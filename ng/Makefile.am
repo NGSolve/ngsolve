@@ -1,0 +1,14 @@
+INCLUDES = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface
+METASOURCES = AUTO
+bin_PROGRAMS = netgen
+netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp
+netgen_LDADD = $(top_builddir)/libsrc/occ/libocc.a \
+	$(top_builddir)/libsrc/csg/libcsg.a $(top_builddir)/libsrc/geom2d/libgeom2d.a \
+	$(top_builddir)/libsrc/stlgeom/libstl.a $(top_builddir)/libsrc/visualization/libvisual.a \
+	$(top_builddir)/libsrc/interface/libinterface.a $(top_builddir)/libsrc/meshing/libmesh.a \
+	$(top_builddir)/libsrc/opti/libopti.a $(top_builddir)/libsrc/linalg/libla.a \
+	$(top_builddir)/libsrc/gprim/libgprim.a $(top_builddir)/libsrc/general/libgeneral.a -lTKSTL -lTKSTEP -lTKBRep \
+	-lTKIGES -L/usr/lib/tcl/Tix8.4.3 -L/usr/local/lib/Togl1.7 -lGLU -lTix8.4.3 \
+	-lTogl1.7 -ltcl8.5 -ltk8.5
+
+AM_CXXFLAGS = -DOPENGL
