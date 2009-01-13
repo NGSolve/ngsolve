@@ -1,4 +1,4 @@
-INCLUDES = -I$(top_srcdir)/libsrc/include
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
 noinst_LIBRARIES = libmesh.a
 libmesh_a_SOURCES = adfront2.cpp adfront3.cpp bisect.cpp boundarylayer.cpp \

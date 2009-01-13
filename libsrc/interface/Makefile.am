@@ -1,4 +1,4 @@
-INCLUDES = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface
 METASOURCES = AUTO
 noinst_LIBRARIES = libinterface.a
 libinterface_a_SOURCES = importsolution.cpp nginterface.cpp printdest.cpp \

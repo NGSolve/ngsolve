@@ -36,7 +36,7 @@ bin_PROGRAMS = netgen$(EXEEXT)
 subdir = ng
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/configure.in
+am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -49,16 +49,16 @@ am_netgen_OBJECTS = demoview.$(OBJEXT) ngappinit.$(OBJEXT) \
 	ngpkg.$(OBJEXT) onetcl.$(OBJEXT)
 netgen_OBJECTS = $(am_netgen_OBJECTS)
 netgen_DEPENDENCIES = $(top_builddir)/libsrc/csg/libcsg.a \
-	$(top_builddir)/libsrc/general/libgeneral.a \
 	$(top_builddir)/libsrc/geom2d/libgeom2d.a \
-	$(top_builddir)/libsrc/gprim/libgprim.a \
 	$(top_builddir)/libsrc/interface/libinterface.a \
-	$(top_builddir)/libsrc/linalg/libla.a \
-	$(top_builddir)/libsrc/meshing/libmesh.a \
-	$(top_builddir)/libsrc/occ/libocc.a \
-	$(top_builddir)/libsrc/opti/libopti.a \
 	$(top_builddir)/libsrc/stlgeom/libstl.a \
-	$(top_builddir)/libsrc/visualization/libvisual.a
+	$(top_builddir)/libsrc/occ/libocc.a \
+	$(top_builddir)/libsrc/visualization/libvisual.a \
+	$(top_builddir)/libsrc/meshing/libmesh.a \
+	$(top_builddir)/libsrc/gprim/libgprim.a \
+	$(top_builddir)/libsrc/opti/libopti.a \
+	$(top_builddir)/libsrc/linalg/libla.a \
+	$(top_builddir)/libsrc/general/libgeneral.a
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -123,6 +123,7 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OCCFLAGS = @OCCFLAGS@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -191,18 +192,19 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-INCLUDES = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface
+
+# AM_CXXFLAGS = 
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface $(OCCFLAGS)
 METASOURCES = AUTO
 netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp
 netgen_LDADD = $(top_builddir)/libsrc/csg/libcsg.a \
-	$(top_builddir)/libsrc/general/libgeneral.a $(top_builddir)/libsrc/geom2d/libgeom2d.a \
-	$(top_builddir)/libsrc/gprim/libgprim.a $(top_builddir)/libsrc/interface/libinterface.a \
-	$(top_builddir)/libsrc/linalg/libla.a $(top_builddir)/libsrc/meshing/libmesh.a \
-	$(top_builddir)/libsrc/occ/libocc.a $(top_builddir)/libsrc/opti/libopti.a \
-	$(top_builddir)/libsrc/stlgeom/libstl.a $(top_builddir)/libsrc/visualization/libvisual.a \
-	-L/usr/local/lib/Togl1.7 -lGLU -lTKBRep -lTKIGES -lTKSTEP -lTKSTL -lTogl1.7 -ltcl8.5 -ltk8.5
+	$(top_builddir)/libsrc/geom2d/libgeom2d.a $(top_builddir)/libsrc/interface/libinterface.a \
+	$(top_builddir)/libsrc/stlgeom/libstl.a $(top_builddir)/libsrc/occ/libocc.a \
+	$(top_builddir)/libsrc/visualization/libvisual.a $(top_builddir)/libsrc/meshing/libmesh.a \
+	$(top_builddir)/libsrc/gprim/libgprim.a $(top_builddir)/libsrc/opti/libopti.a \
+	$(top_builddir)/libsrc/linalg/libla.a $(top_builddir)/libsrc/general/libgeneral.a -L/usr/local/lib/Togl1.7 \
+	-lGLU $(OCCLIBS) -lTogl1.7 -ltcl8.5 -ltk8.5
 
-AM_CXXFLAGS = -DOPENGL
 all: all-am
 
 .SUFFIXES:
@@ -216,9 +218,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  ng/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  ng/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  ng/Makefile
+	  $(AUTOMAKE) --foreign  ng/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -484,6 +486,9 @@ uninstall-am: uninstall-binPROGRAMS
 	pdf pdf-am ps ps-am tags uninstall uninstall-am \
 	uninstall-binPROGRAMS
 
+@OCC_TRUE@	OCCLIBS = -lTKBRep -lTKIGES -lTKSTEP -lTKSTL
+
+# AM_CXXFLAGS = -DOPENGL
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

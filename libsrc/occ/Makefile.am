@@ -1,4 +1,4 @@
-INCLUDES = -I$(top_srcdir)/libsrc/include
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
 noinst_LIBRARIES = libocc.a
 libocc_a_SOURCES = Partition_Inter2d.cxx Partition_Inter3d.cxx \

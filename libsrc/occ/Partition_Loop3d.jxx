@@ -1,0 +1,30 @@
+//  GEOM PARTITION : partition algorithm
+//
+//  Copyright (C) 2003  CEA/DEN, EDF R&D
+//
+//
+//
+//  File   : Partition_Loop3d.jxx
+//  Module : GEOM
+
+#ifndef _TopoDS_Shape_HeaderFile
+#include <TopoDS_Shape.hxx>
+#endif
+#ifndef _TopTools_ListOfShape_HeaderFile
+#include <TopTools_ListOfShape.hxx>
+#endif
+#ifndef _TopTools_MapOfOrientedShape_HeaderFile
+#include <TopTools_MapOfOrientedShape.hxx>
+#endif
+#ifndef _TopoDS_Edge_HeaderFile
+#include <TopoDS_Edge.hxx>
+#endif
+#ifndef _TopoDS_Face_HeaderFile
+#include <TopoDS_Face.hxx>
+#endif
+#ifndef _gp_Vec_HeaderFile
+#include <gp_Vec.hxx>
+#endif
+#ifndef _Partition_Loop3d_HeaderFile
+#include "Partition_Loop3d.hxx"
+#endif

@@ -396,12 +396,13 @@ int Tcl_AppInit(Tcl_Interp * interp)
     // return TCL_ERROR;
     }
   */
-
+    /*
   if (!nodisplay && Tix_Init(interp) == TCL_ERROR) {
     cerr << "Problem in Tix_Init: " << endl;
     cerr << interp->result << endl;
     // return TCL_ERROR;
   }
+    */
 
   if (Ng_Init(interp) == TCL_ERROR) {
     cerr << "Problem in Ng_Init: " << endl;

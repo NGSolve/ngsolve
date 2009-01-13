@@ -1,4 +1,4 @@
-INCLUDES = 
+AM_CPPFLAGS = 
 METASOURCES = AUTO
 pkgdata_DATA = boxcyl.geo circle_on_cube.geo cone.geo cube.geo \
 	cubeandring.geo cubeandspheres.geo cubemcyl.geo cubemsphere.geo cylinder.geo \

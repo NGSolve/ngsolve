@@ -1,4 +1,4 @@
-INCLUDES = -I$(top_srcdir)/libsrc/include
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
 noinst_LIBRARIES = libcsg.a
 libcsg_a_SOURCES = algprim.cpp brick.cpp bspline2d.cpp csgeom.cpp csgparser.cpp \

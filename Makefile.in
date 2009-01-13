@@ -38,7 +38,7 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	TODO config.guess config.sub depcomp install-sh ltmain.sh \
 	missing mkinstalldirs
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/configure.in
+am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -118,6 +118,7 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OCCFLAGS = @OCCFLAGS@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -186,7 +187,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = libsrc ng
+SUBDIRS = libsrc ng tutorials
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -197,15 +198,15 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
-	      echo ' cd $(srcdir) && $(AUTOMAKE) --gnu '; \
-	      cd $(srcdir) && $(AUTOMAKE) --gnu  \
+	      echo ' cd $(srcdir) && $(AUTOMAKE) --foreign '; \
+	      cd $(srcdir) && $(AUTOMAKE) --foreign  \
 		&& exit 0; \
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  Makefile
+	  $(AUTOMAKE) --foreign  Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -635,6 +636,8 @@ uninstall-am:
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags tags-recursive uninstall uninstall-am
 
+
+@OCC_TRUE@	echo "OCC is enabled"
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

@@ -34,7 +34,7 @@ host_triplet = @host@
 subdir = libsrc
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/configure.in
+am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -102,6 +102,7 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OCCFLAGS = @OCCFLAGS@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -170,7 +171,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-INCLUDES = 
+AM_CPPFLAGS = 
 METASOURCES = AUTO
 SUBDIRS = csg general geom2d gprim include interface linalg meshing occ opti \
 	parallel stlgeom visualization
@@ -187,9 +188,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  libsrc/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  libsrc/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  libsrc/Makefile
+	  $(AUTOMAKE) --foreign  libsrc/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
