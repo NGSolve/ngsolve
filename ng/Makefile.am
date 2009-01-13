@@ -1,9 +1,4 @@
-if OCC
-	OCCLIBS = -lTKBRep -lTKIGES -lTKSTEP -lTKSTL
-endif
-
-
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface $(OCCFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL $(OCCFLAGS)
 
 METASOURCES = AUTO
 bin_PROGRAMS = netgen
@@ -21,4 +16,3 @@ netgen_LDADD = $(top_builddir)/libsrc/csg/libcsg.a \
 
 
 
-# AM_CXXFLAGS = -DOPENGL

@@ -1091,20 +1091,18 @@ namespace netgen
   
     IGESControl_Reader reader;
   
-#ifdef OCC52
     Standard_Integer stat = reader.ReadFile((char*)filename);
-#else
-    Standard_Integer stat = reader.LoadFile((char*)filename);
-    reader.Clear();
-#endif
 
+    // pre OCC52-times:
+    // Standard_Integer stat = reader.LoadFile((char*)filename);
+    // reader.Clear();
       
   
-#ifdef OCC52
     reader.TransferRoots(); // Tranlate IGES -> OCC
-#else
-    reader.TransferRoots(Standard_False); // Tranlate IGES -> OCC
-#endif
+
+    // pre OCC52-times:
+    // reader.TransferRoots(Standard_False); // Tranlate IGES -> OCC
+
     //reader.PrintTransferInfo(IFSelect_FailAndWarn,IFSelect_ListByItem);
 
     occgeo->shape = reader.OneShape();

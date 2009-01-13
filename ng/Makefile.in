@@ -48,6 +48,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am_netgen_OBJECTS = demoview.$(OBJEXT) ngappinit.$(OBJEXT) \
 	ngpkg.$(OBJEXT) onetcl.$(OBJEXT)
 netgen_OBJECTS = $(am_netgen_OBJECTS)
+am__DEPENDENCIES_1 =
 netgen_DEPENDENCIES = $(top_builddir)/libsrc/csg/libcsg.a \
 	$(top_builddir)/libsrc/geom2d/libgeom2d.a \
 	$(top_builddir)/libsrc/interface/libinterface.a \
@@ -58,7 +59,8 @@ netgen_DEPENDENCIES = $(top_builddir)/libsrc/csg/libcsg.a \
 	$(top_builddir)/libsrc/gprim/libgprim.a \
 	$(top_builddir)/libsrc/opti/libopti.a \
 	$(top_builddir)/libsrc/linalg/libla.a \
-	$(top_builddir)/libsrc/general/libgeneral.a
+	$(top_builddir)/libsrc/general/libgeneral.a \
+	$(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -124,6 +126,7 @@ NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OCCFLAGS = @OCCFLAGS@
+OCCLIBS = @OCCLIBS@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -192,9 +195,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-
-# AM_CXXFLAGS = 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface $(OCCFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL $(OCCFLAGS)
 METASOURCES = AUTO
 netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp
 netgen_LDADD = $(top_builddir)/libsrc/csg/libcsg.a \
@@ -486,9 +487,6 @@ uninstall-am: uninstall-binPROGRAMS
 	pdf pdf-am ps ps-am tags uninstall uninstall-am \
 	uninstall-binPROGRAMS
 
-@OCC_TRUE@	OCCLIBS = -lTKBRep -lTKIGES -lTKSTEP -lTKSTL
-
-# AM_CXXFLAGS = -DOPENGL
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

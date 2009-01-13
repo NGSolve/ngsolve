@@ -116,6 +116,7 @@ NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OCCFLAGS = @OCCFLAGS@
+OCCLIBS = @OCCLIBS@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -184,7 +185,9 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  $(OCCFLAGS) 
+
+# $(OCC_INC_FLAG)
 METASOURCES = AUTO
 noinst_LIBRARIES = libocc.a
 libocc_a_SOURCES = Partition_Inter2d.cxx Partition_Inter3d.cxx \

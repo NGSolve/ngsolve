@@ -2,24 +2,16 @@
 #define FILE_MYSTDLIB
 
 
+#include <config.h>
+
+
+
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 #include <sstream>
 
-#ifdef OLDCINCLUDE
 
-// e.g., CC compiler on SGI
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <malloc.h>
-#include <ctype.h>
-#include <time.h>
-
-#else
-
-// new standard
 #include <cstdlib>
 #include <cstdio>
 #include <cmath>
@@ -27,8 +19,6 @@
 #include <ctime>
 #include <cstring>
 #include <climits>
-#endif
-
 
 
 #include <new>
