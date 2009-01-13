@@ -12,7 +12,6 @@
 #include <dlfcn.h>
 #endif
 
-
 #ifdef PARALLEL
 #include <mpi.h>
 
