@@ -1,7 +1,7 @@
 AC_INIT(configure.in)
 
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(netgen, 5.0)
+AM_INIT_AUTOMAKE(netgen, 4.9.2)
 
 AC_LANG_CPLUSPLUS
 AC_PROG_CXX

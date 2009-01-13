@@ -1,6 +1,9 @@
 const char * ngscript[] = {
 "\n",\
 "\n",\
+"if {[catch {package require Tix }]} {\n",\
+"    puts \"cannot find package Tix\"\n",\
+"}\n",\
 "set userlevel 3\n",\
 "if { [Ng_GetCommandLineParameter expert]==\"defined\" } {\n",\
 "    set userlevel 3\n",\

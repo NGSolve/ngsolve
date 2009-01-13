@@ -2367,7 +2367,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=netgen
- VERSION=5.0
+ VERSION=4.9.2
 
 
 cat >>confdefs.h <<_ACEOF
