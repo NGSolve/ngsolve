@@ -1,6 +1,6 @@
 INCLUDES = 
 METASOURCES = AUTO
-pkgdata_SCRIPTS = boxcyl.geo circle_on_cube.geo cone.geo cube.geo \
+pkgdata_DATA = boxcyl.geo circle_on_cube.geo cone.geo cube.geo \
 	cubeandring.geo cubeandspheres.geo cubemcyl.geo cubemsphere.geo cylinder.geo \
 	cylsphere.geo ellipsoid.geo ellipticcyl.geo extrusion.geo fichera.geo lshape3d.geo \
 	manyholes.geo manyholes2.geo matrix.geo ortho.geo period.geo revolution.geo \
