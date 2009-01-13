@@ -22,7 +22,6 @@ The interface between the GUI and the netgen library
 #endif
 
 
-
 #include <geometry2d.hpp>
 #include <stlgeom.hpp>
 
