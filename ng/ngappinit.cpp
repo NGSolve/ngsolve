@@ -109,7 +109,7 @@ int main(int argc, char ** argv)
 #ifdef NGSOLVE
         cout << "NETGEN/NGSolve V4.5-RC2" << endl;
 #else
-        cout << "NETGEN V4.5-RC2" << endl;
+        cout << "NETGEN-" << VERSION << endl;
 #endif
 
       
