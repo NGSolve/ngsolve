@@ -1,3 +1,5 @@
+noinst_HEADERS = demoview.hpp
+
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL $(OCCFLAGS)
 
 METASOURCES = AUTO

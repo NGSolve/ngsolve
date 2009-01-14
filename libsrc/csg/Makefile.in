@@ -14,6 +14,7 @@
 
 @SET_MAKE@
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -33,7 +34,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 subdir = libsrc/csg
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
+DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -68,6 +70,7 @@ CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libcsg_a_SOURCES)
 DIST_SOURCES = $(libcsg_a_SOURCES)
+HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -188,13 +191,20 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+noinst_HEADERS = algprim.hpp csgparser.hpp extrusion.hpp manifold.hpp \
+singularref.hpp surface.hpp brick.hpp curve2d.hpp gencyl.hpp	      \
+meshsurf.hpp solid.hpp triapprox.hpp csgeom.hpp edgeflw.hpp geoml.hpp \
+polyhedra.hpp specpoin.hpp csg.hpp explicitcurve2d.hpp identify.hpp   \
+revolution.hpp spline3d.hpp
+
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
-noinst_LIBRARIES = libcsg.a
-libcsg_a_SOURCES = algprim.cpp brick.cpp bspline2d.cpp csgeom.cpp csgparser.cpp \
-	curve2d.cpp edgeflw.cpp explicitcurve2d.cpp extrusion.cpp gencyl.cpp genmesh.cpp \
-	identify.cpp manifold.cpp meshsurf.cpp polyhedra.cpp revolution.cpp singularref.cpp \
-	solid.cpp specpoin.cpp spline3d.cpp surface.cpp triapprox.cpp
+noinst_LIBRARIES = libcsg.a 
+libcsg_a_SOURCES = algprim.cpp brick.cpp   \
+bspline2d.cpp csgeom.cpp csgparser.cpp curve2d.cpp edgeflw.cpp	       \
+explicitcurve2d.cpp extrusion.cpp gencyl.cpp genmesh.cpp identify.cpp  \
+manifold.cpp meshsurf.cpp polyhedra.cpp revolution.cpp singularref.cpp \
+solid.cpp specpoin.cpp spline3d.cpp surface.cpp triapprox.cpp
 
 all: all-am
 
@@ -368,7 +378,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES)
+all-am: Makefile $(LIBRARIES) $(HEADERS)
 installdirs:
 install: install-am
 install-exec: install-exec-am
