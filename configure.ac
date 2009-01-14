@@ -5,7 +5,6 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_ARG_ENABLE([occ], 
         [  --enable-occ            Compile with OpenCascade geometry kernel],
         [occon=true 
-        OCCFLAGS='-DOCCGEOMETRY -I/usr/local/inc'
         occfl='-DOCCGEOMETRY -I/usr/local/inc'
         occlfl='-lTKIGES -lTKBRep -lTKSTEP -lTKSTL' ],
         [occon=false] )
@@ -45,6 +44,3 @@ libsrc/parallel/Makefile libsrc/stlgeom/Makefile libsrc/visualization/Makefile n
 tutorials/Makefile)
 
 AC_OUTPUT
-
-
-
