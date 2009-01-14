@@ -4,7 +4,9 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_ARG_ENABLE([occ], 
         [  --enable-occ            Compile with OpenCascade geometry kernel],
-        [occon=true occfl='-DOCCGEOMETRY -I/usr/local/inc'
+        [occon=true 
+        OCCFLAGS='-DOCCGEOMETRY -I/usr/local/inc'
+        occfl='-DOCCGEOMETRY -I/usr/local/inc'
         occlfl='-lTKIGES -lTKBRep -lTKSTEP -lTKSTL' ],
         [occon=false] )
 
@@ -16,19 +18,25 @@ AC_LANG_CPLUSPLUS
 AC_PROG_CXX
 AM_PROG_LIBTOOL
 
-AC_SYS_POSIX_TERMIOS
+# AC_SYS_POSIX_TERMIOS
 
-AM_CONDITIONAL([OCC], [test x$occon = xtrue])
+# AM_CONDITIONAL([OCC], [test x$occon = xtrue])
 AC_SUBST([OCCFLAGS], [$occfl])
 AC_SUBST([OCCLIBS], [$occlfl])
 
-# AC_CHECK_HEADER([pthread])
+AC_CHECK_HEADER(pthread.h)
+AC_CHECK_HEADER([togl.h])
+
 AC_CHECK_HEADER([iostream],[OCCFLAGS="$OCCFLAGS -DHAVE_IOSTREAM"])
 AC_CHECK_HEADER([iostream.h],[OCC_FLAGS="$OCCFLAGS -DHAVE_IOSTREAM_H"])
 AC_CHECK_HEADER([limits],[OCCFLAGS="$OCCFLAGS -DHAVE_LIMITS"])
 AC_CHECK_HEADER([limits.h],[OCCFLAGS="$OCCFLAGS -DHAVE_LIMITS_H"])
 
-AC_CHECK_LIB(pthread, pthread_create)
+AC_CHECK_LIB(pthread_create, pthread)
+AC_SEARCH_LIBS(Tcl_Init, [tcl8.5 tcl8.4])
+AC_SEARCH_LIBS(Tk_Init, [tk8.5 tk8.4])
+# AC_SEARCH_LIBS(Togl_Init, Toglstub2.0 )
+
 
 AC_CONFIG_FILES(Makefile libsrc/Makefile libsrc/csg/Makefile libsrc/general/Makefile \
 libsrc/geom2d/Makefile libsrc/gprim/Makefile libsrc/include/Makefile libsrc/interface/Makefile \
