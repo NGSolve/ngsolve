@@ -9,6 +9,7 @@ AC_ARG_ENABLE([occ],
         [occon=false] )
 
 
+# AC_HEADER_STDC
 AC_CONFIG_HEADERS(config.h)
 
 AC_LANG_CPLUSPLUS
@@ -21,12 +22,13 @@ AM_CONDITIONAL([OCC], [test x$occon = xtrue])
 AC_SUBST([OCCFLAGS], [$occfl])
 AC_SUBST([OCCLIBS], [$occlfl])
 
+# AC_CHECK_HEADER([pthread])
 AC_CHECK_HEADER([iostream],[OCCFLAGS="$OCCFLAGS -DHAVE_IOSTREAM"])
 AC_CHECK_HEADER([iostream.h],[OCC_FLAGS="$OCCFLAGS -DHAVE_IOSTREAM_H"])
 AC_CHECK_HEADER([limits],[OCCFLAGS="$OCCFLAGS -DHAVE_LIMITS"])
 AC_CHECK_HEADER([limits.h],[OCCFLAGS="$OCCFLAGS -DHAVE_LIMITS_H"])
 
-
+AC_CHECK_LIB(pthread, pthread_create)
 
 AC_CONFIG_FILES(Makefile libsrc/Makefile libsrc/csg/Makefile libsrc/general/Makefile \
 libsrc/geom2d/Makefile libsrc/gprim/Makefile libsrc/include/Makefile libsrc/interface/Makefile \
