@@ -1486,7 +1486,7 @@ const char * ngscript[] = {
 "\n",\
 ".ngmenu.help add command -label \"About...\" \\\n",\
 "    -command {\n",\
-"tk_messageBox -message \"This is NETGEN \\n mainly written by \\n Joachim Sch�erl \\n thanks to \\n R. Gaisbauer, J. Gerstmayr\"\n",\
+"tk_messageBox -message \"This is NETGEN \\n mainly written by \\n Joachim Schöberl \\n thanks to \\n R. Gaisbauer, J. Gerstmayr\"\n",\
 "}\n",\
 "\n",\
 "\n",\
