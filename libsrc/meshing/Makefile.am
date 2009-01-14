@@ -1,3 +1,13 @@
+noinst_HEADERS = adfront2.hpp hpref_quad.hpp meshfunc.hpp ruler3.hpp   \
+adfront3.hpp findip.hpp findip2.hpp hpref_segm.hpp meshing2.hpp	      \
+specials.hpp bisect.hpp geomsearch.hpp hpref_tet.hpp meshing3.hpp     \
+topology.hpp boundarylayer.hpp global.hpp hpref_trig.hpp meshing.hpp  \
+validate.hpp classifyhpel.hpp hpref_hex.hpp improve2.hpp meshtool.hpp \
+clusters.hpp hprefinement.hpp improve3.hpp meshtype.hpp		      \
+curvedelems.hpp hpref_prism.hpp localh.hpp msghandler.hpp	      \
+curvedelems_new.hpp hpref_pyramid.hpp meshclass.hpp ruler2.hpp
+
+
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
 noinst_LIBRARIES = libmesh.a

@@ -1,3 +1,6 @@
+noinst_HEADERS = meshstlsurface.hpp stlgeom.hpp stlline.hpp \
+stltool.hpp stltopology.hpp
+
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
 noinst_LIBRARIES = libstl.a

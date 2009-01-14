@@ -1,3 +1,6 @@
+noinst_HEADERS = meshdoc.hpp mvdraw.hpp soldata.hpp vispar.hpp \
+visual.hpp vssolution.hpp
+
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  -DOPENGL  $(OCCFLAGS) 
 METASOURCES = AUTO
 noinst_LIBRARIES = libvisual.a
