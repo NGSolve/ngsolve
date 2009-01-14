@@ -32,7 +32,7 @@ AC_CHECK_HEADER([iostream.h],[OCC_FLAGS="$OCCFLAGS -DHAVE_IOSTREAM_H"])
 AC_CHECK_HEADER([limits],[OCCFLAGS="$OCCFLAGS -DHAVE_LIMITS"])
 AC_CHECK_HEADER([limits.h],[OCCFLAGS="$OCCFLAGS -DHAVE_LIMITS_H"])
 
-AC_CHECK_LIB(pthread_create, pthread)
+AC_CHECK_LIB(pthread, pthread_create)
 AC_SEARCH_LIBS(Tcl_Init, [tcl8.5 tcl8.4])
 AC_SEARCH_LIBS(Tk_Init, [tk8.5 tk8.4])
 # AC_SEARCH_LIBS(Togl_Init, Toglstub2.0 )
