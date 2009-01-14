@@ -12,8 +12,3 @@ netgen_LDADD = $(top_builddir)/libsrc/csg/libcsg.a \
 	$(top_builddir)/libsrc/gprim/libgprim.a $(top_builddir)/libsrc/opti/libopti.a \
 	$(top_builddir)/libsrc/linalg/libla.a $(top_builddir)/libsrc/general/libgeneral.a -L/usr/local/lib/Togl1.7 \
 	-lGLU $(OCCLIBS) -lTogl1.7
-
-
-
-
-
