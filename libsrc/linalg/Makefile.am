@@ -1,3 +1,4 @@
+noinst_HEADERS = densemat.hpp linalg.hpp polynomial.hpp vector.hpp
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
 noinst_LIBRARIES = libla.a
