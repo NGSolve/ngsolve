@@ -62,7 +62,7 @@ netgen_DEPENDENCIES = $(top_builddir)/libsrc/csg/libcsg.a \
 	$(top_builddir)/libsrc/opti/libopti.a \
 	$(top_builddir)/libsrc/linalg/libla.a \
 	$(top_builddir)/libsrc/general/libgeneral.a \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -144,6 +144,7 @@ SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+TOGLLIBDIR = @TOGLLIBDIR@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -207,8 +208,8 @@ netgen_LDADD = $(top_builddir)/libsrc/csg/libcsg.a \
 	$(top_builddir)/libsrc/stlgeom/libstl.a $(top_builddir)/libsrc/occ/libocc.a \
 	$(top_builddir)/libsrc/visualization/libvisual.a $(top_builddir)/libsrc/meshing/libmesh.a \
 	$(top_builddir)/libsrc/gprim/libgprim.a $(top_builddir)/libsrc/opti/libopti.a \
-	$(top_builddir)/libsrc/linalg/libla.a $(top_builddir)/libsrc/general/libgeneral.a -L/usr/local/lib/Togl1.7 \
-	-lGLU $(OCCLIBS) -lTogl1.7
+	$(top_builddir)/libsrc/linalg/libla.a $(top_builddir)/libsrc/general/libgeneral.a \
+	-lGLU $(OCCLIBS) $(TOGLLIBDIR) -lTogl1.7
 
 all: all-am
 

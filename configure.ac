@@ -3,11 +3,26 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 
 AC_ARG_ENABLE([occ], 
-        [  --enable-occ            Compile with OpenCascade geometry kernel],
+        [  --enable-occ            compile with OpenCascade geometry kernel],
         [occon=true 
-        occfl='-DOCCGEOMETRY -I/usr/local/inc'
-        occlfl='-lTKIGES -lTKBRep -lTKSTEP -lTKSTL' ],
+        occfl="-DOCCGEOMETRY"
+        occlfl="-lTKIGES -lTKBRep -lTKSTEP -lTKSTL" ],
         [occon=false] )
+
+AC_ARG_WITH([occ], 
+        [  --with-occ=dir          use OpenCascade installed in directory dir],
+        [occdir=$withval]
+        [occincfl="-I$withval/inc"]
+        [occlibfl="-L$withval/lib"],
+        )
+
+AC_ARG_WITH([togl], 
+        [  --with-togl=dir         directory containing libTogl1.7],
+        [togldir=$withval]
+        [togllibfl="-L$withval$"],
+        [togllibfl="-L/usr/local/lib/Togl1.7"]
+        )
+
 
 
 # AC_HEADER_STDC
@@ -17,11 +32,13 @@ AC_LANG_CPLUSPLUS
 AC_PROG_CXX
 AM_PROG_LIBTOOL
 
-# AC_SYS_POSIX_TERMIOS
 
-# AM_CONDITIONAL([OCC], [test x$occon = xtrue])
-AC_SUBST([OCCFLAGS], [$occfl])
-AC_SUBST([OCCLIBS], [$occlfl])
+AM_CONDITIONAL([OCC], [test x$occon = xtrue])
+
+# AC_SUBST([OCCFLAGS], [$occfl])
+AC_SUBST([OCCFLAGS], ["$occfl $occincfl"])
+AC_SUBST([OCCLIBS], ["$occlfl $occlibfl"])
+AC_SUBST([TOGLLIBDIR], ["$togllibfl"])
 
 AC_CHECK_HEADER(pthread.h)
 AC_CHECK_HEADER([togl.h])
