@@ -1,4 +1,4 @@
-AC_INIT([netgen], [4.9.2], [], [])
+AC_INIT([netgen], [4.9.3], [], [])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 
