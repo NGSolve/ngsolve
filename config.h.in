@@ -1,7 +1,13 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define if building universal (internal helper macro) */
+#undef AC_APPLE_UNIVERSAL_BUILD
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
+
+/* Define to 1 if you have the `floor' function. */
+#undef HAVE_FLOOR
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
@@ -9,8 +15,17 @@
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
 
+/* Define to 1 if you have the <limits.h> header file. */
+#undef HAVE_LIMITS_H
+
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Do we have <net/errno.h>? */
+#undef HAVE_NET_ERRNO_H
+
+/* Define to 1 if you have the `pow' function. */
+#undef HAVE_POW
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
@@ -24,6 +39,9 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
+/* Define to 1 if you have the <sys/param.h> header file. */
+#undef HAVE_SYS_PARAM_H
+
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
 
@@ -36,6 +54,36 @@
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
 #undef LT_OBJDIR
+
+/* Are we building against Mac OS X TkAqua? */
+#undef MAC_OSX_TK
+
+/* Do we have <dirent.h>? */
+#undef NO_DIRENT_H
+
+/* Do we have <dlfcn.h>? */
+#undef NO_DLFCN_H
+
+/* Do we have <errno.h>? */
+#undef NO_ERRNO_H
+
+/* Do we have <float.h>? */
+#undef NO_FLOAT_H
+
+/* Do we have <limits.h>? */
+#undef NO_LIMITS_H
+
+/* Do we have <stdlib.h>? */
+#undef NO_STDLIB_H
+
+/* Do we have <string.h>? */
+#undef NO_STRING_H
+
+/* Do we have <sys/wait.h>? */
+#undef NO_SYS_WAIT_H
+
+/* Do we have <values.h>? */
+#undef NO_VALUES_H
 
 /* Name of package */
 #undef PACKAGE
@@ -60,3 +108,15 @@
 
 /* Version number of package */
 #undef VERSION
+
+/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
+   significant byte first (like Motorola and SPARC, unlike Intel). */
+#if defined AC_APPLE_UNIVERSAL_BUILD
+# if defined __BIG_ENDIAN__
+#  define WORDS_BIGENDIAN 1
+# endif
+#else
+# ifndef WORDS_BIGENDIAN
+#  undef WORDS_BIGENDIAN
+# endif
+#endif

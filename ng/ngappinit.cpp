@@ -107,9 +107,9 @@ int main(int argc, char ** argv)
   if ( netgen::id == 0 )
     {
 #ifdef NGSOLVE
-        cout << "NETGEN/NGSolve V4.5-RC2" << endl;
+      cout << "NETGEN/NGSolve " << PACKAGE_VERSION << endl;
 #else
-        cout << "NETGEN-" << VERSION << endl;
+      cout << "NETGEN-" << PACKAGE_VERSION << endl;
 #endif
 
       

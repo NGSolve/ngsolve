@@ -869,7 +869,7 @@ namespace netgen
     glPushAttrib (GL_LIST_BIT);
     glListBase (fontbase);
 
-    char buf[] = "Netgen 4.5";
+    char buf[] = "Netgen " PACKAGE_VERSION;
 
     glRasterPos3d (0.0f, 0.0f, 0.0f);
     glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);

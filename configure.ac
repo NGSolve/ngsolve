@@ -1,5 +1,18 @@
-AC_INIT([netgen], [4.9.3], [], [])
+AC_INIT([netgen],[4.9.3],[],[])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+
+AC_CONFIG_MACRO_DIR([m4])
+
+
+TEA_INIT([3.6])
+
+TEA_PATH_TCLCONFIG
+TEA_PATH_TKCONFIG
+TEA_LOAD_TCLCONFIG 
+TEA_LOAD_TKCONFIG 
+TEA_PREFIX
+
+TEA_SETUP_COMPILER
 
 
 AC_ARG_ENABLE([occ], 
@@ -28,9 +41,9 @@ AC_ARG_WITH([togl],
 # AC_HEADER_STDC
 AC_CONFIG_HEADERS(config.h)
 
-AC_LANG_CPLUSPLUS
+AC_LANG([C++])
 AC_PROG_CXX
-AM_PROG_LIBTOOL
+LT_INIT
 
 
 AM_CONDITIONAL([OCC], [test x$occon = xtrue])
@@ -52,6 +65,15 @@ AC_CHECK_LIB(pthread, pthread_create)
 AC_SEARCH_LIBS(Tcl_Init, [tcl8.5 tcl8.4])
 AC_SEARCH_LIBS(Tk_Init, [tk8.5 tk8.4])
 # AC_SEARCH_LIBS(Togl_Init, Toglstub2.0 )
+
+# TEA_TCL_LINK_LIBS
+# AC_DEFINE(USE_TCL_STUBS)
+# AC_DEFINE(USE_TK_STUBS)
+
+
+AC_CHECK_FUNCS([pow])
+AC_CHECK_FUNCS([floor])
+AC_CHECK_HEADERS([limits.h])
 
 
 AC_CONFIG_FILES(Makefile libsrc/Makefile libsrc/csg/Makefile libsrc/general/Makefile \
