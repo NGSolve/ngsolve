@@ -161,6 +161,7 @@ STRIP = @STRIP@
 TCL_BIN_DIR = @TCL_BIN_DIR@
 TCL_DEFS = @TCL_DEFS@
 TCL_EXTRA_CFLAGS = @TCL_EXTRA_CFLAGS@
+TCL_INCLUDES = @TCL_INCLUDES@
 TCL_LD_FLAGS = @TCL_LD_FLAGS@
 TCL_LIBS = @TCL_LIBS@
 TCL_LIB_FILE = @TCL_LIB_FILE@
@@ -239,7 +240,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_HEADERS = demoview.hpp
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL $(OCCFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL $(OCCFLAGS)  $(TCL_INCLUDES) 
 METASOURCES = AUTO
 netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp
 netgen_LDADD = $(top_builddir)/libsrc/csg/libcsg.a \
@@ -248,7 +249,7 @@ netgen_LDADD = $(top_builddir)/libsrc/csg/libcsg.a \
 	$(top_builddir)/libsrc/visualization/libvisual.a $(top_builddir)/libsrc/meshing/libmesh.a \
 	$(top_builddir)/libsrc/gprim/libgprim.a $(top_builddir)/libsrc/opti/libopti.a \
 	$(top_builddir)/libsrc/linalg/libla.a $(top_builddir)/libsrc/general/libgeneral.a \
-	$(OCCLIBS) $(TOGLLIBDIR) -lTogl1.7 -lGLU $(TK_LIB_FLAG) $(TCL_LIB_FLAG)
+	$(OCCLIBS) $(TOGLLIBDIR) -lTogl1.7 -lGLU $(TK_LIB_SPEC) $(TCL_LIB_SPEC)
 
 all: all-am
 

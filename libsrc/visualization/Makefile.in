@@ -148,6 +148,7 @@ STRIP = @STRIP@
 TCL_BIN_DIR = @TCL_BIN_DIR@
 TCL_DEFS = @TCL_DEFS@
 TCL_EXTRA_CFLAGS = @TCL_EXTRA_CFLAGS@
+TCL_INCLUDES = @TCL_INCLUDES@
 TCL_LD_FLAGS = @TCL_LD_FLAGS@
 TCL_LIBS = @TCL_LIBS@
 TCL_LIB_FILE = @TCL_LIB_FILE@
@@ -228,7 +229,7 @@ top_srcdir = @top_srcdir@
 noinst_HEADERS = meshdoc.hpp mvdraw.hpp soldata.hpp vispar.hpp \
 visual.hpp vssolution.hpp
 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  -DOPENGL  $(OCCFLAGS) 
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  -DOPENGL  $(OCCFLAGS)    $(TCL_INCLUDES)
 METASOURCES = AUTO
 noinst_LIBRARIES = libvisual.a
 libvisual_a_SOURCES = meshdoc.cpp mvdraw.cpp stlmeshing.cpp vscsg.cpp \
