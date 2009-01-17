@@ -1,0 +1,405 @@
+/**************************************************************************/
+/* File:   flags.cpp                                                      */
+/* Author: Joachim Schoeberl                                              */
+/* Date:   10. Oct. 96                                                    */
+/**************************************************************************/
+
+#include <ngstd.hpp>
+
+#ifdef WIN32
+#include <float.h>
+#endif
+
+
+namespace ngstd
+{
+  using namespace ngstd;
+
+
+  Flags :: Flags ()
+  {
+    ;
+  }
+
+  Flags :: Flags (const Flags & flags)
+  {
+    const char * name;
+    int i;
+    for (i = 0; i < flags.GetNStringFlags(); i++)
+      {
+	const char * str = flags.GetStringFlag (i, name);
+	SetFlag (name, str);
+      }
+    for (i = 0; i < flags.GetNNumFlags(); i++)
+      {
+	double val = flags.GetNumFlag (i, name);
+	SetFlag (name, val);
+      }
+    for (i = 0; i < flags.GetNDefineFlags(); i++)
+      {
+	flags.GetDefineFlag (i, name);
+	SetFlag (name);
+      }
+    for (i = 0; i < flags.GetNNumListFlags(); i++)
+      {
+	const ARRAY<double> * numa = flags.GetNumListFlag (i, name);
+	SetFlag (name, *numa);
+      }
+    for (i = 0; i < flags.GetNStringListFlags(); i++)
+      {
+	const ARRAY<char*> * stra = flags.GetStringListFlag (i, name);
+	SetFlag (name, *stra);
+      }
+  }
+
+  
+  Flags :: ~Flags ()
+  {
+    DeleteFlags ();
+  }
+  
+  void Flags :: DeleteFlags ()
+  {
+    for (int i = 0; i < strflags.Size(); i++)
+      delete [] strflags[i];
+    strflags.DeleteAll();
+    numflags.DeleteAll();
+    defflags.DeleteAll();
+    for(int i=0; i<strlistflags.Size(); i++)
+      delete strlistflags[i];
+    strlistflags.DeleteAll();
+    for(int i=0; i<numlistflags.Size(); i++)
+      delete numlistflags[i];
+    numlistflags.DeleteAll();
+  }
+  
+  void Flags :: SetFlag (const char * name, const char * val)
+  {
+    char * hval = new char[strlen (val) + 1];
+    strcpy (hval, val);
+    strflags.Set (name, hval);
+  }
+  
+  void Flags :: SetFlag (const char * name, double val)
+  {
+    numflags.Set (name, val);
+  }
+  
+  void Flags :: SetFlag (const char * name)
+  {
+    defflags.Set (name, 1);
+  }
+
+
+  void Flags :: SetFlag (const char * name, const ARRAY<char*> & val)
+  {
+    ARRAY<char*> * strarray = new ARRAY<char*>;
+    for (int i = 0; i < val.Size(); i++)
+      {
+	strarray->Append (new char[strlen(val[i])+1]);
+	strcpy (strarray->Last(), val[i]);
+      }
+    strlistflags.Set (name, strarray);
+  }
+
+  void Flags :: SetFlag (const char * name, const ARRAY<double> & val)
+  {
+    ARRAY<double> * numarray = new ARRAY<double>(val);
+
+    numlistflags.Set (name, numarray);
+  }
+
+
+
+  
+  const char * 
+  Flags :: GetStringFlag (const char * name, const char * def) const
+  {
+    if (strflags.Used (name))
+      return strflags[name];
+    else
+      return def;
+  }
+
+  double Flags :: GetNumFlag (const char * name, double def) const
+  {
+    if (numflags.Used (name))
+      return numflags[name];
+    else
+      return def;
+  }
+  
+  const double * Flags :: GetNumFlagPtr (const char * name) const
+  {
+    if (numflags.Used (name))
+      return & ((SymbolTable<double>&)numflags)[name];
+    else
+      return NULL;
+  }
+  
+  double * Flags :: GetNumFlagPtr (const char * name) 
+  {
+    if (numflags.Used (name))
+      return & ((SymbolTable<double>&)numflags)[name];
+    else
+      return NULL;
+  }
+  
+  int Flags :: GetDefineFlag (const char * name) const
+  {
+    return defflags.Used (name);
+  }
+
+  int Flags :: GetDefineFlag (const string & name) const
+  {
+    return defflags.Used (name);
+  }
+
+
+  const ARRAY<char*> & 
+  Flags :: GetStringListFlag (const char * name) const
+  {
+    if (strlistflags.Used (name))
+      return *strlistflags[name];
+    else
+      {
+	static ARRAY<char*> hstra(0);
+	return hstra;
+      }
+  }
+
+  const ARRAY<double> & 
+  Flags ::GetNumListFlag (const char * name) const
+  {
+    if (numlistflags.Used (name))
+      return *numlistflags[name];
+    else
+      {
+	static ARRAY<double> hnuma(0);
+	return hnuma;
+      }
+  }
+
+
+  int Flags :: StringFlagDefined (const char * name) const
+  {
+    return strflags.Used (name);
+  }
+
+  int Flags :: NumFlagDefined (const char * name) const
+  {
+    return numflags.Used (name);
+  }
+
+  int Flags :: StringListFlagDefined (const char * name) const
+  {
+    return strlistflags.Used (name);
+  }
+
+  int Flags :: NumListFlagDefined (const char * name) const
+  {
+    return numlistflags.Used (name);
+  }
+
+
+  void Flags :: SaveFlags (const char * filename) const 
+  {
+    int i;
+    ofstream outfile (filename);
+  
+    for (i = 0; i < strflags.Size(); i++)
+      outfile << strflags.GetName(i) << " = " << strflags[i] << endl;
+    for (i = 0; i < numflags.Size(); i++)
+      outfile << numflags.GetName(i) << " = " << numflags[i] << endl;
+    for (i = 0; i < defflags.Size(); i++)
+      outfile << defflags.GetName(i) << endl;
+  }
+ 
+
+
+  void Flags :: PrintFlags (ostream & ost) const 
+  {
+    int i;
+    for (i = 0; i < strflags.Size(); i++)
+      ost << strflags.GetName(i) << " = " << strflags[i] << endl;
+    for (i = 0; i < numflags.Size(); i++)
+      ost << numflags.GetName(i) << " = " << numflags[i] << endl;
+    for (i = 0; i < defflags.Size(); i++)
+      ost << defflags.GetName(i) << endl;
+    for (i = 0; i < strlistflags.Size(); i++)
+      ost << strlistflags.GetName(i) << " = " << strlistflags[i] << endl;
+    for (i = 0; i < numlistflags.Size(); i++)
+      ost << numlistflags.GetName(i) << " = " << numlistflags[i] << endl;
+  }
+ 
+
+  void Flags :: LoadFlags (const char * filename) 
+  {
+    char name[100], str[100];
+    char ch;
+    double val;
+    ifstream infile(filename);
+
+    while (infile.good())
+      {
+	infile >> name;
+	if (strlen (name) == 0) break;
+
+	if (name[0] == '/' && name[1] == '/')
+	  {
+	    ch = 0;
+	    while (ch != '\n' && infile.good())
+	      {
+		ch = infile.get();
+	      }
+	    continue;
+	  }
+
+	ch = 0;
+	infile >> ch;
+	if (ch != '=')
+	  {
+	    infile.putback (ch);
+	    SetFlag (name);
+	  }
+	else
+	  {
+	    infile >> val;
+	    if (!infile.good())
+	      {
+		infile.clear();
+		infile >> str;
+		SetFlag (name, str);
+	      }
+	    else
+	      {
+		SetFlag (name, val);
+	      }
+	  }
+      }
+  }
+
+
+  void Flags :: SetCommandLineFlag (const char * st)
+  {
+    //cout << "SetCommandLineFlag: flag = " << st << endl;
+    istringstream inst( (char *)st);
+
+    char name[100];
+    double val;
+
+
+    if (st[0] != '-')
+      {
+	cerr << "flag must start with '-'" << endl;
+	return;
+      }
+  
+    const char * pos = strchr (st, '=');
+    const char * posbrack = strchr (st, '[');
+
+    if (!pos)
+      {
+	//      (cout) << "Add def flag: " << st+1 << endl;
+	SetFlag (st+1);
+      }
+    else
+      {
+	//cout << "pos = " << pos << endl;
+
+	strncpy (name, st+1, (pos-st)-1);
+	name[pos-st-1] = 0;
+
+	//cout << "name = " << name << endl;
+
+	pos++;
+	char * endptr = NULL;
+
+	val = strtod (pos, &endptr);
+
+#ifdef WIN32
+	if(endptr != pos && !_finite(val))
+	  endptr = const_cast<char *>(pos);
+#else
+#ifdef MACOS
+	if(endptr != pos && (__isnand(val) || __isinfd(val)))
+	  endptr = const_cast<char *>(pos);
+#else
+#ifdef SUN
+#else
+	if(endptr != pos && (isnan(val) || isinf(val)))
+	  endptr = const_cast<char *>(pos);
+#endif
+#endif
+#endif
+
+	
+	//cout << "val = " << val << endl;
+
+	if (!posbrack)
+	  {
+	    if (endptr == pos)
+	      {
+		// string-flag
+		//(cout) << "Add String Flag: " << name << " = " << pos << endl;
+		SetFlag (name, pos);
+	      }
+	    else
+	      {
+		// num-flag
+		//(cout) << "Add Num Flag: " << name << " = " << val << endl;
+		SetFlag (name, val);
+	      }
+	  }
+	else
+	  {
+	    // list-flag
+	    char hc;
+	    double val;
+
+	    val = strtod (posbrack+1, &endptr);
+	    if (endptr != posbrack+1)
+	      {
+		ARRAY<double> values;
+		
+		istringstream ist(posbrack);
+		ist >> hc;   // '['
+		ist >> val;
+		while (ist.good())
+		  {
+		    values.Append (val);
+		    ist >> hc;  // ','
+		    ist >> val;
+		  }
+		SetFlag (name, values);
+	      }
+	    else
+	      {
+		ARRAY<char *> strs;
+
+		posbrack++;
+		char * hstr = new char[strlen(posbrack)+1];
+		strcpy (hstr, posbrack);
+		
+		char * chp = hstr;
+
+		bool start = 1;
+		while (*chp && *chp != ']')
+		  {
+		    if (start)
+		      strs.Append (chp);
+		    start = 0;
+		    if (*chp == ',')
+		      {
+			*chp = 0;
+			start = 1;
+		      }
+		    chp++;
+		  }
+		*chp = 0;
+		SetFlag (name, strs);
+	      }
+	  }
+      }
+  }
+}
