@@ -1,3 +1,9 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libsrc ng tutorials
+METASOURCES = AUTO
+
+SUBDIRS = libsrc ng tutorials 
+
+
+
+

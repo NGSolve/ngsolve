@@ -15,6 +15,7 @@
 @SET_MAKE@
 
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -35,8 +36,8 @@ build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = netgen$(EXEEXT)
 subdir = ng
-DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+DIST_COMMON = $(dist_bin_SCRIPTS) $(noinst_HEADERS) \
+	$(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
@@ -47,7 +48,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)"
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_netgen_OBJECTS = demoview.$(OBJEXT) ngappinit.$(OBJEXT) \
@@ -67,6 +68,11 @@ netgen_DEPENDENCIES = $(top_builddir)/libsrc/csg/libcsg.a \
 	$(top_builddir)/libsrc/general/libgeneral.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+netgen_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
+	$(netgen_LDFLAGS) $(LDFLAGS) -o $@
+dist_binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
+SCRIPTS = $(dist_bin_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -241,7 +247,6 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_HEADERS = demoview.hpp
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL $(OCCFLAGS)  $(TCL_INCLUDES) 
-METASOURCES = AUTO
 netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp
 netgen_LDADD = $(top_builddir)/libsrc/csg/libcsg.a \
 	$(top_builddir)/libsrc/geom2d/libgeom2d.a $(top_builddir)/libsrc/interface/libinterface.a \
@@ -251,6 +256,11 @@ netgen_LDADD = $(top_builddir)/libsrc/csg/libcsg.a \
 	$(top_builddir)/libsrc/linalg/libla.a $(top_builddir)/libsrc/general/libgeneral.a \
 	$(OCCLIBS) $(TOGLLIBDIR) -lTogl1.7 -lGLU $(TK_LIB_SPEC) $(TCL_LIB_SPEC)
 
+dist_bin_SCRIPTS = dialog.tcl menustat.tcl ngicon.tcl ng.tcl \
+ngvisual.tcl sockets.tcl drawing.tcl nghelp.tcl ngshell.tcl  \
+ngtesting.tcl parameters.tcl variables.tcl
+
+netgen_LDFLAGS = -rdynamic
 all: all-am
 
 .SUFFIXES:
@@ -314,7 +324,26 @@ clean-binPROGRAMS:
 	done
 netgen$(EXEEXT): $(netgen_OBJECTS) $(netgen_DEPENDENCIES) 
 	@rm -f netgen$(EXEEXT)
-	$(CXXLINK) $(netgen_OBJECTS) $(netgen_LDADD) $(LIBS)
+	$(netgen_LINK) $(netgen_OBJECTS) $(netgen_LDADD) $(LIBS)
+install-dist_binSCRIPTS: $(dist_bin_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
+	@list='$(dist_bin_SCRIPTS)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  if test -f $$d$$p; then \
+	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
+	    echo " $(dist_binSCRIPT_INSTALL) '$$d$$p' '$(DESTDIR)$(bindir)/$$f'"; \
+	    $(dist_binSCRIPT_INSTALL) "$$d$$p" "$(DESTDIR)$(bindir)/$$f"; \
+	  else :; fi; \
+	done
+
+uninstall-dist_binSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_bin_SCRIPTS)'; for p in $$list; do \
+	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
+	  echo " rm -f '$(DESTDIR)$(bindir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(bindir)/$$f"; \
+	done
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -429,9 +458,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(HEADERS)
+all-am: Makefile $(PROGRAMS) $(SCRIPTS) $(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -482,7 +511,7 @@ install-data-am:
 
 install-dvi: install-dvi-am
 
-install-exec-am: install-binPROGRAMS
+install-exec-am: install-binPROGRAMS install-dist_binSCRIPTS
 
 install-html: install-html-am
 
@@ -514,7 +543,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS
+uninstall-am: uninstall-binPROGRAMS uninstall-dist_binSCRIPTS
 
 .MAKE: install-am install-strip
 
@@ -522,15 +551,16 @@ uninstall-am: uninstall-binPROGRAMS
 	clean-generic clean-libtool ctags distclean distclean-compile \
 	distclean-generic distclean-libtool distclean-tags distdir dvi \
 	dvi-am html html-am info info-am install install-am \
-	install-binPROGRAMS install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am \
-	uninstall-binPROGRAMS
+	install-binPROGRAMS install-data install-data-am \
+	install-dist_binSCRIPTS install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-binPROGRAMS \
+	uninstall-dist_binSCRIPTS
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

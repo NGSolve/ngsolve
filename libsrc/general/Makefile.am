@@ -1,4 +1,6 @@
-noinst_HEADERS = array.hpp dynamicmem.hpp myadt.hpp optmem.hpp sort.hpp table.hpp autodiff.hpp flags.hpp mystring.hpp parthreads.hpp spbita2d.hpp template.hpp autoptr.hpp hashtabl.hpp netgenout.hpp profiler.hpp stack.hpp bitarray.hpp moveablemem.hpp ngexception.hpp seti.hpp symbolta.hpp
+noinst_HEADERS = array.hpp myadt.hpp optmem.hpp sort.hpp table.hpp autodiff.hpp flags.hpp mystring.hpp spbita2d.hpp template.hpp autoptr.hpp hashtabl.hpp netgenout.hpp profiler.hpp stack.hpp bitarray.hpp seti.hpp symbolta.hpp
+
+include_HEADERS =  dynamicmem.hpp moveablemem.hpp  parthreads.hpp ngexception.hpp
 
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO

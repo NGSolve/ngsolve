@@ -282,9 +282,10 @@ extern "C" {
 
 #endif
   
-namespace netgen {
-#include "../visualization/soldata.hpp"
-}
+  namespace netgen {
+  // #include "../visualization/soldata.hpp"
+    class SolutionData;
+  }
 
   enum Ng_SolutionType
   { NG_SOLUTION_NODAL = 1, 
@@ -343,7 +344,8 @@ namespace netgen {
   void Ng_SetTerminate(void);
   void Ng_UnSetTerminate(void);
   int Ng_ShouldTerminate(void);
-  
+  void Ng_SetRunning(int flag);
+  int Ng_IsRunning();
   
   //// added by Roman Stainko ....
   int Ng_GetVertex_Elements( int vnr, int* elems);

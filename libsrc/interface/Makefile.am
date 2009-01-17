@@ -1,7 +1,7 @@
 include_HEADERS = nginterface.h
 noinst_HEADERS = writeuser.hpp
 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface   $(TCL_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface $(TCL_INCLUDES) -DOPENGL
 METASOURCES = AUTO
 noinst_LIBRARIES = libinterface.a
 libinterface_a_SOURCES = importsolution.cpp nginterface.cpp printdest.cpp \

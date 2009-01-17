@@ -1868,7 +1868,7 @@ void Ng_SetSolutionData (Ng_SolutionData * soldata)
   //   vssolution.ClearSolutionData ();
   VisualSceneSolution::SolData * vss = new VisualSceneSolution::SolData;
 
-  //  cout << "Add solution " << soldata->name << ", type = " << soldata->soltype << endl;
+  cout << "Add solution " << soldata->name << ", type = " << soldata->soltype << endl;
 
   vss->name = new char[strlen (soldata->name)+1];
   strcpy (vss->name, soldata->name);
@@ -2102,6 +2102,15 @@ void Ng_UnSetTerminate(void)
 int Ng_ShouldTerminate(void)
 {
   return multithread.terminate;
+}
+
+void Ng_SetRunning(int flag)
+{
+  multithread.running = flag;
+}
+int Ng_IsRunning()
+{
+  return multithread.running;
 }
 
 ///// Added by Roman Stainko ....

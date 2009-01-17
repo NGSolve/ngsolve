@@ -214,7 +214,7 @@ int main(int argc, char ** argv)
       // parse tcl-script
       int errcode;
 
-      bool internaltcl = true;
+      bool internaltcl = false;
       if (shellmode)
         internaltcl = false;
   
@@ -232,6 +232,7 @@ int main(int argc, char ** argv)
         internaltcl=true;
       if (parameters.GetDefineFlag ("externaltcl"))
         internaltcl=false;
+
  
 
       if (internaltcl)

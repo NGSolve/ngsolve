@@ -1,5 +1,7 @@
-noinst_HEADERS = meshdoc.hpp mvdraw.hpp soldata.hpp vispar.hpp \
+noinst_HEADERS = meshdoc.hpp mvdraw.hpp vispar.hpp \
 visual.hpp vssolution.hpp
+
+include_HEADERS = soldata.hpp
 
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  -DOPENGL  $(OCCFLAGS)    $(TCL_INCLUDES)
 METASOURCES = AUTO

@@ -3,6 +3,8 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
 
+AC_PREFIX_DEFAULT(["/opt/netgen"])
+
 
 TEA_INIT([3.6])
 
