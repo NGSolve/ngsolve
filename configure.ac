@@ -60,7 +60,7 @@ AC_PROG_RANLIB
 LT_INIT
 
 
-AM_CONDITIONAL([OCC], [test x$occon = xtrue])
+# AM_CONDITIONAL([OCC], [test x$occon = xtrue])
 
 # AC_SUBST([OCCFLAGS], [$occfl])
 AC_SUBST([OCCFLAGS], ["$occfl $occincfl"])
