@@ -7,7 +7,7 @@ numproc.cpp pde.cpp shapetester.cpp evplapack.cpp hyperbolic.cpp  \
 nptests.cpp numprocee.cpp pdeparser.cpp
 
 
-libngsolve_la_LIBADD = $(top_builddir)/comp/libngcomp.la $(top_builddir)/fem/libngfem.la  $(top_builddir)/linalg/libngla.la  $(top_builddir)/basiclinalg/libngbla.la  $(top_builddir)/multigrid/libngmg.la 
+libngsolve_la_LIBADD = $(top_builddir)/comp/libngcomp.la $(top_builddir)/fem/libngfemng.la  $(top_builddir)/linalg/libngla.la  $(top_builddir)/basiclinalg/libngbla.la  $(top_builddir)/multigrid/libngmg.la 
 
 include_HEADERS = numproc.hpp  pde.hpp  solve.hpp
 

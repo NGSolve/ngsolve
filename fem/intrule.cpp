@@ -7,7 +7,6 @@
 /* 
    Finite Element Integration Rules
 */
-  
 
 #include <fem.hpp>
    
