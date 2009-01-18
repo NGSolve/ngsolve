@@ -18,6 +18,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
+/* Define to 1 if you have the `minabc' function. */
+#undef HAVE_MINABC
+
 /* Define to 1 if you have the `pow' function. */
 #undef HAVE_POW
 

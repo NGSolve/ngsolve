@@ -12,7 +12,7 @@ TEA_PATH_TCLCONFIG
 TEA_LOAD_TCLCONFIG 
 
 TEA_PATH_TKCONFIG
-TEA_LOAD_TKCONFIG 
+TEA_LOAD_TKCONFIG
 
 TEA_PUBLIC_TCL_HEADERS
 
@@ -88,6 +88,7 @@ AC_CHECK_LIB(pthread, pthread_create)
 AC_CHECK_FUNCS([pow])
 AC_CHECK_FUNCS([floor])
 AC_CHECK_HEADERS([limits.h])
+AC_CHECK_FUNCS([minabc])
 
 
 AC_CONFIG_FILES(Makefile libsrc/Makefile libsrc/csg/Makefile libsrc/general/Makefile \

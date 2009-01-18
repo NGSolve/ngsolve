@@ -19,6 +19,7 @@
 #include <ctime>
 #include <cstring>
 #include <climits>
+#include <algorithm>
 
 
 #include <new>

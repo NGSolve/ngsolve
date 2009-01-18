@@ -348,9 +348,11 @@ int main(int argc, char ** argv)
 
 
 
+/*
 extern "C" int Tix_Init (Tcl_Interp * interp);
 extern "C" int Itcl_Init (Tcl_Interp * interp);
 extern "C" int Itk_Init (Tcl_Interp * interp);
+*/
 extern "C" int Ng_Init (Tcl_Interp * interp);
 extern "C" int Ng_Vis_Init (Tcl_Interp * interp);
 
@@ -379,7 +381,6 @@ int Tcl_AppInit(Tcl_Interp * interp)
     cerr << interp->result << endl;
     // return TCL_ERROR;
   }
-
 
   // if ITcl and ITk are installed on the system, then
   // they must also be initialized
@@ -528,6 +529,5 @@ int Tcl_AppInit(Tcl_Interp * interp)
 
 
   Tcl_StaticPackage(interp, "Tk", Tk_Init, 0);
-
   return TCL_OK;
 }
