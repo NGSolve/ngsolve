@@ -1,6 +1,12 @@
 
 // #define _GLIBCPP_BASIC_FILE_ENCAPSULATION 1
 
+
+#ifdef HAVE_CONFIG_H
+#include <../config.h>
+#endif
+
+
 #include <iostream>
 #include <fstream>
 // #include <strstream>

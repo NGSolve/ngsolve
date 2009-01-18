@@ -11,7 +11,7 @@
    ng-standard classes
 */
 
-#include <stdinclude.hpp>
+#include <ngs_stdcpp_include.hpp>
 
 
 namespace netgen
@@ -49,7 +49,7 @@ namespace ngstd
 {
   using namespace std;
 
-#include "../ngs_defines.hpp"
+#include <ngs_defines.hpp>
   
 #include "templates.hpp"
 #include "exception.hpp"
@@ -70,6 +70,7 @@ namespace ngstd
 #include "autodiffdiff.hpp"
 #include "stringops.hpp"
 #include "profiler.hpp"
+#include "statushandler.hpp"
 }
 
 #endif
