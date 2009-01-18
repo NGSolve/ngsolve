@@ -73,7 +73,7 @@ namespace netgen
 	    { 3, 2, 5 },
 	    { 0, 3, 6 },
 	    { 1, 2, 7 } };
-	int (*betw)[3](NULL);
+	int (*betw)[3] = 0;
       
 	switch (el.GetType())
 	  {
@@ -169,7 +169,7 @@ namespace netgen
 	    { 3, 4, 10 },
 	    { 4, 5, 11 },
 	  };
-	int (*betw)[3](NULL);
+	int (*betw)[3] = 0;
 
 	switch (el.GetType())
 	  {
