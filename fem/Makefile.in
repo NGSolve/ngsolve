@@ -54,19 +54,38 @@ am__vpath_adj = case $$p in \
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
-LTLIBRARIES = $(lib_LTLIBRARIES)
-libngfem_la_DEPENDENCIES = $(top_builddir)/basiclinalg/libngbla.la
-am_libngfem_la_OBJECTS = bdbequations.lo recursive_pol_trig.lo \
+LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
+libngfem_la_LIBADD =
+am_libngfem_la_OBJECTS = libngfem_la-bdbequations.lo \
+	libngfem_la-recursive_pol_trig.lo libngfem_la-coefficient.lo \
+	libngfem_la-h1hofetp.lo libngfem_la-integrator.lo \
+	libngfem_la-specialelement.lo libngfem_la-elementtopology.lo \
+	libngfem_la-hcurlfe.lo libngfem_la-intrule.lo \
+	libngfem_la-tpequations.lo libngfem_la-facetfe.lo \
+	libngfem_la-hcurlhofe.lo libngfem_la-l2hofe.lo \
+	libngfem_la-tpmaxwell.lo libngfem_la-fastmat.lo \
+	libngfem_la-hcurlhofetp.lo libngfem_la-l2hofetp.lo \
+	libngfem_la-vectorfacetfe.lo libngfem_la-finiteelement.lo \
+	libngfem_la-hdiv_equations.lo libngfem_la-maxwellintegrator.lo \
+	libngfem_la-generic_recpol.lo libngfem_la-hdivfe.lo \
+	libngfem_la-h1hofe.lo libngfem_la-hdivhofe.lo \
+	libngfem_la-recursive_pol.lo libngfem_la-dynamicmem.lo
+libngfem_la_OBJECTS = $(am_libngfem_la_OBJECTS)
+libngfem_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(libngfem_la_LDFLAGS) $(LDFLAGS) -o $@
+libngfemng_la_DEPENDENCIES = $(top_builddir)/basiclinalg/libngbla.la
+am_libngfemng_la_OBJECTS = bdbequations.lo recursive_pol_trig.lo \
 	coefficient.lo h1hofetp.lo integrator.lo specialelement.lo \
 	elementtopology.lo hcurlfe.lo intrule.lo tpequations.lo \
 	facetfe.lo hcurlhofe.lo l2hofe.lo tpmaxwell.lo fastmat.lo \
 	hcurlhofetp.lo l2hofetp.lo vectorfacetfe.lo finiteelement.lo \
 	hdiv_equations.lo maxwellintegrator.lo generic_recpol.lo \
 	hdivfe.lo pml.lo h1hofe.lo hdivhofe.lo recursive_pol.lo
-libngfem_la_OBJECTS = $(am_libngfem_la_OBJECTS)
-libngfem_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+libngfemng_la_OBJECTS = $(am_libngfemng_la_OBJECTS)
+libngfemng_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
-	$(CXXFLAGS) $(libngfem_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(CXXFLAGS) $(libngfemng_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -79,8 +98,8 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libngfem_la_SOURCES)
-DIST_SOURCES = $(libngfem_la_SOURCES)
+SOURCES = $(libngfem_la_SOURCES) $(libngfemng_la_SOURCES)
+DIST_SOURCES = $(libngfem_la_SOURCES) $(libngfemng_la_SOURCES)
 includeHEADERS_INSTALL = $(INSTALL_HEADER)
 HEADERS = $(include_HEADERS)
 ETAGS = etags
@@ -203,8 +222,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_srcdir)/include  $(NETGEN_INCLUDES)
-lib_LTLIBRARIES = libngfem.la
-libngfem_la_SOURCES = bdbequations.cpp recursive_pol_trig.cpp	       \
+noinst_LTLIBRARIES = libngfemng.la
+libngfemng_la_LIBADD = $(top_builddir)/basiclinalg/libngbla.la
+libngfemng_la_LDFLAGS = -avoid-version
+libngfemng_la_SOURCES = bdbequations.cpp recursive_pol_trig.cpp	       \
 coefficient.cpp h1hofetp.cpp integrator.cpp specialelement.cpp	       \
 elementtopology.cpp hcurlfe.cpp intrule.cpp tpequations.cpp	       \
 facetfe.cpp hcurlhofe.cpp l2hofe.cpp tpmaxwell.cpp fastmat.cpp	       \
@@ -212,9 +233,26 @@ hcurlhofetp.cpp l2hofetp.cpp vectorfacetfe.cpp finiteelement.cpp       \
 hdiv_equations.cpp maxwellintegrator.cpp generic_recpol.cpp hdivfe.cpp \
 pml.cpp h1hofe.cpp hdivhofe.cpp recursive_pol.cpp
 
-libngfem_la_LIBADD = $(top_builddir)/basiclinalg/libngbla.la
-include_HEADERS = bdbequations.hpp bdbintegrator.hpp coefficient.hpp elementtopology.hpp elementtransformation.hpp facetfe.hpp fem.hpp femtypes.hpp finiteelement.hpp generic_recpol.hpp h1hofe.hpp h1hofetp.hpp h1hofetp_save.hpp hcurlfe.hpp hcurlhofe.hpp hcurlhofetp.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp highorderfe.hpp integrator.hpp intrule.hpp l2hofe.hpp l2hofetp.hpp pml.hpp recursive_pol.hpp recursive_pol_tet.hpp recursive_pol_trig.hpp specialelement.hpp vectorfacetfe.hpp
+lib_LTLIBRARIES = libngfem.la
+libngfem_la_CPPFLAGS = -I$(top_srcdir)/include
 libngfem_la_LDFLAGS = -avoid-version
+libngfem_la_SOURCES = bdbequations.cpp recursive_pol_trig.cpp	       \
+coefficient.cpp h1hofetp.cpp integrator.cpp specialelement.cpp	       \
+elementtopology.cpp hcurlfe.cpp intrule.cpp tpequations.cpp	       \
+facetfe.cpp hcurlhofe.cpp l2hofe.cpp tpmaxwell.cpp fastmat.cpp	       \
+hcurlhofetp.cpp l2hofetp.cpp vectorfacetfe.cpp finiteelement.cpp       \
+hdiv_equations.cpp maxwellintegrator.cpp generic_recpol.cpp hdivfe.cpp \
+h1hofe.cpp hdivhofe.cpp recursive_pol.cpp dynamicmem.cpp
+
+include_HEADERS = bdbequations.hpp bdbintegrator.hpp coefficient.hpp   \
+elementtopology.hpp elementtransformation.hpp facetfe.hpp fem.hpp      \
+femtypes.hpp finiteelement.hpp generic_recpol.hpp h1hofe.hpp	       \
+h1hofetp.hpp h1hofetp_save.hpp hcurlfe.hpp hcurlhofe.hpp	       \
+hcurlhofetp.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp	       \
+highorderfe.hpp integrator.hpp intrule.hpp l2hofe.hpp l2hofetp.hpp     \
+pml.hpp recursive_pol.hpp recursive_pol_tet.hpp recursive_pol_trig.hpp \
+specialelement.hpp vectorfacetfe.hpp
+
 all: all-am
 
 .SUFFIXES:
@@ -275,8 +313,19 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
+
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
+	done
 libngfem.la: $(libngfem_la_OBJECTS) $(libngfem_la_DEPENDENCIES) 
 	$(libngfem_la_LINK) -rpath $(libdir) $(libngfem_la_OBJECTS) $(libngfem_la_LIBADD) $(LIBS)
+libngfemng.la: $(libngfemng_la_OBJECTS) $(libngfemng_la_DEPENDENCIES) 
+	$(libngfemng_la_LINK)  $(libngfemng_la_OBJECTS) $(libngfemng_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -303,6 +352,33 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/intrule.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/l2hofe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/l2hofetp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-bdbequations.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-coefficient.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-dynamicmem.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-elementtopology.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-facetfe.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-fastmat.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-finiteelement.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-generic_recpol.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-h1hofe.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-h1hofetp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-hcurlfe.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-hcurlhofe.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-hcurlhofetp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-hdiv_equations.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-hdivfe.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-hdivhofe.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-integrator.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-intrule.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-l2hofe.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-l2hofetp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-maxwellintegrator.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-recursive_pol.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-recursive_pol_trig.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-specialelement.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-tpequations.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-tpmaxwell.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-vectorfacetfe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/maxwellintegrator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pml.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/recursive_pol.Plo@am__quote@
@@ -332,6 +408,195 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
+
+libngfem_la-bdbequations.lo: bdbequations.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-bdbequations.lo -MD -MP -MF $(DEPDIR)/libngfem_la-bdbequations.Tpo -c -o libngfem_la-bdbequations.lo `test -f 'bdbequations.cpp' || echo '$(srcdir)/'`bdbequations.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-bdbequations.Tpo $(DEPDIR)/libngfem_la-bdbequations.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='bdbequations.cpp' object='libngfem_la-bdbequations.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-bdbequations.lo `test -f 'bdbequations.cpp' || echo '$(srcdir)/'`bdbequations.cpp
+
+libngfem_la-recursive_pol_trig.lo: recursive_pol_trig.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-recursive_pol_trig.lo -MD -MP -MF $(DEPDIR)/libngfem_la-recursive_pol_trig.Tpo -c -o libngfem_la-recursive_pol_trig.lo `test -f 'recursive_pol_trig.cpp' || echo '$(srcdir)/'`recursive_pol_trig.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-recursive_pol_trig.Tpo $(DEPDIR)/libngfem_la-recursive_pol_trig.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='recursive_pol_trig.cpp' object='libngfem_la-recursive_pol_trig.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-recursive_pol_trig.lo `test -f 'recursive_pol_trig.cpp' || echo '$(srcdir)/'`recursive_pol_trig.cpp
+
+libngfem_la-coefficient.lo: coefficient.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-coefficient.lo -MD -MP -MF $(DEPDIR)/libngfem_la-coefficient.Tpo -c -o libngfem_la-coefficient.lo `test -f 'coefficient.cpp' || echo '$(srcdir)/'`coefficient.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-coefficient.Tpo $(DEPDIR)/libngfem_la-coefficient.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='coefficient.cpp' object='libngfem_la-coefficient.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-coefficient.lo `test -f 'coefficient.cpp' || echo '$(srcdir)/'`coefficient.cpp
+
+libngfem_la-h1hofetp.lo: h1hofetp.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-h1hofetp.lo -MD -MP -MF $(DEPDIR)/libngfem_la-h1hofetp.Tpo -c -o libngfem_la-h1hofetp.lo `test -f 'h1hofetp.cpp' || echo '$(srcdir)/'`h1hofetp.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-h1hofetp.Tpo $(DEPDIR)/libngfem_la-h1hofetp.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='h1hofetp.cpp' object='libngfem_la-h1hofetp.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-h1hofetp.lo `test -f 'h1hofetp.cpp' || echo '$(srcdir)/'`h1hofetp.cpp
+
+libngfem_la-integrator.lo: integrator.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-integrator.lo -MD -MP -MF $(DEPDIR)/libngfem_la-integrator.Tpo -c -o libngfem_la-integrator.lo `test -f 'integrator.cpp' || echo '$(srcdir)/'`integrator.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-integrator.Tpo $(DEPDIR)/libngfem_la-integrator.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='integrator.cpp' object='libngfem_la-integrator.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-integrator.lo `test -f 'integrator.cpp' || echo '$(srcdir)/'`integrator.cpp
+
+libngfem_la-specialelement.lo: specialelement.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-specialelement.lo -MD -MP -MF $(DEPDIR)/libngfem_la-specialelement.Tpo -c -o libngfem_la-specialelement.lo `test -f 'specialelement.cpp' || echo '$(srcdir)/'`specialelement.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-specialelement.Tpo $(DEPDIR)/libngfem_la-specialelement.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='specialelement.cpp' object='libngfem_la-specialelement.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-specialelement.lo `test -f 'specialelement.cpp' || echo '$(srcdir)/'`specialelement.cpp
+
+libngfem_la-elementtopology.lo: elementtopology.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-elementtopology.lo -MD -MP -MF $(DEPDIR)/libngfem_la-elementtopology.Tpo -c -o libngfem_la-elementtopology.lo `test -f 'elementtopology.cpp' || echo '$(srcdir)/'`elementtopology.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-elementtopology.Tpo $(DEPDIR)/libngfem_la-elementtopology.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='elementtopology.cpp' object='libngfem_la-elementtopology.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-elementtopology.lo `test -f 'elementtopology.cpp' || echo '$(srcdir)/'`elementtopology.cpp
+
+libngfem_la-hcurlfe.lo: hcurlfe.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-hcurlfe.lo -MD -MP -MF $(DEPDIR)/libngfem_la-hcurlfe.Tpo -c -o libngfem_la-hcurlfe.lo `test -f 'hcurlfe.cpp' || echo '$(srcdir)/'`hcurlfe.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-hcurlfe.Tpo $(DEPDIR)/libngfem_la-hcurlfe.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='hcurlfe.cpp' object='libngfem_la-hcurlfe.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-hcurlfe.lo `test -f 'hcurlfe.cpp' || echo '$(srcdir)/'`hcurlfe.cpp
+
+libngfem_la-intrule.lo: intrule.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-intrule.lo -MD -MP -MF $(DEPDIR)/libngfem_la-intrule.Tpo -c -o libngfem_la-intrule.lo `test -f 'intrule.cpp' || echo '$(srcdir)/'`intrule.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-intrule.Tpo $(DEPDIR)/libngfem_la-intrule.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='intrule.cpp' object='libngfem_la-intrule.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-intrule.lo `test -f 'intrule.cpp' || echo '$(srcdir)/'`intrule.cpp
+
+libngfem_la-tpequations.lo: tpequations.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-tpequations.lo -MD -MP -MF $(DEPDIR)/libngfem_la-tpequations.Tpo -c -o libngfem_la-tpequations.lo `test -f 'tpequations.cpp' || echo '$(srcdir)/'`tpequations.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-tpequations.Tpo $(DEPDIR)/libngfem_la-tpequations.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='tpequations.cpp' object='libngfem_la-tpequations.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-tpequations.lo `test -f 'tpequations.cpp' || echo '$(srcdir)/'`tpequations.cpp
+
+libngfem_la-facetfe.lo: facetfe.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-facetfe.lo -MD -MP -MF $(DEPDIR)/libngfem_la-facetfe.Tpo -c -o libngfem_la-facetfe.lo `test -f 'facetfe.cpp' || echo '$(srcdir)/'`facetfe.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-facetfe.Tpo $(DEPDIR)/libngfem_la-facetfe.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='facetfe.cpp' object='libngfem_la-facetfe.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-facetfe.lo `test -f 'facetfe.cpp' || echo '$(srcdir)/'`facetfe.cpp
+
+libngfem_la-hcurlhofe.lo: hcurlhofe.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-hcurlhofe.lo -MD -MP -MF $(DEPDIR)/libngfem_la-hcurlhofe.Tpo -c -o libngfem_la-hcurlhofe.lo `test -f 'hcurlhofe.cpp' || echo '$(srcdir)/'`hcurlhofe.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-hcurlhofe.Tpo $(DEPDIR)/libngfem_la-hcurlhofe.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='hcurlhofe.cpp' object='libngfem_la-hcurlhofe.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-hcurlhofe.lo `test -f 'hcurlhofe.cpp' || echo '$(srcdir)/'`hcurlhofe.cpp
+
+libngfem_la-l2hofe.lo: l2hofe.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-l2hofe.lo -MD -MP -MF $(DEPDIR)/libngfem_la-l2hofe.Tpo -c -o libngfem_la-l2hofe.lo `test -f 'l2hofe.cpp' || echo '$(srcdir)/'`l2hofe.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-l2hofe.Tpo $(DEPDIR)/libngfem_la-l2hofe.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='l2hofe.cpp' object='libngfem_la-l2hofe.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-l2hofe.lo `test -f 'l2hofe.cpp' || echo '$(srcdir)/'`l2hofe.cpp
+
+libngfem_la-tpmaxwell.lo: tpmaxwell.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-tpmaxwell.lo -MD -MP -MF $(DEPDIR)/libngfem_la-tpmaxwell.Tpo -c -o libngfem_la-tpmaxwell.lo `test -f 'tpmaxwell.cpp' || echo '$(srcdir)/'`tpmaxwell.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-tpmaxwell.Tpo $(DEPDIR)/libngfem_la-tpmaxwell.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='tpmaxwell.cpp' object='libngfem_la-tpmaxwell.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-tpmaxwell.lo `test -f 'tpmaxwell.cpp' || echo '$(srcdir)/'`tpmaxwell.cpp
+
+libngfem_la-fastmat.lo: fastmat.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-fastmat.lo -MD -MP -MF $(DEPDIR)/libngfem_la-fastmat.Tpo -c -o libngfem_la-fastmat.lo `test -f 'fastmat.cpp' || echo '$(srcdir)/'`fastmat.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-fastmat.Tpo $(DEPDIR)/libngfem_la-fastmat.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='fastmat.cpp' object='libngfem_la-fastmat.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-fastmat.lo `test -f 'fastmat.cpp' || echo '$(srcdir)/'`fastmat.cpp
+
+libngfem_la-hcurlhofetp.lo: hcurlhofetp.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-hcurlhofetp.lo -MD -MP -MF $(DEPDIR)/libngfem_la-hcurlhofetp.Tpo -c -o libngfem_la-hcurlhofetp.lo `test -f 'hcurlhofetp.cpp' || echo '$(srcdir)/'`hcurlhofetp.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-hcurlhofetp.Tpo $(DEPDIR)/libngfem_la-hcurlhofetp.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='hcurlhofetp.cpp' object='libngfem_la-hcurlhofetp.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-hcurlhofetp.lo `test -f 'hcurlhofetp.cpp' || echo '$(srcdir)/'`hcurlhofetp.cpp
+
+libngfem_la-l2hofetp.lo: l2hofetp.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-l2hofetp.lo -MD -MP -MF $(DEPDIR)/libngfem_la-l2hofetp.Tpo -c -o libngfem_la-l2hofetp.lo `test -f 'l2hofetp.cpp' || echo '$(srcdir)/'`l2hofetp.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-l2hofetp.Tpo $(DEPDIR)/libngfem_la-l2hofetp.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='l2hofetp.cpp' object='libngfem_la-l2hofetp.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-l2hofetp.lo `test -f 'l2hofetp.cpp' || echo '$(srcdir)/'`l2hofetp.cpp
+
+libngfem_la-vectorfacetfe.lo: vectorfacetfe.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-vectorfacetfe.lo -MD -MP -MF $(DEPDIR)/libngfem_la-vectorfacetfe.Tpo -c -o libngfem_la-vectorfacetfe.lo `test -f 'vectorfacetfe.cpp' || echo '$(srcdir)/'`vectorfacetfe.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-vectorfacetfe.Tpo $(DEPDIR)/libngfem_la-vectorfacetfe.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='vectorfacetfe.cpp' object='libngfem_la-vectorfacetfe.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-vectorfacetfe.lo `test -f 'vectorfacetfe.cpp' || echo '$(srcdir)/'`vectorfacetfe.cpp
+
+libngfem_la-finiteelement.lo: finiteelement.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-finiteelement.lo -MD -MP -MF $(DEPDIR)/libngfem_la-finiteelement.Tpo -c -o libngfem_la-finiteelement.lo `test -f 'finiteelement.cpp' || echo '$(srcdir)/'`finiteelement.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-finiteelement.Tpo $(DEPDIR)/libngfem_la-finiteelement.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='finiteelement.cpp' object='libngfem_la-finiteelement.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-finiteelement.lo `test -f 'finiteelement.cpp' || echo '$(srcdir)/'`finiteelement.cpp
+
+libngfem_la-hdiv_equations.lo: hdiv_equations.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-hdiv_equations.lo -MD -MP -MF $(DEPDIR)/libngfem_la-hdiv_equations.Tpo -c -o libngfem_la-hdiv_equations.lo `test -f 'hdiv_equations.cpp' || echo '$(srcdir)/'`hdiv_equations.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-hdiv_equations.Tpo $(DEPDIR)/libngfem_la-hdiv_equations.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='hdiv_equations.cpp' object='libngfem_la-hdiv_equations.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-hdiv_equations.lo `test -f 'hdiv_equations.cpp' || echo '$(srcdir)/'`hdiv_equations.cpp
+
+libngfem_la-maxwellintegrator.lo: maxwellintegrator.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-maxwellintegrator.lo -MD -MP -MF $(DEPDIR)/libngfem_la-maxwellintegrator.Tpo -c -o libngfem_la-maxwellintegrator.lo `test -f 'maxwellintegrator.cpp' || echo '$(srcdir)/'`maxwellintegrator.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-maxwellintegrator.Tpo $(DEPDIR)/libngfem_la-maxwellintegrator.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='maxwellintegrator.cpp' object='libngfem_la-maxwellintegrator.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-maxwellintegrator.lo `test -f 'maxwellintegrator.cpp' || echo '$(srcdir)/'`maxwellintegrator.cpp
+
+libngfem_la-generic_recpol.lo: generic_recpol.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-generic_recpol.lo -MD -MP -MF $(DEPDIR)/libngfem_la-generic_recpol.Tpo -c -o libngfem_la-generic_recpol.lo `test -f 'generic_recpol.cpp' || echo '$(srcdir)/'`generic_recpol.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-generic_recpol.Tpo $(DEPDIR)/libngfem_la-generic_recpol.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='generic_recpol.cpp' object='libngfem_la-generic_recpol.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-generic_recpol.lo `test -f 'generic_recpol.cpp' || echo '$(srcdir)/'`generic_recpol.cpp
+
+libngfem_la-hdivfe.lo: hdivfe.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-hdivfe.lo -MD -MP -MF $(DEPDIR)/libngfem_la-hdivfe.Tpo -c -o libngfem_la-hdivfe.lo `test -f 'hdivfe.cpp' || echo '$(srcdir)/'`hdivfe.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-hdivfe.Tpo $(DEPDIR)/libngfem_la-hdivfe.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='hdivfe.cpp' object='libngfem_la-hdivfe.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-hdivfe.lo `test -f 'hdivfe.cpp' || echo '$(srcdir)/'`hdivfe.cpp
+
+libngfem_la-h1hofe.lo: h1hofe.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-h1hofe.lo -MD -MP -MF $(DEPDIR)/libngfem_la-h1hofe.Tpo -c -o libngfem_la-h1hofe.lo `test -f 'h1hofe.cpp' || echo '$(srcdir)/'`h1hofe.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-h1hofe.Tpo $(DEPDIR)/libngfem_la-h1hofe.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='h1hofe.cpp' object='libngfem_la-h1hofe.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-h1hofe.lo `test -f 'h1hofe.cpp' || echo '$(srcdir)/'`h1hofe.cpp
+
+libngfem_la-hdivhofe.lo: hdivhofe.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-hdivhofe.lo -MD -MP -MF $(DEPDIR)/libngfem_la-hdivhofe.Tpo -c -o libngfem_la-hdivhofe.lo `test -f 'hdivhofe.cpp' || echo '$(srcdir)/'`hdivhofe.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-hdivhofe.Tpo $(DEPDIR)/libngfem_la-hdivhofe.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='hdivhofe.cpp' object='libngfem_la-hdivhofe.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-hdivhofe.lo `test -f 'hdivhofe.cpp' || echo '$(srcdir)/'`hdivhofe.cpp
+
+libngfem_la-recursive_pol.lo: recursive_pol.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-recursive_pol.lo -MD -MP -MF $(DEPDIR)/libngfem_la-recursive_pol.Tpo -c -o libngfem_la-recursive_pol.lo `test -f 'recursive_pol.cpp' || echo '$(srcdir)/'`recursive_pol.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-recursive_pol.Tpo $(DEPDIR)/libngfem_la-recursive_pol.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='recursive_pol.cpp' object='libngfem_la-recursive_pol.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-recursive_pol.lo `test -f 'recursive_pol.cpp' || echo '$(srcdir)/'`recursive_pol.cpp
+
+libngfem_la-dynamicmem.lo: dynamicmem.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-dynamicmem.lo -MD -MP -MF $(DEPDIR)/libngfem_la-dynamicmem.Tpo -c -o libngfem_la-dynamicmem.lo `test -f 'dynamicmem.cpp' || echo '$(srcdir)/'`dynamicmem.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-dynamicmem.Tpo $(DEPDIR)/libngfem_la-dynamicmem.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='dynamicmem.cpp' object='libngfem_la-dynamicmem.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-dynamicmem.lo `test -f 'dynamicmem.cpp' || echo '$(srcdir)/'`dynamicmem.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -463,7 +728,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	mostlyclean-am
+	clean-noinstLTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -522,15 +787,16 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libLTLIBRARIES clean-libtool ctags distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-includeHEADERS install-info \
-	install-info-am install-libLTLIBRARIES install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
+	clean-libLTLIBRARIES clean-libtool clean-noinstLTLIBRARIES \
+	ctags distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am \
+	install-includeHEADERS install-info install-info-am \
+	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-includeHEADERS \

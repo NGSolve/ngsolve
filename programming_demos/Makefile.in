@@ -32,7 +32,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = demo_bla$(EXEEXT)
+bin_PROGRAMS = demo_std$(EXEEXT) demo_bla$(EXEEXT) demo_fem$(EXEEXT)
 subdir = programming_demos
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -50,7 +50,16 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_demo_bla_OBJECTS = demo_bla.$(OBJEXT)
 demo_bla_OBJECTS = $(am_demo_bla_OBJECTS)
-demo_bla_DEPENDENCIES = $(top_builddir)/basiclinalg/libngbla.la
+demo_bla_DEPENDENCIES = $(top_builddir)/basiclinalg/libngbla.la \
+	$(top_builddir)/ngstd/libngstd.la
+am_demo_fem_OBJECTS = demo_fem.$(OBJEXT)
+demo_fem_OBJECTS = $(am_demo_fem_OBJECTS)
+demo_fem_DEPENDENCIES = $(top_builddir)/fem/libngfem.la \
+	$(top_builddir)/basiclinalg/libngbla.la \
+	$(top_builddir)/ngstd/libngstd.la
+am_demo_std_OBJECTS = demo_std.$(OBJEXT)
+demo_std_OBJECTS = $(am_demo_std_OBJECTS)
+demo_std_DEPENDENCIES = $(top_builddir)/ngstd/libngstd.la
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -63,8 +72,9 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(demo_bla_SOURCES)
-DIST_SOURCES = $(demo_bla_SOURCES)
+SOURCES = $(demo_bla_SOURCES) $(demo_fem_SOURCES) $(demo_std_SOURCES)
+DIST_SOURCES = $(demo_bla_SOURCES) $(demo_fem_SOURCES) \
+	$(demo_std_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -185,8 +195,17 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_srcdir)/include
+demo_std_SOURCES = demo_std.cpp
+demo_std_LDADD = $(top_builddir)/ngstd/libngstd.la
 demo_bla_SOURCES = demo_bla.cpp
-demo_bla_LDADD = $(top_builddir)/basiclinalg/libngbla.la
+demo_bla_LDADD = $(top_builddir)/basiclinalg/libngbla.la \
+	$(top_builddir)/ngstd/libngstd.la
+
+demo_fem_SOURCES = demo_fem.cpp
+demo_fem_LDADD = $(top_builddir)/fem/libngfem.la \
+	$(top_builddir)/basiclinalg/libngbla.la \
+	$(top_builddir)/ngstd/libngstd.la
+
 all: all-am
 
 .SUFFIXES:
@@ -251,6 +270,12 @@ clean-binPROGRAMS:
 demo_bla$(EXEEXT): $(demo_bla_OBJECTS) $(demo_bla_DEPENDENCIES) 
 	@rm -f demo_bla$(EXEEXT)
 	$(CXXLINK) $(demo_bla_OBJECTS) $(demo_bla_LDADD) $(LIBS)
+demo_fem$(EXEEXT): $(demo_fem_OBJECTS) $(demo_fem_DEPENDENCIES) 
+	@rm -f demo_fem$(EXEEXT)
+	$(CXXLINK) $(demo_fem_OBJECTS) $(demo_fem_LDADD) $(LIBS)
+demo_std$(EXEEXT): $(demo_std_OBJECTS) $(demo_std_DEPENDENCIES) 
+	@rm -f demo_std$(EXEEXT)
+	$(CXXLINK) $(demo_std_OBJECTS) $(demo_std_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -259,6 +284,8 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/demo_bla.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/demo_fem.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/demo_std.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -465,9 +492,6 @@ uninstall-am: uninstall-binPROGRAMS
 	pdf pdf-am ps ps-am tags uninstall uninstall-am \
 	uninstall-binPROGRAMS
 
-
-# demo_fem_SOURCES = demo_fem.cpp
-# demo_fem_LDADD = $(top_builddir)/fem/libngfem.la
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

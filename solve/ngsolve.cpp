@@ -710,7 +710,7 @@ extern "C" int Ngsolve_Init (Tcl_Interp * interp)
 
 int NGSolve_Init (Tcl_Interp * interp)
 {
-  cout << "NGSolve Init" << endl;
+  cout << "NGSolve-" << VERSION << endl;
 
 #ifdef SOCKETS
   if(netgen::serversocketmanager.Good())
