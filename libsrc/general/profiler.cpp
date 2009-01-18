@@ -41,6 +41,9 @@ namespace netgen
     // which leads to an "order of destruction"-problem,
     // thus we use the C-variant:
 
+
+
+    /*
     char filename[100];
 #ifdef PARALLEL
     sprintf (filename, "netgen.prof.%d", id);
@@ -51,6 +54,7 @@ namespace netgen
     FILE *prof = fopen(filename,"w");
     Print (prof);
     fclose(prof);
+    */
   }
 
 

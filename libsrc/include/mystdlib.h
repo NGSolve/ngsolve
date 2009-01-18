@@ -74,20 +74,6 @@ namespace metis { extern "C" {
 # endif
 #endif
 
-/*
-extern void* operator new(std::size_t) throw (std::bad_alloc);
-extern void* operator new[](std::size_t) throw (std::bad_alloc);
-extern void operator delete(void*) throw();
-extern void operator delete[](void*) throw();
-*/
-
-/*
-extern int mem_alloc;
-extern int mem_total_alloc;
-extern int mem_max_alloc;
-extern int mem_total_alloc_array;
-extern int mem_total_alloc_table;
-*/
 
 using namespace std;
 

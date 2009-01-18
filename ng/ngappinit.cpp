@@ -180,6 +180,7 @@ int main(int argc, char ** argv)
 
   if ( netgen::id == 0 )
     {
+      // if (parameters.StringFlagDefined ("testout"))
       netgen::testout = new ofstream (parameters.GetStringFlag ("testout", "test.out"));
 
 

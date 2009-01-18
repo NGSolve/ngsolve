@@ -1,8 +1,12 @@
 #include <mystdlib.h>
 #include "meshing.hpp"
 
+
 namespace netgen
 {
+  // stringstream emptystr;
+  // ostream * testout = &emptystr;
+  // testout -> clear(ios::failbit);
   ostream * testout = &cout;
 
   ostream * mycout = &cout;
