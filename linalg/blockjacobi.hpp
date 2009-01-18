@@ -796,8 +796,8 @@ protected:
 
  // 
   enum { NBLOCKS = 20 };
-  MoveableMem<int> blockstart, blocksize, blockbw;
-  MoveableMem<TM> data[NBLOCKS];
+  DynamicMem<int> blockstart, blocksize, blockbw;
+  DynamicMem<TM> data[NBLOCKS];
   bool lowmem;
 public:
   

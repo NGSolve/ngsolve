@@ -29,10 +29,10 @@ class SparseCholesky : public BaseSparseCholesky
 {
   int height, nze;
 
-  MoveableMem<int> order, firstinrow, firstinrow_ri, rowindex2, blocknrs;
+  DynamicMem<int> order, firstinrow, firstinrow_ri, rowindex2, blocknrs;
   ///
-  MoveableMem<TM> lfact;
-  MoveableMem<TM> diag;
+  DynamicMem<TM> lfact;
+  DynamicMem<TM> diag;
   ///
   BitArray * inner;
   ARRAY<int> * cluster;

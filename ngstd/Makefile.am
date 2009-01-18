@@ -2,7 +2,11 @@ AM_CPPFLAGS = -I$(top_srcdir)/include $(NETGEN_INCLUDES)
 
 lib_LTLIBRARIES = libngstd.la
 
-include_HEADERS = array.hpp autodiffdiff.hpp autodiff.hpp autoptr.hpp bessel.hpp bitarray.hpp blockalloc.hpp evalfunc.hpp exception.hpp flags.hpp hashtable.hpp localheap.hpp memusage.hpp ngstd.hpp profiler.hpp stringops.hpp symboltable.hpp table.hpp templates.hpp
+include_HEADERS = array.hpp autodiffdiff.hpp autodiff.hpp autoptr.hpp \
+bessel.hpp bitarray.hpp blockalloc.hpp evalfunc.hpp exception.hpp     \
+flags.hpp hashtable.hpp localheap.hpp memusage.hpp ngstd.hpp	      \
+profiler.hpp stringops.hpp symboltable.hpp table.hpp templates.hpp    \
+dynamicmem.hpp parthreads.hpp statushandler.hpp
 
 
 

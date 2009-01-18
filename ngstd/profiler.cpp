@@ -44,10 +44,11 @@ namespace ngstd
     // which leads to an "order of destruction"-problem,
     // thus we use the C-variant:
 
+    /*
     FILE *prof = fopen("ng.prof","w");
-
     Print (prof);
     fclose(prof);
+    */
   }
 
 

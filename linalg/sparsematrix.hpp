@@ -117,15 +117,15 @@ protected:
 
   /// column numbers
   // int * colnr;
-  MoveableMem<int> colnr;
+  DynamicMem<int> colnr;
 
   /// pointer to first in row
   // int * firsti;
-  MoveableMem<int> firsti;
+  DynamicMem<int> firsti;
   
   /// position of diagonal element
   //   int * diagi;
-  MoveableMem<int> diagi;
+  DynamicMem<int> diagi;
 
   /// row has same non-zero elements as previous row
   ARRAY<int> same_nze;
@@ -292,7 +292,7 @@ class SparseMatrixTM : public BaseSparseMatrix,
                        public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
 {
 protected:
-  MoveableMem<TM> data;
+  DynamicMem<TM> data;
   VFlatVector<typename mat_traits<TM>::TSCAL> asvec;
   TM nul;
 
@@ -686,7 +686,7 @@ class VarBlockSparseMatrix : public BaseSparseMatrix,
 {
   ARRAY<int> block2linear;
   ARRAY<int> data_index;
-  MoveableMem<TM> data;
+  DynamicMem<TM> data;
 
 public:
 

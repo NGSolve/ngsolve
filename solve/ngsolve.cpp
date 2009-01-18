@@ -21,7 +21,7 @@ using namespace std;
 using namespace ngsolve;
 
 // #include <mystdlib.h>
-#include <stdinclude.hpp>
+#include <ngs_stdcpp_include.hpp>
 
 // for tcltk ...
 #include <tcl.h>   // "../libsrc/include/incvis.hpp"
@@ -373,7 +373,7 @@ int NGS_PrintMemoryUsage (ClientData clientData,
 			  Tcl_Interp * interp,
 			  int argc, tcl_const char *argv[])
 {
-  netgen::BaseMoveableMem::Print ();
+  // netgen::BaseMoveableMem::Print ();
   netgen::BaseDynamicMem::Print ();
 
   /*
