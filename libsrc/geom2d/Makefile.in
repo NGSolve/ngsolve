@@ -46,13 +46,11 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
-LIBRARIES = $(noinst_LIBRARIES)
-ARFLAGS = cru
-libgeom2d_a_AR = $(AR) $(ARFLAGS)
-libgeom2d_a_LIBADD =
-am_libgeom2d_a_OBJECTS = genmesh2d.$(OBJEXT) geom2dmesh.$(OBJEXT) \
-	spline.$(OBJEXT) splinegeometry.$(OBJEXT)
-libgeom2d_a_OBJECTS = $(am_libgeom2d_a_OBJECTS)
+LTLIBRARIES = $(noinst_LTLIBRARIES)
+libgeom2d_la_LIBADD =
+am_libgeom2d_la_OBJECTS = genmesh2d.lo geom2dmesh.lo spline.lo \
+	splinegeometry.lo
+libgeom2d_la_OBJECTS = $(am_libgeom2d_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -65,8 +63,8 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libgeom2d_a_SOURCES)
-DIST_SOURCES = $(libgeom2d_a_SOURCES)
+SOURCES = $(libgeom2d_la_SOURCES)
+DIST_SOURCES = $(libgeom2d_la_SOURCES)
 HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -228,8 +226,8 @@ top_srcdir = @top_srcdir@
 noinst_HEADERS = geom2dmesh.hpp  spline2d.hpp splinegeometry.hpp  spline.hpp geometry2d.hpp
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
-noinst_LIBRARIES = libgeom2d.a
-libgeom2d_a_SOURCES = genmesh2d.cpp geom2dmesh.cpp spline.cpp \
+noinst_LTLIBRARIES = libgeom2d.la
+libgeom2d_la_SOURCES = genmesh2d.cpp geom2dmesh.cpp spline.cpp \
 	splinegeometry.cpp
 
 all: all-am
@@ -266,12 +264,16 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 
-clean-noinstLIBRARIES:
-	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
-libgeom2d.a: $(libgeom2d_a_OBJECTS) $(libgeom2d_a_DEPENDENCIES) 
-	-rm -f libgeom2d.a
-	$(libgeom2d_a_AR) libgeom2d.a $(libgeom2d_a_OBJECTS) $(libgeom2d_a_LIBADD)
-	$(RANLIB) libgeom2d.a
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
+	done
+libgeom2d.la: $(libgeom2d_la_OBJECTS) $(libgeom2d_la_DEPENDENCIES) 
+	$(CXXLINK)  $(libgeom2d_la_OBJECTS) $(libgeom2d_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -279,10 +281,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/genmesh2d.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/geom2dmesh.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spline.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splinegeometry.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/genmesh2d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/geom2dmesh.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spline.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splinegeometry.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -386,7 +388,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES) $(HEADERS)
+all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
 install: install-am
 install-exec: install-exec-am
@@ -414,7 +416,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-noinstLIBRARIES \
+clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
@@ -474,7 +476,7 @@ uninstall-am:
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-noinstLIBRARIES ctags distclean \
+	clean-libtool clean-noinstLTLIBRARIES ctags distclean \
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-dvi \

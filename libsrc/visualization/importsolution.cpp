@@ -11,11 +11,11 @@
 #include <csg.hpp>
 #include <meshing.hpp>
 
-#include "nginterface.h"
+#include <nginterface.h>
 
 namespace netgen
 {
-#include "writeuser.hpp"
+
 
 
 void ImportSolution (const char * filename)

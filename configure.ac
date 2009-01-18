@@ -6,6 +6,8 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_PREFIX_DEFAULT(["/opt/netgen"])
 
 
+# Tcl/Tk configuration:
+
 TEA_INIT([3.6])
 
 TEA_PATH_TCLCONFIG
@@ -17,15 +19,6 @@ TEA_LOAD_TKCONFIG
 TEA_PUBLIC_TCL_HEADERS
 
 
-
-# TEA_PATH_TOGLCONFIG
-# TEA_LOAD_TOGLCONFIG 
-
-# TEA_PATH_TIXCONFIG
-# TEA_LOAD_TIXCONFIG 
-
-# TEA_PREFIX
-# TEA_SETUP_COMPILER
 
 
 AC_ARG_ENABLE([occ], 
@@ -42,6 +35,7 @@ AC_ARG_WITH([occ],
         [occlibfl="-L$withval/lib"],
         )
 
+
 AC_ARG_WITH([togl], 
         [  --with-togl=dir         directory containing libTogl1.7],
         [togldir=$withval]
@@ -50,17 +44,27 @@ AC_ARG_WITH([togl],
         )
 
 
+AC_ARG_ENABLE([nglib],
+        [  --enable-nglib          generate shared library nglib],
+        [ nglibon=true ],
+        [ nglibon=false ])
+
+
 
 # AC_HEADER_STDC
 AC_CONFIG_HEADERS(config.h)
 
+AC_DISABLE_STATIC
+
 AC_LANG([C++])
 AC_PROG_CXX
+AC_PROG_LIBTOOL
 AC_PROG_RANLIB
 LT_INIT
 
 
 # AM_CONDITIONAL([OCC], [test x$occon = xtrue])
+AM_CONDITIONAL([NGLIB], [test x$nglibon = xtrue])
 
 # AC_SUBST([OCCFLAGS], [$occfl])
 AC_SUBST([OCCFLAGS], ["$occfl $occincfl"])
@@ -91,10 +95,12 @@ AC_CHECK_HEADERS([limits.h])
 AC_CHECK_FUNCS([minabc])
 
 
-AC_CONFIG_FILES(Makefile libsrc/Makefile libsrc/csg/Makefile libsrc/general/Makefile \
-libsrc/geom2d/Makefile libsrc/gprim/Makefile libsrc/include/Makefile libsrc/interface/Makefile \
-libsrc/linalg/Makefile libsrc/meshing/Makefile libsrc/occ/Makefile libsrc/opti/Makefile \
-libsrc/parallel/Makefile libsrc/stlgeom/Makefile libsrc/visualization/Makefile ng/Makefile \
-tutorials/Makefile)
+AC_CONFIG_FILES(Makefile libsrc/Makefile libsrc/csg/Makefile 
+libsrc/general/Makefile  libsrc/geom2d/Makefile libsrc/gprim/Makefile
+libsrc/include/Makefile libsrc/interface/Makefile 
+libsrc/linalg/Makefile libsrc/meshing/Makefile libsrc/occ/Makefile 
+libsrc/opti/Makefile  libsrc/parallel/Makefile 
+libsrc/stlgeom/Makefile libsrc/visualization/Makefile ng/Makefile 
+nglib/Makefile tutorials/Makefile)
 
 AC_OUTPUT

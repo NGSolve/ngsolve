@@ -22,10 +22,6 @@ extern
 void ReadFile (Mesh & mesh,
 	       const string & filename);
 
-extern 
-void ImportSolution (const char * filename);
-
-
 
 
 

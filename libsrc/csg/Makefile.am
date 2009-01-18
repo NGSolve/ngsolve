@@ -7,8 +7,8 @@ revolution.hpp spline3d.hpp
 
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
-noinst_LIBRARIES = libcsg.a 
-libcsg_a_SOURCES = algprim.cpp brick.cpp   \
+noinst_LTLIBRARIES = libcsg.la 
+libcsg_la_SOURCES = algprim.cpp brick.cpp   \
 bspline2d.cpp csgeom.cpp csgparser.cpp curve2d.cpp edgeflw.cpp	       \
 explicitcurve2d.cpp extrusion.cpp gencyl.cpp genmesh.cpp identify.cpp  \
 manifold.cpp meshsurf.cpp polyhedra.cpp revolution.cpp singularref.cpp \

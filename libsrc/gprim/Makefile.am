@@ -2,6 +2,6 @@ noinst_HEADERS = adtree.hpp  geom3d.hpp     geomobjects2.hpp  geomops2.hpp  geom
 
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
-noinst_LIBRARIES = libgprim.a
-libgprim_a_SOURCES = adtree.cpp geom2d.cpp geom3d.cpp geomfuncs.cpp \
+noinst_LTLIBRARIES = libgprim.la
+libgprim_la_SOURCES = adtree.cpp geom2d.cpp geom3d.cpp geomfuncs.cpp \
 	geomtest3d.cpp transform3d.cpp

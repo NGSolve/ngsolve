@@ -3,15 +3,20 @@ noinst_HEADERS = demoview.hpp
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL $(OCCFLAGS)  $(TCL_INCLUDES) 
 
 bin_PROGRAMS = netgen
-netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp
+netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp nginterface.cpp
 
 
-netgen_LDADD = $(top_builddir)/libsrc/csg/libcsg.a \
-	$(top_builddir)/libsrc/geom2d/libgeom2d.a $(top_builddir)/libsrc/interface/libinterface.a \
-	$(top_builddir)/libsrc/stlgeom/libstl.a $(top_builddir)/libsrc/occ/libocc.a \
-	$(top_builddir)/libsrc/visualization/libvisual.a $(top_builddir)/libsrc/meshing/libmesh.a \
-	$(top_builddir)/libsrc/gprim/libgprim.a $(top_builddir)/libsrc/opti/libopti.a \
-	$(top_builddir)/libsrc/linalg/libla.a $(top_builddir)/libsrc/general/libgeneral.a \
+netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
+	$(top_builddir)/libsrc/csg/libcsg.la \
+	$(top_builddir)/libsrc/geom2d/libgeom2d.la \
+	$(top_builddir)/libsrc/interface/libinterface.la \
+	$(top_builddir)/libsrc/stlgeom/libstl.la \
+	$(top_builddir)/libsrc/occ/libocc.la \
+	$(top_builddir)/libsrc/meshing/libmesh.la \
+	$(top_builddir)/libsrc/gprim/libgprim.la \
+	$(top_builddir)/libsrc/opti/libopti.la \
+	$(top_builddir)/libsrc/linalg/libla.la \
+	$(top_builddir)/libsrc/general/libgeneral.la \
 	$(OCCLIBS) $(TOGLLIBDIR) -lTogl1.7 -lGLU $(TK_LIB_SPEC) $(TCL_LIB_SPEC)
 
 

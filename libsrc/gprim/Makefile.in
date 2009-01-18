@@ -46,14 +46,11 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
-LIBRARIES = $(noinst_LIBRARIES)
-ARFLAGS = cru
-libgprim_a_AR = $(AR) $(ARFLAGS)
-libgprim_a_LIBADD =
-am_libgprim_a_OBJECTS = adtree.$(OBJEXT) geom2d.$(OBJEXT) \
-	geom3d.$(OBJEXT) geomfuncs.$(OBJEXT) geomtest3d.$(OBJEXT) \
-	transform3d.$(OBJEXT)
-libgprim_a_OBJECTS = $(am_libgprim_a_OBJECTS)
+LTLIBRARIES = $(noinst_LTLIBRARIES)
+libgprim_la_LIBADD =
+am_libgprim_la_OBJECTS = adtree.lo geom2d.lo geom3d.lo geomfuncs.lo \
+	geomtest3d.lo transform3d.lo
+libgprim_la_OBJECTS = $(am_libgprim_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -66,8 +63,8 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libgprim_a_SOURCES)
-DIST_SOURCES = $(libgprim_a_SOURCES)
+SOURCES = $(libgprim_la_SOURCES)
+DIST_SOURCES = $(libgprim_la_SOURCES)
 HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -229,8 +226,8 @@ top_srcdir = @top_srcdir@
 noinst_HEADERS = adtree.hpp  geom3d.hpp     geomobjects2.hpp  geomops2.hpp  geomtest3d.hpp  transform3d.hpp geom2d.hpp  geomfuncs.hpp  geomobjects.hpp   geomops.hpp   gprim.hpp
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
-noinst_LIBRARIES = libgprim.a
-libgprim_a_SOURCES = adtree.cpp geom2d.cpp geom3d.cpp geomfuncs.cpp \
+noinst_LTLIBRARIES = libgprim.la
+libgprim_la_SOURCES = adtree.cpp geom2d.cpp geom3d.cpp geomfuncs.cpp \
 	geomtest3d.cpp transform3d.cpp
 
 all: all-am
@@ -267,12 +264,16 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 
-clean-noinstLIBRARIES:
-	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
-libgprim.a: $(libgprim_a_OBJECTS) $(libgprim_a_DEPENDENCIES) 
-	-rm -f libgprim.a
-	$(libgprim_a_AR) libgprim.a $(libgprim_a_OBJECTS) $(libgprim_a_LIBADD)
-	$(RANLIB) libgprim.a
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
+	done
+libgprim.la: $(libgprim_la_OBJECTS) $(libgprim_la_DEPENDENCIES) 
+	$(CXXLINK)  $(libgprim_la_OBJECTS) $(libgprim_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -280,12 +281,12 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/adtree.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/geom2d.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/geom3d.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/geomfuncs.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/geomtest3d.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/transform3d.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/adtree.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/geom2d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/geom3d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/geomfuncs.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/geomtest3d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/transform3d.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -389,7 +390,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES) $(HEADERS)
+all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
 install: install-am
 install-exec: install-exec-am
@@ -417,7 +418,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-noinstLIBRARIES \
+clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
@@ -477,7 +478,7 @@ uninstall-am:
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-noinstLIBRARIES ctags distclean \
+	clean-libtool clean-noinstLTLIBRARIES ctags distclean \
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-dvi \

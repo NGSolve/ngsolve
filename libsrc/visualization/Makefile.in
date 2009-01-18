@@ -52,7 +52,8 @@ libvisual_a_AR = $(AR) $(ARFLAGS)
 libvisual_a_LIBADD =
 am_libvisual_a_OBJECTS = meshdoc.$(OBJEXT) mvdraw.$(OBJEXT) \
 	stlmeshing.$(OBJEXT) vscsg.$(OBJEXT) vsfieldlines.$(OBJEXT) \
-	vsmesh.$(OBJEXT) vsocc.$(OBJEXT) vssolution.$(OBJEXT)
+	vsmesh.$(OBJEXT) vsocc.$(OBJEXT) vssolution.$(OBJEXT) \
+	importsolution.$(OBJEXT)
 libvisual_a_OBJECTS = $(am_libvisual_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -242,7 +243,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  -DOPENGL  $(OCCFLAGS)    $(TCL_INC
 METASOURCES = AUTO
 noinst_LIBRARIES = libvisual.a
 libvisual_a_SOURCES = meshdoc.cpp mvdraw.cpp stlmeshing.cpp vscsg.cpp \
-	vsfieldlines.cpp vsmesh.cpp vsocc.cpp vssolution.cpp
+	vsfieldlines.cpp vsmesh.cpp vsocc.cpp vssolution.cpp importsolution.cpp
 
 AM_CXXFLAGS = -DOPENGL
 all: all-am
@@ -292,6 +293,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/importsolution.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/meshdoc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mvdraw.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stlmeshing.Po@am__quote@

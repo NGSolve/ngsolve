@@ -6,6 +6,9 @@
 #ifndef SMALLLIB
 #ifndef NOTCL
 
+extern 
+void ImportSolution (const char * filename);
+
 extern int Ng_Vis_Set (ClientData clientData,
 		       Tcl_Interp * interp,
 		       int argc, tcl_const char *argv[]);

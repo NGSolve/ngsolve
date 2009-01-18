@@ -46,16 +46,13 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
-LIBRARIES = $(noinst_LIBRARIES)
-ARFLAGS = cru
-libocc_a_AR = $(AR) $(ARFLAGS)
-libocc_a_LIBADD =
-am_libocc_a_OBJECTS = Partition_Inter2d.$(OBJEXT) \
-	Partition_Inter3d.$(OBJEXT) Partition_Loop.$(OBJEXT) \
-	Partition_Loop2d.$(OBJEXT) Partition_Loop3d.$(OBJEXT) \
-	Partition_Spliter.$(OBJEXT) occconstruction.$(OBJEXT) \
-	occgenmesh.$(OBJEXT) occgeom.$(OBJEXT) occmeshsurf.$(OBJEXT)
-libocc_a_OBJECTS = $(am_libocc_a_OBJECTS)
+LTLIBRARIES = $(noinst_LTLIBRARIES)
+libocc_la_LIBADD =
+am_libocc_la_OBJECTS = Partition_Inter2d.lo Partition_Inter3d.lo \
+	Partition_Loop.lo Partition_Loop2d.lo Partition_Loop3d.lo \
+	Partition_Spliter.lo occconstruction.lo occgenmesh.lo \
+	occgeom.lo occmeshsurf.lo
+libocc_la_OBJECTS = $(am_libocc_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -68,8 +65,8 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libocc_a_SOURCES)
-DIST_SOURCES = $(libocc_a_SOURCES)
+SOURCES = $(libocc_la_SOURCES)
+DIST_SOURCES = $(libocc_la_SOURCES)
 HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -240,8 +237,8 @@ AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  $(OCCFLAGS)
 
 # $(OCC_INC_FLAG)
 METASOURCES = AUTO
-noinst_LIBRARIES = libocc.a
-libocc_a_SOURCES = Partition_Inter2d.cxx Partition_Inter3d.cxx \
+noinst_LTLIBRARIES = libocc.la
+libocc_la_SOURCES = Partition_Inter2d.cxx Partition_Inter3d.cxx \
 	Partition_Loop.cxx Partition_Loop2d.cxx Partition_Loop3d.cxx Partition_Spliter.cxx \
 	occconstruction.cpp occgenmesh.cpp occgeom.cpp occmeshsurf.cpp
 
@@ -279,12 +276,16 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 
-clean-noinstLIBRARIES:
-	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
-libocc.a: $(libocc_a_OBJECTS) $(libocc_a_DEPENDENCIES) 
-	-rm -f libocc.a
-	$(libocc_a_AR) libocc.a $(libocc_a_OBJECTS) $(libocc_a_LIBADD)
-	$(RANLIB) libocc.a
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
+	done
+libocc.la: $(libocc_la_OBJECTS) $(libocc_la_DEPENDENCIES) 
+	$(CXXLINK)  $(libocc_la_OBJECTS) $(libocc_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -292,16 +293,16 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Partition_Inter2d.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Partition_Inter3d.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Partition_Loop.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Partition_Loop2d.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Partition_Loop3d.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Partition_Spliter.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/occconstruction.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/occgenmesh.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/occgeom.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/occmeshsurf.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Partition_Inter2d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Partition_Inter3d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Partition_Loop.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Partition_Loop2d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Partition_Loop3d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Partition_Spliter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/occconstruction.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/occgenmesh.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/occgeom.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/occmeshsurf.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -426,7 +427,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES) $(HEADERS)
+all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
 install: install-am
 install-exec: install-exec-am
@@ -454,7 +455,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-noinstLIBRARIES \
+clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
@@ -514,7 +515,7 @@ uninstall-am:
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-noinstLIBRARIES ctags distclean \
+	clean-libtool clean-noinstLTLIBRARIES ctags distclean \
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-dvi \
