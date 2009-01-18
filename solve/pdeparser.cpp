@@ -1,11 +1,11 @@
 #include <solve.hpp>
-
-
 #include <parallelngs.hpp>
 
-#ifdef LINUX
+
+#ifdef HAVE_DLFCN_H 
 #include <dlfcn.h>
 #endif
+
 
 namespace ngsolve
 {
@@ -499,7 +499,7 @@ namespace ngsolve
 	      scan->ReadNext();
 	      break;
 	    }
-#ifdef LINUX
+
 	  case KW_SHARED:
 	    {
 	      scan->ReadNext();
@@ -514,6 +514,7 @@ namespace ngsolve
               string shared = scan->GetStringValue() + ".so";
 	      scan->ReadNext();
 
+#ifdef HAVE_DLFCN_H 
               void * handle = dlopen (shared.c_str(), RTLD_LAZY);
               if (handle)
                 {
@@ -525,6 +526,9 @@ namespace ngsolve
                   err << "Cannot load shared library '" << shared << "'";
                   throw Exception (err.str());
                 }
+#else
+              throw Exception ("cannot handle shared libraries");
+#endif
 
               /*
               cout << "handle = " << handle << endl;
@@ -541,7 +545,7 @@ namespace ngsolve
 
               break;
             }
-#endif
+
 	  case KW_OVERLAP:
 	    {
 	      cout << "juhuuuuuuuuuu ... " << scan->GetStringValue() << endl;

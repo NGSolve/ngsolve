@@ -5,4 +5,4 @@ SUBDIRS = include ngstd basiclinalg linalg fem comp multigrid parallel solve
 
 dist_bin_SCRIPTS = ngsolve.tcl
 
-include_HEADERS = ngs_defines.hpp
+
