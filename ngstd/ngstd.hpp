@@ -16,9 +16,9 @@
 
 namespace netgen
 {
-#include <parthreads.hpp>
-#include <moveablemem.hpp>
-#include <dynamicmem.hpp>
+#include "parthreads.hpp"
+  // #include <moveablemem.hpp>
+#include "dynamicmem.hpp"
 
   extern ::std::ostream * testout;
   extern ::std::ostream * mycout; 
@@ -27,7 +27,7 @@ namespace netgen
 
 using netgen::printmessage_importance;
 
-using netgen::MoveableMem;
+// using netgen::MoveableMem;
 using netgen::DynamicMem;
 using netgen::NgLock;  
 using netgen::NgMutex;

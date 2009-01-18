@@ -261,9 +261,9 @@ protected:
   ///
   int size;
   ///
-  MoveableMem<T_HASH> hash;
+  DynamicMem<T_HASH> hash;
   ///
-  MoveableMem<T> cont;
+  DynamicMem<T> cont;
   ///
   T_HASH invalid;
 public:

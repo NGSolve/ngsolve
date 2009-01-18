@@ -107,7 +107,7 @@ template <typename T = double>
 class VVector : public T_BaseVector<T>
 {
 protected:
-  MoveableMem<T> data;
+  DynamicMem<T> data;
 private:
 
 public:

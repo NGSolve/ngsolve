@@ -177,7 +177,7 @@ namespace ngla
     blocknrs.Alloc (n);
     blocknrs.SetName ("sparse inverse, block nrs");
     
-    MoveableMem<int> helpi(n);
+    DynamicMem<int> helpi(n);
     
     // order: now inverse map 
     for (int i = 0; i < n; i++)
