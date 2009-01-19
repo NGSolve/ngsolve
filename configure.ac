@@ -10,6 +10,7 @@ AC_PREFIX_DEFAULT(["/opt/netgen"])
 AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
 
+ACX_LAPACK
 
 AC_ARG_WITH([netgen], 
         [  --with-netgen=dir       use Netgen installed in directory dir],
@@ -17,18 +18,22 @@ AC_ARG_WITH([netgen],
         [netgendir="/opt/netgen"]
         )
 
-
-AC_ARG_WITH([lapackpath],
-        [  --with-lapackpath=path  use lapacklib for dense linear algebra operations],          
-        [lapackpath=-L$withval]
-        )
-
-
-AC_ARG_WITH([lapack],
-        [  --with-lapack=lapacklib   use lapacklib for dense linear algebra operations],          
+AC_ARG_ENABLE([lapack],
+       [   enable lapack ],
         [AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])]
-        [AC_SUBST([LAPACK_LIB], ["$lapackpath -l$withval"])]
-        )
+       )
+
+
+# AC_ARG_WITH([lapackpath],
+#        [  --with-lapackpath=path  use lapacklib for dense linear algebra operations],          
+#        [lapackpath=-L$withval]
+#        )
+# AC_ARG_WITH([lapack],
+#        [  --with-lapack=lapacklib   use lapacklib for dense linear algebra operations],          
+#        [AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])]
+#        [AC_SUBST([LAPACK_LIB], ["$lapackpath -l$withval"])]
+#        )
+
 
 #	[AC_SUBST([LAPACK_LIB], ["-L/opt/intel/mkl/10.0.2.018/lib/em64t -lmkl_core -lmkl_def -lmkl_sequential -lmkl_gf_lp64"])]
 #        [AC_SUBST([LAPACK_LIB], ["-llapack"])]
