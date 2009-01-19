@@ -17,7 +17,17 @@ AC_ARG_WITH([netgen],
         [netgendir="/opt/netgen"]
         )
 
+AC_ARG_ENABLE([lapack],
+        [  --enable-lapack         use lapack for dense linear algebra operations],          
+        [AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])]
+        [AC_SUBST([LAPACK_LIB], ["-llapack"])]
+        )
+
+
 AC_SUBST([NETGEN_INCLUDES], ["-DNETGEN_ELTRANS -I$netgendir/include"])
+
+
+
 
 AC_CONFIG_HEADERS(config.h) AC_CONFIG_FILES(Makefile include/Makefile
 ngstd/Makefile basiclinalg/Makefile linalg/Makefile fem/Makefile

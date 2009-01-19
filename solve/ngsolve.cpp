@@ -705,6 +705,7 @@ extern "C" void NGSolve_Exit ();
 extern "C" int Ngsolve_Init (Tcl_Interp * interp)
 {
   NGSolve_Init(interp);
+  return TCL_OK;
 }
 
 
@@ -712,6 +713,11 @@ int NGSolve_Init (Tcl_Interp * interp)
 {
   cout << "NGSolve-" << VERSION << endl;
 
+#ifdef LAPACK
+  cout << "Using Lapack" << endl;
+#endif
+
+  
 #ifdef SOCKETS
   if(netgen::serversocketmanager.Good())
     serverjobmanager.Reset(new ServerJobManager(netgen::serversocketmanager,pde,ma,interp)); //!

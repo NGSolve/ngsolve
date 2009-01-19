@@ -50,13 +50,14 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_demo_bla_OBJECTS = demo_bla.$(OBJEXT)
 demo_bla_OBJECTS = $(am_demo_bla_OBJECTS)
+am__DEPENDENCIES_1 =
 demo_bla_DEPENDENCIES = $(top_builddir)/basiclinalg/libngbla.la \
-	$(top_builddir)/ngstd/libngstd.la
+	$(top_builddir)/ngstd/libngstd.la $(am__DEPENDENCIES_1)
 am_demo_fem_OBJECTS = demo_fem.$(OBJEXT)
 demo_fem_OBJECTS = $(am_demo_fem_OBJECTS)
 demo_fem_DEPENDENCIES = $(top_builddir)/fem/libngfem.la \
 	$(top_builddir)/basiclinalg/libngbla.la \
-	$(top_builddir)/ngstd/libngstd.la
+	$(top_builddir)/ngstd/libngstd.la $(am__DEPENDENCIES_1)
 am_demo_std_OBJECTS = demo_std.$(OBJEXT)
 demo_std_OBJECTS = $(am_demo_std_OBJECTS)
 demo_std_DEPENDENCIES = $(top_builddir)/ngstd/libngstd.la
@@ -111,6 +112,8 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LAPACK_INCLUDES = @LAPACK_INCLUDES@
+LAPACK_LIB = @LAPACK_LIB@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
@@ -199,12 +202,12 @@ demo_std_SOURCES = demo_std.cpp
 demo_std_LDADD = $(top_builddir)/ngstd/libngstd.la
 demo_bla_SOURCES = demo_bla.cpp
 demo_bla_LDADD = $(top_builddir)/basiclinalg/libngbla.la \
-	$(top_builddir)/ngstd/libngstd.la
+	$(top_builddir)/ngstd/libngstd.la $(LAPACK_LIB)
 
 demo_fem_SOURCES = demo_fem.cpp
 demo_fem_LDADD = $(top_builddir)/fem/libngfem.la \
 	$(top_builddir)/basiclinalg/libngbla.la \
-	$(top_builddir)/ngstd/libngstd.la
+	$(top_builddir)/ngstd/libngstd.la $(LAPACK_LIB)
 
 all: all-am
 

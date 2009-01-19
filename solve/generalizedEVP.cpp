@@ -1,6 +1,6 @@
 #ifdef LAPACK
 #include <solve.hpp>
-#include "../lapack/LapackGEP.hpp"
+// #include "LapackGEP.hpp"
 
 using namespace std;
 using namespace ngbla;
