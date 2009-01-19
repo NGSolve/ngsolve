@@ -20,8 +20,9 @@ AC_ARG_WITH([netgen],
 AC_ARG_ENABLE([lapack],
         [  --enable-lapack         use lapack for dense linear algebra operations],          
         [AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])]
-        [AC_SUBST([LAPACK_LIB], ["-llapack"])]
+	[AC_SUBST([LAPACK_LIB], ["-L/opt/intel/mkl/10.0.2.018/lib/em64t -lmkl_core -lmkl_def -lmkl_sequential -lmkl_gf_lp64"])]
         )
+#        [AC_SUBST([LAPACK_LIB], ["-llapack"])]
 
 
 AC_SUBST([NETGEN_INCLUDES], ["-DNETGEN_ELTRANS -I$netgendir/include"])
