@@ -20,14 +20,14 @@ AC_ARG_WITH([netgen],
 
 AC_ARG_WITH([lapackpath],
         [  --with-lapackpath=path  use lapacklib for dense linear algebra operations],          
-        [lapackpath=$withval]
+        [lapackpath=-L$withval]
         )
 
 
 AC_ARG_WITH([lapack],
         [  --with-lapack=lapacklib   use lapacklib for dense linear algebra operations],          
         [AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])]
-        [AC_SUBST([LAPACK_LIB], ["-L$lapackpath -l$withval"])]
+        [AC_SUBST([LAPACK_LIB], ["$lapackpath -l$withval"])]
         )
 
 #	[AC_SUBST([LAPACK_LIB], ["-L/opt/intel/mkl/10.0.2.018/lib/em64t -lmkl_core -lmkl_def -lmkl_sequential -lmkl_gf_lp64"])]
