@@ -1,7 +1,8 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include  $(NETGEN_INCLUDES) $(LAPACK_INCLUDE)
 
 noinst_LTLIBRARIES = libngfemng.la
-libngfemng_la_LIBADD = $(top_builddir)/basiclinalg/libngbla.la  $(LAPACK_LIB)
+libngfemng_la_LIBADD = $(top_builddir)/basiclinalg/libngbla.la 
+#  $(LAPACK_LIB)
 libngfemng_la_LDFLAGS = -avoid-version
 
 libngfemng_la_SOURCES = bdbequations.cpp recursive_pol_trig.cpp	      \
@@ -18,7 +19,8 @@ recursive_pol.cpp
 
 lib_LTLIBRARIES = libngfem.la
 libngfem_la_CPPFLAGS = -I$(top_srcdir)/include  $(LAPACK_INCLUDE)
-libngfem_la_LDFLAGS = -avoid-version  $(LAPACK_LIB)
+libngfem_la_LDFLAGS = -avoid-version
+#   $(LAPACK_LIB)
 
 libngfem_la_SOURCES = bdbequations.cpp recursive_pol_trig.cpp	      \
 coefficient.cpp h1hofetp.cpp integrator.cpp specialelement.cpp	      \
