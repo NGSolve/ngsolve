@@ -9,7 +9,7 @@ hierarchicalee.cpp highorderfes.cpp l2hofespace.cpp linearform.cpp   \
 meshaccess.cpp ngsobject.cpp postproc.cpp preconditioner.cpp	     \
  vectorfacetfespace.cpp
 
-# libngcomp_la_LIBADD = $(top_builddir)/ngstd/libngfem.la
+# libngcomp_la_LIBADD = $(top_builddir)/ngstd/libngfem.la 
 
 include_HEADERS = bilinearform.hpp blocked_gridfunction.hpp comp.hpp \
 facetfespace.hpp fespace.hpp gridfunction.hpp h1hofespace.hpp	     \

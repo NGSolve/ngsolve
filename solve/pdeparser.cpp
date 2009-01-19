@@ -523,7 +523,7 @@ namespace ngsolve
               else
                 {
                   stringstream err;
-                  err << "Cannot load shared library '" << shared << "'";
+                  err << "Cannot load shared library '" << shared << "' \nerrmsg: "  << dlerror();
                   throw Exception (err.str());
                 }
 #else
