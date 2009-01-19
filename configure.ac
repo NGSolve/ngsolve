@@ -30,7 +30,7 @@ AC_ARG_ENABLE([lapack],
 #        )
 # AC_ARG_WITH([lapack],
 #        [  --with-lapack=lapacklib   use lapacklib for dense linear algebra operations],          
-#        [AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])]
+#        [AC_SUBST([LAPACK_INCLUDE], ["-DLAPACK"])]
 #        [AC_SUBST([LAPACK_LIB], ["$lapackpath -l$withval"])]
 #        )
 
