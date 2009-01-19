@@ -9,8 +9,10 @@
 
 #ifdef LINUX
 #include <fenv.h>
-#include <dlfcn.h>
 #endif
+
+#include <dlfcn.h>
+
 
 #ifdef PARALLEL
 #include <mpi.h>
@@ -114,6 +116,7 @@ int main(int argc, char ** argv)
       
       cout << "Developed at RWTH Aachen University, Germany" << endl
            << "and Johannes Kepler University Linz, Austria" << endl;
+
       
 #ifdef OCCGEOMETRY
       cout << "Including OpenCascade geometry kernel" << endl;
