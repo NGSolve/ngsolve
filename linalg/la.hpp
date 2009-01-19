@@ -4,9 +4,11 @@
 #include <bla.hpp>
 
 
+/*
 #ifdef LAPACK
 #include "../lapack/LapackGEP.hpp"
 #endif
+*/
 
 
 #ifdef PARALLEL

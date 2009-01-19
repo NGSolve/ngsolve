@@ -1,4 +1,3 @@
-
 #ifndef FILE_NG_LAPACK
 #define FILE_NG_LAPACK
 
@@ -10,55 +9,6 @@
 /* Author: Joachim Schoeberl                                                */
 /* Date:   21. Nov. 2004                                                    */
 /****************************************************************************/
-
-
-
-
-/*
-#include "i_malloc.h"
-using namespace std;
-
-void * mymalloc(size_t s)
-{
-  std::cout << "mymalloc called" << std::endl;
-  char * p = new char[s];
-  cout << "p = " << (void*)p << endl;
-  return p;
-}
-
-void * mycalloc(size_t nmemb, size_t s)
-{
-  std::cout << "mycalloc called" << std::endl;
-  char * p = new char[s];
-  cout << "p = " << (void*)p << endl;
-  return p;
-}
-
-void * myrealloc(void * ptr, size_t s)
-{
-  std::cout << "myrealloc called" << std::endl;
-  char * p = new char[s];
-  cout << "p = " << (void*)p << endl;
-  return p;
-}
-
-void myfree(void * p)
-{
-  std::cout << "myfree called, p = " << p << std::endl;
-  delete p;
-}
-
-
-extern i_malloc_t i_malloc = mymalloc;
-extern i_calloc_t i_calloc = mycalloc;
-extern i_realloc_t i_realloc = myrealloc;
-extern i_free_t i_free = myfree;
-
-
-
-// (i_maclloc_t)mymalloc;
-*/
-
 
 
 
@@ -926,5 +876,40 @@ inline void LapackEigenValuesSymmetric (ngbla::FlatMatrix<ngbla::Complex> a,
 
 
 #endif
+
+
+
+
+// several LAPACK eigenvalue solvers  
+
+#ifdef LAPACK
+
+void LaEigNSSolve(int n, double * A, double * B, std::complex<double> * lami, int evecs_bool, double *evecs_re, double *evecs_im, char balance_type);
+void LaEigNSSolve(int n, std::complex<double> * A, std::complex<double> * B, std::complex<double> * lami, int evecs_bool, std::complex<double> *evecs, std::complex<double> *dummy, char balance_type);
+
+void LapackSSEP(int n, double* A, double* lami, double* evecs); 
+
+void LapackHessenbergEP (int n, std::complex<double> * H, std::complex<double> * lami, std::complex<double> * evecs); 
+void LapackGHEP(int n, double* A, double* B,  double* lami) ; 
+int LapackGHEPEPairs(int n, double* A, double* B, double* lami);
+int LapackGHEPEPairs(int n, std::complex<double>* A, std::complex<double>* B, double* lami);
+// A,B overwritten in A eigenvectors z^H B z = 1  
+  
+//void LaEigNSSolve(const LaGenMatDouble &A, LaVectorDouble &eigvals);
+//void LaEigNSSolveIP(LaGenMatDouble &A, LaVectorDouble &eigvals);
+
+void LaEigNSSolveTest();
+void LaLinearSolveComplex(int n, std::complex<double> * A, std::complex<double> * F); 
+void LaLinearSolve(int n, double * A, double * F); 
+void LaLinearSolveRHS(int n, double * A, double * F); 
+
+
+void LaEigNSSolveX(int n, std::complex<double> * A, std::complex<double> * B, std::complex<double> * lami, int evecs_bool, std::complex<double> * evecs, std::complex<double> * dummy, char balance_type); 
+void LaEigNSSolveX(int n, double * A, double * B, std::complex<double> * lami, int evecs_bool, double * evecs, double * dummy, char balance_type);
+
+#endif
+
+
+
 
 #endif

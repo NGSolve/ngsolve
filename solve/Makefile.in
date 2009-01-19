@@ -55,11 +55,12 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
+am__DEPENDENCIES_1 =
 libngsolve_la_DEPENDENCIES = $(top_builddir)/comp/libngcomp.la \
 	$(top_builddir)/fem/libngfemng.la \
 	$(top_builddir)/linalg/libngla.la \
 	$(top_builddir)/basiclinalg/libngbla.la \
-	$(top_builddir)/multigrid/libngmg.la
+	$(top_builddir)/multigrid/libngmg.la $(am__DEPENDENCIES_1)
 am_libngsolve_la_OBJECTS = ngsolve.lo bvp.lo generalizedEVP.lo \
 	numproc.lo pde.lo shapetester.lo evplapack.lo hyperbolic.lo \
 	nptests.lo numprocee.lo pdeparser.lo
@@ -119,6 +120,8 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LAPACK_INCLUDES = @LAPACK_INCLUDES@
+LAPACK_LIB = @LAPACK_LIB@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
@@ -202,15 +205,15 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(top_srcdir)/include $(NETGEN_INCLUDES) -I/home/joachim/netgen-mesher/netgen/libsrc/interface
+AM_CPPFLAGS = -I$(top_srcdir)/include $(NETGEN_INCLUDES) $(LAPACK_INCLUDES) -I/home/joachim/netgen-mesher/netgen/libsrc/interface
 lib_LTLIBRARIES = libngsolve.la
 libngsolve_la_SOURCES = ngsolve.cpp bvp.cpp generalizedEVP.cpp \
 numproc.cpp pde.cpp shapetester.cpp evplapack.cpp hyperbolic.cpp  \
 nptests.cpp numprocee.cpp pdeparser.cpp
 
-libngsolve_la_LIBADD = $(top_builddir)/comp/libngcomp.la $(top_builddir)/fem/libngfemng.la  $(top_builddir)/linalg/libngla.la  $(top_builddir)/basiclinalg/libngbla.la  $(top_builddir)/multigrid/libngmg.la 
-include_HEADERS = numproc.hpp  pde.hpp  solve.hpp
-libngsolve_la_LDFLAGS = -avoid-version
+libngsolve_la_LIBADD = $(top_builddir)/comp/libngcomp.la $(top_builddir)/fem/libngfemng.la  $(top_builddir)/linalg/libngla.la  $(top_builddir)/basiclinalg/libngbla.la  $(top_builddir)/multigrid/libngmg.la $(LAPACK_LIB)
+include_HEADERS = numproc.hpp pde.hpp solve.hpp 
+libngsolve_la_LDFLAGS = -avoid-version -rdynamic
 all: all-am
 
 .SUFFIXES:

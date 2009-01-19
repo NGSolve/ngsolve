@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/include  $(NETGEN_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)/include  $(NETGEN_INCLUDES) $(LAPACK_INCLUDE)
 
 noinst_LTLIBRARIES = libngfemng.la
 libngfemng_la_LIBADD = $(top_builddir)/basiclinalg/libngbla.la
@@ -17,7 +17,7 @@ recursive_pol.cpp
 
 
 lib_LTLIBRARIES = libngfem.la
-libngfem_la_CPPFLAGS = -I$(top_srcdir)/include
+libngfem_la_CPPFLAGS = -I$(top_srcdir)/include  $(LAPACK_INCLUDE)
 libngfem_la_LDFLAGS = -avoid-version
 
 libngfem_la_SOURCES = bdbequations.cpp recursive_pol_trig.cpp	      \

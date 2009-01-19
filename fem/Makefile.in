@@ -61,9 +61,8 @@ am_libngfem_la_OBJECTS = libngfem_la-bdbequations.lo \
 	libngfem_la-h1hofetp.lo libngfem_la-integrator.lo \
 	libngfem_la-specialelement.lo libngfem_la-elementtopology.lo \
 	libngfem_la-hcurlfe.lo libngfem_la-intrule.lo \
-	libngfem_la-tpequations.lo libngfem_la-facetfe.lo \
-	libngfem_la-hcurlhofe.lo libngfem_la-l2hofe.lo \
-	libngfem_la-tpmaxwell.lo libngfem_la-fastmat.lo \
+	libngfem_la-facetfe.lo libngfem_la-hcurlhofe.lo \
+	libngfem_la-l2hofe.lo libngfem_la-fastmat.lo \
 	libngfem_la-hcurlhofetp.lo libngfem_la-l2hofetp.lo \
 	libngfem_la-vectorfacetfe.lo libngfem_la-finiteelement.lo \
 	libngfem_la-hdiv_equations.lo libngfem_la-maxwellintegrator.lo \
@@ -77,11 +76,11 @@ libngfem_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 libngfemng_la_DEPENDENCIES = $(top_builddir)/basiclinalg/libngbla.la
 am_libngfemng_la_OBJECTS = bdbequations.lo recursive_pol_trig.lo \
 	coefficient.lo h1hofetp.lo integrator.lo specialelement.lo \
-	elementtopology.lo hcurlfe.lo intrule.lo tpequations.lo \
-	facetfe.lo hcurlhofe.lo l2hofe.lo tpmaxwell.lo fastmat.lo \
-	hcurlhofetp.lo l2hofetp.lo vectorfacetfe.lo finiteelement.lo \
-	hdiv_equations.lo maxwellintegrator.lo generic_recpol.lo \
-	hdivfe.lo pml.lo h1hofe.lo hdivhofe.lo recursive_pol.lo
+	elementtopology.lo hcurlfe.lo intrule.lo facetfe.lo \
+	hcurlhofe.lo l2hofe.lo fastmat.lo hcurlhofetp.lo l2hofetp.lo \
+	vectorfacetfe.lo finiteelement.lo hdiv_equations.lo \
+	maxwellintegrator.lo generic_recpol.lo hdivfe.lo pml.lo \
+	h1hofe.lo hdivhofe.lo recursive_pol.lo
 libngfemng_la_OBJECTS = $(am_libngfemng_la_OBJECTS)
 libngfemng_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
@@ -138,6 +137,8 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LAPACK_INCLUDES = @LAPACK_INCLUDES@
+LAPACK_LIB = @LAPACK_LIB@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
@@ -221,36 +222,36 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(top_srcdir)/include  $(NETGEN_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)/include  $(NETGEN_INCLUDES) $(LAPACK_INCLUDE)
 noinst_LTLIBRARIES = libngfemng.la
 libngfemng_la_LIBADD = $(top_builddir)/basiclinalg/libngbla.la
 libngfemng_la_LDFLAGS = -avoid-version
-libngfemng_la_SOURCES = bdbequations.cpp recursive_pol_trig.cpp	       \
-coefficient.cpp h1hofetp.cpp integrator.cpp specialelement.cpp	       \
-elementtopology.cpp hcurlfe.cpp intrule.cpp tpequations.cpp	       \
-facetfe.cpp hcurlhofe.cpp l2hofe.cpp tpmaxwell.cpp fastmat.cpp	       \
-hcurlhofetp.cpp l2hofetp.cpp vectorfacetfe.cpp finiteelement.cpp       \
-hdiv_equations.cpp maxwellintegrator.cpp generic_recpol.cpp hdivfe.cpp \
-pml.cpp h1hofe.cpp hdivhofe.cpp recursive_pol.cpp
+libngfemng_la_SOURCES = bdbequations.cpp recursive_pol_trig.cpp	      \
+coefficient.cpp h1hofetp.cpp integrator.cpp specialelement.cpp	      \
+elementtopology.cpp hcurlfe.cpp intrule.cpp facetfe.cpp hcurlhofe.cpp \
+l2hofe.cpp fastmat.cpp hcurlhofetp.cpp l2hofetp.cpp vectorfacetfe.cpp \
+finiteelement.cpp hdiv_equations.cpp maxwellintegrator.cpp	      \
+generic_recpol.cpp hdivfe.cpp pml.cpp h1hofe.cpp hdivhofe.cpp	      \
+recursive_pol.cpp
 
 lib_LTLIBRARIES = libngfem.la
-libngfem_la_CPPFLAGS = -I$(top_srcdir)/include
+libngfem_la_CPPFLAGS = -I$(top_srcdir)/include  $(LAPACK_INCLUDE)
 libngfem_la_LDFLAGS = -avoid-version
-libngfem_la_SOURCES = bdbequations.cpp recursive_pol_trig.cpp	       \
-coefficient.cpp h1hofetp.cpp integrator.cpp specialelement.cpp	       \
-elementtopology.cpp hcurlfe.cpp intrule.cpp tpequations.cpp	       \
-facetfe.cpp hcurlhofe.cpp l2hofe.cpp tpmaxwell.cpp fastmat.cpp	       \
-hcurlhofetp.cpp l2hofetp.cpp vectorfacetfe.cpp finiteelement.cpp       \
-hdiv_equations.cpp maxwellintegrator.cpp generic_recpol.cpp hdivfe.cpp \
-h1hofe.cpp hdivhofe.cpp recursive_pol.cpp dynamicmem.cpp
+libngfem_la_SOURCES = bdbequations.cpp recursive_pol_trig.cpp	      \
+coefficient.cpp h1hofetp.cpp integrator.cpp specialelement.cpp	      \
+elementtopology.cpp hcurlfe.cpp intrule.cpp facetfe.cpp hcurlhofe.cpp \
+l2hofe.cpp fastmat.cpp hcurlhofetp.cpp l2hofetp.cpp vectorfacetfe.cpp \
+finiteelement.cpp hdiv_equations.cpp maxwellintegrator.cpp	      \
+generic_recpol.cpp hdivfe.cpp h1hofe.cpp hdivhofe.cpp		      \
+recursive_pol.cpp dynamicmem.cpp
 
-include_HEADERS = bdbequations.hpp bdbintegrator.hpp coefficient.hpp   \
-elementtopology.hpp elementtransformation.hpp facetfe.hpp fem.hpp      \
-femtypes.hpp finiteelement.hpp generic_recpol.hpp h1hofe.hpp	       \
-h1hofetp.hpp h1hofetp_save.hpp hcurlfe.hpp hcurlhofe.hpp	       \
-hcurlhofetp.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp	       \
-highorderfe.hpp integrator.hpp intrule.hpp l2hofe.hpp l2hofetp.hpp     \
-pml.hpp recursive_pol.hpp recursive_pol_tet.hpp recursive_pol_trig.hpp \
+include_HEADERS = bdbequations.hpp bdbintegrator.hpp coefficient.hpp \
+elementtopology.hpp elementtransformation.hpp facetfe.hpp fem.hpp    \
+femtypes.hpp finiteelement.hpp generic_recpol.hpp h1hofe.hpp	     \
+h1hofetp.hpp hcurlfe.hpp hcurlhofe.hpp hcurlhofetp.hpp		     \
+hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp highorderfe.hpp	     \
+integrator.hpp intrule.hpp l2hofe.hpp l2hofetp.hpp pml.hpp	     \
+recursive_pol.hpp recursive_pol_tet.hpp recursive_pol_trig.hpp	     \
 specialelement.hpp vectorfacetfe.hpp
 
 all: all-am
@@ -376,16 +377,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-recursive_pol.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-recursive_pol_trig.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-specialelement.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-tpequations.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-tpmaxwell.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libngfem_la-vectorfacetfe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/maxwellintegrator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pml.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/recursive_pol.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/recursive_pol_trig.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/specialelement.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tpequations.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tpmaxwell.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vectorfacetfe.Plo@am__quote@
 
 .cpp.o:
@@ -472,13 +469,6 @@ libngfem_la-intrule.lo: intrule.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-intrule.lo `test -f 'intrule.cpp' || echo '$(srcdir)/'`intrule.cpp
 
-libngfem_la-tpequations.lo: tpequations.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-tpequations.lo -MD -MP -MF $(DEPDIR)/libngfem_la-tpequations.Tpo -c -o libngfem_la-tpequations.lo `test -f 'tpequations.cpp' || echo '$(srcdir)/'`tpequations.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-tpequations.Tpo $(DEPDIR)/libngfem_la-tpequations.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='tpequations.cpp' object='libngfem_la-tpequations.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-tpequations.lo `test -f 'tpequations.cpp' || echo '$(srcdir)/'`tpequations.cpp
-
 libngfem_la-facetfe.lo: facetfe.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-facetfe.lo -MD -MP -MF $(DEPDIR)/libngfem_la-facetfe.Tpo -c -o libngfem_la-facetfe.lo `test -f 'facetfe.cpp' || echo '$(srcdir)/'`facetfe.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-facetfe.Tpo $(DEPDIR)/libngfem_la-facetfe.Plo
@@ -499,13 +489,6 @@ libngfem_la-l2hofe.lo: l2hofe.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='l2hofe.cpp' object='libngfem_la-l2hofe.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-l2hofe.lo `test -f 'l2hofe.cpp' || echo '$(srcdir)/'`l2hofe.cpp
-
-libngfem_la-tpmaxwell.lo: tpmaxwell.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-tpmaxwell.lo -MD -MP -MF $(DEPDIR)/libngfem_la-tpmaxwell.Tpo -c -o libngfem_la-tpmaxwell.lo `test -f 'tpmaxwell.cpp' || echo '$(srcdir)/'`tpmaxwell.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libngfem_la-tpmaxwell.Tpo $(DEPDIR)/libngfem_la-tpmaxwell.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='tpmaxwell.cpp' object='libngfem_la-tpmaxwell.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libngfem_la-tpmaxwell.lo `test -f 'tpmaxwell.cpp' || echo '$(srcdir)/'`tpmaxwell.cpp
 
 libngfem_la-fastmat.lo: fastmat.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libngfem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libngfem_la-fastmat.lo -MD -MP -MF $(DEPDIR)/libngfem_la-fastmat.Tpo -c -o libngfem_la-fastmat.lo `test -f 'fastmat.cpp' || echo '$(srcdir)/'`fastmat.cpp
