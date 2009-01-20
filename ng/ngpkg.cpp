@@ -37,6 +37,10 @@ The interface between the GUI and the netgen library
 #include <parallel.hpp>
 
 
+// to be sure to include the 'right' togl-version
+#include "togl_1_7.h"
+
+
 extern bool nodisplay;
 
 namespace netgen
@@ -648,7 +652,7 @@ namespace netgen
 		PrintMessage (1, "Load IGES geometry file ", lgfilename);
 		occgeometry = LoadOCC_IGES (lgfilename);
 #else
-		Tcl_SetResult (interp, "IGES import requires the OpenCascade geometry kernel. "
+		Tcl_SetResult (interp, (char*)"IGES import requires the OpenCascade geometry kernel. "
 			       "Please install OpenCascade as described in the Netgen-website", 
 			       TCL_STATIC);      
 		return TCL_ERROR;		
@@ -676,7 +680,7 @@ namespace netgen
 		PrintMessage (1, "Load STEP geometry file ", lgfilename);
 		occgeometry = LoadOCC_STEP (lgfilename);
 #else
-		Tcl_SetResult (interp, "IGES import requires the OpenCascade geometry kernel. "
+		Tcl_SetResult (interp, (char*)"IGES import requires the OpenCascade geometry kernel. "
 			       "Please install OpenCascade as described in the Netgen-website", 
 			       TCL_STATIC);      
 		return TCL_ERROR;		
@@ -692,7 +696,7 @@ namespace netgen
 		PrintMessage (1, "Load BREP geometry file ", lgfilename);
 		occgeometry = LoadOCC_BREP (lgfilename);
 #else
-		Tcl_SetResult (interp, "BREP import requires the OpenCascade geometry kernel. "
+		Tcl_SetResult (interp, (char*)"BREP import requires the OpenCascade geometry kernel. "
 			       "Please install OpenCascade as described in the Netgen-website", 
 			       TCL_STATIC);      
 		return TCL_ERROR;		
@@ -3004,7 +3008,6 @@ namespace netgen
 
 
 
-  // Togl
 
   SYMBOLTABLE<VisualScene*> & GetVisualizationScenes ()
   {
@@ -3067,6 +3070,15 @@ namespace netgen
 #endif // OPENGL
   }
 
+
+
+
+
+
+#if TOGL_MAJOR_VERSION==1
+
+
+  // Togl
   
   static void init( struct Togl *togl )
   {
@@ -3079,7 +3091,6 @@ namespace netgen
     SetVisualScene (Togl_Interp(togl));
     vs->DrawScene();
   }
-
 
   static void zap( struct Togl *togl )
   {
@@ -3127,6 +3138,36 @@ namespace netgen
       }
   }
 
+  static void reshape( struct Togl *togl)
+  {
+    int w = Togl_Width (togl);
+    int h = Togl_Height (togl);
+
+    glViewport(0, 0, w, h);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(20.0f, double(w) / h, pnear, pfar);
+    glMatrixMode(GL_MODELVIEW);
+
+    draw (togl);
+  }
+
+
+
+#else
+
+  
+  // Sorry, Togl 2.0 not supported
+
+
+#endif
+
+
+
+
+
+#if TOGL_MAJOR_VERSION==1
 
 #ifndef VIDEOCLIP
   static int Ng_SnapShot (struct Togl * togl,
@@ -3509,6 +3550,7 @@ namespace netgen
   }
 #endif
 
+#endif
 
 
 
@@ -3520,29 +3562,6 @@ namespace netgen
 
 
 
-
-
-
-
-
-
-
-
-
-  static void reshape( struct Togl *togl)
-  {
-    int w = Togl_Width (togl);
-    int h = Togl_Height (togl);
-
-    glViewport(0, 0, w, h);
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(20.0f, double(w) / h, pnear, pfar);
-    glMatrixMode(GL_MODELVIEW);
-
-    draw (togl);
-  }
 
   int Ng_MouseMove (ClientData clientData,
 		    Tcl_Interp * interp,
@@ -4228,11 +4247,11 @@ namespace netgen
       {
 	if (strcmp (argv[1], "isACISavailable") == 0)
 	  {
-            Tcl_SetResult (interp, "no", TCL_STATIC);
+            Tcl_SetResult (interp, (char*)"no", TCL_STATIC);
 	    return TCL_OK;
 	  }
       }
-    Tcl_SetResult (interp, "undefined ACiS command", TCL_STATIC);
+    Tcl_SetResult (interp, (char*)"undefined ACiS command", TCL_STATIC);
     return TCL_ERROR;
   }
 #endif
@@ -4999,15 +5018,18 @@ namespace netgen
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
+#if TOGL_MAJOR_VERSION==1
     if (!nodisplay && Togl_Init(interp) == TCL_ERROR) {
       return TCL_ERROR;
     }
+#endif
 
 
     /*
      * Specify the C callback functions for widget creation, display,
      * and reshape.
      */
+#if TOGL_MAJOR_VERSION==1
     if(!nodisplay)
       {
 	Togl_CreateFunc( init );
@@ -5019,6 +5041,10 @@ namespace netgen
 	Togl_CreateCommand( (char*)"Ng_VideoClip", Ng_VideoClip);
 	//   Togl_CreateCommand("position",position);
       }
+#else
+    cout << "togl 2.0 setup missing" << endl;
+#endif
+
 
     multithread.pause = 0;
     multithread.testmode = 0;

@@ -17,7 +17,7 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #ifndef NOTCL
-#include <togl.h>
+// #include <togl.h>
 // #include "../../togl/togl.h"
 #endif
 

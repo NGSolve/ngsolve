@@ -3242,11 +3242,11 @@ fi
 if test "${with_togl+set}" = set; then
   withval=$with_togl; togldir=$withval
         togllibfl="-L$withval$"
-else
-  togllibfl="-L/usr/local/lib/Togl1.7"
 
 fi
 
+#        [togllibfl="-L$(TK_BIN_DIR)/Togl1.7"]
+#        [togllibfl="-L/usr/local/lib/Togl1.7"]
 
 
 # Check whether --enable-nglib was given.

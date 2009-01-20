@@ -5,8 +5,8 @@ if {[catch {package require Tix }]} {
     puts "cannot find package Tix"
 }
 
-# if {[catch {package require Togl 1.7}]} {
-#    puts "cannot find package Togl 1.7"
+# if {[catch {package require Togl 2.0 }]} {
+#     puts "cannot find package Togl 2.0"
 # }
 
 
@@ -285,18 +285,17 @@ catch {
 # source ngusers/ebg/elasticity/ebgelast.tcl
 
 
-if { [catch { load libngsolve.so ngsolve }] } {
-    puts "cannot load ngsolve" 
+if { [catch { load libngsolve.so ngsolve } result ] } {
+#    puts "cannot load ngsolve" 
+#    puts "error: $result"
 } {
     source ${ngdir}/ngsolve.tcl
 }
 
 
-catch { source ${ngdir}/demoapp.tcl }
-
-
-if { [catch { load libdemoapp.so demoapp }] } {
-    puts "cannot load demoapp" 
+if { [catch { load libdemoapp.so demoapp } result ] } {
+#    puts "cannot load demoapp" 
+#    puts "error: $result"
 } {
 }
 

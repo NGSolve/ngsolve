@@ -7,7 +7,6 @@ libnglib_la_SOURCES = nglib.cpp
 
 libnglib_la_LIBADD = \
 	$(top_builddir)/libsrc/interface/libinterface.la \
-	$(top_builddir)/libsrc/occ/libocc.la \
 	$(top_builddir)/libsrc/geom2d/libgeom2d.la \
 	$(top_builddir)/libsrc/csg/libcsg.la \
 	$(top_builddir)/libsrc/stlgeom/libstl.la \

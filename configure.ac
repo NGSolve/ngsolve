@@ -39,9 +39,10 @@ AC_ARG_WITH([occ],
 AC_ARG_WITH([togl], 
         [  --with-togl=dir         directory containing libTogl1.7],
         [togldir=$withval]
-        [togllibfl="-L$withval$"],
-        [togllibfl="-L/usr/local/lib/Togl1.7"]
+        [togllibfl="-L$withval$"]
         )
+#        [togllibfl="-L$(TK_BIN_DIR)/Togl1.7"]
+#        [togllibfl="-L/usr/local/lib/Togl1.7"]
 
 
 AC_ARG_ENABLE([nglib],
