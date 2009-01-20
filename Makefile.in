@@ -230,7 +230,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
 METASOURCES = AUTO
-SUBDIRS = libsrc ng nglib tutorials 
+SUBDIRS = libsrc ng nglib tutorials doc
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 

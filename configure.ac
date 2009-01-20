@@ -102,6 +102,6 @@ libsrc/include/Makefile libsrc/interface/Makefile
 libsrc/linalg/Makefile libsrc/meshing/Makefile libsrc/occ/Makefile 
 libsrc/opti/Makefile  libsrc/parallel/Makefile 
 libsrc/stlgeom/Makefile libsrc/visualization/Makefile ng/Makefile 
-nglib/Makefile tutorials/Makefile)
+nglib/Makefile tutorials/Makefile doc/Makefile)
 
 AC_OUTPUT

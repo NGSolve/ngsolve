@@ -17331,7 +17331,7 @@ done
 
 
 
-ac_config_files="$ac_config_files Makefile libsrc/Makefile libsrc/csg/Makefile libsrc/general/Makefile libsrc/geom2d/Makefile libsrc/gprim/Makefile libsrc/include/Makefile libsrc/interface/Makefile libsrc/linalg/Makefile libsrc/meshing/Makefile libsrc/occ/Makefile libsrc/opti/Makefile libsrc/parallel/Makefile libsrc/stlgeom/Makefile libsrc/visualization/Makefile ng/Makefile nglib/Makefile tutorials/Makefile"
+ac_config_files="$ac_config_files Makefile libsrc/Makefile libsrc/csg/Makefile libsrc/general/Makefile libsrc/geom2d/Makefile libsrc/gprim/Makefile libsrc/include/Makefile libsrc/interface/Makefile libsrc/linalg/Makefile libsrc/meshing/Makefile libsrc/occ/Makefile libsrc/opti/Makefile libsrc/parallel/Makefile libsrc/stlgeom/Makefile libsrc/visualization/Makefile ng/Makefile nglib/Makefile tutorials/Makefile doc/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -18346,6 +18346,7 @@ do
     "ng/Makefile") CONFIG_FILES="$CONFIG_FILES ng/Makefile" ;;
     "nglib/Makefile") CONFIG_FILES="$CONFIG_FILES nglib/Makefile" ;;
     "tutorials/Makefile") CONFIG_FILES="$CONFIG_FILES tutorials/Makefile" ;;
+    "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
 
   *) { { $as_echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 $as_echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
