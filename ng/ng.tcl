@@ -1,8 +1,9 @@
 puts "found ng.tcl"
 
 
-if {[catch {package require Tix }]} {
+if {[catch {package require Tix } result ]} {
     puts "cannot find package Tix"
+    puts "error : $result"
 }
 
 # if {[catch {package require Togl 2.0 }]} {
