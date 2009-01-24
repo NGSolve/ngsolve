@@ -1,0 +1,22 @@
+/** @name Linear Algebra
+\begin{verbatim}                           (directory ngsolve/linalg)\end{verbatim}
+
+The linear algebra library is based on the abstact base classes
+\Ref{BaseVector} and \Ref{BaseMatrix}. Derived objects are
+vector classes (\Ref{VVector},...) or specific matrix classes
+(\Ref{SparseMatrix}, ...). Linear operations (\Ref{KrylovSpaceSolver})
+are derived from BaseMatrix as well.
+
+Matrices have to provide the matrix times vector operation. 
+The preferred function is 
+\begin{verbatim}
+  virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
+\end{verbatim}
+implementing 
+\[
+y = y + s * Mat * x
+\]
+
+Expression templates enable a convinient notation. But, in contrast to
+the basic linear algebra, the expression tree is expanded to
+vector-vector and matrix-vector operations.  */
