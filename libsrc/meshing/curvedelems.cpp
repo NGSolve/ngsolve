@@ -1,7 +1,6 @@
 #include <mystdlib.h>
 
 #include "meshing.hpp"
-#ifdef CURVEDELEMS_NEW
 
 #include "../general/autodiff.hpp"
 
@@ -3166,4 +3165,3 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 };
 
 
-#endif
