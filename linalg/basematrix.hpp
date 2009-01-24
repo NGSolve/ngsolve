@@ -8,12 +8,12 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+
+
+
 /**
    The base for all matrices in the linalg.
 */
-
-class MatrixGraph;
-
 class BaseMatrix
 {
 protected:
@@ -68,11 +68,11 @@ public:
   virtual BaseMatrix * CreateMatrix () const;
   /// creates matrix of same type
   virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
-  /// creates a compativle vector, size = width
+  /// creates a matching vector, size = width
   virtual BaseVector * CreateRowVector () const;
-  /// creates a compativle vector, size = height
+  /// creates a matching vector, size = height
   virtual BaseVector * CreateColVector () const;
-  /// creates a fitting vector (for square matrices)
+  /// creates a matching vector (for square matrices)
   virtual BaseVector * CreateVector () const;
 
   /// y = matrix * x. Multadd should be implemented, instead
@@ -158,7 +158,7 @@ public:
   virtual void AllocateConsistentMat ()
   { cerr << "ERROR -- ParallelBaseMatrix::AllocateConsistentMat called" << endl; }
 
-  virtual void  AllocateConsistentMat ( const ngla::MatrixGraph & graph )
+  virtual void  AllocateConsistentMat ( const class MatrixGraph & graph )
   { cerr << "ERROR -- ParallelBaseMatrix::AllocateConsistentMat(const MatrixGraph&) called" << endl; }
 
   virtual void CalcConsistentMat (LocalHeap & lh) 
@@ -178,7 +178,7 @@ public:
 };
 
 
-/// Fixes the scalar type.
+/// specifies the scalar type.
 template <typename SCAL>
 class S_BaseMatrix :  virtual public BaseMatrix
 {
@@ -192,7 +192,7 @@ public:
 };
 
 
-/// Fixes the scalar type Complex.
+// specifies the scalar type Complex.
 template <>
 class S_BaseMatrix<Complex> : virtual public BaseMatrix
 {

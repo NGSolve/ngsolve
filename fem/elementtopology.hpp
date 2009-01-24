@@ -14,7 +14,7 @@
 
 /**
    Geometry of element.
-   Choices are ET_SEGM, ET_TRIG, ET_QUAD, ET_TET, ET_PYRAMID, ET_PRISM, ET_HEX
+   Possible are ET_SEGM, ET_TRIG, ET_QUAD, ET_TET, ET_PYRAMID, ET_PRISM, ET_HEX
  */
 enum ELEMENT_TYPE { ET_SEGM = 1,
 		    ET_TRIG = 10, ET_QUAD = 11, 
@@ -28,7 +28,10 @@ enum ELEMENT_TYPE { ET_SEGM = 1,
    edge nodes are 1 dimensional
    face nodes are 2 dimensional
    cell nodes are 3 dimensional
+
    2D elements have vertex, edge, and face nodes
+
+   3D elements have vertex, edge, face and cell nodes
  */
 
 enum NODE_TYPE { NT_VERTEX = 0, NT_EDGE = 1, NT_FACE = 2, NT_CELL = 3 };
@@ -348,20 +351,34 @@ public:
 
 
 
+/**
+   A Node of an element.  
 
+   A Node has a node type such such NT_VERTEX or NT_FACE, and a node
+   number. The number can be with respect to the local element
+   numbering, or can be the global numbering on the mesh.
+ */
 class Node
 {
   NODE_TYPE nt;
   int nodenr;
+
 public:
+  /// do nothing
   Node () { ; }
+  
+  /// construct node from type and number
   Node (NODE_TYPE ant, int anodenr)
     : nt(ant), nodenr(anodenr) { ; }
-  
+
+  /// copy constructor
   Node (const Node & n2)
   { nt = n2.nt; nodenr = n2.nodenr; }
 
+  /// returns type of the node
   NODE_TYPE GetType () const { return nt; }
+
+  /// returns number of the node
   int GetNodeNr() const { return nodenr; }
 };
 

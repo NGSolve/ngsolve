@@ -14,9 +14,6 @@
 
 
 
-
-
-
 /**
    Define the degree of freedom.
    The dof is the nr_on_node'th dof on the node with numbe nodenr. 
