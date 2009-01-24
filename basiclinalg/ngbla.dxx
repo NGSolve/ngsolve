@@ -1,0 +1,41 @@
+/** @name Basic Linear Algebra
+\begin{verbatim}                           (directory ngsolve/basiclinalg)\end{verbatim}
+
+The basic linear algebra is implemented by expression templates.
+This allows to write matrix and vector operations in a convenient way such as
+\[
+x = y + A * z 
+\]
+
+There is no compromise to efficiency. In particular, ther is now
+frequent allocation and dealloction of dynamic objects. The generated
+code is comparable to a manually optimized one.
+
+The main idea is the following: The operator* (matrix, vector) returns a symbolic
+object matrix-vector product without evaluating it. The computations are done in the assignement,
+where the required memory for storing the result is available.
+
+A good introduction to expression templates is 
+"Techniques for Scientific C++" by Todd Veldhuizen.
+
+
+
+The following vector types are available:
+\Ref{Vec}, \Ref{FlatVector}, \Ref{Vector}, \Ref{VectorMem}, \Ref{SliceVector}
+
+The following matrix types are available:
+\Ref{Mat}, \Ref{Matrix}, \Ref{MatrixFixWidth}, \Ref{MatrixFixHeight}, \Ref{SymBandMatrix}, \Ref{BandCholeskyFactors}.
+
+Again, there are corresponding matrix types without memory management:
+\Ref{FlatMatrix}, \Ref{FlatMatrixFixWidth}, \Ref{FlatMatrixFixHeight}, \Ref{FlatSymBandMatrix}, \Ref{FlatBandCholeskyFactors}, 
+
+
+NGBLA provides the canonical operators (+,-,*,+=, -=) for matrices and vectors.
+Additionally, the following functions are avialable:
+\Ref{Trans}, \Ref{Inv}, \Ref{Height}, \Ref{Width}, \Ref{Trace}, \Ref{InnerProduct}, \Ref{L2Norm}, \Ref{Det}
+
+
+
+Implemented algorithms are Inversion \Ref{CalcInverse}, 
+Eigenvalue computation \Ref{EigenSystem}
+*/

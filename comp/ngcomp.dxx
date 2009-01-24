@@ -1,0 +1,9 @@
+/** @name High level FEM components
+	Hilbert-space objects: \Ref{FESpace}
+	\Ref{GridFunction}, \Ref{BilinearForm}, \Ref{LinearForm}
+	\Ref{Preconditioner}
+	
+	Postprocessing: \Ref{CalcFlux}, 
+
+	Error-estimator: \Ref{ZZErrorEstimate}
+*/

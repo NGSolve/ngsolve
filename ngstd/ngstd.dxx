@@ -1,0 +1,8 @@
+/** @name Standard Data Types and Algorithms
+\begin{verbatim}                           (directory ngsolve/ngstd)\end{verbatim}
+
+Generic container classes: \Ref{FlatArray}, \Ref{ARRAY}, \Ref{ArrayMem}, \Ref{Table}, \Ref{DynamicTable}, \Ref{HashTable}, \Ref{SymbolTable}, 
+
+Specific data types \Ref{Exception}, \Ref{BitArray}, \Ref{Flags}, \Ref{LocalHeap}, \Ref{BlockAllocator}, \Ref{NgProfiler}, \Ref{AutoPtr}, \Ref{EvalFunction}, \Ref{AutoDiff}, \Ref{AutoDiffDiff}
+
+*/

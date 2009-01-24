@@ -1,0 +1,6 @@
+/** @name Main Problem-Components
+\begin{verbatim}                           (directory ngsolve/comp)\end{verbatim}
+
+FE-Spaces (e.g., \Ref{H1HighOrderFESpace}, \Ref{HCurlHighOrderFESpace},...), \Ref{LinearForm}, \Ref{BilinearForm},
+the access to the mesh (\Ref{MeshAccess}), \Ref{GridFunction}s, \Ref{Preconditioner}s, etc.
+*/

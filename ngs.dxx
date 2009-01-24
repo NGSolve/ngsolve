@@ -1,0 +1,372 @@
+/** @name NGSolve
+
+    \begin{center}
+	{\Large{\bf Welcome to the power of NGSolve}}
+    \end{center}
+
+    NGSolve is a general purpose open source 3D finite element solver.
+    
+
+\IMG{../demos/ngslogo.gif}
+*/
+
+//@{
+
+/** 
+  @name Features of NGSolve
+\begin{itemize}
+\item
+Supported models are heat flow, elasticity, and electro-dynamics
+\item
+Stationary and instationary field problems, eigenvalue problems
+\item
+Finite elements on lines, triangles, quadrilaterals, tetrahedra, pyramids,
+prisms, hexahedra
+\item
+Scalar nodal and vector valued edge and face elements
+\item
+Elements of arbitrary order
+\item
+Anisotropic elements for thin layers and edge singularities
+\item
+Sparse direct and iterative Krylov-subspace solvers
+\item
+Geometric and algebraic multigrid preconditioning
+\item
+A posteriori error estimators driving local mesh refinement
+\end{itemize}
+*/
+/** 
+  @name NGSolve Gallery
+	
+  This is a tour through typical applications of NGSolve in mechanical
+  and electrical engineering. You can browse the geometry file, the
+  problem description (pde) file, and you can click onto the image to
+  see a larger picture.
+
+  With NGSolve one can solve boundary value problems, initial-boundary value
+  problems and Eigenvalue problems for the available types of equations,
+  namely scalar (heat flow), elasticity, and magnetic field.
+
+\begin{itemize}
+\item
+  A static simulation of a crank shaft. The normal component of the
+  displacement in the main bearing is fixed, surface load is applied in the
+  left bearing. The simulation used 150k second order tetrahedral
+  finite elements (660k unknowns), CPU time on an 1 GHz PIII notebook is 15 min.
+
+  \URL[Geometry file]{../demos/shaft.geo}
+  \URL[PDE file]{../demos/shaft.pde}
+  \URL[<img src="../demos/shafts.gif">]{../demos/shaft.gif alt="shaft.gif"}
+
+  The picture shows the zz-component of the stress tensor.
+
+\item
+  The first eigenmode of a cantilever beam:
+
+  \URL[Geometry file]{../demos/beam.geo}
+  \URL[PDE file]{../demos/evp.pde}
+  \URL[<img src="../demos/eigenvalues.gif">]{../demos/eigenvalue.gif alt="eigenvalue.gif"}
+
+\item
+  3D wave equations. Potential described at electrods, absorbing boundary conditions of 2nd order. 720k first order tetrahedral elements (129625 complex unknowns), CPU time on an 1 GHz PIII notebook is 6 min.
+
+  \URL[Geometry file]{../demos/saw_3d.geo}
+  \URL[PDE file]{../demos/helmholtz3d.pde}
+  \URL[<img src="../demos/helmholtz3ds.gif">]{../demos/helmholtz3d.gif alt="helmholtz.gif"}
+
+
+\item
+  Magnetic field simulation. The field is induced by prescribed
+  currents in a coil. The problem contains a thin, high permeable shield.
+  This shield is meshed by thin prism elements. The simulation used
+  57563 second order, type 2 Nedelec elements (575195 unknowns), and requires
+  5 min on a 1 GHz PIII notebook.
+
+  \URL[Geometry file]{../demos/coilshield.geo}
+  \URL[PDE file]{../demos/magshield.pde}
+  \URL[<img src="../demos/magshield1s.gif">]{../demos/magshield1.gif alt="magshield1.gif"}
+  \URL[<img src="../demos/magshield2s.gif">]{../demos/magshield2.gif alt="magshield2.gif"}
+    
+
+\end{itemize} 
+*/
+
+
+/** 
+   @name Some representative functions
+	This is an overview of some representative functions of NGSolve. 
+	For instruction purposes, the functions are simplified.
+*/
+//@{
+/** @name Element matrix assembling for BDB integrators:
+
+Many bilinear-forms are of the structure 
+\begin{equation}
+\int  D \partial u \cdot  \partial v \, dx,
+\end{equation}
+where $\partial$ is some differential operator, i.e., the gradient, and $D$
+is the material tensor. Then, the finite elemen matrix $A_T$ is computed as
+\begin{equation}
+A_T = \sum_{Int.Pts.} \omega |J| B^T D B.
+\end{equation}
+The elements of the matrix $B$ are the values of the differential operator
+applied to the shape functions in the integration point, i.e.,
+$B_{i,j} = (\partial \varphi_j)_i$.
+
+The BDBIntegrator is a derived class from BilinearFormIntegrator. 
+Here, the differential operator and the material tensor are defined by
+template arguments. 
+
+\begin{verbatim}
+  template <class DIFFOP, class DMATOP>
+  void BDBIntegrator<DIFFOP,DMATOP> :: 
+  AssembleElementMatrix (const FiniteElement & fel, 
+			 const ElementTransformation & eltrans, 
+			 Matrix & elmat,
+			 LocalHeap & locheap) const
+  {
+    enum { DIM_SPACE   = DIFFOP::DIM_SPACE };
+    enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
+    enum { DIM_DMAT    = DIFFOP::DIM_DMAT };
+    enum { DIM         = DIFFOP::DIM };
+
+    int ndof = fel.GetNDof();
+   
+    elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
+    elmat = 0;
+	
+    MatrixFixHeight<DIM_DMAT> bmat (ndof * DIM, locheap);
+    MatrixFixHeight<DIM_DMAT> dbmat (ndof * DIM, locheap);
+    Mat<DIM_DMAT,DIM_DMAT> dmat;
+
+    const IntegrationRule & ir = GetIntegrationRule (fel);
+
+    // optimized memory management
+    void * heapp = locheap.GetPointer();
+
+    for (int i = 0; i < ir.GetNIP(); i++)
+      {
+        // the mapped point, including Jacobian
+	SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
+	  sip(ir, i, eltrans, locheap);
+
+	DIFFOP::GenerateMatrix (fel, sip, bmat, locheap);
+	dmatop.GenerateMatrix (fel, sip, dmat, locheap);
+
+	double fac = fabs (sip.GetJacobiDet()) * sip.IP().Weight();
+
+	dbmat = dmat * bmat;
+	elmat += fac * (Trans (bmat) * dbmat);
+
+	locheap.CleanUp (heapp);
+      } 
+    }
+\end{verbatim}	
+*/	
+
+/** @name Global matrix assembling
+The bilinear-form consists of a couple of integrators acting on the
+domain or on the boundary. It has a reference to the finite element space
+it is defined on. The sparse matrices are stored in the bilinear-form object.
+
+\begin{verbatim}
+template <typename SCAL = double>
+void BilinearForm :: Assemble ()
+{
+  ARRAY<int> dnums;
+  Matrix<SCAL> Matrix elmat;
+  ElementTransformation eltrans;
+      
+  int ndof = fespace.GetNDof();
+      
+  BaseMatrix & mat = GetMatrix();
+  mat = 0.0;
+      
+  LocalHeap locheap (1000000);
+
+  // assembling of volume terms
+  int ne = ma.GetNE();
+  for (int i = 0; i < ne; i++)
+    {
+      locheap.CleanUp();
+      if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
+
+      ma.GetElementTransformation (i, eltrans);
+      const FiniteElement & fel = fespace.GetFE (i);
+      fespace.GetDofNrs (i, dnums);
+
+      for (int j = 0; j < parts.Size(); j++)
+	{
+	  const BilinearFormIntegrator & bfi = *parts.Get(j);
+	  if (bfi.BoundaryForm()) continue;
+	      
+	  bfi.AssembleElementMatrix (fel, eltrans, elmat, &locheap);
+	  fespace.TransformMatrix (i, elmat);
+	  mat->AddElementMatrix (dnums, elmat);
+	}
+    }
+       
+  // assembling of surface terms
+  int nse = ma.GetNSE();
+  for (int i = 0; i < nse; i++)
+    {
+      locheap.CleanUp();
+      if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+
+      ma.GetSurfaceElementTransformation (i, eltrans);
+      const FiniteElement & fel = fespace.GetSFE (i);
+      fespace.GetSDofNrs (i, dnums);
+
+      for (int j = 1; j <= parts.Size(); j++)
+	{
+	  const BilinearFormIntegrator & bfi = *parts.Get(j);
+	  if (!bfi.BoundaryForm()) continue;
+	      
+	  bfi.AssembleElementMatrix (fel, eltrans, elmat, &locheap);
+	  fespace.TransformSurfMatrix (i, elmat);
+	  mat->AddElementMatrix (dnums, elmat);
+	}
+    }
+}
+\end{verbatim}
+*/
+
+//@}
+
+//@}
+
+
+
+
+
+
+
+
+/** @name The Components of NGSolve
+	NGSolve consists of several libraries. The upper libraries
+	are independent of the lower ones.
+*/
+//@{
+//@Include: ngstd/ngstd.dxx
+//@Include: basiclinalg/ngbla.dxx
+//@Include: linalg/ngla.dxx
+/** @name Finite Elements
+	\begin{verbatim}                           (directory ngsolve/fem)\end{verbatim}
+
+	Definition of reference-\Ref{FiniteElement}, mixed fe \Ref{HDivFiniteElement} and \Ref{HCurlFiniteElement} \\
+	Element-matrix and element-vector assembling \Ref{BilinearFormIntegrator}, \Ref{LinearFormIntegrator} \\
+*/
+//@Include: comp/comp.dxx
+/** @name Multigrid Solvers
+	\begin{verbatim}                           (directory ngsolve/multigrid)\end{verbatim}
+
+	Multigrid preconditioner \Ref{MgPre}, 
+	Components \Ref{Smoother}, \Ref{Prolongation},
+*/
+/** @name Problem Solvers
+	\begin{verbatim}                           (directory ngsolve/solve)\end{verbatim}
+
+	A collection of numerical procedures \Ref{NumProc}, e.g. for
+	the solution of boundary value problems \Ref{NumProcBVP} or
+	eigen value problems \Ref{NumProcEVP}, and many many more.
+*/
+//@}
+
+
+
+
+
+//@Include: ngstd/*.hpp
+//@Include: basiclinalg/*.hpp
+//@Include: linalg/*.hpp
+//@Include: fem/*.hpp
+//@Include: comp/*.hpp
+//@Include: solve/*.hpp
+
+
+
+// @In clude: ngstd/ngstd.hpp
+// @In clude: ngstd/exception.hpp
+// @In clude: ngstd/array.hpp
+// @In clude: ngstd/table.hpp
+// @In clude: ngstd/symboltable.hpp
+// @In clude: ngstd/hashtable.hpp
+// @In clude: ngstd/flags.hpp
+// @In clude: ngstd/bitarray.hpp
+// @In clude: ngstd/evalfunc.hpp
+// @In clude: ngstd/localheap.hpp
+// @In clude: ngstd/blockalloc.hpp
+// @In clude: ngstd/templates.hpp
+
+// @In clude: basiclinalg/bla.hpp
+// @In clude: basiclinalg/expr.hpp
+// @In clude: basiclinalg/matrix.hpp
+//@Include: basiclinalg/vector.hpp
+
+// @In clude: linalg/basevector.hpp
+// @In clude: linalg/bandmatrix.hpp
+// @In clude: linalg/chebyshev.hpp
+// @In clude: linalg/order.hpp
+// @In clude: linalg/basematrix.hpp
+// @In clude: linalg/cholesky.hpp
+// @In clude: linalg/saddlepoint.hpp
+// @In clude: linalg/densematrix.hpp
+// @In clude: linalg/sparsematrix.hpp
+// @In clude: linalg/blockjac.hpp
+// @In clude: linalg/diagmatrix.hpp
+// @In clude: linalg/sparsesysmat.hpp
+// @In clude: linalg/blockjacsp.hpp
+// @In clude: linalg/eigen.hpp
+// @In clude: linalg/vector.hpp
+// @In clude: linalg/blockvec.hpp
+// @In clude: linalg/jacobi.hpp
+// @In clude: linalg/cg.hpp
+
+// @In clude: fem/fem.hpp
+// @In clude: fem/bdbequations.hpp
+// @In clude: fem/femtypes.hpp
+// @In clude: fem/highorderfe.hpp
+// @In clude: fem/coefficient.hpp
+// @In clude: fem/finiteelement.hpp
+// @In clude: fem/integrator.hpp
+// @In clude: fem/intrule.hpp
+// @In clude: fem/equilibrium.hpp
+// @In clude: fem/hcurlfe.hpp
+// @In clude: fem/hdivfe.hpp
+
+
+//@In clude: comp/amg_pebbles.hpp
+//@In clude: comp/bem.hpp
+//@In clude: comp/h1hofespace.hpp
+//@In clude: comp/hcurlhdivfes.hpp
+//@In clude: comp/hcurlhofespace.hpp
+//@In clude: comp/hdivfes.hpp
+//@In clude: comp/hdivhofespace.hpp
+//@In clude: comp/l2hofespace.hpp
+//@In clude: comp/bilinearform.hpp
+//@In clude: comp/gridfunction.hpp
+//@In clude: comp/ngsobject.hpp
+//@In clude: comp/comp.hpp
+//@In clude: comp/highorderfes.hpp
+//@In clude: comp/postproc.hpp
+//@In clude: comp/comptypes.hpp
+//@In clude: comp/linearform.hpp
+//@In clude: comp/preconditioner.hpp
+//@In clude: comp/fespace.hpp
+//@In clude: comp/meshaccess.hpp
+
+// @In clude: multigrid/evcoarse.hpp
+// @In clude: multigrid/mgpre.hpp
+// @In clude: multigrid/prolongation.hpp
+// @In clude: multigrid/multigrid.hpp
+// @In clude: multigrid/smoother.hpp
+// @In clude: solve/chapellestenberg.hpp
+// @In clude: solve/nonlinint.hpp
+// @In clude: solve/plasticity.hpp
+// @In clude: solve/mbs.hpp
+// @In clude: solve/numproc.hpp
+// @In clude: solve/solve.hpp
+// @In clude: solve/mbs3d.hpp
+// @In clude: solve/pde.hpp
+// @In clude: solve/solvebvp.hpp
