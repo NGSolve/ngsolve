@@ -137,10 +137,10 @@ class DomainConstantCoefficientFunction : public CoefficientFunction
 //  : public SpecCoefficientFunction<DomainConstantCoefficientFunction>
 {
   ///
-  ARRAY<double> val;
+  Array<double> val;
 public:
   ///
-  DomainConstantCoefficientFunction (const ARRAY<double> & aval);
+  DomainConstantCoefficientFunction (const Array<double> & aval);
   ///
   virtual ~DomainConstantCoefficientFunction ();
   ///
@@ -181,10 +181,10 @@ class DomainVariableCoefficientFunction : public CoefficientFunction
 //  : public SpecCoefficientFunction<DomainVariableCoefficientFunction>
 {
   ///
-  ARRAY<EvalFunction*> fun;
+  Array<EvalFunction*> fun;
 public:
   ///
-  DomainVariableCoefficientFunction (const ARRAY<EvalFunction*> & afun);
+  DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun);
   ///
   virtual ~DomainVariableCoefficientFunction ();
   ///
@@ -271,7 +271,7 @@ class IntegrationPointCoefficientFunction : public CoefficientFunction
 {
   int elems, ips_per_elem;
   ///
-  ARRAY<double> values;
+  Array<double> values;
 public:
   ///
   IntegrationPointCoefficientFunction (int aelems, int size)
@@ -283,7 +283,7 @@ public:
     values = val;
   } 
   ///
-  IntegrationPointCoefficientFunction (int aelems, int size, ARRAY<double> & avalues)
+  IntegrationPointCoefficientFunction (int aelems, int size, Array<double> & avalues)
     : elems(aelems), ips_per_elem(size), values(avalues) 
   { 
     if ( avalues.Size() < aelems * size )
@@ -368,7 +368,7 @@ public:
 
 
 
-  void ReSetValues( ARRAY<double> & avalues )
+  void ReSetValues( Array<double> & avalues )
   {
     if ( avalues.Size() < values.Size() )
       {
@@ -384,16 +384,16 @@ public:
 class PolynomialCoefficientFunction : public CoefficientFunction
 {
 private:
-  ARRAY < ARRAY< ARRAY<double>* >* > polycoeffs;
-  ARRAY < ARRAY<double>* > polybounds;
+  Array < Array< Array<double>* >* > polycoeffs;
+  Array < Array<double>* > polybounds;
 
 private:
-  double EvalPoly(const double t, const ARRAY<double> & coeffs) const;
-  double EvalPolyDeri(const double t, const ARRAY<double> & coeffs) const;
+  double EvalPoly(const double t, const Array<double> & coeffs) const;
+  double EvalPolyDeri(const double t, const Array<double> & coeffs) const;
 
 public:
-  PolynomialCoefficientFunction(const ARRAY < ARRAY<double>* > & polycoeffs_in);
-  PolynomialCoefficientFunction(const ARRAY < ARRAY< ARRAY<double>* >* > & polycoeffs_in, const ARRAY < ARRAY<double>* > & polybounds_in);
+  PolynomialCoefficientFunction(const Array < Array<double>* > & polycoeffs_in);
+  PolynomialCoefficientFunction(const Array < Array< Array<double>* >* > & polycoeffs_in, const Array < Array<double>* > & polybounds_in);
   
   virtual ~PolynomialCoefficientFunction();
 
@@ -413,7 +413,7 @@ public:
 class FileCoefficientFunction : public CoefficientFunction
 {
 private:
-  ARRAY < ARRAY < double > * > ValuesAtIps;
+  Array < Array < double > * > ValuesAtIps;
 
   ofstream outfile;
 

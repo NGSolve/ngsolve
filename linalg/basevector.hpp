@@ -195,11 +195,11 @@ public:
   virtual void SaveText(ostream & ost) const;
   virtual void LoadText(istream & ist);
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const;
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
   // create vector, procs is the set of processors on which the vector exists
   // default 0 pointer means all procs
-  virtual BaseVector * CreateVector ( const ARRAY<int> * procs = 0) const;
+  virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const;
 
 
   virtual void SetRandom ();
@@ -222,16 +222,16 @@ public:
 		    const FlatVector<Complex> & v);
 
   template<int S>
-  void GetIndirect (const ARRAY<int> & ind, 
+  void GetIndirect (const Array<int> & ind, 
 		    FlatVector< Vec<S,double> > & v) const;
   template<int S>
-  void GetIndirect (const ARRAY<int> & ind, 
+  void GetIndirect (const Array<int> & ind, 
 		    FlatVector< Vec<S,Complex> > & v) const;
   template<int S>
-  void AddIndirect (const ARRAY<int> & ind, 
+  void AddIndirect (const Array<int> & ind, 
 		    const FlatVector< Vec<S,double> > & v);
   template<int S>
-  void AddIndirect (const ARRAY<int> & ind, 
+  void AddIndirect (const Array<int> & ind, 
 		    const FlatVector< Vec<S,Complex> > & v);
   
   
@@ -264,7 +264,7 @@ public:
   virtual void PrintStatus ( ostream & ost ) const
   { cerr << "ERROR -- PrintStatus called for BaseVector, is not parallel" << endl; }
 
-  virtual void AllReduce ( ARRAY<int> * reduceprocs, ARRAY<int> * sendtoprocs=0 ) const
+  virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs=0 ) const
   { cerr << "ERROR -- AllReduce called for BaseVector, is not parallel" << endl; }
 
   virtual void Distribute() const
@@ -278,7 +278,7 @@ public:
   virtual void IRecvVec ( const int dest, int & request )
   { cerr << "ERROR -- IRecvVec called for BaseVector, is not parallel" << endl; }
 
-  virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs, const ARRAY<int> * procs =0 )
+  virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs, const Array<int> * procs =0 )
   { 
     if ( aparalleldofs == 0 ) return;
     cerr << "ERROR -- SetParallelDofs called for BaseVector, is not parallel" << endl; 
@@ -322,11 +322,11 @@ public:
 
 #ifdef PARALLEL
   /*
-  virtual void SetParallelDofs ( ngparallel::ParallelDofs & aparalleldofs, const ARRAY<int> * procs  ) = 0;
+  virtual void SetParallelDofs ( ngparallel::ParallelDofs & aparalleldofs, const Array<int> * procs  ) = 0;
 
   /// values from reduceprocs are added up,
   /// vectors in sendtoprocs are set to the cumulated values
-  virtual void AllReduce ( ARRAY<int> * reduceprocs, ARRAY<int> * sendtoprocs = 0 ) const = 0;
+  virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs = 0 ) const = 0;
 
   virtual void Distribute() const = 0;
 
@@ -334,7 +334,7 @@ public:
   virtual void Send ( const int dest ) = 0;
 
 //   template <class T>
-//   virtual void IRecvVec (  ARRAY<T> & s, const int dest, MPI_Request & request ) = 0;
+//   virtual void IRecvVec (  Array<T> & s, const int dest, MPI_Request & request ) = 0;
 */
  #endif
 };
@@ -369,11 +369,11 @@ public:
 
 #ifdef PARALLEL
   /*
-  virtual void SetParallelDofs ( ngparallel::ParallelDofs & aparalleldofs, const ARRAY<int> * procs  ) = 0;
+  virtual void SetParallelDofs ( ngparallel::ParallelDofs & aparalleldofs, const Array<int> * procs  ) = 0;
 
   /// values from reduceprocs are added up,
   /// vectors in sendtoprocs are set to the cumulated values
-  virtual void AllReduce ( ARRAY<int> * reduceprocs, ARRAY<int> * sendtoprocs = 0) const = 0;
+  virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs = 0) const = 0;
 
   virtual void Distribute() const = 0;
 

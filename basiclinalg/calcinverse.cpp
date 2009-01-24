@@ -38,7 +38,7 @@ namespace ngbla
 
     T hr;
 
-    ngstd::ARRAY<int> p(n);   // pivot-permutation
+    ngstd::Array<int> p(n);   // pivot-permutation
     Vector<T> hv(n);
    
     inv = m;
@@ -136,7 +136,7 @@ namespace ngbla
     // Algorithm of Stoer, Einf. i. d. Num. Math, S 145
     int n = m.Height();
 
-    ngstd::ARRAY<int> p(n);   // pivot-permutation
+    ngstd::Array<int> p(n);   // pivot-permutation
 
     T hr;
     inv = m;

@@ -33,7 +33,7 @@ namespace ngcomp
 	<< "nested = " << nested << endl;
   }
 
-  void GridFunction :: MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  void GridFunction :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     //if (&const_cast<GridFunction&> (*this).GetVector())
     if (&(*this).GetVector())
@@ -336,7 +336,7 @@ namespace ngcomp
   ///
   template <class TV>
   void T_GridFunction<TV> ::
-  GetElementVector (const ARRAY<int> & dnums,
+  GetElementVector (const Array<int> & dnums,
 		    FlatVector<TSCAL> & elvec) const
   {
     FlatVector<TV> fv = vec[0]->FV();
@@ -352,7 +352,7 @@ namespace ngcomp
   ///
   template <class TV>
   void T_GridFunction<TV> ::
-  SetElementVector (const ARRAY<int> & dnums,
+  SetElementVector (const Array<int> & dnums,
 		    const FlatVector<TSCAL> & elvec) 
   {
     FlatVector<TV> fv = vec[0]->FV();
@@ -366,7 +366,7 @@ namespace ngcomp
   template <class TV>
   void T_GridFunction<TV> ::
   GetElementVector (int comp,
-		    const ARRAY<int> & dnums,
+		    const Array<int> & dnums,
 		    FlatVector<TSCAL> & elvec) const
   {
     if (comp < 0 || comp >= vec.Size())
@@ -392,7 +392,7 @@ namespace ngcomp
   template <class TV>
   void T_GridFunction<TV> ::
   SetElementVector (int comp,
-		    const ARRAY<int> & dnums,
+		    const Array<int> & dnums,
 		    const FlatVector<TSCAL> & elvec) 
   {
     FlatVector<TV> fv = vec[comp]->FV();
@@ -411,7 +411,7 @@ namespace ngcomp
   /*
  ///
  template <> void T_GridFunction<double>::
- GetElementVector (const ARRAY<int> & dnums,
+ GetElementVector (const Array<int> & dnums,
  FlatVector<double> & elvec) const
  {
  FlatVector<double> fv = vec->FV();
@@ -423,7 +423,7 @@ namespace ngcomp
  }
  ///
  template <> void T_GridFunction<double>::
- SetElementVector (const ARRAY<int> & dnums,
+ SetElementVector (const Array<int> & dnums,
  const FlatVector<double> & elvec) 
  {
  FlatVector<double> fv = vec->FV();
@@ -433,7 +433,7 @@ namespace ngcomp
  }
 
  template <> void T_GridFunction<Complex>::
- GetElementVector (const ARRAY<int> & dnums,
+ GetElementVector (const Array<int> & dnums,
  FlatVector<Complex> & elvec) const
  {
  FlatVector<Complex> fv = vec->FV();
@@ -445,7 +445,7 @@ namespace ngcomp
  }
  ///
  template <> void T_GridFunction<Complex>::
- SetElementVector (const ARRAY<int> & dnums,
+ SetElementVector (const Array<int> & dnums,
  const FlatVector<Complex> & elvec) 
  {
  FlatVector<Complex> fv = vec->FV();
@@ -559,8 +559,8 @@ namespace ngcomp
   VisualizeGridFunction<SCAL> ::
   VisualizeGridFunction (const MeshAccess & ama,
 			 const GridFunction * agf,
-			 const ARRAY<BilinearFormIntegrator *> & abfi2d,
-			 const ARRAY<BilinearFormIntegrator *> & abfi3d,
+			 const Array<BilinearFormIntegrator *> & abfi2d,
+			 const Array<BilinearFormIntegrator *> & abfi3d,
 			 bool aapplyd)
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
@@ -988,14 +988,14 @@ namespace ngcomp
   
   template <class SCAL>
   void VisualizeGridFunction<SCAL> :: 
-  Analyze(ARRAY<double> & minima, ARRAY<double> & maxima, ARRAY<double> & averages, int component)
+  Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages, int component)
   {
     int ndomains;
 
     if(bfi3d.Size()) ndomains = ma.GetNDomains();
     else if(bfi2d.Size()) ndomains = ma.GetNBoundaries();
 
-    ARRAY<double> volumes(ndomains);
+    Array<double> volumes(ndomains);
 
     Analyze(minima,maxima,averages,volumes,component);
     
@@ -1017,7 +1017,7 @@ namespace ngcomp
 
   template <class SCAL>
   void VisualizeGridFunction<SCAL> :: 
-  Analyze(ARRAY<double> & minima, ARRAY<double> & maxima, ARRAY<double> & averages_times_volumes, ARRAY<double> & volumes, int component)
+  Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages_times_volumes, Array<double> & volumes, int component)
   {
     const FESpace & fes = gf->GetFESpace();
 
@@ -1032,9 +1032,9 @@ namespace ngcomp
     if(bfi3d.Size()) ndomains = ma.GetNDomains();
     else if(bfi2d.Size()) ndomains = ma.GetNBoundaries();
 
-    ARRAY<double> posx;
-    ARRAY<double> posy;
-    ARRAY<double> posz;
+    Array<double> posx;
+    Array<double> posy;
+    Array<double> posz;
     ELEMENT_TYPE cache_type = ET_SEGM;
 	
     LocalHeapMem<10000> lh2;

@@ -28,7 +28,7 @@ public:
   
 
 
-  virtual void GetDofNrs (ARRAY<int> & dnums) const = 0;
+  virtual void GetDofNrs (Array<int> & dnums) const = 0;
   virtual double Energy (const FlatVector<double> & elx, 
 			 LocalHeap & lh) const
   {

@@ -274,7 +274,7 @@ int MeshAccess :: GetElNV ( int elnr ) const
 
 
 
-void MeshAccess :: GetElPNums (int elnr, ARRAY<int> & pnums) const
+void MeshAccess :: GetElPNums (int elnr, Array<int> & pnums) const
 {
   pnums.SetSize (NG_ELEMENT_MAXPOINTS);
   NG_ELEMENT_TYPE typ = Ng_GetElement (elnr+1, &pnums[0]);
@@ -307,7 +307,7 @@ void MeshAccess :: GetElPNums (int elnr, ARRAY<int> & pnums) const
 }
 
 
-void MeshAccess :: GetSegmentPNums (int snr, ARRAY<int> & pnums) const
+void MeshAccess :: GetSegmentPNums (int snr, Array<int> & pnums) const
 {
   pnums.SetSize(3);
   int np;
@@ -327,7 +327,7 @@ int MeshAccess :: GetSegmentIndex (int snr) const
 
 
 
-void MeshAccess :: GetElVertices (int elnr, ARRAY<int> & vnums) const
+void MeshAccess :: GetElVertices (int elnr, Array<int> & vnums) const
 {
   vnums.SetSize (NG_ELEMENT_MAXPOINTS);
   NG_ELEMENT_TYPE typ = Ng_GetElement (elnr+1, &vnums[0]);
@@ -361,7 +361,7 @@ void MeshAccess :: GetElVertices (int elnr, ARRAY<int> & vnums) const
 
   
 void MeshAccess :: 
-GetElEdges (int elnr, ARRAY<int> & ednums, ARRAY<int> & orient) const
+GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const
 {
   ednums.SetSize (12);
   orient.SetSize (12);
@@ -374,7 +374,7 @@ GetElEdges (int elnr, ARRAY<int> & ednums, ARRAY<int> & orient) const
 }
 
 void MeshAccess :: 
-GetElEdges (int elnr, ARRAY<int> & ednums) const
+GetElEdges (int elnr, Array<int> & ednums) const
 {
   ednums.SetSize (12);
   int ned = 
@@ -386,7 +386,7 @@ GetElEdges (int elnr, ARRAY<int> & ednums) const
 
   
 void MeshAccess :: 
-GetSElEdges (int selnr, ARRAY<int> & ednums) const
+GetSElEdges (int selnr, Array<int> & ednums) const
 {
   ednums.SetSize (4);
   int ned = 
@@ -397,7 +397,7 @@ GetSElEdges (int selnr, ARRAY<int> & ednums) const
 }
 
 void MeshAccess :: 
-GetSElEdges (int selnr, ARRAY<int> & ednums, ARRAY<int> & orient) const
+GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const
 {
   ednums.SetSize (4);
   orient.SetSize (4);
@@ -412,7 +412,7 @@ GetSElEdges (int selnr, ARRAY<int> & ednums, ARRAY<int> & orient) const
 
 
 
-void MeshAccess :: GetEdgeElements (int enr, ARRAY<int> & elnums) const
+void MeshAccess :: GetEdgeElements (int enr, Array<int> & elnums) const
 {
   // old routine: Slow !!!
   /* 
@@ -430,7 +430,7 @@ void MeshAccess :: GetEdgeElements (int enr, ARRAY<int> & elnums) const
   
   // fast (he)
   elnums.SetSize(0);
-  ARRAY<int> pnums, velems0, velems1; 
+  Array<int> pnums, velems0, velems1; 
   GetEdgePNums(enr, pnums);
   GetVertexElements(pnums[0], velems0);
   GetVertexElements(pnums[1], velems1);
@@ -450,7 +450,7 @@ void MeshAccess :: GetEdgeElements (int enr, ARRAY<int> & elnums) const
   
   
 void MeshAccess :: 
-GetElFaces (int elnr, ARRAY<int> & fnums) const
+GetElFaces (int elnr, Array<int> & fnums) const
 {
   fnums.SetSize (6);
   int nfa = 
@@ -462,7 +462,7 @@ GetElFaces (int elnr, ARRAY<int> & fnums) const
 }
 
 void MeshAccess :: 
-GetElFaces (int elnr, ARRAY<int> & fnums, ARRAY<int> & orient) const
+GetElFaces (int elnr, Array<int> & fnums, Array<int> & orient) const
 {
   fnums.SetSize (6);
   orient.SetSize (6);
@@ -507,7 +507,7 @@ GetSElFace (int selnr, int & fnum, int & orient) const
 // 	return retval;
 //     }
   
-void MeshAccess :: GetFacePNums (int fnr, ARRAY<int> & pnums) const
+void MeshAccess :: GetFacePNums (int fnr, Array<int> & pnums) const
 {
   pnums.SetSize(4);
   int nv = Ng_GetFace_Vertices (fnr+1, &pnums[0]);
@@ -517,7 +517,7 @@ void MeshAccess :: GetFacePNums (int fnr, ARRAY<int> & pnums) const
 }
 
  
-void MeshAccess :: GetFaceEdges (int fnr, ARRAY<int> & edges) const
+void MeshAccess :: GetFaceEdges (int fnr, Array<int> & edges) const
 {
   edges.SetSize(4);
   int ned = Ng_GetFace_Edges (fnr+1, &edges[0]);
@@ -527,7 +527,7 @@ void MeshAccess :: GetFaceEdges (int fnr, ARRAY<int> & edges) const
 }
  
 
-void MeshAccess :: GetFaceElements (int fnr, ARRAY<int> & elnums) const
+void MeshAccess :: GetFaceElements (int fnr, Array<int> & elnums) const
 {
   int nel = GetNE();
   int faces[8];
@@ -550,7 +550,7 @@ void MeshAccess :: GetEdgePNums (int fnr, int & pn1, int & pn2) const
   pn2 = v2[1]-1;
 }
 
-void MeshAccess :: GetEdgePNums (int fnr, ARRAY<int> & pnums) const
+void MeshAccess :: GetEdgePNums (int fnr, Array<int> & pnums) const
 {
   pnums.SetSize(2);
   Ng_GetEdge_Vertices (fnr+1, &pnums[0]);
@@ -559,7 +559,7 @@ void MeshAccess :: GetEdgePNums (int fnr, ARRAY<int> & pnums) const
 }
 
   
-void MeshAccess :: GetSElPNums (int selnr, ARRAY<int> & pnums) const
+void MeshAccess :: GetSElPNums (int selnr, Array<int> & pnums) const
 {
   pnums.SetSize (NG_SURFACE_ELEMENT_MAXPOINTS);
   NG_ELEMENT_TYPE typ = Ng_GetSurfaceElement (selnr+1, &pnums[0]);
@@ -584,7 +584,7 @@ void MeshAccess :: GetSElPNums (int selnr, ARRAY<int> & pnums) const
 }
 
 
-void MeshAccess :: GetSElVertices (int selnr, ARRAY<int> & vnums) const
+void MeshAccess :: GetSElVertices (int selnr, Array<int> & vnums) const
 {
   vnums.SetSize (NG_SURFACE_ELEMENT_MAXPOINTS);
   NG_ELEMENT_TYPE typ = Ng_GetSurfaceElement (selnr+1, &vnums[0]);
@@ -611,19 +611,19 @@ void MeshAccess :: GetSElVertices (int selnr, ARRAY<int> & vnums) const
 
 
 // he: some utility for Facets
-void MeshAccess :: GetElFacets (int elnr, ARRAY<int> & fnums) const
+void MeshAccess :: GetElFacets (int elnr, Array<int> & fnums) const
 {
   if (GetDimension() == 2) GetElEdges(elnr, fnums);
   else GetElFaces(elnr, fnums);
 } 
 
-void MeshAccess :: GetElFacets (int elnr, ARRAY<int> & fnums, ARRAY<int> & orient) const
+void MeshAccess :: GetElFacets (int elnr, Array<int> & fnums, Array<int> & orient) const
 {
   if (GetDimension() == 2) GetElEdges(elnr, fnums, orient);
   else GetElFaces(elnr, fnums, orient);
 } 
       
-void MeshAccess :: GetSElFacets (int selnr, ARRAY<int> & fnums) const
+void MeshAccess :: GetSElFacets (int selnr, Array<int> & fnums) const
 {
   if (GetDimension() == 2) 
     GetSElEdges(selnr, fnums);
@@ -634,7 +634,7 @@ void MeshAccess :: GetSElFacets (int selnr, ARRAY<int> & fnums) const
   }
 }
   
-void MeshAccess :: GetSElFacet (int selnr, ARRAY<int> & fnums, ARRAY<int> & orient) const
+void MeshAccess :: GetSElFacet (int selnr, Array<int> & fnums, Array<int> & orient) const
 {
   if (GetDimension() == 2) 
     GetSElEdges(selnr, fnums, orient);
@@ -646,7 +646,7 @@ void MeshAccess :: GetSElFacet (int selnr, ARRAY<int> & fnums, ARRAY<int> & orie
   }
 }
   
-void MeshAccess :: GetFacetPNums (int fnr, ARRAY<int> & pnums) const
+void MeshAccess :: GetFacetPNums (int fnr, Array<int> & pnums) const
 {
   if (GetDimension() == 2)
     GetEdgePNums(fnr, pnums);
@@ -695,7 +695,7 @@ bool MeshAccess :: ShouldTerminate(void) const
 }
 
 
-void MeshAccess :: GetVertexElements (int vnr, ARRAY<int> & elnrs) const
+void MeshAccess :: GetVertexElements (int vnr, Array<int> & elnrs) const
 {
   int nel = Ng_GetNVertexElements (vnr+1);
   elnrs.SetSize (nel);
@@ -1005,7 +1005,7 @@ int MeshAccess :: FindElementOfPoint (FlatVector<double> point,
 				      bool build_searchtree,
 				      const int index) const
 {
-  ARRAY<int> dummy(1);
+  Array<int> dummy(1);
   dummy[0] = index;
   return FindElementOfPoint(point,ip,build_searchtree,&dummy);
 }
@@ -1013,7 +1013,7 @@ int MeshAccess :: FindElementOfPoint (FlatVector<double> point,
 int MeshAccess :: FindElementOfPoint (FlatVector<double> point,
 				      IntegrationPoint & ip,
 				      bool build_searchtree,
-				      const ARRAY<int> * const indices) const
+				      const Array<int> * const indices) const
 {
   int elnr;
   double lami[3];
@@ -1045,7 +1045,7 @@ int MeshAccess :: FindSurfaceElementOfPoint (FlatVector<double> point,
 					     bool build_searchtree,
 					     const int index) const
 {
-  ARRAY<int> dummy(1);
+  Array<int> dummy(1);
   dummy[0] = index;
   return FindSurfaceElementOfPoint(point,ip,build_searchtree,&dummy);
 }
@@ -1053,7 +1053,7 @@ int MeshAccess :: FindSurfaceElementOfPoint (FlatVector<double> point,
 int MeshAccess :: FindSurfaceElementOfPoint (FlatVector<double> point,
 					     IntegrationPoint & ip,
 					     bool build_searchtree,
-					     const ARRAY<int> * const indices) const
+					     const Array<int> * const indices) const
 {
   int elnr;
   double lami[3];
@@ -1091,7 +1091,7 @@ int MeshAccess :: GetNPairsPeriodicVertices (int idnr) const
   return Ng_GetNPeriodicVertices(idnr);
 }
  
-void MeshAccess :: GetPeriodicVertices ( ARRAY<INT<2> > & pairs) const
+void MeshAccess :: GetPeriodicVertices ( Array<INT<2> > & pairs) const
 {
   int npairs;
 
@@ -1106,7 +1106,7 @@ void MeshAccess :: GetPeriodicVertices ( ARRAY<INT<2> > & pairs) const
     }
 }
  
-void MeshAccess :: GetPeriodicVertices (int idnr, ARRAY<INT<2> > & pairs) const
+void MeshAccess :: GetPeriodicVertices (int idnr, Array<INT<2> > & pairs) const
 {
   int npairs;
 
@@ -1131,7 +1131,7 @@ int MeshAccess :: GetNPairsPeriodicEdges () const
   return Ng_GetNPeriodicEdges(0);
 }
  
-void MeshAccess :: GetPeriodicEdges ( ARRAY<INT<2> > & pairs) const
+void MeshAccess :: GetPeriodicEdges ( Array<INT<2> > & pairs) const
 {
   int npairs;
 
@@ -1151,7 +1151,7 @@ int MeshAccess :: GetNPairsPeriodicEdges (int idnr) const
   return Ng_GetNPeriodicEdges(idnr);
 }
  
-void MeshAccess :: GetPeriodicEdges (int idnr, ARRAY<INT<2> > & pairs) const
+void MeshAccess :: GetPeriodicEdges (int idnr, Array<INT<2> > & pairs) const
 {
   int npairs;
 
@@ -1168,7 +1168,7 @@ void MeshAccess :: GetPeriodicEdges (int idnr, ARRAY<INT<2> > & pairs) const
 
 /*
 ///// Added by Roman Stainko ....
-void MeshAccess::GetVertexElements( int vnr, ARRAY<int>& elems) const
+void MeshAccess::GetVertexElements( int vnr, Array<int>& elems) const
 {
   int nel = Ng_GetVertex_NElements( vnr+1 );
   elems.SetSize( nel );
@@ -1182,7 +1182,7 @@ void MeshAccess::GetVertexElements( int vnr, ARRAY<int>& elems) const
 */
 
 ///// Added by Roman Stainko ....
-void MeshAccess::GetVertexSurfaceElements( int vnr, ARRAY<int>& elems) const
+void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 {
   int nel = Ng_GetVertex_NSurfaceElements( vnr+1 );
   elems.SetSize( nel );
@@ -1223,7 +1223,7 @@ void MeshAccess :: PrecomputeGeometryData(int intorder)
   cout << "Precompute Geometry Data, intorder = " << intorder << " ..." << flush;
 
   int npts = 0;
-  ARRAY<int> vnums;
+  Array<int> vnums;
   for (int i = 0; i < GetNE(); i++)
     {
       const IntegrationRule & ir1d =

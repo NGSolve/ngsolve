@@ -81,7 +81,7 @@ namespace pardisofunc
   PardisoInverse<TM,TV_ROW,TV_COL> :: 
   PardisoInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
 		  const BitArray * ainner,
-		  const ARRAY<int> * acluster,
+		  const Array<int> * acluster,
 		  int asymmetric)
   { 
     static int timer = NgProfiler::CreateTimer ("Pardiso Inverse");
@@ -515,9 +515,9 @@ namespace pardisofunc
   
   template<class TM, class TV_ROW, class TV_COL>
   PardisoInverse<TM,TV_ROW,TV_COL> :: 
-  PardisoInverse (const ARRAY<int> & aorder, 
-		  const ARRAY<CliqueEl*> & cliques,
-		  const ARRAY<MDOVertex> & vertices,
+  PardisoInverse (const Array<int> & aorder, 
+		  const Array<CliqueEl*> & cliques,
+		  const Array<MDOVertex> & vertices,
 		  int symmetric)
   {
     Allocate (aorder, cliques, vertices);
@@ -527,9 +527,9 @@ namespace pardisofunc
   
   template<class TM, class TV_ROW, class TV_COL>
   void PardisoInverse<TM,TV_ROW,TV_COL> :: 
-  Allocate (const ARRAY<int> & aorder, 
-	    const ARRAY<CliqueEl*> & cliques,
-	    const ARRAY<MDOVertex> & vertices)
+  Allocate (const Array<int> & aorder, 
+	    const Array<CliqueEl*> & cliques,
+	    const Array<MDOVertex> & vertices)
   {
     cout << "PardisoInverse::Allocate not implemented!" << endl;
   }

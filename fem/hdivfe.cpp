@@ -19,11 +19,11 @@ namespace ngfem
 
   template <int D>
   void HDivFiniteElement<D> :: 
-  CalcIPData (ARRAY<IPData> & ipdata)
+  CalcIPData (Array<IPData> & ipdata)
   {
     if (ipdata.Size() == 0)
       {
-	const ARRAY<IntegrationPoint*> & ipts = 
+	const Array<IntegrationPoint*> & ipts = 
 	  GetIntegrationRules().GetIntegrationPoints (eltype);
     
 	/*
@@ -368,7 +368,7 @@ namespace ngfem
 
 
 
-  ARRAY<HDivFiniteElement<2>::IPData> FE_RTTrig0::ipdata;
+  Array<HDivFiniteElement<2>::IPData> FE_RTTrig0::ipdata;
 
   FE_RTTrig0 :: FE_RTTrig0()
     : HDivFiniteElement<2> (ET_TRIG, 3, 1)
@@ -416,7 +416,7 @@ namespace ngfem
 
 
 
-  ARRAY<HDivFiniteElement<2>::IPData> FE_RTTrig0plus::ipdata;
+  Array<HDivFiniteElement<2>::IPData> FE_RTTrig0plus::ipdata;
   
   FE_RTTrig0plus :: FE_RTTrig0plus()
     : HDivFiniteElement<2> (ET_TRIG, 3, 1)
@@ -450,7 +450,7 @@ namespace ngfem
   }
 
 
-  ARRAY<HDivFiniteElement<2>::IPData> FE_BDMTrig1::ipdata;
+  Array<HDivFiniteElement<2>::IPData> FE_BDMTrig1::ipdata;
   Matrix<> FE_BDMTrig1::trans(6);
   
   FE_BDMTrig1 :: FE_BDMTrig1()
@@ -564,7 +564,7 @@ namespace ngfem
 
 
   
-  ARRAY<IPDataHDiv*> FE_BDMTrig1plus::ipdata;
+  Array<IPDataHDiv*> FE_BDMTrig1plus::ipdata;
   DenseMatrix FE_BDMTrig1plus::trans;
 
   FE_BDMTrig1plus :: FE_BDMTrig1plus()
@@ -703,7 +703,7 @@ namespace ngfem
 
 
 
-  ARRAY<IPDataHDiv*> FE_BDFMTrig2::ipdata;
+  Array<IPDataHDiv*> FE_BDFMTrig2::ipdata;
   DenseMatrix FE_BDFMTrig2::trans;
 
   FE_BDFMTrig2 :: FE_BDFMTrig2()
@@ -879,7 +879,7 @@ namespace ngfem
 
 
   
-  ARRAY<IPDataHDiv*> FE_BDMTrig2::ipdata;
+  Array<IPDataHDiv*> FE_BDMTrig2::ipdata;
   DenseMatrix FE_BDMTrig2::trans;
 
   FE_BDMTrig2 :: FE_BDMTrig2()
@@ -1112,7 +1112,7 @@ namespace ngfem
 
 
   
-  ARRAY<IPDataHDiv*> FE_BDMTrig2plus::ipdata;
+  Array<IPDataHDiv*> FE_BDMTrig2plus::ipdata;
   DenseMatrix FE_BDMTrig2plus::trans;
 
   FE_BDMTrig2plus :: FE_BDMTrig2plus()
@@ -1337,7 +1337,7 @@ namespace ngfem
 #endif
 
 
-ARRAY<HDivFiniteElement<2>::IPData> FE_RTQuad0::ipdata;
+Array<HDivFiniteElement<2>::IPData> FE_RTQuad0::ipdata;
 
 FE_RTQuad0 :: FE_RTQuad0()
   : HDivFiniteElement<2> (ET_QUAD, 4, 1)
@@ -1370,7 +1370,7 @@ CalcShape (const IntegrationPoint & ip,
 
 
   
-  ARRAY<IPDataHDiv*> FE_BDMQuad1::ipdata;
+  Array<IPDataHDiv*> FE_BDMQuad1::ipdata;
   DenseMatrix FE_BDMQuad1::trans;
 
   FE_BDMQuad1 :: FE_BDMQuad1()
@@ -1509,7 +1509,7 @@ CalcShape (const IntegrationPoint & ip,
 
 
 
-  ARRAY<IPDataHDiv*> FE_RTSegm0::ipdata;
+  Array<IPDataHDiv*> FE_RTSegm0::ipdata;
 
   FE_RTSegm0 :: FE_RTSegm0()
   {
@@ -1555,7 +1555,7 @@ CalcShape (const IntegrationPoint & ip,
 
 
 
-  ARRAY<IPDataHDiv*> FE_RTSegm1::ipdata;
+  Array<IPDataHDiv*> FE_RTSegm1::ipdata;
 
   FE_RTSegm1 :: FE_RTSegm1()
   {
@@ -1600,7 +1600,7 @@ CalcShape (const IntegrationPoint & ip,
 
 
 
-  ARRAY<IPDataHDiv*> FE_RTSegm2::ipdata;
+  Array<IPDataHDiv*> FE_RTSegm2::ipdata;
 
   FE_RTSegm2 :: FE_RTSegm2()
   {
@@ -1655,7 +1655,7 @@ CalcShape (const IntegrationPoint & ip,
 #endif
 
 
-ARRAY<HDivFiniteElement<3>::IPData> FE_BDMTet1::ipdata;
+Array<HDivFiniteElement<3>::IPData> FE_BDMTet1::ipdata;
 Matrix<> FE_BDMTet1::trans(12);
 
 FE_BDMTet1 :: FE_BDMTet1()
@@ -1756,7 +1756,7 @@ void FE_BDMTet1 :: Orthogonalize()
 #ifdef none
 
   
-  ARRAY<IPDataHDiv*> FE_BDFMTet2::ipdata;
+  Array<IPDataHDiv*> FE_BDFMTet2::ipdata;
   DenseMatrix FE_BDFMTet2::trans;
   DenseMatrix FE_BDFMTet2::trans2;
 
@@ -1983,7 +1983,7 @@ void FE_BDMTet1 :: Orthogonalize()
 
 
   
-  ARRAY<IPDataHDiv*> FE_BDMPrism1::ipdata;
+  Array<IPDataHDiv*> FE_BDMPrism1::ipdata;
   DenseMatrix FE_BDMPrism1::trans;
 
   FE_BDMPrism1 :: FE_BDMPrism1()
@@ -2086,7 +2086,7 @@ void FE_BDMPrism1 :: Orthogonalize()
 
 
   
-  ARRAY<IPDataHDiv*> FE_BDMPrism1p::ipdata;
+  Array<IPDataHDiv*> FE_BDMPrism1p::ipdata;
   DenseMatrix FE_BDMPrism1p::trans;
 
   FE_BDMPrism1p :: FE_BDMPrism1p()
@@ -2205,7 +2205,7 @@ void FE_BDMPrism1p :: Orthogonalize()
 
 
   
-  ARRAY<IPDataHDiv*> FE_BDFMPrism2::ipdata;
+  Array<IPDataHDiv*> FE_BDFMPrism2::ipdata;
   DenseMatrix FE_BDFMPrism2::trans;
 
   FE_BDFMPrism2 :: FE_BDFMPrism2()

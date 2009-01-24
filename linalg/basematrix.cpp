@@ -71,7 +71,7 @@ namespace ngla
     return (ost << "Print base-matrix" << endl);
   }
 
-  void BaseMatrix :: MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  void BaseMatrix :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   { ; }
 
   /*
@@ -92,7 +92,7 @@ namespace ngla
   {
     throw Exception ("BaseMatrix::CraeteMatrix called");
   }
-  BaseMatrix * BaseMatrix :: CreateMatrix (const ARRAY<int> & elsperrow) const
+  BaseMatrix * BaseMatrix :: CreateMatrix (const Array<int> & elsperrow) const
   {
     throw Exception ("BaseMatrix::CraeteMatrix called");
   }

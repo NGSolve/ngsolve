@@ -60,13 +60,13 @@ namespace ngcomp
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
-	ARRAY<CoefficientFunction*> coeffs(1);
+	Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = &one;
 	evaluator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
       }
     else if(ma.GetDimension() == 3) 
       {
-	ARRAY<CoefficientFunction*> coeffs(1); 
+	Array<CoefficientFunction*> coeffs(1); 
 	coeffs[0] = &one;
 	evaluator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
 	boundary_evaluator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
@@ -107,13 +107,13 @@ namespace ngcomp
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
-	ARRAY<CoefficientFunction*> coeffs(1);
+	Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = &one;
 	evaluator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
       }
     else if(ma.GetDimension() == 3) 
       {
-	ARRAY<CoefficientFunction*> coeffs(1); 
+	Array<CoefficientFunction*> coeffs(1); 
 	coeffs[0] = &one;
 	evaluator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
 	boundary_evaluator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
@@ -175,7 +175,7 @@ namespace ngcomp
     // int np = ma.GetNP();
     int ned = ma.GetNEdges();
     
-    ARRAY<int> pnums, enums, eorient;
+    Array<int> pnums, enums, eorient;
     
     
     int level = ma.GetNLevels();
@@ -436,10 +436,10 @@ namespace ngcomp
   }
 
   
-  void NedelecFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void NedelecFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     int eoa[12];
-    ARRAY<int> eorient(12, eoa);
+    Array<int> eorient(12, eoa);
     GetMeshAccess().GetElEdges (elnr, dnums, eorient);
 
     if (!DefinedOn (ma.GetElIndex (elnr)))
@@ -449,10 +449,10 @@ namespace ngcomp
   }
 
 
-  void NedelecFESpace :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void NedelecFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     int eoa[12];
-    ARRAY<int> eorient(12, eoa);
+    Array<int> eorient(12, eoa);
     GetMeshAccess().GetSElEdges (selnr, dnums, eorient);
 
     if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
@@ -503,7 +503,7 @@ namespace ngcomp
   {
     int nd;
     // int ena[12], eoa[12];
-    // ARRAY<int> enums(12, ena), eorient(12, eoa);
+    // Array<int> enums(12, ena), eorient(12, eoa);
     ArrayMem<int,12> enums, eorient;
     LocalHeapMem<1000> lh;
 
@@ -545,7 +545,7 @@ namespace ngcomp
       case SB_AFW:
 	{
 	  cout << " ******** Low-order H(Curl) Smoother: AFW" << endl; 
-	  ARRAY<int> cnts(nv);
+	  Array<int> cnts(nv);
 	  for (int k = 1; k <= 2; k++)
 	    {
 	      if (k == 2)
@@ -592,7 +592,7 @@ namespace ngcomp
       case SB_JAC: // only for getting bad condition numbers  ... 
 	{
 	  cout << " Jacobi Smoother for Low-order H(Curl) --> bad conditoning" << endl;  
-	  ARRAY<int> cnts(nd);
+	  Array<int> cnts(nd);
 	  for (int k = 1; k <= 2; k++)
 	    {
 	      if (k == 2)
@@ -623,7 +623,7 @@ namespace ngcomp
 	}
 	//     case SB_AFW:
 	//       {
-	// 	ARRAY<int> cnts(nv);
+	// 	Array<int> cnts(nv);
 	// 	for (int k = 1; k <= 2; k++)
 	// 	  {
 	// 	    if (k == 2)
@@ -671,7 +671,7 @@ namespace ngcomp
 
       case SB_HIPTMAIR:
 	{
-	  ARRAY<int> cnts(nd);
+	  Array<int> cnts(nd);
 	  for (int k = 1; k <= 2; k++)
 	    {
 	      if (k == 2)
@@ -705,7 +705,7 @@ namespace ngcomp
 	}
       case SB_POTENTIAL:
 	{
-	  ARRAY<int> cnts(nv);
+	  Array<int> cnts(nv);
 	  for (int k = 1; k <= 2; k++)
 	    {
 	      if (k == 2)
@@ -741,7 +741,7 @@ namespace ngcomp
     int ned = GetNDof();
     int level = ma.GetNLevels()-1;
 
-    ARRAY<int> cnts(ned);
+    Array<int> cnts(ned);
     for (i = 0; i < ned; i++)
       cnts[i] = (FineLevelOfEdge(i) == level) ? 2 : 0;
 
@@ -765,23 +765,23 @@ namespace ngcomp
 
 
 
-  void NedelecFESpace :: GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const
+  void NedelecFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
   }
 
-  void NedelecFESpace :: GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const
+  void NedelecFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
     dnums.SetSize(1);
     dnums[0] = ednr;
   }
 
-  void NedelecFESpace :: GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const
+  void NedelecFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
   }
 
-  void NedelecFESpace :: GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const
+  void NedelecFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
   }
@@ -798,7 +798,7 @@ namespace ngcomp
 	int ndof = GetNDof();
 	
 	// Find number of exchange dofs
-	ARRAY<int> nexdof(ntasks); 
+	Array<int> nexdof(ntasks); 
 	nexdof = 0;
 	
 	paralleldofs->SetNExDof(nexdof);
@@ -817,7 +817,7 @@ namespace ngcomp
     int ndof = GetNDof();
 
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks); 
+    Array<int> nexdof(ntasks); 
     nexdof = 0;
 
     MPI_Status status;
@@ -843,19 +843,19 @@ namespace ngcomp
 
 
 
-    ARRAY<int> ** owndofs,** distantdofs;
-    owndofs = new ARRAY<int> * [ntasks];
-    distantdofs = new ARRAY<int> * [ntasks];
+    Array<int> ** owndofs,** distantdofs;
+    owndofs = new Array<int> * [ntasks];
+    distantdofs = new Array<int> * [ntasks];
 
     for ( int i = 0; i < ntasks; i++)
       {
-	owndofs[i] = new ARRAY<int> (1);
+	owndofs[i] = new Array<int> (1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int> (0);
+	distantdofs[i] = new Array<int> (0);
       }
 
     int exdof = 0;
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
 
     // *****************
@@ -929,7 +929,7 @@ namespace ngcomp
 	*testout << "NedelecFESpace::UpdateParallelDofs_hoproc -- discontinuous" << endl;
 	int ndof = GetNDof();
 	// Find number of exchange dofs
-	ARRAY<int> nexdof(ntasks);
+	Array<int> nexdof(ntasks);
 	nexdof = 0;
 	
 	const MeshAccess & ma = (*this). GetMeshAccess();
@@ -965,7 +965,7 @@ namespace ngcomp
     // ******************************
     *testout << "NedelecFESpace::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks);
+    Array<int> nexdof(ntasks);
     nexdof = 0;
 
     MPI_Status status;
@@ -993,21 +993,21 @@ namespace ngcomp
 //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
-    ARRAY<int> ** owndofs, ** distantdofs;
-    owndofs = new ARRAY<int>* [ntasks];
-    distantdofs = new ARRAY<int>* [ntasks];
+    Array<int> ** owndofs, ** distantdofs;
+    owndofs = new Array<int>* [ntasks];
+    distantdofs = new Array<int>* [ntasks];
 
     for ( int i = 0; i < ntasks; i++ )
       {
-	owndofs[i] = new ARRAY<int>(1);
+	owndofs[i] = new Array<int>(1);
 	(*owndofs[i])[0] = GetNDof();
-	distantdofs[i] = new ARRAY<int>(0);
+	distantdofs[i] = new Array<int>(0);
       }
     // *****************
     // Parallel Vertex dofs
     // *****************
 
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
     int exdof = 0;
 
@@ -1353,7 +1353,7 @@ namespace ngcomp
 
     if (flags.NumListFlagDefined("gradientdomains"))
       {
-	const ARRAY<double> & graddomains = flags.GetNumListFlag ("gradientdomains");
+	const Array<double> & graddomains = flags.GetNumListFlag ("gradientdomains");
 	for (int i = 0; i < gradientdomains.Size(); i++)
 	  if (!graddomains[i])
 	    gradientdomains.Clear(i);
@@ -1361,7 +1361,7 @@ namespace ngcomp
 
     if (flags.NumListFlagDefined("gradientboundaries"))
       {
-	const ARRAY<double> & gradbounds = flags.GetNumListFlag ("gradientboundaries");
+	const Array<double> & gradbounds = flags.GetNumListFlag ("gradientboundaries");
 	for (int i = 0; i < gradientboundaries.Size(); i++)
 	  if (!gradbounds[i])
 	    gradientboundaries.Clear(i);
@@ -1387,13 +1387,13 @@ namespace ngcomp
     // Evaluator for shape tester 
     if (ma.GetDimension() == 2)
       {
-	ARRAY<CoefficientFunction*> coeffs(1);
+	Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = new ConstantCoefficientFunction(1);
 	evaluator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
       }
     else if(ma.GetDimension() == 3) 
       {
-	ARRAY<CoefficientFunction*> coeffs(1); 
+	Array<CoefficientFunction*> coeffs(1); 
 	coeffs[0] = new ConstantCoefficientFunction(1); 
 	evaluator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
 	boundary_evaluator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
@@ -1405,7 +1405,7 @@ namespace ngcomp
       {
 	directsolverclustered.SetSize(ama.GetNDomains());
 	directsolverclustered = false;
-	ARRAY<double> clusters(flags.GetNumListFlag("directsolverdomains"));
+	Array<double> clusters(flags.GetNumListFlag("directsolverdomains"));
 	for(int i=0; i<clusters.Size(); i++) 
 	  directsolverclustered[static_cast<int>(clusters[i])-1] = true; // 1-based!!
       }
@@ -1445,14 +1445,14 @@ namespace ngcomp
     if (ma.GetDimension() == 2)
       nfa = nel;
 
-    ARRAY<int> pnums;
+    Array<int> pnums;
 
     if (gradientedge.Size() == ned)
       return;
 
     // new definition of gradient edges
 
-    ARRAY<int> enums, eorient, fnums, forient;
+    Array<int> enums, eorient, fnums, forient;
 
     gradientedge.SetSize(ned);
     gradientedge = 1;
@@ -1613,7 +1613,7 @@ namespace ngcomp
   }
 
   
-  void NedelecFESpace2 :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void NedelecFESpace2 :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     // int eled, elfa;
     int j;
@@ -1904,11 +1904,11 @@ namespace ngcomp
 
 
 
-  void NedelecFESpace2 :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void NedelecFESpace2 :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     int fnum, forient;
     int ena[4], eoa[4];
-    ARRAY<int> enums(4, ena), eorient(4, eoa);
+    Array<int> enums(4, ena), eorient(4, eoa);
 
     ma.GetSElFace (selnr, fnum, forient);
     ma.GetSElEdges (selnr, enums, eorient);
@@ -2049,8 +2049,8 @@ namespace ngcomp
 
   void NedelecFESpace2 ::GetTransformation (ELEMENT_TYPE eltype, 
 					    int elnr,
-					    const ARRAY<int> & eorient,
-					    const ARRAY<int> & forient,
+					    const Array<int> & eorient,
+					    const Array<int> & forient,
 					    FlatVector<double> & fac) const
   {
     bool graddom = gradientdomains[ma.GetElIndex(elnr)];
@@ -2389,8 +2389,8 @@ namespace ngcomp
     /*
       int ena[12], eoa[12];
       int fna[12], foa[12];
-      ARRAY<int> enums(12, ena), eorient(12, eoa);
-      ARRAY<int> fnums(6, fna), forient(6, foa);
+      Array<int> enums(12, ena), eorient(12, eoa);
+      Array<int> fnums(6, fna), forient(6, foa);
     */
     ArrayMem<int,12> enums, eorient;
     ArrayMem<int,6> fnums, forient;
@@ -2493,7 +2493,7 @@ namespace ngcomp
 	  // all vertically aligned faces and elements
 	
 	  // non-overlapping small blocks
-	  ARRAY<int> cnts(nv+ned+nfa+ne);
+	  Array<int> cnts(nv+ned+nfa+ne);
 	  for (k = 1; k <= 2; k++)
 	    {
 	      if (k == 2)
@@ -2712,7 +2712,7 @@ namespace ngcomp
 	      */
 	    
 	      /*
-		ARRAY<int> fpnums;
+		Array<int> fpnums;
 		for (i = 0; i < nfa; i++)
 		{
 		ma.GetFacePNums (i, fpnums);
@@ -2760,7 +2760,7 @@ namespace ngcomp
 	  // all vertically aligned faces and elements
 	
 	  // non-overlapping small blocks
-	  ARRAY<int> cnts(nv+ned+nfa+ne);
+	  Array<int> cnts(nv+ned+nfa+ne);
 	  cout << " Take Smoothing Block Type SB_HIPTMAIR " << endl; 
 	  for (k = 1; k <= 2; k++)
 	    {
@@ -2838,7 +2838,7 @@ namespace ngcomp
 
       case  NedelecFESpace::SB_POTENTIAL:
 	{
-	  ARRAY<int> cnts(nv+ned);
+	  Array<int> cnts(nv+ned);
 	  for (int k = 1; k <= 2; k++)
 	    {
 	      if (k == 2)
@@ -2984,7 +2984,7 @@ namespace ngcomp
   }
 
 
-  ARRAY<int> * 
+  Array<int> * 
   NedelecFESpace2 :: CreateDirectSolverClusters (const Flags & flags) const
   {
     (*testout) << "CreateDirectSolverClusters" << endl;
@@ -2994,7 +2994,7 @@ namespace ngcomp
     int ne = ma.GetNE();
 
 
-    ARRAY<int> & clusters = *new ARRAY<int> (nd);
+    Array<int> & clusters = *new Array<int> (nd);
     clusters = 0;
 
 
@@ -3079,7 +3079,7 @@ namespace ngcomp
     //
 
 
-    ARRAY<int> dnums;
+    Array<int> dnums;
   
 
     for(i=0; i<ne && (directsolverclustered.Size() > 0 || directsolvermaterials.Size() > 0); i++)
@@ -3136,7 +3136,7 @@ namespace ngcomp
     const NedelecFESpace & fe1 = 
       dynamic_cast<const NedelecFESpace&> (*low_order_space);
 
-    ARRAY<int> cnts(GetNDof());
+    Array<int> cnts(GetNDof());
     cnts = 0;
     for (i = 0; i < ned; i++)
       {
@@ -3212,11 +3212,11 @@ namespace ngcomp
     Matrix<Complex> elmatc(1);
     elmat(0,0) = 1e15;
     elmatc(0,0) = 1e15;
-    ARRAY<int> dnums(1);
+    Array<int> dnums(1);
 
-    ARRAY<int> fnums, forient;
-    ARRAY<int> enums, eorient;
-    ARRAY<int> lock;
+    Array<int> fnums, forient;
+    Array<int> enums, eorient;
+    Array<int> lock;
 
     cout << "type is " << typeid(mat).name() << endl;
     SparseMatrixSymmetric<Mat<1,1,double> > & smat =
@@ -3322,24 +3322,24 @@ namespace ngcomp
   }
 
 
-  void NedelecFESpace2 :: GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const
+  void NedelecFESpace2 :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
   }
 
-  void NedelecFESpace2 :: GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const
+  void NedelecFESpace2 :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
     cout << "EdgeDofs vom Nedelec2 space: SABINE FRAGEN.." << endl;
     dnums.SetSize(0);
   }
 
-  void NedelecFESpace2 :: GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const
+  void NedelecFESpace2 :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     cout << "FaceDofs vom Nedelec2 space: SABINE FRAGEN.." << endl;
     dnums.SetSize(0);
   }
 
-  void NedelecFESpace2 :: GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const
+  void NedelecFESpace2 :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
     cout << "InnerDofs vom Nedelec2 space: SABINE FRAGEN.." << endl;
     dnums.SetSize(0);
@@ -3422,7 +3422,7 @@ namespace ngcomp
 	int ndof = GetNDof();
 	
 	// Find number of exchange dofs
-	ARRAY<int> nexdof(ntasks); 
+	Array<int> nexdof(ntasks); 
 	nexdof = 0;
 	
 	paralleldofs->SetNExDof(nexdof);
@@ -3441,7 +3441,7 @@ namespace ngcomp
     int ndof = GetNDof();
 
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks); 
+    Array<int> nexdof(ntasks); 
     nexdof = 0;
 
     MPI_Status status;
@@ -3467,19 +3467,19 @@ namespace ngcomp
 
 
 
-    ARRAY<int> ** owndofs,** distantdofs;
-    owndofs = new ARRAY<int> * [ntasks];
-    distantdofs = new ARRAY<int> * [ntasks];
+    Array<int> ** owndofs,** distantdofs;
+    owndofs = new Array<int> * [ntasks];
+    distantdofs = new Array<int> * [ntasks];
 
     for ( int i = 0; i < ntasks; i++)
       {
-	owndofs[i] = new ARRAY<int> (1);
+	owndofs[i] = new Array<int> (1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int> (0);
+	distantdofs[i] = new Array<int> (0);
       }
 
     int exdof = 0;
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
 
     // *****************
@@ -3552,7 +3552,7 @@ namespace ngcomp
 	*testout << "NedelecFESpace::UpdateParallelDofs_hoproc -- discontinuous" << endl;
 	int ndof = GetNDof();
 	// Find number of exchange dofs
-	ARRAY<int> nexdof(ntasks);
+	Array<int> nexdof(ntasks);
 	nexdof = 0;
 	
 	const MeshAccess & ma = (*this). GetMeshAccess();
@@ -3588,7 +3588,7 @@ namespace ngcomp
     // ******************************
     *testout << "NedelecFESpace::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks);
+    Array<int> nexdof(ntasks);
     nexdof = 0;
 
     MPI_Status status;
@@ -3615,21 +3615,21 @@ namespace ngcomp
 //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
-    ARRAY<int> ** owndofs, ** distantdofs;
-    owndofs = new ARRAY<int>* [ntasks];
-    distantdofs = new ARRAY<int>* [ntasks];
+    Array<int> ** owndofs, ** distantdofs;
+    owndofs = new Array<int>* [ntasks];
+    distantdofs = new Array<int>* [ntasks];
 
     for ( int i = 0; i < ntasks; i++ )
       {
-	owndofs[i] = new ARRAY<int>(1);
+	owndofs[i] = new Array<int>(1);
 	(*owndofs[i])[0] = GetNDof();
-	distantdofs[i] = new ARRAY<int>(0);
+	distantdofs[i] = new Array<int>(0);
       }
     // *****************
     // Parallel Vertex dofs
     // *****************
 
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
     int exdof = 0;
 
@@ -3804,14 +3804,14 @@ namespace ngcomp
   return rttrig0;
   }
   
-  void RaviartThomasFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void RaviartThomasFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
   const MeshAccess & ma = GetMeshAccess();
   int eled, elfa;
   int i, j;
 
   int ena[12], eoa[12];
-  ARRAY<int> enums(12, ena), eorient(12, eoa);
+  Array<int> enums(12, ena), eorient(12, eoa);
 
   ma.GetElEdges (elnr, enums, eorient);
 
@@ -3898,13 +3898,13 @@ namespace ngcomp
   }
 
 
-  void RaviartThomasFESpace :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void RaviartThomasFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
   const MeshAccess & ma = GetMeshAccess();
   int eled;
 
   int ena[4], eoa[4];
-  ARRAY<int> enums(4, ena), eorient(4, eoa);
+  Array<int> enums(4, ena), eorient(4, eoa);
 
   ma.GetSElEdges (selnr, enums, eorient);
 
@@ -4032,7 +4032,7 @@ namespace ngcomp
   mat.SetSize (nd * dimension);
   mat.SetScalar (0);
       
-  ARRAY<int> enums, eorient;
+  Array<int> enums, eorient;
   ma.GetElEdges (elnr, enums, eorient);
 
   mat.SetScalar (0);
@@ -4212,7 +4212,7 @@ namespace ngcomp
   return rttrig0;
   }
   
-  void RaviartThomasFESpaceBoundary :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void RaviartThomasFESpaceBoundary :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
   dnums.SetSize(0);
   return;
@@ -4222,7 +4222,7 @@ namespace ngcomp
   int i, j;
 
   int ena[12], eoa[12];
-  ARRAY<int> enums(12, ena), eorient(12, eoa);
+  Array<int> enums(12, ena), eorient(12, eoa);
 
   ma.GetElEdges (elnr, enums, eorient);
 
@@ -4315,14 +4315,14 @@ namespace ngcomp
   }
 
 
-  void RaviartThomasFESpaceBoundary :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void RaviartThomasFESpaceBoundary :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
   const MeshAccess & ma = GetMeshAccess();
   int eled, elfa;
   int i, j;
 
   int ena[12], eoa[12];
-  ARRAY<int> enums(12, ena), eorient(12, eoa);
+  Array<int> enums(12, ena), eorient(12, eoa);
 
   ma.GetSElEdges (selnr, enums, eorient);
 
@@ -4411,7 +4411,7 @@ namespace ngcomp
 
   IntTable * it;
 
-  ARRAY<int> enums, eorient;
+  Array<int> enums, eorient;
   BitArray bedge(ned);
   bedge.Clear();
   for (i = 1; i <= nse; i++)
@@ -4624,7 +4624,7 @@ namespace ngcomp
   mat.SetSize (nd);
   mat.SetScalar (0);
       
-  ARRAY<int> enums, eorient;
+  Array<int> enums, eorient;
   ma.GetElEdges (elnr, enums, eorient);
 
   mat.SetScalar (0);
@@ -4669,7 +4669,7 @@ namespace ngcomp
   mat.SetSize (nd*dimension);
   mat.SetScalar (0);
       
-  ARRAY<int> enums, eorient;
+  Array<int> enums, eorient;
   ma.GetSElEdges (selnr, enums, eorient);
 
   mat.SetScalar (0);

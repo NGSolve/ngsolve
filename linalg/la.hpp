@@ -45,7 +45,7 @@ namespace ngla
 
   using ngstd::BitArray;
   using ngstd::FlatArray;
-  using ngstd::ARRAY;
+  using ngstd::Array;
   using ngstd::Table;
   using ngstd::INT;
 

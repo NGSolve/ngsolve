@@ -16,16 +16,16 @@ protected:
   ///
   int nel;
 
-  ARRAY<int> first_facet_dof;
+  Array<int> first_facet_dof;
   int ndof_lo;
 
   int rel_order;
 
-  ARRAY<INT<2> > order_facet;
-  ARRAY<bool> fine_facet;
+  Array<INT<2> > order_facet;
+  Array<bool> fine_facet;
 
   int ndof;
-  ARRAY<int> ndlevel;
+  Array<int> ndlevel;
   bool var_order;
   bool print;
 
@@ -79,36 +79,36 @@ public:
   virtual const FiniteElement & GetFE ( int elnr, LocalHeap & lh ) const;
   virtual const FiniteElement & GetSFE ( int selnr, LocalHeap & lh ) const;
 
-  virtual void GetFacetDofNrs ( int felnr, ARRAY<int> & dnums ) const;
+  virtual void GetFacetDofNrs ( int felnr, Array<int> & dnums ) const;
 
   virtual int GetNFacetDofs ( int felnr ) const;
 
-  virtual void GetDofNrs ( int elnr, ARRAY<int> & dnums ) const;
+  virtual void GetDofNrs ( int elnr, Array<int> & dnums ) const;
 
-  virtual void GetWireBasketDofNrs(int elnr, ARRAY<int> & dnums) const;
+  virtual void GetWireBasketDofNrs(int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
   ///
   virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
   ///
-  virtual ARRAY<int> * CreateDirectSolverClusters (const Flags & precflags) const;
+  virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
   
   // some utility functions for convenience
   ///
-  virtual void GetVertexNumbers(int elnr, ARRAY<int>& vnums) ;
+  virtual void GetVertexNumbers(int elnr, Array<int>& vnums) ;
   ///
   virtual INT<2> GetFacetOrder(int fnr) ;
 
     virtual int GetFirstFacetDof(int fanr) const;
 
 
-  virtual void GetVertexDofNrs ( int elnum, ARRAY<int> & dnums ) const;
+  virtual void GetVertexDofNrs ( int elnum, Array<int> & dnums ) const;
 
-  virtual void GetEdgeDofNrs ( int elnum, ARRAY<int> & dnums ) const;
+  virtual void GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const;
 
-  virtual void GetFaceDofNrs (int felnr, ARRAY<int> & dnums) const;
+  virtual void GetFaceDofNrs (int felnr, Array<int> & dnums) const;
   
 #ifdef PARALLEL
    virtual void UpdateParallelDofs_hoproc();

@@ -278,7 +278,7 @@ namespace ngsolve
 
 	// sort by angle
 	BitArray used(m);
-	ARRAY<int> reorder(m);
+	Array<int> reorder(m);
 
 	used.Set();
 	for (int i = 0; i < m; i++)

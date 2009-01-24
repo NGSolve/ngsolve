@@ -1,5 +1,5 @@
-#ifndef FILE_NGS_BITARRAY
-#define FILE_NGS_BITARRAY
+#ifndef FILE_NGS_BITArray
+#define FILE_NGS_BITArray
 
 /**************************************************************************/
 /* File:   bitarray.hpp                                                   */

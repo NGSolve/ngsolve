@@ -27,9 +27,9 @@ protected:
   // Number of Vertex
   int nv;
 
-  ARRAY<int> first_edge_dof;
-  ARRAY<int> first_inner_dof;
-  ARRAY<int> first_face_dof; 
+  Array<int> first_edge_dof;
+  Array<int> first_inner_dof;
+  Array<int> first_face_dof; 
 
   int fn; 
   /// relative order to mesh-order
@@ -37,19 +37,19 @@ protected:
  
   INT<3> rel_orders; 
 
-  ARRAY<int> order_edge;
-  ARRAY<bool> fine_edge; 
-  ARRAY<bool> fine_face; 
-  ARRAY<int> cell_ngrad;
-  ARRAY<int> face_ngrad;
-  ARRAY<INT<2> > order_face;
-  ARRAY<INT<3> > order_inner;
-  ARRAY<int> order_avertex; 
-  ARRAY<int> usegrad_edge; 
-  ARRAY<int> usegrad_face; 
-  ARRAY<int> usegrad_cell; 
-  ARRAY<INT<3> > dom_order_min; 
-  ARRAY<INT<3> > dom_order_max;
+  Array<int> order_edge;
+  Array<bool> fine_edge; 
+  Array<bool> fine_face; 
+  Array<int> cell_ngrad;
+  Array<int> face_ngrad;
+  Array<INT<2> > order_face;
+  Array<INT<3> > order_inner;
+  Array<int> order_avertex; 
+  Array<int> usegrad_edge; 
+  Array<int> usegrad_face; 
+  Array<int> usegrad_cell; 
+  Array<INT<3> > dom_order_min; 
+  Array<INT<3> > dom_order_max;
   int maxorder, minorder; 
   
 
@@ -98,11 +98,11 @@ public:
   ///
   virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
   ///
 
 
@@ -115,7 +115,7 @@ public:
   
   //virtual BitArray * CreateIntermediatePlanes (int type = 0) const;
   ///
-  virtual ARRAY<int> * CreateDirectSolverClusters (const Flags & precflags) const;
+  virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
   ///
   SparseMatrix<double> * CreateGradient() const; 
  
@@ -136,10 +136,10 @@ public:
 //   virtual void UpdateParallelDofs ();
 //   virtual void UpdateParallelDofs ( LocalHeap & lh);
 
-  virtual void GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const;
-  virtual void GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const;
-  virtual void GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const;
-  virtual void GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
+  virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
+  virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
+  virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
   bool GetFineEdge( const int i ) const {return fine_edge[i]; };
   bool GetFineFace( const int i ) const {return fine_face[i]; };

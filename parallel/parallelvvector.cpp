@@ -95,7 +95,7 @@ namespace ngla
 
 
   template <typename T>
-  void ParallelVFlatVector<T> :: SetParallelDofs ( ParallelDofs * aparalleldofs, const ARRAY<int> * procs  )
+  void ParallelVFlatVector<T> :: SetParallelDofs ( ParallelDofs * aparalleldofs, const Array<int> * procs  )
   {
     this -> paralleldofs = aparalleldofs;
     if ( this -> paralleldofs == 0 ) return;
@@ -109,7 +109,7 @@ namespace ngla
     this->recvvector_size . SetSize(ntasks);
     recvvector_size = 0;
 
-    ARRAY<int> exprocs(0);
+    Array<int> exprocs(0);
     if ( procs == 0 )
       {
 	for ( int dest = 0; dest < ntasks; dest++ )
@@ -153,7 +153,7 @@ namespace ngla
 
 
   template <typename T>
-  void ParallelVVector<T> :: SetParallelDofs ( ParallelDofs * aparalleldofs, const ARRAY<int> * procs )
+  void ParallelVVector<T> :: SetParallelDofs ( ParallelDofs * aparalleldofs, const Array<int> * procs )
   {
     this -> paralleldofs = aparalleldofs;
 
@@ -168,10 +168,10 @@ namespace ngla
     recvvector_size . SetSize(ntasks);
     recvvector_size = 0;
   
-    ARRAY<MPI_Request> sendintrequest(ntasks);
-    ARRAY<MPI_Request> recvintrequest(ntasks);
+    Array<MPI_Request> sendintrequest(ntasks);
+    Array<MPI_Request> recvintrequest(ntasks);
 
-    ARRAY<int> exprocs(0);
+    Array<int> exprocs(0);
     if ( procs == 0 )
       {
 	for ( int dest = 0; dest < ntasks; dest++ )
@@ -221,7 +221,7 @@ namespace ngla
   /// vectors in sendtoprocs are set to the cumulated values
   /// default pointer 0 means send to proc 0
   template <typename T>
-  void ParallelVVector<T> :: AllReduce ( ARRAY<int> * reduceprocs, ARRAY<int> * sendtoprocs ) const 
+  void ParallelVVector<T> :: AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs ) const 
   {
     // in case of one process only, return
     if ( status != DISTRIBUTED ) return;
@@ -233,7 +233,7 @@ namespace ngla
 
     MPI_Status status;
 
-    ARRAY<int> exprocs(0);
+    Array<int> exprocs(0);
     
     // find which processors to communicate with
     for ( int i = 0; i < reduceprocs->Size(); i++)
@@ -244,9 +244,9 @@ namespace ngla
     
     ParallelVVector<T> * constvec = const_cast<ParallelVVector<T> * > (this);
     
-    ARRAY<MPI_Request> sendrequest(nexprocs), recvrequest(nexprocs);
+    Array<MPI_Request> sendrequest(nexprocs), recvrequest(nexprocs);
 
-    ARRAY<int> sendto_exprocs(0);
+    Array<int> sendto_exprocs(0);
     if ( sendtoprocs )
       {
 	for ( int i = 0; i < sendtoprocs->Size(); i++ )
@@ -350,7 +350,7 @@ namespace ngla
   /// vectors in sendtoprocs are set to the cumulated values
   /// default pointer 0 means send to proc 0
   template <typename T>
-  void ParallelVFlatVector<T> :: AllReduce ( ARRAY<int> * reduceprocs, ARRAY<int> * sendtoprocs ) const 
+  void ParallelVFlatVector<T> :: AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs ) const 
   {
     // in case of one process only, return
     if ( status != DISTRIBUTED ) return;
@@ -359,7 +359,7 @@ namespace ngla
 #pragma pomp inst begin (vvector_allreduce)
 #endif
 
-    ARRAY<int> exprocs(0);
+    Array<int> exprocs(0);
     int nexprocs;
     MPI_Status status;
 
@@ -377,7 +377,7 @@ namespace ngla
     sendrequest = new MPI_Request[nexprocs];
     recvrequest = new MPI_Request[nexprocs];
     
-    ARRAY<int> sendto_exprocs(0);
+    Array<int> sendto_exprocs(0);
     if ( sendtoprocs )
       {
 	for ( int i = 0; i < sendtoprocs->Size(); i++ )
@@ -566,7 +566,7 @@ void ParallelVVector<T> :: SetStatus ( PARALLEL_STATUS astatus )
 
 
 template <typename T>
-BaseVector * ParallelVVector<T> :: CreateVector ( const ARRAY<int> * procs ) const
+BaseVector * ParallelVVector<T> :: CreateVector ( const Array<int> * procs ) const
 {
   ParallelVVector<T> * parvec;
   
@@ -586,7 +586,7 @@ BaseVector * ParallelVVector<T> :: CreateVector ( const ARRAY<int> * procs ) con
 
 
   template <typename T>
-  BaseVector * ParallelVFlatVector<T> :: CreateVector ( const ARRAY<int> * procs ) const
+  BaseVector * ParallelVFlatVector<T> :: CreateVector ( const Array<int> * procs ) const
   {
     ParallelVVector<T> * parvec;
 

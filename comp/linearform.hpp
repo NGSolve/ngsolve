@@ -17,9 +17,9 @@ protected:
   ///
   const FESpace & fespace;
   ///
-  ARRAY<LinearFormIntegrator*> parts;
+  Array<LinearFormIntegrator*> parts;
   ///
-  ARRAY<bool> parts_deletable;
+  Array<bool> parts_deletable;
   /// do the integration on independent meshes
   bool independent;
 
@@ -92,7 +92,7 @@ public:
   ///
   virtual void PrintReport (ostream & ost);
   ///
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const;
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
   virtual void SetCacheBlockSize (const int size)
   {
@@ -120,12 +120,12 @@ public:
   virtual void AllocateVector () = 0;
 
   ///
-  virtual void AddElementVector (const ARRAY<int> & dnums,
+  virtual void AddElementVector (const Array<int> & dnums,
 				 const FlatVector<SCAL> & elvec,
 				 const int cachecomp = -1) = 0;
-  virtual void SetElementVector (const ARRAY<int> & dnums,
+  virtual void SetElementVector (const Array<int> & dnums,
 				 const FlatVector<SCAL> & elvec) = 0;
-  virtual void GetElementVector (const ARRAY<int> & dnums,
+  virtual void GetElementVector (const Array<int> & dnums,
 				 FlatVector<SCAL> & elvec) const = 0;
 
   ///
@@ -166,12 +166,12 @@ public:
   virtual void CleanUpLevel();
 
   ///
-  virtual void AddElementVector (const ARRAY<int> & dnums,
+  virtual void AddElementVector (const Array<int> & dnums,
 				 const FlatVector<TSCAL> & elvec,
 				 const int cachecomp = -1);
-  virtual void SetElementVector (const ARRAY<int> & dnums,
+  virtual void SetElementVector (const Array<int> & dnums,
 				 const FlatVector<TSCAL> & elvec);
-  virtual void GetElementVector (const ARRAY<int> & dnums,
+  virtual void GetElementVector (const Array<int> & dnums,
 				 FlatVector<TSCAL> & elvec) const;
 };
 

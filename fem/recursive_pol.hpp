@@ -265,7 +265,7 @@ inline void TriangleExtensionMonomial (int n, Sx x, Sy y, T & values)
 template <class Sx, class Sy, class T>
 inline void DiffTriangleExtensionMonomial (int n, Sx x, Sy y, T & values)
 {
-  ARRAY<AutoDiff<2> > ad_values(n+1);
+  Array<AutoDiff<2> > ad_values(n+1);
   AutoDiff<2> ad_x(x, 0);
   AutoDiff<2> ad_y(y, 1);
 
@@ -310,7 +310,7 @@ inline void TriangleExtensionJacobi (int n, Sx x, Sy y, T & values)
 template <class Sx, class Sy, class T>
 inline void DiffTriangleExtensionJacobi (int n, Sx x, Sy y, T & values)
 {
-  ARRAY<AutoDiff<2> > ad_values(n+1);
+  Array<AutoDiff<2> > ad_values(n+1);
   AutoDiff<2> ad_x(x, 0);
   AutoDiff<2> ad_y(y, 1);
 
@@ -338,10 +338,10 @@ inline void TriangleExtensionOpt (int n, Sx x, Sy y, T & values)
     }
   else
     {
-      ARRAY<Sx> ge1(n+2);
-      ARRAY<Sx> ge2(n+2);
-      ARRAY<Sx> ge3(n+2);
-      ARRAY<Sx> ge4(n+2);
+      Array<Sx> ge1(n+2);
+      Array<Sx> ge2(n+2);
+      Array<Sx> ge3(n+2);
+      Array<Sx> ge4(n+2);
 
       GegenbauerPolynomial (n+1, Sx(-1.0), -1.5, ge1);
       GegenbauerPolynomial (n+1, x-y, -1.5, ge2);
@@ -360,7 +360,7 @@ inline void TriangleExtensionOpt (int n, Sx x, Sy y, T & values)
 template <class Sx, class Sy, class T>
 inline void DiffTriangleExtensionOpt (int n, Sx x, Sy y, T & values)
 {
-  ARRAY<AutoDiff<2> > ad_values(n+1);
+  Array<AutoDiff<2> > ad_values(n+1);
   AutoDiff<2> ad_x(x, 0);
   AutoDiff<2> ad_y(y, 1);
 
@@ -1152,9 +1152,9 @@ void DifferentiateJacobiTrans (int n, double alpha, T & inout)
 class ConvertJacobi
 {
   typedef double d2[2];
-  static ARRAY<d2*> coefs_increasealpha;
-  static ARRAY<d2*> coefs_reducealpha;
-  static ARRAY<d2*> coefs_reducealphafac;
+  static Array<d2*> coefs_increasealpha;
+  static Array<d2*> coefs_reducealpha;
+  static Array<d2*> coefs_reducealphafac;
 
 public:
   ConvertJacobi ();
@@ -1272,7 +1272,7 @@ public:
   static double hate (int i, int alpha) { return double(i)/double(i+alpha); }
 
   
-  static ARRAY<d2*> coefs_c, coefs_d, coefs_e;
+  static Array<d2*> coefs_c, coefs_d, coefs_e;
 
   // alpha,beta of input,
   // order of input

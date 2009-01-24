@@ -132,7 +132,7 @@ protected:
   };
   
   ///
-  ARRAY<linestruct> data;
+  Array<linestruct> data;
   ///
   char * oneblock;
 
@@ -140,7 +140,7 @@ public:
   ///
   BaseDynamicTable (int size);
   ///
-  BaseDynamicTable (const ARRAY<int> & entrysizes, int elemsize);
+  BaseDynamicTable (const Array<int> & entrysizes, int elemsize);
   ///
   ~BaseDynamicTable ();
 
@@ -169,7 +169,7 @@ public:
     : BaseDynamicTable (size) { ; }
 
   /// Creates table with a priori fixed entry sizes.
-  DynamicTable (const ARRAY<int> & entrysizes)
+  DynamicTable (const Array<int> & entrysizes)
     : BaseDynamicTable (entrysizes, sizeof(T)) { ; }
 
   /// Inserts element acont into row i. Does not test if already used.

@@ -24,7 +24,7 @@ int main ()
   // ****************** Using Arrays *********************
 
   // an array with memory allocation/deallocation
-  ARRAY<int> ia(10);
+  Array<int> ia(10);
 
   ia = -1;
   for (int i = 0; i < 5; i++)
@@ -49,7 +49,7 @@ int main ()
 
   // a compact table requires a priori knowledge of entrysizes
   // copy dynamic table into a compact table
-  ARRAY<int> entry_sizes(tab.Size());
+  Array<int> entry_sizes(tab.Size());
   for (int i = 0; i < tab.Size(); i++)
     entry_sizes[i] = tab[i].Size();
 

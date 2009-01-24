@@ -277,7 +277,7 @@ namespace ngsolve
     label = flags.GetStringFlag ("label", "");
     useall = flags.GetDefineFlag ("useall");
 
-    ARRAY<BilinearFormIntegrator *> bfi2d, bfi3d;
+    Array<BilinearFormIntegrator *> bfi2d, bfi3d;
 
     for (int i = 0; i < bfa->NumIntegrators(); i++)
       {
@@ -383,7 +383,7 @@ namespace ngsolve
     ///
     Vector<double> point;
     ///
-    ARRAY<int> domains;
+    Array<int> domains;
     ///
     Vector<double> point2;
     ///
@@ -450,7 +450,7 @@ namespace ngsolve
 
     if (flags.NumListFlagDefined ("point"))
       {
-	const ARRAY<double> & p = flags.GetNumListFlag ("point");
+	const Array<double> & p = flags.GetNumListFlag ("point");
 	point.SetSize(p.Size());
 	for (int i = 0; i < p.Size(); i++)
 	  point(i) = p[i];
@@ -459,7 +459,7 @@ namespace ngsolve
 
     if (flags.NumListFlagDefined ("domains"))
       {
-	const ARRAY<double> & ds = flags.GetNumListFlag("domains");
+	const Array<double> & ds = flags.GetNumListFlag("domains");
 	domains.SetSize(ds.Size());
 	for (int i = 0; i < ds.Size(); i++)
 	  domains[i] = int(ds[i])-1;
@@ -467,7 +467,7 @@ namespace ngsolve
 
     if (flags.NumListFlagDefined ("point2"))
       {
-	const ARRAY<double> & p = flags.GetNumListFlag ("point2");
+	const Array<double> & p = flags.GetNumListFlag ("point2");
 	point2.SetSize(p.Size());
 	for (int i = 0; i < p.Size(); i++)
 	  point2(i) = p[i];
@@ -478,11 +478,11 @@ namespace ngsolve
 		     flags.NumListFlagDefined ("point4"));
     if (usepoint3and4)
       {
-	const ARRAY<double> & p3 = flags.GetNumListFlag ("point3");
+	const Array<double> & p3 = flags.GetNumListFlag ("point3");
 	point3.SetSize(p3.Size());
 	for (int i = 0; i < p3.Size(); i++)
 	  point3(i) = p3[i];
-	const ARRAY<double> & p4 = flags.GetNumListFlag ("point4");
+	const Array<double> & p4 = flags.GetNumListFlag ("point4");
 	point4.SetSize(p4.Size());
 	for (int i = 0; i < p4.Size(); i++)
 	  point4(i) = p4[i];
@@ -732,7 +732,7 @@ namespace ngsolve
 
 		double pos1,pos2;
 
-		ARRAY < ARRAY < double > * > values(n[variabledirection]+1);
+		Array < Array < double > * > values(n[variabledirection]+1);
 		values = NULL;
 
 		FlatVector<double> p(point.Size(), lh);
@@ -765,7 +765,7 @@ namespace ngsolve
 			    
 			    if(values[k] == NULL)
 			      {
-				values[k] = new ARRAY<double>(pflux.Size());
+				values[k] = new Array<double>(pflux.Size());
 				(*values[k]) = 0;
 			      }
 			    
@@ -781,7 +781,7 @@ namespace ngsolve
 			    
 			    if(values[k] == NULL)
 			      {
-				values[k] = new ARRAY<double>(2*pflux.Size());
+				values[k] = new Array<double>(2*pflux.Size());
 				(*values[k]) = 0;
 			      }
 			    
@@ -931,9 +931,9 @@ namespace ngsolve
     ///
     int component;
     ///
-    ARRAY<int> surfdomains;
+    Array<int> surfdomains;
     ///
-    ARRAY<int> voldomains;
+    Array<int> voldomains;
   public:
     ///
     NumProcAnalyze (PDE & apde, const Flags & flags);
@@ -1077,7 +1077,7 @@ namespace ngsolve
 	    ndomains = pde.GetMeshAccess().GetNBoundaries();
 	  }
 
-	ARRAY<int> & domains = ((count == 0) ? voldomains : surfdomains);
+	Array<int> & domains = ((count == 0) ? voldomains : surfdomains);
 
 
 	if(domains.Size() == 0)
@@ -1096,7 +1096,7 @@ namespace ngsolve
 					   Evaluator_ptr,false);
 
 
-	ARRAY<double> mini, maxi, average, vol;
+	Array<double> mini, maxi, average, vol;
 
 	if(component == -1)
 	  {
@@ -1442,7 +1442,7 @@ namespace ngsolve
     
     int rows, columns;
 
-    ARRAY < string > tableentries;
+    Array < string > tableentries;
 
     string title;
 
@@ -1487,7 +1487,7 @@ namespace ngsolve
 
     title = flags.GetStringFlag("title","");
 
-    const ARRAY<char*> & textarray = flags.GetStringListFlag("entries");
+    const Array<char*> & textarray = flags.GetStringListFlag("entries");
 
     for(int i=0; i<tableentries.Size() && i<textarray.Size(); i++)
       tableentries[i] = textarray[i];
@@ -1898,17 +1898,17 @@ namespace ngsolve
     string text (flags.GetStringFlag("text",""));
 
 
-    ARRAY<double> centerpoint;
+    Array<double> centerpoint;
     bool center = flags.NumListFlagDefined("centerpoint");
     if(center) centerpoint = flags.GetNumListFlag("centerpoint");
 
 
-    ARRAY<double> rotation_pars; // (alpha, v1, v2, v3)
+    Array<double> rotation_pars; // (alpha, v1, v2, v3)
     bool rotation = flags.NumListFlagDefined("rotation");
     if(rotation) rotation_pars = flags.GetNumListFlag("rotation");
     
 
-    ARRAY<double> clipvec;
+    Array<double> clipvec;
     bool clip = flags.NumListFlagDefined("clipvec");
     if(clip) clipvec = flags.GetNumListFlag("clipvec");
 
@@ -2245,7 +2245,7 @@ namespace ngsolve
       }
     else if(h1hofespace || h1fespace)
       {
-	ARRAY<int> dnums(1);
+	Array<int> dnums(1);
 	Vector<Complex> vecc(1);
 	Vector<double> vecd(1);
 	
@@ -2326,17 +2326,17 @@ namespace ngsolve
 
     if ( id > 0 ) return;
 
-    ARRAY<double> centerpoint;
+    Array<double> centerpoint;
     bool center = flags.NumListFlagDefined("centerpoint");
     if(center) centerpoint = flags.GetNumListFlag("centerpoint");
 
 
-    ARRAY<double> rotation_pars; // (alpha, v1, v2, v3)
+    Array<double> rotation_pars; // (alpha, v1, v2, v3)
     bool rotation = flags.NumListFlagDefined("rotation");
     if(rotation) rotation_pars = flags.GetNumListFlag("rotation");
     
 
-    ARRAY<double> clipvec;
+    Array<double> clipvec;
     bool clip = flags.NumListFlagDefined("clipvec");
     if(clip) clipvec = flags.GetNumListFlag("clipvec");
 
@@ -2625,7 +2625,7 @@ namespace ngsolve
   class NumProcClearGridFunctions : public NumProc
   {
   protected:
-    ARRAY<GridFunction *> gf;
+    Array<GridFunction *> gf;
 
   public:
     NumProcClearGridFunctions (PDE & apde, const Flags & flags) : NumProc(apde)

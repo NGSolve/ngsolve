@@ -662,7 +662,7 @@ class DiagDMat : public DMatOp<DiagDMat<DIM> >
 public:
   DiagDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
 
-  DiagDMat (ARRAY<CoefficientFunction*> & acoefs) : coef(acoefs[0]) { ; }
+  DiagDMat (Array<CoefficientFunction*> & acoefs) : coef(acoefs[0]) { ; }
 
   template <typename FEL, typename SIP, typename MAT>
   void GenerateMatrix (const FEL & fel, const SIP & sip,
@@ -750,8 +750,8 @@ public:
 
   template <typename FEL, typename SIP>
   void GetEigensystem (const FEL & fel, const SIP & sip, 
-		  ARRAY<double> & eigenvalues,
-		  ARRAY<double> & eigenvectors,
+		  Array<double> & eigenvalues,
+		  Array<double> & eigenvectors,
 		  LocalHeap & lh) const
   {
     eigenvalues[0] = Evaluate (*coef1, sip);
@@ -804,8 +804,8 @@ public:
   
   template <typename FEL, typename SIP>
   void GetEigensystem (const FEL & fel, const SIP & sip, 
-		  ARRAY<double> & eigenvalues,
-		  ARRAY<double> & eigenvectors,
+		  Array<double> & eigenvalues,
+		  Array<double> & eigenvectors,
 		  LocalHeap & lh) const
   {
     
@@ -1509,7 +1509,7 @@ public:
   (ElasticityDMat<D> (coefe, coefnu))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new ElasticityIntegrator (coeffs[0], coeffs[1]);
   }
@@ -1536,7 +1536,7 @@ public:
   (PlaneStressDMat (coefe, coefnu))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new ElasticityIntegrator (coeffs[0], coeffs[1]);
   }
@@ -1567,7 +1567,7 @@ public:
   (OrthotropicElasticityDMat<D> (coefE1, coefE2, coefE3, coefnu12, coefnu13, coefnu23, coefG12, coefG13, coefG23))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new OrthotropicElasticityIntegrator (coeffs[0], coeffs[1], coeffs[2], coeffs[3], coeffs[4], coeffs[5], coeffs[6], coeffs[7], coeffs[8]);
   }
@@ -1600,7 +1600,7 @@ public:
   (OrthotropicCylElasticityDMat<D> (coefE1, coefE2, coefE3, coefnu12, coefnu13, coefnu23, coefG12, coefG13, coefG23, coefUseCyl))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new OrthotropicCylElasticityIntegrator (coeffs[0], coeffs[1], coeffs[2], coeffs[3], coeffs[4], coeffs[5], coeffs[6], coeffs[7], coeffs[8], coeffs[9]);
   }
@@ -1658,7 +1658,7 @@ public:
   { ; }
 
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new NormalRobinIntegrator (coeffs[0]);
   }
@@ -1683,7 +1683,7 @@ public:
   ///
   LaplaceIntegrator (CoefficientFunction * coeff);
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new LaplaceIntegrator (coeffs[0]);
   }
@@ -1708,7 +1708,7 @@ public:
   }
   */
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new LaplaceBoundaryIntegrator (coeffs[0]);
   }
@@ -1731,7 +1731,7 @@ public:
     : T_BDBIntegrator<DiffOpGradient<D>, RotSymLaplaceDMat<D>, FEL> (RotSymLaplaceDMat<D> (coeff))
   { ; }
   */
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new RotSymLaplaceIntegrator (coeffs[0]);
   }
@@ -1755,7 +1755,7 @@ public:
     : T_BDBIntegrator<DiffOpGradient<D>, OrthoDMat<D>, FEL> (OrthoDMat<D> (coeff1, coeff2, coeff3))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     if(coeffs.Size() == 2)
       return new OrthoLaplaceIntegrator (coeffs[0], coeffs[1]);
@@ -1780,7 +1780,7 @@ public:
   MassIntegrator (CoefficientFunction * coeff);
   
   ///
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new MassIntegrator (coeffs[0]);
   }
@@ -1800,7 +1800,7 @@ class RobinIntegrator
 public:
   RobinIntegrator (CoefficientFunction * coeff);
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new RobinIntegrator (coeffs[0]);
   }
@@ -1822,7 +1822,7 @@ public:
     : T_BDBIntegrator<DiffOpIdBoundary<D,D>, NormalDMat<D>, NodalFiniteElement<D> > (NormalDMat<D> (coeff))
   { ; }
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new NormalRobinIntegrator (coeffs[0]);
   }
@@ -1874,7 +1874,7 @@ public:
     ;
   }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new DivDivIntegrator (coeffs[0]);
   }
@@ -1936,7 +1936,7 @@ public:
     ;
   }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new CurlCurlIntegrator (coeffs[0]);
   }
@@ -1994,7 +1994,7 @@ public:
     ;
   }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new CurlCurl3dIntegrator (coeffs[0]);
   }
@@ -2040,7 +2040,7 @@ public:
   (DiagDMat<DIM_CURL_TRAIT<D>::DIM> (coeff))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new CurlCurlEdgeIntegrator (coeffs[0]);
   }
@@ -2060,7 +2060,7 @@ public:
   (DiagDMat<1> (coeff))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new CurlCurlBoundaryEdgeIntegrator (coeffs[0]);
   }
@@ -2085,7 +2085,7 @@ public:
   (OrthoDMat<DIM_CURL_TRAIT<D>::DIM> (coeff1, coeff2, coeff3))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new CurlCurlEdgeOrthoIntegrator (coeffs[0], coeffs[1], coeffs[2]);
   }
@@ -2108,7 +2108,7 @@ public:
     : T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
   { ; }
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new MassEdgeIntegrator (coeffs[0]);
   }
@@ -2136,7 +2136,7 @@ public:
     : T_BDBIntegrator<DiffOpIdEdge<D>, OrthoDMat<D>, FEL> (OrthoDMat<D> (coeff1, coeff2, coeff3))
   { ; }
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     if (D == 2)
       return new MassEdgeOrthoIntegrator (coeffs[0], coeffs[1]);
@@ -2174,7 +2174,7 @@ public:
   (SymDMat<3> (coeff00, coeff10, coeff11, coeff20, coeff21, coeff22))
   { ; }
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new MassEdgeAnisotropicIntegrator (coeffs[0], coeffs[1], coeffs[2],
 					      coeffs[3], coeffs[4], coeffs[5]);
@@ -2200,7 +2200,7 @@ public:
     : T_BDBIntegrator<DiffOpIdBoundaryEdge<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
        return new RobinEdgeIntegrator (coeffs[0]);
   }
@@ -2224,7 +2224,7 @@ public:
   ///
   SourceIntegrator (CoefficientFunction * coeff);
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new SourceIntegrator (coeffs[0]);
   }
@@ -2245,7 +2245,7 @@ public:
   ///
   NeumannIntegrator (CoefficientFunction * coeff);
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new NeumannIntegrator (coeffs[0]);
   }
@@ -2268,7 +2268,7 @@ public:
     : T_BIntegrator<DiffOpNormal<D>, DVec<1>, FEL> (DVec<1> (coeff))
   { ; }
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new NormalNeumannIntegrator (coeffs[0]);
   }
@@ -2295,7 +2295,7 @@ public:
     : T_BIntegrator<DiffOpGradient<D>, DVec<D>, FEL> (DVec<D> (coeff1, coeff2, coeff3))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new GradSourceIntegrator (coeffs[0],coeffs[1],coeffs[2]);
   }
@@ -2326,7 +2326,7 @@ public:
   (DVec<D> (coeff1, coeff2))
   { ; }
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     if (D==2) 
       return new SourceEdgeIntegrator<2,FEL> (coeffs[0],coeffs[1]); 
@@ -2351,7 +2351,7 @@ public:
   (TVec<D> (coeff))
   { ; }
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new TangentialSourceEdgeIntegrator<D,FEL> (coeffs[0]);
   }
@@ -2381,7 +2381,7 @@ public:
   (DVec<D> (coeff1, coeff2))
   { ; }
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     if (D == 3)
       return new NeumannEdgeIntegrator (coeffs[0], coeffs[1], coeffs[2]);
@@ -2421,7 +2421,7 @@ public:
 
 
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     if (D == 2)
       return new CurlEdgeIntegrator<2,FEL> (coeffs[0]);
@@ -2450,7 +2450,7 @@ public:
   (DVec<1> (coeff1))
   { ; }
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new CurlBoundaryEdgeIntegrator (coeffs[0]);
   }

@@ -17,7 +17,7 @@ class NodalFESpaceP : public FESpace
   ///
   int p;
   ///
-  ARRAY<int> eldofs;
+  Array<int> eldofs;
   ///
   int ndof;
 
@@ -51,10 +51,10 @@ public:
   { return ndof; }
 
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
   ///
   int GetEdgeDof (int enr, int i1, int i2, int lam1, int lam2) const;

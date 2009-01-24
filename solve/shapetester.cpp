@@ -78,7 +78,7 @@ namespace ngsolve
     {
       BaseVector & vecu = gfu->GetVector();
       vecu = 0;
-      ARRAY<int> dnums(1);
+      Array<int> dnums(1);
       if (dof >= vecu.Size())
 	dof = vecu.Size()-1;
       dnums[0] = dof;

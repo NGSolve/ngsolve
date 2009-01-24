@@ -27,7 +27,7 @@ public:
   H1HighOrderFiniteElement (ELEMENT_TYPE aeltype);
   
   virtual void SetVertexNumbers (FlatArray<int> & avnums, LocalHeap & lh);
-  virtual void GetDofs (ARRAY<Dof> & dofs) const;
+  virtual void GetDofs (Array<Dof> & dofs) const;
 
   void SetOrderInner (int oi);
   void SetOrderInner (INT<3> oi);
@@ -84,7 +84,7 @@ public:
 
   H1HighOrderTrig (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
@@ -112,7 +112,7 @@ class H1HighOrderQuad : public H1HighOrderFiniteElement<2>
 public:
   H1HighOrderQuad (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
@@ -127,7 +127,7 @@ private:
   void T_CalcShape (Tx x, Ty y, TFA & shape) const; 
 
   //  void CalcShapeDShape (const IntegrationPoint & ip, 
-  //			ARRAY<AutoDiff<2> > & shape) const;
+  //			Array<AutoDiff<2> > & shape) const;
 };
 
 
@@ -152,7 +152,7 @@ class H1HighOrderTet : public H1HighOrderFiniteElement<3>
 public:
   H1HighOrderTet (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
@@ -169,7 +169,7 @@ public:
 
 private:
   // void CalcShapeDShape (const IntegrationPoint & ip, 
-  // 			ARRAY<AutoDiff<3> > & shape) const;
+  // 			Array<AutoDiff<3> > & shape) const;
   
   
   template<typename Tx, typename Ty, typename Tz, typename TFA>  
@@ -191,7 +191,7 @@ class H1HighOrderPrism : public H1HighOrderFiniteElement<3>
 public:
   H1HighOrderPrism (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
@@ -208,7 +208,7 @@ private:
   void T_CalcShape (Tx x, Ty y, Tz z, TFA & shape) const; 
   
   //  void CalcShapeDShape (const IntegrationPoint & ip, 
-  //			ARRAY<AutoDiff<3> > & shape) const;
+  //			Array<AutoDiff<3> > & shape) const;
 };
 
 
@@ -224,7 +224,7 @@ class H1HighOrderHex : public H1HighOrderFiniteElement<3>
 public:
   H1HighOrderHex (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
@@ -239,7 +239,7 @@ private:
   void T_CalcShape (Tx x, Ty y, Tz z, TFA & shape) const; 
 
   //  void CalcShapeDShape (const IntegrationPoint & ip, 
-  //  			ARRAY<AutoDiff<3> > & shape) const;
+  //  			Array<AutoDiff<3> > & shape) const;
 };
 
 
@@ -255,7 +255,7 @@ class H1HighOrderPyramid : public H1HighOrderFiniteElement<3>
 public:
   H1HighOrderPyramid (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
@@ -270,7 +270,7 @@ private:
   void T_CalcShape (Tx x, Ty y, Tz z, TFA & shape) const; 
 
   // void CalcShapeDShape (const IntegrationPoint & ip, 
-  // ARRAY<AutoDiff<3> > & shape) const;
+  // Array<AutoDiff<3> > & shape) const;
 };
 
 

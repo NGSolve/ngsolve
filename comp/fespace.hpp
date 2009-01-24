@@ -45,12 +45,12 @@ protected:
   ngmg::Prolongation *prol;
 
   /// on which subdomains is the space defined ?
-  ARRAY<int> definedon;
+  Array<int> definedon;
   /// on which boundaries is the space defined ?
-  ARRAY<int> definedonbound;
+  Array<int> definedonbound;
 
   // BEM is not supported
-  // ARRAY<int> BEMboundary;
+  // Array<int> BEMboundary;
 
   /// prototype: what are the (homogeneous) Dirichlet boundaries ?
   BitArray dirichlet_boundaries;
@@ -91,22 +91,22 @@ protected:
   /// vertex, edge, face, cell dofs start (and end) here ...
   int first_lodof[5];
   /// the high order vertex, edge, face, cell dofs on each node start (and end) here ...
-  ARRAY<int> first_hodofs[4];
+  Array<int> first_hodofs[4];
 
 
 
 
   /// if directsolverclustered[i] is true, then the unknowns of domain i are clustered
-  ARRAY<bool> directsolverclustered;
+  Array<bool> directsolverclustered;
 
-  ARRAY<string> directsolvermaterials;
+  Array<string> directsolvermaterials;
 
-  mutable ARRAY<int> adddirectsolverdofs;
+  mutable Array<int> adddirectsolverdofs;
 
-  ARRAY<int> directvertexclusters;
-  ARRAY<int> directedgeclusters;
-  ARRAY<int> directfaceclusters;
-  ARRAY<int> directelementclusters;
+  Array<int> directvertexclusters;
+  Array<int> directedgeclusters;
+  Array<int> directfaceclusters;
+  Array<int> directelementclusters;
 
 #ifdef PARALLEL
   class ngparallel::ParallelDofs * paralleldofs;
@@ -167,35 +167,35 @@ public:
   /// returns finite element. attention: should be thread-safe, but is not always
   virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
   /// get dof-nrs of the element
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
   /// get remaining dofs after static condensation
-  virtual void GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
 
   /// experiments with new preconditioners
-  virtual void GetWireBasketDofNrs (int vnr, ARRAY<int> & dnums) const;
+  virtual void GetWireBasketDofNrs (int vnr, Array<int> & dnums) const;
 
   /// get dofs on nr'th node of type nt.
-  virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, ARRAY<int> & dnums) const;
+  virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const;
   /// get number of low-order dofs for node of type nt
   virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const
   { return lodofs_per_node[nt]; }
 
   /// get dofs on vertex vnr
-  virtual void GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
   /// get dofs on edge enr
-  virtual void GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const;
+  virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
   /// get dofs on face fnr
-  virtual void GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const;
+  virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
   /// get dofs on element (=cell) elnr
-  virtual void GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
 
   /// returns surface element for boundary interals
   virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
   /// returns dofs of sourface element
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const = 0;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const = 0;
   //
-  // virtual void GetBEMDofNrs (ARRAY<int> & dnums) const;
+  // virtual void GetBEMDofNrs (Array<int> & dnums) const;
 
   /// is the FESpace defined for this sub-domain nr ?
   bool DefinedOn (int domnr) const
@@ -232,22 +232,22 @@ public:
   /// for anisotropic plane smoothing, old style
   virtual BitArray * CreateIntermediatePlanes (int type = 0) const
   { return 0; }
-  //virtual ARRAY<int> * CreateDirectSolverClusters (int type = 0) const
+  //virtual Array<int> * CreateDirectSolverClusters (int type = 0) const
   //{ return 0; }
-  virtual ARRAY<int> * CreateDirectSolverClusters (const Flags & flags) const
+  virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const
   { return 0; }
   //{ return CreateDirectSolverClusters(0); }
 
   virtual void AddDirectSolverClusterDof(int dn) const
   { adddirectsolverdofs.Append(dn); }
 
-  virtual ARRAY<int> & DirectVertexClusters(void)
+  virtual Array<int> & DirectVertexClusters(void)
   { return directvertexclusters; }
-  virtual ARRAY<int> & DirectEdgeClusters(void)
+  virtual Array<int> & DirectEdgeClusters(void)
   { return directedgeclusters; }
-  virtual ARRAY<int> & DirectFaceClusters(void)
+  virtual Array<int> & DirectFaceClusters(void)
   { return directfaceclusters; }
-  virtual ARRAY<int> & DirectElementClusters(void)
+  virtual Array<int> & DirectElementClusters(void)
   { return directelementclusters; }
 
 
@@ -318,7 +318,7 @@ public:
   virtual MatrixGraph * GetGraph (int level, bool symmetric);
 
   /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
-  ARRAY<SpecialElement*> specialelements;
+  Array<SpecialElement*> specialelements;
 
   void AppendSpecialElement (SpecialElement * spel)
   { specialelements.Append (spel); }
@@ -361,7 +361,7 @@ public:
 class NodalFESpace : public FESpace
 {
   ///
-  ARRAY<int> ndlevel;
+  Array<int> ndlevel;
 
 public:
 
@@ -385,19 +385,19 @@ public:
   ///
   virtual int GetNDofLevel (int level) const;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
   
   
-  virtual void GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const;
-  virtual void GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const;
-  virtual void GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const;
-  virtual void GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
+  virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
+  virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
+  virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
-  //virtual ARRAY<int> * CreateDirectSolverClusters (int type = 0) const;
-  virtual ARRAY<int> * CreateDirectSolverClusters (const Flags & flags) const;
+  //virtual Array<int> * CreateDirectSolverClusters (int type = 0) const;
+  virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
 #ifdef PARALLEL
 
    virtual void UpdateParallelDofs_hoproc();
@@ -416,7 +416,7 @@ public:
 class NonconformingFESpace : public FESpace
 {
   ///
-  ARRAY<int> ndlevel;
+  Array<int> ndlevel;
 
 public:
   NonconformingFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
@@ -433,9 +433,9 @@ public:
   ///
   virtual int GetNDof () const;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 };
 
 
@@ -446,7 +446,7 @@ public:
 class NodalFESpaceAlt : public FESpace
 {
   ///
-  ARRAY<int> ndlevel;
+  Array<int> ndlevel;
   ///
   int nv, ned, nfa;
 public:
@@ -485,9 +485,9 @@ public:
   }
   */
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
 
   template <class MAT>
@@ -541,8 +541,8 @@ public:
 ///
 class ElementFESpace : public FESpace
 {
-  ///  ARRAY<int> startelement;
-  ARRAY<int> ndlevel;
+  ///  Array<int> startelement;
+  Array<int> ndlevel;
   int n_el_dofs;
 public:
 
@@ -572,7 +572,7 @@ public:
   ///
   //  virtual const FiniteElement & GetFE (int elnr) const;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
   ///
   virtual int GetNDofLevel (int level) const;
@@ -580,7 +580,7 @@ public:
   ///
   // virtual const FiniteElement & GetSFE (int selnr) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
 
 #ifdef PARALLEL
@@ -597,7 +597,7 @@ public:
 class SurfaceElementFESpace : public FESpace
 {
   ///
-  ARRAY<int> ndlevel;
+  Array<int> ndlevel;
   int n_el_dofs;
 public:
 
@@ -626,13 +626,13 @@ public:
   ///
   virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
   ///
   virtual int GetNDofLevel (int level) const;
 
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 };
 
 
@@ -657,19 +657,19 @@ class NonConformingFESpace : public FESpace
   ///
   HashTable<ngstd::INT<3>,int> *node2face3d;
   ///
-  ARRAY<ngstd::INT<2> > faces;
+  Array<ngstd::INT<2> > faces;
   ///
-  ARRAY<int[4]> elementfaces;
+  Array<int[4]> elementfaces;
   ///
-  ARRAY<int> surfelementfaces;
+  Array<int> surfelementfaces;
 
   ///
-  ARRAY<int[5]> parentfaces;
+  Array<int[5]> parentfaces;
 
   ///
-  ARRAY<short int> finelevelofedge;
+  Array<short int> finelevelofedge;
   ///
-  ARRAY<int> nflevel;
+  Array<int> nflevel;
   
 public:
   ///
@@ -696,12 +696,12 @@ public:
   ///
   virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
   ///
   virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
   ///
   int GetFacePoint1 (int fnr) const { return faces[fnr][0]; }
@@ -738,18 +738,18 @@ class CompoundFESpace : public FESpace
 {
 protected:
   /// pointer to components
-  ARRAY<const FESpace*> spaces;
+  Array<const FESpace*> spaces;
   /// cummlated #dofs of components
-  ARRAY<int> cummulative_nd;
+  Array<int> cummulative_nd;
   /// 
-  ARRAY<int> ndlevel;
+  Array<int> ndlevel;
 public:
   /*
   CompoundFESpace (const MeshAccess & ama,
-		   const ARRAY<const FESpace*> & aspaces);
+		   const Array<const FESpace*> & aspaces);
   */
   CompoundFESpace (const MeshAccess & ama,
-		   const ARRAY<const FESpace*> & aspaces,
+		   const Array<const FESpace*> & aspaces,
                    const Flags & flags, bool parseflags=false);
   ///
   virtual ~CompoundFESpace ();
@@ -784,20 +784,20 @@ public:
 
   virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
-  virtual void GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+  virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
 
 
-  virtual void GetWireBasketDofNrs (int vnr, ARRAY<int> & dnums) const;
-  virtual void GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const;
-  virtual void GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const;
-  virtual void GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const;
-  virtual void GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetWireBasketDofNrs (int vnr, Array<int> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
+  virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
+  virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
+  virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
   ///
   virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
 
   template <class MAT>
@@ -914,14 +914,14 @@ public:
 		 FESpace* (*acreator)(const MeshAccess & ma, const Flags & flags));
   };
 
-  ARRAY<FESpaceInfo*> fesa;
+  Array<FESpaceInfo*> fesa;
 public:
   FESpaceClasses();
   ~FESpaceClasses();  
   void AddFESpace (const string & aname, 
 		   FESpace* (*acreator)(const MeshAccess & ma, const Flags & flags));
   
-  const ARRAY<FESpaceInfo*> & GetFESpaces() { return fesa; }
+  const Array<FESpaceInfo*> & GetFESpaces() { return fesa; }
   const FESpaceInfo * GetFESpace(const string & name);
 
   void Print (ostream & ost) const;

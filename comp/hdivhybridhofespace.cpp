@@ -48,14 +48,14 @@ namespace ngcomp
     // Evaluator for shape tester 
     if (ma.GetDimension() == 2)
       {
-	ARRAY<CoefficientFunction*> coeffs(1);
+	Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = new ConstantCoefficientFunction(1);
 	evaluator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
 
       }
     else
       {
-        ARRAY<CoefficientFunction*> coeffs(1);
+        Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = new ConstantCoefficientFunction(1);
 	evaluator = GetIntegrators().CreateBFI("masshdiv", 3, coeffs);
 	boundary_evaluator = GetIntegrators().CreateBFI("robinhdiv", 3, coeffs);
@@ -111,7 +111,7 @@ namespace ngcomp
         order_edge = order;
         order_inner = order;
 
-        ARRAY<int> eledges;
+        Array<int> eledges;
   
         for (i = 0; i < nel; i++)
 
@@ -180,8 +180,8 @@ namespace ngcomp
 	order_face = order;
 	order_inner = order;
 
-        ARRAY<int> pnums;
-	ARRAY<int> elfaces;
+        Array<int> pnums;
+	Array<int> elfaces;
 
 	ndof = nfa;
 
@@ -360,7 +360,7 @@ namespace ngcomp
     
 
 
-    ARRAY<int> vnums;
+    Array<int> vnums;
     ma.GetElVertices(elnr, vnums);
 
 
@@ -497,10 +497,10 @@ namespace ngcomp
 
 
 
-  void HDivHybridHighOrderFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void HDivHybridHighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
 
-    ARRAY<int> ednums, fnums;
+    Array<int> ednums, fnums;
     int i, j;
     int first,next;
 
@@ -588,7 +588,7 @@ namespace ngcomp
 
 
 
-  void HDivHybridHighOrderFESpace :: GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const
+  void HDivHybridHighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
   {
     if (!eliminate_internal) 
       {
@@ -596,7 +596,7 @@ namespace ngcomp
 	return;
       }
 
-    ARRAY<int> vnums, ednums, fnums;
+    Array<int> vnums, ednums, fnums;
     int i, j;
     int first,next;
 
@@ -667,11 +667,11 @@ namespace ngcomp
 
 
 
-  void HDivHybridHighOrderFESpace :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void HDivHybridHighOrderFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
 
 
-    ARRAY<int> vnums, ednums, eorient;
+    Array<int> vnums, ednums, eorient;
     int fnum,forient;
     int i, j;
     int first,next;
@@ -779,7 +779,7 @@ namespace ngcomp
       }
 
       
-    ARRAY<int> cnt(ncnt);
+    Array<int> cnt(ncnt);
     cnt = 0;
 
     cout << " ncnt " << ncnt << endl;
@@ -916,10 +916,10 @@ namespace ngcomp
 
 
   /// 
-  void HDivHybridHighOrderFESpace :: GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const
+  void HDivHybridHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   { dnums.SetSize(0); return; }
   /// 
-  void HDivHybridHighOrderFESpace :: GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const
+  void HDivHybridHighOrderFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   { 
     dnums.SetSize(0);
     if ( ma.GetDimension() == 2 )
@@ -934,7 +934,7 @@ namespace ngcomp
       }
   }
   /// 
-  void HDivHybridHighOrderFESpace :: GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const
+  void HDivHybridHighOrderFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     if(ma.GetDimension() == 3)
@@ -951,7 +951,7 @@ namespace ngcomp
 
   }  
   /// 
-  void HDivHybridHighOrderFESpace :: GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const
+  void HDivHybridHighOrderFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     int first = first_inner_dof[elnr];

@@ -756,7 +756,7 @@ namespace ngsolve
     /*
     for(i = 0; i< ma.GetNSE(); i++)
       {
-	ARRAY<int> elts;
+	Array<int> elts;
 	ma.GetFaceElements(ma.GetSElFace(i),elts);
 	for(int j=0; j<elts.Size(); j++)
 	  if(refine[elts[j]])

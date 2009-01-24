@@ -25,18 +25,18 @@ namespace ngfem
   { ; }
 
 
-  void FiniteElement :: GetInternalDofs (ARRAY<int> & idofs) const
+  void FiniteElement :: GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize(0);
   }
   
-  void FiniteElement :: GetDofs (ARRAY<Dof> & dofs) const
+  void FiniteElement :: GetDofs (Array<Dof> & dofs) const
   {
     throw Exception(string ("GetDofs not implemented for element ") + typeid(*this).name());
   }
 
 
-  CompoundFiniteElement ::  CompoundFiniteElement (ARRAY<const FiniteElement*> & afea)
+  CompoundFiniteElement ::  CompoundFiniteElement (Array<const FiniteElement*> & afea)
     : FiniteElement (), fea(afea)
   {
     if (fea.Size() && fea[0])
@@ -75,7 +75,7 @@ namespace ngfem
       }
   }
 
-  void CompoundFiniteElement :: GetInternalDofs (ARRAY<int> & idofs) const
+  void CompoundFiniteElement :: GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
     ArrayMem<int,20> bidofs;
@@ -201,7 +201,7 @@ namespace ngfem
   {
     if (!ipdata.data.Size())
       {
-	const ARRAY<IntegrationPoint*> & ipts = 
+	const Array<IntegrationPoint*> & ipts = 
 	  GetIntegrationRules().GetIntegrationPoints (et);
 
 	/*	
@@ -324,7 +324,7 @@ namespace ngfem
   /* Specific finite elements: */
   
 
-  // ARRAY<T_NodalFiniteElement<FE_Tet0,3,1>::IPData> FE_Tet0::ipdata;
+  // Array<T_NodalFiniteElement<FE_Tet0,3,1>::IPData> FE_Tet0::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Tet0::ipdata;
 
   const IntegrationRule &
@@ -335,7 +335,7 @@ namespace ngfem
 
 
 
-  // ARRAY<T_NodalFiniteElement<FE_Tet1,3,4>::IPData> FE_Tet1::ipdata;
+  // Array<T_NodalFiniteElement<FE_Tet1,3,4>::IPData> FE_Tet1::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Tet1::ipdata;
 
   const IntegrationRule &
@@ -344,7 +344,7 @@ namespace ngfem
     return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 1);
   }
 
-  void FE_Tet1 :: GetDofs (ARRAY<Dof> & dofs) const
+  void FE_Tet1 :: GetDofs (Array<Dof> & dofs) const
   {
     dofs.SetSize (0);
     for (int i = 0; i < 4; i++)
@@ -352,7 +352,7 @@ namespace ngfem
   }
 
 
-  // ARRAY<T_NodalFiniteElement<FE_Tet2,3,10>::IPData> FE_Tet2::ipdata;
+  // Array<T_NodalFiniteElement<FE_Tet2,3,10>::IPData> FE_Tet2::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Tet2::ipdata;
 
 
@@ -439,7 +439,7 @@ namespace ngfem
 
 
 
-  // ARRAY<T_NodalFiniteElement<FE_Trig1,2,3>::IPData> FE_Trig1::ipdata;
+  // Array<T_NodalFiniteElement<FE_Trig1,2,3>::IPData> FE_Trig1::ipdata;
   NodalFiniteElement<2>::IPDataArray FE_Trig1::ipdata;
 
   const IntegrationRule &
@@ -450,7 +450,7 @@ namespace ngfem
 
 
 
-  // ARRAY<T_NodalFiniteElement<FE_Trig2,2,6>::IPData> FE_Trig2::ipdata;
+  // Array<T_NodalFiniteElement<FE_Trig2,2,6>::IPData> FE_Trig2::ipdata;
   NodalFiniteElement<2>::IPDataArray FE_Trig2::ipdata;
 
   const IntegrationRule &
@@ -460,7 +460,7 @@ namespace ngfem
   } 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Trig2HB::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Trig2HB::ipdata;
   NodalFiniteElement<2>::IPDataArray FE_Trig2HB::ipdata;
 
   FE_Trig2HB :: FE_Trig2HB()
@@ -501,7 +501,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Trig3Pot::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Trig3Pot::ipdata;
   NodalFiniteElement<2>::IPDataArray FE_Trig3Pot::ipdata;
 
   FE_Trig3Pot :: FE_Trig3Pot()
@@ -548,7 +548,7 @@ namespace ngfem
   }
 
 
-  // ARRAY<T_NodalFiniteElement<FE_NC_Trig1,2,3>::IPData> FE_NC_Trig1::ipdata;
+  // Array<T_NodalFiniteElement<FE_NC_Trig1,2,3>::IPData> FE_NC_Trig1::ipdata;
   NodalFiniteElement<2>::IPDataArray FE_NC_Trig1::ipdata;
 
   const IntegrationRule &
@@ -565,7 +565,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Tet3Pot::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Tet3Pot::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Tet3Pot::ipdata;
 
   FE_Tet3Pot :: FE_Tet3Pot()
@@ -635,7 +635,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Quad0::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Quad0::ipdata;
   NodalFiniteElement<2>::IPDataArray FE_Quad0::ipdata;
 
   FE_Quad0 :: FE_Quad0()
@@ -673,7 +673,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Quad1::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Quad1::ipdata;
   NodalFiniteElement<2>::IPDataArray FE_Quad1::ipdata;
 
   FE_Quad1 :: FE_Quad1()
@@ -733,7 +733,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Quad2::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Quad2::ipdata;
   NodalFiniteElement<2>::IPDataArray FE_Quad2::ipdata;
 
   FE_Quad2 :: FE_Quad2()
@@ -817,7 +817,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Quad3::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Quad3::ipdata;
   NodalFiniteElement<2>::IPDataArray FE_Quad3::ipdata;
 
   FE_Quad3 :: FE_Quad3()
@@ -908,7 +908,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Quad2aniso::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Quad2aniso::ipdata;
   NodalFiniteElement<2>::IPDataArray FE_Quad2aniso::ipdata;
 
   FE_Quad2aniso :: FE_Quad2aniso()
@@ -950,7 +950,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Pyramid0::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Pyramid0::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Pyramid0::ipdata;
 
   FE_Pyramid0 :: FE_Pyramid0()
@@ -993,7 +993,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Pyramid1::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Pyramid1::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Pyramid1::ipdata;
 
   FE_Pyramid1 :: FE_Pyramid1()
@@ -1076,7 +1076,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Pyramid2::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Pyramid2::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Pyramid2::ipdata;
 
   FE_Pyramid2 :: FE_Pyramid2()
@@ -1116,7 +1116,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Prism0::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Prism0::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Prism0::ipdata;
 
   FE_Prism0 :: FE_Prism0()
@@ -1154,7 +1154,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Prism1::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Prism1::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Prism1::ipdata;
 
   FE_Prism1 :: FE_Prism1()
@@ -1237,7 +1237,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Prism2::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Prism2::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Prism2::ipdata;
 
   FE_Prism2 :: FE_Prism2()
@@ -1294,7 +1294,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Prism2aniso::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Prism2aniso::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Prism2aniso::ipdata;
 
   FE_Prism2aniso :: FE_Prism2aniso()
@@ -1344,7 +1344,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Prism2HBaniso::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Prism2HBaniso::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Prism2HBaniso::ipdata;
 
   FE_Prism2HBaniso :: FE_Prism2HBaniso()
@@ -1390,7 +1390,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Prism3aniso::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Prism3aniso::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Prism3aniso::ipdata;
 
   FE_Prism3aniso :: FE_Prism3aniso()
@@ -1444,7 +1444,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Hex1::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Hex1::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Hex1::ipdata;
 
   FE_Hex1 :: FE_Hex1()
@@ -1482,7 +1482,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Hex0::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Hex0::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_Hex0::ipdata;
 
   FE_Hex0 :: FE_Hex0()
@@ -1525,40 +1525,40 @@ namespace ngfem
 
 
 
-  // ARRAY<T_NodalFiniteElement<FE_Segm0,1,1>::IPData> FE_Segm0::ipdata;
+  // Array<T_NodalFiniteElement<FE_Segm0,1,1>::IPData> FE_Segm0::ipdata;
   NodalFiniteElement<1>::IPDataArray FE_Segm0::ipdata;
 
   NodalFiniteElement<1>::IPDataArray FE_SegmDummy::ipdata;
 
-  // ARRAY<T_NodalFiniteElement<FE_Segm1,1,2>::IPData> FE_Segm1::ipdata;
+  // Array<T_NodalFiniteElement<FE_Segm1,1,2>::IPData> FE_Segm1::ipdata;
   NodalFiniteElement<1>::IPDataArray FE_Segm1::ipdata;
 
-  //  ARRAY<T_NodalFiniteElement<FE_Segm1L2,1,2>::IPData> FE_Segm1L2::ipdata;
+  //  Array<T_NodalFiniteElement<FE_Segm1L2,1,2>::IPData> FE_Segm1L2::ipdata;
   NodalFiniteElement<1>::IPDataArray FE_Segm1L2::ipdata;
   FE_Segm1L2 ::  FE_Segm1L2() { ; }
 
-  // ARRAY<T_NodalFiniteElement<FE_Segm2,1,3>::IPData> FE_Segm2::ipdata;
+  // Array<T_NodalFiniteElement<FE_Segm2,1,3>::IPData> FE_Segm2::ipdata;
   NodalFiniteElement<1>::IPDataArray FE_Segm2::ipdata;
 
-  // ARRAY<T_NodalFiniteElement<FE_Segm2L2,1,3>::IPData> FE_Segm2L2::ipdata;
+  // Array<T_NodalFiniteElement<FE_Segm2L2,1,3>::IPData> FE_Segm2L2::ipdata;
   NodalFiniteElement<1>::IPDataArray FE_Segm2L2::ipdata;
   FE_Segm2L2 :: FE_Segm2L2() { ; }
 
-  // ARRAY<T_NodalFiniteElement<FE_Segm2HB,1,3>::IPData> FE_Segm2HB::ipdata;
+  // Array<T_NodalFiniteElement<FE_Segm2HB,1,3>::IPData> FE_Segm2HB::ipdata;
   NodalFiniteElement<1>::IPDataArray FE_Segm2HB::ipdata;
 
-  // ARRAY<T_NodalFiniteElement<FE_NcSegm1,1,1>::IPData> FE_NcSegm1::ipdata;
+  // Array<T_NodalFiniteElement<FE_NcSegm1,1,1>::IPData> FE_NcSegm1::ipdata;
   NodalFiniteElement<1>::IPDataArray FE_NcSegm1::ipdata;
 
   template <int ORDER>
   NodalFiniteElement<1>::IPDataArray FE_TSegmL2<ORDER>::ipdata;
-  // ARRAY<NodalFiniteElement::IPData> FE_TSegmL2<ORDER>::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_TSegmL2<ORDER>::ipdata;
 
   /*
-    ARRAY<NodalFiniteElement::IPData> FE_TSegmL2<0>::ipdata;
-    ARRAY<NodalFiniteElement::IPData> FE_TSegmL2<1>::ipdata;
-    ARRAY<NodalFiniteElement::IPData> FE_TSegmL2<2>::ipdata;
-    ARRAY<NodalFiniteElement::IPData> FE_TSegmL2<3>::ipdata;
+    Array<NodalFiniteElement::IPData> FE_TSegmL2<0>::ipdata;
+    Array<NodalFiniteElement::IPData> FE_TSegmL2<1>::ipdata;
+    Array<NodalFiniteElement::IPData> FE_TSegmL2<2>::ipdata;
+    Array<NodalFiniteElement::IPData> FE_TSegmL2<3>::ipdata;
   */
   template <int ORDER>
   FE_TSegmL2<ORDER> :: FE_TSegmL2()
@@ -1620,7 +1620,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_Segm3Pot::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_Segm3Pot::ipdata;
   NodalFiniteElement<1>::IPDataArray FE_Segm3Pot::ipdata;
 
   FE_Segm3Pot :: FE_Segm3Pot()
@@ -1664,7 +1664,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_NcTrig1::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_NcTrig1::ipdata;
   NodalFiniteElement<2>::IPDataArray FE_NcTrig1::ipdata;
 
 
@@ -1696,7 +1696,7 @@ namespace ngfem
 
 
 
-  // ARRAY<NodalFiniteElement::IPData> FE_NcTet1::ipdata;
+  // Array<NodalFiniteElement::IPData> FE_NcTet1::ipdata;
   NodalFiniteElement<3>::IPDataArray FE_NcTet1::ipdata;
 
   FE_NcTet1 :: FE_NcTet1()

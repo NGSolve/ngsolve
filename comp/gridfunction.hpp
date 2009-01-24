@@ -64,7 +64,7 @@ public:
   ///
   virtual void PrintReport (ostream & ost);
   ///
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const;
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
   ///
   ///
@@ -98,20 +98,20 @@ public:
     : GridFunction (afespace, aname, flags) { ; }
   
   ///
-  virtual void GetElementVector (const ARRAY<int> & dnums,
+  virtual void GetElementVector (const Array<int> & dnums,
 				 FlatVector<SCAL> & elvec) const = 0;
   ///
-  virtual void SetElementVector (const ARRAY<int> & dnums,
+  virtual void SetElementVector (const Array<int> & dnums,
 				 const FlatVector<SCAL> & elvec) = 0;
 
 
   ///
   virtual void GetElementVector (int comp,
-				 const ARRAY<int> & dnums,
+				 const Array<int> & dnums,
 				 FlatVector<SCAL> & elvec) const = 0;
   ///
   virtual void SetElementVector (int comp,
-				 const ARRAY<int> & dnums,
+				 const Array<int> & dnums,
 				 const FlatVector<SCAL> & elvec) = 0;
 };
 
@@ -121,7 +121,7 @@ template <class TV>
 class T_GridFunction : public S_GridFunction<typename mat_traits<TV>::TSCAL>
 {
 protected:
-  ARRAY<VVector<TV>*> vec;
+  Array<VVector<TV>*> vec;
   
 public:
   typedef typename mat_traits<TV>::TSCAL TSCAL;
@@ -138,22 +138,22 @@ public:
   virtual const BaseVector & GetVector (int comp = 0) const;
 
   ///
-  virtual void GetElementVector (const ARRAY<int> & dnums,
+  virtual void GetElementVector (const Array<int> & dnums,
 				 FlatVector<TSCAL> & elvec) const;
 
   ///
-  virtual void SetElementVector (const ARRAY<int> & dnums,
+  virtual void SetElementVector (const Array<int> & dnums,
 				 const FlatVector<TSCAL> & elvec);
 
 
   ///
   virtual void GetElementVector (int comp,
-				 const ARRAY<int> & dnums,
+				 const Array<int> & dnums,
 				 FlatVector<TSCAL> & elvec) const;
 
   ///
   virtual void SetElementVector (int comp,
-				 const ARRAY<int> & dnums,
+				 const Array<int> & dnums,
 				 const FlatVector<TSCAL> & elvec);
 
 
@@ -172,7 +172,7 @@ public:
   const FiniteElement & el = fes.GetFE(elnr);
   int nd = el.GetNDof();
     
-  ARRAY<int> dnums (nd); 
+  Array<int> dnums (nd); 
   fes.GetDofNrs (elnr, dnums);
     
   Vector<double> elemu (nd);
@@ -203,7 +203,7 @@ protected:
   S_GridFunction<double> & gf;
   LocalHeap lh;
   FlatVector<double> elu;
-  ARRAY<int> dnums;
+  Array<int> dnums;
   int cache_elnr;
   int comp;
 
@@ -267,8 +267,8 @@ class VisualizeGridFunction : public netgen::SolutionData
 {
   const MeshAccess & ma;
   const S_GridFunction<SCAL> * gf;
-  ARRAY<const BilinearFormIntegrator *> bfi2d;
-  ARRAY<const BilinearFormIntegrator *> bfi3d;
+  Array<const BilinearFormIntegrator *> bfi2d;
+  Array<const BilinearFormIntegrator *> bfi3d;
   bool applyd;
   //
   int cache_elnr;
@@ -276,7 +276,7 @@ class VisualizeGridFunction : public netgen::SolutionData
   LocalHeap lh;
   ElementTransformation eltrans;
   const FiniteElement * fel;
-  ARRAY<int> dnums;
+  Array<int> dnums;
   FlatVector<SCAL> elu;
 
 public:
@@ -287,8 +287,8 @@ public:
 			 bool aapplyd);
   VisualizeGridFunction (const MeshAccess & ama,
 			 const GridFunction * agf,
-			 const ARRAY<BilinearFormIntegrator *> & abfi2d,
-			 const ARRAY<BilinearFormIntegrator *> & abfi3d,
+			 const Array<BilinearFormIntegrator *> & abfi2d,
+			 const Array<BilinearFormIntegrator *> & abfi3d,
 			 bool aapplyd);
 
   virtual ~VisualizeGridFunction ();
@@ -309,8 +309,8 @@ public:
 			     const double xref[], const double x[], const double dxdxref[],
 			     double * values);
 
-  void Analyze(ARRAY<double> & minima, ARRAY<double> & maxima, ARRAY<double> & averages, int component = -1);
-  void Analyze(ARRAY<double> & minima, ARRAY<double> & maxima, ARRAY<double> & averages_times_volumes, ARRAY<double> & volumes, int component = -1);
+  void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages, int component = -1);
+  void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages_times_volumes, Array<double> & volumes, int component = -1);
     
 
 };

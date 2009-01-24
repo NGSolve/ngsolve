@@ -313,7 +313,7 @@ namespace ngmg
   }
 
 
-  void MultigridPreconditioner :: MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  void MultigridPreconditioner :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     if (coarsegridpre) coarsegridpre->MemoryUsage (mu);
     if (smoother) smoother->MemoryUsage (mu);
@@ -391,7 +391,7 @@ namespace ngmg
 	  smoother->PreSmoothResiduum (level, u, f, res, smoothingsteps);
 	//res.SetStatus(DISTRIBUTED);
         res = f - (*mat) * u;    // zur Sicheheit
-	ARRAY<int> loprocs(1);
+	Array<int> loprocs(1);
 	loprocs[0] = 0;
  	res.AllReduce(&hoprocs, &loprocs );
 	res.Distribute();
@@ -430,7 +430,7 @@ namespace ngmg
 
 
 
-  void TwoLevelMatrix :: MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  void TwoLevelMatrix :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     if (cpre) cpre->MemoryUsage (mu);
     if (smoother) smoother->MemoryUsage (mu);

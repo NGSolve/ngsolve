@@ -18,8 +18,8 @@ class MDOPriorityQueue
   struct entry { 
     int degree, prev, next;
   };
-  ARRAY<entry> list;
-  ARRAY<int> first_in_class;
+  Array<entry> list;
+  Array<int> first_in_class;
 public:
   MDOPriorityQueue (int size, int maxdeg);
   ~MDOPriorityQueue ();
@@ -153,13 +153,13 @@ public:
   ///
   int n;
   ///
-  ARRAY<CliqueEl*> cliques;
+  Array<CliqueEl*> cliques;
   ///
-  ARRAY<int> order;
+  Array<int> order;
   ///
-  ARRAY<int> blocknr;
+  Array<int> blocknr;
   ///
-  ARRAY<MDOVertex> vertices;
+  Array<MDOVertex> vertices;
   ///
   MDOPriorityQueue priqueue;
   ///

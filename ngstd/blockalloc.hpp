@@ -21,7 +21,7 @@ class BlockAllocator
   /// single linked list of free elements
   void * freelist;
   /// pointers to blocks
-  ARRAY<char*> bablocks;
+  Array<char*> bablocks;
   ///
   int nels;
 public:

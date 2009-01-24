@@ -247,9 +247,9 @@ class ElementTransformation
   /// geometry of element
   ELEMENT_TYPE eltype;
 
-  const ARRAY<Vec<3> > * pts;
-  const ARRAY<Mat<3,3> > * dxdxis;
-  const ARRAY<int> * first_of_element;
+  const Array<Vec<3> > * pts;
+  const Array<Mat<3,3> > * dxdxis;
+  const Array<int> * first_of_element;
 
   bool higher_integration_order;
 
@@ -262,15 +262,15 @@ public:
   ///
   ElementTransformation () { pts = 0; higher_integration_order = false; buffervalid = false; }
   /*
-  ElementTransformation (ARRAY<Vec<3> > * apts,
-			 ARRAY<Mat<3,3> > * adxdxis,
-			 ARRAY<int> * afirst_of_element)
+  ElementTransformation (Array<Vec<3> > * apts,
+			 Array<Mat<3,3> > * adxdxis,
+			 Array<int> * afirst_of_element)
     : pts(apts), dxdxis(adxdxis), first_of_element(afirst_of_element) { ; }
   */
 
-  void SetGeometryData (const ARRAY<Vec<3> > * apts,
-			const ARRAY<Mat<3,3> > * adxdxis,
-			const ARRAY<int> * afirst_of_element)
+  void SetGeometryData (const Array<Vec<3> > * apts,
+			const Array<Mat<3,3> > * adxdxis,
+			const Array<int> * afirst_of_element)
   {
     pts = apts;
     dxdxis = adxdxis;

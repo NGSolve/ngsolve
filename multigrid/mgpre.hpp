@@ -54,7 +54,7 @@ private:
   /// creates a new smoother for each update
   bool update_always; 
   /// for robust prolongation
-  ARRAY<BaseMatrix*> prol_projection;
+  Array<BaseMatrix*> prol_projection;
 public:
   ///
   MultigridPreconditioner (const MeshAccess & ama,
@@ -126,7 +126,7 @@ public:
   }
 
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const;
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 };
 
 
@@ -191,7 +191,7 @@ public:
     return mat->VWidth();
   }
   
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const;
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 };
 
 

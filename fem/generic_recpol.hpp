@@ -23,7 +23,7 @@ class RecPol
 {
 protected:
   ///
-  ARRAY< double[3] > coefs;
+  Array< double[3] > coefs;
   
 public:
   /// init coefficient array

@@ -259,7 +259,7 @@ namespace ngfem {
   }
 
   void VectorFacetVolumeFiniteElement :: 
-  GetFacetDofNrs(int afnr, ARRAY<int>& fdnums) const
+  GetFacetDofNrs(int afnr, Array<int>& fdnums) const
   {
     fdnums.SetSize(0);
     int first = first_facet_dof[afnr];
@@ -269,14 +269,14 @@ namespace ngfem {
   }
   
   void VectorFacetVolumeFiniteElement :: 
-  GetVertexNumbers(ARRAY<int>& avnums) const
+  GetVertexNumbers(Array<int>& avnums) const
   {
     avnums.SetSize(nv);
     for ( int i = 0; i < nv; i++ )
       avnums[i] = vnums[i];
   }
   
-  void VectorFacetVolumeFiniteElement :: GetFacetOrders(ARRAY<INT<2> >& forder) const
+  void VectorFacetVolumeFiniteElement :: GetFacetOrders(Array<INT<2> >& forder) const
   {
     forder.SetSize(6);
     for ( int i = 0; i < 6; i++ )
@@ -423,7 +423,7 @@ namespace ngfem {
 //     VectorFacetVolumeTrig * trig=const_cast<VectorFacetVolumeTrig*>(this);
 //     trig->fnr = afnr;
 //     const EDGE * edges = ElementTopology::GetEdges (eltype);
-//     ARRAY<int> fvnums(2);
+//     Array<int> fvnums(2);
 //     fvnums[0] = vnums[edges[fnr][0]]; 
 //     fvnums[1] = vnums[edges[fnr][1]]; 
     
@@ -572,7 +572,7 @@ namespace ngfem {
 //     VectorFacetVolumeQuad * quad=const_cast<VectorFacetVolumeQuad*>(this);
 //     quad->fnr = afnr;
 //     const EDGE * edges = ElementTopology::GetEdges (eltype);
-//     ARRAY<int> fvnums(2);
+//     Array<int> fvnums(2);
 //     fvnums[0] = vnums[edges[fnr][0]]; 
 //     fvnums[1] = vnums[edges[fnr][1]]; 
     
@@ -776,7 +776,7 @@ namespace ngfem {
     
 //     VectorFacetVolumeTet * tet=const_cast<VectorFacetVolumeTet*>(this);
 //     tet->fnr = afnr;
-//     ARRAY<int> fvnums(3);  
+//     Array<int> fvnums(3);  
 //     const FACE * faces = ElementTopology::GetFaces (eltype);
     
 //     fvnums[0] = vnums[faces[fnr][0]]; 
@@ -870,7 +870,7 @@ namespace ngfem {
     
 //     VectorFacetVolumeHex * hex=const_cast<VectorFacetVolumeHex*>(this);
 //     hex->fnr = afnr;
-//     ARRAY<int> fvnums(4);  
+//     Array<int> fvnums(4);  
 //     const FACE * faces = ElementTopology::GetFaces (eltype);
     
 //     fvnums[0] = vnums[faces[fnr][0]]; 
@@ -955,7 +955,7 @@ namespace ngfem {
 //     if (afnr < 2) // triangles
 //       {
 // 	prism->tnr = afnr;
-// 	ARRAY<int> fvnums(3);  
+// 	Array<int> fvnums(3);  
 // 	const FACE * faces = ElementTopology::GetFaces (eltype);
 
 // 	fvnums[0] = vnums[faces[afnr][0]]; 
@@ -968,7 +968,7 @@ namespace ngfem {
 //     else // quad face
 //       {
 // 	prism->qnr = afnr;
-// 	ARRAY<int> fvnums(4);  
+// 	Array<int> fvnums(4);  
 // 	const FACE * faces = ElementTopology::GetFaces (eltype);
 
 // 	fvnums[0] = vnums[faces[afnr][0]]; 
@@ -1031,7 +1031,7 @@ namespace ngfem {
 //     if (afnr < 4) // triangles
 //       {
 // 	pyramid->tnr = afnr;
-// 	ARRAY<int> fvnums(3);  const FACE * faces = ElementTopology::GetFaces (eltype);
+// 	Array<int> fvnums(3);  const FACE * faces = ElementTopology::GetFaces (eltype);
 
 // 	fvnums[0] = vnums[faces[tnr][0]]; 
 // 	fvnums[1] = vnums[faces[tnr][1]]; 
@@ -1043,7 +1043,7 @@ namespace ngfem {
 //     else // quad face
 //       {
 // 	pyramid->qnr = afnr;
-// 	ARRAY<int> fvnums(4);  const FACE * faces = ElementTopology::GetFaces (eltype);
+// 	Array<int> fvnums(4);  const FACE * faces = ElementTopology::GetFaces (eltype);
 
 // 	fvnums[0] = vnums[faces[qnr][0]]; 
 // 	fvnums[1] = vnums[faces[qnr][1]]; 

@@ -1,5 +1,5 @@
-#ifndef FILE_NGS_ARRAY
-#define FILE_NGS_ARRAY
+#ifndef FILE_NGS_Array
+#define FILE_NGS_Array
 
 /**************************************************************************/
 /* File:   array.hpp                                                      */
@@ -236,13 +236,13 @@ inline bool operator== (const FlatArray<T1> & a1,
 /** 
    Dynamic array container.
    
-   ARRAY<T> is an automatically increasing array container.
+   Array<T> is an automatically increasing array container.
    The allocated memory doubles on overflow. 
    Either the container takes care of memory allocation and deallocation,
    or the user provides one block of data.
 */
 template <class T> 
-class ARRAY : public FlatArray<T>
+class Array : public FlatArray<T>
 {
 protected:
   /// physical size of array
@@ -251,7 +251,7 @@ protected:
   bool ownmem;
 public:
   /// Generate array of logical and physical size asize
-  explicit ARRAY(int asize = 0)
+  explicit Array(int asize = 0)
     : FlatArray<T> (asize, asize ? new T[asize] : 0)
   {
     allocsize = asize; 
@@ -259,7 +259,7 @@ public:
   }
 
   /// Generate array in user data
-  ARRAY(int asize, T* adata)
+  Array(int asize, T* adata)
     : FlatArray<T> (asize, adata)
   {
     allocsize = asize; 
@@ -267,7 +267,7 @@ public:
   }
 
   /// array copy 
-  explicit ARRAY (const ARRAY<T> & a2)
+  explicit Array (const Array<T> & a2)
     : FlatArray<T> (a2.Size(), a2.Size() ? new T[a2.Size()] : 0)
   {
     allocsize = this->size;
@@ -277,7 +277,7 @@ public:
   }
 
   /// array merge-copy
-  explicit ARRAY (const ARRAY<T> & a2, const ARRAY<T> & a3)
+  explicit Array (const Array<T> & a2, const Array<T> & a3)
     : FlatArray<T> (a2.Size()+a3.Size(), 
 		    a2.Size()+a3.Size() ? new T[a2.Size()+a3.Size()] : 0)
   {
@@ -290,7 +290,7 @@ public:
   }
 
   /// if responsible, deletes memory
-  ~ARRAY()
+  ~Array()
   {
     if (ownmem)
       delete [] this->data;
@@ -322,7 +322,7 @@ public:
   }
 
   /// Append array at end of array. reallocation if necessary.
-  int Append (const ARRAY<T> & source)
+  int Append (const Array<T> & source)
   {
     if(this->size + source.Size() >= allocsize)
       ReSize (this->size + source.Size() + 1);
@@ -366,14 +366,14 @@ public:
   }
 
   /// Fill array with val
-  ARRAY & operator= (const T & val)
+  Array & operator= (const T & val)
   {
     FlatArray<T>::operator= (val);
     return *this;
   }
 
   /// array copy
-  ARRAY & operator= (const ARRAY & a2)
+  Array & operator= (const Array & a2)
   {
     SetSize (a2.Size());
     for (int i = 0; i < this->size; i++)
@@ -382,7 +382,7 @@ public:
   }
 
   /// array copy
-  ARRAY & operator= (const FlatArray<T> & a2)
+  Array & operator= (const FlatArray<T> & a2)
   {
     SetSize (a2.Size());
     for (int i = 0; i < this->size; i++)
@@ -430,7 +430,7 @@ private:
    otherwise perform dynamic allocation
  */
 template <class T, int S> 
-class ArrayMem : public ARRAY<T>
+class ArrayMem : public Array<T>
 {
   // T mem[S];                     // should be best, but calls trivial default constructor 
   // char mem[S*sizeof(T)];     // avoids calling the array default-constructor (icc)
@@ -439,7 +439,7 @@ class ArrayMem : public ARRAY<T>
 public:
   /// Generate array of logical and physical size asize
   explicit ArrayMem(int asize = 0)    
-    : ARRAY<T> (S, static_cast<T*> (static_cast<void*>(&mem[0])))
+    : Array<T> (S, static_cast<T*> (static_cast<void*>(&mem[0])))
   {
     this->size = asize;
     if (asize > S)
@@ -450,18 +450,18 @@ public:
     // this->SetSize (asize);
   }
 
-  /// copies from ARRAY a2
-  explicit ArrayMem(const ARRAY<T> & a2)
-    : ARRAY<T> (S, (T*)mem)
+  /// copies from Array a2
+  explicit ArrayMem(const Array<T> & a2)
+    : Array<T> (S, (T*)mem)
   {
-    ARRAY<T>::operator= (a2);
+    Array<T>::operator= (a2);
   }
 
   /// copies from ArrayMem a2
   explicit ArrayMem(const ArrayMem & a2)
-    : ARRAY<T> (S, (T*)mem)
+    : Array<T> (S, (T*)mem)
   {
-    ARRAY<T>::operator= (a2);
+    Array<T>::operator= (a2);
   }
   
 
@@ -472,7 +472,7 @@ public:
   }
 
   /// array copy
-  ArrayMem & operator= (const ARRAY<T> & a2)
+  ArrayMem & operator= (const Array<T> & a2)
   {
     SetSize (a2.Size());
     for (int i = 0; i < this->size; i++)
@@ -503,8 +503,8 @@ inline void BubbleSort (const FlatArray<T> & data)
 
 
 /*
-void QickSortRec (const ARRAY<double> & values,
-		  ARRAY<int> & order, 
+void QickSortRec (const Array<double> & values,
+		  Array<int> & order, 
 		  int left, int right)
 {
   int i, j;

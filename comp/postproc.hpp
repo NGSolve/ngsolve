@@ -49,7 +49,7 @@ template <class SCAL>
 extern int CalcPointFlux (const MeshAccess & ma, 
 			  const GridFunction & u,
 			  const FlatVector<double> & point,
-			  const ARRAY<int> & domains,
+			  const Array<int> & domains,
 			  FlatVector<SCAL> & flux,
 			  const BilinearFormIntegrator & bli,
 			  bool applyd,

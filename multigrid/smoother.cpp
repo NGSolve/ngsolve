@@ -177,7 +177,7 @@ namespace ngmg
       return;
 
 
-    ARRAY<int> cnts(ma.GetNP());
+    Array<int> cnts(ma.GetNP());
     cnts = 0;
 
     for (j = 0; j < ma.GetNP(); j++)
@@ -265,8 +265,8 @@ namespace ngmg
       jac.Elem(j) = NULL;
 
     const FESpace & fes = biform.GetFESpace();
-    ARRAY<int> dofs;
-    ARRAY<int> pnums;
+    Array<int> dofs;
+    Array<int> pnums;
     int ne = ma.GetNE();
     int nse = ma.GetNSE();
     int nd = fes.GetNDof();
@@ -370,7 +370,7 @@ namespace ngmg
       return;
 
     int nd = space.GetNDof();
-    ARRAY<int> cnts(nd);
+    Array<int> cnts(nd);
     IntTable *node2edge;
 
     for (i = 1; i <= nd; i++)
@@ -539,7 +539,7 @@ namespace ngmg
 	int ned = ma.GetNEdges();
 	int nv = ma.GetNV();
 	
-	ARRAY<int> cnte(nv+ned), cntv(nv);
+	Array<int> cnte(nv+ned), cntv(nv);
 	
 	for (i = 1; i <= cntv.Size(); i++)
 	  cntv.Elem(i) = 0;
@@ -1055,7 +1055,7 @@ BaseVector * BlockSmoother :: CreateVector(int level) const
   return biform.GetMatrix(level).CreateVector();
 }
 
-void BlockSmoother :: MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+void BlockSmoother :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
 {
   for (int i = 0; i < jac.Size(); i++)
     if (jac[i]) jac[i]->MemoryUsage (mu);
@@ -1220,7 +1220,7 @@ BaseVector * PotentialSmoother :: CreateVector(int level) const
   return biform.GetMatrix(level).CreateVector();
 }
 
-void PotentialSmoother :: MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+void PotentialSmoother :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
 {
   for (int i = 0; i < jac.Size(); i++)
     if (jac[i]) jac[i]->MemoryUsage (mu);
@@ -1609,7 +1609,7 @@ MixedSmoother :: ~MixedSmoother()
       return;
     
     
-    ARRAY<int> dnums, dnums2, pnums;
+    Array<int> dnums, dnums2, pnums;
 
 
     /*

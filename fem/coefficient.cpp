@@ -34,7 +34,7 @@ namespace ngfem
 
 
   DomainConstantCoefficientFunction :: 
-  DomainConstantCoefficientFunction (const ARRAY<double> & aval)
+  DomainConstantCoefficientFunction (const Array<double> & aval)
     : val(aval) { ; }
   /*
   .Size())
@@ -68,7 +68,7 @@ namespace ngfem
 
   template <int DIM>
   DomainVariableCoefficientFunction<DIM> ::
-  DomainVariableCoefficientFunction (const ARRAY<EvalFunction*> & afun)
+  DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun)
     : fun(afun.Size())
   {
     for (int i = 0; i < fun.Size(); i++)
@@ -91,21 +91,21 @@ namespace ngfem
   template class DomainVariableCoefficientFunction<3>;
 
 
-  PolynomialCoefficientFunction::PolynomialCoefficientFunction(const ARRAY < ARRAY< ARRAY<double>* >* > & polycoeffs_in,
-							       const ARRAY < ARRAY<double>* > & polybounds_in)
+  PolynomialCoefficientFunction::PolynomialCoefficientFunction(const Array < Array< Array<double>* >* > & polycoeffs_in,
+							       const Array < Array<double>* > & polybounds_in)
     : polycoeffs(polycoeffs_in), polybounds(polybounds_in)
   {}
 
-  PolynomialCoefficientFunction::PolynomialCoefficientFunction(const ARRAY < ARRAY<double>* > & polycoeffs_in)
+  PolynomialCoefficientFunction::PolynomialCoefficientFunction(const Array < Array<double>* > & polycoeffs_in)
   {
     polycoeffs.SetSize(polycoeffs_in.Size());
     polybounds.SetSize(polycoeffs_in.Size());
     
     for(int i=0; i<polycoeffs_in.Size(); i++)
       {
-	polycoeffs[i] = new ARRAY< ARRAY<double>* >(1);
+	polycoeffs[i] = new Array< Array<double>* >(1);
 	(*polycoeffs[i])[0] = polycoeffs_in[i];
-	polybounds[i] = new ARRAY<double>(0);
+	polybounds[i] = new Array<double>(0);
       } 
   }
 
@@ -134,7 +134,7 @@ namespace ngfem
 
 
 
-  double PolynomialCoefficientFunction::EvalPoly(const double t, const ARRAY<double> & coeffs) const
+  double PolynomialCoefficientFunction::EvalPoly(const double t, const Array<double> & coeffs) const
   {
     const int last = coeffs.Size()-1;
     
@@ -149,7 +149,7 @@ namespace ngfem
   }
 
 
-  double PolynomialCoefficientFunction::EvalPolyDeri(const double t, const ARRAY<double> & coeffs) const
+  double PolynomialCoefficientFunction::EvalPolyDeri(const double t, const Array<double> & coeffs) const
   {
     const int last = coeffs.Size()-1;
 
@@ -289,7 +289,7 @@ namespace ngfem
     
     for(int i=0; i<numels; i++)
       {
-	ValuesAtIps[i] = new ARRAY<double>(numips);
+	ValuesAtIps[i] = new Array<double>(numips);
 	*(ValuesAtIps[i]) = 0.;
       }
 

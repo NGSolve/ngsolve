@@ -63,14 +63,14 @@ namespace ngla
   }
 
   template <typename T>
-  BaseVector * T_BaseVector<T> :: CreateVector ( const ARRAY<int> * procs ) const
+  BaseVector * T_BaseVector<T> :: CreateVector ( const Array<int> * procs ) const
   {
     VVector<T> * vec = new VVector<T> (this->size);
     return vec;
   }
 // #else 
 //   template <typename T>
-//   BaseVector * T_BaseVector<T> :: CreateVector ( const ARRAY<int> * procs ) const
+//   BaseVector * T_BaseVector<T> :: CreateVector ( const Array<int> * procs ) const
 //   {
 //     VVector<T> * vec;
 //     ParallelVVector<T> * parvec;

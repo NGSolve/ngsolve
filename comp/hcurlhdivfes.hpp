@@ -16,14 +16,14 @@
 class NedelecFESpace : public FESpace
 {
   ///
-  ARRAY<ngstd::INT<2> > edgepoints;
+  Array<ngstd::INT<2> > edgepoints;
   ///
-  ARRAY<int[2]> parentedges;
+  Array<int[2]> parentedges;
   ///
-  ARRAY<short int> finelevelofedge;
+  Array<short int> finelevelofedge;
 
   ///
-  ARRAY<int> nelevel;
+  Array<int> nelevel;
 
 protected:
   bool discontinuous;
@@ -54,9 +54,9 @@ public:
   virtual int GetNDofLevel (int level) const;
 
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
   ///
   int EdgePoint1 (int ednr) const { return edgepoints[ednr][0]; }
@@ -119,10 +119,10 @@ public:
   }
 
 
-  virtual void GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const;
-  virtual void GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const;
-  virtual void GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const;
-  virtual void GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
+  virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
+  virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
+  virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
 #ifdef PARALLEL
   virtual void UpdateParallelDofs_loproc();
@@ -146,9 +146,9 @@ private:
   /// order in z-direction
   int zorder;
   ///
-  ARRAY<short int> gradientedge;
+  Array<short int> gradientedge;
   ///
-  ARRAY<short int> gradientface;
+  Array<short int> gradientface;
 
   ///
   int ned;
@@ -167,14 +167,14 @@ private:
   int n_prism_nograd_el_dofs;
   int n_pyramid_el_dofs;
   ///
-  ARRAY<int> first_face_dof;
-  ARRAY<int> first_el_dof;
+  Array<int> first_face_dof;
+  Array<int> first_el_dof;
   ///
   BitArray gradientdomains;
   ///
   BitArray gradientboundaries;
   ///
-  ARRAY<int> ndlevel;
+  Array<int> ndlevel;
 
   FiniteElement * curltet;
   FiniteElement * curlprism;
@@ -205,10 +205,10 @@ public:
   virtual int GetNDofLevel (int level) const;
 
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
   virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
 
@@ -220,8 +220,8 @@ public:
   ///
   void GetTransformation (ELEMENT_TYPE eltype, 
 			  int elnr,
-			  const ARRAY<int> & eorient,
-			  const ARRAY<int> & forient,
+			  const Array<int> & eorient,
+			  const Array<int> & forient,
 			  FlatVector<double> & fac) const;
 			  
 
@@ -269,13 +269,13 @@ public:
   SparseMatrix<double> * CreateGradient() const;
 
   
-  virtual ARRAY<int> * CreateDirectSolverClusters (const Flags & flags) const;
+  virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
 
 
-  virtual void GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const;
-  virtual void GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const;
-  virtual void GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const;
-  virtual void GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
+  virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
+  virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
+  virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
 
 #ifdef PARALLEL
@@ -383,12 +383,12 @@ public:
   ///
   virtual const FiniteElement & GetFE (int elnr) const;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
   ///
   virtual const FiniteElement & GetSFE (int selnr) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
   ///
   virtual void TransformMatrix (int elnr, DenseMatrix & mat) const;
@@ -475,12 +475,12 @@ public:
   ///
   virtual const FiniteElement & GetFE (int elnr) const;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
   ///
   virtual const FiniteElement & GetSFE (int selnr) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
   ///
   virtual IntTable * CreateSmoothingBlocks () const;
@@ -552,9 +552,9 @@ public:
     }
 
     ///
-    virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     ///
-    virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
     
     template <class MAT>

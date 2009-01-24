@@ -44,7 +44,7 @@ class LinearProlongation : public Prolongation
   ///
   const FESpace & space;
   ///
-  ARRAY<int> nvlevel;
+  Array<int> nvlevel;
 public:
   ///
   LinearProlongation(const MeshAccess & ama,
@@ -70,7 +70,7 @@ public:
   {
     int i, nc, nf;
     int parents[2];
-    ARRAY< int > indicesPerRow( space.GetNDof() );
+    Array< int > indicesPerRow( space.GetNDof() );
 
     if ( &( space.LowOrderFESpace() ) )
       {
@@ -439,11 +439,11 @@ protected:
   ///
   const CompoundFESpace * space;
   ///
-  ARRAY<const Prolongation*> prols;
+  Array<const Prolongation*> prols;
 public:
   ///
   CompoundProlongation(const CompoundFESpace * aspace,
-		       ARRAY<const Prolongation*> & aprols);
+		       Array<const Prolongation*> & aprols);
 
   ///
   virtual ~CompoundProlongation();

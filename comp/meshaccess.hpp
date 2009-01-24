@@ -57,7 +57,7 @@ class MeshAccess : public BaseStatusHandler
 
 //@}
 
-  ARRAY<bool> higher_integration_order;
+  Array<bool> higher_integration_order;
 
   /// buffered global quantities:
   // dimension of the domain. Set to -1 if no mesh is present
@@ -81,9 +81,9 @@ class MeshAccess : public BaseStatusHandler
 public:
 
   // for pre-computed geometry information
-  ARRAY<Vec<3> > pts;
-  ARRAY<Mat<3,3> > dxdxis;
-  ARRAY<int> first_of_element;
+  Array<Vec<3> > pts;
+  Array<Mat<3,3> > dxdxis;
+  Array<int> first_of_element;
   
 public:
   ///
@@ -218,49 +218,49 @@ public:
     und GetTopologicElement in 3D ruft
     GetClosureNodes (NT_CELL, cell, NodeSet (NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL), nodes);
    */
-  void GetClosueNodes (NODE_TYPE nt, int nodenr, NODE_SET ns, ARRAY<Node> & nodes);
+  void GetClosueNodes (NODE_TYPE nt, int nodenr, NODE_SET ns, Array<Node> & nodes);
 
   // von astrid
   int GetElNV ( int elnr ) const;
 
   ///
-  void GetElPNums (int elnr, ARRAY<int> & pnums) const;
+  void GetElPNums (int elnr, Array<int> & pnums) const;
   ///
-  void GetSElPNums (int selnr, ARRAY<int> & pnums) const;
+  void GetSElPNums (int selnr, Array<int> & pnums) const;
 
-  void GetElVertices (int elnr, ARRAY<int> & vnums) const;
+  void GetElVertices (int elnr, Array<int> & vnums) const;
   ///
-  void GetSElVertices (int selnr, ARRAY<int> & vnums) const;
+  void GetSElVertices (int selnr, Array<int> & vnums) const;
   ///
-  void GetElEdges (int elnr, ARRAY<int> & ednums) const;
+  void GetElEdges (int elnr, Array<int> & ednums) const;
   ///
-  void GetElEdges (int elnr, ARRAY<int> & ednums, ARRAY<int> & orient) const;
+  void GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const;
   ///
-  void GetSElEdges (int selnr, ARRAY<int> & ednums) const;
+  void GetSElEdges (int selnr, Array<int> & ednums) const;
   ///
-  void GetSElEdges (int selnr, ARRAY<int> & ednums, ARRAY<int> & orient) const;
+  void GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const;
   ///
-  void GetElFaces (int elnr, ARRAY<int> & fnums) const;
+  void GetElFaces (int elnr, Array<int> & fnums) const;
   ///
-  void GetElFaces (int elnr, ARRAY<int> & fnums, ARRAY<int> & orient) const;
+  void GetElFaces (int elnr, Array<int> & fnums, Array<int> & orient) const;
   ///
   int GetSElFace (int selnr) const;
   ///
   void GetSElFace (int selnr, int & fnum, int & orient) const;
   ///
-  void GetFacePNums (int fnr, ARRAY<int> & pnums) const;
+  void GetFacePNums (int fnr, Array<int> & pnums) const;
   ///
   void GetEdgePNums (int enr, int & pn1, int & pn2) const;
   ///
-  void GetEdgePNums (int enr, ARRAY<int> & pnums) const;
+  void GetEdgePNums (int enr, Array<int> & pnums) const;
   ///
-  void GetEdgeElements (int enr, ARRAY<int> & elnums) const;
+  void GetEdgeElements (int enr, Array<int> & elnums) const;
   ///
-  void GetFaceEdges (int fnr, ARRAY<int> & edges) const;
+  void GetFaceEdges (int fnr, Array<int> & edges) const;
   ///
-  void GetFaceElements (int fnr, ARRAY<int> & elnums) const;
+  void GetFaceElements (int fnr, Array<int> & elnums) const;
   
-  void GetSegmentPNums (int snr, ARRAY<int> & pnums) const;
+  void GetSegmentPNums (int snr, Array<int> & pnums) const;
   int GetSegmentIndex (int snr) const;
 
   // he: some utility for Facets
@@ -268,20 +268,20 @@ public:
   int GetNFacets() const
   { return (GetDimension() == 2 ? GetNEdges() : GetNFaces() ); }
   ///
-  void GetElFacets (int elnr, ARRAY<int> & fnums) const;
+  void GetElFacets (int elnr, Array<int> & fnums) const;
   ///
-  void GetElFacets (int elnr, ARRAY<int> & fnums, ARRAY<int> & orient) const;
+  void GetElFacets (int elnr, Array<int> & fnums, Array<int> & orient) const;
   ///
-  void GetSElFacets (int selnr, ARRAY<int> & fnums) const;
+  void GetSElFacets (int selnr, Array<int> & fnums) const;
   ///
-  void GetSElFacet (int selnr, ARRAY<int> & fnums, ARRAY<int> & orient) const;
+  void GetSElFacet (int selnr, Array<int> & fnums, Array<int> & orient) const;
   ///
-  void GetFacetPNums (int fnr, ARRAY<int> & pnums) const;
+  void GetFacetPNums (int fnr, Array<int> & pnums) const;
   ///
-  void GetFacetElements (int fnr, ARRAY<int> & elnums) const
+  void GetFacetElements (int fnr, Array<int> & elnums) const
   { (GetDimension() == 2) ? GetEdgeElements(fnr, elnums) : GetFaceElements(fnr, elnums); }    
 
-  // void GetVertexElements (int vnr, ARRAY<int> & elnrs) const;
+  // void GetVertexElements (int vnr, Array<int> & elnrs) const;
   ///
   int GetElOrder (int enr) const
   { return Ng_GetElementOrder (enr+1); } 
@@ -384,7 +384,7 @@ public:
   int FindElementOfPoint (FlatVector<double> point,
 			  IntegrationPoint & ip, 
 			  bool build_searchtree,
-			  const ARRAY<int> * const indices = NULL) const;
+			  const Array<int> * const indices = NULL) const;
   int FindElementOfPoint (FlatVector<double> point,
 			  IntegrationPoint & ip, 
 			  bool build_searchtree,
@@ -392,7 +392,7 @@ public:
   int FindSurfaceElementOfPoint (FlatVector<double> point,
 				 IntegrationPoint & ip, 
 				 bool build_searchtree,
-				 const ARRAY<int> * const indices = NULL) const;
+				 const Array<int> * const indices = NULL) const;
   int FindSurfaceElementOfPoint (FlatVector<double> point,
 				 IntegrationPoint & ip, 
 				 bool build_searchtree,
@@ -401,14 +401,14 @@ public:
   bool IsElementCurved (int elnr) const
   { return bool (Ng_IsElementCurved (elnr+1)); }
 
-  void GetPeriodicVertices ( ARRAY<ngstd::INT<2> > & pairs) const;
+  void GetPeriodicVertices ( Array<ngstd::INT<2> > & pairs) const;
   int GetNPairsPeriodicVertices () const;
-  void GetPeriodicVertices (int idnr, ARRAY<ngstd::INT<2> > & pairs) const;
+  void GetPeriodicVertices (int idnr, Array<ngstd::INT<2> > & pairs) const;
   int GetNPairsPeriodicVertices (int idnr) const;  
 
-  void GetPeriodicEdges ( ARRAY<ngstd::INT<2> > & pairs) const;
+  void GetPeriodicEdges ( Array<ngstd::INT<2> > & pairs) const;
   int GetNPairsPeriodicEdges () const;
-  void GetPeriodicEdges (int idnr, ARRAY<ngstd::INT<2> > & pairs) const;
+  void GetPeriodicEdges (int idnr, Array<ngstd::INT<2> > & pairs) const;
   int GetNPairsPeriodicEdges (int idnr) const;  
 
 
@@ -422,9 +422,9 @@ public:
   virtual bool ShouldTerminate(void) const;
   
   ///// Added by Roman Stainko ....
-  void GetVertexElements( int vnr, ARRAY<int>& elems) const;
+  void GetVertexElements( int vnr, Array<int>& elems) const;
 
-  void GetVertexSurfaceElements( int vnr, ARRAY<int>& elems) const;
+  void GetVertexSurfaceElements( int vnr, Array<int>& elems) const;
 
 
   void SetHigherIntegrationOrder(int elnr);

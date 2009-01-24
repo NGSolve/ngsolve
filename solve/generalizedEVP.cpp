@@ -125,7 +125,7 @@ namespace ngsolve
     
     cout.precision(16);
 
-    ARRAY<BaseVector*> hvec(2*num);
+    Array<BaseVector*> hvec(2*num);
 
     for (int i = 0; i < 2*num; i++)
       hvec[i] = vecu.CreateVector();
@@ -259,8 +259,8 @@ namespace ngsolve
 	
 	cout.precision(16);
 	
-	ARRAY<BaseVector*> vecui(2*num);
-	ARRAY<BaseVector*> vecunew(num);
+	Array<BaseVector*> vecui(2*num);
+	Array<BaseVector*> vecunew(num);
 	
 	
 	for (i = 0; i < num; i++)

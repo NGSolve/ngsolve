@@ -85,9 +85,9 @@ class SuperLU_DIST_Inverse : public ParallelBaseMatrix
   int symmetric, iscomplex;
   int first_row_tm, first_row_scal;
   const BitArray * inner;
-  const ARRAY<int> * cluster;
+  const Array<int> * cluster;
 
-  ARRAY<int> * index_tm;
+  Array<int> * index_tm;
 
 public:
   typedef typename mat_traits<TM>::TV_COL TV;
@@ -97,18 +97,18 @@ public:
   ///
   SuperLU_DIST_Inverse (const ParallelSparseMatrix<TM,TV_ROW,TV_COL> & a, 
 		  const BitArray * ainner = NULL,
-		  const ARRAY<int> * acluster = NULL,
+		  const Array<int> * acluster = NULL,
 		  int symmetric = 0);
 //   ///
 //   SuperLUInverse (const SparseMatrix<TM> & a, 
 // 		  const BitArray * ainner = NULL,
-// 		  const ARRAY<int> * acluster = NULL,
+// 		  const Array<int> * acluster = NULL,
 // 		  int symmetric = 0);
   
   ///
-//   SuperLU_DIST_Inverse (const ARRAY<int> & aorder, 
-// 		  const ARRAY<CliqueEl*> & cliques,
-// 		  const ARRAY<MDOVertex> & vertices,
+//   SuperLU_DIST_Inverse (const Array<int> & aorder, 
+// 		  const Array<CliqueEl*> & cliques,
+// 		  const Array<MDOVertex> & vertices,
 // 		  int symmetric = 0);		  
   ///
   ~SuperLU_DIST_Inverse ();
@@ -119,9 +119,9 @@ public:
   int VWidth_Local() const { return height_global_tm; }
   int VWidth_Global() const { return height_global_tm; }
   ///
-  void Allocate (const ARRAY<int> & aorder, 
-		 const ARRAY<CliqueEl*> & cliques,
-		 const ARRAY<MDOVertex> & vertices);
+  void Allocate (const Array<int> & aorder, 
+		 const Array<CliqueEl*> & cliques,
+		 const Array<MDOVertex> & vertices);
   ///
   void Factor (const int * blocknr);
   ///
@@ -132,7 +132,7 @@ public:
   ///
   virtual ostream & Print (ostream & ost) const;
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     mu.Append (new MemoryUsageStruct ("SuperLU_DIST_Inverse", nnz_local_tm*sizeof(TM), 1));
   }

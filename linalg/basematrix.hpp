@@ -59,7 +59,7 @@ public:
   virtual const BaseVector & AsVector() const;
   
   virtual ostream & Print (ostream & ost) const;
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const;
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
   // virtual const void * Data() const;
   // virtual void * Data();
@@ -67,7 +67,7 @@ public:
   /// creates matrix of same type
   virtual BaseMatrix * CreateMatrix () const;
   /// creates matrix of same type
-  virtual BaseMatrix * CreateMatrix (const ARRAY<int> & elsperrow) const;
+  virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
   /// creates a compativle vector, size = width
   virtual BaseVector * CreateRowVector () const;
   /// creates a compativle vector, size = height

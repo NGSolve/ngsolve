@@ -80,7 +80,7 @@ public:
 
 protected:
   ///
-  void CalcIPData (ARRAY<IPData> & ipdata);
+  void CalcIPData (Array<IPData> & ipdata);
 
   /// compute basis, will be orthogonalized
   virtual void CalcShape1 (const IntegrationPoint & ip,
@@ -159,7 +159,7 @@ public:
 class FE_RTTrig0 : public HDivFiniteElement<2>
 {
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
 
 public:
   ///
@@ -178,7 +178,7 @@ public:
 class FE_RTTrig0plus : public HDivFiniteElement<2>
 {
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
 
 public:
   ///
@@ -196,7 +196,7 @@ public:
 ///
 class FE_BDMTrig1 : public HDivFiniteElement<2>
 {
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   ///
   static Matrix<> trans;
 
@@ -252,7 +252,7 @@ public:
 class FE_BDMTrig1plus : public HDivFiniteElement
 {
   ///
-  static ARRAY<IPData*> ipdata;
+  static Array<IPData*> ipdata;
   ///
   static FlatMatrix<> trans;
 
@@ -286,7 +286,7 @@ public:
   void Orthogonalize();
 
   ///
-  virtual const ARRAY<IPData*> & GetIPData () const 
+  virtual const Array<IPData*> & GetIPData () const 
     { return ipdata; }
 };
 
@@ -299,7 +299,7 @@ public:
 class FE_BDFMTrig2 : public HDivFiniteElement
 {
   ///
-  static ARRAY<IPData*> ipdata;
+  static Array<IPData*> ipdata;
   ///
   static FlatMatrix<> trans;
 
@@ -333,7 +333,7 @@ public:
   void Orthogonalize();
 
   ///
-  virtual const ARRAY<IPData*> & GetIPData () const 
+  virtual const Array<IPData*> & GetIPData () const 
     { return ipdata; }
 };
 
@@ -348,7 +348,7 @@ public:
 class FE_BDMTrig2 : public HDivFiniteElement
 {
   ///
-  static ARRAY<IPData*> ipdata;
+  static Array<IPData*> ipdata;
   ///
   static FlatMatrix<> trans;
 
@@ -382,7 +382,7 @@ public:
   void Orthogonalize();
 
   ///
-  virtual const ARRAY<IPData*> & GetIPData () const 
+  virtual const Array<IPData*> & GetIPData () const 
     { return ipdata; }
 
 };
@@ -397,7 +397,7 @@ public:
 class FE_BDMTrig2plus : public HDivFiniteElement
 {
   ///
-  static ARRAY<IPData*> ipdata;
+  static Array<IPData*> ipdata;
   ///
   static FlatMatrix<> trans;
 
@@ -431,7 +431,7 @@ public:
   void Orthogonalize();
 
   ///
-  virtual const ARRAY<IPData*> & GetIPData () const 
+  virtual const Array<IPData*> & GetIPData () const 
     { return ipdata; }
 
 };
@@ -444,7 +444,7 @@ class FE_RTQuad0 : public HDivFiniteElement<2>
 {
 protected:
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   
 public:
   
@@ -467,7 +467,7 @@ public:
 class FE_BDMQuad1 : public HDivFiniteElement
 {
   ///
-  static ARRAY<IPData*> ipdata;
+  static Array<IPData*> ipdata;
   ///
   static FlatMatrix<> trans;
 
@@ -501,7 +501,7 @@ public:
   void Orthogonalize();
 
   ///
-  virtual const ARRAY<IPData*> & GetIPData () const 
+  virtual const Array<IPData*> & GetIPData () const 
     { return ipdata; }
 
 };
@@ -517,7 +517,7 @@ public:
 class FE_RTSegm0 : public HDivFiniteElement
 {
   ///
-  static ARRAY<IPData*> ipdata;
+  static Array<IPData*> ipdata;
 
 public:
 
@@ -546,7 +546,7 @@ public:
 			   int comp = 1) const;
 
   ///
-  virtual const ARRAY<IPData*> & GetIPData () const 
+  virtual const Array<IPData*> & GetIPData () const 
     { return ipdata; }
 
 };
@@ -563,7 +563,7 @@ public:
 class FE_RTSegm1 : public HDivFiniteElement
 {
   ///
-  static ARRAY<IPData*> ipdata;
+  static Array<IPData*> ipdata;
 
 public:
 
@@ -594,7 +594,7 @@ public:
 
 
   ///
-  virtual const ARRAY<IPData*> & GetIPData () const 
+  virtual const Array<IPData*> & GetIPData () const 
     { return ipdata; }
 };
 
@@ -605,7 +605,7 @@ public:
 class FE_RTSegm2 : public HDivFiniteElement
 {
   ///
-  static ARRAY<IPData*> ipdata;
+  static Array<IPData*> ipdata;
 
 public:
 
@@ -636,7 +636,7 @@ public:
 
 
   ///
-  virtual const ARRAY<IPData*> & GetIPData () const 
+  virtual const Array<IPData*> & GetIPData () const 
     { return ipdata; }
 };
 
@@ -650,7 +650,7 @@ public:
 class FE_BDMTet1 : public HDivFiniteElement<3>
 {
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   ///
   static Matrix<> trans;
 
@@ -682,7 +682,7 @@ public:
 class FE_BDFMTet2 : public HDivFiniteElement
 {
   ///
-  static ARRAY<IPData*> ipdata;
+  static Array<IPData*> ipdata;
   ///
   static FlatMatrix<> trans;
   ///
@@ -725,7 +725,7 @@ public:
   void Orthogonalize();
 
   ///
-  virtual const ARRAY<IPData*> & GetIPData () const 
+  virtual const Array<IPData*> & GetIPData () const 
     { return ipdata; }
 };
 
@@ -744,7 +744,7 @@ public:
 class FE_BDMPrism1 : public HDivFiniteElement
 {
   ///
-  static ARRAY<IPData*> ipdata;
+  static Array<IPData*> ipdata;
   ///
   static FlatMatrix<> trans;
 
@@ -778,7 +778,7 @@ public:
   void Orthogonalize();
 
   ///
-  virtual const ARRAY<IPData*> & GetIPData () const 
+  virtual const Array<IPData*> & GetIPData () const 
     { return ipdata; }
 };
 
@@ -791,7 +791,7 @@ public:
 class FE_BDMPrism1p : public HDivFiniteElement
 {
   ///
-  static ARRAY<IPData*> ipdata;
+  static Array<IPData*> ipdata;
   ///
   static FlatMatrix<> trans;
 
@@ -825,7 +825,7 @@ public:
   void Orthogonalize();
 
   ///
-  virtual const ARRAY<IPData*> & GetIPData () const 
+  virtual const Array<IPData*> & GetIPData () const 
     { return ipdata; }
 };
 
@@ -844,7 +844,7 @@ public:
 class FE_BDFMPrism2 : public HDivFiniteElement
 {
   ///
-  static ARRAY<IPData*> ipdata;
+  static Array<IPData*> ipdata;
   ///
   static FlatMatrix<> trans;
   ///
@@ -880,7 +880,7 @@ public:
   void Orthogonalize();
 
   ///
-  virtual const ARRAY<IPData*> & GetIPData () const 
+  virtual const Array<IPData*> & GetIPData () const 
     { return ipdata; }
 };
 

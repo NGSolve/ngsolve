@@ -36,7 +36,7 @@ namespace ngla
   {
     *testout << "ParallelSparseMatrix :: CalcConsistentMat" << endl;
     int matsize = this -> Size();
-    ARRAY<int> cnt(matsize);
+    Array<int> cnt(matsize);
     cnt = 0;
     
     // find how many allreduces are needed
@@ -64,18 +64,18 @@ namespace ngla
 #endif
 
 
-    ARRAY<int> ** sendfirsti, ** sendcolnr, **recvfirsti, **recvcolnr;
-    ARRAY<TM> ** sendvalues, **recvvalues;
-    sendfirsti = new ARRAY<int> * [ntasks];
-    sendcolnr = new ARRAY<int> * [ntasks];
-    sendvalues = new ARRAY<TM> * [ntasks];
-    recvfirsti = new ARRAY<int> * [ntasks];
-    recvcolnr = new ARRAY<int> * [ntasks];
-    recvvalues = new ARRAY<TM> * [ntasks];
+    Array<int> ** sendfirsti, ** sendcolnr, **recvfirsti, **recvcolnr;
+    Array<TM> ** sendvalues, **recvvalues;
+    sendfirsti = new Array<int> * [ntasks];
+    sendcolnr = new Array<int> * [ntasks];
+    sendvalues = new Array<TM> * [ntasks];
+    recvfirsti = new Array<int> * [ntasks];
+    recvcolnr = new Array<int> * [ntasks];
+    recvvalues = new Array<TM> * [ntasks];
 
     TM zero = TM(0.0);
 
-    ARRAY<int> exprocs;
+    Array<int> exprocs;
     this->paralleldofs->GetHOExchangeProcs(exprocs);
 
     // find entries in firsti, colnr for dist procs
@@ -83,12 +83,12 @@ namespace ngla
       {
 	int dest = exprocs[idest];
 
-	sendfirsti[dest] = new ARRAY<int> (0);
-	sendcolnr[dest] = new ARRAY<int> (0);
-	sendvalues[dest] = new ARRAY<TM> (0);
-	recvfirsti[dest] = new ARRAY<int> (0);
-	recvcolnr[dest] = new ARRAY<int> (0);
-	recvvalues[dest] = new ARRAY<TM> (0);
+	sendfirsti[dest] = new Array<int> (0);
+	sendcolnr[dest] = new Array<int> (0);
+	sendvalues[dest] = new Array<TM> (0);
+	recvfirsti[dest] = new Array<int> (0);
+	recvcolnr[dest] = new Array<int> (0);
+	recvvalues[dest] = new Array<TM> (0);
 
 	// counts how many values have been stored
 	int indexnr = 0;
@@ -96,7 +96,7 @@ namespace ngla
 	if ( dest == id ) continue;
 
 	FlatArray<int>  sortedexchangedof = this->paralleldofs->GetSortedExchangeDofs(dest);
-	ARRAY<int> dof2sorted (this->size);
+	Array<int> dof2sorted (this->size);
 
 	dof2sorted = -1;
 
@@ -114,9 +114,9 @@ namespace ngla
 	    int nri = rowindices.Size();
 
 	    // contains position of row-index in sortedexchangedofs
-	    ARRAY<int> row2sorted(nri);
+	    Array<int> row2sorted(nri);
 	    // contains rowindices, but sorted with respect to sortedexchangedofs
-	    ARRAY<int> sortedrowindices(nri);
+	    Array<int> sortedrowindices(nri);
 
 	    row2sorted.SetSize(0);
 	    sortedrowindices.SetSize(0);
@@ -311,7 +311,7 @@ namespace ngla
     if ( consistentmat ) delete consistentmat;
     int matsize = this -> Size();
 
-    ARRAY<int> cnt ( matsize );
+    Array<int> cnt ( matsize );
 
     cnt = 0;
 
@@ -360,7 +360,7 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   BaseMatrix *  ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
-  CreateMatrix (const ARRAY<int> & elsperrow) const
+  CreateMatrix (const Array<int> & elsperrow) const
   {
     ParallelSparseMatrix * newmat = new ParallelSparseMatrix(elsperrow);
     return newmat;
@@ -423,7 +423,7 @@ namespace ngla
 
   template <class TM, class TV>
   BaseMatrix *  ParallelSparseMatrixSymmetric<TM,TV> ::
-  CreateMatrix (const ARRAY<int> & elsperrow) const
+  CreateMatrix (const Array<int> & elsperrow) const
   {
     ParallelSparseMatrix<TM,TV,TV> * newmat = 
       new ParallelSparseMatrix<TM,TV,TV>(elsperrow);
@@ -458,7 +458,7 @@ namespace ngla
     void * heapp = lh.GetPointer();
 
     int matsize = this->Size();
-    ARRAY<int> cnt(matsize);
+    Array<int> cnt(matsize);
     cnt = 0;
     
     // find how many allreduces are needed
@@ -488,16 +488,16 @@ namespace ngla
 
     const ParallelDofs & paralleldofs = *this->GetParallelDofs();
 
-    ARRAY<int> ** sendfirsti, ** sendcolnr, **recvfirsti, **recvcolnr;
-    ARRAY<TM> ** sendvalues, **recvvalues;
-    sendfirsti = new ARRAY<int> * [ntasks];
-    sendcolnr = new ARRAY<int> * [ntasks];
-    sendvalues = new ARRAY<TM> * [ntasks];
-    recvfirsti = new ARRAY<int> * [ntasks];
-    recvcolnr = new ARRAY<int> * [ntasks];
-    recvvalues = new ARRAY<TM> * [ntasks];
+    Array<int> ** sendfirsti, ** sendcolnr, **recvfirsti, **recvcolnr;
+    Array<TM> ** sendvalues, **recvvalues;
+    sendfirsti = new Array<int> * [ntasks];
+    sendcolnr = new Array<int> * [ntasks];
+    sendvalues = new Array<TM> * [ntasks];
+    recvfirsti = new Array<int> * [ntasks];
+    recvcolnr = new Array<int> * [ntasks];
+    recvvalues = new Array<TM> * [ntasks];
 
-    ARRAY<int> exprocs;
+    Array<int> exprocs;
     this->paralleldofs->GetHOExchangeProcs(exprocs);
     //    this->paralleldofs->GetExchangeProcs(exprocs);
 
@@ -509,12 +509,12 @@ namespace ngla
 	void * heappointer = lh.GetPointer();
 
 	int dest = exprocs[idest];
-	sendfirsti[dest] = new ARRAY<int> (0);
-	sendcolnr[dest] = new ARRAY<int> (0);
-	sendvalues[dest] = new ARRAY<TM> (0);
-	recvfirsti[dest] = new ARRAY<int> (0);
-	recvcolnr[dest] = new ARRAY<int> (0);
-	recvvalues[dest] = new ARRAY<TM> (0);
+	sendfirsti[dest] = new Array<int> (0);
+	sendcolnr[dest] = new Array<int> (0);
+	sendvalues[dest] = new Array<TM> (0);
+	recvfirsti[dest] = new Array<int> (0);
+	recvcolnr[dest] = new Array<int> (0);
+	recvvalues[dest] = new Array<TM> (0);
 
 	// counts how many values have been stored
 	int indexnr = 0;
@@ -522,7 +522,7 @@ namespace ngla
 	if ( dest == id ) continue;
 
 	FlatArray<int>  sortedexchangedof = this->paralleldofs->GetSortedExchangeDofs(dest);
-	ARRAY<int> dof2sorted (this->size);
+	Array<int> dof2sorted (this->size);
 
 	dof2sorted = -1;
 
@@ -539,8 +539,8 @@ namespace ngla
 	    FlatArray<int> rowindices = (*consistentmat).GetRowIndices(row);
 	    int nri = rowindices.Size();
 
-	    ARRAY<int> row2sorted(nri);
-	    ARRAY<int> sortedrowindices(nri);
+	    Array<int> row2sorted(nri);
+	    Array<int> sortedrowindices(nri);
 
 	    row2sorted.SetSize(0);
 	    sortedrowindices.SetSize(0);
@@ -784,7 +784,7 @@ namespace ngla
 
     if (consistentmat) delete consistentmat;
 
-    ARRAY<int> cnt ( this->Size() );
+    Array<int> cnt ( this->Size() );
     int matsize = this->Size();
     cnt = 0;
 
@@ -863,7 +863,7 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   BaseMatrix * ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
-  InverseMatrix (ARRAY<int> * clusters) const
+  InverseMatrix (Array<int> * clusters) const
   {
     if ( this->GetInverseType() == SUPERLU_DIST )
 #ifdef USE_SUPERLU_DIST
@@ -925,7 +925,7 @@ namespace ngla
   }
 
   template <class TM, class TV>
-  BaseMatrix * ParallelSparseMatrixSymmetric<TM,TV> :: InverseMatrix (ARRAY<int> * clusters) const
+  BaseMatrix * ParallelSparseMatrixSymmetric<TM,TV> :: InverseMatrix (Array<int> * clusters) const
   {
     if ( this->GetInverseType() == SUPERLU_DIST )
 #ifdef USE_SUPERLU_DIST

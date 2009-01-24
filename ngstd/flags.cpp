@@ -42,12 +42,12 @@ namespace ngstd
       }
     for (i = 0; i < flags.GetNNumListFlags(); i++)
       {
-	const ARRAY<double> * numa = flags.GetNumListFlag (i, name);
+	const Array<double> * numa = flags.GetNumListFlag (i, name);
 	SetFlag (name, *numa);
       }
     for (i = 0; i < flags.GetNStringListFlags(); i++)
       {
-	const ARRAY<char*> * stra = flags.GetStringListFlag (i, name);
+	const Array<char*> * stra = flags.GetStringListFlag (i, name);
 	SetFlag (name, *stra);
       }
   }
@@ -91,9 +91,9 @@ namespace ngstd
   }
 
 
-  void Flags :: SetFlag (const char * name, const ARRAY<char*> & val)
+  void Flags :: SetFlag (const char * name, const Array<char*> & val)
   {
-    ARRAY<char*> * strarray = new ARRAY<char*>;
+    Array<char*> * strarray = new Array<char*>;
     for (int i = 0; i < val.Size(); i++)
       {
 	strarray->Append (new char[strlen(val[i])+1]);
@@ -102,9 +102,9 @@ namespace ngstd
     strlistflags.Set (name, strarray);
   }
 
-  void Flags :: SetFlag (const char * name, const ARRAY<double> & val)
+  void Flags :: SetFlag (const char * name, const Array<double> & val)
   {
-    ARRAY<double> * numarray = new ARRAY<double>(val);
+    Array<double> * numarray = new Array<double>(val);
 
     numlistflags.Set (name, numarray);
   }
@@ -156,26 +156,26 @@ namespace ngstd
   }
 
 
-  const ARRAY<char*> & 
+  const Array<char*> & 
   Flags :: GetStringListFlag (const char * name) const
   {
     if (strlistflags.Used (name))
       return *strlistflags[name];
     else
       {
-	static ARRAY<char*> hstra(0);
+	static Array<char*> hstra(0);
 	return hstra;
       }
   }
 
-  const ARRAY<double> & 
+  const Array<double> & 
   Flags ::GetNumListFlag (const char * name) const
   {
     if (numlistflags.Used (name))
       return *numlistflags[name];
     else
       {
-	static ARRAY<double> hnuma(0);
+	static Array<double> hnuma(0);
 	return hnuma;
       }
   }
@@ -360,7 +360,7 @@ namespace ngstd
 	    val = strtod (posbrack+1, &endptr);
 	    if (endptr != posbrack+1)
 	      {
-		ARRAY<double> values;
+		Array<double> values;
 		
 		istringstream ist(posbrack);
 		ist >> hc;   // '['
@@ -375,7 +375,7 @@ namespace ngstd
 	      }
 	    else
 	      {
-		ARRAY<char *> strs;
+		Array<char *> strs;
 
 		posbrack++;
 		char * hstr = new char[strlen(posbrack)+1];

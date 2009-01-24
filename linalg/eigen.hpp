@@ -16,7 +16,7 @@ class EigenSystem
   ///
 const BaseMatrix *a, *c;
   ///
-ARRAY<double> ai, bi;
+Array<double> ai, bi;
   ///
 double prec;
   ///

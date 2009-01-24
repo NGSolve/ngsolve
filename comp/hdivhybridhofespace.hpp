@@ -28,19 +28,19 @@ private:
   // Number of Vertex
   int nv;
 
-  ARRAY<int> first_edge_dof;
-  ARRAY<int> first_face_dof;
-  ARRAY<int> first_inner_dof;
+  Array<int> first_edge_dof;
+  Array<int> first_face_dof;
+  Array<int> first_inner_dof;
 
   /// relative order to mesh-order
   int rel_order; 
 
-  ARRAY<int> order_edge;
-  ARRAY<int> order_inner;
-  ARRAY<int> order_face;
+  Array<int> order_edge;
+  Array<int> order_inner;
+  Array<int> order_face;
 
   int ndof;
-  ARRAY<int> ndlevel;
+  Array<int> ndlevel;
 
 public:
 
@@ -66,23 +66,23 @@ public:
   ///
   virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; // 2D: array =0.;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
   ///
   virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
 
 
   /// 
-  virtual void GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
   /// 
-  virtual void GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const;
+  virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
   /// 
-  virtual void GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const;
+  virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
   /// 
-  virtual void GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
 };
 

@@ -309,7 +309,7 @@ namespace ngfem
   // computes Gaussean integration formula on (0,1) with n points
   // in: Numerical algs in C (or, was it the Fortran book ?)
   void ComputeGaussRule (int n, 
-			 ARRAY<double> & xi, ARRAY<double> & wi)
+			 Array<double> & xi, Array<double> & wi)
   {
     //  cout << "compute gauss rule, n = " << n << endl;
     xi.SetSize (n);
@@ -377,8 +377,8 @@ namespace ngfem
   const int  MAXIT = 10;
 
   void ComputeGaussJacobiRule (int n, 
-			       ARRAY<double> & x, 
-			       ARRAY<double> & w,
+			       Array<double> & x, 
+			       Array<double> & w,
 			       double alf, double bet)
   {
     x.SetSize (n);
@@ -476,8 +476,8 @@ namespace ngfem
 
   
   void ComputeHermiteRule (int n, 
-                           ARRAY<double> & x,
-                           ARRAY<double> & w)
+                           Array<double> & x,
+                           Array<double> & w)
   {
     const double EPS = 3e-14;
     const double PIM4 = 1.0 / pow (M_PI, 0.25);
@@ -1517,8 +1517,8 @@ namespace ngfem
     IntegrationPoint * ip;
 
 
-    ARRAY<double> xi;
-    ARRAY<double> wi;
+    Array<double> xi;
+    Array<double> wi;
 
     // ************************************
     // ** Segment integration rules
@@ -2266,7 +2266,7 @@ namespace ngfem
   }
 
 
-  const ARRAY<IntegrationPoint*> & IntegrationRules ::
+  const Array<IntegrationPoint*> & IntegrationRules ::
   GetIntegrationPoints (ELEMENT_TYPE eltyp) const
   {
     switch (eltyp)
@@ -2298,7 +2298,7 @@ namespace ngfem
   const IntegrationRule & IntegrationRules :: 
   SelectIntegrationRule (ELEMENT_TYPE eltyp, int order) const
   {
-    const ARRAY<IntegrationRule*> * ira;
+    const Array<IntegrationRule*> * ira;
 
     switch (eltyp)
       {
@@ -2339,7 +2339,7 @@ namespace ngfem
 
   const IntegrationRule & IntegrationRules :: SelectIntegrationRuleJacobi10 (int order) const
   {
-    const ARRAY<IntegrationRule*> * ira;
+    const Array<IntegrationRule*> * ira;
   
     ira = &jacobirules10; 
 
@@ -2357,7 +2357,7 @@ namespace ngfem
 
   const IntegrationRule & IntegrationRules :: SelectIntegrationRuleJacobi20 (int order) const
   {
-    const ARRAY<IntegrationRule*> * ira;
+    const Array<IntegrationRule*> * ira;
   
     ira = &jacobirules20; 
 
@@ -2381,7 +2381,7 @@ namespace ngfem
   const IntegrationRule & IntegrationRules :: 
   GenerateIntegrationRule (ELEMENT_TYPE eltyp, int order)
   {
-    ARRAY<IntegrationRule*> * ira;
+    Array<IntegrationRule*> * ira;
 
     if (eltyp == ET_QUAD || eltyp == ET_TRIG)
       {
@@ -2437,7 +2437,7 @@ namespace ngfem
 	    {
 	    case ET_SEGM:
 	      {
-		ARRAY<double> xi, wi;
+		Array<double> xi, wi;
 		ComputeGaussRule (order/2+1, xi, wi);
 		IntegrationRule * rule = new IntegrationRule (xi.Size());
 		double xip[3] = { 0, 0, 0 };
@@ -2456,7 +2456,7 @@ namespace ngfem
 
 	    case ET_TRIG:
 	      {
-		ARRAY<double> xx, wx, xy, wy;
+		Array<double> xx, wx, xy, wy;
 		ComputeGaussJacobiRule (order/2+1, xx, wx, 1, 0);
 		// ComputeGaussRule (order/2+2, xx, wx);
 		ComputeGaussRule (order/2+1, xy, wy);
@@ -2544,7 +2544,7 @@ namespace ngfem
 	      {
 		// tet-rules by degenerated tensor product rules:
 
-		ARRAY<double> xx, wx, xy, wy, xz, wz;
+		Array<double> xx, wx, xy, wy, xz, wz;
 		ComputeGaussRule (order/2+1, xz, wz);
 		ComputeGaussJacobiRule (order/2+1, xy, wy, 1, 0);
 		ComputeGaussJacobiRule (order/2+1, xx, wx, 2, 0);
@@ -2636,7 +2636,7 @@ namespace ngfem
 		prismrules[order] = prismrule;
 
                 /*
-		ARRAY<double> xxz, wxz, xy, wy;
+		Array<double> xxz, wxz, xy, wy;
                 ComputeGaussRule (order/2+1, xxz, wxz);
                 ComputeGaussJacobiRule (order/2+1, xy, wy, 1, 0);
 
@@ -2716,7 +2716,7 @@ namespace ngfem
 
   const IntegrationRule & IntegrationRules :: GenerateIntegrationRuleJacobi10 (int order)
   {
-    ARRAY<IntegrationRule*> * ira;
+    Array<IntegrationRule*> * ira;
     ira = &jacobirules10; 
 
 #pragma omp critical(genintrule)
@@ -2731,7 +2731,7 @@ namespace ngfem
 
     if ( (*ira)[order] == 0)
       {
-        ARRAY<double> xi, wi;
+        Array<double> xi, wi;
         // ComputeGaussRule (order/2+1, xi, wi);
         ComputeGaussJacobiRule (order/2+1, xi, wi, 1, 0);
         IntegrationRule * rule = new IntegrationRule (xi.Size());
@@ -2766,7 +2766,7 @@ namespace ngfem
 
   const IntegrationRule & IntegrationRules :: GenerateIntegrationRuleJacobi20 (int order)
   {
-    ARRAY<IntegrationRule*> * ira;
+    Array<IntegrationRule*> * ira;
     ira = &jacobirules20; 
 
 #pragma omp critical(genintrule)
@@ -2781,7 +2781,7 @@ namespace ngfem
 
     if ( (*ira)[order] == 0)
       {
-        ARRAY<double> xi, wi;
+        Array<double> xi, wi;
         // ComputeGaussRule (order/2+1, xi, wi);
         ComputeGaussJacobiRule (order/2+1, xi, wi, 2, 0);
         IntegrationRule * rule = new IntegrationRule (xi.Size());

@@ -47,8 +47,8 @@ class AMG_H1 : public CommutingAMG
 public:
 
   AMG_H1 (const BaseMatrix & sysmat,
-	  ARRAY<ngstd::INT<2> > & e2v,
-	  ARRAY<double> & weighte,
+	  Array<ngstd::INT<2> > & e2v,
+	  Array<double> & weighte,
 	  int levels);
 
   virtual ~AMG_H1 ();
@@ -72,11 +72,11 @@ class AMG_HCurl : public CommutingAMG
 public:
 
   AMG_HCurl (const BaseMatrix & sysmat,
-	     const ARRAY<Vec<3> > & vertices,
-             ARRAY<ngstd::INT<2> > & e2v,
-	     ARRAY<ngstd::INT<4> > & f2v,
-	     ARRAY<double> & weighte,
-	     ARRAY<double> & weightf,
+	     const Array<Vec<3> > & vertices,
+             Array<ngstd::INT<2> > & e2v,
+	     Array<ngstd::INT<4> > & f2v,
+	     Array<double> & weighte,
+	     Array<double> & weightf,
 	     int levels);
 
   virtual ~AMG_HCurl ();

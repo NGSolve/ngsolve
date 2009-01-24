@@ -13,8 +13,8 @@ namespace ngla
 
   
   AMG_H1 :: AMG_H1 (const BaseMatrix & sysmat,
-		    ARRAY<INT<2> > & e2v,
-		    ARRAY<double> & weighte,
+		    Array<INT<2> > & e2v,
+		    Array<double> & weighte,
 		    int levels)
   {
     int i, j, k;
@@ -43,16 +43,16 @@ namespace ngla
 	return;
       }
 
-    ARRAY<int> vcoarse(nv), connected(nv);
-    ARRAY<bool> edge_collapse(ne);
-    ARRAY<double> edge_collapse_weight(ne);
+    Array<int> vcoarse(nv), connected(nv);
+    Array<bool> edge_collapse(ne);
+    Array<double> edge_collapse_weight(ne);
     edge_collapse = 0;
-    ARRAY<int> v2edge(nv);
+    Array<int> v2edge(nv);
     
 
     /*
     // compute weight to collapse edge
-    ARRAY<double> vstrength(nv);
+    Array<double> vstrength(nv);
     vstrength = 0.0;
     for (i = 0; i < weighte.Size(); i++)
       for (j = 0; j < 2; j++)
@@ -65,7 +65,7 @@ namespace ngla
 
 	*/
     // compute weight to collapse edge
-    ARRAY<double> vstrength(nv);
+    Array<double> vstrength(nv);
     vstrength = 0.0;
     for (i = 0; i < weighte.Size(); i++)
       for (j = 0; j < 2; j++)
@@ -168,7 +168,7 @@ namespace ngla
 	  ht_ecoarse.Set (ce, -1);
       }
     
-    ARRAY<INT<2> > ce2v;
+    Array<INT<2> > ce2v;
     for (i = 0; i < ht_ecoarse.Size(); i++)
       for (j = 0; j < ht_ecoarse.EntrySize(i); j++)
 	{
@@ -180,7 +180,7 @@ namespace ngla
 	  ht_ecoarse.SetData (i, j, ce, efi);
 	}
 
-    ARRAY<int> ecoarse(ne);
+    Array<int> ecoarse(ne);
     for (i = 0; i < e2v.Size(); i++)
       {
 	INT<2> ce;
@@ -194,7 +194,7 @@ namespace ngla
       }
 
     // coarse edge weights:
-    ARRAY<double> cweighte(ce2v.Size());
+    Array<double> cweighte(ce2v.Size());
     cweighte = 0;
     for (i = 0; i < e2v.Size(); i++)
       if (ecoarse[i] != -1)
@@ -205,7 +205,7 @@ namespace ngla
     // prol  ... for matrix projection
 
     // piecewise constant:
-    ARRAY<int> nne(nv);
+    Array<int> nne(nv);
     nne = 1;
 
     //prol = new SparseMatrix<double> (nne);
@@ -238,7 +238,7 @@ namespace ngla
     /*
     // define smoothing blocks
     int nv = pmat->Width();
-    ARRAY<int> cnt(nv);
+    Array<int> cnt(nv);
     cnt = 0;
     for (int i = 0; i < pmat->Height(); i++)
       for (int j = 0; j < pmat->GetRowIndices(i).Size(); j++)
@@ -348,11 +348,11 @@ namespace ngla
 
   
   AMG_HCurl :: AMG_HCurl (const BaseMatrix & sysmat,
-			  const ARRAY<Vec<3> > & vertices,
-                          ARRAY<INT<2> > & e2v,
-			  ARRAY<INT<4> > & f2v,
-			  ARRAY<double> & weighte,
-			  ARRAY<double> & weightf,
+			  const Array<Vec<3> > & vertices,
+                          Array<INT<2> > & e2v,
+			  Array<INT<4> > & f2v,
+			  Array<double> & weighte,
+			  Array<double> & weightf,
 			  int levels)
   {
     static int timer1 = NgProfiler::CreateTimer ("AMG, reg1");
@@ -417,8 +417,8 @@ namespace ngla
 
     cout << "nfa = " << nf << ", ned = " << ne << ", nv = " << nv << endl;
 
-    ARRAY<bool> edge_collapse(ne);
-    ARRAY<double> edge_collapse_weight(ne);
+    Array<bool> edge_collapse(ne);
+    Array<double> edge_collapse_weight(ne);
     edge_collapse = 0;
 
 
@@ -445,7 +445,7 @@ namespace ngla
 	  }
       }
 
-    ARRAY<int> cnt_v2e(nv);
+    Array<int> cnt_v2e(nv);
     cnt_v2e = 0;
     for (int i = 0; i < ne; i++)
       {
@@ -567,7 +567,7 @@ namespace ngla
 
     // compute face 2 edge table
     HashTable<INT<2>, int> ht_edge(e2v.Size());
-    ARRAY<INT<4> > f2e(nf);
+    Array<INT<4> > f2e(nf);
 
     for (int i = 0; i < ne; i++)
       if (e2v[i][0] != -1)
@@ -613,7 +613,7 @@ namespace ngla
     
 
 
-    ARRAY<double> sume(ne);
+    Array<double> sume(ne);
     sume = 0;
     for (int i = 0; i < nf; i++)
       for (int j = 0; j < 4; j++)
@@ -623,7 +623,7 @@ namespace ngla
 
 
 
-    ARRAY<double> face_collapse_weight(nf);
+    Array<double> face_collapse_weight(nf);
     for (int i = 0; i < nf; i++)
       {
         double mine = 1e99;
@@ -650,7 +650,7 @@ namespace ngla
                   face_collapse_weight[i]);
     */
 
-    ARRAY<int> cnt_e2f(ne);
+    Array<int> cnt_e2f(ne);
     cnt_e2f = 0;
     for (int i = 0; i < nf; i++)
       for (int j = 0; j < 4; j++)
@@ -701,7 +701,7 @@ namespace ngla
 
 
     // figure out best edges to collapse (iterative improvement)
-    ARRAY<int> v2edge(nv);
+    Array<int> v2edge(nv);
     v2edge = -1;
     edge_collapse = 0;
 
@@ -843,7 +843,7 @@ namespace ngla
 
 
     // compute fine vertex to coarse vertex map (vcoarse)
-    ARRAY<int> vcoarse(nv), connected(nv);
+    Array<int> vcoarse(nv), connected(nv);
     for (int i = 0; i < nv; i++)
       connected[i] = i;
 
@@ -868,7 +868,7 @@ namespace ngla
 	vcoarse[i] = vcoarse[connected[i]];
 
 
-    ARRAY<Vec<3> > cvertices;
+    Array<Vec<3> > cvertices;
     if (vertices.Size())
       {
         cvertices.SetSize(ncv);
@@ -895,7 +895,7 @@ namespace ngla
 	    }
 	}
     
-    ARRAY<INT<2> > ce2v;
+    Array<INT<2> > ce2v;
     for (int i = 0; i < ht_ecoarse.Size(); i++)
       for (int j = 0; j < ht_ecoarse.EntrySize(i); j++)
 	{
@@ -907,8 +907,8 @@ namespace ngla
 	  ht_ecoarse.SetData (i, j, ce, efi);
 	}
 
-    ARRAY<int> ecoarse(ne);
-    ARRAY<short> ecoarsesign(ne);
+    Array<int> ecoarse(ne);
+    Array<short> ecoarsesign(ne);
     ecoarsesign = 1;
     for (int i = 0; i < ne; i++)
       {
@@ -940,7 +940,7 @@ namespace ngla
       }
 
     // coarse edge weights:
-    ARRAY<double> cweighte(ce2v.Size());
+    Array<double> cweighte(ce2v.Size());
     cweighte = 0;
     for (int i = 0; i < e2v.Size(); i++)
       if (ecoarse[i] != -1)
@@ -982,7 +982,7 @@ namespace ngla
 	  ht_fcoarse.Set (cf, -1);
       }
     
-    ARRAY<INT<4> > cf2v;
+    Array<INT<4> > cf2v;
     for (int i = 0; i < ht_fcoarse.Size(); i++)
       for (int j = 0; j < ht_fcoarse.EntrySize(i); j++)
 	{
@@ -994,7 +994,7 @@ namespace ngla
 	  ht_fcoarse.SetData (i, j, cf, cfi);
 	}
 
-    ARRAY<int> fcoarse(nf);
+    Array<int> fcoarse(nf);
     fcoarse = -1;
     for (int i = 0; i < nf; i++)
       {
@@ -1026,7 +1026,7 @@ namespace ngla
       }
 
     // coarse face weights:
-    ARRAY<double> cweightf(cf2v.Size());
+    Array<double> cweightf(cf2v.Size());
     cweightf = 0;
     for (int i = 0; i < nf; i++)
       if (fcoarse[i] != -1)
@@ -1034,7 +1034,7 @@ namespace ngla
 
 
     // compute prolongation matrix
-    ARRAY<int> nne(ne);
+    Array<int> nne(ne);
     nne = 0;
     for (int i = 0; i < ne; i++)
       if (ecoarse[i] != -1)

@@ -65,7 +65,7 @@ class SuperLUInverse : public BaseMatrix
   int symmetric, iscomplex;
 
   const BitArray * inner;
-  const ARRAY<int> * cluster;
+  const Array<int> * cluster;
 
 public:
   typedef typename mat_traits<TM>::TV_COL TV;
@@ -75,18 +75,18 @@ public:
   ///
   SuperLUInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
 		  const BitArray * ainner = NULL,
-		  const ARRAY<int> * acluster = NULL,
+		  const Array<int> * acluster = NULL,
 		  int symmetric = 0);
 //   ///
 //   SuperLUInverse (const SparseMatrix<TM> & a, 
 // 		  const BitArray * ainner = NULL,
-// 		  const ARRAY<int> * acluster = NULL,
+// 		  const Array<int> * acluster = NULL,
 // 		  int symmetric = 0);
   
   ///
-  SuperLUInverse (const ARRAY<int> & aorder, 
-		  const ARRAY<CliqueEl*> & cliques,
-		  const ARRAY<MDOVertex> & vertices,
+  SuperLUInverse (const Array<int> & aorder, 
+		  const Array<CliqueEl*> & cliques,
+		  const Array<MDOVertex> & vertices,
 		  int symmetric = 0);		  
   ///
   ~SuperLUInverse ();
@@ -95,9 +95,9 @@ public:
   ///
   int VWidth() const { return height; }
   ///
-  void Allocate (const ARRAY<int> & aorder, 
-		 const ARRAY<CliqueEl*> & cliques,
-		 const ARRAY<MDOVertex> & vertices);
+  void Allocate (const Array<int> & aorder, 
+		 const Array<CliqueEl*> & cliques,
+		 const Array<MDOVertex> & vertices);
   ///
   void Factor (const int * blocknr);
   ///
@@ -108,7 +108,7 @@ public:
   ///
   virtual ostream & Print (ostream & ost) const;
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     mu.Append (new MemoryUsageStruct ("SuperLUInverse", nze*sizeof(TM), 1));
   }

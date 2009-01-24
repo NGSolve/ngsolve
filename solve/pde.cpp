@@ -247,7 +247,7 @@ namespace ngsolve
 
   void PDE :: PrintMemoryUsage (ostream & ost)
   {
-    ARRAY<MemoryUsageStruct*> memuse;
+    Array<MemoryUsageStruct*> memuse;
     for (int i = 0; i < spaces.Size(); i++)
       spaces[i]->MemoryUsage (memuse);
     for (int i = 0; i < bilinearforms.Size(); i++)
@@ -1091,8 +1091,8 @@ namespace ngsolve
 	
 	if (type == "compound")
 	  {
-	    const ARRAY<char*> & spacenames = flags.GetStringListFlag ("spaces");
-	    ARRAY<const FESpace*> cspaces (spacenames.Size());
+	    const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
+	    Array<const FESpace*> cspaces (spacenames.Size());
 	    for (int i = 0; i < cspaces.Size(); i++)
 	      cspaces[i] = GetFESpace (spacenames[i]);
 	    space = new CompoundFESpace (GetMeshAccess(), cspaces, flags);
@@ -1135,10 +1135,10 @@ namespace ngsolve
       ;
     else if (flags.GetDefineFlag ("compound"))
       {
-	const ARRAY<char*> & spacenames = flags.GetStringListFlag ("spaces");
+	const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
         if (printmessage_importance>0)
           cout << "   spaces=" << spacenames << endl;
-	ARRAY<const FESpace*> cspaces (spacenames.Size());
+	Array<const FESpace*> cspaces (spacenames.Size());
 	for (int i = 0; i < cspaces.Size(); i++)
 	  cspaces[i] = GetFESpace (spacenames[i]);
 	space = new CompoundFESpace (GetMeshAccess(), cspaces, flags);
@@ -1157,7 +1157,7 @@ namespace ngsolve
       {
 	BitArray dirbnds(ma.GetNBoundaries());
 	dirbnds.Clear();
-	const ARRAY<double> & array = flags.GetNumListFlag ("dirichletboundaries");
+	const Array<double> & array = flags.GetNumListFlag ("dirichletboundaries");
 	for (int i = 0; i < array.Size(); i++)
 	  dirbnds.Set (int(array[i])-1);
 	space->SetDirichletBoundaries (dirbnds);
@@ -1167,7 +1167,7 @@ namespace ngsolve
       {
 	BitArray definedon(ma.GetNDomains());
 	definedon.Clear();
-	const ARRAY<double> & domains = flags.GetNumListFlag ("domains");
+	const Array<double> & domains = flags.GetNumListFlag ("domains");
 	for (int i = 0; i < domains.Size(); i++)
 	  definedon.Set (int(domains[i])-1);
 	space->SetDefinedOn (definedon);
@@ -1177,7 +1177,7 @@ namespace ngsolve
       {
 	BitArray definedon(ma.GetNBoundaries());
 	definedon.Clear();
-	const ARRAY<double> & boundaries = flags.GetNumListFlag ("boundaries");
+	const Array<double> & boundaries = flags.GetNumListFlag ("boundaries");
 	for (int i = 0; i < boundaries.Size(); i++)
 	  definedon.Set (int(boundaries[i])-1);
 	space->SetDefinedOnBoundary (definedon);

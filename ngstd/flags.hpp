@@ -22,9 +22,9 @@ class Flags
   /// define flags
   SymbolTable<int> defflags;
   /// string list flags
-  SymbolTable<ARRAY<char*>*> strlistflags;
+  SymbolTable<Array<char*>*> strlistflags;
   /// numerical list flags
-  SymbolTable<ARRAY<double>*> numlistflags;
+  SymbolTable<Array<double>*> numlistflags;
 public:
   /// no flags
   Flags ();
@@ -42,9 +42,9 @@ public:
   /// Sets boolean flag
   void SetFlag (const char * name);
   /// Sets string array flag
-  void SetFlag (const char * name, const ARRAY<char*> & val);
+  void SetFlag (const char * name, const Array<char*> & val);
   /// Sets double array flag
-  void SetFlag (const char * name, const ARRAY<double> & val);
+  void SetFlag (const char * name, const Array<double> & val);
   
   /// Save flags to file
   void SaveFlags (const char * filename) const;
@@ -72,9 +72,9 @@ public:
   int GetDefineFlag (const char * name) const;
   int GetDefineFlag (const string & name) const;
   /// Returns string list flag, empty array if not exist
-  const ARRAY<char*> & GetStringListFlag (const char * name) const;
+  const Array<char*> & GetStringListFlag (const char * name) const;
   /// Returns num list flag, empty array if not exist
-  const ARRAY<double> & GetNumListFlag (const char * name) const;
+  const Array<double> & GetNumListFlag (const char * name) const;
 
 
   /// Test, if string flag is defined
@@ -104,9 +104,9 @@ public:
     { name = numflags.GetName(i); return numflags[i]; }
   void GetDefineFlag (int i, const char *& name) const
     { name = defflags.GetName(i); }
-  const ARRAY<double> * GetNumListFlag (int i, const char *& name) const
+  const Array<double> * GetNumListFlag (int i, const char *& name) const
     { name = numlistflags.GetName(i); return numlistflags[i]; }
-  const ARRAY<char*> * GetStringListFlag (int i, const char *& name) const
+  const Array<char*> * GetStringListFlag (int i, const char *& name) const
     { name = strlistflags.GetName(i); return strlistflags[i]; }
 };
 

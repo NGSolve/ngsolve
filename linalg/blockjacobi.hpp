@@ -100,7 +100,7 @@ protected:
   bool usecoarsegrid;
   const BaseMatrix * coarsegridprecond;
   
-  ARRAY<int> color;
+  Array<int> color;
   int ncolors;
 
 public:
@@ -120,9 +120,9 @@ public:
 
   virtual bool IsLocalBlock ( const int block ) const;
 
-  virtual void MyMPI_SendBitarrays ( const ARRAY< BitArray* > & dofcolors, const int dest ) const ;
+  virtual void MyMPI_SendBitarrays ( const Array< BitArray* > & dofcolors, const int dest ) const ;
 
-  virtual void MyMPI_RecvBitarrays ( ARRAY< BitArray* > & dofcolors, const int dest ) const;
+  virtual void MyMPI_RecvBitarrays ( Array< BitArray* > & dofcolors, const int dest ) const;
 
 };
 
@@ -140,7 +140,7 @@ protected:
   /// a reference to the matrix
   const SparseMatrix<TM,TV_ROW,TV_COL> & mat;
   /// inverses of the small blocks
-  ARRAY<Matrix<TM>*> invdiag;
+  Array<Matrix<TM>*> invdiag;
 
 
 public:
@@ -317,13 +317,13 @@ public:
 
   ///
   virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,
-				  const ARRAY<int> & numbering, 
+				  const Array<int> & numbering, 
 				  int forward = 1) const
   {
     ;
   }
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     int nels = 0;
     for (int i = 0; i < blocktable.Size(); i++)
@@ -351,7 +351,7 @@ protected:
   /// a reference to the matrix
   const ParallelSparseMatrix<TM,TV_ROW,TV_COL> & mat;
   /// inverses of the small blocks
-  ARRAY<Matrix<TM>*> invdiag;
+  Array<Matrix<TM>*> invdiag;
 
 public:
   // typedef typename mat_traits<TM>::TV_ROW TVX;
@@ -398,13 +398,13 @@ public:
  
   ///
   virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,
-				  const ARRAY<int> & numbering, 
+				  const Array<int> & numbering, 
 				  int forward = 1) const
   {
     ;
   }
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     int nels = 0;
     for (int i = 0; i < blocktable.Size(); i++)
@@ -436,7 +436,7 @@ class BlockJacobiPrecondSymmetric :
 {
 protected:
   const SparseMatrixSymmetric<TM,TV> & mat;
-  ARRAY<CholeskyFactors<TM>*> invdiag;
+  Array<CholeskyFactors<TM>*> invdiag;
 
 public:
 
@@ -631,14 +631,14 @@ public:
   
   ///
   virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,
-				  const ARRAY<int> & numbering, 
+				  const Array<int> & numbering, 
 				  int forward = 1) const
   {
     ;
   }
   
   
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     int nels = 0;
     for (int i = 0; i < blocktable.Size(); i++)
@@ -662,7 +662,7 @@ class ParallelBlockJacobiPrecondSymmetric :
 {
 protected:
   const ParallelSparseMatrixSymmetric<TM,TV> & mat;
-  ARRAY<CholeskyFactors<TM>*> invdiag;
+  Array<CholeskyFactors<TM>*> invdiag;
 
   const SparseMatrixSymmetric<TM,TV> * consistentmat;
 
@@ -756,14 +756,14 @@ public:
   
   ///
   virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,
-				  const ARRAY<int> & numbering, 
+				  const Array<int> & numbering, 
 				  int forward = 1) const
   {
     ;
   }
   
   
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     int nels = 0;
     for (int i = 0; i < blocktable.Size(); i++)
@@ -1056,16 +1056,16 @@ public:
 
   ///
   virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,
-				  const ARRAY<int> & numbering, 
+				  const Array<int> & numbering, 
 				  int forward = 1) const
   {
     ;
   }
   
   /*  
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
-    // ARRAY<BandCholeskyFactors<TM>*> invdiag;
+    // Array<BandCholeskyFactors<TM>*> invdiag;
 
 
     int nels = 0;
@@ -1181,7 +1181,7 @@ public:
 
   ///
   virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,
-				  const ARRAY<int> & numbering, 
+				  const Array<int> & numbering, 
 				  int forward = 1) const
   {
     ;

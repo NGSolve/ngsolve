@@ -99,7 +99,7 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   void JacobiPrecond<TM,TV_ROW,TV_COL> ::
   GSSmoothNumbering (BaseVector & x, const BaseVector & b,
-		     const ARRAY<int> & numbering, 
+		     const Array<int> & numbering, 
 		     int forward) const
   {
     ;
@@ -213,7 +213,7 @@ namespace ngla
   template <class TM, class TV>
   void JacobiPrecondSymmetric<TM,TV> ::
   GSSmoothNumbering (BaseVector & x, const BaseVector & b,
-		     const ARRAY<int> & numbering, 
+		     const Array<int> & numbering, 
 		     int forward) const
   {
     ;

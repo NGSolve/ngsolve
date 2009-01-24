@@ -15,7 +15,7 @@ class BaseSymbolTable
 {
 protected:
   /// identifiers
-  ARRAY <char*> names;
+  Array <char*> names;
   
 public:
   /// 
@@ -50,7 +50,7 @@ template <class T>
 class SymbolTable : public BaseSymbolTable
 {
   /// the data
-  ARRAY <T> data;
+  Array <T> data;
 public:
   /// Creates a symboltable
   SymbolTable ()

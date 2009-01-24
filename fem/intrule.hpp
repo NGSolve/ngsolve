@@ -273,7 +273,7 @@ inline ostream & operator<< (ostream & ost, const SpecificIntegrationPoint<DIMS,
 class IntegrationRule
 {
   ///
-  ARRAY<IntegrationPoint*> ipts;
+  Array<IntegrationPoint*> ipts;
 public:
   ///
   IntegrationRule ();
@@ -466,62 +466,62 @@ public:
 class IntegrationRules
 {
   ///
-  ARRAY<IntegrationRule*> segmentrules;
+  Array<IntegrationRule*> segmentrules;
   ///
   IntegrationRule segmentlumping;
   ///
-  ARRAY<IntegrationPoint*> segmentpoints;
+  Array<IntegrationPoint*> segmentpoints;
   ///
-  ARRAY<IntegrationRule*> jacobirules10;
+  Array<IntegrationRule*> jacobirules10;
   ///
-  ARRAY<IntegrationRule*> jacobirules20;
+  Array<IntegrationRule*> jacobirules20;
   ///
-  ARRAY<IntegrationRule*> trigrules;
+  Array<IntegrationRule*> trigrules;
   ///
-  ARRAY<IntegrationRule*> trignodalrules;
+  Array<IntegrationRule*> trignodalrules;
   ///
   IntegrationRule triglumping;
   ///
   IntegrationRule triglumping2;
   ///
-  ARRAY<IntegrationPoint*> trigpoints;
+  Array<IntegrationPoint*> trigpoints;
 
   ///
-  ARRAY<IntegrationRule*> quadrules;
+  Array<IntegrationRule*> quadrules;
   ///
   IntegrationRule quadlumping;
   ///
-  ARRAY<IntegrationPoint*> quadpoints;
+  Array<IntegrationPoint*> quadpoints;
 
   ///
-  ARRAY<IntegrationRule*> tetrules;
+  Array<IntegrationRule*> tetrules;
   ///
   IntegrationRule tetlumping;
   ///
-  ARRAY<IntegrationRule*> tetnodalrules;
+  Array<IntegrationRule*> tetnodalrules;
   ///
-  ARRAY<IntegrationPoint*> tetpoints;
+  Array<IntegrationPoint*> tetpoints;
 
   ///
-  ARRAY<IntegrationRule*> prismrules;
+  Array<IntegrationRule*> prismrules;
   ///
   IntegrationRule prismlumping;
   ///
   IntegrationRule prismfacemidpoint;
   ///
-  ARRAY<IntegrationPoint*> prismpoints;
+  Array<IntegrationPoint*> prismpoints;
 
   ///
-  ARRAY<IntegrationRule*> pyramidrules;
+  Array<IntegrationRule*> pyramidrules;
   ///
   IntegrationRule pyramidlumping;
   ///
-  ARRAY<IntegrationPoint*> pyramidpoints;
+  Array<IntegrationPoint*> pyramidpoints;
 
   ///
-  ARRAY<IntegrationRule*> hexrules;
+  Array<IntegrationRule*> hexrules;
   ///
-  ARRAY<IntegrationPoint*> hexpoints;
+  Array<IntegrationPoint*> hexpoints;
 
 public:
   ///
@@ -542,7 +542,7 @@ public:
   const IntegrationRule & PrismFaceMidPoint () const
   { return prismfacemidpoint; }
   ///
-  const ARRAY<IntegrationPoint*> & GetIntegrationPoints (ELEMENT_TYPE eltyp) const;
+  const Array<IntegrationPoint*> & GetIntegrationPoints (ELEMENT_TYPE eltyp) const;
   ///
   const IntegrationRule & GenerateIntegrationRule (ELEMENT_TYPE eltyp, int order);
 
@@ -557,8 +557,8 @@ public:
    Exact for polynomials up to order 2n-1
 */ 
 extern void ComputeGaussRule (int n, 
-			      ARRAY<double> & xi, 
-			      ARRAY<double> & wi);
+			      Array<double> & xi, 
+			      Array<double> & wi);
 
 
 
@@ -570,8 +570,8 @@ extern void ComputeGaussRule (int n,
    Exact for polynomials up to order 2n-1 + alpha + beta
 */ 
 extern void ComputeGaussJacobiRule (int n, 
-				    ARRAY<double> & xi, 
-				    ARRAY<double> & wi,
+				    Array<double> & xi, 
+				    Array<double> & wi,
 				    double alf,
 				    double bet);
 
@@ -582,8 +582,8 @@ extern void ComputeGaussJacobiRule (int n,
    Exact for exp{-x*x} * p(x),  with polynomials p(x) up to order 2n-1
 */ 
 extern void ComputeHermiteRule (int n, 
-                                ARRAY<double> & x,
-                                ARRAY<double> & w);
+                                Array<double> & x,
+                                Array<double> & w);
   
 
 

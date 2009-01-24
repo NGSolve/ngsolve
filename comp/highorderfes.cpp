@@ -150,7 +150,7 @@ namespace ngcomp
 
 
     int i, j, k, l;
-    ARRAY<int> pnums;
+    Array<int> pnums;
 
     ndof = ma.GetNP();
 
@@ -313,10 +313,10 @@ namespace ngcomp
   }
 
 
-  void NodalFESpaceP :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void NodalFESpaceP :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    ARRAY<int> pnums;
-    ARRAY<int> ednums, edorient, fanums, faorient;
+    Array<int> pnums;
+    Array<int> ednums, edorient, fanums, faorient;
 
     ma.GetElPNums (elnr, pnums);
     ma.GetElEdges (elnr, ednums, edorient);
@@ -507,7 +507,7 @@ namespace ngcomp
 #ifdef NONE
       case ET_PRISM:
 	{
-	  ARRAY<int> hpnums(6);
+	  Array<int> hpnums(6);
 	  hpnums.Elem(1) = pnums.Get(3);
 	  hpnums.Elem(2) = pnums.Get(2);
 	  hpnums.Elem(3) = pnums.Get(1);
@@ -657,11 +657,11 @@ namespace ngcomp
   }
 
 
-  void NodalFESpaceP :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void NodalFESpaceP :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     //  cout << "getsdofnrs" << endl;
 
-    ARRAY<int> pnums, ednums, edorient;
+    Array<int> pnums, ednums, edorient;
     int fanum, faorient;
     ma.GetSElPNums (selnr, pnums);
     ma.GetSElEdges (selnr, ednums, edorient);
@@ -867,7 +867,7 @@ namespace ngcomp
   int NodalFESpaceP :: GetFaceDof (int fnr, int i1, int i2, int i3, int lam1, int lam2, int lam3) const
   {
     int base = nv + n_edge_dofs * nedge + n_face_dofs * fnr;
-    ARRAY<int> pnums;
+    Array<int> pnums;
     ma.GetFacePNums (fnr, pnums);
 
     int lr1, lr2, lr3;
@@ -1029,13 +1029,13 @@ namespace ngcomp
   Table<int> * NodalFESpaceP :: CreateSmoothingBlocks (int type) const
   {
     int i, j, k, l;
-    ARRAY<int> eledges, orient, pnums;
+    Array<int> eledges, orient, pnums;
     cout << "NodalFESpaceP::CreateSmoothingBlocks" << endl;
 
     if (ma.GetDimension() == 2)
       {
 	// V,E,C, 2D
-	ARRAY<int> cnts(nv+nedge+ne+1);
+	Array<int> cnts(nv+nedge+ne+1);
 	cnts = 0;
 
 	if (!augmented)
@@ -1097,7 +1097,7 @@ namespace ngcomp
 	return it;
 	/*
 	// V,E+C, 2D
-	ARRAY<int> cnts(nv+nedge+1);
+	Array<int> cnts(nv+nedge+1);
 	cnts = 0;
       
 	if (!augmented)
@@ -1172,7 +1172,7 @@ namespace ngcomp
       {
 	/*
 	// V,E,F,C, 3D
-	ARRAY<int> cnts(nv+nedge+nface+ne+1);
+	Array<int> cnts(nv+nedge+nface+ne+1);
 	cnts = 0;
 
 	if (!augmented)
@@ -1251,7 +1251,7 @@ namespace ngcomp
 
 
 	// V,E,F+C, 3D
-	ARRAY<int> cnts(nv+nedge+nface+1);
+	Array<int> cnts(nv+nedge+nface+1);
 	cnts = 0;
 
 	if (!augmented)
@@ -1350,7 +1350,7 @@ namespace ngcomp
 	  }
       
 	// V,E,V+C, 3D
-	ARRAY<int> cnts(nv+nedge+1);
+	Array<int> cnts(nv+nedge+1);
 	cnts = 0;
 
 	if (augmented == 0)
@@ -1471,7 +1471,7 @@ namespace ngcomp
 
 
 #ifdef VEFC_precond
-    ARRAY<int> cnts(nv+nedge+nface+ne);
+    Array<int> cnts(nv+nedge+nface+ne);
     cnts = 0;
     for (i = 0; i < nv; i++)
       cnts[i] = 1;

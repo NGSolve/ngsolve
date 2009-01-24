@@ -42,7 +42,7 @@ namespace ngcomp
       ost << "  " << parts[i]->Name() << endl;
   }
 
-  void LinearForm :: MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  void LinearForm :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     if (&GetVector())  
       {
@@ -114,7 +114,7 @@ namespace ngcomp
 
 #pragma omp parallel
 	    {
-	      ARRAY<int> dnums;
+	      Array<int> dnums;
 	      ElementTransformation eltrans;
 	      
 #pragma omp for	      
@@ -181,7 +181,7 @@ namespace ngcomp
 
 #pragma omp parallel
 	    {
-	      ARRAY<int> dnums;
+	      Array<int> dnums;
 	      ElementTransformation eltrans;
 	      
 #pragma omp for	      
@@ -237,7 +237,7 @@ namespace ngcomp
 
 
 
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	ElementTransformation eltrans;
 
 	for (int j=0; j<parts.Size(); j++ )
@@ -250,7 +250,7 @@ namespace ngcomp
 	    double oldlength;
 
 	    
-	    ARRAY<int> domains;
+	    Array<int> domains;
 
 	    if(parts[j]->DefinedOnSubdomainsOnly())
 	      {
@@ -418,7 +418,7 @@ namespace ngcomp
 	int nse = ma.GetNSE();
 	
 	
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	ElementTransformation seltrans, geltrans;
 
 	for (int i = 0; i < nse; i++)
@@ -568,7 +568,7 @@ namespace ngcomp
 
   template <typename TV>
   void T_LinearForm<TV> ::
-  AddElementVector (const ARRAY<int> & dnums,
+  AddElementVector (const Array<int> & dnums,
 		    const FlatVector<TSCAL> & elvec,
 		    const int cachecomp) 
   {
@@ -590,7 +590,7 @@ namespace ngcomp
   }
   
   template <> void T_LinearForm<double>::
-  AddElementVector (const ARRAY<int> & dnums,
+  AddElementVector (const Array<int> & dnums,
 		    const FlatVector<double> & elvec,
 		    const int cachecomp) 
   {
@@ -601,7 +601,7 @@ namespace ngcomp
   }
   
   template <> void T_LinearForm<Complex>::
-  AddElementVector (const ARRAY<int> & dnums,
+  AddElementVector (const Array<int> & dnums,
 		    const FlatVector<Complex> & elvec,
 		    const int cachecomp) 
   {
@@ -617,7 +617,7 @@ namespace ngcomp
 
   template <typename TV>
   void T_LinearForm<TV> ::
-  SetElementVector (const ARRAY<int> & dnums,
+  SetElementVector (const Array<int> & dnums,
 		    const FlatVector<TSCAL> & elvec) 
   {
     FlatVector<TV> fv = vec->FV();
@@ -628,7 +628,7 @@ namespace ngcomp
   }
   
   template <> void T_LinearForm<double>::
-  SetElementVector (const ARRAY<int> & dnums,
+  SetElementVector (const Array<int> & dnums,
 		    const FlatVector<double> & elvec) 
   {
     FlatVector<double> fv = vec->FV();
@@ -638,7 +638,7 @@ namespace ngcomp
   }
   
   template <> void T_LinearForm<Complex>::
-  SetElementVector (const ARRAY<int> & dnums,
+  SetElementVector (const Array<int> & dnums,
 		    const FlatVector<Complex> & elvec) 
   {
     FlatVector<Complex> fv = vec->FV();
@@ -653,7 +653,7 @@ namespace ngcomp
 
   template <typename TV>
   void T_LinearForm<TV> ::
-  GetElementVector (const ARRAY<int> & dnums,
+  GetElementVector (const Array<int> & dnums,
 		    FlatVector<TSCAL> & elvec) const
   {
     FlatVector<TV> fv = vec->FV();
@@ -664,7 +664,7 @@ namespace ngcomp
   }
   
   template <> void T_LinearForm<double>::
-  GetElementVector (const ARRAY<int> & dnums,
+  GetElementVector (const Array<int> & dnums,
 		    FlatVector<double> & elvec) const
   {
     FlatVector<double> fv = vec->FV();
@@ -674,7 +674,7 @@ namespace ngcomp
   }
   
   template <> void T_LinearForm<Complex>::
-  GetElementVector (const ARRAY<int> & dnums,
+  GetElementVector (const Array<int> & dnums,
 		    FlatVector<Complex> & elvec) const
   {
     FlatVector<Complex> fv = vec->FV();

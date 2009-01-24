@@ -68,7 +68,7 @@ public:
     return (vnums[edges[enr][1]] > vnums[edges[enr][0]]) ? 1 : -1;
   }
   
-  virtual void GetFacetDofs(int i, ARRAY<int> & dnums) const
+  virtual void GetFacetDofs(int i, Array<int> & dnums) const
   { *testout  << " GetFacetDofs for nothing " << endl; dnums.SetSize(0);}; 
 };
 
@@ -167,7 +167,7 @@ public:
 
   HDivHighOrderTrig (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip,
@@ -180,7 +180,7 @@ public:
   //void CalcNumDivShape( const IntegrationPoint & ip,
   //			FlatVector<> divshape) const;
 
-  virtual void GetFacetDofs(int i, ARRAY<int> & dnums) const; 
+  virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
 
 ///
@@ -192,7 +192,7 @@ public:
 
   HDivHighOrderQuad (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip,
@@ -206,7 +206,7 @@ public:
  void CalcNumDivShape( const IntegrationPoint & ip,
   			FlatVector<> divshape) const;
 
- virtual void GetFacetDofs(int i, ARRAY<int> & dnums) const; 
+ virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
 
 template <class T_ORTHOPOL = TrigExtensionMonomial>
@@ -218,7 +218,7 @@ public:
 
   HDivHighOrderTet (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip,
@@ -231,7 +231,7 @@ public:
   //void CalcNumDivShape( const IntegrationPoint & ip,
   //			FlatVector<> divshape) const;
 
-  virtual void GetFacetDofs(int i, ARRAY<int> & dnums) const; 
+  virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
 
 template <class T_ORTHOPOL = TrigExtensionMonomial>
@@ -242,7 +242,7 @@ public:
 
   HDivHighOrderPrism (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip,
@@ -255,7 +255,7 @@ public:
   //void CalcNumDivShape( const IntegrationPoint & ip,
   //			FlatVector<> divshape) const;
 
-  virtual void GetFacetDofs(int i, ARRAY<int> & dnums) const; 
+  virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
 
 template <class T_ORTHOPOL = TrigExtensionMonomial>
@@ -265,7 +265,7 @@ public:
 
   HDivHighOrderHex (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
   
 
   /// compute shape
@@ -278,7 +278,7 @@ public:
   /// compute Div numerical diff
   //void CalcNumDivShape( const IntegrationPoint & ip,
   //			FlatVector<> divshape) const;
- virtual void GetFacetDofs(int i, ARRAY<int> & dnums) const; 
+ virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 
 };
 

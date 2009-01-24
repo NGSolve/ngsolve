@@ -46,7 +46,7 @@ namespace ngparallel
   }
 
 
-//   void ParallelDofs :: SetDistantDofs ( const int proc, const ARRAY<int> & dofs )
+//   void ParallelDofs :: SetDistantDofs ( const int proc, const Array<int> & dofs )
 //   {
 //     for ( int i = 0; i < dofs.Size(); i++)
 //       SetDistantDof ( proc, i, dofs[i] );
@@ -95,7 +95,7 @@ namespace ngparallel
 //   }
 
 
-  void ParallelDofs :: GetExchangeProcs ( const int localdof, ARRAY<int> & procs ) const
+  void ParallelDofs :: GetExchangeProcs ( const int localdof, Array<int> & procs ) const
   {
     procs.SetSize(0);
     for ( int dest = 0; dest < ntasks; dest++)
@@ -104,7 +104,7 @@ namespace ngparallel
     return;
   }
 
-  void ParallelDofs :: GetExchangeProcs ( ARRAY<int> & procs ) const
+  void ParallelDofs :: GetExchangeProcs ( Array<int> & procs ) const
   {
     procs.SetSize(0);
     if ( ntasks == 1 ) return;
@@ -116,7 +116,7 @@ namespace ngparallel
   }
 
 
-  void ParallelDofs :: GetHOExchangeProcs ( const int localdof, ARRAY<int> & procs ) const
+  void ParallelDofs :: GetHOExchangeProcs ( const int localdof, Array<int> & procs ) const
   {
     procs.SetSize(0);
     for ( int dest = 1; dest < ntasks; dest++)
@@ -125,7 +125,7 @@ namespace ngparallel
     return;
   }
 
-  void ParallelDofs :: GetHOExchangeProcs ( ARRAY<int> & procs ) const
+  void ParallelDofs :: GetHOExchangeProcs ( Array<int> & procs ) const
   {
     procs.SetSize(0);
     if ( ntasks == 1 ) return;
@@ -171,7 +171,7 @@ namespace ngparallel
      for ( int el = 0; el < ma.GetNE(); el++ )
        {
 	 if ( ma.IsGhostEl ( el ) ) continue;
-	 ARRAY<int> dofs;
+	 Array<int> dofs;
 	 fespace.GetDofNrs ( el, dofs );
 	 for ( int i = 0; i < dofs.Size(); i++ )
 	   isghostdof -> Clear ( dofs[i] );
@@ -239,7 +239,7 @@ namespace ngparallel
       and sorted such that distant is sorted for (me > you)
     */
 
-//     ARRAY<int> nexdofs(ntasks);
+//     Array<int> nexdofs(ntasks);
 //     for (int i = 0; i < ntasks; i++)
 //       nexdofs[i] = (*localexchangedof)[i].Size();
 
@@ -294,7 +294,7 @@ namespace ngparallel
 	int len_vec = sortedexchangedof.Size();
 	if ( len_vec == 0 ) continue;
 
-         ARRAY<int> blocklen(len_vec);
+         Array<int> blocklen(len_vec);
 	// das geht wirklich nicht --> MPI_Type entspricht schon Vec, blocklen = 1
 //         blocklen = fespace.GetDimension();  // ich glaub das funktioniert nicht so -> offset in multiples of MPI_T
 	blocklen = 1;
@@ -331,7 +331,7 @@ namespace ngparallel
   }
 
 
-//   void ParallelDofs ::  GetDistantDofs ( const int localdof, ARRAY<int> & distantdofs ) const
+//   void ParallelDofs ::  GetDistantDofs ( const int localdof, Array<int> & distantdofs ) const
 //   { 
 //     distantdofs.SetSize(ntasks);
 //     // no distant dof on proc 0, as this one has only low order fespace
@@ -444,10 +444,10 @@ namespace ngparallel
 //     distantexchangedof = new Table<int> (nexdof);
     sorted_exchangedof = new Table<int> (nexdof);
 
-    ARRAY<int> distbase(ntasks);
+    Array<int> distbase(ntasks);
     distbase = 0;
   base = 0;
-  ARRAY<int> ii_comp(ntasks);
+  Array<int> ii_comp(ntasks);
   ii_comp = 0;
     for ( int i = 0; i < nspaces; i++ )
       {

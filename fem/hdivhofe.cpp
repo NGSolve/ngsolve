@@ -458,7 +458,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void HDivHighOrderTrig<T_ORTHOPOL> ::
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     if (discontinuous)
     {
@@ -490,7 +490,7 @@ namespace ngfem
   }
   
   template <class T_ORTHOPOL>
-  void HDivHighOrderTrig<T_ORTHOPOL> :: GetFacetDofs(int fa, ARRAY<int> & dnums) const 
+  void HDivHighOrderTrig<T_ORTHOPOL> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa > 2 ) 
     {
@@ -819,7 +819,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void HDivHighOrderQuad<T_ORTHOPOL> ::
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     if (discontinuous)
     {
@@ -850,7 +850,7 @@ namespace ngfem
   }
   
   template <class T_ORTHOPOL>
-  void HDivHighOrderQuad<T_ORTHOPOL> :: GetFacetDofs(int fa, ARRAY<int> & dnums) const
+  void HDivHighOrderQuad<T_ORTHOPOL> :: GetFacetDofs(int fa, Array<int> & dnums) const
   {
     if (fa > 3 ) 
     {
@@ -1239,7 +1239,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void HDivHighOrderTet<T_ORTHOPOL> ::
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     if (discontinuous)
     {
@@ -1277,7 +1277,7 @@ namespace ngfem
   
   
   template <class T_ORTHOPOL>
-  void HDivHighOrderTet<T_ORTHOPOL> :: GetFacetDofs(int fa, ARRAY<int> & dnums) const 
+  void HDivHighOrderTet<T_ORTHOPOL> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa >= 4 ) 
     {
@@ -2733,7 +2733,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void HDivHighOrderPrism<T_ORTHOPOL> ::
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     if (discontinuous)
     {
@@ -2773,7 +2773,7 @@ namespace ngfem
 
   
   template <class T_ORTHOPOL>
-  void HDivHighOrderPrism<T_ORTHOPOL> :: GetFacetDofs(int fa, ARRAY<int> & dnums) const 
+  void HDivHighOrderPrism<T_ORTHOPOL> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa >= 5 ) 
     {
@@ -3151,7 +3151,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void HDivHighOrderHex<T_ORTHOPOL> ::
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     if (discontinuous)
     {
@@ -3183,7 +3183,7 @@ namespace ngfem
   }
 
   template <class T_ORTHOPOL>
-  void HDivHighOrderHex<T_ORTHOPOL> :: GetFacetDofs(int fa, ARRAY<int> & dnums) const 
+  void HDivHighOrderHex<T_ORTHOPOL> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa >= 6 ) 
     {

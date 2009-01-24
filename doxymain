@@ -4,7 +4,7 @@
 
 NGSolve is a general purpose open source 3D finite element solver.
 
-<IMG src = "../../doc/ngslogo.gif">
+\image html ngslogo.gif
 
 - \subpage features
 - \subpage gallery
@@ -167,7 +167,7 @@ it is defined on. The sparse matrices are stored in the bilinear-form object.
 template <typename SCAL = double>
 void BilinearForm :: Assemble ()
 {
-  ARRAY<int> dnums;
+  Array<int> dnums;
   Matrix<SCAL> Matrix elmat;
   ElementTransformation eltrans;
       

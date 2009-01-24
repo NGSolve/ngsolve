@@ -119,7 +119,7 @@ public:
       : T_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
     { ; }
     
-    static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       return new MassHDivIntegrator (coeffs[0]);
     }
@@ -141,7 +141,7 @@ public:
       : T_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, FEL> (DiagDMat<1> (coeff))
     { ; }
 
-    static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       return new DivDivHDivIntegrator (coeffs[0]);
     }
@@ -164,7 +164,7 @@ public:
       : T_BIntegrator<DiffOpDivHDiv<D>, DVec<1>, FEL> (DVec<1> (coeff))
     { ; }
     
-    static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       return new DivSourceHDivIntegrator (coeffs[0]);
     }
@@ -189,7 +189,7 @@ public:
       : T_BIntegrator<DiffOpIdHDiv<D>, DVec<D>, FEL> (DVec<D> (coeff1, coeff2))
     { ; }
 
-    static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       return new SourceHDivIntegrator (coeffs[0], coeffs[1]);
     }
@@ -210,7 +210,7 @@ public:
     : T_BIntegrator<DiffOpIdHDivBoundary<D>, DVec<1>, FEL> (DVec<1> (coeff))
   { ; }
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new NeumannHDivIntegrator (coeffs[0]);
   }
@@ -233,7 +233,7 @@ public:
   { ; }
 
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new RobinHDivIntegrator (coeffs[0]);
 
