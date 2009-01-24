@@ -1,0 +1,234 @@
+/**
+
+\mainpage
+
+NGSolve is a general purpose open source 3D finite element solver.
+
+<IMG src = "../../doc/ngslogo.gif">
+
+- \subpage features
+- \subpage gallery
+- \subpage rep
+
+
+\page features  Features of NGSolve
+ - Supported models are heat flow, elasticity, and electro-dynamics
+ - Stationary and instationary field problems, eigenvalue problems
+ - Finite elements on lines, triangles, quadrilaterals, tetrahedra, pyramids,
+prisms, hexahedra
+ - Scalar nodal and vector valued edge and face elements
+ - Elements of arbitrary order
+ - Anisotropic elements for thin layers and edge singularities
+ - Sparse direct and iterative Krylov-subspace solvers
+ - Geometric and algebraic multigrid preconditioning
+ - A posteriori error estimators driving local mesh refinement
+
+
+\page gallery NGSolve Gallery
+	
+  This is a tour through typical applications of NGSolve in mechanical
+  and electrical engineering. You can browse the geometry file, the
+  problem description (pde) file, and you can click onto the image to
+  see a larger picture.
+
+  With NGSolve one can solve boundary value problems, initial-boundary value
+  problems and Eigenvalue problems for the available types of equations,
+  namely scalar (heat flow), elasticity, and magnetic field.
+
+
+<ul>
+<li>
+  A static simulation of a crank shaft. The normal component of the
+  displacement in the main bearing is fixed, surface load is applied in the
+  left bearing. The simulation used 150k second order tetrahedral
+  finite elements (660k unknowns), CPU time on an 1 GHz PIII notebook is 15 min.
+       
+  <A HREF="../../demos/shaft.geo"> Geometry File </A> 
+
+  <A HREF="../../demos/shaft.pde"> PDE File </A>
+  <IMG src="../../demos/shaft.gif"> 
+
+<li>
+  The first eigenmode of a cantilever beam:
+
+  <A HREF="../../demos/beam.geo"> Geometry File </A>
+
+  <A HREF="../../demos/evp.pde"> PDE File </A>
+  <IMG src="../../demos/eigenvalue.gif"> 
+
+<li>
+  3D wave equations. Potential described at electrods, absorbing boundary conditions of 2nd order. 720k first order tetrahedral elements (129625 complex unknowns), CPU time on an 1 GHz PIII notebook is 6 min.
+
+
+  <A HREF="../../demos/saw_3d.geo"> Geometry File </A>
+
+  <A HREF="../../demos/helmholtz3d.pde"> PDE File </A>
+  <IMG src="../../demos/helmholtz.gif"> 
+
+<li>
+  Magnetic field simulation. The field is induced by prescribed
+  currents in a coil. The problem contains a thin, high permeable shield.
+  This shield is meshed by thin prism elements. The simulation used
+  57563 second order, type 2 Nedelec elements (575195 unknowns), and requires
+  5 min on a 1 GHz PIII notebook.
+
+  <A HREF="../../demos/coilshield.geo"> Geometry File </A>
+
+  <A HREF="../../demos/magshield.pde"> PDE File </A>
+  <IMG src="../../demos/magshield1.gif"> 
+  <IMG src="../../demos/magshield2.gif"> 
+
+
+</ul>
+*/
+
+
+/** 
+\page rep Some representative functions
+	This is an overview of some representative functions of NGSolve. 
+	For instruction purposes, the functions are simplified.
+
+
+
+Element matrix assembling for BDB integrators:
+
+Many bilinear-forms are of the structure 
+
+\f$\int  D \partial u \cdot  \partial v \, dx \f$
+
+where $\partial$ is some differential operator, i.e., the gradient, and $D$
+is the material tensor. Then, the finite elemen matrix $A_T$ is computed as
+\begin{equation}
+A_T = \sum_{Int.Pts.} \omega |J| B^T D B.
+\end{equation}
+The elements of the matrix $B$ are the values of the differential operator
+applied to the shape functions in the integration point, i.e.,
+$B_{i,j} = (\partial \varphi_j)_i$.
+
+The BDBIntegrator is a derived class from BilinearFormIntegrator. 
+Here, the differential operator and the material tensor are defined by
+template arguments. 
+
+
+\code
+  template <class DIFFOP, class DMATOP>
+  void BDBIntegrator<DIFFOP,DMATOP> :: 
+  AssembleElementMatrix (const FiniteElement & fel, 
+			 const ElementTransformation & eltrans, 
+			 Matrix & elmat,
+			 LocalHeap & locheap) const
+  {
+    enum { DIM_SPACE   = DIFFOP::DIM_SPACE };
+    enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
+    enum { DIM_DMAT    = DIFFOP::DIM_DMAT };
+    enum { DIM         = DIFFOP::DIM };
+
+    int ndof = fel.GetNDof();
+   
+    elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
+    elmat = 0;
+	
+    MatrixFixHeight<DIM_DMAT> bmat (ndof * DIM, locheap);
+    MatrixFixHeight<DIM_DMAT> dbmat (ndof * DIM, locheap);
+    Mat<DIM_DMAT,DIM_DMAT> dmat;
+
+    const IntegrationRule & ir = GetIntegrationRule (fel);
+
+    // optimized memory management
+    void * heapp = locheap.GetPointer();
+
+    for (int i = 0; i < ir.GetNIP(); i++)
+      {
+        // the mapped point, including Jacobian
+	SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
+	  sip(ir, i, eltrans, locheap);
+
+	DIFFOP::GenerateMatrix (fel, sip, bmat, locheap);
+	dmatop.GenerateMatrix (fel, sip, dmat, locheap);
+
+	double fac = fabs (sip.GetJacobiDet()) * sip.IP().Weight();
+
+	dbmat = dmat * bmat;
+	elmat += fac * (Trans (bmat) * dbmat);
+
+	locheap.CleanUp (heapp);
+      } 
+    }
+\endcode
+
+
+
+Global matrix assembling
+The bilinear-form consists of a couple of integrators acting on the
+domain or on the boundary. It has a reference to the finite element space
+it is defined on. The sparse matrices are stored in the bilinear-form object.
+
+\code
+template <typename SCAL = double>
+void BilinearForm :: Assemble ()
+{
+  ARRAY<int> dnums;
+  Matrix<SCAL> Matrix elmat;
+  ElementTransformation eltrans;
+      
+  int ndof = fespace.GetNDof();
+      
+  BaseMatrix & mat = GetMatrix();
+  mat = 0.0;
+      
+  LocalHeap locheap (1000000);
+
+  // assembling of volume terms
+  int ne = ma.GetNE();
+  for (int i = 0; i < ne; i++)
+    {
+      locheap.CleanUp();
+      if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
+
+      ma.GetElementTransformation (i, eltrans);
+      const FiniteElement & fel = fespace.GetFE (i);
+      fespace.GetDofNrs (i, dnums);
+
+      for (int j = 0; j < parts.Size(); j++)
+	{
+	  const BilinearFormIntegrator & bfi = *parts.Get(j);
+	  if (bfi.BoundaryForm()) continue;
+	      
+	  bfi.AssembleElementMatrix (fel, eltrans, elmat, &locheap);
+	  fespace.TransformMatrix (i, elmat);
+	  mat->AddElementMatrix (dnums, elmat);
+	}
+    }
+       
+  // assembling of surface terms
+  int nse = ma.GetNSE();
+  for (int i = 0; i < nse; i++)
+    {
+      locheap.CleanUp();
+      if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+
+      ma.GetSurfaceElementTransformation (i, eltrans);
+      const FiniteElement & fel = fespace.GetSFE (i);
+      fespace.GetSDofNrs (i, dnums);
+
+      for (int j = 1; j <= parts.Size(); j++)
+	{
+	  const BilinearFormIntegrator & bfi = *parts.Get(j);
+	  if (!bfi.BoundaryForm()) continue;
+	      
+	  bfi.AssembleElementMatrix (fel, eltrans, elmat, &locheap);
+	  fespace.TransformSurfMatrix (i, elmat);
+	  mat->AddElementMatrix (dnums, elmat);
+	}
+    }
+}
+\endcode
+*/
+
+//@}
+
+//@}
+
+
+
+*/

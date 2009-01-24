@@ -20,8 +20,6 @@ using namespace ngparallel;
 using namespace std;
 using namespace ngsolve;
 
-// #include <mystdlib.h>
-#include <ngs_stdcpp_include.hpp>
 
 // for tcltk ...
 #include <tcl.h>   // "../libsrc/include/incvis.hpp"
@@ -239,6 +237,7 @@ void * SolveBVP(void *)
       if (pde && pde->IsGood())
 	pde->SolveBVP();
     }
+
   catch (exception & e)
     {
       cerr << "\n\ncaught exception in SolveBVP:\n "
@@ -253,7 +252,6 @@ void * SolveBVP(void *)
       cerr << "\n\ncaught Exception in SolveBVP:\n"
 	   << msg << "\n\n";
       pde->SetGood (false);
-      // got_exception = true;
     }
 #endif
   catch (ngstd::Exception & e)
@@ -261,17 +259,15 @@ void * SolveBVP(void *)
       cerr << "\n\ncaught Exception in SolveBVP:\n"
 	   << e.What() << "\n\n";
       pde->SetGood (false);
-      // got_exception = true;
     }
   catch (netgen::NgException & e)
     {
       cerr << "\n\ncaught Exception in SolveBVP:\n"
 	   << e.What() << "\n\n";
       pde->SetGood (false);
-      // got_exception = true;
     }
 
-  Ng_SetRunning (0);  // running = 0;
+  Ng_SetRunning (0); 
   return NULL;
 }
 

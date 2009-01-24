@@ -197,7 +197,8 @@ namespace ngcomp
       { 
 	FiniteElement * fe;
 	typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
-	
+
+        /*
 	if (fast_pfem)
 	  {
 	switch (ma.GetElType(elnr))
@@ -270,6 +271,7 @@ namespace ngcomp
 	  }
 	
 	else
+        */
 	  {
 	switch (ma.GetElType(elnr))
 	  {

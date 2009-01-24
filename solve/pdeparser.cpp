@@ -514,13 +514,11 @@ namespace ngsolve
               string shared = scan->GetStringValue() + ".so";
 	      scan->ReadNext();
 
+              cout << "load shared library '" << shared << "'" << endl;
+
 #ifdef HAVE_DLFCN_H 
               void * handle = dlopen (shared.c_str(), RTLD_LAZY);
-              if (handle)
-                {
-                  cout << "load shared library '" << shared << "'" << endl;
-                }
-              else
+              if (!handle)
                 {
                   stringstream err;
                   err << "Cannot load shared library '" << shared << "' \nerrmsg: "  << dlerror();

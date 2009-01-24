@@ -645,7 +645,7 @@ namespace ngcomp
   {
     FiniteElement * fe = 0;
     
-   
+    /*
     if (fast_pfem)
       {
         switch (ma.GetElType(elnr))
@@ -676,8 +676,8 @@ namespace ngcomp
             fe = 0;
           }
       }
-
     else
+    */
       {
         switch (ma.GetElType(elnr))
           {
