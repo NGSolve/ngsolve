@@ -759,10 +759,10 @@ namespace ngsolve
 
       case KW_COEFFICIENT:
 	{
-	  ARRAY<double> dcoeffs;
-	  ARRAY<EvalFunction*> coeffs;
-	  ARRAY < ARRAY < ARRAY<double>* >* > polycoeffs;
-	  ARRAY < ARRAY<double>* > polybounds;
+	  Array<double> dcoeffs;
+	  Array<EvalFunction*> coeffs;
+	  Array < Array < Array<double>* >* > polycoeffs;
+	  Array < Array<double>* > polybounds;
 	  scan->ReadNext();
 
 	  string name = scan->GetStringValue ();
@@ -1084,11 +1084,11 @@ namespace ngsolve
                         cout << "polynomial: ";
 		      scan->ReadNext();
 		      double val;
-		      ARRAY< ARRAY<double>* > *polyco = new ARRAY< ARRAY<double>* >;
-		      ARRAY<double> *polyb = new ARRAY<double>;
+		      Array< Array<double>* > *polyco = new Array< Array<double>* >;
+		      Array<double> *polyb = new Array<double>;
 		      while(scan->GetToken() != RSB)
 			{
-			  ARRAY<double> *polyc = new ARRAY<double>;
+			  Array<double> *polyc = new Array<double>;
 			  while(scan->GetToken() != RSB && scan->GetToken() != LP)
 			    {
 			      while (scan->GetToken() == COMMA) 
@@ -1271,7 +1271,7 @@ namespace ngsolve
 
 		  if (info)
 		    {
-		      ARRAY<CoefficientFunction*> coeffs(info->numcoeffs);
+		      Array<CoefficientFunction*> coeffs(info->numcoeffs);
 		      scan->ReadNext();
 		      for (int i = 0; i < info->numcoeffs; i++)
 			{
@@ -1431,7 +1431,7 @@ namespace ngsolve
 		
 		  if (info)
 		    {
-		      ARRAY<CoefficientFunction*> coeffs(info->numcoeffs);
+		      Array<CoefficientFunction*> coeffs(info->numcoeffs);
 		      scan->ReadNext();
 		      for (int i = 0; i < info->numcoeffs; i++)
 			{
@@ -1645,7 +1645,7 @@ namespace ngsolve
 					Integrator & integrator,
 					bool draw)
   {
-    ARRAY<int> domains;
+    Array<int> domains;
 
     if(integrator.DefinedOnSubdomainsOnly())
       {
@@ -1712,7 +1712,7 @@ namespace ngsolve
 
 	    current = start;
 	    
-	    ARRAY<int> verts;
+	    Array<int> verts;
 
 	    int numpoints = 0;
 
@@ -1798,7 +1798,7 @@ namespace ngsolve
 	    int oldelement=-1;
 	    double h;
 
-	    ARRAY<int> verts;
+	    Array<int> verts;
 	    
 
 	    Vector<> oldp(3);

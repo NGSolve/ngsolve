@@ -55,7 +55,7 @@ namespace ngla
     // #endif
   }
   
-  MatrixGraph :: MatrixGraph (const ARRAY<int> & elsperrow)
+  MatrixGraph :: MatrixGraph (const Array<int> & elsperrow)
   {
     size = elsperrow.Size();
     owner = true;
@@ -133,7 +133,7 @@ namespace ngla
 
     int ndof = asize;
 
-    ARRAY<int> cnt(ndof);
+    Array<int> cnt(ndof);
     cnt = 0;
     for (int i = 0; i < elements.Size(); i++)
       {
@@ -152,7 +152,7 @@ namespace ngla
           dof2element[el[j]][cnt[el[j]]++] = i;
       }
 
-    ARRAY<int> mark(ndof);
+    Array<int> mark(ndof);
 
     cnt = 0;
     mark = -1;
@@ -516,7 +516,7 @@ namespace ngla
   }
 
 
-  void MatrixGraph :: MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  void MatrixGraph :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     mu.Append (new MemoryUsageStruct ("MatrixGraph", (nze+size)*sizeof(int), 1));
   }
@@ -545,7 +545,7 @@ namespace ngla
 
   template <class TM>
   SparseMatrixTM<TM> ::
-  SparseMatrixTM (const ARRAY<int> & elsperrow)
+  SparseMatrixTM (const Array<int> & elsperrow)
     : BaseMatrix(),
       BaseSparseMatrix (elsperrow), 
       S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
@@ -745,7 +745,7 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   BaseMatrix * SparseMatrix<TM,TV_ROW,TV_COL> ::
-  InverseMatrix (ARRAY<int> * clusters) const
+  InverseMatrix (Array<int> * clusters) const
   {
     // #ifndef ASTRID
     // #ifdef USE_SUPERLU
@@ -813,7 +813,7 @@ namespace ngla
 
   template <class TM>
   void SparseMatrixTM<TM> ::
-  MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     mu.Append (new MemoryUsageStruct ("SparseMatrix", nze*sizeof(TM), 1));
     if (owner) MatrixGraph::MemoryUsage (mu);
@@ -832,7 +832,7 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   BaseMatrix *  SparseMatrix<TM,TV_ROW,TV_COL> ::
-  CreateMatrix (const ARRAY<int> & elsperrow) const
+  CreateMatrix (const Array<int> & elsperrow) const
   {
     SparseMatrix * newmat = new SparseMatrix(elsperrow);
     return newmat;
@@ -869,7 +869,7 @@ namespace ngla
   
     template <class TM, class TV>
     SparseMatrixSymmetric<TM,TV> ::
-    SparseMatrixSymmetric (const ARRAY<int> & elsperrow)
+    SparseMatrixSymmetric (const Array<int> & elsperrow)
     : SparseMatrixTM<TM> (elsperrow), 
     SparseMatrix<TM,TV,TV> (elsperrow),
     SparseMatrixSymmetricTM<TM> (elsperrow)
@@ -1043,7 +1043,7 @@ namespace ngla
       {
 	IntTable cols(n);
 	IntTable hcols(n);
-	ARRAY<int> marks(n);
+	Array<int> marks(n);
 
 	/*
 	  cout << "1" << flush;
@@ -1118,7 +1118,7 @@ namespace ngla
 	  nc++;
 	
 	  int nze = 0;
-	  ARRAY<int> cnts(nc);
+	  Array<int> cnts(nc);
 	  for (i = 0; i < nc; i++)
 	  {
 	  cnts[i] = cols[i].Size();
@@ -1144,7 +1144,7 @@ namespace ngla
 	// (*testout) << "cnts = " << cnts << endl;
 
 	// new version
-	ARRAY<INT<2> > e2v;
+	Array<INT<2> > e2v;
 	for (i = 0; i < n; i++)
 	  for (j = 0; j < this->GetRowIndices(i).Size(); j++)
 	    {
@@ -1171,7 +1171,7 @@ namespace ngla
 	// *testout << "e2v = " << endl << e2v << endl;
         
         // count all entries in row with multiplicity
-	ARRAY<int> cnt(nc);
+	Array<int> cnt(nc);
 	cnt = 0;
 	for (int i = 0; i < e2v.Size(); i++)
 	  cnt[e2v[i][1]]++;
@@ -1334,7 +1334,7 @@ namespace ngla
   }
 
   template <class TM, class TV>
-  BaseMatrix * SparseMatrixSymmetric<TM,TV> :: InverseMatrix (ARRAY<int> * clusters) const
+  BaseMatrix * SparseMatrixSymmetric<TM,TV> :: InverseMatrix (Array<int> * clusters) const
   {
     // #ifndef ASTRID
     // #ifdef USE_SUPERLU
@@ -1381,9 +1381,9 @@ namespace ngla
 
   template <class TM>
   VarBlockSparseMatrix<TM> ::
-  VarBlockSparseMatrix (ARRAY<int> & elsperrow, 
-			ARRAY<int> & ablock2linear, 
-			ARRAY<int> & linear2block,
+  VarBlockSparseMatrix (Array<int> & elsperrow, 
+			Array<int> & ablock2linear, 
+			Array<int> & linear2block,
 			const SparseMatrix<TM> & sm)
     : BaseSparseMatrix (elsperrow), block2linear(ablock2linear), data_index(nze+1)
   {
@@ -1395,7 +1395,7 @@ namespace ngla
     for (int i = 0; i < block2linear.Size()-1; i++)
       {
 	FlatArray<const int> rlin = sm.GetRowIndices(block2linear[i]);
-	ARRAY<int> rblock(rlin.Size());
+	Array<int> rblock(rlin.Size());
 	for (int j = 0; j < rlin.Size(); j++)
 	  rblock[j] = linear2block[rlin[j]];
 	BubbleSort (rblock.Size(), &rblock[0]);
@@ -1459,9 +1459,9 @@ namespace ngla
   VarBlockSparseMatrix<TM> * VarBlockSparseMatrix<TM> ::
   Create (const SparseMatrix<TM> & sm)
   {
-    ARRAY<int> b2l;
-    ARRAY<int> l2b(sm.Height());
-    ARRAY<int> elsperrow;
+    Array<int> b2l;
+    Array<int> l2b(sm.Height());
+    Array<int> elsperrow;
     
     b2l.Append (0);
     l2b[0] = 0;
@@ -1491,7 +1491,7 @@ namespace ngla
     for (int i = 0; i < b2l.Size()-1; i++)
       {
 	FlatArray<const int> rlin = sm.GetRowIndices(b2l[i]);
-	ARRAY<int> rblock(rlin.Size());
+	Array<int> rblock(rlin.Size());
 	for (int j = 0; j < rlin.Size(); j++)
 	  rblock[j] = l2b[rlin[j]];
 	BubbleSort (rblock.Size(), &rblock[0]);

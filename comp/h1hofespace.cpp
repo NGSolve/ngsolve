@@ -186,7 +186,7 @@ namespace ngcomp
     order_inner = INT<3>(p,p,p); 
     order_avertex = p; 
 	
-    ARRAY<int> eledges, elfaces, vnums;
+    Array<int> eledges, elfaces, vnums;
     
     for (int i = 0; i < nel; i++)
       {	
@@ -392,7 +392,7 @@ namespace ngcomp
     first_edge_dof[ned] = ndof;
          
     first_face_dof.SetSize (nfa+1);
-    ARRAY<int> fapnums;
+    Array<int> fapnums;
     for (int i = 0; i < nfa; i++)
       {
 	first_face_dof[i] = ndof;
@@ -468,7 +468,7 @@ namespace ngcomp
 	dirichlet_edge.SetSize (ma.GetNEdges());
 	dirichlet_face.SetSize (ma.GetNFaces());
 	
-	ARRAY<int> vnums, ednums;
+	Array<int> vnums, ednums;
 	int fanum;
 
 	dirichlet_vertex = false;
@@ -874,7 +874,7 @@ namespace ngcomp
 
 
 
-  void H1HighOrderFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void H1HighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     // FESpace :: GetDofNrs(elnr, dnums);
     // return;
@@ -946,7 +946,7 @@ namespace ngcomp
   }
 
 
-  void  H1HighOrderFESpace :: GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const
+  void  H1HighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
   {
     if (!eliminate_internal) 
       {
@@ -1009,7 +1009,7 @@ namespace ngcomp
 
 
 
-  void H1HighOrderFESpace :: GetWireBasketDofNrs (int elnr, ARRAY<int> & dnums) const
+  void H1HighOrderFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
   {
     ArrayMem<int,12> vnums, ednums;
 
@@ -1031,7 +1031,7 @@ namespace ngcomp
 
 
   
-  void H1HighOrderFESpace :: GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const
+  void H1HighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     dnums.Append (vnr);
@@ -1044,7 +1044,7 @@ namespace ngcomp
   }
   
   
-  void H1HighOrderFESpace :: GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const
+  void H1HighOrderFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     int first = first_edge_dof[ednr];
@@ -1053,7 +1053,7 @@ namespace ngcomp
       dnums.Append (first+j);
   }
 
-  void H1HighOrderFESpace :: GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const
+  void H1HighOrderFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     if (ma.GetDimension() < 3) return;
@@ -1065,7 +1065,7 @@ namespace ngcomp
   }
 
 
-  void H1HighOrderFESpace :: GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const
+  void H1HighOrderFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
 
@@ -1077,11 +1077,11 @@ namespace ngcomp
   }
   
   void H1HighOrderFESpace :: 
-  GetSDofNrs (int elnr, ARRAY<int> & dnums) const
+  GetSDofNrs (int elnr, Array<int> & dnums) const
   {
     static bool getall = false;
 
-    ARRAY<int> vnums, ednums;
+    Array<int> vnums, ednums;
     int fanum;
     int i, j;
 
@@ -1103,7 +1103,7 @@ namespace ngcomp
 	  dnums.Append (nv+(order-1)*vnums[i]+j);
 
     
-    ARRAY<int> edge_start;
+    Array<int> edge_start;
 
     for (i = 0; i < ednums.Size(); i++)
       {
@@ -1130,16 +1130,16 @@ namespace ngcomp
 
     if(defined_on_one_side_of_bounding_curve.Size() > 0 && !getall)
       {
-	ARRAY<bool> keep_dnum(dnums.Size());
+	Array<bool> keep_dnum(dnums.Size());
 	keep_dnum = true;
 
-	ARRAY<int> vnums;
-	ARRAY<int> neighbours;
+	Array<int> vnums;
+	Array<int> neighbours;
 
 	ma.GetSElVertices(elnr,vnums);
 	for(int i=0; i<vnums.Size(); i++)
 	  {
-	    ARRAY<int> auxn;
+	    Array<int> auxn;
 	    ma.GetVertexSurfaceElements(vnums[i],auxn);
 	    for(int j=0; j<auxn.Size(); j++)
 	      if(auxn[j] != elnr)
@@ -1165,7 +1165,7 @@ namespace ngcomp
 		      {
 			//(*testout) << "sel " << elnr << " neighbour " << neighbours[j] << endl;
 			getall = true;
-			ARRAY<int> neighbour_dnums;
+			Array<int> neighbour_dnums;
 			GetSDofNrs(neighbours[j],neighbour_dnums);
 			getall = false;
 			
@@ -1213,7 +1213,7 @@ namespace ngcomp
     int SmoothingType = int(precflags.GetNumFlag("blocktype",0)); 
     
 
-    ARRAY<int> orient, ednums, fanums, vnums,f2ed; 
+    Array<int> orient, ednums, fanums, vnums,f2ed; 
     
 
 
@@ -1304,7 +1304,7 @@ namespace ngcomp
 	return 0; 
       }
     
-    ARRAY<int> cnt(ncnt); 
+    Array<int> cnt(ncnt); 
     cnt = 0; 
     int nvdof = 1; 
     if (augmented == 1) nvdof = 2; 
@@ -1385,7 +1385,7 @@ namespace ngcomp
 	  }
 	for (i = 0; i < nfa; i++)
 	  { 
-	    ARRAY<int>  pnums; 
+	    Array<int>  pnums; 
 	    ma.GetFacePNums(i,pnums); 
 	    for(j=0;j<pnums.Size();j++) 
 	      cnt[pnums[j]] +=  first_face_dof[i+1] - first_face_dof[i];
@@ -1404,7 +1404,7 @@ namespace ngcomp
 	  }
 	for (i = 0; i < nfa; i++)
 	  { 
-	    ARRAY<int>  pnums; 
+	    Array<int>  pnums; 
 	    ma.GetFacePNums(i,pnums); 
 	    int ndof =  first_face_dof[i+1] - first_face_dof[i];
 	    for(j=0;j<pnums.Size();j++) 
@@ -1412,7 +1412,7 @@ namespace ngcomp
 	  }
 	for (i = 0; i < ni; i++)
 	  {
-	    ARRAY<int>  pnums; 
+	    Array<int>  pnums; 
 	    ma.GetElPNums(i,pnums); 
 	    int ndof = first_element_dof[i+1] - first_element_dof[i];
 	    for (j = 0; j < pnums.Size(); j++)
@@ -1436,10 +1436,10 @@ namespace ngcomp
 	  }
 	for (i = 0; i < nfa; i++)
 	  { 
-	    ARRAY<int>  pnums; 
+	    Array<int>  pnums; 
 	    ma.GetFacePNums(i,pnums); 
 	    int ndof =  first_face_dof[i+1] - first_face_dof[i];
-	    ARRAY<int> repv; 
+	    Array<int> repv; 
 	    for(j=0;j<pnums.Size();j++) 
 	      repv.Append(ma.GetClusterRepVertex(pnums[j]));
 	    for(j=0;j<pnums.Size();j++) 
@@ -1451,9 +1451,9 @@ namespace ngcomp
 	  }
 	for (i = 0; i < ni; i++)
 	  {
-	    ARRAY<int>  pnums; 
+	    Array<int>  pnums; 
 	    ma.GetElPNums(i,pnums); 
-	    ARRAY<int> repv; 
+	    Array<int> repv; 
 	   
 	    for(j=0;j<pnums.Size();j++) 
 	      repv.Append(ma.GetClusterRepVertex(pnums[j]));
@@ -1542,7 +1542,7 @@ namespace ngcomp
 	    }
 	for (i = 0; i < ni; i++)
 	  {
-	    ARRAY<int>  pnums; 
+	    Array<int>  pnums; 
 	    ma.GetElPNums(i,pnums); 
 	    int ndof = first_element_dof[i+1] - first_element_dof[i];
 	    for (j = 0; j < pnums.Size(); j++)
@@ -1737,7 +1737,7 @@ namespace ngcomp
 	  }
 	for (i = 0; i < nfa; i++)
 	  {
-	    ARRAY<int> pnums; 
+	    Array<int> pnums; 
 	    ma.GetFacePNums(i,pnums); 
 	    first = first_face_dof[i];
 	    int ndof = first_face_dof[i+1]-first_face_dof[i];
@@ -1768,7 +1768,7 @@ namespace ngcomp
 	  }
 	for (i = 0; i < nfa; i++)
 	  {
-	    ARRAY<int> pnums; 
+	    Array<int> pnums; 
 	    ma.GetFacePNums(i,pnums); 
 	    first = first_face_dof[i];
 	    int ndof = first_face_dof[i+1]-first_face_dof[i];
@@ -1778,7 +1778,7 @@ namespace ngcomp
 	  }
 	for (i = 0; i < ni; i++)
 	  {
-	    ARRAY<int> pnums; 
+	    Array<int> pnums; 
 	    ma.GetElPNums(i,pnums); 
 	    first = first_element_dof[i];
 	    int ndof = first_element_dof[i+1]-first_element_dof[i];
@@ -1810,12 +1810,12 @@ namespace ngcomp
 	  }
 	for (i = 0; i < nfa; i++)
 	  {
-	    ARRAY<int> pnums; 
+	    Array<int> pnums; 
 	    ma.GetFacePNums(i,pnums); 
 	    
 	    first = first_face_dof[i];
 	    int ndof = first_face_dof[i+1]-first_face_dof[i];
-	    ARRAY<int> repv; 
+	    Array<int> repv; 
 	  
 	    for(j=0;j<pnums.Size();j++) 
 	      repv.Append(ma.GetClusterRepVertex(pnums[j]));
@@ -1831,13 +1831,13 @@ namespace ngcomp
 	  }
 	for (i = 0; i < ni; i++)
 	  {
-	    ARRAY<int> pnums; 
+	    Array<int> pnums; 
 	    ma.GetElPNums(i,pnums); 
 	    first = first_element_dof[i];
 	    int ndof = first_element_dof[i+1]-first_element_dof[i];
 	    
 	    
-	    ARRAY<int> repv; 
+	    Array<int> repv; 
 	    for(j=0;j<pnums.Size();j++) 
 	      repv.Append( ma.GetClusterRepVertex(pnums[j]));
 	    for(j=0;j<pnums.Size();j++) 
@@ -1867,7 +1867,7 @@ namespace ngcomp
 	  }
 	for (i = 0; i < nfa; i++)
 	  {
-	    ARRAY<int> pnums; 
+	    Array<int> pnums; 
 	    ma.GetFacePNums(i,pnums); 
 	    first = first_face_dof[i];
 	    int ndof = first_face_dof[i+1]-first_face_dof[i];
@@ -1877,7 +1877,7 @@ namespace ngcomp
 	  }
 	for (i = 0; i < ni; i++)
 	  {
-	    ARRAY<int> pnums; 
+	    Array<int> pnums; 
 	    ma.GetElPNums(i,pnums); 
 	    first = first_element_dof[i];
 	    int ndof = first_element_dof[i+1]-first_element_dof[i];
@@ -1993,7 +1993,7 @@ namespace ngcomp
             }
 	for (i = 0; i < ni; i++)
 	  {
-	    ARRAY<int> pnums; 
+	    Array<int> pnums; 
 	    ma.GetElPNums(i,pnums); 
 	    first = first_element_dof[i];
 	    int ndof = first_element_dof[i+1]-first_element_dof[i];
@@ -2044,7 +2044,7 @@ namespace ngcomp
   }
 
 
-  ARRAY<int> * 
+  Array<int> * 
   H1HighOrderFESpace :: CreateDirectSolverClusters (const Flags & flags) const
   {
     // return 0;
@@ -2054,7 +2054,7 @@ namespace ngcomp
     int nv = ma.GetNV();
     int nd = GetNDof();
     int ne = ma.GetNE();
-    ARRAY<int> & clusters = *new ARRAY<int> (GetNDof());
+    Array<int> & clusters = *new Array<int> (GetNDof());
     clusters = 0;
 
     // all vertices in global space
@@ -2071,9 +2071,9 @@ namespace ngcomp
     */
    
     // All Vertical Edges in one Cluster for Hex and Prism (-> 2d Problems !) 
-    ARRAY<int> ednums, edorient,fnums, forient;
+    Array<int> ednums, edorient,fnums, forient;
 
-    //ARRAY<int> & clusters = *new ARRAY<int> (nd);
+    //Array<int> & clusters = *new Array<int> (nd);
     //clusters = 0;
 
 
@@ -2208,14 +2208,14 @@ das sollte nicht definiert sein
     // ******************************
     *testout << "H1Ho::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks);
+    Array<int> nexdof(ntasks);
     nexdof = 0;
 
-    ARRAY<MPI_Request> sendrequest(ntasks);
-    ARRAY<MPI_Request> recvrequest(ntasks);
+    Array<MPI_Request> sendrequest(ntasks);
+    Array<MPI_Request> recvrequest(ntasks);
     MPI_Status status;
 
-    ARRAY<int> dnums;
+    Array<int> dnums;
 
 
     for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
@@ -2244,20 +2244,20 @@ das sollte nicht definiert sein
 
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
-    ARRAY<int> ** owndofs, ** distantdofs;
-    owndofs = new ARRAY<int>* [ntasks];
-    distantdofs = new ARRAY<int>* [ntasks];
+    Array<int> ** owndofs, ** distantdofs;
+    owndofs = new Array<int>* [ntasks];
+    distantdofs = new Array<int>* [ntasks];
 
     for ( int i = 0; i < ntasks; i++ )
       {
-	owndofs[i] = new ARRAY<int>(1);
+	owndofs[i] = new Array<int>(1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int>(0);
+	distantdofs[i] = new Array<int>(0);
       }
 
 
 
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
     int exdof = 0;
     int ii = 1;
@@ -2287,7 +2287,7 @@ das sollte nicht definiert sein
 	      for ( int i=0; i<dnums.Size(); i++ )
 		(*(paralleldofs->sorted_exchangedof))[id][exdof++] = dnums[i];
 
-	      ARRAY<int[2]> distantnodenums;
+	      Array<int[2]> distantnodenums;
 	      parallelma -> GetDistantNodeNums ( nt, node, distantnodenums);
 	      for ( int idest = 1; idest < distantnodenums.Size(); idest++ )
 		{
@@ -2329,7 +2329,7 @@ das sollte nicht definiert sein
 	      {
 		int nodenum = (*distantdofs[dest])[ii++];
 		int isdistghost = (*distantdofs[dest])[ii++];
-		ARRAY<int> dnums;
+		Array<int> dnums;
 		GetNodeDofNrs (nt, nodenum, dnums);
 		for ( int i=0; i<dnums.Size(); i++)
 		  {

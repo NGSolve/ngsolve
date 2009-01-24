@@ -122,7 +122,7 @@ int NGS_Help (ClientData clientData,
 
       if (argc >= 3 && strcmp (argv[1], "numproc") == 0)
 	{
-	  const ARRAY<NumProcs::NumProcInfo*> & npi =
+	  const Array<NumProcs::NumProcInfo*> & npi =
 	    GetNumProcs().GetNumProcs();
 	  for (int i = 0; i < npi.Size(); i++)
 	    {
@@ -153,13 +153,13 @@ namespace ngparallel
   using namespace ngparallel;
   ParallelMeshAccess * parallelma = 0;
   int id, ntasks;
-  ARRAY<int> hoprocs;
+  Array<int> hoprocs;
 }
 #else
 namespace ngparallel
 {
   using namespace ngparallel;
-  ARRAY<int> hoprocs(0);
+  Array<int> hoprocs(0);
 }
 #endif
 
@@ -778,7 +778,7 @@ int NGSolve_Init (Tcl_Interp * interp)
 
 
 
-  const ARRAY<NumProcs::NumProcInfo*> & npi = GetNumProcs().GetNumProcs();
+  const Array<NumProcs::NumProcInfo*> & npi = GetNumProcs().GetNumProcs();
   Tcl_Eval (interp, "menu .ngmenusolvehelpnp");
   for (int i = 0; i < npi.Size(); i++)
     {

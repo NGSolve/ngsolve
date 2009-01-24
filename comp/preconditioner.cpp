@@ -408,7 +408,7 @@ namespace ngcomp
   }
 
 
-  void MGPreconditioner::MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  void MGPreconditioner::MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     int olds = mu.Size();
 
@@ -537,7 +537,7 @@ namespace ngcomp
 
     int np = bfa->GetFESpace().GetNDof();
     int ne = ma.GetNE();
-    ARRAY<int> domain(np), dnums;
+    Array<int> domain(np), dnums;
     const FESpace & space = bfa->GetFESpace();
 
     for (i = 0; i < np; i++)
@@ -978,7 +978,7 @@ namespace ngcomp
 
     cout << "get edges" << endl;
 
-    ARRAY<INT<2> > e2v (nedge);
+    Array<INT<2> > e2v (nedge);
     for (int i = 0; i < nedge; i++)
       {
 	// if (ma.GetClusterRepEdge (i) >= 0)
@@ -990,8 +990,8 @@ namespace ngcomp
 
     cout << "get faces" << endl;
 
-    ARRAY<INT<4> > f2v (nface);
-    ARRAY<int> fpnums;
+    Array<INT<4> > f2v (nface);
+    Array<int> fpnums;
     for (int i = 0; i < nface; i++)
       {
 	if (ma.GetClusterRepFace (i) >= 0)
@@ -1014,9 +1014,9 @@ namespace ngcomp
 
     // compute edge and face weights:
 
-    ARRAY<double> weighte(nedge), weightf(nface);
-    ARRAY<double> hi;    // edge length
-    ARRAY<double> ai;    // area of face
+    Array<double> weighte(nedge), weightf(nface);
+    Array<double> hi;    // edge length
+    Array<double> ai;    // area of face
 
 
     hi.SetSize(nedge);
@@ -1052,8 +1052,8 @@ namespace ngcomp
 	  }
       }
 
-    ARRAY<int> ednums(12), edorient(12);
-    ARRAY<int> fanums(12), faorient(12);
+    Array<int> ednums(12), edorient(12);
+    Array<int> fanums(12), faorient(12);
     LocalHeap lh (10000);
     ElementTransformation eltrans;
     IntegrationPoint ip(0, 0, 0, 0);
@@ -1110,7 +1110,7 @@ namespace ngcomp
     clock_t starttime, endtime, soltime;
     starttime = clock();
 
-    ARRAY< Vec<3> > vertices;
+    Array< Vec<3> > vertices;
     /*
     int nv = ma.GetNV();
     vertices.SetSize(nv);

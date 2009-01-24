@@ -35,7 +35,7 @@ class SparseCholesky : public BaseSparseCholesky
   DynamicMem<TM> diag;
   ///
   BitArray * inner;
-  ARRAY<int> * cluster;
+  Array<int> * cluster;
   ///
   MinimumDegreeOrdering * mdo;
   int maxrow;
@@ -50,7 +50,7 @@ public:
   ///
   SparseCholesky (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
 		  BitArray * ainner = NULL,
-		  ARRAY<int> * acluster = NULL,
+		  Array<int> * acluster = NULL,
 		  bool allow_refactor = 0);
   ///
   ~SparseCholesky ();
@@ -59,8 +59,8 @@ public:
   ///
   int VWidth() const { return height; }
   ///
-  void Allocate (const ARRAY<int> & aorder, 
-		 const ARRAY<MDOVertex> & vertices,
+  void Allocate (const Array<int> & aorder, 
+		 const Array<MDOVertex> & vertices,
 		 const int * blocknr);
   ///
   void Factor (); // const int * blocknr);
@@ -81,7 +81,7 @@ public:
   ///
   virtual ostream & Print (ostream & ost) const;
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     mu.Append (new MemoryUsageStruct ("SparseChol", nze*sizeof(TM), 1));
   }

@@ -1750,7 +1750,7 @@ namespace ngfem
   Integrators::IntegratorInfo::
   IntegratorInfo (const string & aname,
 		   int aspacedim, int anumcoeffs,
-		   Integrator* (*acreator)(ARRAY<CoefficientFunction*>&))
+		   Integrator* (*acreator)(Array<CoefficientFunction*>&))
     : name(aname), spacedim(aspacedim), numcoeffs(anumcoeffs), creator(acreator)
   {
     ;
@@ -1772,7 +1772,7 @@ namespace ngfem
   
   void Integrators :: 
   AddBFIntegrator (const string & aname, int aspacedim, int anumcoeffs,
-		 Integrator* (*creator)(ARRAY<CoefficientFunction*>&))
+		 Integrator* (*creator)(Array<CoefficientFunction*>&))
   {
     bfis.Append (new IntegratorInfo(aname, aspacedim, anumcoeffs, creator));
   }
@@ -1790,7 +1790,7 @@ namespace ngfem
 
   BilinearFormIntegrator * 
   Integrators::CreateBFI(const string & name, int dim, 
-			 ARRAY<CoefficientFunction*> & coeffs) const
+			 Array<CoefficientFunction*> & coeffs) const
   {
     BilinearFormIntegrator * bfi =
       dynamic_cast<BilinearFormIntegrator*> (GetBFI(name, dim)->creator(coeffs));
@@ -1803,7 +1803,7 @@ namespace ngfem
 
   void Integrators :: 
   AddLFIntegrator (const string & aname, int aspacedim, int anumcoeffs,
-		   Integrator* (*creator)(ARRAY<CoefficientFunction*>&))
+		   Integrator* (*creator)(Array<CoefficientFunction*>&))
   {
     lfis.Append (new IntegratorInfo(aname, aspacedim, anumcoeffs, creator));
   }
@@ -1823,7 +1823,7 @@ namespace ngfem
 
   LinearFormIntegrator * 
   Integrators::CreateLFI(const string & name, int dim, 
-			 ARRAY<CoefficientFunction*> & coeffs) const
+			 Array<CoefficientFunction*> & coeffs) const
   {
     LinearFormIntegrator * lfi =
       dynamic_cast<LinearFormIntegrator*> (GetLFI(name, dim)->creator(coeffs));

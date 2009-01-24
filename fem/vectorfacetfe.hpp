@@ -154,7 +154,7 @@ public:
 //   virtual void CalcFacetShape(int fnr, const IntegrationPoint & ip, 
 // 			      FlatMatrix<> shape) const = 0;
 
-  virtual void GetFacetDofNrs(int afnr, ARRAY<int>& fdnums) const; 
+  virtual void GetFacetDofNrs(int afnr, Array<int>& fdnums) const; 
 
   virtual int GetFacetNDof(int afnr) const 
   { return first_facet_dof[afnr+1] - first_facet_dof[afnr]; };
@@ -169,9 +169,9 @@ public:
 
   virtual int GetNV() const { return nv; };
 
-  virtual void GetVertexNumbers(ARRAY<int>&) const;
+  virtual void GetVertexNumbers(Array<int>&) const;
 
-  virtual void GetFacetOrders(ARRAY<INT<2> >&) const;
+  virtual void GetFacetOrders(Array<INT<2> >&) const;
   
   virtual const FlatMatrix<> GetShape (const IntegrationPoint & ip, 
 				       LocalHeap & lh) const = 0;

@@ -47,9 +47,9 @@ protected:
   string name;
 
   /// integration only along curve
-  ARRAY < FlatVector < double > * > curve_ips;
-  ARRAY < FlatVector < double > * > curve_ip_tangents;
-  ARRAY <int> continuous_curveparts;
+  Array < FlatVector < double > * > curve_ips;
+  Array < FlatVector < double > * > curve_ip_tangents;
+  Array <int> continuous_curveparts;
   
   int cachecomp;
 
@@ -1024,7 +1024,7 @@ public:
   DirichletPenaltyIntegrator (CoefficientFunction * apenalty)
     : penalty(apenalty) { ; }
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new DirichletPenaltyIntegrator (coeffs[0]);
   }
@@ -1418,17 +1418,17 @@ public:
     string name;
     int spacedim;
     int numcoeffs;
-    Integrator* (*creator)(ARRAY<CoefficientFunction*> &);
+    Integrator* (*creator)(Array<CoefficientFunction*> &);
     
     IntegratorInfo (const string & aname,
 		    int aspacedim,
 		    int anumcoffs,		      
-		    Integrator* (*acreator)(ARRAY<CoefficientFunction*>&));
+		    Integrator* (*acreator)(Array<CoefficientFunction*>&));
   };
   
 
-  ARRAY<IntegratorInfo*> bfis;
-  ARRAY<IntegratorInfo*> lfis;
+  Array<IntegratorInfo*> bfis;
+  Array<IntegratorInfo*> lfis;
   
 public:
   ///
@@ -1437,26 +1437,26 @@ public:
   ~Integrators();  
   ///
   void AddBFIntegrator (const string & aname, int aspacedim, int anumcoeffs,
-		      Integrator* (*acreator)(ARRAY<CoefficientFunction*>&));
+		      Integrator* (*acreator)(Array<CoefficientFunction*>&));
   ///
   void AddLFIntegrator (const string & aname, int aspacedim, int anumcoeffs,
-		      Integrator* (*acreator)(ARRAY<CoefficientFunction*>&));
+		      Integrator* (*acreator)(Array<CoefficientFunction*>&));
   
   ///
-  const ARRAY<IntegratorInfo*> & GetBFIs() const { return bfis; }
+  const Array<IntegratorInfo*> & GetBFIs() const { return bfis; }
   ///
   const IntegratorInfo * GetBFI(const string & name, int dim) const;
   ///
   BilinearFormIntegrator * CreateBFI(const string & name, int dim,
-				     ARRAY<CoefficientFunction*> & coeffs) const;
+				     Array<CoefficientFunction*> & coeffs) const;
 
   ///
-  const ARRAY<IntegratorInfo*> & GetLFIs() const { return lfis; }
+  const Array<IntegratorInfo*> & GetLFIs() const { return lfis; }
   ///
   const IntegratorInfo * GetLFI(const string & name, int dim) const;
   ///
   LinearFormIntegrator * CreateLFI(const string & name, int dim,
-                                   ARRAY<CoefficientFunction*> & coeffs) const;
+                                   Array<CoefficientFunction*> & coeffs) const;
 
   ///
   void Print (ostream & ost) const;

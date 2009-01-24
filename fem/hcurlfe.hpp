@@ -123,7 +123,7 @@ public:
 
 
   ///
-  void CalcIPData (ARRAY<IPData> & ipdata);
+  void CalcIPData (Array<IPData> & ipdata);
 
 protected:
   ///
@@ -175,7 +175,7 @@ public:
 
 private:
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
 
 public:
@@ -199,7 +199,7 @@ public:
 
 private:
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
 
 public:
@@ -218,7 +218,7 @@ public:
 class FE_NedelecSegm3 : public HCurlFiniteElementD<1>
 {
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
 
 public:
@@ -250,7 +250,7 @@ public:
 
 protected:
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
 public:
   ///
@@ -285,7 +285,7 @@ public:
 
 protected:
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
   ///
   // static Mat<FE_TNedelecQuad<ORDER,ZORDER>::NDOF> trans;
@@ -327,7 +327,7 @@ public:
 class FE_NedelecTrig1 : public HCurlFiniteElementD<2>
 {
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
 
 public:
@@ -351,7 +351,7 @@ public:
 
 private:
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
   ///
   static Mat<NDOF> trans;
@@ -386,7 +386,7 @@ public:
   enum { NDOF = 12 };
   enum { NEDGEDOF = 6 };
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
   ///
   static Mat<NDOF> trans;
@@ -436,7 +436,7 @@ public:
 
 private:
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
 
 public:
@@ -464,7 +464,7 @@ public:
 
 private:
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
   ///
   static Mat<NDOF> trans;
@@ -501,7 +501,7 @@ public:
 
 protected:
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
   ///
   static Mat<NDOF> trans;
@@ -552,7 +552,7 @@ public:
   enum { NFACEDOF = 12 };
 
 protected:
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
   static Mat<NFACEDOF> trans3;
 
@@ -586,7 +586,7 @@ public:
 class FE_NedelecHex1 : public HCurlFiniteElementD<3> 
 {
   /// 
-  static ARRAY<IPData> ipdata; 
+  static Array<IPData> ipdata; 
   bool ipdatadestructed;
   
 public: 
@@ -607,7 +607,7 @@ public:
 class FE_NedelecPrism1 : public HCurlFiniteElementD<3>
 {
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
 
 public:
@@ -627,7 +627,7 @@ template <int ZORDER>
 class FE_TNedelecPrism2 : public HCurlFiniteElementD<3>
 {
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
   ///
   static Matrix<> trans;
@@ -677,7 +677,7 @@ template <int ZORDER>
 class FE_TNedelecPrism3 : public HCurlFiniteElementD<3>
 {
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
   ///
   static Matrix<> trans;
@@ -730,7 +730,7 @@ public:
 			  FlatMatrixFixWidth<3> shape) const;
 
   ///
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   ///
   void Orthogonalize();
@@ -745,7 +745,7 @@ template <int ZORDER>
 class FE_TNedelecPrism3NoGrad : public HCurlFiniteElementD<3>
 {
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
   ///
   static Matrix<> trans_quad;
@@ -797,7 +797,7 @@ public:
 			  FlatMatrixFixWidth<3> shape) const;
 
   ///
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   ///
   void Orthogonalize();
@@ -820,7 +820,7 @@ public:
 class FE_NedelecPyramid1 : public HCurlFiniteElementD<3>
 {
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
   ///
   static Matrix<> trans;
@@ -852,7 +852,7 @@ public:
 
 private:
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
   ///
   static Matrix<> trans;
@@ -896,7 +896,7 @@ public:
   enum { NINNERDOF = 9 };
 private:
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   bool ipdatadestructed;
   ///
   static Mat<NDOF> trans;
@@ -927,7 +927,7 @@ public:
 			   FlatMatrixFixWidth<3> shape) const;
 
   ///
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
   ///
   void Orthogonalize();
 };
@@ -948,7 +948,7 @@ public:
   enum { NINNERDOF = 9 };
 private:
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   ///
   static Mat<NDOF> trans;
   // static Mat<NEDGEDOF> trans2;
@@ -978,7 +978,7 @@ public:
 			   FlatMatrixFixWidth<3> shape) const;
 
   ///
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
   ///
   void Orthogonalize();
 };
@@ -998,7 +998,7 @@ public:
 class FE_NedelecPyramid1b : public HCurlFiniteElementD<3>
 {
   ///
-  static ARRAY<IPData> ipdata;
+  static Array<IPData> ipdata;
   ///
   FE_NedelecPyramid1 pyramid1;
   ///

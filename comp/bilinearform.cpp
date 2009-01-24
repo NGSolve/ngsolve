@@ -189,7 +189,7 @@ namespace ngcomp
 	  {
 	    precomputed_data.SetSize(0);
 
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    ElementTransformation eltrans;
 	    
 	    int ne = ma.GetNE();
@@ -464,7 +464,7 @@ namespace ngcomp
   }
 
 
-  void BilinearForm :: MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  void BilinearForm :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     if (low_order_bilinear_form)
       low_order_bilinear_form -> MemoryUsage (mu);
@@ -502,7 +502,7 @@ namespace ngcomp
 	  {
 	    ma.PushStatus ("Assemble Matrix");
  
-	    ARRAY<int> dnums, idofs, idofs1, odofs;
+	    Array<int> dnums, idofs, idofs1, odofs;
 	    ElementTransformation eltrans;
             // TopologicElement tel;
 
@@ -536,7 +536,7 @@ namespace ngcomp
 #pragma omp parallel 
                 {
                   ElementTransformation eltrans;
-                  ARRAY<int> dnums, idofs, idofs1, odofs;
+                  Array<int> dnums, idofs, idofs1, odofs;
                   
 #pragma omp for 
                   for (int i = 0; i < ne; i++)
@@ -561,7 +561,7 @@ namespace ngcomp
                         ma.GetTopologicElement (i, tel);
                         cout << "tel = " << tel << endl;
 		      
-                        ARRAY<Dof> dofs;
+                        Array<Dof> dofs;
                         fespace.GetFE(i, lh).GetDofs(dofs);
                         for (int i = 0; i < dofs.Size(); i++)
                         cout << "local dof-node = " << dofs[i].GetNode() 
@@ -1185,8 +1185,8 @@ namespace ngcomp
 #ifdef ABC
 	    // mixed spaces
       
-	    ARRAY<int> dnums1;
-	    ARRAY<int> dnums2;
+	    Array<int> dnums1;
+	    Array<int> dnums2;
 
 	    //      DenseMatrix elmat;
 	    ElementTransformation eltrans;
@@ -1351,7 +1351,7 @@ namespace ngcomp
             int cnt = 0;
 #pragma omp parallel
 	    {
-	      ARRAY<int> dnums, idofs;
+	      Array<int> dnums, idofs;
 	      ElementTransformation eltrans;
 	      
 	      
@@ -1502,7 +1502,7 @@ namespace ngcomp
   {
     try
       {
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	ElementTransformation eltrans;
       
 	int ndof = fespace.GetNDof();
@@ -1793,7 +1793,7 @@ namespace ngcomp
     if (!MixedSpaces())
 
       {
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	ElementTransformation eltrans;
       
 	int ne = ma.GetNE();
@@ -1899,7 +1899,7 @@ namespace ngcomp
 	  (*testout) << "global x = " << endl << x << endl;
 	  (*testout) << "global y,in = " << endl << y << endl;
 	*/
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	ElementTransformation eltrans;
       
 	int ne = ma.GetNE();
@@ -2025,7 +2025,7 @@ namespace ngcomp
 
     if (!MixedSpaces())
       {
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	ElementTransformation eltrans;
 
 	int ne = ma.GetNE();
@@ -2115,7 +2115,7 @@ namespace ngcomp
 
   template <class SCAL>
   void S_BilinearForm<SCAL> :: 
-  AddDiagElementMatrix (const ARRAY<int> & dnums1,
+  AddDiagElementMatrix (const Array<int> & dnums1,
 			const FlatVector<SCAL> & diag,
 			bool inner_element, int elnr,
 			LocalHeap & lh)
@@ -2283,8 +2283,8 @@ namespace ngcomp
   ///
   template <class TM, class TV>
   void T_BilinearForm<TM,TV>::
-  AddElementMatrix (const ARRAY<int> & dnums1,
-		    const ARRAY<int> & dnums2,
+  AddElementMatrix (const Array<int> & dnums1,
+		    const Array<int> & dnums2,
 		    const FlatMatrix<TSCAL> & elmat,
 		    bool inner_element, int elnr,
 		    LocalHeap & lh) 
@@ -2314,8 +2314,8 @@ namespace ngcomp
 
   ///
   template <> void T_BilinearForm<double, double>::
-  AddElementMatrix (const ARRAY<int> & dnums1,
-		    const ARRAY<int> & dnums2,
+  AddElementMatrix (const Array<int> & dnums1,
+		    const Array<int> & dnums2,
 		    const FlatMatrix<double> & elmat,
 		    bool inner_element, int elnr,
 		    LocalHeap & lh) 
@@ -2334,8 +2334,8 @@ namespace ngcomp
 
 
   template <> void T_BilinearForm<Complex, Complex>::
-  AddElementMatrix (const ARRAY<int> & dnums1,
-		    const ARRAY<int> & dnums2,
+  AddElementMatrix (const Array<int> & dnums1,
+		    const Array<int> & dnums2,
 		    const FlatMatrix<Complex> & elmat,
 		    bool inner_element, int elnr,
 		    LocalHeap & lh)
@@ -2354,8 +2354,8 @@ namespace ngcomp
 
 
   template <> void T_BilinearForm<double, Complex>::
-  AddElementMatrix (const ARRAY<int> & dnums1,
-		    const ARRAY<int> & dnums2,
+  AddElementMatrix (const Array<int> & dnums1,
+		    const Array<int> & dnums2,
 		    const FlatMatrix<double> & elmat,
 		    bool inner_element, int elnr,
 		    LocalHeap & lh)
@@ -2390,7 +2390,7 @@ namespace ngcomp
   void T_BilinearForm<TM,TV>::ApplyElementMatrix(const BaseVector & x,
 						 BaseVector & y,
 						 const TSCAL & val,
-						 const ARRAY<int> & dnums,
+						 const Array<int> & dnums,
 						 const ElementTransformation & eltrans,
 						 const int elnum,
 						 const int type,
@@ -2567,8 +2567,8 @@ namespace ngcomp
   ///
   template <class TM, class TV>
   void T_BilinearFormSymmetric<TM,TV> :: 
-  AddElementMatrix (const ARRAY<int> & dnums1,
-		    const ARRAY<int> & dnums2,
+  AddElementMatrix (const Array<int> & dnums1,
+		    const Array<int> & dnums2,
 		    const FlatMatrix<TSCAL> & elmat,
 		    bool inner_element, int elnr,
 		    LocalHeap & lh) 
@@ -2601,8 +2601,8 @@ namespace ngcomp
 
 
   template <> void T_BilinearFormSymmetric<double,double>::
-  AddElementMatrix (const ARRAY<int> & dnums1,
-		    const ARRAY<int> & dnums2,
+  AddElementMatrix (const Array<int> & dnums1,
+		    const Array<int> & dnums2,
 		    const FlatMatrix<double> & elmat,
 		    bool inner_element, int elnr,
 		    LocalHeap & lh) 
@@ -2621,8 +2621,8 @@ namespace ngcomp
   }
 
   template <> void T_BilinearFormSymmetric<Complex,Complex>::
-  AddElementMatrix (const ARRAY<int> & dnums1,
-		    const ARRAY<int> & dnums2,
+  AddElementMatrix (const Array<int> & dnums1,
+		    const Array<int> & dnums2,
 		    const FlatMatrix<Complex> & elmat,
 		    bool inner_element, int elnr,
 		    LocalHeap & lh) 
@@ -2640,8 +2640,8 @@ namespace ngcomp
   }
 
   template <> void T_BilinearFormSymmetric<double,Complex>::
-  AddElementMatrix (const ARRAY<int> & dnums1,
-		    const ARRAY<int> & dnums2,
+  AddElementMatrix (const Array<int> & dnums1,
+		    const Array<int> & dnums2,
 		    const FlatMatrix<double> & elmat,
 		    bool inner_element, int elnr,
 		    LocalHeap & lh) 
@@ -2690,7 +2690,7 @@ namespace ngcomp
   void T_BilinearFormSymmetric<TM,TV>::ApplyElementMatrix(const BaseVector & x,
 							  BaseVector & y,
 							  const TSCAL & val,
-							  const ARRAY<int> & dnums,
+							  const Array<int> & dnums,
 							  const ElementTransformation & eltrans,
 							  const int elnum,
 							  const int type,
@@ -2859,8 +2859,8 @@ namespace ngcomp
   ///
   template <class TM>
   void T_BilinearFormDiagonal<TM> :: 
-  AddElementMatrix (const ARRAY<int> & dnums1,
-		    const ARRAY<int> & dnums2,
+  AddElementMatrix (const Array<int> & dnums1,
+		    const Array<int> & dnums2,
 		    const FlatMatrix<TSCAL> & elmat,
 		    bool inner_element, int elnr,
 		    LocalHeap & lh) 
@@ -2884,8 +2884,8 @@ namespace ngcomp
 
   ///
   template <> void T_BilinearFormDiagonal<double>::
-  AddElementMatrix (const ARRAY<int> & dnums1,
-		    const ARRAY<int> & dnums2,
+  AddElementMatrix (const Array<int> & dnums1,
+		    const Array<int> & dnums2,
 		    const FlatMatrix<double> & elmat,
 		    bool inner_element, int elnr,
 		    LocalHeap & lh) 
@@ -2902,8 +2902,8 @@ namespace ngcomp
 
   ///
   template <> void T_BilinearFormDiagonal<Complex>::
-  AddElementMatrix (const ARRAY<int> & dnums1,
-		    const ARRAY<int> & dnums2,
+  AddElementMatrix (const Array<int> & dnums1,
+		    const Array<int> & dnums2,
 		    const FlatMatrix<Complex> & elmat,
 		    bool inner_element, int elnr,
 		    LocalHeap & lh) 
@@ -2921,7 +2921,7 @@ namespace ngcomp
   void T_BilinearFormDiagonal<TM>::ApplyElementMatrix(const BaseVector & x,
 						      BaseVector & y,
 						      const TSCAL & val,
-						      const ARRAY<int> & dnums,
+						      const Array<int> & dnums,
 						      const ElementTransformation & eltrans,
 						      const int elnum,
 						      const int type,
@@ -2984,7 +2984,7 @@ namespace ngcomp
 
   template <class TM>
   void T_BilinearFormDiagonal<TM> :: 
-  AddDiagElementMatrix (const ARRAY<int> & dnums1,
+  AddDiagElementMatrix (const Array<int> & dnums1,
 			const FlatVector<TSCAL> & diag,
 			bool inner_element, int elnr,
 			LocalHeap & lh) 
@@ -3011,7 +3011,7 @@ namespace ngcomp
 
   ///
   template <> void T_BilinearFormDiagonal<double>::
-  AddDiagElementMatrix (const ARRAY<int> & dnums1,
+  AddDiagElementMatrix (const Array<int> & dnums1,
 			const FlatVector<double> & diag,
 			bool inner_element, int elnr,
 			LocalHeap & lh) 
@@ -3025,7 +3025,7 @@ namespace ngcomp
 
   ///
   template <> void T_BilinearFormDiagonal<Complex>::
-  AddDiagElementMatrix (const ARRAY<int> & dnums1,
+  AddDiagElementMatrix (const Array<int> & dnums1,
 			const FlatVector<Complex> & diag,
 			bool inner_element, int elnr,
 			LocalHeap & lh) 
@@ -3254,8 +3254,8 @@ namespace ngcomp
   int ndof2 = fespace2->GetNDof();
 
   IntTable connecteddofs(ndof2);
-  ARRAY<int> linesize (ndof2);
-  ARRAY<int> dnums1, dnums2;
+  Array<int> linesize (ndof2);
+  Array<int> dnums1, dnums2;
       
   for (int i = 1; i <= ne; i++)
   {

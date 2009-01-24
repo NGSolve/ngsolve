@@ -26,7 +26,7 @@ public :
   int GetLoc2Glob_VolEl ( int locnum );
 
   // returns number of distant processes which share this node
-  int GetDistantNodeNums ( NODE_TYPE nt, int locnum, ARRAY<int[2]> & distnums ) const;
+  int GetDistantNodeNums ( NODE_TYPE nt, int locnum, Array<int[2]> & distnums ) const;
   // ist schöner als proc und dofnr in einem flachen intarray
 
   int GetDistantNodeNum ( int proc, NODE_TYPE nt, int locnum) const;

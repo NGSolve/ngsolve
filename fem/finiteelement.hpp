@@ -119,10 +119,10 @@ public:
   ELEMENT_TYPE ElementType() const { return eltype; }
 
   /// degrees of freedom sitting inside the element, used for static condensation
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// get dof description
-  virtual void GetDofs (ARRAY<Dof> & dofs) const;
+  virtual void GetDofs (Array<Dof> & dofs) const;
 
   virtual string ClassName(void) const {return "FiniteElement";}
 
@@ -164,7 +164,7 @@ protected:
   class IPDataArray
   {
   public:
-    ARRAY<IPData> data;
+    Array<IPData> data;
     int Size() const { return data.Size(); }
     const IPData & operator[] (int i) { return data[i]; }
 
@@ -408,7 +408,7 @@ public:
   }
 
 
-  //  static  ARRAY<IPDataFix> ipdata;
+  //  static  Array<IPDataFix> ipdata;
 private:
 
   FEL & Spec() { return static_cast<FEL&> (*this); }
@@ -417,7 +417,7 @@ private:
   /*
   void CalcIPData () 
   {
-    const ARRAY<IntegrationPoint*> & ipts = 
+    const Array<IntegrationPoint*> & ipts = 
       GetIntegrationRules().GetIntegrationPoints (ELEMENT_TYPE(FEL::ELTYPE));
     
     (*testout) << "New: calc IP Data for element type  " << FEL::ELTYPE 
@@ -475,11 +475,11 @@ protected:
   ArrayMem<const FiniteElement*,10> fea;
 public:
   /// 
-  CompoundFiniteElement (ARRAY<const FiniteElement*> & afea);
+  CompoundFiniteElement (Array<const FiniteElement*> & afea);
   /// select i-th component
   const FiniteElement & operator[] (int i) const { return *fea[i]; }
   /// 
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 };
 
 
@@ -1038,7 +1038,7 @@ public:
 
   ///
   virtual const IntegrationRule & NodalIntegrationRule() const;
-  virtual void GetDofs (ARRAY<Dof> & dofs) const;
+  virtual void GetDofs (Array<Dof> & dofs) const;
 };
 
 

@@ -14,7 +14,7 @@ protected:
   int softblocksize;
   int restvecblocksize;
 
-  ARRAY< S_BaseVector<SCAL> * > blockvec;
+  Array< S_BaseVector<SCAL> * > blockvec;
 
 
 public:
@@ -155,22 +155,22 @@ public:
   virtual const BaseVector & GetVector (int comp = 0) const;
 
   ///
-  virtual void GetElementVector (const ARRAY<int> & dnums,
+  virtual void GetElementVector (const Array<int> & dnums,
 				 FlatVector<TSCAL> & elvec) const;
 
   ///
-  virtual void SetElementVector (const ARRAY<int> & dnums,
+  virtual void SetElementVector (const Array<int> & dnums,
 				 const FlatVector<TSCAL> & elvec);
 
 
   ///
   virtual void GetElementVector (int comp,
-				 const ARRAY<int> & dnums,
+				 const Array<int> & dnums,
 				 FlatVector<TSCAL> & elvec) const;
 
   ///
   virtual void SetElementVector (int comp,
-				 const ARRAY<int> & dnums,
+				 const Array<int> & dnums,
 				 const FlatVector<TSCAL> & elvec);
 
 

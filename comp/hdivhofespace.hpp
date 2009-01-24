@@ -31,8 +31,8 @@ protected:
   // order of curl-fields 
   int curl_order; 
 
-  ARRAY<int> first_facet_dof;
-  ARRAY<int> first_inner_dof;
+  Array<int> first_facet_dof;
+  Array<int> first_inner_dof;
 
   /// relative order to mesh-order
   int rel_order; 
@@ -43,12 +43,12 @@ protected:
   // space is continuous/discontinuous 
   bool discont; 
     
-  ARRAY<INT<3> > order_inner;
-  ARRAY<INT<3> > order_inner_curl;
-  ARRAY<INT<2> > order_facet; 
-  ARRAY<bool> fine_facet; 
+  Array<INT<3> > order_inner;
+  Array<INT<3> > order_inner_curl;
+  Array<INT<2> > order_facet; 
+  Array<bool> fine_facet; 
  
-  ARRAY<int> ndlevel;
+  Array<int> ndlevel;
   int uniform_order_inner; 
   int uniform_order_facet; 
 
@@ -80,35 +80,35 @@ public:
   ///
   virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; // 2D: array =0.;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
   ///
   virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
   /// 
-  virtual ARRAY<int> * CreateDirectSolverClusters (const Flags & precflags) const;
+  virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
 
   /// 
-  virtual void GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
   /// 
-  virtual void GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const;
+  virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
   /// 
-  virtual void GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const;
+  virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
   /// 
-  virtual void GetFacetDofNrs(int fanr, ARRAY<int> & dnums) const 
+  virtual void GetFacetDofNrs(int fanr, Array<int> & dnums) const 
   { 
     if (ma.GetDimension() == 2) GetEdgeDofNrs(fanr,dnums); 
     else if (ma.GetDimension() == 3) GetFaceDofNrs(fanr,dnums); 
   } 
   ///
-  virtual void GetWireBasketDofNrs ( int elnr, ARRAY<int> & dnums ) const;
+  virtual void GetWireBasketDofNrs ( int elnr, Array<int> & dnums ) const;
 	     
-  virtual void GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const; 
+  virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const; 
   
   /// 
-  void GetFacetOrder (ARRAY<INT<2> > & of, ARRAY<bool> & ff) const 
+  void GetFacetOrder (Array<INT<2> > & of, Array<bool> & ff) const 
   {of = order_facet; ff = fine_facet;};
 
   /// 
@@ -117,7 +117,7 @@ public:
     if(discont) return(first_inner_dof[elnr+1] - first_inner_dof[elnr]); 
     else 
       { 
-	ARRAY<int> dnums; 
+	Array<int> dnums; 
 	this->GetDofNrs(elnr,dnums); 
 	return(dnums.Size()); 
       } 

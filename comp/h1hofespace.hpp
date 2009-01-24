@@ -28,25 +28,25 @@ protected:
   // Number of Vertex
   int nv;
 
-  ARRAY<int> first_edge_dof;
-  ARRAY<int> first_face_dof;
-  ARRAY<int> first_element_dof;
+  Array<int> first_edge_dof;
+  Array<int> first_face_dof;
+  Array<int> first_element_dof;
 
-  ARRAY<bool> dirichlet_vertex;
-  ARRAY<bool> dirichlet_edge;
-  ARRAY<bool> dirichlet_face;
+  Array<bool> dirichlet_vertex;
+  Array<bool> dirichlet_edge;
+  Array<bool> dirichlet_face;
 
   /// relative order to mesh-order
   int rel_order; 
   bool var_order; 
   
 
-  ARRAY<int> order_edge;
-  ARRAY<INT<2> > order_face;
-  ARRAY<INT<3> > order_inner;
-  ARRAY<int> order_avertex; 
-  ARRAY<bool> fine_edge; 
-  ARRAY<bool> fine_face; 
+  Array<int> order_edge;
+  Array<INT<2> > order_face;
+  Array<INT<3> > order_inner;
+  Array<int> order_avertex; 
+  Array<bool> fine_edge; 
+  Array<bool> fine_face; 
 
   int ndof;
   int uniform_order_inner;
@@ -54,11 +54,11 @@ protected:
   int uniform_order_edge;
   int uniform_order_quad;
   int uniform_order_trig;
-  ARRAY<INT<3> > dom_order_min; 
-  ARRAY<INT<3> > dom_order_max;
+  Array<INT<3> > dom_order_min; 
+  Array<INT<3> > dom_order_max;
   int smoother; 
   
-  ARRAY<int> ndlevel;
+  Array<int> ndlevel;
 
   int augmented;
 
@@ -73,7 +73,7 @@ protected:
   bool plate;  // thin plate: prism trig dofs are internal
   int testf1,testf2,testi1,testi2,testi3;
 
-  ARRAY<INT<2> > defined_on_one_side_of_bounding_curve;
+  Array<INT<2> > defined_on_one_side_of_bounding_curve;
 
   bool print; 
 
@@ -104,22 +104,22 @@ public:
   ///
   virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
-  virtual void GetWireBasketDofNrs (int vnr, ARRAY<int> & dnums) const;
-  virtual void GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const;
-  virtual void GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const;
-  virtual void GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const;
-  virtual void GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetWireBasketDofNrs (int vnr, Array<int> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
+  virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
+  virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
+  virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
   ///
-  virtual void GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
   
   virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const; 
   ///
-  virtual ARRAY<int> * CreateDirectSolverClusters (const Flags & flags) const;
+  virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
 
   ///
   int GetFirstFaceDof(int i) const {return(first_face_dof[i]);} ;  

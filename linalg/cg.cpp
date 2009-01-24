@@ -307,7 +307,7 @@ namespace ngla
 
 	SCAL be,wd,wdn,kss;
 	Vector<SCAL> al(dim);
-	ARRAY<double> err(dim);
+	Array<double> err(dim);
 
 	if (initialize)
 	  {
@@ -916,7 +916,7 @@ namespace ngla
 	BaseVector & w = *f.CreateVector();
 	BaseVector & hv = *f.CreateVector();
 
-        ARRAY<BaseVector*> vi(maxsteps);
+        Array<BaseVector*> vi(maxsteps);
         Matrix<SCAL> h(maxsteps+1, maxsteps);
         Matrix<SCAL> h2(maxsteps+1, maxsteps);
         Vector<SCAL> gammai(maxsteps), ci(maxsteps), si(maxsteps);

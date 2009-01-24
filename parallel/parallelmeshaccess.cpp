@@ -45,7 +45,7 @@ namespace ngparallel
 
 
   int ParallelMeshAccess :: GetDistantNodeNums ( NODE_TYPE nt, int locnum, 
-                                                 ngstd::ARRAY<int[2]> & distnums ) const
+                                                 ngstd::Array<int[2]> & distnums ) const
   {
     distnums.SetSize( netgen::NgPar_GetNDistantNodeNums(nt, locnum) );
     int nr = netgen::NgPar_GetDistantNodeNums ( nt, locnum, &distnums[0][0] );

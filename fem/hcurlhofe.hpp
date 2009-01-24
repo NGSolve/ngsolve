@@ -94,7 +94,7 @@ public:
 
   HCurlHighOrderTrig (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
  
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
@@ -116,7 +116,7 @@ private:
 public:
   HCurlHighOrderQuad (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
  
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
@@ -141,7 +141,7 @@ public:
   HCurlHighOrderTet (int aorder);
 
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
@@ -166,7 +166,7 @@ private:
 public:
   HCurlHighOrderHex (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
  
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
@@ -188,7 +188,7 @@ private:
 public:
   HCurlHighOrderPrism (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
@@ -211,7 +211,7 @@ public:
 
   HCurlHighOrderPyr (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const;
+  virtual void GetInternalDofs (Array<int> & idofs) const;
  
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 

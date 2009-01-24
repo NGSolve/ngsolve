@@ -558,7 +558,7 @@ namespace ngla
 
     {
       LocalHeap lh (20000 + 5*sizeof(int)*maxbs); 
-      ARRAY<int> block_inv(amat.Height());
+      Array<int> block_inv(amat.Height());
       block_inv = -1;
 
       for (int i = 0; i < blocktable.Size(); i++)

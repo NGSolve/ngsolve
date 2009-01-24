@@ -92,7 +92,7 @@ namespace ngcomp
       {
 	directsolverclustered.SetSize(ama.GetNDomains());
 	directsolverclustered = false;
-	ARRAY<double> clusters(flags.GetNumListFlag("directsolverdomains"));
+	Array<double> clusters(flags.GetNumListFlag("directsolverdomains"));
 	for(int i=0; i<clusters.Size(); i++) 
 	  directsolverclustered[static_cast<int>(clusters[i])-1] = true; // 1-based!!
       }
@@ -101,7 +101,7 @@ namespace ngcomp
       {
 	dirichlet_boundaries.SetSize (ma.GetNBoundaries());
 	dirichlet_boundaries.Clear();
-	ARRAY<double> db (flags.GetNumListFlag("dirichlet"));
+	Array<double> db (flags.GetNumListFlag("dirichlet"));
 	for(int i=0; i< db.Size(); i++) 
 	  dirichlet_boundaries.Set (int(db[i])-1);
       }
@@ -112,7 +112,7 @@ namespace ngcomp
       {
 	definedon.SetSize (ma.GetNDomains());
 	definedon = 0;
-	ARRAY<double> defon;
+	Array<double> defon;
 	if (flags.NumListFlagDefined("definedon")) 
 	  defon = flags.GetNumListFlag("definedon");
 	else if (flags.NumFlagDefined("definedon"))
@@ -126,7 +126,7 @@ namespace ngcomp
 
 	if(flags.StringListFlagDefined("definedon"))
 	  {
-	    ARRAY<string> dmaterials(flags.GetStringListFlag ("definedon").Size());
+	    Array<string> dmaterials(flags.GetStringListFlag ("definedon").Size());
 	    for(int i=0; i<dmaterials.Size(); i++)
 	      dmaterials[i] = flags.GetStringListFlag ("definedon")[i];
 	    for(int i = 0; i < ma.GetNDomains(); i++)
@@ -165,7 +165,7 @@ namespace ngcomp
 	    definedonbound.SetSize (ma.GetNBoundaries());
 	    definedonbound = 0;
 	  }
-	ARRAY<double> defon;
+	Array<double> defon;
 	if ( flags.NumListFlagDefined("definedonbound") )
 	  defon = (flags.GetNumListFlag("definedonbound"));
 	else
@@ -187,7 +187,7 @@ namespace ngcomp
 	    definedonbound = 0;
 	  }
 
-	ARRAY<string*> defon;
+	Array<string*> defon;
 
 	if(flags.StringFlagDefined("definedonbound"))
 	  defon.Append(new string(flags.GetStringFlag("definedonbound","")));
@@ -308,7 +308,7 @@ namespace ngcomp
   }
 
   
-  void FESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void FESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     TopologicElement topel;
     ma.GetTopologicElement (elnr, topel);
@@ -340,17 +340,17 @@ namespace ngcomp
 
 
  
-  void FESpace :: GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const
+  void FESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
   {
     return GetDofNrs(elnr, dnums);
   }
 
-  void FESpace :: GetWireBasketDofNrs (int enr, ARRAY<int> & dnums) const
+  void FESpace :: GetWireBasketDofNrs (int enr, Array<int> & dnums) const
   {
     throw Exception ("FESpace::GetWireBasketDofNrs called");
   }
 
-  void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, ARRAY<int> & dnums) const
+  void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const
   {
     if (first_lodof[4] != -1)
       {
@@ -378,28 +378,28 @@ namespace ngcomp
       }
   }
 
-  void FESpace :: GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const
+  void FESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     if (first_lodof[4] != -1)
       GetNodeDofNrs (NT_VERTEX, vnr, dnums);
     throw Exception ("FESpace::GetVertexDofNrs called");
   }
 
-  void FESpace :: GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const
+  void FESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
     if (first_lodof[4] != -1)
       GetNodeDofNrs (NT_EDGE, ednr, dnums);
     throw Exception ("FESpace::GetEdgeDofNrs called");
   }
 
-  void FESpace :: GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const
+  void FESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     if (first_lodof[4] != -1)
       GetNodeDofNrs (NT_FACE, fanr, dnums);
     throw Exception ("FESpace::GetFaceDofNrs called");
   }
 
-  void FESpace :: GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const
+  void FESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
     if (first_lodof[4] != -1)
       GetNodeDofNrs (NT_CELL, elnr, dnums);
@@ -496,11 +496,11 @@ namespace ngcomp
     int ne = GetMeshAccess().GetNE();
     int nse = GetMeshAccess().GetNSE();
 
-    ARRAY<int> linesize (ndof);
-    ARRAY<int> dnums;
+    Array<int> linesize (ndof);
+    Array<int> dnums;
 
-    ARRAY<int> dof_num_el (ndof);
-    ARRAY<int> el_num_dof (ne);
+    Array<int> dof_num_el (ndof);
+    Array<int> el_num_dof (ne);
 
     PrintReport (*testout);
 
@@ -621,7 +621,7 @@ namespace ngcomp
 	dof_2_BEM_el.Add (dnums[j], 0);
 
 
-    ARRAY<int> elflags(ndof);
+    Array<int> elflags(ndof);
     elflags = -1;
 
     NgProfiler::RegionTimer reg2 (timer2);
@@ -724,7 +724,7 @@ namespace ngcomp
 
     //      graph->Print (cout);
 
-    ARRAY<int> help(ndof);
+    Array<int> help(ndof);
     elflags = -1;
       
     for (int i = 0; i < ndof; i++)
@@ -847,9 +847,9 @@ namespace ngcomp
     int nspecial = specialelements.Size();
 
     
-    ARRAY<int> dnums;
+    Array<int> dnums;
 
-    ARRAY<int> cnt(ne+nse+nspecial);
+    Array<int> cnt(ne+nse+nspecial);
     cnt = 0;
 
     // domain elemnets (element -> dof)
@@ -942,11 +942,11 @@ namespace ngcomp
     int ne = GetMeshAccess().GetNE();
     int nse = GetMeshAccess().GetNSE();
 
-    ARRAY<int> linesize (ndof);
-    ARRAY<int> dnums;
+    Array<int> linesize (ndof);
+    Array<int> dnums;
 
-    ARRAY<int> dof_num_el (ndof);
-    ARRAY<int> el_num_dof (ne);
+    Array<int> dof_num_el (ndof);
+    Array<int> el_num_dof (ne);
 
     PrintReport (*testout);
 
@@ -1025,7 +1025,7 @@ namespace ngcomp
      
 
 
-    ARRAY<int> elflags(ndof);
+    Array<int> elflags(ndof);
     elflags = -1;
 
     for (int i = 0; i < ndof; i++)
@@ -1092,7 +1092,7 @@ namespace ngcomp
 
     //      graph->Print (cout);
 
-    ARRAY<int> help(ndof);
+    Array<int> help(ndof);
     elflags = -1;
       
     for (int i = 0; i < ndof; i++)
@@ -1165,7 +1165,7 @@ namespace ngcomp
 
 
   /*
-  void FESpace :: GetBEMDofNrs (ARRAY<int> & dnums) const
+  void FESpace :: GetBEMDofNrs (Array<int> & dnums) const
   {
     if (!BEMboundary.Size())
       {
@@ -1179,7 +1179,7 @@ namespace ngcomp
 
     BitArray bound(nd);
     bound.Clear();
-    ARRAY<int> sdn;
+    Array<int> sdn;
 
     for (int i = 0; i < nse; i++)
       {
@@ -1367,14 +1367,14 @@ namespace ngcomp
     // ******************************
     *testout << "FESpace::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks);
+    Array<int> nexdof(ntasks);
     nexdof = 0;
 
-    ARRAY<MPI_Request> sendrequest(ntasks);
-    ARRAY<MPI_Request> recvrequest(ntasks);
+    Array<MPI_Request> sendrequest(ntasks);
+    Array<MPI_Request> recvrequest(ntasks);
     MPI_Status status;
 
-    ARRAY<int> dnums;
+    Array<int> dnums;
 
 
     for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
@@ -1399,20 +1399,20 @@ namespace ngcomp
 
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
-    ARRAY<int> ** owndofs, ** distantdofs;
-    owndofs = new ARRAY<int>* [ntasks];
-    distantdofs = new ARRAY<int>* [ntasks];
+    Array<int> ** owndofs, ** distantdofs;
+    owndofs = new Array<int>* [ntasks];
+    distantdofs = new Array<int>* [ntasks];
 
     for ( int i = 0; i < ntasks; i++ )
       {
-	owndofs[i] = new ARRAY<int>(1);
+	owndofs[i] = new Array<int>(1);
 	(*owndofs[i])[0] = GetNDof();
-	distantdofs[i] = new ARRAY<int>(0);
+	distantdofs[i] = new Array<int>(0);
       }
 
 
 
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
     int exdof = 0;
     int ii = 1;
@@ -1442,7 +1442,7 @@ namespace ngcomp
 	      for ( int i=0; i<dnums.Size(); i++ )
 		(*(paralleldofs->sorted_exchangedof))[id][exdof++] = dnums[i];
 
-	      ARRAY<int[2]> distantnodenums;
+	      Array<int[2]> distantnodenums;
 	      parallelma -> GetDistantNodeNums ( nt, node, distantnodenums);
 	      for ( int idest = 1; idest < distantnodenums.Size(); idest++ )
 		{
@@ -1487,7 +1487,7 @@ namespace ngcomp
 		{
 		  int nodenum = (*distantdofs[dest])[ii++];
 		  int isdistghost = (*distantdofs[dest])[ii++];
-		  ARRAY<int> dnums, lodnums;
+		  Array<int> dnums, lodnums;
 		  GetNodeDofNrs (nt, nodenum, dnums);
 		  for ( int i = 0; i < n_lo; i++ )
 		    {
@@ -1505,7 +1505,7 @@ namespace ngcomp
 	      {
 		int nodenum = (*distantdofs[dest])[ii++];
 		int isdistghost = (*distantdofs[dest])[ii++];
-		ARRAY<int> dnums;
+		Array<int> dnums;
 		GetNodeDofNrs (nt, nodenum, dnums);
 
 		ii += n_lo;
@@ -1577,7 +1577,7 @@ namespace ngcomp
 	  {
 	    GetNodeDofNrs (nt, node, dnums);
 
-	    ARRAY<int[2]> distantnodenums;
+	    Array<int[2]> distantnodenums;
 	    parallelma -> GetDistantNodeNums ( nt, node, distantnodenums);
 	    owndofs[0]->Append (distantnodenums[0][1] );
 
@@ -1600,7 +1600,7 @@ namespace ngcomp
 	    if ( dest == id ) continue;
 	    paralleldofs -> SetDistNDof( dest, (*distantdofs[dest])[0]) ;
 	    int nodenum = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums, lodnums;
+	    Array<int> dnums, lodnums;
 	    GetNodeDofNrs (nt, nodenum, dnums);
 	    
 	    for ( int i = 0; i < n_lo; i++ )
@@ -1725,7 +1725,7 @@ namespace ngcomp
 
     if (ma.GetNLevels() > ndlevel.Size())
       {
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	int i, j;
 	int ne = ma.GetNE();
 	int nse = ma.GetNSE();
@@ -1755,7 +1755,7 @@ namespace ngcomp
       {
 	dirichlet_dofs.SetSize (GetNDof());
 	dirichlet_dofs.Clear();
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	for (int i = 0; i < ma.GetNSE(); i++)
 	  {
 	    if (dirichlet_boundaries[ma.GetSElIndex(i)])
@@ -1801,7 +1801,7 @@ namespace ngcomp
 
 
  
-  void NodalFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void NodalFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     ma.GetElPNums (elnr, dnums);
 
@@ -1827,7 +1827,7 @@ namespace ngcomp
   }
 
 
-  void NodalFESpace :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void NodalFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     ma.GetSElPNums (selnr, dnums);
 
@@ -1854,32 +1854,32 @@ namespace ngcomp
 
 
 
-  void NodalFESpace :: GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const
+  void NodalFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     dnums.SetSize(1);
     dnums[0] = vnr;
   }
 
-  void NodalFESpace :: GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const
+  void NodalFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
   }
 
-  void NodalFESpace :: GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const
+  void NodalFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
   }
 
-  void NodalFESpace :: GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const
+  void NodalFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
   }
 
   
-  ARRAY<int> * 
+  Array<int> * 
   NodalFESpace :: CreateDirectSolverClusters (const Flags & flags) const
   {
-    ARRAY<int> & clusters = *new ARRAY<int> (GetNDof());
+    Array<int> & clusters = *new Array<int> (GetNDof());
     clusters = 0;
 
     const int stdoffset = 1;
@@ -1922,7 +1922,7 @@ namespace ngcomp
     int ndof = GetNDof();
 
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks); 
+    Array<int> nexdof(ntasks); 
     nexdof = 0;
 
 
@@ -1947,19 +1947,19 @@ namespace ngcomp
     MPI_Request * sendrequest = new MPI_Request [ntasks];
     MPI_Request * recvrequest = new MPI_Request [ntasks];
 
-    ARRAY<int> ** owndofs,** distantdofs;
-    owndofs = new ARRAY<int> * [ntasks];
-    distantdofs = new ARRAY<int> * [ntasks];
+    Array<int> ** owndofs,** distantdofs;
+    owndofs = new Array<int> * [ntasks];
+    distantdofs = new Array<int> * [ntasks];
 
     for ( int i = 0; i < ntasks; i++)
       {
-	owndofs[i] = new ARRAY<int> (1);
+	owndofs[i] = new Array<int> (1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int> (0);
+	distantdofs[i] = new Array<int> (0);
       }
 
     int exdof = 0;
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
 
     // *****************
@@ -2027,7 +2027,7 @@ namespace ngcomp
     int ndof = GetNDof();
 
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks); 
+    Array<int> nexdof(ntasks); 
     nexdof = 0;
 
     MPI_Status status;
@@ -2057,19 +2057,19 @@ namespace ngcomp
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
  
 
-    ARRAY<int> ** owndofs,** distantdofs;
-    owndofs = new ARRAY<int> * [ntasks];
-    distantdofs = new ARRAY<int> * [ntasks];
+    Array<int> ** owndofs,** distantdofs;
+    owndofs = new Array<int> * [ntasks];
+    distantdofs = new Array<int> * [ntasks];
 
     for ( int i = 0; i < ntasks; i++)
       {
-	owndofs[i] = new ARRAY<int> (1);
+	owndofs[i] = new Array<int> (1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int> (0);
+	distantdofs[i] = new Array<int> (0);
       }
 
     int exdof = 0;
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
 
     // *****************
@@ -2080,7 +2080,7 @@ namespace ngcomp
     for ( int vert = 0; vert < ma.GetNV(); vert++ )
       {
 	if ( !parallelma->IsExchangeVert ( vert ) ) continue;
-	ARRAY<int> dnums;
+	Array<int> dnums;
 
 	(*(paralleldofs->sorted_exchangedof))[id][exdof++] = vert;
 
@@ -2255,7 +2255,7 @@ namespace ngcomp
     /*
     if (ma.GetNLevels() > ndlevel.Size())
       {
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	int i, j;
 	int ne = ma.GetNE();
 	int nse = ma.GetNSE();
@@ -2284,7 +2284,7 @@ namespace ngcomp
       {
 	dirichlet_dofs.SetSize (GetNDof());
 	dirichlet_dofs.Clear();
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	for (int i = 0; i < ma.GetNSE(); i++)
 	  {
 	    if (dirichlet_boundaries[ma.GetSElIndex(i)])
@@ -2300,7 +2300,7 @@ namespace ngcomp
   }
 
  
-  void NonconformingFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void NonconformingFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     ma.GetElEdges (elnr, dnums);
     if (!DefinedOn (ma.GetElIndex (elnr)))
@@ -2308,7 +2308,7 @@ namespace ngcomp
   }
 
 
-  void NonconformingFESpace :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void NonconformingFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     ma.GetSElEdges (selnr, dnums);
     if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
@@ -2434,8 +2434,8 @@ namespace ngcomp
 
     BitArray useddof(nd);
     useddof.Clear();
-    ARRAY<int> dnums;
-    ARRAY<int> dofs;
+    Array<int> dnums;
+    Array<int> dofs;
 
     
     for (i = 0; i < ne; i++)
@@ -2511,7 +2511,7 @@ namespace ngcomp
   }
 
  
-  void NodalFESpaceAlt :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void NodalFESpaceAlt :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     int j;
     switch (order)
@@ -2528,7 +2528,7 @@ namespace ngcomp
       case 2:
 	{
 	  int ena[12], eoa[12];
-	  ARRAY<int> enums(12, ena), eorient(12, eoa);
+	  Array<int> enums(12, ena), eorient(12, eoa);
 	
 	  ma.GetElPNums (elnr, dnums);
 	  GetMeshAccess().GetElEdges (elnr, enums, eorient);
@@ -2567,8 +2567,8 @@ namespace ngcomp
       case 3:
 	{
 	  int ena[12], eoa[12], fna[6], foa[6];
-	  ARRAY<int> enums(12, ena), eorient(12, eoa);
-	  ARRAY<int> fnums(6, fna), forient(6, foa);
+	  Array<int> enums(12, ena), eorient(12, eoa);
+	  Array<int> fnums(6, fna), forient(6, foa);
 	
 	  ma.GetElPNums (elnr, dnums);
 	  GetMeshAccess().GetElEdges (elnr, enums, eorient);
@@ -2623,7 +2623,7 @@ namespace ngcomp
       }
   }
 
-  void NodalFESpaceAlt :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void NodalFESpaceAlt :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     int j;
 
@@ -2639,7 +2639,7 @@ namespace ngcomp
       case 2:
 	{
 	  int ena[4], eoa[4];
-	  ARRAY<int> enums(4, ena), eorient(4, eoa);
+	  Array<int> enums(4, ena), eorient(4, eoa);
 	
 	  ma.GetSElPNums (selnr, dnums);
 	  GetMeshAccess().GetSElEdges (selnr, enums, eorient);
@@ -2665,7 +2665,7 @@ namespace ngcomp
       case 3:
 	{
 	  int ena[4], eoa[4], fnr, forient;
-	  ARRAY<int> enums(4, ena), eorient(4, eoa);
+	  Array<int> enums(4, ena), eorient(4, eoa);
 	
 	  ma.GetSElPNums (selnr, dnums);
 	  GetMeshAccess().GetSElEdges (selnr, enums, eorient);
@@ -2709,7 +2709,7 @@ namespace ngcomp
 				      MAT & mat, TRANSFORM_TYPE tt) const
   {
     int nd, ena[12], eoa[12];
-    ARRAY<int> enums(12, ena), eorient(12, eoa);
+    Array<int> enums(12, ena), eorient(12, eoa);
     LocalHeap lh (10003);
     if (boundary)
       {
@@ -2771,7 +2771,7 @@ namespace ngcomp
   {
     int nd;
     int ena[12], eoa[12];
-    ARRAY<int> enums(12, ena), eorient(12, eoa);
+    Array<int> enums(12, ena), eorient(12, eoa);
     LocalHeap lh (10007);
     if (boundary)
       {
@@ -2825,7 +2825,7 @@ namespace ngcomp
     int nd = GetSFE (elnr).GetNDof();
 
     int ena[12], eoa[12];
-    ARRAY<int> enums(12, ena), eorient(12, eoa);
+    Array<int> enums(12, ena), eorient(12, eoa);
     GetMeshAccess().GetSElEdges (elnr, enums, eorient);
 
     if (order == 3 && enums.Size() == 3)
@@ -2860,9 +2860,9 @@ namespace ngcomp
 
       DenseMatrix elmat(1);
       elmat.Elem(1,1) = 1e20;
-      ARRAY<int> dnums(1);
-      ARRAY<int> fnums, forient;
-      ARRAY<int> enums, eorient;
+      Array<int> dnums(1);
+      Array<int> fnums, forient;
+      Array<int> enums, eorient;
 
 
       for (int elnr = 1; elnr <= ne; elnr++)
@@ -3035,7 +3035,7 @@ namespace ngcomp
   }
 
   
-  void ElementFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void ElementFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     if (order == 0)
       {
@@ -3070,7 +3070,7 @@ namespace ngcomp
 	  dnums[i] = n_el_dofs*elnr+i;
       }
   }
-  void ElementFESpace :: GetSDofNrs (int elnr, ARRAY<int> & dnums) const
+  void ElementFESpace :: GetSDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
   }
@@ -3096,7 +3096,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
      // ******************************
     *testout << "Element::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks);
+    Array<int> nexdof(ntasks);
     nexdof = 0;
 
     const MeshAccess & ma = (*this). GetMeshAccess();
@@ -3135,7 +3135,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     int ndof = GetNDof();
 
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks); 
+    Array<int> nexdof(ntasks); 
     nexdof = 0;
 
     paralleldofs->SetNExDof(nexdof);
@@ -3290,7 +3290,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   }
 
   
-  void SurfaceElementFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void SurfaceElementFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize (0);
     // throw Exception ("SurfaceElementFESpace::GetDofNrs not available");
@@ -3302,7 +3302,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   }
 
 
-  void SurfaceElementFESpace :: GetSDofNrs (int elnr, ARRAY<int> & dnums) const
+  void SurfaceElementFESpace :: GetSDofNrs (int elnr, Array<int> & dnums) const
   {
     if (order == 0)
       {
@@ -3437,7 +3437,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     if (level == nflevel.Size())
       return;
 
-    ARRAY<int> pnums;
+    Array<int> pnums;
 
     elementfaces.SetSize (ne);
     surfelementfaces.SetSize (nse);
@@ -3718,7 +3718,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     return tet1;
   }
   
-  void NonConformingFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void NonConformingFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     const MeshAccess & ma = GetMeshAccess();
 
@@ -3753,7 +3753,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     return trig1;
   }
 
-  void NonConformingFESpace :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void NonConformingFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     dnums.SetSize(1);
     dnums[0] = surfelementfaces[selnr];
@@ -3771,7 +3771,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
 
   CompoundFESpace :: CompoundFESpace (const MeshAccess & ama,
-				      const ARRAY<const FESpace*> & aspaces,
+				      const Array<const FESpace*> & aspaces,
 				      const Flags & flags, bool parseflags)
     : FESpace (ama, flags), spaces(aspaces)
   {
@@ -3780,7 +3780,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     DefineStringListFlag("spaces");
     if(parseflags) ParseFlags(flags);
     
-    ARRAY<const Prolongation*> prols(spaces.Size());
+    Array<const Prolongation*> prols(spaces.Size());
     for (int i = 0; i < spaces.Size(); i++)
       prols[i] = spaces[i]->GetProlongation();
 
@@ -3792,7 +3792,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     loflags.SetFlag("order",0.0);
     paralleldofs = 0;
 
-    ARRAY<const FESpace*> lospaces (0);
+    Array<const FESpace*> lospaces (0);
     for ( int i = 0; i < spaces.Size(); i++)
       if ( &spaces[i]->LowOrderFESpace() )
 	lospaces . Append ( &spaces[i]->LowOrderFESpace() );
@@ -3808,14 +3808,14 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
 #ifdef OLD
   CompoundFESpace :: CompoundFESpace (const MeshAccess & ama,
-				      const ARRAY<const FESpace*> & aspaces)
+				      const Array<const FESpace*> & aspaces)
     : FESpace (ama, 0, 1, aspaces[0]->IsComplex()), spaces(aspaces)
   {
     int i;
     
 
     /*
-    ARRAY<const FiniteElement*> fea(spaces.Size());
+    Array<const FiniteElement*> fea(spaces.Size());
 
     for (i = 0; i < fea.Size(); i++)
       fea[i] = &spaces[i]->GetFE (ET_SEGM);
@@ -3842,7 +3842,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     pyramid = new CompoundFiniteElement (fea);
     */
 
-    ARRAY<const Prolongation*> prols(spaces.Size());
+    Array<const Prolongation*> prols(spaces.Size());
     for (i = 0; i < spaces.Size(); i++)
       prols[i] = spaces[i]->GetProlongation();
 
@@ -3942,7 +3942,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   }
 
   
-  void CompoundFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void CompoundFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
     dnums.SetSize(0);
@@ -3957,7 +3957,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
       }
   }
 
-  void CompoundFESpace :: GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const
+  void CompoundFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
     dnums.SetSize(0);
@@ -3976,7 +3976,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
 
 
-  void CompoundFESpace :: GetWireBasketDofNrs (int elnr, ARRAY<int> & dnums) const
+  void CompoundFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
     dnums.SetSize(0);
@@ -3993,7 +3993,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
 
 
-  void CompoundFESpace :: GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const
+  void CompoundFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
     dnums.SetSize(0);
@@ -4008,7 +4008,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
       }
   }
 
-  void CompoundFESpace :: GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const
+  void CompoundFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
     dnums.SetSize(0);
@@ -4023,7 +4023,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
       }
 
   }
-  void CompoundFESpace :: GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const
+  void CompoundFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
     dnums.SetSize(0);
@@ -4039,7 +4039,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     ;
   }
 
-  void CompoundFESpace :: GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const
+  void CompoundFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
     dnums.SetSize(0);
@@ -4074,7 +4074,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   }
 
 
-  void CompoundFESpace :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void CompoundFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
     dnums.SetSize(0);
@@ -4214,7 +4214,7 @@ void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
      // ******************************
     *testout << "Element::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks);
+    Array<int> nexdof(ntasks);
     nexdof = 0;
 
     const MeshAccess & ma = (*this). GetMeshAccess();
@@ -4253,7 +4253,7 @@ void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
     int ndof = GetNDof();
 
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks); 
+    Array<int> nexdof(ntasks); 
     nexdof = 0;
 
     MPI_Status status;
@@ -4279,19 +4279,19 @@ void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
 
 
 
-    ARRAY<int> ** owndofs,** distantdofs;
-    owndofs = new ARRAY<int> * [ntasks];
-    distantdofs = new ARRAY<int> * [ntasks];
+    Array<int> ** owndofs,** distantdofs;
+    owndofs = new Array<int> * [ntasks];
+    distantdofs = new Array<int> * [ntasks];
 
     for ( int i = 0; i < ntasks; i++)
       {
-	owndofs[i] = new ARRAY<int> (1);
+	owndofs[i] = new Array<int> (1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int> (0);
+	distantdofs[i] = new Array<int> (0);
       }
 
     int exdof = 0;
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
 
 
@@ -4381,7 +4381,7 @@ void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
     int ndof = GetNDof();
 
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks); 
+    Array<int> nexdof(ntasks); 
     nexdof = 0;
 
 
@@ -4406,19 +4406,19 @@ void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
     MPI_Request * sendrequest = new MPI_Request [ntasks];
     MPI_Request * recvrequest = new MPI_Request [ntasks];
 
-    ARRAY<int> ** owndofs,** distantdofs;
-    owndofs = new ARRAY<int> * [ntasks];
-    distantdofs = new ARRAY<int> * [ntasks];
+    Array<int> ** owndofs,** distantdofs;
+    owndofs = new Array<int> * [ntasks];
+    distantdofs = new Array<int> * [ntasks];
 
     for ( int i = 0; i < ntasks; i++)
       {
-	owndofs[i] = new ARRAY<int> (1);
+	owndofs[i] = new Array<int> (1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int> (0);
+	distantdofs[i] = new Array<int> (0);
       }
 
     int exdof = 0;
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
 
     // *****************
@@ -4488,7 +4488,7 @@ void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
     int ndof = GetNDof();
 
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks); 
+    Array<int> nexdof(ntasks); 
     nexdof = 0;
 
     MPI_Status status;
@@ -4518,19 +4518,19 @@ void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
  
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
-    ARRAY<int> ** owndofs,** distantdofs;
-    owndofs = new ARRAY<int> * [ntasks];
-    distantdofs = new ARRAY<int> * [ntasks];
+    Array<int> ** owndofs,** distantdofs;
+    owndofs = new Array<int> * [ntasks];
+    distantdofs = new Array<int> * [ntasks];
 
     for ( int i = 0; i < ntasks; i++)
       {
-	owndofs[i] = new ARRAY<int> (1);
+	owndofs[i] = new Array<int> (1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int> (0);
+	distantdofs[i] = new Array<int> (0);
       }
 
     int exdof = 0;
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
 
     // *****************
@@ -4542,7 +4542,7 @@ void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
     for ( int vert = 0; vert < ma.GetNV(); vert++ )
       {
 	if ( !parallelma->IsExchangeVert ( vert ) ) continue;
-	ARRAY<int> dnums;
+	Array<int> dnums;
 
 	(*(paralleldofs->sorted_exchangedof))[id][exdof++] = vert;
 

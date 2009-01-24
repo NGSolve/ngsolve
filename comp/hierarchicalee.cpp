@@ -36,7 +36,7 @@ namespace ngcomp
     ElementTransformation eltrans;
 
     int dim     = fes.GetDimension();
-    ARRAY<int> dnums, dnumstest;
+    Array<int> dnums, dnumstest;
 
     VVector<SCAL> res(festest.GetNDof());
     VVector<SCAL> diag(festest.GetNDof());

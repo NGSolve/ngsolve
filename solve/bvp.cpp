@@ -435,7 +435,7 @@ namespace ngsolve
     ///
     SOLVER solver;
     ///
-    ARRAY<LinearForm*> constraints;
+    Array<LinearForm*> constraints;
     
   public:
     ///
@@ -477,8 +477,8 @@ namespace ngsolve
   class ConstrainedPrecondMatrix : public BaseMatrix
   {
     const BaseMatrix * c1;
-    ARRAY<const BaseVector*> constraints;
-    ARRAY<BaseVector*> c1constraints;
+    Array<const BaseVector*> constraints;
+    Array<BaseVector*> c1constraints;
     Matrix<double> projection, invprojection;
     int ncnt;
   public:
@@ -530,7 +530,7 @@ namespace ngsolve
   class ConstrainedMatrix : public BaseMatrix
   {
     const BaseMatrix * a1;
-    ARRAY<const BaseVector*> constraints;
+    Array<const BaseVector*> constraints;
     int ncnt;
   public:
     ConstrainedMatrix (const BaseMatrix * aa1)
@@ -590,7 +590,7 @@ namespace ngsolve
     if (flags.GetDefineFlag ("ncg")) solver = NCG;
     print = flags.GetDefineFlag ("print");
 
-    const ARRAY<char*> & cnts = flags.GetStringListFlag ("constraints");
+    const Array<char*> & cnts = flags.GetStringListFlag ("constraints");
     for (int i = 0; i < cnts.Size(); i++)
       constraints.Append (apde.GetLinearForm (cnts[i]));
   }

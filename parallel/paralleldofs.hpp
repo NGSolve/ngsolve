@@ -27,16 +27,16 @@ protected:
   /// number of degrees of freedom
   int ndof;
   /// number of degrees of freedom shared with processors
-  ARRAY<int> nexdof;
+  Array<int> nexdof;
   /// is dof i local or exchange-dof??
   BitArray isexchangedof;
   /// is dof i ghost dof or not??
   BitArray * isghostdof;
   /// number of dofs on distant processes
-  ARRAY<int> distndof;
+  Array<int> distndof;
   /// mpi-datatype to send exchange dofs
   // MPI_Datatype ** mpi_t;
-  ARRAY<MPI_Datatype> mpi_t;
+  Array<MPI_Datatype> mpi_t;
 
 public:
   
@@ -65,7 +65,7 @@ public:
   int GetNExDofs( int proc ) const
   { return nexdof[proc]; } 
 
-  void SetNExDof ( const ARRAY<int> & anexdof ) 
+  void SetNExDof ( const Array<int> & anexdof ) 
   { 
     nexdof.SetSize(ntasks);
     for ( int i = 0; i < ntasks; i++ ) 
@@ -80,7 +80,7 @@ public:
 
 //   void SetDistantDof ( int proc, int localdof, int distantdof );
 
-//   void SetDistantDofs ( int proc, const ARRAY<int> & dofs );
+//   void SetDistantDofs ( int proc, const Array<int> & dofs );
 
   void Update();
 
@@ -118,15 +118,15 @@ public:
   inline void SetMasterDof ( const int localdof ) 
   { ismasterdof.Set ( localdof ); }
   
-//   void GetDistantDofs ( const int localdof,  ARRAY <int> & distantdofs ) const;
+//   void GetDistantDofs ( const int localdof,  Array <int> & distantdofs ) const;
 
-  void GetExchangeProcs ( const int localdof, ARRAY<int> & procs ) const;
+  void GetExchangeProcs ( const int localdof, Array<int> & procs ) const;
 
-  void GetExchangeProcs ( ARRAY<int> & procs ) const;
+  void GetExchangeProcs ( Array<int> & procs ) const;
 
-  void GetHOExchangeProcs ( const int localdof, ARRAY<int> & procs ) const;
+  void GetHOExchangeProcs ( const int localdof, Array<int> & procs ) const;
 
-  void GetHOExchangeProcs ( ARRAY<int> & procs ) const;
+  void GetHOExchangeProcs ( Array<int> & procs ) const;
 
   const bool IsExchangeProc ( const int proc ) const;
 

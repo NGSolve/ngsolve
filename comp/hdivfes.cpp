@@ -28,7 +28,7 @@ namespace ngcomp
 
     if (ma.GetDimension() == 2)
       {
-	ARRAY<CoefficientFunction*> coeffs(1);
+	Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = new ConstantCoefficientFunction(1);
 	evaluator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
       }
@@ -52,7 +52,7 @@ namespace ngcomp
     
     if (ma.GetDimension() == 2)
     {
-      ARRAY<CoefficientFunction*> coeffs(1);
+      Array<CoefficientFunction*> coeffs(1);
       coeffs[0] = new ConstantCoefficientFunction(1);
       evaluator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
     }
@@ -103,9 +103,9 @@ namespace ngcomp
   
   
   
-  void RaviartThomasFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void RaviartThomasFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    ARRAY<int> forient(6);
+    Array<int> forient(6);
     
     if (ma.GetDimension() == 2)
       GetMeshAccess().GetElEdges (elnr, dnums, forient);
@@ -121,12 +121,12 @@ namespace ngcomp
   }
   
   
-  void RaviartThomasFESpace :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void RaviartThomasFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     if (ma.GetDimension() == 2)
       {
 	int eoa[12];
-	ARRAY<int> eorient(12, eoa);
+	Array<int> eorient(12, eoa);
 	GetMeshAccess().GetSElEdges (selnr, dnums, eorient);
 	
 	if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
@@ -138,7 +138,7 @@ namespace ngcomp
 
     /*
       int eoa[12];
-      ARRAY<int> eorient(12, eoa);
+      Array<int> eorient(12, eoa);
       GetMeshAccess().GetSElEdges (selnr, dnums, eorient);
       
       if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
@@ -213,7 +213,7 @@ namespace ngcomp
   void RaviartThomasFESpace ::
   GetTransformationFactors (int elnr, FlatVector<> & fac) const
   {
-    ARRAY<int> edge_nums, edge_orient;
+    Array<int> edge_nums, edge_orient;
     
     fac = 1;
 

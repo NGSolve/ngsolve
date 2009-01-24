@@ -178,7 +178,7 @@ class FE_HexP : public NodalFiniteElement<3>
 {
   ///
   IPDataArray ipdata;
-  ARRAY<IPData> ipdata;
+  Array<IPData> ipdata;
   ///
   int p;
 public:
@@ -220,7 +220,7 @@ public:
 class FE_Augmented_SegmP : public NodalFiniteElement<1>
 {
   ///
-  ARRAY<IPData> ipdata;
+  Array<IPData> ipdata;
   ///
   int p;
 public:
@@ -232,7 +232,7 @@ public:
   virtual void CalcShape (const IntegrationPoint & ip, 
 			  FlatVector<> shape) const;
 
-  virtual const ARRAY<IPData> & GetIPData () const { return ipdata; }
+  virtual const Array<IPData> & GetIPData () const { return ipdata; }
 };
 
 
@@ -241,7 +241,7 @@ public:
 class FE_Augmented_TrigP : public NodalFiniteElement<2>
 {
   ///
-  ARRAY<IPData> ipdata;
+  Array<IPData> ipdata;
   ///
   Matrix<> mat_unify;
   ///
@@ -261,7 +261,7 @@ public:
   ///
   virtual void UnifyTrans (FlatVector<> & uelem) const;
 
-  virtual const ARRAY<IPData> & GetIPData () const { return ipdata; }
+  virtual const Array<IPData> & GetIPData () const { return ipdata; }
 };
 
 
@@ -270,7 +270,7 @@ public:
 class FE_Augmented_TetP : public NodalFiniteElement<3>
 {
   ///
-  ARRAY<IPData> ipdata;
+  Array<IPData> ipdata;
   ///
   int p;
   ///
@@ -291,7 +291,7 @@ public:
   virtual void UnifyTrans (FlatVector<> & uelem) const;
 
   ///
-  virtual const ARRAY<IPData> & GetIPData () const { return ipdata; }
+  virtual const Array<IPData> & GetIPData () const { return ipdata; }
 };
 #endif
 

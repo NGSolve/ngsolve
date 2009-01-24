@@ -70,7 +70,7 @@ class PDE
   ///
   SymbolTable<double> variables;
   ///
-  ARRAY<EvalVariable*> evaluators;
+  Array<EvalVariable*> evaluators;
   ///
   SymbolTable<CoefficientFunction*> coefficients;
   ///
@@ -91,11 +91,11 @@ class PDE
   /// 
   bool isgood;
   ///
-  ARRAY<Integrator*> CurvePointIntegrators;
-  ARRAY<string*> CurvePointIntegratorFilenames;
+  Array<Integrator*> CurvePointIntegrators;
+  Array<string*> CurvePointIntegratorFilenames;
 
   ///
-  ARRAY<NGS_Object*> todo;
+  Array<NGS_Object*> todo;
 
 
   ///

@@ -128,7 +128,7 @@ protected:
   DynamicMem<int> diagi;
 
   /// row has same non-zero elements as previous row
-  ARRAY<int> same_nze;
+  Array<int> same_nze;
 
   /// owner of arrays ?
   bool owner;
@@ -140,7 +140,7 @@ public:
   /// matrix of hight as, uniform number of els/row
   MatrixGraph (int as, int max_elsperrow);
   /// arbitrary number of els/row
-  MatrixGraph (const ARRAY<int> & elsperrow);
+  MatrixGraph (const Array<int> & elsperrow);
   /// shadow matrix graph
   MatrixGraph (const MatrixGraph & graph, bool stealgraph);
   /// 
@@ -183,7 +183,7 @@ public:
 
   ostream & Print (ostream & ost) const;
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const;
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
   virtual void SetInverseType ( INVERSETYPE ainversetype )
   { inversetype = ainversetype; }
@@ -218,7 +218,7 @@ public:
     : MatrixGraph (as, max_elsperrow)
   { ; }
 
-  BaseSparseMatrix (const ARRAY<int> & elsperrow)
+  BaseSparseMatrix (const Array<int> & elsperrow)
     : MatrixGraph (elsperrow)
   { ; }
 
@@ -267,7 +267,7 @@ public:
   }
 
   virtual BaseMatrix * 
-  InverseMatrix (ARRAY<int> * clusters) const
+  InverseMatrix (Array<int> * clusters) const
   { 
     throw Exception ("BaseSparseMatrix::CreateInverse called");
   }
@@ -300,7 +300,7 @@ public:
   typedef typename mat_traits<TM>::TSCAL TSCAL;
 
   SparseMatrixTM (int as, int max_elsperrow);
-  SparseMatrixTM (const ARRAY<int> & elsperrow);
+  SparseMatrixTM (const Array<int> & elsperrow);
   SparseMatrixTM (const MatrixGraph & agraph, bool stealgraph);
   SparseMatrixTM (const SparseMatrixTM & amat);
   virtual ~SparseMatrixTM ();
@@ -351,7 +351,7 @@ public:
   virtual ostream & Print (ostream & ost) const;
 
   ///
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const;
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
 
 };
@@ -373,7 +373,7 @@ public:
   SparseMatrix (int as, int max_elsperrow)
     : SparseMatrixTM<TM> (as, max_elsperrow) { ; }
 
-  SparseMatrix (const ARRAY<int> & elsperrow)
+  SparseMatrix (const Array<int> & elsperrow)
     : SparseMatrixTM<TM> (elsperrow) { ; }
 
   SparseMatrix (const MatrixGraph & agraph, bool stealgraph)
@@ -386,7 +386,7 @@ public:
     : SparseMatrixTM<TM> (amat) { ; }
 
   virtual BaseMatrix * CreateMatrix () const;
-  virtual BaseMatrix * CreateMatrix (const ARRAY<int> & elsperrow) const;
+  virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
   ///
   virtual BaseVector * CreateVector () const;
 
@@ -406,7 +406,7 @@ public:
 
   virtual BaseMatrix * InverseMatrix (BitArray * subset = 0) const;
 
-  virtual BaseMatrix * InverseMatrix (ARRAY<int> * clusters) const;
+  virtual BaseMatrix * InverseMatrix (Array<int> * clusters) const;
 
   virtual BaseSparseMatrix * Restrict (const SparseMatrixTM<double> & prol,
 				       BaseSparseMatrix* cmat = NULL ) const
@@ -478,7 +478,7 @@ protected:
   SparseMatrixSymmetricTM (int as, int max_elsperrow)
     : SparseMatrixTM<TM> (as, max_elsperrow) { ; }
 
-  SparseMatrixSymmetricTM (const ARRAY<int> & elsperrow)
+  SparseMatrixSymmetricTM (const Array<int> & elsperrow)
     : SparseMatrixTM<TM> (elsperrow) { ; }
 
   SparseMatrixSymmetricTM (const MatrixGraph & agraph, bool stealgraph)
@@ -506,7 +506,7 @@ public:
   ///
   SparseMatrixSymmetric (int as, int max_elsperrow);
   ///
-  SparseMatrixSymmetric (const ARRAY<int> & elsperrow);
+  SparseMatrixSymmetric (const Array<int> & elsperrow);
   ///
   SparseMatrixSymmetric (const MatrixGraph & agraph, bool stealgraph);
   ///
@@ -519,7 +519,7 @@ public:
       SparseMatrixSymmetricTM<TM> (as, max_elsperrow)
   { ; }
   
-  SparseMatrixSymmetric (const ARRAY<int> & elsperrow)
+  SparseMatrixSymmetric (const Array<int> & elsperrow)
     : SparseMatrixTM<TM> (elsperrow), 
       SparseMatrix<TM,TV,TV> (elsperrow),
       SparseMatrixSymmetricTM<TM> (elsperrow)
@@ -568,7 +568,7 @@ public:
     return new SparseMatrixSymmetric (*this);
   }
 
-  virtual BaseMatrix * CreateMatrix (const ARRAY<int> & elsperrow) const
+  virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const
   {
     return new SparseMatrix<TM,TV,TV>(elsperrow);
   }
@@ -666,7 +666,7 @@ public:
 
   virtual BaseMatrix * InverseMatrix (BitArray * subset = 0) const;
 
-  virtual BaseMatrix * InverseMatrix (ARRAY<int> * clusters) const;
+  virtual BaseMatrix * InverseMatrix (Array<int> * clusters) const;
 
 };
 
@@ -684,8 +684,8 @@ template<class TM>
 class VarBlockSparseMatrix : public BaseSparseMatrix, 
 			     public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
 {
-  ARRAY<int> block2linear;
-  ARRAY<int> data_index;
+  Array<int> block2linear;
+  Array<int> data_index;
   DynamicMem<TM> data;
 
 public:
@@ -698,9 +698,9 @@ public:
 
 
 
-  VarBlockSparseMatrix (ARRAY<int> & elsperrow, 
-			ARRAY<int> & ablock2linear, 
-			ARRAY<int> & linear2block, 
+  VarBlockSparseMatrix (Array<int> & elsperrow, 
+			Array<int> & ablock2linear, 
+			Array<int> & linear2block, 
 			const SparseMatrix<TM> & sm);
   static VarBlockSparseMatrix * Create (const SparseMatrix<TM> & sm);
   virtual ~VarBlockSparseMatrix ();
@@ -736,7 +736,7 @@ public:
     :  SparseMatrixTM<TM> (as, max_elsperrow) ,SparseMatrix<TM,TV_ROW,TV_COL> (as, max_elsperrow)
   { consistentmat = 0; }
 
-  ParallelSparseMatrix (const ARRAY<int> & elsperrow)
+  ParallelSparseMatrix (const Array<int> & elsperrow)
     :  SparseMatrixTM<TM> (elsperrow) ,SparseMatrix<TM,TV_ROW,TV_COL> (elsperrow) 
   { consistentmat = 0; }
 
@@ -757,7 +757,7 @@ public:
     : SparseMatrixTM<TM> (as, max_elsperrow) ,SparseMatrix<TM,TV_ROW,TV_COL>(as, max_elsperrow) 
   { consistentmat = aconsistentmat; }
 
-  ParallelSparseMatrix (const ARRAY<int> & elsperrow, SparseMatrix<TM,TV_ROW,TV_COL> * aconsistentmat)
+  ParallelSparseMatrix (const Array<int> & elsperrow, SparseMatrix<TM,TV_ROW,TV_COL> * aconsistentmat)
     : SparseMatrixTM<TM> (elsperrow),SparseMatrix<TM,TV_ROW,TV_COL>(elsperrow)  
   { consistentmat = aconsistentmat; }
 
@@ -802,13 +802,13 @@ public:
 //   }
 
   virtual BaseMatrix * CreateMatrix () const;
-  virtual BaseMatrix * CreateMatrix (const ARRAY<int> & elsperrow) const;
+  virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
   ///
   virtual BaseVector * CreateVector () const;
 
   virtual BaseMatrix * InverseMatrix (BitArray * subset = 0) const;
 
-  virtual BaseMatrix * InverseMatrix (ARRAY<int> * clusters) const;
+  virtual BaseMatrix * InverseMatrix (Array<int> * clusters) const;
 
   virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
   virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
@@ -840,7 +840,7 @@ public:
       SparseMatrixSymmetric<TM,TV> (as, max_elsperrow) 
   {     consistentmat = 0; }
   
-  ParallelSparseMatrixSymmetric (const ARRAY<int> & elsperrow)
+  ParallelSparseMatrixSymmetric (const Array<int> & elsperrow)
     : SparseMatrixTM<TM> (elsperrow) , 
        SparseMatrix<TM,TV,TV> (elsperrow),
        SparseMatrixSymmetricTM<TM> (elsperrow),
@@ -876,7 +876,7 @@ public:
       ParallelSparseMatrix<TM,TV,TV> (as, max_elsperrow)
   {     consistentmat = aconsistentmat; }
   
-  ParallelSparseMatrixSymmetric (const ARRAY<int> & elsperrow, SparseMatrixSymmetric<TM,TV> * aconsistentmat )
+  ParallelSparseMatrixSymmetric (const Array<int> & elsperrow, SparseMatrixSymmetric<TM,TV> * aconsistentmat )
     : SparseMatrixTM<TM> (elsperrow) , 
        SparseMatrix<TM,TV,TV> (elsperrow),
        SparseMatrixSymmetricTM<TM> (elsperrow),
@@ -958,13 +958,13 @@ public:
   virtual void CalcConsistentMat (LocalHeap & lh);
 
   virtual BaseMatrix * CreateMatrix () const;
-  virtual BaseMatrix * CreateMatrix (const ARRAY<int> & elsperrow) const;
+  virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
   ///
   virtual BaseVector * CreateVector () const;
 
   virtual BaseMatrix * InverseMatrix (BitArray * subset = 0) const;
 
-  virtual BaseMatrix * InverseMatrix (ARRAY<int> * clusters) const;
+  virtual BaseMatrix * InverseMatrix (Array<int> * clusters) const;
 
   virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
   virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const

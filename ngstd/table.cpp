@@ -56,7 +56,7 @@ namespace ngstd
     oneblock = NULL;
   }
 
-  BaseDynamicTable :: BaseDynamicTable (const ARRAY<int> & entrysizes, int elemsize)
+  BaseDynamicTable :: BaseDynamicTable (const Array<int> & entrysizes, int elemsize)
     : data(entrysizes.Size())
   {
     int cnt = 0;

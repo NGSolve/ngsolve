@@ -142,13 +142,13 @@ namespace ngcomp
     // Evaluator for shape tester 
     if (ma.GetDimension() == 2)
     {
-      ARRAY<CoefficientFunction*> coeffs(1);
+      Array<CoefficientFunction*> coeffs(1);
       coeffs[0] = new ConstantCoefficientFunction(1);
       evaluator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
     }
     else
     {
-      ARRAY<CoefficientFunction*> coeffs(1);
+      Array<CoefficientFunction*> coeffs(1);
       coeffs[0] = new ConstantCoefficientFunction(1);
       evaluator = GetIntegrators().CreateBFI("masshdiv", 3, coeffs);
       boundary_evaluator = GetIntegrators().CreateBFI("robinhdiv", 3, coeffs);
@@ -226,7 +226,7 @@ namespace ngcomp
 	ELEMENT_TYPE eltype=ma.GetElType(i); 
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);
 	
-	ARRAY<int> elfacets; 
+	Array<int> elfacets; 
 	if(dim==2)
 	  ma.GetElEdges(i,elfacets);
 	else 
@@ -257,7 +257,7 @@ namespace ngcomp
 	  }
 	else
 	  {
-	    ARRAY<int> vnums; 
+	    Array<int> vnums; 
 	    ma.GetElVertices (i, vnums);
 	    const FACE * faces = ElementTopology::GetFaces (eltype);
 	    for(int j=0;j<elfacets.Size();j++)
@@ -332,7 +332,7 @@ namespace ngcomp
      nfa = (ma.GetDimension()==3  ? ma.GetNFaces() : ma.GetNEdges());
      nel = ma.GetNE();
      int dim = ma.GetDimension();
-     ARRAY<int> pnums; 
+     Array<int> pnums; 
      
      first_facet_dof.SetSize(nfa+1); 
      first_inner_dof.SetSize(nel+1); 
@@ -447,7 +447,7 @@ namespace ngcomp
 	   {
 	     int incii = first_inner_dof[i+1]-first_inner_dof[i]; 
 	     	     
-	     ARRAY<int> elfacets; 
+	     Array<int> elfacets; 
 	     if(dim==2) 
 	       ma.GetElEdges(i,elfacets);
 	     else 
@@ -537,7 +537,7 @@ namespace ngcomp
 	throw Exception (str.str());
       }
     
-    ARRAY<int> vnums;
+    Array<int> vnums;
     ma.GetElVertices(elnr, vnums);
     if ( ma.GetDimension() == 2)
       {
@@ -695,7 +695,7 @@ namespace ngcomp
     return ndlevel[level];
   }
 
-  void HDivHighOrderFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void HDivHighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     int first,next;
@@ -709,7 +709,7 @@ namespace ngcomp
 	return;
       } 
     
-    ARRAY<int> fanums;
+    Array<int> fanums;
     if(ma.GetDimension() == 3)
       ma.GetElFaces (elnr, fanums);
     else
@@ -738,7 +738,7 @@ namespace ngcomp
     //(*testout) << "hdivspace(sz) el " << elnr << " has dofs " << dnums << endl;
   }
 
-  void HDivHighOrderFESpace :: GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const
+  void HDivHighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0); 
     
@@ -754,13 +754,13 @@ namespace ngcomp
     }
     else 
     {
-      ARRAY<int> vnums, ednums, fnums;
+      Array<int> vnums, ednums, fnums;
       int first,next;
 
       if(order < 0)
         throw Exception(" HDivHighOrderFESpace :: GetDofNrs() order < 0 ");
 
-      ARRAY<int> fanums;
+      Array<int> fanums;
       if(ma.GetDimension() == 3)
         ma.GetElFaces (elnr, fanums);
       else
@@ -783,18 +783,18 @@ namespace ngcomp
     }
   }
 
-  void HDivHighOrderFESpace :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void HDivHighOrderFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     if (discont) return; 
 
-    ARRAY<int> vnums,fanums; 
+    Array<int> vnums,fanums; 
        
     if(order <0) throw (" HDivHighOrderFESpace :: GetSDofNrs() order < 0 ");
     
     if(ma.GetDimension() == 2) 
       { 
-	ARRAY<int> eorient; 
+	Array<int> eorient; 
 	ma.GetSElEdges (selnr, fanums, eorient);
 	// *testout << " sel edges " << fanums << endl; 
       } 
@@ -881,7 +881,7 @@ namespace ngcomp
       }
 
       
-    ARRAY<int> cnt(ncnt);
+    Array<int> cnt(ncnt);
     cnt = 0;
 
     cout << " ncnt " << ncnt << endl;
@@ -1039,10 +1039,10 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
   int SmoothingType = int(precflags.GetNumFlag("blocktype",1)); 
   
   
-  ARRAY<int> vnums,elnums; 
-  ARRAY<int> orient; 
-  ARRAY<int> ednums, fanums;
-  ARRAY<int> edges(3);
+  Array<int> vnums,elnums; 
+  Array<int> orient; 
+  Array<int> ednums, fanums;
+  Array<int> edges(3);
   
   int ned = ma.GetNEdges();
   int nfa = ma.GetNFaces();
@@ -1072,7 +1072,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
       }
 
 
-    ARRAY<int> cnt(ncnt); 
+    Array<int> cnt(ncnt); 
     cnt = 0;
     ii=0; 
 
@@ -1127,7 +1127,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 	    for( i=0; i<nfa; i++)
 	      if(fine_facet[i])
 		{
-		  ARRAY<int> edges;
+		  Array<int> edges;
 		  ma.GetFaceEdges ( i, edges);
 		  for ( int j = 0; j < edges.Size(); j++ )
 		    cnt[offset + edges[j]] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
@@ -1222,7 +1222,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 	    for (i = 0; i < nfa; i++)
 	      {
 		if ( ! fine_facet[i] ) continue;
-		ARRAY<int> faces;
+		Array<int> faces;
 		ma.GetFaceEdges (i,faces);	      
 		
 	
@@ -1284,9 +1284,9 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
   // 1) low order dofs  --  default
 
 
-ARRAY<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
+Array<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
 {
-  ARRAY<int> & clusters = *new ARRAY<int> (ndof);
+  Array<int> & clusters = *new Array<int> (ndof);
 
   int clustertype = int(precflags.GetNumFlag("ds_cluster",1)); 
   cout << " DirectSolverCluster Clustertype " << clustertype << endl; 
@@ -1298,16 +1298,16 @@ ARRAY<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & p
   
   int dim = ma.GetDimension();
 
-  ARRAY<int> vnums,elnums; 
-  ARRAY<int> orient; 
+  Array<int> vnums,elnums; 
+  Array<int> orient; 
   
-  ARRAY<int> edges(3);
+  Array<int> edges(3);
         
   int nfa = ma.GetNFaces();
   int nnv = ma.GetNV();
   int nel = ma.GetNE();
 
-  ARRAY<int> ednums, fnums, pnums;
+  Array<int> ednums, fnums, pnums;
   
   int i, j, k;
         
@@ -1335,10 +1335,10 @@ ARRAY<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & p
 }
 
   /// 
-  void HDivHighOrderFESpace :: GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const
+  void HDivHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   { dnums.SetSize(0); return; }
   /// 
-  void HDivHighOrderFESpace :: GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const
+  void HDivHighOrderFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   { 
     dnums.SetSize(0);
     if(ma.GetDimension() == 3 || discont) return; 
@@ -1351,7 +1351,7 @@ ARRAY<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & p
       dnums.Append (j);
   }
   /// 
-  void HDivHighOrderFESpace :: GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const
+  void HDivHighOrderFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     if(ma.GetDimension() == 2 || discont) return; 
@@ -1367,7 +1367,7 @@ ARRAY<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & p
   }
   
   /// 
-  void HDivHighOrderFESpace :: GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const
+  void HDivHighOrderFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     int first = first_inner_dof[elnr];
@@ -1377,7 +1377,7 @@ ARRAY<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & p
 
   }
 
-  void HDivHighOrderFESpace :: GetWireBasketDofNrs (int elnr, ARRAY<int> & dnums) const
+  void HDivHighOrderFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
   {
     ArrayMem<int,12> facets;
 
@@ -1399,7 +1399,7 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
      // ******************************
     *testout << "HDivHO::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks);
+    Array<int> nexdof(ntasks);
     nexdof = 0;
 
     MPI_Status status;
@@ -1411,7 +1411,7 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
       {
 	if ( !parallelma->IsExchangeFace ( face ) ) continue;
 	
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	GetFaceDofNrs ( face, dnums );
 	nexdof[id] += dnums.Size() ; 
 
@@ -1425,7 +1425,7 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
       {
 	if ( !parallelma->IsExchangeElement ( el ) ) continue;
 	
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	GetInnerDofNrs ( el, dnums );
 	nexdof[id] += dnums.Size() ; 
 
@@ -1442,18 +1442,18 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
-    ARRAY<int> ** owndofs, ** distantdofs;
-    owndofs = new ARRAY<int>* [ntasks];
-    distantdofs = new ARRAY<int>* [ntasks];
+    Array<int> ** owndofs, ** distantdofs;
+    owndofs = new Array<int>* [ntasks];
+    distantdofs = new Array<int>* [ntasks];
 
     for ( int i = 0; i < ntasks; i++ )
       {
-	owndofs[i] = new ARRAY<int>(1);
+	owndofs[i] = new Array<int>(1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int>(0);
+	distantdofs[i] = new Array<int>(0);
       }
 
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
     int exdof = 0;
     int ii;
@@ -1466,7 +1466,7 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
    for ( int face = 0; face < ma.GetNFaces(); face++ )
       if ( parallelma->IsExchangeFace ( face ) )
       {
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	GetFaceDofNrs ( face, dnums );
 	if ( dnums.Size() == 0 ) continue;
 
@@ -1518,7 +1518,7 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 	  {
 	    int fanum = (*distantdofs[dest])[ii++];
 	    int isdistghost = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    GetFaceDofNrs (fanum, dnums);
 // 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
 // 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
@@ -1534,7 +1534,7 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 	  {
 	    int fanum = (*distantdofs[dest])[ii++];
 	    int isdistghost = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    GetFaceDofNrs (fanum, dnums);
 	    ii++; 
 	    for ( int i=1; i<dnums.Size(); i++)
@@ -1562,7 +1562,7 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
     for ( int el = 0; el < ma.GetNE(); el++ )
       if ( parallelma->IsExchangeElement ( el ) )
 	{
-	  ARRAY<int> dnums;
+	  Array<int> dnums;
 	  GetInnerDofNrs ( el, dnums );
 	  if ( dnums.Size() == 0 ) continue;
 
@@ -1613,7 +1613,7 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 	  {
 	    int elnum = (*distantdofs[dest])[ii++];
 	    int isdistghost = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    GetInnerDofNrs (elnum, dnums);
 	    for ( int i=0; i<dnums.Size(); i++)
 	      {
@@ -1700,7 +1700,7 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
     int ndof = GetNDof();
 
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks); 
+    Array<int> nexdof(ntasks); 
     nexdof = 0;
 
     MPI_Status status;
@@ -1726,19 +1726,19 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 
 
 
-    ARRAY<int> ** owndofs,** distantdofs;
-    owndofs = new ARRAY<int> * [ntasks];
-    distantdofs = new ARRAY<int> * [ntasks];
+    Array<int> ** owndofs,** distantdofs;
+    owndofs = new Array<int> * [ntasks];
+    distantdofs = new Array<int> * [ntasks];
 
     for ( int i = 0; i < ntasks; i++)
       {
-	owndofs[i] = new ARRAY<int> (1);
+	owndofs[i] = new Array<int> (1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int> (0);
+	distantdofs[i] = new Array<int> (0);
       }
 
     int exdof = 0;
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
 
     // *****************

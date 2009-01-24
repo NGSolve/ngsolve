@@ -70,7 +70,7 @@ public:
   ///
   virtual ngla::BaseVector * CreateVector(int level) const = 0;
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   { ; }
 };
 
@@ -86,7 +86,7 @@ class GSSmoother : public Smoother
   ///
   const BilinearForm & biform;
   ///
-  ARRAY<ngla::BaseJacobiPrecond*> jac;
+  Array<ngla::BaseJacobiPrecond*> jac;
   
 public:
   ///
@@ -128,7 +128,7 @@ class AnisotropicSmoother : public Smoother
   ///
   const BilinearForm & biform;
   ///
-  ARRAY<BaseBlockJacobiPrecond*> jac;
+  Array<BaseBlockJacobiPrecond*> jac;
   
 public:
   ///
@@ -165,7 +165,7 @@ class EBESmoother : public Smoother
   ///
   const BilinearForm & biform;
   ///
-  ARRAY<BaseBlockJacobiPrecond*> jac;
+  Array<BaseBlockJacobiPrecond*> jac;
   
 public:
   ///
@@ -202,7 +202,7 @@ class EdgeSmoother : public Smoother
   ///
   const BilinearForm & biform;
   ///
-  ARRAY<BaseBlockJacobiPrecond*> jac;
+  Array<BaseBlockJacobiPrecond*> jac;
   
 public:
   ///
@@ -249,9 +249,9 @@ protected:
   ///
   const BilinearForm & biformpot;
   ///
-  ARRAY<BaseBlockJacobiPrecond*> jac;
+  Array<BaseBlockJacobiPrecond*> jac;
   ///
-  ARRAY<BaseBlockJacobiPrecond*> jacpot;
+  Array<BaseBlockJacobiPrecond*> jacpot;
   ///
   ngla::BaseMatrix * potcoarseinv;
   
@@ -307,11 +307,11 @@ class BlockSmoother : public Smoother
   ///
   const LinearForm * constraint;
   ///
-  ARRAY<ngla::BaseBlockJacobiPrecond*> jac;
+  Array<ngla::BaseBlockJacobiPrecond*> jac;
   ///
-  ARRAY<BaseMatrix*> inv;
+  Array<BaseMatrix*> inv;
   ///
-  ARRAY<int> * direct;
+  Array<int> * direct;
   
 public:
   ///
@@ -346,7 +346,7 @@ public:
   ///
   virtual ngla::BaseVector * CreateVector(int level) const;
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const;
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 };
 
 
@@ -361,15 +361,15 @@ class PotentialSmoother : public Smoother
   ///
   const BilinearForm & biform;
   ///
-  ARRAY<BaseBlockJacobiPrecond*> jac;
+  Array<BaseBlockJacobiPrecond*> jac;
   ///
-  ARRAY<SparseMatrix<double>*> gradient;
+  Array<SparseMatrix<double>*> gradient;
   ///
-  ARRAY<BaseSparseMatrix*> potmat;
+  Array<BaseSparseMatrix*> potmat;
   ///
-  ARRAY<BaseBlockJacobiPrecond*> potjac;
+  Array<BaseBlockJacobiPrecond*> potjac;
   ///
-  ARRAY<BaseMatrix*> inv;
+  Array<BaseMatrix*> inv;
 public:
   ///
   PotentialSmoother (const MeshAccess & ama,
@@ -393,7 +393,7 @@ public:
   ///
   virtual BaseVector * CreateVector(int level) const;
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const;
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 };
 
 
@@ -416,11 +416,11 @@ class StabEdgeSmoother : public Smoother
   ///
   const BilinearForm & biforml2;
   ///
-  ARRAY<ngla::BaseJacobiPrecond*> jacl2;
+  Array<ngla::BaseJacobiPrecond*> jacl2;
   ///
-  ARRAY<ngla::BaseJacobiPrecond*> jacedge;
+  Array<ngla::BaseJacobiPrecond*> jacedge;
   ///
-  ARRAY<double> lami;
+  Array<double> lami;
 public:
   ///
   StabEdgeSmoother (const MeshAccess & ama,
@@ -464,12 +464,12 @@ class MixedSmoother : public Smoother
   ///
   const BilinearForm & biformb;
   ///
-  ARRAY<ngla::BaseJacobiPrecond*> jac;
+  Array<ngla::BaseJacobiPrecond*> jac;
   
   ///
-  ARRAY<double> tau1;
+  Array<double> tau1;
   ///
-  ARRAY<double> tau2;
+  Array<double> tau2;
 public:
 
   ///
@@ -508,7 +508,7 @@ class VankaSmoother : public Smoother
   const BilinearForm & biformb;
 
   ///
-  ARRAY<SaddlePointJacobiPrecond<SysMatrix2d,SysVector2d,SysVector1d> *> jac;
+  Array<SaddlePointJacobiPrecond<SysMatrix2d,SysVector2d,SysVector1d> *> jac;
 public:
 
   ///

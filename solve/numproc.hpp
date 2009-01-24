@@ -58,7 +58,7 @@ public:
 		 void (*aprintdoc) (ostream & ost));
   };
 
-  ARRAY<NumProcInfo*> npa;
+  Array<NumProcInfo*> npa;
 public:
   NumProcs();
   ~NumProcs();  
@@ -66,7 +66,7 @@ public:
 		   NumProc* (*acreator)(PDE & pde, const Flags & flags),
 		   void (*printdoc) (ostream & ost) = NumProc::PrintDoc);
   
-  const ARRAY<NumProcInfo*> & GetNumProcs() { return npa; }
+  const Array<NumProcInfo*> & GetNumProcs() { return npa; }
   const NumProcInfo * GetNumProc(const string & name);
 
   void Print (ostream & ost) const;

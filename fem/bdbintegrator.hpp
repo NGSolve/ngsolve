@@ -206,12 +206,12 @@ public:
   enum { DIM         = DIFFOP::DIM };
 
 
-  T_BDBIntegrator  (ARRAY<CoefficientFunction*> & coeffs)
+  T_BDBIntegrator  (Array<CoefficientFunction*> & coeffs)
   : dmatop(coeffs)
   { ; }
 
   /*
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new T_BDBIntegrator (coeffs);
     // return new TIntegrator (coeffs);
@@ -507,8 +507,8 @@ public:
 	    
 
 	    FlatVector<> hv(ndof, lh);
-	    ARRAY< Vec<DIM_DMAT> > hvgrid1(ir.GetNIP());
-	    ARRAY< Vec<DIM_DMAT> > hvgrid2(ir.GetNIP());
+	    Array< Vec<DIM_DMAT> > hvgrid1(ir.GetNIP());
+	    Array< Vec<DIM_DMAT> > hvgrid2(ir.GetNIP());
 
 	    for (int i = 0; i < ndof; i++)
 	      {
@@ -872,7 +872,7 @@ public:
 	    // IntegrationRuleTP ir (fel, ir1d);
             IntegrationRuleTP<DIM_ELEMENT> ir (eltrans, 2*order, lh);
 
-	    ARRAY< Vec<DIM_DMAT> > hvgrid(ir.GetNIP());
+	    Array< Vec<DIM_DMAT> > hvgrid(ir.GetNIP());
 
 	    NgProfiler::StartTimer (trafotimer1);
 
@@ -1790,7 +1790,7 @@ public:
 	    
 	    IntegrationRuleTP<DIM_ELEMENT> ir (eltrans, 2*order, locheap);
 	    
-	    ARRAY<Vec<DIM_DMAT> > dvecs(ir.GetNIP());
+	    Array<Vec<DIM_DMAT> > dvecs(ir.GetNIP());
 	    
 	    void * heapp = locheap.GetPointer();
 

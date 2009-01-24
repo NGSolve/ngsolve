@@ -62,7 +62,7 @@ namespace ngfem
 
   template <int D>
   void L2HighOrderFiniteElement<D>:: 
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize(0);
     for (int i = 0; i < NodalFiniteElement<D>::GetNDof(); i++)

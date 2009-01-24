@@ -395,7 +395,7 @@ namespace ngcomp
 	fe = 0;
       }
     
-    ARRAY<int> vnums;
+    Array<int> vnums;
     ma.GetSElVertices(elnr, vnums);
 
     if (!fe)
@@ -429,7 +429,7 @@ namespace ngcomp
   }
 
 
-  void L2HighOrderFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void L2HighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     dnums.Append (elnr); // lowest_order 
@@ -443,7 +443,7 @@ namespace ngcomp
       dnums = -1;
   }
   
-  void  L2HighOrderFESpace :: GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const
+  void  L2HighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
   {
     if (!eliminate_internal) 
       {
@@ -455,7 +455,7 @@ namespace ngcomp
 
 
   void L2HighOrderFESpace :: 
-  GetSDofNrs (int elnr, ARRAY<int> & dnums) const
+  GetSDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize (0);
   }
@@ -464,7 +464,7 @@ namespace ngcomp
   CreateSmoothingBlocks (const Flags & precflags) const
   {
     int i, j, first;
-    ARRAY<int> cnt(nel);
+    Array<int> cnt(nel);
     cnt = 0;
     for (i = 0; i < nel; i++)
       cnt[i] = first_element_dof[i+1]-first_element_dof[i];
@@ -480,16 +480,16 @@ namespace ngcomp
     return &table;
   }
 
-  void  L2HighOrderFESpace :: GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const
+  void  L2HighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   { dnums.SetSize(0); return; }
   
-  void  L2HighOrderFESpace ::GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const
+  void  L2HighOrderFESpace ::GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   { dnums.SetSize(0); return; }
   
-  void  L2HighOrderFESpace ::GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const
+  void  L2HighOrderFESpace ::GetFaceDofNrs (int fanr, Array<int> & dnums) const
   { dnums.SetSize(0); return; }
   
-  void  L2HighOrderFESpace ::GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const
+  void  L2HighOrderFESpace ::GetInnerDofNrs (int elnr, Array<int> & dnums) const
   { GetDofNrs ( elnr, dnums ); return; }
 
   L2SurfaceHighOrderFESpace ::  
@@ -610,7 +610,7 @@ namespace ngcomp
     return ndof;
   }
 
-  void L2SurfaceHighOrderFESpace :: GetSDofNrs (int elnr, ARRAY<int> & dnums) const
+  void L2SurfaceHighOrderFESpace :: GetSDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     int first = first_element_dof[elnr];
@@ -623,7 +623,7 @@ namespace ngcomp
   }
   
   void L2SurfaceHighOrderFESpace :: 
-  GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  GetDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize (0);
   }
@@ -632,7 +632,7 @@ namespace ngcomp
   CreateSmoothingBlocks ( int type) const
   {
     int i, j, first;
-    ARRAY<int> cnt(nel);
+    Array<int> cnt(nel);
     cnt = 0;
     for (i = 0; i < nel; i++)
       cnt[i] = first_element_dof[i+1]-first_element_dof[i];
@@ -649,16 +649,16 @@ namespace ngcomp
   }
 
 
-  void  L2SurfaceHighOrderFESpace :: GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const
+  void  L2SurfaceHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   { dnums.SetSize(0); return; }
   
-  void  L2SurfaceHighOrderFESpace ::GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const
+  void  L2SurfaceHighOrderFESpace ::GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   { dnums.SetSize(0); return; }
   
-  void  L2SurfaceHighOrderFESpace ::GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const
+  void  L2SurfaceHighOrderFESpace ::GetFaceDofNrs (int fanr, Array<int> & dnums) const
   { GetDofNrs ( fanr, dnums ); return; }
   
-  void  L2SurfaceHighOrderFESpace ::GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const
+  void  L2SurfaceHighOrderFESpace ::GetInnerDofNrs (int elnr, Array<int> & dnums) const
   { GetDofNrs ( elnr, dnums ); return; }
     
 
@@ -672,7 +672,7 @@ void L2HighOrderFESpace :: UpdateParallelDofs_hoproc()
      // ******************************
     *testout << "L2HOFESpace::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks);
+    Array<int> nexdof(ntasks);
     nexdof = 0;
 
     const MeshAccess & ma = (*this). GetMeshAccess();
@@ -686,7 +686,7 @@ void L2HighOrderFESpace :: UpdateParallelDofs_hoproc()
       {
 	if ( !parallelma->IsExchangeElement ( el ) ) continue;
 	
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	GetInnerDofNrs ( el, dnums );
 	nexdof[id] += dnums.Size() ; 
 
@@ -703,20 +703,20 @@ void L2HighOrderFESpace :: UpdateParallelDofs_hoproc()
 //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
-    ARRAY<int> ** owndofs, ** distantdofs;
-    owndofs = new ARRAY<int>* [ntasks];
-    distantdofs = new ARRAY<int>* [ntasks];
+    Array<int> ** owndofs, ** distantdofs;
+    owndofs = new Array<int>* [ntasks];
+    distantdofs = new Array<int>* [ntasks];
 
     for ( int i = 0; i < ntasks; i++ )
       {
-	owndofs[i] = new ARRAY<int>(1);
+	owndofs[i] = new Array<int>(1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int>(0);
+	distantdofs[i] = new Array<int>(0);
       }
 
 
 
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
     int exdof = 0;
 
@@ -729,7 +729,7 @@ void L2HighOrderFESpace :: UpdateParallelDofs_hoproc()
     for ( int el = 0; el < ma.GetNE(); el++ )
       if ( parallelma->IsExchangeElement ( el ) )
 	{
-	  ARRAY<int> dnums;
+	  Array<int> dnums;
 	  GetDofNrs ( el, dnums );
 	  if ( dnums.Size() == 0 ) continue;
 
@@ -782,7 +782,7 @@ void L2HighOrderFESpace :: UpdateParallelDofs_hoproc()
 	  {
 	    int elnum = (*distantdofs[dest])[ii++];
 	    int isdistghost = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    GetDofNrs (elnum, dnums);
 // 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
 // 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
@@ -798,7 +798,7 @@ void L2HighOrderFESpace :: UpdateParallelDofs_hoproc()
 	  {
 	    int elnum = (*distantdofs[dest])[ii++];
 	    int isdistghost = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    GetDofNrs (elnum, dnums);
 	    ii++; 
 	    for ( int i=1; i<dnums.Size(); i++)
@@ -898,7 +898,7 @@ void L2HighOrderFESpace :: UpdateParallelDofs_hoproc()
     int ndof = GetNDof();
 
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks); 
+    Array<int> nexdof(ntasks); 
     nexdof = 0;
 
     paralleldofs->SetNExDof(nexdof);

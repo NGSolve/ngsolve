@@ -14,7 +14,7 @@
 class RaviartThomasFESpace : public FESpace
 {
   ///
-  ARRAY<int> ndlevel;
+  Array<int> ndlevel;
 public:
   ///
   /*
@@ -41,9 +41,9 @@ public:
   virtual int GetNDofLevel (int level) const;
 
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
   ///
   virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;

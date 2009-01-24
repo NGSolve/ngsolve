@@ -57,7 +57,7 @@ class FacetVolumeFiniteElement : public NodalFiniteElement<D>
       
     virtual void SetFacet(int afnr) const = 0; 
     virtual void CalcFacetShape(int fnr, const IntegrationPoint & ip, FlatVector<> shape) const = 0;
-    virtual void GetFacetDofNrs(int afnr, ARRAY<int>& fdnums) const; 
+    virtual void GetFacetDofNrs(int afnr, Array<int>& fdnums) const; 
     virtual int GetFacetNDof(int afnr) const { return first_facet_dof[afnr+1] - first_facet_dof[afnr]; };
     virtual int GetFirstFacetDof(int afnr) const { return first_facet_dof[afnr]; } 
 
@@ -67,8 +67,8 @@ class FacetVolumeFiniteElement : public NodalFiniteElement<D>
       // utility
       virtual int GetNF() const { return nf; };
       virtual int GetNV() const { return nv; };
-      virtual void GetVertexNumbers(ARRAY<int>&) const;
-      virtual void GetFacetOrders(ARRAY<int>&) const;
+      virtual void GetVertexNumbers(Array<int>&) const;
+      virtual void GetFacetOrders(Array<int>&) const;
   
   
 };
@@ -90,7 +90,7 @@ class FacetVolumeFiniteElement : public NodalFiniteElement<D>
 //     virtual void ComputeNDof () = 0;
 //       
 //       // utility
-//     virtual void GetVertexNumbers(ARRAY<int>&) const = 0;
+//     virtual void GetVertexNumbers(Array<int>&) const = 0;
 //     int GetOrder() const { return order; };
 // 
 // };
@@ -116,7 +116,7 @@ class FacetVolumeFiniteElement : public NodalFiniteElement<D>
 //     virtual void ComputeNDof() ;
 //       
 //       // utility
-//     virtual void GetVertexNumbers(ARRAY<int> &vn) const { vn.SetSize(2); vn[0] = vnums[0]; vn[1] = vnums[1];};
+//     virtual void GetVertexNumbers(Array<int> &vn) const { vn.SetSize(2); vn[0] = vnums[0]; vn[1] = vnums[1];};
 // };
 
 // -------------------------------------------------------------
@@ -129,7 +129,7 @@ class FacetVolumeFiniteElement : public NodalFiniteElement<D>
 //     virtual void ComputeNDof() ;
 //       
 //       // utility
-//     virtual void GetVertexNumbers(ARRAY<int> &vn) const { vn.SetSize(3); vn[0] = vnums[0]; vn[1] = vnums[1]; vn[2] = vnums[2]; };
+//     virtual void GetVertexNumbers(Array<int> &vn) const { vn.SetSize(3); vn[0] = vnums[0]; vn[1] = vnums[1]; vn[2] = vnums[2]; };
 // };
 
 // -------------------------------------------------------------
@@ -142,7 +142,7 @@ class FacetVolumeFiniteElement : public NodalFiniteElement<D>
 //     virtual void ComputeNDof() ;
 //       
 //       // utility
-//     virtual void GetVertexNumbers(ARRAY<int> &vn) const { vn.SetSize(4); vn[0] = vnums[0]; vn[1] = vnums[1]; vn[2] = vnums[2]; vn[3] = vnums[3]; };
+//     virtual void GetVertexNumbers(Array<int> &vn) const { vn.SetSize(4); vn[0] = vnums[0]; vn[1] = vnums[1]; vn[2] = vnums[2]; vn[3] = vnums[3]; };
 // };
 
 // VOLUME ELEMENTS

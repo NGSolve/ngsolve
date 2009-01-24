@@ -43,14 +43,14 @@ namespace ngcomp
 
     ElementTransformation eltrans;
 
-    ARRAY<int> dnums;
-    ARRAY<int> dnumsflux;
+    Array<int> dnums;
+    Array<int> dnumsflux;
 
     LocalHeap lh (1000000);
     
     if (!add) flux.GetVector() = 0.0;
 
-    ARRAY<int> cnti(flux.GetVector().Size());
+    Array<int> cnti(flux.GetVector().Size());
     cnti = 0;
 
     for (i = 0; i < ne; i++)
@@ -171,10 +171,10 @@ namespace ngcomp
     const BilinearFormIntegrator & fluxbli =
       bound ? (*fesflux.GetBoundaryEvaluator()) : (*fesflux.GetEvaluator());
 
-    ARRAY<int> dnums;
-    ARRAY<int> dnumsflux;
+    Array<int> dnums;
+    Array<int> dnumsflux;
 
-    ARRAY<int> cnti(fesflux.GetNDof());
+    Array<int> cnti(fesflux.GetNDof());
     cnti = 0;
 
     flux.GetVector() = 0.0;
@@ -373,7 +373,7 @@ namespace ngcomp
   int CalcPointFlux (const MeshAccess & ma, 
 		     const GridFunction & bu,
 		     const FlatVector<double> & point,
-		     const ARRAY<int> & domains,
+		     const Array<int> & domains,
 		     FlatVector<SCAL> & flux,
 		     const BilinearFormIntegrator & bli,
 		     bool applyd,
@@ -382,7 +382,7 @@ namespace ngcomp
   {
     int elnr;
     //double lami[3];
-    ARRAY<int> dnums;
+    Array<int> dnums;
     ElementTransformation eltrans;
 
     IntegrationPoint ip(0,0,0,1);
@@ -400,7 +400,7 @@ namespace ngcomp
 	
 	if (elnr < 0) return 0;
 
-	ARRAY<int> vnums; 
+	Array<int> vnums; 
 	ma.GetSElVertices(elnr, vnums); 
 	
 	const S_GridFunction<SCAL> & u = 
@@ -440,7 +440,7 @@ namespace ngcomp
        
 	if (elnr < 0) return 0;
 
-	ARRAY<int> vnums; 
+	Array<int> vnums; 
 	ma.GetElVertices(elnr, vnums); 
 	
 	const S_GridFunction<SCAL> & u = 
@@ -479,7 +479,7 @@ namespace ngcomp
   template int CalcPointFlux<double> (const MeshAccess & ma, 
 				      const GridFunction & u,
 				      const FlatVector<double> & point,
-				      const ARRAY<int> & domains,
+				      const Array<int> & domains,
 				      FlatVector<double> & flux,
 				      const BilinearFormIntegrator & bli,
 				      bool applyd,
@@ -489,7 +489,7 @@ namespace ngcomp
   template int CalcPointFlux<Complex> (const MeshAccess & ma, 
 				       const GridFunction & u,
 				       const FlatVector<double> & point,
-				       const ARRAY<int> & domains,
+				       const Array<int> & domains,
 				       FlatVector<Complex> & flux,
 				       const BilinearFormIntegrator & bli,
 				       bool applyd,
@@ -508,7 +508,7 @@ namespace ngcomp
 		     LocalHeap & lh,
 		     int component)
   {
-    ARRAY<int> dummy;
+    Array<int> dummy;
     return CalcPointFlux(ma,bu,point,dummy,flux,bli,applyd,lh,component);
   }
 
@@ -559,8 +559,8 @@ namespace ngcomp
 
     ElementTransformation eltrans;
 
-    ARRAY<int> dnums;
-    ARRAY<int> dnumsflux;
+    Array<int> dnums;
+    Array<int> dnumsflux;
 
     double sum = 0;
     for (int i = 0; i < ne; i++)
@@ -751,8 +751,8 @@ namespace ngcomp
     bool applyd1 = 0;
     bool applyd2 = 0;
 
-    ARRAY<int> dnums1;
-    ARRAY<int> dnums2;
+    Array<int> dnums1;
+    Array<int> dnums2;
 
     double sum = 0;
     for (int i = 0; i < ne; i++)
@@ -923,7 +923,7 @@ namespace ngcomp
 
     bool applyd1 = 0;
 
-    ARRAY<int> dnums1;
+    Array<int> dnums1;
 
     double sum = 0;
     for (int i = 0; i < ne; i++)
@@ -1043,7 +1043,7 @@ namespace ngcomp
 
     bool applyd1 = 0;
 
-    ARRAY<int> dnums1;
+    Array<int> dnums1;
 
     double sum = 0;
     for (int i = 0; i < ne; i++)
@@ -1179,7 +1179,7 @@ namespace ngcomp
 
 
     int ne = ma.GetNE();
-    ARRAY<int> dnumsh1, dnumshcurl;
+    Array<int> dnumsh1, dnumshcurl;
     LocalHeap lh(100000);
     
     for (int i = 0; i < ne; i++)
@@ -1255,7 +1255,7 @@ namespace ngcomp
       dynamic_cast<S_BaseVector<SCAL>&> (*vechcurl1.CreateVector());
 
     int ne = ma.GetNE();
-    ARRAY<int> dnumsh1, dnumshcurl;
+    Array<int> dnumsh1, dnumshcurl;
     LocalHeap lh(100000);
     
     vechcurl = vechcurl1;

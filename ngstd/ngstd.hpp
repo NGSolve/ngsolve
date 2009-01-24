@@ -41,7 +41,7 @@ using netgen::mycout;
 /**
    namespace for standard data types and algorithms.
 
-   Generic container classes: FlatArray, ARRAY, ArrayMem, Table, DynamicTable, HashTable, SymbolTable.
+   Generic container classes: FlatArray, Array, ArrayMem, Table, DynamicTable, HashTable, SymbolTable.
 
 Specific data types Exception, BitArray, Flags, LocalHeap, BlockAllocator, NgProfiler, AutoPtr, EvalFunction, AutoDiff, AutoDiffDiff
 */

@@ -81,7 +81,7 @@ namespace ngcomp
 
     if (flags.NumListFlagDefined("gradientdomains"))
       {
-	const ARRAY<double> & graddomains = flags.GetNumListFlag ("gradientdomains");
+	const Array<double> & graddomains = flags.GetNumListFlag ("gradientdomains");
 	for (int i = 0; i < gradientdomains.Size(); i++)
 	  if (!graddomains[i])
 	    gradientdomains.Clear(i);
@@ -90,7 +90,7 @@ namespace ngcomp
       }
     if (flags.NumListFlagDefined("gradientboundaries"))
       {
-	const ARRAY<double> & gradbounds = flags.GetNumListFlag ("gradientboundaries");
+	const Array<double> & gradbounds = flags.GetNumListFlag ("gradientboundaries");
 	for (int i = 0; i < gradientboundaries.Size(); i++)
 	  if (!gradbounds[i])
 	    gradientboundaries.Clear(i);
@@ -170,13 +170,13 @@ namespace ngcomp
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
-	ARRAY<CoefficientFunction*> coeffs(1);
+	Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = &one;
 	evaluator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
       }
     else if(ma.GetDimension() == 3) 
       {
-	ARRAY<CoefficientFunction*> coeffs(1); 
+	Array<CoefficientFunction*> coeffs(1); 
 	coeffs[0] = &one;
 	evaluator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
 	if ( !discontinuous )
@@ -264,7 +264,7 @@ namespace ngcomp
     usegrad_edge = 0;                                
     usegrad_cell = 0; 
 
-    ARRAY<int> eledges, elfaces, vnums;
+    Array<int> eledges, elfaces, vnums;
 
 
     for(int i=0; i< nel; i++) 
@@ -399,7 +399,7 @@ namespace ngcomp
     /*
       if (fast_pfem)
       {
-      ARRAY<int> pnums;
+      Array<int> pnums;
       for(int i=0;i<order_face.Size();i++) 
       {
       ma.GetFacePNums(i,pnums);  
@@ -468,7 +468,7 @@ namespace ngcomp
     
     nfa = (ma.GetDimension()==3) ? ma.GetNFaces() : 0;
     nel = ma.GetNE();
-    ARRAY<int> pnums; 
+    Array<int> pnums; 
     int i; 
     
     nedfine = 0; 
@@ -578,7 +578,7 @@ namespace ngcomp
 
     if ( discontinuous )
       {
-	ARRAY<int> edges, faces;
+	Array<int> edges, faces;
 
 	ndof = 0;
 	for ( int el = 0; el < nel; el++ )
@@ -943,14 +943,14 @@ namespace ngcomp
     return ndof;
   }
 
-  void HCurlHighOrderFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void HCurlHighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     // Save phase-functions the way 
     // (1*e1),.. (1*e_ne)  
     // (p_t)*tang_e1, ... p_t*tang_ne
     // p_n * el1, p_i * el1, ... , p_n * nel_n , p_i *el_nel 
 
-    ARRAY<int> vnums, ednums, fnums;
+    Array<int> vnums, ednums, fnums;
     int i, j;
     int first,next; 
 
@@ -1013,7 +1013,7 @@ namespace ngcomp
   }
  
 
-  void HCurlHighOrderFESpace :: GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const
+  void HCurlHighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
   {
     if (!eliminate_internal) 
       {
@@ -1021,7 +1021,7 @@ namespace ngcomp
 	return;
       }
 
-    ARRAY<int> vnums, ednums, fnums;
+    Array<int> vnums, ednums, fnums;
     int i, j;
     int first,next; 
 
@@ -1066,9 +1066,9 @@ namespace ngcomp
  
 
 
-  void HCurlHighOrderFESpace :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void HCurlHighOrderFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
-    ARRAY<int> vnums, ednums;
+    Array<int> vnums, ednums;
     int fnum; 
     int i, j;
     int first,next; 
@@ -1139,12 +1139,12 @@ namespace ngcomp
   
  
 
-  void HCurlHighOrderFESpace :: GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const
+  void HCurlHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
   }
 
-  void HCurlHighOrderFESpace :: GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const
+  void HCurlHighOrderFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     if ( discontinuous ) return;
@@ -1156,7 +1156,7 @@ namespace ngcomp
       dnums.Append (j);
   }
 
-  void HCurlHighOrderFESpace :: GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const
+  void HCurlHighOrderFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     if ( discontinuous ) return;
@@ -1167,7 +1167,7 @@ namespace ngcomp
       dnums.Append (j);
   }
 
-  void HCurlHighOrderFESpace :: GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const
+  void HCurlHighOrderFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     int first = first_inner_dof[elnr];
@@ -1189,9 +1189,9 @@ namespace ngcomp
     bool excl_grads = precflags.GetDefineFlag("exclude_grads"); 
     cout << " EXCLUDE GRADS " << excl_grads << endl; 
     
-    ARRAY<int> vnums,elnums; 
-    ARRAY<int> orient; 
-    ARRAY<int> ednums, fanums, enums, f2ed;
+    Array<int> vnums,elnums; 
+    Array<int> orient; 
+    Array<int> ednums, fanums, enums, f2ed;
     
     int augv = augmented; 
 
@@ -1242,7 +1242,7 @@ namespace ngcomp
       } 
 
         
-    ARRAY<int> cnt(ncnt); 
+    Array<int> cnt(ncnt); 
     cnt = 0;
     ii=0; 
 
@@ -1856,7 +1856,7 @@ namespace ngcomp
 
     
 
-  ARRAY<int> *   HCurlHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
+  Array<int> *   HCurlHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
     int clustertype = int(precflags.GetNumFlag("ds_cluster",4));  
 
@@ -1869,7 +1869,7 @@ namespace ngcomp
     int ne = ma.GetNE();
     int ned = ma.GetNEdges();
 
-    ARRAY<int> ednums, fnums, pnums;
+    Array<int> ednums, fnums, pnums;
 
     int i, j, k;
     bool hasprism = false;
@@ -1882,7 +1882,7 @@ namespace ngcomp
 	directedgeclusters.Size() == 0 && directfaceclusters.Size() == 0 && directelementclusters.Size() == 0) 
       return NULL;
         
-    ARRAY<int> & clusters = *new ARRAY<int> (GetNDof());
+    Array<int> & clusters = *new Array<int> (GetNDof());
     clusters = 0;
 
 
@@ -2354,7 +2354,7 @@ namespace ngcomp
       CreateIntermediatePlanes (int type) const
       {
       int i;
-      ARRAY<int> vnums;
+      Array<int> vnums;
  
       //bool has_cluster = 0;
       for (i = 0; i < ned; i++)
@@ -2478,11 +2478,11 @@ namespace ngcomp
     const int dim     = fesh1.GetDimension();
     const int dimcurl = GetDimension();
 
-    ARRAY<int> dnums_h1l; 
-    ARRAY<int> dnums_hcl;
+    Array<int> dnums_h1l; 
+    Array<int> dnums_hcl;
     
     // Matrix Graph for gradient matrix , start (end) position for assembling 
-    ARRAY<int> cnts(ndof);
+    Array<int> cnts(ndof);
     cnts = 0; 
 
     // *testout << "grad fine edges " << fine_edge << endl ; 
@@ -2598,7 +2598,7 @@ namespace ngcomp
       {
 	*testout << "HCurlHOFESpace::UpdateParallelDofs_hoproc -- discontinuous" << endl;
 	// Find number of exchange dofs
-	ARRAY<int> nexdof(ntasks);
+	Array<int> nexdof(ntasks);
 	nexdof = 0;
 	
 	const MeshAccess & ma = (*this). GetMeshAccess();
@@ -2635,7 +2635,7 @@ namespace ngcomp
 
     *testout << "HCurlHOFESpace::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks);
+    Array<int> nexdof(ntasks);
     nexdof = 0;
 
     MPI_Status status;
@@ -2647,7 +2647,7 @@ namespace ngcomp
       {
 	if ( !parallelma->IsExchangeEdge ( edge ) ) continue;
 	
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	GetEdgeDofNrs ( edge, dnums );
 	nexdof[id] += dnums.Size() ;  
 	
@@ -2661,7 +2661,7 @@ namespace ngcomp
       {
 	if ( !parallelma->IsExchangeFace ( face ) ) continue;
 	
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	GetFaceDofNrs ( face, dnums );
 	nexdof[id] += dnums.Size() ; 
 
@@ -2675,7 +2675,7 @@ namespace ngcomp
       {
 	if ( !parallelma->IsExchangeElement ( el ) ) continue;
 	
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	GetInnerDofNrs ( el, dnums );
 	nexdof[id] += dnums.Size() ; 
 
@@ -2692,18 +2692,18 @@ namespace ngcomp
 //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
-    ARRAY<int> ** owndofs, ** distantdofs;
-    owndofs = new ARRAY<int>* [ntasks];
-    distantdofs = new ARRAY<int>* [ntasks];
+    Array<int> ** owndofs, ** distantdofs;
+    owndofs = new Array<int>* [ntasks];
+    distantdofs = new Array<int>* [ntasks];
 
     for ( int i = 0; i < ntasks; i++ )
       {
-	owndofs[i] = new ARRAY<int>(1);
+	owndofs[i] = new Array<int>(1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int>(0);
+	distantdofs[i] = new Array<int>(0);
       }
 
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
     int exdof = 0;
     int ii;
@@ -2717,7 +2717,7 @@ namespace ngcomp
     for ( int edge = 0; edge < ma.GetNEdges(); edge++ )
       if ( parallelma->IsExchangeEdge ( edge ) )
 	{
-	  ARRAY<int> dnums;
+	  Array<int> dnums;
 	  GetEdgeDofNrs ( edge, dnums );
 	  if ( dnums.Size() == 0 ) continue;
 
@@ -2769,7 +2769,7 @@ namespace ngcomp
 	  {
 	    int ednum = (*distantdofs[dest])[ii++];
 	    int isdistghost = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    GetEdgeDofNrs (ednum, dnums);
 // 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
 // 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
@@ -2785,7 +2785,7 @@ namespace ngcomp
 	  {
 	    int ednum = (*distantdofs[dest])[ii++];
 	    int isdistghost = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    GetEdgeDofNrs (ednum, dnums);
 	    ii++; 
 	    for ( int i=1; i<dnums.Size(); i++)
@@ -2813,7 +2813,7 @@ namespace ngcomp
     for ( int face = 0; face < ma.GetNFaces(); face++ )
       if ( parallelma->IsExchangeFace ( face ) )
 	{
-	  ARRAY<int> dnums;
+	  Array<int> dnums;
 	  GetFaceDofNrs ( face, dnums );
 	  if ( dnums.Size() == 0 ) continue;
 
@@ -2864,7 +2864,7 @@ namespace ngcomp
 	  {
 	    int fanum = (*distantdofs[dest])[ii++];
 	    int isdistghost = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    GetFaceDofNrs (fanum, dnums);
 	    for ( int i=0; i<dnums.Size(); i++)
 	      {
@@ -2892,7 +2892,7 @@ namespace ngcomp
     for ( int el = 0; el < ma.GetNE(); el++ )
       if ( parallelma->IsExchangeElement ( el ) )
 	{
-	  ARRAY<int> dnums;
+	  Array<int> dnums;
 	  GetInnerDofNrs ( el, dnums );
 	  if ( dnums.Size() == 0 ) continue;
 
@@ -2943,7 +2943,7 @@ namespace ngcomp
 	  {
 	    int elnum = (*distantdofs[dest])[ii++];
 	    int isdistghost = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    GetInnerDofNrs (elnum, dnums);
 	    for ( int i=0; i<dnums.Size(); i++)
 	      {

@@ -82,13 +82,13 @@ namespace ngcomp
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
-	ARRAY<CoefficientFunction*> coeffs(1);
+	Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = &one;
 	evaluator = GetIntegrators().CreateBFI("massvectorfacet", 2, coeffs);
       }
     else if(ma.GetDimension() == 3) 
       {
-	ARRAY<CoefficientFunction*> coeffs(1); 
+	Array<CoefficientFunction*> coeffs(1); 
 	coeffs[0] = &one;
 	evaluator = GetIntegrators().CreateBFI("massvectorfacet",3,coeffs); 
 	boundary_evaluator = GetIntegrators().CreateBFI("robinvectorfacet",3,coeffs); 
@@ -123,7 +123,7 @@ namespace ngcomp
     fine_facet.SetSize(nfacets);
     fine_facet = 0; 
     
-    ARRAY<int> fanums;
+    Array<int> fanums;
         
     for (int i = 0; i < nel; i++)
       {
@@ -152,7 +152,7 @@ namespace ngcomp
 	  }
 	else
 	  {
-	    ARRAY<int> elfaces,vnums;
+	    Array<int> elfaces,vnums;
 	    ma.GetElFaces(i,elfaces);
 	    for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
 	    
@@ -218,7 +218,7 @@ namespace ngcomp
       {
 	int inci = 0;
 	INT<2> p;
-	ARRAY<int> pnums;
+	Array<int> pnums;
 
 	for ( int i = 0; i < nfacets; i++ )
 	  {
@@ -293,7 +293,7 @@ namespace ngcomp
       throw Exception (str.str());
     }
 
-    ARRAY<int> vnums;
+    Array<int> vnums;
     ArrayMem<int, 6> fanums, order_fa;
     
     ma.GetElVertices(elnr, vnums);
@@ -369,9 +369,9 @@ namespace ngcomp
     
   }
 
-  void VectorFacetFESpace :: GetDofNrs(int elnr, ARRAY<int> & dnums) const
+  void VectorFacetFESpace :: GetDofNrs(int elnr, Array<int> & dnums) const
   {
-    ARRAY<int> fanums; // facet numbers
+    Array<int> fanums; // facet numbers
     int first,next;
 
     fanums.SetSize(0);
@@ -401,10 +401,10 @@ namespace ngcomp
     return;
   }
 
-  void VectorFacetFESpace :: GetWireBasketDofNrs(int elnr, ARRAY<int> & dnums) const
+  void VectorFacetFESpace :: GetWireBasketDofNrs(int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
-    ARRAY<int> facets;
+    Array<int> facets;
 
     if ( ma.GetDimension() == 2 )
       {
@@ -423,7 +423,7 @@ namespace ngcomp
   }
 
   ///
-  void VectorFacetFESpace :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void VectorFacetFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     ArrayMem<int, 1> fanums(1);
@@ -457,10 +457,10 @@ namespace ngcomp
   Table<int> * VectorFacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   { ; }
   ///
-  ARRAY<int> * VectorFacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
+  Array<int> * VectorFacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   { ; }
   
-   void VectorFacetFESpace :: GetFacetDofNrs ( int felnr, ARRAY<int> & dnums ) const
+   void VectorFacetFESpace :: GetFacetDofNrs ( int felnr, Array<int> & dnums ) const
   {
     dnums.SetSize(0);
     if ( dimension == 3 )
@@ -485,12 +485,12 @@ namespace ngcomp
     return ( first_facet_dof[felnr+1] - first_facet_dof[felnr] + dimension - 1);
   }
 
-   void VectorFacetFESpace :: GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const
+   void VectorFacetFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
   {
     GetDofNrs ( elnr, dnums);
   }
   ///
-   void VectorFacetFESpace :: GetVertexNumbers(int elnr, ARRAY<int>& vnums) 
+   void VectorFacetFESpace :: GetVertexNumbers(int elnr, Array<int>& vnums) 
   { ma.GetElVertices(elnr, vnums); };
   ///
    INT<2> VectorFacetFESpace :: GetFacetOrder(int fnr) 
@@ -499,12 +499,12 @@ namespace ngcomp
    int VectorFacetFESpace :: GetFirstFacetDof(int fanr) const {return (first_facet_dof[fanr]);}; 
 
 
-   void VectorFacetFESpace :: GetVertexDofNrs ( int elnum, ARRAY<int> & dnums ) const
+   void VectorFacetFESpace :: GetVertexDofNrs ( int elnum, Array<int> & dnums ) const
   {
     dnums.SetSize(0);
   }
 
-   void VectorFacetFESpace :: GetEdgeDofNrs ( int elnum, ARRAY<int> & dnums ) const
+   void VectorFacetFESpace :: GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const
   {
     dnums.SetSize(0);
     if ( ma.GetDimension() == 3 )
@@ -517,7 +517,7 @@ namespace ngcomp
 
   }
 
-   void VectorFacetFESpace :: GetFaceDofNrs (int felnr, ARRAY<int> & dnums) const
+   void VectorFacetFESpace :: GetFaceDofNrs (int felnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     if ( ma.GetDimension() == 2 ) return;
@@ -536,7 +536,7 @@ namespace ngcomp
      // ******************************
     *testout << "VectorFacetFESpace::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks);
+    Array<int> nexdof(ntasks);
     nexdof = 0;
 
     MPI_Status status;
@@ -548,7 +548,7 @@ namespace ngcomp
       {
 	if ( !parallelma->IsExchangeFace ( face ) ) continue;
 	
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	GetFaceDofNrs ( face, dnums );
 	nexdof[id] += dnums.Size() ; 
 
@@ -567,18 +567,18 @@ namespace ngcomp
 //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
-    ARRAY<int> ** owndofs, ** distantdofs;
-    owndofs = new ARRAY<int>* [ntasks];
-    distantdofs = new ARRAY<int>* [ntasks];
+    Array<int> ** owndofs, ** distantdofs;
+    owndofs = new Array<int>* [ntasks];
+    distantdofs = new Array<int>* [ntasks];
 
     for ( int i = 0; i < ntasks; i++ )
       {
-	owndofs[i] = new ARRAY<int>(1);
+	owndofs[i] = new Array<int>(1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int>(0);
+	distantdofs[i] = new Array<int>(0);
       }
 
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
     int exdof = 0;
     int ii;
@@ -591,7 +591,7 @@ namespace ngcomp
    for ( int face = 0; face < ma.GetNFaces(); face++ )
       if ( parallelma->IsExchangeFace ( face ) )
       {
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	GetFaceDofNrs ( face, dnums );
 	if ( dnums.Size() == 0 ) continue;
 
@@ -643,7 +643,7 @@ namespace ngcomp
 	  {
 	    int fanum = (*distantdofs[dest])[ii++];
 	    int isdistghost = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    GetFaceDofNrs (fanum, dnums);
 // 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
 // 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
@@ -666,7 +666,7 @@ namespace ngcomp
 	  {
 	    int fanum = (*distantdofs[dest])[ii++];
 	    int isdistghost = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    GetFaceDofNrs (fanum, dnums);
 	    ii += 2; 
 	    for ( int i=2; i<dnums.Size(); i++)
@@ -761,7 +761,7 @@ namespace ngcomp
     int ndof = GetNDof();
 
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks); 
+    Array<int> nexdof(ntasks); 
     nexdof = 0;
 
     MPI_Status status;
@@ -787,19 +787,19 @@ namespace ngcomp
 
 
 
-    ARRAY<int> ** owndofs,** distantdofs;
-    owndofs = new ARRAY<int> * [ntasks];
-    distantdofs = new ARRAY<int> * [ntasks];
+    Array<int> ** owndofs,** distantdofs;
+    owndofs = new Array<int> * [ntasks];
+    distantdofs = new Array<int> * [ntasks];
 
     for ( int i = 0; i < ntasks; i++)
       {
-	owndofs[i] = new ARRAY<int> (1);
+	owndofs[i] = new Array<int> (1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int> (0);
+	distantdofs[i] = new Array<int> (0);
       }
 
     int exdof = 0;
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
 
     // *****************

@@ -73,7 +73,7 @@ namespace ngla
   SuperLU_DIST_Inverse<TM,TV_ROW,TV_COL> :: 
   SuperLU_DIST_Inverse (const ParallelSparseMatrix<TM,TV_ROW,TV_COL> & a, 
 			const BitArray * ainner,
-			const ARRAY<int> * acluster,
+			const Array<int> * acluster,
 			int asymmetric)
     : ParallelBaseMatrix( a.GetParallelDofs() )
   { 
@@ -105,7 +105,7 @@ namespace ngla
     // -----------------------------------------------------------------------------
 
 
-    index_tm = new ARRAY<int> (a.Height() );
+    index_tm = new Array<int> (a.Height() );
     *index_tm = 0;
 
     if ( inner && inner->Size() < a.Height() ||
@@ -170,7 +170,7 @@ namespace ngla
     first_row_tm = globalrow;
     first_row_scal = first_row_tm * entrysize;
 
-    ARRAY<int> loc2glob (ndof_loc);
+    Array<int> loc2glob (ndof_loc);
     loc2glob = -1;
     for ( int dof = 0; dof < ndof_loc; dof++ )
       if ( IsSuperLUMasterDof(dof) ) //this->paralleldofs->IsMasterDof(dof) )
@@ -180,7 +180,7 @@ namespace ngla
 	}
  
     // array to count how many entries there are per row
-    ARRAY<int> cnt ( height_local_tm );
+    Array<int> cnt ( height_local_tm );
     cnt = 0;
 
     BitArray getpostest(a.Height()*a.Height());
@@ -201,25 +201,25 @@ namespace ngla
     // needs entries in masterdof-rows from other procs 
     // (best from the proc where this column is master, send the cumulated value)
 
-    ARRAY<int> ** sendglobalcolind, ** recvglobalcolind;
-    ARRAY<TM> ** sendcumulatedvals, ** recvcumulatedvals;;
-    ARRAY<int> ** sendrowpointer,** recvrowpointer;
+    Array<int> ** sendglobalcolind, ** recvglobalcolind;
+    Array<TM> ** sendcumulatedvals, ** recvcumulatedvals;;
+    Array<int> ** sendrowpointer,** recvrowpointer;
 
-    sendglobalcolind = new ARRAY<int>* [ntasks];
-    sendcumulatedvals = new ARRAY<TM>* [ntasks];
-    sendrowpointer = new ARRAY<int> * [ntasks];
-    recvglobalcolind = new ARRAY<int>* [ntasks];
-    recvcumulatedvals = new ARRAY<TM>* [ntasks];
-    recvrowpointer = new ARRAY<int> * [ntasks];
+    sendglobalcolind = new Array<int>* [ntasks];
+    sendcumulatedvals = new Array<TM>* [ntasks];
+    sendrowpointer = new Array<int> * [ntasks];
+    recvglobalcolind = new Array<int>* [ntasks];
+    recvcumulatedvals = new Array<TM>* [ntasks];
+    recvrowpointer = new Array<int> * [ntasks];
 
     for ( int dest = 0; dest < ntasks; dest++)
       {
-	sendglobalcolind[dest] = new ARRAY<int> (0);
-	sendcumulatedvals[dest] = new ARRAY<TM>(0);
-	sendrowpointer[dest] = new ARRAY<int>(0);
-	recvglobalcolind[dest] = new ARRAY<int> (0);
-	recvcumulatedvals[dest] = new ARRAY<TM>(0);
-	recvrowpointer[dest] = new ARRAY<int>(0);
+	sendglobalcolind[dest] = new Array<int> (0);
+	sendcumulatedvals[dest] = new Array<TM>(0);
+	sendrowpointer[dest] = new Array<int>(0);
+	recvglobalcolind[dest] = new Array<int> (0);
+	recvcumulatedvals[dest] = new Array<TM>(0);
+	recvrowpointer[dest] = new Array<int>(0);
       }
 
     // --------------------------------------
@@ -265,7 +265,7 @@ namespace ngla
 	    
 
 
-	ARRAY<int> cnt2(a.Height());
+	Array<int> cnt2(a.Height());
 	cnt2 = 0;
 
 
@@ -534,7 +534,7 @@ namespace ngla
     matrix = new TSCAL[ nnz_local_scal ];
 
     // 3rd: write entries into matrix, colind
-    ARRAY<int> counter(height_local_scal);
+    Array<int> counter(height_local_scal);
     for ( int i = 0; i < height_local_scal; i++ )
       counter[i] = rowptr[i];
 
@@ -633,7 +633,7 @@ namespace ngla
 	      }
 
 	    // +++ search in upper right part
-// 	    ARRAY<int> cnt2(a.Height() );
+// 	    Array<int> cnt2(a.Height() );
 // 	    for ( int i = 0; i < a.Height(); i++ )
 // 	      cnt2[i] = a.First(i);
 	    
@@ -943,9 +943,9 @@ namespace ngla
 //   template <class TM, class TV_ROW, class TV_COL>
 //   SuperLU_DIST_Inverse<TM,TV_ROW,TV_COL> :: 
 
-//   SuperLU_DIST_Inverse (const ARRAY<int> & aorder, 
-// 			const ARRAY<CliqueEl*> & cliques,
-// 			const ARRAY<MDOVertex> & vertices,
+//   SuperLU_DIST_Inverse (const Array<int> & aorder, 
+// 			const Array<CliqueEl*> & cliques,
+// 			const Array<MDOVertex> & vertices,
 // 			int symmetric)
 //   {
 //     Allocate (aorder, cliques, vertices);
@@ -956,9 +956,9 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   void SuperLU_DIST_Inverse<TM, TV_ROW,TV_COL> :: 
-  Allocate (const ARRAY<int> & aorder, 
-	    const ARRAY<CliqueEl*> & cliques,
-	    const ARRAY<MDOVertex> & vertices)
+  Allocate (const Array<int> & aorder, 
+	    const Array<CliqueEl*> & cliques,
+	    const Array<MDOVertex> & vertices)
   {
     cout << "SuperLU_DIST_Inverse::Allocate not implemented!" << endl;
   }

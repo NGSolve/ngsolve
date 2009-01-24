@@ -98,7 +98,7 @@ protected:
   };
 
   /// the evaluation sequence
-  ARRAY<step> program;
+  Array<step> program;
 
   const double eps;
 

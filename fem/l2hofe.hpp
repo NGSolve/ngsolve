@@ -34,11 +34,11 @@ public:
 
   // const int * GetVNums() const { return vnums; }
 
-  virtual void GetInternalDofs (ARRAY<int> & idofs) const; 
+  virtual void GetInternalDofs (Array<int> & idofs) const; 
   
 private:
   
-  virtual const ARRAY<typename NodalFiniteElement<DIM>::IPData> & GetIPData () const
+  virtual const Array<typename NodalFiniteElement<DIM>::IPData> & GetIPData () const
   {
     throw Exception ("GetIPData not available for L2HighOrderFE");
   }
@@ -184,7 +184,7 @@ public:
 
 private:
   void CalcShapeDShape (const IntegrationPoint & ip, 
-			ARRAY<AutoDiff<2> > & shape) const;
+			Array<AutoDiff<2> > & shape) const;
 };
 
 
@@ -220,7 +220,7 @@ public:
 
 private:
   void CalcShapeDShape (const IntegrationPoint & ip, 
-			ARRAY<AutoDiff<3> > & shape) const;
+			Array<AutoDiff<3> > & shape) const;
 };
 
 
@@ -247,7 +247,7 @@ public:
 			   FlatMatrix<> dshape) const;
 
   void CalcShapeDShape (const IntegrationPoint & ip, 
-			ARRAY<AutoDiff<3> > & shape) const;
+			Array<AutoDiff<3> > & shape) const;
 };
 
 
@@ -274,7 +274,7 @@ public:
 			   FlatMatrix<> dshape) const;
 
   void CalcShapeDShape (const IntegrationPoint & ip, 
-			ARRAY<AutoDiff<3> > & shape) const;
+			Array<AutoDiff<3> > & shape) const;
 };
 
 

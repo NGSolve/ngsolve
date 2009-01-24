@@ -39,7 +39,7 @@ void NGS_Object :: DefineStringListFlag(const char* s)
     cerr << "WARNING in NGS_Object :: DefineStringListFlag: stringlistflag '" << s << "' already defined" << endl;
     return;
   }    
-  ARRAY<char*> as(0);
+  Array<char*> as(0);
   flaglist.SetFlag(s,as); 
 }
 
@@ -50,7 +50,7 @@ void NGS_Object :: DefineNumListFlag(const char* s)
     cerr << "WARNING in NGS_Object :: DefineNumListFlag: numlistflag '" << s << "' already defined" << endl;
     return;
   }    
-  ARRAY<double> as(0);
+  Array<double> as(0);
   flaglist.SetFlag(s,as); 
 }
 

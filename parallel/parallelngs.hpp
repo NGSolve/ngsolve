@@ -25,7 +25,7 @@ namespace ngparallel
   using namespace ngcomp;
   enum { id = 0 };
   enum { ntasks = 1 };
-  extern ARRAY<int> hoprocs;
+  extern Array<int> hoprocs;
 }
 
 
@@ -56,7 +56,7 @@ namespace ngparallel
 
   extern int id, ntasks;
   extern ParallelMeshAccess * parallelma;
-  extern ARRAY<int> hoprocs;
+  extern Array<int> hoprocs;
 
 
   /*
@@ -218,7 +218,7 @@ namespace ngparallel
   }
 
   template <class T>
-  inline void MyMPI_Recv ( ARRAY <T> & s, int src)
+  inline void MyMPI_Recv ( Array <T> & s, int src)
   {
     /*
     MPI_Status status;
@@ -244,7 +244,7 @@ namespace ngparallel
 
 
   template <class T>
-  inline int MyMPI_Recv ( ARRAY <T> & s)
+  inline int MyMPI_Recv ( Array <T> & s)
   {
     /*
     MPI_Status status;
@@ -298,7 +298,7 @@ void MyMPI_ISend ( const FlatArray<T> & s, int dest, MPI_Request & request )
 
 
 template <class T>
-void MyMPI_IRecv ( ARRAY<T> & s, int src, MPI_Request & request ) 
+void MyMPI_IRecv ( Array<T> & s, int src, MPI_Request & request ) 
 { 
   /*
     MPI_Status status;
@@ -333,10 +333,10 @@ void MyMPI_Send ( const VVector<T> & s, FlatArray<int> * senddofs, const int des
 
 
 template <class T>
-void MyMPI_RecvVec ( ARRAY<T> & s, const int src);
+void MyMPI_RecvVec ( Array<T> & s, const int src);
 
 template <class T>
-void MyMPI_IRecvVec ( ARRAY<T> & s, const int src, MPI_Request & request);
+void MyMPI_IRecvVec ( Array<T> & s, const int src, MPI_Request & request);
 
   
 template <class TSCAL>

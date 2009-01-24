@@ -449,11 +449,11 @@ namespace ngfem
   VertexExtensionOptimal<2> dummy_vextopt2;
   VertexExtensionOptimal<3> dummy_vextopt3;
 
-  ARRAY<ConvertJacobi::d2*> ConvertJacobi::coefs_reducealpha;
-  ARRAY<ConvertJacobi::d2*> ConvertJacobi::coefs_reducealphafac;
-  ARRAY<ConvertJacobi::d2*> ConvertJacobi::coefs_c;
-  ARRAY<ConvertJacobi::d2*> ConvertJacobi::coefs_d;
-  ARRAY<ConvertJacobi::d2*> ConvertJacobi::coefs_e;
+  Array<ConvertJacobi::d2*> ConvertJacobi::coefs_reducealpha;
+  Array<ConvertJacobi::d2*> ConvertJacobi::coefs_reducealphafac;
+  Array<ConvertJacobi::d2*> ConvertJacobi::coefs_c;
+  Array<ConvertJacobi::d2*> ConvertJacobi::coefs_d;
+  Array<ConvertJacobi::d2*> ConvertJacobi::coefs_e;
 
 
   ConvertJacobi :: ConvertJacobi()

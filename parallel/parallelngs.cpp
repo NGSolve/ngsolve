@@ -172,7 +172,7 @@ void MyMPI_ISend ( const FlatVector<TSCAL> & s, const int entrysize, FlatArray<i
 
 
 template <class T>
-void MyMPI_RecvVec ( ARRAY<T> & s, const int src)
+void MyMPI_RecvVec ( Array<T> & s, const int src)
 { 
   MPI_Status status;
   MPI_Datatype MPI_T = MyGetMPIType<T> ();
@@ -184,7 +184,7 @@ void MyMPI_RecvVec ( ARRAY<T> & s, const int src)
 }
 
 template <class T>
-void MyMPI_IRecvVec ( ARRAY<T> & s, const int src, MPI_Request & request)
+void MyMPI_IRecvVec ( Array<T> & s, const int src, MPI_Request & request)
 { 
   MPI_Status status;
   MPI_Request intrequest;
@@ -247,100 +247,100 @@ void MyMPI_IRecvVec ( ARRAY<T> & s, const int src, MPI_Request & request)
 
 
 
-  template void MyMPI_RecvVec (ARRAY<int> &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<double> &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Complex> &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<1, int> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<1, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<2, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<3, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<4, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<5, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<6, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<7, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<8, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<9, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<10, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<11, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<12, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<13, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<14, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<15, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<16, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<17, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<18, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<19, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<24, double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<1, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<2, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<3, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<4, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<5, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<6, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<7, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<8, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<9, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<10, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<11, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<12, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<13, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<14, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<15, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<16, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<17, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<18, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<19, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<Vec<24, Complex> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<FlatVector<double> > &s, const int src);
-  template void MyMPI_RecvVec (ARRAY<FlatVector<Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<int> &s, const int src);
+  template void MyMPI_RecvVec (Array<double> &s, const int src);
+  template void MyMPI_RecvVec (Array<Complex> &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<1, int> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<1, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<2, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<3, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<4, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<5, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<6, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<7, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<8, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<9, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<10, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<11, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<12, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<13, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<14, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<15, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<16, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<17, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<18, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<19, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<24, double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<1, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<2, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<3, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<4, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<5, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<6, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<7, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<8, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<9, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<10, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<11, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<12, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<13, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<14, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<15, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<16, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<17, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<18, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<19, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<Vec<24, Complex> > &s, const int src);
+  template void MyMPI_RecvVec (Array<FlatVector<double> > &s, const int src);
+  template void MyMPI_RecvVec (Array<FlatVector<Complex> > &s, const int src);
 
 
-  template void MyMPI_IRecvVec (ARRAY<int> &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<double> &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Complex> &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<1, int> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<1, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<2, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<3, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<4, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<5, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<6, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<7, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<8, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<9, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<10, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<11, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<12, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<13, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<14, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<15, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<16, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<17, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<18, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<19, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<24, double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<1, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<2, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<3, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<4, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<5, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<6, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<7, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<8, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<9, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<10, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<11, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<12, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<13, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<14, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<15, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<16, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<17, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<18, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<19, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<Vec<24, Complex> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<FlatVector<double> > &s, const int src, MPI_Request & request);
-  template void MyMPI_IRecvVec (ARRAY<FlatVector<Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<int> &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<double> &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Complex> &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<1, int> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<1, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<2, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<3, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<4, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<5, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<6, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<7, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<8, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<9, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<10, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<11, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<12, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<13, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<14, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<15, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<16, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<17, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<18, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<19, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<24, double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<1, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<2, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<3, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<4, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<5, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<6, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<7, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<8, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<9, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<10, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<11, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<12, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<13, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<14, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<15, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<16, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<17, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<18, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<19, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<Vec<24, Complex> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<FlatVector<double> > &s, const int src, MPI_Request & request);
+  template void MyMPI_IRecvVec (Array<FlatVector<Complex> > &s, const int src, MPI_Request & request);
 
   template void MyMPI_Send ( const FlatVector<double> & s, const int entrysize, FlatArray<int> * senddofs, const int dest);  
   template void MyMPI_Send ( const FlatVector<Complex> & s, const int entrysize, FlatArray<int> * senddofs, const int dest);

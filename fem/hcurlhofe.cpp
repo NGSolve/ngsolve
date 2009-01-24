@@ -262,7 +262,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void HCurlHighOrderTrig<T_ORTHOPOL> ::  
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
 
     if ( discontinuous )
@@ -504,7 +504,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void HCurlHighOrderQuad<T_ORTHOPOL> ::  
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     if ( discontinuous )
       {
@@ -764,7 +764,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void HCurlHighOrderTet<T_ORTHOPOL> ::  
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     if ( discontinuous )
       {
@@ -1361,7 +1361,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void HCurlHighOrderPrism<T_ORTHOPOL> ::  
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     if ( discontinuous )
       {
@@ -1998,7 +1998,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void HCurlHighOrderHex<T_ORTHOPOL> ::  
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     if ( discontinuous )
       {
@@ -2461,7 +2461,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void HCurlHighOrderPyr<T_ORTHOPOL> ::  
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     if ( discontinuous )
       {

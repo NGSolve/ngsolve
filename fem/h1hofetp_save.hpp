@@ -316,7 +316,7 @@ protected:
 
   int ndof1d;
   int sort[3];
-  static ARRAY<RecPol*> recpols;
+  static Array<RecPol*> recpols;
 
   static FlatMatrix<> fac_x, fac_y;
   static FlatMatrix<AutoDiff<1> > fac_xdx, fac_ydy;
@@ -561,7 +561,7 @@ class L2HighOrderTetTP : public L2HighOrderTet
   int ndof2d;
   int ndof1d;
   int sort[4];
-  static ARRAY<RecPol*> recpols;
+  static Array<RecPol*> recpols;
   FlatMatrix<> fac_x, fac_y, fac_z;
   static FlatMatrix<AutoDiff<1> > fac_xdx, fac_ydy, fac_zdz;
 

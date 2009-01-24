@@ -19,15 +19,15 @@ protected:
   // Degrees of Freedom 
   int ndof;
   // Levels 
-  ARRAY<int> ndlevel;
+  Array<int> ndlevel;
   // if order is relative to mesh order 
   bool var_order;
   // variable order is set to mesh_order + rel_order 
   int rel_order;
   // order of elements 
-  ARRAY<INT<3> > order_inner;
+  Array<INT<3> > order_inner;
   // table of first element dofnumber 
-  ARRAY<int> first_element_dof;
+  Array<int> first_element_dof;
   // printing bool 
   bool print; 
   bool fast_pfem;
@@ -63,19 +63,19 @@ public:
   ///
   virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
   ///
   virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
   /// 
  
-  virtual void GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const;
-  virtual void GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const;
-  virtual void GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const;
-  virtual void GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
+  virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
+  virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
+  virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
-  virtual void GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
 
   int GetFirstInnerDof(int elnr) const  
   {return (first_element_dof[elnr]);}
@@ -103,7 +103,7 @@ protected:
   // Number of Elements
   int nel;
 
-  ARRAY<int> first_element_dof;
+  Array<int> first_element_dof;
   int ndof;
 
 
@@ -112,7 +112,7 @@ protected:
   // variable order is set to mesh_order + rel_order 
   int rel_order;
   // order of elements 
-  ARRAY<INT<3> > order_cell;
+  Array<INT<3> > order_cell;
 
 public:
 
@@ -138,17 +138,17 @@ public:
   ///
   virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
   ///
-  virtual void GetDofNrs (int elnr, ARRAY<int> & dnums) const;
+  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
   ///
-  virtual void GetSDofNrs (int selnr, ARRAY<int> & dnums) const;
+  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
   
   virtual Table<int> * CreateSmoothingBlocks ( int type = 0) const;
 
   /// 
-  virtual void GetInnerDofNrs (int elnr, ARRAY<int> & dnums) const;
-  virtual void GetVertexDofNrs (int vnr, ARRAY<int> & dnums) const;
-  virtual void GetEdgeDofNrs (int ednr, ARRAY<int> & dnums) const;
-  virtual void GetFaceDofNrs (int fanr, ARRAY<int> & dnums) const;
+  virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
+  virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
+  virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
 
   virtual bool VarOrder() const { return var_order; } 
   virtual int GetRelOrder() const { return rel_order; }   

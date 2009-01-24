@@ -53,7 +53,7 @@ void FacetVolumeFiniteElement<D>::SetOrder(FlatArray<int> & ao)
 }
 
 template<int D>
-void FacetVolumeFiniteElement<D>::GetFacetDofNrs(int fnr, ARRAY<int>& dnums) const
+void FacetVolumeFiniteElement<D>::GetFacetDofNrs(int fnr, Array<int>& dnums) const
 {
   dnums.SetSize(0);
   for (int i=first_facet_dof[fnr]; i<first_facet_dof[fnr+1]; i++)
@@ -62,7 +62,7 @@ void FacetVolumeFiniteElement<D>::GetFacetDofNrs(int fnr, ARRAY<int>& dnums) con
 
 
 template<int D>
-void FacetVolumeFiniteElement<D>::GetVertexNumbers(ARRAY<int> &vn) const
+void FacetVolumeFiniteElement<D>::GetVertexNumbers(Array<int> &vn) const
 {
   vn.SetSize(nv);
   for (int i=0; i<nv; i++)
@@ -70,7 +70,7 @@ void FacetVolumeFiniteElement<D>::GetVertexNumbers(ARRAY<int> &vn) const
 }
 
 template<int D>
-void FacetVolumeFiniteElement<D>::GetFacetOrders(ARRAY<int>& fo) const
+void FacetVolumeFiniteElement<D>::GetFacetOrders(Array<int>& fo) const
 {
   fo.SetSize(6);
   for (int i=0; i<6; i++)
@@ -287,7 +287,7 @@ void FacetVolumeTrig::SetFacet(int afnr) const
   FacetVolumeTrig * trig=const_cast<FacetVolumeTrig*>(this);
   trig->fnr = afnr;
   const EDGE * edges = ElementTopology::GetEdges (eltype);
-  ARRAY<int> fvnums(2);
+  Array<int> fvnums(2);
   fvnums[0] = vnums[edges[fnr][0]]; 
   fvnums[1] = vnums[edges[fnr][1]]; 
    
@@ -365,7 +365,7 @@ void FacetVolumeQuad::SetFacet(int afnr) const
   FacetVolumeQuad * quad=const_cast<FacetVolumeQuad*>(this);
   quad->fnr = afnr;
   const EDGE * edges = ElementTopology::GetEdges (eltype);
-  ARRAY<int> fvnums(2);
+  Array<int> fvnums(2);
   fvnums[0] = vnums[edges[fnr][0]]; 
   fvnums[1] = vnums[edges[fnr][1]]; 
    
@@ -452,7 +452,7 @@ void FacetVolumeTet::SetFacet(int afnr) const
   
   FacetVolumeTet * tet=const_cast<FacetVolumeTet*>(this);
   tet->fnr = afnr;
-  ARRAY<int> fvnums(3);  
+  Array<int> fvnums(3);  
   const FACE * faces = ElementTopology::GetFaces (eltype);
 
   fvnums[0] = vnums[faces[fnr][0]]; 
@@ -502,7 +502,7 @@ void FacetVolumeHex::SetFacet(int afnr) const
   
   FacetVolumeHex * hex=const_cast<FacetVolumeHex*>(this);
   hex->fnr = afnr;
-  ARRAY<int> fvnums(4);  
+  Array<int> fvnums(4);  
   const FACE * faces = ElementTopology::GetFaces (eltype);
 
   fvnums[0] = vnums[faces[fnr][0]]; 
@@ -530,7 +530,7 @@ void FacetVolumeHex::ComputeNDof()
 //   FacetFacetQuad* fe = new(lh.Alloc(sizeof(FacetFacetQuad))) FacetFacetQuad();
 //    
 //   const FACE * faces = ElementTopology::GetFaces (eltype);
-//   ARRAY<int> fvnums(4);
+//   Array<int> fvnums(4);
 //   for (int i=0; i<4; i++)
 //     fvnums[i] = vnums[faces[fnr][i]]; 
 //   
@@ -599,7 +599,7 @@ void FacetVolumePrism::SetFacet(int afnr) const
   if (afnr < 2) // triangles
   {
     prism->tnr = afnr;
-    ARRAY<int> fvnums(3);  
+    Array<int> fvnums(3);  
     const FACE * faces = ElementTopology::GetFaces (eltype);
 
     fvnums[0] = vnums[faces[afnr][0]]; 
@@ -612,7 +612,7 @@ void FacetVolumePrism::SetFacet(int afnr) const
   else // quad face
   {
     prism->qnr = afnr;
-    ARRAY<int> fvnums(4);  
+    Array<int> fvnums(4);  
     const FACE * faces = ElementTopology::GetFaces (eltype);
 
     fvnums[0] = vnums[faces[afnr][0]]; 
@@ -652,7 +652,7 @@ void FacetVolumePrism::ComputeNDof()
 //   if (fnr < 2) // triangle
 //   {
 //     FacetFacetTrig* fe = new(lh.Alloc(sizeof(FacetFacetTrig))) FacetFacetTrig();
-//     ARRAY<int> fvnums(3);
+//     Array<int> fvnums(3);
 //     for (int i=0; i<3; i++)
 //       fvnums[i] = vnums[faces[fnr][i]]; 
 //     fe->SetVertexNumbers(fvnums);
@@ -662,7 +662,7 @@ void FacetVolumePrism::ComputeNDof()
 //   else // quad
 //   {
 //     FacetFacetQuad* fe = new(lh.Alloc(sizeof(FacetFacetQuad))) FacetFacetQuad();
-//     ARRAY<int> fvnums(4);
+//     Array<int> fvnums(4);
 //     for (int i=0; i<4; i++)
 //       fvnums[i] = vnums[faces[fnr][i]]; 
 //     fe->SetVertexNumbers(fvnums);
@@ -700,7 +700,7 @@ void FacetVolumePyramid::SetFacet(int afnr) const
   if (afnr < 4) // triangles
   {
     pyramid->tnr = afnr;
-    ARRAY<int> fvnums(3);  const FACE * faces = ElementTopology::GetFaces (eltype);
+    Array<int> fvnums(3);  const FACE * faces = ElementTopology::GetFaces (eltype);
 
     fvnums[0] = vnums[faces[tnr][0]]; 
     fvnums[1] = vnums[faces[tnr][1]]; 
@@ -712,7 +712,7 @@ void FacetVolumePyramid::SetFacet(int afnr) const
   else // quad face
   {
     pyramid->qnr = afnr;
-    ARRAY<int> fvnums(4);  const FACE * faces = ElementTopology::GetFaces (eltype);
+    Array<int> fvnums(4);  const FACE * faces = ElementTopology::GetFaces (eltype);
 
     fvnums[0] = vnums[faces[qnr][0]]; 
     fvnums[1] = vnums[faces[qnr][1]]; 
@@ -748,7 +748,7 @@ void FacetVolumePyramid::ComputeNDof()
 //   if (fnr < 4) // triangle
 //   {
 //     FacetFacetTrig* fe = new(lh.Alloc(sizeof(FacetFacetTrig))) FacetFacetTrig();
-//     ARRAY<int> fvnums(3);
+//     Array<int> fvnums(3);
 //     for (int i=0; i<3; i++)
 //       fvnums[i] = vnums[faces[fnr][i]]; 
 //     fe->SetVertexNumbers(fvnums);
@@ -758,7 +758,7 @@ void FacetVolumePyramid::ComputeNDof()
 //   else // facet 5: quad
 //   {
 //     FacetFacetQuad* fe = new(lh.Alloc(sizeof(FacetFacetQuad))) FacetFacetQuad();
-//     ARRAY<int> fvnums(4);
+//     Array<int> fvnums(4);
 //     for (int i=0; i<4; i++)
 //       fvnums[i] = vnums[faces[fnr][i]]; 
 //     fe->SetVertexNumbers(fvnums);

@@ -423,7 +423,7 @@ namespace ngmg
 
   CompoundProlongation :: 
   CompoundProlongation(const CompoundFESpace * aspace,
-		       ARRAY<const Prolongation*> & aprols)
+		       Array<const Prolongation*> & aprols)
     : space(aspace), prols(aprols)
   { 
     *testout << "new compoundprolongation" << endl;
@@ -445,8 +445,8 @@ namespace ngmg
   void CompoundProlongation :: 
   ProlongateInline (int finelevel, BaseVector & v) const
   {
-    ARRAY<int> cumm_coarse(prols.Size()+1);
-    ARRAY<int> cumm_fine(prols.Size()+1);
+    Array<int> cumm_coarse(prols.Size()+1);
+    Array<int> cumm_fine(prols.Size()+1);
 
     cumm_coarse[0] = 0;
     cumm_fine[0] = 0;
@@ -484,8 +484,8 @@ namespace ngmg
   {
     int i, j;
   
-    ARRAY<int> cumm_coarse(prols.Size()+1);
-    ARRAY<int> cumm_fine(prols.Size()+1);
+    Array<int> cumm_coarse(prols.Size()+1);
+    Array<int> cumm_fine(prols.Size()+1);
   
     cumm_coarse[0] = 0;
     cumm_fine[0] = 0;

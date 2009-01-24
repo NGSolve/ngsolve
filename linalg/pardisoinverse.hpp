@@ -31,7 +31,7 @@ class PardisoInverse : public BaseMatrix
   int symmetric, matrixtype, spd;
 
   const BitArray * inner;
-  const ARRAY<int> * cluster;
+  const Array<int> * cluster;
 
   //
   void SetMatrixType(TM entry);
@@ -44,13 +44,13 @@ public:
   ///
   PardisoInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
 		  const BitArray * ainner = NULL,
-		  const ARRAY<int> * acluster = NULL,
+		  const Array<int> * acluster = NULL,
 		  int symmetric = 0);
   
   ///
-  PardisoInverse (const ARRAY<int> & aorder, 
-		  const ARRAY<CliqueEl*> & cliques,
-		  const ARRAY<MDOVertex> & vertices,
+  PardisoInverse (const Array<int> & aorder, 
+		  const Array<CliqueEl*> & cliques,
+		  const Array<MDOVertex> & vertices,
 		  int symmetric = 0);		  
   ///
   virtual ~PardisoInverse ();
@@ -59,9 +59,9 @@ public:
   ///
   int VWidth() const { return height; }
   ///
-  void Allocate (const ARRAY<int> & aorder, 
-		 const ARRAY<CliqueEl*> & cliques,
-		 const ARRAY<MDOVertex> & vertices);
+  void Allocate (const Array<int> & aorder, 
+		 const Array<CliqueEl*> & cliques,
+		 const Array<MDOVertex> & vertices);
   ///
   void Factor (const int * blocknr);
   ///
@@ -72,7 +72,7 @@ public:
   ///
   virtual ostream & Print (ostream & ost) const;
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     mu.Append (new MemoryUsageStruct ("SparseChol", nze*sizeof(TM), 1));
   }

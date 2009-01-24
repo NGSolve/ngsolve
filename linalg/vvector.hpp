@@ -42,7 +42,7 @@ public:
   
   // create vector, procs is set of processors on which the vector exists
   // default 0 pointer means all procs
-  virtual BaseVector * CreateVector ( const ARRAY<int> * procs = 0) const;
+  virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const;
   
   virtual ostream & Print (ostream & ost) const;
 
@@ -161,9 +161,9 @@ class ParallelVVector : public VVector<T>
   ngparallel::ParallelDofs * paralleldofs;
 
   PARALLEL_STATUS status;
-  ARRAY<int> sendvector_size;
-  ARRAY<int> recvvector_size;
-  // ARRAY<T> * recvvalues;
+  Array<int> sendvector_size;
+  Array<int> recvvector_size;
+  // Array<T> * recvvalues;
   Table<T> * recvvalues;
 
 public:
@@ -180,7 +180,7 @@ public:
 
   virtual void SetStatus ( PARALLEL_STATUS astatus );
 
-  virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs, const ARRAY<int> * procs=0 );
+  virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs, const Array<int> * procs=0 );
 
   virtual class ngparallel::ParallelDofs * GetParallelDofs () const
   { return paralleldofs; }
@@ -196,7 +196,7 @@ public:
   /// values from reduceprocs are added up,
   /// vectors in sendtoprocs are set to the cumulated values
   /// default pointer 0 means send to proc 0
-  virtual void AllReduce ( ARRAY<int> * reduceprocs, ARRAY<int> * sendtoprocs = 0 ) const;
+  virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs = 0 ) const;
 
   virtual void Distribute() const;
 
@@ -219,7 +219,7 @@ public:
 
   T & RecvValue( int dest, int i ) { return (*recvvalues)[dest][i] ; }
 
-  virtual BaseVector * CreateVector ( const ARRAY<int> * procs = 0) const;
+  virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const;
 
   virtual ostream & Print (ostream & ost) const;
 
@@ -236,9 +236,9 @@ class ParallelVFlatVector : public VFlatVector<T>
 
   PARALLEL_STATUS status;
 
-  ARRAY<int> sendvector_size;
-  ARRAY<int> recvvector_size;
-//   ARRAY<T> * recvvalues;
+  Array<int> sendvector_size;
+  Array<int> recvvector_size;
+//   Array<T> * recvvalues;
   Table<T> * recvvalues;
 
 
@@ -256,7 +256,7 @@ public:
 
   virtual void SetStatus ( PARALLEL_STATUS astatus );
 
-  virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs, const ARRAY<int> * procs=0 );
+  virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs, const Array<int> * procs=0 );
 
   virtual class ngparallel::ParallelDofs * GetParallelDofs () const
   { return paralleldofs; }
@@ -272,7 +272,7 @@ public:
   /// values from reduceprocs are added up,
   /// vectors in sendtoprocs are set to the cumulated values
   /// default pointer 0 means send to proc 0
-  virtual void AllReduce ( ARRAY<int> * reduceprocs, ARRAY<int> * sendtoprocs = 0 ) const;
+  virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs = 0 ) const;
 
   virtual void Distribute() const;
 
@@ -297,7 +297,7 @@ public:
   T & RecvValue( int dest, int i ) 
   { return (*recvvalues)[dest][i] ; }
 
-  virtual BaseVector * CreateVector ( const ARRAY<int> * procs = 0) const;
+  virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const;
 
   virtual ostream & Print (ostream & ost) const;
 

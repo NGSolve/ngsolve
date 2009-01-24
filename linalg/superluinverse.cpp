@@ -67,7 +67,7 @@ namespace superlufunc
   SuperLUInverse<TM,TV_ROW,TV_COL> :: 
   SuperLUInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
 		  const BitArray * ainner,
-		  const ARRAY<int> * acluster,
+		  const Array<int> * acluster,
 		  int asymmetric)
   { 
     //        (*testout) << "matrix = " << a << endl;
@@ -365,9 +365,9 @@ namespace superlufunc
   template <class TM, class TV_ROW, class TV_COL>
   SuperLUInverse<TM,TV_ROW,TV_COL> :: 
 
-  SuperLUInverse (const ARRAY<int> & aorder, 
-		  const ARRAY<CliqueEl*> & cliques,
-		  const ARRAY<MDOVertex> & vertices,
+  SuperLUInverse (const Array<int> & aorder, 
+		  const Array<CliqueEl*> & cliques,
+		  const Array<MDOVertex> & vertices,
 		  int symmetric)
   {
     Allocate (aorder, cliques, vertices);
@@ -378,9 +378,9 @@ namespace superlufunc
 
   template <class TM, class TV_ROW, class TV_COL>
   void SuperLUInverse<TM, TV_ROW,TV_COL> :: 
-  Allocate (const ARRAY<int> & aorder, 
-	    const ARRAY<CliqueEl*> & cliques,
-	    const ARRAY<MDOVertex> & vertices)
+  Allocate (const Array<int> & aorder, 
+	    const Array<CliqueEl*> & cliques,
+	    const Array<MDOVertex> & vertices)
   {
     cout << "SuperLUInverse::Allocate not implemented!" << endl;
   }

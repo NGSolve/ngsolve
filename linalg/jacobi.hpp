@@ -66,7 +66,7 @@ public:
 
   ///
   virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,
-				  const ARRAY<int> & numbering, 
+				  const Array<int> & numbering, 
 				  int forward = 1) const;
 };
 
@@ -100,7 +100,7 @@ public:
 
   ///
   virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,
-				  const ARRAY<int> & numbering, 
+				  const Array<int> & numbering, 
 				  int forward = 1) const;
 };
 

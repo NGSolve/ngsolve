@@ -60,7 +60,7 @@ public:
     ost << typeid(*this).name();
   }
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     cout << "MemoryUsage not implemented for class " << GetClassName() << endl;
   }

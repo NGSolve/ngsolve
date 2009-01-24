@@ -137,7 +137,7 @@ namespace ngcomp
     fine_facet.SetSize(nfa);
     fine_facet = 0; 
     
-    ARRAY<int> fanums;
+    Array<int> fanums;
         
     for (int i = 0; i < nel; i++)
       {
@@ -166,7 +166,7 @@ namespace ngcomp
 	  }
 	else
 	  {
-	    ARRAY<int> elfaces,vnums;
+	    Array<int> elfaces,vnums;
 	    ma.GetElFaces(i,elfaces);
 	    for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
 	    
@@ -229,7 +229,7 @@ namespace ngcomp
     {
       int inci = 0;
       INT<2> p; 
-      ARRAY<int> pnums;
+      Array<int> pnums;
       for (int i=0; i< nfa; i++)
       {
         p = order_facet[i];
@@ -332,7 +332,7 @@ namespace ngcomp
       throw Exception (str.str());
     }
 
-    ARRAY<int> vnums;
+    Array<int> vnums;
     ArrayMem<int, 6> fanums, order_fa;
     
     ma.GetElVertices(elnr, vnums);
@@ -450,10 +450,10 @@ namespace ngcomp
 
 
 // ------------------------------------------------------------------------
-  void FacetFESpace :: GetDofNrs (int elnr, ARRAY<int> & dnums) const
+  void FacetFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
 
-    ARRAY<int> fanums; // facet numbers
+    Array<int> fanums; // facet numbers
     int first,next;
 
     fanums.SetSize(0);
@@ -505,7 +505,7 @@ namespace ngcomp
 //     cout << "** GetDofNrs(" << elnr << "): " << dnums << endl;
   }
 
-  void FacetFESpace :: GetWireBasketDofNrs (int elnr, ARRAY<int> & dnums) const
+  void FacetFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
   {
     ArrayMem<int,12> facets;
 
@@ -520,14 +520,14 @@ namespace ngcomp
   }
 
 // ------------------------------------------------------------------------
-//   void FacetFESpace :: GetExternalDofNrs (int elnr, ARRAY<int> & dnums) const
+//   void FacetFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
 //   {
 //     GetDofNrs(elnr, dnums);
 //   }
 
 
 // ------------------------------------------------------------------------
-  void FacetFESpace :: GetSDofNrs (int selnr, ARRAY<int> & dnums) const
+  void FacetFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     int first,next;
 
@@ -584,7 +584,7 @@ namespace ngcomp
     // 1 x low order + faces/edges
     ncnt = nfa-ncfa;
       
-    ARRAY<int> cnt(ncnt);
+    Array<int> cnt(ncnt);
     cnt = 0;
 
     // setup table
@@ -611,9 +611,9 @@ namespace ngcomp
 
 
   
-  ARRAY<int> * FacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
+  Array<int> * FacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
-    ARRAY<int> & clusters = *new ARRAY<int> (GetNDof());
+    Array<int> & clusters = *new Array<int> (GetNDof());
 
     clusters.SetSize(ndof);
     clusters = 0;
@@ -640,7 +640,7 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
      // ******************************
     *testout << "Facet::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks);
+    Array<int> nexdof(ntasks);
     nexdof = 0;
 
     MPI_Status status;
@@ -652,7 +652,7 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
       {
 	if ( !parallelma->IsExchangeFace ( face ) ) continue;
 	
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	GetFaceDofNrs ( face, dnums );
 	nexdof[id] += dnums.Size() ; 
 
@@ -671,18 +671,18 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
 //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
-    ARRAY<int> ** owndofs, ** distantdofs;
-    owndofs = new ARRAY<int>* [ntasks];
-    distantdofs = new ARRAY<int>* [ntasks];
+    Array<int> ** owndofs, ** distantdofs;
+    owndofs = new Array<int>* [ntasks];
+    distantdofs = new Array<int>* [ntasks];
 
     for ( int i = 0; i < ntasks; i++ )
       {
-	owndofs[i] = new ARRAY<int>(1);
+	owndofs[i] = new Array<int>(1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int>(0);
+	distantdofs[i] = new Array<int>(0);
       }
 
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
     int exdof = 0;
     int ii;
@@ -695,7 +695,7 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
    for ( int face = 0; face < ma.GetNFaces(); face++ )
       if ( parallelma->IsExchangeFace ( face ) )
       {
-	ARRAY<int> dnums;
+	Array<int> dnums;
 	GetFaceDofNrs ( face, dnums );
 	if ( dnums.Size() == 0 ) continue;
 
@@ -747,7 +747,7 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
 	  {
 	    int fanum = (*distantdofs[dest])[ii++];
 	    int isdistghost = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    GetFaceDofNrs (fanum, dnums);
 // 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
 // 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
@@ -763,7 +763,7 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
 	  {
 	    int fanum = (*distantdofs[dest])[ii++];
 	    int isdistghost = (*distantdofs[dest])[ii++];
-	    ARRAY<int> dnums;
+	    Array<int> dnums;
 	    GetFaceDofNrs (fanum, dnums);
 	    ii++; 
 	    for ( int i=1; i<dnums.Size(); i++)
@@ -857,7 +857,7 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
     int ndof = GetNDof();
 
     // Find number of exchange dofs
-    ARRAY<int> nexdof(ntasks); 
+    Array<int> nexdof(ntasks); 
     nexdof = 0;
 
     MPI_Status status;
@@ -883,19 +883,19 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
 
 
 
-    ARRAY<int> ** owndofs,** distantdofs;
-    owndofs = new ARRAY<int> * [ntasks];
-    distantdofs = new ARRAY<int> * [ntasks];
+    Array<int> ** owndofs,** distantdofs;
+    owndofs = new Array<int> * [ntasks];
+    distantdofs = new Array<int> * [ntasks];
 
     for ( int i = 0; i < ntasks; i++)
       {
-	owndofs[i] = new ARRAY<int> (1);
+	owndofs[i] = new Array<int> (1);
 	(*owndofs[i])[0] = ndof;
-	distantdofs[i] = new ARRAY<int> (0);
+	distantdofs[i] = new Array<int> (0);
       }
 
     int exdof = 0;
-    ARRAY<int> cnt_nexdof(ntasks);
+    Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
 
     // *****************

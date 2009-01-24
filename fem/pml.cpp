@@ -511,7 +511,7 @@ public:
     ;
   }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new PML_LaplaceIntegrator (coeffs[0]);
   }
@@ -537,7 +537,7 @@ public:
     ;
   }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new PML_ElasticityIntegrator (coeffs[0], coeffs[1]);
   }
@@ -563,7 +563,7 @@ public:
     ;
   }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new PML_MassIntegrator (coeffs[0]);
   }
@@ -587,7 +587,7 @@ public:
   (PlaneStressDMat (coefe, coefnu))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new PML_ElasticityIntegrator (coeffs[0], coeffs[1]);
   }
@@ -612,7 +612,7 @@ public:
   (DiagDMat<DIM_CURL_TRAIT<D>::DIM> (coef))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new PML_CurlCurlEdgeIntegrator (coeffs[0]);
   }
@@ -631,7 +631,7 @@ public:
   (DiagDMat<D> (coef))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new PML_MassEdgeIntegrator (coeffs[0]);
   }
@@ -668,7 +668,7 @@ public:
   (DiagDMat<1> (coef))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new PML_DivDivHDivIntegrator (coeffs[0]);
   }
@@ -690,7 +690,7 @@ public:
   (DiagDMat<D> (coef))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new PML_MassHDivIntegrator (coeffs[0]);
   }
@@ -715,7 +715,7 @@ public:
   (DiagDMat<1> (coef))
   { ; }
   
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new PML_RobinHDivIntegrator (coeffs[0]);
   }
@@ -763,7 +763,7 @@ public:
   virtual ~PML_ReducedMassIntegrator ()
   { ; }
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new PML_ReducedMassIntegrator (coeffs[0]);
   }
@@ -933,7 +933,7 @@ public:
   virtual ~PML_InterpolationMassIntegrator ()
   { ; }
 
-  static Integrator * Create (ARRAY<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new PML_InterpolationMassIntegrator (coeffs[0]);
   }

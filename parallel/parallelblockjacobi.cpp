@@ -20,7 +20,7 @@ namespace ngla
   MatrixGraph * MergeGraphs ( const MatrixGraph & graph1, const MatrixGraph & graph2 )
   {
     int ndof = graph1.Size();
-    ARRAY<int> cnt (ndof);
+    Array<int> cnt (ndof);
     cnt = 0;
 
     for ( int i = 0; i < ndof; i++ )
@@ -108,7 +108,7 @@ namespace ngla
     BitArray iscolor(ndof);
 
     int maxcolors = 1000, ncolor = 0;
-    ARRAY< BitArray* > dofcolors (0), recvdofcolors(0);
+    Array< BitArray* > dofcolors (0), recvdofcolors(0);
 
     int blockcolor;
     for ( int iproc = 0; iproc < hoprocs.Size(); iproc++ )
@@ -291,7 +291,7 @@ namespace ngla
 
   // localexchangedofs missing
   void ParallelBaseBlockJacobiPrecond :: 
-  MyMPI_SendBitarrays ( const ARRAY< BitArray* > & dofcolors, const int dest ) const
+  MyMPI_SendBitarrays ( const Array< BitArray* > & dofcolors, const int dest ) const
   {
     
 //     FlatArray<int> locexdof = this->paralleldofs->GetLocalExchangeDofs(dest);
@@ -323,7 +323,7 @@ namespace ngla
 
 
   void ParallelBaseBlockJacobiPrecond :: 
-  MyMPI_RecvBitarrays ( ARRAY< BitArray* > & dofcolors, const int src ) const
+  MyMPI_RecvBitarrays ( Array< BitArray* > & dofcolors, const int src ) const
   {
 //     int ndof = this->paralleldofs->GetNDof();
 //     BitArray recvba;
@@ -467,7 +467,7 @@ namespace ngla
 	
 	constvecx->SetStatus(CUMULATED);
 	
-	ARRAY<MPI_Request> sendrequests(0), recvrequests(0);
+	Array<MPI_Request> sendrequests(0), recvrequests(0);
 	MPI_Request request;
 	MPI_Status status;
 	
@@ -595,7 +595,7 @@ namespace ngla
 	
 	constvecx->SetStatus(CUMULATED);
 	
- 	ARRAY<MPI_Request> recvrequests(0), sendrequests(0);
+ 	Array<MPI_Request> recvrequests(0), sendrequests(0);
  	MPI_Request request;
  	MPI_Status status;
 
@@ -679,7 +679,7 @@ namespace ngla
 	constvecx->SetStatus(CUMULATED);
 	
 
-	ARRAY<MPI_Request> sendrequests(0), recvrequests(0);
+	Array<MPI_Request> sendrequests(0), recvrequests(0);
 	MPI_Request request;
 	MPI_Status status;
 	
@@ -804,7 +804,7 @@ namespace ngla
 	
 	constvecx->SetStatus(CUMULATED);
 	
-	ARRAY<MPI_Request> sendrequests(0), recvrequests(0);
+	Array<MPI_Request> sendrequests(0), recvrequests(0);
 	MPI_Request request;
 	MPI_Status status;
 	
@@ -879,7 +879,7 @@ namespace ngla
     BaseVector & w2 = *x.CreateVector(&hoprocs);
     FlatVector<TVX> fw2 =
       dynamic_cast<T_BaseVector<TVX> &> (w2).FV();
-    ARRAY<int> loprocs(0);
+    Array<int> loprocs(0);
 
     x.AllReduce(&hoprocs, &loprocs);
     b.Distribute();
@@ -955,7 +955,7 @@ namespace ngla
     BaseVector & w2 = *x.CreateVector(&hoprocs);
     FlatVector<TVX> fw2 =
       dynamic_cast<T_BaseVector<TVX> &> (w2).FV();
-    ARRAY<int> loprocs(0);
+    Array<int> loprocs(0);
 
     x.AllReduce(&hoprocs, &loprocs);
 
@@ -1301,7 +1301,7 @@ namespace ngla
 
 	{
 	  LocalHeap lh (20000 + 5*sizeof(int)*maxbs); //  + sizeof(int)*amat.Height());
-	  ARRAY<int> block_inv(amat.Height());
+	  Array<int> block_inv(amat.Height());
 	  block_inv = -1;
 
 	      MatrixGraph * commongraph = MergeGraphs ( mat, *consistmat );
@@ -1558,7 +1558,7 @@ namespace ngla
 	
 	constvecx->SetStatus(CUMULATED);
 	
-	ARRAY<MPI_Request> sendrequests(0), recvrequests(0);
+	Array<MPI_Request> sendrequests(0), recvrequests(0);
 	MPI_Request request;
 	MPI_Status status;
 	
@@ -1686,7 +1686,7 @@ namespace ngla
 	
 	constvecx->SetStatus(CUMULATED);
 		
-	ARRAY<MPI_Request> sendrequests(0), recvrequests(0);
+	Array<MPI_Request> sendrequests(0), recvrequests(0);
 	MPI_Request request;
 	MPI_Status status;
 	
@@ -1787,7 +1787,7 @@ namespace ngla
 //     for ( int k = 1; k <= steps; k++ )
 //       while ( doneblocks < blocktable.Size() )
 // 	{
-// 	  ARRAY<int> sendtoprocs(0);
+// 	  Array<int> sendtoprocs(0);
 // 	  x.AllReduce(&hoprocs, &sendtoprocs);
 // 	  y.AllReduce(&hoprocs, &sendtoprocs);
 	  
@@ -1859,7 +1859,7 @@ namespace ngla
 //     for ( int k = 1; k <= 1; k++ )
 //       while ( doneblocks < blocktable.Size() )
 // 	{
-// 	  ARRAY<int> sendtoprocs(0);
+// 	  Array<int> sendtoprocs(0);
 // 	  x.AllReduce(&hoprocs, &sendtoprocs);
 // 	  y.AllReduce(&hoprocs, &sendtoprocs);
 // 	  for ( int i = 0; i < blocktable.Size(); i++ )
@@ -1939,7 +1939,7 @@ namespace ngla
 // 	for ( int k = 1; k <= steps; k++ )
 // 	  while ( doneblocks < blocktable.Size() )
 // 	    {
-// 	      ARRAY<int> sendtoprocs(0);
+// 	      Array<int> sendtoprocs(0);
 // 	      x.AllReduce(&hoprocs, &sendtoprocs);
 // 	      res.AllReduce(&hoprocs, &sendtoprocs);
 
@@ -2036,7 +2036,7 @@ namespace ngla
 //     for ( int k = 1; k <= steps; k++ )
 //       while (  col >= 0 ) //doneblocks < blocktable.Size() )
 // 	{
-// 	      ARRAY<int> sendtoprocs(0);
+// 	      Array<int> sendtoprocs(0);
 // 	      x.AllReduce(&hoprocs, &sendtoprocs);
 // 	      y.AllReduce(&hoprocs, &sendtoprocs);
 // 	  for (int i = blocktable.Size()-1; i >= 0; i--)
@@ -2107,7 +2107,7 @@ GSSmoothBack (BaseVector & x, const BaseVector & b,
 //     for ( int k = 1; k <= 1; k++ )
 //       while (  col >= 0 ) //doneblocks < blocktable.Size() )
 // 	{
-// 	      ARRAY<int> sendtoprocs(0);
+// 	      Array<int> sendtoprocs(0);
 // 	      x.AllReduce(&hoprocs, &sendtoprocs);
 // 	      y.AllReduce(&hoprocs, &sendtoprocs);
 // 	  for (int i = blocktable.Size()-1; i >= 0; i--)

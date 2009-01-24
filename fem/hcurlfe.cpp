@@ -22,15 +22,15 @@ namespace ngfem
 
   template <int D>
   void HCurlFiniteElementD<D> :: 
-  CalcIPData (ARRAY<IPData> & ipdata)
+  CalcIPData (Array<IPData> & ipdata)
   {
-    const ARRAY<IntegrationPoint*> & ipts = 
+    const Array<IntegrationPoint*> & ipts = 
 	  GetIntegrationRules().GetIntegrationPoints (eltype);
 
 
     if (ipdata.Size() != ipts.Size()) 
       {
-	//const ARRAY<IntegrationPoint*> & ipts = 
+	//const Array<IntegrationPoint*> & ipts = 
 	//  GetIntegrationRules().GetIntegrationPoints (eltype);
 
 	/*
@@ -444,7 +444,7 @@ namespace ngfem
   
   class FE_Trig3EdgeBubble : public NodalFiniteElement<2>
   {
-    ARRAY<IPData> ipdata;
+    Array<IPData> ipdata;
     
   public:
     ///
@@ -508,7 +508,7 @@ namespace ngfem
     }
 
     ///
-    virtual const ARRAY<IPData> & GetIPData () const { return ipdata; }
+    virtual const Array<IPData> & GetIPData () const { return ipdata; }
   }; 
 
 
@@ -573,7 +573,7 @@ namespace ngfem
   class ControlDestruction
   {
   private:
-    ARRAY<bool*> isdestructed;
+    Array<bool*> isdestructed;
   public:
     void NewControl(bool * variable)
     {
@@ -596,7 +596,7 @@ namespace ngfem
   /* ******************** Segm elements ********************* */
 
  
-  ARRAY<HCurlFiniteElementD<1>::IPData> FE_NedelecSegm1::ipdata;
+  Array<HCurlFiniteElementD<1>::IPData> FE_NedelecSegm1::ipdata;
 
   FE_NedelecSegm1 :: FE_NedelecSegm1()
     : HCurlFiniteElementD<1>(ET_SEGM, NDOF, 0)
@@ -624,7 +624,7 @@ namespace ngfem
 
 
 
-  ARRAY<HCurlFiniteElementD<1>::IPData> FE_NedelecSegm2::ipdata;
+  Array<HCurlFiniteElementD<1>::IPData> FE_NedelecSegm2::ipdata;
 
   FE_NedelecSegm2 :: FE_NedelecSegm2()
     : HCurlFiniteElementD<1>(ET_SEGM, NDOF, 1)
@@ -653,7 +653,7 @@ namespace ngfem
 
 
 
-  ARRAY<HCurlFiniteElementD<1>::IPData> FE_NedelecSegm3::ipdata;
+  Array<HCurlFiniteElementD<1>::IPData> FE_NedelecSegm3::ipdata;
 
   FE_NedelecSegm3 :: FE_NedelecSegm3()
     : HCurlFiniteElementD<1>(ET_SEGM, 3, 2)
@@ -690,7 +690,7 @@ namespace ngfem
   /* ******************** triangular elements *********************** */
 
 
-  ARRAY<HCurlFiniteElementD<2>::IPData> FE_NedelecTrig1::ipdata;
+  Array<HCurlFiniteElementD<2>::IPData> FE_NedelecTrig1::ipdata;
 
   FE_NedelecTrig1 :: FE_NedelecTrig1()
     : HCurlFiniteElementD<2> (ET_TRIG, 3, 1)
@@ -726,7 +726,7 @@ namespace ngfem
 
 
   
-  ARRAY<HCurlFiniteElementD<2>::IPData> FE_NedelecTrig2::ipdata;
+  Array<HCurlFiniteElementD<2>::IPData> FE_NedelecTrig2::ipdata;
   Mat<FE_NedelecTrig2::NDOF> FE_NedelecTrig2::trans;
 
   FE_NedelecTrig2 :: FE_NedelecTrig2()
@@ -800,7 +800,7 @@ namespace ngfem
   
 
   
-  ARRAY<HCurlFiniteElementD<2>::IPData> FE_NedelecTrig3::ipdata;
+  Array<HCurlFiniteElementD<2>::IPData> FE_NedelecTrig3::ipdata;
   Mat<FE_NedelecTrig3::NDOF> FE_NedelecTrig3::trans;
   Mat<FE_NedelecTrig3::NEDGEDOF> FE_NedelecTrig3::trans2;
   
@@ -934,7 +934,7 @@ namespace ngfem
 
   /* ******************** quad elements *********************** */
 
-  ARRAY<HCurlFiniteElementD<2>::IPData> FE_NedelecQuad1::ipdata;
+  Array<HCurlFiniteElementD<2>::IPData> FE_NedelecQuad1::ipdata;
 
   FE_NedelecQuad1 :: FE_NedelecQuad1()
     : HCurlFiniteElementD<2> (ET_QUAD, NDOF, 1)
@@ -972,7 +972,7 @@ namespace ngfem
   {
   private:
     ///
-    ARRAY<IPData> ipdata;
+    Array<IPData> ipdata;
 
   public:
     enum { NDOF = (ORDER-1) * ZORDER + ORDER * (ZORDER-1) };
@@ -1019,7 +1019,7 @@ namespace ngfem
     }
 
     ///
-    virtual const ARRAY<IPData> & GetIPData () const 
+    virtual const Array<IPData> & GetIPData () const 
     { return ipdata; }
   };
 
@@ -1029,7 +1029,7 @@ namespace ngfem
 
   
   template <int ORDER, int ZORDER>
-  ARRAY<HCurlFiniteElementD<2>::IPData> FE_TNedelecQuad<ORDER,ZORDER>::ipdata;
+  Array<HCurlFiniteElementD<2>::IPData> FE_TNedelecQuad<ORDER,ZORDER>::ipdata;
   /*
   template <int ORDER, int ZORDER>
   Mat<FE_TNedelecQuadTraits<ORDER,ZORDER>::NDOF> FE_TNedelecQuad<ORDER,ZORDER>::trans;
@@ -1279,7 +1279,7 @@ namespace ngfem
 
   /* ******************** Tet elements *********************** */
   
-  ARRAY<HCurlFiniteElementD<3>::IPData> FE_NedelecTet1::ipdata;
+  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecTet1::ipdata;
   
 
   FE_NedelecTet1 :: FE_NedelecTet1()
@@ -1363,7 +1363,7 @@ namespace ngfem
 
 
 
-  ARRAY<HCurlFiniteElementD<3>::IPData> FE_NedelecTet2::ipdata;
+  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecTet2::ipdata;
   Mat<FE_NedelecTet2::NDOF> FE_NedelecTet2::trans;
 
   FE_NedelecTet2 :: FE_NedelecTet2()
@@ -1442,7 +1442,7 @@ namespace ngfem
 
   class FE_Tet3EdgeBubble : public NodalFiniteElement<3>
   {
-    ARRAY<IPData> ipdata;
+    Array<IPData> ipdata;
     
   public:
     ///
@@ -1555,14 +1555,14 @@ namespace ngfem
     }
 
     ///
-    virtual const ARRAY<IPData> & GetIPData () const { return ipdata; }
+    virtual const Array<IPData> & GetIPData () const { return ipdata; }
   }; 
 
 
 
 
   
-  ARRAY<HCurlFiniteElementD<3>::IPData> FE_NedelecTet3::ipdata;
+  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecTet3::ipdata;
   Mat<FE_NedelecTet3::NDOF> FE_NedelecTet3::trans;
   Mat<FE_NedelecTet3::NEDGEDOF> FE_NedelecTet3::trans2;
   Mat<FE_NedelecTet3::NFACEDOF> FE_NedelecTet3::trans3;
@@ -1870,7 +1870,7 @@ namespace ngfem
 
   /* ******************** Hex Elements ************************* */ 
 
-  ARRAY<HCurlFiniteElementD<3>::IPData> FE_NedelecHex1::ipdata;
+  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecHex1::ipdata;
   
   FE_NedelecHex1 :: FE_NedelecHex1()
     : HCurlFiniteElementD<3> (ET_HEX, 12, 1)
@@ -1925,7 +1925,7 @@ namespace ngfem
   /* **************************** Tet3 without gradients ******************* */
 
 
-  ARRAY<HCurlFiniteElementD<3>::IPData> FE_NedelecTet3NoGrad::ipdata;
+  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecTet3NoGrad::ipdata;
   Mat<FE_NedelecTet3NoGrad::NFACEDOF> FE_NedelecTet3NoGrad::trans3;
 
   FE_NedelecTet3NoGrad :: FE_NedelecTet3NoGrad()
@@ -2201,7 +2201,7 @@ namespace ngfem
 
   /* ******************** Prism elements *********************** */
 
-  ARRAY<HCurlFiniteElementD<3>::IPData> FE_NedelecPrism1::ipdata;
+  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecPrism1::ipdata;
 
   FE_NedelecPrism1 :: FE_NedelecPrism1()
     : HCurlFiniteElementD<3> (ET_PRISM, 9, 2)
@@ -2251,7 +2251,7 @@ namespace ngfem
 
 
   template <int OZ>
-  ARRAY<HCurlFiniteElementD<3>::IPData> FE_TNedelecPrism2<OZ>::ipdata;
+  Array<HCurlFiniteElementD<3>::IPData> FE_TNedelecPrism2<OZ>::ipdata;
   template <int OZ>
   Matrix<> FE_TNedelecPrism2<OZ>::trans;
   template <int OZ>
@@ -2622,7 +2622,7 @@ namespace ngfem
   {
   private:
     ///
-    ARRAY<IPData> ipdata;
+    Array<IPData> ipdata;
 
   public:
     enum { NDOF = 4 * ZORDER - 3 };
@@ -2682,7 +2682,7 @@ namespace ngfem
   /* ************************ Prism3 ******************************* */
   
   template <int ORDER>
-  ARRAY<HCurlFiniteElementD<3>::IPData> FE_TNedelecPrism3<ORDER>::ipdata;
+  Array<HCurlFiniteElementD<3>::IPData> FE_TNedelecPrism3<ORDER>::ipdata;
   template <int ORDER>
   Matrix<> FE_TNedelecPrism3<ORDER>::trans;
   template <int ORDER>
@@ -2980,7 +2980,7 @@ namespace ngfem
   }
 
   template <int ZORDER>
-  void FE_TNedelecPrism3<ZORDER> :: GetInternalDofs (ARRAY<int> & idofs) const
+  void FE_TNedelecPrism3<ZORDER> :: GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
     for (int i = NDOF - NINNERDOF; i < NDOF; i++)
@@ -3169,7 +3169,7 @@ namespace ngfem
   {
   private:
     ///
-    ARRAY<IPData> ipdata;
+    Array<IPData> ipdata;
 
   public:
     // enum { NDOF = 4 * ZORDER - 3 };
@@ -3232,7 +3232,7 @@ namespace ngfem
   /* ************************ Prism3 No Gradients ******************************* */
   
   template <int ORDER>
-  ARRAY<HCurlFiniteElementD<3>::IPData> FE_TNedelecPrism3NoGrad<ORDER>::ipdata;
+  Array<HCurlFiniteElementD<3>::IPData> FE_TNedelecPrism3NoGrad<ORDER>::ipdata;
   template <int ORDER>
   Matrix<> FE_TNedelecPrism3NoGrad<ORDER>::trans_quad;
   template <int ORDER>
@@ -3528,7 +3528,7 @@ namespace ngfem
   }
 
   template <int ZORDER>
-  void FE_TNedelecPrism3NoGrad<ZORDER> :: GetInternalDofs (ARRAY<int> & idofs) const
+  void FE_TNedelecPrism3NoGrad<ZORDER> :: GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
     for (int i = NDOF - NINNERDOF; i < NDOF; i++)
@@ -3715,7 +3715,7 @@ namespace ngfem
 
 
 
-  ARRAY<HCurlFiniteElementD<3>::IPData> FE_NedelecPyramid1::ipdata;
+  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecPyramid1::ipdata;
   Matrix<> FE_NedelecPyramid1::trans(8);
 
   FE_NedelecPyramid1 :: FE_NedelecPyramid1()
@@ -3821,7 +3821,7 @@ namespace ngfem
 
 
 
-  ARRAY<HCurlFiniteElementD<3>::IPData> FE_NedelecPyramid2::ipdata;
+  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecPyramid2::ipdata;
   Matrix<> FE_NedelecPyramid2::trans(NDOF);
   Matrix<> FE_NedelecPyramid2::trans2(NEDGEDOF);
 
@@ -4090,7 +4090,7 @@ namespace ngfem
 
   class FE_Pyramid3RefEdgeBubble : public NodalFiniteElement<3>
   {
-    ARRAY<IPData> ipdata;
+    Array<IPData> ipdata;
     
   public:
     ///
@@ -4267,14 +4267,14 @@ namespace ngfem
     }
 
     ///
-    virtual const ARRAY<IPData> & GetIPData () const { return ipdata; }
+    virtual const Array<IPData> & GetIPData () const { return ipdata; }
   }; 
 
 
 
   class FE_Pyramid3RefFaceBubble : public NodalFiniteElement<3>
   {
-    ARRAY<IPData> ipdata;
+    Array<IPData> ipdata;
     
   public:
     ///
@@ -4305,7 +4305,7 @@ namespace ngfem
     }
 
     ///
-    virtual const ARRAY<IPData> & GetIPData () const { return ipdata; }
+    virtual const Array<IPData> & GetIPData () const { return ipdata; }
   };
 
 
@@ -4313,7 +4313,7 @@ namespace ngfem
 
 
 
-  ARRAY<HCurlFiniteElementD<3>::IPData> FE_NedelecPyramid3::ipdata;
+  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecPyramid3::ipdata;
   Mat<FE_NedelecPyramid3::NDOF> FE_NedelecPyramid3::trans;
   Mat<FE_NedelecPyramid3::NEDGEDOF> FE_NedelecPyramid3::trans2;
   Mat<FE_NedelecPyramid3::NFACEDOF> FE_NedelecPyramid3::trans3;
@@ -4632,7 +4632,7 @@ namespace ngfem
 
 
 
-  void FE_NedelecPyramid3 :: GetInternalDofs (ARRAY<int> & idofs) const
+  void FE_NedelecPyramid3 :: GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
     for (int i = NDOF - NINNERDOF; i < NDOF; i++)

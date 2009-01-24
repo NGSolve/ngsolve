@@ -49,17 +49,17 @@ protected:
   LinearForm * linearform;
 
   /// matrices (sparse, application, diagonal, ...)
-  ARRAY<BaseMatrix*> mats;
+  Array<BaseMatrix*> mats;
   /// bilinearform-integrators
-  ARRAY<BilinearFormIntegrator*> parts;
+  Array<BilinearFormIntegrator*> parts;
   /// is biform responsible for the deallocation ?
-  ARRAY<bool> parts_deletable;
+  Array<bool> parts_deletable;
   ///
-  ARRAY<BilinearFormIntegrator*> independent_parts;
+  Array<BilinearFormIntegrator*> independent_parts;
   /// is biform responsible for the deallocation ?
-  ARRAY<bool> independent_parts_deletable;
+  Array<bool> independent_parts_deletable;
   ///
-  ARRAY< Vec<2,int> > independent_meshindex;
+  Array< Vec<2,int> > independent_meshindex;
 
   ///
   bool timing;
@@ -70,7 +70,7 @@ protected:
   
 
   bool precompute;
-  ARRAY<void*> precomputed_data;
+  Array<void*> precomputed_data;
 
 
 public:
@@ -285,7 +285,7 @@ public:
   virtual void PrintReport (ostream & ost);
 
   ///
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const;
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
   ///
   void WriteMatrix (ostream & ost) const;
@@ -392,8 +392,8 @@ public:
 				      LocalHeap & lh, 
 				      bool reallocate = 0);
   ///
-  virtual void AddElementMatrix (const ARRAY<int> & dnums1,
-				 const ARRAY<int> & dnums2,
+  virtual void AddElementMatrix (const Array<int> & dnums1,
+				 const Array<int> & dnums2,
 				 const FlatMatrix<SCAL> & elmat,
 				 bool inner_element, int elnr,
 				 LocalHeap & lh) = 0;
@@ -401,7 +401,7 @@ public:
   virtual void ApplyElementMatrix(const BaseVector & x,
 				  BaseVector & y,
 				  const SCAL & val,
-				  const ARRAY<int> & dnums,
+				  const Array<int> & dnums,
 				  const ElementTransformation & eltrans,
 				  const int elnum,
 				  const int type,
@@ -411,7 +411,7 @@ public:
 				  const SpecialElement * sel = NULL) const
   { cerr << "ApplyElementMatrix called for baseclass" << endl;}
 
-  virtual void AddDiagElementMatrix (const ARRAY<int> & dnums1,
+  virtual void AddDiagElementMatrix (const Array<int> & dnums1,
 				     const FlatVector<SCAL> & diag,
 				     bool inner_element, int elnr,
 				     LocalHeap & lh);
@@ -452,8 +452,8 @@ public:
   virtual void CleanUpLevel();
 
   ///
-  virtual void AddElementMatrix (const ARRAY<int> & dnums1,
-				 const ARRAY<int> & dnums2,
+  virtual void AddElementMatrix (const Array<int> & dnums1,
+				 const Array<int> & dnums2,
 				 const FlatMatrix<TSCAL> & elmat,
 				 bool inner_element, int elnr,
 				 LocalHeap & lh);
@@ -461,7 +461,7 @@ public:
   virtual void ApplyElementMatrix(const BaseVector & x,
 				  BaseVector & y,
 				  const TSCAL & val,
-				  const ARRAY<int> & dnums,
+				  const Array<int> & dnums,
 				  const ElementTransformation & eltrans,
 				  const int elnum,
 				  const int type,
@@ -503,15 +503,15 @@ public:
 
   virtual BaseVector * CreateVector() const;
 
-  virtual void AddElementMatrix (const ARRAY<int> & dnums1,
-				 const ARRAY<int> & dnums2,
+  virtual void AddElementMatrix (const Array<int> & dnums1,
+				 const Array<int> & dnums2,
 				 const FlatMatrix<TSCAL> & elmat,
 				 bool inner_element, int elnr,
 				 LocalHeap & lh);
   virtual void ApplyElementMatrix(const BaseVector & x,
 				  BaseVector & y,
 				  const TSCAL & val,
-				  const ARRAY<int> & dnums,
+				  const Array<int> & dnums,
 				  const ElementTransformation & eltrans,
 				  const int elnum,
 				  const int type,
@@ -553,20 +553,20 @@ public:
   virtual void AllocateMatrix ();
   virtual BaseVector * CreateVector() const;
 
-  virtual void AddElementMatrix (const ARRAY<int> & dnums1,
-				 const ARRAY<int> & dnums2,
+  virtual void AddElementMatrix (const Array<int> & dnums1,
+				 const Array<int> & dnums2,
 				 const FlatMatrix<TSCAL> & elmat,
 				 bool inner_element, int elnr,
 				 LocalHeap & lh);
 
-  virtual void AddDiagElementMatrix (const ARRAY<int> & dnums1,
+  virtual void AddDiagElementMatrix (const Array<int> & dnums1,
 				     const FlatVector<TSCAL> & diag,
 				     bool inner_element, int elnr,
 				     LocalHeap & lh);
   virtual void ApplyElementMatrix(const BaseVector & x,
 				  BaseVector & y,
 				  const TSCAL & val,
-				  const ARRAY<int> & dnums,
+				  const Array<int> & dnums,
 				  const ElementTransformation & eltrans,
 				  const int elnum,
 				  const int type,

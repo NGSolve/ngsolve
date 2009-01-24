@@ -67,7 +67,7 @@ public:
     ost << "type = " << ClassName() << endl;
   }
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     cout << "MemoryUsage not implemented for preconditioner " << ClassName() << endl;
   }
@@ -130,7 +130,7 @@ public:
 
   virtual void PrintReport (ostream & ost);
 
-  virtual void MemoryUsage (ARRAY<MemoryUsageStruct*> & mu) const;
+  virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
   void MgTest () const;
 };
@@ -519,7 +519,7 @@ public:
 						    const Flags & aflags));
   };
   
-  ARRAY<PreconditionerInfo*> prea;
+  Array<PreconditionerInfo*> prea;
 public:
   PreconditionerClasses();
   ~PreconditionerClasses();  
@@ -527,7 +527,7 @@ public:
 			  Preconditioner* (*acreator)(const PDE & pde, 
 						      const Flags & aflags));
   
-  const ARRAY<PreconditionerInfo*> & GetPreconditioners() { return prea; }
+  const Array<PreconditionerInfo*> & GetPreconditioners() { return prea; }
   const PreconditionerInfo * GetPreconditioner(const string & name);
 
   void Print (ostream & ost) const;

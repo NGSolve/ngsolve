@@ -104,7 +104,7 @@ namespace ngfem
 
 
   template<int D>
-  void H1HighOrderFiniteElement<D> :: GetDofs (ARRAY<Dof> & dofs) const
+  void H1HighOrderFiniteElement<D> :: GetDofs (Array<Dof> & dofs) const
   {
     dofs.SetSize (0);
     
@@ -277,7 +277,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void H1HighOrderTrig<T_ORTHOPOL> ::  
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
 
@@ -430,7 +430,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void H1HighOrderQuad<T_ORTHOPOL> ::  
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
 
@@ -606,7 +606,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void H1HighOrderTet<T_ORTHOPOL> ::  
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
 
@@ -808,7 +808,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void H1HighOrderPrism<T_ORTHOPOL> ::  
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
 
@@ -1049,7 +1049,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void H1HighOrderHex<T_ORTHOPOL> ::  
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
 
@@ -1249,7 +1249,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   void H1HighOrderPyramid<T_ORTHOPOL> ::  
-  GetInternalDofs (ARRAY<int> & idofs) const
+  GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
 

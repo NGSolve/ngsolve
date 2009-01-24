@@ -19,7 +19,7 @@ namespace ngla
   SparseCholesky<TM, TV_ROW, TV_COL> :: 
   SparseCholesky (const SparseMatrix<TM, TV_ROW, TV_COL> & a, 
 		  BitArray * ainner,
-		  ARRAY<int> * acluster,
+		  Array<int> * acluster,
 		  bool allow_refactor)
     : mat(a)
   { 
@@ -164,9 +164,9 @@ namespace ngla
   
   template <class TM, class TV_ROW, class TV_COL>
   void SparseCholesky<TM, TV_ROW, TV_COL> :: 
-  Allocate (const ARRAY<int> & aorder, 
-	    // const ARRAY<CliqueEl*> & cliques,
-	    const ARRAY<MDOVertex> & vertices,
+  Allocate (const Array<int> & aorder, 
+	    // const Array<CliqueEl*> & cliques,
+	    const Array<MDOVertex> & vertices,
 	    const int * blocknr)
   {
     int n = aorder.Size();
@@ -317,7 +317,7 @@ namespace ngla
     
     enum { BS = 4 };
 
-    ARRAY<TM> sum(BS*maxrow);
+    Array<TM> sum(BS*maxrow);
 
     double flops1 = 0;
     double flops2 = 0;
@@ -340,7 +340,7 @@ namespace ngla
 
         // #pragma omp parallel
         {
-          // ARRAY<TM> sum(BS*maxrow);
+          // Array<TM> sum(BS*maxrow);
           
           for (int jj = 0; jj < miBS; jj+=4)
             {
@@ -484,7 +484,7 @@ namespace ngla
 
 #pragma omp parallel
         {
-          ARRAY<TM> sum(BS*maxrow);
+          Array<TM> sum(BS*maxrow);
           
 #pragma omp for
           for (int j = 0; j < miBS; j+=BS)
@@ -657,7 +657,7 @@ namespace ngla
     
     enum { BS1 = 6 };
     enum { BS = 6 };
-    // ARRAY<double> sum(BS1*maxrow)
+    // Array<double> sum(BS1*maxrow)
     ;
     __m128d * dsum = (__m128d*)_mm_malloc (BS1*maxrow*sizeof(double), 16);
     FlatArray<double> sum(BS1*maxrow, (double*)dsum);
