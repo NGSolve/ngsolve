@@ -96,14 +96,14 @@ Many bilinear-forms are of the structure
 
 \f$\int  D \partial u \cdot  \partial v \, dx \f$
 
-where $\partial$ is some differential operator, i.e., the gradient, and $D$
-is the material tensor. Then, the finite elemen matrix $A_T$ is computed as
-\begin{equation}
+where \f$\partial\f$ is some differential operator, i.e., the gradient, and \f$D\f$
+is the material tensor. Then, the finite elemen matrix \f$A_T\f$ is computed as
+\f[
 A_T = \sum_{Int.Pts.} \omega |J| B^T D B.
-\end{equation}
-The elements of the matrix $B$ are the values of the differential operator
+\f]
+The elements of the matrix \f$B\f$ are the values of the differential operator
 applied to the shape functions in the integration point, i.e.,
-$B_{i,j} = (\partial \varphi_j)_i$.
+\f$B_{i,j} = (\partial \varphi_j)_i\f$.
 
 The BDBIntegrator is a derived class from BilinearFormIntegrator. 
 Here, the differential operator and the material tensor are defined by

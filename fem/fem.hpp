@@ -17,11 +17,12 @@
 #include <nginterface.h>
 #endif
 
-/** namespace for finite elements
-	
-Definition of reference FiniteElement, mixed fe HDivFiniteElement and HCurlFiniteElementD 
-
-Element-matrix and element-vector assembling BilinearFormIntegrator, LinearFormIntegrator
+/**
+   namespace for finite elements.
+   
+   Definition of reference FiniteElement, mixed fe HDivFiniteElement and HCurlFiniteElementD 
+   
+   Element-matrix and element-vector assembling BilinearFormIntegrator, LinearFormIntegrator
 */
 namespace ngfem
 {
