@@ -1,4 +1,4 @@
-gen# Doxyfile 1.4.6
+# Doxyfile 1.4.6
 
 # This file describes the settings to be used by the documentation system
 # doxygen (www.doxygen.org) for a project
@@ -459,7 +459,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = doc/doxymain ngstd/ngstd.hpp basiclinalg/bla.hpp \
+INPUT                  = doxymain ngstd/ngstd.hpp basiclinalg/bla.hpp \
         linalg/la.hpp fem/fem.hpp comp/comp.hpp solve/solve.hpp
 
 # If the value of the INPUT tag contains directories, you can use the 
