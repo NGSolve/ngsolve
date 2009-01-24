@@ -8,7 +8,7 @@
    Finite element package NGSolve
 */
 
-// #include <stdinclude.hpp>
+
 #include <solve.hpp>
 
 #ifdef PARALLEL
@@ -22,9 +22,9 @@ using namespace ngsolve;
 
 
 // for tcltk ...
-#include <tcl.h>   // "../libsrc/include/incvis.hpp"
-
+#include <tcl.h>  
 #include <nginterface.h>
+
 
 namespace netgen {
 #include <ngexception.hpp>
@@ -140,11 +140,10 @@ int NGS_Help (ClientData clientData,
 }
 
 
-// ngcomp::MeshAccess * ma = 0;
-// ngsolve::PDE * pde = 0;
 
 AutoPtr<ngcomp::MeshAccess> ma;
 AutoPtr<ngsolve::PDE> pde;
+
 
 
 #ifdef PARALLEL
@@ -163,6 +162,10 @@ namespace ngparallel
 }
 #endif
 
+
+
+
+
 #ifdef SOCKETS
 AutoPtr<ngsolve::ServerJobManager> serverjobmanager;
 namespace netgen {
@@ -170,6 +173,8 @@ namespace netgen {
   extern ServerSocketManager serversocketmanager;
 }
 #endif
+
+
 
 int NGS_LoadPDE (ClientData clientData,
 		 Tcl_Interp * interp,
@@ -372,25 +377,6 @@ int NGS_PrintMemoryUsage (ClientData clientData,
   // netgen::BaseMoveableMem::Print ();
   netgen::BaseDynamicMem::Print ();
 
-  /*
-extern int mem_alloc;
-extern int mem_total_alloc;
-extern int mem_max_alloc;
-extern int mem_total_alloc_array;
-extern int mem_total_alloc_table;
-extern int mem_total_alloc_vector;
-  */
-  /*
-  cout << "total mem allocation = " << mem_total_alloc
-       << ", max mem allocation = " << mem_max_alloc << endl;
-  cout << "total_array = " << mem_total_alloc_array << endl;
-  cout << "total_table = " << mem_total_alloc_table << endl;
-  cout << "total_vector = " << mem_total_alloc_vector << endl;
-  */
-  /*
-  if (pde)
-    pde->PrintMemoryUsage(cout);
-  */
   return TCL_OK;
 }
 
@@ -612,6 +598,7 @@ int NGS_GetData (ClientData clientData,
   return TCL_OK;
 }
 
+
 char playanimfile[256];
 extern void PlayAnimFile(const char* name, int speed, int maxcnt);
 /*
@@ -623,6 +610,8 @@ void * PlayAnim(void *)
   return NULL;
 }
 */
+
+
 int NGS_PlayAnim (ClientData clientData,
 		  Tcl_Interp * interp,
 		  int argc, tcl_const char *argv[])
@@ -651,28 +640,6 @@ int NGS_PlayAnim (ClientData clientData,
 
 
 
-
-int NGS_Waves (ClientData clientData,
-	       Tcl_Interp * interp,
-	       int argc, tcl_const char *argv[])
-{
-  /*
-  static ngs::Waves * waves;
-  if (argc == 3)
-    {
-      ngs::intrules = new ngs::IntegrationRules();
-      ma = new ngs::MeshAccess();
-      waves = new ngs::Waves (*ma, atof(argv[1]), atoi(argv[2]));
-    }
-  else if (argc == 2)
-    {
-      if (strcmp (argv[1], "interpolate") == 0)
-	waves -> Interpolate();
-    }
-  */
-  cerr << "NGWaves: currently not available" << endl;
-  return TCL_OK;
-}
 
 
 
@@ -768,10 +735,6 @@ int NGSolve_Init (Tcl_Interp * interp)
 		     (ClientData)NULL,
 		     (Tcl_CmdDeleteProc*) NULL);
 
-  Tcl_CreateCommand (interp, "NGS_Waves", NGS_Waves,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
   Tcl_CreateCommand (interp, "NGS_Set", NGS_Set,
 		     (ClientData)NULL,
 		     (Tcl_CmdDeleteProc*) NULL);
@@ -803,6 +766,9 @@ void NGSolve_Exit ()
   Parallel_Exit();
 #endif
 }
+
+
+
 
 
 
