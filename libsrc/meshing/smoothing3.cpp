@@ -1266,7 +1266,7 @@ void Mesh :: ImproveMesh (const CSGeometry & geometry, OPTIMIZEGOAL goal)
 
   int uselocalh = mparam.uselocalh;
 
-  (*testout).precision(8);
+  (*testout) << setprecision(8);
   (*testout) << "Improve Mesh" << "\n";
   PrintMessage (3, "ImproveMesh");
   //  (*mycout) << "Vol = " << CalcVolume (points, volelements) << endl;
@@ -1470,7 +1470,7 @@ void Mesh :: ImproveMesh (OPTIMIZEGOAL goal)
   
   Vector x(3);
   
-  (*testout).precision(8);
+  (*testout) << setprecision(8);
   
   //int uselocalh = mparam.uselocalh;
 
@@ -1606,7 +1606,7 @@ void Mesh :: ImproveMeshJacobian (OPTIMIZEGOAL goal, const BitArray * usepoint)
   
   Vector x(3);
   
-  (*testout).precision(8);
+  (*testout) << setprecision(8);
   
   JacobianPointFunction pf(points, volelements);
   

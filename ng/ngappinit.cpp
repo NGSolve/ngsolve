@@ -183,8 +183,8 @@ int main(int argc, char ** argv)
 
   if ( netgen::id == 0 )
     {
-      // if (parameters.StringFlagDefined ("testout"))
-      netgen::testout = new ofstream (parameters.GetStringFlag ("testout", "test.out"));
+      if (parameters.StringFlagDefined ("testout"))      
+        netgen::testout = new ofstream (parameters.GetStringFlag ("testout", "test.out"));
 
 
 #ifdef SOCKETS
@@ -330,7 +330,7 @@ int main(int argc, char ** argv)
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
 #endif
-
+      
       Tcl_Exit(0);
     }
 #ifdef PARALLEL

@@ -101,6 +101,9 @@ namespace netgen
 
   void Mesh :: DeleteMesh()
   {
+    NgLock lock(mutex);
+    lock.Lock();
+
     points.SetSize(0);
     segments.SetSize(0);
     surfelements.SetSize(0);
@@ -131,6 +134,7 @@ namespace netgen
     paralleltop = new ParallelMeshTopology (*this);
 #endif
 
+    lock.UnLock();
 
     timestamp = NextTimeStamp();
   }

@@ -330,7 +330,13 @@ namespace netgen
 	VisualScene::BuildScene (zoomall);
 	return;
       }
-      
+
+    if (!lock)
+      {
+	lock = new NgLock (mesh->Mutex());
+	lock -> Lock();
+      }
+
     int i, j;
 	
 
@@ -413,7 +419,6 @@ namespace netgen
 	glDeleteLists (identifiedlist, 1);
 	identifiedlist = 0;
       }
-
 
     pointnumberlist = glGenLists (1);
     glNewList (pointnumberlist, GL_COMPILE);
@@ -598,13 +603,6 @@ namespace netgen
 	//      	glDisable (GL_COLOR_MATERIAL);
       }
     glEndList ();
-
-
-
-
-
-
-
 
 
 
@@ -845,9 +843,6 @@ namespace netgen
     glEndList ();
   
 
-
-  
-
     if (1)
       {
       
@@ -858,31 +853,43 @@ namespace netgen
   
 	glLineWidth (3);
       
-
 	//  for (i = 1; i <= mesh->GetNSeg(); i++)
-	INDEX_2_HASHTABLE<int> & idpts = 
-	  mesh->GetIdentifications().GetIdentifiedPoints();
-	if (&idpts)
-	  for (i = 1; i <= idpts.GetNBags(); i++)
-	    for (j = 1; j <= idpts.GetBagSize(i); j++)
-	      {
-		INDEX_2 pts;
-		int val;
 
-		idpts.GetData (i, j, pts, val);
-		const Point3d & p1 = mesh->Point(pts.I1());
-		const Point3d & p2 = mesh->Point(pts.I2());
-      
-		glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, 
-			      identifiedcol);
-
-		glBegin (GL_LINES);
-		glVertex3f (p1.X(), p1.Y(), p1.Z());
-		glVertex3f (p2.X(), p2.Y(), p2.Z());
-		glEnd(); 
-	      }
+        if (& mesh -> GetIdentifications() )
+          {
+            INDEX_2_HASHTABLE<int> & idpts = 
+              mesh->GetIdentifications().GetIdentifiedPoints();
+            if (&idpts)
+              {
+                for (i = 1; i <= idpts.GetNBags(); i++)
+                  for (j = 1; j <= idpts.GetBagSize(i); j++)
+                    {
+                      INDEX_2 pts;
+                      int val;
+                      
+                      idpts.GetData (i, j, pts, val);
+                      const Point3d & p1 = mesh->Point(pts.I1());
+                      const Point3d & p2 = mesh->Point(pts.I2());
+                      
+                      glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, 
+                                    identifiedcol);
+                      
+                      glBegin (GL_LINES);
+                      glVertex3f (p1.X(), p1.Y(), p1.Z());
+                      glVertex3f (p2.X(), p2.Y(), p2.Z());
+                      glEnd(); 
+                    }
+              }
+          }
 
 	glEndList ();
+      }
+
+    if (lock)
+      {
+	lock -> UnLock();
+	delete lock;
+	lock = NULL;
       }
 
     vstimestamp = meshtimestamp;
@@ -936,7 +943,6 @@ namespace netgen
     // clock_t starttime, endtime;
     // starttime = clock();
 
-    
     if (!lock)
       {
 	lock = new NgLock (mesh->Mutex());

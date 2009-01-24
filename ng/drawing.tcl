@@ -4,6 +4,7 @@
 set oldmousex 0
 set oldmousey 0
 #
+
 # if { 1 } {
 if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect false }] } {    
     puts "no OpenGL" 

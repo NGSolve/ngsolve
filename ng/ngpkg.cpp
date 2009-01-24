@@ -4596,7 +4596,9 @@ namespace netgen
     for ( int dest = 1; dest < ntasks; dest++)
       MyMPI_Send ( "end", dest );
 #endif
-    delete testout;
+
+    if (testout != &cout)
+      delete testout;
 
     return TCL_OK;
   }

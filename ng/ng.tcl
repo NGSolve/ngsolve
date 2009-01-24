@@ -89,7 +89,7 @@ catch {
 
 
 
-catch { source ${ngdir}/ngsolve/ngsolve.tcl }
+# catch { source ${ngdir}/ngsolve/ngsolve.tcl }
 # catch { [source ${ngdir}/ngsolve/preproc.tcl] }
 # catch { [source ${ngdir}/ngsolve/pdecreator.tcl] }
 

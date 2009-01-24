@@ -153,7 +153,8 @@ namespace netgen
 
     (*testout) << endl;
     (*testout) << "Elements in qualityclasses:" << endl;
-    (*testout).precision(2);
+    // (*testout).precision(2);
+    (*testout) << setprecision(2);
     for (i = 1; i <= ncl; i++)
       {
 	(*testout) << setw(4) << double (i-1)/ncl << " - "
@@ -607,7 +608,7 @@ namespace netgen
     (*testout) << endl;
 
     (*testout) << "Volume elements in qualityclasses:" << endl;
-    (*testout).precision(2);
+    (*testout) << setprecision(2);
     for (i = 1; i <= ncl; i++)
       {
 	(*testout) << setw(4) << double (i-1)/ncl << " - "

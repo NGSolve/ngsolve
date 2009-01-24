@@ -19,9 +19,6 @@ extern void ResetTime ();
 ///
 extern int testmode;
 
-// extern ostream * testout;
-// extern AutoPtr<ostream> testout;
-
 /// calling parameters
 extern Flags parameters;
 

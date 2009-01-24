@@ -661,7 +661,6 @@ namespace netgen
 		    int perfstepsstart, int perfstepsend,
 		    const char * optstr)
   {
-
     if (mesh && mesh->GetNSE() &&
 	!geom.GetNSolids())
       {
@@ -673,8 +672,14 @@ namespace netgen
 
     if (perfstepsstart <= MESHCONST_ANALYSE)
       {
+        /*
 	delete mesh;
 	mesh = new Mesh();
+        */
+        if (mesh)
+          mesh -> DeleteMesh();
+        else
+          mesh = new Mesh();
 
 	mesh->SetGlobalH (mparam.maxh);
 	mesh->SetMinimalH (mparam.minh);

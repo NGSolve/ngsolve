@@ -7,7 +7,11 @@ namespace netgen
   // stringstream emptystr;
   // ostream * testout = &emptystr;
   // testout -> clear(ios::failbit);
-  ostream * testout = &cout;
+
+  // ostream * testout = &cout;
+  ostream * testout = new ostream(0);
+
+  // NetgenOutStream * testout = new NetgenOutStream;
 
   ostream * mycout = &cout;
   ostream * myerr = &cerr;

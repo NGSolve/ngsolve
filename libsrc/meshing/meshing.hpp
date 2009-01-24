@@ -3,9 +3,6 @@
 
 
 
-#define CURVEDELEMS_NEW
-
-
 #include "../include/myadt.hpp"
 #include "../include/gprim.hpp"
 #include "../include/linalg.hpp"
@@ -56,12 +53,7 @@ namespace netgen
 #include "findip2.hpp"
 
 #include "topology.hpp"
-
-#ifdef CURVEDELEMS_NEW
-#include "curvedelems_new.hpp"
-#else
 #include "curvedelems.hpp"
-#endif
 #include "clusters.hpp"
 
 #ifdef _INCLUDE_MORE
