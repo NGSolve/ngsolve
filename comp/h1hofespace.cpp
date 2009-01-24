@@ -528,7 +528,6 @@ namespace ngcomp
     //     (*testout) << "first edge = " << first_edge_dof << endl;
     //     (*testout) << "first face = " << first_face_dof << endl;
     //     (*testout) << "first inner = " << first_element_dof << endl;
-
   }
 
 
@@ -539,6 +538,7 @@ namespace ngcomp
 	H1HighOrderFiniteElement<2> * hofe2d = 0;
 	H1HighOrderFiniteElement<3> * hofe3d = 0;
 
+        /*
 	if (fast_pfem)
 	  {
 	    switch (ma.GetElType(elnr))
@@ -576,128 +576,8 @@ namespace ngcomp
 		}
 	      }
 	  }
-#ifdef SABINE 
-	else if  (fast_pfem_sz)
-	  {
-	    switch (ma.GetElType(elnr))
-	      {
-	      case ET_TET:
-		{
-		 
-		  // hofe = new (lh.Alloc (sizeof(H1HighOrderTetFast)))  H1HighOrderTetFast (order);
-                  hofe3d = new (lh.Alloc (sizeof(H1HighOrderTetTPSZ)))  H1HighOrderTetTPSZ (order);
-		  break;
-		}
-	      case ET_PRISM:
-		{
-                  hofe3d = new (lh.Alloc (sizeof(H1HighOrderPrismTPSZ)))  H1HighOrderPrismTPSZ (order);
-		  break;
-		}
-	      case ET_HEX:
-		{
-                  hofe3d = new (lh.Alloc (sizeof(H1HighOrderHexTPSZ)))  H1HighOrderHexTPSZ (order);
-		  break;
-		}
-	      case ET_TRIG:
-		{
-		  hofe2d = new (lh.Alloc (sizeof(H1HighOrderTP<ET_TRIG>SZ)))  H1HighOrderTP<ET_TRIG>SZ (order);
-		  break;
-		}
-	      default:
-		{ 
-		  throw Exception ("GetFE not supported for fast element");
-		}
-	      }
-	  }
-#endif 
-
-	else if (minext)
-	  {
-            cout << "H1-elements with minext currently not supported" << endl;
-            /*
-              typedef TrigExtensionMin T_ORTHOPOL;
-
-              switch (ma.GetElType(elnr))
-	      {
-	      case ET_TET:
-              {
-              hofe = new (lh.Alloc (sizeof(H1HighOrderTet<T_ORTHOPOL>)))  H1HighOrderTet<T_ORTHOPOL> (order);
-              break;
-              }
-	      case ET_PYRAMID:
-              {
-              hofe = new (lh.Alloc (sizeof(H1HighOrderPyramid<T_ORTHOPOL>)))  H1HighOrderPyramid<T_ORTHOPOL> (order);
-              break;
-              }
-	      case ET_PRISM:
-              {
-              hofe = new (lh.Alloc (sizeof(H1HighOrderPrism<T_ORTHOPOL>)))  H1HighOrderPrism<T_ORTHOPOL> (order);
-              break;
-              }
-	      case ET_HEX:
-              {
-              hofe = new (lh.Alloc (sizeof(H1HighOrderHex<T_ORTHOPOL>)))  H1HighOrderHex<T_ORTHOPOL> (order);
-              break;
-              }
-	      case ET_TRIG:
-              {
-              hofe = new (lh.Alloc (sizeof(H1HighOrderTrig<T_ORTHOPOL>)))  H1HighOrderTrig<T_ORTHOPOL> (order);
-              break;
-              }
-	      case ET_QUAD:
-              {
-              hofe = new (lh.Alloc (sizeof(H1HighOrderQuad<T_ORTHOPOL>)))  H1HighOrderQuad<T_ORTHOPOL> (order);
-              break;
-              }
-	      default:
-              hofe = 0; 
-	      }
-            */
-	  }
-	else if (optext)
-	  {
-            cout << "H1-elements with optext currently not supported" << endl;
-            /*
-              typedef TrigExtensionOptimal T_ORTHOPOL;
-
-              switch (ma.GetElType(elnr))
-	      {
-	      case ET_TET:
-              {
-              hofe = new (lh.Alloc (sizeof(H1HighOrderTet<T_ORTHOPOL>)))  H1HighOrderTet<T_ORTHOPOL> (order);
-              break;
-              }
-	      case ET_PYRAMID:
-              {
-              hofe = new (lh.Alloc (sizeof(H1HighOrderPyramid<T_ORTHOPOL>)))  H1HighOrderPyramid<T_ORTHOPOL> (order);
-              break;
-              }
-	      case ET_PRISM:
-              {
-              hofe = new (lh.Alloc (sizeof(H1HighOrderPrism<T_ORTHOPOL>)))  H1HighOrderPrism<T_ORTHOPOL> (order);
-              break;
-              }
-	      case ET_HEX:
-              {
-              hofe = new (lh.Alloc (sizeof(H1HighOrderHex<T_ORTHOPOL>)))  H1HighOrderHex<T_ORTHOPOL> (order);
-              break;
-              }
-	      case ET_TRIG:
-              {
-              hofe = new (lh.Alloc (sizeof(H1HighOrderTrig<T_ORTHOPOL>)))  H1HighOrderTrig<T_ORTHOPOL> (order);
-              break;
-              }
-	      case ET_QUAD:
-              {
-              hofe = new (lh.Alloc (sizeof(H1HighOrderQuad<T_ORTHOPOL>)))  H1HighOrderQuad<T_ORTHOPOL> (order);
-              break;
-              }
-	      default:
-              hofe = 0; 
-	      }
-            */
-	  }
 	else
+        */
 	  {
 	    typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 
@@ -853,6 +733,7 @@ namespace ngcomp
     H1HighOrderFiniteElement<1> * hofe1d;
     H1HighOrderFiniteElement<2> * hofe2d;
 
+    /*
     if (fast_pfem)
       {
 	switch (ma.GetSElType(elnr))
@@ -879,89 +760,8 @@ namespace ngcomp
 	    }
 	  }
       }
-#ifdef SABINE
-    else if (fast_pfem_sz) 
-      {
-	switch (ma.GetSElType(elnr))
-	  {
-	  case ET_TRIG:
-	    {
-	      hofe2d = new (lh.Alloc (sizeof(H1HighOrderTrigTPSZ)))  H1HighOrderTrigTPSZ (order);
-	      break;
-	    }
-	  case ET_QUAD:
-	    {
-	      hofe2d = new (lh.Alloc (sizeof(H1HighOrderQuad<>)))  H1HighOrderQuad<> (order);
-	      break;
-	    }
-	  case ET_SEGM:
-	    {
-	      hofe1d = new (lh.Alloc (sizeof(H1HighOrderSegm<IntegratedLegendreMonomialExt>)))  H1HighOrderSegm<IntegratedLegendreMonomialExt> (order);
-	      break;
-	    }
-	  default:
-	    {
-	      throw Exception ("GetFE not supported for fast element");
-	    }
-	  }
-
-      }
-#endif
-    else if (minext)
-      {
-        /*
-          typedef TrigExtensionMin T_ORTHOPOL;
-	
-          switch (ma.GetSElType(elnr))
-	  {
-	  case ET_TRIG:
-          {
-          hofe = new (lh.Alloc (sizeof(H1HighOrderTrig<T_ORTHOPOL>)))  H1HighOrderTrig<T_ORTHOPOL> (order);
-          break;
-          }
-	  case ET_QUAD:
-          {
-          hofe = new (lh.Alloc (sizeof(H1HighOrderQuad<T_ORTHOPOL>)))  H1HighOrderQuad<T_ORTHOPOL> (order);
-          break;
-          }
-	  case ET_SEGM:
-          {
-          hofe = new (lh.Alloc (sizeof(H1HighOrderSegm<T_ORTHOPOL>)))  H1HighOrderSegm<T_ORTHOPOL> (order);
-          break;
-          }
-	  default:
-          hofe = 0; 
-	  }
-        */
-      }
-    else if (optext)
-      {
-        /*
-          typedef TrigExtensionOptimal T_ORTHOPOL;
-	
-          switch (ma.GetSElType(elnr))
-	  {
-	  case ET_TRIG:
-          {
-          hofe = new (lh.Alloc (sizeof(H1HighOrderTrig<T_ORTHOPOL>)))  H1HighOrderTrig<T_ORTHOPOL> (order);
-          break;
-          }
-	  case ET_QUAD:
-          {
-          hofe = new (lh.Alloc (sizeof(H1HighOrderQuad<T_ORTHOPOL>)))  H1HighOrderQuad<T_ORTHOPOL> (order);
-          break;
-          }
-	  case ET_SEGM:
-          {
-          hofe = new (lh.Alloc (sizeof(H1HighOrderSegm<T_ORTHOPOL>)))  H1HighOrderSegm<T_ORTHOPOL> (order);
-          break;
-          }
-	  default:
-          hofe = 0; 
-	  }
-        */
-      }
     else
+    */
       {
 	typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 	
@@ -2656,7 +2456,7 @@ das sollte nicht definiert sein
     
     Init::Init()
     {
-      GetFESpaceClasses().AddFESpace ("h1ho", H1HighOrderFESpace::Create);
+      GetFESpaceClasses().AddFESpace ("h1hotp", H1HighOrderFESpace::Create);
     }
     
     Init init_h1hofespace;

@@ -8,7 +8,7 @@
 /*********************************************************************/
 
 /** 
-    NG-Solve base class
+    NGSolve base class
 */
 
 class NGS_Object
@@ -161,6 +161,9 @@ else \
 #endif
 
 #endif
+
+
+
 
 
 
