@@ -54,7 +54,7 @@ proc ngtest { {t all} {f ""}} {
     puts "\n*** performing in2d file tests ***"
     puts " ** writing results to $f"
     puts "\n ** testing in2d files in examples/ **" 
-    set testdir "$::ngdir/examples"
+    set testdir "$::ngdir/../examples"
     set in2dfiles { beam2d hyperbolic piezo2dround rectangle
                     squareincl squareinsquare }
     foreach {tfile} $in2dfiles {
@@ -64,7 +64,7 @@ proc ngtest { {t all} {f ""}} {
     }  
   
     puts "\n ** testing in2d files in tutorials/ **"
-    set testdir "$::ngdir/tutorials"
+    set testdir "$::ngdir/../tutorials"
     set in2dfiles { demo2d  newin2d  square  v2in2d }
     foreach {tfile} $in2dfiles {
       if {$f != ""} { puts "  * meshing file tutorials/$tfile.in2d..." }
@@ -76,7 +76,7 @@ proc ngtest { {t all} {f ""}} {
     puts "\n*** performing geo file tests ***"
     puts " ** writing results to $f"
     puts "\n ** testing geo files in examples/ **"
-    set testdir "$::ngdir/examples"
+    set testdir "$::ngdir/../examples"
     set geofiles { beam cylsphere rboxcyl thinc 
        boxcyl fichera period saw_3d thinplate 
        coilshield  gamm3d plate shaft tripelpendel 
@@ -89,7 +89,7 @@ proc ngtest { {t all} {f ""}} {
     } 
   
     puts "\n ** testing geo files in tutorials/ **"
-    set testdir "$::ngdir/tutorials"
+    set testdir "$::ngdir/../tutorials"
     set geofiles { boxcyl          cubemcyl     extrusion  revolution    trafo
                    circle_on_cube  cubemsphere  fichera    sculpture     twobricks
                    cone            cylinder     lshape3d   shaft         twocubes
@@ -107,7 +107,7 @@ proc ngtest { {t all} {f ""}} {
 #    set logfile [open stltest.log "w"]
     puts " ** writing results to $f"
     puts "\n ** testing stl files in examples/ **"
-    set testdir "$::ngdir/examples"
+    set testdir "$::ngdir/../examples"
     set stlfiles { crankshaft hinge1 }
     foreach {tfile} $stlfiles {
       if {$f != ""} { puts "  * meshing file examples/$tfile.stl..." }
@@ -116,7 +116,7 @@ proc ngtest { {t all} {f ""}} {
     }
   
     puts "\n ** testing stl files in tutorials/ **"
-    set testdir "$::ngdir/tutorials"
+    set testdir "$::ngdir/../tutorials"
     set stlfiles { hinge part1 }
     foreach {tfile} $stlfiles {
       if {$f != ""} { puts "  * meshing file tutorials/$tfile.stl..." }
@@ -130,7 +130,7 @@ proc ngtest { {t all} {f ""}} {
     puts " ** writing results to $f"
     
     puts "\n ** testing pde files in ngsolve/pde_tutorial/ **"
-    set testdir "$::ngdir/ngsolve/pde_tutorial"
+    set testdir "$::ngdir/../ngsolve/pde_tutorial"
     set pdefiles { d1_square.pde d2_chip.pde d3_helmholtz.pde d4_cube.pde
                    d5_beam.pde d6_shaft.pde d7_coil.pde d8_coilshield.pde }
      

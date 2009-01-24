@@ -556,10 +556,8 @@ namespace netgen
 
 	PrintMessage (3, (mesh.GetNSE() - oldnf), " elements, ", mesh.GetNP(), " points");
 
-#ifdef OPENGL
 	extern void Render();
 	Render();
-#endif
       }
     
     mesh.Compress();
@@ -636,10 +634,8 @@ namespace netgen
 	    PrintMessage (3, (mesh.GetNSE() - oldnf), " elements, ", mesh.GetNP(), " points");
 	  }
       
-#ifdef OPENGL
 	extern void Render();
 	Render();
-#endif
       }
     while (changed);
 

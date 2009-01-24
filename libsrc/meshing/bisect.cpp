@@ -2632,6 +2632,7 @@ namespace netgen
     PrintMessage(1,"Mesh bisection");
     PushStatus("Mesh bisection");
 
+
     static int localizetimer = NgProfiler::CreateTimer("localize edgepoints");
     NgProfiler::RegionTimer * loct = new NgProfiler::RegionTimer(localizetimer);   
     LocalizeEdgePoints(mesh);
@@ -2699,7 +2700,6 @@ namespace netgen
       if (opt.refinementfilename || opt.usemarkedelements)
       maxsteps = 3;
     */
-
 
 
     if (opt.refine_p)   
@@ -3167,8 +3167,6 @@ namespace netgen
 		  mtris.Elem(i).marked = 0;
 	      }
 	  }
-
-
 
 
 
@@ -3823,8 +3821,6 @@ namespace netgen
 	    }
       }
 
-    
-
 
     // Repair works only for tets!
     bool do_repair = mesh.PureTetMesh ();
@@ -3841,7 +3837,8 @@ namespace netgen
 	  {
 	    if(isnewpoint.Test(ii) && mesh.mlbetweennodes[ii][0] > 0)
 	      {
-		mesh.Point(ii) = Center(mesh.Point(mesh.mlbetweennodes[ii][0]),mesh.Point(mesh.mlbetweennodes[ii][1]));
+		mesh.Point(ii) = Center(mesh.Point(mesh.mlbetweennodes[ii][0]),
+                                        mesh.Point(mesh.mlbetweennodes[ii][1]));
 	      }
 	  }
       }
@@ -3872,7 +3869,7 @@ namespace netgen
       }
 
 
-    if(do_repair)
+    if(do_repair)  // by Markus W
       {
 	const double max_worsening = 1;
 	
@@ -3951,15 +3948,14 @@ namespace netgen
 
 
     
-    
-
-
-
     for(i=0; i<idmaps.Size(); i++)
       delete idmaps[i];
     idmaps.DeleteAll();
 
     mesh.UpdateTopology();
+
+
+
 
     if(refelementinfofilewrite != "")
       {
@@ -3971,6 +3967,8 @@ namespace netgen
 	ofst.close();
       }
 
+
+    mesh.CalcSurfacesOfNode();
 
     PrintMessage (1, "Bisection done");
 

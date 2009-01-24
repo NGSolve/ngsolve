@@ -7,11 +7,12 @@ The interface between the GUI and the netgen library
 
 #include <mystdlib.h>
 
+/*
 #ifdef LINUX
 #include <fenv.h>
 #include <dlfcn.h>
 #endif
-
+*/
 
 #include <myadt.hpp>
 #include <linalg.hpp>
@@ -1862,8 +1863,8 @@ namespace netgen
     printmessage_importance = atoi (Tcl_GetVar (interp, "::options.printmsg", 0));
     printdots = (printmessage_importance >= 4);
 
-    BaseMoveableMem::totalsize = 
-      1048576 * atoi (Tcl_GetVar (interp, "::options.memory", 0));
+    BaseMoveableMem::totalsize = 0;
+    // 1048576 * atoi (Tcl_GetVar (interp, "::options.memory", 0));
     if (mesh.Ptr())
       {
 	mesh->SetGlobalH (mparam.maxh);
@@ -3024,8 +3025,6 @@ namespace netgen
 
   void SetVisualScene (Tcl_Interp * interp)
   {
-#ifdef OPENGL
-#ifndef SMALLLIB
     const char * vismode = vispar.selectvisual;
     // Tcl_GetVar (interp, "selectvisual", 0);
     vs = &vscross;
@@ -3066,8 +3065,6 @@ namespace netgen
 	if (strcmp (vismode, "specpoints") == 0) vs = &vsspecpoints;
 	//      if (strcmp (vismode, "solution") == 0) vs = &vssolution;
       }
-#endif // !SMALLLIB
-#endif // OPENGL
   }
 
 

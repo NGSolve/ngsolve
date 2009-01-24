@@ -591,4 +591,10 @@ void MyBeep (int i)
   ;
 }
 
+void Render()
+{
+  ; 
+}
+
+
 }

@@ -158,16 +158,16 @@ proc meshingoptionsdialog { } {
         pack $f.elementorder
 
 
-	tixControl $f.memory -label "Large Memory \[MB\]: " -integer true \
-	    -variable options.memory -min 0 -max 2000 \
-	    -options {
-		entry.width 5
-		label.width 20
-		label.anchor e
-	    }	
+#	tixControl $f.memory -label "Large Memory \[MB\]: " -integer true \
+\#	    -variable options.memory -min 0 -max 2000 \
+\#	    -options {
+#		entry.width 5
+#		label.width 20
+#		label.anchor e
+#	    }	
 
-	global userlevel
-	if { $userlevel >= 3} { pack $f.memory }
+#	global userlevel
+#	if { $userlevel >= 3} { pack $f.memory }
 
 
 	# Mesh - Size options
@@ -3415,7 +3415,7 @@ proc paralleldialog { } {
 #wm withdraw $w
 
 proc runtestdialog { } {
-    source $::ngdir/ngtcltk/ngshell.tcl
+    source $::ngdir/ngshell.tcl
     set w .runtest_dlg
     
     if {[winfo exists .runtest_dlg] == 1} {

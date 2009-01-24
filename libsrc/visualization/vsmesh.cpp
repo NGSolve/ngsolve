@@ -21,9 +21,6 @@ namespace netgen
 #include "mvdraw.hpp"
 
 
-  //  #define FAST3DELEMENTS
-
-
 
   extern AutoPtr<Mesh> mesh;
   extern STLGeometry * stlgeometry;
@@ -77,8 +74,6 @@ namespace netgen
   }
 
   
-  // ARRAY<Point3d> drawel;
-
   void VisualSceneMesh :: DrawScene ()
   {
     if (!mesh) 
@@ -369,11 +364,10 @@ namespace netgen
 	  center = mesh->Point (vispar.centerpoint);
 	else
 	  center = Center (pmin, pmax);
-	        
 	rad = 0.5 * Dist (pmin, pmax);
-	if(rad == 0) rad = 1;
+	if(rad == 0) rad = 1e-6;
       
-	if (rad > 1.5 * oldrad || 
+	if (rad > 1.2 * oldrad || 
 	    mesh->GetMajorTimeStamp() > vstimestamp || 
 	    zoomall)
 	  {
@@ -1752,262 +1746,6 @@ namespace netgen
   void VisualSceneMesh :: BuildTetList()
   {
 
-
-#ifdef FAST3DELEMENTS
-    
-
-    int i, j;
-    ARRAY<Element2d> faces;
-
-    if (tettimestamp > mesh->GetTimeStamp () &&
-	tettimestamp > vispar.clipplanetimestamp )
-      return;
-
-    if (!lock)
-      {
-	lock = new NgLock (mesh->Mutex());
-	lock -> Lock();
-      }
-
-    tettimestamp = NextTimeStamp();
-
-    if (tetlist)
-      glDeleteLists (tetlist, 1);
-
-
-    tetlist = glGenLists (1);
-    glNewList (tetlist, GL_COMPILE);
-
-  
-    BitArray shownode(mesh->GetNP());
-    if (vispar.clipenable)
-      {
-	shownode.Clear();
-	for (i = 1; i <= shownode.Size(); i++)
-	  {
-	    Point3d p = mesh->Point(i);
-	  
-	    double val =
-	      p.X() * clipplane[0] +
-	      p.Y() * clipplane[1] +
-	      p.Z() * clipplane[2] +
-	      clipplane[3];
-	  
-	    if (val > 0)
-	      shownode.Set (i);
-	  }
-      }
-    else
-      shownode.Set();
-
-#ifdef PARALLEL
-    static float tetcols[][8] = 
-      {
-	{ 1.0f, 1.0f, 0.0f, 1.0f },
-	{ 1.0f, 0.0f, 0.0f, 1.0f },
-	{ 0.0f, 1.0f, 0.0f, 1.0f },
-	{ 0.0f, 0.0f, 1.0f, 1.0f },
-	{ 1.0f, 1.0f, 0.0f, 0.3f },
-	{ 1.0f, 0.0f, 0.0f, 0.3f },
-	{ 0.0f, 1.0f, 0.0f, 0.3f },
-	{ 0.0f, 0.0f, 1.0f, 0.3f }
-      };
-
-#else
-    static float tetcols[][4] = 
-      {
-	{ 1.0f, 1.0f, 0.0f, 1.0f },
-	{ 1.0f, 0.0f, 0.0f, 1.0f },
-	{ 0.0f, 1.0f, 0.0f, 1.0f },
-	{ 0.0f, 0.0f, 1.0f, 1.0f }
-      };
-#endif
-
-    ARRAY<int> elfaces;
-
-    const MeshTopology & top = mesh->GetTopology();
-    CurvedElements & curv = mesh->GetCurvedElements();
-
-    ARRAY<int> displayface(top.GetNFaces());
-    for (i = 0; i < top.GetNFaces(); i++)
-      displayface[i] = -1;
-    
-
-    for (i = 1; i <= mesh->GetNE(); i++)
-      {
-	if (vispar.drawtetsdomain > 0 &&
-	    vispar.drawtetsdomain != mesh->VolumeElement(i).GetIndex())
-	  continue;
-
-	Element el = (*mesh)[(ElementIndex) (i-1)];
-
-	if (el.GetType() == TET)
-	  {
-	    if (el.PNum(1))
-	      {
-		bool drawtet = 1;
-		for (j = 1; j <= el.GetNP(); j++)
-		  if (!shownode.Test(el.PNum(j)))
-		    drawtet = 0;
-		if (!drawtet) continue;
-		
-		{
-		  top.GetElementFaces (i, elfaces);
-		  
-		  for (j = 0; j < 4; j++)
-		    displayface[elfaces[j]-1] *= -1;
-		}
-	      }
-	  }
-      }
-
-    
-    for (i = 1; i <= mesh->GetNE(); i++)
-      {
-	if (vispar.drawtetsdomain > 0 &&
-	    vispar.drawtetsdomain != mesh->VolumeElement(i).GetIndex())
-	  continue;
-
-	if (mesh->VolumeElement(i).GetType() == TET)
-	  {
-	    // copy to be thread-safe
-	    Element el = mesh->VolumeElement (i);
-	    el.GetSurfaceTriangles (faces);
-
-	    if (el.PNum(1))
-	      {
-		bool drawtet = 1;
-		for (j = 1; j <= el.GetNP(); j++)
-		  if (!shownode.Test(el.PNum(j)))
-		    drawtet = 0;
-		if (!drawtet) continue;
-
-		int ind = el.GetIndex() % 4;
-		if (vispar.drawmetispartition && (el.GetPartition()!=-1))
-		  ind = el.GetPartition() % 4;
-		(*testout) << "ind (" << i << ") = " << ind << endl;
-
-#ifdef PARALLEL
-		if ( mesh -> VolumeElement(i).IsGhost() )
-		  {
-		    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, tetcols[ind+4]);
-		  }
-		else
-		  {
-		    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, tetcols[ind]);
-		  }
-#else
-		glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, tetcols[ind]);
-#endif
-
-		top.GetElementFaces (i, elfaces);
-
-		glBegin (GL_TRIANGLES);
-
-		for (j = 0; j < faces.Size(); j++)
-		  {
-		    if (displayface[elfaces[j]-1] == -1) continue;
-
-		    Element2d & face = faces.Elem(j+1);
-
-		    if (curv.IsHighOrder()) //  && curv.IsElementCurved(i-1))
-		      {
-			int hoplotn = 1 << vispar.subdivisions; 
-			// int hoplotn = curv.GetNVisualSubsecs();
-			    
-			const Point3d * facepoint = MeshTopology :: GetVertices (TET);
-			const ELEMENT_FACE * elface = MeshTopology :: GetFaces(TET);
-                    
-			Vec<3> x0,x1,d0,d1;
-			Point<3> xg;
-			x0 = facepoint[face.PNum(3)-1] - facepoint[face.PNum(1)-1];
-			x1 = facepoint[face.PNum(2)-1] - facepoint[face.PNum(1)-1];
-			x0.Normalize();
-			x1.Normalize();
-
-			for (int m0 = 0; m0 < hoplotn; m0++)
-			  for (int m1 = 0; m1 < hoplotn-m0; m1++)
-			    for (int k = 0; k < 2; k++)
-			      {
-				Vec<3> dx, dy, dz, n;
-				Point<4> la[3];
-				int l;
-				for (l = 0; l<3; l++) la[l] = Point<4>(0.,0.,0.,0.);
-
-				if (k == 0)
-				  {
-				    la[0](face.PNum(1)-1) = (m0  )/(double)hoplotn;
-				    la[0](face.PNum(2)-1) = (m1  )/(double)hoplotn;
-				    la[0](face.PNum(3)-1) = 1-la[0](face.PNum(1)-1)-la[0](face.PNum(2)-1);
-
-				    la[1](face.PNum(1)-1) = (m0+1)/(double)hoplotn;
-				    la[1](face.PNum(2)-1) = (m1  )/(double)hoplotn;
-				    la[1](face.PNum(3)-1) = 1-la[1](face.PNum(1)-1)-la[1](face.PNum(2)-1);
-
-				    la[2](face.PNum(1)-1) = (m0  )/(double)hoplotn;
-				    la[2](face.PNum(2)-1) = (m1+1)/(double)hoplotn;
-				    la[2](face.PNum(3)-1) = 1-la[2](face.PNum(1)-1)-la[2](face.PNum(2)-1);
-				  } else
-				    {
-				      if (m1 == hoplotn-m0-1) continue;
-				      la[0](face.PNum(1)-1) = (m0+1)/(double)hoplotn;
-				      la[0](face.PNum(2)-1) = (m1+1)/(double)hoplotn;
-				      la[0](face.PNum(3)-1) = 1-la[0](face.PNum(1)-1)-la[0](face.PNum(2)-1);
-
-				      la[1](face.PNum(1)-1) = (m0  )/(double)hoplotn;
-				      la[1](face.PNum(2)-1) = (m1+1)/(double)hoplotn;
-				      la[1](face.PNum(3)-1) = 1-la[1](face.PNum(1)-1)-la[1](face.PNum(2)-1);
-
-				      la[2](face.PNum(1)-1) = (m0+1)/(double)hoplotn;
-				      la[2](face.PNum(2)-1) = (m1  )/(double)hoplotn;
-				      la[2](face.PNum(3)-1) = 1-la[2](face.PNum(1)-1)-la[2](face.PNum(2)-1);
-				    }
-
-				for (l = 0; l<3; l++)
-				  {
-				    Mat<3,3> dxdxi;
-				    Point<3> xr( la[l](0), la[l](1), la[l](2) );
-				    curv.CalcElementTransformation (xr, i-1, xg, dxdxi);
-				    for (int i = 0; i < 3; i++)
-				      {
-					dx(i) = dxdxi(i,0);
-					dy(i) = dxdxi(i,1);
-					dz(i) = dxdxi(i,2);
-				      }
-
-				    d0 = x0(0)*dx + x0(1)*dy + x0(2)*dz;
-				    d1 = x1(0)*dx + x1(1)*dy + x1(2)*dz;
-				    n = Cross (d0, d1);
-				    glNormal3d ( n(0),  n(1),  n(2));
-				    glVertex3d (xg(0), xg(1), xg(2));
-				  }
-			      }
-
-		      } else {
-			const Point3d & lp1 = mesh->Point (el.PNum(face.PNum(1)));
-			const Point3d & lp2 = mesh->Point (el.PNum(face.PNum(2)));
-			const Point3d & lp3 = mesh->Point (el.PNum(face.PNum(3)));
-			Vec3d n = Cross (Vec3d (lp1, lp3), Vec3d (lp1, lp2));
-			n /= (n.Length()+1e-12);
-			glNormal3d (n.X(), n.Y(), n.Z());
-			glVertex3d (lp1.X(), lp1.Y(), lp1.Z());
-			glVertex3d (lp2.X(), lp2.Y(), lp2.Z());
-			glVertex3d (lp3.X(), lp3.Y(), lp3.Z());
-		      }
-		  }
-	     
-		glEnd();
-	      }
-
-	  }
-      }
-    glEndList ();
-
-
-
-
-#else
-
     if (tettimestamp > mesh->GetTimeStamp () &&
 	tettimestamp > vispar.clipplanetimestamp )
       return;
@@ -2288,8 +2026,6 @@ namespace netgen
       }
     
     glEndList ();
-    
-#endif
   }
 
 

@@ -25,7 +25,7 @@ int EdgeUsed(int p1, int p2, ARRAY<INDEX_2>& edges, INDEX_2_HASHTABLE<int>& hash
 Point<3> STLGeometry :: PointBetween(const Point<3> & ap1, int t1, 
 				     const Point<3> & ap2, int t2)
 {
-  //funktioniert nicht in allen Fällen!
+  //funktioniert nicht in allen FÃ¤llen!
 
   PrintWarning("Point between");
 
@@ -732,8 +732,8 @@ void STLGeometry :: RestrictLocalHCurv(class Mesh & mesh, double gh)
   //  mesh.SetGlobalH(gh);
 
   double mincalch = 1E10;
-  double maxcalch = -1E10;
-
+  double maxcalch = -1E10
+;
   double objectsize = bb.Diam();
   double geometryignoreedgelength = objectsize * 1e-5;
 
@@ -923,7 +923,7 @@ void STLGeometry :: RestrictLocalH(class Mesh & mesh, double gh)
   if (stlparam.resthcloseedgeenable)
     {
       PushStatusF("Restrict H due to close edges");
-      //geht nicht für spiralen!!!!!!!!!!!!!!!!!!
+      //geht nicht fÃ¼r spiralen!!!!!!!!!!!!!!!!!!
       
       double disttohfact = sqr(10.0 / stlparam.resthcloseedgefac);
       int k,l;
@@ -1455,10 +1455,8 @@ int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh,
 	      (*statout) << GetTime() << " & ";
 #endif
 
-#ifdef OPENGL
 	      extern void Render();
 	      Render();
-#endif	      
 	    }
 	  stlgeometry->surfaceoptimized = 1;
 	}
@@ -1573,11 +1571,8 @@ int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh,
 		     << mesh->GetNP() << " " << '\\' << '\\' << " \\" << "hline" << endl;
 #endif
 
-#ifdef OPENGL
 	  extern void Render();
 	  Render();
-#endif	      
-
 	}
     }
   

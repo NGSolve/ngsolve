@@ -400,7 +400,7 @@ proc saveoptions { } {
 	    puts $datei "options.elsizeweight  ${options.elsizeweight}" 
 	    puts $datei "options.secondorder  ${options.secondorder}" 
 	    puts $datei "options.elementorder  ${options.elementorder}" 
-	    puts $datei "options.memory  ${options.memory}" 
+#	    puts $datei "options.memory  ${options.memory}" 
 	    puts $datei "options.quad  ${options.quad}" 
 	    puts $datei "options.inverttets  ${options.inverttets}" 
 	    puts $datei "options.inverttrigs  ${options.inverttrigs}" 

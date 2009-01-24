@@ -1192,11 +1192,6 @@ namespace netgen
   double EllipticCylinder :: MaxCurvatureLoc (const Point<3> & /* c */, 
                                               double /* rad */) const
   {
-#ifdef JOACHIMxxx
-    cout << "max curv local" << endl;
-    return 0.02;
-#endif
-
     // saubere Loesung wird noch notwendig !!!
     double aa = vs.Length();
     double bb = vl.Length();

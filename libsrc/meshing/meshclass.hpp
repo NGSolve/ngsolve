@@ -194,7 +194,6 @@ public:
   void ClearVolumeElements()
   {
     volelements.SetSize(0); 
-    // eltyps.SetSize(0);
     timestamp = NextTimeStamp();
   }
 
@@ -237,7 +236,7 @@ public:
     segments.Elem(segnr).p1 = PointIndex::BASE-1;
     segments.Elem(segnr).p2 = PointIndex::BASE-1;
   }
-  void FullDeleteSegment (int segnr)
+  void FullDeleteSegment (int segnr)  // von wem ist das ???
   {
     segments.Delete(segnr-PointIndex::BASE);
   }
@@ -302,20 +301,8 @@ public:
 
 
 
-
-  // ELEMENTTYPE ElementType (int i) const { return eltyps.Get(i); }
-
-
-  // ELEMENTTYPE ElementType (int i) const 
-  // { return (volelements.Get(i).fixed) ? FIXEDELEMENT : FREEELEMENT; }
-
   ELEMENTTYPE ElementType (ElementIndex i) const 
   { return (volelements[i].flags.fixed) ? FIXEDELEMENT : FREEELEMENT; }
-
-  /*
-  ELEMENTTYPE ElementType (int i) const { return eltyps.Get(i); }
-  ELEMENTTYPE ElementType (ElementIndex i) const { return eltyps[i]; }
-  */
 
   const T_VOLELEMENTS & VolumeElements() const { return volelements; }
   T_VOLELEMENTS & VolumeElements() { return volelements; }
@@ -334,7 +321,6 @@ public:
 
   /// Returns number of domains
   int GetNDomains() const;
-
 
   ///
   int GetDimension() const 
@@ -508,14 +494,6 @@ public:
 				     const ARRAY< Vec<3>* > & nv,
 				     OPTIMIZEGOAL goal = OPT_QUALITY,
 				     const ARRAY< ARRAY<int,PointIndex::BASE>* > * idmaps = NULL);
-  /*
-#ifdef SOLIDGEOM
-  /// old
-  void ImproveMesh (const CSGeometry & surfaces, 
-		    OPTIMIZEGOAL goal = OPT_QUALITY);
-#endif  
-  */
-
   /**
      free nodes in environment of openelements 
      for optimiztion

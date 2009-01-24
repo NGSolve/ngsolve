@@ -253,11 +253,8 @@ namespace netgen
     mesh -> SetNextMajorTimeStamp();
 
 
-#ifdef OPENGL
     extern void Render();
     Render();
-#endif
-
   }
 
 

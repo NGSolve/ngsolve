@@ -667,10 +667,9 @@ void STLSurfaceMeshing1 (STLGeometry & geom,
       (*testout) << "start meshing with h = " << h << endl;
       */
       meshing.GenerateMesh (mesh, h, fnr);  // face index
-#ifdef OPENGL
+
       extern void Render();
       Render();
-#endif
     }    
       
   
