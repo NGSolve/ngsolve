@@ -212,7 +212,7 @@ public:
 
   void UpdateCoarseGridGlobal();
 
-  const bool DoCoarseUpdate() const 
+  bool DoCoarseUpdate() const 
   { return !coarseupdate; }
 
 
