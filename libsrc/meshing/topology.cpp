@@ -2,9 +2,6 @@
 
 #include "meshing.hpp"
 
-#ifdef PARALLEL
-#include <parallel.hpp>
-#endif
 
 namespace netgen
 {

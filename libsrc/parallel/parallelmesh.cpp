@@ -1,7 +1,6 @@
 #ifdef PARALLEL
 
 #include <meshing.hpp>
-#include "parallel.hpp"
 #include "paralleltop.hpp"
 
 
