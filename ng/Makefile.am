@@ -1,9 +1,9 @@
-noinst_HEADERS = demoview.hpp
+include_HEADERS = 
 
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL $(OCCFLAGS)  $(TCL_INCLUDES) $(MPI_INCLUDES) 
 
 bin_PROGRAMS = netgen
-netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp nginterface.cpp parallelfunc.cpp parallelinterface.cpp
+netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp nginterface.cpp parallelfunc.cpp parallelinterface.cpp demoview.hpp parallelfunc.hpp togl_1_7.h
 
 
 netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \

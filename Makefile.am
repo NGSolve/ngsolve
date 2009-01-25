@@ -4,6 +4,7 @@ METASOURCES = AUTO
 
 SUBDIRS = libsrc ng nglib tutorials doc
 
+# TESTS = ng/netgen -batchmode
 
 
 
