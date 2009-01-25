@@ -38,12 +38,13 @@
 #endif
 
 
+/*
 #ifdef METIS
 namespace metis { extern "C" {
 #include <metis.h>
 } }
 #endif
-
+*/
 
 
 #ifndef NO_PARALLEL_THREADS

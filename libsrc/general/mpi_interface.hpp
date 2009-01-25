@@ -99,7 +99,7 @@ extern MPI_Comm MPI_HIGHORDER_COMM;
   }
 
   template <class T, int BASE>
-  inline void MyMPI_Recv ( ARRAY <T, BASE> & s, int src)
+  inline void MyMPI_Recv ( Array <T, BASE> & s, int src)
   {
     MPI_Status status;
     int len;
@@ -111,7 +111,7 @@ extern MPI_Comm MPI_HIGHORDER_COMM;
   }
 
   template <class T, int BASE>
-  inline int MyMPI_Recv ( ARRAY <T, BASE> & s)
+  inline int MyMPI_Recv ( Array <T, BASE> & s)
   {
     MPI_Status status;
     int len;
@@ -185,7 +185,7 @@ extern MPI_Comm MPI_HIGHORDER_COMM;
   }
 
   template <class T>
-  inline void MyMPI_Bcast (ARRAY<T, 0> & s, MPI_Comm comm = MPI_COMM_WORLD)
+  inline void MyMPI_Bcast (Array<T, 0> & s, MPI_Comm comm = MPI_COMM_WORLD)
   {
     int size = s.Size();
     MyMPI_Bcast (size, comm);
@@ -194,7 +194,7 @@ extern MPI_Comm MPI_HIGHORDER_COMM;
   }
 
   template <class T>
-  inline void MyMPI_Bcast (ARRAY<T, 0> & s, int root, MPI_Comm comm = MPI_COMM_WORLD)
+  inline void MyMPI_Bcast (Array<T, 0> & s, int root, MPI_Comm comm = MPI_COMM_WORLD)
   {
     int id;
     MPI_Comm_rank(MPI_HIGHORDER_COMM, &id);
