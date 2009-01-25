@@ -64,7 +64,6 @@ netgen_DEPENDENCIES =  \
 	$(top_builddir)/libsrc/interface/libinterface.la \
 	$(top_builddir)/libsrc/stlgeom/libstl.la \
 	$(top_builddir)/libsrc/occ/libocc.la \
-	$(top_builddir)/libsrc/parallel/libparallel.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
 	$(top_builddir)/libsrc/linalg/libla.la \
@@ -276,7 +275,6 @@ netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
 	$(top_builddir)/libsrc/interface/libinterface.la \
 	$(top_builddir)/libsrc/stlgeom/libstl.la \
 	$(top_builddir)/libsrc/occ/libocc.la \
-	$(top_builddir)/libsrc/parallel/libparallel.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
 	$(top_builddir)/libsrc/linalg/libla.la \

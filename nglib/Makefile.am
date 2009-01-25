@@ -10,7 +10,6 @@ libnglib_la_LIBADD = \
 	$(top_builddir)/libsrc/geom2d/libgeom2d.la \
 	$(top_builddir)/libsrc/csg/libcsg.la \
 	$(top_builddir)/libsrc/stlgeom/libstl.la \
-	$(top_builddir)/libsrc/parallel/libparallel.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
 	$(top_builddir)/libsrc/linalg/libla.la \

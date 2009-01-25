@@ -102,7 +102,7 @@ AC_CONFIG_FILES(Makefile libsrc/Makefile libsrc/csg/Makefile
 libsrc/general/Makefile  libsrc/geom2d/Makefile libsrc/gprim/Makefile
 libsrc/include/Makefile libsrc/interface/Makefile 
 libsrc/linalg/Makefile libsrc/meshing/Makefile libsrc/occ/Makefile 
-  libsrc/parallel/Makefile libsrc/stlgeom/Makefile
+  libsrc/stlgeom/Makefile
   libsrc/visualization/Makefile ng/Makefile nglib/Makefile
   tutorials/Makefile doc/Makefile)
 
