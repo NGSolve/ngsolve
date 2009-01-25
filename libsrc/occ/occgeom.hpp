@@ -163,13 +163,13 @@ class OCCGeometry
 public:
   TopoDS_Shape shape;
   TopTools_IndexedMapOfShape fmap, emap, vmap, somap, shmap, wmap;
-  ARRAY<bool> fsingular, esingular, vsingular;
+  Array<bool> fsingular, esingular, vsingular;
   Box<3> boundingbox;
 
   int changed; 
-  ARRAY<int> facemeshstatus;
+  Array<int> facemeshstatus;
 
-  ARRAY<EntityVisualizationCode> fvispar, evispar, vvispar;
+  Array<EntityVisualizationCode> fvispar, evispar, vvispar;
 
   double tolerance;
   bool fixsmalledges;

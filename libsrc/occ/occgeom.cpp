@@ -1422,8 +1422,8 @@ namespace netgen
 
     double dmax;
     int cnt = 0;
-    ARRAY <double> edgeLengths;
-    ARRAY <int> order;
+    Array <double> edgeLengths;
+    Array <int> order;
     edgeLengths.SetSize (emap.Extent());
     order.SetSize (emap.Extent());
 

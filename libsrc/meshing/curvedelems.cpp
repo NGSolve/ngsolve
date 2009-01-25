@@ -12,7 +12,7 @@ namespace netgen
 
 
   
-  static void ComputeGaussRule (int n, ARRAY<double> & xi, ARRAY<double> & wi)
+  static void ComputeGaussRule (int n, Array<double> & xi, Array<double> & wi)
   {
     xi.SetSize (n);
     wi.SetSize (n);
@@ -451,7 +451,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 
     rational = arational;
 
-    ARRAY<int> edgenrs;
+    Array<int> edgenrs;
 
     edgeorder.SetSize (top.GetNEdges());
     faceorder.SetSize (top.GetNFaces());
@@ -531,7 +531,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
         return;
       }
     
-    ARRAY<double> xi, weight;
+    Array<double> xi, weight;
 
     ComputeGaussRule (aorder+4, xi, weight);  // on (0,1)
 
@@ -1025,7 +1025,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
     
 
     Vector shapes, dshapes;
-    ARRAY<Vec<3> > coefs;
+    Array<Vec<3> > coefs;
 
     SegmentInfo info;
     info.elnr = elnr;
@@ -1145,7 +1145,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
   }
 
   void CurvedElements :: 
-  GetCoefficients (SegmentInfo & info, ARRAY<Vec<3> > & coefs) const
+  GetCoefficients (SegmentInfo & info, Array<Vec<3> > & coefs) const
   {
     const Segment & el = mesh[info.elnr];
 
@@ -1270,7 +1270,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 
     Vector shapes;
     DenseMatrix dshapes;
-    ARRAY<Vec<3> > coefs;
+    Array<Vec<3> > coefs;
 
     const Element2d & el = mesh[elnr];
     ELEMENT_TYPE type = el.GetType();
@@ -1752,7 +1752,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 
 
   void CurvedElements :: 
-  GetCoefficients (SurfaceElementInfo & info, ARRAY<Vec<3> > & coefs) const
+  GetCoefficients (SurfaceElementInfo & info, Array<Vec<3> > & coefs) const
   {
     const Element2d & el = mesh[info.elnr];
     coefs.SetSize (info.ndof);
@@ -2716,17 +2716,17 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 
 
   void CurvedElements :: 
-  CalcMultiPointSegmentTransformation (ARRAY<double> * xi, SegmentIndex segnr,
-				       ARRAY<Point<3> > * x,
-				       ARRAY<Vec<3> > * dxdxi)
+  CalcMultiPointSegmentTransformation (Array<double> * xi, SegmentIndex segnr,
+				       Array<Point<3> > * x,
+				       Array<Vec<3> > * dxdxi)
   {
     ;
   }
 
   void CurvedElements :: 
-  CalcMultiPointSurfaceTransformation (ARRAY< Point<2> > * xi, SurfaceElementIndex elnr,
-				       ARRAY< Point<3> > * x,
-				       ARRAY< Mat<3,2> > * dxdxi)
+  CalcMultiPointSurfaceTransformation (Array< Point<2> > * xi, SurfaceElementIndex elnr,
+				       Array< Point<3> > * x,
+				       Array< Mat<3,2> > * dxdxi)
   {
     if (mesh.coarsemesh)
       {
@@ -2787,7 +2787,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 
     Vector shapes;
     DenseMatrix dshapes;
-    ARRAY<Vec<3> > coefs;
+    Array<Vec<3> > coefs;
 
 
     const Element2d & el = mesh[elnr];
@@ -2859,9 +2859,9 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
   }
 
   void CurvedElements :: 
-  CalcMultiPointElementTransformation (ARRAY< Point<3> > * xi, ElementIndex elnr,
-				       ARRAY< Point<3> > * x,
-				       ARRAY< Mat<3,3> > * dxdxi)
+  CalcMultiPointElementTransformation (Array< Point<3> > * xi, ElementIndex elnr,
+				       Array< Point<3> > * x,
+				       Array< Mat<3,3> > * dxdxi)
   {
     if (mesh.coarsemesh)
       {
@@ -2953,7 +2953,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	// info.ndof += facecoeffsindex[info.facenr+1] - facecoeffsindex[info.facenr];
       }
 
-    ARRAY<Vec<3> > coefs(info.ndof);
+    Array<Vec<3> > coefs(info.ndof);
     GetCoefficients (info, &coefs[0]);
     if (x)
       {
@@ -3110,7 +3110,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	// info.ndof += facecoeffsindex[info.facenr+1] - facecoeffsindex[info.facenr];
       }
 
-    ARRAY<Vec<3> > coefs(info.ndof);
+    Array<Vec<3> > coefs(info.ndof);
     GetCoefficients (info, &coefs[0]);
     if (x)
       {

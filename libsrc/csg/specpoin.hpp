@@ -74,9 +74,9 @@ private:
   ///
   const CSGeometry * geometry;
   ///
-  ARRAY<MeshPoint> * points;
+  Array<MeshPoint> * points;
   ///
-  ARRAY<long int> boxesinlevel;
+  Array<long int> boxesinlevel;
 
   ///
   double size;
@@ -97,11 +97,11 @@ public:
 
   ///
   void CalcSpecialPoints (const CSGeometry & ageometry, 
-			  ARRAY<MeshPoint> & points);
+			  Array<MeshPoint> & points);
   ///
   void AnalyzeSpecialPoints (const CSGeometry & geometry, 
-			     ARRAY<MeshPoint> & points, 
-			     ARRAY<SpecialPoint> & specpoints);
+			     Array<MeshPoint> & points, 
+			     Array<SpecialPoint> & specpoints);
 
 protected:
   ///
@@ -156,17 +156,17 @@ protected:
 
   void ComputeExtremalPoints (const Plane * plane, 
 			      const QuadraticSurface * quadric, 
-			      ARRAY<Point<3> > & pts);
+			      Array<Point<3> > & pts);
 
   void ComputeCrossPoints (const Plane * plane1, 
 			   const Plane * plane2, 
 			   const Plane * plane3, 
-			   ARRAY<Point<3> > & pts);
+			   Array<Point<3> > & pts);
 
   void ComputeCrossPoints (const Plane * plane1, 
 			   const Plane * plane2, 
 			   const QuadraticSurface * quadratic, 
-			   ARRAY<Point<3> > & pts);
+			   Array<Point<3> > & pts);
 };
 
 #endif

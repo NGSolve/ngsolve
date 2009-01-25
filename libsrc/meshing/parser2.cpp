@@ -433,7 +433,7 @@ void netrule :: LoadRule (istream & ist)
   {
     char ok;
     int minn;
-    ARRAY<int> pnearness (noldp);
+    Array<int> pnearness (noldp);
 
     for (i = 1; i <= pnearness.Size(); i++)
       pnearness.Elem(i) = 1000;

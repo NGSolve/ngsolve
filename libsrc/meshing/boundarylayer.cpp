@@ -20,7 +20,7 @@ void InsertVirtualBoundaryLayer (Mesh & mesh)
   cout << "Trigs: " << mesh.GetNSE() << endl;
 
   BitArray bndnodes(np);
-  ARRAY<int> mapto(np);
+  Array<int> mapto(np);
 
   bndnodes.Clear();
   for (i = 1; i <= mesh.GetNSeg(); i++)

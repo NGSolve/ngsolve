@@ -62,8 +62,8 @@ public:
   Plane (const Point<3> & ap, Vec<3> an);
 
   virtual void GetPrimitiveData (const char *& classname, 
-				 ARRAY<double> & coeffs) const;
-  virtual void SetPrimitiveData (ARRAY<double> & coeffs);
+				 Array<double> & coeffs) const;
+  virtual void SetPrimitiveData (Array<double> & coeffs);
   static Primitive * CreateDefault ();
 
   virtual Primitive * Copy () const;
@@ -124,8 +124,8 @@ public:
   Sphere (const Point<3> & ac, double ar);
 
   virtual void GetPrimitiveData (const char *& classname, 
-				 ARRAY<double> & coeffs) const;
-  virtual void SetPrimitiveData (ARRAY<double> & coeffs);
+				 Array<double> & coeffs) const;
+  virtual void SetPrimitiveData (Array<double> & coeffs);
   static Primitive * CreateDefault ();
 
   virtual Primitive * Copy () const;
@@ -177,10 +177,10 @@ class Cylinder : public QuadraticSurface
 
 public:
   Cylinder (const Point<3> & aa, const Point<3> & ab, double ar);
-  Cylinder (ARRAY<double> & coeffs);
+  Cylinder (Array<double> & coeffs);
 
-  virtual void GetPrimitiveData (const char *& classname, ARRAY<double> & coeffs) const;
-  virtual void SetPrimitiveData (ARRAY<double> & coeffs);
+  virtual void GetPrimitiveData (const char *& classname, Array<double> & coeffs) const;
+  virtual void SetPrimitiveData (Array<double> & coeffs);
   static Primitive * CreateDefault ();
 
   virtual Primitive * Copy () const;
@@ -238,8 +238,8 @@ public:
 
   /*
   static Primitive * CreateDefault ();
-  virtual void GetPrimitiveData (const char *& classname, ARRAY<double> & coeffs) const;
-  virtual void SetPrimitiveData (ARRAY<double> & coeffs);
+  virtual void GetPrimitiveData (const char *& classname, Array<double> & coeffs) const;
+  virtual void SetPrimitiveData (Array<double> & coeffs);
   */
   ///
   virtual INSOLID_TYPE BoxInSolid (const BoxSphere<3> & box) const;
@@ -324,8 +324,8 @@ public:
   Cone (const Point<3> & aa, const Point<3> & ab, double ara, double arb);
   ///
   static Primitive * CreateDefault ();
-  virtual void GetPrimitiveData (const char *& classname, ARRAY<double> & coeffs) const;
-  virtual void SetPrimitiveData (ARRAY<double> & coeffs);
+  virtual void GetPrimitiveData (const char *& classname, Array<double> & coeffs) const;
+  virtual void SetPrimitiveData (Array<double> & coeffs);
 
   ///
   virtual INSOLID_TYPE BoxInSolid (const BoxSphere<3> & box) const;
@@ -392,9 +392,9 @@ public:
   virtual Point<3> GetSurfacePoint () const;
   /// OK
   virtual void GetPrimitiveData (const char *& classname, 
-				 ARRAY<double> & coeffs) const;
+				 Array<double> & coeffs) const;
   /// OK			 
-  virtual void SetPrimitiveData (ARRAY<double> & coeffs);
+  virtual void SetPrimitiveData (Array<double> & coeffs);
   /// OK
   static Primitive * CreateDefault ();
   /// OK

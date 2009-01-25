@@ -79,7 +79,7 @@ class STLEdgeDataList
 {
 private:
   INDEX_2_HASHTABLE<int> hashtab;
-  ARRAY<STLEdgeData> edgedata;
+  Array<STLEdgeData> edgedata;
   TABLE<int> edgesperpoint;
   
 public:
@@ -118,7 +118,7 @@ public:
   void Write(ofstream& of) const;
   void Read(ifstream& ifs);
 
-  void BuildLineWithEdge(int ep1, int ep2, ARRAY<twoint>& line);
+  void BuildLineWithEdge(int ep1, int ep2, Array<twoint>& line);
 
   int GetNEPPStat(int p, int status) const;
   int GetNConfCandEPP(int p) const;
@@ -145,10 +145,10 @@ class STLLine
 {
 private:
   const STLGeometry * geometry;
-  ARRAY<int> pts;
-  ARRAY<int> lefttrigs;
-  ARRAY<int> righttrigs;
-  ARRAY<double> dists;
+  Array<int> pts;
+  Array<int> lefttrigs;
+  Array<int> righttrigs;
+  Array<double> dists;
   int split;
 
 public:
@@ -158,11 +158,11 @@ public:
   int NP() const {return pts.Size();}
   int GetNS() const;
   void GetSeg(int nr, int& p1, int& p2) const;
-  double GetSegLen(const ARRAY<Point<3> >& ap, int nr) const;
+  double GetSegLen(const Array<Point<3> >& ap, int nr) const;
   int GetLeftTrig(int nr) const;
   int GetRightTrig(int nr) const;
   double GetDist(int nr) const { return dists.Get(nr);};
-  void GetBoundingBox (const ARRAY<Point<3> > & ap, Box<3> & box) const;
+  void GetBoundingBox (const Array<Point<3> > & ap, Box<3> & box) const;
 
   void AddLeftTrig(int nr) {lefttrigs.Append(nr);}
   void AddRightTrig(int nr) {righttrigs.Append(nr);}
@@ -170,15 +170,15 @@ public:
   int StartP() const {return pts.Get(1);}
   int EndP() const {return pts.Get(pts.Size());}
     
-  double GetLength(const ARRAY<Point<3> >& ap) const;
+  double GetLength(const Array<Point<3> >& ap) const;
 
   //suche punkt in entfernung (in linienkoordinaten) dist
   //in index ist letzter punkt VOR dist (d.h. max pts.Size()-1)
-  Point<3> GetPointInDist(const ARRAY<Point<3> >& ap, double dist, int& index) const;
+  Point<3> GetPointInDist(const Array<Point<3> >& ap, double dist, int& index) const;
 
   //return a meshed polyline
-  STLLine* Mesh(const ARRAY<Point<3> >& ap, 
-		ARRAY<Point3d>& mp, double ghi,
+  STLLine* Mesh(const Array<Point<3> >& ap, 
+		Array<Point3d>& mp, double ghi,
 		class Mesh& mesh) const;
 
   void DoSplit() {split = 1;}

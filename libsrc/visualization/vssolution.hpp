@@ -60,7 +60,7 @@ class VisualSceneSolution : public VisualScene
   int fieldlineslist;
   int num_fieldlineslists;
   int fieldlines_startarea;
-  ARRAY<double> fieldlines_startarea_parameter;
+  Array<double> fieldlines_startarea_parameter;
   int fieldlines_startface;
   string fieldlines_filename;
   double fieldlines_reltolerance;
@@ -86,8 +86,8 @@ class VisualSceneSolution : public VisualScene
 
 
 #ifdef PARALLELGL
-  ARRAY<int> par_linelists;
-  ARRAY<int> par_surfellists;
+  Array<int> par_linelists;
+  Array<int> par_surfellists;
 #endif
 
 
@@ -137,7 +137,7 @@ public:
   
 
 
-  ARRAY<SolData*> soldata;
+  Array<SolData*> soldata;
   
 
 
@@ -168,10 +168,10 @@ public:
   bool imag_part;
 
 private:
-  void BuildFieldLinesFromFile(ARRAY<Point3d> & startpoints);
-  void BuildFieldLinesFromFace(ARRAY<Point3d> & startpoints);
-  void BuildFieldLinesFromBox(ARRAY<Point3d> & startpoints);
-  void BuildFieldLinesFromLine(ARRAY<Point3d> & startpoints);
+  void BuildFieldLinesFromFile(Array<Point3d> & startpoints);
+  void BuildFieldLinesFromFace(Array<Point3d> & startpoints);
+  void BuildFieldLinesFromBox(Array<Point3d> & startpoints);
+  void BuildFieldLinesFromLine(Array<Point3d> & startpoints);
 
 public:
   VisualSceneSolution ();
@@ -207,8 +207,8 @@ public:
 private:
   void GetMinMax (int funcnr, int comp, double & minv, double & maxv) const;
 
-  void GetClippingPlaneTrigs (ARRAY<ClipPlaneTrig> & trigs, ARRAY<ClipPlanePoint> & pts);
-  void GetClippingPlaneGrid (ARRAY<ClipPlanePoint> & pts);
+  void GetClippingPlaneTrigs (Array<ClipPlaneTrig> & trigs, Array<ClipPlanePoint> & pts);
+  void GetClippingPlaneGrid (Array<ClipPlanePoint> & pts);
   void DrawCone (const Point<3> & p1, const Point<3> & p2, double r);
   void DrawCylinder (const Point<3> & p1, const Point<3> & p2, double r);
 
@@ -266,7 +266,7 @@ public:
   void DrawSurfaceElements ();
   void DrawSurfaceElementLines ();
   void DrawSurfaceVectors ();
-  void DrawTrigSurfaceVectors(const ARRAY< Point<3> > & lp, const Point<3> & pmin, const Point<3> & pmax,
+  void DrawTrigSurfaceVectors(const Array< Point<3> > & lp, const Point<3> & pmin, const Point<3> & pmax,
 			      const int sei, const SolData * vsol);
   void DrawIsoSurface(const SolData * sol, const SolData * grad, int comp);
   
@@ -287,8 +287,8 @@ public:
 		     
 
   void DrawClipPlaneTrigs (const SolData * sol, int comp,
-                           const ARRAY<ClipPlaneTrig> & trigs, 
-                           const ARRAY<ClipPlanePoint> & points);
+                           const Array<ClipPlaneTrig> & trigs, 
+                           const Array<ClipPlanePoint> & points);
 			  
   void SetOpenGlColor(double val, double valmin, double valmax, int logscale = 0);
 
@@ -318,14 +318,14 @@ public:
 class RKStepper
 {
 private:
-  ARRAY<double> c,b;
+  Array<double> c,b;
   TABLE<double> *a;
   int steps;
   int order;
   
   double tolerance;
   
-  ARRAY<Vec3d> K;
+  Array<Vec3d> K;
   
   int stepcount;
   
@@ -399,9 +399,9 @@ public:
   void Randomized(void) { randomized = true; }
   void NotRandomized(void) { randomized = false; }
 
-  void Calc(const Point3d & startpoint, ARRAY<Point3d> & points, ARRAY<double> & vals, ARRAY<bool> & drawelems, ARRAY<int> & dirstart);
+  void Calc(const Point3d & startpoint, Array<Point3d> & points, Array<double> & vals, Array<bool> & drawelems, Array<int> & dirstart);
   
-  void GenerateFieldLines(ARRAY<Point3d> & potential_startpoints, const int numlines, const int gllist,
+  void GenerateFieldLines(Array<Point3d> & potential_startpoints, const int numlines, const int gllist,
 			  const double minval, const double maxval, const int logscale, double phaser, double phasei);
 };
 

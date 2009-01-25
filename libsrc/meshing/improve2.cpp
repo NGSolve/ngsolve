@@ -77,7 +77,7 @@ void MeshOptimize2d :: EdgeSwapping (Mesh & mesh, int usemetric)
   bool should;
   PointIndex pi;
 
-  ARRAY<SurfaceElementIndex> seia;
+  Array<SurfaceElementIndex> seia;
   mesh.GetSurfaceElementsOfFace (faceindex, seia);
 
   for (i = 0; i < seia.Size(); i++)
@@ -89,13 +89,13 @@ void MeshOptimize2d :: EdgeSwapping (Mesh & mesh, int usemetric)
 
   int surfnr = mesh.GetFaceDescriptor (faceindex).SurfNr();
 
-  ARRAY<Neighbour> neighbors(mesh.GetNSE());
+  Array<Neighbour> neighbors(mesh.GetNSE());
   INDEX_2_HASHTABLE<trionedge> other(seia.Size() + 2);
 
 
-  ARRAY<char> swapped(mesh.GetNSE());
-  ARRAY<int,PointIndex::BASE> pdef(mesh.GetNP());
-  ARRAY<double,PointIndex::BASE> pangle(mesh.GetNP());
+  Array<char> swapped(mesh.GetNSE());
+  Array<int,PointIndex::BASE> pdef(mesh.GetNP());
+  Array<double,PointIndex::BASE> pangle(mesh.GetNP());
 
   SurfaceElementIndex t1, t2;
   int o1, o2;
@@ -158,7 +158,7 @@ void MeshOptimize2d :: EdgeSwapping (Mesh & mesh, int usemetric)
     }
 
   /*
-  ARRAY<Vec3d> normals(mesh.GetNP());
+  Array<Vec3d> normals(mesh.GetNP());
   for (i = 1; i <= mesh.GetNSE(); i++)
     {
       Element2d & hel = mesh.SurfaceElement(i);
@@ -448,7 +448,7 @@ void MeshOptimize2d :: CombineImprove (Mesh & mesh)
   SurfaceElementIndex sei;
 
 
-  ARRAY<SurfaceElementIndex> seia;
+  Array<SurfaceElementIndex> seia;
   mesh.GetSurfaceElementsOfFace (faceindex, seia);
 
 
@@ -472,7 +472,7 @@ void MeshOptimize2d :: CombineImprove (Mesh & mesh)
   //int nse = mesh.GetNSE();
 
   TABLE<SurfaceElementIndex,PointIndex::BASE> elementsonnode(np); 
-  ARRAY<SurfaceElementIndex> hasonepi, hasbothpi;
+  Array<SurfaceElementIndex> hasonepi, hasbothpi;
 
   for (i = 0; i < seia.Size(); i++)
     {
@@ -484,7 +484,7 @@ void MeshOptimize2d :: CombineImprove (Mesh & mesh)
     }
 
 
-  ARRAY<bool,PointIndex::BASE> fixed(np);
+  Array<bool,PointIndex::BASE> fixed(np);
   fixed = false;
 
   SegmentIndex si;
@@ -499,7 +499,7 @@ void MeshOptimize2d :: CombineImprove (Mesh & mesh)
     fixed[mesh.LockedPoints()[i]] = true;
 
 
-  ARRAY<Vec<3>,PointIndex::BASE> normals(np);
+  Array<Vec<3>,PointIndex::BASE> normals(np);
 
   for (pi = PointIndex::BASE; 
        pi < np + PointIndex::BASE; pi++)
@@ -787,7 +787,7 @@ void MeshOptimize2d :: CheckMeshApproximation (Mesh & mesh)
   int surfnr;
   
   Vec3d n, ng;
-  ARRAY<Vec3d> ngs(3);
+  Array<Vec3d> ngs(3);
 
   (*mycout) << "Check Surface Approxiamtion" << endl;
   (*testout) << "Check Surface Approxiamtion" << endl;

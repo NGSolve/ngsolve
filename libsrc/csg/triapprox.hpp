@@ -32,9 +32,9 @@ public:
 
 class TriangleApproximation
 {
-  ARRAY<Point<3> > points;
-  ARRAY<Vec<3> > normals;
-  ARRAY<TATriangle> trigs;
+  Array<Point<3> > points;
+  Array<Vec<3> > normals;
+  Array<TATriangle> trigs;
 
 public:
   TriangleApproximation();

@@ -74,8 +74,8 @@ Meshing3 :: ~Meshing3 ()
 
 
 
-static double CalcLocH (const ARRAY<Point3d> & locpoints,
-			const ARRAY<MiniElement2d> & locfaces,
+static double CalcLocH (const Array<Point3d> & locpoints,
+			const Array<MiniElement2d> & locfaces,
 			double h)
 {
   return h;
@@ -175,16 +175,16 @@ GenerateMesh (Mesh & mesh, const MeshingParameters & mp)
   NgProfiler::RegionTimer reg (meshing3_timer);
 
 
-  ARRAY<Point3d > locpoints;      // local points
-  ARRAY<MiniElement2d> locfaces;     // local faces
-  ARRAY<PointIndex> pindex;      // mapping from local to front point numbering
-  ARRAY<int> allowpoint;         // point is allowd ?
-  ARRAY<INDEX> findex;           // mapping from local to front face numbering
+  Array<Point3d > locpoints;      // local points
+  Array<MiniElement2d> locfaces;     // local faces
+  Array<PointIndex> pindex;      // mapping from local to front point numbering
+  Array<int> allowpoint;         // point is allowd ?
+  Array<INDEX> findex;           // mapping from local to front face numbering
   //INDEX_2_HASHTABLE<int> connectedpairs(100);  // connecgted pairs for prism meshing
 
-  ARRAY<Point3d > plainpoints;       // points in reference coordinates
-  ARRAY<int> delpoints, delfaces;   // points and lines to be deleted
-  ARRAY<Element> locelements;       // new generated elements
+  Array<Point3d > plainpoints;       // points in reference coordinates
+  Array<int> delpoints, delfaces;   // points and lines to be deleted
+  Array<Element> locelements;       // new generated elements
 
   int i, j, oldnp, oldnf;
   int found;
@@ -206,10 +206,10 @@ GenerateMesh (Mesh & mesh, const MeshingParameters & mp)
 
   
   // for star-shaped domain meshing
-  ARRAY<MeshPoint> grouppoints;      
-  ARRAY<MiniElement2d> groupfaces;
-  ARRAY<PointIndex> grouppindex;
-  ARRAY<INDEX> groupfindex;
+  Array<MeshPoint> grouppoints;      
+  Array<MiniElement2d> groupfaces;
+  Array<PointIndex> grouppindex;
+  Array<INDEX> groupfindex;
   
   
   float minerr;
@@ -218,10 +218,10 @@ GenerateMesh (Mesh & mesh, const MeshingParameters & mp)
   // int giveup = 0;
 
   
-  ARRAY<Point3d> tempnewpoints;
-  ARRAY<MiniElement2d> tempnewfaces;
-  ARRAY<int> tempdelfaces;
-  ARRAY<Element> templocelements;
+  Array<Point3d> tempnewpoints;
+  Array<MiniElement2d> tempnewfaces;
+  Array<int> tempdelfaces;
+  Array<Element> templocelements;
 
 
   stat.h = mp.maxh;
@@ -776,8 +776,8 @@ void Meshing3 :: BlockFill (Mesh & mesh, double gh)
   
   PrintMessage (5, "n1 = ", n1, " n2 = ", n2, " n3 = ", n3);
 
-  ARRAY<blocktyp> inner(n);
-  ARRAY<int> pointnr(n), frontpointnr(n);
+  Array<blocktyp> inner(n);
+  Array<int> pointnr(n), frontpointnr(n);
 
 
   // initialize inner to 1
@@ -1111,7 +1111,7 @@ void Meshing3 :: BlockFillLocalH (Mesh & mesh,
   (*mycout) << "boxes: " << mesh.LocalHFunction().GetNBoxes() << endl
 	    << "filldist = " << filldist << endl;
   */
-  ARRAY<Point3d> npoints;
+  Array<Point3d> npoints;
   
   adfront -> CreateTrees();
 

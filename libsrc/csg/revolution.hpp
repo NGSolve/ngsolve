@@ -18,9 +18,9 @@ private:
   mutable Vector spline_coefficient;
 
 
-  ARRAY < Vec<2>* > checklines_vec;
-  ARRAY < Point<2>* > checklines_start;
-  ARRAY < Vec<2>* > checklines_normal;
+  Array < Vec<2>* > checklines_vec;
+  Array < Point<2>* > checklines_start;
+  Array < Vec<2>* > checklines_normal;
   
 private:
   void Init (void);
@@ -39,7 +39,7 @@ public:
 		 bool last = false,
 		 const int id_in = 0);
 
-  RevolutionFace(const ARRAY<double> & raw_data);
+  RevolutionFace(const Array<double> & raw_data);
 
   ~RevolutionFace();
 
@@ -73,7 +73,7 @@ public:
 
   INSOLID_TYPE PointInFace (const Point<3> & p, const double eps) const;
 
-  void GetRawData(ARRAY<double> & data) const;
+  void GetRawData(Array<double> & data) const;
 
 };
 
@@ -99,7 +99,7 @@ private:
   int type;
   
 
-  ARRAY<RevolutionFace*> faces;
+  Array<RevolutionFace*> faces;
 
   mutable int intersecting_face;
 

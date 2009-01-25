@@ -612,7 +612,7 @@ public:
 class Polygon2d
 {
 protected:
-  ARRAY<Point2d> points;
+  Array<Point2d> points;
   
 public:
   Polygon2d ();

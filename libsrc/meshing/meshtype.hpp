@@ -281,7 +281,7 @@ ostream & operator<<(ostream  & s, const MeshPoint & pt);
 
 
 typedef MoveableArray<MeshPoint,PointIndex::BASE> T_POINTS;
-// typedef ARRAY<MeshPoint,PointIndex::BASE> T_POINTS;
+// typedef Array<MeshPoint,PointIndex::BASE> T_POINTS;
 
 
 class Element2d;
@@ -429,7 +429,7 @@ public:
   /// get number of 'integration points'
   int GetNIP () const;
   void GetIntegrationPoint (int ip, Point2d & p, double & weight) const;
-  void GetTransformation (int ip, const ARRAY<Point2d> & points,
+  void GetTransformation (int ip, const Array<Point2d> & points,
 			  class DenseMatrix & trans) const;
   void GetTransformation (int ip, class DenseMatrix & pmat,
 			  class DenseMatrix & trans) const;
@@ -440,16 +440,16 @@ public:
   void GetDShape (const Point2d & p, class DenseMatrix & dshape) const;
   void GetDShapeNew (const Point<2> & p, class MatrixFixWidth<2> & dshape) const;
   /// matrix 2 * np
-  void GetPointMatrix (const ARRAY<Point2d> & points,
+  void GetPointMatrix (const Array<Point2d> & points,
 		       class DenseMatrix & pmat) const; 
 
   void ComputeIntegrationPointData () const;
   
 
-  double CalcJacobianBadness (const ARRAY<Point2d> & points) const;
+  double CalcJacobianBadness (const Array<Point2d> & points) const;
   double CalcJacobianBadness (const T_POINTS & points, 
 			      const Vec<3> & n) const;
-  double CalcJacobianBadnessDirDeriv (const ARRAY<Point2d> & points,
+  double CalcJacobianBadnessDirDeriv (const Array<Point2d> & points,
 				      int pi, Vec2d & dir, double & dd) const;
 
 
@@ -669,15 +669,15 @@ public:
   void Invert ();
 
   /// split into 4 node tets
-  void GetTets (ARRAY<Element> & locels) const;
+  void GetTets (Array<Element> & locels) const;
   /// split into 4 node tets, local point nrs
-  void GetTetsLocal (ARRAY<Element> & locels) const;
+  void GetTetsLocal (Array<Element> & locels) const;
   /// returns coordinates of nodes
-  // void GetNodesLocal (ARRAY<Point<3> > & points) const;
-  void GetNodesLocalNew (ARRAY<Point<3> > & points) const;
+  // void GetNodesLocal (Array<Point<3> > & points) const;
+  void GetNodesLocalNew (Array<Point<3> > & points) const;
 
   /// split surface into 3 node trigs
-  void GetSurfaceTriangles (ARRAY<Element2d> & surftrigs) const;
+  void GetSurfaceTriangles (Array<Element2d> & surftrigs) const;
 
 
   /// get number of 'integration points'
@@ -1147,7 +1147,7 @@ private:
   /// sorted by identification nr
   TABLE<INDEX_2> idpoints_table;
 
-  ARRAY<ID_TYPE> type;
+  Array<ID_TYPE> type;
 
   /// number of identifications (or, actually used identifications ?)
   int maxidentnr;
@@ -1192,7 +1192,7 @@ public:
   }
 
   ///
-  void GetMap (int identnr, ARRAY<int,PointIndex::BASE> & identmap, bool symmetric = false) const;
+  void GetMap (int identnr, Array<int,PointIndex::BASE> & identmap, bool symmetric = false) const;
   ///
   ID_TYPE GetType(int identnr) const
   {
@@ -1209,7 +1209,7 @@ public:
   }
     
   ///
-  void GetPairs (int identnr, ARRAY<INDEX_2> & identpairs) const;
+  void GetPairs (int identnr, Array<INDEX_2> & identpairs) const;
   ///
   int GetMaxNr () const { return maxidentnr; }  
 

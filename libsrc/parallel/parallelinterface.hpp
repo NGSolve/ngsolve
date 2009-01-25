@@ -23,7 +23,7 @@ extern "C" {
   // number on distant processor 
 
   // gibt anzahl an distant pnums zurueck
-  // * pnums entspricht ARRAY<int[2] >
+  // * pnums entspricht Array<int[2] >
   int NgPar_GetDistantNodeNums ( int nodetype, int locnum, int * pnums );
   int NgPar_GetNDistantNodeNums ( int nodetype, int locnum );
 

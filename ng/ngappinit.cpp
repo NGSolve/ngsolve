@@ -42,7 +42,7 @@ namespace netgen
 using netgen::parameters;
 using netgen::ngdir;
 using netgen::verbose;
-using netgen::ARRAY;
+using netgen::Array;
 using netgen::RegisterUserFormats;
 
 
@@ -290,7 +290,7 @@ int main(int argc, char ** argv)
 
 
       // lookup user file formats and insert into format list:
-      ARRAY<const char*> userformats;
+      Array<const char*> userformats;
       RegisterUserFormats (userformats);
 
       ostringstream fstr;

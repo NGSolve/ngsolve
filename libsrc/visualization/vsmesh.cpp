@@ -339,7 +339,7 @@ namespace netgen
     Point3d pmin, pmax;
     static double oldrad = 0;
 	
-    ARRAY<Element2d> faces;
+    Array<Element2d> faces;
 
     int meshtimestamp = mesh->GetTimeStamp();
     if (meshtimestamp > vstimestamp || zoomall)
@@ -482,7 +482,7 @@ namespace netgen
 	if (vispar.drawfacenumbers)
 	  {
 	    const MeshTopology & top = mesh->GetTopology();
-	    ARRAY<int> v;
+	    Array<int> v;
 	    for (i = 1; i <= top.GetNFaces(); i++)
 	      {
 		top.GetFaceVertices (i, v);
@@ -512,11 +512,11 @@ namespace netgen
 
 	if (vispar.drawelementnumbers)
 	  {
-	    ARRAY<int> v;
+	    Array<int> v;
 	    for (i = 1; i <= mesh->GetNE(); i++)
 	      {
 		const ELEMENTTYPE & eltype = mesh->ElementType(i);
-		ARRAY<int> pnums;
+		Array<int> pnums;
 
 		Point3d p;
 		const Element & el = mesh->VolumeElement (i);
@@ -1773,7 +1773,7 @@ namespace netgen
 
 
 
-    ARRAY<Element2d> faces;
+    Array<Element2d> faces;
   
     BitArray shownode(mesh->GetNP());
     if (vispar.clipenable)
@@ -1933,8 +1933,8 @@ namespace netgen
 
 		int order = curv.GetOrder();
 
-		ARRAY<Point<3> > ploc ( (order+1)*(order+1) );
-		ARRAY<Point<3> > pglob ( (order+1)*(order+1) );
+		Array<Point<3> > ploc ( (order+1)*(order+1) );
+		Array<Point<3> > pglob ( (order+1)*(order+1) );
 		Point<3> fpts[3];
 		
 		for (int trig = 0; trig < 4; trig++)
@@ -2063,7 +2063,7 @@ namespace netgen
     static float prismcol[] = { 0.0f, 1.0f, 1.0f, 1.0f };
     glLineWidth (1.0f);  
 
-    ARRAY<Element2d> faces;
+    Array<Element2d> faces;
 
     
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, prismcol);
@@ -2390,7 +2390,7 @@ namespace netgen
     glLineWidth (1.0f);  
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, hexcol);
 
-    ARRAY<Element2d> faces;
+    Array<Element2d> faces;
     int hoplotn = 1 << vispar.subdivisions; 
 
     for (ElementIndex ei = 0; ei < mesh->GetNE(); ei++)
@@ -2600,7 +2600,7 @@ namespace netgen
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, pyramidcol);
 
     glLineWidth (1.0f);
-    ARRAY<Element2d> faces;
+    Array<Element2d> faces;
 
     for (ElementIndex ei = 0; ei < mesh->GetNE(); ei++)
       {

@@ -12,7 +12,7 @@
 */
 
 
-class SPARSE_BIT_ARRAY_2D
+class SPARSE_BIT_Array_2D
   {
   class linestruct { public: INDEX size; INDEX maxsize; INDEX * col; };
 
@@ -24,9 +24,9 @@ class SPARSE_BIT_ARRAY_2D
   public:
 
   ///
-  SPARSE_BIT_ARRAY_2D (INDEX ah = 0, INDEX aw = 0);
+  SPARSE_BIT_Array_2D (INDEX ah = 0, INDEX aw = 0);
   ///
-  ~SPARSE_BIT_ARRAY_2D ();
+  ~SPARSE_BIT_Array_2D ();
 
   ///
   void SetSize (INDEX ah, INDEX aw = 0);

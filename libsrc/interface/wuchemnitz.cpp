@@ -50,12 +50,12 @@ class EDGE
   int p1, p2;
   };
 
-static ARRAY<POINT3D> points;
-static ARRAY<VOLELEMENT> volelements;
-static ARRAY<SURFELEMENT> surfelements;
+static Array<POINT3D> points;
+static Array<VOLELEMENT> volelements;
+static Array<SURFELEMENT> surfelements;
 
-static ARRAY<FACE> faces;
-static ARRAY<EDGE> edges;
+static Array<FACE> faces;
+static Array<EDGE> edges;
 
 
 void ReadFile (char * filename)

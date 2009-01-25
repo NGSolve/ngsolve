@@ -21,11 +21,11 @@ in geom2d only 2D - Geometry classes (with material properties etc.)
 
 /// 
 extern void LoadBoundarySplines (const char * filename,
-				 ARRAY < GeomPoint<2> > & geompoints,
-				 ARRAY < SplineSeg<2>* > & splines, 
+				 Array < GeomPoint<2> > & geompoints,
+				 Array < SplineSeg<2>* > & splines, 
 				 double & elto0);
 ///
-extern void PartitionBoundary (const ARRAY < SplineSeg<2>* > & splines,
+extern void PartitionBoundary (const Array < SplineSeg<2>* > & splines,
 			       double h, double elto0,
 			       Mesh & mesh2d);
 
@@ -36,14 +36,14 @@ extern int printmessage_importance;
 template < int D >
 class SplineGeometry
 {
-  ARRAY < GeomPoint<D> > geompoints;
-  ARRAY < SplineSeg<D>* > splines;
+  Array < GeomPoint<D> > geompoints;
+  Array < SplineSeg<D>* > splines;
   double elto0;
-  ARRAY<char*> materials;
-  ARRAY<string*> bcnames;
-  ARRAY<double> maxh;
-  ARRAY<bool> quadmeshing;
-  ARRAY<bool> tensormeshing;
+  Array<char*> materials;
+  Array<string*> bcnames;
+  Array<double> maxh;
+  Array<bool> quadmeshing;
+  Array<bool> tensormeshing;
 
 private:
   void AppendSegment(SplineSeg<D> * spline, const int leftdomain, const int rightdomain,
@@ -54,7 +54,7 @@ private:
 public:
   ~SplineGeometry();
 
-  int Load (const ARRAY<double> & raw_data, const int startpos = 0);
+  int Load (const Array<double> & raw_data, const int startpos = 0);
   void Load (const char * filename);
   void CSGLoad (CSGScanner & scan);
 
@@ -64,11 +64,11 @@ public:
 
   void PartitionBoundary (double h, Mesh & mesh2d);
 
-  void GetRawData (ARRAY<double> & raw_data) const;
+  void GetRawData (Array<double> & raw_data) const;
 
   void CopyEdgeMesh (int from, int to, Mesh & mesh2d, Point3dTree & searchtree);
 
-  const ARRAY<SplineSeg<D>*> & GetSplines () const
+  const Array<SplineSeg<D>*> & GetSplines () const
   { return splines; }
 
   int GetNSplines (void) const { return splines.Size(); }
@@ -102,7 +102,7 @@ public:
 			    const double reffac = 1.,
 			    const bool hprefleft = false, const bool hprefright = false,
 			    const int copyfrom = -1);
-  void AppendDiscretePointsSegment (const ARRAY< Point<D> > & points, 
+  void AppendDiscretePointsSegment (const Array< Point<D> > & points, 
 				    const int leftdomain, const int rightdomain, const int bc = -1,
 				    const double reffac = 1.,
 				    const bool hprefleft = false, const bool hprefright = false,

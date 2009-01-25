@@ -108,7 +108,7 @@ namespace netgen
 
 
   void Plane :: GetPrimitiveData (const char *& classname, 
-                                  ARRAY<double> & coeffs) const
+                                  Array<double> & coeffs) const
   {
     classname = "plane";
     coeffs.SetSize (6);
@@ -120,7 +120,7 @@ namespace netgen
     coeffs.Elem(6) = n(2);
   }
 
-  void Plane :: SetPrimitiveData (ARRAY<double> & coeffs)
+  void Plane :: SetPrimitiveData (Array<double> & coeffs)
   {
     p(0) = coeffs.Elem(1);
     p(1) = coeffs.Elem(2);
@@ -376,7 +376,7 @@ namespace netgen
     c1 = (c(0) * c(0) + c(1) * c(1) + c(2) * c(2)) / (2 * r) - r / 2;
   }
 
-  void Sphere :: GetPrimitiveData (const char *& classname, ARRAY<double> & coeffs) const
+  void Sphere :: GetPrimitiveData (const char *& classname, Array<double> & coeffs) const
   {
     classname = "sphere";
     coeffs.SetSize (4);
@@ -386,7 +386,7 @@ namespace netgen
     coeffs.Elem(4) = r;
   }
 
-  void Sphere :: SetPrimitiveData (ARRAY<double> & coeffs)
+  void Sphere :: SetPrimitiveData (Array<double> & coeffs)
   {
     c(0) = coeffs.Elem(1);
     c(1) = coeffs.Elem(2);
@@ -734,7 +734,7 @@ namespace netgen
 
 
 
-  Cylinder :: Cylinder (ARRAY<double> & coeffs)
+  Cylinder :: Cylinder (Array<double> & coeffs)
   {
     SetPrimitiveData(coeffs);
   }
@@ -776,7 +776,7 @@ namespace netgen
 
 
 
-  void Cylinder :: GetPrimitiveData (const char *& classname, ARRAY<double> & coeffs) const
+  void Cylinder :: GetPrimitiveData (const char *& classname, Array<double> & coeffs) const
   {
     classname = "cylinder";
     coeffs.SetSize (7);
@@ -789,7 +789,7 @@ namespace netgen
     coeffs.Elem(7) = r;
   }
 
-  void Cylinder :: SetPrimitiveData (ARRAY<double> & coeffs)
+  void Cylinder :: SetPrimitiveData (Array<double> & coeffs)
   {
     a(0) = coeffs.Elem(1);
     a(1) = coeffs.Elem(2);
@@ -1266,7 +1266,7 @@ namespace netgen
 
 
 
-  void Cone :: GetPrimitiveData (const char *& classname, ARRAY<double> & coeffs) const
+  void Cone :: GetPrimitiveData (const char *& classname, Array<double> & coeffs) const
   {
     classname = "cone";
     coeffs.SetSize (8);
@@ -1280,7 +1280,7 @@ namespace netgen
     coeffs.Elem(8) = rb;
   }
 
-  void Cone :: SetPrimitiveData (ARRAY<double> & coeffs)
+  void Cone :: SetPrimitiveData (Array<double> & coeffs)
   {
     a(0) = coeffs.Elem(1);
     a(1) = coeffs.Elem(2);
@@ -1469,7 +1469,7 @@ namespace netgen
     r = ar;
   }
 
-  void Torus :: GetPrimitiveData (const char *& classname, ARRAY<double> & coeffs) const
+  void Torus :: GetPrimitiveData (const char *& classname, Array<double> & coeffs) const
   {
     classname = "torus";
     coeffs.SetSize (8);
@@ -1483,7 +1483,7 @@ namespace netgen
     coeffs.Elem(8) = r;
   }
 
-  void Torus :: SetPrimitiveData (ARRAY<double> & coeffs)
+  void Torus :: SetPrimitiveData (Array<double> & coeffs)
   {
     c(0) = coeffs.Elem(1);
     c(1) = coeffs.Elem(2);

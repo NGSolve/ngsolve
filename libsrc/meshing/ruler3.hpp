@@ -13,33 +13,33 @@ private:
   /// name of rule
   char * name;
   /// point coordinates in reference position
-  ARRAY<Point3d> points;
+  Array<Point3d> points;
   /// old and new faces in reference numbering
-  ARRAY<Element2d> faces;
+  Array<Element2d> faces;
   /// additional edges of rule
-  ARRAY<twoint> edges;
+  Array<twoint> edges;
 
   /// points of freezone in reference coordinates
-  ARRAY<Point3d> freezone;
+  Array<Point3d> freezone;
   /// points of freezone in reference coordinates if tolcalss to infty
-  ARRAY<Point3d> freezonelimit;
+  Array<Point3d> freezonelimit;
   /// point index, if point equal to mappoint, otherwise 0
-  ARRAY<int> freezonepi;
+  Array<int> freezonepi;
   /// faces of each convex part of freezone
-  ARRAY<ARRAY<threeint>*> freefaces;
+  Array<Array<threeint>*> freefaces;
   /// set of points of each convex part of freezone
-  ARRAY<ARRAY<int>*> freesets;
+  Array<Array<int>*> freesets;
   /// points of transformed freezone
-  ARRAY<Point3d> transfreezone;
+  Array<Point3d> transfreezone;
   /// edges of each convex part of freezone
-  ARRAY<ARRAY<twoint>*> freeedges;
+  Array<Array<twoint>*> freeedges;
 
   /// face numbers to be deleted
-  ARRAY<int> delfaces;
+  Array<int> delfaces;
   /// elements to be generated
-  ARRAY<Element> elements;
+  Array<Element> elements;
   /// tolerances for points and faces (used ??)
-  ARRAY<double> tolerances, linetolerances;
+  Array<double> tolerances, linetolerances;
   /// transformation matrix 
   DenseMatrix oldutonewu;
   /// transformation matrix: deviation old point to dev. freezone
@@ -55,21 +55,21 @@ private:
     a point is outside of convex part of freezone, 
     iff mat * (point, 1) >= 0 for each component (correct ?)
     */
-  ARRAY<DenseMatrix*> freefaceinequ;
+  Array<DenseMatrix*> freefaceinequ;
   /// 
-  ARRAY<fourint> orientations;
+  Array<fourint> orientations;
   /**
     flags specified in rule-description file:
     t .. test rule
     */
-  ARRAY<char> flags;
+  Array<char> flags;
 
   /**
     topological distance of face to base element
     non-connected: > 100  (??) 
     */
-  ARRAY<int> fnearness;
-  ARRAY<int> pnearness;
+  Array<int> fnearness;
+  Array<int> pnearness;
   int maxpnearness;
 
   /// number of old points in rule
@@ -144,19 +144,19 @@ public:
     -1 maybe 
    */
   int IsTriangleInFreeZone (const Point3d & p1, const Point3d & p2,
-                            const Point3d & p3, const ARRAY<int> & pi, int newone);
+                            const Point3d & p3, const Array<int> & pi, int newone);
   ///
   int IsQuadInFreeZone (const Point3d & p1, const Point3d & p2,
 			const Point3d & p3, const Point3d & p4,
-			const ARRAY<int> & pi, int newone);
+			const Array<int> & pi, int newone);
   ///
   int IsTriangleInFreeSet (const Point3d & p1, const Point3d & p2,
-                           const Point3d & p3, int fs, const ARRAY<int> & pi, int newone);
+                           const Point3d & p3, int fs, const Array<int> & pi, int newone);
 
   ///
   int IsQuadInFreeSet (const Point3d & p1, const Point3d & p2,
 		       const Point3d & p3, const Point3d & p4,
-		       int fs, const ARRAY<int> & pi, int newone);
+		       int fs, const Array<int> & pi, int newone);
   
   ///
   int ConvexFreeZone () const;
@@ -194,7 +194,7 @@ public:
   void LoadRule (istream & ist);
 
   ///
-  const ARRAY<Point3d> & GetTransFreeZone () { return transfreezone; }
+  const Array<Point3d> & GetTransFreeZone () { return transfreezone; }
   ///
   int TestOk () const;
 

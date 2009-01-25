@@ -6,8 +6,8 @@
 namespace netgen
 {
 
-  // static ARRAY<Point<2> > points2;
-  //  static ARRAY<int> lp1, lp2;
+  // static Array<Point<2> > points2;
+  //  static Array<int> lp1, lp2;
 
 
   extern void Optimize2d (Mesh & mesh, MeshingParameters & mp);
@@ -69,7 +69,7 @@ namespace netgen
     for (int i = 1; i <= maxdomnr; i++)
       mesh->AddFaceDescriptor (FaceDescriptor (i, 0, 0, i));
 
-    // set ARRAY<string*> bcnames... 
+    // set Array<string*> bcnames... 
     // number of bcnames
     int maxsegmentindex = 0;
     for (SegmentIndex si = 0; si < mesh->GetNSeg(); si++)
@@ -105,8 +105,8 @@ namespace netgen
       if (geometry.GetDomainTensorMeshing (domnr))
         { // tensor product mesh
           
-          ARRAY<PointIndex, PointIndex::BASE> nextpi(bnp);
-          ARRAY<int, PointIndex::BASE> si1(bnp), si2(bnp);
+          Array<PointIndex, PointIndex::BASE> nextpi(bnp);
+          Array<int, PointIndex::BASE> si1(bnp), si2(bnp);
           PointIndex firstpi;
           
           nextpi = -1;
@@ -145,7 +145,7 @@ namespace netgen
 
 
 
-          ARRAY<PointIndex> pts ( (nex+1) * (ney+1) );   // x ... inner loop
+          Array<PointIndex> pts ( (nex+1) * (ney+1) );   // x ... inner loop
           pts = -1;
 
           for (PointIndex pi = c1, i = 0; pi != c2; pi = nextpi[pi], i++)

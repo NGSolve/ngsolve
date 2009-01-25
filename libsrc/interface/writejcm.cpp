@@ -33,7 +33,7 @@ void WriteJCMFormat (const Mesh & mesh,
   int np = mesh.GetNP();
 
   // Identic points
-  ARRAY<int,1> identmap1, identmap2, identmap3;
+  Array<int,1> identmap1, identmap2, identmap3;
   mesh.GetIdentifications().GetMap(1, identmap1);
   mesh.GetIdentifications().GetMap(2, identmap2);
   mesh.GetIdentifications().GetMap(3, identmap3);
@@ -95,7 +95,7 @@ void WriteJCMFormat (const Mesh & mesh,
   int nbquad = 0;
   // array with 1 if point on any tetra, 0 else 
   // this is needed in order to arrange the prism points in the right order
-  ARRAY<int,1> pointsOnTetras;
+  Array<int,1> pointsOnTetras;
   pointsOnTetras.SetSize (mesh.GetNP());
   pointsOnTetras = 0;
   for (i = 1; i <= ne; i++)

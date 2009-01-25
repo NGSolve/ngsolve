@@ -47,7 +47,7 @@ public:
   virtual ~Refinement ();
   
   void Refine (Mesh & mesh);
-  void Bisect (Mesh & mesh, class BisectionOptions & opt, ARRAY<double> * quality_loss = NULL);
+  void Bisect (Mesh & mesh, class BisectionOptions & opt, Array<double> * quality_loss = NULL);
   void MakeSecondOrder (Mesh & mesh);
 
   virtual void PointBetween (const Point<3> & p1, const Point<3> & p2, double secpoint, 
@@ -81,7 +81,7 @@ public:
 
   void ValidateSecondOrder (Mesh & mesh);
   void ValidateRefinedMesh (Mesh & mesh, 
-			    ARRAY<INDEX_2> & parents);
+			    Array<INDEX_2> & parents);
 
   MeshOptimize2d * Get2dOptimizer(void)
   {

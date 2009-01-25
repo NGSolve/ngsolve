@@ -18,16 +18,16 @@ class CurvedElements
 {
   const Mesh & mesh;
 
-  ARRAY<int> edgeorder;
-  ARRAY<int> faceorder;
+  Array<int> edgeorder;
+  Array<int> faceorder;
 
-  ARRAY<int> edgecoeffsindex;
-  ARRAY<int> facecoeffsindex;
+  Array<int> edgecoeffsindex;
+  Array<int> facecoeffsindex;
 
-  ARRAY< Vec<3> > edgecoeffs;
-  ARRAY< Vec<3> > facecoeffs;
+  Array< Vec<3> > edgecoeffs;
+  Array< Vec<3> > facecoeffs;
 
-  ARRAY< double > edgeweight;  // for rational 2nd order splines
+  Array< double > edgeweight;  // for rational 2nd order splines
 
   int order;
   bool rational;
@@ -115,17 +115,17 @@ public:
 
 
 
-  void CalcMultiPointSegmentTransformation (ARRAY<double> * xi, SegmentIndex segnr,
-					    ARRAY<Point<3> > * x,
-					    ARRAY<Vec<3> > * dxdxi);
+  void CalcMultiPointSegmentTransformation (Array<double> * xi, SegmentIndex segnr,
+					    Array<Point<3> > * x,
+					    Array<Vec<3> > * dxdxi);
 
-  void CalcMultiPointSurfaceTransformation (ARRAY< Point<2> > * xi, SurfaceElementIndex elnr,
-					    ARRAY< Point<3> > * x,
-					    ARRAY< Mat<3,2> > * dxdxi);
+  void CalcMultiPointSurfaceTransformation (Array< Point<2> > * xi, SurfaceElementIndex elnr,
+					    Array< Point<3> > * x,
+					    Array< Mat<3,2> > * dxdxi);
 
-  void CalcMultiPointElementTransformation (ARRAY< Point<3> > * xi, ElementIndex elnr,
-					    ARRAY< Point<3> > * x,
-					    ARRAY< Mat<3,3> > * dxdxi);
+  void CalcMultiPointElementTransformation (Array< Point<3> > * xi, ElementIndex elnr,
+					    Array< Point<3> > * x,
+					    Array< Mat<3,3> > * dxdxi);
 
   void CalcMultiPointElementTransformation (ElementIndex elnr, int n,
                                             const double * xi, int sxi,
@@ -163,7 +163,7 @@ private:
   };
 
   void CalcElementShapes (SegmentInfo &  elnr, double xi, Vector & shapes) const;
-  void GetCoefficients (SegmentInfo & elnr, ARRAY<Vec<3> > & coefs) const;
+  void GetCoefficients (SegmentInfo & elnr, Array<Vec<3> > & coefs) const;
   void CalcElementDShapes (SegmentInfo & elnr, double xi, Vector & dshapes) const;
 
 
@@ -200,7 +200,7 @@ private:
   };
 
   void CalcElementShapes (SurfaceElementInfo & elinfo, const Point<2> & xi, Vector & shapes) const;
-  void GetCoefficients (SurfaceElementInfo & elinfo, ARRAY<Vec<3> > & coefs) const;
+  void GetCoefficients (SurfaceElementInfo & elinfo, Array<Vec<3> > & coefs) const;
   void CalcElementDShapes (SurfaceElementInfo & elinfo, const Point<2> & xi, DenseMatrix & dshapes) const;
 };
 

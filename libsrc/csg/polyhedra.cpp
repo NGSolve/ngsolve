@@ -7,7 +7,7 @@ namespace netgen
 {
 
 Polyhedra::Face::Face (int pi1, int pi2, int pi3,
-		       const ARRAY<Point<3> > & points,
+		       const Array<Point<3> > & points,
 		       int ainputnr)
 {
   inputnr = ainputnr;
@@ -165,7 +165,7 @@ INSOLID_TYPE Polyhedra :: PointInSolid (const Point<3> & p,
 
 
 void Polyhedra :: GetTangentialSurfaceIndices (const Point<3> & p, 
-					       ARRAY<int> & surfind, double eps) const
+					       Array<int> & surfind, double eps) const
 {
   for (int i = 0; i < faces.Size(); i++)
     {
@@ -192,7 +192,7 @@ INSOLID_TYPE Polyhedra :: VecInSolid (const Point<3> & p,
 				      const Vec<3> & v,
 				      double eps) const
 {
-  ARRAY<int> point_on_faces;
+  Array<int> point_on_faces;
   INSOLID_TYPE res(DOES_INTERSECT);
 
   Vec<3> vn = v;
@@ -388,7 +388,7 @@ INSOLID_TYPE Polyhedra :: VecInSolid2 (const Point<3> & p,
 
 
 void Polyhedra :: GetTangentialVecSurfaceIndices2 (const Point<3> & p, const Vec<3> & v1, const Vec<3> & v2,
-						   ARRAY<int> & surfind, double eps) const
+						   Array<int> & surfind, double eps) const
 {
   Vec<3> v1n = v1;
   v1n.Normalize();
@@ -447,7 +447,7 @@ void Polyhedra :: GetTangentialVecSurfaceIndices2 (const Point<3> & p, const Vec
 
 
 void Polyhedra :: GetPrimitiveData (const char *& classname, 
-				    ARRAY<double> & coeffs) const
+				    Array<double> & coeffs) const
 {
   classname = "Polyhedra";
   coeffs.SetSize(0);
@@ -471,7 +471,7 @@ void Polyhedra :: GetPrimitiveData (const char *& classname,
   */
 }
 
-void Polyhedra :: SetPrimitiveData (ARRAY<double> & /* coeffs */)
+void Polyhedra :: SetPrimitiveData (Array<double> & /* coeffs */)
 {
   ;
 }
@@ -589,7 +589,7 @@ int Polyhedra :: FaceBoxIntersection (int fnr, const BoxSphere<3> & box) const
 }
 
 
-void Polyhedra :: GetPolySurfs(ARRAY < ARRAY<int> * > & polysurfs)
+void Polyhedra :: GetPolySurfs(Array < Array<int> * > & polysurfs)
 {
   int maxnum = -1;
   
@@ -601,14 +601,14 @@ void Polyhedra :: GetPolySurfs(ARRAY < ARRAY<int> * > & polysurfs)
   
   polysurfs.SetSize(maxnum+1);
   for(int i=0; i<polysurfs.Size(); i++)
-    polysurfs[i] = new ARRAY<int>;
+    polysurfs[i] = new Array<int>;
 
   for(int i = 0; i<faces.Size(); i++)
     polysurfs[faces[i].inputnr]->Append(faces[i].planenr);
 }
 
 
-void Polyhedra::CalcSpecialPoints (ARRAY<Point<3> > & pts) const
+void Polyhedra::CalcSpecialPoints (Array<Point<3> > & pts) const
 {
   for (int i = 0; i < points.Size(); i++)
     pts.Append (points[i]);
@@ -616,7 +616,7 @@ void Polyhedra::CalcSpecialPoints (ARRAY<Point<3> > & pts) const
 
 
 void Polyhedra :: AnalyzeSpecialPoint (const Point<3> & /* pt */, 
-				       ARRAY<Point<3> > & /* specpts */) const
+				       Array<Point<3> > & /* specpts */) const
 {
   ;
 }

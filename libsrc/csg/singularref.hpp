@@ -25,8 +25,8 @@ public:
   int domnr;
   const Solid *sol;
   double factor; 
-  // ARRAY<Point<3> > points;
-  // ARRAY<INDEX_2> segms;
+  // Array<Point<3> > points;
+  // Array<INDEX_2> segms;
 public:
   SingularFace (int adomnr, const Solid * asol, double sf)
     : domnr(adomnr), sol(asol), factor(sf) { ; }
@@ -43,8 +43,8 @@ public:
   int domnr;
   const CSGeometry& geom;
   const Solid *sol1, *sol2;
-  ARRAY<Point<3> > points;
-  ARRAY<INDEX_2> segms;
+  Array<Point<3> > points;
+  Array<INDEX_2> segms;
   double factor; 
 
   double maxhinit;
@@ -64,7 +64,7 @@ class SingularPoint
 public:
   double beta;
   const Solid *sol1, *sol2, *sol3;
-  ARRAY<Point<3> > points;
+  Array<Point<3> > points;
   double factor; 
  
 public:

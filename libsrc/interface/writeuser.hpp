@@ -127,7 +127,7 @@ void WriteDolfinFormat (const Mesh & mesh,
 			const string & filename);
 
 
-extern void RegisterUserFormats (ARRAY<const char*> & names);
+extern void RegisterUserFormats (Array<const char*> & names);
 
 extern bool WriteUserFormat (const string & format,
 			     const Mesh & mesh,

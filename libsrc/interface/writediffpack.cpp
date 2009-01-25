@@ -37,8 +37,8 @@ void WriteDiffPackFormat (const Mesh & mesh,
       int np = mesh.GetNP();
       int ne = mesh.GetNE();
       int nse = mesh.GetNSE();
-      ARRAY <int> BIname;
-      ARRAY <int> BCsinpoint;
+      Array <int> BIname;
+      Array <int> BCsinpoint;
       int i, j, k, l;
 
 
@@ -186,8 +186,8 @@ void WriteDiffPackFormat (const Mesh & mesh,
       int np = mesh.GetNP();
       //int ne = mesh.GetNE();
       int nse = mesh.GetNSE();
-      ARRAY <int> BIname;
-      ARRAY <int> BCsinpoint;
+      Array <int> BIname;
+      Array <int> BCsinpoint;
       int i, j, k, l;
 
 

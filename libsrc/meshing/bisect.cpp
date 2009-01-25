@@ -291,7 +291,7 @@ namespace netgen
 
 
   int BTSortEdges (const Mesh & mesh,
-		   const ARRAY< ARRAY<int,PointIndex::BASE>* > & idmaps,
+		   const Array< Array<int,PointIndex::BASE>* > & idmaps,
 		   INDEX_2_CLOSED_HASHTABLE<int> & edgenumber)
   {
     PrintMessage(4,"sorting ... ");
@@ -301,8 +301,8 @@ namespace netgen
       {
 	// new, fast version
       
-	ARRAY<INDEX_2> edges;
-	ARRAY<int> eclasses;
+	Array<INDEX_2> edges;
+	Array<int> eclasses;
       
 	int i, j, k;
 	int cntedges = 0;
@@ -569,7 +569,7 @@ namespace netgen
 // 	  }
 	
 	// compute classlength:
-	ARRAY<double> edgelength(cntedges);
+	Array<double> edgelength(cntedges);
 
 	/*
 	for (i = 1; i <= cntedges; i++)
@@ -660,7 +660,7 @@ namespace netgen
 
 
 	// sort edges:
-	ARRAY<int> sorted(cntedges);
+	Array<int> sorted(cntedges);
       
 	QickSort (edgelength, sorted);
       
@@ -957,7 +957,7 @@ namespace netgen
 
   bool BTDefineMarkedId(const Element2d & el, 
 			INDEX_2_CLOSED_HASHTABLE<int> & edgenumber, 
-			const ARRAY<int,PointIndex::BASE> & idmap,
+			const Array<int,PointIndex::BASE> & idmap,
 			MarkedIdentification & mi)
   {
 
@@ -1385,7 +1385,7 @@ namespace netgen
 
 
   void BTBisectIdentification (const MarkedIdentification & oldid,
-			       ARRAY<int> & newp,
+			       Array<int> & newp,
 			       MarkedIdentification & newid1,
 			       MarkedIdentification & newid2)
   {
@@ -1619,10 +1619,10 @@ namespace netgen
   {
     int i,j,k;
 
-    ARRAY< ARRAY<int,PointIndex::BASE>* > idmaps;
+    Array< Array<int,PointIndex::BASE>* > idmaps;
     for(i=1; i<=mesh.GetIdentifications().GetMaxNr(); i++)
       {
-	idmaps.Append(new ARRAY<int,PointIndex::BASE>);
+	idmaps.Append(new Array<int,PointIndex::BASE>);
 	mesh.GetIdentifications().GetMap(i,*idmaps.Last());
       }
 
@@ -1827,7 +1827,7 @@ namespace netgen
 
 
   void ConnectToNodeRec (int node, int tonode, 
-			 const TABLE<int> & conto, ARRAY<int> & connecttonode)
+			 const TABLE<int> & conto, Array<int> & connecttonode)
   {
     int i, n2;
     //  (*testout) << "connect " << node << " to " << tonode << endl;
@@ -1936,7 +1936,7 @@ namespace netgen
 
   void BisectTetsCopyMesh (Mesh & mesh, const class CSGeometry *,
 			   BisectionOptions & opt,
-			   const ARRAY< ARRAY<int,PointIndex::BASE>* > & idmaps,
+			   const Array< Array<int,PointIndex::BASE>* > & idmaps,
 			   const string & refinfofile)
   {
     mtets.SetName ("bisection, tets");
@@ -2151,24 +2151,24 @@ namespace netgen
 
   /*
   void UpdateEdgeMarks2(Mesh & mesh,
-			const ARRAY< ARRAY<int,PointIndex::BASE>* > & idmaps)
+			const Array< Array<int,PointIndex::BASE>* > & idmaps)
   {
-    ARRAY< ARRAY<MarkedTet>*,PointIndex::BASE > mtets_old(mesh.GetNP());
-    ARRAY< ARRAY<MarkedPrism>*,PointIndex::BASE > mprisms_old(mesh.GetNP());
-    ARRAY< ARRAY<MarkedIdentification>*,PointIndex::BASE > mids_old(mesh.GetNP());
-    ARRAY< ARRAY<MarkedTri>*,PointIndex::BASE > mtris_old(mesh.GetNP());
-    ARRAY< ARRAY<MarkedQuad>*,PointIndex::BASE > mquads_old(mesh.GetNP());
+    Array< Array<MarkedTet>*,PointIndex::BASE > mtets_old(mesh.GetNP());
+    Array< Array<MarkedPrism>*,PointIndex::BASE > mprisms_old(mesh.GetNP());
+    Array< Array<MarkedIdentification>*,PointIndex::BASE > mids_old(mesh.GetNP());
+    Array< Array<MarkedTri>*,PointIndex::BASE > mtris_old(mesh.GetNP());
+    Array< Array<MarkedQuad>*,PointIndex::BASE > mquads_old(mesh.GetNP());
 
     for(int i=PointIndex::BASE; i<mesh.GetNP()+PointIndex::BASE; i++)
-      mtets_old[i] = new ARRAY<MarkedTet>;
+      mtets_old[i] = new Array<MarkedTet>;
     for(int i=PointIndex::BASE; i<mesh.GetNP()+PointIndex::BASE; i++)
-      mprisms_old[i] = new ARRAY<MarkedPrism>;
+      mprisms_old[i] = new Array<MarkedPrism>;
     for(int i=PointIndex::BASE; i<mesh.GetNP()+PointIndex::BASE; i++)
-      mids_old[i] = new ARRAY<MarkedIdentification>;
+      mids_old[i] = new Array<MarkedIdentification>;
     for(int i=PointIndex::BASE; i<mesh.GetNP()+PointIndex::BASE; i++)
-      mtris_old[i] = new ARRAY<MarkedTri>;
+      mtris_old[i] = new Array<MarkedTri>;
     for(int i=PointIndex::BASE; i<mesh.GetNP()+PointIndex::BASE; i++)
-      mquads_old[i] = new ARRAY<MarkedQuad>;
+      mquads_old[i] = new Array<MarkedQuad>;
 
     for(int i=0; i<mtets.Size(); i++)
       mtets_old[mtets[i].pnums[0]]->Append(mtets[i]);
@@ -2404,11 +2404,11 @@ namespace netgen
 
   
   void UpdateEdgeMarks (Mesh & mesh,
-			const ARRAY< ARRAY<int,PointIndex::BASE>* > & idmaps)
-  //const ARRAY < ARRAY<Element>* > & elements_before,
-  //const ARRAY < ARRAY<int>* > & markedelts_num,
-  //		const ARRAY < ARRAY<Element2d>* > & surfelements_before,
-  //		const ARRAY < ARRAY<int>* > & markedsurfelts_num)
+			const Array< Array<int,PointIndex::BASE>* > & idmaps)
+  //const Array < Array<Element>* > & elements_before,
+  //const Array < Array<int>* > & markedelts_num,
+  //		const Array < Array<Element2d>* > & surfelements_before,
+  //		const Array < Array<int>* > & markedsurfelts_num)
   {
     T_MTETS mtets_old; mtets_old.Copy(mtets);
     T_MPRISMS mprisms_old; mprisms_old.Copy(mprisms);
@@ -2627,7 +2627,7 @@ namespace netgen
 
   void Refinement :: Bisect (Mesh & mesh, 
 			     BisectionOptions & opt,
-			     ARRAY<double> * quality_loss)
+			     Array<double> * quality_loss)
   {
     PrintMessage(1,"Mesh bisection");
     PushStatus("Mesh bisection");
@@ -2638,12 +2638,12 @@ namespace netgen
     LocalizeEdgePoints(mesh);
     delete loct;
 
-    ARRAY< ARRAY<int,PointIndex::BASE>* > idmaps;
+    Array< Array<int,PointIndex::BASE>* > idmaps;
     for(int i=1; i<=mesh.GetIdentifications().GetMaxNr(); i++)
       {
 	if(mesh.GetIdentifications().GetType(i) == Identifications::PERIODIC)
 	  {
-	    idmaps.Append(new ARRAY<int,PointIndex::BASE>);
+	    idmaps.Append(new Array<int,PointIndex::BASE>);
 	    mesh.GetIdentifications().GetMap(i,*idmaps.Last(),true);
 	  }
       }
@@ -2727,7 +2727,7 @@ namespace netgen
 	/*
 	  #ifndef SABINE //Nachbarelemente mit ordx,ordy,ordz 
       
-	  ARRAY<int,PointIndex::BASE> v_order (mesh.GetNP());
+	  Array<int,PointIndex::BASE> v_order (mesh.GetNP());
 	  v_order = 0;
 
 	  for (ElementIndex ei = 0; ei < ne; ei++)
@@ -3103,7 +3103,7 @@ namespace netgen
 	    else
 	      {
 		// vertices with 2 different bnds
-		ARRAY<int> bndind(np);
+		Array<int> bndind(np);
 		bndind = 0;
 		for (i = 1; i <= mesh.GetNSeg(); i++)
 		  {
@@ -3275,11 +3275,11 @@ namespace netgen
 	      if (mids.Elem(i).marked)
 		{
 		  MarkedIdentification oldid,newid1,newid2;
-		  ARRAY<int> newp;
+		  Array<int> newp;
 
 		  oldid = mids.Get(i);
 		  
-		  ARRAY<INDEX_2> edges;
+		  Array<INDEX_2> edges;
 		  edges.Append(INDEX_2(oldid.pnums[oldid.markededge],
 				       oldid.pnums[(oldid.markededge+1)%oldid.np]));
 		  edges.Append(INDEX_2(oldid.pnums[oldid.markededge + oldid.np],
@@ -3535,7 +3535,7 @@ namespace netgen
     if (opt.refine_hp)
       {
 	//
-	ARRAY<int> v_order (mesh.GetNP());
+	Array<int> v_order (mesh.GetNP());
 	v_order = 0;
 	if (mesh.GetDimension() == 3)
 	  {
@@ -3781,7 +3781,7 @@ namespace netgen
     // update identification tables
     for (i = 1; i <= mesh.GetIdentifications().GetMaxNr(); i++)
       {
-	ARRAY<int,PointIndex::BASE> identmap;
+	Array<int,PointIndex::BASE> identmap;
 
 	mesh.GetIdentifications().GetMap (i, identmap);
 
@@ -3859,8 +3859,8 @@ namespace netgen
 	NgProfiler::RegionTimer * regt(NULL);
     regt = new NgProfiler::RegionTimer(reptimer); 
 
-    ARRAY<ElementIndex> bad_elts;
-    ARRAY<double> pure_badness;
+    Array<ElementIndex> bad_elts;
+    Array<double> pure_badness;
    
     if(do_repair || quality_loss != NULL)
       {

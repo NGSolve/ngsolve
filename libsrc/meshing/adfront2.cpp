@@ -62,7 +62,7 @@ namespace netgen
   }
 
   /*
-  void AdFront2 :: GetPoints (ARRAY<Point<3> > & apoints) const
+  void AdFront2 :: GetPoints (Array<Point<3> > & apoints) const
   {
     apoints.Append (points);
     // for (int i = 0; i < points.Size(); i++)
@@ -280,11 +280,11 @@ namespace netgen
 
 
   int AdFront2 :: GetLocals (int baselineindex,
-			     ARRAY<Point3d> & locpoints,
-			     ARRAY<MultiPointGeomInfo> & pgeominfo,
-			     ARRAY<INDEX_2> & loclines,   // local index
-			     ARRAY<INDEX> & pindex,
-			     ARRAY<INDEX> & lindex,
+			     Array<Point3d> & locpoints,
+			     Array<MultiPointGeomInfo> & pgeominfo,
+			     Array<INDEX_2> & loclines,   // local index
+			     Array<INDEX> & pindex,
+			     Array<INDEX> & lindex,
 			     double xh)
   {
     // baselineindex += 1-lines.Begin();
@@ -298,9 +298,9 @@ namespace netgen
     loclines.Append(lines[baselineindex].L());
     lindex.Append(baselineindex);  //  +1-lines.Begin());
 
-    static ARRAY<int> nearlines;
+    static Array<int> nearlines;
     nearlines.SetSize(0);
-    static ARRAY<int> nearpoints;
+    static Array<int> nearpoints;
     nearpoints.SetSize(0);
 
     linesearchtree.GetIntersecting (p0 - Vec3d(xh, xh, xh),
@@ -322,7 +322,7 @@ namespace netgen
 	  }
       }
 
-    static ARRAY<int> invpindex;
+    static Array<int> invpindex;
     invpindex.SetSize (points.Size()); 
     // invpindex = -1;
     for (int i = 0; i < nearpoints.Size(); i++)

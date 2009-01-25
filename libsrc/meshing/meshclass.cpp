@@ -585,7 +585,7 @@ namespace netgen
     if (ident -> GetMaxNr() > 0)
       {
 	outfile << "identifications\n";
-	ARRAY<INDEX_2> identpairs;
+	Array<INDEX_2> identpairs;
 	int cnt = 0;
 	for (i = 1; i <= ident -> GetMaxNr(); i++)
 	  {
@@ -1012,7 +1012,7 @@ namespace netgen
 	if ( strcmp (str, "bcnames" ) == 0 )
 	  {
 	    infile >> n;
-	    ARRAY<int,0> bcnrs(n);
+	    Array<int,0> bcnrs(n);
 
 	    SetNBCNames(n);
 	    for ( i = 1; i <= n; i++ )
@@ -1667,7 +1667,7 @@ namespace netgen
     int ne = GetNE();
     int nse = GetNSE();
     
-    ARRAY<int,PointIndex::BASE> numonpoint(np);
+    Array<int,PointIndex::BASE> numonpoint(np);
 
     numonpoint = 0;
 
@@ -1717,7 +1717,7 @@ namespace netgen
 
 
 
-    ARRAY<char, 1> hasface(GetNFD());
+    Array<char, 1> hasface(GetNFD());
 
     int i;
     for (i = 1; i <= GetNFD(); i++)
@@ -2262,7 +2262,7 @@ namespace netgen
     int i, j, k;
     PointIndex pi;
     const int large = 9999;
-    ARRAY<int,PointIndex::BASE> dist(GetNP());
+    Array<int,PointIndex::BASE> dist(GetNP());
 
     dist = large;
 
@@ -2395,7 +2395,7 @@ namespace netgen
       return 1e10;
   }
 
-  void Mesh :: SetMaxHDomain (const ARRAY<double> & mhd)
+  void Mesh :: SetMaxHDomain (const Array<double> & mhd)
   {
     maxhdomain.SetSize(mhd.Size());
     for (int i = 1; i <= mhd.Size(); i++)
@@ -2728,7 +2728,7 @@ namespace netgen
     int nseg = GetNSeg();
     int nse = GetNSE();
   
-    ARRAY<Vec3d> normals(np);
+    Array<Vec3d> normals(np);
     BitArray linepoint(np);
 
     linepoint.Clear();
@@ -2962,8 +2962,8 @@ namespace netgen
   void Mesh :: Compress ()
   {
     int i, j;
-    ARRAY<int,PointIndex::BASE> op2np(GetNP());
-    ARRAY<MeshPoint> hpoints;
+    Array<int,PointIndex::BASE> op2np(GetNP());
+    Array<MeshPoint> hpoints;
     BitArrayChar<PointIndex::BASE> pused(GetNP());
 
     /*
@@ -3192,7 +3192,7 @@ namespace netgen
     Point3d pmin, pmax;
     GetBox (pmin, pmax);
     Box3dTree setree(pmin, pmax);
-    ARRAY<int> inters;
+    Array<int> inters;
   
     bool overlap = 0;
     bool incons_layers = 0;
@@ -4044,7 +4044,7 @@ namespace netgen
     static Vec3d rhs, sol;
     const double eps = 1e-6;
 
-    static ARRAY<Element2d> loctrigs;
+    static Array<Element2d> loctrigs;
 
 
     //SZ 
@@ -4324,7 +4324,7 @@ namespace netgen
     static Vec3d rhs, sol;
     const double eps = 1.e-4;
     
-    static ARRAY<Element> loctets;
+    static Array<Element> loctets;
 
     VolumeElement(element).GetTets (loctets);
     
@@ -4355,8 +4355,8 @@ namespace netgen
 	if (sol.X() >= -eps && sol.Y() >= -eps && sol.Z() >= -eps &&
 	    sol.X() + sol.Y() + sol.Z() <= 1+eps)
 	  {
-	    ARRAY<Element> loctetsloc;
-	    ARRAY<netgen::Point<3> > pointsloc;
+	    Array<Element> loctetsloc;
+	    Array<netgen::Point<3> > pointsloc;
 	    
 	    VolumeElement(element).GetTetsLocal (loctetsloc);
 	    VolumeElement(element).GetNodesLocalNew (pointsloc);
@@ -4388,7 +4388,7 @@ namespace netgen
   {
     if(index != -1) 
       {
-	ARRAY<int> dummy(1);
+	Array<int> dummy(1);
 	dummy[0] = index;
 	return GetElementOfPoint(p,lami,&dummy,build_searchtree,allowindex);
       }
@@ -4401,7 +4401,7 @@ namespace netgen
 
   int Mesh :: GetElementOfPoint (const Point3d & p,
 				 double lami[3],
-				 const ARRAY<int> * const indices,
+				 const Array<int> * const indices,
 				 bool build_searchtree,
 				 const bool allowindex) const
   {
@@ -4414,7 +4414,7 @@ namespace netgen
 	if(ps_startelement != 0 && ps_startelement <= GetNSE() && PointContainedIn2DElement(p,lami,ps_startelement))
 	  return ps_startelement;
 
-	ARRAY<int> locels;
+	Array<int> locels;
 	if (0)
 	  {
 	    elementsearchtree->GetIntersecting (p, p, locels);
@@ -4454,7 +4454,7 @@ namespace netgen
 	if(ps_startelement != 0 && PointContainedIn3DElement(p,lami,ps_startelement))
 	  return ps_startelement;
 
-	ARRAY<int> locels;
+	Array<int> locels;
 	if (elementsearchtree || build_searchtree)
 	  {
 	    // update if necessary:
@@ -4530,7 +4530,7 @@ namespace netgen
   {
     if(index != -1) 
       {
-	ARRAY<int> dummy(1);
+	Array<int> dummy(1);
 	dummy[0] = index;
 	return GetSurfaceElementOfPoint(p,lami,&dummy,build_searchtree,allowindex);
       }
@@ -4543,7 +4543,7 @@ namespace netgen
 
   int Mesh :: GetSurfaceElementOfPoint (const Point3d & p,
 					double lami[3],
-					const ARRAY<int> * const indices,
+					const Array<int> * const indices,
 					bool build_searchtree,
 					const bool allowindex) const
   {
@@ -4559,7 +4559,7 @@ namespace netgen
 	//(*testout) << "p " << p << endl;
 	//(*testout) << "velement " << velement << endl;
 
-	ARRAY<int> faces;
+	Array<int> faces;
 	topology->GetElementFaces(velement,faces);
 
 	//(*testout) << "faces " << faces << endl;
@@ -4598,7 +4598,7 @@ namespace netgen
 
 
   void Mesh::GetIntersectingVolEls(const Point3d& p1, const Point3d& p2, 
-				   ARRAY<int> & locels) const
+				   Array<int> & locels) const
   {
     elementsearchtree->GetIntersecting (p1, p2, locels);
   }
@@ -4723,7 +4723,7 @@ namespace netgen
     int np = GetNP();
 
     BitArray usedp(np);
-    ARRAY<SurfaceElementIndex> els_of_face;
+    Array<SurfaceElementIndex> els_of_face;
 
     fdi = 1;
     while (fdi <= GetNFD())
@@ -4884,7 +4884,7 @@ namespace netgen
   }
 
 
-  void Mesh :: GetSurfaceElementsOfFace (int facenr, ARRAY<SurfaceElementIndex> & sei) const
+  void Mesh :: GetSurfaceElementsOfFace (int facenr, Array<SurfaceElementIndex> & sei) const
   {
     static int timer = NgProfiler::CreateTimer ("GetSurfaceElementsOfFace");
     NgProfiler::RegionTimer reg (timer);
@@ -5120,7 +5120,7 @@ namespace netgen
 //   }
 
 
-//   void Mesh :: GetIdentificationMap (int identnr, ARRAY<int> & identmap) const
+//   void Mesh :: GetIdentificationMap (int identnr, Array<int> & identmap) const
 //   {
 //     int i, j;
 
@@ -5143,7 +5143,7 @@ namespace netgen
 //   }
 
 
-//   void Mesh :: GetIdentificationPairs (int identnr, ARRAY<INDEX_2> & identpairs) const
+//   void Mesh :: GetIdentificationPairs (int identnr, Array<INDEX_2> & identpairs) const
 //   {
 //     int i, j;
 
@@ -5427,16 +5427,16 @@ namespace netgen
       return "default";
   }
 
-  void Mesh :: SetUserData(const char * id, ARRAY<int> & data)
+  void Mesh :: SetUserData(const char * id, Array<int> & data)
   {
     if(userdata_int.Used(id))
       delete userdata_int.Get(id);
 
-    ARRAY<int> * newdata = new ARRAY<int>(data);
+    Array<int> * newdata = new Array<int>(data);
 
     userdata_int.Set(id,newdata);      
   }
-  bool Mesh :: GetUserData(const char * id, ARRAY<int> & data, int shift) const
+  bool Mesh :: GetUserData(const char * id, Array<int> & data, int shift) const
   {
     if(userdata_int.Used(id))
       {
@@ -5452,16 +5452,16 @@ namespace netgen
 	return false;
       }
   }
-  void Mesh :: SetUserData(const char * id, ARRAY<double> & data)
+  void Mesh :: SetUserData(const char * id, Array<double> & data)
   {
     if(userdata_double.Used(id))
       delete userdata_double.Get(id);
 
-    ARRAY<double> * newdata = new ARRAY<double>(data);
+    Array<double> * newdata = new Array<double>(data);
 
     userdata_double.Set(id,newdata);      
   }
-  bool Mesh :: GetUserData(const char * id, ARRAY<double> & data, int shift) const
+  bool Mesh :: GetUserData(const char * id, Array<double> & data, int shift) const
   {
     if(userdata_double.Used(id))
       {

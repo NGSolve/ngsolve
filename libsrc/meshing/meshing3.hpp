@@ -21,11 +21,11 @@ class Meshing3
   /// current state of front
   AdFront3 * adfront;
   /// 3d generation rules
-  ARRAY<vnetrule*> rules;
+  Array<vnetrule*> rules;
   /// counts how often a rule is used
-  ARRAY<int> ruleused, canuse, foundmap;
+  Array<int> ruleused, canuse, foundmap;
   /// describes, why a rule is not applied
-  ARRAY<char*> problems;
+  Array<char*> problems;
   /// tolerance criterion
   double tolfak;
 public:
@@ -42,11 +42,11 @@ public:
   MESHING3_RESULT GenerateMesh (Mesh & mesh, const MeshingParameters & mp);
   
   ///
-  int ApplyRules (ARRAY<Point3d> & lpoints, ARRAY<int> & allowpoint,
-		  ARRAY<MiniElement2d> & lfaces, INDEX lfacesplit,
+  int ApplyRules (Array<Point3d> & lpoints, Array<int> & allowpoint,
+		  Array<MiniElement2d> & lfaces, INDEX lfacesplit,
 		  INDEX_2_HASHTABLE<int> & connectedpairs,
-		  ARRAY<Element> & elements,
-		  ARRAY<INDEX> & delfaces, int tolerance, 
+		  Array<Element> & elements,
+		  Array<INDEX> & delfaces, int tolerance, 
 		  double sloppy, int rotind1,
 		  float & retminerr);
   
@@ -106,9 +106,9 @@ public:
 
 
 /*
-template <typename POINTARRAY, typename FACEARRAY>
-extern int FindInnerPoint (POINTARRAY & grouppoints,
-			   FACEARRAY & groupfaces,
+template <typename POINTArray, typename FACEArray>
+extern int FindInnerPoint (POINTArray & grouppoints,
+			   FACEArray & groupfaces,
 			   Point3d & p);
 
 */

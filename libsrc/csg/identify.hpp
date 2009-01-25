@@ -30,7 +30,7 @@ public:
   virtual void GetData (ostream & ost) const = 0;
 
   /// obsolete
-  //  virtual void IdentifySpecialPoints (ARRAY<class SpecialPoint> & points);
+  //  virtual void IdentifySpecialPoints (Array<class SpecialPoint> & points);
 
   /// can identify both special points (fixed direction)
   /// (identified points, same tangent)
@@ -55,16 +55,16 @@ public:
   virtual int GetIdentifiedPoint (class Mesh & mesh, int pi1);
 
   /// copy surfaces, or fill rectangles
-  virtual void BuildSurfaceElements (ARRAY<class Segment> & segs,
+  virtual void BuildSurfaceElements (Array<class Segment> & segs,
 				     class Mesh & mesh,
 				     const Surface * surf);
 
   /// insert volume elements in thin layers
-  virtual void BuildVolumeElements (ARRAY<class Element2d> & surfels,
+  virtual void BuildVolumeElements (Array<class Element2d> & surfels,
 				    class Mesh & mesh);
 
   /// get list of identified faces
-  virtual void GetIdentifiedFaces (ARRAY<INDEX_2> & idfaces) const;
+  virtual void GetIdentifiedFaces (Array<INDEX_2> & idfaces) const;
 
   friend ostream & operator<< (ostream & ost, Identification & ident);
 };
@@ -84,7 +84,7 @@ public:
   virtual void GetData (ostream & ost) const;
 
 
-  //  virtual void IdentifySpecialPoints (ARRAY<class SpecialPoint> & points);
+  //  virtual void IdentifySpecialPoints (Array<class SpecialPoint> & points);
   virtual int Identifyable (const SpecialPoint & sp1, const SpecialPoint & sp2,
 			    const TABLE<int> & specpoint2solid,
 			    const TABLE<int> & specpoint2surface) const;
@@ -93,7 +93,7 @@ public:
   virtual int GetIdentifiedPoint (class Mesh & mesh, int pi1);
   virtual void IdentifyPoints (class Mesh & mesh);
   virtual void IdentifyFaces (class Mesh & mesh);
-  virtual void BuildSurfaceElements (ARRAY<class Segment> & segs,
+  virtual void BuildSurfaceElements (Array<class Segment> & segs,
 				     class Mesh & mesh,
 				     const Surface * surf);
 };
@@ -116,9 +116,9 @@ class CloseSurfaceIdentification : public Identification
   int ref_levels_s2;
   ///
   double eps_n;
-  ARRAY<double> slices;
+  Array<double> slices;
   /// used only for domain-local identification:
-  ARRAY<int> domain_surfaces;
+  Array<int> domain_surfaces;
   ///
   bool dom_surf_valid;
 
@@ -139,7 +139,7 @@ public:
   virtual void GetData (ostream & ost) const;
 
 
-  //  virtual void IdentifySpecialPoints (ARRAY<class SpecialPoint> & points);
+  //  virtual void IdentifySpecialPoints (Array<class SpecialPoint> & points);
   virtual int Identifyable (const SpecialPoint & sp1, const SpecialPoint & sp2,
 			    const TABLE<int> & specpoint2solid,
 			    const TABLE<int> & specpoint2surface) const;
@@ -147,17 +147,17 @@ public:
   virtual int IdentifyableCandidate (const SpecialPoint & sp1) const;
   virtual int ShortEdge (const SpecialPoint & sp1, const SpecialPoint & sp2) const;
   virtual int GetIdentifiedPoint (class Mesh & mesh, int pi1);
-  const ARRAY<double> & GetSlices () const { return slices; }
+  const Array<double> & GetSlices () const { return slices; }
   virtual void IdentifyPoints (class Mesh & mesh);
   virtual void IdentifyFaces (class Mesh & mesh);
-  virtual void BuildSurfaceElements (ARRAY<class Segment> & segs,
+  virtual void BuildSurfaceElements (Array<class Segment> & segs,
 				     class Mesh & mesh,
 				     const Surface * surf);
-  void BuildSurfaceElements2 (ARRAY<class Segment> & segs,
+  void BuildSurfaceElements2 (Array<class Segment> & segs,
 			      class Mesh & mesh,
 			      const Surface * surf);
 
-  virtual void BuildVolumeElements (ARRAY<class Element2d> & surfels,
+  virtual void BuildVolumeElements (Array<class Element2d> & surfels,
 				    class Mesh & mesh);
 
   int RefLevels () const { return ref_levels; }
@@ -189,14 +189,14 @@ public:
   virtual void Print (ostream & ost) const;
   virtual void GetData (ostream & ost) const;
 
-  //  virtual void IdentifySpecialPoints (ARRAY<class SpecialPoint> & points);
+  //  virtual void IdentifySpecialPoints (Array<class SpecialPoint> & points);
   virtual int Identifyable (const SpecialPoint & sp1, const SpecialPoint & sp2,
 			    const TABLE<int> & specpoint2solid,
 			    const TABLE<int> & specpoint2surface) const;
 
 
   virtual void IdentifyPoints (class Mesh & mesh);
-  virtual void BuildSurfaceElements (ARRAY<class Segment> & segs,
+  virtual void BuildSurfaceElements (Array<class Segment> & segs,
 				     class Mesh & mesh,
 				     const Surface * surf);
 };

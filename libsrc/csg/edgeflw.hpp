@@ -21,7 +21,7 @@
   points have to be given.
  */
 extern void CalcEdges (const CSGeometry & geometry,
-                       const ARRAY<SpecialPoint> & specpoints,
+                       const Array<SpecialPoint> & specpoints,
                        double h, Mesh & mesh);
 
 
@@ -31,7 +31,7 @@ extern void CalcEdges (const CSGeometry & geometry,
 class EdgeCalculation
 {
   const CSGeometry & geometry;
-  ARRAY<SpecialPoint> & specpoints;
+  Array<SpecialPoint> & specpoints;
   Point3dTree * searchtree;
   Point3dTree * meshpoint_tree;
   int cntedge;
@@ -40,7 +40,7 @@ class EdgeCalculation
 
 public:
   EdgeCalculation (const CSGeometry & ageometry,
-		   ARRAY<SpecialPoint> & aspecpoints);
+		   Array<SpecialPoint> & aspecpoints);
 
   ~EdgeCalculation();
 
@@ -54,34 +54,34 @@ private:
   
 
   void FollowEdge (int pi1, int & ep, int & pos,
-		   // const ARRAY<SpecialPoint> & hsp,
-		   const ARRAY<int> & hsp,
+		   // const Array<SpecialPoint> & hsp,
+		   const Array<int> & hsp,
 		   double h, const Mesh & mesh,
-		   ARRAY<Point<3> > & edgepoints,
-		   ARRAY<double> & curvelength);
+		   Array<Point<3> > & edgepoints,
+		   Array<double> & curvelength);
 		   
 
   void AnalyzeEdge (int s1, int s2, int s1_rep, int s2_rep, int pos, int layer,
-		    const ARRAY<Point<3> > & edgepoints,
-		    ARRAY<Segment> & refedges,
-		    ARRAY<bool> & refedgesinv);
+		    const Array<Point<3> > & edgepoints,
+		    Array<Segment> & refedges,
+		    Array<bool> & refedgesinv);
 
-  void StoreEdge (const ARRAY<Segment> & refedges,
-		  const ARRAY<bool> & refedgesinv,
-		  const ARRAY<Point<3> > & edgepoints,
-		  const ARRAY<double> & curvelength,
+  void StoreEdge (const Array<Segment> & refedges,
+		  const Array<bool> & refedgesinv,
+		  const Array<Point<3> > & edgepoints,
+		  const Array<double> & curvelength,
 		  int layer,
 		  Mesh & mesh);
 
-  void StoreShortEdge (const ARRAY<Segment> & refedges,
-		       const ARRAY<bool> & refedgesinv,
-		       const ARRAY<Point<3> > & edgepoints,
-		       const ARRAY<double> & curvelength,
+  void StoreShortEdge (const Array<Segment> & refedges,
+		       const Array<bool> & refedgesinv,
+		       const Array<Point<3> > & edgepoints,
+		       const Array<double> & curvelength,
 		       int layer,
 		       Mesh & mesh);
 
-  void CopyEdge (const ARRAY<Segment> & refedges,
-		 const ARRAY<bool> & refedgesinv,
+  void CopyEdge (const Array<Segment> & refedges,
+		 const Array<bool> & refedgesinv,
 		 int copyfromedge, 
 		 const Point<3> & fromstart, const Point<3> & fromend,
 		 const Point<3> & tostart, const Point<3> & toend,

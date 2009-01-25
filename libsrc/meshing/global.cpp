@@ -29,7 +29,7 @@ namespace netgen
 
   string ngdir = ".";
 
-  ARRAY<int> tets_in_qualclass;
+  Array<int> tets_in_qualclass;
 
 
   multithreadt :: multithreadt()

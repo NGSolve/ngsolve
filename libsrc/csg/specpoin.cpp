@@ -22,7 +22,7 @@
 
 namespace netgen
 {
-  ARRAY<Box<3> > boxes;
+  Array<Box<3> > boxes;
 
 
   void ProjectToEdge (const Surface * f1, const Surface * f2, Point<3> & hp);
@@ -65,7 +65,7 @@ namespace netgen
   }
 
 
-  static ARRAY<int> numprim_hist;
+  static Array<int> numprim_hist;
 
   SpecialPointCalculation :: SpecialPointCalculation ()
   {
@@ -74,7 +74,7 @@ namespace netgen
 
   void SpecialPointCalculation :: 
   CalcSpecialPoints (const CSGeometry & ageometry, 
-		     ARRAY<MeshPoint> & apoints)
+		     Array<MeshPoint> & apoints)
   {
     geometry = &ageometry;
     points = &apoints;
@@ -109,7 +109,7 @@ namespace netgen
 
 	if (tlo->GetSolid())
 	  {
-	    ARRAY<Point<3> > hpts;
+	    Array<Point<3> > hpts;
 	    tlo->GetSolid()->CalcOnePrimitiveSpecialPoints (box, hpts);
             // if (hpts.Size())
             //  cout << "oneprimitivespecialpoints = " << hpts << endl;
@@ -201,7 +201,7 @@ namespace netgen
     bool possiblecrossp, possibleexp;  // possible cross or extremalpoint
     bool surecrossp = 0, sureexp = 0;          // sure ...
   
-    static ARRAY<int> locsurf;  // attention: array is static
+    static Array<int> locsurf;  // attention: array is static
 
     static int cntbox = 0;
     cntbox++;
@@ -260,8 +260,8 @@ namespace netgen
 
 	if (nquad == numprim && nplane >= numprim-1)
 	  {
-	    ARRAY<Point<3> > pts;
-	    ARRAY<int> surfids;
+	    Array<Point<3> > pts;
+	    Array<int> surfids;
 
 	    for (int k1 = 0; k1 < numprim - 2; k1++)
 	      for (int k2 = k1 + 1; k2 < numprim - 1; k2++)
@@ -447,7 +447,7 @@ namespace netgen
 			    BoxSphere<3> boxp (pp, pp);
 			    boxp.Increase (1e-3*size);
 			    boxp.CalcDiamCenter();
-			    ARRAY<int> locsurf2;
+			    Array<int> locsurf2;
 
 			    geometry -> GetIndependentSurfaceIndices (sol, boxp, locsurf2);
 			  
@@ -1035,7 +1035,7 @@ namespace netgen
   ComputeCrossPoints (const Plane * plane1, 
 		      const Plane * plane2, 
 		      const Plane * plane3, 
-		      ARRAY<Point<3> > & pts)
+		      Array<Point<3> > & pts)
   {
     Mat<3> mat;
     Vec<3> rhs, sol;
@@ -1077,7 +1077,7 @@ namespace netgen
   ComputeCrossPoints (const Plane * plane1, 
 		      const Plane * plane2, 
 		      const QuadraticSurface * quadric, 
-		      ARRAY<Point<3> > & pts)
+		      Array<Point<3> > & pts)
   {
     Mat<2,3> mat;
     Mat<3,2> inv;
@@ -1153,7 +1153,7 @@ namespace netgen
   void SpecialPointCalculation :: 
   ComputeExtremalPoints (const Plane * plane, 
 			 const QuadraticSurface * quadric, 
-			 ARRAY<Point<3> > & pts)
+			 Array<Point<3> > & pts)
   {
     // 3 equations:
     // surf1 = 0  <===> plane_a + plane_b x = 0;
@@ -1362,15 +1362,15 @@ namespace netgen
 
   void SpecialPointCalculation :: 
   AnalyzeSpecialPoints (const CSGeometry & ageometry,
-			ARRAY<MeshPoint> & apoints, 
-			ARRAY<SpecialPoint> & specpoints)
+			Array<MeshPoint> & apoints, 
+			Array<SpecialPoint> & specpoints)
   {
-    ARRAY<int> surfind, rep_surfind, surfind2, rep_surfind2, surfind3;
+    Array<int> surfind, rep_surfind, surfind2, rep_surfind2, surfind3;
 
-    ARRAY<Vec<3> > normalvecs;
+    Array<Vec<3> > normalvecs;
     Vec<3> nsurf;
 
-    ARRAY<int> specpoint2point;
+    Array<int> specpoint2point;
     specpoints.SetSize (0);
 
     geometry = &ageometry;
@@ -1406,7 +1406,7 @@ namespace netgen
     (*testout) << "points = " << apoints << endl;
 
     Point3dTree searchtree (bbox.PMin(), bbox.PMax());
-    ARRAY<int> locsearch;
+    Array<int> locsearch;
 
     for (int si = 0; si < ageometry.GetNTopLevelObjects(); si++)
       {
@@ -1570,7 +1570,7 @@ namespace netgen
 #ifdef DEVELOP
 		      (*testout) << "surfind2 = " << endl << surfind2 << endl;
 #endif
-		      ARRAY<int> surfind2_aux(surfind2);
+		      Array<int> surfind2_aux(surfind2);
 		      ageometry.GetIndependentSurfaceIndices (surfind2_aux);
 #ifdef DEVELOP
 		      (*testout) << "surfind2,rep = " << endl << surfind2_aux << endl;
@@ -1754,7 +1754,7 @@ namespace netgen
 	if(testuncond.Test(i))
 	  continue;
 	
-	ARRAY<int> same;
+	Array<int> same;
 	same.Append(i);
 	
 	for(int j = i+1; j<specpoints.Size(); j++)

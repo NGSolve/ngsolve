@@ -38,7 +38,7 @@ namespace netgen
       {
 	c.SetSize(2); c[0] = 0; c[1] = 0.5;
 	b.SetSize(2); b[0] = 0; b[1] = 1;
-	ARRAY<int> size(2);
+	Array<int> size(2);
 	size[0] = 0; size[1] = 1;
 	a = new TABLE<double>(size);
 	a->Set(2,1,0.5);  // Set, Get: 1-based!
@@ -48,7 +48,7 @@ namespace netgen
       {
 	c.SetSize(3); c[0] = 0; c[1] = 1; c[2] = 0.5;
 	b.SetSize(3); b[0] = b[1] = 1./6.; b[2] = 2./3.;
-	ARRAY<int> size(3);
+	Array<int> size(3);
 	size[0] = 0; size[1] = 1; size[2] = 2;
 	a = new TABLE<double>(size);
 	a->Set(2,1,1);
@@ -59,7 +59,7 @@ namespace netgen
       {
 	c.SetSize(4); c[0] = 0; c[1] = c[2] = 0.5; c[3] = 1;
 	b.SetSize(4); b[0] = b[3] = 1./6.; b[1] = b[2] = 1./3.;
-	ARRAY<int> size(4);
+	Array<int> size(4);
 	size[0] = 0; size[1] = 1; size[2] = 2; size[3] = 3;
 	a = new TABLE<double>(size);
 	a->Set(2,1,0.5);
@@ -181,16 +181,16 @@ namespace netgen
   
 
 
-  void FieldLineCalc :: GenerateFieldLines(ARRAY<Point3d> & potential_startpoints, const int numlines, const int gllist,
+  void FieldLineCalc :: GenerateFieldLines(Array<Point3d> & potential_startpoints, const int numlines, const int gllist,
 					   const double minval, const double maxval, const int logscale, double phaser, double phasei)
   {
     glNewList(gllist, GL_COMPILE);
 
     
-    ARRAY<Point3d> points;
-    ARRAY<double> values;
-    ARRAY<bool> drawelems;
-    ARRAY<int> dirstart;
+    Array<Point3d> points;
+    Array<double> values;
+    Array<bool> drawelems;
+    Array<int> dirstart;
 
 
     if(vsol -> iscomplex)
@@ -315,7 +315,7 @@ namespace netgen
 
 
   
-  void FieldLineCalc :: Calc(const Point3d & startpoint, ARRAY<Point3d> & points, ARRAY<double> & vals, ARRAY<bool> & drawelems, ARRAY<int> & dirstart)
+  void FieldLineCalc :: Calc(const Point3d & startpoint, Array<Point3d> & points, Array<double> & vals, Array<bool> & drawelems, Array<int> & dirstart)
   {
     double lami[3], startlami[3];
     double values[6];
@@ -438,7 +438,7 @@ namespace netgen
 
 
   
-  void VisualSceneSolution :: BuildFieldLinesFromBox(ARRAY<Point3d> & startpoints)
+  void VisualSceneSolution :: BuildFieldLinesFromBox(Array<Point3d> & startpoints)
   {
     if(fieldlines_startarea_parameter[0] > fieldlines_startarea_parameter[3] ||
        fieldlines_startarea_parameter[1] > fieldlines_startarea_parameter[4] ||
@@ -465,7 +465,7 @@ namespace netgen
       }
   }
 
-  void VisualSceneSolution :: BuildFieldLinesFromLine(ARRAY<Point3d> & startpoints)
+  void VisualSceneSolution :: BuildFieldLinesFromLine(Array<Point3d> & startpoints)
   {
     for (int i = 1; i <= startpoints.Size(); i++)
       {
@@ -480,7 +480,7 @@ namespace netgen
   }
 
 
-  void VisualSceneSolution :: BuildFieldLinesFromFile(ARRAY<Point3d> & startpoints)
+  void VisualSceneSolution :: BuildFieldLinesFromFile(Array<Point3d> & startpoints)
   {
     ifstream * infile;
 
@@ -534,7 +534,7 @@ namespace netgen
 	    for(int i=0; i<6; i++) (*infile) >> fieldlines_startarea_parameter[i];
 	    (*infile) >> iparam;
 
-	    ARRAY<Point3d> auxpoints(iparam);
+	    Array<Point3d> auxpoints(iparam);
 	    
 	    if (keyword == "box")
 	      BuildFieldLinesFromBox(auxpoints);
@@ -559,9 +559,9 @@ namespace netgen
   }
 
   
-  void VisualSceneSolution :: BuildFieldLinesFromFace(ARRAY<Point3d> & startpoints)
+  void VisualSceneSolution :: BuildFieldLinesFromFace(Array<Point3d> & startpoints)
   {
-    ARRAY<SurfaceElementIndex> elements_2d;
+    Array<SurfaceElementIndex> elements_2d;
     
     //cout << "fieldlines_startface " << fieldlines_startface << endl;
     mesh->GetSurfaceElementsOfFace(fieldlines_startface,elements_2d);
@@ -676,7 +676,7 @@ namespace netgen
       num_startpoints *= 10;
 
     
-    ARRAY<Point3d> startpoints(num_startpoints);
+    Array<Point3d> startpoints(num_startpoints);
     
 
     for (int ln = 0; ln < num_fieldlineslists; ln++)

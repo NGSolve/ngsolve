@@ -305,7 +305,7 @@ namespace netgen
         int num, bcprop;
         ifstream inpkt (pktfile.c_str());
         inpkt >> np;
-        ARRAY<double> values(np);
+        Array<double> values(np);
         for (i = 1; i <= np; i++)
           {
             Point3d p(0,0,0);

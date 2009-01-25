@@ -75,24 +75,24 @@ public:
     orient = segedges.Get(segnr) > 0 ? 1 : -1;
   }
 
-  void GetElementEdges (int elnr, ARRAY<int> & edges) const;
-  void GetElementFaces (int elnr, ARRAY<int> & faces, bool withorientation = false) const;
-  void GetElementEdgeOrientations (int elnr, ARRAY<int> & eorient) const;
-  void GetElementFaceOrientations (int elnr, ARRAY<int> & forient) const;
+  void GetElementEdges (int elnr, Array<int> & edges) const;
+  void GetElementFaces (int elnr, Array<int> & faces, bool withorientation = false) const;
+  void GetElementEdgeOrientations (int elnr, Array<int> & eorient) const;
+  void GetElementFaceOrientations (int elnr, Array<int> & forient) const;
 
   int GetElementEdges (int elnr, int * edges, int * orient) const;
   int GetElementFaces (int elnr, int * faces, int * orient) const;
 
-  void GetFaceVertices (int fnr, ARRAY<int> & vertices) const;
+  void GetFaceVertices (int fnr, Array<int> & vertices) const;
   void GetFaceVertices (int fnr, int * vertices) const;
   void GetEdgeVertices (int fnr, int & v1, int & v2) const;
-  void GetFaceEdges (int fnr, ARRAY<int> & edges, bool withorientation = false) const;
+  void GetFaceEdges (int fnr, Array<int> & edges, bool withorientation = false) const;
 
   ELEMENT_TYPE GetFaceType (int fnr) const;
 
-  void GetSurfaceElementEdges (int elnr, ARRAY<int> & edges) const;
+  void GetSurfaceElementEdges (int elnr, Array<int> & edges) const;
   int GetSurfaceElementFace (int elnr) const;
-  void GetSurfaceElementEdgeOrientations (int elnr, ARRAY<int> & eorient) const;
+  void GetSurfaceElementEdgeOrientations (int elnr, Array<int> & eorient) const;
   int GetSurfaceElementFaceOrientation (int elnr) const;
 
   int GetSurfaceElementEdges (int elnr, int * edges, int * orient) const;
@@ -105,16 +105,16 @@ public:
 
   int GetFace2SurfaceElement (int fnr) const { return face2surfel[fnr-1]; }
   
-  void GetVertexElements (int vnr, ARRAY<int> & elements) const;
+  void GetVertexElements (int vnr, Array<int> & elements) const;
   FlatArray<int> GetVertexElements (int vnr) const;
 
-  void GetVertexSurfaceElements( int vnr, ARRAY<int>& elements ) const;
+  void GetVertexSurfaceElements( int vnr, Array<int>& elements ) const;
   FlatArray<int> GetVertexSurfaceElements (int vnr) const;
 
 
   
   int GetVerticesEdge ( int v1, int v2) const;
-  void GetSegmentVolumeElements ( int segnr, ARRAY<int> & surfels ) const;
+  void GetSegmentVolumeElements ( int segnr, Array<int> & surfels ) const;
 };
 
 

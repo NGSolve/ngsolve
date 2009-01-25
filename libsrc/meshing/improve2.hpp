@@ -18,8 +18,8 @@ public:
   void ImproveMesh (Mesh & mesh2d);
   void ImproveMeshJacobian (Mesh & mesh2d);
   void ImproveVolumeMesh (Mesh & mesh);
-  void ProjectBoundaryPoints(ARRAY<int> & surfaceindex, 
-			     const ARRAY<Point<3>* > & from, ARRAY<Point<3>* > & dest);
+  void ProjectBoundaryPoints(Array<int> & surfaceindex, 
+			     const Array<Point<3>* > & from, Array<Point<3>* > & dest);
 
   void EdgeSwapping (Mesh & mesh, int usemetric);
   void CombineImprove (Mesh & mesh);

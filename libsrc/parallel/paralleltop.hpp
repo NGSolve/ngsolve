@@ -57,7 +57,7 @@ public:
   int GetLoc2Glob_Vert  ( int locnum ) const { return loc2distvert[locnum][0]; }
   int GetLoc2Glob_VolEl ( int locnum ) const { return loc2distel[locnum-1][0]; }
 
-  void GetVertNeighbours ( int vnum, ARRAY<int> & dests ) const;
+  void GetVertNeighbours ( int vnum, Array<int> & dests ) const;
 
   int Glob2Loc_SurfEl ( int globnum );
   int Glob2Loc_VolEl ( int globnum );

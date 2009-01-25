@@ -456,7 +456,7 @@ void CalcInverse (const DenseMatrix & m1, DenseMatrix & m2)
       double max, hr;
       
 
-      ARRAY<int> p(n);   // pivot-permutation
+      Array<int> p(n);   // pivot-permutation
       Vector hv(n);
     
       
@@ -1213,7 +1213,7 @@ double DenseMatrix :: EvaluateBilinearform (const Vector & hx) const
   }
 
 
-void DenseMatrix :: MultElementMatrix (const ARRAY<int> & pnum, 
+void DenseMatrix :: MultElementMatrix (const Array<int> & pnum, 
       const Vector & hx, Vector & hy)
   {
   int i, j;
@@ -1239,7 +1239,7 @@ void DenseMatrix :: MultElementMatrix (const ARRAY<int> & pnum,
     
   }
   
-void DenseMatrix :: MultTransElementMatrix (const ARRAY<int> & pnum, 
+void DenseMatrix :: MultTransElementMatrix (const Array<int> & pnum, 
       const Vector & hx, Vector & hy)
   {
   int i, j;

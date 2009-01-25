@@ -60,8 +60,8 @@ namespace netgen
 
 #ifdef SOCKETS
   extern AutoPtr<ClientSocket> clientsocket;
-  //extern ARRAY< AutoPtr < ServerInfo > > servers;
-  extern ARRAY< ServerInfo* > servers;
+  //extern Array< AutoPtr < ServerInfo > > servers;
+  extern Array< ServerInfo* > servers;
 #endif
 }
 
@@ -496,14 +496,14 @@ char * Ng_GetDomainMaterial (int dom)
 
 int Ng_GetUserDataSize (char * id)
 {
-  ARRAY<double> da;
+  Array<double> da;
   mesh->GetUserData (id, da);
   return da.Size();
 }
 
 void Ng_GetUserData (char * id, double * data)
 {
-  ARRAY<double> da;
+  Array<double> da;
   mesh->GetUserData (id, da);
   for (int i = 0; i < da.Size(); i++)
     data[i] = da[i];
@@ -654,12 +654,12 @@ int Ng_FindElementOfPoint (double * p, double * lami, int build_searchtree,
 			   const int * const indices, const int numind)
   
 {
-  ARRAY<int> * dummy(NULL);
+  Array<int> * dummy(NULL);
   int ind = -1;
 
   if(indices != NULL)
     {
-      dummy = new ARRAY<int>(numind);
+      dummy = new Array<int>(numind);
       for(int i=0; i<numind; i++) (*dummy)[i] = indices[i];
     }
 
@@ -698,12 +698,12 @@ int Ng_FindSurfaceElementOfPoint (double * p, double * lami, int build_searchtre
 				  const int * const indices, const int numind)
   
 {
-  ARRAY<int> * dummy(NULL);
+  Array<int> * dummy(NULL);
   int ind = -1;
 
   if(indices != NULL)
     {
-      dummy = new ARRAY<int>(numind);
+      dummy = new Array<int>(numind);
       for(int i=0; i<numind; i++) (*dummy)[i] = indices[i];
     }
 
@@ -1637,7 +1637,7 @@ int Ng_GetSurfaceElement_Edges (int elnr, int * edges, int * orient)
   /*
     int i, ned;
     const MeshTopology & topology = mesh->GetTopology();
-    ARRAY<int> ia;
+    Array<int> ia;
     topology.GetSurfaceElementEdges (elnr, ia);
     ned = ia.Size();
     for (i = 1; i <= ned; i++)
@@ -1989,7 +1989,7 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
 		
 int Ng_GetNPeriodicVertices (int idnr)
 {
-  ARRAY<INDEX_2> apairs;
+  Array<INDEX_2> apairs;
   mesh->GetIdentifications().GetPairs (idnr, apairs);
   return apairs.Size();
 }
@@ -1998,7 +1998,7 @@ int Ng_GetNPeriodicVertices (int idnr)
 // pairs should be an integer array of 2*npairs
 void Ng_GetPeriodicVertices (int idnr, int * pairs)
 {
-  ARRAY<INDEX_2> apairs;
+  Array<INDEX_2> apairs;
   mesh->GetIdentifications().GetPairs (idnr, apairs);
   for (int i = 0; i < apairs.Size(); i++)
     {
@@ -2012,7 +2012,7 @@ void Ng_GetPeriodicVertices (int idnr, int * pairs)
 
 int Ng_GetNPeriodicEdges (int idnr)
 {
-  ARRAY<INDEX,PointIndex::BASE> map;
+  Array<INDEX,PointIndex::BASE> map;
   //const MeshTopology & top = mesh->GetTopology();
   int nse = mesh->GetNSeg();
 
@@ -2039,7 +2039,7 @@ int Ng_GetNPeriodicEdges (int idnr)
 
 void Ng_GetPeriodicEdges (int idnr, int * pairs)
 {
-  ARRAY<INDEX,PointIndex::BASE> map;
+  Array<INDEX,PointIndex::BASE> map;
   const MeshTopology & top = mesh->GetTopology();
   int nse = mesh->GetNSeg();
 
@@ -2286,9 +2286,9 @@ int Ng_Bisect_WithInfo ( const char * refinementfile, double ** qualityloss, int
   
   mesh->LocalHFunction().SetGrading (mparam.grading);
 
-  ARRAY<double> * qualityloss_arr = NULL;
+  Array<double> * qualityloss_arr = NULL;
   if(qualityloss != NULL)
-    qualityloss_arr = new ARRAY<double>;
+    qualityloss_arr = new Array<double>;
 
   ref -> Bisect (*mesh, biopt, qualityloss_arr);
 

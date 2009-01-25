@@ -41,7 +41,7 @@ void SingularEdge :: FindPointsOnEdge (class Mesh & mesh)
   segms.SetSize(0);
 
 
-  ARRAY<int> si1, si2;
+  Array<int> si1, si2;
   sol1->GetSurfaceIndices (si1);
   sol2->GetSurfaceIndices (si2);
 
@@ -150,7 +150,7 @@ SingularPoint :: SingularPoint (double abeta,
 void SingularPoint :: FindPoints (class Mesh & mesh)
 {
   points.SetSize(0);
-  ARRAY<int> surfk, surf;
+  Array<int> surfk, surf;
 
 
   for (PointIndex pi = PointIndex::BASE; 

@@ -16,20 +16,20 @@ namespace netgen
 {
   //using namespace netgen;
 
-  SPARSE_BIT_ARRAY_2D :: SPARSE_BIT_ARRAY_2D (int ah, int aw)
+  SPARSE_BIT_Array_2D :: SPARSE_BIT_Array_2D (int ah, int aw)
   {
     lines = NULL;
     SetSize (ah, aw);
   }
 
-  SPARSE_BIT_ARRAY_2D :: ~SPARSE_BIT_ARRAY_2D ()
+  SPARSE_BIT_Array_2D :: ~SPARSE_BIT_Array_2D ()
   {
     DeleteElements ();
     delete lines;
   }
 
 
-  void SPARSE_BIT_ARRAY_2D :: SetSize (int ah, int aw)
+  void SPARSE_BIT_Array_2D :: SetSize (int ah, int aw)
   {
     DeleteElements();
     if (lines)
@@ -58,13 +58,13 @@ namespace netgen
     else
       {
 	height = width = 0;
-	MyError ("SPARSE_ARRAY::SetSize: Out of memory");
+	MyError ("SPARSE_Array::SetSize: Out of memory");
       }
   }
 
 
 
-  void SPARSE_BIT_ARRAY_2D :: DeleteElements ()
+  void SPARSE_BIT_Array_2D :: DeleteElements ()
   {
     if (lines)
       {
@@ -82,7 +82,7 @@ namespace netgen
   }
 
 
-  int SPARSE_BIT_ARRAY_2D :: Test (int i, int j) const
+  int SPARSE_BIT_Array_2D :: Test (int i, int j) const
   {
     int k, max, *col;
 
@@ -100,7 +100,7 @@ namespace netgen
 
 
 
-  void SPARSE_BIT_ARRAY_2D :: Set(int i, int j)
+  void SPARSE_BIT_Array_2D :: Set(int i, int j)
   {
     int k, max, *col;
 
@@ -126,7 +126,7 @@ namespace netgen
 	      }
 	    else
 	      {
-		MyError ("SPARSE_BIT_ARRAY::Set: Out of mem 1");
+		MyError ("SPARSE_BIT_Array::Set: Out of mem 1");
 		return;
 	      }
 	  }
@@ -149,7 +149,7 @@ namespace netgen
 	  }
 	else
 	  {
-	    MyError ("SPARSE_ARRAY::Set: Out of memory 2");
+	    MyError ("SPARSE_Array::Set: Out of memory 2");
 	  }
       }
     else

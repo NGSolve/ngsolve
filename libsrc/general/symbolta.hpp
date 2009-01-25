@@ -16,7 +16,7 @@ class BASE_SYMBOLTABLE
 {
 protected:
   /// identifiers
-  ARRAY <char*> names;
+  Array <char*> names;
   
 public:
   /// Constructor
@@ -41,7 +41,7 @@ class SYMBOLTABLE : public BASE_SYMBOLTABLE
 {
 private:
   /// Associated data
-  ARRAY <T> data;
+  Array <T> data;
   
 public:
   /// Creates a symboltable

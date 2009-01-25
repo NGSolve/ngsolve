@@ -9,7 +9,7 @@
 
 
 void CalcPartition (double l, double h, double r1, double r2,
-		    double ra, double elto0, ARRAY<double> & points);
+		    double ra, double elto0, Array<double> & points);
 
 /*
   Spline curves for 2D mesh generation
@@ -84,13 +84,13 @@ public:
 
   virtual void GetCoeff (Vector & coeffs) const = 0;
 
-  virtual void GetPoints (int n, ARRAY<Point<D> > & points);
+  virtual void GetPoints (int n, Array<Point<D> > & points);
 
   /** calculates (2D) lineintersections:
       for lines $$ a x + b y + c = 0 $$ the interecting points are calculated
       and stored in points */
   virtual void LineIntersections (const double a, const double b, const double c,
-				  ARRAY < Point<D> > & points, const double eps) const
+				  Array < Point<D> > & points, const double eps) const
   {points.SetSize(0);}
 
   virtual double MaxCurvature(void) const = 0;
@@ -100,7 +100,7 @@ public:
   virtual void Project (const Point<D> point, Point<D> & point_on_curve, double & t) const
   { cerr << "Project not implemented for spline base-class" << endl;}
 
-  virtual void GetRawData (ARRAY<double> & data) const
+  virtual void GetRawData (Array<double> & data) const
   { cerr << "GetRawData not implemented for spline base-class" << endl;}
 
 };
@@ -138,13 +138,13 @@ public:
   virtual string GetType(void) const {return "line";}
 
   virtual void LineIntersections (const double a, const double b, const double c,
-				  ARRAY < Point<D> > & points, const double eps) const;
+				  Array < Point<D> > & points, const double eps) const;
 
   virtual double MaxCurvature(void) const {return 0;}
 
   virtual void Project (const Point<D> point, Point<D> & point_on_curve, double & t) const;
 
-  virtual void GetRawData (ARRAY<double> & data) const;
+  virtual void GetRawData (Array<double> & data) const;
 };
 
 
@@ -184,13 +184,13 @@ public:
   const GeomPoint<D> & TangentPoint (void) const { return p2; }
 
   virtual void LineIntersections (const double a, const double b, const double c,
-				  ARRAY < Point<D> > & points, const double eps) const;
+				  Array < Point<D> > & points, const double eps) const;
 
   virtual double MaxCurvature(void) const;
 
   virtual void Project (const Point<D> point, Point<D> & point_on_curve, double & t) const;
 
-  virtual void GetRawData (ARRAY<double> & data) const;
+  virtual void GetRawData (Array<double> & data) const;
 };
 
 
@@ -230,7 +230,7 @@ public:
   virtual string GetType(void) const {return "circle";}
 
   virtual void LineIntersections (const double a, const double b, const double c,
-				  ARRAY < Point<D> > & points, const double eps) const;
+				  Array < Point<D> > & points, const double eps) const;
 
   virtual double MaxCurvature(void) const {return 1./radius;}
 };
@@ -244,11 +244,11 @@ public:
 template<int D>
 class DiscretePointsSeg : public SplineSeg<D>
 {
-  ARRAY<Point<D> > pts;
+  Array<Point<D> > pts;
   GeomPoint<D> p1, p2;
 public:
   ///
-  DiscretePointsSeg (const ARRAY<Point<D> > & apts);
+  DiscretePointsSeg (const Array<Point<D> > & apts);
   ///
   virtual ~DiscretePointsSeg ();
   ///
@@ -302,7 +302,7 @@ void SplineSeg<D> :: Partition (double h, double elto0,
   double lold, dt, frac;
   int n = 100;
   Point<D> p, pold, mark, oldmark;
-  ARRAY<double> curvepoints;
+  Array<double> curvepoints;
   double edgelength, edgelengthold;
   l = Length();
 
@@ -323,7 +323,7 @@ void SplineSeg<D> :: Partition (double h, double elto0,
   lold = 0;
   oldmark = pold;
   edgelengthold = 0;
-  ARRAY<int> locsearch;
+  Array<int> locsearch;
 
   for (i = 1; i <= n; i++)
     {
@@ -401,7 +401,7 @@ void SplineSeg<D> :: Partition (double h, double elto0,
 
 
 template<int D>
-void SplineSeg<D> :: GetPoints (int n, ARRAY<Point<D> > & points)
+void SplineSeg<D> :: GetPoints (int n, Array<Point<D> > & points)
 {
   points.SetSize (n);
   if (n >= 2)
@@ -486,7 +486,7 @@ void LineSeg<D> :: GetCoeff (Vector & coeffs) const
 
 template<int D>
 void LineSeg<D> :: LineIntersections (const double a, const double b, const double c,
-				      ARRAY < Point<D> > & points, const double eps) const
+				      Array < Point<D> > & points, const double eps) const
 {
   points.SetSize(0);
 
@@ -519,7 +519,7 @@ void LineSeg<D> :: Project (const Point<D> point, Point<D> & point_on_curve, dou
 
 
 template<int D>
-void LineSeg<D> :: GetRawData (ARRAY<double> & data) const
+void LineSeg<D> :: GetRawData (Array<double> & data) const
 {
   data.Append(2);
   for(int i=0; i<D; i++)
@@ -825,7 +825,7 @@ double SplineSeg3<D> :: MaxCurvature(void) const
 
 template<int D>
 void SplineSeg3<D> :: LineIntersections (const double a, const double b, const double c,
-					 ARRAY < Point<D> > & points, const double eps) const
+					 Array < Point<D> > & points, const double eps) const
 {
   points.SetSize(0);
 
@@ -872,7 +872,7 @@ void SplineSeg3<D> :: LineIntersections (const double a, const double b, const d
 
 
 template < int D >
-void SplineSeg3<D> :: GetRawData (ARRAY<double> & data) const
+void SplineSeg3<D> :: GetRawData (Array<double> & data) const
 {
   data.Append(3);
   for(int i=0; i<D; i++)
@@ -951,7 +951,7 @@ void CircleSeg<D> :: GetCoeff (Vector & coeff) const
   
 template<int D>
 void CircleSeg<D> :: LineIntersections (const double a, const double b, const double c,
-					ARRAY < Point<D> > & points, const double eps) const
+					Array < Point<D> > & points, const double eps) const
 {
   points.SetSize(0);
 
@@ -971,7 +971,7 @@ void CircleSeg<D> :: LineIntersections (const double a, const double b, const do
   if(discr < 0)
     return;
 
-  ARRAY<double> t;
+  Array<double> t;
 
   if(fabs(discr) < 1e-20)
     t.Append(-0.5*c2/c1);
@@ -996,7 +996,7 @@ void CircleSeg<D> :: LineIntersections (const double a, const double b, const do
 
 
 template<int D>
-DiscretePointsSeg<D> ::   DiscretePointsSeg (const ARRAY<Point<D> > & apts)
+DiscretePointsSeg<D> ::   DiscretePointsSeg (const Array<Point<D> > & apts)
   : pts (apts)
 { 
   for(int i=0; i<D; i++)

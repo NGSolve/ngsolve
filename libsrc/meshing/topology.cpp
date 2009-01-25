@@ -72,8 +72,8 @@ void MeshTopology :: Update()
   delete vert2surfelement;
   delete vert2segment;
   
-  ARRAY<int,PointIndex::BASE> cnt(nv);
-  ARRAY<int> vnums;
+  Array<int,PointIndex::BASE> cnt(nv);
+  Array<int> vnums;
 
   /*
     generate:
@@ -184,12 +184,12 @@ void MeshTopology :: Update()
 	}
 
 
-      ARRAY<int,PointIndex::BASE> edgenr(nv);
-      ARRAY<int,PointIndex::BASE> edgeflag(nv);
+      Array<int,PointIndex::BASE> edgenr(nv);
+      Array<int,PointIndex::BASE> edgeflag(nv);
       edgeflag = 0;
 
       ned = edge2vert.Size();
-      ARRAY<INDEX_3> missing;
+      Array<INDEX_3> missing;
 
       for (int i = 1; i <= nv; i++)
 	{
@@ -675,10 +675,10 @@ void MeshTopology :: Update()
       paralleltop.Reset ();
 #endif
 
-      ARRAY<char> face_els(nfa), face_surfels(nfa);
+      Array<char> face_els(nfa), face_surfels(nfa);
       face_els = 0;
       face_surfels = 0;
-      ARRAY<int> hfaces;
+      Array<int> hfaces;
       for (i = 1; i <= ne; i++)
 	{
 	  GetElementFaces (i, hfaces);
@@ -726,7 +726,7 @@ void MeshTopology :: Update()
 			paralleltop.SetExchangeVert(face2vert[i].I(j+1));
 		    }
 		  
-		  ARRAY<int> faceedges;
+		  Array<int> faceedges;
 		  GetFaceEdges (i+1, faceedges);
 		  for ( int j = 0; j < faceedges.Size(); j++)
 		    {
@@ -1104,14 +1104,14 @@ const Point3d * MeshTopology :: GetVertices (ELEMENT_TYPE et)
 
 
 
-void MeshTopology :: GetElementEdges (int elnr, ARRAY<int> & eledges) const
+void MeshTopology :: GetElementEdges (int elnr, Array<int> & eledges) const
 {
   int ned = GetNEdges (mesh.VolumeElement(elnr).GetType());
   eledges.SetSize (ned);
   for (int i = 0; i < ned; i++)
     eledges[i] = abs (edges.Get(elnr)[i]);
 }
-void MeshTopology :: GetElementFaces (int elnr, ARRAY<int> & elfaces, bool withorientation) const
+void MeshTopology :: GetElementFaces (int elnr, Array<int> & elfaces, bool withorientation) const
 {
   int i;
   int nfa = GetNFaces (mesh.VolumeElement(elnr).GetType());
@@ -1128,7 +1128,7 @@ void MeshTopology :: GetElementFaces (int elnr, ARRAY<int> & elfaces, bool witho
     }
 }
 
-void MeshTopology :: GetElementEdgeOrientations (int elnr, ARRAY<int> & eorient) const
+void MeshTopology :: GetElementEdgeOrientations (int elnr, Array<int> & eorient) const
 {
   int i;
   int ned = GetNEdges (mesh.VolumeElement(elnr).GetType());
@@ -1137,7 +1137,7 @@ void MeshTopology :: GetElementEdgeOrientations (int elnr, ARRAY<int> & eorient)
     eorient.Elem(i) = (edges.Get(elnr)[i-1] > 0) ? 1 : -1;
 }
 
-void MeshTopology :: GetElementFaceOrientations (int elnr, ARRAY<int> & forient) const
+void MeshTopology :: GetElementFaceOrientations (int elnr, Array<int> & forient) const
 {
   int i;
   int nfa = GetNFaces (mesh.VolumeElement(elnr).GetType());
@@ -1223,7 +1223,7 @@ int MeshTopology :: GetElementFaces (int elnr, int * elfaces, int * orient) cons
   return 6;
 }
 
-void MeshTopology :: GetSurfaceElementEdges (int elnr, ARRAY<int> & eledges) const
+void MeshTopology :: GetSurfaceElementEdges (int elnr, Array<int> & eledges) const
 {
   int i;
   if (mesh.GetDimension()==3 || 1)
@@ -1248,7 +1248,7 @@ int MeshTopology :: GetSurfaceElementFace (int elnr) const
 }
 
 void MeshTopology :: 
-GetSurfaceElementEdgeOrientations (int elnr, ARRAY<int> & eorient) const
+GetSurfaceElementEdgeOrientations (int elnr, Array<int> & eorient) const
 {
   int ned = GetNEdges (mesh.SurfaceElement(elnr).GetType());
   eorient.SetSize (ned);
@@ -1295,7 +1295,7 @@ int MeshTopology :: GetSurfaceElementEdges (int elnr, int * eledges, int * orien
 }
 
 
-void MeshTopology :: GetFaceVertices (int fnr, ARRAY<int> & vertices) const
+void MeshTopology :: GetFaceVertices (int fnr, Array<int> & vertices) const
 {
   vertices.SetSize(4);
   int i;
@@ -1319,7 +1319,7 @@ void MeshTopology :: GetEdgeVertices (int ednr, int & v1, int & v2) const
 }
 
 
-void MeshTopology :: GetFaceEdges (int fnr, ARRAY<int> & fedges, bool withorientation) const
+void MeshTopology :: GetFaceEdges (int fnr, Array<int> & fedges, bool withorientation) const
 {
   ArrayMem<int,4> pi(4);
   ArrayMem<int,12> eledges;
@@ -1426,7 +1426,7 @@ ELEMENT_TYPE MeshTopology :: GetFaceType (int fnr) const
 }
 
 
-void MeshTopology :: GetVertexElements (int vnr, ARRAY<int> & elements) const
+void MeshTopology :: GetVertexElements (int vnr, Array<int> & elements) const
 {
   if (vert2element)
     {
@@ -1455,7 +1455,7 @@ FlatArray<int> MeshTopology :: GetVertexSurfaceElements (int vnr) const
 
 
 void MeshTopology :: GetVertexSurfaceElements( int vnr, 
-					       ARRAY<int>& elements ) const
+					       Array<int>& elements ) const
 {
   if (vert2surfelement)
     {
@@ -1470,7 +1470,7 @@ void MeshTopology :: GetVertexSurfaceElements( int vnr,
 
 int MeshTopology :: GetVerticesEdge ( int v1, int v2 ) const
 {
-  ARRAY<int> elements_v1, elementedges;
+  Array<int> elements_v1, elementedges;
   GetVertexElements ( v1, elements_v1);
   int edv1, edv2;
 
@@ -1490,11 +1490,11 @@ int MeshTopology :: GetVerticesEdge ( int v1, int v2 ) const
 
 
 
-void MeshTopology :: GetSegmentVolumeElements ( int segnr, ARRAY<int> & volels ) const
+void MeshTopology :: GetSegmentVolumeElements ( int segnr, Array<int> & volels ) const
 {
   int v1, v2;
   GetEdgeVertices ( GetSegmentEdge (segnr), v1, v2 );
-  ARRAY<int> volels1, volels2;
+  Array<int> volels1, volels2;
   GetVertexElements ( v1, volels1 );
   GetVertexElements ( v2, volels2 );
   volels.SetSize(0);

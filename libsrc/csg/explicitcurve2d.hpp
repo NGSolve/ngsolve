@@ -66,9 +66,9 @@ public:
 class BSplineCurve2d : public ExplicitCurve2d
 {
   ///
-  ARRAY<Point<2> > points;
+  Array<Point<2> > points;
   ///
-  ARRAY<int> intervallused;
+  Array<int> intervallused;
   ///
   int redlevel;
   

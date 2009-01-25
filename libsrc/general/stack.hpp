@@ -39,7 +39,7 @@ public:
 
 private:
   ///
-  ARRAY<T> elems;
+  Array<T> elems;
   ///
   INDEX size;
 };

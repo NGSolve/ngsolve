@@ -17,7 +17,7 @@ namespace netgen
 
     // refine edges
 
-    ARRAY<EdgePointGeomInfo,PointIndex::BASE> epgi;
+    Array<EdgePointGeomInfo,PointIndex::BASE> epgi;
 
     oldns = mesh.GetNSeg();
     for (SegmentIndex si = 0; si < oldns; si++)
@@ -64,7 +64,7 @@ namespace netgen
       }
 
     // refine surface elements
-    ARRAY<PointGeomInfo,PointIndex::BASE> surfgi (8*mesh.GetNP());
+    Array<PointGeomInfo,PointIndex::BASE> surfgi (8*mesh.GetNP());
     for (int i = PointIndex::BASE;
 	 i < surfgi.Size()+PointIndex::BASE; i++)
       surfgi[i].trignum = -1;
@@ -581,7 +581,7 @@ namespace netgen
     // update identification tables
     for (int i = 1; i <= mesh.GetIdentifications().GetMaxNr(); i++)
       {
-	ARRAY<int,PointIndex::BASE> identmap;
+	Array<int,PointIndex::BASE> identmap;
 	mesh.GetIdentifications().GetMap (i, identmap);
 
 	for (int j = 1; j <= between.GetNBags(); j++)
@@ -621,8 +621,8 @@ namespace netgen
 	cout << "WARNING: " << wrongels << " with wrong orientation found" << endl;
 
 	int np = mesh.GetNP();
-	ARRAY<Point<3> > should(np);
-	ARRAY<Point<3> > can(np);
+	Array<Point<3> > should(np);
+	Array<Point<3> > can(np);
 	for (int i = 1; i <= np; i++)
 	  {
 	    should.Elem(i) = can.Elem(i) = mesh.Point(i);

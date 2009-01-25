@@ -62,7 +62,7 @@ public:
   
   void CalcTransformationMatrices();
   void StandardRotation (const char * dir);
-  void ArbitraryRotation (const ARRAY<double> & alpha, const ARRAY<Vec3d> & vec);
+  void ArbitraryRotation (const Array<double> & alpha, const Array<Vec3d> & vec);
   void ArbitraryRotation (const double alpha, const Vec3d & vec);
 
   void MouseMove(int oldx, int oldy,
@@ -96,7 +96,7 @@ public:
 
 class VisualSceneGeometry : public VisualScene
 {
-  ARRAY<int> trilists;
+  Array<int> trilists;
   int selsurf;
 public:
   VisualSceneGeometry ();
@@ -111,7 +111,7 @@ public:
 
 class VisualSceneSTLGeometry : public VisualScene
 {
-  ARRAY<int> trilists;
+  Array<int> trilists;
   
 public:
   VisualSceneSTLGeometry ();
@@ -136,8 +136,8 @@ public:
 #ifdef OCCGEOMETRY
 class VisualSceneOCCGeometry : public VisualScene
 {
-  ARRAY<int> trilists;
-  ARRAY<int> linelists;
+  Array<int> trilists;
+  Array<int> linelists;
   int selsurf;
 public:
   VisualSceneOCCGeometry ();
@@ -161,7 +161,7 @@ public:
 #ifdef STEP
 class VisualSceneSTEPGeometry : public VisualScene
 {
-  ARRAY<int> gllists;
+  Array<int> gllists;
   
 public:
   VisualSceneSTEPGeometry ();
@@ -175,7 +175,7 @@ public:
 
 class VisualSceneSTLMeshing : public VisualScene
 {
-  ARRAY<int> trilists;
+  Array<int> trilists;
   int selecttrig, nodeofseltrig;
 
 public:
@@ -241,8 +241,8 @@ class VisualSceneMesh : public VisualScene
 
 
 #ifdef PARALLELGL
-  ARRAY<int> par_linelists;
-  ARRAY<int> par_filledlists;
+  Array<int> par_linelists;
+  Array<int> par_filledlists;
 #endif
 
 

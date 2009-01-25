@@ -28,7 +28,7 @@ ostream & operator<< (ostream & ost, Identification & ident)
 
 
 /*
-void Identification :: IdentifySpecialPoints (ARRAY<class SpecialPoint> & points)
+void Identification :: IdentifySpecialPoints (Array<class SpecialPoint> & points)
 {
   ;
 }
@@ -84,7 +84,7 @@ void Identification :: IdentifyFaces (class Mesh & mesh)
 }
 
 void Identification :: 
-BuildSurfaceElements (ARRAY<Segment> & segs,
+BuildSurfaceElements (Array<Segment> & segs,
 		      Mesh & mesh, const Surface * surf)
 {
   cout << "Identification::BuildSurfaceElements called for base-class" << endl;
@@ -93,14 +93,14 @@ BuildSurfaceElements (ARRAY<Segment> & segs,
 
 
 void Identification :: 
-BuildVolumeElements (ARRAY<class Element2d> & surfels,
+BuildVolumeElements (Array<class Element2d> & surfels,
 			  class Mesh & mesh)
 {
   ;
 }
 
 void Identification :: 
-GetIdentifiedFaces (ARRAY<INDEX_2> & idfaces) const
+GetIdentifiedFaces (Array<INDEX_2> & idfaces) const
 {
   idfaces.SetSize(0);
   for (int i = 1; i <= identfaces.GetNBags(); i++)
@@ -134,7 +134,7 @@ PeriodicIdentification :: ~PeriodicIdentification ()
 
 /*
 void PeriodicIdentification :: IdentifySpecialPoints 
-(ARRAY<class SpecialPoint> & points)
+(Array<class SpecialPoint> & points)
 {
   int i, j;
   int bestj;
@@ -438,7 +438,7 @@ void PeriodicIdentification :: IdentifyFaces (class Mesh & mesh)
 
 
 void PeriodicIdentification :: 
-BuildSurfaceElements (ARRAY<Segment> & segs,
+BuildSurfaceElements (Array<Segment> & segs,
 		      Mesh & mesh, const Surface * surf)
 {
   int found = 0;
@@ -450,7 +450,7 @@ BuildSurfaceElements (ARRAY<Segment> & segs,
   if (geom.GetSurface(surfnr) == s1 ||
       geom.GetSurface(surfnr) == s2)
     {
-      ARRAY<int> copy_points;
+      Array<int> copy_points;
 
       for (int i = 1; i <= mesh.GetNSE(); i++)
 	{
@@ -601,7 +601,7 @@ void CloseSurfaceIdentification :: GetData (ostream & ost) const
 
 /*
 void CloseSurfaceIdentification :: IdentifySpecialPoints 
-(ARRAY<class SpecialPoint> & points)
+(Array<class SpecialPoint> & points)
 {
   int i, j;
   int bestj;
@@ -669,7 +669,7 @@ Identifyable (const SpecialPoint & sp1, const SpecialPoint & sp2,
   if (!dom_surf_valid)
     {
       const_cast<bool&> (dom_surf_valid) = 1;
-      ARRAY<int> & hsurf = const_cast<ARRAY<int>&> (domain_surfaces);
+      Array<int> & hsurf = const_cast<Array<int>&> (domain_surfaces);
 
       if (domain)
 	{
@@ -879,7 +879,7 @@ GetIdentifiedPoint (class Mesh & mesh,  int pi)
   const Surface * sold, *snew;
   const Point<3> & p = mesh.Point (pi);
 
-  ARRAY<int,PointIndex::BASE> identmap(mesh.GetNP());
+  Array<int,PointIndex::BASE> identmap(mesh.GetNP());
   mesh.GetIdentifications().GetMap (nr, identmap);
   if (identmap.Get(pi))
     return identmap.Get(pi);
@@ -950,13 +950,13 @@ void CloseSurfaceIdentification :: IdentifyPoints (Mesh & mesh)
 {
   int np = mesh.GetNP();
 
-  ARRAY<int> points_on_surf2;
+  Array<int> points_on_surf2;
 
   for (int i2 = 1; i2 <= np; i2++)
     if (s2->PointOnSurface (mesh.Point(i2)))
       points_on_surf2.Append (i2);
     
-  ARRAY<int> surfs_of_p1;
+  Array<int> surfs_of_p1;
 
   for (int i1 = 1; i1 <= np; i1++)
     {
@@ -1072,7 +1072,7 @@ void CloseSurfaceIdentification :: IdentifyFaces (class Mesh & mesh)
 	s2rep = geom.GetSurfaceClassRepresentant(i);
     }
 
-  ARRAY<int> segs_on_face1, segs_on_face2;
+  Array<int> segs_on_face1, segs_on_face2;
 
   identfaces.DeleteData();
 
@@ -1201,13 +1201,13 @@ void CloseSurfaceIdentification :: IdentifyFaces (class Mesh & mesh)
 
 
 void CloseSurfaceIdentification :: 
-BuildSurfaceElements (ARRAY<Segment> & segs,
+BuildSurfaceElements (Array<Segment> & segs,
 		      Mesh & mesh, const Surface * surf)
 {
   bool found = 0;
   int cntquads = 0;
 
-  ARRAY<int,PointIndex::BASE>  identmap;
+  Array<int,PointIndex::BASE>  identmap;
   identmap = 0;
 
   mesh.GetIdentifications().GetMap (nr, identmap);
@@ -1222,7 +1222,7 @@ BuildSurfaceElements (ARRAY<Segment> & segs,
   //(*testout) << "segs = " << endl << segs << endl;
   //(*testout) << "identmap = " << endl << identmap << endl;
   
-  //ARRAY<bool> foundseg(segs.Size());
+  //Array<bool> foundseg(segs.Size());
   //foundseg = false;
 
   // insert quad layer:
@@ -1275,7 +1275,7 @@ BuildSurfaceElements (ARRAY<Segment> & segs,
     {
       PrintMessage(3, "insert quad layer of ", cntquads,
 		   " elements at face ", segs.Get(1).si);
-      //ARRAY<Segment> aux;
+      //Array<Segment> aux;
       //for(int i=0; i<segs.Size();i++)
       //	if(!foundseg[i])
       //	  aux.Append(segs[i]);
@@ -1293,7 +1293,7 @@ BuildSurfaceElements (ARRAY<Segment> & segs,
 
 
 void CloseSurfaceIdentification :: 
-BuildSurfaceElements2 (ARRAY<Segment> & segs,
+BuildSurfaceElements2 (Array<Segment> & segs,
 		       Mesh & mesh, const Surface * surf)
 {
   // copy mesh
@@ -1398,7 +1398,7 @@ BuildSurfaceElements2 (ARRAY<Segment> & segs,
 
 
 void CloseSurfaceIdentification :: 
-BuildVolumeElements (ARRAY<class Element2d> & surfels,
+BuildVolumeElements (Array<class Element2d> & surfels,
 		     class Mesh & mesh)
 {
   ;
@@ -1459,7 +1459,7 @@ void CloseEdgesIdentification :: GetData (ostream & ost) const
 
 /*
 void CloseEdgesIdentification :: IdentifySpecialPoints 
-(ARRAY<class SpecialPoint> & points)
+(Array<class SpecialPoint> & points)
 {
   int i, j;
   int bestj;
@@ -1614,7 +1614,7 @@ void CloseEdgesIdentification :: IdentifyPoints (Mesh & mesh)
 }
 
 void CloseEdgesIdentification :: 
-BuildSurfaceElements (ARRAY<Segment> & segs,
+BuildSurfaceElements (Array<Segment> & segs,
 		      Mesh & mesh, const Surface * surf)
 {
   int i1, i2;

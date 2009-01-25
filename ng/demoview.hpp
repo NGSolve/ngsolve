@@ -98,7 +98,7 @@ template <class S>
 class InterpolationSpline
 {
 protected:
-  ARRAY < InterpolationPoint<S>[3] > ip;
+  Array < InterpolationPoint<S>[3] > ip;
   int finished;
 
 public:

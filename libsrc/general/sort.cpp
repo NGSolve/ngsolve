@@ -16,8 +16,8 @@
 namespace netgen
 {
 
-void Sort (const ARRAY<double> & values,
-	   ARRAY<int> & order)
+void Sort (const Array<double> & values,
+	   Array<int> & order)
 {
   int n = values.Size();
   int i, j;
@@ -35,8 +35,8 @@ void Sort (const ARRAY<double> & values,
 }
 
 
-void QickSortRec (const ARRAY<double> & values,
-		  ARRAY<int> & order, 
+void QickSortRec (const Array<double> & values,
+		  Array<int> & order, 
 		  int left, int right)
 {
   int i, j;
@@ -62,8 +62,8 @@ void QickSortRec (const ARRAY<double> & values,
   if (i < right) QickSortRec (values, order, i, right);
 }
 
-void QickSort (const ARRAY<double> & values,
-	       ARRAY<int> & order)
+void QickSort (const Array<double> & values,
+	       Array<int> & order)
 {
   int i, n = values.Size();
   order.SetSize (n);

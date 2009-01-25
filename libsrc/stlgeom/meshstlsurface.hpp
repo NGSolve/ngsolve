@@ -52,9 +52,9 @@ protected:
   virtual int IsLineVertexOnChart (const Point3d & p1, const Point3d & p2,
 				   int endpoint, const PointGeomInfo & gi);
 
-  virtual void GetChartBoundary (ARRAY<Point2d > & points, 
-				 ARRAY<Point3d > & poitns3d,
-				 ARRAY<INDEX_2> & lines, double h) const;
+  virtual void GetChartBoundary (Array<Point2d > & points, 
+				 Array<Point3d > & poitns3d,
+				 Array<INDEX_2> & lines, double h) const;
 
   ///
   virtual double CalcLocalH (const Point3d & p, double gh) const;

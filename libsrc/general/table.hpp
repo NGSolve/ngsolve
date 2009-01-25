@@ -25,7 +25,7 @@ protected:
   };
   
   ///
-  ARRAY<linestruct> data;
+  Array<linestruct> data;
   char * oneblock;
 
 public:

@@ -28,8 +28,8 @@ static void STLFindEdges (STLGeometry & geom,
   
   PushStatusF("Mesh Lines");
 
-  ARRAY<STLLine*> meshlines;
-  ARRAY<Point3d> meshpoints;
+  Array<STLLine*> meshlines;
+  Array<Point3d> meshpoints;
 
   PrintMessage(3,"Mesh Lines");
 
@@ -472,8 +472,8 @@ int STLSurfaceMeshing (STLGeometry & geom,
 	  
 	  
 
-	  ARRAY<Point3d> refpts;
-	  ARRAY<double> refh;
+	  Array<Point3d> refpts;
+	  Array<double> refh;
 
 	  // was commented:
 
@@ -558,7 +558,7 @@ void STLSurfaceMeshing1 (STLGeometry & geom,
 
   mesh.FindOpenSegments();
   
-  ARRAY<int> spiralps(0);
+  Array<int> spiralps(0);
   spiralps.SetSize(0);
   for (i = 1; i <= geom.GetNP(); i++)
     {
@@ -570,7 +570,7 @@ void STLSurfaceMeshing1 (STLGeometry & geom,
   int sppointnum;
   int spcnt = 0;
 
-  ARRAY<int> meshsp(mesh.GetNP());
+  Array<int> meshsp(mesh.GetNP());
   for (i = 1; i <= mesh.GetNP(); i++)
     {
       meshsp.Elem(i) = 0;
@@ -580,7 +580,7 @@ void STLSurfaceMeshing1 (STLGeometry & geom,
     }
 
 
-  ARRAY<int> opensegsperface(mesh.GetNFD());
+  Array<int> opensegsperface(mesh.GetNFD());
   for (i = 1; i <= mesh.GetNFD(); i++)
     opensegsperface.Elem(i) = 0;
   for (i = 1; i <= mesh.GetNOpenSegments(); i++)
@@ -882,9 +882,9 @@ IsLineVertexOnChart (const Point3d & p1, const Point3d & p2,
 }
 
 void MeshingSTLSurface :: 
-GetChartBoundary (ARRAY<Point2d > & points, 
-		  ARRAY<Point3d > & points3d,
-		  ARRAY<INDEX_2> & lines, double h) const
+GetChartBoundary (Array<Point2d > & points, 
+		  Array<Point3d > & points3d,
+		  Array<INDEX_2> & lines, double h) const
 {
   points.SetSize (0);
   points3d.SetSize (0);

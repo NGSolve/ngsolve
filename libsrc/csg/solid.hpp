@@ -60,14 +60,14 @@ public:
   void IterateSolid (SolidIterator & it, bool only_once = 0);
 
   
-  void Boundaries (const Point<3> & p, ARRAY<int> & bounds) const;
+  void Boundaries (const Point<3> & p, Array<int> & bounds) const;
   int NumPrimitives () const;
-  void GetSurfaceIndices (ARRAY<int> & surfind) const;
+  void GetSurfaceIndices (Array<int> & surfind) const;
   void GetSurfaceIndices (IndexSet & iset) const;
 
-  void GetTangentialSurfaceIndices (const Point<3> & p, ARRAY<int> & surfids, double eps) const;
-  void GetTangentialSurfaceIndices2 (const Point<3> & p, const Vec<3> & v, ARRAY<int> & surfids, double eps) const;
-  void GetTangentialSurfaceIndices3 (const Point<3> & p, const Vec<3> & v, const Vec<3> & v2, ARRAY<int> & surfids, double eps) const;
+  void GetTangentialSurfaceIndices (const Point<3> & p, Array<int> & surfids, double eps) const;
+  void GetTangentialSurfaceIndices2 (const Point<3> & p, const Vec<3> & v, Array<int> & surfids, double eps) const;
+  void GetTangentialSurfaceIndices3 (const Point<3> & p, const Vec<3> & v, const Vec<3> & v2, Array<int> & surfids, double eps) const;
 
 
   Primitive * GetPrimitive ()
@@ -92,16 +92,16 @@ public:
 
 
   /// compute localization in point p
-  void TangentialSolid (const Point<3> & p, Solid *& tansol, ARRAY<int> & surfids, double eps) const;
+  void TangentialSolid (const Point<3> & p, Solid *& tansol, Array<int> & surfids, double eps) const;
 
   /// compute localization in point p tangential to vector t
   void TangentialSolid2 (const Point<3> & p, const Vec<3> & t,
-			 Solid *& tansol, ARRAY<int> & surfids, double eps) const;
+			 Solid *& tansol, Array<int> & surfids, double eps) const;
 
   /** compute localization in point p, with second order approximation to edge
       p + s t + s*s/2 t2 **/
   void TangentialSolid3 (const Point<3> & p, const Vec<3> & t, const Vec<3> & t2, 
-			 Solid *& tansol, ARRAY<int> & surfids, double eps) const;
+			 Solid *& tansol, Array<int> & surfids, double eps) const;
 
 
 
@@ -113,10 +113,10 @@ public:
   **/
   void TangentialEdgeSolid (const Point<3> & p, const Vec<3> & t, const Vec<3> & t2, 
 			    const Vec<3> & m, 
-			    Solid *& tansol, ARRAY<int> & surfids, double eps) const;
+			    Solid *& tansol, Array<int> & surfids, double eps) const;
 
 
-  void CalcOnePrimitiveSpecialPoints (const Box<3> & box, ARRAY<Point<3> > & pts) const;
+  void CalcOnePrimitiveSpecialPoints (const Box<3> & box, Array<Point<3> > & pts) const;
 
   ///
   int Edge (const Point<3> & p, const Vec<3> & v, double eps) const;
@@ -154,23 +154,23 @@ public:
 protected:
   ///
 
-  void RecBoundaries (const Point<3> & p, ARRAY<int> & bounds, 
+  void RecBoundaries (const Point<3> & p, Array<int> & bounds, 
 		      int & in, int & strin) const;
   ///
-  void RecTangentialSolid (const Point<3> & p, Solid *& tansol, ARRAY<int> & surfids, 
+  void RecTangentialSolid (const Point<3> & p, Solid *& tansol, Array<int> & surfids, 
 			   int & in, int & strin, double eps) const;
 
   void RecTangentialSolid2 (const Point<3> & p, const Vec<3> & vec, 
-			    Solid *& tansol, ARRAY<int> & surfids, 
+			    Solid *& tansol, Array<int> & surfids, 
 			    int & in, int & strin, double eps) const;
   ///
   void RecTangentialSolid3 (const Point<3> & p, const Vec<3> & vec,const Vec<3> & vec2, 
-			    Solid *& tansol, ARRAY<int> & surfids, 
+			    Solid *& tansol, Array<int> & surfids, 
 			    int & in, int & strin, double eps) const;
   ///
   void RecTangentialEdgeSolid (const Point<3> & p, const Vec<3> & t, const Vec<3> & t2, 
 			       const Vec<3> & m, 
-			       Solid *& tansol, ARRAY<int> & surfids, 
+			       Solid *& tansol, Array<int> & surfids, 
 			       int & in, int & strin, double eps) const;
 
   ///
@@ -181,16 +181,16 @@ protected:
   ///
   Solid * RecGetReducedSolid (const BoxSphere<3> & box, INSOLID_TYPE & in) const;
   ///
-  void RecGetSurfaceIndices (ARRAY<int> & surfind) const;
-  void RecGetTangentialSurfaceIndices (const Point<3> & p, ARRAY<int> & surfids, double eps) const;
-  void RecGetTangentialSurfaceIndices2 (const Point<3> & p, const Vec<3> & v, ARRAY<int> & surfids, double eps) const;
+  void RecGetSurfaceIndices (Array<int> & surfind) const;
+  void RecGetTangentialSurfaceIndices (const Point<3> & p, Array<int> & surfids, double eps) const;
+  void RecGetTangentialSurfaceIndices2 (const Point<3> & p, const Vec<3> & v, Array<int> & surfids, double eps) const;
   void RecGetTangentialSurfaceIndices3 (const Point<3> & p, const Vec<3> & v, const Vec<3> & v2, 
-					ARRAY<int> & surfids, double eps) const;
+					Array<int> & surfids, double eps) const;
   void RecGetTangentialEdgeSurfaceIndices (const Point<3> & p, const Vec<3> & v, const Vec<3> & v2, const Vec<3> & m,
-					   ARRAY<int> & surfids, double eps) const;
+					   Array<int> & surfids, double eps) const;
   void RecGetSurfaceIndices (IndexSet & iset) const;
 
-  void RecCalcOnePrimitiveSpecialPoints (ARRAY<Point<3> > & pts) const;
+  void RecCalcOnePrimitiveSpecialPoints (Array<Point<3> > & pts) const;
 
   friend class SolidIterator;
   friend class ClearVisitedIt;

@@ -49,17 +49,17 @@ namespace netgen
     Point3d p;
     int numObj3D,numObj2D,numObj1D,numObj0D;
     bool nullstarted;
-    ARRAY<int> eldom;
+    Array<int> eldom;
     int minId3D,minId2D;
     int maxId3D(-1), maxId2D(-1), maxId1D(-1), maxId0D(-1);
-    ARRAY<ARRAY<int> *> segmentdata;
-    ARRAY<Element2d* > tris;
+    Array<Array<int> *> segmentdata;
+    Array<Element2d* > tris;
 
-    ARRAY<int> userdata_int;  // just save data for 1:1 output
-    ARRAY<double> userdata_double;
-    ARRAY<int> point_pids;
-    ARRAY<int> tetfacedata;
-    ARRAY<int> uid_to_group_3D, uid_to_group_2D, uid_to_group_1D, uid_to_group_0D;
+    Array<int> userdata_int;  // just save data for 1:1 output
+    Array<double> userdata_double;
+    Array<int> point_pids;
+    Array<int> tetfacedata;
+    Array<int> uid_to_group_3D, uid_to_group_2D, uid_to_group_1D, uid_to_group_0D;
 
     while(!done)
       {
@@ -226,7 +226,7 @@ namespace netgen
             segmentdata.SetSize(nedges);
             for(int i=0; i<nedges; i++)
               {
-                segmentdata[i] = new ARRAY<int>(7);
+                segmentdata[i] = new Array<int>(7);
                 *segmentdata[i] = -1;
                 in >> dummyint;
                 in >> (*segmentdata[i])[0] >> (*segmentdata[i])[1];
@@ -350,8 +350,8 @@ namespace netgen
               for(int i=0; i<nperiodicmasterfaces; i++)
                 {
                   int tri1,tri2,transl;
-                  ARRAY<PointIndex> nodes1(3),nodes2(3);
-                  ARRAY<double> sortval1(3),sortval2(3);
+                  Array<PointIndex> nodes1(3),nodes2(3);
+                  Array<double> sortval1(3),sortval2(3);
                   in >> tri1 >> tri2 >> transl;
 
                   if(transl > maxtransl)
@@ -455,7 +455,7 @@ namespace netgen
               cout << endl;
 		
 		
-              // 		ARRAY<int> indextodescriptor(maxId2D+1);
+              // 		Array<int> indextodescriptor(maxId2D+1);
 		
               // 		for(int i=1; i<=mesh.GetNFD(); i++)
               // 		  indextodescriptor[mesh.GetFaceDescriptor(i).SurfNr()] = i;
@@ -538,7 +538,7 @@ namespace netgen
           case 27:
             // Object2D GroupID, #Faces <immediately followed by> FaceID List
             {
-              ARRAY<int> ports;
+              Array<int> ports;
               //int totnum = 0;
               uid_to_group_2D.SetSize(maxId2D+1);
               uid_to_group_2D = -1;
@@ -665,7 +665,7 @@ namespace netgen
     mesh.SetUserData("TETmesh:uid_to_group_0D",uid_to_group_0D);
 
 
-    ARRAY<SurfaceElementIndex> surfindices(tris.Size());
+    Array<SurfaceElementIndex> surfindices(tris.Size());
     surfindices = -1;
 
     for(int i=0; i<tris.Size(); i++)
@@ -740,7 +740,7 @@ namespace netgen
 
       }
       
-    //       ARRAY<int> indextodescriptor(maxId2D+1);
+    //       Array<int> indextodescriptor(maxId2D+1);
 		
     //       for(int i=1; i<=mesh.GetNFD(); i++)
     // 	indextodescriptor[mesh.GetFaceDescriptor(i).SurfNr()] = i;

@@ -342,8 +342,8 @@ void Ng_HP_Refinement (Ng_Geometry_2D * geom,
 
 
 
-ARRAY<STLReadTriangle> readtrias; //only before initstlgeometry
-ARRAY<Point<3> > readedges; //only before init stlgeometry
+Array<STLReadTriangle> readtrias; //only before initstlgeometry
+Array<Point<3> > readedges; //only before init stlgeometry
  
 void Ng_SaveMesh(Ng_Mesh * mesh, const char* filename)
 {

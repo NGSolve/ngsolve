@@ -386,8 +386,8 @@ void Element2d :: NormalizeNumbering2 ()
 
 
 
-ARRAY<IntegrationPointData*> ipdtrig;
-ARRAY<IntegrationPointData*> ipdquad;
+Array<IntegrationPointData*> ipdtrig;
+Array<IntegrationPointData*> ipdquad;
 
 
 int Element2d :: GetNIP () const
@@ -433,7 +433,7 @@ GetIntegrationPoint (int ip, Point2d & p, double & weight) const
 }
 
 void Element2d :: 
-GetTransformation (int ip, const ARRAY<Point2d> & points,
+GetTransformation (int ip, const Array<Point2d> & points,
 		   DenseMatrix & trans) const
 {
   int np = GetNP();
@@ -623,7 +623,7 @@ GetDShapeNew (const Point<2> & p, MatrixFixWidth<2> & dshape) const
 
 
 void Element2d :: 
-GetPointMatrix (const ARRAY<Point2d> & points,
+GetPointMatrix (const Array<Point2d> & points,
 		DenseMatrix & pmat) const
 {
   int np = GetNP();
@@ -648,7 +648,7 @@ GetPointMatrix (const ARRAY<Point2d> & points,
 
 
 
-double Element2d :: CalcJacobianBadness (const ARRAY<Point2d> & points) const
+double Element2d :: CalcJacobianBadness (const Array<Point2d> & points) const
 {
   int i, j;
   int nip = GetNIP();
@@ -692,7 +692,7 @@ static const int qip_table[4][4] =
   };
 
 double Element2d :: 
-CalcJacobianBadnessDirDeriv (const ARRAY<Point2d> & points,
+CalcJacobianBadnessDirDeriv (const Array<Point2d> & points,
 			     int pi, Vec2d & dir, double & dd) const
 {
   if (typ == QUAD)
@@ -1210,7 +1210,7 @@ void Element :: GetFace2 (int i, Element2d & face) const
 
 
 
-void Element :: GetTets (ARRAY<Element> & locels) const
+void Element :: GetTets (Array<Element> & locels) const
 {
   GetTetsLocal (locels);
   int i, j;
@@ -1219,7 +1219,7 @@ void Element :: GetTets (ARRAY<Element> & locels) const
       locels.Elem(i).PNum(j) = PNum ( locels.Elem(i).PNum(j) );
 }
 
-void Element :: GetTetsLocal (ARRAY<Element> & locels) const
+void Element :: GetTetsLocal (Array<Element> & locels) const
 {
   int i, j;
   locels.SetSize(0);
@@ -1327,7 +1327,7 @@ bool Element :: operator==(const Element & el2) const
 
 
 #ifdef OLD
-void Element :: GetNodesLocal (ARRAY<Point3d> & points) const
+void Element :: GetNodesLocal (Array<Point3d> & points) const
 {
   const static double tetpoints[4][3] =
     { { 0, 0, 0 },
@@ -1427,7 +1427,7 @@ void Element :: GetNodesLocal (ARRAY<Point3d> & points) const
 
 
 
-void Element :: GetNodesLocalNew (ARRAY<Point<3> > & points) const
+void Element :: GetNodesLocalNew (Array<Point<3> > & points) const
 {
   const static double tetpoints[4][3] =
     {      
@@ -1543,7 +1543,7 @@ void Element :: GetNodesLocalNew (ARRAY<Point<3> > & points) const
 
 
 
-void Element :: GetSurfaceTriangles (ARRAY<Element2d> & surftrigs) const
+void Element :: GetSurfaceTriangles (Array<Element2d> & surftrigs) const
 {
   static int tet4trigs[][3] = 
   { { 2, 3, 4 },
@@ -1656,8 +1656,8 @@ void Element :: GetSurfaceTriangles (ARRAY<Element2d> & surftrigs) const
 
 
 
-ARRAY< AutoPtr < IntegrationPointData > > ipdtet;
-ARRAY< AutoPtr < IntegrationPointData > > ipdtet10;
+Array< AutoPtr < IntegrationPointData > > ipdtet;
+Array< AutoPtr < IntegrationPointData > > ipdtet10;
 
 
 
@@ -2438,7 +2438,7 @@ int Identifications :: GetSymmetric (PointIndex pi1, PointIndex pi2) const
 }
 
 
-void Identifications :: GetMap (int identnr, ARRAY<int,PointIndex::BASE> & identmap, bool symmetric) const
+void Identifications :: GetMap (int identnr, Array<int,PointIndex::BASE> & identmap, bool symmetric) const
 {
   identmap.SetSize (mesh.GetNP());
   identmap = 0;
@@ -2476,7 +2476,7 @@ void Identifications :: GetMap (int identnr, ARRAY<int,PointIndex::BASE> & ident
 
 
 void Identifications :: GetPairs (int identnr, 
-				  ARRAY<INDEX_2> & identpairs) const
+				  Array<INDEX_2> & identpairs) const
 {
   identpairs.SetSize(0);
   

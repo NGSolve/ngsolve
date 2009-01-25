@@ -28,8 +28,8 @@
 
 namespace netgen
 {
-  extern int IsInArray(int n, const ARRAY<int>& ia);
-  extern int AddIfNotExists(ARRAY<int>& list, int x);
+  extern int IsInArray(int n, const Array<int>& ia);
+  extern int AddIfNotExists(Array<int>& list, int x);
 
 
 #include "stltopology.hpp"
@@ -44,7 +44,7 @@ namespace netgen
 
   class STLEdgeDataList
   {
-    ARRAY<int> storedstatus;
+    Array<int> storedstatus;
     STLTopology & geom;
   public:
   
@@ -76,8 +76,8 @@ namespace netgen
     void Write(ofstream& of) const;
     void Read(ifstream& ifs);
 
-    void BuildLineWithEdge(int ep1, int ep2, ARRAY<twoint>& line);
-    void BuildClusterWithEdge(int ep1, int ep2, ARRAY<twoint>& line);
+    void BuildLineWithEdge(int ep1, int ep2, Array<twoint>& line);
+    void BuildClusterWithEdge(int ep1, int ep2, Array<twoint>& line);
 
     int GetNEPPStat(int p, int status) const;
     int GetNConfCandEPP(int p) const;
@@ -91,20 +91,20 @@ namespace netgen
   class STLGeometry : public STLTopology
   {
     // edges to be meshed:
-    ARRAY<STLEdge> edges;
+    Array<STLEdge> edges;
     //edges per point
     TABLE<int> edgesperpoint;
 
     // line: a connection of edges
-    ARRAY<STLLine*> lines;
-    ARRAY<int> lineendpoints; //per geometrypoint, 1 = is endpoint; 0 = no endpoint,
+    Array<STLLine*> lines;
+    Array<int> lineendpoints; //per geometrypoint, 1 = is endpoint; 0 = no endpoint,
 
-    ARRAY<Vec3d> normals; //normals belong to points!
+    Array<Vec3d> normals; //normals belong to points!
 
-    ARRAY<twoint> externaledges;
+    Array<twoint> externaledges;
 
     int undoexternaledges;
-    ARRAY<twoint> storedexternaledges;
+    Array<twoint> storedexternaledges;
 
     STLEdgeDataList * edgedata;
     //  STLEdgeDataList edgedata_store;
@@ -117,27 +117,27 @@ namespace netgen
     int facecnt; 
     //meshpoint is only set, if an edge is at this point!!!
 
-    ARRAY<int> vicinity; //is one, if a triangle belongs to vicinity (eg. of selecttrig)
-    ARRAY<int> markedtrigs; //is one, if a triangle belongs to marked triangles (calcdirtystrigs)
-    ARRAY<Point3d> markedsegs; //every pointpair is a segment!!!  
-    ARRAY<twoint> selectedmultiedge;
+    Array<int> vicinity; //is one, if a triangle belongs to vicinity (eg. of selecttrig)
+    Array<int> markedtrigs; //is one, if a triangle belongs to marked triangles (calcdirtystrigs)
+    Array<Point3d> markedsegs; //every pointpair is a segment!!!  
+    Array<twoint> selectedmultiedge;
 
 
     //spiralpoints:
-    ARRAY<int> spiralpoints;
+    Array<int> spiralpoints;
     //
-    ARRAY<STLChart*> atlas;
+    Array<STLChart*> atlas;
     //marks all already charted trigs with chartnumber
-    ARRAY<int> chartmark; 
+    Array<int> chartmark; 
     //outerchartspertrig, ascending sorted
     TABLE<int> outerchartspertrig;
 
 
     //for meshing and project:
-    ARRAY<int> meshcharttrigs; //per trig: 1=belong to chart, 0 not
+    Array<int> meshcharttrigs; //per trig: 1=belong to chart, 0 not
     int meshchart;
 
-    ARRAY<int> ha_points;  // help array, np long, filled with 0 
+    Array<int> ha_points;  // help array, np long, filled with 0 
 
 
     // sharp geometric edges not declared as edges
@@ -162,8 +162,8 @@ namespace netgen
     //int selecttrig, nodeofseltrig;
 
     //only for testing;
-    ARRAY<STLLine*> meshlines;
-    ARRAY<Point3d> meshpoints;
+    Array<STLLine*> meshlines;
+    Array<Point3d> meshpoints;
 
   public:
     STLGeometry();
@@ -191,14 +191,14 @@ namespace netgen
     //void ClearSelectedMultiEdge() {selectedmultiedge.SetSize(0);}
     //void AddSelectedMultiEdge(twoint ep) {selectedmultiedge.Append(ep);}
     //int SelectedMultiEdgeSize() {return selectedmultiedge.Size();}
-    const ARRAY<twoint>& SelectedMultiEdge() {return selectedmultiedge;}
+    const Array<twoint>& SelectedMultiEdge() {return selectedmultiedge;}
     twoint GetNearestSelectedDefinedEdge();
     void BuildSelectedMultiEdge(twoint ep);
     void BuildSelectedEdge(twoint ep);
     void BuildSelectedCluster(twoint ep);
 
     void ImportEdges();
-    void AddEdges(const ARRAY<Point<3> >& eps);
+    void AddEdges(const Array<Point<3> >& eps);
     void ExportEdges();
     void LoadEdgeData(const char* file);
     void SaveEdgeData(const char* file);
@@ -267,7 +267,7 @@ namespace netgen
     }
     int GetNMarkedSegs() {return markedsegs.Size()/2;}
     void CalcVicinity(int starttrig);
-    void GetVicinity(int starttrig, int size, ARRAY<int>& vic);
+    void GetVicinity(int starttrig, int size, Array<int>& vic);
 
     int Vicinity(int trig) const;
 
@@ -310,7 +310,7 @@ namespace netgen
     ///
 
     ///ReadTriangle->STLTriangle, initialise some important variables, always after load!!!
-    virtual void InitSTLGeometry (const ARRAY<STLReadTriangle> & readtrigs);
+    virtual void InitSTLGeometry (const Array<STLReadTriangle> & readtrigs);
     virtual void TopologyChanged(); //do some things, if topology changed!
     int CheckGeometryOverlapping();
 
@@ -347,14 +347,14 @@ namespace netgen
     void AddConeAndSpiralEdges();
     void AddFaceEdges(); //each face should have at least one starting edge (outherwise it won't be meshed)
 
-    void GetDirtyChartTrigs(int chartnum, STLChart& chart, const ARRAY<int>& outercharttrigs, 
-			    ARRAY<int>& chartpointchecked, ARRAY<int>& dirtytrigs);
+    void GetDirtyChartTrigs(int chartnum, STLChart& chart, const Array<int>& outercharttrigs, 
+			    Array<int>& chartpointchecked, Array<int>& dirtytrigs);
 
     void ClearSpiralPoints();
     void SetSpiralPoint(int pn) {spiralpoints.Elem(pn) = 1;};
     int GetSpiralPoint(int pn) const {return spiralpoints.Get(pn);};
 
-    void GetSortedTrianglesAroundPoint(int p, int starttrig, ARRAY<int>& trigs);
+    void GetSortedTrianglesAroundPoint(int p, int starttrig, Array<int>& trigs);
 
     // smooth edges: sharp geometric edges not declared as edges
     void BuildSmoothEdges ();
@@ -383,13 +383,13 @@ namespace netgen
     STLChart& GetChart(int nr) {return *(atlas.Get(nr));};
     int AtlasMade() const;
   
-    void GetInnerChartLimes(ARRAY<twoint>& limes, int chartnum);
+    void GetInnerChartLimes(Array<twoint>& limes, int chartnum);
 
     //FOR MESHING
     int GetMeshChartNr () { return meshchart; }
-    void GetMeshChartBoundary (ARRAY<Point2d > & points,
-			       ARRAY<Point3d > & points3d,
-			       ARRAY<INDEX_2> & lines, double h);
+    void GetMeshChartBoundary (Array<Point2d > & points,
+			       Array<Point3d > & points3d,
+			       Array<INDEX_2> & lines, double h);
 
 
     Point<3> PointBetween(const Point<3> & p1, int t1, const Point<3> & p2, int t2);
@@ -432,7 +432,7 @@ namespace netgen
 
     void RestrictLocalH(class Mesh & mesh, double gh);
     void RestrictLocalHCurv(class Mesh & mesh, double gh);
-    void RestrictHChartDistOneChart(int chartnum, ARRAY<int>& acttrigs, class Mesh & mesh, 
+    void RestrictHChartDistOneChart(int chartnum, Array<int>& acttrigs, class Mesh & mesh, 
 				    double gh, double fact, double minh);
 
     friend class MeshingSTLSurface;

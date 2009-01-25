@@ -358,8 +358,8 @@ void LocalH :: FindInnerBoxes ( // int (*sameside)(const Point3d & p1, const Poi
     (*testout) << "inner = " << root->flags.pinner << " =?= " 
 	       << testinner(Point3d(root->xmid[0], root->xmid[1], root->xmid[2])) << endl;
   
-  ARRAY<int> faceinds(nf);
-  ARRAY<Box3d> faceboxes(nf);
+  Array<int> faceinds(nf);
+  Array<Box3d> faceboxes(nf);
 
   for (i = 1; i <= nf; i++)
     {
@@ -375,8 +375,8 @@ void LocalH :: FindInnerBoxes ( // int (*sameside)(const Point3d & p1, const Poi
 void LocalH :: 
 FindInnerBoxesRec2 (GradingBox * box,
 		    class AdFront3 * adfront, 
-		    ARRAY<Box3d> & faceboxes,
-		    ARRAY<int> & faceinds, int nfinbox)
+		    Array<Box3d> & faceboxes,
+		    Array<int> & faceinds, int nfinbox)
 {
   if (!box) return;
   
@@ -395,9 +395,9 @@ FindInnerBoxesRec2 (GradingBox * box,
   Box3d boxcfc(c,fc);
 
 
-  static ARRAY<int> faceused;
-  static ARRAY<int> faceused2;
-  static ARRAY<int> facenotused;
+  static Array<int> faceused;
+  static Array<int> faceused2;
+  static Array<int> facenotused;
 
   faceused.SetSize(0);
   facenotused.SetSize(0);
@@ -585,7 +585,7 @@ void LocalH :: WidenRefinement ()
     }
 }
 
-void LocalH :: GetInnerPoints (ARRAY<Point3d> & points)
+void LocalH :: GetInnerPoints (Array<Point3d> & points)
 {
   int i, nb = boxes.Size(); 
 
@@ -611,7 +611,7 @@ void LocalH :: GetInnerPoints (ARRAY<Point3d> & points)
 
 
 
-void LocalH :: GetOuterPoints (ARRAY<Point3d> & points)
+void LocalH :: GetOuterPoints (Array<Point3d> & points)
 {
   int i, nb = boxes.Size(); 
 

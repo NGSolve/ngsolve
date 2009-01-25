@@ -8,11 +8,11 @@ namespace netgen
 
   // global variable for visualization
 
-  static ARRAY<Point3d> locpoints;
-  static ARRAY<int> legalpoints;
-  static ARRAY<Point2d> plainpoints;
-  static ARRAY<int> plainzones;
-  static ARRAY<INDEX_2> loclines;
+  static Array<Point3d> locpoints;
+  static Array<int> legalpoints;
+  static Array<Point2d> plainpoints;
+  static Array<int> plainzones;
+  static Array<INDEX_2> loclines;
   static int geomtrig;
   //static const char * rname;
   static int cntelem, trials, nfaces;
@@ -176,9 +176,9 @@ namespace netgen
   }
 
   void Meshing2 ::
-  GetChartBoundary (ARRAY<Point2d> & points, 
-		    ARRAY<Point3d> & points3d, 
-		    ARRAY<INDEX_2> & lines, double h) const
+  GetChartBoundary (Array<Point2d> & points, 
+		    Array<Point3d> & points3d, 
+		    Array<INDEX_2> & lines, double h) const
   {
     points.SetSize (0);
     points3d.SetSize (0);
@@ -196,13 +196,13 @@ namespace netgen
 
   MESHING2_RESULT Meshing2 :: GenerateMesh (Mesh & mesh, double gh, int facenr)
   {
-    ARRAY<int> pindex, lindex;
-    ARRAY<int> delpoints, dellines;
+    Array<int> pindex, lindex;
+    Array<int> delpoints, dellines;
 
-    ARRAY<PointGeomInfo> upgeominfo;  // unique info
-    ARRAY<MultiPointGeomInfo> mpgeominfo;  // multiple info
+    Array<PointGeomInfo> upgeominfo;  // unique info
+    Array<MultiPointGeomInfo> mpgeominfo;  // multiple info
 
-    ARRAY<Element2d> locelements;
+    Array<Element2d> locelements;
 
     int z1, z2, oldnp(-1);
     SurfaceElementIndex sei;
@@ -224,8 +224,8 @@ namespace netgen
     Box3dTree surfeltree (boundingbox.PMin(),
 			  boundingbox.PMax());
 
-    ARRAY<int> intersecttrias;
-    ARRAY<Point3d> critpoints;
+    Array<int> intersecttrias;
+    Array<Point3d> critpoints;
 
     // test for doubled edges
     //INDEX_2_HASHTABLE<int> doubleedge(300000);
@@ -235,14 +235,14 @@ namespace netgen
 
     StartMesh();
 
-    ARRAY<Point2d> chartboundpoints;
-    ARRAY<Point3d> chartboundpoints3d;
-    ARRAY<INDEX_2> chartboundlines;
+    Array<Point2d> chartboundpoints;
+    Array<Point3d> chartboundpoints3d;
+    Array<INDEX_2> chartboundlines;
 
     // illegal points: points with more then 50 elements per node
     int maxlegalpoint(-1), maxlegalline(-1);
-    ARRAY<int,PointIndex::BASE> trigsonnode;
-    ARRAY<int,PointIndex::BASE> illegalpoint;
+    Array<int,PointIndex::BASE> trigsonnode;
+    Array<int,PointIndex::BASE> illegalpoint;
 
     trigsonnode.SetSize (mesh.GetNP());
     illegalpoint.SetSize (mesh.GetNP());

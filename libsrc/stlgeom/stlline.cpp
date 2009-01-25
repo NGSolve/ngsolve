@@ -197,7 +197,7 @@ int STLEdgeDataList :: GetNConfCandEPP(int p) const
 }
 
 
-void STLEdgeDataList :: BuildLineWithEdge(int ep1, int ep2, ARRAY<twoint>& line)
+void STLEdgeDataList :: BuildLineWithEdge(int ep1, int ep2, Array<twoint>& line)
 {
   int status = Get(GetEdgeNum(ep1,ep2)).GetStatus();
 
@@ -424,7 +424,7 @@ int STLEdgeDataList :: GetNConfCandEPP(int p) const
 }
 
 
-void STLEdgeDataList :: BuildLineWithEdge(int ep1, int ep2, ARRAY<twoint>& line)
+void STLEdgeDataList :: BuildLineWithEdge(int ep1, int ep2, Array<twoint>& line)
 {
   int status = Get(GetEdgeNum(ep1,ep2)).GetStatus();
 
@@ -473,7 +473,7 @@ void STLEdgeDataList :: BuildLineWithEdge(int ep1, int ep2, ARRAY<twoint>& line)
   
 }
 
-int Exists(int p1, int p2, const ARRAY<twoint>& line)
+int Exists(int p1, int p2, const Array<twoint>& line)
 {
   int i;
   for (i = 1; i <= line.Size(); i++)
@@ -484,7 +484,7 @@ int Exists(int p1, int p2, const ARRAY<twoint>& line)
   return 0;
 }
 
-void STLEdgeDataList :: BuildClusterWithEdge(int ep1, int ep2, ARRAY<twoint>& line)
+void STLEdgeDataList :: BuildClusterWithEdge(int ep1, int ep2, Array<twoint>& line)
 {
   int status = Get(GetEdgeNum(ep1,ep2)).GetStatus();
 
@@ -580,12 +580,12 @@ int STLLine :: GetRightTrig(int nr) const
   return righttrigs.Get(nr);
 };
 
-double STLLine :: GetSegLen(const ARRAY<Point<3> >& ap, int nr) const
+double STLLine :: GetSegLen(const Array<Point<3> >& ap, int nr) const
 {
   return Dist(ap.Get(PNum(nr)),ap.Get(PNum(nr+1)));
 }
 
-double STLLine :: GetLength(const ARRAY<Point<3> >& ap) const
+double STLLine :: GetLength(const Array<Point<3> >& ap) const
 {
   double len = 0;
   for (int i = 2; i <= pts.Size(); i++)
@@ -595,7 +595,7 @@ double STLLine :: GetLength(const ARRAY<Point<3> >& ap) const
   return len;
 }
 
-void STLLine :: GetBoundingBox (const ARRAY<Point<3> > & ap, Box<3> & box) const
+void STLLine :: GetBoundingBox (const Array<Point<3> > & ap, Box<3> & box) const
 {
   box.Set (ap.Get (pts[0]));
   for (int i = 1; i < pts.Size(); i++)
@@ -605,7 +605,7 @@ void STLLine :: GetBoundingBox (const ARRAY<Point<3> > & ap, Box<3> & box) const
 
 
 Point<3> STLLine :: 
-GetPointInDist(const ARRAY<Point<3> >& ap, double dist, int& index) const
+GetPointInDist(const Array<Point<3> >& ap, double dist, int& index) const
 {
   if (dist <= 0)
     {
@@ -643,8 +643,8 @@ double GetH(const Point3d& p, double x)
   return stlgh;//+0.5)*(x+0.5);
 }
 */
-STLLine* STLLine :: Mesh(const ARRAY<Point<3> >& ap, 
-			 ARRAY<Point3d>& mp, double ghi,
+STLLine* STLLine :: Mesh(const Array<Point<3> >& ap, 
+			 Array<Point3d>& mp, double ghi,
 			 class Mesh& mesh) const
 {
   STLLine* line = new STLLine(geometry);
@@ -672,8 +672,8 @@ STLLine* STLLine :: Mesh(const ARRAY<Point<3> >& ap,
   
   int nph = 10+int(maxseglen / minh); //anzahl der integralauswertungen pro segment
 
-  ARRAY<double> inthi(GetNS()*nph);
-  ARRAY<double> curvelen(GetNS()*nph);
+  Array<double> inthi(GetNS()*nph);
+  Array<double> curvelen(GetNS()*nph);
 
 
   for (i = 1; i <= GetNS(); i++)

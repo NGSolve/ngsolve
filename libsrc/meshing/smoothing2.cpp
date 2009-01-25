@@ -261,9 +261,9 @@ namespace netgen
   static MeshPoint sp1; 
   static PointGeomInfo gi1;
   static Vec<3> normal, t1, t2;
-  static ARRAY<SurfaceElementIndex> locelements(0);
-  static ARRAY<int> locrots(0);
-  static ARRAY<double> lochs(0);
+  static Array<SurfaceElementIndex> locelements(0);
+  static Array<int> locrots(0);
+  static Array<double> lochs(0);
   // static int locerr2;
   static double locmetricweight = 0;
   static double loch;
@@ -521,7 +521,7 @@ namespace netgen
     //  meshthis -> ProjectPoint (surfi, pp1);
     //  meshthis -> GetNormalVector (surfi, pp1, n);
 
-    static ARRAY<Point2d> pts2d;
+    static Array<Point2d> pts2d;
     pts2d.SetSize(mesh.GetNP());
 
     grad = 0;
@@ -592,7 +592,7 @@ namespace netgen
     //    pp1.Add2 (x.Get(1), t1, x.Get(2), t2);
     pp1 = sp1 + x.Get(1) * t1 + x.Get(2) * t2;
 
-    static ARRAY<Point2d> pts2d;
+    static Array<Point2d> pts2d;
     pts2d.SetSize(mesh.GetNP());
 
     deriv = 0;
@@ -676,7 +676,7 @@ namespace netgen
 
     SurfaceElementIndex sei;
 
-    ARRAY<SurfaceElementIndex> seia;
+    Array<SurfaceElementIndex> seia;
     mesh.GetSurfaceElementsOfFace (faceindex, seia);
 
     bool mixed = 0;
@@ -697,10 +697,10 @@ namespace netgen
     Vec3d n1, n2;
     Vector x(2), xedge(1);
 
-    ARRAY<MeshPoint, PointIndex::BASE> savepoints(mesh.GetNP());
+    Array<MeshPoint, PointIndex::BASE> savepoints(mesh.GetNP());
     uselocalh = mparam.uselocalh;
 
-    ARRAY<int, PointIndex::BASE> nelementsonpoint(mesh.GetNP());
+    Array<int, PointIndex::BASE> nelementsonpoint(mesh.GetNP());
 
     nelementsonpoint = 0;
     for (int i = 0; i < seia.Size(); i++)

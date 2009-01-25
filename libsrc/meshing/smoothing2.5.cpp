@@ -7,8 +7,8 @@ namespace netgen
 {
 
 
-  void MeshOptimize2d :: ProjectBoundaryPoints(ARRAY<int> & surfaceindex, 
-					       const ARRAY<Point<3>* > & from, ARRAY<Point<3>* > & dest)
+  void MeshOptimize2d :: ProjectBoundaryPoints(Array<int> & surfaceindex, 
+					       const Array<Point<3>* > & from, Array<Point<3>* > & dest)
   {
     for(int i=0; i<surfaceindex.Size(); i++)
       {
@@ -51,7 +51,7 @@ namespace netgen
     int i, j, k;
     SurfaceElementIndex sei;
 
-    ARRAY<SurfaceElementIndex> seia;
+    Array<SurfaceElementIndex> seia;
     mesh.GetSurfaceElementsOfFace (faceindex, seia);
 
     bool mixed = 0;
@@ -72,9 +72,9 @@ namespace netgen
 
     Vector x(3);
 
-    ARRAY<MeshPoint, PointIndex::BASE> savepoints(mesh.GetNP());
+    Array<MeshPoint, PointIndex::BASE> savepoints(mesh.GetNP());
 
-    ARRAY<int, PointIndex::BASE> nelementsonpoint(mesh.GetNP());
+    Array<int, PointIndex::BASE> nelementsonpoint(mesh.GetNP());
     nelementsonpoint = 0;
 
     for (i = 0; i < seia.Size(); i++)
@@ -138,8 +138,8 @@ namespace netgen
     int cnt = 0;
 
 
-    ARRAY<SurfaceElementIndex> locelements(0);
-    ARRAY<int> locrots(0);
+    Array<SurfaceElementIndex> locelements(0);
+    Array<int> locrots(0);
 
     for (PointIndex pi = PointIndex::BASE; 
 	 pi < mesh.GetNP()+PointIndex::BASE; pi++)

@@ -29,7 +29,7 @@ namespace netgen
   void TriangleApproximation :: RemoveUnusedPoints ()
   {
     BitArray used(GetNP());
-    ARRAY<int> map (GetNP());
+    Array<int> map (GetNP());
     int i, j;
     int cnt = 0;
 

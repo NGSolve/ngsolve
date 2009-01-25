@@ -224,7 +224,7 @@ namespace netgen
     // update identification tables
     for (int i = 1; i <= mesh.GetIdentifications().GetMaxNr(); i++)
       {
-	ARRAY<int,PointIndex::BASE> identmap;
+	Array<int,PointIndex::BASE> identmap;
 	mesh.GetIdentifications().GetMap (i, identmap);
 
 	for (INDEX_2_HASHTABLE<int>::Iterator it = between.Begin();
@@ -298,7 +298,7 @@ namespace netgen
     int np = mesh.GetNP();
     int ne = mesh.GetNE();
     // int i, j;
-    ARRAY<INDEX_2> parents(np);
+    Array<INDEX_2> parents(np);
   
     for (int i = 1; i <= np; i++)
       parents.Elem(i) = INDEX_2(0,0);
@@ -332,7 +332,7 @@ namespace netgen
 
   void Refinement ::
   ValidateRefinedMesh (Mesh & mesh, 
-		       ARRAY<INDEX_2> & parents)
+		       Array<INDEX_2> & parents)
   {
     // int i, j, k;
   
@@ -363,8 +363,8 @@ namespace netgen
 	cout << "WARNING: " << wrongels << " illegal element(s) found" << endl;
 
 	int np = mesh.GetNP();
-	ARRAY<Point<3> > should(np);
-	ARRAY<Point<3> > can(np);
+	Array<Point<3> > should(np);
+	Array<Point<3> > can(np);
 
 	for (int i = 1; i <= np; i++)
 	  {

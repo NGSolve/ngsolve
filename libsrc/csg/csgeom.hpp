@@ -93,10 +93,10 @@ private:
 
 public:
   /// primitive of surface
-  ARRAY<const Primitive*> surf2prim;
+  Array<const Primitive*> surf2prim;
 
 private:
-  ARRAY<Surface*> delete_them;
+  Array<Surface*> delete_them;
 
   /// all named solids
   SYMBOLTABLE<Solid*> solids;
@@ -107,16 +107,16 @@ private:
   SYMBOLTABLE< SplineGeometry<3>* > splinecurves3d;
 
   /// all top level objects: solids and surfaces
-  ARRAY<TopLevelObject*> toplevelobjects;
+  Array<TopLevelObject*> toplevelobjects;
 
   /// additional points specified by user
-  ARRAY<Point<3> > userpoints;
-  ARRAY<double> userpoints_ref_factor;
+  Array<Point<3> > userpoints;
+  Array<double> userpoints_ref_factor;
 
-  mutable ARRAY<Point<3> > identpoints;
+  mutable Array<Point<3> > identpoints;
 
   /// triangular approximation of top level objects
-  ARRAY<TriangleApproximation*> triapprox;
+  Array<TriangleApproximation*> triapprox;
 
   /// increment, if geometry is changed
   static int changeval;
@@ -129,7 +129,7 @@ private:
 
   /// identic surfaces are stored by pair of indizes, val = inverse
   INDEX_2_HASHTABLE<int> identicsurfaces;
-  ARRAY<int> isidenticto;
+  Array<int> isidenticto;
   /// identification of boundaries (periodic, thin domains, ...)
 
   double ideps;
@@ -223,10 +223,10 @@ public:
 
 
   // quick implementations:
-  ARRAY<SingularFace*> singfaces;
-  ARRAY<SingularEdge*> singedges;
-  ARRAY<SingularPoint*> singpoints;
-  ARRAY<Identification*> identifications;
+  Array<SingularFace*> singfaces;
+  Array<SingularEdge*> singedges;
+  Array<SingularPoint*> singpoints;
+  Array<Identification*> identifications;
 
   int GetNIdentifications (void) const { return identifications.Size(); }
   void AddIdentification (Identification * ident);
@@ -241,17 +241,17 @@ public:
   ///
   void GetSurfaceIndices (const Solid * sol, 
 			  const BoxSphere<3> & box, 
-			  ARRAY<int> & locsurf) const;
+			  Array<int> & locsurf) const;
   ///
   void GetIndependentSurfaceIndices (const Solid * sol, 
 				     const BoxSphere<3> & box, 
-				     ARRAY<int> & locsurf) const;
+				     Array<int> & locsurf) const;
   ///
   void GetIndependentSurfaceIndices (const Solid * sol, 
 				     const Point<3> & p, Vec<3> & v,
-				     ARRAY<int> & locsurf) const;
+				     Array<int> & locsurf) const;
   ///
-  void GetIndependentSurfaceIndices (ARRAY<int> & locsurf) const;
+  void GetIndependentSurfaceIndices (Array<int> & locsurf) const;
 
   ///
   int GetSurfaceClassRepresentant (int si) const
@@ -302,7 +302,7 @@ public:
     string * bcname;
   };
 
-  ARRAY<BCModification> bcmodifications;
+  Array<BCModification> bcmodifications;
 
 };
 #endif

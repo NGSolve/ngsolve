@@ -63,7 +63,7 @@ class LocalH
   ///
   double grading;
   ///
-  ARRAY<GradingBox*> boxes;
+  Array<GradingBox*> boxes;
   ///
   Box3d boundingbox;
 public:
@@ -99,10 +99,10 @@ public:
   void WidenRefinement ();
 
   /// get points in inner elements
-  void GetInnerPoints (ARRAY<Point3d> & points);
+  void GetInnerPoints (Array<Point3d> & points);
 
   /// get points in outer closure
-  void GetOuterPoints (ARRAY<Point3d> & points);
+  void GetOuterPoints (Array<Point3d> & points);
 
   ///
   void Convexify ();
@@ -127,8 +127,8 @@ private:
   ///
   void FindInnerBoxesRec2 (GradingBox * box,
 			   class AdFront3 * adfront,
-			   ARRAY<Box3d> & faceboxes,
-			   ARRAY<int> & finds, int nfinbox);
+			   Array<Box3d> & faceboxes,
+			   Array<int> & finds, int nfinbox);
 
 
   ///

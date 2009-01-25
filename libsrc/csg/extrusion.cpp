@@ -54,13 +54,13 @@ namespace netgen
     Init();
   }
 
-  ExtrusionFace :: ExtrusionFace(const ARRAY<double> & raw_data)
+  ExtrusionFace :: ExtrusionFace(const Array<double> & raw_data)
   {
     deletable = true;
 
     int pos=0;
 
-    ARRAY< Point<2> > p(3);
+    Array< Point<2> > p(3);
 
     int ptype = int(raw_data[pos]); pos++;
 
@@ -147,7 +147,7 @@ namespace netgen
 
     
 
-    ARRAY<double> mindist(path->GetNSplines());
+    Array<double> mindist(path->GetNSplines());
 
     for(int i=0; i<path->GetNSplines(); i++)
       {
@@ -355,12 +355,12 @@ namespace netgen
 
     grad_t *= 1./facA;
 
-    ARRAY < Vec<3> > dphi_dX(3);
+    Array < Vec<3> > dphi_dX(3);
     
     for(i=0; i<3; i++)
       dphi_dX[i] = grad_t(i)*phip;
 
-    ARRAY < Vec<3> > dy_dir_dX(3);
+    Array < Vec<3> > dy_dir_dX(3);
 
     double lphip = phip.Length();
 
@@ -370,7 +370,7 @@ namespace netgen
     for(i=0; i<3; i++)
       dy_dir_dX[i] *= grad_t(i);
 
-    ARRAY < Vec<3> > dx_dir_dX(3);
+    Array < Vec<3> > dx_dir_dX(3);
 
     for(i=0; i<3; i++)
       dx_dir_dX[i] = Cross(dy_dir_dX[i],z_dir[seg]);
@@ -557,7 +557,7 @@ namespace netgen
     v2d(1) = v * loc_z_dir[seg];
     
     Vec<2> n(v2d(1),-v2d(0));
-    ARRAY < Point<2> > ips;
+    Array < Point<2> > ips;
 
 
     profile->LineIntersections(v2d(1),
@@ -702,7 +702,7 @@ namespace netgen
   }
   
 
-  void ExtrusionFace :: GetRawData(ARRAY<double> & data) const
+  void ExtrusionFace :: GetRawData(Array<double> & data) const
   {
     data.DeleteAll();
     profile->GetRawData(data);
@@ -759,7 +759,7 @@ namespace netgen
 
   INSOLID_TYPE Extrusion :: PointInSolid (const Point<3> & p,
 					  const double eps,
-					  ARRAY<int> * const facenums) const
+					  Array<int> * const facenums) const
   {
     Vec<3> random_vec(-0.4561,0.7382,0.4970247);
 
@@ -805,7 +805,7 @@ namespace netgen
 					const Vec<3> & v,
 					double eps) const
   {
-    ARRAY<int> facenums;
+    Array<int> facenums;
     INSOLID_TYPE pInSolid = PointInSolid(p,eps,&facenums);
 
     if(pInSolid != DOES_INTERSECT)

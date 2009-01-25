@@ -1,15 +1,15 @@
 // find inner point
 
-template <typename POINTARRAY, typename FACEARRAY>
-inline int FindInnerPoint2 (POINTARRAY & points,
-			    FACEARRAY & faces,
+template <typename POINTArray, typename FACEArray>
+inline int FindInnerPoint2 (POINTArray & points,
+			    FACEArray & faces,
 			    Point3d & p)
 {
   static int timer = NgProfiler::CreateTimer ("FindInnerPoint2");
   NgProfiler::RegionTimer reg (timer);
 
-  ARRAY<Vec3d> a;
-  ARRAY<double> c;
+  Array<Vec3d> a;
+  Array<double> c;
   Mat<3> m, inv;
   Vec<3> rs, x, pmin;
 

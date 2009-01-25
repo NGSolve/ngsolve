@@ -15,7 +15,7 @@ namespace netgen
 #include "writeuser.hpp"
 
 
-void RegisterUserFormats (ARRAY<const char*> & names)
+void RegisterUserFormats (Array<const char*> & names)
 {
   const char *types[] =
     {
@@ -631,7 +631,7 @@ void WriteEdgeElementFormat (const Mesh & mesh,
   
   int inverttets = mparam.inverttets;
   int invertsurf = mparam.inverttrigs;
-  ARRAY<int> edges;
+  Array<int> edges;
 
   ofstream outfile (filename.c_str());
 
@@ -788,7 +788,7 @@ void WriteFile (int typ,
       INDEX_2_HASHTABLE<int> edgeht(mesh.GetNP());
 
       // list of edges
-      ARRAY<INDEX_2> edgelist;
+      Array<INDEX_2> edgelist;
 
       // edge (point) on boundary ?
       BitArray bedge, bpoint(mesh.GetNP());

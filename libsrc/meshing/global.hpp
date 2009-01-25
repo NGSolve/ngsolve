@@ -24,7 +24,7 @@ extern Flags parameters;
 
 extern MeshingParameters mparam;
 
-extern ARRAY<int> tets_in_qualclass;
+extern Array<int> tets_in_qualclass;
 
 
 class multithreadt

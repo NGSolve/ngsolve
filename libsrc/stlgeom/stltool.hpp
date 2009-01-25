@@ -18,7 +18,7 @@ extern int usechartnormal;
 extern int chartdebug;
 
 extern int geomsearchtreeon;
-extern int AddPointIfNotExists(ARRAY<Point3d>& ap, const Point3d& p, double eps = 1e-8);
+extern int AddPointIfNotExists(Array<Point3d>& ap, const Point3d& p, double eps = 1e-8);
 //get distance from line lp1-lp2 to point p
 extern double GetDistFromLine(const Point<3>& lp1, const Point<3>& lp2, Point<3>& p);
 extern double GetDistFromInfiniteLine(const Point<3>& lp1, const Point<3>& lp2, const Point<3>& p);
@@ -35,7 +35,7 @@ extern void FIOReadStringE(istream& ios, char* str, int len);
 extern void FIOWriteString(ostream& ios, char* str, int len);
 
 
-typedef ARRAY <int> * ARRAYINTPTR;
+typedef Array <int> * ArrayINTPTR;
 
 class STLGeometry;
 
@@ -43,12 +43,12 @@ class STLChart
 {
 private:
   STLGeometry * geometry;
-  ARRAY<int>* charttrigs; // trigs which only belong to this chart
-  ARRAY<int>* outertrigs; // trigs which belong to other charts
+  Array<int>* charttrigs; // trigs which only belong to this chart
+  Array<int>* outertrigs; // trigs which belong to other charts
   Box3dTree * searchtree; // ADT containing outer trigs
 
-  ARRAY<twoint>* olimit; //outer limit of outer chart
-  ARRAY<twoint>* ilimit; //outer limit of inner chart
+  Array<twoint>* olimit; //outer limit of outer chart
+  Array<twoint>* ilimit; //outer limit of inner chart
 
 
 public:
@@ -74,7 +74,7 @@ public:
 
   void GetTrianglesInBox (const Point3d & pmin,
 			  const Point3d & pmax,
-			  ARRAY<int> & trias) const;
+			  Array<int> & trias) const;
   void AddOLimit(twoint l) {olimit->Append(l);}
   void AddILimit(twoint l) {ilimit->Append(l);}
 
@@ -88,8 +88,8 @@ public:
   twoint GetILimit(int i) const {return ilimit->Get(i);}
 
   //move triangles trigs (local chart-trig numbers) to outer chart
-  void MoveToOuterChart(const ARRAY<int>& trigs);
-  void DelChartTrigs(const ARRAY<int>& trigs);
+  void MoveToOuterChart(const Array<int>& trigs);
+  void DelChartTrigs(const Array<int>& trigs);
 
 
   // define local coordinate system, JS:
@@ -115,7 +115,7 @@ class STLBoundarySeg
   int smoothedge;
 public:
   STLBoundarySeg () { ; }
-  STLBoundarySeg (int ai1, int ai2, const ARRAY<Point<3> > & points,
+  STLBoundarySeg (int ai1, int ai2, const Array<Point<3> > & points,
 		  const STLChart * achart);
 
   int operator== (const STLBoundarySeg & s2) const
@@ -143,7 +143,7 @@ class STLBoundary
 private:
   STLGeometry * geometry;
   const STLChart * chart;
-  ARRAY<STLBoundarySeg> boundary;
+  Array<STLBoundarySeg> boundary;
 public:
   STLBoundary(STLGeometry * ageometry);
   // : boundary() {};
@@ -160,7 +160,7 @@ public:
   const STLBoundarySeg & GetSegment(int i) {return boundary.Get(i);}
 
   int TestSeg(const Point<3> & p1, const Point<3> & p2, const Vec<3> & sn, 
-	      double sinchartangle, int divisions, ARRAY<Point<3> >& points,
+	      double sinchartangle, int divisions, Array<Point<3> >& points,
 	      double eps);
 
   int TestSegChartNV(const Point3d& p1, const Point3d& p2, const Vec3d& sn);

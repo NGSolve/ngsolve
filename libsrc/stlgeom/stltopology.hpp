@@ -138,7 +138,7 @@ public:
 
 
   // NON-normalized geometry - normal vector
-  Vec<3> GeomNormal(const ARRAY<Point<3> >& ap) const;
+  Vec<3> GeomNormal(const Array<Point<3> >& ap) const;
   
   // Stored normal vector, normalized
   void SetNormal (const Vec<3> & n);
@@ -148,10 +148,10 @@ public:
   void ChangeOrientation(); 
 
   //project with a certain normal vector in plane
-  void ProjectInPlain(const ARRAY<Point<3> >& ap, 
+  void ProjectInPlain(const Array<Point<3> >& ap, 
 		      const Vec<3> & n, Point<3> & pp) const;
   //project with the triangle's normal vector in plane
-  void ProjectInPlain(const ARRAY<Point<3> > & ap, Point<3> & pp) const;
+  void ProjectInPlain(const Array<Point<3> > & ap, Point<3> & pp) const;
 
 
   /*
@@ -166,20 +166,20 @@ public:
     
     pp(output) = P1 + lam1 v1 + lam2 v2
   */
-  int ProjectInPlain (const ARRAY<Point<3> >& ap, 
+  int ProjectInPlain (const Array<Point<3> >& ap, 
 		      const Vec<3> & nproj, 
 		      Point<3> & pp, Vec<3> & lam) const;
 
-  int PointInside(const ARRAY<Point<3> >& ap, const Point<3> & pp) const;
+  int PointInside(const Array<Point<3> >& ap, const Point<3> & pp) const;
 
   //get nearest point on triangle and distance to it
-  double GetNearestPoint(const ARRAY<Point<3> >& ap, 
+  double GetNearestPoint(const Array<Point<3> >& ap, 
 			 Point<3> & p3d) const;
 
-  double Area(const ARRAY<Point<3> >& ap) const;
+  double Area(const Array<Point<3> >& ap) const;
 
-  double MinHeight(const ARRAY<Point<3> >& ap) const;
-  double MaxLength(const ARRAY<Point<3> >& ap) const; 
+  double MinHeight(const Array<Point<3> >& ap) const;
+  double MaxLength(const Array<Point<3> >& ap) const; 
   //max length of a side of triangle
 
   int GetFaceNum() {return facenum;}
@@ -239,9 +239,9 @@ ostream& operator<<(ostream& os, const STLTriangle& t);
 class STLTopology
 {
 protected:
-  ARRAY<STLTriangle> trias;
-  ARRAY<STLTopEdge> topedges;
-  ARRAY<Point<3> > points;
+  Array<STLTriangle> trias;
+  Array<STLTopEdge> topedges;
+  Array<Point<3> > points;
 
   // mapping of sorted pair of points to topedge
   INDEX_2_HASHTABLE<int> * ht_topedges;
@@ -280,7 +280,7 @@ public:
   void SaveBinary (const char* filename, const char* aname);
   void SaveSTLE (const char * filename); // stores trigs and edges
   
-  virtual void InitSTLGeometry (const ARRAY<STLReadTriangle> & readtrigs);
+  virtual void InitSTLGeometry (const Array<STLReadTriangle> & readtrigs);
 
   virtual void TopologyChanged() {}; //do some things, if topology changed!
 
@@ -289,7 +289,7 @@ public:
 
   
   void GetTrianglesInBox (const Box<3> & box,
-			  ARRAY<int> & trias) const;
+			  Array<int> & trias) const;
 
 
   int GetNP() const { return points.Size(); }
@@ -297,7 +297,7 @@ public:
   const Point<3> & GetPoint(int nr) const { return points.Get(nr); }
   int GetPointNum (const Point<3> & p);
   void SetPoint(int nr, const Point<3> & p) { points.Elem(nr) = p; }
-  const ARRAY<Point<3> >& GetPoints() const { return points; }
+  const Array<Point<3> >& GetPoints() const { return points; }
 
   const Point<3> & operator[] (STLPointIndex i) const { return points[i]; }
   Point<3> & operator[] (STLPointIndex i) { return points[i]; }

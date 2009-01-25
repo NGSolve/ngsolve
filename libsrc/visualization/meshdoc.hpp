@@ -9,7 +9,7 @@ class VisualSceneMeshDoctor : public VisualScene
   int selpoint, selpoint2;
 
   // for edgemarking:
-  ARRAY<int> edgedist;
+  Array<int> edgedist;
   int markedgedist;
   
 

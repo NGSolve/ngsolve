@@ -22,9 +22,9 @@ class Flags
   ///
   SYMBOLTABLE<int> defflags;
   ///
-  SYMBOLTABLE<ARRAY<char*>*> strlistflags;
+  SYMBOLTABLE<Array<char*>*> strlistflags;
   ///
-  SYMBOLTABLE<ARRAY<double>*> numlistflags;
+  SYMBOLTABLE<Array<double>*> numlistflags;
 public:
   ///
   Flags ();
@@ -40,9 +40,9 @@ public:
   /// Sets boolean flag
   void SetFlag (const char * name);
   /// Sets string arary falg
-  void SetFlag (const char * name, const ARRAY<char*> & val);
+  void SetFlag (const char * name, const Array<char*> & val);
   /// Sets double array flag
-  void SetFlag (const char * name, const ARRAY<double> & val);
+  void SetFlag (const char * name, const Array<double> & val);
   
   /// Save flags to file
   void SaveFlags (const char * filename) const;
@@ -64,9 +64,9 @@ public:
   /// Returns boolean flag
   bool GetDefineFlag (const char * name) const;
   /// Returns string list flag, empty array if not exist
-  const ARRAY<char*> & GetStringListFlag (const char * name) const;
+  const Array<char*> & GetStringListFlag (const char * name) const;
   /// Returns num list flag, empty array if not exist
-  const ARRAY<double> & GetNumListFlag (const char * name) const;
+  const Array<double> & GetNumListFlag (const char * name) const;
 
 
   /// Test, if string flag is defined

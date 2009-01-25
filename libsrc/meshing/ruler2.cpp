@@ -5,7 +5,7 @@ namespace netgen
 {
 
 
-static double CalcElementBadness (const ARRAY<Point2d> & points,
+static double CalcElementBadness (const Array<Point2d> & points,
 				  const Element2d & elem)
 {
   // badness = sqrt(3) /36 * circumference^2 / area - 1 +
@@ -45,13 +45,13 @@ static double CalcElementBadness (const ARRAY<Point2d> & points,
 
 
 
-int Meshing2 ::ApplyRules (ARRAY<Point2d> & lpoints, 
-			   ARRAY<int> & legalpoints,
+int Meshing2 ::ApplyRules (Array<Point2d> & lpoints, 
+			   Array<int> & legalpoints,
 			   int maxlegalpoint,
-			   ARRAY<INDEX_2> & llines,
+			   Array<INDEX_2> & llines,
 			   int maxlegalline,
-			   ARRAY<Element2d> & elements,
-			   ARRAY<INDEX> & dellines, int tolerance)
+			   Array<Element2d> & elements,
+			   Array<INDEX> & dellines, int tolerance)
 {
   int i, j, ri, nlok, npok, incnpok, refpi, locli = 0;
 
@@ -70,14 +70,14 @@ int Meshing2 ::ApplyRules (ARRAY<Point2d> & lpoints,
   int noldlp, noldll;
   int loctestmode;
 
-  static ARRAY<int> pused, pmap, pfixed;
-  static ARRAY<int, 1> lmap, lused;
-  static ARRAY<int> pnearness, lnearness;
+  static Array<int> pused, pmap, pfixed;
+  static Array<int, 1> lmap, lused;
+  static Array<int> pnearness, lnearness;
   
-  static ARRAY<Point2d> tempnewpoints;
-  static ARRAY<INDEX_2> tempnewlines;
-  static ARRAY<int> tempdellines;
-  static ARRAY<Element2d> tempelements;
+  static Array<Point2d> tempnewpoints;
+  static Array<INDEX_2> tempnewlines;
+  static Array<int> tempdellines;
+  static Array<Element2d> tempelements;
 
 
 

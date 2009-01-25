@@ -155,7 +155,7 @@ template <int BASE = 1>
 class BitArrayChar
 {
   ///
-  ARRAY<char,BASE> data;
+  Array<char,BASE> data;
 
 public:
   ///

@@ -206,7 +206,7 @@ namespace netgen
   }
 
 
-  void ADTree :: GetMatch (ARRAY <int> & matches)
+  void ADTree :: GetMatch (Array <int> & matches)
   {
     int nodenr;
 
@@ -398,10 +398,10 @@ namespace netgen
 
   void ADTree3 :: GetIntersecting (const float * bmin, 
 				   const float * bmax,
-				   ARRAY<int> & pis) const
+				   Array<int> & pis) const
   {
-    static ARRAY<ADTreeNode3*> stack(1000);
-    static ARRAY<int> stackdir(1000);
+    static Array<ADTreeNode3*> stack(1000);
+    static Array<int> stackdir(1000);
     ADTreeNode3 * node;
     int dir, stacks;
 
@@ -658,10 +658,10 @@ namespace netgen
 
   void ADTree3Div :: GetIntersecting (const float * bmin, 
 				      const float * bmax,
-				      ARRAY<int> & pis) const
+				      Array<int> & pis) const
   {
-    static ARRAY<ADTreeNode3Div*> stack(1000);
-    static ARRAY<int> stackdir(1000);
+    static Array<ADTreeNode3Div*> stack(1000);
+    static Array<int> stackdir(1000);
     ADTreeNode3Div * node;
     int dir, i, stacks;
 
@@ -917,10 +917,10 @@ namespace netgen
 
   void ADTree3M :: GetIntersecting (const float * bmin, 
 				    const float * bmax,
-				    ARRAY<int> & pis) const
+				    Array<int> & pis) const
   {
-    static ARRAY<ADTreeNode3M*> stack(1000);
-    static ARRAY<int> stackdir(1000);
+    static Array<ADTreeNode3M*> stack(1000);
+    static Array<int> stackdir(1000);
     ADTreeNode3M * node;
     int dir, i, stacks;
 
@@ -1163,9 +1163,9 @@ namespace netgen
 
   void ADTree3F :: GetIntersecting (const float * bmin, 
 				    const float * bmax,
-				    ARRAY<int> & pis) const
+				    Array<int> & pis) const
   {
-    static ARRAY<ADTreeNode3F*> stack(1000);
+    static Array<ADTreeNode3F*> stack(1000);
     ADTreeNode3F * node;
     int dir, i, stacks;
 
@@ -1427,9 +1427,9 @@ namespace netgen
 
   void ADTree3FM :: GetIntersecting (const float * bmin, 
 				     const float * bmax,
-				     ARRAY<int> & pis) const
+				     Array<int> & pis) const
   {
-    static ARRAY<ADTreeNode3FM*> stack(1000);
+    static Array<ADTreeNode3FM*> stack(1000);
     ADTreeNode3FM * node;
     int dir, i, stacks;
 
@@ -1700,9 +1700,9 @@ namespace netgen
 
   void ADTree6 :: GetIntersecting (const float * bmin, 
 				   const float * bmax,
-				   ARRAY<int> & pis) const
+				   Array<int> & pis) const
   {
-    static ARRAY<inttn6> stack(10000);
+    static Array<inttn6> stack(10000);
 
     stack.SetSize (10000);
     pis.SetSize(0);
@@ -1959,9 +1959,9 @@ namespace netgen
 
   void ADTree6F :: GetIntersecting (const float * bmin, 
 				    const float * bmax,
-				    ARRAY<int> & pis) const
+				    Array<int> & pis) const
   {
-    static ARRAY<ADTreeNode6F*> stack(1000);
+    static Array<ADTreeNode6F*> stack(1000);
     ADTreeNode6F * node;
     int dir, i, stacks;
 
@@ -2093,7 +2093,7 @@ namespace netgen
   }
 
   void Point3dTree :: GetIntersecting (const Point3d & pmin, const Point3d & pmax, 
-				       ARRAY<int> & pis) const
+				       Array<int> & pis) const
   {
     float pmi[3], pma[3];
     for (int i = 0; i < 3; i++)
@@ -2145,7 +2145,7 @@ namespace netgen
   }
 
   void Box3dTree ::GetIntersecting (const Point3d & pmin, const Point3d & pmax, 
-				    ARRAY<int> & pis) const
+				    Array<int> & pis) const
   {
     float tpmin[6];
     float tpmax[6];

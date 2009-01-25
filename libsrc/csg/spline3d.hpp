@@ -24,7 +24,7 @@ class splinesegment3d
 class spline3d
   {
   ///
-  ARRAY<splinesegment3d *> segments;
+  Array<splinesegment3d *> segments;
   
   public:
   ///

@@ -112,12 +112,12 @@ namespace netgen
     INDEX_3_CLOSED_HASHTABLE<int> faces;
 
     // 
-    ARRAY<DelaunayTet> & tets;
+    Array<DelaunayTet> & tets;
 
   public:
 
     // estimated number of points
-    MeshNB (ARRAY<DelaunayTet> & atets, int np)
+    MeshNB (Array<DelaunayTet> & atets, int np)
       : faces(200), tets(atets)
     { ; }
 
@@ -187,7 +187,7 @@ namespace netgen
   */
   class SphereList 
   {
-    ARRAY<int> links;
+    Array<int> links;
   public:
     SphereList () 
     { ; }
@@ -210,11 +210,11 @@ namespace netgen
       links.Elem (toi) = eli;
     }
       
-    void GetList (int eli, ARRAY<int> & linked) const;
+    void GetList (int eli, Array<int> & linked) const;
   };
 
 
-  void SphereList :: GetList (int eli, ARRAY<int> & linked) const
+  void SphereList :: GetList (int eli, Array<int> & linked) const
   {
     linked.SetSize (0);
     int pi = eli;
@@ -244,13 +244,13 @@ namespace netgen
 
 
   void AddDelaunayPoint (PointIndex newpi, const Point3d & newp, 
-			 ARRAY<DelaunayTet> & tempels, 
+			 Array<DelaunayTet> & tempels, 
 			 Mesh & mesh,
 			 Box3dTree & tettree, 
 			 MeshNB & meshnb,
-			 ARRAY<Point<3> > & centers, ARRAY<double> & radi2,
-			 ARRAY<int> & connected, ARRAY<int> & treesearch, 
-			 ARRAY<int> & freelist, SphereList & list,
+			 Array<Point<3> > & centers, Array<double> & radi2,
+			 Array<int> & connected, Array<int> & treesearch, 
+			 Array<int> & freelist, SphereList & list,
 			 IndexSet & insphere, IndexSet & closesphere)
   {
     /*
@@ -446,7 +446,7 @@ namespace netgen
       } // while (changed)
 
     //      (*testout) << "newels: " << endl;
-    ARRAY<Element> newels;
+    Array<Element> newels;
 
     Element2d face(TRIG);
 
@@ -602,14 +602,14 @@ namespace netgen
 
 
   void Delaunay1 (Mesh & mesh, const MeshingParameters & mp, AdFront3 * adfront,
-		  ARRAY<DelaunayTet> & tempels,
+		  Array<DelaunayTet> & tempels,
 		  int oldnp, DelaunayTet & startel, Point3d & pmin, Point3d & pmax)
   {
     int i, j, k;
     const Point<3> * pp[4];
 
-    ARRAY<Point<3> > centers;
-    ARRAY<double> radi2;
+    Array<Point<3> > centers;
+    Array<double> radi2;
   
     Point3d tpmin, tpmax;
 
@@ -676,7 +676,7 @@ namespace netgen
       usep.Set (mesh.LockedPoints()[i]);
   
 
-    ARRAY<int> freelist;
+    Array<int> freelist;
 
 
     int cntp = 0;
@@ -693,7 +693,7 @@ namespace netgen
     tempels.Append (startel);
     meshnb.Add (1);
     list.AddElement (1);
-    ARRAY<int> connected, treesearch;
+    Array<int> connected, treesearch;
 
 
     tpmin = tpmax = mesh.Point(startel[0]);
@@ -726,7 +726,7 @@ namespace netgen
 
     // "random" reordering of points  (speeds a factor 3 - 5 !!!)
 
-    ARRAY<int> mixed(np);
+    Array<int> mixed(np);
     int prims[] = { 11, 13, 17, 19, 23, 29, 31, 37 };
     int prim;
   
@@ -799,7 +799,7 @@ namespace netgen
     PushStatus ("Delaunay meshing");
 
 
-    ARRAY<DelaunayTet> tempels;
+    Array<DelaunayTet> tempels;
     Point3d pmin, pmax;
 
     DelaunayTet startel;
@@ -959,7 +959,7 @@ namespace netgen
     // find surface triangles which are no face of any tet
 
     INDEX_3_HASHTABLE<int> openeltab(mesh.GetNOpenElements()+3);
-    ARRAY<int> openels;
+    Array<int> openels;
     for (int i = 1; i <= mesh.GetNOpenElements(); i++)
       {
 	const Element2d & tri = mesh.OpenElement(i);
@@ -1147,7 +1147,7 @@ namespace netgen
 	      }
 	  }
       
-	ARRAY<int> neartrias;
+	Array<int> neartrias;
 	for (int i = 1; i <= tempels.Size(); i++)
 	  {
 	    const Point<3> *pp[4];
@@ -1407,7 +1407,7 @@ namespace netgen
     BitArray inner(ne), outer(ne);
     inner.Clear();
     outer.Clear();
-    ARRAY<int> elstack;
+    Array<int> elstack;
 
     /*
       int starti = 0;

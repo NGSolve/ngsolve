@@ -73,7 +73,7 @@ namespace netgen
 
   void CSGeometry :: Clean ()
   {
-    ARRAY< Solid* > to_delete;
+    Array< Solid* > to_delete;
     
     for (int i = 0; i < solids.Size(); i++)
       if(!to_delete.Contains(solids[i]->S1()))
@@ -151,7 +151,7 @@ namespace netgen
     if (prim)
       {
 	const char * classname;
-	ARRAY<double> coeffs;
+	Array<double> coeffs;
 
 	prim -> GetPrimitiveData (classname, coeffs);
 
@@ -222,7 +222,7 @@ namespace netgen
   
     char key[100], name[100], classname[100], sname[100];
     int ncoeff, i, j;
-    ARRAY<double> coeff;
+    Array<double> coeff;
 
     while (ist.good())
       {
@@ -320,7 +320,7 @@ namespace netgen
 
 
     
-    ARRAY<double> coeffs;
+    Array<double> coeffs;
     const char * classname;
 
     out << "csgsurfaces " << GetNSurf() << "\n";
@@ -361,7 +361,7 @@ namespace netgen
 
   void CSGeometry :: LoadSurfaces (istream & in)
   {
-    ARRAY<double> coeffs;
+    Array<double> coeffs;
     string classname;
     int nsurfaces,size;
 
@@ -632,7 +632,7 @@ namespace netgen
   void CSGeometry :: SetFlags (const char * solidname, const Flags & flags)
   {
     Solid * solid = solids.Elem(solidname);
-    ARRAY<int> surfind;
+    Array<int> surfind;
 
     int i;
     double maxh = flags.GetNumFlag ("maxh", -1);
@@ -662,7 +662,7 @@ namespace netgen
 
     if (flags.StringListFlagDefined ("bcname"))
       {
-	const ARRAY<char*> & bcname = flags.GetStringListFlag("bcname");
+	const Array<char*> & bcname = flags.GetStringListFlag("bcname");
 
 	Polyhedra * polyh;
 	if(solid->S1())
@@ -672,7 +672,7 @@ namespace netgen
 
 	if(polyh)
 	  {
-	    ARRAY < ARRAY<int> * > polysurfs;
+	    Array < Array<int> * > polysurfs;
 	    polyh->GetPolySurfs(polysurfs);
 	    if(bcname.Size() != polysurfs.Size())
 	      cerr << "WARNING: solid \"" << solidname << "\" has " << polysurfs.Size()
@@ -716,7 +716,7 @@ namespace netgen
    
     if (flags.NumListFlagDefined ("bc"))
       {
-	const ARRAY<double> & bcnum = flags.GetNumListFlag("bc");
+	const Array<double> & bcnum = flags.GetNumListFlag("bc");
 
 	Polyhedra * polyh;
 	if(solid->S1())
@@ -726,7 +726,7 @@ namespace netgen
 
 	if(polyh)
 	  {
-	    ARRAY < ARRAY<int> * > polysurfs;
+	    Array < Array<int> * > polysurfs;
 	    polyh->GetPolySurfs(polysurfs);
 	    if(bcnum.Size() != polysurfs.Size())
 	      cerr << "WARNING: solid \"" << solidname << "\" has " << polysurfs.Size()
@@ -797,7 +797,7 @@ namespace netgen
   void CSGeometry ::
   GetSurfaceIndices (const Solid * sol, 
 		     const BoxSphere<3> & box, 
-		     ARRAY<int> & locsurf) const
+		     Array<int> & locsurf) const
   {
     ReducePrimitiveIterator rpi(box);
     UnReducePrimitiveIterator urpi;
@@ -826,7 +826,7 @@ namespace netgen
   void CSGeometry ::
   GetIndependentSurfaceIndices (const Solid * sol, 
 				const BoxSphere<3> & box, 
-				ARRAY<int> & locsurf) const
+				Array<int> & locsurf) const
   {
     ReducePrimitiveIterator rpi(box);
     UnReducePrimitiveIterator urpi;
@@ -885,7 +885,7 @@ namespace netgen
   void CSGeometry ::
   GetIndependentSurfaceIndices (const Solid * sol, 
 				const Point<3> & p, Vec<3> & v,
-				ARRAY<int> & locsurf) const
+				Array<int> & locsurf) const
   {
     cout << "very dangerous" << endl;
     Point<3> p2 = p + 1e-2 * v;
@@ -897,7 +897,7 @@ namespace netgen
 
 
   void CSGeometry ::
-  GetIndependentSurfaceIndices (ARRAY<int> & locsurf) const
+  GetIndependentSurfaceIndices (Array<int> & locsurf) const
   {
     for (int i = 0; i < locsurf.Size(); i++)
       locsurf[i] = isidenticto[locsurf[i]];
@@ -938,7 +938,7 @@ namespace netgen
       delete triapprox[i];
     triapprox.SetSize (ntlo);
 
-    ARRAY<int> surfind;
+    Array<int> surfind;
     IndexSet iset(GetNSurf());
 
     for (int i = 0; i < ntlo; i++)
@@ -1062,7 +1062,7 @@ namespace netgen
 
     //    IndexSet iset(GetNSurf());
     locsol -> GetSurfaceIndices (iset);
-    const ARRAY<int> & lsurfi = iset.Array();
+    const Array<int> & lsurfi = iset.Array();
 
     locsol -> IterateSolid (urpi);
 

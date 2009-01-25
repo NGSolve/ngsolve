@@ -27,7 +27,7 @@ void WriteTecPlotFormat (const Mesh & mesh,
   INDEX ne = mesh.GetNE();
   INDEX nse = mesh.GetNSE();
   
-  ARRAY<int> sn(np);
+  Array<int> sn(np);
   ofstream outfile(filename.c_str());
   
   outfile << "TITLE=\" " << filename << "\"" << endl;

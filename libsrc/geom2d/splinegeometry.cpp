@@ -28,8 +28,8 @@ void SplineGeometry<D> :: LoadDataV2 ( ifstream & infile )
 
   string keyword;
 
-  ARRAY < GeomPoint<D> > infilepoints (0);
-  ARRAY <int> pointnrs (0);
+  Array < GeomPoint<D> > infilepoints (0);
+  Array <int> pointnrs (0);
   nump = 0;
   int numdomains = 0;
 
@@ -193,7 +193,7 @@ void SplineGeometry<D> :: LoadDataV2 ( ifstream & infile )
 		{
 		  int npts;
 		  infile >> npts;
-		  ARRAY< Point<D> > pts(npts);
+		  Array< Point<D> > pts(npts);
 		  for (int j = 0; j < npts; j++)
 		    for(int k=0; k<D; k++)
 		      infile >> pts[j](k);
@@ -428,7 +428,7 @@ SplineGeometry<D> :: ~SplineGeometry()
 
 
 template<int D>
-int SplineGeometry<D> :: Load (const ARRAY<double> & raw_data, const int startpos)
+int SplineGeometry<D> :: Load (const Array<double> & raw_data, const int startpos)
 {
   int pos = startpos;
   if(raw_data[pos] != D)
@@ -441,7 +441,7 @@ int SplineGeometry<D> :: Load (const ARRAY<double> & raw_data, const int startpo
   splines.SetSize(int(raw_data[pos]));
   pos++;
 
-  ARRAY< Point<D> > pts(3);
+  Array< Point<D> > pts(3);
 
   for(int i=0; i<splines.Size(); i++)
     {
@@ -479,7 +479,7 @@ int SplineGeometry<D> :: Load (const ARRAY<double> & raw_data, const int startpo
 }
 
 template<int D>
-void SplineGeometry<D> :: GetRawData (ARRAY<double> & raw_data) const
+void SplineGeometry<D> :: GetRawData (Array<double> & raw_data) const
 {
   raw_data.Append(D);
   raw_data.Append(elto0);
@@ -714,7 +714,7 @@ void SplineGeometry<D> :: LoadDataNew ( ifstream & infile )
 	{
 	  int npts;
 	  infile >> npts;
-	  ARRAY< Point<D> > pts(npts);
+	  Array< Point<D> > pts(npts);
 	  for (int j = 0; j < npts; j++)
 	    for(int k=0; k<D; k++)
 	      infile >> pts[j](k);
@@ -922,7 +922,7 @@ void SplineGeometry<D> :: LoadData ( ifstream & infile )
 	{
 	  int npts;
 	  infile >> npts;
-	  ARRAY< Point<D> > pts(npts);
+	  Array< Point<D> > pts(npts);
 	  for (int j = 0; j < npts; j++)
 	    for(int k=0; k<D; k++)
 	      infile >> pts[j](k);
@@ -1018,8 +1018,8 @@ void SplineGeometry<D> :: CopyEdgeMesh (int from, int to, Mesh & mesh, Point3dTr
 {
   int i;
 
-  ARRAY<int, PointIndex::BASE> mappoints (mesh.GetNP());
-  ARRAY<double, PointIndex::BASE> param (mesh.GetNP());
+  Array<int, PointIndex::BASE> mappoints (mesh.GetNP());
+  Array<double, PointIndex::BASE> param (mesh.GetNP());
   mappoints = -1;
   param = 0;
 
@@ -1112,7 +1112,7 @@ void SplineGeometry<D> :: GetBoundingBox (Box<D> & box) const
       return;
     }
 
-  ARRAY<Point<D> > points;
+  Array<Point<D> > points;
   for (int i = 0; i < splines.Size(); i++)
     {
       splines[i]->GetPoints (20, points);
@@ -1192,7 +1192,7 @@ void SplineGeometry<D> :: AppendCircleSegment (const int n1, const int n2, const
 }
 
 template<int D>
-void SplineGeometry<D> :: AppendDiscretePointsSegment (const ARRAY< Point<D> > & points, const int leftdomain, const int rightdomain, 
+void SplineGeometry<D> :: AppendDiscretePointsSegment (const Array< Point<D> > & points, const int leftdomain, const int rightdomain, 
 						       const int bc, 
 						       const double reffac, const bool hprefleft, const bool hprefright,
 						       const int copyfrom)

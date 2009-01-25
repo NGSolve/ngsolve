@@ -29,8 +29,8 @@ namespace netgen
   }
  
   void DivideEdge (TopoDS_Edge & edge,
-		   ARRAY<MeshPoint> & ps,
-		   ARRAY<double> & params,
+		   Array<MeshPoint> & ps,
+		   Array<double> & params,
 		   Mesh & mesh)
   {
     double s0, s1;
@@ -148,7 +148,7 @@ namespace netgen
 
     int first_ep = mesh.GetNP()+1;
 
-    ARRAY<int> face2solid[2];
+    Array<int> face2solid[2];
     for (int i = 0; i<2; i++)
       {
 	face2solid[i].SetSize (geom.fmap.Extent());
@@ -253,13 +253,13 @@ namespace netgen
 
 		int geomedgenr = geom.emap.FindIndex(edge);
 
-		ARRAY <MeshPoint> mp;
-		ARRAY <double> params;
+		Array <MeshPoint> mp;
+		Array <double> params;
 
 		DivideEdge (edge, mp, params, mesh);
 				
 		    
-		ARRAY <int> pnums;
+		Array <int> pnums;
 		pnums.SetSize (mp.Size()+2);
 		    
 		if (!merge_solids)
@@ -403,7 +403,7 @@ namespace netgen
 
     double starttime = GetTime();
 
-    ARRAY<int> glob2loc(noldp);
+    Array<int> glob2loc(noldp);
 
     //int projecttype = PARAMETERSPACE;
   
@@ -509,7 +509,7 @@ namespace netgen
 		cntp+=2;
 	  
 	  
-	    ARRAY< PointGeomInfo > gis;
+	    Array< PointGeomInfo > gis;
 	  
 	    gis.SetAllocSize (cntp);
 	    gis.SetSize (0);
@@ -1101,7 +1101,7 @@ namespace netgen
 	mesh->SetGlobalH (mparam.maxh);
 	mesh->SetMinimalH (mparam.minh);
 
-	ARRAY<double> maxhdom;
+	Array<double> maxhdom;
 	maxhdom.SetSize (geom.NrSolids());
 	maxhdom = mparam.maxh;
       
@@ -1256,7 +1256,7 @@ namespace netgen
 	      
 		int sections = 100;
 	      
-		ARRAY<Line> lines(sections*nedges);
+		Array<Line> lines(sections*nedges);
 	      
 		Box3dTree* searchtree =
 		  new Box3dTree (bb.PMin(), bb.PMax());
@@ -1303,7 +1303,7 @@ namespace netgen
 		      }
 		  }
 		
-		ARRAY<int> linenums;
+		Array<int> linenums;
 	      
 		for (int i = 0; i < nlines; i++)
 		  {
@@ -1365,7 +1365,7 @@ namespace netgen
       
 	  int i, j;
 	  int np = mesh->GetNP();
-	  ARRAY<int> equalto;
+	  Array<int> equalto;
 
 	  equalto.SetSize (np);
 	  equalto = 0;

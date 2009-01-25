@@ -81,7 +81,7 @@ BaseVector :: Copy () const
 
 
 
-void BaseVector :: GetElementVector (const ARRAY<INDEX> & pnum,
+void BaseVector :: GetElementVector (const Array<INDEX> & pnum,
 				 BaseVector & elvec) const
 {
   int i;
@@ -89,7 +89,7 @@ void BaseVector :: GetElementVector (const ARRAY<INDEX> & pnum,
     elvec(i) = (*this)(pnum.Get(i));
 }
 
-void BaseVector :: SetElementVector (const ARRAY<INDEX> & pnum,
+void BaseVector :: SetElementVector (const Array<INDEX> & pnum,
 				 const BaseVector & elvec)
 {
   int i;
@@ -98,7 +98,7 @@ void BaseVector :: SetElementVector (const ARRAY<INDEX> & pnum,
 }
 
 
-void BaseVector :: AddElementVector (const ARRAY<INDEX> & pnum,
+void BaseVector :: AddElementVector (const Array<INDEX> & pnum,
 				 const BaseVector & elvec)
 {
   int i;
@@ -176,8 +176,8 @@ double Vector :: shit = 0;
 class clVecpool
 {
 public:
-  ARRAY<double *> vecs;
-  ARRAY<INDEX> veclens;
+  Array<double *> vecs;
+  Array<INDEX> veclens;
 
   ~clVecpool();
 };
@@ -755,7 +755,7 @@ void Vector :: Swap (BaseVector & v2)
 
 
 
-void Vector :: GetElementVector (const ARRAY<INDEX> & pnum,
+void Vector :: GetElementVector (const Array<INDEX> & pnum,
 				 BaseVector & elvec) const
 {
   int i;
@@ -764,7 +764,7 @@ void Vector :: GetElementVector (const ARRAY<INDEX> & pnum,
     helvec.Elem(i) = Get(pnum.Get(i));
 }
 
-void Vector :: SetElementVector (const ARRAY<INDEX> & pnum,
+void Vector :: SetElementVector (const Array<INDEX> & pnum,
 				 const BaseVector & elvec)
 {
   int i;
@@ -774,7 +774,7 @@ void Vector :: SetElementVector (const ARRAY<INDEX> & pnum,
 }
 
 
-void Vector :: AddElementVector (const ARRAY<INDEX> & pnum,
+void Vector :: AddElementVector (const Array<INDEX> & pnum,
 				 const BaseVector & elvec)
 {
   int i;

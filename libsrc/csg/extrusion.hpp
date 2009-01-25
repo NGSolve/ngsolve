@@ -13,11 +13,11 @@ private:
 
   bool deletable;
   
-  ARRAY< const SplineSeg3<3> * > spline3_path;
-  ARRAY< const LineSeg<3> * > line_path;
+  Array< const SplineSeg3<3> * > spline3_path;
+  Array< const LineSeg<3> * > line_path;
   
-  mutable ARRAY < Vec<3> > x_dir, y_dir, z_dir, loc_z_dir;
-  mutable ARRAY < Point<3> > p0;
+  mutable Array < Vec<3> > x_dir, y_dir, z_dir, loc_z_dir;
+  mutable Array < Point<3> > p0;
 
   mutable Vec<3> profile_tangent;
   mutable double profile_par;
@@ -46,7 +46,7 @@ public:
 		const SplineGeometry<3> * path_in,
 		const Vec<3> & z_direction);
 
-  ExtrusionFace(const ARRAY<double> & raw_data);
+  ExtrusionFace(const Array<double> & raw_data);
     
 
   ~ExtrusionFace();
@@ -91,7 +91,7 @@ public:
   const Vec<3> & GetProfileTangent (void) const {return profile_tangent;}
   double GetProfilePar(void) const {return profile_par;}
 
-  void GetRawData(ARRAY<double> & data) const;
+  void GetRawData(Array<double> & data) const;
 };
 
 
@@ -104,7 +104,7 @@ private:
 
   const Vec<3> & z_direction;
 
-  ARRAY<ExtrusionFace*> faces;
+  Array<ExtrusionFace*> faces;
 
   mutable int latestfacenum;
 
@@ -118,7 +118,7 @@ public:
 				     double eps) const;
   INSOLID_TYPE PointInSolid (const Point<3> & p,
 			     double eps,
-			     ARRAY<int> * const facenums) const;
+			     Array<int> * const facenums) const;
   virtual INSOLID_TYPE VecInSolid (const Point<3> & p,
 				   const Vec<3> & v,
 				   double eps) const;

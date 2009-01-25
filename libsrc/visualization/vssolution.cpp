@@ -714,8 +714,8 @@ namespace netgen
           {
             glDisable(GL_CLIP_PLANE0);
           
-            ARRAY<ClipPlaneTrig> cpt;
-            ARRAY<ClipPlanePoint> pts;
+            Array<ClipPlaneTrig> cpt;
+            Array<ClipPlanePoint> pts;
             GetClippingPlaneTrigs (cpt, pts);
           
             glNormal3d (-clipplane[0], -clipplane[1], -clipplane[2]);
@@ -746,7 +746,7 @@ namespace netgen
 
 
             bool drawelem;
-            ARRAY<ClipPlanePoint> cpp;
+            Array<ClipPlanePoint> cpp;
             GetClippingPlaneGrid (cpp);
 
             for (int i = 0; i < cpp.Size(); i++)
@@ -978,8 +978,8 @@ namespace netgen
             clipplane_isolinelist = glGenLists (1);
             glNewList (clipplane_isolinelist, GL_COMPILE);
 
-            ARRAY<ClipPlaneTrig> cpt;
-            ARRAY<ClipPlanePoint> pts;
+            Array<ClipPlaneTrig> cpt;
+            Array<ClipPlanePoint> pts;
             GetClippingPlaneTrigs (cpt, pts);  
             bool drawelem;
           
@@ -1078,9 +1078,9 @@ namespace netgen
 
     glLineWidth (1.0f);
 
-    ARRAY<Point<2> > pref;
-    ARRAY<Point<3> > points;
-    ARRAY<Mat<3,2> > dxdxis;
+    Array<Point<2> > pref;
+    Array<Point<3> > points;
+    Array<Mat<3,2> > dxdxis;
 
     /*
     Point<2> pref[1100];
@@ -1653,12 +1653,12 @@ namespace netgen
     int n = 1 << subdivisions;
     int n3 = (n+1)*(n+1)*(n+1);
     
-    ARRAY<Point<3> > grid(n3);
-    ARRAY<Point<3> > locgrid(n3);
-    ARRAY<Mat<3,3> > trans(n3);
-    ARRAY<double> val(n3);
-    ARRAY<Vec<3> > grads(n3);
-    ARRAY<int> compress(n3);
+    Array<Point<3> > grid(n3);
+    Array<Point<3> > locgrid(n3);
+    Array<Mat<3,3> > trans(n3);
+    Array<double> val(n3);
+    Array<Vec<3> > grads(n3);
+    Array<int> compress(n3);
     
     MatrixFixWidth<3> pointmat(8);
     grads = Vec<3> (0.0);
@@ -1875,7 +1875,7 @@ namespace netgen
 
 
 
-  void  VisualSceneSolution :: DrawTrigSurfaceVectors(const ARRAY< Point<3> > & lp, const Point<3> & pmin, const Point<3> & pmax,
+  void  VisualSceneSolution :: DrawTrigSurfaceVectors(const Array< Point<3> > & lp, const Point<3> & pmin, const Point<3> & pmax,
                                                       const int sei, const SolData * vsol)
   {
     int dir,dir1,dir2;
@@ -2055,7 +2055,7 @@ namespace netgen
             if (el.GetType() == TRIG || el.GetType() == TRIG6)
               {
           
-                ARRAY< Point<3> > lp(3);
+                Array< Point<3> > lp(3);
                 //Point<2> p2d[3];
                 /*
                   for (k = 0; k < 3; k++)
@@ -2165,7 +2165,7 @@ namespace netgen
               }
             else if (el.GetType() == QUAD)
               {
-                ARRAY < Point<3> > lp(3);
+                Array < Point<3> > lp(3);
 
                 lp[0] = mesh->Point(el[0]);
                 lp[1] = mesh->Point(el[1]);
@@ -3801,8 +3801,8 @@ namespace netgen
 
 
 
-  void VisualSceneSolution :: GetClippingPlaneTrigs (ARRAY<ClipPlaneTrig> & trigs,
-                                                     ARRAY<ClipPlanePoint> & pts)
+  void VisualSceneSolution :: GetClippingPlaneTrigs (Array<ClipPlaneTrig> & trigs,
+                                                     Array<ClipPlanePoint> & pts)
   {
     static int timer1 = NgProfiler::CreateTimer ("ClipPlaneTrigs1");
     static int timer2 = NgProfiler::CreateTimer ("ClipPlaneTrigs2");
@@ -3826,18 +3826,18 @@ namespace netgen
     int cntce;
     int cpe1 = 0, cpe2 = 0, cpe3 = 0;
 
-    // ARRAY<Element> loctets;
-    // ARRAY<Element> loctetsloc;
-    // ARRAY<Point<3> > pointsloc;
+    // Array<Element> loctets;
+    // Array<Element> loctetsloc;
+    // Array<Point<3> > pointsloc;
 
     int n = 1 << subdivisions;
     int n3 = (n+1)*(n+1)*(n+1);
 
-    ARRAY<Point<3> > grid(n3);
-    ARRAY<Point<3> > locgrid(n3);
-    ARRAY<Mat<3,3> > trans(n3);
-    ARRAY<double> val(n3);
-    ARRAY<int> compress(n3);
+    Array<Point<3> > grid(n3);
+    Array<Point<3> > locgrid(n3);
+    Array<Mat<3,3> > trans(n3);
+    Array<double> val(n3);
+    Array<int> compress(n3);
 
 
     for (ElementIndex ei = 0; ei < ne; ei++)
@@ -4098,7 +4098,7 @@ namespace netgen
             /*
 
 
-            ARRAY<double> nodevals(np);
+            Array<double> nodevals(np);
             
             for (int i = 0; i < np; i++)
             {
@@ -4186,7 +4186,7 @@ namespace netgen
       }
   }
 
-  void VisualSceneSolution :: GetClippingPlaneGrid (ARRAY<ClipPlanePoint> & pts)
+  void VisualSceneSolution :: GetClippingPlaneGrid (Array<ClipPlanePoint> & pts)
   {
     int i, j, k;
     int np = mesh->GetNV();
@@ -4511,8 +4511,8 @@ namespace netgen
 
   void VisualSceneSolution :: 
   DrawClipPlaneTrigs (const SolData * sol, int comp,
-                      const ARRAY<ClipPlaneTrig> & trigs, 
-                      const ARRAY<ClipPlanePoint> & points)
+                      const Array<ClipPlaneTrig> & trigs, 
+                      const Array<ClipPlanePoint> & points)
   {
     int maxlpnr = 0;
     for (int i = 0; i < trigs.Size(); i++)

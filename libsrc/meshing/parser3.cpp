@@ -53,8 +53,8 @@ void LoadVMatrixLine (istream & ist, DenseMatrix & m, int line)
 
 int vnetrule :: NeighbourTrianglePoint (const threeint & t1, const threeint & t2) const
 {
-  ARRAY<int> tr1(3);
-  ARRAY<int> tr2(3);
+  Array<int> tr1(3);
+  Array<int> tr2(3);
   tr1.Elem(1)=t1.i1;
   tr1.Elem(2)=t1.i2;
   tr1.Elem(3)=t1.i3;
@@ -472,7 +472,7 @@ void vnetrule :: LoadRule (istream & ist)
 
       else if (strcmp (buf, "freeset") == 0)
 	{
-	  freesets.Append (new ARRAY<int>);
+	  freesets.Append (new Array<int>);
 
 	  ist >> ch;
 
@@ -691,7 +691,7 @@ void vnetrule :: LoadRule (istream & ist)
 
   if (freesets.Size() == 0)
     {
-      freesets.Append (new ARRAY<int>);
+      freesets.Append (new Array<int>);
       for (i = 1; i <= freezone.Size(); i++)
 	freesets.Elem(1)->Append(i);
     }
@@ -721,10 +721,10 @@ void vnetrule :: LoadRule (istream & ist)
 
   for (fs = 1; fs <= freesets.Size(); fs++)
     {
-      freefaces.Append (new ARRAY<threeint>);
+      freefaces.Append (new Array<threeint>);
 
-      ARRAY<int> & freeset = *freesets.Elem(fs);
-      ARRAY<threeint> & freesetfaces = *freefaces.Last();
+      Array<int> & freeset = *freesets.Elem(fs);
+      Array<threeint> & freesetfaces = *freefaces.Last();
 
       for (ii1 = 1; ii1 <= freeset.Size(); ii1++)
 	for (ii2 = 1; ii2 <= freeset.Size(); ii2++)
@@ -770,7 +770,7 @@ void vnetrule :: LoadRule (istream & ist)
 
   {
     int minn;
-    //    ARRAY<int> pnearness (noldp);
+    //    Array<int> pnearness (noldp);
     pnearness.SetSize (noldp);
 
     for (i = 1; i <= pnearness.Size(); i++)
@@ -859,11 +859,11 @@ void vnetrule :: LoadRule (istream & ist)
   //Table of edges:
   for (fs = 1; fs <= freesets.Size(); fs++)
     {
-      freeedges.Append (new ARRAY<twoint>);
+      freeedges.Append (new Array<twoint>);
       
-      //      ARRAY<int> & freeset = *freesets.Get(fs);
-      ARRAY<twoint> & freesetedges = *freeedges.Last();
-      ARRAY<threeint> & freesetfaces = *freefaces.Get(fs);
+      //      Array<int> & freeset = *freesets.Get(fs);
+      Array<twoint> & freesetedges = *freeedges.Last();
+      Array<threeint> & freesetfaces = *freefaces.Get(fs);
       int k,l;
       INDEX ind;
       

@@ -1,5 +1,5 @@
-#ifndef FILE_ARRAY
-#define FILE_ARRAY
+#ifndef FILE_Array
+#define FILE_Array
 
 /**************************************************************************/
 /* File:   array.hpp                                                      */
@@ -77,7 +77,7 @@ public:
   {
 #ifdef DEBUG
     if (i < 1 || i > size)
-      cout << "ARRAY<" << typeid(T).name() 
+      cout << "Array<" << typeid(T).name() 
 	   << ">::Elem out of range, i = " << i
 	   << ", s = " << size << endl;
 #endif
@@ -90,7 +90,7 @@ public:
   {
 #ifdef DEBUG
     if (i < 1 || i > size)
-      cout << "ARRAY<" << typeid(T).name() << ">::Get out of range, i = " << i
+      cout << "Array<" << typeid(T).name() << ">::Get out of range, i = " << i
 	   << ", s = " << size << endl;
 #endif
 
@@ -102,7 +102,7 @@ public:
   { 
 #ifdef DEBUG
     if (i < 1 || i > size)
-      cout << "ARRAY<" << typeid(T).name() << ">::Set out of range, i = " << i
+      cout << "Array<" << typeid(T).name() << ">::Set out of range, i = " << i
 	   << ", s = " << size << endl;
 #endif
 
@@ -170,13 +170,13 @@ inline ostream & operator<< (ostream & s, const FlatArray<T,BASE> & a)
 /** 
    Dynamic array container.
    
-   ARRAY<T> is an automatically increasing array container.
+   Array<T> is an automatically increasing array container.
    The allocated memory doubles on overflow. 
    Either the container takes care of memory allocation and deallocation,
    or the user provides one block of data.
 */
 template <class T, int BASE = 0> 
-class ARRAY : public FlatArray<T, BASE>
+class Array : public FlatArray<T, BASE>
 {
 protected:
   /// physical size of array
@@ -187,7 +187,7 @@ protected:
 public:
 
   /// Generate array of logical and physical size asize
-  explicit ARRAY(int asize = 0)
+  explicit Array(int asize = 0)
     : FlatArray<T, BASE> (asize, asize ? new T[asize] : 0)
   {
     allocsize = asize; 
@@ -195,7 +195,7 @@ public:
   }
 
   /// Generate array in user data
-  ARRAY(int asize, T* adata)
+  Array(int asize, T* adata)
     : FlatArray<T, BASE> (asize, adata)
   {
     allocsize = asize; 
@@ -203,7 +203,7 @@ public:
   }
 
   /// array copy 
-  explicit ARRAY (const ARRAY<T> & a2)
+  explicit Array (const Array<T> & a2)
     : FlatArray<T, BASE> (a2.Size(), a2.Size() ? new T[a2.Size()] : 0)
   {
     allocsize = this->size;
@@ -215,7 +215,7 @@ public:
 
 
   /// if responsible, deletes memory
-  ~ARRAY()
+  ~Array()
   {
     if (ownmem)
       delete [] this->data;
@@ -273,7 +273,7 @@ public:
   /// Delete element i (0-based). Move last element to position i.
   void Delete (int i)
   {
-#ifdef CHECK_ARRAY_RANGE
+#ifdef CHECK_Array_RANGE
     RangeCheck (i+1);
 #endif
 
@@ -286,7 +286,7 @@ public:
   /// Delete element i (1-based). Move last element to position i.
   void DeleteElement (int i)
   {
-#ifdef CHECK_ARRAY_RANGE
+#ifdef CHECK_Array_RANGE
     RangeCheck (i);
 #endif
 
@@ -310,14 +310,14 @@ public:
   }
 
   /// Fill array with val
-  ARRAY & operator= (const T & val)
+  Array & operator= (const T & val)
   {
     FlatArray<T, BASE>::operator= (val);
     return *this;
   }
 
   /// array copy
-  ARRAY & operator= (const ARRAY & a2)
+  Array & operator= (const Array & a2)
   {
     SetSize (a2.Size());
     for (int i = BASE; i < this->size+BASE; i++)
@@ -326,7 +326,7 @@ public:
   }
 
   /// array copy
-  ARRAY & operator= (const FlatArray<T> & a2)
+  Array & operator= (const FlatArray<T> & a2)
   {
     SetSize (a2.Size());
     for (int i = BASE; i < this->size+BASE; i++)
@@ -368,7 +368,7 @@ private:
 
 
 template <class T, int S> 
-class ArrayMem : public ARRAY<T>
+class ArrayMem : public Array<T>
 {
   // T mem[S];     // Intel C++ calls dummy constructor
   // char mem[S*sizeof(T)];
@@ -376,7 +376,7 @@ class ArrayMem : public ARRAY<T>
 public:
   /// Generate array of logical and physical size asize
   explicit ArrayMem(int asize = 0)
-    : ARRAY<T> (S, static_cast<T*> (static_cast<void*>(&mem[0])))
+    : Array<T> (S, static_cast<T*> (static_cast<void*>(&mem[0])))
   {
     this->size = asize;
     if (asize > S)
@@ -389,7 +389,7 @@ public:
 
   ArrayMem & operator= (const T & val)  
   {
-    ARRAY<T>::operator= (val);
+    Array<T>::operator= (val);
     return *this;
   }
 };
@@ -614,7 +614,7 @@ inline void BubbleSort (FlatArray<T> & data, FlatArray<S> & slave)
 
 template <class T> 
 void Intersection (const FlatArray<T> & in1, const FlatArray<T> & in2, 
-		   ARRAY<T> & out)
+		   Array<T> & out)
 {
   out.SetSize(0);
   for(int i=0; i<in1.Size(); i++)
@@ -623,7 +623,7 @@ void Intersection (const FlatArray<T> & in1, const FlatArray<T> & in2,
 }
 template <class T> 
 void Intersection (const FlatArray<T> & in1, const FlatArray<T> & in2, const FlatArray<T> & in3,
-		   ARRAY<T> & out)
+		   Array<T> & out)
 {
   out.SetSize(0);
   for(int i=0; i<in1.Size(); i++)

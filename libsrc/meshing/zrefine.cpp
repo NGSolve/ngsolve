@@ -215,7 +215,7 @@ namespace netgen
   {
     int i, j;
     int nseg = mesh.GetNSeg();
-    ARRAY<int> edgesonpoint(mesh.GetNP());
+    Array<int> edgesonpoint(mesh.GetNP());
     for (i = 1; i <= mesh.GetNP(); i++)
       edgesonpoint.Elem(i) = 0;
 
@@ -255,9 +255,9 @@ namespace netgen
 
     // markers for z-refinement:  p1, p2, levels  
     // p1-p2 is an edge to be refined
-    ARRAY<INDEX_3> ref_uniform;
-    ARRAY<INDEX_3> ref_singular;
-    ARRAY<INDEX_4 > ref_slices;
+    Array<INDEX_3> ref_uniform;
+    Array<INDEX_3> ref_singular;
+    Array<INDEX_4 > ref_slices;
 
     BitArray first_id(geom->identifications.Size());
     first_id.Set();
@@ -291,7 +291,7 @@ namespace netgen
 		    }
 		  else
 		    {   
-		      //const ARRAY<double> & slices = csid->GetSlices();
+		      //const Array<double> & slices = csid->GetSlices();
 		      INDEX_4 i4;
 		      i4[0] = pair.I1();
 		      i4[1] = pair.I2();
@@ -305,7 +305,7 @@ namespace netgen
 
   
   
-    ARRAY<EdgePointGeomInfo> epgi;
+    Array<EdgePointGeomInfo> epgi;
 
     while (1)
       {
@@ -393,7 +393,7 @@ namespace netgen
 		edge.Sort();
 		if (!refedges.Used(edge))
 		  {
-		    const ARRAY<double> & slices = csid->GetSlices();
+		    const Array<double> & slices = csid->GetSlices();
 		    //(*testout) << "idnr " << idnr << " i " << i << endl;
 		    //(*testout) << "slices " << slices << endl;
 		    double slicefac = slices.Get(slicenr);

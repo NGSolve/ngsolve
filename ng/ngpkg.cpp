@@ -111,8 +111,8 @@ namespace netgen
 #ifdef SOCKETS
   AutoPtr<ClientSocket> clientsocket;
   ServerSocketManager serversocketmanager;
-  //ARRAY< AutoPtr < ServerInfo > > servers;
-  ARRAY< ServerInfo* > servers;
+  //Array< AutoPtr < ServerInfo > > servers;
+  Array< ServerInfo* > servers;
   AutoPtr<ServerSocketUserNetgen> serversocketusernetgen;
 #endif
 
@@ -971,7 +971,7 @@ namespace netgen
     tcl_const char * name = argv[1];
     tcl_const char * value = argv[2];
 
-    ARRAY<double> coeffs;
+    Array<double> coeffs;
 
 
     cout << "Set primitive data, name = " << name
@@ -1023,7 +1023,7 @@ namespace netgen
 
     const char * classname;
 
-    ARRAY<double> coeffs;
+    Array<double> coeffs;
 
     geometry->GetSolid (name)->GetPrimitive()->GetPrimitiveData (classname, coeffs);
 
@@ -3632,8 +3632,8 @@ namespace netgen
 			    int argc, tcl_const char *argv[])
   {
     SetVisualScene(interp);
-    ARRAY<double> alpha;
-    ARRAY<Vec3d> vec;
+    Array<double> alpha;
+    Array<Vec3d> vec;
 
     for(int i=1; i<argc; i+=4)
       {

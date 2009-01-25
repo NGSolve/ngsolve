@@ -165,16 +165,16 @@ class AdFront2
 
 
   ///
-  ARRAY<FrontPoint2> points;  /// front points
-  ARRAY<FrontLine> lines;     /// front lines
+  Array<FrontPoint2> points;  /// front points
+  Array<FrontLine> lines;     /// front lines
 
   Box3d boundingbox;
   Box3dTree linesearchtree;       /// search tree for lines
   Point3dTree pointsearchtree;    /// search tree for points
   Point3dTree cpointsearchtree;   /// search tree for cone points (not used ???)
 
-  ARRAY<int> delpointl;     /// list of deleted front points
-  ARRAY<int> dellinel;      /// list of deleted front lines
+  Array<int> delpointl;     /// list of deleted front points
+  Array<int> dellinel;      /// list of deleted front lines
 
   int nfl;                  /// number of front lines;
   INDEX_2_HASHTABLE<int> * allflines; /// all front lines ever have been
@@ -191,7 +191,7 @@ public:
   ~AdFront2 ();
 
   ///
-  // void GetPoints (ARRAY<Point<3> > & apoints) const;
+  // void GetPoints (Array<Point<3> > & apoints) const;
   ///
   void Print (ostream & ost) const;
 
@@ -210,11 +210,11 @@ public:
 
   ///
   int GetLocals (int baseline, 
-		 ARRAY<Point3d> & locpoints,
-		 ARRAY<MultiPointGeomInfo> & pgeominfo,
-                 ARRAY<INDEX_2> & loclines,   // local index
-                 ARRAY<int> & pindex,
-                 ARRAY<int> & lindex,
+		 Array<Point3d> & locpoints,
+		 Array<MultiPointGeomInfo> & pgeominfo,
+                 Array<INDEX_2> & loclines,   // local index
+                 Array<int> & pindex,
+                 Array<int> & lindex,
                  double xh);
 
   ///

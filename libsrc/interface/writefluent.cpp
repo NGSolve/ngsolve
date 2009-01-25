@@ -65,9 +65,9 @@ void WriteFluentFormat (const Mesh & mesh,
 
   Element2d face, face2;
   int i2, j2;
-  ARRAY<INDEX_3> surfaceelp;
-  ARRAY<int> surfaceeli;
-  ARRAY<int> locels;
+  Array<INDEX_3> surfaceelp;
+  Array<int> surfaceeli;
+  Array<int> locels;
 
   //no cells=no tets
   //no faces=2*tets

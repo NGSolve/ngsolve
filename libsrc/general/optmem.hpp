@@ -19,7 +19,7 @@ private:
   ///
   void * freelist;
   ///
-  ARRAY<char*> bablocks;
+  Array<char*> bablocks;
 public:
   ///
   BlockAllocator (unsigned asize, unsigned ablocks = 100);

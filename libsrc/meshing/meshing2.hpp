@@ -31,9 +31,9 @@ class Meshing2
   /// the current advancing front
   AdFront2 * adfront;
   /// rules for mesh generation
-  ARRAY<netrule*> rules;
+  Array<netrule*> rules;
   /// statistics
-  ARRAY<int> ruleused, canuse, foundmap;
+  Array<int> ruleused, canuse, foundmap;
   /// 
   Box<3> boundingbox;
   ///
@@ -119,21 +119,21 @@ protected:
   /*
     get (projected) boundary of current chart
    */
-  virtual void GetChartBoundary (ARRAY<Point2d> & points, 
-				 ARRAY<Point3d> & points3d,
-				 ARRAY<INDEX_2> & lines, double p) const;
+  virtual void GetChartBoundary (Array<Point2d> & points, 
+				 Array<Point3d> & points3d,
+				 Array<INDEX_2> & lines, double p) const;
 
   virtual double Area () const;
 
 
 /** Applies 2D rules.
  Tests all 2D rules */
-  int ApplyRules (ARRAY<Point2d> & lpoints, 
-		  ARRAY<int> & legalpoints,
+  int ApplyRules (Array<Point2d> & lpoints, 
+		  Array<int> & legalpoints,
 		  int maxlegalpoint,
-		  ARRAY<INDEX_2> & llines,
+		  Array<INDEX_2> & llines,
 		  int maxlegelline,
-		  ARRAY<Element2d> & elements, ARRAY<INDEX> & dellines,
+		  Array<Element2d> & elements, Array<INDEX> & dellines,
 		  int tolerance);
   
 

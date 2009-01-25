@@ -5,7 +5,7 @@
 /**************************************************************************/
 
 /* 
-   Abstract data type ARRAY
+   Abstract data type Array
 */
 
 

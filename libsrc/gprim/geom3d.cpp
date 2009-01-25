@@ -698,8 +698,8 @@ void referencetransform :: ToPlain (const Point3d & p, Point3d & pp) const
   pp.Z() = (ez_h * v);
 }
 
-void referencetransform :: ToPlain (const ARRAY<Point3d> & p,
-                                    ARRAY<Point3d> & pp) const
+void referencetransform :: ToPlain (const Array<Point3d> & p,
+                                    Array<Point3d> & pp) const
 {
   Vec3d v;
   int i;

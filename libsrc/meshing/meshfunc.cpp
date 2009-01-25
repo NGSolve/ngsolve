@@ -20,7 +20,7 @@ namespace netgen
     int cntsteps; 
 
 
-    ARRAY<INDEX_2> connectednodes;
+    Array<INDEX_2> connectednodes;
 
     mesh3d.Compress();
 
@@ -219,7 +219,7 @@ namespace netgen
 	    //	  Meshing3 meshing(rulefile);
 	    Meshing3 meshing(tetrules);
       
-	    ARRAY<int, PointIndex::BASE> glob2loc(mesh3d.GetNP());
+	    Array<int, PointIndex::BASE> glob2loc(mesh3d.GetNP());
 	    glob2loc = -1;
             
 	    for (pi = PointIndex::BASE; 

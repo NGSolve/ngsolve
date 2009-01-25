@@ -139,7 +139,7 @@ void WriteAbaqusFormat (const Mesh & mesh,
 
       int masternode(0);
 
-      ARRAY<INDEX_2> pairs;
+      Array<INDEX_2> pairs;
       BitArray master(np), help(np);
       master.Set();
       for (i = 1; i <= 3; i++)
@@ -158,7 +158,7 @@ void WriteAbaqusFormat (const Mesh & mesh,
 
       cout << "masternode = " << masternode << " = "
 	   << mesh.Point(masternode) << endl;
-      ARRAY<int> slaves(3);
+      Array<int> slaves(3);
       for (i = 1; i <= 3; i++)
 	{
 	  mesh.GetIdentifications().GetPairs (i, pairs);

@@ -129,7 +129,7 @@ namespace netgen
   void MeshQuality2d (const Mesh & mesh)
   {
     int ncl = 20, cl;
-    ARRAY<INDEX> incl(ncl);
+    Array<INDEX> incl(ncl);
     INDEX i;
     SurfaceElementIndex sei;
     double qual;
@@ -529,7 +529,7 @@ namespace netgen
 
   
   /*
-    double CalcVolume (const ARRAY<Point3d> & points,
+    double CalcVolume (const Array<Point3d> & points,
     const Element & el)
     {
     Vec3d v1 = points.Get(el.PNum(2)) - 
@@ -543,8 +543,8 @@ namespace netgen
     }  
   */
 
-  double CalcVolume (const ARRAY<Point3d> & points, 
-		     const ARRAY<Element> & elements)
+  double CalcVolume (const Array<Point3d> & points, 
+		     const Array<Element> & elements)
   {
     double vol;
     Vec3d v1, v2, v3;
@@ -563,11 +563,11 @@ namespace netgen
   
   
 
-  void MeshQuality3d (const Mesh & mesh, ARRAY<int> * inclass)
+  void MeshQuality3d (const Mesh & mesh, Array<int> * inclass)
   { 
     int ncl = 20;
     signed int cl;
-    ARRAY<INDEX> incl(ncl);
+    Array<INDEX> incl(ncl);
     INDEX i;
     double qual;
     double sum = 0;
@@ -686,7 +686,7 @@ namespace netgen
 #ifdef OLD
   void Save2DMesh (
 		   const Mesh & mesh2d,
-		   const ARRAY<SplineSegment *> * splines,
+		   const Array<SplineSegment *> * splines,
 		   ostream & outfile)
 
   {

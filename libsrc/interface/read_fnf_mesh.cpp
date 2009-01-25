@@ -53,7 +53,7 @@ namespace netgen
     string name;
     string placement;
     string valuetype;
-    ARRAY<double> places;
+    Array<double> places;
   };
 
 
@@ -173,7 +173,7 @@ namespace netgen
  
             else if (token == "MATERIALS")
               {
-                ARRAY<double> young_modulus, poisson_ratio, mass_density;
+                Array<double> young_modulus, poisson_ratio, mass_density;
 
                 while (1)
                   {
@@ -246,7 +246,7 @@ namespace netgen
                         string propid;
                         sbuf >> elnr >> def >> ch;
                         sbuf >> typid >> matid >> propid;
-                        ARRAY<int> pnums;
+                        Array<int> pnums;
                         while (1)
                           {
                             int pn;
@@ -287,7 +287,7 @@ namespace netgen
                         sbuf >> nr >> kw >> ch;
                         if (kw == "NODES")
                           {
-                            ARRAY<int> enums;
+                            Array<int> enums;
                             while (1)
                               {
                                 int en;
@@ -311,7 +311,7 @@ namespace netgen
                         sbuf >> nr >> kw >> ch;
                         if (kw == "FACES")
                           {
-                            ARRAY<int> fnums;
+                            Array<int> fnums;
                             while (1)
                               {
                                 int fn;
@@ -354,7 +354,7 @@ namespace netgen
  
             else if (token == "LOADS")
               {
-                ARRAY<LoadType*> loadtypes;
+                Array<LoadType*> loadtypes;
 
                 while (1)
                   {

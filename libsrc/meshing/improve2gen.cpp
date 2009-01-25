@@ -9,11 +9,11 @@ namespace netgen
   class ImprovementRule
   {
   public:
-    ARRAY<Element2d> oldels;
-    ARRAY<Element2d> newels;
-    ARRAY<INDEX_2> deledges;
-    ARRAY<int> incelsonnode;
-    ARRAY<int> reused;
+    Array<Element2d> oldels;
+    Array<Element2d> newels;
+    Array<INDEX_2> deledges;
+    Array<int> incelsonnode;
+    Array<int> reused;
     int bonus;
     int onp;
   };
@@ -50,11 +50,11 @@ namespace netgen
     bool ok;
     int olddef, newdef;
 
-    ARRAY<ImprovementRule*> rules;
-    ARRAY<SurfaceElementIndex> elmap;
-    ARRAY<int> elrot;
-    ARRAY<PointIndex> pmap;
-    ARRAY<PointGeomInfo> pgi;
+    Array<ImprovementRule*> rules;
+    Array<SurfaceElementIndex> elmap;
+    Array<int> elrot;
+    Array<PointIndex> pmap;
+    Array<PointGeomInfo> pgi;
 
     int surfnr = mesh.GetFaceDescriptor (faceindex).SurfNr();
   
@@ -195,8 +195,8 @@ namespace netgen
 
 
 
-    ARRAY<int> mapped(rules.Size());
-    ARRAY<int> used(rules.Size());
+    Array<int> mapped(rules.Size());
+    Array<int> used(rules.Size());
     used = 0;
     mapped = 0;
 
@@ -236,7 +236,7 @@ namespace netgen
 
   
     TABLE<int,PointIndex::BASE> elonnode(np);
-    ARRAY<int,PointIndex::BASE> nelonnode(np);
+    Array<int,PointIndex::BASE> nelonnode(np);
     TABLE<SurfaceElementIndex> nbels(ne);
 
     nelonnode = -4;

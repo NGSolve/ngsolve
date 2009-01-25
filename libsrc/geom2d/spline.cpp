@@ -282,7 +282,7 @@ namespace netgen
   */
 
   void CalcPartition (double l, double h, double r1, double r2,
-		      double ra, double elto0, ARRAY<double> & points)
+		      double ra, double elto0, Array<double> & points)
   {
     int i, j, n, nel;
     double sum, t, dt, fun, fperel, oldf, f;

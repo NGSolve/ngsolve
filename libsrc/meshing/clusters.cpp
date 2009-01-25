@@ -38,7 +38,7 @@ void AnisotropicClusters ::  Update()
 
   cluster_reps.SetSize (nv+ned+nfa+ne);
   
-  ARRAY<int> nnums, ednums, fanums;
+  Array<int> nnums, ednums, fanums;
   int changed;
 
   for (i = 1; i <= cluster_reps.Size(); i++)

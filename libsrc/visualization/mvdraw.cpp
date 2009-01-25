@@ -83,8 +83,8 @@ namespace netgen
   extern STLGeometry * stlgeometry;
   extern AutoPtr<SplineGeometry2d> geometry2d;
   extern AutoPtr<Mesh> mesh;
-  extern ARRAY<SpecialPoint> specpoints;
-  extern ARRAY<Box<3> > boxes;
+  extern Array<SpecialPoint> specpoints;
+  extern Array<Box<3> > boxes;
 
   VisualScene :: VisualScene ()
   {
@@ -182,7 +182,7 @@ namespace netgen
   }
 
 
-  void VisualScene :: ArbitraryRotation (const ARRAY<double> & alpha, const ARRAY<Vec3d> & vec)
+  void VisualScene :: ArbitraryRotation (const Array<double> & alpha, const Array<Vec3d> & vec)
   {
     glPushMatrix();
 
@@ -209,8 +209,8 @@ namespace netgen
 
   void VisualScene :: ArbitraryRotation (const double alpha, const Vec3d & vec)
   {
-    ARRAY<double> a(1); a[0] = alpha;
-    ARRAY<Vec3d> v(1); v[0] = vec;
+    Array<double> a(1); a[0] = alpha;
+    Array<Vec3d> v(1); v[0] = vec;
 
     ArbitraryRotation(a,v);
   } 
@@ -918,7 +918,7 @@ namespace netgen
 	    cout << "isdirect = " << glXIsDirect ( dpy, ctx ) << endl;                  
 	    cout << "extensionstring = " << glXQueryExtensionsString( dpy, 0 ) << endl;
 
-	    ARRAY<MPI_Request> request(ntasks);
+	    Array<MPI_Request> request(ntasks);
 	    MPI_Status status;
 	    for ( int dest = 1; dest < ntasks; dest++ )
 	      {
@@ -1010,7 +1010,7 @@ namespace netgen
     glColor3f (0, 0, 1);
   
 
-    ARRAY<Point<2> > points, otherpoints;
+    Array<Point<2> > points, otherpoints;
 
     for (int i = 1; i <= geometry2d->GetSplines().Size(); i++)
       {

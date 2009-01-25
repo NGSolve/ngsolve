@@ -84,7 +84,7 @@ AdFront3 :: ~AdFront3 ()
   delete connectedpairs;
 }
 
-void AdFront3 :: GetPoints (ARRAY<Point<3> > & apoints) const
+void AdFront3 :: GetPoints (Array<Point<3> > & apoints) const
 {
   for (PointIndex pi = PointIndex::BASE; 
        pi < points.Size()+PointIndex::BASE; pi++)
@@ -266,7 +266,7 @@ void AdFront3 :: CreateTrees ()
 
 
 void AdFront3 :: GetIntersectingFaces (const Point<3> & pmin, const Point<3> & pmax, 
-				       ARRAY<int> & ifaces) const
+				       Array<int> & ifaces) const
 {
   facetree -> GetIntersecting (pmin, pmax, ifaces);
 }
@@ -357,7 +357,7 @@ void AdFront3 :: RebuildInternalTables ()
     if (usecl.Test(i))
       cntcl++;
 
-  ARRAY<double, PointIndex::BASE> clvol (np);
+  Array<double, PointIndex::BASE> clvol (np);
   clvol = 0.0;
 
   for (int i = 1; i <= faces.Size(); i++)
@@ -486,10 +486,10 @@ int AdFront3 :: SelectBaseElement ()
 
 
 int AdFront3 :: GetLocals (int fstind,
-			   ARRAY<Point3d > & locpoints,
-			   ARRAY<MiniElement2d> & locfaces,   // local index
-			   ARRAY<PointIndex> & pindex,
-			   ARRAY<INDEX> & findex,
+			   Array<Point3d > & locpoints,
+			   Array<MiniElement2d> & locfaces,   // local index
+			   Array<PointIndex> & pindex,
+			   Array<INDEX> & findex,
 			   INDEX_2_HASHTABLE<int> & getconnectedpairs,
 			   float xh,
 			   float relh,
@@ -511,11 +511,11 @@ int AdFront3 :: GetLocals (int fstind,
   INDEX pi;
   Point3d midp, p0;
 
-  static ARRAY<int, PointIndex::BASE> invpindex;
+  static Array<int, PointIndex::BASE> invpindex;
   
-  static ARRAY<MiniElement2d> locfaces2;           //all local faces in radius xh
-  static ARRAY<int> locfaces3;           // all faces in outer radius relh
-  static ARRAY<INDEX> findex2;
+  static Array<MiniElement2d> locfaces2;           //all local faces in radius xh
+  static Array<int> locfaces3;           // all faces in outer radius relh
+  static Array<INDEX> findex2;
 
   locfaces2.SetSize(0);
   locfaces3.SetSize(0);
@@ -658,12 +658,12 @@ int AdFront3 :: GetLocals (int fstind,
 
 // returns all points connected with fi
 void AdFront3 :: GetGroup (int fi,
-			   ARRAY<MeshPoint> & grouppoints,
-			   ARRAY<MiniElement2d> & groupelements,
-			   ARRAY<PointIndex> & pindex,
-			   ARRAY<INDEX> & findex) const
+			   Array<MeshPoint> & grouppoints,
+			   Array<MiniElement2d> & groupelements,
+			   Array<PointIndex> & pindex,
+			   Array<INDEX> & findex) const
 {
-  static ARRAY<char> pingroup;
+  static Array<char> pingroup;
   int i, j, changed;
 
   pingroup.SetSize(points.Size());
@@ -699,7 +699,7 @@ void AdFront3 :: GetGroup (int fi,
   while (changed);
 
 
-  static ARRAY<int> invpindex;
+  static Array<int> invpindex;
   invpindex.SetSize (points.Size());
   
 
@@ -825,7 +825,7 @@ bool AdFront3 :: Inside (const Point<3> & p) const
 
 
 int AdFront3 :: SameSide (const Point<3> & lp1, const Point<3> & lp2,
-			  const ARRAY<int> * testfaces) const
+			  const Array<int> * testfaces) const
 {
   int i, ii, cnt;
 
@@ -841,7 +841,7 @@ int AdFront3 :: SameSide (const Point<3> & lp1, const Point<3> & lp2,
   pmin.SetToMin (lp2);
   pmax.SetToMax (lp2);
 
-  static ARRAY<int> aprif;
+  static Array<int> aprif;
   aprif.SetSize(0);
   
   if (!testfaces)

@@ -10,7 +10,7 @@ namespace netgen
 
   EdgeCalculation :: 
   EdgeCalculation (const CSGeometry & ageometry,
-		   ARRAY<SpecialPoint> & aspecpoints)
+		   Array<SpecialPoint> & aspecpoints)
     : geometry(ageometry), specpoints(aspecpoints)
   {
     Box<3> bbox = geometry.BoundingBox();
@@ -44,7 +44,7 @@ namespace netgen
     // add all special points before edge points (important for periodic identification)
     // JS, Jan 2007
     const double di=1e-7*geometry.MaxSize();
-    ARRAY<int> locsearch;
+    Array<int> locsearch;
 
     for (int i = 0; i < specpoints.Size(); i++)
       if (specpoints[i].unconditional)
@@ -91,9 +91,9 @@ namespace netgen
 
   void EdgeCalculation :: CalcEdges1 (double h, Mesh & mesh)
   {
-    ARRAY<int> hsp(specpoints.Size());
-    ARRAY<int> glob2hsp(specpoints.Size());
-    ARRAY<int> startpoints, endpoints;
+    Array<int> hsp(specpoints.Size());
+    Array<int> glob2hsp(specpoints.Size());
+    Array<int> startpoints, endpoints;
 
 
     int pos, ep;
@@ -102,11 +102,11 @@ namespace netgen
     Point<3> p, np; 
     int pi1, s1, s2, s1_orig, s2_orig;
 
-    ARRAY<Point<3> > edgepoints;
-    ARRAY<double> curvelength;
+    Array<Point<3> > edgepoints;
+    Array<double> curvelength;
     int copyedge = 0, copyfromedge = -1, copyedgeidentification = -1;
 
-    ARRAY<int> locsurfind, locind;
+    Array<int> locsurfind, locind;
 
     int checkedcopy = 0;
 
@@ -401,8 +401,8 @@ namespace netgen
 	  }
 
       
-	ARRAY<Segment> refedges;
-	ARRAY<bool> refedgesinv;
+	Array<Segment> refedges;
+	Array<bool> refedgesinv;
       
 
 	AnalyzeEdge (s1_orig, s2_orig, s1, s2, pos, layer,
@@ -505,7 +505,7 @@ namespace netgen
     SegmentIndex si;
     PointIndex pi;
 
-    ARRAY<int> osedges(cntedge);
+    Array<int> osedges(cntedge);
     INDEX_2_HASHTABLE<int> osedgesht (cntedge+1);
 
     osedges = 2;
@@ -634,17 +634,17 @@ namespace netgen
 
   void EdgeCalculation :: 
   FollowEdge (int pi1, int & ep, int & pos,
-	      const ARRAY<int> & hsp,
+	      const Array<int> & hsp,
 	      double h, const Mesh & mesh,
-	      ARRAY<Point<3> > & edgepoints,
-	      ARRAY<double> & curvelength)
+	      Array<Point<3> > & edgepoints,
+	      Array<double> & curvelength)
   {
     int s1, s2, s1_rep, s2_rep;
     double len, steplen, cursteplen, loch;
     Point<3> p, np, pnp;
     Vec<3> a1, a2, t;
 
-    ARRAY<int> locind;
+    Array<int> locind;
 
     double size = geometry.MaxSize();  
     double epspointdist2 = size * 1e-6;
@@ -862,9 +862,9 @@ namespace netgen
 
   void EdgeCalculation :: 
   AnalyzeEdge (int s1, int s2, int s1_rep, int s2_rep, int pos, int layer,
-	       const ARRAY<Point<3> > & edgepoints,
-	       ARRAY<Segment> & refedges,
-	       ARRAY<bool> & refedgesinv)
+	       const Array<Point<3> > & edgepoints,
+	       Array<Segment> & refedges,
+	       Array<bool> & refedgesinv)
   {
     int j, k, l;
     int hi;
@@ -872,9 +872,9 @@ namespace netgen
     Vec<3> t, a1, a2, m, n;
     Segment seg;
     Solid * locsol;
-    ARRAY<int> locsurfind, locsurfind2;
+    Array<int> locsurfind, locsurfind2;
 
-    ARRAY<int> edges_priority;
+    Array<int> edges_priority;
 
     double size = geometry.MaxSize();
     bool debug = 0;
@@ -1020,7 +1020,7 @@ namespace netgen
 	    //int k;
 	    double eps = 1e-8*size;
 
-	    ARRAY<bool> pre_ok(2);
+	    Array<bool> pre_ok(2);
 
  	    do
  	      {
@@ -1223,10 +1223,10 @@ namespace netgen
 
 
   void EdgeCalculation :: 
-  StoreEdge (const ARRAY<Segment> & refedges,
-	     const ARRAY<bool> & refedgesinv,
-	     const ARRAY<Point<3> > & edgepoints,
-	     const ARRAY<double> & curvelength,
+  StoreEdge (const Array<Segment> & refedges,
+	     const Array<bool> & refedgesinv,
+	     const Array<Point<3> > & edgepoints,
+	     const Array<double> & curvelength,
 	     int layer,
 	     Mesh & mesh)
   {
@@ -1272,7 +1272,7 @@ namespace netgen
 
     const double di=1e-7*geometry.MaxSize();
 
-    ARRAY<int> locsearch;
+    Array<int> locsearch;
     meshpoint_tree -> GetIntersecting (p-Vec<3> (di,di,di),
 				       p+Vec<3> (di,di,di), locsearch);
     if (locsearch.Size())
@@ -1395,10 +1395,10 @@ namespace netgen
 
 
   void EdgeCalculation :: 
-  StoreShortEdge (const ARRAY<Segment> & refedges,
-		  const ARRAY<bool> & refedgesinv,
-		  const ARRAY<Point<3> > & edgepoints,
-		  const ARRAY<double> & curvelength,
+  StoreShortEdge (const Array<Segment> & refedges,
+		  const Array<bool> & refedgesinv,
+		  const Array<Point<3> > & edgepoints,
+		  const Array<double> & curvelength,
 		  int layer,
 		  Mesh & mesh)
   {
@@ -1526,8 +1526,8 @@ namespace netgen
 
 
   void EdgeCalculation :: 
-  CopyEdge (const ARRAY<Segment> & refedges,
-	    const ARRAY<bool> & refedgesinv,
+  CopyEdge (const Array<Segment> & refedges,
+	    const Array<bool> & refedgesinv,
 	    int copyfromedge, 
 	    const Point<3> & fromstart, const Point<3> & fromend,
 	    const Point<3> & tostart, const Point<3> & toend,
@@ -1679,7 +1679,7 @@ namespace netgen
     Point<3> p1, p2;
     Vec<3> nv, tv;
     Solid * tansol;
-    ARRAY<int> tansurfind;
+    Array<int> tansurfind;
     //  const Solid * sol;
 
     double size = geometry.MaxSize();

@@ -21,11 +21,11 @@ OLD IMPLEMENTATION, NOT USED ANYMORE!
 
 /// 
 extern void LoadBoundarySplines (const char * filename,
-				 ARRAY<GeomPoint2d> & geompoints,
-				 ARRAY<SplineSegment*> & splines, 
+				 Array<GeomPoint2d> & geompoints,
+				 Array<SplineSegment*> & splines, 
 				 double & elto0);
 ///
-extern void PartitionBoundary (const ARRAY<SplineSegment*> & splines,
+extern void PartitionBoundary (const Array<SplineSegment*> & splines,
 			       double h, double elto0,
 			       Mesh & mesh2d);
 
@@ -34,8 +34,8 @@ class CSGScanner;
 
 class SplineGeometry2d
 {
-  ARRAY<GeomPoint2d> geompoints;
-  ARRAY<SplineSegment*> splines;
+  Array<GeomPoint2d> geompoints;
+  Array<SplineSegment*> splines;
   double elto0;
 
 
@@ -54,7 +54,7 @@ public:
 
   void CopyEdgeMesh (int from, int to, Mesh & mesh2d, Point3dTree & searchtree);
 
-  const ARRAY<SplineSegment*> & GetSplines () const
+  const Array<SplineSegment*> & GetSplines () const
   { return splines; }
 
   int GetNSplines (void) const { return splines.Size(); }
@@ -85,7 +85,7 @@ public:
 			    const double reffac = 1.,
 			    const bool hprefleft = false, const bool hprefright = false,
 			    const int copyfrom = -1);
-  void AppendDiscretePointsSegment (const ARRAY< Point<2> > & points, 
+  void AppendDiscretePointsSegment (const Array< Point<2> > & points, 
 				    const int leftdomain, const int rightdomain, const int bc = -1,
 				    const double reffac = 1.,
 				    const bool hprefleft = false, const bool hprefright = false,

@@ -237,7 +237,7 @@ public:
 				     double eps) const = 0;
 
   virtual void GetTangentialSurfaceIndices (const Point<3> & p, 
-					    ARRAY<int> & surfind, double eps) const;
+					    Array<int> & surfind, double eps) const;
 
   virtual INSOLID_TYPE VecInSolid (const Point<3> & p,
 				   const Vec<3> & v,
@@ -263,15 +263,15 @@ public:
 				    double eps) const;
 
   virtual void GetTangentialVecSurfaceIndices (const Point<3> & p, const Vec<3> & v,
-					       ARRAY<int> & surfind, double eps) const;
+					       Array<int> & surfind, double eps) const;
 
   virtual void GetTangentialVecSurfaceIndices2 (const Point<3> & p, const Vec<3> & v1, const Vec<3> & v2,
-						ARRAY<int> & surfind, double eps) const;
+						Array<int> & surfind, double eps) const;
 
 
-  virtual void CalcSpecialPoints (ARRAY<Point<3> > & /* pts */) const { ; }
+  virtual void CalcSpecialPoints (Array<Point<3> > & /* pts */) const { ; }
   virtual void AnalyzeSpecialPoint (const Point<3> & /* pt */, 
-				    ARRAY<Point<3> > & /* specpts */) const { ; }
+				    Array<Point<3> > & /* specpts */) const { ; }
   virtual Vec<3> SpecialPointTangentialVector (const Point<3> & /* p */, 
                                                int /* s1 */, int /* s2 */) const 
   { return Vec<3> (0,0,0); }
@@ -281,8 +281,8 @@ public:
   virtual Surface & GetSurface (int i = 0) = 0;
   virtual const Surface & GetSurface (int i = 0) const = 0;
 
-  ARRAY<int> surfaceids;
-  ARRAY<int> surfaceactive;
+  Array<int> surfaceids;
+  Array<int> surfaceactive;
 
   int GetSurfaceId (int i = 0) const;
   void SetSurfaceId (int i, int id);
@@ -290,8 +290,8 @@ public:
   virtual int SurfaceInverted (int /* i */ = 0) const { return 0; }
 
   virtual void GetPrimitiveData (const char *& classname, 
-				 ARRAY<double> & coeffs) const;
-  virtual void SetPrimitiveData (ARRAY<double> & coeffs);
+				 Array<double> & coeffs) const;
+  virtual void SetPrimitiveData (Array<double> & coeffs);
   static Primitive * CreatePrimitive (const char * classname);
 
 

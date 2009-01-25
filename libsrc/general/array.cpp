@@ -1,5 +1,5 @@
-#ifndef FILE_NGSTD_ARRAYCPP
-#define FILE_NGSTD_ARRAYCPP
+#ifndef FILE_NGSTD_ArrayCPP
+#define FILE_NGSTD_ArrayCPP
 // necessary for SGI ????
 
 /**************************************************************************/
@@ -9,7 +9,7 @@
 /**************************************************************************/
 
 /* 
-   Abstract data type ARRAY
+   Abstract data type Array
 */
 
 #include <mystdlib.h>
@@ -22,7 +22,7 @@ namespace netgen
   //using namespace netgen;
 
 #ifdef NONE  
-  void BASE_ARRAY :: ReSize (int minsize, int elementsize)
+  void BASE_Array :: ReSize (int minsize, int elementsize)
   {
     cout << "resize, minsize = " << minsize << endl;
 
@@ -55,13 +55,13 @@ namespace netgen
   
   
   
-  void BASE_ARRAY :: RangeCheck (int i) const
+  void BASE_Array :: RangeCheck (int i) const
   {
     if (i < 0 || i >= actsize)
       throw ArrayRangeException ();
   }
   
-  void BASE_ARRAY :: CheckNonEmpty () const
+  void BASE_Array :: CheckNonEmpty () const
   {
     if (!actsize)
       {

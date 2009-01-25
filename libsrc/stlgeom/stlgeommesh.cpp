@@ -12,7 +12,7 @@
 
 namespace netgen
 {
-int EdgeUsed(int p1, int p2, ARRAY<INDEX_2>& edges, INDEX_2_HASHTABLE<int>& hashtab)
+int EdgeUsed(int p1, int p2, Array<INDEX_2>& edges, INDEX_2_HASHTABLE<int>& hashtab)
 {
   if (p1 > p2) {swap (p1,p2);}
 
@@ -41,9 +41,9 @@ Point<3> STLGeometry :: PointBetween(const Point<3> & ap1, int t1,
   TABLE<int> edgepointorigines;
   TABLE<int> edgepointoriginps;
 
-  ARRAY<int> edgetrigs;
-  ARRAY<INDEX_2> edgepointnums;
-  ARRAY<int> edgetriglocinds;
+  Array<int> edgetrigs;
+  Array<INDEX_2> edgepointnums;
+  Array<int> edgetriglocinds;
 
   int size = 3*GetNT();
   INDEX_2_HASHTABLE<int> hashtab(size);
@@ -59,8 +59,8 @@ Point<3> STLGeometry :: PointBetween(const Point<3> & ap1, int t1,
   edgepointnums.SetSize(size);
   edgetriglocinds.SetSize(size);
 
-  ARRAY<int> edgelist1;
-  ARRAY<int> edgelist2;
+  Array<int> edgelist1;
+  Array<int> edgelist2;
 
   edgelist1.SetSize(0);
   edgelist2.SetSize(0);
@@ -238,7 +238,7 @@ Point<3> STLGeometry :: PointBetween(const Point<3> & ap1, int t1,
 
   if (!endpointorigine) {PrintSysError("No connection found!");}
 
-  ARRAY<Point3d> plist;
+  Array<Point3d> plist;
 
   plist.Append(ap2);
   int laste = endpointorigine;
@@ -302,9 +302,9 @@ void STLGeometry :: PrepareSurfaceMeshing()
     {meshcharttrigs.Elem(i) = 0;}
 }
 
-void STLGeometry::GetMeshChartBoundary (ARRAY<Point2d > & apoints,
-					ARRAY<Point3d > & points3d,
-					ARRAY<INDEX_2> & alines, double h)
+void STLGeometry::GetMeshChartBoundary (Array<Point2d > & apoints,
+					Array<Point3d > & points3d,
+					Array<INDEX_2> & alines, double h)
 {
   int i, j;
   twoint seg, newseg;
@@ -406,7 +406,7 @@ void STLGeometry :: SelectChartOfPoint (const Point<3> & p)
 {
   int i, ii;
 
-  ARRAY<int> trigsinbox;
+  Array<int> trigsinbox;
   
   Box<3> box(p,p);
   box.Increase (1e-6);
@@ -465,7 +465,7 @@ void STLGeometry :: ToPlane (const Point<3> & locpoint, int * trigs,
       
       else
 	{
-	  ARRAY<int> trigsinbox;
+	  Array<int> trigsinbox;
 
 	  if (!geomsearchtreeon)
 	    {
@@ -476,7 +476,7 @@ void STLGeometry :: ToPlane (const Point<3> & locpoint, int * trigs,
 	    }
 	  else
 	    {
-	      ARRAY<int> trigsinbox2;
+	      Array<int> trigsinbox2;
 	      Box<3> box(locpoint, locpoint);
 	      box.Increase (range);
 	      GetTrianglesInBox (box, trigsinbox2);
@@ -740,7 +740,7 @@ void STLGeometry :: RestrictLocalHCurv(class Mesh & mesh, double gh)
 
   if (stlparam.resthatlasenable)
     {
-      ARRAY<double> minh; //minimales h pro punkt
+      Array<double> minh; //minimales h pro punkt
       minh.SetSize(GetNP());
       for (i = 1; i <= GetNP(); i++)
 	{
@@ -844,7 +844,7 @@ void STLGeometry :: RestrictLocalH(class Mesh & mesh, double gh)
     {
       PushStatusF("Restrict H due to surface curvature");
 
-      ARRAY<double> minh; //minimales h pro punkt
+      Array<double> minh; //minimales h pro punkt
       minh.SetSize(GetNP());
       for (i = 1; i <= GetNP(); i++)
 	{
@@ -936,8 +936,8 @@ void STLGeometry :: RestrictLocalH(class Mesh & mesh, double gh)
       Box3dTree* lsearchtree = new Box3dTree (GetBoundingBox().PMin() - Vec3d(1,1,1),
 					     GetBoundingBox().PMax() + Vec3d(1,1,1));
       
-      ARRAY<Point3d> pmins(GetNLines());
-      ARRAY<Point3d> pmaxs(GetNLines());
+      Array<Point3d> pmins(GetNLines());
+      Array<Point3d> pmaxs(GetNLines());
 
       double maxhline;
       for (i = 1; i <= GetNLines(); i++)
@@ -961,7 +961,7 @@ void STLGeometry :: RestrictLocalH(class Mesh & mesh, double gh)
 	  pmaxs.Elem(i) = box.PMax();
 	}
 
-      ARRAY<int> linenums;
+      Array<int> linenums;
       int k2;
 
       for (i = 1; i <= GetNLines(); i++)
@@ -1071,7 +1071,7 @@ void STLGeometry :: RestrictLocalH(class Mesh & mesh, double gh)
 
       //berechne minimale distanz von chart zu einem nicht-outerchart-punkt in jedem randpunkt einer chart
       
-      ARRAY<int> acttrigs; //outercharttrigs
+      Array<int> acttrigs; //outercharttrigs
       acttrigs.SetSize(GetNT());
       for (i = 1; i <= GetNT(); i++)
 	{
@@ -1121,7 +1121,7 @@ void STLGeometry :: RestrictLocalH(class Mesh & mesh, double gh)
   }
 }
 
-void STLGeometry :: RestrictHChartDistOneChart(int chartnum, ARRAY<int>& acttrigs, 
+void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrigs, 
 					       class Mesh & mesh, double gh, double fact, double minh)
 {
   int i = chartnum;
@@ -1133,16 +1133,16 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, ARRAY<int>& acttrig
   double f1,f2;
   //  mincalch = 1E10;
   //maxcalch = -1E10;  
-  ARRAY<int> limes1;
-  ARRAY<int> limes2;
+  Array<int> limes1;
+  Array<int> limes2;
 	  
-  ARRAY<Point3d> plimes1;
-  ARRAY<Point3d> plimes2;
+  Array<Point3d> plimes1;
+  Array<Point3d> plimes2;
 	  
-  ARRAY<int> plimes1trigs; //check from wich trig the points come
-  ARRAY<int> plimes2trigs;
+  Array<int> plimes1trigs; //check from wich trig the points come
+  Array<int> plimes2trigs;
 	  
-  ARRAY<int> plimes1origin; //either the original pointnumber or zero, if new point
+  Array<int> plimes1origin; //either the original pointnumber or zero, if new point
 
   int divisions = 10;
 	  
@@ -1260,7 +1260,7 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, ARRAY<int>& acttrig
       Point3dTree stree(bbox.PMin(), bbox.PMax());
       for (j = 1; j <= plimes2.Size(); j++)
 	stree.Insert (plimes2.Get(j), j);
-      ARRAY<int> foundpts;
+      Array<int> foundpts;
 	  
       for (j = 1; j <= plimes1.Size(); j++)
 	{

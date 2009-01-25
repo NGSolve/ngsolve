@@ -52,13 +52,13 @@ namespace netgen
   }
 
 
-  RevolutionFace :: RevolutionFace(const ARRAY<double> & raw_data)
+  RevolutionFace :: RevolutionFace(const Array<double> & raw_data)
   {
     deletable = true;
     
     int pos = 0;
 
-    ARRAY< Point<2> > p(3);
+    Array< Point<2> > p(3);
 
     int stype = int(raw_data[pos]); pos++;
 
@@ -293,7 +293,7 @@ namespace netgen
   {
     double retval = spline->MaxCurvature();
 
-    ARRAY < Point<2> > checkpoints;
+    Array < Point<2> > checkpoints;
 
     const SplineSeg3<2> * ss3 = dynamic_cast<const SplineSeg3<2> *>(spline);
     const LineSeg<2> * ls = dynamic_cast<const LineSeg<2> *>(spline);
@@ -346,7 +346,7 @@ namespace netgen
 
 
     // find smallest y value of spline:
-    ARRAY<double> testt;
+    Array<double> testt;
 
     if(!isfirst)
       testt.Append(0);
@@ -574,7 +574,7 @@ namespace netgen
 
   
 
-  void RevolutionFace :: GetRawData(ARRAY<double> & data) const
+  void RevolutionFace :: GetRawData(Array<double> & data) const
   {
     data.DeleteAll();
     spline->GetRawData(data);
@@ -668,7 +668,7 @@ namespace netgen
 	  return DOES_INTERSECT;
 	else
 	  {
-	    ARRAY < Point<3> > pext(2);
+	    Array < Point<3> > pext(2);
 	    Point<3> p;
 
 	    pext[0] = box.PMin();
@@ -722,7 +722,7 @@ namespace netgen
     const double b = -randomx;
     const double c = -a*p2d(0)-b*p2d(1);
 
-    ARRAY < Point<2> > points;
+    Array < Point<2> > points;
 
     //(*testout) << "face intersections at: " << endl;
     for(int i=0; i<faces.Size(); i++)
@@ -764,7 +764,7 @@ namespace netgen
 	return pInSolid;
       }
 
-    ARRAY<int> intersecting_faces;
+    Array<int> intersecting_faces;
 
     for(int i=0; i<faces.Size(); i++)
       if(faces[i]->PointInFace(p,eps) == DOES_INTERSECT)

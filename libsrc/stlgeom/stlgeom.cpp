@@ -264,7 +264,7 @@ void STLGeometry :: SmoothNormals()
 
   // find critical:
 
-  ARRAY<INDEX_2> critpairs;
+  Array<INDEX_2> critpairs;
   for (i = 1; i <= nt; i++)
     {
       const STLTriangle & trig = GetTriangle (i);
@@ -317,7 +317,7 @@ void STLGeometry :: SmoothNormals()
   if (critpairs.Size())
     {
 
-      ARRAY<int> friends;
+      Array<int> friends;
       double area1 = 0, area2 = 0;
 
       for (i = 1; i <= critpairs.Size(); i++)
@@ -553,7 +553,7 @@ twoint STLGeometry :: GetNearestSelectedDefinedEdge()
     //Point3d pestimate = GetTriangle(GetSelectTrig()).center;
 
   int i, j, en;
-  ARRAY<int> vic;
+  Array<int> vic;
   GetVicinity(GetSelectTrig(),4,vic);
   
 
@@ -672,7 +672,7 @@ void STLGeometry :: ImportEdges()
   int ne;
   fin >> ne;
 
-  ARRAY<Point<3> > eps;
+  Array<Point<3> > eps;
 
   int i;
   Point<3> p;
@@ -686,18 +686,18 @@ void STLGeometry :: ImportEdges()
   AddEdges(eps);
 }
 
-void STLGeometry :: AddEdges(const ARRAY<Point<3> >& eps)
+void STLGeometry :: AddEdges(const Array<Point<3> >& eps)
 {
   int i;
   int ne = eps.Size()/2;
   
-  ARRAY<int> epsi;
+  Array<int> epsi;
   Box<3> bb = GetBoundingBox();
   bb.Increase(1);
 
   Point3dTree ptree (bb.PMin(), 
 			 bb.PMax());
-  ARRAY<int> pintersect;
+  Array<int> pintersect;
 
   double gtol = GetBoundingBox().Diam()/1.E10;
   Point<3> p;
@@ -765,9 +765,9 @@ void STLGeometry :: ImportExternalEdges(const char * filename)
   filter[flen] = 0;
   char buf[20];
 
-  ARRAY<Point3d> importpoints;
-  ARRAY<int> importlines;
-  ARRAY<int> importpnums;
+  Array<Point3d> importpoints;
+  Array<int> importlines;
+  Array<int> importpnums;
 
   while (inf.good())
     {
@@ -853,7 +853,7 @@ void STLGeometry :: ImportExternalEdges(const char * filename)
     ebb.AddPoint (importpoints.Get(i));
   PrintMessage(7,"edgep - bb: ", ebb.PMin(), " - ", ebb.PMax());
 
-  ARRAY<int> pintersect;
+  Array<int> pintersect;
 
   double gtol = GetBoundingBox().Diam()/1.E6;
 
@@ -1478,7 +1478,7 @@ void STLGeometry :: ShowSelectedTrigCoords()
 
   /*
   //testing!!!!
-  ARRAY<int> trigs;
+  Array<int> trigs;
   GetSortedTrianglesAroundPoint(GetTriangle(st).PNum(GetNodeOfSelTrig()),st,trigs);
   */
 
@@ -1569,11 +1569,11 @@ void STLGeometry :: NeighbourAnglesOfSelectedTrig()
     }
 }
 
-void STLGeometry :: GetVicinity(int starttrig, int size, ARRAY<int>& vic)
+void STLGeometry :: GetVicinity(int starttrig, int size, Array<int>& vic)
 {
   if (starttrig == 0 || starttrig > GetNT()) {return;} 
 
-  ARRAY<int> vicarray;
+  Array<int> vicarray;
   vicarray.SetSize(GetNT());
 
   int i;
@@ -1586,9 +1586,9 @@ void STLGeometry :: GetVicinity(int starttrig, int size, ARRAY<int>& vic)
   
   int j = 0,k;
 
-  ARRAY <int> list1;
+  Array <int> list1;
   list1.SetSize(0);
-  ARRAY <int> list2;
+  Array <int> list2;
   list2.SetSize(0);
   list1.Append(starttrig);
 
@@ -1640,9 +1640,9 @@ void STLGeometry :: CalcVicinity(int starttrig)
   
   int j = 0,k;
 
-  ARRAY <int> list1;
+  Array <int> list1;
   list1.SetSize(0);
-  ARRAY <int> list2;
+  Array <int> list2;
   list2.SetSize(0);
   list1.Append(starttrig);
 
@@ -1991,7 +1991,7 @@ double STLGeometry :: GetGeomAngle(int t1, int t2)
 }
 
 
-void STLGeometry :: InitSTLGeometry(const ARRAY<STLReadTriangle> & readtrias)
+void STLGeometry :: InitSTLGeometry(const Array<STLReadTriangle> & readtrias)
 {
   PrintFnStart("Init STL Geometry");
   STLTopology::InitSTLGeometry(readtrias);
@@ -2003,7 +2003,7 @@ void STLGeometry :: InitSTLGeometry(const ARRAY<STLReadTriangle> & readtrias)
   int np = GetNP();
   PrintMessage(5,"NO points= ", GetNP());
   normals.SetSize(GetNP());
-  ARRAY<int> normal_cnt(GetNP()); // counts number of added normals in a point
+  Array<int> normal_cnt(GetNP()); // counts number of added normals in a point
 
   for (i = 1; i <= np; i++)
     {
@@ -2076,7 +2076,7 @@ int STLGeometry :: CheckGeometryOverlapping()
   Point<3> pmax = geombox.PMax();
 
   Box3dTree setree(pmin, pmax);
-  ARRAY<int> inters;
+  Array<int> inters;
 
   int oltrigs = 0;
   markedtrigs.SetSize(GetNT());
@@ -2157,14 +2157,14 @@ void STLGeometry :: InitSTLGeometry()
   points.SetSize(0);
   normals.SetSize(0);
 
-  ARRAY<int> normal_cnt; // counts number of added normals in a point
+  Array<int> normal_cnt; // counts number of added normals in a point
 
   Box3d bb (GetBoundingBox().PMin() + Vec3d (-1,-1,-1),
 	    GetBoundingBox().PMax() + Vec3d (1, 1, 1));
 
   Point3dTree pointtree (bb.PMin(), 
 			 bb.PMax());
-  ARRAY<int> pintersect;
+  Array<int> pintersect;
 
   double gtol = GetBoundingBox().CalcDiam()/geometry_tol_fact;
 
@@ -2604,8 +2604,8 @@ void STLGeometry :: AddFaceEdges()
   //für Kugel eine STLLine hinzufügen (Vorteil: verfeinerbar, unabhängig von Auflösung der Geometrie!!!):
   //Grenze von 1. gefundener chart
 
-  ARRAY<int> edgecnt;
-  ARRAY<int> chartindex;
+  Array<int> edgecnt;
+  Array<int> chartindex;
   edgecnt.SetSize(GetNOFaces());
   chartindex.SetSize(GetNOFaces());
 
@@ -2674,7 +2674,7 @@ void STLGeometry :: LinkEdges()
   int rev(0); //indicates, that edge is inserted reverse
 
   //worked edges
-  ARRAY<int> we(GetNE());
+  Array<int> we(GetNE());
 
   //setlineendpoints; wenn 180°, dann keine endpunkte
   //nur punkte mit 2 edges kommen in frage, da bei mehr oder weniger punkten ohnehin ein meshpoint hinkommt
@@ -2865,7 +2865,7 @@ int STLGeometry :: GetNOBodys()
   int i, k, nnt;
   int bodycnt = 0;
 
-  ARRAY<int> bodynum(GetNT());
+  Array<int> bodynum(GetNT());
 
   for (i = 1; i <= GetNT(); i++)
     bodynum.Elem(i)=0;
@@ -2882,8 +2882,8 @@ int STLGeometry :: GetNOBodys()
 	    }
 	} 
       //add all triangles around starttriangle, which is reachable without going over an edge
-      ARRAY<int> todolist;
-      ARRAY<int> nextlist;
+      Array<int> todolist;
+      Array<int> nextlist;
       bodycnt++;
       markedtrigs1++;
       bodynum.Elem(starttrig) = bodycnt;
@@ -2944,8 +2944,8 @@ void STLGeometry :: CalcFaceNums()
 	    }
 	} 
       //add all triangles around starttriangle, which is reachable without going over an edge
-      ARRAY<int> todolist;
-      ARRAY<int> nextlist;
+      Array<int> todolist;
+      Array<int> nextlist;
       facecnt++;
       markedtrigs1++;
       GetTriangle(starttrig).SetFaceNum(facecnt);
@@ -3070,7 +3070,7 @@ int STLGeometry :: IsSmoothEdge (int pi1, int pi2) const
 
 
 //function is not used now
-int IsInArray(int n, const ARRAY<int>& ia)
+int IsInArray(int n, const Array<int>& ia)
 {
   int i;
   for (i = 1; i <= ia.Size(); i++)
@@ -3132,8 +3132,8 @@ void STLGeometry :: AddConeAndSpiralEdges()
   cnt = 0;
   int edgecnt = 0;
 
-  ARRAY<int> trigsaroundp;
-  ARRAY<int> chartpointchecked; //gets number of chart, if in this chart already checked
+  Array<int> trigsaroundp;
+  Array<int> chartpointchecked; //gets number of chart, if in this chart already checked
   chartpointchecked.SetSize(GetNP());
 
   for (i = 1; i <= GetNP(); i++)
@@ -3356,7 +3356,7 @@ void STLGeometry :: AddConeAndSpiralEdges()
 }
 
 //get trigs at a point, started with starttrig, then every left
-void STLGeometry :: GetSortedTrianglesAroundPoint(int p, int starttrig, ARRAY<int>& trigs)
+void STLGeometry :: GetSortedTrianglesAroundPoint(int p, int starttrig, Array<int>& trigs)
 {
   int acttrig = starttrig;
   trigs.SetAllocSize(trigsperpoint.EntrySize(p));

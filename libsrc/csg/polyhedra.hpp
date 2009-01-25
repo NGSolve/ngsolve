@@ -32,13 +32,13 @@ class Polyhedra : public Primitive
 
     Face () { ; }
     Face (int pi1, int pi2, int pi3, 
-	  const ARRAY<Point<3> > & points,
+	  const Array<Point<3> > & points,
 	  int ainputnr);
   };
 
-  ARRAY<Point<3> > points;
-  ARRAY<Face> faces;
-  ARRAY<Plane*> planes;
+  Array<Point<3> > points;
+  Array<Face> faces;
+  Array<Plane*> planes;
   Box<3> poly_bbox;
 
   double eps_base1;
@@ -62,15 +62,15 @@ public:
 				    double eps) const;
 
   virtual void GetTangentialSurfaceIndices (const Point<3> & p, 
-					    ARRAY<int> & surfind, double eps) const;
+					    Array<int> & surfind, double eps) const;
 
 
   virtual void GetTangentialVecSurfaceIndices2 (const Point<3> & p, const Vec<3> & v1, const Vec<3> & v2,
-						ARRAY<int> & surfind, double eps) const;
+						Array<int> & surfind, double eps) const;
 
-  virtual void CalcSpecialPoints (ARRAY<Point<3> > & pts) const;
+  virtual void CalcSpecialPoints (Array<Point<3> > & pts) const;
   virtual void AnalyzeSpecialPoint (const Point<3> & pt, 
-				    ARRAY<Point<3> > & specpts) const;
+				    Array<Point<3> > & specpts) const;
   virtual Vec<3> SpecialPointTangentialVector (const Point<3> & p, int s1, int s2) const;
 
   virtual int GetNSurfaces() const 
@@ -80,8 +80,8 @@ public:
   virtual const Surface & GetSurface (int i) const
     { return *planes[i]; }
 
-  virtual void GetPrimitiveData (const char *& classname, ARRAY<double> & coeffs) const;
-  virtual void SetPrimitiveData (ARRAY<double> & coeffs);
+  virtual void GetPrimitiveData (const char *& classname, Array<double> & coeffs) const;
+  virtual void SetPrimitiveData (Array<double> & coeffs);
 
   virtual void Reduce (const BoxSphere<3> & box);
   virtual void UnReduce ();
@@ -89,7 +89,7 @@ public:
   int AddPoint (const Point<3> & p);
   int AddFace (int pi1, int pi2, int pi3, int inputnum);
 
-  void GetPolySurfs(ARRAY < ARRAY<int> * > & polysurfs);
+  void GetPolySurfs(Array < Array<int> * > & polysurfs);
   
 protected:
   int FaceBoxIntersection (int fnr, const BoxSphere<3> & box) const;

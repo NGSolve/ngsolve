@@ -27,9 +27,9 @@ public:
   typedef MoveableArray<Element> T_VOLELEMENTS;
   typedef MoveableArray<Element2d> T_SURFELEMENTS;
 
-  // typedef ARRAY<MeshPoint,PointIndex::BASE> T_POINTS;
-  // typedef ARRAY<Element> T_VOLELEMENTS;
-  // typedef ARRAY<Element2d> T_SURFELEMENTS;
+  // typedef Array<MeshPoint,PointIndex::BASE> T_POINTS;
+  // typedef Array<Element> T_VOLELEMENTS;
+  // typedef Array<Element2d> T_SURFELEMENTS;
 
 
 private:
@@ -37,16 +37,16 @@ private:
   T_POINTS points;
 
   /// type of element, set in calcsurfacesofnode
-  // ARRAY<ELEMENTTYPE> eltyps;
+  // Array<ELEMENTTYPE> eltyps;
 
   /// line-segments at edges
-  ARRAY<Segment> segments;
+  Array<Segment> segments;
   /// surface elements, 2d-inner elements
   T_SURFELEMENTS surfelements;
   /// volume elements
   T_VOLELEMENTS volelements;
   /// points will be fixed forever
-  ARRAY<PointIndex> lockedpoints;
+  Array<PointIndex> lockedpoints;
 
 
   /// surface indices at boundary nodes
@@ -59,9 +59,9 @@ private:
   INDEX_3_CLOSED_HASHTABLE<int> * surfelementht;
 
   /// faces of rest-solid
-  ARRAY<Element2d> openelements;
+  Array<Element2d> openelements;
   /// open segmenets for surface meshing  
-  ARRAY<Segment> opensegments;
+  Array<Segment> opensegments;
 
 
 
@@ -74,18 +74,18 @@ private:
   ///
   double hmin;
   ///
-  ARRAY<double> maxhdomain;
+  Array<double> maxhdomain;
   
   /**
      the face-index of the surface element maps into
      this table.
   */
-  ARRAY<FaceDescriptor> facedecoding;
+  Array<FaceDescriptor> facedecoding;
 
   /// sub-domain materials 
-  ARRAY<char*> materials;
+  Array<char*> materials;
 
-  ARRAY<string*, 0> bcnames;
+  Array<string*, 0> bcnames;
 
   /// Periodic surface, close surface, etc. identifications
   Identifications * ident;
@@ -120,13 +120,13 @@ private:
   /// mesh access semaphors.
   NgMutex majormutex;
 
-  SYMBOLTABLE< ARRAY<int>* > userdata_int;
-  SYMBOLTABLE< ARRAY<double>* > userdata_double; 
+  SYMBOLTABLE< Array<int>* > userdata_int;
+  SYMBOLTABLE< Array<double>* > userdata_double; 
 
 
-  mutable ARRAY< Point3d > pointcurves;
-  mutable ARRAY<int> pointcurves_startpoint;
-  mutable ARRAY<double> pointcurves_red,pointcurves_green,pointcurves_blue;
+  mutable Array< Point3d > pointcurves;
+  mutable Array<int> pointcurves_startpoint;
+  mutable Array<double> pointcurves_red,pointcurves_green,pointcurves_blue;
 
 
   /// start element for point search (GetElementOfPoint)
@@ -158,18 +158,18 @@ public:
 public:
 
   // store coarse mesh before hp-refinement
-  ARRAY<HPRefElement> * hpelements;
+  Array<HPRefElement> * hpelements;
   Mesh * coarsemesh;
   
   
   /// number of refinement levels
   int mglevels;
   /// refinement hierarchy
-  ARRAY<INDEX_2,PointIndex::BASE> mlbetweennodes;
+  Array<INDEX_2,PointIndex::BASE> mlbetweennodes;
   /// parent element of volume element
-  ARRAY<int> mlparentelement;
+  Array<int> mlparentelement;
   /// parent element of surface element
-  ARRAY<int> mlparentsurfaceelement;
+  Array<int> mlparentsurfaceelement;
 
 
 
@@ -283,7 +283,7 @@ public:
   { return surfelements[ei]; }
 
   
-  void GetSurfaceElementsOfFace (int facenr, ARRAY<SurfaceElementIndex> & sei) const;
+  void GetSurfaceElementsOfFace (int facenr, Array<SurfaceElementIndex> & sei) const;
 
   ElementIndex AddVolumeElement (const Element & el);
 
@@ -316,7 +316,7 @@ public:
   ///
   void ClearLockedPoints ();
 
-  const ARRAY<PointIndex> & LockedPoints() const
+  const Array<PointIndex> & LockedPoints() const
   { return lockedpoints; }
 
   /// Returns number of domains
@@ -403,7 +403,7 @@ public:
   ///
   double MaxHDomain (int dom) const;
   ///
-  void SetMaxHDomain (const ARRAY<double> & mhd);
+  void SetMaxHDomain (const Array<double> & mhd);
   ///
   double GetH (const Point3d & p) const;
   ///
@@ -491,9 +491,9 @@ public:
   void ImproveMeshJacobian (OPTIMIZEGOAL goal = OPT_QUALITY, const BitArray * usepoint = NULL);
   ///
   void ImproveMeshJacobianOnSurface (const BitArray & usepoint, 
-				     const ARRAY< Vec<3>* > & nv,
+				     const Array< Vec<3>* > & nv,
 				     OPTIMIZEGOAL goal = OPT_QUALITY,
-				     const ARRAY< ARRAY<int,PointIndex::BASE>* > * idmaps = NULL);
+				     const Array< Array<int,PointIndex::BASE>* > * idmaps = NULL);
   /**
      free nodes in environment of openelements 
      for optimiztion
@@ -546,7 +546,7 @@ public:
 			 const bool allowindex = true) const;
   int GetElementOfPoint (const Point3d & p,
 			 double * lami,
-			 const ARRAY<int> * const indices,
+			 const Array<int> * const indices,
 			 bool build_searchtree = 0,
 			 const bool allowindex = true) const;
   int GetSurfaceElementOfPoint (const Point3d & p,
@@ -556,13 +556,13 @@ public:
 				const bool allowindex = true) const;
   int GetSurfaceElementOfPoint (const Point3d & p,
 				double * lami,
-				const ARRAY<int> * const indices,
+				const Array<int> * const indices,
 				bool build_searchtree = 0,
 				const bool allowindex = true) const;
 
   /// give list of vol elements which are int the box(p1,p2)
   void GetIntersectingVolEls(const Point3d& p1, const Point3d& p2, 
-			     ARRAY<int> & locels) const;
+			     Array<int> & locels) const;
 
   ///
   int AddFaceDescriptor(const FaceDescriptor& fd)
@@ -614,9 +614,9 @@ public:
 //   }
 
 //   ///
-//   void GetIdentificationMap (int identnr, ARRAY<int> & identmap) const;
+//   void GetIdentificationMap (int identnr, Array<int> & identmap) const;
 //   ///
-//   void GetIdentificationPairs (int identnr, ARRAY<INDEX_2> & identpairs) const;
+//   void GetIdentificationPairs (int identnr, Array<INDEX_2> & identpairs) const;
 //   ///
 //   int GetMaxIdentificationNr () const
 //   { 
@@ -687,13 +687,13 @@ public:
 
 
   ///
-  void SetUserData(const char * id, ARRAY<int> & data);
+  void SetUserData(const char * id, Array<int> & data);
   ///
-  bool GetUserData(const char * id, ARRAY<int> & data, int shift = 0) const;
+  bool GetUserData(const char * id, Array<int> & data, int shift = 0) const;
   ///
-  void SetUserData(const char * id, ARRAY<double> & data);
+  void SetUserData(const char * id, Array<double> & data);
   ///
-  bool GetUserData(const char * id, ARRAY<double> & data, int shift = 0) const;
+  bool GetUserData(const char * id, Array<double> & data, int shift = 0) const;
 
   ///
   friend void OptimizeRestart (Mesh & mesh3d);
@@ -727,13 +727,13 @@ public:
 //   void FindExchangeFaces ();
 
   /// use metis to decompose master mesh 
-  void ParallelMetis (); //  ARRAY<int> & neloc );
-  void PartHybridMesh (); //  ARRAY<int> & neloc );
-  void PartDualHybridMesh (); //  ARRAY<int> & neloc );
-  void PartDualHybridMesh2D ();  // ( ARRAY<int> & neloc );
+  void ParallelMetis (); //  Array<int> & neloc );
+  void PartHybridMesh (); //  Array<int> & neloc );
+  void PartDualHybridMesh (); //  Array<int> & neloc );
+  void PartDualHybridMesh2D ();  // ( Array<int> & neloc );
 
   /// send mesh to parallel machine, keep global mesh at master 
-  void SendMesh ( ) const;   // Mesh * mastermesh, ARRAY<int> & neloc) const;
+  void SendMesh ( ) const;   // Mesh * mastermesh, Array<int> & neloc) const;
 
   void UpdateOverlap ();
  

@@ -89,7 +89,7 @@ namespace netgen
 
 
   PointFunction1 :: PointFunction1 (Mesh::T_POINTS & apoints, 
-				    const ARRAY<INDEX_3> & afaces,
+				    const Array<INDEX_3> & afaces,
 				    double ah)
     : points(apoints), faces(afaces)
   {
@@ -178,12 +178,12 @@ namespace netgen
   class CheapPointFunction1 : public MinFunction
   {
     Mesh::T_POINTS & points;
-    const ARRAY<INDEX_3> & faces;
+    const Array<INDEX_3> & faces;
     DenseMatrix m;
     double h;
   public:
     CheapPointFunction1 (Mesh::T_POINTS & apoints, 
-			 const ARRAY<INDEX_3> & afaces,
+			 const Array<INDEX_3> & afaces,
 			 double ah);
   
     virtual double Func (const Vector & x) const;
@@ -191,7 +191,7 @@ namespace netgen
   };
 
   CheapPointFunction1 :: CheapPointFunction1 (Mesh::T_POINTS & apoints, 
-					      const ARRAY<INDEX_3> & afaces,
+					      const Array<INDEX_3> & afaces,
 					      double ah)
     : points(apoints), faces(afaces)
   {
@@ -349,7 +349,7 @@ namespace netgen
     INDEX eli;
     const Element * el;
     double badness;
-    //  ARRAY<const Point3d*> p(4);
+    //  Array<const Point3d*> p(4);
     Point<3> hp;
 
     badness = 0;
@@ -483,7 +483,7 @@ namespace netgen
   int PointFunction :: MovePointToInner ()
   {
     // try point movement 
-    ARRAY<Element2d> faces;
+    Array<Element2d> faces;
   
     for (int j = 0; j < elementsonpoint[actpind].Size(); j++)
       {
@@ -1434,7 +1434,7 @@ void Mesh :: ImproveMesh (OPTIMIZEGOAL goal)
   int ne = GetNE();
 
 
-  ARRAY<double,PointIndex::BASE> perrs(np);
+  Array<double,PointIndex::BASE> perrs(np);
   perrs = 1.0;
 
   double bad1 = 0;
@@ -1490,7 +1490,7 @@ void Mesh :: ImproveMesh (OPTIMIZEGOAL goal)
   par.maxit_linsearch = 20;
   par.maxit_bfgs = 20;
 
-  ARRAY<double, PointIndex::BASE> pointh (points.Size());
+  Array<double, PointIndex::BASE> pointh (points.Size());
 
   if(lochfunc)
     {
@@ -1627,7 +1627,7 @@ void Mesh :: ImproveMeshJacobian (OPTIMIZEGOAL goal, const BitArray * usepoint)
 	  badnodes.Set (el.PNum(j));
     }
 
-  ARRAY<double, PointIndex::BASE> pointh (points.Size());
+  Array<double, PointIndex::BASE> pointh (points.Size());
 
   if(lochfunc)
     {
@@ -1714,9 +1714,9 @@ void Mesh :: ImproveMeshJacobian (OPTIMIZEGOAL goal, const BitArray * usepoint)
 
 // Improve Condition number of Jacobian, any elements  
 void Mesh :: ImproveMeshJacobianOnSurface (const BitArray & usepoint, 
-					   const ARRAY< Vec<3>* > & nv,
+					   const Array< Vec<3>* > & nv,
 					   OPTIMIZEGOAL goal,
-					   const ARRAY< ARRAY<int,PointIndex::BASE>* > * idmaps)
+					   const Array< Array<int,PointIndex::BASE>* > * idmaps)
 {
   int i, j;
   
@@ -1733,8 +1733,8 @@ void Mesh :: ImproveMeshJacobianOnSurface (const BitArray & usepoint,
   
   JacobianPointFunction pf(points, volelements);
 
-  ARRAY< ARRAY<int,PointIndex::BASE>* > locidmaps;
-  const ARRAY< ARRAY<int,PointIndex::BASE>* > * used_idmaps;
+  Array< Array<int,PointIndex::BASE>* > locidmaps;
+  const Array< Array<int,PointIndex::BASE>* > * used_idmaps;
 
   if(idmaps)
     used_idmaps = idmaps;
@@ -1746,7 +1746,7 @@ void Mesh :: ImproveMeshJacobianOnSurface (const BitArray & usepoint,
 	{
 	  if(GetIdentifications().GetType(i) == Identifications::PERIODIC)
 	    {
-	      locidmaps.Append(new ARRAY<int,PointIndex::BASE>);
+	      locidmaps.Append(new Array<int,PointIndex::BASE>);
 	      GetIdentifications().GetMap(i,*locidmaps.Last(),true);
 	    }
 	}
@@ -1781,7 +1781,7 @@ void Mesh :: ImproveMeshJacobianOnSurface (const BitArray & usepoint,
 	  badnodes.Set (el.PNum(j));
     }
 
-  ARRAY<double, PointIndex::BASE> pointh (points.Size());
+  Array<double, PointIndex::BASE> pointh (points.Size());
  
   if(lochfunc)
     {

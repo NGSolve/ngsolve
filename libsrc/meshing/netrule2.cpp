@@ -21,7 +21,7 @@ netrule ::  ~netrule()
 
 
 /*
-void netrule :: GetFreeArea (ARRAY<Point2d> & afreearea)
+void netrule :: GetFreeArea (Array<Point2d> & afreearea)
   {
   int i;
 

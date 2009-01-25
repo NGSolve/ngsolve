@@ -13,7 +13,7 @@
   */
 class IndexSet
 {
-  ARRAY<int> set;
+  Array<int> set;
   BitArray flags;
 public:
   IndexSet (int maxind);
@@ -38,7 +38,7 @@ public:
   void Del (int ind);
   void Clear ();
   
-  const ARRAY<int> & Array() { return set; }
+  const Array<int> & Array() { return set; }
 };
 
 #endif
