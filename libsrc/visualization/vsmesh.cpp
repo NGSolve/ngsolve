@@ -898,7 +898,7 @@ namespace netgen
     static int timer = NgProfiler::CreateTimer ("Mesh::BuildFilledList");
     NgProfiler::RegionTimer reg (timer);
     
-    cout << "buildilled" << endl;
+    // cout << "buildilled" << endl;
 
 #ifdef PARALLELGL
     cout << "buildfillelist, id = " << id << ", nse = " << mesh -> GetNSE() << endl;
@@ -957,7 +957,7 @@ namespace netgen
     filledlist = glGenLists (1);
     glNewList (filledlist, GL_COMPILE);
     
-    cout << "I am p " << id << " and got filledlist " << filledlist << endl;
+    // cout << "I am p " << id << " and got filledlist " << filledlist << endl;
 
     bool checkvicinity = (stlgeometry != NULL) && stldoctor.showvicinity;
 
