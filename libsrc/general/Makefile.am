@@ -2,7 +2,7 @@ noinst_HEADERS = array.hpp myadt.hpp optmem.hpp sort.hpp table.hpp autodiff.hpp 
 
 include_HEADERS = ngexception.hpp
 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
+AM_CPPFLAGS =  $(MPI_INCLUDES) -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
 noinst_LTLIBRARIES = libgeneral.la
 libgeneral_la_SOURCES = array.cpp bitarray.cpp dynamicmem.cpp flags.cpp \

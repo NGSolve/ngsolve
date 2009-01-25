@@ -25,9 +25,10 @@ namespace netgen
 
 #else   // if PARALLEL
 
-// #include <mystdlib.h>
-#include <meshing.hpp>
-#include "incvis.hpp"
+ #include <mystdlib.h>
+ #include <myadt.hpp>
+//  #include <meshing.hpp>
+// #include "incvis.hpp"
 
 
 //#include "parallelfunc.hpp"
@@ -263,9 +264,8 @@ namespace netgen
 
 
 // #include "parallelmesh.hpp"
-#include "paralleltop.hpp"
-
-#include "parallelinterface.hpp"
+// #include "paralleltop.hpp"
+// #include "parallelinterface.hpp"
 
 }
 

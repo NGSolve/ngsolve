@@ -14,8 +14,18 @@
 
 #endif
 
+
+
 #include <GL/gl.h>
 #include <GL/glu.h>
+
+
+// parallel
+#define GLX_GLXEXT_PROTOTYPES
+#include <GL/glx.h>
+#include <GL/glxext.h>
+
+
 #ifndef NOTCL
 // #include <togl.h>
 // #include "../../togl/togl.h"

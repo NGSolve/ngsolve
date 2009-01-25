@@ -789,8 +789,8 @@ menu .ngmenu.special
 
 
 menu .ngmenu.help
-.ngmenu.help add command -label "Ng Help..." \
-	-command { help_main }
+# .ngmenu.help add command -label "Ng Help..." \
+\#	-command { help_main }
 # .ngmenu.view add checkbutton -variable showsensitivehelp \
 #	-label "Sensitve Help" \
 #	-command { sensitivehelpdialog $showsensitivehelp }

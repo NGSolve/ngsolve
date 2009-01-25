@@ -58,16 +58,19 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(includedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
+am__DEPENDENCIES_1 =
 libnglib_la_DEPENDENCIES =  \
 	$(top_builddir)/libsrc/interface/libinterface.la \
 	$(top_builddir)/libsrc/geom2d/libgeom2d.la \
 	$(top_builddir)/libsrc/csg/libcsg.la \
 	$(top_builddir)/libsrc/stlgeom/libstl.la \
+	$(top_builddir)/libsrc/parallel/libparallel.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
 	$(top_builddir)/libsrc/opti/libopti.la \
 	$(top_builddir)/libsrc/linalg/libla.la \
-	$(top_builddir)/libsrc/general/libgeneral.la
+	$(top_builddir)/libsrc/general/libgeneral.la \
+	$(am__DEPENDENCIES_1)
 am_libnglib_la_OBJECTS = nglib.lo
 libnglib_la_OBJECTS = $(am_libnglib_la_OBJECTS)
 libnglib_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -141,6 +144,8 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
+MPI_INCLUDES = @MPI_INCLUDES@
+MPI_LIBS = @MPI_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -252,7 +257,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 include_HEADERS = nglib.h
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include $(OCCFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include $(OCCFLAGS)  $(MPI_INCLUDES) 
 lib_LTLIBRARIES = libnglib.la
 libnglib_la_SOURCES = nglib.cpp
 libnglib_la_LIBADD = \
@@ -260,11 +265,12 @@ libnglib_la_LIBADD = \
 	$(top_builddir)/libsrc/geom2d/libgeom2d.la \
 	$(top_builddir)/libsrc/csg/libcsg.la \
 	$(top_builddir)/libsrc/stlgeom/libstl.la \
+	$(top_builddir)/libsrc/parallel/libparallel.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
 	$(top_builddir)/libsrc/opti/libopti.la \
 	$(top_builddir)/libsrc/linalg/libla.la \
-	$(top_builddir)/libsrc/general/libgeneral.la  
+	$(top_builddir)/libsrc/general/libgeneral.la  $(MPI_LIBS)
 
 libnglib_la_LDFLAGS = -avoid-version
 ng_vol_SOURCES = ng_vol.cpp

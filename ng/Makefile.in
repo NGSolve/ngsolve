@@ -52,7 +52,8 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_netgen_OBJECTS = demoview.$(OBJEXT) ngappinit.$(OBJEXT) \
-	ngpkg.$(OBJEXT) onetcl.$(OBJEXT) nginterface.$(OBJEXT)
+	ngpkg.$(OBJEXT) onetcl.$(OBJEXT) nginterface.$(OBJEXT) \
+	parallelfunc.$(OBJEXT) parallelinterface.$(OBJEXT)
 netgen_OBJECTS = $(am_netgen_OBJECTS)
 am__DEPENDENCIES_1 =
 netgen_DEPENDENCIES =  \
@@ -62,13 +63,15 @@ netgen_DEPENDENCIES =  \
 	$(top_builddir)/libsrc/interface/libinterface.la \
 	$(top_builddir)/libsrc/stlgeom/libstl.la \
 	$(top_builddir)/libsrc/occ/libocc.la \
+	$(top_builddir)/libsrc/parallel/libparallel.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
 	$(top_builddir)/libsrc/opti/libopti.la \
 	$(top_builddir)/libsrc/linalg/libla.la \
 	$(top_builddir)/libsrc/general/libgeneral.la \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 netgen_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(netgen_LDFLAGS) $(LDFLAGS) -o $@
@@ -136,6 +139,8 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
+MPI_INCLUDES = @MPI_INCLUDES@
+MPI_LIBS = @MPI_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -247,20 +252,21 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_HEADERS = demoview.hpp
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL $(OCCFLAGS)  $(TCL_INCLUDES) 
-netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp nginterface.cpp
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL $(OCCFLAGS)  $(TCL_INCLUDES) $(MPI_INCLUDES) 
+netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp nginterface.cpp parallelfunc.cpp parallelinterface.cpp
 netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
 	$(top_builddir)/libsrc/csg/libcsg.la \
 	$(top_builddir)/libsrc/geom2d/libgeom2d.la \
 	$(top_builddir)/libsrc/interface/libinterface.la \
 	$(top_builddir)/libsrc/stlgeom/libstl.la \
 	$(top_builddir)/libsrc/occ/libocc.la \
+	$(top_builddir)/libsrc/parallel/libparallel.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
 	$(top_builddir)/libsrc/opti/libopti.la \
 	$(top_builddir)/libsrc/linalg/libla.la \
 	$(top_builddir)/libsrc/general/libgeneral.la \
-	$(OCCLIBS) -L$(TK_BIN_DIR)/Togl1.7 $(TOGLLIBDIR) -lTogl1.7 -lGLU $(TK_LIB_SPEC) $(TCL_LIB_SPEC)
+	$(OCCLIBS) -L$(TK_BIN_DIR)/Togl1.7 $(TOGLLIBDIR) -lTogl1.7 -lGLU $(TK_LIB_SPEC) $(TCL_LIB_SPEC) $(MPI_LIBS)
 
 dist_bin_SCRIPTS = dialog.tcl menustat.tcl ngicon.tcl ng.tcl \
 ngvisual.tcl sockets.tcl drawing.tcl nghelp.tcl ngshell.tcl  \
@@ -362,6 +368,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nginterface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ngpkg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onetcl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parallelfunc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parallelinterface.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

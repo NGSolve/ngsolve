@@ -1,3 +1,6 @@
+AM_CPPFLAGS = $(MPI_INCLUDES) -I$(top_srcdir)/libsrc/include 
+
+
 noinst_HEADERS = adfront2.hpp hpref_quad.hpp meshfunc.hpp ruler3.hpp   \
 adfront3.hpp findip.hpp findip2.hpp hpref_segm.hpp meshing2.hpp	      \
 specials.hpp bisect.hpp geomsearch.hpp hpref_tet.hpp meshing3.hpp     \
@@ -8,7 +11,7 @@ clusters.hpp hprefinement.hpp improve3.hpp meshtype.hpp		      \
  hpref_pyramid.hpp meshclass.hpp ruler2.hpp
 
 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
+
 METASOURCES = AUTO
 noinst_LTLIBRARIES = libmesh.la
 libmesh_la_SOURCES = adfront2.cpp adfront3.cpp bisect.cpp boundarylayer.cpp    \

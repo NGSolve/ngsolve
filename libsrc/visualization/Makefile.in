@@ -125,6 +125,8 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
+MPI_INCLUDES = @MPI_INCLUDES@
+MPI_LIBS = @MPI_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -239,7 +241,7 @@ noinst_HEADERS = meshdoc.hpp mvdraw.hpp vispar.hpp \
 visual.hpp vssolution.hpp
 
 include_HEADERS = soldata.hpp
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  -DOPENGL  $(OCCFLAGS)    $(TCL_INCLUDES)
+AM_CPPFLAGS = $(MPI_INCLUDES) -I$(top_srcdir)/libsrc/include  -DOPENGL  $(OCCFLAGS)    $(TCL_INCLUDES)
 METASOURCES = AUTO
 noinst_LIBRARIES = libvisual.a
 libvisual_a_SOURCES = meshdoc.cpp mvdraw.cpp stlmeshing.cpp vscsg.cpp \

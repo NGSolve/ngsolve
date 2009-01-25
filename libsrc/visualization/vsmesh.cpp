@@ -990,7 +990,6 @@ namespace netgen
     CurvedElements & curv = mesh->GetCurvedElements();
     int hoplotn = 1 << vispar.subdivisions; 
 
-	
     for (int col = 1; col <= 2; col++)
       {
 	if (col == 2)
@@ -1036,7 +1035,7 @@ namespace netgen
 		(col == 2) != (el.GetIndex() == selface))
 	      continue;
 
-	    glLoadName (sei+1);
+            glLoadName (sei+1);
 
 	    switch (el.GetType())
 	      {
@@ -1791,6 +1790,7 @@ namespace netgen
 
 
 #ifdef PARALLEL
+
     static float tetcols[][8] = 
       {
 	{ 1.0f, 1.0f, 0.0f, 1.0f },

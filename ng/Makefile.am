@@ -1,9 +1,9 @@
 noinst_HEADERS = demoview.hpp
 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL $(OCCFLAGS)  $(TCL_INCLUDES) 
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL $(OCCFLAGS)  $(TCL_INCLUDES) $(MPI_INCLUDES) 
 
 bin_PROGRAMS = netgen
-netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp nginterface.cpp
+netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp nginterface.cpp parallelfunc.cpp parallelinterface.cpp
 
 
 netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
@@ -12,12 +12,13 @@ netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
 	$(top_builddir)/libsrc/interface/libinterface.la \
 	$(top_builddir)/libsrc/stlgeom/libstl.la \
 	$(top_builddir)/libsrc/occ/libocc.la \
+	$(top_builddir)/libsrc/parallel/libparallel.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
 	$(top_builddir)/libsrc/opti/libopti.la \
 	$(top_builddir)/libsrc/linalg/libla.la \
 	$(top_builddir)/libsrc/general/libgeneral.la \
-	$(OCCLIBS) -L$(TK_BIN_DIR)/Togl1.7 $(TOGLLIBDIR) -lTogl1.7 -lGLU $(TK_LIB_SPEC) $(TCL_LIB_SPEC)
+	$(OCCLIBS) -L$(TK_BIN_DIR)/Togl1.7 $(TOGLLIBDIR) -lTogl1.7 -lGLU $(TK_LIB_SPEC) $(TCL_LIB_SPEC) $(MPI_LIBS)
 
 
 

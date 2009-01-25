@@ -1,6 +1,8 @@
 #ifndef FILE_PARALLELTOP
 #define FILE_PARALLELTOP
 
+#include <meshing.hpp>
+
 extern int ntasks;
 
 class ParallelMeshTopology

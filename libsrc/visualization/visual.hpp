@@ -13,6 +13,8 @@ Visualization
 
 */
 
+#define PARALLELGL
+
 #include "../include/incvis.hpp"
 
 namespace netgen

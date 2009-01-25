@@ -27,7 +27,7 @@ MPI_Comm MPI_HIGHORDER_COMM;
 #endif
 
 #include "../libsrc/parallel/parallel.hpp"
-#include "../libsrc/parallel/parallelfunc.hpp"
+#include "parallelfunc.hpp"
 
 
 namespace netgen
