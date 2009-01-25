@@ -280,10 +280,9 @@ void ParallelRun()
 			     &wx, &wy, &ww, &wh,
 			     &bw, &depth);
 		
-		// cout << "P" << id << ": window-props:  x = " << wx << ", y = " << wy 
-		// << ", w = " << ww << ", h = " << wh << ", depth = " << depth << endl;
+                cout << "P" << id << ": window-props:  x = " << wx << ", y = " << wy 
+                     << ", w = " << ww << ", h = " << wh << ", depth = " << depth << endl;
 		
-
 #define VISUAL
 #ifdef VISUAL
 		
@@ -347,11 +346,11 @@ void ParallelRun()
 		if (!visinfo)
 		  cerr << "no VISINFO found" << endl;
 
-		// context = glXCreateContext( display, visinfo, 0, /* curContext, */ False );
+                // context = glXCreateContext( display, visinfo, 0, /* curContext, */ False );
 		context = glXCreateContext( display, visinfo, glXImportContextEXT ( display, contextid ), False );
+                cout << "context = " << context << endl;
 
-
-		// glXMakeCurrent (display, curDrawable, context);
+                glXMakeCurrent (display, curDrawable, context);
 
 
 #else
@@ -360,10 +359,10 @@ void ParallelRun()
 		
 		context = glXImportContextEXT ( display, contextid );
 
-		/*
+
 		PrintMessage (1, "GLX-contextid = " , contextid,
 			      " imported context ", context);
-		*/
+
 
 		// glXMakeCurrent (display, curDrawable, context);
 #endif

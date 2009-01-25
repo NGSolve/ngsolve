@@ -5,8 +5,6 @@
 #include <geometry2d.hpp>
 #include <stlgeom.hpp>
 
-#include "incvis.hpp"
-
 #include <visual.hpp>
 #include <parallel.hpp>
 

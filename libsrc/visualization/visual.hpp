@@ -13,7 +13,9 @@ Visualization
 
 */
 
+#ifdef PARALLEL
 #define PARALLELGL
+#endif
 
 #include "../include/incvis.hpp"
 

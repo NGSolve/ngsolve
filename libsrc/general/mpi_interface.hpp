@@ -15,12 +15,12 @@
 
 
 
-namespace netgen
-{
+// namespace netgen
+// {
   //using namespace netgen;
   enum { id = 0 };
   enum { ntasks = 0 };
-}
+// }
 
 
 #else   // if PARALLEL
@@ -35,8 +35,8 @@ namespace netgen
 extern MPI_Group MPI_HIGHORDER_WORLD;
 extern MPI_Comm MPI_HIGHORDER_COMM;
 
-namespace netgen
-{
+// namespace netgen
+// {
   extern int id, ntasks;
 
   template <class T>
@@ -267,7 +267,7 @@ namespace netgen
 // #include "paralleltop.hpp"
 // #include "parallelinterface.hpp"
 
-}
+// }
 
 #endif // PARALLEL
 

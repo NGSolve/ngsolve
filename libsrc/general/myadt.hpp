@@ -39,8 +39,9 @@ namespace netgen
 #include "stack.hpp"
 #include "mystring.hpp"
 #include "profiler.hpp"
-#include "netgenout.hpp"
 
+#include "mpi_interface.hpp"
+#include "netgenout.hpp"
 }
 
 #endif

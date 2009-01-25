@@ -1,13 +1,15 @@
 #ifndef NOTCL
 
 #include <mystdlib.h>
-#include "incvis.hpp"
+
 
 
 #include <myadt.hpp>
 #include <meshing.hpp>
 #include <csg.hpp>
 #include <stlgeom.hpp>
+
+#include <visual.hpp>
 
 #include <parallel.hpp>
 
@@ -18,7 +20,6 @@
 namespace netgen
 {
 
-#include "mvdraw.hpp"
 
 
 
@@ -897,8 +898,10 @@ namespace netgen
     static int timer = NgProfiler::CreateTimer ("Mesh::BuildFilledList");
     NgProfiler::RegionTimer reg (timer);
     
+    cout << "buildilled" << endl;
 
 #ifdef PARALLELGL
+    cout << "buildfillelist, id = " << id << ", nse = " << mesh -> GetNSE() << endl;
 
     if (id == 0 && ntasks > 1)
       {
@@ -912,7 +915,10 @@ namespace netgen
 	    MyMPI_Send ("filledlist", dest);
 	  }
 	for ( int dest = 1; dest < ntasks; dest++ )
-	  MyMPI_Recv (par_filledlists[dest], dest);
+          {
+            MyMPI_Recv (par_filledlists[dest], dest);
+            cout << "proc " << dest << " has drawn to list " << par_filledlists[dest] << endl;
+          }
 
 	if (filledlist)
 	  glDeleteLists (filledlist, 1);
@@ -950,7 +956,8 @@ namespace netgen
 
     filledlist = glGenLists (1);
     glNewList (filledlist, GL_COMPILE);
-
+    
+    cout << "I am p " << id << " and got filledlist " << filledlist << endl;
 
     bool checkvicinity = (stlgeometry != NULL) && stldoctor.showvicinity;
 
