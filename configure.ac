@@ -70,7 +70,6 @@ AC_DISABLE_STATIC
 AC_LANG([C++])
 AC_PROG_CXX
 AC_PROG_LIBTOOL
-# AC_PROG_RANLIB
 LT_INIT
 
 
@@ -92,18 +91,11 @@ AC_CHECK_HEADER([limits.h],[OCCFLAGS="$OCCFLAGS -DHAVE_LIMITS_H"])
 
 AC_CHECK_LIB(pthread, pthread_create)
 # AC_SEARCH_LIBS(Tcl_Init, [tcl8.5 tcl8.4])
-# AC_SEARCH_LIBS(Tk_Init, [tk8.5 tk8.4])
-# AC_SEARCH_LIBS(Togl_Init, Toglstub2.0 )
-
-# TEA_TCL_LINK_LIBS
-# AC_DEFINE(USE_TCL_STUBS)
-# AC_DEFINE(USE_TK_STUBS)
 
 
 AC_CHECK_FUNCS([pow])
 AC_CHECK_FUNCS([floor])
 AC_CHECK_HEADERS([limits.h])
-AC_CHECK_FUNCS([minabc])
 
 
 AC_CONFIG_FILES(Makefile libsrc/Makefile libsrc/csg/Makefile 
