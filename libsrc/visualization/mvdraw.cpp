@@ -6,7 +6,7 @@
 #include <stlgeom.hpp>
 
 #include <visual.hpp>
-#include <parallel.hpp>
+// #include <parallel.hpp>
 
 
 

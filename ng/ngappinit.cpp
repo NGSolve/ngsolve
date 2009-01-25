@@ -26,7 +26,7 @@ MPI_Comm MPI_HIGHORDER_COMM;
 
 #endif
 
-#include "../libsrc/parallel/parallel.hpp"
+// #include "../libsrc/parallel/parallel.hpp"
 #include "parallelfunc.hpp"
 
 

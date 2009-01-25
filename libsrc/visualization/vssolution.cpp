@@ -8,7 +8,7 @@
 #include <csg.hpp>
 #include <stlgeom.hpp>
 
-#include <parallel.hpp>
+// #include <parallel.hpp>
 #include <visual.hpp>
 
 

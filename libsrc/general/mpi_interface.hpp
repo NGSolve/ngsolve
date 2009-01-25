@@ -25,8 +25,9 @@
 
 #else   // if PARALLEL
 
- #include <mystdlib.h>
- #include <myadt.hpp>
+
+// #include <mystdlib.h>
+// #include <myadt.hpp>
 //  #include <meshing.hpp>
 // #include "incvis.hpp"
 

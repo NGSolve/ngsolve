@@ -35,7 +35,7 @@ The interface between the GUI and the netgen library
 #include "../libsrc/sockets/socketmanager.hpp"
 #endif
 
-#include <parallel.hpp>
+// #include <parallel.hpp>
 
 
 // to be sure to include the 'right' togl-version
