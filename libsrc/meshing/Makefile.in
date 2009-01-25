@@ -57,7 +57,8 @@ am_libmesh_la_OBJECTS = adfront2.lo adfront3.lo bisect.lo \
 	prism2rls.lo pyramid2rls.lo pyramidrls.lo quadrls.lo refine.lo \
 	ruler2.lo ruler3.lo secondorder.lo smoothing2.5.lo \
 	smoothing2.lo smoothing3.lo specials.lo tetrarls.lo \
-	topology.lo triarls.lo validate.lo zrefine.lo
+	topology.lo triarls.lo validate.lo zrefine.lo parallelmesh.lo \
+	paralleltop.lo
 libmesh_la_OBJECTS = $(am_libmesh_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -70,6 +71,15 @@ LTCXXCOMPILE = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+CCLD = $(CC)
+LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libmesh_la_SOURCES)
 DIST_SOURCES = $(libmesh_la_SOURCES)
@@ -254,7 +264,8 @@ libmesh_la_SOURCES = adfront2.cpp adfront3.cpp bisect.cpp boundarylayer.cpp    \
 	pyramid2rls.cpp pyramidrls.cpp quadrls.cpp refine.cpp		       \
 	ruler2.cpp ruler3.cpp secondorder.cpp smoothing2.5.cpp		       \
 	smoothing2.cpp smoothing3.cpp specials.cpp tetrarls.cpp		       \
-	topology.cpp triarls.cpp validate.cpp zrefine.cpp
+	topology.cpp triarls.cpp validate.cpp zrefine.cpp	\
+	parallelmesh.cpp  paralleltop.cpp  paralleltop.hpp
 
 all: all-am
 
@@ -331,6 +342,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msghandler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/netrule2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/netrule3.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parallelmesh.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/paralleltop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parser2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parser3.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prism2rls.Plo@am__quote@

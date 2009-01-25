@@ -67,7 +67,7 @@ namespace netgen
 #include "validate.hpp"
 
 #ifdef PARALLEL
-#include "../parallel/paralleltop.hpp"
+#include "paralleltop.hpp"
 // #include "../parallel/parallelmesh.hpp"
 #endif
 
