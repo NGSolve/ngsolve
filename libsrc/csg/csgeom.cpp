@@ -1062,7 +1062,7 @@ namespace netgen
 
     //    IndexSet iset(GetNSurf());
     locsol -> GetSurfaceIndices (iset);
-    const Array<int> & lsurfi = iset.Array();
+    const Array<int> & lsurfi = iset.GetArray();
 
     locsol -> IterateSolid (urpi);
 

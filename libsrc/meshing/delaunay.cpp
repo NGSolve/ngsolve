@@ -348,13 +348,13 @@ namespace netgen
       {
 	changed = 0;
 	starti = nstarti;
-	nstarti = insphere.Array().Size()+1;
+	nstarti = insphere.GetArray().Size()+1;
 
 
 	// if point in sphere, then it is also closesphere
 	for (int j = starti; j < nstarti; j++)
 	  {
-	    int helind = insphere.Array().Get(j);
+	    int helind = insphere.GetArray().Get(j);
 	    if (!closesphere.IsIn (helind))
 	      closesphere.Add (helind);
 	  }
@@ -362,7 +362,7 @@ namespace netgen
 	// add connected spheres to insphere - list
 	for (int j = starti; j < nstarti; j++)
 	  {
-	    list.GetList (insphere.Array().Get(j), connected);
+	    list.GetList (insphere.GetArray().Get(j), connected);
 	    for (int k = 0; k < connected.Size(); k++)
 	      {
 		int celind = connected[k];
@@ -380,7 +380,7 @@ namespace netgen
 	for (int j = starti; j < nstarti; j++)
 	  for (int k = 1; k <= 4; k++)
 	    {
-	      int helind = insphere.Array().Get(j);
+	      int helind = insphere.GetArray().Get(j);
 	      int nbind = meshnb.GetNB (helind, k);
 
 	      if (nbind && !insphere.IsIn (nbind) )
@@ -450,11 +450,11 @@ namespace netgen
 
     Element2d face(TRIG);
 
-    for (int j = 1; j <= insphere.Array().Size(); j++)
+    for (int j = 1; j <= insphere.GetArray().Size(); j++)
       for (int k = 1; k <= 4; k++)
 	{
-	  //	    int elind = insphere.Array().Get(j);
-	  int celind = insphere.Array().Get(j);
+	  //	    int elind = insphere.GetArray().Get(j);
+	  int celind = insphere.GetArray().Get(j);
 	  int nbind = meshnb.GetNB (celind, k);
 
 	  if (!nbind || !insphere.IsIn (nbind))
@@ -474,7 +474,7 @@ namespace netgen
 
 	      n.Normalize();
 	      if (n * Vec3d(mesh.Point (face[0]), 
-			    mesh.Point (tempels.Get(insphere.Array().Get(j))[k-1]))
+			    mesh.Point (tempels.Get(insphere.GetArray().Get(j))[k-1]))
 		  > 0)
 		n *= -1;
 
@@ -493,12 +493,12 @@ namespace netgen
 	    }
 	}
 
-    meshnb.ResetFaceHT (10*insphere.Array().Size()+1);
+    meshnb.ResetFaceHT (10*insphere.GetArray().Size()+1);
 
-    for (int j = 1; j <= insphere.Array().Size(); j++)
+    for (int j = 1; j <= insphere.GetArray().Size(); j++)
       {
 	//	  int elind = 
-	int celind = insphere.Array().Get(j);
+	int celind = insphere.GetArray().Get(j);
 
 	meshnb.Delete (celind); 
 	list.DeleteElement (celind);
@@ -512,9 +512,9 @@ namespace netgen
 
 
     int hasclose = 0;
-    for (int j = 1; j <= closesphere.Array().Size(); j++)
+    for (int j = 1; j <= closesphere.GetArray().Size(); j++)
       {
-	int ind = closesphere.Array().Get(j);
+	int ind = closesphere.GetArray().Get(j);
 	if (!insphere.IsIn(ind) &&
 	    fabs (Dist2 (centers.Get (ind), newp) - radi2.Get(ind)) < 1e-8 )
 	  hasclose = 1;
@@ -558,9 +558,9 @@ namespace netgen
 
 	r2 = Dist2 (*pp[0], pc);
 	if (hasclose)
-	  for (int k = 1; k <= closesphere.Array().Size(); k++)
+	  for (int k = 1; k <= closesphere.GetArray().Size(); k++)
 	    {
-	      int csameind = closesphere.Array().Get(k); 
+	      int csameind = closesphere.GetArray().Get(k); 
 	      if (!insphere.IsIn(csameind) &&
 		  fabs (r2 - radi2.Get(csameind)) < 1e-10 && 
 		  Dist (pc, centers.Get(csameind)) < 1e-10)

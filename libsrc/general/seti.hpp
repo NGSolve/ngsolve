@@ -38,7 +38,7 @@ public:
   void Del (int ind);
   void Clear ();
   
-  const Array<int> & Array() { return set; }
+  const Array<int> & GetArray() { return set; }
 };
 
 #endif
