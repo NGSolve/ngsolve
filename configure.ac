@@ -53,13 +53,13 @@ AC_ARG_ENABLE([nglib],
 
 AC_ARG_ENABLE([parallel],
         [  --enable-parallel       enable mpi parallelization],
-        [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -DPARALLEL  -I/home/joachim/download/metis-4.0/Lib -DMETIS")
-        AC_SUBST([MPI_LIBS], "-L/home/joachim/download/metis-4.0 -lmetis -L/opt/mpich/ch-p4/lib64 -lmpich")             
+        [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -DPARALLEL  -I/usr/share/metis/Lib -DMETIS")
+        AC_SUBST([MPI_LIBS], "-lmetis -L/opt/mpich/ch-p4/lib -lmpich")             
         ]
         )
 
-#        [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -DPARALLEL  -I/usr/share/metis/Lib -DMETIS")
-#        AC_SUBST([MPI_LIBS], "-lmetis -L/opt/mpich/ch-p4/lib -lmpich")             
+#        [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -DPARALLEL  -I/home/joachim/download/metis-4.0/Lib -DMETIS")
+#        AC_SUBST([MPI_LIBS], "-L/home/joachim/download/metis-4.0 -lmetis -L/opt/mpich/ch-p4/lib64 -lmpich")             
 
 
 # AC_HEADER_STDC
@@ -102,8 +102,8 @@ AC_CONFIG_FILES(Makefile libsrc/Makefile libsrc/csg/Makefile
 libsrc/general/Makefile  libsrc/geom2d/Makefile libsrc/gprim/Makefile
 libsrc/include/Makefile libsrc/interface/Makefile 
 libsrc/linalg/Makefile libsrc/meshing/Makefile libsrc/occ/Makefile 
-libsrc/opti/Makefile  libsrc/parallel/Makefile 
-libsrc/stlgeom/Makefile libsrc/visualization/Makefile ng/Makefile 
-nglib/Makefile tutorials/Makefile doc/Makefile)
+  libsrc/parallel/Makefile libsrc/stlgeom/Makefile
+  libsrc/visualization/Makefile ng/Makefile nglib/Makefile
+  tutorials/Makefile doc/Makefile)
 
 AC_OUTPUT

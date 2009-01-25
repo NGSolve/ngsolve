@@ -67,7 +67,6 @@ netgen_DEPENDENCIES =  \
 	$(top_builddir)/libsrc/parallel/libparallel.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
-	$(top_builddir)/libsrc/opti/libopti.la \
 	$(top_builddir)/libsrc/linalg/libla.la \
 	$(top_builddir)/libsrc/general/libgeneral.la \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -280,7 +279,6 @@ netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
 	$(top_builddir)/libsrc/parallel/libparallel.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
-	$(top_builddir)/libsrc/opti/libopti.la \
 	$(top_builddir)/libsrc/linalg/libla.la \
 	$(top_builddir)/libsrc/general/libgeneral.la \
 	$(OCCLIBS) -L$(TK_BIN_DIR)/Togl1.7 $(TOGLLIBDIR) -lTogl1.7 -lGLU $(TK_LIB_SPEC) $(TCL_LIB_SPEC) $(MPI_LIBS)

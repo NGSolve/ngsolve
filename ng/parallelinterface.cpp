@@ -3,7 +3,7 @@
 
 #include <meshing.hpp>
 
-#include "../libsrc/parallel/parallelinterface.hpp"
+#include "../libsrc/include/parallelinterface.hpp"
 
 namespace netgen
 {

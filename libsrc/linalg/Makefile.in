@@ -48,7 +48,8 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libla_la_LIBADD =
-am_libla_la_OBJECTS = densemat.lo polynomial.lo vector.lo
+am_libla_la_OBJECTS = densemat.lo polynomial.lo vector.lo bfgs.lo \
+	linopt.lo linsearch.lo
 libla_la_OBJECTS = $(am_libla_la_OBJECTS)
 libla_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
@@ -227,11 +228,11 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-noinst_HEADERS = densemat.hpp linalg.hpp polynomial.hpp vector.hpp
+noinst_HEADERS = densemat.hpp linalg.hpp polynomial.hpp vector.hpp opti.hpp
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
 noinst_LTLIBRARIES = libla.la
-libla_la_SOURCES = densemat.cpp polynomial.cpp vector.cpp
+libla_la_SOURCES = densemat.cpp polynomial.cpp vector.cpp bfgs.cpp linopt.cpp linsearch.cpp
 libla_la_LDFLAGS = -rdynamic
 all: all-am
 
@@ -284,7 +285,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bfgs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/densemat.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/linopt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/linsearch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/polynomial.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vector.Plo@am__quote@
 
