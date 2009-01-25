@@ -298,5 +298,6 @@ if { [catch { load libdemoapp.so demoapp } result ] } {
 #    puts "cannot load demoapp" 
 #    puts "error: $result"
 } {
+    catch { source ${ngdir}/demoapp.tcl }
 }
 
