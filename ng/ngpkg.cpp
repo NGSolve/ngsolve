@@ -3651,7 +3651,7 @@ namespace netgen
 		Tcl_Interp * interp,
 		int argc, tcl_const char *argv[]) 
   {
-#ifdef METIS
+#ifdef METISold
   
     if (!mesh)
       {

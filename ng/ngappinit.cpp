@@ -20,9 +20,9 @@
 namespace netgen
 {
   int id, ntasks;
+  MPI_Group MPI_HIGHORDER_WORLD;
+  MPI_Comm MPI_HIGHORDER_COMM;
 }
-MPI_Group MPI_HIGHORDER_WORLD;
-MPI_Comm MPI_HIGHORDER_COMM;
 
 #endif
 
@@ -96,8 +96,8 @@ int main(int argc, char ** argv)
     process_ranks[i] = i+1;
 
   MPI_Comm_group ( MPI_COMM_WORLD, &MPI_GROUP_WORLD);
-  MPI_Group_incl ( MPI_GROUP_WORLD, n_ho, process_ranks, & MPI_HIGHORDER_WORLD);
-  MPI_Comm_create ( MPI_COMM_WORLD, MPI_HIGHORDER_WORLD, &MPI_HIGHORDER_COMM);
+  MPI_Group_incl ( MPI_GROUP_WORLD, n_ho, process_ranks, & netgen::MPI_HIGHORDER_WORLD);
+  MPI_Comm_create ( MPI_COMM_WORLD, netgen::MPI_HIGHORDER_WORLD, & netgen::MPI_HIGHORDER_COMM);
 
 #pragma pomp inst begin(main)
 #endif

@@ -4,6 +4,14 @@
 #include "parallel.hpp"
 #include "paralleltop.hpp"
 
+
+#ifdef METIS
+namespace metis { extern "C" {
+#include <metis.h>
+} }
+#endif
+
+
 using namespace metis;
 
 namespace netgen
@@ -66,7 +74,7 @@ namespace netgen
  	  {
 	    NgProfiler::RegionTimer reg(timer_pts);
 
-            ARRAY<double> pointarray;
+            Array<double> pointarray;
             MyMPI_Recv ( pointarray, 0 );
 
 	    int numvert = pointarray.Size() / 5;
@@ -88,7 +96,7 @@ namespace netgen
 		(*this)[PointIndex(vert+1)] .Singularity ( pointarray[vert*5+4] );
 	      }
 
-	    ARRAY<int> dist_pnums;
+	    Array<int> dist_pnums;
 	    MyMPI_Recv ( dist_pnums, 0);
 
 	    for (int hi = 0; hi < dist_pnums.Size(); hi += 3)
@@ -106,7 +114,7 @@ namespace netgen
 
 	    Element el;
 
-            ARRAY<int> elarray;
+            Array<int> elarray;
             MyMPI_Recv ( elarray, 0);
 
 	    int ind = 0;
@@ -132,7 +140,7 @@ namespace netgen
 
 	if (strcmp (st.c_str(), "facedescriptor") == 0)
 	  {
-	    ARRAY<double> doublebuf;
+	    Array<double> doublebuf;
 	    MyMPI_Recv( doublebuf, 0 );
 	    int faceind = AddFaceDescriptor (FaceDescriptor(int(doublebuf[0]), int(doublebuf[1]), int(doublebuf[2]), 0));
 	    GetFaceDescriptor(faceind).SetBCProperty (int(doublebuf[3]));
@@ -472,7 +480,7 @@ namespace netgen
 
 
 
-  void Mesh :: PartHybridMesh () //  ARRAY<int> & neloc ) 
+  void Mesh :: PartHybridMesh () //  Array<int> & neloc ) 
   {
 
     int ne = GetNE();
@@ -494,7 +502,7 @@ namespace netgen
     xadj = new idxtype[nn+1];
     part = new idxtype[nn];
 
-    ARRAY<int> cnt(nn+1);
+    Array<int> cnt(nn+1);
     cnt = 0;
 
     for ( int edge = 1; edge <= nedges; edge++ )
@@ -533,7 +541,7 @@ namespace netgen
     metis :: METIS_PartGraphKway ( &nn, xadj, adjacency, v_weights, e_weights, &weightflag, 
 			  &numflag, &nparts, options, &edgecut, part );
 
-    ARRAY<int> nodesinpart(ntasks);
+    Array<int> nodesinpart(ntasks);
 
     for ( int el = 1; el <= ne; el++ )
       {
@@ -568,7 +576,7 @@ namespace netgen
   }
 
 
-  void Mesh :: PartDualHybridMesh ( ) // ARRAY<int> & neloc ) 
+  void Mesh :: PartDualHybridMesh ( ) // Array<int> & neloc ) 
   {
     int ne = GetNE();
     
@@ -587,15 +595,15 @@ namespace netgen
     int edgecut;
     idxtype * part;
 
-    ARRAY<int, 0> facevolels1(nfaces), facevolels2(nfaces);
+    Array<int, 0> facevolels1(nfaces), facevolels2(nfaces);
     facevolels1 = -1;
     facevolels2 = -1;
 
-    ARRAY<int, 0> elfaces;
+    Array<int, 0> elfaces;
     xadj = new idxtype[ne+1];
     part = new idxtype[ne];
 
-    ARRAY<int, 0> cnt(ne+1);
+    Array<int, 0> cnt(ne+1);
     cnt = 0;
 
     for ( int el=1; el <= ne; el++ )
@@ -650,7 +658,7 @@ namespace netgen
 
     NgProfiler::StopTimer (timermetis);
 
-    ARRAY<int> nodesinpart(ntasks);
+    Array<int> nodesinpart(ntasks);
 
     for ( int el = 1; el <= ne; el++ )
       {
@@ -682,11 +690,11 @@ namespace netgen
     int ne = GetNSE();
     int nv = GetNV();
 
-    ARRAY<idxtype> xadj(ne+1);
-    ARRAY<idxtype> adjacency(ne*4);
+    Array<idxtype> xadj(ne+1);
+    Array<idxtype> adjacency(ne*4);
 
     // first, build the vertex 2 element table:
-    ARRAY<int, PointIndex::BASE> cnt(nv);
+    Array<int, PointIndex::BASE> cnt(nv);
     cnt = 0;
     for (SurfaceElementIndex sei = 0; sei < GetNSE(); sei++)
       for (int j = 0; j < (*this)[sei].GetNP(); j++)
@@ -700,7 +708,7 @@ namespace netgen
 
     // find all neighbour elements
     int cntnb = 0;
-    ARRAY<int> marks(ne);   // to visit each neighbour just once
+    Array<int> marks(ne);   // to visit each neighbour just once
     marks = -1;
     for (SurfaceElementIndex sei = 0; sei < ne; sei++)
       {
@@ -742,7 +750,7 @@ namespace netgen
     int options[5];
     options[0] = 0;
     int edgecut;
-    ARRAY<idxtype> part(ne);
+    Array<idxtype> part(ne);
 
     for ( int el = 0; el < ne; el++ )
       BubbleSort (adjacency.Range (xadj[el], xadj[el+1]));
@@ -759,7 +767,7 @@ namespace netgen
 
 
 
-  void Mesh :: SendMesh () const   //  Mesh * mastermesh, ARRAY<int> & neloc ) const
+  void Mesh :: SendMesh () const   //  Mesh * mastermesh, Array<int> & neloc ) const
   {
     const Mesh * mastermesh = this;    // the original plan was different 
 
@@ -797,7 +805,7 @@ namespace netgen
     // MPI_Barrier (MPI_COMM_WORLD);
 
     
-    ARRAY<int> num_els_on_proc(ntasks);
+    Array<int> num_els_on_proc(ntasks);
     num_els_on_proc = 0;
     for (ElementIndex ei = 0; ei < mastermesh->GetNE(); ei++)
       num_els_on_proc[(*this)[ei].GetPartition()]++;
@@ -817,8 +825,8 @@ namespace netgen
 
 
     // get number of vertices for each processor
-    ARRAY<int> elarraysize(ntasks);
-    ARRAY<int> nelloc ( ntasks );
+    Array<int> elarraysize(ntasks);
+    Array<int> nelloc ( ntasks );
     
     nelloc = 0;
     elarraysize = 1;
@@ -830,10 +838,10 @@ namespace netgen
       els_of_proc.Add ( (*this)[ei].GetPartition(), ei);
 
 
-    ARRAY<int, PointIndex::BASE> vert_flag ( GetNV() );
+    Array<int, PointIndex::BASE> vert_flag ( GetNV() );
 
-    ARRAY<int> num_verts_on_proc (ntasks);
-    ARRAY<int, PointIndex::BASE> num_procs_on_vert ( GetNV() );
+    Array<int> num_verts_on_proc (ntasks);
+    Array<int, PointIndex::BASE> num_procs_on_vert ( GetNV() );
 
     num_verts_on_proc = 0;
     num_procs_on_vert = 0;
@@ -903,7 +911,7 @@ namespace netgen
       }
 
 
-    ARRAY<int> nvi5(ntasks);
+    Array<int> nvi5(ntasks);
     for (int i = 0; i < ntasks; i++) 
       nvi5[i] = 5 * num_verts_on_proc[i];
 
@@ -934,7 +942,7 @@ namespace netgen
     NgProfiler::StopTimer (timer3);
     NgProfiler::StartTimer (timer4);
 
-    ARRAY<int> num_distpnums(ntasks);
+    Array<int> num_distpnums(ntasks);
     num_distpnums = 0;
 
     for (int vert = 1; vert <= mastermesh -> GetNP(); vert++)
@@ -1018,7 +1026,7 @@ namespace netgen
     PrintMessage ( 3, "Sending Face Descriptors" );
   
 
-    ARRAY<double> double6(6);
+    Array<double> double6(6);
     for ( int dest = 1; dest < ntasks; dest++)
       for ( int fdi = 1; fdi <= mastermesh->GetNFD(); fdi++)
         {
@@ -1048,7 +1056,7 @@ namespace netgen
 
     PrintMessage ( 3, "Sending Surface elements" );
   
-    ARRAY <int> nlocsel(ntasks), bufsize ( ntasks), seli(ntasks);
+    Array <int> nlocsel(ntasks), bufsize ( ntasks), seli(ntasks);
     for ( int i = 0; i < ntasks; i++)
       {
 	nlocsel[i] = 0;
@@ -1088,7 +1096,7 @@ namespace netgen
     
 
 
-    ARRAY<int> nselloc (ntasks);
+    Array<int> nselloc (ntasks);
     nselloc = 0;
 
     for ( int dest = 1; dest < ntasks; dest++ )
@@ -1165,7 +1173,7 @@ namespace netgen
       MyMPI_Send ( "edgesegmentsgi", dest);    
 
 
-    ARRAY <int> nlocseg(ntasks), segi(ntasks);
+    Array <int> nlocseg(ntasks), segi(ntasks);
     for ( int i = 0; i < ntasks; i++)
       {
 	nlocseg[i] = 0;
@@ -1175,7 +1183,7 @@ namespace netgen
 
     for ( int segi = 1; segi <= mastermesh -> GetNSeg(); segi ++ )
       {
-	ARRAY<int> volels;
+	Array<int> volels;
 	const MeshTopology & topol = mastermesh -> GetTopology();
 	topol . GetSegmentVolumeElements ( segi, volels );
 	const Segment & segm = mastermesh -> LineSegment (segi);
@@ -1207,7 +1215,7 @@ namespace netgen
     //     cout << "mastermesh " << mastermesh -> GetNSeg() << "    lineseg " << mastermesh -> LineSegment (1) << endl;
     for ( int ls=1; ls <= mastermesh -> GetNSeg(); ls++)
       {
-	ARRAY<int> volels;
+	Array<int> volels;
 	mastermesh -> GetTopology().GetSegmentVolumeElements ( ls, volels );
 	const Segment & seg = mastermesh -> LineSegment (ls);
 	int dest;
@@ -1290,7 +1298,7 @@ namespace netgen
   void Mesh :: UpdateOverlap()
   {
     (*testout) << "UPDATE OVERLAP" << endl;
-    ARRAY<int> * globelnums;
+    Array<int> * globelnums;
 
 #ifdef SCALASCA
 #pragma pomp inst begin(updateoverlap)
@@ -1308,7 +1316,7 @@ namespace netgen
 	int nfa = topology -> GetNFaces();
 	int nel = GetNE();
 
-	ARRAY<int,PointIndex::BASE> glob2loc_vert(nvglob);
+	Array<int,PointIndex::BASE> glob2loc_vert(nvglob);
 	glob2loc_vert = -1;
 
 	for ( int locv = 1; locv <= GetNV(); locv++)
@@ -1322,7 +1330,7 @@ namespace netgen
 	addedpoint.Clear();
 	addedel.Clear();
 	
-	ARRAY<int> distvert(ntasks), distel(ntasks), nsenddistel(ntasks);
+	Array<int> distvert(ntasks), distel(ntasks), nsenddistel(ntasks);
 
 	nsenddistel = 0;
 	
@@ -1346,7 +1354,7 @@ namespace netgen
 
 	    if ( node == cluster_rep ) continue;
 
-	    ARRAY<int> dests;
+	    Array<int> dests;
 	    int nneigh = 0;
 	    if ( node - GetNV() <= 0 ) // cluster representant is vertex
 	      {
@@ -1403,16 +1411,16 @@ namespace netgen
 	    sendsel.Add(i, 0);
 	  }
 
-	ARRAY<int> nsentsel (ntasks);
+	Array<int> nsentsel (ntasks);
 	nsentsel = 0;
 
 	for ( int seli = 1; seli <= GetNSE(); seli++ )
 	  {
 	    const Element2d & sel = SurfaceElement(seli);
 	    int selnp = sel.GetNP();
-	    ARRAY<int> vert (selnp);
+	    Array<int> vert (selnp);
 	    
-	    ARRAY<int> alldests (0), dests;
+	    Array<int> alldests (0), dests;
 	    
 	    bool isparsel = false;
 	    for ( int i = 0; i < selnp; i++ )
@@ -1475,9 +1483,9 @@ namespace netgen
 	  {
 	    const Element & el = VolumeElement(eli);
 	    int elnp = el.GetNP();
-	    ARRAY<int> vert (elnp);
+	    Array<int> vert (elnp);
 	    
-	    ARRAY<int> alldests (0), dests;
+	    Array<int> alldests (0), dests;
 	    
 	    for ( int i = 0; i < elnp; i++ )
 	      {
@@ -1515,19 +1523,19 @@ namespace netgen
 	  {
 	    const Element & el = VolumeElement(eli);
 	    int elnp = el.GetNP();
-	    ARRAY<int> vert (elnp);
+	    Array<int> vert (elnp);
 
 	    // 	  append to point list:
 	    // 	  local pnum
 	    // 	  global pnum
 	    // 	  point coordinates
 
-	    ARRAY<Point3d> points(elnp);
+	    Array<Point3d> points(elnp);
 	    for ( int i = 0; i < elnp; i++ )
 	      {
 		vert[i] = el.PNum(i+1);
 		points[i] = Point(vert[i]);
-		ARRAY<int> knowndests;
+		Array<int> knowndests;
 		// send point to all dests which get the volume element
 		for ( int dest = 0; dest < ntasks; dest ++ )
 		  {
@@ -1598,9 +1606,9 @@ namespace netgen
 	distel = 0;    
 
 	// sizes of sendpoints, sendelements, sendsels
-	ARRAY<int> sendsize_pts(ntasks), recvsize_pts(ntasks);
-	ARRAY<int> sendsize_els(ntasks), recvsize_els(ntasks);
-	ARRAY<int> sendsize_sels(ntasks), recvsize_sels(ntasks);
+	Array<int> sendsize_pts(ntasks), recvsize_pts(ntasks);
+	Array<int> sendsize_els(ntasks), recvsize_els(ntasks);
+	Array<int> sendsize_sels(ntasks), recvsize_sels(ntasks);
 
 	for (int i = 0; i < ntasks; i++)
 	  {
@@ -1625,8 +1633,8 @@ namespace netgen
 	recvsel.SetElementSizesToMaxSizes ();
 
 	/*
-	ARRAY<MPI_Request> sendrequest(3*ntasks), recvrequest(3*ntasks);
-	ARRAY<MPI_Status> status(3*ntasks);
+	Array<MPI_Request> sendrequest(3*ntasks), recvrequest(3*ntasks);
+	Array<MPI_Status> status(3*ntasks);
 
 	for ( int proc = 1; proc < ntasks; proc++)
 	  {
@@ -1655,7 +1663,7 @@ namespace netgen
 	  }
 	*/
 
-	ARRAY<MPI_Request> requests;
+	Array<MPI_Request> requests;
 	
 	for ( int proc = 1; proc < ntasks; proc++)
 	  {
@@ -1682,12 +1690,12 @@ namespace netgen
 
 
 
-	ARRAY<int> * distpnum2parpnum;
-	distpnum2parpnum = new ARRAY<int> [2];
+	Array<int> * distpnum2parpnum;
+	distpnum2parpnum = new Array<int> [2];
 	distpnum2parpnum[0].SetSize(0);
 	distpnum2parpnum[1].SetSize(0);
  
-	ARRAY<int> firstdistpnum (ntasks);
+	Array<int> firstdistpnum (ntasks);
 
 
 	for ( int sender = 1; sender < ntasks; sender++)
@@ -1748,7 +1756,7 @@ namespace netgen
 		int distelnum = (recvelements[sender])[ii++];
 		int globelnum = (recvelements[sender])[ii++] ;
 		int elnp = (recvelements[sender])[ii++] ;
-		ARRAY<int> pnums(elnp), globpnums(elnp);
+		Array<int> pnums(elnp), globpnums(elnp);
 
 		// append volel
 		ELEMENT_TYPE eltype; 
@@ -1802,8 +1810,8 @@ namespace netgen
 		int distselnum = (recvsel[sender])[ii++];
 		int selnp = (recvsel[sender])[ii++] ;
 
-		ARRAY<int> globpnums(selnp);
-		ARRAY<int> pnums(selnp);
+		Array<int> globpnums(selnp);
+		Array<int> pnums(selnp);
 
 		// append volel
 		ELEMENT_TYPE eltype; 
@@ -1840,7 +1848,7 @@ namespace netgen
 
       }
 
-    globelnums = new ARRAY<int>;
+    globelnums = new Array<int>;
     if ( id == 0 )
       {
 	for ( int dest = 1; dest < ntasks; dest++)

@@ -216,7 +216,7 @@ int ParallelMeshTopology :: Glob2Loc_Segm (int globnum )
       for ( int i = 1; i <= nfa; i++ )
 	if ( IsExchangeFace(i) )
 	  {
-	    ARRAY<int> facevert;
+	    Array<int> facevert;
 	    mesh . GetTopology().GetFaceVertices(i, facevert);
 	    
 	    (*testout) << "exchange face  " << i << ":  global vertices " ;
@@ -235,7 +235,7 @@ int ParallelMeshTopology :: Glob2Loc_Segm (int globnum )
       for ( int i = 1; i < mesh.GetNE(); i++)
 	{
 	  if ( !IsExchangeElement(i) ) continue;
-	  ARRAY<int> vert;
+	  Array<int> vert;
 	  const Element & el = mesh.VolumeElement(i);
 
 	  (*testout) << "parallel local element " << i << endl;
@@ -333,7 +333,7 @@ int  ParallelMeshTopology :: GetNDistantElNums ( int locelnum ) const
 
 
   // gibt anzahl an distant pnums zurueck
-  // * pnums entspricht ARRAY<int[2] >
+  // * pnums entspricht Array<int[2] >
 int  ParallelMeshTopology :: GetDistantPNums ( int locpnum, int * distpnums ) const
   {
 //     distpnums[0] = loc2distvert[locpnum][0];
@@ -520,7 +520,7 @@ int  ParallelMeshTopology :: GetDistantElNums ( int locelnum, int * distelnums )
     loc2distsegm.Add (locnum-1, distnum);
   }
 
-  void ParallelMeshTopology :: GetVertNeighbours ( int vnum, ARRAY<int> & dests ) const
+  void ParallelMeshTopology :: GetVertNeighbours ( int vnum, Array<int> & dests ) const
   {
     dests.SetSize(0);
     int i = 1;
@@ -577,7 +577,7 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
   *testout << "ParallelMeshTopology :: UpdateCoarseGridGlobal" << endl;
   const MeshTopology & topology = mesh.GetTopology();
   
-  ARRAY<int> sendarray, recvarray;
+  Array<int> sendarray, recvarray;
 
   nfa = topology . GetNFaces();
   ned = topology . GetNEdges();
@@ -611,7 +611,7 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
               SetExchangeVert ( dest, el.PNum(i+1) );
               SetExchangeVert ( el.PNum(i+1) );
             }
-          ARRAY<int> edges;
+          Array<int> edges;
           topology . GetElementEdges ( eli, edges );
           for ( int i = 0; i < edges.Size(); i++ )
             {
@@ -651,7 +651,7 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
     recvface.Clear();
    
     /*
-    ARRAY<int> edges, pnums, faces;
+    Array<int> edges, pnums, faces;
     for ( int el = 1; el <= ne; el++ )
       {
 	topology.GetElementFaces (el, faces);
@@ -705,7 +705,7 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
     */
 
       // new version
-    ARRAY<int> edges, pnums, faces, elpnums;
+    Array<int> edges, pnums, faces, elpnums;
     sendarray.Append (ne);
     for ( int el = 1; el <= ne; el++ )
       {
@@ -739,8 +739,8 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
     edgeisinit.Clear();
     vertisinit.Clear();
     
-    // ARRAY for temporary use, to find local from global element fast
-    ARRAY<int,1> glob2loc_el;
+    // Array for temporary use, to find local from global element fast
+    Array<int,1> glob2loc_el;
     if ( id != 0 ) 
       {
 	glob2loc_el.SetSize (neglob);  
@@ -789,8 +789,8 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
 	
 
 
-	ARRAY<int> faces, edges;
-	ARRAY<int> pnums, globalpnums;
+	Array<int> faces, edges;
+	Array<int> pnums, globalpnums;
 
 	int recv_ne = recvarray[ii++];
 	for (int hi = 0; hi < recv_ne; hi++)
@@ -866,9 +866,9 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
     if ( id == 0 ) return;
 
 
-    ARRAY<int> * sendarray, *recvarray;
-    sendarray = new ARRAY<int> (0);
-    recvarray = new ARRAY<int>;
+    Array<int> * sendarray, *recvarray;
+    sendarray = new Array<int> (0);
+    recvarray = new Array<int>;
 
     nfa = topology . GetNFaces();
     ned = topology . GetNEdges();
@@ -888,7 +888,7 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
 
 	if ( !IsExchangeFace ( fa ) ) continue;
 
-	ARRAY<int> edges, pnums;
+	Array<int> edges, pnums;
 	int globfa = GetDistantFaceNum ( 0, fa );
 
 	topology.GetFaceEdges ( fa, edges );
@@ -934,11 +934,11 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
     edgeisinit.Clear();
     vertisinit.Clear();
     
-    // ARRAY for temporary use, to find local from global element fast
+    // Array for temporary use, to find local from global element fast
     // only for not too big meshes 
     // seems ok, as low-order space is treated on one proc
-    ARRAY<int,1> * glob2locfa;
-    glob2locfa = new ARRAY<int,1> ( nfaglob );
+    Array<int,1> * glob2locfa;
+    glob2locfa = new Array<int,1> ( nfaglob );
     (*glob2locfa) = -1;
 
     for ( int locfa = 1; locfa <= nfa; locfa++)
@@ -988,10 +988,10 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
 		    continue;
 		  }
 		
-		ARRAY<int> edges;
+		Array<int> edges;
 		int fa = locfa;
 		
-		ARRAY<int> pnums, globalpnums;
+		Array<int> pnums, globalpnums;
 		topology.GetFaceEdges ( fa, edges );
 		topology.GetFaceVertices ( fa, pnums );
 		
@@ -1090,9 +1090,9 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
     // receive distant distnum, v1, v2
     // find matching
 
-    ARRAY<int> * sendarray, *recvarray;
-    sendarray = new ARRAY<int> (0);
-    recvarray = new ARRAY<int>;
+    Array<int> * sendarray, *recvarray;
+    sendarray = new Array<int> (0);
+    recvarray = new Array<int>;
     
     sendarray->SetSize (0);
 
@@ -1101,7 +1101,7 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
    
     for ( int el = 1; el <= ne; el++ )
       {
-	ARRAY<int> edges, pnums, faces;
+	Array<int> edges, pnums, faces;
 	topology.GetElementFaces (el, faces);
 	int globeli = GetLoc2Glob_VolEl(el);
 	for ( int fai = 0; fai < faces.Size(); fai++)
@@ -1160,12 +1160,12 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
     edgeisinit.Clear();
     vertisinit.Clear();
     
-    // ARRAY for temporary use, to find local from global element fast
+    // Array for temporary use, to find local from global element fast
     // only for not too big meshes 
     // seems ok, as low-order space is treated on one proc
-    ARRAY<int,1> * glob2loc_el;
+    Array<int,1> * glob2loc_el;
 
-    glob2loc_el = new ARRAY<int,1> ( neglob );
+    glob2loc_el = new Array<int,1> ( neglob );
     (*glob2loc_el) = -1;
     for ( int locel = 1; locel <= mesh.GetNE(); locel++)
       (*glob2loc_el)[GetLoc2Glob_VolEl(locel)] = locel;
@@ -1222,7 +1222,7 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
 		    continue;
 		  }
 
-		ARRAY<int> faces, edges;
+		Array<int> faces, edges;
 		topology.GetElementFaces( volel, faces);
 		topology.GetElementEdges ( volel, edges);
 		for ( int fai= 0; fai < faces.Size(); fai++ )
@@ -1231,7 +1231,7 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
 		    if ( !IsExchangeFace ( fa ) && sender != 0 ) continue;
 		    //		    if ( recvface.Test ( fa-1 ) ) continue;
 
-		    ARRAY<int> pnums, globalpnums;
+		    Array<int> pnums, globalpnums;
 		    //topology.GetFaceEdges ( fa, edges );
 		    topology.GetFaceVertices ( fa, pnums );
 
@@ -1339,8 +1339,8 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
 //     nsurfel = mesh.GetNSE();
     if ( id != 0 )
       {
-	ARRAY<int> * sendarray;
-	sendarray = new ARRAY<int> (4);
+	Array<int> * sendarray;
+	sendarray = new Array<int> (4);
 
 	int sendnfa = 0, sendned = 0;
 
@@ -1382,7 +1382,7 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
 
     else
       {
-	ARRAY<int> * recvarray = new ARRAY<int>;
+	Array<int> * recvarray = new Array<int>;
 
 	for ( int sender = 1; sender < ntasks; sender++ )
 	  {
@@ -1443,7 +1443,7 @@ void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
       }
 
 
-    ARRAY<int> pnums;
+    Array<int> pnums;
     for ( int fa = 1; fa <= nfa; fa++)
       {
 	topology.GetFaceVertices ( fa, pnums );
@@ -1472,7 +1472,7 @@ void ParallelMeshTopology :: UpdateExchangeElements()
     {
       if ( ! IsExchangeElement ( eli ) ) continue;
       const Element & el = mesh.VolumeElement(eli);
-      ARRAY<int> faces, edges;
+      Array<int> faces, edges;
       int np = el.NP();
 
       topology.GetElementEdges ( eli, edges );
@@ -1495,14 +1495,14 @@ void ParallelMeshTopology :: UpdateExchangeElements()
 
 
 
-  ARRAY<int> ** elementonproc, ** recvelonproc;
-  elementonproc = new ARRAY<int>*[ntasks];
-  recvelonproc = new ARRAY<int>*[ntasks];
+  Array<int> ** elementonproc, ** recvelonproc;
+  elementonproc = new Array<int>*[ntasks];
+  recvelonproc = new Array<int>*[ntasks];
 
   for ( int i = 1; i < ntasks; i++ )
     {
-      elementonproc[i] = new ARRAY<int>(0);
-      recvelonproc[i] = new ARRAY<int>(0);
+      elementonproc[i] = new Array<int>(0);
+      recvelonproc[i] = new Array<int>(0);
     }
 
 
