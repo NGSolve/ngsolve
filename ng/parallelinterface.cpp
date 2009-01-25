@@ -1,6 +1,5 @@
 #ifdef PARALLEL
 #include <mystdlib.h>
-#include <parallel.hpp>
 
 #include <meshing.hpp>
 
