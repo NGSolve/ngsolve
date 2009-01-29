@@ -32,7 +32,7 @@ void RegisterUserFormats (Array<const char*> & names)
       "STL Format",
       "VRML Format",
       "Gmsh Format",
-      "Gmsh2 Format"
+      "Gmsh2 Format",
       "JCMwave Format",
       "TET Format",
       //      { "Chemnitz Format" },
