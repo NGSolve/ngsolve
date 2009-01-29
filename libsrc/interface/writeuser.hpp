@@ -8,7 +8,7 @@
 /**************************************************************************/
 
 
-extern 
+extern
 void WriteFile (int typ,
 		const Mesh & mesh,
 		const CSGeometry & geom,
@@ -18,7 +18,7 @@ void WriteFile (int typ,
 
 
 
-extern 
+extern
 void ReadFile (Mesh & mesh,
 	       const string & filename);
 
@@ -55,6 +55,14 @@ void WriteGmshFormat (const Mesh & mesh,
                          const CSGeometry & geom,
                          const string & filename);
 
+
+// Philippose - 29/01/2009
+// Added GMSH v2.xx Mesh Export support
+void WriteGmsh2Format (const Mesh & mesh,
+			           const CSGeometry & geom,
+			           const string & filename);
+
+
 extern
 void WriteUserChemnitz (const Mesh & mesh,
 			const string & filename);
@@ -65,7 +73,7 @@ void WriteJCMFormat (const Mesh & mesh,
                      const string & filename);
 
 
-extern 
+extern
 void WriteDiffPackFormat (const Mesh & mesh,
 			  const CSGeometry & geom,
 			  const string & filename);
@@ -131,7 +139,7 @@ extern void RegisterUserFormats (Array<const char*> & names);
 
 extern bool WriteUserFormat (const string & format,
 			     const Mesh & mesh,
-			     const CSGeometry & geom, 
+			     const CSGeometry & geom,
 			     const string & filename);
 
 
