@@ -9,18 +9,25 @@
 #include <csg.hpp>
 #include <stlgeom.hpp>
 
-#include <visual.hpp>
-
 // #include <parallel.hpp>
 
+#ifdef OCCGEOMETRY
+// Philippose - 30/01/2009
+// Required for OpenCascade XDE Support
+#include <occgeom.hpp>
+#endif
 
-
+#include <visual.hpp>
 
 
 namespace netgen
 {
 
-
+#ifdef OCCGEOMETRY
+  // Philippose - 30/01/2009
+  // Required for OpenCascade XDE Support
+  extern OCCGeometry * occgeometry;
+#endif
 
 
   extern AutoPtr<Mesh> mesh;
@@ -50,12 +57,12 @@ namespace netgen
     linetimestamp = GetTimeStamp();
     edgetimestamp = GetTimeStamp();
     pointnumbertimestamp = GetTimeStamp();
-  
+
     tettimestamp = GetTimeStamp();
     prismtimestamp = GetTimeStamp();
     hextimestamp = GetTimeStamp();
     pyramidtimestamp = GetTimeStamp();
-  
+
     badeltimestamp = GetTimeStamp();
     identifiedtimestamp = GetTimeStamp();
     domainsurftimestamp = GetTimeStamp();
@@ -74,25 +81,25 @@ namespace netgen
     ;
   }
 
-  
+
   void VisualSceneMesh :: DrawScene ()
   {
-    if (!mesh) 
+    if (!mesh)
       {
 	VisualScene::DrawScene();
 	return;
       }
-    
+
     lock = NULL;
-    
+
     clock_t starttime, endtime;
     starttime = clock();
-   
+
     BuildScene();
-    
+
     glClearColor(backcolor, backcolor, backcolor, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
+
     glEnable (GL_COLOR_MATERIAL);
     glColor3f (1.0f, 1.0f, 1.0f);
     glLineWidth (1.0f);
@@ -104,8 +111,8 @@ namespace netgen
 
     GLdouble projmat[16];
     glGetDoublev (GL_PROJECTION_MATRIX, projmat);
-  
-  
+
+
 #ifdef PARALLEL
    glEnable (GL_BLEND);
    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -121,23 +128,23 @@ namespace netgen
 //         glDisable (GL_DEPTH_TEST);
 //         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     //    glHint (GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-  
+
     glDisable (GL_COLOR_MATERIAL);
-  
+
     GLfloat matcol0[] = { 0, 0, 0, 1 };
     GLfloat matcol1[] = { 1, 1, 1, 1 };
     GLfloat matcolf[] = { 0, 1, 0, 1 };
     GLfloat matcolb[] = { 0.5, 0, 0, 1 };
     GLfloat matcolblue[] = { 0, 0, 1, 1 };
-  
-    glMatrixMode (GL_MODELVIEW); 
-  
+
+    glMatrixMode (GL_MODELVIEW);
+
     glMaterialfv(GL_FRONT, GL_EMISSION, matcol0);
     glMaterialfv(GL_BACK, GL_EMISSION, matcol0);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, matcol1);
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcolf);
     glMaterialfv(GL_BACK, GL_AMBIENT_AND_DIFFUSE, matcolb);
-  
+
     glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 
 
@@ -198,15 +205,15 @@ namespace netgen
       }
 
     glDisable (GL_POLYGON_OFFSET_FILL);
-  
+
     // draw lines
 
-    glMatrixMode (GL_MODELVIEW); 
-  
+    glMatrixMode (GL_MODELVIEW);
+
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, matcol0);
     glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, matcol0);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, matcol0);
-  
+
     glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
     glLineWidth (1.0f);
     glColor3f (0.0f, 0.0f, 0.0f);
@@ -215,7 +222,7 @@ namespace netgen
 
 
 
-  
+
     if (vispar.drawoutline)
       {
 	glPolygonOffset (1, 1);
@@ -246,14 +253,14 @@ namespace netgen
 	glCallList (identifiedlist);
 	glDisable (GL_POLYGON_OFFSET_LINE);
       }
-  
+
     if (vispar.drawpointnumbers ||
 	vispar.drawedgenumbers ||
 	vispar.drawfacenumbers ||
 	vispar.drawelementnumbers)
       glCallList (pointnumberlist);
-  
-  
+
+
     glPopName();
 
     if (vispar.drawedges)
@@ -270,20 +277,20 @@ namespace netgen
 	glColor3d (0, 0, 1);
 	glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, matcolblue);
 	glBegin (GL_POINTS);
-      
+
 	const Point3d p = mesh->Point(selpoint);
 	glVertex3f (p.X(), p.Y(), p.Z());
 	glEnd();
 	*/
 
 	glColor3d (0, 0, 1);
-	
-	static GLubyte cross[] = 
+
+	static GLubyte cross[] =
 	  {
 	    0xc6, 0xee, 0x7c, 0x38, 0x7c, 0xee, 0xc6
 	  };
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	
+
 	glDisable (GL_COLOR_MATERIAL);
 	glDisable (GL_LIGHTING);
 	glDisable (GL_CLIP_PLANE0);
@@ -311,7 +318,7 @@ namespace netgen
 	lock = NULL;
       }
 
-    glFinish();  
+    glFinish();
 
 
     endtime = clock();
@@ -334,11 +341,11 @@ namespace netgen
       }
 
     int i, j;
-	
+
 
     Point3d pmin, pmax;
     static double oldrad = 0;
-	
+
     Array<Element2d> faces;
 
     int meshtimestamp = mesh->GetTimeStamp();
@@ -352,9 +359,9 @@ namespace netgen
         else
           {
             // otherwise strange zooms douring mesh generation
-            mesh->GetBox (pmin, pmax, SURFACEPOINT);  
+            mesh->GetBox (pmin, pmax, SURFACEPOINT);
           }
-	
+
 	if (vispar.use_center_coords && zoomall == 2)
 	  {
 	    center.X() = vispar.centerx; center.Y() = vispar.centery; center.Z() = vispar.centerz;
@@ -367,9 +374,9 @@ namespace netgen
 	  center = Center (pmin, pmax);
 	rad = 0.5 * Dist (pmin, pmax);
 	if(rad == 0) rad = 1e-6;
-      
-	if (rad > 1.2 * oldrad || 
-	    mesh->GetMajorTimeStamp() > vstimestamp || 
+
+	if (rad > 1.2 * oldrad ||
+	    mesh->GetMajorTimeStamp() > vstimestamp ||
 	    zoomall)
 	  {
 	    CalcTransformationMatrices();
@@ -381,7 +388,7 @@ namespace netgen
 
     if (pointnumberlist)
       {
-	glDeleteLists (pointnumberlist, 1);      
+	glDeleteLists (pointnumberlist, 1);
 	pointnumberlist = 0;
       }
 
@@ -431,7 +438,7 @@ namespace netgen
 	glNormal3d (0, 0, 1);
 	glPushAttrib (GL_LIST_BIT);
 	glListBase (fontbase);
-    
+
 	char buf[30];
 
 	if (vispar.drawpointnumbers)
@@ -456,12 +463,12 @@ namespace netgen
 		const Point3d & p2 = mesh->Point(seg.p2);
 		const Point3d p = Center (p1, p2);
 		glRasterPos3d (p.X(), p.Y(), p.Z());
-		
+
 		sprintf (buf, "%d", seg.edgenr);
 		glCallLists (strlen (buf), GL_UNSIGNED_BYTE, buf);
 	      }
 	    */
-	    
+
 	    const MeshTopology & top = mesh->GetTopology();
 	    for (i = 1; i <= top.GetNEdges(); i++)
 	      {
@@ -475,8 +482,8 @@ namespace netgen
 		sprintf (buf, "%d", i);
 		glCallLists (strlen (buf), GL_UNSIGNED_BYTE, buf);
 	      }
-	    
-	  }      
+
+	  }
 
 
 	if (vispar.drawfacenumbers)
@@ -506,9 +513,9 @@ namespace netgen
 		sprintf (buf, "%d", i);
 		glCallLists (strlen (buf), GL_UNSIGNED_BYTE, buf);
 	      }
-	  }      
+	  }
 
-	
+
 
 	if (vispar.drawelementnumbers)
 	  {
@@ -523,12 +530,12 @@ namespace netgen
 
 		if ( ! el.PNum(5)) //  eltype == TET )
 		  {
-		    
+
 		    pnums.SetSize(4);
 		    for( int j = 0; j < pnums.Size(); j++)
 		      pnums[j] = mesh->VolumeElement(i).PNum(j+1);
-		    
-	       
+
+
 		    const Point3d & p1 = mesh->Point(pnums[0]);
 		    const Point3d & p2 = mesh->Point(pnums[1]);
 		    const Point3d & p3 = mesh->Point(pnums[2]);
@@ -540,14 +547,14 @@ namespace netgen
 		    pnums.SetSize(5);
 		    for( int j = 0; j < pnums.Size(); j++)
 		      pnums[j] = mesh->VolumeElement(i).PNum(j+1);
-		    
-	       
+
+
 		    const Point3d & p1 = mesh->Point(pnums[0]);
 		    const Point3d & p2 = mesh->Point(pnums[1]);
 		    const Point3d & p3 = mesh->Point(pnums[2]);
 		    const Point3d & p4 = mesh->Point(pnums[3]);
 		    const Point3d & p5 = mesh->Point(pnums[4]);
-	      
+
 		    p.X()  = 0.3 * p5.X() + 0.7 * Center ( Center(p1, p3) , Center(p2, p4) ) . X();
 		    p.Y()  = 0.3 * p5.Y() + 0.7 * Center ( Center(p1, p3) , Center(p2, p4) ) . Y();
 		    p.Z()  = 0.3 * p5.Z() + 0.7 * Center ( Center(p1, p3) , Center(p2, p4) ) . Z();
@@ -583,17 +590,17 @@ namespace netgen
 		    const Point3d & p7 = mesh->Point(pnums[6]);
 		    const Point3d & p8 = mesh->Point(pnums[7]);
 
-		    p = Center ( Center ( Center(p1, p3), Center(p2, p4) ) , Center( Center(p5, p7) , Center(p6, p8 ) ) );		      
+		    p = Center ( Center ( Center(p1, p3), Center(p2, p4) ) , Center( Center(p5, p7) , Center(p6, p8 ) ) );
 		  }
 
 		glRasterPos3d (p.X(), p.Y(), p.Z());
 		sprintf (buf, "%d", i);
 		glCallLists (strlen (buf), GL_UNSIGNED_BYTE, buf);
-		
-	      }
-	  }      
 
-	
+	      }
+	  }
+
+
 	glPopAttrib ();
 	//      	glDisable (GL_COLOR_MATERIAL);
       }
@@ -616,8 +623,8 @@ namespace netgen
 
 	for (i = 1; i <= mesh->GetNE(); i++)
 	  {
-	    if (mesh->VolumeElement(i).flags.badel || 
-		mesh->VolumeElement(i).flags.illegal || 
+	    if (mesh->VolumeElement(i).flags.badel ||
+		mesh->VolumeElement(i).flags.illegal ||
 		(i == vispar.drawelement))
 	      {
 		// copy to be thread-safe
@@ -631,7 +638,7 @@ namespace netgen
 		if (el.PNum(1))
 		  {
 		    glBegin (GL_TRIANGLES);
-	      
+
 		    for (j = 1; j <= faces.Size(); j++)
 		      {
 			Element2d & face = faces.Elem(j);
@@ -645,7 +652,7 @@ namespace netgen
 			glVertex3d (lp2.X(), lp2.Y(), lp2.Z());
 			glVertex3d (lp3.X(), lp3.Y(), lp3.Z());
 		      }
-	      
+
 		    glEnd();
 		  }
 	      }
@@ -669,7 +676,7 @@ namespace netgen
 		  }
 	      }
 	  }
-  
+
 
 	for (i = 1; i <= mesh->GetNE(); i++)
 	  {
@@ -688,7 +695,7 @@ namespace netgen
 
 		if (el.GetNP() == 4)
 		  {
-		    int et[6][2] = 
+		    int et[6][2] =
 		      { { 1, 2 },
 			{ 1, 3 },
 			{ 1, 4 },
@@ -710,7 +717,7 @@ namespace netgen
 
 		if (el.GetNP() == 10)
 		  {
-		    int et[12][2] = 
+		    int et[12][2] =
 		      { { 1, 5 },
 			{ 2, 5 },
 			{ 1, 6 },
@@ -758,7 +765,7 @@ namespace netgen
 	      case TRIG:
 		{
 		  glBegin (GL_TRIANGLES);
-	    
+
 		  Point3d lp1 = mesh->Point (el.PNum(1));
 		  Point3d lp2 = mesh->Point (el.PNum(2));
 		  Point3d lp3 = mesh->Point (el.PNum(3));
@@ -774,12 +781,12 @@ namespace netgen
 	      case QUAD:
 		{
 		  glBegin (GL_QUADS);
-	    
+
 		  const Point3d & lp1 = mesh->Point (el.PNum(1));
 		  const Point3d & lp2 = mesh->Point (el.PNum(2));
 		  const Point3d & lp3 = mesh->Point (el.PNum(4));
 		  const Point3d & lp4 = mesh->Point (el.PNum(3));
-		  Vec3d n = Cross (Vec3d (lp1, lp2), 
+		  Vec3d n = Cross (Vec3d (lp1, lp2),
 				   Vec3d (lp1, Center (lp3, lp4)));
 		  n /= (n.Length() + 1e-12);
 		  glNormal3d (n.X(), n.Y(), n.Z());
@@ -796,7 +803,7 @@ namespace netgen
 		    { 1, 6 }, { 2, 6 },
 		    { 1, 5 }, { 3, 5 },
 		    { 2, 4 }, { 3, 4 } };
-	      
+
 		  glBegin (GL_LINES);
 		  for (j = 0; j < 6; j++)
 		    {
@@ -813,14 +820,14 @@ namespace netgen
 		    { 1, 5 }, { 2, 5 },
 		    { 3, 6 }, { 4, 6 },
 		    { 1, 4 }, { 2, 3 } };
-	      
+
 		  glBegin (GL_LINES);
-	    
+
 		  for (j = 0; j < 6; j++)
 		    {
 		      const Point3d & lp1 = mesh->Point (el.PNum(lines[j][0]));
 		      const Point3d & lp2 = mesh->Point (el.PNum(lines[j][1]));
-		
+
 		      glVertex3d (lp1.X(), lp1.Y(), lp1.Z());
 		      glVertex3d (lp2.X(), lp2.Y(), lp2.Z());
 		    }
@@ -828,31 +835,31 @@ namespace netgen
 		  break;
 		}
 	      default:
-		PrintSysError ("Cannot draw surface element of type ", 
+		PrintSysError ("Cannot draw surface element of type ",
 			       int(el.GetType()));
 	      }
 	  }
-	glLoadName (0);  
+	glLoadName (0);
 
       }
     glEndList ();
-  
+
 
     if (1)
       {
-      
+
 	identifiedlist = glGenLists (1);
 	glNewList (identifiedlist, GL_COMPILE);
-  
+
 	GLfloat identifiedcol[] = { 1, 0, 1, 1 };
-  
+
 	glLineWidth (3);
-      
+
 	//  for (i = 1; i <= mesh->GetNSeg(); i++)
 
         if (& mesh -> GetIdentifications() )
           {
-            INDEX_2_HASHTABLE<int> & idpts = 
+            INDEX_2_HASHTABLE<int> & idpts =
               mesh->GetIdentifications().GetIdentifiedPoints();
             if (&idpts)
               {
@@ -861,18 +868,18 @@ namespace netgen
                     {
                       INDEX_2 pts;
                       int val;
-                      
+
                       idpts.GetData (i, j, pts, val);
                       const Point3d & p1 = mesh->Point(pts.I1());
                       const Point3d & p2 = mesh->Point(pts.I2());
-                      
-                      glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, 
+
+                      glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE,
                                     identifiedcol);
-                      
+
                       glBegin (GL_LINES);
                       glVertex3f (p1.X(), p1.Y(), p1.Z());
                       glVertex3f (p2.X(), p2.Y(), p2.Z());
-                      glEnd(); 
+                      glEnd();
                     }
               }
           }
@@ -897,7 +904,7 @@ namespace netgen
   {
     static int timer = NgProfiler::CreateTimer ("Mesh::BuildFilledList");
     NgProfiler::RegionTimer reg (timer);
-    
+
     // cout << "buildilled" << endl;
 
 #ifdef PARALLELGL
@@ -925,10 +932,10 @@ namespace netgen
 
 	filledlist = glGenLists (1);
 	glNewList (filledlist, GL_COMPILE);
-	
+
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  glCallList (par_filledlists[dest]);
-	
+
 	glEndList();
 
 
@@ -956,15 +963,15 @@ namespace netgen
 
     filledlist = glGenLists (1);
     glNewList (filledlist, GL_COMPILE);
-    
+
     // cout << "I am p " << id << " and got filledlist " << filledlist << endl;
 
     bool checkvicinity = (stlgeometry != NULL) && stldoctor.showvicinity;
 
     glEnable (GL_NORMALIZE);
-      
+
     glLineWidth (1.0f);
-  
+
     Vector locms;
 
     if (vispar.colormeshsize)
@@ -995,7 +1002,7 @@ namespace netgen
 #endif
 
     CurvedElements & curv = mesh->GetCurvedElements();
-    int hoplotn = 1 << vispar.subdivisions; 
+    int hoplotn = 1 << vispar.subdivisions;
 
     for (int col = 1; col <= 2; col++)
       {
@@ -1016,7 +1023,7 @@ namespace netgen
 		else
 		  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_coll_transp);
 	      }
-	    else 
+	    else
 	      {
 		if (col == 2)
 		  glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcolsel);
@@ -1025,6 +1032,23 @@ namespace netgen
 	      }
 #endif
 
+#ifdef OCCGEOMETRY
+      // Philippose - 30/01/2009
+      // OpenCascade XDE Support
+      // Update the colour of each face based on the STEP File Data
+      // if the advanced OpenCascade XDE Support has been enabled
+      if((col == 1) && (occgeometry))
+      {
+         TopoDS_Face face = TopoDS::Face(occgeometry->fmap(el.GetIndex()));
+         Quantity_Color face_colour;
+         occgeometry->face_colours->GetColor(face,XCAFDoc_ColorSurf,face_colour);
+         matcol[0] = face_colour.Red();
+         matcol[1] = face_colour.Green();
+         matcol[2] = face_colour.Blue();
+         matcol[3] = 1.0;
+         glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcol);
+      }
+#endif
 
 	    bool drawel = !el.IsDeleted();
 
@@ -1057,7 +1081,7 @@ namespace netgen
 		      for (int i = 0; i < hoplotn; i++)
                         {
                           glBegin (GL_TRIANGLE_STRIP);
-                          
+
                           for (int j = 0; j <= hoplotn-i; j++)
                             for (int k = 0; k < 2; k++)
                               {
@@ -1093,15 +1117,15 @@ namespace netgen
                               }
                           glEnd();
                         }
-		    } 
+		    }
 		  else // not high order
 		    {
 		      glBegin (GL_TRIANGLES);
-		      
+
 		      const Point<3> & lp0 = (*mesh) [el[0]];
 		      const Point<3> & lp1 = (*mesh) [el[1]];
 		      const Point<3> & lp2 = (*mesh) [el[2]];
-		      
+
 		      Vec<3> n = Cross (lp1-lp0, lp2-lp0);
 		      glNormal3dv (n);
 
@@ -1123,7 +1147,7 @@ namespace netgen
 
 		      glEnd();
 		    }
-		  
+
 		  break;
 		}
 	      case QUAD:
@@ -1164,15 +1188,15 @@ namespace netgen
 			      }
 
 			  }
-                    
+
 		      glEnd();
-		    } 
+		    }
 
 		  else // not high order
 
 		    {
 		      glBegin (GL_QUADS);
-		      
+
 		      const Point<3> & lp1 = mesh->Point (el.PNum(1));
 		      const Point<3> & lp2 = mesh->Point (el.PNum(2));
 		      const Point<3> & lp3 = mesh->Point (el.PNum(4));
@@ -1186,7 +1210,7 @@ namespace netgen
 		      glVertex3dv (lp2);
 		      glVertex3dv (lp4);
 		      glVertex3dv (lp3);
-		      
+
 		      glEnd ();
 		    }
 		  break;
@@ -1201,7 +1225,7 @@ namespace netgen
 		    { 2, 4, 6 },
 		    { 3, 5, 4 },
 		    { 4, 5, 6 } };
-		
+
 		  for (int j = 0; j < 4; j++)
 		    {
                       const Point<3> & lp1 = mesh->Point (el.PNum(trigs[j][0]));
@@ -1225,7 +1249,7 @@ namespace netgen
 		  static int quads[2][4] = {
 		    { 1, 5, 6, 4 },
 		    { 5, 2, 3, 6 } };
-		
+
 		  for (int j = 0; j < 2; j++)
 		    {
                       Point3d lp1 = mesh->Point (el.PNum(quads[j][0]));
@@ -1247,9 +1271,9 @@ namespace netgen
 	      case QUAD8:
 		{
 		  glBegin (GL_TRIANGLES);
-		  static int boundary[] = 
+		  static int boundary[] =
 		    { 1, 5, 2, 8, 3, 6, 4, 7, 1 };
-		
+
 		  Point3d c(0,0,0);
 		  for (int j = 0; j < 4; j++)
 		    {
@@ -1284,7 +1308,7 @@ namespace netgen
 
 
 	      default:
-		PrintSysError ("Cannot draw (2) surface element of type ", 
+		PrintSysError ("Cannot draw (2) surface element of type ",
 			       int(el.GetType()));
 	      }
 
@@ -1333,13 +1357,13 @@ namespace netgen
 
 	linelist = glGenLists (1);
 	glNewList (linelist, GL_COMPILE);
-	
+
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  glCallList (par_linelists[dest]);
-	
+
 	glEndList();
 
-	
+
 	linetimestamp = NextTimeStamp();
 	return;
       }
@@ -1358,7 +1382,7 @@ namespace netgen
 
     if (linelist)
       glDeleteLists (linelist, 1);
-  
+
     linelist = glGenLists (1);
     glNewList (linelist, GL_COMPILE);
 
@@ -1367,13 +1391,13 @@ namespace netgen
     glLineWidth (1.0f);
 
 
-    int hoplotn = 1 << vispar.subdivisions; 
+    int hoplotn = 1 << vispar.subdivisions;
 
     // PrintMessage (3, "nse = ", mesh->GetNSE());
     for (SurfaceElementIndex sei = 0; sei < mesh->GetNSE(); sei++)
       {
 	const Element2d & el = (*mesh)[sei];
-      
+
 	bool drawel = !el.IsDeleted();
 	if (checkvicinity)
 	  for (int j = 0; j < el.GetNP(); j++)
@@ -1412,8 +1436,8 @@ namespace netgen
 		    }
 
 		  glEnd();
-		} 
-	      else 
+		}
+	      else
 		{
 		  glBegin (GL_TRIANGLES);
 
@@ -1430,8 +1454,8 @@ namespace netgen
 
 	      break;
 
-	    }     
- 
+	    }
+
 	  case QUAD:
 	    {
 	      CurvedElements & curv = mesh->GetCurvedElements();
@@ -1492,46 +1516,46 @@ namespace netgen
 		  glEnd();
 
 		}
-	    
+
 	      break;
-	    
+
 	    }
-	    
+
 	  case TRIG6:
 	    {
 	      int lines[6][2] = {
 		{ 1, 6 }, { 2, 6 },
 		{ 1, 5 }, { 3, 5 },
 		{ 2, 4 }, { 3, 4 } };
-	    
+
 	      glBegin (GL_LINES);
 	      for (int j = 0; j < 6; j++)
 		{
 		  const Point3d & lp1 = mesh->Point (el.PNum(lines[j][0]));
 		  const Point3d & lp2 = mesh->Point (el.PNum(lines[j][1]));
-		
+
 		  glVertex3d (lp1.X(), lp1.Y(), lp1.Z());
 		  glVertex3d (lp2.X(), lp2.Y(), lp2.Z());
 		}
-	    
+
 	      glEnd();
 	      break;
 	    }
-	  
+
 	  case QUAD6:
 	    {
 	      int lines[6][2] = {
 		{ 1, 5 }, { 2, 5 },
 		{ 3, 6 }, { 4, 6 },
 		{ 1, 4 }, { 2, 3 } };
-	    
+
 	      glBegin (GL_LINES);
-	    
+
 	      for (int j = 0; j < 6; j++)
 		{
 		  const Point3d & lp1 = mesh->Point (el.PNum(lines[j][0]));
 		  const Point3d & lp2 = mesh->Point (el.PNum(lines[j][1]));
-		
+
 		  glVertex3d (lp1.X(), lp1.Y(), lp1.Z());
 		  glVertex3d (lp2.X(), lp2.Y(), lp2.Z());
 		}
@@ -1545,14 +1569,14 @@ namespace netgen
 		{ 1, 5 }, { 2, 5 }, { 3, 6 }, { 4, 6 },
 		{ 1, 7 }, { 4, 7 }, { 2, 8 }, { 3, 8 }
 	      };
-	    
+
 	      glBegin (GL_LINES);
-	    
+
 	      for (int j = 0; j < 8; j++)
 		{
 		  const Point3d & lp1 = mesh->Point (el.PNum(lines[j][0]));
 		  const Point3d & lp2 = mesh->Point (el.PNum(lines[j][1]));
-		
+
 		  glVertex3d (lp1.X(), lp1.Y(), lp1.Z());
 		  glVertex3d (lp2.X(), lp2.Y(), lp2.Z());
 		}
@@ -1563,14 +1587,14 @@ namespace netgen
 
 
 	  default:
-	    PrintSysError ("Cannot draw (4) surface element of type ", 
+	    PrintSysError ("Cannot draw (4) surface element of type ",
 			   int(el.GetType()));
 	  }
       }
-    
+
     glEndList ();
 
-    
+
 #ifdef PARALLELGL
     glFinish();
     if (id > 0)
@@ -1595,7 +1619,7 @@ namespace netgen
 
     if (edgelist)
       glDeleteLists (edgelist, 1);
-  
+
     edgelist = glGenLists (1);
     glNewList (edgelist, GL_COMPILE);
 
@@ -1605,21 +1629,21 @@ namespace netgen
 
     glEnable (GL_POLYGON_OFFSET_LINE);
     glPolygonOffset (1, -1);
-    
+
     glEnable (GL_COLOR_MATERIAL);
     glDisable (GL_LIGHTING);
-    
+
     for (int i = 1; i <= mesh->GetNSeg(); i++)
       {
 	const Segment & seg = mesh->LineSegment(i);
 	const Point3d & p1 = (*mesh)[seg.p1];
 	const Point3d & p2 = (*mesh)[seg.p2];
-	
+
 	if (seg.singedge_left || seg.singedge_right)
-	  glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, 
+	  glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE,
 			matcolsingedge);
 	else
-	  glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, 
+	  glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE,
 			matcoledge);
 
 	if (seg.singedge_left || seg.singedge_right)
@@ -1631,31 +1655,31 @@ namespace netgen
 	  glLineWidth(5);
 	else
 	  glLineWidth(2);
-	
-	if (mesh->GetCurvedElements().IsHighOrder()) 
+
+	if (mesh->GetCurvedElements().IsHighOrder())
 	  {
 
 	    int j;
-	    int hoplotn = 1 << vispar.subdivisions; 
+	    int hoplotn = 1 << vispar.subdivisions;
 	    // mesh->GetCurvedElements().GetNVisualSubsecs();
-	    
+
 	    Point<3> x;
 	    glBegin (GL_LINE_STRIP);
-	    
-	    for (int j = 0; j <= hoplotn; j++) 
+
+	    for (int j = 0; j <= hoplotn; j++)
 	      {
 		mesh->GetCurvedElements().CalcSegmentTransformation ((double) j/hoplotn, i-1, x);
 		glVertex3d (x(0), x(1), x(2));
                 /*
-                cout << "x = " << x(0) << ", " << x(1) << ", " << x(2) 
+                cout << "x = " << x(0) << ", " << x(1) << ", " << x(2)
                      << ", norm = 1+" << sqrt(x(0)*x(0)+x(1)*x(1))-1
                      << ", phi = " << atan2(x(1), x(0))/M_PI << endl;
                 */
 	      }
-	    
+
 	    glEnd();
-	    
-	  } 
+
+	  }
 	else
 	  {
 	    glBegin (GL_LINES);
@@ -1672,10 +1696,10 @@ namespace netgen
 	    glEnd();
 	  }
       }
-    
+
     glLineWidth (2);
     glDisable (GL_POLYGON_OFFSET_LINE);
-    
+
     glDisable (GL_COLOR_MATERIAL);
     glEnable (GL_LIGHTING);
 
@@ -1691,14 +1715,14 @@ namespace netgen
   }
 
 
-  
+
   // Bernstein Pol B_{n,i}(x) = n! / i! / (n-i)! (1-x)^{n-i} x^i
   static inline double Bernstein (int n, int i, double x)
   {
     double val = 1;
-    for (int j = 1; j <= i; j++)   
+    for (int j = 1; j <= i; j++)
       val *= x;
-    for (int j = 1; j <= n-i; j++) 
+    for (int j = 1; j <= n-i; j++)
       val *= (1-x) * (j+i) / j;
     return val;
   }
@@ -1774,7 +1798,7 @@ namespace netgen
 
 
     Array<Element2d> faces;
-  
+
     BitArray shownode(mesh->GetNP());
     if (vispar.clipenable)
       {
@@ -1782,13 +1806,13 @@ namespace netgen
 	for (int i = 1; i <= shownode.Size(); i++)
 	  {
 	    Point<3> p = mesh->Point(i);
-	  
+
 	    double val =
 	      p[0] * clipplane[0] +
 	      p[1] * clipplane[1] +
 	      p[2] * clipplane[2] +
 	      clipplane[3];
-	  
+
 	    if (val > 0) shownode.Set (i);
 	  }
       }
@@ -1798,7 +1822,7 @@ namespace netgen
 
 #ifdef PARALLEL
 
-    static float tetcols[][8] = 
+    static float tetcols[][8] =
       {
 	{ 1.0f, 1.0f, 0.0f, 1.0f },
 	{ 1.0f, 0.0f, 0.0f, 1.0f },
@@ -1811,7 +1835,7 @@ namespace netgen
       };
 
 #else
-    static float tetcols[][4] = 
+    static float tetcols[][4] =
       {
 	{ 1.0f, 1.0f, 0.0f, 1.0f },
 	{ 1.0f, 0.0f, 0.0f, 1.0f },
@@ -1847,8 +1871,8 @@ namespace netgen
 	      if (!shownode.Test(el[j]))
 		drawtet = 0;
 	    if (!drawtet) continue;
-	    
-	    
+
+
 	    int ind = el.GetIndex() % 4;
 
 
@@ -1868,11 +1892,11 @@ namespace netgen
               }
 #else
 	    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, tetcols[ind]);
-#endif    
+#endif
 
 
 
-	    
+
 	    if (curv.IsHighOrder()) //  && curv.IsElementCurved(ei))
 	      {
 		const ELEMENT_FACE * faces = MeshTopology :: GetFaces (TET);
@@ -1882,51 +1906,51 @@ namespace netgen
 		Point<3> grid[11][11];
 		Point<3> fpts[3];
 		int order = vispar.subdivisions+1;
-		
+
 		for (int trig = 0; trig < 4; trig++)
-		  {   
+		  {
 		    for (int j = 0; j < 3; j++)
 		      fpts[j] = vertices[faces[trig][j]-1];
-		    
+
 		    static Point<3> c(0.25, 0.25, 0.25);
 		    if (vispar.shrink < 1)
 		      for (int j = 0; j < 3; j++)
 			fpts[j] += (1-vispar.shrink) * (c-fpts[j]);
-			
+
 		    for (int ix = 0; ix <= order; ix++)
 		      for (int iy = 0; iy <= order; iy++)
 			{
-			  double lami[3] = 
+			  double lami[3] =
 			    { (1-double(ix)/order) * (1-double(iy)/order),
 			      (  double(ix)/order) * (1-double(iy)/order),
 			      double(iy)/order };
-			      
+
 			  Point<3> xl;
 			  for (int l = 0; l < 3; l++)
 			    xl(l) = lami[0] * fpts[0](l) + lami[1] * fpts[1](l) +
 			      lami[2] * fpts[2](l);
-			      
+
 			  curv.CalcElementTransformation (xl, i-1, grid[ix][iy]);
 			}
-			
+
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[j][0], &grid[0][1]-&grid[0][0]);
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[0][j], &grid[1][0]-&grid[0][0]);
-			
-		    glMap2d(GL_MAP2_VERTEX_3, 
+
+		    glMap2d(GL_MAP2_VERTEX_3,
 			    0.0, 1.0, &grid[0][1](0)-&grid[0][0](0), order+1,
 			    0.0, 1.0, &grid[1][0](0)-&grid[0][0](0), order+1,
 			    &grid[0][0](0));
 		    glEnable(GL_MAP2_VERTEX_3);
-		    glEnable(GL_AUTO_NORMAL); 
-			
+		    glEnable(GL_AUTO_NORMAL);
+
 		    glMapGrid2f(8, 0.0, 0.999, 8, 0.0, 1.0);
 		    glEvalMesh2(GL_FILL, 0, 8, 0, 8);
-			
+
 		    glDisable (GL_AUTO_NORMAL);
 		    glDisable (GL_MAP2_VERTEX_3);
-		  }		    
+		  }
 		*/
 
 
@@ -1936,30 +1960,30 @@ namespace netgen
 		Array<Point<3> > ploc ( (order+1)*(order+1) );
 		Array<Point<3> > pglob ( (order+1)*(order+1) );
 		Point<3> fpts[3];
-		
+
 		for (int trig = 0; trig < 4; trig++)
-		  {   
+		  {
 		    for (int j = 0; j < 3; j++)
 		      fpts[j] = vertices[faces[trig][j]-1];
-		    
+
 		    static Point<3> c(0.25, 0.25, 0.25);
 		    if (vispar.shrink < 1)
 		      for (int j = 0; j < 3; j++)
 			fpts[j] += (1-vispar.shrink) * (c-fpts[j]);
-			
+
 		    for (int ix = 0, ii = 0; ix <= order; ix++)
 		      for (int iy = 0; iy <= order; iy++, ii++)
 			{
-			  double lami[3] = 
+			  double lami[3] =
 			    { (1-double(ix)/order) * (1-double(iy)/order),
 			      (  double(ix)/order) * (1-double(iy)/order),
 			      double(iy)/order };
-			      
+
 			  Point<3> xl;
 			  for (int l = 0; l < 3; l++)
 			    xl(l) = lami[0] * fpts[0](l) + lami[1] * fpts[1](l) +
 			      lami[2] * fpts[2](l);
-			      
+
 			  ploc[ii] = xl;
 			}
 
@@ -1969,25 +1993,25 @@ namespace netgen
 		    for (int ix = 0, ii = 0; ix <= order; ix++)
 		      for (int iy = 0; iy <= order; iy++, ii++)
 			grid[ix][iy] = pglob[ii];
-			
+
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[j][0], &grid[0][1]-&grid[0][0]);
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[0][j], &grid[1][0]-&grid[0][0]);
-			
-		    glMap2d(GL_MAP2_VERTEX_3, 
+
+		    glMap2d(GL_MAP2_VERTEX_3,
 			    0.0, 1.0, &grid[0][1](0)-&grid[0][0](0), order+1,
 			    0.0, 1.0, &grid[1][0](0)-&grid[0][0](0), order+1,
 			    &grid[0][0](0));
 		    glEnable(GL_MAP2_VERTEX_3);
-		    glEnable(GL_AUTO_NORMAL); 
-			
+		    glEnable(GL_AUTO_NORMAL);
+
 		    glMapGrid2f(hoplotn, 0.0, 0.9999, hoplotn, 0.0, 1.0);
 		    glEvalMesh2(GL_FILL, 0, hoplotn, 0, hoplotn);
-			
+
 		    glDisable (GL_AUTO_NORMAL);
 		    glDisable (GL_MAP2_VERTEX_3);
-		  }		    
+		  }
 	      }
 
 	    else
@@ -2031,7 +2055,7 @@ namespace netgen
 	      }
 	  }
       }
-    
+
     glEndList ();
   }
 
@@ -2061,11 +2085,11 @@ namespace netgen
     glNewList (prismlist, GL_COMPILE);
 
     static float prismcol[] = { 0.0f, 1.0f, 1.0f, 1.0f };
-    glLineWidth (1.0f);  
+    glLineWidth (1.0f);
 
     Array<Element2d> faces;
 
-    
+
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, prismcol);
 
     for (ElementIndex ei = 0; ei < mesh->GetNE(); ei++)
@@ -2081,109 +2105,109 @@ namespace netgen
 	      {
 		const ELEMENT_FACE * faces = MeshTopology :: GetFaces (PRISM);
 		const Point3d * vertices = MeshTopology :: GetVertices (PRISM);
-		
+
 		Point<3> grid[11][11];
 		Point<3> fpts[4];
 		int order = vispar.subdivisions+1;
-		
+
 		for (int trig = 0; trig < 2; trig++)
-		  {   
+		  {
 		    for (int j = 0; j < 3; j++)
 		      fpts[j] = vertices[faces[trig][j]-1];
-		    
+
 		    static Point<3> c(1.0/3.0, 1.0/3.0, 0.5);
 		    if (vispar.shrink < 1)
 		      for (int j = 0; j < 3; j++)
 			fpts[j] += (1-vispar.shrink) * (c-fpts[j]);
-			
+
 		    for (int ix = 0; ix <= order; ix++)
 		      for (int iy = 0; iy <= order; iy++)
 			{
-			  double lami[3] = 
+			  double lami[3] =
 			    { (1-double(ix)/order) * (1-double(iy)/order),
 			      (  double(ix)/order) * (1-double(iy)/order),
 			      double(iy)/order };
-			      
+
 			  Point<3> xl;
 			  for (int l = 0; l < 3; l++)
 			    xl(l) = lami[0] * fpts[0](l) + lami[1] * fpts[1](l) +
 			      lami[2] * fpts[2](l);
-			      
+
 			  curv.CalcElementTransformation (xl, i-1, grid[ix][iy]);
 			}
-			
+
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[j][0], &grid[0][1]-&grid[0][0]);
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[0][j], &grid[1][0]-&grid[0][0]);
-			
-		    glMap2d(GL_MAP2_VERTEX_3, 
+
+		    glMap2d(GL_MAP2_VERTEX_3,
 			    0.0, 1.0, &grid[0][1](0)-&grid[0][0](0), order+1,
 			    0.0, 1.0, &grid[1][0](0)-&grid[0][0](0), order+1,
 			    &grid[0][0](0));
 		    glEnable(GL_MAP2_VERTEX_3);
-		    glEnable(GL_AUTO_NORMAL); 
-			
+		    glEnable(GL_AUTO_NORMAL);
+
 		    glMapGrid2f(8, 0.0, 0.999, 8, 0.0, 1.0);
 		    glEvalMesh2(GL_FILL, 0, 8, 0, 8);
-			
+
 		    glDisable (GL_AUTO_NORMAL);
 		    glDisable (GL_MAP2_VERTEX_3);
-		  }		    
+		  }
 
 		for (int quad = 2; quad < 5; quad++)
-		  {   
+		  {
 		    for (int j = 0; j < 4; j++)
 		      fpts[j] = vertices[faces[quad][j]-1];
-		    
+
 		    static Point<3> c(1.0/3.0, 1.0/3.0, 0.5);
 		    if (vispar.shrink < 1)
 		      for (int j = 0; j < 4; j++)
 			fpts[j] += (1-vispar.shrink) * (c-fpts[j]);
-			
+
 		    for (int ix = 0; ix <= order; ix++)
 		      for (int iy = 0; iy <= order; iy++)
 			{
-			  double lami[4] = 
+			  double lami[4] =
 			    { (1-double(ix)/order) * (1-double(iy)/order),
 			      (  double(ix)/order) * (1-double(iy)/order),
 			      (  double(ix)/order) * (  double(iy)/order),
 			      (1-double(ix)/order) * (  double(iy)/order) };
-			      
+
 			  Point<3> xl;
 			  for (int l = 0; l < 3; l++)
-			    xl(l) = 
+			    xl(l) =
 			      lami[0] * fpts[0](l) + lami[1] * fpts[1](l) +
 			      lami[2] * fpts[2](l) + lami[3] * fpts[3](l);
-			      
+
 			  curv.CalcElementTransformation (xl, ei, grid[ix][iy]);
 			}
-			
+
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[j][0], &grid[0][1]-&grid[0][0]);
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[0][j], &grid[1][0]-&grid[0][0]);
-			
-		    glMap2d(GL_MAP2_VERTEX_3, 
+
+		    glMap2d(GL_MAP2_VERTEX_3,
 			    0.0, 1.0, &grid[0][1](0)-&grid[0][0](0), order+1,
 			    0.0, 1.0, &grid[1][0](0)-&grid[0][0](0), order+1,
 			    &grid[0][0](0));
 		    glEnable(GL_MAP2_VERTEX_3);
-		    glEnable(GL_AUTO_NORMAL); 
-			
+		    glEnable(GL_AUTO_NORMAL);
+
 		    glMapGrid2f(8, 0.0, 1.0, 8, 0.0, 1.0);
 		    glEvalMesh2(GL_FILL, 0, 8, 0, 8);
-			
+
 		    glDisable (GL_AUTO_NORMAL);
 		    glDisable (GL_MAP2_VERTEX_3);
-		  }		    
+		  }
 
 
 
 
 
 		/*
-		int hoplotn = 1 << vispar.subdivisions; 
+		int hoplotn = 1 << vispar.subdivisions;
 		// int hoplotn = curv.GetNVisualSubsecs();
 
 		const Point3d * facepoint = MeshTopology :: GetVertices (TRIG);
@@ -2193,7 +2217,7 @@ namespace netgen
 
 		for (int trig = 0; trig<2; trig++)
 		  {
-                    
+
 		    Vec<3> x0,x1,d0,d1;
 		    x0 = facepoint[1] - facepoint[2];
 		    x1 = facepoint[0] - facepoint[2];
@@ -2221,7 +2245,7 @@ namespace netgen
 				  xr[1](0) = (double)(i1+1)/hoplotn; xr[1](1) = (double)(j1+1)/hoplotn;
 				  xr[2](0) = (double)    i1/hoplotn; xr[2](1) = (double)(j1+1)/hoplotn;
 				};
-				    
+
 			    for (int l=0; l<3; l++)
 			      {
 				Mat<3,3> dxdxi;
@@ -2241,7 +2265,7 @@ namespace netgen
 				glVertex3d (xg(0), xg(1), xg(2));
 			      }
 			  }
-			
+
 		  }
 
 		glEnd ();
@@ -2249,7 +2273,7 @@ namespace netgen
 		glBegin (GL_QUADS);
 
 		for (int quad = 0; quad<3; quad++)
-		  {   
+		  {
 		    const Point3d * facepoint = MeshTopology :: GetVertices (PRISM);
 
 		    Vec<3> x0,x1;
@@ -2290,7 +2314,7 @@ namespace netgen
 			  xr[1](xyz) = (double)(i1+1)/hoplotn; xr[1](2) = (double)    j1/hoplotn;
 			  xr[2](xyz) = (double)(i1+1)/hoplotn; xr[2](2) = (double)(j1+1)/hoplotn;
 			  xr[3](xyz) = (double)    i1/hoplotn; xr[3](2) = (double)(j1+1)/hoplotn;
-				    
+
 			  for (int l=0; l<4; l++)
 			    {
 			      switch (quad)
@@ -2319,9 +2343,9 @@ namespace netgen
 		  }
 		glEnd ();
 		*/
-	      } 
+	      }
 	    else
-	      { 
+	      {
 		Point3d c(0,0,0);
 		if (vispar.shrink < 1)
 		  {
@@ -2355,14 +2379,14 @@ namespace netgen
 		    glVertex3d (lp2.X(), lp2.Y(), lp2.Z());
 		    glVertex3d (lp3.X(), lp3.Y(), lp3.Z());
 		  }
-	      
+
 		glEnd();
 	      }
 	  }
       }
     glEndList ();
   }
- 
+
 
 
 
@@ -2387,11 +2411,11 @@ namespace netgen
 
 
     static float hexcol[] = { 1.0f, 1.0f, 0.0f, 1.0f };
-    glLineWidth (1.0f);  
+    glLineWidth (1.0f);
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, hexcol);
 
     Array<Element2d> faces;
-    int hoplotn = 1 << vispar.subdivisions; 
+    int hoplotn = 1 << vispar.subdivisions;
 
     for (ElementIndex ei = 0; ei < mesh->GetNE(); ei++)
       {
@@ -2401,9 +2425,9 @@ namespace netgen
 	    CurvedElements & curv = mesh->GetCurvedElements();
 	    if (curv.IsHighOrder()) //  && curv.IsElementCurved(ei))
 	      {
-		/* // classical 
+		/* // classical
 		   glBegin (GL_QUADS);
-		
+
 		   const ELEMENT_FACE * faces = MeshTopology :: GetFaces (HEX);
 		   const Point3d * vertices = MeshTopology :: GetVertices (HEX);
 
@@ -2411,7 +2435,7 @@ namespace netgen
 		   Vec<3> gridn[33][33];
 		   Point<3> fpts[4];
 		   for (int quad = 0; quad<6; quad++)
-		   {   
+		   {
 		   for (int j = 0; j < 4; j++)
 		   fpts[j] = vertices[faces[quad][j]-1];
 
@@ -2428,7 +2452,7 @@ namespace netgen
 		   {
 		   Point<3> xl;
 		   Mat<3,3> dxdxi;
-		   double lami[4] = 
+		   double lami[4] =
 		   { (1-double(ix)/hoplotn) * (1-double(iy)/hoplotn),
 		   (  double(ix)/hoplotn) * (1-double(iy)/hoplotn),
 		   (  double(ix)/hoplotn) * (  double(iy)/hoplotn),
@@ -2438,12 +2462,12 @@ namespace netgen
 		   lami[2] * fpts[2](l) + lami[3] * fpts[3](l);
 
 		   curv.CalcElementTransformation (xl, ei, grid[ix][iy], dxdxi);
-			  
+
 		   Vec<3> gtaux = dxdxi * taux;
 		   Vec<3> gtauy = dxdxi * tauy;
 		   gridn[ix][iy] = Cross (gtauy, gtaux).Normalize();
 		   }
-		    
+
 		   for (int ix = 0; ix < hoplotn; ix++)
 		   for (int iy = 0; iy < hoplotn; iy++)
 		   {
@@ -2460,7 +2484,7 @@ namespace netgen
 		   glVertex3dv (grid[ix][iy+1]);
 		   }
 		   }
-		
+
 		   glEnd ();
 		*/
 
@@ -2472,7 +2496,7 @@ namespace netgen
 		int order = vispar.subdivisions+1;
 
 		for (int quad = 0; quad<6; quad++)
-		  {   
+		  {
 		    for (int j = 0; j < 4; j++)
 		      fpts[j] = vertices[faces[quad][j]-1];
 
@@ -2484,7 +2508,7 @@ namespace netgen
 		    for (int ix = 0; ix <= order; ix++)
 		      for (int iy = 0; iy <= order; iy++)
 			{
-			  double lami[4] = 
+			  double lami[4] =
 			    { (1-double(ix)/order) * (1-double(iy)/order),
 			      (  double(ix)/order) * (1-double(iy)/order),
 			      (  double(ix)/order) * (  double(iy)/order),
@@ -2497,18 +2521,18 @@ namespace netgen
 
 			  curv.CalcElementTransformation (xl, ei, grid[ix][iy]);
 			}
-		    
+
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[j][0], &grid[0][1]-&grid[0][0]);
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[0][j], &grid[1][0]-&grid[0][0]);
 
-		    glMap2d(GL_MAP2_VERTEX_3, 
+		    glMap2d(GL_MAP2_VERTEX_3,
 			    0.0, 1.0, &grid[0][1](0)-&grid[0][0](0), order+1,
 			    0.0, 1.0, &grid[1][0](0)-&grid[0][0](0), order+1,
 			    &grid[0][0](0));
 		    glEnable(GL_MAP2_VERTEX_3);
-		    glEnable(GL_AUTO_NORMAL); 
+		    glEnable(GL_AUTO_NORMAL);
 
 		    glMapGrid2f(8, 0.0, 1.0, 8, 0.0, 1.0);
 		    glEvalMesh2(GL_FILL, 0, 8, 0, 8);
@@ -2516,9 +2540,9 @@ namespace netgen
 		    glDisable (GL_AUTO_NORMAL);
 		    glDisable (GL_MAP2_VERTEX_3);
 		  }
-	      } 
+	      }
 	    else
-	      { 
+	      {
 		Point3d c(0,0,0);
 		if (vispar.shrink < 1)
 		  {
@@ -2543,10 +2567,10 @@ namespace netgen
 		    Point<3> lp1 = mesh->Point (el.PNum(face.PNum(1)));
 		    Point<3> lp2 = mesh->Point (el.PNum(face.PNum(2)));
 		    Point<3> lp3 = mesh->Point (el.PNum(face.PNum(3)));
-		    Vec<3> n = Cross (lp3-lp1, lp2-lp1);  
+		    Vec<3> n = Cross (lp3-lp1, lp2-lp1);
 		    n.Normalize();
 		    glNormal3dv (n);
-		  
+
 		    if (vispar.shrink < 1)
 		      {
 			lp1 = c + vispar.shrink * (lp1 - c);
@@ -2573,7 +2597,7 @@ namespace netgen
 
 
 
- 
+
   void VisualSceneMesh :: BuildPyramidList()
   {
     if (pyramidtimestamp > mesh->GetTimeStamp () &&
@@ -2595,7 +2619,7 @@ namespace netgen
 
     pyramidlist = glGenLists (1);
     glNewList (pyramidlist, GL_COMPILE);
-  
+
     static float pyramidcol[] = { 1.0f, 0.0f, 1.0f, 1.0f };
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, pyramidcol);
 
@@ -2616,102 +2640,102 @@ namespace netgen
 
 		const ELEMENT_FACE * faces = MeshTopology :: GetFaces (PYRAMID);
 		const Point3d * vertices = MeshTopology :: GetVertices (PYRAMID);
-		
+
 		Point<3> grid[11][11];
 		Point<3> fpts[4];
 		int order = vispar.subdivisions+1;
-		
+
 		for (int trig = 0; trig < 4; trig++)
-		  {   
+		  {
 		    for (int j = 0; j < 3; j++)
 		      fpts[j] = vertices[faces[trig][j]-1];
-		    
+
 		    static Point<3> c(0.375, 0.375, 0.25);
 		    if (vispar.shrink < 1)
 		      for (int j = 0; j < 3; j++)
 			fpts[j] += (1-vispar.shrink) * (c-fpts[j]);
-			
+
 		    for (int ix = 0; ix <= order; ix++)
 		      for (int iy = 0; iy <= order; iy++)
 			{
-			  double lami[3] = 
+			  double lami[3] =
 			    { (1-double(ix)/order) * (1-double(iy)/order),
 			      (  double(ix)/order) * (1-double(iy)/order),
 			      double(iy)/order };
-			      
+
 			  Point<3> xl;
 			  for (int l = 0; l < 3; l++)
 			    xl(l) = lami[0] * fpts[0](l) + lami[1] * fpts[1](l) +
 			      lami[2] * fpts[2](l);
-			      
+
 			  curv.CalcElementTransformation (xl, i-1, grid[ix][iy]);
 			}
-			
+
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[j][0], &grid[0][1]-&grid[0][0]);
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[0][j], &grid[1][0]-&grid[0][0]);
-			
-		    glMap2d(GL_MAP2_VERTEX_3, 
+
+		    glMap2d(GL_MAP2_VERTEX_3,
 			    0.0, 1.0, &grid[0][1](0)-&grid[0][0](0), order+1,
 			    0.0, 1.0, &grid[1][0](0)-&grid[0][0](0), order+1,
 			    &grid[0][0](0));
 		    glEnable(GL_MAP2_VERTEX_3);
-		    glEnable(GL_AUTO_NORMAL); 
-			
+		    glEnable(GL_AUTO_NORMAL);
+
 		    glMapGrid2f(8, 0.0, 0.999, 8, 0.0, 1.0);
 		    glEvalMesh2(GL_FILL, 0, 8, 0, 8);
-			
+
 		    glDisable (GL_AUTO_NORMAL);
 		    glDisable (GL_MAP2_VERTEX_3);
-		  }		    
+		  }
 
 		for (int quad = 4; quad < 5; quad++)
-		  {   
+		  {
 		    for (int j = 0; j < 4; j++)
 		      fpts[j] = vertices[faces[quad][j]-1];
-		    
+
 		    static Point<3> c(0.375, 0.375, 0.25);
 		    if (vispar.shrink < 1)
 		      for (int j = 0; j < 4; j++)
 			fpts[j] += (1-vispar.shrink) * (c-fpts[j]);
-			
+
 		    for (int ix = 0; ix <= order; ix++)
 		      for (int iy = 0; iy <= order; iy++)
 			{
-			  double lami[4] = 
+			  double lami[4] =
 			    { (1-double(ix)/order) * (1-double(iy)/order),
 			      (  double(ix)/order) * (1-double(iy)/order),
 			      (  double(ix)/order) * (  double(iy)/order),
 			      (1-double(ix)/order) * (  double(iy)/order) };
-			      
+
 			  Point<3> xl;
 			  for (int l = 0; l < 3; l++)
-			    xl(l) = 
+			    xl(l) =
 			      lami[0] * fpts[0](l) + lami[1] * fpts[1](l) +
 			      lami[2] * fpts[2](l) + lami[3] * fpts[3](l);
-			      
+
 			  curv.CalcElementTransformation (xl, ei, grid[ix][iy]);
 			}
-			
+
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[j][0], &grid[0][1]-&grid[0][0]);
 		    for (int j = 0; j <= order; j++)
 		      ToBernstein (order, &grid[0][j], &grid[1][0]-&grid[0][0]);
-			
-		    glMap2d(GL_MAP2_VERTEX_3, 
+
+		    glMap2d(GL_MAP2_VERTEX_3,
 			    0.0, 1.0, &grid[0][1](0)-&grid[0][0](0), order+1,
 			    0.0, 1.0, &grid[1][0](0)-&grid[0][0](0), order+1,
 			    &grid[0][0](0));
 		    glEnable(GL_MAP2_VERTEX_3);
-		    glEnable(GL_AUTO_NORMAL); 
-			
+		    glEnable(GL_AUTO_NORMAL);
+
 		    glMapGrid2f(8, 0.0, 1.0, 8, 0.0, 1.0);
 		    glEvalMesh2(GL_FILL, 0, 8, 0, 8);
-			
+
 		    glDisable (GL_AUTO_NORMAL);
 		    glDisable (GL_MAP2_VERTEX_3);
-		  }		    
+		  }
 
 
 
@@ -2719,7 +2743,7 @@ namespace netgen
 
 
 		/*
-		int hoplotn = 1 << vispar.subdivisions; 
+		int hoplotn = 1 << vispar.subdivisions;
 
 		const ELEMENT_FACE * faces = MeshTopology :: GetFaces (PYRAMID);
 		const Point3d * vertices = MeshTopology :: GetVertices (PYRAMID);
@@ -2729,9 +2753,9 @@ namespace netgen
 
 
 		glBegin (GL_TRIANGLES);
-		
+
 		for (int trig = 0; trig < 4; trig++)
-		  {   
+		  {
 		    Point<3> p0 = vertices[faces[trig][0]-1];
 		    Point<3> p1 = vertices[faces[trig][1]-1];
 		    Point<3> p2 = vertices[faces[trig][2]-1];
@@ -2743,7 +2767,7 @@ namespace netgen
 			p1 = c + vispar.shrink * (p1 - c);
 			p2 = c + vispar.shrink * (p2 - c);
 		      }
-		   
+
 
 		    Vec<3> taux = p0-p2;
 		    Vec<3> tauy = p1-p2;
@@ -2756,13 +2780,13 @@ namespace netgen
 		      for (int iy = 0; iy <= hoplotn-ix; iy++)
 			{
 			  for (int l = 0; l < 3; l++)
-			    xl(l) = 
+			    xl(l) =
 			      (1-double(ix+iy)/hoplotn) * p2(l) +
 			      (double(ix)/hoplotn) * p0(l) +
 			      (double(iy)/hoplotn) * p1(l);
-			  
+
 			  curv.CalcElementTransformation (xl, i-1, grid[ix][iy], dxdxi);
-			  
+
 			  gtaux = dxdxi * taux;
 			  gtauy = dxdxi * tauy;
 			  gridn[ix][iy] = Cross (gtauy, gtaux).Normalize();
@@ -2784,7 +2808,7 @@ namespace netgen
 			    {
 			      glNormal3dv (gridn[ix][iy+1]);
 			      glVertex3dv (grid[ix][iy+1]);
-			      
+
 			      glNormal3dv (gridn[ix+1][iy]);
 			      glVertex3dv (grid[ix+1][iy]);
 
@@ -2800,9 +2824,9 @@ namespace netgen
 
 
 		glBegin (GL_QUADS);
-		
+
 		for (int quad = 4; quad < 5; quad++)
-		  {   
+		  {
 		    Point<3> p0 = vertices[faces[quad][0]-1];
 		    Point<3> p1 = vertices[faces[quad][1]-1];
 		    Point<3> p2 = vertices[faces[quad][2]-1];
@@ -2829,14 +2853,14 @@ namespace netgen
 			{
 			  Point<3> xl;
 			  for (int l = 0; l < 3; l++)
-			    xl(l) = 
+			    xl(l) =
 			      (1-double(ix)/hoplotn)*(1-double(iy)/hoplotn) * p0(l) +
 			      (  double(ix)/hoplotn)*(1-double(iy)/hoplotn) * p1(l) +
 			      (  double(ix)/hoplotn)*(  double(iy)/hoplotn) * p2(l) +
 			      (1-double(ix)/hoplotn)*(  double(iy)/hoplotn) * p3(l);
-			  
+
 			  curv.CalcElementTransformation (xl, i-1, grid[ix][iy], dxdxi);
-			  
+
 			  gtaux = dxdxi * taux;
 			  gtauy = dxdxi * tauy;
 			  gridn[ix][iy] = Cross (gtauy, gtaux).Normalize();
@@ -2863,9 +2887,9 @@ namespace netgen
 		*/
 
 
-	      } 
+	      }
 	    else
-	      { 
+	      {
 
 
 
@@ -2883,11 +2907,11 @@ namespace netgen
 
 
 		el.GetSurfaceTriangles (faces);
-	  
+
 		if (el.PNum(1))
 		  {
 		    glBegin (GL_TRIANGLES);
-	      
+
 		    for (int j = 1; j <= faces.Size(); j++)
 		      {
 			Element2d & face = faces.Elem(j);
@@ -2910,7 +2934,7 @@ namespace netgen
 			glVertex3d (lp2.X(), lp2.Y(), lp2.Z());
 			glVertex3d (lp3.X(), lp3.Y(), lp3.Z());
 		      }
-	      
+
 		    glEnd();
 		  }
 	      }
@@ -2928,7 +2952,7 @@ namespace netgen
   {
     ;
   }
-  
+
   void VisualSceneMesh :: BuildDomainSurfList()
   {
     if (domainsurflist)
@@ -2939,23 +2963,23 @@ namespace netgen
 
     int i, j;
     glLineWidth (1.0f);
-  
+
     glDisable (GL_COLOR_MATERIAL);
-  
+
     for (i = 1; i <= mesh->GetNSE(); i++)
       {
 	Element2d el = mesh->SurfaceElement (i);
-      
+
 	int drawel = 1;
 	for (j = 1; j <= el.GetNP(); j++)
 	  {
 	    if (!el.PNum(j))
 	      drawel = 0;
 	  }
-      
+
 	if (!drawel)
 	  continue;
-      
+
 	if (el.GetIndex() < 1 || el.GetIndex() > mesh->GetNFD())
 	  continue;
 	int domin = mesh->GetFaceDescriptor(el.GetIndex()).DomainIn();
@@ -2968,23 +2992,23 @@ namespace netgen
 	  fac = -1;
 	else
 	  continue;
-      
-      
+
+
 	GLfloat matcol[] = { 1, 0, 0, 1 };
 	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcol);
-      
-      
+
+
 	if (el.GetNP() == 3)
 	  {
 	    glBegin (GL_TRIANGLES);
-	      
+
 	    const Point3d & lp1 = mesh->Point (el.PNum(1));
 	    const Point3d & lp2 = mesh->Point (el.PNum(2));
 	    const Point3d & lp3 = mesh->Point (el.PNum(3));
 	    Vec3d n = Cross (Vec3d (lp1, lp2), Vec3d (lp1, lp3));
 	    n /= ( fac * (n.Length()+1e-12));
 	    glNormal3d (n.X(), n.Y(), n.Z());
-	  
+
 	    if (!vispar.colormeshsize)
 	      {
 		glVertex3d (lp1.X(), lp1.Y(), lp1.Z());
@@ -2996,15 +3020,15 @@ namespace netgen
 	else if (el.GetNP() == 4)
 	  {
 	    glBegin (GL_QUADS);
-	  
+
 	    const Point3d & lp1 = mesh->Point (el.PNum(1));
 	    const Point3d & lp2 = mesh->Point (el.PNum(2));
 	    const Point3d & lp3 = mesh->Point (el.PNum(4));
 	    const Point3d & lp4 = mesh->Point (el.PNum(3));
-	    Vec3d n = Cross (Vec3d (lp1, lp2), 
+	    Vec3d n = Cross (Vec3d (lp1, lp2),
 			     Vec3d (lp1, Center (lp3, lp4)));
 	    n /= (fac * (n.Length()+1e-12));
-	    glNormal3d (n.X(), n.Y(), n.Z()); 
+	    glNormal3d (n.X(), n.Y(), n.Z());
 	    glVertex3d (lp1.X(), lp1.Y(), lp1.Z());
 	    glVertex3d (lp2.X(), lp2.Y(), lp2.Z());
 	    glVertex3d (lp4.X(), lp4.Y(), lp4.Z());
@@ -3019,7 +3043,7 @@ namespace netgen
 	      { 2, 4, 6 },
 	      { 3, 5, 4 },
 	      { 4, 5, 6 } };
-	  
+
 	    for (j = 0; j < 4; j++)
 	      {
 		const Point3d & lp1 = mesh->Point (el.PNum(trigs[j][0]));
@@ -3053,14 +3077,14 @@ namespace netgen
 	delete lock;
 	lock = NULL;
       }
-    
+
 
 
     MouseDblClickSelect(px,py,clipplane,backcolor,transformationmat,center,rad,
 			filledlist,selelement,selface,seledge,selpoint,selpoint2,locpi);
 
     selecttimestamp = NextTimeStamp();
-  
+
     /*
     int i, hits;
 
@@ -3076,22 +3100,22 @@ namespace netgen
     glGetIntegerv (GL_VIEWPORT, viewport);
 
 
-    glMatrixMode (GL_PROJECTION); 
+    glMatrixMode (GL_PROJECTION);
     glPushMatrix();
 
     GLdouble projmat[16];
     glGetDoublev (GL_PROJECTION_MATRIX, projmat);
 
-    glLoadIdentity(); 
-    gluPickMatrix (px, viewport[3] - py, 1, 1, viewport); 
+    glLoadIdentity();
+    gluPickMatrix (px, viewport[3] - py, 1, 1, viewport);
     glMultMatrixd (projmat);
-  
+
 
 
     glClearColor(backcolor, backcolor, backcolor, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glMatrixMode (GL_MODELVIEW); 
+    glMatrixMode (GL_MODELVIEW);
 
     glPushMatrix();
     glMultMatrixf (transformationmat);
@@ -3106,7 +3130,7 @@ namespace netgen
     glEnable (GL_POLYGON_OFFSET_FILL);
 
     glDisable(GL_CLIP_PLANE0);
-  
+
     if (vispar.clipenable)
       {
 	Vec<3> n(clipplane[0], clipplane[1], clipplane[2]);
@@ -3116,11 +3140,11 @@ namespace netgen
 	n /= len;
 	Vec<3> t1 = n.GetNormal ();
 	Vec<3> t2 = Cross (n, t1);
-      
+
 	double xi1mid = (center - p) * t1;
 	double xi2mid = (center - p) * t2;
-      
-	glLoadName (0);  
+
+	glLoadName (0);
 	glBegin (GL_QUADS);
 	glVertex3dv (p + (xi1mid-rad) * t1 + (xi2mid-rad) * t2);
 	glVertex3dv (p + (xi1mid+rad) * t1 + (xi2mid-rad) * t2);
@@ -3134,18 +3158,18 @@ namespace netgen
     glCallList (filledlist);
 
     glDisable (GL_POLYGON_OFFSET_FILL);
-  
+
     glPopName();
 
-    glMatrixMode (GL_PROJECTION); 
+    glMatrixMode (GL_PROJECTION);
     glPopMatrix();
 
-    glMatrixMode (GL_MODELVIEW); 
+    glMatrixMode (GL_MODELVIEW);
     glPopMatrix();
 
-    glFlush();  
+    glFlush();
 
-	
+
     hits = glRenderMode (GL_RENDER);
 
     //  cout << "hits = " << hits << endl;
@@ -3194,21 +3218,21 @@ namespace netgen
 	locpi = (locpi % sel.GetNP()) + 1;
 	selpoint2 = selpoint;
 	selpoint = sel.PNum(locpi);
-	cout << "selected point " << selpoint 
-	     << ", pos = " << mesh->Point (selpoint) 
+	cout << "selected point " << selpoint
+	     << ", pos = " << mesh->Point (selpoint)
 	     << endl;
 
 	for (i = 1; i <= mesh->GetNSeg(); i++)
 	  {
 	    const Segment & seg = mesh->LineSegment(i);
-	    if (seg.p1 == selpoint && seg.p2 == selpoint2 || 
+	    if (seg.p1 == selpoint && seg.p2 == selpoint2 ||
 		seg.p2 == selpoint && seg.p1 == selpoint2)
 	      {
 		seledge = seg.edgenr;
 		cout << "seledge = " << seledge << endl;
 	      }
 	  }
-      
+
       }
     else
       {
@@ -3252,22 +3276,22 @@ namespace netgen
     glGetIntegerv (GL_VIEWPORT, viewport);
 
 
-    glMatrixMode (GL_PROJECTION); 
+    glMatrixMode (GL_PROJECTION);
     glPushMatrix();
 
     GLdouble projmat[16];
     glGetDoublev (GL_PROJECTION_MATRIX, projmat);
 
-    glLoadIdentity(); 
-    gluPickMatrix (px, viewport[3] - py, 1, 1, viewport); 
+    glLoadIdentity();
+    gluPickMatrix (px, viewport[3] - py, 1, 1, viewport);
     glMultMatrixd (projmat);
-  
+
 
 
     glClearColor(backcolor, backcolor, backcolor, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glMatrixMode (GL_MODELVIEW); 
+    glMatrixMode (GL_MODELVIEW);
 
     glPushMatrix();
     glMultMatrixf (transformationmat);
@@ -3282,7 +3306,7 @@ namespace netgen
     glEnable (GL_POLYGON_OFFSET_FILL);
 
     glDisable(GL_CLIP_PLANE0);
-  
+
     if (vispar.clipenable)
       {
 	Vec<3> n(clipplane[0], clipplane[1], clipplane[2]);
@@ -3292,11 +3316,11 @@ namespace netgen
 	n /= len;
 	Vec<3> t1 = n.GetNormal ();
 	Vec<3> t2 = Cross (n, t1);
-      
+
 	double xi1mid = (center - p) * t1;
 	double xi2mid = (center - p) * t2;
-      
-	glLoadName (0);  
+
+	glLoadName (0);
 	glBegin (GL_QUADS);
 	glVertex3dv (p + (xi1mid-rad) * t1 + (xi2mid-rad) * t2);
 	glVertex3dv (p + (xi1mid+rad) * t1 + (xi2mid-rad) * t2);
@@ -3310,18 +3334,18 @@ namespace netgen
     glCallList (displaylist);
 
     glDisable (GL_POLYGON_OFFSET_FILL);
-  
+
     glPopName();
 
-    glMatrixMode (GL_PROJECTION); 
+    glMatrixMode (GL_PROJECTION);
     glPopMatrix();
 
-    glMatrixMode (GL_MODELVIEW); 
+    glMatrixMode (GL_MODELVIEW);
     glPopMatrix();
 
-    glFlush();  
+    glFlush();
 
-	
+
     hits = glRenderMode (GL_RENDER);
 
     //cout << "hits = " << hits << endl;
@@ -3343,7 +3367,7 @@ namespace netgen
 	int curname = selbuf[4*i+3];
 	GLuint curdepth = selbuf[4*i+1];
 	/*
-	  cout << selbuf[4*i] << " " << selbuf[4*i+1] << " " 
+	  cout << selbuf[4*i] << " " << selbuf[4*i+1] << " "
 	  << selbuf[4*i+2] << " " << selbuf[4*i+3] << endl;
 	*/
 	if (curname && (curdepth > clipdepth) &&
@@ -3373,21 +3397,21 @@ namespace netgen
 	locpi = (locpi % sel.GetNP()) + 1;
 	selpoint2 = selpoint;
 	selpoint = sel.PNum(locpi);
-	cout << "selected point " << selpoint 
-	     << ", pos = " << mesh->Point (selpoint) 
+	cout << "selected point " << selpoint
+	     << ", pos = " << mesh->Point (selpoint)
 	     << endl;
-	
+
 	for (i = 1; i <= mesh->GetNSeg(); i++)
 	  {
 	    const Segment & seg = mesh->LineSegment(i);
-	    if (seg.p1 == selpoint && seg.p2 == selpoint2 || 
+	    if (seg.p1 == selpoint && seg.p2 == selpoint2 ||
 		seg.p2 == selpoint && seg.p1 == selpoint2)
 	      {
 		seledge = seg.edgenr;
 		cout << "seledge = " << seledge << endl;
 	      }
 	  }
-      
+
       }
     else
       {
@@ -3403,14 +3427,14 @@ namespace netgen
 
 #ifdef PARALLELGL
     vsmesh.Broadcast ();
-#endif    
+#endif
   }
 
 
   void VisualSceneMesh :: SetSelectedFace (int asf)
-  { 
-    selface = asf; 
-    selecttimestamp = GetTimeStamp(); 
+  {
+    selface = asf;
+    selecttimestamp = GetTimeStamp();
   }
 
 
@@ -3420,4 +3444,4 @@ namespace netgen
 
 
 
-#endif // NOTCL  
+#endif // NOTCL

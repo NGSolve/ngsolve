@@ -27,7 +27,7 @@ namespace netgen
   {
     return  Point<3> (p.X(), p.Y(), p.Z());
   }
- 
+
   void DivideEdge (TopoDS_Edge & edge,
 		   Array<MeshPoint> & ps,
 		   Array<double> & params,
@@ -35,7 +35,7 @@ namespace netgen
   {
     double s0, s1;
     double maxh = mparam.maxh;
-    int nsubedges = 1;  
+    int nsubedges = 1;
     gp_Pnt pnt, oldpnt;
     double svalue[DIVIDEEDGESECTIONS];
 
@@ -60,7 +60,7 @@ namespace netgen
 	  1.0/mesh.GetH(Point3d(pnt.X(), pnt.Y(), pnt.Z()))*
 	  pnt.Distance(oldpnt);
 
-	//(*testout) << "mesh.GetH(Point3d(pnt.X(), pnt.Y(), pnt.Z())) " << mesh.GetH(Point3d(pnt.X(), pnt.Y(), pnt.Z())) 
+	//(*testout) << "mesh.GetH(Point3d(pnt.X(), pnt.Y(), pnt.Z())) " << mesh.GetH(Point3d(pnt.X(), pnt.Y(), pnt.Z()))
 	//	   <<  " pnt.Distance(oldpnt) " << pnt.Distance(oldpnt) << endl;
 
 
@@ -106,7 +106,7 @@ namespace netgen
 	params[nsubedges] = s1;
       }
   }
- 
+
 
 
 
@@ -138,13 +138,13 @@ namespace netgen
 		exists = 1;
 		break;
 	      }
-	
+
 	if (!exists)
 	  mesh.AddPoint (mp);
       }
 
     (*testout) << "different vertices = " << mesh.GetNP() << endl;
-  
+
 
     int first_ep = mesh.GetNP()+1;
 
@@ -177,17 +177,17 @@ namespace netgen
       for (TopExp_Explorer exp2(geom.fmap(i3), TopAbs_WIRE); exp2.More(); exp2.Next())
 	for (TopExp_Explorer exp3(exp2.Current(), TopAbs_EDGE); exp3.More(); exp3.Next())
 	  total++;
-	   
 
-  
+
+
 
     int facenr = 0;
     int edgenr = 0;
-    
+
 
     (*testout) << "faces = " << geom.fmap.Extent() << endl;
     int curr = 0;
-    
+
     for (int i3 = 1; i3 <= geom.fmap.Extent(); i3++)
       {
 	TopoDS_Face face = TopoDS::Face(geom.fmap(i3));
@@ -207,16 +207,16 @@ namespace netgen
 	   }
 	*/
 
-	mesh.AddFaceDescriptor (FaceDescriptor(facenr, solidnr0, solidnr1, 0)); 
+	mesh.AddFaceDescriptor (FaceDescriptor(facenr, solidnr0, solidnr1, 0));
 	// ACHTUNG! STIMMT NICHT ALLGEMEIN (RG)
 
 
 	Handle(Geom_Surface) occface = BRep_Tool::Surface(face);
-	      
+
 	for (TopExp_Explorer exp2 (face, TopAbs_WIRE); exp2.More(); exp2.Next())
 	  {
 	    TopoDS_Shape wire = exp2.Current();
-		  
+
 	    for (TopExp_Explorer exp3 (wire, TopAbs_EDGE); exp3.More(); exp3.Next())
 	      {
 		curr++;
@@ -226,13 +226,13 @@ namespace netgen
 		if (multithread.terminate) return;
 
 		TopoDS_Edge edge = TopoDS::Edge (exp3.Current());
-		if (BRep_Tool::Degenerated(edge)) 
+		if (BRep_Tool::Degenerated(edge))
 		  {
 		    //(*testout) << "ignoring degenerated edge" << endl;
 		    continue;
 		  }
 
-		if (geom.vmap.FindIndex(TopExp::FirstVertex (edge)) == 
+		if (geom.vmap.FindIndex(TopExp::FirstVertex (edge)) ==
 		    geom.vmap.FindIndex(TopExp::LastVertex (edge)))
 		  {
 		    GProp_GProps system;
@@ -257,11 +257,11 @@ namespace netgen
 		Array <double> params;
 
 		DivideEdge (edge, mp, params, mesh);
-				
-		    
+
+
 		Array <int> pnums;
 		pnums.SetSize (mp.Size()+2);
-		    
+
 		if (!merge_solids)
 		  {
 		    pnums[0] = geom.vmap.FindIndex (TopExp::FirstVertex (edge));
@@ -271,7 +271,7 @@ namespace netgen
 		  {
 		    Point<3> fp = occ2ng (BRep_Tool::Pnt (TopExp::FirstVertex (edge)));
 		    Point<3> lp = occ2ng (BRep_Tool::Pnt (TopExp::LastVertex (edge)));
-		    
+
 		    pnums[0] = -1;
 		    pnums.Last() = -1;
 		    for (PointIndex pi = 1; pi < first_ep; pi++)
@@ -280,14 +280,14 @@ namespace netgen
 			if (Dist2 (mesh[pi], lp) < eps*eps) pnums.Last() = pi;
 		      }
 		  }
-		
+
 
 		for (int i = 1; i <= mp.Size(); i++)
 		  {
 		    bool exists = 0;
 		    int j;
 		    for (j = first_ep; j <= mesh.GetNP(); j++)
-		      if ((mesh.Point(j)-Point<3>(mp[i-1])).Length() < eps) 
+		      if ((mesh.Point(j)-Point<3>(mp[i-1])).Length() < eps)
 			{
 			  exists = 1;
 			  break;
@@ -303,14 +303,14 @@ namespace netgen
 		      }
 		  }
 		(*testout) << "NP = " << mesh.GetNP() << endl;
-				
+
 		//(*testout) << pnums[pnums.Size()-1] << endl;
-		    
+
 		for (int i = 1; i <= mp.Size()+1; i++)
 		  {
 		    edgenr++;
 		    Segment seg;
-			
+
 		    seg.p1 = pnums[i-1];
 		    seg.p2 = pnums[i];
 		    seg.edgenr = edgenr;
@@ -319,7 +319,7 @@ namespace netgen
 		    seg.epgeominfo[1].dist = params[i];
 		    seg.epgeominfo[0].edgenr = geomedgenr;
 		    seg.epgeominfo[1].edgenr = geomedgenr;
-			
+
 		    gp_Pnt2d p2d;
 		    p2d = cof->Value(params[i-1]);
 		    //			if (i == 1) p2d = cof->Value(s0);
@@ -359,7 +359,7 @@ namespace netgen
 		      seg.epgeominfo[0].v = p2d.Y()-occface->VPeriod();
 		      }
 		    */
-			
+
 		    if (edge.Orientation() == TopAbs_REVERSED)
 		      {
 			swap (seg.p1, seg.p2);
@@ -378,13 +378,13 @@ namespace netgen
       }
 
     //	for(i=1; i<=mesh.GetNSeg(); i++)
-    //		(*testout) << "edge " << mesh.LineSegment(i).edgenr << " face " << mesh.LineSegment(i).si 
+    //		(*testout) << "edge " << mesh.LineSegment(i).edgenr << " face " << mesh.LineSegment(i).si
     //				<< " p1 " << mesh.LineSegment(i).p1 << " p2 " << mesh.LineSegment(i).p2 << endl;
     //	exit(10);
 
     mesh.CalcSurfacesOfNode();
     multithread.task = savetask;
-  }  
+  }
 
 
 
@@ -396,7 +396,7 @@ namespace netgen
 
     const char * savetask = multithread.task;
     multithread.task = "Surface meshing";
-  
+
     geom.facemeshstatus = 0;
 
     int noldp = mesh.GetNP();
@@ -406,7 +406,7 @@ namespace netgen
     Array<int> glob2loc(noldp);
 
     //int projecttype = PARAMETERSPACE;
-  
+
     int projecttype = PARAMETERSPACE;
 
     int notrys = 1;
@@ -426,16 +426,16 @@ namespace netgen
 	multithread.percent = 100 * k / (mesh.GetNFD()+1e-10);
 	geom.facemeshstatus[k-1] = -1;
 
-      
-	/*      
+
+	/*
 		if (k != 42)
 		{
 		cout << "skipped" << endl;
 		continue;
 		}
 	*/
-      
-    
+
+
 	FaceDescriptor & fd = mesh.GetFaceDescriptor(k);
 
 	int oldnf = mesh.GetNSE();
@@ -443,8 +443,8 @@ namespace netgen
 	Box<3> bb = geom.GetBoundingBox();
 
 	//      int projecttype = PLANESPACE;
- 
-	Meshing2OCCSurfaces meshing(TopoDS::Face(geom.fmap(k)), bb, projecttype); 
+
+	Meshing2OCCSurfaces meshing(TopoDS::Face(geom.fmap(k)), bb, projecttype);
 
 	if (meshing.GetProjectionType() == PLANESPACE)
 	  PrintMessage (2, "Face ", k, " / ", mesh.GetNFD(), " (plane space projection)");
@@ -454,7 +454,7 @@ namespace netgen
 	if (surfmesherror)
 	  cout << "Surface meshing error occured before (in " << surfmesherror << " faces)" << endl;
 
-	//      Meshing2OCCSurfaces meshing(f2, bb); 
+	//      Meshing2OCCSurfaces meshing(f2, bb);
 	meshing.SetStartTime (starttime);
 
 	//(*testout) << "Face " << k << endl << endl;
@@ -481,7 +481,7 @@ namespace netgen
 		      }
 		  }
 	      }
-	  
+
 	    for (i = 1; i <= mesh.GetNSeg(); i++)
 	      {
 		Segment & seg = mesh.LineSegment(i);
@@ -493,7 +493,7 @@ namespace netgen
 		    gi0.v = seg.epgeominfo[0].v;
 		    gi1.u = seg.epgeominfo[1].u;
 		    gi1.v = seg.epgeominfo[1].v;
-		  
+
 		    meshing.AddBoundaryElement (glob2loc.Get(seg.p1), glob2loc.Get(seg.p2), gi0, gi1);
 		    //(*testout) << gi0.u << " " << gi0.v << endl;
 		    //(*testout) << gi1.u << " " << gi1.v << endl;
@@ -503,17 +503,17 @@ namespace netgen
 	else
 	  {
 	    int cntp = 0;
-	  
+
 	    for (i = 1; i <= mesh.GetNSeg(); i++)
 	      if (mesh.LineSegment(i).si == k)
 		cntp+=2;
-	  
-	  
+
+
 	    Array< PointGeomInfo > gis;
-	  
+
 	    gis.SetAllocSize (cntp);
 	    gis.SetSize (0);
-	  
+
 	    for (i = 1; i <= mesh.GetNSeg(); i++)
 	      {
 		Segment & seg = mesh.LineSegment(i);
@@ -525,13 +525,13 @@ namespace netgen
 		    gi0.v = seg.epgeominfo[0].v;
 		    gi1.u = seg.epgeominfo[1].u;
 		    gi1.v = seg.epgeominfo[1].v;
-		  
+
 		    int locpnum[2] = {0, 0};
-		  
+
 		    for (j = 0; j < 2; j++)
 		      {
 			PointGeomInfo gi = (j == 0) ? gi0 : gi1;
-		      
+
 			int l;
 			for (l = 0; l < gis.Size() && locpnum[j] == 0; l++)
 			  {
@@ -540,7 +540,7 @@ namespace netgen
 			    if (dist < 1e-10)
 			      locpnum[j] = l+1;
 			  }
-		      
+
 			if (locpnum[j] == 0)
 			  {
 			    int pi = (j == 0) ? seg.p1 : seg.p2;
@@ -551,11 +551,11 @@ namespace netgen
 			    locpnum[j] = l+1;
 			  }
 		      }
-		  
+
 		    meshing.AddBoundaryElement (locpnum[0], locpnum[1], gi0, gi1);
 		    //(*testout) << gi0.u << " " << gi0.v << endl;
 		    //(*testout) << gi1.u << " " << gi1.v << endl;
-	      
+
 		  }
 	      }
 	  }
@@ -564,8 +564,9 @@ namespace netgen
 
 
 
-
-	double maxh = mparam.maxh;
+    // Philippose - 15/01/2009
+    double maxh = geom.face_maxh[k-1];
+	//double maxh = mparam.maxh;
 	mparam.checkoverlap = 0;
 	//      int noldpoints = mesh->GetNP();
 	int noldsurfel = mesh.GetNSE();
@@ -600,7 +601,7 @@ namespace netgen
 	      {
 		for (int i = noldsurfel+1; i <= mesh.GetNSE(); i++)
 		  mesh.DeleteSurfaceElement (i);
-	      
+
 		mesh.Compress();
 
 		cout << "retry Surface " << k << endl;
@@ -624,7 +625,7 @@ namespace netgen
 	  }
 
 	notrys = 1;
-      
+
 	for (i = oldnf+1; i <= mesh.GetNSE(); i++)
 	  mesh.SurfaceElement(i).SetIndex (k);
 
@@ -657,10 +658,10 @@ namespace netgen
 			  gp_Pnt point = BRep_Tool::Pnt(vertex);
 			  problemfile << point.X() << " " << point.Y() << " " << point.Z() << endl;
 			}
-		    }		  
+		    }
 		}
 	      problemfile << endl;
-		
+
 	    }
 	cout << endl << endl;
 	cout << "for more information open IGES/STEP Topology Explorer" << endl;
@@ -672,8 +673,8 @@ namespace netgen
 	problemfile << "OK" << endl << endl;
 	problemfile.close();
       }
-    
-    
+
+
 
 
     if (multithread.terminate || perfstepsend < MESHCONST_OPTSURFACE)
@@ -683,7 +684,7 @@ namespace netgen
 
     static int timer_opt2d = NgProfiler::CreateTimer ("Optimization 2D");
     NgProfiler::StartTimer (timer_opt2d);
-  
+
     for (k = 1; k <= mesh.GetNFD(); k++)
       {
 	//      if (k != 42) continue;
@@ -691,26 +692,26 @@ namespace netgen
 
 	//      (*testout) << "optimize face " << k << endl;
 	multithread.percent = 100 * k / (mesh.GetNFD()+1e-10);
-      
+
 	FaceDescriptor & fd = mesh.GetFaceDescriptor(k);
-      
+
 	PrintMessage (1, "Optimize Surface ", k);
 	for (i = 1; i <= mparam.optsteps2d; i++)
 	  {
 	    //	  (*testout) << "optstep " << i << endl;
 	    if (multithread.terminate) return;
-	  
+
 	    {
 	      MeshOptimize2dOCCSurfaces meshopt(geom);
 	      meshopt.SetFaceIndex (k);
 	      meshopt.SetImproveEdges (0);
 	      meshopt.SetMetricWeight (0.2);
 	      meshopt.SetWriteStatus (0);
-	    
+
 	      //	    (*testout) << "EdgeSwapping (mesh, (i > mparam.optsteps2d/2))" << endl;
 	      meshopt.EdgeSwapping (mesh, (i > mparam.optsteps2d/2));
 	    }
-	  
+
 	    if (multithread.terminate) return;
 	    {
 	      MeshOptimize2dOCCSurfaces meshopt(geom);
@@ -718,22 +719,22 @@ namespace netgen
 	      meshopt.SetImproveEdges (0);
 	      meshopt.SetMetricWeight (0.2);
 	      meshopt.SetWriteStatus (0);
-	    
+
 	      //	    (*testout) << "ImproveMesh (mesh)" << endl;
 	      meshopt.ImproveMesh (mesh);
 	    }
-	  
+
 	    {
 	      MeshOptimize2dOCCSurfaces meshopt(geom);
 	      meshopt.SetFaceIndex (k);
 	      meshopt.SetImproveEdges (0);
 	      meshopt.SetMetricWeight (0.2);
 	      meshopt.SetWriteStatus (0);
-	    
+
 	      //	    (*testout) << "CombineImprove (mesh)" << endl;
 	      meshopt.CombineImprove (mesh);
 	    }
-	  
+
 	    if (multithread.terminate) return;
 	    {
 	      MeshOptimize2dOCCSurfaces meshopt(geom);
@@ -741,15 +742,15 @@ namespace netgen
 	      meshopt.SetImproveEdges (0);
 	      meshopt.SetMetricWeight (0.2);
 	      meshopt.SetWriteStatus (0);
-	    
+
 	      //	    (*testout) << "ImproveMesh (mesh)" << endl;
 	      meshopt.ImproveMesh (mesh);
 	    }
 	  }
-      
+
       }
-  
-  
+
+
     mesh.CalcSurfacesOfNode();
     mesh.Compress();
 
@@ -762,15 +763,15 @@ namespace netgen
   {
     double hret;
     kappa *= mparam.curvaturesafety;
-  
+
     if (mparam.maxh * kappa < 1)
       hret = mparam.maxh;
     else
       hret = 1 / kappa;
-  
+
     if (mparam.maxh < hret)
       hret = mparam.maxh;
-  
+
     return (hret);
   }
 
@@ -784,7 +785,7 @@ namespace netgen
       Vec<3> n = p1-p0;
       Vec<3> q = l.p1-l.p0;
       double nq = n*q;
-    
+
       Point<3> p = p0 + 0.5*n;
       double lambda = (p-l.p0)*n / nq;
 
@@ -797,7 +798,7 @@ namespace netgen
       else
 	return 1e99;
     }
-  
+
     double Length ()
     {
       return (p1-p0).Length();
@@ -814,7 +815,7 @@ namespace netgen
 
     parmid.SetX(0.3*(par0.X()+par1.X()+par2.X()));
     parmid.SetY(0.3*(par0.Y()+par1.Y()+par2.Y()));
-    
+
     if (depth == 0)
       {
 	double curvature = 0;
@@ -867,14 +868,14 @@ namespace netgen
 
 
 	h = ComputeH (curvature+1e-10);
-	
+
 	if(h < 1e-4*maxside)
 	  return;
 
 
 	if (h > 30) return;
       }
-  
+
     if (h < maxside) // && depth < 5)
       {
 	//cout << "\r h " << h << flush;
@@ -887,7 +888,7 @@ namespace netgen
 	//<< " par1 " << par1.X() << " " << par1.Y()
 	//   << " par2 " << par2.X() << " " << par2.Y()<< endl;
 
-      
+
 	pm0.SetX(0.5*(par1.X()+par2.X())); pm0.SetY(0.5*(par1.Y()+par2.Y()));
 	pm1.SetX(0.5*(par0.X()+par2.X())); pm1.SetY(0.5*(par0.Y()+par2.Y()));
 	pm2.SetX(0.5*(par1.X()+par0.X())); pm2.SetY(0.5*(par1.Y()+par0.Y()));
@@ -907,7 +908,7 @@ namespace netgen
   	p3d = Point3d(pnt.X(), pnt.Y(), pnt.Z());
   	mesh.RestrictLocalH (p3d, h);
 
-	
+
 	prop->SetParameters (par0.X(), par0.Y());
 	pnt = prop->Value();
 	p3d = Point3d(pnt.X(), pnt.Y(), pnt.Z());
@@ -927,23 +928,23 @@ namespace netgen
   }
   */
 
-  
+
   void RestrictHTriangle (gp_Pnt2d & par0, gp_Pnt2d & par1, gp_Pnt2d & par2,
 			  BRepLProp_SLProps * prop, Mesh & mesh, int depth, double h = 0)
   {
     int ls = -1;
-    
+
     gp_Pnt pnt0,pnt1,pnt2;
 
     prop->SetParameters (par0.X(), par0.Y());
     pnt0 = prop->Value();
-        
+
     prop->SetParameters (par1.X(), par1.Y());
     pnt1 = prop->Value();
-            
+
     prop->SetParameters (par2.X(), par2.Y());
     pnt2 = prop->Value();
-	
+
     double aux;
     double maxside = pnt0.Distance(pnt1);
     ls = 2;
@@ -959,14 +960,14 @@ namespace netgen
 	maxside = aux;
 	ls = 1;
       }
-        
+
 
 
     gp_Pnt2d parmid;
 
     parmid.SetX(0.3*(par0.X()+par1.X()+par2.X()));
     parmid.SetY(0.3*(par0.Y()+par1.Y()+par2.Y()));
-    
+
     if (depth%3 == 0)
       {
 	double curvature = 0;
@@ -1019,14 +1020,14 @@ namespace netgen
 
 
 	h = ComputeH (curvature+1e-10);
-	
+
 	if(h < 1e-4*maxside)
 	  return;
 
 
 	if (h > 30) return;
       }
-  
+
     if (h < maxside && depth < 10)
       {
 	//cout << "\r h " << h << flush;
@@ -1055,7 +1056,7 @@ namespace netgen
 	    RestrictHTriangle(pm, par1, par2, prop, mesh, depth+1, h);
 	    RestrictHTriangle(pm, par2, par0, prop, mesh, depth+1, h);
 	  }
-	
+
       }
     else
       {
@@ -1085,456 +1086,465 @@ namespace netgen
 
 
   int OCCGenerateMesh (OCCGeometry & geom,
-		       Mesh *& mesh,
-		       int perfstepsstart, int perfstepsend,
-		       char * optstr)
-  {
-    // int i, j;
+         Mesh *& mesh,
+         int perfstepsstart, int perfstepsend,
+         char * optstr)
+   {
+      // int i, j;
 
-    multithread.percent = 0;
+      multithread.percent = 0;
 
-    if (perfstepsstart <= MESHCONST_ANALYSE)
+      if (perfstepsstart <= MESHCONST_ANALYSE)
       {
-	delete mesh;
-	mesh = new Mesh();
-        mesh->geomtype = Mesh::GEOM_OCC;
-	mesh->SetGlobalH (mparam.maxh);
-	mesh->SetMinimalH (mparam.minh);
+         delete mesh;
+         mesh = new Mesh();
+         mesh->geomtype = Mesh::GEOM_OCC;
+         mesh->SetGlobalH (mparam.maxh);
+         mesh->SetMinimalH (mparam.minh);
 
-	Array<double> maxhdom;
-	maxhdom.SetSize (geom.NrSolids());
-	maxhdom = mparam.maxh;
-      
-	mesh->SetMaxHDomain (maxhdom);
-      
-	Box<3> bb = geom.GetBoundingBox();
-	bb.Increase (bb.Diam()/10);
-      
-	mesh->SetLocalH (bb.PMin(), bb.PMax(), 0.5);
-    
+         Array<double> maxhdom;
+         maxhdom.SetSize (geom.NrSolids());
+         maxhdom = mparam.maxh;
 
-	if (mparam.uselocalh)
-	  {
+         mesh->SetMaxHDomain (maxhdom);
 
-	    const char * savetask = multithread.task;
-	    multithread.percent = 0;
+         Box<3> bb = geom.GetBoundingBox();
+         bb.Increase (bb.Diam()/10);
 
-	    mesh->SetLocalH (bb.PMin(), bb.PMax(), mparam.grading);
+         mesh->SetLocalH (bb.PMin(), bb.PMax(), 0.5);
 
-	    int nedges = geom.emap.Extent();
+         if (mparam.uselocalh)
+         {
 
-	    double maxedgelen = 0;
-	    double minedgelen = 1e99;
+            const char * savetask = multithread.task;
+            multithread.percent = 0;
 
-	  
-	    multithread.task = "Setting local mesh size (elements per edge)";
+            mesh->SetLocalH (bb.PMin(), bb.PMax(), mparam.grading);
 
-	    // setting elements per edge
-	  
-	    for (int i = 1; i <= nedges && !multithread.terminate; i++)
-	      {
-		TopoDS_Edge e = TopoDS::Edge (geom.emap(i));
-		multithread.percent = 100 * (i-1)/double(nedges);
-		if (BRep_Tool::Degenerated(e)) continue;
+            int nedges = geom.emap.Extent();
 
-		GProp_GProps system;	       
-		BRepGProp::LinearProperties(e, system);
-		double len = system.Mass();
+            double maxedgelen = 0;
+            double minedgelen = 1e99;
 
-		if (len < IGNORECURVELENGTH)
-		  {
-		    (*testout) << "ignored" << endl;
-		    continue;
-		  }
+            multithread.task = "Setting local mesh size (elements per edge)";
 
+            // setting elements per edge
 
-		double localh = len/mparam.segmentsperedge;
-		double s0, s1;
-		Handle(Geom_Curve) c = BRep_Tool::Curve(e, s0, s1);
+            for (int i = 1; i <= nedges && !multithread.terminate; i++)
+            {
+               TopoDS_Edge e = TopoDS::Edge (geom.emap(i));
+               multithread.percent = 100 * (i-1)/double(nedges);
+               if (BRep_Tool::Degenerated(e)) continue;
 
-		maxedgelen = max (maxedgelen, len);
-		minedgelen = min (minedgelen, len);
+               GProp_GProps system;
+               BRepGProp::LinearProperties(e, system);
+               double len = system.Mass();
 
-		int maxj = 2 * (int) ceil (localh/len);
-		for (int j = 0; j <= maxj; j++)
-		  {
-		    gp_Pnt pnt = c->Value (s0+double(j)/maxj*(s1-s0));
-		    mesh->RestrictLocalH (Point3d(pnt.X(), pnt.Y(), pnt.Z()), localh);
-		  }
-	      }
+               if (len < IGNORECURVELENGTH)
+               {
+                  (*testout) << "ignored" << endl;
+                  continue;
+               }
 
+               double localh = len/mparam.segmentsperedge;
+               double s0, s1;
 
+               // Philippose - 23/01/2009
+               // Find all the parent faces of a given edge
+               // and limit the mesh size of the edge based on the
+               // mesh size limit of the face
+               TopTools_IndexedDataMapOfShapeListOfShape edge_face_map;
+               edge_face_map.Clear();
 
-	  
-	    multithread.task = "Setting local mesh size (edge curvature)";
-	  
-	  
-	    // setting edge curvature
+               TopExp::MapShapesAndAncestors(geom.shape, TopAbs_EDGE, TopAbs_FACE, edge_face_map);
+               const TopTools_ListOfShape& parent_faces = edge_face_map.FindFromKey(e);
 
-	    int nsections = 20;
+               TopTools_ListIteratorOfListOfShape parent_face_list;
 
-	    for (int i = 1; i <= nedges && !multithread.terminate; i++)
-	      {
-		double maxcur = 0;
-		multithread.percent = 100 * (i-1)/double(nedges);
-		TopoDS_Edge edge = TopoDS::Edge (geom.emap(i));
-		if (BRep_Tool::Degenerated(edge)) continue;
-		double s0, s1;
-		Handle(Geom_Curve) c = BRep_Tool::Curve(edge, s0, s1);
-		BRepAdaptor_Curve brepc(edge);
-		BRepLProp_CLProps prop(brepc, 2, 1e-5);
-	      
-		for (int j = 1; j <= nsections; j++)
-		  {
-		    double s = s0 + j/(double) nsections * (s1-s0);
-		    prop.SetParameter (s);
-		    double curvature = prop.Curvature();
-		    if(curvature > maxcur) maxcur = curvature;
+               for(parent_face_list.Initialize(parent_faces); parent_face_list.More(); parent_face_list.Next())
+               {
+                  TopoDS_Face parent_face = TopoDS::Face(parent_face_list.Value());
 
-		    if (curvature >= 1e99)
-		      continue;
-		      
+                  int face_index = geom.fmap.FindIndex(parent_face);
 
-		    gp_Pnt pnt = c->Value (s);
+                  if(face_index >= 1) localh = min(localh,geom.face_maxh[face_index - 1]);
+               }
 
-		    mesh->RestrictLocalH (Point3d(pnt.X(), pnt.Y(), pnt.Z()),
-					  ComputeH (fabs(curvature)));		  
-		  }
-		// (*testout) << "edge " << i << " max. curvature: " << maxcur << endl;
-	      }
+               Handle(Geom_Curve) c = BRep_Tool::Curve(e, s0, s1);
 
-	  
-	  
-	    multithread.task = "Setting local mesh size (face curvature)";
+               maxedgelen = max (maxedgelen, len);
+               minedgelen = min (minedgelen, len);
 
-	    // setting face curvature
-	  
-	    int nfaces = geom.fmap.Extent();
-	  
-	    for (int i = 1; i <= nfaces && !multithread.terminate; i++)
-	      {
-		multithread.percent = 100 * (i-1)/double(nfaces);
-		TopoDS_Face face = TopoDS::Face(geom.fmap(i));
-		TopLoc_Location loc;
-		Handle(Geom_Surface) surf = BRep_Tool::Surface (face);
-		Handle(Poly_Triangulation) triangulation = BRep_Tool::Triangulation (face, loc);
-		if (triangulation.IsNull()) continue;
-	      
-		BRepAdaptor_Surface sf(face, Standard_True);
-		BRepLProp_SLProps prop(sf, 2, 1e-5);
-		
-		int ntriangles = triangulation -> NbTriangles();
-		for (int j = 1; j <= ntriangles; j++)
-		  {
-		    gp_Pnt p[3];
-		    gp_Pnt2d par[3];
-		
-		    for (int k = 1; k <=3; k++)
-		      {
-			int n = triangulation->Triangles()(j)(k);
-			p[k-1] = triangulation->Nodes()(n).Transformed(loc);
-			par[k-1] = triangulation->UVNodes()(n);
-		      }
-		
-		    //double maxside = 0;
-		    //maxside = max (maxside, p[0].Distance(p[1]));
-		    //maxside = max (maxside, p[0].Distance(p[2]));
-		    //maxside = max (maxside, p[1].Distance(p[2]));
-		    //cout << "\rFace " << i << " pos11 ntriangles " << ntriangles << " maxside " << maxside << flush;
+               // Philippose - 23/01/2009
+               // Modified the calculation of maxj, because the
+               // method used so far always results in maxj = 2,
+               // which causes the localh to be set only at the
+               // starting, mid and end of the edge.
+               // Old Algorithm:
+               // int maxj = 2 * (int) ceil (localh/len);
+               int maxj = max((int) ceil(len/localh), 2);
 
-		    RestrictHTriangle (par[0], par[1], par[2], &prop, *mesh, 0);
-		    //cout << "\rFace " << i << " pos12 ntriangles " << ntriangles << flush;
-		  }
-	      }
-	  
+               for (int j = 0; j <= maxj; j++)
+               {
+                  gp_Pnt pnt = c->Value (s0+double(j)/maxj*(s1-s0));
+                  mesh->RestrictLocalH (Point3d(pnt.X(), pnt.Y(), pnt.Z()), localh);
+               }
+            }
 
-	    // setting close edges
+            multithread.task = "Setting local mesh size (edge curvature)";
 
-	    if (stlparam.resthcloseedgeenable)
-	      {
-		multithread.task = "Setting local mesh size (close edges)";
-	      
-		int sections = 100;
-	      
-		Array<Line> lines(sections*nedges);
-	      
-		Box3dTree* searchtree =
-		  new Box3dTree (bb.PMin(), bb.PMax());
-	      
-		int nlines = 0;
-		for (int i = 1; i <= nedges && !multithread.terminate; i++)
-		  {
-		    TopoDS_Edge edge = TopoDS::Edge (geom.emap(i));
-		    if (BRep_Tool::Degenerated(edge)) continue;
+            // setting edge curvature
 
-		    double s0, s1;
-		    Handle(Geom_Curve) c = BRep_Tool::Curve(edge, s0, s1);
-		    BRepAdaptor_Curve brepc(edge);
-		    BRepLProp_CLProps prop(brepc, 1, 1e-5);
-		    prop.SetParameter (s0);
+            int nsections = 20;
 
-		    gp_Vec d0 = prop.D1().Normalized();
-		    double s_start = s0;
-		    int count = 0;
-		    for (int j = 1; j <= sections; j++)
-		      {
-			double s = s0 + (s1-s0)*(double)j/(double)sections;
-			prop.SetParameter (s);
-			gp_Vec d1 = prop.D1().Normalized();
-			double cosalpha = fabs(d0*d1);
-			if ((j == sections) || (cosalpha < cos(10.0/180.0*M_PI)))
-			  {
-			    count++;
-			    gp_Pnt p0 = c->Value (s_start);
-			    gp_Pnt p1 = c->Value (s);
-			    lines[nlines].p0 = Point<3> (p0.X(), p0.Y(), p0.Z());
-			    lines[nlines].p1 = Point<3> (p1.X(), p1.Y(), p1.Z());
-		      
-			    Box3d box;
-			    box.SetPoint (Point3d(lines[nlines].p0));
-			    box.AddPoint (Point3d(lines[nlines].p1));
+            for (int i = 1; i <= nedges && !multithread.terminate; i++)
+            {
+               double maxcur = 0;
+               multithread.percent = 100 * (i-1)/double(nedges);
+               TopoDS_Edge edge = TopoDS::Edge (geom.emap(i));
+               if (BRep_Tool::Degenerated(edge)) continue;
+               double s0, s1;
+               Handle(Geom_Curve) c = BRep_Tool::Curve(edge, s0, s1);
+               BRepAdaptor_Curve brepc(edge);
+               BRepLProp_CLProps prop(brepc, 2, 1e-5);
 
-			    searchtree->Insert (box.PMin(), box.PMax(), nlines+1);
-			    nlines++;
+               for (int j = 1; j <= nsections; j++)
+               {
+                  double s = s0 + j/(double) nsections * (s1-s0);
+                  prop.SetParameter (s);
+                  double curvature = prop.Curvature();
+                  if(curvature> maxcur) maxcur = curvature;
 
-			    s_start = s;
-			    d0 = d1;
-			  }
-		      }
-		  }
-		
-		Array<int> linenums;
-	      
-		for (int i = 0; i < nlines; i++)
-		  {
-		    multithread.percent = (100*i)/double(nlines);
-		    Line & line = lines[i];
-		  
-		    Box3d box;
-		    box.SetPoint (Point3d(line.p0));
-		    box.AddPoint (Point3d(line.p1));
-		    double maxhline = max (mesh->GetH(box.PMin()),
-					   mesh->GetH(box.PMax()));
-		    box.Increase(maxhline);
+                  if (curvature >= 1e99)
+                  continue;
 
-		    double mindist = 1e99;
-		    linenums.SetSize(0);
-		    searchtree->GetIntersecting(box.PMin(),box.PMax(),linenums);
+                  gp_Pnt pnt = c->Value (s);
 
-		    for (int j = 0; j < linenums.Size(); j++)
-		      {
-			int num = linenums[j]-1;
-			if (i == num) continue;
-			if ((line.p0-lines[num].p0).Length2() < 1e-15) continue;
-			if ((line.p0-lines[num].p1).Length2() < 1e-15) continue;
-			if ((line.p1-lines[num].p0).Length2() < 1e-15) continue;
-			if ((line.p1-lines[num].p1).Length2() < 1e-15) continue;
-			mindist = min (mindist, line.Dist(lines[num]));
-		      }
-		  
-		    mindist *= stlparam.resthcloseedgefac;
+                  mesh->RestrictLocalH (Point3d(pnt.X(), pnt.Y(), pnt.Z()),
+                        ComputeH (fabs(curvature)));
+               }
+               // (*testout) << "edge " << i << " max. curvature: " << maxcur << endl;
+            }
 
-		    if (mindist < 1e-3) 
-		      {
-			(*testout) << "extremely small local h: " << mindist
-				   << " --> setting to 1e-3" << endl;
-			(*testout) << "somewhere near " << line.p0 << " - " << line.p1 << endl;
-			mindist = 1e-3;
-		      }
+            multithread.task = "Setting local mesh size (face curvature)";
 
-		    mesh->RestrictLocalHLine(line.p0, line.p1, mindist);
-		  }
-	      }
-				   
+            // setting face curvature
 
-	    multithread.task = savetask;
+            int nfaces = geom.fmap.Extent();
 
-	  }
+            for (int i = 1; i <= nfaces && !multithread.terminate; i++)
+            {
+               multithread.percent = 100 * (i-1)/double(nfaces);
+               TopoDS_Face face = TopoDS::Face(geom.fmap(i));
+               TopLoc_Location loc;
+               Handle(Geom_Surface) surf = BRep_Tool::Surface (face);
+               Handle(Poly_Triangulation) triangulation = BRep_Tool::Triangulation (face, loc);
+               if (triangulation.IsNull()) continue;
+
+               BRepAdaptor_Surface sf(face, Standard_True);
+               BRepLProp_SLProps prop(sf, 2, 1e-5);
+
+               int ntriangles = triangulation -> NbTriangles();
+               for (int j = 1; j <= ntriangles; j++)
+               {
+                  gp_Pnt p[3];
+                  gp_Pnt2d par[3];
+
+                  for (int k = 1; k <=3; k++)
+                  {
+                     int n = triangulation->Triangles()(j)(k);
+                     p[k-1] = triangulation->Nodes()(n).Transformed(loc);
+                     par[k-1] = triangulation->UVNodes()(n);
+                  }
+
+                  //double maxside = 0;
+                  //maxside = max (maxside, p[0].Distance(p[1]));
+                  //maxside = max (maxside, p[0].Distance(p[2]));
+                  //maxside = max (maxside, p[1].Distance(p[2]));
+                  //cout << "\rFace " << i << " pos11 ntriangles " << ntriangles << " maxside " << maxside << flush;
+
+                  RestrictHTriangle (par[0], par[1], par[2], &prop, *mesh, 0);
+                  //cout << "\rFace " << i << " pos12 ntriangles " << ntriangles << flush;
+               }
+            }
+
+            // setting close edges
+
+            if (stlparam.resthcloseedgeenable)
+            {
+               multithread.task = "Setting local mesh size (close edges)";
+
+               int sections = 100;
+
+               Array<Line> lines(sections*nedges);
+
+               Box3dTree* searchtree =
+               new Box3dTree (bb.PMin(), bb.PMax());
+
+               int nlines = 0;
+               for (int i = 1; i <= nedges && !multithread.terminate; i++)
+               {
+                  TopoDS_Edge edge = TopoDS::Edge (geom.emap(i));
+                  if (BRep_Tool::Degenerated(edge)) continue;
+
+                  double s0, s1;
+                  Handle(Geom_Curve) c = BRep_Tool::Curve(edge, s0, s1);
+                  BRepAdaptor_Curve brepc(edge);
+                  BRepLProp_CLProps prop(brepc, 1, 1e-5);
+                  prop.SetParameter (s0);
+
+                  gp_Vec d0 = prop.D1().Normalized();
+                  double s_start = s0;
+                  int count = 0;
+                  for (int j = 1; j <= sections; j++)
+                  {
+                     double s = s0 + (s1-s0)*(double)j/(double)sections;
+                     prop.SetParameter (s);
+                     gp_Vec d1 = prop.D1().Normalized();
+                     double cosalpha = fabs(d0*d1);
+                     if ((j == sections) || (cosalpha < cos(10.0/180.0*M_PI)))
+                     {
+                        count++;
+                        gp_Pnt p0 = c->Value (s_start);
+                        gp_Pnt p1 = c->Value (s);
+                        lines[nlines].p0 = Point<3> (p0.X(), p0.Y(), p0.Z());
+                        lines[nlines].p1 = Point<3> (p1.X(), p1.Y(), p1.Z());
+
+                        Box3d box;
+                        box.SetPoint (Point3d(lines[nlines].p0));
+                        box.AddPoint (Point3d(lines[nlines].p1));
+
+                        searchtree->Insert (box.PMin(), box.PMax(), nlines+1);
+                        nlines++;
+
+                        s_start = s;
+                        d0 = d1;
+                     }
+                  }
+               }
+
+               Array<int> linenums;
+
+               for (int i = 0; i < nlines; i++)
+               {
+                  multithread.percent = (100*i)/double(nlines);
+                  Line & line = lines[i];
+
+                  Box3d box;
+                  box.SetPoint (Point3d(line.p0));
+                  box.AddPoint (Point3d(line.p1));
+                  double maxhline = max (mesh->GetH(box.PMin()),
+                        mesh->GetH(box.PMax()));
+                  box.Increase(maxhline);
+
+                  double mindist = 1e99;
+                  linenums.SetSize(0);
+                  searchtree->GetIntersecting(box.PMin(),box.PMax(),linenums);
+
+                  for (int j = 0; j < linenums.Size(); j++)
+                  {
+                     int num = linenums[j]-1;
+                     if (i == num) continue;
+                     if ((line.p0-lines[num].p0).Length2() < 1e-15) continue;
+                     if ((line.p0-lines[num].p1).Length2() < 1e-15) continue;
+                     if ((line.p1-lines[num].p0).Length2() < 1e-15) continue;
+                     if ((line.p1-lines[num].p1).Length2() < 1e-15) continue;
+                     mindist = min (mindist, line.Dist(lines[num]));
+                  }
+
+                  mindist *= stlparam.resthcloseedgefac;
+
+                  if (mindist < 1e-3)
+                  {
+                     (*testout) << "extremely small local h: " << mindist
+                     << " --> setting to 1e-3" << endl;
+                     (*testout) << "somewhere near " << line.p0 << " - " << line.p1 << endl;
+                     mindist = 1e-3;
+                  }
+
+                  mesh->RestrictLocalHLine(line.p0, line.p1, mindist);
+               }
+            }
+
+            multithread.task = savetask;
+
+         }
       }
 
-
-    if (multithread.terminate || perfstepsend <= MESHCONST_ANALYSE) 
+      if (multithread.terminate || perfstepsend <= MESHCONST_ANALYSE)
       return TCL_OK;
 
-    if (perfstepsstart <= MESHCONST_MESHEDGES)
+      if (perfstepsstart <= MESHCONST_MESHEDGES)
       {
-	FindEdges (geom, *mesh);
+         FindEdges (geom, *mesh);
 
-	/*
-	  cout << "Removing redundant points" << endl;
-      
-	  int i, j;
-	  int np = mesh->GetNP();
-	  Array<int> equalto;
+         /*
+          cout << "Removing redundant points" << endl;
 
-	  equalto.SetSize (np);
-	  equalto = 0;
+          int i, j;
+          int np = mesh->GetNP();
+          Array<int> equalto;
 
-	  for (i = 1; i <= np; i++)
-	  {
-	  for (j = i+1; j <= np; j++)
-	  {
-	  if (!equalto[j-1] && (Dist2 (mesh->Point(i), mesh->Point(j)) < 1e-12))
-	  equalto[j-1] = i;
-	  }
-	  }
+          equalto.SetSize (np);
+          equalto = 0;
 
-	  for (i = 1; i <= np; i++)
-	  if (equalto[i-1])
-	  {
-	  cout << "Point " << i << " is equal to Point " << equalto[i-1] << endl;
-	  for (j = 1; j <= mesh->GetNSeg(); j++)
-	  {
-	  Segment & seg = mesh->LineSegment(j);
-	  if (seg.p1 == i) seg.p1 = equalto[i-1];
-	  if (seg.p2 == i) seg.p2 = equalto[i-1];
-	  }
-	  }
+          for (i = 1; i <= np; i++)
+          {
+          for (j = i+1; j <= np; j++)
+          {
+          if (!equalto[j-1] && (Dist2 (mesh->Point(i), mesh->Point(j)) < 1e-12))
+          equalto[j-1] = i;
+          }
+          }
 
-	  cout << "Removing degenerated segments" << endl;
-	  for (j = 1; j <= mesh->GetNSeg(); j++)
-	  {
-	  Segment & seg = mesh->LineSegment(j);
-	  if (seg.p1 == seg.p2)
-	  {
-	  mesh->DeleteSegment(j);
-	  cout << "Deleting Segment " << j << endl;
-	  }
-	  }
+          for (i = 1; i <= np; i++)
+          if (equalto[i-1])
+          {
+          cout << "Point " << i << " is equal to Point " << equalto[i-1] << endl;
+          for (j = 1; j <= mesh->GetNSeg(); j++)
+          {
+          Segment & seg = mesh->LineSegment(j);
+          if (seg.p1 == i) seg.p1 = equalto[i-1];
+          if (seg.p2 == i) seg.p2 = equalto[i-1];
+          }
+          }
 
-	  mesh->Compress();
-	*/
+          cout << "Removing degenerated segments" << endl;
+          for (j = 1; j <= mesh->GetNSeg(); j++)
+          {
+          Segment & seg = mesh->LineSegment(j);
+          if (seg.p1 == seg.p2)
+          {
+          mesh->DeleteSegment(j);
+          cout << "Deleting Segment " << j << endl;
+          }
+          }
 
-	/*
-	  for (int i = 1; i <= geom.fmap.Extent(); i++)
-	  {
-	  Handle(Geom_Surface) hf1 =
-	  BRep_Tool::Surface(TopoDS::Face(geom.fmap(i)));
-	  for (int j = i+1; j <= geom.fmap.Extent(); j++)
-	  {
-	  Handle(Geom_Surface) hf2 = 
-	  BRep_Tool::Surface(TopoDS::Face(geom.fmap(j)));
-	  if (hf1 == hf2) cout << "face " << i << " and face " << j << " lie on same surface" << endl;
-	  }
-	  }
-	*/
+          mesh->Compress();
+          */
 
+         /*
+          for (int i = 1; i <= geom.fmap.Extent(); i++)
+          {
+          Handle(Geom_Surface) hf1 =
+          BRep_Tool::Surface(TopoDS::Face(geom.fmap(i)));
+          for (int j = i+1; j <= geom.fmap.Extent(); j++)
+          {
+          Handle(Geom_Surface) hf2 =
+          BRep_Tool::Surface(TopoDS::Face(geom.fmap(j)));
+          if (hf1 == hf2) cout << "face " << i << " and face " << j << " lie on same surface" << endl;
+          }
+          }
+          */
 
-
-#ifdef LOG_STREAM      
-	(*logout) << "Edges meshed" << endl
-		  << "time = " << GetTime() << " sec" << endl
-		  << "points: " << mesh->GetNP() << endl;
-#endif
-      }
-
-    if (multithread.terminate || perfstepsend <= MESHCONST_MESHEDGES)
-      return TCL_OK;
-
-    if (perfstepsstart <= MESHCONST_MESHSURFACE)
-      {
-	OCCMeshSurface (geom, *mesh, perfstepsend);  
-	if (multithread.terminate) return TCL_OK;
-      
 #ifdef LOG_STREAM
-	(*logout) << "Surfaces meshed" << endl
-		  << "time = " << GetTime() << " sec" << endl
-		  << "points: " << mesh->GetNP() << endl;
-#endif      
-      
-#ifdef STAT_STREAM
-	(*statout) << mesh->GetNSeg() << " & "
-		   << mesh->GetNSE() << " & - &" 
-		   << GetTime() << " & " << endl;
-#endif  
-      
-	//      MeshQuality2d (*mesh);
-	mesh->CalcSurfacesOfNode();
+         (*logout) << "Edges meshed" << endl
+         << "time = " << GetTime() << " sec" << endl
+         << "points: " << mesh->GetNP() << endl;
+#endif
       }
 
-    if (multithread.terminate || perfstepsend <= MESHCONST_OPTSURFACE)
+      if (multithread.terminate || perfstepsend <= MESHCONST_MESHEDGES)
       return TCL_OK;
-  
 
-
-    if (perfstepsstart <= MESHCONST_MESHVOLUME)
+      if (perfstepsstart <= MESHCONST_MESHSURFACE)
       {
-	multithread.task = "Volume meshing";
-      
-	MESHING3_RESULT res =
-	  MeshVolume (mparam, *mesh);
+         OCCMeshSurface (geom, *mesh, perfstepsend);
+         if (multithread.terminate) return TCL_OK;
 
-	ofstream problemfile("occmesh.rep",ios_base::app);
-
-	problemfile << "VOLUMEMESHING" << endl << endl;
-	if(res != MESHING3_OK) 
-	  problemfile << "ERROR" << endl << endl;
-	else 
-	  problemfile << "OK" << endl
-		      << mesh->GetNE() << " elements" << endl << endl;
-
-	problemfile.close();
-
-	if (res != MESHING3_OK) return TCL_ERROR;
-      
-	if (multithread.terminate) return TCL_OK;
-      
-	RemoveIllegalElements (*mesh);
-	if (multithread.terminate) return TCL_OK;
-
-	MeshQuality3d (*mesh);
-      
-#ifdef STAT_STREAM
-	(*statout) << GetTime() << " & ";
-#endif      
-      
 #ifdef LOG_STREAM
-	(*logout) << "Volume meshed" << endl
-		  << "time = " << GetTime() << " sec" << endl
-		  << "points: " << mesh->GetNP() << endl;
+         (*logout) << "Surfaces meshed" << endl
+         << "time = " << GetTime() << " sec" << endl
+         << "points: " << mesh->GetNP() << endl;
 #endif
+
+#ifdef STAT_STREAM
+         (*statout) << mesh->GetNSeg() << " & "
+         << mesh->GetNSE() << " & - &"
+         << GetTime() << " & " << endl;
+#endif
+
+         //      MeshQuality2d (*mesh);
+         mesh->CalcSurfacesOfNode();
       }
 
-    if (multithread.terminate || perfstepsend <= MESHCONST_MESHVOLUME)
+      if (multithread.terminate || perfstepsend <= MESHCONST_OPTSURFACE)
       return TCL_OK;
 
-
-    if (perfstepsstart <= MESHCONST_OPTVOLUME)
+      if (perfstepsstart <= MESHCONST_MESHVOLUME)
       {
-	multithread.task = "Volume optimization";
-      
-	OptimizeVolume (mparam, *mesh);
-	if (multithread.terminate) return TCL_OK;
-      
-#ifdef STAT_STREAM
-	(*statout) << GetTime() << " & "
-		   << mesh->GetNE() << " & "
-		   << mesh->GetNP() << " " << '\\' << '\\' << " \\" << "hline" << endl;
-#endif      
+         multithread.task = "Volume meshing";
 
-#ifdef LOG_STREAM      
-	(*logout) << "Volume optimized" << endl
-		  << "time = " << GetTime() << " sec" << endl
-		  << "points: " << mesh->GetNP() << endl;
+         MESHING3_RESULT res =
+         MeshVolume (mparam, *mesh);
+
+         ofstream problemfile("occmesh.rep",ios_base::app);
+
+         problemfile << "VOLUMEMESHING" << endl << endl;
+         if(res != MESHING3_OK)
+         problemfile << "ERROR" << endl << endl;
+         else
+         problemfile << "OK" << endl
+         << mesh->GetNE() << " elements" << endl << endl;
+
+         problemfile.close();
+
+         if (res != MESHING3_OK) return TCL_ERROR;
+
+         if (multithread.terminate) return TCL_OK;
+
+         RemoveIllegalElements (*mesh);
+         if (multithread.terminate) return TCL_OK;
+
+         MeshQuality3d (*mesh);
+
+#ifdef STAT_STREAM
+         (*statout) << GetTime() << " & ";
 #endif
 
-     
-	// cout << "Optimization complete" << endl;
-      
+#ifdef LOG_STREAM
+         (*logout) << "Volume meshed" << endl
+         << "time = " << GetTime() << " sec" << endl
+         << "points: " << mesh->GetNP() << endl;
+#endif
       }
 
-    (*testout) << "NP: " << mesh->GetNP() << endl;
-    for (int i = 1; i <= mesh->GetNP(); i++)
+      if (multithread.terminate || perfstepsend <= MESHCONST_MESHVOLUME)
+      return TCL_OK;
+
+      if (perfstepsstart <= MESHCONST_OPTVOLUME)
+      {
+         multithread.task = "Volume optimization";
+
+         OptimizeVolume (mparam, *mesh);
+         if (multithread.terminate) return TCL_OK;
+
+#ifdef STAT_STREAM
+         (*statout) << GetTime() << " & "
+         << mesh->GetNE() << " & "
+         << mesh->GetNP() << " " << '\\' << '\\' << " \\" << "hline" << endl;
+#endif
+
+#ifdef LOG_STREAM
+         (*logout) << "Volume optimized" << endl
+         << "time = " << GetTime() << " sec" << endl
+         << "points: " << mesh->GetNP() << endl;
+#endif
+
+         // cout << "Optimization complete" << endl;
+
+      }
+
+      (*testout) << "NP: " << mesh->GetNP() << endl;
+      for (int i = 1; i <= mesh->GetNP(); i++)
       (*testout) << mesh->Point(i) << endl;
- 
-    (*testout) << endl << "NSegments: " << mesh->GetNSeg() << endl;
-    for (int i = 1; i <= mesh->GetNSeg(); i++)
+
+      (*testout) << endl << "NSegments: " << mesh->GetNSeg() << endl;
+      for (int i = 1; i <= mesh->GetNSeg(); i++)
       (*testout) << mesh->LineSegment(i) << endl;
-   
 
-
-    return TCL_OK;
-  }
+      return TCL_OK;
+   }
 }
 
 #endif

@@ -11,9 +11,9 @@
 
 #include <meshing.hpp>
 
-#include <BRep_Tool.hxx>
-#include <Geom_Curve.hxx>
-#include <Geom2d_Curve.hxx>
+#include "BRep_Tool.hxx"
+#include "Geom_Curve.hxx"
+#include "Geom2d_Curve.hxx"
 #include "Geom_Surface.hxx"
 #include "GeomAPI_ProjectPointOnSurf.hxx"
 #include "GeomAPI_ProjectPointOnCurve.hxx"
@@ -37,6 +37,7 @@
 #include "TopoDS.hxx"
 #include "TopoDS_Solid.hxx"
 #include "TopExp_Explorer.hxx"
+#include "TopTools_ListIteratorOfListOfShape.hxx"
 #include "BRep_Tool.hxx"
 #include "Geom_Curve.hxx"
 #include "Geom2d_Curve.hxx"
@@ -62,8 +63,6 @@
 #include "Poly_Triangle.hxx"
 #include "GProp_GProps.hxx"
 #include "BRepGProp.hxx"
-#include "IGESControl_Reader.hxx"
-#include "STEPControl_Reader.hxx"
 #include "TopoDS_Shape.hxx"
 #include "TopoDS_Face.hxx"
 #include "IGESToBRep_Reader.hxx"
@@ -80,8 +79,33 @@
 #include "Bnd_Box.hxx"
 #include "ShapeAnalysis.hxx"
 #include "ShapeBuild_ReShape.hxx"
+
+// Philippose - 29/01/2009
+// OpenCascade XDE Support
+// Include support for OpenCascade XDE Features
+#include "TDocStd_Document.hxx"
+#include "Quantity_Color.hxx"
+#include "XCAFApp_Application.hxx"
+#include "XCAFDoc_ShapeTool.hxx"
+#include "XCAFDoc_Color.hxx"
+#include "XCAFDoc_ColorTool.hxx"
+#include "XCAFDoc_ColorType.hxx"
+#include "XCAFDoc_LayerTool.hxx"
+#include "XCAFDoc_DimTolTool.hxx"
+#include "XCAFDoc_MaterialTool.hxx"
+#include "XCAFDoc_DocumentTool.hxx"
+#include "TDF_Label.hxx"
+#include "TDF_LabelSequence.hxx"
+#include "STEPCAFControl_Reader.hxx"
+#include "STEPCAFControl_Writer.hxx"
+#include "IGESCAFControl_Reader.hxx"
+#include "IGESCAFControl_Writer.hxx"
+
+#include "IGESControl_Reader.hxx"
+#include "STEPControl_Reader.hxx"
 #include "IGESControl_Writer.hxx"
 #include "STEPControl_Writer.hxx"
+
 #include "StlAPI_Writer.hxx"
 #include "STEPControl_StepModelType.hxx"
 
@@ -89,175 +113,241 @@ namespace netgen
 {
 
 #include "../visualization/vispar.hpp"
-  //  class VisualizationParameters;
-  //  extern VisualizationParameters vispar;
+   //  class VisualizationParameters;
+   //  extern VisualizationParameters vispar;
 
 
 #include "occmeshsurf.hpp"
 
 #define PROJECTION_TOLERANCE 1e-10
 
-
 #define ENTITYISVISIBLE 1
 #define ENTITYISHIGHLIGHTED 2
 #define ENTITYISDRAWABLE 4
 
-class EntityVisualizationCode
-{
-  int code;
+   class EntityVisualizationCode
+   {
+      int code;
 
-public:
+   public:
 
-  EntityVisualizationCode()
-  { code = ENTITYISVISIBLE + !ENTITYISHIGHLIGHTED + ENTITYISDRAWABLE; }
+      EntityVisualizationCode()
+      {  code = ENTITYISVISIBLE + !ENTITYISHIGHLIGHTED + ENTITYISDRAWABLE;}
 
-  int IsVisible ()
-  { return code & ENTITYISVISIBLE; }
+      int IsVisible ()
+      {  return code & ENTITYISVISIBLE;}
 
-  int IsHighlighted ()
-  { return code & ENTITYISHIGHLIGHTED; }
+      int IsHighlighted ()
+      {  return code & ENTITYISHIGHLIGHTED;}
 
-  int IsDrawable ()
-  { return code & ENTITYISDRAWABLE; }
+      int IsDrawable ()
+      {  return code & ENTITYISDRAWABLE;}
 
-  void Show ()
-  { code |= ENTITYISVISIBLE; }
+      void Show ()
+      {  code |= ENTITYISVISIBLE;}
 
-  void Hide ()
-  { code &= ~ENTITYISVISIBLE; }
+      void Hide ()
+      {  code &= ~ENTITYISVISIBLE;}
 
-  void Highlight ()
-  { code |= ENTITYISHIGHLIGHTED; }
+      void Highlight ()
+      {  code |= ENTITYISHIGHLIGHTED;}
 
-  void Lowlight ()
-  { code &= ~ENTITYISHIGHLIGHTED; }
+      void Lowlight ()
+      {  code &= ~ENTITYISHIGHLIGHTED;}
 
-  void SetDrawable ()
-  { code |= ENTITYISDRAWABLE; }
+      void SetDrawable ()
+      {  code |= ENTITYISDRAWABLE;}
 
-  void SetNotDrawable ()
-  { code &= ~ENTITYISDRAWABLE; }
-};
+      void SetNotDrawable ()
+      {  code &= ~ENTITYISDRAWABLE;}
+   };
 
-
-
-inline double Det3 (double a00, double a01, double a02,
-		    double a10, double a11, double a12,
-		    double a20, double a21, double a22)
-{
-  return a00*a11*a22 + a01*a12*a20 + a10*a21*a02 - a20*a11*a02 - a10*a01*a22 - a21*a12*a00;
-}
-
-
+   inline double Det3 (double a00, double a01, double a02,
+         double a10, double a11, double a12,
+         double a20, double a21, double a22)
+   {
+      return a00*a11*a22 + a01*a12*a20 + a10*a21*a02 - a20*a11*a02 - a10*a01*a22 - a21*a12*a00;
+   }
 
 #define OCCGEOMETRYVISUALIZATIONNOCHANGE   0
 #define OCCGEOMETRYVISUALIZATIONFULLCHANGE 1
-  // == compute transformation matrices and redraw
+   // == compute transformation matrices and redraw
 #define OCCGEOMETRYVISUALIZATIONHALFCHANGE 2
-  // == redraw
+   // == redraw
 
-class OCCGeometry
-{
-  Point<3> center;
+   class OCCGeometry
+   {
+      Point<3> center;
 
-public:
-  TopoDS_Shape shape;
-  TopTools_IndexedMapOfShape fmap, emap, vmap, somap, shmap, wmap;
-  Array<bool> fsingular, esingular, vsingular;
-  Box<3> boundingbox;
+   public:
+      TopoDS_Shape shape;
+      TopTools_IndexedMapOfShape fmap, emap, vmap, somap, shmap, wmap;
+      Array<bool> fsingular, esingular, vsingular;
+      Box<3> boundingbox;
 
-  int changed; 
-  Array<int> facemeshstatus;
+      // Philippose - 29/01/2009
+      // OpenCascade XDE Support
+      // XCAF Handle to make the face colours available to the rest of
+      // the system
+      Handle_XCAFDoc_ColorTool face_colours;
 
-  Array<EntityVisualizationCode> fvispar, evispar, vvispar;
+      int changed;
+      Array<int> facemeshstatus;
 
-  double tolerance;
-  bool fixsmalledges;
-  bool fixspotstripfaces;
-  bool sewfaces;
-  bool makesolids;
-  bool splitpartitions;
+      // Philippose - 15/01/2009
+      // Maximum mesh size for a given face
+      // (Used to explicitly define mesh size limits on individual faces)
+      Array<double> face_maxh;
 
+      // Philippose - 15/01/2009
+      // Indicates which faces have been selected by the user in geometry mode
+      // (Currently handles only selection of one face at a time, but an array would
+      //  help to extend this to multiple faces)
+      Array<bool> face_sel_status;
 
-  OCCGeometry()
-  {
-    somap.Clear();
-    shmap.Clear();
-    fmap.Clear();
-    wmap.Clear();
-    emap.Clear();
-    vmap.Clear();
-  }
+      Array<EntityVisualizationCode> fvispar, evispar, vvispar;
 
+      double tolerance;
+      bool fixsmalledges;
+      bool fixspotstripfaces;
+      bool sewfaces;
+      bool makesolids;
+      bool splitpartitions;
 
-  void BuildFMap();
+      OCCGeometry()
+      {
+         somap.Clear();
+         shmap.Clear();
+         fmap.Clear();
+         wmap.Clear();
+         emap.Clear();
+         vmap.Clear();
+      }
 
-  Box<3> GetBoundingBox()
-  { return boundingbox; }
+      void BuildFMap();
 
-  int NrSolids()
-  { return somap.Extent(); }
+      Box<3> GetBoundingBox()
+      {  return boundingbox;}
 
-  void SetCenter()
-  { center = boundingbox.Center(); }
+      int NrSolids()
+      {  return somap.Extent();}
 
-  Point<3> Center()
-  { return center; }
+      // Philippose - 17/01/2009
+      // Total number of faces in the geometry
+      int NrFaces()
+      {  return fmap.Extent();}
 
-  void Project (int surfi, Point<3> & p) const;
-  bool FastProject (int surfi, Point<3> & ap, double& u, double& v) const;
+      void SetCenter()
+      {  center = boundingbox.Center();}
 
- 
-  OCCSurface GetSurface (int surfi)
-  {
-    cout << "OCCGeometry::GetSurface using PLANESPACE" << endl;
-    return OCCSurface (TopoDS::Face(fmap(surfi)), PLANESPACE);
-  }
-  
+      Point<3> Center()
+      {  return center;}
 
-  void BuildVisualizationMesh ();
+      void Project (int surfi, Point<3> & p) const;
+      bool FastProject (int surfi, Point<3> & ap, double& u, double& v) const;
 
-  void RecursiveTopologyTree (const TopoDS_Shape & sh,
-			      stringstream & str,
-			      TopAbs_ShapeEnum l,
-			      bool free,
-			      const char * lname);
+      OCCSurface GetSurface (int surfi)
+      {
+         cout << "OCCGeometry::GetSurface using PLANESPACE" << endl;
+         return OCCSurface (TopoDS::Face(fmap(surfi)), PLANESPACE);
+      }
 
-  void GetTopologyTree (stringstream & str);
+      void BuildVisualizationMesh ();
 
-  void PrintNrShapes ();
+      void RecursiveTopologyTree (const TopoDS_Shape & sh,
+            stringstream & str,
+            TopAbs_ShapeEnum l,
+            bool free,
+            const char * lname);
 
-  void CheckIrregularEntities (stringstream & str);
+      void GetTopologyTree (stringstream & str);
 
-  void SewFaces();
+      void PrintNrShapes ();
 
-  void MakeSolid();
+      void CheckIrregularEntities (stringstream & str);
 
-  void HealGeometry();
+      void SewFaces();
 
-  void LowLightAll()
-  {
-    for (int i = 1; i <= fmap.Extent(); i++)
-      fvispar[i-1].Lowlight();
-    for (int i = 1; i <= emap.Extent(); i++)
-      evispar[i-1].Lowlight();
-    for (int i = 1; i <= vmap.Extent(); i++)
-      vvispar[i-1].Lowlight();
-  }
+      void MakeSolid();
 
-  void GetUnmeshedFaceInfo (stringstream & str);
-  void GetNotDrawableFaces (stringstream & str);
-  bool ErrorInSurfaceMeshing ();
+      void HealGeometry();
 
-  void WriteOCC_STL(char * filename);
-};
+      // Philippose - 15/01/2009
+      // Sets the maximum mesh size for a given face
+      // (Note: Local mesh size limited by the global max mesh size)
+      void SetFaceMaxH(int facenr, double faceh)
+      {
+         if((facenr> 0) && (facenr <= fmap.Extent()))
+         {
+            face_maxh[facenr-1] = min(mparam.maxh,faceh);
+         }
+      }
 
+      // Philippose - 15/01/2009
+      // Returns the local mesh size of a given face
+      double GetFaceMaxH(int facenr)
+      {
+         if((facenr> 0) && (facenr <= fmap.Extent()))
+         {
+            return face_maxh[facenr-1];
+         }
+         else
+         {
+            return 0.0;
+         }
+      }
 
-void PrintContents (OCCGeometry * geom);
+      // Philippose - 17/01/2009
+      // Returns the index of the currently selected face
+      int SelectedFace()
+      {
+         int i;
 
-OCCGeometry * LoadOCC_IGES (const char * filename);
-OCCGeometry * LoadOCC_STEP (const char * filename);
-OCCGeometry * LoadOCC_BREP (const char * filename);
+         for(i = 1; i <= fmap.Extent(); i++)
+         {
+            if(face_sel_status[i-1])
+            {
+               return i;
+            }
+         }
+
+         return 0;
+      }
+
+      // Philippose - 17/01/2009
+      // Sets the currently selected face
+      void SetSelectedFace(int facenr)
+      {
+         face_sel_status = 0;
+
+         if((facenr >= 1) && (facenr <= fmap.Extent()))
+         {
+            face_sel_status[facenr-1] = 1;
+         }
+      }
+
+      void LowLightAll()
+      {
+         for (int i = 1; i <= fmap.Extent(); i++)
+         fvispar[i-1].Lowlight();
+         for (int i = 1; i <= emap.Extent(); i++)
+         evispar[i-1].Lowlight();
+         for (int i = 1; i <= vmap.Extent(); i++)
+         vvispar[i-1].Lowlight();
+      }
+
+      void GetUnmeshedFaceInfo (stringstream & str);
+      void GetNotDrawableFaces (stringstream & str);
+      bool ErrorInSurfaceMeshing ();
+
+      void WriteOCC_STL(char * filename);
+   };
+
+   void PrintContents (OCCGeometry * geom);
+
+   OCCGeometry * LoadOCC_IGES (const char * filename);
+   OCCGeometry * LoadOCC_STEP (const char * filename);
+   OCCGeometry * LoadOCC_BREP (const char * filename);
 
 }
 

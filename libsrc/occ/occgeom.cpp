@@ -2,7 +2,7 @@
 #ifdef OCCGEOMETRY
 
 #include <mystdlib.h>
-#include <occgeom.hpp>  
+#include <occgeom.hpp>
 #include "ShapeAnalysis_ShapeTolerance.hxx"
 #include "ShapeAnalysis_ShapeContents.hxx"
 #include "ShapeAnalysis_CheckSmallFace.hxx"
@@ -62,9 +62,9 @@ namespace netgen
     for (e.Init(geom->shape, TopAbs_COMPSOLID); e.More(); e.Next())
       count++;
     (*testout) << "CompSolids: " << count << endl;
-    
+
     (*testout) << endl;
-    
+
     cout << "Highest entry in topology hierarchy: " << endl;
     if (count)
       cout << count << " composite solid(s)" << endl;
@@ -102,7 +102,7 @@ namespace netgen
       nrw = wmap.Extent(),
       nre = emap.Extent(),
       nrv = vmap.Extent();
-    
+
     TopExp_Explorer exp0;
     TopExp_Explorer exp1;
 
@@ -111,10 +111,10 @@ namespace netgen
     for (exp0.Init(shape, TopAbs_COMPSOLID); exp0.More(); exp0.Next()) nrcs++;
 
     double surfacecont = 0;
-    
-    
 
-    
+
+
+
     {
       Handle_ShapeBuild_ReShape rebuild = new ShapeBuild_ReShape;
       rebuild->Apply(shape);
@@ -129,16 +129,16 @@ namespace netgen
 
     BuildFMap();
 
-       
+
     for (exp0.Init (shape, TopAbs_FACE); exp0.More(); exp0.Next())
       {
 	TopoDS_Face face = TopoDS::Face(exp0.Current());
-	
+
 	GProp_GProps system;
 	BRepGProp::SurfaceProperties(face, system);
 	surfacecont += system.Mass();
       }
-    
+
 
     cout << "Starting geometry healing procedure (tolerance: " << tolerance << ")" << endl
 	 << "-----------------------------------" << endl;
@@ -149,12 +149,12 @@ namespace netgen
 	Handle(ShapeFix_Face) sff;
 	Handle_ShapeBuild_ReShape rebuild = new ShapeBuild_ReShape;
 	rebuild->Apply(shape);
-	
+
 
 	for (exp0.Init (shape, TopAbs_FACE); exp0.More(); exp0.Next())
 	  {
 	    TopoDS_Face face = TopoDS::Face (exp0.Current());
-	    	    
+
 	    sff = new ShapeFix_Face (face);
 	    sff->FixAddNaturalBoundMode() = Standard_True;
 	    sff->FixSmallAreaWireMode() = Standard_True;
@@ -178,7 +178,7 @@ namespace netgen
 		else if(sff->Status(ShapeExtend_DONE5))
 		  cout << "(natural bounds added)" <<endl;
 		TopoDS_Face newface = sff->Face();
-		
+
 		rebuild->Replace(face, newface, Standard_False);
 	      }
 
@@ -188,7 +188,7 @@ namespace netgen
 
 	//delete rebuild; rebuild = NULL;
     }
-  
+
 
     {
       Handle_ShapeBuild_ReShape rebuild = new ShapeBuild_ReShape;
@@ -210,8 +210,8 @@ namespace netgen
 	Handle(ShapeFix_Wire) sfw;
 	Handle_ShapeBuild_ReShape rebuild = new ShapeBuild_ReShape;
 	rebuild->Apply(shape);
-	
-	
+
+
 	for (exp0.Init (shape, TopAbs_FACE); exp0.More(); exp0.Next())
 	  {
 	    TopoDS_Face face = TopoDS::Face(exp0.Current());
@@ -225,12 +225,12 @@ namespace netgen
 		sfw->ClosedWireMode() = Standard_True;
 
 		bool replace = false;
-	      
+
 		replace = sfw->FixReorder() || replace;
 
 		replace = sfw->FixConnected() || replace;
 
-	      
+
 
 		if (sfw->FixSmall (Standard_False, tolerance) && ! (sfw->StatusSmall(ShapeExtend_FAIL1) ||
 								    sfw->StatusSmall(ShapeExtend_FAIL2) ||
@@ -238,7 +238,7 @@ namespace netgen
 		  {
 		    cout << "Fixed small edge in wire " << wmap.FindIndex (oldwire) << endl;
 		    replace = true;
-		  
+
 		  }
 		else if (sfw->StatusSmall(ShapeExtend_FAIL1))
 		  cerr << "Failed to fix small edge in wire " << wmap.FindIndex (oldwire)
@@ -265,14 +265,14 @@ namespace netgen
 		  }
 
 		//delete sfw; sfw = NULL;
-	      
+
 	      }
 	  }
 
 	shape = rebuild->Apply(shape);
 
-	
-	
+
+
 	{
 	  BuildFMap();
 	  Handle_ShapeBuild_ReShape rebuild = new ShapeBuild_ReShape;
@@ -281,14 +281,14 @@ namespace netgen
 	  for (exp1.Init (shape, TopAbs_EDGE); exp1.More(); exp1.Next())
 	    {
 	      TopoDS_Edge edge = TopoDS::Edge(exp1.Current());
-	      if (vmap.FindIndex(TopExp::FirstVertex (edge)) == 
+	      if (vmap.FindIndex(TopExp::FirstVertex (edge)) ==
 		  vmap.FindIndex(TopExp::LastVertex (edge)))
 		{
 		  GProp_GProps system;
 		  BRepGProp::LinearProperties(edge, system);
 		  if (system.Mass() < tolerance)
 		    {
-		      cout << "removing degenerated edge " << emap.FindIndex(edge) 
+		      cout << "removing degenerated edge " << emap.FindIndex(edge)
 			   << " from vertex " << vmap.FindIndex(TopExp::FirstVertex (edge))
 			   << " to vertex " << vmap.FindIndex(TopExp::LastVertex (edge)) << endl;
 		      rebuild->Remove(edge, false);
@@ -299,9 +299,9 @@ namespace netgen
 
 	  //delete rebuild; rebuild = NULL;
 	}
-	
 
-	
+
+
 	{
 	  Handle_ShapeBuild_ReShape rebuild = new ShapeBuild_ReShape;
 	  rebuild->Apply(shape);
@@ -321,7 +321,7 @@ namespace netgen
 	sfwf->SetPrecision(tolerance);
 	sfwf->Load (shape);
 	sfwf->ModeDropSmallEdges() = Standard_True;
-    
+
 	sfwf->SetPrecision(boundingbox.Diam());
 
 	if (sfwf->FixWireGaps())
@@ -333,10 +333,10 @@ namespace netgen
 	    if (sfwf->StatusWireGaps(ShapeExtend_FAIL1)) cout << "failed to fix some 2D gaps" << endl;
 	    if (sfwf->StatusWireGaps(ShapeExtend_FAIL2)) cout << "failed to fix some 3D gaps" << endl;
 	  }
-      
+
 	sfwf->SetPrecision(tolerance);
 
-	
+
 	{
 	  for (exp1.Init (shape, TopAbs_EDGE); exp1.More(); exp1.Next())
 	    {
@@ -350,14 +350,14 @@ namespace netgen
 
 	if (sfwf->FixSmallEdges())
 	  {
-	    cout << endl << "- fixing wire frames" << endl;  
+	    cout << endl << "- fixing wire frames" << endl;
 	    if (sfwf->StatusSmallEdges(ShapeExtend_OK)) cout << "no small edges found" << endl;
 	    if (sfwf->StatusSmallEdges(ShapeExtend_DONE1)) cout << "some small edges fixed" << endl;
 	    if (sfwf->StatusSmallEdges(ShapeExtend_FAIL1)) cout << "failed to fix some small edges" << endl;
 	  }
 
 
-	
+
 	shape = sfwf->Shape();
 
 	//delete sfwf; sfwf = NULL;
@@ -368,7 +368,7 @@ namespace netgen
 
 
 
-    
+
     {
       for (exp1.Init (shape, TopAbs_EDGE); exp1.More(); exp1.Next())
 	{
@@ -383,18 +383,18 @@ namespace netgen
 
     if (fixspotstripfaces)
       {
-  
+
 	cout << endl << "- fixing spot and strip faces" << endl;
 	Handle(ShapeFix_FixSmallFace) sffsm = new ShapeFix_FixSmallFace();
 	sffsm -> Init (shape);
 	sffsm -> SetPrecision (tolerance);
 	sffsm -> Perform();
-      
+
 	shape = sffsm -> FixShape();
 	//delete sffsm; sffsm = NULL;
       }
 
-    
+
     {
       for (exp1.Init (shape, TopAbs_EDGE); exp1.More(); exp1.Next())
 	{
@@ -417,9 +417,9 @@ namespace netgen
 	    TopoDS_Face face = TopoDS::Face (exp0.Current());
 	    sewedObj.Add (face);
 	  }
-      
+
 	sewedObj.Perform();
-  
+
 	if (!sewedObj.SewedShape().IsNull())
 	  shape = sewedObj.SewedShape();
 	else
@@ -427,7 +427,7 @@ namespace netgen
       }
 
 
-    
+
     {
       Handle_ShapeBuild_ReShape rebuild = new ShapeBuild_ReShape;
       rebuild->Apply(shape);
@@ -442,7 +442,7 @@ namespace netgen
 
 
     if (makesolids)
-      {  
+      {
 	cout << endl << "- making solids" << endl;
 
 	BRepBuilderAPI_MakeSolid ms;
@@ -452,7 +452,7 @@ namespace netgen
 	    count++;
 	    ms.Add (TopoDS::Shell(exp0.Current()));
 	  }
-      
+
 	if (!count)
 	  {
 	    cout << " not possible (no shells)" << endl;
@@ -468,7 +468,7 @@ namespace netgen
 		sfs->SetMaxTolerance(tolerance);
 		sfs->Perform();
 		shape = sfs->Shape();
-	      
+
 		for (exp0.Init(shape, TopAbs_SOLID); exp0.More(); exp0.Next())
 		  {
 		    TopoDS_Solid solid = TopoDS::Solid(exp0.Current());
@@ -488,7 +488,7 @@ namespace netgen
 	      cout << " not possible" << endl;
 	  }
       }
-  
+
 
 
     if (splitpartitions)
@@ -498,30 +498,30 @@ namespace netgen
 	TopExp_Explorer e2;
 	Partition_Spliter ps;
 	int count = 0;
-      
+
 	for (e2.Init (shape, TopAbs_SOLID);
 	     e2.More(); e2.Next())
 	  {
 	    count++;
 	    ps.AddShape (e2.Current());
 	  }
-      
+
 	ps.Compute();
 	shape = ps.Shape();
-      
+
 	cout << " before: " << count << " solids" << endl;
-      
+
 	count = 0;
 	for (e2.Init (shape, TopAbs_SOLID);
 	     e2.More(); e2.Next()) count++;
-      
+
 	cout << " after : " << count << " solids" << endl;
       }
 
     BuildFMap();
 
 
-    
+
     {
       for (exp1.Init (shape, TopAbs_EDGE); exp1.More(); exp1.Next())
 	{
@@ -533,8 +533,8 @@ namespace netgen
 
 
     double newsurfacecont = 0;
-    
-    
+
+
     for (exp0.Init (shape, TopAbs_FACE); exp0.More(); exp0.Next())
       {
 	TopoDS_Face face = TopoDS::Face(exp0.Current());
@@ -542,7 +542,7 @@ namespace netgen
 	BRepGProp::SurfaceProperties(face, system);
 	newsurfacecont += system.Mass();
       }
-    
+
 
     int nnrc = 0, nnrcs = 0,
       nnrso = somap.Extent(),
@@ -580,7 +580,7 @@ namespace netgen
 //       }
 
   }
- 
+
 
 
 
@@ -592,9 +592,9 @@ namespace netgen
     wmap.Clear();
     emap.Clear();
     vmap.Clear();
-  
+
     TopExp_Explorer exp0, exp1, exp2, exp3, exp4, exp5;
-  
+
     for (exp0.Init(shape, TopAbs_COMPOUND);
 	 exp0.More(); exp0.Next())
       {
@@ -607,16 +607,16 @@ namespace netgen
 	    (*testout) << "shell " << ++i << endl;
 	  }
       }
-  
+
     for (exp0.Init(shape, TopAbs_SOLID);
 	 exp0.More(); exp0.Next())
       {
 	TopoDS_Solid solid = TopoDS::Solid (exp0.Current());
-      
+
 	if (somap.FindIndex(solid) < 1)
 	  {
 	    somap.Add (solid);
-	  
+
 	    for (exp1.Init(solid, TopAbs_SHELL);
 		 exp1.More(); exp1.Next())
 	      {
@@ -625,7 +625,7 @@ namespace netgen
 		if (shmap.FindIndex(shell) < 1)
 		  {
 		    shmap.Add (shell);
-		  
+
 		    for (exp2.Init(shell, TopAbs_FACE);
 			 exp2.More(); exp2.Next())
 		      {
@@ -636,7 +636,7 @@ namespace netgen
 			    fmap.Add (face);
 			    (*testout) << "face " << fmap.FindIndex(face) << " ";
 			    (*testout) << ((face.Orientation() == TopAbs_REVERSED) ? "-" : "+") << ", ";
-			    (*testout) << ((exp2.Current().Orientation() == TopAbs_REVERSED) ? "-" : "+") << endl;			  
+			    (*testout) << ((exp2.Current().Orientation() == TopAbs_REVERSED) ? "-" : "+") << endl;
 			    for (exp3.Init(exp2.Current(), TopAbs_WIRE);
 				 exp3.More(); exp3.Next())
 			      {
@@ -645,7 +645,7 @@ namespace netgen
 				if (wmap.FindIndex(wire) < 1)
 				  {
 				    wmap.Add (wire);
-				  
+
 				    for (exp4.Init(exp3.Current(), TopAbs_EDGE);
 					 exp4.More(); exp4.Next())
 				      {
@@ -671,7 +671,7 @@ namespace netgen
 	      }
 	  }
       }
-  
+
     // Free Shells
     for (exp1.Init(shape, TopAbs_SHELL, TopAbs_SOLID);
 	 // for (exp1.Init(exp0.Current(), TopAbs_SHELL, TopAbs_SOLID);
@@ -682,10 +682,10 @@ namespace netgen
 	if (shmap.FindIndex(shell) < 1)
 	  {
 	    shmap.Add (shell);
-	  
+
 	    (*testout) << "shell " << shmap.FindIndex(shell) << " ";
 	    (*testout) << ((shell.Orientation() == TopAbs_REVERSED) ? "-" : "+") << ", ";
-	    (*testout) << ((exp1.Current().Orientation() == TopAbs_REVERSED) ? "-" : "+") << endl;			  
+	    (*testout) << ((exp1.Current().Orientation() == TopAbs_REVERSED) ? "-" : "+") << endl;
 
 	    for (exp2.Init(shell, TopAbs_FACE);
 		 exp2.More(); exp2.Next())
@@ -695,7 +695,7 @@ namespace netgen
 		if (fmap.FindIndex(face) < 1)
 		  {
 		    fmap.Add (face);
-		  
+
 		    for (exp3.Init(face, TopAbs_WIRE);
 			 exp3.More(); exp3.Next())
 		      {
@@ -704,7 +704,7 @@ namespace netgen
 			if (wmap.FindIndex(wire) < 1)
 			  {
 			    wmap.Add (wire);
-			  
+
 			    for (exp4.Init(wire, TopAbs_EDGE);
 				 exp4.More(); exp4.Next())
 			      {
@@ -729,10 +729,10 @@ namespace netgen
 	      }
 	  }
       }
-  
-  
+
+
     // Free Faces
-  
+
     for (exp2.Init(shape, TopAbs_FACE, TopAbs_SHELL);
 	 exp2.More(); exp2.Next())
       {
@@ -741,7 +741,7 @@ namespace netgen
 	if (fmap.FindIndex(face) < 1)
 	  {
 	    fmap.Add (face);
-	  
+
 	    for (exp3.Init(exp2.Current(), TopAbs_WIRE);
 		 exp3.More(); exp3.Next())
 	      {
@@ -750,7 +750,7 @@ namespace netgen
 		if (wmap.FindIndex(wire) < 1)
 		  {
 		    wmap.Add (wire);
-		  
+
 		    for (exp4.Init(exp3.Current(), TopAbs_EDGE);
 			 exp4.More(); exp4.Next())
 		      {
@@ -776,7 +776,7 @@ namespace netgen
 
 
     // Free Wires
-  
+
     for (exp3.Init(shape, TopAbs_WIRE, TopAbs_FACE);
 	 exp3.More(); exp3.Next())
       {
@@ -784,7 +784,7 @@ namespace netgen
 	if (wmap.FindIndex(wire) < 1)
 	  {
 	    wmap.Add (wire);
-	  
+
 	    for (exp4.Init(exp3.Current(), TopAbs_EDGE);
 		 exp4.More(); exp4.Next())
 	      {
@@ -806,7 +806,7 @@ namespace netgen
 
 
     // Free Edges
-  
+
     for (exp4.Init(shape, TopAbs_EDGE, TopAbs_WIRE);
 	 exp4.More(); exp4.Next())
       {
@@ -826,7 +826,7 @@ namespace netgen
 
 
     // Free Vertices
-  
+
     for (exp5.Init(shape, TopAbs_VERTEX, TopAbs_EDGE);
 	 exp5.More(); exp5.Next())
       {
@@ -837,9 +837,17 @@ namespace netgen
 
 
 
-  
+
     facemeshstatus.SetSize (fmap.Extent());
     facemeshstatus = 0;
+
+    // Philippose - 15/01/2009
+    face_maxh.SetSize (fmap.Extent());
+    face_maxh = mparam.maxh;
+
+    // Philippose - 17/01/2009
+    face_sel_status.SetSize (fmap.Extent());
+    face_sel_status = 0;
 
     fvispar.SetSize (fmap.Extent());
     evispar.SetSize (emap.Extent());
@@ -867,9 +875,9 @@ namespace netgen
 	TopoDS_Face face = TopoDS::Face (fmap(i));
 	sewedObj.Add (face);
       }
-  
+
     sewedObj.Perform();
-  
+
     if (!sewedObj.SewedShape().IsNull())
       {
 	shape = sewedObj.SewedShape();
@@ -877,7 +885,7 @@ namespace netgen
       }
     else
       cout << " not possible";
-  
+
     /*
       ShapeUpgrade_ShellSewing sewing;
       TopoDS_Shape sh = sewing.ApplySewing (shape);
@@ -915,14 +923,14 @@ namespace netgen
       {
 	Handle(ShapeFix_Shape) sfs = new ShapeFix_Shape;
 	sfs->Init (ms);
-  
+
 	sfs->SetPrecision(1e-5);
 	sfs->SetMaxTolerance(1e-5);
-      
+
 	sfs->Perform();
 
 	shape = sfs->Shape();
-      
+
 	for (exp0.Init(shape, TopAbs_SOLID); exp0.More(); exp0.Next())
 	  {
 	    TopoDS_Solid solid = TopoDS::Solid(exp0.Current());
@@ -932,13 +940,13 @@ namespace netgen
 	    //	  rebuild->Apply(shape);
 	    rebuild->Replace(solid, newsolid, Standard_False);
 	    //	  TopoDS_Shape newshape = rebuild->Apply(shape);
-	  
+
 	    TopoDS_Shape newshape = rebuild->Apply(shape, TopAbs_SHAPE, 1);
 	    shape = newshape;
 	  }
 
 	//delete sfs; sfs = NULL;
-      
+
 	cout << " done" << endl;
       }
     else
@@ -961,17 +969,17 @@ namespace netgen
 
     Bnd_Box bb;
     BRepBndLib::Add (shape, bb);
-  
+
     double x1,y1,z1,x2,y2,z2;
     bb.Get (x1,y1,z1,x2,y2,z2);
     Point<3> p1 = Point<3> (x1,y1,z1);
     Point<3> p2 = Point<3> (x2,y2,z2);
-  
+
     (*testout) << "Bounding Box = [" << p1 << " - " << p2 << "]" << endl;
     boundingbox = Box<3> (p1,p2);
     SetCenter();
 
-  
+
   }
 
 
@@ -979,7 +987,7 @@ namespace netgen
   {
     static int cnt = 0;
     if (++cnt % 1000 == 0) cout << "Project cnt = " << cnt << endl;
-    
+
     gp_Pnt pnt(p(0), p(1), p(2));
 
     //(*testout) << "before " << pnt.X() << " "<< pnt.Y() << " "<< pnt.Z() << " " << endl;
@@ -1000,7 +1008,7 @@ namespace netgen
       }
     */
 
-    
+
     double u,v;
     Handle( Geom_Surface ) thesurf = BRep_Tool::Surface(TopoDS::Face(fmap(surfi)));
     Handle( ShapeAnalysis_Surface ) su = new ShapeAnalysis_Surface( thesurf );
@@ -1008,65 +1016,65 @@ namespace netgen
     suval.Coord( u, v);
     pnt = thesurf->Value( u, v );
 
-    
+
     p = Point<3> (pnt.X(), pnt.Y(), pnt.Z());
-    
+
   }
 
 
   bool OCCGeometry :: FastProject (int surfi, Point<3> & ap, double& u, double& v) const
   {
     gp_Pnt p(ap(0), ap(1), ap(2));
-  
+
     Handle(Geom_Surface) surface = BRep_Tool::Surface(TopoDS::Face(fmap(surfi)));
-  
+
     gp_Pnt x = surface->Value (u,v);
-  
+
     if (p.SquareDistance(x) <= sqr(PROJECTION_TOLERANCE)) return true;
-  
+
     gp_Vec du, dv;
-  
+
     surface->D1(u,v,x,du,dv);
-  
+
     int count = 0;
-  
+
     gp_Pnt xold;
     gp_Vec n;
     double det, lambda, mu;
-  
+
     do {
       count++;
-  
+
       n = du^dv;
-      
+
       det = Det3 (n.X(), du.X(), dv.X(),
 		  n.Y(), du.Y(), dv.Y(),
 		  n.Z(), du.Z(), dv.Z());
-  
-      if (det < 1e-15) return false; 
-  
+
+      if (det < 1e-15) return false;
+
       lambda = Det3 (n.X(), p.X()-x.X(), dv.X(),
 		     n.Y(), p.Y()-x.Y(), dv.Y(),
 		     n.Z(), p.Z()-x.Z(), dv.Z())/det;
-  
+
       mu     = Det3 (n.X(), du.X(), p.X()-x.X(),
 		     n.Y(), du.Y(), p.Y()-x.Y(),
 		     n.Z(), du.Z(), p.Z()-x.Z())/det;
-    
+
       u += lambda;
       v += mu;
-  
+
       xold = x;
       surface->D1(u,v,x,du,dv);
-  
+
     } while (xold.SquareDistance(x) > sqr(PROJECTION_TOLERANCE) && count < 50);
 
     //    (*testout) << "FastProject count: " << count << endl;
-  
+
     if (count == 50) return false;
-  
+
     ap = Point<3> (x.X(), x.Y(), x.Z());
-  
+
     return true;
   }
 
@@ -1082,22 +1090,22 @@ namespace netgen
 
      cout << "done" << endl;
    }
-  
+
 
   OCCGeometry * LoadOCC_IGES (const char * filename)
   {
     OCCGeometry * occgeo;
     occgeo = new OCCGeometry;
-  
+
     IGESControl_Reader reader;
-  
+
     Standard_Integer stat = reader.ReadFile((char*)filename);
 
     // pre OCC52-times:
     // Standard_Integer stat = reader.LoadFile((char*)filename);
     // reader.Clear();
-      
-  
+
+
     reader.TransferRoots(); // Tranlate IGES -> OCC
 
     // pre OCC52-times:
@@ -1108,7 +1116,7 @@ namespace netgen
     occgeo->shape = reader.OneShape();
     occgeo->changed = 1;
     occgeo->BuildFMap();
-  
+
     //
     //   Handle(ShapeFix_Shape) sfs = new ShapeFix_Shape;
     //   sfs->Init(occgeo->shape);
@@ -1127,69 +1135,145 @@ namespace netgen
     return occgeo;
   }
 
-  OCCGeometry * LoadOCC_STEP (const char * filename)
-  {
-    OCCGeometry * occgeo;
-    occgeo = new OCCGeometry;
-  
-    STEPControl_Reader reader;
-    Standard_Integer stat = reader.ReadFile((char*)filename);
-    Standard_Integer nb = reader.NbRootsForTransfer();
-    reader.TransferRoots (); // Tranlate STEP -> OCC
+
+
+// Philippose - 29/01/2009
+/* Special STEP File load function including the ability
+   to extract individual surface colours via the extended
+   OpenCascade XDE and XCAF Feature set.
+*/
+OCCGeometry * LoadOCC_STEP (const char * filename)
+{
+ OCCGeometry * occgeo;
+ occgeo = new OCCGeometry;
+
+ // Initiate a dummy XCAF Application to handle the STEP XCAF Document
+ static Handle_XCAFApp_Application dummy_app = XCAFApp_Application::GetApplication();
+
+ // Create an XCAF Document to contain the STEP file itself
+ Handle_TDocStd_Document step_doc;
+
+ // Check if a STEP File is already open under this handle, if so, close it to prevent
+ // Segmentation Faults when trying to create a new document
+ if(dummy_app->NbDocuments() > 0)
+ {
+  dummy_app->GetDocument(1,step_doc);
+  dummy_app->Close(step_doc);
+ }
+ dummy_app->NewDocument ("STEP-XCAF",step_doc);
+
+ STEPCAFControl_Reader reader;
+
+ Standard_Integer stat = reader.ReadFile((char*)filename);
+
+ // Enable transfer of colours
+ reader.SetColorMode(Standard_True);
+
+ reader.Transfer(step_doc);
+
+ // Read in the shape(s) and the colours present in the STEP File
+ Handle_XCAFDoc_ShapeTool step_shape_contents = XCAFDoc_DocumentTool::ShapeTool(step_doc->Main());
+ Handle_XCAFDoc_ColorTool step_colour_contents = XCAFDoc_DocumentTool::ColorTool(step_doc->Main());
+
+ TDF_LabelSequence step_shapes;
+ step_shape_contents->GetShapes(step_shapes);
+
+/*
+ // List out the available colours in the STEP File as Colour Names
+ TDF_LabelSequence allColours;
+ stepColourContents->GetColors(allColours);
+ cout << "Number of colours in STEP = " << allColours.Length() << endl;
+ for(int i = 1; i <= allColours.Length(); i++)
+ {
+    Quantity_Color col;
+    stepColourContents->GetColor(allColours.Value(i),col);
+    cout << "Colour [" << i << "] = " << col.StringName(col.Name()) << endl;
+ }
+*/
+
+ occgeo->shape = step_shape_contents->GetShape(step_shapes.Value(1));
+ occgeo->face_colours = step_colour_contents;
+ occgeo->changed = 1;
+ occgeo->BuildFMap();
+
+ occgeo->BuildVisualizationMesh();
+ PrintContents (occgeo);
+
+ return occgeo;
+}
 
 
 
-    occgeo->shape = reader.OneShape();
-    occgeo->changed = 1;
-    occgeo->BuildFMap();
-    //
-    //Handle(ShapeFix_Shape) sfs = new ShapeFix_Shape;
-    //sfs->Init(occgeo->shape);
-    //sfs->Perform();
-    //Handle(ShapeFix_Wireframe) sfwf = new ShapeFix_Wireframe(occgeo->shape);
-    //sfwf->FixSmallEdges();
-    //sfwf->FixWireGaps();
+//  Philippose - 29/01/2009
+//  The LOADOCC_STEP Function has been replaced by the one
+//  above, which also includes support for the OpenCascade
+//  XDE Features.
+//
+//  OCCGeometry * LoadOCC_STEP (const char * filename)
+//  {
+//    OCCGeometry * occgeo;
+//    occgeo = new OCCGeometry;
+//
+//    STEPControl_Reader reader;
+//    Standard_Integer stat = reader.ReadFile((char*)filename);
+//    Standard_Integer nb = reader.NbRootsForTransfer();
+//    reader.TransferRoots (); // Tranlate STEP -> OCC
+//
+//
+//
+//    occgeo->shape = reader.OneShape();
+//    occgeo->changed = 1;
+//    occgeo->BuildFMap();
+//    //
+//    //Handle(ShapeFix_Shape) sfs = new ShapeFix_Shape;
+//    //sfs->Init(occgeo->shape);
+//    //sfs->Perform();
+//    //Handle(ShapeFix_Wireframe) sfwf = new ShapeFix_Wireframe(occgeo->shape);
+//    //sfwf->FixSmallEdges();
+//    //sfwf->FixWireGaps();
+//
+//
+//
+//    /*
+//      // JS
+//    TopoDS_Compound aRes;
+//    BRep_Builder aBuilder;
+//    aBuilder.MakeCompound (aRes);
+//
+//    for (TopExp_Explorer exp(occgeo->shape, TopAbs_SOLID); exp.More(); exp.Next())
+//      {
+//	aBuilder.Add (aRes, exp.Current());
+//	cout << "solid" << endl;
+//      }
+//
+//    for (TopExp_Explorer exp(aRes, TopAbs_SOLID); exp.More(); exp.Next())
+//      {
+//	cout << "compound has shapes solid" << endl;
+//      }
+//    occgeo->shape = aRes;
+//    occgeo->changed = 1;
+//    occgeo->BuildFMap();
+//    */
+//
+//
+//    occgeo->BuildVisualizationMesh();
+//    PrintContents (occgeo);
+//
+//    return occgeo;
+//  }
 
 
 
-    /*
-      // JS
-    TopoDS_Compound aRes;
-    BRep_Builder aBuilder;
-    aBuilder.MakeCompound (aRes);
-
-    for (TopExp_Explorer exp(occgeo->shape, TopAbs_SOLID); exp.More(); exp.Next())
-      {
-	aBuilder.Add (aRes, exp.Current());
-	cout << "solid" << endl;
-      }
-
-    for (TopExp_Explorer exp(aRes, TopAbs_SOLID); exp.More(); exp.Next())
-      {
-	cout << "compound has shapes solid" << endl;
-      }
-    occgeo->shape = aRes;
-    occgeo->changed = 1;
-    occgeo->BuildFMap();
-    */
-
-
-    //
-    occgeo->BuildVisualizationMesh();
-    PrintContents (occgeo);
-
-    return occgeo;
-  } 
 
   OCCGeometry * LoadOCC_BREP (const char * filename)
   {
     OCCGeometry * occgeo;
     occgeo = new OCCGeometry;
-  
+
     BRep_Builder aBuilder;
     Standard_Boolean result = BRepTools::Read(occgeo->shape, const_cast<char*> (filename),aBuilder);
-    
-    
+
+
 //     cout << "Writing VRML" << endl;
 //     VrmlAPI::Write(occgeo->shape,"test.vrml");
 //     cout << "Writing STL" << endl;
@@ -1202,7 +1286,7 @@ namespace netgen
     PrintContents (occgeo);
 
     return occgeo;
-  } 
+  }
 
   char * shapesname[] =
     {" ", "CompSolids", "Solids", "Shells",
@@ -1256,9 +1340,9 @@ namespace netgen
 	  case TopAbs_VERTEX:
 	    count2 = vmap.FindIndex(TopoDS::Vertex(e.Current())); break;
 	  }
-      
+
 	int nrsubshapes = 0;
-      
+
 	if (l <= TopAbs_WIRE)
 	  {
 	    TopExp_Explorer e2;
@@ -1266,9 +1350,9 @@ namespace netgen
 		 e2.More(); e2.Next())
 	      nrsubshapes++;
 	  }
-      
+
 	str << "{" << shapename[l] << " " << count2;
-      
+
 	if (l <= TopAbs_EDGE)
 	  {
 	    str << " (" << orientationstring[e.Current().Orientation()];
@@ -1280,7 +1364,7 @@ namespace netgen
 
 	RecursiveTopologyTree (e.Current(), str, TopAbs_ShapeEnum (l+1),
 			       false, (char*)lname2.str().c_str());
-      
+
       }
   }
 
@@ -1381,7 +1465,7 @@ namespace netgen
 	    str << "FaceSplitByVertices/Face" << i << " ";
 	    str << "{Face " << i << " (split by " << count << "vertex/vertices)} ";
 	  }
-      
+
 	int whatrow, sens;
 	if (int type = csm.CheckPin (face, whatrow, sens))
 	  {
@@ -1471,9 +1555,9 @@ namespace netgen
       for (i = 1; i <= shmap.Extent(); i++)
       {
       TopoDS_Shell shell = TopoDS::Shell (shmap(i));
-      if (!shell.Closed()) 
+      if (!shell.Closed())
       cout << "Shell " << i << " is not closed" << endl;
-      if (shell.Infinite()) 
+      if (shell.Infinite())
       cout << "Shell " << i << " is infinite" << endl;
 
       BRepCheck_Analyzer ba(shell);
@@ -1484,9 +1568,9 @@ namespace netgen
       for (i = 1; i <= somap.Extent(); i++)
       {
       TopoDS_Solid solid = TopoDS::Solid (somap(i));
-      if (!solid.Closed()) 
+      if (!solid.Closed())
       cout << "Solid " << i << " is not closed" << endl;
-      if (solid.Infinite()) 
+      if (solid.Infinite())
       cout << "Solid " << i << " is infinite" << endl;
 
       BRepCheck_Analyzer ba(solid);
