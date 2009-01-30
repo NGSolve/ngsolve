@@ -25,7 +25,7 @@ AC_ARG_ENABLE([occ],
         [  --enable-occ            compile with OpenCascade geometry kernel],
         [occon=true 
         occfl="-DOCCGEOMETRY"
-        occlfl="-lTKIGES -lTKBRep -lTKSTEP -lTKSTL" ],
+        occlfl="-lTKernel -lTKGeomBase -lTKMath -lTKG2d -lTKG3d -lTKXSBase -lTKOffset -lTKFillet -lTKShHealing -lTKMesh -lTKMeshVS -lTKTopAlgo -lTKGeomAlgo -lTKBool -lTKPrim -lTKBO -lTKIGES -lTKBRep -lTKSTEPBase -lTKSTEP -lTKSTL -lTKSTEPAttr -lTKSTEP209 -lTKXDESTEP -lTKXDEIGES -lTKXCAF -lTKDCAF -lTKLCAF" ],
         [occon=false] )
 
 AC_ARG_WITH([occ], 
