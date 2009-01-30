@@ -1,5 +1,5 @@
 /*
-  
+
 The interface between the GUI and the netgen library
 
 */
@@ -93,7 +93,7 @@ namespace netgen
   // global variable mesh (should not be used in libraries)
   AutoPtr<Mesh> mesh;
 
-  // geometry: either CSG, or, if an other is non-null, 
+  // geometry: either CSG, or, if an other is non-null,
   // then the other
   AutoPtr<CSGeometry> geometry (new CSGeometry(""));
 
@@ -143,7 +143,7 @@ namespace netgen
   extern VisualSceneMesh vsmesh;
   extern VisualSceneMeshDoctor vsmeshdoc;
   static VisualSceneSpecPoints vsspecpoints;
-  
+
   VisualSceneSolution vssolution;
 
 
@@ -168,6 +168,29 @@ namespace netgen
 
 
 #ifdef _MSC_VER
+// Philippose - 30/01/2009
+// MSVC Express Edition Support
+#ifdef MSVC_EXPRESS
+
+// #include <pthread.h>
+
+  static pthread_t meshingthread;
+  void RunParallel ( void * (*fun)(void *), void * in)
+  {
+     if (mparam.parthread)
+     {
+	     pthread_attr_t attr;
+	     pthread_attr_init (&attr);
+	     // the following call can be removed if not available:
+	     pthread_attr_setstacksize(&attr, 1000000);
+	     //pthread_create (&meshingthread, &attr, fun, NULL);
+	     pthread_create (&meshingthread, &attr, fun, in);
+     }
+     else
+     fun (in);
+  }
+
+#else // Using MS VC++ Standard / Enterprise / Professional edition
 
   // Afx - Threads need different return - value:
 
@@ -188,7 +211,9 @@ namespace netgen
       fun (in);
   }
 
-#else
+#endif // #ifdef MSVC_EXPRESS
+
+#else  // For #ifdef _MSC_VER
 
 // #include <pthread.h>
 
@@ -200,7 +225,7 @@ namespace netgen
 	pthread_attr_t attr;
 	pthread_attr_init (&attr);
 	// the following call can be removed if not available:
-	pthread_attr_setstacksize(&attr, 1000000);  
+	pthread_attr_setstacksize(&attr, 1000000);
 	//pthread_create (&meshingthread, &attr, fun, NULL);
 	pthread_create (&meshingthread, &attr, fun, in);
       }
@@ -208,7 +233,7 @@ namespace netgen
       fun (in);
   }
 
-#endif
+#endif // #ifdef _MSC_VER
 
 
 
@@ -260,7 +285,7 @@ namespace netgen
 	      Tcl_Interp * interp,
 	      int argc, tcl_const char *argv[])
   {
-    if (strcmp (argv[1], "mesh") == 0) 
+    if (strcmp (argv[1], "mesh") == 0)
       mesh.Reset();
 
 
@@ -348,7 +373,7 @@ namespace netgen
 
     PrintMessage (2,  mesh->GetNP(), " Points, ",
 		  mesh->GetNE(), " Elements.");
-  
+
     return TCL_OK;
   }
 
@@ -378,7 +403,7 @@ namespace netgen
     outfile << endl << endl << "endmesh" << endl << endl;
 
     if (geometry && geometry->GetNSurf()) geometry->SaveSurfaces(outfile);
-    
+
 
     return TCL_OK;
   }
@@ -417,7 +442,7 @@ namespace netgen
 
     PrintMessage (2,  mesh->GetNP(), " Points, ",
 		  mesh->GetNSE(), " Surface Elements.");
-  
+
     return TCL_OK;
   }
 
@@ -463,10 +488,10 @@ namespace netgen
     ReadFile (*mesh, filename);
     PrintMessage (2, mesh->GetNP(), " Points, ",
 		  mesh->GetNE(), " Elements.");
-  
+
     mesh->SetGlobalH (mparam.maxh);
     mesh->CalcLocalH();
-  
+
     return TCL_OK;
   }
 
@@ -484,7 +509,7 @@ namespace netgen
 
     const char * filename = argv[1];
     PrintMessage (1, "Import solution from file ", filename);
-  
+
     ImportSolution (filename);
     return TCL_OK;
   }
@@ -517,7 +542,7 @@ namespace netgen
 
     if (demoview)
       result = demoview->SetTime (atof (argv[1]));
-    
+
     if (result == -1)
       Tcl_SetResult (interp, strminusone, TCL_STATIC);
     else
@@ -597,7 +622,7 @@ namespace netgen
 
 	ifstream infile(lgfilename);
 
-	if (strlen(lgfilename) < 4) 
+	if (strlen(lgfilename) < 4)
 	  {
 	    cout << "ERROR: cannot recognise file format!" << endl;
 	  }
@@ -608,34 +633,34 @@ namespace netgen
 		// strcpy (geomfilename, lgfilename);
 		PrintMessage (1, "Load geometry file ", lgfilename);
 
-		
+
 		extern CSGeometry * ParseCSG (istream & istr);
 		// ifstream infile(lgfilename);
 		CSGeometry * hgeom = ParseCSG (infile);
-		if (hgeom) 
+		if (hgeom)
 		  geometry.Reset (hgeom);
 		else
 		  {
 		    geometry.Reset (new CSGeometry (""));
-		    Tcl_SetResult (interp, (char*)"geo-file should start with 'algebraic3d'", TCL_STATIC);      
+		    Tcl_SetResult (interp, (char*)"geo-file should start with 'algebraic3d'", TCL_STATIC);
 		    return TCL_ERROR;
 		  }
-	    
+
 		//geometry -> FindIdenticSurfaces(geometry->GetIdEps() * geometry->MaxSize()); // 1e-8*geometry->MaxSize()
 		geometry -> FindIdenticSurfaces(1e-8 * geometry->MaxSize()); // 1e-8*geometry->MaxSize()
 	      }
 	    else if (strcmp (&lgfilename[strlen(lgfilename)-3], "ngg") == 0)
 	      {
 		//		strcpy (geomfilename, lgfilename);
-	  
+
 		PrintMessage (1, "Load new geometry file ", lgfilename);
 		geometry.Reset (new CSGeometry(""));
 		geometry -> Load (infile);
-	      } 
-	  
+	      }
+
 	    // strcpy (geomfilename, lgfilename);
 	    // (*mycout) << "Load geometry file " << lgfilename << endl;
-      
+
 	    else if (strcmp (&lgfilename[strlen(lgfilename)-3], "stl") == 0)
 	      {
 		// strcpy (geomfilename, lgfilename);
@@ -654,12 +679,12 @@ namespace netgen
 		occgeometry = LoadOCC_IGES (lgfilename);
 #else
 		Tcl_SetResult (interp, (char*)"IGES import requires the OpenCascade geometry kernel. "
-			       "Please install OpenCascade as described in the Netgen-website", 
-			       TCL_STATIC);      
-		return TCL_ERROR;		
-#endif      	
+			       "Please install OpenCascade as described in the Netgen-website",
+			       TCL_STATIC);
+		return TCL_ERROR;
+#endif
 	      }
-      
+
 	    else if (strcmp (&lgfilename[strlen(lgfilename)-3], "sat") == 0)
 	      {
 #ifdef ACIS
@@ -682,10 +707,10 @@ namespace netgen
 		occgeometry = LoadOCC_STEP (lgfilename);
 #else
 		Tcl_SetResult (interp, (char*)"IGES import requires the OpenCascade geometry kernel. "
-			       "Please install OpenCascade as described in the Netgen-website", 
-			       TCL_STATIC);      
-		return TCL_ERROR;		
-#endif      
+			       "Please install OpenCascade as described in the Netgen-website",
+			       TCL_STATIC);
+		return TCL_ERROR;
+#endif
 #endif
 	      }
 	    else if ((strcmp (&lgfilename[strlen(lgfilename)-4], "brep") == 0) ||
@@ -698,30 +723,30 @@ namespace netgen
 		occgeometry = LoadOCC_BREP (lgfilename);
 #else
 		Tcl_SetResult (interp, (char*)"BREP import requires the OpenCascade geometry kernel. "
-			       "Please install OpenCascade as described in the Netgen-website", 
-			       TCL_STATIC);      
-		return TCL_ERROR;		
-#endif      
+			       "Please install OpenCascade as described in the Netgen-website",
+			       TCL_STATIC);
+		return TCL_ERROR;
+#endif
 	      }
 
 	    else if (strcmp (&lgfilename[strlen(lgfilename)-4], "stlb") == 0)
 	      {
 		// strcpy (geomfilename, lgfilename);
-	  
+
 		PrintMessage (1, "Load stl geometry file ", lgfilename, " in binary format");
 		stlgeometry = STLGeometry :: LoadBinary (infile);
 		stlgeometry->edgesfound = 0;
 	      }
-      
+
 	    else if (strcmp (&lgfilename[strlen(lgfilename)-3], "nao") == 0)
 	      {
 		// strcpy (geomfilename, lgfilename);
-	  
+
 		PrintMessage (1, "Load naomi (F. Kickinger) geometry file ", lgfilename);
 		stlgeometry = STLGeometry :: LoadNaomi (infile);
 		stlgeometry->edgesfound = 0;
 	      }
-      
+
 	    else if (strcmp (&lgfilename[strlen(lgfilename)-4], "in2d") == 0)
 	      {
 		// strcpy (geomfilename, lgfilename);
@@ -732,12 +757,12 @@ namespace netgen
       }
     catch (NgException e)
       {
-	Tcl_SetResult (interp, const_cast<char*> (e.What().c_str()), TCL_VOLATILE);      
+	Tcl_SetResult (interp, const_cast<char*> (e.What().c_str()), TCL_VOLATILE);
 	return TCL_ERROR;
       }
 
     mesh.Reset();
-  
+
     return TCL_OK;
   }
 
@@ -758,7 +783,7 @@ namespace netgen
       {
 	const char * cfilename = argv[1];
 	PrintMessage (1, "Save geometry to file ", cfilename);
-      
+
 	if (strlen(cfilename) < 4) {cout << "ERROR: can not recognise file format!!!" << endl;}
 	else
 	  {
@@ -811,22 +836,22 @@ namespace netgen
 		      geometry->Save (of);
 		    }
 		}
-	      else if (strlen(cfilename) > 3 && 
+	      else if (strlen(cfilename) > 3 &&
 		       strcmp (&cfilename[strlen(cfilename)-3], "stl") == 0)
 		{
-		  if (stlgeometry) 
-		    stlgeometry->Save (cfilename); 
-		} 
-	      else if (strlen(cfilename) > 4 && 
+		  if (stlgeometry)
+		    stlgeometry->Save (cfilename);
+		}
+	      else if (strlen(cfilename) > 4 &&
 		       strcmp (&cfilename[strlen(cfilename)-4], "stlb") == 0)
 		{
-		  if (stlgeometry) 
-		    stlgeometry->SaveBinary (cfilename,"Binary STL Geometry"); 
+		  if (stlgeometry)
+		    stlgeometry->SaveBinary (cfilename,"Binary STL Geometry");
 		}
-	      else if (strlen(cfilename) > 4 && 
+	      else if (strlen(cfilename) > 4 &&
 		       strcmp (&cfilename[strlen(cfilename)-4], "stle") == 0)
 		{
-		  if (stlgeometry) 
+		  if (stlgeometry)
 		    stlgeometry->SaveSTLE (cfilename);
 		}
 	  }
@@ -1192,7 +1217,7 @@ namespace netgen
 	Solid * sol = (Solid*)geometry->GetSolid (solname);
 	Surface * surf = (Surface*)geometry->GetSurface (surfname);
 	TopLevelObject * tlo = geometry->GetTopLevelObject (sol, surf);
-      
+
 	if (!tlo) return TCL_OK;
 
 	char varname[50];
@@ -1308,7 +1333,7 @@ namespace netgen
     if (strcmp (argv[1], "moveable") == 0)
       {
 	sprintf (buf, "%6.1f", double(BaseMoveableMem::used)/1048576);
-	Tcl_SetResult (interp, buf, TCL_STATIC);      
+	Tcl_SetResult (interp, buf, TCL_STATIC);
 	return TCL_OK;
       }
 
@@ -1322,7 +1347,7 @@ namespace netgen
 
 	usedmb[512] = 0;
 	BaseDynamicMem::GetUsed (512, usedmb);
-	Tcl_SetResult (interp, usedmb, TCL_STATIC);      
+	Tcl_SetResult (interp, usedmb, TCL_STATIC);
 	return TCL_OK;
       }
 
@@ -1422,12 +1447,107 @@ namespace netgen
   }
 
 
+
+  // Philippose - 30/01/2009
+  // TCL interface function for the Local Face Mesh size
+  // definition functionality
+  int Ng_SurfaceMeshSize (ClientData clientData,
+		                    Tcl_Interp * interp,
+		                    int argc, tcl_const char *argv[])
+  {
+    static char buf[100];
+
+    if (argc < 2)
+    {
+	   Tcl_SetResult (interp, (char *)"Ng_SurfaceMeshSize needs arguments", TCL_STATIC);
+	   return TCL_ERROR;
+    }
+
+    if (!occgeometry)
+    {
+	   Tcl_SetResult (interp, (char *)"Ng_SurfaceMeshSize currently supports only OCC (STEP/IGES) Files", TCL_STATIC);
+	   return TCL_ERROR;
+    }
+
+    // Update the face mesh sizes to reflect the global maximum mesh size
+    for(int i = 1; i <= occgeometry->NrFaces(); i++)
+    {
+       occgeometry->SetFaceMaxH(i, min(mparam.maxh,occgeometry->GetFaceMaxH(i)));
+    }
+
+    if (strcmp (argv[1], "setsurfms") == 0)
+    {
+	   int facenr = atoi (argv[2]);
+	   double surfms = atof (argv[3]);
+	   if (occgeometry && facenr >= 1 && facenr <= occgeometry->NrFaces())
+	     occgeometry->SetFaceMaxH(facenr, surfms);
+
+    }
+
+    if (strcmp (argv[1], "setall") == 0)
+    {
+	   double surfms = atof (argv[2]);
+	   if (occgeometry)
+	   {
+	     int nrFaces = occgeometry->NrFaces();
+	     for (int i = 1; i <= nrFaces; i++)
+	      occgeometry->SetFaceMaxH(i, surfms);
+	   }
+    }
+
+    if (strcmp (argv[1], "getsurfms") == 0)
+    {
+	   int facenr = atoi (argv[2]);
+	   if (occgeometry && facenr >= 1 && facenr <= occgeometry->NrFaces())
+	   {
+	     sprintf (buf, "%5.2f", occgeometry->GetFaceMaxH(facenr));
+	   }
+	   else
+	   {
+	     sprintf (buf, "%5.2f", mparam.maxh);
+	   }
+	   Tcl_SetResult (interp, buf, TCL_STATIC);
+    }
+
+    if (strcmp (argv[1], "getactive") == 0)
+    {
+	   sprintf (buf, "%d", occgeometry->SelectedFace());
+	   Tcl_SetResult (interp, buf, TCL_STATIC);
+    }
+
+    if (strcmp (argv[1], "setactive") == 0)
+    {
+	   int facenr = atoi (argv[2]);
+	   if (occgeometry && facenr >= 1 && facenr <= occgeometry->NrFaces())
+	   {
+	     occgeometry->SetSelectedFace (facenr);
+
+        occgeometry->LowLightAll();
+        occgeometry->fvispar[facenr-1].Highlight();
+        occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
+	   }
+    }
+
+    if (strcmp (argv[1], "getnfd") == 0)
+    {
+	   if (occgeometry)
+	     sprintf (buf, "%d", occgeometry->NrFaces());
+	   else
+	     sprintf (buf, "0");
+	   Tcl_SetResult (interp, buf, TCL_STATIC);
+    }
+    return TCL_OK;
+  }
+
+
+
+
   int Ng_SetNextTimeStamp  (ClientData clientData,
 			    Tcl_Interp * interp,
 			    int argqc, tcl_const char *argv[])
   {
     if (mesh.Ptr())
-      mesh -> SetNextTimeStamp(); 
+      mesh -> SetNextTimeStamp();
     return TCL_OK;
   }
 
@@ -1536,7 +1656,7 @@ namespace netgen
     const char * savetask = multithread.task;
 
     Refinement * ref;
- 
+
     if (stlgeometry)
       ref = new RefinementSTLGeometry (*stlgeometry);
     else if (geometry2d)
@@ -1555,7 +1675,7 @@ namespace netgen
       {
 	ref = new RefinementSurfaces (*geometry);
       }
- 
+
     // if (!mesh -> coarsemesh)
     mesh -> GetCurvedElements().BuildCurvedElements (ref, mparam.elementorder);
     /*
@@ -1569,7 +1689,7 @@ namespace netgen
 
     //
     // cout << "WARNING: Ng_HighOrder! ref is not deleted for edge projection visualization" << endl;
-  
+
     multithread.task = savetask;
     multithread.running = 0;
     multithread.terminate = 1;
@@ -1593,17 +1713,17 @@ namespace netgen
 	return TCL_ERROR;
       }
 
-  
+
     multithread.running = 1;
     multithread.terminate = 0;
-  
+
     mparam.elementorder = atoi(argv[1]);
-    
+
     // if(argc > 2 && strcmp(argv[2],"noparallel") == 0)
     HighOrderDummy(NULL);
     // else
     // RunParallel (HighOrderDummy, NULL);
-    
+
     return TCL_OK;
   }
 
@@ -1686,7 +1806,7 @@ namespace netgen
 
 
     Refinement * ref;
- 
+
     if (stlgeometry)
       ref = new RefinementSTLGeometry (*stlgeometry);
     else if (geometry2d)
@@ -1969,7 +2089,7 @@ namespace netgen
   {
     if (argc != 2)
       {
-	Tcl_SetResult (interp, (char*)"Ng_GetCommandLineParameter needs 1 parameter", 
+	Tcl_SetResult (interp, (char*)"Ng_GetCommandLineParameter needs 1 parameter",
                        TCL_STATIC);
 	return TCL_ERROR;
       }
@@ -2062,10 +2182,10 @@ namespace netgen
 	  }
 	else
 	  {
-	    int res = 
+	    int res =
 	      GenerateMesh (*geometry, mesh.Ptr(), perfstepsstart, perfstepsend, optstringcsg);
 	    if (res != MESHING3_OK) return 0;
-	    
+
 	    if(mparam.autozrefine)
 	      {
 		ZRefinementOptions opt;
@@ -2495,7 +2615,7 @@ namespace netgen
 
     if(!mesh->LocalHFunctionGenerated())
       mesh->CalcLocalH();
-      
+
     mesh->LocalHFunction().SetGrading (mparam.grading);
     ref -> Bisect (*mesh, biopt);
     mesh -> UpdateTopology();
@@ -3076,7 +3196,7 @@ namespace netgen
 
 
   // Togl
-  
+
   static void init( struct Togl *togl )
   {
     VisualScene::fontbase = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
@@ -3154,7 +3274,7 @@ namespace netgen
 
 #else
 
-  
+
   // Sorry, Togl 2.0 not supported
 
 
@@ -3171,7 +3291,7 @@ namespace netgen
                           int argc, tcl_const char *argv[])
   {
     const char * filename = argv[2];
-    
+
     char str[250];
     char filename2[250];
     int len = strlen(filename);
@@ -3219,7 +3339,7 @@ namespace netgen
 
     return TCL_OK;
   }
-  
+
 
 
 #else
@@ -3238,44 +3358,44 @@ namespace netgen
         int w = Togl_Width (togl);
         w = int((w + 1) / 4) * 4 + 4;
         int h = Togl_Height (togl);
-        
+
         // unsigned char * buffer = new unsigned char[w*h*4];
         unsigned char * buffer = new unsigned char[w*h*3];
         glReadPixels (0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, buffer);
 
-        struct jpeg_compress_struct cinfo;  
+        struct jpeg_compress_struct cinfo;
         struct jpeg_error_mgr jerr;
         FILE *outfile = fopen(filename,"wb");
         JSAMPROW row_pointer[1];
         int row_stride, quality = 85; // 1...100
-        
+
         cinfo.err = jpeg_std_error( &jerr );
         jpeg_create_compress( &cinfo );
         jpeg_stdio_dest( &cinfo, outfile );
-        
-        
+
+
         cinfo.image_width = w;
         cinfo.image_height = h;
         cinfo.input_components = 3;
         cinfo.in_color_space = JCS_RGB;
-        
+
         jpeg_set_defaults( &cinfo );
         jpeg_set_quality( &cinfo, quality, TRUE );
         jpeg_start_compress( &cinfo, TRUE );
-        
+
         row_stride = 3*w;
         while( cinfo.next_scanline < cinfo.image_height ) {
           row_pointer[0] = &buffer[ (h-1-cinfo.next_scanline) * row_stride ];
           (void)jpeg_write_scanlines( &cinfo, row_pointer, 1 );
         }
-        
+
         jpeg_finish_compress( &cinfo );
         fclose( outfile );
-        
+
         jpeg_destroy_compress( &cinfo );
-        fprintf( stdout, "done [ok]\n" );  
+        fprintf( stdout, "done [ok]\n" );
         fflush( stdout );
-        
+
         free( buffer );
         return TCL_OK;
       }
@@ -3328,7 +3448,7 @@ namespace netgen
 
   void print_info( int count_frames, AVCodecContext *context, int bytes ) {
     double tmp = context->width * context->height * 255.0 * 255.0;
-    double Ypsnr = psnr( context->coded_frame->error[0] / tmp ); 
+    double Ypsnr = psnr( context->coded_frame->error[0] / tmp );
     double quality = context->coded_frame->quality/(double)FF_QP2LAMBDA;
     char pict_type = av_get_pict_type_char(context->coded_frame->pict_type);
     cout << "video: frame=" << count_frames << " type=" << pict_type;
@@ -3355,7 +3475,7 @@ namespace netgen
     static FILE *MPGfile;
     static buffer_t buff;
 
-    
+
     if (strcmp (argv[2], "init") == 0)
       {
         // Can't initialize when running:
@@ -3370,7 +3490,7 @@ namespace netgen
         const char * filename = argv[3];
         cout << "Saving videoclip to file '" << filename << "'" << endl;
         MPGfile = fopen(filename, "wb");
-        
+
         // Determine picture size:
         //------------------------
         nx = Togl_Width (togl);
@@ -3378,7 +3498,7 @@ namespace netgen
         ny = Togl_Height (togl);
         ny = 2 * (ny/2);
         cout << "Width=" << nx << ", height=" << ny << endl;
-        
+
         // Allocate buffers:
         //------------------
         PIXsize = nx*ny;
@@ -3387,7 +3507,7 @@ namespace netgen
         buff.ROW = (uint8_t*)malloc(stride);
         buff.YUV = (uint8_t*)malloc(3*(PIXsize/2));
         buff.MPG = (uint8_t*)malloc(MPGbufsize);
-        
+
         // Initialize libavcodec:
         //-----------------------
         if( !initialized ) {
@@ -3395,7 +3515,7 @@ namespace netgen
           avcodec_register_all();
           initialized = 1;
         }
-        
+
         // Choose codec:
         //--------------
         codec = avcodec_find_encoder( codec_id );
@@ -3405,7 +3525,7 @@ namespace netgen
           cout << "can't find codec" << endl;
           return TCL_ERROR;
         }
-        
+
         // Init codec context etc.:
         //--------------------------
         context = avcodec_alloc_context();
@@ -3417,7 +3537,7 @@ namespace netgen
         context->max_b_frames = bframes;
         context->pix_fmt = PIX_FMT_YUV420P;
         context->flags |= CODEC_FLAG_PSNR;
-        
+
         if( avcodec_open( context, codec ) < 0 ) {
           avcodec_close( context );
           av_free( context );
@@ -3426,25 +3546,25 @@ namespace netgen
           cout << "can't open codec" << endl;
           return TCL_ERROR;
         }
-        
+
         YUVpicture = avcodec_alloc_frame();
-        
+
         YUVpicture->data[0] = buff.YUV;
         YUVpicture->data[1] = buff.YUV + PIXsize;
         YUVpicture->data[2] = buff.YUV + PIXsize + PIXsize / 4;
         YUVpicture->linesize[0] = nx;
         YUVpicture->linesize[1] = nx / 2;
         YUVpicture->linesize[2] = nx / 2;
-        
+
         RGBpicture = avcodec_alloc_frame();
-        
+
         RGBpicture->data[0] = buff.RGB;
         RGBpicture->data[1] = buff.RGB;
         RGBpicture->data[2] = buff.RGB;
         RGBpicture->linesize[0] = stride;
         RGBpicture->linesize[1] = stride;
         RGBpicture->linesize[2] = stride;
-        
+
         // Set state "started":
         //----------------------
         i_state = STATE_STARTED;
@@ -3461,11 +3581,11 @@ namespace netgen
           cout << "cannot add frame: codec not initialized" << endl;
           return TCL_ERROR;
         }
-        
+
         // Read RGB data:
         //---------------
         glReadPixels (0, 0, nx, ny, GL_RGB, GL_UNSIGNED_BYTE, buff.RGB );
-        
+
         // The picture is upside down - flip it:
         //---------------------------------------
         for( y=0; y<ny/2; y++ ) {
@@ -3475,24 +3595,24 @@ namespace netgen
           memcpy( r1, r2, stride );
           memcpy( r2, buff.ROW, stride );
         }
-        
+
         // Convert to YUV:
         //----------------
-        img_convert( (AVPicture*)YUVpicture, PIX_FMT_YUV420P, 
+        img_convert( (AVPicture*)YUVpicture, PIX_FMT_YUV420P,
                      (AVPicture*)RGBpicture, PIX_FMT_RGB24, nx, ny );
-        
+
         // Encode frame:
         //--------------
-        bytes = avcodec_encode_video( context, buff.MPG, 
+        bytes = avcodec_encode_video( context, buff.MPG,
                                       MPGbufsize, YUVpicture );
         count_frames++;
         print_info( count_frames, context, bytes );
         fwrite( buff.MPG, 1, bytes, MPGfile );
-        
+
         return TCL_OK;
-      } 
-    
-    
+      }
+
+
     else if (strcmp (argv[2], "finalize") == 0)
       {
         // Can't stop if status != started:
@@ -3510,7 +3630,7 @@ namespace netgen
           print_info( count_frames, context, bytes );
           fwrite( buff.MPG, 1, bytes, MPGfile );
         }
-        
+
         // Add sequence end code:
         //-----------------------
         if( codec_id == CODEC_ID_MPEG1VIDEO ) {
@@ -3520,7 +3640,7 @@ namespace netgen
           buff.MPG[3] = 0xb7;
           fwrite( buff.MPG, 1, 4, MPGfile );
         }
-        
+
         // Finalize:
         //-----------
         avcodec_close( context );
@@ -3529,12 +3649,12 @@ namespace netgen
         av_free( RGBpicture );
         free_buffers( &buff );
         fclose( MPGfile );
-    
+
         i_state = STATE_READY;
         cout <<  "finalized" << endl;
-        
+
         return TCL_OK;
-        
+
       }
   }
 
@@ -3649,10 +3769,10 @@ namespace netgen
 
   int Ng_Metis (ClientData clientData,
 		Tcl_Interp * interp,
-		int argc, tcl_const char *argv[]) 
+		int argc, tcl_const char *argv[])
   {
 #ifdef METISold
-  
+
     if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
@@ -3701,8 +3821,8 @@ namespace netgen
 	for (int i=1; i<=ne; i++)
 	  for (int j=1; j<=npe; j++)
 	    elmnts[(i-1)*npe+(j-1)] = mesh->VolumeElement(i).PNum(j)-1;
-	
-     
+
+
 	int numflag = 0;
 	int nparts = atoi (argv[1]);
 	int edgecut;
@@ -3721,11 +3841,11 @@ namespace netgen
 
 	for (int i=1; i<=ne; i++)
 	  mesh->VolumeElement(i).SetPartition(epart[i-1]);
-	
+
 	mesh->SetNextTimeStamp();
       }
-  
- 
+
+
 #endif
     return TCL_OK;
   }
@@ -3741,7 +3861,7 @@ namespace netgen
   {
 #ifdef OCCGEOMETRY
     int showvolume;
-  
+
     showvolume = atoi (Tcl_GetVar (interp, "::occoptions.showvolumenr", 0));
 
     if (showvolume != vispar.occshowvolumenr)
@@ -3761,7 +3881,7 @@ namespace netgen
       }
 
     int temp;
-  
+
     temp = atoi (Tcl_GetVar (interp, "::occoptions.visproblemfaces", 0));
 
     if ((bool) temp != vispar.occvisproblemfaces)
@@ -3772,7 +3892,7 @@ namespace netgen
       }
 
     vispar.occshowsurfaces = atoi (Tcl_GetVar (interp, "::occoptions.showsurfaces", 0));
-    vispar.occshowedges = atoi (Tcl_GetVar (interp, "::occoptions.showedges", 0)); 
+    vispar.occshowedges = atoi (Tcl_GetVar (interp, "::occoptions.showedges", 0));
     vispar.occzoomtohighlightedentity = atoi (Tcl_GetVar (interp, "::occoptions.zoomtohighlightedentity", 0));
     vispar.occdeflection = pow(10.0,-1-atof (Tcl_GetVar (interp, "::occoptions.deflection", 0)));
 
@@ -3784,9 +3904,9 @@ namespace netgen
 
 #ifdef ACIS
     vispar.ACISshowfaces = atoi (Tcl_GetVar (interp, "::occoptions.showsurfaces", 0));
-    vispar.ACISshowedges = atoi (Tcl_GetVar (interp, "::occoptions.showedges", 0)); 
-    vispar.ACISshowsolidnr = atoi (Tcl_GetVar (interp, "::occoptions.showsolidnr", 0)); 
-    vispar.ACISshowsolidnr2 = atoi (Tcl_GetVar (interp, "::occoptions.showsolidnr2", 0)); 
+    vispar.ACISshowedges = atoi (Tcl_GetVar (interp, "::occoptions.showedges", 0));
+    vispar.ACISshowsolidnr = atoi (Tcl_GetVar (interp, "::occoptions.showsolidnr", 0));
+    vispar.ACISshowsolidnr2 = atoi (Tcl_GetVar (interp, "::occoptions.showsolidnr2", 0));
 
 #endif
 
@@ -3806,10 +3926,10 @@ namespace netgen
 
   int Ng_GetOCCData (ClientData clientData,
 		     Tcl_Interp * interp,
-		     int argc, tcl_const char *argv[]) 
+		     int argc, tcl_const char *argv[])
   {
 #ifdef OCCGEOMETRY
-  
+
     static char buf[1000];
     buf[0] = 0;
     stringstream str;
@@ -3826,14 +3946,14 @@ namespace netgen
       }
 
     Tcl_SetResult (interp, (char*)str.str().c_str(), TCL_VOLATILE);
- 
+
 #endif
     return TCL_OK;
   }
 
   int Ng_OCCCommand (ClientData clientData,
 		     Tcl_Interp * interp,
-		     int argc, tcl_const char *argv[]) 
+		     int argc, tcl_const char *argv[])
   {
 #ifdef OCCGEOMETRY
 
@@ -3859,7 +3979,7 @@ namespace netgen
 	      {
 		if (occgeometry->ErrorInSurfaceMeshing())
 		  str << 1;
-		else 
+		else
 		  str << 0;
 	      }
 	    if (strcmp (argv[1], "sewfaces") == 0)
@@ -3899,17 +4019,17 @@ namespace netgen
 	    if (strcmp (argv[1], "shapehealing") == 0)
 	      {
 		occgeometry->tolerance =
-		  atof (Tcl_GetVar (interp, "::occoptions.tolerance", 0)); 
+		  atof (Tcl_GetVar (interp, "::occoptions.tolerance", 0));
 		occgeometry->fixsmalledges =
-		  atoi (Tcl_GetVar (interp, "::occoptions.fixsmalledges", 0)); 
+		  atoi (Tcl_GetVar (interp, "::occoptions.fixsmalledges", 0));
 		occgeometry->fixspotstripfaces =
-		  atoi (Tcl_GetVar (interp, "::occoptions.fixspotstripfaces", 0)); 
+		  atoi (Tcl_GetVar (interp, "::occoptions.fixspotstripfaces", 0));
 		occgeometry->sewfaces =
-		  atoi (Tcl_GetVar (interp, "::occoptions.sewfaces", 0)); 
+		  atoi (Tcl_GetVar (interp, "::occoptions.sewfaces", 0));
 		occgeometry->makesolids =
-		  atoi (Tcl_GetVar (interp, "::occoptions.makesolids", 0)); 
+		  atoi (Tcl_GetVar (interp, "::occoptions.makesolids", 0));
 		occgeometry->splitpartitions =
-		  atoi (Tcl_GetVar (interp, "::occoptions.splitpartitions", 0)); 
+		  atoi (Tcl_GetVar (interp, "::occoptions.splitpartitions", 0));
 
 		//	      cout << "Before operation:" << endl;
 		//	      occgeometry->PrintNrShapes();
@@ -3920,15 +4040,15 @@ namespace netgen
 		occgeometry->BuildVisualizationMesh();
 		occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
 	      }
-	  
-	  
+
+
 	    if (strcmp (argv[1], "highlightentity") == 0)
 	      {
 		if (strcmp (argv[2], "Face") == 0)
 		  {
 		    int nr = atoi (argv[3]);
 		    occgeometry->LowLightAll();
-		  
+
 		    occgeometry->fvispar[nr-1].Highlight();
 		    if (vispar.occzoomtohighlightedentity)
 		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONFULLCHANGE;
@@ -3939,7 +4059,7 @@ namespace netgen
 		  {
 		    int nr = atoi (argv[3]);
 		    occgeometry->LowLightAll();
-		  
+
 		    TopExp_Explorer exp;
 		    for (exp.Init (occgeometry->shmap(nr), TopAbs_FACE);
 			 exp.More(); exp.Next())
@@ -3956,7 +4076,7 @@ namespace netgen
 		  {
 		    int nr = atoi (argv[3]);
 		    occgeometry->LowLightAll();
-		  
+
 		    TopExp_Explorer exp;
 		    for (exp.Init (occgeometry->somap(nr), TopAbs_FACE);
 			 exp.More(); exp.Next())
@@ -3974,7 +4094,7 @@ namespace netgen
 		  {
 		  int nr = atoi (argv[3]);
 		  occgeometry->LowLightAll();
-		
+
 		  TopExp_Explorer exp;
 		  for (exp.Init (occgeometry->cmap(nr), TopAbs_FACE);
 		  exp.More(); exp.Next())
@@ -3985,12 +4105,12 @@ namespace netgen
 		  occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
 		  }
 		*/
-	      
+
 		if (strcmp (argv[2], "Edge") == 0)
 		  {
 		    int nr = atoi (argv[3]);
 		    occgeometry->LowLightAll();
-		  
+
 		    occgeometry->evispar[nr-1].Highlight();
 		    if (vispar.occzoomtohighlightedentity)
 		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONFULLCHANGE;
@@ -4001,7 +4121,7 @@ namespace netgen
 		  {
 		    int nr = atoi (argv[3]);
 		    occgeometry->LowLightAll();
-		  
+
 		    TopExp_Explorer exp;
 		    for (exp.Init (occgeometry->wmap(nr), TopAbs_EDGE);
 			 exp.More(); exp.Next())
@@ -4014,19 +4134,19 @@ namespace netgen
 		    else
 		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
 		  }
-	      
+
 		if (strcmp (argv[2], "Vertex") == 0)
 		  {
 		    int nr = atoi (argv[3]);
 		    occgeometry->LowLightAll();
-		  
+
 		    occgeometry->vvispar[nr-1].Highlight();
 		    if (vispar.occzoomtohighlightedentity)
 		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONFULLCHANGE;
 		    else
 		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
 		  }
-	      
+
 	      }
 
 
@@ -4157,9 +4277,9 @@ namespace netgen
 
 		  Handle_ShapeBuild_ReShape rebuild = new ShapeBuild_ReShape;
 		  rebuild->Apply(occgeometry->shape);
-	      
+
 		  TopoDS_Shape sh;
-	      
+
 		  //	      if (strcmp (argv[2], "CompSolid") == 0) sh = occgeometry->cmap(nr);
 		  if (strcmp (argv[2], "Solid") == 0) sh = occgeometry->somap(nr);
 		  if (strcmp (argv[2], "Shell") == 0) sh = occgeometry->shmap(nr);
@@ -4171,7 +4291,7 @@ namespace netgen
 
 		  TopoDS_Shape newshape = rebuild->Apply(occgeometry->shape, TopAbs_SHELL, 1);
 		  occgeometry->shape = newshape;
-	      	      
+
 		  occgeometry->BuildFMap();
 		  occgeometry->BuildVisualizationMesh();
 		  occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
@@ -4181,7 +4301,7 @@ namespace netgen
 	      {
 		int nr = atoi (argv[3]);
 		cout << "marking " << argv[2] << " " << nr << endl;
-		char buf[2]; buf[0] = '0'; buf[1] = 0; 
+		char buf[2]; buf[0] = '0'; buf[1] = 0;
 		bool sing = false;
 		if (strcmp (argv[2], "Face") == 0)
 		  sing = occgeometry->fsingular[nr-1] = !occgeometry->fsingular[nr-1];
@@ -4189,10 +4309,10 @@ namespace netgen
 		  sing = occgeometry->esingular[nr-1] = !occgeometry->esingular[nr-1];
 		if (strcmp (argv[2], "Vertex") == 0)
 		  sing = occgeometry->vsingular[nr-1] = !occgeometry->vsingular[nr-1];
-	     
+
 		if (sing) buf[0] = '1';
 
-                Tcl_SetVar (interp, "::ismarkedsingular", buf, 0);	 
+                Tcl_SetVar (interp, "::ismarkedsingular", buf, 0);
 
 		stringstream str;
 		occgeometry->GetTopologyTree (str);
@@ -4225,20 +4345,20 @@ namespace netgen
 
   int Ng_OCCConstruction (ClientData clientData,
 			  Tcl_Interp * interp,
-			  int argc, tcl_const char *argv[]) 
+			  int argc, tcl_const char *argv[])
   {
     if (occgeometry)
       OCCConstructGeometry (*occgeometry);
     return TCL_OK;
   }
 #endif
-  
+
 
 
 #ifndef ACIS
   int Ng_ACISCommand (ClientData clientData,
 		      Tcl_Interp * interp,
-		      int argc, tcl_const char *argv[]) 
+		      int argc, tcl_const char *argv[])
   {
     if (argc >= 2)
       {
@@ -4259,7 +4379,7 @@ namespace netgen
   int Ng_SetVisParameters  (ClientData clientData,
 			    Tcl_Interp * interp,
 			    int argc, tcl_const char *argv[])
-  { 
+  {
     if (!Tcl_GetVar (interp, "::viewoptions.light.amb", TCL_GLOBAL_ONLY))
       return TCL_ERROR;
 
@@ -4312,9 +4432,9 @@ namespace netgen
       atoi (Tcl_GetVar (interp, "::stloptions.chartnumberoffset", TCL_GLOBAL_ONLY));
 
     vispar.occshowsurfaces =
-      atoi (Tcl_GetVar (interp, "::occoptions.showsurfaces", TCL_GLOBAL_ONLY)); 
+      atoi (Tcl_GetVar (interp, "::occoptions.showsurfaces", TCL_GLOBAL_ONLY));
     vispar.occshowedges =
-      atoi (Tcl_GetVar (interp, "::occoptions.showedges", TCL_GLOBAL_ONLY)); 
+      atoi (Tcl_GetVar (interp, "::occoptions.showedges", TCL_GLOBAL_ONLY));
 
     vispar.drawoutline =
       atoi (Tcl_GetVar (interp, "::viewoptions.drawoutline", TCL_GLOBAL_ONLY));
@@ -4370,20 +4490,20 @@ namespace netgen
 
     vispar.centerpoint =
       atoi (Tcl_GetVar (interp, "::viewoptions.centerpoint", TCL_GLOBAL_ONLY));
-    vispar.use_center_coords = 
+    vispar.use_center_coords =
       atoi (Tcl_GetVar (interp, "::viewoptions.usecentercoords", TCL_GLOBAL_ONLY)) > 0;
-    vispar.centerx = 
+    vispar.centerx =
       atof (Tcl_GetVar (interp, "::viewoptions.centerx", TCL_GLOBAL_ONLY));
-    vispar.centery = 
+    vispar.centery =
       atof (Tcl_GetVar (interp, "::viewoptions.centery", TCL_GLOBAL_ONLY));
-    vispar.centerz = 
+    vispar.centerz =
       atof (Tcl_GetVar (interp, "::viewoptions.centerz", TCL_GLOBAL_ONLY));
     vispar.drawelement =
       atoi (Tcl_GetVar (interp, "::viewoptions.drawelement", TCL_GLOBAL_ONLY));
     vispar.drawmetispartition =
       atoi (Tcl_GetVar (interp, "::viewoptions.drawmetispartition", TCL_GLOBAL_ONLY));
 
-    vispar.drawspecpoint = 
+    vispar.drawspecpoint =
       atoi (Tcl_GetVar (interp, "::viewoptions.drawspecpoint", TCL_GLOBAL_ONLY));
     vispar.specpointx =
       atof (Tcl_GetVar (interp, "::viewoptions.specpointx", TCL_GLOBAL_ONLY));
@@ -4405,7 +4525,7 @@ namespace netgen
 
 #ifdef PARALLELGL
     vsmesh.Broadcast ();
-#endif    
+#endif
 
     return TCL_OK;
   }
@@ -4429,7 +4549,7 @@ namespace netgen
     vssolution.BuildFieldLinesPlot();
     return TCL_OK;
   }
-  
+
 #ifdef PARALLEL
   int Ng_VisualizeAll (ClientData clientData,
                        Tcl_Interp * interp,
@@ -4491,7 +4611,7 @@ namespace netgen
                             Tcl_Interp * interp,
 			    int argc, tcl_const char * argv[] )
   {
-    string visualizationmode; 
+    string visualizationmode;
     MyMPI_Recv ( visualizationmode, 0);
     Tcl_SetVar (interp, "::selectvisual", visualizationmode.c_str(), 0);
     return TCL_OK;
@@ -4501,8 +4621,8 @@ namespace netgen
                               Tcl_Interp * interp,
                               int argc, tcl_const char * argv[] )
   {
-    string visualizationmode; 
-    string scalarfun; 
+    string visualizationmode;
+    string scalarfun;
     visualizationmode = Tcl_GetVar (interp, "::selectvisual", 0);
 
     if ( visualizationmode == "solution" )
@@ -4565,10 +4685,10 @@ namespace netgen
 
     delete stlgeometry;
     stlgeometry = NULL;
-  
+
     geometry.Reset (0);
     geometry2d.Reset (0);
-  
+
 
 #ifdef ACIS
     outcome res;
@@ -4601,7 +4721,7 @@ namespace netgen
   }
 
 
-#ifdef SOCKETS  
+#ifdef SOCKETS
   void * ServerSocketManagerRunDummy ( void * nix )
   {
     serversocketmanager.Run();
@@ -4718,7 +4838,7 @@ namespace netgen
     Tcl_CreateCommand (interp, "Ng_SetPrimitiveData", Ng_SetPrimitiveData,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
-  
+
     Tcl_CreateCommand (interp, "Ng_GetPrimitiveData", Ng_GetPrimitiveData,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
@@ -4726,7 +4846,7 @@ namespace netgen
     Tcl_CreateCommand (interp, "Ng_GetPrimitiveList", Ng_GetPrimitiveList,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
-    
+
 
     Tcl_CreateCommand (interp, "Ng_GetSurfaceList", Ng_GetSurfaceList,
 		       (ClientData)NULL,
@@ -4745,13 +4865,19 @@ namespace netgen
     Tcl_CreateCommand (interp, "Ng_GetSolidList", Ng_GetSolidList,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
-  
-  
+
+
     Tcl_CreateCommand (interp, "Ng_TopLevel", Ng_TopLevel,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-  
+    // Philippose - 30/01/2009
+    // Register the TCL Interface Command for local face mesh size
+    // definition
+    Tcl_CreateCommand (interp, "Ng_SurfaceMeshSize", Ng_SurfaceMeshSize,
+		       (ClientData)NULL,
+		       (Tcl_CmdDeleteProc*) NULL);
+
 
 
     // meshing
@@ -4888,34 +5014,34 @@ namespace netgen
 		       (Tcl_CmdDeleteProc*) NULL);
 
 
-    Tcl_CreateCommand (interp, "Ng_STLCalcLocalH", 
+    Tcl_CreateCommand (interp, "Ng_STLCalcLocalH",
 		       Ng_STLCalcLocalH,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-    Tcl_CreateCommand (interp, "Ng_SetOCCVisParameters", 
+    Tcl_CreateCommand (interp, "Ng_SetOCCVisParameters",
 		       Ng_SetOCCVisParameters,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-    Tcl_CreateCommand (interp, "Ng_GetOCCData", 
+    Tcl_CreateCommand (interp, "Ng_GetOCCData",
 		       Ng_GetOCCData,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
 #ifdef OCCGEOMETRY
-    Tcl_CreateCommand (interp, "Ng_OCCConstruction", 
+    Tcl_CreateCommand (interp, "Ng_OCCConstruction",
 		       Ng_OCCConstruction,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 #endif
 
-    Tcl_CreateCommand (interp, "Ng_OCCCommand", 
+    Tcl_CreateCommand (interp, "Ng_OCCCommand",
 		       Ng_OCCCommand,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-    Tcl_CreateCommand (interp, "Ng_ACISCommand", 
+    Tcl_CreateCommand (interp, "Ng_ACISCommand",
 		       Ng_ACISCommand,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
@@ -4950,7 +5076,7 @@ namespace netgen
     Tcl_CreateCommand (interp, "Ng_SetVisParameters", Ng_SetVisParameters,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
-		     
+
     Tcl_CreateCommand (interp, "Ng_SetMeshingParameters", Ng_SetMeshingParameters,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
@@ -4962,30 +5088,30 @@ namespace netgen
     Tcl_CreateCommand (interp, "Ng_SetSTLParameters", Ng_SetSTLParameters,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
-		     
-		     
+
+
 
     Tcl_CreateCommand (interp, "Ng_SelectSurface", Ng_SelectSurface,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-    Tcl_CreateCommand (interp, "Ng_GetCommandLineParameter", 
+    Tcl_CreateCommand (interp, "Ng_GetCommandLineParameter",
 		       Ng_GetCommandLineParameter,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-    Tcl_CreateCommand (interp, "Ng_Exit", 
+    Tcl_CreateCommand (interp, "Ng_Exit",
 		       Ng_Exit,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-    Tcl_CreateCommand (interp, "Ng_Metis", 
+    Tcl_CreateCommand (interp, "Ng_Metis",
 		       Ng_Metis,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
 
-    Tcl_CreateCommand (interp, "Ng_BuildFieldLines", 
+    Tcl_CreateCommand (interp, "Ng_BuildFieldLines",
 		       Ng_BuildFieldLines,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
@@ -5051,22 +5177,22 @@ namespace netgen
     multithread.drawing = 1;
     multithread.terminate = 0;
     multithread.running = 0;
-   
+
     multithread.task = "";
     multithread.percent = 20;
-   
 
-    Tcl_LinkVar (interp, "multithread_pause", 
+
+    Tcl_LinkVar (interp, "multithread_pause",
 		 (char*)&multithread.pause, TCL_LINK_INT);
-    Tcl_LinkVar (interp, "multithread_testmode", 
+    Tcl_LinkVar (interp, "multithread_testmode",
 		 (char*)&multithread.testmode, TCL_LINK_INT);
-    Tcl_LinkVar (interp, "multithread_redraw", 
+    Tcl_LinkVar (interp, "multithread_redraw",
 		 (char*)&multithread.redraw, TCL_LINK_INT);
-    Tcl_LinkVar (interp, "multithread_drawing", 
+    Tcl_LinkVar (interp, "multithread_drawing",
 		 (char*)&multithread.drawing, TCL_LINK_INT);
-    Tcl_LinkVar (interp, "multithread_terminate", 
+    Tcl_LinkVar (interp, "multithread_terminate",
 		 (char*)&multithread.terminate, TCL_LINK_INT);
-    Tcl_LinkVar (interp, "multithread_running", 
+    Tcl_LinkVar (interp, "multithread_running",
 		 (char*)&multithread.running, TCL_LINK_INT);
 
 
@@ -5075,7 +5201,7 @@ namespace netgen
     myerr = &cerr;
     extern ostream * mycout;
     mycout = &cout;
-   
+
     testmode = 0;
 
 #ifdef ACIS
@@ -5083,10 +5209,10 @@ namespace netgen
     res = api_start_modeller (0);
     if(!res.ok())
       cerr << "problem with starting acis modeller" << endl;
-  
+
 #ifdef ACIS_R17
     unlock_spatial_products_661();
-#endif     
+#endif
     res = api_initialize_kernel();
     if(!res.ok())
       cerr << "problem with starting acis kernel" << endl;
@@ -5116,5 +5242,5 @@ void Netgen_Test ()
   ifstream infile ("examples/cube.geo");
   netgen::geometry.Reset (netgen::ParseCSG (infile) );
   netgen::  geometry -> FindIdenticSurfaces(1e-10);
-  netgen::GenerateMesh (*netgen::geometry.Ptr(), netgen::mesh.Ptr(), 1, 6, ""); 
+  netgen::GenerateMesh (*netgen::geometry.Ptr(), netgen::mesh.Ptr(), 1, 6, "");
 }
