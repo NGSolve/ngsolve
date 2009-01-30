@@ -1531,6 +1531,103 @@ proc bcpropdialog { } {
 
 
 #
+#  Philippose - 30/01/2009
+#  Local Surface Mesh Size Selection
+#  (Currently only supports OCC Geometry)
+#
+#
+proc surfacemeshsizedialog { } {
+
+    set w .surfacemeshsize_dlg
+
+    if {[winfo exists .surfacemeshsize_dlg] == 1} {
+	wm withdraw $w
+	wm deiconify $w
+    } {
+	toplevel $w
+
+	frame $w.face  -borderwidth 3
+	pack $w.face -fill x -padx 5
+	label $w.face.lab -text "face index:"
+	label $w.face.ent -text 1 -padx 4
+	button $w.face.next -text "next" -command {
+	    set w .surfacemeshsize_dlg;	
+	    set facenr [$w.face.ent cget -text]
+	    if {$facenr == [Ng_SurfaceMeshSize getnfd]} {
+		set facenr 1 
+	    } {
+		set facenr [expr $facenr + 1]
+	    }
+	    $w.face.ent configure -text $facenr
+	    Ng_SurfaceMeshSize setactive $facenr
+	    set surfms [Ng_SurfaceMeshSize getsurfms $facenr]
+	    $w.sms.ent delete 0 end
+	    $w.sms.ent insert 0 $surfms
+
+	    redraw
+	} 
+	button $w.face.prev -text "prev" -command {
+	    set w .surfacemeshsize_dlg;
+	    set facenr [$w.face.ent cget -text]
+	    if {$facenr == 1} {
+		set facenr [Ng_SurfaceMeshSize getnfd]
+	    } {
+		set facenr [expr $facenr - 1]
+	    }
+	    $w.face.ent configure -text $facenr
+	    Ng_SurfaceMeshSize setactive $facenr
+	    set surfms [Ng_SurfaceMeshSize getsurfms $facenr]
+	    $w.sms.ent delete 0 end
+	    $w.sms.ent insert 0 $surfms
+
+	    redraw
+	} 
+
+
+	pack $w.face.lab $w.face.ent $w.face.prev $w.face.next  -side left  
+
+	frame $w.sms  -borderwidth 3
+	pack $w.sms -fill x
+	label $w.sms.lab -text "max mesh size:"
+	entry $w.sms.ent -width 8 -relief sunken 
+	button $w.sms.but -text "change" -command { 
+	    set w .surfacemeshsize_dlg;	    
+	    Ng_SurfaceMeshSize setsurfms [$w.face.ent cget -text] [$w.sms.ent get];
+	}
+	button $w.sms.but2 -text "all" -command {
+	    set w .surfacemeshsize_dlg;	    
+	    Ng_SurfaceMeshSize setall [$w.sms.ent get];
+	}
+	pack $w.sms.lab $w.sms.ent $w.sms.but $w.sms.but2 -side left -padx 5 -expand yes
+
+	frame $w.bu
+	pack $w.bu -fill x -ipady 3
+
+	button $w.bu.close -text "Close" -command { destroy .surfacemeshsize_dlg }
+
+	pack $w.bu.close  -expand yes -side left
+
+	wm withdraw $w
+	wm geom $w +100+100
+	wm deiconify $w
+	wm title $w "Edit Surface Mesh Size"
+    }
+
+    focus $w 
+
+    set facenr [Ng_SurfaceMeshSize getactive]
+    $w.face.ent configure -text $facenr
+
+    set surfms [Ng_SurfaceMeshSize getsurfms $facenr]
+    $w.sms.ent delete 0 end
+    $w.sms.ent insert 0 $surfms
+
+}
+
+
+
+
+#
 #  METIS dialog
 #
 #

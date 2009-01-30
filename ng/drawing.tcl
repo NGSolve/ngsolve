@@ -31,6 +31,7 @@ if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth t
 	Ng_MouseDblClick %x %y
 	.ndraw render
 	if { [winfo exists .bcprop_dlg] } { bcpropdialog }
+	if { [winfo exists .surfacemeshsize_dlg] } { surfacemeshsizedialog }
 	if { [winfo exists .fieldlines_dlg] } { fieldlinesdialog }
     }
 

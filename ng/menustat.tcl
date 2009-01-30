@@ -418,6 +418,12 @@ menu .ngmenu.mesh
 .ngmenu.mesh add command -label "Meshing Options..." \
     -command meshingoptionsdialog
 
+# Philippose - 30/01/2009
+# Add menu item for local face mesh size definition in the 
+# TCL Gui
+.ngmenu.mesh add command -label "Edit Face Mesh Size..." \
+    -command { surfacemeshsizedialog }
+
 .ngmenu.mesh add separator
 
 .ngmenu.mesh add command -label "Delete Mesh" \
