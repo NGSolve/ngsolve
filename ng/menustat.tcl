@@ -418,11 +418,6 @@ menu .ngmenu.mesh
 .ngmenu.mesh add command -label "Meshing Options..." \
     -command meshingoptionsdialog
 
-# Philippose - 30/01/2009
-# Add menu item for local face mesh size definition in the 
-# TCL Gui
-.ngmenu.mesh add command -label "Edit Face Mesh Size..." \
-    -command { surfacemeshsizedialog }
 
 .ngmenu.mesh add separator
 
@@ -567,6 +562,11 @@ menu .ngmenu.geometry
 .ngmenu.geometry add command -label "IGES/STEP Topology Explorer/Doctor..." \
     -command { occdialog; }
 
+# Philippose - 30/01/2009
+# Add menu item for local face mesh size definition in the 
+# TCL Gui
+.ngmenu.geometry add command -label "Edit Face Mesh Size..." \
+    -command { surfacemeshsizedialog }
 
 .ngmenu.geometry add command -label "OCC Construction" \
     -command { Ng_OCCConstruction; }

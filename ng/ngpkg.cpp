@@ -1455,6 +1455,8 @@ namespace netgen
 		                    Tcl_Interp * interp,
 		                    int argc, tcl_const char *argv[])
   {
+#ifdef OCCGEOMETRY
+
     static char buf[100];
 
     if (argc < 2)
@@ -1537,6 +1539,12 @@ namespace netgen
 	   Tcl_SetResult (interp, buf, TCL_STATIC);
     }
     return TCL_OK;
+#else
+
+    Tcl_SetResult (interp, (char *)"Ng_SurfaceMeshSize currently supports only OCC (STEP/IGES) Files", TCL_STATIC);
+    return TCL_ERROR;
+    
+#endif
   }
 
 
