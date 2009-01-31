@@ -1,4 +1,4 @@
-AC_INIT([netgen],[4.9.5],[],[])
+AC_INIT([netgen],[4.9.6],[],[])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -104,6 +104,6 @@ libsrc/include/Makefile libsrc/interface/Makefile
 libsrc/linalg/Makefile libsrc/meshing/Makefile libsrc/occ/Makefile 
   libsrc/stlgeom/Makefile
   libsrc/visualization/Makefile ng/Makefile nglib/Makefile
-  tutorials/Makefile doc/Makefile)
+  tutorials/Makefile doc/Makefile windows/Makefile )
 
 AC_OUTPUT

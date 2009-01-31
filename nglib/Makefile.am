@@ -10,10 +10,12 @@ libnglib_la_LIBADD = \
 	$(top_builddir)/libsrc/geom2d/libgeom2d.la \
 	$(top_builddir)/libsrc/csg/libcsg.la \
 	$(top_builddir)/libsrc/stlgeom/libstl.la \
+	$(top_builddir)/libsrc/occ/libocc.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
 	$(top_builddir)/libsrc/linalg/libla.la \
-	$(top_builddir)/libsrc/general/libgeneral.la  $(MPI_LIBS)
+	$(top_builddir)/libsrc/general/libgeneral.la \
+	$(OCCLIBS) $(MPI_LIBS)
 
 libnglib_la_LDFLAGS = -avoid-version
 #  -rdynamic
