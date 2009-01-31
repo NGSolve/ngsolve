@@ -1,9 +1,9 @@
 #ifndef FILE_MYSTDLIB
 #define FILE_MYSTDLIB
 
-
+#ifndef WIN32
 #include <config.h>
-
+#endif
 
 
 #include <iostream>

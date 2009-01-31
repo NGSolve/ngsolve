@@ -11,8 +11,9 @@
 #include <fenv.h>
 #endif
 
+#ifndef WIN32
 #include <dlfcn.h>
-
+#endif
 
 #ifdef PARALLEL
 #include <mpi.h>

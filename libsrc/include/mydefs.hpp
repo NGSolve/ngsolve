@@ -14,6 +14,15 @@
 
 // #define DEBUG
 
+// Philippose - 31/01/2009
+// Hack for the Windows Version
+// in Linux, "PACKAGE_VERSION" is replaced 
+// in the configure/make phases, with the 
+// right version number
+#ifdef WIN32
+#define PACKAGE_VERSION "4.9.5"
+#endif
+
 
 #define noDEMOVERSION
 #define noDEVELOP

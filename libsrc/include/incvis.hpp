@@ -19,11 +19,12 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-
+#ifndef WIN32
 // parallel
 #define GLX_GLXEXT_PROTOTYPES
 #include <GL/glx.h>
 #include <GL/glxext.h>
+#endif
 
 
 #ifndef NOTCL
