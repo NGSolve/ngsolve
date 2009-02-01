@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual C++ Express 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "netgen", "netgen_MSVC2005.vcproj", "{87468946-A594-4101-81A4-A131F35261EF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug(OCC)|Win32 = Debug(OCC)|Win32
+		Debug|Win32 = Debug|Win32
+		Release(OCC)|Win32 = Release(OCC)|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{87468946-A594-4101-81A4-A131F35261EF}.Debug(OCC)|Win32.ActiveCfg = Debug(OCC)|Win32
+		{87468946-A594-4101-81A4-A131F35261EF}.Debug(OCC)|Win32.Build.0 = Debug(OCC)|Win32
+		{87468946-A594-4101-81A4-A131F35261EF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{87468946-A594-4101-81A4-A131F35261EF}.Debug|Win32.Build.0 = Debug|Win32
+		{87468946-A594-4101-81A4-A131F35261EF}.Release(OCC)|Win32.ActiveCfg = Release(OCC)|Win32
+		{87468946-A594-4101-81A4-A131F35261EF}.Release(OCC)|Win32.Build.0 = Release(OCC)|Win32
+		{87468946-A594-4101-81A4-A131F35261EF}.Release|Win32.ActiveCfg = Release|Win32
+		{87468946-A594-4101-81A4-A131F35261EF}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
