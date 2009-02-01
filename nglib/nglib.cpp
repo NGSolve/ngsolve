@@ -42,12 +42,14 @@ namespace netgen
 #endif
 
 
+/*
 // should not be needed (occ currently requires it)
 namespace netgen {
 #include "../libsrc/visualization/vispar.hpp"
   VisualizationParameters vispar;
   VisualizationParameters :: VisualizationParameters() { ; }
 }
+*/
 
 
 namespace nglib {

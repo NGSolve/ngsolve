@@ -21,6 +21,8 @@
 
 namespace netgen
 {
+  // #include "../visualization/vispar.hpp"
+
 
   void OCCGeometry :: PrintNrShapes ()
   {
@@ -954,19 +956,19 @@ namespace netgen
   }
 
 
-  void OCCGeometry :: BuildVisualizationMesh ()
+  void OCCGeometry :: BuildVisualizationMesh (double deflection)
   {
-
-    cout << "Preparing visualization (deflection = " << vispar.occdeflection << ") ... " << flush;
-
+    cout << "Preparing visualization (deflection = " << deflection << ") ... " << flush;
 
     BRepTools::Clean (shape);
     //WriteOCC_STL("test.stl");
-    BRepMesh_IncrementalMesh::BRepMesh_IncrementalMesh (shape, vispar.occdeflection, true);
+    BRepMesh_IncrementalMesh::BRepMesh_IncrementalMesh (shape, deflection, true);
     cout << "done" << endl;
+  }
 
 
-
+  void OCCGeometry :: CalcBoundingBox ()
+  {
     Bnd_Box bb;
     BRepBndLib::Add (shape, bb);
 
@@ -978,8 +980,6 @@ namespace netgen
     (*testout) << "Bounding Box = [" << p1 << " - " << p2 << "]" << endl;
     boundingbox = Box<3> (p1,p2);
     SetCenter();
-
-
   }
 
 
@@ -1129,7 +1129,8 @@ namespace netgen
     //
 
 
-    occgeo->BuildVisualizationMesh();
+    // occgeo->BuildVisualizationMesh();
+    occgeo->CalcBoundingBox();
     PrintContents (occgeo);
 
     return occgeo;
@@ -1196,7 +1197,8 @@ OCCGeometry * LoadOCC_STEP (const char * filename)
  occgeo->changed = 1;
  occgeo->BuildFMap();
 
- occgeo->BuildVisualizationMesh();
+ // occgeo->BuildVisualizationMesh();
+ occgeo->CalcBoundingBox();
  PrintContents (occgeo);
 
  return occgeo;
@@ -1282,7 +1284,8 @@ OCCGeometry * LoadOCC_STEP (const char * filename)
 
     occgeo->changed = 1;
     occgeo->BuildFMap();
-    occgeo->BuildVisualizationMesh();
+    // occgeo->BuildVisualizationMesh();
+    occgeo->CalcBoundingBox();
     PrintContents (occgeo);
 
     return occgeo;

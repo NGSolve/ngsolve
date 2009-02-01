@@ -3980,7 +3980,7 @@ namespace netgen
 	  {
 	    if (strcmp (argv[1], "buildvisualizationmesh") == 0)
 	      {
-		occgeometry->BuildVisualizationMesh();
+		occgeometry->BuildVisualizationMesh(vispar.occdeflection);
 		occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
 	      }
 	    if (strcmp (argv[1], "mesherror") == 0)
@@ -3998,7 +3998,7 @@ namespace netgen
 		occgeometry->BuildFMap();
 		cout << endl << "After operation:" << endl;
 		occgeometry->PrintNrShapes();
-		occgeometry->BuildVisualizationMesh();
+		occgeometry->BuildVisualizationMesh(vispar.occdeflection);
 		occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
 	      }
 	    if (strcmp (argv[1], "makesolid") == 0)
@@ -4009,7 +4009,7 @@ namespace netgen
 		occgeometry->BuildFMap();
 		cout << endl << "After operation:" << endl;
 		occgeometry->PrintNrShapes();
-		occgeometry->BuildVisualizationMesh();
+		occgeometry->BuildVisualizationMesh(vispar.occdeflection);
 		occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
 	      }
 	    if (strcmp (argv[1], "upgradetopology") == 0)
@@ -4021,7 +4021,7 @@ namespace netgen
 		occgeometry->BuildFMap();
 		cout << endl << "After operation:" << endl;
 		occgeometry->PrintNrShapes();
-		occgeometry->BuildVisualizationMesh();
+		occgeometry->BuildVisualizationMesh(vispar.occdeflection);
 		occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
 	      }
 	    if (strcmp (argv[1], "shapehealing") == 0)
@@ -4045,7 +4045,7 @@ namespace netgen
 		occgeometry->BuildFMap();
 		//	      cout << endl << "After operation:" << endl;
 		//	      occgeometry->PrintNrShapes();
-		occgeometry->BuildVisualizationMesh();
+		occgeometry->BuildVisualizationMesh(vispar.occdeflection);
 		occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
 	      }
 

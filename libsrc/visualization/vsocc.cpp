@@ -364,8 +364,10 @@ namespace netgen
 
    void VisualSceneOCCGeometry :: BuildScene (int zoomall)
    {
-      if (occgeometry -> changed == OCCGEOMETRYVISUALIZATIONFULLCHANGE)
-      {
+     if (occgeometry -> changed == OCCGEOMETRYVISUALIZATIONFULLCHANGE)
+       {
+         occgeometry -> BuildVisualizationMesh (vispar.occdeflection);
+
          center = occgeometry -> Center();
          rad = occgeometry -> GetBoundingBox().Diam() / 2;
 

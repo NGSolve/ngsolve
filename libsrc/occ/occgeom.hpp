@@ -112,7 +112,7 @@
 namespace netgen
 {
 
-#include "../visualization/vispar.hpp"
+  // #include "../visualization/vispar.hpp"
    //  class VisualizationParameters;
    //  extern VisualizationParameters vispar;
 
@@ -252,7 +252,8 @@ namespace netgen
          return OCCSurface (TopoDS::Face(fmap(surfi)), PLANESPACE);
       }
 
-      void BuildVisualizationMesh ();
+      void CalcBoundingBox ();
+      void BuildVisualizationMesh (double deflection);
 
       void RecursiveTopologyTree (const TopoDS_Shape & sh,
             stringstream & str,

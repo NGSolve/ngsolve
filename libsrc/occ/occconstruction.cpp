@@ -37,6 +37,7 @@ namespace netgen
 
   void OCCConstructGeometry (OCCGeometry & geom)
   {
+#ifdef NOTHING
     cout << "OCC construction" << endl;
 
     BRep_Builder builder;
@@ -147,6 +148,8 @@ namespace netgen
     geom.BuildFMap();
     geom.BuildVisualizationMesh();
     geom.changed = 1;
+#endif
+
   }
 }
 
