@@ -73,7 +73,6 @@ namespace netgen
                     return;
                   }
               }
-	  
             /*
               if (invert)
               swap (el.PNum(2), el.PNum(3));

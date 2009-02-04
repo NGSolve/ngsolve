@@ -1,5 +1,4 @@
-puts "found ng.tcl"
-
+puts "Parsing ng.tcl"
 
 if {[catch {package require Tix } result ]} {
     puts "cannot find package Tix"

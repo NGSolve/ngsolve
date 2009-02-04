@@ -10,14 +10,14 @@
 
 
 
-#ifndef WIN32
 
+#ifndef WIN32
 #define GLX_GLXEXT_LEGACY
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>  /* for XA_RGB_DEFAULT_MAP atom */
-#include <GL/glx.h>  
+// #include <GL/glx.h>    // for parallel GL ???
 #endif
 
 

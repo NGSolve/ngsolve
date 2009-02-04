@@ -83,6 +83,7 @@ AC_SUBST([TOGLLIBDIR], ["$togllibfl"])
 
 AC_CHECK_HEADER(pthread.h)
 AC_CHECK_HEADER([togl.h])
+AC_CHECK_HEADER([GL/gl.h])
 
 AC_CHECK_HEADER([iostream],[OCCFLAGS="$OCCFLAGS -DHAVE_IOSTREAM"])
 AC_CHECK_HEADER([iostream.h],[OCC_FLAGS="$OCCFLAGS -DHAVE_IOSTREAM_H"])
@@ -91,6 +92,43 @@ AC_CHECK_HEADER([limits.h],[OCCFLAGS="$OCCFLAGS -DHAVE_LIMITS_H"])
 
 AC_CHECK_LIB(pthread, pthread_create)
 # AC_SEARCH_LIBS(Tcl_Init, [tcl8.5 tcl8.4])
+
+
+
+#--------------------------------------------------------------------
+# __CHANGE__
+# Choose OpenGL platform (borrowed from Togl1.7)
+#--------------------------------------------------------------------
+
+case "${TEA_WINDOWINGSYSTEM}" in
+	aqua)
+		AC_SUBST(TOGL_WINDOWINGSYSTEM,TOGL_AGL)
+		TEA_ADD_LIBS([-framework AGL -framework OpenGL -framework ApplicationServices])
+		# libGLU is implicit in OpenGL framework
+		LIBGLU=
+		;;
+	x11)
+		AC_SUBST(TOGL_WINDOWINGSYSTEM,TOGL_X11)
+		TEA_ADD_LIBS([-lGL -lXmu])
+		LIBGLU=-lGLU
+		;;
+	win32)
+		AC_SUBST(TOGL_WINDOWINGSYSTEM,TOGL_WGL)
+		TEA_ADD_LIBS([opengl32.lib user32.lib gdi32.lib])
+		if test "$GCC" = "yes" ; then
+			LIBGLU=-lglu32
+		else
+			LIBGLU=glu32.lib
+		fi
+		;;
+	*)
+		AC_MSG_ERROR([Unsupported windowing system: ${TEA_WINDOWINGSYSTEM}])
+		;;
+esac
+AC_SUBST(LIBGLU)
+
+
+
 
 
 AC_CHECK_FUNCS([pow])

@@ -11,9 +11,11 @@
 #include <fenv.h>
 #endif
 
+/*
 #ifndef WIN32
 #include <dlfcn.h>
 #endif
+*/
 
 #ifdef PARALLEL
 #include <mpi.h>
@@ -27,7 +29,7 @@ namespace netgen
 
 #endif
 
-// #include "../libsrc/parallel/parallel.hpp"
+
 #include "parallelfunc.hpp"
 
 
@@ -45,13 +47,6 @@ using netgen::ngdir;
 using netgen::verbose;
 using netgen::Array;
 using netgen::RegisterUserFormats;
-
-
-#ifdef NGSOLVE
-  extern "C" int NGSolve_Init (Tcl_Interp * interp);
-#endif
-
-// void * ngsolve_handle;  // dynamic library handle
 
 
 
@@ -103,17 +98,9 @@ int main(int argc, char ** argv)
 #pragma pomp inst begin(main)
 #endif
 
-  // ngsolve_handle = dlopen ("libngsolves.so", RTLD_LAZY | RTLD_GLOBAL);
-  // cout << "ngsolve_handle = " << ngsolve_handle << endl;
-
   if ( netgen::id == 0 )
     {
-#ifdef NGSOLVE
-      cout << "NETGEN/NGSolve " << PACKAGE_VERSION << endl;
-#else
       cout << "NETGEN-" << PACKAGE_VERSION << endl;
-#endif
-
       
       cout << "Developed at RWTH Aachen University, Germany" << endl
            << "and Johannes Kepler University Linz, Austria" << endl;
@@ -280,12 +267,11 @@ int main(int argc, char ** argv)
       if (errcode)
         {
           cout << "Error in Tcl-Script:" << endl;
-          cout << "result = " << myinterp->result << endl;
-          cout << "in line " << myinterp->errorLine << endl;
+          // cout << "result = " << myinterp->result << endl;
+          cout << "result = " << Tcl_GetStringResult (myinterp) << endl;
+          // cout << "in line " << myinterp->errorLine << endl;
 
-          if (myinterp->errorLine == 1)
-            cout << "\nMake sure to set environment variable NETGENDIR" << endl;
-
+          cout << "\nMake sure to set environment variable NETGENDIR to directory containing ng.tcl" << endl;
           exit (1);
         }
 
@@ -377,13 +363,15 @@ int Tcl_AppInit(Tcl_Interp * interp)
 
   if (Tcl_Init(interp) == TCL_ERROR) { 
     cerr << "Problem in Tcl_Init: " << endl;
-    cerr << interp->result << endl;
+    cout << "result = " << Tcl_GetStringResult (interp) << endl;
+    // cerr << interp->result << endl;
     // return TCL_ERROR;
   }
   
   if (!nodisplay && Tk_Init(interp) == TCL_ERROR) {
     cerr << "Problem in Tk_Init: " << endl;
-    cerr << interp->result << endl;
+    cout << "result = " << Tcl_GetStringResult (interp) << endl;
+    // cerr << interp->result << endl;
     // return TCL_ERROR;
   }
 
@@ -412,13 +400,15 @@ int Tcl_AppInit(Tcl_Interp * interp)
 
   if (Ng_Init(interp) == TCL_ERROR) {
     cerr << "Problem in Ng_Init: " << endl;
-    cerr << interp->result << endl;
+    cout << "result = " << Tcl_GetStringResult (interp) << endl;
+    // cerr << interp->result << endl;
     // return TCL_ERROR;
   }
 
   if (!nodisplay && Ng_Vis_Init(interp) == TCL_ERROR) {
     cerr << "Problem in Ng_Vis_Init: " << endl;
-    cerr << interp->result << endl;
+    cout << "result = " << Tcl_GetStringResult (interp) << endl;
+    // cerr << interp->result << endl;
     // return TCL_ERROR;
   }
 
@@ -477,38 +467,6 @@ int Tcl_AppInit(Tcl_Interp * interp)
 
 #endif
 
-  /*
-  if (ngsolve_handle)
-    {
-      void (*ngs_init)(Tcl_Interp*);
-      ngs_init = ( void (*)(Tcl_Interp*) ) dlsym (ngsolve_handle, "NGSolve_Init");
-      cout << "symbolhandle = " << (void*)ngs_init << endl;
-      if (ngs_init) (*ngs_init)(interp);
-    }
-  */
-
-
-#ifdef NGSOLVE
-  if (NGSolve_Init(interp) == TCL_ERROR) 
-    {
-      cerr << "Problem in NgSolve_Init: " << endl;
-      cerr << interp->result << endl;
-      return TCL_ERROR;
-    }
-
-#ifdef SOCKETS
-  extern int NGS_Socket_Init (Tcl_Interp * interp);
-  if (NGS_Socket_Init(interp) == TCL_ERROR)
-    {
-      cerr << "Problem in NGS_Socket_Init: " << endl;
-      cerr << interp->result << endl;
-      return TCL_ERROR;
-    }
-
-#endif // SOCKETS
-#endif // NGSOLVE
-
-
 #ifdef SOCKETS
   extern int Ng_Socket_Init (Tcl_Interp * interp);
   if ( Ng_Socket_Init(interp) == TCL_ERROR)
@@ -519,7 +477,6 @@ int Tcl_AppInit(Tcl_Interp * interp)
     }
 
 #endif
-
 
 
 #ifdef ZUGSTANGE
