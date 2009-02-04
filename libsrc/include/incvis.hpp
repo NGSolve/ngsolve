@@ -1,8 +1,6 @@
 // libraries for User interface:
 
 
-#ifndef NOTCL
-
 #include <tcl.h>
 #include <tk.h>
 // #include "/opt/tcltk86/include/tcl.h"
@@ -15,7 +13,6 @@
 #define tcl_const
 #endif
 
-#endif
 
 #  if defined(TOGL_AGL) || defined(TOGL_AGL_CLASSIC)
 #    include <OpenGL/gl.h>
@@ -26,7 +23,7 @@
 #  endif
 
 
-#ifndef WIN32
+#ifdef TOGL_X11
 // parallel
 #define GLX_GLXEXT_PROTOTYPES
 #include <GL/glx.h>
