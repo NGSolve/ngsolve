@@ -17,10 +17,14 @@
 
 #endif
 
+#  if defined(TOGL_AGL) || defined(TOGL_AGL_CLASSIC)
+#    include <OpenGL/gl.h>
+#    include <OpenGL/glu.h>
+#  else
+#    include <GL/gl.h>
+#    include <GL/glu.h>
+#  endif
 
-
-#include <GL/gl.h>
-#include <GL/glu.h>
 
 #ifndef WIN32
 // parallel
