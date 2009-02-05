@@ -1771,6 +1771,7 @@ public:
   template <class T>
   static  __attribute__ ((__always_inline__)) void Do (T & inout)
   {
+    cout << "I need it" << endl;
     double fac = 1.0 / ( (2 + BE-1 + I-1)*(4 + AL-1 + 2*I-2 + J-1) );
     double val = inout(J,I);
     inout(J,I) = fac * (3 + BE-1 + 2*I-2)*(5 + AL-1 + 2*I-2 + 2*J-2) * val;
