@@ -33,6 +33,17 @@ AC_ARG_WITH([lapack],
         [AC_SUBST([LAPACK_LIBS], [$withval])]
         )
 
+AC_ARG_ENABLE([pardiso],
+        [  --enable-pardiso           enable sparse direct solver pardiso],          
+        [AC_SUBST([PARDISO_INCLUDES], ["-DUSE_PARDISO"])]
+        [AC_SUBST([PARDISO_LIBS], ["-lpardiso_GNU_IA32 -llapack"])]
+        )
+
+# AC_ARG_WITH([pardiso],
+#        [  --with-pardiso=libpardiso.so  enable sparse direct solver pardiso],          
+#        [AC_SUBST([PARDISO_INCLUDES], ["-DUSE_PARDISO"])]
+#        [AC_SUBST([PARDISO_LIBS], [$withval])]
+#        )
 
 #	[AC_SUBST([LAPACK_LIB], ["-L/opt/intel/mkl/10.0.2.018/lib/em64t -lmkl_core -lmkl_def -lmkl_sequential -lmkl_gf_lp64"])]
 #        [AC_SUBST([LAPACK_LIB], ["-llapack"])]
