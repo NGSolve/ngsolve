@@ -20,6 +20,7 @@
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
 			ConfigurationType="1"
+			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName).htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -94,7 +95,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="$(ProjectDir)\postBuild_Install.bat $(InputName) $(TargetFileName) $(OutDir) $(ProjectDir)"
+				CommandLine="$(ProjectDir)\postBuild_netgen.bat $(ProjectName) $(TargetFileName) $(ConfigurationName) $(ProjectDir)"
 			/>
 		</Configuration>
 		<Configuration
@@ -102,6 +103,7 @@
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
 			ConfigurationType="1"
+			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName).htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -181,7 +183,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="$(ProjectDir)\postBuild_Install.bat $(InputName) $(TargetFileName) $(OutDir) $(ProjectDir)"
+				CommandLine="$(ProjectDir)\postBuild_netgen.bat $(ProjectName) $(TargetFileName) $(ConfigurationName) $(ProjectDir)"
 			/>
 		</Configuration>
 		<Configuration
@@ -189,6 +191,7 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
+			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName).htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -269,7 +272,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="$(ProjectDir)\postBuild_Install.bat $(InputName) $(TargetFileName) $(OutDir) $(ProjectDir)"
+				CommandLine="$(ProjectDir)\postBuild_netgen.bat $(ProjectName) $(TargetFileName) $(ConfigurationName) $(ProjectDir)"
 			/>
 		</Configuration>
 		<Configuration
@@ -277,6 +280,7 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
+			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName).htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -351,7 +355,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="$(ProjectDir)\postBuild_Install.bat $(InputName) $(TargetFileName) $(OutDir) $(ProjectDir)"
+				CommandLine="$(ProjectDir)\postBuild_netgen.bat $(ProjectName) $(TargetFileName) $(ConfigurationName) $(ProjectDir)"
 			/>
 		</Configuration>
 	</Configurations>

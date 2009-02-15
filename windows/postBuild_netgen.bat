@@ -6,8 +6,8 @@ REM ***
 REM *** Used to perform an "Install" of the generated executable 
 REM *** along with the required *.tcl files
 REM ***
-REM *** Call from Windows using:
-REM *** postBuild_Install.bat $(InputName) $(TargetFileName) $(OutDir) $(ProjectDir)
+REM *** Call from Visual C++ using:
+REM *** postBuild_netgen.bat $(ProjectName) $(TargetFileName) $(ConfigurationName) $(ProjectDir)
 REM *********************************************************************************
 if [%1]==[] goto BuildEventFailed
 set PROJ_NAME=%1
@@ -17,7 +17,7 @@ set PROJ_DIR=%4
 
 REM *** Change these Folders if required ***
 set NETGEN_TCLSRC=%PROJ_DIR%..\ng
-set INSTALL_FOLDER=%PROJ_DIR%%BUILD_TYPE%-inst
+set INSTALL_FOLDER=%PROJ_DIR%%BUILD_TYPE%-bin
 
 echo POSTBUILD Script for %PROJ_NAME% ........
 
@@ -33,6 +33,10 @@ if errorlevel 1 goto BuildEventFailed
 
 xcopy "%PROJ_DIR%%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%" /i /d /y
 if errorlevel 1 goto BuildEventFailed
+
+REM *** Clean up the build directory by deleting the OBJ files ***
+REM echo Deleting the %PROJ_NAME% build folder %PROJ_DIR%%PROJ_NAME% ....
+REM rmdir %PROJ_DIR%%BUILD_TYPE% /s /q
 
 REM *** If there have been no errors so far, we are done ***
 goto BuildEventOK
