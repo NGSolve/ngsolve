@@ -63,7 +63,7 @@ using namespace netgen;
 namespace nglib
 {
 // initialize, deconstruct Netgen library:
-void Ng_Init ()
+DLL_HEADER void Ng_Init ()
 {
   mycout = &cout;
   myerr = &cerr;
@@ -71,35 +71,35 @@ void Ng_Init ()
   testout = new ofstream ("test.out");
 }
 
-void Ng_Exit ()
+DLL_HEADER void Ng_Exit ()
 {
   ;
 }
   
 
 
-Ng_Mesh * Ng_NewMesh ()
+DLL_HEADER Ng_Mesh * Ng_NewMesh ()
 {
   Mesh * mesh = new Mesh;  
   mesh->AddFaceDescriptor (FaceDescriptor (1, 1, 0, 1));
   return (Ng_Mesh*)(void*)mesh;
 }
 
-void Ng_DeleteMesh (Ng_Mesh * mesh)
+DLL_HEADER void Ng_DeleteMesh (Ng_Mesh * mesh)
 {
   delete (Mesh*)mesh;
 }
 
 
 // feeds points, surface elements and volume elements to the mesh
-void Ng_AddPoint (Ng_Mesh * mesh, double * x)
+DLL_HEADER void Ng_AddPoint (Ng_Mesh * mesh, double * x)
 {
   Mesh * m = (Mesh*)mesh;
   m->AddPoint (Point3d (x[0], x[1], x[2]));
 }
   
-void Ng_AddSurfaceElement (Ng_Mesh * mesh, Ng_Surface_Element_Type et,
-			   int * pi)
+DLL_HEADER void Ng_AddSurfaceElement (Ng_Mesh * mesh, Ng_Surface_Element_Type et,
+			                             int * pi)
 {
   Mesh * m = (Mesh*)mesh;
   Element2d el (3);
@@ -110,8 +110,8 @@ void Ng_AddSurfaceElement (Ng_Mesh * mesh, Ng_Surface_Element_Type et,
   m->AddSurfaceElement (el);
 }
 
-void Ng_AddVolumeElement (Ng_Mesh * mesh, Ng_Volume_Element_Type et,
-			  int * pi)
+DLL_HEADER void Ng_AddVolumeElement (Ng_Mesh * mesh, Ng_Volume_Element_Type et,
+			                            int * pi)
 {
   Mesh * m = (Mesh*)mesh;
   Element el (4);
@@ -124,24 +124,24 @@ void Ng_AddVolumeElement (Ng_Mesh * mesh, Ng_Volume_Element_Type et,
 }
 
 // ask for number of points, surface and volume elements
-int Ng_GetNP (Ng_Mesh * mesh)
+DLL_HEADER int Ng_GetNP (Ng_Mesh * mesh)
 {
   return ((Mesh*)mesh) -> GetNP();
 }
 
-int Ng_GetNSE (Ng_Mesh * mesh)
+DLL_HEADER int Ng_GetNSE (Ng_Mesh * mesh)
 {
   return ((Mesh*)mesh) -> GetNSE();
 }
 
-int Ng_GetNE (Ng_Mesh * mesh)
+DLL_HEADER int Ng_GetNE (Ng_Mesh * mesh)
 {
   return ((Mesh*)mesh) -> GetNE();
 }
 
 
 //  return point coordinates
-void Ng_GetPoint (Ng_Mesh * mesh, int num, double * x)
+DLL_HEADER void Ng_GetPoint (Ng_Mesh * mesh, int num, double * x)
 {
   const Point3d & p = ((Mesh*)mesh)->Point(num);
   x[0] = p.X();
@@ -150,7 +150,7 @@ void Ng_GetPoint (Ng_Mesh * mesh, int num, double * x)
 }
 
 // return surface and volume element in pi
-Ng_Surface_Element_Type 
+DLL_HEADER Ng_Surface_Element_Type 
 Ng_GetSurfaceElement (Ng_Mesh * mesh, int num, int * pi)
 {
   const Element2d & el = ((Mesh*)mesh)->SurfaceElement(num);
@@ -166,7 +166,7 @@ Ng_GetSurfaceElement (Ng_Mesh * mesh, int num, int * pi)
   return et;
 }
 
-Ng_Volume_Element_Type
+DLL_HEADER Ng_Volume_Element_Type
 Ng_GetVolumeElement (Ng_Mesh * mesh, int num, int * pi)
 {
   const Element & el = ((Mesh*)mesh)->VolumeElement(num);
@@ -183,17 +183,17 @@ Ng_GetVolumeElement (Ng_Mesh * mesh, int num, int * pi)
   return et;
 }
 
-void Ng_RestrictMeshSizeGlobal (Ng_Mesh * mesh, double h)
+DLL_HEADER void Ng_RestrictMeshSizeGlobal (Ng_Mesh * mesh, double h)
 {
   ((Mesh*)mesh) -> SetGlobalH (h);
 }
 
-void Ng_RestrictMeshSizePoint (Ng_Mesh * mesh, double * p, double h)
+DLL_HEADER void Ng_RestrictMeshSizePoint (Ng_Mesh * mesh, double * p, double h)
 {
   ((Mesh*)mesh) -> RestrictLocalH (Point3d (p[0], p[1], p[2]), h);
 }
 
-void Ng_RestrictMeshSizeBox (Ng_Mesh * mesh, double * pmin, double * pmax, double h)
+DLL_HEADER void Ng_RestrictMeshSizeBox (Ng_Mesh * mesh, double * pmin, double * pmax, double h)
 {
   for (double x = pmin[0]; x < pmax[0]; x += h)
     for (double y = pmin[1]; y < pmax[1]; y += h)
@@ -203,7 +203,7 @@ void Ng_RestrictMeshSizeBox (Ng_Mesh * mesh, double * pmin, double * pmax, doubl
 
 
 // generates volume mesh from surface mesh
-Ng_Result Ng_GenerateVolumeMesh (Ng_Mesh * mesh, Ng_Meshing_Parameters * mp)
+DLL_HEADER Ng_Result Ng_GenerateVolumeMesh (Ng_Mesh * mesh, Ng_Meshing_Parameters * mp)
 {
   Mesh * m = (Mesh*)mesh;
   
@@ -227,14 +227,14 @@ Ng_Result Ng_GenerateVolumeMesh (Ng_Mesh * mesh, Ng_Meshing_Parameters * mp)
 
 
 
-void Ng_AddPoint_2D (Ng_Mesh * mesh, double * x)
+DLL_HEADER void Ng_AddPoint_2D (Ng_Mesh * mesh, double * x)
 {
   Mesh * m = (Mesh*)mesh;
   
   m->AddPoint (Point3d (x[0], x[1], 0));
 }
 
-void Ng_AddBoundarySeg_2D (Ng_Mesh * mesh, int pi1, int pi2)
+DLL_HEADER void Ng_AddBoundarySeg_2D (Ng_Mesh * mesh, int pi1, int pi2)
 {
   Mesh * m = (Mesh*)mesh;
 
@@ -245,25 +245,25 @@ void Ng_AddBoundarySeg_2D (Ng_Mesh * mesh, int pi1, int pi2)
 }
   
 
-int Ng_GetNP_2D (Ng_Mesh * mesh)
+DLL_HEADER int Ng_GetNP_2D (Ng_Mesh * mesh)
 {
   Mesh * m = (Mesh*)mesh;
   return m->GetNP();
 }
 
-int Ng_GetNE_2D (Ng_Mesh * mesh)
+DLL_HEADER int Ng_GetNE_2D (Ng_Mesh * mesh)
 {
   Mesh * m = (Mesh*)mesh;
   return m->GetNSE();
 }
 
-int Ng_GetNSeg_2D (Ng_Mesh * mesh)
+DLL_HEADER int Ng_GetNSeg_2D (Ng_Mesh * mesh)
 {
   Mesh * m = (Mesh*)mesh;
   return m->GetNSeg();
 }
   
-void Ng_GetPoint_2D (Ng_Mesh * mesh, int num, double * x)
+DLL_HEADER void Ng_GetPoint_2D (Ng_Mesh * mesh, int num, double * x)
 {
   Mesh * m = (Mesh*)mesh;
 
@@ -272,7 +272,7 @@ void Ng_GetPoint_2D (Ng_Mesh * mesh, int num, double * x)
   x[1] = p(1);
 }
 
-void Ng_GetElement_2D (Ng_Mesh * mesh, int num, int * pi, int * matnum)
+DLL_HEADER void Ng_GetElement_2D (Ng_Mesh * mesh, int num, int * pi, int * matnum)
 {
   const Element2d & el = ((Mesh*)mesh)->SurfaceElement(num);
   for (int i = 1; i <= 3; i++)
@@ -282,7 +282,7 @@ void Ng_GetElement_2D (Ng_Mesh * mesh, int num, int * pi, int * matnum)
 }
 
 
-void Ng_GetSegment_2D (Ng_Mesh * mesh, int num, int * pi, int * matnum)
+DLL_HEADER void Ng_GetSegment_2D (Ng_Mesh * mesh, int num, int * pi, int * matnum)
 {
   const Segment & seg = ((Mesh*)mesh)->LineSegment(num);
   pi[0] = seg.p1;
@@ -295,16 +295,16 @@ void Ng_GetSegment_2D (Ng_Mesh * mesh, int num, int * pi, int * matnum)
 
 
 
-Ng_Geometry_2D * Ng_LoadGeometry_2D (const char * filename)
+DLL_HEADER Ng_Geometry_2D * Ng_LoadGeometry_2D (const char * filename)
 {
   SplineGeometry2d * geom = new SplineGeometry2d();
   geom -> Load (filename);
   return (Ng_Geometry_2D *)geom;
 }
 
-Ng_Result Ng_GenerateMesh_2D (Ng_Geometry_2D * geom,
-			      Ng_Mesh ** mesh,
-			      Ng_Meshing_Parameters * mp)
+DLL_HEADER Ng_Result Ng_GenerateMesh_2D (Ng_Geometry_2D * geom,
+			                                Ng_Mesh ** mesh,
+			                                Ng_Meshing_Parameters * mp)
 {
   // use global variable mparam
   //  MeshingParameters mparam;  
@@ -321,17 +321,17 @@ Ng_Result Ng_GenerateMesh_2D (Ng_Geometry_2D * geom,
   return NG_OK;
 }
 
-void Ng_HP_Refinement (Ng_Geometry_2D * geom,
-		       Ng_Mesh * mesh,
-		       int levels)
+DLL_HEADER void Ng_HP_Refinement (Ng_Geometry_2D * geom,
+		                            Ng_Mesh * mesh,
+		                            int levels)
 {
   Refinement2d ref(*(SplineGeometry2d*)geom);
   HPRefinement (*(Mesh*)mesh, &ref, levels);
 }
 
-void Ng_HP_Refinement (Ng_Geometry_2D * geom,
-		       Ng_Mesh * mesh,
-		       int levels, double parameter)
+DLL_HEADER void Ng_HP_Refinement (Ng_Geometry_2D * geom,
+		                            Ng_Mesh * mesh,
+		                            int levels, double parameter)
 {
   Refinement2d ref(*(SplineGeometry2d*)geom);
   HPRefinement (*(Mesh*)mesh, &ref, levels, parameter);
@@ -354,12 +354,12 @@ void Ng_HP_Refinement (Ng_Geometry_2D * geom,
 Array<STLReadTriangle> readtrias; //only before initstlgeometry
 Array<Point<3> > readedges; //only before init stlgeometry
  
-void Ng_SaveMesh(Ng_Mesh * mesh, const char* filename)
+DLL_HEADER void Ng_SaveMesh(Ng_Mesh * mesh, const char* filename)
 {
   ((Mesh*)mesh)->Save(filename);
 }
 
-Ng_Mesh * Ng_LoadMesh(const char* filename)
+DLL_HEADER Ng_Mesh * Ng_LoadMesh(const char* filename)
 {
   Mesh * mesh = new Mesh;
   mesh->Load(filename);
@@ -367,7 +367,7 @@ Ng_Mesh * Ng_LoadMesh(const char* filename)
 }
 
 // loads geometry from STL file
-Ng_STL_Geometry * Ng_STL_LoadGeometry (const char * filename, int binary)
+DLL_HEADER Ng_STL_Geometry * Ng_STL_LoadGeometry (const char * filename, int binary)
 {
   int i;
   STLGeometry geom;
@@ -414,13 +414,13 @@ Ng_STL_Geometry * Ng_STL_LoadGeometry (const char * filename, int binary)
 }
 
 // generate new STL Geometry
-Ng_STL_Geometry * Ng_STL_NewGeometry ()
+DLL_HEADER Ng_STL_Geometry * Ng_STL_NewGeometry ()
 {
   return (Ng_STL_Geometry*)(void*)new STLGeometry;
 } 
 
 // after adding triangles (and edges) initialize
-Ng_Result Ng_STL_InitSTLGeometry (Ng_STL_Geometry * geom)
+DLL_HEADER Ng_Result Ng_STL_InitSTLGeometry (Ng_STL_Geometry * geom)
 {
   STLGeometry* geo = (STLGeometry*)geom;
   geo->InitSTLGeometry(readtrias);
@@ -443,9 +443,9 @@ Ng_Result Ng_STL_InitSTLGeometry (Ng_STL_Geometry * geom)
 }
 
   // automatically generates edges:
-Ng_Result Ng_STL_MakeEdges (Ng_STL_Geometry * geom,
-		       Ng_Mesh* mesh,
-		       Ng_Meshing_Parameters * mp)
+DLL_HEADER Ng_Result Ng_STL_MakeEdges (Ng_STL_Geometry * geom,
+		                                 Ng_Mesh* mesh,
+		                                 Ng_Meshing_Parameters * mp)
 {
   STLGeometry* stlgeometry = (STLGeometry*)geom;
   Mesh* me = (Mesh*)mesh;
@@ -482,9 +482,9 @@ Ng_Result Ng_STL_MakeEdges (Ng_STL_Geometry * geom,
 
   
 // generates mesh, empty mesh be already created.
-Ng_Result Ng_STL_GenerateSurfaceMesh (Ng_STL_Geometry * geom,
-				      Ng_Mesh* mesh,
-				      Ng_Meshing_Parameters * mp)
+DLL_HEADER Ng_Result Ng_STL_GenerateSurfaceMesh (Ng_STL_Geometry * geom,
+				                                     Ng_Mesh* mesh,
+				                                     Ng_Meshing_Parameters * mp)
 {
   STLGeometry* stlgeometry = (STLGeometry*)geom;
   Mesh* me = (Mesh*)mesh;
@@ -539,8 +539,8 @@ Ng_Result Ng_STL_GenerateSurfaceMesh (Ng_STL_Geometry * geom,
   // fills STL Geometry
   // positive orientation
   // normal vector may be null-pointer
-void Ng_STL_AddTriangle (Ng_STL_Geometry * geom, 
-			 double * p1, double * p2, double * p3, double * nv)
+DLL_HEADER void Ng_STL_AddTriangle (Ng_STL_Geometry * geom, 
+			                           double * p1, double * p2, double * p3, double * nv)
 {
   Point<3> apts[3];
   apts[0] = Point<3>(p1[0],p1[1],p1[2]);
@@ -557,8 +557,8 @@ void Ng_STL_AddTriangle (Ng_STL_Geometry * geom,
 }
 
   // add (optional) edges:
-void Ng_STL_AddEdge (Ng_STL_Geometry * geom, 
-		     double * p1, double * p2)
+DLL_HEADER void Ng_STL_AddEdge (Ng_STL_Geometry * geom, 
+		                          double * p1, double * p2)
 {
   readedges.Append(Point3d(p1[0],p1[1],p1[2]));
   readedges.Append(Point3d(p2[0],p2[1],p2[2]));
@@ -566,7 +566,7 @@ void Ng_STL_AddEdge (Ng_STL_Geometry * geom,
 
 
 
-Ng_Meshing_Parameters :: Ng_Meshing_Parameters()
+DLL_HEADER Ng_Meshing_Parameters :: Ng_Meshing_Parameters()
 {
   maxh = 1000;
   fineness = 0.5;
