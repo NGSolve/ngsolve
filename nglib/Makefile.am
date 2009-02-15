@@ -27,6 +27,9 @@ ng_vol_LDADD = \
 	libnglib.la 
 
 
-
+bin_PROGRAMS = ng_stl
+ng_vol_SOURCES = ng_stl.cpp
+ng_vol_LDADD = \
+	libnglib.la 
 
 
