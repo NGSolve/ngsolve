@@ -1092,284 +1092,364 @@ namespace netgen
    }
 
 
-  OCCGeometry * LoadOCC_IGES (const char * filename)
-  {
-    OCCGeometry * occgeo;
-    occgeo = new OCCGeometry;
 
-    IGESControl_Reader reader;
-
-    Standard_Integer stat = reader.ReadFile((char*)filename);
-
-    // pre OCC52-times:
-    // Standard_Integer stat = reader.LoadFile((char*)filename);
-    // reader.Clear();
-
-
-    reader.TransferRoots(); // Tranlate IGES -> OCC
-
-    // pre OCC52-times:
-    // reader.TransferRoots(Standard_False); // Tranlate IGES -> OCC
-
-    //reader.PrintTransferInfo(IFSelect_FailAndWarn,IFSelect_ListByItem);
-
-    occgeo->shape = reader.OneShape();
-    occgeo->changed = 1;
-    occgeo->BuildFMap();
-
-    //
-    //   Handle(ShapeFix_Shape) sfs = new ShapeFix_Shape;
-    //   sfs->Init(occgeo->shape);
-    //   sfs->Perform();
-    //   Handle(ShapeFix_Wireframe) sfwf = new ShapeFix_Wireframe(occgeo->shape);
-    //   //sfwf->DropSmallEdgesMode() = Standard_True;
-    //   sfwf->FixSmallEdges();
-    //   sfwf->FixWireGaps();
-
-    //
-
-
-    // occgeo->BuildVisualizationMesh();
-    occgeo->CalcBoundingBox();
-    PrintContents (occgeo);
-
-    return occgeo;
-  }
-
-
-
-// Philippose - 29/01/2009
-/* Special STEP File load function including the ability
+   // Philippose - 23/02/2009
+   /* Special IGES File load function including the ability
    to extract individual surface colours via the extended
    OpenCascade XDE and XCAF Feature set.
-*/
-OCCGeometry * LoadOCC_STEP (const char * filename)
-{
- OCCGeometry * occgeo;
- occgeo = new OCCGeometry;
+   */
+   OCCGeometry *LoadOCC_IGES(const char *filename)
+   {
+      OCCGeometry *occgeo;
+      occgeo = new OCCGeometry;
 
- // Initiate a dummy XCAF Application to handle the STEP XCAF Document
- static Handle_XCAFApp_Application dummy_app = XCAFApp_Application::GetApplication();
+      // Initiate a dummy XCAF Application to handle the IGES XCAF Document
+      static Handle_XCAFApp_Application dummy_app = XCAFApp_Application::GetApplication();
 
- // Create an XCAF Document to contain the STEP file itself
- Handle_TDocStd_Document step_doc;
+      // Create an XCAF Document to contain the IGES file itself
+      Handle_TDocStd_Document iges_doc;
 
- // Check if a STEP File is already open under this handle, if so, close it to prevent
- // Segmentation Faults when trying to create a new document
- if(dummy_app->NbDocuments() > 0)
- {
-  dummy_app->GetDocument(1,step_doc);
-  dummy_app->Close(step_doc);
- }
- dummy_app->NewDocument ("STEP-XCAF",step_doc);
-
- STEPCAFControl_Reader reader;
-
- Standard_Integer stat = reader.ReadFile((char*)filename);
-
- // Enable transfer of colours
- reader.SetColorMode(Standard_True);
-
- reader.Transfer(step_doc);
-
- // Read in the shape(s) and the colours present in the STEP File
- Handle_XCAFDoc_ShapeTool step_shape_contents = XCAFDoc_DocumentTool::ShapeTool(step_doc->Main());
- Handle_XCAFDoc_ColorTool step_colour_contents = XCAFDoc_DocumentTool::ColorTool(step_doc->Main());
-
- TDF_LabelSequence step_shapes;
- step_shape_contents->GetShapes(step_shapes);
-
-/*
- // List out the available colours in the STEP File as Colour Names
- TDF_LabelSequence allColours;
- stepColourContents->GetColors(allColours);
- cout << "Number of colours in STEP = " << allColours.Length() << endl;
- for(int i = 1; i <= allColours.Length(); i++)
- {
-    Quantity_Color col;
-    stepColourContents->GetColor(allColours.Value(i),col);
-    cout << "Colour [" << i << "] = " << col.StringName(col.Name()) << endl;
- }
-*/
-
- occgeo->shape = step_shape_contents->GetShape(step_shapes.Value(1));
- occgeo->face_colours = step_colour_contents;
- occgeo->changed = 1;
- occgeo->BuildFMap();
-
- // occgeo->BuildVisualizationMesh();
- occgeo->CalcBoundingBox();
- PrintContents (occgeo);
-
- return occgeo;
-}
-
-
-
-//  Philippose - 29/01/2009
-//  The LOADOCC_STEP Function has been replaced by the one
-//  above, which also includes support for the OpenCascade
-//  XDE Features.
-//
-//  OCCGeometry * LoadOCC_STEP (const char * filename)
-//  {
-//    OCCGeometry * occgeo;
-//    occgeo = new OCCGeometry;
-//
-//    STEPControl_Reader reader;
-//    Standard_Integer stat = reader.ReadFile((char*)filename);
-//    Standard_Integer nb = reader.NbRootsForTransfer();
-//    reader.TransferRoots (); // Tranlate STEP -> OCC
-//
-//
-//
-//    occgeo->shape = reader.OneShape();
-//    occgeo->changed = 1;
-//    occgeo->BuildFMap();
-//    //
-//    //Handle(ShapeFix_Shape) sfs = new ShapeFix_Shape;
-//    //sfs->Init(occgeo->shape);
-//    //sfs->Perform();
-//    //Handle(ShapeFix_Wireframe) sfwf = new ShapeFix_Wireframe(occgeo->shape);
-//    //sfwf->FixSmallEdges();
-//    //sfwf->FixWireGaps();
-//
-//
-//
-//    /*
-//      // JS
-//    TopoDS_Compound aRes;
-//    BRep_Builder aBuilder;
-//    aBuilder.MakeCompound (aRes);
-//
-//    for (TopExp_Explorer exp(occgeo->shape, TopAbs_SOLID); exp.More(); exp.Next())
-//      {
-//	aBuilder.Add (aRes, exp.Current());
-//	cout << "solid" << endl;
-//      }
-//
-//    for (TopExp_Explorer exp(aRes, TopAbs_SOLID); exp.More(); exp.Next())
-//      {
-//	cout << "compound has shapes solid" << endl;
-//      }
-//    occgeo->shape = aRes;
-//    occgeo->changed = 1;
-//    occgeo->BuildFMap();
-//    */
-//
-//
-//    occgeo->BuildVisualizationMesh();
-//    PrintContents (occgeo);
-//
-//    return occgeo;
-//  }
-
-
-
-
-  OCCGeometry * LoadOCC_BREP (const char * filename)
-  {
-    OCCGeometry * occgeo;
-    occgeo = new OCCGeometry;
-
-    BRep_Builder aBuilder;
-    Standard_Boolean result = BRepTools::Read(occgeo->shape, const_cast<char*> (filename),aBuilder);
-
-
-//     cout << "Writing VRML" << endl;
-//     VrmlAPI::Write(occgeo->shape,"test.vrml");
-//     cout << "Writing STL" << endl;
-//     StlAPI::Write(occgeo->shape,"test.stl");
-
-
-    occgeo->changed = 1;
-    occgeo->BuildFMap();
-    // occgeo->BuildVisualizationMesh();
-    occgeo->CalcBoundingBox();
-    PrintContents (occgeo);
-
-    return occgeo;
-  }
-
-  char * shapesname[] =
-    {" ", "CompSolids", "Solids", "Shells",
-
-     "Faces", "Wires", "Edges", "Vertices"};
-
-  char * shapename[] =
-    {" ", "CompSolid", "Solid", "Shell",
-     "Face", "Wire", "Edge", "Vertex"};
-
-  char * orientationstring[] =
-    {"+", "-"};
-
-  void OCCGeometry :: RecursiveTopologyTree (const TopoDS_Shape & sh,
-					     stringstream & str,
-					     TopAbs_ShapeEnum l,
-					     bool isfree,
-					     const char * lname)
-  {
-    if (l > TopAbs_VERTEX) return;
-
-    TopExp_Explorer e;
-    int count = 0;
-    int count2;
-
-    if (isfree)
-      e.Init(sh, l, TopAbs_ShapeEnum(l-1));
-    else
-      e.Init(sh, l);
-
-    for (; e.More(); e.Next())
+      // Check if a IGES File is already open under this handle, if so, close it to prevent
+      // Segmentation Faults when trying to create a new document
+      if(dummy_app->NbDocuments() > 0)
       {
-	count++;
+         dummy_app->GetDocument(1,iges_doc);
+         dummy_app->Close(iges_doc);
+      }
+      dummy_app->NewDocument ("IGES-XCAF",iges_doc);
 
-	stringstream lname2;
-	lname2 << lname << "/" << shapename[l] << count;
-	str << lname2.str() << " ";
+      IGESCAFControl_Reader reader;
 
-	switch (e.Current().ShapeType())
-	  {
-	  case TopAbs_SOLID:
-	    count2 = somap.FindIndex(TopoDS::Solid(e.Current())); break;
-	  case TopAbs_SHELL:
-	    count2 = shmap.FindIndex(TopoDS::Shell(e.Current())); break;
-	  case TopAbs_FACE:
-	    count2 = fmap.FindIndex(TopoDS::Face(e.Current())); break;
-	  case TopAbs_WIRE:
-	    count2 = wmap.FindIndex(TopoDS::Wire(e.Current())); break;
-	  case TopAbs_EDGE:
-	    count2 = emap.FindIndex(TopoDS::Edge(e.Current())); break;
-	  case TopAbs_VERTEX:
-	    count2 = vmap.FindIndex(TopoDS::Vertex(e.Current())); break;
-	  }
+      Standard_Integer stat = reader.ReadFile((char*)filename);
 
-	int nrsubshapes = 0;
+      // Enable transfer of colours
+      reader.SetColorMode(Standard_True);
 
-	if (l <= TopAbs_WIRE)
-	  {
-	    TopExp_Explorer e2;
-	    for (e2.Init (e.Current(), TopAbs_ShapeEnum (l+1));
-		 e2.More(); e2.Next())
-	      nrsubshapes++;
-	  }
+      reader.Transfer(iges_doc);
 
-	str << "{" << shapename[l] << " " << count2;
+      // Read in the shape(s) and the colours present in the IGES File
+      Handle_XCAFDoc_ShapeTool iges_shape_contents = XCAFDoc_DocumentTool::ShapeTool(iges_doc->Main());
+      Handle_XCAFDoc_ColorTool iges_colour_contents = XCAFDoc_DocumentTool::ColorTool(iges_doc->Main());
 
-	if (l <= TopAbs_EDGE)
-	  {
-	    str << " (" << orientationstring[e.Current().Orientation()];
-	    if (nrsubshapes != 0) str << ", " << nrsubshapes;
-	    str << ") } ";
-	  }
-	else
-	  str << " } ";
+      TDF_LabelSequence iges_shapes;
+      iges_shape_contents->GetShapes(iges_shapes);
 
-	RecursiveTopologyTree (e.Current(), str, TopAbs_ShapeEnum (l+1),
-			       false, (char*)lname2.str().c_str());
+      // For the IGES Reader, all the shapes can be exported as one compund shape 
+      // using the "OneShape" member
+      occgeo->shape = reader.OneShape();
+      occgeo->face_colours = iges_colour_contents;
+      occgeo->changed = 1;
+      occgeo->BuildFMap();
+
+      // occgeo->BuildVisualizationMesh();
+      occgeo->CalcBoundingBox();
+      PrintContents (occgeo);
+
+      return occgeo;
+   }
+
+
+
+   
+   //  Philippose - 23/02/2009
+   //  The LOADOCC_IGES Function has been replaced by the one
+   //  above, which also includes support for the OpenCascade
+   //  XDE Features.
+   //
+   //OCCGeometry * LoadOCC_IGES (const char * filename)
+   //{
+   //  OCCGeometry * occgeo;
+   //  occgeo = new OCCGeometry;
+
+   //  IGESControl_Reader reader;
+
+   //  Standard_Integer stat = reader.ReadFile((char*)filename);
+
+   //  // pre OCC52-times:
+   //  // Standard_Integer stat = reader.LoadFile((char*)filename);
+   //  // reader.Clear();
+
+
+   //  reader.TransferRoots(); // Tranlate IGES -> OCC
+
+   //  // pre OCC52-times:
+   //  // reader.TransferRoots(Standard_False); // Tranlate IGES -> OCC
+
+   //  //reader.PrintTransferInfo(IFSelect_FailAndWarn,IFSelect_ListByItem);
+
+   //  occgeo->shape = reader.OneShape();
+   //  occgeo->changed = 1;
+   //  occgeo->BuildFMap();
+
+   //  //
+   //  //   Handle(ShapeFix_Shape) sfs = new ShapeFix_Shape;
+   //  //   sfs->Init(occgeo->shape);
+   //  //   sfs->Perform();
+   //  //   Handle(ShapeFix_Wireframe) sfwf = new ShapeFix_Wireframe(occgeo->shape);
+   //  //   //sfwf->DropSmallEdgesMode() = Standard_True;
+   //  //   sfwf->FixSmallEdges();
+   //  //   sfwf->FixWireGaps();
+
+   //  //
+
+
+   //  // occgeo->BuildVisualizationMesh();
+   //  occgeo->CalcBoundingBox();
+   //  PrintContents (occgeo);
+
+   //  return occgeo;
+   //}
+
+
+
+   // Philippose - 29/01/2009
+   /* Special STEP File load function including the ability
+   to extract individual surface colours via the extended
+   OpenCascade XDE and XCAF Feature set.
+   */
+   OCCGeometry * LoadOCC_STEP (const char * filename)
+   {
+      OCCGeometry * occgeo;
+      occgeo = new OCCGeometry;
+
+      // Initiate a dummy XCAF Application to handle the STEP XCAF Document
+      static Handle_XCAFApp_Application dummy_app = XCAFApp_Application::GetApplication();
+
+      // Create an XCAF Document to contain the STEP file itself
+      Handle_TDocStd_Document step_doc;
+
+      // Check if a STEP File is already open under this handle, if so, close it to prevent
+      // Segmentation Faults when trying to create a new document
+      if(dummy_app->NbDocuments() > 0)
+      {
+         dummy_app->GetDocument(1,step_doc);
+         dummy_app->Close(step_doc);
+      }
+      dummy_app->NewDocument ("STEP-XCAF",step_doc);
+
+      STEPCAFControl_Reader reader;
+
+      Standard_Integer stat = reader.ReadFile((char*)filename);
+
+      // Enable transfer of colours
+      reader.SetColorMode(Standard_True);
+
+      reader.Transfer(step_doc);
+
+      // Read in the shape(s) and the colours present in the STEP File
+      Handle_XCAFDoc_ShapeTool step_shape_contents = XCAFDoc_DocumentTool::ShapeTool(step_doc->Main());
+      Handle_XCAFDoc_ColorTool step_colour_contents = XCAFDoc_DocumentTool::ColorTool(step_doc->Main());
+
+      TDF_LabelSequence step_shapes;
+      step_shape_contents->GetShapes(step_shapes);
+
+      /*
+      // List out the available colours in the STEP File as Colour Names
+      TDF_LabelSequence allColours;
+      stepColourContents->GetColors(allColours);
+      cout << "Number of colours in STEP = " << allColours.Length() << endl;
+      for(int i = 1; i <= allColours.Length(); i++)
+      {
+      Quantity_Color col;
+      stepColourContents->GetColor(allColours.Value(i),col);
+      cout << "Colour [" << i << "] = " << col.StringName(col.Name()) << endl;
+      }
+      */
+
+      // For the STEP File Reader in OCC, the 1st Shape contains the entire 
+      // compound geometry as one shape
+      occgeo->shape = step_shape_contents->GetShape(step_shapes.Value(1));
+      occgeo->face_colours = step_colour_contents;
+      occgeo->changed = 1;
+      occgeo->BuildFMap();
+
+      // occgeo->BuildVisualizationMesh();
+      occgeo->CalcBoundingBox();
+      PrintContents (occgeo);
+
+      return occgeo;
+   }
+
+
+
+   //  Philippose - 29/01/2009
+   //  The LOADOCC_STEP Function has been replaced by the one
+   //  above, which also includes support for the OpenCascade
+   //  XDE Features.
+   //
+   //  OCCGeometry * LoadOCC_STEP (const char * filename)
+   //  {
+   //    OCCGeometry * occgeo;
+   //    occgeo = new OCCGeometry;
+   //
+   //    STEPControl_Reader reader;
+   //    Standard_Integer stat = reader.ReadFile((char*)filename);
+   //    Standard_Integer nb = reader.NbRootsForTransfer();
+   //    reader.TransferRoots (); // Tranlate STEP -> OCC
+   //
+   //
+   //
+   //    occgeo->shape = reader.OneShape();
+   //    occgeo->changed = 1;
+   //    occgeo->BuildFMap();
+   //    //
+   //    //Handle(ShapeFix_Shape) sfs = new ShapeFix_Shape;
+   //    //sfs->Init(occgeo->shape);
+   //    //sfs->Perform();
+   //    //Handle(ShapeFix_Wireframe) sfwf = new ShapeFix_Wireframe(occgeo->shape);
+   //    //sfwf->FixSmallEdges();
+   //    //sfwf->FixWireGaps();
+   //
+   //
+   //
+   //    /*
+   //      // JS
+   //    TopoDS_Compound aRes;
+   //    BRep_Builder aBuilder;
+   //    aBuilder.MakeCompound (aRes);
+   //
+   //    for (TopExp_Explorer exp(occgeo->shape, TopAbs_SOLID); exp.More(); exp.Next())
+   //      {
+   //	aBuilder.Add (aRes, exp.Current());
+   //	cout << "solid" << endl;
+   //      }
+   //
+   //    for (TopExp_Explorer exp(aRes, TopAbs_SOLID); exp.More(); exp.Next())
+   //      {
+   //	cout << "compound has shapes solid" << endl;
+   //      }
+   //    occgeo->shape = aRes;
+   //    occgeo->changed = 1;
+   //    occgeo->BuildFMap();
+   //    */
+   //
+   //
+   //    occgeo->BuildVisualizationMesh();
+   //    PrintContents (occgeo);
+   //
+   //    return occgeo;
+   //  }
+
+
+
+
+   OCCGeometry *LoadOCC_BREP (const char *filename)
+   {
+      OCCGeometry * occgeo;
+      occgeo = new OCCGeometry;
+
+      BRep_Builder aBuilder;
+      Standard_Boolean result = BRepTools::Read(occgeo->shape, const_cast<char*> (filename),aBuilder);
+
+
+      //     cout << "Writing VRML" << endl;
+      //     VrmlAPI::Write(occgeo->shape,"test.vrml");
+      //     cout << "Writing STL" << endl;
+      //     StlAPI::Write(occgeo->shape,"test.stl");
+
+      // Philippose - 23/02/2009
+      // Fixed a bug in the OpenCascade XDE Colour handling when 
+      // opening BREP Files, since BREP Files have no colour data.
+      // Hence, the face_colours Handle needs to be created as a NULL handle.
+      occgeo->face_colours = Handle_XCAFDoc_ColorTool::Handle_XCAFDoc_ColorTool();
+      occgeo->face_colours.Nullify();
+      occgeo->changed = 1;
+      occgeo->BuildFMap();
+      // occgeo->BuildVisualizationMesh();
+      occgeo->CalcBoundingBox();
+      PrintContents (occgeo);
+
+      return occgeo;
+   }
+
+
+
+
+   char * shapesname[] =
+   {" ", "CompSolids", "Solids", "Shells",
+
+   "Faces", "Wires", "Edges", "Vertices"};
+
+   char * shapename[] =
+   {" ", "CompSolid", "Solid", "Shell",
+   "Face", "Wire", "Edge", "Vertex"};
+
+   char * orientationstring[] =
+   {"+", "-"};
+
+
+
+
+   void OCCGeometry :: RecursiveTopologyTree (const TopoDS_Shape & sh,
+                                              stringstream & str,
+                                              TopAbs_ShapeEnum l,
+                                              bool isfree,
+                                              const char * lname)
+   {
+      if (l > TopAbs_VERTEX) return;
+
+      TopExp_Explorer e;
+      int count = 0;
+      int count2;
+
+      if (isfree)
+         e.Init(sh, l, TopAbs_ShapeEnum(l-1));
+      else
+         e.Init(sh, l);
+
+      for (; e.More(); e.Next())
+      {
+         count++;
+
+         stringstream lname2;
+         lname2 << lname << "/" << shapename[l] << count;
+         str << lname2.str() << " ";
+
+         switch (e.Current().ShapeType())
+         {
+         case TopAbs_SOLID:
+            count2 = somap.FindIndex(TopoDS::Solid(e.Current())); break;
+         case TopAbs_SHELL:
+            count2 = shmap.FindIndex(TopoDS::Shell(e.Current())); break;
+         case TopAbs_FACE:
+            count2 = fmap.FindIndex(TopoDS::Face(e.Current())); break;
+         case TopAbs_WIRE:
+            count2 = wmap.FindIndex(TopoDS::Wire(e.Current())); break;
+         case TopAbs_EDGE:
+            count2 = emap.FindIndex(TopoDS::Edge(e.Current())); break;
+         case TopAbs_VERTEX:
+            count2 = vmap.FindIndex(TopoDS::Vertex(e.Current())); break;
+         }
+
+         int nrsubshapes = 0;
+
+         if (l <= TopAbs_WIRE)
+         {
+            TopExp_Explorer e2;
+            for (e2.Init (e.Current(), TopAbs_ShapeEnum (l+1));
+               e2.More(); e2.Next())
+               nrsubshapes++;
+         }
+
+         str << "{" << shapename[l] << " " << count2;
+
+         if (l <= TopAbs_EDGE)
+         {
+            str << " (" << orientationstring[e.Current().Orientation()];
+            if (nrsubshapes != 0) str << ", " << nrsubshapes;
+            str << ") } ";
+         }
+         else
+            str << " } ";
+
+         RecursiveTopologyTree (e.Current(), str, TopAbs_ShapeEnum (l+1),
+            false, (char*)lname2.str().c_str());
 
       }
-  }
+   }
+
+
+
 
   void OCCGeometry :: GetTopologyTree (stringstream & str)
   {

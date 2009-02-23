@@ -994,10 +994,10 @@ namespace netgen
       glDisable (GL_COLOR_MATERIAL);
 
 
-    GLfloat matcol[] = { 0, 1, 0, 1 };
+    GLfloat matcol[] = { 1, 1, 0, 1 };
     GLfloat matcolsel[] = { 1, 0, 0, 1 };
 #ifdef PARALLEL
-    GLfloat mat_coll_transp[] = { 0, 1, 0, 0.3 };
+    GLfloat mat_coll_transp[] = { 1, 1, 0, 0.3 };
     GLfloat mat_coll_transp_sel[] = { 1, 0, 0, 0.3 };
 #endif
 
@@ -1041,10 +1041,24 @@ namespace netgen
       {
          TopoDS_Face face = TopoDS::Face(occgeometry->fmap(el.GetIndex()));
          Quantity_Color face_colour;
-         occgeometry->face_colours->GetColor(face,XCAFDoc_ColorSurf,face_colour);
-         matcol[0] = face_colour.Red();
-         matcol[1] = face_colour.Green();
-         matcol[2] = face_colour.Blue();
+         // Philippose - 23/02/2009
+         // Check to see if colours have been extracted first!!
+         // Forum bug-fox (Jean-Yves - 23/02/2009)
+         if(!(occgeometry->face_colours.IsNull())
+            &&(occgeometry->face_colours->GetColor(face,XCAFDoc_ColorSurf,face_colour)))
+         {
+            matcol[0] = face_colour.Red();
+            matcol[1] = face_colour.Green();
+            matcol[2] = face_colour.Blue();
+         }
+         else
+         {
+            matcol[0] = 1.0;
+            matcol[1] = 1.0;
+            matcol[2] = 0.0;
+         }
+
+
          matcol[3] = 1.0;
          glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcol);
       }

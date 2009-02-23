@@ -541,10 +541,22 @@ namespace netgen
             // Philippose - 30/01/2009
             // OpenCascade XDE Support
             Quantity_Color face_colour;
-            occgeometry->face_colours->GetColor(face,XCAFDoc_ColorSurf,face_colour);
-            mat_col[0] = face_colour.Red();
-            mat_col[1] = face_colour.Green();
-            mat_col[2] = face_colour.Blue();
+            // Philippose - 23/02/2009
+            // Check to see if colours have been extracted first!!
+            // Forum bug-fox (Jean-Yves - 23/02/2009)
+            if(!(occgeometry->face_colours.IsNull())
+               && (occgeometry->face_colours->GetColor(face,XCAFDoc_ColorSurf,face_colour)))
+            {
+               mat_col[0] = face_colour.Red();
+               mat_col[1] = face_colour.Green();
+               mat_col[2] = face_colour.Blue();
+            }
+            else
+            {
+               mat_col[0] = 1.0;
+               mat_col[1] = 1.0;
+               mat_col[2] = 0.0;
+            }
          }
          else
          {
