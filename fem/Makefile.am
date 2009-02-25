@@ -31,7 +31,7 @@ include_HEADERS = bdbequations.hpp bdbintegrator.hpp coefficient.hpp   \
 elementtopology.hpp elementtransformation.hpp facetfe.hpp fem.hpp      \
 femtypes.hpp finiteelement.hpp scalarfe.hpp generic_recpol.hpp	       \
 h1hofe.hpp hcurlfe.hpp hcurlhofe.hpp hdiv_equations.hpp hdivfe.hpp     \
-hdivhofe.hpp highorderfe.hpp integrator.hpp intrule.hpp l2hofe.hpp     \
+hdivhofe.hpp  integrator.hpp intrule.hpp l2hofe.hpp     \
 pml.hpp recursive_pol.hpp recursive_pol_tet.hpp recursive_pol_trig.hpp \
  specialelement.hpp vectorfacetfe.hpp				       
 
