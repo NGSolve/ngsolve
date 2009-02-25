@@ -12,295 +12,142 @@
 /**
   High order finite elements for L_2
 */
-template<int DIM>
-class L2HighOrderFiniteElement : virtual public ScalarFiniteElement<DIM>
+template<int D>
+class L2HighOrderFiniteElement : virtual public ScalarFiniteElement<D>
 {
+  enum { DIM = D };
 public:
   int vnums[8];  
-  INT<3> order_inner; 
-
-  L2HighOrderFiniteElement (); // ELEMENT_TYPE aeltype);
+  INT<DIM> order_inner; 
 
   virtual void SetVertexNumbers (FlatArray<int> & avnums);
-  virtual void SetVertexNumbers (FlatArray<int> & avnums, LocalHeap & lh);
 
   void SetOrder (int o);
-  
-  void SetOrderInner (INT<3> oi);
+  void SetOrder (INT<DIM> oi);
 
   virtual void ComputeNDof () = 0; 
-
-  // const int * GetVNums() const { return vnums; }
-
   virtual void GetInternalDofs (Array<int> & idofs) const; 
-  
-private:
-  
-  virtual const Array<typename ScalarFiniteElement<DIM>::IPData> & GetIPData () const
-  {
-    throw Exception ("GetIPData not available for L2HighOrderFE");
-  }
 };
+
+
+
+template <ELEMENT_TYPE ET> class L2HighOrderFE;
+
+template <ELEMENT_TYPE ET>
+class T_L2HighOrderFiniteElement : public L2HighOrderFiniteElement<ET_trait<ET>::DIM>
+{
+  enum { DIM = ET_trait<ET>::DIM };
+
+  using ScalarFiniteElement<DIM>::ndof;
+  using ScalarFiniteElement<DIM>::order;
+  using ScalarFiniteElement<DIM>::eltype;
+  using ScalarFiniteElement<DIM>::dimspace;
+
+  using L2HighOrderFiniteElement<DIM>::vnums;
+  using L2HighOrderFiniteElement<DIM>::order_inner;
+
+public:
+
+  T_L2HighOrderFiniteElement () 
+  {
+    for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
+      vnums[i] = i;
+    dimspace = DIM;
+    eltype = ET;
+  }
+
+  virtual void ComputeNDof();
+
+  virtual void CalcShape (const IntegrationPoint & ip, 
+                          FlatVector<> shape) const;
+
+  virtual void CalcDShape (const IntegrationPoint & ip, 
+                           FlatMatrixFixWidth<DIM> dshape) const;
+
+};
+
+
+
+
+
 
 /**
   High order 1D finite element
 */
-class L2HighOrderSegm : public L2HighOrderFiniteElement<1>
+template <>
+class L2HighOrderFE<ET_SEGM> : public T_L2HighOrderFiniteElement<ET_SEGM>
 {
 public:
-  L2HighOrderSegm (int aorder=0);
-  virtual void ComputeNDof();
+  L2HighOrderFE () { ; }
+  L2HighOrderFE (int aorder);
+  // virtual void ComputeNDof();
 
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatVector<> shape) const;
-
-  /// compute gradient of shape
-  virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx x[1], TFA & shape) const; 
 };
 
 
 /**
   High order triangular finite element
 */
-class L2HighOrderTrig : public L2HighOrderFiniteElement<2>
+template <> 
+class L2HighOrderFE<ET_TRIG> : public T_L2HighOrderFiniteElement<ET_TRIG>
 {
 public:
-  L2HighOrderTrig (int aorder=0);
-  virtual void ComputeNDof();
+  L2HighOrderFE () { ; }
+  L2HighOrderFE (int aorder);
 
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatVector<> shape) const;
-
-  /// compute gradient of shape
-  virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx x[2], TFA & shape) const; 
 };
 
-
-/**
-  High order quadrilateral finite element
-*/
-class L2HighOrderQuad : public L2HighOrderFiniteElement<2>
-{
-  //typedef TrigShapesInnerLegendre T_INNERSHAPES;
-  // typedef TrigShapesInnerJacobi T_INNERSHAPES;
-public:
-  L2HighOrderQuad (int aorder=0);
-  virtual void ComputeNDof();
-
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatVector<> shape) const;
-
-  /// compute gradient of shape 
-  virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const; 
-};
-
-
-/**
-  High order tetrahedral finite element
- */
-class L2HighOrderTet : virtual public L2HighOrderFiniteElement<3>
+template <> 
+class L2HighOrderFE<ET_QUAD> : public T_L2HighOrderFiniteElement<ET_QUAD>
 {
 public:
-  L2HighOrderTet (int aorder=0);
-  virtual void ComputeNDof();
-  
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-                          FlatVector<> shape) const;
-  
-  /// compute gradient of shape
-  virtual void CalcDShape (const IntegrationPoint & ip, FlatMatrix<> dshape) const;
+  L2HighOrderFE () { ; }
+  L2HighOrderFE (int aorder);
+
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx x[2], TFA & shape) const; 
 };
 
 
 
-/**
-  High order prismatic finite element
- */
-class L2HighOrderPrism : public L2HighOrderFiniteElement<3>
+template <> 
+class L2HighOrderFE<ET_TET> : public T_L2HighOrderFiniteElement<ET_TET>
 {
-  public:
-    L2HighOrderPrism (int aorder=0);
-    virtual void ComputeNDof();
-
-  /// compute shape
-    virtual void CalcShape (const IntegrationPoint & ip, 
-                            FlatVector<> shape) const;
-
-  /// compute gradient of shape
-    virtual void CalcDShape (const IntegrationPoint & ip, FlatMatrix<> dshape) const;
-};
-
-
-/**
-  High order hexahedral finite element
- */
-class L2HighOrderHex : public L2HighOrderFiniteElement<3>
-{
-  public:
-    L2HighOrderHex (int aorder=0);
-    virtual void ComputeNDof();
-
-  /// compute shape
-    virtual void CalcShape (const IntegrationPoint & ip, 
-                            FlatVector<> shape) const;
-
-  /// compute gradient of shape
-    virtual void CalcDShape (const IntegrationPoint & ip, FlatMatrix<> dshape) const;
-};
-
-
-
-
-#ifdef abc
-/**
-  High order quadrilateral finite element
-*/
-template <class T_EXT>
-class L2HighOrderQuad : public L2HighOrderFiniteElement<2>
-{
-  typedef T_EXT T_EDGESHAPES;
-  typedef VertexExtensionOptimal<3> T_VERTEXSHAPES;
-
 public:
-  L2HighOrderQuad (int aorder);
-  virtual void ComputeNDof();
+  L2HighOrderFE () { ; }
+  L2HighOrderFE (int aorder);
 
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatVector<> shape) const;
- 
-  /// compute gradient of shape
-  virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
-
-private:
-  void CalcShapeDShape (const IntegrationPoint & ip, 
-			Array<AutoDiff<2> > & shape) const;
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx x[3], TFA & shape) const; 
 };
 
 
-/**
-  High order tetrahedral finite element
-*/
-template <class T_EXT>
-class L2HighOrderTet : public L2HighOrderFiniteElement<3>
+template <> 
+class L2HighOrderFE<ET_PRISM> : public T_L2HighOrderFiniteElement<ET_PRISM>
 {
-  typedef T_EXT T_EDGESHAPES;
-
-  typedef TetShapesInnerLegendre T_INNERSHAPES;
-  typedef TetShapesFaceLegendre T_FACESHAPES;
-
-  // typedef TetShapesInnerJacobi T_INNERSHAPES;
-  // typedef TetShapesFaceJacobi T_FACESHAPES;
-
-  // typedef TetShapesFaceOpt1 T_FACESHAPES;
-
-  typedef VertexExtensionOptimal<3> T_VERTEXSHAPES;
-  // typedef VertexStandard T_VERTEXSHAPES;
 public:
-  L2HighOrderTet (int aorder);
-  virtual void ComputeNDof();
+  L2HighOrderFE () { ; }
+  L2HighOrderFE (int aorder);
 
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatVector<> shape) const;
-  
-  /// compute gradient of shape
-  virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
-
-private:
-  void CalcShapeDShape (const IntegrationPoint & ip, 
-			Array<AutoDiff<3> > & shape) const;
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx x[3], TFA & shape) const; 
 };
 
 
-/**
-  High order prismatic finite element
-*/
-template <class T_EXT>
-class L2HighOrderPrism : public L2HighOrderFiniteElement<3>
+template <> 
+class L2HighOrderFE<ET_HEX> : public T_L2HighOrderFiniteElement<ET_HEX>
 {
-  typedef T_EXT T_EDGESHAPES;
-  typedef TrigShapesInnerLegendre T_TRIGSHAPES;
-  typedef VertexExtensionOptimal<3> T_VERTEXSHAPES;
-
 public:
-  L2HighOrderPrism (int aorder);
-  virtual void ComputeNDof();
+  L2HighOrderFE () { ; }
+  L2HighOrderFE (int aorder);
 
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatVector<> shape) const;
-  
-  /// compute gradient of shape
-  virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
-
-  void CalcShapeDShape (const IntegrationPoint & ip, 
-			Array<AutoDiff<3> > & shape) const;
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx x[3], TFA & shape) const; 
 };
-
-
-
-/**
-  High order hexahedral finite element
-*/
-template <class T_EXT>
-class L2HighOrderHex : public L2HighOrderFiniteElement<3>
-{
-  typedef T_EXT T_EDGESHAPES;
-  typedef VertexExtensionOptimal<3> T_VERTEXSHAPES;
-
-public:
-  L2HighOrderHex (int aorder);
-  virtual void ComputeNDof();
-
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatVector<> shape) const;
-  
-  /// compute gradient of shape
-  virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
-
-  void CalcShapeDShape (const IntegrationPoint & ip, 
-			Array<AutoDiff<3> > & shape) const;
-};
-
-
-/**
-  High order pyramid finite element
-*/
-template <class T_EXT>
-class L2HighOrderPyramid : public L2HighOrderFiniteElement<3>
-{
-  typedef T_EXT T_EDGESHAPES;
-  typedef TrigShapesInnerLegendre T_TRIGSHAPES;
-  typedef VertexExtensionOptimal<3> T_VERTEXSHAPES;
-
-public:
-  L2HighOrderPyramid (int aorder);
-  virtual void ComputeNDof();
-
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatVector<> shape) const;
-  
-  /*
-  /// compute gradient of shape
-  virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
-  */
-};
-#endif
 
 
 #endif

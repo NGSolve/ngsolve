@@ -24,9 +24,9 @@
 // class FacetFacetFiniteElement;
 // typedef L2HighOrderFiniteElement FacetFacetFiniteElement;
 #define FacetFacetFiniteElement L2HighOrderFiniteElement 
-typedef L2HighOrderSegm FacetFacetSegm;
-typedef L2HighOrderTrig FacetFacetTrig;
-typedef L2HighOrderQuad FacetFacetQuad;
+typedef L2HighOrderFE<ET_SEGM> FacetFacetSegm;
+typedef L2HighOrderFE<ET_TRIG> FacetFacetTrig;
+typedef L2HighOrderFE<ET_QUAD> FacetFacetQuad;
 
 
 // BASIS CLASSES

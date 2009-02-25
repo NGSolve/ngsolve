@@ -102,7 +102,7 @@ public:
   
   /// compute dshape, matrix: ndof x spacedim
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+			   FlatMatrixFixWidth<D> dshape) const;
 
   /// compute dshape, matrix: ndof x spacedim
   virtual void CalcMappedDShape (const BaseSpecificIntegrationPoint & sip, 
@@ -242,7 +242,7 @@ public:
 
 
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const
+			   FlatMatrixFixWidth<SDIM> dshape) const
   {
     FEL::CalcDShapeStat (ip, dshape);
   }
@@ -553,7 +553,7 @@ public:
 			  FlatVector<> shape) const;
   ///
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> shape) const;
+			   FlatMatrixFixWidth<1> shape) const;
 };
 
 
@@ -970,7 +970,7 @@ public:
 			  FlatVector<> shape) const;
 			  
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+			   FlatMatrixFixWidth<2> dshape) const;
 			   
   virtual const IntegrationRule & NodalIntegrationRule() const;
 };
@@ -987,7 +987,7 @@ public:
   virtual void CalcShape (const IntegrationPoint & ip, 
 			  FlatVector<> shape) const;
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+			   FlatMatrixFixWidth<2> dshape) const;
 			  
   virtual const IntegrationRule & NodalIntegrationRule() const;
 }; 
@@ -1003,7 +1003,7 @@ public:
   virtual void CalcShape (const IntegrationPoint & ip, 
 			  FlatVector<> shape) const;
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+			   FlatMatrixFixWidth<2> dshape) const;
 			  
   virtual const IntegrationRule & NodalIntegrationRule() const;
 }; 
@@ -1019,7 +1019,7 @@ public:
   virtual void CalcShape (const IntegrationPoint & ip, 
 			  FlatVector<> shape) const;
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+			   FlatMatrixFixWidth<2> dshape) const;
 }; 
 
 
@@ -1069,7 +1069,7 @@ public:
 			  
   ///
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+			   FlatMatrixFixWidth<3> dshape) const;
 
   ///
   virtual const IntegrationRule & NodalIntegrationRule() const;
@@ -1106,7 +1106,7 @@ public:
 			  FlatVector<> shape) const;
 			  
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+			   FlatMatrixFixWidth<3> dshape) const;
 			  
 
   ///
@@ -1169,7 +1169,7 @@ public:
 
   ///
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+			   FlatMatrixFixWidth<3> dshape) const;
 
   ///
   virtual const IntegrationRule & NodalIntegrationRule() const;
@@ -1193,7 +1193,7 @@ public:
 			  FlatVector<> shape) const;
   
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+			   FlatMatrixFixWidth<3> dshape) const;
 			  
   virtual const IntegrationRule & NodalIntegrationRule() const;
 };
@@ -1228,7 +1228,7 @@ public:
 			  FlatVector<> shape) const;
 			  
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+			   FlatMatrixFixWidth<3> dshape) const;
 };
 
 
@@ -1252,7 +1252,7 @@ public:
 			  FlatVector<> shape) const;
 			  
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+			   FlatMatrixFixWidth<3> dshape) const;
 };
 
 

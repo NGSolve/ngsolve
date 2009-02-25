@@ -35,7 +35,6 @@ public:
 
   /// high order elements need extra configuration. update ndof and order
   virtual void ComputeNDof () = 0;
-  // const int * GetVNums() const { return vnums; }
 };
 
 
@@ -74,7 +73,7 @@ public:
                           FlatVector<> shape) const;
 
   virtual void CalcDShape (const IntegrationPoint & ip, 
-                           FlatMatrix<> dshape) const;
+                           FlatMatrixFixWidth<DIM> dshape) const;
 
   /*
   /// compute dshape, matrix: ndof x spacedim
@@ -238,8 +237,6 @@ class H1HighOrderFE<ET_PYRAMID> : public T_H1HighOrderFiniteElement<ET_PYRAMID>
 public:
   H1HighOrderFE () { ; }
   H1HighOrderFE (int aorder);
-  virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[3], TFA & shape) const; 
