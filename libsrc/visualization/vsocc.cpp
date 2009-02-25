@@ -553,7 +553,7 @@ namespace netgen
             }
             else
             {
-               mat_col[0] = 1.0;
+               mat_col[0] = 0.0;
                mat_col[1] = 1.0;
                mat_col[2] = 0.0;
             }

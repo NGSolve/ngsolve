@@ -1053,7 +1053,7 @@ namespace netgen
          }
          else
          {
-            matcol[0] = 1.0;
+            matcol[0] = 0.0;
             matcol[1] = 1.0;
             matcol[2] = 0.0;
          }
