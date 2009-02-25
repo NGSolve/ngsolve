@@ -994,10 +994,10 @@ namespace netgen
       glDisable (GL_COLOR_MATERIAL);
 
 
-    GLfloat matcol[] = { 1, 1, 0, 1 };
+    GLfloat matcol[] = { 0, 1, 0, 1 };
     GLfloat matcolsel[] = { 1, 0, 0, 1 };
 #ifdef PARALLEL
-    GLfloat mat_coll_transp[] = { 1, 1, 0, 0.3 };
+    GLfloat mat_coll_transp[] = { 0, 1, 0, 0.3 };
     GLfloat mat_coll_transp_sel[] = { 1, 0, 0, 0.3 };
 #endif
 
