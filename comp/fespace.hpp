@@ -49,9 +49,6 @@ protected:
   /// on which boundaries is the space defined ?
   Array<int> definedonbound;
 
-  // BEM is not supported
-  // Array<int> BEMboundary;
-
   /// prototype: what are the (homogeneous) Dirichlet boundaries ?
   BitArray dirichlet_boundaries;
 
@@ -127,7 +124,6 @@ public:
      -complex:      complex space \\
      -eliminate_internal:  eliminate internal dofs \\
      -dirichlet=<int-list>: dirichlet boundaries, 1-based \\
-     
   */
   FESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
   ///
@@ -151,13 +147,11 @@ public:
   /// complex space ?
   bool IsComplex () const { return iscomplex; }
 
-  //
-  // void SetBEM (bool abem);
-
+  /*
   /// will be replaced by getclassname !
   virtual const char * GetType() 
   { return GetClassName().c_str(); }
-
+  */
 
   /// number of global dofs
   virtual int GetNDof () const = 0;
@@ -441,100 +435,6 @@ public:
 
 
 
-#ifdef OLD
-/// use edge and face tables
-class NodalFESpaceAlt : public FESpace
-{
-  ///
-  Array<int> ndlevel;
-  ///
-  int nv, ned, nfa;
-public:
-
-  ///
-  NodalFESpaceAlt (const MeshAccess & ama,
-		   int aorder, int adim, bool acomplex);
-
-  ///
-  ~NodalFESpaceAlt ();
-
-
-  virtual string GetClassName () const
-  {
-    return "NodalFESpaceAlt";
-  }
-
-  ///
-  virtual void Update();
-  ///
-  virtual int GetNDof () const;
-  ///
-  virtual int GetNDofLevel (int level) const;
-
-  /*
-  ///
-  virtual const NodalFiniteElement & GetFE (int elnr, LocalHeap & lh) const
-  {
-    return static_cast<const NodalFiniteElement&> (FESpace::GetFE(elnr));
-  }
-
-  ///
-  virtual const FiniteElement & GetSFE (int selnr) const
-  {
-    return static_cast<const NodalFiniteElement&> (FESpace::GetSFE(selnr));
-  }
-  */
-  ///
-  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-  ///
-  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
-
-
-  template <class MAT>
-  void TransformMat (int elnr, bool boundary,
-		     MAT & mat, TRANSFORM_TYPE tt) const;
-
-  template <class VEC>
-  void TransformVec (int elnr, bool boundary,
-		     VEC & vec, TRANSFORM_TYPE tt) const;
-
-
-  virtual void VTransformMR (int elnr, bool boundary,
-			     FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const 
-  {
-    TransformMat (elnr, boundary, mat, tt);
-  }
-
-  virtual void VTransformMC (int elnr, bool boundary,
-			     FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
-  {
-    TransformMat (elnr, boundary, mat, tt);
-  }
-
-  virtual void VTransformVR (int elnr, bool boundary,
-			     FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
-  {
-    TransformVec (elnr, boundary, vec, tt);
-  }
-
-  virtual void VTransformVC (int elnr, bool boundary,
-			     FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
-  {
-    TransformVec (elnr, boundary, vec, tt);
-  }
-
-  /*
-  ///
-  virtual void TransformMatrix (int elnr, DenseMatrix & mat) const;
-  ///
-  virtual void TransformSurfMatrix (int elnr, DenseMatrix & mat) const;
-  */
-  ///
-  virtual void LockSomeDofs (BaseMatrix & mat) const;
-  ///
-  virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
-};
-#endif
 
 
 
@@ -841,6 +741,35 @@ public:
 
 #endif
 };
+
+
+/*
+template <class FE0, class FE1>
+class CompositeFESpace : public CompoundFESpace
+{
+public:
+  CompositeFESpace (const MeshAccess & ama,
+                    const Array<const FESpace*> & aspaces,
+                    const Flags & flags, bool parseflags=false)
+    : CompoundFESpace (ama, aspaces, flags, parseflags)
+  { ; }
+
+  virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const
+  {
+    void * mem = lh.Alloc (sizeof(CompositeFiniteElement<FE0,FE1>));
+    return *new (mem) CompositeFiniteElement<FE0, FE1> 
+      (static_cast<const FE0&> (spaces[0]->GetFE(elnr, lh)),
+       static_cast<const FE1&> (spaces[1]->GetFE(elnr, lh)));
+                                             
+  }
+
+};
+*/
+
+
+
+
+
 
 
 

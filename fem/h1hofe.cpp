@@ -12,23 +12,8 @@ namespace ngfem
   using namespace ngfem;
 
   template<int D>
-  H1HighOrderFiniteElement<D> ::   
-  H1HighOrderFiniteElement (ELEMENT_TYPE aeltype)
-    : NodalFiniteElement<D> (D, aeltype, -1, -1) 
-  { 
-    for (int i = 0; i < 8; i++)
-      vnums[i] = i;
-
-    for (int i = 0; i < 8; i++)
-      order_vertex[i] = NodalFiniteElement<D>::order;
-
-    augmented = 0;
-    NodalFiniteElement<D>::needs_update = true;
-  }
-   
-  template<int D>
   void H1HighOrderFiniteElement<D>::
-  SetVertexNumbers (FlatArray<int> & avnums, LocalHeap & lh)
+  SetVertexNumbers (FlatArray<int> & avnums)
   {
     for (int i = 0; i < avnums.Size(); i++)
       vnums[i] = avnums[i];
@@ -39,8 +24,6 @@ namespace ngfem
   SetOrderInner (int oi)
   {
     order_inner = INT<3> (oi,oi,oi); 
-    NodalFiniteElement<D>::needs_update = true;
-    // ComputeNDof();
   }
 
   template<int D>
@@ -48,17 +31,6 @@ namespace ngfem
   SetOrderInner (INT<3> oi)
   {
     order_inner = oi;
-    NodalFiniteElement<D>::needs_update = true;
-    // ComputeNDof();
-  }
-
-  template<int D>
-  void H1HighOrderFiniteElement<D>::
-  SetAugmented (int aa)
-  {
-    augmented = aa;
-    NodalFiniteElement<D>::needs_update = true;
-    // ComputeNDof();
   }
 
   template<int D>
@@ -67,8 +39,6 @@ namespace ngfem
   {
     for (int i = 0; i < of.Size(); i++)
       order_face[i] = INT<2>(of[i],of[i]);
-    NodalFiniteElement<D>::needs_update = true;
-    // ComputeNDof();
   }
 
   template<int D>
@@ -77,8 +47,6 @@ namespace ngfem
   {
     for (int i = 0; i < of.Size(); i++)
       order_face[i] = of[i];
-    NodalFiniteElement<D>::needs_update = true;
-    // ComputeNDof();
   }
 
   
@@ -88,34 +56,21 @@ namespace ngfem
   {
     for (int i = 0; i < oe.Size(); i++)
       order_edge[i] = oe[i];
-    NodalFiniteElement<D>::needs_update = true;
-    // ComputeNDof();
   }
-
-  template<int D>
-  void H1HighOrderFiniteElement<D>::
-  SetOrderVertex (FlatArray<int> & ov)
-  {
-    for (int i = 0; i < ov.Size(); i++)
-      order_vertex[i] = ov[i];
-    NodalFiniteElement<D>::needs_update = true;
-    // ComputeNDof();
-  }
-
 
   template<int D>
   void H1HighOrderFiniteElement<D> :: GetDofs (Array<Dof> & dofs) const
   {
     dofs.SetSize (0);
     
-    for (int i = 0; i < ElementTopology::GetNNodes(NodalFiniteElement<D>::eltype, NT_VERTEX); i++)
+    for (int i = 0; i < ElementTopology::GetNNodes(eltype, NT_VERTEX); i++)
       dofs.Append (Dof (Node (NT_VERTEX, i), 0));
 
-    for (int i = 0; i < ElementTopology::GetNNodes(NodalFiniteElement<D>::eltype, NT_EDGE); i++)
+    for (int i = 0; i < ElementTopology::GetNNodes(eltype, NT_EDGE); i++)
       for (int j = 0; j < order_edge[i]-1; j++)
 	dofs.Append (Dof (Node (NT_EDGE, i), j));
 
-    for (int i = 0; i < ElementTopology::GetNNodes(NodalFiniteElement<D>::eltype, NT_FACE); i++)
+    for (int i = 0; i < ElementTopology::GetNNodes(eltype, NT_FACE); i++)
       {
         INT<2> p;
         if (D == 2)
@@ -124,9 +79,8 @@ namespace ngfem
           p = order_face[i];
         
         int nf;
-        if (D == 2 && NodalFiniteElement<D>::eltype == ET_TRIG || 
-            D == 3 && 
-            ElementTopology::GetFacetType (NodalFiniteElement<D>::eltype, i) == ET_TRIG)
+        if (D == 2 && eltype == ET_TRIG || 
+            D == 3 && ElementTopology::GetFacetType (eltype, i) == ET_TRIG)
           nf = (p[0]-1)*(p[0]-2) / 2;
         else
           nf = (p[0]-1)*(p[1]-1);
@@ -138,7 +92,7 @@ namespace ngfem
     int ni = 0;
     INT<3> p = order_inner;
     if (D == 3)
-      switch (NodalFiniteElement<D>::eltype)
+      switch (eltype)
         {
         case ET_TET:  if(p[0] > 3) ni = (p[0]-1)*(p[0]-2)*(p[0]-3)/6;   
           break;
@@ -155,108 +109,180 @@ namespace ngfem
   }
 
 
+  template <ELEMENT_TYPE ET>
+  void T_H1HighOrderFiniteElement<ET> :: 
+  ComputeNDof()
+  {
+    ndof = ET_trait<ET>::N_VERTEX;
+    
+    for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+      ndof += order_edge[i] -1;
+    
+    for (int i = 0; i < ET_trait<ET>::N_FACE; i++)
+      if (ET_trait<ET>::FaceType(i) == ET_TRIG)
+        ndof += (order_face[i][0]-1)*(order_face[i][0]-2) / 2;
+      else
+        ndof += (order_face[i][0]-1)*(order_face[i][1]-1);
+    
+    switch (ET)
+      {
+      case ET_TET: 
+        ndof += (order_inner[0]-1)*(order_inner[0]-2)*(order_inner[0]-3) / 6; 
+        break;
+      case ET_PRISM:
+        ndof += (order_inner[0]-1)*(order_inner[0]-2)/2*(order_inner[2]-1);
+        break;
+      case ET_PYRAMID:
+        ndof += (order_inner[0]-1)*(order_inner[0]-2)*(2*order_inner[0]-3) / 6; 
+        break;
+      case ET_HEX:
+        ndof += (order_inner[0]-1)*(order_inner[1]-1)*(order_inner[2]-1);
+        break;
+      default:
+        ;
+      }
+    
+    order = 1;
+    for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+      order = max(order, order_edge[i]);
+
+    for (int i = 0; i < ET_trait<ET>::N_FACE; i++)
+      order = max(order, max (order_face[i][0], order_face[i][1]));
+    
+    order = max(order, order_inner[0]);
+    order = max(order, order_inner[1]);
+    order = max(order, order_inner[2]);
+  }
+
+
+  template <ELEMENT_TYPE ET>
+  void T_H1HighOrderFiniteElement<ET> :: 
+  GetInternalDofs (Array<int> & idofs) const
+  {
+    int ni = 0;
+    switch (ET)
+      {
+      case ET_TRIG: 
+        ni = (order_face[0][0]-1)*(order_face[0][0]-2) / 2; 
+        break;
+      case ET_QUAD: 
+        ni = (order_face[0][0]-1)*(order_face[0][1]-1);
+        break;
+      case ET_TET: 
+        ni = (order_inner[0]-1)*(order_inner[0]-2)*(order_inner[0]-3) / 6;
+        break;
+      case ET_PRISM: 
+        ni = (order_inner[0]-1)*(order_inner[0]-2)/2*(order_inner[2]-1);
+        break;
+      case ET_PYRAMID:
+        ni = (order_inner[0]-1)*(order_inner[0]-2)*(2*order_inner[0]-3) / 6; 
+        break;
+      case ET_HEX: 
+        ni = (order_inner[0]-1)*(order_inner[1]-1)*(order_inner[2]-1);
+        break;
+      }
+    
+    idofs.SetSize (0);
+    for (int i = 0; i < ni; i++)
+      idofs.Append (ndof-ni+i);
+  }
+
+
+
+
+
+  template <ELEMENT_TYPE ET>
+  void T_H1HighOrderFiniteElement<ET> :: 
+  CalcShape (const IntegrationPoint & ip, 
+             FlatVector<> shape) const
+  {
+    double pt[DIM];
+    for (int i = 0; i < DIM; i++) pt[i] = ip(i);
+    static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (pt, shape); 
+  }
+
+  template <ELEMENT_TYPE ET>
+  void T_H1HighOrderFiniteElement<ET> :: 
+  CalcDShape (const IntegrationPoint & ip, 
+              FlatMatrix<> dshape) const
+  {
+    AutoDiff<DIM> adp[DIM];
+    for (int i = 0; i < DIM; i++)
+      adp[i] = AutoDiff<DIM> (ip(i), i);
+
+    ArrayMem<AutoDiff<DIM>,40> sds(ndof);
+    static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (adp, sds);
+
+    for (int i = 0; i < ndof; i++)
+      for (int j = 0; j < DIM; j++)
+	dshape(i,j) = sds[i].DValue(j);
+  }
+
+
+
+
+
+
+
+
+
   /* *********************** Segment  **********************/
 
 
-  template <class T_ORTHOPOL>
-  H1HighOrderSegm<T_ORTHOPOL> :: H1HighOrderSegm (int aorder)
-    : H1HighOrderFiniteElement<1>(ET_SEGM)
+
+  H1HighOrderFE<ET_SEGM> :: H1HighOrderFE (int aorder)
+    : T_H1HighOrderFiniteElement<ET_SEGM> (), ScalarFiniteElement<1>(ET_SEGM)
   {
     order_inner = aorder;
     ComputeNDof();
   }
 
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderSegm<T_ORTHOPOL> :: ComputeNDof()
+  /*
+  void H1HighOrderFE<ET_SEGM> :: ComputeNDof()
   {
     ndof = 2;
-    if (augmented == 1) ndof += 2;
-    if (augmented == 2) ndof = 2 * order_inner[0];
-
     ndof += order_inner[0]-1;
     order = order_inner[0];
-
-    needs_update = 0;
   }
+  */
 
-
-
-  template <class T_ORTHOPOL> 
-  void H1HighOrderSegm<T_ORTHOPOL> ::CalcShape( const IntegrationPoint & ip,
-						FlatVector<> shape) const
+  template<typename Tx, typename TFA>  
+  void H1HighOrderFE<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & sds) const
   {
-    double x = ip(0);
-    double lami[2] = { x, 1-x };
+    Tx x = hx[0];
+    Tx lami[2] = { x, 1-x };
  
-    shape = 0.0;
+    sds = 0.0;
 
-    shape(0) = lami[0];
-    shape(1) = lami[1];
+    sds[0] = lami[0];
+    sds[1] = lami[1];
 
     int ii = 2;
-    
-    // vertex shapes
-    if (augmented == 1)
-      for (int i = 0; i < 2; i++)
-	shape(ii++) = T_VERTEXSHAPES::Calc (order, lami[i]);
-    else
-      if (augmented == 2)
-	for (int i = 0; i < 2; i++)
-	  {
-	    ArrayMem<double,20> pol(order+1);
-	    LegendrePolynomial (order-1, -1+2*lami[i], pol);	
-	    for (int j = 1; j < order; j++)
-	      shape(ii++) = pol[j] * lami[i];
-	  }
-    
     int ee=1, es=0;
     if (vnums[es] > vnums[ee]) swap(es,ee);
-    double * pedge = &shape(ii);
-    T_ORTHOPOL::Calc (order_inner[0], lami[ee]-lami[es], pedge);
-  }
- 
-  template <class T_ORTHOPOL>
-  void H1HighOrderSegm<T_ORTHOPOL> :: CalcDShape (const IntegrationPoint & ip, 
-						  FlatMatrix<> dshape) const
-  {
-    AutoDiff<1> x(ip(0),0); 
-    AutoDiff<1> lami[2] = {x,1-x}; 
-    dshape(0,0) = lami[0].DValue(0);
-    dshape(1,0) = lami[1].DValue(0);
-    
-    int ee=1,es=0;
-    if (vnums[es] > vnums[ee]) swap(es,ee);
-    
-    int ii=2; 
-    ArrayMem<AutoDiff<1>,10> pedge(order_inner[0]);  
-    T_ORTHOPOL::Calc (order_inner[0], lami[ee]-lami[es], pedge);
-    for(int i=0;i<order_inner[0]-1;i++)
-      dshape(ii++,0)=pedge[i].DValue(0); 
+    T_ORTHOPOL::Calc (order_inner[0], lami[ee]-lami[es], sds.Addr(ii));
   }
 
 
 
   /* *********************** Triangle  **********************/
 
-  template <class T_ORTHOPOL>
-  H1HighOrderTrig<T_ORTHOPOL> :: H1HighOrderTrig(int aorder)
-    : H1HighOrderFiniteElement<2> (ET_TRIG)
+
+  H1HighOrderFE<ET_TRIG> :: H1HighOrderFE(int aorder)
+    : T_H1HighOrderFiniteElement<ET_TRIG> (), ScalarFiniteElement<2>(ET_TRIG)
   {
     order_inner = INT<3> (aorder,aorder,aorder);
+    order_face[0] = INT<2> (aorder,aorder);
     for (int i = 0; i < 3; i++)
       order_edge[i] = aorder;
 
     ComputeNDof();
   }
 
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderTrig<T_ORTHOPOL> :: ComputeNDof()
+  /*
+  void H1HighOrderFE<ET_TRIG> :: ComputeNDof()
   {
     ndof = 3;
-    if (augmented == 1) ndof += 3;
-    if (augmented == 2) ndof = 3 * order_inner[0];
 
     for (int i = 0; i < 3; i++)
       ndof += order_edge[i] - 1;
@@ -269,70 +295,33 @@ namespace ngfem
 	order = order_edge[i];
     if (oi > order)
       order = oi;
-
-    needs_update = 0;
   }
+  */
 
-
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderTrig<T_ORTHOPOL> ::  
+  /*
+  void H1HighOrderFE<ET_TRIG> ::  
   GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
 
     int base = 3;
-    if (augmented == 1) base *= 2;
-    if (augmented == 2) base *= order_inner[0];
-
-    int i;
-    for (i = 0; i < 3; i++)
+    for (int i = 0; i < 3; i++)
       base += order_edge[i] - 1;
 
     if(order_inner[0] > 2)
       {
 	int ni = (order_inner[0]-1)*(order_inner[0]-2) / 2;
-	for (i = 0; i < ni; i++)
+	for (int i = 0; i < ni; i++)
 	  idofs.Append (base+i);
       }
   }
+  */
 
 
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderTrig<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip, 
-						 FlatVector<> shape) const
+  template<typename Tx, typename TFA>  
+  void H1HighOrderFE<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & sds) const
   {
-    // T_CalcShape<double, double, FlatVector<> > (ip(0), ip(1), shape); 
-    T_CalcShape (ip(0), ip(1), shape); 
-  }
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderTrig<T_ORTHOPOL> :: CalcDShape (const IntegrationPoint & ip, 
-						  FlatMatrix<> dshape) const
-  {
-    AutoDiff<2> x(ip(0), 0);
-    AutoDiff<2> y(ip(1), 1);
-
-    ArrayMem<AutoDiff<2>,40> sds(ndof);
-    // T_CalcShape<AutoDiff<2>, AutoDiff<2>, FlatArray<AutoDiff<2> > > (x,y,sds);
-    T_CalcShape (x,y,sds);
-
-    for (int i = 0; i < ndof; i++)
-      for (int j = 0; j < 2; j++)
-	dshape(i,j) = sds[i].DValue(j);
-  }
-
-
-
-  template<typename T_ORTHOPOL> 
-  template<typename Tx, typename Ty, typename TFA>  
-  void  H1HighOrderTrig<T_ORTHOPOL> :: T_CalcShape (Tx x, Ty y, TFA & sds) const
-  {
-    if (needs_update) 
-      throw Exception ("H1HighOrderTrig needs update");
-
-
+    Tx x = hx[0], y = hx[1];
     Tx lami[3] = { x, y, 1-x-y };
 
     sds = 0.0;
@@ -341,20 +330,6 @@ namespace ngfem
       sds[i] = lami[i];
 
     int ii = 3;
-
-    // vertex shapes
-    if (augmented == 1)
-      for (int i = 0; i < 3; i++)
-	sds[ii++] = T_VERTEXSHAPES::Calc (order, lami[i]);
-    else
-      if (augmented == 2)
-	for (int i = 0; i < 3; i++)
-	  {
-	    ArrayMem<Tx,20> pol(order+1);
-	    LegendrePolynomial (order-1, -1+2*lami[i], pol);	
-	    for (int j = 1; j < order; j++)
-	      sds[ii++] = pol[j] * lami[i];
-	  }
     
     // edge dofs
     const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
@@ -364,15 +339,9 @@ namespace ngfem
 	  int es = edges[i][0], ee = edges[i][1];
 	  if (vnums[es] > vnums[ee]) swap (es, ee);
 
-          /*
-	  Tx * hp = &sds[ii];
-	  ii += T_ORTHOPOL::CalcTrigExt (order_edge[i], 
-					 lami[ee]-lami[es], 1-lami[es]-lami[ee], hp);
-          */
 	  ii += T_ORTHOPOL::CalcTrigExt (order_edge[i], 
 					 lami[ee]-lami[es], 1-lami[es]-lami[ee], 
                                          sds.Addr(ii));
-          // Range(ii, ii+order_edge[i]-1));
 	}
     
     int fav[3] = { 0, 1, 2 }; 
@@ -382,29 +351,28 @@ namespace ngfem
 
     if (order_inner[0] >= 3)
       {
-	// Tx * hp = &sds[ii];
 	ii += T_INNERSHAPES::Calc (order_inner[0], lami[fav[2]]-lami[fav[1]],
 				   lami[fav[0]], sds.Addr(ii));
-        // Range (ii, ii+order_inner[0]-1));
       }
   }
 
+
   /* *********************** Quadrilateral  **********************/
 
-  template <class T_ORTHOPOL>
-  H1HighOrderQuad<T_ORTHOPOL> :: H1HighOrderQuad (int aorder)
-    : H1HighOrderFiniteElement<2> (ET_QUAD)
+  H1HighOrderFE<ET_QUAD> :: H1HighOrderFE (int aorder)
+  // : T_H1HighOrderFiniteElement<ET_QUAD> (), ScalarFiniteElement<2>(ET_QUAD)
   {
     order_inner = INT<3> (aorder,aorder,aorder);
+    order_face[0] = INT<2> (aorder,aorder);
     for (int i = 0; i < 4; i++)
       order_edge[i] = aorder;
     ComputeNDof();
   }
 
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderQuad<T_ORTHOPOL> :: ComputeNDof()
+  /*
+  void H1HighOrderFE<ET_QUAD> :: ComputeNDof()
   {
+    cout << "compute ndof, quad" << endl;
     order = 1;
     for (int i = 0; i < 4; i++)
       if (order_edge[i] > order)
@@ -415,102 +383,51 @@ namespace ngfem
 	order = order_inner[m];
     
     ndof = 4;
-    if (augmented == 1) ndof *= 2;
-    if (augmented == 2) ndof *= order;
-
     for (int i = 0; i < 4; i++)
       if(order_edge[i]>1)
 	ndof += order_edge[i] - 1;
     
+    cout << "ndof, e = " << ndof << endl;
     if(order_inner[0] > 1 && order_inner[1] >1)
       ndof += (order_inner[0]-1)*(order_inner[1]-1);
 
-    needs_update = 0;
+    cout << "order_face = " <<order_face[0] << endl;
+    cout << "order_inner = " <<order_inner << endl;
+
+    cout << "ndof, f = " << ndof << endl;
   }
 
-  template <class T_ORTHOPOL>
-  void H1HighOrderQuad<T_ORTHOPOL> ::  
+  void H1HighOrderFE<ET_QUAD> ::  
   GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
 
     int base = 4;
-    if (augmented == 1) base *= 2;
-    if (augmented == 2) base *= order_inner[0];
 
-    int i;
-    for (i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++)
       base += order_edge[i] - 1;
 
     if(order_inner[0] >= 2 && order_inner[1] >= 2)
       {
 	int ni = (order_inner[0]-1)*(order_inner[1]-1);
-	for (i = 0; i < ni; i++)
+	for (int i = 0; i < ni; i++)
 	  idofs.Append (base+i);
       }
   }
+  */
 
-  template <class T_ORTHOPOL>
-  void H1HighOrderQuad<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip, 
-						 FlatVector<> shape) const
-  {  
-    T_CalcShape<double, double, FlatVector<> > (ip(0), ip(1), shape); 
-
-    /*
-      ArrayMem<AutoDiff<2>, 40> sds(ndof);
-      CalcShapeDShape (ip, sds);
-      for (int i = 0; i < ndof; i++)
-      shape(i) = sds[i].Value();
-    */
-  }
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderQuad<T_ORTHOPOL> :: CalcDShape (const IntegrationPoint & ip, 
-						  FlatMatrix<> dshape) const
+  template<typename Tx, typename TFA>  
+  void H1HighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & sds) const
   {
-    AutoDiff<2> x(ip(0), 0);
-    AutoDiff<2> y(ip(1), 1);
-
-    ArrayMem<AutoDiff<2>,40> sds(ndof);
-    T_CalcShape<AutoDiff<2>, AutoDiff<2>, FlatArray<AutoDiff<2> > >
-      (x,y,sds);
-    for (int i = 0; i < ndof; i++)
-      for (int j = 0; j < 2; j++)
-	dshape(i, j) = sds[i].DValue(j);
-    /*
-      ArrayMem<AutoDiff<2>,25> sds(ndof);
-      CalcShapeDShape (ip, sds);
-      for (int i = 0; i < ndof; i++)
-      for (int j = 0; j < 2; j++)
-      dshape(i, j) = sds[i].DValue(j);
-    */
-  }
-
-  template<typename T_ORTHOPOL> 
-  template<typename Tx, typename Ty, typename TFA>  
-  void  H1HighOrderQuad<T_ORTHOPOL> :: T_CalcShape (Tx x, Ty y, TFA & sds) const
-  {
+    Tx x = hx[0], y = hx[1];
     Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
     Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
     
-    sds = 0.0;
+    // sds = 0.0;
 
     // vertex shapes
     for(int i=0; i < 4; i++) sds[i] = lami[i]; 
     int ii = 4;
-
-    if (augmented == 1)
-      for (int i = 0; i < 4; i++)
-	sds[ii++] = T_VERTEXSHAPES::Calc (order, sds[i]);
-    else
-      if (augmented == 2)
-	for (int i = 0; i < 4; i++)
-	  {
-	    ArrayMem<Tx,20> pol(order+1);
-	    LegendrePolynomial (order-1, -1+2*sds[i], pol);	
-	    for (int j = 1; j < order; j++)
-	      sds[ii++] = pol[j] * sds[i];
-	  }
 
     ArrayMem<Tx,20> polxi(order+1), poleta(order+1);
      
@@ -532,12 +449,10 @@ namespace ngfem
 	  sds[ii++] = eta * polxi[j];
       }    
     
-    int inci; 
-    if (order_inner[0] >= 2 && order_inner[1] >= 2)
+    
+    INT<2> p (order_face[0][0], order_face[0][1]);
+    if (p[0] >= 2 && p[1] >= 2)
       {
-	inci = ii ; 
-	INT<2> p (order_inner[0], order_inner[1]);
-
 	int fmax = 0; 
 	for (int j = 1; j < 4; j++)
 	  if (vnums[j] > vnums[fmax]) fmax = j;
@@ -562,9 +477,9 @@ namespace ngfem
 
   /* *********************** Tetrahedron  **********************/
 
-  template <class T_ORTHOPOL>
-  H1HighOrderTet<T_ORTHOPOL> :: H1HighOrderTet (int aorder)
-    : H1HighOrderFiniteElement<3> (ET_TET)
+
+  H1HighOrderFE<ET_TET> :: H1HighOrderFE (int aorder)
+    : T_H1HighOrderFiniteElement<ET_TET> (), ScalarFiniteElement<3>(ET_TET)
   {
     order_inner = INT<3> (aorder,aorder,aorder);
 
@@ -576,13 +491,10 @@ namespace ngfem
     ComputeNDof();
   }
 
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderTet<T_ORTHOPOL> :: ComputeNDof()
+  /*
+  void H1HighOrderFE<ET_TET> :: ComputeNDof()
   {
     ndof = 4;
-    if (augmented == 1) ndof *= 2;
-    if (augmented == 2) ndof *= order_inner[0];
 
     for (int i = 0; i < 6; i++)
       ndof += order_edge[i] - 1;
@@ -599,20 +511,15 @@ namespace ngfem
 	order = order_face[i][0];
     if (order_inner[0] > order)
       order = order_inner[0];
-
-    needs_update = 0;
   }
-
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderTet<T_ORTHOPOL> ::  
+  */
+  /*
+  void H1HighOrderFE<ET_TET> ::  
   GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
 
     int base = 4;
-    if (augmented == 1) base *= 2;
-    if (augmented == 2) base *= order_inner[0];
 
     for (int i = 0; i < 6; i++)
       base += order_edge[i] - 1;
@@ -626,65 +533,12 @@ namespace ngfem
 	  idofs.Append (base+i);
       }
   }
+  */
 
-
-
-
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderTet<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip, 
-						FlatVector<> shape) const
+  template<typename Tx, typename TFA>  
+  void  H1HighOrderFE<ET_TET> :: T_CalcShape (Tx hx[3], TFA & sds) const
   {
-    T_CalcShape<double, double, double, FlatVector<> > (ip(0), ip(1), ip(2), shape); 
-  }
-  
-  template <class T_ORTHOPOL>
-  void H1HighOrderTet<T_ORTHOPOL> :: CalcDShape (const IntegrationPoint & ip, 
-						 FlatMatrix<> dshape) const
-  {
-    AutoDiff<3> x(ip(0), 0);
-    AutoDiff<3> y(ip(1), 1);
-    AutoDiff<3> z(ip(2), 2);
-
-    ArrayMem<AutoDiff<3>,40> sds(ndof);
-    T_CalcShape<AutoDiff<3>, AutoDiff<3>, AutoDiff<3>, FlatArray<AutoDiff<3> > >
-      (x,y,z,sds);
-    for (int i = 0; i < ndof; i++)
-      for (int j = 0; j < 3; j++)
-	dshape(i, j) = sds[i].DValue(j);
-  }
-
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderTet<T_ORTHOPOL> :: 
-  CalcMappedDShape (const BaseSpecificIntegrationPoint & bsip, 
-                    FlatMatrix<> dshape) const
-  {
-    const SpecificIntegrationPoint<3,3> & sip = 
-      static_cast<const SpecificIntegrationPoint<3,3> &> (bsip);
-    
-    const IntegrationPoint & ip = sip.IP();
-    AutoDiff<3> x(ip(0)), y(ip(1)), z(ip(2));
-    for (int j = 0; j < 3; j++)
-      {
-        x.DValue(j) = sip.GetJacobianInverse()(0,j);
-        y.DValue(j) = sip.GetJacobianInverse()(1,j);
-        z.DValue(j) = sip.GetJacobianInverse()(2,j);
-      }
-
-    ArrayMem<AutoDiff<3>,40> sds(ndof);
-    T_CalcShape<AutoDiff<3>, AutoDiff<3>, AutoDiff<3>, FlatArray<AutoDiff<3> > >
-      (x,y,z,sds);
-    for (int i = 0; i < ndof; i++)
-      for (int j = 0; j < 3; j++)
-	dshape(i, j) = sds[i].DValue(j);
-  }
-   
-
-  template<typename T_ORTHOPOL> 
-  template<typename Tx, typename Ty, typename Tz, typename TFA>  
-  void  H1HighOrderTet<T_ORTHOPOL> :: T_CalcShape (Tx x, Ty y, Tz z, TFA & sds) const
-  {
+    Tx x = hx[0], y = hx[1], z = hx[2];
     sds = 0.0;
 
     Tx lami[4] = { x, y, z, 1-x-y-z };
@@ -696,19 +550,6 @@ namespace ngfem
       sds[i] = lami[i];
     int ii = 4; 
 
-    if (augmented == 1)
-      for (int i = 0; i < 4; i++)
-	sds[ii++] = T_VERTEXSHAPES::Calc (order, lami[i]);
-    else
-      if (augmented == 2)
-	for (int i = 0; i < 4; i++)
-	  {
-	    ArrayMem<Tx,20> pol(order+1);
-	    LegendrePolynomial (order-1, -1+2*lami[i], pol);	
-	    for (int j = 1; j < order; j++)
-	      sds[ii++] = pol[j] * lami[i];
-	  }
- 
     // edge dofs
     const EDGE * edges = ElementTopology::GetEdges (ET_TET);
     for (int i = 0; i < 6; i++)
@@ -754,9 +595,8 @@ namespace ngfem
   /* *********************** Prism  **********************/
 
 
-  template <class T_ORTHOPOL>
-  H1HighOrderPrism<T_ORTHOPOL> :: H1HighOrderPrism (int aorder)
-    : H1HighOrderFiniteElement<3> (ET_PRISM)
+  H1HighOrderFE<ET_PRISM> :: H1HighOrderFE (int aorder)
+    : T_H1HighOrderFiniteElement<ET_PRISM> (), ScalarFiniteElement<3>(ET_PRISM)
   {
     order_inner = INT<3> (aorder,aorder,aorder);
     for (int i = 0; i < 9; i++)
@@ -764,18 +604,13 @@ namespace ngfem
     for (int i = 0; i < 5; i++)
       order_face[i] = INT<2> (aorder,aorder);
 
-    plate = 0;
-
     ComputeNDof();
   }
 
-
-  template <class T_ORTHOPOL>  
-  void H1HighOrderPrism<T_ORTHOPOL> :: ComputeNDof()
+  /*
+  void H1HighOrderFE<ET_PRISM> :: ComputeNDof()
   {
     ndof = 6;
-    if (augmented == 1) ndof *= 2;
-    if (augmented == 2) ndof *= order_inner[0];
 
     for (int i = 0; i < 9; i++)
       if(order_edge[i] > 1)
@@ -801,20 +636,15 @@ namespace ngfem
       order = order_inner[0];
     if (order_inner[2] > order)
       order = order_inner[2];
-
-    needs_update = 0;
   }
   
 
-  template <class T_ORTHOPOL>
-  void H1HighOrderPrism<T_ORTHOPOL> ::  
+  void H1HighOrderFE<ET_PRISM> ::  
   GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
 
     int base = 6;
-    if (augmented == 1) base *= 2;
-    if (augmented == 2) base *= order_inner[0];
 
     for (int i = 0; i < 9; i++)
       if(order_edge[i] > 1 ) 
@@ -825,10 +655,6 @@ namespace ngfem
 	if(order_face[i][0] >2)
 	  {
 	    int ni = (order_face[i][0]-1)*(order_face[i][0]-2) / 2;
-	    
-	    if (plate)
-	      for (int j = 0; j < ni; j++)
-		idofs.Append (base+j);
 	    base += ni;
 	  }
       }
@@ -844,37 +670,13 @@ namespace ngfem
 	  idofs.Append (base+i);
       }
   }
+  */
 
 
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderPrism<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip, 
-						  FlatVector<> shape) const
+  template<typename Tx, typename TFA>  
+  void  H1HighOrderFE<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & sds) const
   {
-    T_CalcShape<double, double, double, FlatVector<> > (ip(0), ip(1), ip(2), shape); 
-  }
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderPrism<T_ORTHOPOL> :: CalcDShape (const IntegrationPoint & ip, 
-						   FlatMatrix<> dshape) const
-  {
-    AutoDiff<3> x(ip(0), 0);
-    AutoDiff<3> y(ip(1), 1);
-    AutoDiff<3> z(ip(2), 2);
-
-    ArrayMem<AutoDiff<3>,40> sds(ndof);
-    T_CalcShape<AutoDiff<3>, AutoDiff<3>, AutoDiff<3>, FlatArray<AutoDiff<3> > >
-      (x,y,z,sds);
-    for (int i = 0; i < ndof; i++)
-      for (int j = 0; j < 3; j++)
-	dshape(i, j) = sds[i].DValue(j);
-  }
-
-
-  template<typename T_ORTHOPOL> 
-  template<typename Tx, typename Ty, typename Tz, typename TFA>  
-  void  H1HighOrderPrism<T_ORTHOPOL> :: T_CalcShape (Tx x, Ty y, Tz z, TFA & sds) const
-  {
+    Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
     Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
     
@@ -885,19 +687,6 @@ namespace ngfem
       sds[i] = lami[i] * muz[i];
 
     int ii = 6;
-
-    if (augmented == 1)
-      for (int i = 0; i < 6; i++)
-	sds[ii++] = T_VERTEXSHAPES::Calc (order, sds[i]);
-    else
-      if (augmented == 2)
-	for (int i = 0; i < 6; i++)
-	  {
-	    ArrayMem<Tx,20> pol(order+1);
-	    LegendrePolynomial (order-1, -1+2*sds[i], pol);	
-	    for (int j = 1; j < order; j++)
-	      sds[ii++] = pol[j] * sds[i];
-	  }
 
     // horizontal edge dofs
     const EDGE * edges = ElementTopology::GetEdges (ET_PRISM);
@@ -1006,9 +795,8 @@ namespace ngfem
 
   /* *********************** Hex  **********************/
 
-  template <class T_ORTHOPOL>
-  H1HighOrderHex<T_ORTHOPOL> :: H1HighOrderHex (int aorder)
-    : H1HighOrderFiniteElement<3> (ET_HEX)
+  H1HighOrderFE<ET_HEX> :: H1HighOrderFE (int aorder)
+    : T_H1HighOrderFiniteElement<ET_HEX> (), ScalarFiniteElement<3>(ET_HEX)
   {
     order_inner = INT<3> (aorder,aorder,aorder);
     for (int i = 0; i < 12; i++)
@@ -1018,13 +806,10 @@ namespace ngfem
     ComputeNDof();
   }
 
-  template <class T_ORTHOPOL>
-  void H1HighOrderHex<T_ORTHOPOL> :: ComputeNDof()
+  /*
+  void H1HighOrderFE<ET_HEX> :: ComputeNDof()
   {
     ndof = 8;
-
-    if (augmented == 1) ndof *= 2;
-    if (augmented == 2) ndof *= order_inner[0];
 
     for (int i = 0; i < 12; i++)
       ndof += order_edge[i] - 1;
@@ -1043,19 +828,14 @@ namespace ngfem
     for(int m=0; m<3; m++)
       if (order_inner[m] > order)
 	order = order_inner[m];
-
-    needs_update = 0;
   }
 
-  template <class T_ORTHOPOL>
-  void H1HighOrderHex<T_ORTHOPOL> ::  
+  void H1HighOrderFE<ET_HEX> ::  
   GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
 
     int base = 8;
-    if (augmented == 1) base *= 2;
-    if (augmented == 2) base *= order_inner[0];
 
     for (int i = 0; i < 12; i++)
       base += order_edge[i] - 1;
@@ -1069,40 +849,12 @@ namespace ngfem
 	  idofs.Append (base+i);
       }
   }
+  */
 
-
-
-  
-  template <class T_ORTHOPOL>
-  void H1HighOrderHex<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip, 
-						FlatVector<> shape) const
-  {
-    T_CalcShape<double, double, double, FlatVector<> > (ip(0), ip(1), ip(2), shape); 
-  }
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderHex<T_ORTHOPOL> :: CalcDShape (const IntegrationPoint & ip, 
-						 FlatMatrix<> dshape) const
-  {
-    AutoDiff<3> x(ip(0), 0);
-    AutoDiff<3> y(ip(1), 1);
-    AutoDiff<3> z(ip(2), 2);
-
-    ArrayMem<AutoDiff<3>,40> sds(ndof);
-    T_CalcShape<AutoDiff<3>, AutoDiff<3>, AutoDiff<3>, FlatArray<AutoDiff<3> > >
-      (x,y,z,sds);
-    for (int i = 0; i < ndof; i++)
-      for (int j = 0; j < 3; j++)
-	dshape(i, j) = sds[i].DValue(j);
-  }
-
-
-
-
-  template<typename T_ORTHOPOL> 
-  template<typename Tx, typename Ty, typename Tz, typename TFA>  
-  void  H1HighOrderHex<T_ORTHOPOL> :: T_CalcShape (Tx x, Ty y, Tz z, TFA & sds) const
+  template<typename Tx, typename TFA>  
+  void  H1HighOrderFE<ET_HEX> :: T_CalcShape (Tx hx[3], TFA & sds) const
   { 
+    Tx x = hx[0], y = hx[1], z = hx[2];
 
     sds = 0.0;
 
@@ -1114,19 +866,6 @@ namespace ngfem
     // vertex shapes
     for(int i=0; i<8; i++) sds[i] = lami[i]; 
     int ii = 8;
-
-    if (augmented == 1)
-      for (int i = 0; i < 8; i++)
-	sds[ii++] = T_VERTEXSHAPES::Calc (order, sds[i]);
-    else
-      if (augmented == 2)
-	for (int i = 0; i < 8; i++)
-	  {
-	    ArrayMem<Tx,20> pol(order+1);
-	    LegendrePolynomial (order-1, -1+2*sds[i], pol);	
-	    for (int j = 1; j < order; j++)
-	      sds[ii++] = pol[j] * sds[i];
-	  }
 
     ArrayMem<Tx,20> polx(order+1), poly(order+1), polz(order+1);
     
@@ -1202,9 +941,8 @@ namespace ngfem
 
   /* ******************************** Pyramid  ************************************ */
 
-  template <class T_ORTHOPOL>
-  H1HighOrderPyramid<T_ORTHOPOL> :: H1HighOrderPyramid (int aorder)
-    : H1HighOrderFiniteElement<3> (ET_PYRAMID)
+  H1HighOrderFE<ET_PYRAMID> :: H1HighOrderFE (int aorder)
+    : T_H1HighOrderFiniteElement<ET_PYRAMID>(), ScalarFiniteElement<3>(ET_PYRAMID)
   {
     order_inner = INT<3> (aorder,aorder,aorder);
     for (int i = 0; i < 8; i++)
@@ -1215,14 +953,10 @@ namespace ngfem
     ComputeNDof();
   }
 
-
-  template <class T_ORTHOPOL>
-  void H1HighOrderPyramid<T_ORTHOPOL> :: ComputeNDof()
+  /*
+  void H1HighOrderFE<ET_PYRAMID> :: ComputeNDof()
   {
     ndof = 5;
-
-    if (augmented == 1) ndof *= 2;
-    if (augmented == 2) ndof *= order_inner[0];
 
     for (int i = 0; i < 8; i++)
       ndof += order_edge[i] - 1;
@@ -1242,20 +976,15 @@ namespace ngfem
 	  order = order_face[i][k];
     if (order_inner[0] > order)
       order = order_inner[0];
-
-    needs_update = 0;
   }
 
 
-  template <class T_ORTHOPOL>
-  void H1HighOrderPyramid<T_ORTHOPOL> ::  
+  void H1HighOrderFE<ET_PYRAMID> ::  
   GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
 
     int base = 5;
-    if (augmented == 1) base *= 2;
-    if (augmented == 2) base *= order_inner[0];
 
     for (int i = 0; i < 8; i++)
       base += order_edge[i] - 1;
@@ -1271,49 +1000,12 @@ namespace ngfem
 	  idofs.Append (base+i);
       }
   }
+  */
 
-  template <class T_ORTHOPOL>
-  void H1HighOrderPyramid<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip, 
-						    FlatVector<> shape) const
+  template<typename Tx, typename TFA>  
+  void  H1HighOrderFE<ET_PYRAMID> :: T_CalcShape (Tx hx[3], TFA & sds) const
   {
-    T_CalcShape<double, double, double, FlatVector<> > (ip(0), ip(1), ip(2), shape); 
-    /*
-      ArrayMem<AutoDiff<3>, 40> sds(ndof);
-      CalcShapeDShape (ip, sds);
-      for (int i = 0; i < ndof; i++)
-      shape(i) = sds[i].Value();
-    */
-  }
-
-  template <class T_ORTHOPOL>  
-  void H1HighOrderPyramid<T_ORTHOPOL> :: CalcDShape (const IntegrationPoint & ip, 
-						     FlatMatrix<> dshape) const
-  {
-    AutoDiff<3> x(ip(0), 0);
-    AutoDiff<3> y(ip(1), 1);
-    AutoDiff<3> z(ip(2), 2);
-
-    ArrayMem<AutoDiff<3>,40> sds(ndof);
-    T_CalcShape<AutoDiff<3>, AutoDiff<3>, AutoDiff<3>, FlatArray<AutoDiff<3> > >
-      (x,y,z,sds);
-    for (int i = 0; i < ndof; i++)
-      for (int j = 0; j < 3; j++)
-	dshape(i, j) = sds[i].DValue(j);
-    /*
-      ArrayMem<AutoDiff<3>,40> sds(ndof);
-      CalcShapeDShape (ip, sds);
-      for (int i = 0; i < ndof; i++)
-      for (int j = 0; j < 3; j++)
-      dshape(i, j) = sds[i].DValue(j);
-    */
-  }
-
-
-
-  template<typename T_ORTHOPOL> 
-  template<typename Tx, typename Ty, typename Tz, typename TFA>  
-  void  H1HighOrderPyramid<T_ORTHOPOL> :: T_CalcShape (Tx x, Ty y, Tz z, TFA & sds) const
-  {
+    Tx x = hx[0], y = hx[1], z = hx[2];
     sds = 0.0;
 
     if (z == 1.) z -= 1e-10;
@@ -1332,20 +1024,6 @@ namespace ngfem
     sds[4] = z;
 
     int ii = 5;
-
-    if (augmented == 1)
-      for (int i = 0; i < 5; i++)
-	sds[ii++] = T_VERTEXSHAPES::Calc (order, sds[i]);
-    else
-      if (augmented == 2)
-	for (int i = 0; i < 5; i++)
-	  {
-	    ArrayMem<Tx,20> pol(order+1);
-	    LegendrePolynomial (order-1, -1+2*sds[i], pol);	
-	    for (int j = 1; j < order; j++)
-	      sds[ii++] = pol[j] * sds[i];
-	  }
-
 
 
     //horizontal edge dofs 
@@ -1487,66 +1165,7 @@ namespace ngfem
   template class H1HighOrderFiniteElement<2>;
   template class H1HighOrderFiniteElement<3>;
 
-  template class H1HighOrderSegm<IntegratedLegendreMonomialExt>;
-  template class H1HighOrderTrig<IntegratedLegendreMonomialExt>;
-  template class H1HighOrderQuad<IntegratedLegendreMonomialExt>;
-  template class H1HighOrderTet<IntegratedLegendreMonomialExt>;
-  template class H1HighOrderPrism<IntegratedLegendreMonomialExt>;
-  template class H1HighOrderHex<IntegratedLegendreMonomialExt>;
-  template class H1HighOrderPyramid<IntegratedLegendreMonomialExt>;
-
-  /*
-  template class H1HighOrderSegm<TrigExtensionMin>;
-  template class H1HighOrderTrig<TrigExtensionMin>;
-  template class H1HighOrderQuad<TrigExtensionMin>;
-  template class H1HighOrderTet<TrigExtensionMin>;
-  template class H1HighOrderPrism<TrigExtensionMin>;
-  template class H1HighOrderHex<TrigExtensionMin>;
-  template class H1HighOrderPyramid<TrigExtensionMin>;
-  */
-
-  /*
-  template class H1HighOrderSegm<TrigExtensionOptimal>;
-  template class H1HighOrderTrig<TrigExtensionOptimal>;
-  template class H1HighOrderQuad<TrigExtensionOptimal>;
-  template class H1HighOrderTet<TrigExtensionOptimal>;
-  template class H1HighOrderPrism<TrigExtensionOptimal>;
-  template class H1HighOrderHex<TrigExtensionOptimal>;
-  template class H1HighOrderPyramid<TrigExtensionOptimal>;
-  */
-
-
-
-
-  /*
-  template class H1HighOrderSegm<TrigExtensionMonomial>;
-  template class H1HighOrderSegm<TrigExtensionOptimal>;
-  template class H1HighOrderSegm<TrigExtensionMin>;
-
-  template class H1HighOrderTrig<TrigExtensionMonomial>;
-  template class H1HighOrderTrig<TrigExtensionOptimal>;
-  template class H1HighOrderTrig<TrigExtensionMin>;
-
-  template class H1HighOrderQuad<TrigExtensionMonomial>;
-  template class H1HighOrderQuad<TrigExtensionOptimal>;
-  template class H1HighOrderQuad<TrigExtensionMin>;
-
-  template class H1HighOrderTet<TrigExtensionMonomial>;
-  template class H1HighOrderTet<TrigExtensionOptimal>;
-  template class H1HighOrderTet<TrigExtensionMin>;
-
-  template class H1HighOrderPrism<TrigExtensionMonomial>;
-  template class H1HighOrderPrism<TrigExtensionOptimal>;
-  template class H1HighOrderPrism<TrigExtensionMin>;
-
-  template class H1HighOrderHex<TrigExtensionMonomial>;
-  template class H1HighOrderHex<TrigExtensionOptimal>;
-  template class H1HighOrderHex<TrigExtensionMin>;
-
-  template class H1HighOrderPyramid<TrigExtensionMonomial>;
-  template class H1HighOrderPyramid<TrigExtensionOptimal>;
-  template class H1HighOrderPyramid<TrigExtensionMin>;
-  */
-
+  // template class T_H1HighOrderFiniteElement<ET_SEGM>;
+  // template class H1HighOrderFE<ET_SEGM>;
 }
 

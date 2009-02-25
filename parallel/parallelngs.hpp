@@ -15,17 +15,13 @@
 
 #ifndef PARALLEL
 
-#include <comp.hpp>
-#include <la.hpp>
+#include <ngstd.hpp>
 
 namespace ngparallel
 {
-  using namespace ngsolve;
-  using namespace ngparallel;
-  using namespace ngcomp;
   enum { id = 0 };
   enum { ntasks = 1 };
-  extern Array<int> hoprocs;
+  extern ngstd::Array<int> hoprocs;
 }
 
 

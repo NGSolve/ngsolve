@@ -11,8 +11,6 @@
 */ 
 
 #include <la.hpp>
-//#include "../florian/typecast.hh"
-
 #include <parallelngs.hpp>
 
 namespace ngla

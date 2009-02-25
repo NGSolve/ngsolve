@@ -89,13 +89,13 @@ public:
     switch (fel->SpatialDim())
       {
       case 1:
-        dxdxi = pointmat * static_cast<const NodalFiniteElement<1>*> (fel)->GetDShape(ip, lh);
+        dxdxi = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetDShape(ip, lh);
         break;
       case 2:
-        dxdxi = pointmat * static_cast<const NodalFiniteElement<2>*> (fel)->GetDShape(ip, lh);
+        dxdxi = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetDShape(ip, lh);
         break;
       case 3:
-        dxdxi = pointmat * static_cast<const NodalFiniteElement<3>*> (fel)->GetDShape(ip, lh);
+        dxdxi = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetDShape(ip, lh);
         break;
       }
 
@@ -110,13 +110,13 @@ public:
     switch (fel->SpatialDim())
       {
       case 1:
-        dxdxi = pointmat * static_cast<const NodalFiniteElement<1>*> (fel)->GetDShape(ip, lh);
+        dxdxi = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetDShape(ip, lh);
         break;
       case 2:
-        dxdxi = pointmat * static_cast<const NodalFiniteElement<2>*> (fel)->GetDShape(ip, lh);
+        dxdxi = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetDShape(ip, lh);
         break;
       case 3:
-        dxdxi = pointmat * static_cast<const NodalFiniteElement<3>*> (fel)->GetDShape(ip, lh);
+        dxdxi = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetDShape(ip, lh);
         break;
       }
   }
@@ -132,13 +132,13 @@ public:
     switch (fel->SpatialDim())
       {
       case 1:
-        point = pointmat * static_cast<const NodalFiniteElement<1>*> (fel)->GetShape(ip, lh);
+        point = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetShape(ip, lh);
         break;
       case 2:
-        point = pointmat * static_cast<const NodalFiniteElement<2>*> (fel)->GetShape(ip, lh);
+        point = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetShape(ip, lh);
         break;
       case 3:
-        point = pointmat * static_cast<const NodalFiniteElement<3>*> (fel)->GetShape(ip, lh);
+        point = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetShape(ip, lh);
         break;
       }
 
@@ -153,16 +153,16 @@ public:
     switch (fel->SpatialDim())
       {
       case 1:
-        dxdxi = pointmat * static_cast<const NodalFiniteElement<1>*> (fel)->GetDShape(ip, lh);
-        point = pointmat * static_cast<const NodalFiniteElement<1>*> (fel)->GetShape(ip, lh);
+        dxdxi = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetDShape(ip, lh);
+        point = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetShape(ip, lh);
         break;
       case 2:
-        dxdxi = pointmat * static_cast<const NodalFiniteElement<2>*> (fel)->GetDShape(ip, lh);
-        point = pointmat * static_cast<const NodalFiniteElement<2>*> (fel)->GetShape(ip, lh);
+        dxdxi = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetDShape(ip, lh);
+        point = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetShape(ip, lh);
         break;
       case 3:
-        dxdxi = pointmat * static_cast<const NodalFiniteElement<3>*> (fel)->GetDShape(ip, lh);
-        point = pointmat * static_cast<const NodalFiniteElement<3>*> (fel)->GetShape(ip, lh);
+        dxdxi = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetDShape(ip, lh);
+        point = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetShape(ip, lh);
         break;
       }
   }

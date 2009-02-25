@@ -16,7 +16,7 @@
 /**
    high order finite element
  */
-class FE_SegmP : public NodalFiniteElement<1>
+class FE_SegmP : public ScalarFiniteElement<1>
 {
   ///
   IPDataArray ipdata;
@@ -41,7 +41,7 @@ public:
 
 
 ///
-class FE_TrigP : public NodalFiniteElement<2>
+class FE_TrigP : public ScalarFiniteElement<2>
 {
   ///
   IPDataArray ipdata;
@@ -72,7 +72,7 @@ public:
 #ifdef NONE
 
 ///
-class FE_QuadP : public NodalFiniteElement<2>
+class FE_QuadP : public ScalarFiniteElement<2>
 {
   ///
   IPDataArray ipdata;
@@ -114,7 +114,7 @@ public:
 
 
 ///
-class FE_TetP : public NodalFiniteElement<3>
+class FE_TetP : public ScalarFiniteElement<3>
 {
   ///
   IPDataArray ipdata;
@@ -139,7 +139,7 @@ public:
 #ifdef NONE
 
 ///
-class FE_PrismP : public NodalFiniteElement<3>
+class FE_PrismP : public ScalarFiniteElement<3>
 {
   ///
   IPDataArray ipdata;
@@ -174,7 +174,7 @@ public:
 
 
 ///
-class FE_HexP : public NodalFiniteElement<3>
+class FE_HexP : public ScalarFiniteElement<3>
 {
   ///
   IPDataArray ipdata;
@@ -217,7 +217,7 @@ public:
 #ifdef ABC
 
 ///
-class FE_Augmented_SegmP : public NodalFiniteElement<1>
+class FE_Augmented_SegmP : public ScalarFiniteElement<1>
 {
   ///
   Array<IPData> ipdata;
@@ -238,7 +238,7 @@ public:
 
 
 ///
-class FE_Augmented_TrigP : public NodalFiniteElement<2>
+class FE_Augmented_TrigP : public ScalarFiniteElement<2>
 {
   ///
   Array<IPData> ipdata;
@@ -267,7 +267,7 @@ public:
 
 
 ///
-class FE_Augmented_TetP : public NodalFiniteElement<3>
+class FE_Augmented_TetP : public ScalarFiniteElement<3>
 {
   ///
   Array<IPData> ipdata;

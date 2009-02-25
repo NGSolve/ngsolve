@@ -98,7 +98,7 @@ namespace ngfem
   
   template <int D>
   void HDivFiniteElement<D> ::
-  ComputeFaceMoments (int fnr, NodalFiniteElement<DIM-1> & testfe,
+  ComputeFaceMoments (int fnr, ScalarFiniteElement<DIM-1> & testfe,
 		      FlatMatrix<> & moments, int order, int shapenr) const
   {
     int j;

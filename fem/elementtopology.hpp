@@ -483,21 +483,31 @@ template<> class ET_trait<ET_SEGM>
 {
 public:
   enum { DIM = 1 };
-  enum { NV = 2 };
+  enum { N_VERTEX = 2 };
+  enum { N_EDGE = 1 };
+  enum { N_FACE = 0 };
+  static ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
 };
 
 template<> class ET_trait<ET_TRIG>
 {
 public:
   enum { DIM = 2 };
-  enum { NV = 3 };
+  enum { N_VERTEX = 3 };
+  enum { N_EDGE = 3 };
+  enum { N_FACE = 1 };
+  static ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
+
 };
 
 template<> class ET_trait<ET_QUAD>
 {
 public:
   enum { DIM = 2 };
-  enum { NV = 4 };
+  enum { N_VERTEX = 4 };
+  enum { N_EDGE = 4 };
+  enum { N_FACE = 1 };
+  static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
 };
 
 
@@ -505,28 +515,40 @@ template<> class ET_trait<ET_TET>
 {
 public:
   enum { DIM = 3 };
-  enum { NV = 4 };
+  enum { N_VERTEX = 4 };
+  enum { N_EDGE = 6 };
+  enum { N_FACE = 4 };
+  static ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
 };
 
 template<> class ET_trait<ET_PRISM>
 {
 public:
   enum { DIM = 3 };
-  enum { NV = 6 };
+  enum { N_VERTEX = 6 };
+  enum { N_EDGE = 9 };
+  enum { N_FACE = 5 };
+  static ELEMENT_TYPE FaceType(int i) { return (i < 2) ? ET_TRIG : ET_QUAD; }
 };
 
 template<> class ET_trait<ET_PYRAMID>
 {
 public:
   enum { DIM = 3 };
-  enum { NV = 5 };
+  enum { N_VERTEX = 5 };
+  enum { N_EDGE = 8 };
+  enum { N_FACE = 5 };
+  static ELEMENT_TYPE FaceType(int i) { return (i < 4) ? ET_TRIG : ET_QUAD; }
 };
 
 template<> class ET_trait<ET_HEX>
 {
 public:
   enum { DIM = 3 };
-  enum { NV = 8 };
+  enum { N_VERTEX = 8 };
+  enum { N_EDGE = 12 };
+  enum { N_FACE = 6 };
+  static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
 };
 
 

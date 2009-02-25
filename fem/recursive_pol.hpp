@@ -1361,7 +1361,7 @@ public:
   enum { FLOP = TReduceAlpha<N-1,AL>::FLOP + 2 };
 
   template <class T>
-  static   __attribute__ ((__always_inline__)) void Do (T & inout)
+  static ALWAYS_INLINE void Do (T & inout)
   {
     inout[N-1] += double(N)/double(N+AL) * inout[N];
     inout[N] *= double(2*N+AL)/double(N+AL);
@@ -1400,7 +1400,7 @@ public:
   enum { FLOP = TReduceAlphaFactor<N-1,AL>::FLOP + 2 };
 
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Do (T & inout)
+  static  ALWAYS_INLINE void Do (T & inout)
   {
     if (HIGHEST)
       inout[N] = double(-N)/double(2*N+AL) * inout[N-1];
@@ -1411,7 +1411,7 @@ public:
   }
 
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Trans (T & inout)
+  static  ALWAYS_INLINE void Trans (T & inout)
   {
     TReduceAlphaFactor<N-1,AL,0>::Trans(inout);
     inout[N-1] *= double(N+AL)/double(2*N+AL);
@@ -1477,7 +1477,7 @@ public:
     enum { c3 = double((N-1)*(2*N+AL)) / double( (N+AL)*(2*N+AL-2)) };
   */
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Do (T & inout)
+  static  ALWAYS_INLINE void Do (T & inout)
   {
     double val = inout(N);
     inout(N-1) += c2() * val;
@@ -1500,7 +1500,7 @@ public:
   }
 
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Trans (T & inout)
+  static  ALWAYS_INLINE void Trans (T & inout)
   {
     inout(N) = inout(N-1);
     inout(N-1) = 0;
@@ -1571,7 +1571,7 @@ public:
   enum { FLOP = TTriangleReduceFactorCol<N,J,I-1,AL,BE>::FLOP + 4 };
 
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Do (T & inout)
+  static  ALWAYS_INLINE void Do (T & inout)
   {
     double val    = inout(I,J);
 
@@ -1586,7 +1586,7 @@ public:
 
 
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Trans (T & inout)
+  static  ALWAYS_INLINE void Trans (T & inout)
   {
     TTriangleReduceFactorCol<N,J,I-1,AL,BE> ::Trans(inout);
 
@@ -1624,7 +1624,7 @@ public:
          TTriangleReduceFactorCol<N,J,N-J,AL,BE>::FLOP };
 
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Do (T & inout)
+  static  ALWAYS_INLINE void Do (T & inout)
   {
     if (J == N)
       for (int i = 0; i <= N+1; i++)
@@ -1635,7 +1635,7 @@ public:
   }
 
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Trans (T & inout)
+  static  ALWAYS_INLINE void Trans (T & inout)
   {
     /*
       if (J == N)
@@ -1666,7 +1666,7 @@ public:
 
 
 
-
+/*
 
 
 template <int N, int J, int AL, int BE>
@@ -1690,7 +1690,7 @@ public:
 
 
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Do (T & inout)
+  static  ALWAYS_INLINE void Do (T & inout)
   {
     Vec<N-J+2> hv;
     hv(0) = 0.0;
@@ -1717,7 +1717,7 @@ public:
 
 
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Trans (T & inout)
+  static  ALWAYS_INLINE void Trans (T & inout)
   {
     Vec<N-J+2> hv;
     
@@ -1758,6 +1758,9 @@ public:
     TReduceAlpha<N, AL>::Trans(inout.Col(0));
   }
 };
+*/
+
+
 
 
 
@@ -1769,38 +1772,38 @@ class TTriangleReduceLoop2New
 {
 public:
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Do (T & inout)
+  static  ALWAYS_INLINE void Do (T & inout)
   {
-    cout << "I need it" << endl;
-    double fac = 1.0 / ( (2 + BE-1 + I-1)*(4 + AL-1 + 2*I-2 + J-1) );
+    if (BE+I == 0) cout << "is 0" << endl;
+    double fac = 1.0 / ( (BE + I)*(4 + AL-1 + 2*I-2 + J-1) );
     double val = inout(J,I);
-    inout(J,I) = fac * (3 + BE-1 + 2*I-2)*(5 + AL-1 + 2*I-2 + 2*J-2) * val;
+    inout(J,I) = fac * (BE + 2*I)*(5 + AL-1 + 2*I-2 + 2*J-2) * val;
     if (I >= 1)
       {
         inout(J,I-1) += fac * I*(3 + AL-1 + 2*I-2 + J-1) * val;
         inout(1+J,I-1) -= fac * I*(2 + J-1) * val;
       }
     if (J >= 1)
-      inout(J-1, I) += fac * (2 + BE-1 + I-1)*(1 + J-1) * val;
+      inout(J-1, I) += fac * (BE + I)*(1 + J-1) * val;
 
     TTriangleReduceLoop2New<N,I,J-1,AL,BE>::Do(inout);
   }
 
 
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Trans (T & inout)
+  static  ALWAYS_INLINE void Trans (T & inout)
   {
     TTriangleReduceLoop2New<N,I,J-1,AL,BE>::Trans(inout);
 
-    double fac = 1.0 / ( (2 + BE-1 + I-1)*(4 + AL-1 + 2*I-2 + J-1) );
-    double val = inout(J,I) * ( fac * (3 + BE-1 + 2*I-2)*(5 + AL-1 + 2*I-2 + 2*J-2) );
+    double fac = 1.0 / ( (BE + I)*(4 + AL-1 + 2*I-2 + J-1) );
+    double val = inout(J,I) * ( fac * (BE + 2*I)*(5 + AL-1 + 2*I-2 + 2*J-2) );
     if (I >= 1)
       {
         val += inout(J,I-1) * ( fac * I*(3 + AL-1 + 2*I-2 + J-1) );
         val -= inout(1+J,I-1) * ( fac * I*(2 + J-1));
       }
     if (J >= 1)
-      val += inout(J-1, I) * (fac * (2 + BE-1 + I-1)*(1 + J-1));
+      val += inout(J-1, I) * (fac * (BE + I)*(1 + J-1));
       
     inout(J,I) = val;
   }
@@ -1825,15 +1828,18 @@ template <int N, int I, int AL, int BE>
 class TTriangleReduceNew
 {
 public:
+  enum { FLOP = TTriangleReduceNew<N,I-1,AL,BE>::FLOP + 4*(N-I+1) };
+
+
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Do (T & inout)
+  static  ALWAYS_INLINE void Do (T & inout)
   {
     TTriangleReduceLoop2New<N,I,N-I,AL,BE>::Do(inout);
     TTriangleReduceNew<N,I-1,AL,BE>::Do(inout);
   }
 
   template <class T>
-  static  __attribute__ ((__always_inline__)) void Trans (T & inout)
+  static  ALWAYS_INLINE void Trans (T & inout)
   {
     TTriangleReduceNew<N,I-1,AL,BE>::Trans(inout);
     TTriangleReduceLoop2New<N,I,N-I,AL,BE>::Trans(inout);
@@ -1845,6 +1851,7 @@ class TTriangleReduceNew<N,-1,AL,BE>
 {
 public:
   enum { FLOP = 0 };
+
   template <class T>
   static void Do (T & inout) { ; }
   
@@ -1864,7 +1871,7 @@ class TTriangleReduceNew
 public:
 
 template <class T>
-static  __attribute__ ((__always_inline__)) void Do (T & inout)
+static  ALWAYS_INLINE void Do (T & inout)
 {
 for (int J = N-I; J >= 0; J--)
 {
@@ -1885,7 +1892,7 @@ TTriangleReduceNew<N,I-1,AL,BE>::Do(inout);
 
 
 template <class T>
-static  __attribute__ ((__always_inline__)) void Trans (T & inout)
+static  ALWAYS_INLINE void Trans (T & inout)
 {
 TTriangleReduceNew<N,I-1,AL,BE>::Trans(inout);
 

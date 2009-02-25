@@ -15,13 +15,13 @@ namespace ngfem
   using namespace ngfem;
 
   template <int D>
-  HCurlFiniteElementD<D> :: ~HCurlFiniteElementD ()
+  HCurlFiniteElement<D> :: ~HCurlFiniteElement ()
   {
     // delete block;
   }
 
   template <int D>
-  void HCurlFiniteElementD<D> :: 
+  void HCurlFiniteElement<D> :: 
   CalcIPData (Array<IPData> & ipdata)
   {
     const Array<IntegrationPoint*> & ipts = 
@@ -65,7 +65,7 @@ namespace ngfem
 
 
   template <int D>
-  void HCurlFiniteElementD<D> ::
+  void HCurlFiniteElement<D> ::
   CalcCurlShape (const IntegrationPoint & ip, 
 		 FlatMatrixFixWidth<DIM_CURL> curlshape) const
   {
@@ -161,8 +161,8 @@ namespace ngfem
 
 
   template <int D>
-  void HCurlFiniteElementD<D> ::
-  ComputeEdgeMoments (int enr, NodalFiniteElement<1> & testfe,
+  void HCurlFiniteElement<D> ::
+  ComputeEdgeMoments (int enr, ScalarFiniteElement<1> & testfe,
 		      FlatMatrix<> moments, int order, int shapenr) const
   {
     int j;
@@ -211,7 +211,7 @@ namespace ngfem
 
 
   template <int D>
-  void HCurlFiniteElementD<D> ::
+  void HCurlFiniteElement<D> ::
   ComputeFaceMoments (int fnr, HDivFiniteElement<2> & testfe,
 		      FlatMatrix<> moments, int order, int shapenr) const
   {
@@ -298,7 +298,7 @@ namespace ngfem
 
 
   template <int D>
-  void HCurlFiniteElementD<D> ::
+  void HCurlFiniteElement<D> ::
   ComputeVolMoments (HDivFiniteElement<3> & testfe,
 		     FlatMatrix<> moments, int order, int shapenr) const
   {
@@ -339,9 +339,9 @@ namespace ngfem
   }
   
 
-  template class HCurlFiniteElementD<1>;
-  template class HCurlFiniteElementD<2>;
-  template class HCurlFiniteElementD<3>;
+  template class HCurlFiniteElement<1>;
+  template class HCurlFiniteElement<2>;
+  template class HCurlFiniteElement<3>;
 
 
   /*
@@ -442,14 +442,14 @@ namespace ngfem
 
   /* ************************* Edge potential elements *************** */
   
-  class FE_Trig3EdgeBubble : public NodalFiniteElement<2>
+  class FE_Trig3EdgeBubble : public ScalarFiniteElement<2>
   {
     Array<IPData> ipdata;
     
   public:
     ///
     FE_Trig3EdgeBubble()
-      : NodalFiniteElement<2> (2, ET_TRIG, 6, 3) 
+      : ScalarFiniteElement<2> (ET_TRIG, 6, 3) 
     { ; } // CalcIPData(ET_TRIG, ipdata); }
 
     ///
@@ -520,8 +520,8 @@ namespace ngfem
 
 
   template <int D>
-  void ComputeGradientMatrix (const NodalFiniteElement<D> & h1fe,
-			      const HCurlFiniteElementD<D> & hcurlfe,
+  void ComputeGradientMatrix (const ScalarFiniteElement<D> & h1fe,
+			      const HCurlFiniteElement<D> & hcurlfe,
 			      FlatMatrix<> gradient)
   {
     int ndh1 = h1fe.GetNDof();
@@ -557,13 +557,13 @@ namespace ngfem
   }
   
   template
-  void ComputeGradientMatrix<2> (const NodalFiniteElement<2> & h1fe,
-				 const HCurlFiniteElementD<2> & hcurlfe,
+  void ComputeGradientMatrix<2> (const ScalarFiniteElement<2> & h1fe,
+				 const HCurlFiniteElement<2> & hcurlfe,
 				 FlatMatrix<> gradient);
 
   template
-  void ComputeGradientMatrix<3> (const NodalFiniteElement<3> & h1fe,
-				 const HCurlFiniteElementD<3> & hcurlfe,
+  void ComputeGradientMatrix<3> (const ScalarFiniteElement<3> & h1fe,
+				 const HCurlFiniteElement<3> & hcurlfe,
 				 FlatMatrix<> gradient);
 
 
@@ -596,10 +596,10 @@ namespace ngfem
   /* ******************** Segm elements ********************* */
 
  
-  Array<HCurlFiniteElementD<1>::IPData> FE_NedelecSegm1::ipdata;
+  Array<HCurlFiniteElement<1>::IPData> FE_NedelecSegm1::ipdata;
 
   FE_NedelecSegm1 :: FE_NedelecSegm1()
-    : HCurlFiniteElementD<1>(ET_SEGM, NDOF, 0)
+    : HCurlFiniteElement<1>(ET_SEGM, NDOF, 0)
   {
     CalcIPData(ipdata);
     controldestruction.NewControl(&ipdatadestructed);
@@ -624,10 +624,10 @@ namespace ngfem
 
 
 
-  Array<HCurlFiniteElementD<1>::IPData> FE_NedelecSegm2::ipdata;
+  Array<HCurlFiniteElement<1>::IPData> FE_NedelecSegm2::ipdata;
 
   FE_NedelecSegm2 :: FE_NedelecSegm2()
-    : HCurlFiniteElementD<1>(ET_SEGM, NDOF, 1)
+    : HCurlFiniteElement<1>(ET_SEGM, NDOF, 1)
   {
     CalcIPData(ipdata);
     controldestruction.NewControl(&ipdatadestructed);
@@ -653,10 +653,10 @@ namespace ngfem
 
 
 
-  Array<HCurlFiniteElementD<1>::IPData> FE_NedelecSegm3::ipdata;
+  Array<HCurlFiniteElement<1>::IPData> FE_NedelecSegm3::ipdata;
 
   FE_NedelecSegm3 :: FE_NedelecSegm3()
-    : HCurlFiniteElementD<1>(ET_SEGM, 3, 2)
+    : HCurlFiniteElement<1>(ET_SEGM, 3, 2)
   {
     CalcIPData(ipdata);
     controldestruction.NewControl(&ipdatadestructed);
@@ -690,10 +690,10 @@ namespace ngfem
   /* ******************** triangular elements *********************** */
 
 
-  Array<HCurlFiniteElementD<2>::IPData> FE_NedelecTrig1::ipdata;
+  Array<HCurlFiniteElement<2>::IPData> FE_NedelecTrig1::ipdata;
 
   FE_NedelecTrig1 :: FE_NedelecTrig1()
-    : HCurlFiniteElementD<2> (ET_TRIG, 3, 1)
+    : HCurlFiniteElement<2> (ET_TRIG, 3, 1)
   {
     CalcIPData(ipdata);
     controldestruction.NewControl(&ipdatadestructed);
@@ -726,11 +726,11 @@ namespace ngfem
 
 
   
-  Array<HCurlFiniteElementD<2>::IPData> FE_NedelecTrig2::ipdata;
+  Array<HCurlFiniteElement<2>::IPData> FE_NedelecTrig2::ipdata;
   Mat<FE_NedelecTrig2::NDOF> FE_NedelecTrig2::trans;
 
   FE_NedelecTrig2 :: FE_NedelecTrig2()
-  : HCurlFiniteElementD<2>(ET_TRIG, NDOF, 1)
+  : HCurlFiniteElement<2>(ET_TRIG, NDOF, 1)
   {
     if (!ipdata.Size())
       Orthogonalize();
@@ -800,12 +800,12 @@ namespace ngfem
   
 
   
-  Array<HCurlFiniteElementD<2>::IPData> FE_NedelecTrig3::ipdata;
+  Array<HCurlFiniteElement<2>::IPData> FE_NedelecTrig3::ipdata;
   Mat<FE_NedelecTrig3::NDOF> FE_NedelecTrig3::trans;
   Mat<FE_NedelecTrig3::NEDGEDOF> FE_NedelecTrig3::trans2;
   
   FE_NedelecTrig3 :: FE_NedelecTrig3()
-    : HCurlFiniteElementD<2>(ET_TRIG, NDOF, 2)
+    : HCurlFiniteElement<2>(ET_TRIG, NDOF, 2)
   {
     if (!ipdata.Size())
       Orthogonalize();
@@ -934,10 +934,10 @@ namespace ngfem
 
   /* ******************** quad elements *********************** */
 
-  Array<HCurlFiniteElementD<2>::IPData> FE_NedelecQuad1::ipdata;
+  Array<HCurlFiniteElement<2>::IPData> FE_NedelecQuad1::ipdata;
 
   FE_NedelecQuad1 :: FE_NedelecQuad1()
-    : HCurlFiniteElementD<2> (ET_QUAD, NDOF, 1)
+    : HCurlFiniteElement<2> (ET_QUAD, NDOF, 1)
 
   {
     CalcIPData(ipdata);
@@ -1029,7 +1029,7 @@ namespace ngfem
 
   
   template <int ORDER, int ZORDER>
-  Array<HCurlFiniteElementD<2>::IPData> FE_TNedelecQuad<ORDER,ZORDER>::ipdata;
+  Array<HCurlFiniteElement<2>::IPData> FE_TNedelecQuad<ORDER,ZORDER>::ipdata;
   /*
   template <int ORDER, int ZORDER>
   Mat<FE_TNedelecQuadTraits<ORDER,ZORDER>::NDOF> FE_TNedelecQuad<ORDER,ZORDER>::trans;
@@ -1045,7 +1045,7 @@ namespace ngfem
 
   template <int ORDER, int ZORDER>
   FE_TNedelecQuad<ORDER,ZORDER> :: FE_TNedelecQuad()
-    : HCurlFiniteElementD<2>(ET_QUAD, NDOF, MAXORDER)
+    : HCurlFiniteElement<2>(ET_QUAD, NDOF, MAXORDER)
   {
     if (!ipdata.Size())
       Orthogonalize();
@@ -1279,11 +1279,11 @@ namespace ngfem
 
   /* ******************** Tet elements *********************** */
   
-  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecTet1::ipdata;
+  Array<HCurlFiniteElement<3>::IPData> FE_NedelecTet1::ipdata;
   
 
   FE_NedelecTet1 :: FE_NedelecTet1()
-    : HCurlFiniteElementD<3> (ET_TET, NDOF, 1)
+    : HCurlFiniteElement<3> (ET_TET, NDOF, 1)
   {
     CalcIPData(ipdata);
     controldestruction.NewControl(&ipdatadestructed);
@@ -1363,11 +1363,11 @@ namespace ngfem
 
 
 
-  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecTet2::ipdata;
+  Array<HCurlFiniteElement<3>::IPData> FE_NedelecTet2::ipdata;
   Mat<FE_NedelecTet2::NDOF> FE_NedelecTet2::trans;
 
   FE_NedelecTet2 :: FE_NedelecTet2()
-  : HCurlFiniteElementD<3> (ET_TET, NDOF, 1)
+  : HCurlFiniteElement<3> (ET_TET, NDOF, 1)
   {
     if (!ipdata.Size())
       Orthogonalize();
@@ -1440,14 +1440,14 @@ namespace ngfem
 
 
 
-  class FE_Tet3EdgeBubble : public NodalFiniteElement<3>
+  class FE_Tet3EdgeBubble : public ScalarFiniteElement<3>
   {
     Array<IPData> ipdata;
     
   public:
     ///
     FE_Tet3EdgeBubble()
-      : NodalFiniteElement<3> (3, ET_TET, 12, 3) 
+      : ScalarFiniteElement<3> (ET_TET, 12, 3) 
     { ; } // CalcIPData(ET_TET, ipdata); }
     ///
     virtual ~FE_Tet3EdgeBubble() 
@@ -1562,13 +1562,13 @@ namespace ngfem
 
 
   
-  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecTet3::ipdata;
+  Array<HCurlFiniteElement<3>::IPData> FE_NedelecTet3::ipdata;
   Mat<FE_NedelecTet3::NDOF> FE_NedelecTet3::trans;
   Mat<FE_NedelecTet3::NEDGEDOF> FE_NedelecTet3::trans2;
   Mat<FE_NedelecTet3::NFACEDOF> FE_NedelecTet3::trans3;
 
   FE_NedelecTet3 :: FE_NedelecTet3()
-  : HCurlFiniteElementD<3> (ET_TET, NDOF, 2)
+  : HCurlFiniteElement<3> (ET_TET, NDOF, 2)
   {
     if (!ipdata.Size())
       Orthogonalize();
@@ -1870,10 +1870,10 @@ namespace ngfem
 
   /* ******************** Hex Elements ************************* */ 
 
-  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecHex1::ipdata;
+  Array<HCurlFiniteElement<3>::IPData> FE_NedelecHex1::ipdata;
   
   FE_NedelecHex1 :: FE_NedelecHex1()
-    : HCurlFiniteElementD<3> (ET_HEX, 12, 1)
+    : HCurlFiniteElement<3> (ET_HEX, 12, 1)
   {
     order++;
     CalcIPData(ipdata);
@@ -1925,11 +1925,11 @@ namespace ngfem
   /* **************************** Tet3 without gradients ******************* */
 
 
-  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecTet3NoGrad::ipdata;
+  Array<HCurlFiniteElement<3>::IPData> FE_NedelecTet3NoGrad::ipdata;
   Mat<FE_NedelecTet3NoGrad::NFACEDOF> FE_NedelecTet3NoGrad::trans3;
 
   FE_NedelecTet3NoGrad :: FE_NedelecTet3NoGrad()
-  : HCurlFiniteElementD<3> (ET_TET, NDOF, 2)
+  : HCurlFiniteElement<3> (ET_TET, NDOF, 2)
   {
     if (!ipdata.Size())
       Orthogonalize();
@@ -2201,10 +2201,10 @@ namespace ngfem
 
   /* ******************** Prism elements *********************** */
 
-  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecPrism1::ipdata;
+  Array<HCurlFiniteElement<3>::IPData> FE_NedelecPrism1::ipdata;
 
   FE_NedelecPrism1 :: FE_NedelecPrism1()
-    : HCurlFiniteElementD<3> (ET_PRISM, 9, 2)
+    : HCurlFiniteElement<3> (ET_PRISM, 9, 2)
   {
     CalcIPData(ipdata);
     controldestruction.NewControl(&ipdatadestructed);
@@ -2251,7 +2251,7 @@ namespace ngfem
 
 
   template <int OZ>
-  Array<HCurlFiniteElementD<3>::IPData> FE_TNedelecPrism2<OZ>::ipdata;
+  Array<HCurlFiniteElement<3>::IPData> FE_TNedelecPrism2<OZ>::ipdata;
   template <int OZ>
   Matrix<> FE_TNedelecPrism2<OZ>::trans;
   template <int OZ>
@@ -2261,7 +2261,7 @@ namespace ngfem
 
   template <int ZORDER>
   FE_TNedelecPrism2<ZORDER> :: FE_TNedelecPrism2()
-    : HCurlFiniteElementD<3> (ET_PRISM, NDOF, MAXORDER)
+    : HCurlFiniteElement<3> (ET_PRISM, NDOF, MAXORDER)
   {
     if (!ipdata.Size())
       Orthogonalize();
@@ -2682,7 +2682,7 @@ namespace ngfem
   /* ************************ Prism3 ******************************* */
   
   template <int ORDER>
-  Array<HCurlFiniteElementD<3>::IPData> FE_TNedelecPrism3<ORDER>::ipdata;
+  Array<HCurlFiniteElement<3>::IPData> FE_TNedelecPrism3<ORDER>::ipdata;
   template <int ORDER>
   Matrix<> FE_TNedelecPrism3<ORDER>::trans;
   template <int ORDER>
@@ -2695,7 +2695,7 @@ namespace ngfem
 
   template <int ZORDER>
   FE_TNedelecPrism3<ZORDER> :: FE_TNedelecPrism3()
-    : HCurlFiniteElementD<3> (ET_PRISM, NDOF, MAXORDER)
+    : HCurlFiniteElement<3> (ET_PRISM, NDOF, MAXORDER)
   {
     if (!ipdata.Size())
       Orthogonalize();
@@ -3232,7 +3232,7 @@ namespace ngfem
   /* ************************ Prism3 No Gradients ******************************* */
   
   template <int ORDER>
-  Array<HCurlFiniteElementD<3>::IPData> FE_TNedelecPrism3NoGrad<ORDER>::ipdata;
+  Array<HCurlFiniteElement<3>::IPData> FE_TNedelecPrism3NoGrad<ORDER>::ipdata;
   template <int ORDER>
   Matrix<> FE_TNedelecPrism3NoGrad<ORDER>::trans_quad;
   template <int ORDER>
@@ -3241,7 +3241,7 @@ namespace ngfem
 
   template <int ZORDER>
   FE_TNedelecPrism3NoGrad<ZORDER> :: FE_TNedelecPrism3NoGrad()
-    : HCurlFiniteElementD<3> (ET_PRISM, NDOF, MAXORDER)
+    : HCurlFiniteElement<3> (ET_PRISM, NDOF, MAXORDER)
   {
     if (!ipdata.Size())
       Orthogonalize();
@@ -3715,11 +3715,11 @@ namespace ngfem
 
 
 
-  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecPyramid1::ipdata;
+  Array<HCurlFiniteElement<3>::IPData> FE_NedelecPyramid1::ipdata;
   Matrix<> FE_NedelecPyramid1::trans(8);
 
   FE_NedelecPyramid1 :: FE_NedelecPyramid1()
-    : HCurlFiniteElementD<3> (ET_PYRAMID, 8, 3)
+    : HCurlFiniteElement<3> (ET_PYRAMID, 8, 3)
   {
     if (!ipdata.Size())
       Orthogonalize();
@@ -3821,12 +3821,12 @@ namespace ngfem
 
 
 
-  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecPyramid2::ipdata;
+  Array<HCurlFiniteElement<3>::IPData> FE_NedelecPyramid2::ipdata;
   Matrix<> FE_NedelecPyramid2::trans(NDOF);
   Matrix<> FE_NedelecPyramid2::trans2(NEDGEDOF);
 
   FE_NedelecPyramid2 :: FE_NedelecPyramid2()
-    : HCurlFiniteElementD<3> (ET_PYRAMID, NDOF, 2)
+    : HCurlFiniteElement<3> (ET_PYRAMID, NDOF, 2)
   {
     if (!ipdata.Size())
       Orthogonalize();
@@ -4088,14 +4088,14 @@ namespace ngfem
 
 
 
-  class FE_Pyramid3RefEdgeBubble : public NodalFiniteElement<3>
+  class FE_Pyramid3RefEdgeBubble : public ScalarFiniteElement<3>
   {
     Array<IPData> ipdata;
     
   public:
     ///
     FE_Pyramid3RefEdgeBubble()
-      : NodalFiniteElement<3> (3, ET_PYRAMID, 16, 3) 
+      : ScalarFiniteElement<3> (ET_PYRAMID, 16, 3) 
     { ; } 
     ///
     virtual ~FE_Pyramid3RefEdgeBubble() 
@@ -4272,14 +4272,14 @@ namespace ngfem
 
 
 
-  class FE_Pyramid3RefFaceBubble : public NodalFiniteElement<3>
+  class FE_Pyramid3RefFaceBubble : public ScalarFiniteElement<3>
   {
     Array<IPData> ipdata;
     
   public:
     ///
     FE_Pyramid3RefFaceBubble()
-      : NodalFiniteElement<3> (3, ET_PYRAMID, 4, 3) 
+      : ScalarFiniteElement<3> (ET_PYRAMID, 4, 3) 
     { ; } 
     ///
     virtual ~FE_Pyramid3RefFaceBubble() 
@@ -4313,14 +4313,14 @@ namespace ngfem
 
 
 
-  Array<HCurlFiniteElementD<3>::IPData> FE_NedelecPyramid3::ipdata;
+  Array<HCurlFiniteElement<3>::IPData> FE_NedelecPyramid3::ipdata;
   Mat<FE_NedelecPyramid3::NDOF> FE_NedelecPyramid3::trans;
   Mat<FE_NedelecPyramid3::NEDGEDOF> FE_NedelecPyramid3::trans2;
   Mat<FE_NedelecPyramid3::NFACEDOF> FE_NedelecPyramid3::trans3;
 
 
   FE_NedelecPyramid3 :: FE_NedelecPyramid3()
-    : HCurlFiniteElementD<3> (ET_PYRAMID, NDOF, 3)
+    : HCurlFiniteElement<3> (ET_PYRAMID, NDOF, 3)
   {
     if (!ipdata.Size())
       Orthogonalize();

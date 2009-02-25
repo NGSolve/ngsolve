@@ -32,7 +32,7 @@ typedef L2HighOrderQuad FacetFacetQuad;
 // BASIS CLASSES
 //---------------------------------------------------
 template <int D>
-class FacetVolumeFiniteElement : public NodalFiniteElement<D>
+class FacetVolumeFiniteElement : public ScalarFiniteElement<D>
 // später eher FiniteElement!!
 // hier nur, damit man den mass integrator anwendne kann!!  
 {

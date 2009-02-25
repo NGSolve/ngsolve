@@ -19,7 +19,7 @@
    High order H(curl) finite element
  */
 template <int D>
-class HCurlHighOrderFiniteElement : public HCurlFiniteElementD<D> 
+class HCurlHighOrderFiniteElement : public HCurlFiniteElement<D> 
 {
  
 public:

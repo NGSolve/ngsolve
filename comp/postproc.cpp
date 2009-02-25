@@ -68,8 +68,8 @@ namespace ngcomp
 
 	//const FiniteElement & felflux = 
 	//  bound ? fesflux.GetSFE(i, lh) : fesflux.GetFE (i, lh);
- 	const NodalFiniteElement<DIM> & felflux = 
-	  dynamic_cast<const NodalFiniteElement<DIM> &> 
+ 	const ScalarFiniteElement<DIM> & felflux = 
+	  dynamic_cast<const ScalarFiniteElement<DIM> &> 
  	  (bound ? fesflux.GetSFE(i, lh) : fesflux.GetFE (i, lh));
 
 	if (bound)
@@ -1160,19 +1160,19 @@ namespace ngcomp
 		     S_BaseVector<SCAL> & vechcurl)
   {
     cout << "CalcGrad" << endl;
-    const NodalFiniteElement<2> * h1fe2d;
-    const NodalFiniteElement<3> * h1fe3d;
-    const HCurlFiniteElementD<2> * hcurlfe2d;
-    const HCurlFiniteElementD<3> * hcurlfe3d;
+    const ScalarFiniteElement<2> * h1fe2d;
+    const ScalarFiniteElement<3> * h1fe3d;
+    const HCurlFiniteElement<2> * hcurlfe2d;
+    const HCurlFiniteElement<3> * hcurlfe3d;
 
-    h1fe2d = dynamic_cast<const NodalFiniteElement<2>*> (&fesh1.GetFE(ET_TRIG));
-    hcurlfe2d = dynamic_cast<const HCurlFiniteElementD<2>*> (&feshcurl.GetFE(ET_TRIG));
+    h1fe2d = dynamic_cast<const ScalarFiniteElement<2>*> (&fesh1.GetFE(ET_TRIG));
+    hcurlfe2d = dynamic_cast<const HCurlFiniteElement<2>*> (&feshcurl.GetFE(ET_TRIG));
     Matrix<> gradtrig(hcurlfe2d->GetNDof(), h1fe2d->GetNDof());
     ComputeGradientMatrix<2> (*h1fe2d, *hcurlfe2d, gradtrig);
     (*testout) << "gradtrig = " << gradtrig << endl;
 
-    h1fe3d = dynamic_cast<const NodalFiniteElement<3>*> (&fesh1.GetFE(ET_TET));
-    hcurlfe3d = dynamic_cast<const HCurlFiniteElementD<3>*> (&feshcurl.GetFE(ET_TET));
+    h1fe3d = dynamic_cast<const ScalarFiniteElement<3>*> (&fesh1.GetFE(ET_TET));
+    hcurlfe3d = dynamic_cast<const HCurlFiniteElement<3>*> (&feshcurl.GetFE(ET_TET));
     Matrix<> gradtet(hcurlfe3d->GetNDof(), h1fe3d->GetNDof());
     ComputeGradientMatrix<3> (*h1fe3d, *hcurlfe3d, gradtet);
     (*testout) << "gradtet = " << gradtet << endl;
@@ -1233,19 +1233,19 @@ namespace ngcomp
 		      S_BaseVector<SCAL> & vech1)
   {
     cout << "CalcGrad" << endl;
-    const NodalFiniteElement<2> * h1fe2d;
-    const NodalFiniteElement<3> * h1fe3d;
-    const HCurlFiniteElementD<2> * hcurlfe2d;
-    const HCurlFiniteElementD<3> * hcurlfe3d;
+    const ScalarFiniteElement<2> * h1fe2d;
+    const ScalarFiniteElement<3> * h1fe3d;
+    const HCurlFiniteElement<2> * hcurlfe2d;
+    const HCurlFiniteElement<3> * hcurlfe3d;
 
-    h1fe2d = dynamic_cast<const NodalFiniteElement<2>*> (&fesh1.GetFE(ET_TRIG));
-    hcurlfe2d = dynamic_cast<const HCurlFiniteElementD<2>*> (&feshcurl.GetFE(ET_TRIG));
+    h1fe2d = dynamic_cast<const ScalarFiniteElement<2>*> (&fesh1.GetFE(ET_TRIG));
+    hcurlfe2d = dynamic_cast<const HCurlFiniteElement<2>*> (&feshcurl.GetFE(ET_TRIG));
     Matrix<> gradtrig(hcurlfe2d->GetNDof(), h1fe2d->GetNDof());
     ComputeGradientMatrix<2> (*h1fe2d, *hcurlfe2d, gradtrig);
     (*testout) << "gradtrig = " << gradtrig << endl;
 
-    h1fe3d = dynamic_cast<const NodalFiniteElement<3>*> (&fesh1.GetFE(ET_TET));
-    hcurlfe3d = dynamic_cast<const HCurlFiniteElementD<3>*> (&feshcurl.GetFE(ET_TET));
+    h1fe3d = dynamic_cast<const ScalarFiniteElement<3>*> (&fesh1.GetFE(ET_TET));
+    hcurlfe3d = dynamic_cast<const HCurlFiniteElement<3>*> (&feshcurl.GetFE(ET_TET));
     Matrix<> gradtet(hcurlfe3d->GetNDof(), h1fe3d->GetNDof());
     ComputeGradientMatrix<3> (*h1fe3d, *hcurlfe3d, gradtet);
     (*testout) << "gradtet = " << gradtet << endl;

@@ -53,7 +53,7 @@ int main ()
   // **************** Compute shape functions
 
 
-  H1HighOrderSegm<> seg(4);
+  H1HighOrderFE<ET_SEGM> seg(4);
   Vector<> shapess(seg.GetNDof());
   ofstream outf("shape");
 

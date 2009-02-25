@@ -189,7 +189,7 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
    Template argument DiffOp provides differential operator, i.e. B matrix,
    (e.g. gradient, strain operator, curl,...) \\
    DmatOp provides d-matrix (e.g. diagonal, anisotropic, plane stress, ...) \\
-   FEL is element type to assemble matrix for (NodalFiniteElement, 
+   FEL is element type to assemble matrix for (ScalarFiniteElement, 
    HCurlFiniteElement, FE_Trig1, ...)
  */
 template <class DIFFOP, class DMATOP, class FEL = FiniteElement>
@@ -367,16 +367,21 @@ public:
 
     try
       {
+        /*
 	if(!dynamic_cast<const FEL*>(&bfel))
 	  throw Exception("Integrator doesn't fit to element (space) type ");
 
 	const FEL & fel = static_cast<const FEL&> (bfel);
+        */
+        const FEL & fel = *dynamic_cast<const FEL*> (&bfel);
+        if (! &fel)
+	  throw Exception("Integrator doesn't fit to element (space) type ");
+
 	int ndof = fel.GetNDof();
         
 	elmat.AssignMemory (ndof*DIM, ndof*DIM, lh);
 	elmat = 0;
 	
-
 	// if (!fast)
 	  {
 	    enum { BLOCK = 2 * (12 / DIM_DMAT + 1) };
@@ -401,7 +406,7 @@ public:
 		    
 		    SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
 		      sip(ir[i], eltrans, lh);
-		    
+
 		    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
 		    dmatop.GenerateMatrix (fel, sip, dmat, lh);
 		    double fac =  
@@ -605,7 +610,7 @@ public:
 
 	    SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
 	      sip(ir[i], eltrans, locheap);
-
+            
 	    DIFFOP::GenerateMatrix (fel, sip, bmat, locheap);
 	    dmatop.GenerateMatrix (fel, sip, dmat, locheap);
 	    double fac =  

@@ -2,9 +2,9 @@
 #define FILE_HCURLHOFESPACE
 
 /*********************************************************************/
-/* File:   hcurlhofespace.hpp                                           */
-/* Author: Sabine Zaglmayr                                                     */
-/* Date:   20. Maerz 2003                                             */
+/* File:   hcurlhofespace.hpp                                        */
+/* Author: Sabine Zaglmayr, Start-project                            */
+/* Date:   20. Maerz 2003                                            */
 /*********************************************************************/
 
 /**

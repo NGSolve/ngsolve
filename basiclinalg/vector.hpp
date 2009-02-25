@@ -656,7 +656,7 @@ Vec<S> & operator+= (Vec<S> & v, const Expr<TB> & v2)
   return v;
 }
 
-template <class TB>  __attribute__ ((__always_inline__))
+template <class TB>  ALWAYS_INLINE
 Vec<3,double> operator+= (class Vec<3,double> & v, const Expr<TB> & exp)
 {
   v(0) += exp.Spec()(0,0);
