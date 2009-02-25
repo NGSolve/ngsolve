@@ -32,8 +32,14 @@ namespace ngfem
   template <int D>
   void ScalarFiniteElement<D> ::
   CalcDShape (const IntegrationPoint & ip, 
-	      FlatMatrix<> dshape) const
+	      FlatMatrixFixWidth<D> dshape) const
   {
+    static bool firsttime = true;
+    if (firsttime)
+      {
+	cout << "WARNING: CalcDShape not overloaded for class " << typeid(this).name() << endl;
+	firsttime = false;
+      }
     int nd = GetNDof();
     int sdim = SpatialDim();
 
@@ -591,7 +597,7 @@ namespace ngfem
   }
 
   void FE_Quad0 :: CalcDShape (const IntegrationPoint & ip, 
-			       FlatMatrix<> dshape) const
+			       FlatMatrixFixWidth<2> dshape) const
 			      
   {
     dshape = 0;
@@ -635,7 +641,7 @@ namespace ngfem
   }
 
   void FE_Quad1 :: CalcDShape (const IntegrationPoint & ip, 
-			       FlatMatrix<> dshape) const
+			       FlatMatrixFixWidth<2> dshape) const
 			      
   {
     double x = ip.Point()[0];
@@ -703,7 +709,7 @@ namespace ngfem
   }
 
   void FE_Quad2 :: CalcDShape (const IntegrationPoint & ip, 
-			       FlatMatrix<> dshape) const
+			       FlatMatrixFixWidth<2> dshape) const
     
   {
     double x = ip.Point()[0];
@@ -792,7 +798,7 @@ namespace ngfem
 
 
   void FE_Quad3 :: CalcDShape (const IntegrationPoint & ip, 
-			       FlatMatrix<> dshape) const
+			       FlatMatrixFixWidth<2> dshape) const
     
   {
     double x = ip(0);
@@ -906,7 +912,7 @@ namespace ngfem
   }
 
   void FE_Pyramid0 :: CalcDShape (const IntegrationPoint & ip, 
-				  FlatMatrix<> dshape) const
+				  FlatMatrixFixWidth<3> dshape) const
 				  
   {
     dshape = 0;
@@ -958,7 +964,7 @@ namespace ngfem
 
 
   void FE_Pyramid1 :: CalcDShape (const IntegrationPoint & ip, 
-				  FlatMatrix<> dshape) const
+				  FlatMatrixFixWidth<3> dshape) const
 			     
   {
     double x = ip.Point()[0];
@@ -1072,7 +1078,7 @@ namespace ngfem
   }
 
   void FE_Prism0 :: CalcDShape (const IntegrationPoint & ip, 
-				FlatMatrix<> dshape) const
+				FlatMatrixFixWidth<3> dshape) const
 			      
   {
     dshape = 0;
@@ -1120,7 +1126,7 @@ namespace ngfem
   }
 
   void FE_Prism1 :: CalcDShape (const IntegrationPoint & ip, 
-				FlatMatrix<> dshape) const
+				FlatMatrixFixWidth<3> dshape) const
     
   {
     double x = ip.Point()[0];
@@ -1219,7 +1225,7 @@ namespace ngfem
 
 
   void FE_Prism2 :: CalcDShape (const IntegrationPoint & ip, 
-				FlatMatrix<> dshape) const
+				FlatMatrixFixWidth<3> dshape) const
   {
     ScalarFiniteElement<3>::CalcDShape (ip, dshape);
   }
@@ -1268,7 +1274,7 @@ namespace ngfem
 
 
   void FE_Prism2aniso :: CalcDShape (const IntegrationPoint & ip, 
-				     FlatMatrix<> dshape) const
+				     FlatMatrixFixWidth<3> dshape) const
   {
     ScalarFiniteElement<3>::CalcDShape (ip, dshape);
   }
@@ -1527,7 +1533,7 @@ namespace ngfem
 
   template <int ORDER>
   void FE_TSegmL2<ORDER> :: CalcDShape (const IntegrationPoint & ip, 
-					FlatMatrix<> dshape) const
+					FlatMatrixFixWidth<1> dshape) const
   {
     double x = ip.Point()[0];
     dshape = 0;

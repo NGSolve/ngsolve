@@ -198,87 +198,13 @@ namespace ngcomp
 	FiniteElement * fe;
 	typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 
-        /*
-	if (fast_pfem)
-	  {
-	switch (ma.GetElType(elnr))
-	  {
-	  case ET_TET:
-	    { 
-              switch (order)
-                {
-#ifdef TPFO
-                case 0: fe = new (lh.Alloc (sizeof(L2HighOrderTetTPFO<0>)))  L2HighOrderTetTPFO<0>(lh); break;
-                case 1: fe = new (lh.Alloc (sizeof(L2HighOrderTetTPFO<1>)))  L2HighOrderTetTPFO<1>(lh); break;
-                case 2: fe = new (lh.Alloc (sizeof(L2HighOrderTetTPFO<2>)))  L2HighOrderTetTPFO<2>(lh); break;
-                case 3: fe = new (lh.Alloc (sizeof(L2HighOrderTetTPFO<3>)))  L2HighOrderTetTPFO<3>(lh); break;
-                case 4: fe = new (lh.Alloc (sizeof(L2HighOrderTetTPFO<4>)))  L2HighOrderTetTPFO<4>(lh); break;
-                case 5: fe = new (lh.Alloc (sizeof(L2HighOrderTetTPFO<5>)))  L2HighOrderTetTPFO<5>(lh); break;
-                case 6: fe = new (lh.Alloc (sizeof(L2HighOrderTetTPFO<6>)))  L2HighOrderTetTPFO<6>(lh); break;
-                case 7: fe = new (lh.Alloc (sizeof(L2HighOrderTetTPFO<7>)))  L2HighOrderTetTPFO<7>(lh); break;
-                case 8: fe = new (lh.Alloc (sizeof(L2HighOrderTetTPFO<8>)))  L2HighOrderTetTPFO<8>(lh); break;
-                  // case 10: fe = new (lh.Alloc (sizeof(L2HighOrderTetTPFO<10>)))  L2HighOrderTetTPFO<10>(lh); break;
-                  // case 12: fe = new (lh.Alloc (sizeof(L2HighOrderTetTPFO<12>)))  L2HighOrderTetTPFO<12>(lh); break;
-                  // case 16: fe = new (lh.Alloc (sizeof(L2HighOrderTetTPFO<16>)))  L2HighOrderTetTPFO<16>(lh); break;
-#endif
-                default:
-                  fe = new (lh.Alloc (sizeof(L2HighOrderTetTP)))  L2HighOrderTetTP(order, lh);
-                }
-              // fe = new (lh.Alloc (sizeof(L2HighOrderTetTP)))  L2HighOrderTetTP (order, lh);
-	      break;
-	    }
-	  case ET_PYRAMID:
-	    {
-	      fe = new (lh.Alloc (sizeof(H1HighOrderPyramid<T_ORTHOPOL>)))  H1HighOrderPyramid<T_ORTHOPOL> (order);
-	      break;
-	    }
-	  case ET_PRISM:
-	    {
-              fe = new (lh.Alloc (sizeof(L2HighOrderPrism)))  L2HighOrderPrism (order);
-              break;
-	    }
-	  case ET_HEX:
-	    {
-              fe = new (lh.Alloc (sizeof(L2HighOrderHex)))  L2HighOrderHex (order);
-              break;
-	    }
-	  case ET_TRIG:
-	    { 
-              switch (order)
-                {
-#ifdef TPFO
-                case 0: fe = new (lh.Alloc (sizeof(L2HighOrderTrigTPFO<0>)))  L2HighOrderTrigTPFO<0>(lh); break;
-                case 1: fe = new (lh.Alloc (sizeof(L2HighOrderTrigTPFO<1>)))  L2HighOrderTrigTPFO<1>(lh); break;
-                case 2: fe = new (lh.Alloc (sizeof(L2HighOrderTrigTPFO<2>)))  L2HighOrderTrigTPFO<2>(lh); break;
-                case 4: fe = new (lh.Alloc (sizeof(L2HighOrderTrigTPFO<4>)))  L2HighOrderTrigTPFO<4>(lh); break;
-                case 8: fe = new (lh.Alloc (sizeof(L2HighOrderTrigTPFO<8>)))  L2HighOrderTrigTPFO<8>(lh); break;
-#endif
-                  // case 16: fe = new (lh.Alloc (sizeof(L2HighOrderTrigTPFO<16>)))  L2HighOrderTrigTPFO<16>(lh); break;
-                default:
-                  fe = new (lh.Alloc (sizeof(L2HighOrderTrigTP)))  L2HighOrderTrigTP(order, lh);
-                }
-                // fe = new (lh.Alloc (sizeof(L2HighOrderTrigTP)))  L2HighOrderTrigTP(order, lh);
-	      break;
-	    }
-	  case ET_QUAD:
-	    {
-	      fe = new (lh.Alloc (sizeof(L2HighOrderQuad)))  L2HighOrderQuad(order);
-	      break;
-	    }
-	  default:
-	    fe = 0; 
-	  }
-	  }
-	
-	else
-        */
-	  {
 	switch (ma.GetElType(elnr))
 	  {
 	  case ET_TET:
 	    { 
 //               fe = new (lh.Alloc (sizeof(H1HighOrderTet<T_ORTHOPOL>)))  H1HighOrderTet<T_ORTHOPOL> (order);
-              fe = new (lh.Alloc (sizeof(L2HighOrderTet))) L2HighOrderTet (order);
+//              fe = new (lh.Alloc (sizeof(L2HighOrderTet))) L2HighOrderTet (order);
+	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_TET>))) L2HighOrderFE<ET_TET> (order);
 	      break;
 	    }
 	  case ET_PYRAMID:
@@ -289,28 +215,31 @@ namespace ngcomp
 	  case ET_PRISM:
 	    {
 // 	      fe = new (lh.Alloc (sizeof(H1HighOrderPrism<T_ORTHOPOL>)))  H1HighOrderPrism<T_ORTHOPOL> (order);
-              fe = new (lh.Alloc (sizeof(L2HighOrderPrism)))  L2HighOrderPrism (order);
+              // fe = new (lh.Alloc (sizeof(L2HighOrderPrism)))  L2HighOrderPrism (order);
+	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_PRISM>))) L2HighOrderFE<ET_PRISM> (order);
               break;
 	    }
 	  case ET_HEX:
 	    {
 // 	      fe = new (lh.Alloc (sizeof(H1HighOrderHex<T_ORTHOPOL>)))  H1HighOrderHex<T_ORTHOPOL> (order);
-              fe = new (lh.Alloc (sizeof(L2HighOrderHex)))  L2HighOrderHex (order);
+              // fe = new (lh.Alloc (sizeof(L2HighOrderHex)))  L2HighOrderHex (order);
+	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_HEX>))) L2HighOrderFE<ET_HEX> (order);
               break;
 	    }
 	  case ET_TRIG:
 	    { 
-	      fe = new (lh.Alloc (sizeof(L2HighOrderTrig)))  L2HighOrderTrig(order);
+	      // fe = new (lh.Alloc (sizeof(L2HighOrderTrig)))  L2HighOrderTrig(order);
+	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_TRIG>))) L2HighOrderFE<ET_TRIG> (order);
 	      break;
 	    }
 	  case ET_QUAD:
 	    {
-	      fe = new (lh.Alloc (sizeof(L2HighOrderQuad)))  L2HighOrderQuad(order);
+	      // fe = new (lh.Alloc (sizeof(L2HighOrderQuad)))  L2HighOrderQuad(order);
+	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_QUAD>))) L2HighOrderFE<ET_QUAD> (order);
 	      break;
 	    }
 	  default:
 	    fe = 0; 
-	  }
 	  }
 	
 	if (!fe)
@@ -330,7 +259,8 @@ namespace ngcomp
           {
             L2HighOrderFiniteElement<2> * hofe = dynamic_cast<L2HighOrderFiniteElement<2>* > (fe);
  	    hofe-> SetVertexNumbers (vnums); 
-	    hofe-> SetOrderInner(order_inner[elnr]); 
+	    INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
+	    hofe-> SetOrder(p);
 	    hofe-> ComputeNDof(); 
             return *hofe;
           }
@@ -338,7 +268,7 @@ namespace ngcomp
           {
             L2HighOrderFiniteElement<3> * hofe = dynamic_cast<L2HighOrderFiniteElement<3>* > (fe);
  	    hofe-> SetVertexNumbers (vnums); 
-	    hofe-> SetOrderInner(order_inner[elnr]); 
+	    hofe-> SetOrder(order_inner[elnr]); 
 	    hofe-> ComputeNDof(); 
             return *hofe;
           }

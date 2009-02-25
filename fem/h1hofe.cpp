@@ -149,9 +149,12 @@ namespace ngfem
     for (int i = 0; i < ET_trait<ET>::N_FACE; i++)
       order = max(order, max (order_face[i][0], order_face[i][1]));
     
-    order = max(order, order_inner[0]);
-    order = max(order, order_inner[1]);
-    order = max(order, order_inner[2]);
+    if (DIM == 3)
+      {
+	order = max(order, order_inner[0]);
+	order = max(order, order_inner[1]);
+	order = max(order, order_inner[2]);
+      }
   }
 
 
@@ -204,7 +207,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET>
   void T_H1HighOrderFiniteElement<ET> :: 
   CalcDShape (const IntegrationPoint & ip, 
-              FlatMatrix<> dshape) const
+              FlatMatrixFixWidth<DIM> dshape) const
   {
     AutoDiff<DIM> adp[DIM];
     for (int i = 0; i < DIM; i++)
@@ -231,20 +234,11 @@ namespace ngfem
 
 
   H1HighOrderFE<ET_SEGM> :: H1HighOrderFE (int aorder)
-    : T_H1HighOrderFiniteElement<ET_SEGM> (), ScalarFiniteElement<1>(ET_SEGM)
+  // : T_H1HighOrderFiniteElement<ET_SEGM> (), ScalarFiniteElement<1>(ET_SEGM)
   {
     order_inner = aorder;
     ComputeNDof();
   }
-
-  /*
-  void H1HighOrderFE<ET_SEGM> :: ComputeNDof()
-  {
-    ndof = 2;
-    ndof += order_inner[0]-1;
-    order = order_inner[0];
-  }
-  */
 
   template<typename Tx, typename TFA>  
   void H1HighOrderFE<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & sds) const
@@ -269,7 +263,7 @@ namespace ngfem
 
 
   H1HighOrderFE<ET_TRIG> :: H1HighOrderFE(int aorder)
-    : T_H1HighOrderFiniteElement<ET_TRIG> (), ScalarFiniteElement<2>(ET_TRIG)
+  // : T_H1HighOrderFiniteElement<ET_TRIG> (), ScalarFiniteElement<2>(ET_TRIG)
   {
     order_inner = INT<3> (aorder,aorder,aorder);
     order_face[0] = INT<2> (aorder,aorder);
@@ -278,44 +272,6 @@ namespace ngfem
 
     ComputeNDof();
   }
-
-  /*
-  void H1HighOrderFE<ET_TRIG> :: ComputeNDof()
-  {
-    ndof = 3;
-
-    for (int i = 0; i < 3; i++)
-      ndof += order_edge[i] - 1;
-    int oi = order_inner[0]; 
-    ndof += (oi-1)*(oi-2) / 2;
-
-    order = 1;
-    for (int i = 0; i < 3; i++)
-      if (order_edge[i] > order)
-	order = order_edge[i];
-    if (oi > order)
-      order = oi;
-  }
-  */
-
-  /*
-  void H1HighOrderFE<ET_TRIG> ::  
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    idofs.SetSize (0);
-
-    int base = 3;
-    for (int i = 0; i < 3; i++)
-      base += order_edge[i] - 1;
-
-    if(order_inner[0] > 2)
-      {
-	int ni = (order_inner[0]-1)*(order_inner[0]-2) / 2;
-	for (int i = 0; i < ni; i++)
-	  idofs.Append (base+i);
-      }
-  }
-  */
 
 
   template<typename Tx, typename TFA>  
@@ -369,53 +325,6 @@ namespace ngfem
     ComputeNDof();
   }
 
-  /*
-  void H1HighOrderFE<ET_QUAD> :: ComputeNDof()
-  {
-    cout << "compute ndof, quad" << endl;
-    order = 1;
-    for (int i = 0; i < 4; i++)
-      if (order_edge[i] > order)
-	order = order_edge[i];
-
-    for (int m = 0; m < 2; m++)
-      if (order_inner[m] > order)
-	order = order_inner[m];
-    
-    ndof = 4;
-    for (int i = 0; i < 4; i++)
-      if(order_edge[i]>1)
-	ndof += order_edge[i] - 1;
-    
-    cout << "ndof, e = " << ndof << endl;
-    if(order_inner[0] > 1 && order_inner[1] >1)
-      ndof += (order_inner[0]-1)*(order_inner[1]-1);
-
-    cout << "order_face = " <<order_face[0] << endl;
-    cout << "order_inner = " <<order_inner << endl;
-
-    cout << "ndof, f = " << ndof << endl;
-  }
-
-  void H1HighOrderFE<ET_QUAD> ::  
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    idofs.SetSize (0);
-
-    int base = 4;
-
-    for (int i = 0; i < 4; i++)
-      base += order_edge[i] - 1;
-
-    if(order_inner[0] >= 2 && order_inner[1] >= 2)
-      {
-	int ni = (order_inner[0]-1)*(order_inner[1]-1);
-	for (int i = 0; i < ni; i++)
-	  idofs.Append (base+i);
-      }
-  }
-  */
-
   template<typename Tx, typename TFA>  
   void H1HighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & sds) const
   {
@@ -423,7 +332,6 @@ namespace ngfem
     Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
     Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
     
-    // sds = 0.0;
 
     // vertex shapes
     for(int i=0; i < 4; i++) sds[i] = lami[i]; 
@@ -479,7 +387,7 @@ namespace ngfem
 
 
   H1HighOrderFE<ET_TET> :: H1HighOrderFE (int aorder)
-    : T_H1HighOrderFiniteElement<ET_TET> (), ScalarFiniteElement<3>(ET_TET)
+  // : T_H1HighOrderFiniteElement<ET_TET> (), ScalarFiniteElement<3>(ET_TET)
   {
     order_inner = INT<3> (aorder,aorder,aorder);
 
@@ -491,49 +399,6 @@ namespace ngfem
     ComputeNDof();
   }
 
-  /*
-  void H1HighOrderFE<ET_TET> :: ComputeNDof()
-  {
-    ndof = 4;
-
-    for (int i = 0; i < 6; i++)
-      ndof += order_edge[i] - 1;
-    for (int i = 0; i < 4; i++)
-      ndof += (order_face[i][0]-1)*(order_face[i][0]-2) / 2;
-    ndof += (order_inner[0]-1)*(order_inner[0]-2)*(order_inner[0]-3) / 6;
-
-    order = 1;
-    for (int i = 0; i < 6; i++)
-      if (order_edge[i] > order)
-	order = order_edge[i];
-    for (int i = 0; i < 4; i++)
-      if (order_face[i][0] > order)
-	order = order_face[i][0];
-    if (order_inner[0] > order)
-      order = order_inner[0];
-  }
-  */
-  /*
-  void H1HighOrderFE<ET_TET> ::  
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    idofs.SetSize (0);
-
-    int base = 4;
-
-    for (int i = 0; i < 6; i++)
-      base += order_edge[i] - 1;
-    for (int i = 0; i < 4; i++)
-      base += (order_face[i][0]-1)*(order_face[i][0]-2) / 2;
-
-    if(order_inner[0] > 2)
-      {
-	int ni = (order_inner[0]-1)*(order_inner[0]-2)*(order_inner[0]-3) / 6;
-	for (int i = 0; i < ni; i++)
-	  idofs.Append (base+i);
-      }
-  }
-  */
 
   template<typename Tx, typename TFA>  
   void  H1HighOrderFE<ET_TET> :: T_CalcShape (Tx hx[3], TFA & sds) const
@@ -596,7 +461,7 @@ namespace ngfem
 
 
   H1HighOrderFE<ET_PRISM> :: H1HighOrderFE (int aorder)
-    : T_H1HighOrderFiniteElement<ET_PRISM> (), ScalarFiniteElement<3>(ET_PRISM)
+  // : T_H1HighOrderFiniteElement<ET_PRISM> (), ScalarFiniteElement<3>(ET_PRISM)
   {
     order_inner = INT<3> (aorder,aorder,aorder);
     for (int i = 0; i < 9; i++)
@@ -606,71 +471,6 @@ namespace ngfem
 
     ComputeNDof();
   }
-
-  /*
-  void H1HighOrderFE<ET_PRISM> :: ComputeNDof()
-  {
-    ndof = 6;
-
-    for (int i = 0; i < 9; i++)
-      if(order_edge[i] > 1)
-	ndof += order_edge[i] - 1;
-    for (int i = 0; i < 2; i++)
-      if(order_face[i][0] > 2)
-	ndof += (order_face[i][0]-1)*(order_face[i][0]-2) / 2;
-    for (int i = 2; i < 5; i++)
-      if(order_face[i][0] > 1 && order_face[i][1]>1)
-	ndof += (order_face[i][0]-1)*(order_face[i][1]-1);
-    if(order_inner[0] > 2 && order_inner[2] >1) 
-      ndof += (order_inner[0]-1)*(order_inner[0]-2)/2*(order_inner[2]-1);
-
-    order = 1;
-    for (int i = 0; i < 9; i++)
-      if (order_edge[i] > order)
-	order = order_edge[i];
-    for (int i = 0; i < 5; i++)
-      for (int k = 0; k < 2; k++)
-	if (order_face[i][k] > order)
-	  order = order_face[i][k];
-    if (order_inner[0] > order)
-      order = order_inner[0];
-    if (order_inner[2] > order)
-      order = order_inner[2];
-  }
-  
-
-  void H1HighOrderFE<ET_PRISM> ::  
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    idofs.SetSize (0);
-
-    int base = 6;
-
-    for (int i = 0; i < 9; i++)
-      if(order_edge[i] > 1 ) 
-	base += order_edge[i] - 1;
-
-    for (int i = 0; i < 2; i++)
-      {
-	if(order_face[i][0] >2)
-	  {
-	    int ni = (order_face[i][0]-1)*(order_face[i][0]-2) / 2;
-	    base += ni;
-	  }
-      }
-
-    for (int i = 2; i < 5; i++)
-      if(order_face[i][0]>1 && order_face[i][1]>1)
-	base += (order_face[i][0]-1)*(order_face[i][1]-1);
-    
-    if(order_inner[0] > 2 && order_inner[2] > 1)
-      {
-	int ni = (order_inner[0]-1)*(order_inner[0]-2)/2*(order_inner[2]-1);
-	for (int i = 0; i < ni; i++)
-	  idofs.Append (base+i);
-      }
-  }
-  */
 
 
   template<typename Tx, typename TFA>  
@@ -796,7 +596,7 @@ namespace ngfem
   /* *********************** Hex  **********************/
 
   H1HighOrderFE<ET_HEX> :: H1HighOrderFE (int aorder)
-    : T_H1HighOrderFiniteElement<ET_HEX> (), ScalarFiniteElement<3>(ET_HEX)
+  // : T_H1HighOrderFiniteElement<ET_HEX> (), ScalarFiniteElement<3>(ET_HEX)
   {
     order_inner = INT<3> (aorder,aorder,aorder);
     for (int i = 0; i < 12; i++)
@@ -805,51 +605,6 @@ namespace ngfem
       order_face[i] = INT<2> (aorder,aorder);
     ComputeNDof();
   }
-
-  /*
-  void H1HighOrderFE<ET_HEX> :: ComputeNDof()
-  {
-    ndof = 8;
-
-    for (int i = 0; i < 12; i++)
-      ndof += order_edge[i] - 1;
-    for (int i = 0; i < 6; i++)
-      ndof +=  (order_face[i][0]-1)*(order_face[i][1]-1);
-    ndof += (order_inner[0]-1)*(order_inner[1]-1)*(order_inner[2]-1);
-
-    order = 1;
-    for (int i = 0; i < 12; i++)
-      if (order_edge[i] > order)
-	order = order_edge[i];
-    for (int i = 0; i < 6; i++)
-      for (int k = 0; k < 2; k++)
-	if (order_face[i][k] > order)
-	  order = order_face[i][k];
-    for(int m=0; m<3; m++)
-      if (order_inner[m] > order)
-	order = order_inner[m];
-  }
-
-  void H1HighOrderFE<ET_HEX> ::  
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    idofs.SetSize (0);
-
-    int base = 8;
-
-    for (int i = 0; i < 12; i++)
-      base += order_edge[i] - 1;
-    for (int i = 0; i < 6; i++)
-      base += (order_face[i][0]-1)*(order_face[i][1]-1);
-
-    if(order_inner[0] >= 2 && order_inner[1] >= 2 && order_inner[2] >= 2)
-      {
-	int ni = (order_inner[0]-1)*(order_inner[1]-1)*(order_inner[2]-1);
-	for (int i = 0; i < ni; i++)
-	  idofs.Append (base+i);
-      }
-  }
-  */
 
   template<typename Tx, typename TFA>  
   void  H1HighOrderFE<ET_HEX> :: T_CalcShape (Tx hx[3], TFA & sds) const
@@ -942,7 +697,7 @@ namespace ngfem
   /* ******************************** Pyramid  ************************************ */
 
   H1HighOrderFE<ET_PYRAMID> :: H1HighOrderFE (int aorder)
-    : T_H1HighOrderFiniteElement<ET_PYRAMID>(), ScalarFiniteElement<3>(ET_PYRAMID)
+  // : T_H1HighOrderFiniteElement<ET_PYRAMID>(), ScalarFiniteElement<3>(ET_PYRAMID)
   {
     order_inner = INT<3> (aorder,aorder,aorder);
     for (int i = 0; i < 8; i++)
@@ -951,53 +706,6 @@ namespace ngfem
       order_face[i] = INT<2> (aorder,aorder);
 
     ComputeNDof();
-  }
-
-  void H1HighOrderFE<ET_PYRAMID> :: ComputeNDof()
-  {
-    ndof = 5;
-
-    for (int i = 0; i < 8; i++)
-      ndof += order_edge[i] - 1;
-    for (int i = 0; i < 4; i++)
-      ndof += (order_face[i][0]-1)*(order_face[i][0]-2) / 2;
-    ndof += (order_face[4][0]-1)*(order_face[4][1]-1);
-    ndof += (order_inner[0]-1)*(order_inner[0]-2)*(2*order_inner[0]-3) / 6; 
-
-
-    order = 1;
-    for (int i = 0; i < 8; i++)
-      if (order_edge[i] > order)
-	order = order_edge[i];
-    for (int i = 0; i < 5; i++)
-      for (int k = 0; k < 2; k++)
-	if (order_face[i][k] > order)
-	  order = order_face[i][k];
-    if (order_inner[0] > order)
-      order = order_inner[0];
-  }
-
-
-  void H1HighOrderFE<ET_PYRAMID> ::  
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    idofs.SetSize (0);
-
-    int base = 5;
-
-    for (int i = 0; i < 8; i++)
-      base += order_edge[i] - 1;
-    for (int i = 0; i < 4; i++)
-      base += (order_face[i][0]-1)*(order_face[i][0]-2) / 2;
-    base += (order_face[4][0]-1)*(order_face[4][1]-1);
-
-    if(order_inner[0] > 2)
-      {
-	int ni = (order_inner[0]-1)*(order_inner[0]-2)*(2*order_inner[0]-3) / 6;
-	
-	for (int i = 0; i < ni; i++)
-	  idofs.Append (base+i);
-      }
   }
 
   template<typename Tx, typename TFA>  
@@ -1162,8 +870,5 @@ namespace ngfem
   template class H1HighOrderFiniteElement<1>;
   template class H1HighOrderFiniteElement<2>;
   template class H1HighOrderFiniteElement<3>;
-
-  // template class T_H1HighOrderFiniteElement<ET_SEGM>;
-  // template class H1HighOrderFE<ET_SEGM>;
 }
 
