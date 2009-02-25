@@ -39,7 +39,7 @@ public:
    H(Curl) finite element of dimension D
  */
 template <int D>
-class HCurlFiniteElementD : public FiniteElement
+class HCurlFiniteElement : public FiniteElement
 {
 
 public:
@@ -61,10 +61,10 @@ protected:
 public:
   virtual string ClassName(void) const {stringstream out; out << "HCurlHFiniteElementD<" << D << ">"; return out.str();}
   ///
-  HCurlFiniteElementD (ELEMENT_TYPE aeltype, int andof, int aorder)
+  HCurlFiniteElement (ELEMENT_TYPE aeltype, int andof, int aorder)
     : FiniteElement (DIM, aeltype, andof, aorder) { p_ipdata = 0; block = 0; }
   
-  virtual ~HCurlFiniteElementD ();
+  virtual ~HCurlFiniteElement ();
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
@@ -144,7 +144,7 @@ protected:
   { ; }
   
   ///
-  void ComputeEdgeMoments (int enr, NodalFiniteElement<1> & testfe,
+  void ComputeEdgeMoments (int enr, ScalarFiniteElement<1> & testfe,
 			   FlatMatrix<> moments, int order, int shape = 1) const;
   ///
   void ComputeFaceMoments (int fnr, HDivFiniteElement<2> & testfe,
@@ -158,8 +158,8 @@ protected:
 
 
 template <int D>
-extern void ComputeGradientMatrix (const NodalFiniteElement<D> & h1fe,
-				   const HCurlFiniteElementD<D> & hcurlfe,
+extern void ComputeGradientMatrix (const ScalarFiniteElement<D> & h1fe,
+				   const HCurlFiniteElement<D> & hcurlfe,
 				   FlatMatrix<> gradient);
 
 
@@ -167,7 +167,7 @@ extern void ComputeGradientMatrix (const NodalFiniteElement<D> & h1fe,
 
 
 ///
-class FE_NedelecSegm1 : public HCurlFiniteElementD<1>
+class FE_NedelecSegm1 : public HCurlFiniteElement<1>
 {
 public:
 
@@ -191,7 +191,7 @@ public:
 
 
 ///
-class FE_NedelecSegm2 : public HCurlFiniteElementD<1>
+class FE_NedelecSegm2 : public HCurlFiniteElement<1>
 {
 public:
 
@@ -215,7 +215,7 @@ public:
 
 
 ///
-class FE_NedelecSegm3 : public HCurlFiniteElementD<1>
+class FE_NedelecSegm3 : public HCurlFiniteElement<1>
 {
   ///
   static Array<IPData> ipdata;
@@ -243,7 +243,7 @@ public:
 /* *********************** Quad elements ******************* */
 
 /// Gradients of Q1
-class FE_NedelecQuad1 : public HCurlFiniteElementD<2>
+class FE_NedelecQuad1 : public HCurlFiniteElement<2>
 {
 public:
   enum { NDOF = 4 };
@@ -277,7 +277,7 @@ public:
 */
 
 template <int ORDER, int ZORDER>
-class FE_TNedelecQuad : public HCurlFiniteElementD<2>
+class FE_TNedelecQuad : public HCurlFiniteElement<2>
 {
 public:
   enum { NDOF = ORDER * (ZORDER+1) + (ORDER+1) * ZORDER };
@@ -324,7 +324,7 @@ public:
 /* ******************** triangular elements *********************** */
 
 /// Lowest order Nedelec
-class FE_NedelecTrig1 : public HCurlFiniteElementD<2>
+class FE_NedelecTrig1 : public HCurlFiniteElement<2>
 {
   ///
   static Array<IPData> ipdata;
@@ -344,7 +344,7 @@ public:
 
 
 /// Nedelec type 2, order 1, gradients of P2
-class FE_NedelecTrig2 : public HCurlFiniteElementD<2>
+class FE_NedelecTrig2 : public HCurlFiniteElement<2>
 {
 public:
   enum { NDOF = 6 };
@@ -380,7 +380,7 @@ public:
 
 
 /// Nedelec type 2, order 2, gradients of P3
-class FE_NedelecTrig3 : public HCurlFiniteElementD<2>
+class FE_NedelecTrig3 : public HCurlFiniteElement<2>
 {
 public:
   enum { NDOF = 12 };
@@ -429,7 +429,7 @@ public:
 
 
 ///
-class FE_NedelecTet1 : public HCurlFiniteElementD<3>
+class FE_NedelecTet1 : public HCurlFiniteElement<3>
 {
 public:
   enum { NDOF = 6 };
@@ -456,7 +456,7 @@ public:
 
 
 ///
-class FE_NedelecTet2 : public HCurlFiniteElementD<3>
+class FE_NedelecTet2 : public HCurlFiniteElement<3>
 {
 public:
 
@@ -492,7 +492,7 @@ public:
 
 
 /// 2nd order Nedelec element of class II
-class FE_NedelecTet3 : public HCurlFiniteElementD<3>
+class FE_NedelecTet3 : public HCurlFiniteElement<3>
 {
 public:
   enum { NDOF = 30 };
@@ -545,7 +545,7 @@ public:
   void Orthogonalize();
 };
 /// 2nd order Nedelec element of class II, without gradient fields
-class FE_NedelecTet3NoGrad : public HCurlFiniteElementD<3>
+class FE_NedelecTet3NoGrad : public HCurlFiniteElement<3>
 {
 public:
   enum { NDOF = 18 };
@@ -583,7 +583,7 @@ public:
 
 
 ///
-class FE_NedelecHex1 : public HCurlFiniteElementD<3> 
+class FE_NedelecHex1 : public HCurlFiniteElement<3> 
 {
   /// 
   static Array<IPData> ipdata; 
@@ -604,7 +604,7 @@ public:
 /* *********************** Prism elements ********************** */
 
 ///
-class FE_NedelecPrism1 : public HCurlFiniteElementD<3>
+class FE_NedelecPrism1 : public HCurlFiniteElement<3>
 {
   ///
   static Array<IPData> ipdata;
@@ -624,7 +624,7 @@ public:
 
 /// \nabla Q (2,ZORDER)
 template <int ZORDER>
-class FE_TNedelecPrism2 : public HCurlFiniteElementD<3>
+class FE_TNedelecPrism2 : public HCurlFiniteElement<3>
 {
   ///
   static Array<IPData> ipdata;
@@ -674,7 +674,7 @@ public:
 
 /// \nabla Q (3,ZORDER)
 template <int ZORDER>
-class FE_TNedelecPrism3 : public HCurlFiniteElementD<3>
+class FE_TNedelecPrism3 : public HCurlFiniteElement<3>
 {
   ///
   static Array<IPData> ipdata;
@@ -742,7 +742,7 @@ public:
 
 /// \nabla Q (3,ZORDER)
 template <int ZORDER>
-class FE_TNedelecPrism3NoGrad : public HCurlFiniteElementD<3>
+class FE_TNedelecPrism3NoGrad : public HCurlFiniteElement<3>
 {
   ///
   static Array<IPData> ipdata;
@@ -817,7 +817,7 @@ public:
 
 
 ///
-class FE_NedelecPyramid1 : public HCurlFiniteElementD<3>
+class FE_NedelecPyramid1 : public HCurlFiniteElement<3>
 {
   ///
   static Array<IPData> ipdata;
@@ -844,7 +844,7 @@ public:
 
 
 ///
-class FE_NedelecPyramid2 : public HCurlFiniteElementD<3>
+class FE_NedelecPyramid2 : public HCurlFiniteElement<3>
 {
 public:
   enum { NDOF = 20 };
@@ -887,7 +887,7 @@ public:
 
 
 ///
-class FE_NedelecPyramid3 : public HCurlFiniteElementD<3>
+class FE_NedelecPyramid3 : public HCurlFiniteElement<3>
 {
 public:
   enum { NDOF = 57 };
@@ -938,7 +938,7 @@ public:
 
 /*
 ///
-class FE_NedelecPyramid3NoGrad : public HCurlFiniteElementD<3>
+class FE_NedelecPyramid3NoGrad : public HCurlFiniteElement<3>
 {
 public:
   //  enum { NDOF = 57 };
@@ -995,7 +995,7 @@ public:
 #ifdef OLD
 
 /// extension to Nedelec type II
-class FE_NedelecPyramid1b : public HCurlFiniteElementD<3>
+class FE_NedelecPyramid1b : public HCurlFiniteElement<3>
 {
   ///
   static Array<IPData> ipdata;

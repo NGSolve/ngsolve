@@ -9,6 +9,7 @@
 
 namespace ngcomp
 {
+  using namespace ngmg;
   using namespace ngcomp;
   using namespace ngparallel;
 

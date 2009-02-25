@@ -9,7 +9,10 @@
 */
 
 #include <la.hpp>
+
+#ifdef PARALLEL
 #include <parallelngs.hpp>
+#endif
 
 namespace ngla
 {

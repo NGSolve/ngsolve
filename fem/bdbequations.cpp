@@ -18,7 +18,7 @@ namespace ngfem
 
   template <int D>  MassIntegrator<D> :: 
   MassIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, NodalFiniteElement<D> > (DiagDMat<1> (coeff))
+    : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (DiagDMat<1> (coeff))
   { ; }
 
   template <int D, typename FEL> LaplaceIntegrator<D,FEL> ::
@@ -41,7 +41,7 @@ namespace ngfem
 
   template <int D> RobinIntegrator<D> ::
   RobinIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, NodalFiniteElement<D-1> > (DiagDMat<1> (coeff))
+    : T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, ScalarFiniteElement<D-1> > (DiagDMat<1> (coeff))
   { ; }
 
 

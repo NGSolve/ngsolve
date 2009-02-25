@@ -7,7 +7,8 @@ namespace ngfem {
  ****************************************************************************/
 
 template<int D>
-FacetVolumeFiniteElement<D>::FacetVolumeFiniteElement (int adim, ELEMENT_TYPE aeltype) : NodalFiniteElement<D>(adim, aeltype,-1,-1)
+FacetVolumeFiniteElement<D>::FacetVolumeFiniteElement (int adim, ELEMENT_TYPE aeltype) 
+  : ScalarFiniteElement<D>(aeltype,-1,-1)
 {
   for (int i=0; i<8; i++)
     vnums[i] = -1; //HERBERT: warum i
@@ -16,8 +17,8 @@ FacetVolumeFiniteElement<D>::FacetVolumeFiniteElement (int adim, ELEMENT_TYPE ae
   for (int i=0; i<=8; i++)
     first_facet_dof[i] = 0;
 
-  nv = ElementTopology :: GetNVertices(NodalFiniteElement<D>::eltype);
-  nf = ElementTopology :: GetNFacets(NodalFiniteElement<D>::eltype);
+  nv = ElementTopology :: GetNVertices(ScalarFiniteElement<D>::eltype);
+  nf = ElementTopology :: GetNFacets(ScalarFiniteElement<D>::eltype);
 }
  
 template<int D>
@@ -33,7 +34,7 @@ void FacetVolumeFiniteElement<D>::SetVertexNumbers (FlatArray<int> & avnums)
 template<int D>
 void FacetVolumeFiniteElement<D>::SetOrder(int ao)
 {
-  NodalFiniteElement<D>::order = ao;
+  ScalarFiniteElement<D>::order = ao;
   for (int i=0; i<6; i++)
     facet_order[i] = ao;
   ComputeNDof();
@@ -45,9 +46,9 @@ void FacetVolumeFiniteElement<D>::SetOrder(FlatArray<int> & ao)
   for (int i=0; i<ao.Size(); i++)
     facet_order[i] = ao[i];
   
-  NodalFiniteElement<D>::order = facet_order[0];        // integration order (JS, Spet 07)
+  ScalarFiniteElement<D>::order = facet_order[0];        // integration order (JS, Spet 07)
   for (int i = 1; i < ao.Size(); i++)
-    NodalFiniteElement<D>::order = max(NodalFiniteElement<D>::order, ao[i]);
+    ScalarFiniteElement<D>::order = max(ScalarFiniteElement<D>::order, ao[i]);
 
   ComputeNDof();
 }

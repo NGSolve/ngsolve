@@ -503,7 +503,7 @@ int NGS_GetData (ClientData clientData,
 	  cout << "ask space type " << endl;
 	  ngcomp::FESpace * space = pde->GetFESpace(argv[2]);
 	  cerr << "space = " << space << endl;
-	  if (space)  sprintf (buf, "%s", space->GetType());
+	  if (space)  sprintf (buf, "%s", space->GetClassName().c_str());
 	  else sprintf (buf, "Nodal");
 	}
       else if (strcmp (argv[1], "spaceorder") == 0)

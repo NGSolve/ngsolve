@@ -15,12 +15,11 @@ namespace ngfem
 
   template <int D>
   L2HighOrderFiniteElement<D> ::   
-  L2HighOrderFiniteElement (int dim, ELEMENT_TYPE aeltype)
-    : NodalFiniteElement<D> (dim, aeltype, -1, -1) 
+  L2HighOrderFiniteElement ()  // (ELEMENT_TYPE aeltype)
+    : ScalarFiniteElement<D> (ET_TRIG, -1, -1) 
   { 
     for (int i = 0; i < 8; i++)
       vnums[i] = i;
-    
   }
   
   template <int D>
@@ -65,7 +64,7 @@ namespace ngfem
   GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize(0);
-    for (int i = 0; i < NodalFiniteElement<D>::GetNDof(); i++)
+    for (int i = 0; i < ScalarFiniteElement<D>::GetNDof(); i++)
       idofs.Append (i);
   }
 
@@ -73,7 +72,7 @@ namespace ngfem
   /* *********************** Segment  **********************/
 
   L2HighOrderSegm :: L2HighOrderSegm (int aorder)
-    : L2HighOrderFiniteElement<1>(1, ET_SEGM)
+    : ScalarFiniteElement<1> (ET_SEGM) // , L2HighOrderFiniteElement<1>()
   {
     order = aorder;
     order_inner = INT<3> (aorder, aorder, aorder);
@@ -115,7 +114,7 @@ namespace ngfem
   /* *********************** Triangle  **********************/
 
   L2HighOrderTrig :: L2HighOrderTrig (int aorder)
-    : L2HighOrderFiniteElement<2>(2, ET_TRIG)
+    : ScalarFiniteElement<2>(ET_TRIG)
   {
     order_inner = INT<3> (aorder,aorder,aorder); 
     ComputeNDof();
@@ -237,7 +236,7 @@ namespace ngfem
   /* *********************** Quadrilateral  **********************/
 
   L2HighOrderQuad :: L2HighOrderQuad (int aorder)
-    : L2HighOrderFiniteElement<2>(2, ET_QUAD)
+    : ScalarFiniteElement<2>(ET_QUAD)
   {
     order_inner = INT<3>(aorder,aorder,aorder);
     ComputeNDof();
@@ -319,7 +318,7 @@ namespace ngfem
   /* *********************** Tetrahedron  **********************/
 
   L2HighOrderTet :: L2HighOrderTet (int aorder) 
-  : L2HighOrderFiniteElement<3>(3, ET_TET)
+  : ScalarFiniteElement<3>(ET_TET)
   {
     order = aorder;
     order_inner = INT<3>(aorder, aorder, aorder);
@@ -427,7 +426,7 @@ namespace ngfem
   /* *********************** Prism  **********************/
 
   L2HighOrderPrism :: L2HighOrderPrism (int aorder) 
-  : L2HighOrderFiniteElement<3>(3, ET_PRISM)
+  : ScalarFiniteElement<3>(ET_PRISM)
   {
     order = aorder;
     order_inner = INT<3>(aorder, aorder, aorder);
@@ -496,7 +495,7 @@ namespace ngfem
   /* *********************** Hex  **********************/
 
   L2HighOrderHex :: L2HighOrderHex (int aorder) 
-  : L2HighOrderFiniteElement<3>(3, ET_HEX)
+  : ScalarFiniteElement<3>(ET_HEX)
   {
     order = aorder;
     order_inner = INT<3>(aorder, aorder, aorder);

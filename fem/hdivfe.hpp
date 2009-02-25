@@ -91,7 +91,7 @@ protected:
 			   FlatMatrixFixWidth<DIM> shape) const { ; }
 
   ///
-  void ComputeFaceMoments (int fnr, NodalFiniteElement<DIM-1> & testfe,
+  void ComputeFaceMoments (int fnr, ScalarFiniteElement<DIM-1> & testfe,
 			   FlatMatrix<> & moments,
 			   int order, int shape = 1) const;
 };

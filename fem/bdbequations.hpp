@@ -1499,13 +1499,13 @@ public:
 ///
 template <int D>
 class ElasticityIntegrator 
-  : public T_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, NodalFiniteElement<D> >
+  : public T_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, ScalarFiniteElement<D> >
 {
 public:
   ///
   ElasticityIntegrator (CoefficientFunction * coefe,
 			CoefficientFunction * coefnu)
-    : T_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, NodalFiniteElement<D> > 
+    : T_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, ScalarFiniteElement<D> > 
   (ElasticityDMat<D> (coefe, coefnu))
   { ; }
   
@@ -1526,13 +1526,13 @@ public:
 ///
 template <>
 class ElasticityIntegrator <2>
-  : public T_BDBIntegrator<DiffOpStrain<2>, PlaneStressDMat, NodalFiniteElement<D> >
+  : public T_BDBIntegrator<DiffOpStrain<2>, PlaneStressDMat, ScalarFiniteElement<D> >
 {
 public:
   ///
   ElasticityIntegrator (CoefficientFunction * coefe,
 			CoefficientFunction * coefnu)
-    : T_BDBIntegrator<DiffOpStrain<2>, PlaneStressDMat, NodalFiniteElement<D> > 
+    : T_BDBIntegrator<DiffOpStrain<2>, PlaneStressDMat, ScalarFiniteElement<D> > 
   (PlaneStressDMat (coefe, coefnu))
   { ; }
   
@@ -1550,7 +1550,7 @@ public:
 ///
 template <int D>
 class OrthotropicElasticityIntegrator 
-  : public T_BDBIntegrator<DiffOpStrain<D>, OrthotropicElasticityDMat<D>, NodalFiniteElement<D> >
+  : public T_BDBIntegrator<DiffOpStrain<D>, OrthotropicElasticityDMat<D>, ScalarFiniteElement<D> >
 {
 public:
   ///
@@ -1563,7 +1563,7 @@ public:
 				   CoefficientFunction * coefG12,
 				   CoefficientFunction * coefG13,
 				   CoefficientFunction * coefG23)
-    : T_BDBIntegrator<DiffOpStrain<D>, OrthotropicElasticityDMat<D>, NodalFiniteElement<D> > 
+    : T_BDBIntegrator<DiffOpStrain<D>, OrthotropicElasticityDMat<D>, ScalarFiniteElement<D> > 
   (OrthotropicElasticityDMat<D> (coefE1, coefE2, coefE3, coefnu12, coefnu13, coefnu23, coefG12, coefG13, coefG23))
   { ; }
   
@@ -1582,7 +1582,7 @@ public:
 ///
 template <int D>
 class OrthotropicCylElasticityIntegrator 
-  : public T_BDBIntegrator<DiffOpStrain<D>, OrthotropicCylElasticityDMat<D>, NodalFiniteElement<D> >
+  : public T_BDBIntegrator<DiffOpStrain<D>, OrthotropicCylElasticityDMat<D>, ScalarFiniteElement<D> >
 {
 public:
   ///
@@ -1596,7 +1596,7 @@ public:
 				      CoefficientFunction * coefG13,
 				      CoefficientFunction * coefG23,
 				      CoefficientFunction * coefUseCyl)
-    : T_BDBIntegrator<DiffOpStrain<D>, OrthotropicCylElasticityDMat<D>, NodalFiniteElement<D> > 
+    : T_BDBIntegrator<DiffOpStrain<D>, OrthotropicCylElasticityDMat<D>, ScalarFiniteElement<D> > 
   (OrthotropicCylElasticityDMat<D> (coefE1, coefE2, coefE3, coefnu12, coefnu13, coefnu23, coefG12, coefG13, coefG23, coefUseCyl))
   { ; }
   
@@ -1650,11 +1650,11 @@ public:
 /// integrator for $\int_\Gamma u_n v_n \, ds$
 template <int D>
 class NormalRobinIntegrator 
-  : public T_BDBIntegrator<DiffOpNormal<D>, DiagDMat<1>, NodalFiniteElement<D-1> >
+  : public T_BDBIntegrator<DiffOpNormal<D>, DiagDMat<1>, ScalarFiniteElement<D-1> >
 {
 public:
   NormalRobinIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpNormal<D>, DiagDMat<1>, NodalFiniteElement<D-1> > (DiagDMat<1> (coeff))
+    : T_BDBIntegrator<DiffOpNormal<D>, DiagDMat<1>, ScalarFiniteElement<D-1> > (DiagDMat<1> (coeff))
   { ; }
 
 
@@ -1675,7 +1675,7 @@ public:
 // ********************************* Scalar integrators: ********************
 
 /// Integrator for grad u grad v
-template <int D, typename FEL = NodalFiniteElement<D> >
+template <int D, typename FEL = ScalarFiniteElement<D> >
 class LaplaceIntegrator 
   : public T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL>
 {
@@ -1694,7 +1694,7 @@ public:
 
 
 /// 
-template <int D, typename FEL = NodalFiniteElement<D-1> >
+template <int D, typename FEL = ScalarFiniteElement<D-1> >
 class LaplaceBoundaryIntegrator 
   : public T_BDBIntegrator<DiffOpGradientBoundary<D>, DiagDMat<D>, FEL>
 {
@@ -1720,7 +1720,7 @@ public:
 
 
 ///
-template <int D, typename FEL = NodalFiniteElement<D> >
+template <int D, typename FEL = ScalarFiniteElement<D> >
 class RotSymLaplaceIntegrator 
   : public T_BDBIntegrator<DiffOpGradient<D>, RotSymLaplaceDMat<D>, FEL>
 {
@@ -1742,7 +1742,7 @@ public:
 
 
 ///
-template <int D, typename FEL = NodalFiniteElement<D> >
+template <int D, typename FEL = ScalarFiniteElement<D> >
 class OrthoLaplaceIntegrator 
   : public T_BDBIntegrator<DiffOpGradient<D>, OrthoDMat<D>, FEL>
 {
@@ -1773,7 +1773,7 @@ public:
 ///
 template <int D>
 class MassIntegrator 
-  : public T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, NodalFiniteElement<D> >
+  : public T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> >
 {
 public:
   ///
@@ -1795,7 +1795,7 @@ public:
 /// integrator for $\int_\Gamma u v \, ds$
 template <int D>
 class RobinIntegrator 
-  : public T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, NodalFiniteElement<D-1> >
+  : public T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, ScalarFiniteElement<D-1> >
 {
 public:
   RobinIntegrator (CoefficientFunction * coeff);
@@ -1815,11 +1815,11 @@ public:
 /*
 template <int D>
 class NormalRobinIntegrator 
-  : public T_BDBIntegrator<DiffOpIdBoundary<D,D>, NormalDMat<D>, NodalFiniteElement<D> >
+  : public T_BDBIntegrator<DiffOpIdBoundary<D,D>, NormalDMat<D>, ScalarFiniteElement<D> >
 {
 public:
   NormalRobinIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpIdBoundary<D,D>, NormalDMat<D>, NodalFiniteElement<D> > (NormalDMat<D> (coeff))
+    : T_BDBIntegrator<DiffOpIdBoundary<D,D>, NormalDMat<D>, ScalarFiniteElement<D> > (NormalDMat<D> (coeff))
   { ; }
 
   static Integrator * Create (Array<CoefficientFunction*> & coeffs)
@@ -1862,7 +1862,7 @@ public:
 };
 
 
-template <int D, typename FEL = NodalFiniteElement<D> >
+template <int D, typename FEL = ScalarFiniteElement<D> >
 class DivDivIntegrator 
   : public T_BDBIntegrator<DiffOpDiv<D>, DiagDMat<1>, FEL>
 {
@@ -1924,7 +1924,7 @@ public:
 };
 
 
-template <typename FEL = NodalFiniteElement<2> >
+template <typename FEL = ScalarFiniteElement<2> >
 class CurlCurlIntegrator 
   : public T_BDBIntegrator<DiffOpCurl, DiagDMat<1>, FEL>
 {
@@ -1982,7 +1982,7 @@ public:
 };
 
 
-template <typename FEL = NodalFiniteElement<3> >
+template <typename FEL = ScalarFiniteElement<3> >
 class CurlCurl3dIntegrator 
   : public T_BDBIntegrator<DiffOpCurl3d, DiagDMat<3>, FEL>
 {
@@ -2029,7 +2029,7 @@ public:
 // Maxwell integrators:
 
 /// 
-template <int D, typename FEL = HCurlFiniteElementD<D> >
+template <int D, typename FEL = HCurlFiniteElement<D> >
 class CurlCurlEdgeIntegrator 
   : public T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, FEL>
 {
@@ -2051,12 +2051,12 @@ public:
 
 /// 
 class CurlCurlBoundaryEdgeIntegrator 
-  : public T_BDBIntegrator<DiffOpCurlBoundaryEdge, DiagDMat<1>, HCurlFiniteElementD<2> >
+  : public T_BDBIntegrator<DiffOpCurlBoundaryEdge, DiagDMat<1>, HCurlFiniteElement<2> >
 {
 public:
   ///
   CurlCurlBoundaryEdgeIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpCurlBoundaryEdge, DiagDMat<1>, HCurlFiniteElementD<2> > 
+    : T_BDBIntegrator<DiffOpCurlBoundaryEdge, DiagDMat<1>, HCurlFiniteElement<2> > 
   (DiagDMat<1> (coeff))
   { ; }
   
@@ -2072,7 +2072,7 @@ public:
 };
 
 /// 
-template <int D, typename FEL = HCurlFiniteElementD<D> >
+template <int D, typename FEL = HCurlFiniteElement<D> >
 class CurlCurlEdgeOrthoIntegrator 
   : public T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_TRAIT<D>::DIM>, FEL>
 {
@@ -2098,7 +2098,7 @@ public:
 
 
 ///
-template <int D, typename FEL = HCurlFiniteElementD<D> >
+template <int D, typename FEL = HCurlFiniteElement<D> >
 class MassEdgeIntegrator 
   : public T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, FEL>
 {
@@ -2119,7 +2119,7 @@ public:
 
 
 ///
-template <int D, typename FEL = HCurlFiniteElementD<D> >
+template <int D, typename FEL = HCurlFiniteElement<D> >
 class MassEdgeOrthoIntegrator 
   : public T_BDBIntegrator<DiffOpIdEdge<D>, OrthoDMat<D>, FEL>
 {
@@ -2150,7 +2150,7 @@ public:
 
 
 ///
-template <int D, typename FEL = HCurlFiniteElementD<D> >
+template <int D, typename FEL = HCurlFiniteElement<D> >
 class MassEdgeAnisotropicIntegrator 
   : public T_BDBIntegrator<DiffOpIdEdge<D>, SymDMat<D>, FEL>
 { 
@@ -2159,8 +2159,8 @@ class MassEdgeAnisotropicIntegrator
 
 
 template <> 
-class MassEdgeAnisotropicIntegrator<3, HCurlFiniteElementD<3> >
-  : public T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElementD<3> >
+class MassEdgeAnisotropicIntegrator<3, HCurlFiniteElement<3> >
+  : public T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElement<3> >
 {
 public:
   ///
@@ -2170,7 +2170,7 @@ public:
 				 CoefficientFunction * coeff20,
 				 CoefficientFunction * coeff21,
 				 CoefficientFunction * coeff22)
-    : T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElementD<3> >
+    : T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElement<3> >
   (SymDMat<3> (coeff00, coeff10, coeff11, coeff20, coeff21, coeff22))
   { ; }
 
@@ -2190,7 +2190,7 @@ public:
 
 
 ///
-template <int D, typename FEL = HCurlFiniteElementD<D-1> >
+template <int D, typename FEL = HCurlFiniteElement<D-1> >
 class RobinEdgeIntegrator 
   : public T_BDBIntegrator<DiffOpIdBoundaryEdge<D>, DiagDMat<D>, FEL>
 {
@@ -2216,7 +2216,7 @@ public:
 /* ************************** Linearform Integrators ************************* */
 
 ///
-template <int D, typename FEL = NodalFiniteElement<D>  >
+template <int D, typename FEL = ScalarFiniteElement<D>  >
 class SourceIntegrator 
   : public T_BIntegrator<DiffOpId<D>, DVec<1>, FEL>
 {
@@ -2237,7 +2237,7 @@ public:
 
 
 ///
-template <int D, typename FEL = NodalFiniteElement<D-1> >
+template <int D, typename FEL = ScalarFiniteElement<D-1> >
 class NeumannIntegrator 
   : public T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL>
 {
@@ -2258,7 +2258,7 @@ public:
 
 
 /// integrator for $\int_\Gamma v_n \, ds$
-template <int D, typename FEL = NodalFiniteElement<D-1> >
+template <int D, typename FEL = ScalarFiniteElement<D-1> >
 class NormalNeumannIntegrator 
   : public T_BIntegrator<DiffOpNormal<D>, DVec<1>, FEL>
 {
@@ -2285,7 +2285,7 @@ public:
 
 
 ///
-template <int D, typename FEL = NodalFiniteElement<D>  >
+template <int D, typename FEL = ScalarFiniteElement<D>  >
 class GradSourceIntegrator 
   : public T_BIntegrator<DiffOpGradient<D>, DVec<D>, FEL>
 {
@@ -2307,7 +2307,7 @@ public:
 
 
 ///
-template <int D, typename FEL = HCurlFiniteElementD<D> >
+template <int D, typename FEL = HCurlFiniteElement<D> >
 class SourceEdgeIntegrator 
   : public T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL>
 {
@@ -2340,7 +2340,7 @@ public:
 
 
 ///
-template <int D, typename FEL = HCurlFiniteElementD<D> >
+template <int D, typename FEL = HCurlFiniteElement<D> >
 class TangentialSourceEdgeIntegrator 
   : public T_BIntegrator<DiffOpIdEdge<D>, TVec<D>, FEL>
 {
@@ -2363,7 +2363,7 @@ public:
 
 
 ///
-template <int D, typename FEL = HCurlFiniteElementD<D-1> >
+template <int D, typename FEL = HCurlFiniteElement<D-1> >
 class NeumannEdgeIntegrator
   : public T_BIntegrator<DiffOpIdBoundaryEdge<D>, DVec<D>, FEL>
 {
@@ -2401,7 +2401,7 @@ public:
 
 
 ///
-template <int D, typename FEL = HCurlFiniteElementD<D> >
+template <int D, typename FEL = HCurlFiniteElement<D> >
 class CurlEdgeIntegrator 
   : public T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_TRAIT<D>::DIM>, FEL>
 {
@@ -2439,7 +2439,7 @@ public:
 
 
 ///
-template <typename FEL = HCurlFiniteElementD<2> >
+template <typename FEL = HCurlFiniteElement<2> >
 class CurlBoundaryEdgeIntegrator 
   : public T_BIntegrator<DiffOpCurlBoundaryEdge, DVec<1>, FEL>
 {

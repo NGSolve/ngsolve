@@ -34,7 +34,7 @@ namespace ngfem
   template <int D>
   HCurlHighOrderFiniteElement<D> ::
   HCurlHighOrderFiniteElement (ELEMENT_TYPE aeltype)
-    : HCurlFiniteElementD<D> (aeltype, -1, -1) 
+    : HCurlFiniteElement<D> (aeltype, -1, -1) 
   { 
     for (int i = 0; i < 8; i++)
       vnums[i] = i;

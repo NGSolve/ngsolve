@@ -1099,8 +1099,8 @@ namespace ngfem
       {
       case 1:
         {
-          const NodalFiniteElement<1> & fel = 
-            dynamic_cast<const NodalFiniteElement<1> &> (bfel);
+          const ScalarFiniteElement<1> & fel = 
+            dynamic_cast<const ScalarFiniteElement<1> &> (bfel);
           const IntegrationRule & nodalrule = fel.NodalIntegrationRule();
           
           for (i = 0; i < ndof; i++)
@@ -1114,8 +1114,8 @@ namespace ngfem
         }
       case 2:
         {
-          const NodalFiniteElement<2> & fel = 
-            dynamic_cast<const NodalFiniteElement<2> &> (bfel);
+          const ScalarFiniteElement<2> & fel = 
+            dynamic_cast<const ScalarFiniteElement<2> &> (bfel);
           const IntegrationRule & nodalrule = fel.NodalIntegrationRule();
           
           for (i = 0; i < ndof; i++)

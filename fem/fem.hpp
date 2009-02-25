@@ -20,7 +20,7 @@
 /**
    namespace for finite elements.
    
-   Definition of reference FiniteElement, mixed fe HDivFiniteElement and HCurlFiniteElementD 
+   Definition of reference FiniteElement, mixed fe HDivFiniteElement and HCurlFiniteElement 
    
    Element-matrix and element-vector assembling BilinearFormIntegrator, LinearFormIntegrator
 */
@@ -41,6 +41,8 @@ namespace ngfem
 #include "recursive_pol_tet.hpp"
 
 #include "finiteelement.hpp"
+#include "scalarfe.hpp"
+
 #include "elementtransformation.hpp"
 #include "coefficient.hpp"
 

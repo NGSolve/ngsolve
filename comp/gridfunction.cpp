@@ -812,6 +812,8 @@ namespace ngcomp
     FlatVector<SCAL> flux;
 
     IntegrationPoint ip(lam1, lam2, 0, 0);
+
+
     if (bound)
       {
 	SpecificIntegrationPoint<2,3> sip (ip, eltrans, lh);

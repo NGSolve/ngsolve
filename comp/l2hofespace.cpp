@@ -278,12 +278,12 @@ namespace ngcomp
 	  case ET_TET:
 	    { 
 //               fe = new (lh.Alloc (sizeof(H1HighOrderTet<T_ORTHOPOL>)))  H1HighOrderTet<T_ORTHOPOL> (order);
-              fe = new (lh.Alloc (sizeof(L2HighOrderTet)))  L2HighOrderTet (order);
+              fe = new (lh.Alloc (sizeof(L2HighOrderTet))) L2HighOrderTet (order);
 	      break;
 	    }
 	  case ET_PYRAMID:
 	    {
-	      fe = new (lh.Alloc (sizeof(H1HighOrderPyramid<T_ORTHOPOL>)))  H1HighOrderPyramid<T_ORTHOPOL> (order);
+	      fe = new (lh.Alloc (sizeof(H1HighOrderFE<ET_PYRAMID>))) H1HighOrderFE<ET_PYRAMID> (order);
 	      break;
 	    }
 	  case ET_PRISM:
@@ -328,7 +328,7 @@ namespace ngcomp
 
         if (dynamic_cast<L2HighOrderFiniteElement<2>* > (fe))
           {
-            L2HighOrderFiniteElement<2> * hofe = static_cast<L2HighOrderFiniteElement<2>* > (fe);
+            L2HighOrderFiniteElement<2> * hofe = dynamic_cast<L2HighOrderFiniteElement<2>* > (fe);
  	    hofe-> SetVertexNumbers (vnums); 
 	    hofe-> SetOrderInner(order_inner[elnr]); 
 	    hofe-> ComputeNDof(); 
@@ -336,7 +336,7 @@ namespace ngcomp
           }
         if (dynamic_cast<L2HighOrderFiniteElement<3>* > (fe))
           {
-            L2HighOrderFiniteElement<3> * hofe = static_cast<L2HighOrderFiniteElement<3>* > (fe);
+            L2HighOrderFiniteElement<3> * hofe = dynamic_cast<L2HighOrderFiniteElement<3>* > (fe);
  	    hofe-> SetVertexNumbers (vnums); 
 	    hofe-> SetOrderInner(order_inner[elnr]); 
 	    hofe-> ComputeNDof(); 
@@ -363,7 +363,7 @@ namespace ngcomp
 	      throw Exception("L2HighOrderFESpace not working for 3D and variable order!"); 
 	    
 	    H1HighOrderFiniteElement<3> * hofe = dynamic_cast<H1HighOrderFiniteElement<3>* > (fe);
-	    hofe-> SetVertexNumbers (vnums,lh); 
+	    hofe-> SetVertexNumbers (vnums); 
 	    // ATTENTION for var_order this is not correct !!! 
 	    // on edges and faces order is still used !!! 
 	    hofe-> SetOrderInner(order_inner[elnr]); 
@@ -506,9 +506,9 @@ namespace ngcomp
     if(flags.NumFlagDefined("relorder"))
       throw Exception("Variable order not implemented for L2SurfaceHighOrderFESpace"); 
     
-    segm = new H1HighOrderSegm<IntegratedLegendreMonomialExt> (order);
-    trig = new H1HighOrderTrig<IntegratedLegendreMonomialExt> (order);
-    quad = new H1HighOrderQuad<IntegratedLegendreMonomialExt> (order);
+    segm = new H1HighOrderFE<ET_SEGM> (order);
+    trig = new H1HighOrderFE<ET_TRIG> (order);
+    quad = new H1HighOrderFE<ET_QUAD> (order);
 
     if (ma.GetDimension() == 2)
       {
@@ -595,7 +595,7 @@ namespace ngcomp
 	throw Exception (str.str());
       }
 
-    dynamic_cast<H1HighOrderFiniteElement<2>*> (fe) -> SetVertexNumbers (vnums,lh);
+    dynamic_cast<H1HighOrderFiniteElement<2>*> (fe) -> SetVertexNumbers (vnums);
 
     return *fe;
   }

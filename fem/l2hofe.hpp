@@ -13,15 +13,13 @@
   High order finite elements for L_2
 */
 template<int DIM>
-class L2HighOrderFiniteElement : public NodalFiniteElement<DIM>
+class L2HighOrderFiniteElement : virtual public ScalarFiniteElement<DIM>
 {
 public:
-  
-  int vnums[8]; //he: make oriented L2 elements => can be used for facets
+  int vnums[8];  
   INT<3> order_inner; 
 
-
-  L2HighOrderFiniteElement (int dim, ELEMENT_TYPE aeltype);
+  L2HighOrderFiniteElement (); // ELEMENT_TYPE aeltype);
 
   virtual void SetVertexNumbers (FlatArray<int> & avnums);
   virtual void SetVertexNumbers (FlatArray<int> & avnums, LocalHeap & lh);
@@ -38,7 +36,7 @@ public:
   
 private:
   
-  virtual const Array<typename NodalFiniteElement<DIM>::IPData> & GetIPData () const
+  virtual const Array<typename ScalarFiniteElement<DIM>::IPData> & GetIPData () const
   {
     throw Exception ("GetIPData not available for L2HighOrderFE");
   }
@@ -106,18 +104,18 @@ public:
 /**
   High order tetrahedral finite element
  */
-class L2HighOrderTet : public L2HighOrderFiniteElement<3>
+class L2HighOrderTet : virtual public L2HighOrderFiniteElement<3>
 {
-  public:
-    L2HighOrderTet (int aorder=0);
-    virtual void ComputeNDof();
-
+public:
+  L2HighOrderTet (int aorder=0);
+  virtual void ComputeNDof();
+  
   /// compute shape
-    virtual void CalcShape (const IntegrationPoint & ip, 
-                            FlatVector<> shape) const;
-
+  virtual void CalcShape (const IntegrationPoint & ip, 
+                          FlatVector<> shape) const;
+  
   /// compute gradient of shape
-    virtual void CalcDShape (const IntegrationPoint & ip, FlatMatrix<> dshape) const;
+  virtual void CalcDShape (const IntegrationPoint & ip, FlatMatrix<> dshape) const;
 };
 
 

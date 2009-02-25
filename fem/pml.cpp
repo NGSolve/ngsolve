@@ -499,7 +499,7 @@ namespace ngfem
 
 
 /// 
-template <int D, typename FEL = NodalFiniteElement<D> >
+template <int D, typename FEL = ScalarFiniteElement<D> >
 class PML_LaplaceIntegrator 
   : public PML_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL>
 {
@@ -524,7 +524,7 @@ public:
 
 
 /// 
-template <int D, typename FEL = NodalFiniteElement<D> >
+template <int D, typename FEL = ScalarFiniteElement<D> >
 class PML_ElasticityIntegrator 
   : public PML_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, FEL>
 {
@@ -551,7 +551,7 @@ public:
 
 
 /// 
-template <int D, typename FEL = NodalFiniteElement<D> >
+template <int D, typename FEL = ScalarFiniteElement<D> >
 class PML_MassIntegrator 
   : public PML_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, FEL>
 {
@@ -577,13 +577,13 @@ public:
 /*
 ///
 class PML_ElasticityIntegrator
-  : public PML_BDBIntegrator<DiffOpStrain<2>, PlaneStressDMat, NodalFiniteElement>
+  : public PML_BDBIntegrator<DiffOpStrain<2>, PlaneStressDMat, ScalarFiniteElement>
 {
 public:
   ///
   PML_ElasticityIntegrator (CoefficientFunction * coefe,
 			    CoefficientFunction * coefnu)
-    : PML_BDBIntegrator<DiffOpStrain<2>, PlaneStressDMat, NodalFiniteElement> 
+    : PML_BDBIntegrator<DiffOpStrain<2>, PlaneStressDMat, ScalarFiniteElement> 
   (PlaneStressDMat (coefe, coefnu))
   { ; }
   
@@ -603,12 +603,12 @@ public:
 
 template <int D>
 class PML_CurlCurlEdgeIntegrator
-  : public PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElementD<D> >
+  : public PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> >
 {
 public:
   ///
   PML_CurlCurlEdgeIntegrator (CoefficientFunction * coef)
-    : PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElementD<D> > 
+    : PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> > 
   (DiagDMat<DIM_CURL_TRAIT<D>::DIM> (coef))
   { ; }
   
@@ -623,11 +623,11 @@ public:
 
 template <int D>
 class PML_MassEdgeIntegrator
-  : public PML_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElementD<D> >
+  : public PML_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElement<D> >
 {
 public:
   PML_MassEdgeIntegrator (CoefficientFunction * coef)
-    : PML_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElementD<D> > 
+    : PML_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElement<D> > 
   (DiagDMat<D> (coef))
   { ; }
   
@@ -790,8 +790,8 @@ public:
   {
 
     FE_Trig2 trig;
-    NodalFiniteElement<2> & felq = trig;
-    const NodalFiniteElement<2> & fel = dynamic_cast<const NodalFiniteElement<2> &> (bfel);
+    ScalarFiniteElement<2> & felq = trig;
+    const ScalarFiniteElement<2> & fel = dynamic_cast<const ScalarFiniteElement<2> &> (bfel);
     int ndof = fel.GetNDof();
     int ndofq = felq.GetNDof();
 
@@ -835,7 +835,7 @@ public:
     /*
     try
       {
-	const NodalFiniteElement & fel = dynamic_cast<const NodalFiniteElement&> (bfel);
+	const ScalarFiniteElement & fel = dynamic_cast<const ScalarFiniteElement&> (bfel);
 	int ndof = fel.GetNDof();
 
 	elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
@@ -960,8 +960,8 @@ public:
   {
 
     FE_Trig1 trig;
-    NodalFiniteElement<2> & felq = trig;
-    const NodalFiniteElement<2> & fel = dynamic_cast<const NodalFiniteElement<2> &> (bfel);
+    ScalarFiniteElement<2> & felq = trig;
+    const ScalarFiniteElement<2> & fel = dynamic_cast<const ScalarFiniteElement<2> &> (bfel);
     int ndof = fel.GetNDof();
     int ndofq = felq.GetNDof();
 

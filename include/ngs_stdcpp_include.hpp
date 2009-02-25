@@ -55,11 +55,9 @@
 #include <omp.h>
 #endif
 
-/*
-extern void* operator new(std::size_t) throw (std::bad_alloc);
-extern void* operator new[](std::size_t) throw (std::bad_alloc);
-extern void operator delete(void*) throw();
-extern void operator delete[](void*) throw();
 
-extern int mem_total_alloc_vector;
-*/
+
+// gcc compiler 
+#define ALWAYS_INLINE __attribute__ ((__always_inline__))
+
+
