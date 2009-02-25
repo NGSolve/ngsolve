@@ -953,7 +953,6 @@ namespace ngfem
     ComputeNDof();
   }
 
-  /*
   void H1HighOrderFE<ET_PYRAMID> :: ComputeNDof()
   {
     ndof = 5;
@@ -1000,7 +999,6 @@ namespace ngfem
 	  idofs.Append (base+i);
       }
   }
-  */
 
   template<typename Tx, typename TFA>  
   void  H1HighOrderFE<ET_PYRAMID> :: T_CalcShape (Tx hx[3], TFA & sds) const
