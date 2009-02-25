@@ -1188,7 +1188,7 @@ namespace netgen
 
             for (int iy = 0, ii = 0; iy <= n; iy++)
               for (int ix = 0; ix <= n; ix++, ii++)
-                pref[ii] = Point<2> (double(ix)/n, double(iy/n));
+                pref[ii] = Point<2> (double(ix)/n, double(iy)/n);
 
             int npt = (n+1)*(n+1);
             if (curved)
@@ -1216,6 +1216,7 @@ namespace netgen
                 for (int ii = 0; ii < npt; ii++)
                   nvs[ii] = nv;
               }
+
 
             if (sol && sol->draw_surface) 
               {

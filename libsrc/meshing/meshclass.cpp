@@ -2477,8 +2477,7 @@ namespace netgen
 		  GetNSE(), " Surface Elements");
 
 
-    int i;
-    for (i = 0; i < GetNSE(); i++)
+    for (int i = 0; i < GetNSE(); i++)
       {
 	const Element2d & el = surfelements[i];
 	int j;
@@ -2532,7 +2531,7 @@ namespace netgen
 	  }
       }
 
-    for (i = 0; i < GetNSeg(); i++)
+    for (int i = 0; i < GetNSeg(); i++)
       {
 	const Segment & seg = segments[i];
 	const Point3d & p1 = points[seg.p1];

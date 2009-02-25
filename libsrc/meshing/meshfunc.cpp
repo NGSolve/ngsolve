@@ -22,6 +22,8 @@ namespace netgen
 
     Array<INDEX_2> connectednodes;
 
+    if (&mesh3d.LocalHFunction() == NULL) mesh3d.CalcLocalH();
+
     mesh3d.Compress();
 
     //  mesh3d.PrintMemInfo (cout);
@@ -157,7 +159,7 @@ namespace netgen
 		  mesh3d.VolumeElement(i).SetIndex (k);
 	      
 		(*testout) 
-		  << "mesh has " << mesh3d.GetNE() << " prism/pyramid elements" << endl;
+		  << "mesh has " << mesh3d.GetNE() << " prism/pyramidÂ elements" << endl;
 	      
 		mesh3d.FindOpenElements(k);
 	      }

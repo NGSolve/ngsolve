@@ -329,6 +329,7 @@ namespace netgen
 	const OneSurfacePrimitive * sp = dynamic_cast< const OneSurfacePrimitive * > (GetSurface(i));
 	const ExtrusionFace * ef = dynamic_cast< const ExtrusionFace * > (GetSurface(i));
 	const RevolutionFace * rf = dynamic_cast< const RevolutionFace * > (GetSurface(i));
+	const DummySurface * dummyf = dynamic_cast< const DummySurface * > (GetSurface(i));
 
 
 	if(sp)
@@ -346,6 +347,11 @@ namespace netgen
 	  {
 	    out << "revolutionface ";
 	    rf->GetRawData(coeffs);
+	  }
+	else if(dummyf)
+	  {
+	    out << "dummy ";
+            coeffs.SetSize(0);
 	  }
 	else
 	  throw NgException ("Cannot write csg surface. Please, contact developers!");
@@ -438,6 +444,15 @@ namespace netgen
 	    AddSurface(rf);
 	    delete_them.Append(rf);
 	  }
+
+	else if(classname == "dummy")
+	  {
+	    Surface * surf = new DummySurface();
+            
+	    AddSurface(surf);
+	    delete_them.Append(surf);
+	  }
+
       }    
   }
     

@@ -664,14 +664,8 @@ namespace netgen
 	  perfstepsstart = MESHCONST_MESHVOLUME;
       }
 
-
-
     if (perfstepsstart <= MESHCONST_ANALYSE)
       {
-        /*
-	delete mesh;
-	mesh = new Mesh();
-        */
         if (mesh)
           mesh -> DeleteMesh();
         else

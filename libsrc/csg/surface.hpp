@@ -189,10 +189,6 @@ public:
 					 const Box<3> & /* boundingbox */, 
 					 double /* facets */ ) const { };
 
-#ifdef MYGRAPH  
-  ///
-  virtual void Plot (const class ROT3D & /* rot */) const { };
-#endif
 
   string GetBCName() const { return bcname; }
 
@@ -211,6 +207,29 @@ inline ostream & operator<< (ostream & ost, const Surface & surf)
 typedef enum { IS_OUTSIDE = 0, IS_INSIDE = 1, DOES_INTERSECT = 2}
 INSOLID_TYPE;
 
+
+
+
+class DummySurface : public Surface
+{
+  virtual double CalcFunctionValue (const Point<3> & point) const 
+  { return 0; }
+
+  virtual void CalcGradient (const Point<3> & point, Vec<3> & grad) const 
+  { grad = Vec<3> (0,0,0); }
+  
+  virtual Point<3> GetSurfacePoint () const
+  { return Point<3> (0,0,0); }
+
+  virtual double HesseNorm () const
+  { return 0; }
+
+  virtual void Project (Point<3> & p) const
+  { ; }
+
+  virtual void Print (ostream & ost) const
+  { ost << "dummy surface"; }
+};
 
 
 

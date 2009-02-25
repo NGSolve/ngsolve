@@ -286,8 +286,8 @@ catch {
 
 
 if { [catch { load libngsolve.so ngsolve } result ] } {
-#    puts "cannot load ngsolve" 
-#    puts "error: $result"
+    puts "cannot load ngsolve" 
+    puts "error: $result"
 } {
     catch { source ${ngdir}/ngsolve.tcl }
 }
