@@ -77,6 +77,8 @@ public:
 template <>
 class L2HighOrderFE<ET_SEGM> : public T_L2HighOrderFiniteElement<ET_SEGM>
 {
+  using L2HighOrderFiniteElement<DIM>::order_inner;
+
 public:
   L2HighOrderFE () { ; }
   L2HighOrderFE (int aorder);
