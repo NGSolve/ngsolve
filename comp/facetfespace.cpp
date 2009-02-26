@@ -10,9 +10,9 @@ namespace ngcomp
   using namespace ngfem ;
   using namespace ngparallel;
 
-// ------------------------------------------------------------------------
+  // ------------------------------------------------------------------------
   FacetFESpace ::  FacetFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
-  : FESpace(ama, flags)
+    : FESpace(ama, flags)
   {
     name="FacetFESpace(facet)";
     // defined flags
@@ -35,17 +35,17 @@ namespace ngcomp
     else
       low_order_space = 0;
         
-// #ifdef PARALLEL
-//     low_order_space = 0; // new FacesFESpace
-// #endif
+    // #ifdef PARALLEL
+    //     low_order_space = 0; // new FacesFESpace
+    // #endif
 
-// Variable order space: 
+    // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
     var_order = flags.GetDefineFlag("variableorder");  
     order =  int (flags.GetNumFlag ("order",0)); 
     
     if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order")) 
-       var_order = 1; 
+      var_order = 1; 
     
     rel_order=int(flags.GetNumFlag("relorder",order-1)); 
 
@@ -85,38 +85,38 @@ namespace ngcomp
     // TODO: Evaluator for shape tester 
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
-    {
-      evaluator = new MassIntegrator<2> (&one);
-      boundary_evaluator = 0;
-    }
+      {
+        evaluator = new MassIntegrator<2> (&one);
+        boundary_evaluator = 0;
+      }
     else
-    {
-      evaluator = new MassIntegrator<3> (&one);
-      boundary_evaluator = new RobinIntegrator<3> (&one);
-    }
+      {
+        evaluator = new MassIntegrator<3> (&one);
+        boundary_evaluator = new RobinIntegrator<3> (&one);
+      }
 
     if (dimension > 1)
-    {
-      evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
-      boundary_evaluator = 
+      {
+        evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
+        boundary_evaluator = 
           new BlockBilinearFormIntegrator (*boundary_evaluator, dimension);
-    }
+      }
     // Update();
   }
   
-// ------------------------------------------------------------------------
+  // ------------------------------------------------------------------------
   FacetFESpace :: ~FacetFESpace ()
   {
     ;
   }
 
-// ------------------------------------------------------------------------
+  // ------------------------------------------------------------------------
   FESpace * FacetFESpace :: Create (const MeshAccess & ma, const Flags & flags)
   {
     return new FacetFESpace (ma, flags, true);
   }
 
-// ------------------------------------------------------------------------
+  // ------------------------------------------------------------------------
   void FacetFESpace :: Update(LocalHeap & lh)
   {
     if(print) 
@@ -217,55 +217,55 @@ namespace ngcomp
     first_facet_dof = nfa;
       
     if (ma.GetDimension() == 2)
-    {
-      for (int i = 0; i < nfa; i++)
       {
-        first_facet_dof[i] = ndof;
-        ndof += order_facet[i][0];
-      }
-      first_facet_dof[nfa] = ndof;
-    } // 2D
+        for (int i = 0; i < nfa; i++)
+          {
+            first_facet_dof[i] = ndof;
+            ndof += order_facet[i][0];
+          }
+        first_facet_dof[nfa] = ndof;
+      } // 2D
     else  // 3D
-    {
-      int inci = 0;
-      INT<2> p; 
-      Array<int> pnums;
-      for (int i=0; i< nfa; i++)
       {
-        p = order_facet[i];
-        ma.GetFacePNums(i,pnums);
+        int inci = 0;
+        INT<2> p; 
+        Array<int> pnums;
+        for (int i=0; i< nfa; i++)
+          {
+            p = order_facet[i];
+            ma.GetFacePNums(i,pnums);
 
-        switch(pnums.Size())
-        {
-          case 3: 
-            inci = ((p[0]+1)*(p[0]+2))/2 - 1;
-            break;
-          case 4: 
-            inci= (p[0]+1)*(p[1]+1) - 1;
-            break;
-        }
-        first_facet_dof[i] = ndof;
-        ndof+= inci;
-      }
-      first_facet_dof[nfa] = ndof;
-    } // 3D
+            switch(pnums.Size())
+              {
+              case 3: 
+                inci = ((p[0]+1)*(p[0]+2))/2 - 1;
+                break;
+              case 4: 
+                inci= (p[0]+1)*(p[1]+1) - 1;
+                break;
+              }
+            first_facet_dof[i] = ndof;
+            ndof+= inci;
+          }
+        first_facet_dof[nfa] = ndof;
+      } // 3D
 
-      //HERBERT: h1hofe code. is that correct ??
+    //HERBERT: h1hofe code. is that correct ??
     while (ma.GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
       
-      //HERBERT: no prolongation so far       
-      //prol->Update();
+    //HERBERT: no prolongation so far       
+    //prol->Update();
     if(print)
       {
 	*testout << "*** Update FAcetFESpace: General Information" << endl;
 	*testout << " order facet (facet) " << order_facet << endl; 
 	*testout << " first_facet_dof (facet)  " << first_facet_dof << endl; 
       } 
-   /* 
-    cout << "    ne = " << nel << ", nfa = " << nfa << ", ncfa=" << ncfa << ", ndof=" << ndof << endl;
-    cout << "    order_facet = " << order_facet << endl;*/
+    /* 
+       cout << "    ne = " << nel << ", nfa = " << nfa << ", ncfa=" << ncfa << ", ndof=" << ndof << endl;
+       cout << "    order_facet = " << order_facet << endl;*/
 
 
 
@@ -294,14 +294,14 @@ namespace ngcomp
 
 
 
-// ------------------------------------------------------------------------
+  // ------------------------------------------------------------------------
   const FiniteElement & FacetFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     FacetVolumeFiniteElement<2> * fe2d;
     FacetVolumeFiniteElement<3> * fe3d;
 
     switch (ma.GetElType(elnr))
-    {
+      {
       case ET_TRIG:
         fe2d = new (lh.Alloc (sizeof(FacetVolumeTrig)))  FacetVolumeTrig ();
         break;
@@ -320,17 +320,17 @@ namespace ngcomp
       case ET_HEX:
         fe3d = new (lh.Alloc (sizeof(FacetVolumeHex)))  FacetVolumeHex ();
         break;
-    }
+      }
 
     if (!fe2d && !fe3d)
-    {
-      stringstream str;
-      str << "FacetFESpace " << GetClassName() 
-          << ", undefined eltype " 
-          << ElementTopology::GetElementName(ma.GetElType(elnr))
-          << ", order = " << order << endl;
-      throw Exception (str.str());
-    }
+      {
+        stringstream str;
+        str << "FacetFESpace " << GetClassName() 
+            << ", undefined eltype " 
+            << ElementTopology::GetElementName(ma.GetElType(elnr))
+            << ", order = " << order << endl;
+        throw Exception (str.str());
+      }
 
     Array<int> vnums;
     ArrayMem<int, 6> fanums, order_fa;
@@ -368,44 +368,43 @@ namespace ngcomp
   }
 
 
-// ------------------------------------------------------------------------
+  // ------------------------------------------------------------------------
   const FiniteElement & FacetFESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
-
-    FacetFacetFiniteElement<1> * fe1d = 0;
-    FacetFacetFiniteElement<2> * fe2d = 0;
+    L2HighOrderFiniteElement<1> * fe1d = 0;
+    L2HighOrderFiniteElement<2> * fe2d = 0;
 
     switch (ma.GetSElType(selnr))
-    {
+      {
       case ET_SEGM:
-        fe1d = new (lh.Alloc (sizeof(FacetFacetSegm)))  FacetFacetSegm ();
+        fe1d = new (lh.Alloc (sizeof(L2HighOrderFE<ET_SEGM>))) L2HighOrderFE<ET_SEGM> ();
         break;
       case ET_TRIG:
-        fe2d = new (lh.Alloc (sizeof(FacetFacetTrig)))  FacetFacetTrig ();
+        fe2d = new (lh.Alloc (sizeof(L2HighOrderFE<ET_TRIG>))) L2HighOrderFE<ET_TRIG> ();
         break;
       case ET_QUAD:
-        fe2d = new (lh.Alloc (sizeof(FacetFacetQuad)))  FacetFacetQuad ();
+        fe2d = new (lh.Alloc (sizeof(L2HighOrderFE<ET_QUAD>))) L2HighOrderFE<ET_QUAD> ();
         break;
       default:
         ;
-    }
+      }
      
     if (!fe1d && !fe2d)
-    {
-      stringstream str;
-      str << "FacetFESpace " << GetClassName()
-          << ", undefined eltype "
-          << ElementTopology::GetElementName(ma.GetSElType(selnr))
-          << ", order = " << order << endl;
-      throw Exception (str.str());
-    }
+      {
+        stringstream str;
+        str << "FacetFESpace " << GetClassName()
+            << ", undefined eltype "
+            << ElementTopology::GetElementName(ma.GetSElType(selnr))
+            << ", order = " << order << endl;
+        throw Exception (str.str());
+      }
      
     ArrayMem<int,4> vnums;
-    ArrayMem<int, 4> ednums;
+    ArrayMem<int,4> ednums;
     
     ma.GetSElVertices(selnr, vnums);
     switch (ma.GetSElType(selnr))
-    {
+      {
       case ET_SEGM:
 #ifdef PARALLEL
 	if ( ntasks > 1 )
@@ -430,18 +429,18 @@ namespace ngcomp
         fe2d -> ComputeNDof();
         return *fe2d;
         break;
-    }
+      }
   }
 
 
 
-// ------------------------------------------------------------------------
+  // ------------------------------------------------------------------------
   int FacetFESpace :: GetNDof () const
   {
     return ndof;
   }
 
-// ------------------------------------------------------------------------
+  // ------------------------------------------------------------------------
   int FacetFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
@@ -449,7 +448,7 @@ namespace ngcomp
 
 
 
-// ------------------------------------------------------------------------
+  // ------------------------------------------------------------------------
   void FacetFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
 
@@ -471,38 +470,38 @@ namespace ngcomp
         first = first_facet_dof[fanums[i]];
         next = first_facet_dof[fanums[i]+1];
         for(int j=first ; j<next; j++)
-        dnums.Append(j);
+          dnums.Append(j);
       }
 
     
     // old 
     /*
-    if(ma.GetDimension() == 3)
-    {
+      if(ma.GetDimension() == 3)
+      {
       ma.GetElFaces (elnr, fdnums);
       for(int i=0; i<fdnums.Size(); i++)
       {
-        for (int j=0; j<fdnums.Size(); j++
-        first = first_facet_dof[fdnums[i]];
-        next = first_facet_dof[fdnums[i]+1];
-        for(int j=first ; j<next; j++)
-          dnums.Append(j);
+      for (int j=0; j<fdnums.Size(); j++
+      first = first_facet_dof[fdnums[i]];
+      next = first_facet_dof[fdnums[i]+1];
+      for(int j=first ; j<next; j++)
+      dnums.Append(j);
       }
-    }
-    else // 2D
-    {
+      }
+      else // 2D
+      {
       ma.GetElEdges (elnr, ednums); //neu
       for (int i = 0; i < ednums.Size(); i++)
       {
-        first = first_facet_dof[ednums[i]];
-        next = first_facet_dof[ednums[i]+1];
+      first = first_facet_dof[ednums[i]];
+      next = first_facet_dof[ednums[i]+1];
 
-        for (int j = first; j <next; j++)
-          dnums.Append (j);
+      for (int j = first; j <next; j++)
+      dnums.Append (j);
       }
-    }
+      }
     */
-//     cout << "** GetDofNrs(" << elnr << "): " << dnums << endl;
+    //     cout << "** GetDofNrs(" << elnr << "): " << dnums << endl;
   }
 
   void FacetFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
@@ -519,43 +518,43 @@ namespace ngcomp
       }
   }
 
-// ------------------------------------------------------------------------
-//   void FacetFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
-//   {
-//     GetDofNrs(elnr, dnums);
-//   }
+  // ------------------------------------------------------------------------
+  //   void FacetFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
+  //   {
+  //     GetDofNrs(elnr, dnums);
+  //   }
 
 
-// ------------------------------------------------------------------------
+  // ------------------------------------------------------------------------
   void FacetFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     int first,next;
 
     dnums.SetSize(0);
     if (ma.GetDimension() == 2)
-    {
-      ArrayMem<int, 4> fanums;
-      ma.GetSElEdges (selnr, fanums);
-
-      dnums.Append(fanums[0]);
-      
-      first = first_facet_dof[fanums[0]];
-      next = first_facet_dof[fanums[0]+1];
-      for (int j = first; j <next; j++)
-        dnums.Append (j);
-      
-/*      for (int i = 0; i < fanums.Size(); i++)
       {
-        dnums.Append(fanums[i]);
+        ArrayMem<int, 4> fanums;
+        ma.GetSElEdges (selnr, fanums);
+
+        dnums.Append(fanums[0]);
       
-        first = first_facet_dof[ednums[i]];
-        next = first_facet_dof[ednums[i]+1];
+        first = first_facet_dof[fanums[0]];
+        next = first_facet_dof[fanums[0]+1];
         for (int j = first; j <next; j++)
           dnums.Append (j);
-      }*/
-    }
+      
+        /*      for (int i = 0; i < fanums.Size(); i++)
+                {
+                dnums.Append(fanums[i]);
+      
+                first = first_facet_dof[ednums[i]];
+                next = first_facet_dof[ednums[i]+1];
+                for (int j = first; j <next; j++)
+                dnums.Append (j);
+                }*/
+      }
     else// 3D
-    {
+      {
         int fnum = ma.GetSElFace(selnr);
         dnums.Append(fnum);
         first = first_facet_dof[fnum];
@@ -564,19 +563,19 @@ namespace ngcomp
           dnums.Append(j);
       }
 
-/*      if(first_facet_dof.Size()>1)
-      {
-        int fnum = ma.GetSElFace(selnr);
-        first = first_facet_dof[fnum];
-        next = first_facet_dof[fnum+1];
-        for(int j=first; j<next; j++)
-          dnums.Append(j);
-      }*/
-    }
+    /*      if(first_facet_dof.Size()>1)
+            {
+            int fnum = ma.GetSElFace(selnr);
+            first = first_facet_dof[fnum];
+            next = first_facet_dof[fnum+1];
+            for(int j=first; j<next; j++)
+            dnums.Append(j);
+            }*/
+  }
 
 
 
-// ------------------------------------------------------------------------
+  // ------------------------------------------------------------------------
   Table<int> * FacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
     int ncnt;
@@ -597,12 +596,12 @@ namespace ngcomp
     // face/edges
     int ii;
     for (int i = ncfa; i < nfa; i++)
-    {
-      table[i-ncfa][0] = i-ncfa;
-      ii=1;
-      for (int j = first_facet_dof[i]; j < first_facet_dof[i+1]; j++, ii++)
-        table[i][ii] = j;
-    }
+      {
+        table[i-ncfa][0] = i-ncfa;
+        ii=1;
+        for (int j = first_facet_dof[i]; j < first_facet_dof[i+1]; j++, ii++)
+          table[i][ii] = j;
+      }
       
     cout << "smoothingblocks = " << endl << table << endl;
     return &table;
@@ -633,11 +632,11 @@ namespace ngcomp
 
 #ifdef PARALLEL_NOT_JS
 
-void FacetFESpace :: UpdateParallelDofs_hoproc()
+  void FacetFESpace :: UpdateParallelDofs_hoproc()
   {
-     // ******************************
-     // update exchange dofs 
-     // ******************************
+    // ******************************
+    // update exchange dofs 
+    // ******************************
     *testout << "Facet::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
     Array<int> nexdof(ntasks);
@@ -667,8 +666,8 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
 
     paralleldofs->SetNExDof(nexdof);
 
-//     paralleldofs->localexchangedof = new Table<int> (nexdof);
-//     paralleldofs->distantexchangedof = new Table<int> (nexdof);
+    //     paralleldofs->localexchangedof = new Table<int> (nexdof);
+    //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
     Array<int> ** owndofs, ** distantdofs;
@@ -692,31 +691,31 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
     // *****************
 
 
-   for ( int face = 0; face < ma.GetNFaces(); face++ )
+    for ( int face = 0; face < ma.GetNFaces(); face++ )
       if ( parallelma->IsExchangeFace ( face ) )
-      {
-	Array<int> dnums;
-	GetFaceDofNrs ( face, dnums );
-	if ( dnums.Size() == 0 ) continue;
+        {
+          Array<int> dnums;
+          GetFaceDofNrs ( face, dnums );
+          if ( dnums.Size() == 0 ) continue;
 
- 	for ( int i=0; i<dnums.Size(); i++ )
- 	  (*(paralleldofs->sorted_exchangedof))[id][exdof++] = dnums[i];
+          for ( int i=0; i<dnums.Size(); i++ )
+            (*(paralleldofs->sorted_exchangedof))[id][exdof++] = dnums[i];
 
-	for ( int dest = 1; dest < ntasks; dest++ )
-	  {
-	    int distface = parallelma -> GetDistantFaceNum ( dest, face );
-	    if( distface < 0 ) continue;
+          for ( int dest = 1; dest < ntasks; dest++ )
+            {
+              int distface = parallelma -> GetDistantFaceNum ( dest, face );
+              if( distface < 0 ) continue;
 
-	    owndofs[dest]->Append ( distface );
-	    owndofs[dest]->Append (int(paralleldofs->IsGhostDof(dnums[0])) );
-	    for ( int i=0; i<dnums.Size(); i++)
-	      {
-		paralleldofs->SetExchangeDof ( dest, dnums[i] );
-		paralleldofs->SetExchangeDof ( dnums[i] );
-		owndofs[dest]->Append ( dnums[i] );
-	      }
-  	  }
-      }   
+              owndofs[dest]->Append ( distface );
+              owndofs[dest]->Append (int(paralleldofs->IsGhostDof(dnums[0])) );
+              for ( int i=0; i<dnums.Size(); i++)
+                {
+                  paralleldofs->SetExchangeDof ( dest, dnums[i] );
+                  paralleldofs->SetExchangeDof ( dnums[i] );
+                  owndofs[dest]->Append ( dnums[i] );
+                }
+            }
+        }   
 
 
     for ( int sender = 1; sender < ntasks; sender ++ )
@@ -736,7 +735,7 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
 	  
       }
 
-     for( int dest=1; dest<ntasks; dest++) 
+    for( int dest=1; dest<ntasks; dest++) 
       {
 	if ( dest == id ) continue;
 	MPI_Wait(recvrequest+dest, &status);
@@ -749,8 +748,8 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
 	    int isdistghost = (*distantdofs[dest])[ii++];
 	    Array<int> dnums;
 	    GetFaceDofNrs (fanum, dnums);
-// 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
-// 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
+            // 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
+            // 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
 	    (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
 	    if ( dest < id && !isdistghost )
 	      paralleldofs->ismasterdof.Clear ( dnums[0] ) ;
@@ -768,8 +767,8 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
 	    ii++; 
 	    for ( int i=1; i<dnums.Size(); i++)
 	      {
-// 		(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
-// 		(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
+                // 		(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
+                // 		(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
 		(*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
 		if ( dest < id && !isdistghost )
 		  paralleldofs->ismasterdof.Clear ( dnums[i] ) ;
@@ -780,37 +779,37 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
 
 
 
-     /*******************************
+    /*******************************
 
          update low order space
 
-     *****************************/
+    *****************************/
 
-     if ( order == 0 ) return;
+    if ( order == 0 ) return;
 
-     int ndof_lo = ma.GetNFaces();
+    int ndof_lo = ma.GetNFaces();
 
-     // all dofs are exchange dofs
-     nexdof = ndof_lo;
+    // all dofs are exchange dofs
+    nexdof = ndof_lo;
      
-     exdof = 0;
-     cnt_nexdof = 0;
+    exdof = 0;
+    cnt_nexdof = 0;
      
 
-     // *****************
-     // Parallel Face dofs
-     // *****************
+    // *****************
+    // Parallel Face dofs
+    // *****************
      
-     owndofs[0]->SetSize(1);
-     (*owndofs[0])[0] = ndof;
-     distantdofs[0]->SetSize(0);
+    owndofs[0]->SetSize(1);
+    (*owndofs[0])[0] = ndof;
+    distantdofs[0]->SetSize(0);
      
-     // find local and distant dof numbers for face exchange dofs
-     for ( int face = 0; face < ma.GetNFaces(); face++ )
-       {
-	 int dest = 0;
+    // find local and distant dof numbers for face exchange dofs
+    for ( int face = 0; face < ma.GetNFaces(); face++ )
+      {
+        int dest = 0;
 	 
-	 int distface = parallelma -> GetDistantFaceNum ( dest, face );
+        int distface = parallelma -> GetDistantFaceNum ( dest, face );
 	owndofs[0]->Append ( distface );
 	paralleldofs->SetExchangeDof ( dest, face );
 	owndofs[0]->Append ( face );
@@ -827,8 +826,8 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
     while ( ii < distantdofs[0]->Size() )
       {
 	int fanum = (*distantdofs[0])[ii++];
-// 	(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = fanum;
-// 	(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[0])[ii];
+        // 	(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = fanum;
+        // 	(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[0])[ii];
 	(*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = fanum;
 	ii++; cnt_nexdof[dest]++;
       }
@@ -837,10 +836,10 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
       QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
 
     for ( int i = 0; i < ntasks; i++ )
-       delete distantdofs[i], owndofs[i];
+      delete distantdofs[i], owndofs[i];
 
-     delete [] owndofs, distantdofs;
-     delete [] sendrequest, recvrequest;
+    delete [] owndofs, distantdofs;
+    delete [] sendrequest, recvrequest;
 
   }
 
@@ -877,8 +876,8 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
 
     paralleldofs->SetNExDof(nexdof);
 
-//     paralleldofs->localexchangedof = new Table<int> (nexdof);
-//     paralleldofs->distantexchangedof = new Table<int> (nexdof);
+    //     paralleldofs->localexchangedof = new Table<int> (nexdof);
+    //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
 
@@ -939,10 +938,10 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
 	while ( ii < distantdofs[dest]->Size() )
 	  {
 	    int fanum = (*distantdofs[dest])[ii++];
-// 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = fanum;
-// 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
+            // 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = fanum;
+            // 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
 	    (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = fanum;
-		ii++; cnt_nexdof[dest]++;
+            ii++; cnt_nexdof[dest]++;
 	     
 	  }
       }
@@ -950,11 +949,11 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
     for ( int dest = id+1; dest < ntasks; dest++ )
       QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
 
-     for ( int i = 0; i < ntasks; i++ )
-       delete distantdofs[i], owndofs[i];
+    for ( int i = 0; i < ntasks; i++ )
+      delete distantdofs[i], owndofs[i];
 
-     delete [] owndofs, distantdofs;
-     delete [] sendrequest, recvrequest;
+    delete [] owndofs, distantdofs;
+    delete [] sendrequest, recvrequest;
  
   }
 #endif // PARALLEL
@@ -962,14 +961,14 @@ void FacetFESpace :: UpdateParallelDofs_hoproc()
 
 
   
-// ------------------------------------------------------------------------
-   // register FESpaces
+  // ------------------------------------------------------------------------
+  // register FESpaces
   namespace facefespace_cpp
   {
     class Init
     {
-      public:
-        Init ();
+    public:
+      Init ();
     };
 
     Init::Init()

@@ -336,7 +336,6 @@ namespace ngfem
       for (int j = 0; j <= p-i; j++)
         for (int k = 0; k <= q; k++)
           shape[ii++] = polx[i] * poly[j] * polz[k];
-    
   }
 
 

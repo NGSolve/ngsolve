@@ -1210,7 +1210,6 @@ namespace ngfem
 
       }
 
-
     
     p = order_inner[0];
     int pc = order_inner[0]; // should be order_inner_curl!!!  
@@ -2850,7 +2849,7 @@ namespace ngfem
 	//if (order_face[i][0] > 0)
 	  {
 	    INT<2> p = order_face[i];
-	    ndof_face += p[0]*p[1]+p[0]*p[1];
+	    ndof_face += p[0]*p[1]+p[0]+p[1];
 	    ndof += p[0]*p[1]+p[0]+p[1];
 	  }
       }
