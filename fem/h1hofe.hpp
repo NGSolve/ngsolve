@@ -44,6 +44,7 @@ template <ELEMENT_TYPE ET> class H1HighOrderFE;
 template <ELEMENT_TYPE ET>
 class T_H1HighOrderFiniteElement : public H1HighOrderFiniteElement<ET_trait<ET>::DIM>
 {
+protected:
   enum { DIM = ET_trait<ET>::DIM };
 
   using ScalarFiniteElement<DIM>::ndof;
