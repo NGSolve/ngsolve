@@ -600,12 +600,11 @@ namespace ngfem {
   // }
 
 
+  
+  //template class FacetVolumeFiniteElement<1>;
 
-  template class FacetVolumeFiniteElement<1>;
   template class FacetVolumeFiniteElement<2>;
   template class FacetVolumeFiniteElement<3>;
-
-
 
 } // namespace
 
