@@ -2830,7 +2830,15 @@ namespace netgen
 
     ifstream msf(meshsizefilename);
 
-    if (!msf) return;
+    // Philippose - 09/03/2009
+    // Adding print message information in case the specified 
+    // does not exist, or does not load successfully due to 
+    // other reasons such as access rights, etc...
+    if (!msf) 
+    {
+       PrintMessage(2, "Error loading Mesh Size File: ", meshsizefilename, "....","Skipping!");
+       return;
+    }
 
     PrintMessage (3, "Load local mesh-size");
     int nmsp, nmsl;
