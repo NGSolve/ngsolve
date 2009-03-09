@@ -110,7 +110,8 @@ public:
 
 // *** Functions Exported by this Library *************
 
-// General purpose initialisation / destruction functions
+// ------------------------------------------------------------------
+// Netgen library initialisation / destruction functions
 
 /*! \brief Initialise the Netgen library and prepare for use
 
@@ -137,7 +138,7 @@ DLL_HEADER void Ng_Exit ();
     Use the returned pointer for subsequent operations 
     which involve mesh operations.
 
-    \return Ng_Mesh* Pointer to a Netgen Mesh type #Ng_Mesh
+    \return Ng_Mesh Pointer to a Netgen Mesh type #Ng_Mesh
 */
 DLL_HEADER  Ng_Mesh * Ng_NewMesh ();
 
@@ -153,8 +154,42 @@ DLL_HEADER  Ng_Mesh * Ng_NewMesh ();
 DLL_HEADER void Ng_DeleteMesh (Ng_Mesh * mesh);
 
 
+/*! \brief Save a Netgen Mesh to disk
 
-// Common Mesh related utility functions
+    This function allows a generated mesh structure to be saved 
+    to disk.
+
+    A Mesh saved using this function, will be written to disk 
+    in the Netgen VOL file format.
+
+    \param mesh    Pointer to an existing Netgen Mesh structure 
+                   of type #Ng_Mesh
+    \param filename Pointer to a character array containing the 
+                    name of the file to which the mesh should 
+                    be saved
+*/
+DLL_HEADER void Ng_SaveMesh(Ng_Mesh * mesh, const char* filename);
+
+
+/*! \brief Load a Netgen VOL Mesh from disk into memory
+
+    A Netgen mesh saved in the internal VOL format can be loaded 
+    into a Netgen Mesh structure using this function. 
+
+    \param filename Pointer to a character array containing the 
+                    name of the file to load
+    \return Ng_Mesh Pointer to a Netgen Mesh type #Ng_Mesh containing 
+                    the mesh loaded from disk
+*/
+DLL_HEADER Ng_Mesh * Ng_LoadMesh(const char* filename);
+
+// ------------------------------------------------------------------
+
+
+
+// ------------------------------------------------------------------
+// Basic Meshing functions for manually adding points, surface elements 
+// and volume elements to a Netgen Mesh structure
 
 /*! \brief Add a point to a given Netgen Mesh Structure
 
@@ -220,7 +255,125 @@ DLL_HEADER void Ng_AddSurfaceElement (Ng_Mesh * mesh, Ng_Surface_Element_Type et
 */
 DLL_HEADER void Ng_AddVolumeElement (Ng_Mesh * mesh, Ng_Volume_Element_Type et, int * pi);
   
+// ------------------------------------------------------------------
 
+
+
+// ------------------------------------------------------------------
+// Local Mesh Size restriction / limiting utilities
+
+/*! \brief Apply a global restriction on mesh element size
+
+    This utility allows the user to apply a global mesh element 
+    size limitation. 
+
+    During mesh creation, in the absence of an explicit local 
+    size restriction around the neighbourhood of a point within 
+    the meshing domain, this global size restriction will be 
+    utilised.
+
+    <b>Note</b>: This function only limits the <b>Maximum</b> 
+    size of an element within the mesh.
+
+    \param mesh Pointer to an existing Netgen Mesh structure of 
+                type #Ng_Mesh
+    \param h    Variable of type <i>double</i>, specifying the maximum
+                allowable mesh size
+*/
+DLL_HEADER void Ng_RestrictMeshSizeGlobal (Ng_Mesh * mesh, double h);
+
+
+/*! \brief Locally restrict the mesh element size at the given point
+
+    Unlike the function #Ng_RestrictMeshSizeGlobal, this function 
+    allows the user to locally restrict the maximum allowable mesh 
+    size at a given point.
+
+    The point is specified via its three cartesian co-ordinates.
+
+    <b>Note</b>: This function only limits the <b>Maximum</b> size 
+    of the elements around the specified point.
+
+    \param mesh Pointer to an existing Netgen Mesh structure of 
+                type #Ng_Mesh
+    \param p    Pointer to an Array of type <i>double</i>, containing 
+                the three co-ordinates of the point in the form: \n
+                - p[0] = X co-ordinate
+                - p[1] = Y co-ordinate
+                - p[2] = Z co-ordinate
+    \param h    Variable of type <i>double</i>, specifying the maximum
+                allowable mesh size at that point
+*/
+DLL_HEADER void Ng_RestrictMeshSizePoint (Ng_Mesh * mesh, double * p, double h);
+
+
+/*! \brief Locally restrict the mesh element size within a specified box
+
+    Similar to the function #Ng_RestrictMeshSizePoint, this function 
+    allows the size of elements within a mesh to be locally limited.
+
+    However, rather than limit the mesh size at a single point, this 
+    utility restricts the local mesh size within a 3D Box region, specified 
+    via the co-ordinates of the two diagonally opposite points of a cuboid.
+
+    <b>Note</b>: This function only limits the <b>Maximum</b> size 
+    of the elements within the specified region.
+
+    \param mesh Pointer to an existing Netgen Mesh structure of 
+                type #Ng_Mesh
+    \param pmin Pointer to an Array of type <i>double</i>, containing 
+                the three co-ordinates of the first point of the cuboid: \n
+                - pmin[0] = X co-ordinate
+                - pmin[1] = Y co-ordinate
+                - pmin[2] = Z co-ordinate
+    \param pmax Pointer to an Array of type <i>double</i>, containing 
+                the three co-ordinates of the opposite point of the 
+                cuboid: \n
+                - pmax[0] = X co-ordinate
+                - pmax[1] = Y co-ordinate
+                - pmax[2] = Z co-ordinate
+    \param h    Variable of type <i>double</i>, specifying the maximum
+                allowable mesh size at that point
+*/
+DLL_HEADER void Ng_RestrictMeshSizeBox (Ng_Mesh * mesh, double * pmin, double * pmax, double h);
+
+// ------------------------------------------------------------------
+
+
+
+// ------------------------------------------------------------------
+// 3D Mesh Generation functions
+
+/*! \brief Create a 3D Volume Mesh given a Surface Mesh
+
+    After creating a surface mesh, this function can be utilised 
+    to automatically generate the corresponding 3D Volume Mesh.
+
+    Mesh generation parameters (such as grading, maximum element size, 
+    etc.) are specified via the meshing parameters class which also 
+    needs to be passed to this function.
+
+    <b>Note</b>: Currently, Netgen generates pure tetrahedral volume 
+    meshes.
+
+    \param mesh Pointer to an existing Netgen Mesh structure of 
+                type #Ng_Mesh
+    \param mp   Pointer to a copy of the Meshing Parameters class
+                (#Ng_Meshing_Parameters), filled up with the 
+                required values
+
+    \return Ng_Result Status of the Mesh Generation routine. More 
+                      details regarding the return value can be 
+                      found in the description of #Ng_Result
+*/
+DLL_HEADER Ng_Result Ng_GenerateVolumeMesh (Ng_Mesh * mesh, Ng_Meshing_Parameters * mp);
+
+// ------------------------------------------------------------------
+
+
+
+// ------------------------------------------------------------------
+// Basic Mesh information functions
 
 /*! \brief Returns the Number of Points present in the specified Mesh
 
@@ -262,7 +415,14 @@ DLL_HEADER int Ng_GetNSE (Ng_Mesh * mesh);
 */
 DLL_HEADER int Ng_GetNE (Ng_Mesh * mesh);
 
+// ------------------------------------------------------------------
 
+
+
+// ------------------------------------------------------------------
+// Mesh Topology functions
+// Use these functions to extract points, surface / volume elements, 
+// perform topological searches, etc..etc...
   
 //  Return the Point Coordinates of a specified Point
 // The x, y and z co-ordinates are returned in the array pointer as 
@@ -278,18 +438,7 @@ Ng_GetSurfaceElement (Ng_Mesh * mesh, int num, int * pi);
 DLL_HEADER Ng_Volume_Element_Type
 Ng_GetVolumeElement (Ng_Mesh * mesh, int num, int * pi);
 
-
-// Defines MeshSize Functions
-DLL_HEADER void Ng_RestrictMeshSizeGlobal (Ng_Mesh * mesh, double h);
-DLL_HEADER void Ng_RestrictMeshSizePoint (Ng_Mesh * mesh, double * p, double h);
-DLL_HEADER void Ng_RestrictMeshSizeBox (Ng_Mesh * mesh, double * pmin, double * pmax, double h);
-  
-// generates volume mesh from surface mesh
-DLL_HEADER Ng_Result Ng_GenerateVolumeMesh (Ng_Mesh * mesh, Ng_Meshing_Parameters * mp);
-
-DLL_HEADER void Ng_SaveMesh(Ng_Mesh * mesh, const char* filename);
-DLL_HEADER Ng_Mesh * Ng_LoadMesh(const char* filename);
-
+// ------------------------------------------------------------------
 
 
 
