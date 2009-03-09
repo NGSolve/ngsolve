@@ -1113,6 +1113,19 @@ namespace netgen
 
          mesh->SetLocalH (bb.PMin(), bb.PMax(), 0.5);
 
+         // Philippose - 09/03/2009
+         // Added the capability to load the mesh size from a 
+         // file also for OpenCascade Geometry
+         // Note: 
+         // ** If the "uselocalh" option is ticked in 
+         // the "mesh options...insider" menu, the mesh 
+         // size will be further modified by the topology 
+         // analysis routines.
+         // ** To use the mesh size file as the sole source 
+         // for defining the mesh size, uncheck the "uselocalh"
+         // option.
+         mesh->LoadLocalMeshSize (mparam.meshsizefilename);
+
          if (mparam.uselocalh)
          {
 
