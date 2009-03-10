@@ -2826,45 +2826,77 @@ namespace netgen
 
   void Mesh :: LoadLocalMeshSize (const char * meshsizefilename)
   {
-    if (!meshsizefilename) return;
+     // Philippose - 10/03/2009
+     // Improve error checking when loading and reading
+     // the local mesh size file
 
-    ifstream msf(meshsizefilename);
+     if (!meshsizefilename) return;
 
-    // Philippose - 09/03/2009
-    // Adding print message information in case the specified 
-    // does not exist, or does not load successfully due to 
-    // other reasons such as access rights, etc...
-    if (!msf) 
-    {
-       PrintMessage(2, "Error loading Mesh Size File: ", meshsizefilename, "....","Skipping!");
-       return;
-    }
+     ifstream msf(meshsizefilename);
 
-    PrintMessage (3, "Load local mesh-size");
-    int nmsp, nmsl;
-    msf >> nmsp;
-    for (int i = 0; i < nmsp; i++)
-      {
-	Point3d pi;
-	double hi;
-	msf >> pi.X() >> pi.Y() >> pi.Z();
-	msf >> hi;
-	if (!msf.good())
-	  throw NgException ("problem in mesh-size file\n");
-	RestrictLocalH (pi, hi);
-      }
-    msf >> nmsl;
-    for (int i = 0; i < nmsl; i++)
-      {
-	Point3d p1, p2;
-	double hi;
-	msf >> p1.X() >> p1.Y() >> p1.Z();
-	msf >> p2.X() >> p2.Y() >> p2.Z();
-	msf >> hi;
-	if (!msf.good())
-	  throw NgException ("problem in mesh-size file\n");
-	RestrictLocalHLine (p1, p2, hi);
-      }  
+     // Philippose - 09/03/2009
+     // Adding print message information in case the specified 
+     // does not exist, or does not load successfully due to 
+     // other reasons such as access rights, etc...
+     if (!msf) 
+     {
+        PrintMessage(3, "Error loading mesh size file: ", meshsizefilename, "....","Skipping!");
+        return;
+     }
+
+     PrintMessage (3, "Load local mesh-size file: ", meshsizefilename);
+
+     int nmsp = 0;
+     int nmsl = 0;
+
+     msf >> nmsp;
+     if(nmsp > 0)
+     {
+        if(!msf.good())
+           throw NgException ("Mesh-size file error: No points found\n");
+        PrintMessage (4, "Number of mesh-size restriction points: ", nmsp);
+     }
+     else
+     {
+        msf.close();
+        return;
+     }
+     for (int i = 0; i < nmsp; i++)
+     {
+        Point3d pi;
+        double hi;
+        msf >> pi.X() >> pi.Y() >> pi.Z();
+        msf >> hi;
+        if (!msf.good())
+           throw NgException ("Mesh-size file error: Number of points don't match specified list size\n");
+        RestrictLocalH (pi, hi);
+     }
+     msf >> nmsl;
+     if(nmsl > 0)
+     {
+        cout << "Number of line definitions expected = " << nmsl << endl;
+        if(!msf.good())
+           throw NgException ("Mesh-size file error: No line definitions found\n");
+        PrintMessage (4, "Number of mesh-size restriction lines: ", nmsl);
+     }
+     else
+     {
+        msf.close();
+        return;
+     }
+     for (int i = 0; i < nmsl; i++)
+     {
+        Point3d p1, p2;
+        double hi;
+        msf >> p1.X() >> p1.Y() >> p1.Z();
+        msf >> p2.X() >> p2.Y() >> p2.Z();
+        msf >> hi;
+        if (!msf.good())
+           throw NgException ("Mesh-size file error: Number of line definitions don't match specified list size\n");
+        RestrictLocalHLine (p1, p2, hi);
+     }
+
+     msf.close();
   }
 
 
