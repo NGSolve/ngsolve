@@ -1243,18 +1243,18 @@ namespace netgen
       TDF_LabelSequence step_shapes;
       step_shape_contents->GetShapes(step_shapes);
 
-      /*
+      
       // List out the available colours in the STEP File as Colour Names
-      TDF_LabelSequence allColours;
-      stepColourContents->GetColors(allColours);
-      cout << "Number of colours in STEP = " << allColours.Length() << endl;
-      for(int i = 1; i <= allColours.Length(); i++)
+      TDF_LabelSequence all_colours;
+      step_colour_contents->GetColors(all_colours);
+      PrintMessage(4,"Number of colours in STEP File: ",all_colours.Length());
+      for(int i = 1; i <= all_colours.Length(); i++)
       {
       Quantity_Color col;
-      stepColourContents->GetColor(allColours.Value(i),col);
-      cout << "Colour [" << i << "] = " << col.StringName(col.Name()) << endl;
+      step_colour_contents->GetColor(all_colours.Value(i),col);
+      PrintMessage(4, "Colour [", i, "] = ",col.StringName(col.Name()));
       }
-      */
+      
 
       // For the STEP File Reader in OCC, the 1st Shape contains the entire 
       // compound geometry as one shape

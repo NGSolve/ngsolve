@@ -18,17 +18,18 @@ The interface between the GUI and the netgen library
 #include <linalg.hpp>
 #include <csg.hpp>
 
-#ifdef OCCGEOMETRY
-#include <occgeom.hpp>
-#endif
-
-
 #include <geometry2d.hpp>
 #include <stlgeom.hpp>
-
 #include <meshing.hpp>
+
+#ifdef OCCGEOMETRY
+#include <occgeom.hpp>
+#include "../libsrc/occ/occauxfunctions.hpp"
+#endif
+
 #include <incvis.hpp>
 #include <visual.hpp>
+
 
 #ifdef SOCKETS
 #include "../libsrc/sockets/sockets.hpp"
@@ -1539,17 +1540,57 @@ namespace netgen
 	   Tcl_SetResult (interp, buf, TCL_STATIC);
     }
     return TCL_OK;
-#else
+#else // No OCCGEOMETRY 
 
     Tcl_SetResult (interp, (char *)"Ng_SurfaceMeshSize currently supports only OCC (STEP/IGES) Files", TCL_STATIC);
     return TCL_ERROR;
     
-#endif
+#endif // OCCGEOMETRY
   }
 
 
 
 
+  // Philippose - 10/03/2009
+  // TCL interface function for the Automatic Colour-based
+  // definition of boundary conditions for OCC Geometry
+  int Ng_OCCAutoColourBcProps (ClientData clientData,
+		                         Tcl_Interp * interp,
+		                         int argc, tcl_const char *argv[])
+  {
+#ifdef OCCGEOMETRY
+
+     if(!mesh.Ptr())
+     {
+        Tcl_SetResult (interp, (char *)"Ng_OCCAutoColourBcProps: Valid netgen mesh required...please mesh the OCC Geometry first", TCL_STATIC);
+	     return TCL_ERROR;
+     }
+
+     if (!occgeometry)
+     {
+        Tcl_SetResult (interp, (char *)"Ng_OCCAutoColourBcProps: Currently supports only OCC (STEP/IGES) Geometry", TCL_STATIC);
+	     return TCL_ERROR;
+     }
+
+     if(occgeometry->face_colours.IsNull())
+     {
+        Tcl_SetResult (interp, (char *)"Ng_OCCAutoColourBcProps: No colour data detected in the current OCC Geometry", TCL_STATIC);
+	     return TCL_ERROR;
+     }
+
+     OCCAutoColourBcProps(*mesh, *occgeometry);
+
+     return TCL_OK;
+#else
+
+     Tcl_SetResult (interp, (char *)"Ng_OCCAutoColourBcProps currently supports only OCC (STEP/IGES) Geometry", TCL_STATIC);
+     return TCL_ERROR;
+
+#endif // OCCGEOMETRY
+  }
+                          
+                          
+  
   int Ng_SetNextTimeStamp  (ClientData clientData,
 			    Tcl_Interp * interp,
 			    int argqc, tcl_const char *argv[])
@@ -4886,7 +4927,10 @@ namespace netgen
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-
+    Tcl_CreateCommand (interp, "Ng_OCCAutoColourBcProps", Ng_OCCAutoColourBcProps,
+		       (ClientData)NULL,
+		       (Tcl_CmdDeleteProc*) NULL);
+    
 
     // meshing
     Tcl_CreateCommand (interp, "Ng_GenerateMesh", Ng_GenerateMesh,
