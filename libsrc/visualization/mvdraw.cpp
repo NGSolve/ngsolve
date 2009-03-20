@@ -852,7 +852,7 @@ namespace netgen
 
     glTranslatef (1, -1, 0.0);
     glScalef (40.0 / viewport[2], 40.0 / viewport[3], 1);
-    glTranslatef (-6.0, 2.0, 0.0);
+    glTranslatef (-7.0, 2.0, 0.0);
 
     glDisable (GL_CLIP_PLANE0);
     glDisable (GL_LIGHTING);

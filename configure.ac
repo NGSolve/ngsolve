@@ -94,7 +94,6 @@ AC_CHECK_LIB(pthread, pthread_create)
 # AC_SEARCH_LIBS(Tcl_Init, [tcl8.5 tcl8.4])
 
 
-
 #--------------------------------------------------------------------
 # __CHANGE__
 # Choose OpenGL platform (borrowed from Togl1.7)
