@@ -105,8 +105,8 @@ public:
 			   FlatMatrixFixWidth<D> dshape) const;
 
   /// compute dshape, matrix: ndof x spacedim
-  virtual void CalcMappedDShape (const BaseSpecificIntegrationPoint & sip, 
-                                 FlatMatrix<> dshape) const;
+  virtual void CalcMappedDShape (const SpecificIntegrationPoint<D,D> & sip, 
+                                 FlatMatrixFixWidth<D> dshape) const;
 
 
   /**
@@ -632,7 +632,7 @@ public:
 			  FlatVector<> shape) const;
   ///
   virtual void CalcDShape (const IntegrationPoint & ip, 
-			   FlatMatrix<> dshape) const;
+			   FlatMatrixFixWidth<2> dshape) const;
   ///
   virtual const IntegrationRule & NodalIntegrationRule() const;
 };

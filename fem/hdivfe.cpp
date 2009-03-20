@@ -95,6 +95,32 @@ namespace ngfem
       }
   }
 
+
+  /// compute shape
+  template <int D>
+  void HDivFiniteElement<D> ::
+  CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+                   FlatMatrixFixWidth<DIM> shape) const
+  {
+    CalcShape (sip.IP(), shape);
+    Mat<DIM> trans = (1.0/sip.GetJacobiDet()) * sip.GetJacobian();
+    for (int i = 0; i < ndof; i++)
+      {
+        Vec<DIM> hs = shape.Row(i);
+        shape.Row(i) = trans * hs;
+      }
+  }
+
+  /// compute curl of shape
+  template <int D>
+  void HDivFiniteElement<D> ::
+  CalcMappedDivShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+                      FlatVector<> divshape) const
+  {
+    CalcDivShape (sip.IP(), divshape);
+    divshape /= sip.GetJacobiDet();
+  }
+
   
   template <int D>
   void HDivFiniteElement<D> ::

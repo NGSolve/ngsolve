@@ -49,6 +49,7 @@ namespace ngcomp
     DefineDefineFlag("print");
     DefineDefineFlag("noprint");
     DefineDefineFlag("variableorder"); 
+    DefineDefineFlag("hodivfree"); 
     
     if(parseflags) ParseFlags(flags);
 
@@ -131,6 +132,8 @@ namespace ngcomp
 #endif
         
     print = flags.GetDefineFlag("print"); 
+
+    ho_div_free = flags.GetDefineFlag("hodivfree"); 
 
     uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
     
@@ -359,7 +362,10 @@ namespace ngcomp
 	     switch(ma.GetElType(i))
 	       {
 	       case ET_TRIG:
-		 inci = pc[0]*(pc[0]-1)/2 + p[0]*(p[0]-1)/2 + p[0]-1;
+                 if (!ho_div_free)
+                   inci = pc[0]*(pc[0]-1)/2 + p[0]*(p[0]-1)/2 + p[0]-1;
+                 else
+                   inci = pc[0]*(pc[0]-1)/2;
 		 break;
 	       case ET_QUAD:
 		 inci = pc[0]*pc[1] + p[0]*p[1]+p[0]+p[1];
@@ -568,7 +574,7 @@ namespace ngcomp
 	hofe -> SetOrderInner (order_inner[elnr]); 
 	//hofe -> SetOrderInnerCurl (order_inner_curl[elnr]);
 	hofe -> SetDiscontinuous(discont); 
-
+        hofe -> SetHODivFree (ho_div_free);
 	hofe -> ComputeNDof();
       }
       else // dim=3

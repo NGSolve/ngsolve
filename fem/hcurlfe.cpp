@@ -158,6 +158,45 @@ namespace ngfem
   }
 
 
+  /// compute shape
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+                   FlatMatrixFixWidth<DIM> shape) const
+  {
+    CalcShape (sip.IP(), shape);
+    Mat<DIM> trans = Trans (sip.GetJacobianInverse());
+    for (int i = 0; i < ndof; i++)
+      {
+        Vec<DIM> hs = shape.Row(i);
+        shape.Row(i) = trans * hs;
+      }
+  }
+
+  /// compute curl of shape
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcMappedCurlShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+                       FlatMatrixFixWidth<DIM_CURL> curlshape) const
+  {
+    CalcCurlShape (sip.IP(), curlshape);
+    if (DIM == 2)
+      {
+        curlshape /= sip.GetJacobiDet();        
+      }
+    else
+      {
+        Mat<DIM> trans = (1.0/sip.GetJacobiDet()) * sip.GetJacobian();
+        for (int i = 0; i < ndof; i++)
+          {
+            Vec<DIM> hs = curlshape.Row(i);
+            curlshape.Row(i) = trans * hs;
+          }
+      }
+  }
+
+
+
 
 
   template <int D>

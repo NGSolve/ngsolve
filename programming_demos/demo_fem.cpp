@@ -55,6 +55,7 @@ int main ()
 
   H1HighOrderFE<ET_SEGM> seg(4);
   Vector<> shapess(seg.GetNDof());
+  cout << "ndof = " << seg.GetNDof() << endl;
   ofstream outf("shape");
 
   for(double x = 0; x <= 1.0001; x += 0.1)
@@ -66,7 +67,8 @@ int main ()
       outf << endl;
     }
   outf.close();
-  
+
+
   
   FE_Quad1 quad;
   Vector<> shapes(quad.GetNDof());

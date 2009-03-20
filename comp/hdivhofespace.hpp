@@ -52,6 +52,9 @@ protected:
   int uniform_order_inner; 
   int uniform_order_facet; 
 
+  // high order divergence free
+  bool ho_div_free; 
+
   bool print; 
      
 public:

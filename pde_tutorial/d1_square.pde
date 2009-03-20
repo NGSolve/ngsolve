@@ -43,7 +43,7 @@ robin penalty
 define linearform f -fespace=v
 source coef_source
 
-define preconditioner c -type=direct -bilinearform=a -inverstype=PARDISO
+define preconditioner c -type=direct -bilinearform=a
 # define preconditioner c -type=local -bilinearform=a
 # define preconditioner c -type=multigrid -bilinearform=a -smoothingsteps=1 
 

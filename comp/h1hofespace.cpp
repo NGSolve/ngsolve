@@ -622,7 +622,7 @@ namespace ngcomp
             hofe2d -> SetVertexNumbers (vnums);
 
             hofe2d -> SetOrderEdge (order_ed);
-            hofe2d -> SetOrderInner (order_inner[elnr]); // old style
+            // hofe2d -> SetOrderInner (order_inner[elnr]); // old style
             
             INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
             FlatArray<INT<2> > of(1, &p);
@@ -647,8 +647,7 @@ namespace ngcomp
               order_fa[j] = order_face[fanums[j]];
 	
             hofe3d -> SetOrderFace (order_fa);
-
-            hofe3d -> SetOrderInner (order_inner[elnr]);
+            hofe3d -> SetOrderCell (order_inner[elnr]);
             hofe3d -> ComputeNDof();
 
             return *hofe3d;
@@ -744,7 +743,7 @@ namespace ngcomp
     
     if (ma.GetDimension() == 2)
       {
-        hofe1d -> SetOrderInner (order_ed[0]);
+        // hofe1d -> SetOrderInner (order_ed[0]);  // old style
         hofe1d -> SetOrderEdge (order_ed);
 
         hofe1d -> ComputeNDof();
@@ -762,7 +761,7 @@ namespace ngcomp
       {
         hofe2d -> SetOrderEdge (order_ed);
         INT<2> p = order_face[ma.GetSElFace(elnr)];
-        hofe2d -> SetOrderInner (INT<3> (p[0], p[1], 0));  // old style
+        // hofe2d -> SetOrderInner (INT<3> (p[0], p[1], 0));  // old style
 
         FlatArray<INT<2> > of(1, &p);
         hofe2d -> SetOrderFace (of);

@@ -989,12 +989,28 @@ public:
   template <class Sx, class Sy, class T>
   inline static int CalcTrigExt (int n, Sx x, Sy y, T & values)
   {
-    // T & values = const_cast<T&> (cvalues);
-
     Sy fy = (1-y)*(1-y);
     Sx p3 = 0;
     Sx p2 = -1;
     Sx p1 = x;
+
+    for (int j=2; j<=n; j++)
+      {
+	p3=p2; p2=p1;
+	p1 = double(2*j-3)/j  * x * p2 - double(j-3)/j * fy * p3;
+	values[j-2] = p1;
+      }     
+
+    return n-1;
+  }
+
+  template <class Sx, class Sy, class Sf, class T>
+  inline static int CalcTrigExtMult (int n, Sx x, Sy y, Sf fac, T & values)
+  {
+    Sy fy = (1-y)*(1-y);
+    Sx p3 = 0;
+    Sx p2 = -fac;
+    Sx p1 = x * fac;
 
     for (int j=2; j<=n; j++)
       {
@@ -1007,6 +1023,8 @@ public:
 
     return n-1;
   }
+
+
 
 
   template <class T>
@@ -1049,6 +1067,24 @@ public:
       }
     return n-1;
   }
+
+  template <class Sx, class Sf, class T>
+  inline static int CalcMult (int n, Sx x, Sf fac, T & values)
+  {
+    Sx p3 = 0;
+    Sx p2 = -fac;
+    Sx p1 = x*fac;
+
+    for (int j=2; j<=n; j++)
+      {
+	p3=p2; p2=p1;
+	p1=( (2*j-3) * x * p2 - (j-3) * p3) / j;
+	values[j-2] = p1;
+      }
+    return n-1;
+  }
+
+
 
   template <class T>
   inline static int CalcDeriv (int n, double x, T & values)

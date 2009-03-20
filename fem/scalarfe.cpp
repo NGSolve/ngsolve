@@ -38,7 +38,7 @@ namespace ngfem
     if (firsttime)
       {
 	cout << "WARNING: CalcDShape not overloaded for class " << typeid(this).name() << endl;
-	firsttime = false;
+        firsttime = false;
       }
     int nd = GetNDof();
     int sdim = SpatialDim();
@@ -86,17 +86,16 @@ namespace ngfem
 
   /// compute dshape, matrix: ndof x spacedim
   template<int D>
-  void ScalarFiniteElement<D> :: CalcMappedDShape (const BaseSpecificIntegrationPoint & bsip, 
-                                               FlatMatrix<> dshape) const
+  void ScalarFiniteElement<D> :: CalcMappedDShape (const SpecificIntegrationPoint<D,D> & sip, 
+                                                   FlatMatrixFixWidth<D> dshape) const
   {
-    const SpecificIntegrationPoint<D,D> & sip = 
-      static_cast<const SpecificIntegrationPoint<D,D> &> (bsip);
-    Vec<D> hv;
+    // const SpecificIntegrationPoint<D,D> & sip = 
+    // static_cast<const SpecificIntegrationPoint<D,D> &> (bsip);
           
     CalcDShape (sip.IP(), dshape);
     for (int i = 0; i < dshape.Height(); i++)
       {
-        hv = dshape.Row(i);
+        Vec<D> hv = dshape.Row(i);
         dshape.Row(i) = Trans (sip.GetJacobianInverse ()) * hv;
       }
   }
@@ -363,7 +362,7 @@ namespace ngfem
   }
 
   void FE_Trig0 :: CalcDShape (const IntegrationPoint & ip, 
-                               FlatMatrix<> dshape) const
+                               FlatMatrixFixWidth<2> dshape) const
 			      
   {
     dshape = 0;

@@ -25,6 +25,7 @@ public:
   enum { DIM_DMAT = D };
   enum { DIFFORDER = 1 };
 
+
   ///
   template <typename FEL, typename SIP, typename MAT>
   static void GenerateMatrix (const FEL & fel, const SIP & sip,
@@ -32,10 +33,16 @@ public:
   {
     mat = Trans (sip.GetJacobianInverse ()) * 
       Trans (fel.GetDShape(sip.IP(),lh));
+  }
 
-    // FlatMatrix<> hm(mat.Width(), mat.Height(), lh);
-    // fel.CalcMappedDShape (sip, hm);
-    // mat = Trans (hm);
+  template <typename FEL, typename MAT>
+  static void GenerateMatrix (const FEL & fel, 
+                              const SpecificIntegrationPoint<D,D> & sip,
+			      MAT & mat, LocalHeap & lh)
+  {
+    FlatMatrixFixWidth<D> hm(fel.GetNDof(), lh);
+    fel.CalcMappedDShape (sip, hm);
+    mat = Trans (hm);
   }
 
   ///
@@ -1188,7 +1195,7 @@ public:
     typedef typename MAT::TSCAL TSCAL;
     int nd = fel.GetNDof();
 
-    FlatMatrix<TSCAL> grad (2, nd, lh);
+    FlatMatrixFixHeight<2, TSCAL> grad (nd, lh);
     grad = Trans (sip.GetJacobianInverse ()) * 
       Trans (fel.GetDShape(sip.IP(), lh));
     
@@ -1225,12 +1232,7 @@ public:
     int nd = fel.GetNDof();
     void * heapp = lh.GetPointer();
 
-    // FlatMatrix<double> grad1 (nd, 3, lh);
-    // fel.CalcMappedDShape (sip, grad1);
-
-    FlatMatrix<TSCAL> grad (3, nd, lh);
-    // grad = Trans (grad1);
-
+    FlatMatrixFixHeight<3,TSCAL> grad (nd, lh);
     grad =  Trans (sip.GetJacobianInverse ()) * 
       Trans (fel.GetDShape(sip.IP(),lh));
 
@@ -1253,6 +1255,40 @@ public:
 
     lh.CleanUp(heapp);
   }
+
+
+
+  template <typename FEL, typename MAT>
+  static void GenerateMatrix (const FEL & fel, 
+                              const SpecificIntegrationPoint<3,3> & sip,
+			      MAT & mat, LocalHeap & lh)
+  {
+    typedef typename MAT::TSCAL TSCAL;
+
+    int nd = fel.GetNDof();
+    HeapReset hr(lh);
+
+    FlatMatrixFixWidth<3> grad (nd, lh);
+    fel.CalcMappedDShape (sip, grad);
+
+    mat = TSCAL (0);
+    for (int i = 0; i < nd; i++)
+      {
+	mat(0, DIM*i  ) = grad(i, 0);
+	mat(1, DIM*i+1) = grad(i, 1);
+	mat(2, DIM*i+2) = grad(i, 2);
+
+	mat(3, DIM*i  ) = grad(i, 1);
+	mat(3, DIM*i+1) = grad(i, 0);
+
+	mat(4, DIM*i  ) = grad(i, 2);
+	mat(4, DIM*i+2) = grad(i, 0);
+
+	mat(5, DIM*i+1) = grad(i, 2);
+	mat(5, DIM*i+2) = grad(i, 1);
+      }
+  }
+
 };
 
 

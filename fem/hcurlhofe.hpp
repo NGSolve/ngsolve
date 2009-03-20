@@ -1,16 +1,12 @@
 #ifndef FILE_HCURLHOFE_
 #define FILE_HCURLHOFE_  
 
-// zur Numerischen Berechnung von curl(phi) bei TETS: 
-// #define NUMCURLTET 
-// #define NUMCURLPRISM 
-// #define NUMCURLHEX
+
 #define NUMCURLPYR
-#undef newinner // test for hcurl-pyr-inner 
  
 /*********************************************************************/
 /* File:   hcurlhofe.hpp                                             */
-/* Author: Sabine Zaglmayr                                           */
+/* Author: Sabine Zaglmayr, Joachim Schoeberl                        */
 /* Date:   20. Maerz 2003                                            */
 /*********************************************************************/
    
@@ -21,209 +17,238 @@
 template <int D>
 class HCurlHighOrderFiniteElement : public HCurlFiniteElement<D> 
 {
- 
-public:
-  //  enum { DIM = D };
-
 protected:
-  // int ndof; 
   int vnums[8]; 
-  INT<3> order_inner;
-  INT<2> order_face[6];
   int order_edge[12];
-  //int ndof_edge; 
-  int ned; // number of edges in element  
-  int nv; // number of vertices in element 
-  int nf; // number of faces in element
+  INT<2> order_face[6];
+  INT<3> order_cell;
+
+  int usegrad_edge[12]; 
   int usegrad_face[6]; 
   int usegrad_cell; 
-  int usegrad_edge[12]; 
-  int order_vertex[8];   // for augmented
-  int augmented; 
+
   bool discontinuous;
   
 public:
   ///
   HCurlHighOrderFiniteElement (ELEMENT_TYPE aeltype);
+  HCurlHighOrderFiniteElement () { discontinuous = false; }
 
   virtual void SetVertexNumbers (FlatArray<int> & avnums, LocalHeap & lh);
-  void SetOrderInner (int oi);
-  void SetOrderInner (INT<3> oi);
+  void SetOrderCell (int oi);
+  void SetOrderCell (INT<3> oi);
   void SetOrderFace (FlatArray<int> & of);
   void SetOrderFace (FlatArray<INT<2> > & of); 
   void SetOrderEdge (FlatArray<int> & oen);
   void SetUsegradEdge(FlatArray<int> & uge); 
   void SetUsegradFace(FlatArray<int> & ugf); 
   void SetUsegradCell(int ugc); 
-  void SetOrderVertex (FlatArray<int> & ov);
-  void SetAugmented (int aa);
   
   virtual void ComputeNDof () = 0;
-
+  
   void PrintInfo() const;
 
   virtual void SetDiscontinuous ( bool adiscont ) { discontinuous = adiscont; }
 };
+
+
+
+template <ELEMENT_TYPE ET> class HCurlHighOrderFE;
+
+template <ELEMENT_TYPE ET>
+class T_HCurlHighOrderFiniteElement : public HCurlHighOrderFiniteElement<ET_trait<ET>::DIM>
+{
+protected:
+  enum { DIM = ET_trait<ET>::DIM };
+  
+  using HCurlFiniteElement<DIM>::DIM_CURL;
+  using HCurlFiniteElement<DIM>::ndof;
+  using HCurlFiniteElement<DIM>::order;
+  using HCurlFiniteElement<DIM>::eltype;
+  using HCurlFiniteElement<DIM>::dimspace;
+
+  using HCurlHighOrderFiniteElement<DIM>::vnums;
+  using HCurlHighOrderFiniteElement<DIM>::order_edge;
+  using HCurlHighOrderFiniteElement<DIM>::order_face;
+  using HCurlHighOrderFiniteElement<DIM>::order_cell;
+
+  using HCurlHighOrderFiniteElement<DIM>::usegrad_edge;
+  using HCurlHighOrderFiniteElement<DIM>::usegrad_face;
+  using HCurlHighOrderFiniteElement<DIM>::usegrad_cell;
+
+  using HCurlHighOrderFiniteElement<DIM>::discontinuous;
+
+
+  typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
+
+  // typedef TrigShapesInnerLegendre T_TRIGSHAPES;
+  // typedef TrigShapesInnerJacobi T_TRIGSHAPES;
+
+public:
+
+  T_HCurlHighOrderFiniteElement () 
+  {
+    for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
+      vnums[i] = i;
+    dimspace = DIM;
+    eltype = ET;
+  }
+
+  T_HCurlHighOrderFiniteElement (int aorder) 
+  {
+    for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+      order_edge[i] = aorder;
+    for (int i=0; i < ET_trait<ET>::N_FACE; i++) 
+      order_face[i] = INT<2> (aorder,aorder); 
+    if (DIM == 3)
+      order_cell = INT<3> (aorder,aorder,aorder);
+
+    for(int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+      usegrad_edge[i] = 1;
+    for(int i=0; i < ET_trait<ET>::N_FACE; i++)
+      usegrad_face[i] = 1;
+    if (DIM == 3)
+      usegrad_cell = 1;
+
+    for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
+      vnums[i] = i;
+    dimspace = DIM;
+    eltype = ET;
+  }
+
+
+  virtual void ComputeNDof();
+  virtual void GetInternalDofs (Array<int> & idofs) const;
+
+  virtual void CalcShape (const IntegrationPoint & ip, 
+                          FlatMatrixFixWidth<DIM> shape) const;
+
+  virtual void CalcCurlShape (const IntegrationPoint & ip, 
+                              FlatMatrixFixWidth<DIM_CURL> curlshape) const;
+
+  virtual void CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+                                FlatMatrixFixWidth<DIM> shape) const;
+
+  virtual void CalcMappedCurlShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+                                    FlatMatrixFixWidth<DIM_CURL> curlshape) const;
+
+
+  /*
+  virtual void CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
+                                 FlatMatrixFixWidth<DIM> dshape) const;
+
+  virtual Vec<3> EvaluateCurlShape (const IntegrationPoint & ip, 
+                                    FlatVector<double> x,
+                                    LocalHeap & lh) const;
+  */
+};
+
+
+
+
+
+
+
  
 /// 
-template <class T_ORTHOPOL> 
-class HCurlHighOrderSegm:  public HCurlHighOrderFiniteElement<1>
+template <>
+class HCurlHighOrderFE<ET_SEGM>:  public HCurlHighOrderFiniteElement<1>
 {
 private: 
-   typedef VertexExtensionOptimal<3> T_VERTEXSHAPES;
+  typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
  
 public:
-  
-  HCurlHighOrderSegm (int aorder);
+  HCurlHighOrderFE ();
+  HCurlHighOrderFE (int aorder);
   virtual void ComputeNDof();
  
-  /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
 			  FlatMatrixFixWidth<1> shape) const;
-  
 };
 
 ///
-template <class T_ORTHOPOL> 
-class HCurlHighOrderTrig : public HCurlHighOrderFiniteElement<2>
+template <>
+class HCurlHighOrderFE<ET_TRIG> : public T_HCurlHighOrderFiniteElement<ET_TRIG>
 {
 private:
   typedef TrigShapesInnerLegendre T_INNERSHAPES; 
   typedef VertexExtensionOptimal<3> T_VERTEXSHAPES;
 public:
+  HCurlHighOrderFE () { ; }
+  HCurlHighOrderFE (int aorder);
 
-  HCurlHighOrderTrig (int aorder);
-  virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
- 
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatMatrixFixWidth<2> shape) const;
- 
-  /// compute Curl of shape 
-  virtual void CalcCurlShape (const IntegrationPoint & ip, 
-			      FlatMatrixFixWidth<1> curlshape) const; 
- 
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx hx[2], TFA & shape) const; 
 };
 
-
 ///
-template <class T_ORTHOPOL>
-class HCurlHighOrderQuad : public HCurlHighOrderFiniteElement<2>
+template <>
+class HCurlHighOrderFE<ET_QUAD> : public T_HCurlHighOrderFiniteElement<ET_QUAD>
 {
 private: 
    typedef VertexExtensionOptimal<3> T_VERTEXSHAPES;
 public:
-  HCurlHighOrderQuad (int aorder);
-  virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
- 
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatMatrixFixWidth<2> shape) const;
+  HCurlHighOrderFE () { ; }
+  HCurlHighOrderFE (int aorder);
 
-   /// compute Curl of shape 
-  virtual void CalcCurlShape (const IntegrationPoint & ip, 
-			      FlatMatrixFixWidth<1> curlshape) const; 
-  
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx hx[2], TFA & shape) const; 
 };
 
-
 ///
-template <class T_ORTHOPOL = IntegratedLegendreMonomialExt> 
-class HCurlHighOrderTet : public HCurlHighOrderFiniteElement<3>
+template <>
+class HCurlHighOrderFE<ET_TET> : public T_HCurlHighOrderFiniteElement<ET_TET>
 {
 private:
-  typedef VertexExtensionOptimal<3> T_VERTEXSHAPES;
   typedef TetShapesFaceLegendre T_FACESHAPES; 
   typedef TetShapesInnerLegendre T_INNERSHAPES; 
 public:
-  HCurlHighOrderTet (int aorder);
+  HCurlHighOrderFE () { ; }
+  HCurlHighOrderFE (int aorder);
 
-  virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
-
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatMatrixFixWidth<3> shape) const;
- #ifndef NUMCURLTET
-  ///compute Curl of shape 
-  virtual void CalcCurlShape (const IntegrationPoint & ip, 
-			      FlatMatrixFixWidth<3> shape) const;
-#endif 
-
-  virtual Vec<3> EvaluateCurlShape (const IntegrationPoint & ip, 
-                                    FlatVector<double> x,
-                                    LocalHeap & lh) const;
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx hx[3], TFA & shape) const; 
 };
 
 ///
-template <class T_ORTHOPOL>
-class HCurlHighOrderHex : public HCurlHighOrderFiniteElement<3>
+template <>
+class HCurlHighOrderFE<ET_HEX> : public T_HCurlHighOrderFiniteElement<ET_HEX>
 {
-private: 
-  typedef VertexExtensionOptimal<3> T_VERTEXSHAPES;
 public:
-  HCurlHighOrderHex (int aorder);
-  virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
- 
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatMatrixFixWidth<3> shape) const;
-#ifndef NUMCURLHEX
-  /// compute Curl of shape 
-  virtual void CalcCurlShape (const IntegrationPoint & ip, 
-			      FlatMatrixFixWidth<3> curlshape) const;
-#endif
+  HCurlHighOrderFE () { ; }
+  HCurlHighOrderFE (int aorder);
+
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx hx[3], TFA & shape) const; 
 };
 
 ///
-template <class T_ORTHOPOL = IntegratedLegendreMonomialExt> 
-class HCurlHighOrderPrism : public HCurlHighOrderFiniteElement<3>
+template <>
+class HCurlHighOrderFE<ET_PRISM> : public T_HCurlHighOrderFiniteElement<ET_PRISM>
 {
 private:
   typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
-  typedef VertexExtensionOptimal<3> T_VERTEXSHAPES;
+
 public:
-  HCurlHighOrderPrism (int aorder);
-  virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
+  HCurlHighOrderFE () { ; }
+  HCurlHighOrderFE (int aorder);
 
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatMatrixFixWidth<3> shape) const;
-
-/// compute curl of shape
-#ifndef NUMCURLPRISM
-  virtual void CalcCurlShape (const IntegrationPoint & ip, 
-			      FlatMatrixFixWidth<3> shape) const;
-#endif
- 
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx hx[3], TFA & shape) const; 
 };
 
 ///
-template <class T_ORTHOPOL>
-class HCurlHighOrderPyr : public HCurlHighOrderFiniteElement<3>
+template <>
+class HCurlHighOrderFE<ET_PYRAMID> : public T_HCurlHighOrderFiniteElement<ET_PYRAMID>
 {
   typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;  
 public:
+  HCurlHighOrderFE () { ; }
+  HCurlHighOrderFE (int aorder);
 
-  HCurlHighOrderPyr (int aorder);
-  virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
- 
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatMatrixFixWidth<3> shape) const;
-
-  /// compute Curl of shape 
-#ifndef NUMCURLPYR
-  virtual void CalcCurlShape (const IntegrationPoint & ip, 
-			      FlatMatrixFixWidth<3> curlshape) const;
-#endif 
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx hx[3], TFA & shape) const; 
 };
-
 
 
 #endif

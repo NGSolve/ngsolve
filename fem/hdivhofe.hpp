@@ -25,13 +25,13 @@ protected:
 public:
   int vnums[8];
  
-  #ifdef HDIV_OLD
+#ifdef HDIV_OLD
   int order_inner;
   int order_face[6];
-  #else 
+#else 
   INT<3> order_inner;
   INT<2> order_face[6];
-  #endif 
+#endif 
   int order_edge[12];
 
   int ned; // number of edges in element
@@ -44,6 +44,7 @@ public:
 
   bool augmented;
   bool discontinuous;
+  bool ho_div_free;
 
 public:
   ///
@@ -59,6 +60,7 @@ public:
   void SetOrderInner (INT<3> oi); 
 #endif
   void SetDiscontinuous(bool disc) { discontinuous=disc; };  
+  void SetHODivFree(bool aho_div_free) { ho_div_free = aho_div_free; };  
 
   virtual void ComputeNDof () = 0;
 
