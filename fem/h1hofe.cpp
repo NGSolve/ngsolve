@@ -4,7 +4,6 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
-
  
 #include <fem.hpp>
 namespace ngfem
@@ -21,16 +20,16 @@ namespace ngfem
     
   template<int D>
   void H1HighOrderFiniteElement<D>::
-  SetOrderInner (int oi)
+  SetOrderCell (int oi)
   {
-    order_inner = INT<3> (oi,oi,oi); 
+    order_cell = INT<3> (oi,oi,oi); 
   }
 
   template<int D>
   void H1HighOrderFiniteElement<D>::
-  SetOrderInner (INT<3> oi)
+  SetOrderCell (INT<3> oi)
   {
-    order_inner = oi;
+    order_cell = oi;
   }
 
   template<int D>
@@ -72,12 +71,14 @@ namespace ngfem
 
     for (int i = 0; i < ElementTopology::GetNNodes(eltype, NT_FACE); i++)
       {
-        INT<2> p;
+        INT<2> p = order_face[i];
+        /*
         if (D == 2)
           { p[0] = order_inner[0]; p[1] = order_inner[1]; }
         else
           p = order_face[i];
-        
+        */
+
         int nf;
         if (D == 2 && eltype == ET_TRIG || 
             D == 3 && ElementTopology::GetFacetType (eltype, i) == ET_TRIG)
@@ -90,7 +91,7 @@ namespace ngfem
       }
 
     int ni = 0;
-    INT<3> p = order_inner;
+    INT<3> p = order_cell;
     if (D == 3)
       switch (eltype)
         {
@@ -127,16 +128,16 @@ namespace ngfem
     switch (ET)
       {
       case ET_TET: 
-        ndof += (order_inner[0]-1)*(order_inner[0]-2)*(order_inner[0]-3) / 6; 
+        ndof += (order_cell[0]-1)*(order_cell[0]-2)*(order_cell[0]-3) / 6; 
         break;
       case ET_PRISM:
-        ndof += (order_inner[0]-1)*(order_inner[0]-2)/2*(order_inner[2]-1);
+        ndof += (order_cell[0]-1)*(order_cell[0]-2)/2*(order_cell[2]-1);
         break;
       case ET_PYRAMID:
-        ndof += (order_inner[0]-1)*(order_inner[0]-2)*(2*order_inner[0]-3) / 6; 
+        ndof += (order_cell[0]-1)*(order_cell[0]-2)*(2*order_cell[0]-3) / 6; 
         break;
       case ET_HEX:
-        ndof += (order_inner[0]-1)*(order_inner[1]-1)*(order_inner[2]-1);
+        ndof += (order_cell[0]-1)*(order_cell[1]-1)*(order_cell[2]-1);
         break;
       default:
         ;
@@ -151,9 +152,9 @@ namespace ngfem
     
     if (DIM == 3)
       {
-	order = max(order, order_inner[0]);
-	order = max(order, order_inner[1]);
-	order = max(order, order_inner[2]);
+	order = max(order, order_cell[0]);
+	order = max(order, order_cell[1]);
+	order = max(order, order_cell[2]);
       }
   }
 
@@ -172,16 +173,16 @@ namespace ngfem
         ni = (order_face[0][0]-1)*(order_face[0][1]-1);
         break;
       case ET_TET: 
-        ni = (order_inner[0]-1)*(order_inner[0]-2)*(order_inner[0]-3) / 6;
+        ni = (order_cell[0]-1)*(order_cell[0]-2)*(order_cell[0]-3) / 6;
         break;
       case ET_PRISM: 
-        ni = (order_inner[0]-1)*(order_inner[0]-2)/2*(order_inner[2]-1);
+        ni = (order_cell[0]-1)*(order_cell[0]-2)/2*(order_cell[2]-1);
         break;
       case ET_PYRAMID:
-        ni = (order_inner[0]-1)*(order_inner[0]-2)*(2*order_inner[0]-3) / 6; 
+        ni = (order_cell[0]-1)*(order_cell[0]-2)*(2*order_cell[0]-3) / 6; 
         break;
       case ET_HEX: 
-        ni = (order_inner[0]-1)*(order_inner[1]-1)*(order_inner[2]-1);
+        ni = (order_cell[0]-1)*(order_cell[1]-1)*(order_cell[2]-1);
         break;
       }
     
@@ -204,6 +205,37 @@ namespace ngfem
     static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (pt, shape); 
   }
 
+
+  template <int DIM>
+  class DShapeElement
+  {
+    double * data;
+  public:
+    DShapeElement (double * adata) : data(adata) { ; }
+    void operator= (AutoDiff<DIM> ad) 
+    { for (int i = 0; i < DIM; i++) data[i] = ad.DValue(i); }
+  };
+
+  template <int DIM>
+  class DShapeAssign
+  {
+    double * dshape;
+  public:
+    DShapeAssign (FlatMatrixFixWidth<DIM> mat)
+    { dshape = &mat(0,0); }
+
+    DShapeAssign (double * adshape)
+    { dshape = adshape; }
+
+    DShapeElement<DIM> operator[] (int i) const
+    { return DShapeElement<DIM> (dshape + i*DIM); }
+
+    const DShapeAssign Addr (int i) const
+    { return DShapeAssign (dshape+i*DIM); } 
+  };
+
+
+
   template <ELEMENT_TYPE ET>
   void T_H1HighOrderFiniteElement<ET> :: 
   CalcDShape (const IntegrationPoint & ip, 
@@ -213,17 +245,47 @@ namespace ngfem
     for (int i = 0; i < DIM; i++)
       adp[i] = AutoDiff<DIM> (ip(i), i);
 
+    DShapeAssign<DIM> ds(dshape); 
+    static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
+
+    /*
     ArrayMem<AutoDiff<DIM>,40> sds(ndof);
     static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (adp, sds);
 
     for (int i = 0; i < ndof; i++)
       for (int j = 0; j < DIM; j++)
 	dshape(i,j) = sds[i].DValue(j);
+    */
   }
 
 
+  /// compute dshape, matrix: ndof x spacedim
+  template <ELEMENT_TYPE ET>
+  void T_H1HighOrderFiniteElement<ET> :: 
+  CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
+                    FlatMatrixFixWidth<DIM> dshape) const
+  {
+    AutoDiff<DIM> adp[DIM];
+    
+    for (int i = 0; i < DIM; i++)
+      adp[i].Value() = sip.IP()(i);
 
+    for (int i = 0; i < DIM; i++)
+      for (int j = 0; j < DIM; j++)
+        adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
 
+    DShapeAssign<DIM> ds(dshape); 
+    static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
+
+    /*
+    ArrayMem<AutoDiff<DIM>,40> sds(ndof);
+    static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (adp, sds);
+
+    for (int i = 0; i < ndof; i++)
+      for (int j = 0; j < DIM; j++)
+	dshape(i,j) = sds[i].DValue(j);
+    */
+  }
 
 
 
@@ -231,30 +293,28 @@ namespace ngfem
 
   /* *********************** Segment  **********************/
 
-
-
   H1HighOrderFE<ET_SEGM> :: H1HighOrderFE (int aorder)
-  // : T_H1HighOrderFiniteElement<ET_SEGM> (), ScalarFiniteElement<1>(ET_SEGM)
   {
-    order_inner = aorder;
+    order_edge[0] = aorder;
+    // order_inner = aorder;
     ComputeNDof();
   }
 
   template<typename Tx, typename TFA>  
-  void H1HighOrderFE<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & sds) const
+  void H1HighOrderFE<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & shape) const
   {
     Tx x = hx[0];
     Tx lami[2] = { x, 1-x };
- 
-    sds = 0.0;
 
-    sds[0] = lami[0];
-    sds[1] = lami[1];
+    shape[0] = lami[0];
+    shape[1] = lami[1];
 
     int ii = 2;
-    int ee=1, es=0;
+
+    int ee = 1, es = 0;
     if (vnums[es] > vnums[ee]) swap(es,ee);
-    T_ORTHOPOL::Calc (order_inner[0], lami[ee]-lami[es], sds.Addr(ii));
+
+    T_ORTHOPOL::Calc (order_edge[0], lami[ee]-lami[es], shape.Addr(ii));
   }
 
 
@@ -263,9 +323,8 @@ namespace ngfem
 
 
   H1HighOrderFE<ET_TRIG> :: H1HighOrderFE(int aorder)
-  // : T_H1HighOrderFiniteElement<ET_TRIG> (), ScalarFiniteElement<2>(ET_TRIG)
   {
-    order_inner = INT<3> (aorder,aorder,aorder);
+    // order_inner = INT<3> (aorder,aorder,aorder);
     order_face[0] = INT<2> (aorder,aorder);
     for (int i = 0; i < 3; i++)
       order_edge[i] = aorder;
@@ -275,15 +334,13 @@ namespace ngfem
 
 
   template<typename Tx, typename TFA>  
-  void H1HighOrderFE<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & sds) const
+  void H1HighOrderFE<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1];
     Tx lami[3] = { x, y, 1-x-y };
 
-    sds = 0.0;
-
     for (int i = 0; i < 3; i++)
-      sds[i] = lami[i];
+      shape[i] = lami[i];
 
     int ii = 3;
     
@@ -297,7 +354,7 @@ namespace ngfem
 
 	  ii += T_ORTHOPOL::CalcTrigExt (order_edge[i], 
 					 lami[ee]-lami[es], 1-lami[es]-lami[ee], 
-                                         sds.Addr(ii));
+                                         shape.Addr(ii));
 	}
     
     int fav[3] = { 0, 1, 2 }; 
@@ -305,10 +362,10 @@ namespace ngfem
     if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
     if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	
 
-    if (order_inner[0] >= 3)
+    if (order_face[0][0] >= 3)
       {
-	ii += T_INNERSHAPES::Calc (order_inner[0], lami[fav[2]]-lami[fav[1]],
-				   lami[fav[0]], sds.Addr(ii));
+	ii += T_TRIGSHAPES::Calc (order_face[0][0], lami[fav[2]]-lami[fav[1]],
+                                  lami[fav[0]], shape.Addr(ii));
       }
   }
 
@@ -316,9 +373,8 @@ namespace ngfem
   /* *********************** Quadrilateral  **********************/
 
   H1HighOrderFE<ET_QUAD> :: H1HighOrderFE (int aorder)
-  // : T_H1HighOrderFiniteElement<ET_QUAD> (), ScalarFiniteElement<2>(ET_QUAD)
   {
-    order_inner = INT<3> (aorder,aorder,aorder);
+    // order_inner = INT<3> (aorder,aorder,aorder);
     order_face[0] = INT<2> (aorder,aorder);
     for (int i = 0; i < 4; i++)
       order_edge[i] = aorder;
@@ -326,7 +382,7 @@ namespace ngfem
   }
 
   template<typename Tx, typename TFA>  
-  void H1HighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & sds) const
+  void H1HighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1];
     Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
@@ -334,7 +390,7 @@ namespace ngfem
     
 
     // vertex shapes
-    for(int i=0; i < 4; i++) sds[i] = lami[i]; 
+    for(int i=0; i < 4; i++) shape[i] = lami[i]; 
     int ii = 4;
 
     ArrayMem<Tx,20> polxi(order+1), poleta(order+1);
@@ -354,9 +410,8 @@ namespace ngfem
 	T_ORTHOPOL::Calc (p, xi, polxi);
 	
 	for (int j = 0; j <= p-2; j++)
-	  sds[ii++] = eta * polxi[j];
+	  shape[ii++] = eta * polxi[j];
       }    
-    
     
     INT<2> p (order_face[0][0], order_face[0][1]);
     if (p[0] >= 2 && p[1] >= 2)
@@ -377,7 +432,7 @@ namespace ngfem
 	
 	for (int k = 0; k <= p[0]-2; k++)
 	  for (int j = 0; j <= p[1]-2; j++)
-	    sds[ii++] = polxi[k] * poleta[j];
+	    shape[ii++] = polxi[k] * poleta[j];
       }
   }
 
@@ -385,12 +440,9 @@ namespace ngfem
 
   /* *********************** Tetrahedron  **********************/
 
-
   H1HighOrderFE<ET_TET> :: H1HighOrderFE (int aorder)
-  // : T_H1HighOrderFiniteElement<ET_TET> (), ScalarFiniteElement<3>(ET_TET)
   {
-    order_inner = INT<3> (aorder,aorder,aorder);
-
+    order_cell = INT<3> (aorder,aorder,aorder);
     for (int i = 0; i < 6; i++)
       order_edge[i] = aorder;
     for (int i = 0; i < 4; i++)
@@ -401,18 +453,16 @@ namespace ngfem
 
 
   template<typename Tx, typename TFA>  
-  void  H1HighOrderFE<ET_TET> :: T_CalcShape (Tx hx[3], TFA & sds) const
+  void  H1HighOrderFE<ET_TET> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
-    sds = 0.0;
-
     Tx lami[4] = { x, y, z, 1-x-y-z };
 
     ArrayMem<Tx, 20> polx(order+1), poly(order+1), polz(order+1); 
 
     // vertex shapes
     for (int i = 0; i < 4; i++)
-      sds[i] = lami[i];
+      shape[i] = lami[i];
     int ii = 4; 
 
     // edge dofs
@@ -424,8 +474,7 @@ namespace ngfem
 	  if (vnums[es] > vnums[ee]) swap (es, ee);
 	  
 	  ii += T_ORTHOPOL::CalcTrigExt (order_edge[i], lami[ee]-lami[es], 
-					 1-lami[es]-lami[ee], sds.Addr(ii) );
-
+					 1-lami[es]-lami[ee], shape.Addr(ii) );
 	}
 
     // face dofs
@@ -440,18 +489,14 @@ namespace ngfem
 	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	
 	  
 	  int vop = 6 - fav[0] - fav[1] - fav[2];  	
-	  
-	  // Tx * hp = &sds[ii];
+          
 	  ii += T_FACESHAPES::Calc (order_face[i][0], 
 				    lami[fav[2]]-lami[fav[1]],
-				    lami[fav[0]], lami[vop],  sds.Addr(ii));
+				    lami[fav[0]], lami[vop],  shape.Addr(ii));
 	}
 
-    if (order_inner[0] >= 4)
-      {
-	// Tx * psds = &sds[ii];
-	ii += T_INNERSHAPES::Calc (order_inner[0], x-(1-x-y-z), y, z, sds.Addr(ii) );
-      }
+    if (order_cell[0] >= 4)
+      ii += T_INNERSHAPES::Calc (order_cell[0], x-(1-x-y-z), y, z, shape.Addr(ii) );
   }
 
 
@@ -461,9 +506,8 @@ namespace ngfem
 
 
   H1HighOrderFE<ET_PRISM> :: H1HighOrderFE (int aorder)
-  // : T_H1HighOrderFiniteElement<ET_PRISM> (), ScalarFiniteElement<3>(ET_PRISM)
   {
-    order_inner = INT<3> (aorder,aorder,aorder);
+    order_cell = INT<3> (aorder,aorder,aorder);
     for (int i = 0; i < 9; i++)
       order_edge[i] = aorder;
     for (int i = 0; i < 5; i++)
@@ -474,17 +518,15 @@ namespace ngfem
 
 
   template<typename Tx, typename TFA>  
-  void  H1HighOrderFE<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & sds) const
+  void  H1HighOrderFE<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
     Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
     
-    sds = 0.0;
-
     // vertex shapes
     for (int i = 0; i < 6; i++)
-      sds[i] = lami[i] * muz[i];
+      shape[i] = lami[i] * muz[i];
 
     int ii = 6;
 
@@ -499,12 +541,8 @@ namespace ngfem
 
 	  Tx xi = lami[ee]-lami[es]; 
 	  Tx eta = lami[es]+lami[ee]; 
-	  
-	  Tx * hp = &sds[ii];
-	  T_ORTHOPOL::CalcTrigExt (p, xi, 1-eta, hp);
-	  
-	  for (int k = 0; k < p-1; k++)
-	    sds[ii++] *= muz[ee];  
+
+          ii += T_ORTHOPOL::CalcTrigExtMult (p, xi, 1-eta, muz[ee], shape.Addr(ii));
 	}
     
     // vertical edges
@@ -515,11 +553,7 @@ namespace ngfem
 	  int es = edges[i][0], ee = edges[i][1];
 	  if (vnums[es] > vnums[ee]) swap (es, ee);
 	  
-	  Tx * hp = &sds[ii];
-	  T_ORTHOPOL::Calc (p, muz[ee]-muz[es], hp);
-	  
-	  for (int j = 0; j < p-1; j++)
-	    sds[ii++] *= lami[ee];
+          ii += T_ORTHOPOL::CalcMult (p, muz[ee]-muz[es], lami[ee], shape.Addr(ii));
 	}
     
 
@@ -535,13 +569,9 @@ namespace ngfem
 	  if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
 	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	
 	  
-	  Tx * pface = &sds[ii];
-	  int ndf = T_TRIGFACESHAPES::Calc 
-	    (order_face[i][0], lami[fav[2]]-lami[fav[1]], lami[fav[0]], pface);
-	  
-	  for (int j = 0; j < ndf; j++)
-	    pface[j] *= muz[fav[2]];
-	  ii += ndf;
+	  ii += T_TRIGSHAPES::CalcMult
+	    (order_face[i][0], lami[fav[2]]-lami[fav[1]], lami[fav[0]], 
+             muz[fav[2]], shape.Addr(ii));
 	}
    
     // quad face dofs
@@ -569,23 +599,23 @@ namespace ngfem
 	  if (vnums[faces[i][ftrig]] > vnums[faces[i][fz]])  
 	    for (int k = 0; k < p[0]-1; k++)
 	      for (int j = 0; j < p[1]-1; j++)
-		sds[ii++] = polx[k] * polz[j];
+		shape[ii++] = polx[k] * polz[j];
 	  else
 	    for (int j = 0; j < p[0]-1; j++)
 	      for (int k = 0; k < p[1]-1; k++)
-		sds[ii++] = polx[k] * polz[j];
+		shape[ii++] = polx[k] * polz[j];
 	}
     
     // volume dofs:
-    if (order_inner[0] > 2 && order_inner[2] > 1)
+    if (order_cell[0] > 2 && order_cell[2] > 1)
       {
-	ArrayMem<Tx,20> pol_trig((order_inner[0]-1)*(order_inner[0]-2)/2);
-	int nf = T_TRIGFACESHAPES::Calc (order_inner[0], x-y, 1-x-y, pol_trig);
+	ArrayMem<Tx,20> pol_trig((order_cell[0]-1)*(order_cell[0]-2)/2);
+	int nf = T_TRIGSHAPES::Calc (order_cell[0], x-y, 1-x-y, pol_trig);
 
-	T_ORTHOPOL:: Calc(order_inner[2], 2*z-1, polz);
+	T_ORTHOPOL:: Calc(order_cell[2], 2*z-1, polz);
 	for (int i = 0; i < nf; i++)
-	  for (int k = 0; k < order_inner[2]-1; k++)
-	    sds[ii++] = pol_trig[i] * polz[k];
+	  for (int k = 0; k < order_cell[2]-1; k++)
+	    shape[ii++] = pol_trig[i] * polz[k];
       }
   }
 
@@ -596,9 +626,8 @@ namespace ngfem
   /* *********************** Hex  **********************/
 
   H1HighOrderFE<ET_HEX> :: H1HighOrderFE (int aorder)
-  // : T_H1HighOrderFiniteElement<ET_HEX> (), ScalarFiniteElement<3>(ET_HEX)
   {
-    order_inner = INT<3> (aorder,aorder,aorder);
+    order_cell = INT<3> (aorder,aorder,aorder);
     for (int i = 0; i < 12; i++)
       order_edge[i] = aorder;
     for (int i = 0; i < 6; i++)
@@ -607,11 +636,9 @@ namespace ngfem
   }
 
   template<typename Tx, typename TFA>  
-  void  H1HighOrderFE<ET_HEX> :: T_CalcShape (Tx hx[3], TFA & sds) const
+  void  H1HighOrderFE<ET_HEX> :: T_CalcShape (Tx hx[3], TFA & shape) const
   { 
     Tx x = hx[0], y = hx[1], z = hx[2];
-
-    sds = 0.0;
 
     Tx lami[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
 		(1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z}; 
@@ -619,14 +646,13 @@ namespace ngfem
 		 (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z}; 
 
     // vertex shapes
-    for(int i=0; i<8; i++) sds[i] = lami[i]; 
+    for(int i=0; i<8; i++) shape[i] = lami[i]; 
     int ii = 8;
 
     ArrayMem<Tx,20> polx(order+1), poly(order+1), polz(order+1);
     
     // edge dofs
     const EDGE * edges = ElementTopology::GetEdges (ET_HEX);
-    // const POINT3D * points = ElementTopology::GetVertices (ET_HEX);
     for (int i = 0; i < 12; i++)
       if (order_edge[i] >= 2)
 	{
@@ -639,7 +665,7 @@ namespace ngfem
 	  T_ORTHOPOL::Calc (p, xi, polx);
 	  
 	  for (int j = 0; j < p-1; j++)
-	    sds[ii++] = lam_e * polx[j];
+	    shape[ii++] = lam_e * polx[j];
 	}
      
     const FACE * faces = ElementTopology::GetFaces (ET_HEX);
@@ -674,22 +700,22 @@ namespace ngfem
 	    {
 	      Tx pxl = polx[k] * lam_f;
 	      for (int j = 0; j < py-1; j++) 
-		sds[ii++]= pxl * poly[j];
+		shape[ii++]= pxl * poly[j];
 	    }
 	}
     
     // volume dofs:
-    if (order_inner[0] >= 2 && order_inner[1] >= 2 && order_inner[2] >= 2)
+    if (order_cell[0] >= 2 && order_cell[1] >= 2 && order_cell[2] >= 2)
       {
-	T_ORTHOPOL::Calc (order_inner[0], 2*x-1, polx);
-	T_ORTHOPOL::Calc (order_inner[1], 2*y-1, poly);
-	T_ORTHOPOL::Calc (order_inner[2], 2*z-1, polz);
-	for (int i = 0; i < order_inner[0]-1; i++)
-	  for (int j = 0; j < order_inner[1]-1; j++)
+	T_ORTHOPOL::Calc (order_cell[0], 2*x-1, polx);
+	T_ORTHOPOL::Calc (order_cell[1], 2*y-1, poly);
+	T_ORTHOPOL::Calc (order_cell[2], 2*z-1, polz);
+	for (int i = 0; i < order_cell[0]-1; i++)
+	  for (int j = 0; j < order_cell[1]-1; j++)
 	    {
 	      Tx pxy = polx[i] * poly[j];
-	      for (int k = 0; k < order_inner[2]-1; k++)
-		sds[ii++] = pxy * polz[k];
+	      for (int k = 0; k < order_cell[2]-1; k++)
+		shape[ii++] = pxy * polz[k];
 	    }
       }
   }
@@ -697,9 +723,8 @@ namespace ngfem
   /* ******************************** Pyramid  ************************************ */
 
   H1HighOrderFE<ET_PYRAMID> :: H1HighOrderFE (int aorder)
-  // : T_H1HighOrderFiniteElement<ET_PYRAMID>(), ScalarFiniteElement<3>(ET_PYRAMID)
   {
-    order_inner = INT<3> (aorder,aorder,aorder);
+    order_cell = INT<3> (aorder,aorder,aorder);
     for (int i = 0; i < 8; i++)
       order_edge[i] = aorder;
     for (int i = 0; i < 5; i++)
@@ -709,25 +734,27 @@ namespace ngfem
   }
 
   template<typename Tx, typename TFA>  
-  void  H1HighOrderFE<ET_PYRAMID> :: T_CalcShape (Tx hx[3], TFA & sds) const
+  void  H1HighOrderFE<ET_PYRAMID> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
-    sds = 0.0;
 
     if (z == 1.) z -= 1e-10;
 
     Tx xt = x / (1-z);
     Tx yt = y / (1-z);
     
-    // Tx mux[4] = { 1-xt, xt, xt, 1-xt };
-    // Tx muy[4] = { 1-yt, 1-yt, yt, yt };
-
     Tx sigma[4]  = { (1-xt)+(1-yt), xt+(1-yt), xt+yt, (1-xt)+yt };
     Tx lambda[4] = { (1-xt)*(1-yt), xt*(1-yt), xt*yt, (1-xt)*yt };
+    Tx lambda3d[5];
 
     for (int i = 0; i < 4; i++)  
-      sds[i] = lambda[i] * (1-z);
-    sds[4] = z;
+      lambda3d[i] = lambda[i] * (1-z);
+    lambda3d[4] = z;
+
+
+    for (int i = 0; i < 4; i++)  
+      shape[i] = lambda[i] * (1-z);
+    shape[4] = z;
 
     int ii = 5;
 
@@ -744,12 +771,17 @@ namespace ngfem
 
 	  Tx lam = sigma[ee]-sigma[es]; 
 	  Tx lam_edge = lambda[es] + lambda[ee];
-	  
-	  Tx * pedge = &sds[ii];
-	  T_ORTHOPOL::CalcTrigExt (p, lam*(1-z), z, pedge);
 
+          /*
+	  Tx * pedge = &shape[ii];
+	  T_ORTHOPOL::CalcTrigExt (p, lam*(1-z), z, pedge);
+          */
+          ii +=
+            T_ORTHOPOL::CalcTrigExtMult (p, lam*(1-z), z, lam_edge, shape.Addr(ii));
+          /*
 	  for (int j = 0; j <= p-2; j++)
-	    sds[ii++] *= lam_edge;
+	    shape[ii++] *= lam_edge;
+          */
 	}
     
     // vertical edges
@@ -759,16 +791,13 @@ namespace ngfem
 	  int es = edges[i][0], ee = edges[i][1];
 	  if (vnums[es] > vnums[ee]) swap (es, ee);
 	  
-	  Tx * pedge = &sds[ii];
-	  ii += T_ORTHOPOL::CalcTrigExt (order_edge[i], sds[ee]-sds[es],  
-					 1-sds[es]-sds[ee], pedge);
+	  ii += T_ORTHOPOL::CalcTrigExt (order_edge[i], lambda3d[ee]-lambda3d[es],  
+					 1-lambda3d[es]-lambda3d[ee], shape.Addr(ii));
 	}
 
 
     ArrayMem<Tx,20> polx(order+1), poly(order+1), polz(order+1);
- 
     const FACE * faces = ElementTopology::GetFaces (ET_PYRAMID);
-    const POINT3D * points = ElementTopology::GetVertices (ET_PYRAMID);
 
     // trig face dofs
     for (int i = 0; i < 4; i++)
@@ -784,13 +813,16 @@ namespace ngfem
 	  if(vnums[faces[i][fav[1]]] > vnums[faces[i][fav[2]]]) swap(fav[1],fav[2]);
 	  if(vnums[faces[i][fav[0]]] > vnums[faces[i][fav[1]]]) swap(fav[0],fav[1]); 	
 	 
-	  Tx * pface = &sds[ii];
+	  // Tx * pface = &shape[ii];
 	  
-	  int ndf = T_TRIGSHAPES::Calc 
-	    (p, bary[fav[2]]-bary[fav[1]], bary[fav[0]], pface);
+	  int ndf = T_TRIGSHAPES::CalcMult
+	    (p, bary[fav[2]]-bary[fav[1]], bary[fav[0]], lam_face, shape.Addr(ii));
 	  
+          /*
 	  for (int j = ii; j < ii+ndf; j++)
-	    sds[j] *= lam_face; 
+	    shape[j] *= lam_face; 
+          */
+
 	  ii += ndf;
 	}
     
@@ -821,51 +853,30 @@ namespace ngfem
 
 	for (int k = 0; k < p-1; k++) 
 	  for (int j = 0; j < p-1; j++) 
-	    sds[ii++]= polx[k] * poly[j] * fac; 
+	    shape[ii++]= polx[k] * poly[j] * fac; 
       }
 
-    //#ifdef SABINE  
-    if (order_inner[0] >= 3)
+    
+    if (order_cell[0] >= 3)
       {
-	T_ORTHOPOL::Calc (order_inner[0], 2*xt-1, poly);
-	T_ORTHOPOL::Calc (order_inner[0], 2*yt-1, polx);		
+	T_ORTHOPOL::Calc (order_cell[0], 2*xt-1, poly);
+	T_ORTHOPOL::Calc (order_cell[0], 2*yt-1, polx);		
 	
 	Tx pz = z*(1-z)*(1-z);
 	
-	for(int k=0; k<= order_inner[0]-3; k++)
+	for(int k = 0; k <= order_cell[0]-3; k++)
 	  {
 	    for(int i = 0; i <= k; i++)
 	      { 
 		Tx bubpik = pz * polx[i];
 		for (int j = 0; j <= k; j++)
-		  sds[ii++] = bubpik * poly[j];
+		  shape[ii++] = bubpik * poly[j];
 	      }
 	    pz *= 1-z;  
 	  }
       }
-    //#else
-
-//     if (order_inner[0] >= 3)
-//       {
-// 	LegendrePolynomial (order_inner[0]-2, -1+2*xt, polx);
-// 	LegendrePolynomial (order_inner[0]-2, -1+2*yt, poly); 
-	
-// 	Tx bub = xt*(1-xt)*yt*(1-yt)*z*(1-z)*(1-z);
-	
-// 	for(int i = 0; i <= order_inner[0]-3; i++)
-// 	  {
-// 	    for (int j = 0; j <= i; j++)
-// 	      {
-// 		 Tx bubpj = bub * polx[j];
-// 		 for (int k = 0; k <= i; k++)
-// 		  sds[ii++] = bubpj * poly[k];
-// 	      }
-// 	    bub *= 1-z;  
-// 	  }
-//       }
-//#endif 
   }
-
+  
 
   template class H1HighOrderFiniteElement<1>;
   template class H1HighOrderFiniteElement<2>;

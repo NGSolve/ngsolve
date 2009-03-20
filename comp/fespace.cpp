@@ -4036,16 +4036,19 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 	  else
 	    dnums.Append (-1);
       }
-    ;
   }
 
   void CompoundFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
     dnums.SetSize(0);
+
+    *testout << "getinnerdofs, compound" << endl;
+
     for (int i = 0; i < spaces.Size(); i++)
       {
 	spaces[i]->GetInnerDofNrs (elnr, hdnums);
+        *testout << "gerinnerdofs: " << hdnums << endl;
 	for (int j = 0; j < hdnums.Size(); j++)
 	  if (hdnums[j] != -1)
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);

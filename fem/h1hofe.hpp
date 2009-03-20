@@ -16,7 +16,7 @@ class H1HighOrderFiniteElement : virtual public ScalarFiniteElement<DIM>
 {
 public:
   int vnums[8];
-  INT<3> order_inner;
+  INT<3> order_cell;
   INT<2> order_face[6];
   int order_edge[12];
 
@@ -27,8 +27,8 @@ public:
   void SetVertexNumbers (FlatArray<int> & avnums);
   virtual void GetDofs (Array<Dof> & dofs) const;
 
-  void SetOrderInner (int oi);
-  void SetOrderInner (INT<3> oi);
+  void SetOrderCell (int oi);
+  void SetOrderCell (INT<3> oi);
   void SetOrderFace (FlatArray<int> & of);
   void SetOrderFace (FlatArray<INT<2> > & of);
   void SetOrderEdge (FlatArray<int> & oe);
@@ -55,7 +55,14 @@ protected:
   using H1HighOrderFiniteElement<DIM>::vnums;
   using H1HighOrderFiniteElement<DIM>::order_edge;
   using H1HighOrderFiniteElement<DIM>::order_face;
-  using H1HighOrderFiniteElement<DIM>::order_inner;
+  using H1HighOrderFiniteElement<DIM>::order_cell;
+
+
+
+  typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
+
+  typedef TrigShapesInnerLegendre T_TRIGSHAPES;
+  // typedef TrigShapesInnerJacobi T_TRIGSHAPES;
 
 public:
 
@@ -76,34 +83,8 @@ public:
   virtual void CalcDShape (const IntegrationPoint & ip, 
                            FlatMatrixFixWidth<DIM> dshape) const;
 
-  /*
-  /// compute dshape, matrix: ndof x spacedim
-  virtual void CalcMappedDShape (const BaseSpecificIntegrationPoint & sip, 
-                                 FlatMatrix<> dshape) const;
-
-  {
-    const SpecificIntegrationPoint<3,3> & sip = 
-      static_cast<const SpecificIntegrationPoint<3,3> &> (bsip);
-    
-    const IntegrationPoint & ip = sip.IP();
-    AutoDiff<3> x(ip(0)), y(ip(1)), z(ip(2));
-    for (int j = 0; j < 3; j++)
-      {
-        x.DValue(j) = sip.GetJacobianInverse()(0,j);
-        y.DValue(j) = sip.GetJacobianInverse()(1,j);
-        z.DValue(j) = sip.GetJacobianInverse()(2,j);
-      }
-
-    ArrayMem<AutoDiff<3>,40> sds(ndof);
-    T_CalcShape<AutoDiff<3>, AutoDiff<3>, AutoDiff<3>, FlatArray<AutoDiff<3> > >
-      (x,y,z,sds);
-    for (int i = 0; i < ndof; i++)
-      for (int j = 0; j < 3; j++)
-	dshape(i, j) = sds[i].DValue(j);
-  }
-
-  */
-
+  virtual void CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
+                                 FlatMatrixFixWidth<DIM> dshape) const;
 };
 
 
@@ -120,8 +101,6 @@ public:
 template <> 
 class H1HighOrderFE<ET_SEGM> : public T_H1HighOrderFiniteElement<ET_SEGM>
 {
-private:
-  typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 public:
   H1HighOrderFE () { ; }
   H1HighOrderFE (int aorder);
@@ -137,10 +116,6 @@ public:
 template <>
 class H1HighOrderFE<ET_TRIG> : public T_H1HighOrderFiniteElement<ET_TRIG>
 {
-  typedef TrigShapesInnerLegendre T_INNERSHAPES;
-  // typedef TrigShapesInnerJacobi T_INNERSHAPES;
-
-  typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 public:
   H1HighOrderFE () { ; }
   H1HighOrderFE (int aorder);
@@ -156,7 +131,6 @@ public:
 template <>
 class H1HighOrderFE<ET_QUAD> : public T_H1HighOrderFiniteElement<ET_QUAD>
 {
-  typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 public:
   H1HighOrderFE () { ; }
   H1HighOrderFE (int aorder);
@@ -174,11 +148,9 @@ class H1HighOrderFE<ET_TET> : public T_H1HighOrderFiniteElement<ET_TET>
 {
   typedef TetShapesInnerLegendre T_INNERSHAPES;
   typedef TetShapesFaceLegendre T_FACESHAPES;
-  typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 
   // typedef TetShapesInnerJacobi T_INNERSHAPES;
   // typedef TetShapesFaceJacobi T_FACESHAPES;
-
   // typedef TetShapesFaceOpt1 T_FACESHAPES;
 
 public:
@@ -196,9 +168,9 @@ public:
 template <>
 class H1HighOrderFE<ET_PRISM> : public T_H1HighOrderFiniteElement<ET_PRISM>
 {
-  typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
+  // typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
   //typedef TrigShapesInnerJacobi T_TRIGFACESHAPES;
-  typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
+  // typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 
 public:
   H1HighOrderFE () { ; }
@@ -216,7 +188,6 @@ public:
 template <> 
 class H1HighOrderFE<ET_HEX> : public T_H1HighOrderFiniteElement<ET_HEX>
 {
-  typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 public:
   H1HighOrderFE () { ; }
   H1HighOrderFE (int aorder);
@@ -232,8 +203,7 @@ public:
 template<>
 class H1HighOrderFE<ET_PYRAMID> : public T_H1HighOrderFiniteElement<ET_PYRAMID>
 {
-  typedef TrigShapesInnerLegendre T_TRIGSHAPES;
-  typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
+  // typedef TrigShapesInnerLegendre T_TRIGSHAPES;
 
 public:
   H1HighOrderFE () { ; }

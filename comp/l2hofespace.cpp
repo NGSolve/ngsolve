@@ -296,7 +296,7 @@ namespace ngcomp
 	    hofe-> SetVertexNumbers (vnums); 
 	    // ATTENTION for var_order this is not correct !!! 
 	    // on edges and faces order is still used !!! 
-	    hofe-> SetOrderInner(order_inner[elnr]); 
+	    hofe-> SetOrderCell(order_inner[elnr]); 
 	    hofe-> ComputeNDof(); 
 	  } 
 	return *fe;

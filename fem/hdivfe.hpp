@@ -43,9 +43,18 @@ public:
   virtual void CalcShape (const IntegrationPoint & ip,
 			  FlatMatrixFixWidth<DIM> shape) const = 0;
 
-  /// compute curl of shape
+  /// compute div of shape
   virtual void CalcDivShape (const IntegrationPoint & ip,
 			     FlatVector<> divshape) const;
+
+  /// compute shape
+  virtual void CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+                                FlatMatrixFixWidth<DIM> shape) const;
+
+  /// compute div of shape
+  virtual void CalcMappedDivShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+                                   FlatVector<> divshape) const;
+
 
 
   const FlatMatrixFixWidth<DIM> GetShape (const IntegrationPoint & ip,

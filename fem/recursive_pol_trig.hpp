@@ -24,6 +24,27 @@ public:
     return ii;
   }
 
+  /// computes all shape functions
+  template <typename Sx, typename Sy, typename Sf, typename T>
+  static int CalcMult (int n, Sx x, Sy y, Sf & fac, T & values)
+  {
+    int ii = 0, i, j, k;
+    ArrayMem<Sx, 20> polx(n-2), poly(n-2);
+
+    ScaledLegendrePolynomial (n-3, x, 1-y, polx);
+    LegendrePolynomial (n-3, 2*y-1, poly);
+
+    Sx bub = fac * y * (1-x-y) * (1+x-y);
+
+    for (i = 0; i <= n-3; i++)
+      for (j = 0; j <= n-3-i; j++)
+        values[ii++] = bub * polx[i] * poly[j];
+
+    return ii;
+  }
+
+
+
   /// compute shape functions in factored form $\varphi_{ij} = u_i v_j$
   template <typename Sx, typename Sy, typename T>
   static void CalcSplitted (int n, Sx x, Sy y, T & val1, T & val2)

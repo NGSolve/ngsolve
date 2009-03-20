@@ -656,9 +656,9 @@ namespace ngcomp
           case ET_PYRAMID:
             fe = new (lh.Alloc (sizeof(HCurlHighOrderPyr<IntegratedLegendreMonomialExt>))) HCurlHighOrderPyr<IntegratedLegendreMonomialExt> (order);
             //fe = pyramid; 
-            break;
+            break; 
           case ET_PRISM:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderPrismTP))) HCurlHighOrderPrismTP (order);
+            fe = new (lh.Alloc (sizeof(HCurlHighOrderPrismTP))) HCurlHighOrderPrismTP (order);                     
             break;
           case ET_TRIG:
             fe = new (lh.Alloc (sizeof(HCurlHighOrderTrig<IntegratedLegendreMonomialExt>))) HCurlHighOrderTrig<IntegratedLegendreMonomialExt> (order);
@@ -682,25 +682,22 @@ namespace ngcomp
         switch (ma.GetElType(elnr))
           {
           case ET_TET:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderTet<IntegratedLegendreMonomialExt>))) HCurlHighOrderTet<IntegratedLegendreMonomialExt> (order);
+            fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_TET>))) HCurlHighOrderFE<ET_TET> ();
             break;
           case ET_PYRAMID:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderPyr<IntegratedLegendreMonomialExt>))) HCurlHighOrderPyr<IntegratedLegendreMonomialExt> (order);
+            fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_PYRAMID>))) HCurlHighOrderFE<ET_PYRAMID> ();
             break;
           case ET_PRISM:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderPrism<IntegratedLegendreMonomialExt>))) HCurlHighOrderPrism<IntegratedLegendreMonomialExt> (order);
+            fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_PRISM>))) HCurlHighOrderFE<ET_PRISM> ();
             break;
           case ET_TRIG:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderTrig<IntegratedLegendreMonomialExt>))) HCurlHighOrderTrig<IntegratedLegendreMonomialExt> (order);
-            //fe = trig; 
+            fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_TRIG>))) HCurlHighOrderFE<ET_TRIG> ();
             break;
           case ET_QUAD:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderQuad<IntegratedLegendreMonomialExt>))) HCurlHighOrderQuad<IntegratedLegendreMonomialExt> (order);
-            //fe = quad; 
+            fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_QUAD>))) HCurlHighOrderFE<ET_QUAD> ();
             break;
           case ET_HEX: 
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderHex<IntegratedLegendreMonomialExt>))) HCurlHighOrderHex<IntegratedLegendreMonomialExt> (order);
-            //fe = hex; 
+            fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_HEX>))) HCurlHighOrderFE<ET_HEX> ();
             break; 
           default:
             fe = 0;
@@ -740,11 +737,17 @@ namespace ngcomp
 	  }
 
 	hofe -> SetOrderEdge (ord_edge);
-	hofe -> SetOrderInner (order_inner[elnr]);
+        hofe -> SetOrderCell (order_inner[elnr]);   // old style
+        INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
+        FlatArray<INT<2> > of(1, &p);
+        hofe -> SetOrderFace (of);
+
 
 	hofe -> SetUsegradEdge (ug_edge); 
-	hofe -> SetUsegradCell (usegrad_cell[elnr]); 
-	hofe -> SetAugmented(augmented);
+	hofe -> SetUsegradCell (usegrad_cell[elnr]);  // old style
+        FlatArray<int> augf(1,&usegrad_cell[elnr]);
+	hofe -> SetUsegradFace (augf); 
+	// hofe -> SetAugmented(augmented);
 	// hofe -> SetOrderVertex (order_vert);
 	hofe -> ComputeNDof();
 
@@ -783,10 +786,10 @@ namespace ngcomp
 	    ug_face[j] = usegrad_face[fanums[j]];
 	  }
 
-       	hofe -> SetAugmented(augmented); 
+       	// hofe -> SetAugmented(augmented); 
 	hofe -> SetOrderEdge (ord_edge);
 	hofe -> SetOrderFace (ord_face);
-	hofe -> SetOrderInner (order_inner[elnr]);
+	hofe -> SetOrderCell (order_inner[elnr]);
 
 	hofe -> SetUsegradEdge (ug_edge); 
 	hofe -> SetUsegradFace (ug_face); 
@@ -844,16 +847,13 @@ namespace ngcomp
     switch (ma.GetSElType(selnr))
       {
       case ET_SEGM: 
-	fe = new (lh.Alloc (sizeof(HCurlHighOrderSegm<IntegratedLegendreMonomialExt>))) HCurlHighOrderSegm<IntegratedLegendreMonomialExt> (order);
-	//fe = segm; 
+        fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_SEGM>))) HCurlHighOrderFE<ET_SEGM> ();
 	break; 
       case ET_TRIG:
-	fe = new (lh.Alloc (sizeof(HCurlHighOrderTrig<IntegratedLegendreMonomialExt>))) HCurlHighOrderTrig<IntegratedLegendreMonomialExt> (order);
-	//fe = trig; 
+        fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_TRIG>))) HCurlHighOrderFE<ET_TRIG> ();
 	break;
       case ET_QUAD:
-	fe = new (lh.Alloc (sizeof(HCurlHighOrderQuad<IntegratedLegendreMonomialExt>))) HCurlHighOrderQuad<IntegratedLegendreMonomialExt> (order);
-	//fe = quad; 
+        fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_QUAD>))) HCurlHighOrderFE<ET_QUAD> ();
 	break;
       default:
 	fe = 0;
@@ -887,10 +887,15 @@ namespace ngcomp
 	    vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
 #endif
 	hofe -> SetVertexNumbers (vnums, lh);
-	hofe -> SetAugmented(augmented); 
+	// hofe -> SetAugmented(augmented); 
 	ma.GetSElEdges(selnr, ednums);
-	hofe -> SetOrderInner (order_edge[ednums[0]]);
-	hofe -> SetUsegradCell (usegrad_edge[ednums[0]]);
+	hofe -> SetOrderCell (order_edge[ednums[0]]);  // old style
+        FlatArray<int> aoe(1, &order_edge[ednums[0]]);
+	// hofe -> SetOrderEdge (order_edge[ednums[0]]);
+        hofe -> SetOrderEdge (aoe);
+	hofe -> SetUsegradCell (usegrad_edge[ednums[0]]);  // old style
+        FlatArray<int> auge(1, &usegrad_edge[ednums[0]]);
+	hofe -> SetUsegradEdge (auge);
 	hofe -> ComputeNDof();
       } 
     else 
@@ -916,20 +921,18 @@ namespace ngcomp
 #endif
 	hofe -> SetVertexNumbers (vnums, lh);
 	hofe -> SetOrderEdge (ord_edge);
-	hofe -> SetOrderInner (INT<3> (order_face[ma.GetSElFace(selnr)][0],order_face[ma.GetSElFace(selnr)][1],0));
-      
+
+        INT<2> p = order_face[ma.GetSElFace(selnr)];
+	hofe -> SetOrderCell (INT<3> (p[0],p[1],0));  // old style
+        FlatArray<INT<2> > of(1, &p);
+        hofe -> SetOrderFace (of);
+
 	hofe -> SetUsegradEdge(ug_edge); 
-	hofe -> SetUsegradCell(usegrad_face[ma.GetSElFace(selnr)]); 
-	hofe -> SetAugmented(augmented); 
-
-	/*ArrayMem<int, 8> order_vert;
-	  for (int j = 0; j < vnums.Size(); j++)
-	  order_vert[j] = order_avertex[vnums[j]];
-	  hofe -> SetOrderVertex (order_vert);*/
-
+        FlatArray<int> augf(1, &usegrad_face[ma.GetSElFace(selnr)]);
+	hofe -> SetUsegradFace(augf); 
+	hofe -> SetUsegradCell(usegrad_face[ma.GetSElFace(selnr)]);   // old style
 
 	hofe -> ComputeNDof();
-	
       }
     
     return *fe;

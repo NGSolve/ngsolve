@@ -61,6 +61,9 @@ protected:
 public:
   virtual string ClassName(void) const {stringstream out; out << "HCurlHFiniteElementD<" << D << ">"; return out.str();}
   ///
+  HCurlFiniteElement () { p_ipdata = 0; block = 0; }
+
+  /// 
   HCurlFiniteElement (ELEMENT_TYPE aeltype, int andof, int aorder)
     : FiniteElement (DIM, aeltype, andof, aorder) { p_ipdata = 0; block = 0; }
   
@@ -73,6 +76,15 @@ public:
   /// compute curl of shape, default: numerical diff
   virtual void CalcCurlShape (const IntegrationPoint & ip, 
 			      FlatMatrixFixWidth<DIM_CURL> curlshape) const;
+
+  /// compute shape
+  virtual void CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+                                FlatMatrixFixWidth<DIM> shape) const;
+
+  /// compute curl of shape
+  virtual void CalcMappedCurlShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+                                    FlatMatrixFixWidth<DIM_CURL> curlshape) const;
+
 
   ///
   const FlatMatrixFixWidth<DIM> GetShape (const IntegrationPoint & ip, 

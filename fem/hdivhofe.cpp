@@ -53,6 +53,7 @@ namespace ngfem
       vnums[i] = i;
 
     augmented = 0;
+    ho_div_free = 0;
   }
 
   template <int D>
@@ -437,7 +438,10 @@ namespace ngfem
     
     if (order_inner[0] > 1)
       { 
-        ndof += order_inner[0]*order_inner[0]-1;
+        if (ho_div_free)
+          ndof += order_inner[0]*(order_inner[0]-1)/2;
+        else
+          ndof += order_inner[0]*order_inner[0]-1;
 	//ndof += order_inner_curl*(order_inner_curl-1)/2;
 	//ndof += order_inner*(order_inner-1)/2 + order_inner-1;
       }
@@ -463,7 +467,7 @@ namespace ngfem
     if (discontinuous)
     {
       idofs.SetSize(0);
-      for (int i=0; i<ndof; i++)
+      for (int i=0; i < ndof; i++)
         idofs.Append(i);
       return ;
     }
@@ -634,16 +638,19 @@ namespace ngfem
 	    for (l = 0; l < 2; l++)
 	      shape(ii, l) = ls*le*rec_pol[j]*curl_recpol2(k,l) + curl_recpol(j,l)*lo*rec_pol2[k];
 
-	// rotations of curls
-	for (j = 0; j <= p-2; j++)
-	  for (k = 0; k <= p-2-j; k++, ii++)
-	    for (l = 0; l < 2; l++)
-	      shape(ii, l) = ls*le*rec_pol[j]*curl_recpol2(k,l) - curl_recpol(j,l) * lo * rec_pol2[k];
-
-	// rec_pol2 * RT_0
-	for (j = 0; j <= p-2; j++, ii++)
-	  for (l = 0; l < 2; l++)
-	    shape(ii,l) = lo*rec_pol2[j] * (ls*clami(fav[1],l)-le*clami(fav[0],l));
+        if (!ho_div_free)
+          {
+            // rotations of curls
+            for (j = 0; j <= p-2; j++)
+              for (k = 0; k <= p-2-j; k++, ii++)
+                for (l = 0; l < 2; l++)
+                  shape(ii, l) = ls*le*rec_pol[j]*curl_recpol2(k,l) - curl_recpol(j,l) * lo * rec_pol2[k];
+            
+            // rec_pol2 * RT_0
+            for (j = 0; j <= p-2; j++, ii++)
+              for (l = 0; l < 2; l++)
+                shape(ii,l) = lo*rec_pol2[j] * (ls*clami(fav[1],l)-le*clami(fav[0],l));
+          }
       }
   }
 
@@ -759,22 +766,25 @@ namespace ngfem
 	  for (k = 0; k <= p_curl-2-j; k++)
 	    ii++;
 	     
-	// rotations of curls  
-	for (j = 0; j <= p-2; j++)
-	  for (k = 0; k <= p-2-j; k++, ii++)
-	    for (l = 0; l < 2; l++)
-	      shape(ii) = 2 * (grad_recpol(j,0) * grad_recpol2(k,1)
-			       - grad_recpol(j,1) * grad_recpol2(k,0));
-	// shape (ii) = grad u . curl v = 2 (u_x v_y - u_y v_x) ; 
-		
-	// div(rec_pol * RT_0)  =
- 	double divrt0 = 2*(dlami(fav[0],0)*clami(fav[1],0) +  dlami(fav[0],1)*clami(fav[1],1));
-	Vec<2> rt0;
-	for (l = 0; l<2; l++)
-	  rt0(l) = lami[fav[0]]*clami(fav[1],l)-lami[fav[1]]*clami(fav[0],l);
-	for (j = 0; j <= p-2; j++, ii++)
-	  shape(ii) = divrt0 * lo*rec_pol2[j] + rt0(0)*grad_recpol2(j,0) +
-	    rt0(1)*grad_recpol2(j,1); 
+        if (!ho_div_free)
+          {
+            // rotations of curls  
+            for (j = 0; j <= p-2; j++)
+              for (k = 0; k <= p-2-j; k++, ii++)
+                for (l = 0; l < 2; l++)
+                  shape(ii) = 2 * (grad_recpol(j,0) * grad_recpol2(k,1)
+                                   - grad_recpol(j,1) * grad_recpol2(k,0));
+            // shape (ii) = grad u . curl v = 2 (u_x v_y - u_y v_x) ; 
+            
+            // div(rec_pol * RT_0)  =
+            double divrt0 = 2*(dlami(fav[0],0)*clami(fav[1],0) +  dlami(fav[0],1)*clami(fav[1],1));
+            Vec<2> rt0;
+            for (l = 0; l<2; l++)
+              rt0(l) = lami[fav[0]]*clami(fav[1],l)-lami[fav[1]]*clami(fav[0],l);
+            for (j = 0; j <= p-2; j++, ii++)
+              shape(ii) = divrt0 * lo*rec_pol2[j] + rt0(0)*grad_recpol2(j,0) +
+                rt0(1)*grad_recpol2(j,1); 
+          }
       }
   }
 
