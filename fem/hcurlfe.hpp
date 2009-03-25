@@ -19,19 +19,21 @@ template <int D>
 class DIM_CURL_TRAIT
 {
 public:
-  enum { DIM = 3 };
+  enum { DIM = (D*(D-1))/2 };
 };
 
+/*
 template <> class DIM_CURL_TRAIT<2>
 {
 public:
   enum { DIM = 1 };
 };
+*/
 
 template <> class DIM_CURL_TRAIT<1>
 {
 public:
-  enum { DIM = 1 };  // suggested by joachim: should be 0; changed to make gcc34 feel ok
+  enum { DIM = 1 };  // should be 0; changed to make gcc34 feel ok
 };
 
 
@@ -59,7 +61,6 @@ protected:
   DynamicMem<double> * block;
 
 public:
-  virtual string ClassName(void) const {stringstream out; out << "HCurlHFiniteElementD<" << D << ">"; return out.str();}
   ///
   HCurlFiniteElement () { p_ipdata = 0; block = 0; }
 
@@ -68,6 +69,8 @@ public:
     : FiniteElement (DIM, aeltype, andof, aorder) { p_ipdata = 0; block = 0; }
   
   virtual ~HCurlFiniteElement ();
+
+  virtual string ClassName(void) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip, 
@@ -119,20 +122,19 @@ public:
   }  
  
   template <typename TVX>
-  Vec<DIM_CURL, typename TVX::TSCAL> EvaluateCurlShape (const IntegrationPoint & ip, const TVX & x, LocalHeap & lh) const
+  Vec<DIM_CURL, typename TVX::TSCAL> 
+  EvaluateCurlShape (const IntegrationPoint & ip, 
+                     const TVX & x, LocalHeap & lh) const
   {
     return Trans (GetCurlShape(ip, lh)) * x;
-    } 
+  } 
 
-  virtual
-  Vec<DIM_CURL> EvaluateCurlShape (const IntegrationPoint & ip, FlatVector<double> x, LocalHeap & lh) const
+  virtual Vec<DIM_CURL> 
+  EvaluateCurlShape (const IntegrationPoint & ip, 
+                     FlatVector<double> x, LocalHeap & lh) const
   {
     return Trans (GetCurlShape(ip, lh)) * x;
-    }  
-
- 
-
-
+  }  
 
   ///
   void CalcIPData (Array<IPData> & ipdata);

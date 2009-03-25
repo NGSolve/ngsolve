@@ -21,6 +21,15 @@ namespace ngfem
   }
 
   template <int D>
+  string HCurlFiniteElement<D> :: ClassName(void) const
+  { 
+    stringstream out; 
+    out << "HCurlHFiniteElementD<" << D << ">"; 
+    return out.str();
+  }
+
+
+  template <int D>
   void HCurlFiniteElement<D> :: 
   CalcIPData (Array<IPData> & ipdata)
   {

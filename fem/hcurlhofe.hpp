@@ -1,13 +1,12 @@
 #ifndef FILE_HCURLHOFE_
 #define FILE_HCURLHOFE_  
 
-
-#define NUMCURLPYR
- 
 /*********************************************************************/
 /* File:   hcurlhofe.hpp                                             */
-/* Author: Sabine Zaglmayr, Joachim Schoeberl                        */
+/* Author: Sabine Zaglmayr                                           */
 /* Date:   20. Maerz 2003                                            */
+/*                                                                   */
+/* AutoCurl - revision: J. Schoeberl, March 2009                     */
 /*********************************************************************/
    
 
@@ -30,7 +29,6 @@ protected:
   bool discontinuous;
   
 public:
-  ///
   HCurlHighOrderFiniteElement (ELEMENT_TYPE aeltype);
   HCurlHighOrderFiniteElement () { discontinuous = false; }
 
@@ -43,12 +41,10 @@ public:
   void SetUsegradEdge(FlatArray<int> & uge); 
   void SetUsegradFace(FlatArray<int> & ugf); 
   void SetUsegradCell(int ugc); 
+  void SetDiscontinuous ( bool adiscont ) { discontinuous = adiscont; }
   
   virtual void ComputeNDof () = 0;
-  
   void PrintInfo() const;
-
-  virtual void SetDiscontinuous ( bool adiscont ) { discontinuous = adiscont; }
 };
 
 
@@ -56,7 +52,8 @@ public:
 template <ELEMENT_TYPE ET> class HCurlHighOrderFE;
 
 template <ELEMENT_TYPE ET>
-class T_HCurlHighOrderFiniteElement : public HCurlHighOrderFiniteElement<ET_trait<ET>::DIM>
+class T_HCurlHighOrderFiniteElement 
+  : public HCurlHighOrderFiniteElement<ET_trait<ET>::DIM>
 {
 protected:
   enum { DIM = ET_trait<ET>::DIM };
@@ -132,22 +129,11 @@ public:
   virtual void CalcMappedCurlShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
                                     FlatMatrixFixWidth<DIM_CURL> curlshape) const;
 
-
-  /*
-  virtual void CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
-                                 FlatMatrixFixWidth<DIM> dshape) const;
-
-  virtual Vec<3> EvaluateCurlShape (const IntegrationPoint & ip, 
-                                    FlatVector<double> x,
-                                    LocalHeap & lh) const;
-  */
+  virtual Vec <DIM_CURL_TRAIT<ET_trait<ET>::DIM>::DIM>
+  EvaluateCurlShape (const IntegrationPoint & ip, 
+                     FlatVector<double> x,
+                     LocalHeap & lh) const;
 };
-
-
-
-
-
-
 
  
 /// 
