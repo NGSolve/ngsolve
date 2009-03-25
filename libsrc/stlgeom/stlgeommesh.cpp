@@ -1343,6 +1343,8 @@ int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh,
     {
 
       mesh = new Mesh();
+      mesh->geomtype = Mesh::GEOM_STL;
+
       mesh -> SetGlobalH (mparam.maxh);
       mesh -> SetLocalH (stlgeometry->GetBoundingBox().PMin() - Vec3d(10, 10, 10),
 			 stlgeometry->GetBoundingBox().PMax() + Vec3d(10, 10, 10),
