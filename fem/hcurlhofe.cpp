@@ -1,9 +1,16 @@
+/*********************************************************************/
+/* File:   hcurlhofe.cpp                                             */
+/* Author: Sabine Zaglmayr                                           */
+/* Date:   20. Maerz 2003                                            */
+/*                                                                   */
+/* AutoDiff - revision: J. Schoeberl, March 2009                     */
+/*********************************************************************/
+
 #include <fem.hpp>    
 
 namespace ngfem
 {
   using namespace ngfem;
-
 
   //------------------------------------------------------------------------
   // HCurlHighOrderFiniteElement
@@ -253,6 +260,41 @@ namespace ngfem
     }
   };
 
+  template <int DIM>
+  class HCurlEvaluateCurlElement
+  {
+    const double * coefs;
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+    Vec<DIM_CURL> & sum;
+  public:
+    HCurlEvaluateCurlElement (const double * acoefs, Vec<DIM_CURL> & asum)
+      : coefs(acoefs), sum(asum) { ; }
+
+    void operator= (const Du<DIM> & uv) 
+      { ; }
+
+    void operator= (const uDv<DIM> & uv) 
+    {
+      AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
+      for (int i = 0; i < DIM_CURL; i++) 
+        sum[i] += *coefs * hd.DValue(i);
+    }
+
+    void operator= (const uDv_minus_vDu<DIM> & uv) 
+    {
+      AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
+      for (int i = 0; i < DIM_CURL; i++) 
+        sum[i] += 2 * *coefs * hd.DValue(i);
+    }
+
+    void operator= (const wuDv_minus_wvDu<DIM> & uv) 
+    {
+      AutoDiff<DIM_CURL> hd = Cross (uv.u*uv.w, uv.v) + Cross(uv.u, uv.v*uv.w);
+      for (int i = 0; i < DIM_CURL; i++) 
+        sum[i] += *coefs * hd.DValue(i);
+    }
+  };
+
 
 
   template <int DIM>
@@ -262,9 +304,6 @@ namespace ngfem
   public:
     HCurlShapeAssign (FlatMatrixFixWidth<DIM> mat)
     { dshape = &mat(0,0); }
-
-    HCurlShapeAssign (double * adshape)
-    { dshape = adshape; }
 
     HCurlShapeElement<DIM> operator[] (int i) const
     { return HCurlShapeElement<DIM> (dshape + i*DIM); }
@@ -280,13 +319,25 @@ namespace ngfem
     HCurlCurlShapeAssign (FlatMatrixFixWidth<DIM_CURL> mat)
     { dshape = &mat(0,0); }
 
-    HCurlCurlShapeAssign (double * adshape)
-    { dshape = adshape; }
-
     HCurlCurlShapeElement<DIM> operator[] (int i) const
     { return HCurlCurlShapeElement<DIM> (dshape + i*DIM_CURL); }
   };
 
+  template <int DIM>
+  class HCurlEvaluateCurl
+  {
+    const double * coefs;
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+    Vec<DIM_CURL> sum;
+  public:
+    HCurlEvaluateCurl (FlatVector<> acoefs)
+    { coefs = &acoefs(0); sum = 0.0; }
+
+    HCurlEvaluateCurlElement<DIM> operator[] (int i) 
+    { return HCurlEvaluateCurlElement<DIM> (coefs+i, sum); }
+
+    Vec<DIM_CURL> Sum() { return sum; }
+  };
 
   
   template <ELEMENT_TYPE ET>
@@ -356,12 +407,28 @@ namespace ngfem
   }
 
 
+  template <ELEMENT_TYPE ET>
+  Vec <DIM_CURL_TRAIT<ET_trait<ET>::DIM>::DIM>
+  T_HCurlHighOrderFiniteElement<ET> :: 
+  EvaluateCurlShape (const IntegrationPoint & ip, 
+                     FlatVector<double> x,
+                     LocalHeap & lh) const
+  {
+    /*
+    // cout << "eval curl shape" << endl;
+    FlatMatrixFixWidth<DIM_CURL> mat(ndof, lh);
+    CalcCurlShape (ip, mat);
+    return Trans (mat) * x;
+    */
 
+    AutoDiff<DIM> adp[DIM];
+    for (int i = 0; i < DIM; i++)
+      adp[i] = AutoDiff<DIM> (ip(i), i);
 
-
-
-
-
+    HCurlEvaluateCurl<DIM> ds(x); 
+    static_cast<const HCurlHighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
+    return ds.Sum();
+  }
 
 
   template <ELEMENT_TYPE ET>

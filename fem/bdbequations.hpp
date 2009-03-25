@@ -471,8 +471,8 @@ public:
     typedef typename TVX::TSCAL TSCAL;
 
     Vec<3,TSCAL> hx;
-    // hx = fel.EvaluateCurlShape (sip.IP(), x, lh);
-    hx = Trans (fel.GetCurlShape (sip.IP(), lh)) * x;
+    hx = fel.EvaluateCurlShape (sip.IP(), x, lh);
+     // hx = Trans (fel.GetCurlShape (sip.IP(), lh)) * x;
     y = (1.0/sip.GetJacobiDet()) * (sip.GetJacobian() * hx);
   }
 
