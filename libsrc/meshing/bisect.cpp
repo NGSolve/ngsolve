@@ -3825,6 +3825,8 @@ namespace netgen
     // Repair works only for tets!
     bool do_repair = mesh.PureTetMesh ();
 
+    do_repair = false;   // JS, March 2009: multigrid crashes
+
     //if(mesh.mglevels == 3)
     //  noprojection = true;
 
