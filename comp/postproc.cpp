@@ -1100,8 +1100,12 @@ namespace ngcomp
 		    SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
 		    eltrans.CalcPoint(sip.IP(), point, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-		    fluxi2(0) = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
-		    if ( coef_imag ) fluxi2(0).imag() = const_cast<CoefficientFunction*>(coef_imag)->Evaluate(sip);
+
+                    double real, imag = 0;
+		    real = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
+		    if ( coef_imag ) imag = const_cast<CoefficientFunction*>(coef_imag)->Evaluate(sip);
+                    fluxi2(0) = Complex(real,imag);
+
 		    det = fabs(sip.GetJacobiDet()); 
 		  }
 	 	else
@@ -1110,8 +1114,14 @@ namespace ngcomp
 		    SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
 		    eltrans.CalcPoint(sip.IP(), point, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-		    fluxi2(0) = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
-		    if ( coef_imag ) fluxi2(0).imag() = const_cast<CoefficientFunction*>(coef_imag)->Evaluate(sip);
+
+		    // fluxi2(0) = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
+		    // if ( coef_imag ) fluxi2(0).imag() = const_cast<CoefficientFunction*>(coef_imag)->Evaluate(sip);
+
+                    double real, imag = 0;
+		    real = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
+		    if ( coef_imag ) imag = const_cast<CoefficientFunction*>(coef_imag)->Evaluate(sip);
+                    fluxi2(0) = Complex(real,imag);
 		    det = fabs(sip.GetJacobiDet());  
 		  }
 	      }

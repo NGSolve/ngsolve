@@ -453,14 +453,18 @@ namespace ngcomp
 
       }
   }
-  ///
+
   Table<int> * VectorFacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
-  { ; }
-  ///
+  { 
+    return NULL;
+  }
+
   Array<int> * VectorFacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
-  { ; }
+  {
+    return NULL;
+  }
   
-   void VectorFacetFESpace :: GetFacetDofNrs ( int felnr, Array<int> & dnums ) const
+  void VectorFacetFESpace :: GetFacetDofNrs ( int felnr, Array<int> & dnums ) const
   {
     dnums.SetSize(0);
     if ( dimension == 3 )
