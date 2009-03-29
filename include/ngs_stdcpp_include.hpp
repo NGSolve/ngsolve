@@ -4,6 +4,8 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#else
+#define VERSION "4.9.5"
 #endif
 
 
@@ -27,9 +29,6 @@
 #include <typeinfo>
 #include <memory>
 
-//#ifndef MACOS
-//#include <emmintrin.h>
-//#endif
 
 /*** threading headers ***/
 #ifdef _MSC_VER
