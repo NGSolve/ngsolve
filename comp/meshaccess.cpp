@@ -12,6 +12,8 @@
 #include <comp.hpp>
 #include <parallelngs.hpp>
 
+#include <nginterface_v2.hpp>
+
 
 namespace ngcomp
 
@@ -115,8 +117,6 @@ namespace ngcomp
 
 
 
-
-
   int MeshAccess :: GetNDomains () const
   {
     int maxind = -1;
@@ -145,16 +145,22 @@ namespace ngcomp
 
   
   ELEMENT_TYPE MeshAccess :: GetElType (int elnr) const
-{
-  elnr++;
-  switch (Ng_GetElementType (elnr))
-    {
-    case NG_TRIG:
-    case NG_TRIG6:
+  {
+    // elnr++;
+    // switch (Ng_GetElementType (elnr))
+
+    Ng_Element ngel = (dim == 2) 
+      ? Ng_GetElement<2> (elnr)
+      : Ng_GetElement<3> (elnr);
+    
+    switch (ngel.GetType())
       {
-	return ET_TRIG;
-	break;
-      }
+      case NG_TRIG:
+      case NG_TRIG6:
+        {
+          return ET_TRIG;
+          break;
+        }
 
     case NG_QUAD:
     case NG_QUAD6:
@@ -189,7 +195,7 @@ namespace ngcomp
     default:
       {
 	cerr << "MeshAccess::GetElType undefined type "
-	     << int(Ng_GetElementType (elnr)) << endl;
+	     << int(ngel.GetType()) << endl;
       }
     }
   return ET_TET;
@@ -198,8 +204,14 @@ namespace ngcomp
 
 ELEMENT_TYPE MeshAccess :: GetSElType (int elnr) const
 {
-  int pi[NG_SURFACE_ELEMENT_MAXPOINTS];
-  switch (Ng_GetSurfaceElement (elnr+1, pi))
+  // int pi[NG_SURFACE_ELEMENT_MAXPOINTS];
+  // switch (Ng_GetSurfaceElement (elnr+1, pi))
+
+  Ng_Element ngel = (dim == 2) 
+    ? Ng_GetElement<1> (elnr)
+    : Ng_GetElement<2> (elnr);
+
+  switch (ngel.GetType())
     {
     case NG_SEGM:
     case NG_SEGM3:
@@ -230,7 +242,7 @@ ELEMENT_TYPE MeshAccess :: GetSElType (int elnr) const
 
   stringstream str;
   str << "MeshAccess::GetSElType undefined type "
-      << int(Ng_GetSurfaceElement (elnr, pi)) << endl;
+      << int(ngel.GetType()) << endl;
   throw Exception (str.str());
 }
 
@@ -276,6 +288,15 @@ int MeshAccess :: GetElNV ( int elnr ) const
 
 void MeshAccess :: GetElPNums (int elnr, Array<int> & pnums) const
 {
+  Ng_Element ngel = (dim == 2) 
+    ? Ng_GetElement<2> (elnr)
+    : Ng_GetElement<3> (elnr);
+
+  pnums.SetSize(ngel.GetNP());
+  for (int j = 0; j < ngel.GetNP(); j++)
+    pnums[j] = ngel[j];
+  
+  /*
   pnums.SetSize (NG_ELEMENT_MAXPOINTS);
   NG_ELEMENT_TYPE typ = Ng_GetElement (elnr+1, &pnums[0]);
   
@@ -304,6 +325,7 @@ void MeshAccess :: GetElPNums (int elnr, Array<int> & pnums) const
 
   for (int i = 0; i < pnums.Size(); i++)
     pnums[i]--;
+  */
 }
 
 
@@ -561,6 +583,15 @@ void MeshAccess :: GetEdgePNums (int fnr, Array<int> & pnums) const
   
 void MeshAccess :: GetSElPNums (int selnr, Array<int> & pnums) const
 {
+  Ng_Element ngel = (dim == 2) 
+    ? Ng_GetElement<1> (selnr)
+    : Ng_GetElement<2> (selnr);
+    
+  pnums.SetSize(ngel.GetNP());
+  for (int j = 0; j < ngel.GetNP(); j++)
+    pnums[j] = ngel[j];  
+
+  /*
   pnums.SetSize (NG_SURFACE_ELEMENT_MAXPOINTS);
   NG_ELEMENT_TYPE typ = Ng_GetSurfaceElement (selnr+1, &pnums[0]);
   switch (typ)
@@ -581,6 +612,7 @@ void MeshAccess :: GetSElPNums (int selnr, Array<int> & pnums) const
 
     }
   for (int i = 0; i < pnums.Size(); i++) pnums[i]--;
+  */
 }
 
 
