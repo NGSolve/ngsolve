@@ -129,7 +129,7 @@ namespace ngfem
 	      Complex g = 1.+alpha*(1.0-pml_x/abs_x);
 	      point = g * hpoint;
 	      Mat<2,2,Complex> trans =
-		g * Id<2>() + (pml_r*alpha/(abs_x*abs_x)) * (hpoint * Trans(dabs_dpoint));
+		g * Id<2>() + (pml_x*alpha/(abs_x*abs_x)) * (hpoint * Trans(dabs_dpoint));
 	      dxdxi = trans * hdxdxi;
 	    }
 	  break;
