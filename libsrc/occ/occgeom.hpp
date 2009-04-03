@@ -111,12 +111,6 @@
 
 namespace netgen
 {
-
-  // #include "../visualization/vispar.hpp"
-   //  class VisualizationParameters;
-   //  extern VisualizationParameters vispar;
-
-
 #include "occmeshsurf.hpp"
 
 #define PROJECTION_TOLERANCE 1e-10
@@ -163,17 +157,17 @@ namespace netgen
    };
 
    inline double Det3 (double a00, double a01, double a02,
-         double a10, double a11, double a12,
-         double a20, double a21, double a22)
+      double a10, double a11, double a12,
+      double a20, double a21, double a22)
    {
       return a00*a11*a22 + a01*a12*a20 + a10*a21*a02 - a20*a11*a02 - a10*a01*a22 - a21*a12*a00;
    }
 
 #define OCCGEOMETRYVISUALIZATIONNOCHANGE   0
 #define OCCGEOMETRYVISUALIZATIONFULLCHANGE 1
-   // == compute transformation matrices and redraw
+// == compute transformation matrices and redraw
 #define OCCGEOMETRYVISUALIZATIONHALFCHANGE 2
-   // == redraw
+// == redraw
 
    class OCCGeometry
    {
@@ -256,10 +250,10 @@ namespace netgen
       void BuildVisualizationMesh (double deflection);
 
       void RecursiveTopologyTree (const TopoDS_Shape & sh,
-            stringstream & str,
-            TopAbs_ShapeEnum l,
-            bool free,
-            const char * lname);
+         stringstream & str,
+         TopAbs_ShapeEnum l,
+         bool free,
+         const char * lname);
 
       void GetTopologyTree (stringstream & str);
 
@@ -330,11 +324,11 @@ namespace netgen
       void LowLightAll()
       {
          for (int i = 1; i <= fmap.Extent(); i++)
-         fvispar[i-1].Lowlight();
+            fvispar[i-1].Lowlight();
          for (int i = 1; i <= emap.Extent(); i++)
-         evispar[i-1].Lowlight();
+            evispar[i-1].Lowlight();
          for (int i = 1; i <= vmap.Extent(); i++)
-         vvispar[i-1].Lowlight();
+            vvispar[i-1].Lowlight();
       }
 
       void GetUnmeshedFaceInfo (stringstream & str);
