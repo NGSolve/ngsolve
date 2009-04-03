@@ -274,7 +274,8 @@ public:
 			     double detail,
 			     const TATriangle & tria, 
 			     TriangleApproximation & tams,
-			     IndexSet & iset);
+			     IndexSet & iset,
+                             int level);
 
   const Box<3> & BoundingBox () const { return boundingbox; }
 

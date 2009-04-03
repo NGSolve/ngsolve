@@ -24,7 +24,7 @@ namespace netgen
       {
 	const Segment & el = mesh.LineSegment(si);
 
-	INDEX_2 i2 = INDEX_2::Sort(el.p1, el.p2);
+	INDEX_2 i2 = INDEX_2::Sort(el[0], el[1]);
 	PointIndex pinew;
 	EdgePointGeomInfo ngi;
 
@@ -37,8 +37,8 @@ namespace netgen
 	  {
 	    Point<3> pnew;
 
-	    PointBetween (mesh.Point (el.p1),
-			  mesh.Point (el.p2), 0.5,
+	    PointBetween (mesh.Point (el[0]),
+			  mesh.Point (el[1]), 0.5,
 			  el.surfnr1, el.surfnr2,
 			  el.epgeominfo[0], el.epgeominfo[1],
 			  pnew, ngi);
@@ -54,9 +54,9 @@ namespace netgen
 
 	Segment ns1 = el;
 	Segment ns2 = el;
-	ns1.p2 = pinew;
+	ns1[1] = pinew;
 	ns1.epgeominfo[1] = ngi;
-	ns2.p1 = pinew;
+	ns2[0] = pinew;
 	ns2.epgeominfo[0] = ngi;
 
 	mesh.LineSegment(si) = ns1;

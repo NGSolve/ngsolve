@@ -459,8 +459,8 @@ namespace netgen
 	      {
 		const Segment & seg = (*mesh)[i];
 
-		const Point3d & p1 = mesh->Point(seg.p1);
-		const Point3d & p2 = mesh->Point(seg.p2);
+		const Point3d & p1 = mesh->Point(seg[0]);
+		const Point3d & p2 = mesh->Point(seg[1]);
 		const Point3d p = Center (p1, p2);
 		glRasterPos3d (p.X(), p.Y(), p.Z());
 
@@ -1650,8 +1650,8 @@ namespace netgen
     for (int i = 1; i <= mesh->GetNSeg(); i++)
       {
 	const Segment & seg = mesh->LineSegment(i);
-	const Point3d & p1 = (*mesh)[seg.p1];
-	const Point3d & p2 = (*mesh)[seg.p2];
+	const Point3d & p1 = (*mesh)[seg[0]];
+	const Point3d & p2 = (*mesh)[seg[1]];
 
 	if (seg.singedge_left || seg.singedge_right)
 	  glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE,
@@ -3239,8 +3239,8 @@ namespace netgen
 	for (i = 1; i <= mesh->GetNSeg(); i++)
 	  {
 	    const Segment & seg = mesh->LineSegment(i);
-	    if (seg.p1 == selpoint && seg.p2 == selpoint2 ||
-		seg.p2 == selpoint && seg.p1 == selpoint2)
+	    if (seg[0] == selpoint && seg[1] == selpoint2 ||
+		seg[1] == selpoint && seg[0] == selpoint2)
 	      {
 		seledge = seg.edgenr;
 		cout << "seledge = " << seledge << endl;
@@ -3418,8 +3418,8 @@ namespace netgen
 	for (i = 1; i <= mesh->GetNSeg(); i++)
 	  {
 	    const Segment & seg = mesh->LineSegment(i);
-	    if (seg.p1 == selpoint && seg.p2 == selpoint2 ||
-		seg.p2 == selpoint && seg.p1 == selpoint2)
+	    if (seg[0] == selpoint && seg[1] == selpoint2 ||
+		seg[1] == selpoint && seg[0] == selpoint2)
 	      {
 		seledge = seg.edgenr;
 		cout << "seledge = " << seledge << endl;

@@ -239,8 +239,8 @@ DLL_HEADER void Ng_AddBoundarySeg_2D (Ng_Mesh * mesh, int pi1, int pi2)
   Mesh * m = (Mesh*)mesh;
 
   Segment seg;
-  seg.p1 = pi1;
-  seg.p2 = pi2;
+  seg[0] = pi1;
+  seg[1] = pi2;
   m->AddSegment (seg);
 }
   
@@ -285,8 +285,8 @@ DLL_HEADER void Ng_GetElement_2D (Ng_Mesh * mesh, int num, int * pi, int * matnu
 DLL_HEADER void Ng_GetSegment_2D (Ng_Mesh * mesh, int num, int * pi, int * matnum)
 {
   const Segment & seg = ((Mesh*)mesh)->LineSegment(num);
-  pi[0] = seg.p1;
-  pi[1] = seg.p2;
+  pi[0] = seg[0];
+  pi[1] = seg[1];
 
   if (matnum)
     *matnum = seg.edgenr;

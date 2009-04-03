@@ -311,8 +311,8 @@ namespace netgen
 		    edgenr++;
 		    Segment seg;
 
-		    seg.p1 = pnums[i-1];
-		    seg.p2 = pnums[i];
+		    seg[0] = pnums[i-1];
+		    seg[1] = pnums[i];
 		    seg.edgenr = edgenr;
 		    seg.si = facenr;
 		    seg.epgeominfo[0].dist = params[i-1];
@@ -362,7 +362,7 @@ namespace netgen
 
 		    if (edge.Orientation() == TopAbs_REVERSED)
 		      {
-			swap (seg.p1, seg.p2);
+			swap (seg[0], seg[1]);
 			swap (seg.epgeominfo[0].dist, seg.epgeominfo[1].dist);
 			swap (seg.epgeominfo[0].u, seg.epgeominfo[1].u);
 			swap (seg.epgeominfo[0].v, seg.epgeominfo[1].v);
@@ -379,7 +379,7 @@ namespace netgen
 
     //	for(i=1; i<=mesh.GetNSeg(); i++)
     //		(*testout) << "edge " << mesh.LineSegment(i).edgenr << " face " << mesh.LineSegment(i).si
-    //				<< " p1 " << mesh.LineSegment(i).p1 << " p2 " << mesh.LineSegment(i).p2 << endl;
+    //				<< " p1 " << mesh.LineSegment(i)[0] << " p2 " << mesh.LineSegment(i)[1] << endl;
     //	exit(10);
 
     mesh.CalcSurfacesOfNode();
@@ -471,7 +471,7 @@ namespace netgen
 		  {
 		    for (j = 1; j <= 2; j++)
 		      {
-			int pi = (j == 1) ? seg.p1 : seg.p2;
+			int pi = (j == 1) ? seg[0] : seg[1];
 			if (!glob2loc.Get(pi))
 			  {
 			    meshing.AddPoint (mesh.Point(pi), pi);
@@ -494,7 +494,7 @@ namespace netgen
 		    gi1.u = seg.epgeominfo[1].u;
 		    gi1.v = seg.epgeominfo[1].v;
 
-		    meshing.AddBoundaryElement (glob2loc.Get(seg.p1), glob2loc.Get(seg.p2), gi0, gi1);
+		    meshing.AddBoundaryElement (glob2loc.Get(seg[0]), glob2loc.Get(seg[1]), gi0, gi1);
 		    //(*testout) << gi0.u << " " << gi0.v << endl;
 		    //(*testout) << gi1.u << " " << gi1.v << endl;
 		  }
@@ -543,7 +543,7 @@ namespace netgen
 
 			if (locpnum[j] == 0)
 			  {
-			    int pi = (j == 0) ? seg.p1 : seg.p2;
+			    int pi = (j == 0) ? seg[0] : seg[1];
 			    meshing.AddPoint (mesh.Point(pi), pi);
 
 			    gis.SetSize (gis.Size()+1);
@@ -1417,8 +1417,8 @@ namespace netgen
           for (j = 1; j <= mesh->GetNSeg(); j++)
           {
           Segment & seg = mesh->LineSegment(j);
-          if (seg.p1 == i) seg.p1 = equalto[i-1];
-          if (seg.p2 == i) seg.p2 = equalto[i-1];
+          if (seg[0] == i) seg[0] = equalto[i-1];
+          if (seg[1] == i) seg[1] = equalto[i-1];
           }
           }
 
@@ -1426,7 +1426,7 @@ namespace netgen
           for (j = 1; j <= mesh->GetNSeg(); j++)
           {
           Segment & seg = mesh->LineSegment(j);
-          if (seg.p1 == seg.p2)
+          if (seg[0] == seg[1])
           {
           mesh->DeleteSegment(j);
           cout << "Deleting Segment " << j << endl;

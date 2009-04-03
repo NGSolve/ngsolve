@@ -526,19 +526,19 @@ NG_ELEMENT_TYPE Ng_GetSurfaceElement (int ei, int * epi, int * np)
     {
       const Segment & seg = mesh->LineSegment (ei);
 
-      if (seg.pmid < 0)
+      if (seg[2] < 0)
 	{
-	  epi[0] = seg.p1;
-	  epi[1] = seg.p2;
+	  epi[0] = seg[0];
+	  epi[1] = seg[1];
 	  
 	  if (np) *np = 2;
 	  return NG_SEGM;
 	}
       else
 	{
-	  epi[0] = seg.p1;
-	  epi[1] = seg.p2;
-	  epi[2] = seg.pmid;
+	  epi[0] = seg[0];
+	  epi[1] = seg[1];
+	  epi[2] = seg[2];
 
 	  if (np) *np = 3;
 	  return NG_SEGM3;
@@ -953,17 +953,17 @@ NG_ELEMENT_TYPE Ng_GetSegment (int ei, int * epi, int * np)
 {
   const Segment & seg = mesh->LineSegment (ei);
   
-  epi[0] = seg.p1;
-  epi[1] = seg.p2;
+  epi[0] = seg[0];
+  epi[1] = seg[1];
 
-  if (seg.pmid < 0)
+  if (seg[2] < 0)
     {
       if (np) *np = 2;
       return NG_SEGM;
     }
   else
     {
-      epi[2] = seg.pmid;
+      epi[2] = seg[2];
       if (np) *np = 3;
       return NG_SEGM3;
     }
@@ -2024,8 +2024,8 @@ int Ng_GetNPeriodicEdges (int idnr)
 
       for (SegmentIndex si = 0; si < nse; si++)
 	{
-	  PointIndex other1 = map[(*mesh)[si].p1];
-	  PointIndex other2 = map[(*mesh)[si].p2];
+	  PointIndex other1 = map[(*mesh)[si][0]];
+	  PointIndex other2 = map[(*mesh)[si][1]];
 	  //  (*testout) << "seg = " << (*mesh)[si] << "; other = " 
 	  //     << other1 << "-" << other2 << endl;
 	  if (other1 && other2 && mesh->IsSegment (other1, other2))
@@ -2052,8 +2052,8 @@ void Ng_GetPeriodicEdges (int idnr, int * pairs)
 
       for (SegmentIndex si = 0; si < nse; si++)
 	{
-	  PointIndex other1 = map[(*mesh)[si].p1];
-	  PointIndex other2 = map[(*mesh)[si].p2];
+	  PointIndex other1 = map[(*mesh)[si][0]];
+	  PointIndex other2 = map[(*mesh)[si][1]];
 	  if (other1 && other2 && mesh->IsSegment (other1, other2))
 	    {
 	      SegmentIndex otherseg = mesh->SegmentNr (other1, other2);

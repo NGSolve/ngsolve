@@ -233,8 +233,8 @@ public:
   SegmentIndex AddSegment (const Segment & s);
   void DeleteSegment (int segnr)
   {
-    segments.Elem(segnr).p1 = PointIndex::BASE-1;
-    segments.Elem(segnr).p2 = PointIndex::BASE-1;
+    segments.Elem(segnr)[0] = PointIndex::BASE-1;
+    segments.Elem(segnr)[1] = PointIndex::BASE-1;
   }
   void FullDeleteSegment (int segnr)  // von wem ist das ???
   {

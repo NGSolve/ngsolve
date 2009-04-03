@@ -423,11 +423,11 @@ void VisualSceneMeshDoctor :: BuildScene (int zoomall)
   for (i = 1; i <= mesh->GetNSeg(); i++)
     {
       const Segment & seg = mesh->LineSegment(i);
-      const Point3d & p1 = mesh->Point(seg.p1);
-      const Point3d & p2 = mesh->Point(seg.p2);
+      const Point3d & p1 = mesh->Point(seg[0]);
+      const Point3d & p2 = mesh->Point(seg[1]);
 
-      if (edgedist.Get(seg.p1) <= markedgedist &&
-	  edgedist.Get(seg.p2) <= markedgedist)
+      if (edgedist.Get(seg[0]) <= markedgedist &&
+	  edgedist.Get(seg[1]) <= markedgedist)
 	{
 	  glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, 
 			matcolseledge);
@@ -574,8 +574,8 @@ void VisualSceneMeshDoctor :: UpdateTables ()
   for (i = 1; i <= mesh->GetNSeg(); i++)
     {
       const Segment & seg = mesh->LineSegment(i);
-      if (seg.p1 == selpoint && seg.p2 == selpoint2 ||
-	  seg.p2 == selpoint && seg.p1 == selpoint2)
+      if (seg[0] == selpoint && seg[1] == selpoint2 ||
+	  seg[1] == selpoint && seg[0] == selpoint2)
 	{
 	  edgedist.Elem(selpoint) = 1;
 	  edgedist.Elem(selpoint2) = 1;
@@ -590,17 +590,17 @@ void VisualSceneMeshDoctor :: UpdateTables ()
 	{
 	  const Segment & seg = mesh->LineSegment(i);
 	  
-	  int edist = min2 (edgedist.Get(seg.p1), edgedist.Get(seg.p2));
+	  int edist = min2 (edgedist.Get(seg[0]), edgedist.Get(seg[1]));
 	  edist++;
 
-	  if (edgedist.Get(seg.p1) > edist)
+	  if (edgedist.Get(seg[0]) > edist)
 	    {
-	      edgedist.Elem(seg.p1) = edist;
+	      edgedist.Elem(seg[0]) = edist;
 	      changed = 1;
 	    }
-	  if (edgedist.Get(seg.p2) > edist)
+	  if (edgedist.Get(seg[1]) > edist)
 	    {
-	      edgedist.Elem(seg.p2) = edist;
+	      edgedist.Elem(seg[1]) = edist;
 	      changed = 1;
 	    }
 	}	    
@@ -611,8 +611,8 @@ void VisualSceneMeshDoctor :: UpdateTables ()
 int VisualSceneMeshDoctor :: IsSegmentMarked (int segnr) const
 {
   const Segment & seg = mesh->LineSegment(segnr);
-  return (edgedist.Get(seg.p1) <= markedgedist &&
-	  edgedist.Get(seg.p2) <= markedgedist);
+  return (edgedist.Get(seg[0]) <= markedgedist &&
+	  edgedist.Get(seg[1]) <= markedgedist);
 }
 }
 

@@ -30,22 +30,22 @@ namespace netgen
       {
 	Segment & el = mesh.LineSegment(si);
 
-	INDEX_2 i2 = INDEX_2::Sort (el.p1, el.p2);
+	INDEX_2 i2 = INDEX_2::Sort (el[0], el[1]);
 
 	if (between.Used(i2))
-	  el.pmid = between.Get(i2);
+	  el[2] = between.Get(i2);
 	else
 	  {
 	    Point<3> pb;
 	    EdgePointGeomInfo ngi;
-            PointBetween (mesh.Point (el.p1),
-                          mesh.Point (el.p2), 0.5,
+            PointBetween (mesh.Point (el[0]),
+                          mesh.Point (el[1]), 0.5,
 			  el.surfnr1, el.surfnr2,
 			  el.epgeominfo[0], el.epgeominfo[1],
 			  pb, ngi);
 	  
-	    el.pmid = mesh.AddPoint (pb);
-	    between.Set (i2, el.pmid);
+	    el[2] = mesh.AddPoint (pb);
+	    between.Set (i2, el[2]);
 	  }
       }
 

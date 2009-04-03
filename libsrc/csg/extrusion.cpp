@@ -7,6 +7,10 @@
 namespace netgen
 {
 
+  Array<Point<3> > project1, project2;
+
+
+
   void ExtrusionFace :: Init(void)
   {
     p0.SetSize(path->GetNSplines());
@@ -40,7 +44,6 @@ namespace netgen
     
     profile->GetCoeff(profile_spline_coeff);
     latest_point3d = -1.111e30;
-
   }
 
   
@@ -73,31 +76,24 @@ namespace netgen
       {
 	profile = new LineSeg<2>(GeomPoint<2>(p[0],1),
 				 GeomPoint<2>(p[1],1));
-	//(*testout) << "appending LineSeg<2> " << p[0] 
-	//	   << " to " << p[1] << endl;
       }
     else if(ptype == 3)
       {
 	profile = new SplineSeg3<2>(GeomPoint<2>(p[0],1),
 				    GeomPoint<2>(p[1],1),
 				    GeomPoint<2>(p[2],1));
-	//(*testout) << "appending SplineSeg<3> "
-	//	   << p[0] << " -- " << p[1] << " -- " << p[2] << endl;
       }
 
     path = new SplineGeometry<3>;
     pos = const_cast< SplineGeometry<3> *>(path)->Load(raw_data,pos);
 
-    for(int i=0; i<3; i++)
+    for(int i = 0; i < 3; i++)
       {
 	glob_z_direction(i) = raw_data[pos]; 
 	pos++;
       }
-
-    //(*testout) << "read glob_z_direction " << glob_z_direction << endl;
     
     Init();
-
   }
 
   ExtrusionFace :: ~ExtrusionFace()
@@ -128,11 +124,34 @@ namespace netgen
     v2.Normalize();
   }
 
-  
+
+#define NEWJS
   void ExtrusionFace :: CalcProj(const Point<3> & point3d, Point<2> & point2d,
 				 int & seg, double & t) const
   {
-    if(Dist2(point3d,latest_point3d) < 1e-25*Dist2(path->GetSpline(0).StartPI(),path->GetSpline(0).EndPI()))
+#ifdef NEWJS
+    // JS Version
+    double mindist = 0;
+    for (int i = 0; i < path->GetNSplines(); i++)
+      {
+        Point<2> hpoint2d;
+        double ht = CalcProj (point3d, hpoint2d, i);
+        double hdist = Dist2(point3d, p0[i]);
+        if (i == 0 || hdist < mindist)
+          {
+            seg = i;
+            t = ht;
+            mindist = hdist;
+            point2d = hpoint2d;
+            latest_seg = i;
+          }
+      }
+    return;
+#endif
+
+#ifdef OLDWM
+    if (Dist2 (point3d, latest_point3d) < 
+        1e-25 * Dist2(path->GetSpline(0).StartPI(), path->GetSpline(0).EndPI()))
       {
 	point2d = latest_point2d;
 	seg = latest_seg;
@@ -142,18 +161,15 @@ namespace netgen
     
     latest_point3d = point3d;
 
-    double cutdist(-1);
-    
-
+    double cutdist = -1;
     
 
     Array<double> mindist(path->GetNSplines());
 
-    for(int i=0; i<path->GetNSplines(); i++)
+    for(int i = 0; i < path->GetNSplines(); i++)
       {
-
-	double auxcut(-1);
-	double auxmin(-1);
+	double auxcut = -1;
+	double auxmin = -1;
 
 	if(spline3_path[i])
 	  {
@@ -162,9 +178,9 @@ namespace netgen
 	    Point<3> tanp(spline3_path[i]->TangentPoint());
 	    double da,db,dc;
 
-	    double l;
 	    Vec<3> dir = endp-startp;
-	    l = dir.Length(); dir *= 1./l;
+	    double l = dir.Length(); 
+            dir *= 1./l;
 	    Vec<3> topoint = point3d - startp;
 	    double s = topoint * dir;
 	    if(s<=0)
@@ -267,6 +283,7 @@ namespace netgen
 	double thist = CalcProj(point3d,testpoint2d,i);
 	testpoint3d = p0[i] + testpoint2d(0)*x_dir[i] + testpoint2d(1)*loc_z_dir[i];
 	double d = Dist2(point3d,testpoint3d);
+
 	//(*testout) << "(d="<<d<<") ";
 
 	if(!minproj_set || d < minproj)
@@ -283,13 +300,13 @@ namespace netgen
       }
     //(*testout) << endl;
     //(*testout) << " t " << t << endl;
-
+#endif
   }
 
   double ExtrusionFace :: CalcProj(const Point<3> & point3d, Point<2> & point2d,
-				   const int seg) const
+				   int seg) const
   {
-    double t(-1);
+    double t = -1;
 
     if(line_path[seg])
       {
@@ -306,7 +323,8 @@ namespace netgen
       {
 	spline3_path[seg]->Project(point3d,p0[seg],t);
 	
-	y_dir[seg] = spline3_path[seg]->GetTangent(t); y_dir[seg].Normalize();
+	y_dir[seg] = spline3_path[seg]->GetTangent(t); 
+        y_dir[seg].Normalize();
 	loc_z_dir[seg] = z_dir[seg];
 	Orthogonalize(y_dir[seg],loc_z_dir[seg]);
 	x_dir[seg] = Cross(y_dir[seg],loc_z_dir[seg]);
@@ -482,7 +500,7 @@ namespace netgen
     profile->Project(p2d,p2d,profile_par);
     
     p = p0[seg] + p2d(0)*x_dir[seg] + p2d(1)*loc_z_dir[seg];
-    
+
     Vec<2> tangent2d = profile->GetTangent(profile_par);
     profile_tangent = tangent2d(0)*x_dir[seg] + tangent2d(1)*y_dir[seg];
   }
@@ -505,6 +523,7 @@ namespace netgen
 
     return p0[0] + locpoint(0)*x_dir[0] + locpoint(1)*loc_z_dir[0];
   }
+  
 
   bool ExtrusionFace :: BoxIntersectsFace(const Box<3> & box) const
   {
@@ -515,7 +534,7 @@ namespace netgen
     //(*testout) << "box.Center() " << box.Center() << " projected " << center << " diam " << box.Diam() 
     //       << " dist " << Dist(box.Center(),center) << endl;
 
-    return (Dist(box.Center(),center) < 0.5*box.Diam());
+    return (Dist(box.Center(),center) < 1*box.Diam());
   }
 
 
@@ -661,16 +680,12 @@ namespace netgen
 						  double facets) const
   {
     int n = int(facets) + 1;
-    
-    int i,j,k;
-    
-    
-    int nump = 0;
-    for(k=0; k<path->GetNSplines(); k++)
+
+    for(int k = 0; k < path -> GetNSplines(); k++)
       {
-	for(i=0; i<=n; i++)
+	for(int i = 0; i <= n; i++)
 	  {
-	    Point<3> origin = path->GetSpline(k).GetPoint(double(i)/double(n));
+	    Point<3> origin = path -> GetSpline(k).GetPoint(double(i)/double(n));
 	    if(!line_path[k])
 	      {
 		y_dir[k] = path->GetSpline(k).GetTangent(double(i)/double(n));
@@ -681,23 +696,22 @@ namespace netgen
 	    if(!line_path[k])
 	      x_dir[k] = Cross(y_dir[k],loc_z_dir[k]);
 	    
-	    for(j=0; j<=n; j++)
+	    for(int j = 0; j <= n; j++)
 	      {
 		Point<2> locp = profile->GetPoint(double(j)/double(n));
 		tas.AddPoint(origin + locp(0)*x_dir[k] + locp(1)*loc_z_dir[k]);
-		nump++;
 	      }
 	  }
       }
     
-    for(k=0; k<path->GetNSplines(); k++)
-      for(i=0; i<n; i++)
-	for(j=0; j<n; j++)
+    for(int k = 0; k < path->GetNSplines(); k++)
+      for(int i = 0; i < n; i++)
+	for(int j = 0; j < n; j++)
 	  {
 	    int pi = k*(n+1)*(n+1) + (n+1)*i +j;
 	  
-	    tas.AddTriangle( TATriangle (0, pi,pi+1,pi+n+1));
-	    tas.AddTriangle( TATriangle (0, pi+1,pi+n+1,pi+n+2));
+	    tas.AddTriangle( TATriangle (0, pi,pi+1,pi+n+1) );
+	    tas.AddTriangle( TATriangle (0, pi+1,pi+n+1,pi+n+2) );
 	  }
   }
   
@@ -926,13 +940,13 @@ namespace netgen
 
   void Extrusion :: Reduce (const BoxSphere<3> & box)
   {
-    for(int i=0; i<faces.Size(); i++)
+    for(int i = 0; i < faces.Size(); i++)
       surfaceactive[i] = faces[i]->BoxIntersectsFace(box);
   }
 
   void Extrusion :: UnReduce ()
   {
-    for(int i=0; i<faces.Size(); i++)
+    for(int i = 0; i < faces.Size(); i++)
       surfaceactive[i] = true;
   }
 

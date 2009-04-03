@@ -33,7 +33,7 @@ namespace netgen
 	const Segment & seg = mesh.LineSegment(i);
 	if (seg.singedge_left || seg.singedge_right)
 	  {
-	    INDEX_2 i2(seg.p1, seg.p2);
+	    INDEX_2 i2(seg[0], seg[1]);
 	    i2.Sort();
 	    singedges.Set (i2, 1);
 	  }
@@ -224,8 +224,8 @@ namespace netgen
 	for (j = 1; j <= 2; j++)
 	  {
 	    int pi = (j == 1) ? 
-	      mesh.LineSegment(i).p1 :
-	      mesh.LineSegment(i).p2;
+	      mesh.LineSegment(i)[0] :
+	      mesh.LineSegment(i)[1];
 	    edgesonpoint.Elem(pi)++;
 	  }
       }
@@ -526,7 +526,7 @@ namespace netgen
 	  {
 	    const Segment & el = mesh.LineSegment(i);
 
-	    INDEX_2 i2(el.p1, el.p2);
+	    INDEX_2 i2(el[0], el[1]);
 	    i2.Sort();
 	  
 	    int pnew;
@@ -544,13 +544,13 @@ namespace netgen
 		// 	      Point3d pb;
 
 		// 	      /*
-		// 	      geom->PointBetween (mesh.Point (el.p1),
-		// 				  mesh.Point (el.p2),
+		// 	      geom->PointBetween (mesh.Point (el[0]),
+		// 				  mesh.Point (el[1]),
 		// 				  el.surfnr1, el.surfnr2,
 		// 				  el.epgeominfo[0], el.epgeominfo[1],
 		// 				  pb, ngi);
 		// 	      */
-		// 	      pb = Center (mesh.Point (el.p1), mesh.Point (el.p2));
+		// 	      pb = Center (mesh.Point (el[0]), mesh.Point (el[1]));
 
 		// 	      pnew = mesh.AddPoint (pb);
 	      
@@ -563,9 +563,9 @@ namespace netgen
 	  
 	    Segment ns1 = el;
 	    Segment ns2 = el;
-	    ns1.p2 = pnew;
+	    ns1[1] = pnew;
 	    ns1.epgeominfo[1] = ngi;
-	    ns2.p1 = pnew;
+	    ns2[0] = pnew;
 	    ns2.epgeominfo[0] = ngi;
 
 	    mesh.LineSegment(i) = ns1;

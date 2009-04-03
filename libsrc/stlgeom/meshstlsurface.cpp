@@ -118,8 +118,8 @@ static void STLFindEdges (STLGeometry & geom,
 	  */
 	  Point3d hp, hp2;
 	  Segment seg;
-	  seg.p1 = p1;
-	  seg.p2 = p2;
+	  seg[0] = p1;
+	  seg[1] = p2;
 	  seg.si = geom.GetTriangle(trig1).GetFaceNum();
 	  seg.edgenr = i;
 
@@ -140,7 +140,7 @@ static void STLFindEdges (STLGeometry & geom,
 
 	  /*
 	  geom.SelectChartOfTriangle (trig1);
-	  hp = hp2 = mesh.Point (seg.p1);
+	  hp = hp2 = mesh.Point (seg[0]);
 	  seg.geominfo[0].trignum = geom.Project (hp);
 
 	  (*testout) << "hp = " << hp2 << ", hp proj = " << hp << ", trignum = " << seg.geominfo[0].trignum << endl;
@@ -150,7 +150,7 @@ static void STLFindEdges (STLGeometry & geom,
 	    }
 
 	  geom.SelectChartOfTriangle (trig1b);
-	  hp = hp2 = mesh.Point (seg.p2);
+	  hp = hp2 = mesh.Point (seg[1]);
 	  seg.geominfo[1].trignum = geom.Project (hp);
 
 	  (*testout) << "hp = " << hp2 << ", hp proj = " << hp << ", trignum = " << seg.geominfo[1].trignum << endl;
@@ -161,12 +161,12 @@ static void STLFindEdges (STLGeometry & geom,
 	  */
 
 
-	  if (Dist (mesh.Point(seg.p1), mesh.Point(seg.p2)) < 1e-10)
+	  if (Dist (mesh.Point(seg[0]), mesh.Point(seg[1])) < 1e-10)
 	    {
 	      (*testout) << "ERROR: Line segment of length 0" << endl;
-	      (*testout) << "pi1, 2 = " << seg.p1 << ", " << seg.p2 << endl;
-	      (*testout) << "p1, 2 = " << mesh.Point(seg.p1)
-			 << ", " << mesh.Point(seg.p2) << endl;
+	      (*testout) << "pi1, 2 = " << seg[0] << ", " << seg[1] << endl;
+	      (*testout) << "p1, 2 = " << mesh.Point(seg[0])
+			 << ", " << mesh.Point(seg[1]) << endl;
 	      throw NgException ("Line segment of length 0");
 	    }
 	  
@@ -174,8 +174,8 @@ static void STLFindEdges (STLGeometry & geom,
 
 
 	  Segment seg2;
-	  seg2.p1 = p2;
-	  seg2.p2 = p1;
+	  seg2[0] = p2;
+	  seg2[1] = p1;
 	  seg2.si = geom.GetTriangle(trig2).GetFaceNum();
 	  seg2.edgenr = i;
 
@@ -196,7 +196,7 @@ static void STLFindEdges (STLGeometry & geom,
 	  
 	  /*
 	  geom.SelectChartOfTriangle (trig2);
-	  hp = hp2 = mesh.Point (seg.p1);
+	  hp = hp2 = mesh.Point (seg[0]);
 	  seg2.geominfo[0].trignum = geom.Project (hp);
 
 	  (*testout) << "hp = " << hp2 << ", hp proj = " << hp << ", trignum = " << seg.geominfo[0].trignum << endl;
@@ -207,7 +207,7 @@ static void STLFindEdges (STLGeometry & geom,
 
 
 	  geom.SelectChartOfTriangle (trig2b);
-	  hp = hp2 = mesh.Point (seg.p2);
+	  hp = hp2 = mesh.Point (seg[1]);
 	  seg2.geominfo[1].trignum = geom.Project (hp);
 	  (*testout) << "hp = " << hp2 << ", hp proj = " << hp << ", trignum = " << seg.geominfo[1].trignum << endl;
 	  if (Dist (hp, hp2) > 1e-5 || seg2.geominfo[1].trignum == 0) 
@@ -301,7 +301,7 @@ int STLSurfaceMeshing (STLGeometry & geom,
 		  for (i = 1; i <= nopen; i++)
 		    {
 		      const Segment & seg = mesh.GetOpenSegment (i);
-		      geom.AddMarkedSeg(mesh.Point(seg.p1),mesh.Point(seg.p2));
+		      geom.AddMarkedSeg(mesh.Point(seg[0]),mesh.Point(seg[1]));
 		    }
 
 		  geom.InitMarkedTrigs();
@@ -364,7 +364,7 @@ int STLSurfaceMeshing (STLGeometry & geom,
 	      for (i = 1; i <= mesh.GetNOpenSegments(); i++)
 		{
 		  const Segment & seg = mesh.GetOpenSegment (i);
-		  INDEX_2 i2(seg.p1, seg.p2);
+		  INDEX_2 i2(seg[0], seg[1]);
 		  i2.Sort();
 		  openseght.Set (i2, 1);
 		}
@@ -382,12 +382,12 @@ int STLSurfaceMeshing (STLGeometry & geom,
 	      for (i = 1; i <= nsegold; i++)
 		{
 		  Segment seg = mesh.LineSegment(i);
-		  INDEX_2 i2(seg.p1, seg.p2);
+		  INDEX_2 i2(seg[0], seg[1]);
 		  i2.Sort();
 		  if (openseght.Used (i2))
 		    {
 		      // segment will be split
-		      PrintMessage(7,"Split segment ", int(seg.p1), "-", int(seg.p2));
+		      PrintMessage(7,"Split segment ", int(seg[0]), "-", int(seg[1]));
 	      
 		      Segment nseg1, nseg2;
 		      EdgePointGeomInfo newgi;
@@ -418,23 +418,23 @@ int STLSurfaceMeshing (STLGeometry & geom,
 
 		      nseg1 = seg;
 		      nseg2 = seg;
-		      nseg1.p2 = newpi;
+		      nseg1[1] = newpi;
 		      nseg1.epgeominfo[1] = newgi;
 		      
-		      nseg2.p1 = newpi;
+		      nseg2[0] = newpi;
 		      nseg2.epgeominfo[0] = newgi;
 		      
 		      mesh.LineSegment(i) = nseg1;
 		      mesh.AddSegment (nseg2);
 		      
-		      mesh.RestrictLocalH (Center (mesh.Point(nseg1.p1),
-						   mesh.Point(nseg1.p2)),
-					   Dist (mesh.Point(nseg1.p1),
-						 mesh.Point(nseg1.p2)));
-		      mesh.RestrictLocalH (Center (mesh.Point(nseg2.p1),
-						   mesh.Point(nseg2.p2)),
-					   Dist (mesh.Point(nseg2.p1),
-						 mesh.Point(nseg2.p2)));
+		      mesh.RestrictLocalH (Center (mesh.Point(nseg1[0]),
+						   mesh.Point(nseg1[1])),
+					   Dist (mesh.Point(nseg1[0]),
+						 mesh.Point(nseg1[1])));
+		      mesh.RestrictLocalH (Center (mesh.Point(nseg2[0]),
+						   mesh.Point(nseg2[1])),
+					   Dist (mesh.Point(nseg2[0]),
+						 mesh.Point(nseg2[1])));
 		    }
 		}
 
@@ -657,7 +657,7 @@ void STLSurfaceMeshing1 (STLGeometry & geom,
 	{
 	  const Segment & seg = mesh.GetOpenSegment (i);
 	  if (seg.si == fnr)
-	    meshing.AddBoundaryElement (seg.p1, seg.p2, seg.geominfo[0], seg.geominfo[1]);
+	    meshing.AddBoundaryElement (seg[0], seg[1], seg.geominfo[0], seg.geominfo[1]);
 	}
       
       

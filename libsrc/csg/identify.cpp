@@ -380,19 +380,19 @@ void PeriodicIdentification :: IdentifyFaces (class Mesh & mesh)
 		    if (seg2.si != fi2)
 		      continue;
 		    
-		    //		    (*testout) << "seg1 = " << seg1.p1 << "-" << seg1.p2 << ", seg2 = " << seg2.p1 << "-" << seg2.p2;
+		    //		    (*testout) << "seg1 = " << seg1[0] << "-" << seg1[1] << ", seg2 = " << seg2[0] << "-" << seg2[1];
 
 		    if (side == 1)
 		      {
-			if (mesh.GetIdentifications().Get (seg1.p1, seg2.p1) &&
-			    mesh.GetIdentifications().Get (seg1.p2, seg2.p2))
+			if (mesh.GetIdentifications().Get (seg1[0], seg2[0]) &&
+			    mesh.GetIdentifications().Get (seg1[1], seg2[1]))
 			  {
 			    foundother = 1;
 			    break;
 			  }
 			
-			if (mesh.GetIdentifications().Get (seg1.p1, seg2.p2) &&
-			    mesh.GetIdentifications().Get (seg1.p2, seg2.p1))
+			if (mesh.GetIdentifications().Get (seg1[0], seg2[1]) &&
+			    mesh.GetIdentifications().Get (seg1[1], seg2[0]))
 			  {
 			    foundother = 1;
 			    break;
@@ -400,15 +400,15 @@ void PeriodicIdentification :: IdentifyFaces (class Mesh & mesh)
 		      }
 		    else
 		      {
-			if (mesh.GetIdentifications().Get (seg2.p1, seg1.p1) &&
-			    mesh.GetIdentifications().Get (seg2.p2, seg1.p2))
+			if (mesh.GetIdentifications().Get (seg2[0], seg1[0]) &&
+			    mesh.GetIdentifications().Get (seg2[1], seg1[1]))
 			  {
 			    foundother = 1;
 			    break;
 			  }
 			
-			if (mesh.GetIdentifications().Get (seg2.p1, seg1.p2) &&
-			    mesh.GetIdentifications().Get (seg2.p2, seg1.p1))
+			if (mesh.GetIdentifications().Get (seg2[0], seg1[1]) &&
+			    mesh.GetIdentifications().Get (seg2[1], seg1[0]))
 			  {
 			    foundother = 1;
 			    break;
@@ -1146,15 +1146,15 @@ void CloseSurfaceIdentification :: IdentifyFaces (class Mesh & mesh)
 		      
 		      if (side == 1)
 			{
-			  if (mesh.GetIdentifications().Get (seg1.p1, seg2.p1) &&
-			      mesh.GetIdentifications().Get (seg1.p2, seg2.p2))
+			  if (mesh.GetIdentifications().Get (seg1[0], seg2[0]) &&
+			      mesh.GetIdentifications().Get (seg1[1], seg2[1]))
 			    {
 			      foundother = 1;
 			      break;
 			    }
 			  
-			  if (mesh.GetIdentifications().Get (seg1.p1, seg2.p2) &&
-			      mesh.GetIdentifications().Get (seg1.p2, seg2.p1))
+			  if (mesh.GetIdentifications().Get (seg1[0], seg2[1]) &&
+			      mesh.GetIdentifications().Get (seg1[1], seg2[0]))
 			    {
 			      foundother = 1;
 			      break;
@@ -1162,15 +1162,15 @@ void CloseSurfaceIdentification :: IdentifyFaces (class Mesh & mesh)
 			}
 		      else
 			{
-			  if (mesh.GetIdentifications().Get (seg2.p1, seg1.p1) &&
-			      mesh.GetIdentifications().Get (seg2.p2, seg1.p2))
+			  if (mesh.GetIdentifications().Get (seg2[0], seg1[0]) &&
+			      mesh.GetIdentifications().Get (seg2[1], seg1[1]))
 			    {
 			      foundother = 1;
 			      break;
 			    }
 			  
-			  if (mesh.GetIdentifications().Get (seg2.p1, seg1.p2) &&
-			      mesh.GetIdentifications().Get (seg2.p2, seg1.p1))
+			  if (mesh.GetIdentifications().Get (seg2[0], seg1[1]) &&
+			      mesh.GetIdentifications().Get (seg2[1], seg1[0]))
 			    {
 			      foundother = 1;
 			      break;
@@ -1229,7 +1229,7 @@ BuildSurfaceElements (Array<Segment> & segs,
   for (int i1 = 0; i1 < segs.Size(); i1++)
     {
       const Segment & s1 = segs[i1];
-      if (identmap[s1.p1] && identmap[s1.p2])
+      if (identmap[s1[0]] && identmap[s1[1]])
 	for (int i2 = 0; i2 < i1; i2++)
 	  {
 	    const Segment & s2 = segs[i2];
@@ -1241,12 +1241,12 @@ BuildSurfaceElements (Array<Segment> & segs,
 			    s2.domout == dom_nr)))
 	      continue;
 	 
-	    if ((mesh.GetIdentifications().Get (s1.p1, s2.p2, nr) && 
-		 mesh.GetIdentifications().Get (s1.p2, s2.p1, nr))    || 
-		(mesh.GetIdentifications().Get (s2.p1, s1.p2, nr) && 
-		 mesh.GetIdentifications().Get (s2.p2, s1.p1, nr)))
+	    if ((mesh.GetIdentifications().Get (s1[0], s2[1], nr) && 
+		 mesh.GetIdentifications().Get (s1[1], s2[0], nr))    || 
+		(mesh.GetIdentifications().Get (s2[0], s1[1], nr) && 
+		 mesh.GetIdentifications().Get (s2[1], s1[0], nr)))
 	      {
-		Element2d el(s1.p1, s1.p2, s2.p1, s2.p2);
+		Element2d el(s1[0], s1[1], s2[0], s2[1]);
 
 		Vec<3> n = Cross (mesh[el[1]] - mesh[el[0]],
 				  mesh[el[3]] - mesh[el[0]]);
@@ -1629,14 +1629,14 @@ BuildSurfaceElements (Array<Segment> & segs,
       {
 	const Segment & s1 = segs.Get(i1);
 	const Segment & s2 = segs.Get(i2);
-	if (mesh.GetIdentifications().Get (s1.p1, s2.p2) &&
-	    mesh.GetIdentifications().Get (s1.p2, s2.p1))
+	if (mesh.GetIdentifications().Get (s1[0], s2[1]) &&
+	    mesh.GetIdentifications().Get (s1[1], s2[0]))
 	  {
 	    Element2d el(QUAD);
-	    el.PNum(1) = s1.p1;
-	    el.PNum(2) = s1.p2;
-	    el.PNum(3) = s2.p2;
-	    el.PNum(4) = s2.p1;
+	    el.PNum(1) = s1[0];
+	    el.PNum(2) = s1[1];
+	    el.PNum(3) = s2[1];
+	    el.PNum(4) = s2[0];
 
 	    Vec<3> n = Cross (Point<3> (mesh.Point(el.PNum(2)))-
 			      Point<3> (mesh.Point(el.PNum(1))),

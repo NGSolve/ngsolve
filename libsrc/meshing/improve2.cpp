@@ -490,7 +490,7 @@ void MeshOptimize2d :: CombineImprove (Mesh & mesh)
   SegmentIndex si;
   for (si = 0; si < mesh.GetNSeg(); si++)
     {
-      INDEX_2 i2(mesh[si].p1, mesh[si].p2);
+      INDEX_2 i2(mesh[si][0], mesh[si][1]);
       fixed[i2.I1()] = true;
       fixed[i2.I2()] = true;
     }

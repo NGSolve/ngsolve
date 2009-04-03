@@ -1353,8 +1353,8 @@ namespace netgen
 		case HP_SEGM:
 		  {
 		    Segment seg;
-		    seg.p1 = hpel.pnums[0];
-		    seg.p2 = hpel.pnums[1];
+		    seg[0] = hpel.pnums[0];
+		    seg[1] = hpel.pnums[1];
 		    // NOTE: only for less than 10000 elements (HACK) !!!
 		    seg.edgenr = hpel.index % 10000;
 		    seg.si     = hpel.index / 10000;
@@ -1593,8 +1593,8 @@ bool CheckSingularities(Mesh & mesh, INDEX_2_HASHTABLE<int> & edges, INDEX_2_HAS
 	for (int i = 1; i <= mesh.GetNSeg(); i++)
 	  if (mesh.LineSegment(i).singedge_left * levels >= act_ref)
 	    {
-	      INDEX_2 i2 (mesh.LineSegment(i).p1, 
-			  mesh.LineSegment(i).p2);
+	      INDEX_2 i2 (mesh.LineSegment(i)[0], 
+			  mesh.LineSegment(i)[1]);
 
 	      /*
 		// before
@@ -1712,8 +1712,8 @@ bool CheckSingularities(Mesh & mesh, INDEX_2_HASHTABLE<int> & edges, INDEX_2_HAS
 	   
 		if (seg.singedge_left * levels >= act_ref)
 		  {
-		    INDEX_2 i2 (mesh.LineSegment(i).p1, 
-				mesh.LineSegment(i).p2);
+		    INDEX_2 i2 (mesh.LineSegment(i)[0], 
+				mesh.LineSegment(i)[1]);
 		    edges.Set(i2,1); 
 		    edgepoint.Set(i2.I1());
 		    edgepoint.Set(i2.I2());
@@ -1728,8 +1728,8 @@ bool CheckSingularities(Mesh & mesh, INDEX_2_HASHTABLE<int> & edges, INDEX_2_HAS
 		
 		  if (seg.singedge_right * levels >= act_ref)
 		    {
-		      INDEX_2 i2 (mesh.LineSegment(i).p2, 
-				  mesh.LineSegment(i).p1);  
+		      INDEX_2 i2 (mesh.LineSegment(i)[1], 
+				  mesh.LineSegment(i)[0]);  
 		      edges.Set (i2, 1);
 		      edgepoint.Set(i2.I1());
 		      edgepoint.Set(i2.I2());
@@ -1743,7 +1743,7 @@ bool CheckSingularities(Mesh & mesh, INDEX_2_HASHTABLE<int> & edges, INDEX_2_HAS
 		      sing = 1;
 		    }
 	
-	    // (*testout) << "seg = " << ind << ", " << seg.p1 << "-" << seg.p2 << endl;
+	    // (*testout) << "seg = " << ind << ", " << seg[0] << "-" << seg[1] << endl;
 
 
 	    if (seg.singedge_left * levels >= act_ref
@@ -1751,7 +1751,7 @@ bool CheckSingularities(Mesh & mesh, INDEX_2_HASHTABLE<int> & edges, INDEX_2_HAS
 	      {
 		for (int j = 0; j < 2; j++)
 		  {
-		    int pi = (j == 0) ? seg.p1 : seg.p2;
+		    int pi = (j == 0) ? seg[0] : seg[1];
 		    INDEX_3 & i3 = surfonpoint.Elem(pi);
 		    if (ind != i3.I1() &&
 			ind != i3.I2())

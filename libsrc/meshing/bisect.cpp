@@ -3088,8 +3088,8 @@ namespace netgen
 		for (i = 1; i <= mesh.GetNSeg(); i++)
 		  {
 		    const Segment & seg = mesh.LineSegment(i);
-		    singv.Set (seg.p1);
-		    singv.Set (seg.p2);
+		    singv.Set (seg[0]);
+		    singv.Set (seg[1]);
 		  }
 		/*
 		  for ( i=1; i<= mesh.GetNSE(); i++)
@@ -3110,7 +3110,7 @@ namespace netgen
 		    const Segment & seg = mesh.LineSegment(i);
 		    for (j = 0; j < 2; j++)
 		      {
-			int pi = (j == 0) ? seg.p1 : seg.p2;
+			int pi = (j == 0) ? seg[0] : seg[1];
 			if (bndind.Elem(pi) == 0)
 			  bndind.Elem(pi) = seg.edgenr;
 			else if (bndind.Elem(pi) != seg.edgenr)
@@ -3478,7 +3478,7 @@ namespace netgen
 	    for (i = 1; i <= nseg; i++)
 	      {
 		Segment & seg = mesh.LineSegment (i);
-		INDEX_2 edge(seg.p1, seg.p2);
+		INDEX_2 edge(seg[0], seg[1]);
 		edge.Sort();
 		if (cutedges.Used (edge))
 		  {
@@ -3488,15 +3488,15 @@ namespace netgen
 		  
 		    int newpi = cutedges.Get(edge);
 		  
-		    nseg1.p2 = newpi;
-		    nseg2.p1 = newpi;
+		    nseg1[1] = newpi;
+		    nseg2[0] = newpi;
 		  
 		    EdgePointGeomInfo newepgi;
 		  
  
 //                     
 //                     cerr << "move edgepoint " << newpi << " from " << mesh.Point(newpi);
-		    PointBetween (mesh.Point (seg.p1), mesh.Point (seg.p2),
+		    PointBetween (mesh.Point (seg[0]), mesh.Point (seg[1]),
 				  0.5, seg.surfnr1, seg.surfnr2, 
 				  seg.epgeominfo[0], seg.epgeominfo[1],
 				  mesh.Point (newpi), newepgi);

@@ -686,8 +686,8 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
       {
 	SetThreadPercent(double(i)/mesh.GetNSeg()*100.);
 	const Segment & seg = mesh[i];
-	PointIndex pi1 = mesh[i].p1;
-	PointIndex pi2 = mesh[i].p2;
+	PointIndex pi1 = mesh[i][0];
+	PointIndex pi2 = mesh[i][1];
 
 	bool swap = (pi1 > pi2);
 
@@ -1087,7 +1087,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 
     if (info.order >= 2)
       {
-	if (mesh[info.elnr].p1 > mesh[info.elnr].p2)
+	if (mesh[info.elnr][0] > mesh[info.elnr][1])
 	  xi = 1-xi;
 	CalcEdgeShape (edgeorder[info.edgenr], 2*xi-1, &shapes(2));
       }
@@ -1131,7 +1131,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
     if (info.order >= 2)
       {
         double fac = 2;
-	if (mesh[info.elnr].p1 > mesh[info.elnr].p2)
+	if (mesh[info.elnr][0] > mesh[info.elnr][1])
           {
             xi = 1-xi; 
             fac *= -1;
@@ -1151,8 +1151,8 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 
     coefs.SetSize(info.ndof);
 
-    coefs[0] = Vec<3> (mesh[el.p1]);
-    coefs[1] = Vec<3> (mesh[el.p2]);
+    coefs[0] = Vec<3> (mesh[el[0]]);
+    coefs[1] = Vec<3> (mesh[el[1]]);
 
     if (info.order >= 2)
       {

@@ -529,7 +529,7 @@ namespace netgen
 	  {
 	    if (osedges.Get(seg.edgenr))
 	      {
-		INDEX_2 i2(seg.p1, seg.p2);
+		INDEX_2 i2(seg[0], seg[1]);
 		i2.Sort ();
 		if (osedgesht.Used (i2))
 		  osedgesht.Set (i2, 2);
@@ -592,26 +592,26 @@ namespace netgen
 	const Segment & seg = mesh[si];
 	if (seg.seginfo && seg.edgenr >= 1 && seg.edgenr <= cntedge)
 	  {
-	    INDEX_2 i2(seg.p1, seg.p2);
+	    INDEX_2 i2(seg[0], seg[1]);
 	    i2.Sort ();
 	    if (osedgesht.Used (i2) &&
 		osedgesht.Get (i2) == 2 &&
 		osedges.Elem(seg.edgenr) == -1)
 	      {
-		Point<3> newp = Center (mesh[PointIndex(seg.p1)],
-					mesh[PointIndex(seg.p2)]);
+		Point<3> newp = Center (mesh[PointIndex(seg[0])],
+					mesh[PointIndex(seg[1])]);
 
 		ProjectToEdge (geometry.GetSurface(seg.surfnr1), 
 			       geometry.GetSurface(seg.surfnr2), 
 			       newp);
 
 		osedges.Elem(seg.edgenr) = 
-		  mesh.AddPoint (newp, mesh[PointIndex(seg.p1)].GetLayer(), EDGEPOINT);
+		  mesh.AddPoint (newp, mesh[PointIndex(seg[0])].GetLayer(), EDGEPOINT);
 		meshpoint_tree -> Insert (newp, osedges.Elem(seg.edgenr));
 	      }
 	  }
       }
-
+    
 
     for (int i = 1; i <= nseg; i++)
       {
@@ -621,8 +621,8 @@ namespace netgen
 	    if (osedges.Get(seg.edgenr) != -1)
 	      {
 		Segment newseg = seg;
-		newseg.p1 = osedges.Get(seg.edgenr);
-		seg.p2 = osedges.Get(seg.edgenr);
+		newseg[0] = osedges.Get(seg.edgenr);
+		seg[1] = osedges.Get(seg.edgenr);
 		mesh.AddSegment (newseg);
 	      }
 	  }
@@ -1329,13 +1329,13 @@ namespace netgen
 	  {
 	    if (refedgesinv.Get(k))
 	      {
-		seg.p1 = lastpi;
-		seg.p2 = thispi;
+		seg[0] = lastpi;
+		seg[1] = thispi;
 	      }
 	    else
 	      {
-		seg.p1 = thispi;
-		seg.p2 = lastpi;
+		seg[0] = thispi;
+		seg[1] = lastpi;
 	      }
 	    seg.si = refedges.Get(k).si;
 	    seg.domin = refedges.Get(k).domin;
@@ -1496,13 +1496,13 @@ namespace netgen
       {
 	if (refedgesinv.Get(k))
 	  {
-	    seg.p1 = pi1;
-	    seg.p2 = pi2;
+	    seg[0] = pi1;
+	    seg[1] = pi2;
 	  }
 	else
 	  {
-	    seg.p1 = pi2;
-	    seg.p2 = pi1;
+	    seg[0] = pi2;
+	    seg[1] = pi1;
 	  }
 
 	seg.si = refedges.Get(k).si;
@@ -1515,7 +1515,7 @@ namespace netgen
 	seg.seginfo = 0;
 	if (k == 1) seg.seginfo = (refedgesinv.Get(k)) ? 2 : 1;
 	mesh.AddSegment (seg);
-	//	  (*testout) << "add seg " << seg.p1 << "-" << seg.p2 << endl;
+	//	  (*testout) << "add seg " << seg[0] << "-" << seg[1] << endl;
       }
   }
   
@@ -1604,8 +1604,8 @@ namespace netgen
 	if (oldseg.seginfo == 0)
 	  continue;
 
-	int pi1 = oldseg.p1;
-	int pi2 = oldseg.p2;
+	int pi1 = oldseg[0];
+	int pi2 = oldseg[1];
 
 	int npi1 = geometry.identifications.Get(copyedgeidentification)
 	  -> GetIdentifiedPoint (mesh, pi1);
@@ -1628,13 +1628,13 @@ namespace netgen
 
 	    if (inv)
 	      {
-		seg.p1 = npi1;
-		seg.p2 = npi2;
+		seg[0] = npi1;
+		seg[1] = npi2;
 	      }
 	    else
 	      {
-		seg.p1 = npi2;
-		seg.p2 = npi1;
+		seg[0] = npi2;
+		seg[1] = npi1;
 	      }
 	    seg.si = refedges.Get(k).si;
 	    seg.domin = refedges.Get(k).domin;
@@ -1646,12 +1646,12 @@ namespace netgen
 	    seg.seginfo = 0;
 	    if (k == 1) seg.seginfo = refedgesinv.Get(k) ? 2 : 1;
 	    mesh.AddSegment (seg);
-	    //	  (*testout) << "copy seg " << seg.p1 << "-" << seg.p2 << endl;
+	    //	  (*testout) << "copy seg " << seg[0] << "-" << seg[1] << endl;
 #ifdef DEVELOP
 
 	    (*testout) << "copy seg, face = " << seg.si << ": " 
 		       << " inv = " << inv << ", refinv = " << refedgesinv.Get(k)
-		       << mesh.Point(seg.p1) << ", " << mesh.Point(seg.p2) << endl;
+		       << mesh.Point(seg[0]) << ", " << mesh.Point(seg[1]) << endl;
 #endif
 
 	  }
@@ -1792,10 +1792,10 @@ namespace netgen
 	      {
 		mesh.AddPoint (p1, layer, EDGEPOINT);
 		mesh.AddPoint (p2, layer, EDGEPOINT);
-		seg1.p1 = mesh.GetNP()-1;
-		seg1.p2 = mesh.GetNP();
-		seg2.p2 = mesh.GetNP()-1;
-		seg2.p1 = mesh.GetNP();
+		seg1[0] = mesh.GetNP()-1;
+		seg1[1] = mesh.GetNP();
+		seg2[1] = mesh.GetNP()-1;
+		seg2[0] = mesh.GetNP();
 		seg1.geominfo[0].trignum = 1;
 		seg1.geominfo[1].trignum = 1;
 		seg2.geominfo[0].trignum = 1;

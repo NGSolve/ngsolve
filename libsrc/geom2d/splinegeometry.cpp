@@ -1035,11 +1035,11 @@ void SplineGeometry<D> :: CopyEdgeMesh (int from, int to, Mesh & mesh, Point3dTr
       const Segment & seg = mesh.LineSegment(i);
       if (seg.edgenr == from)
 	{
-	  mappoints.Elem(seg.p1) = 1;
-	  param.Elem(seg.p1) = seg.epgeominfo[0].dist;
+	  mappoints.Elem(seg[0]) = 1;
+	  param.Elem(seg[0]) = seg.epgeominfo[0].dist;
 
-	  mappoints.Elem(seg.p2) = 1;
-	  param.Elem(seg.p2) = seg.epgeominfo[1].dist;
+	  mappoints.Elem(seg[1]) = 1;
+	  param.Elem(seg[1]) = seg.epgeominfo[1].dist;
 	}
     }
 
@@ -1087,15 +1087,15 @@ void SplineGeometry<D> :: CopyEdgeMesh (int from, int to, Mesh & mesh, Point3dTr
 	  Segment nseg;
 	  nseg.edgenr = to;
 	  nseg.si = splines.Get(to)->bc;
-	  nseg.p1 = mappoints.Get(seg.p1);
-	  nseg.p2 = mappoints.Get(seg.p2);
+	  nseg[0] = mappoints.Get(seg[0]);
+	  nseg[1] = mappoints.Get(seg[1]);
 	  nseg.domin = splines.Get(to)->leftdom;
 	  nseg.domout = splines.Get(to)->rightdom;
 	  
 	  nseg.epgeominfo[0].edgenr = to;
-	  nseg.epgeominfo[0].dist = param.Get(seg.p1);
+	  nseg.epgeominfo[0].dist = param.Get(seg[0]);
 	  nseg.epgeominfo[1].edgenr = to;
-	  nseg.epgeominfo[1].dist = param.Get(seg.p2);
+	  nseg.epgeominfo[1].dist = param.Get(seg[1]);
 	  mesh.AddSegment (nseg);
 	}
     }

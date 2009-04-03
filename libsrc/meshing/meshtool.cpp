@@ -640,7 +640,7 @@ namespace netgen
       {
 	seg = &mesh.LineSegment(i);
 
-	of << seg->p2 << " " << seg->p1 << " " << seg->si << "\n";
+	of << (*seg)[1] << " " << (*seg)[0] << " " << seg->si << "\n";
       }
    
   }
@@ -700,8 +700,8 @@ namespace netgen
     outfile << mesh2d.GetNSeg() << endl;
     for (i = 1; i <= mesh2d.GetNSeg(); i++)
       outfile << mesh2d.LineSegment(i).si << "        "
-	      << mesh2d.LineSegment(i).p1 << " "
-	      << mesh2d.LineSegment(i).p2 << "  " << endl;
+	      << mesh2d.LineSegment(i)[0] << " "
+	      << mesh2d.LineSegment(i)[1] << "  " << endl;
   
 
     outfile << mesh2d.GetNSE() << endl;

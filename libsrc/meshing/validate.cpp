@@ -192,8 +192,8 @@ namespace netgen
     for(int i = 1; i <= mesh.GetNSeg(); i++)
       {
 	const Segment & seg = mesh.LineSegment(i);
-	isedgepoint.Set(seg.p1);
-	isedgepoint.Set(seg.p2);
+	isedgepoint.Set(seg[0]);
+	isedgepoint.Set(seg[1]);
       }
 
     Array<int> surfaceindex(np);

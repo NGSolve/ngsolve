@@ -124,8 +124,8 @@ namespace netgen
 	if (mesh[si].seginfo)
 	  {
 	    Box<3> hbox;
-	    hbox.Set (mesh[mesh[si].p1]);
-	    hbox.Add (mesh[mesh[si].p2]);
+	    hbox.Set (mesh[mesh[si][0]]);
+	    hbox.Add (mesh[mesh[si][1]]);
 	    segtree.Insert (hbox.PMin(), hbox.PMax(), si);
 	  }
       }
@@ -137,8 +137,8 @@ namespace netgen
 	  if (!mesh[si].seginfo) continue;
 
 	  Box<3> hbox;
-	  hbox.Set (mesh[mesh[si].p1]);
-	  hbox.Add (mesh[mesh[si].p2]);
+	  hbox.Set (mesh[mesh[si][0]]);
+	  hbox.Add (mesh[mesh[si][1]]);
 	  hbox.Increase (1e-6);
 	  segtree.GetIntersecting (hbox.PMin(), hbox.PMax(), loc);
 	  	  
@@ -148,12 +148,12 @@ namespace netgen
 	      SegmentIndex sj = loc[j];
 	      if (sj >= si) continue;
 	      if (!mesh[si].seginfo || !mesh[sj].seginfo) continue;
-	      if (mesh[mesh[si].p1].GetLayer() != mesh[mesh[sj].p2].GetLayer()) continue;
+	      if (mesh[mesh[si][0]].GetLayer() != mesh[mesh[sj][1]].GetLayer()) continue;
 	      
-	      Point<3> pi1 = mesh[mesh[si].p1];
-	      Point<3> pi2 = mesh[mesh[si].p2];
-	      Point<3> pj1 = mesh[mesh[sj].p1];
-	      Point<3> pj2 = mesh[mesh[sj].p2];
+	      Point<3> pi1 = mesh[mesh[si][0]];
+	      Point<3> pi2 = mesh[mesh[si][1]];
+	      Point<3> pj1 = mesh[mesh[sj][0]];
+	      Point<3> pj2 = mesh[mesh[sj][1]];
 	      Vec<3> vi = pi2 - pi1;
 	      Vec<3> vj = pj2 - pj1;
 	      
@@ -201,7 +201,7 @@ namespace netgen
 		  cout << "Intersection at " << ip << endl;
 		  
 		  geom.AddUserPoint (ip);
-		  spoints.Append (MeshPoint (ip, mesh[mesh[si].p1].GetLayer()));
+		  spoints.Append (MeshPoint (ip, mesh[mesh[si][0]].GetLayer()));
 		  mesh.AddPoint (ip);
 		  
 		  (*testout) << "found intersection at " << ip << endl;
@@ -447,8 +447,8 @@ namespace netgen
 	  {
 	    PointGeomInfo gi;
 	    gi.trignum = k;
-	    meshing.AddBoundaryElement (segments[si].p1 + 1 - PointIndex::BASE, 
-					segments[si].p2 + 1 - PointIndex::BASE, 
+	    meshing.AddBoundaryElement (segments[si][0] + 1 - PointIndex::BASE, 
+					segments[si][1] + 1 - PointIndex::BASE, 
 					gi, gi);
 	  }
 

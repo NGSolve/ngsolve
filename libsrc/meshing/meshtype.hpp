@@ -233,7 +233,7 @@ class MeshPoint : public Point<3>
 
 public:
   MeshPoint () : layer(1), singular(0.), type(INNERPOINT) 
-{ 
+  { 
 #ifdef PARALLEL
   isghost = 0;
 #endif
@@ -781,10 +781,12 @@ public:
 
   friend ostream & operator<<(ostream  & s, const Segment & seg);
 
+  PointIndex pnums[3];  // p1, p2, pmid
+
   /// point index 1
-  PointIndex p1;
+  // PointIndex p1;
   /// point index 2
-  PointIndex p2;    
+  // PointIndex p2;    
   /// edge nr
   int edgenr;
   ///
@@ -810,7 +812,7 @@ public:
   ///
   EdgePointGeomInfo epgeominfo[2];
   ///
-  int pmid; // for second order
+  // int pmid; // for second order
   ///
   int meshdocval;
 
@@ -818,11 +820,13 @@ private:
   string* bcname;
 
 public:
+  /*
   PointIndex operator[] (int i) const
   { return (i == 0) ? p1 : p2; }
 
   PointIndex & operator[] (int i) 
   { return (i == 0) ? p1 : p2; }
+  */
 
   Segment& operator=(const Segment & other);
 
@@ -849,7 +853,18 @@ public:
     return *bcname;
   }
 
+  int GetNP() const
+  {
+    return (pnums[2] < 0) ? 2 : 3;
+  }
 
+  ELEMENT_TYPE GetType() const
+  {
+    return (pnums[2] < 0) ? SEGMENT : SEGMENT3;
+  }
+  
+  PointIndex & operator[] (int i) { return pnums[i]; }
+  const PointIndex & operator[] (int i) const { return pnums[i]; }
 };
 
 

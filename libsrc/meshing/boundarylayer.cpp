@@ -29,8 +29,8 @@ void InsertVirtualBoundaryLayer (Mesh & mesh)
       cout << "snr = " << snr << endl;
       if (snr == surfid)
 	{
-	  bndnodes.Set (mesh.LineSegment(i).p1);
-	  bndnodes.Set (mesh.LineSegment(i).p2);
+	  bndnodes.Set (mesh.LineSegment(i)[0]);
+	  bndnodes.Set (mesh.LineSegment(i)[1]);
 	}
     }
   for (i = 1; i <= mesh.GetNSeg(); i++)
@@ -38,8 +38,8 @@ void InsertVirtualBoundaryLayer (Mesh & mesh)
       int snr = mesh.LineSegment(i).edgenr;
       if (snr != surfid)
 	{
-	  bndnodes.Clear (mesh.LineSegment(i).p1);
-	  bndnodes.Clear (mesh.LineSegment(i).p2);
+	  bndnodes.Clear (mesh.LineSegment(i)[0]);
+	  bndnodes.Clear (mesh.LineSegment(i)[1]);
 	}
     }
   
@@ -66,8 +66,8 @@ void InsertVirtualBoundaryLayer (Mesh & mesh)
       int snr = mesh.LineSegment(i).edgenr;
       if (snr == surfid)
 	{
-	  int p1 = mesh.LineSegment(i).p1;
-	  int p2 = mesh.LineSegment(i).p2;
+	  int p1 = mesh.LineSegment(i)[0];
+	  int p2 = mesh.LineSegment(i)[1];
 	  int p3 = mapto.Get (p1);
 	  if (!p3) p3 = p1;
 	  int p4 = mapto.Get (p2);

@@ -37,7 +37,7 @@ private:
 
 public:
   double CalcProj(const Point<3> & point3d, Point<2> & point2d,
-		  const int seg) const;
+		  int seg) const;
   void CalcProj(const Point<3> & point3d, Point<2> & point2d,
 		int & seg, double & t) const;
 

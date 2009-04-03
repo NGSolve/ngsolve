@@ -55,8 +55,8 @@ namespace netgen
 
   Segment :: Segment() 
   {
-    p1 = -1;
-    p2 = -1; 
+    pnums[0] = -1;
+    pnums[1] = -1; 
     edgenr = -1;
 
     singedge_left = 0.;
@@ -71,7 +71,7 @@ namespace netgen
 
     surfnr1 = -1;
     surfnr2 = -1;
-    pmid = -1;
+    pnums[2] = -1;
     meshdocval = 0;
     /*
     geominfo[0].trignum=-1; 
@@ -87,8 +87,7 @@ namespace netgen
   }    
 
   Segment::Segment (const Segment & other)
-    : p1(other.p1),
-      p2(other.p2),
+    :
       edgenr(other.edgenr),
       singedge_left(other.singedge_left),
       singedge_right(other.singedge_right),
@@ -101,10 +100,12 @@ namespace netgen
       surfnr1(other.surfnr1),
       surfnr2(other.surfnr2),
       epgeominfo(),
-      pmid(other.pmid),
       meshdocval(other.meshdocval),
       hp_elnr(other.hp_elnr)
   {
+    for (int j = 0; j < 3; j++)
+      pnums[j] = other.pnums[j];
+
     geominfo[0] = other.geominfo[0];
     geominfo[1] = other.geominfo[1];
     epgeominfo[0] = other.epgeominfo[0];
@@ -116,8 +117,8 @@ namespace netgen
   {
     if (&other != this)
       {
-	p1 = other.p1;
-	p2 = other.p2;
+	pnums[0] = other[0];
+	pnums[1] = other[1];
 	edgenr = other.edgenr;
 	singedge_left = other.singedge_left;
 	singedge_right = other.singedge_right;
@@ -132,7 +133,7 @@ namespace netgen
 	surfnr2 = other.surfnr2;
 	epgeominfo[0] = other.epgeominfo[0];
 	epgeominfo[1] = other.epgeominfo[1];
-	pmid = other.pmid;
+	pnums[2] = other.pnums[2];
 	meshdocval = other.meshdocval;
 	hp_elnr = other.hp_elnr;
 	bcname = other.bcname;
@@ -144,8 +145,8 @@ namespace netgen
 
   ostream & operator<<(ostream  & s, const Segment & seg)
   {
-    s << seg.p1 << "(gi=" << seg.geominfo[0].trignum << ") - "
-      << seg.p2 << "(gi=" << seg.geominfo[1].trignum << ")"
+    s << seg[0] << "(gi=" << seg.geominfo[0].trignum << ") - "
+      << seg[1] << "(gi=" << seg.geominfo[1].trignum << ")"
       << " domin = " << seg.domin << ", domout = " << seg.domout 
       << " si = " << seg.si << ", edgenr = " << seg.edgenr;
     return s;
@@ -334,7 +335,7 @@ void Element2d :: Invert2()
 
 int Element2d::HasFace(const Element2d& el) const
 {
-  //nur für tets!!! hannes
+  //nur fÃ¼r tets!!! hannes
   for (int i = 1; i <= 3; i++)
     {
       if (PNumMod(i)   == el[0] && 

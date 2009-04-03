@@ -117,9 +117,9 @@ namespace netgen
               int p1 = -1, p2 = -2;
 
               if ( (*mesh)[si].domin == domnr)
-                { p1 = (*mesh)[si].p1; p2 = (*mesh)[si].p2; }
+                { p1 = (*mesh)[si][0]; p2 = (*mesh)[si][1]; }
               if ( (*mesh)[si].domout == domnr)
-                { p1 = (*mesh)[si].p2; p2 = (*mesh)[si].p1; }
+                { p1 = (*mesh)[si][1]; p2 = (*mesh)[si][0]; }
               
               if (p1 == -1) continue;
 
@@ -207,11 +207,11 @@ namespace netgen
 	for (SegmentIndex si = 0; si < mesh->GetNSeg(); si++)
 	  {
 	    if ( (*mesh)[si].domin == domnr)
-	      meshing.AddBoundaryElement ( (*mesh)[si].p1 + 1 - PointIndex::BASE, 
-					   (*mesh)[si].p2 + 1 - PointIndex::BASE, gi, gi);
+	      meshing.AddBoundaryElement ( (*mesh)[si][0] + 1 - PointIndex::BASE, 
+					   (*mesh)[si][1] + 1 - PointIndex::BASE, gi, gi);
 	    if ( (*mesh)[si].domout == domnr)
-	      meshing.AddBoundaryElement ( (*mesh)[si].p2 + 1 - PointIndex::BASE, 
-					   (*mesh)[si].p1 + 1 - PointIndex::BASE, gi, gi);
+	      meshing.AddBoundaryElement ( (*mesh)[si][1] + 1 - PointIndex::BASE, 
+					   (*mesh)[si][0] + 1 - PointIndex::BASE, gi, gi);
 	  }
 
 

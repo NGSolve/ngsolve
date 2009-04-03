@@ -15,7 +15,7 @@ namespace netgen
 
 /* *********************** Draw Geometry **************** */
 
-
+  extern Array<Point<3> > project1, project2;
 
 
 extern AutoPtr<CSGeometry> geometry;
@@ -116,6 +116,23 @@ void VisualSceneGeometry :: DrawScene ()
     }
 
   glDisable (GL_POLYGON_OFFSET_FILL);
+
+  /*
+  cout << "draw " << project1.Size() << " lines " << endl;
+  glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
+  glLineWidth (1.0f);
+  glEnable (GL_COLOR_MATERIAL);
+
+  glColor3f (1.0f, 0.0f, 0.0f);
+
+  glBegin (GL_LINES);
+  for (int i = 0; i < project1.Size(); i++)
+    {
+      glVertex3dv (project1[i]);
+      glVertex3dv (project2[i]);
+    }
+  glEnd();
+  */
 
 
   glPopMatrix();
@@ -236,16 +253,11 @@ void VisualSceneGeometry :: BuildScene (int zoomall)
 	  glBegin (GL_TRIANGLES);
 	  for (int j = 0; j < ta.GetNT(); j++)
 	    {
-	      
 	      for (int k = 0; k < 3; k++)
 		{
 		  int pi = ta.GetTriangle(j)[k];
-		  glNormal3f (ta.GetNormal (pi)(0),
-			      ta.GetNormal (pi)(1),
-			      ta.GetNormal (pi)(2));
-		  glVertex3f (ta.GetPoint(pi)(0),
-			      ta.GetPoint(pi)(1),
-			      ta.GetPoint(pi)(2));
+		  glNormal3dv (ta.GetNormal (pi));
+		  glVertex3dv (ta.GetPoint(pi));
 		}
 	    }
 	  glEnd ();

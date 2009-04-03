@@ -107,7 +107,7 @@ namespace netgen
     for(SegmentIndex si = 0; si < mesh.GetNSeg(); si++)
       {
 	const Segment & seg = mesh[si];
-	INDEX_2 i2(seg.p1,seg.p2);
+	INDEX_2 i2(seg[0],seg[1]);
 	i2.Sort();
 	if(edgenumbers.Used(i2))
 	  continue;
@@ -118,10 +118,10 @@ namespace netgen
 
 	edge_ids.Append(seg.edgenr);
 
-	if(point_ids[seg.p1] == -1)
-	  point_ids[seg.p1] = (version >= 2) ? seg.edgenr : 0;
-	if(point_ids[seg.p2] == -1)
-	  point_ids[seg.p2] = (version >= 2) ? seg.edgenr : 0;
+	if(point_ids[seg[0]] == -1)
+	  point_ids[seg[0]] = (version >= 2) ? seg.edgenr : 0;
+	if(point_ids[seg[1]] == -1)
+	  point_ids[seg[1]] = (version >= 2) ? seg.edgenr : 0;
       }
 
     for(SurfaceElementIndex si = 0; si < mesh.GetNSE(); si++)

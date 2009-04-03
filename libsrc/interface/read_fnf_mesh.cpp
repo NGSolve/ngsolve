@@ -298,9 +298,9 @@ namespace netgen
                             for (int j = 0; j+2 < enums.Size(); j+=2)
                               {
                                 Segment seg;
-                                seg.p1 = enums[j];
-                                seg.p2 = enums[j+2];
-                                seg.pmid = enums[j+1];
+                                seg[0] = enums[j];
+                                seg[1] = enums[j+2];
+                                seg[2] = enums[j+1];
                                 seg.edgenr = nr;
                                 mesh.AddSegment (seg);
                               }

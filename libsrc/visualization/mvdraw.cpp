@@ -1282,10 +1282,10 @@ namespace netgen
 	for (int i = 1; i <= mesh->GetNSeg(); i++)
 	  {
 	    const Segment & seg = mesh -> LineSegment (i);
-	    glVertex3dv ( (*mesh)[seg.p1] );
-            glVertex3dv ( (*mesh)[seg.p2] );
-	    // glVertex3dv ( &(*mesh)[seg.p1].X() );
-	    // glVertex3dv ( &(*mesh)[seg.p2].X() );
+	    glVertex3dv ( (*mesh)[seg[0]] );
+            glVertex3dv ( (*mesh)[seg[1]] );
+	    // glVertex3dv ( &(*mesh)[seg[0]].X() );
+	    // glVertex3dv ( &(*mesh)[seg[1]].X() );
 	  }
 	glEnd();
       }
@@ -1316,8 +1316,8 @@ namespace netgen
 	for (int i = 1; i <= mesh->GetNSeg(); i++)
 	  {
 	    const Segment & seg = mesh -> LineSegment (i);
-	    const Point3d p1 = mesh -> Point (seg.p1);
-	    const Point3d p2 = mesh -> Point (seg.p2);
+	    const Point3d p1 = mesh -> Point (seg[0]);
+	    const Point3d p2 = mesh -> Point (seg[1]);
 
 	    const Point3d p = Center (p1, p2);
 	    glRasterPos3d (p.X(), p.Y(), p.Z());
@@ -1421,11 +1421,11 @@ namespace netgen
   
     if (mesh->GetNSeg())
       {
-	box.SetPoint (mesh->Point (mesh->LineSegment(1).p1));
+	box.SetPoint (mesh->Point (mesh->LineSegment(1)[0]));
 	for (int i = 1; i <= mesh->GetNSeg(); i++)
 	  {
-	    box.AddPoint (mesh->Point (mesh->LineSegment(i).p1));
-	    box.AddPoint (mesh->Point (mesh->LineSegment(i).p2));
+	    box.AddPoint (mesh->Point (mesh->LineSegment(i)[0]));
+	    box.AddPoint (mesh->Point (mesh->LineSegment(i)[1]));
 	  }
       }
     else if (specpoints.Size() >= 2)

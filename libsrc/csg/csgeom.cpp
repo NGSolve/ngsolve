@@ -990,14 +990,11 @@ namespace netgen
 	    for (int k = 0; k < tas.GetNP(); k++)
 	      {
 		tams -> AddPoint (tas.GetPoint(k));
-		Vec<3> n = GetSurface(j) -> GetNormalVector (tas.GetPoint(k));
+                Vec<3> n = GetSurface(j) -> GetNormalVector (tas.GetPoint(k)); 
 		n.Normalize();
 		if (GetSurface(j)->Inverse()) n *= -1;
 		tams -> AddNormal (n);
-		//(*testout) << "point " << tas.GetPoint(k) << " normal " << n << endl;
-		//cout << "added point, normal=" << n << endl;
 	      }
-
 	  
 	    BoxSphere<3> surfbox;
 
@@ -1033,9 +1030,12 @@ namespace netgen
 				    tri[0] + oldnp,
 				    tri[1] + oldnp,
 				    tri[2] + oldnp);
+                    
+                    // tams -> AddTriangle (tria);
 
 		    RefineTriangleApprox (locsol, j, box, detail, 
-					  tria, *tams, iset);
+					  tria, *tams, iset, 1);
+
 		    delete locsol;
 		  }
 	      }
@@ -1057,9 +1057,11 @@ namespace netgen
 			double detail,
 			const TATriangle & tria, 
 			TriangleApproximation & tams,
-			IndexSet & iset)
+			IndexSet & iset,
+                        int level)
   {
-    
+    if (level > 10) return;
+
     //tams.AddTriangle (tria);
     //(*testout) << "tria " << tams.GetPoint(tria[0]) << " - " << tams.GetPoint(tria[1]) << " - " << tams.GetPoint(tria[2]) 
     //       << " ( " << tria[0] << " " << tria[1] << " " << tria[2] << ")" <<endl;
@@ -1352,6 +1354,7 @@ namespace netgen
 	Vec<3> n;
 	
 	GetSurface(surfind)->Project (newp);
+
 	n = GetSurface(surfind)->GetNormalVector (newp);
       
 	pinds[between[i][2]] = tams.AddPoint (newp);
@@ -1377,7 +1380,7 @@ namespace netgen
 	nbox.Set (tams.GetPoint (ntri[0]));
 	nbox.Add (tams.GetPoint (ntri[1]));
 	nbox.Add (tams.GetPoint (ntri[2]));
-	nbox.Increase (1e-6);
+	nbox.Increase (1e-8);
 	nbox.CalcDiamCenter();
 
 	Solid * nsol = locsol -> GetReducedSolid (nbox);
@@ -1385,7 +1388,7 @@ namespace netgen
 	if (nsol)
 	  {
 	    RefineTriangleApprox (nsol, surfind, nbox, 
-				  detail, ntri, tams, iset);
+				  detail, ntri, tams, iset, level+1);
 	  
 	    delete nsol;
 	  }

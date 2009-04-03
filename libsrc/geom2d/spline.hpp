@@ -21,21 +21,20 @@ template < int D >
 class GeomPoint : public Point<D>
 {
 public:
-  /// refinement to point
+  /// refinement factor at point
   double refatpoint;
+
+  /// hp-refinement
   bool hpref;
 
-  GeomPoint ()
-  { ; }
+  ///
+  GeomPoint () { ; }
 
   ///
-  GeomPoint (double ax, double ay, double aref = 1, bool ahpref=false)
-  : Point<D> (ax, ay), refatpoint(aref), hpref(ahpref) { ; }
-  GeomPoint (double ax, double ay, double az, double aref, bool ahpref=false)
-  : Point<D> (ax, ay, az), refatpoint(aref), hpref(ahpref) { ; }
   GeomPoint (const Point<D> & ap, double aref = 1, bool ahpref=false)
   : Point<D>(ap), refatpoint(aref), hpref(ahpref) { ; }
 };
+
 
 
 
@@ -56,12 +55,14 @@ public:
   int copyfrom;
   /// perfrom anisotropic refinement (hp-refinement) to edge
   bool hpref_left;
+  /// perfrom anisotropic refinement (hp-refinement) to edge
   bool hpref_right;
+
   /// calculates length of curve
   virtual double Length () const;
   /// returns point at curve, 0 <= t <= 1
   virtual Point<D> GetPoint (double t) const = 0;
-  /// returns a (not necessarily uniform) tangent vector for 0 <= t <= 1
+  /// returns a (not necessarily unit-length) tangent vector for 0 <= t <= 1
   virtual Vec<D> GetTangent (const double t) const
   { cerr << "GetTangent not implemented for spline base-class"  << endl; Vec<D> dummy; return dummy;}
   virtual void GetDerivatives (const double t, 
@@ -112,14 +113,13 @@ class LineSeg : public SplineSeg<D>
 {
   ///
   GeomPoint<D> p1, p2;
-  //const GeomPoint<D> &p1, &p2;
 public:
   ///
   LineSeg (const GeomPoint<D> & ap1, const GeomPoint<D> & ap2);
   ///
   virtual double Length () const;
   ///
-  virtual Point<D> GetPoint (double t) const;
+  inline virtual Point<D> GetPoint (double t) const;
   ///
   virtual Vec<D> GetTangent (const double t) const;
 
@@ -154,7 +154,6 @@ class SplineSeg3 : public SplineSeg<D>
 {
   ///
   GeomPoint<D> p1, p2, p3;
-  //const GeomPoint<D> &p1, &p2, &p3;
 
   mutable double proj_latest_t;
 public:
@@ -163,7 +162,7 @@ public:
 	      const GeomPoint<D> & ap2, 
 	      const GeomPoint<D> & ap3);
   ///
-  virtual Point<D> GetPoint (double t) const;
+  inline virtual Point<D> GetPoint (double t) const;
   ///
   virtual Vec<D> GetTangent (const double t) const;
 
@@ -376,8 +375,8 @@ void SplineSeg<D> :: Partition (double h, double elto0,
 	    Segment seg;
 	    seg.edgenr = segnr;
 	    seg.si = bc; // segnr;
-	    seg.p1 = pi1;
-	    seg.p2 = pi2;
+	    seg[0] = pi1;
+	    seg[1] = pi2;
 	    seg.domin = leftdom;
 	    seg.domout = rightdom;
 	    seg.epgeominfo[0].edgenr = segnr;
@@ -409,6 +408,7 @@ void SplineSeg<D> :: GetPoints (int n, Array<Point<D> > & points)
       points[i] = GetPoint(double(i) / (n-1));
 }
 
+
 template<int D>
 void SplineSeg<D> :: PrintCoeff (ostream & ost) const
 {
@@ -438,7 +438,7 @@ LineSeg<D> :: LineSeg (const GeomPoint<D> & ap1,
 
 
 template<int D>
-Point<D> LineSeg<D> :: GetPoint (double t) const
+inline Point<D> LineSeg<D> :: GetPoint (double t) const
 {
   return p1 + t * (p2 - p1);
 }
@@ -529,150 +529,6 @@ void LineSeg<D> :: GetRawData (Array<double> & data) const
 }
 
 
-template<int D>
-void SplineSeg3<D> :: Project (const Point<D> point, Point<D> & point_on_curve, double & t) const
-{
-  double t_old = -1;
-
-  if(proj_latest_t > 0. && proj_latest_t < 1.)
-    t = proj_latest_t;
-  else
-    t = 0.5;
-	
-  Point<D> phi;
-  Vec<D> phip,phipp,phimp;
-    
-  int i=0;
-
-  while(t > -0.5 && t < 1.5 && i<20 && fabs(t-t_old) > 1e-15 )
-    {
-      GetDerivatives(t,phi,phip,phipp);
-	
-      t_old = t;
-
-      phimp = phi-point;
-
-      //t = min2(max2(t-(phip*phimp)/(phipp*phimp + phip*phip),0.),1.);
-      t -= (phip*phimp)/(phipp*phimp + phip*phip);
-
-      i++;
-    }
-    
-  //if(i<10 && t > 0. && t < 1.)
-  if(i<20 && t > -0.4 && t < 1.4)
-    {
-      if(t < 0)
-	{
-	  t = 0.;
-	}
-      if(t > 1)
-	{
-	  t = 1.;
-	}
-
-      point_on_curve = GetPoint(t);
-	
-      double dist = Dist(point,point_on_curve);
-	
-      phi = GetPoint(0);
-      double auxdist = Dist(phi,point);
-      if(auxdist < dist)
-	{
-	  t = 0.;
-	  point_on_curve = phi;
-	  dist = auxdist;
-	}
-      phi = GetPoint(1);
-      auxdist = Dist(phi,point);
-      if(auxdist < dist)
-	{
-	  t = 1.;
-	  point_on_curve = phi;
-	  dist = auxdist;
-	}
-    }
-  else
-    {
-      double t0 = 0;
-      double t1 = 0.5;
-      double t2 = 1.;
-
-      double d0,d1,d2;
-
-	
-      //(*testout) << "newtonersatz" << endl;
-      while(t2-t0 > 1e-8)
-	{
-	    
-	  phi = GetPoint(t0); d0 = Dist(phi,point);
-	  phi = GetPoint(t1); d1 = Dist(phi,point);
-	  phi = GetPoint(t2); d2 = Dist(phi,point);
-
-	  double a = (2.*d0 - 4.*d1 +2.*d2)/pow(t2-t0,2);
-
-	  if(a <= 0)
-	    {
-	      if(d0 < d2)
-		t2 -= 0.3*(t2-t0);
-	      else
-		t0 += 0.3*(t2-t0);
-
-	      t1 = 0.5*(t2+t0);
-	    }
-	  else
-	    {
-	      double b = (d1-d0-a*(t1*t1-t0*t0))/(t1-t0);
-
-	      double auxt1 = -0.5*b/a;
-
-	      if(auxt1 < t0)
-		{
-		  t2 -= 0.4*(t2-t0);
-		  t0 = max2(0.,t0-0.1*(t2-t0));
-		}
-	      else if (auxt1 > t2)
-		{
-		  t0 += 0.4*(t2-t0);
-		  t2 = min2(1.,t2+0.1*(t2-t0));
-		}
-	      else
-		{
-		  t1 = auxt1;
-		  auxt1 = 0.25*(t2-t0);
-		  t0 = max2(0.,t1-auxt1);
-		  t2 = min2(1.,t1+auxt1);
-		}
-		
-	      t1 = 0.5*(t2+t0);
-	    }  
-
-	}
-
-	
-      phi = GetPoint(t0); d0 = Dist(phi,point);
-      phi = GetPoint(t1); d1 = Dist(phi,point);
-      phi = GetPoint(t2); d2 = Dist(phi,point);
-
-      double mind = d0;
-      t = t0;
-      if(d1 < mind)
-	{
-	  t = t1;
-	  mind = d1;
-	}
-      if(d2 < mind)
-	{
-	  t = t2;
-	  mind = d2;
-	}
-
-      point_on_curve = GetPoint(t);
-    }
-  //(*testout) << " latest_t " << proj_latest_t << " t " << t << endl;
-
-  proj_latest_t = t;
-}
-
 
 
 
@@ -686,7 +542,7 @@ SplineSeg3<D> :: SplineSeg3 (const GeomPoint<D> & ap1,
 }
 
 template<int D>
-Point<D> SplineSeg3<D> :: GetPoint (double t) const
+inline Point<D> SplineSeg3<D> :: GetPoint (double t) const
 {
   double x, y, w;
   double b1, b2, b3;

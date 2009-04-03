@@ -758,8 +758,8 @@ namespace netgen
         if((atof(version.c_str()) <= 1.999999 && (*segmentdata[i])[2] > 0) ||
            (atof(version.c_str()) > 1.999999  && (*segmentdata[i])[2] > 0 && (*segmentdata[i])[2] < minId2D))
           {
-            seg.p1 = (*segmentdata[i])[0];
-            seg.p2 = (*segmentdata[i])[1];
+            seg[0] = (*segmentdata[i])[0];
+            seg[1] = (*segmentdata[i])[1];
             seg.edgenr = (*segmentdata[i])[2];
             seg.epgeominfo[0].edgenr = (*segmentdata[i])[2];
             seg.epgeominfo[1].edgenr = (*segmentdata[i])[2];
@@ -770,8 +770,8 @@ namespace netgen
             seg.geominfo[1].trignum = (*segmentdata[i])[5];
             mesh.AddSegment(seg);
 
-            seg.p1 = (*segmentdata[i])[1];
-            seg.p2 = (*segmentdata[i])[0];
+            seg[0] = (*segmentdata[i])[1];
+            seg[1] = (*segmentdata[i])[0];
             seg.si = (*segmentdata[i])[4]-minId2D+1;
             seg.surfnr1 = -1;//(*segmentdata[i])[3];
             seg.surfnr2 = -1;//(*segmentdata[i])[4];

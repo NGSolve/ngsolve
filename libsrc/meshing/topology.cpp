@@ -120,16 +120,16 @@ void MeshTopology :: Update()
   for (int i = 1; i <= nseg; i++)
     {
       const Segment & seg = mesh.LineSegment(i);
-      cnt[seg.p1]++;
-      cnt[seg.p2]++;
+      cnt[seg[0]]++;
+      cnt[seg[1]]++;
     }
  
   vert2segment = new TABLE<int,PointIndex::BASE> (cnt);
   for (int i = 1; i <= nseg; i++)
     {
       const Segment & seg = mesh.LineSegment(i);
-      vert2segment->AddSave (seg.p1, i);
-      vert2segment->AddSave (seg.p2, i);
+      vert2segment->AddSave (seg[0], i);
+      vert2segment->AddSave (seg[1], i);
     }
 
   if (buildedges)
@@ -278,7 +278,7 @@ void MeshTopology :: Update()
 	      int elnr = vert2segment->Get(i,j);
 	      const Segment & el = mesh.LineSegment (elnr);
 
-	      INDEX_2 edge(el.p1, el.p2);
+	      INDEX_2 edge(el[0], el[1]);
 	      
 	      int edgedir = (edge.I1() > edge.I2());
 	      if (edgedir) swap (edge.I1(), edge.I2());
@@ -348,7 +348,7 @@ void MeshTopology :: Update()
 	{
 	  const Segment & el = mesh.LineSegment (i);
       
-	  INDEX_2 edge(el.p1, el.p2);
+	  INDEX_2 edge(el[0], el[1]);
 	  int edgedir = (edge.I1() > edge.I2());
 	  if (edgedir) swap (edge.I1(), edge.I2());
 	  

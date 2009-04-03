@@ -222,7 +222,7 @@ namespace netgen
       lock.Lock();
       timestamp = NextTimeStamp();
 
-      int maxn = max2 (s.p1, s.p2);
+      int maxn = max2 (s[0], s[1]);
       maxn += 1-PointIndex::BASE;
 
       /*
@@ -234,16 +234,16 @@ namespace netgen
       ptyps[i] = INNERPOINT;
       }
 
-      if (ptyps[s.p1] > EDGEPOINT) ptyps[s.p1] = EDGEPOINT;
-      if (ptyps[s.p2] > EDGEPOINT) ptyps[s.p2] = EDGEPOINT;
+      if (ptyps[s[0]] > EDGEPOINT) ptyps[s[0]] = EDGEPOINT;
+      if (ptyps[s[1]] > EDGEPOINT) ptyps[s[1]] = EDGEPOINT;
       */
 
       if (maxn <= points.Size())
       {
-         if (points[s.p1].Type() > EDGEPOINT)
-            points[s.p1].SetType (EDGEPOINT);
-         if (points[s.p2].Type() > EDGEPOINT)
-            points[s.p2].SetType (EDGEPOINT);
+         if (points[s[0]].Type() > EDGEPOINT)
+            points[s[0]].SetType (EDGEPOINT);
+         if (points[s[1]].Type() > EDGEPOINT)
+            points[s[1]].SetType (EDGEPOINT);
       }
       /*
       else
@@ -511,9 +511,9 @@ namespace netgen
          outfile.width(8);
          outfile << 0;
          outfile.width(8);
-         outfile << seg.p1;
+         outfile << seg[0];
          outfile.width(8);
-         outfile << seg.p2;
+         outfile << seg[1];
          outfile << " ";
          outfile.width(8);
          outfile << seg.geominfo[0].trignum;  // stl dreiecke
@@ -902,7 +902,7 @@ namespace netgen
             {
                Segment seg;
                int hi;
-               infile >> seg.si >> hi >> seg.p1 >> seg.p2;
+               infile >> seg.si >> hi >> seg[0] >> seg[1];
                AddSegment (seg);
             }
          }
@@ -916,7 +916,7 @@ namespace netgen
             {
                Segment seg;
                int hi;
-               infile >> seg.si >> hi >> seg.p1 >> seg.p2
+               infile >> seg.si >> hi >> seg[0] >> seg[1]
                   >> seg.geominfo[0].trignum
                   >> seg.geominfo[1].trignum;
                AddSegment (seg);
@@ -935,7 +935,7 @@ namespace netgen
             {
                Segment seg;
                int hi;
-               infile >> seg.si >> hi >> seg.p1 >> seg.p2
+               infile >> seg.si >> hi >> seg[0] >> seg[1]
                   >> seg.geominfo[0].trignum
                   >> seg.geominfo[1].trignum
                   >> seg.surfnr1 >> seg.surfnr2
@@ -1250,9 +1250,9 @@ namespace netgen
             {
                Segment seg;
                int hi;
-               infile >> seg.si >> hi >> seg.p1 >> seg.p2;
-               seg.p1 = seg.p1 + oldnp;
-               seg.p2 = seg.p2 + oldnp;
+               infile >> seg.si >> hi >> seg[0] >> seg[1];
+               seg[0] = seg[0] + oldnp;
+               seg[1] = seg[1] + oldnp;
                AddSegment (seg);
             }
          }
@@ -1266,11 +1266,11 @@ namespace netgen
             {
                Segment seg;
                int hi;
-               infile >> seg.si >> hi >> seg.p1 >> seg.p2
+               infile >> seg.si >> hi >> seg[0] >> seg[1]
                   >> seg.geominfo[0].trignum
                   >> seg.geominfo[1].trignum;
-               seg.p1 = seg.p1 + oldnp;
-               seg.p2 = seg.p2 + oldnp;
+               seg[0] = seg[0] + oldnp;
+               seg[1] = seg[1] + oldnp;
                AddSegment (seg);
             }
          }
@@ -1283,7 +1283,7 @@ namespace netgen
             {
                Segment seg;
                int hi;
-               infile >> seg.si >> hi >> seg.p1 >> seg.p2
+               infile >> seg.si >> hi >> seg[0] >> seg[1]
                   >> seg.geominfo[0].trignum
                   >> seg.geominfo[1].trignum
                   >> seg.surfnr1 >> seg.surfnr2
@@ -1298,8 +1298,8 @@ namespace netgen
 
                if(seg.surfnr1 >= 0)  seg.surfnr1 = seg.surfnr1 + max_surfnr;
                if(seg.surfnr2 >= 0)  seg.surfnr2 = seg.surfnr2 + max_surfnr;
-               seg.p1 = seg.p1 +oldnp;
-               seg.p2 = seg.p2 +oldnp;
+               seg[0] = seg[0] +oldnp;
+               seg[1] = seg[1] +oldnp;
                seg.edgenr = seg.edgenr + oldne;
                seg.epgeominfo[1].edgenr = seg.epgeominfo[1].edgenr + oldne;
 
@@ -1458,7 +1458,7 @@ namespace netgen
       for (int i = 0; i < GetNSeg(); i++)
       {
          const Segment & seg = segments[i];
-         INDEX_2 i2(seg.p1, seg.p2);
+         INDEX_2 i2(seg[0], seg[1]);
          i2.Sort();
 
          boundaryedges -> Set (i2, 2);
@@ -1587,7 +1587,7 @@ namespace netgen
             const Segment & seg = segments[i];
             for (j = 1; j <= 2; j++)
             {
-               PointIndex hi = (j == 1) ? seg.p1 : seg.p2;
+               PointIndex hi = (j == 1) ? seg[0] : seg[1];
 
                if (points[hi].Type() == INNERPOINT ||
                   points[hi].Type() == SURFACEPOINT)
@@ -1624,7 +1624,7 @@ namespace netgen
       for (i = 0; i < GetNSeg(); i++)
       {
          const Segment & seg = segments[i];
-         INDEX_2 i2(seg.p1, seg.p2);
+         INDEX_2 i2(seg[0], seg[1]);
          i2.Sort();
 
          //boundaryedges -> Set (i2, 2);
@@ -1968,7 +1968,7 @@ namespace netgen
          for (i = 1; i <= GetNSeg(); i++)
          {
          const Segment & seg = LineSegment(i);
-         INDEX_2 i2(seg.p1, seg.p2);
+         INDEX_2 i2(seg[0], seg[1]);
          i2.Sort();
 
          if (!boundaryedges->Used (i2))
@@ -2009,7 +2009,7 @@ namespace netgen
 
          if (surfnr == 0 || seg.si == surfnr)
          {
-            INDEX_2 key(seg.p1, seg.p2);
+            INDEX_2 key(seg[0], seg[1]);
             INDEX_2 data(seg.si, -i);
 
             if (faceht.Used (key))
@@ -2029,7 +2029,7 @@ namespace netgen
 
          if (surfnr == 0 || seg.si == surfnr)
          {
-            INDEX_2 key(seg.p2, seg.p1);
+            INDEX_2 key(seg[1], seg[0]);
             if (!faceht.Used(key))
             {
                cerr << "ERROR: Segment " << seg << " brother not used" << endl;
@@ -2092,8 +2092,8 @@ namespace netgen
             if (data.I1())  // surfnr
             {
                Segment seg;
-               seg.p1 = i2.I1();
-               seg.p2 = i2.I2();
+               seg[0] = i2.I1();
+               seg[1] = i2.I2();
                seg.si = data.I1();
 
                // find geomdata:
@@ -2103,9 +2103,9 @@ namespace netgen
                   const Element2d & el = SurfaceElement (data.I2());
                   for (k = 1; k <= el.GetNP(); k++)
                   {
-                     if (seg.p1 == el.PNum(k))
+                     if (seg[0] == el.PNum(k))
                         seg.geominfo[0] = el.GeomInfoPi(k);
-                     if (seg.p2 == el.PNum(k))
+                     if (seg[1] == el.PNum(k))
                         seg.geominfo[1] = el.GeomInfoPi(k);
                   }
 
@@ -2121,8 +2121,8 @@ namespace netgen
                   (*testout) << "line seg: ";
                }
 
-               (*testout) << seg.p1 << " - " << seg.p2 
-                  << " len = " << Dist (Point(seg.p1), Point(seg.p2))
+               (*testout) << seg[0] << " - " << seg[1] 
+                  << " len = " << Dist (Point(seg[0]), Point(seg[1]))
                   << endl;
 
                opensegments.Append (seg);
@@ -2145,14 +2145,14 @@ namespace netgen
          for (i = 1; i <= GetNSeg(); i++)
          {
          const Segment & seg = LineSegment (i);
-         ptyps.Elem(seg.p1) = EDGEPOINT;
-         ptyps.Elem(seg.p2) = EDGEPOINT;
+         ptyps.Elem(seg[0]) = EDGEPOINT;
+         ptyps.Elem(seg[1]) = EDGEPOINT;
          }
          for (i = 1; i <= GetNOpenSegments(); i++)
          {
          const Segment & seg = GetOpenSegment (i);
-         ptyps.Elem(seg.p1) = EDGEPOINT;
-         ptyps.Elem(seg.p2) = EDGEPOINT;
+         ptyps.Elem(seg[0]) = EDGEPOINT;
+         ptyps.Elem(seg[1]) = EDGEPOINT;
          }
          */
          for (i = 1; i <= points.Size(); i++)
@@ -2161,14 +2161,14 @@ namespace netgen
          for (i = 1; i <= GetNSeg(); i++)
          {
             const Segment & seg = LineSegment (i);
-            points[seg.p1].SetType(EDGEPOINT);
-            points[seg.p2].SetType(EDGEPOINT);
+            points[seg[0]].SetType(EDGEPOINT);
+            points[seg[1]].SetType(EDGEPOINT);
          }
          for (i = 1; i <= GetNOpenSegments(); i++)
          {
             const Segment & seg = GetOpenSegment (i);
-            points[seg.p1].SetType (EDGEPOINT);
-            points[seg.p2].SetType (EDGEPOINT);
+            points[seg[0]].SetType (EDGEPOINT);
+            points[seg[1]].SetType (EDGEPOINT);
          }
 
 
@@ -2212,8 +2212,8 @@ namespace netgen
       for (i = 1; i <= GetNOpenSegments(); i++)
       {
          const Segment & seg = GetOpenSegment(i);
-         frontpoints.Set (seg.p1);
-         frontpoints.Set (seg.p2);
+         frontpoints.Set (seg[0]);
+         frontpoints.Set (seg[1]);
       }
 
       for (i = 1; i <= GetNSE(); i++)
@@ -2534,15 +2534,15 @@ namespace netgen
       for (int i = 0; i < GetNSeg(); i++)
       {
          const Segment & seg = segments[i];
-         const Point3d & p1 = points[seg.p1];
-         const Point3d & p2 = points[seg.p2];
+         const Point3d & p1 = points[seg[0]];
+         const Point3d & p2 = points[seg[1]];
          /*
-         INDEX_2 i21(seg.p1, seg.p2);
-         INDEX_2 i22(seg.p2, seg.p1);
+         INDEX_2 i21(seg[0], seg[1]);
+         INDEX_2 i22(seg[1], seg[0]);
          if (identifiedpoints)
          if (!identifiedpoints->Used (i21) && !identifiedpoints->Used (i22))
          */
-         if (!ident -> UsedSymmetric (seg.p1, seg.p2))
+         if (!ident -> UsedSymmetric (seg[0], seg[1]))
          {
             lochfunc->SetH (Center (p1, p2), Dist (p1, p2));
          }
@@ -2648,7 +2648,7 @@ namespace netgen
       for (i = 1; i <= GetNSeg(); i++)
       {
          const Segment & seg = LineSegment(i);
-         INDEX_2 i2(seg.p1, seg.p2);
+         INDEX_2 i2(seg[0], seg[1]);
          i2.Sort();
          bedges.Set (i2, 1);
       }
@@ -2709,8 +2709,8 @@ namespace netgen
       for (i = 1; i <= GetNSeg(); i++)
       {
          const Segment & seg = LineSegment(i);
-         const Point3d & p1 = Point(seg.p1);
-         const Point3d & p2 = Point(seg.p2);
+         const Point3d & p1 = Point(seg[0]);
+         const Point3d & p2 = Point(seg[1]);
          RestrictLocalH (Center (p1, p2),  Dist (p1, p2));
       }
 
@@ -2730,8 +2730,8 @@ namespace netgen
       linepoint.Clear();
       for (i = 1; i <= nseg; i++)
       {
-      linepoint.Set (LineSegment(i).p1);
-      linepoint.Set (LineSegment(i).p2);
+      linepoint.Set (LineSegment(i)[0]);
+      linepoint.Set (LineSegment(i)[1]);
       }
 
       for (i = 1; i <= np; i++)
@@ -2817,7 +2817,7 @@ namespace netgen
       case RESTRICTH_SEGMENT:
          {
             const Segment & seg = LineSegment(nr);
-            RestrictLocalHLine (Point (seg.p1), Point(seg.p2), loch);
+            RestrictLocalHLine (Point (seg[0]), Point(seg[1]), loch);
             break;
          }
       }
@@ -3030,7 +3030,7 @@ namespace netgen
             }
 
             for (i = 0; i < segments.Size(); i++)
-               if (segments[i].p1 <= PointIndex::BASE-1)
+               if (segments[i][0] <= PointIndex::BASE-1)
                {
                   segments.Delete(i);
                   i--;
@@ -3054,8 +3054,8 @@ namespace netgen
                for (i = 0; i < segments.Size(); i++)
                {
                   const Segment & seg = segments[i];
-                  pused.Set (seg.p1);
-                  pused.Set (seg.p2);
+                  pused.Set (seg[0]);
+                  pused.Set (seg[1]);
                }
 
                for (i = 0; i < openelements.Size(); i++)
@@ -3121,8 +3121,8 @@ namespace netgen
                for (i = 0; i < segments.Size(); i++)
                {
                   Segment & seg = segments[i];
-                  seg.p1 = op2np[seg.p1];
-                  seg.p2 = op2np[seg.p2];
+                  seg[0] = op2np[seg[0]];
+                  seg[1] = op2np[seg[1]];
                }
 
                for (i = 1; i <= openelements.Size(); i++)
