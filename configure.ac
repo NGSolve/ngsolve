@@ -12,6 +12,22 @@ AC_PROG_LIBTOOL
 
 # ACX_LAPACK
 
+
+# Tcl/Tk configuration:
+
+TEA_INIT([3.6])
+
+TEA_PATH_TCLCONFIG
+TEA_LOAD_TCLCONFIG 
+
+TEA_PATH_TKCONFIG
+TEA_LOAD_TKCONFIG
+
+TEA_PUBLIC_TCL_HEADERS
+
+
+
+
 AC_ARG_WITH([netgen], 
         [  --with-netgen=dir       use Netgen installed in directory dir],
         [netgendir=$withval],
