@@ -9,30 +9,55 @@ REM ***
 REM *** Call from Visual C++ using:
 REM *** postBuild_netgen.bat $(ProjectName) $(TargetFileName) $(ConfigurationName) $(ProjectDir)
 REM *********************************************************************************
-if [%1]==[] goto BuildEventFailed
+if [%1]==[] goto InputParamsFailed
 set PROJ_NAME=%~1
 set PROJ_EXEC=%~2
 set BUILD_TYPE=%~3
 set PROJ_DIR=%~4
+set LIB_NAME=%~5
 
 REM *** Change these Folders if required ***
-set NETGEN_TCLSRC=%PROJ_DIR%..\ng
 set INSTALL_FOLDER=%PROJ_DIR%%BUILD_TYPE%-bin
+set NETGEN_TCLSRC=%PROJ_DIR%..\ng
+set NETGEN_LIBINC=%PROJ_DIR%..\libsrc\include
 
+REM *** Start the Installation procedure ***
 echo POSTBUILD Script for %PROJ_NAME% ........
 
 REM *** Embed the Windows Manifest into the Executable File ***
 echo Embedding Manifest into the executable: %PROJ_EXEC% ....
 mt.exe -manifest "%BUILD_TYPE%\%PROJ_EXEC%.intermediate.manifest" "-outputresource:%BUILD_TYPE%\%PROJ_EXEC%;1" 
-if errorlevel 1 goto BuildEventFailed
+if errorlevel 1 goto ManifestFailed
+echo Embedding Manifest into the executable: Completed OK!!
 
-REM *** Copy the TCL files and the executable to the Install Folder ***
-echo Installing required files into %INSTALL_FOLDER% ....
+REM *** Copy the core TCL files into the Install Folder ***
+echo Installing core TCL files into %INSTALL_FOLDER% ....
 xcopy  "%NETGEN_TCLSRC%\*.tcl" "%INSTALL_FOLDER%" /i /d /y
-if errorlevel 1 goto BuildEventFailed
+if errorlevel 1 goto CoreTCLFailed
+echo Installing core TCL Files: Completed OK!!
 
+REM *** Copy any more auxiliary TCL files into the Install Folder ***
+REM if errorlevel 1 goto AuxTCLFailed
+REM echo Installing auxiliary TCL Files: Completed OK!!
+
+REM *** Copy the primary Netgen executable file into the Install Folder ***
+echo Installing %PROJ_EXEC% into %INSTALL_FOLDER% ....
 xcopy "%PROJ_DIR%%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%" /i /d /y
-if errorlevel 1 goto BuildEventFailed
+if errorlevel 1 goto ExecInstallFailed
+echo Installing %PROJ_EXEC%: Completed OK!!
+
+REM *** Copy the primary Netgen library and include files into the Install Folder ***
+echo Installing %LIB_NAME%.lib into %INSTALL_FOLDER% ....
+xcopy "%PROJ_DIR%%BUILD_TYPE%\%LIB_NAME%.lib" "%INSTALL_FOLDER%" /i /d /y
+if errorlevel 1 goto LibInstallFailed
+echo Installing %LIB_NAME%.lib: Completed OK!!
+
+echo Installing %LIB_NAME%.h into %INSTALL_FOLDER% ....
+xcopy "%NETGEN_LIBINC%\%LIB_NAME%.h" "%INSTALL_FOLDER%" /i /d /y
+if errorlevel 1 goto LibInstallFailed
+echo Installing %LIB_NAME%.h: Completed OK!!
+
+REM *** Done with the installation routine ***
 
 REM *** Clean up the build directory by deleting the OBJ files ***
 REM echo Deleting the %PROJ_NAME% build folder %PROJ_DIR%%PROJ_NAME% ....
@@ -40,8 +65,24 @@ REM rmdir %PROJ_DIR%%BUILD_TYPE% /s /q
 
 REM *** If there have been no errors so far, we are done ***
 goto BuildEventOK
-:BuildEventFailed
-echo POSTBUILD Script for %PROJ_NAME% FAILED..... Install Manually !!!
+
+REM *** Error Messages for each stage of the post build process ***
+:InputParamsFailed
+echo POSTBUILD Script for %PROJ_NAME% FAILED..... Invalid number of input parameters!!!
 exit 1
+:ManifestFailed
+echo POSTBUILD Script for %PROJ_NAME% FAILED..... Manifest not successfully embedded!!!
+exit 1
+:CoreTCLFailed
+echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying core TCL Files into install folder!!!
+exit 1
+:ExecInstallFailed
+echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying the netgen executable into install folder!!!
+exit 1
+:LibInstallFailed
+echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying %LIB_NAME%.lib or %LIB_NAME%.h into install folder!!!
+exit 1
+
 :BuildEventOK
 echo POSTBUILD Script for %PROJ_NAME% completed OK.....!!
+

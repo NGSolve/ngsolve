@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OPENGL;WINVER=0x0501"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -61,13 +61,16 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="pthreadVC2.lib tcl85.lib tk85.lib tix84.lib Togl17.lib glu32.lib opengl32.lib"
 				ShowProgress="0"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
 				GenerateManifest="true"
+				EnableUAC="false"
 				GenerateDebugInformation="true"
 				SubSystem="1"
+				ImportLibrary="$(OutDir)\nginterface.lib"
 				TargetMachine="1"
 				AllowIsolation="false"
 			/>
@@ -95,7 +98,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -126,7 +129,7 @@
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;WIN32;MSVC_EXPRESS;OPENGL;WINVER=0x0501"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;WIN32;MSVC_EXPRESS;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableEnhancedInstructionSet="1"
@@ -146,16 +149,19 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="pthreadVC2.lib tcl85.lib tk85.lib tix84.lib Togl17.lib glu32.lib opengl32.lib"
 				ShowProgress="0"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
 				GenerateManifest="true"
+				EnableUAC="false"
 				GenerateDebugInformation="false"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				OptimizeForWindows98="0"
+				ImportLibrary="$(OutDir)\nginterface.lib"
 				TargetMachine="1"
 				AllowIsolation="false"
 			/>
@@ -183,7 +189,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -214,7 +220,7 @@
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(CASROOT)\inc&quot;"
-				PreprocessorDefinitions="WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0501"
+				PreprocessorDefinitions="WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableEnhancedInstructionSet="1"
@@ -234,17 +240,20 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="pthreadVC2.lib tcl85.lib tk85.lib tix84.lib Togl17.lib glu32.lib opengl32.lib TKernel.lib TKGeomBase.lib TKMath.lib TKG2d.lib TKG3d.lib TKXSBase.lib TKOffset.lib TKFillet.lib TKShHealing.lib TKMesh.lib TKMeshVS.lib TKTopAlgo.lib TKGeomAlgo.lib TKBool.lib TKPrim.lib TKBO.lib TKIGES.lib TKBRep.lib TKSTEPBase.lib TKSTEP.lib TKSTL.lib TKSTEPAttr.lib TKSTEP209.lib TKXDESTEP.lib TKXDEIGES.lib TKXCAF.lib TKDCAF.lib TKLCAF.lib"
 				ShowProgress="0"
 				OutputFile="$(OutDir)\$(ProjectName).exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;;&quot;$(CASROOT)\win32\lib&quot;"
 				GenerateManifest="true"
+				EnableUAC="false"
 				GenerateDebugInformation="false"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				OptimizeForWindows98="0"
+				ImportLibrary="$(OutDir)\nginterface.lib"
 				TargetMachine="1"
 				AllowIsolation="false"
 			/>
@@ -272,7 +281,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -301,7 +310,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(CASROOT)\inc&quot;"
-				PreprocessorDefinitions="WIN32;WNT;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0501"
+				PreprocessorDefinitions="WIN32;WNT;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -321,13 +330,16 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="pthreadVC2.lib tcl85.lib tk85.lib tix84.lib Togl17.lib glu32.lib opengl32.lib TKernel.lib TKGeomBase.lib TKMath.lib TKG2d.lib TKG3d.lib TKXSBase.lib TKOffset.lib TKFillet.lib TKShHealing.lib TKMesh.lib TKMeshVS.lib TKTopAlgo.lib TKGeomAlgo.lib TKBool.lib TKPrim.lib TKBO.lib TKIGES.lib TKBRep.lib TKSTEPBase.lib TKSTEP.lib TKSTL.lib TKSTEPAttr.lib TKSTEP209.lib TKXDESTEP.lib TKXDEIGES.lib TKXCAF.lib TKDCAF.lib TKLCAF.lib"
 				ShowProgress="0"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;;&quot;$(CASROOT)\win32\lib&quot;"
 				GenerateManifest="true"
+				EnableUAC="false"
 				GenerateDebugInformation="true"
 				SubSystem="1"
+				ImportLibrary="$(OutDir)\nginterface.lib"
 				TargetMachine="1"
 				AllowIsolation="false"
 			/>
@@ -355,7 +367,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -1575,6 +1587,58 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\occ\Partition_Spliter.hxx"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Aux Header Files"
+			>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Inter2d.ixx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Inter2d.jxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Inter3d.ixx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Inter3d.jxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop.ixx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop.jxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop2d.ixx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop2d.jxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop3d.ixx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop3d.jxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Spliter.ixx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Spliter.jxx"
 				>
 			</File>
 		</Filter>

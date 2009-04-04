@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OPENGL;WINVER=0x0501"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -62,6 +62,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="pthreadVC2.lib tcl85.lib tk85.lib tix84.lib Togl17.lib glu32.lib opengl32.lib"
 				ShowProgress="0"
 				LinkIncremental="0"
@@ -70,6 +71,7 @@
 				EnableUAC="false"
 				GenerateDebugInformation="true"
 				SubSystem="1"
+				ImportLibrary="$(OutDir)\nginterface.lib"
 				TargetMachine="1"
 				AllowIsolation="false"
 			/>
@@ -94,7 +96,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -125,7 +127,7 @@
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;WIN32;MSVC_EXPRESS;OPENGL;WINVER=0x0501"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;WIN32;MSVC_EXPRESS;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableEnhancedInstructionSet="1"
@@ -145,6 +147,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="pthreadVC2.lib tcl85.lib tk85.lib tix84.lib Togl17.lib glu32.lib opengl32.lib"
 				ShowProgress="0"
 				LinkIncremental="0"
@@ -156,6 +159,7 @@
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				OptimizeForWindows98="0"
+				ImportLibrary="$(OutDir)\nginterface.lib"
 				TargetMachine="1"
 				AllowIsolation="false"
 			/>
@@ -180,7 +184,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -211,7 +215,7 @@
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(CASROOT)\inc&quot;"
-				PreprocessorDefinitions="WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0501"
+				PreprocessorDefinitions="WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableEnhancedInstructionSet="1"
@@ -231,6 +235,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="pthreadVC2.lib tcl85.lib tk85.lib tix84.lib Togl17.lib glu32.lib opengl32.lib TKernel.lib TKGeomBase.lib TKMath.lib TKG2d.lib TKG3d.lib TKXSBase.lib TKOffset.lib TKFillet.lib TKShHealing.lib TKMesh.lib TKMeshVS.lib TKTopAlgo.lib TKGeomAlgo.lib TKBool.lib TKPrim.lib TKBO.lib TKIGES.lib TKBRep.lib TKSTEPBase.lib TKSTEP.lib TKSTL.lib TKSTEPAttr.lib TKSTEP209.lib TKXDESTEP.lib TKXDEIGES.lib TKXCAF.lib TKDCAF.lib TKLCAF.lib"
 				ShowProgress="0"
 				LinkIncremental="0"
@@ -242,6 +247,7 @@
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				OptimizeForWindows98="0"
+				ImportLibrary="$(OutDir)\nginterface.lib"
 				TargetMachine="1"
 				AllowIsolation="false"
 			/>
@@ -266,7 +272,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -295,7 +301,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(CASROOT)\inc&quot;"
-				PreprocessorDefinitions="WIN32;WNT;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0501"
+				PreprocessorDefinitions="WIN32;WNT;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -315,6 +321,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="pthreadVC2.lib tcl85.lib tk85.lib tix84.lib Togl17.lib glu32.lib opengl32.lib TKernel.lib TKGeomBase.lib TKMath.lib TKG2d.lib TKG3d.lib TKXSBase.lib TKOffset.lib TKFillet.lib TKShHealing.lib TKMesh.lib TKMeshVS.lib TKTopAlgo.lib TKGeomAlgo.lib TKBool.lib TKPrim.lib TKBO.lib TKIGES.lib TKBRep.lib TKSTEPBase.lib TKSTEP.lib TKSTL.lib TKSTEPAttr.lib TKSTEP209.lib TKXDESTEP.lib TKXDEIGES.lib TKXCAF.lib TKDCAF.lib TKLCAF.lib"
 				ShowProgress="0"
 				LinkIncremental="0"
@@ -323,6 +330,7 @@
 				EnableUAC="false"
 				GenerateDebugInformation="true"
 				SubSystem="1"
+				ImportLibrary="$(OutDir)\nginterface.lib"
 				TargetMachine="1"
 				AllowIsolation="false"
 			/>
@@ -347,7 +355,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -416,11 +424,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\csg.hpp"
+				RelativePath="..\libsrc\csg\csg.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\csg\csg.hpp"
+				RelativePath="..\libsrc\include\csg.hpp"
 				>
 			</File>
 			<File
@@ -492,11 +500,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\geometry2d.hpp"
+				RelativePath="..\libsrc\geom2d\geometry2d.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\geom2d\geometry2d.hpp"
+				RelativePath="..\libsrc\include\geometry2d.hpp"
 				>
 			</File>
 			<File
@@ -596,11 +604,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\linalg.hpp"
+				RelativePath="..\libsrc\include\linalg.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\linalg.hpp"
+				RelativePath="..\libsrc\linalg\linalg.hpp"
 				>
 			</File>
 			<File
@@ -624,11 +632,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\meshing.hpp"
+				RelativePath="..\libsrc\meshing\meshing.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\meshing\meshing.hpp"
+				RelativePath="..\libsrc\include\meshing.hpp"
 				>
 			</File>
 			<File
@@ -716,11 +724,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\occ\occgeom.hpp"
+				RelativePath="..\libsrc\include\occgeom.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\occgeom.hpp"
+				RelativePath="..\libsrc\occ\occgeom.hpp"
 				>
 			</File>
 			<File
@@ -728,11 +736,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\opti.hpp"
+				RelativePath="..\libsrc\include\opti.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\opti.hpp"
+				RelativePath="..\libsrc\linalg\opti.hpp"
 				>
 			</File>
 			<File
@@ -840,11 +848,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\stlgeom\stlgeom.hpp"
+				RelativePath="..\libsrc\include\stlgeom.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\stlgeom.hpp"
+				RelativePath="..\libsrc\stlgeom\stlgeom.hpp"
 				>
 			</File>
 			<File
@@ -908,11 +916,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\visual.hpp"
+				RelativePath="..\libsrc\visualization\visual.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\visualization\visual.hpp"
+				RelativePath="..\libsrc\include\visual.hpp"
 				>
 			</File>
 			<File
@@ -1567,6 +1575,58 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\occ\Partition_Spliter.hxx"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Aux Header Files"
+			>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Inter2d.ixx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Inter2d.jxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Inter3d.ixx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Inter3d.jxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop.ixx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop.jxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop2d.ixx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop2d.jxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop3d.ixx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop3d.jxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Spliter.ixx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Spliter.jxx"
 				>
 			</File>
 		</Filter>
