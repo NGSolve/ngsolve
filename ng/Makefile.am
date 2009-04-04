@@ -23,4 +23,6 @@ ngvisual.tcl sockets.tcl drawing.tcl nghelp.tcl ngshell.tcl  \
 ngtesting.tcl parameters.tcl variables.tcl
 
 
-netgen_LDFLAGS = -rdynamic
+netgen_LDFLAGS = -rdynamic -pg 
+
+

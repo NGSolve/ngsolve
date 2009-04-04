@@ -285,15 +285,15 @@ catch {
 # source ngusers/ebg/elasticity/ebgelast.tcl
 
 
-if { [catch { load libngsolve.so ngsolve } result ] } {
-    puts "cannot load ngsolve" 
-    puts "error: $result"
+if { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
+#    puts "cannot load ngsolve" 
+#    puts "error: $result"
 } {
     catch { source ${ngdir}/ngsolve.tcl }
 }
 
 
-if { [catch { load libdemoapp.so demoapp } result ] } {
+if { [catch { load libdemoapp[info sharedlibextension] demoapp } result ] } {
 #    puts "cannot load demoapp" 
 #    puts "error: $result"
 } {
