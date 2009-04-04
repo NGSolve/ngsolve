@@ -92,7 +92,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="$(ProjectDir)\postBuild_nglib.bat $(ProjectName) $(TargetFileName) $(ConfigurationName) $(ProjectDir)"
+				CommandLine="&quot;$(ProjectDir)\postBuild_nglib.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -175,7 +175,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="$(ProjectDir)\postBuild_nglib.bat $(ProjectName) $(TargetFileName) $(ConfigurationName) $(ProjectDir)"
+				CommandLine="&quot;$(ProjectDir)\postBuild_nglib.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
 			/>
 		</Configuration>
 	</Configurations>

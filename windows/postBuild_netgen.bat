@@ -10,10 +10,10 @@ REM *** Call from Visual C++ using:
 REM *** postBuild_netgen.bat $(ProjectName) $(TargetFileName) $(ConfigurationName) $(ProjectDir)
 REM *********************************************************************************
 if [%1]==[] goto BuildEventFailed
-set PROJ_NAME=%1
-set PROJ_EXEC=%2
-set BUILD_TYPE=%3
-set PROJ_DIR=%4
+set PROJ_NAME=%~1
+set PROJ_EXEC=%~2
+set BUILD_TYPE=%~3
+set PROJ_DIR=%~4
 
 REM *** Change these Folders if required ***
 set NETGEN_TCLSRC=%PROJ_DIR%..\ng

@@ -95,7 +95,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="$(ProjectDir)\postBuild_netgen.bat $(ProjectName) $(TargetFileName) $(ConfigurationName) $(ProjectDir)"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -183,7 +183,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="$(ProjectDir)\postBuild_netgen.bat $(ProjectName) $(TargetFileName) $(ConfigurationName) $(ProjectDir)"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -272,7 +272,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="$(ProjectDir)\postBuild_netgen.bat $(ProjectName) $(TargetFileName) $(ConfigurationName) $(ProjectDir)"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -355,7 +355,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="$(ProjectDir)\postBuild_netgen.bat $(ProjectName) $(TargetFileName) $(ConfigurationName) $(ProjectDir)"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
 			/>
 		</Configuration>
 	</Configurations>
