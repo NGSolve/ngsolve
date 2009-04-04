@@ -41,26 +41,26 @@ class Partition_Loop3d  {
 
 public:
 
-    void* operator new(size_t,void* anAddress) 
-      {
-        return anAddress;
-      }
-    void* operator new(size_t size) 
-      { 
-        return Standard::Allocate(size); 
-      }
-    void  operator delete(void *anAddress) 
-      { 
-        if (anAddress) Standard::Free((Standard_Address&)anAddress); 
-      }
- // Methods PUBLIC
- // 
-Standard_EXPORT Partition_Loop3d();
-Standard_EXPORT   void AddConstFaces(const TopoDS_Shape& S) ;
-Standard_EXPORT   void AddSectionFaces(const TopoDS_Shape& S) ;
-Standard_EXPORT  const TopTools_ListOfShape& MakeShells(const TopTools_MapOfOrientedShape& AvoidFacesMap) ;
-Standard_EXPORT static  Standard_Boolean IsInside(const TopoDS_Edge& E,const TopoDS_Face& F1,const TopoDS_Face& F2,const Standard_Boolean CountDot,Standard_Real& Dot,Standard_Boolean& GoodOri) ;
-Standard_EXPORT static  gp_Vec Normal(const TopoDS_Edge& E,const TopoDS_Face& F) ;
+   void* operator new(size_t,void* anAddress) 
+   {
+      return anAddress;
+   }
+   void* operator new(size_t size) 
+   { 
+      return Standard::Allocate(size); 
+   }
+   void  operator delete(void *anAddress) 
+   { 
+      if (anAddress) Standard::Free((Standard_Address&)anAddress); 
+   }
+   // Methods PUBLIC
+   // 
+   Partition_Loop3d();
+   void AddConstFaces(const TopoDS_Shape& S) ;
+   void AddSectionFaces(const TopoDS_Shape& S) ;
+   const TopTools_ListOfShape& MakeShells(const TopTools_MapOfOrientedShape& AvoidFacesMap) ;
+   static  Standard_Boolean IsInside(const TopoDS_Edge& E,const TopoDS_Face& F1,const TopoDS_Face& F2,const Standard_Boolean CountDot,Standard_Real& Dot,Standard_Boolean& GoodOri) ;
+   static  gp_Vec Normal(const TopoDS_Edge& E,const TopoDS_Face& F) ;
 
 
 
@@ -68,25 +68,25 @@ Standard_EXPORT static  gp_Vec Normal(const TopoDS_Edge& E,const TopoDS_Face& F)
 
 protected:
 
- // Methods PROTECTED
- // 
+   // Methods PROTECTED
+   // 
 
 
- // Fields PROTECTED
- //
+   // Fields PROTECTED
+   //
 
 
 private: 
 
- // Methods PRIVATE
- // 
+   // Methods PRIVATE
+   // 
 
 
- // Fields PRIVATE
- //
-TopTools_ListOfShape myNewShells;
-TopTools_ListOfShape myFaces;
-TopTools_IndexedDataMapOfShapeListOfShape myEFMap;
+   // Fields PRIVATE
+   //
+   TopTools_ListOfShape myNewShells;
+   TopTools_ListOfShape myFaces;
+   TopTools_IndexedDataMapOfShapeListOfShape myEFMap;
 
 
 };

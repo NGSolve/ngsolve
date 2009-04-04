@@ -63,37 +63,37 @@ class Partition_Inter3d  {
 
 public:
 
-    void* operator new(size_t,void* anAddress) 
-      {
-        return anAddress;
-      }
-    void* operator new(size_t size) 
-      { 
-        return Standard::Allocate(size); 
-      }
-    void  operator delete(void *anAddress) 
-      { 
-        if (anAddress) Standard::Free((Standard_Address&)anAddress); 
-      }
- // Methods PUBLIC
- // 
-Standard_EXPORT Partition_Inter3d();
-Standard_EXPORT Partition_Inter3d(const Handle(BRepAlgo_AsDes)& AsDes);
-Standard_EXPORT   void CompletPart3d(const TopTools_ListOfShape& SetOfFaces1,const TopTools_DataMapOfShapeShape& FaceShapeMap) ;
-Standard_EXPORT   void FacesPartition(const TopoDS_Face& F1,const TopoDS_Face& F2) ;
-Standard_EXPORT   Standard_Boolean IsDone(const TopoDS_Face& F1,const TopoDS_Face& F2) const;
-Standard_EXPORT   TopTools_MapOfShape& TouchedFaces() ;
-Standard_EXPORT   Handle_BRepAlgo_AsDes AsDes() const;
-Standard_EXPORT   TopTools_MapOfShape& NewEdges() ;
-Standard_EXPORT   Standard_Boolean HasSameDomainF(const TopoDS_Shape& F) const;
-Standard_EXPORT   Standard_Boolean IsSameDomainF(const TopoDS_Shape& F1,const TopoDS_Shape& F2) const;
-Standard_EXPORT  const TopTools_ListOfShape& SameDomain(const TopoDS_Face& F) const;
-Standard_EXPORT   TopoDS_Vertex ReplaceSameDomainV(const TopoDS_Vertex& V,const TopoDS_Edge& E) const;
-Standard_EXPORT   Handle_BRepAlgo_AsDes SectionEdgesAD() const;
-Standard_EXPORT   Standard_Boolean IsSectionEdge(const TopoDS_Edge& E) const;
-Standard_EXPORT   Standard_Boolean HasSectionEdge(const TopoDS_Face& F) const;
-Standard_EXPORT   Standard_Boolean IsSplitOn(const TopoDS_Edge& NewE,const TopoDS_Edge& OldE,const TopoDS_Face& F) const;
-Standard_EXPORT  const TopTools_ListOfShape& SectionEdgeFaces(const TopoDS_Edge& SecE) const;
+   void* operator new(size_t,void* anAddress) 
+   {
+      return anAddress;
+   }
+   void* operator new(size_t size) 
+   { 
+      return Standard::Allocate(size); 
+   }
+   void  operator delete(void *anAddress) 
+   { 
+      if (anAddress) Standard::Free((Standard_Address&)anAddress); 
+   }
+   // Methods PUBLIC
+   // 
+   Partition_Inter3d();
+   Partition_Inter3d(const Handle(BRepAlgo_AsDes)& AsDes);
+   void CompletPart3d(const TopTools_ListOfShape& SetOfFaces1,const TopTools_DataMapOfShapeShape& FaceShapeMap) ;
+   void FacesPartition(const TopoDS_Face& F1,const TopoDS_Face& F2) ;
+   Standard_Boolean IsDone(const TopoDS_Face& F1,const TopoDS_Face& F2) const;
+   TopTools_MapOfShape& TouchedFaces() ;
+   Handle_BRepAlgo_AsDes AsDes() const;
+   TopTools_MapOfShape& NewEdges() ;
+   Standard_Boolean HasSameDomainF(const TopoDS_Shape& F) const;
+   Standard_Boolean IsSameDomainF(const TopoDS_Shape& F1,const TopoDS_Shape& F2) const;
+   const TopTools_ListOfShape& SameDomain(const TopoDS_Face& F) const;
+   TopoDS_Vertex ReplaceSameDomainV(const TopoDS_Vertex& V,const TopoDS_Edge& E) const;
+   Handle_BRepAlgo_AsDes SectionEdgesAD() const;
+   Standard_Boolean IsSectionEdge(const TopoDS_Edge& E) const;
+   Standard_Boolean HasSectionEdge(const TopoDS_Face& F) const;
+   Standard_Boolean IsSplitOn(const TopoDS_Edge& NewE,const TopoDS_Edge& OldE,const TopoDS_Face& F) const;
+   const TopTools_ListOfShape& SectionEdgeFaces(const TopoDS_Edge& SecE) const;
 
 
 
@@ -101,33 +101,33 @@ Standard_EXPORT  const TopTools_ListOfShape& SectionEdgeFaces(const TopoDS_Edge&
 
 protected:
 
- // Methods PROTECTED
- // 
+   // Methods PROTECTED
+   // 
 
 
- // Fields PROTECTED
- //
+   // Fields PROTECTED
+   //
 
 
 private: 
 
- // Methods PRIVATE
- // 
-Standard_EXPORT   void Inter3D(const TopoDS_Face& F1,const TopoDS_Face& F2,TopTools_ListOfShape& LInt) ;
-Standard_EXPORT   void StorePart3d(const TopoDS_Face& F1,const TopoDS_Face& F2,const TopTools_ListOfShape& LInt1) ;
-Standard_EXPORT   void SetDone(const TopoDS_Face& F1,const TopoDS_Face& F2) ;
-Standard_EXPORT   void Affiche(const TopTools_ListOfShape& SetOfFaces) const;
+   // Methods PRIVATE
+   // 
+   void Inter3D(const TopoDS_Face& F1,const TopoDS_Face& F2,TopTools_ListOfShape& LInt) ;
+   void StorePart3d(const TopoDS_Face& F1,const TopoDS_Face& F2,const TopTools_ListOfShape& LInt1) ;
+   void SetDone(const TopoDS_Face& F1,const TopoDS_Face& F2) ;
+   void Affiche(const TopTools_ListOfShape& SetOfFaces) const;
 
 
- // Fields PRIVATE
- //
-Handle_BRepAlgo_AsDes myAsDes;
-TopTools_DataMapOfShapeListOfShape myDone;
-TopTools_MapOfShape myTouched;
-TopTools_MapOfShape myNewEdges;
-Handle_BRepAlgo_AsDes mySectionEdgesAD;
-TopTools_DataMapOfShapeListOfShape mySameDomainFM;
-TopTools_DataMapOfShapeShape mySameDomainVM;
+   // Fields PRIVATE
+   //
+   Handle_BRepAlgo_AsDes myAsDes;
+   TopTools_DataMapOfShapeListOfShape myDone;
+   TopTools_MapOfShape myTouched;
+   TopTools_MapOfShape myNewEdges;
+   Handle_BRepAlgo_AsDes mySectionEdgesAD;
+   TopTools_DataMapOfShapeListOfShape mySameDomainFM;
+   TopTools_DataMapOfShapeShape mySameDomainVM;
 
 
 };

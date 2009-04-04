@@ -60,28 +60,28 @@ class Partition_Spliter  {
 
 public:
 
-    void* operator new(size_t,void* anAddress) 
-      {
-        return anAddress;
-      }
-    void* operator new(size_t size) 
-      { 
-        return Standard::Allocate(size); 
-      }
-    void  operator delete(void *anAddress) 
-      { 
-        if (anAddress) Standard::Free((Standard_Address&)anAddress); 
-      }
- // Methods PUBLIC
- // 
-Standard_EXPORT Partition_Spliter();
-Standard_EXPORT   void AddShape(const TopoDS_Shape& S) ;
-Standard_EXPORT   void AddTool(const TopoDS_Shape& S) ;
-Standard_EXPORT   void Compute(const TopAbs_ShapeEnum Limit = TopAbs_SHAPE) ;
-Standard_EXPORT   void KeepShapesInside(const TopoDS_Shape& S) ;
-Standard_EXPORT   void RemoveShapesInside(const TopoDS_Shape& S) ;
-Standard_EXPORT   TopoDS_Shape Shape() const;
-Standard_EXPORT   void Clear() ;
+   void* operator new(size_t,void* anAddress) 
+   {
+      return anAddress;
+   }
+   void* operator new(size_t size) 
+   { 
+      return Standard::Allocate(size); 
+   }
+   void  operator delete(void *anAddress) 
+   { 
+      if (anAddress) Standard::Free((Standard_Address&)anAddress); 
+   }
+   // Methods PUBLIC
+   // 
+   Partition_Spliter();
+   void AddShape(const TopoDS_Shape& S) ;
+   void AddTool(const TopoDS_Shape& S) ;
+   void Compute(const TopAbs_ShapeEnum Limit = TopAbs_SHAPE) ;
+   void KeepShapesInside(const TopoDS_Shape& S) ;
+   void RemoveShapesInside(const TopoDS_Shape& S) ;
+   TopoDS_Shape Shape() const;
+   void Clear() ;
 
 
 
@@ -89,52 +89,52 @@ Standard_EXPORT   void Clear() ;
 
 protected:
 
- // Methods PROTECTED
- // 
+   // Methods PROTECTED
+   // 
 
 
- // Fields PROTECTED
- //
+   // Fields PROTECTED
+   //
 
 
 private: 
 
- // Methods PRIVATE
- // 
-Standard_EXPORT   void MakeSolids(const TopoDS_Shape& Solid,TopTools_ListOfShape& Shells) ;
-Standard_EXPORT   void MakeShells(const TopoDS_Shape& S,TopTools_ListOfShape& NS) ;
-Standard_EXPORT   TopoDS_Shape MakeFaces(const TopoDS_Shape& S) ;
-Standard_EXPORT   void MakeEdges(const TopoDS_Edge& E,const TopTools_ListOfShape& VOnE,TopTools_ListOfShape& NE) const;
-Standard_EXPORT   TopoDS_Shape FindFacesInside(const TopoDS_Shape& S,const Standard_Boolean CheckClosed = Standard_False,const Standard_Boolean All = Standard_False) ;
-Standard_EXPORT   Standard_Boolean CheckTool(const TopoDS_Shape& S) ;
-Standard_EXPORT   void MergeEqualEdges(const TopTools_ListOfShape& LE) ;
-Standard_EXPORT static  Standard_Boolean IsInside(const TopoDS_Shape& S1,const TopoDS_Shape& S2) ;
-Standard_EXPORT   TopoDS_Shape GetOriginalShape(const TopoDS_Shape& aShape) const;
-Standard_EXPORT   void FindToolsToReconstruct() ;
+   // Methods PRIVATE
+   // 
+   void MakeSolids(const TopoDS_Shape& Solid,TopTools_ListOfShape& Shells) ;
+   void MakeShells(const TopoDS_Shape& S,TopTools_ListOfShape& NS) ;
+   TopoDS_Shape MakeFaces(const TopoDS_Shape& S) ;
+   void MakeEdges(const TopoDS_Edge& E,const TopTools_ListOfShape& VOnE,TopTools_ListOfShape& NE) const;
+   TopoDS_Shape FindFacesInside(const TopoDS_Shape& S,const Standard_Boolean CheckClosed = Standard_False,const Standard_Boolean All = Standard_False) ;
+   Standard_Boolean CheckTool(const TopoDS_Shape& S) ;
+   void MergeEqualEdges(const TopTools_ListOfShape& LE) ;
+   static  Standard_Boolean IsInside(const TopoDS_Shape& S1,const TopoDS_Shape& S2) ;
+   TopoDS_Shape GetOriginalShape(const TopoDS_Shape& aShape) const;
+   void FindToolsToReconstruct() ;
 
 
- // Fields PRIVATE
- //
-TopAbs_ShapeEnum myDoneStep;
-TopoDS_Compound myShape;
-BRep_Builder myBuilder;
-TopTools_ListOfShape myListShapes;
-TopTools_MapOfShape myMapFaces;
-TopTools_MapOfShape myMapTools;
-TopTools_MapOfShape myEqualEdges;
-TopTools_MapOfShape myNewSection;
-TopTools_MapOfShape myClosedShapes;
-TopTools_MapOfShape mySharedFaces;
-TopTools_MapOfShape myWrappingSolid;
-TopTools_DataMapOfShapeShape myFaceShapeMap;
-TopTools_DataMapOfShapeShape myInternalFaces;
-TopTools_DataMapOfShapeShape myIntNotClFaces;
-Handle_BRepAlgo_AsDes myAsDes;
-BRepAlgo_Image myImagesFaces;
-BRepAlgo_Image myImagesEdges;
-BRepAlgo_Image myImageShape;
-Partition_Inter3d myInter3d;
-TopTools_MapOfOrientedShape myAddedFacesMap;
+   // Fields PRIVATE
+   //
+   TopAbs_ShapeEnum myDoneStep;
+   TopoDS_Compound myShape;
+   BRep_Builder myBuilder;
+   TopTools_ListOfShape myListShapes;
+   TopTools_MapOfShape myMapFaces;
+   TopTools_MapOfShape myMapTools;
+   TopTools_MapOfShape myEqualEdges;
+   TopTools_MapOfShape myNewSection;
+   TopTools_MapOfShape myClosedShapes;
+   TopTools_MapOfShape mySharedFaces;
+   TopTools_MapOfShape myWrappingSolid;
+   TopTools_DataMapOfShapeShape myFaceShapeMap;
+   TopTools_DataMapOfShapeShape myInternalFaces;
+   TopTools_DataMapOfShapeShape myIntNotClFaces;
+   Handle_BRepAlgo_AsDes myAsDes;
+   BRepAlgo_Image myImagesFaces;
+   BRepAlgo_Image myImagesEdges;
+   BRepAlgo_Image myImageShape;
+   Partition_Inter3d myInter3d;
+   TopTools_MapOfOrientedShape myAddedFacesMap;
 
 
 };

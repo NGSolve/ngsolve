@@ -55,46 +55,46 @@ class Partition_Inter2d  {
 
 public:
 
-    void* operator new(size_t,void* anAddress) 
-      {
-        return anAddress;
-      }
-    void* operator new(size_t size) 
-      { 
-        return Standard::Allocate(size); 
-      }
-    void  operator delete(void *anAddress) 
-      { 
-        if (anAddress) Standard::Free((Standard_Address&)anAddress); 
-      }
- // Methods PUBLIC
- // 
-Standard_EXPORT static  void CompletPart2d(const Handle(BRepAlgo_AsDes)& AsDes,const TopoDS_Face& F,const TopTools_MapOfShape& NewEdges) ;
-Standard_EXPORT static  TopoDS_Vertex FindEndVertex(const TopTools_ListOfShape& VertList,const Standard_Real f,const Standard_Real l,const TopoDS_Edge& E,Standard_Boolean& First,Standard_Real& DU) ;
-Standard_EXPORT static  TopoDS_Vertex AddVonE(const TopoDS_Vertex& V,const TopoDS_Edge& E1,const TopoDS_Edge& E2,const Handle(BRepAlgo_AsDes)& AsDes,const TopoDS_Face& F) ;
-Standard_EXPORT static  Standard_Real GetTolerance(const TopoDS_Vertex& theV,const Standard_Real theU,const TopoDS_Edge& theE,const Handle(BRepAlgo_AsDes)& theAsDes) ;
+   void* operator new(size_t,void* anAddress) 
+   {
+      return anAddress;
+   }
+   void* operator new(size_t size) 
+   { 
+      return Standard::Allocate(size); 
+   }
+   void  operator delete(void *anAddress) 
+   { 
+      if (anAddress) Standard::Free((Standard_Address&)anAddress); 
+   }
+   // Methods PUBLIC
+   // 
+   static  void CompletPart2d(const Handle(BRepAlgo_AsDes)& AsDes,const TopoDS_Face& F,const TopTools_MapOfShape& NewEdges) ;
+   static  TopoDS_Vertex FindEndVertex(const TopTools_ListOfShape& VertList,const Standard_Real f,const Standard_Real l,const TopoDS_Edge& E,Standard_Boolean& First,Standard_Real& DU) ;
+   static  TopoDS_Vertex AddVonE(const TopoDS_Vertex& V,const TopoDS_Edge& E1,const TopoDS_Edge& E2,const Handle(BRepAlgo_AsDes)& AsDes,const TopoDS_Face& F) ;
+   static  Standard_Real GetTolerance(const TopoDS_Vertex& theV,const Standard_Real theU,const TopoDS_Edge& theE,const Handle(BRepAlgo_AsDes)& theAsDes) ;
 
 
 
 
 protected:
 
- // Methods PROTECTED
- // 
+   // Methods PROTECTED
+   // 
 
 
- // Fields PROTECTED
- //
+   // Fields PROTECTED
+   //
 
 
 private: 
 
- // Methods PRIVATE
- // 
+   // Methods PRIVATE
+   // 
 
 
- // Fields PRIVATE
- //
+   // Fields PRIVATE
+   //
 
 
 };

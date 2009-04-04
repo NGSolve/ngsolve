@@ -52,57 +52,57 @@ class Partition_Loop  {
 
 public:
 
-    inline void* operator new(size_t,void* anAddress) 
-      {
-        return anAddress;
-      }
-    inline void* operator new(size_t size) 
-      { 
-        return Standard::Allocate(size); 
-      }
-    inline void  operator delete(void *anAddress) 
-      { 
-        if (anAddress) Standard::Free((Standard_Address&)anAddress); 
-      }
-//    inline void  operator delete(void *anAddress, size_t size) 
-//      { 
-//        if (anAddress) Standard::Free((Standard_Address&)anAddress,size); 
-//      }
- // Methods PUBLIC
- // 
-Standard_EXPORT Partition_Loop();
-Standard_EXPORT   void Init(const TopoDS_Face& F) ;
-Standard_EXPORT   void AddConstEdge(const TopoDS_Edge& E) ;
-Standard_EXPORT   void Perform() ;
-Standard_EXPORT  const TopTools_ListOfShape& NewWires() const;
-Standard_EXPORT   void WiresToFaces() ;
-Standard_EXPORT  const TopTools_ListOfShape& NewFaces() const;
+   inline void* operator new(size_t,void* anAddress) 
+   {
+      return anAddress;
+   }
+   inline void* operator new(size_t size) 
+   { 
+      return Standard::Allocate(size); 
+   }
+   inline void  operator delete(void *anAddress) 
+   { 
+      if (anAddress) Standard::Free((Standard_Address&)anAddress); 
+   }
+   //    inline void  operator delete(void *anAddress, size_t size) 
+   //      { 
+   //        if (anAddress) Standard::Free((Standard_Address&)anAddress,size); 
+   //      }
+   // Methods PUBLIC
+   // 
+   Partition_Loop();
+   void Init(const TopoDS_Face& F) ;
+   void AddConstEdge(const TopoDS_Edge& E) ;
+   void Perform() ;
+   const TopTools_ListOfShape& NewWires() const;
+   void WiresToFaces() ;
+   const TopTools_ListOfShape& NewFaces() const;
 
 
 
 
 protected:
 
- // Methods PROTECTED
- // 
+   // Methods PROTECTED
+   // 
 
 
- // Fields PROTECTED
- //
+   // Fields PROTECTED
+   //
 
 
 private: 
 
- // Methods PRIVATE
- // 
+   // Methods PRIVATE
+   // 
 
 
- // Fields PRIVATE
- //
-TopoDS_Face myFace;
-TopTools_ListOfShape myConstEdges;
-TopTools_ListOfShape myNewWires;
-TopTools_ListOfShape myNewFaces;
+   // Fields PRIVATE
+   //
+   TopoDS_Face myFace;
+   TopTools_ListOfShape myConstEdges;
+   TopTools_ListOfShape myNewWires;
+   TopTools_ListOfShape myNewFaces;
 
 
 };
