@@ -1060,7 +1060,7 @@ namespace netgen
 			IndexSet & iset,
                         int level)
   {
-    if (level > 10) return;
+    // if (level > 10) return;
 
     //tams.AddTriangle (tria);
     //(*testout) << "tria " << tams.GetPoint(tria[0]) << " - " << tams.GetPoint(tria[1]) << " - " << tams.GetPoint(tria[2]) 
