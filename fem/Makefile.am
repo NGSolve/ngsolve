@@ -1,21 +1,22 @@
-AM_CPPFLAGS = -I$(top_srcdir)/include  $(NETGEN_INCLUDES) $(LAPACK_INCLUDES)
+lib_LTLIBRARIES = libngfemng.la   libngfem.la
 
-noinst_LTLIBRARIES = libngfemng.la
-libngfemng_la_LIBADD = $(top_builddir)/basiclinalg/libngbla.la 
-libngfemng_la_LDFLAGS = -avoid-version
+libngfemng_la_CPPFLAGS = -I$(top_srcdir)/include  $(NETGEN_INCLUDES) $(LAPACK_INCLUDES)
+# libngfemng_la_LIBADD = $(top_builddir)/basiclinalg/libngbla.la 
+libngfemng_la_LDFLAGS = -avoid-version -rdynamic 
 
 libngfemng_la_SOURCES = bdbequations.cpp recursive_pol_trig.cpp	       \
 coefficient.cpp integrator.cpp specialelement.cpp elementtopology.cpp  \
 hcurlfe.cpp intrule.cpp facetfe.cpp hcurlhofe.cpp l2hofe.cpp	       \
 fastmat.cpp vectorfacetfe.cpp finiteelement.cpp scalarfe.cpp	       \
 hdiv_equations.cpp maxwellintegrator.cpp generic_recpol.cpp hdivfe.cpp \
-pml.cpp h1hofe.cpp hdivhofe.cpp recursive_pol.cpp hybridDG.cpp
+pml.cpp h1hofe.cpp h1hofefo.cpp hdivhofe.cpp recursive_pol.cpp	       \
+hybridDG.cpp
 
 
 
 
 
-lib_LTLIBRARIES = libngfem.la
+# lib_LTLIBRARIES =
 libngfem_la_CPPFLAGS = -I$(top_srcdir)/include  $(LAPACK_INCLUDE)
 libngfem_la_LDFLAGS = -avoid-version
 

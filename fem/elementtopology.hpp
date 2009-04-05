@@ -126,6 +126,26 @@ public:
   }
 
 
+  /// returns face type
+  static ELEMENT_TYPE GetFaceType (ELEMENT_TYPE et, int k)
+  {
+    switch (et)
+    {
+      case ET_TRIG: return ET_TRIG;
+      case ET_QUAD: return ET_QUAD;
+      case ET_TET: return ET_TRIG;
+      case ET_PYRAMID: return (k<4 ? ET_TRIG : ET_QUAD); 
+      case ET_PRISM: return (k<2 ? ET_TRIG : ET_QUAD);
+      case ET_HEX: return ET_QUAD;
+      default:
+        cerr << "*** error in GetFacetType: Unhandled Elementtype" << endl;
+        return ET_SEGM;
+    }  
+  }
+
+
+
+
   /// returns number of nodes of type nt
   static int GetNNodes (ELEMENT_TYPE et, NODE_TYPE nt)
   {
@@ -428,6 +448,9 @@ inline Node CalcNodeFromId (ELEMENT_TYPE et, int nodeid)
 
 ostream & operator<< (ostream & ost, const Node & node);
 
+/**
+   A binary representation of selecting V-E-F-C Nodes.
+ */
 typedef int NODE_SET;
 
 inline NODE_SET NodeSet (NODE_TYPE nt1) 

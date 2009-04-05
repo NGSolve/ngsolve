@@ -3,57 +3,50 @@
 
 /*********************************************************************/
 /* File:   hdiv_equations.hpp                                        */
-/* Author: Joachim Schoeberl                                         */
+/* Author: Joachim Schoeberl, Almedin Becirovic                      */
 /* Date:   10. Feb. 2002                                             */
 /*********************************************************************/
 
 /*
-   Finite Element Integrators
+  Finite Element Integrators for H(div)
+
+  Mapping with Piola transformation
+
+  Requires H(div) finite elements
 */
 
 
 
-//Almedin
-
-
-
-  // Id and div for H(div) elements, Piola transformation
-
-
-
-  /// Identity operator, Piolas transformation
-  template <int D>
-  class DiffOpIdHDiv : public DiffOp<DiffOpIdHDiv<D> >
+/// Identity operator, Piola transformation
+template <int D>
+class DiffOpIdHDiv : public DiffOp<DiffOpIdHDiv<D> >
+{
+public:
+  enum { DIM = 1 };
+  enum { DIM_SPACE = D };
+  enum { DIM_ELEMENT = D };
+  enum { DIM_DMAT = D };
+  enum { DIFFORDER = 0 };
+    
+  template <typename FEL, typename SIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+                              MAT & mat, LocalHeap & lh)
   {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 0 };
+    mat = (1.0/sip.GetJacobiDet()) * (sip.GetJacobian() * Trans (fel.GetShape(sip.IP(), lh)));
+  }
     
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const SIP & sip,
-				MAT & mat, LocalHeap & lh)
-    {
-      mat = (1.0/sip.GetJacobiDet()) * (sip.GetJacobian() * Trans (fel.GetShape(sip.IP(), lh)));
-    }
-    
-    
-    ///
-    template <typename FEL, typename SIP, class TVX, class TVY>
-    static void Apply (const FEL & fel, const SIP & sip,
-		       const TVX & x, TVY & y,
-		       LocalHeap & lh) 
-    {
-      typedef typename TVX::TSCAL TSCAL;
+  template <typename FEL, typename SIP, class TVX, class TVY>
+  static void Apply (const FEL & fel, const SIP & sip,
+                     const TVX & x, TVY & y,
+                     LocalHeap & lh) 
+  {
+    typedef typename TVX::TSCAL TSCAL;
       
-      Vec<D,TSCAL> hv = Trans (fel.GetShape(sip.IP(), lh)) * x;
-      hv *= (1.0/sip.GetJacobiDet());
-      y = sip.GetJacobian() * hv;
-    }
+    Vec<D,TSCAL> hv = Trans (fel.GetShape(sip.IP(), lh)) * x;
+    hv *= (1.0/sip.GetJacobiDet());
+    y = sip.GetJacobian() * hv;
+  }
 
-  ///
   template <typename FEL, typename SIP, class TVX, class TVY>
   static void ApplyTrans (const FEL & fel, const SIP & sip,
 			  const TVX & x, TVY & y,
@@ -65,54 +58,50 @@
     hv *= (1.0/sip.GetJacobiDet());
     y = fel.GetShape(sip.IP(),lh) * hv;
   }
-  };
+};
 
 
 
 
-  /// Operator $div$
-  template <int D>
-  class DiffOpDivHDiv : public DiffOp<DiffOpDivHDiv<D> >
+/// divergence Operator
+template <int D>
+class DiffOpDivHDiv : public DiffOp<DiffOpDivHDiv<D> >
+{
+public:
+  enum { DIM = 1 };
+  enum { DIM_SPACE = D };
+  enum { DIM_ELEMENT = D };
+  enum { DIM_DMAT = 1 };
+  enum { DIFFORDER = 1 };
+
+  template <typename FEL, typename SIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+                              MAT & mat, LocalHeap & lh)
   {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 1 };
-
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const SIP & sip,
-				MAT & mat, LocalHeap & lh)
-    {
     
-      mat = 1.0/sip.GetJacobiDet() *
-	Trans (fel.GetDivShape(sip.IP(), lh));
-    }
+    mat = 1.0/sip.GetJacobiDet() *
+      Trans (fel.GetDivShape(sip.IP(), lh));
+  }
+
+  template <typename FEL, typename SIP>
+  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+                              FlatVector<double> & mat, LocalHeap & lh)
+  {
+    mat = 1.0/sip.GetJacobiDet() * (fel.GetDivShape(sip.IP(), lh));
+  }
 
 
-    template <typename FEL, typename SIP>
-    static void GenerateMatrix (const FEL & fel, const SIP & sip,
-				FlatVector<double> & mat, LocalHeap & lh)
-    {
-    
-      mat = 1.0/sip.GetJacobiDet() *
-        (fel.GetDivShape(sip.IP(), lh));
-    }
-
-    ///
-    template <typename FEL, typename SIP, class TVX, class TVY>
-    static void Apply (const FEL & fel, const SIP & sip,
-		       const TVX & x, TVY & y,
-		       LocalHeap & lh) 
-    {
-      typedef typename TVX::TSCAL TSCAL;
+  template <typename FEL, typename SIP, class TVX, class TVY>
+  static void Apply (const FEL & fel, const SIP & sip,
+                     const TVX & x, TVY & y,
+                     LocalHeap & lh) 
+  {
+    typedef typename TVX::TSCAL TSCAL;
       
-      Vec<DIM,TSCAL> hv = Trans (fel.GetDivShape(sip.IP(), lh)) * x;
-      y = (1.0/sip.GetJacobiDet()) * hv;
-    }
+    Vec<DIM,TSCAL> hv = Trans (fel.GetDivShape(sip.IP(), lh)) * x;
+    y = (1.0/sip.GetJacobiDet()) * hv;
+  }
 
-  ///
   template <typename FEL, typename SIP, class TVX, class TVY>
   static void ApplyTrans (const FEL & fel, const SIP & sip,
 			  const TVX & x, TVY & y,
@@ -123,16 +112,12 @@
     hv *= (1.0/sip.GetJacobiDet());
     y = fel.GetDivShape(sip.IP(),lh) * hv;
   }
+};
 
 
 
 
-
-
-  };
-
-
-/// Identity on boundary
+/// Identity for boundary-normal elements
 template <int D>
 class DiffOpIdHDivBoundary : public DiffOp<DiffOpIdHDivBoundary<D> >
 {
@@ -147,8 +132,7 @@ public:
   static void GenerateMatrix (const FEL & fel, const SIP & sip,
 			      MAT & mat, LocalHeap & lh)
   {
-     mat =  (1.0/sip.GetJacobiDet())*Trans(fel.GetShape (sip.IP(), lh));
-
+    mat =  (1.0/sip.GetJacobiDet())*Trans(fel.GetShape (sip.IP(), lh));
   }
 
   template <typename FEL, typename SIP, class TVX, class TVY>
@@ -156,9 +140,7 @@ public:
 		     const TVX & x, TVY & y,
 		     LocalHeap & lh)
   {
-
     y = (1.0/sip.GetJacobiDet())*(Trans (fel.GetShape (sip.IP(), lh)) * x);
-
   }
 
   template <typename FEL, typename SIP, class TVX, class TVY>
@@ -167,111 +149,91 @@ public:
 			  LocalHeap & lh)
   {
     y = fel.GetShape (sip.IP(), lh)*((1.0/sip.GetJacobiDet())* x);
-   
   }
 };
 
 
 
-  ///
-  template <int D, typename FEL = HDivFiniteElement<D> >
-  class MassHDivIntegrator
-    : public T_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, FEL>
-  {
-  public:
-    ///
-    MassHDivIntegrator (CoefficientFunction * coeff)
-      : T_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
-    { (*testout)<<"MassHDivIntegrator"<<endl; }
-    
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      return new MassHDivIntegrator (coeffs[0]);
-    }
+/// Integrator for term of zero-th order
+template <int D>
+class MassHDivIntegrator
+  : public T_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> >
+{
+public:
+  MassHDivIntegrator (CoefficientFunction * coeff);
 
-    ///
-    virtual string Name () const { return "MassHDiv"; }
-  };
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+  {
+    return new MassHDivIntegrator (coeffs[0]);
+  }
+
+  virtual string Name () const { return "MassHDiv"; }
+};
 
   
 
-  ///
-  template <int D, typename FEL = HDivFiniteElement<D> >
-  class DivDivHDivIntegrator
-    : public T_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, FEL>
+/// Integrator for div u div v
+template <int D>
+class DivDivHDivIntegrator
+  : public T_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> >
+{
+public:
+  DivDivHDivIntegrator (CoefficientFunction * coeff);
+
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
-  public:
-    ///
-    DivDivHDivIntegrator (CoefficientFunction * coeff)
-      : T_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, FEL> (DiagDMat<1> (coeff))
-    { ; }
-
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      return new DivDivHDivIntegrator (coeffs[0]);
-    }
+    return new DivDivHDivIntegrator (coeffs[0]);
+  }
     
-    ///
-    virtual string Name () const { return "DivDivHDiv"; }
-  };
+  virtual string Name () const { return "DivDivHDiv"; }
+};
 
 
 
 
-  ///
-  template <int D, typename FEL = HDivFiniteElement<D> >
-  class DivSourceHDivIntegrator 
-    : public T_BIntegrator<DiffOpDivHDiv<D>, DVec<1>, FEL>
+/// source term integrator for \ff div v
+template <int D>
+class DivSourceHDivIntegrator 
+  : public T_BIntegrator<DiffOpDivHDiv<D>, DVec<1>, HDivFiniteElement<D> >
+{
+public:
+  DivSourceHDivIntegrator (CoefficientFunction * coeff);
+
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
-  public:
-    ///
-    DivSourceHDivIntegrator (CoefficientFunction * coeff)
-      : T_BIntegrator<DiffOpDivHDiv<D>, DVec<1>, FEL> (DVec<1> (coeff))
-    { ; }
-    
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      return new DivSourceHDivIntegrator (coeffs[0]);
-    }
+    return new DivSourceHDivIntegrator (coeffs[0]);
+  }
 
-    ///
-    virtual string Name () const { return "DivSourceHDiv"; }
-  };
+  virtual string Name () const { return "DivSourceHDiv"; }
+};
 
 
+/// source term for H(div)
+template <int D>
+class SourceHDivIntegrator 
+  : public T_BIntegrator<DiffOpIdHDiv<D>, DVec<D>, HDivFiniteElement<D> >
+{
+public:
+  SourceHDivIntegrator (CoefficientFunction * coeff1,
+                        CoefficientFunction * coeff2,
+                        CoefficientFunction * coeff3);
 
+  SourceHDivIntegrator (CoefficientFunction * coeff1,
+                        CoefficientFunction * coeff2);
 
-
-  ///
-  template <int D, typename FEL = HDivFiniteElement<D> >
-  class SourceHDivIntegrator 
-    : public T_BIntegrator<DiffOpIdHDiv<D>, DVec<D>, FEL>
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
-  public:
-    ///
-    SourceHDivIntegrator (CoefficientFunction * coeff1,
-			  CoefficientFunction * coeff2,
-			  CoefficientFunction * coeff3)
-      : T_BIntegrator<DiffOpIdHDiv<D>, DVec<D>, FEL> (DVec<D> (coeff1, coeff2,coeff3))
-    { ; }
-    SourceHDivIntegrator (CoefficientFunction * coeff1,
-			  CoefficientFunction * coeff2)
-      : T_BIntegrator<DiffOpIdHDiv<D>, DVec<D>, FEL> (DVec<D> (coeff1, coeff2))
-    { ; }
-
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      if(D == 2)
-	return new SourceHDivIntegrator (coeffs[0], coeffs[1]);
-      else if (D == 3)
-	return new SourceHDivIntegrator (coeffs[0], coeffs[1], coeffs[2]);
-    }
+    if(D == 2)
+      return new SourceHDivIntegrator (coeffs[0], coeffs[1]);
+    else if (D == 3)
+      return new SourceHDivIntegrator (coeffs[0], coeffs[1], coeffs[2]);
+  }
     
-    ///
-    virtual string Name () const { return "SourceHDiv"; }
-  };
+  ///
+  virtual string Name () const { return "SourceHDiv"; }
+};
 
-//***************************************Ali***************************************************************
+
 ///
 template <int D, typename FEL = HDivNormalFiniteElement<D-1> >
 class NeumannHDivIntegrator
@@ -295,7 +257,7 @@ public:
 };
 
 
-/// integrator for $\int_\Gamma \sigma_n \tau_n \, ds$
+/// integrator for \f$\int_\Gamma \sigma_n \tau_n \, ds\f$
 template <int D>
 class RobinHDivIntegrator
   : public T_BDBIntegrator<DiffOpIdHDivBoundary<D>, DiagDMat<1>, HDivNormalFiniteElement<D-1> >

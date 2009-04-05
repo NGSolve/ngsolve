@@ -15,12 +15,14 @@
 
 /**
    Define the degree of freedom.
-   The dof is the nr_on_node'th dof on the node with numbe nodenr. 
-   On the element level, nodenr is the local number, and it is global number on the mesh level
- */
+   The dof is the nr_on_node'th dof on the Node node.
+   On the element level, node corresponds to the local number, and it is global number on the mesh level.
+   Dof-concept is not yet used very consistently
+*/
 class Dof
 {
 public:
+  /// the node
   Node node;
   int nr_on_node;
 
@@ -103,91 +105,10 @@ public:
   /// get dof description
   virtual void GetDofs (Array<Dof> & dofs) const;
 
+  /// the name of the element family
   virtual string ClassName() const {return "FiniteElement";}
-
-  // tensor product element ?
-  // bool IsTPElement () const { return tp; }
 };
 
-
-
-
-
-
-
-
-#ifdef NOAVAILABLE
-
-// not supported
-class emptyfe { };
-
-template <class FE0, class FE1, class FE2 = emptyfe>
-class CompositeFiniteElement : public FiniteElement
-{
-protected:
-  const FE0 & fe0;
-  const FE1 & fe1;
-  const FE1 & fe2;
-public:
-  CompositeFiniteElement (const FE0 & afe0,
-			  const FE1 & afe1,
-			  const FE2 & afe2)
-    : fe0(afe0), fe1(afe1), fe2(afe2) { ; }
-
-  // template <int I> int GetFE();
-
-  const FE0 & GetFE0 () const { return fe0; }
-  const FE1 & GetFE1 () const { return fe1; }
-  const FE1 & GetFE2 () const { return fe2; }
-};
-
-
-/*
-  // wie geht das ?
-template <class FE0, class FE1, class FE2> template <int I>
-int CompositeFiniteElement<FE0,FE1,FE2> :: GetFE() { return 47; }
-
-template <class FE0, class FE1, class FE2> template <> 
-int CompositeFiniteElement<FE0,FE1,FE2> :: GetFE<0>() { return 47; }
-*/
-
-
-template <>
-class CompositeFiniteElement<FiniteElement, FiniteElement, emptyfe> : public FiniteElement
-{
-protected:
-  const FiniteElement & fe0;
-  const FiniteElement & fe1;
-public:
-  CompositeFiniteElement (const FiniteElement & afe0,
-			  const FiniteElement & afe1)
-    : FiniteElement(afe0.SpatialDim(), afe0.ElementType(), afe0.GetNDof()+afe1.GetNDof(),0), fe0(afe0), fe1(afe1) { ; }
-
-  const FiniteElement & GetFE0 () const { return fe0; }
-  const FiniteElement & GetFE1 () const { return fe1; }
-};
-
-
-template <class FE0, class FE1>
-class CompositeFiniteElement<FE0, FE1, emptyfe> : 
-  public CompositeFiniteElement<FiniteElement, FiniteElement, emptyfe>
-{
-  /*
-protected:
-  const FE0 & fe0;
-  const FE1 & fe1;
-  */
-public:
-  CompositeFiniteElement (const FE0 & afe0,
-			  const FE1 & afe1)
-    : CompositeFiniteElement<FiniteElement, FiniteElement, emptyfe> (afe0, afe1)
-  { ; }
-
-  const FE0 & GetFE0 () const { return static_cast<const FE0 &> (fe0); }
-  const FE1 & GetFE1 () const { return static_cast<const FE1 &> (fe1); }
-};
-
-#endif
 
 
 
@@ -203,20 +124,15 @@ public:
 class CompoundFiniteElement : public FiniteElement
 {
 protected:
-  ///
+  /// pointers to the components
   ArrayMem<const FiniteElement*,10> fea;
 public:
   /// 
   CompoundFiniteElement (Array<const FiniteElement*> & afea);
   /// select i-th component
   const FiniteElement & operator[] (int i) const { return *fea[i]; }
-  /// 
   virtual void GetInternalDofs (Array<int> & idofs) const;
 };
-
-
-
-
 
 
 

@@ -987,6 +987,27 @@ public:
   }
 
   template <class Sx, class Sy, class T>
+  inline static int CalcScaled (int n, Sx x, Sy y, T & values)
+  {
+    Sy fy = y*y;
+    Sx p3 = 0;
+    Sx p2 = -1;
+    Sx p1 = x;
+
+    for (int j=2; j<=n; j++)
+      {
+	p3=p2; p2=p1;
+	p1 = double(2*j-3)/j  * x * p2 - double(j-3)/j * fy * p3;
+	values[j-2] = p1;
+      }     
+
+    return n-1;
+  }
+
+
+
+
+  template <class Sx, class Sy, class T>
   inline static int CalcTrigExt (int n, Sx x, Sy y, T & values)
   {
     Sy fy = (1-y)*(1-y);

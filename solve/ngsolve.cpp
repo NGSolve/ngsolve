@@ -673,6 +673,15 @@ extern "C" int Ngsolve_Init (Tcl_Interp * interp)
 }
 
 
+namespace ngsolve { 
+  namespace bvp_cpp { extern int link_it; }
+}
+namespace ngfem {
+  namespace bdbequations_cpp { extern int link_it; }
+  extern int link_it_h1hofefo;
+}
+
+
 int NGSolve_Init (Tcl_Interp * interp)
 {
   cout << "NGSolve-" << VERSION << endl;
@@ -680,6 +689,12 @@ int NGSolve_Init (Tcl_Interp * interp)
 #ifdef LAPACK
   cout << "Using Lapack" << endl;
 #endif
+
+#ifdef _OPENMP
+  cout << "Running OpenMP - parallel using " << omp_get_max_threads() << " threads" << endl;
+  cout << "(number of threads can be changed by setting OMP_NUM_THREADS)" << endl;
+#endif
+
 
   
 #ifdef SOCKETS
@@ -752,6 +767,13 @@ int NGSolve_Init (Tcl_Interp * interp)
 
       Tcl_Eval (interp, (char *) command.c_str());
     }
+
+
+  // trick for forcing linking static libs
+  ngsolve::bvp_cpp::link_it = 0;
+  ngfem::bdbequations_cpp::link_it = 0;
+  ngfem::link_it_h1hofefo = 0;
+
 
   return TCL_OK;
 }

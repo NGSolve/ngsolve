@@ -105,14 +105,13 @@ namespace ngfem
   void ScalarFiniteElement<D> :: CalcDDShape (const IntegrationPoint & ip, 
 					  FlatMatrix<> ddshape) const
   {
-    int i, j, k;
     int nd = GetNDof();
     int sdim = SpatialDim();
 
     double eps = 1e-7;
     Matrix<> dshape1(nd, sdim), dshape2(nd, sdim);
 
-    for (i = 0; i < sdim; i++)
+    for (int i = 0; i < sdim; i++)
       {
 	IntegrationPoint ip1 = ip;
 	IntegrationPoint ip2 = ip;
@@ -123,8 +122,8 @@ namespace ngfem
 	CalcDShape (ip2, dshape2);
 	dshape2 -= dshape1;
 	dshape2 *= (0.5 / eps);
-	for (j = 0; j < nd; j++)
-	  for (k = 0; k < sdim; k++)
+	for (int j = 0; j < nd; j++)
+	  for (int k = 0; k < sdim; k++)
 	    ddshape(j,sdim*i+k) = dshape2(j,k);
       }  
   }

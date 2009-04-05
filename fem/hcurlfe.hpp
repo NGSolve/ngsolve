@@ -596,7 +596,7 @@ public:
 /* *********************** Hex elements ************************ */ 
 
 
-///
+/// 
 class FE_NedelecHex1 : public HCurlFiniteElement<3> 
 {
   /// 
@@ -636,7 +636,7 @@ public:
 			  FlatMatrixFixWidth<3> shape) const;
 };
 
-/// \nabla Q (2,ZORDER)
+/// \f$ \nabla Q (2,ZORDER) \f$
 template <int ZORDER>
 class FE_TNedelecPrism2 : public HCurlFiniteElement<3>
 {
@@ -686,7 +686,7 @@ public:
 
 
 
-/// \nabla Q (3,ZORDER)
+/// \f$ \nabla Q (3,ZORDER) \f$
 template <int ZORDER>
 class FE_TNedelecPrism3 : public HCurlFiniteElement<3>
 {
@@ -754,7 +754,7 @@ public:
 
 
 
-/// \nabla Q (3,ZORDER)
+/// \f$ \nabla Q (3,ZORDER) \f$
 template <int ZORDER>
 class FE_TNedelecPrism3NoGrad : public HCurlFiniteElement<3>
 {

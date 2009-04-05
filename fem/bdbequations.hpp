@@ -207,6 +207,14 @@ public:
     y = Trans (fel.GetShape (sip.IP(), lh)) * x;
   }
 
+  static void Apply (const ScalarFiniteElement<D> & fel, const SpecificIntegrationPoint<D,D> & sip,
+		     const FlatVector<double> & x, FlatVector<double>  & y,
+		     LocalHeap & lh) 
+  {
+    y(0) = fel.Evaluate(sip.IP(), x, lh);
+  }
+
+
   template <typename FEL, typename SIP, class TVX, class TVY>
   static void ApplyTrans (const FEL & fel, const SIP & sip,
 			  const TVX & x, TVY & y,
@@ -1683,7 +1691,7 @@ public:
 
 
 
-/// integrator for $\int_\Gamma u_n v_n \, ds$
+/// integrator for \f$\int_\Gamma u_n v_n \, ds\f$
 template <int D>
 class NormalRobinIntegrator 
   : public T_BDBIntegrator<DiffOpNormal<D>, DiagDMat<1>, ScalarFiniteElement<D-1> >
@@ -1828,7 +1836,7 @@ public:
   virtual string Name () const { return "Mass"; }
 };
 
-/// integrator for $\int_\Gamma u v \, ds$
+/// integrator for \f$\int_\Gamma u v \, ds\f$
 template <int D>
 class RobinIntegrator 
   : public T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, ScalarFiniteElement<D-1> >
@@ -2251,7 +2259,7 @@ public:
 
 /* ************************** Linearform Integrators ************************* */
 
-///
+/// integrator for \f$\int_\Omega f v \f$
 template <int D, typename FEL = ScalarFiniteElement<D>  >
 class SourceIntegrator 
   : public T_BIntegrator<DiffOpId<D>, DVec<1>, FEL>
@@ -2293,7 +2301,7 @@ public:
 };
 
 
-/// integrator for $\int_\Gamma v_n \, ds$
+/// integrator for \f$\int_\Gamma v_n \, ds\f$
 template <int D, typename FEL = ScalarFiniteElement<D-1> >
 class NormalNeumannIntegrator 
   : public T_BIntegrator<DiffOpNormal<D>, DVec<1>, FEL>

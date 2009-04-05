@@ -187,7 +187,7 @@ namespace ngfem
     }
     
     Init init;
-    
+    int link_it;
   }
  
 }

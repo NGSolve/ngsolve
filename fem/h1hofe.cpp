@@ -72,16 +72,9 @@ namespace ngfem
     for (int i = 0; i < ElementTopology::GetNNodes(eltype, NT_FACE); i++)
       {
         INT<2> p = order_face[i];
-        /*
-        if (D == 2)
-          { p[0] = order_inner[0]; p[1] = order_inner[1]; }
-        else
-          p = order_face[i];
-        */
 
         int nf;
-        if (D == 2 && eltype == ET_TRIG || 
-            D == 3 && ElementTopology::GetFacetType (eltype, i) == ET_TRIG)
+        if (ElementTopology::GetFaceType (eltype, i) == ET_TRIG)
           nf = (p[0]-1)*(p[0]-2) / 2;
         else
           nf = (p[0]-1)*(p[1]-1);
@@ -247,15 +240,6 @@ namespace ngfem
 
     DShapeAssign<DIM> ds(dshape); 
     static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
-
-    /*
-    ArrayMem<AutoDiff<DIM>,40> sds(ndof);
-    static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (adp, sds);
-
-    for (int i = 0; i < ndof; i++)
-      for (int j = 0; j < DIM; j++)
-	dshape(i,j) = sds[i].DValue(j);
-    */
   }
 
 
@@ -276,15 +260,6 @@ namespace ngfem
 
     DShapeAssign<DIM> ds(dshape); 
     static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
-
-    /*
-    ArrayMem<AutoDiff<DIM>,40> sds(ndof);
-    static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (adp, sds);
-
-    for (int i = 0; i < ndof; i++)
-      for (int j = 0; j < DIM; j++)
-	dshape(i,j) = sds[i].DValue(j);
-    */
   }
 
 
@@ -296,7 +271,6 @@ namespace ngfem
   H1HighOrderFE<ET_SEGM> :: H1HighOrderFE (int aorder)
   {
     order_edge[0] = aorder;
-    // order_inner = aorder;
     ComputeNDof();
   }
 
@@ -309,22 +283,18 @@ namespace ngfem
     shape[0] = lami[0];
     shape[1] = lami[1];
 
-    int ii = 2;
-
     int ee = 1, es = 0;
     if (vnums[es] > vnums[ee]) swap(es,ee);
 
-    T_ORTHOPOL::Calc (order_edge[0], lami[ee]-lami[es], shape.Addr(ii));
+    T_ORTHOPOL::Calc (order_edge[0], lami[ee]-lami[es], shape.Addr(2));
   }
 
 
 
   /* *********************** Triangle  **********************/
 
-
   H1HighOrderFE<ET_TRIG> :: H1HighOrderFE(int aorder)
   {
-    // order_inner = INT<3> (aorder,aorder,aorder);
     order_face[0] = INT<2> (aorder,aorder);
     for (int i = 0; i < 3; i++)
       order_edge[i] = aorder;
@@ -374,7 +344,6 @@ namespace ngfem
 
   H1HighOrderFE<ET_QUAD> :: H1HighOrderFE (int aorder)
   {
-    // order_inner = INT<3> (aorder,aorder,aorder);
     order_face[0] = INT<2> (aorder,aorder);
     for (int i = 0; i < 4; i++)
       order_edge[i] = aorder;
@@ -400,12 +369,11 @@ namespace ngfem
     for (int i = 0; i < 4; i++)
       {
 	int p = order_edge[i];
-	int es = edges[i][0];
-	int ee = edges[i][1];
+	int es = edges[i][0], ee = edges[i][1];
 	if (vnums[es] > vnums[ee]) swap (es, ee);
 
 	Tx xi  = sigma[ee]-sigma[es]; // in [-1,1] 
-	Tx eta = lami[ee]+lami[es];  // attention in [0,1]
+	Tx eta = lami[ee]+lami[es];   // in [0,1]
 
 	T_ORTHOPOL::Calc (p, xi, polxi);
 	
@@ -557,7 +525,7 @@ namespace ngfem
 	}
     
 
-    ArrayMem<Tx,20> polx(order+1) /* , poly(order+1) */ , polz(order+1);
+    ArrayMem<Tx,20> polx(order+1), polz(order+1);
 
     const FACE * faces = ElementTopology::GetFaces (ET_PRISM);
     // trig face dofs
@@ -772,16 +740,7 @@ namespace ngfem
 	  Tx lam = sigma[ee]-sigma[es]; 
 	  Tx lam_edge = lambda[es] + lambda[ee];
 
-          /*
-	  Tx * pedge = &shape[ii];
-	  T_ORTHOPOL::CalcTrigExt (p, lam*(1-z), z, pedge);
-          */
-          ii +=
-            T_ORTHOPOL::CalcTrigExtMult (p, lam*(1-z), z, lam_edge, shape.Addr(ii));
-          /*
-	  for (int j = 0; j <= p-2; j++)
-	    shape[ii++] *= lam_edge;
-          */
+          ii += T_ORTHOPOL::CalcTrigExtMult (p, lam*(1-z), z, lam_edge, shape.Addr(ii));
 	}
     
     // vertical edges

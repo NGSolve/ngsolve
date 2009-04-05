@@ -15,5 +15,6 @@ $(top_builddir)/multigrid/libngmg.la  $(PARDISO_LIBS) $(LAPACK_LIBS)
 
 include_HEADERS = numproc.hpp pde.hpp solve.hpp 
 
-libngsolve_la_LDFLAGS = -avoid-version -rdynamic
+libngsolve_la_LDFLAGS = -avoid-version -rdynamic -pg
+
 

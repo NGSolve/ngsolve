@@ -15,10 +15,10 @@
 
 
 /**
-   Nodal finite element.
+   Scalar finite element.
    Provides shape functions and derivaties.
    Values of shape functions and derivatives in integration points 
-   are stored as static data (IPData).
+   might be stored as static data (IPData).
  */
 template <int D>
 class ScalarFiniteElement : public FiniteElement
@@ -107,6 +107,13 @@ public:
   /// compute dshape, matrix: ndof x spacedim
   virtual void CalcMappedDShape (const SpecificIntegrationPoint<D,D> & sip, 
                                  FlatMatrixFixWidth<D> dshape) const;
+
+  virtual double
+  Evaluate (const IntegrationPoint & ip, 
+            FlatVector<double> x, LocalHeap & lh) const
+  {
+    return InnerProduct (GetShape(ip, lh), x);
+  }  
 
 
   /**
@@ -539,6 +546,7 @@ public:
 }; 
 
 
+/// segment of fixed order
 template <int ORDER>
 class FE_TSegmL2 : public ScalarFiniteElement<1>
 {
@@ -925,7 +933,7 @@ public:
 
 
 
-///
+/// tet of order 3 (obsolete)
 class FE_Tet3Pot : public ScalarFiniteElement<3>
 {
   ///
@@ -935,20 +943,9 @@ public:
   FE_Tet3Pot();
   ///
   virtual ~FE_Tet3Pot();
-  /*
-  ///
-  virtual int SpatialDim () const { return 3; }
-  ///
-  virtual int GetNDof () const { return 20; }
-  ///
-  virtual int Order () const { return 3; }
-  ///
-  virtual ELEMENT_TYPE ElementType() const { return ET_TET; }
-  */
   ///
   virtual void CalcShape (const IntegrationPoint & ip, 
 			  FlatVector<> shape) const;
-			  
 }; 
 
 
@@ -958,7 +955,7 @@ public:
 /* ***************************** Quads ********************************* */
 
 
-///
+/// quad of order 0
 class FE_Quad0 : public ScalarFiniteElement<2>
 {
   static IPDataArray ipdata;
@@ -976,7 +973,7 @@ public:
 };
 
 
-///
+/// quad of order 1
 class FE_Quad1 : public ScalarFiniteElement<2>
 {
   static IPDataArray ipdata;
@@ -993,6 +990,7 @@ public:
 }; 
 
 
+/// quad or order 2
 class FE_Quad2 : public ScalarFiniteElement<2>
 {
   static IPDataArray ipdata;
@@ -1008,7 +1006,7 @@ public:
   virtual const IntegrationRule & NodalIntegrationRule() const;
 }; 
 
-
+/// quad of order 3
 class FE_Quad3 : public ScalarFiniteElement<2>
 {
   static IPDataArray ipdata;
@@ -1041,7 +1039,7 @@ public:
 /* **************************** Pyramid Elements *********************** */
 
 
-///
+/// pyramid of order 0
 class FE_Pyramid0 : public ScalarFiniteElement<3>
 {
   ///
@@ -1079,7 +1077,7 @@ public:
 
 
 
-///
+/// pyramid of order 1
 class FE_Pyramid1 : public ScalarFiniteElement<3>
 {
   ///
@@ -1115,7 +1113,7 @@ public:
 
 
 
-///
+/// pyramid of order 2
 class FE_Pyramid2 : public ScalarFiniteElement<3>
 {
   ///
@@ -1151,7 +1149,7 @@ public:
 
 
 
-///
+/// prism of order 0
 class FE_Prism0 : public ScalarFiniteElement<3>
 {
   ///
@@ -1176,7 +1174,7 @@ public:
 };
 
 
-///
+/// prism of order 1
 class FE_Prism1 : public ScalarFiniteElement<3>
 {
   ///
@@ -1201,7 +1199,7 @@ public:
 
 
 
-///  second order
+/// prism of order 2
 class FE_Prism2 : public ScalarFiniteElement<3>
 {
   ///

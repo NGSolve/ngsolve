@@ -10,29 +10,46 @@
 
 
 /**
-  High order finite elements for L_2
+  Base class for L2 - high order finite elements, i.e., a
+  discontinuous approximation
 */
 template<int D>
 class L2HighOrderFiniteElement : virtual public ScalarFiniteElement<D>
 {
+protected:
+
   enum { DIM = D };
-public:
   int vnums[8];  
   INT<DIM> order_inner; 
 
+public:
+  /// global vertex numbers define ordering of vertices
   virtual void SetVertexNumbers (FlatArray<int> & avnums);
 
+  /// set polynomial order
   void SetOrder (int o);
+
+  /// different orders in differnt directions
   void SetOrder (INT<DIM> oi);
 
+  /// calculate number of dofs
   virtual void ComputeNDof () = 0; 
+
+  
   virtual void GetInternalDofs (Array<int> & idofs) const; 
 };
 
 
-
+/**
+   Template family of L2 - high order finite elements.
+   The template argument is the element shape
+ */
 template <ELEMENT_TYPE ET> class L2HighOrderFE;
 
+
+/**
+   Barton-Nackman base class for L2 - high order finite elements
+ */
 template <ELEMENT_TYPE ET>
 class T_L2HighOrderFiniteElement : public L2HighOrderFiniteElement<ET_trait<ET>::DIM>
 {
@@ -73,7 +90,7 @@ public:
 
 
 /**
-  High order 1D finite element
+  L2 high order 1D finite element
 */
 template <>
 class L2HighOrderFE<ET_SEGM> : public T_L2HighOrderFiniteElement<ET_SEGM>
@@ -88,7 +105,7 @@ public:
 
 
 /**
-  High order triangular finite element
+   L2 high order triangular finite element
 */
 template <> 
 class L2HighOrderFE<ET_TRIG> : public T_L2HighOrderFiniteElement<ET_TRIG>
@@ -101,6 +118,10 @@ public:
   void T_CalcShape (Tx x[2], TFA & shape) const; 
 };
 
+
+/**
+   L2 high order quadrilateral finite element
+*/
 template <> 
 class L2HighOrderFE<ET_QUAD> : public T_L2HighOrderFiniteElement<ET_QUAD>
 {
@@ -113,7 +134,9 @@ public:
 };
 
 
-
+/**
+   L2 high order tetrahedral finite element
+*/
 template <> 
 class L2HighOrderFE<ET_TET> : public T_L2HighOrderFiniteElement<ET_TET>
 {
@@ -126,6 +149,9 @@ public:
 };
 
 
+/**
+   L2 high order prismatic finite element
+*/
 template <> 
 class L2HighOrderFE<ET_PRISM> : public T_L2HighOrderFiniteElement<ET_PRISM>
 {
@@ -138,6 +164,9 @@ public:
 };
 
 
+/**
+   L2 high order hexahedral finite element
+*/
 template <> 
 class L2HighOrderFE<ET_HEX> : public T_L2HighOrderFiniteElement<ET_HEX>
 {

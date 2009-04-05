@@ -30,7 +30,7 @@ define coefficient coef_source
 
 
 # define a second order fespace (play around with -order=...)
-define fespace v -order=5
+define fespace v -order=2
 
 # the solution field ...
 define gridfunction u -fespace=v -nested
@@ -43,9 +43,9 @@ robin penalty
 define linearform f -fespace=v
 source coef_source
 
-define preconditioner c -type=direct -bilinearform=a
+# define preconditioner c -type=direct -bilinearform=a
 # define preconditioner c -type=local -bilinearform=a
-# define preconditioner c -type=multigrid -bilinearform=a -smoothingsteps=1 
+define preconditioner c -type=multigrid -bilinearform=a -smoothingsteps=1 
 
 
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=1000
