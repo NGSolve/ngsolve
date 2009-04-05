@@ -57,10 +57,15 @@ namespace netgen
 #endif
 
 
-#ifdef VIDEOCLIP
+#ifdef JPEGLIB
 #include <jpeglib.h>
+#endif
+
+#ifdef FFMPEG
 extern "C" {
 #include <ffmpeg/avcodec.h>
+#include <ffmpeg/avformat.h>
+#include <ffmpeg/swscale.h>
 }
 #endif
 
@@ -3335,7 +3340,7 @@ namespace netgen
 
 #if TOGL_MAJOR_VERSION==1
 
-#ifndef VIDEOCLIP
+#ifndef JPEGLIB
   static int Ng_SnapShot (struct Togl * togl,
                           int argc, tcl_const char *argv[])
   {
@@ -3459,12 +3464,16 @@ namespace netgen
 #endif
 
 
-#ifdef VIDEOCLIP
-  // VIDEO CLIP:
 
-#define INBUF_SIZE 4096
+
+
+#ifdef FFMPEG
+  
 #define STATE_READY 0
 #define STATE_STARTED 1
+
+
+#define INBUF_SIZE 4096
 #define DEFAULT_B_FRAMES 3
   // #define DEFAULT_B_FRAMES 0
 #define DEFAULT_GOP_SIZE 200
@@ -3473,7 +3482,6 @@ namespace netgen
 #define DEFAULT_BITRATE 5000000
   // #define DEFAULT_MPG_BUFSIZE 500000
 #define DEFAULT_MPG_BUFSIZE 500000
-
 
   typedef struct buffer_s {
     uint8_t *MPG;
@@ -3504,6 +3512,8 @@ namespace netgen
     cout << " size=" << bytes << " PSNR(Y)=" << Ypsnr << " dB q=" << (float)quality << endl;
   }
 
+
+
   static int Ng_VideoClip (struct Togl * togl,
                            int argc, tcl_const char *argv[])
   {
@@ -3523,6 +3533,7 @@ namespace netgen
     static CodecID codec_id = CODEC_ID_MPEG1VIDEO;
     static FILE *MPGfile;
     static buffer_t buff;
+    static struct SwsContext *img_convert_ctx;
 
 
     if (strcmp (argv[2], "init") == 0)
@@ -3533,6 +3544,8 @@ namespace netgen
           cout << "cannot initialize: already running" << endl;
           return TCL_ERROR;
         }
+
+
 
         // Open output file:
         //-------------------
@@ -3560,8 +3573,7 @@ namespace netgen
         // Initialize libavcodec:
         //-----------------------
         if( !initialized ) {
-          avcodec_init();
-          avcodec_register_all();
+          av_register_all();
           initialized = 1;
         }
 
@@ -3622,6 +3634,8 @@ namespace netgen
         return TCL_OK;
       }
 
+
+
     else if (strcmp (argv[2], "addframe") == 0)
       {
         // Can't compress if status != started:
@@ -3647,8 +3661,19 @@ namespace netgen
 
         // Convert to YUV:
         //----------------
-        img_convert( (AVPicture*)YUVpicture, PIX_FMT_YUV420P,
-                     (AVPicture*)RGBpicture, PIX_FMT_RGB24, nx, ny );
+        if( img_convert_ctx == NULL )
+          img_convert_ctx = sws_getContext( nx, ny, PIX_FMT_RGB24,
+                                            nx, ny, PIX_FMT_YUV420P,
+                                            SWS_BICUBIC, NULL, NULL, NULL );
+        
+        if( img_convert_ctx == NULL ) {
+          cout << "can't initialize scaler context" << endl;
+          return TCL_ERROR;
+        }
+        
+        sws_scale( img_convert_ctx, RGBpicture->data, RGBpicture->linesize,
+                   0, ny, YUVpicture->data, YUVpicture->linesize );
+
 
         // Encode frame:
         //--------------
@@ -3660,6 +3685,7 @@ namespace netgen
 
         return TCL_OK;
       }
+
 
 
     else if (strcmp (argv[2], "finalize") == 0)
@@ -3703,9 +3729,9 @@ namespace netgen
         cout <<  "finalized" << endl;
 
         return TCL_OK;
-
       }
   }
+
 
 
 #else

@@ -56,11 +56,27 @@ AC_ARG_ENABLE([parallel],
         [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -DPARALLEL  -I/usr/share/metis/Lib -DMETIS")
         AC_SUBST([MPI_LIBS], "-lmetis -L/opt/mpich/ch-p4/lib -lmpich")             
         ]
-        )
+        )       
+
 
 #        [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -DPARALLEL  -I/home/joachim/download/metis-4.0/Lib -DMETIS")
 #        AC_SUBST([MPI_LIBS], "-L/home/joachim/download/metis-4.0 -lmetis -L/opt/mpich/ch-p4/lib64 -lmpich")             
 
+
+
+AC_ARG_ENABLE([jpeglib],
+        [  --enable-jpeglib        enable snapshots using jpeglib],
+        [AC_SUBST([JPEGLIB_INCLUDES], "-DJPEGLIB")
+        AC_SUBST([JPEGLIB_LIBS], "-ljpeg")
+        ]       
+        )               
+
+AC_ARG_ENABLE([ffmpeg],
+        [  --enable-ffmpeg         enable video recording with FFmpeg, uses libavcodec],
+        [AC_SUBST([FFMPEG_INCLUDES], "-DFFMPEG")
+        AC_SUBST([FFMPEG_LIBS], "-lavutil -lavformat -lavcodec -lavutil -lswscale -lz -lbz2")
+        ]       
+        )               
 
 # AC_HEADER_STDC
 AC_CONFIG_HEADERS(config.h)
