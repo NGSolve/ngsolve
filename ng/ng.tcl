@@ -293,10 +293,8 @@ if { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
 }
 
 
-if { [catch { load libdemoapp[info sharedlibextension] demoapp } result ] } {
+if { [catch { source ${ngdir}/demoapp.tcl } result ] } {
 #    puts "cannot load demoapp" 
 #    puts "error: $result"
-} {
-    catch { source ${ngdir}/demoapp.tcl }
 }
 
