@@ -20,6 +20,7 @@
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
 			ConfigurationType="1"
+			DeleteExtensionsOnClean="*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;*.exp;*.lib;$(TargetPath)"
 			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName).htm"
 			>
 			<Tool
@@ -106,6 +107,7 @@
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
 			ConfigurationType="1"
+			DeleteExtensionsOnClean="*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;*.exp;*.lib;$(TargetPath)"
 			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName).htm"
 			>
 			<Tool
@@ -197,6 +199,7 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
+			DeleteExtensionsOnClean="*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;*.exp;*.lib;$(TargetPath)"
 			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName).htm"
 			>
 			<Tool
@@ -289,6 +292,7 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
+			DeleteExtensionsOnClean="*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;*.exp;*.lib;$(TargetPath)"
 			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName).htm"
 			>
 			<Tool
