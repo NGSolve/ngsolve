@@ -18,11 +18,18 @@ netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
 	$(top_builddir)/libsrc/general/libgeneral.la \
 	$(OCCLIBS) -L$(TK_BIN_DIR)/Togl1.7 $(TOGLLIBDIR) -lTogl1.7 $(LIBGLU) $(TK_LIB_SPEC) $(TCL_LIB_SPEC) $(MPI_LIBS) $(PKG_LIBS) 
 
+
+#
+# add for static linkage of ngsolve:
+# /opt/netgen/lib/libngsolve.a /opt/netgen/lib/libngcomp.a  /opt/netgen/lib/libngfem.a /opt/netgen/lib/libngcomp.a  /opt/netgen/lib/libngfem.a   /opt/netgen/lib/libngmg.a  /opt/netgen/lib/libngla.a  /opt/netgen/lib/libngbla.a  /opt/netgen/lib/libngstd.a
+#
+#
+
 dist_bin_SCRIPTS = dialog.tcl menustat.tcl ngicon.tcl ng.tcl \
 ngvisual.tcl sockets.tcl drawing.tcl nghelp.tcl ngshell.tcl  \
 ngtesting.tcl parameters.tcl variables.tcl
 
-
-netgen_LDFLAGS = -rdynamic -pg 
+# netgen_LDFLAGS =  -pg  -static
+netgen_LDFLAGS = -rdynamic -pg  -static
 
 

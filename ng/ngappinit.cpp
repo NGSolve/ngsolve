@@ -131,10 +131,6 @@ int main(int argc, char ** argv)
       cout << "Including sparse direct solver Pardiso" << endl;
 #endif
 
-#ifdef _OPENMP
-      cout << "Running OpenMP - parallel using " << omp_get_max_threads() << " threads" << endl;
-      // cout << "(can be changed by setting OMP_NUM_THREADS)" << endl;
-#endif
 
 #ifdef PARALLEL
       cout << "Including MPI " << endl;
@@ -358,6 +354,9 @@ extern "C" int Ng_Vis_Init (Tcl_Interp * interp);
  *
  */
 
+// extern "C" int NGSolve_Init (Tcl_Interp * interp);
+
+
 int Tcl_AppInit(Tcl_Interp * interp)
 {
 
@@ -411,6 +410,12 @@ int Tcl_AppInit(Tcl_Interp * interp)
     // cerr << interp->result << endl;
     // return TCL_ERROR;
   }
+
+
+  /*
+  if (NGSolve_Init(interp) == TCL_ERROR) 
+    return TCL_ERROR;
+  */
 
 
 #ifdef DEMOAPP
