@@ -20,9 +20,13 @@
 /**
    namespace for finite elements.
    
-   Definition of reference FiniteElement, mixed fe HDivFiniteElement and HCurlFiniteElement 
-   
-   Element-matrix and element-vector assembling BilinearFormIntegrator, LinearFormIntegrator
+   Definition of reference FiniteElement, ScalarFiniteElement, and vector-valued elements HDivFiniteElement and HCurlFiniteElement 
+
+   Definition of the geometry of the element, i.e., ElementTransformation
+
+   IntegrationPoint on the reference element, and SpecificIntegrationPoint on the mapped element
+
+   Element-matrix and element-vector calculation by BilinearFormIntegrator and LinearFormIntegrator
 */
 namespace ngfem
 {

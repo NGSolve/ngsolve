@@ -14,6 +14,12 @@
 #include <parallelngs.hpp>
 
 
+namespace ngfem
+{
+#include "../fem/h1hofefo.hpp"
+}
+
+
 using namespace ngmg; 
 
 namespace ngcomp
@@ -102,9 +108,6 @@ namespace ngcomp
     optext = flags.GetDefineFlag ("optext");
     fast_pfem = flags.GetDefineFlag ("fast");
     
-#ifdef SABINE
-    fast_pfem_sz = flags.GetDefineFlag ("fastsz");
-#endif
 
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
@@ -536,6 +539,26 @@ namespace ngcomp
   {
     H1HighOrderFiniteElement<2> * hofe2d = 0;
     H1HighOrderFiniteElement<3> * hofe3d = 0;
+
+    if (!var_order && ma.GetElType(elnr) == ET_TRIG && order <= 6)
+      {
+        H1HighOrderFiniteElementFO<2> * hofe2d = 0;
+        switch (order)
+          {
+          case 1: hofe2d = new (lh.Alloc (sizeof(H1HighOrderFEFO<ET_TRIG,1>)))  H1HighOrderFEFO<ET_TRIG,1> (); break;
+          case 2: hofe2d = new (lh.Alloc (sizeof(H1HighOrderFEFO<ET_TRIG,2>)))  H1HighOrderFEFO<ET_TRIG,2> (); break;
+          case 3: hofe2d = new (lh.Alloc (sizeof(H1HighOrderFEFO<ET_TRIG,3>)))  H1HighOrderFEFO<ET_TRIG,3> (); break;
+          case 4: hofe2d = new (lh.Alloc (sizeof(H1HighOrderFEFO<ET_TRIG,4>)))  H1HighOrderFEFO<ET_TRIG,4> (); break;
+          case 5: hofe2d = new (lh.Alloc (sizeof(H1HighOrderFEFO<ET_TRIG,5>)))  H1HighOrderFEFO<ET_TRIG,5> (); break;
+          case 6: hofe2d = new (lh.Alloc (sizeof(H1HighOrderFEFO<ET_TRIG,6>)))  H1HighOrderFEFO<ET_TRIG,6> (); break;
+          }
+
+    
+        ArrayMem<int,12> vnums; 
+        ma.GetElVertices(elnr, vnums);
+        hofe2d -> SetVertexNumbers (vnums);
+        return *hofe2d;
+      }
 
     try
       {

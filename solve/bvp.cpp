@@ -721,10 +721,7 @@ namespace ngsolve
   
 
 
-  namespace
-#ifdef MACOS
-  bvp_cpp
-#endif
+  namespace bvp_cpp
   {
     class Init
     { 
@@ -740,7 +737,7 @@ namespace ngsolve
     
     
     Init init;
-    
+    int link_it;
   }
   
 

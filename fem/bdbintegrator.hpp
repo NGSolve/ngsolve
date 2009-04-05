@@ -1211,7 +1211,7 @@ public:
 	    LocalHeap & lh) const
   {
     const FEL & fel = static_cast<const FEL&> (bfel);
-    const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
+    const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
 
     
