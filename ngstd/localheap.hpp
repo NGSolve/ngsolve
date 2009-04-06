@@ -63,7 +63,7 @@ public:
   {
     // p = data;
     p = data;
-    p += (16 - long(p) & 15);
+    p += (16 - (long(p) & 15) );
   }
 
   /// returns heap-pointer

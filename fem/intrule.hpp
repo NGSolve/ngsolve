@@ -428,8 +428,8 @@ public:
                      NODE_TYPE nt, int nodenr, int order, LocalHeap & lh);
 
   /*
-  IntegrationRuleTP (ElementType & etype, int classnr, 
-                     int order, LocalHeap & lh);
+    IntegrationRuleTP (ElementType & etype, int classnr, 
+    int order, LocalHeap & lh);
   */
 
   const IntegrationRule & GetIRX() const { return *irx; }
@@ -459,9 +459,9 @@ public:
 
 
 /** 
-   Integration Rules.
-   A global class maintaining integration rules. If a rule of specific
-   order is requested for the first time, than the rule is generated.
+    Integration Rules.
+    A global class maintaining integration rules. If a rule of specific
+    order is requested for the first time, than the rule is generated.
 */
 class IntegrationRules
 {
@@ -664,37 +664,36 @@ public:
   }
 
 
-    void operator()(int fnr, const IntegrationPoint &ipfac, IntegrationPoint & ipvol) const 
-    {
-      ELEMENT_TYPE facettype;
-      switch (eltype) 
+  void operator()(int fnr, const IntegrationPoint &ipfac, IntegrationPoint & ipvol) const 
+  {
+    ELEMENT_TYPE facettype;
+    switch (eltype) 
       {
-        case ET_TRIG:
-        case ET_QUAD:
-          facettype = ET_SEGM;
-          break;
-        case ET_TET:
-          facettype = ET_TRIG;
-          break;
-        case ET_HEX:
-          facettype = ET_QUAD;
-          break;
-        case ET_PRISM:
-          if (fnr < 2) facettype = ET_TRIG;
-          else facettype = ET_QUAD;
-          break;
-        case ET_PYRAMID:
-          if (fnr < 4) facettype = ET_TRIG;
-          else facettype = ET_QUAD;
-          break;
-        default:
-          cerr << "undefined element type in Facet2ElementTrafo()" << endl;
-          exit(0);
+      case ET_TRIG:
+      case ET_QUAD:
+        facettype = ET_SEGM;
+        break;
+      case ET_TET:
+        facettype = ET_TRIG;
+        break;
+      case ET_HEX:
+        facettype = ET_QUAD;
+        break;
+      case ET_PRISM:
+        if (fnr < 2) facettype = ET_TRIG;
+        else facettype = ET_QUAD;
+        break;
+      case ET_PYRAMID:
+        if (fnr < 4) facettype = ET_TRIG;
+        else facettype = ET_QUAD;
+        break;
+      default:
+        throw Exception ("undefined element type in Facet2ElementTrafo()\n");
       }
-      
-      switch (facettype)
+    
+    switch (facettype)
       {
-        case ET_SEGM:
+      case ET_SEGM:
         {
           const POINT3D & p1 = points[edges[fnr][0]];
           const POINT3D & p2 = points[edges[fnr][1]];
@@ -703,7 +702,7 @@ public:
           ipvol(2) = p1[2] + (ipfac(0))*(p2[2]-p1[2]);
           break;
         }
-        case ET_TRIG:
+      case ET_TRIG:
         {
           const POINT3D & p0 = points[faces[fnr][0]];
           const POINT3D & p1 = points[faces[fnr][1]];
@@ -713,7 +712,7 @@ public:
           ipvol(2) = p2[2] + ipfac(0)*(p0[2]-p2[2]) + ipfac(1)*(p1[2]-p2[2]);
           break;
         }
-        case ET_QUAD:
+      case ET_QUAD:
         {
           const POINT3D & p0 = points[faces[fnr][0]];
           const POINT3D & p1 = points[faces[fnr][1]];
@@ -723,16 +722,19 @@ public:
           ipvol(2) = p0[2] + ipfac(0)*(p1[2]-p0[2]) + ipfac(1)*(p2[2]-p0[2]);
           break;
         }
+      default:
+        throw Exception ("undefined facet type in Facet2ElementTrafo()\n");
+
       } 
-/*      cerr << "*** mapping integrationpoint for element " << eltype << " and facel " << fnr << " of type " << facettype << endl;
-      cerr << "  * ipfac = " << ipfac;
-      cerr << "  * ipvol = " << ipvol;*/
-    }
-    const IntegrationPoint & operator()(int fnr, const IntegrationPoint &ip1d) const 
-    {
-      operator()(fnr, ip1d, elpoint);
-      return elpoint;
-    }
+    /*      cerr << "*** mapping integrationpoint for element " << eltype << " and facel " << fnr << " of type " << facettype << endl;
+            cerr << "  * ipfac = " << ipfac;
+            cerr << "  * ipvol = " << ipvol;*/
+  }
+  const IntegrationPoint & operator()(int fnr, const IntegrationPoint &ip1d) const 
+  {
+    operator()(fnr, ip1d, elpoint);
+    return elpoint;
+  }
 };
 
 #endif

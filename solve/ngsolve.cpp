@@ -781,6 +781,7 @@ int NGSolve_Init (Tcl_Interp * interp)
 
 void NGSolve_Exit ()
 {
+  cout << "NGSolve says good bye" << endl;
   // delete pde;
   // delete ma;
   // ma = 0;

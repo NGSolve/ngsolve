@@ -27,7 +27,6 @@ public:
   template <int n, typename Sx, typename Sy, typename T>
   static int Calc (Sx x, Sy y, T & values)
   {
-    int ii = 0, i, j, k;
     // ArrayMem<Sx, 20> polx(n-2), poly(n-2);
     Sx polx[n], poly[n];
 
@@ -35,9 +34,10 @@ public:
     LegendrePolynomial (n-3, 2*y-1, poly);
 
     Sx bub = y * (1-x-y) * (1+x-y);
-
-    for (i = 0; i <= n-3; i++)
-      for (j = 0; j <= n-3-i; j++)
+    
+    int ii = 0;
+    for (int i = 0; i <= n-3; i++)
+      for (int j = 0; j <= n-3-i; j++)
         values[ii++] = bub * polx[i] * poly[j];
 
     return ii;
