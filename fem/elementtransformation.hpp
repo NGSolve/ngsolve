@@ -522,6 +522,9 @@ public:
         if (vnums[sort[4]] > vnums[sort[5]]) Swap (sort[4], sort[5]);
         if (vnums[sort[3]] > vnums[sort[4]]) Swap (sort[3], sort[4]);
         break;
+
+      default:
+        throw Exception ("undefined eltype in ElementTransformation::GetSort()\n");
       }
   }
 };

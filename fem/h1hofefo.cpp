@@ -252,9 +252,8 @@ namespace ngfem
 	  int es = edges[i][0], ee = edges[i][1];
 	  if (vnums[es] > vnums[ee]) swap (es, ee);
 
-	  ii += T_ORTHOPOL::CalcScaled (ORDER, 
-                                        lami[ee]-lami[es], lami[es]+lami[ee], 
-                                        shape.Addr(ii));
+	  ii += T_ORTHOPOL::CalcScaled<ORDER> 
+            (lami[ee]-lami[es], lami[es]+lami[ee], shape.Addr(ii));
 	}
     
     int fav[3] = { 0, 1, 2 }; 

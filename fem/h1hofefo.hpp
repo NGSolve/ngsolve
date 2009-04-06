@@ -97,8 +97,10 @@ public:
 template <int ORDER>
 class H1HighOrderFEFO<ET_TRIG, ORDER> : public T_H1HighOrderFiniteElementFO<ET_TRIG, ORDER>
 {
-  using ScalarFiniteElement<2>::ndof;
-  using H1HighOrderFiniteElementFO<2>::vnums;
+  // using ScalarFiniteElement<2>::ndof;
+  // using H1HighOrderFiniteElementFO<2>::vnums; 
+  T_H1HighOrderFiniteElementFO<ET_TRIG, ORDER>::ndof;
+  T_H1HighOrderFiniteElementFO<ET_TRIG, ORDER>::vnums;
   typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
   typedef TrigShapesInnerLegendre T_TRIGSHAPES;
 
