@@ -525,7 +525,7 @@ namespace ngla
     // lowmem = true;
     
     // int i;
-    int sumnn = 0;
+    // int sumnn = 0;
     int maxbs = 0;
     
     int n = blocktable.Size();

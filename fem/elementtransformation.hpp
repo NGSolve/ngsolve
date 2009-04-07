@@ -41,7 +41,7 @@ class ElementTransformation
 public:
   ///
   ElementTransformation ()
-    : pointmat(0,0,0), nvmat(0,0,0), pointmat_ownmem(false), higher_integration_order(false)
+    : pointmat(0,0,0), pointmat_ownmem(false), nvmat(0,0,0), higher_integration_order(false)
   { ; }
 
   ~ElementTransformation ()

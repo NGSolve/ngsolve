@@ -80,15 +80,15 @@ public:
   template <typename Sx, typename Sy, typename Sz, typename T>
   static int Calc (int n, Sx x, Sy y, Sz z, T & values)
   {
-    int ii = 0, i, j, k;
     ArrayMem<Sx, 20> polx(n+1), poly(n+1);
     
     ScaledLegendrePolynomial (n-3, x, 1-y-z, polx);
     ScaledLegendrePolynomial (n-3, 2*y-(1-z),(1-z), poly);
     Sx bub = (1-x-y-z) * (1+x-y-z)*y; 
 
-    for (i = 0; i <= n-3; i++)
-      for (j = 0; j <= n-3-i; j++)
+    int ii = 0;
+    for (int i = 0; i <= n-3; i++)
+      for (int j = 0; j <= n-3-i; j++)
 	values[ii++] = bub * polx[i] * poly[j];
  
     return ii;

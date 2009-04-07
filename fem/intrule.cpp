@@ -946,8 +946,7 @@ namespace ngfem
   IntegrationRuleTP<D> :: IntegrationRuleTP (const ElementTransformation & eltrans,
                                              int order, bool compute_mapping, LocalHeap & lh)
   {
-    int nip;
-
+    int nip = 0;
 
     switch (eltrans.GetElementType())
       {

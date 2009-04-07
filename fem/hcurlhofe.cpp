@@ -1081,7 +1081,7 @@ namespace ngfem
 	// Type 3 
 	// ned0(trig) * polxy2[j]*polz 
 	// z.DValue(0) * polxy1[i] * polxy2[j] 
-	double ned_trig[2] = {y.Value(),-x.Value()};  
+	// double ned_trig[2] = {y.Value(),-x.Value()};  
 	for(int j=0;j<=order_cell[0]-2;j++) 
 	  for (int k=0;k<=order_cell[2]-1;k++) 
             shape[ii++] = wuDv_minus_wvDu<3> (x,y, adpolxy2[j]*adpolz[k]);
@@ -1253,8 +1253,10 @@ namespace ngfem
     AutoDiff<3> lami[5] = {(1-xt)*(1-yt)*(1-z),xt*(1-yt)*(1-z), xt * yt * (1-z), 
 			   (1-xt)*yt*(1-z),z}; 
 
+    /*
     AutoDiff<3> sig[5] = {(1-xt)+(1-yt),xt+(1-yt), xt + yt, 
 			    (1-xt)+yt,z}; 
+    */
 
     AutoDiff<3> lambda[5] = {(1-xt)*(1-yt),xt*(1-yt), xt * yt, 
 			   (1-xt)*yt,z}; 
@@ -1299,9 +1301,9 @@ namespace ngfem
 
 	if (usegrad_edge[i])
 	  {
-	    int ne = T_ORTHOPOL::CalcTrigExt (order_edge[i]+1, lami[ee]-lami[es],  
-					      1-lami[es]-lami[ee], pol_xi);
-	    for(int j=0; j < order_edge[i]; j++)
+	    T_ORTHOPOL::CalcTrigExt (order_edge[i]+1, lami[ee]-lami[es],  
+                                     1-lami[es]-lami[ee], pol_xi);
+	    for(int j = 0; j < order_edge[i]; j++)
               shape[ii++] = Du<3> (pol_xi[j]);
 	  }
       }

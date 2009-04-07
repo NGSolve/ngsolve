@@ -291,17 +291,14 @@ namespace ngcomp
       case ET_QUAD:
 	fe = quad; break;
       default:
-	fe = 0;
-      }
-    
-    if (!fe)
-      {
-	stringstream str;
-	str << "FESpace " << GetClassName() 
-	    << ", undefined eltype " 
-	    << ElementTopology::GetElementName(ma.GetElType(elnr))
-	    << ", order = " << order << endl;
-	throw Exception (str.str());
+        {
+          stringstream str;
+          str << "FESpace " << GetClassName() 
+              << ", undefined eltype " 
+              << ElementTopology::GetElementName(ma.GetElType(elnr))
+              << ", order = " << order << endl;
+          throw Exception (str.str());
+        }
       }
     
     return *fe;
@@ -421,6 +418,8 @@ namespace ngcomp
 	fe = quad; break;
       case ET_SEGM:
 	fe = segm; break;
+      default:
+        ;
       }
     
     if (!fe)
@@ -1814,6 +1813,8 @@ namespace ngcomp
 	  case ET_TRIG: np = 3; break;
 	  case ET_QUAD: np = 4; break;
 	  case ET_PRISM: np = 6; break;
+          default:
+            ;
 	  }
 	if (dnums.Size() > np) dnums.SetSize (np);
       }
@@ -1839,6 +1840,8 @@ namespace ngcomp
 	  case ET_SEGM: np = 2; break;
 	  case ET_TRIG: np = 3; break;
 	  case ET_QUAD: np = 4; break;
+          default:
+            ;
 	  }
 	if (dnums.Size() > np) dnums.SetSize (np);
       }
@@ -3713,8 +3716,9 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 	return trig1;
       case ET_TET:
 	return tet1;
+      default:
+        cerr << "NonConformingFESpace, GetFE: unknown type" << endl;
       }
-    cerr << "NonConformingFESpace, GetFE: unknown type" << endl;
     return tet1;
   }
   
