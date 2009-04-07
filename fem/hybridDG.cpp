@@ -94,7 +94,7 @@ namespace ngfem
           const SpecificIntegrationPoint<D,D> sip(ir_vol[l], eltrans, lh);
           
           fel_l2.CalcMappedDShape (sip, dshape);
-          fac_dshape = (sip.GetJacobiDet() * ir_vol[l].Weight()) * dshape;
+          fac_dshape = (lam * sip.GetJacobiDet() * ir_vol[l].Weight()) * dshape;
 
           mat_gradgrad += fac_dshape * Trans (dshape);
         }

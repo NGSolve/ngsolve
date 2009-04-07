@@ -22,6 +22,8 @@ protected:
   /// profiling
   int timer;
 public:
+  bool skipCleanUp; 
+
   /// 
   NGS_Object (const MeshAccess & ama, const string & aname = "noname", bool parseflags=false)
   : name(aname), ma(ama), time(0), skipCleanUp(0)
@@ -30,8 +32,8 @@ public:
   }
   
   NGS_Object (const NGS_Object& obj)
-  : name(obj.name), ma(obj.ma), time(obj.time), timer(obj.timer), 
-    skipCleanUp(obj.skipCleanUp), flaglist(obj.flaglist)  
+  : name(obj.name), flaglist(obj.flaglist), ma(obj.ma), 
+    time(obj.time), timer(obj.timer), skipCleanUp(obj.skipCleanUp)
   { ; }
   
   virtual ~NGS_Object () { ; }
@@ -70,7 +72,6 @@ public:
 
   int GetTimer () const { return timer; }
 
-  bool skipCleanUp; 
   
   void DefineStringFlag(const char* s, const char* val="");
   void DefineNumFlag(const char* s, double val=0);

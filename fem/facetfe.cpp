@@ -11,10 +11,10 @@ namespace ngfem {
     : FiniteElement(D, aeltype,-1,-1)
   {
     for (int i=0; i<8; i++)
-      vnums[i] = -1; //HERBERT: warum i
-    for (int i=0; i<6; i++)
+      vnums[i] = i;
+    for (int i = 0; i < 6; i++)
       facet_order[i] = -1;
-    for (int i=0; i<=8; i++)
+    for (int i=0; i < 7; i++)
       first_facet_dof[i] = 0;
   }
  

@@ -1439,10 +1439,6 @@ namespace ngfem
 			     FlatVector<> shape) const
 			     
   {
-    double x = ip.Point()[0];
-    double y = ip.Point()[1];
-    double z = ip.Point()[2];
-
     shape(0) = 1;
   }
 

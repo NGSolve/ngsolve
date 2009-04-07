@@ -168,7 +168,7 @@ namespace ngfem
 
       case 3:
 	{
-	  double r2 = 1.2;
+	  // double r2 = 1.2;
 	  double abs_x = L2Norm (hpoint);
 	  if (abs_x <= pml_r)
 	    {

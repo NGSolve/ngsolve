@@ -228,7 +228,8 @@ namespace ngfem
     Tx y = hx[1];
     
     // orient: copied from h1
-    Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
+    // Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
+
     Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
     int fmax = 0; 
     for (int j = 1; j < 4; j++)

@@ -58,7 +58,7 @@ namespace ngla
 	  {
 	    int col = a.GetRowIndices(i)[j];
 	    if (col <= i)
-	      if (inner->Test(i) && inner->Test(col) || i==col)
+	      if ( (inner->Test(i) && inner->Test(col)) || i==col)
 		mdo->AddEdge (i, col);
 	  }
 
@@ -70,7 +70,7 @@ namespace ngla
 	    {
 	      int col = row[j];
 	      if (col <= i)
-		if ( (*cluster)[i] == (*cluster)[col] && (*cluster)[i] ||
+		if ( ((*cluster)[i] == (*cluster)[col] && (*cluster)[i]) ||
 		     i == col )
 		  mdo->AddEdge (i, col);
 	    }
@@ -129,7 +129,7 @@ namespace ngla
 	  {
 	    int col = a.GetRowIndices(i)[j];
 	    if (col <= i)
-	      if (inner->Test(i) && inner->Test(col) || i==col)
+	      if ( (inner->Test(i) && inner->Test(col)) || i==col)
 		SetOrig (i, col, a.GetRow(i)[j]);
 	  }
     else
@@ -140,7 +140,7 @@ namespace ngla
 	    {
 	      int col = row[j];
 	      if (col <= i)
-		if ( (*cluster)[i] == (*cluster)[col] && (*cluster)[i] ||
+		if ( ( (*cluster)[i] == (*cluster)[col] && (*cluster)[i]) ||
 		     i == col )
                   SetOrig (i, col, a.GetRow(i)[j]);
 	    }
@@ -279,9 +279,9 @@ namespace ngla
 	{
 	  int col = a.GetRowIndices(i)[j];
 	
-	  if (!inner && !cluster || 
-	      inner && inner->Test(i) && inner->Test(col) ||
-	      !inner && cluster && (*cluster)[i] == (*cluster)[col] && (*cluster)[i] )
+	  if ((!inner && !cluster) || 
+	      (inner && inner->Test(i) && inner->Test(col)) ||
+	      (!inner && cluster && (*cluster)[i] == (*cluster)[col] && (*cluster)[i]) )
 	    {
 	      if ( col <= i ) SetOrig (i, col, a.GetRow(i)[j]);
 	    }
@@ -302,7 +302,7 @@ namespace ngla
     NgProfiler::RegionTimer reg (factor_timer);
 
     clock_t starttime, starttime1;
-    double time, time1 = 0, time2 = 0;
+    double time1 = 0, time2 = 0;
 
     
     int n = Height();

@@ -515,35 +515,35 @@ public:
 
   SparseMatrixSymmetric (int as, int max_elsperrow)
     : SparseMatrixTM<TM> (as, max_elsperrow) , 
-      SparseMatrix<TM,TV,TV> (as, max_elsperrow),
-      SparseMatrixSymmetricTM<TM> (as, max_elsperrow)
+      SparseMatrixSymmetricTM<TM> (as, max_elsperrow),
+      SparseMatrix<TM,TV,TV> (as, max_elsperrow)
   { ; }
   
   SparseMatrixSymmetric (const Array<int> & elsperrow)
     : SparseMatrixTM<TM> (elsperrow), 
-      SparseMatrix<TM,TV,TV> (elsperrow),
-      SparseMatrixSymmetricTM<TM> (elsperrow)
+      SparseMatrixSymmetricTM<TM> (elsperrow),
+      SparseMatrix<TM,TV,TV> (elsperrow)
   { ; }
 
   SparseMatrixSymmetric (const MatrixGraph & agraph, bool stealgraph)
     : SparseMatrixTM<TM> (agraph, stealgraph), 
-      SparseMatrix<TM,TV,TV> (agraph, stealgraph),
-      SparseMatrixSymmetricTM<TM> (agraph, stealgraph)
+      SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
+      SparseMatrix<TM,TV,TV> (agraph, stealgraph)
   { ; }
 
 
   SparseMatrixSymmetric (const SparseMatrixSymmetric & amat)
     : SparseMatrixTM<TM> (amat), 
-      SparseMatrix<TM,TV,TV> (amat),
-      SparseMatrixSymmetricTM<TM> (amat)
+      SparseMatrixSymmetricTM<TM> (amat),
+      SparseMatrix<TM,TV,TV> (amat)
   { 
     this->AsVector() = amat.AsVector(); 
   }
 
   SparseMatrixSymmetric (const SparseMatrixSymmetricTM<TM> & amat)
     : SparseMatrixTM<TM> (amat), 
-      SparseMatrix<TM,TV,TV> (amat),
-      SparseMatrixSymmetricTM<TM> (amat)
+      SparseMatrixSymmetricTM<TM> (amat),
+      SparseMatrix<TM,TV,TV> (amat)
   { 
     this->AsVector() = amat.AsVector(); 
   }

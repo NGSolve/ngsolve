@@ -922,7 +922,7 @@ namespace ngfem
 
   void FE_NedelecTrig3 :: Orthogonalize()
   {
-    int i, j, k, l;
+    // int i, j, k, l;
 
     // Matrix<> fiphij(NDOF);
     Mat<NDOF> fiphij;
@@ -930,10 +930,10 @@ namespace ngfem
     Matrix<> edgemoments(3, NDOF);
     FE_Segm2L2 segm2;
     
-    for (i = 0; i < 3; i++)
+    for (int i = 0; i < 3; i++)
       {
 	ComputeEdgeMoments (i, segm2, edgemoments, 4);
-	for (j = 0; j < NDOF; j++)
+	for (int j = 0; j < NDOF; j++)
 	  {
 	    fiphij(i  , j) = edgemoments(0, j);
 	    fiphij(3+i, j) = edgemoments(1, j);
@@ -945,7 +945,7 @@ namespace ngfem
     FE_RTTrig0 rttrig0;
     ComputeFaceMoments (0, rttrig0, facemoments, 4);
 
-    for (j = 0; j < NDOF; j++)
+    for (int j = 0; j < NDOF; j++)
       {
 	fiphij(9 , j) = facemoments(1, j);
 	fiphij(10, j) = facemoments(0, j);
@@ -960,10 +960,10 @@ namespace ngfem
     Mat<NEDGEDOF> fiphij2;
     Matrix<> edgemoments2(3, nd);
 
-    for (i = 0; i < 3; i++)
+    for (int i = 0; i < 3; i++)
       {
 	ComputeEdgeMoments (i, segm2, edgemoments, 4, 2);
-	for (j = 0; j < nd; j++)
+	for (int j = 0; j < nd; j++)
 	  {
 	    fiphij2(i, j) = edgemoments(1, j);
 	    fiphij2(3+i, j) = edgemoments(2, j);

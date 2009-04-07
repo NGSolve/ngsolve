@@ -370,7 +370,7 @@ namespace ngfem {
 
     shape = 0.0;
     int first = first_facet_dof[fanr];
-    int last = first_facet_dof[fanr+1];
+    // int last = first_facet_dof[fanr+1];
     // the parts of shape where the shapes for this face are stored
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);

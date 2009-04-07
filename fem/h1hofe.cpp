@@ -96,6 +96,8 @@ namespace ngfem
           break;
         case ET_HEX: if(p[0]>1 && p[1] > 1 && p[2]>1) ni = (p[0]-1)*(p[1]-1)*(p[2]-1);
           break;
+        default:
+          ;
         }
     
     for (int j = 0; j < ni; j++)
