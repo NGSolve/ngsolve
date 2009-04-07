@@ -3468,6 +3468,8 @@ namespace netgen
 
 
 #ifdef FFMPEG
+
+  // thanks to Mikko Lyly @ CSC, Helsinki
   
 #define STATE_READY 0
 #define STATE_STARTED 1

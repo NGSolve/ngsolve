@@ -65,14 +65,16 @@ AC_ARG_ENABLE([parallel],
 
 
 AC_ARG_ENABLE([jpeglib],
-        [  --enable-jpeglib        enable snapshots using jpeglib],
+        [AS_HELP_STRING([--enable-jpeglib],[enable snapshots using library libjpeg])],
         [AC_SUBST([JPEGLIB_INCLUDES], "-DJPEGLIB")
-        AC_SUBST([JPEGLIB_LIBS], "-ljpeg")
+        AC_CHECK_LIB(jpeg, jpeg_start_compress,  
+                     AC_SUBST([JPEGLIB_LIBS], "-ljpeg") , 
+                     AC_MSG_ERROR([no usable library libjpeg found]))
         ]       
         )               
 
 AC_ARG_ENABLE([ffmpeg],
-        [  --enable-ffmpeg         enable video recording with FFmpeg, uses libavcodec],
+        [AS_HELP_STRING([--enable-ffmpeg],[enable video recording with FFmpeg, uses libavcodec])],
         [AC_SUBST([FFMPEG_INCLUDES], "-DFFMPEG")
         AC_SUBST([FFMPEG_LIBS], "-lavutil -lavformat -lavcodec -lavutil -lswscale -lz -lbz2")
         ]       
@@ -80,7 +82,6 @@ AC_ARG_ENABLE([ffmpeg],
 
 # AC_HEADER_STDC
 AC_CONFIG_HEADERS(config.h)
-
 AC_DISABLE_STATIC
 
 AC_LANG([C++])
