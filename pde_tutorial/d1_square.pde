@@ -30,7 +30,7 @@ define coefficient coef_source
 
 
 # define a second order fespace (play around with -order=...)
-define fespace v -order=2
+define fespace v -order=5
 
 # the solution field ...
 define gridfunction u -fespace=v -nested

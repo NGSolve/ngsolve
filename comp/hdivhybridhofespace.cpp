@@ -32,8 +32,8 @@ namespace ngcomp
     segm = new HDivHighOrderNormalSegm<T_ORTHOPOL>(order);
     if (ma.GetDimension() == 2)
       {
-	trig = new HDivHighOrderTrig<T_ORTHOPOL>(order);
-	quad = new HDivHighOrderQuad<T_ORTHOPOL>(order);
+	trig = new HDivHighOrderFE<ET_TRIG>(order);
+	quad = new HDivHighOrderFE<ET_QUAD>(order);
       }
     else
       {
@@ -41,7 +41,7 @@ namespace ngcomp
 	quad = new HDivHighOrderNormalQuad<T_ORTHOPOL>(order);
       }   
     //quad = new HDivHighOrderQuad (order);
-    tet = new HDivHighOrderTet<T_ORTHOPOL>(order);
+    tet = new HDivHighOrderFE<ET_TET>(order);
     hex = new HDivHighOrderHex<T_ORTHOPOL>(order);
     prism = new HDivHighOrderPrism<T_ORTHOPOL>(order);
     
@@ -314,7 +314,7 @@ namespace ngcomp
       {
       case ET_TET:
 	{ 
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderTet<T_ORTHOPOL>)))  HDivHighOrderTet<T_ORTHOPOL> (order);
+	  fe = new (lh.Alloc (sizeof(HDivHighOrderFE<ET_TET>)))  HDivHighOrderFE<ET_TET> (order);
 	  break;
 	}
 	/*
@@ -336,12 +336,12 @@ namespace ngcomp
 	}
       case ET_TRIG:
 	{ 
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderTrig<T_ORTHOPOL>)))  HDivHighOrderTrig<T_ORTHOPOL> (order);
+	  fe = new (lh.Alloc (sizeof(HDivHighOrderFE<ET_TRIG>)))  HDivHighOrderFE<ET_TRIG> (order);
 	  break;
 	}
       case ET_QUAD:
 	{
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderQuad<T_ORTHOPOL>)))  HDivHighOrderQuad<T_ORTHOPOL> (order);
+	  fe = new (lh.Alloc (sizeof(HDivHighOrderFE<ET_QUAD>)))  HDivHighOrderFE<ET_QUAD> (order);
 	  break;
 	}
       default:

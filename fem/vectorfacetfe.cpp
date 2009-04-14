@@ -376,9 +376,9 @@ namespace ngfem {
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
     const EDGE * faces = ElementTopology :: GetEdges ( eltype );
-    const POINT3D * points = ElementTopology :: GetVertices (eltype);
-    const ELEMENT_TYPE facettype = ElementTopology :: GetFacetType (eltype, fanr);
-    int nvert = ElementTopology :: GetNVertices (facettype);
+    // const POINT3D * points = ElementTopology :: GetVertices (eltype);
+    // const ELEMENT_TYPE facettype = ElementTopology :: GetFacetType (eltype, fanr);
+    // int nvert = ElementTopology :: GetNVertices (facettype);
 
     int  fav[2] = {faces[fanr][0], faces[fanr][1] };
     int j1 = 0; 
@@ -528,9 +528,9 @@ namespace ngfem {
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
     const EDGE * faces = ElementTopology :: GetEdges ( eltype );
-    const POINT3D * points = ElementTopology :: GetVertices (eltype);
-    const ELEMENT_TYPE facettype = ElementTopology :: GetFacetType (eltype, fanr);
-    int nvert = ElementTopology :: GetNVertices (facettype);
+    // const POINT3D * points = ElementTopology :: GetVertices (eltype);
+    // const ELEMENT_TYPE facettype = ElementTopology :: GetFacetType (eltype, fanr);
+    // int nvert = ElementTopology :: GetNVertices (facettype);
 
     int  fav[2] = {faces[fanr][0], faces[fanr][1] };
     int j1 = 0; 
@@ -719,7 +719,7 @@ namespace ngfem {
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
 
     const FACE * faces = ElementTopology :: GetFaces ( eltype );
-    const POINT3D * points = ElementTopology :: GetVertices (eltype);
+    // const POINT3D * points = ElementTopology :: GetVertices (eltype);
     const ELEMENT_TYPE facettype = ElementTopology :: GetFacetType (eltype, fanr);
     int nvert = ElementTopology :: GetNVertices (facettype);
 
@@ -807,7 +807,7 @@ namespace ngfem {
   CalcShape (const IntegrationPoint & ip, FlatMatrix<> shape) const
   {
     //   topology: points = 0:()
-    int fanr;
+    int fanr = -1;
     double x=ip(0), y=ip(1), z=ip(2);
     
     shape = 0.0;
@@ -899,7 +899,7 @@ namespace ngfem {
   void VectorFacetVolumePrism::
   CalcShape (const IntegrationPoint & ip, FlatMatrix<> shape) const
   {  
-    int fanr;
+    int fanr = -1;
     double x=ip(0), y=ip(1), z=ip(2);
     
     shape = 0.0;

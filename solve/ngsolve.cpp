@@ -600,6 +600,8 @@ int NGS_GetData (ClientData clientData,
 }
 
 
+#ifdef NOT_WORKING
+// from multibody ?
 char playanimfile[256];
 extern void PlayAnimFile(const char* name, int speed, int maxcnt);
 /*
@@ -638,7 +640,7 @@ int NGS_PlayAnim (ClientData clientData,
   //  RunParallel (PlayAnim, NULL);
   return TCL_OK;
 }
-
+#endif
 
 
 
@@ -747,9 +749,11 @@ int NGSolve_Init (Tcl_Interp * interp)
 		     (ClientData)NULL,
 		     (Tcl_CmdDeleteProc*) NULL);
 
+  /*
   Tcl_CreateCommand (interp, "NGS_PlayAnim", NGS_PlayAnim,
 		     (ClientData)NULL,
 		     (Tcl_CmdDeleteProc*) NULL);
+  */
 
   Tcl_CreateCommand (interp, "NGS_Set", NGS_Set,
 		     (ClientData)NULL,

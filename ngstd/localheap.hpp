@@ -207,7 +207,7 @@ public:
   {
     int tid = omp_get_thread_num();
     p[tid] = data[tid];
-    p[tid] += (16 - long(p[tid]) & 15);
+    p[tid] += (16 - (long(p[tid]) & 15) );
   }
 
   void * GetPointer () throw ()

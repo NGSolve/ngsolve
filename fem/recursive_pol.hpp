@@ -133,6 +133,94 @@ inline void LegendrePolynomialMult (int n, S x, Sc c , T & values)
 
 
 
+
+
+
+
+
+  template <int n>
+  class LegendrePolynomialFO
+  {
+  public:
+    template <class S, class T>
+    static void Eval (S x, T & values)
+    {
+      LegendrePolynomialFO<n-1>::Eval (x, values);
+      values[n] = (2.0*n-1)/n * x * values[n-1] - (n-1.0)/n * values[n-2];    
+    }
+
+    template <class S, class Sc, class T>
+    static void EvalMult (S x, Sc c, T & values)
+    {
+      LegendrePolynomialFO<n-1>::EvalMult (x, c, values);
+      values[n] = (2.0*n-1)/n * x * values[n-1] - (n-1.0)/n * values[n-2];    
+    }
+  };
+
+
+  template <> class LegendrePolynomialFO<-1>
+  {
+  public:
+    template <class S, class T>
+    static void Eval (S x, T & values)
+    { ; }
+
+    template <class S, class Sc, class T>
+    static void EvalMult (S x, Sc c, T & values)
+    { ; }
+
+  };
+
+  template <> class LegendrePolynomialFO<0>
+  {
+  public:
+    template <class S, class T>
+    static void Eval (S x, T & values)
+    {
+      values[0] = 1;
+    }
+
+    template <class S, class Sc, class T>
+    static void EvalMult (S x, Sc c, T & values)
+    {
+      values[0] = c;
+    }
+
+  };
+
+  template <> class LegendrePolynomialFO<1>
+  {
+  public:
+    template <class S, class T>
+    static void Eval (S x, T & values)
+    {
+      values[0] = 1;
+      values[1] = x;
+    }
+
+    template <class S, class Sc, class T>
+    static void EvalMult (S x, Sc c, T & values)
+    {
+      values[0] = c;
+      values[1] = c*x;
+    }
+  };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 template <class S, class T>
 inline void GegenbauerPolynomial (int n, S x, double lam, T & values)
 {

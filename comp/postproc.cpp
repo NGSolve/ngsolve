@@ -12,7 +12,9 @@
 
 #include <solve.hpp>
 #include <fem.hpp>
-extern ngsolve::PDE * pde;
+// extern PDE * pde;
+extern ngstd::AutoPtr<ngsolve::PDE> pde;
+
 
 namespace ngcomp
 {
