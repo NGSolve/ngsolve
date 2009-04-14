@@ -16,8 +16,8 @@
 */
 
 
-#undef DEVELOP
-//#define DEVELOP
+// #undef DEVELOP
+// #define DEVELOP
 
 
 namespace netgen

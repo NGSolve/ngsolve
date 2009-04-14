@@ -566,47 +566,6 @@ inline Point<D> SplineSeg3<D> :: GetPoint (double t) const
 
 
 
-template<int D>
-void SplineSeg3<D> :: GetDerivatives (const double t, 
-				      Point<D> & point,
-				      Vec<D> & first,
-				      Vec<D> & second) const
-{
-  Vec<D> v1(p1), v2(p2), v3(p3);
-
-  double b1 = (1.-t)*(1.-t);
-  double b2 = sqrt(2.)*t*(1.-t);
-  double b3 = t*t;
-  double w = b1+b2+b3;
-  b1 *= 1./w; b2 *= 1./w; b3 *= 1./w;
-
-  double b1p = 2.*(t-1.);
-  double b2p = sqrt(2.)*(1.-2.*t);
-  double b3p = 2.*t;
-  const double wp = b1p+b2p+b3p;
-  const double fac1 = wp/w;
-  b1p *= 1./w; b2p *= 1./w; b3p *= 1./w;
-
-  const double b1pp = 2.;
-  const double b2pp = -2.*sqrt(2.);
-  const double b3pp = 2.;
-  const double wpp = b1pp+b2pp+b3pp;
-  const double fac2 = (wpp*w-2.*wp*wp)/(w*w);
-
-  for(int i=0; i<D; i++)
-    point(i) = b1*p1(i) + b2*p2(i) + b3*p3(i);
-    
- 
-  first = (b1p - b1*fac1) * v1 +
-    (b2p - b2*fac1) * v2 +
-    (b3p - b3*fac1) * v3;
-
-  second = (b1pp/w - b1p*fac1 - b1*fac2) * v1 +
-    (b2pp/w - b2p*fac1 - b2*fac2) * v2 +
-    (b3pp/w - b3p*fac1 - b3*fac2) * v3;
-}
-
-
 
 template<int D>
 Vec<D> SplineSeg3<D> :: GetTangent (const double t) const

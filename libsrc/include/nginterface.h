@@ -443,3 +443,18 @@ extern "C" {
   DLL_HEADER int Ng_GetElementClosureNodes (int dim, int elementnr, int nodeset, int * nodes);
 
 }
+
+
+
+
+
+#ifdef __cplusplus
+#include <iostream>
+namespace netgen 
+{
+  DLL_HEADER extern std::ostream * testout;
+  DLL_HEADER extern int printmessage_importance;
+}
+
+#endif
+

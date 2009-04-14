@@ -125,31 +125,9 @@ namespace netgen
   }
 
 
-#define NEWJS
   void ExtrusionFace :: CalcProj(const Point<3> & point3d, Point<2> & point2d,
 				 int & seg, double & t) const
   {
-#ifdef NEWJS
-    // JS Version
-    double mindist = 0;
-    for (int i = 0; i < path->GetNSplines(); i++)
-      {
-        Point<2> hpoint2d;
-        double ht = CalcProj (point3d, hpoint2d, i);
-        double hdist = Dist2(point3d, p0[i]);
-        if (i == 0 || hdist < mindist)
-          {
-            seg = i;
-            t = ht;
-            mindist = hdist;
-            point2d = hpoint2d;
-            latest_seg = i;
-          }
-      }
-    return;
-#endif
-
-#ifdef OLDWM
     if (Dist2 (point3d, latest_point3d) < 
         1e-25 * Dist2(path->GetSpline(0).StartPI(), path->GetSpline(0).EndPI()))
       {
@@ -176,6 +154,8 @@ namespace netgen
 	    Point<3> startp(path->GetSpline(i).StartPI());
 	    Point<3> endp(path->GetSpline(i).EndPI());
 	    Point<3> tanp(spline3_path[i]->TangentPoint());
+            
+            /*
 	    double da,db,dc;
 
 	    Vec<3> dir = endp-startp;
@@ -211,16 +191,29 @@ namespace netgen
 	      dc = Dist(endp,point3d);
 	    else
 	      dc = sqrt(topoint.Length2() - s*s);
-	    
+
+
+            // da = sqrt (MinDistLP2 (startp, endp, point3d));
+            // db = sqrt (MinDistLP2 (startp, tanp, point3d));
+            // dc = sqrt (MinDistLP2 (endp, tanp, point3d));
+
+            auxmin = min3(da,db,dc);
+
 	    if(da > db && da > dc)
 	      auxcut = da;
 	    else
 	      auxcut = max2(da,min2(db,dc));
+            */
 
-	    auxmin = min3(da,db,dc);
+            // lower bound for dist
+            auxmin = sqrt (MinDistTP2 (startp, endp, tanp, point3d)); 
+            
+            // upper bound for dist
+            auxcut = min2 (Dist (startp, point3d), Dist (endp, point3d));
 	  }
 	else if(line_path[i])
 	  {
+            /*
 	    double l;
 	    Vec<3> dir = path->GetSpline(i).EndPI() - path->GetSpline(i).StartPI();
 	    l = dir.Length(); dir *= 1./l;
@@ -228,22 +221,21 @@ namespace netgen
 	    double s = topoint * dir;
 	    if(s<=0)
 	      auxcut = topoint.Length();
-	    else if(s>=l)
+              else if(s>=l)
 	      auxcut = Dist(path->GetSpline(i).EndPI(),point3d);
 	    else
 	      auxcut = sqrt(topoint.Length2() - s*s);
-
 	    auxmin = auxcut;
+            */
+            auxmin = auxcut = sqrt (MinDistLP2 (path->GetSpline(i).StartPI(),
+                                                path->GetSpline(i).EndPI(),
+                                                point3d));
 	  }
-
 	
 	mindist[i] = auxmin;
 	
 	if(i==0 || auxcut < cutdist)
 	  cutdist = auxcut;
-
-	
-
 	
 	/*
 	double d1 = Dist2(point3d,path.GetSpline(i).StartPI());
@@ -278,7 +270,6 @@ namespace netgen
     for(int i=0; i<path->GetNSplines(); i++)
       {
 	if(mindist[i] > cutdist) continue;
-	//(*testout) << i << " ";
 
 	double thist = CalcProj(point3d,testpoint2d,i);
 	testpoint3d = p0[i] + testpoint2d(0)*x_dir[i] + testpoint2d(1)*loc_z_dir[i];
@@ -300,7 +291,6 @@ namespace netgen
       }
     //(*testout) << endl;
     //(*testout) << " t " << t << endl;
-#endif
   }
 
   double ExtrusionFace :: CalcProj(const Point<3> & point3d, Point<2> & point2d,
@@ -335,6 +325,8 @@ namespace netgen
     return t;
   }
 
+
+
   double ExtrusionFace :: CalcFunctionValue (const Point<3> & point) const
   {
     Point<2> p;
@@ -342,60 +334,58 @@ namespace netgen
     double dummyd;
     int dummyi;
 
-    CalcProj(point,p,dummyi,dummyd);
-    //(*testout) << "spline " << dummyi << " t " << dummyd << endl;
+    CalcProj(point, p, dummyi, dummyd);
 
-    return profile_spline_coeff(0)*p(0)*p(0) + profile_spline_coeff(1)*p(1)*p(1)
-      + profile_spline_coeff(2)*p(0)*p(1) + profile_spline_coeff(3)*p(0)
-      + profile_spline_coeff(4)*p(1) + profile_spline_coeff(5);    
+    return 
+      profile_spline_coeff(0)*p(0)*p(0) + 
+      profile_spline_coeff(1)*p(1)*p(1) + 
+      profile_spline_coeff(2)*p(0)*p(1) + 
+      profile_spline_coeff(3)*p(0) + 
+      profile_spline_coeff(4)*p(1) + 
+      profile_spline_coeff(5);    
   }
+
+
 
 
   void ExtrusionFace :: CalcGradient (const Point<3> & point, Vec<3> & grad) const
   {
-    int i;
     Point<2> p2d;
 
     double t_path;
     int seg;
-    CalcProj(point,p2d,seg,t_path);
+    CalcProj (point, p2d, seg, t_path);
 
     Point<3> phi;
-    Vec<3> phip,phipp,phi_minus_point;
+    Vec<3> phip, phipp, phi_minus_point;
 
-    path->GetSpline(seg).GetDerivatives(t_path,phi,phip,phipp);
-
+    path->GetSpline(seg).GetDerivatives(t_path, phi, phip, phipp);
     phi_minus_point = phi-point;
 
-    Vec<3> grad_t = phip;
-    
-    double facA = phipp*phi_minus_point + phip*phip;
 
-    grad_t *= 1./facA;
+    Vec<3> grad_t = (1.0/(phipp*phi_minus_point + phip*phip)) * phip;
 
-    Array < Vec<3> > dphi_dX(3);
+    Vec<3> dphi_dX[3];
+    Vec<3> dy_dir_dX[3];
+    Vec<3> dx_dir_dX[3];
     
-    for(i=0; i<3; i++)
+    for(int i = 0; i < 3; i++)
       dphi_dX[i] = grad_t(i)*phip;
 
-    Array < Vec<3> > dy_dir_dX(3);
-
     double lphip = phip.Length();
+    Vec<3> dy_dir_dt = (1./lphip) * phipp - ((phip*phipp)/pow(lphip,3)) * phip;
 
-    dy_dir_dX[0] = dy_dir_dX[1] = dy_dir_dX[2] =
-      (1./lphip) * phipp - ((phip*phipp)/pow(lphip,3)) * phip;
+    Vec<3> dx_dir_dt = Cross(dy_dir_dt,z_dir[seg]);   
 
-    for(i=0; i<3; i++)
-      dy_dir_dX[i] *= grad_t(i);
+    for(int i = 0; i < 3; i++)
+      dy_dir_dX[i] = grad_t(i) * dy_dir_dt;
+    for(int i = 0; i < 3; i++)
+      dx_dir_dX[i] = grad_t(i) * dx_dir_dt;
 
-    Array < Vec<3> > dx_dir_dX(3);
-
-    for(i=0; i<3; i++)
-      dx_dir_dX[i] = Cross(dy_dir_dX[i],z_dir[seg]);
 
     Vec<3> grad_xbar;
 
-    for(i=0; i<3; i++)
+    for(int i=0; i<3; i++)
       grad_xbar(i) = -1.*(phi_minus_point * dx_dir_dX[i]) + x_dir[seg](i) - x_dir[seg] * dphi_dX[i];
 
     double zy = z_dir[seg]*y_dir[seg];
@@ -403,20 +393,81 @@ namespace netgen
     Vec<3> grad_ybar;
     Vec<3> aux = z_dir[seg] - zy*y_dir[seg];
 
-    for(i=0; i<3; i++)
+    for(int i=0; i<3; i++)
       grad_ybar(i) = ( (z_dir[seg]*dy_dir_dX[i])*y_dir[seg] + zy*dy_dir_dX[i] ) * phi_minus_point +
 	aux[i] -
 	aux * dphi_dX[i];
 
     
-    const double dFdxbar = 2.*profile_spline_coeff(0)*p2d(0) +
+    double dFdxbar = 2.*profile_spline_coeff(0)*p2d(0) +
       profile_spline_coeff(2)*p2d(1) + profile_spline_coeff(3);
 
-    const double dFdybar = 2.*profile_spline_coeff(1)*p2d(1) +
+    double dFdybar = 2.*profile_spline_coeff(1)*p2d(1) +
       profile_spline_coeff(2)*p2d(0) + profile_spline_coeff(4);
     
 
     grad = dFdxbar * grad_xbar + dFdybar * grad_ybar;    
+
+
+    /*
+    {
+      cout << "grad_xbar = " << grad_xbar << endl;
+      cout << "grad_ybar = " << grad_ybar << endl;
+      Vec<3> numgradx, numgrady;
+
+      for (int i = 0; i < 3; i++)
+        {
+          Point<3> hpl = point, hpr = point;
+          hpl(i) -= 1e-6; hpr(i) += 1e-6;
+          
+          Point<2> p2dl, p2dr;
+          CalcProj (hpl, p2dl, seg, t_path);
+          CalcProj (hpr, p2dr, seg, t_path);
+          
+          
+          numgradx(i) = (p2dr(0)-p2dl(0)) / (2e-6);
+          numgrady(i) = (p2dr(1)-p2dl(1)) / (2e-6);
+        }
+      cout << "num grad_xbar" << numgradx << endl;
+      cout << "num grad_ybar" << numgrady << endl;
+    }
+    
+
+    {
+    cout << "grad = " << grad << " =?= ";
+    Vec<3> numgrad;
+
+    for (int i = 0; i < 3; i++)
+      {
+        Point<3> hpl = point;
+        Point<3> hpr = point;
+        hpl(i) -= 1e-6;
+        hpr(i) += 1e-6;
+        double vall = CalcFunctionValue (hpl);
+        double valr = CalcFunctionValue (hpr);
+        numgrad(i) = (valr - vall) / (2e-6);
+      }
+    
+    cout << " numgrad = " << numgrad << endl;
+
+    for (int i = 0; i < 3; i++)
+      {
+        Point<3> hpl = point;
+        Point<3> hpr = point;
+        hpl(i) -= 1e-4;
+        hpr(i) += 1e-4;
+        double vall = CalcFunctionValue (hpl);
+        double valr = CalcFunctionValue (hpr);
+        numgrad(i) = (valr - vall) / (2e-4);
+      }
+    
+    cout << " numgrad2 = " << numgrad << endl;
+    }    
+    static int cnt = 0;
+    cnt++;
+    if (cnt == 10000)
+      exit (0);
+    */
   }
 
   void ExtrusionFace :: CalcHesse (const Point<3> & point, Mat<3> & hesse) const
@@ -534,7 +585,7 @@ namespace netgen
     //(*testout) << "box.Center() " << box.Center() << " projected " << center << " diam " << box.Diam() 
     //       << " dist " << Dist(box.Center(),center) << endl;
 
-    return (Dist(box.Center(),center) < 1*box.Diam());
+    return (Dist(box.Center(),center) < 0.5*box.Diam());
   }
 
 
