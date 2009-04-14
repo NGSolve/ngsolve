@@ -161,6 +161,9 @@ namespace ngfem
     int ni = 0;
     switch (ET)
       {
+      case ET_SEGM: 
+        ni = order_edge[0]-1;
+        break;
       case ET_TRIG: 
         ni = (order_face[0][0]-1)*(order_face[0][0]-2) / 2; 
         break;
@@ -334,10 +337,15 @@ namespace ngfem
     if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
     if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	
 
-    if (order_face[0][0] >= 3)
+    int p = order_face[0][0];
+    if (p >= 3)
       {
-	ii += T_TRIGSHAPES::Calc (order_face[0][0], lami[fav[2]]-lami[fav[1]],
-                                  lami[fav[0]], shape.Addr(ii));
+        ArrayMem<Tx, 20> polx(p-2), poly(p-2);
+        T_TRIGSHAPES::CalcSplitted (p, lami[fav[2]]-lami[fav[1]],
+                                    lami[fav[0]], polx, poly);
+        for (int i = 0; i <= p-3; i++)
+          for (int j = 0; j <= p-3-i; j++)
+            shape[ii++] = polx[i] * poly[j];
       }
   }
 

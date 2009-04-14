@@ -14,26 +14,17 @@
 
 
 ///
-template <int D>
-class HDivHighOrderFiniteElement : public HDivFiniteElement<D>
+template <int DIM>
+class HDivHighOrderFiniteElement : public HDivFiniteElement<DIM>
 {
-
-  //public:
-  // enum { DIM = D };
-
 protected:
-public:
   int vnums[8];
  
-#ifdef HDIV_OLD
-  int order_inner;
-  int order_face[6];
-#else 
   INT<3> order_inner;
-  INT<2> order_face[6];
-#endif 
-  int order_edge[12];
+  INT<2> order_face[6];  // 3D only
+  int order_edge[12];   // 2D only
 
+  /*
   int ned; // number of edges in element
   int nv; // number of vertices in element
   int nf; // number of faces in element
@@ -41,13 +32,18 @@ public:
   int ndof_edge;
   int ndof_face;
   int ndof_inner;
+  */
 
-  bool augmented;
+  // bool augmented;
+
   bool discontinuous;
   bool ho_div_free;
 
+  typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
+
+
 public:
-  ///
+
   HDivHighOrderFiniteElement (ELEMENT_TYPE aeltype);
 
 
@@ -161,38 +157,104 @@ public:
 
 };
 
-///
-template <class T_ORTHOPOL = TrigExtensionMonomial>
-class HDivHighOrderTrig : public HDivHighOrderFiniteElement<2>
+
+
+
+template <ELEMENT_TYPE ET> class HDivHighOrderFE;
+
+
+template <ELEMENT_TYPE ET>
+class T_HDivHighOrderFiniteElement 
+  : public HDivHighOrderFiniteElement<ET_trait<ET>::DIM>
+{
+protected:
+  enum { DIM = ET_trait<ET>::DIM };
+  
+  using HDivFiniteElement<DIM>::ndof;
+  using HDivFiniteElement<DIM>::order;
+  using HDivFiniteElement<DIM>::eltype;
+  using HDivFiniteElement<DIM>::dimspace;
+
+  using HDivHighOrderFiniteElement<DIM>::order_edge;
+  using HDivHighOrderFiniteElement<DIM>::order_face;
+  using HDivHighOrderFiniteElement<DIM>::order_inner;
+
+
+  using HDivHighOrderFiniteElement<DIM>::vnums;
+  
+  
+public:
+  T_HDivHighOrderFiniteElement () 
+    : HDivHighOrderFiniteElement<DIM> (ET)
+  {
+    for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
+      vnums[i] = i;
+    dimspace = DIM;
+    eltype = ET;
+  }
+
+  T_HDivHighOrderFiniteElement (int aorder) 
+  {
+    if (DIM == 2)
+      for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+        order_edge[i] = aorder;
+    else
+      for (int i=0; i < ET_trait<ET>::N_FACE; i++) 
+        order_face[i] = INT<2> (aorder,aorder); 
+    
+    order_inner = INT<3> (aorder,aorder,aorder);
+
+    for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
+      vnums[i] = i;
+    dimspace = DIM;
+    eltype = ET;
+  }
+
+  // virtual void ComputeNDof();
+  // virtual void GetInternalDofs (Array<int> & idofs) const;
+
+  virtual void CalcShape (const IntegrationPoint & ip, 
+                          FlatMatrixFixWidth<DIM> shape) const;
+
+  virtual void CalcDivShape (const IntegrationPoint & ip, 
+                             FlatVector<> divshape) const;
+};
+
+
+
+
+template <>
+class HDivHighOrderFE<ET_TRIG> : public T_HDivHighOrderFiniteElement<ET_TRIG>
 {
 public:
-
-  HDivHighOrderTrig (int aorder);
+  HDivHighOrderFE (int aorder);
   virtual void ComputeNDof();
   virtual void GetInternalDofs (Array<int> & idofs) const;
 
+  /*
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip,
-			  FlatMatrixFixWidth<2> shape) const;
+                          FlatMatrixFixWidth<2> shape) const;
 
   /// compute Div of shape
   virtual void CalcDivShape (const IntegrationPoint & ip,
 			     FlatVector<> shape) const;
-  /// compute Div numerical diff
-  //void CalcNumDivShape( const IntegrationPoint & ip,
-  //			FlatVector<> divshape) const;
+  */
+
+  /// compute shape
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx hx[2], TFA & shape) const; 
 
   virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
 
 ///
 
-template <class T_ORTHOPOL = TrigExtensionMonomial>
-class HDivHighOrderQuad : public HDivHighOrderFiniteElement<2>
+template <>
+class HDivHighOrderFE<ET_QUAD> : public T_HDivHighOrderFiniteElement<ET_QUAD>
 {
 public:
-
-  HDivHighOrderQuad (int aorder);
+  HDivHighOrderFE (int aorder);
   virtual void ComputeNDof();
   virtual void GetInternalDofs (Array<int> & idofs) const;
 
@@ -204,23 +266,36 @@ public:
   /// compute Div of shape
   virtual void CalcDivShape (const IntegrationPoint & ip,
 			     FlatVector<> shape) const;
+  /*
   /// compute Div numerical diff
  void CalcNumDivShape( const IntegrationPoint & ip,
   			FlatVector<> divshape) const;
+  */
 
- virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
+  /// compute shape
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx hx[2], TFA & shape) const; 
+
+  virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
 
-template <class T_ORTHOPOL = TrigExtensionMonomial>
-class HDivHighOrderTet : public HDivHighOrderFiniteElement<3>
+
+
+// template <class T_ORTHOPOL = TrigExtensionMonomial>
+template<> 
+class HDivHighOrderFE<ET_TET> : public T_HDivHighOrderFiniteElement<ET_TET>
 {
    typedef TetShapesInnerLegendre T_INNERSHAPES;
    typedef TetShapesFaceLegendre T_FACESHAPES; 
 public:
 
-  HDivHighOrderTet (int aorder);
+  HDivHighOrderFE (int aorder);
   virtual void ComputeNDof();
   virtual void GetInternalDofs (Array<int> & idofs) const;
+
+  /// compute shape
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx hx[2], TFA & shape) const; 
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip,

@@ -375,7 +375,7 @@ inline void LapackAInvBt (ngbla::FlatMatrix<double> a, ngbla::FlatMatrix<double>
   int nrhs = b.Height();
   int * ipiv = new int[n];
   int info;
-  char uplo = 'L';
+  // char uplo = 'L';
 
   dgetrf_ (n, m, a(0,0), lda, *ipiv, info);
   dgetrs_ (trans, n, nrhs, a(0,0), lda, *ipiv, b(0,0), ldb, info);
@@ -635,11 +635,11 @@ inline void LapackEigenValues (ngbla::FlatMatrix<ngbla::Complex> a,
 
 {
   int n = a.Height();
-  int evecs_bool = 0;
-  std::complex<double> * evecs, * dummy;
+  // int evecs_bool = 0;
+  // std::complex<double> * evecs, * dummy;
 
   char jobvr = 'N', jobvl= 'N';
-  bool balancing = 0; 
+  // bool balancing = 0; 
   
   std::complex<double> * alpha= new std::complex<double>[n];
   std::complex<double> * beta = new std::complex<double>[n]; 
@@ -658,14 +658,14 @@ inline void LapackEigenValues (ngbla::FlatMatrix<ngbla::Complex> a,
   int i; 
   
   // char job=balance_type; // Permute and Scale in Balancing 
-  int ihi,ilo; 
+  // int ihi,ilo; 
   double * lscale, *rscale; 
   lscale = new double[n]; 
   rscale = new double[n]; 
   double * work2; 
   work2 = new double[6*n];
   
-  char side = 'R'; 
+  // char side = 'R'; 
   
   int info = 0;
 

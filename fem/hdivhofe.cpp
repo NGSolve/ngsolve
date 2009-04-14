@@ -1,12 +1,10 @@
 
 #include <fem.hpp>
-
+#define DEBUG
 
 namespace ngfem
 {  
   using namespace ngfem;
-
-#include "hdivhofe.hpp" 
 
   
   // hv.DValue() = (grad u) x (grad v) 
@@ -52,7 +50,6 @@ namespace ngfem
     for (int i = 0; i < 8; i++)
       vnums[i] = i;
 
-    augmented = 0;
     ho_div_free = 0;
   }
 
@@ -89,7 +86,7 @@ namespace ngfem
   {
     for (int i = 0; i < of.Size(); i++)
       order_face[i] = of[i];
-      ComputeNDof();
+    ComputeNDof();
   }
 
   template <int D>
@@ -120,8 +117,6 @@ namespace ngfem
   {
     for (int i = 0; i < 4; i++)
       vnums[i] = i;
-
-    augmented = 0;
   }
 
   template <int D>
@@ -276,7 +271,7 @@ namespace ngfem
     for (k = 0; k < p[0]; k++)
       shape(ii++) = -eta.DValue(0)*pol_xi[k].DValue(1) + eta.DValue(1)*pol_xi[k].DValue(0); 
     for (k = 0; k < p[1]; k++)
-	shape(ii++)   = -xi.DValue(0)*pol_eta[k].DValue(1) + xi.DValue(1)*pol_eta[k].DValue(0);
+      shape(ii++)   = -xi.DValue(0)*pol_eta[k].DValue(1) + xi.DValue(1)*pol_eta[k].DValue(0);
 
     return;
   }
@@ -396,9 +391,9 @@ namespace ngfem
     curlned = 2.* (ls.DValue(0)*le.DValue(1) - ls.DValue(1)*le.DValue(0));
     for (k = 0; k <= p-1; k++, ii++)
       {
-	  for (j = 0; j < 2; j++)
-	    grad2(j) = ad_rec_pol2[k].DValue(j);
-	  shape(ii) = (grad2(0)*nedelec(1) - grad2(1)*nedelec(0)) + ad_rec_pol2[k].Value()*curlned;
+        for (j = 0; j < 2; j++)
+          grad2(j) = ad_rec_pol2[k].DValue(j);
+        shape(ii) = (grad2(0)*nedelec(1) - grad2(1)*nedelec(0)) + ad_rec_pol2[k].Value()*curlned;
       }       
   }
   template class HDivHighOrderNormalTrig<IntegratedLegendreMonomialExt>;
@@ -406,15 +401,446 @@ namespace ngfem
   // template class HDivHighOrderNormalTrig<TrigExtensionOptimal>;
   template class HDivHighOrderNormalTrig<TrigExtensionMin>;
 
+
+
+
+
+
+
+
+
+
+
+  // hv.DValue() = (grad u) x (grad v) 
+  inline AutoDiff<3> Cross (const AutoDiff<3> & u,
+			    const AutoDiff<3> & v)
+  {
+    AutoDiff<3> hv;
+    hv.Value() = 0.0;
+    hv.DValue(0) = u.DValue(1)*v.DValue(2)-u.DValue(2)*v.DValue(1);
+    hv.DValue(1) = u.DValue(2)*v.DValue(0)-u.DValue(0)*v.DValue(2);
+    hv.DValue(2) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
+    return hv;
+  }
+
+  inline AutoDiff<1> Cross (const AutoDiff<2> & u,
+			    const AutoDiff<2> & v)
+  {
+    AutoDiff<1> hv;
+    hv.Value() = 0.0;
+    hv.DValue(0) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
+    return hv;
+  }
+
+
+  template <int D>
+  inline double Dot (const AutoDiff<D> & u, const AutoDiff<D> & v)
+  {
+    double sum = 0;
+    for (int i = 0; i < D; i++)
+      sum += u.DValue(i) * v.DValue(i);
+    return sum;
+  }
+
+
+
+
+  template <int DIM>
+  class Du
+  {
+  public:
+    const AutoDiff<DIM> & u;
+    Du (const AutoDiff<DIM> & au)
+      : u(au) { ; }
+  };
+  
+  template <int DIM>
+  class uDv
+  {
+  public:
+    const AutoDiff<DIM> & u, v;
+    uDv (const AutoDiff<DIM> & au, 
+         const AutoDiff<DIM> & av)
+      : u(au), v(av) { ; }
+  };
+
+
+  template <int DIM>
+  class uDv_minus_vDu
+  {
+  public:
+    const AutoDiff<DIM> & u, v;
+    uDv_minus_vDu (const AutoDiff<DIM> & au, 
+                   const AutoDiff<DIM> & av)
+      : u(au), v(av) { ; }
+  };
+
+  template <int DIM>
+  class wuDv_minus_wvDu
+  {
+  public:
+    const AutoDiff<DIM> & u, v, w;
+    wuDv_minus_wvDu (const AutoDiff<DIM> & au, 
+                     const AutoDiff<DIM> & av,
+                     const AutoDiff<DIM> & aw)
+      : u(au), v(av), w(aw) { ; }
+  };
+
+  template <int DIM>
+  class uDvDw_Cyclic
+  {
+  public:
+  public:
+    const AutoDiff<DIM> & u, v, w;
+    uDvDw_Cyclic (const AutoDiff<DIM> & au, 
+                  const AutoDiff<DIM> & av,
+                  const AutoDiff<DIM> & aw)
+      : u(au), v(av), w(aw) { ; }
+  };
+
+  template <int DIM>
+  class Du_Cross_Dv
+  {
+  public:
+  public:
+    const AutoDiff<DIM> & u, v;
+    Du_Cross_Dv (const AutoDiff<DIM> & au, 
+                 const AutoDiff<DIM> & av)
+      : u(au), v(av) { ; }
+  };
+
+  template <int DIM>
+  class wDu_Cross_Dv
+  {
+  public:
+  public:
+    const AutoDiff<DIM> & u, v, w;
+    wDu_Cross_Dv (const AutoDiff<DIM> & au, 
+                  const AutoDiff<DIM> & av,
+                  const AutoDiff<DIM> & aw)
+      : u(au), v(av), w(aw) { ; }
+  };
+
+
+  template <int DIM>
+  class uDvDw_minus_DuvDw
+  {
+  public:
+  public:
+    const AutoDiff<DIM> & u, v, w;
+    uDvDw_minus_DuvDw (const AutoDiff<DIM> & au, 
+                       const AutoDiff<DIM> & av,
+                       const AutoDiff<DIM> & aw)
+      : u(au), v(av), w(aw) { ; }
+  };
+
+  template <int DIM>
+  class curl_uDvw_minus_Duvw
+  {
+  public:
+  public:
+    const AutoDiff<DIM> & u, v, w;
+    curl_uDvw_minus_Duvw (const AutoDiff<DIM> & au, 
+                          const AutoDiff<DIM> & av,
+                          const AutoDiff<DIM> & aw)
+      : u(au), v(av), w(aw) { ; }
+  };
+
+
+
+
+
+
+
+
+  // 2D 
+  template <int DIM>
+  class HDivShapeElement
+  {
+    double * data;
+  public:
+    HDivShapeElement (double * adata) : data(adata) { ; }
+    
+    void operator= (const Du<DIM> & uv) 
+    {
+      data[0] =  uv.u.DValue(1);
+      data[1] = -uv.u.DValue(0);
+    }
+
+    void operator= (const uDv<DIM> & uv) 
+    { 
+      data[0] = -uv.u.Value() * uv.v.DValue(1);
+      data[1] =  uv.u.Value() * uv.v.DValue(0);
+      
+      // for (int i = 0; i < DIM; i++) 
+      // data[i] = uv.u.Value() * uv.v.DValue(i); 
+    }
+
+    void operator= (const uDv_minus_vDu<DIM> & uv) 
+    { 
+      data[0] = -uv.u.Value() * uv.v.DValue(1) + uv.u.DValue(1) * uv.v.Value();
+      data[1] =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
+    }
+    
+    void operator= (const wuDv_minus_wvDu<DIM> & uv) 
+    { 
+      data[0] = -uv.u.Value() * uv.v.DValue(1) + uv.u.DValue(1) * uv.v.Value();
+      data[1] =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
+      data[0] *= uv.w.Value();
+      data[1] *= uv.w.Value();
+    }
+
+
+
+
+    void operator= (const uDvDw_Cyclic<DIM> & uvw) 
+    { 
+      AutoDiff<3> hv =
+        uvw.u.Value() * Cross (uvw.v, uvw.w) +
+        uvw.v.Value() * Cross (uvw.w, uvw.u) +
+        uvw.w.Value() * Cross (uvw.u, uvw.v);
+
+      for (int i = 0; i < 3; i++)
+        data[i] = hv.DValue(i);
+    }
+
+    void operator= (const Du_Cross_Dv<DIM> & uv) 
+    { 
+      AutoDiff<3> hv = Cross (uv.u, uv.v);
+      for (int i = 0; i < 3; i++)
+        data[i] = hv.DValue(i);
+    }
+
+    void operator= (const wDu_Cross_Dv<DIM> & uvw) 
+    { 
+      AutoDiff<3> hv = Cross (uvw.u, uvw.v);
+      for (int i = 0; i < 3; i++)
+        data[i] = uvw.w.Value() * hv.DValue(i);
+    }
+
+
+    void operator= (const uDvDw_minus_DuvDw<DIM> & uvw) 
+    { 
+      AutoDiff<3> hv =
+        uvw.u.Value() * Cross (uvw.v, uvw.w) +
+        uvw.v.Value() * Cross (uvw.w, uvw.u);
+
+      for (int i = 0; i < 3; i++)
+        data[i] = hv.DValue(i);
+    }
+
+    void operator= (const curl_uDvw_minus_Duvw<DIM> & uvw) 
+    { 
+      AutoDiff<3> hv = Cross (uvw.u*uvw.w, uvw.v) - Cross (uvw.v*uvw.w, uvw.u);
+      for (int i = 0; i < 3; i++)
+        data[i] = hv.DValue(i);
+    }
+  };
+
+
+
+
+  template <int DIM>
+  class HDivDivShapeElement
+  {
+    double * data;
+  public:
+    HDivDivShapeElement (double * adata) : data(adata) { ; }
+
+    void operator= (const Du<DIM> & uv) 
+    { 
+      data[0] = 0;
+    }
+
+    void operator= (const uDv<DIM> & uv) 
+    {
+      AutoDiff<1> hd = Cross (uv.u, uv.v);
+      data[0] = -hd.DValue(0);
+    }
+
+    void operator= (const uDv_minus_vDu<DIM> & uv) 
+    {
+      data[0] = -2*uv.u.DValue(0) * uv.v.DValue(1) 
+        + 2*uv.u.DValue(1) * uv.v.DValue(0);
+    }
+
+    void operator= (const wuDv_minus_wvDu<DIM> & uv) 
+    {
+      AutoDiff<1> hd = Cross (uv.u*uv.w, uv.v) + Cross(uv.u, uv.v*uv.w);
+      data[0] = -hd.DValue(0);
+    }
+
+
+    void operator= (const uDvDw_Cyclic<DIM> & uvw) 
+    { 
+      data[0] = 
+        Dot (uvw.u, Cross (uvw.v, uvw.w)) +
+        Dot (uvw.v, Cross (uvw.w, uvw.u)) +
+        Dot (uvw.w, Cross (uvw.u, uvw.v));
+    }
+
+
+    void operator= (const Du_Cross_Dv<DIM> & uv) 
+    { 
+      data[0] = 0;
+    }
+
+    void operator= (const wDu_Cross_Dv<DIM> & uvw) 
+    { 
+      data[0] = Dot (uvw.w, Cross (uvw.u, uvw.v));
+    }
+
+    void operator= (const uDvDw_minus_DuvDw<DIM> & uv) 
+    { 
+      data[0] = 
+        Dot (uv.u, Cross (uv.v, uv.w)) +
+        Dot (uv.v, Cross (uv.w, uv.u));
+    }
+
+    void operator= (const curl_uDvw_minus_Duvw<DIM> & uvw) 
+    { 
+      data[0] = 0;
+    }
+      
+  };
+
+  /*
+    template <int DIM>
+    class HCurlEvaluateCurlElement
+    {
+    const double * coefs;
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+    Vec<DIM_CURL> & sum;
+    public:
+    HCurlEvaluateCurlElement (const double * acoefs, Vec<DIM_CURL> & asum)
+    : coefs(acoefs), sum(asum) { ; }
+
+    void operator= (const Du<DIM> & uv) 
+    { ; }
+
+    void operator= (const uDv<DIM> & uv) 
+    {
+    AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
+    for (int i = 0; i < DIM_CURL; i++) 
+    sum[i] += *coefs * hd.DValue(i);
+    }
+
+    void operator= (const uDv_minus_vDu<DIM> & uv) 
+    {
+    AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
+    for (int i = 0; i < DIM_CURL; i++) 
+    sum[i] += 2 * *coefs * hd.DValue(i);
+    }
+
+    void operator= (const wuDv_minus_wvDu<DIM> & uv) 
+    {
+    AutoDiff<DIM_CURL> hd = Cross (uv.u*uv.w, uv.v) + Cross(uv.u, uv.v*uv.w);
+    for (int i = 0; i < DIM_CURL; i++) 
+    sum[i] += *coefs * hd.DValue(i);
+    }
+    };
+  */
+
+
+  template <int DIM>
+  class HDivShapeAssign
+  {
+    double * dshape;
+  public:
+    HDivShapeAssign (FlatMatrixFixWidth<DIM> mat)
+    { dshape = &mat(0,0); }
+    
+    HDivShapeElement<DIM> operator[] (int i) const
+    { return HDivShapeElement<DIM> (dshape + i*DIM); }
+  };
+
+
+  template <int DIM>
+  class HDivDivShapeAssign
+  {
+    double * dshape;
+  public:
+    HDivDivShapeAssign (FlatVector<>  mat)
+    { dshape = &mat(0); }
+
+    HDivDivShapeElement<DIM> operator[] (int i) const
+    { return HDivDivShapeElement<DIM> (dshape + i); }
+  };
+
+
+  /*
+    template <int DIM>
+    class HCurlEvaluateCurl
+    {
+    const double * coefs;
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+    Vec<DIM_CURL> sum;
+    public:
+    HCurlEvaluateCurl (FlatVector<> acoefs)
+    { coefs = &acoefs(0); sum = 0.0; }
+
+    HCurlEvaluateCurlElement<DIM> operator[] (int i) 
+    { return HCurlEvaluateCurlElement<DIM> (coefs+i, sum); }
+
+    Vec<DIM_CURL> Sum() { return sum; }
+    };
+
+  */
+
+
+
+
+
+  template <ELEMENT_TYPE ET>
+  void T_HDivHighOrderFiniteElement<ET> :: 
+  CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<DIM> shape) const
+  {    
+    AutoDiff<DIM> adp[DIM];
+    for (int i = 0; i < DIM; i++)
+      adp[i] = AutoDiff<DIM> (ip(i), i);
+
+    HDivShapeAssign<DIM> ds(shape); 
+    static_cast<const HDivHighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
+  }
+
+
+  template <ELEMENT_TYPE ET>
+  void T_HDivHighOrderFiniteElement<ET> :: 
+  CalcDivShape (const IntegrationPoint & ip, FlatVector<> shape) const
+  {  
+    AutoDiff<DIM> adp[DIM];
+    for (int i = 0; i < DIM; i++)
+      adp[i] = AutoDiff<DIM> (ip(i), i);
+
+    HDivDivShapeAssign<DIM> ds(shape); 
+    static_cast<const HDivHighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   //------------------------------------------------------------------------
   // HDivHighOrderTrig
   //------------------------------------------------------------------------
 
-  template <class T_ORTHOPOL>
-  HDivHighOrderTrig<T_ORTHOPOL> :: HDivHighOrderTrig (int aorder)
-    : HDivHighOrderFiniteElement<2>(ET_TRIG)
+  HDivHighOrderFE<ET_TRIG> :: HDivHighOrderFE (int aorder)
+  // : T_HDivHighOrderFiniteElement<ET_TRIG> ()>(ET_TRIG)
   {
-
     order_inner = INT<3>(aorder,0,0);
     for (int i = 0; i < 3; i++)
       order_edge[i] = aorder;
@@ -422,10 +848,9 @@ namespace ngfem
     ComputeNDof();
   }
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderTrig<T_ORTHOPOL> :: ComputeNDof()
+  void HDivHighOrderFE<ET_TRIG> :: ComputeNDof()
   {
-    ndof_edge =0;
+    // ndof_edge =0;
     ndof = 3; // Thomas-Raviart 
     // if oder_edge < 1 --> Thomas Raviart
     int i;
@@ -433,7 +858,7 @@ namespace ngfem
     for (i = 0; i < 3; i++)
       {  
 	ndof += order_edge[i];
-	ndof_edge += order_edge[i];
+	// ndof_edge += order_edge[i];
       }
     
     if (order_inner[0] > 1)
@@ -460,49 +885,48 @@ namespace ngfem
   }
 
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderTrig<T_ORTHOPOL> ::
+  void HDivHighOrderFE<ET_TRIG> ::
   GetInternalDofs (Array<int> & idofs) const
   {
     if (discontinuous)
-    {
-      idofs.SetSize(0);
-      for (int i=0; i < ndof; i++)
-        idofs.Append(i);
-      return ;
-    }
+      {
+        idofs.SetSize(0);
+        for (int i=0; i < ndof; i++)
+          idofs.Append(i);
+        return ;
+      }
     else
-    {
-      idofs.SetSize (0);
-
-      int base = 3;
-      for (int i = 0; i < 3; i++)
       {
-        base += order_edge[i];
-      }
+        idofs.SetSize (0);
+
+        int base = 3;
+        for (int i = 0; i < 3; i++)
+          {
+            base += order_edge[i];
+          }
 
 
-      if(order_inner[0] > 1)
-      {
-        int p = order_inner[0];
-        int ni = p*p -1 ;
-        for (int i = 0; i < ni; i++)
-          idofs.Append (base+i);
+        if(order_inner[0] > 1)
+          {
+            int p = order_inner[0];
+            int ni = p*p -1 ;
+            for (int i = 0; i < ni; i++)
+              idofs.Append (base+i);
+          }
+        //(*testout) << "idofs = " << idofs << endl;
       }
-    //(*testout) << "idofs = " << idofs << endl;
-    }
   }
   
-  template <class T_ORTHOPOL>
-  void HDivHighOrderTrig<T_ORTHOPOL> :: GetFacetDofs(int fa, Array<int> & dnums) const 
+
+  void HDivHighOrderFE<ET_TRIG> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa > 2 ) 
-    {
-      cout << " Warning HDIVHighOrderTrigSZ::GetFacetDofNrs() index out of range" << endl; 
+      {
+        cout << " Warning HDIVHighOrderTrigSZ::GetFacetDofNrs() index out of range" << endl; 
       
-      dnums.SetSize(0); 
-      return; 
-    } 
+        dnums.SetSize(0); 
+        return; 
+      } 
   
     dnums.SetSize(0); 
     dnums.Append(fa); 
@@ -515,12 +939,83 @@ namespace ngfem
       dnums.Append(ii+i); 
   }                  
 
-  
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderTrig<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip,
-						   FlatMatrixFixWidth<2> shape) const
+
+  template<typename Tx, typename TFA>  
+  void  HDivHighOrderFE<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
+    Tx x = hx[0], y = hx[1];
+    Tx lami[3] = { x, y, 1-x-y };
+
+    ArrayMem<AutoDiff<2>,10> adpol1(order),adpol2(order);	
+	
+    int ii = 3; 
+    const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+    for (int i = 0; i < 3; i++)
+      {
+	int es = edges[i][0], ee = edges[i][1];
+	if (vnums[es] > vnums[ee])  swap (es, ee);
+
+	//Nedelec low order edge shape function 
+        shape[i] = uDv_minus_vDu<2> (lami[es], lami[ee]);
+
+	int p = order_edge[i]; 
+	//HO-Edge shapes (Gradient Fields)   
+	if(p > 0) //  && usegrad_edge[i]) 
+	  { 
+	    AutoDiff<2> xi = lami[ee] - lami[es]; 
+	    AutoDiff<2> eta = 1 - lami[ee] - lami[es]; 
+	    T_ORTHOPOL::CalcTrigExt(p+1, xi, eta, adpol1); 
+	   
+	    for(int j = 0; j < p; j++) 
+              shape[ii++] = Du<2> (adpol1[j]);
+	  }
+      }   
+
+    //Inner shapes (Face) 
+    int p = order_inner[0];      
+    if(p > 1) 
+      {
+	int fav[3] = { 0, 1, 2 }; 
+	//Sort vertices ... v(f0) < v(f1) < v(f2) 
+	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
+	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
+	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  
+
+	AutoDiff<2> xi  = lami[fav[2]]-lami[fav[1]];
+	AutoDiff<2> eta = lami[fav[0]]; 
+
+        TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
+	
+	// gradients:
+        for (int j = 0; j < p-1; j++)
+          for (int k = 0; k < p-1-j; k++, ii++)
+            shape[ii] = Du<2> (adpol1[j] * adpol2[k]);
+        
+        
+        if (!ho_div_free)
+          {
+            // other combination
+            for (int j = 0; j < p-1; j++)
+              for (int k = 0; k < p-1-j; k++, ii++)
+                shape[ii] = uDv_minus_vDu<2> (adpol2[k], adpol1[j]);
+            
+            // rec_pol * Nedelec0 
+            for (int j = 0; j < p-1; j++, ii++)
+              shape[ii] = wuDv_minus_wvDu<2> (lami[fav[1]], lami[fav[2]], adpol2[j]);
+          }
+      }
+  }
+
+
+
+#ifdef HDIV_V2  
+  void HDivHighOrderFE<ET_TRIG> :: CalcShape (const IntegrationPoint & ip,
+                                              FlatMatrixFixWidth<2> shape) const
+  {
+    T_HDivHighOrderFiniteElement<ET_TRIG>::CalcShape (ip, shape);
+    return;
+
     double x = ip(0);
     double y = ip(1);
 
@@ -654,10 +1149,13 @@ namespace ngfem
       }
   }
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderTrig<T_ORTHOPOL> :: CalcDivShape (const IntegrationPoint & ip,
-						      FlatVector<> shape) const
+  void HDivHighOrderFE<ET_TRIG> :: CalcDivShape (const IntegrationPoint & ip,
+                                                 FlatVector<> shape) const
   {
+    T_HDivHighOrderFiniteElement<ET_TRIG>::CalcDivShape (ip, shape);
+    return;
+    cout << "divshape,new = " << endl << shape << endl;
+
 
     double lami[3];
     lami[0] = ip(0);
@@ -786,20 +1284,27 @@ namespace ngfem
                 rt0(1)*grad_recpol2(j,1); 
           }
       }
-  }
 
-  template class HDivHighOrderTrig<IntegratedLegendreMonomialExt>;
-  template class HDivHighOrderTrig<TrigExtensionMonomial>;
-  //  template class HDivHighOrderTrig<TrigExtensionOptimal>;
-  template class HDivHighOrderTrig<TrigExtensionMin>;
+    cout << "shape,orig = " << endl << shape << endl;
+  }
+#endif
+
+  /*
+    template class HDivHighOrderTrig<IntegratedLegendreMonomialExt>;
+    template class HDivHighOrderTrig<TrigExtensionMonomial>;
+    //  template class HDivHighOrderTrig<TrigExtensionOptimal>;
+    template class HDivHighOrderTrig<TrigExtensionMin>;
+  */
 
   //------------------------------------------------------------------------
   // HDivHighOrderQuad
   //------------------------------------------------------------------------
 
-  template <class T_ORTHOPOL>
-  HDivHighOrderQuad<T_ORTHOPOL> :: HDivHighOrderQuad (int aorder)
-    : HDivHighOrderFiniteElement<2>(ET_QUAD)
+
+
+
+  HDivHighOrderFE<ET_QUAD> :: HDivHighOrderFE (int aorder)
+  // : HDivHighOrderFiniteElement<2>(ET_QUAD)
   {
     order_inner = INT<3>(aorder,aorder,0);
     for (int i = 0; i < 4; i++)
@@ -807,8 +1312,7 @@ namespace ngfem
     ComputeNDof();
   }
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderQuad<T_ORTHOPOL> :: ComputeNDof()
+  void HDivHighOrderFE<ET_QUAD> :: ComputeNDof()
   {
     int i;
     ndof = 4;
@@ -816,7 +1320,11 @@ namespace ngfem
     for (i = 0; i < 4; i++)
       ndof += order_edge[i];
 
-    ndof += 2*order_inner[0]*order_inner[1]+order_inner[0]+order_inner[1];
+    INT<2> p = INT<2>(order_inner[0],order_inner[1]);
+    int ni = ho_div_free ? 
+      p[0]*p[1] : 2*p[0]*p[1] + p[0] + p[1];
+
+    ndof += ni; // 2*order_inner[0]*order_inner[1]+order_inner[0]+order_inner[1];
 
     order = 0;
     for (i = 0; i < 4; i++)
@@ -827,48 +1335,47 @@ namespace ngfem
     order++;
   }
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderQuad<T_ORTHOPOL> ::
+
+  void HDivHighOrderFE<ET_QUAD> ::
   GetInternalDofs (Array<int> & idofs) const
   {
     if (discontinuous)
-    {
-      idofs.SetSize(0);
-      for (int i=0; i<ndof; i++)
-        idofs.Append(i);
-      return ;
-    }
-    else
-    {
-      idofs.SetSize (0);
-
-      int base = 4;
-      for (int i = 0; i < 4; i++)
       {
-        base += order_edge[i];
+        idofs.SetSize(0);
+        for (int i=0; i<ndof; i++)
+          idofs.Append(i);
+        return ;
       }
+    else
+      {
+        idofs.SetSize (0);
 
+        int base = 4;
+        for (int i = 0; i < 4; i++)
+          {
+            base += order_edge[i];
+          }
 
+        INT<2> p = INT<2>(order_inner[0],order_inner[1]);
+        int ni = ho_div_free ? 
+          p[0]*p[1] : 2*p[0]*p[1] + p[0] + p[1];
 
-      INT<2> p = INT<2>(order_inner[0],order_inner[1]);
-      int ni = 2*p[0]*p[1] + p[0] + p[1];
-      for (int i = 0; i < ni; i++)
-        idofs.Append (base+i);
+        for (int i = 0; i < ni; i++)
+          idofs.Append (base+i);
 
-    //(*testout) << "idofs = " << idofs << endl;
-    }
+        //(*testout) << "idofs = " << idofs << endl;
+      }
   }
   
-  template <class T_ORTHOPOL>
-  void HDivHighOrderQuad<T_ORTHOPOL> :: GetFacetDofs(int fa, Array<int> & dnums) const
+  void HDivHighOrderFE<ET_QUAD> :: GetFacetDofs(int fa, Array<int> & dnums) const
   {
     if (fa > 3 ) 
-    {
-      cout << " Warning HDIVHighOrderQuadSZ::GetFacetDofNrs() index out of range" << endl; 
+      {
+        cout << " Warning HDIVHighOrderQuadSZ::GetFacetDofNrs() index out of range" << endl; 
       
-      dnums.SetSize(0); 
-      return; 
-    } 
+        dnums.SetSize(0); 
+        return; 
+      } 
 
    
     dnums.SetSize(0); 
@@ -884,11 +1391,93 @@ namespace ngfem
 
   } 
   
-  
-  template <class T_ORTHOPOL>
-  void HDivHighOrderQuad<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip,
-						   FlatMatrixFixWidth<2> shape) const
+
+
+
+  template<typename Tx, typename TFA>  
+  void  HDivHighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
+    Tx x = hx[0], y = hx[1];
+
+    AutoDiff<2> lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
+    AutoDiff<2> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+
+    int ii = 4;
+    ArrayMem<AutoDiff<2>, 10> pol_xi(order+2), pol_eta(order+2);
+
+    // edges
+    const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
+    for (int i = 0; i < 4; i++)
+      {
+	int p = order_edge[i]; 
+	int es = edges[i][0], ee = edges[i][1];
+	if (vnums[es] > vnums[ee]) swap (es, ee);
+
+	AutoDiff<2> xi  = sigma[ee]-sigma[es];
+	AutoDiff<2> lam_e = lami[ee]+lami[es];  // attention in [0,1]
+
+	// Nedelec0-shapes
+        shape[i] = uDv<2> (0.5 * lam_e, xi); 
+
+	// High Order edges ... Gradient fields 
+	// if(usegrad_edge[i])
+        {
+          T_ORTHOPOL::Calc (p+1, xi, pol_xi);  
+          for (int j = 0; j < p; j++)
+            shape[ii++] = Du<2> (pol_xi[j] * lam_e);
+        }
+      }
+     
+    // INT<2> p = order_face[0]; // (order_cell[0],order_cell[1]);
+    INT<2> p (order_inner[0], order_inner[1]); // (order_cell[0],order_cell[1]);
+    int fmax = 0; 
+    for (int j = 1; j < 4; j++)
+      if (vnums[j] > vnums[fmax])
+	fmax = j;
+    
+    int f1 = (fmax+3)%4; 
+    int f2 = (fmax+1)%4; 
+    if(vnums[f2] > vnums[f1]) swap(f1,f2);  // fmax > f2 > f1; 
+
+    AutoDiff<2> xi = sigma[fmax]-sigma[f1];  // in [-1,1]
+    AutoDiff<2> eta = sigma[fmax]-sigma[f2]; // in [-1,1]
+    
+    T_ORTHOPOL::Calc(p[0]+1, xi,pol_xi);
+    T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
+    
+    //Gradient fields 
+    // if(usegrad_face[0])
+    for (int k = 0; k < p[0]; k++)
+      for (int j= 0; j < p[1]; j++)
+        shape[ii++] = Du<2> (pol_xi[k]*pol_eta[j]);
+    
+    if (!ho_div_free)
+      {
+        //Rotation of Gradient fields 
+        for (int k = 0; k < p[0]; k++)
+          for (int j= 0; j < p[1]; j++)
+            shape[ii++] = uDv_minus_vDu<2> (pol_eta[j], pol_xi[k]);
+        
+        //Missing ones 
+        for(int j = 0; j< p[0]; j++)
+          shape[ii++] = uDv<2> (0.5*pol_xi[j], eta);
+        
+        for(int j = 0; j < p[1]; j++)
+          shape[ii++] = uDv<2> (0.5*pol_eta[j], xi); 
+      }
+  }
+
+
+
+
+  void HDivHighOrderFE<ET_QUAD> :: CalcShape (const IntegrationPoint & ip,
+                                              FlatMatrixFixWidth<2> shape) const
+  {
+    T_HDivHighOrderFiniteElement<ET_QUAD>::CalcShape (ip, shape);
+    return;
+    cout << "shape,new = " << endl << shape << endl;
+
+
     AutoDiff<2> x (ip(0), 0);
     AutoDiff<2> y (ip(1), 1);
 
@@ -1010,18 +1599,21 @@ namespace ngfem
       }
     for (int i= 0; i < p[1]; i++, ii++)
       {
-	  shape(ii,0) = (xi.DValue(1)*poleta[i].Value());
-	  shape(ii,1) = (-xi.DValue(0)*poleta[i].Value());
+        shape(ii,0) = (xi.DValue(1)*poleta[i].Value());
+        shape(ii,1) = (-xi.DValue(0)*poleta[i].Value());
       }
 
-    return;
 
+    cout << "shape,old = " << endl << shape << endl;
+    return;
   }
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderQuad<T_ORTHOPOL> :: CalcDivShape (const IntegrationPoint & ip,
-						      FlatVector<> shape ) const
+
+  void HDivHighOrderFE<ET_QUAD> :: CalcDivShape (const IntegrationPoint & ip,
+                                                 FlatVector<> shape ) const
   {
+    T_HDivHighOrderFiniteElement<ET_QUAD>::CalcDivShape (ip, shape);
+    return;
 
 
     AutoDiff<2> x (ip(0), 0);
@@ -1109,17 +1701,18 @@ namespace ngfem
 	    shape(ii++) = (2*(polxi[i].DValue(1)*poleta[j].DValue(0) - polxi[i].DValue(0)*poleta[j].DValue(1)));
           }
       }
-      for (int i= 0; i < p[0]; i++, ii++)
-        shape(ii) = (eta.DValue(1)*polxi[i].DValue(0)-eta.DValue(0)*polxi[i].DValue(1));
-      for (int i= 0; i < p[1]; i++, ii++)
-	  shape(ii) = (xi.DValue(1)*poleta[i].DValue(0)-xi.DValue(0)*poleta[i].DValue(1));
+    for (int i= 0; i < p[0]; i++, ii++)
+      shape(ii) = (eta.DValue(1)*polxi[i].DValue(0)-eta.DValue(0)*polxi[i].DValue(1));
+    for (int i= 0; i < p[1]; i++, ii++)
+      shape(ii) = (xi.DValue(1)*poleta[i].DValue(0)-xi.DValue(0)*poleta[i].DValue(1));
     return;
 
   }
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderQuad<T_ORTHOPOL> :: CalcNumDivShape (const IntegrationPoint & ip,
-							 FlatVector<> divshape) const
+
+#ifdef V2  
+  void HDivHighOrderFE<ET_QUAD> :: CalcNumDivShape (const IntegrationPoint & ip,
+                                                    FlatVector<> divshape) const
   {
     double x=ip(0);
     double y=ip(1);
@@ -1157,144 +1750,125 @@ namespace ngfem
 
     return;
   }
+#endif
 
 
-  template class HDivHighOrderQuad<IntegratedLegendreMonomialExt>;
-  template class HDivHighOrderQuad<TrigExtensionMonomial>;
-  // template class HDivHighOrderQuad<TrigExtensionOptimal>;
-  template class HDivHighOrderQuad<TrigExtensionMin>;
+  /*
+    template class HDivHighOrderQuad<IntegratedLegendreMonomialExt>;
+    template class HDivHighOrderQuad<TrigExtensionMonomial>;
+    // template class HDivHighOrderQuad<TrigExtensionOptimal>;
+    template class HDivHighOrderQuad<TrigExtensionMin>;
+  */
 
 
   //------------------------------------------------------------------------
   // HDivHighOrderTet
   //------------------------------------------------------------------------
 
-  template <class T_ORTHOPOL>
-  HDivHighOrderTet<T_ORTHOPOL> :: HDivHighOrderTet (int aorder)
-    : HDivHighOrderFiniteElement<3>(ET_TET)
+
+  HDivHighOrderFE<ET_TET> :: HDivHighOrderFE (int aorder)
   {
-    nv = 4;
-    ned = 6;
-    nf = 4;
-
-    augmented =0;
-
-    int i;
     order_inner = INT<3>(aorder,aorder,aorder);
-    for (i = 0; i < nf; i++)
-      {
-	order_face[i] = INT<2>(aorder,aorder);
-      }
+    for (int i = 0; i < 4; i++)
+      order_face[i] = INT<2>(aorder,aorder);
 
     ComputeNDof();
-
   }
 
  
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderTet<T_ORTHOPOL> :: ComputeNDof()
+  void HDivHighOrderFE<ET_TET> :: ComputeNDof()
   {
-    ndof_face = 0;
-  
-
-    // RT_0
     ndof = 4;
 
-    //ndof = 0;
-    int i;
-    int p;
-
-    for (i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++)
       {
         if (order_face[i][0] > 0)
 	  { 
-	    p = order_face[i][0];
-
-	    ndof_face += (p*p+3*p)/2;
-
+	    int p = order_face[i][0];
 	    ndof += (p*p+3*p)/2;
-
 	  }
-
-
       }
-
     
-    p = order_inner[0];
+    int p = order_inner[0];
     int pc = order_inner[0]; // should be order_inner_curl!!!  
+    
     if(pc > 1) 
       ndof += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
-    if(p > 1) 
+    if(p > 1 && !ho_div_free) 
       ndof += p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
 
 
     order = 0; // max(order_face_normal,order_inner);
-    for (i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++)
       {
 	if (order_face[i][0] > order)
 	  order = order_face[i][0];
-
       }
+
     if (order_inner[0] > order)
       order = order_inner[0];
 
-    order++;
-
-
+    // order++;
   }
 
 
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderTet<T_ORTHOPOL> ::
+  // template <class T_ORTHOPOL>
+  void HDivHighOrderFE<ET_TET> ::
   GetInternalDofs (Array<int> & idofs) const
   {
     if (discontinuous)
-    {
-      idofs.SetSize(0);
-      for (int i=0; i<ndof; i++)
-        idofs.Append(i);
-      return ;
-    }
+      {
+        idofs.SetSize(0);
+        for (int i=0; i<ndof; i++)
+          idofs.Append(i);
+        return ;
+      }
     else
-    {
-      idofs.SetSize (0);
-
-      int base = 4;
-      for (int i = 0; i < 4; i++)
       {
-        int p = order_face[i][0];
-        base += (p*p+3*p)/2;
-      }
+        idofs.SetSize (0);
+
+        int base = 4;
+        for (int i = 0; i < 4; i++)
+          {
+            int p = order_face[i][0];
+            base += (p*p+3*p)/2;
+          }
 
 
-      if(order_inner[0] >= 2)
-      {
-        int p = order_inner[0];
-	//int ni = 6*(p-1) + 4*(p-1)*(p-2) + (p-1)*(p-2)*(p-3)/2;
-        int ni = p*(p+1)*(p-1)/2 + p*(p-1)+(p-1);
-        for (int i = 0; i < ni; i++)
-          idofs.Append (base+i);
+        if(order_inner[0] >= 2)
+          {
+            int p = order_inner[0];
+            int pc = order_inner[0];
+
+            //int ni = 6*(p-1) + 4*(p-1)*(p-2) + (p-1)*(p-2)*(p-3)/2;
+            // int ni = p*(p+1)*(p-1)/2 + p*(p-1)+(p-1);
+
+            int ni;
+            if(pc > 1) 
+              ni += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
+            if(p > 1 && !ho_div_free) 
+              ni += p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
+            
+            for (int i = 0; i < ni; i++)
+              idofs.Append (base+i);
+          }
+        //(*testout) << "idofs = " << idofs << endl;
       }
-    //(*testout) << "idofs = " << idofs << endl;
-    }
   }
   
   
-  
-  
-  
-  template <class T_ORTHOPOL>
-  void HDivHighOrderTet<T_ORTHOPOL> :: GetFacetDofs(int fa, Array<int> & dnums) const 
+
+  void HDivHighOrderFE<ET_TET> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa >= 4 ) 
-    {
-      cout << " Warning HDIVHighOrderTet::GetFacetDofNrs() index out of range" << endl; 
+      {
+        cout << " Warning HDIVHighOrderTet::GetFacetDofNrs() index out of range" << endl; 
       
-      dnums.SetSize(0); 
-      return; 
-    } 
+        dnums.SetSize(0); 
+        return; 
+      } 
   
     dnums.SetSize(0); 
     dnums.Append(fa);  // lowest-order
@@ -1302,26 +1876,138 @@ namespace ngfem
     int ii = 4; // Thomas-Raviart 
      
     for (int i = 0; i < fa; i++)
-    {     
-      int p = order_face[i][0];
-      ii+= (p*p+3*p)/2; 
-    }
+      {     
+        int p = order_face[i][0];
+        ii+= (p*p+3*p)/2; 
+      }
     
     int p = order_face[fa][0];
     int nf = (p*p+3*p)/2;
     
     for(int i = 0; i < nf; i++)  
       dnums.Append(ii+i); 
-
-    *testout << " HDIVHO2 FacetDofs " << dnums << endl; 
   }                  
+
+
+
+
+
+  template<typename Tx, typename TFA>  
+  void  HDivHighOrderFE<ET_TET> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  {
+    Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx lami[4] = { x, y, z, 1-x-y-z };
+
+    ArrayMem<Tx,10> adpol1(order), adpol2(order), adpol3(order);
+	
+    int ii = 4; 
+    const FACE * faces = ElementTopology::GetFaces (ET_TET);
+    for (int i = 0; i < 4; i++)
+      {
+	int p = order_face[i][0];
+
+        int fav[3];
+        for(int j = 0; j < 3; j++) fav[j]=faces[i][j];
+        
+        //Sort vertices  first edge op minimal vertex
+        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
+        if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
+        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
+        int fop = 6 - fav[0] - fav[1] - fav[2];
+        
+	// RT lowest order
+        shape[i] = uDvDw_Cyclic<3> (lami[fav[0]], lami[fav[1]], lami[fav[2]]);
+
+        Tx xi = lami[fav[1]]-lami[fav[0]];
+        Tx eta = lami[fav[2]];
+        Tx zeta = lami[fop];  
+      
+        T_FACESHAPES::CalcSplitted (p+2, xi, eta, zeta, adpol1, adpol2); 
+
+        // Compability WITH TRIG!! 
+        for (int k = 0; k < adpol1.Size(); k++)
+          adpol1[k] *= 0.5; 
+          
+        // Curl (Type 2) 2*grad v x grad u
+        for (int j = 0; j <= p-1; j++) 
+          for (int k = 0; k <= p-1-j; k++)
+            shape[ii++] = Du_Cross_Dv<3> (adpol2[k], adpol1[j]);
+
+        // Curl (Type 3) //curl( * v) = nabla v x ned + curl(ned)*v
+        for (int j = 0; j <= p-1; j++)
+          shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[fav[0]], lami[fav[1]], adpol2[j]);
+      }
+
+    
+    // cell-based shapes 
+    int p = order_inner[0];
+    int pc = order_inner[0]; // should be order_inner_curl  
+    int pp = max(p,pc); 
+    if ( pp >= 2 )
+      {
+        T_INNERSHAPES::CalcSplitted(pp+2, lami[0]-lami[3], lami[1], lami[2], adpol1, adpol2, adpol3 );
+      
+        // Curl-Fields 
+        for (int i = 0; i <= pc-2; i++)
+          for (int j = 0; j <= pc-2-i; j++)
+            for (int k = 0; k <= pc-2-i-j; k++)
+              {
+                // grad v  x  grad (uw)
+                shape[ii++] = Du_Cross_Dv<3> (adpol2[j], adpol1[i]*adpol3[k]);
+      
+                // grad w  x  grad (uv)
+                shape[ii++] = Du_Cross_Dv<3> (adpol3[k], adpol1[i]*adpol2[j]);
+              }     
+
+
+        // Type 1 : Curl(T3)
+        // ned = lami[0] * nabla(lami[3]) - lami[3] * nabla(lami[0]) 
+        for (int j= 0; j <= pc-2; j++)
+          for (int k = 0; k <= pc-2-j; k++)
+            shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[0], lami[3], adpol2[j]*adpol3[k]);
+
+
+        if (!ho_div_free)
+          { 
+            // Type 2:  
+            // (grad u  x  grad v) w 
+            for (int i = 0; i <= p-2; i++)
+              for (int j = 0; j <= p-2-i; j++)
+                for (int k = 0; k <= p-2-i-j; k++)
+                  shape[ii++] = wDu_Cross_Dv<3> (adpol1[i], adpol2[j], adpol3[k]);
+
+            // (ned0 x grad v) w    
+            for (int j = 0; j <= p-2; j++)
+              for (int k= 0; k <= p-2-j; k++)
+                shape[ii++] = wDu_Cross_Dv<3> (lami[0], adpol2[j], lami[3]*adpol3[k]);
+            
+            // Type 3: 
+            // (ned0 x e_z) v = (N_y, -N_x,0)^T * v ) 
+            for (int j=0; j<=p-2; j++) 
+              shape[ii++] = wDu_Cross_Dv<3> (lami[0], z, lami[3]*adpol2[j]);
+          }
+      }
+  }
+
+
+
+
+
+
+
 
 #define oldv
 #ifdef oldv 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderTet<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip,
-						  FlatMatrixFixWidth<3> shape) const
+
+
+  void HDivHighOrderFE<ET_TET> :: CalcShape (const IntegrationPoint & ip,
+                                             FlatMatrixFixWidth<3> shape) const
   {
+    shape = 0.0;
+    T_HDivHighOrderFiniteElement<ET_TET>::CalcShape (ip, shape);
+    return;
+    // *testout << "newshape = " << endl << shape << endl;
+
 
     double x = ip(0);
     double y = ip(1);
@@ -1429,7 +2115,7 @@ namespace ngfem
 	    ArrayMem<AutoDiff<3>, 10> ad_rec_pol1(order+1);
 	    ArrayMem<AutoDiff<3>, 10> ad_rec_pol2(order+1);
 
-         // *testout << " p " << p << endl; 
+            // *testout << " p " << p << endl; 
             
           
 	    ScaledLegendrePolynomial(p-1, le-ls, ls+le, ad_rec_pol1);
@@ -1473,7 +2159,7 @@ namespace ngfem
     
 
 
-   // if(order_inner[0] < 2) return;
+    // if(order_inner[0] < 2) return;
     // **********************************INNER*********************************************
 
     
@@ -1564,7 +2250,7 @@ namespace ngfem
       {
 	for (j = 0; j < 3; j++)
 	  grad1(j) = z1.DValue(j);
-      vp1 = Cross(ned,grad1);   
+        vp1 = Cross(ned,grad1);   
 	for (m = 0; m < 3; m++)
 	  {
 	    shape(ii,m) = vp1(m)* ad_polj[i].Value();
@@ -1572,15 +2258,20 @@ namespace ngfem
 	    
 	  }
       }
+
+    *testout << "oldshape = " << endl << shape << endl;
    
-  // (*testout)<<"shape tet="<<shape<<endl;
-     
+    // (*testout)<<"shape tet="<<shape<<endl;
+    // cout << "shape, old = " << shape << endl;     
   }
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderTet<T_ORTHOPOL> :: CalcDivShape (const IntegrationPoint & ip,
-						     FlatVector<> divshape) const
+
+  void HDivHighOrderFE<ET_TET> :: CalcDivShape (const IntegrationPoint & ip,
+                                                FlatVector<> divshape) const
   {
+    divshape = 0.0;
+    T_HDivHighOrderFiniteElement<ET_TET>::CalcDivShape (ip, divshape);
+    return;
 
 
     double x = ip(0);
@@ -1699,8 +2390,8 @@ namespace ngfem
 	if(order_inner[0] < 2) return;
 
     
-      //***************DIV curl shapes*****************************************************
-	  p = order_inner[0];
+    //***************DIV curl shapes*****************************************************
+        p = order_inner[0];
     Vec<3> grad1, grad2, grad3, vp1, vp2, vp3;
     ArrayMem<AutoDiff<3>, 100> ad_poli(100);
     ArrayMem<AutoDiff<3>, 100> ad_polj(100);
@@ -1797,7 +2488,7 @@ namespace ngfem
     //Vector<> divshape_num(divshape.Size());
     //HDivFiniteElement<3> :: CalcDivShape (ip, divshape_num);
 	    
-     //(*testout) << "divshape numerisch = " << endl << divshape_num << endl;
+    //(*testout) << "divshape numerisch = " << endl << divshape_num << endl;
 
     // (*testout) << "difference = " << endl << divshape-divshape_num << endl;
 
@@ -1805,154 +2496,157 @@ namespace ngfem
 
 #else 
   
-  template <class T_ORTHOPOL>
-      void HDivHighOrderTet<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip,
-      FlatMatrixFixWidth<3> shape) const
-      {
-        AutoDiff<3> x(ip(0),0);
-        AutoDiff<3> y(ip(1),1);
-        AutoDiff<3> z(ip(2),2);
 
-        AutoDiff<3> lami[4] = {x, y, z, 1-x-y-z}; 
+  void HDivHighOrderFE<ET_TET> :: CalcShape (const IntegrationPoint & ip,
+                                             FlatMatrixFixWidth<3> shape) const
+  {
+    /*
+    shape = 0.0;
+    T_HDivHighOrderFiniteElement<ET_TET>::CalcShape (ip, shape);
+    cout << "shape xx, new = " << shape << endl;
+    */
+
+    AutoDiff<3> x(ip(0),0);
+    AutoDiff<3> y(ip(1),1);
+    AutoDiff<3> z(ip(2),2);
+
+    AutoDiff<3> lami[4] = {x, y, z, 1-x-y-z}; 
     
-        int i, j, ii, k,l, m, n;
-        int print=0;
-        shape = 0.0; 
+    int i, j, ii, k,l, m, n;
+    int print=0;
+    shape = 0.0; 
   
         
 
         
         
-        const FACE * faces = ElementTopology::GetFaces (ET_TET);
+    const FACE * faces = ElementTopology::GetFaces (ET_TET);
   
-        ArrayMem<AutoDiff<3>,10> adpol1(order+2),adpol2(order+2),adpol3(order+2); 
+    ArrayMem<AutoDiff<3>,10> adpol1(order+2),adpol2(order+2),adpol3(order+2); 
      
-        ii =4; 
-        for (i = 0; i < 4; i++)
-        {
-          int p = order_face[i][0]; 
+    ii =4; 
+    for (i = 0; i < 4; i++)
+      {
+        int p = order_face[i][0]; 
 
-          int fav[3] =  { faces[i][0], faces[i][1], faces[i][2] };
+        int fav[3] =  { faces[i][0], faces[i][1], faces[i][2] };
       
-      //Sort vertices  first edge op minimal vertex
-          if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-          if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-          if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-          int fop = 6 - fav[0] - fav[1] - fav[2];
+        //Sort vertices  first edge op minimal vertex
+        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
+        if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
+        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
+        int fop = 6 - fav[0] - fav[1] - fav[2];
       
-          AutoDiff<3> cr0 = GradCrossGrad(lami[fav[1]],lami[fav[2]]); 
-          AutoDiff<3> cr1 = GradCrossGrad(lami[fav[2]],lami[fav[0]]);
-          AutoDiff<3> cr2 = GradCrossGrad(lami[fav[0]],lami[fav[1]]);
+        AutoDiff<3> cr0 = GradCrossGrad(lami[fav[1]],lami[fav[2]]); 
+        AutoDiff<3> cr1 = GradCrossGrad(lami[fav[2]],lami[fav[0]]);
+        AutoDiff<3> cr2 = GradCrossGrad(lami[fav[0]],lami[fav[1]]);
       
-          AutoDiff<3> rt = cr0 * lami[fav[0]].Value() + cr1 *lami[fav[1]].Value() + cr2 *lami[fav[2]].Value();  
+        AutoDiff<3> rt = cr0 * lami[fav[0]].Value() + cr1 *lami[fav[1]].Value() + cr2 *lami[fav[2]].Value();  
       
-      //RT_0 low order
-          for(l=0;l<3;l++) 
-            shape(i,l) = rt.DValue(l); 
+        //RT_0 low order
+        for(l=0;l<3;l++) 
+          shape(i,l) = rt.DValue(l); 
       
-      // Curl-Shapes   
-          AutoDiff<3> xi = lami[fav[1]]-lami[fav[0]];
-          AutoDiff<3> eta = lami[fav[2]];
-          AutoDiff<3> zeta = lami[fop];  // in [0,1] // lam_F
+        // Curl-Shapes   
+        AutoDiff<3> xi = lami[fav[1]]-lami[fav[0]];
+        AutoDiff<3> eta = lami[fav[2]];
+        AutoDiff<3> zeta = lami[fop];  // in [0,1] // lam_F
       
-          T_FACESHAPES::CalcSplitted (p+2, xi, eta, zeta, adpol1, adpol2); 
+        T_FACESHAPES::CalcSplitted (p+2, xi, eta, zeta, adpol1, adpol2); 
 
      
-      // Compability WITH TRIG!! 
-      for (k=0;k<adpol1.Size();k++)
-         adpol1[k]*=0.25; 
+        // Compability WITH TRIG!! 
+        for (k=0;k<adpol1.Size();k++)
+          adpol1[k]*=0.25; 
       
-      // Curl (Type 2) 2*grad v x grad u
-          for (j = 0; j <= p-1; j++) 
-            for (k = 0; k <= p-1-j; k++, ii++)
-          { 
-            AutoDiff<3> hv = GradCrossGrad(adpol2[k],adpol1[j]); 
-            for(l=0;l<3;l++)
-              shape(ii,l) = 2*hv.DValue(l); 
-          }
+        // Curl (Type 2) 2*grad v x grad u
+        for (j = 0; j <= p-1; j++) 
+          for (k = 0; k <= p-1-j; k++, ii++)
+            { 
+              AutoDiff<3> hv = GradCrossGrad(adpol2[k],adpol1[j]); 
+              for(l=0;l<3;l++)
+                shape(ii,l) = 2*hv.DValue(l); 
+            }
       
-      // Curl (Type 3) //curl( * v) = nabla v x ned + curl(ned)*v
-          Vec<3> ned; 
-          for(l=0;l<3;l++) 
-            ned(l) = lami[fav[0]].Value()*lami[fav[1]].DValue(l) - lami[fav[1]].Value()*lami[fav[0]].DValue(l);
-          AutoDiff<3> curlned =  
-              2*GradCrossGrad(lami[fav[0]],lami[fav[1]]);
+        // Curl (Type 3) //curl( * v) = nabla v x ned + curl(ned)*v
+        Vec<3> ned; 
+        for(l=0;l<3;l++) 
+          ned(l) = lami[fav[0]].Value()*lami[fav[1]].DValue(l) - lami[fav[1]].Value()*lami[fav[0]].DValue(l);
+        AutoDiff<3> curlned =  
+          2*GradCrossGrad(lami[fav[0]],lami[fav[1]]);
       
-          for (j = 0; j <= p-1; j++, ii++)
+        for (j = 0; j <= p-1; j++, ii++)
           {
             Vec<3> hv1 = GradCrossVec(adpol2[j],ned); 
           
             for(l=0;l<3;l++)
               shape(ii,l) = curlned.DValue(l) * adpol2[j].Value()+ hv1(l);  
           }
-        }
+      }
     
       
     // cell-based shapes 
-        int p = order_inner[0];
-        int pc = order_inner[0]; // should be order_inner_curl  
-        int pp = max(p,pc); 
-        if ( p >= 2 || pc >= 2 ) 
-        {
-          T_INNERSHAPES::CalcSplitted(pp+2, lami[0]-lami[3], lami[1], lami[2],adpol1, adpol2, adpol3 );
+    int p = order_inner[0];
+    int pc = order_inner[0]; // should be order_inner_curl  
+    int pp = max(p,pc); 
+    if ( p >= 2 || pc >= 2 ) 
+      {
+        T_INNERSHAPES::CalcSplitted(pp+2, lami[0]-lami[3], lami[1], lami[2],adpol1, adpol2, adpol3 );
       
-      // Curl-Fields 
-          for (i = 0; i <= pc-2; i++)
-            for (j = 0; j <= pc-2-i; j++)
-              for (k = 0; k <= pc-2-i-j; k++, ii+=2)
-          {
-            // 2 grad v  x  grad (uw)
-            AutoDiff<3> hv = 2*GradCrossGrad(adpol2[j],adpol1[i]*adpol3[k]);
+        // Curl-Fields 
+        for (i = 0; i <= pc-2; i++)
+          for (j = 0; j <= pc-2-i; j++)
+            for (k = 0; k <= pc-2-i-j; k++, ii+=2)
+              {
+                // 2 grad v  x  grad (uw)
+                AutoDiff<3> hv = 2*GradCrossGrad(adpol2[j],adpol1[i]*adpol3[k]);
       
-            for (l = 0; l < 3; l++)
-              shape(ii,l) = hv.DValue(l);
+                for (l = 0; l < 3; l++)
+                  shape(ii,l) = hv.DValue(l);
                         
-            // 2 grad w  x  grad (uv)
-            hv = 2*GradCrossGrad(adpol3[k], adpol1[i] * adpol2[j]);
+                // 2 grad w  x  grad (uv)
+                hv = 2*GradCrossGrad(adpol3[k], adpol1[i] * adpol2[j]);
       
-            for (l = 0; l < 3; l++)
-              shape(ii+1,l) = hv.DValue(l); 
+                for (l = 0; l < 3; l++)
+                  shape(ii+1,l) = hv.DValue(l); 
      
           
-          }     
+              }     
 
-      // Type 1 : Curl(T3)
-      // ned = lami[0] * nabla(lami[3]) - lami[3] * nabla(lami[0]) 
-          double curlned[3] = {0,2,-2}; 
-          Vec<3> curlnedv; curlnedv(0) = 0; curlnedv(1)=2; curlnedv(2)=-2; // = {0,2,-2}; 
-          Vec<3> nedv; 
+        // Type 1 : Curl(T3)
+        // ned = lami[0] * nabla(lami[3]) - lami[3] * nabla(lami[0]) 
+        double curlned[3] = {0,2,-2}; 
+        Vec<3> curlnedv; curlnedv(0) = 0; curlnedv(1)=2; curlnedv(2)=-2; // = {0,2,-2}; 
+        Vec<3> nedv; 
      
-          for(l=0;l<3;l++) 
-            nedv(l) = lami[0].Value()*lami[3].DValue(l) - lami[3].Value()*lami[0].DValue(l);
+        for(l=0;l<3;l++) 
+          nedv(l) = lami[0].Value()*lami[3].DValue(l) - lami[3].Value()*lami[0].DValue(l);
       
-          for (j= 0; j <= pc-2; j++)
-            for (k = 0; k <= pc-2-j; k++, ii++)
-          {
-            // Curl(Ned*vj*wk) = vj*wk*Curl(ned) + nabla(vj*wk)xNed0
-            AutoDiff<3> pjk = adpol2[j] * adpol3[k]; 
-            Vec<3> vv = GradCrossVec(pjk,nedv); 
-            vv +=pjk.Value()*curlnedv; 
+        for (j= 0; j <= pc-2; j++)
+          for (k = 0; k <= pc-2-j; k++, ii++)
+            {
+              // Curl(Ned*vj*wk) = vj*wk*Curl(ned) + nabla(vj*wk)xNed0
+              AutoDiff<3> pjk = adpol2[j] * adpol3[k]; 
+              Vec<3> vv = GradCrossVec(pjk,nedv); 
+              vv +=pjk.Value()*curlnedv; 
              
-            for(l=0; l<3; l++) 
-              shape(ii,l) = vv(l); 
-            
-          
-             
-          }
+              for(l=0; l<3; l++) 
+                shape(ii,l) = vv(l); 
+            }
        
-      // Type 2:  
-      // (grad u  x  grad v) w 
-          for (i = 0; i <= p-2; i++)
-            for (j = 0; j <= p-2-i; j++)
-          {
-            AutoDiff<3> hv = GradCrossGrad(adpol1[i],adpol2[j]);
-            for (k = 0; k <= p-2-i-j; k++,ii++)
-              for (l = 0; l < 3; l++)
-                shape(ii,l) = hv.DValue(l) * adpol3[k].Value(); 
-          }    
+        // Type 2:  
+        // (grad u  x  grad v) w 
+        for (i = 0; i <= p-2; i++)
+          for (j = 0; j <= p-2-i; j++)
+            {
+              AutoDiff<3> hv = GradCrossGrad(adpol1[i],adpol2[j]);
+              for (k = 0; k <= p-2-i-j; k++,ii++)
+                for (l = 0; l < 3; l++)
+                  shape(ii,l) = hv.DValue(l) * adpol3[k].Value(); 
+            }    
           
-       // (ned0 x grad v) w    
-          for (j = 0; j <= p-2; j++)
+        // (ned0 x grad v) w    
+        for (j = 0; j <= p-2; j++)
           {
             Vec<3> vv = GradCrossVec(adpol2[j],nedv);
             for (k= 0; k <= p-2-j; k++, ii++)
@@ -1961,90 +2655,91 @@ namespace ngfem
           } 
       
           
-      // Type 3: 
-      // (ned0 x e_z) v = (N_y, -N_x,0)^T * v ) 
-          for (j=0; j<=p-2; j++,ii++) 
+        // Type 3: 
+        // (ned0 x e_z) v = (N_y, -N_x,0)^T * v ) 
+        for (j=0; j<=p-2; j++,ii++) 
           {        
             Vec<3> hv = GradCrossVec(z,nedv);
             for(int l=0;l<3;l++) shape(ii,l) = -hv(l)*adpol2[j].Value();
           }
       
-        }
-      
-     // *testout << " shape new " << shape << endl; 
-        return; 
-
       }
       
-      template <class T_ORTHOPOL>
-          void HDivHighOrderTet<T_ORTHOPOL> :: CalcDivShape (const IntegrationPoint & ip,
-          FlatVector<> shape) const             
-          {
-    /*
-            LocalHeap lh(100000); 
-            FlatVector<> shape2(shape.Size(),lh); 
-            HDivHighOrderFiniteElement<3> :: CalcDivShape(ip,shape2); 
-    */
-            AutoDiff<3> x(ip(0),0);
-            AutoDiff<3> y(ip(1),1);
-            AutoDiff<3> z(ip(2),2);
-            AutoDiff<3> lami[4] = {x, y, z, 1-x-y-z}; 
-    
-            
-            
-            shape = 0.0; 
-  
-            const FACE * faces = ElementTopology::GetFaces (ET_TET);
-            const POINT3D * vertices = ElementTopology::GetVertices (ET_TET);
-    
-            ArrayMem< AutoDiff<3> , 10> adpol1(order+2), adpol2(order+2), adpol3(order+2); 
-     
-            int ii = 4;
-            for (int i = 0; i < 4; i++)
-            {
-              int p = order_face[i][0]; 
-              ii += (p*p+3*p)/2; 
+    // cout << " shape, old " << shape << endl; 
+        
+    return; 
 
-              int fav[3] =  { faces[i][0], faces[i][1], faces[i][2] };
+  }
       
-      //Sort vertices  first edge op minimal vertex
-              if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-              if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-              if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-              int fop = 6 - fav[0] - fav[1] - fav[2];
+  
+  void HDivHighOrderFE<ET_TET> :: CalcDivShape (const IntegrationPoint & ip,
+                                                FlatVector<> shape) const             
+  {
+    /*
+      LocalHeap lh(100000); 
+      FlatVector<> shape2(shape.Size(),lh); 
+      HDivHighOrderFiniteElement<3> :: CalcDivShape(ip,shape2); 
+    */
+    AutoDiff<3> x(ip(0),0);
+    AutoDiff<3> y(ip(1),1);
+    AutoDiff<3> z(ip(2),2);
+    AutoDiff<3> lami[4] = {x, y, z, 1-x-y-z}; 
+    
+            
+            
+    shape = 0.0; 
+  
+    const FACE * faces = ElementTopology::GetFaces (ET_TET);
+    const POINT3D * vertices = ElementTopology::GetVertices (ET_TET);
+    
+    ArrayMem< AutoDiff<3> , 10> adpol1(order+2), adpol2(order+2), adpol3(order+2); 
+     
+    int ii = 4;
+    for (int i = 0; i < 4; i++)
+      {
+        int p = order_face[i][0]; 
+        ii += (p*p+3*p)/2; 
+
+        int fav[3] =  { faces[i][0], faces[i][1], faces[i][2] };
+      
+        //Sort vertices  first edge op minimal vertex
+        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
+        if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
+        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
+        int fop = 6 - fav[0] - fav[1] - fav[2];
       
    
-              AutoDiff<3> cr0 = GradCrossGrad(lami[fav[1]],lami[fav[2]]); 
-              AutoDiff<3> cr1 = GradCrossGrad(lami[fav[2]],lami[fav[0]]);
-              AutoDiff<3> cr2 = GradCrossGrad(lami[fav[0]],lami[fav[1]]);
+        AutoDiff<3> cr0 = GradCrossGrad(lami[fav[1]],lami[fav[2]]); 
+        AutoDiff<3> cr1 = GradCrossGrad(lami[fav[2]],lami[fav[0]]);
+        AutoDiff<3> cr2 = GradCrossGrad(lami[fav[0]],lami[fav[1]]);
       
     
    
-              for(int l=0;l<3;l++)
-              {
-                shape(i) += cr0.DValue(l)*lami[fav[0]].DValue(l) + cr1.DValue(l)*lami[fav[1]].DValue(l) +cr2.DValue(l)*lami[fav[2]].DValue(l) ; 
-              }
+        for(int l=0;l<3;l++)
+          {
+            shape(i) += cr0.DValue(l)*lami[fav[0]].DValue(l) + cr1.DValue(l)*lami[fav[1]].DValue(l) +cr2.DValue(l)*lami[fav[2]].DValue(l) ; 
+          }
       
     
-            }
-     // cell-based shapes 
-            int p = order_inner[0];
-            int pc = order_inner[0]; // should be order_inner_curl  
-            int pp = max(p,pc); 
-            if (pc >= 2 ) 
-              ii += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2; 
+      }
+    // cell-based shapes 
+    int p = order_inner[0];
+    int pc = order_inner[0]; // should be order_inner_curl  
+    int pp = max(p,pc); 
+    if (pc >= 2 ) 
+      ii += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2; 
       
-            if (p >=2) 
-            { 
+    if (p >=2) 
+      { 
         
         
-              T_INNERSHAPES::CalcSplitted(pp+2, x-(1-x-y-z), y, z,adpol1, adpol2, adpol3 );
+        T_INNERSHAPES::CalcSplitted(pp+2, x-(1-x-y-z), y, z,adpol1, adpol2, adpol3 );
       
-      // Type 2:  
-       // (grad u  x  grad (v)) . grad w 
-              for (int i = 0; i <= p-2; i++)
-                for (int j = 0; j <= p-2-i; j++)
-                  for (int k = 0; k <= p-2-i-j; k++,ii++)             
+        // Type 2:  
+        // (grad u  x  grad (v)) . grad w 
+        for (int i = 0; i <= p-2; i++)
+          for (int j = 0; j <= p-2-i; j++)
+            for (int k = 0; k <= p-2-i-j; k++,ii++)             
               { 
        
           
@@ -2055,54 +2750,54 @@ namespace ngfem
               }
       
             
-              Vec<3> curlnedv; curlnedv(0) = 0; curlnedv(1)=2; curlnedv(2)=-2; // = {0,2,-2}; 
-              Vec<3> nedv; 
+        Vec<3> curlnedv; curlnedv(0) = 0; curlnedv(1)=2; curlnedv(2)=-2; // = {0,2,-2}; 
+        Vec<3> nedv; 
      
-              for(int l=0;l<3;l++) 
-                nedv(l) = lami[0].Value()*lami[3].DValue(l) - lami[3].Value()*lami[0].DValue(l);
-              AutoDiff<3> ned[3]; 
-              for(int l=0;l<3;l++) 
-                ned[l] = lami[0]*lami[3].DValue(l) - lami[3]*lami[0].DValue(l);
+        for(int l=0;l<3;l++) 
+          nedv(l) = lami[0].Value()*lami[3].DValue(l) - lami[3].Value()*lami[0].DValue(l);
+        AutoDiff<3> ned[3]; 
+        for(int l=0;l<3;l++) 
+          ned[l] = lami[0]*lami[3].DValue(l) - lami[3]*lami[0].DValue(l);
       
       
-       // div((ned0 x grad v) w) = grad v * curlned *w + gradw *(ned0xgradv)    
-              for (int j = 0; j <= p-2; j++)
-              {
+        // div((ned0 x grad v) w) = grad v * curlned *w + gradw *(ned0xgradv)    
+        for (int j = 0; j <= p-2; j++)
+          {
         
         
-                Vec<3> vv = GradCrossVec(adpol2[j],nedv);
-                double sp = 0; 
-                for(int l=0;l<3;l++) sp+=curlnedv(l)*adpol2[j].DValue(l);
-                for (int k= 0; k <= p-2-j; k++, ii++)
-                { 
+            Vec<3> vv = GradCrossVec(adpol2[j],nedv);
+            double sp = 0; 
+            for(int l=0;l<3;l++) sp+=curlnedv(l)*adpol2[j].DValue(l);
+            for (int k= 0; k <= p-2-j; k++, ii++)
+              { 
          
           
-                  shape(ii) = adpol3[k].Value()*sp; 
-                  for(int l=0; l<3; l++) 
-                    shape(ii) -=  adpol3[k].DValue(l)*vv(l);
-         
-                }
-              } 
-      
-       // div((ned0 x grad z) v) = grad z * curlned *v + gradv *(ned0xgradz)    
-     
-              Vec<3> vv = GradCrossVec(z,nedv);
-              double sp = 0; 
-              for(int l=0;l<3;l++) sp+=curlnedv(l)*z.DValue(l);
-              for (int k= 0; k <= p-2; k++, ii++)
-              { 
-                shape(ii) = adpol2[k].Value()*sp; 
+                shape(ii) = adpol3[k].Value()*sp; 
                 for(int l=0; l<3; l++) 
-                  shape(ii) -=  adpol2[k].DValue(l)*vv(l);
+                  shape(ii) -=  adpol3[k].DValue(l)*vv(l);
+         
               }
+          } 
       
-      
-            }
-      
-            //*testout << " divshape new " << shape << endl; 
-            //*testout << " shape2 " << shape2 << endl;
-            //*testout << " diff " << shape-shape2 << endl;   
+        // div((ned0 x grad z) v) = grad z * curlned *v + gradv *(ned0xgradz)    
+     
+        Vec<3> vv = GradCrossVec(z,nedv);
+        double sp = 0; 
+        for(int l=0;l<3;l++) sp+=curlnedv(l)*z.DValue(l);
+        for (int k= 0; k <= p-2; k++, ii++)
+          { 
+            shape(ii) = adpol2[k].Value()*sp; 
+            for(int l=0; l<3; l++) 
+              shape(ii) -=  adpol2[k].DValue(l)*vv(l);
           }
+      
+      
+      }
+      
+    //*testout << " divshape new " << shape << endl; 
+    //*testout << " shape2 " << shape2 << endl;
+    //*testout << " diff " << shape-shape2 << endl;   
+  }
           
 #endif
 
@@ -2114,13 +2809,9 @@ namespace ngfem
   HDivHighOrderPrism<T_ORTHOPOL> :: HDivHighOrderPrism (int aorder)
     : HDivHighOrderFiniteElement<3>(ET_PRISM)
   {
-    nv = 6;
-    nf = 5;
-
-    int i;
     order_inner = INT<3> (aorder,aorder,aorder);
 
-    for (i=0; i<nf; i++)
+    for (int i = 0; i < 5; i++)
       order_face[i] = INT<2> (aorder,aorder);
 
     ComputeNDof();
@@ -2157,11 +2848,11 @@ namespace ngfem
     for(i=0; i<2; i++)
       {
         int pp = order_face[i][0];  
-     	  if (pp > order)
-	    order = pp;
+        if (pp > order)
+          order = pp;
       }
       
-      for(i=3; i<5; i++)
+    for(i=3; i<5; i++)
       {
         int pp = max(order_face[i][0],order_face[i][1]);
         if (pp > order)
@@ -2333,7 +3024,7 @@ namespace ngfem
 	AutoDiff<1> zeta = muz[f]-muz[f2];
 
 
-       int pp = max(p[0],p[1]); 
+        int pp = max(p[0],p[1]); 
 	T_ORTHOPOL::CalcTrigExt(pp+1,xi,eta,adpolxy1);
 	T_ORTHOPOL::Calc(pp+1,zeta,adpolz);
 
@@ -2398,36 +3089,36 @@ namespace ngfem
 	      lami[f].DValue(1)*lami[f1].DValue(0));
 
 	
-	 if (vnums[f1] > vnums[f2])
-	   {
-           for (j= 0; j <= p[0]-1; j++, ii++)
-           {
-		  shape(ii,0) =  adpolxy1[j].DValue(1)*zeta.DValue(0);
-              shape(ii,1) = -adpolxy1[j].DValue(0)*zeta.DValue(0);
-           }
-           for(j=0; j<= p[1]-1;j++,ii++)
-           {
-             shape(ii,0) = -2*adpolz[j].DValue(0)*ned0trig(1);
-             shape(ii,1) = 2*adpolz[j].DValue(0)*ned0trig(0);
-             shape(ii,2) = 2*curlned0trig * adpolz[j].Value();
-           }
-         }  
-       else
-	   {
+        if (vnums[f1] > vnums[f2])
+          {
+            for (j= 0; j <= p[0]-1; j++, ii++)
+              {
+                shape(ii,0) =  adpolxy1[j].DValue(1)*zeta.DValue(0);
+                shape(ii,1) = -adpolxy1[j].DValue(0)*zeta.DValue(0);
+              }
+            for(j=0; j<= p[1]-1;j++,ii++)
+              {
+                shape(ii,0) = -2*adpolz[j].DValue(0)*ned0trig(1);
+                shape(ii,1) = 2*adpolz[j].DValue(0)*ned0trig(0);
+                shape(ii,2) = 2*curlned0trig * adpolz[j].Value();
+              }
+          }  
+        else
+          {
           
-           for(j=0; j<= p[0]-1;j++,ii++)
-           {
-             shape(ii,0) = -2*adpolz[j].DValue(0)*ned0trig(1);
-             shape(ii,1) = 2*adpolz[j].DValue(0)*ned0trig(0);
-             shape(ii,2) = 2*curlned0trig * adpolz[j].Value();
-           }
+            for(j=0; j<= p[0]-1;j++,ii++)
+              {
+                shape(ii,0) = -2*adpolz[j].DValue(0)*ned0trig(1);
+                shape(ii,1) = 2*adpolz[j].DValue(0)*ned0trig(0);
+                shape(ii,2) = 2*curlned0trig * adpolz[j].Value();
+              }
              
-           for (j= 0; j <= p[1]-1; j++, ii++)
-           {
-             shape(ii,0) =  adpolxy1[j].DValue(1)*zeta.DValue(0);
-             shape(ii,1) = -adpolxy1[j].DValue(0)*zeta.DValue(0);
-           }
-         }   
+            for (j= 0; j <= p[1]-1; j++, ii++)
+              {
+                shape(ii,0) =  adpolxy1[j].DValue(1)*zeta.DValue(0);
+                shape(ii,1) = -adpolxy1[j].DValue(0)*zeta.DValue(0);
+              }
+          }   
 
       }
 
@@ -2745,39 +3436,39 @@ namespace ngfem
   GetInternalDofs (Array<int> & idofs) const
   {
     if (discontinuous)
-    {
-      idofs.SetSize(0);
-      for (int i=0; i<ndof; i++)
-        idofs.Append(i);
-      return ;
-    }
-    else
-    {
-      idofs.SetSize (0);
-
-      if(order_inner[0] >= 2) // else no inner dofs
       {
-        int base = 5; // low order
-      
-        // trig faces
-        for (int i = 0; i < 2; i++)
-        {
-          int p = order_face[i][0];
-          base += (p*p+3*p)/2;  // see ComputeNDof
-        }
-
-        // quad faces
-        for (int i=2; i<5; i++)
-        {
-          INT<2> p = order_face[i];
-          base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
-        }
-
-        for (int i=base; i<ndof; i++)
+        idofs.SetSize(0);
+        for (int i=0; i<ndof; i++)
           idofs.Append(i);
+        return ;
       }
-    //(*testout) << "idofs = " << idofs << endl;
-    }
+    else
+      {
+        idofs.SetSize (0);
+
+        if(order_inner[0] >= 2) // else no inner dofs
+          {
+            int base = 5; // low order
+      
+            // trig faces
+            for (int i = 0; i < 2; i++)
+              {
+                int p = order_face[i][0];
+                base += (p*p+3*p)/2;  // see ComputeNDof
+              }
+
+            // quad faces
+            for (int i=2; i<5; i++)
+              {
+                INT<2> p = order_face[i];
+                base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
+              }
+
+            for (int i=base; i<ndof; i++)
+              idofs.Append(i);
+          }
+        //(*testout) << "idofs = " << idofs << endl;
+      }
   }
 
   
@@ -2785,12 +3476,12 @@ namespace ngfem
   void HDivHighOrderPrism<T_ORTHOPOL> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa >= 5 ) 
-    {
-      cout << " Warning HDIVHighOrderPrism::GetFacetDofNrs() index out of range" << endl; 
+      {
+        cout << " Warning HDIVHighOrderPrism::GetFacetDofNrs() index out of range" << endl; 
       
-      dnums.SetSize(0); 
-      return; 
-    } 
+        dnums.SetSize(0); 
+        return; 
+      } 
   
     dnums.SetSize(0); 
     dnums.Append(fa);  // lowest-order
@@ -2800,31 +3491,31 @@ namespace ngfem
     int nf; 
     // trig faces
     for (int i = 0; i < 2 && i <fa; i++)
-    {
-       int p = order_face[i][0];
-       base += (p*p+3*p)/2;  // see ComputeNDof
-    }
+      {
+        int p = order_face[i][0];
+        base += (p*p+3*p)/2;  // see ComputeNDof
+      }
 
    
     if(fa<2) 
-    {
-      int p = order_face[fa][0];
-      nf = (p*p+3*p)/2;
-    }
-    else
-    {
-      // quad faces
-      for (int i=2; i<fa; i++)
       {
-        INT<2> p = order_face[i];
-        base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
+        int p = order_face[fa][0];
+        nf = (p*p+3*p)/2;
       }
-      INT<2> p = order_face[fa][0];
-      nf = p[0]*p[1]+p[0]+p[1];
-    }
+    else
+      {
+        // quad faces
+        for (int i=2; i<fa; i++)
+          {
+            INT<2> p = order_face[i];
+            base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
+          }
+        INT<2> p = order_face[fa][0];
+        nf = p[0]*p[1]+p[0]+p[1];
+      }
       
     for (int i=0; i<nf; i++)
-        dnums.Append(i+base);
+      dnums.Append(i+base);
   }   
   
 
@@ -2837,9 +3528,9 @@ namespace ngfem
     : HDivHighOrderFiniteElement<3>(ET_HEX)
   {
     int i;
-    nf = 6;
+    // nf = 6;
     order_inner = aorder;
-    for (i=0; i<6; i++)
+    for (i = 0; i < 6; i++)
       order_face[i] = aorder;
     ComputeNDof();
   }
@@ -2857,14 +3548,14 @@ namespace ngfem
     for (i = 0; i < 6; i++)
       {
 	//if (order_face[i][0] > 0)
-	  {
-	    INT<2> p = order_face[i];
-	    ndof_face += p[0]*p[1]+p[0]+p[1];
-	    ndof += p[0]*p[1]+p[0]+p[1];
-	  }
+        {
+          INT<2> p = order_face[i];
+          // ndof_face += p[0]*p[1]+p[0]+p[1];
+          ndof += p[0]*p[1]+p[0]+p[1];
+        }
       }
     INT<3> p = order_inner;
-    ndof_inner = 3*p[0]*p[1]*p[2] + 2*p[0]*p[1] + 2 *p[1]*p[2] + 2 * p[0]*p[2] + p[0] + p[1] + p[2]; 
+    int ndof_inner = 3*p[0]*p[1]*p[2] + 2*p[0]*p[1] + 2 *p[1]*p[2] + 2 * p[0]*p[2] + p[0] + p[1] + p[2]; 
     //3*p*(p+1)*(p+1);
     ndof += ndof_inner;
 
@@ -2984,7 +3675,7 @@ namespace ngfem
 	//Typ 2
 	for (k = 0; k < p[0]; k++)
 	  pol_xi[k]  *= lam_f;
-      for (k = 0; k < p[1]; k++)
+        for (k = 0; k < p[1]; k++)
 	  pol_eta[k] *= lam_f;
 	  
 
@@ -3012,20 +3703,20 @@ namespace ngfem
 	  }
         
         for (k = 0; k < p[1]; k++, ii++)
-        {
-          for (j = 0; j < 3; j++)
           {
+            for (j = 0; j < 3; j++)
+              {
             
-            grad2(j) = pol_eta[k].DValue(j);
-          }
-          vp1=Cross(grad2,grad3);
+                grad2(j) = pol_eta[k].DValue(j);
+              }
+            vp1=Cross(grad2,grad3);
           
-          for (m = 0; m < 3; m++)
-          {
-            shape(ii,m)   = vp1(m);
+            for (m = 0; m < 3; m++)
+              {
+                shape(ii,m)   = vp1(m);
             
+              }
           }
-        }
 
 	//(*testout)<<"shape="<<shape<<endl<<endl;
       }
@@ -3163,44 +3854,44 @@ namespace ngfem
   GetInternalDofs (Array<int> & idofs) const
   {
     if (discontinuous)
-    {
-      idofs.SetSize(0);
-      for (int i=0; i<ndof; i++)
-        idofs.Append(i);
-      return ;
-    }
-    else 
-    {
-      idofs.SetSize (0);
-
-      //if(order_inner >= 2) // else no inner dofs
       {
-        int base = 6; // low order
-      
-        // quad faces
-        for (int i=0; i<6; i++)
-        {
-          INT<2> p = order_face[i];
-          base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
-        }
-
-        for (int i=base; i<ndof; i++)
+        idofs.SetSize(0);
+        for (int i=0; i<ndof; i++)
           idofs.Append(i);
+        return ;
       }
-    //(*testout) << "idofs = " << idofs << endl;
-    }
+    else 
+      {
+        idofs.SetSize (0);
+
+        //if(order_inner >= 2) // else no inner dofs
+        {
+          int base = 6; // low order
+      
+          // quad faces
+          for (int i=0; i<6; i++)
+            {
+              INT<2> p = order_face[i];
+              base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
+            }
+
+          for (int i=base; i<ndof; i++)
+            idofs.Append(i);
+        }
+        //(*testout) << "idofs = " << idofs << endl;
+      }
   }
 
   template <class T_ORTHOPOL>
   void HDivHighOrderHex<T_ORTHOPOL> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa >= 6 ) 
-    {
-      cout << " Warning HDIVHighOrderHex::GetFacetDofNrs() index out of range" << endl; 
+      {
+        cout << " Warning HDIVHighOrderHex::GetFacetDofNrs() index out of range" << endl; 
       
-      dnums.SetSize(0); 
-      return; 
-    } 
+        dnums.SetSize(0); 
+        return; 
+      } 
   
     dnums.SetSize(0); 
     dnums.Append(fa);  // lowest-order
@@ -3209,10 +3900,10 @@ namespace ngfem
         
     // quad faces
     for (int i=0; i<fa; i++)
-    {
-      INT<2> p = order_face[i];
-      base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
-    }
+      {
+        INT<2> p = order_face[i];
+        base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
+      }
     INT<2> p = order_face[fa][0];
     int nf = p[0]*p[1]+p[0]+p[1];
          
@@ -3222,19 +3913,19 @@ namespace ngfem
   
 
   template class HDivHighOrderHex<IntegratedLegendreMonomialExt>;
-  template class HDivHighOrderTet<IntegratedLegendreMonomialExt>;
+  // template class HDivHighOrderTet<IntegratedLegendreMonomialExt>;
   template class HDivHighOrderPrism<IntegratedLegendreMonomialExt>;
 
   /*
-  template class HDivHighOrderHex<TrigExtensionMonomial>;
-  template class HDivHighOrderTet<TrigExtensionMonomial>;
-  template class HDivHighOrderPrism<TrigExtensionMonomial>;
+    template class HDivHighOrderHex<TrigExtensionMonomial>;
+    template class HDivHighOrderTet<TrigExtensionMonomial>;
+    template class HDivHighOrderPrism<TrigExtensionMonomial>;
   */
 
   /*
-  template class HDivHighOrderHex<TrigExtensionMin>;
-  template class HDivHighOrderTet<TrigExtensionMin>;
-  template class HDivHighOrderPrism<TrigExtensionMin>;
+    template class HDivHighOrderHex<TrigExtensionMin>;
+    template class HDivHighOrderTet<TrigExtensionMin>;
+    template class HDivHighOrderPrism<TrigExtensionMin>;
   */
 
   //  template class HDivHighOrderHex<TrigExtensionOptimal>;

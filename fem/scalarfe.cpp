@@ -37,7 +37,7 @@ namespace ngfem
     static bool firsttime = true;
     if (firsttime)
       {
-	cout << "WARNING: CalcDShape not overloaded for class " << typeid(this).name() << endl;
+	cout << "WARNING: CalcDShape not overloaded for class, using numerical differentiation " << typeid(this).name() << endl;
         firsttime = false;
       }
     int nd = GetNDof();

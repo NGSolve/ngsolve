@@ -368,7 +368,10 @@ namespace ngcomp
                    inci = pc[0]*(pc[0]-1)/2;
 		 break;
 	       case ET_QUAD:
-		 inci = pc[0]*pc[1] + p[0]*p[1]+p[0]+p[1];
+                 if (!ho_div_free)
+                   inci = pc[0]*pc[1] + p[0]*p[1]+p[0]+p[1];
+                 else
+                   inci = pc[0]*pc[1];
 		 break;
 	       }
 	     if (inci < 0) inci = 0;
@@ -418,7 +421,7 @@ namespace ngcomp
 	     switch(ma.GetElType(i))
 	       {
 	       case ET_TET:
-		 if(p[0]>1)
+		 if(p[0]>1 && !ho_div_free)
 		   inci = p[0]*(p[0]+1)*(p[0]-1)/6 + p[0]*(p[0]-1)/2 + p[0]-1;
 		 if(pc[0]>1)
 		   inci += pc[0]*(pc[0]+1)*(pc[0]-1)/3 + pc[0]*(pc[0]-1)/2; ;
@@ -499,7 +502,7 @@ namespace ngcomp
       {
       case ET_TET:
 	{ 
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderTet<T_ORTHOPOL>)))  HDivHighOrderTet<T_ORTHOPOL> (order);
+	  fe = new (lh.Alloc (sizeof(HDivHighOrderFE<ET_TET>)))  HDivHighOrderFE<ET_TET> (order);
 	  break;
 	}
 	/*
@@ -521,12 +524,12 @@ namespace ngcomp
 	}
       case ET_TRIG:
 	{ 
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderTrig<T_ORTHOPOL>)))  HDivHighOrderTrig<T_ORTHOPOL> (order);
+	  fe = new (lh.Alloc (sizeof(HDivHighOrderFE<ET_TRIG>)))  HDivHighOrderFE<ET_TRIG> (order);
 	  break;
 	}
       case ET_QUAD:
 	{
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderQuad<T_ORTHOPOL>)))  HDivHighOrderQuad<T_ORTHOPOL> (order);
+	  fe = new (lh.Alloc (sizeof(HDivHighOrderFE<ET_QUAD>)))  HDivHighOrderFE<ET_QUAD> (order);
 	  break;
 	}
       default:
@@ -601,6 +604,7 @@ namespace ngcomp
 	hofe -> SetOrderInner (order_inner[elnr]);
 	//hofe -> SetOrderInnerCurl (order_inner_curl[elnr]); // under construction
 	hofe -> SetDiscontinuous(discont); 
+        hofe -> SetHODivFree (ho_div_free);
 	hofe -> ComputeNDof();
       }
     return *fe;

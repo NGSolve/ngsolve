@@ -5,6 +5,35 @@
 class TrigShapesInnerLegendre
 {
 public:
+  /// compute shape functions in factored form $\varphi_{ij} = u_i v_j$
+  template <typename Sx, typename Sy, typename T>
+  static void CalcSplitted (int n, Sx x, Sy y, T & val1, T & val2)
+  {
+    Sx bub1 = (1-x-y)*(1+x-y);
+    ScaledLegendrePolynomialMult (n-3, x, 1-y, bub1, val1); 
+    LegendrePolynomialMult (n-3, 2*y-1, y, val2);
+    /*
+    ScaledLegendrePolynomial (n-3, x, 1-y, val1); 
+    for (int i = 0; i <= n-3; i++)
+      val1[i] *= bub1;
+
+    LegendrePolynomial (n-3, 2*y-1, val2);
+    for (int i = 0; i <= n-3; i++)
+      val2[i] *= y;
+    */
+  }
+
+
+  template <int n, typename Sx, typename Sy, typename T>
+  static void CalcSplitted (Sx x, Sy y, T & val1, T & val2)
+  {
+    Sx bub1 = (1-x-y)*(1+x-y);
+    ScaledLegendrePolynomialMult (n-3, x, 1-y, bub1, val1); 
+    // LegendrePolynomialMult (n-3, 2*y-1, y, val2);
+    LegendrePolynomialFO<n-3>::EvalMult (2*y-1, y, val2);
+  }
+
+
   /// computes all shape functions
   template < typename Sx, typename Sy, typename T>
   static int Calc (int n, Sx x, Sy y, T & values)
@@ -13,7 +42,6 @@ public:
 
     ScaledLegendrePolynomial (n-3, x, 1-y, polx);
     LegendrePolynomial (n-3, 2*y-1, poly);
-
     Sx bub = y * (1-x-y) * (1+x-y);
 
     int ii = 0;
@@ -30,15 +58,16 @@ public:
     // ArrayMem<Sx, 20> polx(n-2), poly(n-2);
     Sx polx[n], poly[n];
 
+    /*
     ScaledLegendrePolynomial (n-3, x, 1-y, polx);
     LegendrePolynomial (n-3, 2*y-1, poly);
-
     Sx bub = y * (1-x-y) * (1+x-y);
-    
+    */
+    CalcSplitted<n> (x, y, polx, poly);
     int ii = 0;
     for (int i = 0; i <= n-3; i++)
       for (int j = 0; j <= n-3-i; j++)
-        values[ii++] = bub * polx[i] * poly[j];
+        values[ii++] = /* bub * */ polx[i] * poly[j];
 
     return ii;
   }
@@ -67,20 +96,6 @@ public:
   }
 
 
-
-  /// compute shape functions in factored form $\varphi_{ij} = u_i v_j$
-  template <typename Sx, typename Sy, typename T>
-  static void CalcSplitted (int n, Sx x, Sy y, T & val1, T & val2)
-  {
-    ScaledLegendrePolynomial (n-3, x, 1-y, val1); 
-    Sx bub1 = (1-x-y)*(1+x-y);
-    for (int i = 0; i <= n-3; i++)
-      val1[i] *= bub1;
-
-    LegendrePolynomial (n-3, 2*y-1, val2);
-    for (int i = 0; i <= n-3; i++)
-      val2[i] *= y;
-  }
 };
 
 

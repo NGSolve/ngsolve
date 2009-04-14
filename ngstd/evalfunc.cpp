@@ -579,8 +579,9 @@ namespace ngstd
 	  ReadNext(); 
 	  AddOperation (op);
 	  break;
-	  
 	}
+      default:
+        return;
       }
   }
 
