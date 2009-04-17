@@ -258,21 +258,6 @@ public:
   virtual void ComputeNDof();
   virtual void GetInternalDofs (Array<int> & idofs) const;
 
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip,
-			  FlatMatrixFixWidth<2> shape) const;
-
-
-  /// compute Div of shape
-  virtual void CalcDivShape (const IntegrationPoint & ip,
-			     FlatVector<> shape) const;
-  /*
-  /// compute Div numerical diff
- void CalcNumDivShape( const IntegrationPoint & ip,
-  			FlatVector<> divshape) const;
-  */
-
-  /// compute shape
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[2], TFA & shape) const; 
 
@@ -297,27 +282,18 @@ public:
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[2], TFA & shape) const; 
 
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip,
-			  FlatMatrixFixWidth<3> shape) const;
-
-  /// compute Div of shape
-  virtual void CalcDivShape (const IntegrationPoint & ip,
-			     FlatVector<> shape) const;
-  /// compute Div numerical diff
-  //void CalcNumDivShape( const IntegrationPoint & ip,
-  //			FlatVector<> divshape) const;
-
   virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
 
-template <class T_ORTHOPOL = TrigExtensionMonomial>
-class HDivHighOrderPrism : public HDivHighOrderFiniteElement<3>
+
+// template <class T_ORTHOPOL = TrigExtensionMonomial>
+template<>
+class HDivHighOrderFE<ET_PRISM> : public HDivHighOrderFiniteElement<3>
 {
   typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
 public:
 
-  HDivHighOrderPrism (int aorder);
+  HDivHighOrderFE (int aorder);
   virtual void ComputeNDof();
   virtual void GetInternalDofs (Array<int> & idofs) const;
 
@@ -335,12 +311,12 @@ public:
   virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
 
-template <class T_ORTHOPOL = TrigExtensionMonomial>
-class HDivHighOrderHex : public HDivHighOrderFiniteElement<3>
+template<> 
+class HDivHighOrderFE<ET_HEX> : public HDivHighOrderFiniteElement<3>
 {
 public:
 
-  HDivHighOrderHex (int aorder);
+  HDivHighOrderFE (int aorder);
   virtual void ComputeNDof();
   virtual void GetInternalDofs (Array<int> & idofs) const;
   

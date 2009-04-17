@@ -1534,7 +1534,7 @@ public:
   }
 
   template <class T>
-  static   __attribute__ ((__always_inline__)) void Trans (T & inout)
+  static ALWAYS_INLINE void Trans (T & inout)
   {
     TReduceAlpha<N-1,AL>::Trans(inout);
     inout[N] *= double(2*N+AL)/double(N+AL);

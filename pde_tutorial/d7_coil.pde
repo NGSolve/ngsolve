@@ -20,7 +20,7 @@ define coefficient cs3
 0, 0, 0
 
 define coefficient penalty
-0, 0, 0, 0, 0, 0
+0, 0, 1e8, 0, 0, 0
 
 
 

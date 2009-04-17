@@ -42,8 +42,8 @@ namespace ngcomp
       }   
     //quad = new HDivHighOrderQuad (order);
     tet = new HDivHighOrderFE<ET_TET>(order);
-    hex = new HDivHighOrderHex<T_ORTHOPOL>(order);
-    prism = new HDivHighOrderPrism<T_ORTHOPOL>(order);
+    hex = new HDivHighOrderFE<ET_HEX>(order);
+    prism = new HDivHighOrderFE<ET_PRISM>(order);
     
     // Evaluator for shape tester 
     if (ma.GetDimension() == 2)
@@ -326,12 +326,12 @@ namespace ngcomp
 	*/
       case ET_PRISM:
 	{
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderPrism<T_ORTHOPOL>)))  HDivHighOrderPrism<T_ORTHOPOL> (order);
+	  fe = new (lh.Alloc (sizeof(HDivHighOrderFE<ET_PRISM>)))  HDivHighOrderFE<ET_PRISM> (order);
 	  break;
 	}
       case ET_HEX:
 	{
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderHex<T_ORTHOPOL>)))  HDivHighOrderHex<T_ORTHOPOL> (order);
+	  fe = new (lh.Alloc (sizeof(HDivHighOrderFE<ET_HEX>)))  HDivHighOrderFE<ET_HEX> (order);
 	  break;
 	}
       case ET_TRIG:

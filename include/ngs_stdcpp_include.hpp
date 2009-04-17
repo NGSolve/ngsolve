@@ -57,6 +57,9 @@
 
 
 // gcc compiler 
+#ifdef __GNUC__
 #define ALWAYS_INLINE __attribute__ ((__always_inline__))
-
+#else
+#define ALWAYS_INLINE
+#endif
 
