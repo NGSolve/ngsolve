@@ -24,6 +24,15 @@
 #endif
 
 
+#ifdef WIN32
+    #define DLL_HEADER   __declspec(dllexport)
+#else
+    #define DLL_HEADER 
+#endif
+
+
+
+
 #define noDEMOVERSION
 #define noDEVELOP
 #define noSTEP

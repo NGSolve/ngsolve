@@ -20,7 +20,7 @@
 // #include <iostream>
 /** output stream for testing.
   testout is opened by main */
-extern ostream * testout;
+DLL_HEADER extern ostream * testout;
 
 /** use instead of cout */
 extern ostream * mycout;
