@@ -74,6 +74,6 @@ AC_SUBST([NETGEN_INCLUDES], ["-DNETGEN_ELTRANS -I$netgendir/include"])
 AC_CONFIG_HEADERS(config.h) AC_CONFIG_FILES(Makefile include/Makefile
 ngstd/Makefile basiclinalg/Makefile linalg/Makefile fem/Makefile
 comp/Makefile solve/Makefile multigrid/Makefile parallel/Makefile 
-programming_demos/Makefile )
+programming_demos/Makefile windows/Makefile)
 
 AC_OUTPUT

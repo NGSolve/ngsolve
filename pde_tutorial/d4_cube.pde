@@ -24,7 +24,7 @@ define coefficient dirich_bc
 
 
 
-define fespace v -order=4 -h1ho -eliminate_internal 
+define fespace v -order=8 -h1ho -eliminate_internal 
 define fespace vp -order=4 -dim=3 -h1ho
 
 define gridfunction u -fespace=v -nested
@@ -43,10 +43,11 @@ robin penalty
 
 # define preconditioner c -type=direct -bilinearform=a
 # define preconditioner c -type=local -bilinearform=a
-define preconditioner c -type=multigrid -bilinearform=a -smoothingsteps=1 -smoother=block -notest -blocktype=3
+define preconditioner c -type=multigrid -bilinearform=a -smoothingsteps=1 -smoother=block -notest 
 # define preconditioner c -type=amg -bilinearform=a -coefe=lam -notiming -test
 
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=200 -noprint -prec=1e-8
 #numproc calcflux np2 -bilinearform=a -solution=u -flux=p -applyd
 #numproc drawflux np4 -order
 #numproc drawflux np3 -bilinearform=aid -solution=u -noapplyd -label=sol
+        

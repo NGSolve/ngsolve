@@ -372,7 +372,7 @@ public:
 };
 
 
-template <class TB>  __attribute__ ((__always_inline__))
+template <class TB> ALWAYS_INLINE
 Mat<3,3,double> operator+= (class Mat<3,3,double> & m, const Expr<TB> & exp)
 {
   m(0,0) += exp.Spec()(0,0);
@@ -387,7 +387,7 @@ Mat<3,3,double> operator+= (class Mat<3,3,double> & m, const Expr<TB> & exp)
   return m;
 }
 
-template <class TB>  __attribute__ ((__always_inline__))
+template <class TB> ALWAYS_INLINE
 Mat<2,2,double> operator+= (class Mat<2,2,double> & m, const Expr<TB> & exp)
 {
   m(0,0) += exp.Spec()(0,0);

@@ -272,9 +272,8 @@ namespace ngfem
       shape(ii++) = -eta.DValue(0)*pol_xi[k].DValue(1) + eta.DValue(1)*pol_xi[k].DValue(0); 
     for (k = 0; k < p[1]; k++)
       shape(ii++)   = -xi.DValue(0)*pol_eta[k].DValue(1) + xi.DValue(1)*pol_eta[k].DValue(0);
-
-    return;
   }
+
 
   template class HDivHighOrderNormalQuad<IntegratedLegendreMonomialExt>;
   template class HDivHighOrderNormalQuad<TrigExtensionMonomial>;
@@ -704,43 +703,6 @@ namespace ngfem
       
   };
 
-  /*
-    template <int DIM>
-    class HCurlEvaluateCurlElement
-    {
-    const double * coefs;
-    enum { DIM_CURL = (DIM * (DIM-1))/2 };
-    Vec<DIM_CURL> & sum;
-    public:
-    HCurlEvaluateCurlElement (const double * acoefs, Vec<DIM_CURL> & asum)
-    : coefs(acoefs), sum(asum) { ; }
-
-    void operator= (const Du<DIM> & uv) 
-    { ; }
-
-    void operator= (const uDv<DIM> & uv) 
-    {
-    AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
-    for (int i = 0; i < DIM_CURL; i++) 
-    sum[i] += *coefs * hd.DValue(i);
-    }
-
-    void operator= (const uDv_minus_vDu<DIM> & uv) 
-    {
-    AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
-    for (int i = 0; i < DIM_CURL; i++) 
-    sum[i] += 2 * *coefs * hd.DValue(i);
-    }
-
-    void operator= (const wuDv_minus_wvDu<DIM> & uv) 
-    {
-    AutoDiff<DIM_CURL> hd = Cross (uv.u*uv.w, uv.v) + Cross(uv.u, uv.v*uv.w);
-    for (int i = 0; i < DIM_CURL; i++) 
-    sum[i] += *coefs * hd.DValue(i);
-    }
-    };
-  */
-
 
   template <int DIM>
   class HDivShapeAssign
@@ -766,26 +728,6 @@ namespace ngfem
     HDivDivShapeElement<DIM> operator[] (int i) const
     { return HDivDivShapeElement<DIM> (dshape + i); }
   };
-
-
-  /*
-    template <int DIM>
-    class HCurlEvaluateCurl
-    {
-    const double * coefs;
-    enum { DIM_CURL = (DIM * (DIM-1))/2 };
-    Vec<DIM_CURL> sum;
-    public:
-    HCurlEvaluateCurl (FlatVector<> acoefs)
-    { coefs = &acoefs(0); sum = 0.0; }
-
-    HCurlEvaluateCurlElement<DIM> operator[] (int i) 
-    { return HCurlEvaluateCurlElement<DIM> (coefs+i, sum); }
-
-    Vec<DIM_CURL> Sum() { return sum; }
-    };
-
-  */
 
 
 
@@ -1304,7 +1246,6 @@ namespace ngfem
 
 
   HDivHighOrderFE<ET_QUAD> :: HDivHighOrderFE (int aorder)
-  // : HDivHighOrderFiniteElement<2>(ET_QUAD)
   {
     order_inner = INT<3>(aorder,aorder,0);
     for (int i = 0; i < 4; i++)
@@ -1469,7 +1410,7 @@ namespace ngfem
 
 
 
-
+#ifdef OLD
   void HDivHighOrderFE<ET_QUAD> :: CalcShape (const IntegrationPoint & ip,
                                               FlatMatrixFixWidth<2> shape) const
   {
@@ -1708,6 +1649,7 @@ namespace ngfem
     return;
 
   }
+#endif
 
 
 #ifdef V2  
@@ -1994,7 +1936,7 @@ namespace ngfem
 
 
 
-
+#ifdef OLD
 
 #define oldv
 #ifdef oldv 
@@ -2801,13 +2743,16 @@ namespace ngfem
           
 #endif
 
+#endif
+
+
   //------------------------------------------------------------------------
   // HDivHighOrderPrism
   //------------------------------------------------------------------------
 
-  template <class T_ORTHOPOL>
-  HDivHighOrderPrism<T_ORTHOPOL> :: HDivHighOrderPrism (int aorder)
-    : HDivHighOrderFiniteElement<3>(ET_PRISM)
+
+  HDivHighOrderFE<ET_PRISM> :: HDivHighOrderFE (int aorder)
+    : HDivHighOrderFiniteElement<3> (ET_PRISM)
   {
     order_inner = INT<3> (aorder,aorder,aorder);
 
@@ -2817,8 +2762,8 @@ namespace ngfem
     ComputeNDof();
   }
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderPrism<T_ORTHOPOL> :: ComputeNDof()
+
+  void HDivHighOrderFE<ET_PRISM> :: ComputeNDof()
   {
     int i;
     ndof = 5; // RT_0
@@ -2869,9 +2814,8 @@ namespace ngfem
   
   
   //SZ : Attention PRISMA has still isotropic inner_order
-  template <class T_ORTHOPOL>
-  void HDivHighOrderPrism<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip,
-						    FlatMatrixFixWidth<3> shape) const
+  void HDivHighOrderFE<ET_PRISM> :: CalcShape (const IntegrationPoint & ip,
+                                               FlatMatrixFixWidth<3> shape) const
   {
     AutoDiff<2> x (ip(0), 0);
     AutoDiff<2> y (ip(1), 1);
@@ -3431,8 +3375,8 @@ namespace ngfem
 
   }*/
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderPrism<T_ORTHOPOL> ::
+
+  void HDivHighOrderFE<ET_PRISM> ::
   GetInternalDofs (Array<int> & idofs) const
   {
     if (discontinuous)
@@ -3472,8 +3416,7 @@ namespace ngfem
   }
 
   
-  template <class T_ORTHOPOL>
-  void HDivHighOrderPrism<T_ORTHOPOL> :: GetFacetDofs(int fa, Array<int> & dnums) const 
+  void HDivHighOrderFE<ET_PRISM> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa >= 5 ) 
       {
@@ -3523,29 +3466,22 @@ namespace ngfem
   // HDivHighOrderHex
   //------------------------------------------------------------------------
 
-  template <class T_ORTHOPOL>
-  HDivHighOrderHex<T_ORTHOPOL> :: HDivHighOrderHex (int aorder)
+
+  HDivHighOrderFE<ET_HEX> :: HDivHighOrderFE (int aorder)
     : HDivHighOrderFiniteElement<3>(ET_HEX)
   {
-    int i;
-    // nf = 6;
     order_inner = aorder;
-    for (i = 0; i < 6; i++)
+    for (int i = 0; i < 6; i++)
       order_face[i] = aorder;
     ComputeNDof();
   }
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderHex<T_ORTHOPOL> :: ComputeNDof()
+
+  void HDivHighOrderFE<ET_HEX> :: ComputeNDof()
   {
     ndof = 6; // RT_0
-
-
-
-    //ndof = 0;
-    int i;
    
-    for (i = 0; i < 6; i++)
+    for (int i = 0; i < 6; i++)
       {
 	//if (order_face[i][0] > 0)
         {
@@ -3560,7 +3496,7 @@ namespace ngfem
     ndof += ndof_inner;
 
     order = 0; // max(order_face_normal,order_inner);
-    for (i = 0; i < 6; i++)
+    for (int i = 0; i < 6; i++)
       {
         int pp = max(order_face[i][0],order_face[i][1]);
 	if (pp > order)
@@ -3575,8 +3511,7 @@ namespace ngfem
   }
 
 
-  template <class T_ORTHOPOL> 
-  void HDivHighOrderHex<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip,
+  void HDivHighOrderFE<ET_HEX> :: CalcShape (const IntegrationPoint & ip,
 						  FlatMatrixFixWidth<3> shape) const
   {
 
@@ -3756,9 +3691,8 @@ namespace ngfem
 
   }
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderHex<T_ORTHOPOL> :: CalcDivShape (const IntegrationPoint & ip,
-						     FlatVector<> divshape) const
+  void HDivHighOrderFE<ET_HEX> :: CalcDivShape (const IntegrationPoint & ip,
+                                                FlatVector<> divshape) const
   {
     int i, j, k, l, m;
     AutoDiff<3> x (ip(0),0);
@@ -3849,8 +3783,7 @@ namespace ngfem
   }
 
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderHex<T_ORTHOPOL> ::
+  void HDivHighOrderFE<ET_HEX> ::
   GetInternalDofs (Array<int> & idofs) const
   {
     if (discontinuous)
@@ -3882,8 +3815,7 @@ namespace ngfem
       }
   }
 
-  template <class T_ORTHOPOL>
-  void HDivHighOrderHex<T_ORTHOPOL> :: GetFacetDofs(int fa, Array<int> & dnums) const 
+  void HDivHighOrderFE<ET_HEX> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa >= 6 ) 
       {
@@ -3912,9 +3844,9 @@ namespace ngfem
   }   
   
 
-  template class HDivHighOrderHex<IntegratedLegendreMonomialExt>;
+  // template class HDivHighOrderHex<IntegratedLegendreMonomialExt>;
   // template class HDivHighOrderTet<IntegratedLegendreMonomialExt>;
-  template class HDivHighOrderPrism<IntegratedLegendreMonomialExt>;
+  // template class HDivHighOrderPrism<IntegratedLegendreMonomialExt>;
 
   /*
     template class HDivHighOrderHex<TrigExtensionMonomial>;
