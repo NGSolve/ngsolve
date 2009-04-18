@@ -281,6 +281,7 @@ namespace ngfem
           (lami[ee]-lami[es], lami[es]+lami[ee], shape.Addr(ii));
       }
 
+    // inner dofs
     int fav[3] = { 0, 1, 2 }; 
     if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
     if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
