@@ -271,32 +271,48 @@ namespace ngfem
     int ii = 3;
 
     // edge dofs
-    if (ORDER >= 2)
-      {
-        const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
-        for (int i = 0; i < 3; i++)
-          { 
-            int es = edges[i][0], ee = edges[i][1];
-            if (vnums[es] > vnums[ee]) swap (es, ee);
-            
-            ii += T_ORTHOPOL::CalcScaled<ORDER> 
-              (lami[ee]-lami[es], lami[es]+lami[ee], shape.Addr(ii));
-          }
+    const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+    for (int i = 0; i < 3; i++)
+      { 
+        int es = edges[i][0], ee = edges[i][1];
+        if (vnums[es] > vnums[ee]) swap (es, ee);
+        
+        ii += T_ORTHOPOL::CalcScaled<ORDER> 
+          (lami[ee]-lami[es], lami[es]+lami[ee], shape.Addr(ii));
       }
 
-    if (ORDER >= 3)
-      {
-        int fav[3] = { 0, 1, 2 }; 
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-        if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	
+    int fav[3] = { 0, 1, 2 }; 
+    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
+    if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
+    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	
+    
+    Tx polx[ORDER-2], poly[ORDER-2];
+    
+    T_TRIGSHAPES::CalcSplitted<ORDER> (lami[fav[2]]-lami[fav[1]],
+                                       lami[fav[0]], polx, poly);
+    
+    TrigProduct<ORDER-3>::Do (polx, poly, shape.Addr(ii));
+  }
 
-        Tx polx[ORDER-2], poly[ORDER-2];
+  template <>   template<typename Tx, typename TFA>  
+  void H1HighOrderFEFO<ET_TRIG, 2> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  {
+    Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
+    
+    for (int i = 0; i < 3; i++)
+      shape[i] = lami[i];
+    
+    int ii = 3;
+
+    // edge dofs
+    const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+    for (int i = 0; i < 3; i++)
+      { 
+        int es = edges[i][0], ee = edges[i][1];
+        if (vnums[es] > vnums[ee]) swap (es, ee);
         
-        T_TRIGSHAPES::CalcSplitted<ORDER> (lami[fav[2]]-lami[fav[1]],
-                                           lami[fav[0]], polx, poly);
-        
-        TrigProduct<ORDER-3>::Do (polx, poly, shape.Addr(ii));
+        ii += T_ORTHOPOL::CalcScaled<2> 
+          (lami[ee]-lami[es], lami[es]+lami[ee], shape.Addr(ii));
       }
   }
 
