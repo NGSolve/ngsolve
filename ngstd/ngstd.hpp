@@ -14,15 +14,28 @@
 #include <ngs_stdcpp_include.hpp>
 
 
+
+#ifdef WIN32
+   #ifdef NGINTERFACE_EXPORTS
+      #define DLL_HEADER   __declspec(dllexport)
+   #else
+      #define DLL_HEADER   __declspec(dllimport)
+   #endif
+#else
+   #define DLL_HEADER 
+#endif
+
+
+
 namespace netgen
 {
 #include "parthreads.hpp"
   // #include <moveablemem.hpp>
 #include "dynamicmem.hpp"
 
-  extern ::std::ostream * testout;
-  extern ::std::ostream * mycout; 
-  extern int printmessage_importance;
+  DLL_HEADER extern ::std::ostream * testout;
+  // extern ::std::ostream * mycout; 
+  DLL_HEADER extern int printmessage_importance;
 }
 
 using netgen::printmessage_importance;
@@ -33,7 +46,7 @@ using netgen::NgLock;
 using netgen::NgMutex;
 
 using netgen::testout;
-using netgen::mycout; 
+// using netgen::mycout; 
 
 
 
