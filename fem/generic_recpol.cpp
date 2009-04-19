@@ -1,6 +1,6 @@
 /*********************************************************************/
 /* File:   generic_recpol.cpp                                        */
-/* Author: Veronika Pillwein and Joachim Schöberl                    */
+/* Author: Veronika Pillwein and Joachim SchÃ¶berl                    */
 /* Date:   5. Jan. 2005                                              */
 /*********************************************************************/
 
@@ -147,7 +147,7 @@ namespace ngfem
 	      
     int h = mat.Height();
     int w = mat.Width();
-    int wp1 = pol1_vals.Width();
+    // int wp1 = pol1_vals.Width();
     int wp2 = pol2_vals.Width();
 
     if (h == 0 || w == 0)
@@ -228,7 +228,7 @@ namespace ngfem
       
       double aj = pol1.A(j);
       double bj = pol1.B(j);
-      double cj = pol1.C(j);
+      // double cj = pol1.C(j);
 
       // col 0:
       rowj[0] = aj * rowj1[0]

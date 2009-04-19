@@ -647,6 +647,8 @@ namespace superlufunc
   template class SuperLUInverse<Complex, Vec<13,Complex>, Vec<13,Complex> >;
   template class SuperLUInverse<Complex, Vec<14,Complex>, Vec<14,Complex> >;
   template class SuperLUInverse<Complex, Vec<15,Complex>, Vec<15,Complex> >;
+  */
+
 
   /*
 

@@ -17,13 +17,11 @@ namespace ngla
 		    Array<double> & weighte,
 		    int levels)
   {
-    int i, j, k;
-
     // find number of vertices
     int ne = e2v.Size();
     int nv = 0;
-    for (i = 0; i < ne; i++)
-      for (j = 0; j < 2; j++)
+    for (int i = 0; i < ne; i++)
+      for (int j = 0; j < 2; j++)
 	if (e2v[i][j] > nv)
 	  nv = e2v[i][j];
     nv++;
@@ -67,11 +65,11 @@ namespace ngla
     // compute weight to collapse edge
     Array<double> vstrength(nv);
     vstrength = 0.0;
-    for (i = 0; i < weighte.Size(); i++)
-      for (j = 0; j < 2; j++)
+    for (int i = 0; i < weighte.Size(); i++)
+      for (int j = 0; j < 2; j++)
 	vstrength[e2v[i][j]] += weighte[i];
 
-    for (i = 0; i < ne; i++)
+    for (int i = 0; i < ne; i++)
       {
 	double vstr1 = vstrength[e2v[i][0]];
 	double vstr2 = vstrength[e2v[i][1]];
@@ -87,7 +85,7 @@ namespace ngla
     do
       {
 	changed = 0;
-	for (i = 0; i < ne; i++)
+	for (int i = 0; i < ne; i++)
 	  if (edge_collapse_weight[i] > 0.1)
 	    {
 	      if (v2edge[e2v[i][0]] == -1 && v2edge[e2v[i][1]] == -1)
@@ -102,7 +100,7 @@ namespace ngla
 	      else
 		
 		{
-		  for (j = 0; j < 2; j++)
+		  for (int j = 0; j < 2; j++)
 		    {
 		      int pi1 = e2v[i][j];
 		      int pi2 = e2v[i][1-j];
@@ -128,10 +126,10 @@ namespace ngla
     while (changed);
 
     // compute fine vertex to coarse vertex map (vcoarse)
-    for (i = 0; i < nv; i++)
+    for (int i = 0; i < nv; i++)
       connected[i] = i;
 
-    for (i = 0; i < ne; i++)
+    for (int i = 0; i < ne; i++)
       if (edge_collapse[i])
 	{
 	  int pi1 = e2v[i][0];
@@ -143,13 +141,13 @@ namespace ngla
 	}
 
     int ncv = 0;
-    for (i = 0; i < nv; i++)
+    for (int i = 0; i < nv; i++)
       if (connected[i] == i)
 	{
 	  vcoarse[i] = ncv;
 	  ncv++;
 	}
-    for (i = 0; i < nv; i++)
+    for (int i = 0; i < nv; i++)
       if (connected[i] != i)
 	vcoarse[i] = vcoarse[connected[i]];
 
@@ -158,7 +156,7 @@ namespace ngla
 
     // compute fine edge to coarse edge map (ecoarse)
     HashTable<INT<2>, int> ht_ecoarse(e2v.Size());
-    for (i = 0; i < e2v.Size(); i++)
+    for (int i = 0; i < e2v.Size(); i++)
       {
 	INT<2> ce;
 	for (int j = 0; j < 2; j++)
@@ -169,8 +167,8 @@ namespace ngla
       }
     
     Array<INT<2> > ce2v;
-    for (i = 0; i < ht_ecoarse.Size(); i++)
-      for (j = 0; j < ht_ecoarse.EntrySize(i); j++)
+    for (int i = 0; i < ht_ecoarse.Size(); i++)
+      for (int j = 0; j < ht_ecoarse.EntrySize(i); j++)
 	{
 	  INT<2> ce;
 	  int efi;
@@ -181,7 +179,7 @@ namespace ngla
 	}
 
     Array<int> ecoarse(ne);
-    for (i = 0; i < e2v.Size(); i++)
+    for (int i = 0; i < e2v.Size(); i++)
       {
 	INT<2> ce;
 	for (int j = 0; j < 2; j++)
@@ -196,7 +194,7 @@ namespace ngla
     // coarse edge weights:
     Array<double> cweighte(ce2v.Size());
     cweighte = 0;
-    for (i = 0; i < e2v.Size(); i++)
+    for (int i = 0; i < e2v.Size(); i++)
       if (ecoarse[i] != -1)
 	cweighte[ecoarse[i]] += weighte[i];
 
@@ -210,7 +208,7 @@ namespace ngla
 
     //prol = new SparseMatrix<double> (nne);
     prol = dynamic_cast< SparseMatrixTM<double>* >(sysmat.CreateMatrix(nne));
-    for (i = 0; i < nv; i++)
+    for (int i = 0; i < nv; i++)
       {
 	prol->CreatePosition (i, vcoarse[i]);
 	(*prol)(i, vcoarse[i]) = 1;
