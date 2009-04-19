@@ -33,14 +33,18 @@
 /*** threading headers ***/
 #ifdef _MSC_VER
 # define WIN32_LEAN_AND_MEAN
-# include <afxwin.h>
-# include <afxmt.h>
+# ifdef MSVC_EXPRESS
+#  include <pthread.h>
+# else
+#  include <afxwin.h>
+#  include <afxmt.h>
+# endif // MSVC_EXPRESS
 # include <windows.h>
 # undef WIN32_LEAN_AND_MEAN
 # include <winnt.h>
-#else
+#else // Not using MSVC++
 # include <pthread.h>
-#endif 
+#endif // _MSC_VER
 
 
 

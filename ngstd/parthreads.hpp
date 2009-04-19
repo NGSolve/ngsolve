@@ -27,7 +27,59 @@ public:
 #else
 
 #ifdef _MSC_VER
+# ifdef MSVC_EXPRESS
+// #include <pthread.h>
 
+class NgMutex
+{
+  pthread_mutex_t mut;
+public:
+  NgMutex ()
+  {
+    pthread_mutex_init (&mut, NULL);
+   }
+  friend class NgLock;
+};
+
+class NgLock
+{
+  pthread_mutex_t & mut;
+  bool locked;
+public:
+  NgLock (NgMutex & ngmut, bool lock = false)
+    : mut (ngmut.mut)
+  {
+    if (lock)
+      pthread_mutex_lock (&mut);
+
+    locked = lock;
+  };
+
+  ~NgLock()
+  {
+    if (locked)
+      pthread_mutex_unlock (&mut);
+  }
+
+  void Lock ()
+  {
+    pthread_mutex_lock (&mut);
+    locked = true;
+  }
+  void UnLock ()
+  {
+    pthread_mutex_unlock (&mut);
+    locked = false;
+  }
+  /*
+  int TryLock ()
+  {
+    return pthread_mutex_trylock (&mut);
+  }
+  */
+};
+
+# else // Using MSVC++ Standard / Professional
 class NgMutex
 {
   CCriticalSection cs;
@@ -67,8 +119,9 @@ public:
     locked = 0;
   }
 };
+# endif // MSVC_EXPRESS
 
-#else
+#else // Not using MSVC++
 
 
 // #include <pthread.h>
@@ -122,8 +175,8 @@ public:
   */
 };
 
-#endif
+#endif // _MSC_VER
 
-#endif
+#endif // NO_PARALLEL_THREADS
 
 #endif
