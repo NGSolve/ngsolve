@@ -71,17 +71,17 @@ using namespace netgen;
 
 
 
-template <> int Ng_GetNElements<1> ()
+template <> int DLL_HEADER Ng_GetNElements<1> ()
 {
   return mesh->GetNSeg();
 }
 
-template <> int Ng_GetNElements<2> ()
+template <> DLL_HEADER int Ng_GetNElements<2> ()
 {
   return mesh->GetNSE();
 }
 
-template <> int Ng_GetNElements<3> ()
+template <> DLL_HEADER int Ng_GetNElements<3> ()
 {
   return mesh->GetNE();
 }
@@ -89,7 +89,7 @@ template <> int Ng_GetNElements<3> ()
 
 
 
-template <> Ng_Element Ng_GetElement<1> (int nr)
+template <> DLL_HEADER Ng_Element Ng_GetElement<1> (int nr)
 {
   const Segment & el = mesh->LineSegment (SegmentIndex(nr));
 
@@ -101,8 +101,7 @@ template <> Ng_Element Ng_GetElement<1> (int nr)
   return ret;
 }
 
-template <>
-Ng_Element Ng_GetElement<2> (int nr)
+template <> DLL_HEADER Ng_Element Ng_GetElement<2> (int nr)
 {
   const Element2d & el = mesh->SurfaceElement (SurfaceElementIndex (nr));
   
@@ -113,8 +112,7 @@ Ng_Element Ng_GetElement<2> (int nr)
   return ret;
 }
 
-template <>
-Ng_Element Ng_GetElement<3> (int nr)
+template <> DLL_HEADER Ng_Element Ng_GetElement<3> (int nr)
 {
   const Element & el = mesh->VolumeElement (ElementIndex (nr));
   

@@ -24,9 +24,7 @@ public:
 
 
 
-template <int DIM> 
-DLL_HEADER int Ng_GetNElements ();
+template <int DIM> DLL_HEADER int Ng_GetNElements ();
 
-template <int DIM> 
-DLL_HEADER Ng_Element Ng_GetElement (int nr);
+template <int DIM> DLL_HEADER Ng_Element Ng_GetElement (int nr);
 
