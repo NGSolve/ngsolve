@@ -23,6 +23,12 @@
 #define tcl_const
 #endif
 
+#ifdef WIN32
+   #define LOCAL_EXPORTS __declspec(dllexport)
+#else
+   #define LOCAL_EXPORTS 
+#endif
+
 
 /**
    A collection of solvers.
