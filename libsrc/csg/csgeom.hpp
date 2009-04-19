@@ -134,10 +134,8 @@ private:
 
   double ideps;
 
-
   /// filename of inputfile
   string filename;
-
 
 public:
   CSGeometry ();

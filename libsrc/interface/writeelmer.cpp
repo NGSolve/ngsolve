@@ -37,7 +37,8 @@ void WriteElmerFormat (const Mesh &mesh,
   sprintf( a, "mkdir %s", filename.c_str() );
   system( a );
 #else
-  int rc = mkdir(filename.c_str(), S_IRWXU|S_IRWXG);
+  // int rc = 
+  mkdir(filename.c_str(), S_IRWXU|S_IRWXG);
 #endif
 
   sprintf( str, "%s/mesh.header", filename.c_str() );

@@ -1226,12 +1226,10 @@ void SplineGeometry<D> :: AppendDiscretePointsSegment (const Array< Point<D> > &
  template<int D>
  string	SplineGeometry<D> :: GetBCName( const int  bcnr ) const
  {
-   string bcname;
    if ( bcnames.Size() >= bcnr)
-     if ( bcnames[bcnr-1] )
-       bcname =  *bcnames[bcnr-1];
-     else bcname = "default";
-   return bcname;
+     if (bcnames[bcnr-1] )
+       return *bcnames[bcnr-1];
+   return "default";
  }
 
 template<int D>

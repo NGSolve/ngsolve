@@ -367,7 +367,6 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
     AutoDiff<3> adt(t, 2);
     AutoDiff<3> res[2000];
     CalcScaledTrigShape (n, adx, ady, adt, &res[0]);
-    double dshape1[6000];
     int ndof = (n-1)*(n-2)/2;
     for (int i = 0; i < ndof; i++)
       {
@@ -377,6 +376,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
       }
 
     /*
+    double dshape1[6000];
     if (n < 3) return;
     double hvl[1000], hvr[1000];
     int nd = (n-1)*(n-2)/2;
@@ -1486,6 +1486,9 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 
 	  break;
 	}
+        
+      default:
+        throw NgException("CurvedElements::CalcShape 2d, element type not handled");
       };
   }
 
@@ -1746,6 +1749,9 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	  */
 	  break;
 	}
+      default:
+        throw NgException("CurvedElements::CalcDShape 2d, element type not handled");
+
       };
   }
 
@@ -2189,6 +2195,10 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	  shapes[7] = (1-x)*   y *(z);
           break;
         }
+
+      default:
+        throw NgException("CurvedElements::CalcShape 3d, element type not handled");
+
       };
   }
 
@@ -2616,6 +2626,9 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 
           break;
         }
+
+      default:
+        throw NgException("CurvedElements::CalcDShape 3d, element type not handled");
       }
     
     /*

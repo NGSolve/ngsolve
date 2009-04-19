@@ -9,11 +9,11 @@ namespace netgen
 {
 
   SingularEdge :: SingularEdge (double abeta, int adomnr, 
-			      const CSGeometry & ageom,
-			      const Solid * asol1, 
-			      const Solid * asol2, double sf,
-			      const double maxh_at_initialization)
-    : geom(ageom), domnr(adomnr)
+                                const CSGeometry & ageom,
+                                const Solid * asol1, 
+                                const Solid * asol2, double sf,
+                                const double maxh_at_initialization)
+    : domnr(adomnr), geom(ageom)
   {
   beta = abeta;
   maxhinit = maxh_at_initialization;
@@ -86,8 +86,8 @@ void SingularEdge :: FindPointsOnEdge (class Mesh & mesh)
       int surfi1 = geom.GetSurfaceClassRepresentant(mesh[si].surfnr1);
       int surfi2 = geom.GetSurfaceClassRepresentant(mesh[si].surfnr2);
 
-      if (si1.Contains(surfi1) && si2.Contains(surfi2) ||
-	  si1.Contains(surfi2) && si2.Contains(surfi1))
+      if ( (si1.Contains(surfi1) && si2.Contains(surfi2)) ||
+           (si1.Contains(surfi2) && si2.Contains(surfi1)) )
 
 	// if (onedge)
 	{

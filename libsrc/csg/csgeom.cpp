@@ -53,14 +53,14 @@ namespace netgen
 
   CSGeometry :: CSGeometry ()
     : boundingbox (default_boundingbox),
-      identicsurfaces (100), filename(""), ideps(1e-9)
+      identicsurfaces (100), ideps(1e-9), filename("")
   {
     ;
   }
 
   CSGeometry :: CSGeometry (const string & afilename)
     : boundingbox (default_boundingbox),
-      identicsurfaces (100), filename(afilename), ideps(1e-9)
+      identicsurfaces (100), ideps(1e-9), filename(afilename)
   {
     changeval++;
   }

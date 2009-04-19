@@ -22,7 +22,7 @@ protected:
 
 public:
   Point () { ; }
-  Point (double ax) { x[0] = ax; }
+  Point (double ax) { for (int i = 0; i < D; i++) x[i] = ax; }
   Point (double ax, double ay) { x[0] = ax; x[1] = ay; }
   Point (double ax, double ay, double az)
   { x[0] = ax; x[1] = ay; x[2] = az; }

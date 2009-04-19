@@ -22,8 +22,6 @@ namespace netgen
 
     const char * filename = hfilename.c_str();
 
-    int i, j;
-
     char reco[100];
     int np, nbe;
 
@@ -41,7 +39,7 @@ namespace netgen
       
         in >> reco;
         in >> np;
-        for (i = 1; i <= np; i++)
+        for (int i = 1; i <= np; i++)
           {
             Point3d p;
             in >> p.X() >> p.Y() >> p.Z();
@@ -53,15 +51,12 @@ namespace netgen
       
         in >> nbe;
         //      int invert = globflags.GetDefineFlag ("invertsurfacemesh");
-        for (i = 1; i <= nbe; i++)
+        for (int i = 1; i <= nbe; i++)
           {
             Element2d el;
-            int hi;
-	  
             el.SetIndex(1);
-	  
-            // in >> hi; 
-            for (j = 1; j <= 3; j++)
+
+            for (int j = 1; j <= 3; j++)
               {
                 in >> el.PNum(j);
                 // el.PNum(j)++;
@@ -93,11 +88,11 @@ namespace netgen
     if ( (strlen (filename) > 4) &&
          strcmp (&filename[strlen (filename)-4], ".unv") == 0 )
       {  
-        int i, j, k;
+        // int i, j, k;
       
-        double h;
+        // double h;
         char reco[100];
-        int np, nbe;
+        // int np, nbe;
         int invert;
       
       
@@ -116,13 +111,13 @@ namespace netgen
             if (strcmp (reco, "NODES") == 0)
               {
                 cout << "nodes found" << endl;
-                for (j = 1; j <= 4; j++)
+                for (int j = 1; j <= 4; j++)
                   in >> reco;  // read dummy
 
                 while (1)
                   {
                     int pi, hi;
-                    double x, y, z;
+                    // double x, y, z;
                     Point3d p;
 
                     in >> pi;
@@ -144,7 +139,7 @@ namespace netgen
             if (strcmp (reco, "ELEMENTS") == 0)
               {
                 cout << "elements found" << endl;
-                for (j = 1; j <= 4; j++)
+                for (int j = 1; j <= 4; j++)
                   in >> reco;  // read dummy
 
                 while (1)
@@ -152,7 +147,7 @@ namespace netgen
                     int hi;
                     in >> hi;
                     if (hi == -1) break;
-                    for (j = 1; j <= 7; j++)
+                    for (int j = 1; j <= 7; j++)
                       in >> hi;
 	      
                     Element2d el;
@@ -163,7 +158,7 @@ namespace netgen
                       swap (el.PNum(2), el.PNum(3));
                     mesh.AddSurfaceElement (el);	  
 	      
-                    for (j = 1; j <= 5; j++)
+                    for (int j = 1; j <= 5; j++)
                       in >> hi;
                   }
               }
@@ -260,7 +255,7 @@ namespace netgen
             in >> nse;
             for (i = 1; i <= nse; i++)
               {
-                int mat, nelp;
+                int mat; // , nelp;
                 in >> mat;
                 Element2d el (TRIG);
                 el.SetIndex (mat);
@@ -301,7 +296,7 @@ namespace netgen
         cout << "pktfile = " << pktfile << endl;
 
         int np, nse, i;
-        int num, bcprop;
+        int bcprop;
         ifstream inpkt (pktfile.c_str());
         inpkt >> np;
         Array<double> values(np);

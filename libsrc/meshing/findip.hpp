@@ -78,7 +78,7 @@ inline int FindInnerPoint (POINTArray & points,
   Array<Vec3d> a;
   Array<double> c;
   Mat<3> m, inv;
-  Vec<3> rs, x, center;
+  Vec<3> rs, x = 0.0, center;
   double f;
 
   int nf = faces.Size();

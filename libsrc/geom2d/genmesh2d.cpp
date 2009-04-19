@@ -80,14 +80,11 @@ namespace netgen
     mesh->SetNBCNames(maxsegmentindex);
 
     for ( int sindex = 0; sindex < maxsegmentindex; sindex++ )
-      {
-	mesh->SetBCName ( sindex, geometry.GetBCName( sindex+1 ) );
-      }
+      mesh->SetBCName ( sindex, geometry.GetBCName( sindex+1 ) );
 
     for (SegmentIndex si = 0; si < mesh->GetNSeg(); si++)
-      {
- 	(*mesh)[si].SetBCName ( (*mesh).GetBCNamePtr( (*mesh)[si].si-1 ) );
-      }
+      (*mesh)[si].SetBCName ( (*mesh).GetBCNamePtr( (*mesh)[si].si-1 ) );
+
     Point3d pmin(bbox.PMin()(0), bbox.PMin()(1), -bbox.Diam());
     Point3d pmax(bbox.PMax()(0), bbox.PMax()(1), bbox.Diam());
 

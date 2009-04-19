@@ -569,12 +569,10 @@ double STLTriangle :: GetNearestPoint(const Array<Point<3> >& ap,
   if (PointInside(ap, p)) {p3d = p; return dist;}
   else
     {
-      Point<3> pf;
+      Point<3> pf = 0.0;
       double nearest = 1E50;
       //int fi = 0;
-      int j;
-      
-      for (j = 1; j <= 3; j++)
+      for (int j = 1; j <= 3; j++)
 	{
 	  p = p3d;
 	  dist = GetDistFromLine(ap.Get(PNum(j)), ap.Get(PNumMod(j+1)), p);

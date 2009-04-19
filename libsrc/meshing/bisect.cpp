@@ -362,6 +362,8 @@ namespace netgen
 		  ned = 6;
 		  break;
 		}
+              default:
+                throw NgException("Bisect, element type not handled in switch");
 	      }
 	      
 	    for (j = 0; j < ned; j++)
@@ -462,7 +464,7 @@ namespace netgen
 		  { { 1, 2, 4, 3 },
 		    { 1, 5, 4, 5 },
 		    { 2, 5, 3, 5 } };
-		      
+                
 		int (*pairs)[4] = NULL;
 		switch (el.GetType())
 		  {
@@ -477,6 +479,8 @@ namespace netgen
 		      pairs = pyramidpairs;
 		      break;
 		    }
+                  default:
+                    throw NgException("Bisect, element type not handled in switch, 2");
 		  }
 
 		for (j = 0; j < 3; j++)
@@ -744,6 +748,8 @@ namespace netgen
 		      ned = 6;
 		      break;
 		    }
+                  default:
+                    throw NgException("Bisect, element type not handled in switch, 3");
 		  }
 	      
 		for (j = 0; j < ned; j++)
@@ -802,6 +808,8 @@ namespace netgen
 			      pairs = pyramidpairs;
 			      break;
 			    }
+                          default:
+                            throw NgException("Bisect, element type not handled in switch, 3a");
 			  }
 
 			for (j = 0; j < 3; j++)
@@ -2100,6 +2108,8 @@ namespace netgen
 		  mprisms.Append (mp);
 		  break;
 		}
+              default:
+                throw NgException("Bisect, element type not handled in switch, 4");
 	      }
 	  }
 	
@@ -2523,6 +2533,8 @@ namespace netgen
 		   << endl;
 	      break;
 	    }
+          default:
+            throw NgException("Bisect, element type not handled in switch, 6");
 	  }
 	
       }
@@ -2563,6 +2575,8 @@ namespace netgen
 	       mquads.Append (mt);
 	       break;
 	     }
+           default:
+             throw NgException("Bisect, element type not handled in switch, 5");
 	   }
 
 	 

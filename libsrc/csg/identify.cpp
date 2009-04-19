@@ -256,7 +256,7 @@ Identifyable (const Point<3> & p1, const Point<3> & p2) const
 int PeriodicIdentification :: 
 GetIdentifiedPoint (class Mesh & mesh,  int pi)
 {
-  const Surface * sold, *snew;
+  const Surface *snew;
   const Point<3> & p = mesh.Point (pi);
 
   if (s1->PointOnSurface (p))
@@ -280,9 +280,8 @@ GetIdentifiedPoint (class Mesh & mesh,  int pi)
   Point<3> hp = p;
   snew->Project (hp);
 
-  int i;
   int newpi = 0;
-  for (i = 1; i <= mesh.GetNP(); i++)
+  for (int i = 1; i <= mesh.GetNP(); i++)
     if (Dist2 (mesh.Point(i), hp) < 1e-12)
       {
 	newpi = i;
@@ -442,7 +441,7 @@ BuildSurfaceElements (Array<Segment> & segs,
 		      Mesh & mesh, const Surface * surf)
 {
   int found = 0;
-  int fother;
+  int fother = -1;
 
   int facei = segs.Get(1).si;
   int surfnr = mesh.GetFaceDescriptor(facei).SurfNr();
@@ -876,7 +875,7 @@ ShortEdge (const SpecialPoint & sp1, const SpecialPoint & sp2) const
 int CloseSurfaceIdentification :: 
 GetIdentifiedPoint (class Mesh & mesh,  int pi)
 {
-  const Surface * sold, *snew;
+  const Surface *snew;
   const Point<3> & p = mesh.Point (pi);
 
   Array<int,PointIndex::BASE> identmap(mesh.GetNP());
@@ -1062,7 +1061,7 @@ void CloseSurfaceIdentification :: IdentifyPoints (Mesh & mesh)
 void CloseSurfaceIdentification :: IdentifyFaces (class Mesh & mesh)
 {
   int fi1, fi2, side;
-  int s1rep, s2rep;
+  int s1rep = -1, s2rep = -1;
 
   for (int i = 0; i < geom.GetNSurf(); i++)
     {
@@ -1305,9 +1304,9 @@ BuildSurfaceElements2 (Array<Segment> & segs,
   if (!segs.Size()) return;
 
   bool found = 0;
+  int fother = -1;
 
-  int fother;
-  int facei = segs.Get(1).si;
+  int facei = segs[0].si;
   int surfnr = mesh.GetFaceDescriptor(facei).SurfNr();
 
   
@@ -1356,11 +1355,7 @@ BuildSurfaceElements2 (Array<Segment> & segs,
 	      Element2d newel(sel.GetType());
 	      newel.SetIndex (facei);
 	      for (int k = 1; k <= sel.GetNP(); k++)
-		{
-		  newel.PNum(k) = 
-		    GetIdentifiedPoint (mesh, sel.PNum(k));
-		  //		      cout << "id-point = " << sel.PNum(k) << ", np = " << newel.PNum(k) << endl;
-		}	  
+                newel.PNum(k) = GetIdentifiedPoint (mesh, sel.PNum(k));
 	      
 	      Vec<3> nt = Cross (Point<3> (mesh.Point (newel.PNum(2)))- 
 				 Point<3> (mesh.Point (newel.PNum(1))),
@@ -1572,12 +1567,9 @@ Identifyable (const SpecialPoint & sp1, const SpecialPoint & sp2,
 
 void CloseEdgesIdentification :: IdentifyPoints (Mesh & mesh)
 {
-  int i, j;
-  int i1, i2;
-
   int np = mesh.GetNP();
-  for (i1 = 1; i1 <= np; i1++)
-    for (i2 = 1; i2 <= np; i2++)
+  for (int i1 = 1; i1 <= np; i1++)
+    for (int i2 = 1; i2 <= np; i2++)
       {
 	if (i2 == i1)
 	  continue;
@@ -1617,15 +1609,13 @@ void CloseEdgesIdentification ::
 BuildSurfaceElements (Array<Segment> & segs,
 		      Mesh & mesh, const Surface * surf)
 {
-  int i1, i2;
   int found = 0;
-  int i, j, k;
 
   if (surf != facet)
     return;
 
-  for (i1 = 1; i1 <= segs.Size(); i1++)
-    for (i2 = 1; i2 < i1; i2++)
+  for (int i1 = 1; i1 <= segs.Size(); i1++)
+    for (int i2 = 1; i2 < i1; i2++)
       {
 	const Segment & s1 = segs.Get(i1);
 	const Segment & s2 = segs.Get(i2);

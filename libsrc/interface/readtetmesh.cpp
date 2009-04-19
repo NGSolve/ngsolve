@@ -50,7 +50,7 @@ namespace netgen
     int numObj3D,numObj2D,numObj1D,numObj0D;
     bool nullstarted;
     Array<int> eldom;
-    int minId3D,minId2D;
+    int minId3D = -1, minId2D = -1;
     int maxId3D(-1), maxId2D(-1), maxId1D(-1), maxId0D(-1);
     Array<Array<int> *> segmentdata;
     Array<Element2d* > tris;

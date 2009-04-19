@@ -13,7 +13,7 @@ namespace netgen
   static Array<Point2d> plainpoints;
   static Array<int> plainzones;
   static Array<INDEX_2> loclines;
-  static int geomtrig;
+  // static int geomtrig;
   //static const char * rname;
   static int cntelem, trials, nfaces;
   static int oldnl;
@@ -400,13 +400,10 @@ namespace netgen
 
 	debugflag = 
 	  debugparam.haltsegment &&
-	  ( (debugparam.haltsegmentp1 == gpi1) && 
-	    (debugparam.haltsegmentp2 == gpi2) || 
-	    (debugparam.haltsegmentp1 == gpi2) && 
-	    (debugparam.haltsegmentp2 == gpi1)) ||
+	  ( ((debugparam.haltsegmentp1 == gpi1) && (debugparam.haltsegmentp2 == gpi2)) || 
+	    ((debugparam.haltsegmentp1 == gpi2) && (debugparam.haltsegmentp2 == gpi1))) ||
 	  debugparam.haltnode &&
-	  ( (debugparam.haltsegmentp1 == gpi1) ||
-	    (debugparam.haltsegmentp2 == gpi1));
+	  ( (debugparam.haltsegmentp1 == gpi1) || (debugparam.haltsegmentp2 == gpi1));
 
       
 	if (debugparam.haltface && debugparam.haltfacenr == facenr)
@@ -566,7 +563,7 @@ namespace netgen
 		      }			
 		  }
 	      
-		else if (z1 > 0 && z2 > 0 && (z1 != z2) || (z1 < 0) && (z2 < 0) )
+		else if ( (z1 > 0 && z2 > 0 && (z1 != z2)) || ((z1 < 0) && (z2 < 0)) )
 		  {
 		    loclines.DeleteElement(i);
 		    lindex.DeleteElement(i);

@@ -429,7 +429,7 @@ int IntersectTetTriangleRef (const Point<3> ** tri, const int * tripi)
 {
   int i, j;
   double eps = 1e-8;
-  double eps2 = eps * eps;
+  // double eps2 = eps * eps;
 
   static Point<3> rtetp1(0, 0, 0);
   static Point<3> rtetp2(1, 0, 0);  

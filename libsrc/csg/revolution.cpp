@@ -45,7 +45,7 @@ namespace netgen
 				   bool first,
 				   bool last,
 				   const int id_in) :
-    spline(&spline_in), p0(p), v_axis(vec), isfirst(first), islast(last), id(id_in)
+    isfirst(first), islast(last), spline(&spline_in), p0(p), v_axis(vec),  id(id_in)
   {    
     deletable = false;
     Init();

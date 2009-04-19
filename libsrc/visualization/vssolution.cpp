@@ -2166,6 +2166,7 @@ namespace netgen
               }
             else if (el.GetType() == QUAD)
               {
+                /*
                 Array < Point<3> > lp(3);
 
                 lp[0] = mesh->Point(el[0]);
@@ -2179,106 +2180,106 @@ namespace netgen
                 lp[2] = mesh->Point(el[3]);
 
                 DrawTrigSurfaceVectors(lp,pmin,pmax,sei,vsol);
-
-                /*
-                  Point<3> lp[4];
-                  Point<2> p2d[4];
-              
-                  for (k = 0; k < 4; k++)
-                  lp[k] = mesh->Point (el[k]);
-                  
-
-                  Vec<3> n = Cross (lp[1]-lp[0], lp[2]-lp[0]);
-                  Vec<3> na (fabs (n(0)), fabs(n(1)), fabs(n(2)));
-                  if (na(0) > na(1) && na(0) > na(2))
-                  dir = 1;
-                  else if (na(1) > na(2))
-                  dir = 2;
-                  else 
-                  dir = 3;
-              
-                  dir1 = (dir % 3) + 1;
-                  dir2 = (dir1 % 3) + 1;
-              
-                  for (k = 0; k < 4; k++)
-                  {
-                  p2d[k] = Point<2> ((lp[k](dir1-1) - pmin(dir1-1)) / (2*rad),
-                  (lp[k](dir2-1) - pmin(dir2-1)) / (2*rad));
-                  }
-              
-                  double minx2d, maxx2d, miny2d, maxy2d;
-                  minx2d = maxx2d = p2d[0](0);
-                  miny2d = maxy2d = p2d[0](1);
-                  for (k = 1; k < 4; k++)
-                  {
-                  minx2d = min2 (minx2d, p2d[k](0));
-                  maxx2d = max2 (maxx2d, p2d[k](0));
-                  miny2d = min2 (miny2d, p2d[k](1));
-                  maxy2d = max2 (maxy2d, p2d[k](1));
-                  }
-          
-                  for (s = xoffset/gridsize; s <= 1+xoffset/gridsize; s += 1.0 / gridsize)
-                  if (s >= minx2d && s <= maxx2d)
-                  for (t = yoffset/gridsize; t <= 1+yoffset/gridsize; t += 1.0 / gridsize)
-                  if (t >= miny2d && t <= maxy2d)
-                  {
-                  double lami[3];
-                  Point3d p3d(2*rad*s+pmin(0), 2*rad*t+pmin(1),0);
-
-                  if (mesh->PointContainedIn2DElement (p3d, lami, sei+1))
-                  {
-                  Point<3> cp = p3d;
-                  double lam1 = lami[0];
-                  double lam2 = lami[1];
-
-                  //for (k = 0; k < 3; k++)
-                  //cp(k) = lp[0](k) + 
-                  //lam1 * (lp[1](k)-lp[0](k)) + 
-                  //lam2 * (lp[2](k)-lp[0](k));
-                              
-
-                  Vec<3> v;
-                  double values[6];
-                  drawelem = GetSurfValues (vsol, sei, lam1, lam2, values);
-                  (*testout) << "sei " << sei << " lam1 " << lam1 << " lam2 " << lam2 << " drawelem " << drawelem << endl;
-
-                  if (!vsol->iscomplex)
-                  for (k = 0; k < 3; k++)
-                  v(k) = values[k];
-                  else
-                  {
-                  if (!imag_part)
-                  for (k = 0; k < 3; k++)
-                  v(k) = values[2*k];
-                  else
-                  for (k = 0; k < 3; k++)
-                  v(k) = values[2*k+1];
-                  }
-                        
-                  if (mesh->GetDimension() == 2)
-                  if ( (!vsol->iscomplex && vsol->components != 3) ||
-                  (vsol->iscomplex && vsol->components != 6) )
-                  v(2) = 0;
-                        
-                  double val = v.Length();
-                  SetOpenGlColor  (val, minval, maxval, logscale);
-
-                  (*testout) << "v " << v << endl;
-
-                  if (val > 1e-10 * maxval)
-                  v *= (rad / val / gridsize * 0.5);
-
-                  (*testout) << "v " << v << endl;
-
-                  if ( drawelem )
-                  {
-                  DrawCone (cp, cp+4*v, 0.8*rad / gridsize);
-                  (*testout) << "cp " << cp << " rad " << rad << " gridsize " << gridsize << endl;
-                  }
-                                
-                  }
-                  }
                 */
+                
+                Point<3> lp[4];
+                Point<2> p2d[4];
+                
+                for (int k = 0; k < 4; k++)
+                  lp[k] = mesh->Point (el[k]);
+                
+                
+                Vec<3> n = Cross (lp[1]-lp[0], lp[2]-lp[0]);
+                Vec<3> na (fabs (n(0)), fabs(n(1)), fabs(n(2)));
+                int dir, dir1, dir2;
+                if (na(0) > na(1) && na(0) > na(2))
+                  dir = 1;
+                else if (na(1) > na(2))
+                  dir = 2;
+                else 
+                  dir = 3;
+                
+                dir1 = (dir % 3) + 1;
+                dir2 = (dir1 % 3) + 1;
+                
+                for (int k = 0; k < 4; k++)
+                  {
+                    p2d[k] = Point<2> ((lp[k](dir1-1) - pmin(dir1-1)) / (2*rad),
+                                       (lp[k](dir2-1) - pmin(dir2-1)) / (2*rad));
+                  }
+                
+                double minx2d, maxx2d, miny2d, maxy2d;
+                minx2d = maxx2d = p2d[0](0);
+                miny2d = maxy2d = p2d[0](1);
+                for (int k = 1; k < 4; k++)
+                  {
+                    minx2d = min2 (minx2d, p2d[k](0));
+                    maxx2d = max2 (maxx2d, p2d[k](0));
+                    miny2d = min2 (miny2d, p2d[k](1));
+                    maxy2d = max2 (maxy2d, p2d[k](1));
+                  }
+                
+                for (double s = xoffset/gridsize; s <= 1+xoffset/gridsize; s += 1.0 / gridsize)
+                  if (s >= minx2d && s <= maxx2d)
+                    for (double t = yoffset/gridsize; t <= 1+yoffset/gridsize; t += 1.0 / gridsize)
+                      if (t >= miny2d && t <= maxy2d)
+                        {
+                          double lami[3];
+                          Point3d p3d(2*rad*s+pmin(0), 2*rad*t+pmin(1),0);
+                          
+                          if (mesh->PointContainedIn2DElement (p3d, lami, sei+1))
+                            {
+                              Point<3> cp = p3d;
+                              double lam1 = lami[0];
+                              double lam2 = lami[1];
+                              
+                              //for (k = 0; k < 3; k++)
+                              //cp(k) = lp[0](k) + 
+                              //lam1 * (lp[1](k)-lp[0](k)) + 
+                              //lam2 * (lp[2](k)-lp[0](k));
+                              
+                              
+                              Vec<3> v;
+                              double values[6];
+                              bool drawelem = GetSurfValues (vsol, sei, lam1, lam2, values);
+                              (*testout) << "sei " << sei << " lam1 " << lam1 << " lam2 " << lam2 << " drawelem " << drawelem << endl;
+                              
+                              if (!vsol->iscomplex)
+                                for (int k = 0; k < 3; k++)
+                                  v(k) = values[k];
+                              else
+                                {
+                                  if (!imag_part)
+                                    for (int k = 0; k < 3; k++)
+                                      v(k) = values[2*k];
+                                  else
+                                    for (int k = 0; k < 3; k++)
+                                      v(k) = values[2*k+1];
+                                }
+                              
+                              if (mesh->GetDimension() == 2)
+                                if ( (!vsol->iscomplex && vsol->components != 3) ||
+                                     (vsol->iscomplex && vsol->components != 6) )
+                                  v(2) = 0;
+                              
+                              double val = v.Length();
+                              SetOpenGlColor  (val, minval, maxval, logscale);
+                              
+                              (*testout) << "v " << v << endl;
+                              
+                              if (val > 1e-10 * maxval)
+                                v *= (rad / val / gridsize * 0.5);
+                              
+                              (*testout) << "v " << v << endl;
+                              
+                              if ( drawelem )
+                                {
+                                  DrawCone (cp, cp+4*v, 0.8*rad / gridsize);
+                                  (*testout) << "cp " << cp << " rad " << rad << " gridsize " << gridsize << endl;
+                                }
+                              
+                            }
+                        }
               }
           }
       }

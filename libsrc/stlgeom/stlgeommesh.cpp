@@ -678,7 +678,7 @@ int STLGeometry :: ProjectOnWholeSurface(Point<3> & p3d) const
 
 int STLGeometry :: ProjectNearest(Point<3> & p3d) const
 {
-  Point<3> p, pf;
+  Point<3> p, pf = 0.0;
 
   //set new chart
   const STLChart& chart = GetChart(meshchart);

@@ -92,6 +92,14 @@ public:
   double GetProfilePar(void) const {return profile_par;}
 
   void GetRawData(Array<double> & data) const;
+
+  void CalcLocalCoordinates (int seg, double t, 
+                             Vec<3> & ex, Vec<3> & ey, Vec<3> & ez) const;
+
+  void CalcLocalCoordinatesDeriv (int seg, double t, 
+                                  Vec<3> & ex, Vec<3> & ey, Vec<3> & ez,
+                                  Vec<3> & dex, Vec<3> & dey, Vec<3> & dez) const;
+
 };
 
 

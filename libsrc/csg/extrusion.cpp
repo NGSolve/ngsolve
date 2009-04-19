@@ -356,25 +356,27 @@ namespace netgen
     int seg;
     CalcProj (point, p2d, seg, t_path);
 
+
     Point<3> phi;
     Vec<3> phip, phipp, phi_minus_point;
 
     path->GetSpline(seg).GetDerivatives(t_path, phi, phip, phipp);
     phi_minus_point = phi-point;
 
-
     Vec<3> grad_t = (1.0/(phipp*phi_minus_point + phip*phip)) * phip;
+    Vec<3> grad_xbar, grad_ybar;
 
+    /*
     Vec<3> dphi_dX[3];
-    Vec<3> dy_dir_dX[3];
-    Vec<3> dx_dir_dX[3];
-    
     for(int i = 0; i < 3; i++)
       dphi_dX[i] = grad_t(i)*phip;
 
+    Vec<3> dx_dir_dX[3];
+    Vec<3> dy_dir_dX[3];
+    Vec<3> dz_dir_dX[3];
+
     double lphip = phip.Length();
     Vec<3> dy_dir_dt = (1./lphip) * phipp - ((phip*phipp)/pow(lphip,3)) * phip;
-
     Vec<3> dx_dir_dt = Cross(dy_dir_dt,z_dir[seg]);   
 
     for(int i = 0; i < 3; i++)
@@ -383,22 +385,26 @@ namespace netgen
       dx_dir_dX[i] = grad_t(i) * dx_dir_dt;
 
 
-    Vec<3> grad_xbar;
-
     for(int i=0; i<3; i++)
       grad_xbar(i) = -1.*(phi_minus_point * dx_dir_dX[i]) + x_dir[seg](i) - x_dir[seg] * dphi_dX[i];
 
     double zy = z_dir[seg]*y_dir[seg];
 
-    Vec<3> grad_ybar;
     Vec<3> aux = z_dir[seg] - zy*y_dir[seg];
 
     for(int i=0; i<3; i++)
       grad_ybar(i) = ( (z_dir[seg]*dy_dir_dX[i])*y_dir[seg] + zy*dy_dir_dX[i] ) * phi_minus_point +
 	aux[i] -
 	aux * dphi_dX[i];
+    */
 
-    
+    // new version by JS
+    Vec<3> hex, hey, hez, dex, dey, dez;
+    CalcLocalCoordinatesDeriv (seg, t_path, hex, hey, hez, dex, dey, dez);
+
+    grad_xbar = hex - (phi_minus_point*dex + hex*phip) * grad_t;
+    grad_ybar = hez - (phi_minus_point*dez + hez*phip) * grad_t;
+
     double dFdxbar = 2.*profile_spline_coeff(0)*p2d(0) +
       profile_spline_coeff(2)*p2d(1) + profile_spline_coeff(3);
 
@@ -409,31 +415,8 @@ namespace netgen
     grad = dFdxbar * grad_xbar + dFdybar * grad_ybar;    
 
 
+
     /*
-    {
-      cout << "grad_xbar = " << grad_xbar << endl;
-      cout << "grad_ybar = " << grad_ybar << endl;
-      Vec<3> numgradx, numgrady;
-
-      for (int i = 0; i < 3; i++)
-        {
-          Point<3> hpl = point, hpr = point;
-          hpl(i) -= 1e-6; hpr(i) += 1e-6;
-          
-          Point<2> p2dl, p2dr;
-          CalcProj (hpl, p2dl, seg, t_path);
-          CalcProj (hpr, p2dr, seg, t_path);
-          
-          
-          numgradx(i) = (p2dr(0)-p2dl(0)) / (2e-6);
-          numgrady(i) = (p2dr(1)-p2dl(1)) / (2e-6);
-        }
-      cout << "num grad_xbar" << numgradx << endl;
-      cout << "num grad_ybar" << numgrady << endl;
-    }
-    
-
-    {
     cout << "grad = " << grad << " =?= ";
     Vec<3> numgrad;
 
@@ -449,24 +432,6 @@ namespace netgen
       }
     
     cout << " numgrad = " << numgrad << endl;
-
-    for (int i = 0; i < 3; i++)
-      {
-        Point<3> hpl = point;
-        Point<3> hpr = point;
-        hpl(i) -= 1e-4;
-        hpr(i) += 1e-4;
-        double vall = CalcFunctionValue (hpl);
-        double valr = CalcFunctionValue (hpr);
-        numgrad(i) = (valr - vall) / (2e-4);
-      }
-    
-    cout << " numgrad2 = " << numgrad << endl;
-    }    
-    static int cnt = 0;
-    cnt++;
-    if (cnt == 10000)
-      exit (0);
     */
   }
 
@@ -778,6 +743,52 @@ namespace netgen
   }
 
 
+  void ExtrusionFace :: 
+  CalcLocalCoordinates (int seg, double t, 
+                        Vec<3> & ex, Vec<3> & ey, Vec<3> & ez) const
+  {
+    ey = path->GetSpline(seg).GetTangent(t); 
+    ey /= ey.Length();
+    ex = Cross (ey, glob_z_direction);
+    ex /= ex.Length();
+    ez = Cross (ex, ey);
+  }
+
+  void ExtrusionFace :: 
+  CalcLocalCoordinatesDeriv (int seg, double t, 
+                             Vec<3> & ex, Vec<3> & ey, Vec<3> & ez,
+                             Vec<3> & dex, Vec<3> & dey, Vec<3> & dez) const
+  {
+    Point<3> point;
+    Vec<3> first, second;
+    path->GetSpline(seg).GetDerivatives (t, point, first, second);
+
+    ey = first;
+    ex = Cross (ey, glob_z_direction);
+    ez = Cross (ex, ey);
+    
+    dey = second;
+    dex = Cross (dey, glob_z_direction);
+    dez = Cross (dex, ey) + Cross (ex, dey);
+    
+    double lenx = ex.Length();
+    double leny = ey.Length();
+    double lenz = ez.Length();
+
+    ex /= lenx;
+    ey /= leny;
+    ez /= lenz;
+    
+    dex /= lenx;
+    dex -= (dex * ex) * ex;
+
+    dey /= leny;
+    dey -= (dey * ey) * ey;
+
+    dez /= lenz;
+    dez -= (dez * ez) * ez;
+  }
+  
 
   Extrusion :: Extrusion(const SplineGeometry<3> & path_in,
 			 const SplineGeometry<2> & profile_in,

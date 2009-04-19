@@ -25,14 +25,14 @@ namespace netgen
 
     int np = mesh.GetNP();
     int ne = mesh.GetNE();
-    int nse = mesh.GetNSE();
+    // int nse = mesh.GetNSE();
     int nsd = mesh.GetDimension(); 
-    int invertsurf = mparam.inverttrigs;
-    int i, j;
+    // int invertsurf = mparam.inverttrigs;
+    // int i, j;
 
     ofstream outfile (filename.c_str());
 
-    char str[100];
+    // char str[100];
     outfile.precision(8);
     outfile.setf (ios::fixed, ios::floatfield);
     outfile.setf (ios::showpoint);
@@ -45,7 +45,7 @@ namespace netgen
       outfile << "<dolfin xmlns:dolfin=\"http://www.phi.chalmers.se/dolfin/\">"<<endl;
       outfile << "  <mesh celltype=\"tetrahedron\" dim=\"3\">" <<endl; 
       outfile << "      <vertices size=\""<<np<<"\">"<<endl; 
-      for (i = 1; i <= np; i++) { 
+      for (int i = 1; i <= np; i++) { 
         const Point3d & p = mesh.Point(i);
         outfile << "      <vertex index=\""<<i-1<<"\" x=\""<<p.X()<<"\" y=\""<<p.Y()<<"\" z=\""<<p.Z()<<"\"/>"<<endl; 
       }
@@ -54,7 +54,7 @@ namespace netgen
 
 
       outfile << "      <cells size=\""<<ne<<"\">"<<endl; 
-      for (i = 1; i <= ne; i++) {
+      for (int i = 1; i <= ne; i++) {
         const Element & el = mesh.VolumeElement(i);
 
         outfile << "      <tetrahedron index=\""<<i-1<<"\" v0=\""<<el.PNum(1)-1<<"\" v1=\""<<el.PNum(2)-1<<"\" v2=\""<<el.PNum(3)-1<<"\" v3=\""<<el.PNum(4)-1<<"\"/>"<<endl; 

@@ -1368,7 +1368,7 @@ namespace netgen
     Array<int> surfind, rep_surfind, surfind2, rep_surfind2, surfind3;
 
     Array<Vec<3> > normalvecs;
-    Vec<3> nsurf;
+    Vec<3> nsurf = 0.0;
 
     Array<int> specpoint2point;
     specpoints.SetSize (0);

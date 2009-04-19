@@ -792,6 +792,7 @@ HPREF_ELEMENT_TYPE ClassifyTrig(HPRefElement & el, INDEX_2_HASHTABLE<int> & edge
 	if(cornerpoint.Test(el.PNum(p[k]))) 
 	  point_sing[p[k]-1] = 3; 
       
+      *testout << "point_sing = " << point_sing[0] << point_sing[1] << point_sing[2] << endl;
 
       if(edge_sing[0] + edge_sing[1] + edge_sing[2] == 0) 
         { 
@@ -851,8 +852,11 @@ HPREF_ELEMENT_TYPE ClassifyTrig(HPRefElement & el, INDEX_2_HASHTABLE<int> & edge
      
       //  cout << " run for " <<  j << " gives type " << type << endl; 
       //*testout << " run for " <<  j << " gives type " << type << endl; 
+
       if(type!=HP_NONE) break;
     }
+
+  *testout << "type = " << type << endl;
     
   for(int k=0;k<3;k++) el[k] = pnums[k]; 
   /*if(type != HP_NONE) 
