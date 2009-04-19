@@ -45,6 +45,25 @@ namespace netgen {
 
 #ifdef _MSC_VER
 
+# ifdef MSVC_EXPRESS
+
+// #include <pthread.h>
+static pthread_t meshingthread;
+static void RunParallel ( void * (*fun)(void *), void * in)
+{
+  if (1)
+    {
+      pthread_attr_t attr;
+      pthread_attr_init (&attr);
+      pthread_attr_setstacksize(&attr, 10000000);
+      pthread_create (&meshingthread, &attr, fun, NULL);
+    }
+  else
+    fun (in);
+}
+
+# else // Using MSVC++ Standard / Profession
+
 // Afx - Threads need different return - value:
 
 static void* (*sfun)(void *);
@@ -62,7 +81,7 @@ static void RunParallel ( void* (*fun)(void *), void * in)
   else
     fun (in);
 }
-
+# endif // MSVC_EXPRESS
 #else
 // #include <pthread.h>
 static pthread_t meshingthread;
@@ -251,6 +270,7 @@ void * SolveBVP(void *)
       pde->SetGood (false);
     }
 #ifdef _MSC_VER
+# ifndef MSVC_EXPRESS
   catch (CException * e)
     {
       TCHAR msg[255];
@@ -259,6 +279,7 @@ void * SolveBVP(void *)
 	   << msg << "\n\n";
       pde->SetGood (false);
     }
+# endif // MSVC_EXPRESS
 #endif
   catch (ngstd::Exception & e)
     {
@@ -668,7 +689,7 @@ extern "C" int NGSolve_Init (Tcl_Interp * interp);
 extern "C" void NGSolve_Exit ();
 
 // tcl package dynamic load
-extern "C" int Ngsolve_Init (Tcl_Interp * interp)
+extern "C" int LOCAL_EXPORTS Ngsolve_Init (Tcl_Interp * interp)
 {
   NGSolve_Init(interp);
   return TCL_OK;
