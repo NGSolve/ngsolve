@@ -29,6 +29,7 @@ if defined NETGENDIR (
    
 set NETGEN_TCLSRC=%PROJ_DIR%..\ng
 set NETGEN_LIBINC=%PROJ_DIR%..\libsrc\include
+set NETGEN_NGSINC=%PROJ_DIR%..\libsrc
 
 REM *** Start the Installation procedure ***
 echo POSTBUILD Script for %PROJ_NAME% ........
@@ -65,6 +66,12 @@ echo Installing %LIB_NAME%.h into %INSTALL_FOLDER%\include ....
 xcopy "%NETGEN_LIBINC%\%LIB_NAME%.h" "%INSTALL_FOLDER%\include\" /i /d /y
 if errorlevel 1 goto LibInstallFailed
 echo Installing %LIB_NAME%.h: Completed OK!!
+
+echo Installing NgSolve dependent header files into %INSTALL_FOLDER%\include ....
+xcopy "%NETGEN_NGSINC%\include\nginterface_v2.hpp" "%INSTALL_FOLDER%\include\" /i /d /y
+xcopy "%NETGEN_NGSINC%\general\dynamicmem.hpp" "%INSTALL_FOLDER%\include\" /i /d /y
+xcopy "%NETGEN_NGSINC%\general\ngexception.hpp" "%INSTALL_FOLDER%\include\" /i /d /y
+xcopy "%NETGEN_NGSINC%\visualization\soldata.hpp" "%INSTALL_FOLDER%\include\" /i /d /y
 
 REM *** Done with the installation routine ***
 
