@@ -712,6 +712,7 @@ namespace ngsolve
 				     string(fes->GetName()));
 		  }
 #ifdef _MSC_VER
+# ifndef MSVC_EXPRESS
 		catch (CException * e)
 		  {
 		    TCHAR msg[255];
@@ -720,6 +721,7 @@ namespace ngsolve
 				     string ("\nthrown by update space ") +
 				     string(fes->GetName()));
 		  }
+# endif // MSVC_EXPRESS
 #endif
 		catch (Exception & e)
 		  {
@@ -746,6 +748,7 @@ namespace ngsolve
 				     string (gf->GetName()));
 		  }
 #ifdef _MSC_VER
+# ifndef MSVC_EXPRESS
 		catch (CException * e)
 		  {
 		    TCHAR msg[255];
@@ -754,6 +757,7 @@ namespace ngsolve
 				     string ("\nthrown by update grid-function ") +
 				     string(gf->GetName()));
 		  }
+# endif // MSVC_EXPRESS
 #endif
 		catch (Exception & e)
 		  {
@@ -785,6 +789,7 @@ namespace ngsolve
 				     string (bf->GetName()));
 		  }
 #ifdef _MSC_VER
+# ifndef MSVC_EXPRESS
 		catch (CException * e)
 		  {
 		    TCHAR msg[255];
@@ -793,6 +798,7 @@ namespace ngsolve
 				     string ("\nthrown by update bilinear-form ") +
 				     string(bf->GetName()));
 		  }
+# endif // MSVC_EXPRESS
 #endif
 		catch (Exception & e)
 		  {
@@ -823,6 +829,7 @@ namespace ngsolve
 					 string (lf->GetName()));
 		      }
 #ifdef _MSC_VER
+# ifndef MSVC_EXPRESS
 		    catch (CException * e)
 		      {
 			TCHAR msg[255];
@@ -831,6 +838,7 @@ namespace ngsolve
 					 string ("\nthrown by update linear-form ") +
 					 string(lf->GetName()));
 		      }
+# endif // MSVC_EXPRESS
 #endif
 		    catch (Exception & e)
 		      {
@@ -874,6 +882,7 @@ namespace ngsolve
 				     string (pre->GetName()));
 		  }
 #ifdef _MSC_VER
+# ifndef MSVC_EXPRESS
 		catch (CException * e)
 		  {
 		    TCHAR msg[255];
@@ -882,6 +891,7 @@ namespace ngsolve
 				     string ("\nthrown by update preconditioner ") +
 				     string(pre->GetName()));
 		  }
+# endif // MSVC_EXPRESS
 #endif
 		catch (Exception & e)
 		  {
@@ -911,6 +921,7 @@ namespace ngsolve
 				     string (np->GetName()));
 		  }
 #ifdef _MSC_VER
+# ifndef MSVC_EXPRESS
 		catch (CException * e)
 		  {
 		    TCHAR msg[255];
@@ -919,6 +930,7 @@ namespace ngsolve
 				     string ("\nthrown by update numproc ") +
 				     string(np->GetName()));
 		  }
+# endif // MSVC_EXPRESS
 #endif
 		catch (Exception & e)
 		  {
