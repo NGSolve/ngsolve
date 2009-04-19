@@ -540,6 +540,8 @@ namespace ngcomp
     H1HighOrderFiniteElement<2> * hofe2d = 0;
     H1HighOrderFiniteElement<3> * hofe3d = 0;
 
+    /*
+      // order_inner etc. must all be the same ...
     if (!var_order && ma.GetElType(elnr) == ET_TRIG && order <= 6)
       {
         H1HighOrderFiniteElementFO<2> * hofe2d = 0;
@@ -559,6 +561,7 @@ namespace ngcomp
         hofe2d -> SetVertexNumbers (vnums);
         return *hofe2d;
       }
+    */
 
     try
       {

@@ -217,19 +217,18 @@ namespace ngfem
   void HDivHighOrderNormalQuad<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip,
 							 FlatVector<> shape) const
   {
-    int i, j, k, l, m, ii;
     AutoDiff<2> x (ip(0), 0);
     AutoDiff<2> y (ip(1), 1);
 
-    AutoDiff<2> lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};
+    // AutoDiff<2> lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};
     AutoDiff<2> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};
 
     shape = 0.0;
 
-    ii = 1;
+    int ii = 1;
 
     INT<2> p = order_inner;
-    int pp = max(p[0],p[1]); 
+    // int pp = max(p[0],p[1]); 
     
     ArrayMem<AutoDiff<2>,20> pol_xi(p[0]+1), pol_eta(p[1]+1);
     AutoDiff<2> polprod;
@@ -258,9 +257,9 @@ namespace ngfem
     T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
 
     // Typ 1
-    for (k = 0; k < p[0]; k++)
+    for (int k = 0; k < p[0]; k++)
       {
-	for (l = 0; l < p[1]; l++, ii++)
+	for (int l = 0; l < p[1]; l++, ii++)
 	  {
             shape(ii) = 2.*(pol_eta[l].DValue(0)*pol_xi[k].DValue(1)-pol_eta[l].DValue(1)*pol_xi[k].DValue(0));
 	  }
@@ -268,9 +267,9 @@ namespace ngfem
 
     //Typ 2
 
-    for (k = 0; k < p[0]; k++)
+    for (int k = 0; k < p[0]; k++)
       shape(ii++) = -eta.DValue(0)*pol_xi[k].DValue(1) + eta.DValue(1)*pol_xi[k].DValue(0); 
-    for (k = 0; k < p[1]; k++)
+    for (int k = 0; k < p[1]; k++)
       shape(ii++)   = -xi.DValue(0)*pol_eta[k].DValue(1) + xi.DValue(1)*pol_eta[k].DValue(0);
   }
 
@@ -1787,7 +1786,7 @@ namespace ngfem
             //int ni = 6*(p-1) + 4*(p-1)*(p-2) + (p-1)*(p-2)*(p-3)/2;
             // int ni = p*(p+1)*(p-1)/2 + p*(p-1)+(p-1);
 
-            int ni;
+            int ni = 0;
             if(pc > 1) 
               ni += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
             if(p > 1 && !ho_div_free) 
@@ -2837,7 +2836,7 @@ namespace ngfem
 
 
     const FACE * faces = ElementTopology::GetFaces (ET_PRISM);
-    const EDGE * edges = ElementTopology::GetEdges (ET_PRISM);
+    // const EDGE * edges = ElementTopology::GetEdges (ET_PRISM);
 
 
     ArrayMem<AutoDiff<2>,20> adpolxy1(order+1), adpolxy2(order+1), adpolx(order+1), adpoly(order+1);
@@ -3453,7 +3452,7 @@ namespace ngfem
             INT<2> p = order_face[i];
             base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
           }
-        INT<2> p = order_face[fa][0];
+        INT<2> p = order_face[fa];
         nf = p[0]*p[1]+p[0]+p[1];
       }
       
@@ -3694,7 +3693,7 @@ namespace ngfem
   void HDivHighOrderFE<ET_HEX> :: CalcDivShape (const IntegrationPoint & ip,
                                                 FlatVector<> divshape) const
   {
-    int i, j, k, l, m;
+    int i, j, k; 
     AutoDiff<3> x (ip(0),0);
     AutoDiff<3> y (ip(1),1);
     AutoDiff<3> z (ip(2),2);
@@ -3836,7 +3835,7 @@ namespace ngfem
         INT<2> p = order_face[i];
         base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
       }
-    INT<2> p = order_face[fa][0];
+    INT<2> p = order_face[fa];
     int nf = p[0]*p[1]+p[0]+p[1];
          
     for (int i=0; i<nf; i++)

@@ -548,7 +548,7 @@ namespace ngla
     // (*testout) << "Eliminate Slave Vertex " << v << endl;
     // PrintCliques();
 
-    CliqueEl *p1, *p2, *p3, *p4, *newp;
+    CliqueEl *p1, *newp;
     
     if (cliques[v])
       {

@@ -1730,7 +1730,6 @@ void FE_BDMTet1 :: Orthogonalize()
 {
   cout << "compute BDM1 tet" << endl;
   
-  int i, j, k, l;
   int nd = 12;
   
   //  const POINT3D * points = MeshAccess::ME_GetVertices (ET_TET);
@@ -1741,7 +1740,7 @@ void FE_BDMTet1 :: Orthogonalize()
   Matrix<> moments(3,nd);
   FE_Trig1 trig1;
   
-  for (i = 0; i < 4; i++)
+  for (int i = 0; i < 4; i++)
     {
       ComputeFaceMoments (i, trig1, moments, 2);
       if (i == 0 || i == 2)
@@ -1749,7 +1748,7 @@ void FE_BDMTet1 :: Orthogonalize()
 
       (*testout) << "moments = " << moments << endl;
 
-      for (j = 0; j < nd; j++)
+      for (int j = 0; j < nd; j++)
 	{
 	  fiphij(3*i  , j) = moments(0, j);
 	  fiphij(3*i+1, j) = moments(1, j);

@@ -1,4 +1,4 @@
- /*********************************************************************/
+/*********************************************************************/
 /* File:   hcurlfe.cpp                                               */
 /* Author: Joachim Schoeberl                                         */
 /* Date:   16. Apr. 2000                                             */
@@ -1379,10 +1379,6 @@ namespace ngfem
   CalcCurlShape (const IntegrationPoint & ip, 
 		 FlatMatrixFixWidth<3> curlshape) const
   {
-    double x = ip(0);
-    double y = ip(1);
-    double z = ip(2);
-
     curlshape (0,0) = 0;
     curlshape (0,1) = -2;
     curlshape (0,2) = 2;
@@ -2503,11 +2499,11 @@ namespace ngfem
     double x = ip(0);
     double y = ip(1);
     double z = ip(2);
-    double l3 = 1-x-y;
+    // double l3 = 1-x-y;
 
     Vec<3> shapev;
     Mat<6,2> shapeh;
-
+    
     shape = 0.0;
 
     shapev(0) = x*(1-x-y);
@@ -3841,16 +3837,15 @@ namespace ngfem
 
     Matrix<> fiphij(nd);
     fiphij = 0;
-    int i, j, k, l;
 
     Matrix<> edgemoments(2, nd);
     FE_Segm1L2 segm1;
     
-    for (i = 0; i < 8; i++)
+    for (int i = 0; i < 8; i++)
       {
 	ComputeEdgeMoments (i, segm1, edgemoments, 2);
 
-	for (j = 0; j < nd; j++)
+	for (int j = 0; j < nd; j++)
 	  fiphij(i, j) = edgemoments(0, j);
       }
 
@@ -4081,16 +4076,15 @@ namespace ngfem
 
     Mat<NDOF> fiphij;
     fiphij = 0;
-    int i, j, k, l;
 
     Matrix<> edgemoments(2, NDOF);
     FE_Segm1L2 segm1;
     
-    for (i = 0; i < 8; i++)
+    for (int i = 0; i < 8; i++)
       {
 	ComputeEdgeMoments (i, segm1, edgemoments, 4);
 
-	for (j = 0; j < NDOF; j++)
+	for (int j = 0; j < NDOF; j++)
 	  {
 	    fiphij(i, j) = edgemoments(0, j);
 	    fiphij(i+8, j) = edgemoments(1, j);
@@ -4101,7 +4095,7 @@ namespace ngfem
     FE_RTQuad0 rtquad0;
     ComputeFaceMoments (4, rtquad0, facemoments, 4);
 
-    for (j = 0; j < NDOF; j++)
+    for (int j = 0; j < NDOF; j++)
       {
 	fiphij(16, j) = facemoments(0, j);
 	fiphij(17, j) = facemoments(1, j);
@@ -4117,11 +4111,11 @@ namespace ngfem
     Mat<NEDGEDOF> fiphij2;
     fiphij2 = 0;
 
-    for (i = 0; i < NEDGEDOF; i++)
+    for (int i = 0; i < NEDGEDOF; i++)
       {
 	ComputeEdgeMoments (i, segm1, edgemoments, 4, 2);
 
-	for (j = 0; j < NEDGEDOF; j++)
+	for (int j = 0; j < NEDGEDOF; j++)
 	  fiphij2(i, j) = edgemoments(1, j);
       }
 
@@ -4450,11 +4444,11 @@ namespace ngfem
     quad3.CalcDShape (ipxy, q3dshape);
 
     hshape = 0;
-    int ii = 0, i, j;
+    int ii = 0;
 
     // 29 grad dofs:
     // \nabla (1-z) Q1:  .... 4 dof
-    for (i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++)
       {
 	hshape(ii, 0) = (1-z) * q1dshape(i,0);
 	hshape(ii, 1) = (1-z) * q1dshape(i,1);
@@ -4463,7 +4457,7 @@ namespace ngfem
       }
 
     // \nabla (1-z)^2 Q2:  .... 9 dof
-    for (i = 0; i < 9; i++)
+    for (int i = 0; i < 9; i++)
       {
 	hshape(ii, 0) = (1-z) * (1-z) * q2dshape(i,0);
 	hshape(ii, 1) = (1-z) * (1-z) * q2dshape(i,1);
@@ -4472,7 +4466,7 @@ namespace ngfem
       }
 
     // \nabla (1-z)^3 Q3:  .... 16 dof
-    for (i = 0; i < 16; i++)
+    for (int i = 0; i < 16; i++)
       {
 	hshape(ii, 0) = (1-z) * (1-z) * (1-z) * q3dshape(i,0);
 	hshape(ii, 1) = (1-z) * (1-z) * (1-z) * q3dshape(i,1);
@@ -4694,16 +4688,15 @@ namespace ngfem
 
     Matrix<> fiphij(NDOF);
     fiphij = 0;
-    int i, j, k, l;
 
     Matrix<> edgemoments(3, NDOF);
     FE_Segm2L2 segm2;
     
-    for (i = 0; i < 8; i++)
+    for (int i = 0; i < 8; i++)
       {
 	ComputeEdgeMoments (i, segm2, edgemoments, 5);
 
-	for (j = 0; j < NDOF; j++)
+	for (int j = 0; j < NDOF; j++)
 	  {
 	    fiphij(i, j) = edgemoments(0, j);
 	    fiphij(i+8, j) = edgemoments(1, j);
@@ -4717,10 +4710,10 @@ namespace ngfem
     FE_RTTrig0 rttrig0;
 
     // 4*3 = 12
-    for (i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++)
       {
 	ComputeFaceMoments (i, rttrig0, facemoments3, 4);
-	for (j = 0; j < NDOF; j++)
+	for (int j = 0; j < NDOF; j++)
 	  {
 	    fiphij(ii, j)   = facemoments3(1, j);
 	    fiphij(ii+1, j) = facemoments3(0, j);
@@ -4735,15 +4728,15 @@ namespace ngfem
 
     ComputeFaceMoments (4, quadtest, facemoments4, 6);
 	
-    for (j = 0; j < NDOF; j++)
-      for (k = 0; k < nqtest; k++)
+    for (int j = 0; j < NDOF; j++)
+      for (int k = 0; k < nqtest; k++)
 	fiphij(ii+k, j) = facemoments4(k,j);
     ii += nqtest;
 
     Matrix<> f2(ii, NDOF);
     
-    for (i = 0; i < ii; i++)
-      for (j = 0; j < NDOF; j++)
+    for (int i = 0; i < ii; i++)
+      for (int j = 0; j < NDOF; j++)
 	f2(i,j) = fiphij(i,j);
 
     // trans.SetSize (NDOF, NDOF);
@@ -4758,11 +4751,11 @@ namespace ngfem
     Mat<NEDGEDOF> fiphij2;
     fiphij2 = 0;
 
-    for (i = 0; i < 8; i++)
+    for (int i = 0; i < 8; i++)
       {
 	ComputeEdgeMoments (i, segm2, edgemoments, 4, 2);
 
-	for (j = 0; j < NEDGEDOF; j++)
+	for (int j = 0; j < NEDGEDOF; j++)
 	  {
 	    fiphij2(i, j) = edgemoments(1, j);
 	    fiphij2(i+8, j) = edgemoments(2, j);
@@ -4786,10 +4779,10 @@ namespace ngfem
 
     // 4*3 = 12
     ii = 0;
-    for (i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++)
       {
 	ComputeFaceMoments (i, rttrig0, facemoments3, 4, 3);
-	for (j = 0; j < NFACEDOF; j++)
+	for (int j = 0; j < NFACEDOF; j++)
 	  {
 	    fiphij3(ii, j)   = facemoments3(1, j);
 	    fiphij3(ii+1, j) = facemoments3(0, j);
@@ -4800,8 +4793,8 @@ namespace ngfem
 
     ComputeFaceMoments (4, quadtest, facemoments4, 6, 3);
 	
-    for (j = 0; j < NFACEDOF; j++)
-      for (k = 0; k < nqtest; k++)
+    for (int j = 0; j < NFACEDOF; j++)
+      for (int k = 0; k < nqtest; k++)
 	fiphij3(ii+k, j) = facemoments4(k,j);
 
     // trans2.SetSize (NEDGEDOF);
