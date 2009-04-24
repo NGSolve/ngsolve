@@ -231,10 +231,9 @@ namespace ngcomp
 		      }
 		    }
 		}
-	      cout << "\rassemble surface element " << nse << "/" << nse << endl;	  
 	    }
+	    cout << "\rassemble surface element " << nse << "/" << nse << endl;	  
 	  }
-
 
 
 	Array<int> dnums;
