@@ -7,6 +7,9 @@
 /* Date:   24. Oct. 02                                                    */
 /**************************************************************************/
 
+namespace ngstd
+{
+
 // Automatic differentiation datatype
 
 
@@ -359,5 +362,7 @@ inline AutoDiff<D,SCAL> sqrt (const AutoDiff<D,SCAL> & x)
 
 
 //@}
+
+}
 
 #endif

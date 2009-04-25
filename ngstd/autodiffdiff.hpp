@@ -7,6 +7,9 @@
 /* Date:   13. June. 05                                                   */
 /**************************************************************************/
 
+namespace ngstd
+{
+
 // Automatic second differentiation datatype
 
 
@@ -379,5 +382,8 @@ inline AutoDiffDiff<D> operator/ (double x, const AutoDiffDiff<D> & y)
 }
 
 //@}
+
+}
+
 
 #endif

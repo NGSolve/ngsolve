@@ -7,6 +7,9 @@
 /* Date:   16. June 2002                                                  */
 /**************************************************************************/
 
+namespace ngstd
+{
+
 /**
    Reports amount of used memory
  */
@@ -28,5 +31,7 @@ public:
   int NBytes () const { return nbytes; }
   int NBlocks () const { return nblocks; }
 };
+
+}
 
 #endif

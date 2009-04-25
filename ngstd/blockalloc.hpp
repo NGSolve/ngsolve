@@ -7,6 +7,9 @@
 /* Date:   19. Apr. 2000                                                  */
 /**************************************************************************/
 
+namespace ngstd
+{
+
 /**
    Optimized memory handler.
    Memory handler allocates many objects at once.
@@ -55,5 +58,8 @@ public:
 private:
   void * Alloc2 ();
 };
+
+
+}
 
 #endif

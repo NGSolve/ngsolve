@@ -7,6 +7,9 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+namespace ngstd 
+{
+
 /// min of 2 values
 template <class T>
 inline T min2 (T a, T b)
@@ -142,6 +145,6 @@ void MergeSort (int size, T * data, T * help);
 template <class T>
 void MergeSort (int size, T * data, T * help, int * index, int * indexhelp);
 
-
+}
 
 #endif

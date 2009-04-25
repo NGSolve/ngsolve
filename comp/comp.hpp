@@ -60,6 +60,7 @@ namespace ngcomp
   using namespace ngfem;
 
   class MeshAccess;
+}
 
 #include "ngsobject.hpp"
   // #include "statushandler.hpp"
@@ -79,7 +80,7 @@ namespace ngcomp
 #include "hcurlhofespace.hpp" 
 #include "facetfespace.hpp" 
 #include "vectorfacetfespace.hpp"
-}
+
 
 
 #endif

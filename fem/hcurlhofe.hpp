@@ -9,6 +9,8 @@
 /* AutoCurl - revision: J. Schoeberl, March 2009                     */
 /*********************************************************************/
    
+namespace ngfem
+{
 
 /**
    High order H(curl) finite element
@@ -236,6 +238,7 @@ public:
   void T_CalcShape (Tx hx[3], TFA & shape) const; 
 };
 
+}
 
 #endif
 

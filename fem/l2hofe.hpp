@@ -7,176 +7,178 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
-
-
-/**
-  Base class for L2 - high order finite elements, i.e., a
-  discontinuous approximation
-*/
-template<int D>
-class L2HighOrderFiniteElement : virtual public ScalarFiniteElement<D>
+namespace ngfem
 {
-protected:
 
-  enum { DIM = D };
-  int vnums[8];  
-  INT<DIM> order_inner; 
+  /**
+     Base class for L2 - high order finite elements, i.e., a
+     discontinuous approximation
+  */
+  template<int D>
+  class L2HighOrderFiniteElement : virtual public ScalarFiniteElement<D>
+  {
+  protected:
 
-public:
-  /// global vertex numbers define ordering of vertices
-  virtual void SetVertexNumbers (FlatArray<int> & avnums);
+    enum { DIM = D };
+    int vnums[8];  
+    INT<DIM> order_inner; 
 
-  /// set polynomial order
-  void SetOrder (int o);
+  public:
+    /// global vertex numbers define ordering of vertices
+    virtual void SetVertexNumbers (FlatArray<int> & avnums);
 
-  /// different orders in differnt directions
-  void SetOrder (INT<DIM> oi);
+    /// set polynomial order
+    void SetOrder (int o);
 
-  /// calculate number of dofs
-  virtual void ComputeNDof () = 0; 
+    /// different orders in differnt directions
+    void SetOrder (INT<DIM> oi);
+
+    /// calculate number of dofs
+    virtual void ComputeNDof () = 0; 
 
   
-  virtual void GetInternalDofs (Array<int> & idofs) const; 
-};
+    virtual void GetInternalDofs (Array<int> & idofs) const; 
+  };
 
 
-/**
-   Template family of L2 - high order finite elements.
-   The template argument is the element shape
- */
-template <ELEMENT_TYPE ET> class L2HighOrderFE;
+  /**
+     Template family of L2 - high order finite elements.
+     The template argument is the element shape
+  */
+  template <ELEMENT_TYPE ET> class L2HighOrderFE;
 
 
-/**
-   Barton-Nackman base class for L2 - high order finite elements
- */
-template <ELEMENT_TYPE ET>
-class T_L2HighOrderFiniteElement : public L2HighOrderFiniteElement<ET_trait<ET>::DIM>
-{
-protected:
-  enum { DIM = ET_trait<ET>::DIM };
-
-  using ScalarFiniteElement<DIM>::ndof;
-  using ScalarFiniteElement<DIM>::order;
-  using ScalarFiniteElement<DIM>::eltype;
-  using ScalarFiniteElement<DIM>::dimspace;
-
-  using L2HighOrderFiniteElement<DIM>::vnums;
-  using L2HighOrderFiniteElement<DIM>::order_inner;
-
-public:
-
-  T_L2HighOrderFiniteElement () 
+  /**
+     Barton-Nackman base class for L2 - high order finite elements
+  */
+  template <ELEMENT_TYPE ET>
+  class T_L2HighOrderFiniteElement : public L2HighOrderFiniteElement<ET_trait<ET>::DIM>
   {
-    for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
-      vnums[i] = i;
-    dimspace = DIM;
-    eltype = ET;
-  }
+  protected:
+    enum { DIM = ET_trait<ET>::DIM };
 
-  virtual void ComputeNDof();
+    using ScalarFiniteElement<DIM>::ndof;
+    using ScalarFiniteElement<DIM>::order;
+    using ScalarFiniteElement<DIM>::eltype;
+    using ScalarFiniteElement<DIM>::dimspace;
 
-  virtual void CalcShape (const IntegrationPoint & ip, 
-                          FlatVector<> shape) const;
+    using L2HighOrderFiniteElement<DIM>::vnums;
+    using L2HighOrderFiniteElement<DIM>::order_inner;
 
-  virtual void CalcDShape (const IntegrationPoint & ip, 
-                           FlatMatrixFixWidth<DIM> dshape) const;
+  public:
 
-};
+    T_L2HighOrderFiniteElement () 
+    {
+      for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
+	vnums[i] = i;
+      dimspace = DIM;
+      eltype = ET;
+    }
 
+    virtual void ComputeNDof();
 
+    virtual void CalcShape (const IntegrationPoint & ip, 
+			    FlatVector<> shape) const;
 
+    virtual void CalcDShape (const IntegrationPoint & ip, 
+			     FlatMatrixFixWidth<DIM> dshape) const;
 
-
-
-/**
-  L2 high order 1D finite element
-*/
-template <>
-class L2HighOrderFE<ET_SEGM> : public T_L2HighOrderFiniteElement<ET_SEGM>
-{
-public:
-  L2HighOrderFE () { ; }
-  L2HighOrderFE (int aorder);
-
-  template<typename Tx, typename TFA>  
-  void T_CalcShape (Tx x[1], TFA & shape) const; 
-};
+  };
 
 
-/**
-   L2 high order triangular finite element
-*/
-template <> 
-class L2HighOrderFE<ET_TRIG> : public T_L2HighOrderFiniteElement<ET_TRIG>
-{
-public:
-  L2HighOrderFE () { ; }
-  L2HighOrderFE (int aorder);
-
-  template<typename Tx, typename TFA>  
-  void T_CalcShape (Tx x[2], TFA & shape) const; 
-};
 
 
-/**
-   L2 high order quadrilateral finite element
-*/
-template <> 
-class L2HighOrderFE<ET_QUAD> : public T_L2HighOrderFiniteElement<ET_QUAD>
-{
-public:
-  L2HighOrderFE () { ; }
-  L2HighOrderFE (int aorder);
-
-  template<typename Tx, typename TFA>  
-  void T_CalcShape (Tx x[2], TFA & shape) const; 
-};
 
 
-/**
-   L2 high order tetrahedral finite element
-*/
-template <> 
-class L2HighOrderFE<ET_TET> : public T_L2HighOrderFiniteElement<ET_TET>
-{
-public:
-  L2HighOrderFE () { ; }
-  L2HighOrderFE (int aorder);
+  /**
+     L2 high order 1D finite element
+  */
+  template <>
+  class L2HighOrderFE<ET_SEGM> : public T_L2HighOrderFiniteElement<ET_SEGM>
+  {
+  public:
+    L2HighOrderFE () { ; }
+    L2HighOrderFE (int aorder);
 
-  template<typename Tx, typename TFA>  
-  void T_CalcShape (Tx x[3], TFA & shape) const; 
-};
-
-
-/**
-   L2 high order prismatic finite element
-*/
-template <> 
-class L2HighOrderFE<ET_PRISM> : public T_L2HighOrderFiniteElement<ET_PRISM>
-{
-public:
-  L2HighOrderFE () { ; }
-  L2HighOrderFE (int aorder);
-
-  template<typename Tx, typename TFA>  
-  void T_CalcShape (Tx x[3], TFA & shape) const; 
-};
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx x[1], TFA & shape) const; 
+  };
 
 
-/**
-   L2 high order hexahedral finite element
-*/
-template <> 
-class L2HighOrderFE<ET_HEX> : public T_L2HighOrderFiniteElement<ET_HEX>
-{
-public:
-  L2HighOrderFE () { ; }
-  L2HighOrderFE (int aorder);
+  /**
+     L2 high order triangular finite element
+  */
+  template <> 
+  class L2HighOrderFE<ET_TRIG> : public T_L2HighOrderFiniteElement<ET_TRIG>
+  {
+  public:
+    L2HighOrderFE () { ; }
+    L2HighOrderFE (int aorder);
 
-  template<typename Tx, typename TFA>  
-  void T_CalcShape (Tx x[3], TFA & shape) const; 
-};
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx x[2], TFA & shape) const; 
+  };
 
+
+  /**
+     L2 high order quadrilateral finite element
+  */
+  template <> 
+  class L2HighOrderFE<ET_QUAD> : public T_L2HighOrderFiniteElement<ET_QUAD>
+  {
+  public:
+    L2HighOrderFE () { ; }
+    L2HighOrderFE (int aorder);
+
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx x[2], TFA & shape) const; 
+  };
+
+
+  /**
+     L2 high order tetrahedral finite element
+  */
+  template <> 
+  class L2HighOrderFE<ET_TET> : public T_L2HighOrderFiniteElement<ET_TET>
+  {
+  public:
+    L2HighOrderFE () { ; }
+    L2HighOrderFE (int aorder);
+
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx x[3], TFA & shape) const; 
+  };
+
+
+  /**
+     L2 high order prismatic finite element
+  */
+  template <> 
+  class L2HighOrderFE<ET_PRISM> : public T_L2HighOrderFiniteElement<ET_PRISM>
+  {
+  public:
+    L2HighOrderFE () { ; }
+    L2HighOrderFE (int aorder);
+
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx x[3], TFA & shape) const; 
+  };
+
+
+  /**
+     L2 high order hexahedral finite element
+  */
+  template <> 
+  class L2HighOrderFE<ET_HEX> : public T_L2HighOrderFiniteElement<ET_HEX>
+  {
+  public:
+    L2HighOrderFE () { ; }
+    L2HighOrderFE (int aorder);
+
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx x[3], TFA & shape) const; 
+  };
+
+}
 
 #endif

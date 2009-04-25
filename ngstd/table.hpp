@@ -2,13 +2,14 @@
 #define FILE_NGS_TABLE
 
 /**************************************************************************/
-/* File:   table.hh                                                       */
+/* File:   table.hpp                                                      */
 /* Author: Joachim Schoeberl                                              */
 /* Date:   25. Mar. 2000                                                  */
 /**************************************************************************/
 
 
-
+namespace ngstd
+{
 
 
 
@@ -257,6 +258,8 @@ inline ostream & operator<< (ostream & s, const DynamicTable<T> & table)
 }
 
 typedef DynamicTable<int> IntTable;
+
+}
 
 #endif
 

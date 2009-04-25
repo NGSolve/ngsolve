@@ -7,6 +7,9 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+namespace ngfem
+{
+
 /* 
    realizations of bdb integrators for many equations.
    The differential operators provide the B-matrix,
@@ -2571,10 +2574,6 @@ public:
 #endif
 
 
-
-
-
-
-
+}
 
 #endif

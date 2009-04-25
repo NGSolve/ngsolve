@@ -7,6 +7,8 @@
 /* Date:   16. Jan. 2002                                                  */
 /**************************************************************************/
 
+namespace ngstd
+{
 
 #ifdef DEBUG
 #define CHECK_RANGE
@@ -42,5 +44,6 @@ public:
 		  int ind, int imin, int imax);
 };
 
+}
 
 #endif

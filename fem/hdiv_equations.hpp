@@ -7,6 +7,10 @@
 /* Date:   10. Feb. 2002                                             */
 /*********************************************************************/
 
+namespace ngfem
+{
+
+
 /*
   Finite Element Integrators for H(div)
 
@@ -277,6 +281,10 @@ public:
   virtual bool BoundaryForm () const { return 1; }
   virtual string Name () const { return "RobinHDiv"; }
 };
+
+}
+
+
 #endif
 
 

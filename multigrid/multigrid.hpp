@@ -14,6 +14,9 @@
 
 #include <comp.hpp>
 
+
+/// namespace for multigrid components
+
 namespace ngmg
 {
   using namespace std;
@@ -22,6 +25,7 @@ namespace ngmg
   using namespace ngla;
   using namespace ngfem;
   using namespace ngcomp;
+}
 
 
 #include "mgpre.hpp"
@@ -29,7 +33,6 @@ namespace ngmg
 #include "smoother.hpp"
   // #include "vefc.hpp"
   // #include "evcoarse.hpp"
-}
 
 
 #endif

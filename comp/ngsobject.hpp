@@ -7,6 +7,9 @@
 /* Date:   2. Aug. 2000                                              */
 /*********************************************************************/
 
+namespace ngcomp
+{
+
 /** 
     NGSolve base class
 */
@@ -897,7 +900,7 @@ Base * CreateMatObjectSym (int dim, bool iscomplex, ARG & arg, ARG2 & arg2)
 
 
 
-
+}
 
 
 

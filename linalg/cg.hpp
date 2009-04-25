@@ -1,229 +1,234 @@
 #ifndef FILE_CG_NEW
 #define FILE_CG_NEW
 
+
 /**************************************************************************/
 /* File:   cg.hh                                                          */
 /* Author: Joachim Schoeberl                                              */
 /* Date:   5. Jul. 96                                                     */
 /**************************************************************************/
 
-/**
-   Krylov Space Solver
-  */ 
-class KrylovSpaceSolver : public BaseMatrix
+namespace ngla
 {
-protected:
-  ///
-  const BaseMatrix *a, *c;
-  ///
-  double prec;
-  ///
-  int maxsteps;
-  ///
-  int steps;
-  ///
-  int initialize;
-  ///
-  bool stop_absolute;
-  ///
-  int printrates;
-  ///
-  int absoluteRes;
-  ///
-  bool useseed;
-
-  ///
-  const BaseStatusHandler * sh;
-
-public:
-  ///
-  KrylovSpaceSolver ();
-  ///
-  KrylovSpaceSolver (const BaseMatrix & aa);
-  ///
-  KrylovSpaceSolver (const BaseMatrix & aa, const BaseMatrix & ac);
-  ///
-  void SetMatrix (const BaseMatrix & aa)
-  { a = &aa; }
-  ///
-  void SetPrecond (const BaseMatrix & ac)
-  { c = &ac; }
-  ///
-  void SetMaxSteps (int amaxsteps)
-  { maxsteps = amaxsteps; }
-
-  ///
-  void SetPrecision (double aprec)
-  { prec = aprec; stop_absolute = 0; }
-  ///
-  void SetAbsolutePrecision (double aprec)
-  {  prec = aprec; stop_absolute = 1; }
-  ///
-  void SetRelativePrecision (double aprec)
-  {  prec = aprec; stop_absolute = 0; }
 
 
-  void SetPrintRates (int pr = 1)
-  { printrates = pr; }
-  ///
-  void SetInitialize (int ai)
-  { initialize = ai; }
-  ///
-  void SetStatusHandler (const BaseStatusHandler & stha)
-  { sh = &stha; }
+  /**
+     Krylov Space Solver
+  */ 
+  class KrylovSpaceSolver : public BaseMatrix
+  {
+  protected:
+    ///
+    const BaseMatrix *a, *c;
+    ///
+    double prec;
+    ///
+    int maxsteps;
+    ///
+    int steps;
+    ///
+    int initialize;
+    ///
+    bool stop_absolute;
+    ///
+    int printrates;
+    ///
+    int absoluteRes;
+    ///
+    bool useseed;
+
+    ///
+    const BaseStatusHandler * sh;
+
+  public:
+    ///
+    KrylovSpaceSolver ();
+    ///
+    KrylovSpaceSolver (const BaseMatrix & aa);
+    ///
+    KrylovSpaceSolver (const BaseMatrix & aa, const BaseMatrix & ac);
+    ///
+    void SetMatrix (const BaseMatrix & aa)
+    { a = &aa; }
+    ///
+    void SetPrecond (const BaseMatrix & ac)
+    { c = &ac; }
+    ///
+    void SetMaxSteps (int amaxsteps)
+    { maxsteps = amaxsteps; }
+
+    ///
+    void SetPrecision (double aprec)
+    { prec = aprec; stop_absolute = 0; }
+    ///
+    void SetAbsolutePrecision (double aprec)
+    {  prec = aprec; stop_absolute = 1; }
+    ///
+    void SetRelativePrecision (double aprec)
+    {  prec = aprec; stop_absolute = 0; }
+
+
+    void SetPrintRates (int pr = 1)
+    { printrates = pr; }
+    ///
+    void SetInitialize (int ai)
+    { initialize = ai; }
+    ///
+    void SetStatusHandler (const BaseStatusHandler & stha)
+    { sh = &stha; }
     
 
-  void UseSeed(const bool useit = true)
-  { useseed = useit; }
+    void UseSeed(const bool useit = true)
+    { useseed = useit; }
 
-  ///
-  int GetSteps () const
-  { return steps; }
-  ///
-  virtual void Mult (const BaseVector & v, BaseVector & prod) const = 0;
-  ///
-  virtual BaseVector * CreateVector () const;
-};
+    ///
+    int GetSteps () const
+    { return steps; }
+    ///
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const = 0;
+    ///
+    virtual BaseVector * CreateVector () const;
+  };
   
 
-/// The conjugate gradient solver
-template <class IPTYPE>
-class CGSolver : public KrylovSpaceSolver
-{
-protected:
-  ///
-  void MultiMult (const BaseVector & f, BaseVector & u, const int dim) const;
-  ///
-  void MultiMultSeed (const BaseVector & f, BaseVector & u, const int dim) const;
-public:
-  typedef typename SCAL_TRAIT<IPTYPE>::SCAL SCAL;
-  ///
-  CGSolver () 
-    : KrylovSpaceSolver () { ; }
-  ///
-  CGSolver (const BaseMatrix & aa)
-    : KrylovSpaceSolver (aa) { ; }
+  /// The conjugate gradient solver
+  template <class IPTYPE>
+  class CGSolver : public KrylovSpaceSolver
+  {
+  protected:
+    ///
+    void MultiMult (const BaseVector & f, BaseVector & u, const int dim) const;
+    ///
+    void MultiMultSeed (const BaseVector & f, BaseVector & u, const int dim) const;
+  public:
+    typedef typename SCAL_TRAIT<IPTYPE>::SCAL SCAL;
+    ///
+    CGSolver () 
+      : KrylovSpaceSolver () { ; }
+    ///
+    CGSolver (const BaseMatrix & aa)
+      : KrylovSpaceSolver (aa) { ; }
 
-  ///
-  CGSolver (const BaseMatrix & aa, const BaseMatrix & ac)
-    : KrylovSpaceSolver (aa, ac) { ; }
+    ///
+    CGSolver (const BaseMatrix & aa, const BaseMatrix & ac)
+      : KrylovSpaceSolver (aa, ac) { ; }
 
-  ///
-  virtual void Mult (const BaseVector & v, BaseVector & prod) const;
-};
-
-
-/// The BiCGStab solver
-template <class IPTYPE>
-class BiCGStabSolver : public KrylovSpaceSolver
-{
-public:
-  typedef typename SCAL_TRAIT<IPTYPE>::SCAL SCAL;
-  ///
-  BiCGStabSolver () 
-    : KrylovSpaceSolver () { ; }
-  ///
-  BiCGStabSolver (const BaseMatrix & aa)
-    : KrylovSpaceSolver (aa) { ; }
-
-  ///
-  BiCGStabSolver (const BaseMatrix & aa, const BaseMatrix & ac)
-    : KrylovSpaceSolver (aa, ac) { ; }
-
-  ///
-  virtual void Mult (const BaseVector & v, BaseVector & prod) const;
-};
-  
+    ///
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const;
+  };
 
 
+  /// The BiCGStab solver
+  template <class IPTYPE>
+  class BiCGStabSolver : public KrylovSpaceSolver
+  {
+  public:
+    typedef typename SCAL_TRAIT<IPTYPE>::SCAL SCAL;
+    ///
+    BiCGStabSolver () 
+      : KrylovSpaceSolver () { ; }
+    ///
+    BiCGStabSolver (const BaseMatrix & aa)
+      : KrylovSpaceSolver (aa) { ; }
 
+    ///
+    BiCGStabSolver (const BaseMatrix & aa, const BaseMatrix & ac)
+      : KrylovSpaceSolver (aa, ac) { ; }
 
-//   Simple iteration solver
-template <class IPTYPE>
-class SimpleIterationSolver : public KrylovSpaceSolver
-{
-public:
-  typedef typename SCAL_TRAIT<IPTYPE>::SCAL SCAL;
-private:
-  SCAL tau;
-public:
-  ///
-  SimpleIterationSolver ()
-    : KrylovSpaceSolver() { tau = 1; }
-  ///
-  SimpleIterationSolver (const BaseMatrix & aa)
-    : KrylovSpaceSolver (aa) { tau = 1; }
-  ///
-  SimpleIterationSolver (const BaseMatrix & aa, const BaseMatrix & ac)
-    : KrylovSpaceSolver (aa, ac) { tau = 1; }
-  ///
-  virtual void Mult (const BaseVector & v, BaseVector & prod) const;
-
-  void SetTau (SCAL atau) { tau = atau; }
-};
-
-
-
-/// The conjugate gradient solver
-template <class IPTYPE>
-class GMRESSolver : public KrylovSpaceSolver
-{
-public:
-  typedef typename SCAL_TRAIT<IPTYPE>::SCAL SCAL;
-  ///
-  GMRESSolver () 
-    : KrylovSpaceSolver () { ; }
-  ///
-  GMRESSolver (const BaseMatrix & aa)
-    : KrylovSpaceSolver (aa) { ; }
-
-  ///
-  GMRESSolver (const BaseMatrix & aa, const BaseMatrix & ac)
-    : KrylovSpaceSolver (aa, ac) { ; }
-
-  ///
-  virtual void Mult (const BaseVector & v, BaseVector & prod) const;
-};
+    ///
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const;
+  };
   
 
 
 
 
-/// The quasi-minimal residual (QMR) solver
-template <class IPTYPE>
-class QMRSolver : public KrylovSpaceSolver
-{
-  int status;
-  const BaseMatrix * c2;
-public:
-  typedef typename SCAL_TRAIT<IPTYPE>::SCAL SCAL;
-  ///
-  QMRSolver () 
-    : KrylovSpaceSolver (), c2(0) { ; }
-  ///
-  QMRSolver (const BaseMatrix & aa)
-    : KrylovSpaceSolver (aa), c2(0) { ; }
+  //   Simple iteration solver
+  template <class IPTYPE>
+  class SimpleIterationSolver : public KrylovSpaceSolver
+  {
+  public:
+    typedef typename SCAL_TRAIT<IPTYPE>::SCAL SCAL;
+  private:
+    SCAL tau;
+  public:
+    ///
+    SimpleIterationSolver ()
+      : KrylovSpaceSolver() { tau = 1; }
+    ///
+    SimpleIterationSolver (const BaseMatrix & aa)
+      : KrylovSpaceSolver (aa) { tau = 1; }
+    ///
+    SimpleIterationSolver (const BaseMatrix & aa, const BaseMatrix & ac)
+      : KrylovSpaceSolver (aa, ac) { tau = 1; }
+    ///
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const;
 
-  ///
-  QMRSolver (const BaseMatrix & aa, const BaseMatrix & ac)
-    : KrylovSpaceSolver (aa, ac), c2(0) { ; }
+    void SetTau (SCAL atau) { tau = atau; }
+  };
 
-  ///
-  virtual void Mult (const BaseVector & v, BaseVector & prod) const;
-};
+
+
+  /// The conjugate gradient solver
+  template <class IPTYPE>
+  class GMRESSolver : public KrylovSpaceSolver
+  {
+  public:
+    typedef typename SCAL_TRAIT<IPTYPE>::SCAL SCAL;
+    ///
+    GMRESSolver () 
+      : KrylovSpaceSolver () { ; }
+    ///
+    GMRESSolver (const BaseMatrix & aa)
+      : KrylovSpaceSolver (aa) { ; }
+
+    ///
+    GMRESSolver (const BaseMatrix & aa, const BaseMatrix & ac)
+      : KrylovSpaceSolver (aa, ac) { ; }
+
+    ///
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const;
+  };
   
 
 
 
 
-/*
+  /// The quasi-minimal residual (QMR) solver
+  template <class IPTYPE>
+  class QMRSolver : public KrylovSpaceSolver
+  {
+    int status;
+    const BaseMatrix * c2;
+  public:
+    typedef typename SCAL_TRAIT<IPTYPE>::SCAL SCAL;
+    ///
+    QMRSolver () 
+      : KrylovSpaceSolver (), c2(0) { ; }
+    ///
+    QMRSolver (const BaseMatrix & aa)
+      : KrylovSpaceSolver (aa), c2(0) { ; }
 
-// Conjugate residual solver for symmetric, indefinite matrices
+    ///
+    QMRSolver (const BaseMatrix & aa, const BaseMatrix & ac)
+      : KrylovSpaceSolver (aa, ac), c2(0) { ; }
+
+    ///
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const;
+  };
+  
 
 
-class CRSolver : public CGSolver
-{
-public:
+
+
+  /*
+
+  // Conjugate residual solver for symmetric, indefinite matrices
+
+
+  class CRSolver : public CGSolver
+  {
+  public:
   ///
   CRSolver ();
   ///
@@ -234,16 +239,16 @@ public:
   ~CRSolver ();
   ///
   virtual void Mult (const BaseVector & v, BaseVector & prod) const;
-};
+  };
 
 
 
-//  CG Solver for normal problem 
+  //  CG Solver for normal problem 
 
 
-class NormalCGSolver : public CGSolver
-{
-public:
+  class NormalCGSolver : public CGSolver
+  {
+  public:
   ///
   NormalCGSolver ();
   ///
@@ -254,14 +259,14 @@ public:
   ~NormalCGSolver ();
   ///
   virtual void Mult (const BaseVector & v, BaseVector & prod) const;
-};
+  };
 
 
 
-/// gradient method for non-symmetric, indefinite matrices
-class MinResGradientSolver : public CGSolver
-{
-public:
+  /// gradient method for non-symmetric, indefinite matrices
+  class MinResGradientSolver : public CGSolver
+  {
+  public:
   ///
   MinResGradientSolver ();
   ///
@@ -272,15 +277,15 @@ public:
   ~MinResGradientSolver ();
   ///
   virtual void Mult (const BaseVector & v, BaseVector & prod) const;
-};
+  };
 
 
 
-//  Bi-CG Stab solver for non-symmetric matrices
+  //  Bi-CG Stab solver for non-symmetric matrices
 
-class BiCGStabSolver : public CGSolver
-{
-public:
+  class BiCGStabSolver : public CGSolver
+  {
+  public:
   ///
   BiCGStabSolver ();
   ///
@@ -291,7 +296,7 @@ public:
   ~BiCGStabSolver ();
   ///
   virtual void Mult (const BaseVector & v, BaseVector & prod) const;
-};
+  };
 
 
 
@@ -301,14 +306,14 @@ public:
 
 
 
-//  QMR solver for non-symmetric matrices
+  //  QMR solver for non-symmetric matrices
 
-class QMRSolver : public CGSolver
-{
+  class QMRSolver : public CGSolver
+  {
   int status;
   ///
   const BaseMatrix * c2;
-public:
+  public:
   ///
   QMRSolver ();
   ///
@@ -319,23 +324,23 @@ public:
   ~QMRSolver ();
   ///
   virtual void Mult (const BaseVector & v, BaseVector & prod) const;
-};
+  };
 
 
 
 
 
 
-//  complex QMR solver for non-symmetric matrices
+  //  complex QMR solver for non-symmetric matrices
 
-class ComplexQMRSolver : public CGSolver
-{
-public:
+  class ComplexQMRSolver : public CGSolver
+  {
+  public:
   ///
   int status;
   ///
   const BaseMatrix * c2;
-public:
+  public:
   ///
   ComplexQMRSolver ();
   ///
@@ -346,11 +351,12 @@ public:
   ~ComplexQMRSolver ();
   ///
   virtual void Mult (const BaseVector & v, BaseVector & prod) const;
-};
+  };
 
-*/
+  */
 
 
+}
 
 
 #endif
