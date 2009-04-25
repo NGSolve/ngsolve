@@ -21,7 +21,8 @@ using namespace std;
 
 // #include "LapackGEP.hpp" 
 
-
+namespace ngbla
+{
 
 void LaEigNSSolveTest()
 {   
@@ -808,5 +809,8 @@ void LaLinearSolveRHS(int n, double * A, double * F)
 
   return; 
   } 
+}
+
+
 
 #endif
