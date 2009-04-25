@@ -12,7 +12,6 @@ namespace ngstd
   using namespace ngstd;
 
 
-#ifndef _OPENMP
   LocalHeap :: LocalHeap (unsigned int asize)
   {
     totsize = asize;
@@ -20,8 +19,6 @@ namespace ngstd
     p = data;
     owner = 1;
   }
-#endif
-
 
   void LocalHeap :: ThrowException() throw (LocalHeapOverflow)
   {

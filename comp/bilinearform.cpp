@@ -488,11 +488,10 @@ namespace ngcomp
   }
 
   template <class SCAL>
-  void S_BilinearForm<SCAL> :: DoAssemble (LocalHeap & lh)
+  void S_BilinearForm<SCAL> :: DoAssemble (LocalHeap & clh)
   {
     static int mattimer = NgProfiler::CreateTimer ("Matrix assembling");
     NgProfiler::RegionTimer reg (mattimer);
-
 
 
     try
@@ -535,9 +534,12 @@ namespace ngcomp
 		int cnt = 0;
 #pragma omp parallel 
                 {
+		  LocalHeap lh = clh.Split();
+
                   ElementTransformation eltrans;
                   Array<int> dnums, idofs, idofs1, odofs;
-                  
+		  
+
 #pragma omp for 
                   for (int i = 0; i < ne; i++)
                     {
@@ -912,7 +914,7 @@ namespace ngcomp
 
 	    if (hasinner && diagonal)
 	      {
-		void * heapp = lh.GetPointer();
+		void * heapp = clh.GetPointer();
 		for (int i = 0; i < ne; i++)
 		  {
 
@@ -926,17 +928,17 @@ namespace ngcomp
 			prevtime = clock();
 		      }
 		
-		    lh.CleanUp(heapp);
+		    clh.CleanUp(heapp);
 		  
 		    if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
 		  
-		    const FiniteElement & fel = fespace.GetFE (i, lh);
+		    const FiniteElement & fel = fespace.GetFE (i, clh);
 		  
-		    ma.GetElementTransformation (i, eltrans, lh);
+		    ma.GetElementTransformation (i, eltrans, clh);
 		    fespace.GetDofNrs (i, dnums);
 		  
 		  
-		    FlatVector<SCAL> sum_diag(dnums.Size()*fespace.GetDimension(), lh);
+		    FlatVector<SCAL> sum_diag(dnums.Size()*fespace.GetDimension(), clh);
 		    sum_diag = 0;
 		    for (int j = 0; j < NumIntegrators(); j++)
 		      {
@@ -952,7 +954,7 @@ namespace ngcomp
 			    double time;
 			    starttime = clock();
 			  
-			    bfi.AssembleElementMatrixDiag (fel, eltrans, diag, lh);
+			    bfi.AssembleElementMatrixDiag (fel, eltrans, diag, clh);
 			  
 			    time = double(clock() - starttime) / CLOCKS_PER_SEC;
 			    // cout << "time = " << time << endl;
@@ -983,13 +985,13 @@ namespace ngcomp
 		      }
 
 
-		    AddDiagElementMatrix (dnums, sum_diag, 1, i, lh);
+		    AddDiagElementMatrix (dnums, sum_diag, 1, i, clh);
 
 		    for (int j = 0; j < dnums.Size(); j++)
 		      if (dnums[j] != -1)
 			useddof.Set (dnums[j]);
 		  }
-		lh.CleanUp(heapp);
+		clh.CleanUp(heapp);
 		cout << "\rassemble element " << ne << "/" << ne << endl;
 	      }
 
@@ -1017,14 +1019,14 @@ namespace ngcomp
 
 		    ma.SetThreadPercentage ( 100.0*(ne+i) / (ne+nse) );
 
-		    lh.CleanUp();
+		    clh.CleanUp();
 		  
 		    if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
 		
-		    const FiniteElement & fel = fespace.GetSFE (i, lh);
+		    const FiniteElement & fel = fespace.GetSFE (i, clh);
 		
 
-		    ma.GetSurfaceElementTransformation (i, eltrans, lh);
+		    ma.GetSurfaceElementTransformation (i, eltrans, clh);
 		    fespace.GetSDofNrs (i, dnums);
 
 		    if(fel.GetNDof() != dnums.Size())
@@ -1052,7 +1054,7 @@ namespace ngcomp
 			    useddof.Set (dnums[k]);
 
 			FlatMatrix<SCAL> elmat;
-			bfi.AssembleElementMatrix (fel, eltrans, elmat, lh);
+			bfi.AssembleElementMatrix (fel, eltrans, elmat, clh);
 
 			fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
@@ -1074,7 +1076,7 @@ namespace ngcomp
 
 			    (*testout) << "elind = " << eltrans.GetElementIndex() << endl;
 #ifdef LAPACK
-			    LapackEigenSystem(elmat, lh);
+			    LapackEigenSystem(elmat, clh);
 #else
 			    Vector<> lami(elmat.Height());
 			    Matrix<> evecs(elmat.Height());
@@ -1090,7 +1092,7 @@ namespace ngcomp
                         // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
 
 
-			AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+			AddElementMatrix (dnums, dnums, elmat, 0, i, clh);
 		      }
 		  }
 		cout << "\rassemble surface element " << nse << "/" << nse << endl;	  
@@ -1100,11 +1102,11 @@ namespace ngcomp
 
 	    if(NumIndependentIntegrators() > 0)
 	      {
-		DoAssembleIndependent(useddof,lh);
+		DoAssembleIndependent(useddof,clh);
 	      }
 
 
-	    lh.CleanUp();
+	    clh.CleanUp();
 
 	    bool assembledspecialelements(false);
 	    for (int i = 0; i < fespace.specialelements.Size(); i++)
@@ -1120,32 +1122,32 @@ namespace ngcomp
 		    useddof.Set (dnums[j]);
 	      
 		FlatMatrix<SCAL> elmat;
-		el.Assemble (elmat, lh);
+		el.Assemble (elmat, clh);
 	      
-		AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+		AddElementMatrix (dnums, dnums, elmat, 0, i, clh);
 		assembledspecialelements = true;
 
-		lh.CleanUp();
+		clh.CleanUp();
 	      }
 	    if(assembledspecialelements) cout << "\rassemble special element " 
 					      << fespace.specialelements.Size() << "/" << fespace.specialelements.Size() << endl;
 
 	  
 	    // add eps to avoid empty lines
-	    FlatMatrix<SCAL> elmat (fespace.GetDimension(), lh);
+	    FlatMatrix<SCAL> elmat (fespace.GetDimension(), clh);
 	    elmat = 0;
 	    dnums.SetSize(1);
 
-	    void * p = lh.GetPointer();
+	    void * p = clh.GetPointer();
 	    if (eps_regularization != 0)
 	      {
 		for (int i = 0; i < elmat.Height(); i++)
 		  elmat(i, i) = eps_regularization;
 		for (int i = 0; i < ndof; i++)
 		  {
-		    lh.CleanUp (p);
+		    clh.CleanUp (p);
 		    dnums[0] = i; 
-		    AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+		    AddElementMatrix (dnums, dnums, elmat, 0, i, clh);
 		  }
 	      }
 	    if (unuseddiag != 0)
@@ -1156,9 +1158,9 @@ namespace ngcomp
 		  if (!useddof.Test (i))
 		    {
 		      //(*testout) << "unused: " << i << endl;
-		      lh.CleanUp (p);
+		      clh.CleanUp (p);
 		      dnums[0] = i;
-		      AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+		      AddElementMatrix (dnums, dnums, elmat, 0, i, clh);
 		    }
 	      }
 
@@ -1216,7 +1218,7 @@ namespace ngcomp
 		{
 		  if (i % 100 == 0)
 		    cout << "." << flush;
-		  lh.CleanUp();
+		  clh.CleanUp();
 	  
 		  const FiniteElement & fel1 = fespace.GetFE (i, lh);
 		  const FiniteElement & fel2 = fespace2->GetFE (i, lh);
@@ -1320,7 +1322,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  void S_BilinearForm<SCAL> :: ComputeInternal (BaseVector & u, LocalHeap & lh) const
+  void S_BilinearForm<SCAL> :: ComputeInternal (BaseVector & u, LocalHeap & clh) const
   {
     if (!eliminate_internal) return;
     if (!linearform)
@@ -1351,6 +1353,7 @@ namespace ngcomp
             int cnt = 0;
 #pragma omp parallel
 	    {
+	      LocalHeap lh = clh.Split();
 	      Array<int> dnums, idofs;
 	      ElementTransformation eltrans;
 	      
