@@ -28,6 +28,9 @@ namespace ngbla
 
   inline bool IsComplex(double v) { return false; }
   inline bool IsComplex(Complex v) { return true; }
+}
+
+
 
 #include "expr.hpp"
 #include "vector.hpp"
@@ -36,6 +39,9 @@ namespace ngbla
 #include "symmetricmatrix.hpp"
 #include "bandmatrix.hpp"
 
+
+namespace ngbla
+{
 
   /// Computes eigenvalues and vectors of the symmetric matrix mat.
   extern void CalcEigenSystem (const FlatMatrix<double> & mat,

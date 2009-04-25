@@ -1,3 +1,17 @@
+#ifndef FILE_VECTOR_EXPR
+#define FILE_VECTOR_EXPR
+
+/**************************************************************************/
+/* File:   vector.hpp                                                     */
+/* Author: Joachim Schoeberl                                              */
+/* Date:   01. Jan. 02                                                    */
+/**************************************************************************/
+
+
+namespace ngbla
+{
+
+
 template <int S, class T> class Vec;
 template <class T> class SysVector;
 template <class T> class FlatVector;
@@ -1153,3 +1167,8 @@ public:
   typedef T TSCAL;
 };
 
+}
+
+
+
+#endif

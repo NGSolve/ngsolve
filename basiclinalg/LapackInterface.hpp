@@ -1,3 +1,5 @@
+// old style interface
+
 #ifndef LAEVINTERFACE_HH
 #define LAEVINTERFACE_HH
 
