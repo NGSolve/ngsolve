@@ -49,10 +49,12 @@ namespace ngsolve
 // #ifdef SOCKETS
 // #include "../markus/clientsocketaccess.hpp"
 // #endif
+}
 #include "numproc.hpp"
 #include "pde.hpp"
 
-
+namespace ngsolve
+{
 #ifdef WIN32
   const char dirslash = '\\';
 #else

@@ -7,6 +7,9 @@
 /* Date:   10. Jul. 2000                                             */
 /*********************************************************************/
 
+namespace ngsolve
+{
+
 /** 
     numerical procedures
 */
@@ -76,6 +79,6 @@ public:
 extern NumProcs & GetNumProcs ();
 
 
-
+}
 
 #endif

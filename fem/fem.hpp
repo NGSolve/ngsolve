@@ -34,6 +34,7 @@ namespace ngfem
   using namespace ngstd;
   using ngstd::INT;
   using namespace ngbla;
+}
 
 
 #include "elementtopology.hpp"
@@ -69,7 +70,6 @@ namespace ngfem
 #include "hdiv_equations.hpp"
 
 #include "pml.hpp" 
-}
 
 
 #endif

@@ -7,6 +7,9 @@
 /* Date:   01. Jun. 95                                                    */
 /**************************************************************************/
 
+namespace ngstd
+{
+
 /**
   Base class for generic SymbolTable.
   Maintains the array of identifiers.
@@ -150,6 +153,8 @@ ostream & operator<< (ostream & ost, SymbolTable<T> & st)
   for (int i = 0; i < st.Size(); i++)
     ost << st.GetName(i) << " : " << st[i] << endl;
   return ost;
+}
+
 }
 
 #endif

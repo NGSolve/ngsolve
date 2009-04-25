@@ -1,3 +1,6 @@
+namespace ngla
+{
+
 class BaseVector;
 typedef auto_ptr<BaseVector> TempVector;
 template <class SCAL> class S_BaseVector;
@@ -678,5 +681,4 @@ inline double L2Norm (const BaseVector & v)
   return v.L2Norm();
 }
 
-
-
+}

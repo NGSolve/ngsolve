@@ -7,6 +7,8 @@
 /* Date:   29. Dec. 02                                                    */
 /**************************************************************************/
 
+namespace ngstd
+{
 
 /**
    Pointer to object.
@@ -51,5 +53,7 @@ private:
   /// forbid assignement operator
   AutoPtr & operator= (AutoPtr &) { ; }
 };
+
+}
 
 #endif

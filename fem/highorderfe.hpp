@@ -7,6 +7,9 @@
 /* Date:   28. Oct. 2000                                             */
 /*********************************************************************/
 
+should not be used anymore
+
+
 /*
   Old style high order Finite Elements
   nodal value shape functions (non - hierarchical)

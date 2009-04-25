@@ -8,6 +8,9 @@
 /**************************************************************************/
 
 
+namespace ngstd
+{
+
 /**
    Exception thrown by array range check.
    Only thrown when compiled with RANGE_CHECK
@@ -565,8 +568,7 @@ void QuickSort (const FlatArray<T> & data)
 }
 
 
-
-
+}
 
 
 #endif

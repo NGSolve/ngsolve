@@ -16,132 +16,132 @@
 #ifndef FACET_FESPACE_HPP
 #define FACET_FESPACE_HPP
 
-#include <fem.hpp>
-#include <comp.hpp> 
-
-class FacetFESpace : public FESpace 
+namespace ngcomp
 {
-protected:  
-  // Level
-  int level;
-  // Number of Facets
-  int nfa;
-  // Number of coarse facets, number of fine facets;
-  int ncfa;
-  // Number of Elements
-  int nel;
-  
-  Array<int> first_facet_dof;
-  
-  // relative order to mesh-order
-  int rel_order; 
-  
-  Array<INT<2> > order_facet;
-  Array<bool> fine_facet;
-  
-  int ndof;
-  Array<int> ndlevel;
-  bool var_order; 
-  bool print; 
-  
-public:
-  ///
-  FacetFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
-  ///
-  virtual ~FacetFESpace ();
-  ///
-  static FESpace * Create (const MeshAccess & ma, const Flags & flags);
-  ///
-  virtual string GetClassName () const
+
+  class FacetFESpace : public FESpace 
   {
-    return "FacetFESpace";
-  }
+  protected:  
+    // Level
+    int level;
+    // Number of Facets
+    int nfa;
+    // Number of coarse facets, number of fine facets;
+    int ncfa;
+    // Number of Elements
+    int nel;
   
-  ///
-  virtual void Update(LocalHeap & lh);
+    Array<int> first_facet_dof;
   
-  //  virtual void UpdateDofTables();
-  ///
-  virtual int GetNDof () const;
-  ///
-  virtual int GetNDofLevel (int level) const;
-  ///
-  virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
-  ///
-  virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; 
-  ///
-  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-  ///
-  virtual void GetFacetDofNrs (int felnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
-    dnums.Append(felnr);
-    for (int j=first_facet_dof[felnr]; j<first_facet_dof[felnr+1]; j++)
-      dnums.Append(j);
-  }
-  ///
-  virtual int GetNFacetDofs (int felnr) const 
-  { return (first_facet_dof[felnr+1]-first_facet_dof[felnr] + 1); }
-  ///
-  virtual void GetWireBasketDofNrs(int elnr, Array<int> & dnums) const;
-  ///
-  //  virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
-  ///
-  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
-  ///
-  virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
-  ///
-  virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
+    // relative order to mesh-order
+    int rel_order; 
+  
+    Array<INT<2> > order_facet;
+    Array<bool> fine_facet;
+  
+    int ndof;
+    Array<int> ndlevel;
+    bool var_order; 
+    bool print; 
+  
+  public:
+    ///
+    FacetFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
+    ///
+    virtual ~FacetFESpace ();
+    ///
+    static FESpace * Create (const MeshAccess & ma, const Flags & flags);
+    ///
+    virtual string GetClassName () const
+    {
+      return "FacetFESpace";
+    }
+  
+    ///
+    virtual void Update(LocalHeap & lh);
+  
+    //  virtual void UpdateDofTables();
+    ///
+    virtual int GetNDof () const;
+    ///
+    virtual int GetNDofLevel (int level) const;
+    ///
+    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    ///
+    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; 
+    ///
+    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    ///
+    virtual void GetFacetDofNrs (int felnr, Array<int> & dnums) const
+    {
+      dnums.SetSize(0);
+      dnums.Append(felnr);
+      for (int j=first_facet_dof[felnr]; j<first_facet_dof[felnr+1]; j++)
+	dnums.Append(j);
+    }
+    ///
+    virtual int GetNFacetDofs (int felnr) const 
+    { return (first_facet_dof[felnr+1]-first_facet_dof[felnr] + 1); }
+    ///
+    virtual void GetWireBasketDofNrs(int elnr, Array<int> & dnums) const;
+    ///
+    //  virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
+    ///
+    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
+    ///
+    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
+    ///
+    virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
      
-  // some utility functions for convenience
-  ///
-  virtual void GetVertexNumbers(int elnr, Array<int>& vnums) 
-  { ma.GetElVertices(elnr, vnums); };
-  ///
-  virtual INT<2> GetFacetOrder(int fnr) 
-  { return order_facet[fnr]; };
+    // some utility functions for convenience
+    ///
+    virtual void GetVertexNumbers(int elnr, Array<int>& vnums) 
+    { ma.GetElVertices(elnr, vnums); };
+    ///
+    virtual INT<2> GetFacetOrder(int fnr) 
+    { return order_facet[fnr]; };
   
 
   
-  virtual int GetFirstFacetDof(int fanr) const {return (first_facet_dof[fanr]);}; 
+    virtual int GetFirstFacetDof(int fanr) const {return (first_facet_dof[fanr]);}; 
 
 
-  virtual void GetVertexDofNrs ( int elnum, Array<int> & dnums ) const
-  {
-    dnums.SetSize(0);
-  }
+    virtual void GetVertexDofNrs ( int elnum, Array<int> & dnums ) const
+    {
+      dnums.SetSize(0);
+    }
 
-  virtual void GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const
-  {
-    dnums.SetSize(0);
-    if ( ma.GetDimension() == 3 )
-      return;
+    virtual void GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const
+    {
+      dnums.SetSize(0);
+      if ( ma.GetDimension() == 3 )
+	return;
 
-    dnums.Append(elnum);
-    for (int j=first_facet_dof[elnum]; j<first_facet_dof[elnum+1]; j++)
-      dnums.Append(j);
+      dnums.Append(elnum);
+      for (int j=first_facet_dof[elnum]; j<first_facet_dof[elnum+1]; j++)
+	dnums.Append(j);
 
 
-  }
+    }
 
-  virtual void GetFaceDofNrs (int felnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
-    if ( ma.GetDimension() == 2 ) return;
+    virtual void GetFaceDofNrs (int felnr, Array<int> & dnums) const
+    {
+      dnums.SetSize(0);
+      if ( ma.GetDimension() == 2 ) return;
 
-    dnums.Append(felnr);
-    for (int j=first_facet_dof[felnr]; j<first_facet_dof[felnr+1]; j++)
-      dnums.Append(j);
-  }
+      dnums.Append(felnr);
+      for (int j=first_facet_dof[felnr]; j<first_facet_dof[felnr+1]; j++)
+	dnums.Append(j);
+    }
   
 #ifdef PARALLEL
-  // virtual void UpdateParallelDofs_hoproc();
-  virtual void UpdateParallelDofs_loproc();
+    // virtual void UpdateParallelDofs_hoproc();
+    virtual void UpdateParallelDofs_loproc();
 #endif
   
-};
+  };
 
-
+}
 
 
 

@@ -61,6 +61,7 @@ Specific data types Exception, BitArray, Flags, LocalHeap, BlockAllocator, NgPro
 namespace ngstd
 {
   using namespace std;
+}
 
 #include <ngs_defines.hpp>
   
@@ -84,6 +85,5 @@ namespace ngstd
 #include "stringops.hpp"
 #include "profiler.hpp"
 #include "statushandler.hpp"
-}
 
 #endif

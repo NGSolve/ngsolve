@@ -7,6 +7,9 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
+namespace ngfem
+{
+
 /*
   Recursive Polynomials
 */
@@ -2106,6 +2109,7 @@ static void Trans (T & inout)
 
 
 
+}
 
 
 #endif

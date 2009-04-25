@@ -7,6 +7,9 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+namespace ngfem
+{
+
 /*
   Transformation from reference element to actual element
 */
@@ -532,6 +535,10 @@ public:
 
 
 #endif
+
+}
+
+
 #endif
 
 

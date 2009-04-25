@@ -8,6 +8,9 @@
 /**************************************************************************/
 
 
+namespace ngstd
+{
+
 /**
    A compressed array of bools.
 
@@ -108,5 +111,7 @@ private:
 
 /// prints BitArray
 ostream & operator<<(ostream & s, const BitArray & ba);
+
+}
 
 #endif

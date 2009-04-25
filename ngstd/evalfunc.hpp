@@ -8,8 +8,8 @@
 /**************************************************************************/
 
 
-// class CoefficientFunction;
-
+namespace ngstd
+{
 
 
 /**
@@ -155,6 +155,8 @@ protected:
   /// read next token
   void ReadNext();
 };
+}
+
 
 #endif
 

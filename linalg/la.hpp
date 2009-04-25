@@ -48,14 +48,13 @@ namespace ngla
   using ngstd::Array;
   using ngstd::Table;
   using ngstd::INT;
-
+}
   /*
   using ngbla::BaseMatrix;
   using ngbla::BaseVector;
   */
 
 #include "basevector.hpp"
-  // #include "tbasevector.hpp"
 #include "vvector.hpp"
 #include "basematrix.hpp"
 #include "sparsematrix.hpp"
@@ -70,7 +69,7 @@ namespace ngla
 #include "cg.hpp"
 #include "chebyshev.hpp"
 #include "eigen.hpp"
-}
+
 
 
 

@@ -7,6 +7,9 @@
 /* Date:   08. Jul. 2000                                             */
 /*********************************************************************/
 
+namespace ngsolve
+{
+
 #ifdef GNU_PRE3
 #define ios_base ios
 #endif
@@ -349,5 +352,6 @@ public:
   ///
 };
 
+}
 
 #endif

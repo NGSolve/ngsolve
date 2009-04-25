@@ -7,46 +7,51 @@
 /* Date:   5. Jul. 96                                                     */
 /**************************************************************************/
 
-/**
-   Lanczos Eigen system calculation
-*/ 
-
-class EigenSystem
+namespace ngla
 {
-  ///
-const BaseMatrix *a, *c;
-  ///
-Array<double> ai, bi;
-  ///
-double prec;
-  ///
-int maxsteps;
+
+  /**
+     Lanczos Eigen system calculation
+  */ 
+
+  class EigenSystem
+  {
+    ///
+    const BaseMatrix *a, *c;
+    ///
+    Array<double> ai, bi;
+    ///
+    double prec;
+    ///
+    int maxsteps;
   
-public:
-  ///
-  EigenSystem (const BaseMatrix & aa);
-  ///
-  EigenSystem (const BaseMatrix & aa, const BaseMatrix & ac);
-  ///
-  void SetMatrix (const BaseMatrix & aa);
-  ///
-  void SetPrecond (const BaseMatrix & ac);
-  ///
-  void SetMaxSteps (int amaxsteps);
-  ///
-  void SetPrecision (double aprec);
+  public:
+    ///
+    EigenSystem (const BaseMatrix & aa);
+    ///
+    EigenSystem (const BaseMatrix & aa, const BaseMatrix & ac);
+    ///
+    void SetMatrix (const BaseMatrix & aa);
+    ///
+    void SetPrecond (const BaseMatrix & ac);
+    ///
+    void SetMaxSteps (int amaxsteps);
+    ///
+    void SetPrecision (double aprec);
 
-  ///
-  int Calc();
+    ///
+    int Calc();
 
-  ///
-  double EigenValue (int nr) const;
-  ///
-  double MaxEigenValue () const;
-  ///
-  int NumEigenValues () const;
-  ///
-  void PrintEigenValues (ostream & ost) const;
-};
+    ///
+    double EigenValue (int nr) const;
+    ///
+    double MaxEigenValue () const;
+    ///
+    int NumEigenValues () const;
+    ///
+    void PrintEigenValues (ostream & ost) const;
+  };
+
+}
 
 #endif
