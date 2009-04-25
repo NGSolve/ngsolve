@@ -34,15 +34,6 @@ AC_ARG_WITH([netgen],
         [netgendir="/opt/netgen"]
         )
 
-# AC_ARG_ENABLE([lapack],
-#       [   enable lapack ],
-#        [AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])]
-#       )
-# AC_ARG_WITH([lapackpath],
-#        [  --with-lapackpath=path  use lapacklib for dense linear algebra operations],          
-#        [lapackpath=-L$withval]
-#        )
-
 AC_ARG_WITH([lapack],
         [  --with-lapack=lapacklib   linker flags for linking dense linear algebra library LAPACK],          
         [AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])]
@@ -74,6 +65,6 @@ AC_SUBST([NETGEN_INCLUDES], ["-DNETGEN_ELTRANS -I$netgendir/include"])
 AC_CONFIG_HEADERS(config.h) AC_CONFIG_FILES(Makefile include/Makefile
 ngstd/Makefile basiclinalg/Makefile linalg/Makefile fem/Makefile
 comp/Makefile solve/Makefile multigrid/Makefile parallel/Makefile 
-programming_demos/Makefile windows/Makefile)
+programming_demos/Makefile pde_tutorial/Makefile windows/Makefile)
 
 AC_OUTPUT
