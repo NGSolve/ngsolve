@@ -73,7 +73,7 @@ namespace ngcomp
   }
 
   template <class SCAL>
-  void S_LinearForm<SCAL> :: Assemble (LocalHeap & lh)
+  void S_LinearForm<SCAL> :: Assemble (LocalHeap & clh)
   {
     static int vectimer = NgProfiler::CreateTimer ("Vector assembling");
     NgProfiler::RegionTimer reg (vectimer);
@@ -82,7 +82,7 @@ namespace ngcomp
 
     if (independent)
       {
-	AssembleIndependent(lh);
+	AssembleIndependent(clh);
 	return;
       }
     
@@ -114,6 +114,9 @@ namespace ngcomp
 
 #pragma omp parallel
 	    {
+
+	      LocalHeap lh = clh.Split();
+	      
 	      Array<int> dnums;
 	      ElementTransformation eltrans;
 	      
@@ -181,6 +184,7 @@ namespace ngcomp
 
 #pragma omp parallel
 	    {
+	      LocalHeap lh = clh.Split();
 	      Array<int> dnums;
 	      ElementTransformation eltrans;
 	      
@@ -284,15 +288,15 @@ namespace ngcomp
 		    
 		    if(element != oldelement)
 		      { 
-			lh.CleanUp();
-			fel = &fespace.GetFE(element,lh);
-			ma.GetElementTransformation(element,eltrans,lh);
+			clh.CleanUp();
+			fel = &fespace.GetFE(element,clh);
+			ma.GetElementTransformation(element,eltrans,clh);
 			fespace.GetDofNrs(element,dnums);
 		      }
 		    
-		    void * heapp = lh.GetPointer();
+		    void * heapp = clh.GetPointer();
 		    
-		    FlatVector<double> tangent(parts[j]->CurvePoint(0).Size(),lh);
+		    FlatVector<double> tangent(parts[j]->CurvePoint(0).Size(),clh);
 		    tangent = parts[j]->CurvePointTangent(i);
 		    double length = L2Norm(tangent);
 		    if(length < 1e-15)
@@ -319,27 +323,27 @@ namespace ngcomp
 		    
 		    if (eltrans.SpaceDim() == 3)
 		      {
-			SpecificIntegrationPoint<1,3> s_sip(ip,eltrans,lh);
-			SpecificIntegrationPoint<3,3> g_sip(ip,eltrans,lh);
+			SpecificIntegrationPoint<1,3> s_sip(ip,eltrans,clh);
+			SpecificIntegrationPoint<3,3> g_sip(ip,eltrans,clh);
 			Vec<3> tv;
 			tv(0) = tangent(0); tv(1) = tangent(1); tv(2) = tangent(2);
 			s_sip.SetTV(tv);
 			parts[j]->AssembleElementVectorIndependent(*fel,
 								   s_sip,
 								   g_sip,
-								   elvec,lh,true);
+								   elvec,clh,true);
 		      }
 		    else if (eltrans.SpaceDim() == 2)
 		      {
-			SpecificIntegrationPoint<1,2> s_sip(ip,eltrans,lh);
-			SpecificIntegrationPoint<2,2> g_sip(ip,eltrans,lh);
+			SpecificIntegrationPoint<1,2> s_sip(ip,eltrans,clh);
+			SpecificIntegrationPoint<2,2> g_sip(ip,eltrans,clh);
 			Vec<2> tv;
 			tv(0) = tangent(0); tv(1) = tangent(1);
 			s_sip.SetTV(tv);
 			parts[j]->AssembleElementVectorIndependent(*fel,
 								   s_sip,
 								   g_sip,
-								   elvec,lh,true);
+								   elvec,clh,true);
 		      }
 		    fespace.TransformVec (element, false, elvec, TRANSFORM_RHS);
 
@@ -351,7 +355,7 @@ namespace ngcomp
 		    
 		    
 		    
-		    lh.CleanUp(heapp);
+		    clh.CleanUp(heapp);
 		    
 		    oldlength = length;      
 		    
@@ -363,7 +367,7 @@ namespace ngcomp
 
 	    cout << "\rassemble curvepoint " << parts[j]->NumCurvePoints() << "/" 
 		 << parts[j]->NumCurvePoints() << endl;
-	    lh.CleanUp();
+	    clh.CleanUp();
 
 	  }
 	

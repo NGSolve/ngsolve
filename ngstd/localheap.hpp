@@ -24,7 +24,7 @@ namespace ngstd
  
 
 
-#ifndef _OPENMP
+#ifndef _OPENMP_oder_auch_die_neue
 
   /**
      Optimized memory handler.
@@ -53,6 +53,12 @@ namespace ngstd
       // p = data;
       CleanUp();
     }
+
+    /// Use provided memory for the LocalHeap
+    LocalHeap (const LocalHeap & lh2)
+      : data(lh2.data), p(lh2.p), totsize(lh2.totsize), owner(false)
+    { ; }
+
   
     /// free memory
     ~LocalHeap ()
@@ -125,7 +131,23 @@ namespace ngstd
 
     /// available memory on LocalHeap
     int Available () const throw () { return (totsize - (p-data)); }
+
+    /// Split free memory on heap into pieces for each openmp-thread
+    LocalHeap Split () const
+    {
+#ifdef _OPENMP
+      int pieces = omp_get_num_threads();
+      int i = omp_get_thread_num();
+#else
+      int pieces = 1;
+      int i = 0;
+#endif
+      int freemem = totsize - (p - data);
+      int size_of_piece = freemem / pieces;
+      return LocalHeap (p + i * size_of_piece, size_of_piece);
+    }
   };
+
 
 
   /**
@@ -144,8 +166,8 @@ namespace ngstd
 
 
 #else
-
-
+  
+  the first experiment with a openmp - localheap
 
   class LocalHeap
   {
