@@ -34,19 +34,19 @@ namespace ngfem
   const POINT3D * ElementTopology :: GetVertices (ELEMENT_TYPE et)
   { 
     static double segm_points [][3] = 
-      { { 1, 0, 0 },
-	{ 0, 0, 0 } };
+      { { 1 },
+	{ 0 } };
     
     static double trig_points [][3] = 
-      { { 1, 0, 0 },
-	{ 0, 1, 0 },
-	{ 0, 0, 0 } };
+      { { 1, 0 },
+	{ 0, 1 },
+	{ 0, 0 } };
 
     static double quad_points [][3] = 
-      { { 0, 0, 0 },
-	{ 1, 0, 0 },
-	{ 1, 1, 0 },
-	{ 0, 1, 0 } };
+      { { 0, 0 },
+	{ 1, 0 },
+	{ 1, 1 },
+	{ 0, 1 } };
 
     static double tet_points [][3] = 
       { { 1, 0, 0 },
