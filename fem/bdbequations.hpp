@@ -1064,8 +1064,6 @@ public:
     vec(0) = Evaluate (*coef1, sip);
     vec(1) = Evaluate (*coef2, sip);
     vec(2) = Evaluate (*coef3, sip);
-    // if(fabs(vec(0)) + fabs(vec(1)) > 1e-5)
-    //(*testout) << "DVec at " << sip.GetPoint() << ": " << vec << endl;
   }  
 };
 
