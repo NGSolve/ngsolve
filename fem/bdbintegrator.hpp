@@ -1722,7 +1722,7 @@ public:
 	const FEL & fel = static_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 	
-	elvec.AssignMemory (ndof * DIM, locheap);
+	// elvec.AssignMemory (ndof * DIM, locheap);
 	elvec = 0;
 
 	FlatVector<double> hv(ndof * DIM, locheap);
@@ -1781,7 +1781,7 @@ public:
 	const FEL & fel = static_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 	
-	elvec.AssignMemory (ndof * DIM, locheap);
+	// elvec.AssignMemory (ndof * DIM, locheap);
 	elvec = 0;
 
 	if (fast)

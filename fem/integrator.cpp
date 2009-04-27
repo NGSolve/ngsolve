@@ -1724,9 +1724,9 @@ namespace ngfem
 			 FlatVector<double> & elvec,
 			 LocalHeap & locheap) const
   {
-    FlatVector<double> vec1;
+    FlatVector<double> vec1(bfel.GetNDof(), locheap);
     lfi.AssembleElementVector (bfel, eltrans, vec1, locheap);
-    elvec.AssignMemory (vec1.Size()*dim, locheap);
+    // elvec.AssignMemory (vec1.Size()*dim, locheap);
     elvec = 0;
     if (comp == -1)
       for (int i = 0; i < vec1.Size(); i++)
