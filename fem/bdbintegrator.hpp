@@ -299,7 +299,7 @@ public:
 	const FEL & fel = static_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
         
-	elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
+	// elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
 	elmat = 0;
 
 	FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, locheap);
@@ -380,7 +380,7 @@ public:
 
 	int ndof = fel.GetNDof();
         
-	elmat.AssignMemory (ndof*DIM, ndof*DIM, lh);
+	// elmat.AssignMemory (ndof*DIM, ndof*DIM, lh);
 	elmat = 0;
 	
 	// if (!fast)
@@ -594,7 +594,7 @@ public:
 
 	const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 
-	elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
+	// elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
 	// elmat = 0;
 	
 	FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, locheap);

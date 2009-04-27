@@ -148,11 +148,11 @@ namespace ngfem
   AssembleElementMatrix (const FiniteElement & fel,
 			 const ElementTransformation & eltrans, 
 			 FlatMatrix<Complex> & elmat,
-			 LocalHeap & locheap) const
+			 LocalHeap & lh) const
   {
-    FlatMatrix<double> rmat;
-    AssembleElementMatrix (fel, eltrans, rmat, locheap);
-    elmat.AssignMemory (rmat.Height(), rmat.Width(), locheap);
+    FlatMatrix<double> rmat (elmat.Height(), elmat.Width(), lh);
+    AssembleElementMatrix (fel, eltrans, rmat, lh);
+    // elmat.AssignMemory (rmat.Height(), rmat.Width(), lh);
     elmat = rmat;
   }
 
@@ -205,7 +205,7 @@ namespace ngfem
 		      LocalHeap & locheap) const
   {
     cout << "call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
-    FlatMatrix<double> mat;
+    FlatMatrix<double> mat(elx.Size(), locheap);
     AssembleElementMatrix (fel, eltrans, mat, locheap);
     ely = mat * elx;
   }
@@ -219,7 +219,7 @@ namespace ngfem
 		      LocalHeap & locheap) const
   {
     //cout << "call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
-    FlatMatrix<Complex> mat;
+    FlatMatrix<Complex> mat(elx.Size(), locheap);
     AssembleElementMatrix (fel, eltrans, mat, locheap);
     ely = mat * elx;
   }
@@ -512,11 +512,10 @@ namespace ngfem
 			 FlatMatrix<double> & elmat,
 			 LocalHeap & locheap) const
   {
-
-    FlatMatrix<double> mat1;
+    FlatMatrix<double> mat1(bfel.GetNDof(), locheap);
     bfi.AssembleElementMatrix (bfel, eltrans, mat1, locheap);
     
-    elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, locheap);
+    // elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, locheap);
     elmat = 0;
 
     if (comp == -1)
@@ -539,10 +538,10 @@ namespace ngfem
 			 FlatMatrix<Complex> & elmat,
 			 LocalHeap & locheap) const
   {
-    FlatMatrix<Complex> mat1;
+    FlatMatrix<Complex> mat1(bfel.GetNDof(), locheap);
     bfi.AssembleElementMatrix (bfel, eltrans, mat1, locheap);
     
-    elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, locheap);
+    // elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, locheap);
     elmat = 0;
 
     if (comp == -1)
@@ -1083,7 +1082,7 @@ namespace ngfem
   {
 
     int i, j, k, l;
-    FlatMatrix<double> mat1;
+    FlatMatrix<double> mat1(bfel.GetNDof(), locheap);
     bfi.AssembleElementMatrix (bfel, eltrans, mat1, locheap);
     
     int ndof = mat1.Height();
@@ -1170,9 +1169,9 @@ namespace ngfem
 			 FlatMatrix<Complex> & elmat,
 			 LocalHeap & locheap) const
   {
-    FlatMatrix<double> rmat;
+    FlatMatrix<double> rmat(elmat.Height(), locheap);
     bfi.AssembleElementMatrix (fel, eltrans, rmat, locheap);
-    elmat.AssignMemory (rmat.Height(), rmat.Width(), locheap);
+    // elmat.AssignMemory (rmat.Height(), rmat.Width(), locheap);
      
     elmat = factor * rmat; 
   }  
@@ -1339,10 +1338,10 @@ namespace ngfem
     const CompoundFiniteElement & fel =
       dynamic_cast<const CompoundFiniteElement&> (bfel);
 
-    FlatMatrix<double> mat1;
+    FlatMatrix<double> mat1(fel[comp].GetNDof(), locheap);
     bfi.AssembleElementMatrix (fel[comp], eltrans, mat1, locheap);
     
-    elmat.AssignMemory (fel.GetNDof(), fel.GetNDof(), locheap);
+    // elmat.AssignMemory (fel.GetNDof(), fel.GetNDof(), locheap);
     elmat = 0;
     
     int base = 0;
@@ -1364,11 +1363,11 @@ namespace ngfem
     const CompoundFiniteElement & fel =
       dynamic_cast<const CompoundFiniteElement&> (bfel);
 
-    FlatMatrix<Complex> mat1;
+    FlatMatrix<Complex> mat1(fel[comp].GetNDof(), locheap);
 
     bfi.AssembleElementMatrix (fel[comp], eltrans, mat1, locheap);
     
-    elmat.AssignMemory (fel.GetNDof(), fel.GetNDof(), locheap);
+    // elmat.AssignMemory (fel.GetNDof(), fel.GetNDof(), locheap);
     elmat = 0;
     
     int base = 0;

@@ -592,8 +592,8 @@ namespace ngcomp
                           throw Exception ( "Inconsistent number of degrees of freedom " );
                         }
 
-
-                      FlatMatrix<SCAL> sum_elmat(dnums.Size()*fespace.GetDimension(), lh);
+                      int elmat_size = dnums.Size()*fespace.GetDimension();
+                      FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
                       sum_elmat = 0;
                       for (int j = 0; j < NumIntegrators(); j++)
                         {
@@ -609,13 +609,15 @@ namespace ngcomp
                               static int elementtimer = NgProfiler::CreateTimer ("Element matrix integration");
                               NgProfiler::StartTimer (elementtimer);
  
+                              elmat.AssignMemory (elmat_size, elmat_size, lh);
+
                               if (!diagonal)
                                 bfi.AssembleElementMatrix (fel, eltrans, elmat, lh);
                               else
                                 {
                                   FlatVector<double> diag;
                                   bfi.AssembleElementMatrixDiag (fel, eltrans, diag, lh);
-                                  elmat.AssignMemory (diag.Size(), diag.Size(), lh);
+                                  // elmat.AssignMemory (diag.Size(), diag.Size(), lh);
                                   elmat = 0.0;
                                   for (int k = 0; k < diag.Size(); k++)
                                     elmat(k,k) = diag(k);
@@ -1053,7 +1055,9 @@ namespace ngcomp
 			  if (dnums[k] != -1)
 			    useddof.Set (dnums[k]);
 
-			FlatMatrix<SCAL> elmat;
+                        int elmat_size = dnums.Size()*fespace.GetDimension();
+			FlatMatrix<SCAL> elmat(elmat_size, clh);
+;
 			bfi.AssembleElementMatrix (fel, eltrans, elmat, clh);
 
 			fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
@@ -1385,8 +1389,8 @@ namespace ngcomp
                   ma.GetElementTransformation (i, eltrans, lh);
                   fespace.GetDofNrs (i, dnums);
 	      
-	      
-                  FlatMatrix<SCAL> sum_elmat(dnums.Size()*fespace.GetDimension(), lh);
+                  int elmat_size = dnums.Size()*fespace.GetDimension();
+                  FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
                   sum_elmat = 0;
                   for (int j = 0; j < NumIntegrators(); j++)
                     {
@@ -1395,7 +1399,7 @@ namespace ngcomp
                       if (bfi.BoundaryForm()) continue;
                       if (!bfi.DefinedOn (ma.GetElIndex (i))) continue;
 		  
-                      FlatMatrix<SCAL> elmat;
+                      FlatMatrix<SCAL> elmat(elmat_size, lh);
                       bfi.AssembleElementMatrix (fel, eltrans, elmat, lh);
 		  
                       sum_elmat += elmat;
