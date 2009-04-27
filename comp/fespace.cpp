@@ -3738,6 +3738,8 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 	  dnums.SetSize(4);
 	  break;
 	}
+      default:
+        cerr << "NonConformingFESpace, GetFE: unknown type" << endl;
       }
     for (int j = 0; j < dnums.Size(); j++)
       dnums[j] = abs (elementfaces[elnr][j]);

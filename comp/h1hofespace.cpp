@@ -444,6 +444,9 @@ namespace ngcomp
 	    if(p[0]>1 && p[1] > 1 && p[2]>1) 
 	      ndof += (p[0]-1)*(p[1]-1)*(p[2]-1);
 	    break;
+          case ET_SEGM:
+            cerr << "should not be" << endl;
+            break;
 	  }
       } 
     first_element_dof[nel] = ndof;
@@ -1009,13 +1012,10 @@ namespace ngcomp
     static bool getall = false;
 
     Array<int> vnums, ednums;
-    int fanum;
     int i, j;
 
     ma.GetSElVertices (elnr, vnums);
     ma.GetSElEdges (elnr, ednums);
-    if (ma.GetDimension() == 3)
-      fanum = ma.GetSElFace (elnr);
     
     dnums.SetSize(0);
     for (i = 0; i < vnums.Size(); i++)
@@ -1033,10 +1033,9 @@ namespace ngcomp
       }
     edge_start.Append(dnums.Size());
 
-    int face_start  = dnums.Size();
-
     if (ma.GetDimension() == 3)
       {
+        int fanum = ma.GetSElFace (elnr);
         int first = first_face_dof[fanum];
         int nfadofs = first_face_dof[fanum+1] - first;
         for (j = 0; j < nfadofs; j++)
@@ -1153,9 +1152,10 @@ namespace ngcomp
     // default smoother
     
     if (SmoothingType == 0) 
-      if(augmented) SmoothingType=3; 
-      else SmoothingType = 4; 
-    
+      {
+        if(augmented) SmoothingType=3; 
+        else SmoothingType = 4; 
+      }
 
 
     cout << " blocktype " << SmoothingType << endl; 
@@ -1968,9 +1968,9 @@ namespace ngcomp
     // return 0;
 
     int i, j, k;
-
-    int nv = ma.GetNV();
-    int nd = GetNDof();
+    
+    // int nv = ma.GetNV();
+    // int nd = GetNDof();
     int ne = ma.GetNE();
     Array<int> & clusters = *new Array<int> (GetNDof());
     clusters = 0;

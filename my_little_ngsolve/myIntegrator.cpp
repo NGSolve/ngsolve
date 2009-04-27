@@ -46,7 +46,7 @@ namespace ngfem
     // number of element basis functions:
     int ndof = fel.GetNDof();
 
-    elmat.AssignMemory (ndof, ndof, lh);
+    // elmat.AssignMemory (ndof, ndof, lh);
     elmat = 0;
 
     Matrix<> dshape_ref(ndof, 2); // gradient on reference element
