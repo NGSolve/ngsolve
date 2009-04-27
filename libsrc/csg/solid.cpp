@@ -181,6 +181,9 @@ namespace netgen
 	  s1->IterateSolid (it, only_once);
 	  break;
 	}
+      case TERM:
+      case TERM_REF:
+	break;   // do nothing
       } 
   }
 

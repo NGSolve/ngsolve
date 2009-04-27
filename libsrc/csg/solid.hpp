@@ -32,7 +32,7 @@ class Solid
 {
 public:
   
-  typedef enum optyp1 { TERM, TERM_REF, SECTION, UNION, SUB, ROOT, DUMMY } optyp;
+  typedef enum optyp1 { TERM, TERM_REF, SECTION, UNION, SUB, ROOT /*, DUMMY */ } optyp;
   
 private:
   char * name;

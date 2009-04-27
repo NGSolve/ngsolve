@@ -581,7 +581,7 @@ namespace netgen
 
 
 
-
+    /*
   class RemoveDummyIterator : public SolidIterator
   {
   public:
@@ -593,6 +593,8 @@ namespace netgen
 
   void RemoveDummyIterator :: Do(Solid * sol)
   {
+    cerr << "remove dummy iterator is obsolete" << endl;
+
     if ( (sol->op == Solid::SUB || sol->op == Solid::SECTION || 
 	  sol->op == Solid::UNION)
 	 && sol->s1->op == Solid::DUMMY)
@@ -601,6 +603,7 @@ namespace netgen
 	 && sol->s2->op == Solid::DUMMY)
       sol->s2 = sol->s2->s1;
   }
+    */
 
 
 

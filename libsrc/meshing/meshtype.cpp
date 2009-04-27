@@ -1086,6 +1086,9 @@ void Element :: SetType (ELEMENT_TYPE atyp)
     case HEX: np = 8; break;
     case TET10: np = 10; break;
     case PRISM12: np = 12; break;
+
+    default: break;
+      cerr << "Element::SetType unknown type  " << int(typ) << endl;
     }
 }
 
@@ -1751,6 +1754,8 @@ GetTransformation (int ip, class DenseMatrix & pmat,
     {
     case TET: dshapep = &ipdtet.Get(ip)->dshape; break;
     case TET10: dshapep = &ipdtet10.Get(ip)->dshape; break;
+    default:
+      PrintSysError ("Element::GetTransformation, illegal type ", int(typ));
     }
   
   CalcABt (pmat, *dshapep, trans);
@@ -2248,6 +2253,8 @@ void Element :: ComputeIntegrationPointData () const
     {
     case TET: ipdtet.SetSize(GetNIP()); break;
     case TET10: ipdtet10.SetSize(GetNIP()); break;
+    default:
+      PrintSysError ("Element::ComputeIntegrationPoint, illegal type2 ", int(typ));
     }
 
 
