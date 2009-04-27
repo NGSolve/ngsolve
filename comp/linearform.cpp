@@ -149,7 +149,8 @@ namespace ngcomp
 		      if (!parts[j] -> DefinedOn (ma.GetElIndex (i))) continue;
 		      if (parts[j] -> IntegrationAlongCurve()) continue;
 
-		      FlatVector<TSCAL> elvec;
+                      int elvec_size = dnums.Size()*fespace.GetDimension();
+		      FlatVector<TSCAL> elvec(elvec_size, lh);
 		  
 		      parts[j] -> AssembleElementVector (fel, eltrans, elvec, lh);
                  
@@ -212,7 +213,8 @@ namespace ngcomp
 		      if (!parts[j] -> DefinedOn (ma.GetSElIndex (i))) continue;
 		      if (parts[j] -> IntegrationAlongCurve()) continue;		    
 		  
-		      FlatVector<TSCAL> elvec;
+                      int elvec_size = dnums.Size()*fespace.GetDimension();
+		      FlatVector<TSCAL> elvec(elvec_size, lh);
 		      parts[j] -> AssembleElementVector (fel, eltrans, elvec, lh);
 		      if (printelvec)
 			{

@@ -532,7 +532,7 @@ namespace ngfem
     {
       int ndof = fel.GetNDof();
 
-      elmat.AssignMemory (ndof, ndof, locheap);
+      // elmat.AssignMemory (ndof, ndof, locheap);
       elmat = 0;
       SpecificIntegrationPoint<3,3> sip (GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 0)[0], 
 					 eltrans, locheap);
@@ -1041,7 +1041,7 @@ namespace ngfem
     {
       int ndof = fel.GetNDof();
 
-      elmat.AssignMemory (ndof, ndof, locheap);
+      // elmat.AssignMemory (ndof, ndof, locheap);
     
       const IntegrationRule & ir = GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 0);
       SpecificIntegrationPoint<DIM_SPACE-1,DIM_SPACE> sip (ir[0], eltrans, locheap);
@@ -1115,9 +1115,9 @@ namespace ngfem
 			   FlatVector<Complex> & elvec,
 			   LocalHeap & locheap) const 
     {
-      FlatVector<double> rvec;
+      FlatVector<double> rvec(elvec.Size(), locheap);
       AssembleElementVector (fel, eltrans, rvec, locheap);
-      elvec.AssignMemory (rvec.Size(), locheap);
+      // elvec.AssignMemory (rvec.Size(), locheap);
       elvec = rvec;
     }
 
@@ -1141,9 +1141,9 @@ namespace ngfem
 				      LocalHeap & locheap,
 				      const bool curveint = false) const
     {
-      FlatVector<double> rvec;
+      FlatVector<double> rvec(elvec.Size(), locheap);
       AssembleElementVectorIndependent (gfel, s_sip, g_sip, rvec, locheap,curveint);
-      elvec.AssignMemory (rvec.Size(), locheap);
+      // elvec.AssignMemory (rvec.Size(), locheap);
       elvec = rvec;
     }
 
@@ -1294,18 +1294,17 @@ namespace ngfem
       const CompoundFiniteElement & fel =
 	dynamic_cast<const CompoundFiniteElement&> (bfel);
 
-      int i;
-      FlatVector<double> vec1;
+      FlatVector<double> vec1(fel[comp].GetNDof(), locheap);
       lfi.AssembleElementVector (fel[comp], eltrans, vec1, locheap);
     
       elvec.AssignMemory (fel.GetNDof(), locheap);
       elvec = 0;
 
       int base = 0;
-      for (i = 0; i < comp; i++)
+      for (int i = 0; i < comp; i++)
 	base += fel[i].GetNDof();
 
-      for (i = 0; i < vec1.Size(); i++)
+      for (int i = 0; i < vec1.Size(); i++)
 	elvec(base+i) = vec1(i);
     }  
 
@@ -1319,18 +1318,17 @@ namespace ngfem
       const CompoundFiniteElement & fel =
 	dynamic_cast<const CompoundFiniteElement&> (bfel);
 
-      int i;
-      FlatVector<Complex> vec1;
+      FlatVector<Complex> vec1(fel[comp].GetNDof(), locheap);
       lfi.AssembleElementVector (fel[comp], eltrans, vec1, locheap);
     
       elvec.AssignMemory (fel.GetNDof(), locheap);
       elvec = 0;
 
       int base = 0;
-      for (i = 0; i < comp; i++)
+      for (int i = 0; i < comp; i++)
 	base += fel[i].GetNDof();
 
-      for (i = 0; i < vec1.Size(); i++)
+      for (int i = 0; i < vec1.Size(); i++)
 	elvec(base+i) = vec1(i);
     }  
 
