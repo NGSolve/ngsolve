@@ -95,8 +95,8 @@ namespace pardisofunc
 
     (*testout) << "Pardiso, symmetric = " << symmetric << endl;
 
-    if ( inner && inner->Size() < a.Height() ||
-	 cluster && cluster->Size() < a.Height() )
+    if ( (inner && inner->Size() < a.Height()) ||
+	 (cluster && cluster->Size() < a.Height() ) )
       {
 	cout << "PardisoInverse: Size of inner/cluster does not match matrix size!" << endl;
 	throw Exception("Invalid parameters inner/cluster. Thrown by PardisoInverse.");
@@ -651,6 +651,8 @@ namespace pardisofunc
   const TM & PardisoInverse<TM,TV_ROW,TV_COL> :: Get (int i, int j) const
   {
     cout << "PardisoInverse::Get not implemented!" << endl;
+    static TM dummy(0.0);
+    return dummy;
   }
 
   template<class TM, class TV_ROW, class TV_COL>

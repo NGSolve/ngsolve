@@ -966,14 +966,16 @@ double MeshAccess :: ElementVolume (int elnr) const
   if (GetDimension() == 2)
     {
       SourceIntegrator<2> si( &ccf );
-      FlatVector<> elvec;
+      // FlatVector<> elvec;
+      Vector<> elvec(fe->GetNDof());
       si.AssembleElementVector (*fe, trans, elvec, lh);
       return elvec(0);
     }
   else
     {
       SourceIntegrator<3> si( &ccf );
-      FlatVector<> elvec;
+      // FlatVector<> elvec;
+      Vector<> elvec(fe->GetNDof());
       si.AssembleElementVector (*fe, trans, elvec, lh);
       return elvec(0);
     }
