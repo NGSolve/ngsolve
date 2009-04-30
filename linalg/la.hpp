@@ -62,6 +62,7 @@ namespace ngla
 #include "sparsecholesky.hpp"
 #include "pardisoinverse.hpp"
 #include "superluinverse.hpp"
+#include "mumpsinverse.hpp"
 #include "jacobi.hpp"
 #include "blockjacobi.hpp"
 #include "commutingAMG.hpp"

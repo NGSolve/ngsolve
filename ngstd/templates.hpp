@@ -89,7 +89,7 @@ template <class T>
 void SaveBin (ostream & ost, const T & val)
 {
   const char * cp = reinterpret_cast<const char*> (&val);
-  for (int j = 0; j < sizeof(T); j++)
+  for (unsigned j = 0; j < sizeof(T); j++)
     ost.put(cp[j]);
 }
 
@@ -98,7 +98,7 @@ template <class T>
 void LoadBin (istream & ist, T & val)
 {
   char * cp = reinterpret_cast<char*> (&val);
-  for (int j = 0; j < sizeof(T); j++)
+  for (unsigned j = 0; j < sizeof(T); j++)
     ist.get(cp[j]);
 }
 
