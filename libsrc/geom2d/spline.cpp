@@ -336,7 +336,4 @@ namespace netgen
     return sqrt(cosalpha + 1.)/(min2(l1,l2)*(1.-cosalpha));
   }
 
-
-
-
 }

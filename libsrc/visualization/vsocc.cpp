@@ -71,7 +71,7 @@ namespace netgen
 
       glEnable (GL_BLEND);
       glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+      
       //  glEnable (GL_LIGHTING);
 
       double shine = vispar.shininess;
@@ -79,6 +79,8 @@ namespace netgen
 
       glMaterialf (GL_FRONT_AND_BACK, GL_SHININESS, shine);
       glLogicOp (GL_COPY);
+
+      glEnable (GL_NORMALIZE);
 
       float mat_col[] = {  0.2f, 0.2f, 0.8f, 1.0f};
       glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_col);

@@ -74,12 +74,6 @@ void VisualSceneGeometry :: DrawScene ()
   double transp = vispar.transp;
 
 
-
-
-
-
-
-
   glMaterialf (GL_FRONT_AND_BACK, GL_SHININESS, shine);
   glLogicOp (GL_COPY);
   

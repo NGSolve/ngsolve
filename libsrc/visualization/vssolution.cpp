@@ -2035,9 +2035,11 @@ namespace netgen
       vsol->soltype==SOL_VIRTUALFUNCTION)
     */
 
-    // if (autoscale)
-    // GetMinMax (vecfunction, 0, minval, maxval);
-
+    /*
+      // was commented out, JS Apr 2009
+    if (autoscale && !scalfunction)
+      GetMinMax (vecfunction, 0, minval, maxval);
+    */
     glColor3d (1.0, 1.0, 1.0);
     // glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 
