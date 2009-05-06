@@ -115,10 +115,12 @@ namespace ngla
   BaseVector & BaseVector :: Add (double scal, const BaseVector & v)
   {
     if ( (*this).Status() != v.Status() )
-      if ( (*this).Status() == DISTRIBUTED )
-	AllReduce(&hoprocs);
-      else 
-	v.AllReduce(&hoprocs);
+      {
+        if ( (*this).Status() == DISTRIBUTED )
+          AllReduce(&hoprocs);
+        else 
+          v.AllReduce(&hoprocs);
+      }
     FVDouble() += scal * v.FVDouble();
     return *this;
   }
@@ -126,10 +128,12 @@ namespace ngla
   BaseVector & BaseVector :: Add (Complex scal, const BaseVector & v)
   {
     if ( (*this).Status() != v.Status() )
-      if ( (*this).Status() == DISTRIBUTED )
-	AllReduce(&hoprocs);
-      else 
-	v.AllReduce(&hoprocs);
+      {
+        if ( (*this).Status() == DISTRIBUTED )
+          AllReduce(&hoprocs);
+        else 
+          v.AllReduce(&hoprocs);
+      }
     FVComplex() += scal * v.FVComplex();
     return *this;
   }
