@@ -1223,9 +1223,9 @@ namespace ngfem
 			   FlatVector<Complex> & elvec,
 			   LocalHeap & locheap) const
     {
-      FlatVector<Complex> rvec;
+      FlatVector<Complex> rvec(elvec.Size(), locheap);
       lfi.AssembleElementVector (fel, eltrans, rvec, locheap);
-      elvec.AssignMemory (rvec.Size(), locheap);
+      // elvec.AssignMemory (rvec.Size(), locheap);
       elvec = factor * rvec;
     }  
 
