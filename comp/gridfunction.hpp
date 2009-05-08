@@ -22,7 +22,7 @@ namespace ngcomp
     bool visual;
     int multidim;
     int level_updated;
-    NgMutex mutex;
+    // NgMutex mutex;
     netgen::SolutionData * vis;
 
     int cacheblocksize;
@@ -55,7 +55,7 @@ namespace ngcomp
     { return fespace; }
 
   
-    NgMutex & Mutex () { return mutex; }
+    // NgMutex & Mutex () { return mutex; }
 
     ///
     virtual string GetClassName () const
