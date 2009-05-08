@@ -1,5 +1,5 @@
 #
-# PDE example file for solving a linear stationary mechanical problem
+# PDE example file for solving a linear elasticity model
 #
 
 
@@ -38,7 +38,7 @@ define coefficient coef_surface_force_z
 0, 1e5, 
 
 
-define fespace v -dim=3 -order=4 -eliminate_internal -augmented=0
+define fespace v -dim=3 -order=4 -eliminate_internal 
 define fespace vp -dim=6  -order=3
 
 define gridfunction u -fespace=v

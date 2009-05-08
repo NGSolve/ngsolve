@@ -306,12 +306,14 @@ if { [catch { NGS_GetData } ] == 0 } {
     # the ini file is saved  on demand :
     proc savengsinifile { } {
 	uplevel 1  {
-	    set datei [open ngs.ini w]
-	    for { set i [.ngmenu.solve.recent index last] } { $i >= 1 } { incr i -1 } {
-		puts $datei "recentfile \"[.ngmenu.solve.recent entrycget $i -label]\""
-	    }
-	
-	    close $datei
+            if {[catch { set datei [open ngs.ini w]  } result ]} {
+                puts "cannot write to ng.ini file"
+            } {
+                for { set i [.ngmenu.solve.recent index last] } { $i >= 1 } { incr i -1 } {
+                    puts $datei "recentfile \"[.ngmenu.solve.recent entrycget $i -label]\""
+                }
+                close $datei
+            }
 	}
     }
     

@@ -699,9 +699,8 @@ namespace ngfem
 	  {
 	    const POINT3D & p1 = points[edges[fnr][0]];
 	    const POINT3D & p2 = points[edges[fnr][1]];
-	    ipvol(0) = p1[0] + (ipfac(0))*(p2[0]-p1[0]);
-	    ipvol(1) = p1[1] + (ipfac(0))*(p2[1]-p1[1]);
-	    ipvol(2) = p1[2] + (ipfac(0))*(p2[2]-p1[2]);
+            for (int j = 0; j < 3; j++)
+              ipvol(j) = p2[j] + (ipfac(0))*(p1[j]-p2[j]);
 	    break;
 	  }
 	case ET_TRIG:
