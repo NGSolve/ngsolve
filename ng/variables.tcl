@@ -623,15 +623,17 @@ proc saveoptions { } {
 
 
 
-# the ini file is save on demand :
+# the ini file is saved on demand :
 proc saveinifile { } {
     uplevel 1  {
-	set datei [open ng.ini w]
-	for { set i [.ngmenu.file.recent index last] } { $i >= 1 } { incr i -1 } {
-	    puts $datei "recentfile \"[.ngmenu.file.recent entrycget $i -label]\""
-	}
-	
-	close $datei
+        if {[catch { set datei [open ng.ini w] } result ]} {
+            puts "cannot write to ng.ini file"
+        } {
+            for { set i [.ngmenu.file.recent index last] } { $i >= 1 } { incr i -1 } {
+                puts $datei "recentfile \"[.ngmenu.file.recent entrycget $i -label]\""
+            }
+            close $datei
+        }
     }    
 
 
@@ -641,12 +643,14 @@ proc saveinifile { } {
 
 proc savemeshinifile { } {
     uplevel 1  {
-	set datei [open ngmesh.ini w]
-	for { set i [.ngmenu.file.recentmesh index last] } { $i >= 1 } { incr i -1 } {
-	    puts $datei "recentfile \"[.ngmenu.file.recentmesh entrycget $i -label]\""
-	}
-	
-	close $datei
+	if {[catch { set datei [open ngmesh.ini w] } result } {
+            puts "cannot write to ng.ini file"
+        } {
+            for { set i [.ngmenu.file.recentmesh index last] } { $i >= 1 } { incr i -1 } {
+                puts $datei "recentfile \"[.ngmenu.file.recentmesh entrycget $i -label]\""
+            }
+            close $datei
+        }
     }    
 
 

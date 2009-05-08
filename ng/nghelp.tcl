@@ -187,7 +187,7 @@ set_control_help $f.first "First step in mesh generation. Usually, meshing  star
 set_control_help $f.last "Last step in mesh generation. If only the surface mesh is required, please set \"Last Step\" to \"Optimize Surface\""
 
 set_control_help .bubar.surfm "Start mesh generation"
-set_control_help .bubar.stopm "Start mesh generation"
+set_control_help .bubar.stopm "Stop mesh generation"
 
 proc help_item { helptext } {p
     puts $helptext
