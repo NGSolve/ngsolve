@@ -86,7 +86,7 @@ namespace ngfem {
     first_facet_dof[3] = ndof;
 
     const EDGE * edges = ElementTopology::GetEdges (eltype);
-    Array<int> fvnums(2);
+    ArrayMem<int,2> fvnums(2);
 
     for (int fnr = 0; fnr < 3; fnr++)
       {

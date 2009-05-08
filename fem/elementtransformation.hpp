@@ -485,6 +485,7 @@ public:
     return iscurved;
   }
 
+
   void GetSort (FlatArray<int> sort) const
   {
     int vnums[12];
