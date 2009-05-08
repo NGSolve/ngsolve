@@ -14,12 +14,6 @@ namespace ngcomp
   using namespace ngcomp;
   using namespace ngparallel;
 
-  // dummy function header
-  void CalcEigenSystem (FlatMatrix<Complex> & elmat, 
-			FlatVector<> & lami, 
-			FlatMatrix<> & evecs)
-  { ; }
-
 
 
   BilinearForm :: 
@@ -159,8 +153,6 @@ namespace ngcomp
       low_order_bilinear_form -> SetPrintElmat (ap);
   }
 
-
-
   void BilinearForm ::  SetElmatEigenValues (bool ee)
   { 
     elmat_ev = ee;
@@ -173,8 +165,6 @@ namespace ngcomp
 
   void BilinearForm :: Assemble (LocalHeap & lh)
   {
-
-
     if (mats.Size() == ma.GetNLevels())
       return;
 
@@ -487,13 +477,15 @@ namespace ngcomp
     ;
   }
 
+
+
+
   template <class SCAL>
   void S_BilinearForm<SCAL> :: DoAssemble (LocalHeap & clh)
   {
     static int mattimer = NgProfiler::CreateTimer ("Matrix assembling");
     NgProfiler::RegionTimer reg (mattimer);
-
-
+    
     try
       {
 	if (!MixedSpaces())
@@ -502,7 +494,7 @@ namespace ngcomp
 	    ma.PushStatus ("Assemble Matrix");
  
 	    Array<int> dnums, idofs, idofs1, odofs;
-	    ElementTransformation eltrans;
+	    // ElementTransformation eltrans;
             // TopologicElement tel;
 
 
@@ -862,33 +854,36 @@ namespace ngcomp
 
 
                             
-                              if (linearform)
-                                {
-                                  FlatVector<SCAL> elvec (size, lh);
-                                  linearform -> GetVector().GetIndirect (dnums, elvec);
-                                
-                                  FlatVector<SCAL> hfi1(sizei, lh);
-                                  FlatVector<SCAL> hfi2(sizei, lh);
-                                  FlatVector<SCAL> hfo(sizeo, lh);
-                                
-                                  for (int k = 0; k < idofs.Size(); k++)
-                                    hfi1(k) = elvec(idofs[k]);
-
+#pragma omp critical (assemble_modifyf)
+			      {
+				if (linearform)
+				  {
+				    FlatVector<SCAL> elvec (size, lh);
+				    linearform -> GetVector().GetIndirect (dnums, elvec);
+				    
+				    FlatVector<SCAL> hfi1(sizei, lh);
+				    FlatVector<SCAL> hfi2(sizei, lh);
+				    FlatVector<SCAL> hfo(sizeo, lh);
+				    
+				    for (int k = 0; k < idofs.Size(); k++)
+				      hfi1(k) = elvec(idofs[k]);
+				    
 #ifdef LAPACK
-                                  hfo = b * hfi1;
+				    hfo = b * hfi1;
 #else
-                                  hfi2 = d * hfi1;
-                                  hfo = b * hfi2;
+				    hfi2 = d * hfi1;
+				    hfo = b * hfi2;
 #endif
-                                  for (int k = 0; k < odofs.Size(); k++)
-                                    elvec(odofs[k]) -= hfo(k);
-                                
-                                  linearform->GetVector().SetIndirect (dnums, elvec);
-                                }
-			    
+				    for (int k = 0; k < odofs.Size(); k++)
+				      elvec(odofs[k]) -= hfo(k);
+				    
+				    linearform->GetVector().SetIndirect (dnums, elvec);
+				  }
+			      }
+
                               for (int k = 0; k < idofs1.Size(); k++)
                                 dnums[idofs1[k]] = -1;
-                            }
+			    }
                           NgProfiler::StopTimer (statcondtimer);
                         }
 
@@ -916,6 +911,7 @@ namespace ngcomp
 
 	    if (hasinner && diagonal)
 	      {
+		ElementTransformation eltrans;
 		void * heapp = clh.GetPointer();
 		for (int i = 0; i < ne; i++)
 		  {
@@ -1003,32 +999,35 @@ namespace ngcomp
 
 
 
-
-
-
-
-
 	    if (hasbound)
 	      {
 
-		for (int i = 0; i < nse; i++)
-		  {
-		    if (i % 100 == 0)
-		      cout << "\rassemble surface element " << i << "/" << nse << flush;
+#pragma omp parallel 
+                {
+		  LocalHeap lh = clh.Split();
 
-
-		    if ( ma.IsGhostSEl ( i ) ) continue;
-
-		    ma.SetThreadPercentage ( 100.0*(ne+i) / (ne+nse) );
-
-		    clh.CleanUp();
+                  ElementTransformation eltrans;
+                  Array<int> dnums, idofs, idofs1, odofs;
+#pragma omp for 
+		  for (int i = 0; i < nse; i++)
+		    {
+		      if ( ma.IsGhostSEl ( i ) ) continue;
+		      
+#pragma omp critical(printmatasstatus2)
+		      {
+			if (i % 100 == 0)
+			  cout << "\rassemble surface element " << i << "/" << nse << flush;
+			
+			ma.SetThreadPercentage ( 100.0*(ne+i) / (ne+nse) );
+		      }
+		      
+		      lh.CleanUp();
 		  
-		    if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
-		
-		    const FiniteElement & fel = fespace.GetSFE (i, clh);
-		
-
-		    ma.GetSurfaceElementTransformation (i, eltrans, clh);
+		      if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+		      
+		      const FiniteElement & fel = fespace.GetSFE (i, lh);
+		      
+		      ma.GetSurfaceElementTransformation (i, eltrans, lh);
 		    fespace.GetSDofNrs (i, dnums);
 
 		    if(fel.GetNDof() != dnums.Size())
@@ -1056,9 +1055,9 @@ namespace ngcomp
 			    useddof.Set (dnums[k]);
 
                         int elmat_size = dnums.Size()*fespace.GetDimension();
-			FlatMatrix<SCAL> elmat(elmat_size, clh);
+			FlatMatrix<SCAL> elmat(elmat_size, lh);
 ;
-			bfi.AssembleElementMatrix (fel, eltrans, elmat, clh);
+			bfi.AssembleElementMatrix (fel, eltrans, elmat, lh);
 
 			fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
@@ -1080,7 +1079,7 @@ namespace ngcomp
 
 			    (*testout) << "elind = " << eltrans.GetElementIndex() << endl;
 #ifdef LAPACK
-			    LapackEigenSystem(elmat, clh);
+			    LapackEigenSystem(elmat, lh);
 #else
 			    Vector<> lami(elmat.Height());
 			    Matrix<> evecs(elmat.Height());
@@ -1095,10 +1094,13 @@ namespace ngcomp
                         // 			  if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
                         // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
 
-
-			AddElementMatrix (dnums, dnums, elmat, 0, i, clh);
+#pragma omp critical (addelmat2)
+			{
+			  AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+			}
 		      }
-		  }
+		    }
+		}
 		cout << "\rassemble surface element " << nse << "/" << nse << endl;	  
 	      }
 
@@ -1523,8 +1525,6 @@ namespace ngcomp
       
 	cout << "Assemble linearization" << endl;
       
-      
-	//	  LocalHeap lh (5000000);
       
 	bool hasbound = 0;
 	bool hasinner = 0;

@@ -115,13 +115,13 @@ public:
   ///
   virtual ~ConstantCoefficientFunction ();
   ///
-
+  /*
   template <int S, int R>
   double Evaluate (const SpecificIntegrationPoint<S,R> & ip)
   {
     return val;
   }
-
+  */
   virtual double Evaluate (const BaseSpecificIntegrationPoint & ip)
   {
     return val;
@@ -148,7 +148,7 @@ public:
   virtual ~DomainConstantCoefficientFunction ();
   ///
 
-
+  /*
   template <int S, int R>
   double Evaluate (const SpecificIntegrationPoint<S,R> & ip)
   {
@@ -164,6 +164,7 @@ public:
         
     return val[elind]; 
   }
+  */
 
   virtual double Evaluate (const BaseSpecificIntegrationPoint & ip);
 
@@ -191,6 +192,7 @@ public:
   ///
   virtual ~DomainVariableCoefficientFunction ();
   ///
+  /*
   template <int S, int R>
   double Evaluate (const SpecificIntegrationPoint<S,R> & ip)
   {
@@ -203,7 +205,7 @@ public:
       }
     return fun[elind]->Eval ( &ip.GetPoint()(0));
   }
-
+  */
   virtual double Evaluate (const BaseSpecificIntegrationPoint & ip)
   {
     int elind = ip.GetTransformation().GetElementIndex();
@@ -240,6 +242,7 @@ public:
   ///
   virtual ~DomainInternalCoefficientFunction () { ; }
   ///
+  /*
   template <int S, int R>
   double Evaluate (const SpecificIntegrationPoint<S,R> & ip)
   {
@@ -248,6 +251,7 @@ public:
   
     return f(&ip.GetPoint()(0));
   }
+  */
   
   virtual double Evaluate (const BaseSpecificIntegrationPoint & ip)
   {
@@ -299,6 +303,7 @@ public:
   ///
   virtual ~IntegrationPointCoefficientFunction () { ; }
   ///
+  /*
   template <int S, int R>
   double Evaluate (const SpecificIntegrationPoint<S,R> & ip)
   {
@@ -316,7 +321,7 @@ public:
   
     return values[elnr*ips_per_elem+ipnr];
   }
-  
+  */
   virtual double Evaluate (const BaseSpecificIntegrationPoint & ip)
   {
     int ipnr = ip.GetIPNr();

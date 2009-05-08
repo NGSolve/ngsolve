@@ -241,7 +241,7 @@ namespace ngcomp
   {
     try
       {
-	NgLock lock(this -> mutex, 1);
+	// NgLock lock(this -> mutex, 1);
 	
 	int ndof = this->GetFESpace().GetNDof();
 
@@ -494,7 +494,7 @@ namespace ngcomp
     const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
     const int dim     = fes.GetDimension();
     
-    NgLock lock(gf.Mutex(), 1);
+    // NgLock lock(gf.Mutex(), 1);
 
     
     if (cache_elnr != elnr)
@@ -596,7 +596,7 @@ namespace ngcomp
 
     int dim     = fes.GetDimension();
 
-    NgLock lock(const_cast<S_GridFunction<SCAL>*> (gf) -> Mutex(), 1);
+    // NgLock lock(const_cast<S_GridFunction<SCAL>*> (gf) -> Mutex(), 1);
 
     if ( !fes.DefinedOn(ma.GetElIndex(elnr)) ) 
       return 0;
@@ -671,7 +671,7 @@ namespace ngcomp
 
     int dim     = fes.GetDimension();
 
-    NgLock lock(const_cast<S_GridFunction<SCAL>*> (gf) -> Mutex(), 1);
+    // NgLock lock(const_cast<S_GridFunction<SCAL>*> (gf) -> Mutex(), 1);
 
     // added 07.04.2004 (FB): don't draw, if not defined on this domain
     if ( !fes.DefinedOn(ma.GetElIndex(elnr)) ) return 0;
@@ -754,7 +754,7 @@ namespace ngcomp
     const FESpace & fes = gf->GetFESpace();
 
 
-    NgLock lock(const_cast<S_GridFunction<SCAL>*> (gf) -> Mutex(), 1);
+    // NgLock lock(const_cast<S_GridFunction<SCAL>*> (gf) -> Mutex(), 1);
 
     int dim = fes.GetDimension();
 
@@ -867,7 +867,7 @@ namespace ngcomp
         const FESpace & fes = gf->GetFESpace();
 
 
-        NgLock lock(const_cast<S_GridFunction<SCAL>*> (gf) -> Mutex(), 1);
+        // NgLock lock(const_cast<S_GridFunction<SCAL>*> (gf) -> Mutex(), 1);
 
         int dim     = fes.GetDimension();
 

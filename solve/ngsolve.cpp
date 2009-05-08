@@ -23,7 +23,7 @@ using namespace ngsolve;
 
 
 // for tcltk ...
-#include <tcl.h>  
+// #include <tcl.h>  
 #include <nginterface.h>
 
 
@@ -41,6 +41,8 @@ namespace netgen {
 
 
 // static bool got_exception = false;
+
+/*
 
 
 #ifdef _MSC_VER
@@ -99,7 +101,7 @@ static void RunParallel ( void * (*fun)(void *), void * in)
 }
 #endif
 
-
+*/
 
 
 

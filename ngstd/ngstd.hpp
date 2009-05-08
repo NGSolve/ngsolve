@@ -29,7 +29,7 @@
 
 namespace netgen
 {
-#include "parthreads.hpp"
+  // #include "parthreads.hpp"
   // #include <moveablemem.hpp>
 #include "dynamicmem.hpp"
 
@@ -42,8 +42,8 @@ using netgen::printmessage_importance;
 
 // using netgen::MoveableMem;
 using netgen::DynamicMem;
-using netgen::NgLock;  
-using netgen::NgMutex;
+// using netgen::NgLock;  
+// using netgen::NgMutex;
 
 using netgen::testout;
 // using netgen::mycout; 

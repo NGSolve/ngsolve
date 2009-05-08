@@ -2,14 +2,16 @@
 #define FILE_SOLVE
 
 /*********************************************************************/
-/* File:   solve.hh                                                  */
+/* File:   solve.hpp                                                 */
 /* Author: Joachim Schoeberl                                         */
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+
 /* 
    NGS Solvers: BVP, Instationary, ...
 */
+
 
 #include <comp.hpp>
 #include <multigrid.hpp>
@@ -22,6 +24,8 @@
 #else
 #define tcl_const
 #endif
+
+
 
 #ifdef WIN32
    #define LOCAL_EXPORTS __declspec(dllexport)
@@ -52,6 +56,7 @@ namespace ngsolve
 }
 #include "numproc.hpp"
 #include "pde.hpp"
+
 
 namespace ngsolve
 {
