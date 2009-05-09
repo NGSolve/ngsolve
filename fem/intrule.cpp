@@ -956,7 +956,7 @@ namespace ngfem
           iry = &SelectIntegrationRule (ET_SEGM, order);
           
           int sort[3];
-          eltrans.GetSort (FlatArray<int> (3, sort) );
+          eltrans.GetSort (FlatArray<int> (3, &sort[0]) );
           int isort[3];
           for (int i = 0; i < 3; i++) isort[sort[i]] = i;
           
