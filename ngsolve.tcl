@@ -1,3 +1,8 @@
+if { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
+    puts "cannot load ngsolve" 
+    puts "error: $result"
+} 
+
 # check some NGS command
 if { [catch { NGS_GetData } ] == 0 } { 
     
