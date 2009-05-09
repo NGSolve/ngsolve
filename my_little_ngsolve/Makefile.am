@@ -5,5 +5,6 @@ lib_LTLIBRARIES = libmyngsolve.la
 libmyngsolve_la_SOURCES = myElement.cpp myFESpace.cpp myIntegrator.cpp \
 myElement.hpp myFESpace.hpp myIntegrator.hpp all_in_one.cpp 
 
-noinst_data = simple.pde
+dist_noinst_DATA = simple.pde all_in_one.pde square.in2d  square.vol 
+
 
