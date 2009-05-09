@@ -242,6 +242,9 @@ if { $stereo == "defined" } {
 }
 
 
+catch { source ${ngdir}/ngsolve.tcl } 
+
+
 set scriptfilename [Ng_GetCommandLineParameter script]
 if { $scriptfilename != "undefined" } {
     if { [catch { source $scriptfilename } errstring] == 1 } {
@@ -284,9 +287,6 @@ if { [file exists startup.tcl] } {
 
 
 # source ngusers/ebg/elasticity/ebgelast.tcl
-
-catch { source ${ngdir}/ngsolve.tcl } 
-
 
 # if { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
 #    puts "cannot load ngsolve" 
