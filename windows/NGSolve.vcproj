@@ -6,6 +6,7 @@
 	ProjectGUID="{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}"
 	RootNamespace="NGSolve"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="0"
 	>
 	<Platforms>
 		<Platform
@@ -40,8 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\blas&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\lapack&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
-				PreprocessorDefinitions="_DEBUG;NETGEN_ELTRANS;WINVER=0x0501;WIN32;LAPACK;MSVC_EXPRESS"
+				AdditionalIncludeDirectories="C:\Users\joachim\NetgenInstall\Netgen\include;&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\blas&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\lapack&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
+				PreprocessorDefinitions="_DEBUG;NETGEN_ELTRANS;WINVER=0x0501;WIN32;LAPACK"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="0"
@@ -62,10 +63,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="lapack_win32.lib blas_win32.lib nginterface.lib tcl85.lib nafxcw.lib libcpmt.lib"
+				AdditionalDependencies="lapack_win32.lib blas_win32.lib nginterface.lib tcl85.lib libcpmtd.lib"
 				OutputFile="$(OutDir)\libngsolve.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\lib&quot;"
+				AdditionalLibraryDirectories="C:\Users\joachim\NetgenInstall\Netgen\lib;&quot;C:\Users\joachim\NetgenRoot\ext_libs\lapack-blas&quot;;&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\lib&quot;"
 				IgnoreDefaultLibraryNames="nafxcw.lib;libcpmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -90,9 +91,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -154,7 +152,7 @@
 				AdditionalDependencies="lapack_win32.lib blas_win32.lib nginterface.lib tcl85.lib pthreadVC2.lib libcpmt.lib"
 				OutputFile="$(OutDir)\libngsolve.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\lib&quot;"
 				IgnoreDefaultLibraryNames="nafxcw.lib;libcpmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -179,9 +177,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
