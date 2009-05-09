@@ -67,6 +67,7 @@ if { $batchmode != "defined" } {
 catch { 
     source ${ngdir}/dialog.tcl
 }
+
 catch {
     source ${ngdir}/drawing.tcl
 }
@@ -271,30 +272,32 @@ if { [file exists startup.tcl] } {
 
 
 ##################################################
-catch { source ${ngdir}/trafo/trafo.tcl }
+# catch { source ${ngdir}/trafo/trafo.tcl }
 
-catch { source ${ngdir}/trafoapp/smallmodels.tcl }
+# catch { source ${ngdir}/trafoapp/smallmodels.tcl }
 
-catch { 
-  source ${ngdir}/ngshell.tcl
-  source ${ngdir}/ngtesting.tcl
-}
+# catch { 
+#  source ${ngdir}/ngshell.tcl
+#  source ${ngdir}/ngtesting.tcl
+# }
 
 
 
 # source ngusers/ebg/elasticity/ebgelast.tcl
 
+catch { source ${ngdir}/ngsolve.tcl } 
 
-if { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
+
+# if { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
 #    puts "cannot load ngsolve" 
 #    puts "error: $result"
-} {
-    catch { source ${ngdir}/ngsolve.tcl }
-}
+# } {
+#     catch { source ${ngdir}/ngsolve.tcl }
+# }
 
 
-if { [catch { source ${ngdir}/demoapp.tcl } result ] } {
+# if { [catch { source ${ngdir}/demoapp.tcl } result ] } {
 #    puts "cannot load demoapp" 
 #    puts "error: $result"
-}
+# }
 

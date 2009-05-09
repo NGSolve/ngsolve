@@ -1,4 +1,3 @@
-
 # netgen menus:
 
 menu .ngmenu -tearoff 0  -relief raised -bd 2
@@ -787,7 +786,6 @@ menu .ngmenu.special
 #    -command { stldoctordialog; }
 
 
-
 #####################################################
 #                                                   #
 #     Menu Help                                     #
@@ -817,7 +815,6 @@ tk_messageBox -message "This is NETGEN \n mainly written by \n Joachim Sch�erl
 
 # tk_menuBar .mbar .mbar.file .mbar.mesh .mbar.test .mbar.help
 # focus .mbar
-
 
 
 
@@ -876,8 +873,6 @@ tixOptionMenu .bubar.modesel \
 .bubar.modesel add command rotate -label Rotate
 .bubar.modesel add command move -label Move
 .bubar.modesel add command zoom -label Zoom
-
-
 
 
 

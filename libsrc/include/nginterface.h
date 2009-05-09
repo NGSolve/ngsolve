@@ -443,6 +443,14 @@ extern "C" {
    */
   DLL_HEADER int Ng_GetElementClosureNodes (int dim, int elementnr, int nodeset, int * nodes);
 
+
+  struct Ng_Tcl_Interp;
+  typedef int (Ng_Tcl_CmdProc) (Ng_Tcl_Interp *interp, int argc, const char *argv[]);
+
+  DLL_HEADER void Ng_Tcl_CreateCommand (Ng_Tcl_Interp * interp, 
+                                        const char * cmdName, Ng_Tcl_CmdProc * proc);
+
+  void Ng_Tcl_SetResult (Ng_Tcl_Interp * interp, const char * result);
 }
 
 

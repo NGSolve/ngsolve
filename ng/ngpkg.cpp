@@ -249,6 +249,7 @@ namespace netgen
 
 
 
+
 #ifndef SMALLLIB
   // Destination for messages, errors, ...
   void Ng_PrintDest(const char * s)
