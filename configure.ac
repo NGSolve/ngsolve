@@ -34,10 +34,12 @@ AC_ARG_WITH([netgen],
         [netgendir="/opt/netgen"]
         )
 
+
+AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])]
 AC_ARG_WITH([lapack],
-        [  --with-lapack=lapacklib   linker flags for linking dense linear algebra library LAPACK],          
-        [AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])]
-        [AC_SUBST([LAPACK_LIBS], [$withval])]
+        [  --with-lapack=lapacklib   linker flags for linking dense linear algebra library LAPACK, default is '-llapack -lblas'],          
+        [AC_SUBST([LAPACK_LIBS], [$withval])],
+        [AC_SUBST([LAPACK_LIBS], "-llapack -lblas")],
         )
 
 AC_ARG_ENABLE([pardiso],

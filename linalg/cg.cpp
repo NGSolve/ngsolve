@@ -1116,7 +1116,7 @@ void QMRSolver<SCAL> :: Mult (const BaseVector & b, BaseVector & x) const
     {
       cout << "QMR called" << endl;
       double resid;
-      SCAL rho, rho_1, xi, gamma, gamma_1, theta, theta_1, eta, delta, ep, beta;
+      SCAL rho, rho_1, xi, gamma, gamma_1, theta, theta_1, eta, delta, ep=1.0, beta;
       
 
       BaseVector & r = *b.CreateVector();
