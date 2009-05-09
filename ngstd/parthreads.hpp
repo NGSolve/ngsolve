@@ -1,6 +1,10 @@
 #ifndef FILE_PARTHREADS
 #define FILE_PARTHREADS
 
+this file ist not used anymore
+
+
+
 /**************************************************************************/
 /* File:   parthreads.hh                                                  */
 /* Author: Joachim Schoeberl                                              */
