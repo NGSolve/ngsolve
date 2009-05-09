@@ -759,9 +759,8 @@ namespace ngsolve
 			if (!gfu->GetFESpace().IsComplex())
 			  {
 			    FlatVector<double> pflux;
-			    bool ok =
-			      CalcPointFlux (ma, *gfu, p,
-					     pflux, bfi, applyd, lh, component);
+                            CalcPointFlux (ma, *gfu, p,
+                                           pflux, bfi, applyd, lh, component);
 			    
 			    if(values[k] == NULL)
 			      {
@@ -775,9 +774,8 @@ namespace ngsolve
 			  {
 			    FlatVector<Complex> pflux;
 			    complexflux = true;
-			    bool ok =
-			      CalcPointFlux (ma, *gfu, p,
-					     pflux, bfi, applyd, lh, component);
+                            CalcPointFlux (ma, *gfu, p,
+                                           pflux, bfi, applyd, lh, component);
 			    
 			    if(values[k] == NULL)
 			      {
@@ -1037,7 +1035,7 @@ namespace ngsolve
 
   void NumProcAnalyze :: Do(LocalHeap & lh)
   {
-    int i, j, dom;
+    int dom;
 
     bool writevar = (strcmp(variablename.c_str(), "") != 0);
     string actvarname;
@@ -1089,7 +1087,7 @@ namespace ngsolve
 	      }
 	  }
 
-	const FESpace & fes = gfu->GetFESpace();
+	// const FESpace & fes = gfu->GetFESpace();
 
 	VisualizeGridFunction<double> vgfu(pde.GetMeshAccess(),gfu,
 					   BoundaryEvaluator_ptr,
@@ -1930,7 +1928,7 @@ namespace ngsolve
     double light = flags.GetNumFlag("light",-1);
     if(light > 1) light = 1;
 
-    double minval, maxval;
+    double minval = 0, maxval = 1;
     bool autoscale = flags.GetDefineFlag("autoscale");
     bool noautoscale = ( flags.NumFlagDefined("minval") && flags.NumFlagDefined("maxval") );
     if(noautoscale)
@@ -2356,7 +2354,7 @@ namespace ngsolve
     double light = flags.GetNumFlag("light",-1);
     if(light > 1) light = 1;
 
-    double minval, maxval;
+    double minval = 0, maxval = 1;
     bool autoscale = flags.GetDefineFlag("autoscale");
     bool noautoscale = ( flags.NumFlagDefined("minval") && flags.NumFlagDefined("maxval") );
     if(noautoscale)

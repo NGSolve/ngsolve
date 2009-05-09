@@ -43,8 +43,6 @@ namespace netgen {
 // static bool got_exception = false;
 
 /*
-
-
 #ifdef _MSC_VER
 
 # ifdef MSVC_EXPRESS
@@ -100,10 +98,7 @@ static void RunParallel ( void * (*fun)(void *), void * in)
     fun (in);
 }
 #endif
-
 */
-
-
 
 
 
