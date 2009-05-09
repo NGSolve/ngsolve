@@ -1,4 +1,4 @@
-AC_INIT([netgen],[4.9.8-dev],[],[])
+AC_INIT([netgen],[4.9.9],[],[])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
