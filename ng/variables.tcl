@@ -639,10 +639,9 @@ proc saveinifile { } {
 }
 
 
-
 proc savemeshinifile { } {
     uplevel 1  {
-	if {[catch { set datei [open ngmesh.ini w] } result } {
+	if {[catch { set datei [open ngmesh.ini w] } result ]} {
             puts "cannot write to ng.ini file"
         } {
             for { set i [.ngmenu.file.recentmesh index last] } { $i >= 1 } { incr i -1 } {
@@ -651,8 +650,6 @@ proc savemeshinifile { } {
             close $datei
         }
     }    
-
-
 }
 
 proc loadinifile { } {
