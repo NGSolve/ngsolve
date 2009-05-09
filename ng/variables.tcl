@@ -260,10 +260,10 @@ set optlist {
 }
 
 
-set visoptions.usetexture 0
+set visoptions.usetexture 1
 set visoptions.invcolor 0
 set visoptions.imaginary 0
-set visoptions.lineartexture 1
+set visoptions.lineartexture 0
 set visoptions.numtexturecols 16
 set visoptions.showclipsolution 1
 set visoptions.showsurfacesolution 0
@@ -322,7 +322,6 @@ set visoptions.gridsize 20
 set visoptions.xoffset 0
 set visoptions.yoffset 0
 set visoptions.autoscale 1
-set visoptions.lineartexture 1
 set visoptions.redrawperiodic 0
 set visoptions.logscale 0
 set visoptions.mminval 0

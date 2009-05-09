@@ -45,6 +45,82 @@ The interface between the GUI and the netgen library
 
 extern bool nodisplay;
 
+
+#include <nginterface.h>
+
+
+
+#ifdef _MSC_VER
+// Philippose - 30/01/2009
+// MSVC Express Edition Support
+#ifdef MSVC_EXPRESS
+
+// #include <pthread.h>
+
+  static pthread_t meshingthread;
+  void RunParallel ( void * (*fun)(void *), void * in)
+  {
+    if (netgen::mparam.parthread)
+     {
+	     pthread_attr_t attr;
+	     pthread_attr_init (&attr);
+	     // the following call can be removed if not available:
+	     pthread_attr_setstacksize(&attr, 1000000);
+	     //pthread_create (&meshingthread, &attr, fun, NULL);
+	     pthread_create (&meshingthread, &attr, fun, in);
+     }
+     else
+     fun (in);
+  }
+
+#else // Using MS VC++ Standard / Enterprise / Professional edition
+
+  // Afx - Threads need different return - value:
+
+  static void* (*sfun)(void *);
+  unsigned int fun2 (void * val)
+  {
+    sfun (val);
+    return 0;
+  }
+
+  void RunParallel ( void* (*fun)(void *), void * in)
+  {
+    sfun = fun;
+    if (netgen::mparam.parthread)
+      AfxBeginThread (fun2, in);
+    //AfxBeginThread (fun2, NULL);
+    else
+      fun (in);
+  }
+
+#endif // #ifdef MSVC_EXPRESS
+
+#else  // For #ifdef _MSC_VER
+
+// #include <pthread.h>
+
+  static pthread_t meshingthread;
+  void RunParallel ( void * (*fun)(void *), void * in)
+  {
+    if (netgen::mparam.parthread)
+      {
+	pthread_attr_t attr;
+	pthread_attr_init (&attr);
+	// the following call can be removed if not available:
+	pthread_attr_setstacksize(&attr, 1000000);
+	//pthread_create (&meshingthread, &attr, fun, NULL);
+	pthread_create (&meshingthread, &attr, fun, in);
+      }
+    else
+      fun (in);
+  }
+
+#endif // #ifdef _MSC_VER
+
+
+
+
 namespace netgen
 {
 #include "../libsrc/interface/writeuser.hpp"
@@ -170,76 +246,6 @@ namespace netgen
   static char * err_needsstlgeometry = (char*) "This operation needs an STL geometry";
   static char * err_jobrunning = (char*) "Meshing Job already running";
 
-
-
-
-#ifdef _MSC_VER
-// Philippose - 30/01/2009
-// MSVC Express Edition Support
-#ifdef MSVC_EXPRESS
-
-// #include <pthread.h>
-
-  static pthread_t meshingthread;
-  void RunParallel ( void * (*fun)(void *), void * in)
-  {
-     if (mparam.parthread)
-     {
-	     pthread_attr_t attr;
-	     pthread_attr_init (&attr);
-	     // the following call can be removed if not available:
-	     pthread_attr_setstacksize(&attr, 1000000);
-	     //pthread_create (&meshingthread, &attr, fun, NULL);
-	     pthread_create (&meshingthread, &attr, fun, in);
-     }
-     else
-     fun (in);
-  }
-
-#else // Using MS VC++ Standard / Enterprise / Professional edition
-
-  // Afx - Threads need different return - value:
-
-  static void* (*sfun)(void *);
-  unsigned int fun2 (void * val)
-  {
-    sfun (val);
-    return 0;
-  }
-
-  void RunParallel ( void* (*fun)(void *), void * in)
-  {
-    sfun = fun;
-    if (mparam.parthread)
-      AfxBeginThread (fun2, in);
-    //AfxBeginThread (fun2, NULL);
-    else
-      fun (in);
-  }
-
-#endif // #ifdef MSVC_EXPRESS
-
-#else  // For #ifdef _MSC_VER
-
-// #include <pthread.h>
-
-  static pthread_t meshingthread;
-  void RunParallel ( void * (*fun)(void *), void * in)
-  {
-    if (mparam.parthread)
-      {
-	pthread_attr_t attr;
-	pthread_attr_init (&attr);
-	// the following call can be removed if not available:
-	pthread_attr_setstacksize(&attr, 1000000);
-	//pthread_create (&meshingthread, &attr, fun, NULL);
-	pthread_create (&meshingthread, &attr, fun, in);
-      }
-    else
-      fun (in);
-  }
-
-#endif // #ifdef _MSC_VER
 
 
 

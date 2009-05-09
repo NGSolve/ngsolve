@@ -344,6 +344,7 @@ extern "C" {
   // pairs should be an integer array of 2*npairs
   DLL_HEADER void Ng_GetPeriodicEdges (int idnr, int * pairs); 
 
+  DLL_HEADER void RunParallel ( void * (*fun)(void *), void * in);
 
   DLL_HEADER void Ng_PushStatus (const char * str);
   DLL_HEADER void Ng_PopStatus ();
