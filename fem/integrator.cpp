@@ -1392,8 +1392,8 @@ namespace ngfem
     const CompoundFiniteElement & fel =
       dynamic_cast<const CompoundFiniteElement&> (bfel);
 
-    FlatMatrix<double> mat1;
     int nd = fel[comp].GetNDof();
+    FlatMatrix<double> mat1(nd, locheap);
     FlatVector<double> ellin1(nd, locheap);
 
     int base = 0;
@@ -1405,9 +1405,7 @@ namespace ngfem
 
     bfi.AssembleLinearizedElementMatrix (fel[comp], eltrans, ellin1, mat1, locheap);
     
-    elmat.AssignMemory (fel.GetNDof(), fel.GetNDof(), locheap);
     elmat = 0;
-    
     for (int i = 0; i < mat1.Height(); i++)
       for (int j = 0; j < mat1.Width(); j++)
 	elmat(base+i, base+j) = mat1(i,j);

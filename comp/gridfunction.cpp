@@ -575,6 +575,7 @@ namespace ngcomp
 
     if (bfi2d.Size()) components = bfi2d[0]->DimFlux();
     if (bfi3d.Size()) components = bfi3d[0]->DimFlux();
+
     if (iscomplex) components *= 2;
     multidimcomponent = 0;
   }

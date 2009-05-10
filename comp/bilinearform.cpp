@@ -1562,6 +1562,7 @@ namespace ngcomp
 		    useddof.Set (dnums[j]);
 	      
 		FlatMatrix<SCAL> sum_elmat(dnums.Size()*fespace.GetDimension(), lh);
+		FlatMatrix<SCAL> elmat(dnums.Size()*fespace.GetDimension(), lh);
 		sum_elmat = 0;
 
 		FlatVector<SCAL> elveclin (dnums.Size()*fespace.GetDimension(), lh);
@@ -1575,7 +1576,6 @@ namespace ngcomp
 		    if (bfi.BoundaryForm()) continue;
 		    if (!bfi.DefinedOn (ma.GetElIndex (i))) continue;
 		  
-		    FlatMatrix<SCAL> elmat;
 		    try
 		      {
 			bfi.AssembleLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
@@ -1669,6 +1669,8 @@ namespace ngcomp
 		    useddof.Set (dnums[j]);
 
 		FlatVector<SCAL> elveclin (dnums.Size()*fespace.GetDimension(), lh);
+                FlatMatrix<SCAL> elmat (dnums.Size()*fespace.GetDimension(), lh);
+
 		lin.GetIndirect (dnums, elveclin);
 		fespace.TransformVec (i, true, elveclin, TRANSFORM_SOL);
 	      
@@ -1678,7 +1680,6 @@ namespace ngcomp
 		  
 		    if (!bfi.BoundaryForm()) continue;
 
-		    FlatMatrix<SCAL> elmat;
 		  
 		    bfi.AssembleLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
 		  	  
