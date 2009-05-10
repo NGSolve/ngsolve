@@ -150,8 +150,8 @@ namespace ngfem
       GetIntegrators().AddBFIntegrator ("elasticity", 3, 2,
 					ElasticityIntegrator<3>::Create);
       
-      GetIntegrators().AddBFIntegrator ("orthoelasticity", 2, 9,
-					OrthotropicElasticityIntegrator<2>::Create);
+      // GetIntegrators().AddBFIntegrator ("orthoelasticity", 2, 9,
+      // OrthotropicElasticityIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("orthoelasticity", 3, 9,
 					OrthotropicElasticityIntegrator<3>::Create);
       
