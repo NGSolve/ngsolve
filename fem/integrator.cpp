@@ -654,29 +654,21 @@ namespace ngfem
 				   FlatMatrix<double> & elmat,
 				   LocalHeap & locheap) const
   {
+    FlatMatrix<double> mat1(bfel.GetNDof(), locheap);
     const int smallsizelin = elveclin.Size()/dim;
 
-    Vector<double> small_elveclin(smallsizelin);
-
-    FlatMatrix<double> mat1;
+    FlatVector<double> small_elveclin(smallsizelin, locheap);
 
     if (comp == -1)
       {
-	bool allocated(false);
-
 	for(int d=0; d<dim; d++)
 	  {
 	    for(int i=0; i<smallsizelin; i++)
-	      {
-		small_elveclin(i) = elveclin(i*dim+d);
-	      }
+              small_elveclin(i) = elveclin(i*dim+d);
+
 	    bfi.AssembleLinearizedElementMatrix (bfel, eltrans, small_elveclin, mat1, locheap);
-	    if(!allocated)
-	      {
-		elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, locheap);
-		elmat = 0;
-		allocated = true;
-	      }
+            elmat = 0;
+
 	    for (int i = 0; i < mat1.Height(); i++)
 	      for (int j = 0; j < mat1.Width(); j++)
 		elmat(i*dim+d, j*dim+d) = mat1(i,j);
@@ -685,11 +677,9 @@ namespace ngfem
     else
       {
 	for(int i=0; i<smallsizelin; i++)
-	  {
-	    small_elveclin(i) = elveclin(i*dim+comp);
-	  }
+          small_elveclin(i) = elveclin(i*dim+comp);
+
 	bfi.AssembleLinearizedElementMatrix (bfel, eltrans, small_elveclin, mat1, locheap);
-	elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, locheap);
 	elmat = 0;
 	for (int i = 0; i < mat1.Height(); i++)
 	  for (int j = 0; j < mat1.Width(); j++)
