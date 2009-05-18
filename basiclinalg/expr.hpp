@@ -21,21 +21,6 @@ namespace ngbla
   */
 
 
-#ifdef GNU_PRE3
-
-  template <class T, int num>
-  inline T & Access (Vec<num, T> & vec, int nr)
-  {
-    return vec(nr);
-  }
-  template <class T, int num>
-  inline T Access (const Vec<num, T> & vec, int nr) 
-  {
-    return vec(nr);
-  }
-
-#else
-
   template <typename TVEC> 
   inline typename TVEC::TELEM & Access (TVEC & vec, int nr)
   {
@@ -47,10 +32,6 @@ namespace ngbla
   {
     return vec(nr);
   }
-
-#endif // GNU_PRE3
-
-
 
   inline double & Access (double & vec, int nr)
   {
@@ -71,6 +52,45 @@ namespace ngbla
   {
     return vec;
   }
+
+
+
+
+
+
+  template <typename TM> 
+  inline typename TM::TELEM & Access (TM & mat, int i, int j)
+  {
+    return mat(i,j);
+  }
+
+  template <typename TM> 
+  inline typename TM::TELEM Access (const TM & mat, int i, int j)
+  {
+    return mat(i,j);
+  }
+
+  inline double & Access (double & mat, int i, int j)
+  {
+    return mat;
+  }
+
+  inline double Access (const double & mat, int i, int j)
+  {
+    return mat;
+  }
+
+  inline Complex & Access (Complex & mat, int i, int j)
+  {
+    return mat;
+  }
+
+  inline Complex Access (const Complex & mat, int i, int j)
+  {
+    return mat;
+  }
+
+
 
 
 
@@ -99,6 +119,8 @@ namespace ngbla
     enum { HEIGHT = T::HEIGHT };
     /// matrix with
     enum { WIDTH  = T::WIDTH  };
+    ///
+    enum { IS_COMPLEX = mat_traits<TSCAL>::IS_COMPLEX };
   };
 
 
@@ -113,6 +135,7 @@ namespace ngbla
     typedef int TV_ROW;
     enum { HEIGHT = 1 };
     enum { WIDTH = 1 };
+    enum { IS_COMPLEX = 0 };
   };
 
   template <>
@@ -125,6 +148,7 @@ namespace ngbla
     typedef int TV_ROW;
     enum { HEIGHT = 1 };
     enum { WIDTH = 1 };
+    enum { IS_COMPLEX = 0 };
   };
 
 
@@ -138,6 +162,7 @@ namespace ngbla
     typedef double TV_ROW;
     enum { HEIGHT = 1 };
     enum { WIDTH = 1 };
+    enum { IS_COMPLEX = 0 };
   };
 
   template <>
@@ -150,6 +175,7 @@ namespace ngbla
     typedef Complex TV_ROW;
     enum { HEIGHT = 1 };
     enum { WIDTH = 1 };
+    enum { IS_COMPLEX = 1 };
   };
 
   template <int D, typename SCAL>
@@ -162,6 +188,7 @@ namespace ngbla
     typedef AutoDiff<D,SCAL> TV_ROW;
     enum { HEIGHT = 1 };
     enum { WIDTH = 1 };
+    enum { IS_COMPLEX = mat_traits<SCAL>::IS_COMPLEX };
   };
 
   template <>
@@ -174,6 +201,7 @@ namespace ngbla
     typedef int TV_ROW;
     enum { HEIGHT = 1 };
     enum { WIDTH = 1 };
+    enum { IS_COMPLEX = 0 };
   };
 
   template <>
@@ -186,6 +214,7 @@ namespace ngbla
     typedef double TV_ROW;
     enum { HEIGHT = 1 };
     enum { WIDTH = 1 };
+    enum { IS_COMPLEX = 0 };
   };
 
   template <>
@@ -198,6 +227,7 @@ namespace ngbla
     typedef Complex TV_ROW;
     enum { HEIGHT = 1 };
     enum { WIDTH = 1 };
+    enum { IS_COMPLEX = 1 };
   };
 
 

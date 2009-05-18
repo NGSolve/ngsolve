@@ -87,6 +87,11 @@ namespace ngla
   template<class TM, 
 	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
 	   class TV_COL = typename mat_traits<TM>::TV_COL>
+  class MumpsInverse;
+
+  template<class TM, 
+	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
+	   class TV_COL = typename mat_traits<TM>::TV_COL>
   class SuperLUInverse;
 
 
@@ -97,7 +102,7 @@ namespace ngla
   //template <class TM> class SuperLUInverse;
 
   // sets the solver which is used for InverseMatrix
-  enum INVERSETYPE { PARDISO, PARDISOSPD, SPARSECHOLESKY, SUPERLU, SUPERLU_DIST };
+  enum INVERSETYPE { PARDISO, PARDISOSPD, SPARSECHOLESKY, SUPERLU, SUPERLU_DIST, MUMPS };
 
 
 

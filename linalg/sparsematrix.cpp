@@ -42,7 +42,7 @@ namespace ngla
 	firsti[i] = i*max_elsperrow;
 	diagi[i] = i*max_elsperrow;
       }
-    // #ifdef ASTRID
+
 #ifdef USE_PARDISO
     inversetype = PARDISO;
 #else
@@ -52,7 +52,6 @@ namespace ngla
     inversetype = SPARSECHOLESKY;
 #endif
 #endif
-    // #endif
   }
   
   MatrixGraph :: MatrixGraph (const Array<int> & elsperrow)
@@ -80,7 +79,6 @@ namespace ngla
     for (int i = 0; i < nze; i++)
       colnr[i] = -1;
     colnr[nze] = 0;
-    // #ifdef ASTRID
 #ifdef USE_PARDISO
     inversetype = PARDISO;
 #else
@@ -90,7 +88,6 @@ namespace ngla
     inversetype = SPARSECHOLESKY;
 #endif
 #endif
-    // #endif
   }
     
   MatrixGraph :: MatrixGraph (const MatrixGraph & agraph, bool stealgraph)
@@ -735,6 +732,15 @@ namespace ngla
 	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
 #endif
       }
+    else if (  BaseSparseMatrix :: GetInverseType()  == MUMPS)
+      {
+#ifdef USE_MUMPS
+	return new MumpsInverse<TM,TV_ROW,TV_COL> (*this, subset);
+#else
+	throw Exception ("SparseMatrix::InverseMatrix: MumpsInverse not available");
+#endif
+      }
+
     else
       return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, subset);
     //#endif
@@ -772,12 +778,20 @@ namespace ngla
 	throw Exception ("SparseMatrix::InverseMatrix:  SuperLUInverse not available");
 #endif
       }
-    else if (  BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
+    else if ( BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
 #ifdef USE_PARDISO
 	return new PardisoInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
+#endif
+      }
+    else if ( BaseSparseMatrix :: GetInverseType()  == MUMPS )
+      {
+#ifdef USE_MUMPS
+	return new MumpsInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters);
+#else
+	throw Exception ("SparseMatrix::InverseMatrix:  MumpsInverse not available");
 #endif
       }
     else
@@ -1328,6 +1342,14 @@ namespace ngla
 	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
 #endif
       }
+    else if ( BaseSparseMatrix :: GetInverseType()  == MUMPS )
+      {
+#ifdef USE_MUMPS
+	return new MumpsInverse<TM,TV_ROW,TV_COL> (*this, subset, 0, 1);
+#else
+	throw Exception ("SparseMatrix::InverseMatrix:  MumpsInverse not available");
+#endif
+      }
     else
       return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, subset);
     // #endif
@@ -1368,6 +1390,14 @@ namespace ngla
 	return new PardisoInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters, 1);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
+#endif
+      }
+    else if (  BaseSparseMatrix :: GetInverseType()  == MUMPS )
+      {
+#ifdef USE_MUMPS
+	return new MumpsInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters, 1);
+#else
+	throw Exception ("SparseMatrix::InverseMatrix:  MumpsInverse not available");
 #endif
       }
     else
@@ -1553,6 +1583,8 @@ namespace ngla
       matrix.SetInverseType ( SUPERLU );
     else if ( ainversetype == "superlu_dist" )
       matrix.SetInverseType ( SUPERLU_DIST );
+    else if ( ainversetype == "mumps" )
+      matrix.SetInverseType ( MUMPS );
     else
       matrix.SetInverseType ( SPARSECHOLESKY );
   }

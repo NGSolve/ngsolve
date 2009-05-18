@@ -1,4 +1,4 @@
-AC_INIT([ngsolve],[4.9.9],[])
+AC_INIT([ngsolve],[4.9.10-dev],[])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -47,6 +47,13 @@ AC_ARG_ENABLE([pardiso],
         [AC_SUBST([PARDISO_INCLUDES], ["-DUSE_PARDISO"])]
         [AC_SUBST([PARDISO_LIBS], ["-lpardiso_GNU_IA32 -llapack"])]
         )
+
+AC_ARG_ENABLE([mumps],
+        [  --enable-mumps             enable sparse direct solver MUMPS],          
+        [AC_SUBST([MUMPS_INCLUDES], ["-DUSE_MUMPS"])]
+        [AC_SUBST([MUMPS_LIBS], ["-ldmumps -lmumps_common -lpord -lmpiseq"])]
+        )
+
 
 # AC_ARG_WITH([pardiso],
 #        [  --with-pardiso=libpardiso.so  enable sparse direct solver pardiso],          
