@@ -73,4 +73,3 @@ numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c 
 numproc calcflux np2 -bilinearform=a -solution=u -flux=stress -applyd
 
 
-

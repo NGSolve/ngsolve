@@ -958,6 +958,42 @@ namespace ngcomp
   }
 #endif // PARALLEL
 
+  
+
+
+
+
+  class HybridDGFESpace : public CompoundFESpace
+  {
+  public:
+    HybridDGFESpace (const MeshAccess & ama, 
+                   const Array<const FESpace*> & aspaces,
+                   const Flags & flags)
+      : CompoundFESpace (ama, aspaces, flags)
+    { }
+
+    virtual ~HybridDGFESpace () { ; }
+
+    static FESpace * Create (const MeshAccess & ma, const Flags & flags)
+    {
+      Array<const FESpace*> spaces(2);
+
+      Flags l2flags(flags), facetflags(flags);
+
+      int order = int (flags.GetNumFlag ("order", 1));
+
+      l2flags.SetFlag ("orderinner", order);
+      facetflags.SetFlag("orderfacet", order);
+
+      spaces[0] = new L2HighOrderFESpace (ma, l2flags);    
+      spaces[1] = new FacetFESpace (ma, facetflags);        
+
+      HybridDGFESpace * fes = new HybridDGFESpace (ma, spaces, flags);
+      return fes;
+    }
+    
+    virtual string GetClassName () const { return "HybridDGFESpace"; }
+  };
 
 
   
@@ -974,6 +1010,7 @@ namespace ngcomp
     Init::Init()
     {
       GetFESpaceClasses().AddFESpace ("facet", FacetFESpace::Create);
+      GetFESpaceClasses().AddFESpace ("HDG", HybridDGFESpace::Create);
     }
 
     Init init;

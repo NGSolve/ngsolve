@@ -443,7 +443,7 @@ namespace ngcomp
     (*testout) << " Condition   " << eigen.MaxEigenValue()/eigen.EigenValue(mgnumber) << endl;
     static ofstream condout (mgfile.c_str());
 
-    double cond;
+    // double cond;
 
     condout << bfa->GetFESpace().GetNDof() << "\t" << bfa->GetFESpace().GetOrder() << "\t" << eigen.EigenValue(mgnumber) << "\t" << eigen.MaxEigenValue() << "\t" 
 	    << eigen.MaxEigenValue()/eigen.EigenValue(mgnumber) <<  "\t" << endl;
@@ -471,6 +471,7 @@ namespace ngcomp
 
   void DirectPreconditioner :: Update ()
   {
+    cout << "Inverse type = " << inversetype << endl;
     if ( inverse )
       delete inverse;
     try
@@ -610,7 +611,7 @@ namespace ngcomp
     cout << "Update Local Preconditioner" << flush;
     delete jacobi;
     
-    const BaseSparseMatrix& amatrix = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix());
+    // const BaseSparseMatrix& amatrix = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix());
     // 	if ( inversetype != "none" )
     // 	amatrix.SetInverseType ( inversetype );
 	
@@ -689,7 +690,7 @@ namespace ngcomp
     (*testout) << " Condition   " << eigen.MaxEigenValue()/eigen.EigenValue(1) << endl;
     static ofstream condout (locprecfile.c_str());
 
-    double cond;
+    // double cond;
 
     condout << bfa->GetFESpace().GetNDof() << "\t" << bfa->GetFESpace().GetOrder() << "\t" << eigen.EigenValue(1) << "\t" << eigen.MaxEigenValue() << "\t" 
 	    << eigen.MaxEigenValue()/eigen.EigenValue(1) <<  "\t" << endl;
