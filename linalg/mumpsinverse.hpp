@@ -16,7 +16,7 @@ namespace ngla
 
 #ifdef USE_MUMPS
 #include "dmumps_c.h"
-#include "cmumps_c.h"
+#include "zmumps_c.h"
 
 
   template <class TSCAL>
@@ -33,10 +33,10 @@ namespace ngla
   class mumps_trait<Complex>
   {
   public:
-    typedef CMUMPS_STRUC_C MUMPS_STRUC_C;
-    typedef mumps_complex MUMPS_TSCAL;
-    static void MumpsFunction (CMUMPS_STRUC_C * id)
-    { cmumps_c (id); }
+    typedef ZMUMPS_STRUC_C MUMPS_STRUC_C;
+    typedef mumps_double_complex MUMPS_TSCAL;
+    static void MumpsFunction (ZMUMPS_STRUC_C * id)
+    { zmumps_c (id); }
   };
 #endif
 
