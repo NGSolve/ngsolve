@@ -49,17 +49,16 @@ namespace ngla
 	throw Exception("Invalid parameters inner/cluster. Thrown by MumpsInverse.");
       }
 
-    clock_t starttime, time1 = 0, time2 = 0; 
-    starttime = clock();
-
-    // prepare matrix and parameters for Mumps
     if ( int( mat_traits<TM>::WIDTH) != int(mat_traits<TM>::HEIGHT) )
       {
 	cout << "Mumps: Each entry in the square matrix has to be a square matrix!" << endl;
 	throw Exception("No Square Matrix. Thrown by MumpsInverse.");
       }
 
-    entrysize = mat_traits<TM>::HEIGHT;   // NumRows(entry);
+    clock_t starttime, time1 = 0, time2 = 0; 
+    starttime = clock();
+
+    entrysize = mat_traits<TM>::HEIGHT; 
     iscomplex = mat_traits<TM>::IS_COMPLEX;
 
     height = a.Height() * entrysize;
@@ -74,6 +73,57 @@ namespace ngla
     
     if ( symmetric )
       {
+	col_indices = new int[a.NZE() * entrysize * entrysize ];
+	row_indices = new int[a.NZE() * entrysize * entrysize ];
+	matrix = new TSCAL[a.NZE() * entrysize * entrysize ];      
+        
+        int ii = 0;
+	for (int i = 0; i < a.Height(); i++ )
+	  {
+            FlatArray<const int> rowind = a.GetRowIndices(i);
+	    for (int j = 0; j < rowind.Size(); j++ )
+	      {
+		int col = rowind[j];
+
+		if (  (!inner && !cluster) ||
+		      (inner && (inner->Test(i) && inner->Test(col) ) ) ||
+		      (!inner && cluster &&
+                       ((*cluster)[i] == (*cluster)[col] 
+                        && (*cluster)[i] ))  )
+		  {
+		    TM entry = a(i,col);
+                    for (int l = 0; l < entrysize; l++ )
+                      for (int k = 0; k < entrysize; k++)
+			{
+                          int rowi = i*entrysize+l+1;
+                          int coli = col*entrysize+k+1;
+                          TSCAL val = Access(entry,l,k);
+                          if (rowi >= coli)
+                            {
+                              col_indices[ii] = coli;
+                              row_indices[ii] = rowi;
+                              matrix[ii] = val;
+                              ii++;
+                            }
+			}
+		  }
+		else if (i == col)
+		  {
+		    // in the case of 'inner' or 'cluster': 1 on the diagonal for
+		    // unused dofs.
+		    for (int l=0; l<entrysize; l++ )
+		      {
+			col_indices[ii] = col*entrysize+l+1;
+			row_indices[ii] = col*entrysize+l+1;
+                        matrix[ii] = 1;
+                        ii++;
+		      }
+		  }
+	      }
+	  }
+        nze = ii;
+
+
         /* later 
 	// --- transform lower left to full matrix (in compressed column storage format) ---
 	// 1.) build array 'colstart':
@@ -231,9 +281,9 @@ namespace ngla
 		    for (int k = 0; k < entrysize; k++)
 		      for (int l = 0; l < entrysize; l++ )
 			{
-			  col_indices[ colstart[col*entrysize+k]+
-                                       counter[col*entrysize+k] ] = i*entrysize+l + 1;
 			  row_indices[ colstart[col*entrysize+k]+
+                                       counter[col*entrysize+k] ] = i*entrysize+l + 1;
+			  col_indices[ colstart[col*entrysize+k]+
                                        counter[col*entrysize+k] ] = col*entrysize+k + 1;
 			  matrix[ colstart[col*entrysize+k]+
 				  counter[col*entrysize+k] ] = Access(entry,l,k);
@@ -262,7 +312,7 @@ namespace ngla
 
     id.job=JOB_INIT; 
     id.par=1; 
-    id.sym=0;
+    id.sym=symmetric;
     id.comm_fortran=USE_COMM_WORLD;
     // dmumps_c(&id);
     mumps_trait<TSCAL>::MumpsFunction (&id);
@@ -273,8 +323,8 @@ namespace ngla
     /* Define the problem on the host */
     id.n   = height; 
     id.nz  = nze;
-    id.irn = col_indices;
-    id.jcn = row_indices;
+    id.irn = row_indices;
+    id.jcn = col_indices;
     // id.rhs = rhs;
 
     if (symmetric)
@@ -290,6 +340,9 @@ namespace ngla
 
     id.job = JOB_ANALYSIS;
     // dmumps_c(&id);
+
+    cout << "call analysis" << endl;
+
     mumps_trait<TSCAL>::MumpsFunction (&id);
 
     cout << "analysis done, now factor" << endl;

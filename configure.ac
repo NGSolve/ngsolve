@@ -51,7 +51,7 @@ AC_ARG_ENABLE([pardiso],
 AC_ARG_ENABLE([mumps],
         [  --enable-mumps             enable sparse direct solver MUMPS],          
         [AC_SUBST([MUMPS_INCLUDES], ["-DUSE_MUMPS"])]
-        [AC_SUBST([MUMPS_LIBS], ["-ldmumps -lmumps_common -lpord -lmpiseq"])]
+        [AC_SUBST([MUMPS_LIBS], ["-ldmumps -lzmumps -lmumps_common -lpord -lmpiseq"])]
         )
 
 
