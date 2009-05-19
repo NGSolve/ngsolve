@@ -18,9 +18,9 @@ namespace ngstd
 class BlockAllocator
 {
   /// size of data
-  int size;
+  unsigned int size;
   /// number of blocks allocated at once
-  int blocks;
+  unsigned int blocks;
   /// single linked list of free elements
   void * freelist;
   /// pointers to blocks
@@ -29,7 +29,7 @@ class BlockAllocator
   int nels;
 public:
   /// Create BlockAllocator for elements of size asize
-  BlockAllocator (int asize, int ablocks = 100);
+  BlockAllocator (unsigned int asize, unsigned int ablocks = 100);
   /// Delete all memeory
   ~BlockAllocator ();
 

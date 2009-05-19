@@ -386,7 +386,7 @@ namespace ngfem
 
     int i,its,j;
     double alfbet,an,bn,r1,r2,r3;
-    double a,b,c,p1,p2,p3,pp,temp,z,z1;
+    double a,b,c,p1,p2,p3,pp,temp,z=0,z1;
     
     for (i=1;i<=n;i++) {
       if (i == 1) {
@@ -485,8 +485,8 @@ namespace ngfem
     x.SetSize (n);
     w.SetSize (n);
 
-    int its, j, m;
-    double p1, p2, p3, pp, z, z1;
+    int its, m;
+    double p1, p2, p3, pp, z = 0, z1;
 
     m = (n+1)/2;
     for (int i = 1; i <= m; i++)
@@ -1244,6 +1244,14 @@ namespace ngfem
 
           break;
         }
+      default:
+        {
+          stringstream str;
+          str<< "IntegratonRuleTP not available for element type " 
+             << ElementTopology::GetElementName(eltrans.GetElementType()) << endl;
+          throw Exception (str.str());
+        }
+
       }
 
     if (compute_mapping && !eltrans.Boundary())
@@ -1492,6 +1500,14 @@ namespace ngfem
             }
           break;
         }
+      default:
+        {
+          stringstream str;
+          str<< "IntegratonRuleTP,2 not available for element type " 
+             << ElementTopology::GetElementName(eltype) << endl;
+          throw Exception (str.str());
+        }
+
       }
   }
 
