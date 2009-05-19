@@ -10,14 +10,14 @@ namespace ngstd
     int strpos = 0;
 
     int patternsize = -1;
-    for(int i=0; patternsize < 0 && i<pattern.size(); i++)
+    for(unsigned int i=0; patternsize < 0 && i < pattern.size(); i++)
       if(pattern[i] == 0)
 	patternsize = i;
     if(patternsize < 0)
       patternsize = pattern.size();
 
     int strsize = -1;
-    for(int i=0; strsize < 0 && i<str.size(); i++)
+    for(unsigned int i=0; strsize < 0 && i<str.size(); i++)
       if(str[i] == 0)
 	strsize = i;
     if(strsize < 0)
@@ -61,7 +61,7 @@ namespace ngstd
 	
 
 
-	int foundpos;
+	unsigned int foundpos;
 	
 	if(nextpartsize == 0)
 	  foundpos = strsize;

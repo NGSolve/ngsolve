@@ -16,7 +16,7 @@ namespace ngstd
   using namespace ngstd;
 
 
-  BlockAllocator :: BlockAllocator (int asize, int ablocks)
+  BlockAllocator :: BlockAllocator (unsigned int asize, unsigned int ablocks)
     : bablocks (0)
   { 
     if (asize < sizeof(void*)) 
@@ -42,8 +42,8 @@ namespace ngstd
 	char * hcp = new char [size * blocks];
 	bablocks.Append (hcp);
 	bablocks.Last() = hcp;
-	int i;
-	for (i = 0; i < blocks-1; i++)
+
+	for (unsigned int i = 0; i < blocks-1; i++)
 	  *(void**)&(hcp[i * size]) = &(hcp[ (i+1) * size]);
 	*(void**)&(hcp[(blocks-1)*size]) = NULL;
 	freelist = hcp;
