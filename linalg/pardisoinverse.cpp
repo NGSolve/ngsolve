@@ -20,9 +20,9 @@ extern "C"
 #endif
 
   int F77_FUNC(pardiso)
-    (void *, int *, int *, int *, int *, int *, 
-     double *, int *, int *, int *, int *, int *, 
-     int *, double *, double *, int *);
+    (void * pt, int * maxfct, int * mnum, int * mtype, int * phase, int * n, 
+     double * a, int * ia, int * ja, int * perm, int * nrhs, int * iparam, 
+     int * msglvl, double * b, double * x, int * error);
 }
 
 
@@ -66,12 +66,13 @@ namespace pardisofunc
   Complex Elem (Complex entry, int i, int j) { return entry; }
 
 
-
+  /*
   template<class TM>
   int IsComplex(TM entry)
   {
     return ( sizeof( Elem(entry,0,0) ) == sizeof( Complex ) );
   }
+  */
 
 }
 
@@ -87,13 +88,12 @@ namespace pardisofunc
     static int timer = NgProfiler::CreateTimer ("Pardiso Inverse");
     NgProfiler::RegionTimer reg (timer);
 
-    //    (*testout) << "matrix = " << a << endl;
-
     symmetric = asymmetric;
     inner = ainner;
     cluster = acluster;
 
     (*testout) << "Pardiso, symmetric = " << symmetric << endl;
+
 
     if ( (inner && inner->Size() < a.Height()) ||
 	 (cluster && cluster->Size() < a.Height() ) )
@@ -102,63 +102,57 @@ namespace pardisofunc
 	throw Exception("Invalid parameters inner/cluster. Thrown by PardisoInverse.");
       }
 
-    clock_t starttime, time1, time2;
-    starttime = clock();
-
-
-    // prepare matrix and parameters for PARDISO
-    TM entry = a(0,0);
-    if ( NumRows(entry) != NumCols(entry) )
+    if ( int( mat_traits<TM>::WIDTH) != int(mat_traits<TM>::HEIGHT) )
       {
 	cout << "PardisoInverse: Each entry in the square matrix has to be a square matrix!" << endl;
 	throw Exception("No Square Matrix. Thrown by PardisoInverse.");
       }
-    entrysize = NumRows(entry);
-
-    SetMatrixType(entry);
 
 
+    entrysize = mat_traits<TM>::HEIGHT; 
     height = a.Height() * entrysize;
+
     rowstart = new int[height+1];
     indices = new int[a.NZE() * entrysize * entrysize ];
     matrix = new TSCAL[a.NZE() * entrysize * entrysize ];     
-    //#ifdef ASTRID
-    spd = 0;
-    if ( a.GetInverseType() == PARDISOSPD ) spd = 1;
-    //#endif
+
+    spd = ( a.GetInverseType() == PARDISOSPD ) ? 1 : 0;
+
     int i, j, k, l, rowsize;
     int col;
-    int maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = 0, error;
-    // int params[64];
+    int maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = 1, error;
     int * params = const_cast <int*> (&hparams[0]);
 
     params[0] = 1; // no pardiso defaults
-    params[2] = 1; // 1 processor
+    params[2] = 8; // 1 processor
 
-    params[1] = 2;
+    params[1] = 2; // fill in 2..metis
     params[3] = params[4] = params[5] = params[7] = params[8] = 
       params[11] = params[12] = params[18] = 0;
     params[6] = 16;
-    params[9] = 20;
+    params[9] = 10;  // perturbation 1E-10
     params[10] = 1;
 
     // JS
     params[6] = 0;
     params[17] = -1;
-    params[20] = 0;
+    params[20] = 1;  // 1x1 and 2x2 bunc and Kaufman pivoting
     
-    for (i = 0; i < 64; i++) pt[i] = 0;
- 
+    params[26] = 1; // check input matrix
+    params[59] = 0; // in-core pardiso
+
+    for (i = 0; i < 128; i++) pt[i] = 0;
     int retvalue;
 
+    cout << "&pt = " << &pt[0] << endl;
+
 #ifdef USE_MKL
-//     retvalue = F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &height, 
-// 				   reinterpret_cast<double *>(matrix),
-// 				   rowstart, indices, NULL, &nrhs, params, &msglevel,
-// 				   NULL, NULL, &error );
+    //    no init in MKL PARDISO
+    //     retvalue = F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &height, 
+    // 				   reinterpret_cast<double *>(matrix),
+    // 				   rowstart, indices, NULL, &nrhs, params, &msglevel,
+    // 				   NULL, NULL, &error );
 #else
-    //    cout << "call pardiso init" << endl;
-    // cout << "mtype = " << matrixtype << endl;
 
     retvalue = 
       F77_FUNC(pardisoinit) (pt,  &matrixtype, params); 
@@ -166,8 +160,8 @@ namespace pardisofunc
     // cout << "init success" << endl;
     // cout << "retvalue = " << retvalue << endl;
 #endif
-
-    SetMatrixType(entry);
+    
+    SetMatrixType();
 
     if ( symmetric )
       {
@@ -232,7 +226,7 @@ namespace pardisofunc
 			  ((*cluster)[i] == (*cluster)[col] 
 			   && (*cluster)[i] ))  )
 		      {
-			entry = a(i,col);
+			TM entry = a(i,col);
 			for ( k=0; k<entrysize; k++)
 			  for ( l=0; l<entrysize; l++ )
 			    {
@@ -248,7 +242,7 @@ namespace pardisofunc
 			  (inner && inner->Test(i)) ||
 			  (!inner && cluster && (*cluster)[i]) )
 		  {
-		    entry = a(i,col);
+		    TM entry = a(i,col);
 		    for ( l=0; l<entrysize; l++ )
 		      for ( k=0; k<=l; k++)
 			{
@@ -400,7 +394,7 @@ namespace pardisofunc
 		      ((*cluster)[i] == (*cluster)[col] 
 		       && (*cluster)[i] )) )
                       {
-                        entry = a(i,col);
+                        TM entry = a(i,col);
                         for ( k=0; k<entrysize; k++ )
                           for ( l=0; l<entrysize; l++ )
                             {
@@ -431,7 +425,7 @@ namespace pardisofunc
                     
                     if ( (*cluster)[i] == (*cluster)[col] && (*cluster)[i] )
                       {
-                        entry = a(i,col);
+                        TM entry = a(i,col);
                         for ( k=0; k<entrysize; k++ )
                           for ( l=0; l<entrysize; l++ )
                             {
@@ -456,7 +450,7 @@ namespace pardisofunc
                 {
                   col = a.GetRowIndices(i)[j];
                   
-                  entry = a(i,col);
+                  TM entry = a(i,col);
                   for ( k=0; k<entrysize; k++ )
                     for ( l=0; l<entrysize; l++ )
                       {
@@ -488,14 +482,20 @@ namespace pardisofunc
     nze = rowstart[height];
 
     // call pardiso for factorization:
-    time1 = clock();
+    // time1 = clock();
     cout << "call pardiso ..." << flush;
-    F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &height, 
-			reinterpret_cast<double *>(matrix),
-			rowstart, indices, NULL, &nrhs, params, &msglevel,
-			NULL, NULL, &error );
+
+
+
+    retvalue = F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &height, 
+				   reinterpret_cast<double *>(matrix),
+				   rowstart, indices, NULL, &nrhs, params, &msglevel,
+				   NULL, NULL, &error );
+
+    cout << "retvalue = " << retvalue << endl;
+    cout << "error = " << error << endl;
     cout << " done" << endl;
-    time2 = clock();
+    // time2 = clock();
 
 
     if ( error != 0 )
@@ -504,12 +504,13 @@ namespace pardisofunc
 	throw Exception("PardisoInverse: Setup and Factorization failed.");
       }
 
+    /*
     (*testout) << endl << "Direct Solver: PARDISO by Schenk/Gaertner." << endl;
     (*testout) << "Matrix prepared for PARDISO in " <<
       double(time1 - starttime)/CLOCKS_PER_SEC << " sec." << endl;
     (*testout) << "Factorization by PARDISO done in " << 
       double(time2 - time1)/CLOCKS_PER_SEC << " sec." << endl << endl;
-
+    */
   }
   
   
@@ -583,29 +584,30 @@ namespace pardisofunc
       params[10] = 1;
     */
 
-
-
+    /*
     params[0] = 1; // no pardiso defaults
+    params[1] = 2;
     params[2] = 1; // 1 processor
 
-    params[1] = 2;
     params[3] = params[4] = params[5] = params[7] = params[8] = 
       params[11] = params[12] = params[18] = 0;
     params[6] = 16;
     params[9] = 20;
     params[10] = 1;
+    */
 
     // JS
-    params[6] = 0;
-    params[17] = -1;
-    params[20] = 0;
+    // params[6] = 0;
+    // params[17] = -1;
+    // params[20] = 0;
 
 
+    /*
+    params[0] = 0; // 
+    params[2] = 8; 
+    */
 
-
-
-
-
+    
 
 
 
@@ -666,9 +668,7 @@ namespace pardisofunc
   template<class TM, class TV_ROW, class TV_COL>
   PardisoInverse<TM,TV_ROW,TV_COL> :: ~PardisoInverse()
   {
-    int maxfct = 1, mnum = 1, phase = -1, nrhs = 1, msglevel = 0, error;
-    // int params[64];
-
+    int maxfct = 1, mnum = 1, phase = -1, nrhs = 1, msglevel = 1, error;
     int * params = const_cast <int*> (&hparams[0]);
 
     //    cout << "call pardiso (clean up) ..." << endl;
@@ -689,9 +689,10 @@ namespace pardisofunc
 
 
   template<class TM, class TV_ROW, class TV_COL>
-  void PardisoInverse<TM,TV_ROW,TV_COL> :: SetMatrixType(TM entry)
+  void PardisoInverse<TM,TV_ROW,TV_COL> :: SetMatrixType() // TM entry)
   {
-    if ( IsComplex(entry) )
+    // if ( IsComplex(entry) )
+    if (mat_traits<TM>::IS_COMPLEX)
       {
 	if ( symmetric ) matrixtype = 6;
 	else
@@ -710,19 +711,23 @@ namespace pardisofunc
 	    (*testout) << "PARDISO: Assume matrix type to be symmetric positive definite." << endl;
 	    (*testout) << "Warning: This might cause errors for symmetric indefinite matrices!!" << endl;
 	    */
-#ifdef ASTIRD
+
 	    if ( spd ) 
 	      matrixtype = 2;
 	    else
 	      matrixtype = -2;
-#else
-           matrixtype = -2; 
-#endif
 	  }
 	else matrixtype = 11;
       }
+
+    cout << "spd = " << int(spd) << ", sym = " << int(symmetric) 
+	 << "complex = " << int(mat_traits<TM>::IS_COMPLEX)
+	 << ", matrixtype = " << matrixtype << endl;
     *testout << "pardiso matrixtype = " << matrixtype << endl;
   }
+
+
+
 
 
 

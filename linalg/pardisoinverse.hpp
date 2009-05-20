@@ -24,7 +24,7 @@ namespace ngla
   {
     int height, nze, entrysize;
 
-    int pt[64];
+    int pt[128];
     int hparams[64];
     int * rowstart, * indices;
     typename mat_traits<TM>::TSCAL * matrix;
@@ -35,7 +35,7 @@ namespace ngla
     const Array<int> * cluster;
 
     //
-    void SetMatrixType(TM entry);
+    void SetMatrixType(); // TM entry);
   
   public:
     typedef typename mat_traits<TM>::TV_COL TV;

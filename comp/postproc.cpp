@@ -155,7 +155,7 @@ namespace ngcomp
 			const S_GridFunction<SCAL> & u,
 			S_GridFunction<SCAL> & flux,
 			const BilinearFormIntegrator & bli,
-			bool applyd, const BitArray & domains, LocalHeap & lh)
+			bool applyd, const BitArray & domains, LocalHeap & clh)
   {
     ma.PushStatus ("Post-processing");
 
@@ -168,120 +168,124 @@ namespace ngcomp
     int dim     = fes.GetDimension();
     int dimflux = fesflux.GetDimension();
 
-    ElementTransformation eltrans;
+    // ElementTransformation eltrans;
 
     const BilinearFormIntegrator & fluxbli =
       bound ? (*fesflux.GetBoundaryEvaluator()) : (*fesflux.GetEvaluator());
-
-    Array<int> dnums;
-    Array<int> dnumsflux;
 
     Array<int> cnti(fesflux.GetNDof());
     cnti = 0;
 
     flux.GetVector() = 0.0;
 
-    void * heapp1 = lh.GetPointer();
-    for (int i = 0; i < ne; i++)
-      {
-	ma.SetThreadPercentage ( 100.0*i / ne );
-
-	int eldom = 
-	  bound ? ma.GetSElIndex(i) : ma.GetElIndex(i);
-	
-	if(!domains[eldom])
-	  continue;
-
-	const FiniteElement & fel = 
-	  bound ? fes.GetSFE(i, lh) : fes.GetFE (i, lh);
-
-	const FiniteElement & felflux = 
-	  bound ? fesflux.GetSFE(i, lh) : fesflux.GetFE (i, lh);
-
-	if (bound)
-	  {
-	    ma.GetSurfaceElementTransformation (i, eltrans, lh);
-	    fes.GetSDofNrs (i, dnums);
-	    fesflux.GetSDofNrs (i, dnumsflux);
-	  }
-	else
-	  {
-	    ma.GetElementTransformation (i, eltrans, lh);
-	    fes.GetDofNrs (i, dnums);
-	    fesflux.GetDofNrs (i, dnumsflux);
-	  }
-
-	FlatVector<SCAL> elu(dnums.Size() * dim, lh);
-	FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
-	FlatVector<SCAL> elfluxi(dnumsflux.Size() * dimflux, lh);
-	FlatVector<SCAL> fluxi(dimflux, lh);
 
 
-	u.GetElementVector (dnums, elu);
-	fes.TransformVec (i, bound, elu, TRANSFORM_SOL);
+#pragma omp parallel 
+    {
+      LocalHeap lh = clh.Split();
+      
+      ElementTransformation eltrans;
+      Array<int> dnums, dnumsflux;
 
-	const IntegrationRule & ir = 
-	  GetIntegrationRules().SelectIntegrationRule(fel.ElementType(), max(fel.Order(),felflux.Order())*felflux.Order());
-	elflux = 0;
-
-	void * heapp2 = lh.GetPointer();
-
-	for (int j = 0; j < ir.GetNIP(); j++)
-	  {
-	    // bli.CalcFlux (fel, eltrans, ir.GetIP(j), elu, fluxi, applyd, lh);
-	    // fluxbli.ApplyBTrans (felflux, eltrans, ir.GetIP(j), fluxi, elfluxi, lh);
-	    double fac;
-	    if (!bound)
-	      {
-		if (fel.SpatialDim() == 2)
-		  {
-		    SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
-		    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-		    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-		  }
-		else
-		  {
-		    SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
-		    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-		    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-		  }
-	      }
-	    else
-	      {
-		if (fel.SpatialDim() == 2)
-		  {
-		    SpecificIntegrationPoint<2,3> sip (ir.GetIP(j), eltrans, lh);
-		    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-		    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-		  }
-		else
-		  {
-		    SpecificIntegrationPoint<1,2> sip (ir.GetIP(j), eltrans, lh);
-		    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-		    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-		  }
-	      }
-
-
-	    elflux += fac * elfluxi;
-	    lh.CleanUp (heapp2);
-	  }
-
-
-
-
-	if (dimflux > 1)
-	  {
+      void * heapp1 = lh.GetPointer();
+#pragma omp for 
+      for (int i = 0; i < ne; i++)
+	{
+	  ma.SetThreadPercentage ( 100.0*i / ne );
+	  
+	  int eldom = 
+	    bound ? ma.GetSElIndex(i) : ma.GetElIndex(i);
+	  
+	  if(!domains[eldom])
+	    continue;
+	  
+	  const FiniteElement & fel = 
+	    bound ? fes.GetSFE(i, lh) : fes.GetFE (i, lh);
+	  
+	  const FiniteElement & felflux = 
+	    bound ? fesflux.GetSFE(i, lh) : fesflux.GetFE (i, lh);
+	  
+	  if (bound)
+	    {
+	      ma.GetSurfaceElementTransformation (i, eltrans, lh);
+	      fes.GetSDofNrs (i, dnums);
+	      fesflux.GetSDofNrs (i, dnumsflux);
+	    }
+	  else
+	    {
+	      ma.GetElementTransformation (i, eltrans, lh);
+	      fes.GetDofNrs (i, dnums);
+	      fesflux.GetDofNrs (i, dnumsflux);
+	    }
+	  
+	  FlatVector<SCAL> elu(dnums.Size() * dim, lh);
+	  FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
+	  FlatVector<SCAL> elfluxi(dnumsflux.Size() * dimflux, lh);
+	  FlatVector<SCAL> fluxi(dimflux, lh);
+	  
+	  
+	  u.GetElementVector (dnums, elu);
+	  fes.TransformVec (i, bound, elu, TRANSFORM_SOL);
+	  
+	  const IntegrationRule & ir = 
+	    GetIntegrationRules().SelectIntegrationRule(fel.ElementType(), max(fel.Order(),felflux.Order())*felflux.Order());
+	  elflux = 0;
+	  
+	  void * heapp2 = lh.GetPointer();
+	  
+	  for (int j = 0; j < ir.GetNIP(); j++)
+	    {
+	      // bli.CalcFlux (fel, eltrans, ir.GetIP(j), elu, fluxi, applyd, lh);
+	      // fluxbli.ApplyBTrans (felflux, eltrans, ir.GetIP(j), fluxi, elfluxi, lh);
+	      double fac;
+	      if (!bound)
+		{
+		  if (fel.SpatialDim() == 2)
+		    {
+		      SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
+		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
+		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
+		    }
+		  else
+		    {
+		      SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
+		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
+		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
+		    }
+		}
+	      else
+		{
+		  if (fel.SpatialDim() == 2)
+		    {
+		      SpecificIntegrationPoint<2,3> sip (ir.GetIP(j), eltrans, lh);
+		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
+		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
+		    }
+		  else
+		    {
+		      SpecificIntegrationPoint<1,2> sip (ir.GetIP(j), eltrans, lh);
+		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
+		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
+		    }
+		}
+	      
+	      
+	      elflux += fac * elfluxi;
+	      lh.CleanUp (heapp2);
+	    }
+	  
+	  if (dimflux > 1)
+	    {
 	    FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
 	    const BlockBilinearFormIntegrator & bbli = 
 	      dynamic_cast<const BlockBilinearFormIntegrator&> (fluxbli);
 	    bbli . Block() . AssembleElementMatrix (felflux, eltrans, elmat, lh);
 	    FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-
+	    
 	    FlatVector<SCAL> hv1(dnumsflux.Size(), lh);
 	    FlatVector<SCAL> hv2(dnumsflux.Size(), lh);
 	    for (int j = 0; j < dimflux; j++)
@@ -290,32 +294,34 @@ namespace ngcomp
 		invelmat.Mult (hv1, hv2);
 		elfluxi.Slice(j, dimflux) = hv2;
 	      }
-	  }
-	else
+	    }
+	  else
+	    {
+	      FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
+	      fluxbli.AssembleElementMatrix (felflux, eltrans, elmat, lh);
+	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+	      invelmat.Mult (elflux, elfluxi);
+	    }
+	  
+	  fesflux.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
+	  
+	  
+#pragma omp critical(fluxprojetadd)
 	  {
-	    FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
-	    fluxbli.AssembleElementMatrix (felflux, eltrans, elmat, lh);
-	    FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-	    invelmat.Mult (elflux, elfluxi);
+	    flux.GetElementVector (dnumsflux, elflux);
+	    elfluxi += elflux;
+	    flux.SetElementVector (dnumsflux, elfluxi);
+	    
+	    for (int j = 0; j < dnumsflux.Size(); j++)
+	      cnti[dnumsflux[j]]++;
 	  }
 
-	fesflux.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
+	  lh.CleanUp(heapp1);
+	}
+    }
 
-	
-
-	flux.GetElementVector (dnumsflux, elflux);
-	elfluxi += elflux;
-	flux.SetElementVector (dnumsflux, elfluxi);
-
-	for (int j = 0; j < dnumsflux.Size(); j++)
-	  cnti[dnumsflux[j]]++;
-
-
-	lh.CleanUp(heapp1);
-      }
-
-    FlatVector<SCAL> fluxi(dimflux, lh);
-    dnumsflux.SetSize(1);
+    FlatVector<SCAL> fluxi(dimflux, clh);
+    Array<int> dnumsflux(1);
     for (int i = 0; i < cnti.Size(); i++)
       if (cnti[i])
 	{

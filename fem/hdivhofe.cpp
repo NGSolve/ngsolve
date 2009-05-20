@@ -3335,37 +3335,37 @@ namespace ngfem
     //cout<<"shape.h ="<<shape.Height()<< " ii = "<<ii<<endl;
 
 
-    /*  for( i = 0; i <= p-1; i++, ii++)
-    {
-    shape(ii,2) = 1.* adpolz[i].Value();
-    }
+//     for( i = 0; i <= p-1; i++, ii++)
+//     {
+//     shape(ii,2) = 1.* adpolz[i].Value();
+//     }
 
-    if (p >= 1)
-    for( i = 0; i <= p-1; i++, ii+=2)
-    {
-    shape(ii,2) = x.Value() * adpolz[i].Value();
-    shape(ii+1,2) = y.Value() * adpolz[i].Value();
-    }
+//     if (p >= 1)
+//     for( i = 0; i <= p-1; i++, ii+=2)
+//     {
+//     shape(ii,2) = x.Value() * adpolz[i].Value();
+//     shape(ii+1,2) = y.Value() * adpolz[i].Value();
+//     }
 
-    // edge dofs H1 * IntLegendre
-    if (p >=2)
-    for (i = 0; i < 3; i++)
-    {
-    int es = edges[i][0];
-    int ee = edges[i][1];
-    if (vnums[es] > vnums[ee]) swap (es, ee);
-    T_ORTHOPOL::CalcTrigExt (p-1, lami[ee]-lami[es], 1-lami[es]-lami[ee], adpolxy1);
-    for (j = 0; j <= p-1; j++)
-    for (k = 0; k <= p-2; k++, ii++)
-    shape(ii,2) = adpolxy1[k].Value()*adpolz[j].Value();
-    }
-    if (p>=3)
-    {
-    T_TRIGFACESHAPES::Calc (p, x-y, 1-x-y, adpolxy1);
-    for (j = 0; j <= p-1; j++)
-    for (k = 0; k <= p-3; k++, ii++)
-    shape(ii,2) = adpolxy1[k].Value()*adpolz[j].Value();
-    }*/
+//     edge dofs H1 * IntLegendre
+//     if (p >=2)
+//     for (i = 0; i < 3; i++)
+//     {
+//     int es = edges[i][0];
+//     int ee = edges[i][1];
+//     if (vnums[es] > vnums[ee]) swap (es, ee);
+//     T_ORTHOPOL::CalcTrigExt (p-1, lami[ee]-lami[es], 1-lami[es]-lami[ee], adpolxy1);
+//     for (j = 0; j <= p-1; j++)
+//     for (k = 0; k <= p-2; k++, ii++)
+//     shape(ii,2) = adpolxy1[k].Value()*adpolz[j].Value();
+//     }
+//     if (p>=3)
+//     {
+//     T_TRIGFACESHAPES::Calc (p, x-y, 1-x-y, adpolxy1);
+//     for (j = 0; j <= p-1; j++)
+//     for (k = 0; k <= p-3; k++, ii++)
+//     shape(ii,2) = adpolxy1[k].Value()*adpolz[j].Value();
+//     }
 
   //(*testout)<<"shape inner="<<shape<<endl<<endl;
 

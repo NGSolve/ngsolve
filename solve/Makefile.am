@@ -12,7 +12,7 @@ libngsolve_la_LIBADD = $(top_builddir)/comp/libngcomp.la	    \
 $(top_builddir)/fem/libngfemng.la $(top_builddir)/linalg/libngla.la \
 $(top_builddir)/basiclinalg/libngbla.la				    \
 $(top_builddir)/multigrid/libngmg.la  $(PARDISO_LIBS) $(MUMPS_LIBS) $(LAPACK_LIBS) 
-# -lgomp
+
 
 include_HEADERS = numproc.hpp pde.hpp solve.hpp 
 
