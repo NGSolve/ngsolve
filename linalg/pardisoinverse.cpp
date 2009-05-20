@@ -139,12 +139,10 @@ namespace pardisofunc
     params[20] = 1;  // 1x1 and 2x2 bunc and Kaufman pivoting
     
     params[26] = 1; // check input matrix
-    params[59] = 0; // in-core pardiso
+    params[59] = 1; // in-core pardiso
 
     for (i = 0; i < 128; i++) pt[i] = 0;
     int retvalue;
-
-    cout << "&pt = " << &pt[0] << endl;
 
 #ifdef USE_MKL
     //    no init in MKL PARDISO

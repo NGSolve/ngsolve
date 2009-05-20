@@ -345,6 +345,9 @@ namespace ngla
 
     mumps_trait<TSCAL>::MumpsFunction (&id);
 
+    cout << "num floating-point ops = " << id.rinfog[0] << endl;
+    cout << "error-code = " << id.infog[0] << endl;
+
     cout << "analysis done, now factor" << endl;
 
     // id.a   = (double*)(void*)matrix; 
@@ -356,7 +359,11 @@ namespace ngla
     // dmumps_c(&id);
     mumps_trait<TSCAL>::MumpsFunction (&id);
 
+
     cout << "factorization done" << endl;
+    cout << "error-code = " << id.infog[0] << endl;
+    cout << "info(1) = " << id.info[0] << endl;
+    cout << "info(2) = " << id.info[1] << endl;
 
     time2 = clock();
 
