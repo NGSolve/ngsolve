@@ -1072,6 +1072,9 @@ namespace ngcomp
 		posx.DeleteAll(); posy.DeleteAll(); posz.DeleteAll(); 
 		switch(fel.ElementType())
 		  {
+		  case ET_SEGM: ET_TRIG: ET_QUAD:  // for the compiler
+		    break;
+
 		  case ET_TET:
 		    posx.Append(0.25); posy.Append(0.25); posz.Append(0.25); 
 		    posx.Append(0); posy.Append(0); posz.Append(0); 
@@ -1138,6 +1141,10 @@ namespace ngcomp
 		posx.DeleteAll(); posy.DeleteAll(); posz.DeleteAll(); 
 		switch(fel.ElementType())
 		  {
+		  case ET_SEGM: 
+		  case ET_TET: case ET_HEX: case ET_PRISM: case ET_PYRAMID:
+		    break;
+		    
 		  case ET_TRIG:
 		    posx.Append(0.33); posy.Append(0.33);
 		    posx.Append(0); posy.Append(0);

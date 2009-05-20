@@ -338,7 +338,7 @@ namespace ngla
 
         // miBS = 0;
 
-        // #pragma omp parallel
+        // #pragma omp parallel  (was commented out)
         {
           // Array<TM> sum(BS*maxrow);
           
@@ -379,7 +379,7 @@ namespace ngla
                   sum[2*BS+1] += qtrans2 * hli[2];
                   sum[2*BS+2] += qtrans3 * hli[2];
 
-#pragma omp parallel for
+		  // #pragma omp parallel for
                   for (int k = 3; k < nk; k++)
                     {
                       TM hv = hli[k];
@@ -482,11 +482,11 @@ namespace ngla
         miBS = (mi / BS) * BS;
 
 
-#pragma omp parallel
+	// #pragma omp parallel
         {
           Array<TM> sum(BS*maxrow);
           
-#pragma omp for
+	  // #pragma omp for
           for (int j = 0; j < miBS; j+=BS)
             {
               for (int k = BS*(j+1); k < BS*mi; k++)
