@@ -552,72 +552,93 @@ namespace ngbla
 
 
   extern "C"
-  void zhseqr_(const char & job, const char & compz, const int & n, 
-               const int & ilo, const int & ihi, complex<double> & h, const int & ldh, 
-               complex<double> & w, complex<double> & z, const int & ldz, 
-               complex<double> & work, const int & lwork, int & info);
+  void zhseqr_(char & job, char & compz, int & n, 
+               int & ilo, int & ihi, complex<double> & h, int & ldh, 
+               complex<double> & w, complex<double> & z, int & ldz, 
+               complex<double> & work, int & lwork, int & info);
 
   extern "C"
-  void zhsein_ (const char & side, const char & eigsrc, const char & initv,
-                int * select, const int & n, 
-                complex<double> & h, const int & ldh, complex<double> & w,
-                complex<double> & vl, const int & ldvl,
-                complex<double> & vr, const int & ldvr,
-                const int & mm, int & m, 
+  void zhsein_ (char & side, char & eigsrc, char & initv,
+                int * select, 
+		int & n, complex<double> & h, int & ldh, 
+		complex<double> & w,
+                complex<double> & vl, int & ldvl,
+                complex<double> & vr, int & ldvr,
+		int & mm, int & m, 
                 complex<double> & work, double & rwork,
                 int & ifaill, int & ifailr, int & info);
 
+
   void LapackHessenbergEP (int n, std::complex<double> * A, std::complex<double> * lami, std::complex<double> * evecs)
   {
-    int lwork = 2 * n * n;  // or n ?
+    int lwork = 2 * n * n;  // or 6 n ?
     complex<double> * work = new complex<double>[lwork];
-    //  complex<double> * work2 = new complex<double>[lwork];
-    double * rwork = new double[n];
 
     complex<double> * hA = new complex<double>[n*n];
     for (int i = 0; i < n*n; i++)  { hA[i] = A[i]; }
 
     int * select = new int[n];
-    for (int i = 0; i < n; i++) select[i] = 'V';
+    for (int i = 0; i < n; i++) select[i] = 1; // 'V';
+
 
     complex<double> vl;
     //  complex<double> * vl = new complex<double>[n*n];
     //  complex<double> * vr = new complex<double>[n*n];
 
     int info;
-    int * ifaill = new int[n];
-    int * ifailr = new int[n];
 
-    cout << "calls zhseqr" << endl;
-    zhseqr_('E', 'N', n, 1, n, *hA, n, *lami, *evecs, n, *work, lwork, info);
+    // cout << "calls zhseqr" << endl;
+
+    char job = 'E', compz = 'N';
+    int hn = n, ilo = 1, ihi = n, ldh = n, ldz = n;
+    zhseqr_(job, compz, hn, ilo, ihi, *hA, ldh, *lami, *evecs, ldz, *work, lwork, info);
     //  zhseqr_('S', 'I', n, 1, n, *A, n, *lami, *evecs, n, *work, lwork, info);
+
+
     if (info)
       cout << "error in eigensolver, info = " << info << endl;
 
-    for (int i = 0; i < n; i++)
-      cout << "ev(" << i << ") = " << lami[i] << endl;
+    // for (int i = 0; i < n; i++)
+    // cout << "ev(" << i << ") = " << lami[i] << endl;
 
     for (int i = 0; i < n*n; i++)  { hA[i] = A[i]; }
+    double * rwork = new double[n];
 
     int m = 0;
-    // char side = 'R', eigsrc = 'N', initv = 'N';
-    int hn = n, ldh = n, ldvl = n, ldvr = n, mm = n;
-    cout << "call zhsein" << endl;
-    zhsein_ ('R', 'Q', 'N', select, hn, *A, ldh, *lami, vl, ldvl, *evecs, ldvr,
+    char side = 'R', eigsrc = 'Q', initv = 'N';
+    hn = n; ldh = n; 
+    int ldvl = n, ldvr = n, mm = n;
+    int * ifaill = new int[n];
+    int * ifailr = new int[n];
+
+    for (int i = 0; i < n*n; i++)
+      evecs[i] = -1.0;
+    // cout << "call zhsein" << endl;
+
+    zhsein_ (side, eigsrc, initv, select, hn, *A, ldh, *lami, vl, ldvl, *evecs, ldvr,
              mm, m, *work, *rwork, *ifaill, *ifailr, info);
+
+    if (info)
+      cout << "error in eigensolver, info = " << info << endl;
+    
+    /*
+    cout << "m  = " << m << endl;
+    cout << "info = " << info << endl;
     cout << "m = " << m << endl;
     cout << "rwork[0] = " << rwork[0] << endl;
-    //  for (int i = 0; i < n; i++)
-    //    cout << "ifail[" << i << "] = " << ifaill[i] << endl;
+    cout << "evecs(0,0) = " << evecs[0] << endl;
+    for (int i = 0; i < n; i++)
+      cout << "ifail[" << i << "] = " << ifailr[i] << endl;
     // cout << "ifaill = " << ifaill << endl;
     //   cout << "ifailr = " << ifailr << endl;
     cout << "info = " << info << endl;
-  
+    */
+
     delete[] select;
     delete[] hA;
     delete[] rwork;
     delete[] work;
-    cout << "hessenberg complete" << endl;
+    // cout << "hessenberg complete" << endl;
   }
 
 
