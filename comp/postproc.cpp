@@ -178,7 +178,8 @@ namespace ngcomp
 
     flux.GetVector() = 0.0;
 
-
+    int cnt = 0;
+    clock_t prevtime = clock();
 
 #pragma omp parallel 
     {
@@ -191,8 +192,18 @@ namespace ngcomp
 #pragma omp for 
       for (int i = 0; i < ne; i++)
 	{
-	  ma.SetThreadPercentage ( 100.0*i / ne );
-	  
+
+#pragma omp critical(fluxprojetpercent)
+	  {
+	    cnt++;
+	    if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
+	      {
+		cout << "\rpostprocessing element " << cnt << "/" << ne << flush;
+		ma.SetThreadPercentage ( 100.0*cnt / ne );
+		prevtime = clock();
+	      }
+	  }
+
 	  int eldom = 
 	    bound ? ma.GetSElIndex(i) : ma.GetElIndex(i);
 	  
@@ -319,6 +330,9 @@ namespace ngcomp
 	  lh.CleanUp(heapp1);
 	}
     }
+
+    cout << "\rpostprocessing element " << ne << "/" << ne << endl;
+
 
     FlatVector<SCAL> fluxi(dimflux, clh);
     Array<int> dnumsflux(1);
