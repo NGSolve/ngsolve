@@ -25,7 +25,7 @@ namespace ngfem
 
   public:
     /// global vertex numbers define ordering of vertices
-    virtual void SetVertexNumbers (FlatArray<int> & avnums);
+    void SetVertexNumbers (FlatArray<int> & avnums);
 
     /// set polynomial order
     void SetOrder (int o);
