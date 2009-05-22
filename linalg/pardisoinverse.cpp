@@ -124,7 +124,7 @@ namespace pardisofunc
     int * params = const_cast <int*> (&hparams[0]);
 
     params[0] = 1; // no pardiso defaults
-    params[2] = 1; // 1 processor (?)
+    params[2] = 8; // 1 processor (?)
 
     params[1] = 2; // fill in 2..metis
     params[3] = params[4] = params[5] = params[7] = params[8] = 

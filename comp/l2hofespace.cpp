@@ -202,8 +202,6 @@ namespace ngcomp
 	  {
 	  case ET_TET:
 	    { 
-//               fe = new (lh.Alloc (sizeof(H1HighOrderTet<T_ORTHOPOL>)))  H1HighOrderTet<T_ORTHOPOL> (order);
-//              fe = new (lh.Alloc (sizeof(L2HighOrderTet))) L2HighOrderTet (order);
 	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_TET>))) L2HighOrderFE<ET_TET> (order);
 	      break;
 	    }
@@ -214,27 +212,21 @@ namespace ngcomp
 	    }
 	  case ET_PRISM:
 	    {
-// 	      fe = new (lh.Alloc (sizeof(H1HighOrderPrism<T_ORTHOPOL>)))  H1HighOrderPrism<T_ORTHOPOL> (order);
-              // fe = new (lh.Alloc (sizeof(L2HighOrderPrism)))  L2HighOrderPrism (order);
 	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_PRISM>))) L2HighOrderFE<ET_PRISM> (order);
               break;
 	    }
 	  case ET_HEX:
 	    {
-// 	      fe = new (lh.Alloc (sizeof(H1HighOrderHex<T_ORTHOPOL>)))  H1HighOrderHex<T_ORTHOPOL> (order);
-              // fe = new (lh.Alloc (sizeof(L2HighOrderHex)))  L2HighOrderHex (order);
 	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_HEX>))) L2HighOrderFE<ET_HEX> (order);
               break;
 	    }
 	  case ET_TRIG:
 	    { 
-	      // fe = new (lh.Alloc (sizeof(L2HighOrderTrig)))  L2HighOrderTrig(order);
 	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_TRIG>))) L2HighOrderFE<ET_TRIG> (order);
 	      break;
 	    }
 	  case ET_QUAD:
 	    {
-	      // fe = new (lh.Alloc (sizeof(L2HighOrderQuad)))  L2HighOrderQuad(order);
 	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_QUAD>))) L2HighOrderFE<ET_QUAD> (order);
 	      break;
 	    }
@@ -262,9 +254,8 @@ namespace ngcomp
 	    INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
 	    hofe-> SetOrder(p);
 	    hofe-> ComputeNDof(); 
-            return *hofe;
           }
-        if (dynamic_cast<L2HighOrderFiniteElement<3>* > (fe))
+        else
           {
             L2HighOrderFiniteElement<3> * hofe = dynamic_cast<L2HighOrderFiniteElement<3>* > (fe);
  	    hofe-> SetVertexNumbers (vnums); 
@@ -273,32 +264,6 @@ namespace ngcomp
             return *hofe;
           }
 
-        /*
-        //         if( ma.GetElType(elnr) == ET_TRIG || ma.GetElType(elnr) == ET_QUAD) // all other elements h1
-        if( ma.GetElType(elnr) == ET_TRIG || 
-            ma.GetElType(elnr) == ET_QUAD || 
-            ma.GetElType(elnr) == ET_TET  ||  
-            ma.GetElType(elnr) == ET_PRISM || 
-            ma.GetElType(elnr) == ET_HEX)
-	  { 
-	    L2HighOrderFiniteElement * hofe = dynamic_cast<L2HighOrderFiniteElement* > (fe);
- 	    hofe-> SetVertexNumbers (vnums); 
-	    hofe-> SetOrderInner(order_inner[elnr]); 
-	    hofe-> ComputeNDof(); 
-	  } 
-	else 
-        */
-	  {
-	    if(var_order) 
-	      throw Exception("L2HighOrderFESpace not working for 3D and variable order!"); 
-	    
-	    H1HighOrderFiniteElement<3> * hofe = dynamic_cast<H1HighOrderFiniteElement<3>* > (fe);
-	    hofe-> SetVertexNumbers (vnums); 
-	    // ATTENTION for var_order this is not correct !!! 
-	    // on edges and faces order is still used !!! 
-	    hofe-> SetOrderCell(order_inner[elnr]); 
-	    hofe-> ComputeNDof(); 
-	  } 
 	return *fe;
       } 
     catch (Exception & e)
@@ -325,9 +290,6 @@ namespace ngcomp
 	fe = 0;
       }
     
-    Array<int> vnums;
-    ma.GetSElVertices(elnr, vnums);
-
     if (!fe)
       {
 	stringstream str;
@@ -336,14 +298,6 @@ namespace ngcomp
 	    << ", order = " << order << endl;
 	throw Exception (str.str());
       }
-    /*
-    ArrayMem<int, 8> vnums;
-    hofe -> SetOrderInner (0); 
-    */
-    /*
-    dynamic_cast<H1HighOrderFiniteElement*> (fe)
-      -> SetVertexNumbers (vnums);
-    */
     return *fe;
   }
  
@@ -421,6 +375,15 @@ namespace ngcomp
   
   void  L2HighOrderFESpace ::GetInnerDofNrs (int elnr, Array<int> & dnums) const
   { GetDofNrs ( elnr, dnums ); return; }
+
+
+
+
+
+
+
+
+
 
   L2SurfaceHighOrderFESpace ::  
   L2SurfaceHighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
@@ -844,10 +807,7 @@ void L2HighOrderFESpace :: UpdateParallelDofs_hoproc()
 
 
   // register FESpaces
-  namespace
-#ifdef MACOS
-  l2hofespace_cpp
-#endif
+  namespace l2hofespace_cpp
   {
   
     class Init

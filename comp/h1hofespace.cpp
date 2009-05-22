@@ -568,8 +568,6 @@ namespace ngcomp
 
     try
       {
-        typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
-    
         switch (ma.GetElType(elnr))
           {
           case ET_TET:
@@ -696,55 +694,32 @@ namespace ngcomp
 
   const FiniteElement & H1HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   {
-    /*
-      FiniteElement * fe = 0;
+    H1HighOrderFiniteElement<1> * hofe1d = NULL;
+    H1HighOrderFiniteElement<2> * hofe2d = NULL;
 
-      switch (ma.GetSElType(elnr))
+    switch (ma.GetSElType(elnr))
       {
-      case ET_SEGM:
-      fe = segm; break;
       case ET_TRIG:
-      fe = trig; break;
-      case ET_QUAD:
-      fe = quad; break;
-      default:
-      fe = 0;
-      }
-
-      H1HighOrderFiniteElement * hofe =
-      dynamic_cast<H1HighOrderFiniteElement*> (fe);
-    */
-
-    H1HighOrderFiniteElement<1> * hofe1d;
-    H1HighOrderFiniteElement<2> * hofe2d;
-
-    {
-      typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
-	
-      switch (ma.GetSElType(elnr))
         {
-        case ET_TRIG:
-          {
-            hofe2d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_TRIG>)))  H1HighOrderFE<ET_TRIG> ();
-            break;
-          }
-        case ET_QUAD:
-          {
-            hofe2d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_QUAD>)))  H1HighOrderFE<ET_QUAD> ();
-            break;
-          }
-        case ET_SEGM:
-          {
-            hofe1d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_SEGM>)))  H1HighOrderFE<ET_SEGM> ();
-            break;
-          }
-        default:
-          {
-            throw Exception ("GetFE not supported for element");
-          }
+          hofe2d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_TRIG>)))  H1HighOrderFE<ET_TRIG> ();
+          break;
         }
-    }
-      
+      case ET_QUAD:
+        {
+          hofe2d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_QUAD>)))  H1HighOrderFE<ET_QUAD> ();
+          break;
+        }
+      case ET_SEGM:
+        {
+          hofe1d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_SEGM>)))  H1HighOrderFE<ET_SEGM> ();
+          break;
+        }
+      default:
+        {
+          throw Exception ("GetFE not supported for element");
+        }
+      }
+  
     if (!hofe1d && !hofe2d)
       {
         stringstream str;
