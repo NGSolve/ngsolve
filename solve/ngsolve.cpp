@@ -9,7 +9,6 @@
    Finite element package NGSolve
 */
 
-
 #include <solve.hpp>
 
 #ifdef PARALLEL
@@ -160,6 +159,14 @@ int NGS_Help (ClientData clientData,
 
 AutoPtr<ngcomp::MeshAccess> ma;
 AutoPtr<ngsolve::PDE> pde;
+
+// some files in the fem-library access it
+SymbolTable<double> & GetConstantTable ()
+{
+  return pde -> GetConstantTable();
+}
+
+
 
 
 
@@ -479,10 +486,10 @@ int NGS_GetData (ClientData clientData,
       if (strcmp (argv[1], "evaluatefiles") == 0)
 	{
 	  string auxstring = pde->GetEvaluateFiles();
-	  int i=0;
+          size_t i=0;
 	  while(i<auxstring.size())
 	    {
-	      i = auxstring.find('\\',i);
+              i = auxstring.find('\\',i);
 	      if(i>=0 && i<auxstring.size())
 		auxstring.replace(i,1,"\\\\");
 	      else

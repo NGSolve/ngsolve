@@ -25,23 +25,19 @@
 // *****************************************************************   
 
 
-// #include <fem.hpp>
-#include <solve.hpp>
-  
+#include <fem.hpp>
 
-extern ngstd::AutoPtr<ngsolve::PDE> pde;
+// #include <solve.hpp>
+// extern ngstd::AutoPtr<ngsolve::PDE> pde;
+
+extern ngstd::SymbolTable<double> & GetConstantTable ();
 
 
 
 
 namespace ngfem
 {
-#include "pml.hpp"
-
-  using namespace ngfem;
-
-
-
+  // #include "pml.hpp"
 
 
   Complex alpha(0,1);
@@ -433,46 +429,46 @@ namespace ngfem
 
   void SetPMLParameters()
   {
-    if (pde->GetConstantTable().Used ("pml_r"))
-      pml_r = pde->GetConstant("pml_r");
+    if (GetConstantTable().Used ("pml_r"))
+      pml_r = GetConstantTable()["pml_r"];
     
-    if (pde->GetConstantTable().Used ("pml_x"))
+    if (GetConstantTable().Used ("pml_x"))
       {
-	pml_x = pde->GetConstant("pml_x");
+	pml_x = GetConstantTable()["pml_x"];
 	rect_pml = 1;
       }
 
 
-    if (pde->GetConstantTable().Used ("pml_xmin"))
+    if (GetConstantTable().Used ("pml_xmin"))
       {
-	pml_xmin[0] = pde->GetConstant("pml_xmin");
+	pml_xmin[0] = GetConstantTable()["pml_xmin"];
 	rect_pml = 2;
       }
-    if (pde->GetConstantTable().Used ("pml_xmax"))
+    if (GetConstantTable().Used ("pml_xmax"))
       {
-	pml_xmax[0] = pde->GetConstant("pml_xmax");
-	rect_pml = 2;
-      }
-
-    if (pde->GetConstantTable().Used ("pml_ymin"))
-      {
-	pml_xmin[1] = pde->GetConstant("pml_ymin");
-	rect_pml = 2;
-      }
-    if (pde->GetConstantTable().Used ("pml_ymax"))
-      {
-	pml_xmax[1] = pde->GetConstant("pml_ymax");
+	pml_xmax[0] = GetConstantTable()["pml_xmax"];
 	rect_pml = 2;
       }
 
-    if (pde->GetConstantTable().Used ("pml_zmin"))
+    if (GetConstantTable().Used ("pml_ymin"))
       {
-	pml_xmin[2] = pde->GetConstant("pml_zmin");
+	pml_xmin[1] = GetConstantTable()["pml_ymin"];
 	rect_pml = 2;
       }
-    if (pde->GetConstantTable().Used ("pml_zmax"))
+    if (GetConstantTable().Used ("pml_ymax"))
       {
-	pml_xmax[2] = pde->GetConstant("pml_zmax");
+	pml_xmax[1] = GetConstantTable()["pml_ymax"];
+	rect_pml = 2;
+      }
+
+    if (GetConstantTable().Used ("pml_zmin"))
+      {
+	pml_xmin[2] = GetConstantTable()["pml_zmin"];
+	rect_pml = 2;
+      }
+    if (GetConstantTable().Used ("pml_zmax"))
+      {
+	pml_xmax[2] = GetConstantTable()["pml_zmax"];
 	rect_pml = 2;
       }
 
@@ -489,8 +485,8 @@ namespace ngfem
 	break;
       }
 
-    if (pde->GetConstantTable().Used ("pml_alpha"))
-      alpha = Complex (0, pde->GetConstant("pml_alpha"));
+    if (GetConstantTable().Used ("pml_alpha"))
+      alpha = Complex (0, GetConstantTable()["pml_alpha"]);
   }
 
 
