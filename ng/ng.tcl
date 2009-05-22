@@ -286,15 +286,6 @@ if { [file exists startup.tcl] } {
 
 
 
-# source ngusers/ebg/elasticity/ebgelast.tcl
-
-# if { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
-#    puts "cannot load ngsolve" 
-#    puts "error: $result"
-# } {
-#     catch { source ${ngdir}/ngsolve.tcl }
-# }
-
 
 # if { [catch { source ${ngdir}/demoapp.tcl } result ] } {
 #    puts "cannot load demoapp" 
