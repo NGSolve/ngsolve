@@ -33,13 +33,17 @@ namespace ngfem
   void ScalarFiniteElement<D> ::
   CalcDShape (const IntegrationPoint & ip, 
 	      FlatMatrixFixWidth<D> dshape) const
+  
   {
-    static bool firsttime = true;
-    if (firsttime)
+    /*
+      static bool firsttime = true;
+      if (firsttime)
       {
 	cout << "WARNING: CalcDShape not overloaded for class, using numerical differentiation " << typeid(this).name() << endl;
         firsttime = false;
-      }
+        }
+    */
+    
     int nd = GetNDof();
     int sdim = SpatialDim();
 

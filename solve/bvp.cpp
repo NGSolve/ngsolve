@@ -35,7 +35,7 @@ namespace ngsolve
     ///
     bool print;
     ///
-    enum SOLVER { CG, GMRES, QMR, NCG, SIMPLE, DIRECT, BICGSTAB };
+    enum SOLVER { CG, GMRES, QMR/*, NCG */, SIMPLE, DIRECT, BICGSTAB };
     ///
     enum IP_TYPE { SYMMETRIC, HERMITEAN, CONJ_HERMITEAN };
     ///
@@ -81,8 +81,8 @@ namespace ngsolve
           ost << "QMR" << endl; break;
         case GMRES:
           ost << "GMRES" << endl; break;
-        case NCG:
-          ost << "NCG" << endl; break;
+          // case NCG:
+          // ost << "NCG" << endl; break;
         case SIMPLE:
           ost << "Simple" << endl; break;
         case DIRECT:
@@ -203,8 +203,8 @@ namespace ngsolve
     const BaseMatrix * premat = NULL;
     if (pre)  premat = &(pre->GetMatrix());
     
-    KrylovSpaceSolver * invmat;
-    BaseMatrix * invmat2; 
+    KrylovSpaceSolver * invmat = NULL;
+    BaseMatrix * invmat2 = NULL; 
 
     if (!bfa->GetFESpace().IsComplex())
       {
@@ -357,7 +357,7 @@ namespace ngsolve
       ma.PushStatus ("Direct solver");
 
       
-    clock_t starttime, endtime, soltime;
+    clock_t starttime, endtime;
     starttime = clock();
 
     if (solver != DIRECT)
@@ -431,7 +431,7 @@ namespace ngsolve
     ///
     bool print;
     ///
-    enum SOLVER { CG, QMR, NCG };
+    enum SOLVER { CG, QMR /* , NCG */ };
     ///
     SOLVER solver;
     ///
@@ -587,7 +587,7 @@ namespace ngsolve
     prec = flags.GetNumFlag ("prec", 1e-12);
     solver = CG;
     if (flags.GetDefineFlag ("qmr")) solver = QMR;
-    if (flags.GetDefineFlag ("ncg")) solver = NCG;
+    // if (flags.GetDefineFlag ("ncg")) solver = NCG;
     print = flags.GetDefineFlag ("print");
 
     const Array<char*> & cnts = flags.GetStringListFlag ("constraints");
@@ -656,7 +656,7 @@ namespace ngsolve
       hmat->AddConstraint(&constraints[i]->GetVector());
     
 
-    KrylovSpaceSolver * invmat;
+    KrylovSpaceSolver * invmat = NULL;
 
     if (!bfa->GetFESpace().IsComplex())
       {
@@ -690,7 +690,7 @@ namespace ngsolve
     invmat->SetPrintRates ();
     invmat->SetInitialize (0);
 
-    clock_t starttime, endtime, soltime;
+    clock_t starttime, endtime;
     starttime = clock();
 
     invmat->Mult (vecf, vecu);
