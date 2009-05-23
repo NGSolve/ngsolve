@@ -174,6 +174,8 @@ namespace ngcomp
 	  case ET_HEX:
 	    ndof += (pi[0]+1)*(pi[1]+1)*(pi[2]+1);
 	    break;
+          default:  // for the compiler
+            break;
 	  }
 	ndof--; // subtract constant 
       }

@@ -100,8 +100,8 @@ namespace ngcomp
     nel = ma.GetNE();
     nfa = ma.GetNFaces();
    // (*testout)<<"nel= "<<nel<<" nv= "<<nv<<" ned= "<<ned<<" nfa= "<<nfa<<endl;
-	
-    int nedel; // no of edges per element
+    
+    // int nedel; // no of edges per element
 
     if (ma.GetDimension() == 2)
       {
@@ -409,8 +409,6 @@ namespace ngcomp
 
   const FiniteElement & HDivHybridHighOrderFESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
-    int i, j;
-
     FiniteElement * fe = 0;
 
     switch (ma.GetSElType(selnr))
@@ -723,10 +721,7 @@ namespace ngcomp
   Table<int> * HDivHybridHighOrderFESpace ::
   CreateSmoothingBlocks (const Flags & precflags) const
   {
-    int i, j, first;
     int ncnt;
-
-    int ii;
     int SmoothingType=1;
 
     cout << "SmoothingType " << SmoothingType << endl;
@@ -790,7 +785,7 @@ namespace ngcomp
       // RT_0 - Faeod - Iaecd - block  (RT_0 - Eaeod - Iaecd - block for 2D)
       if (ma.GetDimension() == 3)
       {
-         int i, j, first;
+        int i, j;
          cnt[0] = nfa;
          for (i = 0; i < nfa; i++)
 	   cnt[i+1] = first_face_dof[i+1]-first_face_dof[i];
@@ -826,7 +821,7 @@ namespace ngcomp
      }
      else
      {
-        int i, j, first;
+       int i, j;
          cnt[0] = ned;
          for (i = 0; i < ned; i++)
 	   cnt[i+1] = 1+first_edge_dof[i+1]-first_edge_dof[i];
@@ -861,7 +856,7 @@ namespace ngcomp
       if (ma.GetDimension() == 3)
       {
          //cout << "cnt = " <<endl;
-         int i, j, k, first;
+        int i, j, k;
          cnt[0] = nfa;
          for (i = 0; i < nel; i++)
 	 {

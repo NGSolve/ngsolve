@@ -281,17 +281,10 @@ namespace ngcomp
       case ET_HEX:
         fe = new (lh.Alloc (sizeof(VectorFacetVolumeHex)))  VectorFacetVolumeHex ();
         break;
-
+      default:
+        throw Exception (string("VectorFacetFESpace::GetFE: unsupported element ")+
+                         ElementTopology::GetElementName(ma.GetElType(elnr)));
       }
-    if (!fe)
-    {
-      stringstream str;
-      str << "VectorFacetFESpace " << GetClassName() 
-          << ", undefined eltype " 
-          << ElementTopology::GetElementName(ma.GetElType(elnr))
-          << ", order = " << order << endl;
-      throw Exception (str.str());
-    }
 
     Array<int> vnums;
     ArrayMem<int, 6> fanums, order_fa;
@@ -364,6 +357,8 @@ namespace ngcomp
         fe -> SetOrder (order_facet[ma.GetSElFace(selnr)][0]);// SZ not yet anisotropic order for facet fe !!! 
         fe -> ComputeNDof();
         break;
+    default:
+      throw Exception ("VectorFacetFESpace::GetSFE: unsupported element");
     }
     return *fe;
     

@@ -287,7 +287,7 @@ namespace ngcomp
 	      }
 
 	    //	    if (i == 0)
-            cout << "visualize" << endl;
+            // cout << "visualize" << endl;
             // Visualize (this->name);
 	    
 	    delete ovec;
@@ -542,7 +542,7 @@ namespace ngcomp
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
       ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
-      applyd(aapplyd), cache_elnr(-1), fel(NULL), lh(1000000)
+      applyd(aapplyd), cache_elnr(-1), lh(1000000), fel(NULL)
   { 
     if(abfi2d)
       bfi2d.Append(abfi2d);
@@ -565,7 +565,7 @@ namespace ngcomp
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
       ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
-      applyd(aapplyd), cache_elnr(-1), fel(NULL), lh(1000000)
+      applyd(aapplyd), cache_elnr(-1), lh(1000000), fel(NULL)
   { 
     for(int i=0; i<abfi2d.Size(); i++)
       bfi2d.Append(abfi2d[i]);
@@ -993,10 +993,12 @@ namespace ngcomp
   void VisualizeGridFunction<SCAL> :: 
   Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages, int component)
   {
-    int ndomains;
+    int ndomains = 0;
 
-    if(bfi3d.Size()) ndomains = ma.GetNDomains();
-    else if(bfi2d.Size()) ndomains = ma.GetNBoundaries();
+    if (bfi3d.Size()) 
+      ndomains = ma.GetNDomains();
+    else if(bfi2d.Size()) 
+      ndomains = ma.GetNBoundaries();
 
     Array<double> volumes(ndomains);
 
@@ -1072,9 +1074,6 @@ namespace ngcomp
 		posx.DeleteAll(); posy.DeleteAll(); posz.DeleteAll(); 
 		switch(fel.ElementType())
 		  {
-		  case ET_SEGM: ET_TRIG: ET_QUAD:  // for the compiler
-		    break;
-
 		  case ET_TET:
 		    posx.Append(0.25); posy.Append(0.25); posz.Append(0.25); 
 		    posx.Append(0); posy.Append(0); posz.Append(0); 
@@ -1093,6 +1092,17 @@ namespace ngcomp
 		    posx.Append(1); posy.Append(1); posz.Append(0);
 		    posx.Append(1); posy.Append(1); posz.Append(1);
 		    break;
+                  default:
+                    {
+                      bool firsttime = 1;
+                      if (firsttime)
+                        {
+                          cerr << "WARNING::VisGridFunction::Analyze: unsupported element "
+                               << ElementTopology::GetElementName(fel.ElementType()) << endl;
+                          firsttime = 0;
+                        }
+                      break;
+                    } 
 		  }
 		cache_type = fel.ElementType();
 	      }

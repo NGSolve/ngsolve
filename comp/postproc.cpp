@@ -930,8 +930,6 @@ namespace ngcomp
   {
     ma.PushStatus ("Calc Difference");
 
-    double kappa = pde->GetConstant("k");
-
     const FESpace & fes1 = u1.GetFESpace();
 
     bool bound1 = bli1.BoundaryForm();
@@ -989,7 +987,7 @@ namespace ngcomp
 	const IntegrationRule & ir = 
 	  GetIntegrationRules().SelectIntegrationRule(fel1.ElementType(), 
 						      2*io+2);
-	double det; 
+	double det = 0;
 	
 	for (int j = 0; j < ir.GetNIP(); j++)
 	  {
@@ -1050,8 +1048,6 @@ namespace ngcomp
   {
     ma.PushStatus ("Calc Difference");
 
-    double kappa = pde->GetConstant("k");
-
     const FESpace & fes1 = u1.GetFESpace();
 
     bool bound1 = bli1.BoundaryForm();
@@ -1109,7 +1105,7 @@ namespace ngcomp
 	const IntegrationRule & ir = 
 	  GetIntegrationRules().SelectIntegrationRule(fel1.ElementType(), 
 						      2*io+2);
-	double det; 
+	double det = 0; 
 	
 	for (int j = 0; j < ir.GetNIP(); j++)
 	  {
@@ -1236,6 +1232,8 @@ namespace ngcomp
 	  case ET_TET:
 	    elhcurl = gradtet * elh1;
 	    break;
+          default:
+            throw Exception ("CalcGradient: unsupported element");
 	  }
 
 	feshcurl.TransformVec (i, 0, elhcurl, TRANSFORM_RHS);
@@ -1312,6 +1310,8 @@ namespace ngcomp
 	  case ET_TET:
 	    elh1 = Trans (gradtet) * elhcurl;
 	    break;
+          default:
+            throw Exception ("CalcGradientT: unsupported element");
 	  }
 
 	fesh1.TransformVec (i, 0, elh1, TRANSFORM_RHS);

@@ -571,6 +571,8 @@ namespace ngcomp
 		cell_ngrad[i] = usegrad_cell[i]*(p[0]-1)*p[0]*(2*p[0]-1)/6; 
 	      }
 	    break; 
+          default:  // for the compiler
+            break; 
 	  }
       }
     first_inner_dof[nel] = ndof;    
@@ -821,8 +823,6 @@ namespace ngcomp
  
   const FiniteElement & HCurlHighOrderFESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
-    int i, j;
-
     FiniteElement * fe = 0;
     
     if ( discontinuous )
@@ -908,7 +908,7 @@ namespace ngcomp
 	ord_edge.SetSize (ednums.Size());
 	ug_edge.SetSize (ednums.Size()); 
 	
-	for (j = 0; j < ednums.Size(); j++)
+	for (int j = 0; j < ednums.Size(); j++)
 	  {
 	    ord_edge[j] = order_edge[ednums[j]]; 
 	    ug_edge[j] = usegrad_edge[ednums[j]];
@@ -1196,7 +1196,7 @@ namespace ngcomp
     Array<int> orient; 
     Array<int> ednums, fanums, enums, f2ed;
     
-    int augv = augmented; 
+    // int augv = augmented; 
 
         
     if(nfa == 0 && SmoothingType == 1) 
@@ -1540,7 +1540,7 @@ namespace ngcomp
 	      
 	  for (i = 0; i < ni; i++)
 	    { 
-	      int first = first_inner_dof[i] + excl_grads*cell_ngrad[i];
+	      // int first = first_inner_dof[i] + excl_grads*cell_ngrad[i];
 	      for (j = first_inner_dof[i]; j < first_inner_dof[i+1]; j++)
 		table[nnv+ned+nfa+i][cnt[nnv+ned+nfa+i]++] = j;
 	    }
@@ -1580,7 +1580,7 @@ namespace ngcomp
 	  
 	  for (i = 0; i < ni; i++)
 	    { 
-	      int first = first_inner_dof[i] + excl_grads*cell_ngrad[i];
+	      // int first = first_inner_dof[i] + excl_grads*cell_ngrad[i];
 	      for (j = first_inner_dof[i]; j < first_inner_dof[i+1]; j++)
 		table[nnv+ned+nfa+i][cnt[nnv+ned+nfa+i]++] = j;
 	    }
@@ -1785,7 +1785,6 @@ namespace ngcomp
 	      
 	  for (i = 0; i < ni; i++)
 	    { 
-	      int first = first_inner_dof[i];
 	      for (j = first_inner_dof[i]; j < first_inner_dof[i+1]; j++)
 		table[ii++][0] = j;
 	    }
@@ -1867,8 +1866,8 @@ namespace ngcomp
     if(clustertype==0)
       return(0);
 	   
-    int nv = ma.GetNV();
-    int nd = GetNDof();
+    // int nv = ma.GetNV();
+    // int nd = GetNDof();
     int ne = ma.GetNE();
     int ned = ma.GetNEdges();
 
@@ -2473,13 +2472,13 @@ namespace ngcomp
     fesh1.Update(lh);
      
     int ned = ma.GetNEdges(); 
-    int nv  = ma.GetNV(); 
+    // int nv  = ma.GetNV(); 
     int nel = ma.GetNE(); 
     int nfa = 0;
     if(ma.GetDimension()==3) nfa= ma.GetNFaces();  
 
-    const int dim     = fesh1.GetDimension();
-    const int dimcurl = GetDimension();
+    // int dim     = fesh1.GetDimension();
+    // int dimcurl = GetDimension();
 
     Array<int> dnums_h1l; 
     Array<int> dnums_hcl;
