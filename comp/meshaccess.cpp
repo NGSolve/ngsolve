@@ -333,7 +333,7 @@ void MeshAccess :: GetSegmentPNums (int snr, Array<int> & pnums) const
 {
   pnums.SetSize(3);
   int np;
-  NG_ELEMENT_TYPE typ = Ng_GetSegment (snr+1, &pnums[0], &np);
+  Ng_GetSegment (snr+1, &pnums[0], &np);
   pnums.SetSize(np);
 
   for (int i = 0; i < np; i++)
@@ -940,7 +940,7 @@ GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans,
 double MeshAccess :: ElementVolume (int elnr) const
 {
 
-  const FiniteElement * fe;
+  const FiniteElement * fe = NULL;
   switch (GetElType (elnr))
     {
     case ET_TRIG: fe = &trig0; break;
@@ -966,16 +966,14 @@ double MeshAccess :: ElementVolume (int elnr) const
   if (GetDimension() == 2)
     {
       SourceIntegrator<2> si( &ccf );
-      // FlatVector<> elvec;
-      Vector<> elvec(fe->GetNDof());
+      FlatVector<> elvec(fe->GetNDof(), lh);
       si.AssembleElementVector (*fe, trans, elvec, lh);
       return elvec(0);
     }
   else
     {
       SourceIntegrator<3> si( &ccf );
-      // FlatVector<> elvec;
-      Vector<> elvec(fe->GetNDof());
+      FlatVector<> elvec(fe->GetNDof(), lh);
       si.AssembleElementVector (*fe, trans, elvec, lh);
       return elvec(0);
     }
@@ -1253,7 +1251,7 @@ void MeshAccess::UnSetHigherIntegrationOrder(int elnr)
 void MeshAccess :: PrecomputeGeometryData(int intorder)
 {
   return;
-
+#ifdef CURRENTLY_NOT_SUPPORTED
   cout << "Precompute Geometry Data, intorder = " << intorder << " ..." << flush;
 
   int npts = 0;
@@ -1295,6 +1293,8 @@ void MeshAccess :: PrecomputeGeometryData(int intorder)
 
   // (*testout) << "computed pts = " << pts << endl;
   cout << " done" << endl;
+#endif
+
 }
 
 

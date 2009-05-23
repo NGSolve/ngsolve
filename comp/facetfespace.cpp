@@ -297,11 +297,13 @@ namespace ngcomp
   // ------------------------------------------------------------------------
   const FiniteElement & FacetFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    FacetVolumeFiniteElement<2> * fe2d;
-    FacetVolumeFiniteElement<3> * fe3d;
+    FacetVolumeFiniteElement<2> * fe2d = NULL;
+    FacetVolumeFiniteElement<3> * fe3d = NULL;;
 
     switch (ma.GetElType(elnr))
       {
+      case ET_SEGM:
+        break;
       case ET_TRIG:
         fe2d = new (lh.Alloc (sizeof(FacetVolumeTrig)))  FacetVolumeTrig ();
         break;
@@ -386,7 +388,8 @@ namespace ngcomp
         fe2d = new (lh.Alloc (sizeof(L2HighOrderFE<ET_QUAD>))) L2HighOrderFE<ET_QUAD> ();
         break;
       default:
-        ;
+        throw Exception (string("FacetFESpace::GetSFE: unsupported element ")+
+                         ElementTopology::GetElementName(ma.GetSElType(selnr)));
       }
      
     if (!fe1d && !fe2d)
@@ -429,7 +432,10 @@ namespace ngcomp
         fe2d -> ComputeNDof();
         return *fe2d;
         break;
+      default:
+        break;
       }
+    return *fe2d;
   }
 
 

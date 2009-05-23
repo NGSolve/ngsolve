@@ -373,6 +373,8 @@ namespace ngcomp
                  else
                    inci = pc[0]*pc[1];
 		 break;
+               default: // for the compiler
+                 break;  
 	       }
 	     if (inci < 0) inci = 0;
 	     {
@@ -612,8 +614,6 @@ namespace ngcomp
 
   const FiniteElement & HDivHighOrderFESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
-    int i, j;
-
     FiniteElement * fe = 0;
 
     int porder; 
@@ -634,6 +634,9 @@ namespace ngcomp
 	fe = new (lh.Alloc (sizeof(HDivHighOrderNormalQuad<TrigExtensionMonomial>)))  
 	  HDivHighOrderNormalQuad<TrigExtensionMonomial> (porder);
 	break; 
+      default:
+        throw Exception (string("HDivHighOrderFESpace::GetSFE: unsupported element ")+
+                         ElementTopology::GetElementName(ma.GetSElType(selnr)));
       }
 
     if (!fe)
@@ -1039,9 +1042,9 @@ namespace ngcomp
 
 Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
 {
-  int i, j, k, first,ii;
-  int ncnt; 
-  int ni = ma.GetNE();//nel;
+  int first, ii;
+  int ncnt = 0;
+  // int ni = ma.GetNE(); //nel;
   
   int dim = ma.GetDimension();
   
@@ -1095,7 +1098,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
       {
 	//      0 ..... jacobi
       case 0:   // diagonal
-	for(i=0; i<ndof; i++ )
+	for(int i=0; i<ndof; i++ )
 	    cnt[i] = 1;
 	break;
 
@@ -1104,7 +1107,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 	if( dim == 2 )
 	  {
 	    // vertex blocks
-	    for( i=0; i<ned; i++)
+	    for(int i=0; i<ned; i++)
 	      if(fine_facet[i])
 	      {
 		int pn1, pn2;
@@ -1116,7 +1119,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 
 	    offset += nnv;
 	    // edges
-	    for( i=0; i<ned; i++)
+	    for(int i=0; i<ned; i++)
 	      if( fine_facet[i] )
 	      {
 		cnt[offset + i] += first_facet_dof[i+1] - first_facet_dof[i];;
@@ -1124,7 +1127,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 	    offset += ned;
 
 	    // cells
-	    for( i=0; i<nel; i++)
+	    for(int i=0; i<nel; i++)
 	      {
 		cnt[offset + i] += first_inner_dof[i+1] - first_inner_dof[i];;
 	      }
@@ -1134,7 +1137,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 	else
 	  {
 	    // vertex blocks
-	    for( i=0; i<nfa; i++)
+	    for(int i=0; i<nfa; i++)
 	      if(fine_facet[i])
 		{
 		  Array<int> edges;
@@ -1146,7 +1149,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 	    
 	    offset += ned;
 	    // edges
-	    for( i=0; i<nfa; i++)
+	    for(int i=0; i<nfa; i++)
 	      if( fine_facet[i] )
 		{
 		  cnt[offset + i] += first_facet_dof[i+1] - first_facet_dof[i];;
@@ -1154,7 +1157,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 	    offset += nfa;
 
 	    // cells
-	    for( i=0; i<nel; i++)
+	    for(int i=0; i<nel; i++)
 	      {
 		cnt[offset + i] += first_inner_dof[i+1] - first_inner_dof[i];;
 	      }
@@ -1177,7 +1180,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
       {
 	//      0 ..... jacobi
       case 0:
-	for(i=0; i<ndof; i++)
+	for(int i=0; i<ndof; i++)
 	  table[i][cnt[i]] = i;
 	break;
 	
@@ -1186,7 +1189,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 
 	if ( dim == 2 )
 	  {
-	    for (i = 0; i < ned; i++)
+	    for (int i = 0; i < ned; i++)
 	      {
 		int pn1, pn2;
 		ma.GetEdgePNums (i,pn1,pn2);	      
@@ -1208,7 +1211,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 
 	    offset += nnv;
 
-	    for ( i = 0; i < ned; i++ )
+	    for (int i = 0; i < ned; i++ )
 	      {
 		first = first_facet_dof[i];
 		int last = first_facet_dof[i+1];
@@ -1216,7 +1219,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 		  table[offset + i ] [cnt[offset+i]++] = l;
 	      }
 
-	    for ( i = 0; i < nel; i++ )
+	    for (int i = 0; i < nel; i++ )
 	      {
 		first = first_inner_dof[i];
 		int last = first_inner_dof[i+1];
@@ -1229,7 +1232,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 	else // 3d
 
 	  {
-	    for (i = 0; i < nfa; i++)
+	    for (int i = 0; i < nfa; i++)
 	      {
 		if ( ! fine_facet[i] ) continue;
 		Array<int> faces;
@@ -1251,7 +1254,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 
 	    offset += ned;
 
-	    for ( i = 0; i < nfa; i++ )
+	    for (int i = 0; i < nfa; i++ )
 	      {
 		first = first_facet_dof[i];
 		int last = first_facet_dof[i+1];
@@ -1259,7 +1262,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 		  table[offset + i ] [cnt[offset+i]++] = l;
 	      }
 
-	    for ( i = 0; i < nel; i++ )
+	    for (int i = 0; i < nel; i++ )
 	      {
 		first = first_inner_dof[i];
 		int last = first_inner_dof[i+1];
@@ -1301,12 +1304,12 @@ Array<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & p
   int clustertype = int(precflags.GetNumFlag("ds_cluster",1)); 
   cout << " DirectSolverCluster Clustertype " << clustertype << endl; 
   
-  int nv = ma.GetNV();
-  int nd = GetNDof();
-  int ne = ma.GetNE();
-  int ned = ma.GetNEdges();
+  // int nv = ma.GetNV();
+  // int nd = GetNDof();
+  // int ne = ma.GetNE();
+  // int ned = ma.GetNEdges();
   
-  int dim = ma.GetDimension();
+  // int dim = ma.GetDimension();
 
   Array<int> vnums,elnums; 
   Array<int> orient; 
@@ -1314,12 +1317,12 @@ Array<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & p
   Array<int> edges(3);
         
   int nfa = ma.GetNFaces();
-  int nnv = ma.GetNV();
-  int nel = ma.GetNE();
+  // int nnv = ma.GetNV();
+  // int nel = ma.GetNE();
 
   Array<int> ednums, fnums, pnums;
   
-  int i, j, k;
+  //  int i, j, k;
         
 
 
@@ -1334,7 +1337,7 @@ Array<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & p
     case 1: 
       clusters = 0;
 
-      for( i=0; i<nfa; i++ )
+      for(int i=0; i<nfa; i++ )
 	if( fine_facet[i] )
 	  clusters[i] = 1;
       break;

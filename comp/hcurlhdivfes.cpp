@@ -2099,7 +2099,7 @@ namespace ngcomp
 
 	
 	  int nmx = order * (zorder-1);
-	  int nmy = (order-1) * zorder;
+	  // int nmy = (order-1) * zorder;
 
 	  // vertical flip
 	  if (forient[0] & 1)
@@ -2178,7 +2178,7 @@ namespace ngcomp
 
 	
 	  int nmx = order * (zorder-1);
-	  int nmy = (order-1) * zorder;
+	  // int nmy = (order-1) * zorder;
 
 	  for (i = 2; i < 5; i++)
 	    {
@@ -2321,7 +2321,11 @@ namespace ngcomp
 	  break;
 	}
 
-
+      default:
+        {
+          cerr << "unhandled case 152345" << endl;
+          break;
+        }
 
       }
   }
@@ -2463,22 +2467,22 @@ namespace ngcomp
   {
     cout << "Ned2, CreateSmoothingblocks, type = " << type << endl;
     int ne = ma.GetNE();
-    int nse = ma.GetNSE();
+    // int nse = ma.GetNSE();
     int nv = ma.GetNV();
-    int nd = nv+ned + nfa + ne;
-    int level = ma.GetNLevels()-1;
+    // int nd = nv+ned + nfa + ne;
+    // int level = ma.GetNLevels()-1;
 
-    int i, j, k, l, m;
+    int i, j, k, l;
 
     ArrayMem<int,12> pnums;
     ArrayMem<int,37> dnums, dcluster;
     ArrayMem<int,12> enums, eorient, fnums, forient, fpnum1, fpnum2;
     ArrayMem<int,12> ecluster, fcluster;
 
-    int elcluster;
-    Table<int> * it;
-    const NedelecFESpace & fe1 = 
-      dynamic_cast<const NedelecFESpace&> (*low_order_space);
+    // int elcluster;
+    Table<int> * it = NULL;
+    // const NedelecFESpace & fe1 = 
+    // dynamic_cast<const NedelecFESpace&> (*low_order_space);
 
   
   
@@ -2989,7 +2993,7 @@ namespace ngcomp
   {
     (*testout) << "CreateDirectSolverClusters" << endl;
 
-    int nv = ma.GetNV();
+    // int nv = ma.GetNV();
     int nd = GetNDof();
     int ne = ma.GetNE();
 

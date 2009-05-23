@@ -3755,6 +3755,8 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 	return trig1;
       case ET_SEGM:
 	return segm1;
+      default:
+        throw Exception ("NonconformingFESpace::GetSFE unsupported element");
       }  
     return trig1;
   }

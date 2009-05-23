@@ -1109,7 +1109,7 @@ namespace ngcomp
 
 
 
-    clock_t starttime, endtime, soltime;
+    clock_t starttime, endtime;
     starttime = clock();
 
     Array< Vec<3> > vertices;

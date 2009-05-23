@@ -249,7 +249,7 @@ namespace ngcomp
 	  {
 	    if (!(parts[j] -> IntegrationAlongCurve())) continue;
 	    
-	    const FiniteElement * fel;
+	    const FiniteElement * fel = NULL;
 	    int oldelement;
 	    int element;
 	    double oldlength;
