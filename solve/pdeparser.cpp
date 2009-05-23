@@ -168,7 +168,7 @@ namespace ngsolve
 	  copy_of_stream += ch;
       }
 
-    int pos = 0;
+    size_t pos = 0;
     int ok = 0;
     string constname,constvalue;
     while(pos < copy_of_stream.size())
@@ -222,7 +222,7 @@ namespace ngsolve
 	      }
 
 	    string fullname = string("$(")+constname+string(")");
-	    int spos = pos;
+	    size_t spos = pos;
 	    while(spos != string::npos)
 	      {
 		spos = copy_of_stream.find(fullname,spos);
@@ -551,8 +551,8 @@ namespace ngsolve
 	      if (scan->GetToken() != '=')
 		scan->Error ("Expected '='");
 	      scan->ReadNext();
-	      int overlap = int(scan -> GetNumValue());
 #ifdef PARALLEL
+	      int overlap = int(scan -> GetNumValue());
 	      while (pde->GetMeshAccess().Overlap() < overlap && id == 0 && ntasks != 1)
 		{
 		  for ( int dest = 1; dest < ntasks; dest++)
@@ -664,7 +664,7 @@ namespace ngsolve
 
 	  scan->ReadNext();
 
-	  double val;
+	  double val = 0;
 	  string sval;
 
 	  if (scan->GetToken() == LP)
@@ -720,7 +720,7 @@ namespace ngsolve
 
 	  scan->ReadNext();
 
-	  double val;
+	  double val = 0;
 	  
 	  EvalVariable * eval = NULL;
 
@@ -839,11 +839,11 @@ namespace ngsolve
 	      bool only_constant = true;
 	      for (int i = 0; i < ne; i++)
 		{
-		  EvalFunction * fun;
+		  EvalFunction * fun = NULL;
 		  string mat = pde->GetMeshAccess().GetElMaterial(i);
 		  int index = pde->GetMeshAccess().GetElIndex(i);
 		  // cout << "mat = " << mat << ", ind = " << index << endl;
-		  double val;
+
 
 		  bool used = false;
 		  for(int j=0; !used && j<funs.Size(); j++)
@@ -1001,11 +1001,10 @@ namespace ngsolve
 	      bool only_constant = true;
 	      for (int i = 0; i < nse; i++)
 		{
-		  EvalFunction * fun;
+		  EvalFunction * fun = NULL;
 		  string bcname = pde->GetMeshAccess().GetSElBCName(i);
 		  int index = pde->GetMeshAccess().GetSElIndex(i);
 		  // cout << "bcname = " << bcname << ", ind = " << index << endl;
-		  double val;
 
 		  bool used = false;
 		  for(int j=0; !used && j<funs.Size(); j++)
@@ -1717,7 +1716,7 @@ namespace ngsolve
 	    int numpoints = 0;
 
 	    int oldelement=-1;
-	    double h;
+	    double h = 0;
 	    if(draw)
 	      ma.AddPointCurvePoint(start);
 
@@ -1796,8 +1795,8 @@ namespace ngsolve
 	    double t = 0;
 	    double tstep = 0.1;
 	    int oldelement=-1;
-	    double h;
-
+	    double h = 0;
+            
 	    Array<int> verts;
 	    
 

@@ -477,8 +477,6 @@ namespace ngsolve
 
     err = 0;
   
-    int i, j, k;
-
     if (!bfa->GetFESpace().IsComplex())
       {
 	CalcFluxProject (ma, 
@@ -510,7 +508,7 @@ namespace ngsolve
 
     // delete flux;
     double sum = 0;
-    for (i = 0; i < err.Size(); i++)
+    for (int i = 0; i < err.Size(); i++)
       sum += err(i);
     cout << "estimated error = " << sqrt (sum) << endl;
     static ofstream errout ("error.out");
@@ -845,8 +843,6 @@ Flags visflags;
 
   void NumProcSetVisual :: Do()
   {
-    int i;
-
     /*
       cout << "Set Visualization Flag:" << endl;
 
@@ -937,7 +933,6 @@ Flags visflags;
 
     err = 0;
   
-    int i, j, k;
     if (!bfa->GetFESpace().IsComplex())
       {
 	CalcError (ma, 
@@ -957,7 +952,7 @@ Flags visflags;
       
       
     double sum = 0;
-    for (i = 0; i < err.Size(); i++)
+    for (int i = 0; i < err.Size(); i++)
       sum += err(i);
     cout << "estimated error = " << sqrt (sum) << endl;
   }

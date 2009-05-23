@@ -1,5 +1,5 @@
 /**************************************************************************/
-/* File:   evalfunc.cc                                                    */
+/* File:   evalfunc.cpp                                                   */
 /* Author: Joachim Schoeberl                                              */
 /* Date:   01. Oct. 95                                                    */
 /**************************************************************************/
@@ -134,27 +134,10 @@ namespace ngstd
 
   void EvalFunction :: Eval (const double * x, double * y, int ydim) const
   {
-    int i, stacksize;
-
-    /*
-    enum { LOC_SIZE = 100 };
-
-    double locmem[LOC_SIZE];
-    double *pmem;
-
-    if (program.Size() <= LOC_SIZE)
-      pmem = locmem;
-    else
-      pmem = new double[program.Size()];
-
-    FlatArray<double> stack(program.Size(), pmem);
-    */
-    
     ArrayMem<double, 100> stack(program.Size());
 
-    stacksize = -1;
-
-    for (i = 0; i < program.Size(); i++)
+    int stacksize = -1;
+    for (int i = 0; i < program.Size(); i++)
       {
 	switch (program[i].op)
 	  {
@@ -277,12 +260,8 @@ namespace ngstd
 	    stack[stacksize] = atan (stack[stacksize]);
 	    break;
 	  case ATAN2:
-	    //if(std::fabs(stack[stacksize]) < 0.1)
-	    //  (*testout) << "atan2("<< stack[stacksize-1] <<", " << stack[stacksize] << ") = ";
 	    stack[stacksize-1] = atan2(stack[stacksize-1],
 				       stack[stacksize]);
-	    //if(std::fabs(stack[stacksize]) < 0.1)
-	    //  (*testout) << stack[stacksize-1] << " (= " << stack[stacksize-1]*180./M_PI << " grad)"<< endl;
 	    stacksize--;
 	    break;
 	  case EXP:
@@ -323,7 +302,6 @@ namespace ngstd
 	    stack[stacksize] = bessy1 (stack[stacksize]);
 	    break;
 	    */
-	    
 
 	  default:
 	    cerr << "undefined operation for EvalFunction" << endl;
@@ -336,11 +314,8 @@ namespace ngstd
 	return;
       }
 
-    for (i = 0; i < ydim; i++)
+    for (int i = 0; i < ydim; i++)
       y[i] = stack[i];
-
-    //    if (program.Size() > LOC_SIZE)
-    //     delete pmem;
   }
 
 
