@@ -251,6 +251,7 @@
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;;&quot;$(CASROOT)\win32\lib&quot;"
 				GenerateManifest="true"
 				EnableUAC="false"
+				EmbedManagedResourceFile=""
 				GenerateDebugInformation="false"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -1643,6 +1644,14 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\occ\Partition_Spliter.jxx"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Resource Files"
+			>
+			<File
+				RelativePath=".\netgen.rc"				
 				>
 			</File>
 		</Filter>
