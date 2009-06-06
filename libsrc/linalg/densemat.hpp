@@ -2,7 +2,7 @@
 #define FILE_DENSEMAT
 
 /**************************************************************************/
-/* File:   densemat.hh                                                    */
+/* File:   densemat.hpp                                                    */
 /* Author: Joachim Schoeberl                                              */
 /* Date:   01. Oct. 94                                                    */
 /**************************************************************************/
@@ -10,11 +10,6 @@
 /** 
     Data type dense matrix
 */
-
-
-#include <assert.h>
-
-
 
 
 class DenseMatrix
@@ -67,12 +62,8 @@ public:
 #ifdef DEBUG
     if (prod.Size() != height)
       {
-	cerr << "Mult: wrong vector size " << endl;
-	assert (1);
-	// prod.SetSize (height);
+	(*myerr) << "Mult: wrong vector size " << endl;
       }
-    
-
     if (!height) 
       {
 	cout << "DenseMatrix::Mult height = 0" << endl;
@@ -94,13 +85,13 @@ public:
 #endif
       {      
 	mp = data;
-	dp = &prod.Elem(1);
-	for (int i = 1; i <= height; i++)
+	dp = &prod(0);
+        for (int i = 0; i < height; i++)
 	  {
 	    sum = 0;
-	    sp = &v.Get(1);
+	    sp = &v(0);
 	    
-	    for (int j = 1; j <= width; j++)
+	    for (int j = 0; j < width; j++)
 	      {
 		//        sum += Get(i,j) * v.Get(j);
 		sum += *mp * *sp;

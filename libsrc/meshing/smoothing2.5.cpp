@@ -219,9 +219,9 @@ namespace netgen
 	    while (loci <= 5 && !moveisok)
 	      {
 		loci ++;
-		mesh[pi](0) = origp(0) + x.Get(1)*fact;
-		mesh[pi](1) = origp(1) + x.Get(2)*fact;
-		mesh[pi](2) = origp(2) + x.Get(3)*fact;
+		mesh[pi](0) = origp(0) + x(0)*fact;
+		mesh[pi](1) = origp(1) + x(1)*fact;
+		mesh[pi](2) = origp(2) + x(2)*fact;
 		fact = fact/2.;
 	    
 	    

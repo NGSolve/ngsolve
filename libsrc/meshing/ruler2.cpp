@@ -397,11 +397,11 @@ int Meshing2 ::ApplyRules (Array<Point2d> & lpoints,
 			{
 			  oldu.SetSize (2 * rule->GetNOldP());
 			  
-			  for (i = 1; i <= rule->GetNOldP(); i++)
+			  for (int i = 1; i <= rule->GetNOldP(); i++)
 			    {
 			      Vec2d ui(rule->GetPoint(i), lpoints.Get(pmap.Get(i)));
-			      oldu.Set (2*i-1, ui.X());
-			      oldu.Set (2*i  , ui.Y());
+			      oldu (2*i-2) = ui.X();
+			      oldu (2*i-1) = ui.Y();
 			    }
 			  
 			  rule -> SetFreeZoneTransformation (oldu, tolerance);
@@ -513,8 +513,8 @@ int Meshing2 ::ApplyRules (Array<Point2d> & lpoints,
 			  for (i = oldnp + 1; i <= rule->GetNP(); i++)
 			    {
 			      np = rule->GetPoint(i);
-			      np.X() += newu.Elem (2 * (i-oldnp) - 1);
-			      np.Y() += newu.Elem (2 * (i-oldnp));
+			      np.X() += newu (2 * (i-oldnp) - 2);
+			      np.Y() += newu (2 * (i-oldnp) - 1);
 
 			      pmap.Elem(i) = lpoints.Append (np);
 			    }

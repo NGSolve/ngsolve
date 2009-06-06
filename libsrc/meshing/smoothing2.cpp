@@ -441,7 +441,7 @@ namespace netgen
     vgrad = 0.0;
     badness = 0;
 
-    pp1 = sp1 + x.Get(1) * t1;
+    pp1 = sp1 + x(0) * t1;
     meshthis -> ProjectPoint2 (surfi, surfi2, pp1);
 
     for (j = 0; j < locelements.Size(); j++)
@@ -540,7 +540,7 @@ namespace netgen
 	    pts2d.Elem(pi) = Point2d (t1 * (mesh.Point(pi) - sp1), 
 				      t2 * (mesh.Point(pi) - sp1)); 
 	  }				    
-	pts2d.Elem(gpi) = Point2d (x.Get(1), x.Get(2));
+	pts2d.Elem(gpi) = Point2d (x(0), x(1));
       
 
 	for (int k = 1; k <= 2; k++)
@@ -552,8 +552,8 @@ namespace netgen
 	  
 	    hbad = bel.
 	      CalcJacobianBadnessDirDeriv (pts2d, lpi, vdir, hderiv);
-
-	    grad.Elem(k) += hderiv;
+            
+	    grad(k-1) += hderiv;
 	    if (k == 1)
 	      badness += hbad;
 	  }
@@ -590,7 +590,7 @@ namespace netgen
 
     // pp1 = sp1;
     //    pp1.Add2 (x.Get(1), t1, x.Get(2), t2);
-    pp1 = sp1 + x.Get(1) * t1 + x.Get(2) * t2;
+    pp1 = sp1 + x(0) * t1 + x(1) * t2;
 
     static Array<Point2d> pts2d;
     pts2d.SetSize(mesh.GetNP());
@@ -611,7 +611,7 @@ namespace netgen
 	    pts2d.Elem(pi) = Point2d (t1 * (mesh.Point(pi) - sp1), 
 				      t2 * (mesh.Point(pi) - sp1)); 
 	  }				    
-	pts2d.Elem(gpi) = Point2d (x.Get(1), x.Get(2));
+	pts2d.Elem(gpi) = Point2d (x(0), x(1));
       
 
 	vdir = Vec2d (dir(0), dir(1));

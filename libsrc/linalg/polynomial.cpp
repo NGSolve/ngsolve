@@ -152,24 +152,6 @@ MaxUnitSquare ()
   if (hv > maxv) maxv = hv;
 
   return maxv;
-
-  //  (*testout) << "maxv = " << maxv << " =~= ";
-
-  /*
-  double x, y;
-  maxv = -1e8;
-  double val;
-  for (x = 0; x <= 1.01; x += 0.1)
-    for (y = 0; y <= 1.01; y += 0.1)
-      {
-	val = Value (x, y);
-	if (val > maxv)
-	  maxv = val;
-      }
-
-  //  (*testout) << maxv << endl;
-  return maxv;
-  */
 };
 
 

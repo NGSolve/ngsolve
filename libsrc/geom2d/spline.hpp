@@ -587,8 +587,6 @@ Vec<D> SplineSeg3<D> :: GetTangent (const double t) const
 template<int D>
 void SplineSeg3<D> :: GetCoeff (Vector & u) const
 {
-  double t;
-  int i;
   Point<D> p;
   DenseMatrix a(6, 6);
   DenseMatrix ata(6, 6);
@@ -598,23 +596,23 @@ void SplineSeg3<D> :: GetCoeff (Vector & u) const
 
   //  ata.SetSymmetric(1);
 
-  t = 0;
-  for (i = 1; i <= 5; i++, t += 0.25)
+  double t = 0;
+  for (int i = 0; i < 5; i++, t += 0.25)
     {
       p = GetPoint (t);
-      a.Elem(i, 1) = p(0) * p(0);
-      a.Elem(i, 2) = p(1) * p(1);
-      a.Elem(i, 3) = p(0) * p(1);
-      a.Elem(i, 4) = p(0);
-      a.Elem(i, 5) = p(1);
-      a.Elem(i, 6) = 1;
+      a(i, 0) = p(0) * p(0);
+      a(i, 1) = p(1) * p(1);
+      a(i, 2) = p(0) * p(1);
+      a(i, 3) = p(0);
+      a(i, 4) = p(1);
+      a(i, 5) = 1;
     }
-  a.Elem(6, 1) = 1;
+  a(5, 0) = 1;
 
   CalcAtA (a, ata);
 
   u = 0;
-  u.Elem(6) = 1;
+  u(5) = 1;
   a.MultTrans (u, f);
   ata.Solve (f, u);
 }

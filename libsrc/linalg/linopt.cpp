@@ -37,9 +37,9 @@ void LinearOptimize (const DenseMatrix & a, const Vector & b,
           m.Elem(3, j) = a.Get(i3, j);
           }
           
-        rs.Elem(1) = b.Get(i1);
-        rs.Elem(2) = b.Get(i2);
-        rs.Elem(3) = b.Get(i3);
+        rs(0) = b(i1-1);
+        rs(1) = b(i2-1);
+        rs(2) = b(i3-1);
         
         if (fabs (m.Det()) < 1e-12) continue;
         
@@ -59,9 +59,9 @@ void LinearOptimize (const DenseMatrix & a, const Vector & b,
 */
 
 	
-	double rmin = res.Elem(1);
-	for (int hi = 2; hi <= res.Size(); hi++)
-	  if (res.Elem(hi) < rmin) rmin = res.Elem(hi);
+	double rmin = res(0);
+	for (int hi = 1; hi < res.Size(); hi++)
+	  if (res(hi) < rmin) rmin = res(hi);
         
         if ( (f < fmin) && rmin >= -1e-8)
           {

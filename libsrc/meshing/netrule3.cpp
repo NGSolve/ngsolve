@@ -61,7 +61,7 @@ void vnetrule :: SetFreeZoneTransformation (const Vector & allp, int tolclass)
   for (i = 1; i <= 3; i++)
     {
       for (j = 1; j <= np; j++)
-	vp.Elem(j) = allp.Get(i+3*j-3);
+	vp(j-1) = allp(i+3*j-3-1);
 
       oldutofreezone->Mult (vp, vfp1);
       oldutofreezonelimit->Mult (vp, vfp2);
@@ -70,7 +70,7 @@ void vnetrule :: SetFreeZoneTransformation (const Vector & allp, int tolclass)
       vfp1.Add (lam2, vfp2);
 
       for (j = 1; j <= nfp; j++)
-	transfreezone.Elem(j).X(i) = vfp1.Elem(j);
+	transfreezone.Elem(j).X(i) = vfp1(j-1);
     }
 
   // MARK(setfz2);
@@ -709,7 +709,7 @@ int vnetrule :: IsTriangleInFreeSet (const Point3d & p1, const Point3d & p2,
   minit = 1000;
   fold = 1E10;
 
-
+  
 
   while (1)
     {
@@ -814,7 +814,7 @@ int vnetrule :: IsTriangleInFreeSet (const Point3d & p1, const Point3d & p2,
 	  if (it > minit)
 	    (*testout) << "act1,2,3 = " << act1 << act2 << act3 << endl;
 
-	  if (act1 && act2 || act1 && act3 || act2 && act3) return 0;
+	  if ( (act1 && act2) || (act1 && act3) || (act2 && act3) ) return 0;
 
 	  if (act1)
 	    {

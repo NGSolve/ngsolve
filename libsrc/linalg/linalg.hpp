@@ -10,7 +10,6 @@
 /* 
 
    Data types for basic linear algebra
-   more data types are found in linalgl.hpp
    
    The basic concepts include the data types 
    

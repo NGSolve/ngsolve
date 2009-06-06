@@ -183,7 +183,7 @@ void STLGeometry :: SmoothNormals()
 	  
 	  
 	  for (k = 0; k < 3; k++)
-	    hv.Elem(k+1) = ngeom(k);
+	    hv(k) = ngeom(k);
 	  
 	  hm.Mult (hv, hv2);
 	  /*
@@ -230,7 +230,7 @@ void STLGeometry :: SmoothNormals()
 		}
 	      
 	      for (k = 0; k < 3; k++)
-		hv.Elem(k+1) = nnb(k);
+		hv(k) = nnb(k);
 	      
 	      hm.Mult (hv, hv2);
 	      /*
@@ -245,7 +245,7 @@ void STLGeometry :: SmoothNormals()
 	}
 
       m.Solve (rhs, sol);
-      Vec3d newn(sol.Get(1), sol.Get(2), sol.Get(3));
+      Vec3d newn(sol(0), sol(1), sol(2));
       newn /= (newn.Length() + 1e-24);      
 
       GetTriangle(i).SetNormal(newn);
@@ -1562,9 +1562,9 @@ void STLGeometry :: NeighbourAnglesOfSelectedTrig()
       for (i = 1; i <= NONeighbourTrigs(st); i++)
 	{
 	  PrintMessage(1,"   triangle ", NeighbourTrig(st,i), ": angle = ", 
-		       180./M_PI*GetAngle(st, NeighbourTrig(st,i)), "°",
+		       180./M_PI*GetAngle(st, NeighbourTrig(st,i)), "Â°",
 		       ", calculated = ", 180./M_PI*Angle(GetTriangle(st).GeomNormal(points), 
-							  GetTriangle(NeighbourTrig(st,i)).GeomNormal(points)), "°");
+							  GetTriangle(NeighbourTrig(st,i)).GeomNormal(points)), "Â°");
 	}
     }
 }
@@ -2601,7 +2601,7 @@ void STLGeometry :: AddFaceEdges()
 {
   PrintFnStart("Add starting edges for faces");
 
-  //für Kugel eine STLLine hinzufügen (Vorteil: verfeinerbar, unabhängig von Auflösung der Geometrie!!!):
+  //fÃ¼r Kugel eine STLLine hinzufÃ¼gen (Vorteil: verfeinerbar, unabhÃ¤ngig von AuflÃ¶sung der Geometrie!!!):
   //Grenze von 1. gefundener chart
 
   Array<int> edgecnt;
@@ -2676,7 +2676,7 @@ void STLGeometry :: LinkEdges()
   //worked edges
   Array<int> we(GetNE());
 
-  //setlineendpoints; wenn 180°, dann keine endpunkte
+  //setlineendpoints; wenn 180Â°, dann keine endpunkte
   //nur punkte mit 2 edges kommen in frage, da bei mehr oder weniger punkten ohnehin ein meshpoint hinkommt
 
   Vec3d v1,v2;

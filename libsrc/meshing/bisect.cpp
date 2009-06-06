@@ -1091,26 +1091,23 @@ namespace netgen
 		  T_MPRISMS & mprisms,
 		  const Mesh & mesh)
   {
-    int i, j, k;
-    int step;
-
     int marked = 0;
 
     int np = mesh.GetNP();
     Vector hv(np);
-    for (i = 1; i <= np; i++)
-      hv.Elem(i) = mesh.GetH (mesh.Point(i));
+    for (int i = 0; i < np; i++)
+      hv(i) = mesh.GetH (mesh.Point(i+1));
 
     double hfac = 1;
   
-    for (step = 1; step <= 2; step++)
+    for (int step = 1; step <= 2; step++)
       {
-	for (i = 1; i <= mtets.Size(); i++)
+	for (int i = 1; i <= mtets.Size(); i++)
 	  {
 	    double h = 0;
 	  
-	    for (j = 0; j < 3; j++)
-	      for (k = j+1; k < 4; k++)
+	    for (int j = 0; j < 3; j++)
+	      for (int k = j+1; k < 4; k++)
 		{
 		  const Point<3> & p1 = mesh.Point (mtets.Get(i).pnums[j]);
 		  const Point<3> & p2 = mesh.Point (mtets.Get(i).pnums[k]);
@@ -1120,9 +1117,9 @@ namespace netgen
 	    h = sqrt (h);
 	  
 	    double hshould = 1e10;
-	    for (j = 0; j < 4; j++)
+	    for (int j = 0; j < 4; j++)
 	      {
-		double hi = hv.Get (mtets.Get(i).pnums[j]);
+		double hi = hv (mtets.Get(i).pnums[j]-1);
 		if (hi < hshould)
 		  hshould = hi;
 	      }
@@ -1145,12 +1142,12 @@ namespace netgen
 	      }
 	  
 	  }
-	for (i = 1; i <= mprisms.Size(); i++)
+	for (int i = 1; i <= mprisms.Size(); i++)
 	  {
 	    double h = 0;
 	  
-	    for (j = 0; j < 2; j++)
-	      for (k = j+1; k < 3; k++)
+	    for (int j = 0; j < 2; j++)
+	      for (int k = j+1; k < 3; k++)
 		{
 		  const Point<3> & p1 = mesh.Point (mprisms.Get(i).pnums[j]);
 		  const Point<3> & p2 = mesh.Point (mprisms.Get(i).pnums[k]);
@@ -1160,9 +1157,9 @@ namespace netgen
 	    h = sqrt (h);
 	  
 	    double hshould = 1e10;
-	    for (j = 0; j < 6; j++)
+	    for (int j = 0; j < 6; j++)
 	      {
-		double hi = hv.Get (mprisms.Get(i).pnums[j]);
+		double hi = hv (mprisms.Get(i).pnums[j]-1);
 		if (hi < hshould)
 		  hshould = hi;
 	      }

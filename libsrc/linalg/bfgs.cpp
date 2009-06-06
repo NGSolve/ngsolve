@@ -1,9 +1,9 @@
 /***************************************************************************/
 /*                                                                         */
 /* Vorlesung Optimierung I, Gfrerer, WS94/95                               */
-/* BFGS-Verfahren zur Lösung freier nichtlinearer Optimierungsprobleme     */
+/* BFGS-Verfahren zur LÃ¶sung freier nichtlinearer Optimierungsprobleme     */
 /*                                                                         */
-/* Programmautor:  Joachim Schöberl                                        */
+/* Programmautor:  Joachim SchÃ¶berl                                        */
 /* Matrikelnummer: 9155284                                                 */
 /*                                                                         */
 /***************************************************************************/
@@ -25,37 +25,36 @@ void Cholesky (const DenseMatrix & a,
 
   double x;
 
-  int i, j, k;
   int n = a.Height();
   
   //  (*testout) << "a = " << a << endl;
 
   l = a;
 
-  for (i = 1; i <= n; i++)
+  for (int i = 1; i <= n; i++)
     {
-      for (j = i; j <= n; j++)
+      for (int j = i; j <= n; j++)
 	{
 	  x = l.Get(i, j);
 
-	  for (k = 1; k < i; k++)
-	    x -= l.Get(i, k) * l.Get(j, k) * d.Get(k); 
-	  
+	  for (int k = 1; k < i; k++)
+	    x -= l.Get(i, k) * l.Get(j, k) * d(k-1); 
+          
 	  if (i == j)
 	    {
-	      d.Elem(i) = x;
+	      d(i-1) = x;
 	    }
 	  else
 	    {
-	      l.Elem(j, i) = x / d.Get(k);
+	      l.Elem(j, i) = x / d(i-1);
 	    }
 	}
     }
 
-  for (i = 1; i <= n; i++)
+  for (int i = 1; i <= n; i++)
     {
       l.Elem(i, i) = 1;
-      for (j = i+1; j <= n; j++)
+      for (int j = i+1; j <= n; j++)
 	l.Elem(i, j) = 0;
     }
 
@@ -162,9 +161,7 @@ int LDLtUpdate (DenseMatrix & l, Vector & d, double a, const Vector & u)
   // Rueckgabewert: 0 .. D bleibt positiv definit
   //                1 .. sonst
 
-  int i, j, n;
-
-  n = l.Height();
+  int n = l.Height();
 
   Vector v(n);
   double t, told, xi;
@@ -172,9 +169,9 @@ int LDLtUpdate (DenseMatrix & l, Vector & d, double a, const Vector & u)
   told = 1;
   v = u;
 
-  for (j = 1; j <= n; j++)
+  for (int j = 1; j <= n; j++)
     {
-      t = told + a * sqr (v.Elem(j)) / d.Get(j);
+      t = told + a * sqr (v(j-1)) / d(j-1);
 
       if (t <= 0) 
 	{
@@ -182,14 +179,14 @@ int LDLtUpdate (DenseMatrix & l, Vector & d, double a, const Vector & u)
 	  return 1;
 	}
 
-      xi = a * v.Elem(j) / (d.Get(j) * t);
+      xi = a * v(j-1) / (d(j-1) * t);
 
-      d.Elem(j) *= t / told;
+      d(j-1) *= t / told;
 
-      for (i = j + 1; i <= n; i++)
+      for (int i = j + 1; i <= n; i++)
 	{
-	  v.Elem(i) -= v.Elem(j) * l.Elem(i, j);
-	  l.Elem(i, j) += xi * v.Elem(i);
+	  v(i-1) -= v(j-1) * l.Elem(i, j);
+	  l.Elem(i, j) += xi * v(i-1);
 	}
 
       told = t;
@@ -209,7 +206,7 @@ double BFGS (
 
 
 {
-  int i, j, n = x.Size();
+  int n = x.Size();
   long it;
   char a1crit, a3acrit;
 
@@ -233,14 +230,14 @@ double BFGS (
   int ifail;                    // o:  0 .. Erfolg
                                 //    -1 .. Unterschreitung von fmin
                                 //     1 .. kein Erfolg bei Liniensuche
-                                //     2 .. Überschreitung von itmax
+                                //     2 .. Ãœberschreitung von itmax
 
   typx = par.typx;
   typf = par.typf;
 
 
   l = 0;
-  for (i = 1; i <= n; i++)
+  for (int i = 1; i <= n; i++)
     l.Elem(i, i) = 1;
 
   f = fun.FuncGrad (x, g);
@@ -255,10 +252,10 @@ double BFGS (
       if (it % (5 * n) == 0)
 	{
 
-	  for (i = 1; i <= n; i++)
-	    d.Elem(i) = typf/ sqr (typx.Get(i));   // 1;
-	  for (i = 2; i <= n; i++)
-	    for (j = 1; j < i; j++)
+	  for (int i = 1; i <= n; i++)
+	    d(i-1) = typf/ sqr (typx(i-1));   // 1;
+	  for (int i = 2; i <= n; i++)
+	    for (int j = 1; j < i; j++)
 	      l.Elem(i, j) = 0;
 
 	  /*
@@ -357,8 +354,8 @@ double BFGS (
 
       hd = eps * max2 (typf, fabs (f));
       a1crit = 1;
-      for (i = 1; i <= n; i++)
-	if ( fabs (g.Elem(i)) * max2 (typx.Elem(i), fabs (x.Elem(i))) > hd)
+      for (int i = 1; i <= n; i++)
+	if ( fabs (g(i-1)) * max2 (typx(i-1), fabs (x(i-1))) > hd)
 	  a1crit = 0;
 
 

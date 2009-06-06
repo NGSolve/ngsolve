@@ -6,160 +6,104 @@
 namespace netgen
 {
 
-double BaseVector :: shit = 0;
+  double BaseVector :: shit = 0;
 
-// %FD Constructs a vector of length zero
-BaseVector :: BaseVector ()
+  // %FD Constructs a vector of length zero
+  BaseVector :: BaseVector ()
   {
-  length = 0;
+    length = 0;
   }
 
-// %FD Constructs a vector of given length
-BaseVector :: BaseVector (
-    INDEX alength  // length of the vector
-    )
+  // %FD Constructs a vector of given length
+  BaseVector :: BaseVector (
+                            INDEX alength  // length of the vector
+                            )
   {
-  length = alength;
+    length = alength;
   }
 
-// %FD Sets length of the vector, old vector will be destroyed
-void
-BaseVector :: SetLength (
-    INDEX alength        // new length of the vector
-    )
+  // %FD Sets length of the vector, old vector will be destroyed
+  void
+  BaseVector :: SetLength (
+                           INDEX alength        // new length of the vector
+                           )
   {
-  length = alength;
+    length = alength;
   }
 
-// %FD Changes length of the vector, old values stay valid
-void
-BaseVector :: ChangeLength (
-    INDEX alength        // new length of the vector
-    )
+  // %FD Changes length of the vector, old values stay valid
+  void
+  BaseVector :: ChangeLength (
+                              INDEX alength        // new length of the vector
+                              )
   {
-  length = alength;
-  }
-
-
-
-// %FD { Write a vector with the help of the '<<' operator onto a stream }
-ostream &    // stream for further use
-operator<< (
-    ostream & s,            // stream to write vector onto
-    const BaseVector & v   // vector to write
-    )
-  {
-  return v.Print (s);
-  }
-
-
-// %FD{ Divides every component of the vector by the scalar c.
-//      The function checks for division by zero }
-BaseVector &      // result vector
-BaseVector :: operator/= (
-    double c       // scalar to divide by
-    )
-  {
-  if (c)
-    return (*this) *= (1/c);
-  else
-    {
-    (*myerr) << "operator/=: division by zero" << endl;
-    return *this;
-    }
-  }
-
-
-// %FD Creates a copy of the object
-BaseVector *      // pointer to the new vector
-BaseVector :: Copy () const
-  {
-  cerr << "Base_vector::Copy called" << endl << flush;
-  return NULL;
+    length = alength;
   }
 
 
 
-
-void BaseVector :: GetElementVector (const Array<INDEX> & pnum,
-				 BaseVector & elvec) const
-{
-  int i;
-  for (i = 1; i <= pnum.Size(); i++)
-    elvec(i) = (*this)(pnum.Get(i));
-}
-
-void BaseVector :: SetElementVector (const Array<INDEX> & pnum,
-				 const BaseVector & elvec)
-{
-  int i;
-  for (i = 1; i <= pnum.Size(); i++)
-    (*this)(pnum.Get(i)) = elvec(i);
-}
-
-
-void BaseVector :: AddElementVector (const Array<INDEX> & pnum,
-				 const BaseVector & elvec)
-{
-  int i;
-  for (i = 1; i <= pnum.Size(); i++)
-    (*this)(pnum.Get(i)) += elvec(i);
-}
-
-
-
-
-
-
-
-
-
-
-
-TempVector :: ~TempVector ()
+  // %FD { Write a vector with the help of the '<<' operator onto a stream }
+  ostream &    // stream for further use
+  operator<< (
+              ostream & s,            // stream to write vector onto
+              const BaseVector & v   // vector to write
+              )
   {
-  delete vec;
-  }
-
-TempVector BaseVector :: operator+ (const BaseVector & v2) const
-  {
-  return (*Copy()) += v2;
-  }
-
-TempVector BaseVector :: operator- (const BaseVector & v2) const
-  {
-  return (*Copy()) -= v2;
-  }
-
-TempVector BaseVector :: operator- () const
-  {
-  return (*Copy()) *= -1;
+    return v.Print (s);
   }
 
 
-TempVector operator* (const BaseVector & v1, double scal) 
+  // %FD{ Divides every component of the vector by the scalar c.
+  //      The function checks for division by zero }
+  BaseVector &      // result vector
+  BaseVector :: operator/= (
+                            double c       // scalar to divide by
+                            )
   {
-  return (*v1.Copy()) *= scal;
+    if (c)
+      return (*this) *= (1/c);
+    else
+      {
+        (*myerr) << "operator/=: division by zero" << endl;
+        return *this;
+      }
   }
 
-TempVector operator/ (const BaseVector & v1, double scal) 
-  {
-  return (*v1.Copy()) /= scal;
-  }
 
-
-TempVector operator* (double scal, const BaseVector & v1)
+  // %FD Creates a copy of the object
+  BaseVector *      // pointer to the new vector
+  BaseVector :: Copy () const
   {
-  return v1 * scal;
+    cerr << "Base_vector::Copy called" << endl << flush;
+    return NULL;
   }
 
 
 
 
-
-BaseVector * TempVector :: Copy () const
+  void BaseVector :: GetElementVector (const Array<INDEX> & pnum,
+                                       BaseVector & elvec) const
   {
-  return vec->Copy();
+    int i;
+    for (i = 1; i <= pnum.Size(); i++)
+      elvec(i) = (*this)(pnum.Get(i));
+  }
+
+  void BaseVector :: SetElementVector (const Array<INDEX> & pnum,
+                                       const BaseVector & elvec)
+  {
+    int i;
+    for (i = 1; i <= pnum.Size(); i++)
+      (*this)(pnum.Get(i)) = elvec(i);
+  }
+
+
+  void BaseVector :: AddElementVector (const Array<INDEX> & pnum,
+                                       const BaseVector & elvec)
+  {
+    int i;
+    for (i = 1; i <= pnum.Size(); i++)
+      (*this)(pnum.Get(i)) += elvec(i);
   }
 
 
@@ -171,616 +115,672 @@ BaseVector * TempVector :: Copy () const
 
 
 
-double Vector :: shit = 0;
 
-class clVecpool
-{
-public:
-  Array<double *> vecs;
-  Array<INDEX> veclens;
+  TempVector :: ~TempVector ()
+  {
+    delete vec;
+  }
 
-  ~clVecpool();
-};
+  TempVector BaseVector :: operator+ (const BaseVector & v2) const
+  {
+    return (*Copy()) += v2;
+  }
 
-clVecpool :: ~clVecpool()
-{
-  int i;
-  for (i = 1; i <= vecs.Size(); i++)
-    delete vecs.Elem(i);
-}
+  TempVector BaseVector :: operator- (const BaseVector & v2) const
+  {
+    return (*Copy()) -= v2;
+  }
 
-static clVecpool vecpool;
+  TempVector BaseVector :: operator- () const
+  {
+    return (*Copy()) *= -1;
+  }
+
+
+  TempVector operator* (const BaseVector & v1, double scal) 
+  {
+    return (*v1.Copy()) *= scal;
+  }
+
+  TempVector operator/ (const BaseVector & v1, double scal) 
+  {
+    return (*v1.Copy()) /= scal;
+  }
+
+
+  TempVector operator* (double scal, const BaseVector & v1)
+  {
+    return v1 * scal;
+  }
 
 
 
-static double * NewDouble (INDEX len)
-{
-  if (len < 10)
-    return new double[len];
-  else
-    {
-      int i;
-      for (i = 1; i <= vecpool.veclens.Size(); i++)
-	if (vecpool.veclens.Get(i) == len)
-	  {
-	    double * hvec = vecpool.vecs.Get(i);
-	    vecpool.vecs.DeleteElement(i);
-	    vecpool.veclens.DeleteElement(i);
-	    return hvec;
-	  }
 
+
+  BaseVector * TempVector :: Copy () const
+  {
+    return vec->Copy();
+  }
+
+
+
+
+
+
+
+
+
+
+  double Vector :: shit = 0;
+
+  class clVecpool
+  {
+  public:
+    Array<double *> vecs;
+    Array<INDEX> veclens;
+
+    ~clVecpool();
+  };
+
+  clVecpool :: ~clVecpool()
+  {
+    int i;
+    for (i = 1; i <= vecs.Size(); i++)
+      delete vecs.Elem(i);
+  }
+
+  static clVecpool vecpool;
+
+
+
+  static double * NewDouble (INDEX len)
+  {
+    if (len < 10)
       return new double[len];
-    }
-}
+    else
+      {
+        int i;
+        for (i = 1; i <= vecpool.veclens.Size(); i++)
+          if (vecpool.veclens.Get(i) == len)
+            {
+              double * hvec = vecpool.vecs.Get(i);
+              vecpool.vecs.DeleteElement(i);
+              vecpool.veclens.DeleteElement(i);
+              return hvec;
+            }
 
-static void DeleteDouble (INDEX len, double * dp)
-{
-  if (len < 10)
-    delete [] dp;
-  else
-    {
-      vecpool.vecs.Append (dp);
-      vecpool.veclens.Append (len);
-    }
-}
-
-
-
-Vector :: Vector () : BaseVector()
-  {
-  data = NULL;
+        return new double[len];
+      }
   }
 
-Vector :: Vector (INDEX alength) : BaseVector (alength)
+  static void DeleteDouble (INDEX len, double * dp)
   {
-  if (length)
-    {
-      //    data = new double[length];
-      data = NewDouble (length);
+    if (len < 10)
+      delete [] dp;
+    else
+      {
+        vecpool.vecs.Append (dp);
+        vecpool.veclens.Append (len);
+      }
+  }
+
+
+
+  Vector :: Vector () : BaseVector()
+  {
+    data = NULL;
+  }
+
+  Vector :: Vector (INDEX alength) : BaseVector (alength)
+  {
+    if (length)
+      {
+        //    data = new double[length];
+        data = NewDouble (length);
+
+        if (!data)
+          {
+            length = 0;
+            (*myerr) << "Vector not allocated" << endl;
+          }
+      }
+    else
+      data = NULL;
+  }
+
+
+  Vector :: Vector (const Vector & v2)
+  {
+    length = v2.length;
+
+    if (length)
+      {
+        //    data = new double[length];
+        data = NewDouble (length);
+
+        if (data)
+          {
+            memcpy (data, v2.data, length * sizeof (double));
+          }
+        else
+          {
+            length = 0;
+            (*myerr) << "Vector::Vector : Vector not allocated" << endl;
+          }
+      }
+    else
+      data = NULL;
+  }
+
+
+  Vector :: ~Vector ()
+  {
+    //  veclenfile << "~Vector delete: " << length << endl;
+    if (data) 
+      {
+        DeleteDouble (length, data);
+        //      delete [] data;
+      }
+
+  }
+
+  void Vector :: SetLength (INDEX alength)
+  {
+    if (length == alength) return;
+
+    if (data) 
+      {
+        DeleteDouble (length, data);
+        //      delete [] data;
+      }
+    data = NULL;
+    length = alength;
+
+    if (length == 0) return;
+    //  data = new double[length];
+    data = NewDouble (length);
 
     if (!data)
       {
-      length = 0;
-      (*myerr) << "Vector not allocated" << endl;
+        length = 0;
+        (*myerr) << "Vector::SetLength: Vector not allocated" << endl;
       }
-    }
-  else
-    data = NULL;
   }
 
-
-Vector :: Vector (const Vector & v2)
+  void Vector :: ChangeLength (INDEX alength)
   {
-  length = v2.length;
-
-  if (length)
-    {
-      //    data = new double[length];
-      data = NewDouble (length);
-
-    if (data)
-      {
-      memcpy (data, v2.data, length * sizeof (double));
-      }
-    else
-      {
-      length = 0;
-      (*myerr) << "Vector::Vector : Vector not allocated" << endl;
-      }
-    }
-  else
-    data = NULL;
-  }
-
-
-Vector :: ~Vector ()
-{
-  //  veclenfile << "~Vector delete: " << length << endl;
-  if (data) 
-    {
-      DeleteDouble (length, data);
-      //      delete [] data;
-    }
-
-}
-
-void Vector :: SetLength (INDEX alength)
-  {
-  if (length == alength) return;
-
-  if (data) 
-    {
-      DeleteDouble (length, data);
-      //      delete [] data;
-    }
-  data = NULL;
-  length = alength;
-
-  if (length == 0) return;
-  //  data = new double[length];
-  data = NewDouble (length);
-
-  if (!data)
-    {
-    length = 0;
-    (*myerr) << "Vector::SetLength: Vector not allocated" << endl;
-    }
-  }
-
-void Vector :: ChangeLength (INDEX alength)
-{
-  (*mycout) << "Vector::ChangeLength called" << endl;
-  if (length == alength) return;
+    (*mycout) << "Vector::ChangeLength called" << endl;
+    if (length == alength) return;
   
-  if (alength == 0)
-    {
-      //    delete [] data;
-      DeleteDouble (length, data);
-      length = 0;
-      return;
-    }
+    if (alength == 0)
+      {
+        //    delete [] data;
+        DeleteDouble (length, data);
+        length = 0;
+        return;
+      }
   
-  double * olddata = data;
+    double * olddata = data;
 
-  data = NewDouble (alength);
-  //  data = new double[alength];
-  if (!data)
-    {
-    length = 0;
-    (*myerr) << "Vector::SetLength: Vector not allocated" << endl;
+    data = NewDouble (alength);
+    //  data = new double[alength];
+    if (!data)
+      {
+        length = 0;
+        (*myerr) << "Vector::SetLength: Vector not allocated" << endl;
+        delete [] olddata;
+      }
+
+    memcpy (data, olddata, min2(alength, length));
+
     delete [] olddata;
-    }
-
-  memcpy (data, olddata, min2(alength, length));
-
-  delete [] olddata;
-  length = alength;
+    length = alength;
   }
 
-/// NEW RM
-void Vector::SetBlockLength (INDEX /* blength */)
-{
-  MyError("BaseVector::SetBlockLength was called for a Vector");
-}
-
-
-double & Vector :: operator() (INDEX i)
+  /// NEW RM
+  void Vector::SetBlockLength (INDEX /* blength */)
   {
-  if (i >= 1 && i <= length) return Elem(i);
-  else (*myerr) << "\nindex " << i << " out of range ("
-                                << 1 << "," << Length() << ")\n";
-  return shit;
+    MyError("BaseVector::SetBlockLength was called for a Vector");
   }
 
-double Vector :: operator() (INDEX i) const
+
+  double & Vector :: operator() (INDEX i)
   {
-  if (i >= 1 && i <= length) return Get(i);
-  else (*myerr) << "\nindex " << i << " out of range ("
-                                << 1 << "," << Length() << ")\n" << flush;
-  return shit;
+    if (i >= 1 && i <= length) return Elem(i);
+    else (*myerr) << "\nindex " << i << " out of range ("
+                  << 1 << "," << Length() << ")\n";
+    return shit;
+  }
+
+  double Vector :: operator() (INDEX i) const
+  {
+    if (i >= 1 && i <= length) return Get(i);
+    else (*myerr) << "\nindex " << i << " out of range ("
+                  << 1 << "," << Length() << ")\n" << flush;
+    return shit;
   }
 
 
 
-double Vector :: SupNorm () const
+  double Vector :: SupNorm () const
   {
-  double sup = 0;
+    double sup = 0;
 
-  for (INDEX i = 1; i <= Length(); i++)
-    if (fabs (Get(i)) > sup)
-      sup = fabs(Get(i));
+    for (INDEX i = 1; i <= Length(); i++)
+      if (fabs (Get(i)) > sup)
+        sup = fabs(Get(i));
 
-  return sup;
+    return sup;
   }
 
-double Vector :: L2Norm () const
+  double Vector :: L2Norm () const
   {
-  double sum = 0;
+    double sum = 0;
 
-  for (INDEX i = 1; i <= Length(); i++)
-    sum += Get(i) * Get(i);
+    for (INDEX i = 1; i <= Length(); i++)
+      sum += Get(i) * Get(i);
 
-  return sqrt (sum);
+    return sqrt (sum);
   }
 
-double Vector :: L1Norm () const
+  double Vector :: L1Norm () const
   {
-  double sum = 0;
+    double sum = 0;
 
-  for (INDEX i = 1; i <= Length(); i++)
-    sum += fabs (Get(i));
+    for (INDEX i = 1; i <= Length(); i++)
+      sum += fabs (Get(i));
 
-  return sum;
+    return sum;
   }
 
-double Vector :: Max () const
+  double Vector :: Max () const
   {
-  if (!Length()) return 0;
-  double m = Get(1);
-  for (INDEX i = 2; i <= Length(); i++)
-    if (Get(i) > m) m = Get(i);
-  return m;
+    if (!Length()) return 0;
+    double m = Get(1);
+    for (INDEX i = 2; i <= Length(); i++)
+      if (Get(i) > m) m = Get(i);
+    return m;
   }
 
-double Vector :: Min () const
+  double Vector :: Min () const
   {
-  if (!Length()) return 0;
-  double m = Get(1);
-  for (INDEX i = 2; i <= Length(); i++)
-    if (Get(i) < m) m = Get(i);
-  return m;
+    if (!Length()) return 0;
+    double m = Get(1);
+    for (INDEX i = 2; i <= Length(); i++)
+      if (Get(i) < m) m = Get(i);
+    return m;
   }
 
 
-/*
-ostream & operator<<(ostream & s, const Vector & v)
-  {
-  int w = s.width();
-  if (v.Length())
+  /*
+    ostream & operator<<(ostream & s, const Vector & v)
+    {
+    int w = s.width();
+    if (v.Length())
     {
     s.width(0);
     s << '(';
     for (INDEX i = 1; i < v.Length(); i++)
-      {
-      s.width(w);
-      s << v.Get(i) << ",";
-      if (i % 8 == 0) s << endl << ' ';
-      }
+    {
+    s.width(w);
+    s << v.Get(i) << ",";
+    if (i % 8 == 0) s << endl << ' ';
+    }
     s.width(w);
     s << v.Get(v.Length()) << ')';
     }
-  else
+    else
     s << "(Vector not allocated)";
 
-  return s;
-  }
-*/
-
-ostream & Vector :: Print (ostream & s) const
-  {
-  int w = s.width();
-  if (Length())
-    {
-    s.width(0);
-    s << '(';
-    for (INDEX i = 1; i < Length(); i++)
-      {
-      s.width(w);
-      s << Get(i) << ",";
-      if (i % 8 == 0) s << endl << ' ';
-      }
-    s.width(w);
-    s << Get(Length()) << ')';
+    return s;
     }
-  else
-    s << "(Vector not allocated)";
+  */
 
-  return s;
+  ostream & Vector :: Print (ostream & s) const
+  {
+    int w = s.width();
+    if (Length())
+      {
+        s.width(0);
+        s << '(';
+        for (INDEX i = 1; i < Length(); i++)
+          {
+            s.width(w);
+            s << Get(i) << ",";
+            if (i % 8 == 0) s << endl << ' ';
+          }
+        s.width(w);
+        s << Get(Length()) << ')';
+      }
+    else
+      s << "(Vector not allocated)";
+
+    return s;
   }
 
 
 
-BaseVector & Vector :: operator+= (const BaseVector & v2)
+  BaseVector & Vector :: operator+= (const BaseVector & v2)
   {
-  const Vector & hv2 = v2.CastToVector();
+    const Vector & hv2 = v2.CastToVector();
 
-  if (Length() == hv2.Length())
+    if (Length() == hv2.Length())
+      for (INDEX i = 1; i <= Length(); i++)
+        Elem (i) += hv2.Get(i);
+    else
+      (*myerr) << "operator+= illegal dimension" << endl;
+    return *this;
+  }
+
+  BaseVector & Vector :: operator-= (const BaseVector & v2)
+  {
+    const Vector & hv2 = v2.CastToVector();
+
+    if (Length() == hv2.Length())
+      for (INDEX i = 1; i <= Length(); i++)
+        Elem (i) -= hv2.Get(i);
+    else
+      (*myerr) << "operator-= illegal dimension" << endl;
+    return *this;
+  }
+
+  BaseVector & Vector :: operator*= (double c)
+  {
     for (INDEX i = 1; i <= Length(); i++)
-      Elem (i) += hv2.Get(i);
-  else
-    (*myerr) << "operator+= illegal dimension" << endl;
-  return *this;
-  }
-
-BaseVector & Vector :: operator-= (const BaseVector & v2)
-  {
-  const Vector & hv2 = v2.CastToVector();
-
-  if (Length() == hv2.Length())
-    for (INDEX i = 1; i <= Length(); i++)
-      Elem (i) -= hv2.Get(i);
-  else
-    (*myerr) << "operator-= illegal dimension" << endl;
-  return *this;
-  }
-
-BaseVector & Vector :: operator*= (double c)
-  {
-  for (INDEX i = 1; i <= Length(); i++)
-    Elem(i) *= c;
-  return *this;
+      Elem(i) *= c;
+    return *this;
   }
 
 
 
-BaseVector & Vector :: Add (double scal, const BaseVector & v2)
+  BaseVector & Vector :: Add (double scal, const BaseVector & v2)
   {
-  const Vector & hv2 = v2.CastToVector();
+    const Vector & hv2 = v2.CastToVector();
 
-  if (Length() == hv2.Length())
-    {
-    double * p1 = data;
-    double * p2 = hv2.data;
-
-    for (INDEX i = Length(); i > 0; i--)
+    if (Length() == hv2.Length())
       {
-      (*p1) += scal * (*p2);
-      p1++; p2++;
+        double * p1 = data;
+        double * p2 = hv2.data;
+
+        for (INDEX i = Length(); i > 0; i--)
+          {
+            (*p1) += scal * (*p2);
+            p1++; p2++;
+          }
       }
-    }
-  else
-    (*myerr) << "Vector::Add: illegal dimension" << endl;
-  return *this;
+    else
+      (*myerr) << "Vector::Add: illegal dimension" << endl;
+    return *this;
   }
 
-BaseVector & Vector :: Add2 (double scal, const BaseVector & v2,
-                             double scal3, const BaseVector & v3)
+  BaseVector & Vector :: Add2 (double scal, const BaseVector & v2,
+                               double scal3, const BaseVector & v3)
   {
-  const Vector & hv2 = v2.CastToVector();
-  const Vector & hv3 = v3.CastToVector();
+    const Vector & hv2 = v2.CastToVector();
+    const Vector & hv3 = v3.CastToVector();
 
-  if (Length() == hv2.Length())
-    {
-    double * p1 = data;
-    double * p2 = hv2.data;
-    double * p3 = hv3.data;
-
-    for (INDEX i = Length(); i > 0; i--)
+    if (Length() == hv2.Length())
       {
-      (*p1) += (scal * (*p2) + scal3 * (*p3));
-      p1++; p2++; p3++;
+        double * p1 = data;
+        double * p2 = hv2.data;
+        double * p3 = hv3.data;
+
+        for (INDEX i = Length(); i > 0; i--)
+          {
+            (*p1) += (scal * (*p2) + scal3 * (*p3));
+            p1++; p2++; p3++;
+          }
       }
-    }
-  else
-    (*myerr) << "Vector::Add: illegal dimension" << endl;
-  return *this;
+    else
+      (*myerr) << "Vector::Add: illegal dimension" << endl;
+    return *this;
   }
 
-BaseVector & Vector :: Set (double scal, const BaseVector & v2)
+  BaseVector & Vector :: Set (double scal, const BaseVector & v2)
   {
-  const Vector & hv2 = v2.CastToVector();
+    const Vector & hv2 = v2.CastToVector();
 
-  if (Length() == hv2.Length())
-    {
-    double * p1 = data;
-    double * p2 = hv2.data;
-
-    for (INDEX i = Length(); i > 0; i--)
+    if (Length() == hv2.Length())
       {
-      (*p1) = scal * (*p2);
-      p1++; p2++;
+        double * p1 = data;
+        double * p2 = hv2.data;
+
+        for (INDEX i = Length(); i > 0; i--)
+          {
+            (*p1) = scal * (*p2);
+            p1++; p2++;
+          }
       }
-    }
-  else
-    (*myerr) << "Vector::Set: illegal dimension" << endl;
-  return *this;
+    else
+      (*myerr) << "Vector::Set: illegal dimension" << endl;
+    return *this;
   }
 
 
-BaseVector & Vector :: Set2 (double scal , const BaseVector & v2,
-      double scal3, const BaseVector & v3)
-{
-  const Vector & hv2 = v2.CastToVector();
-  const Vector & hv3 = v3.CastToVector();
+  BaseVector & Vector :: Set2 (double scal , const BaseVector & v2,
+                               double scal3, const BaseVector & v3)
+  {
+    const Vector & hv2 = v2.CastToVector();
+    const Vector & hv3 = v3.CastToVector();
 
-  if (Length() == hv2.Length() && Length() == hv3.Length())
-    {
-      double * p1 = data;
-      double * p2 = hv2.data;
-      double * p3 = hv3.data;
+    if (Length() == hv2.Length() && Length() == hv3.Length())
+      {
+        double * p1 = data;
+        double * p2 = hv2.data;
+        double * p3 = hv3.data;
       
-      for (INDEX i = Length(); i > 0; i--)
-	{
-	  (*p1) = scal * (*p2) + scal3 * (*p3);
-	  p1++; p2++; p3++;
-	}
-    }
-  else
-    (*myerr) << "Vector::Set: illegal dimension" << endl;
-  return *this;
-}
-
-
-void Vector :: GetPart (int startpos, BaseVector & v2) const
-{
-  Vector & hv2 = v2.CastToVector();
-
-  if (Length() >= startpos + v2.Length() - 1)
-    {
-      const double * p1 = &Get(startpos);
-      double * p2 = &hv2.Elem(1);
-      
-      memcpy (p2, p1, hv2.Length() * sizeof(double));
-    }
-  else
-    MyError ("Vector::GetPart: Vector to short");
-}
-
-
-// NEW RM
-void Vector :: SetPart (int startpos, const BaseVector & v2)
-{
-  const Vector & hv2 = v2.CastToVector();
-  INDEX i;
-  INDEX n = v2.Length();
-
-  if (Length() >= startpos + n - 1)
-    {
-      double * p1 = &Elem(startpos);
-      const double * p2 = &hv2.Get(1);
-
-      for (i = 1; i <= n; i++)
-	{
-	  (*p1) = (*p2);
-	  p1++;
-	  p2++;
-	}
-    }
-  else
-    MyError ("Vector::SetPart: Vector to short");
-}
-
-void Vector :: AddPart (int startpos, double val, const BaseVector & v2)
-{
-  const Vector & hv2 = v2.CastToVector();
-  INDEX i;
-  INDEX n = v2.Length();
-
-  if (Length() >= startpos + n - 1)
-    {
-      double * p1 = &Elem(startpos);
-      const double * p2 = &hv2.Get(1);
-
-      for (i = 1; i <= n; i++)
-	{
-	  (*p1) += val * (*p2);
-	  p1++;
-	  p2++;
-	}
-    }
-  else
-    MyError ("Vector::AddPart: Vector to short");
-}
-
-
-
-
-double Vector :: operator* (const BaseVector & v2) const
-  {
-  const Vector & hv2 = v2.CastToVector();
-
-  double sum = 0;
-  double * p1 = data;
-  double * p2 = hv2.data;
-
-  if (Length() == hv2.Length())
-    {
-    for (INDEX i = Length(); i > 0; i--)
-      {
-      sum += (*p1) * (*p2);
-      p1++; p2++;
+        for (INDEX i = Length(); i > 0; i--)
+          {
+            (*p1) = scal * (*p2) + scal3 * (*p3);
+            p1++; p2++; p3++;
+          }
       }
-    }
-  else
-    (*myerr) << "Scalarproduct illegal dimension" << endl;
-  return sum;
+    else
+      (*myerr) << "Vector::Set: illegal dimension" << endl;
+    return *this;
   }
 
-void Vector :: SetRandom ()
-  {
-  INDEX i;
-  for (i = 1; i <= Length(); i++)
-    Elem(i) = rand ();
 
-  double l2 = L2Norm();
-  if (l2 > 0)
-    (*this) /= l2;
+  void Vector :: GetPart (int startpos, BaseVector & v2) const
+  {
+    Vector & hv2 = v2.CastToVector();
+
+    if (Length() >= startpos + v2.Length() - 1)
+      {
+        const double * p1 = &Get(startpos);
+        double * p2 = &hv2.Elem(1);
+      
+        memcpy (p2, p1, hv2.Length() * sizeof(double));
+      }
+    else
+      MyError ("Vector::GetPart: Vector to short");
+  }
+
+
+  // NEW RM
+  void Vector :: SetPart (int startpos, const BaseVector & v2)
+  {
+    const Vector & hv2 = v2.CastToVector();
+    INDEX i;
+    INDEX n = v2.Length();
+
+    if (Length() >= startpos + n - 1)
+      {
+        double * p1 = &Elem(startpos);
+        const double * p2 = &hv2.Get(1);
+
+        for (i = 1; i <= n; i++)
+          {
+            (*p1) = (*p2);
+            p1++;
+            p2++;
+          }
+      }
+    else
+      MyError ("Vector::SetPart: Vector to short");
+  }
+
+  void Vector :: AddPart (int startpos, double val, const BaseVector & v2)
+  {
+    const Vector & hv2 = v2.CastToVector();
+    INDEX i;
+    INDEX n = v2.Length();
+
+    if (Length() >= startpos + n - 1)
+      {
+        double * p1 = &Elem(startpos);
+        const double * p2 = &hv2.Get(1);
+
+        for (i = 1; i <= n; i++)
+          {
+            (*p1) += val * (*p2);
+            p1++;
+            p2++;
+          }
+      }
+    else
+      MyError ("Vector::AddPart: Vector to short");
+  }
+
+
+
+
+  double Vector :: operator* (const BaseVector & v2) const
+  {
+    const Vector & hv2 = v2.CastToVector();
+
+    double sum = 0;
+    double * p1 = data;
+    double * p2 = hv2.data;
+
+    if (Length() == hv2.Length())
+      {
+        for (INDEX i = Length(); i > 0; i--)
+          {
+            sum += (*p1) * (*p2);
+            p1++; p2++;
+          }
+      }
+    else
+      (*myerr) << "Scalarproduct illegal dimension" << endl;
+    return sum;
+  }
+
+  void Vector :: SetRandom ()
+  {
+    INDEX i;
+    for (i = 1; i <= Length(); i++)
+      Elem(i) = rand ();
+
+    double l2 = L2Norm();
+    if (l2 > 0)
+      (*this) /= l2;
     //    Elem(i) = 1.0 / double(i);
     //    Elem(i) = drand48();
   }
 
 
-/*
-TempVector Vector :: operator- () const
-  {
-  Vector & sum = *(Vector*)Copy();
+  /*
+    TempVector Vector :: operator- () const
+    {
+    Vector & sum = *(Vector*)Copy();
 
-  if (sum.Length () == Length())
+    if (sum.Length () == Length())
     {
     for (INDEX i = 1; i <= Length(); i++)
-      sum.Set (i, Get(i));
+    sum.Set (i, Get(i));
     }
-  else
+    else
     (*myerr) << "operator+ (Vector, Vector): sum.Length() not ok" << endl;
-  return sum;
-  }
-*/
+    return sum;
+    }
+  */
 
-BaseVector & Vector::operator= (const Vector & v2)
+  BaseVector & Vector::operator= (const Vector & v2)
   {
-  SetLength (v2.Length());
+    SetLength (v2.Length());
 
-  if (data == v2.data) return *this;
+    if (data == v2.data) return *this;
   
-  if (v2.Length() == Length())
-    memcpy (data, v2.data, sizeof (double) * Length());
-  else
-    (*myerr) << "Vector::operator=: not allocated" << endl;
+    if (v2.Length() == Length())
+      memcpy (data, v2.data, sizeof (double) * Length());
+    else
+      (*myerr) << "Vector::operator=: not allocated" << endl;
 
-  return *this;
+    return *this;
   }
 
-BaseVector & Vector::operator= (const BaseVector & v2)
+  BaseVector & Vector::operator= (const BaseVector & v2)
   {
-  const Vector & hv2 = v2.CastToVector();
+    const Vector & hv2 = v2.CastToVector();
 
-  SetLength (hv2.Length());
+    SetLength (hv2.Length());
 
-  if (data == hv2.data) return *this;
+    if (data == hv2.data) return *this;
   
-  if (hv2.Length() == Length())
-    memcpy (data, hv2.data, sizeof (double) * Length());
-  else
-    (*myerr) << "Vector::operator=: not allocated" << endl;
+    if (hv2.Length() == Length())
+      memcpy (data, hv2.data, sizeof (double) * Length());
+    else
+      (*myerr) << "Vector::operator=: not allocated" << endl;
 
-  return *this;
+    return *this;
   }
 
 
-BaseVector & Vector::operator= (double scal)
+  BaseVector & Vector::operator= (double scal)
   {
-  if (!Length()) (*myerr) << "Vector::operator= (double) : data not allocated"
-                      << endl;
+    if (!Length()) (*myerr) << "Vector::operator= (double) : data not allocated"
+                            << endl;
 
-  for (INDEX i = 1; i <= Length(); i++)
-    Set (i, scal);
+    for (INDEX i = 1; i <= Length(); i++)
+      Set (i, scal);
 
-  return *this;
+    return *this;
   }
 
 
-BaseVector * Vector :: Copy () const
+  BaseVector * Vector :: Copy () const
   {
-  return new Vector (*this);
+    return new Vector (*this);
   }
 
 
-void Vector :: Swap (BaseVector & v2)
+  void Vector :: Swap (BaseVector & v2)
   {
-  Vector & hv2 = v2.CastToVector();
-  swap (length, hv2.length);
-  swap (data, hv2.data);
+    Vector & hv2 = v2.CastToVector();
+    swap (length, hv2.length);
+    swap (data, hv2.data);
   }
 
 
 
 
-void Vector :: GetElementVector (const Array<INDEX> & pnum,
-				 BaseVector & elvec) const
-{
-  int i;
-  Vector & helvec = elvec.CastToVector();
-  for (i = 1; i <= pnum.Size(); i++)
-    helvec.Elem(i) = Get(pnum.Get(i));
-}
+  void Vector :: GetElementVector (const Array<INDEX> & pnum,
+                                   BaseVector & elvec) const
+  {
+    int i;
+    Vector & helvec = elvec.CastToVector();
+    for (i = 1; i <= pnum.Size(); i++)
+      helvec.Elem(i) = Get(pnum.Get(i));
+  }
 
-void Vector :: SetElementVector (const Array<INDEX> & pnum,
-				 const BaseVector & elvec)
-{
-  int i;
-  const Vector & helvec = elvec.CastToVector();
-  for (i = 1; i <= pnum.Size(); i++)
-    Elem(pnum.Get(i)) = helvec.Get(i);
-}
+  void Vector :: SetElementVector (const Array<INDEX> & pnum,
+                                   const BaseVector & elvec)
+  {
+    int i;
+    const Vector & helvec = elvec.CastToVector();
+    for (i = 1; i <= pnum.Size(); i++)
+      Elem(pnum.Get(i)) = helvec.Get(i);
+  }
 
 
-void Vector :: AddElementVector (const Array<INDEX> & pnum,
-				 const BaseVector & elvec)
-{
-  int i;
-  const Vector & helvec = elvec.CastToVector();
-  for (i = 1; i <= pnum.Size(); i++)
-    Elem(pnum.Get(i)) += helvec.Get(i);
-}
+  void Vector :: AddElementVector (const Array<INDEX> & pnum,
+                                   const BaseVector & elvec)
+  {
+    int i;
+    const Vector & helvec = elvec.CastToVector();
+    for (i = 1; i <= pnum.Size(); i++)
+      Elem(pnum.Get(i)) += helvec.Get(i);
+  }
 }
 #endif

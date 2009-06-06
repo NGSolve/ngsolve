@@ -706,13 +706,13 @@ void vnetrule :: LoadRule (istream & ist)
 
   if (quality < 100)
     {
-      for (i = 1; i <= 3; i++)
+      for (int i = 1; i <= 3; i++)
 	{
-	  for (j = 1; j <= points.Size(); j++)
-	    vp.Elem(j) = points.Get(j).X(i);
+	  for (int j = 1; j <= points.Size(); j++)
+	    vp(j-1) = points.Get(j).X(i);
 	  oldutofreezone->Mult(vp, vfp);
-	  for (j = 1; j <= freezone.Size(); j++)
-	    freezone.Elem(j).X(i) = vfp.Get(j);
+	  for (int j = 1; j <= freezone.Size(); j++)
+	    freezone.Elem(j).X(i) = vfp(j-1);
 	}
       //      for (i = 1; i <= freezone.Size(); i++)
       //	(*testout) << "freepoint: " << freezone.Get(i) << endl;

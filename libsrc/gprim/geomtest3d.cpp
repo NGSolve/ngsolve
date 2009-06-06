@@ -23,12 +23,12 @@ IntersectTriangleLine (const Point<3> ** tri, const Point<3> ** line)
 	     << "tri = " << *tri[0] << ", " << *tri[1] << ", " << *tri[2] << endl
 	     << "line = " << *line[0] << ", " << *line[1] << endl;
   */
-  for (i = 1; i <= 3; i++)
+  for (i = 0; i < 3; i++)
     {
-      a.Elem(i, 1) = -vl.X(i);
-      a.Elem(i, 2) = vt1.X(i);
-      a.Elem(i, 3) = vt2.X(i);
-      rs.Elem(i) = vrs.X(i);
+      a(i, 0) = -vl.X(i+1);
+      a(i, 1) = vt1.X(i+1);
+      a(i, 2) = vt2.X(i+1);
+      rs(i) = vrs.X(i+1);
     }
 
   double det = a.Det();
@@ -70,12 +70,12 @@ IntersectTriangleLine (const Point<3> ** tri, const Point<3> ** line)
 
   double eps = 1e-6;
   if (
-      (lami.Get(1) >= -eps && lami.Get(1) <= 1+eps && 
-       lami.Get(2) >= -eps && lami.Get(3) >= -eps && 
-       lami.Get(2) + lami.Get(3) <= 1+eps)  && !
-      (lami.Get(1) >= eps && lami.Get(1) <= 1-eps && 
-       lami.Get(2) >= eps && lami.Get(3) >= eps && 
-       lami.Get(2) + lami.Get(3) <= 1-eps) )
+      (lami(0) >= -eps && lami(0) <= 1+eps && 
+       lami(1) >= -eps && lami(2) >= -eps && 
+       lami(1) + lami(2) <= 1+eps)  && !
+      (lami(0) >= eps && lami(0) <= 1-eps && 
+       lami(1) >= eps && lami(2) >= eps && 
+       lami(1) + lami(2) <= 1-eps) )
 
 
      {
@@ -97,8 +97,8 @@ IntersectTriangleLine (const Point<3> ** tri, const Point<3> ** line)
     }
       
 
-  if (lami.Get(1) >= 0 && lami.Get(1) <= 1 && 
-      lami.Get(2) >= 0 && lami.Get(3) >= 0 && lami.Get(2) + lami.Get(3) <= 1)
+  if (lami(0) >= 0 && lami(0) <= 1 && 
+      lami(1) >= 0 && lami(2) >= 0 && lami(1) + lami(2) <= 1)
     {
 
       return 1;
@@ -860,12 +860,12 @@ int CalcTriangleCenter (const Point3d ** pts, Point3d & c)
   Vec3d v1(*pts[0], *pts[1]);
   Vec3d v2(*pts[0], *pts[2]);
 
-  rs.Elem(1) = v1 * v1;
-  rs.Elem(2) = v2 * v2;
+  rs(0) = v1 * v1;
+  rs(1) = v2 * v2;
 
-  a.Elem(1,1) = 2 * rs.Get(1);
-  a.Elem(1,2) = a.Elem(2,1) = 2 * (v1 * v2);
-  a.Elem(2,2) = 2 * rs.Get(2);
+  a(0,0) = 2 * rs(0);
+  a(0,1) = a(1,0) = 2 * (v1 * v2);
+  a(1,1) = 2 * rs(1);
 
   if (fabs (a.Det()) <= 1e-12 * h * h)
     {
@@ -877,8 +877,8 @@ int CalcTriangleCenter (const Point3d ** pts, Point3d & c)
   inva.Mult (rs, sol);
 
   c = *pts[0];
-  v1 *= sol.Get(1);
-  v2 *= sol.Get(2);
+  v1 *= sol(0);
+  v2 *= sol(1);
 
   c += v1;
   c += v2;

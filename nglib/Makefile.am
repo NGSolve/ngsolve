@@ -1,5 +1,7 @@
 include_HEADERS = nglib.h
 
+dist_pkgdata_DATA = cube.surf
+
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include $(OCCFLAGS)  $(MPI_INCLUDES) 
 
 lib_LTLIBRARIES = libnglib.la

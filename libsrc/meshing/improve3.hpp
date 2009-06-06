@@ -20,8 +20,18 @@ public:
 
 
 
-extern double CalcBad (const Mesh::T_POINTS & points, const Element & elem,
-		       double h);
+inline double 
+CalcBad (const Mesh::T_POINTS & points, const Element & elem,
+         double h)
+{
+  if (elem.GetType() == TET)
+    return CalcTetBadness (points[elem[0]], points[elem[1]],  
+			   points[elem[2]], points[elem[3]], h);  
+  return 0;
+}
+
+
+
 
 extern double CalcTotalBad (const Mesh::T_POINTS & points, 
 			    const Mesh::T_VOLELEMENTS & elements);

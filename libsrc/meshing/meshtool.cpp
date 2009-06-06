@@ -202,7 +202,7 @@ namespace netgen
     Vec3d v2 (p1, p3);
     Vec3d v3 (p1, p4);
 
-    vol = -Determinant (v1, v2, v3) / 6;
+    vol = Determinant (v1, v2, v3)  * (-0.166666666666666);
 
     ll1 = v1.Length2();
     ll2 = v2.Length2();
@@ -276,7 +276,7 @@ namespace netgen
     Vec3d v5 (*pp2, *pp4);
     Vec3d v6 (*pp3, *pp4);
 
-    vol = -Determinant (v1, v2, v3) / 6;  
+    vol = Determinant (v1, v2, v3) * (-0.166666666666666);
 
     Vec3d gradvol;
     Cross (v5, v4, gradvol);
@@ -344,9 +344,7 @@ namespace netgen
 	graderr += (1/(h*h) - h*h/(ll1*ll1)) * gradll1;
 	graderr += (1/(h*h) - h*h/(ll2*ll2)) * gradll2;
 	graderr += (1/(h*h) - h*h/(ll3*ll3)) * gradll3;
-	cout << "?";
       }
-
 
     double errpow;
     if (teterrpow == 2)

@@ -90,21 +90,21 @@ void Transformation3d :: CalcInverse (Transformation3d & inv) const
   static Vector b(3), sol(3);
   int i, j;
   
-  for (i = 1; i <= 3; i++)
+  for (int i = 0; i < 3; i++)
     {
-      b.Elem(i) = offset[i-1];
-      for (j = 1; j <= 3; j++)
-	a.Elem(i, j) = lin[i-1][j-1];
+      b(i) = offset[i];
+      for (j = 0; j < 3; j++)
+	a(i, j) = lin[i][j];
     }
 
   ::netgen::CalcInverse (a, inva);
   inva.Mult (b, sol);
 
-  for (i = 1; i <= 3; i++)
+  for (int i = 0; i < 3; i++)
     {
-      inv.offset[i-1] = -sol.Get(i);
-      for (j = 1; j <= 3; j++)
-	inv.lin[i-1][j-1] = inva.Elem(i, j);
+      inv.offset[i] = -sol(i);
+      for (j = 0; j < 3; j++)
+	inv.lin[i][j] = inva(i, j);
     }
 }
 

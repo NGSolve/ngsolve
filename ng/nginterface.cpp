@@ -149,10 +149,8 @@ using namespace netgen;
 
 void Ng_LoadGeometry (const char * filename)
 {
-
-  
-  if (printmessage_importance>0)
-    cout << "CALLED NG LOAD GEOMETRY" << endl; 
+  //  if (printmessage_importance>0)
+  // cout << "CALLED NG LOAD GEOMETRY" << endl; 
   
   geometry.Reset (new CSGeometry ());
   geometry2d.Reset ();
@@ -171,6 +169,8 @@ void Ng_LoadGeometry (const char * filename)
   if (strcmp(filename,"")==0) 
     return;
      
+  PrintMessage (1, "Load geometry from file ", filename);
+
   ifstream infile (filename);
   
   if ((strcmp (&filename[strlen(filename)-3], "geo") == 0) ||
@@ -1935,8 +1935,6 @@ void Ng_SetSolutionData (Ng_SolutionData * soldata)
 #ifdef OPENGL
   //   vssolution.ClearSolutionData ();
   VisualSceneSolution::SolData * vss = new VisualSceneSolution::SolData;
-
-  cout << "Add solution " << soldata->name << ", type = " << soldata->soltype << endl;
 
   vss->name = new char[strlen (soldata->name)+1];
   strcpy (vss->name, soldata->name);

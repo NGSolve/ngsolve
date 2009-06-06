@@ -603,13 +603,13 @@ int Meshing3 :: ApplyRules
 			{
 			  const Point3d & lp = lpoints.Get(pmap.Get(i));
 			  const Point3d & rp = rule->GetPoint(i);
-			  oldu.Set (3*i-2, lp.X()-rp.X());
-			  oldu.Set (3*i-1, lp.Y()-rp.Y());
-			  oldu.Set (3*i  , lp.Z()-rp.Z());
+			  oldu (3*i-3) = lp.X()-rp.X();
+                          oldu (3*i-2) = lp.Y()-rp.Y();
+			  oldu (3*i-1) = lp.Z()-rp.Z();
 			  
-			  allp.Set (3*i-2, lp.X());
-			  allp.Set (3*i-1, lp.Y());
-			  allp.Set (3*i  , lp.Z());
+			  allp (3*i-3) = lp.X();
+                          allp (3*i-2) = lp.Y();
+                          allp (3*i-1) = lp.Z();
 			}
 
 		      if (rule->GetNP() > rule->GetNOldP())
@@ -623,9 +623,9 @@ int Meshing3 :: ApplyRules
 		      for (i = rule->GetNOldP()+1; i <= rule->GetNP(); i++)
 			{
 			  const Point3d & rp = rule->GetPoint(i);
-			  allp.Set (3*i-2, rp.X() + newu.Get(3*i-2 - idiff));
-			  allp.Set (3*i-1, rp.Y() + newu.Get(3*i-1 - idiff));
-			  allp.Set (3*i  , rp.Z() + newu.Get(3*i   - idiff));
+			  allp (3*i-3) = rp.X() + newu(3*i-3 - idiff);
+                          allp (3*i-2) = rp.Y() + newu(3*i-2 - idiff);
+                          allp (3*i-1) = rp.Z() + newu(3*i-1 - idiff);
 			}
 		      
 		      rule->SetFreeZoneTransformation (allp, 
@@ -865,9 +865,9 @@ int Meshing3 :: ApplyRules
 			  for (i = oldnp + 1; i <= rule->GetNP(); i++)
 			    {
 			      np = rule->GetPoint(i);
-			      np.X() += newu.Elem (3 * (i-oldnp) - 2);
-			      np.Y() += newu.Elem (3 * (i-oldnp) - 1);
-			      np.Z() += newu.Elem (3 * (i-oldnp));
+			      np.X() += newu (3 * (i-oldnp) - 3);
+			      np.Y() += newu (3 * (i-oldnp) - 2);
+			      np.Z() += newu (3 * (i-oldnp) - 1);
 			      
 			      pmap.Elem(i) = lpoints.Append (np);
 			    }

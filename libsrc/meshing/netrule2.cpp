@@ -128,10 +128,10 @@ int netrule :: IsLineInFreeZone2 (const Point2d & p1, const Point2d & p2) const
 {
   int left, right, allleft, allright;
 
-  if (p1.X() > fzmaxx && p2.X() > fzmaxx ||
-      p1.X() < fzminx && p2.X() < fzminx ||
-      p1.Y() > fzmaxy && p2.Y() > fzmaxy ||
-      p1.Y() < fzminy && p2.Y() < fzminy) return 0;
+  if ( (p1.X() > fzmaxx && p2.X() > fzmaxx) ||
+       (p1.X() < fzminx && p2.X() < fzminx) ||
+       (p1.Y() > fzmaxy && p2.Y() > fzmaxy) ||
+       (p1.Y() < fzminy && p2.Y() < fzminy) ) return 0;
 
   for (int i = 1; i <= transfreezone.Size(); i++)
     {

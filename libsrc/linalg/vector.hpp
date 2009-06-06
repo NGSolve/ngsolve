@@ -35,9 +35,9 @@ public:
   double & operator() (int i) { return data[i]; }
   const double & operator() (int i) const { return data[i]; }
 
-  double & Elem (int i) { return data[i-1]; }
-  const double & Get (int i) const { return data[i-1]; }
-  void Set (int i, double val) { data[i-1] = val; }
+  // double & Elem (int i) { return data[i-1]; }
+  // const double & Get (int i) const { return data[i-1]; }
+  // void Set (int i, double val) { data[i-1] = val; }
 
   FlatVector & operator*= (double scal)
   {
@@ -92,7 +92,7 @@ public:
   { delete [] data; }
 
   Vector & operator= (const FlatVector & v) 
-  { memcpy (data, &v.Get(1), s*sizeof(double)); return *this; }
+  { memcpy (data, &v(0), s*sizeof(double)); return *this; }
 
   Vector & operator= (double scal) 
   {

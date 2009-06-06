@@ -2,7 +2,7 @@
 /*                                                                         */
 /* Problem:        Liniensuche                                             */
 /*                                                                         */
-/* Programmautor:  Joachim Schöberl                                        */
+/* Programmautor:  Joachim SchÃ¶berl                                        */
 /* Matrikelnummer: 9155284                                                 */
 /*                                                                         */
 /* Algorithmus nach:                                                       */
@@ -98,36 +98,36 @@ void MinFunction :: ApproximateHesse (const Vector & x,
   double eps = 1e-6;
   double f, f11, f12, f21, f22;
   
-  for (i = 1; i <= n; i++)
+  for (i = 0; i < n; i++)
     {
-      for (j = 1; j < i; j++)
+      for (j = 0; j < i; j++)
 	{
 	  hx = x;
-	  hx.Elem(i) = x.Get(i) + eps;
-	  hx.Elem(j) = x.Get(j) + eps;
+	  hx(i) = x(i) + eps;
+	  hx(j) = x(j) + eps;
 	  f11 = Func(hx);
-	  hx.Elem(i) = x.Get(i) + eps;
-	  hx.Elem(j) = x.Get(j) - eps;
+	  hx(i) = x(i) + eps;
+	  hx(j) = x(j) - eps;
 	  f12 = Func(hx);
-	  hx.Elem(i) = x.Get(i) - eps;
-	  hx.Elem(j) = x.Get(j) + eps;
+	  hx(i) = x(i) - eps;
+	  hx(j) = x(j) + eps;
 	  f21 = Func(hx);
-	  hx.Elem(i) = x.Get(i) - eps;
-	  hx.Elem(j) = x.Get(j) - eps;
+	  hx(i) = x(i) - eps;
+	  hx(j) = x(j) - eps;
 	  f22 = Func(hx);
 
-	  hesse.Elem(i, j) = hesse.Elem(j, i) =
+	  hesse(i, j) = hesse(j, i) =
 	    (f11 + f22 - f12 - f21) / (2 * eps * eps);
 	}
 
       hx = x;
       f = Func(x);
-      hx.Elem(i) = x.Get(i) + eps;
+      hx(i) = x(i) + eps;
       f11 = Func(hx);
-      hx.Elem(i) = x.Get(i) - eps;
+      hx(i) = x(i) - eps;
       f22 = Func(hx);
 
-      hesse.Elem(i, i) = (f11 + f22 - 2 * f) / (eps * eps);
+      hesse(i, i) = (f11 + f22 - 2 * f) / (eps * eps);
     }
   //  (*testout) << "hesse = " << hesse << endl;
 }

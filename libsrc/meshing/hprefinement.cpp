@@ -117,7 +117,7 @@ namespace netgen
           
   }
 
-  void HPRefElement :: SetType( HPREF_ELEMENT_TYPE t) 
+  void HPRefElement :: SetType (HPREF_ELEMENT_TYPE t) 
   {
     type = t; 
     switch(type)
@@ -129,11 +129,17 @@ namespace netgen
       case HP_PRISM: np=6; break; 
       case HP_PYRAMID: np=5; break; 
       case HP_HEX: np=8; break;      
+
+      default:
+        cerr << "HPRefElement: illegal type " << type << endl;
+        throw NgException ("HPRefElement::SetType: illegal type");
       } 
-    for(int k=0;k<8;k++)
+
+    for(int k = 0; k < 8;k++)
       {
 	pnums[k]=0;
-	for(int l=0;l<3;l++) param[k][l]=0.;
+	for(int l = 0; l < 3; l++) 
+          param[k][l]=0.;
       }
   }
   
@@ -587,6 +593,11 @@ namespace netgen
 	  case PYRAMID: 
 	    hpel.type = HP_PYRAMID; 
 	    break; 
+
+          default:
+            cerr << "HPRefElement: illegal elementtype (1) " << mesh[i].GetType() << endl;
+            throw NgException ("HPRefElement: illegal elementtype (1)");
+
 	  } 
 	elements.Append(hpel); 
       }
@@ -700,7 +711,7 @@ namespace netgen
 	HPRef_Struct * hprs = Get_HPRef_Struct (el.type);
 	int newlevel = el.levelx + 1;
 
-	int oldnp(0);
+	int oldnp = 0;
 	switch (hprs->geom)
 	  {
 	  case HP_SEGM: oldnp = 2; break;
@@ -710,6 +721,10 @@ namespace netgen
 	  case HP_PYRAMID: oldnp = 5; break;
 	  case HP_PRISM: oldnp = 6; break;
 	  case HP_HEX: oldnp = 8; break;
+            
+          default:
+            cerr << "HPRefElement: illegal type (3) " << hprs->geom << endl;
+            throw NgException ("HPRefElement::SetType: illegal type (3)");
 	  }
 
 
@@ -830,6 +845,8 @@ namespace netgen
 	      case HP_PRISM: newel.np=6; break;
 	      case HP_TET: newel.np=4; break; 
 	      case HP_PYRAMID: newel.np=5; break; 
+              default:
+                throw NgException (string("hprefinement.cpp: illegal type"));
 	      }
 
 	    for (int k = 0; k < newel.np; k++)
@@ -915,6 +932,11 @@ namespace netgen
 	      case HP_PRISM: newel.np=6; break;
 	      case HP_TET: newel.np=4; break; 
 	      case HP_PYRAMID: newel.np=5; break; 
+
+              default:
+                cerr << "HPRefElement: illegal type (4) " << hprsnew->geom << endl;
+                throw NgException ("HPRefElement: illegal type (4)");
+                
 	      }
 	    newel.type = hprs->neweltypes[j];
 	    for (int k = 0; k < 8; k++)
@@ -1477,6 +1499,12 @@ namespace netgen
 		ord_dir[2] = 2; 
 		ned = 8;  
 		break; 
+
+
+              default:
+                cerr << "HPRefElement: illegal elementtype (2) " << mesh[i].GetType() << endl;
+                throw NgException ("HPRefElement: illegal elementtype (2)");
+                
 	      }
 	
 	    for (int j=0;j<ned;j++) 

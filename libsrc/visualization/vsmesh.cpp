@@ -3,7 +3,6 @@
 #include <mystdlib.h>
 
 
-
 #include <myadt.hpp>
 #include <meshing.hpp>
 #include <csg.hpp>
@@ -983,9 +982,9 @@ namespace netgen
 	for (int i = 1; i <= locms.Size(); i++)
 	  {
 	    Point3d p = mesh->Point(i);
-	    locms.Elem(i) = mesh->GetH (p);
-	    if (locms.Elem(i) > maxh) maxh = locms.Elem(i);
-	    if (locms.Elem(i) < minh) minh = locms.Elem(i);
+	    locms(i-1) = mesh->GetH (p);
+	    if (locms(i-1) > maxh) maxh = locms(i-1);
+	    if (locms(i-1) < minh) minh = locms(i-1);
 	  }
 	if (!locms.Size())
 	  { minh = 1; maxh = 10; }
@@ -1145,11 +1144,11 @@ namespace netgen
 
 		      if (vispar.colormeshsize)
 			{
-			  SetOpenGlColor  (locms.Get(el[0]), minh, maxh, 1);
+			  SetOpenGlColor  (locms(el[0]-1), minh, maxh, 1);
 			  glVertex3dv (lp0);
-			  SetOpenGlColor  (locms.Get(el[1]), minh, maxh, 1);
+			  SetOpenGlColor  (locms(el[1]-1), minh, maxh, 1);
 			  glVertex3dv (lp1);
-			  SetOpenGlColor  (locms.Get(el[2]), minh, maxh, 1);
+			  SetOpenGlColor  (locms(el[2]-1), minh, maxh, 1);
 			  glVertex3dv (lp2);
 			}
 		      else

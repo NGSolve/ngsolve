@@ -793,25 +793,25 @@ bool AdFront3 :: Inside (const Point<3> & p) const
 	v1 = p2 - p1;
 	v2 = p3 - p1;
 
-	a.Elem(1, 1) = v1.X();
-	a.Elem(2, 1) = v1.Y();
-	a.Elem(3, 1) = v1.Z();
-	a.Elem(1, 2) = v2.X();
-	a.Elem(2, 2) = v2.Y();
-	a.Elem(3, 2) = v2.Z();
-	a.Elem(1, 3) = -n.X();
-	a.Elem(2, 3) = -n.Y();
-	a.Elem(3, 3) = -n.Z();
+	a(0, 0) = v1.X();
+	a(1, 0) = v1.Y();
+	a(2, 0) = v1.Z();
+	a(0, 1) = v2.X();
+	a(1, 1) = v2.Y();
+	a(2, 1) = v2.Z();
+	a(0, 2) = -n.X();
+	a(1, 2) = -n.Y();
+	a(2, 2) = -n.Z();
 
-	b.Elem(1) = p(0) - p1(0);
-	b.Elem(2) = p(1) - p1(1);
-	b.Elem(3) = p(2) - p1(2);
+	b(0) = p(0) - p1(0);
+	b(1) = p(1) - p1(1);
+	b(2) = p(2) - p1(2);
 
 	CalcInverse (a, ainv);
 	ainv.Mult (b, u);
 
-	if (u.Elem(1) >= 0 && u.Elem(2) >= 0 && u.Elem(1)+u.Elem(2) <= 1 &&
-	    u.Elem(3) > 0)
+	if (u(0) >= 0 && u(1) >= 0 && u(0)+u(1) <= 1 &&
+	    u(2) > 0)
 	  {
 	    cnt++;
 	  }
