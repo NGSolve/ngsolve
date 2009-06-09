@@ -331,9 +331,7 @@ namespace ngsolve
       return coefficients[name]; 
 
     if (opt) return 0;
-    stringstream str;
-    str << "CoefficientFunction '" << name << "' not defined\n";
-    throw Exception (str.str());
+    throw Exception (string ("CoefficientFunction '") + name + "' not defined\n");
   }
 
   FESpace * PDE :: 

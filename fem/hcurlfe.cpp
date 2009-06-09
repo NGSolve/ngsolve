@@ -213,7 +213,6 @@ namespace ngfem
   ComputeEdgeMoments (int enr, ScalarFiniteElement<1> & testfe,
 		      FlatMatrix<> moments, int order, int shapenr) const
   {
-    int j;
     int test_ndof = testfe.GetNDof();
     
     MatrixFixWidth<DIM> shape(ndof);
@@ -228,7 +227,7 @@ namespace ngfem
     const EDGE & edge = ElementTopology::GetEdges (ElementType()) [enr];
     
     
-    for (j = 0; j < dimspace; j++)
+    for (int j = 0; j < dimspace; j++)
       {
 	p1(j) = points[edge[0]][j];
 	p2(j) = points[edge[1]][j];
@@ -237,7 +236,7 @@ namespace ngfem
     tau = p2 - p1;
     moments = 0;
     
-    for (j = 0; j < linerule.GetNIP(); j++)
+    for (int j = 0; j < linerule.GetNIP(); j++)
       {
 	const IntegrationPoint & ip = linerule.GetIP(j);
 	
@@ -253,7 +252,8 @@ namespace ngfem
 
 	shapetau = shape * tau;
 
-	moments += ChangeSize(ip.Weight() * (testshape * Trans (shapetau)),moments.Height(),moments.Width());
+	// moments += ChangeSize(ip.Weight() * (testshape * Trans (shapetau)),moments.Height(),moments.Width());
+        moments.VRange(0, testshape.Height()) += ip.Weight() * (testshape * Trans (shapetau));
       }
   }
 

@@ -35,7 +35,7 @@ AC_ARG_WITH([netgen],
         )
 
 
-AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])]
+AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])
 AC_ARG_WITH([lapack],
         [  --with-lapack=lapacklib   linker flags for linking dense linear algebra library LAPACK, default is '-llapack -lblas'],          
         [AC_SUBST([LAPACK_LIBS], [$withval])],
