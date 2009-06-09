@@ -31,15 +31,15 @@ namespace ngcomp
     ///
     bool nonassemble;
     /// 
-    int diagonal;
+    bool diagonal;
     ///
-    int multilevel;
+    bool multilevel;
     /// galerkin projection of coarse grid matrices
-    int galerkin;
+    bool galerkin;
     /// complex forms are hermitean
-    int hermitean;
+    bool hermitean;
     /// bilinear form is symmetric
-    int symmetric;
+    bool symmetric;
     /// add epsilon for regularization
     double eps_regularization; 
     /// diagonal value for unused dofs
@@ -232,23 +232,23 @@ namespace ngcomp
     int GetNLevels() const
     { return mats.Size(); }
 
-    void SetNonAssemble (bool na = 1)
+    void SetNonAssemble (bool na = true)
     { nonassemble = na; }
 
     ///
-    void SetGalerkin (int agalerkin = 1)
+    void SetGalerkin (bool agalerkin = true)
     { galerkin = agalerkin; }
     ///
-    void SetDiagonal (int adiagonal = 1)
+    void SetDiagonal (bool adiagonal = true)
     { diagonal = adiagonal; }
     ///
-    void SetSymmetric (int asymmetric = 1)
+    void SetSymmetric (bool asymmetric = true)
     { symmetric = asymmetric; }
     ///
-    void SetHermitean (int ahermitean = 1)
+    void SetHermitean (bool ahermitean = true)
     { hermitean = ahermitean; }
     ///
-    void SetMultiLevel (int amultilevel = 1)
+    void SetMultiLevel (bool amultilevel = 1)
     { multilevel = amultilevel; }
 
     void SetTiming (bool at) 
