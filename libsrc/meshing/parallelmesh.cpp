@@ -37,15 +37,15 @@ namespace netgen
     // MPI_Barrier (MPI_COMM_WORLD);
 
     string st;
-    double doublebuf[100];
-    int i, n;
-    int tag_dim = 10, tag_token = 100, tag_n=11, tag_pnum=12, tag_point=13;
-    int tag_index = 101, tag_facedescr = 102;
-    MPI_Status status;
+    // double doublebuf[100];
+    // int i, n;
+    // int tag_dim = 10, tag_token = 100, tag_n=11, tag_pnum=12, tag_point=13;
+    // int tag_index = 101, tag_facedescr = 102;
+    // MPI_Status status;
     
     bool endmesh = false;
 
-    int dim;
+    // int dim;
     int nelglob, nelloc, nvglob, nedglob, nfaglob;
 
     // receive global values
@@ -63,7 +63,7 @@ namespace netgen
 
     PrintMessage (1, "Receive mesh");
 
-    int ve = 0;
+    // int ve = 0;
     while (!endmesh)
       {
 	MyMPI_Recv ( st, 0 );
@@ -153,7 +153,7 @@ namespace netgen
 	  {
 	    NgProfiler::RegionTimer reg(timer_sels);
 	    int j;
-	    int surfnr, bcp, domin, domout, nep, faceind = 0;
+	    int nep, faceind = 0;
 	    int globsel;
 	    int * selbuf;
 	    selbuf = 0;
@@ -210,7 +210,6 @@ namespace netgen
 	    int bufsize;
 	    MyMPI_Recv ( segmbuf, bufsize, 0);
 	    Segment seg;
-	    int hi;
 	    int globsegi;
 	    int ii = 0;
 	    int segi = 1;
@@ -221,8 +220,8 @@ namespace netgen
 		globsegi = int (segmbuf[ii++]);
 		seg.si = int (segmbuf[ii++]);
 
-                seg.p1 = glob2loc_vert_ht.Get (int(segmbuf[ii++]));
-                seg.p2 = glob2loc_vert_ht.Get (int(segmbuf[ii++]));
+                seg.pnums[0] = glob2loc_vert_ht.Get (int(segmbuf[ii++]));
+                seg.pnums[1] = glob2loc_vert_ht.Get (int(segmbuf[ii++]));
 		seg.geominfo[0].trignum = int( segmbuf[ii++] );
 		seg.geominfo[1].trignum = int ( segmbuf[ii++]);
 		seg.surfnr1 = int ( segmbuf[ii++]);
@@ -239,7 +238,7 @@ namespace netgen
 		
 		seg.domin = seg.surfnr1;
 		seg.domout = seg.surfnr2;
-		if ( seg.p1 >0 && seg.p2 > 0 )
+		if ( seg.pnums[0] >0 && seg.pnums[1] > 0 )
 		  {
 		    paralleltop-> SetLoc2Glob_Segm ( segi,  globsegi );
 		    
@@ -579,8 +578,8 @@ namespace netgen
   {
     int ne = GetNE();
     
-    int nn = GetNP();
-    int nedges = topology->GetNEdges();
+    // int nn = GetNP();
+    // int nedges = topology->GetNEdges();
     int nfaces = topology->GetNFaces();
 
     idxtype  *xadj, * adjacency, *v_weights = NULL, *e_weights = NULL;
@@ -661,7 +660,7 @@ namespace netgen
 
     for ( int el = 1; el <= ne; el++ )
       {
-	Element & volel = VolumeElement(el);
+	// Element & volel = VolumeElement(el);
 	nodesinpart = 0;
 
 	VolumeElement(el).SetPartition(part[el-1 ] + 1);
@@ -1185,8 +1184,8 @@ namespace netgen
 	Array<int> volels;
 	const MeshTopology & topol = mastermesh -> GetTopology();
 	topol . GetSegmentVolumeElements ( segi, volels );
-	const Segment & segm = mastermesh -> LineSegment (segi);
-	int dest;
+	// const Segment & segm = mastermesh -> LineSegment (segi);
+	// int dest;
         for (int j = 0; j < volels.Size(); j++)
           {
             int ei = volels[j];
@@ -1233,8 +1232,8 @@ namespace netgen
 		  {
 		    segmbuf[dest][segi[dest]++] = ls;
 		    segmbuf[dest][segi[dest]++] = seg.si;
-		    segmbuf[dest][segi[dest]++] = seg.p1;
-		    segmbuf[dest][segi[dest]++] = seg.p2;
+		    segmbuf[dest][segi[dest]++] = seg.pnums[0];
+		    segmbuf[dest][segi[dest]++] = seg.pnums[1];
 		    segmbuf[dest][segi[dest]++] = seg.geominfo[0].trignum;
 		    segmbuf[dest][segi[dest]++] = seg.geominfo[1].trignum;
 		    segmbuf[dest][segi[dest]++] = seg.surfnr1;
@@ -1308,12 +1307,12 @@ namespace netgen
     if ( id > 0 )
       {
 	int nvglob = paralleltop->GetNVGlob ();
-	int nelglob = paralleltop->GetNEGlob();
+	// int nelglob = paralleltop->GetNEGlob();
 
-	int nv = GetNV();
-	int ned = topology -> GetNEdges();
-	int nfa = topology -> GetNFaces();
-	int nel = GetNE();
+	// int nv = GetNV();
+	// int ned = topology -> GetNEdges();
+	// int nfa = topology -> GetNFaces();
+	// int nel = GetNE();
 
 	Array<int,PointIndex::BASE> glob2loc_vert(nvglob);
 	glob2loc_vert = -1;
