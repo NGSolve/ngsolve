@@ -162,6 +162,8 @@ Ng_GetSurfaceElement (Ng_Mesh * mesh, int num, int * pi)
     case 3: et = NG_TRIG; break;
     case 4: et = NG_QUAD; break;
     case 6: et = NG_TRIG6; break;
+    default:
+      et = NG_TRIG; break; // for the compiler
     }
   return et;
 }
@@ -179,6 +181,8 @@ Ng_GetVolumeElement (Ng_Mesh * mesh, int num, int * pi)
     case 5: et = NG_PYRAMID; break;
     case 6: et = NG_PRISM; break;
     case 10: et = NG_TET10; break;
+    default:
+      et = NG_TET; break; // for the compiler
     }
   return et;
 }
@@ -428,9 +432,8 @@ DLL_HEADER Ng_Result Ng_STL_InitSTLGeometry (Ng_STL_Geometry * geom)
 
   if (readedges.Size() != 0)
     {
-      int i;
       /*
-      for (i = 1; i <= readedges.Size(); i+=2)
+      for (int i = 1; i <= readedges.Size(); i+=2)
 	{
 	  cout << "e(" << readedges.Get(i) << "," << readedges.Get(i+1) << ")" << endl;
 	}

@@ -544,19 +544,21 @@ HPREF_ELEMENT_TYPE ClassifyPrism(HPRefElement & el, INDEX_2_HASHTABLE<int> & edg
 	  break;
 	case 1:
 	  if(sve[0] <= 1 && sve[1] <= 1)  
-	    if(sve[2]==0)
-	      { 
-		types[0] = HP_PRISM_1FB_0E_0V;
-		types[1] = HP_PRISM_1FA_1FB_0E_0V;
-		types[2] = HP_PRISM_2FA_1FB_0E_0V;  
-	      }
-	    else
-	      { 
-		types[0] = HP_PRISM_1FB_1EC_0V;
-		types[1] = HP_PRISM_1FA_1FB_1EC_0V;
-		types[2] = HP_PRISM_2FA_1FB_1EC_0V; 
-	      }
-	  
+            {
+              if(sve[2]==0)
+                { 
+                  types[0] = HP_PRISM_1FB_0E_0V;
+                  types[1] = HP_PRISM_1FA_1FB_0E_0V;
+                  types[2] = HP_PRISM_2FA_1FB_0E_0V;  
+                }
+              else
+                { 
+                  types[0] = HP_PRISM_1FB_1EC_0V;
+                  types[1] = HP_PRISM_1FA_1FB_1EC_0V;
+                  types[2] = HP_PRISM_2FA_1FB_1EC_0V; 
+                }
+            }
+
 	  if(sve[0] > 1 && sve[2] >= 1 && sve[1] <= 1)
 	    { 
 	      types[0] = HP_PRISM_1FB_2EB_0V;  
