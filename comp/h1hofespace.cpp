@@ -933,8 +933,12 @@ namespace ngcomp
       dnums.Append (vnums[i]);
 
     for (int i = 0; i < ednums.Size(); i++)
+      for (int j = first_edge_dof[ednums[i]]; j < first_edge_dof[ednums[i]+1]; j++)
+	dnums.Append(j);
+      /*
       if (order_edge[ednums[i]] > 1)
         dnums.Append (first_edge_dof[ednums[i]]);
+      */
   }
 
 

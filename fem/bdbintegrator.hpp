@@ -584,6 +584,8 @@ public:
 			 FlatMatrix<double> & elmat,
 			 LocalHeap & locheap) const
   {
+    static int timer = NgProfiler::CreateTimer (string ("Elementmatrix, ") + Name());
+    NgProfiler::RegionTimer reg (timer);
 
     try
       {
@@ -648,6 +650,7 @@ public:
 	*/
 
 	LapackMultABt (bbmat, bdbmat, elmat);
+	NgProfiler::AddFlops (timer, long(elmat.Height())*long(elmat.Width())*bbmat.Width());
 
 	/*
 	cblas_dgemm (CblasRowMajor, CblasNoTrans, CblasTrans,

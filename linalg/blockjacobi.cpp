@@ -519,7 +519,7 @@ namespace ngla
 			       Table<int> & ablocktable)
     : BaseBlockJacobiPrecond(ablocktable), mat(amat)
   { 
-    cout << "symmetric BlockJacobi Preconditioner, constructor called, #blocks = " << blocktable.Size() << endl;
+    cout << "symmetric BlockJacobi Preconditioner 2, constructor called, #blocks = " << blocktable.Size() << endl;
 
     lowmem = false;
     // lowmem = true;

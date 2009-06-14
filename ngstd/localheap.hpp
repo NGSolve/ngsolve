@@ -18,7 +18,7 @@ namespace ngstd
   class LocalHeapOverflow : public Exception
   {
   public:
-    LocalHeapOverflow (int size);
+    LocalHeapOverflow (size_t size);
     virtual ~LocalHeapOverflow ();
   };
  
@@ -35,15 +35,15 @@ namespace ngstd
   {
     char * data;
     char * p;
-    unsigned int totsize;
+    size_t totsize;
     bool owner;
 
   public:
     /// Allocate one block of size asize.
-    LocalHeap (unsigned int asize);
+    LocalHeap (size_t asize);
 
     /// Use provided memory for the LocalHeap
-    LocalHeap (char * adata, unsigned int asize) throw ()
+    LocalHeap (char * adata, size_t asize) throw ()
     {
       totsize = asize;
       data = adata;
@@ -86,7 +86,7 @@ namespace ngstd
     }
 
     /// allocates size bytes of memory from local heap
-    void * Alloc (unsigned int size) throw (LocalHeapOverflow)
+    void * Alloc (size_t size) throw (LocalHeapOverflow)
     {
       char * oldp = p;
     
@@ -94,7 +94,7 @@ namespace ngstd
       size += (16 - size % 16);
       p += size;
 
-      if ( (p - data) >= int(totsize) )
+      if ( size_t(p - data) >= totsize )
 	ThrowException();
 
       return oldp;
@@ -102,7 +102,7 @@ namespace ngstd
 
     /// allocates size objects of type T on local heap
     template <typename T>
-    T * Alloc (unsigned int size) throw (LocalHeapOverflow)
+    T * Alloc (size_t size) throw (LocalHeapOverflow)
     {
       char * oldp = p;
       size *= sizeof (T);
@@ -111,7 +111,7 @@ namespace ngstd
       size += (16 - size % 16);
       p += size;
 
-      if ( (p - data) >= int(totsize) )
+      if ( size_t(p - data) >= totsize )
 	ThrowException();
 
       return reinterpret_cast<T*> (oldp);
@@ -128,7 +128,7 @@ namespace ngstd
     }
 
     /// available memory on LocalHeap
-    int Available () const throw () { return (totsize - (p-data)); }
+    size_t Available () const throw () { return (totsize - (p-data)); }
 
     /// Split free memory on heap into pieces for each openmp-thread
     LocalHeap Split () const
@@ -140,8 +140,8 @@ namespace ngstd
       int pieces = 1;
       int i = 0;
 #endif
-      int freemem = totsize - (p - data);
-      int size_of_piece = freemem / pieces;
+      size_t freemem = totsize - (p - data);
+      size_t size_of_piece = freemem / pieces;
       return LocalHeap (p + i * size_of_piece, size_of_piece);
     }
   };

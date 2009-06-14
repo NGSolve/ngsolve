@@ -10,7 +10,7 @@ namespace ngcomp
   template <class SCAL>
   ElementByElement_BilinearForm<SCAL> :: 
   ElementByElement_BilinearForm (const FESpace & afespace, const string & aname,
-					    const Flags & flags)
+				 const Flags & flags)
     : S_BilinearForm<SCAL> (afespace, aname, flags)
   { ; }
 
@@ -27,7 +27,6 @@ namespace ngcomp
     cout << "alloc matrix" << endl;
     const FESpace & fespace = this->fespace;
     this->mats.Append (new ElementByElementMatrix<SCAL> (fespace.GetNDof()));
-
   }
 
 
@@ -39,23 +38,20 @@ namespace ngcomp
 
   template<class SCAL>
   void ElementByElement_BilinearForm<SCAL> :: AddElementMatrix (const Array<int> & dnums1,
-						  const Array<int> & dnums2,
-						  const FlatMatrix<SCAL> & elmat,
-						  bool inner_element, int elnr,
-						  LocalHeap & lh)
+								const Array<int> & dnums2,
+								const FlatMatrix<SCAL> & elmat,
+								bool inner_element, int elnr,
+								LocalHeap & lh)
   {
     /*
-    (*testout) << "inner_element = " << inner_element << endl;
-    (*testout) << "elnr = " << elnr << endl;
-    (*testout) << "elmat = " << endl << elmat << endl;
-    (*testout) << "dnums1 = " << endl << dnums1 << endl;
+      (*testout) << "inner_element = " << inner_element << endl;
+      (*testout) << "elnr = " << elnr << endl;
+      (*testout) << "elmat = " << endl << elmat << endl;
+      (*testout) << "dnums1 = " << endl << dnums1 << endl;
     */
 
     dynamic_cast<ElementByElementMatrix<SCAL>&> (this->GetMatrix()) . AddElementMatrix (dnums1, dnums2, elmat);
-
-	 
   }
-
 
 
 
@@ -64,85 +60,93 @@ namespace ngcomp
 
 
 
-template <class SCAL>
-void ElementByElementMatrix<SCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
-    {
-      int maxs = 0;
-      for (int i = 0; i < dnums.Size(); i++)
-	maxs = max2 (maxs, dnums[i].Size());
+  template <class SCAL>
+  void ElementByElementMatrix<SCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    int maxs = 0;
+    for (int i = 0; i < dnums.Size(); i++)
+      maxs = max2 (maxs, dnums[i].Size());
 
-      ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
+    ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
       
-      FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
-      FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
+    FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
+    FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
 
-      for (int i = 0; i < dnums.Size(); i++)
-	{
-	  FlatArray<int> di (dnums[i]);
-	  FlatVector<SCAL> hv1(di.Size(), &mem1[0]);
-	  FlatVector<SCAL> hv2(di.Size(), &mem2[0]);
+    for (int i = 0; i < dnums.Size(); i++)
+      {
+	FlatArray<int> di (dnums[i]);
+	FlatVector<SCAL> hv1(di.Size(), &mem1[0]);
+	FlatVector<SCAL> hv2(di.Size(), &mem2[0]);
 	  
-	  for (int j = 0; j < di.Size(); j++)
-	    hv1(j) = vx (di[j]);
+	for (int j = 0; j < di.Size(); j++)
+	  hv1(j) = vx (di[j]);
 
-	  hv2 = elmats[i] * hv1;
-	  // elmats[i].Mult (hv1, hv2);
-	  hv2 *= s;
+	hv2 = elmats[i] * hv1;
+	hv2 *= s;
 
-	  for (int j = 0; j < dnums[i].Size(); j++)
-	    vy (di[j]) += hv2[j];
-	}
-    }
+	for (int j = 0; j < dnums[i].Size(); j++)
+	  vy (di[j]) += hv2[j];
+      }
+  }
 
-template <class SCAL>
-BaseMatrix *  ElementByElementMatrix<SCAL> :: InverseMatrix ( BitArray * subset ) const
-{
-  ElementByElementMatrix<SCAL> * invmat = new ElementByElementMatrix<SCAL> (height);
-  LocalHeap lh (100000);
+  template <class SCAL>
+  BaseMatrix *  ElementByElementMatrix<SCAL> :: InverseMatrix ( BitArray * subset ) const
+  {
+    ElementByElementMatrix<SCAL> * invmat = new ElementByElementMatrix<SCAL> (height);
 
-  for ( int i = 0; i < dnums.Size(); i++ )
+    int maxs = 0;
+    for (int i = 0; i < dnums.Size(); i++)
+      maxs = max2 (maxs, dnums[i].Size());
+
+    LocalHeap lh (maxs*maxs*sizeof(SCAL)+100);
+
+    for ( int i = 0; i < dnums.Size(); i++ )
+      {
+	int nd = dnums[i] . Size();
+	FlatMatrix<SCAL> mat(nd, nd, lh);
+	Array<int> dnumsarray(nd);
+	for ( int j = 0; j < nd; j++ )
+	  dnumsarray[j] = dnums[i][j];
+	mat = elmats[i];
+
+	LapackInverse(mat);
+
+	invmat -> AddElementMatrix(dnumsarray, dnumsarray, mat);
+	lh.CleanUp();
+      }
+
+    return invmat;
+  }
+
+  template <class SCAL>
+  void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1,
+							 const Array<int> & dnums2,
+							 const FlatMatrix<SCAL> & elmat)
+  {
+    Array<int> used;
+    for (int i = 0; i < dnums1.Size(); i++)
+      if (dnums1[i] >= 0) used.Append(i);
+
+    int s = used.Size();
+
+    FlatMatrix<SCAL> mat (s, new SCAL[s*s]);
+    for (int i = 0; i < s; i++)
+      for (int j = 0; j < s; j++)
+	mat(i,j) = elmat(used[i], used[j]);
+
+    FlatArray<int> dn(s, new int[s]);
+    for (int i = 0; i < s; i++)
+      dn[i] = dnums1[used[i]];
+
+
+#pragma omp critical (ebe_addelementmatrix)
     {
-      int nd = dnums[i] . Size();
-      FlatMatrix<SCAL> mat(nd, nd, lh);
-      Array<int> dnumsarray(nd);
-      for ( int j = 0; j < nd; j++ )
-	dnumsarray[j] = dnums[i][j];
-      mat = elmats[i];
-
-      LapackInverse(mat);
-
-      invmat -> AddElementMatrix(dnumsarray, dnumsarray, mat);
-      lh.CleanUp();
-    }
-
-  return invmat;
-}
-
-template <class SCAL>
-void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1,
-			   const Array<int> & dnums2,
-			   const FlatMatrix<SCAL> & elmat)
-    {
-      Array<int> used;
-      for (int i = 0; i < dnums1.Size(); i++)
-	if (dnums1[i] >= 0) used.Append(i);
-
-      int s = used.Size();
-
-      FlatMatrix<SCAL> mat (s, new SCAL[s*s]);
-      for (int i = 0; i < s; i++)
-	for (int j = 0; j < s; j++)
-	  mat(i,j) = elmat(used[i], used[j]);
-
-      FlatArray<int> dn(s, new int[s]);
-      for (int i = 0; i < s; i++)
-	dn[i] = dnums1[used[i]];
-
       dnums.Append (dn);
-
+      
       elmats.SetSize (elmats.Size()+1);
       elmats.Last().AssignMemory (s, s, &mat(0,0));
     }
+  }
 
 
   template <class SCAL>
@@ -173,6 +177,8 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
   void HO_BilinearForm<SCAL> :: AllocateMatrix ()
   {
     cout << "alloc matrix" << endl;
+    cout << "symmetric = " << this->symmetric << endl;
+
     const FESpace & fespace = this->fespace;
 
     this->mats.Append (new ElementByElementMatrix<SCAL> (fespace.GetNDof()));
@@ -197,11 +203,13 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
 
 	    this->ma.GetFaceEdges (i, ednums);
 	    this->ma.GetFaceElements (i, elnums);
-	
+	    
+	    /*
 	    // only for shells
 	    if ( this->ma.GetElType(elnums[0]) == ET_PRISM 
 		 && this->ma.GetElType(elnums[1]) == ET_PRISM )
 	      if (vnums.Size() == 3) continue;
+	    */
 
 	    for (int j = 0; j < vnums.Size(); j++)
 	      {
@@ -248,10 +256,12 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
 
 	    this->ma.GetFaceElements (i, elnums);
 
+	    /*
 	    // only for shells
 	    if ( this->ma.GetElType(elnums[0]) == ET_PRISM 
 		 && this->ma.GetElType(elnums[1]) == ET_PRISM )
 	      if (vnums.Size() == 3) continue;
+	    */
 
 	    this->ma.GetFaceEdges (i, ednums);
 	    int ii = 0;
@@ -283,7 +293,7 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
 	  }
 
 	cout << "has graph table" << endl;
-// 	(*testout) << "face graph table: " << endl << fa2dof << endl;
+	// 	(*testout) << "face graph table: " << endl << fa2dof << endl;
 	/*    
 	      for (int i = 0; i < ne; i++)
 	      {
@@ -297,7 +307,7 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
 	// (*testout) << "fa2dof = " << endl << fa2dof << endl;
     
 
-	graph = new MatrixGraph (fespace.GetNDof(), fa2dof, 0);
+	graph = new MatrixGraph (fespace.GetNDof(), fa2dof, this->symmetric);
       }
     
     else
@@ -366,7 +376,7 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
 
 
 	cout << "has graph table" << endl;
-// 	(*testout) << "face graph table: " << endl << fa2dof << endl;
+	// 	(*testout) << "face graph table: " << endl << fa2dof << endl;
 	/*    
 	      for (int i = 0; i < ne; i++)
 	      {
@@ -380,16 +390,20 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
 	// (*testout) << "fa2dof = " << endl << fa2dof << endl;
     
 
-	graph = new MatrixGraph (fespace.GetNDof(), fa2dof, 0);
+	graph = new MatrixGraph (fespace.GetNDof(), fa2dof, this->symmetric);
       }
 
 
-    inexact_schur = new SparseMatrix<SCAL> (*graph, 1);
+    if (this->symmetric)
+      inexact_schur = new SparseMatrixSymmetric<SCAL> (*graph, 1);
+    else
+      inexact_schur = new SparseMatrix<SCAL> (*graph, 1);
+
     delete graph;
 
     inexact_schur -> AsVector() = 0.0;
 
-//     (*testout) << "matrix = " << endl << *inexact_schur << endl;
+    //     (*testout) << "matrix = " << endl << *inexact_schur << endl;
   }
 
 
@@ -407,17 +421,20 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
 						  LocalHeap & lh)
   {
     /*
-    (*testout) << "inner_element = " << inner_element << endl;
-    (*testout) << "elnr = " << elnr << endl;
-    (*testout) << "elmat = " << endl << elmat << endl;
-    (*testout) << "dnums1 = " << endl << dnums1 << endl;
+      (*testout) << "inner_element = " << inner_element << endl;
+      (*testout) << "elnr = " << elnr << endl;
+      (*testout) << "elmat = " << endl << elmat << endl;
+      (*testout) << "dnums1 = " << endl << dnums1 << endl;
     */
 
     dynamic_cast<ElementByElementMatrix<SCAL>&> (this->GetMatrix()) . AddElementMatrix (dnums1, dnums2, elmat);
-
+    
 
     if (inner_element)
       {
+	static int timer = NgProfiler::CreateTimer ("Wirebasket matrix processing");
+	NgProfiler::RegionTimer reg (timer);
+
 	// build Schur complements for faces
 
 
@@ -438,11 +455,13 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
 		unusedi.SetSize (0);
 
 		this->ma.GetFacePNums (fanums[i], vnums);
-
+		
+		/*
 		// only for shells
 		if ( this->ma.GetElType(elnr) == ET_PRISM )
 		  if (vnums.Size() == 3) continue;
-		
+		*/
+
 		// this->ma.GetElPNums (elnr, vnums);   // all vertices
 
 		this->fespace.GetWireBasketDofNrs (elnr, useddofs);
@@ -484,6 +503,8 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
 		int su = usedi.Size();
 		int sunu = unusedi.Size();
 
+		// cout << "ndof = " << dnums1.Size() << " schurd = " << su << " nonschurd = " << sunu << endl;
+
 		FlatMatrix<SCAL> a(su, su, lh);
 		FlatMatrix<SCAL> b(su, sunu, lh);
 		FlatMatrix<SCAL> c(su, sunu, lh);
@@ -518,9 +539,12 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
 #ifdef LAPACK
 		if ( sunu > 0 )
 		  {
-		    LapackInverse (d);
-		    LapackMultABt (c, d, idc);
-		    LapackMultAddABt (b, idc, -1, a);
+		    // JS, June 2009
+		    LapackAInvBt (d, b);
+		    LapackMultAddABt (b, c, -1, a);
+		    // LapackInverse (d);
+		    // LapackMultABt (c, d, idc);
+		    // LapackMultAddABt (b, idc, -1, a);
 		  }
 #else
 		FlatMatrix<SCAL> invd(sunu, sunu, lh);
@@ -529,11 +553,23 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
 		idc = c * Trans (invd);
 		a -= b * Trans (idc);
 #endif
-	    
-		for (int k = 0; k < usedi.Size(); k++)
-		  for (int l = 0; l < usedi.Size(); l++)
-		      (*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
-
+	
+#pragma omp critical (addinexact_schur)
+		{
+		  if (this->symmetric)
+		    {
+		      for (int k = 0; k < usedi.Size(); k++)
+			for (int l = 0; l < usedi.Size(); l++)
+			  if (dnums1[usedi[k]] >= dnums1[usedi[l]])
+			    (*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
+		    }
+		  else
+		    {
+		      for (int k = 0; k < usedi.Size(); k++)
+			for (int l = 0; l < usedi.Size(); l++)
+			  (*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
+		    }
+		}
 	      }
 	  }
 	else
@@ -562,12 +598,12 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
 		    for (int k = 0; k < dnums.Size(); k++)
 		      if (dnums[k] != -1) useddofs.Append (dnums[k]);
 		  }
-// 		*testout << "useddofs1 " << useddofs << endl;
+		// 		*testout << "useddofs1 " << useddofs << endl;
 
 		this->fespace.GetEdgeDofNrs (ednums[i], dnums);
 		for (int k = 0; k < dnums.Size(); k++)
 		  if (dnums[k] != -1) useddofs.Append (dnums[k]);
-// 		*testout << "useddofs2 " << useddofs << endl;
+		// 		*testout << "useddofs2 " << useddofs << endl;
 	    
 		for (int j = 0; j < dnums1.Size(); j++)
 		  if (dnums1[j] != -1)
@@ -631,20 +667,38 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
 		a -= b * Trans (idc);
 #endif
 
-
-		for (int k = 0; k < usedi.Size(); k++)
-		  for (int l = 0; l < usedi.Size(); l++)
-		    (*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
+#pragma omp critical (addinexact_schur)
+		{
+		  for (int k = 0; k < usedi.Size(); k++)
+		    for (int l = 0; l < usedi.Size(); l++)
+		      (*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
+		}
 
 	      }
 	  }
       }
     else
       {
-	for (int i = 0; i < dnums1.Size(); i++)
-	  for (int j = 0; j < dnums2.Size(); j++)
-	    if (dnums1[i] != -1 && dnums2[j] != -1)
-	      (*inexact_schur)(dnums1[i], dnums2[j]) += elmat(i, j);
+
+#pragma omp critical (addinexact_schur)
+	{
+	  
+	  if (this -> symmetric)
+	    {
+	      for (int i = 0; i < dnums1.Size(); i++)
+		for (int j = 0; j < dnums2.Size(); j++)
+		  if (dnums1[i] != -1 && dnums2[j] != -1)
+		    if (dnums1[i] >= dnums1[j])
+		      (*inexact_schur)(dnums1[i], dnums2[j]) += elmat(i, j);
+	    }
+	  else
+	    {
+	      for (int i = 0; i < dnums1.Size(); i++)
+		for (int j = 0; j < dnums2.Size(); j++)
+		  if (dnums1[i] != -1 && dnums2[j] != -1)
+		    (*inexact_schur)(dnums1[i], dnums2[j]) += elmat(i, j);
+	    }
+	}
       }
 
 		 
@@ -665,48 +719,49 @@ void ElementByElementMatrix<SCAL> :: AddElementMatrix (const Array<int> & dnums1
   WireBasketPreconditioner<SCAL> ::
   WireBasketPreconditioner (const PDE * pde, const Flags & aflags, const string aname)
     : Preconditioner (pde, aflags, aname)
-    {
-      cout << "\ncreate wire-basket precond" << endl;
-      bfa = dynamic_cast<const HO_BilinearForm<SCAL>*>(pde->GetBilinearForm (aflags.GetStringFlag ("bilinearform", NULL)));
-      inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
-      smoothingtype = int(flags.GetNumFlag("blocktype", -1));
-    }
+  {
+    cout << "\ncreate wire-basket precond" << endl;
+    bfa = dynamic_cast<const HO_BilinearForm<SCAL>*>(pde->GetBilinearForm (aflags.GetStringFlag ("bilinearform", NULL)));
+    inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
+    smoothingtype = int(flags.GetNumFlag("blocktype", -1));
+  }
 
 
   template <class SCAL>
   void WireBasketPreconditioner<SCAL> ::
   Update ()
-    {
-      cout << "update wirebasket" << endl;
+  {
+    cout << "update wirebasket" << endl;
 
-      const SparseMatrix<SCAL> & mat = bfa -> InexactSchur();
+    const SparseMatrix<SCAL> & mat = bfa -> InexactSchur();
 
-      //      const SparseMatrix<SCAL> & mat = 
-      //	dynamic_cast<const SparseMatrix<SCAL>& > (bfa -> GetMatrix());
+    //      const SparseMatrix<SCAL> & mat = 
+    //	dynamic_cast<const SparseMatrix<SCAL>& > (bfa -> GetMatrix());
 
-//       (*testout) << "type = " << typeid(mat).name() << endl;
-//       (*testout) << "mat = " << mat << endl;
+    //       (*testout) << "type = " << typeid(mat).name() << endl;
+    //       (*testout) << "mat = " << mat << endl;
       
-      mat.SetInverseType(inversetype);
-      if ( smoothingtype == -1 )
-	{
-	  pre = mat.InverseMatrix(); // const_cast<SparseMatrix<SCAL>*> (&mat); // 
-	}
-      else
-	{
-	  Array<int> cnt(ma.GetNE());
-	  // const ElementByElementMatrix<SCAL> & elbyelmat =
-          // dynamic_cast<const ElementByElementMatrix<SCAL>&> (bfa -> GetMatrix() );
-// 	  const helmholtz_exp_cpp::HybridHelmholtzFESpace & hhspace = 
-// 	    dynamic_cast<const helmholtz_exp_cpp::HybridHelmholtzFESpace & > 
-// 	    (bfa -> GetFESpace() );
+    mat.SetInverseType(inversetype);
+    cout << "inversetype = " << inversetype << endl;
+    if ( smoothingtype == -1 )
+      {
+	pre = mat.InverseMatrix(); // const_cast<SparseMatrix<SCAL>*> (&mat); // 
+      }
+    else
+      {
+	Array<int> cnt(ma.GetNE());
+	// const ElementByElementMatrix<SCAL> & elbyelmat =
+	// dynamic_cast<const ElementByElementMatrix<SCAL>&> (bfa -> GetMatrix() );
+	// 	  const helmholtz_exp_cpp::HybridHelmholtzFESpace & hhspace = 
+	// 	    dynamic_cast<const helmholtz_exp_cpp::HybridHelmholtzFESpace & > 
+	// 	    (bfa -> GetFESpace() );
 	  
-	  Table<int> * blocktable = bfa->GetFESpace().CreateSmoothingBlocks(smoothingtype);
+	Table<int> * blocktable = bfa->GetFESpace().CreateSmoothingBlocks(smoothingtype);
 	  
-	  pre = mat.  CreateBlockJacobiPrecond (*blocktable);
-	}
-      if (test) Test();
-    }
+	pre = mat.  CreateBlockJacobiPrecond (*blocktable);
+      }
+    if (test) Test();
+  }
 
 
   template class WireBasketPreconditioner<double>;
