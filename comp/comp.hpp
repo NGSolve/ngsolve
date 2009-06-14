@@ -80,6 +80,7 @@ namespace ngcomp
 #include "hcurlhofespace.hpp" 
 #include "facetfespace.hpp" 
 #include "vectorfacetfespace.hpp"
+#include "wirebasket.hpp"
 
 
 
