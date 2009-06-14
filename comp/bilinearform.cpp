@@ -556,7 +556,6 @@ namespace ngcomp
 			  }
 		      }
 		      
-		      
 		      /*
                         ma.GetTopologicElement (i, tel);
                         cout << "tel = " << tel << endl;
@@ -567,7 +566,6 @@ namespace ngcomp
                         cout << "local dof-node = " << dofs[i].GetNode() 
                         << " == global dof-node " << tel.GlobalNode (dofs[i].GetNode()) << endl;
 		      */
-
 
                       if ( ma.IsGhostEl( i ) ) {continue;}
 		
@@ -593,8 +591,10 @@ namespace ngcomp
                       int elmat_size = dnums.Size()*fespace.GetDimension();
                       FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
                       sum_elmat = 0;
+
                       for (int j = 0; j < NumIntegrators(); j++)
                         {
+			  HeapReset hr (lh);
                           BilinearFormIntegrator & bfi = *parts[j];
 		      
 			
@@ -620,9 +620,7 @@ namespace ngcomp
                                   for (int k = 0; k < diag.Size(); k++)
                                     elmat(k,k) = diag(k);
                                 }
- 
-				
-			  
+
                               NgProfiler::StopTimer (elementtimer);
 			  
                               // 			    if(elmat.Height() != dnums.Size())
@@ -780,7 +778,6 @@ namespace ngcomp
                               FlatMatrix<SCAL> a(sizeo, sizeo, lh);
                               FlatMatrix<SCAL> b(sizeo, sizei, lh);
                               FlatMatrix<SCAL> c(sizeo, sizei, lh);
-                              FlatMatrix<SCAL> idc(sizeo, sizei, lh);
                               FlatMatrix<SCAL> d(sizei, sizei, lh);
 			    
                               for (int k = 0; k < sizeo; k++)
@@ -816,6 +813,7 @@ namespace ngcomp
 			    
 #else
                               FlatMatrix<SCAL> invd(sizei, sizei, lh);
+                              FlatMatrix<SCAL> idc(sizeo, sizei, lh);
                               CalcInverse (d, invd);
                               d = invd;
                               idc = c * Trans (invd);
@@ -859,7 +857,7 @@ namespace ngcomp
                                   sum_elmat(odofs[k], odofs[l]) = a(k,l);
 
 
-                            
+
 #pragma omp critical (assemble_modifyf)
 			      {
 				if (linearform)
@@ -893,11 +891,10 @@ namespace ngcomp
                           NgProfiler::StopTimer (statcondtimer);
                         }
 
-                    
-
-#pragma omp critical (addelmat)
+		      AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
+		      
+#pragma omp critical (setuseddofs)
                       {
-                        AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
                         for (int j = 0; j < dnums.Size(); j++)
                           if (dnums[j] != -1)
                             useddof.Set (dnums[j]);
@@ -1100,10 +1097,8 @@ namespace ngcomp
                         // 			  if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
                         // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
 
-#pragma omp critical (addelmat2)
-			{
-			  AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
-			}
+
+			AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
 		      }
 		    }
 		}
@@ -1388,7 +1383,7 @@ namespace ngcomp
                       }
                   }
 	      
-                  HeapReset hr(lh); // lh.CleanUp();
+                  HeapReset hr(lh);
 	      
                   if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
 		  
@@ -1402,6 +1397,7 @@ namespace ngcomp
                   sum_elmat = 0;
                   for (int j = 0; j < NumIntegrators(); j++)
                     {
+		      HeapReset hr(lh);
                       const BilinearFormIntegrator & bfi = *parts[j];
 		  
                       if (bfi.BoundaryForm()) continue;
@@ -1426,10 +1422,10 @@ namespace ngcomp
 		  
                       FlatVector<SCAL> elf (sum_elmat.Height(), lh);
                       FlatVector<SCAL> elu (sum_elmat.Height(), lh);
-                      FlatMatrix<SCAL> ai(dim*idofs.Size(), lh);
-                      FlatMatrix<SCAL> inv_ai(dim*idofs.Size(), lh);
                       FlatVector<SCAL> resi(dim*idofs.Size(), lh);
                       FlatVector<SCAL> wi(dim*idofs.Size(), lh);
+
+                      FlatMatrix<SCAL> ai(dim*idofs.Size(), lh);
 		  
                       linearform->GetVector().GetIndirect (dnums, elf);
                       u.GetIndirect (dnums, elu);
@@ -1459,10 +1455,9 @@ namespace ngcomp
 #ifdef LAPACK
                       FlatMatrix<SCAL> mresi(1,resi.Size(), &resi(0));
                       LapackAInvBt (ai, mresi, 'T');
-                      // 		    LapackInverse(ai);
-                      //                  wi = ai * Trans(mresi);
                       wi = resi;
 #else
+                      FlatMatrix<SCAL> inv_ai(dim*idofs.Size(), lh);
                       CalcInverse (ai, inv_ai);
                       wi = inv_ai * resi;
 #endif
@@ -2303,26 +2298,29 @@ namespace ngcomp
 		    bool inner_element, int elnr,
 		    LocalHeap & lh) 
   {
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
-    //FlatArray<int> colpos(dnums2.Size(), lh);
-
-    for (int i = 0; i < dnums1.Size(); i++)
-      for (int j = 0; j < dnums2.Size(); j++)
-	if (dnums1[i] != -1 && dnums2[j] != -1)
-	  {
-	    AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
-				   elmat, i, j);
-	    /*
-              TM & mij = mat(dnums1[i], dnums2[j]);
-	  
-              int hi = Height(mij);
-              int wi = Width(mij);
-	  
-              for (int k = 0; k < hi; k++)
-	      for (int l = 0; l < wi; l++)
-              mij(k,l) += elmat(i*hi+k, j*wi+l);
-	    */
-	  }
+#pragma omp critical (addelmat)
+    {
+      TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
+      //FlatArray<int> colpos(dnums2.Size(), lh);
+      
+      for (int i = 0; i < dnums1.Size(); i++)
+	for (int j = 0; j < dnums2.Size(); j++)
+	  if (dnums1[i] != -1 && dnums2[j] != -1)
+	    {
+	      AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
+				     elmat, i, j);
+	      /*
+		TM & mij = mat(dnums1[i], dnums2[j]);
+		
+		int hi = Height(mij);
+		int wi = Width(mij);
+		
+		for (int k = 0; k < hi; k++)
+		for (int l = 0; l < wi; l++)
+		mij(k,l) += elmat(i*hi+k, j*wi+l);
+	      */
+	    }
+    }
   }
 
 
@@ -2336,6 +2334,7 @@ namespace ngcomp
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&>(*this->mats.Last());
     
+#pragma omp critical (addelmat)
     {
       for (int i = 0; i < dnums1.Size(); i++)
         for (int j = 0; j < dnums2.Size(); j++)
@@ -2356,12 +2355,15 @@ namespace ngcomp
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
 
-    for (int i = 0; i < dnums1.Size(); i++)
-      for (int j = 0; j < dnums2.Size(); j++)
-	if (dnums1[i] != -1 && dnums2[j] != -1)
-	  AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
-				 elmat, i, j);
-    //mat(dnums1[i], dnums2[j]) += elmat(i, j);
+#pragma omp critical (addelmat)
+    {
+      for (int i = 0; i < dnums1.Size(); i++)
+	for (int j = 0; j < dnums2.Size(); j++)
+	  if (dnums1[i] != -1 && dnums2[j] != -1)
+	    AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
+				   elmat, i, j);
+      //mat(dnums1[i], dnums2[j]) += elmat(i, j);
+    }
 
   }
 
@@ -2376,12 +2378,15 @@ namespace ngcomp
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
 
+#pragma omp critical (addelmat)
+    {
     for (int i = 0; i < dnums1.Size(); i++)
       for (int j = 0; j < dnums2.Size(); j++)
 	if (dnums1[i] != -1 && dnums2[j] != -1)
 	  AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
 				 elmat, i, j);
     //mat(dnums1[i], dnums2[j]) += elmat(i, j);
+    }
 
   }
 
@@ -2589,6 +2594,8 @@ namespace ngcomp
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
 
+#pragma omp critical (addelmat)
+    {
     for (int i = 0; i < dnums1.Size(); i++)
       for (int j = 0; j < dnums2.Size(); j++)
 	if (dnums1[i] != -1 && dnums2[j] != -1 &&
@@ -2608,6 +2615,7 @@ namespace ngcomp
               mij(k,l) += elmat(i*hi+k, j*wi+l);
 	    */
 	  }
+    }
   }
 
 
@@ -2621,16 +2629,19 @@ namespace ngcomp
 		    bool inner_element, int elnr,
 		    LocalHeap & lh) 
   {
+    TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
+
+#pragma omp critical (addelmat)
+    {
     static int addtimer = NgProfiler::CreateTimer ("Element matrix insertion");
     NgProfiler::RegionTimer reg(addtimer);
-
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
 
     for (int i = 0; i < dnums1.Size(); i++)
       if (dnums1[i] != -1)
         for (int j = 0; j < dnums2.Size(); j++)
           if (dnums2[j] != -1 && dnums1[i] >= dnums2[j])
             AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]), elmat, i,j);
+    }
     // mat(dnums1[i], dnums2[j]) += elmat(i, j);
   }
 
@@ -2643,6 +2654,8 @@ namespace ngcomp
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*mats.Last());
   
+#pragma omp critical (addelmat)
+    {
     for (int i = 0; i < dnums1.Size(); i++)
       for (int j = 0; j < dnums2.Size(); j++)
 	if (dnums1[i] != -1 && dnums2[j] != -1 && 
@@ -2650,6 +2663,7 @@ namespace ngcomp
 	  AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
 				 elmat,
 				 i,j);
+    }
     //mat(dnums1[i], dnums2[j]) += elmat(i, j);
   }
 
@@ -2880,7 +2894,10 @@ namespace ngcomp
 		    LocalHeap & lh) 
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
-  
+
+  #pragma omp critical (addelmat)
+    {
+
     for (int i = 0; i < dnums1.Size(); i++)
       if (dnums1[i] != -1)
 	{
@@ -2892,6 +2909,7 @@ namespace ngcomp
 	    for (int l = 0; l < wi; l++)
 	      mij(k,l) += elmat(i*hi+k, i*wi+l);
 	}
+    }
   }
 
 
@@ -2906,9 +2924,12 @@ namespace ngcomp
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
 
+#pragma omp critical (addelmat)
+    {
     for (int i = 0; i < dnums1.Size(); i++)
       if (dnums1[i] != -1)
 	mat(dnums1[i], dnums1[i]) += elmat(i, i);
+    }
   }
 
 
@@ -2924,9 +2945,12 @@ namespace ngcomp
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix()); 
 
+#pragma omp critical (addelmat)
+    {
     for (int i = 0; i < dnums1.Size(); i++)
       if (dnums1[i] != -1)
 	mat(dnums1[i], dnums1[i]) += elmat(i, i);
+    }
   }
 
 

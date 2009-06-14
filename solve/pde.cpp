@@ -542,9 +542,9 @@ namespace ngsolve
         MyMPI_Send("ngs_solvepde" , dest);
 #endif
 
-    long int heapsize = 1000000;
+    size_t heapsize = 1000000;
     if (constants.Used ("heapsize"))
-      heapsize = (long int) (constants["heapsize"]);
+      heapsize = size_t(constants["heapsize"]);
     LocalHeap lh(heapsize);
 
     clock_t starttime, endtime;

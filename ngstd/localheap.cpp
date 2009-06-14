@@ -12,7 +12,7 @@ namespace ngstd
   using namespace ngstd;
 
 
-  LocalHeap :: LocalHeap (unsigned int asize)
+  LocalHeap :: LocalHeap (size_t asize)
   {
     totsize = asize;
     data = new char[asize];
@@ -26,7 +26,7 @@ namespace ngstd
   }
 
 
-  LocalHeapOverflow :: LocalHeapOverflow (int size) 
+  LocalHeapOverflow :: LocalHeapOverflow (size_t size) 
     : Exception("Local Heap overflow\n")
   {
     stringstream str;

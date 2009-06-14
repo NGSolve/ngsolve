@@ -126,7 +126,7 @@ namespace pardisofunc
     params[0] = 1; // no pardiso defaults
     params[2] = 8; // 1 processor (?)
 
-    params[1] = 2; // fill in 2..metis
+    params[1] = 0; // fill in 0..MDO, 2..metis
     params[3] = params[4] = params[5] = params[7] = params[8] = 
       params[11] = params[12] = params[18] = 0;
     params[6] = 16;
@@ -139,7 +139,7 @@ namespace pardisofunc
     params[20] = 1;  // 1x1 and 2x2 bunc and Kaufman pivoting
     
     params[26] = 1; // check input matrix
-    params[59] = 1; // in-core pardiso
+    params[59] = 0; // 0..incore, 1..depending on MKL_PARDISO_MAX_CORE_SIZE, 2..ooc
 
     for (i = 0; i < 128; i++) pt[i] = 0;
     int retvalue;
@@ -558,6 +558,8 @@ namespace pardisofunc
   void PardisoInverse<TM,TV_ROW,TV_COL> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
+    static int timer = NgProfiler::CreateTimer ("Pardiso Solve");
+    NgProfiler::RegionTimer reg (timer);
 
 
     FlatVector<TVX> fx = 
@@ -719,7 +721,7 @@ namespace pardisofunc
       }
 
     cout << "spd = " << int(spd) << ", sym = " << int(symmetric) 
-	 << "complex = " << int(mat_traits<TM>::IS_COMPLEX)
+	 << ", complex = " << int(mat_traits<TM>::IS_COMPLEX)
 	 << ", matrixtype = " << matrixtype << endl;
     *testout << "pardiso matrixtype = " << matrixtype << endl;
   }

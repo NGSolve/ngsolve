@@ -166,7 +166,7 @@ namespace ngfem
 	   p1d(0) = ip(0);
 	   p2d = p1 + tau * p1d;
 	   
-	   IntegrationPoint ip2d(&p2d(0), 0);
+	   IntegrationPoint ip2d(p2d, 0);
 	   
 	   testfe.CalcShape (ip, testshape);
 	   

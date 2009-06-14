@@ -15,9 +15,9 @@ namespace ngfem
   using namespace ngfem;
   
   /*
-  IntegrationPoint :: 
-  IntegrationPoint (const double api[3], double aw)
-  {
+    IntegrationPoint :: 
+    IntegrationPoint (const double api[3], double aw)
+    {
     glob_nr = -1;
     nr = -1;
     pi[0] = api[0];
@@ -25,11 +25,11 @@ namespace ngfem
     pi[2] = api[2];
     weight = aw;
     precomputed_geometry = 0;
-  }
+    }
   
-  IntegrationPoint :: 
-  IntegrationPoint (double p1, double p2, double p3, double aw)
-  {
+    IntegrationPoint :: 
+    IntegrationPoint (double p1, double p2, double p3, double aw)
+    {
     glob_nr = -1;
     nr = -1;
     pi[0] = p1;
@@ -37,11 +37,11 @@ namespace ngfem
     pi[2] = p3;
     weight = aw;
     precomputed_geometry = 0;
-  }
+    }
   
-  IntegrationPoint :: 
-  IntegrationPoint (const FlatVector<double> & ap, double aw)
-  {
+    IntegrationPoint :: 
+    IntegrationPoint (const FlatVector<double> & ap, double aw)
+    {
     glob_nr = -1;
     nr = -1;
     pi[0] = (ap.Size() >= 1) ? ap(0) : 0;
@@ -49,10 +49,10 @@ namespace ngfem
     pi[2] = (ap.Size() >= 3) ? ap(2) : 0;
     weight = aw;
     precomputed_geometry = 0;
-  }
+    }
 
-  IntegrationPoint & IntegrationPoint :: operator=(const IntegrationPoint & aip)
-  {
+    IntegrationPoint & IntegrationPoint :: operator=(const IntegrationPoint & aip)
+    {
     glob_nr = aip.IPNr();
     nr = aip.Nr();
     pi[0] = aip(0);
@@ -61,8 +61,8 @@ namespace ngfem
     weight = aip.Weight();
     precomputed_geometry = aip.precomputed_geometry;
     return *this;
-  }
-*/
+    }
+  */
   
   ostream & operator<< (ostream & ost, const IntegrationPoint & ip)
   {
@@ -113,23 +113,23 @@ namespace ngfem
             normalvec /= det;
             
             /*
-            cout << "normalvec 1 = " << normalvec << endl;
-            cout << "det 1 = " << det << endl;
+	      cout << "normalvec 1 = " << normalvec << endl;
+	      cout << "det 1 = " << det << endl;
 
-	    det = sqrt ( sqr (dxdxi(1,0) * dxdxi(2,1) -
-			      dxdxi(2,0) * dxdxi(1,1)) +
-			 sqr (dxdxi(0,0) * dxdxi(2,1) -
-			      dxdxi(2,0) * dxdxi(0,1)) +
-			 sqr (dxdxi(1,0) * dxdxi(0,1) -
-			      dxdxi(0,0) * dxdxi(1,1)) );
+	      det = sqrt ( sqr (dxdxi(1,0) * dxdxi(2,1) -
+	      dxdxi(2,0) * dxdxi(1,1)) +
+	      sqr (dxdxi(0,0) * dxdxi(2,1) -
+	      dxdxi(2,0) * dxdxi(0,1)) +
+	      sqr (dxdxi(1,0) * dxdxi(0,1) -
+	      dxdxi(0,0) * dxdxi(1,1)) );
 
-	    normalvec(0) = dxdxi(1,0) * dxdxi(2,1) - dxdxi(2,0) * dxdxi(1,1);
-	    normalvec(1) = dxdxi(2,0) * dxdxi(0,1) - dxdxi(0,0) * dxdxi(2,1);
-	    normalvec(2) = dxdxi(0,0) * dxdxi(1,1) - dxdxi(1,0) * dxdxi(0,1);
-	    normalvec /= L2Norm (normalvec);
+	      normalvec(0) = dxdxi(1,0) * dxdxi(2,1) - dxdxi(2,0) * dxdxi(1,1);
+	      normalvec(1) = dxdxi(2,0) * dxdxi(0,1) - dxdxi(0,0) * dxdxi(2,1);
+	      normalvec(2) = dxdxi(0,0) * dxdxi(1,1) - dxdxi(1,0) * dxdxi(0,1);
+	      normalvec /= L2Norm (normalvec);
 
-            cout << "normalvec 2 = " << normalvec << endl;
-            cout << "det 2 = " << det << endl;
+	      cout << "normalvec 2 = " << normalvec << endl;
+	      cout << "det 2 = " << det << endl;
             */
 	  }
 	else
@@ -150,47 +150,47 @@ namespace ngfem
 
 
   /*
-  template <int S, int R, typename SCAL>
-  SpecificIntegrationPoint<S,R,SCAL> :: 
-  SpecificIntegrationPoint (const IntegrationPoint & aip,
-			    const ElementTransformation & aeltrans,			    
-			    const Vec<R, SCAL> & ax,
-			    const Mat<R, S, SCAL> & adxdxi, 
-			    LocalHeap & lh)
+    template <int S, int R, typename SCAL>
+    SpecificIntegrationPoint<S,R,SCAL> :: 
+    SpecificIntegrationPoint (const IntegrationPoint & aip,
+    const ElementTransformation & aeltrans,			    
+    const Vec<R, SCAL> & ax,
+    const Mat<R, S, SCAL> & adxdxi, 
+    LocalHeap & lh)
     : DimSpecificIntegrationPoint<R,SCAL> (aip, aeltrans)
-  {
+    {
     this->point = ax;
     dxdxi = adxdxi;
       
     if (S == R)
-      {
-	det = Det (dxdxi);
-	dxidx = Inv (dxdxi);
-      }
+    {
+    det = Det (dxdxi);
+    dxidx = Inv (dxdxi);
+    }
     else
-      {
-	if (R == 3)
-	  {
-            normalvec = Cross (Vec<3> (dxdxi.Col(0)),
-                               Vec<3> (dxdxi.Col(1)));
-            det = L2Norm (normalvec);
-            normalvec /= det;
-	  }
-	else
-	  {
-	    det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
+    {
+    if (R == 3)
+    {
+    normalvec = Cross (Vec<3> (dxdxi.Col(0)),
+    Vec<3> (dxdxi.Col(1)));
+    det = L2Norm (normalvec);
+    normalvec /= det;
+    }
+    else
+    {
+    det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
 
-	    normalvec(0) = -dxdxi(1,0) / det;
-	    normalvec(1) = dxdxi(0,0) / det;
-	  }
+    normalvec(0) = -dxdxi(1,0) / det;
+    normalvec(1) = dxdxi(0,0) / det;
+    }
 	
-	Mat<S,S> ata, iata;
+    Mat<S,S> ata, iata;
 	
-	ata = Trans (dxdxi) * dxdxi;
-	iata = Inv (ata);
-	dxidx = iata * Trans (dxdxi);
-      }
-  }
+    ata = Trans (dxdxi) * dxdxi;
+    iata = Inv (ata);
+    dxidx = iata * Trans (dxdxi);
+    }
+    }
   */
   
 
@@ -1526,7 +1526,7 @@ namespace ngfem
 
 
   IntegrationRules :: IntegrationRules ()
-    {
+  {
     int i, p;
     IntegrationRule * rule;    
     IntegrationPoint * ip;
@@ -2245,6 +2245,13 @@ namespace ngfem
       }
     */      
 
+
+    // segfaults with openmp
+    for (int i = 0; i < 50; i++)
+      {
+	GenerateIntegrationRuleJacobi10 (i);
+	GenerateIntegrationRuleJacobi20 (i);
+      }
   }
 
 
@@ -2651,28 +2658,28 @@ namespace ngfem
 		prismrules[order] = prismrule;
 
                 /*
-		Array<double> xxz, wxz, xy, wy;
-                ComputeGaussRule (order/2+1, xxz, wxz);
-                ComputeGaussJacobiRule (order/2+1, xy, wy, 1, 0);
+		  Array<double> xxz, wxz, xy, wy;
+		  ComputeGaussRule (order/2+1, xxz, wxz);
+		  ComputeGaussJacobiRule (order/2+1, xy, wy, 1, 0);
 
-		IntegrationRule * prismrule = new IntegrationRule(xxz.Size()*xy.Size()*xxz.Size());
+		  IntegrationRule * prismrule = new IntegrationRule(xxz.Size()*xy.Size()*xxz.Size());
 	      
-		int ii = 0;
-		for (int i = 0; i < xxz.Size(); i++)
+		  int ii = 0;
+		  for (int i = 0; i < xxz.Size(); i++)
 		  for (int j = 0; j < xy.Size(); j++)
-		    for (int k = 0; k < xxz.Size(); k++)
-		      {
-			IntegrationPoint * ip = 
-			  new IntegrationPoint (xxz[i], 
-						xy[j]*(1-xxz[i]),
-						xxz[k],
-						wxz[i]*wy[j]*wxz[k]*(1-xxz[i]));
-			ip->SetNr (ii); ii++;
-			if (order <= 6)
-			  ip->SetGlobNr (prismpoints.Append (ip)-1);
-			prismrule->AddIntegrationPoint (ip);
-		      }
-		prismrules[order] = prismrule;
+		  for (int k = 0; k < xxz.Size(); k++)
+		  {
+		  IntegrationPoint * ip = 
+		  new IntegrationPoint (xxz[i], 
+		  xy[j]*(1-xxz[i]),
+		  xxz[k],
+		  wxz[i]*wy[j]*wxz[k]*(1-xxz[i]));
+		  ip->SetNr (ii); ii++;
+		  if (order <= 6)
+		  ip->SetGlobNr (prismpoints.Append (ip)-1);
+		  prismrule->AddIntegrationPoint (ip);
+		  }
+		  prismrules[order] = prismrule;
                 */
 		break;
 	      }
@@ -2736,40 +2743,40 @@ namespace ngfem
 
 #pragma omp critical(genintrule)
     {
-    if (ira -> Size() < order+1)
-      {
-	int oldsize = ira -> Size();
-	ira -> SetSize (order+1);
-	for (int i = oldsize; i < order+1; i++)
-	  (*ira)[i] = 0;
-      }
+      if (ira -> Size() < order+1)
+	{
+	  int oldsize = ira -> Size();
+	  ira -> SetSize (order+1);
+	  for (int i = oldsize; i < order+1; i++)
+	    (*ira)[i] = 0;
+	}
 
-    if ( (*ira)[order] == 0)
-      {
-        Array<double> xi, wi;
-        // ComputeGaussRule (order/2+1, xi, wi);
-        ComputeGaussJacobiRule (order/2+1, xi, wi, 1, 0);
-        IntegrationRule * rule = new IntegrationRule (xi.Size());
-        double xip[3] = { 0, 0, 0 };
-        for (int j = 0; j < xi.Size(); j++)
-          {
-            xip[0] = xi[j];
-            IntegrationPoint * ip = new IntegrationPoint (xip, wi[j]);
-            ip->SetNr (j);
-            if (order < 20)
-              ip->SetGlobNr (segmentpoints.Append (ip)-1);
-            rule->AddIntegrationPoint (ip);
-          }
-        jacobirules10[order] = rule;	      
-      }
+      if ( (*ira)[order] == 0)
+	{
+	  Array<double> xi, wi;
+	  // ComputeGaussRule (order/2+1, xi, wi);
+	  ComputeGaussJacobiRule (order/2+1, xi, wi, 1, 0);
+	  IntegrationRule * rule = new IntegrationRule (xi.Size());
+	  double xip[3] = { 0, 0, 0 };
+	  for (int j = 0; j < xi.Size(); j++)
+	    {
+	      xip[0] = xi[j];
+	      IntegrationPoint * ip = new IntegrationPoint (xip, wi[j]);
+	      ip->SetNr (j);
+	      if (order < 20)
+		ip->SetGlobNr (segmentpoints.Append (ip)-1);
+	      rule->AddIntegrationPoint (ip);
+	    }
+	  jacobirules10[order] = rule;	      
+	}
 
-    if ( (*ira)[order] == 0)
-      {
-	stringstream str;
-	str << "could not generate Jacobi-10 integration rule of order " << order 
-	    << " for element type " << endl;
-	throw Exception (str.str());
-      }
+      if ( (*ira)[order] == 0)
+	{
+	  stringstream str;
+	  str << "could not generate Jacobi-10 integration rule of order " << order 
+	      << " for element type " << endl;
+	  throw Exception (str.str());
+	}
     }
     return *(*ira)[order];
   }
@@ -2786,40 +2793,40 @@ namespace ngfem
 
 #pragma omp critical(genintrule)
     {
-    if (ira -> Size() < order+1)
-      {
-	int oldsize = ira -> Size();
-	ira -> SetSize (order+1);
-	for (int i = oldsize; i < order+1; i++)
-	  (*ira)[i] = 0;
-      }
+      if (ira -> Size() < order+1)
+	{
+	  int oldsize = ira -> Size();
+	  ira -> SetSize (order+1);
+	  for (int i = oldsize; i < order+1; i++)
+	    (*ira)[i] = 0;
+	}
 
-    if ( (*ira)[order] == 0)
-      {
-        Array<double> xi, wi;
-        // ComputeGaussRule (order/2+1, xi, wi);
-        ComputeGaussJacobiRule (order/2+1, xi, wi, 2, 0);
-        IntegrationRule * rule = new IntegrationRule (xi.Size());
-        double xip[3] = { 0, 0, 0 };
-        for (int j = 0; j < xi.Size(); j++)
-          {
-            xip[0] = xi[j];
-            IntegrationPoint * ip = new IntegrationPoint (xip, wi[j]);
-            ip->SetNr (j);
-            if (order < 20)
-              ip->SetGlobNr (segmentpoints.Append (ip)-1);
-            rule->AddIntegrationPoint (ip);
-          }
-        jacobirules20[order] = rule;	      
-      }
+      if ( (*ira)[order] == 0)
+	{
+	  Array<double> xi, wi;
+	  // ComputeGaussRule (order/2+1, xi, wi);
+	  ComputeGaussJacobiRule (order/2+1, xi, wi, 2, 0);
+	  IntegrationRule * rule = new IntegrationRule (xi.Size());
+	  double xip[3] = { 0, 0, 0 };
+	  for (int j = 0; j < xi.Size(); j++)
+	    {
+	      xip[0] = xi[j];
+	      IntegrationPoint * ip = new IntegrationPoint (xip, wi[j]);
+	      ip->SetNr (j);
+	      if (order < 20)
+		ip->SetGlobNr (segmentpoints.Append (ip)-1);
+	      rule->AddIntegrationPoint (ip);
+	    }
+	  jacobirules20[order] = rule;	      
+	}
 
-    if ( (*ira)[order] == 0)
-      {
-	stringstream str;
-	str << "could not generate Jacobi-20 integration rule of order " << order 
-	    << " for element type " << endl;
-	throw Exception (str.str());
-      }
+      if ( (*ira)[order] == 0)
+	{
+	  stringstream str;
+	  str << "could not generate Jacobi-20 integration rule of order " << order 
+	      << " for element type " << endl;
+	  throw Exception (str.str());
+	}
     }
     return *(*ira)[order];
   }
