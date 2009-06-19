@@ -763,6 +763,8 @@ menu .ngmenu.meshsize.hpref
 #####################################################
 
 menu .ngmenu.special
+.ngmenu.special add command -label "Prismatic Boundary Layer" \
+    -command { Ng_GenerateBoundaryLayer; redraw }
 .ngmenu.special add command -label "Insert virtual boundary layer" \
     -command { Ng_InsertVirtualBL; redraw }
 .ngmenu.special add command -label "Cut off and combine with other" \
