@@ -43,6 +43,7 @@ echo Embedding Manifest into the executable: Completed OK!!
 REM *** Copy the core TCL files into the Install Folder ***
 echo Installing core TCL files into %INSTALL_FOLDER%\bin ....
 xcopy  "%NETGEN_TCLSRC%\*.tcl" "%INSTALL_FOLDER%\bin\" /i /d /y
+xcopy  "%NETGEN_TCLSRC%\*.ocf" "%INSTALL_FOLDER%\bin\" /i /d /y
 if errorlevel 1 goto CoreTCLFailed
 echo Installing core TCL Files: Completed OK!!
 

@@ -1590,7 +1590,7 @@ namespace netgen
 	     return TCL_ERROR;
      }
 
-     OCCAutoColourBcProps(*mesh, *occgeometry);
+     OCCAutoColourBcProps(*mesh, *occgeometry, "netgen.ocf");
 
      return TCL_OK;
 #else
@@ -1958,6 +1958,30 @@ namespace netgen
     for (int i = 1; i <= geometry->singedges.Size(); i++)
       geometry->singedges.Get(i)->SetMeshSize (*mesh, globh);
     return TCL_OK;
+  }
+
+
+  // Philippose Rajan - 13 June 2009
+  // Added a new TCL function call for the generation 
+  // of prismatic boundary layers
+  int Ng_GenerateBoundaryLayer (ClientData clientData,
+           Tcl_Interp * interp,
+           int argc, tcl_const char *argv[])
+  {
+     if (!mesh.Ptr())
+     {
+        Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
+        return TCL_ERROR;
+     }
+
+     if(multithread.running)
+     {
+        Tcl_SetResult(interp, err_jobrunning, TCL_STATIC);
+        return TCL_ERROR;
+     }
+
+     GenerateBoundaryLayer (*mesh);
+     return TCL_OK;
   }
 
 
@@ -5061,6 +5085,10 @@ namespace netgen
 		       (Tcl_CmdDeleteProc*) NULL);
 
     Tcl_CreateCommand (interp, "Ng_SingularPointMS", Ng_SingularPointMS,
+		       (ClientData)NULL,
+		       (Tcl_CmdDeleteProc*) NULL);
+
+    Tcl_CreateCommand (interp, "Ng_GenerateBoundaryLayer", Ng_GenerateBoundaryLayer,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 

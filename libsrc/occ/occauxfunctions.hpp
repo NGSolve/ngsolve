@@ -39,7 +39,7 @@ namespace netgen
        - BC Prop 2: 2200 : Colour 2
        - BC Prop 3: 8500 : Colour 0 (no colour defined)
    */
-   extern void OCCAutoColourBcProps(Mesh & mesh, OCCGeometry & occgeometry);
+   extern void OCCAutoColourBcProps(Mesh & mesh, OCCGeometry & occgeometry, const char *occcolourfile);
 
 }
 #endif
