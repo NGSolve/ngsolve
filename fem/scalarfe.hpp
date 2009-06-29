@@ -338,92 +338,63 @@ namespace ngfem
 
   /* ********************************** Segm ********************************* */
 
-  ///
-  class FE_Segm0 : public T_ScalarFiniteElement<FE_Segm0,1,1>
-  {
-  public:
-    enum { SDIM = 1 };
-    enum { NDOF = 1 };
-    enum { ORDER = 0 };
-    enum { ELTYPE = ET_SEGM };
+  /*
+ ///
+ class FE_Segm0 : public T_ScalarFiniteElement<FE_Segm0,1,1>
+ {
+ public:
+ enum { SDIM = 1 };
+ enum { NDOF = 1 };
+ enum { ORDER = 0 };
+ enum { ELTYPE = ET_SEGM };
 
-    static IPDataArray ipdata;
+ static IPDataArray ipdata;
 
-    template <class TP, class T>
-    static void CalcShapeStat (TP & p, T & shape)
-    {
-      shape(0) = 1;
-    }
+ template <class TP, class T>
+ static void CalcShapeStat (TP & p, T & shape)
+ {
+ shape(0) = 1;
+ }
 
-    template <class TP, class T>
-    static void CalcDShapeStat (TP & p, T & dshape)
-    {
-      dshape(0,0) = 0;
-    }
-  }; 
-
-
-  class FE_SegmDummy : public T_ScalarFiniteElement<FE_SegmDummy,1,0>
-  {
-  public:
-    enum { SDIM = 1 };
-    enum { NDOF = 0 };
-    enum { ORDER = 0 };
-    enum { ELTYPE = ET_SEGM };
-
-    static IPDataArray ipdata;
-
-    template <class TP, class T>
-    static void CalcShapeStat (TP & p, T & shape)
-    {
-      // cout << "WARNING: FE_SegmDummy :: CalcShapeStat called!" << endl;
-      //he:  do nothing since ndofs=0;
-      //     (*testout) << "WARNING: FE_SegmDummy :: CalcShapeStat called!" << endl;
-      ;
-    }
-
-    template <class TP, class T>
-    static void CalcDShapeStat (TP & p, T & dshape)
-    {
-      // he: do nothing since ndofs=0
-      //     (*testout) << "WARNING: FE_SegmDummy :: CalcDShapeStat called!" << endl;
-      ;
-    }
-  }; 
+ template <class TP, class T>
+ static void CalcDShapeStat (TP & p, T & dshape)
+ {
+ dshape(0,0) = 0;
+ }
+ }; 
+  */
 
 
 
 
+  /*
+ ///
+ class FE_Segm1 : public T_ScalarFiniteElement<FE_Segm1,1,2>
+ {
+ public:
+ enum { SDIM = 1 };
+ enum { NDOF = 2 };
+ enum { ORDER = 1 };
+ enum { ELTYPE = ET_SEGM };
 
+ static IPDataArray ipdata;
 
+ template <class TP, class T>
+ static void CalcShapeStat (TP & p, T & shape)
+ {
+ double x = p(0);
 
-  ///
-  class FE_Segm1 : public T_ScalarFiniteElement<FE_Segm1,1,2>
-  {
-  public:
-    enum { SDIM = 1 };
-    enum { NDOF = 2 };
-    enum { ORDER = 1 };
-    enum { ELTYPE = ET_SEGM };
+ shape(0) = x;
+ shape(1) = 1-x;
+ }
 
-    static IPDataArray ipdata;
-
-    template <class TP, class T>
-    static void CalcShapeStat (TP & p, T & shape)
-    {
-      double x = p(0);
-
-      shape(0) = x;
-      shape(1) = 1-x;
-    }
-
-    template <class TP, class T>
-    static void CalcDShapeStat (TP & p, T & dshape)
-    {
-      dshape(0,0) = 1;
-      dshape(1,0) = -1;
-    }
-  }; 
+ template <class TP, class T>
+ static void CalcDShapeStat (TP & p, T & dshape)
+ {
+ dshape(0,0) = 1;
+ dshape(1,0) = -1;
+ }
+ }; 
 
 
 
@@ -431,128 +402,128 @@ namespace ngfem
 
 
 
-  ///
-  class FE_Segm1L2 : public T_ScalarFiniteElement<FE_Segm1L2,1,2>
-  {
-  public:
-    enum { SDIM = 1 };
-    enum { NDOF = 2 };
-    enum { ORDER = 1 };
-    enum { ELTYPE = ET_SEGM };
+ ///
+ class FE_Segm1L2 : public T_ScalarFiniteElement<FE_Segm1L2,1,2>
+ {
+ public:
+ enum { SDIM = 1 };
+ enum { NDOF = 2 };
+ enum { ORDER = 1 };
+ enum { ELTYPE = ET_SEGM };
 
-    static IPDataArray ipdata;
-
-
-    FE_Segm1L2 ();
-
-    template <class TP, class T>
-    static void CalcShapeStat (TP & p, T & shape)
-    {
-      double x = p(0);
-
-      shape(0) = 1;
-      shape(1) = 2*x-1;
-    }
-
-    template <class TP, class T>
-    static void CalcDShapeStat (TP & p, T & dshape)
-    {
-      dshape(0,0) = 0;
-      dshape(1,0) = 2;
-    }
-  }; 
+ static IPDataArray ipdata;
 
 
+ FE_Segm1L2 ();
 
-  ///
-  class FE_Segm2 : public T_ScalarFiniteElement<FE_Segm2,1,3>
-  {
+ template <class TP, class T>
+ static void CalcShapeStat (TP & p, T & shape)
+ {
+ double x = p(0);
 
-  public:
-    enum { SDIM = 1 };
-    enum { NDOF = 3 };
-    enum { ORDER = 2 };
-    enum { ELTYPE = ET_SEGM };
+ shape(0) = 1;
+ shape(1) = 2*x-1;
+ }
 
-    static IPDataArray ipdata;
+ template <class TP, class T>
+ static void CalcDShapeStat (TP & p, T & dshape)
+ {
+ dshape(0,0) = 0;
+ dshape(1,0) = 2;
+ }
+ }; 
 
-    ///
-    template <class TP, class T>
-    static void CalcShapeStat (TP & p, T & shape)
-    {
-      double x = p(0);
 
-      shape(0) = 2*x*x - x;
-      shape(1) = 2*x*x - 3*x + 1;  
-      shape(2) = 4 * x * (1-x);
-    }
+
+ ///
+ class FE_Segm2 : public T_ScalarFiniteElement<FE_Segm2,1,3>
+ {
+
+ public:
+ enum { SDIM = 1 };
+ enum { NDOF = 3 };
+ enum { ORDER = 2 };
+ enum { ELTYPE = ET_SEGM };
+
+ static IPDataArray ipdata;
+
+ ///
+ template <class TP, class T>
+ static void CalcShapeStat (TP & p, T & shape)
+ {
+ double x = p(0);
+
+ shape(0) = 2*x*x - x;
+ shape(1) = 2*x*x - 3*x + 1;  
+ shape(2) = 4 * x * (1-x);
+ }
 
   
-    ///
-    template <class TP, class T>
-    static void CalcDShapeStat (TP & p, T & dshape)
-    {
-      double x = p(0);
+ ///
+ template <class TP, class T>
+ static void CalcDShapeStat (TP & p, T & dshape)
+ {
+ double x = p(0);
 
-      dshape(0, 0) = 4*x - 1;
-      dshape(1, 0) = 4*x - 3;
-      dshape(2, 0) = 4 - 8 * x;
-    }
-
-
-  }; 
+ dshape(0, 0) = 4*x - 1;
+ dshape(1, 0) = 4*x - 3;
+ dshape(2, 0) = 4 - 8 * x;
+ }
 
 
-  ///
-  class FE_Segm2HB : public T_ScalarFiniteElement<FE_Segm2HB,1,3>
-  {
-  public:
-    enum { SDIM = 1 };
-    enum { NDOF = 3 };
-    enum { ORDER = 2 };
-    enum { ELTYPE = ET_SEGM };
-
-    static IPDataArray ipdata;
-
-    ///
-    template <class TP, class T>
-    static void CalcShapeStat (TP & p, T & shape)
-    {
-      double x = p(0);
-
-      shape(0) = x;
-      shape(1) = 1-x;
-      shape(2) = 4 * x * (1-x);
-    }
-  }; 
+ }; 
 
 
+ ///
+ class FE_Segm2HB : public T_ScalarFiniteElement<FE_Segm2HB,1,3>
+ {
+ public:
+ enum { SDIM = 1 };
+ enum { NDOF = 3 };
+ enum { ORDER = 2 };
+ enum { ELTYPE = ET_SEGM };
 
-  ///
-  class FE_Segm2L2 : public T_ScalarFiniteElement<FE_Segm2L2,1,3>
-  {
-  public:
-    enum { SDIM = 1 };
-    enum { NDOF = 3 };
-    enum { ORDER = 2 };
-    enum { ELTYPE = ET_SEGM };
+ static IPDataArray ipdata;
 
-    static IPDataArray ipdata;
+ ///
+ template <class TP, class T>
+ static void CalcShapeStat (TP & p, T & shape)
+ {
+ double x = p(0);
 
-    FE_Segm2L2();
+ shape(0) = x;
+ shape(1) = 1-x;
+ shape(2) = 4 * x * (1-x);
+ }
+ }; 
+
+
+
+ ///
+ class FE_Segm2L2 : public T_ScalarFiniteElement<FE_Segm2L2,1,3>
+ {
+ public:
+ enum { SDIM = 1 };
+ enum { NDOF = 3 };
+ enum { ORDER = 2 };
+ enum { ELTYPE = ET_SEGM };
+
+ static IPDataArray ipdata;
+
+ FE_Segm2L2();
   
-    ///
-    template <class TP, class T>
-    static void CalcShapeStat (TP & p, T & shape)
-    {
-      double x = p(0);
+ ///
+ template <class TP, class T>
+ static void CalcShapeStat (TP & p, T & shape)
+ {
+ double x = p(0);
 
-      shape(0) = 1;
-      shape(1) = 2*x-1;
-      shape(2) = (2*x-1)*(2*x-1)-1.0/3.0;
-    }
-  }; 
-
+ shape(0) = 1;
+ shape(1) = 2*x-1;
+ shape(2) = (2*x-1)*(2*x-1)-1.0/3.0;
+ }
+ }; 
+  */
 
   /// segment of fixed order
   template <int ORDER>
@@ -633,105 +604,105 @@ namespace ngfem
   /* ********************************* Trigs ******************************* */
 
   /*
-  ///
-  class FE_Trig0 : public ScalarFiniteElement<2>
-  {
-    ///
-    static IPDataArray ipdata;
-  public:
-    ///
-    FE_Trig0();
-    ///
-    virtual ~FE_Trig0();
+ ///
+ class FE_Trig0 : public ScalarFiniteElement<2>
+ {
+ ///
+ static IPDataArray ipdata;
+ public:
+ ///
+ FE_Trig0();
+ ///
+ virtual ~FE_Trig0();
 
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-    ///
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<2> dshape) const;
-    ///
-    virtual const IntegrationRule & NodalIntegrationRule() const;
-  };
+ ///
+ virtual void CalcShape (const IntegrationPoint & ip, 
+ FlatVector<> shape) const;
+ ///
+ virtual void CalcDShape (const IntegrationPoint & ip, 
+ FlatMatrixFixWidth<2> dshape) const;
+ ///
+ virtual const IntegrationRule & NodalIntegrationRule() const;
+ };
 
-  ///
-  class FE_Trig1 : public T_ScalarFiniteElement<FE_Trig1,2,3>
-  {
-  public:
-    enum { SDIM = 2 };
-    enum { NDOF = 3 };
-    enum { ORDER = 1 };
-    enum { ELTYPE = ET_TRIG };
+ ///
+ class FE_Trig1 : public T_ScalarFiniteElement<FE_Trig1,2,3>
+ {
+ public:
+ enum { SDIM = 2 };
+ enum { NDOF = 3 };
+ enum { ORDER = 1 };
+ enum { ELTYPE = ET_TRIG };
 
-    static IPDataArray ipdata;
+ static IPDataArray ipdata;
 
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[2], TFA & shape) const
-    {
-      shape[0] = x[0];
-      shape[1] = x[1];      
-      shape[2] = 1-x[0]-x[1];
-    }
-
-
-    ///
-    template <class TP, class T>
-    static void CalcShapeStat (TP & p, T & shape)
-    {
-      double x = p(0);
-      double y = p(1);
-
-      shape(0) = x;
-      shape(1) = y;
-      shape(2) = 1-x-y;
-    }
-
-    ///
-    template <class TP, class T>
-    static void CalcDShapeStat (TP & p, T & dshape)
-    {
-      dshape = 0;
-      dshape(0,0) = 1;
-      dshape(1,1) = 1;
-      dshape(2,0) = -1;
-      dshape(2,1) = -1;
-    }
-
-    ///
-    virtual const IntegrationRule & NodalIntegrationRule() const;
-  }; 
+ template<typename Tx, typename TFA>  
+ void T_CalcShape (Tx x[2], TFA & shape) const
+ {
+ shape[0] = x[0];
+ shape[1] = x[1];      
+ shape[2] = 1-x[0]-x[1];
+ }
 
 
-  ///
-  class FE_Trig2 : public T_ScalarFiniteElement<FE_Trig2,2,6>
-  {
-  public:
-    enum { SDIM = 2 };
-    enum { NDOF = 6 };
-    enum { ORDER = 2 };
-    enum { ELTYPE = ET_TRIG };
+ ///
+ template <class TP, class T>
+ static void CalcShapeStat (TP & p, T & shape)
+ {
+ double x = p(0);
+ double y = p(1);
 
-    static IPDataArray ipdata;
+ shape(0) = x;
+ shape(1) = y;
+ shape(2) = 1-x-y;
+ }
 
-    ///
-    template <class TP, class T>
-    static void CalcShapeStat (TP & p, T & shape)
-    {
-      double x = p(0);
-      double y = p(1);
-      double lam3 = 1-x-y;
+ ///
+ template <class TP, class T>
+ static void CalcDShapeStat (TP & p, T & dshape)
+ {
+ dshape = 0;
+ dshape(0,0) = 1;
+ dshape(1,1) = 1;
+ dshape(2,0) = -1;
+ dshape(2,1) = -1;
+ }
+
+ ///
+ virtual const IntegrationRule & NodalIntegrationRule() const;
+ }; 
+
+
+ ///
+ class FE_Trig2 : public T_ScalarFiniteElement<FE_Trig2,2,6>
+ {
+ public:
+ enum { SDIM = 2 };
+ enum { NDOF = 6 };
+ enum { ORDER = 2 };
+ enum { ELTYPE = ET_TRIG };
+
+ static IPDataArray ipdata;
+
+ ///
+ template <class TP, class T>
+ static void CalcShapeStat (TP & p, T & shape)
+ {
+ double x = p(0);
+ double y = p(1);
+ double lam3 = 1-x-y;
     
-      shape(0) = x * (2*x-1);
-      shape(1) = y * (2*y-1);
-      shape(2) = lam3 * (2*lam3-1);
-      shape(3) = 4 * y * lam3;
-      shape(4) = 4 * x * lam3;
-      shape(5) = 4 * x * y;
-    }
+ shape(0) = x * (2*x-1);
+ shape(1) = y * (2*y-1);
+ shape(2) = lam3 * (2*lam3-1);
+ shape(3) = 4 * y * lam3;
+ shape(4) = 4 * x * lam3;
+ shape(5) = 4 * x * y;
+ }
 
-    virtual const IntegrationRule & NodalIntegrationRule() const;
-  }; 
-*/
+ virtual const IntegrationRule & NodalIntegrationRule() const;
+ }; 
+  */
 
 
   ///
@@ -817,131 +788,131 @@ namespace ngfem
   /* ***************************** Tet *************************************** */
 
   /*
-  ///
-  class FE_Tet0 : public T_ScalarFiniteElement<FE_Tet0,3,1>
-  {
-  public:
-    enum { SDIM = 3 };
-    enum { NDOF = 1 };
-    enum { ORDER = 0 };
-    enum { ELTYPE = ET_TET };
+ ///
+ class FE_Tet0 : public T_ScalarFiniteElement<FE_Tet0,3,1>
+ {
+ public:
+ enum { SDIM = 3 };
+ enum { NDOF = 1 };
+ enum { ORDER = 0 };
+ enum { ELTYPE = ET_TET };
 
-    static IPDataArray ipdata;
+ static IPDataArray ipdata;
 
-    ///
-    template <class TP, class T>
-    static void CalcShapeStat (TP & p, T & shape)
-    {
-      shape(0) = 1;
-    }
+ ///
+ template <class TP, class T>
+ static void CalcShapeStat (TP & p, T & shape)
+ {
+ shape(0) = 1;
+ }
   
-    /// 
-    template <class TP, class T>
-    static void CalcDShapeStat (TP & p, T & dshape)
-    {
-      dshape = 0;
-    }
+ /// 
+ template <class TP, class T>
+ static void CalcDShapeStat (TP & p, T & dshape)
+ {
+ dshape = 0;
+ }
   
-    ///
-    virtual const IntegrationRule & NodalIntegrationRule() const;
-  };
+ ///
+ virtual const IntegrationRule & NodalIntegrationRule() const;
+ };
 
 
-  ///
-  class FE_Tet1 : public T_ScalarFiniteElement<FE_Tet1,3,4>
-  {
-  public:
-    enum { SDIM = 3 };
-    enum { NDOF = 4 };
-    enum { ORDER = 1 };
-    enum { ELTYPE = ET_TET };
+ ///
+ class FE_Tet1 : public T_ScalarFiniteElement<FE_Tet1,3,4>
+ {
+ public:
+ enum { SDIM = 3 };
+ enum { NDOF = 4 };
+ enum { ORDER = 1 };
+ enum { ELTYPE = ET_TET };
 
-    static IPDataArray ipdata;
+ static IPDataArray ipdata;
 
-    ///
-    template <class TP, class T>
-    static void CalcShapeStat (TP & p, T & shape)
-    {
-      double x = p(0);
-      double y = p(1);
-      double z = p(2);
+ ///
+ template <class TP, class T>
+ static void CalcShapeStat (TP & p, T & shape)
+ {
+ double x = p(0);
+ double y = p(1);
+ double z = p(2);
 
-      shape(0) = x;
-      shape(1) = y;
-      shape(2) = z;
-      shape(3) = 1-x-y-z;
-    }
+ shape(0) = x;
+ shape(1) = y;
+ shape(2) = z;
+ shape(3) = 1-x-y-z;
+ }
   
-    ///
-    template <class TP, class MAT>
-    static void CalcDShapeStat (TP & p, MAT & dshape)
-    {
-      dshape = 0;
-      dshape(0,0) = 1;
-      dshape(1,1) = 1;
-      dshape(2,2) = 1;
-      dshape(3,0) = -1;
-      dshape(3,1) = -1;
-      dshape(3,2) = -1;
-    }
+ ///
+ template <class TP, class MAT>
+ static void CalcDShapeStat (TP & p, MAT & dshape)
+ {
+ dshape = 0;
+ dshape(0,0) = 1;
+ dshape(1,1) = 1;
+ dshape(2,2) = 1;
+ dshape(3,0) = -1;
+ dshape(3,1) = -1;
+ dshape(3,2) = -1;
+ }
 
 
-    ///
-    virtual const IntegrationRule & NodalIntegrationRule() const;
-    virtual void GetDofs (Array<Dof> & dofs) const;
-  };
+ ///
+ virtual const IntegrationRule & NodalIntegrationRule() const;
+ virtual void GetDofs (Array<Dof> & dofs) const;
+ };
 
 
 
-  ///
-  class FE_Tet2 : public T_ScalarFiniteElement<FE_Tet2,3,10>
-  {
-  public:
-    enum { SDIM = 3 };
-    enum { NDOF = 10 };
-    enum { ORDER = 2 };
-    enum { ELTYPE = ET_TET };
+ ///
+ class FE_Tet2 : public T_ScalarFiniteElement<FE_Tet2,3,10>
+ {
+ public:
+ enum { SDIM = 3 };
+ enum { NDOF = 10 };
+ enum { ORDER = 2 };
+ enum { ELTYPE = ET_TET };
 
-    static IPDataArray ipdata;
+ static IPDataArray ipdata;
 
-    ///
-    template <class TP, class T>
-    static void CalcShapeStat (TP & p, T & shape)
-    {
-      double x = p(0);
-      double y = p(1);
-      double z = p(2);
-      double lam4 = 1 - x - y - z;
+ ///
+ template <class TP, class T>
+ static void CalcShapeStat (TP & p, T & shape)
+ {
+ double x = p(0);
+ double y = p(1);
+ double z = p(2);
+ double lam4 = 1 - x - y - z;
     
-      shape(0) = 2 * x * x - x;  
-      shape(1) = 2 * y * y - y;
-      shape(2) = 2 * z * z - z;
-      shape(3) = 2 * lam4 * lam4 - lam4;
+ shape(0) = 2 * x * x - x;  
+ shape(1) = 2 * y * y - y;
+ shape(2) = 2 * z * z - z;
+ shape(3) = 2 * lam4 * lam4 - lam4;
 
-      shape(4) = 4 * x * y;
-      shape(5) = 4 * x * z;
-      shape(6) = 4 * x * lam4;
-      shape(7) = 4 * y * z;
-      shape(8) = 4 * y * lam4;
-      shape(9) = 4 * z * lam4;
-    }
-  };
+ shape(4) = 4 * x * y;
+ shape(5) = 4 * x * z;
+ shape(6) = 4 * x * lam4;
+ shape(7) = 4 * y * z;
+ shape(8) = 4 * y * lam4;
+ shape(9) = 4 * z * lam4;
+ }
+ };
 
 
-  ///
-  class FE_Tet2HB : public ScalarFiniteElement<3>
-  {
-    ///
-    static IPDataArray ipdata;
-  public:
-    ///
-    FE_Tet2HB();
-    ///
-    virtual ~FE_Tet2HB();
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-  };
+ ///
+ class FE_Tet2HB : public ScalarFiniteElement<3>
+ {
+ ///
+ static IPDataArray ipdata;
+ public:
+ ///
+ FE_Tet2HB();
+ ///
+ virtual ~FE_Tet2HB();
+ ///
+ virtual void CalcShape (const IntegrationPoint & ip, 
+ FlatVector<> shape) const;
+ };
   */
 
 
@@ -969,57 +940,58 @@ namespace ngfem
 
   /* ***************************** Quads ********************************* */
 
+  /*
+ /// quad of order 0
+ class FE_Quad0 : public ScalarFiniteElement<2>
+ {
+ static IPDataArray ipdata;
+ public:
+ FE_Quad0();
+ virtual ~FE_Quad0();
 
-  /// quad of order 0
-  class FE_Quad0 : public ScalarFiniteElement<2>
-  {
-    static IPDataArray ipdata;
-  public:
-    FE_Quad0();
-    virtual ~FE_Quad0();
-
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
+ virtual void CalcShape (const IntegrationPoint & ip, 
+ FlatVector<> shape) const;
 			  
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<2> dshape) const;
+ virtual void CalcDShape (const IntegrationPoint & ip, 
+ FlatMatrixFixWidth<2> dshape) const;
 			   
-    virtual const IntegrationRule & NodalIntegrationRule() const;
-  };
+ virtual const IntegrationRule & NodalIntegrationRule() const;
+ };
 
 
-  /// quad of order 1
-  class FE_Quad1 : public ScalarFiniteElement<2>
-  {
-    static IPDataArray ipdata;
+ /// quad of order 1
+ class FE_Quad1 : public ScalarFiniteElement<2>
+ {
+ static IPDataArray ipdata;
 
-  public:
-    FE_Quad1();
-    virtual ~FE_Quad1();
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<2> dshape) const;
+ public:
+ FE_Quad1();
+ virtual ~FE_Quad1();
+ virtual void CalcShape (const IntegrationPoint & ip, 
+ FlatVector<> shape) const;
+ virtual void CalcDShape (const IntegrationPoint & ip, 
+ FlatMatrixFixWidth<2> dshape) const;
 			  
-    virtual const IntegrationRule & NodalIntegrationRule() const;
-  }; 
+ virtual const IntegrationRule & NodalIntegrationRule() const;
+ }; 
 
 
-  /// quad or order 2
-  class FE_Quad2 : public ScalarFiniteElement<2>
-  {
-    static IPDataArray ipdata;
+ /// quad or order 2
+ class FE_Quad2 : public ScalarFiniteElement<2>
+ {
+ static IPDataArray ipdata;
 
-  public:
-    FE_Quad2();
-    virtual ~FE_Quad2();
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<2> dshape) const;
+ public:
+ FE_Quad2();
+ virtual ~FE_Quad2();
+ virtual void CalcShape (const IntegrationPoint & ip, 
+ FlatVector<> shape) const;
+ virtual void CalcDShape (const IntegrationPoint & ip, 
+ FlatMatrixFixWidth<2> dshape) const;
 			  
-    virtual const IntegrationRule & NodalIntegrationRule() const;
-  }; 
+ virtual const IntegrationRule & NodalIntegrationRule() const;
+ }; 
+  */
 
   /// quad of order 3
   class FE_Quad3 : public ScalarFiniteElement<2>
@@ -1036,19 +1008,19 @@ namespace ngfem
   }; 
 
 
+  /*
+ /// second order x, first order y
+ class FE_Quad2aniso : public ScalarFiniteElement<2>
+ {
+ static IPDataArray ipdata;
 
-  /// second order x, first order y
-  class FE_Quad2aniso : public ScalarFiniteElement<2>
-  {
-    static IPDataArray ipdata;
-
-  public:
-    FE_Quad2aniso();
-    virtual ~FE_Quad2aniso();
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-  }; 
-
+ public:
+ FE_Quad2aniso();
+ virtual ~FE_Quad2aniso();
+ virtual void CalcShape (const IntegrationPoint & ip, 
+ FlatVector<> shape) const;
+ }; w
+  */
 
 
   /* **************************** Pyramid Elements *********************** */
@@ -1452,6 +1424,29 @@ namespace ngfem
   /* ************************** */
   /*    Dummy Elements          */
   /* ************************** */
+
+  class FE_SegmDummy : public T_ScalarFiniteElement<FE_SegmDummy,1,0>
+  {
+  public:
+    enum { SDIM = 1 };
+    enum { NDOF = 0 };
+    enum { ORDER = 0 };
+    enum { ELTYPE = ET_SEGM };
+
+    static IPDataArray ipdata;
+
+    template <class TP, class T>
+    static void CalcShapeStat (TP & p, T & shape)
+    {
+      ;
+    }
+
+    template <class TP, class T>
+    static void CalcDShapeStat (TP & p, T & dshape)
+    {
+      ;
+    }
+  }; 
 
   class FE_TrigDummy : public T_ScalarFiniteElement<FE_TrigDummy,2,0>
   {

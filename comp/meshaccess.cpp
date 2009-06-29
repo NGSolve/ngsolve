@@ -22,9 +22,20 @@ namespace ngcomp
 {
   using namespace ngcomp;
 
+  FE_Segm1 segm1;
+  FE_Segm2 segm2;
+
   FE_Trig0 trig0;
   FE_Trig1 trig1;
   FE_Trig2 trig2;
+
+  FE_Quad0 quad0;
+  FE_Quad1 quad1;
+  FE_Quad2aniso quad2aniso;
+
+  FE_Tet0 tet0;
+  FE_Tet1 tet1;
+  FE_Tet2 tet2;
 
 
   MeshAccess :: MeshAccess ()
@@ -63,21 +74,6 @@ namespace ngcomp
 
     nlevels = Ng_GetNLevels(); 
   }
-
-  /*
-  int MeshAccess :: GetNNodes (NODE_TYPE nt) const
-  {
-    // return Ng_GetNNodes (nt);
-
-    switch (nt)
-      {
-      case NT_VERTEX: return Ng_GetNV();
-      case NT_EDGE: return Ng_GetNEdges();
-      case NT_FACE: return Ng_GetNFaces();
-      case NT_CELL: return Ng_GetNE();
-      }
-  }
-  */
 
 
   void MeshAccess::GetTopologicElement (int elnr, TopologicElement & topel) const
@@ -790,7 +786,7 @@ GetElementTransformation (int elnr, ElementTransformation & eltrans,
     case NG_QUAD:
       eltrans.SetElement (&quad1, elnr, elind); break;
     case NG_QUAD6:
-      eltrans.SetElement (&quad2, elnr, elind); break;
+      eltrans.SetElement (&quad2aniso, elnr, elind); break;
 
     case NG_TET:
       eltrans.SetElement (&tet1, elnr, elind); break;
@@ -877,7 +873,7 @@ GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans,
 	case NG_QUAD:
 	  eltrans.SetElement (&quad1, elnr, elind); break;
 	case NG_QUAD6:
-	  eltrans.SetElement (&quad2, elnr, elind); break;
+	  eltrans.SetElement (&quad2aniso, elnr, elind); break;
 	  
 	default:
 	  cerr << "surface element transformation for element " 
