@@ -14,7 +14,7 @@ the global mesh.
 */
 
 
-#include <comp.hpp>   // provides FESpace, ...
+#include <comp.hpp>    // provides FESpace, ...
 
 #include "myElement.hpp"
 #include "myFESpace.hpp"

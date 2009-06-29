@@ -37,14 +37,12 @@ namespace ngfem
 	      FlatMatrixFixWidth<D> dshape) const
   
   {
-    /*
       static bool firsttime = true;
       if (firsttime)
       {
-	cout << "WARNING: CalcDShape not overloaded for class, using numerical differentiation " << typeid(this).name() << endl;
+	cout << "WARNING: CalcDShape not overloaded for class, using numerical differentiation " << typeid(this).name() << ", ndof = " << ndof << endl;
         firsttime = false;
         }
-    */
     
     int nd = GetNDof();
     int sdim = SpatialDim();
@@ -581,7 +579,7 @@ namespace ngfem
 
   // Array<ScalarFiniteElement::IPData> FE_Quad0::ipdata;
   ScalarFiniteElement<2>::IPDataArray FE_Quad0::ipdata;
-
+  /*
   FE_Quad0 :: FE_Quad0()
     : ScalarFiniteElement<2> (ET_QUAD, 1, 0)
   {
@@ -607,7 +605,7 @@ namespace ngfem
   {
     dshape = 0;
   }
-
+  */
   const IntegrationRule &
   FE_Quad0 :: NodalIntegrationRule() const
   {
@@ -619,7 +617,7 @@ namespace ngfem
 
   // Array<ScalarFiniteElement::IPData> FE_Quad1::ipdata;
   ScalarFiniteElement<2>::IPDataArray FE_Quad1::ipdata;
-
+  /*
   FE_Quad1 :: FE_Quad1()
     : ScalarFiniteElement<2> (ET_QUAD, 4, 1)
   {
@@ -664,7 +662,7 @@ namespace ngfem
     dshape(3,0) = -y;
     dshape(3,1) = (1-x);
   }
-
+  */
 
   const IntegrationRule &
   FE_Quad1:: NodalIntegrationRule() const
@@ -679,7 +677,7 @@ namespace ngfem
 
   // Array<ScalarFiniteElement::IPData> FE_Quad2::ipdata;
   ScalarFiniteElement<2>::IPDataArray FE_Quad2::ipdata;
-
+  /*
   FE_Quad2 :: FE_Quad2()
     : ScalarFiniteElement<2> (ET_QUAD, 9, 2)
   {
@@ -746,7 +744,7 @@ namespace ngfem
 	  ii++;
 	}
   }
-
+*/
 
   const IntegrationRule &
   FE_Quad2:: NodalIntegrationRule() const
@@ -855,6 +853,7 @@ namespace ngfem
   // Array<ScalarFiniteElement::IPData> FE_Quad2aniso::ipdata;
   ScalarFiniteElement<2>::IPDataArray FE_Quad2aniso::ipdata;
 
+  /*
   FE_Quad2aniso :: FE_Quad2aniso()
     : ScalarFiniteElement<2> (ET_QUAD, 6, 2)
   {
@@ -882,7 +881,7 @@ namespace ngfem
     shape(5) = 4*x*(1-x) * y;
   }
 
-
+  */
 
 
 
@@ -1469,21 +1468,20 @@ namespace ngfem
   // Array<T_ScalarFiniteElement<FE_Segm0,1,1>::IPData> FE_Segm0::ipdata;
   ScalarFiniteElement<1>::IPDataArray FE_Segm0::ipdata;
 
-  ScalarFiniteElement<1>::IPDataArray FE_SegmDummy::ipdata;
 
   // Array<T_ScalarFiniteElement<FE_Segm1,1,2>::IPData> FE_Segm1::ipdata;
   ScalarFiniteElement<1>::IPDataArray FE_Segm1::ipdata;
 
   //  Array<T_ScalarFiniteElement<FE_Segm1L2,1,2>::IPData> FE_Segm1L2::ipdata;
   ScalarFiniteElement<1>::IPDataArray FE_Segm1L2::ipdata;
-  FE_Segm1L2 ::  FE_Segm1L2() { ; }
+  // FE_Segm1L2 ::  FE_Segm1L2() { ; }
 
   // Array<T_ScalarFiniteElement<FE_Segm2,1,3>::IPData> FE_Segm2::ipdata;
   ScalarFiniteElement<1>::IPDataArray FE_Segm2::ipdata;
 
   // Array<T_ScalarFiniteElement<FE_Segm2L2,1,3>::IPData> FE_Segm2L2::ipdata;
   ScalarFiniteElement<1>::IPDataArray FE_Segm2L2::ipdata;
-  FE_Segm2L2 :: FE_Segm2L2() { ; }
+  // FE_Segm2L2 :: FE_Segm2L2() { ; }
 
   // Array<T_ScalarFiniteElement<FE_Segm2HB,1,3>::IPData> FE_Segm2HB::ipdata;
   ScalarFiniteElement<1>::IPDataArray FE_Segm2HB::ipdata;
@@ -1668,6 +1666,8 @@ namespace ngfem
 
 
   /* Dummy elements */
+  ScalarFiniteElement<1>::IPDataArray FE_SegmDummy::ipdata;
+
   ScalarFiniteElement<2>::IPDataArray FE_TrigDummy::ipdata;
   ScalarFiniteElement<2>::IPDataArray FE_QuadDummy::ipdata;
 
