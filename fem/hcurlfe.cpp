@@ -10,6 +10,8 @@
 */
 
 #include <fem.hpp>
+#include <h1lofe.hpp>
+
 namespace ngfem
 {
   using namespace ngfem;

@@ -16,6 +16,7 @@
 
 // ng-soft header files
 #include <fem.hpp>
+#include <../fem/h1lofe.hpp>
 
 
 using namespace std;
@@ -110,14 +111,14 @@ int main ()
   cout << "PointMatrix = " << endl << eltrans.PointMatrix() << endl;
 
  
-  FlatMatrix<double> elmat_lap;
+  FlatMatrix<double> elmat_lap (trig.GetNDof(), lh);
   laplace.AssembleElementMatrix (trig, eltrans, elmat_lap, lh);
 
   cout << "elmat laplace = " << endl << elmat_lap << endl;
 
 
 
-  FlatMatrix<double> elmat_mass;
+  FlatMatrix<double> elmat_mass(trig.GetNDof(), lh);
   mass.AssembleElementMatrix (trig, eltrans, elmat_mass, lh);
   
   cout << "elmat mass = " << endl << elmat_mass << endl;

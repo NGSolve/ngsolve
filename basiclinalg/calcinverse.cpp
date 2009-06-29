@@ -285,6 +285,7 @@ namespace ngbla
     */
 
 #ifdef LAPACK
+
     LapackInverse (c);
     LapackMultAB (c, b1, hb1);
     // hb1 = c * b1;

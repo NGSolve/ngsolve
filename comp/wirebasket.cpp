@@ -207,8 +207,8 @@ namespace ngcomp
 	    /*
 	    // only for shells
 	    if ( this->ma.GetElType(elnums[0]) == ET_PRISM 
-		 && this->ma.GetElType(elnums[1]) == ET_PRISM )
-	      if (vnums.Size() == 3) continue;
+            && this->ma.GetElType(elnums[1]) == ET_PRISM )
+            if (vnums.Size() == 3) continue;
 	    */
 
 	    for (int j = 0; j < vnums.Size(); j++)
@@ -259,8 +259,8 @@ namespace ngcomp
 	    /*
 	    // only for shells
 	    if ( this->ma.GetElType(elnums[0]) == ET_PRISM 
-		 && this->ma.GetElType(elnums[1]) == ET_PRISM )
-	      if (vnums.Size() == 3) continue;
+            && this->ma.GetElType(elnums[1]) == ET_PRISM )
+            if (vnums.Size() == 3) continue;
 	    */
 
 	    this->ma.GetFaceEdges (i, ednums);
@@ -376,7 +376,7 @@ namespace ngcomp
 
 
 	cout << "has graph table" << endl;
-	// 	(*testout) << "face graph table: " << endl << fa2dof << endl;
+        // (*testout) << "face graph table: " << endl << fa2dof << endl;
 	/*    
 	      for (int i = 0; i < ne; i++)
 	      {
@@ -435,13 +435,85 @@ namespace ngcomp
 	static int timer = NgProfiler::CreateTimer ("Wirebasket matrix processing");
 	NgProfiler::RegionTimer reg (timer);
 
-	// build Schur complements for faces
+	// build Schur complements for facets
 
+        
+
+        Array<int> usedi, unusedi, wirebasketdofs;
+        
+#ifdef WB_EXTRA
+        this->fespace.GetWireBasketDofNrs (elnr, wirebasketdofs);
+          
+	  
+          for (int j = 0; j < dnums1.Size(); j++)
+            if (dnums1[j] != -1)
+              {
+                bool has = wirebasketdofs.Contains(dnums1[j]);
+                
+                if (has)  usedi.Append (j);
+                if (!has) unusedi.Append (j);
+              }
+          
+          int su = usedi.Size();
+          int sunu = unusedi.Size();
+          
+          FlatMatrix<SCAL> a(su, su, lh);
+          FlatMatrix<SCAL> b(su, sunu, lh);
+          FlatMatrix<SCAL> c(su, sunu, lh);
+          FlatMatrix<SCAL> idc(su, sunu, lh);
+          FlatMatrix<SCAL> d(sunu, sunu, lh);
+          
+          for (int k = 0; k < su; k++)
+            for (int l = 0; l < su; l++)
+              a(k,l) = elmat(usedi[k], usedi[l]);
+          
+          for (int k = 0; k < su; k++)
+            for (int l = 0; l < sunu; l++)
+              {
+                b(k,l) = elmat(usedi[k], unusedi[l]);
+                c(k,l) = elmat(unusedi[l], usedi[k]);
+              }
+          
+          for (int k = 0; k < sunu; k++)
+            for (int l = 0; l < sunu; l++)
+              d(k,l) = elmat(unusedi[k], unusedi[l]);
+          
+#ifdef LAPACK
+            if ( sunu > 0 )
+              {
+                LapackInverse (d);
+                LapackMultABt (c, d, idc);
+                LapackMultAddABt (b, idc, -1, a);
+              }
+#else
+            FlatMatrix<SCAL> invd(sunu, sunu, lh);
+            CalcInverse (d, invd);
+            d = invd;
+            idc = c * Trans (invd);
+            a -= b * Trans (idc);
+#endif
+
+
+#pragma omp critical (addinexact_schur)
+            if (this->symmetric)
+              {
+                for (int k = 0; k < usedi.Size(); k++)
+                  for (int l = 0; l < usedi.Size(); l++)
+                    if (dnums1[usedi[k]] >= dnums1[usedi[l]])
+                      (*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
+              }
+            else
+              {
+                for (int k = 0; k < usedi.Size(); k++)
+                  for (int l = 0; l < usedi.Size(); l++)
+                    (*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
+              }
+#endif
 
 	if (this->ma.GetDimension() == 3)
 	  {
 
-	    Array<int> useddofs, usedi, unusedi;
+	    Array<int> useddofs;
 	    Array<int> vnums, ednums, fanums, dnums;	
 
 	    this->ma.GetElPNums (elnr, vnums);
@@ -459,7 +531,7 @@ namespace ngcomp
 		/*
 		// only for shells
 		if ( this->ma.GetElType(elnr) == ET_PRISM )
-		  if (vnums.Size() == 3) continue;
+                if (vnums.Size() == 3) continue;
 		*/
 
 		// this->ma.GetElPNums (elnr, vnums);   // all vertices
@@ -468,8 +540,6 @@ namespace ngcomp
 
 		this->ma.GetFaceEdges (fanums[i], ednums);
 	    
-		// int ii = 0;
-
 		for (int j = 0; j < vnums.Size(); j++)
 		  {
 		    this->fespace.GetVertexDofNrs (vnums[j], dnums);
@@ -486,29 +556,27 @@ namespace ngcomp
 		for (int k = 0; k < dnums.Size(); k++)
 		  if (dnums[k] != -1) useddofs.Append (dnums[k]);
 
-		// (*testout) << "useddofs = " << useddofs << endl;
-	    
+
 		for (int j = 0; j < dnums1.Size(); j++)
 		  if (dnums1[j] != -1)
 		    {
-		      bool has = 0;
-		      for (int k = 0; k < useddofs.Size(); k++)
-			if (useddofs[k] == dnums1[j])
-			  has = 1;
-		  
+		      bool has = useddofs.Contains (dnums1[j]);
+                      /*
+		      bool wb = wirebasketdofs.Contains (dnums1[j]);
+		      if (has && !wb) usedi.Append (j);
+                      if (!has && !wb) unusedi.Append (j);
+                      */
 		      if (has) usedi.Append (j);
-		      else unusedi.Append (j);
+                      if (!has) unusedi.Append (j);
 		    }
 
 		int su = usedi.Size();
 		int sunu = unusedi.Size();
 
-		// cout << "ndof = " << dnums1.Size() << " schurd = " << su << " nonschurd = " << sunu << endl;
 
 		FlatMatrix<SCAL> a(su, su, lh);
 		FlatMatrix<SCAL> b(su, sunu, lh);
 		FlatMatrix<SCAL> c(su, sunu, lh);
-		FlatMatrix<SCAL> idc(su, sunu, lh);
 		FlatMatrix<SCAL> d(sunu, sunu, lh);
 			    
 		for (int k = 0; k < su; k++)
@@ -526,28 +594,15 @@ namespace ngcomp
 		  for (int l = 0; l < sunu; l++)
 		    d(k,l) = elmat(unusedi[k], unusedi[l]);
 
-		/*
-		  (*testout) << "usedi = " << endl << usedi << endl;
-		  (*testout) << "unusedi = " << endl << unusedi << endl;
-		  (*testout) << "a = " << endl << a << endl;
-		  (*testout) << "b = " << endl << b << endl;
-		  (*testout) << "c = " << endl << c << endl;
-		  (*testout) << "d = " << endl << d << endl;
-		*/
-
-
 #ifdef LAPACK
 		if ( sunu > 0 )
 		  {
-		    // JS, June 2009
 		    LapackAInvBt (d, b);
 		    LapackMultAddABt (b, c, -1, a);
-		    // LapackInverse (d);
-		    // LapackMultABt (c, d, idc);
-		    // LapackMultAddABt (b, idc, -1, a);
 		  }
 #else
 		FlatMatrix<SCAL> invd(sunu, sunu, lh);
+		FlatMatrix<SCAL> idc(su, sunu, lh);
 		CalcInverse (d, invd);
 		d = invd;
 		idc = c * Trans (invd);
@@ -574,73 +629,74 @@ namespace ngcomp
 	  }
 	else
 	  {
-	    Array<int> useddofs, usedi, unusedi;
+	    Array<int> useddofs;
 	    Array<int> dnums, ednums;
 
 	    this->ma.GetElEdges (elnr, ednums);
+            Matrix<SCAL> helmat(elmat.Height());
+            helmat = elmat;
 
+                
+            for (int i = 0; i < ednums.Size(); i++)
+              {
+                useddofs.SetSize (0);
+                usedi.SetSize (0);
+                unusedi.SetSize (0);
 
-	    for (int i = 0; i < ednums.Size(); i++)
-	      {
-		useddofs.SetSize (0);
-		usedi.SetSize (0);
-		unusedi.SetSize (0);
-
-		int vi[2];
-		this->ma.GetEdgePNums (ednums[i], vi[0], vi[1]);
 		this->fespace.GetWireBasketDofNrs (elnr, useddofs);
+                    
+                int vi[2];
+                this->ma.GetEdgePNums (ednums[i], vi[0], vi[1]);
 
+                for (int j = 0; j < 2; j++)
+                  {
+                    this->fespace.GetVertexDofNrs (vi[j], dnums);
+                    for (int k = 0; k < dnums.Size(); k++)
+                      if (dnums[k] != -1) useddofs.Append (dnums[k]);
+                  }
+                    
+                this->fespace.GetEdgeDofNrs (ednums[i], dnums);
+                for (int k = 0; k < dnums.Size(); k++)
+                  if (dnums[k] != -1) useddofs.Append (dnums[k]);
+                    
+                for (int j = 0; j < dnums1.Size(); j++)
+                  if (dnums1[j] != -1)
+                    {
+                      bool has = useddofs.Contains(dnums1[j]);
+                      /*
+                      bool wb = wirebasketdofs.Contains(dnums1[j]);
+                      if (has && !wb) usedi.Append (j);
+                      if (!has && !wb) unusedi.Append (j);
+                      */
 
-		// int ii = 0;
-		for (int j = 0; j < 2; j++)
-		  {
-		    this->fespace.GetVertexDofNrs (vi[j], dnums);
-		    for (int k = 0; k < dnums.Size(); k++)
-		      if (dnums[k] != -1) useddofs.Append (dnums[k]);
-		  }
-		// 		*testout << "useddofs1 " << useddofs << endl;
-
-		this->fespace.GetEdgeDofNrs (ednums[i], dnums);
-		for (int k = 0; k < dnums.Size(); k++)
-		  if (dnums[k] != -1) useddofs.Append (dnums[k]);
-		// 		*testout << "useddofs2 " << useddofs << endl;
-	    
-		for (int j = 0; j < dnums1.Size(); j++)
-		  if (dnums1[j] != -1)
-		    {
-		      bool has = 0;
-		      for (int k = 0; k < useddofs.Size(); k++)
-			if (useddofs[k] == dnums1[j])
-			  has = 1;
-		  
-		      if (has) usedi.Append (j);
-		      else unusedi.Append (j);
-		    }
-
-		int su = usedi.Size();
-		int sunu = unusedi.Size();
-
-		FlatMatrix<SCAL> a(su, su, lh);
-		FlatMatrix<SCAL> b(su, sunu, lh);
-		FlatMatrix<SCAL> c(su, sunu, lh);
-		FlatMatrix<SCAL> idc(su, sunu, lh);
-		FlatMatrix<SCAL> d(sunu, sunu, lh);
-			    
-		for (int k = 0; k < su; k++)
-		  for (int l = 0; l < su; l++)
-		    a(k,l) = elmat(usedi[k], usedi[l]);
-			    
-		for (int k = 0; k < su; k++)
-		  for (int l = 0; l < sunu; l++)
-		    {
-		      b(k,l) = elmat(usedi[k], unusedi[l]);
-		      c(k,l) = elmat(unusedi[l], usedi[k]);
-		    }
-	    
-		for (int k = 0; k < sunu; k++)
-		  for (int l = 0; l < sunu; l++)
-		    d(k,l) = elmat(unusedi[k], unusedi[l]);
-
+                      if (has) usedi.Append (j);
+                      if (!has) unusedi.Append (j);
+                    }
+                    
+                int su = usedi.Size();
+                int sunu = unusedi.Size();
+                    
+                FlatMatrix<SCAL> a(su, su, lh);
+                FlatMatrix<SCAL> b(su, sunu, lh);
+                FlatMatrix<SCAL> c(su, sunu, lh);
+                FlatMatrix<SCAL> idc(su, sunu, lh);
+                FlatMatrix<SCAL> d(sunu, sunu, lh);
+                    
+                for (int k = 0; k < su; k++)
+                  for (int l = 0; l < su; l++)
+                    a(k,l) = helmat(usedi[k], usedi[l]);
+                    
+                for (int k = 0; k < su; k++)
+                  for (int l = 0; l < sunu; l++)
+                    {
+                      b(k,l) = helmat(usedi[k], unusedi[l]);
+                      c(k,l) = helmat(unusedi[l], usedi[k]);
+                    }
+                    
+                for (int k = 0; k < sunu; k++)
+                  for (int l = 0; l < sunu; l++)
+                    d(k,l) = helmat(unusedi[k], unusedi[l]);
+                    
 
 		/*
 		  (*testout) << "usedi = " << endl << usedi << endl;
@@ -651,7 +707,7 @@ namespace ngcomp
 		  (*testout) << "d = " << endl << d << endl;
 		*/
 
-
+                    
 #ifdef LAPACK
 		if ( sunu > 0 )
 		  {
@@ -667,14 +723,31 @@ namespace ngcomp
 		a -= b * Trans (idc);
 #endif
 
-#pragma omp critical (addinexact_schur)
-		{
-		  for (int k = 0; k < usedi.Size(); k++)
-		    for (int l = 0; l < usedi.Size(); l++)
-		      (*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
-		}
+                // *testout << "schur = " << endl << a << endl;
 
+                /*
+                  for (int k = 0; k < su; k++)
+		  for (int l = 0; l < su; l++)
+                  helmat(usedi[k], usedi[l]) -= 0.99999 * a(k,l);
+                */
+
+
+#pragma omp critical (addinexact_schur)
+                if (this->symmetric)
+                  {
+                    for (int k = 0; k < usedi.Size(); k++)
+                      for (int l = 0; l < usedi.Size(); l++)
+                        if (dnums1[usedi[k]] >= dnums1[usedi[l]])
+                          (*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
+                  }
+                else
+                  {
+                    for (int k = 0; k < usedi.Size(); k++)
+                      for (int l = 0; l < usedi.Size(); l++)
+                        (*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
+                  }
 	      }
+            // *testout << "helmat = " << endl << helmat << endl;
 	  }
       }
     else

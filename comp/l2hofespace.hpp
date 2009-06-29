@@ -73,6 +73,7 @@ namespace ngcomp
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
     /// 
  
+    virtual void GetWireBasketDofNrs(int elnr, Array<int> & dnums) const;
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;

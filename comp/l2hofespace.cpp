@@ -366,17 +366,31 @@ namespace ngcomp
     return &table;
   }
 
+  void L2HighOrderFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
+  {
+    dnums.SetSize(0);
+    dnums.Append (elnr);
+  }
+
   void  L2HighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
-  { dnums.SetSize(0); return; }
+  { 
+    dnums.SetSize(0);
+  }
   
   void  L2HighOrderFESpace ::GetEdgeDofNrs (int ednr, Array<int> & dnums) const
-  { dnums.SetSize(0); return; }
+  { 
+    dnums.SetSize(0); 
+  }
   
   void  L2HighOrderFESpace ::GetFaceDofNrs (int fanr, Array<int> & dnums) const
-  { dnums.SetSize(0); return; }
+  { 
+    dnums.SetSize(0); 
+  }
   
   void  L2HighOrderFESpace ::GetInnerDofNrs (int elnr, Array<int> & dnums) const
-  { GetDofNrs ( elnr, dnums ); return; }
+  { 
+    GetDofNrs ( elnr, dnums ); 
+  }
 
 
 

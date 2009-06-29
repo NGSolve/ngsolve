@@ -47,7 +47,7 @@ namespace ngfem
      Barton-Nackman base class for H1 - high order finite elements
   */
   template <ELEMENT_TYPE ET>
-  class T_H1HighOrderFiniteElement : public H1HighOrderFiniteElement<ET_trait<ET>::DIM>
+  class T_H1HighOrderFiniteElement : public H1HighOrderFiniteElement<ET_trait<ET>::DIM> 
   {
   protected:
     enum { DIM = ET_trait<ET>::DIM };
@@ -75,7 +75,6 @@ namespace ngfem
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
 	vnums[i] = i;
-      dimspace = DIM;
       eltype = ET;
     }
 
@@ -174,7 +173,7 @@ namespace ngfem
   class H1HighOrderFE<ET_PRISM> : public T_H1HighOrderFiniteElement<ET_PRISM>
   {
     // typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
-    //typedef TrigShapesInnerJacobi T_TRIGFACESHAPES;
+    // typedef TrigShapesInnerJacobi T_TRIGFACESHAPES;
     // typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 
   public:

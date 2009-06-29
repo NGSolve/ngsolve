@@ -825,8 +825,8 @@ void BlockSmoother :: Update (bool force_update)
   if (jac.Size() == level && !force_update)
     return;
 
-
   Table<int> * it = biform.GetFESpace().CreateSmoothingBlocks(flags);
+
 
   while (jac.Size() < level)
     jac.Append(NULL);

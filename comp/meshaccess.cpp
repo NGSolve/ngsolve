@@ -12,13 +12,20 @@
 #include <comp.hpp>
 #include <parallelngs.hpp>
 
+
 #include <nginterface_v2.hpp>
 
+#include <../fem/h1lofe.hpp>
 
 namespace ngcomp
 
 {
   using namespace ngcomp;
+
+  FE_Trig0 trig0;
+  FE_Trig1 trig1;
+  FE_Trig2 trig2;
+
 
   MeshAccess :: MeshAccess ()
   {

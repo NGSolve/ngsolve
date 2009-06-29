@@ -115,10 +115,6 @@ namespace ngfem
 
 
 
-
-
-
-
   /**
      A compound of several elements. 
      Useful for mixed finite elements such as Stokes problem: 
