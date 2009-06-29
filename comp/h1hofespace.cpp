@@ -928,17 +928,26 @@ namespace ngcomp
 
     ma.GetElVertices (elnr, vnums);
     ma.GetElEdges (elnr, ednums);
-    
+
     for (int i = 0; i < vnums.Size(); i++)
       dnums.Append (vnums[i]);
 
-    for (int i = 0; i < ednums.Size(); i++)
-      for (int j = first_edge_dof[ednums[i]]; j < first_edge_dof[ednums[i]+1]; j++)
-	dnums.Append(j);
-      /*
-      if (order_edge[ednums[i]] > 1)
-        dnums.Append (first_edge_dof[ednums[i]]);
-      */
+
+
+    if (ma.GetDimension() == 2)
+      {
+        for (int i = 0; i < ednums.Size(); i++)
+          if (order_edge[ednums[i]] > 1)
+            dnums.Append (first_edge_dof[ednums[i]]);
+      }
+    if (ma.GetDimension() == 3)
+      {
+        ArrayMem<int,12> fanums;
+        ma.GetElFaces (elnr, fanums);
+        for (int i = 0; i < fanums.Size(); i++)
+          if (order_face[fanums[i]][0] > 1)
+            dnums.Append (first_face_dof[fanums[i]]);
+      }
   }
 
 

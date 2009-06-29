@@ -1802,9 +1802,6 @@ namespace ngcomp
     if (!MixedSpaces())
 
       {
-	Array<int> dnums;
-	ElementTransformation eltrans;
-      
 	int ne = ma.GetNE();
       
 
@@ -1827,25 +1824,37 @@ namespace ngcomp
 	  {
 	    try
 	      {
-		LocalHeap lh (lh_size);
 
 		int cnt = 0;
 
 		if (hasinner)
-		  for (int i = 0; i < ne; i++)
-		    {
-		      lh.CleanUp();
-		      
- 		      if ( ma.IsGhostEl( i ) ) {continue;}
+#pragma omp parallel
+                  {
+                    LocalHeap lh(lh_size);
+                    Array<int> dnums;
+                    ElementTransformation eltrans;
+                    
+#pragma omp for
+                    for (int i = 0; i < ne; i++)
+                      {
+                        lh.CleanUp();
+                        
+                        if ( ma.IsGhostEl( i ) ) {continue;}
+                        
+                        if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
+                        
+                        const FiniteElement & fel = fespace.GetFE (i, lh);
+                        ma.GetElementTransformation (i, eltrans, lh);
+                        fespace.GetDofNrs (i, dnums);
+                        
+                        ApplyElementMatrix(x,y,val,dnums,eltrans,i,0,cnt,lh,&fel);
+                      }
+                  }
 
-		      if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
-		      
-		      const FiniteElement & fel = fespace.GetFE (i, lh);
-		      ma.GetElementTransformation (i, eltrans, lh);
-		      fespace.GetDofNrs (i, dnums);
-		      
-		      ApplyElementMatrix(x,y,val,dnums,eltrans,i,0,cnt,lh,&fel);
-		    }
+		LocalHeap lh (lh_size);
+                Array<int> dnums;
+                ElementTransformation eltrans;
+      
 			
 		int nse = ma.GetNSE();
 		if (hasbound)
@@ -2441,7 +2450,9 @@ namespace ngcomp
 	    
 	    
 	    if (this->precompute)
-	      bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
+	      // bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
+              bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 
+                                      this->precomputed_data[elnum*this->NumIntegrators()+j], lh);
 	    else
 	      bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 0, lh);
 	    
@@ -2456,7 +2467,10 @@ namespace ngcomp
 	    BilinearForm::GetFESpace().TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
 	
 	    elvecy *= val;
-	    y.AddIndirect (dnums, elvecy);
+#pragma omp critical(addapply)
+            {
+              y.AddIndirect (dnums, elvecy);
+            }
 	  }
       }
     else if (type == 2)
@@ -2752,7 +2766,9 @@ namespace ngcomp
 	    
 	    
 	    if (this->precompute)
-	      bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
+	      // bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
+              bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 
+                                      this->precomputed_data[elnum*this->NumIntegrators()+j], lh);
 	    else
 	      bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 0, lh);
 	    
@@ -2767,7 +2783,10 @@ namespace ngcomp
 	    BilinearForm::GetFESpace().TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
 	
 	    elvecy *= val;
-	    y.AddIndirect (dnums, elvecy);
+#pragma omp critical(addapply)
+            {
+              y.AddIndirect (dnums, elvecy);
+            }
 	  }
       }
     else if (type == 2)

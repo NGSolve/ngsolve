@@ -47,13 +47,13 @@ namespace ngfem
   public:
     virtual string ClassName(void) const {return "ScalarFiniteElement";}
     ///
-    ScalarFiniteElement () { p_ipdata = 0; }
+    ScalarFiniteElement () { dimspace = D; p_ipdata = 0; }
     ///
     ScalarFiniteElement (ELEMENT_TYPE aeltype, 
 			 int andof = 0, int aorder = 0)
       : FiniteElement (D, aeltype, andof, aorder) { p_ipdata = 0; /* block = 0; */ }
     ///
-    virtual ~ScalarFiniteElement ();
+    virtual ~ScalarFiniteElement () { ; }
     ///
     virtual const IntegrationRule & NodalIntegrationRule() const;
 
@@ -156,6 +156,16 @@ namespace ngfem
     void CalcIPData (ELEMENT_TYPE et,
 		     IPDataArray & ipdata);
   };
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -311,6 +321,7 @@ namespace ngfem
       }
     */
   };
+
 
 
 
@@ -621,6 +632,7 @@ namespace ngfem
 
   /* ********************************* Trigs ******************************* */
 
+  /*
   ///
   class FE_Trig0 : public ScalarFiniteElement<2>
   {
@@ -642,8 +654,6 @@ namespace ngfem
     virtual const IntegrationRule & NodalIntegrationRule() const;
   };
 
-
-
   ///
   class FE_Trig1 : public T_ScalarFiniteElement<FE_Trig1,2,3>
   {
@@ -654,6 +664,15 @@ namespace ngfem
     enum { ELTYPE = ET_TRIG };
 
     static IPDataArray ipdata;
+
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx x[2], TFA & shape) const
+    {
+      shape[0] = x[0];
+      shape[1] = x[1];      
+      shape[2] = 1-x[0]-x[1];
+    }
+
 
     ///
     template <class TP, class T>
@@ -677,11 +696,10 @@ namespace ngfem
       dshape(2,0) = -1;
       dshape(2,1) = -1;
     }
-			   
+
     ///
     virtual const IntegrationRule & NodalIntegrationRule() const;
   }; 
-
 
 
   ///
@@ -713,6 +731,7 @@ namespace ngfem
 
     virtual const IntegrationRule & NodalIntegrationRule() const;
   }; 
+*/
 
 
   ///
@@ -797,7 +816,7 @@ namespace ngfem
 
   /* ***************************** Tet *************************************** */
 
-
+  /*
   ///
   class FE_Tet0 : public T_ScalarFiniteElement<FE_Tet0,3,1>
   {
@@ -826,7 +845,6 @@ namespace ngfem
     ///
     virtual const IntegrationRule & NodalIntegrationRule() const;
   };
-
 
 
   ///
@@ -910,7 +928,6 @@ namespace ngfem
   };
 
 
-
   ///
   class FE_Tet2HB : public ScalarFiniteElement<3>
   {
@@ -925,6 +942,7 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const;
   };
+  */
 
 
 

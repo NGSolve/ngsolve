@@ -15,6 +15,9 @@
 
 #include <parallelngs.hpp>
 
+#include <../fem/h1lofe.hpp>
+
+
 #ifdef PARALLEL
 extern MPI_Group MPI_HIGHORDER_WORLD;
 extern MPI_Comm MPI_HIGHORDER_COMM;
@@ -344,7 +347,9 @@ namespace ngcomp
 
   void FESpace :: GetWireBasketDofNrs (int enr, Array<int> & dnums) const
   {
-    throw Exception ("FESpace::GetWireBasketDofNrs called");
+    // throw Exception ("FESpace::GetWireBasketDofNrs called");
+    throw Exception (string("FESpace::GetWireBasketDofNrs called, type = ")
+                     +typeid(this).name());
   }
 
   void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const

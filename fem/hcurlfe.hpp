@@ -708,7 +708,7 @@ namespace ngfem
 
     FE_NedelecPrism1 prism1;
     FE_NedelecTrig3 trig3;
-    FE_Trig2 h1trig2;
+    static class FE_Trig2 h1trig2;
     FE_Trig3Pot h1trig3;
     FE_TSegmL2<ZORDER> segm;
   public:
@@ -772,7 +772,7 @@ namespace ngfem
 
     FE_NedelecPrism1 prism1;
     FE_NedelecTrig3 trig3;
-    FE_Trig2 h1trig2;
+    static class FE_Trig2 h1trig2;
     FE_Trig3Pot h1trig3;
     FE_TSegmL2<ZORDER> segm;
   public:

@@ -266,7 +266,7 @@ public:
   {
     eldx.AssignMemory (DIM_DMAT, lh);
     // FlatVec<DIM_DMAT> heldx(&eldx[0]);
-    dmatop.Apply(static_cast<const FEL&> (bfel),
+    dmatop.Apply(dynamic_cast<const FEL&> (bfel),
 		 static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bsip),
 		 elx, eldx ,lh);
   }
@@ -278,7 +278,7 @@ public:
 			  LocalHeap & lh) const
   {
     eldx.AssignMemory (DIM_DMAT, lh);
-    dmatop.Apply(static_cast<const FEL&> (bfel),
+    dmatop.Apply(dynamic_cast<const FEL&> (bfel),
 		 static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bsip),
 		 elx,eldx,lh);
   }
@@ -296,7 +296,7 @@ public:
 
     try
       {
-	const FEL & fel = static_cast<const FEL&> (bfel);
+	const FEL & fel = dynamic_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
         
 	// elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
@@ -372,7 +372,7 @@ public:
 	if(!dynamic_cast<const FEL*>(&bfel))
 	  throw Exception("Integrator doesn't fit to element (space) type ");
 
-	const FEL & fel = static_cast<const FEL&> (bfel);
+	const FEL & fel = dynamic_cast<const FEL&> (bfel);
         */
         const FEL & fel = *dynamic_cast<const FEL*> (&bfel);
         if (! &fel)
@@ -591,7 +591,7 @@ public:
       {
 	// cout << "start assemble, free = " << locheap.Available() << endl;
 
-	const FEL & fel = static_cast<const FEL&> (bfel);
+	const FEL & fel = dynamic_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 
 	const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
@@ -693,7 +693,7 @@ public:
   {
     try
       {
-	const FEL & fel = static_cast<const FEL&> (bfel);
+	const FEL & fel = dynamic_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 
 	diag.AssignMemory (ndof*DIM, locheap);
@@ -758,7 +758,7 @@ public:
     static int maintimer = NgProfiler::CreateTimer ("BDBIntegrator::ApplyElementMatrix");
     NgProfiler::RegionTimer reg(maintimer);
 
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    const FEL & fel = dynamic_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
     
     ely = 0;
@@ -862,7 +862,7 @@ public:
 	NgProfiler::StartTimer (maintimer);
 
 
-	const FEL & fel = static_cast<const FEL&> (bfel);
+	const FEL & fel = dynamic_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 
 	void * heapp = lh.GetPointer();
@@ -1010,7 +1010,7 @@ public:
 		      void * precomputed,
 		      LocalHeap & locheap) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    const FEL & fel = dynamic_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
     
     ely = 0;
@@ -1047,8 +1047,8 @@ public:
 			   FlatVector<double> & ely,
 			   LocalHeap & lh) const
   {
-    const FEL & fel1 = static_cast<const FEL&> (bfel1);
-    const FEL & fel2 = static_cast<const FEL&> (bfel2);
+    const FEL & fel1 = dynamic_cast<const FEL&> (bfel1);
+    const FEL & fel2 = dynamic_cast<const FEL&> (bfel2);
     // int ndof1 = fel1.GetNDof ();
     int ndof2 = fel2.GetNDof ();
     
@@ -1143,7 +1143,7 @@ public:
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    const FEL & fel = dynamic_cast<const FEL&> (bfel);
     
     flux.AssignMemory (DIM_DMAT, lh);
     if (applyd)
@@ -1168,7 +1168,7 @@ public:
 		 bool applyd,
 		 LocalHeap & lh) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    const FEL & fel = dynamic_cast<const FEL&> (bfel);
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = 
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
 
@@ -1214,7 +1214,7 @@ public:
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    const FEL & fel = dynamic_cast<const FEL&> (bfel);
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
 
@@ -1243,7 +1243,7 @@ public:
 	    LocalHeap & lh) const
   {
     //cout << "cfb1" << endl;
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    const FEL & fel = dynamic_cast<const FEL&> (bfel);
     //cout << "cfb2" << endl;
     flux.AssignMemory (DIM_DMAT, lh);
     //cout << "cfb3" << endl;
@@ -1272,7 +1272,7 @@ public:
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    const FEL & fel = dynamic_cast<const FEL&> (bfel);
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
     flux.AssignMemory (DIM_DMAT, lh);
@@ -1298,7 +1298,7 @@ public:
 	       FlatVector<double> & ely,
 	       LocalHeap & lh) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    const FEL & fel = dynamic_cast<const FEL&> (bfel);
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
     DIFFOP::ApplyTrans (fel, sip, elx, ely, lh);
@@ -1313,7 +1313,7 @@ public:
 	       FlatVector<Complex> & ely,
 	       LocalHeap & lh) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    const FEL & fel = dynamic_cast<const FEL&> (bfel);
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
     DIFFOP::ApplyTrans (fel, sip, elx, ely, lh);
@@ -1400,7 +1400,7 @@ public:
 
     try
       {
-	const FEL & fel = static_cast<const FEL&> (bfel);
+	const FEL & fel = dynamic_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 
 	elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
@@ -1467,7 +1467,7 @@ public:
   {
     try
       {
-	const FEL & fel = static_cast<const FEL&> (bfel);
+	const FEL & fel = dynamic_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 
 	elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
@@ -1534,7 +1534,7 @@ public:
 				FlatVector<double> & ely,
 				LocalHeap & locheap) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    const FEL & fel = dynamic_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
     
     ely = 0;
@@ -1580,7 +1580,7 @@ public:
 				FlatVector<Complex> & ely,
 				LocalHeap & locheap) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    const FEL & fel = dynamic_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
     
     ely = 0;
@@ -1621,7 +1621,7 @@ public:
 			 const FlatVector<double> & elx, 
 			 LocalHeap & locheap) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    const FEL & fel = dynamic_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
     
     Vec<DIM_DMAT,double> hvx;
@@ -1722,7 +1722,7 @@ public:
 	if(!dynamic_cast<const FEL*>(&bfel))
 	  throw Exception("Integrator doesn't fit to element (space) type ");
 
-	const FEL & fel = static_cast<const FEL&> (bfel);
+	const FEL & fel = dynamic_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 	
 	// elvec.AssignMemory (ndof * DIM, locheap);
@@ -1781,7 +1781,7 @@ public:
     
     try
       {
-	const FEL & fel = static_cast<const FEL&> (bfel);
+	const FEL & fel = dynamic_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 	
 	// elvec.AssignMemory (ndof * DIM, locheap);
@@ -1904,7 +1904,7 @@ public:
 				    LocalHeap & locheap,
 				    const bool curveint = false) const
   {
-    const FEL & fel = static_cast<const FEL&> (gfel);
+    const FEL & fel = dynamic_cast<const FEL&> (gfel);
     int ndof = fel.GetNDof();
     
     elvec.AssignMemory (ndof * DIM, locheap);

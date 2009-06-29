@@ -6,6 +6,9 @@
 
  
 #include <fem.hpp>
+#include <h1lofe.hpp>
+
+
 namespace ngfem
 {
   using namespace ngfem;
@@ -203,7 +206,7 @@ namespace ngfem
     static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (pt, shape); 
   }
 
-
+  /*
   template <int DIM>
   class DShapeElement
   {
@@ -231,7 +234,7 @@ namespace ngfem
     const DShapeAssign Addr (int i) const
     { return DShapeAssign (dshape+i*DIM); } 
   };
-
+  */
 
 
   template <ELEMENT_TYPE ET>

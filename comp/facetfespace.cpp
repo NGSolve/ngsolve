@@ -513,14 +513,13 @@ namespace ngcomp
   void FacetFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
   {
     ArrayMem<int,12> facets;
-
-    dnums.SetSize(0);
-
     ma.GetElFacets (elnr, facets);
 
+    dnums.SetSize(0);
     for (int i = 0; i < facets.Size(); i++)
       {
-	dnums.Append (facets[i]);
+        dnums.Append (facets[i]);
+        dnums.Append (first_facet_dof[facets[i]]);
       }
   }
 
@@ -609,7 +608,7 @@ namespace ngcomp
           table[i][ii] = j;
       }
       
-    cout << "smoothingblocks = " << endl << table << endl;
+    // cout << "smoothingblocks = " << endl << table << endl;
     return &table;
 
   }
@@ -622,6 +621,8 @@ namespace ngcomp
 
     clusters.SetSize(ndof);
     clusters = 0;
+    for (int i = 0; i < nfa; i++)
+      clusters[i] = 1;
     
     return &clusters;
     
@@ -630,7 +631,7 @@ namespace ngcomp
     for (int i=0; i<nfa-ncfa; i++)
       clusters[i]  = 1;
   
-    cout << "direct solver cluster = " << clusters << endl;
+    // cout << "direct solver cluster = " << clusters << endl;
     return & clusters;
   }
 

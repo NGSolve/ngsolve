@@ -13,6 +13,7 @@
 
 
 #include <fem.hpp>
+#include <h1lofe.hpp>
 
 namespace ngfem
 {
@@ -21,13 +22,14 @@ namespace ngfem
 
 
 
-
+  /*
   template <int D>
   ScalarFiniteElement<D> :: ~ScalarFiniteElement ()
   {
     // delete block;
     ;
   }
+  */
 
   template <int D>
   void ScalarFiniteElement<D> ::
@@ -302,7 +304,7 @@ namespace ngfem
 
 
   ScalarFiniteElement<3>::IPDataArray FE_Tet2HB::ipdata;
-
+  /*
   FE_Tet2HB :: FE_Tet2HB()
     : ScalarFiniteElement<3> (ET_TET, 10, 2)
 
@@ -339,12 +341,13 @@ namespace ngfem
     shape(8) = 4 * y * lam4;
     shape(9) = 4 * z * lam4;
   }
-
+  */
 
 
 
   ScalarFiniteElement<2>::IPDataArray FE_Trig0::ipdata;
 
+  /*
   FE_Trig0 :: FE_Trig0()
     : ScalarFiniteElement<2> (ET_TRIG, 1, 0)
   {
@@ -370,6 +373,7 @@ namespace ngfem
   {
     dshape = 0;
   }
+  */
 
   const IntegrationRule &
   FE_Trig0 :: NodalIntegrationRule() const
@@ -388,7 +392,6 @@ namespace ngfem
   {
     return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 1);
   } 
-
 
 
   // Array<T_ScalarFiniteElement<FE_Trig2,2,6>::IPData> FE_Trig2::ipdata;

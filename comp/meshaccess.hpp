@@ -28,9 +28,9 @@ FE_Segm1 segm1;
     ///
 FE_Segm2 segm2;
     ///
-FE_Trig1 trig1;
+// FE_Trig1 trig1;
     ///
-FE_Trig2 trig2;
+// FE_Trig2 trig2;
     ///
 FE_Quad1 quad1;
     ///
@@ -52,7 +52,7 @@ FE_Prism1 prism1;
     FE_Prism0 prism0;
     FE_Pyramid0 pyramid0;
     FE_Hex0 hex0;
-    FE_Trig0 trig0;
+    // FE_Trig0 trig0;
     FE_Quad0 quad0;
 
     //@}

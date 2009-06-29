@@ -26,6 +26,7 @@
 
 
 #include <fem.hpp>
+#include <h1lofe.hpp>
 
 // #include <solve.hpp>
 // extern ngstd::AutoPtr<ngsolve::PDE> pde;

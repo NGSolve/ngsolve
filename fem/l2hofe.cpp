@@ -119,7 +119,7 @@ namespace ngfem
     switch (ET)
       {
       case ET_SEGM:
-	ndof = order+1;
+	ndof = order_inner[0]+1;
 	break;
       case ET_TRIG:
 	ndof = (order_inner[0]+1) * (order_inner[0]+2) / 2;
@@ -157,7 +157,9 @@ namespace ngfem
   L2HighOrderFE<ET_SEGM> :: L2HighOrderFE (int aorder)
   {
     order_inner = INT<1> (aorder);
+    cout << "set order innter to " << order_inner << endl;
     ComputeNDof();
+    cout << "ndof = " << ndof << endl;
   }
 
 
