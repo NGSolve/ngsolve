@@ -240,8 +240,9 @@ namespace netgen
                   // Set the bitarray to indicate that the 
                   // point is part of the required set
                   bndnodes.Set(sel.PNum(j));
-
-                  Vec3d& surfacenormal = Vec3d();
+		  
+                  // Vec3d& surfacenormal = Vec3d();   ????
+		  Vec3d surfacenormal;
 
                   // Calculate the surface normal at the current point 
                   // with respect to the current surface element
