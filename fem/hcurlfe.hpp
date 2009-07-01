@@ -878,8 +878,11 @@ namespace ngfem
     static Matrix<> trans3;
   
     ///
-    static class FE_Quad1 quad1;
-    static class FE_Quad2 quad2;
+    // static class FE_Quad1 quad1;
+    // static class FE_Quad2 quad2;
+    typedef FE_Quad1 quad1;
+    typedef FE_Quad2 quad2;
+
     FE_NedelecPyramid1 pyramid1;
   public:
     ///
