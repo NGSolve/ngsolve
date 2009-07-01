@@ -22,20 +22,9 @@ namespace ngcomp
 {
   using namespace ngcomp;
 
-  FE_Segm1 segm1;
-  FE_Segm2 segm2;
 
-  FE_Trig0 trig0;
-  FE_Trig1 trig1;
-  FE_Trig2 trig2;
 
-  FE_Quad0 quad0;
-  FE_Quad1 quad1;
-  FE_Quad2aniso quad2aniso;
 
-  FE_Tet0 tet0;
-  FE_Tet1 tet1;
-  FE_Tet2 tet2;
 
 
   MeshAccess :: MeshAccess ()
@@ -771,6 +760,25 @@ void MeshAccess ::
 GetElementTransformation (int elnr, ElementTransformation & eltrans,
 			  LocalHeap & lh) const
 {
+  FE_Segm1 segm1;
+  FE_Segm2 segm2;
+
+  FE_Trig1 trig1;
+  FE_Trig2 trig2;
+
+  FE_Quad1 quad1;
+  FE_Quad2aniso quad2aniso;
+
+  static FE_Tet1 tet1;
+  static FE_Tet2 tet2;
+
+  static FE_Prism1 prism1;
+  static FE_Prism2aniso prism2;
+
+  static FE_Pyramid1 pyramid1;
+  static FE_Hex1 hex1;
+
+
   int elind = Ng_GetElementIndex (elnr+1)-1;
   int pnums[NG_ELEMENT_MAXPOINTS];
   int np;
@@ -780,7 +788,7 @@ GetElementTransformation (int elnr, ElementTransformation & eltrans,
   switch (et)
     {
     case NG_TRIG:
-        eltrans.SetElement (&trig1, elnr, elind); break;
+      eltrans.SetElement (&trig1, elnr, elind); break;
     case NG_TRIG6:
       eltrans.SetElement (&trig2, elnr, elind); break;
     case NG_QUAD:
@@ -851,6 +859,15 @@ void MeshAccess ::
 GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans, 
 				 LocalHeap & lh) const
 {
+  FE_Segm1 segm1;
+  FE_Segm2 segm2;
+
+  FE_Trig1 trig1;
+  FE_Trig2 trig2;
+
+  FE_Quad1 quad1;
+  FE_Quad2aniso quad2aniso;
+
   try
     {
       int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
@@ -942,7 +959,13 @@ GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans,
   
 double MeshAccess :: ElementVolume (int elnr) const
 {
-
+  static FE_Trig0 trig0;
+  static FE_Quad0 quad0;
+  static FE_Tet0 tet0;
+  static FE_Prism0 prism0;
+  static FE_Pyramid0 pyramid0;
+  static FE_Hex0 hex0;
+  
   const FiniteElement * fe = NULL;
   switch (GetElType (elnr))
     {
@@ -986,6 +1009,9 @@ double MeshAccess :: ElementVolume (int elnr) const
   
 double MeshAccess :: SurfaceElementVolume (int selnr) const
 {
+  static FE_Trig0 trig0;
+  static FE_Quad0 quad0;
+
   const FiniteElement * fe;
   switch (GetSElType (selnr))
     {
