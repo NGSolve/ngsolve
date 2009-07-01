@@ -362,12 +362,7 @@ namespace ngfem
  dshape(0,0) = 0;
  }
  }; 
-  */
 
-
-
-
-  /*
  ///
  class FE_Segm1 : public T_ScalarFiniteElement<FE_Segm1,1,2>
  {
@@ -525,6 +520,7 @@ namespace ngfem
  }; 
   */
 
+
   /// segment of fixed order
   template <int ORDER>
   class FE_TSegmL2 : public ScalarFiniteElement<1>
@@ -545,9 +541,8 @@ namespace ngfem
 
 
 
-
+  /*
   /// Non-conforming finite elements
-
   class FE_NcSegm1 : public T_ScalarFiniteElement<FE_NcSegm1,1,1>
   {
   public:
@@ -591,7 +586,7 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const;
   }; 
-
+  */
 
 
 

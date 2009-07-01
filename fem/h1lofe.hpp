@@ -129,23 +129,22 @@ namespace ngfem
 
 
 
-
+    
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const
     {
       double pt[DIM];
       for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-      Spec().T_CalcShape (pt, shape); 
+      FEL::T_CalcShape (pt, shape); 
     }
 
     static void CalcShapeStat (const IntegrationPoint & ip, 
-                               FlatVector<> shape) 
+                               FlatVector<> shape)
     {
       double pt[DIM];
       for (int i = 0; i < DIM; i++) pt[i] = ip(i);
       FEL::T_CalcShape (pt, shape); 
     }
-    
     
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     FlatMatrixFixWidth<DIM> dshape) const
@@ -155,13 +154,11 @@ namespace ngfem
         adp[i] = AutoDiff<DIM> (ip(i), i);
       
       DShapeAssign<DIM> ds(dshape); 
-      static_cast<const FEL*> (this) -> T_CalcShape (adp, ds);
-      
-      // FEL::CalcDShapeStat (ip, dshape);
+      FEL::T_CalcShape (adp, ds);
     }
 
     static void CalcDShapeStat (const IntegrationPoint & ip, 
-				FlatMatrixFixWidth<DIM> dshape) 
+				FlatMatrixFixWidth<DIM> dshape)
     {
       AutoDiff<DIM> adp[DIM];
       for (int i = 0; i < DIM; i++)
@@ -169,10 +166,7 @@ namespace ngfem
       
       DShapeAssign<DIM> ds(dshape); 
       FEL::T_CalcShape (adp, ds);
-      
-      // FEL::CalcDShapeStat (ip, dshape);
     }
-
 
 
     virtual void 
@@ -189,10 +183,8 @@ namespace ngfem
           adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
       
       DShapeAssign<DIM> ds(dshape); 
-      Spec().T_CalcShape (adp, ds);
+      FEL::T_CalcShape (adp, ds);
     }
-
-
 
 
     //  static  Array<IPDataFix> ipdata;
@@ -243,22 +235,6 @@ namespace ngfem
     }
   }; 
 
-  /*
-  ///
-  class FE_SegmDummy : public T_ScalarFiniteElement2<FE_SegmDummy,ET_SEGM,0,0>
-  {
-  public:
-    static IPDataArray ipdata;
-
-    template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[1], TFA & shape) 
-    {
-      ;
-    }
-
-  }; 
-  */
-
   ///
   class FE_Segm1 : public T_ScalarFiniteElement2<FE_Segm1,ET_SEGM,2,1>
   {
@@ -272,7 +248,6 @@ namespace ngfem
       shape[1] = 1-x[0];
     }
   }; 
-
 
   ///
   class FE_Segm1L2 : public T_ScalarFiniteElement2<FE_Segm1L2,ET_SEGM,2,1>
@@ -348,6 +323,40 @@ namespace ngfem
     }
   }; 
 
+  ///
+  class FE_NcSegm1 :public T_ScalarFiniteElement2<FE_NcSegm1,ET_SEGM,1,1>
+  {
+  public:
+
+    static IPDataArray ipdata;
+
+
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[1], TFA & shape) 
+    {
+      shape[0] = 1;
+    }
+  }; 
+
+
+  /// potential space for Nedelec IIb
+  class FE_Segm3Pot :public T_ScalarFiniteElement2<FE_Segm3Pot,ET_SEGM,4,3>
+  {
+  public:
+    static IPDataArray ipdata;
+
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[1], TFA & shape) 
+    {
+      Tx x = hx[0];
+      Tx lam2 = 1-x;
+
+      shape[0] = x;
+      shape[1] = lam2;
+      shape[2] = 3 * x * lam2 * (lam2+x);
+      shape[3] = 7.5 * x * lam2 * (x-lam2);
+    }
+  }; 
 
 
 
@@ -382,13 +391,12 @@ namespace ngfem
     static IPDataArray ipdata;
 
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[2], TFA & shape) 
+    inline static void T_CalcShape (Tx x[2], TFA & shape)
     {
       shape[0] = x[0];
       shape[1] = x[1];      
       shape[2] = 1-x[0]-x[1];
     }
-
     virtual const IntegrationRule & NodalIntegrationRule() const;
   }; 
 

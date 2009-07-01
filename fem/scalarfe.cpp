@@ -1562,6 +1562,7 @@ namespace ngfem
   // Array<ScalarFiniteElement::IPData> FE_Segm3Pot::ipdata;
   ScalarFiniteElement<1>::IPDataArray FE_Segm3Pot::ipdata;
 
+  /*
   FE_Segm3Pot :: FE_Segm3Pot()
     : ScalarFiniteElement<1> (ET_SEGM, 4, 3)
   {
@@ -1587,7 +1588,7 @@ namespace ngfem
     shape(2) = 3 * x * lam2 * (lam2+x);
     shape(3) = 7.5 * x * lam2 * (x-lam2);
   }
-
+  */
 
 
 

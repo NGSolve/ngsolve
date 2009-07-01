@@ -15,8 +15,8 @@ coefficient.cpp integrator.cpp specialelement.cpp elementtopology.cpp  \
 hcurlfe.cpp intrule.cpp facetfe.cpp hcurlhofe.cpp l2hofe.cpp	       \
 fastmat.cpp vectorfacetfe.cpp finiteelement.cpp scalarfe.cpp	       \
 hdiv_equations.cpp maxwellintegrator.cpp generic_recpol.cpp hdivfe.cpp \
-h1hofe.cpp h1hofefo.cpp hdivhofe.cpp recursive_pol.cpp hybridDG.cpp    \
-pml.cpp
+h1lofe.cpp h1hofe.cpp h1hofefo.cpp hdivhofe.cpp recursive_pol.cpp      \
+hybridDG.cpp pml.cpp
 
 
 libngfem_la_CPPFLAGS = -I$(top_srcdir)/include  $(LAPACK_INCLUDE)
@@ -27,8 +27,8 @@ coefficient.cpp integrator.cpp specialelement.cpp elementtopology.cpp  \
 hcurlfe.cpp intrule.cpp facetfe.cpp hcurlhofe.cpp l2hofe.cpp	       \
 fastmat.cpp vectorfacetfe.cpp finiteelement.cpp scalarfe.cpp	       \
 hdiv_equations.cpp maxwellintegrator.cpp generic_recpol.cpp hdivfe.cpp \
-h1hofe.cpp h1hofefo.cpp hdivhofe.cpp recursive_pol.cpp dynamicmem.cpp  \
-hybridDG.cpp
+h1lofe.cpp h1hofe.cpp h1hofefo.cpp hdivhofe.cpp recursive_pol.cpp      \
+dynamicmem.cpp hybridDG.cpp
 
 
 include_HEADERS = bdbequations.hpp bdbintegrator.hpp coefficient.hpp  \

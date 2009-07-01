@@ -21,28 +21,6 @@ namespace ngcomp
 
   class MeshAccess : public BaseStatusHandler
   {
-    /// @name Finite Elements for mesh transformation
-//@{
-///
-// FE_Segm1 segm1;
-    ///
-// FE_Segm2 segm2;
-    ///
-FE_Prism1 prism1;
-    //
-    FE_Prism2aniso prism2;
-    ///
-    FE_Pyramid1 pyramid1;
-    ///
-    FE_Hex1 hex1;
-  
-    // FE_Tet0 tet0;
-    FE_Prism0 prism0;
-    FE_Pyramid0 pyramid0;
-    FE_Hex0 hex0;
-
-    //@}
-
     Array<bool> higher_integration_order;
 
     /// buffered global quantities:
