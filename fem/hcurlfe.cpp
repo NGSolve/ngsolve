@@ -3938,11 +3938,11 @@ namespace ngfem
 
     IntegrationPoint ipxy(xr, yr, 0, 0);
 
-    quad1.CalcShape (ipxy, q1shape);
-    quad2.CalcShape (ipxy, q2shape);
+    quad1::CalcShapeStat (ipxy, q1shape);
+    quad2::CalcShapeStat (ipxy, q2shape);
 
-    quad1.CalcDShape (ipxy, q1dshape);
-    quad2.CalcDShape (ipxy, q2dshape);
+    quad1::CalcDShapeStat (ipxy, q1dshape);
+    quad2::CalcDShapeStat (ipxy, q2dshape);
 
     hshape = 0;
     int ii = 0, i;

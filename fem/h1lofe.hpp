@@ -160,6 +160,20 @@ namespace ngfem
       // FEL::CalcDShapeStat (ip, dshape);
     }
 
+    static void CalcDShapeStat (const IntegrationPoint & ip, 
+				FlatMatrixFixWidth<DIM> dshape) 
+    {
+      AutoDiff<DIM> adp[DIM];
+      for (int i = 0; i < DIM; i++)
+        adp[i] = AutoDiff<DIM> (ip(i), i);
+      
+      DShapeAssign<DIM> ds(dshape); 
+      FEL::T_CalcShape (adp, ds);
+      
+      // FEL::CalcDShapeStat (ip, dshape);
+    }
+
+
 
     virtual void 
     CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
