@@ -4699,10 +4699,7 @@ void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
 
     
   // register FESpaces
-  namespace
-#ifdef MACOS
-  fespace_cpp
-#endif
+  namespace fespace_cpp
   {
      
     class Init
