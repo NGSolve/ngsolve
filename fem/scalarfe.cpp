@@ -1667,6 +1667,7 @@ namespace ngfem
 
 
   /* Dummy elements */
+  /*
   ScalarFiniteElement<1>::IPDataArray FE_SegmDummy::ipdata;
 
   ScalarFiniteElement<2>::IPDataArray FE_TrigDummy::ipdata;
@@ -1676,7 +1677,7 @@ namespace ngfem
   ScalarFiniteElement<3>::IPDataArray FE_TetDummy::ipdata;
   ScalarFiniteElement<3>::IPDataArray FE_PrismDummy::ipdata;
   ScalarFiniteElement<3>::IPDataArray FE_PyramidDummy::ipdata;
-
+  */
 
 
 

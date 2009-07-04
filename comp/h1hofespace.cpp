@@ -932,14 +932,14 @@ namespace ngcomp
     for (int i = 0; i < vnums.Size(); i++)
       dnums.Append (vnums[i]);
 
-
-
-    if (ma.GetDimension() == 2)
+    /*
+    // if (ma.GetDimension() == 2)
       {
         for (int i = 0; i < ednums.Size(); i++)
           if (order_edge[ednums[i]] > 1)
             dnums.Append (first_edge_dof[ednums[i]]);
       }
+    */
     if (ma.GetDimension() == 3)
       {
         ArrayMem<int,12> fanums;

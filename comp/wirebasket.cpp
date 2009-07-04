@@ -1,7 +1,7 @@
 #include <comp.hpp>
 #include <solve.hpp>
 
-
+#define DEBUG
 
 namespace ngcomp
 {
@@ -420,6 +420,8 @@ namespace ngcomp
 						  bool inner_element, int elnr,
 						  LocalHeap & lh)
   {
+#pragma omp critical (addelmatho)
+    {
     /*
       (*testout) << "inner_element = " << inner_element << endl;
       (*testout) << "elnr = " << elnr << endl;
@@ -773,8 +775,7 @@ namespace ngcomp
 	    }
 	}
       }
-
-		 
+    }
   }
 
 
@@ -865,7 +866,9 @@ namespace ngcomp
 
       for (int i = 0; i < ne; i++)
 	{
-	  cnt[i] = fes.GetFE(i, lh).GetNDof();
+	  fes.GetExternalDofNrs (i, dnums);
+	  cnt[i] = dnums.Size();
+
 	  fes.GetWireBasketDofNrs (i, lwbdofs);
 	  for (int j = 0; j < lwbdofs.Size(); j++)
 	    wbdofs[lwbdofs[j]] = 1;
@@ -873,13 +876,16 @@ namespace ngcomp
 
       Table<int> dcdofs(cnt);   // discontinuous dofs
 
+      
+
       int firstdcdof = 0;
       for (int i = 0; i < wbdofs.Size(); i++)
 	if (wbdofs[i]) firstdcdof = i+1;
 
       for (int i = 0; i < ne; i++)
 	{
-	  fes.GetDofNrs (i, dnums);
+	  fes.GetExternalDofNrs (i, dnums);
+
 	  for (int j = 0; j < dnums.Size(); j++)
 	    {
 	      if (dnums[j] == -1) continue;
@@ -892,24 +898,34 @@ namespace ngcomp
 	    dcdofs[i][j] = dnums[j];
 	}
 
-      restrict.SetSize(dcdofs.Size());
+      *testout << "dcdofs = " << endl << dcdofs << endl;
+
+      restrict.SetSize(firstdcdof);
       restrict = -1;
       for (int i = 0; i < ne; i++)
 	{
-	  fes.GetDofNrs (i, dnums);
-	  for (int j = 0; i < dnums.Size(); j++)
-	    if (dcdofs[i][j] != -1)
-	      restrict[dcdofs[i][j]] = dnums[j];
+	  fes.GetExternalDofNrs (i, dnums);
+
+	  for (int j = 0; j < dnums.Size(); j++)
+	    {
+	      if (dnums[j] != -1)
+		restrict[dcdofs[i][j]] = dnums[j];
+	    }
 	}
+
+      *testout << "restrict = " << endl << restrict << endl;
+
+      multiple.SetSize (fes.GetNDof());
       multiple = 0;
       for (int i = 0; i < restrict.Size(); i++)
 	if (restrict[i] != -1)
 	  multiple[restrict[i]]++;
 
+      *testout << "multiple = " << endl << multiple << endl;
 
       MatrixGraph graph(firstdcdof, dcdofs, 1);
       SparseMatrixSymmetric<double> dcmat(graph, 1);
-
+      dcmat.SetInverseType ("sparsecholesky");
       
       for (int i = 0; i < ne; i++)
 	{
@@ -921,10 +937,9 @@ namespace ngcomp
 	    for (int l = 0; l < dofs.Size(); l++)
 	      if (dofs[k] != -1 && dofs[l] != -1 && dofs[k] >= dofs[l])
 		dcmat(dofs[k], dofs[l]) += elmat(k,l);
-	  
-
-	  inv = dcmat.InverseMatrix();
 	}
+
+      inv = dcmat.InverseMatrix();
     }
 
 
@@ -937,13 +952,15 @@ namespace ngcomp
       VVector<> ly(restrict.Size());
 
       for (int i = 0; i < restrict.Size(); i++)
-	lx(i) = fx(restrict[i]) / multiple[restrict[i]];
+	if (restrict[i] != -1)
+	  lx(i) = fx(restrict[i]) / multiple[restrict[i]];
 
       ly = (*inv) * lx;
-      
+            
       fy = 0.0;
       for (int i = 0; i < restrict.Size(); i++)
-	fy(restrict[i]) += ly(i) / multiple[restrict[i]];
+	if (restrict[i] != -1)
+	  fy(restrict[i]) += ly(i) / multiple[restrict[i]];
     }
 
   };
@@ -966,6 +983,9 @@ namespace ngcomp
   {
     cout << "update bddc" << endl;
     pre = new BDDCMatrix(*bfa);
+
+    if (test) Test();
+    
   }  
 
 
