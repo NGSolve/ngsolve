@@ -519,7 +519,7 @@ namespace ngcomp
     for (int i = 0; i < facets.Size(); i++)
       {
         dnums.Append (facets[i]);
-        dnums.Append (first_facet_dof[facets[i]]);
+        // dnums.Append (first_facet_dof[facets[i]]);
       }
   }
 
