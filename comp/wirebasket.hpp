@@ -143,12 +143,6 @@ public:
   public:
     WireBasketPreconditioner (const PDE * pde, const Flags & aflags, 
 			      const std::string aname = "wirebasketprecond");
-//       : Preconditioner (&pde, aflags);
-//     {
-//       cout << "create wire-basket precond" << endl;
-//       bfa = dynamic_cast<const HO_BilinearForm<SCAL>*>(pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform", NULL)));
-
-//     }
 
     virtual ~WireBasketPreconditioner() 
     { ; }
@@ -159,40 +153,6 @@ public:
     }
 
     virtual void Update ();
-//     {
-//       cout << "update wirebasket" << endl;
-
-//       const SparseMatrix<SCAL> & mat = bfa -> InexactSchur();
-
-//       //      const SparseMatrix<SCAL> & mat = 
-//       //	dynamic_cast<const SparseMatrix<SCAL>& > (bfa -> GetMatrix());
-
-// //       (*testout) << "type = " << typeid(mat).name() << endl;
-// //       (*testout) << "mat = " << mat << endl;
-      
-//       mat.SetInverseType(inversetype);
-// //       pre = mat.InverseMatrix(); // const_cast<SparseMatrix<SCAL>*> (&mat); // 
-
-//       Array<int> cnt(ma.GetNE());
-//       const ElementByElementMatrix<SCAL> & elbyelmat =
-// 	dynamic_cast<const ElementByElementMatrix<SCAL>&> (bfa -> GetMatrix() );
-//       cnt = 0;
-//       for ( int el = 0; el < ma.GetNE(); el++ )
-// 	{
-// 	  FlatArray<int> dofs = elbyelmat.GetElementDNums(el);
-// 	  cnt = dofs.Size();
-// 	}
-//       Table<int> * blocktable = new Table<int> (cnt);
-//       for ( int el = 0; el < ma.GetNE(); el++ )
-// 	{
-// 	  FlatArray<int> dofs = elbyelmat.GetElementDNums(el);
-// 	  blocktable[i] = dofs;
-// 	}
-
-
-//       pre = mat.  CreateBlockJacobiPrecond (*blocktable);
-//       if (test) Test();
-//     }
 
     virtual const BaseMatrix & GetAMatrix() const
     {
@@ -204,6 +164,47 @@ public:
       return *pre;
     }
   };
+
+
+
+
+
+  template <class SCAL>
+  class BDDCPreconditioner : public Preconditioner
+  {
+    const HO_BilinearForm<SCAL> * bfa;
+    BaseMatrix * pre;
+    string inversetype;
+  public:
+    BDDCPreconditioner (const PDE * pde, const Flags & aflags,
+			const std::string aname = "bddcprecond");
+
+    virtual ~BDDCPreconditioner() 
+    { ; }
+
+    static Preconditioner * Create (const PDE & pde, const Flags & flags)
+    {
+      return new BDDCPreconditioner<SCAL> (&pde, flags);
+    }
+
+    virtual void Update ();
+
+    virtual const BaseMatrix & GetAMatrix() const
+    {
+      return bfa->GetMatrix();
+    }
+
+    virtual const BaseMatrix & GetMatrix() const
+    {
+      return *pre;
+    }
+  };
+
+
+
+
+
+
 
 }
 
