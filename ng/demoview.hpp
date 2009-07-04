@@ -98,7 +98,17 @@ template <class S>
 class InterpolationSpline
 {
 protected:
-  Array < InterpolationPoint<S>[3] > ip;
+  // typedef Vec<3, InterpolationPoint<S> > intpts;
+  // Array < InterpolationPoint<S>[3] > ip;
+
+  class intpts
+  {
+  public:
+    InterpolationPoint<S> pts[3];
+    InterpolationPoint<S> & operator[](int i) { return pts[i]; }
+  };
+  Array < intpts > ip;
+  
   int finished;
 
 public:
