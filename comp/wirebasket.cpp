@@ -445,69 +445,69 @@ namespace ngcomp
         this->fespace.GetWireBasketDofNrs (elnr, wirebasketdofs);
           
 	  
-          for (int j = 0; j < dnums1.Size(); j++)
-            if (dnums1[j] != -1)
-              {
-                bool has = wirebasketdofs.Contains(dnums1[j]);
+	for (int j = 0; j < dnums1.Size(); j++)
+	  if (dnums1[j] != -1)
+	    {
+	      bool has = wirebasketdofs.Contains(dnums1[j]);
                 
-                if (has)  usedi.Append (j);
-                if (!has) unusedi.Append (j);
-              }
+	      if (has)  usedi.Append (j);
+	      if (!has) unusedi.Append (j);
+	    }
           
-          int su = usedi.Size();
-          int sunu = unusedi.Size();
+	int su = usedi.Size();
+	int sunu = unusedi.Size();
           
-          FlatMatrix<SCAL> a(su, su, lh);
-          FlatMatrix<SCAL> b(su, sunu, lh);
-          FlatMatrix<SCAL> c(su, sunu, lh);
-          FlatMatrix<SCAL> idc(su, sunu, lh);
-          FlatMatrix<SCAL> d(sunu, sunu, lh);
+	FlatMatrix<SCAL> a(su, su, lh);
+	FlatMatrix<SCAL> b(su, sunu, lh);
+	FlatMatrix<SCAL> c(su, sunu, lh);
+	FlatMatrix<SCAL> idc(su, sunu, lh);
+	FlatMatrix<SCAL> d(sunu, sunu, lh);
           
-          for (int k = 0; k < su; k++)
-            for (int l = 0; l < su; l++)
-              a(k,l) = elmat(usedi[k], usedi[l]);
+	for (int k = 0; k < su; k++)
+	  for (int l = 0; l < su; l++)
+	    a(k,l) = elmat(usedi[k], usedi[l]);
           
-          for (int k = 0; k < su; k++)
-            for (int l = 0; l < sunu; l++)
-              {
-                b(k,l) = elmat(usedi[k], unusedi[l]);
-                c(k,l) = elmat(unusedi[l], usedi[k]);
-              }
+	for (int k = 0; k < su; k++)
+	  for (int l = 0; l < sunu; l++)
+	    {
+	      b(k,l) = elmat(usedi[k], unusedi[l]);
+	      c(k,l) = elmat(unusedi[l], usedi[k]);
+	    }
           
-          for (int k = 0; k < sunu; k++)
-            for (int l = 0; l < sunu; l++)
-              d(k,l) = elmat(unusedi[k], unusedi[l]);
+	for (int k = 0; k < sunu; k++)
+	  for (int l = 0; l < sunu; l++)
+	    d(k,l) = elmat(unusedi[k], unusedi[l]);
           
 #ifdef LAPACK
-            if ( sunu > 0 )
-              {
-                LapackInverse (d);
-                LapackMultABt (c, d, idc);
-                LapackMultAddABt (b, idc, -1, a);
-              }
+	if ( sunu > 0 )
+	  {
+	    LapackInverse (d);
+	    LapackMultABt (c, d, idc);
+	    LapackMultAddABt (b, idc, -1, a);
+	  }
 #else
-            FlatMatrix<SCAL> invd(sunu, sunu, lh);
-            CalcInverse (d, invd);
-            d = invd;
-            idc = c * Trans (invd);
-            a -= b * Trans (idc);
+	FlatMatrix<SCAL> invd(sunu, sunu, lh);
+	CalcInverse (d, invd);
+	d = invd;
+	idc = c * Trans (invd);
+	a -= b * Trans (idc);
 #endif
 
 
 #pragma omp critical (addinexact_schur)
-            if (this->symmetric)
-              {
-                for (int k = 0; k < usedi.Size(); k++)
-                  for (int l = 0; l < usedi.Size(); l++)
-                    if (dnums1[usedi[k]] >= dnums1[usedi[l]])
-                      (*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
-              }
-            else
-              {
-                for (int k = 0; k < usedi.Size(); k++)
-                  for (int l = 0; l < usedi.Size(); l++)
-                    (*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
-              }
+	if (this->symmetric)
+	  {
+	    for (int k = 0; k < usedi.Size(); k++)
+	      for (int l = 0; l < usedi.Size(); l++)
+		if (dnums1[usedi[k]] >= dnums1[usedi[l]])
+		  (*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
+	  }
+	else
+	  {
+	    for (int k = 0; k < usedi.Size(); k++)
+	      for (int l = 0; l < usedi.Size(); l++)
+		(*inexact_schur)(dnums1[usedi[k]], dnums1[usedi[l]]) += a(k,l);
+	  }
 #endif
 
 	if (this->ma.GetDimension() == 3)
@@ -562,9 +562,9 @@ namespace ngcomp
 		    {
 		      bool has = useddofs.Contains (dnums1[j]);
                       /*
-		      bool wb = wirebasketdofs.Contains (dnums1[j]);
-		      if (has && !wb) usedi.Append (j);
-                      if (!has && !wb) unusedi.Append (j);
+			bool wb = wirebasketdofs.Contains (dnums1[j]);
+			if (has && !wb) usedi.Append (j);
+			if (!has && !wb) unusedi.Append (j);
                       */
 		      if (has) usedi.Append (j);
                       if (!has) unusedi.Append (j);
@@ -664,9 +664,9 @@ namespace ngcomp
                     {
                       bool has = useddofs.Contains(dnums1[j]);
                       /*
-                      bool wb = wirebasketdofs.Contains(dnums1[j]);
-                      if (has && !wb) usedi.Append (j);
-                      if (!has && !wb) unusedi.Append (j);
+			bool wb = wirebasketdofs.Contains(dnums1[j]);
+			if (has && !wb) usedi.Append (j);
+			if (!has && !wb) unusedi.Append (j);
                       */
 
                       if (has) usedi.Append (j);
@@ -842,6 +842,135 @@ namespace ngcomp
 
 
 
+  class BDDCMatrix : public BaseMatrix
+  {
+    const HO_BilinearForm<double> bfa;
+    Array<int> restrict;
+    Array<int> multiple;
+    BaseMatrix * inv;
+
+  public:
+    BDDCMatrix (const HO_BilinearForm<double> & abfa)
+      : bfa(abfa) 
+    {
+      LocalHeap lh(10000000);
+      const FESpace & fes = bfa.GetFESpace();
+      const MeshAccess & ma = fes.GetMeshAccess();
+
+      int ne = ma.GetNE();
+      Array<int> cnt(ne);
+
+      Array<int> wbdofs(fes.GetNDof()), lwbdofs, dnums;
+      wbdofs = 0;
+
+      for (int i = 0; i < ne; i++)
+	{
+	  cnt[i] = fes.GetFE(i, lh).GetNDof();
+	  fes.GetWireBasketDofNrs (i, lwbdofs);
+	  for (int j = 0; j < lwbdofs.Size(); j++)
+	    wbdofs[lwbdofs[j]] = 1;
+	}
+
+      Table<int> dcdofs(cnt);   // discontinuous dofs
+
+      int firstdcdof = 0;
+      for (int i = 0; i < wbdofs.Size(); i++)
+	if (wbdofs[i]) firstdcdof = i+1;
+
+      for (int i = 0; i < ne; i++)
+	{
+	  fes.GetDofNrs (i, dnums);
+	  for (int j = 0; j < dnums.Size(); j++)
+	    {
+	      if (dnums[j] == -1) continue;
+	      if (wbdofs[dnums[j]]) continue;
+	      dnums[j] = firstdcdof;
+	      firstdcdof++;
+	    }
+
+	  for (int j = 0; j < dnums.Size(); j++)
+	    dcdofs[i][j] = dnums[j];
+	}
+
+      restrict.SetSize(dcdofs.Size());
+      restrict = -1;
+      for (int i = 0; i < ne; i++)
+	{
+	  fes.GetDofNrs (i, dnums);
+	  for (int j = 0; i < dnums.Size(); j++)
+	    if (dcdofs[i][j] != -1)
+	      restrict[dcdofs[i][j]] = dnums[j];
+	}
+      multiple = 0;
+      for (int i = 0; i < restrict.Size(); i++)
+	if (restrict[i] != -1)
+	  multiple[restrict[i]]++;
+
+
+      MatrixGraph graph(firstdcdof, dcdofs, 1);
+      SparseMatrixSymmetric<double> dcmat(graph, 1);
+
+      
+      for (int i = 0; i < ne; i++)
+	{
+	  FlatMatrix<> elmat = 
+	    dynamic_cast<const ElementByElementMatrix<double>&> (bfa.GetMatrix()) . GetElementMatrix (i);
+
+	  FlatArray<int> dofs = dcdofs[i];
+	  for (int k = 0; k < dofs.Size(); k++)
+	    for (int l = 0; l < dofs.Size(); l++)
+	      if (dofs[k] != -1 && dofs[l] != -1 && dofs[k] >= dofs[l])
+		dcmat(dofs[k], dofs[l]) += elmat(k,l);
+	  
+
+	  inv = dcmat.InverseMatrix();
+	}
+    }
+
+
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
+    {
+      FlatVector<> fx = x.FVDouble();
+      FlatVector<> fy = y.FVDouble();
+
+      VVector<> lx(restrict.Size());
+      VVector<> ly(restrict.Size());
+
+      for (int i = 0; i < restrict.Size(); i++)
+	lx(i) = fx(restrict[i]) / multiple[restrict[i]];
+
+      ly = (*inv) * lx;
+      
+      fy = 0.0;
+      for (int i = 0; i < restrict.Size(); i++)
+	fy(restrict[i]) += ly(i) / multiple[restrict[i]];
+    }
+
+  };
+
+
+
+  template <class SCAL>
+  BDDCPreconditioner<SCAL> ::
+  BDDCPreconditioner (const PDE * pde, const Flags & aflags, const string aname)
+    : Preconditioner (pde, aflags, aname)
+  {
+    bfa = dynamic_cast<const HO_BilinearForm<SCAL>*>(pde->GetBilinearForm (aflags.GetStringFlag ("bilinearform", NULL)));
+    inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
+  }
+
+
+  template <class SCAL>
+  void BDDCPreconditioner<SCAL> ::
+  Update ()
+  {
+    cout << "update bddc" << endl;
+    pre = new BDDCMatrix(*bfa);
+  }  
+
+
+
+  template class BDDCPreconditioner<double>;
     
   namespace wirebasket_cpp
   {
@@ -856,6 +985,8 @@ namespace ngcomp
     {
       GetPreconditionerClasses().AddPreconditioner ("wirebasket", WireBasketPreconditioner<double>::Create);
       GetPreconditionerClasses().AddPreconditioner ("wirebasket_complex", WireBasketPreconditioner<Complex>::Create);
+
+      GetPreconditionerClasses().AddPreconditioner ("bddc", BDDCPreconditioner<double>::Create);
     }
     
     Init init;
