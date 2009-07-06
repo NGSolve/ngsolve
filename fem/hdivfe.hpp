@@ -22,6 +22,7 @@ namespace ngfem
 
   protected:
 
+    /*
     class IPData
     {
     public:
@@ -30,12 +31,12 @@ namespace ngfem
     };
 
     IPData * p_ipdata;
-
+    */
 
   public:
     ///
     HDivFiniteElement (ELEMENT_TYPE aeltype, int andof, int aorder)
-      : FiniteElement (DIM, aeltype, andof, aorder) { p_ipdata = 0; }
+      : FiniteElement (DIM, aeltype, andof, aorder) { ; } // p_ipdata = 0; }
 
     ///
     virtual ~HDivFiniteElement () { ; }
@@ -62,11 +63,13 @@ namespace ngfem
     const FlatMatrixFixWidth<DIM> GetShape (const IntegrationPoint & ip,
 					    LocalHeap & lh) const
     {
+      /*
       if (ip.IPNr() >= 0 && p_ipdata)
 	{
 	  return p_ipdata[ip.IPNr()].shape;
 	}
       else
+      */
 	{
 	  FlatMatrixFixWidth<DIM> shape(ndof, lh);
 	  CalcShape (ip, shape);
@@ -77,11 +80,13 @@ namespace ngfem
     const FlatVector<> GetDivShape (const IntegrationPoint & ip,
 				    LocalHeap & lh) const
     {
+      /*
       if (ip.IPNr() >= 0 && p_ipdata)
 	{
 	  return p_ipdata[ip.IPNr()].divshape;
 	}
       else
+      */
 	{
 	  FlatVector<> divshape(ndof, lh);
 	  CalcDivShape (ip, divshape);
@@ -91,7 +96,7 @@ namespace ngfem
 
   protected:
     ///
-    void CalcIPData (Array<IPData> & ipdata);
+    // void CalcIPData (Array<IPData> & ipdata);
 
     /// compute basis, will be orthogonalized
     virtual void CalcShape1 (const IntegrationPoint & ip,
@@ -170,7 +175,7 @@ namespace ngfem
   class FE_RTTrig0 : public HDivFiniteElement<2>
   {
     ///
-    static Array<IPData> ipdata;
+// static Array<IPData> ipdata;
 
   public:
     ///
@@ -189,7 +194,7 @@ namespace ngfem
   class FE_RTTrig0plus : public HDivFiniteElement<2>
   {
     ///
-    static Array<IPData> ipdata;
+// static Array<IPData> ipdata;
 
   public:
     ///
@@ -207,7 +212,7 @@ namespace ngfem
   ///
   class FE_BDMTrig1 : public HDivFiniteElement<2>
   {
-    static Array<IPData> ipdata;
+    // static Array<IPData> ipdata;
     ///
     static Matrix<> trans;
 
@@ -263,7 +268,7 @@ namespace ngfem
   class FE_BDMTrig1plus : public HDivFiniteElement
   {
     ///
-    static Array<IPData*> ipdata;
+// static Array<IPData*> ipdata;
     ///
     static FlatMatrix<> trans;
 
@@ -297,8 +302,8 @@ namespace ngfem
     void Orthogonalize();
 
     ///
-    virtual const Array<IPData*> & GetIPData () const 
-    { return ipdata; }
+    // virtual const Array<IPData*> & GetIPData () const 
+    // { return ipdata; }
   };
 
 
@@ -310,7 +315,7 @@ namespace ngfem
   class FE_BDFMTrig2 : public HDivFiniteElement
   {
     ///
-    static Array<IPData*> ipdata;
+// static Array<IPData*> ipdata;
     ///
     static FlatMatrix<> trans;
 
@@ -344,8 +349,8 @@ namespace ngfem
     void Orthogonalize();
 
     ///
-    virtual const Array<IPData*> & GetIPData () const 
-    { return ipdata; }
+    // virtual const Array<IPData*> & GetIPData () const 
+    // { return ipdata; }
   };
 
 
@@ -359,7 +364,7 @@ namespace ngfem
   class FE_BDMTrig2 : public HDivFiniteElement
   {
     ///
-    static Array<IPData*> ipdata;
+// static Array<IPData*> ipdata;
     ///
     static FlatMatrix<> trans;
 
@@ -393,8 +398,8 @@ namespace ngfem
     void Orthogonalize();
 
     ///
-    virtual const Array<IPData*> & GetIPData () const 
-    { return ipdata; }
+    // virtual const Array<IPData*> & GetIPData () const 
+    // { return ipdata; }
 
   };
 
@@ -408,7 +413,7 @@ namespace ngfem
   class FE_BDMTrig2plus : public HDivFiniteElement
   {
     ///
-    static Array<IPData*> ipdata;
+// static Array<IPData*> ipdata;
     ///
     static FlatMatrix<> trans;
 
@@ -442,8 +447,8 @@ namespace ngfem
     void Orthogonalize();
 
     ///
-    virtual const Array<IPData*> & GetIPData () const 
-    { return ipdata; }
+    // virtual const Array<IPData*> & GetIPData () const 
+    // { return ipdata; }
 
   };
 
@@ -455,7 +460,7 @@ namespace ngfem
   {
   protected:
     ///
-    static Array<IPData> ipdata;
+    // static Array<IPData> ipdata;
   
   public:
   
@@ -478,7 +483,7 @@ namespace ngfem
   class FE_BDMQuad1 : public HDivFiniteElement
   {
     ///
-    static Array<IPData*> ipdata;
+// static Array<IPData*> ipdata;
     ///
     static FlatMatrix<> trans;
 
@@ -512,8 +517,8 @@ namespace ngfem
     void Orthogonalize();
 
     ///
-    virtual const Array<IPData*> & GetIPData () const 
-    { return ipdata; }
+    // virtual const Array<IPData*> & GetIPData () const 
+    // { return ipdata; }
 
   };
 
@@ -528,7 +533,7 @@ namespace ngfem
   class FE_RTSegm0 : public HDivFiniteElement
   {
     ///
-    static Array<IPData*> ipdata;
+// static Array<IPData*> ipdata;
 
   public:
 
@@ -557,8 +562,8 @@ namespace ngfem
 			     int comp = 1) const;
 
     ///
-    virtual const Array<IPData*> & GetIPData () const 
-    { return ipdata; }
+    // virtual const Array<IPData*> & GetIPData () const 
+    // { return ipdata; }
 
   };
 
@@ -574,7 +579,7 @@ namespace ngfem
   class FE_RTSegm1 : public HDivFiniteElement
   {
     ///
-    static Array<IPData*> ipdata;
+// static Array<IPData*> ipdata;
 
   public:
 
@@ -605,8 +610,8 @@ namespace ngfem
 
 
     ///
-    virtual const Array<IPData*> & GetIPData () const 
-    { return ipdata; }
+    // virtual const Array<IPData*> & GetIPData () const 
+    // { return ipdata; }
   };
 
 
@@ -616,7 +621,7 @@ namespace ngfem
   class FE_RTSegm2 : public HDivFiniteElement
   {
     ///
-    static Array<IPData*> ipdata;
+// static Array<IPData*> ipdata;
 
   public:
 
@@ -647,8 +652,8 @@ namespace ngfem
 
 
     ///
-    virtual const Array<IPData*> & GetIPData () const 
-    { return ipdata; }
+    // virtual const Array<IPData*> & GetIPData () const 
+    // { return ipdata; }
   };
 
 
@@ -661,7 +666,7 @@ namespace ngfem
   class FE_BDMTet1 : public HDivFiniteElement<3>
   {
     ///
-    static Array<IPData> ipdata;
+// static Array<IPData> ipdata;
     ///
     static Matrix<> trans;
 
@@ -693,7 +698,7 @@ namespace ngfem
   class FE_BDFMTet2 : public HDivFiniteElement
   {
     ///
-    static Array<IPData*> ipdata;
+// static Array<IPData*> ipdata;
     ///
     static FlatMatrix<> trans;
     ///
@@ -736,8 +741,8 @@ namespace ngfem
     void Orthogonalize();
 
     ///
-    virtual const Array<IPData*> & GetIPData () const 
-    { return ipdata; }
+    // virtual const Array<IPData*> & GetIPData () const 
+    // { return ipdata; }
   };
 
 
@@ -755,7 +760,7 @@ namespace ngfem
   class FE_BDMPrism1 : public HDivFiniteElement
   {
     ///
-    static Array<IPData*> ipdata;
+// static Array<IPData*> ipdata;
     ///
     static FlatMatrix<> trans;
 
@@ -789,8 +794,8 @@ namespace ngfem
     void Orthogonalize();
 
     ///
-    virtual const Array<IPData*> & GetIPData () const 
-    { return ipdata; }
+    // virtual const Array<IPData*> & GetIPData () const 
+    // { return ipdata; }
   };
 
 
@@ -802,7 +807,7 @@ namespace ngfem
   class FE_BDMPrism1p : public HDivFiniteElement
   {
     ///
-    static Array<IPData*> ipdata;
+// static Array<IPData*> ipdata;
     ///
     static FlatMatrix<> trans;
 
@@ -836,8 +841,8 @@ namespace ngfem
     void Orthogonalize();
 
     ///
-    virtual const Array<IPData*> & GetIPData () const 
-    { return ipdata; }
+    // virtual const Array<IPData*> & GetIPData () const 
+    // { return ipdata; }
   };
 
 
@@ -855,7 +860,7 @@ namespace ngfem
   class FE_BDFMPrism2 : public HDivFiniteElement
   {
     ///
-    static Array<IPData*> ipdata;
+// static Array<IPData*> ipdata;
     ///
     static FlatMatrix<> trans;
     ///
@@ -891,8 +896,8 @@ namespace ngfem
     void Orthogonalize();
 
     ///
-    virtual const Array<IPData*> & GetIPData () const 
-    { return ipdata; }
+    // virtual const Array<IPData*> & GetIPData () const 
+    // { return ipdata; }
   };
 
 

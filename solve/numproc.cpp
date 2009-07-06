@@ -268,11 +268,12 @@ namespace ngsolve
 	return;
       }
 
+    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
 
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-    gfu = pde.GetGridFunction (flags.GetStringFlag ("solution", NULL));
+    gfu = pde.GetGridFunction (flags.GetStringFlag ("solution", ""));
     if(!gfu)
-      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", NULL));
+      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+
     applyd = flags.GetDefineFlag ("applyd");
     label = flags.GetStringFlag ("label", "");
     useall = flags.GetDefineFlag ("useall");

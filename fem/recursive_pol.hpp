@@ -1326,6 +1326,7 @@ class ConvertJacobi
 
 public:
   ConvertJacobi ();
+  ~ConvertJacobi ();
 
   template <class T>
   static void ReduceAlpha (int n, int alpha, T & inout)  // alpha of input

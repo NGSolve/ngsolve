@@ -55,7 +55,7 @@ namespace ngfem
   */
 
   template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
-  class T_ScalarFiniteElement2 : public ScalarFiniteElement<ET_trait<ET>::DIM>
+  class T_ScalarFiniteElement : public ScalarFiniteElement<ET_trait<ET>::DIM>
   {
 
   public:
@@ -63,73 +63,28 @@ namespace ngfem
   protected:
     enum { DIM = ET_trait<ET>::DIM };
 
-    T_ScalarFiniteElement2 ()
-    // : ScalarFiniteElement<SDIM> (ELEMENT_TYPE(FEL::ELTYPE), NDOF, int(FEL::ORDER))
-      : ScalarFiniteElement<DIM> (ET, NDOF, ORDER)
-    {
-      try
-	{
-	  // CalcIPData (ELEMENT_TYPE(FEL::ELTYPE), Spec().ipdata);
-	  CalcIPData (ET, Spec().ipdata);
-	  /*
-	    if (!Spec().ipdata.Size())
-	    CalcIPData ();
-	  */
-	}
-      catch (Exception & e)
-	{
-	  e.Append ("In Constructor of finite element ");
-	  e.Append (typeid(FEL).name());
-	  throw e;
-	}
-    }
+    T_ScalarFiniteElement ()
+      : ScalarFiniteElement<DIM> (ET, NDOF, ORDER) { ; }
 
-    virtual ~T_ScalarFiniteElement2() { ; }
+    virtual ~T_ScalarFiniteElement() { ; }
 
   public:
-    virtual const FlatVector<> GetShapeV (const IntegrationPoint & ip) const
-    {
-      return FlatVector<> (Spec().ipdata[ip.IPNr()] . shape);
-    }
 
-    virtual const FlatMatrix<> GetDShapeV (const IntegrationPoint & ip) const
+    /*
+  const FlatVec<NDOF> & GetShape (const IntegrationPoint & ip,
+                                  LocalHeap & lh) const
     {
-      return FlatMatrix<> (Spec().ipdata[ip.IPNr()] . dshape);
-    }
-
-
-    const Vec<NDOF> & GetShape (const IntegrationPoint & ip,
-				LocalHeap & lh) const
-    {
-      if (ip.IPNr() != -1)
-	// return Spec().ipdata[ip.IPNr()] . shape;
-	return  reinterpret_cast<const Vec<NDOF> & >
-	  ( Spec().ipdata[ip.IPNr()] . shape(0) );
-      else
-	{
-	  throw Exception ("GetDShape, ipnr == -1");
-	}
+      ;
     }
 
     const Mat<NDOF,DIM> & GetDShape (const IntegrationPoint & ip,
 				     LocalHeap & lh) const
     {
-      if (ip.IPNr() != -1)
-	{
-	  // return Spec().ipdata[ip.IPNr()] . dshape;
-	  return  reinterpret_cast<const Mat<NDOF,DIM> & >
-	    ( Spec().ipdata[ip.IPNr()] . dshape(0,0) );
-	}
-      else
-	{
-	  throw Exception ("GetDShape, ipnr == -1");
-	}
+      ;
     }
+    */
 
 
-
-
-    
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const
     {
@@ -168,7 +123,6 @@ namespace ngfem
       FEL::T_CalcShape (adp, ds);
     }
 
-
     virtual void 
     CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
                       FlatMatrixFixWidth<DIM> dshape) const
@@ -185,31 +139,6 @@ namespace ngfem
       DShapeAssign<DIM> ds(dshape); 
       FEL::T_CalcShape (adp, ds);
     }
-
-
-    //  static  Array<IPDataFix> ipdata;
-  private:
-
-    FEL & Spec() { return static_cast<FEL&> (*this); }
-    const FEL & Spec() const { return static_cast<const FEL&> (*this); }
-
-    /*
-      void CalcIPData () 
-      {
-      const Array<IntegrationPoint*> & ipts = 
-      GetIntegrationRules().GetIntegrationPoints (ELEMENT_TYPE(FEL::ELTYPE));
-    
-      (*testout) << "New: calc IP Data for element type  " << FEL::ELTYPE 
-      << ", ndof = " << GetNDof() << ": " << ipts.Size() << endl;
-    
-      Spec().ipdata.SetSize (ipts.Size());
-      for (int i = 0; i < ipts.Size(); i++)
-      {
-      FEL::CalcShapeStat (*ipts[i], Spec().ipdata[i] . shape);
-      FEL::CalcDShapeStat (*ipts[i], Spec().ipdata[i] . dshape);
-      }
-      }
-    */
   };
 
 
@@ -217,17 +146,10 @@ namespace ngfem
 
 
 
-
-
-
-
-
   ///
-  class FE_Segm0 : public T_ScalarFiniteElement2<FE_Segm0,ET_SEGM,1,0>
+  class FE_Segm0 : public T_ScalarFiniteElement<FE_Segm0,ET_SEGM,1,0>
   {
   public:
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx x[1], TFA & shape) 
     {
@@ -236,11 +158,9 @@ namespace ngfem
   }; 
 
   ///
-  class FE_Segm1 : public T_ScalarFiniteElement2<FE_Segm1,ET_SEGM,2,1>
+  class FE_Segm1 : public T_ScalarFiniteElement<FE_Segm1,ET_SEGM,2,1>
   {
   public:
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx x[1], TFA & shape) 
     {
@@ -250,28 +170,9 @@ namespace ngfem
   }; 
 
   ///
-  class FE_Segm1L2 : public T_ScalarFiniteElement2<FE_Segm1L2,ET_SEGM,2,1>
+  class FE_Segm2 : public T_ScalarFiniteElement<FE_Segm2,ET_SEGM,3,2>
   {
   public:
-    static IPDataArray ipdata;
-
-    template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[1], TFA & shape) 
-    {
-      shape[0] = 1;
-      shape[1] = 2*x[0]-1;
-    }
-  }; 
-
-
-  ///
-  class FE_Segm2 : public T_ScalarFiniteElement2<FE_Segm2,ET_SEGM,3,2>
-  {
-  public:
-
-    static IPDataArray ipdata;
-
-    ///
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[1], TFA & shape) 
     {
@@ -283,14 +184,10 @@ namespace ngfem
     }
   }; 
 
-
   ///
-  class FE_Segm2HB : public T_ScalarFiniteElement2<FE_Segm2HB,ET_SEGM,3,2>
+  class FE_Segm2HB : public T_ScalarFiniteElement<FE_Segm2HB,ET_SEGM,3,2>
   {
   public:
-
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[1], TFA & shape) 
     {
@@ -303,15 +200,22 @@ namespace ngfem
   }; 
 
 
-
   ///
-  class FE_Segm2L2 :public T_ScalarFiniteElement2<FE_Segm2L2,ET_SEGM,3,2>
+  class FE_Segm1L2 : public T_ScalarFiniteElement<FE_Segm1L2,ET_SEGM,2,1>
   {
   public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx x[1], TFA & shape) 
+    {
+      shape[0] = 1;
+      shape[1] = 2*x[0]-1;
+    }
+  }; 
 
-    static IPDataArray ipdata;
-
-
+  ///
+  class FE_Segm2L2 :public T_ScalarFiniteElement<FE_Segm2L2,ET_SEGM,3,2>
+  {
+  public:
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[1], TFA & shape) 
     {
@@ -324,13 +228,9 @@ namespace ngfem
   }; 
 
   ///
-  class FE_NcSegm1 :public T_ScalarFiniteElement2<FE_NcSegm1,ET_SEGM,1,1>
+  class FE_NcSegm1 :public T_ScalarFiniteElement<FE_NcSegm1,ET_SEGM,1,1>
   {
   public:
-
-    static IPDataArray ipdata;
-
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[1], TFA & shape) 
     {
@@ -338,13 +238,10 @@ namespace ngfem
     }
   }; 
 
-
   /// potential space for Nedelec IIb
-  class FE_Segm3Pot :public T_ScalarFiniteElement2<FE_Segm3Pot,ET_SEGM,4,3>
+  class FE_Segm3Pot :public T_ScalarFiniteElement<FE_Segm3Pot,ET_SEGM,4,3>
   {
   public:
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[1], TFA & shape) 
     {
@@ -359,8 +256,31 @@ namespace ngfem
   }; 
 
 
+  /// segment of fixed order
+  template <int ORDER>
+  class FE_TSegmL2 : public T_ScalarFiniteElement<FE_TSegmL2<ORDER>, ET_SEGM, ORDER+1, ORDER>
+  {
+    // static IPDataArray ipdata;
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[1], TFA & shape) 
+    {
+      Tx x = hx[0];
+      // Tx lam2 = 1-x;
 
-
+      // very primitive ...
+      // shape = 0;
+      
+      if (ORDER >= 0) shape[0] = 1;
+      if (ORDER >= 1) shape[1] = 2*x-1;
+      if (ORDER >= 2) shape[2] = (2*x-1)*(2*x-1)-1.0/3.0;
+      if (ORDER >= 3) shape[3] = (2*x-1)*(2*x-1)*(2*x-1);
+      if (ORDER >= 4)
+        {
+          throw Exception ("TSegmL2: Legendre polynomials not implemented");
+        }
+    }
+  };
 
 
 
@@ -370,11 +290,9 @@ namespace ngfem
   /* ***************************** Trig Elements *************************************** */
 
   ///
-  class FE_Trig0 : public T_ScalarFiniteElement2<FE_Trig0,ET_TRIG,1,0>
+  class FE_Trig0 : public T_ScalarFiniteElement<FE_Trig0,ET_TRIG,1,0>
   {
   public:
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx x[2], TFA & shape) 
     {
@@ -385,11 +303,9 @@ namespace ngfem
   }; 
 
   ///
-  class FE_Trig1 : public T_ScalarFiniteElement2<FE_Trig1,ET_TRIG,3,1>
+  class FE_Trig1 : public T_ScalarFiniteElement<FE_Trig1,ET_TRIG,3,1>
   {
   public:
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     inline static void T_CalcShape (Tx x[2], TFA & shape)
     {
@@ -402,11 +318,9 @@ namespace ngfem
 
 
   ///
-  class FE_Trig2 : public T_ScalarFiniteElement2<FE_Trig2,ET_TRIG,6,2>
+  class FE_Trig2 : public T_ScalarFiniteElement<FE_Trig2,ET_TRIG,6,2>
   {
   public:
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[2], TFA & shape) 
     {
@@ -425,15 +339,52 @@ namespace ngfem
     virtual const IntegrationRule & NodalIntegrationRule() const;
   }; 
 
+  class FE_Trig2HB : public T_ScalarFiniteElement<FE_Trig2HB,ET_TRIG,6,2>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    {
+      Tx x = hx[0];
+      Tx y = hx[1];
+      Tx lam3 = 1-x-y;
+    
+      shape[0] = x;
+      shape[1] = y;
+      shape[2] = lam3;
+      shape[3] = 4 * y * lam3;
+      shape[4] = 4 * x * lam3;
+      shape[5] = 4 * x * y;
+    }
+  }; 
+
+
+
+  class FE_NcTrig1 : public T_ScalarFiniteElement<FE_NcTrig1,ET_TRIG,3,1>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    {
+      Tx x = hx[0];
+      Tx y = hx[1];
+      Tx lam3 = 1-x-y;
+    
+      shape[0] = 1-2*y;
+      shape[1] = 1-2*x;
+      shape[2] = 1-2*lam3;
+    }
+  };
+
+
+
 
   /* ***************************** Quad *************************************** */
 
 
-  class FE_Quad0 : public T_ScalarFiniteElement2<FE_Quad0,ET_QUAD,1,0>
+  class FE_Quad0 : public T_ScalarFiniteElement<FE_Quad0,ET_QUAD,1,0>
   {
   public:
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[2], TFA & shape) 
     {
@@ -445,11 +396,9 @@ namespace ngfem
 
 
   /// quad of order 1
-  class FE_Quad1 : public T_ScalarFiniteElement2<FE_Quad1,ET_QUAD,4,1>
+  class FE_Quad1 : public T_ScalarFiniteElement<FE_Quad1,ET_QUAD,4,1>
   {
   public:
-    static IPDataArray ipdata;
-		
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[2], TFA & shape) 
     {
@@ -467,11 +416,9 @@ namespace ngfem
 
 
   /// quad or order 2
-  class FE_Quad2 : public T_ScalarFiniteElement2<FE_Quad2,ET_QUAD,9,2>
+  class FE_Quad2 : public T_ScalarFiniteElement<FE_Quad2,ET_QUAD,9,2>
   {
   public:
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[2], TFA & shape) 
     {
@@ -496,11 +443,9 @@ namespace ngfem
   }; 
 
 
-  class FE_Quad2aniso :  public T_ScalarFiniteElement2<FE_Quad2aniso,ET_QUAD,6,2>
+  class FE_Quad2aniso :  public T_ScalarFiniteElement<FE_Quad2aniso,ET_QUAD,6,2>
   {
   public:
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[2], TFA & shape) 
     {
@@ -523,11 +468,9 @@ namespace ngfem
 
 
   ///
-  class FE_Tet0 : public T_ScalarFiniteElement2<FE_Tet0,ET_TET,1,0>
+  class FE_Tet0 : public T_ScalarFiniteElement<FE_Tet0,ET_TET,1,0>
   {
   public:
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[3], TFA & shape) 
     {
@@ -539,11 +482,9 @@ namespace ngfem
 
 
   ///
-  class FE_Tet1 : public T_ScalarFiniteElement2<FE_Tet1,ET_TET,4,1>
+  class FE_Tet1 : public T_ScalarFiniteElement<FE_Tet1,ET_TET,4,1>
   {
   public:
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[3], TFA & shape) 
     {
@@ -563,11 +504,9 @@ namespace ngfem
 
 
   ///
-  class FE_Tet2 : public T_ScalarFiniteElement2<FE_Tet2,ET_TET,10,2>
+  class FE_Tet2 : public T_ScalarFiniteElement<FE_Tet2,ET_TET,10,2>
   {
   public:
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[3], TFA & shape) 
     {
@@ -593,11 +532,9 @@ namespace ngfem
 
 
   ///
-  class FE_Tet2HB : public T_ScalarFiniteElement2<FE_Tet2HB,ET_TET,10,2>
+  class FE_Tet2HB : public T_ScalarFiniteElement<FE_Tet2HB,ET_TET,10,2>
   {
   public:
-    static IPDataArray ipdata;
-
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[3], TFA & shape) 
     {
@@ -622,6 +559,147 @@ namespace ngfem
 
 
 
+  class FE_NcTet1 : public T_ScalarFiniteElement<FE_NcTet1,ET_TET,4,1>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    {
+      Tx x = hx[0];
+      Tx y = hx[1];
+      Tx z = hx[2];
+      Tx lam4 = 1-x-y-z;
+    
+      shape[0] = 1-2*x;
+      shape[1] = 1-2*y;
+      shape[2] = 1-2*z;
+      shape[3] = 1-2*lam4;
+    }
+  };
+
+
+  /* ***************************** Prism *********************************** */
+
+  ///
+  class FE_Prism0 : public T_ScalarFiniteElement<FE_Prism0,ET_PRISM,1,0>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    {
+      shape[0] = 1;
+    }
+  
+    virtual const IntegrationRule & NodalIntegrationRule() const;
+  };
+
+  ///
+  class FE_Prism1 : public T_ScalarFiniteElement<FE_Prism1,ET_PRISM,6,1>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    {
+      Tx x = hx[0];
+      Tx y = hx[1];
+      Tx z = hx[2];
+      
+      shape[0] = x * (1-z);
+      shape[1] = y * (1-z);
+      shape[2] = (1-x-y) * (1-z);
+      shape[3] = x * z;
+      shape[4] = y * z;
+      shape[5] = (1-x-y) * z;
+    }
+  
+    virtual const IntegrationRule & NodalIntegrationRule() const;
+  };
+
+
+
+
+
+  /* ***************************** Hex *********************************** */
+
+  ///
+  class FE_Hex0 : public T_ScalarFiniteElement<FE_Hex0,ET_HEX,1,0>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    {
+      shape[0] = 1;
+    }
+  
+    // virtual const IntegrationRule & NodalIntegrationRule() const;
+  };
+
+  ///
+  class FE_Hex1 : public T_ScalarFiniteElement<FE_Hex1,ET_HEX,8,1>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    {
+      Tx x = hx[0];
+      Tx y = hx[1];
+      Tx z = hx[2];
+
+      shape[0] = (1-x) * (1-y) * (1-z);
+      shape[1] =    x  * (1-y) * (1-z);
+      shape[2] =    x  *    y  * (1-z);
+      shape[3] = (1-x) *    y  * (1-z);
+      shape[4] = (1-x) * (1-y) *    z ;
+      shape[5] =    x  * (1-y) *    z ;
+      shape[6] =    x  *    y  *    z ;
+      shape[7] = (1-x) *    y  *    z ;
+
+    }
+  
+    // virtual const IntegrationRule & NodalIntegrationRule() const;
+  };
+
+
+
+
+  /* ***************************** Pyramid *********************************** */
+
+  ///
+  class FE_Pyramid0 : public T_ScalarFiniteElement<FE_Pyramid0,ET_PYRAMID,1,0>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    {
+      shape[0] = 1;
+    }
+  
+    virtual const IntegrationRule & NodalIntegrationRule() const;
+  };
+
+
+  ///
+  class FE_Pyramid1 : public T_ScalarFiniteElement<FE_Pyramid1,ET_PYRAMID,5,1>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    {
+      Tx x = hx[0];
+      Tx y = hx[1];
+      Tx z = hx[2];
+
+      if (z == 1) z -= 1e-10;
+
+      shape[0] = (1-z-x)*(1-z-y) / (1-z);
+      shape[1] = x*(1-z-y) / (1-z);
+      shape[2] = x*y / (1-z);
+      shape[3] = (1-z-x)*y / (1-z);
+      shape[4] = z;
+    }
+  
+    virtual const IntegrationRule & NodalIntegrationRule() const;
+  };
 
 
 

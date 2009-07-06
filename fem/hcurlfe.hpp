@@ -26,13 +26,6 @@ namespace ngfem
     enum { DIM = (D*(D-1))/2 };
   };
 
-  /*
-    template <> class DIM_CURL_TRAIT<2>
-    {
-    public:
-    enum { DIM = 1 };
-    };
-  */
 
   template <> class DIM_CURL_TRAIT<1>
   {
@@ -52,27 +45,16 @@ namespace ngfem
     enum { DIM = D };
     enum { DIM_CURL = DIM_CURL_TRAIT<D>::DIM };
 
-  protected:
-
-    class IPData
-    {
-    public:
-      FlatMatrixFixWidth<DIM> shape;
-      FlatMatrixFixWidth<DIM_CURL> curlshape;
-    };
-
-    IPData * p_ipdata;
-    DynamicMem<double> * block;
 
   public:
     ///
-    HCurlFiniteElement () { p_ipdata = 0; block = 0; }
+    HCurlFiniteElement () { ; }
 
     /// 
     HCurlFiniteElement (ELEMENT_TYPE aeltype, int andof, int aorder)
-      : FiniteElement (DIM, aeltype, andof, aorder) { p_ipdata = 0; block = 0; }
+      : FiniteElement (DIM, aeltype, andof, aorder) { ; } 
   
-    virtual ~HCurlFiniteElement ();
+    virtual ~HCurlFiniteElement () { ; }
 
     virtual string ClassName(void) const;
 
@@ -97,34 +79,20 @@ namespace ngfem
     const FlatMatrixFixWidth<DIM> GetShape (const IntegrationPoint & ip, 
 					    LocalHeap & lh) const
     {
-      if (p_ipdata && ip.IPNr() >= 0)
-	{
-	  return p_ipdata[ip.IPNr()].shape;
-	}
-      else
-	{
-	  FlatMatrixFixWidth<DIM> shape(ndof, lh);
-	  CalcShape (ip, shape);
-	  return shape;
-	}      
+      FlatMatrixFixWidth<DIM> shape(ndof, lh);
+      CalcShape (ip, shape);
+      return shape;
     }
 
     ///
     const FlatMatrixFixWidth<DIM_CURL> GetCurlShape (const IntegrationPoint & ip, 
 						     LocalHeap & lh) const
     {
-      if (p_ipdata && ip.IPNr() >= 0)
-	{
-	  return p_ipdata[ip.IPNr()].curlshape;
-	}
-      else
-	{
-	  FlatMatrixFixWidth<DIM_CURL> curlshape(ndof, lh);
-	  CalcCurlShape (ip, curlshape);
-	  return curlshape;
-	}
+      FlatMatrixFixWidth<DIM_CURL> curlshape(ndof, lh);
+      CalcCurlShape (ip, curlshape);
+      return curlshape;
     }  
- 
+    
     template <typename TVX>
     Vec<DIM_CURL, typename TVX::TSCAL> 
     EvaluateCurlShape (const IntegrationPoint & ip, 
@@ -140,8 +108,6 @@ namespace ngfem
       return Trans (GetCurlShape(ip, lh)) * x;
     }  
 
-    ///
-    void CalcIPData (Array<IPData> & ipdata);
 
   protected:
     ///
@@ -175,10 +141,333 @@ namespace ngfem
 
 
 
+
+
+
+
+  template <int DIM>
+  class Du
+  {
+  public:
+    const AutoDiff<DIM> & u;
+    Du (const AutoDiff<DIM> & au)
+      : u(au) { ; }
+  };
+
+  template <int DIM>
+  class uDv
+  {
+  public:
+    const AutoDiff<DIM> & u, v;
+    uDv (const AutoDiff<DIM> & au, 
+         const AutoDiff<DIM> & av)
+      : u(au), v(av) { ; }
+  };
+
+
+  template <int DIM>
+  class uDv_minus_vDu
+  {
+  public:
+    const AutoDiff<DIM> & u, v;
+    uDv_minus_vDu (const AutoDiff<DIM> & au, 
+                   const AutoDiff<DIM> & av)
+      : u(au), v(av) { ; }
+  };
+
+  template <int DIM>
+  class wuDv_minus_wvDu
+  {
+  public:
+    const AutoDiff<DIM> & u, v, w;
+    wuDv_minus_wvDu (const AutoDiff<DIM> & au, 
+                     const AutoDiff<DIM> & av,
+                     const AutoDiff<DIM> & aw)
+      : u(au), v(av), w(aw) { ; }
+  };
+
+
+
+
+  template <int DIM>
+  class HCurlShapeElement
+  {
+    double * data;
+  public:
+    HCurlShapeElement (double * adata) : data(adata) { ; }
+
+    void operator= (const Du<DIM> & uv) 
+    { for (int i = 0; i < DIM; i++) 
+        data[i] = uv.u.DValue(i); }
+
+    void operator= (const uDv<DIM> & uv) 
+    { for (int i = 0; i < DIM; i++) 
+        data[i] = uv.u.Value() * uv.v.DValue(i); }
+
+    void operator= (const uDv_minus_vDu<DIM> & uv) 
+    { for (int i = 0; i < DIM; i++) 
+        data[i] = 
+          uv.u.Value() * uv.v.DValue(i)
+          -uv.v.Value() * uv.u.DValue(i); }
+
+    void operator= (const wuDv_minus_wvDu<DIM> & uv) 
+    { for (int i = 0; i < DIM; i++) 
+        data[i] = 
+          uv.w.Value() * uv.u.Value() * uv.v.DValue(i)
+          -uv.w.Value() * uv.v.Value() * uv.u.DValue(i); }
+  };
+
+  
+  // hv.DValue() = (grad u) x (grad v) 
+  inline AutoDiff<3> Cross (const AutoDiff<3> & u,
+			    const AutoDiff<3> & v)
+  {
+    AutoDiff<3> hv;
+    hv.Value() = 0.0;
+    hv.DValue(0) = u.DValue(1)*v.DValue(2)-u.DValue(2)*v.DValue(1);
+    hv.DValue(1) = u.DValue(2)*v.DValue(0)-u.DValue(0)*v.DValue(2);
+    hv.DValue(2) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
+    return hv;
+  }
+
+  inline AutoDiff<1> Cross (const AutoDiff<2> & u,
+			    const AutoDiff<2> & v)
+  {
+    AutoDiff<1> hv;
+    hv.Value() = 0.0;
+    hv.DValue(0) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
+    return hv;
+  }
+
+
+
+  template <int DIM>
+  class HCurlCurlShapeElement
+  {
+    double * data;
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+  public:
+    HCurlCurlShapeElement (double * adata) : data(adata) { ; }
+
+    void operator= (const Du<DIM> & uv) 
+    { for (int i = 0; i < DIM; i++) 
+        data[i] = 0; }
+
+    void operator= (const uDv<DIM> & uv) 
+    {
+      AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
+      for (int i = 0; i < DIM_CURL; i++) 
+        data[i] = hd.DValue(i);
+    }
+
+    void operator= (const uDv_minus_vDu<DIM> & uv) 
+    {
+      AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
+      for (int i = 0; i < DIM_CURL; i++) 
+        data[i] = 2*hd.DValue(i);
+    }
+
+    void operator= (const wuDv_minus_wvDu<DIM> & uv) 
+    {
+      AutoDiff<DIM_CURL> hd = Cross (uv.u*uv.w, uv.v) + Cross(uv.u, uv.v*uv.w);
+      for (int i = 0; i < DIM_CURL; i++) 
+        data[i] = hd.DValue(i);
+    }
+  };
+
+  template <int DIM>
+  class HCurlEvaluateCurlElement
+  {
+    const double * coefs;
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+    Vec<DIM_CURL> & sum;
+  public:
+    HCurlEvaluateCurlElement (const double * acoefs, Vec<DIM_CURL> & asum)
+      : coefs(acoefs), sum(asum) { ; }
+
+    void operator= (const Du<DIM> & uv) 
+    { ; }
+
+    void operator= (const uDv<DIM> & uv) 
+    {
+      AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
+      for (int i = 0; i < DIM_CURL; i++) 
+        sum[i] += *coefs * hd.DValue(i);
+    }
+
+    void operator= (const uDv_minus_vDu<DIM> & uv) 
+    {
+      AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
+      for (int i = 0; i < DIM_CURL; i++) 
+        sum[i] += 2 * *coefs * hd.DValue(i);
+    }
+
+    void operator= (const wuDv_minus_wvDu<DIM> & uv) 
+    {
+      AutoDiff<DIM_CURL> hd = Cross (uv.u*uv.w, uv.v) + Cross(uv.u, uv.v*uv.w);
+      for (int i = 0; i < DIM_CURL; i++) 
+        sum[i] += *coefs * hd.DValue(i);
+    }
+  };
+
+
+
+  template <int DIM>
+  class HCurlShapeAssign
+  {
+    double * dshape;
+  public:
+    HCurlShapeAssign (FlatMatrixFixWidth<DIM> mat)
+    { dshape = &mat(0,0); }
+
+    HCurlShapeElement<DIM> operator[] (int i) const
+    { return HCurlShapeElement<DIM> (dshape + i*DIM); }
+  };
+
+
+  template <int DIM>
+  class HCurlCurlShapeAssign
+  {
+    double * dshape;
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+  public:
+    HCurlCurlShapeAssign (FlatMatrixFixWidth<DIM_CURL> mat)
+    { dshape = &mat(0,0); }
+
+    HCurlCurlShapeElement<DIM> operator[] (int i) const
+    { return HCurlCurlShapeElement<DIM> (dshape + i*DIM_CURL); }
+  };
+
+  template <int DIM>
+  class HCurlEvaluateCurl
+  {
+    const double * coefs;
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+    Vec<DIM_CURL> sum;
+  public:
+    HCurlEvaluateCurl (FlatVector<> acoefs)
+    { coefs = &acoefs(0); sum = 0.0; }
+
+    HCurlEvaluateCurlElement<DIM> operator[] (int i) 
+    { return HCurlEvaluateCurlElement<DIM> (coefs+i, sum); }
+
+    Vec<DIM_CURL> Sum() { return sum; }
+  };
+
+
+
+
+
+
+
+  /**
+     Base-element for template polymorphism.
+     Barton and Nackman Trick
+  */
+  
+  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
+  class T_HCurlFiniteElement : public HCurlFiniteElement<ET_trait<ET>::DIM>
+  {
+
+  public:
+    
+  protected:
+    enum { DIM = ET_trait<ET>::DIM };
+    using HCurlFiniteElement<DIM>::DIM_CURL;
+
+    T_HCurlFiniteElement ()
+      : HCurlFiniteElement<DIM> (ET, NDOF, ORDER) { ; }
+
+    virtual ~T_HCurlFiniteElement() { ; }
+
+  public:
+
+    virtual void CalcShape (const IntegrationPoint & ip, 
+                            FlatMatrixFixWidth<DIM> shape) const
+    {
+      AutoDiff<DIM> adp[DIM];
+      for (int i = 0; i < DIM; i++)
+        adp[i] = AutoDiff<DIM> (ip(i), i);
+      
+      HCurlShapeAssign<DIM> ds(shape); 
+      FEL::T_CalcShape (adp, ds);
+    }
+
+    virtual void
+    CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+                     FlatMatrixFixWidth<DIM> shape) const
+    {
+      AutoDiff<DIM> adp[DIM];
+      
+      for (int i = 0; i < DIM; i++)
+        adp[i].Value() = sip.IP()(i);
+      
+      for (int i = 0; i < DIM; i++)
+        for (int j = 0; j < DIM; j++)
+          adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
+      
+      HCurlShapeAssign<DIM> ds(shape); 
+      FEL::T_CalcShape (adp, ds);
+    }
+
+
+
+    virtual void CalcCurlShape (const IntegrationPoint & ip, 
+                                FlatMatrixFixWidth<DIM_CURL> curlshape) const
+    {
+      AutoDiff<DIM> adp[DIM];
+      for (int i = 0; i < DIM; i++)
+        adp[i] = AutoDiff<DIM> (ip(i), i);
+
+      HCurlCurlShapeAssign<DIM> ds(curlshape); 
+      FEL::T_CalcShape (adp, ds);
+    }
+
+    virtual void
+    CalcMappedCurlShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+                         FlatMatrixFixWidth<DIM_CURL> curlshape) const
+    {
+      AutoDiff<DIM> adp[DIM];
+
+      for (int i = 0; i < DIM; i++)
+        adp[i].Value() = sip.IP()(i);
+      
+      for (int i = 0; i < DIM; i++)
+        for (int j = 0; j < DIM; j++)
+          adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
+
+      HCurlCurlShapeAssign<DIM> ds(curlshape); 
+      FEL::T_CalcShape (adp, ds);
+    }
+
+    virtual Vec <DIM_CURL>
+    EvaluateCurlShape (const IntegrationPoint & ip, 
+                       FlatVector<double> x,
+                       LocalHeap & lh) const
+    {
+      AutoDiff<DIM> adp[DIM];
+      for (int i = 0; i < DIM; i++)
+        adp[i] = AutoDiff<DIM> (ip(i), i);
+      
+      HCurlEvaluateCurl<DIM> ds(x); 
+      FEL::T_CalcShape (adp, ds);
+      return ds.Sum();
+    }
+
+  };
+
+
+
+
+
+
+
+
   template <int D>
   extern void ComputeGradientMatrix (const ScalarFiniteElement<D> & h1fe,
 				     const HCurlFiniteElement<D> & hcurlfe,
 				     FlatMatrix<> gradient);
+
 
 
   /* **************************** Segm Elements *************** */
@@ -193,8 +482,8 @@ namespace ngfem
 
   private:
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+    // static Array<IPData> ipdata;
+    // bool ipdatadestructed;
 
   public:
     ///
@@ -217,8 +506,8 @@ namespace ngfem
 
   private:
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+    // static Array<IPData> ipdata;
+    // bool ipdatadestructed;
 
   public:
     ///
@@ -236,8 +525,8 @@ namespace ngfem
   class FE_NedelecSegm3 : public HCurlFiniteElement<1>
   {
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+// static Array<IPData> ipdata;
+// bool ipdatadestructed;
 
   public:
     ///
@@ -254,12 +543,33 @@ namespace ngfem
 
 
 
-
-
-
-
   /* *********************** Quad elements ******************* */
 
+  class FE_NedelecQuad1 : public T_HCurlFiniteElement<FE_NedelecQuad1,ET_QUAD,4,1>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    {
+      Tx x = hx[0], y = hx[1];
+      
+      AutoDiff<2> lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
+      AutoDiff<2> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+      
+      const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
+      for (int i = 0; i < 4; i++)
+        {
+          int es = edges[i][0], ee = edges[i][1];
+          
+          AutoDiff<2> xi  = sigma[ee]-sigma[es];
+          AutoDiff<2> lam_e = lami[ee]+lami[es];  
+          
+          shape[i] = uDv<2> (0.5 * lam_e, xi); 
+        }
+    }
+  };
+
+  /*
   /// Gradients of Q1
   class FE_NedelecQuad1 : public HCurlFiniteElement<2>
   {
@@ -268,8 +578,8 @@ namespace ngfem
 
   protected:
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+    // static Array<IPData> ipdata;
+    // bool ipdatadestructed;
   public:
     ///
     FE_NedelecQuad1();
@@ -281,7 +591,7 @@ namespace ngfem
 			    FlatMatrixFixWidth<2> shape) const;
 
   };
-
+  */
 
 
   /*
@@ -303,8 +613,8 @@ namespace ngfem
 
   protected:
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+    // static Array<IPData> ipdata;
+    // bool ipdatadestructed;
     ///
     // static Mat<FE_TNedelecQuad<ORDER,ZORDER>::NDOF> trans;
 
@@ -341,12 +651,79 @@ namespace ngfem
 
   /* ******************** triangular elements *********************** */
 
+  class FE_NedelecTrig1 : public T_HCurlFiniteElement<FE_NedelecTrig1,ET_TRIG,3,1>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    {
+      Tx x = hx[0], y = hx[1];
+      Tx lami[3] = { x, y, 1-x-y };
+      
+      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+      for (int i = 0; i < 3; i++)
+        shape[i] = uDv_minus_vDu<2> (lami[edges[i][0]], lami[edges[i][1]]);
+    }
+  };
+
+  class FE_NedelecTrig2 : public T_HCurlFiniteElement<FE_NedelecTrig2,ET_TRIG,6,1>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    {
+      Tx x = hx[0], y = hx[1];
+      Tx lami[3] = { x, y, 1-x-y };
+      
+      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+      for (int i = 0; i < 3; i++)
+        {
+          shape[i] = uDv_minus_vDu<2> (lami[edges[i][0]], lami[edges[i][1]]);
+          shape[i+3] = Du<2> (lami[edges[i][0]]*lami[edges[i][1]]);
+        }
+    }
+  };
+
+  class FE_NedelecTrig3 : public T_HCurlFiniteElement<FE_NedelecTrig3,ET_TRIG,12,2>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    {
+      Tx x = hx[0], y = hx[1];
+      Tx lami[3] = { x, y, 1-x-y };
+      
+      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+      for (int i = 0; i < 3; i++)
+        {
+          Tx lam1 = lami[edges[i][0]];
+          Tx lam2 = lami[edges[i][1]];
+
+          shape[i] = uDv_minus_vDu<2> (lam1, lam2);
+          shape[i+3] = Du<2> (lam1*lam2);
+          shape[i+6] = Du<2> (lam1*lam2*(lam1-lam2));
+        }
+
+      const FACE * faces = ElementTopology::GetFaces (ET_TRIG); 
+      for (int k = 0; k < 3; k++)
+        {
+          int k1 = (k+1)%3, k2 = (k+2)%3;
+          shape[9+k] = uDv_minus_vDu<2> (lami[faces[0][k]],
+                                         lami[faces[0][k1]]*lami[faces[0][k2]]);
+        }
+
+    }
+  };
+
+
+
+  /*
   /// Lowest order Nedelec
   class FE_NedelecTrig1 : public HCurlFiniteElement<2>
   {
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+    // static Array<IPData> ipdata;
+    // bool ipdatadestructed;
 
   public:
 
@@ -369,8 +746,8 @@ namespace ngfem
 
   private:
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+    // static Array<IPData> ipdata;
+    // bool ipdatadestructed;
     ///
     static Mat<NDOF> trans;
 
@@ -392,11 +769,6 @@ namespace ngfem
   };
 
 
-
-
-
-
-
   /// Nedelec type 2, order 2, gradients of P3
   class FE_NedelecTrig3 : public HCurlFiniteElement<2>
   {
@@ -404,8 +776,8 @@ namespace ngfem
     enum { NDOF = 12 };
     enum { NEDGEDOF = 6 };
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+    // static Array<IPData> ipdata;
+    // bool ipdatadestructed;
     ///
     static Mat<NDOF> trans;
     ///
@@ -432,7 +804,7 @@ namespace ngfem
     ///
     void Orthogonalize();
   };
-
+  */
 
 
 
@@ -444,37 +816,101 @@ namespace ngfem
 
 
   /* *********************** Tetrahedral elements ********************** */
-
-
-  ///
-  class FE_NedelecTet1 : public HCurlFiniteElement<3>
+  
+  class FE_NedelecTet1 : public T_HCurlFiniteElement<FE_NedelecTet1,ET_TET,6,1>
   {
   public:
-    enum { NDOF = 6 };
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx x[3], TFA & shape) 
+    {
+      // Tx x = hx[0], y = hx[1], z = hx[2];
+      // Tx lami[4] = { x, y, z, 1-x-y-z };
+      Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };      
 
-  private:
-    ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+      const EDGE * edges = ElementTopology::GetEdges (ET_TET);
+      for (int i = 0; i < 6; i++)
+        shape[i] = uDv_minus_vDu<3> (lami[edges[i][0]], lami[edges[i][1]]);
+    }
+  };
 
+  class FE_NedelecTet2 : public T_HCurlFiniteElement<FE_NedelecTet2,ET_TET,12,1>
+  {
   public:
-
-    ///
-    FE_NedelecTet1();
-    ///
-    virtual ~FE_NedelecTet1();
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const;
-
-    virtual void CalcCurlShape (const IntegrationPoint & ip, 
-				FlatMatrixFixWidth<3> curlshape) const;
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx x[3], TFA & shape) 
+    {
+      // Tx x = hx[0], y = hx[1], z = hx[2];
+      // Tx lami[4] = { x, y, z, 1-x-y-z };
+      Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };      
+      
+      const EDGE * edges = ElementTopology::GetEdges (ET_TET);
+      for (int i = 0; i < 6; i++)
+        {
+          shape[i] = uDv_minus_vDu<3> (lami[edges[i][0]], lami[edges[i][1]]);
+          shape[i+6] = Du<3> (lami[edges[i][0]]*lami[edges[i][1]]);
+        }
+    }
   };
 
 
+  class FE_NedelecTet3 : public T_HCurlFiniteElement<FE_NedelecTet3,ET_TET,30,2>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx x[3], TFA & shape)
+    {
+      Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };      
+      
+      const EDGE * edges = ElementTopology::GetEdges (ET_TET);
+      for (int i = 0; i < 6; i++)
+        {
+          Tx lam1 = lami[edges[i][0]];
+          Tx lam2 = lami[edges[i][1]];
+          shape[i] = uDv_minus_vDu<3> (lam1, lam2);
+          shape[i+6] = Du<3> (lam1*lam2);
+          shape[i+12] = Du<3> (lam1*lam2*(lam1-lam2));
+        }
+
+      const FACE * faces = ElementTopology::GetFaces (ET_TET); 
+      for (int i = 0; i < 4; i++)
+        for (int k = 0; k < 3; k++)
+          {
+            int k1 = (k+1)%3, k2 = (k+2)%3;
+            shape[18+3*i+k] = uDv_minus_vDu<3> (lami[faces[i][k]],
+                                                lami[faces[i][k1]]*lami[faces[i][k2]]);
+          }
+    }
+  };
+
+
+  /*
+    class FE_NedelecTet1o : public HCurlFiniteElement<3>
+    {
+    public:
+    enum { NDOF = 6 };
+
+    private:
+    ///
+      // static Array<IPData> ipdata;
+      // bool ipdatadestructed;
+
+    public:
+
+    ///
+    FE_NedelecTet1o();
+    ///
+    virtual ~FE_NedelecTet1o();
+    ///
+    virtual void CalcShape (const IntegrationPoint & ip, 
+    FlatMatrixFixWidth<3> shape) const;
+
+    virtual void CalcCurlShape (const IntegrationPoint & ip, 
+    FlatMatrixFixWidth<3> curlshape) const;
+    };
+
 
   ///
-  class FE_NedelecTet2 : public HCurlFiniteElement<3>
+  class FE_NedelecTet2o : public HCurlFiniteElement<3>
   {
   public:
 
@@ -482,31 +918,28 @@ namespace ngfem
 
   private:
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+    // static Array<IPData> ipdata;
+    // bool ipdatadestructed;
     ///
     static Mat<NDOF> trans;
 
   public:
     ///
-    FE_NedelecTet2();
+    FE_NedelecTet2o();
     ///
-    virtual ~FE_NedelecTet2();
+    virtual ~FE_NedelecTet2o();
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const;
+                            FlatMatrixFixWidth<3> shape) const;
 
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> shape) const;
+                             FlatMatrixFixWidth<3> shape) const;
 
     ///
     void Orthogonalize();
   };
-
-
-
 
 
   /// 2nd order Nedelec element of class II
@@ -519,8 +952,8 @@ namespace ngfem
 
   protected:
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+    //     static Array<IPData> ipdata;
+    // bool ipdatadestructed;
     ///
     static Mat<NDOF> trans;
     ///
@@ -541,27 +974,30 @@ namespace ngfem
 			    FlatMatrixFixWidth<3> shape) const;
 
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
-				FlatMatrixFixWidth<3> curlshape) const;
+                                FlatMatrixFixWidth<3> curlshape) const;
   
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> shape) const;
+                             FlatMatrixFixWidth<3> shape) const;
 
     ///
     virtual void CalcShape2 (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> shape) const;
+                             FlatMatrixFixWidth<3> shape) const;
 
     ///
     virtual void CalcShape3 (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> shape) const;
+                             FlatMatrixFixWidth<3> shape) const;
 
     ///
     virtual void CalcCurlShape3 (const IntegrationPoint & ip, 
-				 FlatMatrixFixWidth<3> shape) const;
+                                 FlatMatrixFixWidth<3> shape) const;
 
     ///
     void Orthogonalize();
   };
+  */
+
+
   /// 2nd order Nedelec element of class II, without gradient fields
   class FE_NedelecTet3NoGrad : public HCurlFiniteElement<3>
   {
@@ -570,8 +1006,6 @@ namespace ngfem
     enum { NFACEDOF = 12 };
 
   protected:
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
     static Mat<NFACEDOF> trans3;
 
     FE_NedelecTet1 tet1;
@@ -584,13 +1018,13 @@ namespace ngfem
 			    FlatMatrixFixWidth<3> shape) const;
 
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
-				FlatMatrixFixWidth<3> curlshape) const;
+                                FlatMatrixFixWidth<3> curlshape) const;
 
     virtual void CalcShape3 (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> shape) const;
+                             FlatMatrixFixWidth<3> shape) const;
 
     virtual void CalcCurlShape3 (const IntegrationPoint & ip, 
-				 FlatMatrixFixWidth<3> shape) const;
+                                 FlatMatrixFixWidth<3> shape) const;
 
     void Orthogonalize();
   };
@@ -600,12 +1034,13 @@ namespace ngfem
   /* *********************** Hex elements ************************ */ 
 
 
+
   /// 
   class FE_NedelecHex1 : public HCurlFiniteElement<3> 
   {
     /// 
-    static Array<IPData> ipdata; 
-    bool ipdatadestructed;
+// static Array<IPData> ipdata; 
+// bool ipdatadestructed;
   
   public: 
     ///
@@ -614,19 +1049,48 @@ namespace ngfem
     virtual ~FE_NedelecHex1(); 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const; 
+                            FlatMatrixFixWidth<3> shape) const; 
   }; 
-  
 
 
   /* *********************** Prism elements ********************** */
 
+  class FE_NedelecPrism1 : public T_HCurlFiniteElement<FE_NedelecPrism1,ET_PRISM,9,1>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    {
+      Tx x = hx[0], y = hx[1], z = hx[2];
+
+      Tx lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
+      Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
+       
+      const EDGE * edges = ElementTopology::GetEdges (ET_PRISM);
+  
+      // horizontal edge shapes
+      for (int i = 0; i < 6; i++)
+        {
+          int es = edges[i][0], ee = edges[i][1]; 
+          shape[i] = wuDv_minus_wvDu<3> (lami[es], lami[ee], muz[ee]);
+        }
+      
+      //Vertical Edge Shapes
+      for (int i = 6; i < 9; i++)
+        {
+          int es = edges[i][0], ee = edges[i][1];
+          shape[i] = wuDv_minus_wvDu<3> (muz[es], muz[ee], lami[ee]);
+        }
+    }
+  };
+  
+  /*
   ///
   class FE_NedelecPrism1 : public HCurlFiniteElement<3>
   {
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+    // static Array<IPData> ipdata;
+    // bool ipdatadestructed;
 
   public:
 
@@ -639,14 +1103,15 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<3> shape) const;
   };
+  */
 
   /// \f$ \nabla Q (2,ZORDER) \f$
   template <int ZORDER>
   class FE_TNedelecPrism2 : public HCurlFiniteElement<3>
   {
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+// static Array<IPData> ipdata;
+// bool ipdatadestructed;
     ///
     static Matrix<> trans;
     ///
@@ -689,14 +1154,33 @@ namespace ngfem
 
 
 
+  /// potential space for Nedelec IIb
+  class FE_Trig3Pot : public ScalarFiniteElement<2>
+  {
+    ///
+// static IPDataArray ipdata;
+  public:
+  ///
+    FE_Trig3Pot();
+    ///
+    virtual ~FE_Trig3Pot();
+
+    ///
+    virtual void CalcShape (const IntegrationPoint & ip, 
+			    FlatVector<> shape) const;
+			  
+  }; 
+
+
+
 
   /// \f$ \nabla Q (3,ZORDER) \f$
   template <int ZORDER>
   class FE_TNedelecPrism3 : public HCurlFiniteElement<3>
   {
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+// static Array<IPData> ipdata;
+// bool ipdatadestructed;
     ///
     static Matrix<> trans;
     ///
@@ -763,8 +1247,8 @@ namespace ngfem
   class FE_TNedelecPrism3NoGrad : public HCurlFiniteElement<3>
   {
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+// static Array<IPData> ipdata;
+// bool ipdatadestructed;
     ///
     static Matrix<> trans_quad;
     ///
@@ -838,8 +1322,8 @@ namespace ngfem
   class FE_NedelecPyramid1 : public HCurlFiniteElement<3>
   {
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+// static Array<IPData> ipdata;
+// bool ipdatadestructed;
     ///
     static Matrix<> trans;
   public:
@@ -870,8 +1354,8 @@ namespace ngfem
 
   private:
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+    // static Array<IPData> ipdata;
+    // bool ipdatadestructed;
     ///
     static Matrix<> trans;
     static Matrix<> trans2;
@@ -906,6 +1390,21 @@ namespace ngfem
   };
 
 
+  /// quad of order 3
+  class FE_Quad3 : public ScalarFiniteElement<2>
+  {
+    // static IPDataArray ipdata;
+
+  public:
+    FE_Quad3();
+    virtual ~FE_Quad3();
+    virtual void CalcShape (const IntegrationPoint & ip, 
+			    FlatVector<> shape) const;
+    virtual void CalcDShape (const IntegrationPoint & ip, 
+			     FlatMatrixFixWidth<2> dshape) const;
+  }; 
+
+
 
   ///
   class FE_NedelecPyramid3 : public HCurlFiniteElement<3>
@@ -917,8 +1416,8 @@ namespace ngfem
     enum { NINNERDOF = 9 };
   private:
     ///
-    static Array<IPData> ipdata;
-    bool ipdatadestructed;
+    // static Array<IPData> ipdata;
+    // bool ipdatadestructed;
     ///
     static Mat<NDOF> trans;
     static Mat<NEDGEDOF> trans2;
@@ -1007,56 +1506,6 @@ namespace ngfem
  void Orthogonalize();
  };
   */
-
-
-
-
-
-
-
-
-
-#ifdef OLD
-
-  /// extension to Nedelec type II
-  class FE_NedelecPyramid1b : public HCurlFiniteElement<3>
-  {
-    ///
-    static Array<IPData> ipdata;
-    ///
-    FE_NedelecPyramid1 pyramid1;
-    ///
-    static FlatMatrix<> trans;
-
-  public:
-
-    ///
-    FE_NedelecPyramid1b();
-    ///
-    virtual ~FE_NedelecPyramid1b();
-
-    ///
-    virtual int SpatialDim () const { return 3; }
-    ///
-    virtual int GetNDof () const { return 16; }
-    ///
-    virtual int Order () const { return 2; }
-    ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const;
-    ///
-    virtual void CalcShape1 (const IntegrationPoint & ip, 
-			     FlatMatrix<> shape) const;
-
-    ///
-    void Orthogonalize();
-  };
-
-#endif
-
-
 
 
 }

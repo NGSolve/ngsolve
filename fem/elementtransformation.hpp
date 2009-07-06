@@ -81,7 +81,7 @@ public:
 
 
   ELEMENT_TYPE GetElementType () const
-   { return fel->ElementType(); }
+  { return fel->ElementType(); }
   
   ///
   template <typename T>
@@ -148,13 +148,24 @@ public:
         // point = pointmat * fel->GetShape(ip, lh);
   }
 
-  template <typename T1, typename T2>
+  /*
+  template <int D, typename T1, typename T2>
   void CalcPointJacobian (const IntegrationPoint & ip,
 			  T1 & point, T2 & dxdxi,
 			  LocalHeap & lh) const
+  */
+  template <int S, int R>
+  void CalcPointJacobian (const IntegrationPoint & ip,
+			  // T1 & point, T2 & dxdxi,
+                          Vec<R> & point, Mat<R,S> & dxdxi,
+			  LocalHeap & lh) const
   {
-    switch (fel->SpatialDim())
-      {
+    dxdxi = pointmat * static_cast<const ScalarFiniteElement<S>*> (fel)->GetDShape(ip, lh);
+    point = pointmat * static_cast<const ScalarFiniteElement<S>*> (fel)->GetShape(ip, lh);
+    
+    /*
+    // switch (fel->SpatialDim())
+    {
       case 1:
         dxdxi = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetDShape(ip, lh);
         point = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetShape(ip, lh);
@@ -168,6 +179,7 @@ public:
         point = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetShape(ip, lh);
         break;
       }
+    */
   }
 
 
@@ -361,10 +373,12 @@ public:
   }
 
 
-
-  template <typename T1, typename T2>
+  // template <int D>
+  // template <typename T1, typename T2>
+  template <int S, int R>
   void CalcPointJacobian (const IntegrationPoint & ip,
-			  T1 & point, T2 & dxdxi,
+			  // T1 & point, T2 & dxdxi,
+                          Vec<R> & point, Mat<R,S> & dxdxi,
 			  LocalHeap & lh) const
   {
     if (boundary)
@@ -386,6 +400,7 @@ public:
   }
 
 
+#ifdef abc
   template <typename T0, typename T1, typename T2>
   void CalcMultiPointJacobian (FlatArray<T0> ipts,
                                FlatArray<T1> point, 
@@ -393,12 +408,13 @@ public:
                                LocalHeap & lh) const
   {
     if (boundary)
-      ;
-      // Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0));
+      for (int j = 0; j < ipts.Size(); j++)
+        Ng_GetSurfaceElementTransformation (elnr+1, &ipts[j](0), &point[j](0), &dxdxi[j](0,0));
+
     else
       {
         /*
-        for (int i = 0; i < ipts.Size(); i++)
+        for (int i = 0; i < ipts.Size(); i++)b
           Ng_GetElementTransformation (elnr+1, &ipts[i](0), &point[i](0), &dxdxi[i](0,0));
         */
 
@@ -408,8 +424,29 @@ public:
                                           &dxdxi[0](0,0), &dxdxi[1](0,0)-&dxdxi[0](0,0));
       }
   }
+#endif
 
+  template <typename T0, int DIMS, int DIMR>
+  void CalcMultiPointJacobian (FlatArray<T0> ipts,
+                               FlatArray<Vec<DIMR> > point, 
+                               FlatArray<Mat<DIMR,DIMS> > dxdxi,
+                               LocalHeap & lh) const
+  {
+    /*
+    // if (DIMR != DIMS)
+    if (DIMS == 1)
+      for (int j = 0; j < ipts.Size(); j++)
+        Ng_GetSurfaceElementTransformation (elnr+1, &ipts[j](0), &point[j](0), &dxdxi[j](0,0));
 
+    else
+    */
+    {
+      Ng_MultiElementTransformation <DIMS,DIMR> (elnr, ipts.Size(),
+                                                 &ipts[0](0), &ipts[1](0)-&ipts[0](0),
+                                                 &point[0](0), &point[1](0)-&point[0](0),
+                                                 &dxdxi[0](0,0), &dxdxi[1](0,0)-&dxdxi[0](0,0));
+    }
+  }
 
 
 
