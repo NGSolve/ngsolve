@@ -18,6 +18,8 @@ namespace ngfem
 {
   using namespace ngfem;
 
+
+#ifdef OLD
   template <int D>
   void HDivFiniteElement<D> :: 
   CalcIPData (Array<IPData> & ipdata)
@@ -53,6 +55,7 @@ namespace ngfem
 
     p_ipdata = &ipdata[0];
   }
+#endif
   
   template <int D>
   void HDivFiniteElement<D> ::
@@ -395,12 +398,12 @@ namespace ngfem
 
 
 
-  Array<HDivFiniteElement<2>::IPData> FE_RTTrig0::ipdata;
+  // Array<HDivFiniteElement<2>::IPData> FE_RTTrig0::ipdata;
 
   FE_RTTrig0 :: FE_RTTrig0()
     : HDivFiniteElement<2> (ET_TRIG, 3, 1)
   {
-    CalcIPData(ipdata);
+    // CalcIPData(ipdata);
   }
 
   FE_RTTrig0 :: ~FE_RTTrig0()
@@ -443,12 +446,12 @@ namespace ngfem
 
 
 
-  Array<HDivFiniteElement<2>::IPData> FE_RTTrig0plus::ipdata;
+  // Array<HDivFiniteElement<2>::IPData> FE_RTTrig0plus::ipdata;
   
   FE_RTTrig0plus :: FE_RTTrig0plus()
     : HDivFiniteElement<2> (ET_TRIG, 3, 1)
   {
-    CalcIPData(ipdata);
+    // CalcIPData(ipdata);
   }
 
   FE_RTTrig0plus :: ~FE_RTTrig0plus()
@@ -477,14 +480,14 @@ namespace ngfem
   }
 
 
-  Array<HDivFiniteElement<2>::IPData> FE_BDMTrig1::ipdata;
+  // Array<HDivFiniteElement<2>::IPData> FE_BDMTrig1::ipdata;
   Matrix<> FE_BDMTrig1::trans(6);
   
   FE_BDMTrig1 :: FE_BDMTrig1()
     : HDivFiniteElement<2> (ET_TRIG, 6, 1)
   {
     Orthogonalize();
-    CalcIPData(ipdata);
+    // CalcIPData(ipdata);
   }
   
   FE_BDMTrig1 :: ~FE_BDMTrig1()
@@ -591,7 +594,7 @@ namespace ngfem
 
 
   
-  Array<IPDataHDiv*> FE_BDMTrig1plus::ipdata;
+  // Array<IPDataHDiv*> FE_BDMTrig1plus::ipdata;
   DenseMatrix FE_BDMTrig1plus::trans;
 
   FE_BDMTrig1plus :: FE_BDMTrig1plus()
@@ -1364,12 +1367,12 @@ namespace ngfem
 #endif
 
 
-Array<HDivFiniteElement<2>::IPData> FE_RTQuad0::ipdata;
+  // Array<HDivFiniteElement<2>::IPData> FE_RTQuad0::ipdata;
 
 FE_RTQuad0 :: FE_RTQuad0()
   : HDivFiniteElement<2> (ET_QUAD, 4, 1)
 {
-  CalcIPData(ipdata);
+  // CalcIPData(ipdata);
 }
 
 FE_RTQuad0 :: ~FE_RTQuad0()
@@ -1397,15 +1400,15 @@ CalcShape (const IntegrationPoint & ip,
 
 
   
-  Array<IPDataHDiv*> FE_BDMQuad1::ipdata;
+  // Array<IPDataHDiv*> FE_BDMQuad1::ipdata;
   DenseMatrix FE_BDMQuad1::trans;
 
   FE_BDMQuad1 :: FE_BDMQuad1()
   {
-    if (!ipdata.Size())
+    // if (!ipdata.Size())
       {
 	Orthogonalize();
-	CalcIPData(ET_QUAD, ipdata);
+	// CalcIPData(ET_QUAD, ipdata);
       }
   }
 
@@ -1536,12 +1539,12 @@ CalcShape (const IntegrationPoint & ip,
 
 
 
-  Array<IPDataHDiv*> FE_RTSegm0::ipdata;
+  // Array<IPDataHDiv*> FE_RTSegm0::ipdata;
 
   FE_RTSegm0 :: FE_RTSegm0()
   {
-    if (!ipdata.Size())
-      CalcIPData(ET_SEGM, ipdata);
+    // if (!ipdata.Size())
+    // CalcIPData(ET_SEGM, ipdata);
   }
 
   FE_RTSegm0 :: ~FE_RTSegm0()
@@ -1582,12 +1585,12 @@ CalcShape (const IntegrationPoint & ip,
 
 
 
-  Array<IPDataHDiv*> FE_RTSegm1::ipdata;
+  // Array<IPDataHDiv*> FE_RTSegm1::ipdata;
 
   FE_RTSegm1 :: FE_RTSegm1()
   {
-    if (!ipdata.Size())
-      CalcIPData(ET_SEGM, ipdata);
+    // if (!ipdata.Size())
+    // CalcIPData(ET_SEGM, ipdata);
   }
 
   FE_RTSegm1 :: ~FE_RTSegm1()
@@ -1627,12 +1630,12 @@ CalcShape (const IntegrationPoint & ip,
 
 
 
-  Array<IPDataHDiv*> FE_RTSegm2::ipdata;
+  // Array<IPDataHDiv*> FE_RTSegm2::ipdata;
 
   FE_RTSegm2 :: FE_RTSegm2()
   {
-    if (!ipdata.Size())
-      CalcIPData(ET_SEGM, ipdata);
+    // if (!ipdata.Size())
+    // CalcIPData(ET_SEGM, ipdata);
   }
 
   FE_RTSegm2 :: ~FE_RTSegm2()
@@ -1682,14 +1685,14 @@ CalcShape (const IntegrationPoint & ip,
 #endif
 
 
-Array<HDivFiniteElement<3>::IPData> FE_BDMTet1::ipdata;
+  // Array<HDivFiniteElement<3>::IPData> FE_BDMTet1::ipdata;
 Matrix<> FE_BDMTet1::trans(12);
 
 FE_BDMTet1 :: FE_BDMTet1()
   : HDivFiniteElement<3> (ET_TET, 12, 1)
 {
   Orthogonalize();
-  CalcIPData(ipdata);
+  // CalcIPData(ipdata);
 }
 
 FE_BDMTet1 :: ~FE_BDMTet1()

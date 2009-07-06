@@ -17,7 +17,7 @@ namespace ngfem
     /// number within intergration Rule
     int nr; 
     /// enumerates ALL intergration points for element type
-    int glob_nr; 
+    // int glob_nr; 
     /// coordinates (empty values for 1D and 2D)
     double pi[3];
     /// weight of integration point
@@ -29,7 +29,7 @@ namespace ngfem
     ///
     IntegrationPoint & operator=(const IntegrationPoint & aip)
     {
-      glob_nr = aip.IPNr();
+      // glob_nr = aip.IPNr();
       nr = aip.Nr();
       pi[0] = aip(0);
       pi[1] = aip(1);
@@ -42,7 +42,7 @@ namespace ngfem
     ///
     IntegrationPoint (const double api[3], double aw)
     {
-      glob_nr = -1;
+      // glob_nr = -1;
       nr = -1;
       pi[0] = api[0];
       pi[1] = api[1];
@@ -54,7 +54,7 @@ namespace ngfem
     ///
     IntegrationPoint (double p1 = 0, double p2 = 0, double p3 = 0, double aw = 0)
     {
-      glob_nr = -1;
+      // glob_nr = -1;
       nr = -1;
       pi[0] = p1;
       pi[1] = p2;
@@ -66,7 +66,7 @@ namespace ngfem
     ///
     IntegrationPoint (const FlatVector<double> & ap, double aw)
     {
-      glob_nr = -1;
+      // glob_nr = -1;
       nr = -1;
       pi[0] = (ap.Size() >= 1) ? ap(0) : 0;
       pi[1] = (ap.Size() >= 2) ? ap(1) : 0;
@@ -79,7 +79,7 @@ namespace ngfem
     template <int D>
     IntegrationPoint (const Vec<D> & ap, double aw = -1)
     {
-      glob_nr = -1;
+      // glob_nr = -1;
       nr = -1;
       for (int j = 0; j < D; j++)
 	pi[j] = ap(j);
@@ -94,7 +94,7 @@ namespace ngfem
     ///
     void SetNr (int anr) { nr = anr; }
     ///
-    void SetGlobNr (int aipnr) { glob_nr = aipnr; }
+    // void SetGlobNr (int aipnr) { glob_nr = aipnr; }
     ///
     const double * Point () const { return pi; }
     ///
@@ -112,7 +112,7 @@ namespace ngfem
     int Nr () const { return nr; }
 
     /// global number of ip
-    int IPNr () const { return glob_nr; }
+    int IPNr () const { return -1; }
 
     ///
     friend ostream & operator<< (ostream & ost, const IntegrationPoint & ip);
@@ -196,8 +196,8 @@ namespace ngfem
     SpecificIntegrationPoint (const IntegrationPoint & aip,
 			      const ElementTransformation & aeltrans,
 			      const Vec<DIMR, SCAL> & ax,
-			      const Mat<DIMR, DIMS, SCAL> & adxdxi, 
-			      LocalHeap & lh)
+			      const Mat<DIMR, DIMS, SCAL> & adxdxi)
+    // LocalHeap & lh)
       : DimSpecificIntegrationPoint<DIMR,SCAL> (aip, aeltrans)
     {
       this->point = ax;
@@ -272,50 +272,29 @@ namespace ngfem
      An integration rule.
      Contains array of integration points
   */
-  class IntegrationRule
+  class IntegrationRule : public Array<IntegrationPoint> // ipts
   {
-    ///
-    Array<IntegrationPoint*> ipts;
   public:
     ///
-    IntegrationRule ();
-    ///
-    IntegrationRule (int nips);
-    ///
-    ~IntegrationRule ();
-    ///
-    void AddIntegrationPoint (IntegrationPoint * ip);
+    IntegrationRule () { ; }
 
-    /// number of integration points
-    int GetNIP() const { return ipts.Size(); }
+    ///
+    IntegrationRule (int nips)
+      : Array<IntegrationPoint> (nips) { ; }
 
-    /// returns i-th integration point
-    const IntegrationPoint & operator[] (int i) const
-    {
-#ifdef CHECK_RANGE
-      if (i < 0 || i >= ipts.Size())
-	{
-	  stringstream st;
-	  st << "Integration Point out of range " << i << endl;
-	  throw Exception (st.str());
-	}
-#endif
-      return *ipts[i]; 
+    ///
+    void AddIntegrationPoint (const IntegrationPoint & ip)
+    { 
+      Append (ip);
     }
 
+    /// number of integration points
+    int GetNIP() const { return Size(); }
 
     // old style, should be replaced by []
     const IntegrationPoint & GetIP(int i) const
     {
-#ifdef CHECK_RANGE
-      if (i < 0 || i >= ipts.Size())
-	{
-	  stringstream st;
-	  st << "Integration Point out of range " << i << endl;
-	  throw Exception (st.str());
-	}
-#endif
-      return *ipts[i]; 
+      return (*this)[i];
     }
   };
 
@@ -325,86 +304,6 @@ namespace ngfem
       ost << ir[i] << endl;
     return ost;
   }
-
-
-
-
-  class FiniteElement;
-
-
-#ifdef OLD
-
-  class TensorProductIntegrationRule : public IntegrationRule
-  {
-    bool useho;
-    ELEMENT_TYPE type;
-    const IntegrationRule & seg_rule;
-    int n;
-    unsigned int nx;
-    int vnums[8];
-    int sort[8], isort[8];
-    Vec<3> vertices[8];
-  public:
-    TensorProductIntegrationRule (const FiniteElement & el, const IntegrationRule & aseg_rule);
-    TensorProductIntegrationRule (ELEMENT_TYPE atype, const int * avnums, const IntegrationRule & aseg_rule);
-
-    unsigned int GetNIP() const { return n; }
-    unsigned int GetNIPX() const { return nx; }
-    unsigned int GetNIPY() const { return nx; }
-    unsigned int GetNIPZ() const { return nx; }
-  
-    IntegrationPoint GetIP(int i) const;
-    IntegrationPoint GetIP(int ix, int iy, int iz) const;
-    void GetIP_DTet_DHex(int i, Mat<3> & dtet_dhex) const;
-    void GetIP_DTrig_DQuad(int i, Mat<2> & dtrig_dquad) const;
-
-    double GetIPX (int ix) const { return seg_rule[ix](0); }
-    double GetIPY (int iy) const { return seg_rule[iy](0); }
-    double GetIPZ (int iz) const { return seg_rule[iz](0); }
-
-    double GetWeight (int i)
-    {
-      switch (type)
-	{
-	case ET_TET:
-	  {
-	    int ix = i % nx;
-	    i /= nx;
-	    int iy = i % nx;
-	    i /= nx;
-	    int iz = i;
-	  
-	    double eta = seg_rule[iy](0);
-	    double zeta = seg_rule[iz](0);
-	  
-	    return seg_rule[ix].Weight() * (1-eta)*(1-zeta) *
-	      seg_rule[iy].Weight() * (1-zeta) *
-	      seg_rule[iz].Weight();
-	  }
-	case ET_TRIG:
-	  {
-	    int ix = i % nx;
-	    i /= nx;
-	    int iy = i;
-	  
-	    double eta = seg_rule[iy](0);
-	    return seg_rule[ix].Weight() * (1-eta)* seg_rule[iy].Weight();
-	  }
-	}
-    }
-	
-
-
-    void GetWeights (FlatArray<double> weights);
-
-
-
-    IntegrationPoint operator[] (int i) const
-    {
-      return GetIP(i);
-    }
-  };
-#endif
 
 
 
@@ -472,7 +371,7 @@ namespace ngfem
     ///
     IntegrationRule segmentlumping;
     ///
-    Array<IntegrationPoint*> segmentpoints;
+    // Array<IntegrationPoint*> segmentpoints;
     ///
     Array<IntegrationRule*> jacobirules10;
     ///
@@ -486,14 +385,14 @@ namespace ngfem
     ///
     IntegrationRule triglumping2;
     ///
-    Array<IntegrationPoint*> trigpoints;
+    // Array<IntegrationPoint*> trigpoints;
 
     ///
     Array<IntegrationRule*> quadrules;
     ///
     IntegrationRule quadlumping;
     ///
-    Array<IntegrationPoint*> quadpoints;
+    // Array<IntegrationPoint*> quadpoints;
 
     ///
     Array<IntegrationRule*> tetrules;
@@ -502,7 +401,7 @@ namespace ngfem
     ///
     Array<IntegrationRule*> tetnodalrules;
     ///
-    Array<IntegrationPoint*> tetpoints;
+    // Array<IntegrationPoint*> tetpoints;
 
     ///
     Array<IntegrationRule*> prismrules;
@@ -511,19 +410,19 @@ namespace ngfem
     ///
     IntegrationRule prismfacemidpoint;
     ///
-    Array<IntegrationPoint*> prismpoints;
+    // Array<IntegrationPoint*> prismpoints;
 
     ///
     Array<IntegrationRule*> pyramidrules;
     ///
     IntegrationRule pyramidlumping;
     ///
-    Array<IntegrationPoint*> pyramidpoints;
+    // Array<IntegrationPoint*> pyramidpoints;
 
     ///
     Array<IntegrationRule*> hexrules;
     ///
-    Array<IntegrationPoint*> hexpoints;
+    // Array<IntegrationPoint*> hexpoints;
 
   public:
     ///
@@ -544,7 +443,7 @@ namespace ngfem
     const IntegrationRule & PrismFaceMidPoint () const
     { return prismfacemidpoint; }
     ///
-    const Array<IntegrationPoint*> & GetIntegrationPoints (ELEMENT_TYPE eltyp) const;
+    // const Array<IntegrationPoint*> & GetIntegrationPoints (ELEMENT_TYPE eltyp) const;
     ///
     const IntegrationRule & GenerateIntegrationRule (ELEMENT_TYPE eltyp, int order);
 

@@ -1220,11 +1220,7 @@ namespace ngcomp
 
 
   NedelecFESpace2 :: NedelecFESpace2 (const MeshAccess & ama, const Flags & flags, bool parseflags)
-  //  int aorder, int azorder, int adim, bool acomplex) 
     : FESpace (ama, flags)
-				     /*	     int(flags.GetNumFlag ("order", 2)),
-				       int(flags.GetNumFlag ("dim", 1)),
-				       flags.GetDefineFlag ("complex"))*/
   {
     name="NedelecFESpace2(hcurl)";
     // defined flags
@@ -1353,6 +1349,7 @@ namespace ngcomp
 
     if (flags.NumListFlagDefined("gradientdomains"))
       {
+        cout << "has gradientdomains" << endl;
 	const Array<double> & graddomains = flags.GetNumListFlag ("gradientdomains");
 	for (int i = 0; i < gradientdomains.Size(); i++)
 	  if (!graddomains[i])
@@ -1368,7 +1365,7 @@ namespace ngcomp
       }
 
 
-
+    cout << "gradientdomains = " << gradientdomains << endl;
 
     Flags loflags;
     loflags.SetFlag ("order", 1);

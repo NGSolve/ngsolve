@@ -520,6 +520,18 @@ namespace ngfem
 
   }
 
+  ConvertJacobi :: ~ConvertJacobi ()
+  {
+    for (int i = 0; i < coefs_reducealpha.Size(); i++)
+      {
+        delete [] coefs_reducealpha[i];
+        delete [] coefs_reducealphafac[i];
+        delete [] coefs_c[i];
+        delete [] coefs_d[i];
+        delete [] coefs_e[i];
+      }
+  }
+
   ConvertJacobi init_convjac;
 
 

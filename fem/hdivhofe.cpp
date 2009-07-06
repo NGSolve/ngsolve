@@ -408,7 +408,7 @@ namespace ngfem
 
 
 
-
+  /*
   // hv.DValue() = (grad u) x (grad v) 
   inline AutoDiff<3> Cross (const AutoDiff<3> & u,
 			    const AutoDiff<3> & v)
@@ -429,7 +429,7 @@ namespace ngfem
     hv.DValue(0) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
     return hv;
   }
-
+  */
 
   template <int D>
   inline double Dot (const AutoDiff<D> & u, const AutoDiff<D> & v)
@@ -442,7 +442,7 @@ namespace ngfem
 
 
 
-
+  /*
   template <int DIM>
   class Du
   {
@@ -483,6 +483,7 @@ namespace ngfem
                      const AutoDiff<DIM> & aw)
       : u(au), v(av), w(aw) { ; }
   };
+*/
 
   template <int DIM>
   class uDvDw_Cyclic

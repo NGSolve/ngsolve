@@ -257,6 +257,14 @@ public:
   DMATOP & DMat () { return dmatop; }
   const DMATOP & DMat () const { return dmatop; }
 
+  virtual void CheckElement (const FiniteElement & el)
+  {
+    if (!dynamic_cast<const FEL*> (&el) )
+      throw Exception (string ("Element does not match integrator\n") +
+                       string ("element is ") + typeid(el).name() +
+                       string ("integrator is ") + Name());
+  }
+
 
   virtual void ApplyDMat (const FiniteElement & bfel,
 			  const BaseSpecificIntegrationPoint & bsip,
@@ -354,6 +362,7 @@ public:
 #define BLOCK_VERSION
 #ifdef BLOCK_VERSION
 
+
   /// this is my preferred one !
 
 
@@ -363,199 +372,103 @@ public:
 			 FlatMatrix<double> & elmat,
 			 LocalHeap & lh) const
   {
-    static int timer = NgProfiler::CreateTimer (string ("Elementmatrix, ") + Name());
-    NgProfiler::RegionTimer reg (timer);
+    // static int timer = NgProfiler::CreateTimer (string ("Elementmatrix, ") + Name());
+    // NgProfiler::RegionTimer reg (timer);
 
     try
       {
-        /*
-	if(!dynamic_cast<const FEL*>(&bfel))
-	  throw Exception("Integrator doesn't fit to element (space) type ");
-
-	const FEL & fel = dynamic_cast<const FEL&> (bfel);
-        */
-        const FEL & fel = *dynamic_cast<const FEL*> (&bfel);
-        if (! &fel)
-	  throw Exception("Integrator doesn't fit to element (space) type ");
-
+        const FEL & fel = *static_cast<const FEL*> (&bfel);
 	int ndof = fel.GetNDof();
         
-	// elmat.AssignMemory (ndof*DIM, ndof*DIM, lh);
 	elmat = 0;
 	
-	// if (!fast)
-	  {
-	    enum { BLOCK = 2 * (12 / DIM_DMAT + 1) };
-	    
-	    void * heapp = lh.GetPointer();
-	    
-	    FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, lh);
-	    FlatMatrixFixHeight<DIM_DMAT, double> dbmat (ndof * DIM, lh);
-	    
-	    FlatMatrixFixHeight<DIM_DMAT*BLOCK, double> bbmat (ndof * DIM, lh);
-	    FlatMatrixFixHeight<DIM_DMAT*BLOCK, double> bdbmat (ndof * DIM, lh);
-	    Mat<DIM_DMAT,DIM_DMAT> dmat;
-	    
-	    const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
-	    
-	    int i = 0;
-	    for (int i1 = 0; i1 < ir.GetNIP() / BLOCK; i1++)
-	      {
-		for (int i2 = 0; i2 < BLOCK; i++, i2++)
-		  {
-		    void * heapp2 = lh.GetPointer();
-		    
-		    SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-		      sip(ir[i], eltrans, lh);
 
-		    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
-		    dmatop.GenerateMatrix (fel, sip, dmat, lh);
-		    double fac =  
-		      fabs (sip.GetJacobiDet()) * sip.IP().Weight();
-		    
-		    dbmat = fac * (dmat * bmat);
-		    
-		    for (int l = 0; l < ndof*DIM; l++)
-		      for (int k = 0; k < DIM_DMAT; k++)
-			{
-			  bbmat(i2*DIM_DMAT+k, l) = bmat(k,l);
-			  bdbmat(i2*DIM_DMAT+k, l) = dbmat(k,l);
-			}
-		    
-		    lh.CleanUp (heapp2);
-		  }
-		
-		
-		if (DMATOP::SYMMETRIC)
-		  // elmat += Symmetric (Trans (bdbmat) * bbmat);
-		  FastMat<DIM_DMAT*BLOCK> (elmat.Height(), &bdbmat(0,0), &bbmat(0,0), &elmat(0,0));
-		else
-		  elmat += Trans (bbmat) * bdbmat; 
-	      } 
-	    
-	    for ( ; i < ir.GetNIP(); i++)
-	      {
-		void * heapp2 = lh.GetPointer();
-		
-		SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-		  sip(ir[i], eltrans, lh);
+        enum { BLOCK = 2 * (12 / DIM_DMAT + 1) };
+	
+        HeapReset hr1(lh);
+	
+        FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, lh);
+        FlatMatrixFixHeight<DIM_DMAT, double> dbmat (ndof * DIM, lh);
+	
+        FlatMatrixFixHeight<DIM_DMAT*BLOCK, double> bbmat (ndof * DIM, lh);
+        FlatMatrixFixHeight<DIM_DMAT*BLOCK, double> bdbmat (ndof * DIM, lh);
+        Mat<DIM_DMAT,DIM_DMAT> dmat;
+	
+        const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
+	
+        FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
+        FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
 
-		DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
-		dmatop.GenerateMatrix (fel, sip, dmat, lh);
-		double fac =  
-		  fabs (sip.GetJacobiDet()) * sip.IP().Weight();
+        eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
 
-		dbmat = fac * (dmat * bmat);
-		
-		
-		if (DMATOP::SYMMETRIC)
-		  // elmat += Symmetric (Trans (dbmat) * bmat);
-		  FastMat<DIM_DMAT> (elmat.Height(), &dbmat(0,0), &bmat(0,0), &elmat(0,0));
-		else
-		  elmat += Trans (bmat) * dbmat;
-		
-		lh.CleanUp (heapp2);
-	      } 
 
-            if (DMATOP::SYMMETRIC)
+
+        int i = 0;
+        for (int i1 = 0; i1 < ir.GetNIP() / BLOCK; i1++)
+          {
+            for (int i2 = 0; i2 < BLOCK; i++, i2++)
               {
-                for (int i = 0; i < elmat.Height(); i++)
-                  for (int j = 0; j < i; j++)
-                    elmat(j,i) = elmat(i,j);
+                HeapReset hr(lh);
+		    
+                // SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
+                // sip(ir[i], eltrans, lh);
+                SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
+                  sip(ir[i], eltrans, pts[i], dxdxi[i]);
+                
+                DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
+                dmatop.GenerateMatrix (fel, sip, dmat, lh);
+                double fac =  
+                  fabs (sip.GetJacobiDet()) * sip.IP().Weight();
+                
+                dbmat = fac * (dmat * bmat);
+		
+                for (int l = 0; l < ndof*DIM; l++)
+                  for (int k = 0; k < DIM_DMAT; k++)
+                    {
+                      bbmat(i2*DIM_DMAT+k, l) = bmat(k,l);
+                      bdbmat(i2*DIM_DMAT+k, l) = dbmat(k,l);
+                    }
               }
-
-
-	    lh.CleanUp (heapp);
-	  }
-
-        /*
+            
+            
+            if (DMATOP::SYMMETRIC)
+              // elmat += Symmetric (Trans (bdbmat) * bbmat);
+              FastMat<DIM_DMAT*BLOCK> (elmat.Height(), &bdbmat(0,0), &bbmat(0,0), &elmat(0,0));
+            else
+              elmat += Trans (bbmat) * bdbmat; 
+          } 
         
-	else
-
-	  {	   
-	    int order = 2*fel.Order() + 2;
-	    if (common_integration_order >= 0)
-	      order = common_integration_order;
-
-	    if(eltrans.HigherIntegrationOrderSet() && higher_integration_order > order) order = higher_integration_order;
-
-	    const IntegrationRule & ir1d = SelectIntegrationRule (ET_SEGM, order); 
-	      // GetIntegrationRules().SelectIntegrationRule (ET_SEGM, order);
-	    
-	    IntegrationRuleTP ir (fel, ir1d);
-	    
-	    void * heapp = lh.GetPointer();
-
-	    FlatArray<Mat<DIM_DMAT> > dmats(ir.GetNIP(), lh);
-
-	    for (int i = 0; i < ir.GetNIP(); i++)
-	      {
-		void * heapp2 = lh.GetPointer();
-		SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, lh);
-		
-		Mat<DIM_DMAT> dmat;
-		Vec<DIM_DMAT> hv1, hv2;
-
-		dmatop.GenerateMatrix (fel, sip, dmat, lh);
-		
-		double fac = fabs (sip.GetJacobiDet()) * sip.IP().Weight(); 
-		for (int j = 0; j < DIM_DMAT; j++)
-		  {
-		    hv1 = 0; 
-		    hv1(j) = fac;
-		    DIFFOP::Transform (sip, hv1);
-		    hv2 = dmat * hv1;
-		    DIFFOP::TransformT (sip, hv2);
-		    dmats[i].Row(j) = hv2;
-		  }
-		lh.CleanUp (heapp2);
-	      }
-	    
-
-	    FlatVector<> hv(ndof, lh);
-	    Array< Vec<DIM_DMAT> > hvgrid1(ir.GetNIP());
-	    Array< Vec<DIM_DMAT> > hvgrid2(ir.GetNIP());
-
-	    for (int i = 0; i < ndof; i++)
-	      {
-		void * heapp2 = lh.GetPointer();
-		hv = 0;
-		hv(i) = 1;
-		DIFFOP::ApplyGrid (fel, ir, hv, hvgrid1, lh);
-
-		for (int j = 0; j < ir.GetNIP(); j++)
-		  hvgrid2[j] = dmats[j] * hvgrid1[j];
-
-		DIFFOP::ApplyTransGrid (fel, ir, hvgrid2, hv, lh);
-		elmat.Col(i) = hv;
-
-		lh.CleanUp (heapp2);
-	      }
-
-
-	    if (checkfast)
-	      {
-		FlatMatrix<double> em2(elmat.Height(), lh);
-		em2 = elmat;
-		
-		const_cast<T_BDBIntegrator&> (*this) . SetFastIntegration (0,0);
-		AssembleElementMatrix (bfel, eltrans, elmat, lh);
-		const_cast<T_BDBIntegrator&> (*this) . SetFastIntegration (1,1);
-
-		(*testout) << "std elmat = " << endl << elmat << endl;
-		(*testout) << "new elmat = " << endl << em2 << endl;
-		(*testout) << "diff = " << endl << (elmat-em2) << endl;
-
-		double sum = 0;
-		for (int i = 0; i < em2.Height()*em2.Width(); i++)
-		  sum += sqr (em2(i)-elmat(i));
-		cout << "diff between std and fast: " << sqrt (sum) << endl;
-	      }
-
-	    lh.CleanUp (heapp);
-	  }
-        */
+        for ( ; i < ir.GetNIP(); i++)
+          {
+            HeapReset hr(lh);
+            
+            SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
+              sip(ir[i], eltrans, pts[i], dxdxi[i]);
+            // sip(ir[i], eltrans, lh);
+            
+            DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
+            dmatop.GenerateMatrix (fel, sip, dmat, lh);
+            double fac =  
+              fabs (sip.GetJacobiDet()) * sip.IP().Weight();
+            
+            dbmat = fac * (dmat * bmat);
+            
+            
+            if (DMATOP::SYMMETRIC)
+              // elmat += Symmetric (Trans (dbmat) * bmat);
+              FastMat<DIM_DMAT> (elmat.Height(), &dbmat(0,0), &bmat(0,0), &elmat(0,0));
+            else
+              elmat += Trans (bmat) * dbmat;
+          } 
+        
+        if (DMATOP::SYMMETRIC)
+          {
+            for (int i = 0; i < elmat.Height(); i++)
+              for (int j = 0; j < i; j++)
+                elmat(j,i) = elmat(i,j);
+          }
       }
+
     catch (Exception & e)
       {
 	e.Append ("in AssembleElementMatrix - blockversion, type = ");
@@ -1707,14 +1620,13 @@ public:
   { return DIM_SPACE; }
 
 
-#ifndef FAST
 
   ///
   virtual void
   AssembleElementVector (const FiniteElement & bfel,
 			 const ElementTransformation & eltrans, 
 			 FlatVector<double> & elvec,
-			 LocalHeap & locheap) const
+			 LocalHeap & lh) const
   {
    
     try
@@ -1722,13 +1634,13 @@ public:
 	if(!dynamic_cast<const FEL*>(&bfel))
 	  throw Exception("Integrator doesn't fit to element (space) type ");
 
-	const FEL & fel = dynamic_cast<const FEL&> (bfel);
+	const FEL & fel = static_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 	
-	// elvec.AssignMemory (ndof * DIM, locheap);
+	// elvec.AssignMemory (ndof * DIM, lh);
 	elvec = 0;
 
-	FlatVector<double> hv(ndof * DIM, locheap);
+	FlatVector<double> hv(ndof * DIM, lh);
 	Vec<DIM_DMAT> dvec;
 	
 	int order = IntegrationOrder (fel);
@@ -1739,17 +1651,28 @@ public:
 	  GetIntegrationRules().SelectLumpingIntegrationRule (fel.ElementType()) :
 	  GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), order);
 	
-	void * heapp = locheap.GetPointer();
+
+        // FlatArray<Vec<DIM_ELEMENT> > refpts(ir.GetNIP(), lh);
+        FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
+        FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
+        /*
+        for (int i = 0; i < ir.GetNIP(); i++)
+          for (int j = 0; j < DIM_ELEMENT; j++)
+            refpts[i](j) = ir[i](j);
+        */
+        eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
+
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
-	    SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, locheap);
+            HeapReset hr(lh);
+	    // SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, lh);
+            SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, pts[i], dxdxi[i]); // , lh);
 
-	    dvecop.GenerateVector (fel, sip, dvec, locheap);
-	    DIFFOP::ApplyTrans (fel, sip, dvec, hv, locheap);
+	    dvecop.GenerateVector (fel, sip, dvec, lh);
+	    DIFFOP::ApplyTrans (fel, sip, dvec, hv, lh);
 
 	    double fac = fabs (sip.GetJacobiDet()) * sip.IP().Weight();
 	    elvec += fac * hv;
-	    locheap.CleanUp (heapp);
 	  }
       }
     
@@ -1770,128 +1693,6 @@ public:
       }
   }
     
-#else
-
-  virtual void
-  AssembleElementVector (const FiniteElement & bfel,
-			 const ElementTransformation & eltrans, 
-			 FlatVector<double> & elvec,
-			 LocalHeap & locheap) const
-  {
-    
-    try
-      {
-	const FEL & fel = dynamic_cast<const FEL&> (bfel);
-	int ndof = fel.GetNDof();
-	
-	// elvec.AssignMemory (ndof * DIM, locheap);
-	elvec = 0;
-
-	if (fast)
-	  {
-	    int order = IntegrationOrder (fel)+2;
-
-	    if (common_integration_order >= 0)
-	      order = common_integration_order;
-
-	    // const IntegrationRule & ir1d =
-            // GetIntegrationRules().SelectIntegrationRule (ET_SEGM, order);
-	    
-	    IntegrationRuleTP<DIM_ELEMENT> ir (eltrans, 2*order, locheap);
-	    
-	    Array<Vec<DIM_DMAT> > dvecs(ir.GetNIP());
-	    
-	    void * heapp = locheap.GetPointer();
-
-	    if (!const_coef)
-	      for (int i = 0; i < ir.GetNIP(); i++)
-		{
-		  SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, locheap);
-		  
-		  dvecop.GenerateVector (fel, sip, dvecs[i], locheap);
-		  DIFFOP::TransformT (sip, dvecs[i]);
-		  
-		  dvecs[i] *= fabs (sip.GetJacobiDet()) * sip.IP().Weight();
-		  locheap.CleanUp (heapp);
-		}
-	    else
-	      {
-		SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[0], eltrans, locheap);
-		
-		for (int i = 0; i < ir.GetNIP(); i++)
-		  {
-		    dvecop.GenerateVector (fel, sip, dvecs[i], locheap);
-		    DIFFOP::TransformT (sip, dvecs[i]);
-		    
-		    dvecs[i] *= fabs (sip.GetJacobiDet()) * ir.GetWeight(i);
-		  }
-		locheap.CleanUp (heapp);
-	      }
-	      
-	    
-	    DIFFOP::ApplyTransGrid (fel, ir, dvecs, elvec, locheap);
-
-
-	    if (checkfast)
-	      {
-		FlatVector<double> ev2(elvec.Size(), locheap);
-		ev2 = elvec;
-		
-		const_cast<T_BIntegrator&> (*this) . SetFastIntegration (0,0);
-		AssembleElementVector (bfel, eltrans, elvec, locheap);
-		const_cast<T_BIntegrator&> (*this) . SetFastIntegration (1,1);
-
-		(*testout) << "std elvec = " << endl << elvec << endl;
-		(*testout) << "new elvec = " << endl << ev2 << endl;
-		(*testout) << "diff elvec = " << endl << (ev2-elvec) << endl;
-		
-		cout << "diff between std and fast: " << L2Norm (ev2-elvec) << endl;
-	      }
-	  }
-	else
-	  {
-	    FlatVector<double> hv(ndof * DIM, locheap);
-	    Vec<DIM_DMAT> dvec;
-	    
-	    int order = IntegrationOrder (fel);
-	    
-	    const IntegrationRule & ir = (Lumping() && fel.Order() == 1 && 0) ?
-	      GetIntegrationRules().SelectLumpingIntegrationRule (fel.ElementType()) :
-	      GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), order);
-	    
-	    void * heapp = locheap.GetPointer();
-	    for (int i = 0; i < ir.GetNIP(); i++)
-	      {
-		SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, locheap);
-		dvecop.GenerateVector (fel, sip, dvec, locheap);
-		DIFFOP::ApplyTrans (fel, sip, dvec, hv, locheap);
-		double fac = fabs (sip.GetJacobiDet()) * sip.IP().Weight();
-                
-		elvec += fac * hv;
-
-		locheap.CleanUp (heapp);
-	      }
-	  }
-      }
-    
-    catch (Exception & e)
-      {
-	e.Append ("in AssembleElementVector, type = ");
-	e.Append (typeid(*this).name());
-	e.Append ("\n");
-	throw;
-      }
-    catch (exception & e)
-      {
-	Exception e2(e.what());
-	e2.Append ("\nin AssembleElementVector, type = ");
-	e2.Append (typeid(*this).name());
-	e2.Append ("\n");
-	throw e2;
-      }
-  }
-#endif
-
 
 
 

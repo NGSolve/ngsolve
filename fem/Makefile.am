@@ -15,7 +15,7 @@ coefficient.cpp integrator.cpp specialelement.cpp elementtopology.cpp  \
 hcurlfe.cpp intrule.cpp facetfe.cpp hcurlhofe.cpp l2hofe.cpp	       \
 fastmat.cpp vectorfacetfe.cpp finiteelement.cpp scalarfe.cpp	       \
 hdiv_equations.cpp maxwellintegrator.cpp generic_recpol.cpp hdivfe.cpp \
-h1lofe.cpp h1hofe.cpp h1hofefo.cpp hdivhofe.cpp recursive_pol.cpp      \
+h1hofe.cpp h1hofefo.cpp hdivhofe.cpp recursive_pol.cpp      \
 hybridDG.cpp pml.cpp
 
 
@@ -27,7 +27,7 @@ coefficient.cpp integrator.cpp specialelement.cpp elementtopology.cpp  \
 hcurlfe.cpp intrule.cpp facetfe.cpp hcurlhofe.cpp l2hofe.cpp	       \
 fastmat.cpp vectorfacetfe.cpp finiteelement.cpp scalarfe.cpp	       \
 hdiv_equations.cpp maxwellintegrator.cpp generic_recpol.cpp hdivfe.cpp \
-h1lofe.cpp h1hofe.cpp h1hofefo.cpp hdivhofe.cpp recursive_pol.cpp      \
+ h1hofe.cpp h1hofefo.cpp hdivhofe.cpp recursive_pol.cpp      \
 dynamicmem.cpp hybridDG.cpp
 
 

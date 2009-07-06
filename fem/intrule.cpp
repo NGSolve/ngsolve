@@ -66,7 +66,9 @@ namespace ngfem
   
   ostream & operator<< (ostream & ost, const IntegrationPoint & ip)
   {
-    ost << "IP globnr " << ip.glob_nr << " locnr = " << ip.nr << ": (" 
+    ost 
+      // << "IP globnr " << ip.glob_nr
+      << " locnr = " << ip.nr << ": (" 
 	<< ip.pi[0] << ", " << ip.pi[1] << ", " << ip.pi[2] 
 	<< "), weight = " << ip.weight << endl;
     return ost;
@@ -81,7 +83,7 @@ namespace ngfem
 			    LocalHeap & lh)
     : DimSpecificIntegrationPoint<R,SCAL> (aip, aeltrans)
   {
-    this->eltrans.CalcPointJacobian (this->ip, this->point, dxdxi, lh);
+    this->eltrans.CalcPointJacobian(this->ip, this->point, dxdxi, lh);
 
     if (S == R)
       {
@@ -282,28 +284,19 @@ namespace ngfem
   template class SpecificIntegrationPoint<2,3>;
   template class SpecificIntegrationPoint<1,3>;
   
-  IntegrationRule :: IntegrationRule ()
-  {
-    ;
-  }
-  
+  /*
   IntegrationRule :: IntegrationRule (int nips)
+    : Array<IntegrationPoint> (nips) 
   {
-    ipts.SetAllocSize (nips);
+    ; // SetAllocSize (nips);
   }
-  
-  IntegrationRule :: ~IntegrationRule ()
-  {
-    for (int i = 0; i < ipts.Size(); i++)
-      delete ipts[i];
-  }
-  
   
   void IntegrationRule :: 
-  AddIntegrationPoint (IntegrationPoint * ip)
+  AddIntegrationPoint (const IntegrationPoint & ip)
   {
-    ipts.Append (ip);
+    Append (ip);
   }
+  */
 
   
   // computes Gaussean integration formula on (0,1) with n points
@@ -1274,8 +1267,8 @@ namespace ngfem
     static IntegrationRule ir0, ir1;
     if (ir0.GetNIP() == 0)
       {
-        ir0.AddIntegrationPoint (new IntegrationPoint (0.0, 0, 0, 1.0));
-        ir1.AddIntegrationPoint (new IntegrationPoint (1.0, 0, 0, 1.0));
+        ir0.AddIntegrationPoint (IntegrationPoint (0.0, 0, 0, 1.0));
+        ir1.AddIntegrationPoint (IntegrationPoint (1.0, 0, 0, 1.0));
       }
 
     switch (eltype)
@@ -1529,7 +1522,7 @@ namespace ngfem
   {
     int i, p;
     IntegrationRule * rule;    
-    IntegrationPoint * ip;
+    IntegrationPoint ip;
 
 
     Array<double> xi;
@@ -1552,10 +1545,10 @@ namespace ngfem
       { 0.5, 0.5 } ;
     for (i = 0; i < 2; i++)
       {
-	ip = new IntegrationPoint (qf_segm_lumping_points[i],
-				   qf_segm_lumping_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (segmentpoints.Append (ip)-1);
+	IntegrationPoint ip(qf_segm_lumping_points[i],
+                            qf_segm_lumping_weights[i]);
+	ip.SetNr (i);
+	// ip->SetGlobNr (segmentpoints.Append (ip)-1);
 	segmentlumping.AddIntegrationPoint (ip);
       }
 
@@ -1577,19 +1570,19 @@ namespace ngfem
 
     
     rule = new IntegrationRule (1);
-    ip = new IntegrationPoint (qf_trig_order1_points[0],
-			       qf_trig_order1_weights[0]);
-    ip->SetNr (0);
-    ip->SetGlobNr (trigpoints.Append (ip)-1);
+    ip = IntegrationPoint (qf_trig_order1_points[0],
+                           qf_trig_order1_weights[0]);
+    ip.SetNr (0);
+    // ip->SetGlobNr (trigpoints.Append (ip)-1);
     rule->AddIntegrationPoint (ip);
     trigrules[0] = rule;
 
 
     rule = new IntegrationRule (1);
-    ip = new IntegrationPoint (qf_trig_order1_points[0],
-			       qf_trig_order1_weights[0]);
-    ip->SetNr (0);
-    ip->SetGlobNr (trigpoints.Append (ip)-1);
+    ip = IntegrationPoint (qf_trig_order1_points[0],
+                           qf_trig_order1_weights[0]);
+    ip.SetNr (0);
+    // ip->SetGlobNr (trigpoints.Append (ip)-1);
     rule->AddIntegrationPoint (ip);
     trigrules[1] = rule;
 
@@ -1609,10 +1602,10 @@ namespace ngfem
     rule = new IntegrationRule (3);
     for (i = 0; i < 3; i++)
       {
-	ip = new IntegrationPoint (qf_tria_order2_points[i],
-				   qf_tria_order2_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (trigpoints.Append (ip)-1);
+	ip = IntegrationPoint (qf_tria_order2_points[i],
+                               qf_tria_order2_weights[i]);
+	ip.SetNr (i);
+	// ip->SetGlobNr (trigpoints.Append (ip)-1);
 	rule->AddIntegrationPoint (ip);
       }
 
@@ -1639,10 +1632,10 @@ namespace ngfem
     rule = new IntegrationRule (6);
     for (i = 0; i < 6; i++)
       {
-	ip = new IntegrationPoint (qf_trig_order4_points[i],
-				   qf_trig_order4_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (trigpoints.Append (ip)-1);
+	ip = IntegrationPoint (qf_trig_order4_points[i],
+                               qf_trig_order4_weights[i]);
+	ip.SetNr (i);
+	// ip->SetGlobNr (trigpoints.Append (ip)-1);
 	rule->AddIntegrationPoint (ip);
       }
 
@@ -1652,10 +1645,10 @@ namespace ngfem
     rule = new IntegrationRule (6);
     for (i = 0; i < 6; i++)
       {
-	ip = new IntegrationPoint (qf_trig_order4_points[i],
-				   qf_trig_order4_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (trigpoints.Append (ip)-1);
+	ip = IntegrationPoint (qf_trig_order4_points[i],
+                               qf_trig_order4_weights[i]);
+	ip.SetNr (i);
+	// ip.SetGlobNr (trigpoints.Append (ip)-1);
 	rule->AddIntegrationPoint (ip);
       }
 
@@ -1692,10 +1685,10 @@ namespace ngfem
     rule = new IntegrationRule (12);
     for (i = 0; i < 12; i++)
       {
-	ip = new IntegrationPoint (qf_trig_order6_points[i],
+	ip = IntegrationPoint (qf_trig_order6_points[i],
 				   qf_trig_order6_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (trigpoints.Append (ip)-1);
+	ip.SetNr (i);
+	// ip.SetGlobNr (trigpoints.Append (ip)-1);
 	rule->AddIntegrationPoint (ip);
       }
 
@@ -1704,10 +1697,10 @@ namespace ngfem
     rule = new IntegrationRule (12);
     for (i = 0; i < 12; i++)
       {
-	ip = new IntegrationPoint (qf_trig_order6_points[i],
+	ip = IntegrationPoint (qf_trig_order6_points[i],
 				   qf_trig_order6_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (trigpoints.Append (ip)-1);
+	ip.SetNr (i);
+	// ip.SetGlobNr (trigpoints.Append (ip)-1);
 	rule->AddIntegrationPoint (ip);
       }
 
@@ -1732,10 +1725,10 @@ namespace ngfem
     
     for (i = 0; i < 3; i++)
       {
-	ip = new IntegrationPoint (qf_trig_lumping_points[i],
+	ip = IntegrationPoint (qf_trig_lumping_points[i],
 				   qf_trig_lumping_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (trigpoints.Append (ip)-1);
+	ip.SetNr (i);
+	// ip.SetGlobNr (trigpoints.Append (ip)-1);
 	triglumping.AddIntegrationPoint (ip);
       }
 
@@ -1759,10 +1752,10 @@ namespace ngfem
     
     for (i = 0; i < 6; i++)
       {
-	ip = new IntegrationPoint (qf_trig_lumping2_points[i],
+	ip = IntegrationPoint (qf_trig_lumping2_points[i],
 				   qf_trig_lumping2_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (trigpoints.Append (ip)-1);
+	ip.SetNr (i);
+	// ip.SetGlobNr (trigpoints.Append (ip)-1);
 	triglumping2.AddIntegrationPoint (ip);
       }
 
@@ -1787,9 +1780,9 @@ namespace ngfem
 	      for (int n = 0; n < 3; n++)
 		xi[n] = double(lami[n]) / p;
 	    
-	      ip = new IntegrationPoint (xi, 1.0 / (2.0 * nelp));
-	      ip->SetNr (i); i++;
-	      ip->SetGlobNr (trigpoints.Append (ip)-1);
+	      ip = IntegrationPoint (xi, 1.0 / (2.0 * nelp));
+	      ip.SetNr (i); i++;
+	      // ip.SetGlobNr (trigpoints.Append (ip)-1);
 	      rule->AddIntegrationPoint (ip);
 	    }
 	trignodalrules[p-1] = rule;
@@ -1822,10 +1815,10 @@ namespace ngfem
     
       for (i = 0; i < 4; i++)
 	{
-	  ip = new IntegrationPoint (qf_quad_lumping_points[i],
+	  ip = IntegrationPoint (qf_quad_lumping_points[i],
 				     qf_quad_lumping_weights[i]);
-	  ip->SetNr (i);
-	  ip->SetGlobNr (quadpoints.Append (ip)-1);
+	  ip.SetNr (i);
+	  // ip.SetGlobNr (quadpoints.Append (ip)-1);
 	  quadlumping.AddIntegrationPoint (ip);
 	}
 
@@ -1859,10 +1852,10 @@ namespace ngfem
     
     rule = new IntegrationRule (1);
 
-    ip = new IntegrationPoint (qf_tetra_order1_points[0],
+    ip = IntegrationPoint (qf_tetra_order1_points[0],
 			       qf_tetra_order1_weights[0]);
-    ip->SetNr (0);
-    ip->SetGlobNr (tetpoints.Append (ip)-1);
+    ip.SetNr (0);
+    // ip.SetGlobNr (tetpoints.Append (ip)-1);
     rule->AddIntegrationPoint (ip);
 
     tetrules[0] = rule;
@@ -1886,10 +1879,10 @@ namespace ngfem
       rule = new IntegrationRule (4);
       for (i = 0; i < 4; i++)
       {
-      ip = new IntegrationPoint (qf_tetra_order2_points[i],
+      ip = IntegrationPoint (qf_tetra_order2_points[i],
       qf_tetra_order2_weights[i]);
-      ip->SetNr (i);
-      ip->SetGlobNr (tetpoints.Append (ip)-1);
+      ip.SetNr (i);
+      // ip.SetGlobNr (tetpoints.Append (ip)-1);
       rule->AddIntegrationPoint (ip);
       }
 
@@ -1898,10 +1891,10 @@ namespace ngfem
     rule = new IntegrationRule (1);
     for (i = 0; i < 1; i++)
       {
-	ip = new IntegrationPoint (qf_tetra_order1_points[i],
+	ip = IntegrationPoint (qf_tetra_order1_points[i],
 				   qf_tetra_order1_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (tetpoints.Append (ip)-1);
+	ip.SetNr (i);
+	// ip.SetGlobNr (tetpoints.Append (ip)-1);
 	rule->AddIntegrationPoint (ip);
       }
 
@@ -1913,10 +1906,10 @@ namespace ngfem
     rule = new IntegrationRule (4);
     for (i = 0; i < 4; i++)
       {
-	ip = new IntegrationPoint (qf_tetra_order2_points[i],
+	ip = IntegrationPoint (qf_tetra_order2_points[i],
 				   qf_tetra_order2_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (tetpoints.Append (ip)-1);
+	ip.SetNr (i);
+	// ip.SetGlobNr (tetpoints.Append (ip)-1);
 	rule->AddIntegrationPoint (ip);
       }
 
@@ -1955,10 +1948,10 @@ namespace ngfem
     rule = new IntegrationRule (14);
     for (i = 0; i < 14; i++)
       {
-	ip = new IntegrationPoint (qf_tetra_order5_points[i],
+	ip = IntegrationPoint (qf_tetra_order5_points[i],
 				   qf_tetra_order5_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (tetpoints.Append (ip)-1);
+	ip.SetNr (i);
+	// ip.SetGlobNr (tetpoints.Append (ip)-1);
 	rule->AddIntegrationPoint (ip);
       }
 
@@ -1967,10 +1960,10 @@ namespace ngfem
     rule = new IntegrationRule (14);
     for (i = 0; i < 14; i++)
       {
-	ip = new IntegrationPoint (qf_tetra_order5_points[i],
+	ip = IntegrationPoint (qf_tetra_order5_points[i],
 				   qf_tetra_order5_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (tetpoints.Append (ip)-1);
+	ip.SetNr (i);
+	// ip.SetGlobNr (tetpoints.Append (ip)-1);
 	rule->AddIntegrationPoint (ip);
       }
 
@@ -2000,9 +1993,9 @@ namespace ngfem
 		for (n = 0; n < 4; n++)
 		  xi[n] = double(lami[n]) / p;
 
-		ip = new IntegrationPoint (xi, 1.0 / (6.0 * nelp));
-		ip->SetNr (i); i++;
-		ip->SetGlobNr (tetpoints.Append (ip)-1);
+		ip = IntegrationPoint (xi, 1.0 / (6.0 * nelp));
+		ip.SetNr (i); i++;
+		// ip.SetGlobNr (tetpoints.Append (ip)-1);
 		rule->AddIntegrationPoint (ip);
 	      }
 	tetnodalrules[p-1] = rule;
@@ -2017,9 +2010,9 @@ namespace ngfem
     rule = new IntegrationRule (4);
     for (i = 0; i < 4; i++)
       {
-	ip = new IntegrationPoint (tet1pts[i], 1.0 / (6.0 * 4));
-	ip->SetNr (i);
-	ip->SetGlobNr (tetpoints.Append (ip)-1);
+	ip = IntegrationPoint (tet1pts[i], 1.0 / (6.0 * 4));
+	ip.SetNr (i);
+	// ip.SetGlobNr (tetpoints.Append (ip)-1);
 	rule->AddIntegrationPoint (ip);
       }
 
@@ -2028,9 +2021,9 @@ namespace ngfem
     rule = new IntegrationRule (4);
     for (i = 0; i < 4; i++)
       {
-	ip = new IntegrationPoint (tet1pts[i], 1.0 / (6.0 * 4));
-	ip->SetNr (i);
-	ip->SetGlobNr (tetpoints.Append (ip)-1);
+	ip = IntegrationPoint (tet1pts[i], 1.0 / (6.0 * 4));
+	ip.SetNr (i);
+	// ip.SetGlobNr (tetpoints.Append (ip)-1);
 	rule->AddIntegrationPoint (ip);
       }
 
@@ -2055,10 +2048,10 @@ namespace ngfem
     
     for (i = 0; i < 4; i++)
       {
-	ip = new IntegrationPoint (qf_tet_lumping_points[i],
+	ip = IntegrationPoint (qf_tet_lumping_points[i],
 				   qf_tet_lumping_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (tetpoints.Append (ip)-1);
+	ip.SetNr (i);
+	// ip.SetGlobNr (tetpoints.Append (ip)-1);
 	tetlumping.AddIntegrationPoint (ip);
       }
 
@@ -2082,9 +2075,9 @@ namespace ngfem
 
     for (i = 0; i < 3; i++)
       {
-	ip = new IntegrationPoint (qf_prismfacemidpoint[i], 0.5);
-	ip->SetNr (i);
-	ip->SetGlobNr (prismpoints.Append (ip)-1);
+	ip = IntegrationPoint (qf_prismfacemidpoint[i], 0.5);
+	ip.SetNr (i);
+	// ip.SetGlobNr (prismpoints.Append (ip)-1);
 	prismfacemidpoint.AddIntegrationPoint (ip);
       }
 
@@ -2106,10 +2099,10 @@ namespace ngfem
     
     for (i = 0; i < 6; i++)
       {
-	ip = new IntegrationPoint (qf_prism_lumping_points[i],
+	ip = IntegrationPoint (qf_prism_lumping_points[i],
 				   qf_prism_lumping_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (prismpoints.Append (ip)-1);
+	ip.SetNr (i);
+	// ip.SetGlobNr (prismpoints.Append (ip)-1);
 	prismlumping.AddIntegrationPoint (ip);
       }
 
@@ -2178,8 +2171,8 @@ namespace ngfem
     point[2] = 1-zrule[j][0];
     weight = zrule[j][1] * ipquad.Weight();
 	      
-    ip = new IntegrationPoint (point, weight);
-    ip->SetGlobNr (pyramidpoints.Append (ip)-1);
+    ip = IntegrationPoint (point, weight);
+    // ip.SetGlobNr (pyramidpoints.Append (ip)-1);
     pyramidrule->AddIntegrationPoint (ip);
     }
     pyramidrules[k] = pyramidrule;
@@ -2210,10 +2203,10 @@ namespace ngfem
     
     for (i = 0; i < 5; i++)
       {
-	ip = new IntegrationPoint (qf_pyramid_lumping_points[i],
+	ip = IntegrationPoint (qf_pyramid_lumping_points[i],
 				   qf_pyramid_lumping_weights[i]);
-	ip->SetNr (i);
-	ip->SetGlobNr (pyramidpoints.Append (ip)-1);
+	ip.SetNr (i);
+	// ip.SetGlobNr (pyramidpoints.Append (ip)-1);
 	pyramidlumping.AddIntegrationPoint (ip);
       }
 
@@ -2285,9 +2278,15 @@ namespace ngfem
 
     for (int i = 0; i < hexrules.Size(); i++)
       delete hexrules[i];
+
+    for (int i = 0; i < jacobirules10.Size(); i++)
+      delete jacobirules10[i];
+
+    for (int i = 0; i < jacobirules20.Size(); i++)
+      delete jacobirules20[i];
   }
 
-
+  /*
   const Array<IntegrationPoint*> & IntegrationRules ::
   GetIntegrationPoints (ELEMENT_TYPE eltyp) const
   {
@@ -2314,7 +2313,7 @@ namespace ngfem
        << ElementTopology::GetElementName(eltyp) << endl;
     throw Exception (str.str());
   }
-
+  */
 
 
   const IntegrationRule & IntegrationRules :: 
@@ -2466,10 +2465,10 @@ namespace ngfem
 		for (int j = 0; j < xi.Size(); j++)
 		  {
 		    xip[0] = xi[j];
-		    IntegrationPoint * ip = new IntegrationPoint (xip, wi[j]);
-		    ip->SetNr (j);
-		    if (order < 20)
-		      ip->SetGlobNr (segmentpoints.Append (ip)-1);
+		    IntegrationPoint ip = IntegrationPoint (xip, wi[j]);
+		    ip.SetNr (j);
+		    // if (order < 20)
+		      // ip.SetGlobNr (segmentpoints.Append (ip)-1);
 		    rule->AddIntegrationPoint (ip);
 		  }
 		segmentrules[order] = rule;	      
@@ -2489,12 +2488,12 @@ namespace ngfem
 		for (int i = 0; i < xx.Size(); i++)
 		  for (int j = 0; j < xy.Size(); j++)
 		    {
-		      IntegrationPoint * ip = 
-			new IntegrationPoint (xx[i], xy[j]*(1-xx[i]), 0,
-					      wx[i]*wy[j]*(1-xx[i]));
-		      ip->SetNr (ii); ii++;
-		      if (order <= 10)
-			ip->SetGlobNr (trigpoints.Append (ip)-1);
+		      IntegrationPoint ip = 
+			IntegrationPoint (xx[i], xy[j]*(1-xx[i]), 0,
+                                          wx[i]*wy[j]*(1-xx[i]));
+		      ip.SetNr (ii); ii++;
+		      // if (order <= 10)
+			// ip.SetGlobNr (trigpoints.Append (ip)-1);
 		      trigrule->AddIntegrationPoint (ip);
 		    }
 		trigrules[order] = trigrule;
@@ -2521,10 +2520,10 @@ namespace ngfem
 		  weight = ipsegmi.Weight() *
 		  ipsegmj.Weight() * (1-point[0]);
 		    
-		  IntegrationPoint * ip = new IntegrationPoint (point, weight);
-		  ip->SetNr (ii); ii++;
+		  IntegrationPoint * ip = IntegrationPoint (point, weight);
+		  ip.SetNr (ii); ii++;
 		  if (order <= 10)
-		  ip->SetGlobNr (trigpoints.Append (ip)-1);
+		  // ip.SetGlobNr (trigpoints.Append (ip)-1);
 		  trigrule->AddIntegrationPoint (ip);
 		  }
 		  trigrules[order] = trigrule;
@@ -2551,10 +2550,10 @@ namespace ngfem
 		      point[2] = 0;
 		      weight = ipsegm1.Weight() * ipsegm2.Weight();
 		    
-		      IntegrationPoint * ip = new IntegrationPoint (point, weight);
-		      ip->SetNr (ii); ii++;
-		      if (order <= 10)
-			ip->SetGlobNr (quadpoints.Append (ip)-1);
+		      IntegrationPoint ip = IntegrationPoint (point, weight);
+		      ip.SetNr (ii); ii++;
+		      // if (order <= 10)
+			// ip.SetGlobNr (quadpoints.Append (ip)-1);
 		      quadrule->AddIntegrationPoint (ip);
 		    }
 		quadrules[order] = quadrule;
@@ -2578,14 +2577,14 @@ namespace ngfem
 		  for (int j = 0; j < xy.Size(); j++)
 		    for (int k = 0; k < xz.Size(); k++)
 		      {
-			IntegrationPoint * ip = 
-			  new IntegrationPoint (xx[i], 
-						xy[j]*(1-xx[i]),
-						xz[k]*(1-xx[i])*(1-xy[j]),
-						wx[i]*wy[j]*wz[k]*sqr(1-xx[i])*(1-xy[j]));
-			ip->SetNr (ii); ii++;
-			if (order <= 6)
-			  ip->SetGlobNr (tetpoints.Append (ip)-1);
+			IntegrationPoint ip = 
+			  IntegrationPoint (xx[i], 
+                                            xy[j]*(1-xx[i]),
+                                            xz[k]*(1-xx[i])*(1-xy[j]),
+                                            wx[i]*wy[j]*wz[k]*sqr(1-xx[i])*(1-xy[j]));
+			ip.SetNr (ii); ii++;
+			// if (order <= 6)
+			  // ip.SetGlobNr (tetpoints.Append (ip)-1);
 			tetrule->AddIntegrationPoint (ip);
 		      }
 		tetrules[order] = tetrule;
@@ -2614,12 +2613,12 @@ namespace ngfem
 			point[2] = ipsegm3.Point()[0];
 			weight = ipsegm1.Weight() * ipsegm2.Weight() * ipsegm3.Weight();
 		      
-			IntegrationPoint * ip = 
-			  new IntegrationPoint (point, weight);
+			IntegrationPoint ip = 
+			  IntegrationPoint (point, weight);
 		      
-			ip->SetNr (ii); ii++;
-			if (order <= 6)
-			  ip->SetGlobNr (hexpoints.Append (ip)-1);
+			ip.SetNr (ii); ii++;
+			// if (order <= 6)
+			  // ip.SetGlobNr (hexpoints.Append (ip)-1);
 			hexrule->AddIntegrationPoint (ip);
 		      }
 		hexrules[order] = hexrule;
@@ -2648,11 +2647,11 @@ namespace ngfem
 		      point[2] = ipsegm.Point()[0];
 		      weight = iptrig.Weight() * ipsegm.Weight();
 	      
-		      IntegrationPoint * ip = 
-			new IntegrationPoint (point, weight);
-		      ip->SetNr (ii); ii++;
-		      if (order <= 6)
-			ip->SetGlobNr (prismpoints.Append (ip)-1);
+		      IntegrationPoint ip = 
+			IntegrationPoint (point, weight);
+		      ip.SetNr (ii); ii++;
+		      // if (order <= 6)
+			// ip.SetGlobNr (prismpoints.Append (ip)-1);
 		      prismrule->AddIntegrationPoint (ip);
 		    }
 		prismrules[order] = prismrule;
@@ -2674,9 +2673,9 @@ namespace ngfem
 		  xy[j]*(1-xxz[i]),
 		  xxz[k],
 		  wxz[i]*wy[j]*wxz[k]*(1-xxz[i]));
-		  ip->SetNr (ii); ii++;
+		  ip.SetNr (ii); ii++;
 		  if (order <= 6)
-		  ip->SetGlobNr (prismpoints.Append (ip)-1);
+		  // ip.SetGlobNr (prismpoints.Append (ip)-1);
 		  prismrule->AddIntegrationPoint (ip);
 		  }
 		  prismrules[order] = prismrule;
@@ -2706,10 +2705,10 @@ namespace ngfem
 		      point[2] = ipseg(0);
 		      weight = ipseg.Weight() * sqr (1-ipseg(0)) * ipquad.Weight();
 		    
-		      IntegrationPoint * ip = new IntegrationPoint (point, weight);
-		      ip->SetNr (ii); ii++;
-		      if (order <= 6)
-			ip->SetGlobNr (pyramidpoints.Append (ip)-1);
+		      IntegrationPoint ip = IntegrationPoint (point, weight);
+		      ip.SetNr (ii); ii++;
+		      // if (order <= 6)
+			// ip.SetGlobNr (pyramidpoints.Append (ip)-1);
 		      pyramidrule->AddIntegrationPoint (ip);
 		    }
 		pyramidrules[order] = pyramidrule;
@@ -2761,10 +2760,10 @@ namespace ngfem
 	  for (int j = 0; j < xi.Size(); j++)
 	    {
 	      xip[0] = xi[j];
-	      IntegrationPoint * ip = new IntegrationPoint (xip, wi[j]);
-	      ip->SetNr (j);
-	      if (order < 20)
-		ip->SetGlobNr (segmentpoints.Append (ip)-1);
+	      IntegrationPoint ip = IntegrationPoint (xip, wi[j]);
+	      ip.SetNr (j);
+              // 	      if (order < 20)
+		// ip.SetGlobNr (segmentpoints.Append (ip)-1);
 	      rule->AddIntegrationPoint (ip);
 	    }
 	  jacobirules10[order] = rule;	      
@@ -2811,10 +2810,10 @@ namespace ngfem
 	  for (int j = 0; j < xi.Size(); j++)
 	    {
 	      xip[0] = xi[j];
-	      IntegrationPoint * ip = new IntegrationPoint (xip, wi[j]);
-	      ip->SetNr (j);
-	      if (order < 20)
-		ip->SetGlobNr (segmentpoints.Append (ip)-1);
+	      IntegrationPoint ip = IntegrationPoint (xip, wi[j]);
+	      ip.SetNr (j);
+	      // if (order < 20)
+		// ip.SetGlobNr (segmentpoints.Append (ip)-1);
 	      rule->AddIntegrationPoint (ip);
 	    }
 	  jacobirules20[order] = rule;	      

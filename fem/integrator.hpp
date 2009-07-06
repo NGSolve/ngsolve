@@ -127,6 +127,8 @@ namespace ngfem
     ///
     virtual string Name () const;
 
+    virtual void CheckElement (const FiniteElement & el) { ; }
+
 
     // added by MW:   Markus, müssen die virtual sein (JS) ??
     virtual bool IntegrationAlongCurve (void) const

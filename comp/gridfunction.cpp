@@ -719,7 +719,7 @@ namespace ngcomp
       }
 
     IntegrationPoint ip(xref[0], xref[1], xref[2], 0);
-    SpecificIntegrationPoint<3,3> sip (ip, eltrans, vx, mdxdxref, lh);
+    SpecificIntegrationPoint<3,3> sip (ip, eltrans, vx, mdxdxref); // , lh);
 
     for(int j = 0; j<bfi3d.Size(); j++)
       {
@@ -938,7 +938,7 @@ namespace ngcomp
                 for (int j = 0; j < 2; j++)
                   mdxdxref(i,j) = dxdxref[2*i+j];
               }
-            SpecificIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref, lh);
+            SpecificIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref); // , lh);
             for (int i = 0; i < components; i++)
               values[i] = 0.0;
             for(int j = 0; j<bfi2d.Size(); j++)
@@ -958,7 +958,7 @@ namespace ngcomp
                 for (int j = 0; j < 2; j++)
                   mdxdxref(i,j) = dxdxref[2*i+j];
               }
-            SpecificIntegrationPoint<2,2> sip (ip, eltrans, vx, mdxdxref, lh);
+            SpecificIntegrationPoint<2,2> sip (ip, eltrans, vx, mdxdxref); // , lh);
 
             for (int i = 0; i < components; i++)
               values[i] = 0.0;

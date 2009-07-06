@@ -38,14 +38,14 @@ public:
       Trans (fel.GetDShape(sip.IP(),lh));
   }
 
-  template <typename FEL, typename MAT>
+  template <typename FEL>
   static void GenerateMatrix (const FEL & fel, 
                               const SpecificIntegrationPoint<D,D> & sip,
-			      MAT & mat, LocalHeap & lh)
+			      FlatMatrixFixHeight<D> & mat, LocalHeap & lh)
   {
-    FlatMatrixFixWidth<D> hm(fel.GetNDof(), lh);
+    FlatMatrixFixWidth<D> hm(fel.GetNDof(), &mat(0,0));
     fel.CalcMappedDShape (sip, hm);
-    mat = Trans (hm);
+    // mat = Trans (hm);
   }
 
   ///
@@ -202,6 +202,7 @@ public:
       mat(0, j) = shape(j);
   }
 
+
   template <typename FEL, typename SIP, class TVX, class TVY>
   static void Apply (const FEL & fel, const SIP & sip,
 		     const TVX & x, TVY & y,
@@ -211,7 +212,7 @@ public:
   }
 
   static void Apply (const ScalarFiniteElement<D> & fel, const SpecificIntegrationPoint<D,D> & sip,
-		     const FlatVector<double> & x, FlatVector<double>  & y,
+		     const FlatVector<double> & x, FlatVector<double> & y,
 		     LocalHeap & lh) 
   {
     y(0) = fel.Evaluate(sip.IP(), x, lh);
@@ -473,6 +474,18 @@ public:
     mat = (1.0/sip.GetJacobiDet())
       * (sip.GetJacobian() * Trans (fel.GetCurlShape(sip.IP(), lh)));
   }
+
+  template <typename FEL, typename MAT>
+  static void GenerateMatrix (const FEL & fel, 
+                              const SpecificIntegrationPoint<3,3> & sip,
+			      MAT & mat, LocalHeap & lh)
+  {
+    FlatMatrixFixWidth<3> hm(fel.GetNDof(), lh);
+    fel.CalcMappedCurlShape (sip, hm);
+    mat = Trans (hm);
+  }
+
+
 
   template <typename FEL, typename SIP, class TVX, class TVY>
   static void Apply (const FEL & fel, const SIP & sip,
