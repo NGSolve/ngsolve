@@ -673,7 +673,7 @@ namespace ngfem
 
 
 
-
+  /*
   class NormalBilinearFormIntegrator : public BilinearFormIntegrator
   {
     const BilinearFormIntegrator & bfi;
@@ -688,7 +688,7 @@ namespace ngfem
 			   FlatMatrix<double> & elmat,
 			   LocalHeap & locheap) const;
   };
-
+  */
 
 
 

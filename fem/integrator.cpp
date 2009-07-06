@@ -1055,7 +1055,7 @@ namespace ngfem
 
 
 
- 
+  /*
   NormalBilinearFormIntegrator ::
   NormalBilinearFormIntegrator (const BilinearFormIntegrator & abfi)
     : bfi(abfi)
@@ -1126,7 +1126,7 @@ namespace ngfem
 	    elmat(i*sdim+k, j*sdim+l) = mat1(i,j) * nvmat(k,i) * nvmat(l,j);
    
   }  
-
+  */
 
 
 

@@ -13,7 +13,6 @@
 
 
 #include <fem.hpp>
-#include <h1lofe.hpp>
 
 namespace ngfem
 {
@@ -121,14 +120,14 @@ namespace ngfem
 
 
 
-  
+  /*
   template<int D>
   const IntegrationRule &
   ScalarFiniteElement<D> :: NodalIntegrationRule() const
   {
     return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), Order());
   }
-
+  */
 
   template<int D>
   void ScalarFiniteElement<D> ::
@@ -204,302 +203,19 @@ namespace ngfem
 
 
 
-
-
-
-
-
-  /* Specific finite elements: */
-  
-  const IntegrationRule &
-  FE_Tet0 :: NodalIntegrationRule() const
-  {
-    return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 1);
-  }
-
-  const IntegrationRule &
-  FE_Tet1 :: NodalIntegrationRule() const
-  {
-    return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 1);
-  }
-
   void FE_Tet1 :: GetDofs (Array<Dof> & dofs) const
   {
+    Dof da[] = { Dof (Node (NT_VERTEX, 0), 0),
+		 Dof (Node (NT_VERTEX, 1), 0),
+		 Dof (Node (NT_VERTEX, 2), 0),
+		 Dof (Node (NT_VERTEX, 3), 0) };
+		 
+
     dofs.SetSize (0);
     for (int i = 0; i < 4; i++)
       dofs.Append (Dof (Node (NT_VERTEX, i), 0));
   }
 
-
-
-  const IntegrationRule &
-  FE_Trig0 :: NodalIntegrationRule() const
-  {
-    return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 1);
-  }
-
-
-  const IntegrationRule &
-  FE_Trig1 :: NodalIntegrationRule() const
-  {
-    return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 1);
-  } 
-
-
-  const IntegrationRule &
-  FE_Trig2 :: NodalIntegrationRule() const
-  {
-    return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 2);
-  } 
-
-
-
-  const IntegrationRule &
-  FE_Quad0 :: NodalIntegrationRule() const
-  {
-    return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 1);
-  }
-
-  const IntegrationRule &
-  FE_Quad1:: NodalIntegrationRule() const
-  {
-    return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 1);
-  }
-
-
-  const IntegrationRule &
-  FE_Quad2:: NodalIntegrationRule() const
-  {
-    return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 1);
-  }
-
-
-  const IntegrationRule &
-  FE_Pyramid0 :: NodalIntegrationRule() const
-  {
-    return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 1);
-  }
-
-
-
-  const IntegrationRule &
-  FE_Pyramid1 :: NodalIntegrationRule() const
-  {
-    return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 1);
-  }
-
-
-
-  const IntegrationRule &
-  FE_Prism0 :: NodalIntegrationRule() const
-  {
-    return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 1);
-  }
-
-
-
-
-  const IntegrationRule &
-  FE_Prism1 :: NodalIntegrationRule() const
-  {
-    return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), 1);
-  }
-
-
-
-
-
-
-  // Array<ScalarFiniteElement::IPData> FE_Prism2::ipdata;
-  // ScalarFiniteElement<3>::IPDataArray FE_Prism2::ipdata;
-
-  FE_Prism2 :: FE_Prism2()
-    : ScalarFiniteElement<3> (ET_PRISM, 18, 3)
-  {
-    // if (!ipdata.Size()) CalcIPData(ET_PRISM, ipdata);
-  }
-
-  FE_Prism2 :: ~FE_Prism2()
-  {
-    ;
-  }
-
-  void FE_Prism2 :: CalcShape (const IntegrationPoint & ip, 
-			       FlatVector<> shape) const
-			     
-  {
-    double x = ip.Point()[0];
-    double y = ip.Point()[1];
-    double z = ip.Point()[2];
-
-    shape(0) = x * (1-z);
-    shape(1) = y * (1-z);
-    shape(2) = (1-x-y) * (1-z);
-    shape(3) = x * z;
-    shape(4) = y * z;
-    shape(5) = (1-x-y) * z;
-
-    shape(6) = 4 * x * (1-x-y) * (1-z);
-    shape(7) = 4 * x * y       * (1-z);
-    shape(8) = 4 * y * (1-x-y) * (1-z);
-    shape(9) = 4 * x * (1-x-y) * z;
-    shape(10) = 4 * x * y       * z;
-    shape(11) = 4 * y * (1-x-y) * z;
-
-
-    shape(12) = x * (1-z) * z;
-    shape(13) = y * (1-z) * z;
-    shape(14) = (1-x-y) * (1-z) * z;
-    shape(15) = 4 * x * (1-x-y) * (1-z) * z;
-    shape(16) = 4 * x * y       * (1-z) * z;
-    shape(17) = 4 * y * (1-x-y) * (1-z) * z;
-  }
-
-
-
-  void FE_Prism2 :: CalcDShape (const IntegrationPoint & ip, 
-				FlatMatrixFixWidth<3> dshape) const
-  {
-    ScalarFiniteElement<3>::CalcDShape (ip, dshape);
-  }
-
-
-
-
-  // Array<ScalarFiniteElement::IPData> FE_Prism2aniso::ipdata;
-  // ScalarFiniteElement<3>::IPDataArray FE_Prism2aniso::ipdata;
-
-
-  FE_Prism2aniso :: FE_Prism2aniso()
-    : ScalarFiniteElement<3> (ET_PRISM, 12, 3)
-  {
-    // if (!ipdata.Size()) CalcIPData(ET_PRISM, ipdata);
-  }
-
-  FE_Prism2aniso :: ~FE_Prism2aniso()
-  {
-    ;
-  }
-
-  void FE_Prism2aniso :: CalcShape (const IntegrationPoint & ip, 
-				    FlatVector<> shape) const
-			     
-  {
-    double x = ip(0);
-    double y = ip(1);
-    double z = ip(2);
-    double lam3 = 1-x-y;
-
-    shape(0) = x * (2*x-1) * (1-z);
-    shape(1) = y * (2*y-1) * (1-z);
-    shape(2) = lam3 * (2*lam3-1) * (1-z);
-    shape(3) = x * (2*x-1) * z;
-    shape(4) = y * (2*y-1) * z;
-    shape(5) = lam3 * (2*lam3-1) * z;
-
-    shape(6) = 4 * x * lam3 * (1-z);
-    shape(7) = 4 * x * y       * (1-z);
-    shape(8) = 4 * y * lam3 * (1-z);
-    shape(9) = 4 * x * lam3 * z;
-    shape(10) = 4 * x * y       * z;
-    shape(11) = 4 * y * lam3 * z;
-  }
-
-
-  void FE_Prism2aniso :: CalcDShape (const IntegrationPoint & ip, 
-				     FlatMatrixFixWidth<3> dshape) const
-  {
-    ScalarFiniteElement<3>::CalcDShape (ip, dshape);
-  }
-
-
-
-
-
-  // Array<ScalarFiniteElement::IPData> FE_Prism2HBaniso::ipdata;
-  // ScalarFiniteElement<3>::IPDataArray FE_Prism2HBaniso::ipdata;
-
-  FE_Prism2HBaniso :: FE_Prism2HBaniso()
-    : ScalarFiniteElement<3> (ET_PRISM, 12, 3)
-  {
-    // if (!ipdata.Size()) CalcIPData(ET_PRISM, ipdata);
-  }
-
-  FE_Prism2HBaniso :: ~FE_Prism2HBaniso()
-  {
-    ;
-  }
-
-  void FE_Prism2HBaniso :: CalcShape (const IntegrationPoint & ip, 
-                                      FlatVector<> shape) const
-			     
-  {
-    double x = ip(0);
-    double y = ip(1);
-    double z = ip(2);
-
-    shape(0) = x * (1-z);
-    shape(1) = y * (1-z);
-    shape(2) = (1-x-y) * (1-z);
-    shape(3) = x * z;
-    shape(4) = y * z;
-    shape(5) = (1-x-y) * z;
-
-    shape(6) = 4 * x * (1-x-y) * (1-z);
-    shape(7) = 4 * x * y       * (1-z);
-    shape(8) = 4 * y * (1-x-y) * (1-z);
-    shape(9) = 4 * x * (1-x-y) * z;
-    shape(10) = 4 * x * y       * z;
-    shape(11) = 4 * y * (1-x-y) * z;
-  }
-
-
-
-
-
-
-
-
-
-  // Array<ScalarFiniteElement::IPData> FE_Prism3aniso::ipdata;
-  // ScalarFiniteElement<3>::IPDataArray FE_Prism3aniso::ipdata;
-
-  FE_Prism3aniso :: FE_Prism3aniso() 
-    : ScalarFiniteElement<3> (ET_PRISM)
-  {
-    // if (!ipdata.Size()) CalcIPData(ET_PRISM, ipdata);
-  }
-
-  FE_Prism3aniso :: ~FE_Prism3aniso()
-  {
-    ;
-  }
-
-  void FE_Prism3aniso :: CalcShape (const IntegrationPoint & ip, 
-				    FlatVector<> shape) const
-			     
-  {
-    double x = ip.Point()[0];
-    double y = ip.Point()[1];
-    double lam3 = 1-x-y;
-    double z = ip.Point()[2];
-    int base;
-    for (base = 0; base <= 10; base += 10)
-      {
-	double shapez = (base == 0) ? z : 1-z;
-
-	shape(base  ) = shapez * x;
-	shape(base+1) = shapez * y;
-	shape(base+2) = shapez * lam3;
-	shape(base+3) = shapez * x*x*y;
-	shape(base+4) = shapez * x*y*y;
-	shape(base+5) = shapez * x*x*lam3;
-	shape(base+6) = shapez * x*lam3*lam3;
-	shape(base+7) = shapez * y*y*lam3;
-	shape(base+8) = shapez * y*lam3*lam3;
-	shape(base+9) = shapez * x*y*lam3;
-      }
-  }
 
 
 

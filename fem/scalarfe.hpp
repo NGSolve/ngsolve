@@ -29,7 +29,7 @@ namespace ngfem
     ///
     virtual ~ScalarFiniteElement () { ; }
     ///
-    virtual const IntegrationRule & NodalIntegrationRule() const;
+    // virtual const IntegrationRule & NodalIntegrationRule() const;
 
     /**
        returns shape functions in point ip.
@@ -120,265 +120,143 @@ namespace ngfem
 
 
 
-
-
-
-
-  /* ********************************** Segm ********************************* */
-
-
-
-
-  /* ********************************* Trigs ******************************* */
-
-
-
-
-  /* ***************************** Tet *************************************** */
-
-
-
-  /* ***************************** Quads ********************************* */
-
-
-
-  /* **************************** Pyramid Elements *********************** */
-
-  /*
-  /// pyramid of order 0
-  class FE_Pyramid0 : public ScalarFiniteElement<3>
-  {
-    ///
-// static IPDataArray ipdata;
-
-  public:
-
-  ///
-    FE_Pyramid0();
-    ///
-    virtual ~FE_Pyramid0();
-
-    ///
-    virtual int SpatialDim () const { return 3; }
-    ///
-    virtual int GetNDof () const { return 1; }
-    ///
-    virtual int Order () const { return 0; }
-    ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
-
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-			  
-    ///
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> dshape) const;
-
-    ///
-    virtual const IntegrationRule & NodalIntegrationRule() const;
-
-  };
-  */
-
-
-  /*
-  /// pyramid of order 1
-  class FE_Pyramid1 : public ScalarFiniteElement<3>
-  {
-    ///
-// static IPDataArray ipdata;
-
-  public:
-
-  ///
-    FE_Pyramid1();
-    ///
-    virtual ~FE_Pyramid1();
-
-    ///
-    virtual int SpatialDim () const { return 3; }
-    ///
-    virtual int GetNDof () const { return 5; }
-    ///
-    virtual int Order () const { return 3; }
-    ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
-
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-			  
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> dshape) const;
-			  
-
-    ///
-    virtual const IntegrationRule & NodalIntegrationRule() const;
-  };
-  */
-
-  /*
-  /// pyramid of order 2
-  class FE_Pyramid2 : public ScalarFiniteElement<3>
-  {
-    ///
-// static IPDataArray ipdata;
-
-  public:
-
-  ///
-    FE_Pyramid2();
-    ///
-    virtual ~FE_Pyramid2();
-
-    ///
-    virtual int SpatialDim () const { return 3; }
-    ///
-    virtual int GetNDof () const { return 13; }
-    ///
-    virtual int Order () const { return 4; }
-    ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
-
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-			  
-  };
-
-  */
-
-
-
-  /* ******************************* Prism Elements ********************* */
-
-
-  /*
-  /// prism of order 0
-  class FE_Prism0 : public ScalarFiniteElement<3>
-  {
-    ///
-// static IPDataArray ipdata;
-
-  public:
-
-  ///
-    FE_Prism0();
-    ///
-    virtual ~FE_Prism0();
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-
-    ///
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> dshape) const;
-
-    ///
-    virtual const IntegrationRule & NodalIntegrationRule() const;
-  };
-  */
-
-  /*
-  /// prism of order 1
-  class FE_Prism1 : public ScalarFiniteElement<3>
-  {
-    ///
-// static IPDataArray ipdata;
-
-  public:
-
-  ///
-    FE_Prism1();
-    ///
-    virtual ~FE_Prism1();
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
   
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> dshape) const;
-			  
-    virtual const IntegrationRule & NodalIntegrationRule() const;
+
+
+  
+  
+  template <int DIM>
+  class DShapeElement
+  {
+    double * data;
+  public:
+    DShapeElement (double * adata) : data(adata) { ; }
+    void operator= (AutoDiff<DIM> ad) 
+    { 
+      for (int i = 0; i < DIM; i++) 
+        data[i] = ad.DValue(i); 
+    }
   };
+
+
+
+  template <int DIM>
+  class DShapeAssign
+  {
+    double * dshape;
+  public:
+    DShapeAssign (FlatMatrixFixWidth<DIM> mat)
+    { dshape = &mat(0,0); }
+
+    DShapeAssign (double * adshape)
+    { dshape = adshape; }
+
+    DShapeElement<DIM> operator[] (int i) const
+    { return DShapeElement<DIM> (dshape + i*DIM); }
+
+    const DShapeAssign Addr (int i) const
+    { return DShapeAssign (dshape+i*DIM); } 
+  };
+
+  
+
+
+
+
+
+
+
+
+  /**
+     Base-element for template polymorphism.
+     Barton and Nackman Trick
   */
 
-
-
-  /// prism of order 2
-  class FE_Prism2 : public ScalarFiniteElement<3>
+  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
+  class T_ScalarFiniteElement : public ScalarFiniteElement<ET_trait<ET>::DIM>
   {
-    ///
-// static IPDataArray ipdata;
+
+  public:
+    
+  protected:
+    enum { DIM = ET_trait<ET>::DIM };
+
+    T_ScalarFiniteElement ()
+      : ScalarFiniteElement<DIM> (ET, NDOF, ORDER) { ; }
+
+    virtual ~T_ScalarFiniteElement() { ; }
 
   public:
 
-  ///
-    FE_Prism2();
-    ///
-    virtual ~FE_Prism2();
     /*
-   ///
-   virtual int SpatialDim () const { return 3; }
-   ///
-   virtual int GetNDof () const { return 18; }
-   ///
-   virtual int Order () const { return 3; }
-   ///
-   virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
+  const FlatVec<NDOF> & GetShape (const IntegrationPoint & ip,
+                                  LocalHeap & lh) const
+    {
+      ;
+    }
+
+    const Mat<NDOF,DIM> & GetDShape (const IntegrationPoint & ip,
+				     LocalHeap & lh) const
+    {
+      ;
+    }
     */
-    ///
+
+
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-			  
+			    FlatVector<> shape) const
+    {
+      double pt[DIM];
+      for (int i = 0; i < DIM; i++) pt[i] = ip(i);
+      FEL::T_CalcShape (pt, shape); 
+    }
+
+    static void CalcShapeStat (const IntegrationPoint & ip, 
+                               FlatVector<> shape)
+    {
+      double pt[DIM];
+      for (int i = 0; i < DIM; i++) pt[i] = ip(i);
+      FEL::T_CalcShape (pt, shape); 
+    }
+    
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> dshape) const;
-  };
+			     FlatMatrixFixWidth<DIM> dshape) const
+    {
+      AutoDiff<DIM> adp[DIM];
+      for (int i = 0; i < DIM; i++)
+        adp[i] = AutoDiff<DIM> (ip(i), i);
+      
+      DShapeAssign<DIM> ds(dshape); 
+      FEL::T_CalcShape (adp, ds);
+    }
 
+    static void CalcDShapeStat (const IntegrationPoint & ip, 
+				FlatMatrixFixWidth<DIM> dshape)
+    {
+      AutoDiff<DIM> adp[DIM];
+      for (int i = 0; i < DIM; i++)
+        adp[i] = AutoDiff<DIM> (ip(i), i);
+      
+      DShapeAssign<DIM> ds(dshape); 
+      FEL::T_CalcShape (adp, ds);
+    }
 
-
-
-
-  /// in plane second order
-  class FE_Prism2aniso : public ScalarFiniteElement<3>
-  {
-    ///
-// static IPDataArray ipdata;
-
-  public:
-
-  ///
-    FE_Prism2aniso();
-    ///
-    virtual ~FE_Prism2aniso();
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-			  
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> dshape) const;
-  };
-
-
-
-  /// in plane second order
-  class FE_Prism2HBaniso : public ScalarFiniteElement<3>
-  {
-    ///
-// static IPDataArray ipdata;
-
-  public:
-
-  ///
-    FE_Prism2HBaniso();
-    ///
-    virtual ~FE_Prism2HBaniso();
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-			  
-
+    virtual void 
+    CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
+                      FlatMatrixFixWidth<DIM> dshape) const
+    {
+      AutoDiff<DIM> adp[DIM];
+      
+      for (int i = 0; i < DIM; i++)
+        adp[i].Value() = sip.IP()(i);
+      
+      for (int i = 0; i < DIM; i++)
+        for (int j = 0; j < DIM; j++)
+          adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
+      
+      DShapeAssign<DIM> ds(dshape); 
+      FEL::T_CalcShape (adp, ds);
+    }
   };
 
 
@@ -386,94 +264,10 @@ namespace ngfem
 
 
 
-  /// in plane third order
-  class FE_Prism3aniso : public ScalarFiniteElement<3>
-  {
-    ///
-// static IPDataArray ipdata;
-
-  public:
-
-  ///
-    FE_Prism3aniso();
-    ///
-    virtual ~FE_Prism3aniso();
-
-    ///
-    virtual int SpatialDim () const { return 3; }
-    ///
-    virtual int GetNDof () const { return 20; }
-    ///
-    virtual int Order () const { return 3; }
-    ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
-
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-			  
-  };
 
 
 
 
-
-  /* **************************** Hex elements ************************* */
-
-
-  /*
-  ///
-  class FE_Hex0 : public ScalarFiniteElement<3>
-  {
-    ///
-// static IPDataArray ipdata;
-  public:
-  ///
-    FE_Hex0();
-    ///
-    virtual ~FE_Hex0();
-
-    ///
-    virtual int SpatialDim () const { return 3; }
-    ///
-    virtual int GetNDof () const { return 1; }
-    ///
-    virtual int Order () const { return 1; }
-    ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_HEX; }
-
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-  };
-  */
-
-  /*
-  ///
-  class FE_Hex1 : public ScalarFiniteElement<3>
-  {
-    ///
-// static IPDataArray ipdata;
-  public:
-  ///
-    FE_Hex1();
-    ///
-    virtual ~FE_Hex1();
-
-    ///
-    virtual int SpatialDim () const { return 3; }
-    ///
-    virtual int GetNDof () const { return 8; }
-    ///
-    virtual int Order () const { return 1; }
-    ///
-    virtual ELEMENT_TYPE ElementType() const { return ET_HEX; }
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-			  
-  };
-  */
 
 }
 

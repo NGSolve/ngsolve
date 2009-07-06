@@ -278,9 +278,9 @@ namespace ngfem
     ///
     IntegrationRule () { ; }
 
-    ///
+    /// allocate for nips points
     IntegrationRule (int nips)
-      : Array<IntegrationPoint> (nips) { ; }
+      : Array<IntegrationPoint> () { SetAllocSize(nips); }
 
     ///
     void AddIntegrationPoint (const IntegrationPoint & ip)

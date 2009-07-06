@@ -2846,8 +2846,6 @@ namespace ngfem
 
 
 
-
-
   const IntegrationRule & IntegrationRules :: 
   SelectLumpingIntegrationRule (ELEMENT_TYPE eltyp) const
   {
@@ -2878,8 +2876,6 @@ namespace ngfem
     return *ir;
   }
   
-
-
 
   const IntegrationRule & IntegrationRules :: 
   SelectNodalIntegrationRule (ELEMENT_TYPE eltyp, int order) const
@@ -2918,7 +2914,6 @@ namespace ngfem
       }
     return *ir;
   }
-  
 
 
   int Integrator :: common_integration_order = -1;
