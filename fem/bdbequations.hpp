@@ -202,6 +202,13 @@ public:
       mat(0, j) = shape(j);
   }
 
+  static void GenerateMatrix (const ScalarFiniteElement<D> & fel, 
+			      const SpecificIntegrationPoint<D,D> & sip,
+			      FlatMatrixFixHeight<1> & mat, LocalHeap & lh)
+  {
+    fel.CalcShape (sip.IP(), FlatVector<> (fel.GetNDof(), &mat(0,0)));
+  }
+
 
   template <typename FEL, typename SIP, class TVX, class TVY>
   static void Apply (const FEL & fel, const SIP & sip,

@@ -106,7 +106,14 @@ namespace ngstd
     static void AddFlops (int nr, double aflops) { ; };
 #endif
 
-
+    static double GetTime (int nr)
+    {
+#ifdef USE_TIMEOFDAY
+      return tottimes[nr];
+#else
+      return tottimes[nr]/CLOCKS_PER_SEC;
+#endif
+    }
 
     /// change name
     static void SetName (int nr, const string & name) { names[nr] = name; }

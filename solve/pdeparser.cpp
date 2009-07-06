@@ -1342,8 +1342,11 @@ namespace ngsolve
 
 		      if (partflags.GetDefineFlag ("normal"))
 			{
+			  throw Exception ("-normal flag currently not available");
+			  /*
 			  integrator = new NormalBilinearFormIntegrator
 			    (*integrator);
+			  */
 			}
 
 		      if (partflags.GetDefineFlag ("imag"))

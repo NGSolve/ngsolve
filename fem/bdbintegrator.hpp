@@ -1647,9 +1647,7 @@ public:
 
 	//(*testout) << "Integrator " << name << " order " << order << endl;
 
-	const IntegrationRule & ir = (Lumping() && fel.Order() == 1 && 0) ?
-	  GetIntegrationRules().SelectLumpingIntegrationRule (fel.ElementType()) :
-	  GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), order);
+	const IntegrationRule & ir = SelectIntegrationRule (fel.ElementType(), order);
 	
 
         // FlatArray<Vec<DIM_ELEMENT> > refpts(ir.GetNIP(), lh);

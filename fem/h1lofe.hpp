@@ -13,138 +13,6 @@ namespace ngfem
 
 
 
-  template <int DIM>
-  class DShapeElement
-  {
-    double * data;
-  public:
-    DShapeElement (double * adata) : data(adata) { ; }
-    void operator= (AutoDiff<DIM> ad) 
-    { 
-      for (int i = 0; i < DIM; i++) 
-        data[i] = ad.DValue(i); 
-    }
-  };
-
-  template <int DIM>
-  class DShapeAssign
-  {
-    double * dshape;
-  public:
-    DShapeAssign (FlatMatrixFixWidth<DIM> mat)
-    { dshape = &mat(0,0); }
-
-    DShapeAssign (double * adshape)
-    { dshape = adshape; }
-
-    DShapeElement<DIM> operator[] (int i) const
-    { return DShapeElement<DIM> (dshape + i*DIM); }
-
-    const DShapeAssign Addr (int i) const
-    { return DShapeAssign (dshape+i*DIM); } 
-  };
-
-
-
-
-
-
-  /**
-     Base-element for template polymorphism.
-     Barton and Nackman Trick
-  */
-
-  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
-  class T_ScalarFiniteElement : public ScalarFiniteElement<ET_trait<ET>::DIM>
-  {
-
-  public:
-    
-  protected:
-    enum { DIM = ET_trait<ET>::DIM };
-
-    T_ScalarFiniteElement ()
-      : ScalarFiniteElement<DIM> (ET, NDOF, ORDER) { ; }
-
-    virtual ~T_ScalarFiniteElement() { ; }
-
-  public:
-
-    /*
-  const FlatVec<NDOF> & GetShape (const IntegrationPoint & ip,
-                                  LocalHeap & lh) const
-    {
-      ;
-    }
-
-    const Mat<NDOF,DIM> & GetDShape (const IntegrationPoint & ip,
-				     LocalHeap & lh) const
-    {
-      ;
-    }
-    */
-
-
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const
-    {
-      double pt[DIM];
-      for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-      FEL::T_CalcShape (pt, shape); 
-    }
-
-    static void CalcShapeStat (const IntegrationPoint & ip, 
-                               FlatVector<> shape)
-    {
-      double pt[DIM];
-      for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-      FEL::T_CalcShape (pt, shape); 
-    }
-    
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<DIM> dshape) const
-    {
-      AutoDiff<DIM> adp[DIM];
-      for (int i = 0; i < DIM; i++)
-        adp[i] = AutoDiff<DIM> (ip(i), i);
-      
-      DShapeAssign<DIM> ds(dshape); 
-      FEL::T_CalcShape (adp, ds);
-    }
-
-    static void CalcDShapeStat (const IntegrationPoint & ip, 
-				FlatMatrixFixWidth<DIM> dshape)
-    {
-      AutoDiff<DIM> adp[DIM];
-      for (int i = 0; i < DIM; i++)
-        adp[i] = AutoDiff<DIM> (ip(i), i);
-      
-      DShapeAssign<DIM> ds(dshape); 
-      FEL::T_CalcShape (adp, ds);
-    }
-
-    virtual void 
-    CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
-                      FlatMatrixFixWidth<DIM> dshape) const
-    {
-      AutoDiff<DIM> adp[DIM];
-      
-      for (int i = 0; i < DIM; i++)
-        adp[i].Value() = sip.IP()(i);
-      
-      for (int i = 0; i < DIM; i++)
-        for (int j = 0; j < DIM; j++)
-          adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
-      
-      DShapeAssign<DIM> ds(dshape); 
-      FEL::T_CalcShape (adp, ds);
-    }
-  };
-
-
-
-
-
 
   ///
   class FE_Segm0 : public T_ScalarFiniteElement<FE_Segm0,ET_SEGM,1,0>
@@ -298,8 +166,6 @@ namespace ngfem
     {
       shape[0] = 1;
     }
-
-    virtual const IntegrationRule & NodalIntegrationRule() const;
   }; 
 
   ///
@@ -313,7 +179,6 @@ namespace ngfem
       shape[1] = x[1];      
       shape[2] = 1-x[0]-x[1];
     }
-    virtual const IntegrationRule & NodalIntegrationRule() const;
   }; 
 
 
@@ -335,8 +200,6 @@ namespace ngfem
       shape[4] = 4 * x * lam3;
       shape[5] = 4 * x * y;
     }
-
-    virtual const IntegrationRule & NodalIntegrationRule() const;
   }; 
 
   class FE_Trig2HB : public T_ScalarFiniteElement<FE_Trig2HB,ET_TRIG,6,2>
@@ -390,8 +253,6 @@ namespace ngfem
     {
       shape[0] = 1.0;
     }
-			   
-    virtual const IntegrationRule & NodalIntegrationRule() const;
   };
 
 
@@ -410,8 +271,6 @@ namespace ngfem
       shape[2] =    x  *  y;
       shape[3] = (1-x) *  y;
     }
-	  
-    virtual const IntegrationRule & NodalIntegrationRule() const;
   }; 
 
 
@@ -438,8 +297,6 @@ namespace ngfem
 	for (int j = 0; j < 3; j++)
 	  shape[ii++] = px(i) * py(j);
     }
-			  
-    virtual const IntegrationRule & NodalIntegrationRule() const;
   }; 
 
 
@@ -476,8 +333,6 @@ namespace ngfem
     {
       shape[0] = 1;
     }
-  
-    virtual const IntegrationRule & NodalIntegrationRule() const;
   };
 
 
@@ -498,7 +353,6 @@ namespace ngfem
       shape[3] = 1-x-y-z;
     }
 
-    virtual const IntegrationRule & NodalIntegrationRule() const;
     virtual void GetDofs (Array<Dof> & dofs) const;
   };
 
@@ -589,8 +443,6 @@ namespace ngfem
     {
       shape[0] = 1;
     }
-  
-    virtual const IntegrationRule & NodalIntegrationRule() const;
   };
 
   ///
@@ -611,9 +463,105 @@ namespace ngfem
       shape[4] = y * z;
       shape[5] = (1-x-y) * z;
     }
-  
-    virtual const IntegrationRule & NodalIntegrationRule() const;
   };
+
+
+  ///
+  class FE_Prism2 : public T_ScalarFiniteElement<FE_Prism2,ET_PRISM,18,2>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    {
+      Tx x = hx[0];
+      Tx y = hx[1];
+      Tx z = hx[2];
+      
+
+      shape[0] = x * (1-z);
+      shape[1] = y * (1-z);
+      shape[2] = (1-x-y) * (1-z);
+      shape[3] = x * z;
+      shape[4] = y * z;
+      shape[5] = (1-x-y) * z;
+      
+      shape[6] = 4 * x * (1-x-y) * (1-z);
+      shape[7] = 4 * x * y       * (1-z);
+      shape[8] = 4 * y * (1-x-y) * (1-z);
+      shape[9] = 4 * x * (1-x-y) * z;
+      shape[10] = 4 * x * y       * z;
+      shape[11] = 4 * y * (1-x-y) * z;
+      
+      shape[12] = x * (1-z) * z;
+      shape[13] = y * (1-z) * z;
+      shape[14] = (1-x-y) * (1-z) * z;
+      shape[15] = 4 * x * (1-x-y) * (1-z) * z;
+      shape[16] = 4 * x * y       * (1-z) * z;
+      shape[17] = 4 * y * (1-x-y) * (1-z) * z;
+    }
+  };
+
+
+
+
+  class FE_Prism2aniso : public T_ScalarFiniteElement<FE_Prism2aniso,ET_PRISM,12,2>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    {
+      Tx x = hx[0];
+      Tx y = hx[1];
+      Tx z = hx[2];
+      
+      double lam3 = 1-x-y;
+      
+      shape[0] = x * (2*x-1) * (1-z);
+      shape[1] = y * (2*y-1) * (1-z);
+      shape[2] = lam3 * (2*lam3-1) * (1-z);
+      shape[3] = x * (2*x-1) * z;
+      shape[4] = y * (2*y-1) * z;
+      shape[5] = lam3 * (2*lam3-1) * z;
+      
+      shape[6] = 4 * x * lam3 * (1-z);
+      shape[7] = 4 * x * y       * (1-z);
+      shape[8] = 4 * y * lam3 * (1-z);
+      shape[9] = 4 * x * lam3 * z;
+      shape[10] = 4 * x * y       * z;
+      shape[11] = 4 * y * lam3 * z;
+    }
+  };
+
+
+
+  class FE_Prism2HBaniso : public T_ScalarFiniteElement<FE_Prism2HBaniso,ET_PRISM,12,2>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    {
+      Tx x = hx[0];
+      Tx y = hx[1];
+      Tx z = hx[2];
+      
+      shape[0] = x * (1-z);
+      shape[1] = y * (1-z);
+      shape[2] = (1-x-y) * (1-z);
+      shape[3] = x * z;
+      shape[4] = y * z;
+      shape[5] = (1-x-y) * z;
+      
+      shape[6] = 4 * x * (1-x-y) * (1-z);
+      shape[7] = 4 * x * y       * (1-z);
+      shape[8] = 4 * y * (1-x-y) * (1-z);
+      shape[9] = 4 * x * (1-x-y) * z;
+      shape[10] = 4 * x * y       * z;
+      shape[11] = 4 * y * (1-x-y) * z;
+    }
+  };
+
+
+
 
 
 
@@ -630,8 +578,6 @@ namespace ngfem
     {
       shape[0] = 1;
     }
-  
-    // virtual const IntegrationRule & NodalIntegrationRule() const;
   };
 
   ///
@@ -655,8 +601,6 @@ namespace ngfem
       shape[7] = (1-x) *    y  *    z ;
 
     }
-  
-    // virtual const IntegrationRule & NodalIntegrationRule() const;
   };
 
 
@@ -673,8 +617,6 @@ namespace ngfem
     {
       shape[0] = 1;
     }
-  
-    virtual const IntegrationRule & NodalIntegrationRule() const;
   };
 
 
@@ -697,8 +639,6 @@ namespace ngfem
       shape[3] = (1-z-x)*y / (1-z);
       shape[4] = z;
     }
-  
-    virtual const IntegrationRule & NodalIntegrationRule() const;
   };
 
 
