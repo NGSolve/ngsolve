@@ -124,3 +124,63 @@ template <> DLL_HEADER Ng_Element Ng_GetElement<3> (int nr)
 }
 
 
+
+template <>
+DLL_HEADER void Ng_MultiElementTransformation<3,3> (int elnr, int npts,
+                                                  const double * xi, int sxi,
+                                                  double * x, int sx,
+                                                  double * dxdxi, int sdxdxi)
+{
+  mesh->GetCurvedElements().CalcMultiPointElementTransformation (elnr, npts, xi, sxi, x, sx, dxdxi, sdxdxi);
+}
+
+template <>
+DLL_HEADER void Ng_MultiElementTransformation<2,2> (int elnr, int npts,
+                                                  const double * xi, int sxi,
+                                                  double * x, int sx,
+                                                  double * dxdxi, int sdxdxi)
+{
+  mesh->GetCurvedElements().CalcMultiPointSurfaceTransformation<2> (elnr, npts, xi, sxi, x, sx, dxdxi, sdxdxi);
+}
+
+template <>
+DLL_HEADER void Ng_MultiElementTransformation<2,3> (int elnr, int npts,
+                                                  const double * xi, int sxi,
+                                                  double * x, int sx,
+                                                  double * dxdxi, int sdxdxi)
+{
+  mesh->GetCurvedElements().CalcMultiPointSurfaceTransformation<3> (elnr, npts, xi, sxi, x, sx, dxdxi, sdxdxi);
+}
+
+template <>
+DLL_HEADER void Ng_MultiElementTransformation<1,2> (int elnr, int npts,
+                                                    const double * xi, int sxi,
+                                                    double * x, int sx,
+                                                    double * dxdxi, int sdxdxi)
+{
+  for (int ip = 0; ip < npts; ip++)
+    {
+      Point<3> xg;
+      Vec<3> dx;
+
+      mesh->GetCurvedElements().CalcSegmentTransformation (xi[ip*sxi], elnr, xg, dx);
+      
+      if (x)
+        for (int i = 0; i < 2; i++)
+	  x[ip*sx+i] = xg(i);
+	  
+      if (dxdxi)
+        for (int i=0; i<2; i++)
+	  dxdxi[ip*sdxdxi+i] = dx(i);
+    }
+}
+
+template <>
+DLL_HEADER void Ng_MultiElementTransformation<1,1> (int elnr, int npts,
+                                                    const double * xi, int sxi,
+                                                    double * x, int sx,
+                                                    double * dxdxi, int sdxdxi)
+{
+  cout << "1D not supported" << endl;
+}
+

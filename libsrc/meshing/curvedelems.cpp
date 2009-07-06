@@ -205,64 +205,64 @@ namespace netgen
 
 
 
-template <class S, class T>
-inline void JacobiPolynomial (int n, S x, double alpha, double beta, T * values)
-{
-  S p1 = 1.0, p2 = 0.0, p3;
+  template <class S, class T>
+  inline void JacobiPolynomial (int n, S x, double alpha, double beta, T * values)
+  {
+    S p1 = 1.0, p2 = 0.0, p3;
 
-  if (n >= 0) 
-    p2 = values[0] = 1.0;
-  if (n >= 1) 
-    p1 = values[1] = 0.5 * (2*(alpha+1)+(alpha+beta+2)*(x-1));
+    if (n >= 0) 
+      p2 = values[0] = 1.0;
+    if (n >= 1) 
+      p1 = values[1] = 0.5 * (2*(alpha+1)+(alpha+beta+2)*(x-1));
 
-  for (int i  = 1; i < n; i++)
-    {
-      p3 = p2; p2=p1;
-      p1 =
-	1.0 / ( 2 * (i+1) * (i+alpha+beta+1) * (2*i+alpha+beta) ) *
-	( 
-	 ( (2*i+alpha+beta+1)*(alpha*alpha-beta*beta) + 
-	   (2*i+alpha+beta)*(2*i+alpha+beta+1)*(2*i+alpha+beta+2) * x) 
-	 * p2
-	 - 2*(i+alpha)*(i+beta) * (2*i+alpha+beta+2) * p3
-	 );
-      values[i+1] = p1;
-    }
-}
-
-
+    for (int i  = 1; i < n; i++)
+      {
+        p3 = p2; p2=p1;
+        p1 =
+          1.0 / ( 2 * (i+1) * (i+alpha+beta+1) * (2*i+alpha+beta) ) *
+          ( 
+           ( (2*i+alpha+beta+1)*(alpha*alpha-beta*beta) + 
+             (2*i+alpha+beta)*(2*i+alpha+beta+1)*(2*i+alpha+beta+2) * x) 
+           * p2
+           - 2*(i+alpha)*(i+beta) * (2*i+alpha+beta+2) * p3
+           );
+        values[i+1] = p1;
+      }
+  }
 
 
-template <class S, class St, class T>
-inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta, T * values)
-{
-  /*
-  S p1 = 1.0, p2 = 0.0, p3;
 
-  if (n >= 0) values[0] = 1.0;
-  */
 
-  S p1 = 1.0, p2 = 0.0, p3;
+  template <class S, class St, class T>
+  inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta, T * values)
+  {
+    /*
+      S p1 = 1.0, p2 = 0.0, p3;
 
-  if (n >= 0) 
-    p2 = values[0] = 1.0;
-  if (n >= 1) 
-    p1 = values[1] = 0.5 * (2*(alpha+1)*t+(alpha+beta+2)*(x-t));
+      if (n >= 0) values[0] = 1.0;
+    */
 
-  for (int i=1; i < n; i++)
-    {
-      p3 = p2; p2=p1;
-      p1 =
-	1.0 / ( 2 * (i+1) * (i+alpha+beta+1) * (2*i+alpha+beta) ) *
-	( 
-	 ( (2*i+alpha+beta+1)*(alpha*alpha-beta*beta) * t + 
-	   (2*i+alpha+beta)*(2*i+alpha+beta+1)*(2*i+alpha+beta+2) * x) 
-	 * p2
-	 - 2*(i+alpha)*(i+beta) * (2*i+alpha+beta+2) * t * t * p3
-	 );
-      values[i+1] = p1;
-    }
-}
+    S p1 = 1.0, p2 = 0.0, p3;
+
+    if (n >= 0) 
+      p2 = values[0] = 1.0;
+    if (n >= 1) 
+      p1 = values[1] = 0.5 * (2*(alpha+1)*t+(alpha+beta+2)*(x-t));
+
+    for (int i=1; i < n; i++)
+      {
+        p3 = p2; p2=p1;
+        p1 =
+          1.0 / ( 2 * (i+1) * (i+alpha+beta+1) * (2*i+alpha+beta) ) *
+          ( 
+           ( (2*i+alpha+beta+1)*(alpha*alpha-beta*beta) * t + 
+             (2*i+alpha+beta)*(2*i+alpha+beta+1)*(2*i+alpha+beta+2) * x) 
+           * p2
+           - 2*(i+alpha)*(i+beta) * (2*i+alpha+beta+2) * t * t * p3
+           );
+        values[i+1] = p1;
+      }
+  }
 
 
 
@@ -310,21 +310,21 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
     /*    
 	  if (n < 3) return;
     
-    int ndof = (n-1)*(n-2)/2;
-    double h1[1000], h2[1000];
-    double eps = 1e-4;
+          int ndof = (n-1)*(n-2)/2;
+          double h1[1000], h2[1000];
+          double eps = 1e-4;
   
-    CalcTrigShape (n, x+eps, y, h1);
-    CalcTrigShape (n, x-eps, y, h2);
+          CalcTrigShape (n, x+eps, y, h1);
+          CalcTrigShape (n, x-eps, y, h2);
 
-    for (int i = 0; i < ndof; i++)
-      dshape[2*i] = (h1[i]-h2[i])/(2*eps);
+          for (int i = 0; i < ndof; i++)
+          dshape[2*i] = (h1[i]-h2[i])/(2*eps);
 
-    CalcTrigShape (n, x, y+eps, h1);
-    CalcTrigShape (n, x, y-eps, h2);
+          CalcTrigShape (n, x, y+eps, h1);
+          CalcTrigShape (n, x, y-eps, h2);
 
-    for (int i = 0; i < ndof; i++)
-      dshape[2*i+1] = (h1[i]-h2[i])/(2*eps);
+          for (int i = 0; i < ndof; i++)
+          dshape[2*i+1] = (h1[i]-h2[i])/(2*eps);
     */
   }
 
@@ -376,36 +376,36 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
       }
 
     /*
-    double dshape1[6000];
-    if (n < 3) return;
-    double hvl[1000], hvr[1000];
-    int nd = (n-1)*(n-2)/2;
+      double dshape1[6000];
+      if (n < 3) return;
+      double hvl[1000], hvr[1000];
+      int nd = (n-1)*(n-2)/2;
     
-    double eps = 1e-6;
+      double eps = 1e-6;
 
-    CalcScaledTrigShape (n, x-eps, y, t, hvl);
-    CalcScaledTrigShape (n, x+eps, y, t, hvr);
-    for (int i = 0; i < nd; i++)
+      CalcScaledTrigShape (n, x-eps, y, t, hvl);
+      CalcScaledTrigShape (n, x+eps, y, t, hvr);
+      for (int i = 0; i < nd; i++)
       dshape[3*i] = (hvr[i]-hvl[i])/(2*eps);
 
-    CalcScaledTrigShape (n, x, y-eps, t, hvl);
-    CalcScaledTrigShape (n, x, y+eps, t, hvr);
-    for (int i = 0; i < nd; i++)
+      CalcScaledTrigShape (n, x, y-eps, t, hvl);
+      CalcScaledTrigShape (n, x, y+eps, t, hvr);
+      for (int i = 0; i < nd; i++)
       dshape[3*i+1] = (hvr[i]-hvl[i])/(2*eps);
 
-    CalcScaledTrigShape (n, x, y, t-eps, hvl);
-    CalcScaledTrigShape (n, x, y, t+eps, hvr);
-    for (int i = 0; i < nd; i++)
+      CalcScaledTrigShape (n, x, y, t-eps, hvl);
+      CalcScaledTrigShape (n, x, y, t+eps, hvr);
+      for (int i = 0; i < nd; i++)
       dshape[3*i+2] = (hvr[i]-hvl[i])/(2*eps);
     */
 
     /*
-    for (int i = 0; i < 3*nd; i++)
+      for (int i = 0; i < 3*nd; i++)
       if (fabs (dshape[i]-dshape1[i]) > 1e-8 * fabs(dshape[i]) + 1e-6)
-	{
-	  cerr
-	  cerr << "big difference: " << dshape1[i] << " != " << dshape[i] << endl;
-	  }
+      {
+      cerr
+      cerr << "big difference: " << dshape1[i] << " != " << dshape[i] << endl;
+      }
     */
   }
 
@@ -723,21 +723,21 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
             edgecoeffs[edgecoeffsindex[segnr]] = Vec<3> (p3);
 
             
-//             double dopt = 1e99;
-//             double wopt = 0;
-//             for (double w = 0; w <= 2; w += 0.0001)
-//               {
-//                 Vec<3> v05 = 0.25 * Vec<3> (p1) + 0.5*w* Vec<3>(p3) + 0.25 * Vec<3> (p2);
-//                 v05 /= 1 + (w-1) * 0.5;
-//                 Point<3> p05 (v05), pp05(v05);
-//                 ref -> ProjectToEdge (pp05, seg.surfnr1, seg.surfnr2, seg.epgeominfo[0]);
-//                 double d = Dist (pp05, p05);
-//                 if (d < dopt)
-//                   {
-//                     wopt = w;
-//                     dopt = d;
-//                   }
-//               }
+            //             double dopt = 1e99;
+            //             double wopt = 0;
+            //             for (double w = 0; w <= 2; w += 0.0001)
+            //               {
+            //                 Vec<3> v05 = 0.25 * Vec<3> (p1) + 0.5*w* Vec<3>(p3) + 0.25 * Vec<3> (p2);
+            //                 v05 /= 1 + (w-1) * 0.5;
+            //                 Point<3> p05 (v05), pp05(v05);
+            //                 ref -> ProjectToEdge (pp05, seg.surfnr1, seg.surfnr2, seg.epgeominfo[0]);
+            //                 double d = Dist (pp05, p05);
+            //                 if (d < dopt)
+            //                   {
+            //                     wopt = w;
+            //                     dopt = d;
+            //                   }
+            //               }
             
             double wold = 1, w = 1, dw = 0.1;
             double dold = 1e99;
@@ -766,10 +766,10 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
             // cout << "wopt = " << w << ", dopt = " << dold << endl;
             edgeweight[segnr] = w;
             
-//             cout << "p1 = " << p1 << ", tau1 = " << tau1 << ", alpha1 = " << sol(0) << endl;
-//             cout << "p2 = " << p2 << ", tau2 = " << tau2 << ", alpha2 = " << -sol(1) << endl;
-//             cout << "p+alpha tau = " << p1 + sol(0) * tau1 
-//                  << " =?= " << p2 +sol(1) * tau2 << endl;
+            //             cout << "p1 = " << p1 << ", tau1 = " << tau1 << ", alpha1 = " << sol(0) << endl;
+            //             cout << "p2 = " << p2 << ", tau2 = " << tau2 << ", alpha2 = " << -sol(1) << endl;
+            //             cout << "p+alpha tau = " << p1 + sol(0) * tau1 
+            //                  << " =?= " << p2 +sol(1) * tau2 << endl;
             
           }
 
@@ -837,71 +837,71 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
     PrintMessage (3, "Curving faces");
 
     if (mesh.GetDimension() == 3)
-    for (SurfaceElementIndex i = 0; i < mesh.GetNSE(); i++)
-      {
-	SetThreadPercent(double(i)/mesh.GetNSE()*100.);
-	const Element2d & el = mesh[i];
-	int facenr = top.GetSurfaceElementFace (i+1)-1;
+      for (SurfaceElementIndex i = 0; i < mesh.GetNSE(); i++)
+        {
+          SetThreadPercent(double(i)/mesh.GetNSE()*100.);
+          const Element2d & el = mesh[i];
+          int facenr = top.GetSurfaceElementFace (i+1)-1;
 
-	if (el.GetType() == TRIG && order >= 3)
-	  {
-	    int fnums[] = { 0, 1, 2 };
-	    if (el[fnums[0]] > el[fnums[1]]) swap (fnums[0], fnums[1]);
-	    if (el[fnums[1]] > el[fnums[2]]) swap (fnums[1], fnums[2]);
-	    if (el[fnums[0]] > el[fnums[1]]) swap (fnums[0], fnums[1]);
+          if (el.GetType() == TRIG && order >= 3)
+            {
+              int fnums[] = { 0, 1, 2 };
+              if (el[fnums[0]] > el[fnums[1]]) swap (fnums[0], fnums[1]);
+              if (el[fnums[1]] > el[fnums[2]]) swap (fnums[1], fnums[2]);
+              if (el[fnums[0]] > el[fnums[1]]) swap (fnums[0], fnums[1]);
 
-	    int order1 = faceorder[facenr];
-	    int ndof = max (0, (order1-1)*(order1-2)/2);
+              int order1 = faceorder[facenr];
+              int ndof = max (0, (order1-1)*(order1-2)/2);
 	    
-	    Vector shape(ndof);
-	    DenseMatrix mat(ndof, ndof), inv(ndof, ndof),
-	      rhs(ndof, 3), sol(ndof, 3);
+              Vector shape(ndof);
+              DenseMatrix mat(ndof, ndof), inv(ndof, ndof),
+                rhs(ndof, 3), sol(ndof, 3);
 	    
-	    rhs = 0.0;
-	    mat = 0.0;
+              rhs = 0.0;
+              mat = 0.0;
 
-	    for (int jx = 0; jx < xi.Size(); jx++)
-	      for (int jy = 0; jy < xi.Size(); jy++)
-		{
-		  double y = xi[jy];
-		  double x = (1-y) * xi[jx];
-		  double lami[] = { x, y, 1-x-y };
-		  double wi = weight[jx]*weight[jy]*(1-y);
+              for (int jx = 0; jx < xi.Size(); jx++)
+                for (int jy = 0; jy < xi.Size(); jy++)
+                  {
+                    double y = xi[jy];
+                    double x = (1-y) * xi[jx];
+                    double lami[] = { x, y, 1-x-y };
+                    double wi = weight[jx]*weight[jy]*(1-y);
 
-		  Point<2> xii (x, y);
-		  Point<3> p1, p2;
-		  CalcSurfaceTransformation (xii, i, p1);
-		  p2 = p1;
-		  ref -> ProjectToSurface (p2, mesh.GetFaceDescriptor(el.GetIndex()).SurfNr());
+                    Point<2> xii (x, y);
+                    Point<3> p1, p2;
+                    CalcSurfaceTransformation (xii, i, p1);
+                    p2 = p1;
+                    ref -> ProjectToSurface (p2, mesh.GetFaceDescriptor(el.GetIndex()).SurfNr());
 
-		  Vec<3> dist = p2-p1;
+                    Vec<3> dist = p2-p1;
 		
-		  CalcTrigShape (order1, lami[fnums[1]]-lami[fnums[0]],
-				 1-lami[fnums[1]]-lami[fnums[0]], &shape(0));
+                    CalcTrigShape (order1, lami[fnums[1]]-lami[fnums[0]],
+                                   1-lami[fnums[1]]-lami[fnums[0]], &shape(0));
 
-		  for (int k = 0; k < ndof; k++)
-		    for (int l = 0; l < ndof; l++)
-		      mat(k,l) += wi * shape(k) * shape(l);
+                    for (int k = 0; k < ndof; k++)
+                      for (int l = 0; l < ndof; l++)
+                        mat(k,l) += wi * shape(k) * shape(l);
 		  
-		  for (int k = 0; k < ndof; k++)
-		    for (int l = 0; l < 3; l++)
-		      rhs(k,l) += wi * shape(k) * dist(l);
-		}
+                    for (int k = 0; k < ndof; k++)
+                      for (int l = 0; l < 3; l++)
+                        rhs(k,l) += wi * shape(k) * dist(l);
+                  }
 
-	    // *testout << "mat = " << endl << mat << endl;
-	    // CalcInverse (mat, inv);
-	    // Mult (inv, rhs, sol);
+              // *testout << "mat = " << endl << mat << endl;
+              // CalcInverse (mat, inv);
+              // Mult (inv, rhs, sol);
 
-	    for (int i = 0; i < ndof; i++)
-	      for (int j = 0; j < 3; j++)
-		sol(i,j) = rhs(i,j) / mat(i,i);   // Orthogonal basis !
+              for (int i = 0; i < ndof; i++)
+                for (int j = 0; j < 3; j++)
+                  sol(i,j) = rhs(i,j) / mat(i,i);   // Orthogonal basis !
 
-	    int first = facecoeffsindex[facenr];
-	    for (int j = 0; j < ndof; j++)
-	      for (int k = 0; k < 3; k++)
-		facecoeffs[first+j](k) = sol(j,k);
-	  }
-      }
+              int first = facecoeffsindex[facenr];
+              for (int j = 0; j < ndof; j++)
+                for (int k = 0; k < 3; k++)
+                  facecoeffs[first+j](k) = sol(j,k);
+            }
+        }
     
     PrintMessage (3, "Complete");
 
@@ -1232,7 +1232,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	const HPRefElement & hpref_el =
 	  (*mesh.hpelements) [mesh[elnr].hp_elnr];
 	
-	  // xi umrechnen
+        // xi umrechnen
 	double lami[4];
 	FlatVector vlami(4, lami);
 	vlami = 0;
@@ -1251,7 +1251,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	      for (int l = 0; l < 2; l++)
 		for (int i = 0; i < hpref_el.np; i++)
 		  trans(l,k) += hpref_el.param[i][l] * dlami(i, k);
-	    }
+          }
 	
 	Point<2> coarse_xi(0,0);
 	for (int i = 0; i < hpref_el.np; i++)
@@ -1269,7 +1269,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 
 
     Vector shapes;
-    DenseMatrix dshapes;
+    MatrixFixWidth<2> dshapes;
     Array<Vec<3> > coefs;
 
     const Element2d & el = mesh[elnr];
@@ -1359,7 +1359,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
     const Element2d & el = mesh[info.elnr];
 
     shapes.SetSize(info.ndof);
-    shapes = 0;	  
+    // shapes = 0;	  
 
     if (rational && info.order >= 2)
       {
@@ -1457,8 +1457,8 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	  
 	  double mu[4] = { 
 	    1 - xi(0) + 1 - xi(1), 
-	        xi(0) + 1 - xi(1), 
-	        xi(0) +     xi(1), 
+            xi(0) + 1 - xi(1), 
+            xi(0) +     xi(1), 
 	    1 - xi(0) +     xi(1), 
 	  };
 	    
@@ -1494,15 +1494,15 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 
 
   void CurvedElements :: 
-  CalcElementDShapes (SurfaceElementInfo & info, const Point<2> & xi, DenseMatrix & dshapes) const
+  CalcElementDShapes (SurfaceElementInfo & info, const Point<2> & xi, MatrixFixWidth<2> & dshapes) const
   {
     const Element2d & el = mesh[info.elnr];
     ELEMENT_TYPE type = el.GetType();
 
     double lami[4];
 
-    dshapes.SetSize(info.ndof,2);
-    dshapes = 0;	  
+    dshapes.SetSize(info.ndof);
+    // dshapes = 0;	  
 
     // *testout << "calcelementdshapes, info.ndof = " << info.ndof << endl;
 
@@ -1536,7 +1536,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
             w += (wi-1) * 2 * lami[edges[j][0]-1] * lami[edges[j][1]-1];
             for (int k = 0; k < 2; k++)
               dw[k] += 2*(wi-1) * (lami[edges[j][0]-1] * dlami[edges[j][1]-1][k] +
-                                  lami[edges[j][1]-1] * dlami[edges[j][0]-1][k]);
+                                   lami[edges[j][1]-1] * dlami[edges[j][0]-1][k]);
           }
         // shapes *= 1.0 / w;
         dshapes *= 1.0 / w;
@@ -1555,6 +1555,8 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
       case TRIG:
 	{
 	  dshapes(0,0) = 1;
+          dshapes(0,1) = 0.0;
+          dshapes(1,0) = 0.0;
 	  dshapes(1,1) = 1;
 	  dshapes(2,0) = -1;
 	  dshapes(2,1) = -1;
@@ -1681,15 +1683,15 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 
 	  double shapes[4] = {
 	    (1-xi(0))*(1-xi(1)),
-	       xi(0) *(1-xi(1)),
-	       xi(0) *   xi(1) ,
+            xi(0) *(1-xi(1)),
+            xi(0) *   xi(1) ,
 	    (1-xi(0))*   xi(1) 
 	  };
 
 	  double mu[4] = { 
 	    1 - xi(0) + 1 - xi(1), 
-	        xi(0) + 1 - xi(1), 
-	        xi(0) +     xi(1), 
+            xi(0) + 1 - xi(1), 
+            xi(0) +     xi(1), 
 	    1 - xi(0) +     xi(1), 
 	  };
 
@@ -1731,22 +1733,22 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	    }
 
 	  /*	  
-	  *testout << "quad, dshape = " << endl << dshapes << endl;
-	  for (int i = 0; i < 2; i++)
-	    {
-	      Point<2> xil = xi, xir = xi;
-	      Vector shapesl(dshapes.Height()), shapesr(dshapes.Height());
-	      xil(i) -= 1e-6;
-	      xir(i) += 1e-6;
-	      CalcElementShapes (info, xil, shapesl);
-	      CalcElementShapes (info, xir, shapesr);
+           *testout << "quad, dshape = " << endl << dshapes << endl;
+           for (int i = 0; i < 2; i++)
+           {
+           Point<2> xil = xi, xir = xi;
+           Vector shapesl(dshapes.Height()), shapesr(dshapes.Height());
+           xil(i) -= 1e-6;
+           xir(i) += 1e-6;
+           CalcElementShapes (info, xil, shapesl);
+           CalcElementShapes (info, xir, shapesr);
 	      
-	      for (int j = 0; j < dshapes.Height(); j++)
-		dshapes(j,i) = 1.0 / 2e-6 * (shapesr(j)-shapesl(j));
-	    }
+           for (int j = 0; j < dshapes.Height(); j++)
+           dshapes(j,i) = 1.0 / 2e-6 * (shapesr(j)-shapesl(j));
+           }
 	  
-	  *testout << "quad, num dshape = " << endl << dshapes << endl;
-	  */
+           *testout << "quad, num dshape = " << endl << dshapes << endl;
+           */
 	  break;
 	}
       default:
@@ -1756,16 +1758,20 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
   }
 
 
-
+  template <int DIM_SPACE>
   void CurvedElements :: 
-  GetCoefficients (SurfaceElementInfo & info, Array<Vec<3> > & coefs) const
+  GetCoefficients (SurfaceElementInfo & info, Array<Vec<DIM_SPACE> > & coefs) const
   {
     const Element2d & el = mesh[info.elnr];
     coefs.SetSize (info.ndof);
     // coefs = Vec<3> (0,0,0);
     
     for (int i = 0; i < info.nv; i++)
-      coefs[i] = Vec<3> (mesh[el[i]]);
+      {
+        Vec<3> hv(mesh[el[i]]);
+        for (int j = 0; j < DIM_SPACE; j++)
+          coefs[i](j) = hv(j);
+      }
     
     if (info.order == 1) return;
 
@@ -1776,16 +1782,23 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	int first = edgecoeffsindex[info.edgenrs[i]];
 	int next = edgecoeffsindex[info.edgenrs[i]+1];
 	for (int j = first; j < next; j++, ii++)
-	  coefs[ii] = edgecoeffs[j];
+          for (int k = 0; k < DIM_SPACE; k++)
+            coefs[ii](k) = edgecoeffs[j](k);
       }
     
     int first = facecoeffsindex[info.facenr];
     int next = facecoeffsindex[info.facenr+1];
     for (int j = first; j < next; j++, ii++)
-      coefs[ii] = facecoeffs[j];
+      for (int k = 0; k < DIM_SPACE; k++)
+        coefs[ii](k) = facecoeffs[j](k);
   }
 
 
+  template void CurvedElements :: 
+  GetCoefficients<2> (SurfaceElementInfo & info, Array<Vec<2> > & coefs) const;
+
+  template void CurvedElements :: 
+  GetCoefficients<3> (SurfaceElementInfo & info, Array<Vec<3> > & coefs) const;
 
 
 
@@ -1844,41 +1857,41 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
   {
     if (mesh.coarsemesh)
       {
-	  const HPRefElement & hpref_el =
-	    (*mesh.hpelements) [mesh[elnr].hp_elnr];
+        const HPRefElement & hpref_el =
+          (*mesh.hpelements) [mesh[elnr].hp_elnr];
 	  
-	  // xi umrechnen
-	  double lami[8];
-	  FlatVector vlami(8, lami);
-	  vlami = 0;
-	  mesh[elnr].GetShapeNew (xi, vlami);
+        // xi umrechnen
+        double lami[8];
+        FlatVector vlami(8, lami);
+        vlami = 0;
+        mesh[elnr].GetShapeNew (xi, vlami);
 
-	  Mat<3,3> trans, dxdxic;
-	  if (dxdxi)
-	    {
-	      MatrixFixWidth<3> dlami(8);
-	      dlami = 0;
-	      mesh[elnr].GetDShapeNew (xi, dlami);	  
+        Mat<3,3> trans, dxdxic;
+        if (dxdxi)
+          {
+            MatrixFixWidth<3> dlami(8);
+            dlami = 0;
+            mesh[elnr].GetDShapeNew (xi, dlami);	  
 	      
-	      trans = 0;
-	      for (int k = 0; k < 3; k++)
-		for (int l = 0; l < 3; l++)
-		  for (int i = 0; i < hpref_el.np; i++)
-		    trans(l,k) += hpref_el.param[i][l] * dlami(i, k);
-	    }
+            trans = 0;
+            for (int k = 0; k < 3; k++)
+              for (int l = 0; l < 3; l++)
+                for (int i = 0; i < hpref_el.np; i++)
+                  trans(l,k) += hpref_el.param[i][l] * dlami(i, k);
+          }
 
-	  Point<3> coarse_xi(0,0,0);
-	  for (int i = 0; i < hpref_el.np; i++)
-	    for (int j = 0; j < 3; j++)
-	      coarse_xi(j) += hpref_el.param[i][j] * lami[i];
+        Point<3> coarse_xi(0,0,0);
+        for (int i = 0; i < hpref_el.np; i++)
+          for (int j = 0; j < 3; j++)
+            coarse_xi(j) += hpref_el.param[i][j] * lami[i];
 
-	  mesh.coarsemesh->GetCurvedElements().CalcElementTransformation (coarse_xi, hpref_el.coarse_elnr, x, &dxdxic /* , curved */);
+        mesh.coarsemesh->GetCurvedElements().CalcElementTransformation (coarse_xi, hpref_el.coarse_elnr, x, &dxdxic /* , curved */);
 
-	  if (dxdxi)
-	    *dxdxi = dxdxic * trans;
+        if (dxdxi)
+          *dxdxi = dxdxic * trans;
 
-	  return;
-	}
+        return;
+      }
 
 
     Vector shapes;
@@ -2042,10 +2055,10 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
           double z = xi(2);
           double lam4 = 1 - x - y - z;
           /*
-	  shapes(0) = xi(0);
-	  shapes(1) = xi(1);
-	  shapes(2) = xi(2);
-	  shapes(3) = 1-xi(0)-xi(1)-xi(2);
+            shapes(0) = xi(0);
+            shapes(1) = xi(1);
+            shapes(2) = xi(2);
+            shapes(3) = 1-xi(0)-xi(1)-xi(2);
           */
           
           shapes(0) = 2 * x * x - x;  
@@ -2506,7 +2519,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 				 lami[fav[2]]-lami[fav[1]], lami[fav[0]],
 				 &dshapei(0,0));
 	      CalcTrigShape (forder, lami[fav[2]]-lami[fav[1]], lami[fav[0]],
-				 &shapei(0));
+                             &shapei(0));
 	      
 	      Mat<2,2> trans;
 	      for (int j = 0; j < 2; j++)
@@ -2566,13 +2579,13 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	  dshapes(4,0) = 0;
 	  dshapes(4,1) = 0;
 	  dshapes(4,2) = 1;
-		  /* old:
-	  vdshape[0] = Vec<3>( -(z1-y)/z1, -(z1-x)/z1, ((x+y+2*z-2)*z1+(z1-y)*(z1-x))/z2 );
-	  vdshape[1] = Vec<3>( (z1-y)/z1,  -x/z1,      (-x*z1+x*(z1-y))/z2 );
-	  vdshape[2] = Vec<3>( y/z1,       x/z1,       x*y/z2 );
-	  vdshape[3] = Vec<3>( -y/z1,      (z1-x)/z1,  (-y*z1+y*(z1-x))/z2 );
-	  vdshape[4] = Vec<3>( 0, 0, 1 );
-		  */
+          /* old:
+             vdshape[0] = Vec<3>( -(z1-y)/z1, -(z1-x)/z1, ((x+y+2*z-2)*z1+(z1-y)*(z1-x))/z2 );
+             vdshape[1] = Vec<3>( (z1-y)/z1,  -x/z1,      (-x*z1+x*(z1-y))/z2 );
+             vdshape[2] = Vec<3>( y/z1,       x/z1,       x*y/z2 );
+             vdshape[3] = Vec<3>( -y/z1,      (z1-x)/z1,  (-y*z1+y*(z1-x))/z2 );
+             vdshape[4] = Vec<3>( 0, 0, 1 );
+          */
 	  break;
 	}
 
@@ -2632,28 +2645,28 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
       }
     
     /*
-    DenseMatrix dshapes2 (info.ndof, 3);
-    Vector shapesl(info.ndof); 
-    Vector shapesr(info.ndof); 
+      DenseMatrix dshapes2 (info.ndof, 3);
+      Vector shapesl(info.ndof); 
+      Vector shapesr(info.ndof); 
     
-    double eps = 1e-6;
-    for (int i = 0; i < 3; i++)
+      double eps = 1e-6;
+      for (int i = 0; i < 3; i++)
       {
-	Point<3> xl = xi;
-	Point<3> xr = xi;
+      Point<3> xl = xi;
+      Point<3> xr = xi;
 	
-	xl(i) -= eps;
-	xr(i) += eps;
-	CalcElementShapes (info, xl, shapesl);
-	CalcElementShapes (info, xr, shapesr);
+      xl(i) -= eps;
+      xr(i) += eps;
+      CalcElementShapes (info, xl, shapesl);
+      CalcElementShapes (info, xr, shapesr);
 	
-	for (int j = 0; j < info.ndof; j++)
-	  dshapes2(j,i) = (shapesr(j)-shapesl(j)) / (2*eps);
+      for (int j = 0; j < info.ndof; j++)
+      dshapes2(j,i) = (shapesr(j)-shapesl(j)) / (2*eps);
       }
-    (*testout) << "dshapes = " << endl << dshapes << endl;
-    (*testout) << "dshapes2 = " << endl << dshapes2 << endl;
-    dshapes2 -= dshapes;
-    (*testout) << "diff = " << endl << dshapes2 << endl;
+      (*testout) << "dshapes = " << endl << dshapes << endl;
+      (*testout) << "dshapes2 = " << endl << dshapes2 << endl;
+      dshapes2 -= dshapes;
+      (*testout) << "diff = " << endl << dshapes2 << endl;
     */
   }
 
@@ -2668,11 +2681,11 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
     const Element & el = mesh[info.elnr];
 
     /*
-    coefs.SetSize (info.ndof);
-    coefs = Vec<3> (0,0,0);
+      coefs.SetSize (info.ndof);
+      coefs = Vec<3> (0,0,0);
     */
     /*
-    for (int i = 0; i < info.ndof; i++)
+      for (int i = 0; i < info.ndof; i++)
       coefs[i] = Vec<3> (0,0,0);
     */
     for (int i = 0; i < info.nv; i++)
@@ -2746,7 +2759,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	const HPRefElement & hpref_el =
 	  (*mesh.hpelements) [mesh[elnr].hp_elnr];
 	
-	  // xi umrechnen
+        // xi umrechnen
 	double lami[4];
 	FlatVector vlami(4, lami);
 
@@ -2799,7 +2812,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 
 
     Vector shapes;
-    DenseMatrix dshapes;
+    MatrixFixWidth<2> dshapes;
     Array<Vec<3> > coefs;
 
 
@@ -2853,11 +2866,11 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	    CalcElementDShapes (info, (*xi)[ip], dshapes);
 
             /*
-	    (*dxdxi)[ip] = 0;
-	    for (int i = 0; i < coefs.Size(); i++)
+              (*dxdxi)[ip] = 0;
+              for (int i = 0; i < coefs.Size(); i++)
 	      for (int j = 0; j < 3; j++)
-		for (int k = 0; k < 2; k++)
-		  (*dxdxi)[ip](j,k) += dshapes(i,k) * coefs[i](j);
+              for (int k = 0; k < 2; k++)
+              (*dxdxi)[ip](j,k) += dshapes(i,k) * coefs[i](j);
             */
 
 	    Mat<3,2> ds;
@@ -2871,6 +2884,181 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
       }
   }
 
+
+
+
+  template <int DIM_SPACE>
+  void CurvedElements :: 
+  CalcMultiPointSurfaceTransformation (SurfaceElementIndex elnr, int npts,
+				       const double * xi, int sxi,
+                                       double * x, int sx,
+                                       double * dxdxi, int sdxdxi)
+  {
+    if (mesh.coarsemesh)
+      {
+	const HPRefElement & hpref_el =
+	  (*mesh.hpelements) [mesh[elnr].hp_elnr];
+	
+        // xi umrechnen
+	double lami[4];
+	FlatVector vlami(4, lami);
+
+	ArrayMem<Point<2>, 50> coarse_xi (npts);
+	
+	for (int pi = 0; pi < npts; pi++)
+	  {
+	    vlami = 0;
+            Point<2> hxi(xi[pi*sxi], xi[pi*sxi+1]);
+	    mesh[elnr].GetShapeNew ( hxi, vlami);
+	    
+	    Point<2> cxi(0,0);
+	    for (int i = 0; i < hpref_el.np; i++)
+	      for (int j = 0; j < 2; j++)
+		cxi(j) += hpref_el.param[i][j] * lami[i];
+
+	    coarse_xi[pi] = cxi;
+	  }
+
+        mesh.coarsemesh->GetCurvedElements().
+          CalcMultiPointSurfaceTransformation<DIM_SPACE> (hpref_el.coarse_elnr, npts,
+                                                          &coarse_xi[0](0), &coarse_xi[1](0)-&coarse_xi[0](0), 
+                                                          x, sx, dxdxi, sdxdxi);
+
+        Mat<2,2> trans;
+        Mat<3,2> dxdxic;
+	if (dxdxi)
+	  {
+	    MatrixFixWidth<2> dlami(4);
+	    dlami = 0;
+
+	    for (int pi = 0; pi < npts; pi++)
+	      {
+                Point<2> hxi(xi[pi*sxi], xi[pi*sxi+1]);
+		mesh[elnr].GetDShapeNew ( hxi, dlami);	  
+		
+		trans = 0;
+		for (int k = 0; k < 2; k++)
+		  for (int l = 0; l < 2; l++)
+		    for (int i = 0; i < hpref_el.np; i++)
+		      trans(l,k) += hpref_el.param[i][l] * dlami(i, k);
+		
+                Mat<DIM_SPACE,2> hdxdxic, hdxdxi;
+                for (int k = 0; k < 2*DIM_SPACE; k++)
+                  hdxdxic(k) = dxdxi[pi*sdxdxi+k];
+
+                hdxdxi = hdxdxic * trans;
+
+                for (int k = 0; k < 2*DIM_SPACE; k++)
+                  dxdxi[pi*sdxdxi+k] = hdxdxi(k);
+                    
+                // dxdxic = (*dxdxi)[pi];
+                // (*dxdxi)[pi] = dxdxic * trans;
+	      }
+	  }	
+
+	return;
+      }
+
+    Vector shapes;
+    MatrixFixWidth<2> dshapes;
+    Array<Vec<DIM_SPACE> > coefs;
+
+
+    const Element2d & el = mesh[elnr];
+    ELEMENT_TYPE type = el.GetType();
+
+    SurfaceElementInfo info;
+    info.elnr = elnr;
+    info.order = order;
+    switch (type)
+      {
+      case TRIG : info.nv = 3; break;
+      case QUAD : info.nv = 4; break;
+      case TRIG6: info.nv = 6; break;
+      default:
+	cerr << "undef element in CalcMultPointSurfaceTrao" << endl;
+      }
+    info.ndof = info.nv;
+
+    if (info.order > 1)
+      {
+	const MeshTopology & top = mesh.GetTopology();
+	
+	top.GetSurfaceElementEdges (elnr+1, info.edgenrs);
+	for (int i = 0; i < info.edgenrs.Size(); i++)
+	  info.edgenrs[i]--;
+	info.facenr = top.GetSurfaceElementFace (elnr+1)-1;
+
+	for (int i = 0; i < info.edgenrs.Size(); i++)
+	  info.ndof += edgecoeffsindex[info.edgenrs[i]+1] - edgecoeffsindex[info.edgenrs[i]];
+	info.ndof += facecoeffsindex[info.facenr+1] - facecoeffsindex[info.facenr];
+      }
+
+    GetCoefficients (info, coefs);
+
+    if (x)
+      {
+	for (int j = 0; j < npts; j++)
+	  {
+            Point<2> vxi(xi[j*sxi], xi[j*sxi+1]);
+	    CalcElementShapes (info, vxi, shapes);
+
+	    Point<DIM_SPACE> val = 0.0;
+	    for (int i = 0; i < coefs.Size(); i++)
+	      val += shapes(i) * coefs[i];
+            
+            for (int k = 0; k < DIM_SPACE; k++)
+              x[j*sx+k] = val(k);
+	  }
+      }
+
+    if (dxdxi)
+      {
+	for (int j = 0; j < npts; j++)
+	  {
+            Point<2> vxi(xi[j*sxi], xi[j*sxi+1]);
+	    CalcElementDShapes (info, vxi, dshapes);
+
+	    Mat<DIM_SPACE,2> ds;
+            ds = 0.0;
+	    for (int i = 0; i < coefs.Size(); i++)
+	      for (int j = 0; j < DIM_SPACE; j++)
+		for (int k = 0; k < 2; k++)
+                  ds(j,k) += dshapes(i,k) * coefs[i](j);
+            // (*dxdxi)[ip] = ds;
+
+            for (int k = 0; k < 2*DIM_SPACE; k++)
+              dxdxi[j*sdxdxi+k] = ds(k);
+	  }
+      }
+  }
+
+
+
+  template void CurvedElements :: 
+  CalcMultiPointSurfaceTransformation<2> (SurfaceElementIndex elnr, int npts,
+                                          const double * xi, int sxi,
+                                          double * x, int sx,
+                                          double * dxdxi, int sdxdxi);
+
+  template void CurvedElements :: 
+  CalcMultiPointSurfaceTransformation<3> (SurfaceElementIndex elnr, int npts,
+                                          const double * xi, int sxi,
+                                          double * x, int sx,
+                                          double * dxdxi, int sdxdxi);
+
+
+
+
+
+
+
+
+
+
+
+
+
   void CurvedElements :: 
   CalcMultiPointElementTransformation (Array< Point<3> > * xi, ElementIndex elnr,
 				       Array< Point<3> > * x,
@@ -2881,7 +3069,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	const HPRefElement & hpref_el =
 	  (*mesh.hpelements) [mesh[elnr].hp_elnr];
 	
-	  // xi umrechnen
+        // xi umrechnen
 	double lami[8];
 	FlatVector vlami(8, lami);
 
@@ -2985,11 +3173,11 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	    CalcElementDShapes (info, (*xi)[ip], dshapes);
 	
             /*
-	    (*dxdxi)[ip] = 0;
-	    for (int i = 0; i < coefs.Size(); i++)
+              (*dxdxi)[ip] = 0;
+              for (int i = 0; i < coefs.Size(); i++)
 	      for (int j = 0; j < 3; j++)
-		for (int k = 0; k < 3; k++)
-		  (*dxdxi)[ip](j,k) += dshapes(i,k) * coefs[i](j);
+              for (int k = 0; k < 3; k++)
+              (*dxdxi)[ip](j,k) += dshapes(i,k) * coefs[i](j);
             */
 
 	    Mat<3,3> ds;
@@ -3017,7 +3205,7 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 	const HPRefElement & hpref_el =
 	  (*mesh.hpelements) [mesh[elnr].hp_elnr];
 	
-	  // xi umrechnen
+        // xi umrechnen
 	double lami[8];
 	FlatVector vlami(8, lami);
 
@@ -3160,9 +3348,9 @@ inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta,
 		  dxdxij(j,k) += dshapes(i,k) * coefs[i](j);
 
 
-	      for (int j = 0; j < 3; j++)
-		for (int k = 0; k < 3; k++)
-                  dxdxi[ip*sdxdxi+3*j+k] = dxdxij(j,k);
+            for (int j = 0; j < 3; j++)
+              for (int k = 0; k < 3; k++)
+                dxdxi[ip*sdxdxi+3*j+k] = dxdxij(j,k);
 	  }
       }
   }

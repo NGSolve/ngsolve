@@ -122,6 +122,13 @@ public:
   void CalcMultiPointSurfaceTransformation (Array< Point<2> > * xi, SurfaceElementIndex elnr,
 					    Array< Point<3> > * x,
 					    Array< Mat<3,2> > * dxdxi);
+  
+  template <int DIM_SPACE>
+  void CalcMultiPointSurfaceTransformation (SurfaceElementIndex elnr, int n,
+                                            const double * xi, int sxi,
+                                            double * x, int sx,
+                                            double * dxdxi, int sdxdxi);
+
 
   void CalcMultiPointElementTransformation (Array< Point<3> > * xi, ElementIndex elnr,
 					    Array< Point<3> > * x,
@@ -200,8 +207,9 @@ private:
   };
 
   void CalcElementShapes (SurfaceElementInfo & elinfo, const Point<2> & xi, Vector & shapes) const;
-  void GetCoefficients (SurfaceElementInfo & elinfo, Array<Vec<3> > & coefs) const;
-  void CalcElementDShapes (SurfaceElementInfo & elinfo, const Point<2> & xi, DenseMatrix & dshapes) const;
+  template <int DIM_SPACE>
+  void GetCoefficients (SurfaceElementInfo & elinfo, Array<Vec<DIM_SPACE> > & coefs) const;
+  void CalcElementDShapes (SurfaceElementInfo & elinfo, const Point<2> & xi, MatrixFixWidth<2> & dshapes) const;
 };
 
 

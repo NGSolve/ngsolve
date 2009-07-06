@@ -929,38 +929,10 @@ void Ng_GetMultiElementTransformation (int ei, int n,
                                        double * dxdxi, int sdxdxi)
 {
   if (mesh->GetDimension() == 2)
-    {
-      for (int i = 0; i < n; i++)
-        {
-          Point<2> xl(xi[i*sxi], xi[i*sxi+1]);
-          Point<3> xg;
-          Mat<3,2> dx;
-
-          mesh->GetCurvedElements().CalcSurfaceTransformation (xl, ei-1, xg, dx);
-
-          if (x)
-            {
-              x[i*sx  ] = xg(0);
-              x[i*sx+1] = xg(1);
-            }
-	  
-          if (dxdxi)
-            {
-              dxdxi[i*sdxdxi  ] = dx(0,0);
-              dxdxi[i*sdxdxi+1] = dx(0,1);
-              dxdxi[i*sdxdxi+2] = dx(1,0);
-              dxdxi[i*sdxdxi+3] = dx(1,1);
-            }
-        }
-    }
+    mesh->GetCurvedElements().CalcMultiPointSurfaceTransformation<2> (ei-1, n, xi, sxi, x, sx, dxdxi, sdxdxi);
   else
-    {
-      mesh->GetCurvedElements().CalcMultiPointElementTransformation (ei-1, n, xi, sxi, x, sx, dxdxi, sdxdxi);
-    }
+    mesh->GetCurvedElements().CalcMultiPointElementTransformation (ei-1, n, xi, sxi, x, sx, dxdxi, sdxdxi);
 }
-
-
-
 
 
 
