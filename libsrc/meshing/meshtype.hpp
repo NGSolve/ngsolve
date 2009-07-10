@@ -885,6 +885,11 @@ class FaceDescriptor
   int tlosurf;
   /// boundary condition property
   int bcprop;
+  // Philippose - 06/07/2009
+  // Add capability to store surface colours along with 
+  // other face data
+  /// surface colour (Default: R=0.0 ; G=1.0 ; B=0.0)
+  Vec3d surfcolour;
 
   ///
   string * bcname;
@@ -909,6 +914,9 @@ public:
   int DomainOut () const { return domout; }
   int TLOSurface () const { return tlosurf; }
   int BCProperty () const { return bcprop; }
+  // Philippose - 06/07/2009
+  // Get Surface colour
+  Vec3d SurfColour () const { return surfcolour; }
   string GetBCName () const; 
   // string * BCNamePtr () { return bcname; }
   // const string * BCNamePtr () const  { return bcname; }
@@ -917,6 +925,9 @@ public:
   void SetDomainOut (int dom) { domout = dom; }
   void SetBCProperty (int bc) { bcprop = bc; }
   void SetBCName (string * bcn) { bcname = bcn; }
+  // Philippose - 06/07/2009
+  // Set the surface colour
+  void SetSurfColour (Vec3d colour) { surfcolour = colour; }
 
   friend ostream & operator<<(ostream  & s, const FaceDescriptor & fd);
   friend class Mesh;

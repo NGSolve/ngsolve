@@ -2260,6 +2260,9 @@ namespace netgen
   { 
     surfnr = domin = domout  = bcprop = 0; 
     domin_singular = domout_singular = 0.;
+    // Philippose - 06/07/2009
+    // Initialise surface colour
+    surfcolour = Vec3d(0.0,1.0,0.0);
     tlosurf = -1; 
     bcname = 0;
     firstelement = -1;
@@ -2268,7 +2271,8 @@ namespace netgen
   FaceDescriptor ::  FaceDescriptor(const FaceDescriptor& other)
     : surfnr(other.surfnr), domin(other.domin), domout(other.domout),
       tlosurf(other.tlosurf), bcprop(other.bcprop), bcname(other.bcname),
-      domin_singular(other.domin_singular), domout_singular(other.domout_singular)
+      domin_singular(other.domin_singular), domout_singular(other.domout_singular), 
+      surfcolour(other.surfcolour)
   { 
     firstelement = -1;
   }
@@ -2279,6 +2283,9 @@ namespace netgen
     surfnr = surfnri; 
     domin = domini; 
     domout = domouti;
+    // Philippose - 06/07/2009
+    // Initialise surface colour
+    surfcolour = Vec3d(0.0,1.0,0.0);
     tlosurf = tlosurfi; 
     bcprop = surfnri;
     domin_singular = domout_singular = 0.;
@@ -2291,6 +2298,9 @@ namespace netgen
     surfnr = seg.si; 
     domin = seg.domin+1;
     domout = seg.domout+1;
+    // Philippose - 06/07/2009
+    // Initialise surface colour
+    surfcolour = Vec3d(0.0,1.0,0.0);
     tlosurf = seg.tlosurf+1;
     bcprop = 0;
     domin_singular = domout_singular = 0.;
@@ -2333,7 +2343,8 @@ namespace netgen
       << ", tlosurf = " << fd.tlosurf
       << ", bcprop = " << fd.bcprop
       << ", domin_sing = " << fd.domin_singular
-      << ", domout_sing = " << fd.domout_singular;
+      << ", domout_sing = " << fd.domout_singular
+      << ", colour = " << fd.surfcolour;
     return s;
   }
 
