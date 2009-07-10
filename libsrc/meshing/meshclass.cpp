@@ -771,6 +771,33 @@ namespace netgen
       }
 
 
+    // Philippose - 09/07/2009
+    // Add mesh face colours to Netgen Vol file format
+    // The colours are saved in RGB triplets
+    int cnt_facedesc = GetNFD();
+    if (cnt_facedesc)
+    {
+       outfile << endl << endl << "#   Surfnr     Red     Green     Blue" << endl;
+       outfile << "face_colours" << endl << cnt_facedesc << endl;
+
+       outfile.precision(8);
+       outfile.setf(ios::fixed, ios::floatfield);
+       outfile.setf(ios::showpoint);
+
+       for(i = 1; i <= cnt_facedesc; i++)
+       {
+          outfile.width(8);
+          outfile << GetFaceDescriptor(i).SurfNr()+1 << " ";
+          outfile.width(12);
+          outfile << GetFaceDescriptor(i).SurfColour().X() << " ";
+          outfile.width(12);
+          outfile << GetFaceDescriptor(i).SurfColour().Y() << " ";
+          outfile.width(12);
+          outfile << GetFaceDescriptor(i).SurfColour().Z();
+          outfile << endl;
+       }
+    }
+
   }
 
 
@@ -1112,6 +1139,41 @@ namespace netgen
                 GetFaceDescriptor((*this)[sei].GetIndex()).domout_singular = s;
               }
           }
+
+        // Philippose - 09/07/2009
+        // Add mesh face colours to Netgen Vol file format
+        // The colours are read in as RGB triplets
+        if (strcmp (str, "face_colours") == 0)
+        {
+           int cnt_facedesc = GetNFD();
+           infile >> n;
+           if(n == cnt_facedesc)
+           {
+              for(i = 1; i <= n; i++)
+              {
+                 int surfnr = 0;
+                 Vec3d surfcolour(0.0,1.0,0.0);
+
+                 infile >> surfnr 
+                        >> surfcolour.X() 
+                        >> surfcolour.Y() 
+                        >> surfcolour.Z();
+
+                 surfnr--;
+
+                 if(surfnr > 0) 
+                 {
+                    for(int facedesc = 1; facedesc <= cnt_facedesc; facedesc++)
+                    {
+                       if(surfnr == GetFaceDescriptor(facedesc).SurfNr())
+                       {
+                          GetFaceDescriptor(facedesc).SetSurfColour(surfcolour);
+                       }
+                    }
+                 }
+              }
+           }
+        }
 
         if (strcmp (str, "endmesh") == 0)
           endmesh = true;
