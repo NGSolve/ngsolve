@@ -2,7 +2,6 @@
 
 #include <mystdlib.h>
 
-
 #include <myadt.hpp>
 #include <meshing.hpp>
 #include <csg.hpp>
@@ -10,30 +9,13 @@
 
 // #include <parallel.hpp>
 
-#ifdef OCCGEOMETRY
-// Philippose - 30/01/2009
-// Required for OpenCascade XDE Support
-#include <occgeom.hpp>
-#endif
-
 #include <visual.hpp>
-
 
 namespace netgen
 {
-
-#ifdef OCCGEOMETRY
-  // Philippose - 30/01/2009
-  // Required for OpenCascade XDE Support
-  extern OCCGeometry * occgeometry;
-#endif
-
-
   extern AutoPtr<Mesh> mesh;
   extern STLGeometry * stlgeometry;
   VisualSceneMesh vsmesh;
-
-
 
   VisualSceneMesh :: VisualSceneMesh ()
     : VisualScene()
@@ -1031,37 +1013,19 @@ namespace netgen
 	      }
 #endif
 
-#ifdef OCCGEOMETRY
-      // Philippose - 30/01/2009
-      // OpenCascade XDE Support
-      // Update the colour of each face based on the STEP File Data
-      // if the advanced OpenCascade XDE Support has been enabled
-      if((col == 1) && (occgeometry))
-      {
-         TopoDS_Face face = TopoDS::Face(occgeometry->fmap(el.GetIndex()));
-         Quantity_Color face_colour;
-         // Philippose - 23/02/2009
-         // Check to see if colours have been extracted first!!
-         // Forum bug-fox (Jean-Yves - 23/02/2009)
-         if(!(occgeometry->face_colours.IsNull())
-            &&(occgeometry->face_colours->GetColor(face,XCAFDoc_ColorSurf,face_colour)))
-         {
-            matcol[0] = face_colour.Red();
-            matcol[1] = face_colour.Green();
-            matcol[2] = face_colour.Blue();
-         }
-         else
-         {
-            matcol[0] = 0.0;
-            matcol[1] = 1.0;
-            matcol[2] = 0.0;
-         }
+       // Philippose - 06/07/2009
+       // Modified the colour system to integrate the face colours into 
+       // the mesh data structure, rather than limit it to the OCC geometry 
+       // structure... allows other geometry types to use face colours too
+       if(col == 1)
+       {
+          matcol[0] = mesh->GetFaceDescriptor(el.GetIndex()).SurfColour().X();
+          matcol[1] = mesh->GetFaceDescriptor(el.GetIndex()).SurfColour().Y();
+          matcol[2] = mesh->GetFaceDescriptor(el.GetIndex()).SurfColour().Z();
 
-
-         matcol[3] = 1.0;
-         glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcol);
-      }
-#endif
+          matcol[3] = 1.0;
+          glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcol);
+       }
 
 	    bool drawel = !el.IsDeleted();
 

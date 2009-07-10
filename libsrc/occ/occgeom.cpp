@@ -1162,57 +1162,7 @@ namespace netgen
    }
 
 
-
    
-   //  Philippose - 23/02/2009
-   //  The LOADOCC_IGES Function has been replaced by the one
-   //  above, which also includes support for the OpenCascade
-   //  XDE Features.
-   //
-   //OCCGeometry * LoadOCC_IGES (const char * filename)
-   //{
-   //  OCCGeometry * occgeo;
-   //  occgeo = new OCCGeometry;
-
-   //  IGESControl_Reader reader;
-
-   //  Standard_Integer stat = reader.ReadFile((char*)filename);
-
-   //  // pre OCC52-times:
-   //  // Standard_Integer stat = reader.LoadFile((char*)filename);
-   //  // reader.Clear();
-
-
-   //  reader.TransferRoots(); // Tranlate IGES -> OCC
-
-   //  // pre OCC52-times:
-   //  // reader.TransferRoots(Standard_False); // Tranlate IGES -> OCC
-
-   //  //reader.PrintTransferInfo(IFSelect_FailAndWarn,IFSelect_ListByItem);
-
-   //  occgeo->shape = reader.OneShape();
-   //  occgeo->changed = 1;
-   //  occgeo->BuildFMap();
-
-   //  //
-   //  //   Handle(ShapeFix_Shape) sfs = new ShapeFix_Shape;
-   //  //   sfs->Init(occgeo->shape);
-   //  //   sfs->Perform();
-   //  //   Handle(ShapeFix_Wireframe) sfwf = new ShapeFix_Wireframe(occgeo->shape);
-   //  //   //sfwf->DropSmallEdgesMode() = Standard_True;
-   //  //   sfwf->FixSmallEdges();
-   //  //   sfwf->FixWireGaps();
-
-   //  //
-
-
-   //  // occgeo->BuildVisualizationMesh();
-   //  occgeo->CalcBoundingBox();
-   //  PrintContents (occgeo);
-
-   //  return occgeo;
-   //}
-
 
 
    // Philippose - 29/01/2009
@@ -1263,9 +1213,9 @@ namespace netgen
       PrintMessage(4,"Number of colours in STEP File: ",all_colours.Length());
       for(int i = 1; i <= all_colours.Length(); i++)
       {
-      Quantity_Color col;
-      step_colour_contents->GetColor(all_colours.Value(i),col);
-      PrintMessage(4, "Colour [", i, "] = ",col.StringName(col.Name()));
+         Quantity_Color col;
+         step_colour_contents->GetColor(all_colours.Value(i),col);
+         PrintMessage(4, "Colour [", i, "] = ",col.StringName(col.Name()));
       }
       
 
@@ -1284,64 +1234,6 @@ namespace netgen
    }
 
 
-
-   //  Philippose - 29/01/2009
-   //  The LOADOCC_STEP Function has been replaced by the one
-   //  above, which also includes support for the OpenCascade
-   //  XDE Features.
-   //
-   //  OCCGeometry * LoadOCC_STEP (const char * filename)
-   //  {
-   //    OCCGeometry * occgeo;
-   //    occgeo = new OCCGeometry;
-   //
-   //    STEPControl_Reader reader;
-   //    Standard_Integer stat = reader.ReadFile((char*)filename);
-   //    Standard_Integer nb = reader.NbRootsForTransfer();
-   //    reader.TransferRoots (); // Tranlate STEP -> OCC
-   //
-   //
-   //
-   //    occgeo->shape = reader.OneShape();
-   //    occgeo->changed = 1;
-   //    occgeo->BuildFMap();
-   //    //
-   //    //Handle(ShapeFix_Shape) sfs = new ShapeFix_Shape;
-   //    //sfs->Init(occgeo->shape);
-   //    //sfs->Perform();
-   //    //Handle(ShapeFix_Wireframe) sfwf = new ShapeFix_Wireframe(occgeo->shape);
-   //    //sfwf->FixSmallEdges();
-   //    //sfwf->FixWireGaps();
-   //
-   //
-   //
-   //    /*
-   //      // JS
-   //    TopoDS_Compound aRes;
-   //    BRep_Builder aBuilder;
-   //    aBuilder.MakeCompound (aRes);
-   //
-   //    for (TopExp_Explorer exp(occgeo->shape, TopAbs_SOLID); exp.More(); exp.Next())
-   //      {
-   //	aBuilder.Add (aRes, exp.Current());
-   //	cout << "solid" << endl;
-   //      }
-   //
-   //    for (TopExp_Explorer exp(aRes, TopAbs_SOLID); exp.More(); exp.Next())
-   //      {
-   //	cout << "compound has shapes solid" << endl;
-   //      }
-   //    occgeo->shape = aRes;
-   //    occgeo->changed = 1;
-   //    occgeo->BuildFMap();
-   //    */
-   //
-   //
-   //    occgeo->BuildVisualizationMesh();
-   //    PrintContents (occgeo);
-   //
-   //    return occgeo;
-   //  }
 
 
 

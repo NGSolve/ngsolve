@@ -208,6 +208,20 @@ namespace netgen
 	*/
 
 	mesh.AddFaceDescriptor (FaceDescriptor(facenr, solidnr0, solidnr1, 0));
+
+   // Philippose - 06/07/2009
+   // Add the face colour to the mesh data
+   Quantity_Color face_colour;
+ 
+   if(!(geom.face_colours.IsNull())
+      && (geom.face_colours->GetColor(face,XCAFDoc_ColorSurf,face_colour)))
+   {
+      mesh.GetFaceDescriptor(facenr).SetSurfColour(Vec3d(face_colour.Red(),face_colour.Green(),face_colour.Blue()));
+   }
+   else
+   {
+      mesh.GetFaceDescriptor(facenr).SetSurfColour(Vec3d(0.0,1.0,0.0));
+   }
 	// ACHTUNG! STIMMT NICHT ALLGEMEIN (RG)
 
 
