@@ -24,8 +24,9 @@ The interface between the GUI and the netgen library
 
 #ifdef OCCGEOMETRY
 #include <occgeom.hpp>
-#include "../libsrc/occ/occauxfunctions.hpp"
 #endif
+
+#include "../libsrc/meshing/bcfunctions.hpp"
 
 #include <incvis.hpp>
 #include <visual.hpp>
@@ -1566,39 +1567,19 @@ namespace netgen
   // Philippose - 10/03/2009
   // TCL interface function for the Automatic Colour-based
   // definition of boundary conditions for OCC Geometry
-  int Ng_OCCAutoColourBcProps (ClientData clientData,
-		                         Tcl_Interp * interp,
-		                         int argc, tcl_const char *argv[])
+  int Ng_AutoColourBcProps (ClientData clientData,
+		                      Tcl_Interp * interp,
+		                      int argc, tcl_const char *argv[])
   {
-#ifdef OCCGEOMETRY
-
      if(!mesh.Ptr())
      {
-        Tcl_SetResult (interp, (char *)"Ng_OCCAutoColourBcProps: Valid netgen mesh required...please mesh the OCC Geometry first", TCL_STATIC);
+        Tcl_SetResult (interp, (char *)"Ng_AutoColourBcProps: Valid netgen mesh required...please mesh the Geometry first", TCL_STATIC);
 	     return TCL_ERROR;
      }
 
-     if (!occgeometry)
-     {
-        Tcl_SetResult (interp, (char *)"Ng_OCCAutoColourBcProps: Currently supports only OCC (STEP/IGES) Geometry", TCL_STATIC);
-	     return TCL_ERROR;
-     }
-
-     if(occgeometry->face_colours.IsNull())
-     {
-        Tcl_SetResult (interp, (char *)"Ng_OCCAutoColourBcProps: No colour data detected in the current OCC Geometry", TCL_STATIC);
-	     return TCL_ERROR;
-     }
-
-     OCCAutoColourBcProps(*mesh, *occgeometry, "netgen.ocf");
+     AutoColourBcProps(*mesh, "netgen.ocf");
 
      return TCL_OK;
-#else
-
-     Tcl_SetResult (interp, (char *)"Ng_OCCAutoColourBcProps currently supports only OCC (STEP/IGES) Geometry", TCL_STATIC);
-     return TCL_ERROR;
-
-#endif // OCCGEOMETRY
   }
                           
                           
@@ -4986,7 +4967,7 @@ namespace netgen
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-    Tcl_CreateCommand (interp, "Ng_OCCAutoColourBcProps", Ng_OCCAutoColourBcProps,
+    Tcl_CreateCommand (interp, "Ng_AutoColourBcProps", Ng_AutoColourBcProps,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
     

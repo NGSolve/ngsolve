@@ -778,7 +778,7 @@ menu .ngmenu.special
 .ngmenu.special add command -label "Helmholtz Mesh grading" \
     -command { Ng_HelmholtzMesh; }
 .ngmenu.special add command -label "Colour-based boundary conditions" \
-    -command { Ng_OCCAutoColourBcProps; redraw }
+    -command { Ng_AutoColourBcProps; redraw }
 
 
 # menu .mbar.stl.menu
