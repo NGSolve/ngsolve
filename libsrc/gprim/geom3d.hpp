@@ -256,6 +256,17 @@ public:
     { return x[0] * x[0] + x[1] * x[1] + x[2] * x[2]; }
 
   ///
+  inline friend double Dist (const Vec3d & v1, const Vec3d & v2)
+    { return sqrt (  (v1.x[0]-v2.x[0]) * (v1.x[0]-v2.x[0]) + 
+		     (v1.x[1]-v2.x[1]) * (v1.x[1]-v2.x[1]) +
+                     (v1.x[2]-v2.x[2]) * (v1.x[2]-v2.x[2])); }
+  ///
+  inline friend double Dist2 (const Vec3d & v1, const Vec3d & v2)
+    { return  (  (v1.x[0]-v2.x[0]) * (v1.x[0]-v2.x[0]) + 
+		 (v1.x[1]-v2.x[1]) * (v1.x[1]-v2.x[1]) +
+		 (v1.x[2]-v2.x[2]) * (v1.x[2]-v2.x[2])); }
+
+  ///
   Vec3d & operator+= (const Vec3d & v2);
   ///
   Vec3d & operator-= (const Vec3d & v2);
