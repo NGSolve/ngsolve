@@ -1,9 +1,26 @@
-8
+# Netgen 4.9.9
+# Boundary Condition Colour Profile
+#
+# Name: netgen.ocf
+#
+# Description: Netgen default colour 
+# profile file for colour based automatic 
+# assignment of boundary condition numbers
+#
+# Format: 
+# [boundary_colours] (mandatory keyword)
+# <num of entries>
+# <bc_num1> <R> <G> <B>
+# <bc_num2> <R> <G> <B>
+# ....
+# ....
+
+boundary_colours
+7
 1	0.0000	0.0000	0.0000
 2	1.0000	0.0000	0.0000
-3	0.0000	1.0000	0.0000
-4	0.0000	0.0000	1.0000
-5	1.0000	1.0000	0.0000
-6	0.0000	1.0000	1.0000
-7	1.0000	0.0000	1.0000
-8	1.0000	1.0000	1.0000
+3	0.0000	0.0000	1.0000
+4	1.0000	1.0000	0.0000
+5	0.0000	1.0000	1.0000
+6	1.0000	0.0000	1.0000
+7	1.0000	1.0000	1.0000
