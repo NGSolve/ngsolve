@@ -8,7 +8,7 @@ topology.hpp boundarylayer.hpp global.hpp hpref_trig.hpp meshing.hpp  \
 validate.hpp classifyhpel.hpp hpref_hex.hpp improve2.hpp meshtool.hpp \
 clusters.hpp hprefinement.hpp improve3.hpp meshtype.hpp		      \
  hpref_prism.hpp localh.hpp msghandler.hpp curvedelems.hpp	      \
- hpref_pyramid.hpp meshclass.hpp ruler2.hpp
+ hpref_pyramid.hpp meshclass.hpp ruler2.hpp bcfunctions.hpp
 
 
 
@@ -23,5 +23,5 @@ libmesh_la_SOURCES = adfront2.cpp adfront3.cpp bisect.cpp boundarylayer.cpp    \
 	pyramid2rls.cpp pyramidrls.cpp quadrls.cpp refine.cpp		       \
 	ruler2.cpp ruler3.cpp secondorder.cpp smoothing2.5.cpp		       \
 	smoothing2.cpp smoothing3.cpp specials.cpp tetrarls.cpp		       \
-	topology.cpp triarls.cpp validate.cpp zrefine.cpp	\
+	topology.cpp triarls.cpp validate.cpp zrefine.cpp bcfunctions.cpp \
 	parallelmesh.cpp  paralleltop.cpp  paralleltop.hpp

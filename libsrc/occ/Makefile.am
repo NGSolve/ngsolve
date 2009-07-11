@@ -1,4 +1,4 @@
-noinst_HEADERS = occauxfunctions.hpp occgeom.hpp occmeshsurf.hpp \
+noinst_HEADERS = occgeom.hpp occmeshsurf.hpp \
 Partition_Inter2d.hxx Partition_Loop2d.hxx Partition_Loop.hxx \
 Partition_Inter3d.hxx Partition_Loop3d.hxx Partition_Spliter.hxx \
 Partition_Inter2d.ixx Partition_Loop2d.ixx Partition_Loop.ixx \
@@ -18,4 +18,4 @@ noinst_LTLIBRARIES = libocc.la
 
 libocc_la_SOURCES = Partition_Inter2d.cxx Partition_Inter3d.cxx \
 	Partition_Loop.cxx Partition_Loop2d.cxx Partition_Loop3d.cxx Partition_Spliter.cxx \
-	occconstruction.cpp occgenmesh.cpp occgeom.cpp occmeshsurf.cpp occauxfunctions.cpp
+	occconstruction.cpp occgenmesh.cpp occgeom.cpp occmeshsurf.cpp
