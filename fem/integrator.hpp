@@ -131,36 +131,35 @@ namespace ngfem
 
 
     // added by MW:   Markus, müssen die virtual sein (JS) ??
-    virtual bool IntegrationAlongCurve (void) const
+    bool IntegrationAlongCurve (void) const
     { return curve_ips.Size() > 0; }
 
-    virtual void SetIntegrationAlongCurve ( const int npoints );
+    void SetIntegrationAlongCurve ( const int npoints );
 
-    virtual void UnSetIntegrationAlongCurve ( void );
+    void UnSetIntegrationAlongCurve ( void );
 
-    virtual int NumCurvePoints(void) const
+    int NumCurvePoints(void) const
     { return curve_ips.Size(); }
 
-    virtual FlatVector<double> & CurvePoint(const int i)
+    FlatVector<double> & CurvePoint(const int i)
     { return *(curve_ips[i]); }
 
-    virtual const FlatVector<double> & CurvePoint(const int i) const
+    const FlatVector<double> & CurvePoint(const int i) const
     { return *(curve_ips[i]); }
 
-  
-    virtual FlatVector<double> & CurvePointTangent(const int i)
+    FlatVector<double> & CurvePointTangent(const int i)
     { return *(curve_ip_tangents[i]); }
 
-    virtual const FlatVector<double> & CurvePointTangent(const int i) const
+    const FlatVector<double> & CurvePointTangent(const int i) const
     { return *(curve_ip_tangents[i]); }
 
-    virtual int GetNumCurveParts(void) const;
-    virtual int GetStartOfCurve(const int i) const;
-    virtual int GetEndOfCurve(const int i) const;
+    int GetNumCurveParts(void) const;
+    int GetStartOfCurve(const int i) const;
+    int GetEndOfCurve(const int i) const;
 
-    virtual void AppendCurvePoint(const FlatVector<double> & point);
-    virtual void AppendCurvePoint(const FlatVector<double> & point, const FlatVector<double> & tangent);
-    virtual void SetCurveClearance(void);
+    void AppendCurvePoint(const FlatVector<double> & point);
+    void AppendCurvePoint(const FlatVector<double> & point, const FlatVector<double> & tangent);
+    void SetCurveClearance(void);
 
 
   

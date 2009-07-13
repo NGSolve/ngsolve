@@ -48,9 +48,17 @@ public:
     Array<FlatMatrix<SCAL> > elmats;
     Array<FlatArray<int> > dnums;
     int height;
+    int ne;
+
   public:
-    ElementByElementMatrix (int h) 
-    { height = h; }
+    ElementByElementMatrix (int h, int ane);
+    /*
+    {
+      height = h; ne = ane; 
+      elmats.SetSize(ne);
+      dnums.SetSize(ne);
+    }
+    */
 
     virtual int VHeight() const { return height; }
     virtual int VWidth() const { return height; }
@@ -62,7 +70,8 @@ public:
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
 
-    void AddElementMatrix (const Array<int> & dnums1,
+    void AddElementMatrix (int elnr,
+                           const Array<int> & dnums1,
 			   const Array<int> & dnums2,
 			   const FlatMatrix<SCAL> & elmat);
     
@@ -172,7 +181,7 @@ public:
   template <class SCAL>
   class BDDCPreconditioner : public Preconditioner
   {
-    const HO_BilinearForm<SCAL> * bfa;
+    const S_BilinearForm<SCAL> * bfa;
     BaseMatrix * pre;
     string inversetype;
   public:
