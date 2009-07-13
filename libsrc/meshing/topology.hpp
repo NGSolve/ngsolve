@@ -56,10 +56,10 @@ public:
   int GetNFaces () const
   { return face2vert.Size(); }
 
-  static int GetNVertices (ELEMENT_TYPE et);
-  static int GetNPoints (ELEMENT_TYPE et);
-  static int GetNEdges (ELEMENT_TYPE et);
-  static int GetNFaces (ELEMENT_TYPE et);
+  static inline int GetNVertices (ELEMENT_TYPE et);
+  static inline int GetNPoints (ELEMENT_TYPE et);
+  static inline int GetNEdges (ELEMENT_TYPE et);
+  static inline int GetNFaces (ELEMENT_TYPE et);
 
   static const Point3d * GetVertices (ELEMENT_TYPE et);
   inline static const ELEMENT_EDGE * GetEdges (ELEMENT_TYPE et);
@@ -97,6 +97,14 @@ public:
 
   int GetSurfaceElementEdges (int elnr, int * edges, int * orient) const;
 
+  const int * GetElementEdgesPtr (int elnr) const { return &edges[elnr][0]; }
+  const int * GetSurfaceElementEdgesPtr (int selnr) const { return &surfedges[selnr][0]; }
+  const int * GetSegmentElementEdgesPtr (int selnr) const { return &segedges[selnr]; }
+
+  const int * GetElementFacesPtr (int elnr) const { return &faces[elnr][0]; }
+  const int * GetSurfaceElementFacesPtr (int selnr) const { return &surffaces[selnr]; }
+
+
   void GetSurface2VolumeElement (int selnr, int & elnr1, int & elnr2) const
   { 
     elnr1 = surf2volelement.Get(selnr)[0];
@@ -123,6 +131,163 @@ public:
 
 
 
+
+
+
+int MeshTopology :: GetNVertices (ELEMENT_TYPE et)
+{
+  switch (et)
+    {
+    case SEGMENT:
+    case SEGMENT3:
+      return 2;
+
+    case TRIG:
+    case TRIG6:
+      return 3;
+
+    case QUAD:
+    case QUAD6:
+    case QUAD8:
+      return 4;
+
+    case TET:
+    case TET10:
+      return 4;
+
+    case PYRAMID:
+      return 5;
+
+    case PRISM:
+    case PRISM12:
+      return 6;
+
+    case HEX:
+      return 8;
+
+    default:
+      cerr << "Ng_ME_GetNVertices, illegal element type " << et << endl;
+    }
+  return 0;
+}
+
+
+int MeshTopology :: GetNPoints (ELEMENT_TYPE et)
+{
+  switch (et)
+    {
+    case SEGMENT:
+      return 2;
+    case SEGMENT3:
+      return 3;
+
+    case TRIG:
+      return 3;
+    case TRIG6:
+      return 6;
+
+    case QUAD:
+    case QUAD6:
+    case QUAD8:
+      return 4;
+
+    case TET:
+      return 4;
+    case TET10:
+      return 10;
+
+    case PYRAMID:
+      return 5;
+
+    case PRISM:
+    case PRISM12:
+      return 6;
+
+    case HEX:
+      return 8;
+
+    default:
+      cerr << "Ng_ME_GetNVertices, illegal element type " << et << endl;
+    }
+  return 0;
+}
+
+
+
+int MeshTopology :: GetNEdges (ELEMENT_TYPE et)
+{
+  switch (et)
+    {
+    case SEGMENT:
+    case SEGMENT3:
+      return 1;
+
+    case TRIG:
+    case TRIG6:
+      return 3;
+
+    case QUAD:
+    case QUAD6:
+    case QUAD8:
+      return 4;
+
+    case TET:
+    case TET10:
+      return 6;
+
+    case PYRAMID:
+      return 8;
+
+    case PRISM:
+    case PRISM12:
+      return 9;
+
+    case HEX:
+      return 12;
+
+    default:
+      cerr << "Ng_ME_GetNEdges, illegal element type " << et << endl;
+    }
+  return 0;
+}
+
+
+int MeshTopology :: GetNFaces (ELEMENT_TYPE et)
+{
+  switch (et)
+    {
+    case SEGMENT:
+    case SEGMENT3:
+      return 0;
+
+    case TRIG:
+    case TRIG6:
+      return 1;
+
+    case QUAD:
+    case QUAD6:
+    case QUAD8:
+      return 1;
+
+    case TET:
+    case TET10:
+      return 4;
+
+    case PYRAMID:
+      return 5;
+
+    case PRISM:
+    case PRISM12:
+      return 5;
+
+    case HEX:
+      return 6;
+
+    default:
+      cerr << "Ng_ME_GetNVertices, illegal element type " << et << endl;
+    }
+  return 0;
+}
 
 
 

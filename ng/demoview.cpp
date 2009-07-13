@@ -46,8 +46,6 @@ namespace netgen {
 
   DemoScanner :: DemoScanner (ifstream & ascanin)
   {
-    int i;
-
     scanin = &ascanin;
     token = DTOK_END;
     num_value = 0;

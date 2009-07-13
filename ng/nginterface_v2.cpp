@@ -95,9 +95,19 @@ template <> DLL_HEADER Ng_Element Ng_GetElement<1> (int nr)
 
   Ng_Element ret;
   ret.type = NG_ELEMENT_TYPE(el.GetType());
-  ret.npoints = el.GetNP();
-  ret.points = (int*)&(el[0]);
-  
+
+  ret.points.num = el.GetNP();
+  ret.points.ptr = (int*)&(el[0]);
+
+  ret.vertices.num = 2;
+  ret.vertices.ptr = (int*)&(el[0]);
+
+  ret.edges.num = 1;
+  ret.edges.ptr = mesh->GetTopology().GetSegmentElementEdgesPtr (nr);
+
+  ret.faces.num = 0;
+  ret.faces.ptr = NULL;
+
   return ret;
 }
 
@@ -107,8 +117,18 @@ template <> DLL_HEADER Ng_Element Ng_GetElement<2> (int nr)
   
   Ng_Element ret;
   ret.type = NG_ELEMENT_TYPE(el.GetType());
-  ret.npoints = el.GetNP();
-  ret.points = (int*)&el[0];
+  ret.points.num = el.GetNP();
+  ret.points.ptr  = (int*)&el[0];
+
+  ret.vertices.num = el.GetNV();
+  ret.vertices.ptr = (int*)&(el[0]);
+
+  ret.edges.num = MeshTopology::GetNEdges (el.GetType());
+  ret.edges.ptr = mesh->GetTopology().GetSurfaceElementEdgesPtr (nr);
+
+  ret.faces.num = MeshTopology::GetNFaces (el.GetType());
+  ret.faces.ptr = mesh->GetTopology().GetSurfaceElementFacesPtr (nr);
+
   return ret;
 }
 
@@ -118,8 +138,18 @@ template <> DLL_HEADER Ng_Element Ng_GetElement<3> (int nr)
   
   Ng_Element ret;
   ret.type = NG_ELEMENT_TYPE(el.GetType());
-  ret.npoints = el.GetNP();
-  ret.points = (int*)&el[0];
+  ret.points.num = el.GetNP();
+  ret.points.ptr = (int*)&el[0];
+
+  ret.vertices.num = el.GetNV();
+  ret.vertices.ptr = (int*)&(el[0]);
+
+  ret.edges.num = MeshTopology::GetNEdges (el.GetType());
+  ret.edges.ptr = mesh->GetTopology().GetElementEdgesPtr (nr);
+
+  ret.faces.num = MeshTopology::GetNFaces (el.GetType());
+  ret.faces.ptr = mesh->GetTopology().GetElementFacesPtr (nr);
+
   return ret;
 }
 

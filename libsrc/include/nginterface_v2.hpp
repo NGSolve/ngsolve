@@ -1,25 +1,55 @@
 class Ng_Element
 {
+
+  class Ng_Points
+  {
+  public:
+    int num;
+    const int * ptr;
+  
+    int Size() const { return num; }
+    int operator[] (int i) const { return ptr[i]-1; }
+  };
+
+
+  class Ng_Vertices
+  {
+  public:
+    int num;
+    const int * ptr;
+  
+    int Size() const { return num; }
+    int operator[] (int i) const { return ptr[i]-1; }
+  };
+
+  class Ng_Edges
+  {
+  public:
+    int num;
+    const int * ptr;
+  
+    int Size() const { return num; }
+    int operator[] (int i) const { return abs (ptr[i])-1; }
+  };
+
+  class Ng_Faces
+  {
+  public:
+    int num;
+    const int * ptr;
+  
+    int Size() const { return num; }
+    int operator[] (int i) const { return (ptr[i]-1) / 8; }
+  };
+
 public:
   NG_ELEMENT_TYPE type;
-  int npoints;
-  int nv;
-  int * points;
+  NG_ELEMENT_TYPE GetType() const { return type; }
 
-  NG_ELEMENT_TYPE GetType() const
-  {
-    return type;
-  }
-
-  int GetNP() const
-  {
-    return npoints;
-  }
-
-  int operator[] (int i) const
-  {
-    return points[i]-1;
-  }
+  Ng_Points points;      // all points
+  Ng_Vertices vertices;
+  Ng_Edges edges;
+  Ng_Faces faces;
 };
 
 
