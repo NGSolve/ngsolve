@@ -1368,8 +1368,8 @@ namespace ngsolve
 			  integrator->SetDefinedOn (definedon);
 			}
 
-		      integrator -> SetFastIntegration (partflags.GetDefineFlag("fast"),
-							partflags.GetDefineFlag("checkfast"));
+		      // integrator -> SetFastIntegration (partflags.GetDefineFlag("fast"),
+		      // partflags.GetDefineFlag("checkfast"));
 
 		      integrator -> SetConstantCoefficient (partflags.GetDefineFlag("const"));
 
@@ -1535,8 +1535,8 @@ namespace ngsolve
 			  //				   *integrator);
 			}
 
-		      integrator -> SetFastIntegration (partflags.GetDefineFlag("fast"),
-							partflags.GetDefineFlag("checkfast"));
+		      // integrator -> SetFastIntegration (partflags.GetDefineFlag("fast"),
+		      // partflags.GetDefineFlag("checkfast"));
 
 		      integrator -> SetConstantCoefficient (partflags.GetDefineFlag("const"));
 

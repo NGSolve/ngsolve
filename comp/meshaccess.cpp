@@ -414,14 +414,22 @@ GetElEdges (int elnr, Array<int> & ednums) const
 
   
 void MeshAccess :: 
-GetSElEdges (int selnr, Array<int> & ednums) const
+GetSElEdges (int elnr, Array<int> & ednums) const
 {
+  /*
   ednums.SetSize (4);
   int ned = 
     Ng_GetSurfaceElement_Edges (selnr+1, &ednums[0], 0);
   ednums.SetSize (ned);
   for (int i = 0; i < ned; i++)
     ednums[i]--;
+  */
+  Ng_Element ngel = (dim == 2) 
+    ? Ng_GetElement<1> (elnr)
+    : Ng_GetElement<2> (elnr);
+  ednums.SetSize(ngel.edges.Size());
+  for (int j = 0; j < ngel.edges.Size(); j++)
+    ednums[j] = ngel.edges[j];
 }
 
 void MeshAccess :: 
@@ -474,6 +482,7 @@ void MeshAccess :: GetEdgeElements (int enr, Array<int> & elnums) const
       }
     }
   }
+  // fast function should go into Netgen - part (JS)
 }
   
   
@@ -662,19 +671,30 @@ void MeshAccess :: GetSElVertices (int selnr, Array<int> & vnums) const
 
 
 
-// he: some utility for Facets
+// some utility for Facets
 void MeshAccess :: GetElFacets (int elnr, Array<int> & fnums) const
 {
+  if (dim == 2)
+    {
+      Ng_Element ngel = Ng_GetElement<2> (elnr);
+      fnums.SetSize(ngel.edges.Size());
+      for (int j = 0; j < ngel.edges.Size(); j++)
+	fnums[j] = ngel.edges[j];
+    }
+  else
+    {
+      Ng_Element ngel = Ng_GetElement<3> (elnr);
+      fnums.SetSize(ngel.faces.Size());
+      for (int j = 0; j < ngel.faces.Size(); j++)
+	fnums[j] = ngel.faces[j];
+    }
+      
+  /*
   if (GetDimension() == 2) GetElEdges(elnr, fnums);
   else GetElFaces(elnr, fnums);
+  */
 } 
-
-void MeshAccess :: GetElFacets (int elnr, Array<int> & fnums, Array<int> & orient) const
-{
-  if (GetDimension() == 2) GetElEdges(elnr, fnums, orient);
-  else GetElFaces(elnr, fnums, orient);
-} 
-      
+    
 void MeshAccess :: GetSElFacets (int selnr, Array<int> & fnums) const
 {
   if (GetDimension() == 2) 
@@ -685,19 +705,7 @@ void MeshAccess :: GetSElFacets (int selnr, Array<int> & fnums) const
     fnums[0] = GetSElFace(selnr);
   }
 }
-  
-void MeshAccess :: GetSElFacet (int selnr, Array<int> & fnums, Array<int> & orient) const
-{
-  if (GetDimension() == 2) 
-    GetSElEdges(selnr, fnums, orient);
-  else
-  {
-    fnums.SetSize(1);
-    orient.SetSize(1);
-    GetSElFace(selnr, fnums[0], orient[0]);
-  }
-}
-  
+
 void MeshAccess :: GetFacetPNums (int fnr, Array<int> & pnums) const
 {
   if (GetDimension() == 2)
@@ -773,8 +781,10 @@ GetElementTransformation (int elnr, ElementTransformation & eltrans,
   int elind = Ng_GetElementIndex (elnr+1)-1;
   eltrans.SetElement (0, elnr, elind);
   eltrans.SetElementType (GetElType(elnr));
+  /*
   if (pts.Size())
     eltrans.SetGeometryData (&pts, &dxdxis, &first_of_element);
+  */
 
   if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
     eltrans.SetHigherIntegrationOrder();
@@ -1302,58 +1312,6 @@ void MeshAccess::UnSetHigherIntegrationOrder(int elnr)
     }
   higher_integration_order[elnr] = false;
 }
-
-
-
-void MeshAccess :: PrecomputeGeometryData(int intorder)
-{
-  return;
-#ifdef CURRENTLY_NOT_SUPPORTED
-  cout << "Precompute Geometry Data, intorder = " << intorder << " ..." << flush;
-
-  int npts = 0;
-  Array<int> vnums;
-  for (int i = 0; i < GetNE(); i++)
-    {
-      const IntegrationRule & ir1d =
-	GetIntegrationRules().SelectIntegrationRule (ET_SEGM, intorder);
-      GetElVertices (i, vnums);
-      
-      /*
-      TensorProductIntegrationRule ir (GetElType (i), &vnums[0], ir1d);
-      npts += ir.GetNIP();
-      */
-    }
-
-  cout << ", npts = " << npts << ", memory = " << npts * 8 * 12 << " ... " << flush;
-
-  pts.SetSize(npts);
-  dxdxis.SetSize (npts);
-  first_of_element.SetSize (GetNE());
-
-  npts = 0;
-  for (int i = 0; i < GetNE(); i++)
-    {
-      const IntegrationRule & ir1d =
-	GetIntegrationRules().SelectIntegrationRule (ET_SEGM, intorder);
-      GetElVertices (i, vnums);
-
-      /*
-      TensorProductIntegrationRule ir (GetElType (i), &vnums[0], ir1d);
-
-      first_of_element[i] = npts;
-
-      for (int j = 0; j < ir.GetNIP(); j++, npts++)
-	Ng_GetElementTransformation (i+1, &ir[j](0), &pts[npts](0), &dxdxis[npts](0,0));
-      */
-    }
-
-  // (*testout) << "computed pts = " << pts << endl;
-  cout << " done" << endl;
-#endif
-
-}
-
 
 
 void MeshAccess :: InitPointCurve(double red, double green, double blue) const

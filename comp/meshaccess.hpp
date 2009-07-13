@@ -44,11 +44,13 @@ namespace ngcomp
     int nlevels;
   public:
 
+    /*
     // for pre-computed geometry information
     Array<Vec<3> > pts;
     Array<Mat<3,3> > dxdxis;
     Array<int> first_of_element;
-  
+    */
+
   public:
     ///
     MeshAccess ();
@@ -85,12 +87,6 @@ namespace ngcomp
     /// number of distinct boundaries
     int GetNBoundaries () const;
 
-    /*
-   ///
-   void GetPoint (int pi, double * p) const
-   { Ng_GetPoint (pi+1, p); }
-    */
-
     template <int D>
     void GetPoint (int pi, Vec<D> & p) const
     { Ng_GetPoint (pi+1, &p(0)); }
@@ -108,7 +104,13 @@ namespace ngcomp
     ELEMENT_TYPE GetElType (int elnr) const;
     ///
     int GetElIndex (int elnr) const
-    { return Ng_GetElementIndex (elnr+1)-1; }
+    {
+      if (dim == 2)
+        return Ng_GetElementIndex<2> (elnr)-1;
+      else
+        return Ng_GetElementIndex<3> (elnr)-1;
+    }
+    // { return Ng_GetElementIndex (elnr+1)-1; }
 
     void SetElIndex (int elnr, int index) const
     { Ng_SetElementIndex (elnr+1,index+1); }
@@ -123,7 +125,13 @@ namespace ngcomp
     ELEMENT_TYPE GetSElType (int elnr) const;
     ///
     int GetSElIndex (const int elnr) const
-    { return Ng_GetSurfaceElementIndex (elnr+1)-1; }
+    {
+      if (dim == 2)
+        return Ng_GetElementIndex<1> (elnr)-1;
+      else
+        return Ng_GetElementIndex<2> (elnr)-1;
+    }
+    // { return Ng_GetSurfaceElementIndex (elnr+1)-1; }
 
     ///
     int GetSElSurfaceNumber (const int elnr) const
@@ -186,18 +194,16 @@ namespace ngcomp
 
     Ng_Element GetElement (int elnr) const
     {
-      if (dim == 2)
-        return Ng_GetElement<2> (elnr);
-      else
-        return Ng_GetElement<3> (elnr);
+      return (dim == 2) 
+	? Ng_GetElement<2> (elnr)
+	: Ng_GetElement<3> (elnr);
     }
 
     Ng_Element GetSElement (int elnr) const
     {
-      if (dim == 2)
-        return Ng_GetElement<1> (elnr);
-      else
-        return Ng_GetElement<2> (elnr);
+      return (dim == 2) 
+	? Ng_GetElement<1> (elnr)
+	: Ng_GetElement<2> (elnr);
     }
 
 
@@ -244,18 +250,17 @@ namespace ngcomp
     void GetSegmentPNums (int snr, Array<int> & pnums) const;
     int GetSegmentIndex (int snr) const;
 
-    // he: some utility for Facets
     ///
     int GetNFacets() const
-    { return (GetDimension() == 2 ? GetNEdges() : GetNFaces() ); }
+    { return nnodes_cd[1]; } //  (GetDimension() == 2 ? GetNEdges() : GetNFaces() ); }
     ///
     void GetElFacets (int elnr, Array<int> & fnums) const;
     ///
-    void GetElFacets (int elnr, Array<int> & fnums, Array<int> & orient) const;
+    // void GetElFacets (int elnr, Array<int> & fnums, Array<int> & orient) const;
     ///
     void GetSElFacets (int selnr, Array<int> & fnums) const;
     ///
-    void GetSElFacet (int selnr, Array<int> & fnums, Array<int> & orient) const;
+    // void GetSElFacet (int selnr, Array<int> & fnums, Array<int> & orient) const;
     ///
     void GetFacetPNums (int fnr, Array<int> & pnums) const;
     ///
@@ -418,7 +423,7 @@ namespace ngcomp
 
 
 
-    void PrecomputeGeometryData(int intorder);
+    // void PrecomputeGeometryData(int intorder);
 
     void InitPointCurve(double red = 1, double green = 0, double blue = 0) const;
     void AddPointCurvePoint(const Vec<3> & point) const;

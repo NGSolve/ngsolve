@@ -19,9 +19,9 @@ namespace ngfem
     SetHigherIntegrationOrder(20);
     SetIntegrationOrder (-1);
     SetCacheComp (0);
-    fast = false;
+    // fast = false;
     const_coef = false;
-    checkfast = false;
+    // checkfast = false;
     name = "Integrator";
   }
 
@@ -42,13 +42,11 @@ namespace ngfem
   void Integrator :: SetDefinedOn (const BitArray & adefinedon)
   {
     definedon = adefinedon;
-    // (*testout) << "SetDefinedOn: " << definedon << endl;
   }
 
   void Integrator :: SetName (const string & aname)
   { 
     name = aname; 
-    //cout << "set integrator name to " << name << endl;
   }
 
   string Integrator :: Name () const
