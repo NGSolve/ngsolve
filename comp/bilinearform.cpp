@@ -174,8 +174,8 @@ namespace ngcomp
     if (mats.Size() == ma.GetNLevels())
       return;
 
-    if (Integrator::GetCommonIntegrationOrder() > 0)
-      const_cast<MeshAccess&> (ma).PrecomputeGeometryData (Integrator::GetCommonIntegrationOrder());
+    // if (Integrator::GetCommonIntegrationOrder() > 0)
+    // const_cast<MeshAccess&> (ma).PrecomputeGeometryData (Integrator::GetCommonIntegrationOrder());
 
     if (nonassemble)
       {

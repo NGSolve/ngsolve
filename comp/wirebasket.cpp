@@ -177,9 +177,9 @@ namespace ngcomp
         *testout << "elmats[i] = " << elmats[elnr] << endl;
       }
     /*
-    else
+      else
       cout << "elnr too high, elnr = " << elnr << ", size = " << elmats.Size()
-           << ", dnums = " << dn << endl;
+      << ", dnums = " << dn << endl;
     */
   }
 
@@ -1017,55 +1017,87 @@ namespace ngcomp
     Array<int> multiple;
     BaseMatrix * inv;
     
-    Table<int> *wbdofs, *dcdofs;
-    Table<int> *globwbdofs, *globdcdofs;
+    Table<int> *wbdofs, *dcdofs, *internaldofs, *externaldofs;
+    Table<int> *globwbdofs, *globdcdofs, *globinternaldofs, *globexternaldofs;
 
     Array<int> elclassnr;
     Array<Matrix<>*> invdc_ref, extwb_ref, schurwb_ref;
-    int ne;
+    Array<Matrix<>*> inv_int_ref, extension_int_ref;
+    int ne, ndof;
     
   public:
     BDDCMatrixRefElement (const S_BilinearForm<double> & abfa)
       : bfa(abfa) 
     {
-      LocalHeap lh(10000000);
+      LocalHeap lh(50000000);
+
       const FESpace & fes = bfa.GetFESpace();
       const MeshAccess & ma = fes.GetMeshAccess();
 
       ne = ma.GetNE();
-      Array<int> cnt(ne), cntwb(ne), cntdc(ne);
+      ndof = fes.GetNDof();
+      Array<int> cnt(ne), cntwb(ne), cntdc(ne), cntinternal(ne), cntexternal(ne);
 
-      Array<int> gwbdofs(fes.GetNDof()), lwbdofs, dnums, dcdnums, vnums;
+      Array<int> gwbdofs(ndof), wbdnums, dnums, extdnums, dcdnums, vnums;
       gwbdofs = 0;
 
       for (int i = 0; i < ne; i++)
         {
-          fes.GetExternalDofNrs (i, dnums);
-          fes.GetWireBasketDofNrs (i, lwbdofs);
+          fes.GetDofNrs (i, dnums);
+          fes.GetExternalDofNrs (i, extdnums);
+          fes.GetWireBasketDofNrs (i, wbdnums);
 
           cnt[i] = dnums.Size();
-          cntwb[i] = lwbdofs.Size();
-          cntdc[i] = dnums.Size()-lwbdofs.Size();
-          for (int j = 0; j < lwbdofs.Size(); j++)
-            gwbdofs[lwbdofs[j]] = 1;
+          cntwb[i] = wbdnums.Size();
+          cntdc[i] = extdnums.Size()-wbdnums.Size();
+          cntinternal[i] = dnums.Size()-extdnums.Size();
+          cntexternal[i] = extdnums.Size();
+
+          for (int j = 0; j < wbdnums.Size(); j++)
+            gwbdofs[wbdnums[j]] = 1;
         }
 
       Table<int> dcdofnrs(cnt);   // discontinuous dofs
+
       wbdofs = new Table<int>(cntwb);
       dcdofs = new Table<int>(cntdc);
+      internaldofs = new Table<int>(cntinternal);
+      externaldofs = new Table<int>(cntexternal);
+
       globwbdofs = new Table<int>(cntwb);
       globdcdofs = new Table<int>(cntdc);
-      
+      globinternaldofs = new Table<int>(cntinternal);
+      globexternaldofs = new Table<int>(cntexternal);      
 
       int totdofs  = fes.GetNDof();
       for (int i = 0; i < ne; i++)
         {
-          fes.GetExternalDofNrs (i, dnums);
-          dcdnums.SetSize (dnums.Size());
+          fes.GetDofNrs (i, dnums);
+          fes.GetExternalDofNrs (i, extdnums);
 
-          for (int j = 0; j < dnums.Size(); j++)
+	  int nint = 0, next = 0;
+
+	  for (int j = 0; j < dnums.Size(); j++)
+	    {
+	      if (extdnums.Contains (dnums[j]))
+		{
+		  (*externaldofs)[i][next] = j;
+		  (*globexternaldofs)[i][next] = dnums[j];
+		  next++;
+		}
+	      else
+		{
+		  (*internaldofs)[i][nint] = j;
+		  (*globinternaldofs)[i][nint] = dnums[j];
+		  nint++;
+		}
+	    }
+	  
+          dcdnums.SetSize (extdnums.Size());
+
+          for (int j = 0; j < extdnums.Size(); j++)
             {
-              dcdnums[j] = dnums[j];
+              dcdnums[j] = extdnums[j];
               if (dcdnums[j] == -1) continue;
               if (gwbdofs[dcdnums[j]]) continue;
               dcdnums[j] = totdofs;
@@ -1074,13 +1106,13 @@ namespace ngcomp
 
 
           int wbi = 0, dci = 0;
-          for (int j = 0; j < dnums.Size(); j++)
+          for (int j = 0; j < extdnums.Size(); j++)
             {
-              if (dnums[j] == -1) continue;
-              if (gwbdofs[dnums[j]])
+              if (extdnums[j] == -1) continue;
+              if (gwbdofs[extdnums[j]])
                 {
                   (*wbdofs)[i][wbi] = j;
-                  (*globwbdofs)[i][wbi] = dnums[j];
+                  (*globwbdofs)[i][wbi] = extdnums[j];
                   wbi++;
                 }
               else
@@ -1091,16 +1123,16 @@ namespace ngcomp
                 }
             }
           
-          for (int j = 0; j < dnums.Size(); j++)
+          for (int j = 0; j < extdnums.Size(); j++)
             dcdofnrs[i][j] = dcdnums[j];
         }
 
       int firstdcdof = fes.GetNDof();      
       
-      // MatrixGraph graph(firstdcdof, dcdofnrs, 1);
       MatrixGraph graph(firstdcdof, *globwbdofs, 1);
       SparseMatrixSymmetric<double> dcmat(graph, 1);
-      dcmat.SetInverseType ("sparsecholesky");
+      // dcmat.SetInverseType ("sparsecholesky");
+      dcmat.SetInverseType ("pardisospd");
 
 
       elclassnr.SetSize(ne);
@@ -1108,9 +1140,15 @@ namespace ngcomp
       invdc_ref.SetSize(32);
       extwb_ref.SetSize(32);
       schurwb_ref.SetSize(32);
+      
+      inv_int_ref.SetSize(32);
+      extension_int_ref.SetSize(32);
+
       invdc_ref = NULL;
       extwb_ref = NULL;
       schurwb_ref = NULL;
+      inv_int_ref = NULL;
+      extension_int_ref = NULL;
 
       for (int i = 0; i < ne; i++)
         {
@@ -1139,8 +1177,9 @@ namespace ngcomp
 
           cout << "assemble class " << classnr << endl;
 
-          fes.GetExternalDofNrs (i, dnums);
-
+          fes.GetDofNrs (i, dnums);
+          fes.GetExternalDofNrs (i, extdnums);
+	  
           Matrix<> elmat(dnums.Size());
           Matrix<> partelmat(dnums.Size());
           elmat = 0.0;
@@ -1155,9 +1194,35 @@ namespace ngcomp
               elmat += partelmat;
             }
 
-
+	  
           int nwb = (*wbdofs)[i].Size();
           int ndc = (*dcdofs)[i].Size();
+          int nint = (*internaldofs)[i].Size();
+          int next = (*externaldofs)[i].Size();
+
+
+	  // external/internal extension
+
+
+          Matrix<> matee(next);
+          Matrix<> matie(nint, next);
+          Matrix<> extie(nint, next);
+          Matrix<> matii(nint);
+
+          for (int j = 0; j < next; j++)
+            for (int k = 0; k < next; k++)
+              matee(j,k) = elmat((*externaldofs)[i][j], (*externaldofs)[i][k]);
+          for (int j = 0; j < nint; j++)
+            for (int k = 0; k < next; k++)
+              matie(j,k) = elmat((*internaldofs)[i][j], (*externaldofs)[i][k]);
+          for (int j = 0; j < nint; j++)
+            for (int k = 0; k < nint; k++)
+              matii(j,k) = elmat((*internaldofs)[i][j], (*internaldofs)[i][k]);
+
+          LapackInverse (matii);
+          extie = matii * matie;
+          matee -= Trans (matie) * extie;
+	  
 
           Matrix<> matwbwb(nwb);
           Matrix<> matdcwb(ndc, nwb);
@@ -1166,33 +1231,37 @@ namespace ngcomp
 
           for (int j = 0; j < nwb; j++)
             for (int k = 0; k < nwb; k++)
-              matwbwb(j,k) = elmat((*wbdofs)[i][j], (*wbdofs)[i][k]);
+              matwbwb(j,k) = matee((*wbdofs)[i][j], (*wbdofs)[i][k]);
           for (int j = 0; j < ndc; j++)
             for (int k = 0; k < nwb; k++)
-              matdcwb(j,k) = elmat((*dcdofs)[i][j], (*wbdofs)[i][k]);
+              matdcwb(j,k) = matee((*dcdofs)[i][j], (*wbdofs)[i][k]);
           for (int j = 0; j < ndc; j++)
             for (int k = 0; k < ndc; k++)
-              matdcdc(j,k) = elmat((*dcdofs)[i][j], (*dcdofs)[i][k]);
+              matdcdc(j,k) = matee((*dcdofs)[i][j], (*dcdofs)[i][k]);
 
           LapackInverse (matdcdc);
           extdcwb = matdcdc * matdcwb;
           matwbwb -= Trans (matdcwb) * extdcwb;
 
-          if (invdc_ref[classnr] == NULL)
-            {
-              invdc_ref[classnr] = new Matrix<> (ndc, ndc);
-              extwb_ref[classnr] = new Matrix<> (ndc, nwb);
-              schurwb_ref[classnr] = new Matrix<> (nwb, nwb);
-              *(invdc_ref[classnr]) = matdcdc;
-              *(extwb_ref[classnr]) = extdcwb;
-              *(schurwb_ref[classnr]) = matwbwb;
-            }
+          
+	  invdc_ref[classnr] = new Matrix<> (ndc, ndc);
+	  extwb_ref[classnr] = new Matrix<> (ndc, nwb);
+	  schurwb_ref[classnr] = new Matrix<> (nwb, nwb);
+	  
+	  *(invdc_ref[classnr]) = matdcdc;
+	  *(extwb_ref[classnr]) = extdcwb;
+	  *(schurwb_ref[classnr]) = matwbwb;
+
+	  inv_int_ref[classnr] = new Matrix<> (nint, nint);
+	  *(inv_int_ref[classnr]) = matii;
+	  extension_int_ref[classnr] = new Matrix<> (nint, next);
+	  *(extension_int_ref[classnr]) = extie;
         }
 
 
       for (int i = 0; i < ne; i++)
         {
-          FlatArray<int> dofs = (*globwbdofs)[i]; // dcdofnrs[i];
+          FlatArray<int> dofs = (*globwbdofs)[i]; 
           FlatMatrix<> matwbwb = *schurwb_ref[elclassnr[i]];
           for (int k = 0; k < dofs.Size(); k++)
             for (int l = 0; l < dofs.Size(); l++)
@@ -1204,12 +1273,13 @@ namespace ngcomp
       restrict = -1;
       for (int i = 0; i < ne; i++)
         {
-          fes.GetExternalDofNrs (i, dnums);
+          // fes.GetDofNrs (i, dnums);
+          fes.GetExternalDofNrs (i, extdnums);
 
-          for (int j = 0; j < dnums.Size(); j++)
+          for (int j = 0; j < extdnums.Size(); j++)
             {
-              if (dnums[j] != -1)
-                restrict[dcdofnrs[i][j]] = dnums[j];
+              if (extdnums[j] != -1)
+                restrict[dcdofnrs[i][j]] = extdnums[j];
             }
         }
 
@@ -1219,7 +1289,6 @@ namespace ngcomp
         if (restrict[i] != -1)
           multiple[restrict[i]]++;
 
-
       for (int i = 0; i < firstdcdof; i++)
         if (gwbdofs[i] == 0)
           dcmat(i,i) = 1;
@@ -1228,8 +1297,10 @@ namespace ngcomp
     }
 
 
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
-    {
+
+    /*
+      virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
+      {
       static int timer = NgProfiler::CreateTimer ("Apply BDDC preconditioner");
       static int timerrest = NgProfiler::CreateTimer ("Apply BDDC preconditioner, restrict");
       static int timerdc = NgProfiler::CreateTimer ("Apply BDDC preconditioner, decoupled");
@@ -1245,37 +1316,37 @@ namespace ngcomp
 
       lx = 0.0;
       for (int i = 0; i < restrict.Size(); i++)
-        if (restrict[i] != -1)
-          lx(i) = fx(restrict[i]) / multiple[restrict[i]];
+      if (restrict[i] != -1)
+      lx(i) = fx(restrict[i]) / multiple[restrict[i]];
 
 
       // restrict
       NgProfiler::StartTimer (timerrest);
-#pragma omp parallel
+      #pragma omp parallel
       {
-        LocalHeap lh(100000);
-#pragma omp for
+      LocalHeap lh(100000);
+      #pragma omp for
       for (int i = 0; i < ne; i++)
-        {
-          HeapReset hr(lh);
-          FlatArray<int> wbd = (*globwbdofs)[i];
-          FlatArray<int> dcd = (*globdcdofs)[i];
+      {
+      HeapReset hr(lh);
+      FlatArray<int> wbd = (*globwbdofs)[i];
+      FlatArray<int> dcd = (*globdcdofs)[i];
 
-          FlatVector<> wb(wbd.Size(), lh);
-          FlatVector<> dc(dcd.Size(), lh);
+      FlatVector<> wb(wbd.Size(), lh);
+      FlatVector<> dc(dcd.Size(), lh);
 
-          for (int j = 0; j < dcd.Size(); j++)
-            dc(j) = lx(dcd[j]);
+      for (int j = 0; j < dcd.Size(); j++)
+      dc(j) = lx(dcd[j]);
           
-          // wb = Trans(*extwb[i]) * dc;
-          wb = Trans(*extwb_ref[elclassnr[i]]) * dc;
+      // wb = Trans(*extwb[i]) * dc;
+      wb = Trans(*extwb_ref[elclassnr[i]]) * dc;
           
-          for (int j = 0; j < wbd.Size(); j++)
-            lx(wbd[j]) -= wb(j);
+      for (int j = 0; j < wbd.Size(); j++)
+      lx(wbd[j]) -= wb(j);
 
-          NgProfiler::AddFlops (timer, 2*wbd.Size()*dcd.Size());
-          NgProfiler::AddFlops (timerrest, wbd.Size()*dcd.Size());
-        }
+      NgProfiler::AddFlops (timer, 2*wbd.Size()*dcd.Size());
+      NgProfiler::AddFlops (timerrest, wbd.Size()*dcd.Size());
+      }
       }
       NgProfiler::StopTimer (timerrest);
 
@@ -1285,64 +1356,288 @@ namespace ngcomp
 
       // solve decoupled
       NgProfiler::StartTimer (timerdc);
-#pragma omp parallel
+      #pragma omp parallel
       {
-        LocalHeap lh(100000);
-#pragma omp for
-        for (int i = 0; i < ne; i++)
-          {
-            HeapReset hr(lh);
-            FlatArray<int> dcd = (*globdcdofs)[i];
+      LocalHeap lh(100000);
+      #pragma omp for
+      for (int i = 0; i < ne; i++)
+      {
+      HeapReset hr(lh);
+      FlatArray<int> dcd = (*globdcdofs)[i];
             
-            FlatVector<> dc1(dcd.Size(), lh);
-            FlatVector<> dc2(dcd.Size(), lh);
+      FlatVector<> dc1(dcd.Size(), lh);
+      FlatVector<> dc2(dcd.Size(), lh);
             
-            for (int j = 0; j < dcd.Size(); j++)
-              dc1(j) = lx(dcd[j]);
+      for (int j = 0; j < dcd.Size(); j++)
+      dc1(j) = lx(dcd[j]);
             
-            // dc2 = Trans(*invdc[i]) * dc1;
-            dc2 = (*invdc_ref[elclassnr[i]]) * dc1;
+      // dc2 = Trans(*invdc[i]) * dc1;
+      dc2 = (*invdc_ref[elclassnr[i]]) * dc1;
             
-            for (int j = 0; j < dcd.Size(); j++)
-              ly(dcd[j]) = dc2(j);
+      for (int j = 0; j < dcd.Size(); j++)
+      ly(dcd[j]) = dc2(j);
             
-            NgProfiler::AddFlops (timer, sqr(dcd.Size()));
-            NgProfiler::AddFlops (timerdc, sqr(dcd.Size()));
-          }
+      NgProfiler::AddFlops (timer, sqr(dcd.Size()));
+      NgProfiler::AddFlops (timerdc, sqr(dcd.Size()));
+      }
       }
       NgProfiler::StopTimer (timerdc);
 
       // extend
       NgProfiler::StartTimer (timerext);
-#pragma omp parallel
+      #pragma omp parallel
       {
-        LocalHeap lh(100000);
-#pragma omp for
+      LocalHeap lh(100000);
+      #pragma omp for
       for (int i = 0; i < ne; i++)
-        {
-          HeapReset hr(lh);
-          FlatArray<int> wbd = (*globwbdofs)[i];
-          FlatArray<int> dcd = (*globdcdofs)[i];
+      {
+      HeapReset hr(lh);
+      FlatArray<int> wbd = (*globwbdofs)[i];
+      FlatArray<int> dcd = (*globdcdofs)[i];
 
-          FlatVector<> wb(wbd.Size(), lh);
-          FlatVector<> dc(dcd.Size(), lh);
-          for (int j = 0; j < wbd.Size(); j++)
-            wb(j) = ly(wbd[j]);
+      FlatVector<> wb(wbd.Size(), lh);
+      FlatVector<> dc(dcd.Size(), lh);
+      for (int j = 0; j < wbd.Size(); j++)
+      wb(j) = ly(wbd[j]);
 
-          // dc = (*extwb[i]) * wb;
-          dc = (*extwb_ref[elclassnr[i]]) * wb;
+      // dc = (*extwb[i]) * wb;
+      dc = (*extwb_ref[elclassnr[i]]) * wb;
 
-          for (int j = 0; j < dcd.Size(); j++)
-            ly(dcd[j]) -= dc(j);
-          NgProfiler::AddFlops (timerext, wbd.Size()*dcd.Size());
-        }
+      for (int j = 0; j < dcd.Size(); j++)
+      ly(dcd[j]) -= dc(j);
+      NgProfiler::AddFlops (timerext, wbd.Size()*dcd.Size());
+      }
       }
       NgProfiler::StopTimer (timerext);
 
       fy = 0.0;
       for (int i = 0; i < restrict.Size(); i++)
+      if (restrict[i] != -1)
+      fy(restrict[i]) += ly(i) / multiple[restrict[i]];
+      }
+    */
+
+
+
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
+    {
+      static int timer = NgProfiler::CreateTimer ("Apply BDDC preconditioner");
+      static int timertransx = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx");
+      static int timertransy = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy");
+      static int timerrest = NgProfiler::CreateTimer ("Apply BDDC preconditioner, restrict");
+      static int timerdc = NgProfiler::CreateTimer ("Apply BDDC preconditioner, decoupled");
+      static int timerext = NgProfiler::CreateTimer ("Apply BDDC preconditioner, extend");
+      static int timerinner = NgProfiler::CreateTimer ("Apply BDDC preconditioner, inner");
+      NgProfiler::RegionTimer reg (timer);
+
+
+
+      LocalHeap lh(100000);
+      FlatVector<> fx = x.FVDouble();
+      FlatVector<> fy = y.FVDouble();
+
+      VVector<> transx(ndof);
+      VVector<> transy(ndof);
+
+      VVector<> lx(restrict.Size());
+      VVector<> ly(restrict.Size());
+      
+      {
+	NgProfiler::RegionTimer reg(timertransx);
+	transx = 1.0 * x;
+
+#pragma omp parallel
+	{
+	  LocalHeap slh = lh.Split();
+#pragma omp for
+	  for (int cl = 0; cl < 32; cl++)
+	  for (int i = 0; i < ne; i++)
+	    {
+	      if (elclassnr[i] != cl) continue;
+
+	      HeapReset hr(slh);
+	      FlatArray<int> dint = (*globinternaldofs)[i];
+	      FlatArray<int> dext = (*globexternaldofs)[i];
+	      
+	      FlatVector<> vi(dint.Size(), slh);
+	      FlatVector<> ve(dext.Size(), slh);
+	      
+	      for (int j = 0; j < dint.Size(); j++)
+		vi(j) = transx(dint[j]);
+	      
+	      ve = Trans(*extension_int_ref[elclassnr[i]]) * vi;
+
+#pragma omp critical (bddc_transx)
+	      {
+		for (int j = 0; j < ve.Size(); j++)
+		  transx(dext[j]) -= ve(j);
+		NgProfiler::AddFlops (timertransx, dint.Size()*dext.Size());
+	      }
+	    }
+	}
+      }
+
+
+      lx = 0.0;
+      for (int i = 0; i < restrict.Size(); i++)
         if (restrict[i] != -1)
-          fy(restrict[i]) += ly(i) / multiple[restrict[i]];
+          lx(i) = transx(restrict[i]) / multiple[restrict[i]];
+
+
+      // restrict
+      {
+	NgProfiler::RegionTimer reg(timerrest);
+
+#pragma omp parallel
+	{
+	  LocalHeap slh = lh.Split();
+#pragma omp for
+	  for (int i = 0; i < ne; i++)
+	    {
+	      HeapReset hr(slh);
+	      FlatArray<int> wbd = (*globwbdofs)[i];
+	      FlatArray<int> dcd = (*globdcdofs)[i];
+	      
+	      FlatVector<> wb(wbd.Size(), slh);
+	      FlatVector<> dc(dcd.Size(), slh);
+	    
+	      for (int j = 0; j < dcd.Size(); j++)
+		dc(j) = lx(dcd[j]);
+	      
+	      wb = Trans(*extwb_ref[elclassnr[i]]) * dc;
+	      
+#pragma omp critical (bddc_restrict)
+	      {
+		for (int j = 0; j < wbd.Size(); j++)
+		  lx(wbd[j]) -= wb(j);
+	      }
+	    }
+	}
+      }
+
+      ly = 0.0;
+      ly = (*inv) * lx;
+
+      
+      // solve decoupled
+      {
+	NgProfiler::RegionTimer reg(timerdc);
+#pragma omp parallel
+	{
+	  LocalHeap slh = lh.Split();
+#pragma omp for
+	  for (int cl = 0; cl < 32; cl++)
+	  for (int i = 0; i < ne; i++)
+	    {
+	      if (elclassnr[i] != cl) continue;
+	      HeapReset hr(slh);
+	      FlatArray<int> dcd = (*globdcdofs)[i];
+	      
+	      FlatVector<> dc1(dcd.Size(), slh);
+	      FlatVector<> dc2(dcd.Size(), slh);
+	      
+	      for (int j = 0; j < dcd.Size(); j++)
+		dc1(j) = lx(dcd[j]);
+	      
+	      // dc2 = Trans(*invdc[i]) * dc1;
+	      dc2 = (*invdc_ref[elclassnr[i]]) * dc1;
+	      
+	      for (int j = 0; j < dcd.Size(); j++)
+		ly(dcd[j]) += s * dc2(j);
+	      
+	      NgProfiler::AddFlops (timerdc, sqr (dcd.Size()));
+	    }
+	}
+      }
+
+      // extend
+      {
+	NgProfiler::RegionTimer reg(timerext);
+
+#pragma omp parallel
+	{
+	  LocalHeap slh = lh.Split();
+#pragma omp for
+	  for (int i = 0; i < ne; i++)
+	    {
+	      HeapReset hr(slh);
+	      FlatArray<int> wbd = (*globwbdofs)[i];
+	      FlatArray<int> dcd = (*globdcdofs)[i];
+	      
+	      FlatVector<> wb(wbd.Size(), slh);
+	      FlatVector<> dc(dcd.Size(), slh);
+	      for (int j = 0; j < wbd.Size(); j++)
+		wb(j) = ly(wbd[j]);
+	      
+	      // dc = (*extwb[i]) * wb;
+	      dc = (*extwb_ref[elclassnr[i]]) * wb;
+	      
+	      for (int j = 0; j < dcd.Size(); j++)
+		ly(dcd[j]) -= dc(j);
+	    }
+	}
+      }
+
+      transy = 0.0;
+      for (int i = 0; i < restrict.Size(); i++)
+	if (restrict[i] != -1)
+	  transy(restrict[i]) += s * ly(i) / multiple[restrict[i]];
+
+      
+      {
+	NgProfiler::RegionTimer reg(timertransy);
+#pragma omp parallel
+	{
+	  LocalHeap slh = lh.Split();
+#pragma omp for
+	  for (int cl = 0; cl < 32; cl++)
+	    for (int i = 0; i < ne; i++)
+	    {
+	      if (elclassnr[i] != cl) continue;
+	      HeapReset hr(slh);
+	      FlatArray<int> dint = (*globinternaldofs)[i];
+	      FlatArray<int> dext = (*globexternaldofs)[i];
+	      
+	      FlatVector<> vi(dint.Size(), slh);
+	      FlatVector<> ve(dext.Size(), slh);
+	      
+	      for (int j = 0; j < dext.Size(); j++)
+		ve(j) = transy(dext[j]);
+	      
+	      vi = (*extension_int_ref[elclassnr[i]]) * ve;
+	      
+	      for (int j = 0; j < dint.Size(); j++)
+		transy(dint[j]) -= vi(j);
+	    }
+	}
+      }
+      
+      y += s * transy;
+
+      {
+	NgProfiler::RegionTimer reg(timerinner);
+#pragma omp parallel
+	{
+	  LocalHeap slh = lh.Split();
+#pragma omp for
+	  for (int i = 0; i < ne; i++)
+	    {
+	      HeapReset hr(slh);
+	      FlatArray<int> dint = (*globinternaldofs)[i];
+	      
+	      FlatVector<> v1(dint.Size(), slh);
+	      FlatVector<> v2(dint.Size(), slh);
+            
+	      for (int j = 0; j < dint.Size(); j++)
+		v1(j) = fx(dint[j]);
+            
+	      v2 = (*inv_int_ref[elclassnr[i]]) * v1;
+            
+	      for (int j = 0; j < dint.Size(); j++)
+		fy(dint[j]) += s * v2(j);
+	    }
+	}
+      }
     }
 
   };

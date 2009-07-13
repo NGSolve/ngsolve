@@ -36,13 +36,13 @@ namespace ngfem
 
 
     /// fast integration ?
-    bool fast;
+    // bool fast;
 
     /// plane element and constant coefficients 
     bool const_coef;
   
     /// check fast integration correct ?
-    bool checkfast;
+    // bool checkfast;
 
     ///
     string name;
@@ -109,8 +109,8 @@ namespace ngfem
     }
 
     /// use fast (tensor product) integration, if available
-    void SetFastIntegration (bool afast = 1, bool acheck = 0) 
-    { fast = afast; checkfast = acheck; }
+    // void SetFastIntegration (bool afast = 1, bool acheck = 0) 
+    // { fast = afast; checkfast = acheck; }
 
     /// benefit from constant coefficient
     void SetConstantCoefficient (bool acc = 1)
