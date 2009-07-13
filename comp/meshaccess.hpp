@@ -184,6 +184,23 @@ namespace ngcomp
     */
     void GetClosueNodes (NODE_TYPE nt, int nodenr, NODE_SET ns, Array<Node> & nodes);
 
+    Ng_Element GetElement (int elnr) const
+    {
+      if (dim == 2)
+        return Ng_GetElement<2> (elnr);
+      else
+        return Ng_GetElement<3> (elnr);
+    }
+
+    Ng_Element GetSElement (int elnr) const
+    {
+      if (dim == 2)
+        return Ng_GetElement<1> (elnr);
+      else
+        return Ng_GetElement<2> (elnr);
+    }
+
+
     // von astrid
     int GetElNV ( int elnr ) const;
 

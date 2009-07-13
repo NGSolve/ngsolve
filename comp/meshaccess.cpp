@@ -284,9 +284,9 @@ void MeshAccess :: GetElPNums (int elnr, Array<int> & pnums) const
     ? Ng_GetElement<2> (elnr)
     : Ng_GetElement<3> (elnr);
 
-  pnums.SetSize(ngel.GetNP());
-  for (int j = 0; j < ngel.GetNP(); j++)
-    pnums[j] = ngel[j];
+  pnums.SetSize(ngel.points.Size());
+  for (int j = 0; j < ngel.points.Size(); j++)
+    pnums[j] = ngel.points[j];
   
   /*
   pnums.SetSize (NG_ELEMENT_MAXPOINTS);
@@ -390,12 +390,26 @@ GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const
 void MeshAccess :: 
 GetElEdges (int elnr, Array<int> & ednums) const
 {
+  /*
   ednums.SetSize (12);
   int ned = 
     Ng_GetElement_Edges (elnr+1, &ednums[0], 0);
   ednums.SetSize (ned);
   for (int i = 0; i < ned; i++)
     ednums[i]--;
+
+  cout << "ednums, old = " << ednums << endl;
+  */
+
+  Ng_Element ngel = (dim == 2) 
+    ? Ng_GetElement<2> (elnr)
+    : Ng_GetElement<3> (elnr);
+  ednums.SetSize(ngel.edges.Size());
+  for (int j = 0; j < ngel.edges.Size(); j++)
+    ednums[j] = ngel.edges[j];
+
+  // cout << "ednums, new = " << ednums << endl;
+
 }
 
   
@@ -466,6 +480,7 @@ void MeshAccess :: GetEdgeElements (int enr, Array<int> & elnums) const
 void MeshAccess :: 
 GetElFaces (int elnr, Array<int> & fnums) const
 {
+  /*
   fnums.SetSize (6);
   int nfa = 
     Ng_GetElement_Faces (elnr+1, &fnums[0], 0);
@@ -473,6 +488,19 @@ GetElFaces (int elnr, Array<int> & fnums) const
 
   for (int i = 0; i < nfa; i++)
     fnums[i]--;
+
+  // cout << "fnums, old = " << fnums << endl;
+  */
+
+  Ng_Element ngel = (dim == 2) 
+    ? Ng_GetElement<2> (elnr)
+    : Ng_GetElement<3> (elnr);
+
+  fnums.SetSize(ngel.faces.Size());
+  for (int j = 0; j < ngel.faces.Size(); j++)
+    fnums[j] = ngel.faces[j];
+
+  // cout << "fnums, new = " << fnums << endl;
 }
 
 void MeshAccess :: 
@@ -579,9 +607,9 @@ void MeshAccess :: GetSElPNums (int selnr, Array<int> & pnums) const
     ? Ng_GetElement<1> (selnr)
     : Ng_GetElement<2> (selnr);
     
-  pnums.SetSize(ngel.GetNP());
-  for (int j = 0; j < ngel.GetNP(); j++)
-    pnums[j] = ngel[j];  
+  pnums.SetSize(ngel.points.Size());
+  for (int j = 0; j < ngel.points.Size(); j++)
+    pnums[j] = ngel.points[j];  
 
   /*
   pnums.SetSize (NG_SURFACE_ELEMENT_MAXPOINTS);

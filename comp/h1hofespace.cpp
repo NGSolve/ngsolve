@@ -451,20 +451,13 @@ namespace ngcomp
       } 
     first_element_dof[nel] = ndof;
    
-    /*
-      (*testout) << "augmented " << augmented << endl; 
-   
-      (*testout) << "h1 first edge = " << first_edge_dof << endl;
-      (*testout) << "h1 first face = " << first_face_dof << endl;
-      (*testout) << "h1 first inner = " << first_element_dof << endl;
-    
-      (*testout) << "order_edge H1 = " << order_edge << endl;
-      (*testout) << "order_face H1 = " << order_face << endl;
-      (*testout) << "order_inner H1 = " << order_inner << endl;
-      (*testout) << " NDOF H1" << ndof << endl; 
-    
-      (*testout) << specialelements.Size() << endl;
-    */
+
+    if (print)
+      {
+        (*testout) << "h1 first edge = " << first_edge_dof << endl;
+        (*testout) << "h1 first face = " << first_face_dof << endl;
+        (*testout) << "h1 first inner = " << first_element_dof << endl;
+      }
 
     if (dirichlet_boundaries.Size())
       {
@@ -804,64 +797,37 @@ namespace ngcomp
 
   void H1HighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    // FESpace :: GetDofNrs(elnr, dnums);
-    // return;
-
-    ArrayMem<int,12> vnums, ednums, fanums; 
-    int i, j;
-    int first, next; 
-
-    ma.GetElVertices (elnr, vnums);
-    ma.GetElEdges (elnr, ednums);
-    if (ma.GetDimension() == 3)
-      ma.GetElFaces (elnr, fanums);
-    else 
-      fanums.SetSize(0);
+    Ng_Element ngel = ma.GetElement(elnr);
     dnums.SetSize(0); 
 
-    
-    if(order < 1 && !var_order) 
-      throw Exception(" H1HighOrderFESpace :: GetDofNrs() order < 1 "); 
+    for (int i = 0; i < ngel.vertices.Size(); i++)
+      dnums.Append (ngel.vertices[i]);
 
-    for (i = 0; i < vnums.Size(); i++)
-      dnums.Append (vnums[i]);
-
-    //(*testout) << "after verts dnums.Size() " << dnums.Size() << endl;
-
-    for (i = 0; i < ednums.Size(); i++)
+    for (int i = 0; i < ngel.edges.Size(); i++)
       {
-        first = first_edge_dof[ednums[i]];
-        next = first_edge_dof[ednums[i]+1];
-        for (j = first; j < next; j++)
+        int first = first_edge_dof[ngel.edges[i]];
+        int next = first_edge_dof[ngel.edges[i]+1];
+        for (int j = first; j < next; j++)
           dnums.Append (j);
       }
 
-    //(*testout) << "after edges dnums.Size() " << dnums.Size() << endl;
+    if (ma.GetDimension() == 3)
+      for (int i = 0; i < ngel.faces.Size(); i++)
+        {
+          int first = first_face_dof[ngel.faces[i]];
+          int next = first_face_dof[ngel.faces[i]+1];
+          for (int j = first; j < next; j++)
+            dnums.Append (j);
+        }
 
-    for (i = 0; i < fanums.Size(); i++)
-      {
-        first = first_face_dof[fanums[i]];
-        next = first_face_dof[fanums[i]+1];
-	  
-        for (j = first; j < next; j++)
-          dnums.Append (j);
-      }
-
-    //(*testout) << "after faces dnums.Size() " << dnums.Size() << endl;
-
-    first = first_element_dof[elnr];
-    next = first_element_dof[elnr+1];
- 
-    
-    for (j = first; j < next; j++)
+    int first = first_element_dof[elnr];
+    int next = first_element_dof[elnr+1];
+    for (int j = first; j < next; j++)
       dnums.Append (j);
      
-    //(*testout) << "after inner dnums.Size() " << dnums.Size() << endl;
 
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
-
-    // cout << "orig dnums = " << dnums << endl;
   }
 
 
@@ -932,16 +898,19 @@ namespace ngcomp
     for (int i = 0; i < vnums.Size(); i++)
       dnums.Append (vnums[i]);
 
-    /*
-    // if (ma.GetDimension() == 2)
+    if (ma.GetDimension() == 2)
       {
         for (int i = 0; i < ednums.Size(); i++)
           if (order_edge[ednums[i]] > 1)
             dnums.Append (first_edge_dof[ednums[i]]);
       }
-    */
+
     if (ma.GetDimension() == 3)
       {
+        for (int i = 0; i < ednums.Size(); i++)
+          for (int j = first_edge_dof[ednums[i]]; j < first_edge_dof[ednums[i]+1]; j++)
+            dnums.Append (j);
+
         ArrayMem<int,12> fanums;
         ma.GetElFaces (elnr, fanums);
         for (int i = 0; i < fanums.Size(); i++)
@@ -997,41 +966,37 @@ namespace ngcomp
   void H1HighOrderFESpace :: 
   GetSDofNrs (int elnr, Array<int> & dnums) const
   {
+    Ng_Element ngel = ma.GetSElement(elnr);
+
+    dnums.SetSize(0); 
+
+    for (int i = 0; i < ngel.vertices.Size(); i++)
+      dnums.Append (ngel.vertices[i]);
+
+    for (int i = 0; i < ngel.edges.Size(); i++)
+      {
+        int first = first_edge_dof[ngel.edges[i]];
+        int next = first_edge_dof[ngel.edges[i]+1];
+        for (int j = first; j < next; j++)
+          dnums.Append (j);
+      }
+
+    for (int i = 0; i < ngel.faces.Size(); i++)
+      {
+        int first = first_face_dof[ngel.faces[i]];
+        int next = first_face_dof[ngel.faces[i]+1];
+        for (int j = first; j < next; j++)
+          dnums.Append (j);
+      }
+
+
+
+    // what's that (JS) ?
     static bool getall = false;
-
-    Array<int> vnums, ednums;
-    int i, j;
-
-    ma.GetSElVertices (elnr, vnums);
-    ma.GetSElEdges (elnr, ednums);
-    
-    dnums.SetSize(0);
-    for (i = 0; i < vnums.Size(); i++)
-      dnums.Append (vnums[i]);
-    
-    Array<int> edge_start;
-
-    for (i = 0; i < ednums.Size(); i++)
-      {
-        edge_start.Append(dnums.Size());
-        int first = first_edge_dof[ednums[i]];
-        int neddofs = first_edge_dof[ednums[i]+1] - first;
-        for (j = 0; j < neddofs; j++)
-          dnums.Append (first+j);
-      }
-    edge_start.Append(dnums.Size());
-
-    if (ma.GetDimension() == 3)
-      {
-        int fanum = ma.GetSElFace (elnr);
-        int first = first_face_dof[fanum];
-        int nfadofs = first_face_dof[fanum+1] - first;
-        for (j = 0; j < nfadofs; j++)
-          dnums.Append (first+j);
-      }
 
     if (!DefinedOnBoundary (ma.GetSElIndex (elnr)) && !getall)
       dnums = -1;
+
 
     if(defined_on_one_side_of_bounding_curve.Size() > 0 && !getall)
       {
