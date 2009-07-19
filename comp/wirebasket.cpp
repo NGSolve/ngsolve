@@ -1022,7 +1022,7 @@ namespace ngcomp
 
     Array<int> elclassnr;
     Array<Matrix<>*> invdc_ref, extwb_ref, schurwb_ref;
-    Array<Matrix<>*> inv_int_ref, extension_int_ref;
+    Array<Matrix<>*> inv_int_ref, extension_int_ref, extension_int_ref_trans;
     int ne, ndof;
     
   public:
@@ -1143,6 +1143,7 @@ namespace ngcomp
       
       inv_int_ref.SetSize(32);
       extension_int_ref.SetSize(32);
+      extension_int_ref_trans.SetSize(32);
 
       invdc_ref = NULL;
       extwb_ref = NULL;
@@ -1256,6 +1257,9 @@ namespace ngcomp
 	  *(inv_int_ref[classnr]) = matii;
 	  extension_int_ref[classnr] = new Matrix<> (nint, next);
 	  *(extension_int_ref[classnr]) = extie;
+
+	  extension_int_ref_trans[classnr] = new Matrix<> (next, nint);
+	  *(extension_int_ref_trans[classnr]) = Trans(extie);
         }
 
 
@@ -1465,7 +1469,7 @@ namespace ngcomp
 	      for (int j = 0; j < dint.Size(); j++)
 		vi(j) = transx(dint[j]);
 	      
-	      ve = Trans(*extension_int_ref[elclassnr[i]]) * vi;
+	      ve = (*extension_int_ref_trans[elclassnr[i]]) * vi;
 
 #pragma omp critical (bddc_transx)
 	      {
