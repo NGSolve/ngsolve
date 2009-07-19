@@ -154,6 +154,28 @@ template <> DLL_HEADER Ng_Element Ng_GetElement<3> (int nr)
 }
 
 
+template <>
+DLL_HEADER int Ng_GetElementIndex<1> (int nr)
+{
+  return (*mesh)[SegmentIndex(nr)].si;
+}
+
+template <>
+DLL_HEADER int Ng_GetElementIndex<2> (int nr)
+{
+  int ind = (*mesh)[SurfaceElementIndex(nr)].GetIndex(); 
+  return mesh->GetFaceDescriptor(ind).BCProperty();
+}
+
+template <>
+DLL_HEADER int Ng_GetElementIndex<3> (int nr)
+{
+  return (*mesh)[ElementIndex(nr)].GetIndex();
+}
+
+
+
+
 
 template <>
 DLL_HEADER void Ng_MultiElementTransformation<3,3> (int elnr, int npts,

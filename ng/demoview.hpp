@@ -98,7 +98,6 @@ template <class S>
 class InterpolationSpline
 {
 protected:
-  // typedef Vec<3, InterpolationPoint<S> > intpts;
   // Array < InterpolationPoint<S>[3] > ip;
 
   class intpts
