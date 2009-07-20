@@ -19,12 +19,15 @@ Visualization
 
 #include "../include/incvis.hpp"
 
-namespace netgen
-{
+#include "vispar.hpp"
 #include "mvdraw.hpp"
 #include "soldata.hpp"
+
+namespace netgen
+{
 #include "vssolution.hpp"
 #include "meshdoc.hpp"
 }
+
 
 #endif

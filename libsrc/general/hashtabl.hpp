@@ -7,6 +7,9 @@
 /* Date:   01. Jun. 95                                                    */
 /**************************************************************************/
 
+namespace netgen
+{
+
 /**
    Abstract data type HASHTABLE.
    Hash is done by one INDEX
@@ -1304,19 +1307,7 @@ PrintMemInfo (ostream & ost) const
 */
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
 
 
 #endif

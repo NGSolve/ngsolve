@@ -31,6 +31,17 @@ namespace netgen
     delete solclass;
   }
 
+  bool SolutionData :: GetMultiSurfValue (int selnr, int npts,
+                                          const double * xref, int sxref,
+                                          const double * x, int sx,
+                                          const double * dxdxref, int sdxdxref,
+                                          double * values, int svalues)
+  {
+    bool res = false;
+    for (int i = 0; i < npts; i++)
+      res = GetSurfValue (selnr, &xref[i*sxref], &x[i*sx], &dxdxref[i*sdxdxref], &values[i*svalues]);
+    return res;
+  }
   
   VisualSceneSolution :: VisualSceneSolution ()
     : VisualScene()
@@ -119,6 +130,8 @@ namespace netgen
                 }
               break;
             }
+          default:
+            nsd->size = 0;
           }
         solutiontimestamp = NextTimeStamp();
       }
@@ -180,6 +193,8 @@ namespace netgen
                 ost << " -type=noncontinuous"; break;
               case SOL_SURFACE_NONCONTINUOUS:
                 ost << " -type=surfacenoncontinuous"; break;
+              default:
+                cerr << "save solution data, case not handeld" << endl;
               }
       
             ost << endl;
@@ -236,6 +251,8 @@ namespace netgen
               {
               case QUAD: surf_ost << 9; break;
               case TRIG: surf_ost << 5; break;
+              default:
+                cerr << "not implemented 2378" << endl;
               }
             surf_ost << "\n";
           }
@@ -276,6 +293,8 @@ namespace netgen
             switch (el.GetType())
               {
               case TET: ost << 10; break;
+              default:
+                cerr << "not implemented 67324" << endl;
               }
             ost << "\n";
           }
@@ -1090,6 +1109,7 @@ namespace netgen
 
     Vec<3> nvs[1100];
     double values[1100];
+    double mvalues[11000];
     double valuesc[1100][2];
 
     
@@ -1238,8 +1258,8 @@ namespace netgen
             for (int iy = 0; iy < n; iy++, ii++)
               for (int ix = 0; ix < n; ix++, ii++)
                 {
-                  double x = double(ix) / n;
-                  double y = double(iy) / n;
+                  // double x = double(ix) / n;
+                  // double y = double(iy) / n;
                   
                   int index[] = { ii, ii+1, ii+n+2, ii+n+1 };
                   
@@ -1396,11 +1416,19 @@ namespace netgen
                   for (int ii = 0; ii < npt; ii++)
                     drawelem = GetSurfValueComplex (sol, sei, pref[ii](0), pref[ii](1), scalcomp, valuesc[ii][0], valuesc[ii][1]);
                 else
-                  for (int ii = 0; ii < npt; ii++)
-                    {
-                      drawelem = GetSurfValue (sol, sei, &pref[ii](0), &points[ii](0), &dxdxis[ii](0), scalcomp, values[ii]);
-                      //  drawelem = GetSurfValue (sol, sei, pref[ii](0), pref[ii](1), scalcomp, values[ii]);
-                    }
+                  {
+                    // for (int ii = 0; ii < npt; ii++)
+                    // drawelem = GetSurfValue (sol, sei, &pref[ii](0), &points[ii](0), &dxdxis[ii](0), scalcomp, values[ii]);
+
+                    drawelem = GetMultiSurfValues (sol, sei, npt, 
+                                                   &pref[0](0), &pref[1](0)-&pref[0](0),
+                                                   &points[0](0), &points[1](0)-&points[0](0),
+                                                   &dxdxis[0](0), &dxdxis[1](0)-&dxdxis[0](0),
+                                                   &mvalues[0], sol->components);
+                    
+                    for (int ii = 0; ii < npt; ii++)
+                      values[ii] = ExtractValue(sol, scalcomp, mvalues+ii*sol->components);
+                  }
               }
             
             if (deform)
@@ -1521,8 +1549,8 @@ namespace netgen
         Point<3> pnt;
         for (int k = 0; k < nv; k++)
           {
-            Point<2> p0;
-            Vec<2> vtau;
+            Point<2> p0 = 0.0;
+            Vec<2> vtau = 0.0;
             if (nv == 3)
               switch (k)
                 {
@@ -1635,7 +1663,7 @@ namespace netgen
 
     glBegin (GL_TRIANGLES);
 
-    int np = mesh->GetNP();
+    // int np = mesh->GetNP();
     int ne = mesh->GetNE();
 
 
@@ -1719,6 +1747,9 @@ namespace netgen
                                          double(iy) / n * (1-double(iz)/n),
                                          double(iz)/n);
                         break;
+                      default:
+                        cerr << "case not implementd 878234" << endl;
+                        ploc = 0.0;
                       }
                     if (compress[ii] != -1)
                       locgrid[compress[ii]] = ploc;
@@ -1840,7 +1871,7 @@ namespace netgen
 
 
                                         Vec<3> normal = Cross (points[2]-points[0], points[1]-points[0]);
-                                        if ( (normal * (p2-p1)) > 0 == nodevali[lpi1] < 0)
+                                        if ( ( (normal * (p2-p1)) > 0 ) == ( nodevali[lpi1] < 0) )
                                           normal *= -1;
                                         glNormal3dv (normal);
 
@@ -2426,7 +2457,7 @@ namespace netgen
              double lam1, double lam2, double lam3,
              double * values) const
   {
-    bool ok;
+    bool ok = false;
     switch (data->soltype)
       {
       case SOL_VIRTUALFUNCTION:
@@ -2448,7 +2479,7 @@ namespace netgen
              const double xref[], const double x[], const double dxdxref[], 
              double * values) const
   {
-    bool ok;
+    bool ok = false;
     switch (data->soltype)
       {
       case SOL_VIRTUALFUNCTION:
@@ -2496,7 +2527,7 @@ namespace netgen
             }
           case FUNC_ABS_TENSOR:
             {
-              int d;
+              int d = 0;
               switch (data->components)
                 {
                 case 1: d = 1; break;
@@ -2514,7 +2545,7 @@ namespace netgen
 
           case FUNC_MISES:
             {
-              int d;
+              int d = 0;
               switch(data->components)
                 {
                 case 1: d = 1; break;
@@ -2534,7 +2565,7 @@ namespace netgen
             }
           case FUNC_MAIN:
             {
-              int d;
+              int d = 0;
               switch(data->components)
                 {
                 case 1: d = 1; break;
@@ -2587,8 +2618,8 @@ namespace netgen
         {
           const Element & el = (*mesh)[elnr];
 
-          double lami[8];
-          int np, i;
+          double lami[8] = { 0.0 };
+          int np = 0;
         
           switch (el.GetType())
             {
@@ -2614,9 +2645,11 @@ namespace netgen
                 np = 6;
                 break;
               }     
+            default:
+              cerr << "case not implementd 23523" << endl;
             }
 
-          for (i = 0; i < np; i++)
+          for (int i = 0; i < np; i++)
             val += lami[i] * data->data[(el[i]-1) * data->dist + comp-1];
 
           return 1;
@@ -2635,8 +2668,8 @@ namespace netgen
         {
           const Element & el = (*mesh)[elnr];
 
-          double lami[8];
-          int np, i;
+          double lami[8] = { 0.0 };
+          int np = 0;
 
           switch (el.GetType())
             {
@@ -2693,7 +2726,7 @@ namespace netgen
             base = 10 * elnr;
 
 
-          for (i = 0; i < np; i++)
+          for (int i = 0; i < np; i++)
             val += lami[i] * data->data[(base+i) * data->dist + comp-1];
 
           return 1;
@@ -2710,6 +2743,9 @@ namespace netgen
           val = (*mesh)[elnr].GetOrder();
           return 1;
         }
+
+      default:
+        cerr << "case not handled 7234" << endl;
       }
     return 0;
   }
@@ -2741,7 +2777,7 @@ namespace netgen
             }
           case FUNC_ABS_TENSOR:
             {
-              int d;
+              int d = 0;
               switch (data->components)
                 {
                 case 1: d = 1; break;
@@ -2759,7 +2795,7 @@ namespace netgen
 
           case FUNC_MISES:
             {
-              int d;
+              int d = 0;
               switch(data->components)
                 {
                 case 1: d = 1; break;
@@ -2779,7 +2815,7 @@ namespace netgen
             }
           case FUNC_MAIN:
             {
-              int d;
+              int d = 0;
               switch(data->components)
                 {
                 case 1: d = 1; break;
@@ -2832,8 +2868,8 @@ namespace netgen
         {
           const Element & el = (*mesh)[elnr];
 
-          double lami[8];
-          int np, i;
+          double lami[8] = { 0.0 };
+          int np = 0;
         
           switch (el.GetType())
             {
@@ -2859,9 +2895,11 @@ namespace netgen
                 np = 6;
                 break;
               }     
+            default:
+              cerr << "case not implemented 234324" << endl;
             }
 
-          for (i = 0; i < np; i++)
+          for (int i = 0; i < np; i++)
             val += lami[i] * data->data[(el[i]-1) * data->dist + comp-1];
 
           return 1;
@@ -2880,8 +2918,8 @@ namespace netgen
         {
           const Element & el = (*mesh)[elnr];
 
-          double lami[8];
-          int np, i;
+          double lami[8] = { 0.0 };
+          int np = 0;
 
           switch (el.GetType())
             {
@@ -2938,7 +2976,7 @@ namespace netgen
             base = 10 * elnr;
 
 
-          for (i = 0; i < np; i++)
+          for (int i = 0; i < np; i++)
             val += lami[i] * data->data[(base+i) * data->dist + comp-1];
 
           return 1;
@@ -2955,6 +2993,8 @@ namespace netgen
           val = (*mesh)[elnr].GetOrder();
           return 1;
         }
+      default:
+        cerr << "case not implemented 234234" << endl;
       }
     return 0;
   }
@@ -2986,7 +3026,8 @@ namespace netgen
           vali = values[comp];
           return ok;
         }
-            
+      default:
+        cerr << "case not handled 234234" << endl;
       } 
     return 0;
   }
@@ -3003,7 +3044,7 @@ namespace netgen
                  double lam1, double lam2, 
                  double * values) const
   {
-    bool ok;
+    bool ok = false;
     switch (data->soltype)
       {
       case SOL_VIRTUALFUNCTION:
@@ -3028,7 +3069,7 @@ namespace netgen
                  const double xref[], const double x[], const double dxdxref[], 
                  double * values) const
   {
-    bool ok;
+    bool ok = false;
     switch (data->soltype)
       {
       case SOL_VIRTUALFUNCTION:
@@ -3044,6 +3085,118 @@ namespace netgen
       }
     return ok;
   }
+
+  bool VisualSceneSolution :: 
+  GetMultiSurfValues (const SolData * data, SurfaceElementIndex elnr, int npt,
+                      const double * xref, int sxref,
+                      const double * x, int sx,
+                      const double * dxdxref, int sdxdxref,
+                      double * val, int sval) const
+  {
+    bool drawelem = false;
+    if (data->soltype == SOL_VIRTUALFUNCTION)
+      drawelem = data->solclass->GetMultiSurfValue(elnr, npt, xref, sxref, x, sx, dxdxref, sdxdxref, val, sval);
+    else
+      for (int i = 0; i < npt; i++)
+        drawelem = GetSurfValues (data, elnr, xref+i*sxref, x+i*sx, dxdxref+i*sdxdxref, val+i*sval);
+    return drawelem;
+  }
+  
+  double VisualSceneSolution ::  ExtractValue (const SolData * data, int comp, double * values) const
+  {
+    double val = 0;
+    if (comp == 0)
+      {
+        switch (evalfunc)
+          {
+          case FUNC_ABS:
+            {
+              for (int ci = 0; ci < data->components; ci++)
+                val += sqr (values[ci]);
+              val = sqrt (val);
+              break;
+            }
+          case FUNC_ABS_TENSOR:
+            {
+              int d = 0;
+              switch (data->components)
+                {
+                case 1: d = 1; break;
+                case 3: d = 2; break;
+                case 6: d = 3; break;
+                }
+              for (int ci = 0; ci < d; ci++)
+                val += sqr (values[ci]);
+              for (int ci = d; ci < data->components; ci++)
+                val += 2*sqr (values[ci]);
+              val = sqrt (val);
+              break;
+            }
+
+          case FUNC_MISES:
+            {
+              int d = 0;
+              switch(data->components)
+                {
+                case 1: d = 1; break;
+                case 3: d = 2; break;
+                case 6: d = 3; break;
+                }
+              int ci;
+              double trace = 0.;
+              for (ci = 0; ci < d; ci++)
+                trace += 1./3.*(values[ci]);
+              for (ci = 0; ci < d; ci++)
+                val += sqr (values[ci]-trace);
+              for (ci = d; ci < data->components; ci++)
+                val += 2.*sqr (values[ci]);
+              val = sqrt (val);
+              break;
+            }
+          case FUNC_MAIN:
+            {
+              int d = 0;
+              switch(data->components)
+                {
+                case 1: d = 1; break;
+                case 3: d = 2; break;
+                case 6: d = 3; break;
+                }
+              Mat<3,3> m ;
+              Vec<3> ev;
+              int ci;
+              for (ci = 0; ci < d; ci++)
+                m(ci,ci) = (values[ci]);
+              m(0,1) = m(1,0) = values[3];
+              m(0,2) = m(2,0) = values[4];
+              m(1,2) = m(2,1) = values[5];
+
+              EigenValues (m, ev);
+              double help;
+              for (int i=0; i<d; i++)
+                {
+                  for (int j=d-1; i<j; j--)
+                    {
+                      if ( abs(ev(j)) > abs(ev(j-1)) )
+                        {
+                          help = ev(j);
+                          ev(j) = ev(j-1);
+                          ev(j-1) = help;
+                        }
+                    }
+                }
+              val = (ev(0));
+              break;
+            }
+          }
+        return val;
+      }
+
+    return values[comp-1];
+  }
+
+
+
 
 
 
@@ -3077,6 +3230,8 @@ namespace netgen
           
           return ok;
         }
+      default:
+        cerr << "case not implementd 6565" << endl;
       }
     return 0;
   }
@@ -3106,7 +3261,7 @@ namespace netgen
             }
           case FUNC_ABS_TENSOR:
             {
-              int d;
+              int d = 0;
               switch (data->components)
                 {
                 case 1: d = 1; break;
@@ -3124,7 +3279,7 @@ namespace netgen
 
           case FUNC_MISES:
             {
-              int d;
+              int d = 0;
               switch(data->components)
                 {
                 case 1: d = 1; break;
@@ -3144,7 +3299,7 @@ namespace netgen
             }
           case FUNC_MAIN:
             {
-              int d;
+              int d = 0;
               switch(data->components)
                 {
                 case 1: d = 1; break;
@@ -3312,7 +3467,7 @@ namespace netgen
           const Element2d & el = (*mesh)[selnr];
 
           double lami[8];
-          int np, i;
+          int np = 0;
           val = 0;
           int order = data->order;
 
@@ -3333,6 +3488,8 @@ namespace netgen
                       np = 3;
                       break;
                     }
+                  default:
+                    cerr << "case not implementd 2342" << endl;
                   }
                 break;
               }
@@ -3360,6 +3517,8 @@ namespace netgen
                       np = 6;
                       break;
                     }
+                  default:
+                    cerr << "case not implemented 8712" << endl;
                   }
                 break;
               }
@@ -3371,10 +3530,9 @@ namespace netgen
           else 
             base = 9 * selnr;
 
-          for (i = 0; i < np; i++)
-            {
-              val += lami[i] * data->data[(base+i) * data->dist + comp-1];
-            }
+          for (int i = 0; i < np; i++)
+            val += lami[i] * data->data[(base+i) * data->dist + comp-1];
+
           return 1;
         }
 
@@ -3430,7 +3588,7 @@ namespace netgen
             }
           case FUNC_ABS_TENSOR:
             {
-              int d;
+              int d = 0;
               switch (data->components)
                 {
                 case 1: d = 1; break;
@@ -3448,7 +3606,7 @@ namespace netgen
 
           case FUNC_MISES:
             {
-              int d;
+              int d = 0;
               switch(data->components)
                 {
                 case 1: d = 1; break;
@@ -3468,7 +3626,7 @@ namespace netgen
             }
           case FUNC_MAIN:
             {
-              int d;
+              int d = 0;
               switch(data->components)
                 {
                 case 1: d = 1; break;
@@ -3636,8 +3794,8 @@ namespace netgen
         {
           const Element2d & el = (*mesh)[selnr];
 
-          double lami[8];
-          int np, i;
+          double lami[8] = { 0.0 };
+          int np = 0;
           val = 0;
           int order = data->order;
 
@@ -3658,6 +3816,8 @@ namespace netgen
                       np = 3;
                       break;
                     }
+                  default:
+                    cerr << "case not impl 234234" << endl;
                   }
                 break;
               }
@@ -3685,6 +3845,8 @@ namespace netgen
                       np = 6;
                       break;
                     }
+                  default:
+                    cerr << "case not implented 3234" << endl;
                   }
                 break;
               }
@@ -3696,10 +3858,9 @@ namespace netgen
           else 
             base = 9 * selnr;
 
-          for (i = 0; i < np; i++)
-            {
-              val += lami[i] * data->data[(base+i) * data->dist + comp-1];
-            }
+          for (int i = 0; i < np; i++)
+            val += lami[i] * data->data[(base+i) * data->dist + comp-1];
+
           return 1;
         }
 
@@ -3736,7 +3897,7 @@ namespace netgen
         GetValues (soldata[vecfunction], elnr, p(0), p(1), p(2), &def(0));
         def *= scaledeform;
 
-        if (soldata[vecfunction]->dist == 2) def(2) = 0;
+        if (soldata[vecfunction]->components == 2) def(2) = 0;
       }
     else
       def = 0;
@@ -3753,7 +3914,7 @@ namespace netgen
         GetSurfValues (soldata[vecfunction], elnr, lam1, lam2,  &def(0));
         def *= scaledeform;
 
-        if (soldata[vecfunction]->dist == 2) def(2) = 0;
+        if (soldata[vecfunction]->components == 2) def(2) = 0;
       }
     else if (deform && scalfunction != -1 && mesh->GetDimension()==2)
       { // he: allow for 3d plots of 2d surfaces: usage: turn deformation on
@@ -3770,7 +3931,6 @@ namespace netgen
                                                    SurfaceElementIndex elnr) const
   {
     p = mesh->Point (pnum+1);
-
     if (deform && vecfunction != -1)
       {
         const SolData * vsol = soldata[vecfunction];
@@ -3816,7 +3976,6 @@ namespace netgen
 
     NgProfiler::RegionTimer reg1 (timer1);
 
-    int np = mesh->GetNP();
     int ne = mesh->GetNE();
 
     const int edgei[6][2] =
@@ -3929,6 +4088,9 @@ namespace netgen
                                            double(iz)/n);
                           if (iz == n) ploc = Point<3> (0,0,1-1e-8);
                           break;
+                        default:
+                          cerr << "clip plane trigs not implemented" << endl;
+                          ploc = Point<3> (0,0,0);
                         }
                       if (compress[ii] != -1)
                         locgrid[compress[ii]] = ploc;
@@ -4192,10 +4354,6 @@ namespace netgen
 
   void VisualSceneSolution :: GetClippingPlaneGrid (Array<ClipPlanePoint> & pts)
   {
-    int i, j, k;
-    int np = mesh->GetNV();
-    int ne = mesh->GetNE();
-  
     Vec3d n(clipplane[0], clipplane[1], clipplane[2]);
 
     double mu = -clipplane[3] / n.Length2();
@@ -4406,7 +4564,6 @@ namespace netgen
     rotmat(0,1) = -rotmat(1,0);
 
     glBegin (GL_TRIANGLES);
-    double phi;
     for (i = 1; i <= n; i++)
       {
         /*
@@ -4468,7 +4625,6 @@ namespace netgen
     rotmat(0,1) = -rotmat(1,0);
 
     glBegin (GL_QUADS);
-    double phi;
     for (i = 1; i <= n; i++)
       {
         newcs = rotmat * cs;
@@ -4667,10 +4823,8 @@ namespace netgen
 
             for (i = 0; i < vssolution.soldata.Size(); i++)
               {
-                if (strlen (vssolution.soldata[i]->name) ==
-                    pointpos-1 &&
-                    strncmp (vssolution.soldata[i]->name, scalname,
-                             pointpos-1) == 0)
+                if ( (strlen (vssolution.soldata[i]->name) == pointpos-1) &&
+                     (strncmp (vssolution.soldata[i]->name, scalname, pointpos-1) == 0) )
                   {
                     vssolution.scalfunction = i;
                     vssolution.scalcomp = atoi (scalname + pointpos);

@@ -19,6 +19,9 @@
 #ifndef MYSTRING__H
 #define MYSTRING__H
 
+namespace netgen
+{
+
 class Point3d;
 class Vec3d;
 
@@ -211,6 +214,7 @@ inline void MyStr::SetToErrHandler(void (*Handler)())
   ErrHandler = Handler;
 };
 
+}
 #endif
 
    

@@ -4008,7 +4008,7 @@ namespace netgen
   {
     char script[50];
     sprintf (script, "selectentity {Face %i}", facenr);
-    int errcode = Tcl_GlobalEval (tcl_interp, script);
+    Tcl_GlobalEval (tcl_interp, script);
   }
 
 

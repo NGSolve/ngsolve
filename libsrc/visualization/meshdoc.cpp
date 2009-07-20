@@ -4,14 +4,15 @@
 
 #include <meshing.hpp>
 
-#include "incvis.hpp"
+// #include "incvis.hpp"
 
+
+#include <visual.hpp>
 
 
 namespace netgen
 {
-#include "mvdraw.hpp"
-#include "meshdoc.hpp"
+  // #include "meshdoc.hpp"
 
 
 MeshDoctorParameters meshdoctor;
@@ -84,8 +85,6 @@ VisualSceneMeshDoctor :: ~VisualSceneMeshDoctor ()
 
 void VisualSceneMeshDoctor :: DrawScene ()
 {
-  int i, j, k;
-
   if (!mesh) return;
 
   int hchval = mesh->GetNP() + mesh->GetNE() + mesh->GetNSE();
@@ -162,9 +161,9 @@ void VisualSceneMeshDoctor :: DrawScene ()
 
 void VisualSceneMeshDoctor :: BuildScene (int zoomall)
 {
-  int i, j, k;
+  int i, j;
  
-
+  
   if (zoomall)
     {
       Point3d pmin, pmax;
@@ -197,11 +196,6 @@ void VisualSceneMeshDoctor :: BuildScene (int zoomall)
   glNewList (filledlist, GL_COMPILE);
 
   glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-  
-  static float matcol0[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-  static float matcol1[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-  static float matcolsel[] = { 1.0f, 0.0f, 0.0f, 1.0f };
-  static float matcolnosel[] = { 0.0f, 1.0f, 0.0f, 1.0f };
   
   glLineWidth (1.0f);
   
@@ -456,7 +450,7 @@ void VisualSceneMeshDoctor :: MouseDblClick (int px, int py)
 {
   cout << "dblclick: " << px << " - " << py << endl;
   
-  int i, j, k, hits;
+  int i, hits;
 
   // select surface triangle by mouse click
   GLuint selbuf[10000];
@@ -574,8 +568,8 @@ void VisualSceneMeshDoctor :: UpdateTables ()
   for (i = 1; i <= mesh->GetNSeg(); i++)
     {
       const Segment & seg = mesh->LineSegment(i);
-      if (seg[0] == selpoint && seg[1] == selpoint2 ||
-	  seg[1] == selpoint && seg[0] == selpoint2)
+      if ( (seg[0] == selpoint && seg[1] == selpoint2) ||
+           (seg[1] == selpoint && seg[0] == selpoint2) )
 	{
 	  edgedist.Elem(selpoint) = 1;
 	  edgedist.Elem(selpoint2) = 1;

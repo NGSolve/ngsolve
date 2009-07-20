@@ -417,7 +417,6 @@ int Tcl_AppInit(Tcl_Interp * interp)
     return TCL_ERROR;
   */
 
-
 #ifdef DEMOAPP
   extern int DemoApp_Init (Tcl_Interp * interp);
   if (DemoApp_Init(interp) == TCL_ERROR) 

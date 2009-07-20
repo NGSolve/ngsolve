@@ -7,6 +7,8 @@
 /* Date:   12. Feb. 2003                                                  */
 /**************************************************************************/
 
+namespace netgen
+{
 
 extern NgMutex mem_mutex;
 
@@ -95,5 +97,7 @@ protected:
   MoveableMem (const MoveableMem & m) { ; }
   MoveableMem & operator= (const MoveableMem & m) { ; }
 };
+
+}
 
 #endif

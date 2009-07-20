@@ -1,6 +1,9 @@
 #ifndef FILE_VISPAR
 #define FILE_VISPAR
 
+namespace netgen
+{
+
 class VisualizationParameters
 {
 public:
@@ -98,5 +101,6 @@ public:
   VisualizationParameters();
 };
 extern VisualizationParameters vispar;
+}
 
 #endif

@@ -17,7 +17,8 @@
   #define VT_TRACER(n)
 #endif
 
-
+namespace netgen
+{
 
 class NgProfiler
 {
@@ -58,5 +59,7 @@ public:
     ~RegionTimer () { StopTimer (nr); }
   };
 };
+
+}
 
 #endif

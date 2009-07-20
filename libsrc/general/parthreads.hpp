@@ -11,6 +11,9 @@
   Parallel thread, Mutex,
 */
 
+namespace netgen
+{
+
 #ifdef NO_PARALLEL_THREADS
 
 class NgMutex { };
@@ -182,5 +185,7 @@ public:
 #endif
 
 #endif
+
+}
 
 #endif

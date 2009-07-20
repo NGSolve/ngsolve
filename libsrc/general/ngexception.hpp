@@ -7,6 +7,8 @@
 /* Date:   16. Jan. 2002                                                  */
 /**************************************************************************/
 
+namespace netgen
+{
 
 /// Base class for all ng exceptions
 class NgException 
@@ -26,5 +28,6 @@ public:
   /// verbal description of exception
   const string & What() const { return what; }
 };
+}
 
 #endif

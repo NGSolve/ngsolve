@@ -7,6 +7,8 @@
 /* Date:   07. Jan. 00                                                    */
 /**************************************************************************/
 
+namespace netgen
+{
 
 // order(i) is sorted index of element i
 extern void Sort (const Array<double> & values,
@@ -37,6 +39,8 @@ inline void BubbleSort (Array<T> & data)
 {
   if(data.Size() > 0)
 	  BubbleSort (data.Size(), &data[data.Begin()]);
+}
+
 }
 
 #endif

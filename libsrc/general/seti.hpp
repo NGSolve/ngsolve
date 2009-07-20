@@ -8,6 +8,9 @@
 /* Date:   20. Mar. 98                                                    */
 /**************************************************************************/
 
+namespace netgen
+{
+
 /**
   Set of Integers
   */
@@ -40,6 +43,8 @@ public:
   
   const Array<int> & GetArray() { return set; }
 };
+
+}
 
 #endif
 

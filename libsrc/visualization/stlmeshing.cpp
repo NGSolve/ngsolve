@@ -52,7 +52,7 @@ void VisualSceneSTLMeshing :: DrawScene ()
 
   int colormeshsize = vispar.colormeshsize;
   
-  double hmin, hmax;
+  double hmin = 0.0, hmax = 1.0;
 
   if (colormeshsize)
     {
@@ -99,7 +99,7 @@ void VisualSceneSTLMeshing :: DrawScene ()
   glMaterialfv (GL_FRONT_AND_BACK, GL_SPECULAR, mat_spec_col);
 
   double shine = vispar.shininess;
-  double transp = vispar.transp;
+  // double transp = vispar.transp;
 
   glMaterialf (GL_FRONT_AND_BACK, GL_SHININESS, shine);
   glLogicOp (GL_COPY);
@@ -109,11 +109,11 @@ void VisualSceneSTLMeshing :: DrawScene ()
   float mat_colblue[]   = { 0.1f, 0.1f, 1.0f, 1.0f };
 
   float mat_colbluegreen[] = { 0.1f, 0.5f, 0.9f, 1.0f };
-  float mat_colpink[]      = { 1.0f, 0.1f, 0.5f, 1.0f };
+  // float mat_colpink[]      = { 1.0f, 0.1f, 0.5f, 1.0f };
   float mat_colviolet[]    = { 1.0f, 0.1f, 1.0f, 1.0f };
   float mat_colbrown[]     = { 0.8f, 0.6f, 0.1f, 1.0f };
-  float mat_colorange[]    = { 0.9f, 0.7f, 0.1f, 1.0f };
-  float mat_colturquis[]   = { 0.0f, 1.0f, 0.8f, 1.0f };
+  // float mat_colorange[]    = { 0.9f, 0.7f, 0.1f, 1.0f };
+  // float mat_colturquis[]   = { 0.0f, 1.0f, 0.8f, 1.0f };
 
   float mat_colgrey[] = { 0.3f, 0.3f, 0.3f, 1.0f };
 
@@ -122,7 +122,7 @@ void VisualSceneSTLMeshing :: DrawScene ()
   float mat_collbrown[] = { 1.0f, 0.8f, 0.3f, 1.0f };
 
   float mat_collgrey[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-  float mat_colmgrey[] = { 0.4f, 0.4f, 0.4f, 1.0f };
+  // float mat_colmgrey[] = { 0.4f, 0.4f, 0.4f, 1.0f };
 
   float mat_colstlbody[] = { 0.0f, 0.0f, 0.8f, 1.0f };
   float mat_colseltrig[] = { 0.7f, 0.7f, 0.3f, 1.0f };

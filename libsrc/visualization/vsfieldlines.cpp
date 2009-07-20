@@ -196,7 +196,7 @@ namespace netgen
     if(vsol -> iscomplex)
       SetPhase(phaser,phasei);
 
-    double crit;
+    double crit = 1.0;
 
     if(randomized)
       {
@@ -327,7 +327,7 @@ namespace netgen
     
     double startval;
     bool startdraw;
-    bool drawelem;
+    bool drawelem = false;
     int elnr;
 
     for (int i=0; i<6; i++) values[i]=0.0;

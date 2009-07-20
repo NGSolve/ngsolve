@@ -8,6 +8,9 @@
 /* Date:   10. Oct. 96                                                   */
 /**************************************************************************/
 
+namespace netgen
+{
+
 /** 
    Flag - Table.
    A flag table maintains string variables, numerical 
@@ -78,6 +81,8 @@ public:
   /// Test, if num list flag is defined
   bool NumListFlagDefined (const char * name) const;
 };
+
+}
   
 #endif
 

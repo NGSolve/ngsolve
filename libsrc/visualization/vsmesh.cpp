@@ -116,7 +116,7 @@ namespace netgen
     GLfloat matcol1[] = { 1, 1, 1, 1 };
     GLfloat matcolf[] = { 0, 1, 0, 1 };
     GLfloat matcolb[] = { 0.5, 0, 0, 1 };
-    GLfloat matcolblue[] = { 0, 0, 1, 1 };
+    // GLfloat matcolblue[] = { 0, 0, 1, 1 };
 
     glMatrixMode (GL_MODELVIEW);
 
@@ -503,7 +503,7 @@ namespace netgen
 	    Array<int> v;
 	    for (i = 1; i <= mesh->GetNE(); i++)
 	      {
-		const ELEMENTTYPE & eltype = mesh->ElementType(i);
+		// const ELEMENTTYPE & eltype = mesh->ElementType(i);
 		Array<int> pnums;
 
 		Point3d p;
@@ -1635,8 +1635,6 @@ namespace netgen
 
 	if (mesh->GetCurvedElements().IsHighOrder())
 	  {
-
-	    int j;
 	    int hoplotn = 1 << vispar.subdivisions;
 	    // mesh->GetCurvedElements().GetNVisualSubsecs();
 
@@ -2392,7 +2390,7 @@ namespace netgen
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, hexcol);
 
     Array<Element2d> faces;
-    int hoplotn = 1 << vispar.subdivisions;
+    // int hoplotn = 1 << vispar.subdivisions;
 
     for (ElementIndex ei = 0; ei < mesh->GetNE(); ei++)
       {
@@ -2608,9 +2606,8 @@ namespace netgen
 	const Element & el = (*mesh)[ei];
 	if (el.GetType() == PYRAMID && !el.IsDeleted())
 	  {
-	    int j;
 	    int i = ei + 1;
-
+            
 	    CurvedElements & curv = mesh->GetCurvedElements();
 	    if (curv.IsHighOrder()) //  && curv.IsElementCurved(ei))
 	      {
@@ -3381,8 +3378,8 @@ namespace netgen
 	for (i = 1; i <= mesh->GetNSeg(); i++)
 	  {
 	    const Segment & seg = mesh->LineSegment(i);
-	    if (seg[0] == selpoint && seg[1] == selpoint2 ||
-		seg[1] == selpoint && seg[0] == selpoint2)
+	    if ( (seg[0] == selpoint && seg[1] == selpoint2) ||
+		 (seg[1] == selpoint && seg[0] == selpoint2) )
 	      {
 		seledge = seg.edgenr;
 		cout << "seledge = " << seledge << endl;

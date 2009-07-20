@@ -2,6 +2,9 @@
 #define NGINTERFACE
 
 
+
+
+
 /**************************************************************************/
 /* File:   nginterface.h                                                  */
 /* Author: Joachim Schoeberl                                              */

@@ -7,6 +7,9 @@
 /* Date:   04. Apr. 97                                                    */
 /**************************************************************************/
 
+namespace netgen
+{
+
 /** 
     Optimized Memory allocation classes
 */
@@ -54,6 +57,6 @@ private:
   //  void Alloc2 ();
 };
 
-
+}
 
 #endif

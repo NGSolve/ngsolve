@@ -7,7 +7,8 @@
 /* Date:   12. Feb. 2003                                                  */
 /**************************************************************************/
 
-
+namespace netgen
+{
 
 
 class BaseDynamicMem
@@ -91,5 +92,7 @@ protected:
   DynamicMem (const DynamicMem & m);
   DynamicMem & operator= (const DynamicMem & m);
 };
+
+}
 
 #endif

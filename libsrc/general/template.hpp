@@ -7,6 +7,9 @@
 /* Date:   01. Jun. 95                                                    */
 /**************************************************************************/
 
+namespace netgen 
+{
+
 /*
    templates, global types, defines and variables
 */
@@ -443,6 +446,6 @@ void MergeSort (int size, T * data, T * help);
 
 
 
-
+}
 
 #endif

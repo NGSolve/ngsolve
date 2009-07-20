@@ -242,6 +242,8 @@ private:
 		     const double xref[], const double x[], const double dxdxref[], 
 		     int comp, double & val) const;
 
+  
+
   bool GetSurfValueComplex (const SolData * data, SurfaceElementIndex elnr,
 			    double lam1, double lam2, 
 			    int comp, double & valr, double & vali) const;
@@ -254,6 +256,13 @@ private:
 		      const double xref[], const double x[], const double dxdxref[], 
 		      double * values) const;
 
+  bool GetMultiSurfValues (const SolData * data, SurfaceElementIndex elnr, int npt,
+                           const double * xref, int sxref,
+                           const double * x, int sx,
+                           const double * dxdxref, int sdxdxref,
+                           double * val, int sval) const;
+  
+  double ExtractValue (const SolData * data, int comp, double * values) const;
 
 
   Vec<3> GetDeformation (ElementIndex elnr, const Point<3> & p) const;

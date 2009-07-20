@@ -14,8 +14,10 @@
  */
 
 
-#include "array.hpp"
+// #include "array.hpp"
 
+namespace netgen
+{
 
 ///
 template <class T> class STACK
@@ -107,6 +109,6 @@ inline void STACK<T> :: MakeEmpty ()
   size = 0;
 }
 
-
+}
 
 #endif

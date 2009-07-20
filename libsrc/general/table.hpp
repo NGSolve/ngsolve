@@ -7,6 +7,10 @@
 /* Date:   01. Jun. 95                                                    */
 /**************************************************************************/
 
+namespace netgen
+{
+
+
 /// Base class to generic class TABLE.
 class BASE_TABLE
 {
@@ -217,6 +221,8 @@ inline ostream & operator<< (ostream & ost, const TABLE<T,BASE> & table)
       ost << endl;
     }
   return ost;
+}
+
 }
 
 #endif

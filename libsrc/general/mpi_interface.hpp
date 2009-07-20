@@ -11,6 +11,10 @@
   #define VT_TRACER(n)
 #endif
 
+
+namespace netgen
+{
+
 #ifndef PARALLEL
 
 
@@ -271,5 +275,7 @@ extern MPI_Comm MPI_HIGHORDER_COMM;
 // }
 
 #endif // PARALLEL
+
+}
 
 #endif

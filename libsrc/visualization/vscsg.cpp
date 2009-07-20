@@ -8,10 +8,11 @@
 #include <csg.hpp>
 #include <stlgeom.hpp>
 
+#include <visual.hpp>
+
 
 namespace netgen
 {
-#include "mvdraw.hpp"
 
 /* *********************** Draw Geometry **************** */
 

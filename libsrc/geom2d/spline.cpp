@@ -36,6 +36,7 @@ namespace netgen
 
 
 
+
   template<int D>
   void SplineSeg3<D> :: Project (const Point<D> point, Point<D> & point_on_curve, double & t) const
   {

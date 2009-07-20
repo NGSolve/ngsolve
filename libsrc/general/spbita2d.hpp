@@ -11,6 +11,8 @@
    Implementation of sparse 2 dimensional bitarray
 */
 
+namespace netgen
+{
 
 class SPARSE_BIT_Array_2D
   {
@@ -52,5 +54,6 @@ class SPARSE_BIT_Array_2D
   INDEX GetIndex (INDEX i, INDEX nr) const { return lines[i-1].col[nr-1]; }
   };
 
+}
 
 #endif

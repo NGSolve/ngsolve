@@ -8,7 +8,8 @@
 /**************************************************************************/
 
 
-
+namespace netgen
+{
 
 // template <class T, int B1, int B2> class IndirectArray;
 
@@ -632,7 +633,7 @@ void Intersection (const FlatArray<T> & in1, const FlatArray<T> & in2, const Fla
 }
 
 
-
+}
 
 #endif
 

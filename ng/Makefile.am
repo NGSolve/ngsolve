@@ -21,7 +21,7 @@ netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
 
 #
 # add for static linkage of ngsolve:
-# /opt/netgen/lib/libngsolve.a /opt/netgen/lib/libngcomp.a  /opt/netgen/lib/libngfem.a /opt/netgen/lib/libngcomp.a  /opt/netgen/lib/libngfem.a   /opt/netgen/lib/libngmg.a  /opt/netgen/lib/libngla.a  /opt/netgen/lib/libngbla.a  /opt/netgen/lib/libngstd.a
+# /opt/netgen/lib/libngsolve.a /opt/netgen/lib/libngcomp.a /opt/netgen/lib/libngcomp.a  /opt/netgen/lib/libngfemng.a   /opt/netgen/lib/libngmg.a  /opt/netgen/lib/libngla.a  /opt/netgen/lib/libngbla.a  /opt/netgen/lib/libngstd.a -llapack
 #
 #
 

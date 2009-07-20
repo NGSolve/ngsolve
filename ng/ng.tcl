@@ -89,20 +89,7 @@ catch {
 
 
 
-# catch { source ${ngdir}/ngsolve/ngsolve.tcl }
-# catch { [source ${ngdir}/ngsolve/preproc.tcl] }
-# catch { [source ${ngdir}/ngsolve/pdecreator.tcl] }
-
-# some applications:
-#    source ${ngdir}/demoapp/demoapp.tcl
-#    source ${ngdir}/metis/ngmetis.tcl
-
-
-# trafo/zugstange : menu
-##################################################
 set zugstange 0
-
-
 catch { source ${ngdir}/trafo/menu.tcl }
 
 

@@ -17,8 +17,6 @@
 #include "../include/mydefs.hpp"
 
 
-namespace netgen
-{
 #include "ngexception.hpp"
 #include "parthreads.hpp"
 #include "moveablemem.hpp"
@@ -28,10 +26,13 @@ namespace netgen
 #include "array.hpp"
 #include "table.hpp"
 #include "hashtabl.hpp"
+
+
 #include "symbolta.hpp"
 #include "bitarray.hpp"
 #include "flags.hpp"
 #include "spbita2d.hpp"
+
 #include "seti.hpp"
 #include "optmem.hpp"
 #include "autoptr.hpp"
@@ -42,6 +43,6 @@ namespace netgen
 
 #include "mpi_interface.hpp"
 #include "netgenout.hpp"
-}
+
 
 #endif
