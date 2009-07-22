@@ -117,7 +117,6 @@ namespace ngstd
       return reinterpret_cast<T*> (oldp);
     }
 
-
     ///
     void ThrowException() throw (LocalHeapOverflow);
 
@@ -187,6 +186,12 @@ namespace ngstd
     }
   };
 
+}
+
+
+inline void * operator new (size_t size, ngstd::LocalHeap & lh)  
+{
+  return lh.Alloc(size);
 }
 
 

@@ -421,7 +421,7 @@ namespace ngsolve
   void CommandList (bool nomeshload = false, const bool nogeometryload = false);
   void DefineCommand ();
   void NumProcCommand ();
-  void ParseFlags (Flags & flags);
+  void CheckFlags (Flags & flags);
 
   
   static PDEScanner * scan;
@@ -609,7 +609,7 @@ namespace ngsolve
 
 	      scan->ReadNext();
 	      Flags flags;
-	      ParseFlags (flags);
+	      CheckFlags (flags);
 	      
 	      if (GetNumProcs().GetNumProc(npid))
 		{
@@ -909,7 +909,7 @@ namespace ngsolve
 	      
  	      scan -> ReadNext();
  	      Flags flags;
- 	      ParseFlags (flags);
+ 	      CheckFlags (flags);
 
 	      ipfilename = pde->GetDirectory()+dirslash+flags.GetStringFlag("ipfile","ipfile");
 	      infofilename = pde->GetDirectory()+dirslash+flags.GetStringFlag("infofile","infofile");
@@ -1209,7 +1209,7 @@ namespace ngsolve
 	  string name = scan->GetStringValue ();
 	  scan->ReadNext();
 	  Flags flags;
-	  ParseFlags (flags);
+	  CheckFlags (flags);
 	  pde->AddFESpace (name, flags);
 	  break;
 	}
@@ -1221,7 +1221,7 @@ namespace ngsolve
 	  scan->ReadNext();
 
 	  Flags flags;
-	  ParseFlags (flags);
+	  CheckFlags (flags);
 	  pde->AddGridFunction (name, flags);
 	  break;
 	}
@@ -1234,7 +1234,7 @@ namespace ngsolve
 	  scan->ReadNext();
 
 	  Flags flags;
-	  ParseFlags (flags);
+	  CheckFlags (flags);
 	  pde->AddBilinearForm (name, flags);
 
 
@@ -1291,7 +1291,7 @@ namespace ngsolve
 			}
 		    
 		      Flags partflags;
-		      ParseFlags (partflags);
+		      CheckFlags (partflags);
 
 		      ngfem::BilinearFormIntegrator * integrator = 
 			dynamic_cast<ngfem::BilinearFormIntegrator*> (info->creator(coeffs));
@@ -1411,7 +1411,7 @@ namespace ngsolve
 
 	  scan->ReadNext();
 	  Flags flags;
-	  ParseFlags (flags);
+	  CheckFlags (flags);
 
 	  pde->AddLinearForm (name, flags);
 	
@@ -1455,7 +1455,7 @@ namespace ngsolve
 			}
 		    
 		      Flags partflags;
-		      ParseFlags (partflags);
+		      CheckFlags (partflags);
 		    
 		      ngfem::LinearFormIntegrator * integrator = 
 			dynamic_cast<ngfem::LinearFormIntegrator*> (info->creator(coeffs));
@@ -1566,7 +1566,7 @@ namespace ngsolve
 	  scan->ReadNext();
 	  Flags flags;
 
-	  ParseFlags (flags);
+	  CheckFlags (flags);
 
 	  pde->AddPreconditioner (name, flags);
 
@@ -1583,7 +1583,7 @@ namespace ngsolve
 	  scan->ReadNext();
 	  Flags flags;
 
-	  ParseFlags (flags);
+	  CheckFlags (flags);
 	  pde->AddBEMElement (name, flags);
 
 	  break;
@@ -1608,7 +1608,7 @@ namespace ngsolve
 
 
 
-  void ParseFlags (Flags & flags)
+  void CheckFlags (Flags & flags)
   {
     while (scan->GetToken() == '-')
       {

@@ -171,10 +171,11 @@ namespace ngmg
     //  SetSymmetric (biform.GetMatrix(1).Symmetric());
 
 
+#ifdef OLD
     if (prol_projection.Size() < ma.GetNLevels() && prolongation)
       {
 	// BitArray * innerdof = prolongation->GetInnerDofs();
-	BitArray * innerdof = biform.GetFESpace().CreateIntermediatePlanes (1);
+	// BitArray * innerdof = biform.GetFESpace().CreateIntermediatePlanes (1);
 
 	if (innerdof && 0)
 	  {
@@ -191,6 +192,7 @@ namespace ngmg
 	    prol_projection.Append (inv);
 	  }
       }
+#endif
    }
 
   void MultigridPreconditioner ::

@@ -43,7 +43,7 @@ namespace ngcomp
     DefineDefineFlag("hdiv");
     
     // parse flags
-    if(parseflags) ParseFlags(flags);
+    if(parseflags) CheckFlags(flags);
     
     order = 1; // he: see above constructor!
         

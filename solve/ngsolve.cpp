@@ -26,9 +26,7 @@ using namespace ngsolve;
 #include <nginterface.h>
 
 
-namespace netgen {
 #include <ngexception.hpp>
-}
 
 #ifdef SOCKETS
 #include "markus/jobmanager.hpp"
@@ -695,8 +693,7 @@ extern "C" void NGSolve_Exit ();
 // tcl package dynamic load
 extern "C" int LOCAL_EXPORTS Ngsolve_Init (Tcl_Interp * interp)
 {
-  NGSolve_Init(interp);
-  return TCL_OK;
+  return NGSolve_Init(interp);
 }
 
 
@@ -707,6 +704,11 @@ namespace ngfem {
   namespace bdbequations_cpp { extern int link_it; }
   extern int link_it_h1hofefo;
 }
+
+namespace ngcomp {
+  extern int link_it_hdivhofes;
+}
+
 
 
 int NGSolve_Init (Tcl_Interp * interp)

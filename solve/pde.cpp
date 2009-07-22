@@ -969,13 +969,13 @@ namespace ngsolve
 
 
 	  for (int i = 0; i < preconditioners.Size(); i++)
-	    if(!preconditioners[i]->skipCleanUp)
+	    if(!preconditioners[i]->SkipCleanUp())
               preconditioners[i]->CleanUpLevel();
           for (int i = 0; i < bilinearforms.Size(); i++)
-	    if(!bilinearforms[i]->skipCleanUp)
+	    if(!bilinearforms[i]->SkipCleanUp())
 	      bilinearforms[i]->CleanUpLevel();
 	  for (int i = 0; i < linearforms.Size(); i++)
-	    if(!linearforms[i]->skipCleanUp)
+	    if(!linearforms[i]->SkipCleanUp())
 	      linearforms[i]->CleanUpLevel();
 	  
 

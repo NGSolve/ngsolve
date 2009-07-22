@@ -263,11 +263,12 @@ namespace ngcomp
 	else
 	  sm = new BlockSmoother (ma, *lo_bfa, *lfconstraint, flags);
       }
+    /*
     else if (smoothertype == "potential")
       {
 	sm = new PotentialSmoother (ma, *lo_bfa);
       }
-
+    */
     else
       cerr << "Unknown Smoother " << smoothertype << endl;
 
@@ -358,9 +359,11 @@ namespace ngcomp
 	//cout << "now prepare 2-level" << endl;
 
 	Smoother * fine_smoother = NULL;
+        /*
 	if (smoothertype == "potential")
 	  fine_smoother = new PotentialSmoother (bfa->GetMeshAccess(), *bfa);
 	else
+        */
 	  fine_smoother = new BlockSmoother (bfa->GetMeshAccess(), *bfa, flags);
 	  // fine_smoother = new GSSmoother (bfa->GetMeshAccess(), *bfa);
 
@@ -645,11 +648,12 @@ namespace ngcomp
       {
 	cout << "\nFlag block deprecated: use -blocktype=<typeno> instead" << endl;
 	// old version of creatin smoothing blocks
+        /*
 	Table<int> * blocks = bfa->GetFESpace().CreateSmoothingBlocks();
-	
 	jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
 	  .CreateBlockJacobiPrecond(*blocks, 0, coarse_pre, parallel);
 	dynamic_cast<BaseBlockJacobiPrecond&> (*jacobi) . InitCoarseType(ct);
+        */
       }
     else
       {

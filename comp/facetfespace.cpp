@@ -11,7 +11,7 @@ namespace ngcomp
   using namespace ngparallel;
 
   // ------------------------------------------------------------------------
-  FacetFESpace ::  FacetFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
+  FacetFESpace ::  FacetFESpace (const MeshAccess & ama, const Flags & flags, bool checkflags)
     : FESpace(ama, flags)
   {
     name="FacetFESpace(facet)";
@@ -21,7 +21,7 @@ namespace ngcomp
     DefineDefineFlag("variableorder"); 
 
 
-    if(parseflags) ParseFlags(flags);
+    if(checkflags) CheckFlags(flags);
     
     print = flags.GetDefineFlag("print"); 
     

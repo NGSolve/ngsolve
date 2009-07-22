@@ -1255,10 +1255,9 @@ namespace ngfem
 
   void HDivHighOrderFE<ET_QUAD> :: ComputeNDof()
   {
-    int i;
     ndof = 4;
 
-    for (i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++)
       ndof += order_edge[i];
 
     INT<2> p = INT<2>(order_inner[0],order_inner[1]);
@@ -1268,7 +1267,7 @@ namespace ngfem
     ndof += ni; // 2*order_inner[0]*order_inner[1]+order_inner[0]+order_inner[1];
 
     order = 0;
-    for (i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++)
       if (order_edge[i] > order)
 	order = order_edge[i];
     if (order_inner[0] > order)

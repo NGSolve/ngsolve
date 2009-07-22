@@ -13,33 +13,45 @@ namespace ngcomp
 /** 
     NGSolve base class
 */
-
 class NGS_Object
 {
 protected:
+  /// name of the instance
   string name;
-  Flags flaglist; // define flags
+
+  /// the valid flags for this class
+  Flags flaglist; 
+
+  /// access to the mesh
   const MeshAccess & ma;
-  double time;
+
+  // double time;
 
   /// profiling
   int timer;
-public:
+
+  /// keep the object
   bool skipCleanUp; 
 
+public:
+
   /// 
-  NGS_Object (const MeshAccess & ama, const string & aname = "noname", bool parseflags=false)
-  : name(aname), ma(ama), time(0), skipCleanUp(0)
+  NGS_Object (const MeshAccess & ama, const string & aname = "noname", 
+              bool checkflags = false)
+    : name(aname), ma(ama), /* time(0), */ skipCleanUp(0)
   { 
     timer = NgProfiler::CreateTimer (aname);
   }
   
+  ///
   NGS_Object (const NGS_Object& obj)
   : name(obj.name), flaglist(obj.flaglist), ma(obj.ma), 
-    time(obj.time), timer(obj.timer), skipCleanUp(obj.skipCleanUp)
+    /* time(obj.time), */ timer(obj.timer), skipCleanUp(obj.skipCleanUp)
   { ; }
-  
+
+  ///
   virtual ~NGS_Object () { ; }
+
   ///
   void SetName (const string & aname)
   { 
@@ -49,11 +61,15 @@ public:
 
   ///
   const string & GetName () const
-  { return name; }
+  {
+    return name; 
+  }
 
   ///
   const MeshAccess & GetMeshAccess() const
-  { return ma; }
+  { 
+    return ma; 
+  }
 
   virtual string GetClassName () const
   {
@@ -70,110 +86,28 @@ public:
     cout << "MemoryUsage not implemented for class " << GetClassName() << endl;
   }
 
-  double GetTime () const { return time; }
-  void SetTime (double t) { time = t; }
+  // double GetTime () const { return time; }
+  // void SetTime (double t) { time = t; }
 
   int GetTimer () const { return timer; }
 
-  
-  void DefineStringFlag(const char* s, const char* val="");
-  void DefineNumFlag(const char* s, double val=0);
-  void DefineDefineFlag(const char* s);
-  void DefineStringListFlag(const char* s);
-  void DefineNumListFlag(const char* s);
-  int ParseFlags(const Flags& flags); 
+  bool SkipCleanUp () { return skipCleanUp; }
+
+protected:
+  void DefineStringFlag (const char* s); // , const char* val="");
+  void DefineNumFlag (const char* s); // , double val=0);
+  void DefineDefineFlag (const char* s);
+  void DefineStringListFlag (const char* s);
+  void DefineNumListFlag (const char* s);
+  int CheckFlags (const Flags& flags); 
 };
 
 
 
-#ifdef OLD
-
-#define CreateVecObject1S(dest, Object, dim, SCAL, arg) \
-switch (dim) {  \
- case 1: dest = new Object<SCAL>(arg); break; \
- case 2: dest = new Object<Vec<2,SCAL> >(arg); break; \
- case 3: dest = new Object<Vec<3,SCAL> >(arg); break; \
- case 4: dest = new Object<Vec<4,SCAL> >(arg); break; \
- case 5: dest = new Object<Vec<5,SCAL> >(arg); break; \
- case 6: dest = new Object<Vec<6,SCAL> >(arg); break; \
- case 7: dest = new Object<Vec<7,SCAL> >(arg); break; \
- case 8: dest = new Object<Vec<8,SCAL> >(arg); break; \
- case 9: dest = new Object<Vec<9,SCAL> >(arg); break; \
- case 12: dest = new Object<Vec<12,SCAL> >(arg); break; \
- case 18: dest = new Object<Vec<18,SCAL> >(arg); break; \
- case 24: dest = new Object<Vec<24,SCAL> >(arg); break; \
-}
-
-#define CreateVecObject1(dest, Object, dim, iscomplex, arg) \
-if (iscomplex) \
-  CreateVecObject1S (dest, Object, dim, Complex, arg) \
-else \
- CreateVecObject1S (dest, Object, dim, double, arg);
 
 
-
-
-#define CreateVecObject2S(dest, Object, dim, SCAL, arg, arg2) \
-switch (dim) {  \
- case 1: dest = new Object<SCAL>(arg, arg2); break; \
- case 2: dest = new Object<Vec<2,SCAL> >(arg, arg2); break; \
- case 3: dest = new Object<Vec<3,SCAL> >(arg, arg2); break; \
- case 4: dest = new Object<Vec<4,SCAL> >(arg, arg2); break; \
- case 5: dest = new Object<Vec<5,SCAL> >(arg, arg2); break; \
- case 6: dest = new Object<Vec<6,SCAL> >(arg, arg2); break; \
- case 7: dest = new Object<Vec<7,SCAL> >(arg, arg2); break; \
- case 8: dest = new Object<Vec<8,SCAL> >(arg, arg2); break; \
- case 9: dest = new Object<Vec<9,SCAL> >(arg, arg2); break; \
- case 12: dest = new Object<Vec<12,SCAL> >(arg, arg2); break; \
- case 18: dest = new Object<Vec<18,SCAL> >(arg, arg2); break; \
- case 24: dest = new Object<Vec<24,SCAL> >(arg, arg2); break; \
-}
-
-#define CreateVecObject2(dest, Object, dim, iscomplex, arg, arg2) \
-if (iscomplex) \
-  CreateVecObject2S (dest, Object, dim, Complex, arg, arg2) \
-else \
-  CreateVecObject2S (dest, Object, dim, double, arg, arg2);
-
-
-
-
-#ifdef OLD
-
-#define CreateVecObject3S(dest, Object, dim, SCAL, arg, arg2, arg3) \
-switch (dim) {  \
- case 1: dest = new Object<SCAL>(arg, arg2, arg3); break; \
- case 2: dest = new Object<Vec<2,SCAL> >(arg, arg2, arg3); break; \
- case 3: dest = new Object<Vec<3,SCAL> >(arg, arg2, arg3); break; \
- case 4: dest = new Object<Vec<4,SCAL> >(arg, arg2, arg3); break; \
- case 5: dest = new Object<Vec<5,SCAL> >(arg, arg2, arg3); break; \
- case 6: dest = new Object<Vec<6,SCAL> >(arg, arg2, arg3); break; \
- case 7: dest = new Object<Vec<7,SCAL> >(arg, arg2, arg3); break; \
- case 8: dest = new Object<Vec<8,SCAL> >(arg, arg2, arg3); break; \
- case 9: dest = new Object<Vec<9,SCAL> >(arg, arg2, arg3); break; \
- case 12: dest = new Object<Vec<12,SCAL> >(arg, arg2, arg3); break; \
- case 18: dest = new Object<Vec<18,SCAL> >(arg, arg2, arg3); break; \
- case 24: dest = new Object<Vec<24,SCAL> >(arg, arg2, arg3); break; \
-}
-
-#define CreateVecObject3(dest, Object, dim, iscomplex, arg, arg2, arg3) \
-if (iscomplex) \
-  CreateVecObject3S (dest, Object, dim, Complex, arg, arg2, arg3) \
-else \
-  CreateVecObject3S (dest, Object, dim, double, arg, arg2, arg3);
-
-#endif
-
-#endif
-
-
-
-
-
-
-
-
-template <template <class T> class Object, class Base, class SCAL, class ARG, class ARG2, class ARG3, int ACTDIM>
+template <template <class T> class Object, class Base, class SCAL, 
+          class ARG, class ARG2, class ARG3, int ACTDIM>
 class TCreateVecObject3S { 
 public:
   static Base * Create (int dim, ARG & arg, ARG2 & arg2, ARG3 & arg3)
@@ -183,7 +117,8 @@ public:
   }
 };
 
-template <template <class T> class Object, class Base, class SCAL, class ARG, class ARG2, class ARG3>
+template <template <class T> class Object, class Base, class SCAL, 
+          class ARG, class ARG2, class ARG3>
 class TCreateVecObject3S<Object, Base, SCAL, ARG, ARG2, ARG3, 1> {
 public:
   static Base * Create (int dim, ARG & arg, ARG2 & arg2, ARG3 & arg3)
@@ -234,31 +169,7 @@ class TCreateVecObjectS<Object, Base, SCAL, ARG, 1> {
     throw Exception (err.str());
   }
 };
-/*
-template <template <class T> class Object, class Base, class SCAL, class ARG>
-Base * CreateVecObjectS (int dim, ARG & arg)
-{
-  switch (dim)
-    {
-    case 1: return new Object<SCAL> (arg);
-    case 2: return new Object<ngbla::Vec<2,SCAL> > (arg);
-    case 3: return new Object<ngbla::Vec<3,SCAL> > (arg);
-    case 4: return new Object<ngbla::Vec<4,SCAL> > (arg);
-    case 5: return new Object<ngbla::Vec<5,SCAL> > (arg);
-    case 6: return new Object<ngbla::Vec<6,SCAL> > (arg);
-    case 7: return new Object<ngbla::Vec<7,SCAL> > (arg);
-    case 8: return new Object<ngbla::Vec<8,SCAL> > (arg);
-    case 9: return new Object<ngbla::Vec<9,SCAL> > (arg);
-    case 12: return new Object<ngbla::Vec<12,SCAL> > (arg);
-    case 18: return new Object<ngbla::Vec<18,SCAL> > (arg);
-    case 24: return new Object<ngbla::Vec<24,SCAL> > (arg);
-    }
 
-  stringstream err;
-  err << "illegal CreateVecObject, dim = " << dim << endl;
-  throw Exception (err.str());
-}
-*/
 
 template <template <class T> class Object, class Base, class ARG>
 Base * CreateVecObject (int dim, bool iscomplex, ARG & arg)
@@ -268,55 +179,6 @@ Base * CreateVecObject (int dim, bool iscomplex, ARG & arg)
   else
     return TCreateVecObjectS<Object, Base, Complex, ARG, 12>::Create (dim, arg);
 }
-
-/*    
-template <template <class T> class Object, class Base, class ARG>
-Base * CreateVecObject (int dim, bool iscomplex, ARG & arg)
-{
-  if (!iscomplex)
-    {
-      switch (dim)
-	{
-	case 1: return new Object<double> (arg);
-	case 2: return new Object<ngbla::Vec<2> > (arg);
-	case 3: return new Object<ngbla::Vec<3> > (arg);
-	case 4: return new Object<ngbla::Vec<4> > (arg);
-	case 5: return new Object<ngbla::Vec<5> > (arg);
-	case 6: return new Object<ngbla::Vec<6> > (arg);
-	case 7: return new Object<ngbla::Vec<7> > (arg);
-	case 8: return new Object<ngbla::Vec<8> > (arg);
-	case 9: return new Object<ngbla::Vec<9> > (arg);
-	case 12: return new Object<ngbla::Vec<12> > (arg);
-	case 18: return new Object<ngbla::Vec<18> > (arg);
-	case 24: return new Object<ngbla::Vec<24> > (arg);
-	}
-    }
-  else
-    {
-      switch (dim)
-	{
-	case 1: return new Object<Complex> (arg);
-	case 2: return new Object<ngbla::Vec<2,Complex> > (arg);
-	case 3: return new Object<ngbla::Vec<3,Complex> > (arg);
-	case 4: return new Object<ngbla::Vec<4,Complex> > (arg);
-	case 5: return new Object<ngbla::Vec<5,Complex> > (arg);
-	case 6: return new Object<ngbla::Vec<6,Complex> > (arg);
-	case 7: return new Object<ngbla::Vec<7,Complex> > (arg);
-	case 8: return new Object<ngbla::Vec<8,Complex> > (arg);
-	case 9: return new Object<ngbla::Vec<9,Complex> > (arg);
-	case 10: return new Object<ngbla::Vec<10,Complex> > (arg);
-	case 11: return new Object<ngbla::Vec<11,Complex> > (arg);
-	case 12: return new Object<ngbla::Vec<12,Complex> > (arg);
-	case 18: return new Object<ngbla::Vec<18,Complex> > (arg);
-	case 24: return new Object<ngbla::Vec<24,Complex> > (arg);
-	}
-    }
-
-  stringstream err;
-  err << "illegal CreateVecObject, dim = " << dim << endl;
-  throw Exception (err.str());
-}
-*/
 
 
 
@@ -371,44 +233,6 @@ Base * CreateVecObject (int dim, bool iscomplex, ARG & arg, ARG2 & arg2)
 
 
 
-/*
-
-template <template <class T> class Object, class Base, class SCAL, class ARG, class ARG2, class ARG3>
-Base * CreateVecObjectS (int dim, ARG & arg, ARG2 & arg2, ARG3 & arg3)
-{
-  switch (dim)
-    {
-    case 1: return new Object<SCAL> (arg,arg2,arg3);
-    case 2: return new Object<ngbla::Vec<2,SCAL> > (arg,arg2,arg3);
-    case 3: return new Object<ngbla::Vec<3,SCAL> > (arg,arg2,arg3);
-    case 4: return new Object<ngbla::Vec<4,SCAL> > (arg,arg2,arg3);
-    case 5: return new Object<ngbla::Vec<5,SCAL> > (arg,arg2,arg3);
-    case 6: return new Object<ngbla::Vec<6,SCAL> > (arg,arg2,arg3);
-    case 7: return new Object<ngbla::Vec<7,SCAL> > (arg,arg2,arg3);
-    case 8: return new Object<ngbla::Vec<8,SCAL> > (arg,arg2,arg3);
-    case 9: return new Object<ngbla::Vec<9,SCAL> > (arg,arg2,arg3);
-    case 10: return new Object<ngbla::Vec<10,SCAL> > (arg,arg2,arg3);
-    case 11: return new Object<ngbla::Vec<11,SCAL> > (arg,arg2,arg3);
-    case 12: return new Object<ngbla::Vec<12,SCAL> > (arg,arg2,arg3);
-    case 18: return new Object<ngbla::Vec<18,SCAL> > (arg,arg2,arg3);
-    case 24: return new Object<ngbla::Vec<24,SCAL> > (arg,arg2,arg3);
-    }
-
-  stringstream err;
-  err << "illegal CreateVecObject, dim = " << dim << endl;
-  throw Exception (err.str());
-}
-
-
-template <template <class T> class Object, class Base, class ARG, class ARG2, class ARG3>
-Base * CreateVecObject (int dim, bool iscomplex, ARG & arg, ARG2 & arg2, ARG3 & arg3)
-{
-  if (!iscomplex)
-    return CreateVecObjectS<Object, Base, double, ARG, ARG2, ARG3> (dim, arg, arg2, arg3);
-  else
-    return CreateVecObjectS<Object, Base, Complex, ARG, ARG2, ARG3> (dim, arg, arg2, arg3);
-}
-*/
 
 
 
@@ -820,83 +644,6 @@ else \
   CreateSymMatObject4S (dest, Object, dim, blocksize, double, arg, arg2, arg3);
 
 
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-template <template <class T> class Object, class Base, class SCAL, class ARG, class ARG2>
-Base * S_CreateMatObject (int dim1, int dim2, ARG & arg, ARG2 & arg2)
-{
-  switch (dim1)
-    {
-    case 1:
-      return new Object<SCAL> (arg,arg2);
-    case 2:
-      return new Object<ngbla::Mat<2,2,SCAL> > (arg,arg2);
-    case 3:
-      return new Object<ngbla::Mat<3,3,SCAL> > (arg,arg2);
-    case 4:
-      return new Object<ngbla::Mat<4,4,SCAL> > (arg,arg2);
-    }
-
-  stringstream err;
-  err << "illegal CreateVecObject, dim = " << dim << endl;
-  throw Exception (err.str());
-}
-
-
-template <template <class T> class Object, class Base, class ARG, class ARG2>
-Base * CreateMatObject (int dim1, int dim2, bool iscomplex, ARG & arg, ARG2 & arg2)
-{
-  if (!iscomplex)
-    S_CreateMatObject<Object, Base, double, ARG,ARG2> (dim1, dim2, arg, arg2);
-  else
-    S_CreateMatObject<Object, Base, Complex, ARG,ARG2> (dim1, dim2, arg, arg2);
-}
-
-
-
-
-
-template <template <class T> class Object, class Base, class SCAL, class ARG, class ARG2>
-Base * S_CreateMatObjectSym (int dim, ARG & arg, ARG2 & arg2)
-{
-  switch (dim)
-    {
-    case 1:
-      return new Object<SCAL> (arg,arg2);
-    case 2:
-      return new Object<ngbla::Mat<2,2,SCAL> > (arg,arg2);
-    case 3:
-      return new Object<ngbla::Mat<3,3,SCAL> > (arg,arg2);
-    case 4:
-      return new Object<ngbla::Mat<4,4,SCAL> > (arg,arg2);
-    }
-
-  stringstream err;
-  err << "illegal CreateVecObject, dim = " << dim << endl;
-  throw Exception (err.str());
-}
-
-
-template <template <class T> class Object, class Base, class ARG, class ARG2>
-Base * CreateMatObjectSym (int dim, bool iscomplex, ARG & arg, ARG2 & arg2)
-{
-  if (!iscomplex)
-    S_CreateMatObjectSym<Object, Base, double, ARG,ARG2> (dim, arg, arg2);
-  else
-    S_CreateMatObjectSym<Object, Base, Complex, ARG,ARG2> (dim, arg, arg2);
-}
-*/
 
 
 

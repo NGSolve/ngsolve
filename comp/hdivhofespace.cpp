@@ -4,12 +4,12 @@
 /* Continuous and discontinuous version : 
    Disont space has no extra low-order block(!), all dofs internal! 
    Flags:
-         -order  : uniform order 
-         -relorder : varialbe order relative to mesh-order 
-	            (on facets maximum order of facet-patch elements, also for discont)
-         -curl_order,relcurlorder: orders of curl fields in uniform/variable version 
-	 -disontinuous (DefineFlag) : discontinuous space 
-	 -orderinner, orderfacet: for variable and uniform space uniform order for inner or facets 
+   -order  : uniform order 
+   -relorder : varialbe order relative to mesh-order 
+   (on facets maximum order of facet-patch elements, also for discont)
+   -curl_order,relcurlorder: orders of curl fields in uniform/variable version 
+   -disontinuous (DefineFlag) : discontinuous space 
+   -orderinner, orderfacet: for variable and uniform space uniform order for inner or facets 
 	 
 */ 
 
@@ -32,7 +32,7 @@ namespace ngcomp
 
   HDivHighOrderFESpace ::  
   HDivHighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
-  : FESpace (ama, flags)
+    : FESpace (ama, flags)
   {
     name="HDivHighOrderFESpace(hdivho)";
     // allowed flags
@@ -51,7 +51,7 @@ namespace ngcomp
     DefineDefineFlag("variableorder"); 
     DefineDefineFlag("hodivfree"); 
     
-    if(parseflags) ParseFlags(flags);
+    if(parseflags) CheckFlags(flags);
 
     discont = flags.GetDefineFlag("discontinuous"); 
     
@@ -60,9 +60,9 @@ namespace ngcomp
     else 
       low_order_space = 0; 
 
-// #ifdef PARALLEL    
-//       low_order_space = new RaviartThomasFESpace (ma,dimension, iscomplex);
-// #endif
+    // #ifdef PARALLEL    
+    //       low_order_space = new RaviartThomasFESpace (ma,dimension, iscomplex);
+    // #endif
 
     // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
@@ -144,24 +144,24 @@ namespace ngcomp
     
     // Evaluator for shape tester 
     if (ma.GetDimension() == 2)
-    {
-      Array<CoefficientFunction*> coeffs(1);
-      coeffs[0] = new ConstantCoefficientFunction(1);
-      evaluator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
-    }
+      {
+        Array<CoefficientFunction*> coeffs(1);
+        coeffs[0] = new ConstantCoefficientFunction(1);
+        evaluator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
+      }
     else
-    {
-      Array<CoefficientFunction*> coeffs(1);
-      coeffs[0] = new ConstantCoefficientFunction(1);
-      evaluator = GetIntegrators().CreateBFI("masshdiv", 3, coeffs);
-      boundary_evaluator = GetIntegrators().CreateBFI("robinhdiv", 3, coeffs);
-    }
+      {
+        Array<CoefficientFunction*> coeffs(1);
+        coeffs[0] = new ConstantCoefficientFunction(1);
+        evaluator = GetIntegrators().CreateBFI("masshdiv", 3, coeffs);
+        boundary_evaluator = GetIntegrators().CreateBFI("robinhdiv", 3, coeffs);
+      }
     if (dimension > 1)
-    {
-      evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
-      boundary_evaluator =
+      {
+        evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
+        boundary_evaluator =
           new BlockBilinearFormIntegrator (*boundary_evaluator, dimension);
-    }
+      }
 
   }
   
@@ -284,12 +284,12 @@ namespace ngcomp
 		    // p[1] for direction fmax,f[1] 
 		    for(int l=0;l<2;l++)
 		      for(int k=0;k<3;k++)
-			    if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
-			      {
-				order_facet[elfacets[j]][l] = max(order_facet[elfacets[j]][l], rel_curl_order + 
-								 el_orders[k]);
-				break; 
-			      } 
+                        if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
+                          {
+                            order_facet[elfacets[j]][l] = max(order_facet[elfacets[j]][l], rel_curl_order + 
+                                                              el_orders[k]);
+                            break; 
+                          } 
 		    
 		  }
 	      }
@@ -321,7 +321,7 @@ namespace ngcomp
     
  
     
-       UpdateDofTables(); 
+    UpdateDofTables(); 
 
 #ifdef PARALLEL
     UpdateParallelDofs();
@@ -331,160 +331,160 @@ namespace ngcomp
 
   void HDivHighOrderFESpace :: UpdateDofTables()
   {
-     nv = ma.GetNV(); 
-     nfa = (ma.GetDimension()==3  ? ma.GetNFaces() : ma.GetNEdges());
-     nel = ma.GetNE();
-     int dim = ma.GetDimension();
-     Array<int> pnums; 
+    nv = ma.GetNV(); 
+    nfa = (ma.GetDimension()==3  ? ma.GetNFaces() : ma.GetNEdges());
+    nel = ma.GetNE();
+    int dim = ma.GetDimension();
+    Array<int> pnums; 
      
-     first_facet_dof.SetSize(nfa+1); 
-     first_inner_dof.SetSize(nel+1); 
+    first_facet_dof.SetSize(nfa+1); 
+    first_inner_dof.SetSize(nel+1); 
 
-     ndof = nfa; 
-     first_facet_dof = ndof; 
+    ndof = nfa; 
+    first_facet_dof = ndof; 
 
-     if(dim==2)
-       {
-	 for (int i = 0; i < nfa; i++)
-	   {
-	     first_facet_dof[i] = ndof;
-	     if(fine_facet[i])
-	       ndof += order_facet[i][0];
-	   }
+    if(dim==2)
+      {
+        for (int i = 0; i < nfa; i++)
+          {
+            first_facet_dof[i] = ndof;
+            if(fine_facet[i])
+              ndof += order_facet[i][0];
+          }
 
-	 first_facet_dof[nfa] = ndof;
+        first_facet_dof[nfa] = ndof;
       
-	 int inci = 0;
-	 for(int i=0; i< nel; i++)
-	   {
-	     INT<3> pc = order_inner_curl[i];
-	     INT<3> p = order_inner[i];
-	     switch(ma.GetElType(i))
-	       {
-	       case ET_TRIG:
-                 if (!ho_div_free)
-                   inci = pc[0]*(pc[0]-1)/2 + p[0]*(p[0]-1)/2 + p[0]-1;
-                 else
-                   inci = pc[0]*(pc[0]-1)/2;
-		 break;
-	       case ET_QUAD:
-                 if (!ho_div_free)
-                   inci = pc[0]*pc[1] + p[0]*p[1]+p[0]+p[1];
-                 else
-                   inci = pc[0]*pc[1];
-		 break;
-               default: // for the compiler
-                 break;  
-	       }
-	     if (inci < 0) inci = 0;
-	     {
-	       first_inner_dof[i] = ndof;
-	       ndof+=inci;
-	     }
-	   }
-	 first_inner_dof[nel] = ndof;
-       }
-     else 
-       {
-	 int inci = 0;
-	 for (int i=0; i< nfa; i++) 
-	   {
-	     inci =0; 
-	     if(fine_facet[i])
-	       {
-		 INT<2> p = order_facet[i]; 
-		 ma.GetFacePNums(i,pnums);
-		 switch(pnums.Size())
-		   {
-		   case 3: //Triangle
-		     inci= (p[0]*p[0]+3*p[0])/2; 
-		     break;
-		   case 4: //Quad 
-		     inci= p[0]*p[1] + p[0] + p[1];
-		     break;
-		   }
-	       }
-	     else
-	       inci = 0;
+        int inci = 0;
+        for(int i=0; i< nel; i++)
+          {
+            INT<3> pc = order_inner_curl[i];
+            INT<3> p = order_inner[i];
+            switch(ma.GetElType(i))
+              {
+              case ET_TRIG:
+                if (!ho_div_free)
+                  inci = pc[0]*(pc[0]-1)/2 + p[0]*(p[0]-1)/2 + p[0]-1;
+                else
+                  inci = pc[0]*(pc[0]-1)/2;
+                break;
+              case ET_QUAD:
+                if (!ho_div_free)
+                  inci = pc[0]*pc[1] + p[0]*p[1]+p[0]+p[1];
+                else
+                  inci = pc[0]*pc[1];
+                break;
+              default: // for the compiler
+                break;  
+              }
+            if (inci < 0) inci = 0;
+            {
+              first_inner_dof[i] = ndof;
+              ndof+=inci;
+            }
+          }
+        first_inner_dof[nel] = ndof;
+      }
+    else 
+      {
+        int inci = 0;
+        for (int i=0; i< nfa; i++) 
+          {
+            inci =0; 
+            if(fine_facet[i])
+              {
+                INT<2> p = order_facet[i]; 
+                ma.GetFacePNums(i,pnums);
+                switch(pnums.Size())
+                  {
+                  case 3: //Triangle
+                    inci= (p[0]*p[0]+3*p[0])/2; 
+                    break;
+                  case 4: //Quad 
+                    inci= p[0]*p[1] + p[0] + p[1];
+                    break;
+                  }
+              }
+            else
+              inci = 0;
 
-	     if (inci < 0) inci = 0;
-	     first_facet_dof[i] = ndof;
-	     ndof+= inci;
+            if (inci < 0) inci = 0;
+            first_facet_dof[i] = ndof;
+            ndof+= inci;
 
-	   }
-	 first_facet_dof[nfa] = ndof;
+          }
+        first_facet_dof[nfa] = ndof;
 	 
-	 for (int i=0; i< nel; i++)
-	   {
-	     INT<3> p = order_inner[i];
-	     INT<3> pc = order_inner_curl[i];
-	     int inci = 0;
+        for (int i=0; i< nel; i++)
+          {
+            INT<3> p = order_inner[i];
+            INT<3> pc = order_inner_curl[i];
+            int inci = 0;
 	     
-	     switch(ma.GetElType(i))
-	       {
-	       case ET_TET:
-		 if(p[0]>1 && !ho_div_free)
-		   inci = p[0]*(p[0]+1)*(p[0]-1)/6 + p[0]*(p[0]-1)/2 + p[0]-1;
-		 if(pc[0]>1)
-		   inci += pc[0]*(pc[0]+1)*(pc[0]-1)/3 + pc[0]*(pc[0]-1)/2; ;
-		 break;
-	       case ET_PRISM:
-		 inci = (p[0]+1)*(3*(p[0]-1)+(p[0]-1)*(p[0]-2))+ (p[0]-1)*(p[0]+1)*(p[0]+2)/2;
-		 break;
-	       case ET_HEX:
-		 inci =  2*pc[0]*pc[1]*pc[2] + pc[0]*pc[1] + pc[1]*pc[2] + pc[0]* pc[2]
-		   +  p[0]*(p[1]*p[2] + p[1] + p[2] + 1)  + p[1]*p[2] + p[1] + p[2]; 
-		 break; 
-	       case ET_PYRAMID: 
-		 inci=0; 
-		 cout << "WARNING: there are hdiv-pyramids (not implemented yet) !! " << endl;
-		 break; 
-	       default:
-		 inci = 0;
-		 break;
-	       }
-	     if (inci < 0) inci = 0;
-	     first_inner_dof[i] = ndof;
-	     ndof+= inci;
-	   }
-	 first_inner_dof[nel] = ndof;
-       }
+            switch(ma.GetElType(i))
+              {
+              case ET_TET:
+                if(p[0]>1 && !ho_div_free)
+                  inci = p[0]*(p[0]+1)*(p[0]-1)/6 + p[0]*(p[0]-1)/2 + p[0]-1;
+                if(pc[0]>1)
+                  inci += pc[0]*(pc[0]+1)*(pc[0]-1)/3 + pc[0]*(pc[0]-1)/2; ;
+                break;
+              case ET_PRISM:
+                inci = (p[0]+1)*(3*(p[0]-1)+(p[0]-1)*(p[0]-2))+ (p[0]-1)*(p[0]+1)*(p[0]+2)/2;
+                break;
+              case ET_HEX:
+                inci =  2*pc[0]*pc[1]*pc[2] + pc[0]*pc[1] + pc[1]*pc[2] + pc[0]* pc[2]
+                  +  p[0]*(p[1]*p[2] + p[1] + p[2] + 1)  + p[1]*p[2] + p[1] + p[2]; 
+                break; 
+              case ET_PYRAMID: 
+                inci=0; 
+                cout << "WARNING: there are hdiv-pyramids (not implemented yet) !! " << endl;
+                break; 
+              default:
+                inci = 0;
+                break;
+              }
+            if (inci < 0) inci = 0;
+            first_inner_dof[i] = ndof;
+            ndof+= inci;
+          }
+        first_inner_dof[nel] = ndof;
+      }
    
 
-     if(discont) 
-       { 
-	 ndof = 0; 
-	 for(int i=0;i<nel;i++)
-	   {
-	     int incii = first_inner_dof[i+1]-first_inner_dof[i]; 
+    if(discont) 
+      { 
+        ndof = 0; 
+        for(int i=0;i<nel;i++)
+          {
+            int incii = first_inner_dof[i+1]-first_inner_dof[i]; 
 	     	     
-	     Array<int> elfacets; 
-	     if(dim==2) 
-	       ma.GetElEdges(i,elfacets);
-	     else 
-	       ma.GetElFaces(i,elfacets);
+            Array<int> elfacets; 
+            if(dim==2) 
+              ma.GetElEdges(i,elfacets);
+            else 
+              ma.GetElFaces(i,elfacets);
 	     
-	     for(int j=0; j<elfacets.Size(); j++) 
-	       incii+=first_facet_dof[elfacets[j]+1]-first_facet_dof[elfacets[j]]+1; // incl. lowest-order 
+            for(int j=0; j<elfacets.Size(); j++) 
+              incii+=first_facet_dof[elfacets[j]+1]-first_facet_dof[elfacets[j]]+1; // incl. lowest-order 
 	     
-	     first_inner_dof[i] = ndof; 
-	     ndof += incii;
+            first_inner_dof[i] = ndof; 
+            ndof += incii;
 	    
-	   } 
-	 first_inner_dof[nel] = ndof; 
-	 first_facet_dof = 0; 
-       } 
+          } 
+        first_inner_dof[nel] = ndof; 
+        first_facet_dof = 0; 
+      } 
 	
     
-     if(print) 
-       {
-	 (*testout) << "ndof hdivhofespace update = " << endl << ndof << endl;
-	 (*testout) << "first_facet_dof (hdiv)  = " << endl << first_facet_dof << endl;
-	 (*testout) << "first_facet_dof (hdiv) = " << endl << first_facet_dof << endl;
-	 (*testout) << "first_inner_dof (hdiv) = " << endl << first_inner_dof << endl;
-       }
+    if(print) 
+      {
+        (*testout) << "ndof hdivhofespace update = " << endl << ndof << endl;
+        (*testout) << "first_facet_dof (hdiv)  = " << endl << first_facet_dof << endl;
+        (*testout) << "first_facet_dof (hdiv) = " << endl << first_facet_dof << endl;
+        (*testout) << "first_inner_dof (hdiv) = " << endl << first_inner_dof << endl;
+      }
      
-     while (ma.GetNLevels() > ndlevel.Size())
+    while (ma.GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
     //    prol->Update();
@@ -508,11 +508,11 @@ namespace ngcomp
 	  break;
 	}
 	/*
-      case ET_PYRAMID:
-	{
+          case ET_PYRAMID:
+          {
 	  fe = new (lh.Alloc (sizeof(HDivHighOrderPyramidSZ<T_ORTHOPOL>)))  HDivHighOrderPyramidSZ<T_ORTHOPOL> (order);
 	  break;
-	}
+          }
 	*/
       case ET_PRISM:
 	{
@@ -582,7 +582,7 @@ namespace ngcomp
         hofe -> SetHODivFree (ho_div_free);
 	hofe -> ComputeNDof();
       }
-      else // dim=3
+    else // dim=3
       {
 	HDivHighOrderFiniteElement<3> * hofe =
 	  dynamic_cast<HDivHighOrderFiniteElement<3>*> (fe);
@@ -756,44 +756,44 @@ namespace ngcomp
     dnums.SetSize(0); 
     
     if (!eliminate_internal) 
-    {
-      GetDofNrs (elnr, dnums);
-      return;
-    }
+      {
+        GetDofNrs (elnr, dnums);
+        return;
+      }
     
     if(discont) 
-    {
-      return; 
-    }
-    else 
-    {
-      Array<int> vnums, ednums, fnums;
-      int first,next;
-
-      if(order < 0)
-        throw Exception(" HDivHighOrderFESpace :: GetDofNrs() order < 0 ");
-
-      Array<int> fanums;
-      if(ma.GetDimension() == 3)
-        ma.GetElFaces (elnr, fanums);
-      else
-        ma.GetElEdges (elnr, fanums); 
-    
-//       Ravier-Thomas
-      for (int i = 0; i < fanums.Size(); i++)
-        dnums.Append (fanums[i]);
-
-//       facets
-      for(int i=0; i<fanums.Size(); i++)
       {
-        first = first_facet_dof[fanums[i]];
-        next = first_facet_dof[fanums[i]+1];
-        for(int j=first ; j<next; j++)
-          dnums.Append(j);
+        return; 
       }
+    else 
+      {
+        Array<int> vnums, ednums, fnums;
+        int first,next;
+
+        if(order < 0)
+          throw Exception(" HDivHighOrderFESpace :: GetDofNrs() order < 0 ");
+
+        Array<int> fanums;
+        if(ma.GetDimension() == 3)
+          ma.GetElFaces (elnr, fanums);
+        else
+          ma.GetElEdges (elnr, fanums); 
+    
+        //       Ravier-Thomas
+        for (int i = 0; i < fanums.Size(); i++)
+          dnums.Append (fanums[i]);
+
+        //       facets
+        for(int i=0; i<fanums.Size(); i++)
+          {
+            first = first_facet_dof[fanums[i]];
+            next = first_facet_dof[fanums[i]+1];
+            for(int j=first ; j<next; j++)
+              dnums.Append(j);
+          }
       
-      return;
-    }
+        return;
+      }
   }
 
   void HDivHighOrderFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
@@ -831,205 +831,205 @@ namespace ngcomp
 	  dnums.Append (j);
       }
     
-//     (*testout)<<"SElNr= "<<selnr<<endl;
-//     (*testout)<<"SDofNr= "<<dnums<<endl;
+    //     (*testout)<<"SElNr= "<<selnr<<endl;
+    //     (*testout)<<"SDofNr= "<<dnums<<endl;
   }
 
   /*** old version 
-  Table<int> * HDivHighOrderFESpace ::
-  CreateSmoothingBlocks (const Flags & precflags) const
-  {
-    int i, j, first;
-    int ncnt;
+       Table<int> * HDivHighOrderFESpace ::
+       CreateSmoothingBlocks (const Flags & precflags) const
+       {
+       int i, j, first;
+       int ncnt;
 
-    int ii;
-    int SmoothingType=1;
+       int ii;
+       int SmoothingType=1;
 
-    cout << "SmoothingType " << SmoothingType << endl;
+       cout << "SmoothingType " << SmoothingType << endl;
 
-    ArrayMem<int,12> vnums, ednums, fnums, orient;
+       ArrayMem<int,12> vnums, ednums, fnums, orient;
 
     
-//       for(i=0; i< nel ; i++)
-//       ma.GetElVertices (i, vnums);
+       //       for(i=0; i< nel ; i++)
+       //       ma.GetElVertices (i, vnums);
 
 
-//       for(i=0; i< nel; i++)
-//       ma.GetElEdges (i,vnums,orient);
+       //       for(i=0; i< nel; i++)
+       //       ma.GetElEdges (i,vnums,orient);
 
-//       int pn1,pn2;
-//       for(i=0; i< ned; i++)
-//       ma.GetEdgePNums (i,pn1,pn2);
+       //       int pn1,pn2;
+       //       for(i=0; i< ned; i++)
+       //       ma.GetEdgePNums (i,pn1,pn2);
 
-    switch(SmoothingType)
-      {
-      case 1:  // RT_0 - Faeod - Iaecd - block  (RT_0 - Eaeod - Iaecd - block for 2D)
-        if (ma.GetDimension() == 3)
-	  {
-	    ncnt = 1 + nfa;
-	    if (!eliminate_internal)
-	      ncnt += nel;
-	  }
-	else
-	  {
-	    ncnt = 1 + ned;
-	    if (!eliminate_internal)
-	      ncnt += nel;
-	  }
-	break;
-      case 2:  // RT_0 - ElFaces -I  -block ( - block for 2D)
-        if (ma.GetDimension() == 3)
-	  {
-	    ncnt = 1 + nel;
-	    if (!eliminate_internal)
-	      ncnt += nel;
-	  }
-	else
-	  {
-	    ncnt = 1 + ned;
-	    if (!eliminate_internal)
-	      ncnt += nel;
-	  }
-	break;
-      }
+       switch(SmoothingType)
+       {
+       case 1:  // RT_0 - Faeod - Iaecd - block  (RT_0 - Eaeod - Iaecd - block for 2D)
+       if (ma.GetDimension() == 3)
+       {
+       ncnt = 1 + nfa;
+       if (!eliminate_internal)
+       ncnt += nel;
+       }
+       else
+       {
+       ncnt = 1 + ned;
+       if (!eliminate_internal)
+       ncnt += nel;
+       }
+       break;
+       case 2:  // RT_0 - ElFaces -I  -block ( - block for 2D)
+       if (ma.GetDimension() == 3)
+       {
+       ncnt = 1 + nel;
+       if (!eliminate_internal)
+       ncnt += nel;
+       }
+       else
+       {
+       ncnt = 1 + ned;
+       if (!eliminate_internal)
+       ncnt += nel;
+       }
+       break;
+       }
 
       
-    Array<int> cnt(ncnt);
-    cnt = 0;
+       Array<int> cnt(ncnt);
+       cnt = 0;
 
-    cout << " ncnt " << ncnt << endl;
+       cout << " ncnt " << ncnt << endl;
 
  
 
-    switch(SmoothingType)
-      {
-      case 1:
-	// RT_0 - Faeod - Iaecd - block  (RT_0 - Eaeod - Iaecd - block for 2D)
-	if (ma.GetDimension() == 3)
-	  {
-	    int i, j, first;
-	    cnt[0] = nfa;
-	    for (i = 0; i < nfa; i++)
-	      cnt[i+1] = first_facet_dof[i+1]-first_facet_dof[i];
-	    //cnt[i+1] = 1+first_facet_dof[i+1]-first_facet_dof[i];
+       switch(SmoothingType)
+       {
+       case 1:
+       // RT_0 - Faeod - Iaecd - block  (RT_0 - Eaeod - Iaecd - block for 2D)
+       if (ma.GetDimension() == 3)
+       {
+       int i, j, first;
+       cnt[0] = nfa;
+       for (i = 0; i < nfa; i++)
+       cnt[i+1] = first_facet_dof[i+1]-first_facet_dof[i];
+       //cnt[i+1] = 1+first_facet_dof[i+1]-first_facet_dof[i];
 
 
-	    if (!eliminate_internal)
-	      for (i = 0; i < nel; i++)
-		cnt[nfa+1+i] = first_inner_dof[i+1]-first_inner_dof[i];
+       if (!eliminate_internal)
+       for (i = 0; i < nel; i++)
+       cnt[nfa+1+i] = first_inner_dof[i+1]-first_inner_dof[i];
 
 
-	    Table<int> & table = *new Table<int> (cnt);
-	    cnt = 0;
-	    for (i = 0; i < nfa; i++)
-	      table[0][i] = i; //RT_0
-	    for (i = 0; i < nfa; i++)
-	      {
-		//table[i+1][0] = i;
-		//cnt[i+1] = 1;
-		for (j = first_facet_dof[i]; j < first_facet_dof[i+1]; j++)
-		  table[i+1][cnt[i+1]++] = j;
-	      }
-	    if (!eliminate_internal)
-	      for (i = 0; i < nel; i++)
-		{
-		  for (j = first_inner_dof[i]; j < first_inner_dof[i+1]; j++)
-		    table[nfa+1+i][cnt[nfa+1+i]++] = j;
+       Table<int> & table = *new Table<int> (cnt);
+       cnt = 0;
+       for (i = 0; i < nfa; i++)
+       table[0][i] = i; //RT_0
+       for (i = 0; i < nfa; i++)
+       {
+       //table[i+1][0] = i;
+       //cnt[i+1] = 1;
+       for (j = first_facet_dof[i]; j < first_facet_dof[i+1]; j++)
+       table[i+1][cnt[i+1]++] = j;
+       }
+       if (!eliminate_internal)
+       for (i = 0; i < nel; i++)
+       {
+       for (j = first_inner_dof[i]; j < first_inner_dof[i+1]; j++)
+       table[nfa+1+i][cnt[nfa+1+i]++] = j;
 
-		}
-	    (*testout) << "smoothingblocks = " << endl << table << endl;
-	    return &table;
+       }
+       (*testout) << "smoothingblocks = " << endl << table << endl;
+       return &table;
 
-	  }
-	else
-	  {
-	    int i, j, first;
-	    cnt[0] = ned;
-	    for (i = 0; i < ned; i++)
-	      cnt[i+1] = 1+first_facet_dof[i+1]-first_facet_dof[i];
-	    if (!eliminate_internal)
-	      for (i = 0; i < nel; i++)
-		cnt[nfa+1+i] = first_inner_dof[i+1]-first_inner_dof[i];
+       }
+       else
+       {
+       int i, j, first;
+       cnt[0] = ned;
+       for (i = 0; i < ned; i++)
+       cnt[i+1] = 1+first_facet_dof[i+1]-first_facet_dof[i];
+       if (!eliminate_internal)
+       for (i = 0; i < nel; i++)
+       cnt[nfa+1+i] = first_inner_dof[i+1]-first_inner_dof[i];
 
-	    Table<int> & table = *new Table<int> (cnt);
-	    cnt = 0;
-	    for (i = 0; i < ned; i++)
-	      table[0][i] = i; //RT_0
-	    for (i = 0; i < ned; i++)
-	      {
-		table[i+1][0] = i;
-		cnt[i+1] = 1;
-		for (j = first_facet_dof[i]; j < first_facet_dof[i+1]; j++)
-		  table[i+1][cnt[i+1]++] = j;
-	      }
-	    if (!eliminate_internal)
-	      for (i = 0; i < nel; i++)
-		{
-		  for (j = first_inner_dof[i]; j < first_inner_dof[i+1]; j++)
-		    table[ned+1+i][cnt[ned+1+i]++] = j;
-		}
-	    (*testout) << "smoothingblocks = " << endl << table << endl;
-	    return &table;
-	  }
+       Table<int> & table = *new Table<int> (cnt);
+       cnt = 0;
+       for (i = 0; i < ned; i++)
+       table[0][i] = i; //RT_0
+       for (i = 0; i < ned; i++)
+       {
+       table[i+1][0] = i;
+       cnt[i+1] = 1;
+       for (j = first_facet_dof[i]; j < first_facet_dof[i+1]; j++)
+       table[i+1][cnt[i+1]++] = j;
+       }
+       if (!eliminate_internal)
+       for (i = 0; i < nel; i++)
+       {
+       for (j = first_inner_dof[i]; j < first_inner_dof[i+1]; j++)
+       table[ned+1+i][cnt[ned+1+i]++] = j;
+       }
+       (*testout) << "smoothingblocks = " << endl << table << endl;
+       return &table;
+       }
 
-	break;
-      case 2:
-	// // RT_0 - ElFaces -I  -block ( - block for 2D)
-	if (ma.GetDimension() == 3)
-	  {
-	    //cout << "cnt = " <<endl;
-	    int i, j, k, first;
-	    cnt[0] = nfa;
-	    for (i = 0; i < nel; i++)
-	      {
-		ma.GetElFaces(i,fnums,orient);
-		//cout << "fnums.Size = " <<fnums.Size()<<endl;
-		for (j = 0; j < fnums.Size(); j++)
-		  {
-		    // cout << "firstfacedof = " <<first_facet_dof[fnums[j]]<<endl;
-		    cnt[i+1] += first_facet_dof[fnums[j]+1]-first_facet_dof[fnums[j]];
-		  }
-	      }   
-	    //cout << "cnt = " <<endl;
-	    //cnt[i+1] = 1+first_facet_dof[i+1]-first_facet_dof[i];
+       break;
+       case 2:
+       // // RT_0 - ElFaces -I  -block ( - block for 2D)
+       if (ma.GetDimension() == 3)
+       {
+       //cout << "cnt = " <<endl;
+       int i, j, k, first;
+       cnt[0] = nfa;
+       for (i = 0; i < nel; i++)
+       {
+       ma.GetElFaces(i,fnums,orient);
+       //cout << "fnums.Size = " <<fnums.Size()<<endl;
+       for (j = 0; j < fnums.Size(); j++)
+       {
+       // cout << "firstfacedof = " <<first_facet_dof[fnums[j]]<<endl;
+       cnt[i+1] += first_facet_dof[fnums[j]+1]-first_facet_dof[fnums[j]];
+       }
+       }   
+       //cout << "cnt = " <<endl;
+       //cnt[i+1] = 1+first_facet_dof[i+1]-first_facet_dof[i];
 
-	    if (!eliminate_internal)
-	      for (i = 0; i < nel; i++)
-		cnt[nel+1+i] = first_inner_dof[i+1]-first_inner_dof[i];
+       if (!eliminate_internal)
+       for (i = 0; i < nel; i++)
+       cnt[nel+1+i] = first_inner_dof[i+1]-first_inner_dof[i];
 
-	    // cout << "cnt = " << endl << cnt << endl;
-	    Table<int> & table = *new Table<int> (cnt);
-	    cnt = 0;
-	    for (i = 0; i < nfa; i++)
-	      table[0][i] = i; //RT_0
-	    for (i = 0; i < nel; i++)
-	      {
-		ma.GetElFaces(i,fnums,orient);
-		for (j = 0; j < fnums.Size(); j++)
-		  for (k = first_facet_dof[fnums[j]]; k < first_facet_dof[fnums[j]+1]; k++)
-		    table[i+1][cnt[i+1]++] = k;
-	      }
-	    if (!eliminate_internal)
-	      for (i = 0; i < nel; i++)
-		{
-		  for (j = first_inner_dof[i]; j < first_inner_dof[i+1]; j++)
-		    table[nel+1+i][cnt[nel+1+i]++] = j;
+       // cout << "cnt = " << endl << cnt << endl;
+       Table<int> & table = *new Table<int> (cnt);
+       cnt = 0;
+       for (i = 0; i < nfa; i++)
+       table[0][i] = i; //RT_0
+       for (i = 0; i < nel; i++)
+       {
+       ma.GetElFaces(i,fnums,orient);
+       for (j = 0; j < fnums.Size(); j++)
+       for (k = first_facet_dof[fnums[j]]; k < first_facet_dof[fnums[j]+1]; k++)
+       table[i+1][cnt[i+1]++] = k;
+       }
+       if (!eliminate_internal)
+       for (i = 0; i < nel; i++)
+       {
+       for (j = first_inner_dof[i]; j < first_inner_dof[i+1]; j++)
+       table[nel+1+i][cnt[nel+1+i]++] = j;
 
-		}
-	    (*testout) << "smoothingblocks = " << endl << table << endl;
-	    return &table;
+       }
+       (*testout) << "smoothingblocks = " << endl << table << endl;
+       return &table;
 
-	  }
-	else
-	  {
-	    ;
-	  }
+       }
+       else
+       {
+       ;
+       }
 
-	break;
+       break;
 
-      }
-    return 0;
-  }
+       }
+       return 0;
+       }
   */
 
 
@@ -1040,31 +1040,31 @@ namespace ngcomp
   //  0) Jacobi
   //  1) 2d-Vertex / 3d-Edge blocks + F + I  --- default
 
-Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
-{
-  int first, ii;
-  int ncnt = 0;
-  // int ni = ma.GetNE(); //nel;
+  Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  {
+    int first, ii;
+    int ncnt = 0;
+    // int ni = ma.GetNE(); //nel;
   
-  int dim = ma.GetDimension();
-  
-  
-  int SmoothingType = int(precflags.GetNumFlag("blocktype",1)); 
+    int dim = ma.GetDimension();
   
   
-  Array<int> vnums,elnums; 
-  Array<int> orient; 
-  Array<int> ednums, fanums;
-  Array<int> edges(3);
+    int SmoothingType = int(precflags.GetNumFlag("blocktype",1)); 
   
-  int ned = ma.GetNEdges();
-  int nfa = ma.GetNFaces();
-  int nnv = ma.GetNV();
-  int nel = ma.GetNE();
   
-  cout << "SmoothingType " << SmoothingType << endl; 
-  switch(SmoothingType) 
-    {
+    Array<int> vnums,elnums; 
+    Array<int> orient; 
+    Array<int> ednums, fanums;
+    Array<int> edges(3);
+  
+    int ned = ma.GetNEdges();
+    int nfa = ma.GetNFaces();
+    int nnv = ma.GetNV();
+    int nel = ma.GetNE();
+  
+    cout << "SmoothingType " << SmoothingType << endl; 
+    switch(SmoothingType) 
+      {
       case 0: 
 	cout << "Local Preconditioner" << endl;
 	ncnt = ndof; //_used;
@@ -1099,31 +1099,31 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 	//      0 ..... jacobi
       case 0:   // diagonal
 	for(int i=0; i<ndof; i++ )
-	    cnt[i] = 1;
+          cnt[i] = 1;
 	break;
 
-//      1 ..... vertex/edge blocks -- E -- I
+        //      1 ..... vertex/edge blocks -- E -- I
       case 1:   
 	if( dim == 2 )
 	  {
 	    // vertex blocks
 	    for(int i=0; i<ned; i++)
 	      if(fine_facet[i])
-	      {
-		int pn1, pn2;
-		ma.GetEdgePNums ( i, pn1, pn2);
-		cnt[offset + pn1] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
-		cnt[offset + pn2] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
+                {
+                  int pn1, pn2;
+                  ma.GetEdgePNums ( i, pn1, pn2);
+                  cnt[offset + pn1] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
+                  cnt[offset + pn2] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
 		
-	      }
+                }
 
 	    offset += nnv;
 	    // edges
 	    for(int i=0; i<ned; i++)
 	      if( fine_facet[i] )
-	      {
-		cnt[offset + i] += first_facet_dof[i+1] - first_facet_dof[i];;
-	      }
+                {
+                  cnt[offset + i] += first_facet_dof[i+1] - first_facet_dof[i];;
+                }
 	    offset += ned;
 
 	    // cells
@@ -1169,12 +1169,12 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
       }
 
 
-  Table<int> & table = *new Table<int> (cnt); 
+    Table<int> & table = *new Table<int> (cnt); 
   
-  ii = 0; 
-  cnt = 0;
+    ii = 0; 
+    cnt = 0;
   
-  offset =0;
+    offset =0;
   
     switch(SmoothingType) 
       {
@@ -1274,7 +1274,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
 	  }
 	break;
 
-//      2 ..... div-free p, loAFW - edges - faces - diag
+        //      2 ..... div-free p, loAFW - edges - faces - diag
 
 	break;
       }
@@ -1283,7 +1283,7 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
     // cout << "sucess " << endl;
     return & table;
 
-}
+  }
 
 
 
@@ -1297,55 +1297,55 @@ Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precfl
   // 1) low order dofs  --  default
 
 
-Array<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
-{
-  Array<int> & clusters = *new Array<int> (ndof);
+  Array<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
+  {
+    Array<int> & clusters = *new Array<int> (ndof);
 
-  int clustertype = int(precflags.GetNumFlag("ds_cluster",1)); 
-  cout << " DirectSolverCluster Clustertype " << clustertype << endl; 
+    int clustertype = int(precflags.GetNumFlag("ds_cluster",1)); 
+    cout << " DirectSolverCluster Clustertype " << clustertype << endl; 
   
-  // int nv = ma.GetNV();
-  // int nd = GetNDof();
-  // int ne = ma.GetNE();
-  // int ned = ma.GetNEdges();
+    // int nv = ma.GetNV();
+    // int nd = GetNDof();
+    // int ne = ma.GetNE();
+    // int ned = ma.GetNEdges();
   
-  // int dim = ma.GetDimension();
+    // int dim = ma.GetDimension();
 
-  Array<int> vnums,elnums; 
-  Array<int> orient; 
+    Array<int> vnums,elnums; 
+    Array<int> orient; 
   
-  Array<int> edges(3);
+    Array<int> edges(3);
         
-  int nfa = ma.GetNFaces();
-  // int nnv = ma.GetNV();
-  // int nel = ma.GetNE();
+    int nfa = ma.GetNFaces();
+    // int nnv = ma.GetNV();
+    // int nel = ma.GetNE();
 
-  Array<int> ednums, fnums, pnums;
+    Array<int> ednums, fnums, pnums;
   
-  //  int i, j, k;
+    //  int i, j, k;
         
 
 
 
-  switch (clustertype)
-    {
-  // 0) none
-    case 0:
-      clusters = 0;
+    switch (clustertype)
+      {
+        // 0) none
+      case 0:
+        clusters = 0;
 
-  // 1) low-order dofs
-    case 1: 
-      clusters = 0;
+        // 1) low-order dofs
+      case 1: 
+        clusters = 0;
 
-      for(int i=0; i<nfa; i++ )
-	if( fine_facet[i] )
-	  clusters[i] = 1;
-      break;
+        for(int i=0; i<nfa; i++ )
+          if( fine_facet[i] )
+            clusters[i] = 1;
+        break;
 
-    }
-  return &clusters;
+      }
+    return &clusters;
 
-}
+  }
 
   /// 
   void HDivHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
@@ -1405,11 +1405,11 @@ Array<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & p
 
 #ifdef PARALLEL
 
-void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
+  void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
   {
-     // ******************************
-     // update exchange dofs 
-     // ******************************
+    // ******************************
+    // update exchange dofs 
+    // ******************************
     *testout << "HDivHO::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
     Array<int> nexdof(ntasks);
@@ -1451,8 +1451,8 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 
     paralleldofs->SetNExDof(nexdof);
 
-//     paralleldofs->localexchangedof = new Table<int> (nexdof);
-//     paralleldofs->distantexchangedof = new Table<int> (nexdof);
+    //     paralleldofs->localexchangedof = new Table<int> (nexdof);
+    //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
     Array<int> ** owndofs, ** distantdofs;
@@ -1476,31 +1476,31 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
     // *****************
 
 
-   for ( int face = 0; face < ma.GetNFaces(); face++ )
+    for ( int face = 0; face < ma.GetNFaces(); face++ )
       if ( parallelma->IsExchangeFace ( face ) )
-      {
-	Array<int> dnums;
-	GetFaceDofNrs ( face, dnums );
-	if ( dnums.Size() == 0 ) continue;
+        {
+          Array<int> dnums;
+          GetFaceDofNrs ( face, dnums );
+          if ( dnums.Size() == 0 ) continue;
 
- 	for ( int i=0; i<dnums.Size(); i++ )
- 	  (*(paralleldofs->sorted_exchangedof))[id][exdof++] = dnums[i];
+          for ( int i=0; i<dnums.Size(); i++ )
+            (*(paralleldofs->sorted_exchangedof))[id][exdof++] = dnums[i];
 
-	for ( int dest = 1; dest < ntasks; dest++ )
-	  {
-	    int distface = parallelma -> GetDistantFaceNum ( dest, face );
-	    if( distface < 0 ) continue;
+          for ( int dest = 1; dest < ntasks; dest++ )
+            {
+              int distface = parallelma -> GetDistantFaceNum ( dest, face );
+              if( distface < 0 ) continue;
 
-	    owndofs[dest]->Append ( distface );
-	    owndofs[dest]->Append (int(paralleldofs->IsGhostDof(dnums[0])) );
-	    for ( int i=0; i<dnums.Size(); i++)
-	      {
-		paralleldofs->SetExchangeDof ( dest, dnums[i] );
-		paralleldofs->SetExchangeDof ( dnums[i] );
-		owndofs[dest]->Append ( dnums[i] );
-	      }
-  	  }
-      }   
+              owndofs[dest]->Append ( distface );
+              owndofs[dest]->Append (int(paralleldofs->IsGhostDof(dnums[0])) );
+              for ( int i=0; i<dnums.Size(); i++)
+                {
+                  paralleldofs->SetExchangeDof ( dest, dnums[i] );
+                  paralleldofs->SetExchangeDof ( dnums[i] );
+                  owndofs[dest]->Append ( dnums[i] );
+                }
+            }
+        }   
 
 
     for ( int sender = 1; sender < ntasks; sender ++ )
@@ -1520,7 +1520,7 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 	  
       }
 
-     for( int dest=1; dest<ntasks; dest++) 
+    for( int dest=1; dest<ntasks; dest++) 
       {
 	if ( dest == id ) continue;
 	MPI_Wait(recvrequest+dest, &status);
@@ -1533,8 +1533,8 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 	    int isdistghost = (*distantdofs[dest])[ii++];
 	    Array<int> dnums;
 	    GetFaceDofNrs (fanum, dnums);
-// 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
-// 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
+            // 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
+            // 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
 	    (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
 	    if ( dest < id && !isdistghost )
 	      paralleldofs->ismasterdof.Clear ( dnums[0] ) ;
@@ -1552,8 +1552,8 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 	    ii++; 
 	    for ( int i=1; i<dnums.Size(); i++)
 	      {
-// 		(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
-// 		(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
+                // 		(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
+                // 		(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
 		(*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
 		if ( dest < id && !isdistghost )
 		  paralleldofs->ismasterdof.Clear ( dnums[i] ) ;
@@ -1630,8 +1630,8 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 	    GetInnerDofNrs (elnum, dnums);
 	    for ( int i=0; i<dnums.Size(); i++)
 	      {
-// 		(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
-// 		(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
+                // 		(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
+                // 		(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
 		(*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
 		if ( dest < id && !isdistghost )
 		  paralleldofs->ismasterdof.Clear ( dnums[i] ) ;
@@ -1640,37 +1640,37 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 	  }
       }
 
-     /*******************************
+    /*******************************
 
          update low order space
 
-     *****************************/
+    *****************************/
 
-     if ( order == 0 ) return;
+    if ( order == 0 ) return;
 
-     int ndof_lo = ma.GetNFaces();
+    int ndof_lo = ma.GetNFaces();
 
-     // all dofs are exchange dofs
-     nexdof = ndof_lo;
+    // all dofs are exchange dofs
+    nexdof = ndof_lo;
      
-     exdof = 0;
-     cnt_nexdof = 0;
+    exdof = 0;
+    cnt_nexdof = 0;
      
 
-     // *****************
-     // Parallel Face dofs
-     // *****************
+    // *****************
+    // Parallel Face dofs
+    // *****************
      
-     owndofs[0]->SetSize(1);
-     (*owndofs[0])[0] = ndof;
-     distantdofs[0]->SetSize(0);
+    owndofs[0]->SetSize(1);
+    (*owndofs[0])[0] = ndof;
+    distantdofs[0]->SetSize(0);
      
-     // find local and distant dof numbers for face exchange dofs
-     for ( int face = 0; face < ma.GetNFaces(); face++ )
-       {
-	 int dest = 0;
+    // find local and distant dof numbers for face exchange dofs
+    for ( int face = 0; face < ma.GetNFaces(); face++ )
+      {
+        int dest = 0;
 	 
-	 int distface = parallelma -> GetDistantFaceNum ( dest, face );
+        int distface = parallelma -> GetDistantFaceNum ( dest, face );
 	owndofs[0]->Append ( distface );
 	paralleldofs->SetExchangeDof ( dest, face );
 	owndofs[0]->Append ( face );
@@ -1687,8 +1687,8 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
     while ( ii < distantdofs[0]->Size() )
       {
 	int fanum = (*distantdofs[0])[ii++];
-// 	(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = fanum;
-// 	(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[0])[ii];
+        // 	(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = fanum;
+        // 	(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[0])[ii];
 	(*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = fanum;
 	ii++; cnt_nexdof[dest]++;
       }
@@ -1697,10 +1697,10 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
       QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
 
     for ( int i = 0; i < ntasks; i++ )
-       delete distantdofs[i], owndofs[i];
+      delete distantdofs[i], owndofs[i];
 
-     delete [] owndofs, distantdofs;
-     delete [] sendrequest, recvrequest;
+    delete [] owndofs, distantdofs;
+    delete [] sendrequest, recvrequest;
 
   }
 
@@ -1733,8 +1733,8 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 
     paralleldofs->SetNExDof(nexdof);
 
-//     paralleldofs->localexchangedof = new Table<int> (nexdof);
-//     paralleldofs->distantexchangedof = new Table<int> (nexdof);
+    //     paralleldofs->localexchangedof = new Table<int> (nexdof);
+    //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
 
@@ -1795,10 +1795,10 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 	while ( ii < distantdofs[dest]->Size() )
 	  {
 	    int fanum = (*distantdofs[dest])[ii++];
-// 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = fanum;
-// 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
+            // 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = fanum;
+            // 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
 	    (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = fanum;
-		ii++; cnt_nexdof[dest]++;
+            ii++; cnt_nexdof[dest]++;
 	     
 	  }
       }
@@ -1806,11 +1806,11 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
     for ( int dest = id+1; dest < ntasks; dest++ )
       QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
 
-     for ( int i = 0; i < ntasks; i++ )
-       delete distantdofs[i], owndofs[i];
+    for ( int i = 0; i < ntasks; i++ )
+      delete distantdofs[i], owndofs[i];
 
-     delete [] owndofs, distantdofs;
-     delete [] sendrequest, recvrequest;
+    delete [] owndofs, distantdofs;
+    delete [] sendrequest, recvrequest;
  
   }
 #endif // PARALLEL
@@ -1836,7 +1836,8 @@ void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
 
     Init init;
   }
-
+  
+  int link_it_hdivhofes;
 }
 
 

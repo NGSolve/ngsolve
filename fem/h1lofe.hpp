@@ -514,7 +514,7 @@ namespace ngfem
       Tx y = hx[1];
       Tx z = hx[2];
       
-      double lam3 = 1-x-y;
+      Tx lam3 = 1-x-y;
       
       shape[0] = x * (2*x-1) * (1-z);
       shape[1] = y * (2*y-1) * (1-z);

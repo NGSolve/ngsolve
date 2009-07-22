@@ -304,7 +304,7 @@ public:
 
     try
       {
-	const FEL & fel = dynamic_cast<const FEL&> (bfel);
+	const FEL & fel = static_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
         
 	// elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
@@ -395,13 +395,11 @@ public:
         Mat<DIM_DMAT,DIM_DMAT> dmat;
 	
         const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
-	
+
         FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
         FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
 
         eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
-
-
 
         int i = 0;
         for (int i1 = 0; i1 < ir.GetNIP() / BLOCK; i1++)
@@ -410,8 +408,6 @@ public:
               {
                 HeapReset hr(lh);
 		    
-                // SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-                // sip(ir[i], eltrans, lh);
                 SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
                   sip(ir[i], eltrans, pts[i], dxdxi[i]);
                 
@@ -428,6 +424,9 @@ public:
                       bbmat(i2*DIM_DMAT+k, l) = bmat(k,l);
                       bdbmat(i2*DIM_DMAT+k, l) = dbmat(k,l);
                     }
+                
+                // bbmat.VRange(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = bmat;
+                // bdbmat.VRange(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = dbmat;
               }
             
             

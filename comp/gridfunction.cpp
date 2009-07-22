@@ -513,16 +513,20 @@ namespace ngcomp
 	cache_elnr = elnr;
       }
 
-    void * hp = lh.GetPointer();
+
+    HeapReset hr(lh);
+
+    /* should be, but not yet tested
+    BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
+    FlatVector<double> flux(bfi->DimFlux(), lh);
+    bfi->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh);
+    */
 
     FlatVector<double> flux;
-
     if(boundary)
       fes.GetBoundaryEvaluator()->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh);
     else
       fes.GetEvaluator()->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh);
-
-    lh.CleanUp(hp);
 
     return flux(0); 
 
@@ -810,7 +814,6 @@ namespace ngcomp
 
     HeapReset hr(lh);
 
-    FlatVector<SCAL> flux;
 
     IntegrationPoint ip(lam1, lam2, 0, 0);
 
@@ -820,6 +823,7 @@ namespace ngcomp
 	SpecificIntegrationPoint<2,3> sip (ip, eltrans, lh);
 	for(int j = 0; j<bfi2d.Size(); j++)
 	  {
+            FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
 	    bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
 
 	    for (int i = 0; i < components; i++)
@@ -836,6 +840,7 @@ namespace ngcomp
 	SpecificIntegrationPoint<2,2> sip (ip, eltrans, lh);
 	for(int j = 0; j<bfi2d.Size(); j++)
 	  {
+            FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
 	    bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
 
 	    for (int i = 0; i < components; i++)
@@ -923,13 +928,13 @@ namespace ngcomp
 
 
 
-        void * hp = lh.GetPointer();
+        HeapReset hr(lh);
 
-        FlatVector<SCAL> flux;
 
         IntegrationPoint ip(xref[0], xref[1], 0, 0);
         if (bound)
           {
+            FlatVector<SCAL> flux;
             Vec<3> vx;
             Mat<3,2> mdxdxref;
             for (int i = 0; i < 3; i++)
@@ -938,7 +943,7 @@ namespace ngcomp
                 for (int j = 0; j < 2; j++)
                   mdxdxref(i,j) = dxdxref[2*i+j];
               }
-            SpecificIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref); // , lh);
+            SpecificIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref); 
             for (int i = 0; i < components; i++)
               values[i] = 0.0;
             for(int j = 0; j<bfi2d.Size(); j++)
@@ -958,19 +963,19 @@ namespace ngcomp
                 for (int j = 0; j < 2; j++)
                   mdxdxref(i,j) = dxdxref[2*i+j];
               }
-            SpecificIntegrationPoint<2,2> sip (ip, eltrans, vx, mdxdxref); // , lh);
+            SpecificIntegrationPoint<2,2> sip (ip, eltrans, vx, mdxdxref); 
 
             for (int i = 0; i < components; i++)
               values[i] = 0.0;
             for(int j = 0; j<bfi2d.Size(); j++)
               {
+                FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
                 bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
                 for (int i = 0; i < components; i++)
                   values[i] += ((double*)(void*)&flux(0))[i];
               }
           }
 
-        lh.CleanUp(hp);
         return 1; 
       }
     catch (Exception & e)
@@ -982,6 +987,152 @@ namespace ngcomp
       }
       
   }
+
+
+
+
+
+
+  template <class SCAL>
+  bool VisualizeGridFunction<SCAL> ::
+  GetMultiSurfValue (int elnr, int npts,
+                     const double * xref, int sxref,
+                     const double * x, int sx,
+                     const double * dxdxref, int sdxdxref,
+                     double * values, int svalues)
+  {
+    try
+      {
+        if (!bfi2d.Size()) return 0;
+        if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
+
+        bool bound = (ma.GetDimension() == 3);
+
+        const FESpace & fes = gf->GetFESpace();
+        int dim = fes.GetDimension();
+
+        
+        HeapReset hr(lh);
+        
+        if (bound)
+          {
+            ma.GetSurfaceElementTransformation (elnr, eltrans, lh);
+            fes.GetSDofNrs (elnr, dnums);
+            fel = &fes.GetSFE (elnr, lh);
+          }
+        else
+          {
+            ma.GetElementTransformation (elnr, eltrans, lh);
+            fes.GetDofNrs (elnr, dnums);
+            fel = &fes.GetFE (elnr, lh);
+          }
+        
+        elu.AssignMemory (dnums.Size() * dim, lh);
+        
+        if(gf->GetCacheBlockSize() == 1)
+          {
+            gf->GetElementVector (multidimcomponent, dnums, elu);
+          }
+        else
+          {
+            FlatVector<SCAL> elu2(dnums.Size()*dim*gf->GetCacheBlockSize(),lh);
+            gf->GetElementVector (0, dnums, elu2);
+            for(int i=0; i<elu.Size(); i++)
+              elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
+          }
+        
+        fes.TransformVec (elnr, bound, elu, TRANSFORM_SOL);
+
+        
+        if ( bound ? 
+             !fes.DefinedOnBoundary(eltrans.GetElementIndex()) : 
+             !fes.DefinedOn(eltrans.GetElementIndex()) ) return 0;
+
+
+
+
+        if (bound)
+          {
+            FlatVector<SCAL> flux;
+
+            for (int k = 0; k < npts; k++)
+              for (int i = 0; i < components; i++)
+                values[k*svalues+i] = 0.0;
+            
+            for (int k = 0; k < npts; k++)
+              {
+                HeapReset hr(lh);
+                
+                IntegrationPoint ip(xref[k*sxref], xref[k*sxref+1], 0, 0);
+                Vec<3> vx;
+                Mat<3,2> mdxdxref;
+
+                for (int i = 0; i < 3; i++)
+                  vx(i) = x[k*sx+i];
+                for (int i = 0; i < 3; i++)
+                  for (int j = 0; j < 2; j++)
+                    mdxdxref(i,j) = dxdxref[k*sdxdxref+2*i+j];
+
+                SpecificIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref); 
+                
+                for(int j = 0; j<bfi2d.Size(); j++)
+                  {
+                    bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
+                    for (int i = 0; i < components; i++)
+                      values[k*svalues+i] += ((double*)(void*)&flux(0))[i];
+                  }
+              }
+          }
+        else
+          {
+            for (int k = 0; k < npts; k++)
+              for (int i = 0; i < components; i++)
+                values[k*svalues+i] = 0.0;
+
+            for (int k = 0; k < npts; k++)
+              {
+                HeapReset hr(lh);
+                
+                IntegrationPoint ip(xref[k*sxref], xref[k*sxref+1], 0, 0);
+                Vec<2> vx;
+                Mat<2,2> mdxdxref;
+                for (int i = 0; i < 2; i++)
+                  {
+                    vx(i) = x[k*sx+i];
+                    for (int j = 0; j < 2; j++)
+                      mdxdxref(i,j) = dxdxref[k*sdxdxref+2*i+j];
+                  }
+
+                SpecificIntegrationPoint<2,2> sip (ip, eltrans, vx, mdxdxref); 
+
+                for(int j = 0; j<bfi2d.Size(); j++)
+                  {
+                    FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
+                    bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
+                    for (int i = 0; i < components; i++)
+                      values[k*svalues+i] += ((double*)(void*)&flux(0))[i];
+                  }
+              }
+          }
+
+        return 1; 
+      }
+    catch (Exception & e)
+      {
+        cout << "GetMultiSurfaceValue caught exception" << endl
+             << e.What();
+
+        return 0;
+      }
+  }
+
+
+
+
+
+
+
+
 
 
 

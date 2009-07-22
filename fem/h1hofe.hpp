@@ -25,22 +25,31 @@ namespace ngfem
     using ScalarFiniteElement<DIM>::eltype;
 
   public:
-  
-    void SetVertexNumbers (FlatArray<int> & avnums);
+    void SetVertexNumbers (const FlatArray<int> & avnums)
+    {
+      for (int i = 0; i < avnums.Size(); i++)
+        vnums[i] = avnums[i];
+    }
+
+    void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
+
     virtual void GetDofs (Array<Dof> & dofs) const;
 
-    void SetOrderCell (int oi);
-    void SetOrderCell (INT<3> oi);
+    void SetOrderCell (int oi)   { order_cell = INT<3> (oi,oi,oi); }
+    void SetOrderCell (INT<3> oi)  { order_cell = oi; }
+
     void SetOrderFace (FlatArray<int> & of);
     void SetOrderFace (FlatArray<INT<2> > & of);
+    void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
+
     void SetOrderEdge (FlatArray<int> & oe);
+    void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
+
 
     /// high order elements need extra configuration. update ndof and order
     virtual void ComputeNDof () = 0;
   };
 
-
-  template <ELEMENT_TYPE ET> class H1HighOrderFE;
 
 
   /**
@@ -84,6 +93,8 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const;
 
+    virtual double Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const;
+
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     FlatMatrixFixWidth<DIM> dshape) const;
 
@@ -96,6 +107,7 @@ namespace ngfem
 
 
 
+  template <ELEMENT_TYPE ET> class H1HighOrderFE;
 
 
   /**

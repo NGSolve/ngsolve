@@ -87,7 +87,7 @@ namespace ngcomp
     name="NedelecFESpace(hcurl)";
     DefineDefineFlag("hcurl");
     // parse standard flags
-    if(parseflags) ParseFlags(flags);
+    if(parseflags) CheckFlags(flags);
     
     if( flags.GetDefineFlag("hcurl"))
       cerr << "WARNING: -hcurl flag is deprecated: use -type=hcurl instead" << endl;
@@ -1231,7 +1231,7 @@ namespace ngcomp
     DefineNumListFlag("direcsolverdomains");
     DefineNumListFlag("directsolvermaterials");
   
-    if(parseflags) ParseFlags(flags);
+    if(parseflags) CheckFlags(flags);
   
     order = (int) flags.GetNumFlag("order",2);
     zorder = int(flags.GetNumFlag ("zorder", order));

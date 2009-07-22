@@ -1068,7 +1068,7 @@ void BlockSmoother :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
 
 
 
-
+#ifdef OLD
 
 
 PotentialSmoother :: 
@@ -1226,6 +1226,7 @@ void PotentialSmoother :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
     if (jac[i]) jac[i]->MemoryUsage (mu);
 }
 
+#endif
 
 
 

@@ -338,7 +338,7 @@ inline AutoDiff<D,SCAL> operator/ (double x, const AutoDiff<D,SCAL> & y)
 template<int D, typename SCAL>
 inline AutoDiff<D,SCAL> fabs (const AutoDiff<D,SCAL> & x)
 {
-  double abs = fabs (x.Value());
+  double abs = std::fabs (x.Value());
   AutoDiff<D,SCAL> res( abs );
   if (abs != 0.0)
     for (int i = 0; i < D; i++)
@@ -353,9 +353,9 @@ template<int D, typename SCAL>
 inline AutoDiff<D,SCAL> sqrt (const AutoDiff<D,SCAL> & x)
 {
   AutoDiff<D,SCAL> res;
-  res.Value() = sqrt(x.Value());
+  res.Value() = std::sqrt(x.Value());
   for (int j = 0; j < D; j++)
-    res.DValue(j) * 0.5 / res.Value() * x.DValue(j);
+    res.DValue(j) = 0.5 / res.Value() * x.DValue(j);
   return res;
 }
 

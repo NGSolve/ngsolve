@@ -870,9 +870,10 @@ namespace ngcomp
         // 	  const helmholtz_exp_cpp::HybridHelmholtzFESpace & hhspace = 
         // 	    dynamic_cast<const helmholtz_exp_cpp::HybridHelmholtzFESpace & > 
         // 	    (bfa -> GetFESpace() );
-	  
-        Table<int> * blocktable = bfa->GetFESpace().CreateSmoothingBlocks(smoothingtype);
-	  
+
+        Flags flags;
+        flags.SetFlag ("blocktype", smoothingtype);
+        Table<int> * blocktable = bfa->GetFESpace().CreateSmoothingBlocks(flags);
         pre = mat.  CreateBlockJacobiPrecond (*blocktable);
       }
     if (test) Test();

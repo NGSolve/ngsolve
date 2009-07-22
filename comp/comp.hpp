@@ -14,11 +14,8 @@
 #include <fem.hpp>
 #include <la.hpp>
 
-
-#include <nginterface.h>
-namespace netgen {
 #include <soldata.hpp>
-}
+
 
 namespace ngmg
 {
@@ -33,11 +30,6 @@ namespace ngsolve
   class PDE;
 }
 using ngsolve::PDE;
-
-namespace RS_AMG
-{
-  class OutBack;
-}
 
 
 #ifdef PARALLEL
@@ -62,8 +54,8 @@ namespace ngcomp
   class MeshAccess;
 }
 
+#include "comp_utils.hpp"
 #include "ngsobject.hpp"
-  // #include "statushandler.hpp"
 #include "meshaccess.hpp"
 #include "fespace.hpp"
 #include "hcurlhdivfes.hpp"
@@ -76,7 +68,7 @@ namespace ngcomp
 #include "preconditioner.hpp"
 #include "postproc.hpp"
 #include "hdivhofespace.hpp" 
-#include "hdivhybridhofespace.hpp" 
+// #include "hdivhybridhofespace.hpp" 
 #include "hcurlhofespace.hpp" 
 #include "facetfespace.hpp" 
 #include "vectorfacetfespace.hpp"

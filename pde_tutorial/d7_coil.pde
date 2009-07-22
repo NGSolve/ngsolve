@@ -13,9 +13,9 @@ define coefficient sigma
 1e-6, 1e-6,
 
 define coefficient cs1
-( x2), 0,
+( y ), 0,
 define coefficient cs2
-( -x1 ), 0,
+( -x ), 0,
 define coefficient cs3
 0, 0, 0
 

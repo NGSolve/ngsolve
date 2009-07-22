@@ -354,6 +354,7 @@ namespace ngmg
 
 
 
+#ifdef OLD
   /**
      Hiptmair's smoother for H(curl)
   */
@@ -398,6 +399,7 @@ namespace ngmg
 
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
   };
+#endif
 
 
 
