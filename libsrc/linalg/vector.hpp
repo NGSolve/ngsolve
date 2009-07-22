@@ -82,14 +82,16 @@ public:
 
 class Vector : public FlatVector
 {
-
+  bool ownmem;
 public:
   Vector () 
-  { s = 0; data = 0; }
+  { s = 0; data = 0; ownmem = false; }
   Vector (int as)
-  { s = as; data = new double[s]; }
+  { s = as; data = new double[s]; ownmem = true; }
+  Vector (int as, double * mem)
+  { s = as; data = mem; ownmem = false; }
   ~Vector ()
-  { delete [] data; }
+  { if (ownmem) delete [] data; }
 
   Vector & operator= (const FlatVector & v) 
   { memcpy (data, &v(0), s*sizeof(double)); return *this; }
@@ -105,12 +107,33 @@ public:
     if (s != as)
       {
 	s = as;
-	delete [] data;
+	if (ownmem) delete [] data;
 	data = new double [s];
+        ownmem = true;
       }
   }
 
 };
+
+template <int S>
+class VectorMem : public Vector
+{
+  double mem[S];
+public:
+  VectorMem () : Vector(S, &mem[0]) { ; }
+
+  VectorMem & operator= (const FlatVector & v) 
+  { memcpy (data, &v(0), S*sizeof(double)); return *this; }
+
+  VectorMem & operator= (double scal) 
+  {
+    for (int i = 0; i < S; i++) data[i] = scal; 
+    return *this;
+  }
+};
+
+
+
 
 
 inline double operator* (const FlatVector & v1, const FlatVector & v2)

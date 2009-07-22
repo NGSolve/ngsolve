@@ -23,7 +23,8 @@ namespace netgen
   void MinFunctionSum :: Grad (const Vector & x, Vector & g) const
   {
     g = 0.;
-    static Vector gi(3);
+    // static Vector gi(3);
+    VectorMem<3> gi;
     for(int i=0; i<functions.Size(); i++)
       {
 	functions[i]->Grad(x,gi);
@@ -120,8 +121,12 @@ namespace netgen
   double PointFunction1 :: 
   FuncDeriv (const Vector & x, const Vector & dir, double & deriv) const
   {
+    /*
     static Vector hx(3);
     static double eps = 1e-6;
+    */
+    VectorMem<3> hx;
+    const double eps = 1e-6;
 
     double dirlen = dir.L2Norm();
     if (dirlen < 1e-14)
@@ -304,7 +309,7 @@ namespace netgen
   public:
     Mesh::T_POINTS & points;
     const Mesh::T_VOLELEMENTS & elements;
-    TABLE<INDEX,PointIndex::BASE> elementsonpoint;
+    TABLE<int,PointIndex::BASE> elementsonpoint;
     PointIndex actpind;
     double h;
   
@@ -327,15 +332,10 @@ namespace netgen
 				  const Mesh::T_VOLELEMENTS & aelements)
     : points(apoints), elements(aelements), elementsonpoint(apoints.Size())
   {
-    INDEX i;
-    int j;
-  
-    for (i = 1; i <= elements.Size(); i++)
-      {
-	if (elements.Get(i).NP() == 4)
-	  for (j = 1; j <= elements.Get(i).NP(); j++)
-	    elementsonpoint.Add (elements.Get(i).PNum(j), i);  
-      }
+    for (int i = 0; i < elements.Size(); i++)
+      if (elements[i].NP() == 4)
+        for (int j = 0; j < elements[i].NP(); j++)
+          elementsonpoint.Add (elements[i][j], i);  
   }
 
   void PointFunction :: SetPointIndex (PointIndex aactpind)
@@ -345,11 +345,7 @@ namespace netgen
 
   double PointFunction :: PointFunctionValue (const Point<3> & pp) const
   {
-    int j;
-    INDEX eli;
-    const Element * el;
     double badness;
-    //  Array<const Point3d*> p(4);
     Point<3> hp;
 
     badness = 0;
@@ -357,14 +353,11 @@ namespace netgen
     hp = points[actpind];
     points[actpind] = Point<3> (pp);
 
-    for (j = 0; j < elementsonpoint[actpind].Size(); j++)
+    for (int j = 0; j < elementsonpoint[actpind].Size(); j++)
       {
-	eli = elementsonpoint[actpind][j];
-	el = &elements.Get(eli);
-	badness += CalcTetBadness (points[el->PNum(1)], 
-				   points[el->PNum(2)], 
-				   points[el->PNum(3)], 
-				   points[el->PNum(4)], -1);
+        const Element & el = elements[elementsonpoint[actpind][j]];
+	badness += CalcTetBadness (points[el[0]], points[el[1]], 
+				   points[el[2]], points[el[3]], -1);
       }
   
     points[actpind] = Point<3> (hp); 
@@ -375,28 +368,22 @@ namespace netgen
   double PointFunction :: PointFunctionValueGrad (const Point<3> & pp, Vec<3> & grad) const
   {
     double f = 0;
-    // f = PointFunctionValue (pp);
 
-    Point<3> hp;
+    Point<3> hp = points[actpind];
     Vec<3> vgradi, vgrad(0,0,0);
-
-    hp = points[actpind];
     points[actpind] = Point<3> (pp);
 
     for (int j = 0; j < elementsonpoint[actpind].Size(); j++)
       {
-	INDEX eli = elementsonpoint[actpind][j];
-	const Element & el = elements.Get(eli);
-
-	for (int k = 1; k <= 4; k++)
-	  if (el.PNum(k) == actpind)
+        const Element & el = elements[elementsonpoint[actpind][j]];
+	for (int k = 0; k < 4; k++)
+	  if (el[k] == actpind)
 	    {
-	      f += CalcTetBadnessGrad (points[el.PNum(1)], 
-                                       points[el.PNum(2)], 
-                                       points[el.PNum(3)], 
-                                       points[el.PNum(4)], -1, k, vgradi);
+	      f += CalcTetBadnessGrad (points[el[0]], points[el[1]], 
+                                       points[el[2]], points[el[3]], 
+                                       -1, k+1, vgradi);
 
-	      vgrad += vgradi;
+              vgrad += vgradi;
 	    }
       }
 
@@ -410,30 +397,17 @@ namespace netgen
   double PointFunction :: PointFunctionValueDeriv (const Point<3> & pp, const Vec<3> & dir,
 						   double & deriv) const
   {
-    double f;
-    // Point<3> hpp;
-
-    Vec<3> dirn (dir);
-    //double ldir = dir.Length();
-
-    int j, k;
-    INDEX eli;
-    //  double badness;
-    Point<3> hp;
     Vec<3> vgradi, vgrad(0,0,0);
 
-    //  badness = 0;
-
-    hp = points[actpind];
+    Point<3> hp = points[actpind];
     points[actpind] = pp;
-    f = 0;
+    double f = 0;
 
-    for (j = 0; j < elementsonpoint[actpind].Size(); j++)
+    for (int j = 0; j < elementsonpoint[actpind].Size(); j++)
       {
-	eli = elementsonpoint[actpind][j];
-	const Element & el = elements.Get(eli);
+        const Element & el = elements[elementsonpoint[actpind][j]];
 
-	for (k = 1; k <= 4; k++)
+	for (int k = 1; k <= 4; k++)
 	  if (el.PNum(k) == actpind)
 	    {
 	      f += CalcTetBadnessGrad (points[el.PNum(1)], 
@@ -458,7 +432,7 @@ namespace netgen
     for (int j = 0; j < elementsonpoint[actpind].Size(); j++)
       {
 	const Element & el = 
-	  elements.Get(elementsonpoint[actpind][j]);
+	  elements[elementsonpoint[actpind][j]];
       
 	for (int k = 1; k <= 4; k++)
 	  if (el.PNum(k) == actpind)
@@ -539,7 +513,7 @@ namespace netgen
 	pi2 = 0;
 	pi3 = 0;
 
-	const Element & el = elements.Get (elementsonpoint[actpind][i]);
+	const Element & el = elements[elementsonpoint[actpind][i]];
 	for (j = 1; j <= 4; j++)
 	  if (el.PNum(j) != actpind)
 	    {
@@ -826,12 +800,11 @@ namespace netgen
   {
     Vec3d n, vgrad;
     Point3d pp1;
-    double badness;
     static Vector freegrad(3);
 
     CalcNewPoint (x, pp1);
 
-    badness = pf.PointFunctionValueGrad (pp1, freegrad);
+    double badness = pf.PointFunctionValueGrad (pp1, freegrad);
     vgrad.X() = freegrad.Get(1);
     vgrad.Y() = freegrad.Get(2);
     vgrad.Z() = freegrad.Get(3);
