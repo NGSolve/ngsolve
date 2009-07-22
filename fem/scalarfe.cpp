@@ -92,8 +92,18 @@ namespace ngfem
 
 
   template<int D>
+  double ScalarFiniteElement<D> :: 
+  Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
+  {
+    VectorMem<20, double> shape(ndof);
+    CalcShape (ip, shape);
+    return InnerProduct (shape, x);
+  }  
+  
+
+  template<int D>
   void ScalarFiniteElement<D> :: CalcDDShape (const IntegrationPoint & ip, 
-					  FlatMatrix<> ddshape) const
+                                              FlatMatrix<> ddshape) const
   {
     int nd = GetNDof();
     int sdim = SpatialDim();
@@ -205,11 +215,12 @@ namespace ngfem
 
   void FE_Tet1 :: GetDofs (Array<Dof> & dofs) const
   {
+    /*
     Dof da[] = { Dof (Node (NT_VERTEX, 0), 0),
 		 Dof (Node (NT_VERTEX, 1), 0),
 		 Dof (Node (NT_VERTEX, 2), 0),
 		 Dof (Node (NT_VERTEX, 3), 0) };
-		 
+    */	 
 
     dofs.SetSize (0);
     for (int i = 0; i < 4; i++)

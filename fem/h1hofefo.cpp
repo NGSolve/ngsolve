@@ -6,16 +6,12 @@
 
  
 #include <fem.hpp>
-#include <h1lofe.hpp>
+#include <h1hofefo.hpp>
 
 
 namespace ngfem
 {
-  #include <h1hofefo.hpp>
 
-
-  using namespace ngfem;
-    
   
 
 
@@ -180,54 +176,16 @@ namespace ngfem
   }
 
 
-
-
-  template <int DIM>
-  class EvaluateShapeElement
-  {
-    const double * coefs;
-    double * sum;
-  public:
-    EvaluateShapeElement (const double * acoefs, double * asum)
-      : coefs(acoefs), sum(asum) { ; }
-
-    void operator= (const double & shape) 
-    {
-      *sum += *coefs * shape;
-    }
-  };
-
-  template <int DIM>
-  class EvaluateShape
-  {
-    const double * coefs;
-    double * sum;
-  public:
-    EvaluateShape (FlatVector<> acoefs, double * asum)
-      : coefs(&acoefs[0]), sum(asum) { ; }
-
-    EvaluateShape (const double * acoefs, double * asum)
-      : coefs(acoefs), sum(asum) { ; }
-
-    EvaluateShapeElement<DIM> operator[] (int i) const
-    { return EvaluateShapeElement<DIM> (coefs+i, sum); }
-
-    const EvaluateShape Addr (int i) const
-    { return EvaluateShape (coefs+i, sum); } 
-
-  };
-
-
   template <ELEMENT_TYPE ET, int ORDER>
   double T_H1HighOrderFiniteElementFO<ET, ORDER> :: 
   Evaluate (const IntegrationPoint & ip, 
-            FlatVector<double> x, LocalHeap & lh) const
+            FlatVector<double> x) const
   {
     double sum = 0.0;
     double pt[DIM];
     for (int i = 0; i < DIM; i++) pt[i] = ip(i);
 
-    EvaluateShape<DIM> ds(x, &sum);
+    EvaluateShape ds(x, &sum);
     static_cast<const H1HighOrderFEFO<ET,ORDER>*> (this) -> T_CalcShape (pt, ds);
     return sum;
   }

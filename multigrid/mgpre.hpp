@@ -58,7 +58,7 @@ namespace ngmg
     /// creates a new smoother for each update
     bool update_always; 
     /// for robust prolongation
-    Array<BaseMatrix*> prol_projection;
+    // Array<BaseMatrix*> prol_projection;
   public:
     ///
     MultigridPreconditioner (const MeshAccess & ama,

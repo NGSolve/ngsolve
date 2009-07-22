@@ -34,7 +34,7 @@ public:
   HCurlHighOrderFiniteElement (ELEMENT_TYPE aeltype);
   HCurlHighOrderFiniteElement () { discontinuous = false; }
 
-  virtual void SetVertexNumbers (FlatArray<int> & avnums, LocalHeap & lh);
+  void SetVertexNumbers (FlatArray<int> & avnums);
   void SetOrderCell (int oi);
   void SetOrderCell (INT<3> oi);
   void SetOrderFace (FlatArray<int> & of);

@@ -19,7 +19,6 @@ namespace ngfem
   {
   public:
     int vnums[8];
-    using ScalarFiniteElement<DIM>::eltype;
 
   public:
     void SetVertexNumbers (FlatArray<int> & avnums)
@@ -27,6 +26,8 @@ namespace ngfem
       for (int i = 0; i < avnums.Size(); i++)
 	vnums[i] = avnums[i];
     }
+
+    void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
   };
 
 
@@ -73,7 +74,7 @@ namespace ngfem
 				   FlatMatrixFixWidth<DIM> dshape) const;
 
     virtual double Evaluate (const IntegrationPoint & ip, 
-			     FlatVector<double> x, LocalHeap & lh) const;
+			     FlatVector<double> x) const;
   };
 
 
@@ -100,10 +101,9 @@ namespace ngfem
   template <int ORDER>
   class H1HighOrderFEFO<ET_TRIG, ORDER> : public T_H1HighOrderFiniteElementFO<ET_TRIG, ORDER>
   {
-    // using ScalarFiniteElement<2>::ndof;
-    // using H1HighOrderFiniteElementFO<2>::vnums; 
-    T_H1HighOrderFiniteElementFO<ET_TRIG, ORDER>::ndof;
-    T_H1HighOrderFiniteElementFO<ET_TRIG, ORDER>::vnums;
+    using T_H1HighOrderFiniteElementFO<ET_TRIG, ORDER>::ndof;
+    using T_H1HighOrderFiniteElementFO<ET_TRIG, ORDER>::vnums; 
+
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
     typedef TrigShapesInnerLegendre T_TRIGSHAPES;
 

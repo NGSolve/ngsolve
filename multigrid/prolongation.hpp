@@ -69,65 +69,7 @@ namespace ngmg
 
 
     /// 
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
-    {
-      int i, nc, nf;
-      int parents[2];
-      Array< int > indicesPerRow( space.GetNDof() );
-
-      if ( &( space.LowOrderFESpace() ) )
-	{
-	  nf = space.LowOrderFESpace().GetNDofLevel( finelevel );
-	  nc = space.LowOrderFESpace().GetNDofLevel( finelevel-1 );
-	}
-      else
-	{
-	  nf = space.GetNDofLevel( finelevel );
-	  nc = space.GetNDofLevel( finelevel-1 );
-	}
-    
-      // count entries per row
-      indicesPerRow = 0;
-      for( i=0; i<nc; i++ )
-	indicesPerRow[ i ]++;
-      for( i=nc; i<nf; i++ )
-	{
-	  ma.GetParentNodes( i, parents );
-	  if ( parents[ 0 ] != -1 )
-	    indicesPerRow[ i ]++;
-	  if ( parents[ 1 ] != -1 )
-	    indicesPerRow[ i ]++;
-	}
-
-      // create matrix graph
-      MatrixGraph mg( indicesPerRow );
-      for( i=0; i<nc; i++ )
-	mg.CreatePosition( i, i );
-      for( i=nc; i<nf; i++ )
-	{
-	  ma.GetParentNodes( i, parents );
-	  if ( parents[ 0 ] != -1 )
-	    mg.CreatePosition( i, parents[ 0 ] ); 
-	  if ( parents[ 1 ] != -1 )
-	    mg.CreatePosition( i, parents[ 1 ] ); 
-	}
-
-      // write prolongation matrix
-      SparseMatrix< double >* prol = new SparseMatrix< double >( mg, 1 );
-      for( i=0; i<nc; i++ )
-	(*prol)( i, i ) = 1;
-      for( i=nc; i<nf; i++ )
-	{
-	  ma.GetParentNodes( i, parents );
-	  if ( parents[ 0 ] != -1 )
-	    (*prol)( i, parents[ 0 ] ) = 0.5; 
-	  if ( parents[ 1 ] != -1 )
-	    (*prol)( i, parents[ 1 ] ) = 0.5; 
-	}
-
-      return prol;
-    }
-
+    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const;
 
 
     ///

@@ -46,7 +46,7 @@ namespace ngcomp
     DefineDefineFlag("fast"); 
     DefineDefineFlag ("discontinuous");
     
-    if(parseflags) ParseFlags(flags);
+    if(parseflags) CheckFlags(flags);
     
     // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
@@ -455,7 +455,9 @@ namespace ngcomp
        } */ 
 
     UpdateDofTables(); 
-    
+
+    if (timing) Timing();    
+
 #ifdef PARALLEL
     UpdateParallelDofs();
 #endif
@@ -637,73 +639,23 @@ namespace ngcomp
 	
 	
       } 
-
-   
-
-
   }
+
   
   const FiniteElement & HCurlHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     FiniteElement * fe = 0;
     
-    /*
-    if (fast_pfem)
+    switch (ma.GetElType(elnr))
       {
-        switch (ma.GetElType(elnr))
-          {
-          case ET_TET:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderTetTP))) HCurlHighOrderTetTP (order);
-            break;
-          case ET_PYRAMID:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderPyr<IntegratedLegendreMonomialExt>))) HCurlHighOrderPyr<IntegratedLegendreMonomialExt> (order);
-            //fe = pyramid; 
-            break; 
-          case ET_PRISM:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderPrismTP))) HCurlHighOrderPrismTP (order);                     
-            break;
-          case ET_TRIG:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderTrig<IntegratedLegendreMonomialExt>))) HCurlHighOrderTrig<IntegratedLegendreMonomialExt> (order);
-            //fe = trig; 
-            break;
-          case ET_QUAD:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderQuad<IntegratedLegendreMonomialExt>))) HCurlHighOrderQuad<IntegratedLegendreMonomialExt> (order);
-            //fe = quad; 
-            break;
-          case ET_HEX: 
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderHex<IntegratedLegendreMonomialExt>))) HCurlHighOrderHex<IntegratedLegendreMonomialExt> (order);
-            //fe = hex; 
-            break; 
-          default:
-            fe = 0;
-          }
-      }
-    else
-    */
-      {
-        switch (ma.GetElType(elnr))
-          {
-          case ET_TET:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_TET>))) HCurlHighOrderFE<ET_TET> ();
-            break;
-          case ET_PYRAMID:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_PYRAMID>))) HCurlHighOrderFE<ET_PYRAMID> ();
-            break;
-          case ET_PRISM:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_PRISM>))) HCurlHighOrderFE<ET_PRISM> ();
-            break;
-          case ET_TRIG:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_TRIG>))) HCurlHighOrderFE<ET_TRIG> ();
-            break;
-          case ET_QUAD:
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_QUAD>))) HCurlHighOrderFE<ET_QUAD> ();
-            break;
-          case ET_HEX: 
-            fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_HEX>))) HCurlHighOrderFE<ET_HEX> ();
-            break; 
-          default:
-            fe = 0;
-          }
+      case ET_TET:     fe = new (lh) HCurlHighOrderFE<ET_TET> (); break;
+      case ET_PYRAMID: fe = new (lh) HCurlHighOrderFE<ET_PYRAMID> (); break;
+      case ET_PRISM:   fe = new (lh) HCurlHighOrderFE<ET_PRISM> (); break;
+      case ET_TRIG:    fe = new (lh) HCurlHighOrderFE<ET_TRIG> (); break;
+      case ET_QUAD:    fe = new (lh) HCurlHighOrderFE<ET_QUAD> (); break;
+      case ET_HEX:     fe = new (lh) HCurlHighOrderFE<ET_HEX> (); break; 
+      default:
+        fe = 0;
       }
     
     if (!fe)
@@ -716,9 +668,8 @@ namespace ngcomp
 	throw Exception (str.str());
       }
 
-    ArrayMem<int,12> vnums; // calls GetElPNums -> max 12 for PRISM12
+    ArrayMem<int,12> vnums;
     ma.GetElVertices(elnr, vnums);
-    // cout << " GetFE : vnums " << elnr << " \t " << vnums << endl;  
 
     if(ma.GetDimension() == 2) 
       {	
@@ -744,7 +695,6 @@ namespace ngcomp
         FlatArray<INT<2> > of(1, &p);
         hofe -> SetOrderFace (of);
 
-
 	hofe -> SetUsegradEdge (ug_edge); 
 	hofe -> SetUsegradCell (usegrad_cell[elnr]);  // old style
         FlatArray<int> augf(1,&usegrad_cell[elnr]);
@@ -758,7 +708,7 @@ namespace ngcomp
 	  for ( int i = 0; i < vnums.Size(); i++ )
 	    vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
 #endif
-	hofe -> SetVertexNumbers (vnums, lh);
+	hofe -> SetVertexNumbers (vnums);
       }   
     else if (ma.GetDimension() == 3) 
       {
@@ -788,7 +738,6 @@ namespace ngcomp
 	    ug_face[j] = usegrad_face[fanums[j]];
 	  }
 
-       	// hofe -> SetAugmented(augmented); 
 	hofe -> SetOrderEdge (ord_edge);
 	hofe -> SetOrderFace (ord_face);
 	hofe -> SetOrderCell (order_inner[elnr]);
@@ -797,15 +746,6 @@ namespace ngcomp
 	hofe -> SetUsegradFace (ug_face); 
 	hofe -> SetUsegradCell (usegrad_cell[elnr]); 
 
-	//	hofe -> SetAugmented(augmented); 
-
-	/*	ArrayMem<int, 8> order_vert;
-	  for (int j = 0; j < vnums.Size(); j++)
-	  order_vert[j] = order_avertex[vnums[j]];
-	  hofe -> SetOrderVertex (order_vert);
-	*/
-	
-
 	hofe -> ComputeNDof();
 
 #ifdef PARALLEL
@@ -813,7 +753,7 @@ namespace ngcomp
 	for ( int i = 0; i < vnums.Size(); i++ )
 	  vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
 #endif
-	hofe -> SetVertexNumbers (vnums, lh);
+	hofe -> SetVertexNumbers (vnums);
 
 	hofe -> SetDiscontinuous(discontinuous);
       }
@@ -829,15 +769,9 @@ namespace ngcomp
       {
 	switch (ma.GetSElType(selnr))
 	  {
-	  case ET_SEGM: 
-	    fe = new (lh.Alloc (sizeof(FE_SegmDummy))) FE_SegmDummy ; 
-	    break; 
-	  case ET_TRIG:
-	    fe = new (lh.Alloc (sizeof(FE_TrigDummy))) FE_TrigDummy ; 
-	    break;
-	  case ET_QUAD:
-	    fe = new (lh.Alloc (sizeof(FE_QuadDummy))) FE_QuadDummy ; 
-	    break;
+	  case ET_SEGM: fe = new (lh) FE_SegmDummy; break; 
+	  case ET_TRIG: fe = new (lh) FE_TrigDummy; break;
+	  case ET_QUAD: fe = new (lh) FE_QuadDummy; break;
 	  default:
 	    fe = 0;
 	  }
@@ -846,15 +780,9 @@ namespace ngcomp
 
     switch (ma.GetSElType(selnr))
       {
-      case ET_SEGM: 
-        fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_SEGM>))) HCurlHighOrderFE<ET_SEGM> ();
-	break; 
-      case ET_TRIG:
-        fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_TRIG>))) HCurlHighOrderFE<ET_TRIG> ();
-	break;
-      case ET_QUAD:
-        fe = new (lh.Alloc (sizeof(HCurlHighOrderFE<ET_QUAD>))) HCurlHighOrderFE<ET_QUAD> ();
-	break;
+      case ET_SEGM: fe = new (lh) HCurlHighOrderFE<ET_SEGM> (); break; 
+      case ET_TRIG: fe = new (lh) HCurlHighOrderFE<ET_TRIG> (); break;
+      case ET_QUAD: fe = new (lh) HCurlHighOrderFE<ET_QUAD> (); break;
       default:
 	fe = 0;
       }
@@ -873,8 +801,6 @@ namespace ngcomp
     ArrayMem<int, 4> ednums, ord_edge, ug_edge; 
        
     ma.GetSElVertices(selnr, vnums);
-    // cout << " GetSFE : vnums " << selnr << " \t " << vnums << endl;  
-
 
     if(ma.GetSElType(selnr) == ET_SEGM)
       {
@@ -886,8 +812,7 @@ namespace ngcomp
 	  for ( int i = 0; i < vnums.Size(); i++ )
 	    vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
 #endif
-	hofe -> SetVertexNumbers (vnums, lh);
-	// hofe -> SetAugmented(augmented); 
+	hofe -> SetVertexNumbers (vnums);
 	ma.GetSElEdges(selnr, ednums);
 	hofe -> SetOrderCell (order_edge[ednums[0]]);  // old style
         FlatArray<int> aoe(1, &order_edge[ednums[0]]);
@@ -919,7 +844,7 @@ namespace ngcomp
 	for ( int i = 0; i < vnums.Size(); i++ )
 	  vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
 #endif
-	hofe -> SetVertexNumbers (vnums, lh);
+	hofe -> SetVertexNumbers (vnums);
 	hofe -> SetOrderEdge (ord_edge);
 
         INT<2> p = order_face[ma.GetSElFace(selnr)];
@@ -937,79 +862,38 @@ namespace ngcomp
     
     return *fe;
   }
- 
 
 
   int HCurlHighOrderFESpace :: GetNDof () const
   {
-
     return ndof;
   }
 
   void HCurlHighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    // Save phase-functions the way 
+    // ordering of shape functions
     // (1*e1),.. (1*e_ne)  
     // (p_t)*tang_e1, ... p_t*tang_ne
     // p_n * el1, p_i * el1, ... , p_n * nel_n , p_i *el_nel 
 
-    Array<int> vnums, ednums, fnums;
-    int i, j;
-    int first,next; 
-
-    ma.GetElEdges (elnr, ednums);
-    if(ma.GetDimension() == 3)
-      ma.GetElFaces (elnr, fnums); 
-    else 
-      fnums.SetSize(0); 
-   
+    Ng_Element ngel = ma.GetElement (elnr);
     dnums.SetSize(0);
      
-    if(order < 0) 
-      throw Exception(" HCurlHighOrderFESpace :: GetDofNrs() order < 0 "); 
-
-    if ( !discontinuous )
       //Nedelec0
-      for (i = 0; i < ednums.Size(); i++) 
-	dnums.Append (ednums[i]);
+    if ( !discontinuous )
+      for (int i = 0; i < ngel.edges.Size(); i++) 
+	dnums.Append (ngel.edges[i]);
         
-    // augmented 
-    if(augmented==1) 
-      {
-
-	ma.GetElVertices (elnr, vnums);
-	
-	for(i=0;i< vnums.Size();i++) 
-	  dnums.Append(ned+vnums[i]); 
-      }
-
     //edges
-    for (i = 0; i < ednums.Size(); i++) 
-      {
-	first = first_edge_dof[ednums[i]];
-	next = first_edge_dof[ednums[i]+1]; 
-	
-
-
-	for (j = first; j <next; j++)
-	  dnums.Append (j);
-      }
+    for (int i = 0; i < ngel.edges.Size(); i++) 
+      dnums += GetEdgeDofs(ngel.edges[i]); 
        
     // faces 
-    for(i=0; i<fnums.Size(); i++)     
-      { 
-	first = first_face_dof[fnums[i]]; 
-	next = first_face_dof[fnums[i]+1];
-	for(j=first ; j<next; j++) 
-	  dnums.Append(j); 
-      } 
+    if (ma.GetDimension() == 3)
+      for(int i = 0; i < ngel.faces.Size(); i++)     
+        dnums += GetFaceDofs(ngel.faces[i]);  
         
-    //inner 
-    first = first_inner_dof[elnr];
-    next = first_inner_dof[elnr+1]; 
-
-    for(j=first; j<next; j++) 
-      dnums.Append(j);
+    dnums += GetElementDofs (elnr); 
     
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
@@ -1024,45 +908,24 @@ namespace ngcomp
 	return;
       }
 
-    Array<int> vnums, ednums, fnums;
-    int i, j;
-    int first,next; 
 
-    ma.GetElEdges (elnr, ednums);
-    if(ma.GetDimension() == 3)
-      ma.GetElFaces (elnr, fnums); 
-    else 
-      fnums.SetSize(0); 
+    Ng_Element ngel = ma.GetElement (elnr);
     dnums.SetSize(0);
-
- 
-    if(order < 0) 
-      throw Exception(" HCurlHighOrderFESpace :: GetDofNrs() order < 0 "); 
-
-    if ( !discontinuous )
+     
       //Nedelec0
-      for (i = 0; i < ednums.Size(); i++) 
-	dnums.Append (ednums[i]);
-    
+    if ( !discontinuous )
+      for (int i = 0; i < ngel.edges.Size(); i++) 
+	dnums.Append (ngel.edges[i]);
+        
     //edges
-    for (i = 0; i < ednums.Size(); i++) 
-      {
-	first = first_edge_dof[ednums[i]];
-	next = first_edge_dof[ednums[i]+1]; 
-	
-	for (j = first; j <next; j++)
-	  dnums.Append (j);
-      }
+    for (int i = 0; i < ngel.edges.Size(); i++) 
+      dnums += GetEdgeDofs(ngel.edges[i]); 
+       
     // faces 
-
-    for(i=0; i<fnums.Size(); i++)     
-      { 
-	first = first_face_dof[fnums[i]]; 
-	next = first_face_dof[fnums[i]+1];
-	for(j=first ; j<next; j++) 
-	  dnums.Append(j); 
-      } 
-
+    if (ma.GetDimension() == 3)
+      for(int i = 0; i < ngel.faces.Size(); i++)     
+        dnums += GetFaceDofs(ngel.faces[i]);  
+    
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
   }

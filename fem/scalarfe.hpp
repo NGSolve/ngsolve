@@ -28,8 +28,6 @@ namespace ngfem
       : FiniteElement (D, aeltype, andof, aorder) { ; }
     ///
     virtual ~ScalarFiniteElement () { ; }
-    ///
-    // virtual const IntegrationRule & NodalIntegrationRule() const;
 
     /**
        returns shape functions in point ip.
@@ -67,13 +65,8 @@ namespace ngfem
     /// compute dshape, matrix: ndof x spacedim
     virtual void CalcMappedDShape (const SpecificIntegrationPoint<D,D> & sip, 
 				   FlatMatrixFixWidth<D> dshape) const;
-
-    virtual double
-    Evaluate (const IntegrationPoint & ip, 
-	      FlatVector<double> x, LocalHeap & lh) const
-    {
-      return InnerProduct (GetShape(ip, lh), x);
-    }  
+    /// evaluate \sum x_i shape_i
+    virtual double Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const;
 
 
     /**
@@ -161,6 +154,37 @@ namespace ngfem
   
 
 
+  class EvaluateShapeElement
+  {
+    double coef;
+    double * sum;
+  public:
+    EvaluateShapeElement (double acoef, double * asum)
+      : coef(acoef), sum(asum) { ; }
+
+    void operator= (double val) 
+    {
+      *sum += coef * val;
+    }
+  };
+
+  class EvaluateShape
+  {
+    const double * coefs;
+    double * sum;
+  public:
+    EvaluateShape (FlatVector<> acoefs, double * asum)
+      : coefs(&acoefs(0)), sum(asum) { ; }
+    
+    EvaluateShape (const double * acoefs, double * asum)
+      : coefs(acoefs), sum(asum) { ; }
+
+    EvaluateShapeElement operator[] (int i) const
+    { return EvaluateShapeElement (coefs[i], sum); }
+
+    const EvaluateShape Addr (int i) const
+    { return EvaluateShape (coefs+i, sum); } 
+  };
 
 
 
@@ -189,17 +213,17 @@ namespace ngfem
   public:
 
     /*
-  const FlatVec<NDOF> & GetShape (const IntegrationPoint & ip,
-                                  LocalHeap & lh) const
-    {
+      const FlatVec<NDOF> & GetShape (const IntegrationPoint & ip,
+      LocalHeap & lh) const
+      {
       ;
-    }
+      }
 
-    const Mat<NDOF,DIM> & GetDShape (const IntegrationPoint & ip,
-				     LocalHeap & lh) const
-    {
+      const Mat<NDOF,DIM> & GetDShape (const IntegrationPoint & ip,
+      LocalHeap & lh) const
+      {
       ;
-    }
+      }
     */
 
 
@@ -210,6 +234,20 @@ namespace ngfem
       for (int i = 0; i < DIM; i++) pt[i] = ip(i);
       FEL::T_CalcShape (pt, shape); 
     }
+
+    virtual double
+    Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
+    {
+      double pt[DIM];
+      for (int i = 0; i < DIM; i++) pt[i] = ip(i);
+
+      double sum = 0.0;
+      EvaluateShape eval(x, &sum); 
+
+      FEL::T_CalcShape (pt, eval); 
+      return sum;
+    }  
+
 
     static void CalcShapeStat (const IntegrationPoint & ip, 
                                FlatVector<> shape)

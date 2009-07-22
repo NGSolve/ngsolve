@@ -42,12 +42,11 @@ namespace ngcomp
     /// relative order to mesh-order
     int rel_order; 
     bool var_order; 
-  
+    bool fixed_order;
 
     Array<int> order_edge;
     Array<INT<2> > order_face;
     Array<INT<3> > order_inner;
-    Array<int> order_avertex; 
     Array<bool> fine_edge; 
     Array<bool> fine_face; 
 
@@ -63,7 +62,7 @@ namespace ngcomp
   
     Array<int> ndlevel;
 
-    int augmented;
+    // int augmented;
 
     bool level_adapted_order; 
 
@@ -71,10 +70,6 @@ namespace ngcomp
     int loworderindex; 
 
     bool minext, optext;
-    bool fast_pfem;
-    bool fast_pfem_sz;
-    bool plate;  // thin plate: prism trig dofs are internal
-    int testf1,testf2,testi1,testi2,testi3;
 
     Array<INT<2> > defined_on_one_side_of_bounding_curve;
 
@@ -82,7 +77,7 @@ namespace ngcomp
 
   public:
 
-    H1HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
+    H1HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool checkflags=false);
     ///
     virtual ~H1HighOrderFESpace ();
 
@@ -144,7 +139,7 @@ namespace ngcomp
     void SetElementOrder (int elnr, int ox, int oy, int oz) 
     { order_inner[elnr] = INT<3> (ox, oy, oz); }
 
-    int GetAugmented() const { return augmented; }
+    // int GetAugmented() const { return augmented; }
 
     /// get relative (to mesh) order of finite elements
     virtual int GetRelOrder() const { return rel_order; }
@@ -154,11 +149,28 @@ namespace ngcomp
     void DeleteOneSideRestrictions(void);
 
 #ifdef PARALLEL
-#ifdef OLD_PARALLEL_UPDATE
-    virtual void UpdateParallelDofs_hoproc();
-#endif
     virtual void UpdateParallelDofs_loproc();
 #endif
+    
+  protected:
+    IntRange GetEdgeDofs (int nr) const
+    {
+      return IntRange (first_edge_dof[nr], 
+                       first_edge_dof[nr+1]);
+    }
+
+    IntRange GetFaceDofs (int nr) const
+    {
+      return IntRange (first_face_dof[nr], 
+                       first_face_dof[nr+1]);
+    }
+
+    IntRange GetElementDofs (int nr) const
+    {
+      return IntRange (first_element_dof[nr], 
+                       first_element_dof[nr+1]);
+    }
+
   };
 
 }

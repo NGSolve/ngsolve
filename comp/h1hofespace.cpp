@@ -10,17 +10,16 @@
 
 #include <comp.hpp>
 #include <multigrid.hpp> 
-#include <solve.hpp>
 #include <parallelngs.hpp>
-
-
-namespace ngfem
-{
 #include "../fem/h1hofefo.hpp"
-}
 
 
 using namespace ngmg; 
+
+namespace ngfem
+{
+  extern int link_it_h1hofefo;
+}
 
 namespace ngcomp
 {
@@ -34,7 +33,7 @@ namespace ngcomp
     name = "H1HighOrderFESpace(h1ho)";
     // define h1ho flags
     DefineDefineFlag("h1ho");
-    DefineNumFlag("augmented");
+    // DefineNumFlag("augmented");
     DefineDefineFlag("plate");
     DefineNumFlag("relorder");
     DefineNumFlag("orderinner");
@@ -52,19 +51,18 @@ namespace ngcomp
     DefineNumFlag("smoothing");
     DefineDefineFlag("minext");
     DefineDefineFlag("optext");
-    DefineDefineFlag("fast");
-    DefineDefineFlag("fastsz");
     DefineDefineFlag("print");
     DefineDefineFlag("noprint");
-    if (parseflags) ParseFlags(flags);
+    if (parseflags) CheckFlags(flags);
     
-    augmented = int (flags.GetNumFlag ("augmented", 0));
-    plate = int (flags.GetDefineFlag ("plate"));
+    // augmented = int (flags.GetNumFlag ("augmented", 0));
+    // plate = int (flags.GetDefineFlag ("plate"));
     print = (flags.GetDefineFlag("print")); 
   
     // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
     var_order = flags.GetDefineFlag("variableorder");  
+    fixed_order = flags.GetDefineFlag("fixedorder");  
     order =  int (flags.GetNumFlag ("order",1)); 
     
     if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order")) 
@@ -106,7 +104,7 @@ namespace ngcomp
           
     minext = flags.GetDefineFlag ("minext");
     optext = flags.GetDefineFlag ("optext");
-    fast_pfem = flags.GetDefineFlag ("fast");
+    // fast_pfem = flags.GetDefineFlag ("fast");
     
 
     static ConstantCoefficientFunction one(1);
@@ -176,7 +174,6 @@ namespace ngcomp
     order_edge.SetSize (ned);
     order_face.SetSize (nfa);
     order_inner.SetSize (nel);
-    order_avertex.SetSize (nv); 
     fine_edge.SetSize(ned); 
     fine_face.SetSize(nfa); 
 
@@ -187,7 +184,6 @@ namespace ngcomp
     order_edge = p; 
     order_face = INT<2>(p,p);
     order_inner = INT<3>(p,p,p); 
-    order_avertex = p; 
 	
     Array<int> eledges, elfaces, vnums;
     
@@ -348,6 +344,8 @@ namespace ngcomp
 
 
     UpdateDofTables ();
+
+    if (timing) Timing();
 
 #ifdef PARALLEL
     try
@@ -528,7 +526,6 @@ namespace ngcomp
   }
 
 
-  
 
 
   const FiniteElement & H1HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
@@ -536,118 +533,63 @@ namespace ngcomp
     H1HighOrderFiniteElement<2> * hofe2d = 0;
     H1HighOrderFiniteElement<3> * hofe3d = 0;
 
-    /*
-      // order_inner etc. must all be the same ...
-    if (!var_order && ma.GetElType(elnr) == ET_TRIG && order <= 6)
+    if (fixed_order && ma.GetElType(elnr) == ET_TRIG && order <= 6)
       {
         H1HighOrderFiniteElementFO<2> * hofe2d = 0;
         switch (order)
           {
-          case 1: hofe2d = new (lh.Alloc (sizeof(H1HighOrderFEFO<ET_TRIG,1>)))  H1HighOrderFEFO<ET_TRIG,1> (); break;
-          case 2: hofe2d = new (lh.Alloc (sizeof(H1HighOrderFEFO<ET_TRIG,2>)))  H1HighOrderFEFO<ET_TRIG,2> (); break;
-          case 3: hofe2d = new (lh.Alloc (sizeof(H1HighOrderFEFO<ET_TRIG,3>)))  H1HighOrderFEFO<ET_TRIG,3> (); break;
-          case 4: hofe2d = new (lh.Alloc (sizeof(H1HighOrderFEFO<ET_TRIG,4>)))  H1HighOrderFEFO<ET_TRIG,4> (); break;
-          case 5: hofe2d = new (lh.Alloc (sizeof(H1HighOrderFEFO<ET_TRIG,5>)))  H1HighOrderFEFO<ET_TRIG,5> (); break;
-          case 6: hofe2d = new (lh.Alloc (sizeof(H1HighOrderFEFO<ET_TRIG,6>)))  H1HighOrderFEFO<ET_TRIG,6> (); break;
+          case 1: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,1> (); break;
+          case 2: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,2> (); break;
+          case 3: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,3> (); break;
+          case 4: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,4> (); break;
+          case 5: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,5> (); break;
+          case 6: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,6> (); break;
           }
-
     
-        ArrayMem<int,12> vnums; 
-        ma.GetElVertices(elnr, vnums);
-        hofe2d -> SetVertexNumbers (vnums);
+        Ng_Element ngel = ma.GetElement<2> (elnr);
+        for (int j = 0; j < 3; j++)
+          hofe2d->SetVertexNumber (j, ngel.vertices[j]);
         return *hofe2d;
       }
-    */
 
     try
       {
         switch (ma.GetElType(elnr))
           {
-          case ET_TET:
-            { 
-              hofe3d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_TET>)))  H1HighOrderFE<ET_TET> ();
-              break;
-            }
-          case ET_PYRAMID:
-            {
-              hofe3d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_PYRAMID>)))  H1HighOrderFE<ET_PYRAMID> ();
-              break;
-            }
-          case ET_PRISM:
-            {
-              hofe3d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_PRISM>)))  H1HighOrderFE<ET_PRISM> ();
-              break;
-            }
-          case ET_HEX:
-            {
-              hofe3d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_HEX>)))  H1HighOrderFE<ET_HEX> ();
-              break;
-            }
-          case ET_TRIG:
-            { 
-              hofe2d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_TRIG>)))  H1HighOrderFE<ET_TRIG> ();
-              break;
-            }
-          case ET_QUAD:
-            {
-              hofe2d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_QUAD>)))  H1HighOrderFE<ET_QUAD> ();
-              break;
-            }
+          case ET_TET:     hofe3d = new (lh) H1HighOrderFE<ET_TET> (); break;
+          case ET_PYRAMID: hofe3d = new (lh) H1HighOrderFE<ET_PYRAMID> (); break;
+          case ET_PRISM:   hofe3d = new (lh) H1HighOrderFE<ET_PRISM> (); break;
+          case ET_HEX:     hofe3d = new (lh) H1HighOrderFE<ET_HEX> ();  break;
+          case ET_TRIG:    hofe2d = new (lh) H1HighOrderFE<ET_TRIG> (); break;
+          case ET_QUAD:    hofe2d = new (lh) H1HighOrderFE<ET_QUAD> (); break;
+
           default:
             {
-              throw Exception ("GetFE not supported for element");
+              throw Exception (string ("GetFE not supported for element") + 
+                               ElementTopology::GetElementName(ma.GetElType(elnr)));
             }
           }
-    
-        if (!hofe2d && !hofe3d)
-          {
-            stringstream str;
-            str << "H1HighOrderFESpace " << GetClassName() 
-                << ", undefined eltype " 
-                << ElementTopology::GetElementName(ma.GetElType(elnr))
-                << ", order = " << order << endl;
-            throw Exception (str.str());
-          }
-
-
-    
-        ArrayMem<int,12> vnums; // calls GetElPNums -> max 12 for PRISM12
-        ArrayMem<int, 12> ednums, order_ed;
-        ArrayMem<int, 6> fanums;
-        ArrayMem<INT<2>, 6> order_fa;
-
-
-        ma.GetElVertices(elnr, vnums);
-
-        ma.GetElEdges(elnr, ednums);
-
-        order_ed.SetSize (ednums.Size());
-
-        for (int j = 0; j < ednums.Size(); j++)
-          order_ed[j] = order_edge[ednums[j]];
-
-        ArrayMem<int, 8> order_vert(vnums.Size());
-        for (int j = 0; j < vnums.Size(); j++)
-          order_vert[j] = order_avertex[vnums[j]];
-
-#ifdef PARALLEL
-        if ( ntasks > 1 )
-          for ( int i = 0; i < vnums.Size(); i++ )
-            vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
-#endif
 
 
         if (ma.GetDimension() == 2)
           {
-            hofe2d -> SetVertexNumbers (vnums);
-
-            hofe2d -> SetOrderEdge (order_ed);
-            // hofe2d -> SetOrderInner (order_inner[elnr]); // old style
+            Ng_Element ngel = ma.GetElement<2> (elnr);
+        
+#ifdef PARALLEL
+            for (int j = 0; j < ngel.vertices.Size())
+              if (ntasks > 1)
+                for (int j = 0; j < ngel.vertices.Size(); j++)
+                  hofe2d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, ngel.vertices[j]));
+              else
+#endif
+                for (int j = 0; j < ngel.vertices.Size(); j++)
+                  hofe2d -> SetVertexNumber (j, ngel.vertices[j]);
+            
+            for (int j = 0; j < ngel.edges.Size(); j++)
+              hofe2d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
             
             INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
-            FlatArray<INT<2> > of(1, &p);
-            hofe2d -> SetOrderFace (of);
-
+            hofe2d -> SetOrderFace (0, p);
 
             hofe2d -> ComputeNDof();
 
@@ -657,27 +599,34 @@ namespace ngcomp
         else
 
           {
-            hofe3d -> SetVertexNumbers (vnums);
+            Ng_Element ngel = ma.GetElement<3> (elnr);
 
-            hofe3d -> SetOrderEdge (order_ed);
-    
-            ma.GetElFaces(elnr, fanums);
-            order_fa.SetSize (fanums.Size());
-            for (int j = 0; j < fanums.Size(); j++)
-              order_fa[j] = order_face[fanums[j]];
-	
-            hofe3d -> SetOrderFace (order_fa);
+#ifdef PARALLEL
+            for (int j = 0; j < ngel.vertices.Size())
+              if (ntasks > 1)
+                for (int j = 0; j < ngel.vertices.Size(); j++)
+                  hofe3d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, ngel.vertices[i]));
+              else
+#endif
+                for (int j = 0; j < ngel.vertices.Size(); j++)
+                  hofe3d -> SetVertexNumber (j, ngel.vertices[j]);
+
+            for (int j = 0; j < ngel.edges.Size(); j++)
+              hofe3d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
+            
+            for (int j = 0; j < ngel.faces.Size(); j++)
+              hofe3d -> SetOrderFace (j, order_face[ngel.faces[j]]);
+
             hofe3d -> SetOrderCell (order_inner[elnr]);
-            hofe3d -> ComputeNDof();
 
+            hofe3d -> ComputeNDof();
             return *hofe3d;
           }
       }
 
     catch (Exception & e)
       {
-        e.Append ("in H1HoFESpace::GetElement");
-        e.Append ("\n");
+        e.Append ("in H1HoFESpace::GetElement\n");
         throw;
       }
   }
@@ -692,93 +641,52 @@ namespace ngcomp
 
     switch (ma.GetSElType(elnr))
       {
-      case ET_TRIG:
-        {
-          hofe2d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_TRIG>)))  H1HighOrderFE<ET_TRIG> ();
-          break;
-        }
-      case ET_QUAD:
-        {
-          hofe2d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_QUAD>)))  H1HighOrderFE<ET_QUAD> ();
-          break;
-        }
-      case ET_SEGM:
-        {
-          hofe1d = new (lh.Alloc (sizeof(H1HighOrderFE<ET_SEGM>)))  H1HighOrderFE<ET_SEGM> ();
-          break;
-        }
+      case ET_TRIG: hofe2d = new (lh) H1HighOrderFE<ET_TRIG> (); break;
+      case ET_QUAD: hofe2d = new (lh) H1HighOrderFE<ET_QUAD> (); break;
+      case ET_SEGM: hofe1d = new (lh) H1HighOrderFE<ET_SEGM> (); break;
       default:
         {
           throw Exception ("GetFE not supported for element");
         }
       }
   
-    if (!hofe1d && !hofe2d)
-      {
-        stringstream str;
-        str << "FESpace " << GetClassName() 
-            << ", undefined surface eltype " << ma.GetSElType(elnr) 
-            << ", order = " << order << endl;
-        throw Exception (str.str());
-      }
-
+    Ng_Element ngel = ma.GetSElement(elnr);
     
-    ArrayMem<int, 8> vnums, order_vert(8);
-    ArrayMem<int, 4> ednums, order_ed;
-    
-    ma.GetSElVertices(elnr, vnums);
-    ma.GetSElEdges(elnr, ednums);
-    
-    order_ed.SetSize (ednums.Size());
-    
-    for (int j = 0; j < ednums.Size(); j++)
-      order_ed[j] = order_edge[ednums[j]];
-    
-    for (int j = 0; j < 8; j++)
-      order_vert[j] = order;
-    
+#ifdef PARALLEL
+    if ( ntasks > 1 )
+      for ( int i = 0; i < vnums.Size(); i++ )
+        vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
+    cout << "have to set vertex numbers!!!" << endl;
+#endif 
     
     if (ma.GetDimension() == 2)
       {
-        // hofe1d -> SetOrderInner (order_ed[0]);  // old style
-        hofe1d -> SetOrderEdge (order_ed);
+        for (int j = 0; j < ngel.vertices.Size(); j++)
+          hofe1d -> SetVertexNumber (j, ngel.vertices[j]);
+
+        for (int j = 0; j < ngel.edges.Size(); j++)
+          hofe1d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
 
         hofe1d -> ComputeNDof();
-        
-#ifdef PARALLEL
-        if ( ntasks > 1 )
-          for ( int i = 0; i < vnums.Size(); i++ )
-            vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
-#endif 
-        hofe1d -> SetVertexNumbers (vnums);  
-        
         return *hofe1d;
       }
     else
       {
-        hofe2d -> SetOrderEdge (order_ed);
-        INT<2> p = order_face[ma.GetSElFace(elnr)];
-        // hofe2d -> SetOrderInner (INT<3> (p[0], p[1], 0));  // old style
+        for (int j = 0; j < ngel.vertices.Size(); j++)
+          hofe2d -> SetVertexNumber (j, ngel.vertices[j]);
 
+        for (int j = 0; j < ngel.edges.Size(); j++)
+          hofe2d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
+
+        INT<2> p = order_face[ma.GetSElFace(elnr)];
         FlatArray<INT<2> > of(1, &p);
         hofe2d -> SetOrderFace (of);
 
         hofe2d  -> ComputeNDof();
-#ifdef PARALLEL
-        if ( ntasks > 1 )
-          for ( int i = 0; i < vnums.Size(); i++ )
-            vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
-#endif 
-        hofe2d -> SetVertexNumbers (vnums);  
-        
         return *hofe2d;
       }
   }
  
-
-
-
-
 
 
   int H1HighOrderFESpace :: GetNDof () const
@@ -787,45 +695,28 @@ namespace ngcomp
   }
 
 
-
   int H1HighOrderFESpace :: GetNDofLevel (int alevel) const
   {
     return ndlevel[alevel];
   }
 
 
-
   void H1HighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     Ng_Element ngel = ma.GetElement(elnr);
-    dnums.SetSize(0); 
 
+    dnums.SetSize(ngel.vertices.Size()); 
     for (int i = 0; i < ngel.vertices.Size(); i++)
-      dnums.Append (ngel.vertices[i]);
+      dnums[i] = ngel.vertices[i];
 
     for (int i = 0; i < ngel.edges.Size(); i++)
-      {
-        int first = first_edge_dof[ngel.edges[i]];
-        int next = first_edge_dof[ngel.edges[i]+1];
-        for (int j = first; j < next; j++)
-          dnums.Append (j);
-      }
+      dnums += GetEdgeDofs (ngel.edges[i]);
 
     if (ma.GetDimension() == 3)
       for (int i = 0; i < ngel.faces.Size(); i++)
-        {
-          int first = first_face_dof[ngel.faces[i]];
-          int next = first_face_dof[ngel.faces[i]+1];
-          for (int j = first; j < next; j++)
-            dnums.Append (j);
-        }
+        dnums += GetFaceDofs (ngel.faces[i]);
 
-    int first = first_element_dof[elnr];
-    int next = first_element_dof[elnr+1];
-    for (int j = first; j < next; j++)
-      dnums.Append (j);
-     
-
+    dnums += GetElementDofs (elnr);
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
   }
@@ -839,45 +730,19 @@ namespace ngcomp
         return;
       }
 
-    ArrayMem<int,12> vnums, ednums, fanums; 
-    int i, j;
-    int first,next; 
+    Ng_Element ngel = ma.GetElement(elnr);
 
-    ma.GetElVertices (elnr, vnums);
-    ma.GetElEdges (elnr, ednums);
-    if (ma.GetDimension() == 3)
-      ma.GetElFaces (elnr, fanums);
-    else 
-      fanums.SetSize(0); 
-    dnums.SetSize(0);
+    dnums.SetSize(ngel.vertices.Size()); 
+    for (int i = 0; i < ngel.vertices.Size(); i++)
+      dnums[i] = ngel.vertices[i];
 
-    for (i = 0; i < vnums.Size(); i++)
-      dnums.Append (vnums[i]);
-
-    if(order < 1) 
-      throw Exception(" H1HighOrderFESpace :: GetDofNrs() order < 1 "); 
-
-    for (i = 0; i < ednums.Size(); i++)
-      {
-        first = first_edge_dof[ednums[i]];
-        next = first_edge_dof[ednums[i]+1];
-	
-        for (j = first; j < next; j++)
-          dnums.Append (j);
-      }
+    for (int i = 0; i < ngel.edges.Size(); i++)
+      dnums += GetEdgeDofs (ngel.edges[i]);
 
     if (ma.GetDimension() == 3)
-      {
-        int first_face = 0;
-        if (plate && vnums.Size() == 6) first_face = 2;
-        for (i = first_face; i < fanums.Size(); i++)
-          {
-            first = first_face_dof[fanums[i]];
-            next = first_face_dof[fanums[i]+1]; 
-            for (j = first; j < next; j++)
-              dnums.Append (j);
-          }
-      }
+      for (int i = 0; i < ngel.faces.Size(); i++)
+        dnums += GetFaceDofs (ngel.faces[i]);
+
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
   }
@@ -934,33 +799,42 @@ namespace ngcomp
   void H1HighOrderFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
+    dnums += GetEdgeDofs (ednr);
+    /*
     int first = first_edge_dof[ednr];
-    int neddofs = first_edge_dof[ednr+1] - first;
-    for (int j = 0; j < neddofs; j++)
-      dnums.Append (first+j);
+    int next = first_edge_dof[ednr+1];
+    for (int j = first; j < next; j++)
+      dnums.Append (j);
+    */
   }
 
   void H1HighOrderFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     if (ma.GetDimension() < 3) return;
-    
+
+    dnums += GetFaceDofs (fanr);
+
+    /*
     int first = first_face_dof[fanr];
-    int nfadofs = first_face_dof[fanr+1] - first;
-    for (int j = 0; j < nfadofs; j++)
-      dnums.Append (first+j);
+    int next = first_face_dof[fanr+1];
+    for (int j = first; j < next; j++)
+      dnums.Append (j);
+    */
   }
 
 
   void H1HighOrderFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
+    dnums += GetElementDofs (elnr);
 
+    /*
     int first = first_element_dof[elnr];
-    int neldofs = first_element_dof[elnr+1] - first;
-     
-    for (int j = 0; j < neldofs; j++)
-      dnums.Append (first+j);
+    int next = first_element_dof[elnr+1];
+    for (int j = first; j < next; j++)
+      dnums.Append (j);
+    */
   }
   
   void H1HighOrderFESpace :: 
@@ -968,26 +842,17 @@ namespace ngcomp
   {
     Ng_Element ngel = ma.GetSElement(elnr);
 
-    dnums.SetSize(0); 
+    dnums.SetSize(ngel.vertices.Size()); 
 
     for (int i = 0; i < ngel.vertices.Size(); i++)
-      dnums.Append (ngel.vertices[i]);
+      dnums[i] = ngel.vertices[i];
 
     for (int i = 0; i < ngel.edges.Size(); i++)
-      {
-        int first = first_edge_dof[ngel.edges[i]];
-        int next = first_edge_dof[ngel.edges[i]+1];
-        for (int j = first; j < next; j++)
-          dnums.Append (j);
-      }
+      dnums += GetEdgeDofs (ngel.edges[i]);
 
-    for (int i = 0; i < ngel.faces.Size(); i++)
-      {
-        int first = first_face_dof[ngel.faces[i]];
-        int next = first_face_dof[ngel.faces[i]+1];
-        for (int j = first; j < next; j++)
-          dnums.Append (j);
-      }
+    if (ma.GetDimension() == 3)
+      dnums += GetFaceDofs (ngel.faces[0]);
+
 
 
 
@@ -1018,7 +883,7 @@ namespace ngcomp
 	
 
         bool isfirst = true;
-        for(int i=0; i<defined_on_one_side_of_bounding_curve.Size(); i++)
+        for (int i = 0; i<defined_on_one_side_of_bounding_curve.Size(); i++)
           {
             if(defined_on_one_side_of_bounding_curve[i][0] == ma.GetSElIndex (elnr))
               {
@@ -1079,14 +944,10 @@ namespace ngcomp
   Table<int> * H1HighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags ) const
   {
-    int i, j, k, first;
     int SmoothingType = int(precflags.GetNumFlag("blocktype",0)); 
+
+    Array<int> ednums, fanums, vnums,f2ed; 
     
-
-    Array<int> orient, ednums, fanums, vnums,f2ed; 
-    
-
-
     int ni = nel, ncnt; 
     if (eliminate_internal) ni = 0; 
    
@@ -1105,14 +966,9 @@ namespace ngcomp
     // default smoother
     
     if (SmoothingType == 0) 
-      {
-        if(augmented) SmoothingType=3; 
-        else SmoothingType = 4; 
-      }
-
+      SmoothingType = 4; 
 
     cout << " blocktype " << SmoothingType << endl; 
-    // *testout << " h1ho-Smoother with order " << order << " level " << level << endl; 
     cout << " Use H1-Block Smoother:  "; 
     switch(SmoothingType) 
       {
@@ -1178,57 +1034,52 @@ namespace ngcomp
     Array<int> cnt(ncnt); 
     cnt = 0; 
     int nvdof = 1; 
-    if (augmented == 1) nvdof = 2; 
-    if (augmented == 2) nvdof = order; //SZ: hier noch v_order(i) einsetzen 
-    for (i=0; i<nv; i++)
+    for (int i = 0; i < nv; i++)
       cnt[i] = nvdof; 
       
     int ii =0; 
     switch(SmoothingType)
       { 
       case 1: // 2d V + E + I 
-        for (i = 0; i < ned; i++, ii++)
+        for (int i = 0; i < ned; i++, ii++)
           if(fine_edge[i])
-            cnt[nv+ii] = first_edge_dof[i+1]-first_edge_dof[i];
-        for (i = 0; i < ni; i++)
-          cnt[nv+ned+i] = first_element_dof[i+1]-first_element_dof[i];
+            cnt[nv+ii] = GetEdgeDofs(i).Size(); 
+        for (int i = 0; i < ni; i++)
+          cnt[nv+ned+i] = GetElementDofs(i).Size(); 
         break;
       case 2: // 2d VE + I 
-        for (i = 0; i < ned; i++ )
+        for (int i = 0; i < ned; i++ )
           if(fine_edge[i])
             {
-              int v1, v2;
-              ma.GetEdgePNums (i, v1, v2);
-              cnt[v1] += first_edge_dof[i+1]-first_edge_dof[i];
-              cnt[v2] += first_edge_dof[i+1]-first_edge_dof[i];
+              Ng_Node<1> edge = ma.GetNode<1> (i);
+              cnt[edge.vertices[0]] += GetEdgeDofs(i).Size();
+              cnt[edge.vertices[1]] += GetEdgeDofs(i).Size();
             }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           cnt[nv+i] = first_element_dof[i+1]-first_element_dof[i];
         break; 
       case 3: // V + E + F + I 
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           cnt[nv+i] = first_edge_dof[i+1]-first_edge_dof[i];
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           cnt[nv+ned+i] = first_face_dof[i+1]-first_face_dof[i];
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           cnt[nv+ned+nfa+i] = first_element_dof[i+1]-first_element_dof[i];
         break; 
       case 4: // VE + F + I 
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           {
-            int v1, v2;
-            int ndof = first_edge_dof[i+1]-first_edge_dof[i];
-            ma.GetEdgePNums (i, v1, v2);
-            cnt[v1] += ndof;
-            cnt[v2] += ndof;
+            Ng_Node<1> enode = ma.GetNode<1> (i);
+            cnt[enode.vertices[0]] += GetEdgeDofs(i).Size();
+            cnt[enode.vertices[1]] += GetEdgeDofs(i).Size();
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           cnt[nv+i] = first_face_dof[i+1]-first_face_dof[i];
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           cnt[nv+nfa+i] = first_element_dof[i+1]-first_element_dof[i];
         break; 
       case 5: // VE + FI 
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           {
             int v1, v2;
             int ndof = first_edge_dof[i+1]-first_edge_dof[i];
@@ -1236,36 +1087,36 @@ namespace ngcomp
             cnt[v1] += ndof;
             cnt[v2] += ndof;
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           cnt[nv+i] = first_face_dof[i+1]-first_face_dof[i];
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
-            ma.GetElFaces (i, fanums, orient);
+            ma.GetElFaces (i, fanums);
             int ndof = first_element_dof[i+1] - first_element_dof[i];
-            for (j = 0; j < fanums.Size(); j++)
+            for (int j = 0; j < fanums.Size(); j++)
               cnt[nv+fanums[j]] += ndof;
           }
         break; 
       case 6: // VEF + I 
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           {
             int v1, v2;
             ma.GetEdgePNums (i, v1, v2);
             cnt[v1] += first_edge_dof[i+1]-first_edge_dof[i];
             cnt[v2] += first_edge_dof[i+1]-first_edge_dof[i];
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           { 
             Array<int>  pnums; 
             ma.GetFacePNums(i,pnums); 
-            for(j=0;j<pnums.Size();j++) 
+            for(int j=0;j<pnums.Size();j++) 
               cnt[pnums[j]] +=  first_face_dof[i+1] - first_face_dof[i];
           }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           cnt[nv + i] +=  first_element_dof[i+1] - first_element_dof[i];
         break;
       case 7: // VEFI 
-        for(i=0; i<ned; i++)
+        for (int i=0; i<ned; i++)
           {
             int v1, v2;
             int ndof = first_edge_dof[i+1]-first_edge_dof[i];
@@ -1273,30 +1124,30 @@ namespace ngcomp
             cnt[v1] += ndof;
             cnt[v2] += ndof;
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           { 
             Array<int>  pnums; 
             ma.GetFacePNums(i,pnums); 
             int ndof =  first_face_dof[i+1] - first_face_dof[i];
-            for(j=0;j<pnums.Size();j++) 
+            for (int j =0;j<pnums.Size();j++) 
               cnt[pnums[j]] += ndof ;
           }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
             Array<int>  pnums; 
             ma.GetElPNums(i,pnums); 
             int ndof = first_element_dof[i+1] - first_element_dof[i];
-            for (j = 0; j < pnums.Size(); j++)
+            for (int j = 0; j < pnums.Size(); j++)
               cnt[pnums[j]] += ndof;
           }
         break;
       case 12: // VEFI-Cluster 
         cnt =0; 
-        for(i=0;i<nv;i++)
+        for(int i=0;i<nv;i++)
           {
             cnt[ma.GetClusterRepVertex(i)]++;
           }
-        for(i=0; i<ned; i++)
+        for (int i =0; i<ned; i++)
           {
             int v1, v2;
             int ndof = first_edge_dof[i+1]-first_edge_dof[i];
@@ -1305,34 +1156,34 @@ namespace ngcomp
             if(ma.GetClusterRepVertex(v1)!=ma.GetClusterRepVertex(v2))
               cnt[ma.GetClusterRepVertex(v2)] += ndof;
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           { 
             Array<int>  pnums; 
             ma.GetFacePNums(i,pnums); 
             int ndof =  first_face_dof[i+1] - first_face_dof[i];
             Array<int> repv; 
-            for(j=0;j<pnums.Size();j++) 
+            for (int j =0;j<pnums.Size();j++) 
               repv.Append(ma.GetClusterRepVertex(pnums[j]));
-            for(j=0;j<pnums.Size();j++) 
+            for (int j =0;j<pnums.Size();j++) 
               { 
                 bool ok=1; 
-                for(k=0;k<j;k++) if(repv[j] == repv[k]) ok = 0;  
+                for (int k = 0;k<j;k++) if(repv[j] == repv[k]) ok = 0;  
                 if(ok) cnt[repv[j]] += ndof ;
               }
           }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
             Array<int>  pnums; 
             ma.GetElPNums(i,pnums); 
             Array<int> repv; 
 	   
-            for(j=0;j<pnums.Size();j++) 
+            for (int j =0;j<pnums.Size();j++) 
               repv.Append(ma.GetClusterRepVertex(pnums[j]));
             int ndof = first_element_dof[i+1] - first_element_dof[i];
-            for (j = 0; j < pnums.Size(); j++)
+            for (int j = 0; j < pnums.Size(); j++)
               { 
                 bool ok=1; 
-                for(k=0;k<j;k++) if(repv[j] == repv[k]) ok = 0;  
+                for (int k = 0;k<j;k++) if(repv[j] == repv[k]) ok = 0;  
                 if(ok) cnt[repv[j]] += ndof ;
               }
 	     
@@ -1340,60 +1191,60 @@ namespace ngcomp
         break;
 
       case 8: // V + E + FI 
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           cnt[nv+i] = first_edge_dof[i+1]-first_edge_dof[i];
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           cnt[nv+ned+i] = first_face_dof[i+1]-first_face_dof[i];
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
-            ma.GetElFaces (i,fanums,orient);
-            for (k = 0; k < fanums.Size(); k++)
+            ma.GetElFaces (i,fanums);
+            for (int k = 0; k < fanums.Size(); k++)
               cnt[nv+ned+fanums[k]] += first_element_dof[i+1] - first_element_dof[i];
           }
         break; 
 
       case 9: // V + EF + I 
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           cnt[nv+i]= first_edge_dof[i+1]-first_edge_dof[i];
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           {
             ma.GetFaceEdges (i, f2ed);
             int fdof = first_face_dof[i+1]-first_face_dof[i];
-            for (j = 0; j < f2ed.Size(); j++)
+            for (int j = 0; j < f2ed.Size(); j++)
               cnt[nv+f2ed[j]] +=  fdof; 
           }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           cnt[nv+ned+i] = first_element_dof[i+1]-first_element_dof[i];
         break;     
 
       case 10: // V + EI + FI 
         cnt = 0;  
-        for(i=0; i< nv;i++)
+        for (int i =0; i< nv;i++)
           cnt[ma.GetClusterRepVertex(i)]++; 
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           if(fine_edge[i])
             cnt[ma.GetClusterRepEdge(i)] += first_edge_dof[i+1]-first_edge_dof[i];
        
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           if(fine_face[i])
             cnt[ma.GetClusterRepFace(i)] += first_face_dof[i+1]-first_face_dof[i];
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
             int ccl = ma.GetClusterRepElement(i);
             cnt[ccl] +=first_element_dof[i+1] - first_element_dof[i];
           }
         /*
-          for (i = 0; i < ni; i++)
+          for (int i = 0; i < ni; i++)
           {
           int ccl = ma.GetClusterRepElement(i);
           ma.GetElEdges (i,ednums,orient);
 	     
-          for (k = 0; k < ednums.Size(); k++)
+          for (int k = 0; k < ednums.Size(); k++)
           if(ccl!= ma.GetClusterRepFace(ednums[k]))
           cnt[ma.GetClusterRepEdge(ednums[k])] += first_element_dof[i+1] - first_element_dof[i];
 	      
           ma.GetElFaces (i,fanums,orient);
-          for (k = 0; k < fanums.Size(); k++)
+          for (int k = 0; k < fanums.Size(); k++)
           if(ccl != ma.GetClusterRepFace(fanums[k]))
           cnt[ma.GetClusterRepFace(fanums[k])] += first_element_dof[i+1] - first_element_dof[i];
           }*/
@@ -1402,7 +1253,7 @@ namespace ngcomp
         break; 
 
       case 11: // 2d VEI 
-        for(i=0; i<ned; i++)
+        for (int i =0; i<ned; i++)
           if(fine_edge[i])
             {
               int v1, v2;
@@ -1411,12 +1262,12 @@ namespace ngcomp
               cnt[v1] += ndof;
               cnt[v2] += ndof;
             }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
             Array<int>  pnums; 
             ma.GetElPNums(i,pnums); 
             int ndof = first_element_dof[i+1] - first_element_dof[i];
-            for (j = 0; j < pnums.Size(); j++)
+            for (int j = 0; j < pnums.Size(); j++)
               cnt[pnums[j]] += ndof;
           }
         break;
@@ -1441,7 +1292,7 @@ namespace ngcomp
             {
               ma.GetFaceEdges (i, f2ed);
               int fdof = first_face_dof[i+1]-first_face_dof[i];
-              for (j = 0; j < f2ed.Size(); j++)
+              for (int j = 0; j < f2ed.Size(); j++)
                 cnt[nv+f2ed[j]] +=  fdof; 
             }
           break;
@@ -1454,16 +1305,18 @@ namespace ngcomp
     cnt = 0; 
     if(SmoothingType != 10) 
       {
-        for (i = 0; i < nv; i++)
+        for (int i = 0; i < nv; i++)
           table[i][0] = i;
+        /*
         if (augmented == 1)
-          for (i = 0; i < nv; i++)
+          for (int i = 0; i < nv; i++)
             table[i][1] = nv+i;
         else if (augmented == 2)
-          for (i = 0; i < nv; i++)
-            for (j = 0; j < order-1; j++)
+          for (int i = 0; i < nv; i++)
+            for (int j = 0; j < order-1; j++)
               table[i][j+1] = nv+i*(order-1)+j; 
-        for (i = 0; i < nv; i++)
+        */
+        for (int i = 0; i < nv; i++)
           cnt[i] = nvdof;
       }
  
@@ -1472,376 +1325,373 @@ namespace ngcomp
     switch(SmoothingType)
       {
       case 1:  // 2d: V + E + I
-        for (i = 0; i < ned; i++,ii++)
+        for (int i = 0; i < ned; i++,ii++)
           if(fine_edge[i])
             {
-              first = first_edge_dof[i];
+              int first = first_edge_dof[i];
               int ndof = first_edge_dof[i+1]-first_edge_dof[i]; 
-              for (j = 0; j < ndof; j++)
+              for (int j = 0; j < ndof; j++)
                 table[nv+i][j] = first+j;
             }
-        for (i = 0; i < nel; i++)
+        for (int i = 0; i < nel; i++)
           {
-            first = first_element_dof[i];
+            int first = first_element_dof[i];
             int ndof =  first_element_dof[i+1]-first_element_dof[i]; 
-            for (j = 0; j < ndof; j++)
+            for (int j = 0; j < ndof; j++)
               table[nv+ned+i][j] = first+j;
           }
         break; 
       case 2: // 2d VE + I
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           if(fine_edge[i])
             {
               int v1, v2;
-              first = first_edge_dof[i];
+              int first = first_edge_dof[i];
               int ndof = first_edge_dof[i+1]-first;
               ma.GetEdgePNums (i, v1, v2);
-              for (j = 0; j < ndof; j++)
+              for (int j = 0; j < ndof; j++)
                 {
                   table[v1][cnt[v1]++] = first+j;
                   table[v2][cnt[v2]++] = first+j;
                 }
             }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
-            first = first_element_dof[i];
+            int first = first_element_dof[i];
             int ndof = first_element_dof[i+1]-first;
-            for (j = 0; j < ndof; j++)
+            for (int j = 0; j < ndof; j++)
               table[nv+i][j] = first+j;
           }
       case 3 : // V + E + F + I 
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           {
             int ndof = first_edge_dof[i+1]-first_edge_dof[i]; 
-            first = first_edge_dof[i];
-            for (j = 0; j < ndof; j++)
+            int first = first_edge_dof[i];
+            for (int j = 0; j < ndof; j++)
               table[nv+i][j] = first+j;
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           {
             int ndof = first_face_dof[i+1]-first_face_dof[i]; 
-            first = first_face_dof[i];
-            for (j = 0; j < ndof; j++)
+            int first = first_face_dof[i];
+            for (int j = 0; j < ndof; j++)
               table[nv+ned+i][j] = first+j;
           }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
-            first = first_element_dof[i];
+            int first = first_element_dof[i];
             int ndof = first_element_dof[i+1]-first_element_dof[i]; 
-            for (j = 0; j < ndof; j++)
+            for (int j = 0; j < ndof; j++)
               table[nv+ned+nfa+i][j] = first+j;
           }
         break; 
       case 4: // VE + F + I
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           {
-            int v1, v2;
-            first = first_edge_dof[i];
-            int ndof = first_edge_dof[i+1]-first_edge_dof[i];
-            ma.GetEdgePNums (i, v1, v2);
-            for (j = 0; j < ndof; j++)
-              {
-                table[v1][cnt[v1]++] = first+j;
-                table[v2][cnt[v2]++] = first+j;
-              }
+            IntRange range = GetEdgeDofs(i);
+            Ng_Node<1> edge = ma.GetNode<1> (i);
+            int v[2] = { edge.vertices[0], edge.vertices[1] };
+
+            for (int j = 0; j < range.Size(); j ++)
+              for (int k = 0; k < 2; k++)
+                table[v[k]][cnt[v[k]]++] = range.First()+j;
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           {
-            first = first_face_dof[i];
-            int ndof = first_face_dof[i+1]-first_face_dof[i];
-            for (j = 0; j < ndof; j++)
-              table[nv+i][j] = first+j;
-            cnt[nv+i] = ndof;
+            IntRange range = GetFaceDofs(i);
+            for (int j = 0; j < range.Size(); j++)
+              table[nv+i][j] = range.First()+j;
+            cnt[nv+i] = range.Size();
           }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
-            first = first_element_dof[i];
+            int first = first_element_dof[i];
             int ndof = first_element_dof[i+1]-first_element_dof[i]; 
-            for (j = 0; j < ndof; j++)
+            for (int j = 0; j < ndof; j++)
               table[nv+nfa+i][j] = first+j;
           }
         break; 
       case 5: // VE + FI
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           {
             int v1, v2;
-            first = first_edge_dof[i];
+            int first = first_edge_dof[i];
             int ndof = first_edge_dof[i+1]-first;
             ma.GetEdgePNums (i, v1, v2);
-            for (j = 0; j < ndof; j++)
+            for (int j = 0; j < ndof; j++)
               {
                 table[v1][cnt[v1]++] = first+j;
                 table[v2][cnt[v2]++] = first+j;
               }
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           {
-            first = first_face_dof[i];
+            int first = first_face_dof[i];
             int ndof = first_face_dof[i+1]-first_face_dof[i];
-            for (j = 0; j < ndof; j++)
+            for (int j = 0; j < ndof; j++)
               table[nv+i][j] = first+j;
             cnt[nv+i] = ndof;
           }
 	
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
-            ma.GetElFaces (i, fanums, orient);
-            first = first_element_dof[i];
+            ma.GetElFaces (i, fanums);
+            int first = first_element_dof[i];
             int ndof = first_element_dof[i+1] - first_element_dof[i];
-            for (j = 0; j < fanums.Size(); j++)
-              for (k = 0; k < ndof; k++)
+            for (int j = 0; j < fanums.Size(); j++)
+              for (int k = 0; k < ndof; k++)
                 table[nv+fanums[j]][cnt[nv+fanums[j]]++] = first + k;
           }
         break; 
       case 6: // VEF + I
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           {
             int v1, v2;
-            first = first_edge_dof[i];
+            int first = first_edge_dof[i];
             int ndof = first_edge_dof[i+1]-first;
             ma.GetEdgePNums (i, v1, v2);
-            for (j = 0; j < ndof; j++)
+            for (int j = 0; j < ndof; j++)
               {
                 table[v1][cnt[v1]++] = first+j;
                 table[v2][cnt[v2]++] = first+j;
               }
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           {
             Array<int> pnums; 
             ma.GetFacePNums(i,pnums); 
-            first = first_face_dof[i];
+            int first = first_face_dof[i];
             int ndof = first_face_dof[i+1]-first_face_dof[i];
-            for(k=0;k<pnums.Size();k++)
-              for (j = 0; j < ndof; j++)
+            for (int k = 0;k<pnums.Size();k++)
+              for (int j = 0; j < ndof; j++)
                 table[pnums[k]][cnt[pnums[k]]++] = first+j;
           }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
-            first = first_element_dof[i];
+            int first = first_element_dof[i];
             int ndof = first_element_dof[i+1]-first;
-            for (j = 0; j < ndof; j++)
+            for (int j = 0; j < ndof; j++)
               table[nv+i][j] = first+j;
           }
         break; 
       case 7: // VEFI
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           {
             int v1, v2;
-            first = first_edge_dof[i];
+            int first = first_edge_dof[i];
             int ndof = first_edge_dof[i+1]-first;
             ma.GetEdgePNums (i, v1, v2);
-            for (j = 0; j < ndof; j++)
+            for (int j = 0; j < ndof; j++)
               {
                 table[v1][cnt[v1]++] = first+j;
                 table[v2][cnt[v2]++] = first+j;
               }
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           {
             Array<int> pnums; 
             ma.GetFacePNums(i,pnums); 
-            first = first_face_dof[i];
+            int first = first_face_dof[i];
             int ndof = first_face_dof[i+1]-first_face_dof[i];
-            for(k=0;k<pnums.Size();k++)
-              for (j = 0; j < ndof; j++)
+            for (int k = 0;k<pnums.Size();k++)
+              for (int j = 0; j < ndof; j++)
                 table[pnums[k]][cnt[pnums[k]]++] = first+j;
           }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
             Array<int> pnums; 
             ma.GetElPNums(i,pnums); 
-            first = first_element_dof[i];
+            int first = first_element_dof[i];
             int ndof = first_element_dof[i+1]-first_element_dof[i];
-            for(k=0;k<pnums.Size();k++)
-              for (j = 0; j < ndof; j++)
+            for (int k = 0;k<pnums.Size();k++)
+              for (int j = 0; j < ndof; j++)
                 table[pnums[k]][cnt[pnums[k]]++] = first+j;
           }
         break;
       case 12: // VEFI
         //cnt =0; 
-        for(i=0;i<nv;i++)
+        for (int i =0;i<nv;i++)
           table[ma.GetClusterRepVertex(i)][cnt[ma.GetClusterRepVertex(i)]++]=i;
 	     
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           {
             int v1, v2;
-            first = first_edge_dof[i];
+            int first = first_edge_dof[i];
             int ndof = first_edge_dof[i+1]-first;
             ma.GetEdgePNums (i, v1, v2);
             int r1 = ma.GetClusterRepVertex(v1); 
             int r2 = ma.GetClusterRepVertex(v2); 
 	    
-            for (j = 0; j < ndof; j++)
+            for (int j = 0; j < ndof; j++)
               {
                 table[r1][cnt[r1]++] = first+j;
                 if(r1!=r2)
                   table[v2][cnt[v2]++] = first+j;
               }
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           {
             Array<int> pnums; 
             ma.GetFacePNums(i,pnums); 
 	    
-            first = first_face_dof[i];
+            int first = first_face_dof[i];
             int ndof = first_face_dof[i+1]-first_face_dof[i];
             Array<int> repv; 
 	  
-            for(j=0;j<pnums.Size();j++) 
+            for (int j =0;j<pnums.Size();j++) 
               repv.Append(ma.GetClusterRepVertex(pnums[j]));
-            for(j=0;j<pnums.Size();j++) 
+            for (int j =0;j<pnums.Size();j++) 
               { 
                 bool ok=1; 
-                for(k=0;k<j;k++) if(repv[j] == repv[k]) ok = 0;  
+                for (int k = 0;k<j;k++) if(repv[j] == repv[k]) ok = 0;  
 		
                 if(ok)
-                  for (k = 0; k < ndof; k++)
+                  for (int k = 0; k < ndof; k++)
                     table[repv[j]][cnt[repv[j]]++] += first+k ;
               }
           }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
             Array<int> pnums; 
             ma.GetElPNums(i,pnums); 
-            first = first_element_dof[i];
+            int first = first_element_dof[i];
             int ndof = first_element_dof[i+1]-first_element_dof[i];
 	    
 	    
             Array<int> repv; 
-            for(j=0;j<pnums.Size();j++) 
+            for (int j =0;j<pnums.Size();j++) 
               repv.Append( ma.GetClusterRepVertex(pnums[j]));
-            for(j=0;j<pnums.Size();j++) 
+            for (int j =0;j<pnums.Size();j++) 
               { 
                 bool ok=1; 
-                for(k=0;k<j;k++) if(repv[j] == repv[k]) ok = 0;  
+                for (int k = 0;k<j;k++) if(repv[j] == repv[k]) ok = 0;  
 		
                 if(ok)
-                  for (k = 0; k < ndof; k++)
+                  for (int k = 0; k < ndof; k++)
                     table[repv[j]][cnt[repv[j]]++] += first+k ;
               }
           }
 	   
         break;
  
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           {
             int v1, v2;
-            first = first_edge_dof[i];
+            int first = first_edge_dof[i];
             int ndof = first_edge_dof[i+1]-first;
             ma.GetEdgePNums (i, v1, v2);
-            for (j = 0; j < ndof; j++)
+            for (int j = 0; j < ndof; j++)
               {
                 table[v1][cnt[v1]++] = first+j;
                 table[v2][cnt[v2]++] = first+j;
               }
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           {
             Array<int> pnums; 
             ma.GetFacePNums(i,pnums); 
-            first = first_face_dof[i];
+            int first = first_face_dof[i];
             int ndof = first_face_dof[i+1]-first_face_dof[i];
-            for(k=0;k<pnums.Size();k++)
-              for (j = 0; j < ndof; j++)
+            for (int k = 0;k<pnums.Size();k++)
+              for (int j = 0; j < ndof; j++)
                 table[pnums[k]][cnt[pnums[k]]++] = first+j;
           }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
             Array<int> pnums; 
             ma.GetElPNums(i,pnums); 
-            first = first_element_dof[i];
+            int first = first_element_dof[i];
             int ndof = first_element_dof[i+1]-first_element_dof[i];
-            for(k=0;k<pnums.Size();k++)
-              for (j = 0; j < ndof; j++)
+            for (int k = 0;k<pnums.Size();k++)
+              for (int j = 0; j < ndof; j++)
                 table[pnums[k]][cnt[pnums[k]]++] = first+j;
           }
         break;
  
       case 8: // V + E + FI 
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           {
-            first = first_edge_dof[i];
-            for (j = first; j < first_edge_dof[i+1]; j++)
+            int first = first_edge_dof[i];
+            for (int j = first; j < first_edge_dof[i+1]; j++)
               table[nv+i][cnt[nv+i]++] = j;
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           {
-            first = first_face_dof[i];
-            for (j = first; j < first_face_dof[i+1]; j++)
+            int first = first_face_dof[i];
+            for (int j = first; j < first_face_dof[i+1]; j++)
               table[nv+ned+i][cnt[nv+ned+i]++] = j;
           }
-        for (i = 0; i < nel; i++)
+        for (int i = 0; i < nel; i++)
           {
-            ma.GetElFaces (i,fanums,orient);
-            for (k = 0; k < fanums.Size(); k++)
-              for (j = first_element_dof[i]; j < first_element_dof[i+1]; j++)
+            ma.GetElFaces (i,fanums);
+            for (int k = 0; k < fanums.Size(); k++)
+              for (int j = first_element_dof[i]; j < first_element_dof[i+1]; j++)
                 table[nv+ned+fanums[k]][cnt[nv+ned+fanums[k]]++] = j;
           }
         break;
       case 9: // V + EF + I
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           {
-            first = first_edge_dof[i];
+            int first = first_edge_dof[i];
             int ndof = first_edge_dof[i+1]-first;
-            for (j = 0; j < ndof; j++)
+            for (int j = 0; j < ndof; j++)
               table[nv+i][cnt[nv+i]++] = first+j;
           }
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           {
-            first = first_face_dof[i];
+            int first = first_face_dof[i];
             int ndof = first_face_dof[i+1]-first;
             ma.GetFaceEdges (i, f2ed);
-            for (k = 0; k < f2ed.Size(); k++)
-              for (j = 0; j < ndof; j++)
+            for (int k = 0; k < f2ed.Size(); k++)
+              for (int j = 0; j < ndof; j++)
                 table[nv+f2ed[k]][cnt[nv+f2ed[k]]++] = first+j;
           }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
-            first = first_element_dof[i];
+            int first = first_element_dof[i];
             int ndof = first_element_dof[i+1]-first;
-            for (j = 0; j < ndof; j++)
+            for (int j = 0; j < ndof; j++)
               table[nv+ned+i][j] = first+j;
           }
         break; 
       case 10: // V + EI + FI
         cnt =0; 
 
-        for (i=0;i<nv ; i++) 
+        for (int i = 0; i < nv ; i++) 
           table[ma.GetClusterRepVertex(i)][cnt[ma.GetClusterRepVertex(i)]++] = i; 	
 
 	
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           if(fine_edge[i])
-            for (j = first_edge_dof[i]; j < first_edge_dof[i+1]; j++)
+            for (int j = first_edge_dof[i]; j < first_edge_dof[i+1]; j++)
               table[ma.GetClusterRepEdge(i)][cnt[ma.GetClusterRepEdge(i)]++] = j;
 	
 
-        for (i = 0; i < nfa; i++)
+        for (int i = 0; i < nfa; i++)
           if(fine_face[i])
-            for (j = first_face_dof[i]; j < first_face_dof[i+1]; j++)
+            for (int j = first_face_dof[i]; j < first_face_dof[i+1]; j++)
               table[ma.GetClusterRepFace(i)][cnt[ma.GetClusterRepFace(i)]++] = j;
 
-        for(i=0;i<ni;i++)
+        for (int i =0;i<ni;i++)
           {
             int ccl = ma.GetClusterRepElement(i);
-            for (j = first_element_dof[i]; j < first_element_dof[i+1]; j++)
+            for (int j = first_element_dof[i]; j < first_element_dof[i+1]; j++)
               table[ma.GetClusterRepElement(i)][cnt[ccl]++] = j;
           }
-        /*	for (i = 0; i < ni; i++)
+        /*	for (int i = 0; i < ni; i++)
           {
           int ccl = ma.GetClusterRepElement(i);
           ma.GetElEdges (i,ednums,orient);
-          for (k = 0; k < ednums.Size(); k++)
+          for (int k = 0; k < ednums.Size(); k++)
           //  if(ccl!=ma.GetClusterRepEdge(ednums[k]))
-          for (j = first_element_dof[i]; j < first_element_dof[i+1]; j++)
+          for (int j = first_element_dof[i]; j < first_element_dof[i+1]; j++)
           table[ma.GetClusterRepEdge(ednums[k])][cnt[ma.GetClusterRepEdge(ednums[k])]++] = j;
 	    
           ma.GetElFaces (i,fanums,orient);
 	   
-          for (k = 0; k < fanums.Size(); k++)
+          for (int k = 0; k < fanums.Size(); k++)
           //  if(ccl!=ma.GetClusterRepFace(fanums[k]))
-          for (j = first_element_dof[i]; j < first_element_dof[i+1]; j++)
+          for (int j = first_element_dof[i]; j < first_element_dof[i+1]; j++)
           table[ma.GetClusterRepFace(fanums[k])][cnt[ma.GetClusterRepFace(fanums[k])]++] = j;
           }	*/
         //cout << " test 5 " << endl; 
@@ -1849,27 +1699,27 @@ namespace ngcomp
         //*testout  << "table " << table << endl; 
         break;
       case 11: //2d VEF
-        for (i = 0; i < ned; i++)
+        for (int i = 0; i < ned; i++)
           if(fine_edge[i])
             {
               int v1, v2;
-              first = first_edge_dof[i];
+              int first = first_edge_dof[i];
               int ndof = first_edge_dof[i+1]-first;
               ma.GetEdgePNums (i, v1, v2);
-              for (j = 0; j < ndof; j++)
+              for (int j = 0; j < ndof; j++)
                 {
                   table[v1][cnt[v1]++] = first+j;
                   table[v2][cnt[v2]++] = first+j;
                 }
             }
-        for (i = 0; i < ni; i++)
+        for (int i = 0; i < ni; i++)
           {
             Array<int> pnums; 
             ma.GetElPNums(i,pnums); 
-            first = first_element_dof[i];
+            int first = first_element_dof[i];
             int ndof = first_element_dof[i+1]-first_element_dof[i];
-            for(k=0;k<pnums.Size();k++)
-              for (j = 0; j < ndof; j++)
+            for (int k=0;k<pnums.Size();k++)
+              for (int j = 0; j < ndof; j++)
                 table[pnums[k]][cnt[pnums[k]]++] = first+j;
           }
         break;
@@ -1896,11 +1746,11 @@ namespace ngcomp
               }
           for (int i = 0; i < nfa; i++)
             {
-              first = first_face_dof[i];
+              int first = first_face_dof[i];
               int ndof = first_face_dof[i+1]-first;
               ma.GetFaceEdges (i, f2ed);
-              for (k = 0; k < f2ed.Size(); k++)
-                for (j = 0; j < ndof; j++)
+              for (int k = 0; k < f2ed.Size(); k++)
+                for (int j = 0; j < ndof; j++)
                   table[nv+f2ed[k]][cnt[nv+f2ed[k]]++] = first+j;
             }
           break;
@@ -1930,7 +1780,7 @@ namespace ngcomp
 
     // all vertices in global space
     /*
-      for (i = 0; i < nv; i++)
+      for (int i = 0; i < nv; i++)
       clusters[i] = 1;
 
       // all edges in direct solver cluster
@@ -1942,7 +1792,7 @@ namespace ngcomp
     */
    
     // All Vertical Edges in one Cluster for Hex and Prism (-> 2d Problems !) 
-    Array<int> ednums, edorient,fnums, forient;
+    Array<int> ednums,fnums;
 
     //Array<int> & clusters = *new Array<int> (nd);
     //clusters = 0;
@@ -1953,7 +1803,7 @@ namespace ngcomp
       {
         if (ma.GetElType(i) == ET_PRISM)
           {
-            ma.GetElEdges (i, ednums, edorient);
+            ma.GetElEdges (i, ednums);
             for (j = 6; j < 9; j++)  //vertical Edges 
               { 
                 int first = first_edge_dof[ednums[j]];
@@ -1962,8 +1812,8 @@ namespace ngcomp
                   clusters[k] = 2;
               }
 	    
-            ma.GetElFaces(i,fnums,forient); // vertical faces 
-            for(j=2;j<5;j++) 
+            ma.GetElFaces(i,fnums); // vertical faces 
+            for (int j =2;j<5;j++) 
               {
 	
                 int first = first_face_dof[fnums[j]]; 
@@ -1980,7 +1830,7 @@ namespace ngcomp
 
         else if (ma.GetElType(i) == ET_HEX)  
           {
-            ma.GetElEdges (i, ednums, edorient);
+            ma.GetElEdges (i, ednums);
             for (j = 8; j < 12; j++) //vertical edges
               {
                 int first = first_edge_dof[ednums[j]];
@@ -1988,8 +1838,8 @@ namespace ngcomp
                 for (k = first; k < next; k++)
                   clusters[k] = 2;
               }
-            ma.GetElFaces(i,fnums,forient); // vertical faces 
-            for(j=2;j<6;j++) 
+            ma.GetElFaces(i,fnums); // vertical faces 
+            for (int j =2;j<6;j++) 
               {
                 
                 int first = first_face_dof[fnums[j]]; 
@@ -2003,12 +1853,12 @@ namespace ngcomp
 
 
    
-    for(i=0; directsolverclustered.Size() > 0 && i<ne; i++)
+    for (int i =0; directsolverclustered.Size() > 0 && i<ne; i++)
       {
         if(directsolverclustered[ma.GetElIndex(i)])
           {
             GetDofNrs(i,ednums);
-            for(k=0; k<ednums.Size(); k++)
+            for (int k = 0; k<ednums.Size(); k++)
               {
                 clusters[ednums[k]] = 4;
               }
@@ -2017,7 +1867,7 @@ namespace ngcomp
 
    
 
-    for(i=0; i< adddirectsolverdofs.Size(); i++)
+    for (int i =0; i< adddirectsolverdofs.Size(); i++)
       {
         clusters[adddirectsolverdofs[i]] = 5;
       }
@@ -2031,21 +1881,21 @@ namespace ngcomp
       (*testout) << "directelementclusters" << directelementclusters << endl;
     */
 
-    for(i=0; i<directvertexclusters.Size(); i++)
+    for (int i = 0; i<directvertexclusters.Size(); i++)
       if(directvertexclusters[i] >= 0)
         clusters[i] = directvertexclusters[i] + stdoffset;
 
-    for(i=0; i<directedgeclusters.Size(); i++)
+    for (int i = 0; i<directedgeclusters.Size(); i++)
       if(directedgeclusters[i] >= 0)
         for(j = first_edge_dof[i]; j<first_edge_dof[i+1]; j++)
           clusters[j] = directedgeclusters[i] + stdoffset;
 
-    for(i=0; i<directfaceclusters.Size(); i++)
+    for (int i = 0; i<directfaceclusters.Size(); i++)
       if(directfaceclusters[i] >= 0)
         for(j = first_face_dof[i]; j<first_face_dof[i+1]; j++)
           clusters[j] = directfaceclusters[i] + stdoffset;
 	  
-    for(i=0; i<directelementclusters.Size(); i++)
+    for (int i = 0; i<directelementclusters.Size(); i++)
       if(directelementclusters[i] >= 0)
         for(j = first_element_dof[i]; j<first_element_dof[i+1]; j++)
           clusters[j] = directelementclusters[i] + stdoffset;
@@ -2066,246 +1916,6 @@ namespace ngcomp
   }
 
 #ifdef PARALLEL
-
-
-#ifdef OLD_PARALLEL_UPDATE
-
-  das sollte nicht definiert sein
-
-  void H1HighOrderFESpace :: UpdateParallelDofs_hoproc()
-  {
-    // ******************************
-    // update exchange dofs 
-    // ******************************
-    *testout << "H1Ho::UpdateParallelDofs_hoproc" << endl;
-    // Find number of exchange dofs
-    Array<int> nexdof(ntasks);
-    nexdof = 0;
-
-    Array<MPI_Request> sendrequest(ntasks);
-    Array<MPI_Request> recvrequest(ntasks);
-    MPI_Status status;
-
-    Array<int> dnums;
-
-
-    for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
-      {
-        if ( eliminate_internal && nt == NT_CELL ) break;
-        for ( int nr = 0; nr < ma.GetNNodes(nt); nr++ )
-          {
-            if ( !parallelma->IsExchangeNode ( nt, nr ) ) continue;
-	    
-            GetNodeDofNrs ( nt, nr, dnums );
-            nexdof[id] += dnums.Size();
-	    
-            for ( int dest = 1; dest < ntasks; dest ++ )
-              if (  parallelma -> GetDistantNodeNum ( dest, nt, nr ) >= 0 )
-                nexdof[dest] += dnums.Size(); 
-          }
-      }
-
-    nexdof[0] = LowOrderFESpace() . GetNDof();
-
-    paralleldofs->SetNExDof(nexdof);
-
-    //     // brauchen wir eigentlich nicht mehr
-    //     paralleldofs->localexchangedof = new Table<int> (nexdof);
-    //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
-
-    paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
-
-    Array<int> ** owndofs, ** distantdofs;
-    owndofs = new Array<int>* [ntasks];
-    distantdofs = new Array<int>* [ntasks];
-
-    for ( int i = 0; i < ntasks; i++ )
-      {
-        owndofs[i] = new Array<int>(1);
-        (*owndofs[i])[0] = ndof;
-        distantdofs[i] = new Array<int>(0);
-      }
-
-
-
-    Array<int> cnt_nexdof(ntasks);
-    cnt_nexdof = 0;
-    int exdof = 0;
-    int ii = 1;
-
-    // *******************
-    // Parallel Node dofs
-    // *******************
-
-
-
-    for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
-      {
-        if ( eliminate_internal && nt == NT_CELL ) break;
-
-        for ( int dest = 0; dest < ntasks; dest++)
-          {
-            owndofs[dest]->SetSize(1);
-            distantdofs[dest]->SetSize(0);
-          }
-
-        for ( int node = 0; node < ma.GetNNodes(nt); node++ )
-          if ( parallelma->IsExchangeNode(nt, node) )
-            {
-              GetNodeDofNrs (nt, node, dnums); 
-              if ( dnums.Size() == 0 ) continue;
-	      
-              for ( int i=0; i<dnums.Size(); i++ )
-                (*(paralleldofs->sorted_exchangedof))[id][exdof++] = dnums[i];
-
-              Array<int[2]> distantnodenums;
-              parallelma -> GetDistantNodeNums ( nt, node, distantnodenums);
-              for ( int idest = 1; idest < distantnodenums.Size(); idest++ )
-                {
-                  int dest = distantnodenums[idest][0];
-                  int distnode = distantnodenums[idest][1];
-
-                  owndofs[dest]->Append ( distnode );
-                  owndofs[dest]->Append (int(paralleldofs->IsGhostDof(dnums[0])) );
-
-                  for ( int i=0; i<dnums.Size(); i++)
-                    {
-                      paralleldofs->SetExchangeDof ( dest, dnums[i] );
-                      paralleldofs->SetExchangeDof ( dnums[i] );
-                      owndofs[dest]->Append ( dnums[i] );
-                    }
-                }
-            } 
-
-
-        for ( int dest = 1; dest < ntasks; dest ++ )
-          if ( dest != id )
-            {
-              MyMPI_ISend ( *owndofs[dest], dest, sendrequest[dest]);
-            }
-	
-        for ( int sender = 1; sender < ntasks; sender ++ )
-          if ( sender != id )
-            {
-              MyMPI_IRecv ( *distantdofs[sender], sender, recvrequest[sender]);
-            }
-	
-        for( int dest=1; dest<ntasks; dest++) 
-          {
-            ii = 1;
-            if ( dest == id ) continue;
-            MPI_Wait ( &recvrequest[dest], &status );
-
-            while ( ii < distantdofs[dest]->Size() )
-              {
-                int nodenum = (*distantdofs[dest])[ii++];
-                int isdistghost = (*distantdofs[dest])[ii++];
-                Array<int> dnums;
-                GetNodeDofNrs (nt, nodenum, dnums);
-                for ( int i=0; i<dnums.Size(); i++)
-                  {
-                    // 		    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
-                    // 		    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
-
-
-                    (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
-
-                    if ( dest < id && !isdistghost )
-                      paralleldofs->ismasterdof.Clear ( dnums[i] ) ;
-                    ii++; 
-                    cnt_nexdof[dest]++;
-                  }
-              }
-          }
-
-        // das ist abgegangen (JS -> AS) !
-        for ( int dest = 1; dest < ntasks; dest ++ )
-          if ( dest != id )
-            MPI_Wait ( &sendrequest[dest], &status );
-      }
-
-
-
-    for ( int dest = id+1; dest < ntasks; dest++ )
-      QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
-
-
-
-    
-
-
-
-
-
-    /*******************************
-
-         update low order space
-
-    *****************************/
-
-
-    int ndof_lo = low_order_space->GetNDof();
-
-    // all dofs are exchange dofs
-    nexdof = ndof_lo;
- 
-    exdof = 0;
-    cnt_nexdof = 0;
-
-
-    // *****************
-    // Parallel Vertex dofs
-    // *****************
-
-    owndofs[0]->SetSize(1);
-    (*owndofs[0])[0] = ndof;
-    distantdofs[0]->SetSize(0);
-    
-    // find local and distant dof numbers for vertex exchange dofs
-    for ( int vert = 0; vert < ma.GetNV(); vert++ )
-      {
-        int dest = 0;
-	
-        int distvert = parallelma -> GetDistantPNum ( dest, vert );
-        owndofs[0]->Append ( distvert );
-        paralleldofs->SetExchangeDof ( dest, vert );
-        owndofs[0]->Append ( vert );
-      }   
-    
-
-    int dest = 0;
-    MyMPI_ISend ( *owndofs[0], dest, sendrequest[dest]);
-    MyMPI_IRecv ( *distantdofs[0], dest, recvrequest[dest] );
-   
-    MPI_Wait ( &recvrequest[dest], &status );
-
-    ii = 1;
-    while ( ii < distantdofs[0]->Size() )
-      {
-        if ( dest == id ) continue;
-        paralleldofs -> SetDistNDof( dest, (*distantdofs[dest])[0]) ;
-        int vnum = (*distantdofs[0])[ii++];
-        // 	(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = vnum;
-        // 	(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[0])[ii];
-
-        (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = vnum;
-        ii++; cnt_nexdof[dest]++;
-      }
-
-    for ( int i = 0; i < ntasks; i++ )
-      delete distantdofs[i], owndofs[i];
-
-    delete [] owndofs, distantdofs;
-    // delete [] sendrequest, recvrequest;
-
-
-    //     *testout << "localexchangedof = " << endl 
-    //              << *paralleldofs->localexchangedof << endl;
-    //     *testout << "distantexchangedof = " << endl 
-    //              << *paralleldofs->distantexchangedof << endl;
-  }
-
-#endif
 
   void H1HighOrderFESpace :: UpdateParallelDofs_loproc()
   {

@@ -167,6 +167,29 @@ namespace ngcomp
     virtual void UpdateParallelDofs_loproc();
 #endif
 
+
+  protected:
+    IntRange GetEdgeDofs (int nr) const
+    {
+      return IntRange (first_edge_dof[nr], 
+                       first_edge_dof[nr+1]);
+    }
+
+    IntRange GetFaceDofs (int nr) const
+    {
+      return IntRange (first_face_dof[nr], 
+                       first_face_dof[nr+1]);
+    }
+
+    IntRange GetElementDofs (int nr) const
+    {
+      return IntRange (first_inner_dof[nr], 
+                       first_inner_dof[nr+1]);
+    }
+
+
+
+
   };
 
 }

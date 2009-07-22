@@ -25,6 +25,11 @@ class AutoDiffDiff
   double dval[D];
   double ddval[D*D];
 public:
+
+  typedef AutoDiffDiff<D> TELEM;
+  typedef double TSCAL;
+
+
   /// elements are undefined
   AutoDiffDiff  () throw() { ; }
 
@@ -380,6 +385,27 @@ inline AutoDiffDiff<D> operator/ (double x, const AutoDiffDiff<D> & y)
 {
   return x * Inv(y);
 }
+
+
+template<int D>
+inline AutoDiffDiff<D> sqrt (const AutoDiffDiff<D> & x)
+{
+  AutoDiffDiff<D> res;
+  res.Value() = std::sqrt(x.Value());
+  for (int j = 0; j < D; j++)
+    res.DValue(j) = 0.5 / res.Value() * x.DValue(j);
+
+  
+  for (int i = 0; i < D; i++)
+    for (int j = 0; j < D; j++)
+      res.DDValue(i,j) = 0.5/res.Value() * x.DDValue(i,j) - 0.25 / (x.Value()*res.Value()) * x.DValue(i) * x.DValue(j);
+
+  return res;
+}
+
+
+
+
 
 //@}
 

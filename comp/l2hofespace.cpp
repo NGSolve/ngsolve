@@ -41,7 +41,7 @@ namespace ngcomp
     DefineDefineFlag("print"); 
     DefineDefineFlag("l2ho");
     
-    if (parseflags) ParseFlags(flags);
+    if (parseflags) CheckFlags(flags);
     
     var_order = 0; 
     
@@ -409,7 +409,7 @@ namespace ngcomp
     // defined flags 
     DefineDefineFlag("l2surf");
 
-    if(parseflags) ParseFlags(flags);
+    if(parseflags) CheckFlags(flags);
     
     
     if(flags.NumFlagDefined("relorder"))

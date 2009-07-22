@@ -222,7 +222,7 @@ public:
 		     const FlatVector<double> & x, FlatVector<double> & y,
 		     LocalHeap & lh) 
   {
-    y(0) = fel.Evaluate(sip.IP(), x, lh);
+    y(0) = fel.Evaluate(sip.IP(), x);
   }
 
 
@@ -337,6 +337,14 @@ public:
   {
     y = Trans (fel.GetShape (sip.IP(), lh)) * x;
   }
+
+  static void Apply (const ScalarFiniteElement<D-1> & fel, const SpecificIntegrationPoint<D-1,D> & sip,
+		     const FlatVector<double> & x, FlatVector<double> & y,
+		     LocalHeap & lh) 
+  {
+    y(0) = fel.Evaluate(sip.IP(), x);
+  }
+
 
   template <typename FEL, typename SIP, class TVX, class TVY>
   static void ApplyTrans (const FEL & fel, const SIP & sip,

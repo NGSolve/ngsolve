@@ -311,6 +311,13 @@ namespace ngcomp
 			       const double xref[], const double x[], const double dxdxref[],
 			       double * values);
 
+    virtual bool GetMultiSurfValue (int selnr, int npts,
+                                    const double * xref, int sxref,
+                                    const double * x, int sx,
+                                    const double * dxdxref, int sdxdxref,
+                                    double * values, int svalues);
+
+
     void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages, int component = -1);
     void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages_times_volumes, Array<double> & volumes, int component = -1);
     

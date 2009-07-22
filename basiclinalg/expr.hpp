@@ -191,6 +191,20 @@ namespace ngbla
     enum { IS_COMPLEX = mat_traits<SCAL>::IS_COMPLEX };
   };
 
+  template <int D>
+  class mat_traits<AutoDiffDiff<D> >
+  {
+  public:
+    typedef AutoDiffDiff<D> TELEM;
+    typedef AutoDiffDiff<D> TSCAL;
+    typedef AutoDiffDiff<D> TV_COL;
+    typedef AutoDiffDiff<D> TV_ROW;
+    enum { HEIGHT = 1 };
+    enum { WIDTH = 1 };
+    enum { IS_COMPLEX = false };
+  };
+
+
   template <>
   class mat_traits<const int>
   {

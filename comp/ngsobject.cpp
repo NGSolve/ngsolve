@@ -2,24 +2,24 @@
 
 namespace ngcomp {
 
-void NGS_Object :: DefineStringFlag(const char* s, const char* val) 
-{
-  if (flaglist.StringFlagDefined(s))
+  void NGS_Object :: DefineStringFlag(const char* s) //, const char* val) 
   {
-      cerr << "WARNING in NGS_Object :: DefineStringFlag: stringflag '" << s << "' already defined" << endl;
-      return;
-  }    
-  flaglist.SetFlag(s,val); 
-}
+    if (flaglist.StringFlagDefined(s))
+      {
+        cerr << "WARNING in NGS_Object :: DefineStringFlag: stringflag '" << s << "' already defined" << endl;
+        return;
+      }    
+    flaglist.SetFlag(s, "" /* val */ ); 
+  }
 
-void NGS_Object :: DefineNumFlag(const char* s, double val) 
+  void NGS_Object :: DefineNumFlag(const char* s) // , double val) 
 {
   if (flaglist.NumFlagDefined(s))
   {
     cerr << "WARNING in NGS_Object :: DefineNumFlag: numflag '" << s << "' already defined" << endl;
     return;
   }    
-  flaglist.SetFlag(s,val); 
+  flaglist.SetFlag(s, 0.0 /* val */ ); 
 }
 
 void NGS_Object :: DefineDefineFlag(const char* s) 
@@ -54,7 +54,7 @@ void NGS_Object :: DefineNumListFlag(const char* s)
   flaglist.SetFlag(s,as); 
 }
 
-int NGS_Object :: ParseFlags(const Flags& flags)
+int NGS_Object :: CheckFlags(const Flags& flags)
 {
   int ret=0; // ok
   
@@ -65,7 +65,7 @@ int NGS_Object :: ParseFlags(const Flags& flags)
     flags.GetStringFlag(i, s);
     if (!flaglist.StringFlagDefined(s))
     {
-      cerr << "WARNING in NGS_Object :: ParseFlags(): stringflag '" << s << "' not defined for object " << name  << endl;
+      cerr << "WARNING in NGS_Object :: CheckFlags(): stringflag '" << s << "' not defined for object " << name  << endl;
       ret++;
     }
   }
@@ -75,7 +75,7 @@ int NGS_Object :: ParseFlags(const Flags& flags)
     flags.GetNumFlag(i, s);
     if (!flaglist.NumFlagDefined(s))
     {
-      cerr << "WARNING in NGS_Object :: ParseFlags(): numflag '" << s << "' not defined for object " << name  << endl;
+      cerr << "WARNING in NGS_Object :: CheckFlags(): numflag '" << s << "' not defined for object " << name  << endl;
       ret++;
     }
   }
@@ -85,7 +85,7 @@ int NGS_Object :: ParseFlags(const Flags& flags)
     flags.GetDefineFlag(i, s);
     if (!flaglist.GetDefineFlag(s))
     {
-      cerr << "WARNING in NGS_Object :: ParseFlags(): defineflag '" << s << "' not defined for object " << name  << endl;
+      cerr << "WARNING in NGS_Object :: CheckFlags(): defineflag '" << s << "' not defined for object " << name  << endl;
       ret++;
     }
   }
@@ -95,7 +95,7 @@ int NGS_Object :: ParseFlags(const Flags& flags)
     flags.GetStringListFlag(i, s);
     if (!flaglist.StringListFlagDefined(s))
     {
-      cerr << "WARNING in NGS_Object :: ParseFlags(): stringlistflag '" << s << "' not defined for object " << name  << endl;
+      cerr << "WARNING in NGS_Object :: CheckFlags(): stringlistflag '" << s << "' not defined for object " << name  << endl;
       ret++;
     }
   }
@@ -105,7 +105,7 @@ int NGS_Object :: ParseFlags(const Flags& flags)
     flags.GetNumListFlag(i, s);
     if (!flaglist.NumListFlagDefined(s))
     {
-      cerr << "WARNING in NGS_Object :: ParseFlags(): numlistflag '" << s << "' not defined for object " << name  << endl;
+      cerr << "WARNING in NGS_Object :: CheckFlags(): numlistflag '" << s << "' not defined for object " << name  << endl;
       ret++;
     }
   }

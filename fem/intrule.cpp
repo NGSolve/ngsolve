@@ -931,12 +931,8 @@ namespace ngfem
 
 
 
-
-
-
-
-  template <int D>
-  IntegrationRuleTP<D> :: IntegrationRuleTP (const ElementTransformation & eltrans,
+  template <>
+  IntegrationRuleTP<2> :: IntegrationRuleTP (const ElementTransformation & eltrans,
                                              int order, bool compute_mapping, LocalHeap & lh)
   {
     int nip = 0;
@@ -948,9 +944,9 @@ namespace ngfem
           irx = &SelectIntegrationRuleJacobi10 (order);
           iry = &SelectIntegrationRule (ET_SEGM, order);
           
-          int sort[3];
+          int sort[3] = { 0, 0, 0 };
           eltrans.GetSort (FlatArray<int> (3, &sort[0]) );
-          int isort[3];
+          int isort[3] = { 0, 0, 0 };
           for (int i = 0; i < 3; i++) isort[sort[i]] = i;
           
           nip = irx->GetNIP() * iry->GetNIP();
@@ -1010,7 +1006,6 @@ namespace ngfem
           break;
         }
 
-
       case ET_QUAD:
         {
           irx = &SelectIntegrationRule (ET_SEGM, order);
@@ -1039,8 +1034,36 @@ namespace ngfem
 
           break;
         }
+      default:
+        {
+          stringstream str;
+          str<< "IntegratonRuleTP not available for element type " 
+             << ElementTopology::GetElementName(eltrans.GetElementType()) << endl;
+          throw Exception (str.str());
+        }
+
+      }
+
+    if (compute_mapping && !eltrans.Boundary())
+      {
+        x.SetSize(nip);
+        dxdxi.SetSize(nip);
+        eltrans.CalcMultiPointJacobian (xi, x, dxdxi, lh);
+      }
+  }
 
 
+
+
+
+  template <>
+  IntegrationRuleTP<3> :: IntegrationRuleTP (const ElementTransformation & eltrans,
+                                             int order, bool compute_mapping, LocalHeap & lh)
+  {
+    int nip = 0;
+
+    switch (eltrans.GetElementType())
+      {
       case ET_TET:
         {
           irx = &SelectIntegrationRuleJacobi20 (order);
@@ -1129,7 +1152,6 @@ namespace ngfem
             }
           break;
         }
-
 
       case ET_PRISM:
         {
@@ -1258,6 +1280,18 @@ namespace ngfem
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
   template <int D>
   IntegrationRuleTP<D> :: IntegrationRuleTP (ELEMENT_TYPE eltype, FlatArray<int> sort, 
                                              NODE_TYPE nt, int nodenr, int order, LocalHeap & lh)
@@ -1366,8 +1400,6 @@ namespace ngfem
             }
           
         }
-
-
       case ET_TET:
         {
           if (nt != NT_FACE) break;
@@ -1500,14 +1532,13 @@ namespace ngfem
              << ElementTopology::GetElementName(eltype) << endl;
           throw Exception (str.str());
         }
-
       }
   }
 
 
 
 
-  template class IntegrationRuleTP<1>;
+  //  template class IntegrationRuleTP<1>;
   template class IntegrationRuleTP<2>;
   template class IntegrationRuleTP<3>;
 

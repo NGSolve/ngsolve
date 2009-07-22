@@ -10,7 +10,6 @@
 
 namespace ngfem
 {
-  using namespace ngfem;
 
   //------------------------------------------------------------------------
   // HCurlHighOrderFiniteElement
@@ -35,7 +34,7 @@ namespace ngfem
 
   template <int D>
   void HCurlHighOrderFiniteElement<D>::
-  SetVertexNumbers (FlatArray<int> & avnums, LocalHeap & lh)
+  SetVertexNumbers (FlatArray<int> & avnums)
   {
     for (int i = 0; i < avnums.Size(); i++)
       vnums[i] = avnums[i];
@@ -205,13 +204,6 @@ namespace ngfem
                      FlatVector<double> x,
                      LocalHeap & lh) const
   {
-    /*
-    // cout << "eval curl shape" << endl;
-    FlatMatrixFixWidth<DIM_CURL> mat(ndof, lh);
-    CalcCurlShape (ip, mat);
-    return Trans (mat) * x;
-    */
-
     AutoDiff<DIM> adp[DIM];
     for (int i = 0; i < DIM; i++)
       adp[i] = AutoDiff<DIM> (ip(i), i);

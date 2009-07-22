@@ -15,7 +15,6 @@
 
 #include <parallelngs.hpp>
 
-#include <../fem/h1lofe.hpp>
 
 
 #ifdef PARALLEL
@@ -31,42 +30,12 @@ namespace ngcomp
   using namespace ngparallel;
 
 
-  /*
-  FESpace :: FESpace (const MeshAccess & ama,
-		      int aorder, int adim, bool acomplex, bool parseflags)
-    : NGS_Object (ama)
+
+
+  FESpace :: FESpace (const MeshAccess & ama, const Flags & flags, bool checkflags)
+    : NGS_Object (ama, "FESpace")
   {
-    name = "FESpace";
-    order = aorder;
-    dimension = adim;
-    iscomplex = acomplex;
-    prol = 0;
-    low_order_space = 0;
-    eliminate_internal = 0;
-
-    tet = 0;
-    pyramid = 0;
-    prism = 0;
-    hex = 0;
-    trig = 0;
-    quad = 0;
-    segm = 0;
-
-    evaluator = 0;
-    boundary_evaluator = 0;
-
-#ifdef PARALLEL
-    paralleldofs = 0;
-#endif
-  }
-  */
-
-
-  FESpace :: FESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
-    : NGS_Object (ama)
-  {
-    name = "FESpace";
-    // flags which are allowed
+    // register flags
     DefineStringFlag("type");
     DefineNumFlag("order");
     DefineNumFlag("dim");
@@ -74,6 +43,7 @@ namespace ngcomp
     DefineDefineFlag("complex");
     DefineDefineFlag("eliminate_internal");
     DefineDefineFlag("noeliminate_internal");
+    DefineDefineFlag("timing");
     DefineNumListFlag("directsolverdomains");
     DefineNumListFlag("dirichlet");
     DefineNumListFlag("definedon");
@@ -83,13 +53,13 @@ namespace ngcomp
     DefineNumFlag ("definedonbound");
     DefineStringListFlag ("definedonbound");
 
-    // if(parseflags) ParseFlags(flags);
-    // no parsing needed since space bas class not used
+
     
     order = int (flags.GetNumFlag ("order", 1));
     dimension = int (flags.GetNumFlag ("dim", 1));
     iscomplex = flags.GetDefineFlag ("complex");
     eliminate_internal = flags.GetDefineFlag("eliminate_internal");
+    timing = flags.GetDefineFlag("timing");
 
     if(flags.NumListFlagDefined("directsolverdomains"))
       {
@@ -239,6 +209,7 @@ namespace ngcomp
     paralleldofs = 0;
 #endif
   }
+
   
   FESpace :: ~FESpace ()
   {
@@ -260,13 +231,14 @@ namespace ngcomp
  #endif
   }
   
-
+  /*
   void FESpace :: Update()
   {
     throw Exception (string ("FESpace::Update called, but Update(LocalHeap) should be called, fespace = ")
                      + typeid(*this).name() );
   }
-  
+  */
+
   void FESpace :: Update(LocalHeap & lh)
   {
     throw Exception (string ("FESpace::Update (LocalHeap) not overloaded, fespace = ")
@@ -294,14 +266,17 @@ namespace ngcomp
       case ET_QUAD:
 	fe = quad; break;
       default:
-        {
-          stringstream str;
-          str << "FESpace " << GetClassName() 
-              << ", undefined eltype " 
-              << ElementTopology::GetElementName(ma.GetElType(elnr))
-              << ", order = " << order << endl;
-          throw Exception (str.str());
-        }
+        ;
+      }
+
+    if (!fe)
+      {
+        stringstream str;
+        str << "FESpace " << GetClassName() 
+            << ", undefined eltype " 
+            << ElementTopology::GetElementName(ma.GetElType(elnr))
+            << ", order = " << order << endl;
+        throw Exception (str.str());
       }
     
     return *fe;
@@ -927,6 +902,45 @@ namespace ngcomp
   }
 
 
+  void FESpace :: Timing () const
+  {
+    clock_t starttime;
+    double time;
+    
+    starttime = clock();
+    
+    int steps = 0;
+    Array<int> dnums;
+    do
+      {
+        for (int i = 0; i < ma.GetNE(); i++)
+          GetDofNrs (i, dnums);
+        steps++;
+        time = double(clock() - starttime) / CLOCKS_PER_SEC;
+      }
+    while (time < 2.0);
+    
+    cout << ma.GetNE()*steps / time << " GetDofNrs per second" << endl;
+
+
+
+    starttime = clock();
+    steps = 0;
+    LocalHeap lh (100000);
+    do
+      {
+        for (int i = 0; i < ma.GetNE(); i++)
+          {
+            HeapReset hr(lh);
+            GetFE (i, lh);
+          }
+        steps++;
+        time = double(clock() - starttime) / CLOCKS_PER_SEC;
+      }
+    while (time < 2.0);
+    
+    cout << ma.GetNE()*steps / time << " GetFE per second" << endl;
+  }
 
 
 
@@ -1161,7 +1175,19 @@ namespace ngcomp
 #endif
 
 
+  /*
   Table<int> * FESpace :: CreateSmoothingBlocks (int type) const
+  {
+    int nd = GetNDof();
+    
+    Table<int> * it = new Table<int>(nd,1);
+    for (int i = 0; i < nd; i++)
+      (*it)[i][0] = i;
+
+    return it;
+  }
+  */
+  Table<int> * FESpace :: CreateSmoothingBlocks (const Flags & flags) const
   {
     int nd = GetNDof();
     
@@ -1733,6 +1759,8 @@ namespace ngcomp
       }
       
 
+    if (timing) Timing();
+
 #ifdef PARALLEL
     
     try
@@ -2172,7 +2200,7 @@ namespace ngcomp
     name="NonconformingFESpace(nonconforming)";
     // defined flags
     DefineDefineFlag("nonconforming");
-    if (parseflags) ParseFlags(flags);
+    if (parseflags) CheckFlags(flags);
     
     // prol = new LinearProlongation(*this);
     
@@ -2297,7 +2325,7 @@ namespace ngcomp
     : FESpace (ama, flags)
   {
     name="ElementFESpace(l2)";
-    if (parseflags) ParseFlags(flags);
+    if (parseflags) CheckFlags(flags);
     
     prol = new ElementProlongation (*this);
 
@@ -2494,7 +2522,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   : FESpace (ama, flags)
   {
     name="SurfaceElementFESpace(surfl2)";
-    if(parseflags) ParseFlags(flags);
+    if(parseflags) CheckFlags(flags);
     
     // prol = new SurfaceElementProlongation (GetMeshAccess(), *this);
 
@@ -2658,7 +2686,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   node2face2d (NULL), node2face3d(NULL)
   {
     name="NonConformingFESpace";
-    if(parseflags) ParseFlags(flags);
+    if(parseflags) CheckFlags(flags);
     
     node2face2d = new HashTable<INT<2>,int>(10000);
     prol = new NonConformingProlongation (GetMeshAccess(), *this);
@@ -3038,7 +3066,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     name="CompoundFESpaces";
     DefineDefineFlag("compound");
     DefineStringListFlag("spaces");
-    if(parseflags) ParseFlags(flags);
+    if(parseflags) CheckFlags(flags);
     
     Array<const Prolongation*> prols(spaces.Size());
     for (int i = 0; i < spaces.Size(); i++)

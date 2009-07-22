@@ -21,10 +21,9 @@ namespace ngcomp
 
   class MeshAccess : public BaseStatusHandler
   {
-    Array<bool> higher_integration_order;
 
     /// buffered global quantities:
-    // dimension of the domain. Set to -1 if no mesh is present
+    /// dimension of the domain. Set to -1 if no mesh is present
     int dim;
   
     // number of vertex, edge, face, and cell nodes
@@ -36,11 +35,12 @@ namespace ngcomp
     int nnodes_cd[4];
 
 
-    // number of elements of dimension i
+    /// number of elements of dimension i
     int nelements[4];  
-    // number of elements of co-dimension i
+    /// number of elements of co-dimension i
     int nelements_cd[4];
 
+    /// number of multigrid levels 
     int nlevels;
   public:
 
@@ -58,39 +58,40 @@ namespace ngcomp
     virtual ~MeshAccess ();
 
     /// problem dimension
-    int GetDimension() const { return dim; }  // { return Ng_GetDimension(); }
+    int GetDimension() const { return dim; }  
 
     /// number of points. needed for 6 node trigs, old-style
     int GetNP() const  { return Ng_GetNP(); }
 
     /// number of vertices
-    int GetNV() const  { return nnodes[0]; }         // { Ng_GetNV(); }
+    int GetNV() const  { return nnodes[0]; }  
 
     /// number of elements in the domain
-    int GetNE() const  { return nelements_cd[0]; }     // { return Ng_GetNE(); }
+    int GetNE() const  { return nelements_cd[0]; }  
 
     /// number of boundary elements
-    int GetNSE() const { return nelements_cd[1]; }   // { return Ng_GetNSE(); }
+    int GetNSE() const { return nelements_cd[1]; }  
 
     /// number of edges in the whole mesh
-    int GetNEdges() const { return nnodes[1]; }     // { return Ng_GetNEdges(); }
+    int GetNEdges() const { return nnodes[1]; }     
 
     /// number of faces in the whole mesh
-    int GetNFaces() const { return nnodes[2]; }    //  { return Ng_GetNFaces(); }
+    int GetNFaces() const { return nnodes[2]; }    
 
 
 
-
-    /// number of distinct domain
+    /// number of distinct domains
     int GetNDomains () const;
 
     /// number of distinct boundaries
     int GetNBoundaries () const;
 
+    ///
     template <int D>
     void GetPoint (int pi, Vec<D> & p) const
     { Ng_GetPoint (pi+1, &p(0)); }
 
+    ///
     template <int D>
     Vec<D> GetPoint (int pi) const
     { 
@@ -104,13 +105,15 @@ namespace ngcomp
     ELEMENT_TYPE GetElType (int elnr) const;
     ///
     int GetElIndex (int elnr) const
+    /*
     {
       if (dim == 2)
         return Ng_GetElementIndex<2> (elnr)-1;
       else
         return Ng_GetElementIndex<3> (elnr)-1;
     }
-    // { return Ng_GetElementIndex (elnr+1)-1; }
+    */
+    { return Ng_GetElementIndex (elnr+1)-1; }
 
     void SetElIndex (int elnr, int index) const
     { Ng_SetElementIndex (elnr+1,index+1); }
@@ -125,13 +128,15 @@ namespace ngcomp
     ELEMENT_TYPE GetSElType (int elnr) const;
     ///
     int GetSElIndex (const int elnr) const
+    /*
     {
       if (dim == 2)
         return Ng_GetElementIndex<1> (elnr)-1;
       else
         return Ng_GetElementIndex<2> (elnr)-1;
     }
-    // { return Ng_GetSurfaceElementIndex (elnr+1)-1; }
+    */
+    { return Ng_GetSurfaceElementIndex (elnr+1)-1; }
 
     ///
     int GetSElSurfaceNumber (const int elnr) const
@@ -199,6 +204,13 @@ namespace ngcomp
 	: Ng_GetElement<3> (elnr);
     }
 
+    template <int DIM>
+    Ng_Element GetElement (int elnr) const
+    {
+      return Ng_GetElement<DIM> (elnr);
+    }
+
+
     Ng_Element GetSElement (int elnr) const
     {
       return (dim == 2) 
@@ -206,6 +218,11 @@ namespace ngcomp
 	: Ng_GetElement<2> (elnr);
     }
 
+    template <int DIM>
+    Ng_Node<DIM> GetNode (int nr) const
+    {
+      return Ng_GetNode<DIM> (nr);
+    }
 
     // von astrid
     int GetElNV ( int elnr ) const;
@@ -251,16 +268,11 @@ namespace ngcomp
     int GetSegmentIndex (int snr) const;
 
     ///
-    int GetNFacets() const
-    { return nnodes_cd[1]; } //  (GetDimension() == 2 ? GetNEdges() : GetNFaces() ); }
+    int GetNFacets() const { return nnodes_cd[1]; } 
     ///
     void GetElFacets (int elnr, Array<int> & fnums) const;
     ///
-    // void GetElFacets (int elnr, Array<int> & fnums, Array<int> & orient) const;
-    ///
     void GetSElFacets (int selnr, Array<int> & fnums) const;
-    ///
-    // void GetSElFacet (int selnr, Array<int> & fnums, Array<int> & orient) const;
     ///
     void GetFacetPNums (int fnr, Array<int> & pnums) const;
     ///
@@ -413,8 +425,13 @@ namespace ngcomp
     void GetVertexSurfaceElements( int vnr, Array<int>& elems) const;
 
 
+  private:
+    Array<bool> higher_integration_order;
+  public:
     void SetHigherIntegrationOrder(int elnr);
     void UnSetHigherIntegrationOrder(int elnr);
+
+
 
     void LoadMeshFromString(const string & str)
     {

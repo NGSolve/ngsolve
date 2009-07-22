@@ -114,12 +114,6 @@ namespace ngcomp
 #endif
   
   public:
-    /*
-   /// old constructor type, eliminated by JS Jan 2008
-   FESpace (const MeshAccess & ama, int aorder,
-   int adim, bool acomplex, bool parseflags=false);
-    */
-
     /**
        Constructor.
        Used flags are: \\
@@ -129,14 +123,15 @@ namespace ngcomp
        -eliminate_internal:  eliminate internal dofs \\
        -dirichlet=<int-list>: dirichlet boundaries, 1-based \\
     */
-    FESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
+    FESpace (const MeshAccess & ama, const Flags & flags, 
+             bool checkflags = false);
     ///
     virtual ~FESpace ();
   
-    /// update dof-tables
-    virtual void Update();
+    /// update dof-tables, old style
+    // virtual void Update();
 
-    /// update dof-table, preferred form
+    /// update dof-table
     virtual void Update(LocalHeap & lh);
 
     /// print report to stream
@@ -151,11 +146,6 @@ namespace ngcomp
     /// complex space ?
     bool IsComplex () const { return iscomplex; }
 
-    /*
-   /// will be replaced by getclassname !
-   virtual const char * GetType() 
-   { return GetClassName().c_str(); }
-    */
 
     /// number of global dofs
     virtual int GetNDof () const = 0;
@@ -192,19 +182,19 @@ namespace ngcomp
     virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
     /// returns dofs of sourface element
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const = 0;
-    //
-    // virtual void GetBEMDofNrs (Array<int> & dnums) const;
 
     /// is the FESpace defined for this sub-domain nr ?
     bool DefinedOn (int domnr) const
     { return !definedon.Size() || definedon[domnr]; }
-    /// 
+    /// is the FESpace defined for this boundary nr ?
     bool DefinedOnBoundary (int bnr) const
     {return !definedonbound.Size() || definedonbound[bnr]; }
+
     ///
     void SetDefinedOn (const BitArray & defon);
     ///
     void SetDefinedOnBoundary (const BitArray & defon);
+
     ///
     void SetDirichletBoundaries (const BitArray & dirbnds);
     /// Get reference element for tet, prism, trig, etc ..
@@ -218,18 +208,18 @@ namespace ngcomp
 
 
     ///
-    virtual void LockSomeDofs (BaseMatrix & mat) const { };
+    // virtual void LockSomeDofs (BaseMatrix & mat) const { };
 
     /// old style
-    virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
+    // virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
 
     /// 
-    virtual Table<int> * CreateSmoothingBlocks (const Flags & flags) const
-    { return CreateSmoothingBlocks(0); }
+    virtual Table<int> * CreateSmoothingBlocks (const Flags & flags) const;
+    // { return CreateSmoothingBlocks(0); }
 
     /// for anisotropic plane smoothing, old style
-    virtual BitArray * CreateIntermediatePlanes (int type = 0) const
-    { return 0; }
+    // virtual BitArray * CreateIntermediatePlanes (int type = 0) const
+    // { return 0; }
     //virtual Array<int> * CreateDirectSolverClusters (int type = 0) const
     //{ return 0; }
     virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const
@@ -300,8 +290,8 @@ namespace ngcomp
     virtual const ngmg::Prolongation * GetProlongation () const
     { return prol; }
     /// Set multigrid prolongation
-    void SetProlongation (ngmg::Prolongation * aprol)
-    { prol = aprol; }
+    // void SetProlongation (ngmg::Prolongation * aprol)
+    // { prol = aprol; }
 
 
     /// returns function-evaluator
@@ -345,6 +335,9 @@ namespace ngcomp
     } 
 
     virtual bool VarOrder() const { return 0; }
+
+    bool timing;
+    void Timing () const;
   };
 
 
@@ -377,7 +370,7 @@ namespace ngcomp
     }
 
     ///
-    virtual void Update(LocalHeap & lh);
+    virtual void Update (LocalHeap & lh);
     ///
     virtual int GetNDof () const;
     ///
@@ -386,7 +379,6 @@ namespace ngcomp
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
-
   
   
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
@@ -396,13 +388,11 @@ namespace ngcomp
 
     //virtual Array<int> * CreateDirectSolverClusters (int type = 0) const;
     virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
-#ifdef PARALLEL
 
+#ifdef PARALLEL
     virtual void UpdateParallelDofs_hoproc();
     virtual void UpdateParallelDofs_loproc();
-
 #endif
-
   };
 
 
@@ -449,12 +439,6 @@ namespace ngcomp
     Array<int> ndlevel;
     int n_el_dofs;
   public:
-
-    ///
-    /*
-      ElementFESpace (const MeshAccess & ama,
-      int aorder, int adim, bool acomplex);
-    */
     ///
     ElementFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags=false);
 
@@ -470,11 +454,8 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh);
 
     ///
-    virtual int GetNDof () const
-    { return ndlevel.Last(); }
+    virtual int GetNDof () const { return ndlevel.Last(); }
   
-    ///
-    //  virtual const FiniteElement & GetFE (int elnr) const;
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
@@ -482,10 +463,7 @@ namespace ngcomp
     virtual int GetNDofLevel (int level) const;
 
     ///
-    // virtual const FiniteElement & GetSFE (int selnr) const;
-    ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
-
 
 #ifdef PARALLEL
     virtual void UpdateParallelDofs_hoproc();
@@ -504,14 +482,9 @@ namespace ngcomp
     Array<int> ndlevel;
     int n_el_dofs;
   public:
-
     ///
-    /*
-      SurfaceElementFESpace (const MeshAccess & ama,
-      int aorder, int adim, bool acomplex);
-    */
-    ///
-    SurfaceElementFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags=false);
+    SurfaceElementFESpace (const MeshAccess & ama, const Flags& flags, 
+                           bool checkflags = false);
 
     ///
     ~SurfaceElementFESpace ();
@@ -524,11 +497,11 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh);
 
     ///
-    virtual int GetNDof () const
-    { return ndlevel.Last(); }
+    virtual int GetNDof () const { return ndlevel.Last(); } 
 
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
@@ -576,9 +549,6 @@ namespace ngcomp
     Array<int> nflevel;
   
   public:
-    ///
-    //   NonConformingFESpace (const MeshAccess & ama,
-    //			int aorder, int adim, bool acomplex);
     ///
     NonConformingFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags=false);
 
@@ -648,27 +618,24 @@ namespace ngcomp
     /// 
     Array<int> ndlevel;
   public:
-    /*
-      CompoundFESpace (const MeshAccess & ama,
-      const Array<const FESpace*> & aspaces);
-    */
+    ///
     CompoundFESpace (const MeshAccess & ama,
 		     const Array<const FESpace*> & aspaces,
 		     const Flags & flags, bool parseflags=false);
     ///
     virtual ~CompoundFESpace ();
 
+    ///
     virtual string GetClassName () const
     {
       return "CompoundFESpace";
     }
 
     ///
-    // virtual void Update();
     virtual void Update(LocalHeap & lh);
     ///
     virtual int GetNDof () const
-    {return ndlevel.Last(); }
+    { return ndlevel.Last(); }
     ///
     virtual int GetNDofLevel (int level) const
     { return ndlevel[level]; }
@@ -677,15 +644,17 @@ namespace ngcomp
     // first space: spacenr = 0
     int GetStorageStart(int spacenr) const
     { return cummulative_nd[spacenr]; }
-
+    
+    ///
     int GetStorageEnd(int spacenr) const
     { return cummulative_nd[spacenr+1]; }
 
 
-
+    ///
     const FESpace * operator[] (int i) const { return spaces[i]; }
     FESpace * operator[] (int i) { return const_cast<FESpace*> (spaces[i]); }
 
+    ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
@@ -745,35 +714,6 @@ namespace ngcomp
 
 #endif
   };
-
-
-  /*
-    template <class FE0, class FE1>
-    class CompositeFESpace : public CompoundFESpace
-    {
-    public:
-    CompositeFESpace (const MeshAccess & ama,
-    const Array<const FESpace*> & aspaces,
-    const Flags & flags, bool parseflags=false)
-    : CompoundFESpace (ama, aspaces, flags, parseflags)
-    { ; }
-
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const
-    {
-    void * mem = lh.Alloc (sizeof(CompositeFiniteElement<FE0,FE1>));
-    return *new (mem) CompositeFiniteElement<FE0, FE1> 
-    (static_cast<const FE0&> (spaces[0]->GetFE(elnr, lh)),
-    static_cast<const FE1&> (spaces[1]->GetFE(elnr, lh)));
-                                             
-    }
-
-    };
-  */
-
-
-
-
-
 
 
 

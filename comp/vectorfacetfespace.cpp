@@ -21,7 +21,7 @@ namespace ngcomp
     DefineDefineFlag("print");
     DefineDefineFlag("variableorder");
 
-    if ( parseflags) ParseFlags(flags);
+    if ( parseflags) CheckFlags(flags);
 
     print = flags.GetDefineFlag("print");
 

@@ -15,28 +15,6 @@ namespace ngfem
 
   template<int D>
   void H1HighOrderFiniteElement<D>::
-  SetVertexNumbers (FlatArray<int> & avnums)
-  {
-    for (int i = 0; i < avnums.Size(); i++)
-      vnums[i] = avnums[i];
-  }
-    
-  template<int D>
-  void H1HighOrderFiniteElement<D>::
-  SetOrderCell (int oi)
-  {
-    order_cell = INT<3> (oi,oi,oi); 
-  }
-
-  template<int D>
-  void H1HighOrderFiniteElement<D>::
-  SetOrderCell (INT<3> oi)
-  {
-    order_cell = oi;
-  }
-
-  template<int D>
-  void H1HighOrderFiniteElement<D>::
   SetOrderFace (FlatArray<int> & of)
   {
     for (int i = 0; i < of.Size(); i++)
@@ -50,7 +28,6 @@ namespace ngfem
     for (int i = 0; i < of.Size(); i++)
       order_face[i] = of[i];
   }
-
   
   template<int D>
   void H1HighOrderFiniteElement<D>::
@@ -115,7 +92,7 @@ namespace ngfem
     ndof = ET_trait<ET>::N_VERTEX;
     
     for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
-      ndof += order_edge[i] -1;
+      ndof += order_edge[i] - 1;
     
     for (int i = 0; i < ET_trait<ET>::N_FACE; i++)
       if (ET_trait<ET>::FaceType(i) == ET_TRIG)
@@ -206,35 +183,20 @@ namespace ngfem
     static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (pt, shape); 
   }
 
-  /*
-  template <int DIM>
-  class DShapeElement
+
+  template <ELEMENT_TYPE ET>
+  double T_H1HighOrderFiniteElement<ET> :: 
+  Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
   {
-    double * data;
-  public:
-    DShapeElement (double * adata) : data(adata) { ; }
-    void operator= (AutoDiff<DIM> ad) 
-    { for (int i = 0; i < DIM; i++) data[i] = ad.DValue(i); }
-  };
+    double pt[DIM];
+    for (int i = 0; i < DIM; i++) pt[i] = ip(i);
 
-  template <int DIM>
-  class DShapeAssign
-  {
-    double * dshape;
-  public:
-    DShapeAssign (FlatMatrixFixWidth<DIM> mat)
-    { dshape = &mat(0,0); }
-
-    DShapeAssign (double * adshape)
-    { dshape = adshape; }
-
-    DShapeElement<DIM> operator[] (int i) const
-    { return DShapeElement<DIM> (dshape + i*DIM); }
-
-    const DShapeAssign Addr (int i) const
-    { return DShapeAssign (dshape+i*DIM); } 
-  };
-  */
+    double sum = 0.0;
+    EvaluateShape eval(x, &sum); 
+    
+    static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (pt, eval); 
+    return sum;
+  }  
 
 
   template <ELEMENT_TYPE ET>
@@ -779,22 +741,14 @@ namespace ngfem
 	  Tx lam_face = lambda[faces[i][0]] + lambda[faces[i][1]];  // vertices on quad    
 	  Tx bary[3] = 
 	    {(sigma[faces[i][0]]-lam_face)*(1-z), (sigma[faces[i][1]]-lam_face)*(1-z), z};  
-			     
 	  int fav[3] = {0, 1, 2};
 	  if(vnums[faces[i][fav[0]]] > vnums[faces[i][fav[1]]]) swap(fav[0],fav[1]); 
 	  if(vnums[faces[i][fav[1]]] > vnums[faces[i][fav[2]]]) swap(fav[1],fav[2]);
 	  if(vnums[faces[i][fav[0]]] > vnums[faces[i][fav[1]]]) swap(fav[0],fav[1]); 	
-	 
-	  // Tx * pface = &shape[ii];
-	  
+          
 	  int ndf = T_TRIGSHAPES::CalcMult
 	    (p, bary[fav[2]]-bary[fav[1]], bary[fav[0]], lam_face, shape.Addr(ii));
 	  
-          /*
-	  for (int j = ii; j < ii+ndf; j++)
-	    shape[j] *= lam_face; 
-          */
-
 	  ii += ndf;
 	}
     
@@ -825,7 +779,7 @@ namespace ngfem
 
 	for (int k = 0; k < p-1; k++) 
 	  for (int j = 0; j < p-1; j++) 
-	    shape[ii++]= polx[k] * poly[j] * fac; 
+	    shape[ii++] = polx[k] * poly[j] * fac; 
       }
 
     

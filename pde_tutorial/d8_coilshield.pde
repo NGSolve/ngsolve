@@ -24,21 +24,22 @@ define coefficient penalty
 #1e+6, 0, 0, 0, 0, 0
 
 
-#define fespace v -hcurlho -order=4 -smoothing=7  -nograds  #-variableorder
-define fespace v -hcurlho -order=4  -nograds  #-variableorder
+define fespace v -hcurlho -order=5  -nograds -eliminate_internal
 
 define gridfunction u -fespace=v
 
-define bilinearform a -fespace=v -symmetric 
+define linearform f -fespace=v -noprintelvec
+sourceedge cs1 cs2 cs3  -definedon=2
+
+
+define bilinearform a -fespace=v -symmetric  -eliminate_internal  -linearform=f
 curlcurledge nu 
-massedge kappa #  -order=2
+massedge kappa  -order=2
 robinedge penalty
 	
 define bilinearform acurl -fespace=v -symmetric  -nonassemble
 curlcurledge nu
 
-define linearform f -fespace=v -noprintelvec
-sourceedge cs1 cs2 cs3  -definedon=2
 
 define preconditioner c -type=multigrid -bilinearform=a -cylce=1 -smoother=block -coarsetype=direct -coarsesmoothingsteps=5 -notest
 
