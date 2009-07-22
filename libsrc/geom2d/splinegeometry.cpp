@@ -1127,12 +1127,14 @@ template<int D>
 void SplineGeometry<D> :: SetGrading (const double grading)
 { elto0 = grading;}
 
+/*
 template<int D>
 void SplineGeometry<D> :: AppendPoint (const double x, const double y, const double reffac, const bool hpref)
 {
   geompoints.Append (GeomPoint<D>(x, y, reffac));
   geompoints.Last().hpref = hpref;
 }
+*/
 
 template<int D>
 void SplineGeometry<D> :: AppendPoint (const Point<D> & p, const double reffac, const bool hpref)

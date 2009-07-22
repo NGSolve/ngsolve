@@ -84,7 +84,7 @@ public:
   const GeomPoint<D> & GetPoint(int i) const { return geompoints[i]; }
 
   void SetGrading (const double grading);
-  void AppendPoint (const double x, const double y, const double reffac = 1., const bool hpref = false);
+  //  void AppendPoint (const double x, const double y, const double reffac = 1., const bool hpref = false);
   void AppendPoint (const Point<D> & p, const double reffac = 1., const bool hpref = false);
   
   void AppendLineSegment (const int n1, const int n2,
