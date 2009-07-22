@@ -15,6 +15,8 @@ namespace netgen
    // default colour
    #define DEFAULT_BCNUM   0
 
+   // Default tolerance for colour matching (using Euclidean distance)
+   #define DEFAULT_EPS     2.5e-05
 
 
 
@@ -29,11 +31,10 @@ namespace netgen
        colours match is defined as "eps" and is currently 
        2.5e-5 (for square of distance)
    */
-   bool ColourMatch(Vec3d col1, Vec3d col2)
+   bool ColourMatch(Vec3d col1, Vec3d col2, double eps = DEFAULT_EPS)
    {
-      // Match tolerance - Adjust if required
-      double eps = 2.5e-5;
-
+      if(eps <= 0.0) eps = DEFAULT_EPS;
+      
       bool colmatch = false;
 
       if(Dist2(col1,col2) < eps) colmatch = true;
@@ -207,7 +208,7 @@ namespace netgen
 
          // Get the colour of the face being currently processed
          face_colour = mesh.GetFaceDescriptor(face_index).SurfColour();
-         if((face_colour.Length2()) && (!ColourMatch(face_colour,Vec3d(DEFAULT_R,DEFAULT_G,DEFAULT_B))))
+         if(!ColourMatch(face_colour,Vec3d(DEFAULT_R,DEFAULT_G,DEFAULT_B)))
          {
             // Boolean variable to check if the boundary condition was applied 
             // or not... not applied would imply that the colour of the face 
@@ -316,7 +317,7 @@ namespace netgen
          Vec3d face_colour;
 
          face_colour = mesh.GetFaceDescriptor(face_index).SurfColour();
-         if((face_colour.Length2()) && (!ColourMatch(face_colour,Vec3d(DEFAULT_R,DEFAULT_G,DEFAULT_B))))
+         if(!ColourMatch(face_colour,Vec3d(DEFAULT_R,DEFAULT_G,DEFAULT_B)))
          {
             for(int i = 1; i <= all_colours.Size(); i++)
             {
@@ -348,7 +349,7 @@ namespace netgen
          Vec3d face_colour;
 
          face_colour = mesh.GetFaceDescriptor(face_index).SurfColour();
-         if((face_colour.Length2()) && (!ColourMatch(face_colour,Vec3d(DEFAULT_R,DEFAULT_G,DEFAULT_B))))
+         if(!ColourMatch(face_colour,Vec3d(DEFAULT_R,DEFAULT_G,DEFAULT_B)))
          {
             for(int i = 0; i < colours_sorted.Size(); i++)
             {
@@ -388,7 +389,15 @@ namespace netgen
 
 
 
-   //void OCCAutoColourBcProps(Mesh & mesh, OCCGeometry & occgeometry, const char * bccolourfile)
+   /*! Philippose - 13/07/2009
+       Main function implementing automated assignment of 
+       Boundary Condition numbers based on face colours
+
+       This functionality is currently implemtented at the mesh 
+       level, and hence allows colour based assignment of boundary 
+       conditions for any geometry type within netgen which 
+       supports face colours
+   */
    void AutoColourBcProps(Mesh & mesh, const char * bccolourfile)
    {
       // Go directly to the alternate algorithm if no colour profile file was specified
@@ -396,23 +405,25 @@ namespace netgen
       {
          AutoColourAlg_Sorted(mesh);
       }
-      
-      ifstream ocf(bccolourfile);
-
-      // If there was an error opening the Colour profile file, jump to the alternate 
-      // algorithm after printing a message
-      if(!ocf)
-      {
-         PrintMessage(1,"AutoColourBcProps: Error loading Boundary Colour Profile file ", 
-                      bccolourfile, " ....","Switching to alternate algorithm!");
-
-         AutoColourAlg_Sorted(mesh);
-      }
-      // If the file opens successfully, call the function which assigns boundary conditions 
-      // based on the colour profile file
       else
       {
-         AutoColourAlg_UserProfile(mesh, ocf);
+         ifstream ocf(bccolourfile);
+
+         // If there was an error opening the Colour profile file, jump to the alternate 
+         // algorithm after printing a message
+         if(!ocf)
+         {
+            PrintMessage(1,"AutoColourBcProps: Error loading Boundary Colour Profile file ", 
+                         bccolourfile, " ....","Switching to alternate algorithm!");
+
+            AutoColourAlg_Sorted(mesh);
+         }
+         // If the file opens successfully, call the function which assigns boundary conditions 
+         // based on the colour profile file
+         else
+         {
+            AutoColourAlg_UserProfile(mesh, ocf);
+         }
       }
    }
 }
