@@ -1571,13 +1571,27 @@ namespace netgen
 		                      Tcl_Interp * interp,
 		                      int argc, tcl_const char *argv[])
   {
+     if(argc < 1)
+     {
+        Tcl_SetResult (interp, (char *)"Ng_AutoColourBcProps needs arguments", TCL_STATIC);
+        return TCL_ERROR;
+     }
+
      if(!mesh.Ptr())
      {
         Tcl_SetResult (interp, (char *)"Ng_AutoColourBcProps: Valid netgen mesh required...please mesh the Geometry first", TCL_STATIC);
 	     return TCL_ERROR;
      }
 
-     AutoColourBcProps(*mesh, "netgen.ocf");
+     if(strcmp(argv[1], "auto") == 0)
+     {
+        AutoColourBcProps(*mesh, 0);
+     }
+
+     if(strcmp(argv[1], "profile") == 0)
+     {
+        AutoColourBcProps(*mesh, argv[2]);
+     }
 
      return TCL_OK;
   }

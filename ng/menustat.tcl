@@ -777,8 +777,13 @@ menu .ngmenu.special
     }
 .ngmenu.special add command -label "Helmholtz Mesh grading" \
     -command { Ng_HelmholtzMesh; }
-.ngmenu.special add command -label "Colour-based boundary conditions" \
-    -command { Ng_AutoColourBcProps; redraw }
+.ngmenu.special add cascade -label "Colour-based boundary conditions" -menu .ngmenu.special.colbndcond
+
+menu .ngmenu.special.colbndcond 
+ .ngmenu.special.colbndcond add command -label "Automatic Assignment" \
+    -command { Ng_AutoColourBcProps auto; redraw }
+ .ngmenu.special.colbndcond add command -label "Profile based Assignment" \
+	-command { Ng_AutoColourBcProps profile netgen.ocf; redraw }
 
 
 # menu .mbar.stl.menu
