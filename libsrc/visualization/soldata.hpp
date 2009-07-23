@@ -7,7 +7,7 @@ namespace netgen
 
   using namespace std;
 
-  class SolutionData
+  class DLL_HEADER SolutionData
   {
   protected:
 
