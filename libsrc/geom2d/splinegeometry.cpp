@@ -13,11 +13,13 @@
 namespace netgen
 {
 
-  //using namespace netgen;
+
 
 template<int D>
 void SplineGeometry<D> :: LoadDataV2 ( ifstream & infile )
-{
+{  
+  // new parser by Astrid Sinwel
+
   PrintMessage (1, "Load 2D Geometry V2");
   int nump, leftdom, rightdom;
   Point<D> x;
@@ -114,6 +116,7 @@ void SplineGeometry<D> :: LoadDataV2 ( ifstream & infile )
 
 	      infilepoints.Append ( GeomPoint<D>(x, hd) );
 	      infilepoints.Last().hpref = flags.GetDefineFlag ("hpref");
+	      infilepoints.Last().hmax = flags.GetNumFlag ("maxh", 1e99);
 
 	      TestComment(infile);
 	      infile.get(ch);
@@ -246,8 +249,8 @@ void SplineGeometry<D> :: LoadDataV2 ( ifstream & infile )
 		int (flags.GetDefineFlag ("hprefright"));
 	      splines.Last()->copyfrom = int (flags.GetNumFlag ("copy", -1));
 	      splines.Last()->reffak = flags.GetNumFlag ("ref", 1 );
-	      if ( hd != 1 )
-		splines.Last()->reffak = hd;
+	      splines.Last()->hmax = flags.GetNumFlag ("maxh", 1e99 );
+	      if ( hd != 1 ) splines.Last()->reffak = hd;
 
 	      if ( flags.StringFlagDefined("bcname") )
 		{
@@ -414,9 +417,7 @@ template<int D>
 SplineGeometry<D> :: ~SplineGeometry()
 {
   for(int i=0; i<splines.Size(); i++)
-    {
-      delete splines[i];
-    }
+    delete splines[i];
   splines.DeleteAll();
   geompoints.DeleteAll();
   for (int i=0; i<materials.Size(); i++)
@@ -764,6 +765,7 @@ void SplineGeometry<D> :: LoadDataNew ( ifstream & infile )
 	int (flags.GetDefineFlag ("hprefright"));
       splines.Last()->copyfrom = int (flags.GetNumFlag ("copy", -1));
       splines.Last()->reffak = flags.GetNumFlag ("ref", 1 );
+      splines.Last()->hmax = flags.GetNumFlag ("maxh", 1e99 );
 
       if ( flags.StringFlagDefined("bcname") )
 	{

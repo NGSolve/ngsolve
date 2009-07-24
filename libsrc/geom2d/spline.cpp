@@ -264,8 +264,8 @@ namespace netgen
 
 
 
-  void CalcPartition (double l, double h, double r1, double r2,
-		      double ra, double elto0, Array<double> & points)
+  void CalcPartition (double l, double h, double h1, double h2,
+		      double hcurve, double elto0, Array<double> & points)
   {
     int i, j, n, nel;
     double sum, t, dt, fun, fperel, oldf, f;
@@ -279,7 +279,7 @@ namespace netgen
     t = 0.5 * dt;
     for (i = 1; i <= n; i++)
       {
-	fun = min3 (h/ra, t/elto0 + h/r1, (l-t)/elto0 + h/r2);
+	fun = min3 (hcurve, t/elto0 + h1, (l-t)/elto0 + h2);
 	sum += dt / fun;
 	t += dt;
       }
@@ -294,7 +294,7 @@ namespace netgen
     t = 0.5 * dt;
     for (j = 1; j <= n && i < nel; j++)
       {
-	fun = min3 (h/ra, t/elto0 + h/r1, (l-t)/elto0 + h/r2);
+	fun = min3 (hcurve, t/elto0 + h1, (l-t)/elto0 + h2);
 
 	f = oldf + dt / fun;
 

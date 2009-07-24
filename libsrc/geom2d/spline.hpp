@@ -8,8 +8,8 @@
 /**************************************************************************/
 
 
-void CalcPartition (double l, double h, double r1, double r2,
-		    double ra, double elto0, Array<double> & points);
+void CalcPartition (double l, double h, double h1, double h2,
+		    double hcurve, double elto0, Array<double> & points);
 
 /*
   Spline curves for 2D mesh generation
@@ -23,7 +23,8 @@ class GeomPoint : public Point<D>
 public:
   /// refinement factor at point
   double refatpoint;
-
+  /// max mesh-size at point
+  double hmax;
   /// hp-refinement
   bool hpref;
 
@@ -49,6 +50,8 @@ public:
   int rightdom;
   /// refinement at line
   double reffak;
+  /// maximal h;
+  double hmax;
   /// boundary condition number
   int bc;
   /// copy spline mesh from other spline (-1.. do not copy)
@@ -297,7 +300,7 @@ void SplineSeg<D> :: Partition (double h, double elto0,
 				Mesh & mesh, Point3dTree & searchtree, int segnr) const
 {
   int i, j;
-  double l, r1, r2, ra;
+  double l; // , r1, r2, ra;
   double lold, dt, frac;
   int n = 100;
   Point<D> p, pold, mark, oldmark;
@@ -305,12 +308,12 @@ void SplineSeg<D> :: Partition (double h, double elto0,
   double edgelength, edgelengthold;
   l = Length();
 
-  r1 = StartPI().refatpoint;
-  r2 = EndPI().refatpoint;
-  ra = reffak;
+  double h1 = min (StartPI().hmax, h/StartPI().refatpoint);
+  double h2 = min (EndPI().hmax, h/EndPI().refatpoint);
+  double hcurve = min (hmax, h/reffak);
 
   //  cout << "Partition, l = " << l << ", h = " << h << endl;
-  CalcPartition (l, h, r1, r2, ra, elto0, curvepoints);
+  CalcPartition (l, h, h1, h2, hcurve, elto0, curvepoints);
   //  cout << "curvepoints = " << curvepoints << endl;
 
   dt = 1.0 / n;
