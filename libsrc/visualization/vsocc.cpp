@@ -6,9 +6,6 @@
 #include <myadt.hpp>
 #include <meshing.hpp>
 
-// #include <csg.hpp>
-// #include <stlgeom.hpp>
-
 #include <occgeom.hpp>
 
 #include "TopoDS_Shape.hxx"
@@ -24,15 +21,11 @@
 #include "Poly_Triangle.hxx"
 #include "Poly_Polygon3D.hxx"
 #include "Poly_PolygonOnTriangulation.hxx"
-// #include "BRepMesh.hxx"
-// #include "BRepMesh_IncrementalMesh.hxx"
 
-#include "incvis.hpp"
+#include <visual.hpp>
 
 namespace netgen
 {
-#include "mvdraw.hpp"
-
    extern OCCGeometry * occgeometry;
 
    /* *********************** Draw OCC Geometry **************** */
