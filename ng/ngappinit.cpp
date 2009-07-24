@@ -127,9 +127,6 @@ int main(int argc, char ** argv)
 #ifdef USE_SUPERLU
       cout << "Including sparse direct solver SuperLU by Lawrence Berkeley National Laboratory" << endl;
 #endif
-#ifdef USE_PARDISO
-      cout << "Including sparse direct solver Pardiso" << endl;
-#endif
 
 
 #ifdef PARALLEL
