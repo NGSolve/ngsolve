@@ -10,13 +10,9 @@
 */
 
 #include <fem.hpp>
-#include <h1lofe.hpp>
 
 namespace ngfem
 {
-  using namespace ngfem;
-
-
   template <int D>
   string HCurlFiniteElement<D> :: ClassName(void) const
   { 
