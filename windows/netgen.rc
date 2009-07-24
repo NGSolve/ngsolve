@@ -4,11 +4,11 @@
 // File and Product Version information. 
 // Displayed in the "Version" Tab in Windows 
 // Explorer after right clicking on the EXE File
-#define FILE_VERSION          4,9,9,0
-#define FILE_VERSION_STR      "4.9.9\0"
+#define FILE_VERSION          4,9,10,0
+#define FILE_VERSION_STR      "4.9.10\0"
 
-#define PRODUCT_VERSION       4,9,9,0
-#define PRODUCT_VERSION_STR   "4.9.9\0"
+#define PRODUCT_VERSION       4,9,10,0
+#define PRODUCT_VERSION_STR   "4.9.10\0"
 // --------------------------------------------------
 
 // Add the Netgen icon to the executable
