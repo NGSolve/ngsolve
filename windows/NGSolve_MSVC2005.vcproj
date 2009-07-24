@@ -236,10 +236,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\comp\hdivhybridhofespace.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\comp\hierarchicalee.cpp"
 					>
 				</File>
@@ -271,6 +267,10 @@
 					RelativePath="..\comp\vectorfacetfespace.cpp"
 					>
 				</File>
+				<File
+					RelativePath="..\comp\wirebasket.cpp"
+					>
+				</File>				
 			</Filter>
 			<Filter
 				Name="basiclinalg"
@@ -444,6 +444,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\linalg\mumpsinverse.cpp"
+					>
+				</File>
+				<File				
 					RelativePath="..\linalg\order.cpp"
 					>
 				</File>
@@ -634,14 +638,14 @@
 					>
 				</File>
 				<File
-					RelativePath="..\comp\blocked_gridfunction.hpp"
-					>
-				</File>
-				<File
 					RelativePath="..\comp\comp.hpp"
 					>
 				</File>
 				<File
+					RelativePath="..\comp\comp_utils.hpp"
+					>
+				</File>
+				<File				
 					RelativePath="..\comp\facetfespace.hpp"
 					>
 				</File>
@@ -674,10 +678,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\comp\hdivhybridhofespace.hpp"
-					>
-				</File>
-				<File
 					RelativePath="..\comp\l2hofespace.hpp"
 					>
 				</File>
@@ -705,6 +705,10 @@
 					RelativePath="..\comp\vectorfacetfespace.hpp"
 					>
 				</File>
+				<File
+					RelativePath="..\comp\wirebasket.hpp"
+					>
+				</File>				
 			</Filter>
 			<Filter
 				Name="basiclinalg"
@@ -802,6 +806,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\fem\h1lofe.hpp"
+					>
+				</File>
+				<File				
 					RelativePath="..\fem\hcurlfe.hpp"
 					>
 				</File>
@@ -947,6 +955,10 @@
 				</File>
 				<File
 					RelativePath="..\linalg\la.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\linalg\mumpsinverse.hpp"					
 					>
 				</File>
 				<File
