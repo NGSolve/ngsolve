@@ -7,5 +7,5 @@ dist_pkgdata_DATA = boxcyl.geo circle_on_cube.geo cone.geo cube.geo \
 	sculpture.geo shaft.geo shell.geo sphere.geo sphereincube.geo torus.geo trafo.geo \
 	twobricks.geo twocubes.geo twocyl.geo \
 	hinge.stl  part1.stl frame.step  screw.step \
-	demo2d.in2d square.in2d
+	squarehole.in2d square.in2d
 
