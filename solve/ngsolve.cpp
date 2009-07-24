@@ -719,6 +719,10 @@ int NGSolve_Init (Tcl_Interp * interp)
   cout << "Using Lapack" << endl;
 #endif
 
+#ifdef USE_PARDISO
+  cout << "Including sparse direct solver Pardiso" << endl;
+#endif
+
 #ifdef _OPENMP
   cout << "Running OpenMP - parallel using " << omp_get_max_threads() << " threads" << endl;
   cout << "(number of threads can be changed by setting OMP_NUM_THREADS)" << endl;

@@ -2452,18 +2452,18 @@ namespace ngsolve
         tclstring << "set ::visoptions.deformation 0" << endl;
     
       if(vecfun != "")
-      {
-// 	if(deformationon)
-// 	  {
-//             tclstring << "set ::visoptions.deformation 1" << endl
-//                 << "set ::visoptions.scaledeform1 " << deformationscale << endl
-//                 << "set ::visoptions.scaledeform2 1" << endl;
-// 	  }
-// 	else 
-          tclstring << "set ::visoptions.showsurfacesolution 1" << endl;
-
-        tclstring  << "set ::visoptions.vecfunction " << vecfun << endl;
-	ng_vissetpar = true;
+        {
+          if(deformationon)
+            {
+              tclstring << "set ::visoptions.deformation 1" << endl
+                        << "set ::visoptions.scaledeform1 " << deformationscale << endl
+                        << "set ::visoptions.scaledeform2 1" << endl;
+            }
+          else 
+            tclstring << "set ::visoptions.showsurfacesolution 1" << endl;
+          
+          tclstring  << "set ::visoptions.vecfunction " << vecfun << endl;
+          ng_vissetpar = true;
 	  
       }
 	
