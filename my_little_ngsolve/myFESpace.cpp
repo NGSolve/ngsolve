@@ -143,6 +143,8 @@ namespace ngcomp
   }
 
 
+
+
   namespace myfespace_cpp
   {
     class Init
@@ -154,7 +156,7 @@ namespace ngcomp
     Init::Init()
     {
       /*
-        register fe-space
+        register fe-spaces
         when reading "define fespace v -type=myfespace", the 
         PDE - parser will call the corresponding Create - Function, which
         will generate a MyFESpace object.

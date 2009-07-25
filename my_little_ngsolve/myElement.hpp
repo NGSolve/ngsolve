@@ -58,6 +58,7 @@ namespace ngfem
     virtual void CalcDShape (const IntegrationPoint & ip, 
                              FlatMatrixFixWidth<2> dshape) const;
   };
+
 }
 
 #endif

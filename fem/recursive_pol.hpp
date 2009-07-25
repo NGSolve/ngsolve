@@ -672,7 +672,7 @@ inline void ScaledIntegratedLegendrePolynomial (int n, Sx x, St t, T & values)
   for (int j=1; j<=n; j++)
     {
       p3=p2; p2=p1;
-      p1=((2.0*j-3.0) * x*p2 - t*t*(j-3.0)*p3)/j;
+      p1=((2.0*j-3.0) * x*p2 - tt*(j-3.0)*p3)/j;
       values[j] = p1;
     }
 }
