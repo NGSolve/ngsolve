@@ -36,7 +36,7 @@ echo POSTBUILD Script for %PROJ_NAME% ........
 
 REM *** Embed the Windows Manifest into the Executable File ***
 echo Embedding Manifest into the executable: %PROJ_EXEC% ....
-mt.exe -manifest "%BUILD_TYPE%\%PROJ_EXEC%.intermediate.manifest" "-outputresource:%BUILD_TYPE%\%PROJ_EXEC%;1" 
+mt.exe -manifest "%BUILD_TYPE%\%PROJ_EXEC%.intermediate.manifest" "-outputresource:%BUILD_TYPE%\%PROJ_EXEC%;#1" 
 if errorlevel 1 goto ManifestFailed
 echo Embedding Manifest into the executable: Completed OK!!
 

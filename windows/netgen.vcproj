@@ -43,13 +43,13 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OPENGL;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA;NGINTERFACE_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="false"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -130,13 +130,13 @@
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;WIN32;MSVC_EXPRESS;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;MSVC_EXPRESS;OPENGL;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA;NGINTERFACE_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableEnhancedInstructionSet="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="2"
-				Detect64BitPortabilityProblems="false"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -220,13 +220,13 @@
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(CASROOT)\inc&quot;"
-				PreprocessorDefinitions="WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
+				PreprocessorDefinitions="WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA;NGINTERFACE_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableEnhancedInstructionSet="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="2"
-				Detect64BitPortabilityProblems="false"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -309,13 +309,13 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(CASROOT)\inc&quot;"
-				PreprocessorDefinitions="WIN32;WNT;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
+				PreprocessorDefinitions="WIN32;WNT;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA;NGINTERFACE_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="false"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -437,11 +437,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\csg\csg.hpp"
+				RelativePath="..\libsrc\include\csg.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\csg.hpp"
+				RelativePath="..\libsrc\csg\csg.hpp"
 				>
 			</File>
 			<File
@@ -557,11 +557,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\gprim.hpp"
+				RelativePath="..\libsrc\gprim\gprim.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\gprim\gprim.hpp"
+				RelativePath="..\libsrc\include\gprim.hpp"
 				>
 			</File>
 			<File
@@ -617,11 +617,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\linalg.hpp"
+				RelativePath="..\libsrc\linalg\linalg.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\linalg.hpp"
+				RelativePath="..\libsrc\include\linalg.hpp"
 				>
 			</File>
 			<File
@@ -645,11 +645,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\meshing\meshing.hpp"
+				RelativePath="..\libsrc\include\meshing.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\meshing.hpp"
+				RelativePath="..\libsrc\meshing\meshing.hpp"
 				>
 			</File>
 			<File
@@ -733,11 +733,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\occ\occgeom.hpp"
+				RelativePath="..\libsrc\include\occgeom.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\occgeom.hpp"
+				RelativePath="..\libsrc\occ\occgeom.hpp"
 				>
 			</File>
 			<File
@@ -745,11 +745,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\opti.hpp"
+				RelativePath="..\libsrc\linalg\opti.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\opti.hpp"
+				RelativePath="..\libsrc\include\opti.hpp"
 				>
 			</File>
 			<File
@@ -857,11 +857,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\stlgeom.hpp"
+				RelativePath="..\libsrc\stlgeom\stlgeom.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\stlgeom\stlgeom.hpp"
+				RelativePath="..\libsrc\include\stlgeom.hpp"
 				>
 			</File>
 			<File
@@ -925,11 +925,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\visualization\visual.hpp"
+				RelativePath="..\libsrc\include\visual.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\visual.hpp"
+				RelativePath="..\libsrc\visualization\visual.hpp"
 				>
 			</File>
 			<File
