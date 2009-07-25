@@ -32,10 +32,10 @@ set NGLIB_LIBINC=%PROJ_DIR%..\nglib
 echo POSTBUILD Script for %PROJ_NAME% ........
 
 REM *** Embed the Windows Manifest into the Executable File ***
-echo Embedding Manifest into the DLL: %PROJ_EXEC% ....
-mt.exe -manifest "%PROJ_DIR%%PROJ_NAME%\%BUILD_TYPE%\%PROJ_EXEC%.intermediate.manifest" "-outputresource:%PROJ_DIR%%PROJ_NAME%\%BUILD_TYPE%\%PROJ_EXEC%;#2" 
-if errorlevel 1 goto ManifestFailed
-echo Embedding Manifest into the DLL: Completed OK!!
+REM echo Embedding Manifest into the DLL: %PROJ_EXEC% ....
+REM mt.exe -manifest "%PROJ_DIR%%PROJ_NAME%\%BUILD_TYPE%\%PROJ_EXEC%.intermediate.manifest" "-outputresource:%PROJ_DIR%%PROJ_NAME%\%BUILD_TYPE%\%PROJ_EXEC%;#2" 
+REM if errorlevel 1 goto ManifestFailed
+REM echo Embedding Manifest into the DLL: Completed OK!!
 
 REM *** Copy the DLL and LIB Files into the install folder ***
 echo Installing required files into %INSTALL_FOLDER% ....

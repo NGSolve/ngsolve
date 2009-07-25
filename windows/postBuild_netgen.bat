@@ -35,10 +35,10 @@ REM *** Start the Installation procedure ***
 echo POSTBUILD Script for %PROJ_NAME% ........
 
 REM *** Embed the Windows Manifest into the Executable File ***
-echo Embedding Manifest into the executable: %PROJ_EXEC% ....
-mt.exe -manifest "%BUILD_TYPE%\%PROJ_EXEC%.intermediate.manifest" "-outputresource:%BUILD_TYPE%\%PROJ_EXEC%;#1" 
-if errorlevel 1 goto ManifestFailed
-echo Embedding Manifest into the executable: Completed OK!!
+REM echo Embedding Manifest into the executable: %PROJ_EXEC% ....
+REM mt.exe -manifest "%BUILD_TYPE%\%PROJ_EXEC%.intermediate.manifest" "-outputresource:%BUILD_TYPE%\%PROJ_EXEC%;#1" 
+REM if errorlevel 1 goto ManifestFailed
+REM echo Embedding Manifest into the executable: Completed OK!!
 
 REM *** Copy the core TCL files into the Install Folder ***
 echo Installing core TCL files into %INSTALL_FOLDER%\bin ....

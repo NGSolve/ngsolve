@@ -42,13 +42,13 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OPENGL;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA;NGINTERFACE_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="false"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -68,11 +68,12 @@
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
 				GenerateManifest="true"
+				EnableUAC="true"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				ImportLibrary="$(OutDir)\nginterface.lib"
 				TargetMachine="1"
-				AllowIsolation="false"
+				AllowIsolation="true"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -130,13 +131,13 @@
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;WIN32;MSVC_EXPRESS;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;WIN32;MSVC_EXPRESS;OPENGL;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA;NGINTERFACE_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableEnhancedInstructionSet="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="2"
-				Detect64BitPortabilityProblems="false"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -156,6 +157,7 @@
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
 				GenerateManifest="true"
+				EnableUAC="true"
 				GenerateDebugInformation="false"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -163,7 +165,7 @@
 				OptimizeForWindows98="0"
 				ImportLibrary="$(OutDir)\nginterface.lib"
 				TargetMachine="1"
-				AllowIsolation="false"
+				AllowIsolation="true"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -221,13 +223,13 @@
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(CASROOT)\inc&quot;"
-				PreprocessorDefinitions="WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
+				PreprocessorDefinitions="WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA;NGINTERFACE_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableEnhancedInstructionSet="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="2"
-				Detect64BitPortabilityProblems="false"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -248,6 +250,7 @@
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;;&quot;$(CASROOT)\win32\lib&quot;"
 				GenerateManifest="true"
+				EnableUAC="true"
 				EmbedManagedResourceFile=""
 				GenerateDebugInformation="false"
 				SubSystem="1"
@@ -256,7 +259,7 @@
 				OptimizeForWindows98="0"
 				ImportLibrary="$(OutDir)\nginterface.lib"
 				TargetMachine="1"
-				AllowIsolation="false"
+				AllowIsolation="true"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -312,13 +315,13 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(CASROOT)\inc&quot;"
-				PreprocessorDefinitions="WIN32;WNT;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0501;NGINTERFACE_EXPORTS"
+				PreprocessorDefinitions="WIN32;WNT;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA;NGINTERFACE_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="false"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -338,11 +341,12 @@
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;;&quot;$(CASROOT)\win32\lib&quot;"
 				GenerateManifest="true"
+				EnableUAC="true"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				ImportLibrary="$(OutDir)\nginterface.lib"
 				TargetMachine="1"
-				AllowIsolation="false"
+				AllowIsolation="true"
 			/>
 			<Tool
 				Name="VCALinkTool"
