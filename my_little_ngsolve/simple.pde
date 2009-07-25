@@ -9,14 +9,16 @@ define coefficient lam
 1,
 
 define coefficient penalty
-1e5, 1e5, 1e5, 1e5,
+1e5, 0,
 
 define coefficient coef_source
 1,
 
 
 # create an instance of our new FESpace
-define fespace v -type=myfespace -secondorder
+
+# define fespace v -type=myfespace -secondorder
+define fespace v -type=myhofespace -order=5
 
 
 define gridfunction u -fespace=v -nested
@@ -33,3 +35,4 @@ mysource coef_source
 
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u  -maxsteps=1000 -solver=direct
 
+numproc visualization npvis -scalarfunction=u -subdivision=3 -nolineartexture
