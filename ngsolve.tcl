@@ -286,7 +286,7 @@ if { [catch { NGS_GetData } ] == 0 } {
                  and Johannes Kepler University, Linz, Austria \n\
                  supported by the Austrian Science Foundation FWF \n\
                  thanks to \n\
-                 F. Bachinger, A. Becirovic, H. Egger, R. Gaisbauer, J. Gerstmayr, U. Langer, A. Sinwel, M. Wabro, S. Zaglmayr"
+                 F. Bachinger, A. Becirovic, H. Egger, R. Gaisbauer, J. Gerstmayr, U. Langer, P. Rajan, A. Sinwel, M. Wabro, S. Zaglmayr"
 	}
     
 
