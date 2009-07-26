@@ -1981,7 +1981,7 @@ namespace netgen
 		    glEnable(GL_MAP2_VERTEX_3);
 		    glEnable(GL_AUTO_NORMAL);
 
-		    glMapGrid2f(hoplotn, 0.0, 0.9999, hoplotn, 0.0, 1.0);
+		    glMapGrid2f(hoplotn, 0.0, 0.9999f, hoplotn, 0.0, 1.0);
 		    glEvalMesh2(GL_FILL, 0, hoplotn, 0, hoplotn);
 
 		    glDisable (GL_AUTO_NORMAL);
@@ -2123,7 +2123,7 @@ namespace netgen
 		    glEnable(GL_MAP2_VERTEX_3);
 		    glEnable(GL_AUTO_NORMAL);
 
-		    glMapGrid2f(8, 0.0, 0.999, 8, 0.0, 1.0);
+		    glMapGrid2f(8, 0.0, 0.999f, 8, 0.0, 1.0);
 		    glEvalMesh2(GL_FILL, 0, 8, 0, 8);
 
 		    glDisable (GL_AUTO_NORMAL);
@@ -2657,7 +2657,7 @@ namespace netgen
 		    glEnable(GL_MAP2_VERTEX_3);
 		    glEnable(GL_AUTO_NORMAL);
 
-		    glMapGrid2f(8, 0.0, 0.999, 8, 0.0, 1.0);
+		    glMapGrid2f(8, 0.0, 0.999f, 8, 0.0, 1.0);
 		    glEvalMesh2(GL_FILL, 0, 8, 0, 8);
 
 		    glDisable (GL_AUTO_NORMAL);
