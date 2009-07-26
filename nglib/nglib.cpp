@@ -216,6 +216,10 @@ DLL_HEADER Ng_Result Ng_GenerateVolumeMesh (Ng_Mesh * mesh, Ng_Meshing_Parameter
   mparam.maxh = mp->maxh;
   mparam.meshsizefilename = mp->meshsize_filename;
 
+  double fineness = min(1., max(0., mp->fineness));
+  mparam.curvaturesafety = 0.3 + 5 * fineness;
+  mparam.segmentsperedge = 0.3 + 5 * fineness;
+
   m->CalcLocalH();
 
   MeshVolume (mparam, *m);
