@@ -229,7 +229,7 @@ if { $stereo == "defined" } {
 }
 
 
-# catch { source ${ngdir}/ngsolve.tcl } 
+catch { source ${ngdir}/ngsolve.tcl } 
 
 
 set scriptfilename [Ng_GetCommandLineParameter script]
