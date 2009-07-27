@@ -13,8 +13,9 @@ if [%1]==[] goto InputParamsFailed
 set PROJ_NAME=%~1
 set PROJ_EXEC=%~2
 set BUILD_TYPE=%~3
-set PROJ_DIR=%~4
-set LIB_NAME=%~5
+set BUILD_ARCH=%~4
+set PROJ_DIR=%~5
+set LIB_NAME=%~6
 
 REM *** Change these Folders if required ***
 REM Check if the environment variable NETGENDIR exists, 
@@ -24,7 +25,7 @@ if defined NETGENDIR (
    set INSTALL_FOLDER=%NETGENDIR%\..
 ) else (
    echo Environment variable NETGENDIR not found.... using default location!!!
-   set INSTALL_FOLDER=%PROJ_DIR%..\..\%PROJ_NAME%-inst
+   set INSTALL_FOLDER=%PROJ_DIR%..\..\%PROJ_NAME%-inst_%BUILD_ARCH%
 )
    
 set NETGEN_TCLSRC=%PROJ_DIR%..\ng
@@ -53,14 +54,26 @@ REM echo Installing auxiliary TCL Files: Completed OK!!
 
 REM *** Copy the primary Netgen executable file into the Install Folder ***
 echo Installing %PROJ_EXEC% into %INSTALL_FOLDER%\bin ....
-xcopy "%PROJ_DIR%%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\" /i /d /y
-if errorlevel 1 goto ExecInstallFailed
+if /i "%BUILD_ARCH%" == "win32" (
+   xcopy "%PROJ_DIR%%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\" /i /d /y
+   if errorlevel 1 goto ExecInstallFailed
+)
+if /i "%BUILD_ARCH%" == "x64" (
+   xcopy "%PROJ_DIR%%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\" /i /d /y
+   if errorlevel 1 goto ExecInstallFailed
+)   
 echo Installing %PROJ_EXEC%: Completed OK!!
 
 REM *** Copy the primary Netgen library and include files into the Install Folder ***
 echo Installing %LIB_NAME%.lib into %INSTALL_FOLDER%\lib ....
-xcopy "%PROJ_DIR%%BUILD_TYPE%\%LIB_NAME%.lib" "%INSTALL_FOLDER%\lib\" /i /d /y
-if errorlevel 1 goto LibInstallFailed
+if /i "%BUILD_ARCH%" == "win32" (
+   xcopy "%PROJ_DIR%%BUILD_TYPE%\%LIB_NAME%.lib" "%INSTALL_FOLDER%\lib\" /i /d /y
+   if errorlevel 1 goto LibInstallFailed
+)
+if /i "%BUILD_ARCH%" == "x64" (
+   xcopy "%PROJ_DIR%%BUILD_ARCH%\%BUILD_TYPE%\%LIB_NAME%.lib" "%INSTALL_FOLDER%\lib\" /i /d /y
+   if errorlevel 1 goto LibInstallFailed
+)   
 echo Installing %LIB_NAME%.lib: Completed OK!!
 
 echo Installing %LIB_NAME%.h into %INSTALL_FOLDER%\include ....

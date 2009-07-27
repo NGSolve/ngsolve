@@ -12,6 +12,9 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
@@ -98,7 +101,93 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			DeleteExtensionsOnClean="*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;*.exp;*.lib;$(TargetPath)"
+			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName).htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OPENGL;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA;NGINTERFACE_EXPORTS"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
+				AdditionalDependencies="pthreadVC2_64.lib tcl85.lib tk85.lib tix84.lib Togl17.lib glu32.lib opengl32.lib"
+				ShowProgress="0"
+				Version=""
+				LinkIncremental="0"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\tcl-64\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
+				GenerateManifest="true"
+				EnableUAC="true"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				ImportLibrary="$(OutDir)\nginterface.lib"
+				TargetMachine="17"
+				AllowIsolation="true"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="Running POSTBUILD Script...."
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -188,7 +277,99 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			DeleteExtensionsOnClean="*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;*.exp;*.lib;$(TargetPath)"
+			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName).htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;MSVC_EXPRESS;OPENGL;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA;NGINTERFACE_EXPORTS"
+				StringPooling="true"
+				RuntimeLibrary="2"
+				EnableEnhancedInstructionSet="1"
+				UsePrecompiledHeader="0"
+				WarningLevel="2"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
+				AdditionalDependencies="pthreadVC2_64.lib tcl85.lib tk85.lib tix84.lib Togl17.lib glu32.lib opengl32.lib"
+				ShowProgress="0"
+				OutputFile="$(OutDir)\$(ProjectName).exe"
+				Version=""
+				LinkIncremental="0"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\tcl-64\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
+				GenerateManifest="true"
+				EnableUAC="true"
+				GenerateDebugInformation="false"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				OptimizeForWindows98="0"
+				ImportLibrary="$(OutDir)\nginterface.lib"
+				TargetMachine="17"
+				AllowIsolation="true"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="Running POSTBUILD Script...."
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -279,7 +460,99 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release(OCC)|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			DeleteExtensionsOnClean="*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;*.exp;*.lib;$(TargetPath)"
+			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName).htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(CASROOT)\inc&quot;"
+				PreprocessorDefinitions="WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA;NGINTERFACE_EXPORTS"
+				StringPooling="true"
+				RuntimeLibrary="2"
+				EnableEnhancedInstructionSet="1"
+				UsePrecompiledHeader="0"
+				WarningLevel="2"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
+				AdditionalDependencies="pthreadVC2.lib tcl85.lib tk85.lib tix84.lib Togl17.lib glu32.lib opengl32.lib TKernel.lib TKGeomBase.lib TKMath.lib TKG2d.lib TKG3d.lib TKXSBase.lib TKOffset.lib TKFillet.lib TKShHealing.lib TKMesh.lib TKMeshVS.lib TKTopAlgo.lib TKGeomAlgo.lib TKBool.lib TKPrim.lib TKBO.lib TKIGES.lib TKBRep.lib TKSTEPBase.lib TKSTEP.lib TKSTL.lib TKSTEPAttr.lib TKSTEP209.lib TKXDESTEP.lib TKXDEIGES.lib TKXCAF.lib TKDCAF.lib TKLCAF.lib"
+				ShowProgress="0"
+				Version=""
+				LinkIncremental="0"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;;&quot;$(CASROOT)\win32\lib&quot;"
+				GenerateManifest="true"
+				EnableUAC="true"
+				EmbedManagedResourceFile=""
+				GenerateDebugInformation="false"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				OptimizeForWindows98="0"
+				ImportLibrary="$(OutDir)\nginterface.lib"
+				TargetMachine="17"
+				AllowIsolation="true"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="Running POSTBUILD Script...."
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -364,7 +637,93 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Running POSTBUILD Script...."
-				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug(OCC)|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			DeleteExtensionsOnClean="*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;*.exp;*.lib;$(TargetPath)"
+			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName).htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(CASROOT)\inc&quot;"
+				PreprocessorDefinitions="WIN32;WNT;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OCCGEOMETRY;OPENGL;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA;NGINTERFACE_EXPORTS"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
+				AdditionalDependencies="pthreadVC2.lib tcl85.lib tk85.lib tix84.lib Togl17.lib glu32.lib opengl32.lib TKernel.lib TKGeomBase.lib TKMath.lib TKG2d.lib TKG3d.lib TKXSBase.lib TKOffset.lib TKFillet.lib TKShHealing.lib TKMesh.lib TKMeshVS.lib TKTopAlgo.lib TKGeomAlgo.lib TKBool.lib TKPrim.lib TKBO.lib TKIGES.lib TKBRep.lib TKSTEPBase.lib TKSTEP.lib TKSTL.lib TKSTEPAttr.lib TKSTEP209.lib TKXDESTEP.lib TKXDEIGES.lib TKXCAF.lib TKDCAF.lib TKLCAF.lib"
+				ShowProgress="0"
+				Version=""
+				LinkIncremental="0"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;;&quot;$(CASROOT)\win32\lib&quot;"
+				GenerateManifest="true"
+				EnableUAC="true"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				ImportLibrary="$(OutDir)\nginterface.lib"
+				TargetMachine="17"
+				AllowIsolation="true"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="Running POSTBUILD Script...."
+				CommandLine="&quot;$(ProjectDir)\postBuild_netgen.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;nginterface&quot;"
 			/>
 		</Configuration>
 	</Configurations>

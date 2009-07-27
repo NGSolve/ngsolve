@@ -12,6 +12,9 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
@@ -92,7 +95,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="&quot;$(ProjectDir)\postBuild_nglib.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_nglib.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -175,7 +178,172 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="&quot;$(ProjectDir)\postBuild_nglib.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(ProjectDir)&quot;"
+				CommandLine="&quot;$(ProjectDir)\postBuild_nglib.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(SolutionDir)$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="1"
+			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName)_$(PlatformName).htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\nglib&quot;;&quot;$(SolutionDir)..\&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="pthreadVC2_64.lib"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
+				ManifestFile="$(OutDir)\$(TargetFileName).intermediate.manifest"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				OutputManifestFile="$(OutDir)\$(TargetFileName).embed.manifest"
+				ManifestResourceFile="$(OutDir)\$(TargetFileName).embed.manifest.res"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="&quot;$(ProjectDir)\postBuild_nglib.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(SolutionDir)$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="1"
+			DeleteExtensionsOnClean="*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;$(TargetPath)"
+			WholeProgramOptimization="1"
+			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName)_$(PlatformName).htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\nglib&quot;;&quot;$(SolutionDir)..\&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				EnableEnhancedInstructionSet="1"
+				UsePrecompiledHeader="0"
+				ObjectFile="$(IntDir)\"
+				ProgramDataBaseFileName="$(IntDir)\vc90.pdb"
+				XMLDocumentationFileName="$(IntDir)\"
+				WarningLevel="2"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="pthreadVC2_64.lib"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
+				ManifestFile="$(OutDir)\$(TargetFileName).intermediate.manifest"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				OutputManifestFile="$(OutDir)\$(TargetFileName).embed.manifest"
+				ManifestResourceFile="$(OutDir)\$(TargetFileName).embed.manifest.res"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="&quot;$(ProjectDir)\postBuild_nglib.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -818,11 +986,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\geom2d\geometry2d.hpp"
+				RelativePath="..\libsrc\include\geometry2d.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\geometry2d.hpp"
+				RelativePath="..\libsrc\geom2d\geometry2d.hpp"
 				>
 			</File>
 			<File
@@ -862,11 +1030,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\gprim\gprim.hpp"
+				RelativePath="..\libsrc\include\gprim.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\gprim.hpp"
+				RelativePath="..\libsrc\gprim\gprim.hpp"
 				>
 			</File>
 			<File
@@ -918,11 +1086,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\linalg.hpp"
+				RelativePath="..\libsrc\linalg\linalg.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\linalg.hpp"
+				RelativePath="..\libsrc\include\linalg.hpp"
 				>
 			</File>
 			<File
@@ -942,11 +1110,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\meshing\meshing.hpp"
+				RelativePath="..\libsrc\include\meshing.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\meshing.hpp"
+				RelativePath="..\libsrc\meshing\meshing.hpp"
 				>
 			</File>
 			<File
@@ -986,11 +1154,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\general\myadt.hpp"
+				RelativePath="..\libsrc\include\myadt.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\myadt.hpp"
+				RelativePath="..\libsrc\general\myadt.hpp"
 				>
 			</File>
 			<File
@@ -1022,11 +1190,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\opti.hpp"
+				RelativePath="..\libsrc\include\opti.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\opti.hpp"
+				RelativePath="..\libsrc\linalg\opti.hpp"
 				>
 			</File>
 			<File
