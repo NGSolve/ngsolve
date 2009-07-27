@@ -12,6 +12,9 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
@@ -73,6 +76,87 @@
 				OptimizeReferences="0"
 				EnableCOMDATFolding="0"
 				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\blas&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\lapack&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
+				PreprocessorDefinitions="_DEBUG;NETGEN_ELTRANS;WIN32;LAPACK;MSVC_EXPRESS;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="0"
+				UsePrecompiledHeader="0"
+				WarningLevel="0"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+				CompileAs="2"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="lapack_win32.lib blas_win32.lib nginterface.lib tcl85.lib libcpmtd.lib"
+				OutputFile="$(OutDir)\libngsolve.dll"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="C:\Users\joachim\NetgenInstall\Netgen\lib;&quot;C:\Users\joachim\NetgenRoot\ext_libs\lapack-blas&quot;;&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\lib&quot;"
+				IgnoreDefaultLibraryNames="nafxcw.lib;libcpmt.lib"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				OptimizeReferences="0"
+				EnableCOMDATFolding="0"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -159,6 +243,93 @@
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			UseOfMFC="0"
+			CharacterSet="2"
+			WholeProgramOptimization="0"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				FavorSizeOrSpeed="1"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\blas&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\lapack&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
+				PreprocessorDefinitions="NETGEN_ELTRANS;WIN32;noLAPACK;MSVC_EXPRESS;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="1"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				LinkLibraryDependencies="true"
+				AdditionalDependencies="nginterface.lib tcl85.lib pthreadVC2_64.lib libcpmt.lib"
+				OutputFile="$(OutDir)\libngsolve.dll"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
+				IgnoreDefaultLibraryNames="nafxcw.lib;libcpmt.lib"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
