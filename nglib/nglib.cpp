@@ -457,7 +457,10 @@ DLL_HEADER Ng_Result Ng_STL_MakeEdges (Ng_STL_Geometry * geom,
   STLGeometry* stlgeometry = (STLGeometry*)geom;
   Mesh* me = (Mesh*)mesh;
   
-  MeshingParameters mparam;
+  // Philippose - 27/07/2009
+  // Do not locally re-define "mparam" here... "mparam" is a global 
+  // object 
+  //MeshingParameters mparam;
 
   mparam.maxh = mp->maxh;
   mparam.meshsizefilename = mp->meshsize_filename;
@@ -496,7 +499,10 @@ DLL_HEADER Ng_Result Ng_STL_GenerateSurfaceMesh (Ng_STL_Geometry * geom,
   STLGeometry* stlgeometry = (STLGeometry*)geom;
   Mesh* me = (Mesh*)mesh;
 
-  MeshingParameters mparam;
+  // Philippose - 27/07/2009
+  // Do not locally re-define "mparam" here... "mparam" is a global 
+  // object
+  //MeshingParameters mparam;
 
   mparam.maxh = mp->maxh;
   mparam.meshsizefilename = mp->meshsize_filename;
