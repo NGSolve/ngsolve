@@ -490,7 +490,11 @@ public:
   // by JS, only for 2D meshes ????
   int GetPartition () const { return partitionNumber; }
   void SetPartition (int nr) { partitionNumber = nr; }; 
+
+#else
+  bool IsGhost () const { return false; }
 #endif
+
 
 };
 
@@ -756,6 +760,8 @@ public:
   bool IsGhost () const { return isghost; }
 
   void SetGhost ( const bool aisghost ) { isghost = aisghost; }
+#else
+  bool IsGhost () const { return false; }
 #endif
 
   friend class Mesh;

@@ -876,6 +876,7 @@ void SplineGeometry<D> :: LoadData ( ifstream & infile )
 
       geompoints.Append (GeomPoint<D>(x, hd));
       geompoints.Last().hpref = flags.GetDefineFlag ("hpref");
+      geompoints.Last().hmax = 1e99;
     }
 
   PrintMessage (3, nump, " points loaded");
@@ -935,6 +936,7 @@ void SplineGeometry<D> :: LoadData ( ifstream & infile )
       infile >> spline->reffak;
       spline -> leftdom = leftdom;
       spline -> rightdom = rightdom;
+      spline -> hmax = 1e99;
       splines.Append (spline);
 
 

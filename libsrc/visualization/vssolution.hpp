@@ -47,7 +47,7 @@ class VisualSceneSolution : public VisualScene
   int isolinelist;
   int clipplane_isolinelist;
   int surface_vector_list;
-  int cone_list;
+  // int cone_list;
   int isosurface_list;
 
   int pointcurvelist;
@@ -299,9 +299,12 @@ public:
                            const Array<ClipPlaneTrig> & trigs, 
                            const Array<ClipPlanePoint> & points);
 			  
-  void SetOpenGlColor(double val, double valmin, double valmax, int logscale = 0);
+  // void SetOpenGlColor(double val, double valmin, double valmax, int logscale = 0);
 
   void SetOpenGlColor(double val);
+
+  // 0 .. non, 1 .. scalar, 2 .. complex
+  void SetTextureMode (int texturemode) const;
 
 #ifndef SMALLLIB  
 #ifndef NOTCL

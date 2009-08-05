@@ -1180,6 +1180,8 @@ namespace netgen
 
   bool CurvedElements :: IsSurfaceElementCurved (SurfaceElementIndex elnr) const
   {
+    if (!IsHighOrder()) return false;
+
     if (mesh.coarsemesh)
       {
 	const HPRefElement & hpref_el =

@@ -52,7 +52,7 @@ namespace netgen
     isolinelist = 0;
     clipplane_isolinelist = 0;
     surface_vector_list = 0;
-    cone_list = 0;
+    // cone_list = 0;
     isosurface_list = 0;
 
     fieldlineslist = 0;
@@ -390,16 +390,7 @@ namespace netgen
 
     if (usetexture)
       {
-        if (usetexture == 1)
-          {
-            glEnable (GL_TEXTURE_1D);
-            glDisable (GL_TEXTURE_2D);
-          }
-        else
-          {
-            glEnable (GL_TEXTURE_2D);
-            glDisable (GL_TEXTURE_1D);
-          }
+        SetTextureMode (usetexture);
 
         glMatrixMode (GL_TEXTURE);
         glLoadIdentity();
@@ -465,16 +456,13 @@ namespace netgen
 	glCallList(pointcurvelist);
       }
 
+
     glMatrixMode (GL_TEXTURE);
     glLoadIdentity();
     glMatrixMode (GL_MODELVIEW);
 
-    if (usetexture)
-      {
-        glDisable (GL_TEXTURE_1D);
-        glDisable (GL_TEXTURE_2D);
-      }
-
+    glDisable (GL_TEXTURE_1D);
+    glDisable (GL_TEXTURE_2D);
 
     glDisable (GL_POLYGON_OFFSET_FILL);
     glDisable (GL_COLOR_MATERIAL);
@@ -524,7 +512,6 @@ namespace netgen
     
     // delete lock;
     mem_lock.UnLock();
-
 
     endtime = clock();
     //    cout << 1.0 / (double(endtime - starttime)/CLOCKS_PER_SEC) << " frames/sec" << endl;
@@ -585,7 +572,8 @@ namespace netgen
         VisualScene::BuildScene (zoomall);
         return;
       }
-    
+
+    /*
     if (!cone_list)
       {
         cone_list = glGenLists (1);
@@ -593,7 +581,7 @@ namespace netgen
         DrawCone (Point<3> (0,0,0), Point<3> (0,0,1), 0.4);
         glEndList();
       }
-
+    */
     
     vispar.colormeshsize = 1;
     
@@ -620,7 +608,7 @@ namespace netgen
     if (sol && sol->solclass) sol->solclass->SetMultiDimComponent (multidimcomponent);
     if (vsol && vsol->solclass) vsol->solclass->SetMultiDimComponent (multidimcomponent);
 
-    if (!autoscale || !sol)
+    if (!autoscale || (!sol && !vsol) )
       {
         minval = mminval;
         maxval = mmaxval;
@@ -740,19 +728,9 @@ namespace netgen
             glNormal3d (-clipplane[0], -clipplane[1], -clipplane[2]);
             glColor3d (1.0, 1.0, 1.0);
 
-            glDisable (GL_TEXTURE_1D);
-            glDisable (GL_TEXTURE_2D);
+            SetTextureMode (usetexture);
 
-            if (usetexture == 1)
-              glEnable (GL_TEXTURE_1D);
-            if (usetexture == 2)
-              glEnable (GL_TEXTURE_2D);
-
-            glBegin (GL_TRIANGLES);
-            //            for (int i = 0; i < cpt.Size(); i++)
-            // DrawClipPlaneTrig (sol, scalcomp, cpt[i], 0);
             DrawClipPlaneTrigs (sol, scalcomp, cpt, pts);
-            glEnd();
 
             glEnable(GL_CLIP_PLANE0);
           }
@@ -760,11 +738,11 @@ namespace netgen
       
         if (vispar.clipenable && clipsolution == 2 && vsol)
           {
+            SetTextureMode (usetexture);
+
             if (autoscale)
               GetMinMax (vecfunction, 0, minval, maxval);
 
-
-            bool drawelem;
             Array<ClipPlanePoint> cpp;
             GetClippingPlaneGrid (cpp);
 
@@ -774,17 +752,17 @@ namespace netgen
                 double values[6];
                 Vec3d v;
 
-                drawelem = GetValues (vsol, p.elnr, p.lami(0), p.lami(1), p.lami(2), values);
+                bool drawelem = 
+                  GetValues (vsol, p.elnr, p.lami(0), p.lami(1), p.lami(2), values);
                 RealVec3d (values, v, vsol->iscomplex, imag_part);
 
                 double val = v.Length();
 
-                // "drawelem": added 07.04.2004 (FB)
                 if (drawelem && val > 1e-10 * maxval)
                   {
                     v *= (rad / val / gridsize * 0.5);
                   
-                    SetOpenGlColor  (val, minval, maxval, logscale);
+                    SetOpenGlColor  (val);
                     DrawCone (p.p, p.p+v, rad / gridsize * 0.2);
                   }
               }
@@ -1082,7 +1060,6 @@ namespace netgen
     
     const SolData * sol = NULL;
     const SolData * vsol = NULL;
-    bool drawelem = 0;
     
     if (scalfunction != -1)
       sol = soldata[scalfunction];
@@ -1097,15 +1074,15 @@ namespace netgen
 
     glLineWidth (1.0f);
 
+    GLfloat col_grey[] = { 0.6f, 0.6f, 0.6f };
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, col_grey);
+        
+
     Array<Point<2> > pref;
     Array<Point<3> > points;
     Array<Mat<3,2> > dxdxis;
 
-    /*
-    Point<2> pref[1100];
-    Point<3> points[1100];
-    Mat<3,2> dxdxis[1100];
-    */
+
 
     Vec<3> nvs[1100];
     double values[1100];
@@ -1115,10 +1092,8 @@ namespace netgen
     
     int nse = mesh->GetNSE();
 
-    if ( usetexture )
-      glColor3d (1.0, 1.0, 1.0);   
-    else
-      glColor3d (0.6, 0.6, 0.6);   
+    SetTextureMode (usetexture);
+
     CurvedElements & curv = mesh->GetCurvedElements();
 
     int n = 1 << subdivisions;
@@ -1128,24 +1103,31 @@ namespace netgen
     points.SetSize (npt);
     dxdxis.SetSize (npt);
 
-    glBegin (GL_QUADS);
     for (SurfaceElementIndex sei = 0; sei < nse; sei++)
       {
         const Element2d & el = (*mesh)[sei];
 
-#ifdef PARALLEL
-	// parallel visualization --> dont draw ghost elements
 	if ( el . IsGhost() ) continue;
-#endif
-        if(vispar.drawdomainsurf > 0 &&
-           ((mesh->GetDimension() == 3 && 
-             vispar.drawdomainsurf != mesh->GetFaceDescriptor(el.GetIndex()).DomainIn() &&
-             vispar.drawdomainsurf != mesh->GetFaceDescriptor(el.GetIndex()).DomainOut()) ||
-            (mesh->GetDimension() == 2 && el.GetIndex() != vispar.drawdomainsurf))) continue;
+
+        if (vispar.drawdomainsurf > 0)
+          {
+            if (mesh->GetDimension() == 3)
+              {
+                if (vispar.drawdomainsurf != mesh->GetFaceDescriptor(el.GetIndex()).DomainIn() &&
+                    vispar.drawdomainsurf != mesh->GetFaceDescriptor(el.GetIndex()).DomainOut())
+                  continue;
+              }
+            else
+              {
+                if (el.GetIndex() != vispar.drawdomainsurf) continue;
+              }
+          }
+
+
 
         if ( el.GetType() == QUAD || el.GetType() == QUAD6 )
           {
-            bool curved = curv.IsHighOrder(); //  && curv.IsSurfaceElementCurved(sei);
+            bool curved = curv.IsSurfaceElementCurved(sei);
 
             Point<3> lpi[4];
             Vec<3> vx, vy, vtwist;
@@ -1165,46 +1147,6 @@ namespace netgen
             //             glNormal3dv (nv);
 
 
-            /*
-            for (int iy = 0, ii = 0; iy <= n; iy++)
-              for (int ix = 0; ix <= n; ix++, ii++)
-                {
-                  double x = double(ix) / n;
-                  double y = double(iy) / n;
-
-                  if (sol && sol->draw_surface) 
-                    {
-                      if (usetexture == 2)
-                        drawelem = GetSurfValueComplex (sol, sei, x, y, scalcomp, valuesc[ii][0], valuesc[ii][1]);
-                      else
-                        drawelem = GetSurfValue (sol, sei, x, y, scalcomp, values[ii]);
-                    }
-
-                  if (curved)
-                    {
-                      Point<2> xref(x,y);
-                      Mat<3,2> dxdxi;
-
-                      mesh->GetCurvedElements().
-                        CalcSurfaceTransformation (xref, sei, points[ii], dxdxi);
-                      nvs[ii] = Cross (dxdxi.Col(0), dxdxi.Col(1));
-                      nvs[ii].Normalize();
-                    }
-                  else
-                    {
-                      points[ii] = lpi[0] + x * vx + y * vy + x*y * vtwist;
-                      nvs[ii] = Cross (vx, vy);
-                      nvs[ii].Normalize();
-                    }
-                  
-                  if (deform)
-                    {
-                      points[ii] += GetSurfDeformation (sei, x, y);
-                    }
-
-                  ii++;
-                }
-            */
 
             for (int iy = 0, ii = 0; iy <= n; iy++)
               for (int ix = 0; ix <= n; ix++, ii++)
@@ -1238,6 +1180,7 @@ namespace netgen
               }
 
 
+            bool drawelem = false;
             if (sol && sol->draw_surface) 
               {
                 if (usetexture == 2)
@@ -1253,44 +1196,49 @@ namespace netgen
                 points[ii] += GetSurfDeformation (sei, pref[ii](0), pref[ii](1));
 
 
-          
+            int save_usetexture = usetexture;
+            if (!drawelem)
+              {
+                usetexture = 0;
+                SetTextureMode (0);
+              }
+
             int ii = 0;
+
+            glBegin (GL_QUADS);
+
             for (int iy = 0; iy < n; iy++, ii++)
               for (int ix = 0; ix < n; ix++, ii++)
                 {
-                  // double x = double(ix) / n;
-                  // double y = double(iy) / n;
-                  
                   int index[] = { ii, ii+1, ii+n+2, ii+n+1 };
                   
                   for (int j = 0; j < 4; j++)
                     {
-                      if (sol && sol->draw_surface)
+                      if (drawelem)
                         {
-                          if (usetexture == 2)
-			    {
-			      if(drawelem)
-				glTexCoord2f ( valuesc[index[j]][0],
-					       valuesc[index[j]][1] );
-			      else
-				glTexCoord2f ( minval,minval);
-			    }
+                          if (usetexture != 2)
+                            SetOpenGlColor  (values[index[j]]);
                           else
-			    {
-			      if(drawelem)
-				SetOpenGlColor  (values[index[j]]);
-			      else
-				glColor3d(0.6,0.6,0.6);
-			    }
+                            glTexCoord2f ( valuesc[index[j]][0],
+                                           valuesc[index[j]][1] );
                         }
+                      else
+                        glColor3fv (col_grey);
                       
                       glNormal3dv (nvs[index[j]]);
                       glVertex3dv (points[index[j]]);
                     }
                 }
+            glEnd();
+
+            if (!drawelem && (usetexture != save_usetexture))
+              {
+                usetexture = save_usetexture;
+                SetTextureMode (usetexture);
+              }
+
           }
       }
-    glEnd();
 
     n = 1 << subdivisions;
     double invn = 1.0 / n;
@@ -1410,6 +1358,7 @@ namespace netgen
                   nvs[ii] = nv;
               }
 
+            bool drawelem = false;
             if (sol && sol->draw_surface) 
               {
                 if (usetexture == 2)
@@ -1437,11 +1386,13 @@ namespace netgen
 
 
 
-
-
-
-
-
+            int save_usetexture = usetexture;
+            if (!drawelem)
+              {
+                usetexture = 0;
+                SetTextureMode (usetexture);
+              }
+            
             for (int iy = 0, ii = 0; iy < n; iy++)
               {
                 glBegin (GL_TRIANGLE_STRIP);
@@ -1450,37 +1401,26 @@ namespace netgen
                     {
                       if (ix+iy+k > n) continue;
                       int hi = (k == 0) ? ii : ii+n-iy+1;
-
-                      if (sol && sol->draw_surface)
+                      
+                      if (drawelem)
                         {
-                          switch (usetexture)
-                            {
-                            case 0:
-			      if(drawelem)
-				SetOpenGlColor  (values[hi]);
-			      else
-				glColor3d(0.6,0.6,0.6);
-			      //SetOpenGlColor (minval);
-                              break;
-                            case 1:
-			      if(drawelem)
-				glTexCoord1f ( values[hi] );
-			      else
-				glTexCoord1f (minval);
-                              break;
-                            case 2:
-			      if(drawelem)
-				glTexCoord2f ( valuesc[hi][0], valuesc[hi][1] );
-			      else
-				glTexCoord2f ( minval,minval);
-                              break;
-                            }
+                          if (usetexture != 2)
+                            SetOpenGlColor (values[hi]); 
+                          else
+                            glTexCoord2f ( valuesc[hi][0], valuesc[hi][1] );
                         }
-
+                      else
+                        glColor3fv (col_grey);
+                      
                       glNormal3dv (nvs[hi]);
                       glVertex3dv (points[hi]);
                     }
                 glEnd();
+              }
+            if (!drawelem && (usetexture != save_usetexture))
+              {
+                usetexture = save_usetexture;
+                SetTextureMode (usetexture);
               }
 	  }
       }
@@ -1495,43 +1435,24 @@ namespace netgen
   }
 
 
-  // Bernstein Pol B_{n,i}(x) = n! / i! / (n-i)! (1-x)^{n-i} x^i
-  static inline double Bernstein (int n, int i, double x)
-  {
-    double val = 1;
-    for (int j = 1; j <= i; j++)   
-      val *= x;
-    for (int j = 1; j <= n-i; j++) 
-      val *= (1-x) * (j+i) / j;
-    return val;
-  }
-
   void  VisualSceneSolution :: DrawSurfaceElementLines ()
   {
     glLineWidth (1.0f);
-    glNormal3d (1, 0, 0);
+    // glNormal3d (1, 0, 0);
 
     int nse = mesh->GetNSE();
 
     CurvedElements & curv = mesh->GetCurvedElements();
-    bool curved = curv.IsHighOrder();  //  && curv.IsSurfaceElementCurved(sei);
 
     for (SurfaceElementIndex sei = 0; sei < nse; sei++)
       {
         Element2d & el = (*mesh)[sei];
 
-
-#ifdef PARALLEL
-	// parallel visualization --> dont draw ghost elements
 	if ( el . IsGhost() ) continue;
-#endif
 
+        bool curved = curv.IsSurfaceElementCurved (sei);
 
-        int nv;
-        if (el.GetType() == TRIG || el.GetType() == TRIG6)
-          nv = 3;
-        else 
-          nv = 4;
+        int nv = (el.GetType() == TRIG || el.GetType() == TRIG6) ? 3 : 4;
         
         Point<3> p1, p2, p3, p4;
         if (!curved)
@@ -1539,14 +1460,11 @@ namespace netgen
             p1 = (*mesh)[el[0]];
             p2 = (*mesh)[el[1]];
             p3 = (*mesh)[el[2]];
-            if (nv == 4)
-              p4 = (*mesh)[el[3]];
+            if (nv == 4) p4 = (*mesh)[el[3]];
           }
-
 
         int n = 1 << subdivisions;
 
-        Point<3> pnt;
         for (int k = 0; k < nv; k++)
           {
             Point<2> p0 = 0.0;
@@ -1613,7 +1531,9 @@ namespace netgen
                 for (int ix = 0; ix <= n; ix++)
                   {
                     Point<2> p = p0 + (double(ix) / n) * vtau;
-                    
+
+                    Point<3> pnt;
+
                     if (nv == 3)
                       pnt = p3 + p(0) * (p1-p3) + p(1) * (p2-p3);
                     else
@@ -1647,25 +1567,14 @@ namespace netgen
     if (!sol) return;
 
    
+    SetTextureMode (0);
     glColor3d (1.0, 0, 0);
-    glDisable (GL_TEXTURE_1D);
-    glDisable (GL_TEXTURE_2D);
     glEnable (GL_COLOR_MATERIAL);
 
-    /*
-      GLfloat matcol0[] = { 0.5, 0, 0, 1 };
-      glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
-
-      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, matcol0);
-      glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, matcol0);
-      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, matcol0);
-    */
 
     glBegin (GL_TRIANGLES);
 
-    // int np = mesh->GetNP();
     int ne = mesh->GetNE();
-
 
     const int edgei[6][2] =
       { { 0, 1 }, { 0, 2 }, { 0, 3 },
@@ -1697,10 +1606,7 @@ namespace netgen
         // if(vispar.clipdomain > 0 && vispar.clipdomain != (*mesh)[ei].GetIndex()) continue;
         // if(vispar.donotclipdomain > 0 && vispar.donotclipdomain == (*mesh)[ei].GetIndex()) continue;
 
-#ifdef PARALLEL
-	// parallel visualization --> dont draw ghost elements
 	if ( (*mesh)[ei] . IsGhost() ) continue;
-#endif
 
         ELEMENT_TYPE type = (*mesh)[ei].GetType();
         if (type == HEX || type == PRISM || type == TET || type == PYRAMID)
@@ -1907,12 +1813,12 @@ namespace netgen
 
 
 
-  void  VisualSceneSolution :: DrawTrigSurfaceVectors(const Array< Point<3> > & lp, const Point<3> & pmin, const Point<3> & pmax,
+  void  VisualSceneSolution :: DrawTrigSurfaceVectors(const Array< Point<3> > & lp, 
+                                                      const Point<3> & pmin, const Point<3> & pmax,
                                                       const int sei, const SolData * vsol)
   {
     int dir,dir1,dir2;
     double s,t;
-    bool drawelem;
 
     Vec<3> n = Cross (lp[1]-lp[0], lp[2]-lp[0]);
     Vec<3> na (fabs (n(0)), fabs(n(1)), fabs(n(2)));
@@ -1980,7 +1886,8 @@ namespace netgen
                   
                   Vec<3> v;
                   double values[6];
-                  drawelem = GetSurfValues (vsol, sei, lam1, lam2, values);
+                  bool drawelem = 
+                    GetSurfValues (vsol, sei, lam1, lam2, values);
                   
                   if (!vsol->iscomplex)
                     for (k = 0; k < 3; k++)
@@ -2002,7 +1909,7 @@ namespace netgen
                   
                   double val = v.Length();
 
-                  SetOpenGlColor  (val, minval, maxval, logscale);  // change JS
+                  SetOpenGlColor  (val); // (val, minval, maxval, logscale);  // change JS
 
                   if (val > 1e-10 * maxval)
                     v *= (rad / val / gridsize * 0.5);
@@ -2011,23 +1918,6 @@ namespace netgen
 
                   if ( drawelem ) 
                     DrawCone (cp, cp+4*v, 0.8*rad / gridsize);
-                  
-                  /*
-                    v /= val;
-                    
-                    glPushMatrix();
-                    glTranslated (cp(0), cp(1), cp(2));
-                    
-                    double l = 2*rad/gridsize;
-                    double r = 0.8*rad/gridsize;
-                    glScaled (l, l, l);
-                    
-                    double phi = acos (v(2));
-                    glRotated (-180/M_PI*phi, v(1), -v(0), 0);
-                    
-                    glCallList (cone_list);
-                    glPopMatrix();
-                  */
                 }
             }
     
@@ -2037,8 +1927,6 @@ namespace netgen
 
   void  VisualSceneSolution :: DrawSurfaceVectors ()
   {
-    //int j, k;
-    //int dir, dir1, dir2;
     SurfaceElementIndex sei;
 
     const SolData * vsol = NULL;
@@ -2056,22 +1944,8 @@ namespace netgen
     Point<3> pmin = center - Vec3d (rad, rad, rad);
     Point<3> pmax = center - Vec3d (rad, rad, rad);
 
-    //double s, t;
 
-    // draw surface cones
-    //  if (0)
-    /*
-      if (vsol->soltype==SOL_SURFACE_ELEMENT ||
-      vsol->soltype==SOL_SURFACE_NONCONTINUOUS ||
-      vsol->soltype==SOL_VIRTUALFUNCTION)
-    */
-
-    /*
-      // was commented out, JS Apr 2009
-    if (autoscale && !scalfunction)
-      GetMinMax (vecfunction, 0, minval, maxval);
-    */
-    glColor3d (1.0, 1.0, 1.0);
+    // glColor3d (1.0, 1.0, 1.0);
     // glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 
     if (vsol->draw_surface && showsurfacesolution)
@@ -2081,20 +1955,13 @@ namespace netgen
           {
             const Element2d & el = (*mesh)[sei];
           
-#ifdef PARALLEL
-	    // parallel visualization --> dont draw ghost elements
 	    if ( el . IsGhost() ) continue;
-#endif
 
             if (el.GetType() == TRIG || el.GetType() == TRIG6)
               {
           
                 Array< Point<3> > lp(3);
-                //Point<2> p2d[3];
-                /*
-                  for (k = 0; k < 3; k++)
-                  lp[k] = mesh->Point (el[k]);
-                */
+
                 lp[0] = mesh->Point(el[2]);
                 lp[1] = mesh->Point(el[0]);
                 lp[2] = mesh->Point(el[1]);
@@ -2296,7 +2163,7 @@ namespace netgen
                                   v(2) = 0;
                               
                               double val = v.Length();
-                              SetOpenGlColor  (val, minval, maxval, logscale);
+                              SetOpenGlColor  (val); // , minval, maxval, logscale); july 09
                               
                               (*testout) << "v " << v << endl;
                               
@@ -4066,19 +3933,6 @@ namespace netgen
                           else
                             compress[ii] = -1;
                           break;
-                          /*
-                        case TET:
-                        case TET10:
-                          if (ix+iy+iz <= n)
-                            {
-                              ploc = Point<3> (double(ix) / n, double(iy) / n, double(iz) / n);
-                              compress[ii] = cnt_valid;
-                              cnt_valid++;
-                            }
-                          else
-                            compress[ii] = -1;
-                          break;
-                          */
                         case HEX:
                           ploc = Point<3> (double(ix) / n, double(iy) / n, double(iz) / n);
                           break;
@@ -4261,92 +4115,6 @@ namespace netgen
         else
           {  // other elements not supported (JS, June 2007)
             return;
-            /*
-
-
-            Array<double> nodevals(np);
-            
-            for (int i = 0; i < np; i++)
-            {
-            Point<3> p;
-            GetPointDeformation(i, p);
-            nodevals[i] =
-            p(0) * clipplane[0] +
-            p(1) * clipplane[1] +
-            p(2) * clipplane[2] +
-            clipplane[3];
-            }
-
-
-
-
-
-
-            // const Element & el = mesh->VolumeElement(i);
-
-            (*mesh)[ei].GetTets (loctets);
-            (*mesh)[ei].GetTetsLocal (loctetsloc);
-            // (*mesh)[ei].GetNodesLocal (pointsloc);
-            (*mesh)[ei].GetNodesLocalNew (pointsloc);
-
-            for (int ii = 0; ii < loctets.Size(); ii++)
-            {
-            const Element & el = loctets[ii];
-          
-            for (int j = 0; j < 4; j++)
-            nodevali[j] = nodevals.Get(el[j]);
-          
-            cntce = 0;
-            for (int j = 0; j < 6; j++)
-            {
-            int lpi1 = edgei[j][0];
-            int lpi2 = edgei[j][1];
-            if ( (nodevali[lpi1] > 0) !=
-            (nodevali[lpi2] > 0) )
-            {
-            edgelam[j] = nodevali[lpi2] / (nodevali[lpi2] - nodevali[lpi1]);
-            Point<3> p1, p2;
-            GetPointDeformation (el[lpi1]-1, p1);
-            GetPointDeformation (el[lpi2]-1, p2);
-                  
-            edgep[j] = p1 + (1-edgelam[j]) * (p2-p1);
-                  
-            cntce++;
-            cpe3 = cpe2;
-            cpe2 = cpe1;
-            cpe1 = j;
-            if (cntce >= 3)
-            {
-            ClipPlaneTrig cpt;
-            cpt.elnr = ei;
-
-            for (int k = 0; k < 3; k++)
-            {
-            int ednr;
-            switch (k)
-            {
-            case 0: ednr = cpe1; break;
-            case 1: ednr = cpe2; break;
-            case 2: ednr = cpe3; break;
-            }
-            cpt.points[k].p = edgep[ednr];
-
-            int pi1 = edgei[ednr][0];
-            int pi2 = edgei[ednr][1];
-            Point<3> p1 = pointsloc.Get (loctetsloc[ii][pi1]);
-            Point<3> p2 = pointsloc.Get (loctetsloc[ii][pi2]);
-            for (int l = 0; l < 3; l++)
-            cpt.points[k].lami(l) = 
-            edgelam[ednr]     * p1(l) + 
-            (1-edgelam[ednr]) * p2(l);
-            }
-
-            trigs.Append (cpt);
-            }
-            }
-            }
-            }
-            */
           }
       
       }
@@ -4359,7 +4127,8 @@ namespace netgen
     double mu = -clipplane[3] / n.Length2();
     Point3d p(mu*n.X(), mu * n.Y(), mu * n.Z());
 
-    n /= n.Length();
+    // n /= n.Length();
+    n.Normalize();
     Vec3d t1, t2;
     n.GetNormal (t1);
     t2 = Cross (n, t1);
@@ -4371,19 +4140,10 @@ namespace netgen
 
     pts.SetSize(0);
 
-    int elnr;
-    double lami[3];
-
-    //  cout << "getclippingplanegrid. xoffset = " << xoffset << ", yoffset = ";
-    //  cout << yoffset << endl;
-
     for (xi1 = xi1mid-rad+xoffset/gridsize; xi1 <= xi1mid+rad+xoffset/gridsize; xi1 += rad / gridsize)
       for (xi2 = xi2mid-rad+yoffset/gridsize; xi2 <= xi2mid+rad+yoffset/gridsize; xi2 += rad / gridsize)
-        //  for (xi1 = xi1mid-rad; xi1 <= xi1mid+rad; xi1 += rad / gridsize)
-        //    for (xi2 = xi2mid-rad; xi2 <= xi2mid+rad; xi2 += rad / gridsize)
         {
           Point3d hp = p + xi1 * t1 + xi2 * t2;
-
         
           int cindex(-1);
           bool allowindex(true);
@@ -4396,7 +4156,9 @@ namespace netgen
               allowindex = false;
               cindex = vispar.donotclipdomain;
             }
-          elnr = mesh->GetElementOfPoint (hp, lami,0,cindex,allowindex)-1;
+
+          double lami[3];
+          int elnr = mesh->GetElementOfPoint (hp, lami,0,cindex,allowindex)-1;
 
           if (elnr != -1)
             {
@@ -4413,12 +4175,108 @@ namespace netgen
 
 
 
+
+  void VisualSceneSolution :: 
+  DrawClipPlaneTrigs (const SolData * sol, int comp,
+                      const Array<ClipPlaneTrig> & trigs, 
+                      const Array<ClipPlanePoint> & points)
+  {
+    glBegin (GL_TRIANGLES);
+
+    int maxlpnr = 0;
+    for (int i = 0; i < trigs.Size(); i++)
+      for (int j = 0; j < 3; j++)
+        maxlpnr = max2 (maxlpnr, trigs[i].points[j].locpnr);
+
+    ArrayMem<double, 1000> vals(maxlpnr+1);
+    ArrayMem<int, 1000> elnrs(maxlpnr+1);
+    ArrayMem<bool, 1000> trigok(maxlpnr+1);
+    trigok = false;
+    elnrs = -1;
+
+    Point<3> p[3];
+    double val[3],vali[3];
+
+    for (int i = 0; i < trigs.Size(); i++)
+      {
+        const ClipPlaneTrig & trig = trigs[i];
+	bool ok = true;
+        for (int j = 0; ok && j < 3; j++)
+          {
+            p[j] = points[trig.points[j].pnr].p;
+            Point<3> ploc = points[trig.points[j].pnr].lami;
+            
+            if (deform)
+              p[j] += GetDeformation (trig.elnr, ploc);
+            
+            if (usetexture != 2 || !sol->iscomplex)
+              {
+                if (elnrs[trig.points[j].locpnr] != trig.elnr)
+                  {
+                    elnrs[trig.points[j].locpnr] = trig.elnr;
+
+                    Point<3> pglob;
+                    Mat<3> trans;
+                    
+                    mesh->GetCurvedElements().
+                      CalcElementTransformation (ploc, trig.elnr, pglob, trans);
+                  
+                    //double val;
+		    ok = GetValue (sol, trig.elnr, &ploc(0), &pglob(0), &trans(0,0), scalcomp, val[j]);
+                    vals[trig.points[j].locpnr] = val[j];
+		    trigok[trig.points[j].locpnr] = ok;
+		  }
+                else
+                  {   
+		    ok = trigok[trig.points[j].locpnr];
+                    //SetOpenGlColor (vals[trig.points[j].locpnr]);
+                  }
+              }
+            else
+              {
+                //double valr, vali;
+                ok = GetValueComplex (sol, trig.elnr, ploc(0), ploc(1), ploc(2),
+				      scalcomp, val[j], vali[j]);
+                
+                //glTexCoord2f ( valr, vali );
+              }
+            //glVertex3dv (p);
+          }
+
+	if(ok)
+	  for(int j=0; j<3; j++)
+	    {
+	      if (usetexture != 2 || !sol->iscomplex)
+		{
+		  if (elnrs[trig.points[j].locpnr] != trig.elnr)
+		    SetOpenGlColor(val[j]);
+		  else
+		    SetOpenGlColor (vals[trig.points[j].locpnr]);
+		}
+	      else
+		glTexCoord2f ( val[j], vali[j] );
+
+	      glVertex3dv (p[j]);
+	    }
+
+      }
+    glEnd();
+  }
+
+
+
+
+
+
+
+
+
+
   void VisualSceneSolution ::
   SetOpenGlColor(double val)
   {
     if (usetexture == 1 && !logscale)
       {
-        glColor3d (1, 1, 1);
         glTexCoord1f ( val );
         return;
       }
@@ -4440,13 +4298,6 @@ namespace netgen
     if (!invcolor)
       value = 1 - value;
 
-    if (usetexture)
-      {
-        glColor3d (1, 1, 1);
-        glTexCoord1f ( 0.999 * value + 0.001);
-        return;
-      };
-
 
     if (value > 1) value = 1;
     if (value < 0) value = 0;
@@ -4471,67 +4322,31 @@ namespace netgen
     for (int j = 0; j < 3; j++)
       col[j] = (1-r) * colp[i][j] + r * colp[i+1][j];
   
-    glColor3d (col[0], col[1], col[2]);
+    glColor3dv (col);
   }
 
 
+
   void VisualSceneSolution ::
-  SetOpenGlColor(double h, double valmin, double valmax, int logscale)
+  SetTextureMode (int texturemode) const
   {
-    if (usetexture == 1 && !logscale)
+    switch (texturemode)
       {
-        glColor3d (1, 1, 1);
-        glTexCoord1f ( h );
-        return;
+      case 0:
+        glDisable (GL_TEXTURE_1D);
+        glDisable (GL_TEXTURE_2D);
+        break;
+      case 1:
+        glEnable (GL_TEXTURE_1D);
+        glDisable (GL_TEXTURE_2D);
+        glColor3d (1.0, 1.0, 1.0);   
+        break;
+      case 2:
+        glDisable (GL_TEXTURE_1D);
+        glEnable (GL_TEXTURE_2D);
+        glColor3d (1.0, 1.0, 1.0);   
+        break;
       }
-
-
-    double value;
-
-    if (!logscale)
-      value = (h - valmin) / (valmax - valmin);
-    else
-      {
-        if (valmax <= 0) valmax = 1;
-        if (valmin <= 0) valmin = 1e-4 * valmax;
-        value = (log(fabs(h)) - log(valmin)) / (log(valmax) - log(valmin));
-      }
-
-    if (!invcolor)
-      value = 1 - value;
-
-    if (usetexture)
-      {
-        glColor3d (1, 1, 1);
-        glTexCoord1f ( 0.999 * value + 0.001);
-        return;
-      };
-
-
-    if (value > 1) value = 1;
-    if (value < 0) value = 0;
-
-    value *= 4;
-
-    static const double colp[][3] =
-      {
-        { 1, 0, 0 },
-        { 1, 1, 0 },
-        { 0, 1, 0 },
-        { 0, 1, 1 },
-        { 0, 0, 1 },
-        { 1, 0, 1 },
-        { 1, 0, 0 },
-      };
-  
-    int i = int(value);
-    double r = value - i;
-
-    GLdouble col[3];
-    for (int j = 0; j < 3; j++)
-      col[j] = (1-r) * colp[i][j] + r * colp[i+1][j];
-  
-    glColor3d (col[0], col[1], col[2]);
   }
 
 
@@ -4669,90 +4484,6 @@ namespace netgen
   }
 
 
-  void VisualSceneSolution :: 
-  DrawClipPlaneTrigs (const SolData * sol, int comp,
-                      const Array<ClipPlaneTrig> & trigs, 
-                      const Array<ClipPlanePoint> & points)
-  {
-    int maxlpnr = 0;
-    for (int i = 0; i < trigs.Size(); i++)
-      for (int j = 0; j < 3; j++)
-        maxlpnr = max2 (maxlpnr, trigs[i].points[j].locpnr);
-
-    ArrayMem<double, 1000> vals(maxlpnr+1);
-    ArrayMem<int, 1000> elnrs(maxlpnr+1);
-    ArrayMem<bool, 1000> trigok(maxlpnr+1);
-    trigok = false;
-    elnrs = -1;
-
-    Point<3> p[3];
-    double val[3],vali[3];
-
-    for (int i = 0; i < trigs.Size(); i++)
-      {
-        const ClipPlaneTrig & trig = trigs[i];
-	bool ok = true;
-        for (int j = 0; ok && j < 3; j++)
-          {
-            p[j] = points[trig.points[j].pnr].p;
-            Point<3> ploc = points[trig.points[j].pnr].lami;
-            
-            if (deform)
-              p[j] += GetDeformation (trig.elnr, ploc);
-            
-            if (usetexture != 2 || !sol->iscomplex)
-              {
-                if (elnrs[trig.points[j].locpnr] != trig.elnr)
-                  {
-                    elnrs[trig.points[j].locpnr] = trig.elnr;
-
-                    Point<3> pglob;
-                    Mat<3> trans;
-                    
-                    mesh->GetCurvedElements().
-                      CalcElementTransformation (ploc, trig.elnr, pglob, trans);
-                  
-                    //double val;
-		    ok = GetValue (sol, trig.elnr, &ploc(0), &pglob(0), &trans(0,0), scalcomp, val[j]);
-                    vals[trig.points[j].locpnr] = val[j];
-		    trigok[trig.points[j].locpnr] = ok;
-		  }
-                else
-                  {   
-		    ok = trigok[trig.points[j].locpnr];
-                    //SetOpenGlColor (vals[trig.points[j].locpnr]);
-                  }
-              }
-            else
-              {
-                //double valr, vali;
-                ok = GetValueComplex (sol, trig.elnr, ploc(0), ploc(1), ploc(2),
-				      scalcomp, val[j], vali[j]);
-                
-                //glTexCoord2f ( valr, vali );
-              }
-            //glVertex3dv (p);
-          }
-
-	if(ok)
-	  for(int j=0; j<3; j++)
-	    {
-	      if (usetexture != 2 || !sol->iscomplex)
-		{
-		  if (elnrs[trig.points[j].locpnr] != trig.elnr)
-		    SetOpenGlColor(val[j]);
-		  else
-		    SetOpenGlColor (vals[trig.points[j].locpnr]);
-		}
-	      else
-		glTexCoord2f ( val[j], vali[j] );
-
-	      glVertex3dv (p[j]);
-	    }
-
-      }
-  }
-
 
 #ifdef PARALLELGL
 
@@ -4838,7 +4569,6 @@ namespace netgen
 
                     if (strcmp (scalname, newscalname) != 0)
                       Tcl_SetVar ( interp, "::visoptions.scalfunction", newscalname, TCL_GLOBAL_ONLY );
-
                   }
                 if (strcmp (vssolution.soldata[i]->name, vecname) == 0)
                   {

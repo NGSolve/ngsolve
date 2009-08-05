@@ -184,7 +184,6 @@ namespace netgen
   void FieldLineCalc :: GenerateFieldLines(Array<Point3d> & potential_startpoints, const int numlines, const int gllist,
 					   const double minval, const double maxval, const int logscale, double phaser, double phasei)
   {
-    glNewList(gllist, GL_COMPILE);
 
     
     Array<Point3d> points;
@@ -232,6 +231,9 @@ namespace netgen
 
     cout << endl;
 
+
+
+
     for(int i=0; i<potential_startpoints.Size(); i++)
       {
 	cout << "\rFieldline Calculation " << int(100.*i/potential_startpoints.Size()) << "%"; cout.flush();
@@ -253,19 +255,19 @@ namespace netgen
 	      usable = true;
  
 	      // vss.SetOpenGlColor  (0.5*(values[k]+values[k+1]), minval, maxval, logscale);
+              
+              /*
               if (vss.usetexture == 1)
                 glTexCoord1f ( 0.5*(values[k]+values[k+1]) );
               else
-                vss.SetOpenGlColor  (0.5*(values[k]+values[k+1]) );
-		    
-	      
+              */
+              vss.SetOpenGlColor  (0.5*(values[k]+values[k+1]) );
 	      vss.DrawCylinder (points[k], points[k+1], thickness);
 	    }
 
 	if(usable) calculated++;
       }
     cout << "\rFieldline Calculation " << 100 << "%" << endl;
-    glEndList ();
     
   }
 
@@ -707,9 +709,14 @@ namespace netgen
 	double phaser = cos(phi), phasei = sin(phi);
 	
 
-	
+        glNewList(fieldlineslist+ln, GL_COMPILE);
+        
+        SetTextureMode (usetexture);
 	linecalc.GenerateFieldLines(startpoints,num_fieldlines / num_fieldlineslists+1,
 				    fieldlineslist+ln,minval,maxval,logscale,phaser,phasei);
+
+        glEndList ();
+
       }
   }
 
