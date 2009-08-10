@@ -26,7 +26,6 @@ namespace netgen
   MPI_Group MPI_HIGHORDER_WORLD;
   MPI_Comm MPI_HIGHORDER_COMM;
 }
-
 #endif
 
 
