@@ -221,6 +221,16 @@ namespace netgen
 
   static void MeshSurface (CSGeometry & geom, Mesh & mesh)
   {
+    /*
+    Point3d pmin, pmax;
+    mesh.GetBox(pmin, pmax);
+    cout << "box = " << pmin << " -  " << pmax << endl;
+    cout << "localhbox = " 
+         << mesh.LocalHFunction().GetBoundingBox().PMin() << " - " 
+         << mesh.LocalHFunction().GetBoundingBox().PMax() 
+         << endl;
+    */
+
     const char * savetask = multithread.task;
     multithread.task = "Surface meshing";
   
@@ -416,12 +426,12 @@ namespace netgen
 	Meshing2Surfaces meshing(*surf, geom.BoundingBox());
 	meshing.SetStartTime (starttime);
 
-
+        double eps = 1e-8 * geom.MaxSize();
 	for (PointIndex pi = PointIndex::BASE; pi < noldp+PointIndex::BASE; pi++)
 	  { 
 	    //if(surf->PointOnSurface(mesh[pi]))
 	    meshing.AddPoint (mesh[pi], pi, NULL,
-			      (surf->PointOnSurface(mesh[pi])!=0));
+			      (surf->PointOnSurface(mesh[pi], eps) != 0));
 	  }
 
 	segments.SetSize (0);

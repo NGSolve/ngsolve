@@ -144,6 +144,7 @@ namespace netgen
 	    BuildFilledList ();
 	  }
 
+
 #ifdef PARALLELGL
 	if (ntasks > 1 && vispar.drawtetsdomain > 0 && vispar.drawtetsdomain < ntasks)
 	  glCallList (par_filledlists[vispar.drawtetsdomain]);
@@ -1097,13 +1098,13 @@ namespace netgen
 		    }
 		  else // not high order
 		    {
-		      glBegin (GL_TRIANGLES);
+                      glBegin (GL_TRIANGLES);
 
 		      const Point<3> & lp0 = (*mesh) [el[0]];
 		      const Point<3> & lp1 = (*mesh) [el[1]];
 		      const Point<3> & lp2 = (*mesh) [el[2]];
 
-		      Vec<3> n = Cross (lp1-lp0, lp2-lp0);
+		      Vec<3> n = Cross (lp1-lp0, lp2-lp0).Normalize();
 		      glNormal3dv (n);
 
 		      if (vispar.colormeshsize)
