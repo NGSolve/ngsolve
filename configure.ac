@@ -19,6 +19,18 @@ TEA_LOAD_TKCONFIG
 TEA_PUBLIC_TCL_HEADERS
 
 
+
+# AC_HEADER_STDC
+AC_CONFIG_HEADERS(config.h)
+AC_DISABLE_STATIC
+
+AC_LANG([C++])
+AC_PROG_CXX
+AC_PROG_LIBTOOL
+LT_INIT
+
+
+
 # OpenCASCADE configuration
 
 AC_ARG_ENABLE([occ], 
@@ -33,13 +45,13 @@ AC_ARG_WITH([occ],
         )
 
 
+
 if test a$occon = atrue ; then
 
 	AC_SUBST([OCCFLAGS], ["-DOCCGEOMETRY -I$occdir/inc"])
 	AC_SUBST([OCCLIBS], ["-L$occdir/lib -lTKernel -lTKGeomBase -lTKMath -lTKG2d -lTKG3d -lTKXSBase -lTKOffset -lTKFillet -lTKShHealing -lTKMesh -lTKMeshVS -lTKTopAlgo -lTKGeomAlgo -lTKBool -lTKPrim -lTKBO -lTKIGES -lTKBRep -lTKSTEPBase -lTKSTEP -lTKSTL -lTKSTEPAttr -lTKSTEP209 -lTKXDESTEP -lTKXDEIGES -lTKXCAF -lTKLCAF -lFWOSPlugin"])
 
 #  -lTKDCAF
-
 
 	if test a$build_cpu = ax86_64 ; then
 		AC_SUBST([OCCFLAGS],["$OCCFLAGS -D_OCC64"])
@@ -106,15 +118,6 @@ AC_ARG_ENABLE([ffmpeg],
         ]       
         )               
 
-# AC_HEADER_STDC
-AC_CONFIG_HEADERS(config.h)
-AC_DISABLE_STATIC
-
-AC_LANG([C++])
-AC_PROG_CXX
-AC_PROG_LIBTOOL
-LT_INIT
-
 
 AM_CONDITIONAL([NGLIB], [test x$nglibon = xtrue])
 
@@ -125,7 +128,6 @@ AC_CHECK_HEADER([togl.h])
 AC_CHECK_HEADER([GL/gl.h])
 
 AC_CHECK_LIB(pthread, pthread_create)
-
 
 
 
@@ -162,12 +164,13 @@ esac
 AC_SUBST(LIBGLU)
 
 
-
-
+	
 
 AC_CHECK_FUNCS([pow])
 AC_CHECK_FUNCS([floor])
 AC_CHECK_HEADERS([limits.h])
+
+
 
 
 AC_CONFIG_FILES(Makefile libsrc/Makefile libsrc/csg/Makefile 
@@ -177,5 +180,8 @@ libsrc/linalg/Makefile libsrc/meshing/Makefile libsrc/occ/Makefile
   libsrc/stlgeom/Makefile
   libsrc/visualization/Makefile ng/Makefile nglib/Makefile
   tutorials/Makefile doc/Makefile windows/Makefile )
+
+
+
 
 AC_OUTPUT
