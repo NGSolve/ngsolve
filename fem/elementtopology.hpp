@@ -337,7 +337,7 @@ namespace ngfem
 	{
 	  { 0, 1, 2, -1 },
 	};
-    
+      
       static int quad_faces[1][4] = 
 	{
 	  { 0, 1, 2, 3 },
@@ -513,6 +513,37 @@ namespace ngfem
     enum { N_EDGE = 1 };
     enum { N_FACE = 0 };
     static ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
+
+
+
+    static INT<2> GetEdge (int /* i */)
+    {
+      static const int edges[][2] = 
+	{ { 0, 1 } };
+      return INT<2> (edges[0][0], edges[0][1]);
+    }
+
+    template <typename TVN>
+    static INT<2> GetEdgeSort (int i, const TVN & vnums)
+    {
+      INT<2> e = GetEdge (i);
+      if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
+      return e;
+    }
+
+
+    static INT<4> GetFace (int /* i */ )
+    {
+      return INT<4> (-1, -1, -1, -1);
+    }
+
+    template <typename TVN>
+    static INT<4> GetFaceSort (int /*  i */ , const TVN & vnums)
+    {
+      return GetFace(0);
+    }
+
+
   };
 
   template<> class ET_trait<ET_TRIG>
@@ -523,6 +554,47 @@ namespace ngfem
     enum { N_EDGE = 3 };
     enum { N_FACE = 1 };
     static ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
+    
+    template <typename Tx, typename Tlam>
+    static void CalcLambda (const Tx & x, Tlam & lam)
+    { lam[0] = x[0]; lam[1] = x[1], lam[2] = 1-x[0]-x[1]; }
+
+
+    static INT<2> GetEdge (int i)
+    {
+      static const int edges[][2] = 
+	{ { 2, 0 },
+	  { 1, 2 },
+	  { 0, 1 } };
+      return INT<2> (edges[i][0], edges[i][1]);
+    }
+
+    template <typename TVN>
+    static INT<2> GetEdgeSort (int i, const TVN & vnums)
+    {
+      INT<2> e = GetEdge (i);
+      if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
+      return e;
+    }
+
+
+    static INT<4> GetFace (int /* i */ )
+    {
+      static const int face[] = { 0, 1, 2, -1 };
+
+      return INT<4> (face[0], face[1], face[2], -1);
+    }
+
+    template <typename TVN>
+    static INT<4> GetFaceSort (int /*  i */ , const TVN & vnums)
+    {
+      INT<4> f = GetFace (0);
+      if(vnums[f[0]] > vnums[f[1]]) swap(f[0],f[1]); 
+      if(vnums[f[1]] > vnums[f[2]]) swap(f[1],f[2]);
+      if(vnums[f[0]] > vnums[f[1]]) swap(f[0],f[1]); 	
+
+      return f;
+    }
 
   };
 
@@ -534,6 +606,59 @@ namespace ngfem
     enum { N_EDGE = 4 };
     enum { N_FACE = 1 };
     static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
+
+
+
+
+    static INT<2> GetEdge (int i)
+    {
+      static const int edges[][2] = 
+	{ { 0, 1 },
+	  { 2, 3 },
+	  { 3, 0 },
+	  { 1, 2 }};
+      return INT<2> (edges[i][0], edges[i][1]);
+    }
+
+    template <typename TVN>
+    static INT<2> GetEdgeSort (int i, const TVN & vnums)
+    {
+      INT<2> e = GetEdge (i);
+      if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
+      return e;
+    }
+
+
+    static INT<4> GetFace (int /* i */ )
+    {
+      static const int face[] = 
+        { 0, 1, 2, 3 };
+
+      return INT<4> (face[0], face[1], face[2], face[3]);
+    }
+
+    template <typename TVN>
+    static INT<4> GetFaceSort (int /*  i */ , const TVN & vnums)
+    {
+      INT<4> f = GetFace (0);
+      
+      int fmax = 0;
+      for (int j=1; j<4; j++) 
+        if (vnums[j] > vnums[fmax]) fmax = j;  
+      
+      int f1 = (fmax+3)%4;
+      int f2 = (fmax+1)%4; 
+      int fop = (fmax+2)%4; 
+      
+      if(vnums[f2]>vnums[f1]) swap(f1,f2);  // fmax > f1 > f2 
+
+      f[0] = fmax;
+      f[1] = f1;
+      f[2] = fop;
+      f[3] = f2;
+
+      return f;
+    }
   };
 
 
@@ -545,6 +670,50 @@ namespace ngfem
     enum { N_EDGE = 6 };
     enum { N_FACE = 4 };
     static ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
+
+
+    static INT<2> GetEdge (int i)
+    {
+      static const int edges[6][2] = 
+	{ { 3, 0 },
+	  { 3, 1 },
+	  { 3, 2 }, 
+	  { 0, 1 }, 
+	  { 0, 2 },
+	  { 1, 2 }};
+      return INT<2> (edges[i][0], edges[i][1]);
+    }
+
+    template <typename TVN>
+    static INT<2> GetEdgeSort (int i, const TVN & vnums)
+    {
+      INT<2> e = GetEdge (i);
+      if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
+      return e;
+    }
+
+
+    static INT<4> GetFace (int i )
+    {
+      static const int faces[][4]  =
+	{ { 3, 1, 2, -1 },
+	  { 3, 2, 0, -1 },
+	  { 3, 0, 1, -1 },
+	  { 0, 2, 1, -1 } }; 
+
+      return INT<4> (faces[i][0], faces[i][1], faces[i][2], -1);
+    }
+
+    template <typename TVN>
+    static INT<4> GetFaceSort (int i, const TVN & vnums)
+    {
+      INT<4> f = GetFace (i);
+      if(vnums[f[0]] > vnums[f[1]]) swap(f[0],f[1]); 
+      if(vnums[f[1]] > vnums[f[2]]) swap(f[1],f[2]);
+      if(vnums[f[0]] > vnums[f[1]]) swap(f[0],f[1]); 	
+
+      return f;
+    }
   };
 
   template<> class ET_trait<ET_PRISM>
@@ -555,6 +724,37 @@ namespace ngfem
     enum { N_EDGE = 9 };
     enum { N_FACE = 5 };
     static ELEMENT_TYPE FaceType(int i) { return (i < 2) ? ET_TRIG : ET_QUAD; }
+
+
+
+    static INT<2> GetEdge (int i)
+    {
+      static const int edges[][2] = 
+	{ { 2, 0 },
+	  { 0, 1 },
+	  { 2, 1 },
+	  { 5, 3 },
+	  { 3, 4 },
+	  { 5, 4 },
+	  { 2, 5 },
+	  { 0, 3 },
+	  { 1, 4 }};
+      return INT<2> (edges[i][0], edges[i][1]);
+    }
+
+    template <typename TVN>
+    static INT<2> GetEdgeSort (int i, const TVN & vnums)
+    {
+      INT<2> e = GetEdge (i);
+      if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
+      return e;
+    }
+
+    template <typename TVN>
+    static INT<4> GetFaceSort (int i, const TVN & vnums)
+    {
+      return INT<4> (-1, -1, -1, -1);
+    }
   };
 
   template<> class ET_trait<ET_PYRAMID>
@@ -565,7 +765,41 @@ namespace ngfem
     enum { N_EDGE = 8 };
     enum { N_FACE = 5 };
     static ELEMENT_TYPE FaceType(int i) { return (i < 4) ? ET_TRIG : ET_QUAD; }
+
+
+
+    static INT<2> GetEdge (int i)
+    {
+      static const int edges[][2] = 
+	{ { 0, 1 },
+	  { 1, 2 },
+	  { 0, 3 },
+	  { 3, 2 },
+	  { 0, 4 },
+	  { 1, 4 },
+	  { 2, 4 },
+	  { 3, 4 }};
+
+      return INT<2> (edges[i][0], edges[i][1]);
+    }
+
+    template <typename TVN>
+    static INT<2> GetEdgeSort (int i, const TVN & vnums)
+    {
+      INT<2> e = GetEdge (i);
+      if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
+      return e;
+    }
+
+
+    template <typename TVN>
+    static INT<4> GetFaceSort (int i, const TVN & vnums)
+    {
+      return INT<4> (-1, -1, -1, -1);
+    }
   };
+
+
 
   template<> class ET_trait<ET_HEX>
   {
@@ -575,6 +809,78 @@ namespace ngfem
     enum { N_EDGE = 12 };
     enum { N_FACE = 6 };
     static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
+
+
+    static INT<2> GetEdge (int i)
+    {
+      static const int edges[][2] = 
+	{
+	  { 0, 1 },
+	  { 2, 3 },
+	  { 3, 0 },
+	  { 1, 2 },
+	  { 4, 5 },
+	  { 6, 7 },
+	  { 7, 4 },
+	  { 5, 6 },
+	  { 0, 4 },
+	  { 1, 5 },
+	  { 2, 6 },
+	  { 3, 7 },
+	};
+      return INT<2> (edges[i][0], edges[i][1]);
+    }
+
+    template <typename TVN>
+    static INT<2> GetEdgeSort (int i, const TVN & vnums)
+    {
+      INT<2> e = GetEdge (i);
+      if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
+      return e;
+    }
+
+
+    static INT<4> GetFace (int i )
+    {
+      static const int faces[][4]  =
+	{
+	  { 0, 3, 2, 1 },
+	  { 4, 5, 6, 7 },
+	  { 0, 1, 5, 4 },
+	  { 1, 2, 6, 5 },
+	  { 2, 3, 7, 6 },
+	  { 3, 0, 4, 7 }
+	};
+
+      return INT<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
+    }
+
+    template <typename TVN>
+    static INT<4> GetFaceSort (int i, const TVN & vnums)
+    {
+      INT<4> f = GetFace (i);
+
+      int fmax = 0;
+      for (int j=1; j<4; j++) 
+        if (vnums[f[j]] > vnums[f[fmax]]) fmax = j;  
+      
+      int f1 = f[(fmax+3)%4];
+      int f2 = f[(fmax+1)%4]; 
+      int fop = f[(fmax+2)%4]; 
+      fmax = f[fmax]; 
+      
+      if(vnums[f2]>vnums[f1]) swap(f1,f2);  // fmax > f1 > f2 
+
+      f[0] = fmax;
+      f[1] = f1;
+      f[2] = fop;
+      f[3] = f2;
+
+      return f;
+    }
+
+
+
   };
 }
 

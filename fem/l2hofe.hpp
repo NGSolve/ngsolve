@@ -41,18 +41,14 @@ namespace ngfem
   };
 
 
-  /**
-     Template family of L2 - high order finite elements.
-     The template argument is the element shape
-  */
-  template <ELEMENT_TYPE ET> class L2HighOrderFE;
 
 
   /**
      Barton-Nackman base class for L2 - high order finite elements
   */
   template <ELEMENT_TYPE ET>
-  class T_L2HighOrderFiniteElement : public L2HighOrderFiniteElement<ET_trait<ET>::DIM>
+  class T_L2HighOrderFiniteElement : public L2HighOrderFiniteElement<ET_trait<ET>::DIM>,
+    public ET_trait<ET> 
   {
   protected:
     enum { DIM = ET_trait<ET>::DIM };
@@ -64,6 +60,15 @@ namespace ngfem
 
     using L2HighOrderFiniteElement<DIM>::vnums;
     using L2HighOrderFiniteElement<DIM>::order_inner;
+
+    using ET_trait<ET>::N_VERTEX;
+    using ET_trait<ET>::N_EDGE;
+    using ET_trait<ET>::N_FACE;
+    using ET_trait<ET>::FaceType;
+    using ET_trait<ET>::GetEdgeSort;
+    using ET_trait<ET>::GetFaceSort;
+
+
 
   public:
 
@@ -88,6 +93,11 @@ namespace ngfem
 
 
 
+  /**
+     Template family of L2 - high order finite elements.
+     The template argument is the element shape
+  */
+  template <ELEMENT_TYPE ET> class L2HighOrderFE;
 
 
   /**

@@ -7,6 +7,7 @@
 /*********************************************************************/
 
 #include <fem.hpp>    
+#include <hcurlhofe.hpp>
 
 namespace ngfem
 {
@@ -129,6 +130,30 @@ namespace ngfem
   /*******************************************/
 
 
+  template <ELEMENT_TYPE ET>
+  T_HCurlHighOrderFiniteElement<ET> :: 
+  T_HCurlHighOrderFiniteElement (int aorder)
+  {
+    for (int i = 0; i < N_EDGE; i++)
+      order_edge[i] = aorder;
+    for (int i=0; i < N_FACE; i++) 
+      order_face[i] = INT<2> (aorder,aorder); 
+    if (DIM == 3)
+      order_cell = INT<3> (aorder,aorder,aorder);
+
+    for(int i = 0; i < N_EDGE; i++)
+      usegrad_edge[i] = 1;
+    for(int i=0; i < N_FACE; i++)
+      usegrad_face[i] = 1;
+    if (DIM == 3)
+      usegrad_cell = 1;
+
+    for (int i = 0; i < N_VERTEX; i++)
+      vnums[i] = i;
+    dimspace = DIM;
+    eltype = ET;
+  }
+
   
   template <ELEMENT_TYPE ET>
   void T_HCurlHighOrderFiniteElement<ET> :: 
@@ -231,14 +256,14 @@ namespace ngfem
   void T_HCurlHighOrderFiniteElement<ET> :: 
   ComputeNDof()
   {
-    ndof = ET_trait<ET>::N_EDGE;
+    ndof = N_EDGE;
 
-    for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+    for (int i = 0; i < N_EDGE; i++)
       if(order_edge[i] > 0)
         ndof += usegrad_edge[i]*order_edge[i];
     
-    for(int i = 0; i < ET_trait<ET>::N_FACE; i++)
-      if (ET_trait<ET>::FaceType(i) == ET_TRIG)
+    for(int i = 0; i < N_FACE; i++)
+      if (FaceType(i) == ET_TRIG)
         {
           if (order_face[i][0] > 1) 
             ndof += ((usegrad_face[i]+1)*order_face[i][0]+2)*(order_face[i][0]-1)/2 ;
@@ -281,10 +306,10 @@ namespace ngfem
 
 
     order = 0; // max(order_edges,order_face,order_cell);  
-    for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+    for (int i = 0; i < N_EDGE; i++)
       if (order_edge[i] > order)  order = order_edge[i];
 
-    for(int i=0; i < ET_trait<ET>::N_FACE; i++) 
+    for(int i=0; i < N_FACE; i++) 
       if (ET_trait<ET>::FaceType(i) == ET_TRIG)
         {
           if (order_face[i][0] > order) 
@@ -402,7 +427,8 @@ namespace ngfem
                                                FlatMatrixFixWidth<1> shape) const
   {
     AutoDiff<1> x (ip(0),0); 
-    AutoDiff<1> lami[2] = {1-x,x}; 
+    // AutoDiff<1> lami[2] = {1-x,x}; 
+    AutoDiff<1> lami[2] = {x,1-x}; 
     
     int es = 0, ee =1;
     if (vnums[es] > vnums[ee]) swap(es,ee);  
@@ -528,7 +554,7 @@ namespace ngfem
 	if (vnums[es] > vnums[ee]) swap (es, ee);
 
 	AutoDiff<2> xi  = sigma[ee]-sigma[es];
-	AutoDiff<2> lam_e = lami[ee]+lami[es];  // attention in [0,1]
+	AutoDiff<2> lam_e = lami[ee]+lami[es];  
 
 	// Nedelec0-shapes
         shape[i] = uDv<2> (0.5 * lam_e, xi); 
@@ -596,26 +622,23 @@ namespace ngfem
     Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lami[4] = { x, y, z, 1-x-y-z };
 
-    const EDGE * edges = ElementTopology::GetEdges (ET_TET);
-    const FACE * faces = ElementTopology::GetFaces (ET_TET); 
-
     ArrayMem<AutoDiff<3>,10> adpol1(order+2),adpol2(order+2),adpol3(order+2); 
     int ii = 6; 
 
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < N_EDGE; i++)
       { 
 	int p = order_edge[i]; 
-	int es = edges[i][0], ee = edges[i][1]; 
-	if (vnums[es] > vnums[ee]) swap (es, ee);
+
+        INT<2> e = GetEdgeSort (i, vnums);	  
 	
 	//Nedelec low order edge shape function 
-        shape[i] = uDv_minus_vDu<3> (lami[es], lami[ee]);
+        shape[i] = uDv_minus_vDu<3> (lami[e[0]], lami[e[1]]);
 
 	//HO-Edge shape functions (Gradient Fields) 	
-	if(p>0 && usegrad_edge[i]) 
+	if (p > 0 && usegrad_edge[i]) 
 	  {
-	    AutoDiff<3> xi = lami[ee]-lami[es]; 
-	    AutoDiff<3> eta = 1-lami[ee]-lami[es]; 
+	    AutoDiff<3> xi = lami[e[1]]-lami[e[0]]; 
+	    AutoDiff<3> eta = 1-lami[e[1]]-lami[e[0]]; 
 	    T_ORTHOPOL::CalcTrigExt(p+1,xi,eta, adpol1); 
 
 	    for(int j = 0; j < p; j++) 	      
@@ -624,42 +647,35 @@ namespace ngfem
       }
 
     // face shape functions
-    for(int i=0; i<4; i++) 
-      {
-	int fav[3] = { faces[i][0], faces[i][1], faces[i][2] };
-
-	//Sort vertices  first edge op minimal vertex 
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  	
-
-	int vop = 6 - fav[0] - fav[1] - fav[2];  	
-	int p = order_face[i][0];
-
-	if (p >= 2)
-	  {
-	    AutoDiff<3> xi = lami[fav[2]]-lami[fav[1]];
-	    AutoDiff<3> eta = lami[fav[0]]; // lo 
-	    AutoDiff<3> zeta = lami[vop];   // lz 
-
-	    T_FACESHAPES::CalcSplitted (p+1, xi, eta, zeta, adpol1, adpol2); 
-
-	    // gradients 
-	    if (usegrad_face[i])
-	      for (int j = 0; j <= p-2; j++)
-		for (int k = 0; k <= p-2-j; k++, ii++)
-                  shape[ii] = Du<3> (adpol1[j] * adpol2[k]);
-
-	    // other combination
-	    for (int j = 0; j <= p-2; j++)
-	      for (int k = 0; k <= p-2-j; k++, ii++)
-                shape[ii] = uDv_minus_vDu<3> (adpol2[k], adpol1[j]);
-
-            // type 3
-	    for (int j = 0; j <= p-2; j++, ii++)
-              shape[ii] = wuDv_minus_wvDu<3> (lami[fav[1]], lami[fav[2]], adpol2[j]);
-	  }
-      }
+    for(int i = 0; i < N_FACE; i++) 
+      if (order_face[i][0] >= 2)
+        {
+          INT<4> fav = GetFaceSort (i, vnums);
+          
+          int vop = 6 - fav[0] - fav[1] - fav[2];  	
+          int p = order_face[i][0];
+          
+          AutoDiff<3> xi = lami[fav[2]]-lami[fav[1]];
+          AutoDiff<3> eta = lami[fav[0]]; // lo 
+          AutoDiff<3> zeta = lami[vop];   // lz 
+          
+          T_FACESHAPES::CalcSplitted (p+1, xi, eta, zeta, adpol1, adpol2); 
+          
+          // gradients 
+          if (usegrad_face[i])
+            for (int j = 0; j <= p-2; j++)
+              for (int k = 0; k <= p-2-j; k++, ii++)
+                shape[ii] = Du<3> (adpol1[j] * adpol2[k]);
+          
+          // other combination
+          for (int j = 0; j <= p-2; j++)
+            for (int k = 0; k <= p-2-j; k++, ii++)
+              shape[ii] = uDv_minus_vDu<3> (adpol2[k], adpol1[j]);
+          
+          // type 3
+          for (int j = 0; j <= p-2; j++, ii++)
+            shape[ii] = wuDv_minus_wvDu<3> (lami[fav[1]], lami[fav[2]], adpol2[j]);
+        }
 
     
     int p = order_cell[0]; 
@@ -853,7 +869,7 @@ namespace ngfem
       }
     
 
-    if(order_cell[0] > 1&& order_cell[2]>0) 
+    if(order_cell[0] > 1 && order_cell[2] > 0) 
       {
 	T_TRIGFACESHAPES::CalcSplitted(order_cell[0]+1,x-y,1-x-y,adpolxy1,adpolxy2);
 	T_ORTHOPOL::Calc(order_cell[2]+1,2*z-1,adpolz); 
@@ -1072,7 +1088,7 @@ namespace ngfem
 	if (vnums[es] > vnums[ee]) swap (es, ee);
 	
 	AutoDiff<3> xi  = sigma[ee] - sigma[es];   
-	AutoDiff<3> lam_e = lami[ee] + lami[es];
+	// AutoDiff<3> lam_e = lami[ee] + lami[es];
 	AutoDiff<3> lam_t = lambda[ee] + lambda[es]; 
 	
         shape[i] = uDv<3> (0.5 * (1-z)*(1-z)*lam_t, xi);

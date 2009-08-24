@@ -1,7 +1,6 @@
-
 #include <fem.hpp>
-#define DEBUG
-
+#include <hdivhofe.hpp>
+ 
 namespace ngfem
 {  
   using namespace ngfem;
@@ -358,8 +357,8 @@ namespace ngfem
     shape(0) = fswap;
 
     Vec<2> grad1, grad2;
-    ArrayMem<AutoDiff<2>, 100> ad_rec_pol1(100);
-    ArrayMem<AutoDiff<2>, 100> ad_rec_pol2(100);
+    ArrayMem<AutoDiff<2>, 100> ad_rec_pol1(p);
+    ArrayMem<AutoDiff<2>, 100> ad_rec_pol2(p);
 
     ScaledLegendrePolynomial(p-1, le-ls, 1-lo, ad_rec_pol1);
     LegendrePolynomial(p-1, 2*lo-1, ad_rec_pol2);
@@ -730,6 +729,145 @@ namespace ngfem
   };
 
 
+  template <ELEMENT_TYPE ET>
+  void T_HDivHighOrderFiniteElement<ET> :: 
+  ComputeNDof()
+  {
+    if (DIM == 2)
+      {
+        ndof = ET_trait<ET>::N_EDGE;
+        
+        for(int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+          ndof += order_edge[i];
+        
+        if (ET == ET_TRIG)
+          {
+            if (order_inner[0] > 1)
+              { 
+                if (ho_div_free)
+                  ndof += order_inner[0]*(order_inner[0]-1)/2;
+                else
+                  ndof += order_inner[0]*order_inner[0]-1;
+              }
+          }
+        else
+          {  // quad
+            INT<2> p(order_inner[0], order_inner[1]);
+
+            int ni = ho_div_free
+              ? p[0]*p[1] 
+              : 2*p[0]*p[1] + p[0] + p[1];
+            
+            ndof += ni; 
+          }
+       
+        order = 0; 
+        for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+          if (order_edge[i] > order)
+            order = order_edge[i];
+        
+        for (int j = 0; j < 2; j++)
+          if (order_inner[j] > order) 
+            order = order_inner[0];
+        order++;       // ????
+      }
+    else
+      {
+        ndof = ET_trait<ET>::N_FACE;
+
+        for(int i = 0; i < ET_trait<ET>::N_FACE; i++)
+          {
+            INT<2> p = order_face[i];
+            if (ET_trait<ET>::FaceType(i) == ET_TRIG)
+              ndof += (p[0]*p[0]+3*p[0])/2;
+            else
+              ndof +=  p[0]*p[1] + p[0] + p[1];
+          }
+
+        int p = order_inner[0];
+        int pc = order_inner[0]; // should be order_inner_curl!!!  
+
+        switch (ET)
+          {   
+          case ET_TRIG: case ET_QUAD: // for the compiler
+            break;
+
+          case ET_TET: 
+            if(pc > 1) 
+              ndof += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
+            if(p > 1 && !ho_div_free) 
+              ndof += p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
+            break;
+
+          case ET_PRISM:
+            // SZ: ATTENTION PRISM up to now only using for order_inner[0] !!  
+            if (order_inner[0]>0 )
+              {
+                // inner_dof horizontal
+                ndof += (order_inner[0]+1)*(3*(order_inner[0]-1)+(order_inner[0]-2)*(order_inner[0]-1));
+                // inner dof vertical
+                ndof += (order_inner[0]-1)*(order_inner[0]+1)*(order_inner[0]+2)/2;
+              }
+            break;
+          }
+
+
+        order = 0; 
+        for (int i = 0; i < ET_trait<ET>::N_FACE; i++)
+          {
+            int p = max(order_face[i][0], order_face[i][1]);
+            if (p > order) order = p;
+          }
+
+        int pi = max3(order_inner[0], order_inner[1], order_inner[2]);
+        if (pi > order) order = pi;
+      }
+  }
+
+
+
+  template <ELEMENT_TYPE ET>
+  void T_HDivHighOrderFiniteElement<ET> :: 
+  GetInternalDofs (Array<int> & idofs) const
+  {
+    idofs.SetSize(0);
+    int base;
+    if (discontinuous)
+      {
+        base = 0;
+      }
+    else
+      {
+        if (DIM == 2)
+          {
+            base = ET_trait<ET>::N_EDGE;
+            for(int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+              base += order_edge[i];
+          }
+        else
+          {
+            base = ET_trait<ET>::N_FACE;
+            for(int i = 0; i < ET_trait<ET>::N_FACE; i++)
+              {
+                INT<2> p = order_face[i];
+                if (ET_trait<ET>::FaceType(i) == ET_TRIG)
+                  base += (p[0]*p[0]+3*p[0])/2;
+                else
+                  base +=  p[0]*p[1] + p[0] + p[1];
+              }
+          }
+      }
+    idofs += IntRange (base, ndof);
+  }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -786,66 +924,6 @@ namespace ngfem
     for (int i = 0; i < 3; i++)
       order_edge[i] = aorder;
     ComputeNDof();
-  }
-
-  void HDivHighOrderFE<ET_TRIG> :: ComputeNDof()
-  {
-    ndof = 3; 
-
-    for (int i = 0; i < 3; i++)
-      ndof += order_edge[i];
-    
-    if (order_inner[0] > 1)
-      { 
-        if (ho_div_free)
-          ndof += order_inner[0]*(order_inner[0]-1)/2;
-        else
-          ndof += order_inner[0]*order_inner[0]-1;
-	//ndof += order_inner_curl*(order_inner_curl-1)/2;
-	//ndof += order_inner*(order_inner-1)/2 + order_inner-1;
-      }
-
-    order = 0; // max(order_edges_normal,order_inner);
-    for (int i = 0; i < 3; i++)
-      if (order_edge[i] > order)
-	order = order_edge[i];
-    if (order_inner[0] > order) 
-      order = order_inner[0];
-
-    // order++;
-  }
-
-
-  void HDivHighOrderFE<ET_TRIG> ::
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    if (discontinuous)
-      {
-        idofs.SetSize(0);
-        for (int i=0; i < ndof; i++)
-          idofs.Append(i);
-        return ;
-      }
-    else
-      {
-        idofs.SetSize (0);
-
-        int base = 3;
-        for (int i = 0; i < 3; i++)
-          {
-            base += order_edge[i];
-          }
-
-
-        if(order_inner[0] > 1)
-          {
-            int p = order_inner[0];
-            int ni = p*p -1 ;
-            for (int i = 0; i < ni; i++)
-              idofs.Append (base+i);
-          }
-        //(*testout) << "idofs = " << idofs << endl;
-      }
   }
   
 
@@ -938,295 +1016,6 @@ namespace ngfem
       }
   }
 
-
-
-#ifdef HDIV_V2  
-  void HDivHighOrderFE<ET_TRIG> :: CalcShape (const IntegrationPoint & ip,
-                                              FlatMatrixFixWidth<2> shape) const
-  {
-    T_HDivHighOrderFiniteElement<ET_TRIG>::CalcShape (ip, shape);
-    return;
-
-    double x = ip(0);
-    double y = ip(1);
-
-    double lami[3];
-
-    lami[0] = x;
-    lami[1] = y;
-    lami[2] = 1-x-y;
-
-
-    Mat<3,2> dlami(0);
-    dlami(0,0) = 1.;
-    dlami(1,1) = 1.;
-    dlami(2,0) = -1.;
-    dlami(2,1) = -1.;
-
-    // Curl(lami_i) 
-    Mat<3,2> clami(0); 
-    clami(0,1) = -1.;
-    clami(1,0) = 1.;
-    clami(2,1) = 1.;
-    clami(2,0) = -1.;
-
-    shape = 0.0;
-
-    int p, p_curl;
-
-    int i, j, k, l;
-    int ii = 3;
-
-
-    const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
-
-    int is, ie, io;
-    for (i = 0; i < 3; i++)
-      {
-	p = order_edge[i];
-	is = edges[i][0];
-	ie = edges[i][1];
-	io = 3-is-ie;
-
-	if (vnums[is] > vnums[ie])
-	  swap (is, ie);
-
-	//RT low order edge shape function
-	for(j=0; j<2; j++)
-	  shape(i,j) = lami[ie]*clami(is,j) - lami[is]*clami(ie,j);
-	
-	//Edge normal shapes
-	if(p>0)
-	  {
-	    MatrixFixWidth<2> DExt(p+2);
-
-	    T_ORTHOPOL::CalcTrigExtDeriv(p+1, lami[ie]-lami[is], lami[io], DExt);
-
-	    for(j=0; j<= p-1;j++)
-	      {
-		shape(ii,0) = (clami(ie,0) - clami(is,0)) * DExt(j,0) + clami(io,0) * DExt(j,1);
-		shape(ii++,1) = (clami(ie,1) - clami(is,1)) * DExt(j,0) + clami(io,1) * DExt(j,1);
-
-	      }
-	  }
-
-      }
-
-    if(order_inner[0] < 2) return;
-
-    p = order_inner[0];
-    p_curl = order_inner[0];
-
-    //Inner shapes
-    if(p>1)
-      {
-
-	ArrayMem<double,10> rec_pol(order-1), drec_polx(order-1),  drec_polt(order-1);
-	ArrayMem<double,10> rec_pol2(order-1), drec_pol2x(order-1), drec_pol2t(order-1);
-	ArrayMem<double,30> mem(3*order*sizeof(double));
-	ArrayMem<double,30> mem2(3*order*sizeof(double));
-	FlatMatrixFixWidth<3> curl_recpol(order, &mem[0]);
-	FlatMatrixFixWidth<3> curl_recpol2(order, &mem2[0]);
-
-	int fav[3];
-	for(i=0;i<3;i++) fav[i] = i;
-
-	//Sort vertices  first edge op minimal vertex
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-
-
-	double ls = lami[fav[0]];
-	double le = lami[fav[1]];
-        double lo = lami[fav[2]];
-
-	ScaledLegendrePolynomialandDiff(p_curl-2, le-ls, 1-lo,
-					rec_pol, drec_polx, drec_polt);
-	LegendrePolynomialandDiff(p_curl-2, 2*lo-1,rec_pol2, drec_pol2x);
-	// \curl (ls * le * rec_pol), and \curl (lo rec_pol2)
-	for (j = 0; j <= p_curl-2; j++)
-	  {
-	    for (l = 0; l < 2; l++)
-	      {
-		curl_recpol(j,l) = ls * le * (drec_polx[j] * (clami(fav[1],l) - clami(fav[0],l)) -
-					      drec_polt[j] * (clami(fav[2],l))) +
-		  (ls * clami(fav[1],l) + le * clami(fav[0],l)) * rec_pol[j];
-
-		curl_recpol2(j,l) = lo * (drec_pol2x[j] * 2*clami(fav[2],l)) +
-		  clami(fav[2],l) * rec_pol2[j];
-	      }
-	  }
-
-	// curls:
-	for (j = 0; j <= p_curl-2; j++)
-	  for (k = 0; k <= p_curl-2-j; k++, ii++)
-	    for (l = 0; l < 2; l++)
-	      shape(ii, l) = ls*le*rec_pol[j]*curl_recpol2(k,l) + curl_recpol(j,l)*lo*rec_pol2[k];
-
-        if (!ho_div_free)
-          {
-            // rotations of curls
-            for (j = 0; j <= p-2; j++)
-              for (k = 0; k <= p-2-j; k++, ii++)
-                for (l = 0; l < 2; l++)
-                  shape(ii, l) = ls*le*rec_pol[j]*curl_recpol2(k,l) - curl_recpol(j,l) * lo * rec_pol2[k];
-            
-            // rec_pol2 * RT_0
-            for (j = 0; j <= p-2; j++, ii++)
-              for (l = 0; l < 2; l++)
-                shape(ii,l) = lo*rec_pol2[j] * (ls*clami(fav[1],l)-le*clami(fav[0],l));
-          }
-      }
-  }
-
-  void HDivHighOrderFE<ET_TRIG> :: CalcDivShape (const IntegrationPoint & ip,
-                                                 FlatVector<> shape) const
-  {
-    T_HDivHighOrderFiniteElement<ET_TRIG>::CalcDivShape (ip, shape);
-    return;
-    cout << "divshape,new = " << endl << shape << endl;
-
-
-    double lami[3];
-    lami[0] = ip(0);
-    lami[1] = ip(1);
-    lami[2] = 1-ip(0)-ip(1);
-
-    Mat<3,2> dlami(0.);
-    dlami(0,0) = 1.;
-    dlami(1,1) = 1.;
-    dlami(2,0) = -1.;
-    dlami(2,1) = -1.;
-
-
-
-    Mat<3,2> clami(0.);
-    clami(0,1) = -1.;
-    clami(1,0) = 1.;
-    clami(2,1) = 1.;
-    clami(2,0) = -1.;
-
-    shape = 0.0;
-
-    int p, p_curl;
-
-    int i, j, k, l;
-    int ii = 3; 
-
-
-
-    const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
-    for (i = 0; i < 3; i++)
-      {
-        p = order_edge[i];
-
-	int is = edges[i][0]; 
-	int ie = edges[i][1];
-	
-	if (vnums[is] > vnums[ie])
-	  swap (is, ie);
-
-	//RT low order edge shape function  
-	//shape(i) = 2*(dlami(ie,0)*clami(is,0) +  dlami(ie,1)*clami(ie,1));
-	for(j=0; j<= 1; j++)
-	  shape(i) += dlami(ie,j)*clami(is,j) - dlami(is,j)*clami(ie,j);
-	
-
-	//Edge normal shapes (curls) 
-	if(p>0)
-	  {
-	    for(j=0; j<= p-1;j++)
-	      ii++; 
-	  }
-      }
-    
-    if(order_inner[0] < 2) return;
-    
-    p = order_inner[0];
-    p_curl = order_inner[0];
-        
-    //Inner shapes (Face) 
-    if(p>1) 
-      {
-	
-	ArrayMem<double,10> rec_pol(order-1), drec_polx(order-1),  drec_polt(order-1);
-	ArrayMem<double,10> rec_pol2(order-1), drec_pol2x(order-1), drec_pol2t(order-1);  
-	ArrayMem<double,30> mem(3*order*sizeof(double));
-	ArrayMem<double,30> mem2(3*order*sizeof(double));
-	FlatMatrixFixWidth<2> grad_recpol(order, &mem[0]);
-	FlatMatrixFixWidth<2> grad_recpol2(order, &mem2[0]);
-
-	int fav[3];
-	for(i=0;i<3;i++) fav[i] = i;
-
-	//Sort vertices  first edge op minimal vertex
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-
-	
-	double ls = lami[fav[0]]; 
-	double le = lami[fav[1]]; 
-       	double lo = lami[fav[2]];  
-	
-	ScaledLegendrePolynomialandDiff(p_curl-2, le-ls, 1-lo,
-					rec_pol, drec_polx, drec_polt);  	    
-	LegendrePolynomialandDiff(p_curl-2, 2*lo-1,rec_pol2, drec_pol2x);
-	// \curl (ls * le * rec_pol), and \curl (lo rec_pol2)
-	for (j = 0; j <= p_curl-2; j++)
-	  {
-	    for (l = 0; l < 2; l++)
-	      {
-		grad_recpol(j,l) =
-		  ls * le * (drec_polx[j] * (dlami(fav[1],l) - dlami(fav[0],l)) -
-			     drec_polt[j] * (dlami(fav[2],l))) +
-		  (ls * dlami(fav[1],l) + le * dlami(fav[0],l)) * rec_pol[j];
-		grad_recpol2(j,l) =
-		  lo * (drec_pol2x[j] * 2*dlami(fav[2],l)) + 
-		  dlami(fav[2],l) * rec_pol2[j];
-	      }
-	  }
-
-
-
-	// curls:
-	for (j = 0; j <= p_curl-2; j++)
-	  for (k = 0; k <= p_curl-2-j; k++)
-	    ii++;
-	     
-        if (!ho_div_free)
-          {
-            // rotations of curls  
-            for (j = 0; j <= p-2; j++)
-              for (k = 0; k <= p-2-j; k++, ii++)
-                for (l = 0; l < 2; l++)
-                  shape(ii) = 2 * (grad_recpol(j,0) * grad_recpol2(k,1)
-                                   - grad_recpol(j,1) * grad_recpol2(k,0));
-            // shape (ii) = grad u . curl v = 2 (u_x v_y - u_y v_x) ; 
-            
-            // div(rec_pol * RT_0)  =
-            double divrt0 = 2*(dlami(fav[0],0)*clami(fav[1],0) +  dlami(fav[0],1)*clami(fav[1],1));
-            Vec<2> rt0;
-            for (l = 0; l<2; l++)
-              rt0(l) = lami[fav[0]]*clami(fav[1],l)-lami[fav[1]]*clami(fav[0],l);
-            for (j = 0; j <= p-2; j++, ii++)
-              shape(ii) = divrt0 * lo*rec_pol2[j] + rt0(0)*grad_recpol2(j,0) +
-                rt0(1)*grad_recpol2(j,1); 
-          }
-      }
-
-    cout << "shape,orig = " << endl << shape << endl;
-  }
-#endif
-
-  /*
-    template class HDivHighOrderTrig<IntegratedLegendreMonomialExt>;
-    template class HDivHighOrderTrig<TrigExtensionMonomial>;
-    //  template class HDivHighOrderTrig<TrigExtensionOptimal>;
-    template class HDivHighOrderTrig<TrigExtensionMin>;
-  */
-
   //------------------------------------------------------------------------
   // HDivHighOrderQuad
   //------------------------------------------------------------------------
@@ -1242,61 +1031,6 @@ namespace ngfem
     ComputeNDof();
   }
 
-  void HDivHighOrderFE<ET_QUAD> :: ComputeNDof()
-  {
-    ndof = 4;
-
-    for (int i = 0; i < 4; i++)
-      ndof += order_edge[i];
-
-    INT<2> p = INT<2>(order_inner[0],order_inner[1]);
-    int ni = ho_div_free ? 
-      p[0]*p[1] : 
-      2*p[0]*p[1] + p[0] + p[1];
-
-    ndof += ni; // 2*order_inner[0]*order_inner[1]+order_inner[0]+order_inner[1];
-
-    order = 0;
-    for (int i = 0; i < 4; i++)
-      if (order_edge[i] > order)
-	order = order_edge[i];
-    if (order_inner[0] > order)
-      order = order_inner[0];
-    order++;
-  }
-
-
-  void HDivHighOrderFE<ET_QUAD> ::
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    if (discontinuous)
-      {
-        idofs.SetSize(0);
-        for (int i=0; i<ndof; i++)
-          idofs.Append(i);
-        return ;
-      }
-    else
-      {
-        idofs.SetSize (0);
-
-        int base = 4;
-        for (int i = 0; i < 4; i++)
-          {
-            base += order_edge[i];
-          }
-
-        INT<2> p = INT<2>(order_inner[0],order_inner[1]);
-        int ni = ho_div_free ? 
-          p[0]*p[1] : 2*p[0]*p[1] + p[0] + p[1];
-
-        for (int i = 0; i < ni; i++)
-          idofs.Append (base+i);
-
-        //(*testout) << "idofs = " << idofs << endl;
-      }
-  }
-  
   void HDivHighOrderFE<ET_QUAD> :: GetFacetDofs(int fa, Array<int> & dnums) const
   {
     if (fa > 3 ) 
@@ -1318,7 +1052,6 @@ namespace ngfem
       dnums.Append(ii+i); 
   } 
   
-
 
 
   template<typename Tx, typename TFA>  
@@ -1396,299 +1129,6 @@ namespace ngfem
 
 
 
-#ifdef OLD
-  void HDivHighOrderFE<ET_QUAD> :: CalcShape (const IntegrationPoint & ip,
-                                              FlatMatrixFixWidth<2> shape) const
-  {
-    T_HDivHighOrderFiniteElement<ET_QUAD>::CalcShape (ip, shape);
-    return;
-    cout << "shape,new = " << endl << shape << endl;
-
-
-    AutoDiff<2> x (ip(0), 0);
-    AutoDiff<2> y (ip(1), 1);
-
-    AutoDiff<2> lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};
-    AutoDiff<2> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};
-
-    AutoDiff<2> ext[4] = {1-y, y, 1-x, x};
-
-    Mat<4,2> can(0);
-    can(0,1) = -1.;
-    can(1,1) = 1.;
-    can(2,0) = -1.;
-    can(3,0) = 1.;
-
-    shape = 0.0;
-    int ii = 4;
-
-    ArrayMem<AutoDiff<2>,20> rec_pol(order+2);
-
-    const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
-
-    int is, ie;
-    for (int i = 0; i < 4; i++)
-      {
-        int p = order_edge[i];
-        
-        is = edges[i][0];
-        ie = edges[i][1];
-        
-        int fac=1;
-        if (vnums[is] > vnums[ie])
-          { swap (is, ie); fac *= -1;}
-
-        AutoDiff<2> prod;
-        AutoDiff<2> xi  = sigma[ie]-sigma[is]; // in [-1,1]
-        AutoDiff<2> eta = lami[ie]+lami[is];  // attention in [0,1]
-
-        T_ORTHOPOL::Calc(p+1, xi,rec_pol);
-
-        //RT low order edge shape function
-        for(int k=0; k<2; k++)
-	  shape(i,k) = -1.*fac*ext[i].Value()*can(i,k);
-
-	//Edge normal shapes
-        for (int j=0; j < p; j++, ii++)
-	  {
-	    prod = eta*rec_pol[j];
-	    shape(ii,0) = prod.DValue(1);
-	    shape(ii,1) = -prod.DValue(0);
-	  }
-
-	/*
-	  AutoDiff<2> ss = sigma[is];
-	  AutoDiff<2> se = sigma[ie];
-	  AutoDiff<2> xi  = sigma[ie]-sigma[is]; // in [-1,1]
-	  AutoDiff<2> eta = lami[ie]+lami[is];  // attention in [0,1]
-	  LegendrePolynomial(p+1, se-ss, rec_pol);
-	  //RT low order edge shape function
-	  for(int k=0; k<2; k++)
-	  shape(i,k) = -1.*fac*ext[i].Value()*can(i,k);
-	  // Edge normal shapes
-	  for (int j=1; j<=p; j++, ii++)
-	  for (int k=0; k<2; k++)
-	  shape(ii,k) = 2.*fac*rec_pol[j].Value()*ext[i].Value()*can(i,k);
-	*/
-      }
-
-
-    // Inner shapes
-    INT<2> p = INT<2>(order_inner[0],order_inner[1]);
-
-    ArrayMem<AutoDiff<2>,20> polxi(p[0]+1), poleta(p[1]+1);
-    AutoDiff<2> polprod;
-
-    int fmax = 0;
-    for (int j = 1; j < 4; j++)
-      if (vnums[j] > vnums[fmax])
-	fmax = j;
-
-    int f1 = (fmax+3)%4;
-    int f2 = (fmax+1)%4;
-
-
-    if(vnums[f2] > vnums[f1])
-      swap(f1,f2);  // fmax > f1 > f2;
-
-
-    AutoDiff<2> xi  = sigma[fmax]-sigma[f1];
-    AutoDiff<2> eta = sigma[fmax]-sigma[f2];
-
-    //LegendrePolynomial(p+1, xi, polxi);
-    //LegendrePolynomial(p+1, eta, poleta);
-
-    T_ORTHOPOL::Calc(p[0]+1, xi,polxi);
-    T_ORTHOPOL::Calc(p[1]+1,eta,poleta);
-
-
-    for (int i = 0; i < p[0]; i++)
-      {
-	for (int j = 0; j < p[1]; j++)
-	  {
-	    polprod = polxi[i]*poleta[j];
-	    shape(ii,0) = polprod.DValue(1);
-	    shape(ii++,1) = -polprod.DValue(0);
-	  }
-      }
-    for (int i = 0; i < p[0]; i++)
-      {
-	for (int j = 0; j < p[1]; j++)
-	  {
-	    shape(ii,0) = (polxi[i].DValue(1)*poleta[j].Value() - polxi[i].Value()*poleta[j].DValue(1));
-	    shape(ii++,1) = (-polxi[i].DValue(0)*poleta[j].Value() + polxi[i].Value()*poleta[j].DValue(0));
-	  }
-      }
-    for (int i= 0; i < p[0]; i++, ii++)
-      {
-        shape(ii,0) = (eta.DValue(1)*polxi[i].Value());
-        shape(ii,1) = (-eta.DValue(0)*polxi[i].Value());
-      }
-    for (int i= 0; i < p[1]; i++, ii++)
-      {
-        shape(ii,0) = (xi.DValue(1)*poleta[i].Value());
-        shape(ii,1) = (-xi.DValue(0)*poleta[i].Value());
-      }
-
-
-    cout << "shape,old = " << endl << shape << endl;
-    return;
-  }
-
-
-  void HDivHighOrderFE<ET_QUAD> :: CalcDivShape (const IntegrationPoint & ip,
-                                                 FlatVector<> shape ) const
-  {
-    T_HDivHighOrderFiniteElement<ET_QUAD>::CalcDivShape (ip, shape);
-    return;
-
-
-    AutoDiff<2> x (ip(0), 0);
-    AutoDiff<2> y (ip(1), 1);
-
-
-    AutoDiff<2> lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};
-    AutoDiff<2> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};
-    AutoDiff<2> ext[4] = {(1-y), y, (1-x), x};
-    int ind[4] = {1, 1, 0, 0};
-    int can[4] = {-1, 1, -1, 1};
-    shape = 0.0;
-
-
-    int ii = 4;
-
-    ArrayMem<AutoDiff<2>,10> rec_pol(order+1);
-    AutoDiff<2> pol_ext;
-
-    const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
-
-    int is, ie;
-    for (int i = 0; i < 4; i++)
-      {
-	int p = order_edge[i];
-	is = edges[i][0];
-	ie = edges[i][1];
-
-        int fac=1;
-	if (vnums[is] > vnums[ie])
-	  {  swap (is, ie); fac*=-1;
-	  }
-
-        AutoDiff<2> ss = sigma[is];
-	AutoDiff<2> se = sigma[ie];
-
-        LegendrePolynomial(p+1, se-ss, rec_pol);
-
-        //RT low order edge shape function
-
-	shape(i) = -1.*fac*ext[i].DValue(ind[i])*can[i];
-
-	//Edge normal shapes
-	/*for (int j=1; j<=p; j++)
-	  {
-	  pol_ext = rec_pol[j]*ext[i];
-	  shape(ii++) = 2.*fac*pol_ext.DValue(ind[i])*can[i];
-	  //shape(ii++) = rec_pol[j].DValue(ind[i]);
-
-	  }*/
-	ii += p;
-
-      }
-    // Inner shapes
-    INT<2> p = INT<2> (order_inner[0],order_inner[1]);
-
-    ArrayMem<AutoDiff<2>,20> polxi(p[0]+1), poleta(p[1]+1);
-    AutoDiff<2> polprod;
-
-    int fmax = 0;
-    for (int j = 1; j < 4; j++)
-      if (vnums[j] > vnums[fmax])
-	fmax = j;
-
-    int f1 = (fmax+3)%4;
-    int f2 = (fmax+1)%4;
-
-    if(vnums[f2] > vnums[f1]) swap(f1,f2);  // fmax > f1 > f2;
-
-    AutoDiff<2> xi  = sigma[fmax]-sigma[f1];
-    AutoDiff<2> eta = sigma[fmax]-sigma[f2];
-
-
-    //LegendrePolynomial(p+1, xi, polxi);
-    //LegendrePolynomial(p+1, eta, poleta);
-    T_ORTHOPOL::Calc(p[0]+1, xi,polxi);
-    T_ORTHOPOL::Calc(p[1]+1,eta,poleta);
-
-    ii += p[0]*p[1];
-
-    for (int i = 0; i < p[0]; i++)
-      {
-	for (int j = 0; j < p[1]; j++)
-	  {
-	    shape(ii++) = (2*(polxi[i].DValue(1)*poleta[j].DValue(0) - polxi[i].DValue(0)*poleta[j].DValue(1)));
-          }
-      }
-    for (int i= 0; i < p[0]; i++, ii++)
-      shape(ii) = (eta.DValue(1)*polxi[i].DValue(0)-eta.DValue(0)*polxi[i].DValue(1));
-    for (int i= 0; i < p[1]; i++, ii++)
-      shape(ii) = (xi.DValue(1)*poleta[i].DValue(0)-xi.DValue(0)*poleta[i].DValue(1));
-    return;
-
-  }
-#endif
-
-
-#ifdef V2  
-  void HDivHighOrderFE<ET_QUAD> :: CalcNumDivShape (const IntegrationPoint & ip,
-                                                    FlatVector<> divshape) const
-  {
-    double x=ip(0);
-    double y=ip(1);
-    LocalHeap lh(10000000);
-    FlatMatrixFixWidth<2> cshape(ndof, lh);
-    FlatMatrixFixWidth<2> cshape1(ndof, lh);
-    FlatMatrixFixWidth<2> cshape_(ndof, lh);
-    FlatMatrixFixWidth<2> cshape1_(ndof, lh);
-    FlatMatrixFixWidth<2> cshape2(ndof, lh);
-    FlatMatrixFixWidth<2> cshape3(ndof, lh);
-    FlatMatrixFixWidth<2> cshape2_(ndof, lh);
-    FlatMatrixFixWidth<2> cshape3_(ndof, lh);
-
-    double h = 0.001;
-    IntegrationPoint ipp(x+h,y,0,0);
-    IntegrationPoint ipp1(x-h,y,0,0);
-    IntegrationPoint ipp_(x+2*h,y,0,0);
-    IntegrationPoint ipp1_(x-2*h,y,0,0);
-    IntegrationPoint ipp2(x,y+h,0,0);
-    IntegrationPoint ipp3(x,y-h,0,0);
-    IntegrationPoint ipp2_(x,y+2*h,0,0);
-    IntegrationPoint ipp3_(x,y-2*h,0,0);
-
-    CalcShape(ipp,cshape);
-    CalcShape(ipp1,cshape1);
-    CalcShape(ipp_,cshape_);
-    CalcShape(ipp1_,cshape1_);
-    CalcShape(ipp2,cshape2);
-    CalcShape(ipp3,cshape3);
-    CalcShape(ipp2_,cshape2_);
-    CalcShape(ipp3_,cshape3_);
-
-    for (int i = 0; i< ndof; i++)
-      divshape(i) = 2/(3*h)*(cshape(i,0)-cshape1(i,0))-1/(12*h)*(cshape_(i,0)-cshape1_(i,0)) + 2/(3*h)*(cshape2(i,1)-cshape3(i,1))-1/(12*h)*(cshape2_(i,1)-cshape3_(i,1));
-
-    return;
-  }
-#endif
-
-
-  /*
-    template class HDivHighOrderQuad<IntegratedLegendreMonomialExt>;
-    template class HDivHighOrderQuad<TrigExtensionMonomial>;
-    // template class HDivHighOrderQuad<TrigExtensionOptimal>;
-    template class HDivHighOrderQuad<TrigExtensionMin>;
-  */
-
-
   //------------------------------------------------------------------------
   // HDivHighOrderTet
   //------------------------------------------------------------------------
@@ -1703,97 +1143,13 @@ namespace ngfem
     ComputeNDof();
   }
 
- 
-
-  void HDivHighOrderFE<ET_TET> :: ComputeNDof()
-  {
-    ndof = 4;
-
-    for (int i = 0; i < 4; i++)
-      {
-        if (order_face[i][0] > 0)
-	  { 
-	    int p = order_face[i][0];
-	    ndof += (p*p+3*p)/2;
-	  }
-      }
-    
-    int p = order_inner[0];
-    int pc = order_inner[0]; // should be order_inner_curl!!!  
-    
-    if(pc > 1) 
-      ndof += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
-    if(p > 1 && !ho_div_free) 
-      ndof += p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
-
-
-    order = 0; // max(order_face_normal,order_inner);
-    for (int i = 0; i < 4; i++)
-      {
-	if (order_face[i][0] > order)
-	  order = order_face[i][0];
-      }
-
-    if (order_inner[0] > order)
-      order = order_inner[0];
-
-    // order++;
-  }
-
-
-
-  // template <class T_ORTHOPOL>
-  void HDivHighOrderFE<ET_TET> ::
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    if (discontinuous)
-      {
-        idofs.SetSize(0);
-        for (int i=0; i<ndof; i++)
-          idofs.Append(i);
-        return ;
-      }
-    else
-      {
-        idofs.SetSize (0);
-
-        int base = 4;
-        for (int i = 0; i < 4; i++)
-          {
-            int p = order_face[i][0];
-            base += (p*p+3*p)/2;
-          }
-
-
-        if(order_inner[0] >= 2)
-          {
-            int p = order_inner[0];
-            int pc = order_inner[0];
-
-            //int ni = 6*(p-1) + 4*(p-1)*(p-2) + (p-1)*(p-2)*(p-3)/2;
-            // int ni = p*(p+1)*(p-1)/2 + p*(p-1)+(p-1);
-
-            int ni = 0;
-            if(pc > 1) 
-              ni += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
-            if(p > 1 && !ho_div_free) 
-              ni += p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
-            
-            for (int i = 0; i < ni; i++)
-              idofs.Append (base+i);
-          }
-        //(*testout) << "idofs = " << idofs << endl;
-      }
-  }
-  
-  
 
   void HDivHighOrderFE<ET_TET> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa >= 4 ) 
       {
         cout << " Warning HDIVHighOrderTet::GetFacetDofNrs() index out of range" << endl; 
-      
+        
         dnums.SetSize(0); 
         return; 
       } 
@@ -1815,8 +1171,6 @@ namespace ngfem
     for(int i = 0; i < nf; i++)  
       dnums.Append(ii+i); 
   }                  
-
-
 
 
 
@@ -1920,816 +1274,6 @@ namespace ngfem
 
 
 
-
-
-#ifdef OLD
-
-#define oldv
-#ifdef oldv 
-
-
-  void HDivHighOrderFE<ET_TET> :: CalcShape (const IntegrationPoint & ip,
-                                             FlatMatrixFixWidth<3> shape) const
-  {
-    shape = 0.0;
-    T_HDivHighOrderFiniteElement<ET_TET>::CalcShape (ip, shape);
-    return;
-    // *testout << "newshape = " << endl << shape << endl;
-
-
-    double x = ip(0);
-    double y = ip(1);
-    double z = ip(2);
-
-
-    int i, j, ii, k,l, m, n;
-
-    int print=0;
-
-    double lami[4];
-    for (j=0;j<3;j++) lami[j] = ip(j);
-    lami[3] = 1-ip(0)-ip(1)-ip(2);
-
-    int index[3][3];
-
-    int node[3];
-
-    Mat<4,3> dlami;
-    dlami = 0.0;
-    dlami(0,0) = 1.;
-    dlami(1,1) = 1.;
-    dlami(2,2) = 1.;
-    dlami(3,0) = -1.;
-    dlami(3,1) = -1.;
-    dlami(3,2) = -1.;
-
-    shape = 0.0;
-
-    const EDGE * edges = ElementTopology::GetEdges (ET_TET);
-    const FACE * faces = ElementTopology::GetFaces (ET_TET);
-    const POINT3D * vertices = ElementTopology::GetVertices (ET_TET);
-
-
-    Vec<3> tang, tang1, normal, vp;
-
-    int is, ie, iop, iop1, iop2;
-
-    int p=(order+1)*(order+2)*(order+3)/2;
-    
-
-    ArrayMem<double,10> rec_pol(p), rec_pol_1(p), rec_pol_2(p);
-
-    //********************************FACE SHAPES********************************************************
-	// RT_0
-	// Typ 1
-	// Typ 2
-    
-	ii = 4;
-    for (i = 0; i < 4; i++)
-      {
-	p = order_face[i][0];
-	
-	if (p >= 0)
-	  {
-            int fav[3];
-	    for(j=0; j<3; j++) fav[j]=faces[i][j];
-
-	    //Sort vertices  first edge op minimal vertex
-	    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-	    if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-	    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-	    int fop = 6 - fav[0] - fav[1] - fav[2];
-
-            is = fav[0]; ie = fav[1]; iop = fav[2];
-
-	    AutoDiff<3> ls = lami[is];
-	    AutoDiff<3> le = lami[ie];
-	    AutoDiff<3> lo = lami[iop];
-	    AutoDiff<3> lz = lami[fop];
-           
-
-	    for (j = 0; j < 3; j++)
-	      {
-		ls.DValue(j) = dlami(is,j);
-		le.DValue(j) = dlami(ie,j);
-		lo.DValue(j) = dlami(iop,j);
-		lz.DValue(j) = dlami(fop,j);
-
-	      }
-	    AutoDiff<3> lsle=ls*le;
-
-            Vec<3> vp, vp1, vp2, vp3, nedelec;
-	    Vec<3> dlamis, dlamie, dlamio;
-
-	    for (n = 0; n < 3; n++)
-	      {
-		dlamis(n) = dlami(is,n);
-		dlamie(n) = dlami(ie,n);
-		dlamio(n) = dlami(iop,n);
-		nedelec(n) = ls.Value()*dlamie(n) - le.Value()*dlamis(n);
-	      }
-	    vp1 = Cross (dlamis, dlamie);
-	    vp2 = Cross (dlamio, dlamis);
-	    vp3 = Cross (dlamie, dlamio);
-
-
-
-	    // RT_0 low order shapes
-	    for (j = 0; j < 3; j++)
-	      shape(i,j) = ls.Value()*vp3(j)+le.Value()*vp2(j)+lo.Value()*vp1(j);
-
-
-            Vec<3> grad1, grad2;
-	    ArrayMem<AutoDiff<3>, 10> ad_rec_pol1(order+1);
-	    ArrayMem<AutoDiff<3>, 10> ad_rec_pol2(order+1);
-
-            // *testout << " p " << p << endl; 
-            
-          
-	    ScaledLegendrePolynomial(p-1, le-ls, ls+le, ad_rec_pol1);
-	    ScaledLegendrePolynomial(p-1, lo-le-ls, lo+ls+le, ad_rec_pol2);
-
-            for (k = 0; k <= p-1; k++)
-	      { 
-		ad_rec_pol1[k] *= lsle;
-		ad_rec_pol2[k] *= lo;
-	      }
-           
-            // Typ 1
-            for (k = 0; k <= p-1; k++)
-	      {
-		for (l = 0; l <= p-1-k; l++, ii++)
-		  {
-
-		    for (j = 0; j < 3; j++)
-		      {
-			grad1(j) = ad_rec_pol1[k].DValue(j);
-			grad2(j) = ad_rec_pol2[l].DValue(j);
-		      }
-		    vp = Cross(grad2,grad1);
-		    for (m = 0; m < 3; m++)
-		      shape(ii,m) = 2.*vp(m);
-		  }
-	      }
-
-	    // Typ 2
-	    for (k = 0; k <= p-1; k++, ii++)
-	      {
-		for (j = 0; j < 3; j++)
-                  grad2(j) = ad_rec_pol2[k].DValue(j);
-		vp = Cross(nedelec,grad2);
-		for (m = 0; m < 3; m++)
-	          shape(ii,m) = (-1.*vp(m) + 2 * vp1(m) * ad_rec_pol2[k].Value());
-	      }
-
-	  }
-      }
-    
-
-
-    // if(order_inner[0] < 2) return;
-    // **********************************INNER*********************************************
-
-    
-      
-    // **************curl inner shapes****************************************************
-    p = order_inner[0];
-    Vec<3> grad1, grad2, grad3, vp1, vp2, vp3;
-    ArrayMem<AutoDiff<3>, 10> ad_poli(order-1);
-    ArrayMem<AutoDiff<3>, 10> ad_polj(order-1);
-    ArrayMem<AutoDiff<3>, 10> ad_polk(order-1);
-    AutoDiff<3> pol_prod;
-    AutoDiff<3> x1 (ip(0),0);
-    AutoDiff<3> y1 (ip(1),1);
-    AutoDiff<3> z1 (ip(2),2);
-    
-    //AutoDiff<3> lz = lami[fop];
-    T_INNERSHAPES::CalcSplitted(p+2, x1-(1-x1-y1-z1), y1, z1,ad_poli, ad_polj, ad_polk );
-    //   ScaledLegendrePolynomial(p-1, le-ls, ls+le, ad_rec_pol1);
-    //   ScaledLegendrePolynomial(p-1, lo-le-ls, lo+ls+le, ad_rec_pol2);
-    for (i = 0; i <= p-2; i++)
-      {
-	
-	for (j = 0; j <= p-2-i; j++)
-	  {
-	    
-	    for (k = 0; k <= p-2-i-j; k++, ii+=3)
-	      {
-		
-		for (l = 0; l < 3; l++)
-		  {
-		    grad1(l) = ad_poli[i].DValue(l);
-		    grad2(l) = ad_polj[j].DValue(l);
-		    grad3(l) = ad_polk[k].DValue(l);
-		  }
-		
-		vp1 = Cross(grad2,grad1);
-		vp2 = Cross(grad2,grad3);
-		vp3 = Cross(grad3,grad1);
-
-		
-		for (m = 0; m < 3; m++)
-		  {
-		    shape(ii,m)   = 2.* (ad_polk[k].Value()*vp1(m) + ad_poli[i].Value()*vp2(m));
-		    shape(ii+1,m) = 2.* (ad_polj[j].Value()*vp3(m) - ad_poli[i].Value()*vp2(m));
-		    shape(ii+2,m) = ad_polk[k].Value()*vp1(m);
-		  }
-              
-             
-            
-	      }
-	  }
-      }
-    AutoDiff<3> le = 1-x1-y1-z1;
-    
-    Vec<3> ned=0.;;
-    ned(0) = - x1.Value() - le.Value(); 
-    ned(1) =  - x1.Value(); 
-    ned(2)= - x1.Value();
-   
-    Vec<3> curlned=0.;
-    curlned(1) = (-x1.DValue(0)*le.DValue(2));
-    curlned(2) = (x1.DValue(0)*le.DValue(1));
-    // Typ 4  curl(Nedelec*ad_polk*ad_polj)
-    for (i = 0; i <= p-2; i++)
-      {
-	for (j = 0; j <= p-2-i; j++, ii+=2)
-	  {
-	    pol_prod = ad_polj[j]*ad_polk[i];
-	    for (k = 0; k < 3; k++)
-	      {
-		grad1(k) = pol_prod.DValue(k);
-		grad2(k) = ad_polj[i].DValue(k);
-	      }
-	    vp1 = Cross(grad1,ned);
-	    vp2 = Cross(ned,grad2);
-	    
-         
-          
-	    for (m = 0; m < 3; m++)
-	      {
-		shape(ii,m) = 2.*(curlned(m)*pol_prod.Value()) + vp1(m);
-		shape(ii+1,m) = vp2(m)*ad_polk[j].Value();
-	      }
-                       
-	  }
-      }
-    for (i = 0; i <= p-2; i++, ii++)
-      {
-	for (j = 0; j < 3; j++)
-	  grad1(j) = z1.DValue(j);
-        vp1 = Cross(ned,grad1);   
-	for (m = 0; m < 3; m++)
-	  {
-	    shape(ii,m) = vp1(m)* ad_polj[i].Value();
-          
-	    
-	  }
-      }
-
-    *testout << "oldshape = " << endl << shape << endl;
-   
-    // (*testout)<<"shape tet="<<shape<<endl;
-    // cout << "shape, old = " << shape << endl;     
-  }
-
-
-  void HDivHighOrderFE<ET_TET> :: CalcDivShape (const IntegrationPoint & ip,
-                                                FlatVector<> divshape) const
-  {
-    divshape = 0.0;
-    T_HDivHighOrderFiniteElement<ET_TET>::CalcDivShape (ip, divshape);
-    return;
-
-
-    double x = ip(0);
-    double y = ip(1);
-    double z = ip(2);
-
-    int i, j, ii, k, l, m, n;
-    int is, ie, iop, iop1, iop2;
-
-
-
-
-    double lami[4];
-    for (j=0;j<3;j++) lami[j] = ip(j);
-    lami[3] = 1-ip(0)-ip(1)-ip(2);
-
-    Mat<4,3> dlami;
-    dlami = 0.0;
-    dlami(0,0) = 1.;
-    dlami(1,1) = 1.;
-    dlami(2,2) = 1.;
-    dlami(3,0) = -1.;
-    dlami(3,1) = -1.;
-    dlami(3,2) = -1.;
-
-    divshape = 0.0;
-
-    const EDGE * edges = ElementTopology::GetEdges (ET_TET);
-    const FACE * faces = ElementTopology::GetFaces (ET_TET);
-    const POINT3D * vertices = ElementTopology::GetVertices (ET_TET);
-
-    Vec<3> tang, tang1, normal, vp;
-
-    int p=(order+1)*(order+2)*(order+3)/2;
-
-
-
-
-    ArrayMem<double,10> rec_pol(p), rec_pol_1(p), rec_pol_2(p);
-    ArrayMem<double,10> drec_pol(p), drec_pol_1(p), drec_pol_2(p);
-    ArrayMem<AutoDiff<3>, 100> ad_rec_pol(100);
-
-
-    //*******************************DIV FACE-SHAPES*********************************************
-
-
-
-	// RT_0
-	// Typ 1
-	// Typ 2
-
-	ii = 4;
-    for (i = 0; i < 4; i++)
-      {
-	p = order_face[i][0];
-
-	if (p >= 0)
-	  {
-            int fav[3];
-	    for(j=0; j<3; j++) fav[j]=faces[i][j];
-
-	    //Sort vertices  first edge op minimal vertex
-	    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-	    if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-	    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-	    int fop = 6 - fav[0] - fav[1] - fav[2];
-
-            is = fav[0]; ie = fav[1]; iop = fav[2];
-
-	    AutoDiff<3> ls = lami[is];
-	    AutoDiff<3> le = lami[ie];
-	    AutoDiff<3> lo = lami[iop];
-	    AutoDiff<3> lz = lami[fop];
-
-
-	    for (j = 0; j < 3; j++)
-	      {
-		ls.DValue(j) = dlami(is,j);
-		le.DValue(j) = dlami(ie,j);
-		lo.DValue(j) = dlami(iop,j);
-		lz.DValue(j) = dlami(fop,j);
-
-	      }
-	    AutoDiff<3> lsle=ls*le;
-
-            Vec<3> vp, vp1, vp2, vp3, nedelec;
-	    Vec<3> dlamis, dlamie, dlamio;
-	    for (n = 0; n < 3; n++)
-	      {
-		dlamis(n) = dlami(is,n);
-		dlamie(n) = dlami(ie,n);
-		dlamio(n) = dlami(iop,n);
-		nedelec(n) = ls.Value()*dlamie(n) - le.Value()*dlamis(n);
-	      }
-	    vp1 = Cross (dlamis, dlamie);
-	    vp2 = Cross (dlamio, dlamis);
-	    vp3 = Cross (dlamie, dlamio);
-
-
-
-	    // Divergenz RT_0 low order divshapes
-	    for (j = 0; j < 3; j++)
-	      divshape(i) += dlamis(j)*vp3(j) + dlamie(j)*vp2(j) + dlamio(j)*vp1(j);
-
-	    // Divergenz Typ 1 = 0
-
-	    // Divergenz Typ 2 = 0
-
-
-	  }
-      }
-    ii += 4*(p*p+3*p)/2;
-
-
-    //**********************************DIV INNER-SHAPES*********************************************
-	if(order_inner[0] < 2) return;
-
-    
-    //***************DIV curl shapes*****************************************************
-        p = order_inner[0];
-    Vec<3> grad1, grad2, grad3, vp1, vp2, vp3;
-    ArrayMem<AutoDiff<3>, 100> ad_poli(100);
-    ArrayMem<AutoDiff<3>, 100> ad_polj(100);
-    ArrayMem<AutoDiff<3>, 100> ad_polk(100);
-    AutoDiff<3> pol_prod;
-    AutoDiff<3> x1 (ip(0),0);
-    AutoDiff<3> y1 (ip(1),1);
-    AutoDiff<3> z1 (ip(2),2);
-
-    T_INNERSHAPES::CalcSplitted(p+2, x1-(1-x1-y1-z1), y1, z1,ad_poli, ad_polj, ad_polk );
-    //   ScaledLegendrePolynomial(p-1, le-ls, ls+le, ad_rec_pol1);
-    //   ScaledLegendrePolynomial(p-1, lo-le-ls, lo+ls+le, ad_rec_pol2);
-
-    for (i = 0; i <= p-2; i++)
-      {
-
-	for (j = 0; j <= p-2-i; j++)
-	  {
-
-	    for (k = 0; k <= p-2-i-j; k++, ii+=3)
-	      {
-
-		for (l = 0; l < 3; l++)
-		  {
-		    grad1(l) = ad_poli[i].DValue(l);
-		    grad2(l) = ad_polj[j].DValue(l);
-		    grad3(l) = ad_polk[k].DValue(l);
-		  }
-		vp1 = Cross(grad2,grad1);
-		//  Divergenz Typ 1 = 0
-		//  Divergenz Typ 2 = 0
-		//  Divergenz Typ 3 div((adpolj.D X adpoli.D)adpolk) = - adpolj.D*(adpolk.D X adpoli.D)
-
-            
-            
-		divshape(ii+2) = InnerProduct(grad3,vp1);
-           
-        
-	      }
-	  }
-      }
-
-  
-
-    AutoDiff<3> le = 1-x1-y1-z1;
-
-    Vec<3> ned=0.;;
-    ned(0) = - x1.Value() - le.Value(); ned(1) =  - x1.Value(); ned(2)= - x1.Value();
-    Vec<3> curlned=0.;
-    curlned(1) = 2; // (-x1.DValue(0)*le.DValue(2));
-    curlned(2) = -2; // (x1.DValue(0)*le.DValue(1));
-    // Divergenz Typ 4  div(curl(Nedelec*ad_polk*ad_polj)) = 0
-    // Divergenz Typ 5 div((Nedelec X ad_polj)ad_polk) = ad_polj.D*ad_polk*curlned + ad_polk.D*(ned X ad_polj.D)
-    for (i = 0; i <= p-2; i++)
-      {
-	for (j = 0; j <= p-2-i; j++, ii+=2)
-	  {
-
-	    for (k = 0; k < 3; k++)
-	      {
-		grad1(k) = ad_polj[i].DValue(k);
-		grad2(k) = ad_polk[j].DValue(k);
-
-	      }
-	    vp1 = Cross(ned,grad1);
-	    double h1 = InnerProduct(grad2,vp1);
-	    double h2 = InnerProduct(grad1,curlned);
-
-	    divshape(ii+1) = h2*ad_polk[j].Value() + h1;
-         
-          
-	  }
-      }
-    // Divergenz Typ 6 div((Nedelec X grad(lam4))*ad_polj) = grad(lam4)*ad_polj*curlned + ad_polj.D*(ned X grad(lam4))
-    for (i = 0; i <= p-2; i++, ii++)
-      {
-	for (j = 0; j < 3; j++)
-	  {
-	    grad1(j) = z1.DValue(j);
-	    grad2(j) = ad_polj[i].DValue(j);
-	  }
-	vp1 = Cross(ned,grad1);
-
-	double h1 = InnerProduct(grad2,vp1);
-	double h2 = InnerProduct(grad1,curlned);
-
-	divshape(ii) = ad_polj[i].Value()*h2 + h1;
-     
-     
-      }
-
-    //(*testout)<<"divshape analytisch tet="<<divshape<<endl;
-	    
-    //Vector<> divshape_num(divshape.Size());
-    //HDivFiniteElement<3> :: CalcDivShape (ip, divshape_num);
-	    
-    //(*testout) << "divshape numerisch = " << endl << divshape_num << endl;
-
-    // (*testout) << "difference = " << endl << divshape-divshape_num << endl;
-
-  }
-
-#else 
-  
-
-  void HDivHighOrderFE<ET_TET> :: CalcShape (const IntegrationPoint & ip,
-                                             FlatMatrixFixWidth<3> shape) const
-  {
-    /*
-    shape = 0.0;
-    T_HDivHighOrderFiniteElement<ET_TET>::CalcShape (ip, shape);
-    cout << "shape xx, new = " << shape << endl;
-    */
-
-    AutoDiff<3> x(ip(0),0);
-    AutoDiff<3> y(ip(1),1);
-    AutoDiff<3> z(ip(2),2);
-
-    AutoDiff<3> lami[4] = {x, y, z, 1-x-y-z}; 
-    
-    int i, j, ii, k,l, m, n;
-    int print=0;
-    shape = 0.0; 
-  
-        
-
-        
-        
-    const FACE * faces = ElementTopology::GetFaces (ET_TET);
-  
-    ArrayMem<AutoDiff<3>,10> adpol1(order+2),adpol2(order+2),adpol3(order+2); 
-     
-    ii =4; 
-    for (i = 0; i < 4; i++)
-      {
-        int p = order_face[i][0]; 
-
-        int fav[3] =  { faces[i][0], faces[i][1], faces[i][2] };
-      
-        //Sort vertices  first edge op minimal vertex
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-        if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-        int fop = 6 - fav[0] - fav[1] - fav[2];
-      
-        AutoDiff<3> cr0 = GradCrossGrad(lami[fav[1]],lami[fav[2]]); 
-        AutoDiff<3> cr1 = GradCrossGrad(lami[fav[2]],lami[fav[0]]);
-        AutoDiff<3> cr2 = GradCrossGrad(lami[fav[0]],lami[fav[1]]);
-      
-        AutoDiff<3> rt = cr0 * lami[fav[0]].Value() + cr1 *lami[fav[1]].Value() + cr2 *lami[fav[2]].Value();  
-      
-        //RT_0 low order
-        for(l=0;l<3;l++) 
-          shape(i,l) = rt.DValue(l); 
-      
-        // Curl-Shapes   
-        AutoDiff<3> xi = lami[fav[1]]-lami[fav[0]];
-        AutoDiff<3> eta = lami[fav[2]];
-        AutoDiff<3> zeta = lami[fop];  // in [0,1] // lam_F
-      
-        T_FACESHAPES::CalcSplitted (p+2, xi, eta, zeta, adpol1, adpol2); 
-
-     
-        // Compability WITH TRIG!! 
-        for (k=0;k<adpol1.Size();k++)
-          adpol1[k]*=0.25; 
-      
-        // Curl (Type 2) 2*grad v x grad u
-        for (j = 0; j <= p-1; j++) 
-          for (k = 0; k <= p-1-j; k++, ii++)
-            { 
-              AutoDiff<3> hv = GradCrossGrad(adpol2[k],adpol1[j]); 
-              for(l=0;l<3;l++)
-                shape(ii,l) = 2*hv.DValue(l); 
-            }
-      
-        // Curl (Type 3) //curl( * v) = nabla v x ned + curl(ned)*v
-        Vec<3> ned; 
-        for(l=0;l<3;l++) 
-          ned(l) = lami[fav[0]].Value()*lami[fav[1]].DValue(l) - lami[fav[1]].Value()*lami[fav[0]].DValue(l);
-        AutoDiff<3> curlned =  
-          2*GradCrossGrad(lami[fav[0]],lami[fav[1]]);
-      
-        for (j = 0; j <= p-1; j++, ii++)
-          {
-            Vec<3> hv1 = GradCrossVec(adpol2[j],ned); 
-          
-            for(l=0;l<3;l++)
-              shape(ii,l) = curlned.DValue(l) * adpol2[j].Value()+ hv1(l);  
-          }
-      }
-    
-      
-    // cell-based shapes 
-    int p = order_inner[0];
-    int pc = order_inner[0]; // should be order_inner_curl  
-    int pp = max(p,pc); 
-    if ( p >= 2 || pc >= 2 ) 
-      {
-        T_INNERSHAPES::CalcSplitted(pp+2, lami[0]-lami[3], lami[1], lami[2],adpol1, adpol2, adpol3 );
-      
-        // Curl-Fields 
-        for (i = 0; i <= pc-2; i++)
-          for (j = 0; j <= pc-2-i; j++)
-            for (k = 0; k <= pc-2-i-j; k++, ii+=2)
-              {
-                // 2 grad v  x  grad (uw)
-                AutoDiff<3> hv = 2*GradCrossGrad(adpol2[j],adpol1[i]*adpol3[k]);
-      
-                for (l = 0; l < 3; l++)
-                  shape(ii,l) = hv.DValue(l);
-                        
-                // 2 grad w  x  grad (uv)
-                hv = 2*GradCrossGrad(adpol3[k], adpol1[i] * adpol2[j]);
-      
-                for (l = 0; l < 3; l++)
-                  shape(ii+1,l) = hv.DValue(l); 
-     
-          
-              }     
-
-        // Type 1 : Curl(T3)
-        // ned = lami[0] * nabla(lami[3]) - lami[3] * nabla(lami[0]) 
-        double curlned[3] = {0,2,-2}; 
-        Vec<3> curlnedv; curlnedv(0) = 0; curlnedv(1)=2; curlnedv(2)=-2; // = {0,2,-2}; 
-        Vec<3> nedv; 
-     
-        for(l=0;l<3;l++) 
-          nedv(l) = lami[0].Value()*lami[3].DValue(l) - lami[3].Value()*lami[0].DValue(l);
-      
-        for (j= 0; j <= pc-2; j++)
-          for (k = 0; k <= pc-2-j; k++, ii++)
-            {
-              // Curl(Ned*vj*wk) = vj*wk*Curl(ned) + nabla(vj*wk)xNed0
-              AutoDiff<3> pjk = adpol2[j] * adpol3[k]; 
-              Vec<3> vv = GradCrossVec(pjk,nedv); 
-              vv +=pjk.Value()*curlnedv; 
-             
-              for(l=0; l<3; l++) 
-                shape(ii,l) = vv(l); 
-            }
-       
-        // Type 2:  
-        // (grad u  x  grad v) w 
-        for (i = 0; i <= p-2; i++)
-          for (j = 0; j <= p-2-i; j++)
-            {
-              AutoDiff<3> hv = GradCrossGrad(adpol1[i],adpol2[j]);
-              for (k = 0; k <= p-2-i-j; k++,ii++)
-                for (l = 0; l < 3; l++)
-                  shape(ii,l) = hv.DValue(l) * adpol3[k].Value(); 
-            }    
-          
-        // (ned0 x grad v) w    
-        for (j = 0; j <= p-2; j++)
-          {
-            Vec<3> vv = GradCrossVec(adpol2[j],nedv);
-            for (k= 0; k <= p-2-j; k++, ii++)
-              for(l=0; l<3; l++) 
-                shape(ii,l) = -adpol3[k].Value()*vv(l);
-          } 
-      
-          
-        // Type 3: 
-        // (ned0 x e_z) v = (N_y, -N_x,0)^T * v ) 
-        for (j=0; j<=p-2; j++,ii++) 
-          {        
-            Vec<3> hv = GradCrossVec(z,nedv);
-            for(int l=0;l<3;l++) shape(ii,l) = -hv(l)*adpol2[j].Value();
-          }
-      
-      }
-      
-    // cout << " shape, old " << shape << endl; 
-        
-    return; 
-
-  }
-      
-  
-  void HDivHighOrderFE<ET_TET> :: CalcDivShape (const IntegrationPoint & ip,
-                                                FlatVector<> shape) const             
-  {
-    /*
-      LocalHeap lh(100000); 
-      FlatVector<> shape2(shape.Size(),lh); 
-      HDivHighOrderFiniteElement<3> :: CalcDivShape(ip,shape2); 
-    */
-    AutoDiff<3> x(ip(0),0);
-    AutoDiff<3> y(ip(1),1);
-    AutoDiff<3> z(ip(2),2);
-    AutoDiff<3> lami[4] = {x, y, z, 1-x-y-z}; 
-    
-            
-            
-    shape = 0.0; 
-  
-    const FACE * faces = ElementTopology::GetFaces (ET_TET);
-    const POINT3D * vertices = ElementTopology::GetVertices (ET_TET);
-    
-    ArrayMem< AutoDiff<3> , 10> adpol1(order+2), adpol2(order+2), adpol3(order+2); 
-     
-    int ii = 4;
-    for (int i = 0; i < 4; i++)
-      {
-        int p = order_face[i][0]; 
-        ii += (p*p+3*p)/2; 
-
-        int fav[3] =  { faces[i][0], faces[i][1], faces[i][2] };
-      
-        //Sort vertices  first edge op minimal vertex
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-        if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-        int fop = 6 - fav[0] - fav[1] - fav[2];
-      
-   
-        AutoDiff<3> cr0 = GradCrossGrad(lami[fav[1]],lami[fav[2]]); 
-        AutoDiff<3> cr1 = GradCrossGrad(lami[fav[2]],lami[fav[0]]);
-        AutoDiff<3> cr2 = GradCrossGrad(lami[fav[0]],lami[fav[1]]);
-      
-    
-   
-        for(int l=0;l<3;l++)
-          {
-            shape(i) += cr0.DValue(l)*lami[fav[0]].DValue(l) + cr1.DValue(l)*lami[fav[1]].DValue(l) +cr2.DValue(l)*lami[fav[2]].DValue(l) ; 
-          }
-      
-    
-      }
-    // cell-based shapes 
-    int p = order_inner[0];
-    int pc = order_inner[0]; // should be order_inner_curl  
-    int pp = max(p,pc); 
-    if (pc >= 2 ) 
-      ii += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2; 
-      
-    if (p >=2) 
-      { 
-        
-        
-        T_INNERSHAPES::CalcSplitted(pp+2, x-(1-x-y-z), y, z,adpol1, adpol2, adpol3 );
-      
-        // Type 2:  
-        // (grad u  x  grad (v)) . grad w 
-        for (int i = 0; i <= p-2; i++)
-          for (int j = 0; j <= p-2-i; j++)
-            for (int k = 0; k <= p-2-i-j; k++,ii++)             
-              { 
-       
-          
-                AutoDiff<3> hv = GradCrossGrad(adpol1[i],adpol2[j]);
-                for (int l = 0; l < 3; l++)
-                  shape(ii) += hv.DValue(l) * adpol3[k].DValue(l); 
-  
-              }
-      
-            
-        Vec<3> curlnedv; curlnedv(0) = 0; curlnedv(1)=2; curlnedv(2)=-2; // = {0,2,-2}; 
-        Vec<3> nedv; 
-     
-        for(int l=0;l<3;l++) 
-          nedv(l) = lami[0].Value()*lami[3].DValue(l) - lami[3].Value()*lami[0].DValue(l);
-        AutoDiff<3> ned[3]; 
-        for(int l=0;l<3;l++) 
-          ned[l] = lami[0]*lami[3].DValue(l) - lami[3]*lami[0].DValue(l);
-      
-      
-        // div((ned0 x grad v) w) = grad v * curlned *w + gradw *(ned0xgradv)    
-        for (int j = 0; j <= p-2; j++)
-          {
-        
-        
-            Vec<3> vv = GradCrossVec(adpol2[j],nedv);
-            double sp = 0; 
-            for(int l=0;l<3;l++) sp+=curlnedv(l)*adpol2[j].DValue(l);
-            for (int k= 0; k <= p-2-j; k++, ii++)
-              { 
-         
-          
-                shape(ii) = adpol3[k].Value()*sp; 
-                for(int l=0; l<3; l++) 
-                  shape(ii) -=  adpol3[k].DValue(l)*vv(l);
-         
-              }
-          } 
-      
-        // div((ned0 x grad z) v) = grad z * curlned *v + gradv *(ned0xgradz)    
-     
-        Vec<3> vv = GradCrossVec(z,nedv);
-        double sp = 0; 
-        for(int l=0;l<3;l++) sp+=curlnedv(l)*z.DValue(l);
-        for (int k= 0; k <= p-2; k++, ii++)
-          { 
-            shape(ii) = adpol2[k].Value()*sp; 
-            for(int l=0; l<3; l++) 
-              shape(ii) -=  adpol2[k].DValue(l)*vv(l);
-          }
-      
-      
-      }
-      
-    //*testout << " divshape new " << shape << endl; 
-    //*testout << " shape2 " << shape2 << endl;
-    //*testout << " diff " << shape-shape2 << endl;   
-  }
-          
-#endif
-
-#endif
 
 
   //------------------------------------------------------------------------

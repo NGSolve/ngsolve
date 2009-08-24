@@ -3,7 +3,7 @@
 
 /*********************************************************************/
 /* File:   hdivhofe.hpp                                              */
-/* Author: Almedin Becirovic                                         */
+/* Author: A. Becirovic, S. Zaglmayr, J. Schoeberl                   */
 /* Date:   15. Feb. 2003                                             */
 /*********************************************************************/
 
@@ -47,23 +47,20 @@ protected:
 
 
 public:
-
   HDivHighOrderFiniteElement (ELEMENT_TYPE aeltype);
-
 
   void SetVertexNumbers (FlatArray<int> & avnums);
   void SetOrderEdge(FlatArray<int> & oe);
   void SetOrderFace (FlatArray<int> & of);
   void SetOrderInner (int oi);
-#ifndef HDIV_OLD
   void SetOrderFace (FlatArray<INT<2> > & of);
   void SetOrderInner (INT<3> oi); 
-#endif
-  void SetDiscontinuous(bool disc) { discontinuous=disc; };  
-  void SetHODivFree(bool aho_div_free) { ho_div_free = aho_div_free; };  
+
+  void SetDiscontinuous (bool disc) { discontinuous = disc; };  
+  void SetHODivFree (bool aho_div_free) { ho_div_free = aho_div_free; };  
 
   virtual void ComputeNDof () = 0;
-
+  
   int EdgeOrientation (int enr) const
   {
     const EDGE * edges = ElementTopology::GetEdges (this->eltype);
@@ -182,6 +179,8 @@ protected:
   using HDivHighOrderFiniteElement<DIM>::order_edge;
   using HDivHighOrderFiniteElement<DIM>::order_face;
   using HDivHighOrderFiniteElement<DIM>::order_inner;
+  using HDivHighOrderFiniteElement<DIM>::ho_div_free;
+  using HDivHighOrderFiniteElement<DIM>::discontinuous;
 
 
   using HDivHighOrderFiniteElement<DIM>::vnums;
@@ -214,8 +213,8 @@ public:
     eltype = ET;
   }
 
-  // virtual void ComputeNDof();
-  // virtual void GetInternalDofs (Array<int> & idofs) const;
+  virtual void ComputeNDof();
+  virtual void GetInternalDofs (Array<int> & idofs) const;
 
   virtual void CalcShape (const IntegrationPoint & ip, 
                           FlatMatrixFixWidth<DIM> shape) const;
@@ -232,8 +231,8 @@ class HDivHighOrderFE<ET_TRIG> : public T_HDivHighOrderFiniteElement<ET_TRIG>
 {
 public:
   HDivHighOrderFE (int aorder);
-  virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
+  // virtual void ComputeNDof();
+  // virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /*
   /// compute shape
@@ -259,8 +258,8 @@ class HDivHighOrderFE<ET_QUAD> : public T_HDivHighOrderFiniteElement<ET_QUAD>
 {
 public:
   HDivHighOrderFE (int aorder);
-  virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
+  // virtual void ComputeNDof();
+  // virtual void GetInternalDofs (Array<int> & idofs) const;
 
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[2], TFA & shape) const; 
@@ -279,9 +278,9 @@ class HDivHighOrderFE<ET_TET> : public T_HDivHighOrderFiniteElement<ET_TET>
 public:
 
   HDivHighOrderFE (int aorder);
-  virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
-
+  // virtual void ComputeNDof();
+  // virtual void GetInternalDofs (Array<int> & idofs) const;
+  
   /// compute shape
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[2], TFA & shape) const; 

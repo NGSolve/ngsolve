@@ -12,11 +12,14 @@
 To do: *Internal External Dofs (eliminate internal) 
        *Flag for low-order dofs eliminated ...   
 ************************* */ 
+
 #include <comp.hpp>
 #include <multigrid.hpp>
 
 #include <parallelngs.hpp>
 
+#include <../fem/l2hofe.hpp>
+#include <../fem/h1hofe.hpp>
 
 #ifdef PARALLEL
 extern MPI_Group MPI_HIGHORDER_WORLD;
@@ -202,36 +205,12 @@ namespace ngcomp
 
 	switch (ma.GetElType(elnr))
 	  {
-	  case ET_TET:
-	    { 
-	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_TET>))) L2HighOrderFE<ET_TET> (order);
-	      break;
-	    }
-	  case ET_PYRAMID:
-	    {
-	      fe = new (lh.Alloc (sizeof(H1HighOrderFE<ET_PYRAMID>))) H1HighOrderFE<ET_PYRAMID> (order);
-	      break;
-	    }
-	  case ET_PRISM:
-	    {
-	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_PRISM>))) L2HighOrderFE<ET_PRISM> (order);
-              break;
-	    }
-	  case ET_HEX:
-	    {
-	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_HEX>))) L2HighOrderFE<ET_HEX> (order);
-              break;
-	    }
-	  case ET_TRIG:
-	    { 
-	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_TRIG>))) L2HighOrderFE<ET_TRIG> (order);
-	      break;
-	    }
-	  case ET_QUAD:
-	    {
-	      fe = new (lh.Alloc (sizeof(L2HighOrderFE<ET_QUAD>))) L2HighOrderFE<ET_QUAD> (order);
-	      break;
-	    }
+	  case ET_TET:     fe = new (lh) L2HighOrderFE<ET_TET> (order); break;
+	  case ET_PYRAMID: fe = new (lh) H1HighOrderFE<ET_PYRAMID> (order); break;
+	  case ET_PRISM:   fe = new (lh) L2HighOrderFE<ET_PRISM> (order); break;
+	  case ET_HEX:     fe = new (lh) L2HighOrderFE<ET_HEX> (order); break;
+	  case ET_TRIG:    fe = new (lh) L2HighOrderFE<ET_TRIG> (order); break;
+	  case ET_QUAD:    fe = new (lh) L2HighOrderFE<ET_QUAD> (order); break;
 	  default:
 	    fe = 0; 
 	  }
@@ -282,12 +261,9 @@ namespace ngcomp
     
     switch (ma.GetSElType(elnr))
       {
-      case ET_SEGM:
-	fe = new FE_SegmDummy; break;
-      case ET_TRIG:
-	fe = new FE_SegmDummy ; break;
-      case ET_QUAD:
-	fe = new FE_SegmDummy; break;
+      case ET_SEGM: fe = new FE_SegmDummy; break;
+      case ET_TRIG: fe = new FE_SegmDummy ; break;
+      case ET_QUAD: fe = new FE_SegmDummy; break;
       default:
 	fe = 0;
       }

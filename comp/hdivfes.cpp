@@ -76,7 +76,7 @@ namespace ngcomp
   }
 
   
-  void RaviartThomasFESpace :: Update()
+  void RaviartThomasFESpace :: Update(LocalHeap & lh)
   {
     const MeshAccess & ma = GetMeshAccess();
     int level = ma.GetNLevels();

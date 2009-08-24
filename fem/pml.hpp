@@ -103,10 +103,10 @@ namespace ngfem
     {
       try
 	{
-	  const FEL & fel = dynamic_cast<const FEL&> (bfel);
+	  const FEL & fel = static_cast<const FEL&> (bfel);
 	  int ndof = fel.GetNDof();
 
-	  elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
+	  // elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
 	  elmat = 0;
 	
 	  FlatMatrixFixHeight<DIM_DMAT, Complex> bmat (ndof * DIM, locheap);
@@ -116,9 +116,10 @@ namespace ngfem
 
 	  const IntegrationRule & ir = GetIntegrationRule (fel);
 
-	  void * heapp = locheap.GetPointer();
 	  for (int i = 0; i < ir.GetNIP(); i++)
 	    {
+              HeapReset hr (locheap);
+
 	      SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> 
 		sip(ir[i], eltrans, locheap);
 	      SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,double> 
@@ -129,11 +130,13 @@ namespace ngfem
 
 	      Complex fac = sip.GetJacobiDet() * sip.IP().Weight();
 
+              dmat *= fac;
 	      dbmat = dmat * bmat;
-	      elmat += fac * (Trans (bmat) * dbmat);
-
-	      locheap.CleanUp (heapp);
-
+	      // elmat += Trans (bmat) * dbmat;
+              if (DMATOP::SYMMETRIC)
+                FastMat<DIM_DMAT> (elmat.Height(), &dbmat(0,0), &bmat(0,0), &elmat(0,0));
+              else
+                elmat += Trans (bmat) * dbmat;
 	    } 
 	}
 
