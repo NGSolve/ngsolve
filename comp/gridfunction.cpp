@@ -23,7 +23,7 @@ namespace ngcomp
     multidim = int (flags.GetNumFlag ("multidim", 1));
     level_updated = -1;
     cacheblocksize = 1;
-    vis = 0;
+    // vis = 0;
   }
 
 
@@ -58,10 +58,7 @@ namespace ngcomp
 
     // cout << "visualize gridfunction " << name << endl;
 
-    // new version:
-
-    const BilinearFormIntegrator *bfi2d = 0, *bfi3d = 0;
-    // netgen::SolutionData * vis;
+    const BilinearFormIntegrator * bfi2d = 0, * bfi3d = 0;
 
     if (ma.GetDimension() == 2)
       {
@@ -76,14 +73,13 @@ namespace ngcomp
     if (bfi2d || bfi3d)
       {
 	// if (ma.GetNLevels() > 1) return;
-
         // if (!vis)
-        {
-          if (!fespace.IsComplex())
-            vis = new VisualizeGridFunction<double> (ma, this, bfi2d, bfi3d, 0);
-          else
-            vis = new VisualizeGridFunction<Complex> (ma, this, bfi2d, bfi3d, 0);
-        }
+
+	netgen::SolutionData * vis;
+	if (!fespace.IsComplex())
+	  vis = new VisualizeGridFunction<double> (ma, this, bfi2d, bfi3d, 0);
+	else
+	  vis = new VisualizeGridFunction<Complex> (ma, this, bfi2d, bfi3d, 0);
 
 	Ng_SolutionData soldata;
 	Ng_InitSolutionData (&soldata);
@@ -99,102 +95,7 @@ namespace ngcomp
 	soldata.solclass = vis;
 	Ng_SetSolutionData (&soldata);    
       }
-
-
-    /*
-      const MeshAccess & ma = GetMeshAccess();
-      Ng_SolutionData soldata;
-      Ng_InitSolutionData (&soldata);
-  
-      soldata.name = const_cast<char*> (name.c_str());
-
-      if (&GetVector())
-      {
-      FlatVector<> fv = GetVector().FVDouble();
-      soldata.data = &fv[0];
-
-      if (!GetFESpace().IsComplex())
-      soldata.components = GetFESpace().GetDimension();
-      else
-      soldata.components = 2*GetFESpace().GetDimension();
-
-      //	soldata.data = static_cast<double*> (GetVector().Data());
-      //	soldata.components = GetVector().ElementSize() / sizeof (double);
-      }
-      else
-      {
-      soldata.data = 0;
-      soldata.components = 1;
-      }
-
-      soldata.dist = soldata.components;
-      soldata.soltype = NG_SOLUTION_NODAL;
-      soldata.order = GetFESpace().GetOrder();
-      soldata.iscomplex = GetFESpace().IsComplex();
-
-
-      if (dynamic_cast <const NodalFESpace*> (&GetFESpace()))
-      {
-      ;
-      }
-    
-      else if (dynamic_cast <const ElementFESpace*> (&GetFESpace()))
-      {
-      if (ma.GetDimension() == 3)
-      {
-      if (GetFESpace().GetOrder() == 0)
-      soldata.soltype = NG_SOLUTION_ELEMENT;
-      else
-      soldata.soltype = NG_SOLUTION_NONCONTINUOUS;
-      }
-      else 
-      {	  
-      if (GetFESpace().GetOrder() == 0)
-      soldata.soltype = NG_SOLUTION_SURFACE_ELEMENT;
-      else
-      soldata.soltype = NG_SOLUTION_SURFACE_NONCONTINUOUS;
-      }
-      }
-  
-      else if (dynamic_cast <const SurfaceElementFESpace*> (&GetFESpace()))
-
-      {
-      if (ma.GetDimension() == 3)
-      {
-      if (GetFESpace().GetOrder() == 0)
-      soldata.soltype = NG_SOLUTION_SURFACE_ELEMENT;
-      else
-      soldata.soltype = NG_SOLUTION_SURFACE_NONCONTINUOUS;
-      }
-      }
-    
-      else if (dynamic_cast <const CompoundFESpace*> (&GetFESpace()) ||
-      dynamic_cast <const NedelecFESpace*> (&GetFESpace()) ||
-      dynamic_cast <const NedelecFESpace2*> (&GetFESpace())
-      )
-
-      {
-      // do not visualize, and do not complain
-      return;
-      }
-	     
-      else 
-
-      {
-      //	  throw Exception ("Don't know how to visualize gridfunction in fespace" +
-      //	  GetFESpace().GetClassName());
-      cout << "Don't know how to visualize gridfunction in fespace" << endl;
-      }
-
-
-      Ng_SetSolutionData (&soldata);
-    */
   }
-
-
-
-
-
 
 
 
@@ -222,7 +123,6 @@ namespace ngcomp
   }
 
 
-
   template <class TV>
   bool T_GridFunction<TV> :: IsUpdated (void) const
   {
@@ -241,11 +141,7 @@ namespace ngcomp
   {
     try
       {
-	// NgLock lock(this -> mutex, 1);
-	
 	int ndof = this->GetFESpace().GetNDof();
-
-	// cout << "update gridfunction, ndof = " << ndof << endl;
 
 	for (int i = 0; i < this->multidim; i++)
 	  {
@@ -263,15 +159,10 @@ namespace ngcomp
 #endif
  	      vec[i] = new VVector<TV> (ndof);
 
-	    *testout << "update gf" << endl;
-	    *testout << "prol = " << this->GetFESpace().GetProlongation() << endl;
 
 	    if (this->nested && ovec && this->GetFESpace().GetProlongation())
 	      {
-		*testout << "do prolongation" << endl;
-
 		(*vec[i]) = TSCAL(0);
-		
 		*vec[i]->Range (0, ovec->Size()) += (*ovec);
 
 		const_cast<ngmg::Prolongation&> (*this->GetFESpace().GetProlongation()).Update();
@@ -327,6 +218,7 @@ namespace ngcomp
   {
     return *vec[comp];
   }
+
   template <class TV>
   const BaseVector & T_GridFunction<TV> :: GetVector (int comp) const
   {
@@ -359,7 +251,6 @@ namespace ngcomp
     for (int k = 0; k < dnums.Size(); k++)
       if (dnums[k] != -1)
 	for (int j = 0; j < VDIM; j++)
-	  // fv(dnums[k])(j) = elvec(k*VDIM+j);
 	  Access (fv(dnums[k]),j) = elvec(k*VDIM+j);
   }
 
@@ -381,14 +272,13 @@ namespace ngcomp
     for (int k = 0; k < dnums.Size(); k++)
       if (dnums[k] != -1)
 	for (int j = 0; j < VDIM; j++)
-	  // elvec(k*VDIM+j) = fv(dnums[k])(j);
 	  elvec(k*VDIM+j) = Access (fv(dnums[k]),j);
       else
 	for (int j = 0; j < VDIM; j++)
 	  elvec(k*VDIM+j) = 0;
   }
 
-  ///
+
   template <class TV>
   void T_GridFunction<TV> ::
   SetElementVector (int comp,
@@ -399,61 +289,9 @@ namespace ngcomp
     for (int k = 0; k < dnums.Size(); k++)
       if (dnums[k] != -1)
 	for (int j = 0; j < VDIM; j++)
-	  // fv(dnums[k])(j) = elvec(k*VDIM+j);
 	  Access (fv(dnums[k]),j) = elvec(k*VDIM+j);
   }
 
-
-
-
-
-
-  /*
- ///
- template <> void T_GridFunction<double>::
- GetElementVector (const Array<int> & dnums,
- FlatVector<double> & elvec) const
- {
- FlatVector<double> fv = vec->FV();
- for (int k = 0; k < dnums.Size(); k++)
- if (dnums[k] != -1)
- elvec(k) = fv(dnums[k]);
- else
- elvec(k) = 0;
- }
- ///
- template <> void T_GridFunction<double>::
- SetElementVector (const Array<int> & dnums,
- const FlatVector<double> & elvec) 
- {
- FlatVector<double> fv = vec->FV();
- for (int k = 0; k < dnums.Size(); k++)
- if (dnums[k] != -1)
- fv(dnums[k]) = elvec(k);
- }
-
- template <> void T_GridFunction<Complex>::
- GetElementVector (const Array<int> & dnums,
- FlatVector<Complex> & elvec) const
- {
- FlatVector<Complex> fv = vec->FV();
- for (int k = 0; k < dnums.Size(); k++)
- if (dnums[k] != -1)
- elvec(k) = fv(dnums[k]);
- else
- elvec(k) = 0;
- }
- ///
- template <> void T_GridFunction<Complex>::
- SetElementVector (const Array<int> & dnums,
- const FlatVector<Complex> & elvec) 
- {
- FlatVector<Complex> fv = vec->FV();
- for (int k = 0; k < dnums.Size(); k++)
- if (dnums[k] != -1)
- fv(dnums[k]) = elvec(k);
- }
-  */
 
 
 
@@ -483,7 +321,7 @@ namespace ngcomp
 
     
 
-  double GridFunctionCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip)
+  double GridFunctionCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip) const
   {
     LocalHeapMem<10000> lh2;
     
@@ -501,7 +339,7 @@ namespace ngcomp
       {
 	lh.CleanUp();
 	if(boundary)
-	  fes.GetSDofNrs(elnr,dnums);
+	  fes.GetSDofNrs(elnr, dnums);
 	else
 	  fes.GetDofNrs (elnr, dnums);
     
@@ -516,18 +354,18 @@ namespace ngcomp
 
     HeapReset hr(lh);
 
-    /* should be, but not yet tested
-    BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
+    // should be, but not yet tested
+    const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
     FlatVector<double> flux(bfi->DimFlux(), lh);
     bfi->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh);
-    */
 
+    /*
     FlatVector<double> flux;
     if(boundary)
       fes.GetBoundaryEvaluator()->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh);
     else
       fes.GetEvaluator()->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh);
-
+    */
     return flux(0); 
 
   }
@@ -634,10 +472,6 @@ namespace ngcomp
 	cache_bound = 0;
 
       }
-    void * hp = lh.GetPointer();
-
-    FlatVector<SCAL> flux;
-
     
     IntegrationPoint ip(lam1, lam2, lam3, 0);
     SpecificIntegrationPoint<3,3> sip (ip, eltrans, lh);
@@ -645,6 +479,9 @@ namespace ngcomp
 
     for(int j = 0; j<bfi3d.Size(); j++)
       {
+	HeapReset hr(lh);
+
+	FlatVector<SCAL> flux(bfi3d[j] -> DimFlux(), lh);
 	bfi3d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
 
 	for (int i = 0; i < components; i++)
@@ -654,7 +491,6 @@ namespace ngcomp
 	    else
 	      values[i] += ((double*)(void*)&flux(0))[i];
 	  }
-	lh.CleanUp(hp);
       }
 
     return 1; 
@@ -710,7 +546,6 @@ namespace ngcomp
 
     void * hp = lh.GetPointer();
 
-    FlatVector<SCAL> flux;
     
 
     Vec<3> vx;
@@ -727,6 +562,7 @@ namespace ngcomp
 
     for(int j = 0; j<bfi3d.Size(); j++)
       {
+	FlatVector<SCAL> flux (bfi3d[j]->DimFlux(), lh);
 	bfi3d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
 
 
@@ -934,7 +770,6 @@ namespace ngcomp
         IntegrationPoint ip(xref[0], xref[1], 0, 0);
         if (bound)
           {
-            FlatVector<SCAL> flux;
             Vec<3> vx;
             Mat<3,2> mdxdxref;
             for (int i = 0; i < 3; i++)
@@ -948,6 +783,7 @@ namespace ngcomp
               values[i] = 0.0;
             for(int j = 0; j<bfi2d.Size(); j++)
               {
+		FlatVector<SCAL> flux(bfi3d[j]->DimFlux(), lh);
                 bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
                 for (int i = 0; i < components; i++)
                   values[i] += ((double*)(void*)&flux(0))[i];
@@ -1053,7 +889,6 @@ namespace ngcomp
 
         if (bound)
           {
-            FlatVector<SCAL> flux;
 
             for (int k = 0; k < npts; k++)
               for (int i = 0; i < components; i++)
@@ -1077,6 +912,7 @@ namespace ngcomp
                 
                 for(int j = 0; j<bfi2d.Size(); j++)
                   {
+		    FlatVector<SCAL> flux (bfi2d[j]->DimFlux(), lh);
                     bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
                     for (int i = 0; i < components; i++)
                       values[k*svalues+i] += ((double*)(void*)&flux(0))[i];

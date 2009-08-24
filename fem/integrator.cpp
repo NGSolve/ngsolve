@@ -370,7 +370,7 @@ namespace ngfem
   {
     FlatVector<double> selx(elx.Size()/m, lh);
     FlatVector<double> sflux(DimFlux(), lh);
-    flux.AssignMemory (m*DimFlux(), lh);
+    // flux.AssignMemory (m*DimFlux(), lh);
     for (int j = 0; j < m; j++)
       {
 	for (int i = 0; i < selx.Size(); i++)
@@ -760,7 +760,7 @@ namespace ngfem
       {
 	FlatVector<double> selx(elx.Size()/dim, lh);
 	FlatVector<double> sflux(bfi.DimFlux(), lh);
-	flux.AssignMemory (DimFlux(), lh);
+	// flux.AssignMemory (DimFlux(), lh);
 	for (int j = 0; j < dim; j++)
 	  {
 	    for (int i = 0; i < selx.Size(); i++)
@@ -811,7 +811,7 @@ namespace ngfem
       {
 	FlatVector<Complex> selx(elx.Size()/dim, lh);
 	FlatVector<Complex> sflux(bfi.DimFlux(), lh);
-	flux.AssignMemory (DimFlux(), lh);
+	// flux.AssignMemory (DimFlux(), lh);
 	for (int j = 0; j < dim; j++)
 	  {
 	    for (int i = 0; i < selx.Size(); i++)
@@ -920,7 +920,7 @@ namespace ngfem
       {
 	FlatVector<Complex> selx(elx.Size()/dim, lh);
 	FlatVector<Complex> sflux(bfi.DimFlux(), lh);
-	flux.AssignMemory (DimFlux(), lh);
+	// flux.AssignMemory (DimFlux(), lh);
 	for (int j = 0; j < dim; j++)
 	  {
 	    for (int i = 0; i < selx.Size(); i++)
@@ -1424,7 +1424,7 @@ namespace ngfem
 
     bfi.AssembleLinearizedElementMatrix (fel[comp], eltrans, ellin1, mat1, locheap);
     
-    elmat.AssignMemory (fel.GetNDof(), fel.GetNDof(), locheap);
+    // elmat.AssignMemory (fel.GetNDof(), fel.GetNDof(), locheap);
     elmat = 0;
     
     for (int i = 0; i < mat1.Height(); i++)
@@ -1693,6 +1693,27 @@ namespace ngfem
 
 
 
+
+
+  void LinearFormIntegrator ::
+  AssembleElementVector (const FiniteElement & fel,
+			 const ElementTransformation & eltrans, 
+			 FlatVector<double> & elvec,
+			 LocalHeap & locheap) const
+  { 
+    cerr << "LinearFormIntegrator::AssembleElementVector: base class called" << endl;
+  }
+  
+  void  LinearFormIntegrator ::
+  AssembleElementVector (const FiniteElement & fel,
+			 const ElementTransformation & eltrans, 
+			 FlatVector<Complex> & elvec,
+			 LocalHeap & locheap) const
+  {
+    FlatVector<double> rvec(elvec.Size(), locheap);
+    AssembleElementVector (fel, eltrans, rvec, locheap);
+    elvec = rvec;
+  }
 
 
 

@@ -44,7 +44,7 @@ namespace ngfem
   }
   */
  
-  double DomainConstantCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip)
+  double DomainConstantCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip) const
   {
     int elind = ip.GetTransformation().GetElementIndex();
     
@@ -127,7 +127,7 @@ namespace ngfem
     
   
   
-  double PolynomialCoefficientFunction::Evaluate (const BaseSpecificIntegrationPoint & ip)
+  double PolynomialCoefficientFunction::Evaluate (const BaseSpecificIntegrationPoint & ip) const
   {
     return Evaluate(ip,0);
   }
@@ -164,7 +164,7 @@ namespace ngfem
   }
 
 
-  double PolynomialCoefficientFunction::Evaluate (const BaseSpecificIntegrationPoint & ip, const double & t)
+  double PolynomialCoefficientFunction::Evaluate (const BaseSpecificIntegrationPoint & ip, const double & t) const
   {
     const int elind = ip.GetTransformation().GetElementIndex();
     
@@ -186,7 +186,7 @@ namespace ngfem
 
 
  
-  double PolynomialCoefficientFunction::EvaluateDeri (const BaseSpecificIntegrationPoint & ip, const double & t)
+  double PolynomialCoefficientFunction::EvaluateDeri (const BaseSpecificIntegrationPoint & ip, const double & t) const
   {
     const int elind = ip.GetTransformation().GetElementIndex();
     
@@ -205,7 +205,7 @@ namespace ngfem
   }
 
 
-  double PolynomialCoefficientFunction::EvaluateConst () 
+  double PolynomialCoefficientFunction::EvaluateConst () const
   {
     return (*(*polycoeffs[0])[0])[0];
   }
@@ -307,7 +307,7 @@ namespace ngfem
 
 
 
-  double FileCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip)
+  double FileCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip) const
   {
     const ElementTransformation & eltrans = ip.GetTransformation();
     const int elnum = eltrans.GetElementNr();
@@ -315,16 +315,16 @@ namespace ngfem
 
     if(writeips)
       {
-	if(elnum > maxelnum) maxelnum = elnum;
-	if(ipnum > maxipnum) maxipnum = ipnum;
-	totalipnum++;
+	if(elnum > maxelnum) const_cast<int&> (maxelnum) = elnum;
+	if(ipnum > maxipnum) const_cast<int&> (maxipnum) = ipnum;
+	const_cast<int&> (totalipnum)++;
 
 	Vec<3> point;
-	void * heapp = lh2.GetPointer();
-	eltrans.CalcPoint(ip.IP(),point,lh2);
-	lh2.CleanUp(heapp);
+	void * heapp = const_cast<LocalHeapMem<10000>&> (lh2).GetPointer();
+	eltrans.CalcPoint(ip.IP(),point, const_cast<LocalHeapMem<10000>&> (lh2) );
+	const_cast<LocalHeapMem<10000>&> (lh2).CleanUp(heapp);
 
-	outfile << elnum << " " << ipnum << " " << point << "\n";
+	const_cast<ofstream&> (outfile) << elnum << " " << ipnum << " " << point << "\n";
       }
 
     if(elnum < ValuesAtIps.Size())

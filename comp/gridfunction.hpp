@@ -13,7 +13,6 @@ namespace ngcomp
   /** 
       Grid-functions
   */
-
   class GridFunction : public NGS_Object
   {
   protected:
@@ -22,16 +21,14 @@ namespace ngcomp
     bool visual;
     int multidim;
     int level_updated;
-    // NgMutex mutex;
-    netgen::SolutionData * vis;
 
+    // netgen::SolutionData * vis;
     int cacheblocksize;
   public:
     ///
     GridFunction (const FESpace & afespace, const string & name, const Flags & flags);
     ///
     virtual ~GridFunction () { ; }
-  
     ///
     virtual void Update () = 0;
     ///  
@@ -40,12 +37,9 @@ namespace ngcomp
     virtual const BaseVector & GetVector (int comp = 0) const = 0;
 
     ///
-    void SetNested (int anested = 1)
-    { nested = anested; }
-
+    void SetNested (int anested = 1) { nested = anested; }
     ///
-    void SetVisual (bool avisual = 1)
-    { visual = avisual; }
+    void SetVisual (bool avisual = 1) { visual = avisual; }
 
     int GetMultiDim () const { return multidim; }
   
@@ -69,24 +63,14 @@ namespace ngcomp
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
     ///
-    ///
     void Visualize(const string & name);
 
     ///
-    virtual void SetCacheBlockSize (const int size)
-    {
-      cacheblocksize = size;
-    }
-
-    virtual int GetCacheBlockSize (void) const
-    {
-      return cacheblocksize;
-    }
-
-    virtual bool IsUpdated (void) const
-    {
-      return false;
-    }
+    virtual void SetCacheBlockSize (const int size) {cacheblocksize = size;}
+    ///
+    virtual int GetCacheBlockSize (void) const { return cacheblocksize;}
+    ///
+    virtual bool IsUpdated () const { return false; }
   
   };
 
@@ -203,11 +187,11 @@ namespace ngcomp
   protected:
     ///
     S_GridFunction<double> & gf;
-    LocalHeap lh;
-    FlatVector<double> elu;
-    Array<int> dnums;
-    int cache_elnr;
-    int comp;
+    mutable LocalHeap lh;
+    mutable FlatVector<double> elu;
+    mutable Array<int> dnums;
+    mutable int cache_elnr;
+    mutable int comp;
 
   public:
     ///
@@ -215,50 +199,18 @@ namespace ngcomp
       : gf(dynamic_cast<S_GridFunction<double>&> (agf)),lh(1000000),comp(0)
     { 
       cache_elnr = -1;
-      //cout << "Created GridFunctionCoefficientFunction with gf = " << &gf << endl;
     }			
 			
     GridFunctionCoefficientFunction (GridFunction & agf, const int acomp)
       : gf(dynamic_cast<S_GridFunction<double>&> (agf)),lh(1000000),comp(acomp)
     { 
       cache_elnr = -1;
-      //cout << "Created GridFunctionCoefficientFunction with gf = " << &gf << endl;
     }
 		
     ///
     virtual ~GridFunctionCoefficientFunction () {}
-    ///
 
-    //   template <int S, int R>
-    //   double Evaluate (const SpecificIntegrationPoint<S,R> & ip)
-    //   {
-    //     int elnr = ip.GetTransformation().GetElementNr();
-    
-    //     if (elnr < 0 || elnr >= gf.vec[0]->Size())
-    //       {
-    // 	ostringstream ost;
-    // 	ost << "GridFunctionCoefficientFunction: Element nr. "
-    // 	    << elnr << " out of range 0 - " << gf.vec[0]->Size()-1 << endl;
-    // 	throw Exception (ost.str());
-    //       }
-
-    //     return (gf.vec[0]->FV())(elnr);
-    //   }
-  
-    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip);
-
-
-    //   {
-    //     if (elnr < 0 || elnr >= gf.vec[0]->Size())
-    //       {
-    // 	ostringstream ost;
-    // 	ost << "GridFunctionCoefficientFunction: Element nr. "
-    // 	    << elnr << " out of range 0 - " << gf.vec[0]->Size()-1 << endl;
-    // 	throw Exception (ost.str());
-    //       }
-
-    //     return (gf.vec[0]->FV())(elnr);
-    //  }
+    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const;
   
   };
 

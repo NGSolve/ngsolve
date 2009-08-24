@@ -130,7 +130,6 @@ namespace ngfem
     virtual void CheckElement (const FiniteElement & el) { ; }
 
 
-    // added by MW:   Markus, müssen die virtual sein (JS) ??
     bool IntegrationAlongCurve (void) const
     { return curve_ips.Size() > 0; }
 
@@ -1108,19 +1107,16 @@ namespace ngfem
     AssembleElementVector (const FiniteElement & fel,
 			   const ElementTransformation & eltrans, 
 			   FlatVector<double> & elvec,
-			   LocalHeap & locheap) const = 0;
+			   LocalHeap & locheap) const;
 
     virtual void 
     AssembleElementVector (const FiniteElement & fel,
 			   const ElementTransformation & eltrans, 
 			   FlatVector<Complex> & elvec,
-			   LocalHeap & locheap) const 
-    {
-      FlatVector<double> rvec(elvec.Size(), locheap);
-      AssembleElementVector (fel, eltrans, rvec, locheap);
-      // elvec.AssignMemory (rvec.Size(), locheap);
-      elvec = rvec;
-    }
+
+
+
+			   LocalHeap & locheap) const;
 
     virtual void
     AssembleElementVectorIndependent (const FiniteElement & gfel,

@@ -23,11 +23,11 @@ namespace ngsolve
   {
     if(variable)
       {
-	*variable = evaluator.Eval();
+	*variable = evaluator.Eval((double*)(0));
 	return *variable;
       }
     else
-      return evaluator.Eval();
+      return evaluator.Eval((double*)(0));
   }
 
 

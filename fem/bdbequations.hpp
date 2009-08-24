@@ -495,9 +495,8 @@ public:
                               const SpecificIntegrationPoint<3,3> & sip,
 			      MAT & mat, LocalHeap & lh)
   {
-    FlatMatrixFixWidth<3> hm(fel.GetNDof(), lh);
+    FlatMatrixFixWidth<3> hm(fel.GetNDof(), &mat(0,0));
     fel.CalcMappedCurlShape (sip, hm);
-    mat = Trans (hm);
   }
 
 
@@ -1021,43 +1020,138 @@ public:
 
 
 
-///
-template <int N> 
+
+template <int N, typename TSCAL> 
+class DVecBase 
+{
+ protected:
+  CoefficientFunction * coefs[N];
+ public:
+  template <typename FEL, typename SIP, typename VEC>
+  void GenerateVector (const FEL & fel, const SIP & sip,
+		       VEC & vec, LocalHeap & lh) const
+  {
+    for (int i = 0; i < N; i++)
+      vec(i) = coefs[i] -> Evaluate (sip);
+  }  
+};
+
+template <int N>
+class DVecBase<N, Complex>
+{
+ protected:
+  CoefficientFunction * coefs[N];
+ public:
+  template <typename FEL, typename SIP, typename VEC>
+  void GenerateVector (const FEL & fel, const SIP & sip,
+		       VEC & vec, LocalHeap & lh) const
+  {
+    for (int i = 0; i < N; i++)
+      vec(i) = coefs[i] -> EvaluateComplex (sip);
+  }  
+};
+
+
+template <int N, typename T = double> 
 class DVec { };
 
-template <> class DVec<1>
+template <typename T> 
+class DVec<1, T> : public DVecBase<1,T>
 {
-  CoefficientFunction * coef;
 public:
-  DVec (CoefficientFunction * acoef) : coef(acoef) { ; }
+  using DVecBase<1,T>::coefs;
+  typedef T TSCAL;
+
+  DVec (CoefficientFunction * acoef)
+  { 
+    coefs[0] = acoef;
+  }
+};
+
+template <typename T> 
+class DVec<2, T> : public DVecBase<2,T>
+{
+public:
+  typedef T TSCAL;
+  using DVecBase<2,T>::coefs;
+  DVec (CoefficientFunction * acoef1,
+	CoefficientFunction * acoef2)
+  { 
+    coefs[0] = acoef1;
+    coefs[1] = acoef2;
+  }
+};
+
+template <typename T> 
+class DVec<3, T> : public DVecBase<3,T>
+{
+public:
+  typedef T TSCAL;
+  using DVecBase<3,T>::coefs;
 
   DVec (CoefficientFunction * acoef1,
 	CoefficientFunction * acoef2,
 	CoefficientFunction * acoef3)
-    : coef(acoef1) { ; }
+  { 
+    coefs[0] = acoef1;
+    coefs[1] = acoef2;
+    coefs[2] = acoef3;
+  }
+};
+
+
+
+
+
+///
+		   /*
+template <int N, typename TSCAL = double> 
+class DVec { };
+
+template <typename TSCAL> class DVec<1, TSCAL>
+{
+  CoefficientFunction * coef;
+public:
+  typedef double TSCAL;
+
+  DVec (CoefficientFunction * acoef) : coef(acoef) { ; }
 
   template <typename FEL, typename SIP, typename VEC>
   void GenerateVector (const FEL & fel, const SIP & sip,
 		       VEC & vec, LocalHeap & lh) const
   {
-    vec(0) = Evaluate (*coef, sip);
+    vec(0) = coef -> Evaluate (sip);
+  }  
+};
+
+template <> class DVec<1, Complex>
+{
+  CoefficientFunction * coef;
+public:
+  typedef Complex TSCAL;
+
+  DVec (CoefficientFunction * acoef) : coef(acoef) { ; }
+
+  template <typename FEL, typename SIP, typename VEC>
+  void GenerateVector (const FEL & fel, const SIP & sip,
+		       VEC & vec, LocalHeap & lh) const
+  {
+    vec(0) = coef -> EvaluateComplex (sip);
   }  
 };
 
 
-template <> class DVec<2>
+template <> class DVec<2, double>
 {
   CoefficientFunction * coef1;
   CoefficientFunction * coef2;
 public:
+  typedef double TSCAL;
+
   DVec (CoefficientFunction * acoef1,
 	CoefficientFunction * acoef2)
     : coef1(acoef1), coef2(acoef2) { ; }
-  DVec (CoefficientFunction * acoef1,
-	CoefficientFunction * acoef2,
-	CoefficientFunction * acoef3)
-    : coef1(acoef1), coef2(acoef2) { ; }
-  
+
   template <typename FEL, typename SIP, typename VEC>
   void GenerateVector (const FEL & fel, const SIP & sip,
 		       VEC & vec, LocalHeap & lh) const
@@ -1067,19 +1161,14 @@ public:
   }  
 };
 
-template <> class DVec<3>
+template <> class DVec<3, double>
 {
   CoefficientFunction * coef1;
   CoefficientFunction * coef2;
   CoefficientFunction * coef3;
 public:
-  DVec (CoefficientFunction * acoef1)
-    : coef1(acoef1), coef2(acoef1), coef3(acoef1) { ; }
+  typedef double TSCAL;
 
-  DVec (CoefficientFunction * acoef1,
-	CoefficientFunction * acoef2)
-    : coef1(acoef1), coef2(acoef2), coef3(acoef2) { ; }
-  
   DVec (CoefficientFunction * acoef1,
 	CoefficientFunction * acoef2,
 	CoefficientFunction * acoef3)
@@ -1094,6 +1183,8 @@ public:
     vec(2) = Evaluate (*coef3, sip);
   }  
 };
+*/
+
 
 
 
@@ -1130,12 +1221,37 @@ public:
 
 
 
+
+
+template <int N, typename T = double>  
+class DVecN
+{
+  CoefficientFunction * coef;
+public:
+  typedef T TSCAL;
+  DVecN (CoefficientFunction * acoef)
+    : coef(acoef) { ; }
+  
+  template <typename FEL, typename SIP, typename VEC>
+  void GenerateVector (const FEL & fel, const SIP & sip,
+		       VEC & vec, LocalHeap & lh) const
+  {
+    Vec<N> hv;
+    coef -> Evaluate (sip, hv);
+    for (int i = 0; i < N; i++)
+      vec(i) = hv(i);
+  }  
+};
+
+
+
 template <int N>
 class TVec
 {
   CoefficientFunction * coef;
 
 public:
+  typedef double TSCAL;
   TVec (CoefficientFunction * acoef) : coef(acoef) {;}
 
   
@@ -1148,7 +1264,7 @@ public:
 
     typedef typename VEC::TSCAL TSCAL;
     
-    double length = 0.;
+    TSCAL length = 0.;
     for(int i=0; i<N; i++)
       {
 	//vec(i) = sip.GetJacobian()(i,0);
@@ -2294,18 +2410,19 @@ class SourceIntegrator
   : public T_BIntegrator<DiffOpId<D>, DVec<1>, FEL>
 {
 public:
-  ///
   SourceIntegrator (CoefficientFunction * coeff);
-
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-  {
-    return new SourceIntegrator (coeffs[0]);
-  }
-
-  ///
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs);
   virtual string Name () const { return "Source"; }
 };
 
+template <int D, typename FEL = ScalarFiniteElement<D>  >
+class ComplexSourceIntegrator 
+  : public T_BIntegrator<DiffOpId<D>, DVec<1, Complex>, FEL>
+{
+public:
+  ComplexSourceIntegrator (CoefficientFunction * coeff);
+  virtual string Name () const { return "ComplexSource"; }
+};
 
 
 
@@ -2318,16 +2435,25 @@ public:
   ///
   NeumannIntegrator (CoefficientFunction * coeff);
 
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-  {
-    return new NeumannIntegrator (coeffs[0]);
-  }
-
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs);
   ///  
   virtual bool BoundaryForm () const { return 1; }
   ///
   virtual string Name () const { return "Neumann"; }
 };
+
+template <int D, typename FEL = ScalarFiniteElement<D-1>  >
+class ComplexNeumannIntegrator 
+  : public T_BIntegrator<DiffOpIdBoundary<D>, DVec<1, Complex>, FEL>
+{
+public:
+  ComplexNeumannIntegrator (CoefficientFunction * coeff);
+  virtual bool BoundaryForm () const { return 1; }
+  virtual string Name () const { return "ComplexNeumann"; }
+};
+
+
+
 
 
 /// integrator for \f$\int_\Gamma v_n \, ds\f$
@@ -2379,7 +2505,24 @@ public:
 
 
 
+template <int D, typename FEL = HCurlFiniteElement<D> >
+class SourceEdgeIntegratorN
+  : public T_BIntegrator<DiffOpIdEdge<D>, DVecN<D>, FEL>
+{
+public:
+  ///
+  SourceEdgeIntegratorN (CoefficientFunction * coeff)
+    : T_BIntegrator<DiffOpIdEdge<D>, DVecN<D>, FEL> 
+  (DVecN<D> (coeff))
+  { ; }
+  
+  ///
+  virtual string Name () const { return "SourceEdgeN"; }
+};
+
+
 ///
+    /*
 template <int D, typename FEL = HCurlFiniteElement<D> >
 class SourceEdgeIntegrator 
   : public T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL>
@@ -2401,8 +2544,11 @@ public:
 
   static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
+    if (coeffs.Size() == 1 && coeffs[0]->Dimension() == D)
+      return new SourceEdgeIntegratorN<D,FEL> (coeffs[0]); 
+
     if (D==2) 
-      return new SourceEdgeIntegrator<2,FEL> (coeffs[0],coeffs[1]); 
+      return new SourceEdgeIntegrator<2,FEL> (coeffs[0], coeffs[1]); 
     else
       return new SourceEdgeIntegrator<3,FEL> (coeffs[0], coeffs[1], coeffs[2]);
   }
@@ -2410,6 +2556,59 @@ public:
   ///
   virtual string Name () const { return "SourceEdge"; }
 };
+    */
+
+
+
+template <int D, typename FEL = HCurlFiniteElement<D> >
+class SourceEdgeIntegrator;
+
+template <int D, typename FEL = HCurlFiniteElement<D> >
+class BaseSourceEdgeIntegrator 
+  : public T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL>
+{
+public:
+  BaseSourceEdgeIntegrator (const DVec<D> & dvec)
+    : T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> (dvec) { ; }
+
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+  {
+    if (coeffs.Size() == 1 && coeffs[0]->Dimension() == D)
+      return new SourceEdgeIntegratorN<D,FEL> (coeffs[0]); 
+
+    if (D==2) 
+      return new SourceEdgeIntegrator<2,FEL> (coeffs[0], coeffs[1]); 
+    else
+      return new SourceEdgeIntegrator<3,FEL> (coeffs[0], coeffs[1], coeffs[2]);
+  }
+  
+  virtual string Name () const { return "SourceEdge"; }
+};
+
+
+template <typename FEL>
+class SourceEdgeIntegrator<2, FEL>
+  : public BaseSourceEdgeIntegrator<2,FEL> // T_BIntegrator<DiffOpIdEdge<2>, DVec<2>, FEL>
+{
+public:
+  SourceEdgeIntegrator (CoefficientFunction * coeff1,
+			CoefficientFunction * coeff2)
+    : BaseSourceEdgeIntegrator<2,FEL> (DVec<2> (coeff1, coeff2)) { ; }
+};
+
+template <typename FEL>
+class SourceEdgeIntegrator<3, FEL>
+  : public BaseSourceEdgeIntegrator<3,FEL>
+{
+public:
+  SourceEdgeIntegrator (CoefficientFunction * coeff1,
+			CoefficientFunction * coeff2,
+			CoefficientFunction * coeff3)
+    : BaseSourceEdgeIntegrator<3,FEL> (DVec<3> (coeff1, coeff2, coeff3)) { ; }
+};
+
+
+
 
 
 ///
@@ -2457,9 +2656,9 @@ public:
   static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     if (D == 3)
-      return new NeumannEdgeIntegrator (coeffs[0], coeffs[1], coeffs[2]);
+      return new NeumannEdgeIntegrator<3> (coeffs[0], coeffs[1], coeffs[2]);
     else
-      return new NeumannEdgeIntegrator (coeffs[0], coeffs[1]);
+      return new NeumannEdgeIntegrator<2> (coeffs[0], coeffs[1]);
   }
   
   ///

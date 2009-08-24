@@ -781,27 +781,19 @@ namespace ngfem
   //------------------------------------------------------------------------
 
   HDivHighOrderFE<ET_TRIG> :: HDivHighOrderFE (int aorder)
-  // : T_HDivHighOrderFiniteElement<ET_TRIG> ()>(ET_TRIG)
   {
     order_inner = INT<3>(aorder,0,0);
     for (int i = 0; i < 3; i++)
       order_edge[i] = aorder;
-
     ComputeNDof();
   }
 
   void HDivHighOrderFE<ET_TRIG> :: ComputeNDof()
   {
-    // ndof_edge =0;
-    ndof = 3; // Thomas-Raviart 
-    // if oder_edge < 1 --> Thomas Raviart
-    int i;
+    ndof = 3; 
 
-    for (i = 0; i < 3; i++)
-      {  
-	ndof += order_edge[i];
-	// ndof_edge += order_edge[i];
-      }
+    for (int i = 0; i < 3; i++)
+      ndof += order_edge[i];
     
     if (order_inner[0] > 1)
       { 
@@ -814,16 +806,13 @@ namespace ngfem
       }
 
     order = 0; // max(order_edges_normal,order_inner);
-    for (i = 0; i < 3; i++)
-      {
-	if (order_edge[i] > order)
-	  order = order_edge[i];
-      }
-
+    for (int i = 0; i < 3; i++)
+      if (order_edge[i] > order)
+	order = order_edge[i];
     if (order_inner[0] > order) 
       order = order_inner[0];
 
-    order++;
+    // order++;
   }
 
 
@@ -1262,7 +1251,8 @@ namespace ngfem
 
     INT<2> p = INT<2>(order_inner[0],order_inner[1]);
     int ni = ho_div_free ? 
-      p[0]*p[1] : 2*p[0]*p[1] + p[0] + p[1];
+      p[0]*p[1] : 
+      2*p[0]*p[1] + p[0] + p[1];
 
     ndof += ni; // 2*order_inner[0]*order_inner[1]+order_inner[0]+order_inner[1];
 
@@ -1316,7 +1306,6 @@ namespace ngfem
         dnums.SetSize(0); 
         return; 
       } 
-
    
     dnums.SetSize(0); 
     dnums.Append(fa);  
@@ -1327,8 +1316,6 @@ namespace ngfem
 
     for(int i = 0; i < order_edge[fa]; i++)  
       dnums.Append(ii+i); 
-   
-
   } 
   
 
