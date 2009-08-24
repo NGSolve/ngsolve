@@ -19,21 +19,47 @@ TEA_LOAD_TKCONFIG
 TEA_PUBLIC_TCL_HEADERS
 
 
-
+# OpenCASCADE configuration
 
 AC_ARG_ENABLE([occ], 
         [  --enable-occ            compile with OpenCascade geometry kernel],
-        [occon=true 
-        occfl="-DOCCGEOMETRY"
-        occlfl="-lTKernel -lTKGeomBase -lTKMath -lTKG2d -lTKG3d -lTKXSBase -lTKOffset -lTKFillet -lTKShHealing -lTKMesh -lTKMeshVS -lTKTopAlgo -lTKGeomAlgo -lTKBool -lTKPrim -lTKBO -lTKIGES -lTKBRep -lTKSTEPBase -lTKSTEP -lTKSTL -lTKSTEPAttr -lTKSTEP209 -lTKXDESTEP -lTKXDEIGES -lTKXCAF -lTKDCAF -lTKLCAF" ],
-        [occon=false] )
+        [occon=true])
 
 AC_ARG_WITH([occ], 
         [  --with-occ=dir          use OpenCascade installed in directory dir],
-        [occdir=$withval]
-        [occincfl="-I$withval/inc"]
-        [occlibfl="-L$withval/lib"],
+        [occdir=$withval] 
+	[occon=true],
+	[occdir=/opt/OpenCASCADE]
         )
+
+
+if test a$occon = atrue ; then
+
+	AC_SUBST([OCCFLAGS], ["-DOCCGEOMETRY -I$occdir/inc"])
+	AC_SUBST([OCCLIBS], ["-L$occdir/lib -lTKernel -lTKGeomBase -lTKMath -lTKG2d -lTKG3d -lTKXSBase -lTKOffset -lTKFillet -lTKShHealing -lTKMesh -lTKMeshVS -lTKTopAlgo -lTKGeomAlgo -lTKBool -lTKPrim -lTKBO -lTKIGES -lTKBRep -lTKSTEPBase -lTKSTEP -lTKSTL -lTKSTEPAttr -lTKSTEP209 -lTKXDESTEP -lTKXDEIGES -lTKXCAF -lTKLCAF -lFWOSPlugin"])
+
+#  -lTKDCAF
+
+
+	if test a$build_cpu = ax86_64 ; then
+		AC_SUBST([OCCFLAGS],["$OCCFLAGS -D_OCC64"])
+	fi
+
+
+	AC_CHECK_HEADER([iostream],[OCCFLAGS="$OCCFLAGS -DHAVE_IOSTREAM"])
+	AC_CHECK_HEADER([iostream.h],[OCC_FLAGS="$OCCFLAGS -DHAVE_IOSTREAM_H"])
+	AC_CHECK_HEADER([limits],[OCCFLAGS="$OCCFLAGS -DHAVE_LIMITS"])
+	AC_CHECK_HEADER([limits.h],[OCCFLAGS="$OCCFLAGS -DHAVE_LIMITS_H"])
+
+
+	echo "OCCFLAGS = $OCCFLAGS"
+	echo "OCCLIBS = $OCCLIBS"
+fi
+
+
+
+
+
 
 
 AC_ARG_WITH([togl], 
@@ -43,6 +69,7 @@ AC_ARG_WITH([togl],
         )
 #        [togllibfl="-L$(TK_BIN_DIR)/Togl1.7"]
 #        [togllibfl="-L/usr/local/lib/Togl1.7"]
+
 
 
 AC_ARG_ENABLE([nglib],
@@ -57,7 +84,6 @@ AC_ARG_ENABLE([parallel],
         AC_SUBST([MPI_LIBS], "-lmetis -L/opt/mpich/ch-p4/lib -lmpich")
         ]
         )       
-
 
 #        [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -DPARALLEL  -I/home/joachim/download/metis-4.0/Lib -DMETIS")
 #        AC_SUBST([MPI_LIBS], "-L/home/joachim/download/metis-4.0 -lmetis -L/opt/mpich/ch-p4/lib64 -lmpich")             
@@ -90,25 +116,17 @@ AC_PROG_LIBTOOL
 LT_INIT
 
 
-# AM_CONDITIONAL([OCC], [test x$occon = xtrue])
 AM_CONDITIONAL([NGLIB], [test x$nglibon = xtrue])
 
-# AC_SUBST([OCCFLAGS], [$occfl])
-AC_SUBST([OCCFLAGS], ["$occfl $occincfl"])
-AC_SUBST([OCCLIBS], ["$occlfl $occlibfl"])
 AC_SUBST([TOGLLIBDIR], ["$togllibfl"])
 
 AC_CHECK_HEADER(pthread.h)
 AC_CHECK_HEADER([togl.h])
 AC_CHECK_HEADER([GL/gl.h])
 
-AC_CHECK_HEADER([iostream],[OCCFLAGS="$OCCFLAGS -DHAVE_IOSTREAM"])
-AC_CHECK_HEADER([iostream.h],[OCC_FLAGS="$OCCFLAGS -DHAVE_IOSTREAM_H"])
-AC_CHECK_HEADER([limits],[OCCFLAGS="$OCCFLAGS -DHAVE_LIMITS"])
-AC_CHECK_HEADER([limits.h],[OCCFLAGS="$OCCFLAGS -DHAVE_LIMITS_H"])
-
 AC_CHECK_LIB(pthread, pthread_create)
-# AC_SEARCH_LIBS(Tcl_Init, [tcl8.5 tcl8.4])
+
+
 
 
 #--------------------------------------------------------------------
