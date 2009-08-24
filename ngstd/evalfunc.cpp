@@ -31,18 +31,14 @@ namespace ngstd
 
   EvalFunction :: EvalFunction (istream & aist) : eps(1e-14)
   {
-    ist = &aist;
-    ReadNext();
-    ParseExpression ();
+    Parse (aist);
   }
 
 
   EvalFunction :: EvalFunction (const string & str) : eps(1e-14)
   {
     stringstream strstr(str);
-    ist = &strstr;
-    ReadNext();
-    ParseExpression ();
+    Parse (strstr);
   }
 
   EvalFunction :: EvalFunction (const EvalFunction & eval2) : eps(1e-14)
@@ -64,54 +60,6 @@ namespace ngstd
     ParseExpression ();
   }
 
-  void EvalFunction :: AddConstant (double val)
-  {
-    step hstep;
-    hstep.op = CONSTANT;
-    hstep.operand.val = val;
-
-    program.Append (hstep);
-  }
-
-  void EvalFunction :: AddVariable (int varnum)
-  {
-    step hstep;
-    hstep.op = VARIABLE;
-    hstep.operand.varnum = varnum;
-
-    program.Append (hstep);
-  }
-
-  void EvalFunction :: AddGlobVariable (const double * aglobvar)
-  {
-    step hstep;
-    hstep.op = GLOBVAR;
-    hstep.operand.globvar = aglobvar;
-
-    program.Append (hstep);
-  }
-
-
-  void EvalFunction :: AddFunction (double (*fun) (double))
-  {
-    step hstep;
-    hstep.op = FUNCTION;
-    hstep.operand.fun = fun;
-
-    program.Append (hstep);
-  }
-
-
-
-  void EvalFunction :: AddOperation (EVAL_TOKEN op)
-  {
-    step hstep;
-    hstep.op = op;
-    hstep.operand.val = 0;
-
-    program.Append (hstep);
-  }
-
   double EvalFunction :: Eval (const double * x) const
   {
     double y;
@@ -119,18 +67,23 @@ namespace ngstd
     return y;
   }
 
+  complex<double> EvalFunction :: Eval (const complex<double> * x) const
+  {
+    complex<double> y;
+    Eval (x, &y, 1);
+    return y;
+  }
+
+
   void EvalFunction :: DefineConstant (const char * name, double val)
   {
-    //    cout << "evalfunc, def const " << name << " = " << val << endl;
     constants.Set (name, val);
   }
 
   void EvalFunction :: DefineGlobalVariable (const char * name, double * var)
   {
-    //    cout << "evalfunc, def const " << name << " = " << val << endl;
     globvariables.Set (name, var);
   }
-
 
   void EvalFunction :: Eval (const double * x, double * y, int ydim) const
   {
@@ -243,6 +196,9 @@ namespace ngstd
 	    stack[stacksize] = *program[i].operand.globvar;
 	    break;
 
+	  case IMAG:
+	    throw Exception ("Real Eval called for Complex EvalFunction");
+
 	  case FUNCTION:
 	    stack[stacksize] = (*program[i].operand.fun) (stack[stacksize]);
 	    break;
@@ -288,6 +244,8 @@ namespace ngstd
 	    stack[stacksize] = (stack[stacksize] >= 0) ? 1 : 0;
 	    break;
 	    
+	  case COMMA:
+	    break;
 	    /*
 	  case BESSELJ0:
 	    stack[stacksize] = bessj0 (stack[stacksize]);
@@ -320,17 +278,250 @@ namespace ngstd
 
 
 
+  void EvalFunction :: Eval (const complex<double> * x, complex<double> * y, int ydim) const
+  {
+    ArrayMem<complex<double>, 100> stack(program.Size());
+
+    int stacksize = -1;
+    for (int i = 0; i < program.Size(); i++)
+      {
+	switch (program[i].op)
+	  {
+	  case ADD:
+	    stack[stacksize-1] += stack[stacksize];
+	    stacksize--;
+	    break;
+
+	  case SUB:
+	    stack[stacksize-1] -= stack[stacksize];
+	    stacksize--;
+	    break;
+
+	  case MULT:
+	    stack[stacksize-1] *= stack[stacksize];
+	    stacksize--;
+	    break;
+
+	  case DIV:
+	    stack[stacksize-1] /= stack[stacksize];
+	    stacksize--;
+	    break;
+
+	  case NEG:
+	    stack[stacksize] = -stack[stacksize];
+	    break;
+
+	    /*
+	  case AND:
+	    if(stack[stacksize-1] > eps && stack[stacksize] > eps)
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+	    
+	  case OR:
+	    if(stack[stacksize-1] > eps || stack[stacksize] > eps)
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+	    
+	  case NOT:
+	    if(stack[stacksize] > eps)
+	      stack[stacksize] = 0;
+	    else
+	      stack[stacksize] = 1;
+	    break;
+
+	  case GREATER:
+	    if(stack[stacksize-1] > stack[stacksize])
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+
+	  case GREATEREQUAL:
+	    if(stack[stacksize-1] >= stack[stacksize])
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+
+	  case EQUAL:
+	    if(std::fabs(stack[stacksize-1] - stack[stacksize]) < eps)
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+
+	  case LESSEQUAL:
+	    if(stack[stacksize-1] <= stack[stacksize])
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+
+	  case LESS:
+	    if(stack[stacksize-1] < stack[stacksize])
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+	    */
+	  case CONSTANT:
+	    stacksize++;
+	    stack[stacksize] = program[i].operand.val;
+	    break;
+
+	  case VARIABLE:
+	    stacksize++;
+	    stack[stacksize] = x[program[i].operand.varnum];
+	    break;
+
+	  case GLOBVAR:
+	    stacksize++;
+	    stack[stacksize] = *program[i].operand.globvar;
+	    break;
+
+	  case IMAG:
+	    stacksize++;
+	    stack[stacksize] = complex<double> (0, 1);
+	    break;
+
+
+	    /*
+	  case FUNCTION:
+	    stack[stacksize] = (*program[i].operand.fun) (stack[stacksize]);
+	    break;
+	    */
+
+	  case SIN:
+	    stack[stacksize] = sin (stack[stacksize]);
+	    break;
+	  case COS:
+	    stack[stacksize] = cos (stack[stacksize]);
+	    break;
+	  case TAN:
+	    stack[stacksize] = tan (stack[stacksize]);
+	    break;
+	    /*
+	  case ATAN:
+	    stack[stacksize] = atan (stack[stacksize]);
+	    break;
+	  case ATAN2:
+	    stack[stacksize-1] = atan2(stack[stacksize-1],
+				       stack[stacksize]);
+	    stacksize--;
+	    break;
+	    */
+	  case EXP:
+	    stack[stacksize] = exp (stack[stacksize]);
+	    break;
+	  case LOG:
+	    stack[stacksize] = log (stack[stacksize]);
+	    break;
+	    /*
+	  case ABS:
+	    stack[stacksize] = std::fabs (stack[stacksize]);
+	    break;
+	    */
+	    /*
+	  case SIGN:
+	    if(stack[stacksize] > 0)
+	      stack[stacksize] = 1;
+	    else if(stack[stacksize] < 0)
+	      stack[stacksize] = -1;
+	    else
+	      stack[stacksize] = 0;
+	    break;
+	    */
+	  case SQRT:
+	    stack[stacksize] = sqrt (stack[stacksize]);
+	    break;
+	    /*
+	  case STEP:
+	    stack[stacksize] = (stack[stacksize] >= 0) ? 1 : 0;
+	    break;
+	    */
+	  case COMMA:
+	    break;
+	    /*
+	  case BESSELJ0:
+	    stack[stacksize] = bessj0 (stack[stacksize]);
+	    break;
+	  case BESSELJ1:
+	    stack[stacksize] = bessj1 (stack[stacksize]);
+	    break;
+	  case BESSELY0:
+	    stack[stacksize] = bessy0 (stack[stacksize]);
+	    break;
+	  case BESSELY1:
+	    stack[stacksize] = bessy1 (stack[stacksize]);
+	    break;
+	    */
+
+	  default:
+	    cerr << "undefined operation for EvalFunction" << endl;
+	  }
+      }
+
+    if (stacksize != ydim-1)
+      {
+	cout << "final stacksize not matching ydim" << endl;
+	return;
+      }
+
+    for (int i = 0; i < ydim; i++)
+      y[i] = stack[i];
+  }
+
+
+
+
+
+
+
+
   bool EvalFunction :: IsConstant () const
   {
     for (int i = 0; i < program.Size(); i++)
       {
 	EVAL_TOKEN op = program[i].op;
 
-	if (op == VARIABLE || op == GLOBVAR || op == COEFF_FUNC)
-	  return 0;
+	if (op == VARIABLE || op == GLOBVAR || op == COEFF_FUNC  || op == COMMA)
+	  return false;
       }
-    return 1;
+    return true;
   }
+
+  bool EvalFunction :: IsComplex () const
+  {
+    cout << "evalfunction::iscomplex:" << endl;
+    for (int i = 0; i < program.Size(); i++)
+      {
+	EVAL_TOKEN op = program[i].op;
+	if (op == IMAG) return true;
+      }
+    cout << "return false" << endl;
+    return false;
+  }
+
+  int EvalFunction :: Dimension() const
+  {
+    int dim = 1;
+    for (int i = 0; i < program.Size(); i++)
+      if (program[i].op == ',') dim++;
+
+    return dim;
+  }
+
 
   void EvalFunction :: Print (ostream & ost) const
   {
@@ -346,11 +537,32 @@ namespace ngstd
 
 
 
-  
-  
-
-
   void EvalFunction :: ParseExpression ()
+  {
+    ParseExpression2 ();
+
+    while (1)
+      {
+	//      cout << "parseexpr, goken = " << GetToken() << endl;
+	switch (GetToken())
+	  {
+	  case COMMA:
+	    {
+	      ReadNext();
+	      ParseExpression ();
+	      AddOperation (COMMA);
+	      break;
+	    }
+	  default:
+	    return;
+	  }
+      }
+  }
+
+
+
+
+  void EvalFunction :: ParseExpression2 ()
   {
     ParseSubExpression ();
 
@@ -514,6 +726,12 @@ namespace ngstd
 	  AddGlobVariable (globvar);
 	  break;
 	}
+      case IMAG:
+	{
+	  ReadNext();
+	  AddOperation (IMAG);
+	  break;
+	}
       case FUNCTION:
 	{
 	  ReadNext();
@@ -565,9 +783,10 @@ namespace ngstd
   void EvalFunction :: ReadNext ()
   {
     char ch;
-  
+
+    // skip whitespaces
     do
-      { // whitespaces ueberspringen
+      {
 	(*ist).get(ch);
 	if ((*ist).eof())
 	  {
@@ -586,7 +805,6 @@ namespace ngstd
       case ',':
 	{
 	  token = EVAL_TOKEN (ch);
-	  //	cout << "found token " << ch << endl;
 	  break;
 	}
       
@@ -596,7 +814,6 @@ namespace ngstd
 	    {
 	      (*ist).putback (ch);
 	      (*ist) >> num_value;
-	      //	    cout << "found constant " << num_value << endl;
 	      token = CONSTANT;
 	    }
 	  else
@@ -752,7 +969,11 @@ namespace ngstd
 		  return;
 		}
 
-
+	      if (strcmp (string_value, "I") == 0)
+		{
+		  token = IMAG;
+		  return;
+		}
 
 	      if (functions.Used (string_value))
 		{

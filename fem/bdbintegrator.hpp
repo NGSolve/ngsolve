@@ -206,30 +206,10 @@ public:
   enum { DIM_DMAT    = DIFFOP::DIM_DMAT };
   enum { DIM         = DIFFOP::DIM };
 
-
+  /*
   T_BDBIntegrator  (Array<CoefficientFunction*> & coeffs)
   : dmatop(coeffs)
   { ; }
-
-  /*
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-  {
-    return new T_BDBIntegrator (coeffs);
-    // return new TIntegrator (coeffs);
-  }
-  */
-
-  /*
-  // same in base-class
-  virtual void
-  AssembleLinearizedElementMatrix (const FiniteElement & fel, 
-				   const ElementTransformation & eltrans, 
-				   FlatVector<double> & elveclin,
-				   FlatMatrix<double> & elmat,
-				   LocalHeap & locheap) const 
-  {
-    AssembleElementMatrix (fel, eltrans, elmat, locheap);
-  }
   */
 
   ///
@@ -273,7 +253,6 @@ public:
 			  LocalHeap & lh) const
   {
     eldx.AssignMemory (DIM_DMAT, lh);
-    // FlatVec<DIM_DMAT> heldx(&eldx[0]);
     dmatop.Apply(dynamic_cast<const FEL&> (bfel),
 		 static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bsip),
 		 elx, eldx ,lh);
@@ -307,7 +286,6 @@ public:
 	const FEL & fel = static_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
         
-	// elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
 	elmat = 0;
 
 	FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, locheap);
@@ -316,10 +294,10 @@ public:
 
 	const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 
-	void * heapp = locheap.GetPointer();
-
 	for (int i = 0 ; i < ir.GetNIP(); i++)
 	  {
+	    HeapReset hr(locheap);
+
 	    SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
 	      sip(ir[i], eltrans, locheap);
 
@@ -331,8 +309,6 @@ public:
 	    
 	    dbmat = fac * (dmat * bmat);
 	    elmat += Trans (bmat) * dbmat; 
-	  
-	    locheap.CleanUp (heapp);
 	  } 
       }
 
@@ -424,11 +400,7 @@ public:
                       bbmat(i2*DIM_DMAT+k, l) = bmat(k,l);
                       bdbmat(i2*DIM_DMAT+k, l) = dbmat(k,l);
                     }
-                
-                // bbmat.VRange(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = bmat;
-                // bdbmat.VRange(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = dbmat;
               }
-            
             
             if (DMATOP::SYMMETRIC)
               // elmat += Symmetric (Trans (bdbmat) * bbmat);
@@ -441,9 +413,8 @@ public:
           {
             HeapReset hr(lh);
             
-            SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-              sip(ir[i], eltrans, pts[i], dxdxi[i]);
-            // sip(ir[i], eltrans, lh);
+            SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>
+	      sip(ir[i], eltrans, pts[i], dxdxi[i]);
             
             DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
             dmatop.GenerateMatrix (fel, sip, dmat, lh);
@@ -845,7 +816,7 @@ public:
   {
     const FEL & fel = dynamic_cast<const FEL&> (bfel);
     
-    flux.AssignMemory (DIM_DMAT, lh);
+    // flux.AssignMemory (DIM_DMAT, lh);
     if (applyd)
       {
 	Vec<DIM_DMAT,double> hv1;
@@ -872,7 +843,7 @@ public:
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = 
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
 
-    flux.AssignMemory (DIM_DMAT * m, lh);
+    // flux.AssignMemory (DIM_DMAT * m, lh);
 
     int ndof = fel.GetNDof();
     FlatMatrixFixHeight<DIM_DMAT> bmat (ndof * DIM, lh);
@@ -919,7 +890,7 @@ public:
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
 
     
-    flux.AssignMemory (DIM_DMAT, lh);
+    // flux.AssignMemory (DIM_DMAT, lh);
     if (applyd)
       {
 	Vec<DIM_DMAT,double> hv1;
@@ -942,20 +913,13 @@ public:
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    //cout << "cfb1" << endl;
     const FEL & fel = dynamic_cast<const FEL&> (bfel);
-    //cout << "cfb2" << endl;
-    flux.AssignMemory (DIM_DMAT, lh);
-    //cout << "cfb3" << endl;
+    // flux.AssignMemory (DIM_DMAT, lh);
     if (applyd)
       {
-	//cout << "cfb4" << endl;
 	Vec<DIM_DMAT,Complex> hv1;
-	//cout << "cfb5" << endl;
 	DIFFOP::Apply (fel, sip, elx, hv1, lh);
-	//cout << "cfb6" << endl;
 	dmatop.Apply (fel, sip, hv1, flux, lh);
-	//cout << "cfb7" << endl;
       }
     else
       {
@@ -975,7 +939,7 @@ public:
     const FEL & fel = dynamic_cast<const FEL&> (bfel);
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
-    flux.AssignMemory (DIM_DMAT, lh);
+    // flux.AssignMemory (DIM_DMAT, lh);
     if (applyd)
       {
 	Vec<DIM_DMAT,Complex> hv1;
@@ -1385,7 +1349,8 @@ public:
   enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
   enum { DIM_DMAT = DIFFOP::DIM_DMAT };
   enum { DIM = DIFFOP::DIM };
-  
+  typedef typename DVecOp::TSCAL TSCAL;
+
   ///
   T_BIntegrator (const DVecOp & advec)
     : dvecop(advec)
@@ -1395,6 +1360,14 @@ public:
   virtual ~T_BIntegrator ()
   { ; }
 
+  ///
+  virtual void CheckElement (const FiniteElement & el)
+  {
+    if (!dynamic_cast<const FEL*> (&el) )
+      throw Exception (string ("Element does not match integrator\n") +
+                       string ("element is ") + typeid(el).name() +
+                       string ("integrator is ") + Name());
+  }
 
   ///
   virtual bool BoundaryForm () const
@@ -1412,45 +1385,31 @@ public:
   virtual void
   AssembleElementVector (const FiniteElement & bfel,
 			 const ElementTransformation & eltrans, 
-			 FlatVector<double> & elvec,
+			 FlatVector<TSCAL> & elvec,
 			 LocalHeap & lh) const
   {
-   
     try
       {
-	if(!dynamic_cast<const FEL*>(&bfel))
-	  throw Exception("Integrator doesn't fit to element (space) type ");
-
 	const FEL & fel = static_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 	
-	// elvec.AssignMemory (ndof * DIM, lh);
 	elvec = 0;
 
-	FlatVector<double> hv(ndof * DIM, lh);
-	Vec<DIM_DMAT> dvec;
+	FlatVector<TSCAL> hv(ndof * DIM, lh);
+	Vec<DIM_DMAT, TSCAL> dvec;
 	
 	int order = IntegrationOrder (fel);
-
-	//(*testout) << "Integrator " << name << " order " << order << endl;
-
 	const IntegrationRule & ir = SelectIntegrationRule (fel.ElementType(), order);
 	
-
-        // FlatArray<Vec<DIM_ELEMENT> > refpts(ir.GetNIP(), lh);
         FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
         FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
-        /*
-        for (int i = 0; i < ir.GetNIP(); i++)
-          for (int j = 0; j < DIM_ELEMENT; j++)
-            refpts[i](j) = ir[i](j);
-        */
+
+
         eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
 
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
             HeapReset hr(lh);
-	    // SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, lh);
             SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, pts[i], dxdxi[i]); // , lh);
 
 	    dvecop.GenerateVector (fel, sip, dvec, lh);
@@ -1481,12 +1440,11 @@ public:
 
 
 
-
   virtual void
   AssembleElementVectorIndependent (const FiniteElement & gfel, 
 				    const BaseSpecificIntegrationPoint & s_sip,
 				    const BaseSpecificIntegrationPoint & g_sip,
-				    FlatVector<double> & elvec,
+				    FlatVector<TSCAL> & elvec,
 				    LocalHeap & locheap,
 				    const bool curveint = false) const
   {
@@ -1496,7 +1454,7 @@ public:
     elvec.AssignMemory (ndof * DIM, locheap);
     //elvec = 0;
 
-    Vec<DIM_DMAT> dvec;
+    Vec<DIM_DMAT, TSCAL> dvec;
 	
     const SpecificIntegrationPoint< DIM_SPACE, DIM_SPACE > & d_g_sip
       (static_cast<const SpecificIntegrationPoint< DIM_SPACE, DIM_SPACE > &>(g_sip));

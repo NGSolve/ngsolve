@@ -168,6 +168,8 @@ namespace ngsolve
       }
     else
       {
+	cout << "old style calcflux" << endl;
+	/*
 	gfflux->GetVector() = 0;
 	for (int k = 0; k < bfa->NumIntegrators(); k++)
 	  {
@@ -184,8 +186,94 @@ namespace ngsolve
 			*bfa->GetIntegrator(k),
 			applyd, 1, domain);
 	  }
+	*/
       }
   }
+
+
+
+
+
+  /* ***************************** Numproc CalcFlux ************************** */
+
+
+
+  ///
+  class NumProcSetValues : public NumProc
+  {
+  protected:
+    ///
+    GridFunction * gfu;
+    ///
+    CoefficientFunction * coef;
+  public:
+    ///
+    NumProcSetValues (PDE & apde, const Flags & flags)
+    : NumProc (apde)
+    {
+      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", NULL));
+      coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", NULL));
+    }
+
+    ///
+    virtual ~NumProcSetValues() { ; }
+
+    static NumProc * Create (PDE & pde, const Flags & flags)
+    {
+      return new NumProcSetValues (pde, flags);
+    }
+
+    static void PrintDoc (ostream & ost)
+    {
+      ost << 
+	"\n\nNumproc CalcFlux:\n"		\
+	"-----------------\n"				\
+	"Computes the natural flux of the bvp:\n\n"	\
+	"- Heat flux for thermic problems\n"		\
+	"- Stresses for mechanical problems\n"		\
+	"- Induction for magnetostatic problems\n\n"	\
+	"Required flags:\n" 
+	"-bilinearform=<bfname>\n" 
+	"    the first integrator for the bf computes the flux\n"	\
+	"-solution=<gfname>\n"						\
+	"    grid-function providing the primal solution field\n"	\
+	"-flux=<gfname>\n"						\
+	"    grid-function used for storing the flux (e.g., vector-valued L2)\n\n" \
+	"\nOptional flags:\n"						\
+	"-applyd   apply coefficient matrix (compute either strains or stresses, B-field or H-field,..\n" \
+	"-useall   use all integrators for computing the flux, and add up result\n" \
+	  << endl;
+    }
+    
+    ///
+    virtual void Do(LocalHeap & lh)
+    {
+      if (!gfu->GetFESpace().IsComplex())
+	SetValues (pde.GetMeshAccess(),
+		   *coef,
+		   dynamic_cast<S_GridFunction<double>&> (*gfu), 
+		   false, lh);
+      /*
+      else
+	SetValues (pde.GetMeshAccess(),
+		   *coef,
+		   dynamic_cast<S_GridFunction<Complex>&> (*gfu), 
+		   false, lh);
+      */
+    }
+
+    ///
+    virtual string GetClassName () const
+    {
+      return "SetValues";
+    }
+
+    virtual void PrintReport (ostream & ost)
+    {
+      ost << GetClassName() << endl
+	  << "Gridfunction-Out = " << gfu->GetName() << endl;
+    }
+  };
 
 
 
@@ -2835,6 +2923,7 @@ namespace ngsolve
     Init::Init()
     {
       GetNumProcs().AddNumProc ("calcflux", NumProcCalcFlux::Create, NumProcCalcFlux::PrintDoc);
+      GetNumProcs().AddNumProc ("setvalues", NumProcSetValues::Create, NumProcSetValues::PrintDoc);
       GetNumProcs().AddNumProc ("drawflux", NumProcDrawFlux::Create, NumProcDrawFlux::PrintDoc);
       GetNumProcs().AddNumProc ("evaluate", NumProcEvaluate::Create, NumProcEvaluate::PrintDoc);
       GetNumProcs().AddNumProc ("analyze", NumProcAnalyze::Create, NumProcAnalyze::PrintDoc);

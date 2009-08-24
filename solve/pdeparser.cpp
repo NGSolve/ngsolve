@@ -679,7 +679,7 @@ namespace ngsolve
 	      
 	      fun->Parse (*scan->scanin);
 	      if (fun->IsConstant())
-		val = fun->Eval (NULL);
+		val = fun->Eval ((double*)(0));
 	      else
 		scan->Error  ("Expression not constant");
 	    }
@@ -866,7 +866,7 @@ namespace ngsolve
 			 
 		  if(coeffs[index] == NULL) coeffs[index] = new EvalFunction(*fun);
 		  if(fun->IsConstant())
-		    dcoeffs[index] = fun->Eval(NULL);
+		    dcoeffs[index] = fun->Eval( (double*)(0));
 		  else
 		    only_constant = false;
 		}
@@ -1023,7 +1023,7 @@ namespace ngsolve
 			 
 		  if(coeffs[index] == NULL) coeffs[index] = new EvalFunction(*fun);
 		  if(fun->IsConstant())
-		    dcoeffs[index] = fun->Eval(NULL);
+		    dcoeffs[index] = fun->Eval( (double*)(0) );
 		  else
 		    only_constant = false;
 		}
@@ -1074,8 +1074,10 @@ namespace ngsolve
 		      fun->Parse (*scan->scanin);
 		      coeffs.Append (fun);
 		      if (fun->IsConstant())
-			dcoeffs.Append (fun->Eval (NULL));
+			dcoeffs.Append (fun->Eval ( (double*)(0) ));
 		      scan->ReadNext();
+
+		      // fun -> Print(cout);
 		    }
 		  else if (scan->GetToken() == LSB) // polynomial [MW]
 		    {
@@ -1445,13 +1447,17 @@ namespace ngsolve
 			      if (gf)
 				coeffs[i] = new GridFunctionCoefficientFunction (*gf);
 			      else
-				{
-				  throw Exception (string("undefined coefficient ") + scan->GetStringValue());
-				}
+				throw Exception (string("undefined coefficient ") + scan->GetStringValue());
 			    }
-			  
-			  
 			  scan->ReadNext();
+
+			  // for vector valued coefficient functions
+			  if (i == 0 &&
+			      coeffs[i]->Dimension() == info->numcoeffs)
+			    {
+			      coeffs.SetSize(1);
+			      break;
+			    }
 			}
 		    
 		      Flags partflags;

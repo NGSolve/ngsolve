@@ -20,134 +20,6 @@ namespace ngcomp
 {
   using namespace ngcomp;
 
-  template <class SCAL>
-  void CalcFlux (const MeshAccess & ma, 
-		 const S_GridFunction<SCAL> & u,
-		 S_GridFunction<SCAL> & flux,
-		 const BilinearFormIntegrator & bli,
-		 bool applyd, bool add,
-		 int domain)
-  {
-    throw Exception ("Nodal CalcFlux not supported anymore");
-
-#ifdef OLD
-    // cout << "calc flux, type = " << typeid(SCAL).name() << endl;
-
-    const FESpace & fes = u.GetFESpace();
-    const FESpace & fesflux = flux.GetFESpace();
-
-    bool bound = bli.BoundaryForm();
-
-    int ne      = bound ? ma.GetNSE() : ma.GetNE();
-    int dim     = fes.GetDimension();
-    int dimflux = fesflux.GetDimension();
-    int i, j;
-
-    ElementTransformation eltrans;
-
-    Array<int> dnums;
-    Array<int> dnumsflux;
-
-    LocalHeap lh (1000000);
-    
-    if (!add) flux.GetVector() = 0.0;
-
-    Array<int> cnti(flux.GetVector().Size());
-    cnti = 0;
-
-    for (i = 0; i < ne; i++)
-      {
-	lh.CleanUp();
-
-	int eldom = 
-	  bound ? ma.GetSElIndex(i) : ma.GetElIndex(i);
-	
-	if ((domain != -1) && (domain != eldom))
-	  continue;
-
-	const FiniteElement & fel = 
-	  bound ? fes.GetSFE(i, lh) : fes.GetFE (i, lh);
-
-	//const FiniteElement & felflux = 
-	//  bound ? fesflux.GetSFE(i, lh) : fesflux.GetFE (i, lh);
- 	const ScalarFiniteElement<DIM> & felflux = 
-	  dynamic_cast<const ScalarFiniteElement<DIM> &> 
- 	  (bound ? fesflux.GetSFE(i, lh) : fesflux.GetFE (i, lh));
-
-	if (bound)
-	  {
-	    ma.GetSurfaceElementTransformation (i, eltrans, lh);
-	    fes.GetSDofNrs (i, dnums);
-	    fesflux.GetSDofNrs (i, dnumsflux);
-	  }
-	else
-	  {
-	    ma.GetElementTransformation (i, eltrans, lh);
-	    fes.GetDofNrs (i, dnums);
-	    fesflux.GetDofNrs (i, dnumsflux);
-	  }
-
-	FlatVector<SCAL> elu(dnums.Size() * dim, lh);
-	FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
-	FlatVector<SCAL> fluxi(dimflux, lh);
-
-
-	u.GetElementVector (dnums, elu);
-	fes.TransformVec (i, bound, elu, TRANSFORM_SOL);
-
-	//	if (add)
-	flux.GetElementVector (dnumsflux, elflux);
-	/*
-	else
-	  elflux = 0;
-	*/
-	const IntegrationRule & ir = felflux.NodalIntegrationRule();
-	//const IntegrationRule & ir = 
-	//  GetIntegrationRules().SelectNodalIntegrationRule(fel.ElementType(), 2*felflux.Order());
-
-	for (j = 0; j < ir.GetNIP(); j++)
-	  {
-	    bli.CalcFlux (fel, eltrans, ir.GetIP(j), elu, fluxi, applyd, lh);
-	    for (int k = 0; k < dimflux; k++)
-	      elflux(dimflux*j+k) += fluxi(k);
-	  }
-	flux.SetElementVector (dnumsflux, elflux);
-	//	cout << " .... elem " << i << ", val: " << elflux << endl;
-	
-	for (j = 0; j < dnumsflux.Size(); j++)
-	  cnti[dnumsflux[j]]++;
-      }
-
-    if (!add)
-      {
-	FlatVector<SCAL> fluxi(dimflux, lh);
-	dnumsflux.SetSize(1);
-	for (i = 0; i < cnti.Size(); i++)
-	  if (cnti[i])
-	    {
-	      dnumsflux[0] = i;
-	      flux.GetElementVector (dnumsflux, fluxi);
-	      fluxi /= cnti[i];
-	      flux.SetElementVector (dnumsflux, fluxi);
-	    }
-      }
-#endif
-  }
-
-  template void CalcFlux<double> (const MeshAccess & ma, 
-                                  const S_GridFunction<double> & bu,
-                                  S_GridFunction<double> & bflux,
-                                  const BilinearFormIntegrator & bli,
-                                  bool applyd, bool add, int domain);
-  
-  template void CalcFlux<Complex> (const MeshAccess & ma, 
-                                   const S_GridFunction<Complex> & bu,
-                                   S_GridFunction<Complex> & bflux,
-                                   const BilinearFormIntegrator & bli,
-                                   bool applyd, bool add, int domain);
-  
-
-
 
 
   template <class SCAL>
@@ -239,13 +111,12 @@ namespace ngcomp
 	  fes.TransformVec (i, bound, elu, TRANSFORM_SOL);
 	  
 	  const IntegrationRule & ir = 
-	    GetIntegrationRules().SelectIntegrationRule(fel.ElementType(), max(fel.Order(),felflux.Order())*felflux.Order());
+	    GetIntegrationRules().SelectIntegrationRule(fel.ElementType(), max(fel.Order(),felflux.Order())+felflux.Order());
 	  elflux = 0;
-	  
-	  void * heapp2 = lh.GetPointer();
 	  
 	  for (int j = 0; j < ir.GetNIP(); j++)
 	    {
+	      HeapReset hr(lh);
 	      // bli.CalcFlux (fel, eltrans, ir.GetIP(j), elu, fluxi, applyd, lh);
 	      // fluxbli.ApplyBTrans (felflux, eltrans, ir.GetIP(j), fluxi, elfluxi, lh);
 	      double fac;
@@ -284,9 +155,7 @@ namespace ngcomp
 		    }
 		}
 	      
-	      
 	      elflux += fac * elfluxi;
-	      lh.CleanUp (heapp2);
 	    }
 	  
 	  if (dimflux > 1)
@@ -384,7 +253,6 @@ namespace ngcomp
 					  S_GridFunction<Complex> & bflux,
 					  const BilinearFormIntegrator & bli,
 					  bool applyd, int domain, LocalHeap & lh);
-
 
 
 
@@ -555,6 +423,207 @@ namespace ngcomp
 				       int component);
     
 
+
+
+
+
+
+
+
+  template <class SCAL>
+  void SetValues (const MeshAccess & ma, 
+		  const CoefficientFunction & coef,
+		  S_GridFunction<SCAL> & u,
+		  bool bound,
+		  LocalHeap & clh)
+  {
+    ma.PushStatus ("setvalues");
+
+    const FESpace & fes = u.GetFESpace();
+    // bool bound = bli.BoundaryForm();
+
+    int ne      = bound ? ma.GetNSE() : ma.GetNE();
+    int dim     = fes.GetDimension();
+
+    const BilinearFormIntegrator & bli =
+      bound ? (*fes.GetBoundaryEvaluator()) : (*fes.GetEvaluator());
+
+    Array<int> cnti(fes.GetNDof());
+    cnti = 0;
+
+    u.GetVector() = 0.0;
+
+    int cnt = 0;
+    clock_t prevtime = clock();
+
+#pragma omp parallel 
+    {
+      LocalHeap lh = clh.Split();
+      
+      ElementTransformation eltrans;
+      Array<int> dnums;
+
+#pragma omp for 
+      for (int i = 0; i < ne; i++)
+	{
+	  HeapReset hr(lh);
+#pragma omp critical(fluxprojetpercent)
+	  {
+	    cnt++;
+	    if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
+	      {
+		cout << "\rpostprocessing element " << cnt << "/" << ne << flush;
+		ma.SetThreadPercentage ( 100.0*cnt / ne );
+		prevtime = clock();
+	      }
+	  }
+
+	  // int eldom = 
+	  // bound ? ma.GetSElIndex(i) : ma.GetElIndex(i);
+	  
+	  const FiniteElement & fel = 
+	    bound ? fes.GetSFE(i, lh) : fes.GetFE (i, lh);
+	  
+	  if (bound)
+	    {
+	      ma.GetSurfaceElementTransformation (i, eltrans, lh);
+	      fes.GetSDofNrs (i, dnums);
+	    }
+	  else
+	    {
+	      ma.GetElementTransformation (i, eltrans, lh);
+	      fes.GetDofNrs (i, dnums);
+	    }
+	  
+	  FlatVector<SCAL> elflux(dnums.Size() * dim, lh);
+	  FlatVector<SCAL> elfluxi(dnums.Size() * dim, lh);
+	  FlatVector<SCAL> fluxi(dim, lh);
+	  
+	  const IntegrationRule & ir = 
+	    GetIntegrationRules().SelectIntegrationRule(fel.ElementType(), 2*fel.Order());
+	  elflux = 0;
+	  
+	  for (int j = 0; j < ir.GetNIP(); j++)
+	    {
+	      HeapReset hr(lh);
+
+	      double fac;
+	      if (!bound)
+		{
+		  if (fel.SpatialDim() == 2)
+		    {
+		      SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
+		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+		      coef.Evaluate (sip, fluxi);
+		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
+		    }
+		  else
+		    {
+		      SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
+		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+		      coef.Evaluate (sip, fluxi);
+		      // bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
+		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
+		    }
+		}
+	      else
+		{
+		  if (fel.SpatialDim() == 2)
+		    {
+		      SpecificIntegrationPoint<2,3> sip (ir.GetIP(j), eltrans, lh);
+		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+		      coef.Evaluate (sip, fluxi);
+		      // bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
+		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
+		    }
+		  else
+		    {
+		      SpecificIntegrationPoint<1,2> sip (ir.GetIP(j), eltrans, lh);
+		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+		      coef.Evaluate (sip, fluxi);
+		      // bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
+		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
+		    }
+		}
+	      
+	      elflux += fac * elfluxi;
+	    }
+	  
+	  /*
+	  if (dimflux > 1)
+	    {
+	      FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
+	      const BlockBilinearFormIntegrator & bbli = 
+		dynamic_cast<const BlockBilinearFormIntegrator&> (fluxbli);
+	      bbli . Block() . AssembleElementMatrix (felflux, eltrans, elmat, lh);
+	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+	      
+	      FlatVector<SCAL> hv1(dnumsflux.Size(), lh);
+	      FlatVector<SCAL> hv2(dnumsflux.Size(), lh);
+	      for (int j = 0; j < dimflux; j++)
+		{
+		  hv1 = elflux.Slice (j, dimflux);
+		  invelmat.Mult (hv1, hv2);
+		  elfluxi.Slice(j, dimflux) = hv2;
+		}
+	    }
+	  else
+	  */
+	    {
+	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
+	      bli.AssembleElementMatrix (fel, eltrans, elmat, lh);
+	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+	      invelmat.Mult (elflux, elfluxi);
+	    }
+	  
+	    fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
+	  
+	  
+#pragma omp critical(fluxprojetadd)
+	  {
+	    u.GetElementVector (dnums, elflux);
+	    elfluxi += elflux;
+	    u.SetElementVector (dnums, elfluxi);
+	    
+	    for (int j = 0; j < dnums.Size(); j++)
+	      cnti[dnums[j]]++;
+	  }
+	}
+    }
+
+    
+    cout << "\rpostprocessing element " << ne << "/" << ne << endl;
+
+
+    FlatVector<SCAL> fluxi(dim, clh);
+    Array<int> dnums(1);
+    for (int i = 0; i < cnti.Size(); i++)
+      if (cnti[i])
+	{
+	  dnums[0] = i;
+	  u.GetElementVector (dnums, fluxi);
+	  fluxi /= double (cnti[i]);
+	  u.SetElementVector (dnums, fluxi);
+	}
+    
+    ma.PopStatus ();
+  }
+
+
+
+  template void SetValues<double> (const MeshAccess & ma, 
+				   const CoefficientFunction & coef,
+				   S_GridFunction<double> & u,
+				   bool bound,
+				   LocalHeap & clh);
+
+  /*
+  template void SetValues<Complex> (const MeshAccess & ma, 
+				    const CoefficientFunction & coef,
+				    S_GridFunction<Complex> & u,
+				    bool bound,
+				    LocalHeap & clh);
+  */
 
 
   template <class SCAL>

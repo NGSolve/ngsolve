@@ -19,6 +19,8 @@ namespace ngfem
 
   using namespace ngfem;
 
+  template class SourceEdgeIntegrator<2>;
+  template class SourceEdgeIntegrator<3>;
 
   namespace maxwellint {
 

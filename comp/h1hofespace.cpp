@@ -1022,7 +1022,7 @@ namespace ngcomp
         break; 
 
       case 20:
-        cout << "Joachim's special" << endl;
+        cout << "VE + EF + I" << endl;
         ncnt = nv+ned;
         break;
 

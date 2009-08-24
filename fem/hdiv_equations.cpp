@@ -33,18 +33,30 @@ namespace ngfem
   DivSourceHDivIntegrator (CoefficientFunction * coeff)
     : T_BIntegrator<DiffOpDivHDiv<D>, DVec<1>, HDivFiniteElement<D> > (DVec<1> (coeff))
   { ; }
+
+
+  template <int D> 
+  Integrator * BaseSourceHDivIntegrator<D> ::
+  Create (Array<CoefficientFunction*> & coeffs)
+  {
+    if(D == 2)
+      return new SourceHDivIntegrator<2> (coeffs[0], coeffs[1]);
+    else if (D == 3)
+      return new SourceHDivIntegrator<3> (coeffs[0], coeffs[1], coeffs[2]);
+  }
+
   
-  template <int D> SourceHDivIntegrator<D> ::
+  SourceHDivIntegrator<3> ::
   SourceHDivIntegrator (CoefficientFunction * coeff1,
                         CoefficientFunction * coeff2,
                         CoefficientFunction * coeff3)
-    : T_BIntegrator<DiffOpIdHDiv<D>, DVec<D>, HDivFiniteElement<D> > (DVec<D> (coeff1, coeff2,coeff3))
+    : BaseSourceHDivIntegrator<3> (DVec<3> (coeff1, coeff2,coeff3))
   { ; }
   
-  template <int D> SourceHDivIntegrator<D> ::
+  SourceHDivIntegrator<2> ::
   SourceHDivIntegrator (CoefficientFunction * coeff1,
                         CoefficientFunction * coeff2)
-    : T_BIntegrator<DiffOpIdHDiv<D>, DVec<D>, HDivFiniteElement<D> > (DVec<D> (coeff1, coeff2))
+    : BaseSourceHDivIntegrator<2> (DVec<2> (coeff1, coeff2))
   { ; }
   
 

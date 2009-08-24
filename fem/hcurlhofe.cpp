@@ -187,12 +187,25 @@ namespace ngfem
       }
     else
       {
+	AutoDiff<DIM> adp[DIM];
+	
+	for (int i = 0; i < DIM; i++)
+	  adp[i].Value() = sip.IP()(i);
+	
+	for (int i = 0; i < DIM; i++)
+	  for (int j = 0; j < DIM; j++)
+	    adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
+
+	HCurlCurlShapeAssign<DIM> ds(curlshape); 
+	static_cast<const HCurlHighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
+	/*
         Mat<DIM> trans = (1.0/sip.GetJacobiDet()) * sip.GetJacobian();
         for (int i = 0; i < ndof; i++)
           {
             Vec<DIM> hs = curlshape.Row(i);
             curlshape.Row(i) = trans * hs;
           }
+	*/
       }
   }
 

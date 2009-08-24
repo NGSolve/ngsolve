@@ -39,6 +39,15 @@ namespace ngcomp
 
 
   template <class SCAL>
+  extern void SetValues (const MeshAccess & ma, 
+			 const CoefficientFunction & coef,
+			 S_GridFunction<SCAL> & u,
+			 bool bound,
+			 LocalHeap & clh);
+    
+
+
+  template <class SCAL>
   extern int CalcPointFlux (const MeshAccess & ma, 
 			    const GridFunction & u,
 			    const FlatVector<double> & point,

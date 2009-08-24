@@ -211,7 +211,7 @@ public:
   virtual string Name () const { return "DivSourceHDiv"; }
 };
 
-
+/*
 /// source term for H(div)
 template <int D>
 class SourceHDivIntegrator 
@@ -236,6 +236,60 @@ public:
   ///
   virtual string Name () const { return "SourceHDiv"; }
 };
+*/
+
+
+  template <int D> class SourceHDivIntegrator;
+
+
+template <int D>
+class BaseSourceHDivIntegrator 
+  : public T_BIntegrator<DiffOpIdHDiv<D>, DVec<D>, HDivFiniteElement<D> >
+{
+public:
+  BaseSourceHDivIntegrator(const DVec<D> & dvec)
+    : T_BIntegrator<DiffOpIdHDiv<D>, DVec<D>, HDivFiniteElement<D> > (dvec) { ; }
+
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs);
+  /*
+  {
+    if(D == 2)
+      return new SourceHDivIntegrator<2> (coeffs[0], coeffs[1]);
+    else if (D == 3)
+      return new SourceHDivIntegrator<3> (coeffs[0], coeffs[1], coeffs[2]);
+  }
+  */
+  ///
+  virtual string Name () const { return "SourceHDiv"; }
+};
+
+
+
+template <>
+class SourceHDivIntegrator<2>
+  : public BaseSourceHDivIntegrator<2> 
+{
+public:
+  SourceHDivIntegrator (CoefficientFunction * coeff1,
+                        CoefficientFunction * coeff2);
+};
+
+template <>
+class SourceHDivIntegrator<3>
+  : public BaseSourceHDivIntegrator<3> 
+{
+public:
+  SourceHDivIntegrator (CoefficientFunction * coeff1,
+                        CoefficientFunction * coeff2,
+                        CoefficientFunction * coeff3);
+};
+
+
+
+
+
+
+
 
 
 ///

@@ -28,7 +28,7 @@ class EvalFunction
     COMMA = ',',
     NEG = 100, 
     AND, OR, NOT, GREATER, LESS, GREATEREQUAL, LESSEQUAL, EQUAL,
-    CONSTANT, VARIABLE, FUNCTION, GLOBVAR, COEFF_FUNC, END, STRING,
+    CONSTANT, IMAG, VARIABLE, FUNCTION, GLOBVAR, COEFF_FUNC, END, STRING,
     SIN, COS, TAN, ATAN, ATAN2, EXP, LOG, ABS, SIGN, SQRT, STEP,
     BESSELJ0, BESSELY0, BESSELJ1, BESSELY1
   };
@@ -56,20 +56,40 @@ public:
   double Eval (const double * x = NULL) const;
   /// evaluate multi-value function
   void Eval (const double * x, double * y, int ydim) const;
+
+  /// evaluate function
+  complex<double> Eval (const complex<double> * x = NULL) const;
+  /// evaluate multi-value function
+  void Eval (const complex<double> * x, complex<double> * y, int ydim) const;
+
+  /// is expression complex valued ?
+  bool IsComplex () const;
+
   /// is expression a constant ?
   bool IsConstant () const;
 
-  /// push constant on stack. Used for external parser.
-  void AddConstant (double val);
-  /// push variable x[varnum-1]. Used for external parser.
-  void AddVariable (int varnum);
-  /// push pointer to global double value. Used for external parser.
-  void AddGlobVariable (const double * dp);
-  /// push operation. Used for external parser.
-  void AddOperation (EVAL_TOKEN op);
-  /// push function call. Used for external parser.
-  void AddFunction (double (*fun) (double));
+  /// vector dimension of result
+  int Dimension() const;
 
+  /// push constant on stack. 
+  void AddConstant (double val)
+  { program.Append (step (val)); }
+
+  /// push variable x[varnum-1].
+  void AddVariable (int varnum)
+  { program.Append (step(varnum)); }
+
+  /// push pointer to global double value.
+  void AddGlobVariable (const double * dp)
+  { program.Append (step(dp)); }
+
+  /// push operation. 
+  void AddOperation (EVAL_TOKEN op)
+  { program.Append (step(op)); }
+
+  /// push function call. 
+  void AddFunction (double (*fun) (double))
+  { program.Append (step(fun)); }
 
   /// print expression
   void Print (ostream & ost) const;
@@ -95,6 +115,39 @@ protected:
     }; 
     ///
     UNION_OP operand;
+
+
+    step () { ; }
+
+    step (EVAL_TOKEN hop)
+    { 
+      op = hop;
+      operand.val = 0;
+    }
+
+    step (double hval)
+    { 
+      op = CONSTANT;
+      operand.val = hval;
+    }
+
+    step (int varnum)
+    { 
+      op = VARIABLE;
+      operand.varnum = varnum;
+    }
+
+    step (const double * aglobvar)
+    { 
+      op = GLOBVAR;
+      operand.globvar = aglobvar;
+    }
+
+    step (double (*fun) (double))
+    {
+      op = FUNCTION;
+      operand.fun = fun;
+    }
   };
 
   /// the evaluation sequence
@@ -105,6 +158,8 @@ protected:
 
   /// parsing expression (standard parsing grammer)
   void ParseExpression ();
+  /// parsing expression (standard parsing grammer)
+  void ParseExpression2 ();
   /// parsing expression (standard parsing grammer)
   void ParseSubExpression ();
   /// parsing expression (standard parsing grammer)
