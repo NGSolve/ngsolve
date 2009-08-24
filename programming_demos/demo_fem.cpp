@@ -16,7 +16,7 @@
 
 // ng-soft header files
 #include <fem.hpp>
-#include <../fem/h1lofe.hpp>
+#include <../fem/h1hofe.hpp>
 
 
 using namespace std;
@@ -89,7 +89,8 @@ int main ()
   LocalHeap lh(10000);
 
   // reference finite element
-  FE_Trig1 trig;
+  // FE_Trig1 trig;
+  H1HighOrderFE<ET_TRIG> trig(2);
 
   // integrators for (\nabla u, \nabla v) and (u,v)
   ConstantCoefficientFunction coef(1);
@@ -101,7 +102,6 @@ int main ()
   ElementTransformation eltrans;
 
   eltrans.SetElement (&trig, 0, 0);
-  
 
   // vertex coordinates  
   double pts[3][2] = { { 0, 0 }, { 1, 0 }, { 0, 1 } };

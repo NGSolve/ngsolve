@@ -11,6 +11,7 @@
 #include <comp.hpp>
 #include <multigrid.hpp> 
 #include <parallelngs.hpp>
+#include "../fem/h1hofe.hpp"
 #include "../fem/h1hofefo.hpp"
 
 

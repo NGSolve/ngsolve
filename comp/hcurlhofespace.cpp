@@ -4,6 +4,7 @@
 */
 #include <comp.hpp>
 #include <fem.hpp> 
+#include <../fem/hcurlhofe.hpp> 
 #include <multigrid.hpp>
 
 #ifdef PARALLEL
@@ -112,7 +113,7 @@ namespace ngcomp
     loflags.SetFlag ("order", 1);
     loflags.SetFlag ("dim", dimension);
     if (iscomplex) loflags.SetFlag ("complex");
-    if (discontinuous) loflags.SetFlag ("complex");
+    if (discontinuous) loflags.SetFlag ("disontinuous");
     
 #ifndef PARALLEL
     low_order_space = new  NedelecFESpace (ma, loflags);
@@ -145,28 +146,8 @@ namespace ngcomp
 	  else
     */
 
-    
-    /*
-      trig = new HCurlHighOrderTrig<IntegratedLegendreMonomialExt> (order);
-      tet =  new HCurlHighOrderTet<IntegratedLegendreMonomialExt> (order);
-      prism =  new HCurlHighOrderPrism<IntegratedLegendreMonomialExt> (order);
-      quad = new HCurlHighOrderQuad<IntegratedLegendreMonomialExt> (order);
-      hex = new HCurlHighOrderHex<IntegratedLegendreMonomialExt> (order);
-      segm = new HCurlHighOrderSegm<IntegratedLegendreMonomialExt> (order); 
-      pyramid = new HCurlHighOrderPyr<IntegratedLegendreMonomialExt> (order);
-    
-      
-      dynamic_cast<HCurlHighOrderFiniteElement<1>*> (segm) -> SetAugmented (augmented);
-      dynamic_cast<HCurlHighOrderFiniteElement<2>*> (trig) -> SetAugmented (augmented);
-      dynamic_cast<HCurlHighOrderFiniteElement<3>*> (tet) -> SetAugmented (augmented);
-      dynamic_cast<HCurlHighOrderFiniteElement<3>*> (prism) -> SetAugmented (augmented);
-      dynamic_cast<HCurlHighOrderFiniteElement<2>*> (quad) -> SetAugmented (augmented);
-      dynamic_cast<HCurlHighOrderFiniteElement<3>*> (pyramid) -> SetAugmented (augmented);
-      dynamic_cast<HCurlHighOrderFiniteElement<3>*> (hex) -> SetAugmented (augmented);
-    */    
 
-
-    // Evaluator for shape tester 
+    // Evaluator 
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
@@ -194,15 +175,6 @@ namespace ngcomp
   FESpace * HCurlHighOrderFESpace :: 
   Create (const MeshAccess & ma, const Flags & flags)
   {
-    /*
-      int order = int(flags.GetNumFlag ("order", 0));
-      int dim = int(flags.GetNumFlag ("dim", 1));
-      bool iscomplex = flags.GetDefineFlag ("complex");
-
-      if (order <= 0)
-      return new NedelecFESpace (ma,0, dim, iscomplex);      // Space with MG   
-      else       
-    */
     return new HCurlHighOrderFESpace (ma, flags, true);
   }
   
@@ -249,7 +221,6 @@ namespace ngcomp
     int p = var_order ? 0 : order; 
     order_edge = p; 
     order_inner = INT<3> (p,p,p); 
-
 
  
    
@@ -396,63 +367,6 @@ namespace ngcomp
       if(!fine_face[i]) order_face[i] = INT<2> (0,0);  
 
 
-    /*
-      if (fast_pfem)
-      {
-      Array<int> pnums;
-      for(int i=0;i<order_face.Size();i++) 
-      {
-      ma.GetFacePNums(i,pnums);  
-      if(pnums.Size() == 4) order_face[i] = INT<2> (0,0);  
-      }
-      }
-    */
-
-
-    /*
-    // skip dofs on Dirichlet boundary hack [JS]
-    int nsel = ma.GetNE();
-    for (i = 0; i < nsel; i++)
-    {
-    ma.GetSElEdges (i, eledges);
-    int face = ma.GetSElFace (i);
-	  
-    for (j = 0; j < eledges.Size(); j++)
-    order_edge[eledges[j]] = 0;
-    order_face[face] = 0;
-    }
-    */
-
-    // for(i=0;i<ned;i++) order_edge[i] *= usegrad_edge[i]; 
-    
-    // pyramids 
-    /* 
-       for ( int i = 0; i < nel; i++)
-       { 
-       if (!DefinedOn (ma.GetElIndex(i))) continue;
-       ELEMENT_TYPE eltype=ma.GetElType(i); 
-       if(eltype == ET_PYRAMID)
-       {
-	    
-       const FACE * faces = ElementTopology::GetFaces (eltype);
-       const EDGE * edges = ElementTopology::GetEdges (eltype);
-
-       ma.GetElEdges (i, eledges);		
-       ma.GetElFaces(i, elfaces);
-
-       for(int j=0;j<8;j++)  
-       order_edge[eledges[j]] = order; 
-	    
-       for(int j=0;j<5;j++) order_face[elfaces[j]] = INT<2> (order,order); 
-	      
-	      
-	    
-       // order_inner[i] = INT<3>(0,0,0); 
-       order_inner[i] = INT<3>(order,order,order); 
-	    
-       }
-	
-       } */ 
 
     UpdateDofTables(); 
 
@@ -654,12 +568,8 @@ namespace ngcomp
       case ET_TRIG:    fe = new (lh) HCurlHighOrderFE<ET_TRIG> (); break;
       case ET_QUAD:    fe = new (lh) HCurlHighOrderFE<ET_QUAD> (); break;
       case ET_HEX:     fe = new (lh) HCurlHighOrderFE<ET_HEX> (); break; 
+
       default:
-        fe = 0;
-      }
-    
-    if (!fe)
-      {
 	stringstream str;
 	str << "HCurlHighOrderFESpace " << GetClassName() 
 	    << ", undefined eltype " 
@@ -667,6 +577,7 @@ namespace ngcomp
 	    << ", order = " << order << endl;
 	throw Exception (str.str());
       }
+    
 
     ArrayMem<int,12> vnums;
     ma.GetElVertices(elnr, vnums);
@@ -674,8 +585,9 @@ namespace ngcomp
     if(ma.GetDimension() == 2) 
       {	
 	HCurlHighOrderFiniteElement<2> * hofe = 
-	  dynamic_cast<HCurlHighOrderFiniteElement<2>*> (fe);
-	
+	  static_cast<HCurlHighOrderFiniteElement<2>*> (fe);
+
+               
     	ArrayMem<int, 4> ednums, ord_edge, ug_edge;
 	
 	ma.GetElEdges(elnr, ednums);
@@ -699,8 +611,6 @@ namespace ngcomp
 	hofe -> SetUsegradCell (usegrad_cell[elnr]);  // old style
         FlatArray<int> augf(1,&usegrad_cell[elnr]);
 	hofe -> SetUsegradFace (augf); 
-	// hofe -> SetAugmented(augmented);
-	// hofe -> SetOrderVertex (order_vert);
 	hofe -> ComputeNDof();
 
 #ifdef PARALLEL
@@ -710,51 +620,40 @@ namespace ngcomp
 #endif
 	hofe -> SetVertexNumbers (vnums);
       }   
+
     else if (ma.GetDimension() == 3) 
+
       {
+        Ng_Element ngel = ma.GetElement<3> (elnr);
+
 	HCurlHighOrderFiniteElement<3> * hofe = 
-	  dynamic_cast<HCurlHighOrderFiniteElement<3>*> (fe);
-
-	ArrayMem<int, 12> ednums, ord_edge, ug_edge;
-	ArrayMem<int, 6> fanums,  ug_face; 
-	ArrayMem<INT<2>, 6> ord_face; 
-	
-	ma.GetElEdges(elnr, ednums);
-	ma.GetElFaces(elnr, fanums);
-	
-	ord_edge.SetSize (ednums.Size());
-	ord_face.SetSize (fanums.Size());
-	ug_edge.SetSize (ednums.Size()); 
-	ug_face.SetSize (fanums.Size()); 
-	
-	for (int j = 0; j < ednums.Size(); j++)
-	  {
-	    ord_edge[j] = order_edge[ednums[j]];
-	    ug_edge[j] = usegrad_edge[ednums[j]]; 
-	  }
-	for (int j = 0; j < fanums.Size(); j++)
-	  {
-	    ord_face[j] = order_face[fanums[j]];
-	    ug_face[j] = usegrad_face[fanums[j]];
-	  }
-
-	hofe -> SetOrderEdge (ord_edge);
-	hofe -> SetOrderFace (ord_face);
-	hofe -> SetOrderCell (order_inner[elnr]);
-
-	hofe -> SetUsegradEdge (ug_edge); 
-	hofe -> SetUsegradFace (ug_face); 
-	hofe -> SetUsegradCell (usegrad_cell[elnr]); 
-
-	hofe -> ComputeNDof();
+	  static_cast<HCurlHighOrderFiniteElement<3>*> (fe);
 
 #ifdef PARALLEL
 	if ( ntasks > 1 )
 	for ( int i = 0; i < vnums.Size(); i++ )
 	  vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
 #endif
-	hofe -> SetVertexNumbers (vnums);
 
+        for (int i = 0; i < ngel.vertices.Size(); i++)
+          hofe -> SetVertexNumber (i, ngel.vertices[i]);
+        
+        for (int i = 0; i < ngel.edges.Size(); i++)
+          {
+            hofe -> SetOrderEdge (i, order_edge[ngel.edges[i]]);
+            hofe -> SetUseGradEdge (i, usegrad_edge[ngel.edges[i]]);
+          }
+
+        for (int i = 0; i < ngel.faces.Size(); i++)
+          {
+            hofe -> SetOrderFace (i, order_face[ngel.faces[i]]);
+            hofe -> SetUseGradFace (i, usegrad_face[ngel.faces[i]]);
+          }
+
+	hofe -> SetOrderCell (order_inner[elnr]);
+	hofe -> SetUsegradCell (usegrad_cell[elnr]); 
+
+	hofe -> ComputeNDof();
 	hofe -> SetDiscontinuous(discontinuous);
       }
 
@@ -991,10 +890,6 @@ namespace ngcomp
     gradientdomains = adoms;
   }
 
-  double InnerProduct (const Vec<3> & a, const Vec<3> & b)
-  {
-    return a(0)*b(0) + a(1)*b(1) + a(2)*b(2);
-  }
 
   void HCurlHighOrderFESpace ::
   SetGradientBoundaries (const BitArray & abnds)
@@ -2451,6 +2346,14 @@ namespace ngcomp
   }
 
 
+
+
+
+
+
+
+
+
 #ifdef PARALLEL
 
 
@@ -2904,11 +2807,9 @@ namespace ngcomp
   }
 #endif // PARALLEL
 
+
   // register FESpaces
-  namespace
-#ifdef MACOS
-  hcurlhofespace_cpp
-#endif
+  namespace hcurlhofespace_cpp
   {
     class Init
     { 
@@ -2922,7 +2823,5 @@ namespace ngcomp
     }
     
     Init init;
-
   }
-  
 }

@@ -26,20 +26,15 @@
 
 
 #include <fem.hpp>
-#include <h1lofe.hpp>
+#include "pml.hpp"
 
-// #include <solve.hpp>
-// extern ngstd::AutoPtr<ngsolve::PDE> pde;
 
 extern ngstd::SymbolTable<double> & GetConstantTable ();
 
 
 
-
 namespace ngfem
 {
-  // #include "pml.hpp"
-
 
   Complex alpha(0,1);
   double pml_r = 1;

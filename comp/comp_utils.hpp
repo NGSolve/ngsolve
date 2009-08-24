@@ -11,34 +11,7 @@
 
 namespace ngstd
 {
-
   /*
-  class IntRange : public Array<int>::AppendType<IntRange>
-  {
-    int first, next;
-  public: 
-    IntRange (int f, int n) : first(f), next(n) {;} 
-    int First() const { return first; }
-    int Next() const { return next; }
-  };
-
-  template <> template<>
-  inline int Array<int>::Append (const AppendType<IntRange> & atrange)
-  {
-    const IntRange & range = static_cast<const IntRange &> (atrange);
-
-    int oldsize = size;
-    int s = range.Next() - range.First();
-    
-    SetSize (oldsize+s);
-
-    for (int i = 0; i < s; i++)
-      data[oldsize+i] = range.First()+i;
-
-    return size;
-  }
-  */
-
   class IntRange
   {
     int first, next;
@@ -61,7 +34,7 @@ namespace ngstd
 
     return array;
   }
-  
+  */
 }
 
 

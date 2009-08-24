@@ -36,7 +36,7 @@ namespace ngcomp
     static FESpace * Create (const MeshAccess & ma, const Flags & flags);
 
     ///
-    virtual void Update();
+    virtual void Update(LocalHeap & lh);
 
     ///
     virtual int GetNDof () const;

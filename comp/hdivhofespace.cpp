@@ -17,6 +17,7 @@
 
 #include <comp.hpp>
 #include <fem.hpp>  
+#include <../fem/hdivhofe.hpp>  
 
 #ifdef PARALLEL
 #include <parallelngs.hpp>
@@ -54,11 +55,17 @@ namespace ngcomp
     if(parseflags) CheckFlags(flags);
 
     discont = flags.GetDefineFlag("discontinuous"); 
-    
-    if(!discont) 
-      low_order_space = 0; // new RaviartThomasFESpace (ma,dimension, iscomplex);
-    else 
-      low_order_space = 0; 
+
+
+    Flags loflags;
+    loflags.SetFlag ("order", 1);
+    loflags.SetFlag ("dim", dimension);
+    if (iscomplex) loflags.SetFlag ("complex");
+    if (discont) loflags.SetFlag ("discontinuous"); // supported ?
+
+    // low_order_space = new RaviartThomasFESpace (ma, loflags);
+    low_order_space = 0; 
+
 
     // #ifdef PARALLEL    
     //       low_order_space = new RaviartThomasFESpace (ma,dimension, iscomplex);
@@ -173,14 +180,12 @@ namespace ngcomp
   FESpace * HDivHighOrderFESpace ::
   Create (const MeshAccess & ma, const Flags & flags)
   {
-    int order=(int) flags.GetNumFlag("order",0);
-    
-    if (order < 0) // only for trigs and segm!!
+    int order = int (flags.GetNumFlag("order",0));
+
+    if (order < 0) 
       return new RaviartThomasFESpace (ma, flags, true);
-    // Space with MG
     else
-      return new   HDivHighOrderFESpace (ma, flags, true);
-    
+      return new HDivHighOrderFESpace (ma, flags, true);
   }
 
   void HDivHighOrderFESpace :: Update(LocalHeap & lh)
@@ -193,7 +198,6 @@ namespace ngcomp
     rel_curl_order= rel_order; 
     curl_order = order; 
 
-      
     if (low_order_space)
       low_order_space -> Update(lh);
     
@@ -502,38 +506,12 @@ namespace ngcomp
     
     switch (ma.GetElType(elnr))
       {
-      case ET_TET:
-	{ 
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderFE<ET_TET>)))  HDivHighOrderFE<ET_TET> (order);
-	  break;
-	}
-	/*
-          case ET_PYRAMID:
-          {
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderPyramidSZ<T_ORTHOPOL>)))  HDivHighOrderPyramidSZ<T_ORTHOPOL> (order);
-	  break;
-          }
-	*/
-      case ET_PRISM:
-	{
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderFE<ET_PRISM>)))  HDivHighOrderFE<ET_PRISM> (order);
-	  break;
-	}
-      case ET_HEX:
-	{
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderFE<ET_HEX>)))  HDivHighOrderFE<ET_HEX> (order);
-	  break;
-	}
-      case ET_TRIG:
-	{ 
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderFE<ET_TRIG>)))  HDivHighOrderFE<ET_TRIG> (order);
-	  break;
-	}
-      case ET_QUAD:
-	{
-	  fe = new (lh.Alloc (sizeof(HDivHighOrderFE<ET_QUAD>)))  HDivHighOrderFE<ET_QUAD> (order);
-	  break;
-	}
+      case ET_TET: fe = new (lh)  HDivHighOrderFE<ET_TET> (order); break;
+        // case ET_PYRAMID: fe = new (lh)  HDivHighOrderPyramid<ET_PYRAMID> (order);  break;
+      case ET_PRISM: fe = new (lh)  HDivHighOrderFE<ET_PRISM> (order); break;
+      case ET_HEX:   fe = new (lh)  HDivHighOrderFE<ET_HEX> (order); break;
+      case ET_TRIG:  fe = new (lh)  HDivHighOrderFE<ET_TRIG> (order); break;
+      case ET_QUAD:  fe = new (lh)  HDivHighOrderFE<ET_QUAD> (order); break;
       default:
 	fe = 0; 
       }
@@ -623,17 +601,14 @@ namespace ngcomp
     switch (ma.GetSElType(selnr))
       {
       case ET_SEGM:
-	fe = new (lh.Alloc (sizeof(HDivHighOrderNormalSegm<TrigExtensionMonomial>)))  
-	  HDivHighOrderNormalSegm<TrigExtensionMonomial> (porder);
-	break;
-      case ET_TRIG:
-	fe = new (lh.Alloc (sizeof(HDivHighOrderNormalTrig<TrigExtensionMonomial>)))  
-	  HDivHighOrderNormalTrig<TrigExtensionMonomial> (porder);
-	break; 
-      case ET_QUAD:
-	fe = new (lh.Alloc (sizeof(HDivHighOrderNormalQuad<TrigExtensionMonomial>)))  
-	  HDivHighOrderNormalQuad<TrigExtensionMonomial> (porder);
-	break; 
+        fe = new (lh) HDivHighOrderNormalSegm<TrigExtensionMonomial> (porder); 
+        break;
+      case ET_TRIG: 
+        fe = new (lh) HDivHighOrderNormalTrig<TrigExtensionMonomial> (porder); 
+        break; 
+      case ET_QUAD: 
+        fe = new (lh) HDivHighOrderNormalQuad<TrigExtensionMonomial> (porder); 
+        break; 
       default:
         throw Exception (string("HDivHighOrderFESpace::GetSFE: unsupported element ")+
                          ElementTopology::GetElementName(ma.GetSElType(selnr)));
@@ -1816,24 +1791,22 @@ namespace ngcomp
 #endif // PARALLEL
 
 
+  
   // register FESpaces
-  namespace
-#ifdef MACOS
-  hdivhofespace_cpp
-#endif
+  namespace hdivhofespace_cpp
   {
-
+    
     class Init
     {
     public:
       Init ();
     };
-
+    
     Init::Init()
     {
       GetFESpaceClasses().AddFESpace ("hdivho", HDivHighOrderFESpace::Create);
     }
-
+    
     Init init;
   }
   

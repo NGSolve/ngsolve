@@ -49,8 +49,8 @@ public:
   NumProcCouplingDemo (PDE & apde, const Flags & flags)
     : NumProc (apde)
   {
-    // in the input-file, you specify the bilinear-forms for the stiffness and for the mass-term
-    // like  "-linearform=f". Default arguments are 'f' and 'u'
+    // in the input-file, you specify the linear-form and the gridfunction as
+    // -linearform=f -gridfunction=u
 
     // we know that we work with real-valued gridfunctions:
     lff = dynamic_cast<S_LinearForm<double> *> 
@@ -122,11 +122,11 @@ public:
             // could use also other differential operators such as
             // DiffOpGradient<2>, DiffOpCurl<2>, ....
 
-
+ 
             Vec<1> fi;
             fi = ir[j].Weight() * fabs (sip.GetJacobiDet())  * ui;   // local math
 
-            DiffOpId<1>::ApplyTrans (felf, sip, fi, helf, lh);   // coefficient times test functions
+            DiffOpId<2>::ApplyTrans (felf, sip, fi, helf, lh);   // coefficient times test functions
             elf += helf;
           }
 

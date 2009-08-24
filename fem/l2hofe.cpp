@@ -5,24 +5,12 @@
 /*********************************************************************/
 
 
-
 #include <fem.hpp>
-
+#include <l2hofe.hpp>
 
 namespace ngfem
 {
   using namespace ngfem;
-
-  /*
-  template <int D>
-  L2HighOrderFiniteElement<D> ::   
-  L2HighOrderFiniteElement ()  // (ELEMENT_TYPE aeltype)
-    : ScalarFiniteElement<D> (ET_TRIG, -1, -1) 
-  { 
-    for (int i = 0; i < 8; i++)
-      vnums[i] = i;
-  }
-  */
 
   template <int D>
   void L2HighOrderFiniteElement<D> :: 
@@ -30,21 +18,7 @@ namespace ngfem
   {
     for (int i=0; i<avnums.Size(); i++)
       vnums[i] = avnums[i];
-    for (int i=avnums.Size(); i<8; i++)
-      vnums[i] = -1;
   }
-
-  /*
-  template <int D>
-  void L2HighOrderFiniteElement<D> :: 
-  SetVertexNumbers (FlatArray<int> & avnums, LocalHeap & lh)
-  {
-    for (int i=0; i<avnums.Size(); i++)
-      vnums[i] = avnums[i];
-    for (int i=avnums.Size(); i<8; i++)
-      vnums[i] = -1;
-  }
-  */
 
   template <int D>
   void L2HighOrderFiniteElement<D>::
@@ -134,7 +108,7 @@ namespace ngfem
 	ndof = ((order_inner[0]+1) * (order_inner[0]+2) * (order_inner[2]+1)) / 2; // P_k x Q_k
         break;
       case ET_PYRAMID:
-	cout << "pyramid not implemented" << endl;
+        ndof = (order_inner[0]+2)*(order_inner[0]+1)*(2*order_inner[0]+3) / 6; 
         break;
       case ET_HEX:
 	ndof = (order_inner[0]+1) * (order_inner[1]+1) * (order_inner[2]+1); 
@@ -157,9 +131,7 @@ namespace ngfem
   L2HighOrderFE<ET_SEGM> :: L2HighOrderFE (int aorder)
   {
     order_inner = INT<1> (aorder);
-    cout << "set order innter to " << order_inner << endl;
     ComputeNDof();
-    cout << "ndof = " << ndof << endl;
   }
 
 
@@ -273,23 +245,22 @@ namespace ngfem
     
     // no orientation necessary
     int n=order;
-   // double eps=0.0;
     ArrayMem<Tx, 20> polx(n+1), poly(n+1), polz(n+1);
-
-//     LegendrePolynomial (n, 2*x-(1+eps), polx);
-//     ScaledLegendrePolynomial (n, 2*y+x-(1+eps), (1+eps)-x, poly);
-//     ScaledLegendrePolynomial (n, 2*z+x+y-(1+eps), (1+eps)-x-y, polz);
     
-//     int ii = 0;
-//     for (int i = 0; i <= order; i++)
-//       for (int j = 0; j <= order-i; j++)
-//         for (int k = 0; k <= order-i-j; k++, ii++)
-//           for (int l=0; l<3; l++)
-//	      shape(ii++) = polx[i] * poly[j] * polz[k];
+    //     LegendrePolynomial (n, 2*x-1, polx);
+    //     ScaledLegendrePolynomial (n, 2*y+x-1, 1-x, poly);
+    //     ScaledLegendrePolynomial (n, 2*z+x+y-1, 1-x-y, polz);
+    
+    //     int ii = 0;
+    //     for (int i = 0; i <= order; i++)
+    //       for (int j = 0; j <= order-i; j++)
+    //         for (int k = 0; k <= order-i-j; k++, ii++)
+    //           for (int l=0; l<3; l++)
+    //	      shape(ii++) = polx[i] * poly[j] * polz[k];
 
-
-
-// Polynomials orthogonal w.r.t L2 inner product
+    
+    
+    // Polynomials orthogonal w.r.t L2 inner product
     ScaledLegendrePolynomial ( n, 2*x+y+z-1, 1-y-z, polx);
   
     int ii = 0;

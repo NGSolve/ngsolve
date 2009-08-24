@@ -34,6 +34,13 @@ public:
   HCurlHighOrderFiniteElement (ELEMENT_TYPE aeltype);
   HCurlHighOrderFiniteElement () { discontinuous = false; }
 
+  void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
+  void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
+  void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
+
+  void SetUseGradEdge(int nr, int uge) { usegrad_edge[nr] = uge; }
+  void SetUseGradFace(int nr, int ugf) { usegrad_face[nr] = ugf; }
+
   void SetVertexNumbers (FlatArray<int> & avnums);
   void SetOrderCell (int oi);
   void SetOrderCell (INT<3> oi);
@@ -55,7 +62,8 @@ template <ELEMENT_TYPE ET> class HCurlHighOrderFE;
 
 template <ELEMENT_TYPE ET>
 class T_HCurlHighOrderFiniteElement 
-  : public HCurlHighOrderFiniteElement<ET_trait<ET>::DIM>
+  : public HCurlHighOrderFiniteElement<ET_trait<ET>::DIM>, public ET_trait<ET> 
+
 {
 protected:
   enum { DIM = ET_trait<ET>::DIM };
@@ -78,6 +86,15 @@ protected:
   using HCurlHighOrderFiniteElement<DIM>::discontinuous;
 
 
+  using ET_trait<ET>::N_VERTEX;
+  using ET_trait<ET>::N_EDGE;
+  using ET_trait<ET>::N_FACE;
+  using ET_trait<ET>::FaceType;
+  using ET_trait<ET>::GetEdgeSort;
+  using ET_trait<ET>::GetFaceSort;
+  
+
+
   typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 
   // typedef TrigShapesInnerLegendre T_TRIGSHAPES;
@@ -87,34 +104,13 @@ public:
 
   T_HCurlHighOrderFiniteElement () 
   {
-    for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
+    for (int i = 0; i < N_VERTEX; i++)
       vnums[i] = i;
     dimspace = DIM;
     eltype = ET;
   }
 
-  T_HCurlHighOrderFiniteElement (int aorder) 
-  {
-    for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
-      order_edge[i] = aorder;
-    for (int i=0; i < ET_trait<ET>::N_FACE; i++) 
-      order_face[i] = INT<2> (aorder,aorder); 
-    if (DIM == 3)
-      order_cell = INT<3> (aorder,aorder,aorder);
-
-    for(int i = 0; i < ET_trait<ET>::N_EDGE; i++)
-      usegrad_edge[i] = 1;
-    for(int i=0; i < ET_trait<ET>::N_FACE; i++)
-      usegrad_face[i] = 1;
-    if (DIM == 3)
-      usegrad_cell = 1;
-
-    for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
-      vnums[i] = i;
-    dimspace = DIM;
-    eltype = ET;
-  }
-
+  T_HCurlHighOrderFiniteElement (int aorder);
 
   virtual void ComputeNDof();
   virtual void GetInternalDofs (Array<int> & idofs) const;

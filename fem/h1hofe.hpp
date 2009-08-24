@@ -33,8 +33,6 @@ namespace ngfem
 
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
 
-    virtual void GetDofs (Array<Dof> & dofs) const;
-
     void SetOrderCell (int oi)   { order_cell = INT<3> (oi,oi,oi); }
     void SetOrderCell (INT<3> oi)  { order_cell = oi; }
 
@@ -56,7 +54,9 @@ namespace ngfem
      Barton-Nackman base class for H1 - high order finite elements
   */
   template <ELEMENT_TYPE ET>
-  class T_H1HighOrderFiniteElement : public H1HighOrderFiniteElement<ET_trait<ET>::DIM> 
+  class T_H1HighOrderFiniteElement : 
+    public H1HighOrderFiniteElement<ET_trait<ET>::DIM>, 
+    public ET_trait<ET> 
   {
   protected:
     enum { DIM = ET_trait<ET>::DIM };
@@ -72,6 +72,12 @@ namespace ngfem
     using H1HighOrderFiniteElement<DIM>::order_cell;
 
 
+    using ET_trait<ET>::N_VERTEX;
+    using ET_trait<ET>::N_EDGE;
+    using ET_trait<ET>::N_FACE;
+    using ET_trait<ET>::FaceType;
+    using ET_trait<ET>::GetEdgeSort;
+    using ET_trait<ET>::GetFaceSort;
 
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 
@@ -82,10 +88,30 @@ namespace ngfem
 
     T_H1HighOrderFiniteElement () 
     {
-      for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
+      for (int i = 0; i < N_VERTEX; i++)
 	vnums[i] = i;
       eltype = ET;
     }
+
+    T_H1HighOrderFiniteElement (int aorder) 
+    {
+      eltype = ET;
+
+      for (int i = 0; i < N_VERTEX; i++)
+	vnums[i] = i;
+
+      for (int i = 0; i < N_EDGE; i++)
+        order_edge[i] = aorder;
+      for (int i = 0; i < N_FACE; i++)
+        order_face[i] = INT<2> (aorder,aorder);
+      if (DIM == 3)
+        order_cell = INT<3> (aorder,aorder,aorder);
+      
+      order = aorder;
+    }
+
+
+    virtual void GetDofs (Array<Dof> & dofs) const;
 
     virtual void ComputeNDof();
     virtual void GetInternalDofs (Array<int> & idofs) const;
@@ -119,7 +145,10 @@ namespace ngfem
   {
   public:
     H1HighOrderFE () { ; }
-    H1HighOrderFE (int aorder);
+
+    H1HighOrderFE (int aorder)
+    : T_H1HighOrderFiniteElement<ET_SEGM> (aorder) 
+    { ndof = (order+1); }
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx x[1], TFA & shape) const; 
@@ -134,7 +163,10 @@ namespace ngfem
   {
   public:
     H1HighOrderFE () { ; }
-    H1HighOrderFE (int aorder);
+
+    H1HighOrderFE (int aorder)
+    : T_H1HighOrderFiniteElement<ET_TRIG> (aorder) 
+    { ndof = (order+1)*(order+2)/2; }
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx x[2], TFA & shape) const; 
@@ -149,7 +181,10 @@ namespace ngfem
   {
   public:
     H1HighOrderFE () { ; }
-    H1HighOrderFE (int aorder);
+
+    H1HighOrderFE (int aorder)
+    : T_H1HighOrderFiniteElement<ET_QUAD> (aorder) 
+    { ndof = (order+1)*(order+1); }
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx x[2], TFA & shape) const; 
@@ -171,7 +206,10 @@ namespace ngfem
 
   public:
     H1HighOrderFE () { ; }
-    H1HighOrderFE (int aorder);
+
+    H1HighOrderFE (int aorder)
+      : T_H1HighOrderFiniteElement<ET_TET> (aorder) 
+    { ndof = (order+1)*(order+2)*(order+3)/6; }
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[3], TFA & shape) const; 
@@ -190,7 +228,10 @@ namespace ngfem
 
   public:
     H1HighOrderFE () { ; }
-    H1HighOrderFE (int aorder);
+
+    H1HighOrderFE (int aorder)
+      : T_H1HighOrderFiniteElement<ET_PRISM> (aorder) 
+    { ndof = (order+1)*(order+2)*(order+1)/2; }
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[3], TFA & shape) const; 
@@ -206,7 +247,10 @@ namespace ngfem
   {
   public:
     H1HighOrderFE () { ; }
-    H1HighOrderFE (int aorder);
+
+    H1HighOrderFE (int aorder)
+      : T_H1HighOrderFiniteElement<ET_HEX> (aorder) 
+    { ndof = (order+1)*(order+1)*(order+1); }
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[3], TFA & shape) const; 
@@ -223,7 +267,10 @@ namespace ngfem
 
   public:
     H1HighOrderFE () { ; }
-    H1HighOrderFE (int aorder);
+
+    H1HighOrderFE (int aorder)
+      : T_H1HighOrderFiniteElement<ET_PYRAMID> (aorder) 
+    { ndof = (order+2)*(order+1)*(2*order+3) / 6; }
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[3], TFA & shape) const; 
