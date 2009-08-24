@@ -5,7 +5,8 @@
 using namespace std;
 namespace netgen
 {
-  
+
+#ifdef OLD  
   NgMutex mem_mutex;
   
   size_t BaseMoveableMem::totalsize = 0; // 500000000;
@@ -266,5 +267,6 @@ namespace netgen
     cout << " used  = " << used << endl;
     //  cout << "******************************************************" << endl;
   }
+#endif
 
 }

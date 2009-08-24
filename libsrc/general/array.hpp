@@ -422,14 +422,13 @@ public:
 
 
 
-
 ///
 template <class T, int BASE = 0> 
 class MoveableArray 
 {
   int size;
   int allocsize;
-  MoveableMem<T> data;
+  DynamicMem<T> data;
 
 public:
 
@@ -576,6 +575,7 @@ inline ostream & operator<< (ostream & ost, MoveableArray<T> & a)
     ost << i << ": " << a[i] << endl;
   return ost;
 }
+
 
 
 /// bubble sort array

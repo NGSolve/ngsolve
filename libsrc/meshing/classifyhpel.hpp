@@ -731,15 +731,17 @@ HPREF_ELEMENT_TYPE ClassifyTrig(HPRefElement & el, INDEX_2_HASHTABLE<int> & edge
 		{	  
 		  i2.Sort();  
 		  if(surf_edges.Used(i2) && surf_edges.Get(i2) != fd.SurfNr()+1)  // edge not face_edge acc. to surface in which trig lies
-		    if(face_edges.Get(i2)==-1 ||face_edges.Get(i2) == fd.DomainIn() || face_edges.Get(i2) == fd.DomainOut() )
-		      { 
-			edge_sing[k]=1;
-		      } 
-		    else
-		      { 
-			point_sing[ep1-1] = 0; // set to edge_point 
-			point_sing[ep2-1] = 0; // set to edge_point
-		      } 
+		    {
+		      if(face_edges.Get(i2)==-1 ||face_edges.Get(i2) == fd.DomainIn() || face_edges.Get(i2) == fd.DomainOut() )
+			{ 
+			  edge_sing[k]=1;
+			} 
+		      else
+			{ 
+			  point_sing[ep1-1] = 0; // set to edge_point 
+			  point_sing[ep2-1] = 0; // set to edge_point
+			} 
+		    }
 		}
 	      
 	      /*  *testout << " pointsing NACH edges UND FACEEDGES UMSETZEN ... " ; 

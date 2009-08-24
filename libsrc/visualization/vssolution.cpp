@@ -14,9 +14,7 @@
 
 namespace netgen
 {
-
   extern AutoPtr<Mesh> mesh;
-
   extern VisualSceneMesh vsmesh;
 
 
@@ -52,7 +50,6 @@ namespace netgen
     isolinelist = 0;
     clipplane_isolinelist = 0;
     surface_vector_list = 0;
-    // cone_list = 0;
     isosurface_list = 0;
 
     fieldlineslist = 0;
@@ -360,8 +357,8 @@ namespace netgen
         return;
       }
 
-    static NgLock mem_lock(mem_mutex);
-    mem_lock.Lock();
+    // static NgLock mem_lock(mem_mutex);
+    // mem_lock.Lock();
 
     NgLock meshlock1 (mesh->MajorMutex(), true);
     NgLock meshlock (mesh->Mutex(), true);
@@ -511,7 +508,7 @@ namespace netgen
 
     
     // delete lock;
-    mem_lock.UnLock();
+    // mem_lock.UnLock();
 
     endtime = clock();
     //    cout << 1.0 / (double(endtime - starttime)/CLOCKS_PER_SEC) << " frames/sec" << endl;
@@ -1087,7 +1084,7 @@ namespace netgen
     Vec<3> nvs[1100];
     double values[1100];
     double mvalues[11000];
-    double valuesc[1100][2];
+    complex<double> valuesc[11000];
 
     
     int nse = mesh->GetNSE();
@@ -1127,7 +1124,7 @@ namespace netgen
 
         if ( el.GetType() == QUAD || el.GetType() == QUAD6 )
           {
-            bool curved = curv.IsSurfaceElementCurved(sei);
+            bool curved = curv.IsSurfaceElementCurved (sei);
 
             Point<3> lpi[4];
             Vec<3> vx, vy, vtwist;
@@ -1145,8 +1142,6 @@ namespace netgen
             //             Vec<3> nv = Cross (lpi[1]-lpi[0], Center (lpi[2],lpi[3]) - lpi[0]);
             //             nv.Normalize();
             //             glNormal3dv (nv);
-
-
 
             for (int iy = 0, ii = 0; iy <= n; iy++)
               for (int ix = 0; ix <= n; ix++, ii++)
@@ -1185,7 +1180,7 @@ namespace netgen
               {
                 if (usetexture == 2)
                   for (int ii = 0; ii < npt; ii++)
-                    drawelem = GetSurfValueComplex (sol, sei, pref[ii](0), pref[ii](1), scalcomp, valuesc[ii][0], valuesc[ii][1]);
+                    drawelem = GetSurfValueComplex (sol, sei, pref[ii](0), pref[ii](1), scalcomp, valuesc[ii].real(), valuesc[ii].imag());
                 else
                   for (int ii = 0; ii < npt; ii++)
                     drawelem = GetSurfValue (sol, sei, pref[ii](0), pref[ii](1), scalcomp, values[ii]);
@@ -1219,8 +1214,8 @@ namespace netgen
                           if (usetexture != 2)
                             SetOpenGlColor  (values[index[j]]);
                           else
-                            glTexCoord2f ( valuesc[index[j]][0],
-                                           valuesc[index[j]][1] );
+                            glTexCoord2f ( valuesc[index[j]].real(),
+                                           valuesc[index[j]].imag() );
                         }
                       else
                         glColor3fv (col_grey);
@@ -1253,75 +1248,26 @@ namespace netgen
       {
         const Element2d & el = (*mesh)[sei];
 
-#ifdef PARALLEL
-	// parallel visualization --> dont draw ghost elements
 	if ( el . IsGhost() ) continue;
-#endif
 
-        // if ( mesh->GetFaceDescriptor(el.GetIndex()).BCProperty() != 1) continue;
-        
-
-        if(vispar.drawdomainsurf > 0 &&
-           ((mesh->GetDimension() == 3 && 
-             vispar.drawdomainsurf != mesh->GetFaceDescriptor(el.GetIndex()).DomainIn() &&
-             vispar.drawdomainsurf != mesh->GetFaceDescriptor(el.GetIndex()).DomainOut()) ||
-            (mesh->GetDimension() == 2 && el.GetIndex() != vispar.drawdomainsurf))) continue;
-        
+        if(vispar.drawdomainsurf > 0)
+	  {
+	    if (mesh->GetDimension() == 3)
+	      {
+		if (vispar.drawdomainsurf != mesh->GetFaceDescriptor(el.GetIndex()).DomainIn() &&
+		    vispar.drawdomainsurf != mesh->GetFaceDescriptor(el.GetIndex()).DomainOut())
+		  continue;
+	      }
+	    else
+	      {
+		if (el.GetIndex() != vispar.drawdomainsurf)
+		  continue;
+	      }
+	  }
         
         if ( el.GetType() == TRIG || el.GetType() == TRIG6 )
           {
-            bool curved = curv.IsHighOrder(); //  && curv.IsSurfaceElementCurved(sei);
-            // if (el.GetType() == TRIG6) curved = true;
-
-            Point<3> p1, p2, p3;
-            Mat<3,2> dxdxi;
-
-            if (! curved)
-              {
-                GetPointDeformation (el[0]-1, p1, sei);
-                GetPointDeformation (el[1]-1, p2, sei);
-                GetPointDeformation (el[2]-1, p3, sei);
-
-                for (int i = 0; i < 3; i++)
-                  {
-                    dxdxi(i, 0) = p1(i)-p3(i);
-                    dxdxi(i, 1) = p2(i)-p3(i);
-                  }
-              }
-            
-
-            /*
-            for (int iy = 0, ii = 0; iy <= n; iy++)
-              for (int ix = 0; ix <= n-iy; ix++, ii++)
-                {
-                  Point<2> pref(ix*invn,iy*invn);
-                  if (curved)
-                    {
-                      mesh->GetCurvedElements().
-                        CalcSurfaceTransformation (pref, sei, points[ii], dxdxi);
-                    }
-                  else
-                    {
-                      points[ii] = p3 + (invn*ix) * (p1-p3) + (invn*iy) * (p2-p3);
-                    }
-                  
-                  nvs[ii] = Cross (dxdxi.Col(0), dxdxi.Col(1));
-                  nvs[ii].Normalize();
-
-                  if (sol && sol->draw_surface) 
-                    {
-                      if (usetexture == 2)
-                        drawelem = GetSurfValueComplex (sol, sei, ix*invn, iy*invn, scalcomp, 
-                                                        valuesc[ii][0], valuesc[ii][1]);
-                      else
-                        drawelem = GetSurfValue (sol, sei, pref, points[ii], &dxdxi(0,0), scalcomp, values[ii]);
-                    }
-                  
-                  if (deform)
-                    points[ii] += GetSurfDeformation (sei, invn*ix, invn*iy);
-                }
-            */
-
+	    bool curved = curv.IsSurfaceElementCurved(sei);
 
             for (int iy = 0, ii = 0; iy <= n; iy++)
               for (int ix = 0; ix <= n-iy; ix++, ii++)
@@ -1338,14 +1284,15 @@ namespace netgen
               }
             else
               {
-                Vec<3> vx = (p1-p3);
-                Vec<3> vy = (p2-p3);
+		Point<3> p1 = mesh->Point (el[0]);
+		Point<3> p2 = mesh->Point (el[1]);
+		Point<3> p3 = mesh->Point (el[2]);
+
+                Vec<3> vx = p1-p3;
+                Vec<3> vy = p2-p3;
                 for (int ii = 0; ii < npt; ii++)
                   {
-                    double x = pref[ii](0);
-                    double y = pref[ii](1);
-                    points[ii] = p3 + x * vx + y * vy;
-
+                    points[ii] = p3 + pref[ii](0) * vx + pref[ii](1) * vy;
                     for (int j = 0; j < 3; j++)
                       {
                         dxdxis[ii](j,0) = vx(j);
@@ -1361,30 +1308,23 @@ namespace netgen
             bool drawelem = false;
             if (sol && sol->draw_surface) 
               {
+		drawelem = GetMultiSurfValues (sol, sei, npt, 
+					       &pref[0](0), &pref[1](0)-&pref[0](0),
+					       &points[0](0), &points[1](0)-&points[0](0),
+					       &dxdxis[0](0), &dxdxis[1](0)-&dxdxis[0](0),
+					       &mvalues[0], sol->components);
+		
                 if (usetexture == 2)
-                  for (int ii = 0; ii < npt; ii++)
-                    drawelem = GetSurfValueComplex (sol, sei, pref[ii](0), pref[ii](1), scalcomp, valuesc[ii][0], valuesc[ii][1]);
+		  for (int ii = 0; ii < npt; ii++)
+		    valuesc[ii] = ExtractValueComplex(sol, scalcomp, mvalues+ii*sol->components);
                 else
-                  {
-                    // for (int ii = 0; ii < npt; ii++)
-                    // drawelem = GetSurfValue (sol, sei, &pref[ii](0), &points[ii](0), &dxdxis[ii](0), scalcomp, values[ii]);
-
-                    drawelem = GetMultiSurfValues (sol, sei, npt, 
-                                                   &pref[0](0), &pref[1](0)-&pref[0](0),
-                                                   &points[0](0), &points[1](0)-&points[0](0),
-                                                   &dxdxis[0](0), &dxdxis[1](0)-&dxdxis[0](0),
-                                                   &mvalues[0], sol->components);
-                    
-                    for (int ii = 0; ii < npt; ii++)
-                      values[ii] = ExtractValue(sol, scalcomp, mvalues+ii*sol->components);
-                  }
+		  for (int ii = 0; ii < npt; ii++)
+		    values[ii] = ExtractValue(sol, scalcomp, mvalues+ii*sol->components);
               }
             
             if (deform)
               for (int ii = 0; ii < npt; ii++)
                 points[ii] += GetSurfDeformation (sei, pref[ii](0), pref[ii](1));
-
-
 
             int save_usetexture = usetexture;
             if (!drawelem)
@@ -1407,7 +1347,7 @@ namespace netgen
                           if (usetexture != 2)
                             SetOpenGlColor (values[hi]); 
                           else
-                            glTexCoord2f ( valuesc[hi][0], valuesc[hi][1] );
+                            glTexCoord2f ( valuesc[hi].real(), valuesc[hi].imag() );
                         }
                       else
                         glColor3fv (col_grey);
@@ -1444,6 +1384,16 @@ namespace netgen
 
     CurvedElements & curv = mesh->GetCurvedElements();
 
+    int n = 1 << subdivisions;
+    ArrayMem<Point<2>, 65> ptsloc(n+1);
+    ArrayMem<Point<3>, 65> ptsglob(n+1);
+
+    double trigpts[3][2] = { { 0, 0 }, { 1, 0 }, { 0, 1} };
+    double trigvecs[3][2] = { { 1, 0 }, { -1,1 }, { 0, -1} };
+
+    double quadpts[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1} };
+    double quadvecs[4][2] = { { 1, 0 }, { 0, 1 }, { -1, 0}, { 0, -1} };
+
     for (SurfaceElementIndex sei = 0; sei < nse; sei++)
       {
         Element2d & el = (*mesh)[sei];
@@ -1463,56 +1413,25 @@ namespace netgen
             if (nv == 4) p4 = (*mesh)[el[3]];
           }
 
-        int n = 1 << subdivisions;
-
         for (int k = 0; k < nv; k++)
           {
-            Point<2> p0 = 0.0;
-            Vec<2> vtau = 0.0;
+            Point<2> p0;
+            Vec<2> vtau;
             if (nv == 3)
-              switch (k)
-                {
-                case 0:
-                  p0 = Point<2> (0,0);
-                  vtau = Vec<2> (1,0);
-                  break;
-                case 1:
-                  p0 = Point<2> (1,0);
-                  vtau = Vec<2> (-1,1);
-                  break;
-                case 2:
-                  p0 = Point<2> (0,1);
-                  vtau = Vec<2> (0,-1);
-                  break;
-                }
+	      {
+		p0 = Point<2>(trigpts[k][0], trigpts[k][1]);
+		vtau = Vec<2>(trigvecs[k][0], trigvecs[k][1]);
+	      }
             else
-              switch (k)
-                {
-                case 0:
-                  p0 = Point<2> (0,0);
-                  vtau = Vec<2> (1,0);
-                  break;
-                case 1:
-                  p0 = Point<2> (1,0);
-                  vtau = Vec<2> (0,1);
-                  break;
-                case 2:
-                  p0 = Point<2> (1,1);
-                  vtau = Vec<2> (-1,0);
-                  break;
-                case 3:
-                  p0 = Point<2> (0,1);
-                  vtau = Vec<2> (0,-1);
-                  break;
-                }
-            
+	      {
+		p0 = Point<2>(quadpts[k][0], quadpts[k][1]);
+		vtau = Vec<2>(quadvecs[k][0], quadvecs[k][1]);
+	      }
+
             glBegin (GL_LINE_STRIP);
 
             if (curved)
               {
-                ArrayMem<Point<2>, 65> ptsloc(n+1);
-                ArrayMem<Point<3>, 65> ptsglob(n+1);
-
                 for (int ix = 0; ix <= n; ix++)
                   ptsloc[ix] = p0 + (double(ix) / n) * vtau;
                     
@@ -1548,7 +1467,6 @@ namespace netgen
             glEnd ();
           }
       }
-
   }
 
 
@@ -2278,7 +2196,6 @@ namespace netgen
             int ne = mesh->GetNE();
             for (int i = 0; i < ne; i++)
               {
-                // "considerElem": added 07.04.2004 (FB)
                 considerElem = GetValue (sol, i, 0.333, 0.333, 0.333, comp, val);
                 if (considerElem)
                   {
@@ -2295,7 +2212,6 @@ namespace netgen
             int nse = mesh->GetNSE();
             for (int i = 0; i < nse; i++)
               {
-                // "considerElem": added 07.04.2004 (FB)
                 ELEMENT_TYPE type = mesh->SurfaceElement(i+1).GetType();
                 if (type == QUAD)
                   considerElem = GetSurfValue (sol, i, 0.5, 0.5, comp, val);
@@ -3062,7 +2978,21 @@ namespace netgen
     return values[comp-1];
   }
 
-
+  complex<double> VisualSceneSolution ::  ExtractValueComplex (const SolData * data, int comp, double * values) const
+  {
+    double valr, vali;
+    if (!data->iscomplex)
+      {
+	valr =  values[comp-1];
+	vali = 0;
+      }
+    else
+      {
+	valr = values[comp-1];
+	vali = values[comp];
+      }
+    return complex<double> (valr, vali);
+  }
 
 
 

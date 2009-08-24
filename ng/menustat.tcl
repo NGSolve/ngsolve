@@ -800,6 +800,8 @@ menu .ngmenu.special.colbndcond
 #####################################################
 
 
+
+
 menu .ngmenu.help
 # .ngmenu.help add command -label "Ng Help..." \
 \#	-command { help_main }
@@ -883,7 +885,6 @@ tixOptionMenu .bubar.modesel \
 
 
 
-
 set viewvals { geometry specpoints mesh solution}
 if { $userlevel == 3} {
     set viewvals { geometry mesh specpoints surfmeshing modelview solution}
@@ -909,6 +910,7 @@ foreach viewv $viewvals {
 }
 
 
+
 .bubar.selview config -variable selectvisual
 .bubar.selview config -command { Ng_SetVisParameters; redraw }
 
@@ -926,6 +928,8 @@ pack .bubar.center .bubar.zoomall .bubar.selview -side right
 	    pack forget .bubar.modesel
 	}
     }
+
+
 
 
 #####################################################
@@ -996,8 +1000,8 @@ proc timer2 { } {
         }
     }
 
-    global mem_moveable
-    set mem_moveable [Ng_MemInfo moveable]
+    # global mem_moveable
+    # set mem_moveable [Ng_MemInfo moveable]
 
 
     .statbar.per config -value [expr $status_percent/100] -text [format %2.1f [expr 0.1*int(10*$status_percent)]]%
@@ -1068,7 +1072,6 @@ proc timer2 { } {
     }
 
 
-
     if {[winfo exists .memuse_dlg] == 1} {    
 	
 	global memmark
@@ -1082,16 +1085,10 @@ proc timer2 { } {
 	}
 
     }
-
-
-
-
-
     after 200 { timer2 }
 }
 # after 1000 { timer2 }
 timer2
-
 
 
 
@@ -1139,7 +1136,6 @@ bind . <e><p> { editprimitivedialog }
 bind . <e><s> { newsoliddialog }
 bind . <g><m> { .ngmenu.mesh invoke "Generate Mesh" }  ;
 
-# bind . <v><m> { .bubar.selview configure activate  mesh }  ;
 
 
 

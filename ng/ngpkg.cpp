@@ -179,7 +179,6 @@ namespace netgen
   // geometry: either CSG, or, if an other is non-null,
   // then the other
   AutoPtr<CSGeometry> geometry (new CSGeometry(""));
-
   STLGeometry * stlgeometry = NULL;
   AutoPtr<SplineGeometry2d> geometry2d (0);
 
@@ -1344,13 +1343,14 @@ namespace netgen
   {
     static char buf[100];
     if (argc < 2) return TCL_ERROR;
+    /*
     if (strcmp (argv[1], "moveable") == 0)
       {
 	sprintf (buf, "%6.1f", double(BaseMoveableMem::used)/1048576);
 	Tcl_SetResult (interp, buf, TCL_STATIC);
 	return TCL_OK;
       }
-
+    */
 
     if (strcmp (argv[1], "usedmb") == 0)
       { // returns string of 512 '0' or '1'
@@ -2063,7 +2063,7 @@ namespace netgen
     printmessage_importance = atoi (Tcl_GetVar (interp, "::options.printmsg", 0));
     printdots = (printmessage_importance >= 4);
 
-    BaseMoveableMem::totalsize = 0;
+    //BaseMoveableMem::totalsize = 0;
     // 1048576 * atoi (Tcl_GetVar (interp, "::options.memory", 0));
     if (mesh.Ptr())
       {

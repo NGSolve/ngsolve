@@ -85,7 +85,7 @@ public:
 /**
    CSGeometry has the whole geometric information
  */
-class CSGeometry
+class CSGeometry : public NetgenGeometry
 {
 private:
   /// all surfaces

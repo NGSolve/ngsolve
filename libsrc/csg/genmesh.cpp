@@ -492,8 +492,8 @@ namespace netgen
 
 	if (multithread.terminate) return;
       
-	for (int i = oldnf+1; i <= mesh.GetNSE(); i++)
-	  mesh.SurfaceElement(i).SetIndex (k);
+	for (SurfaceElementIndex sei = oldnf; sei < mesh.GetNSE(); sei++)
+	  mesh[sei].SetIndex (k);
 
 
 	//      mesh.CalcSurfacesOfNode();
@@ -621,8 +621,8 @@ namespace netgen
 	  
 	    if (multithread.terminate) return;
 
-	    for (int i = oldnf+1; i <= mesh.GetNSE(); i++)
-	      mesh.SurfaceElement(i).SetIndex (k);
+	    for (SurfaceElementIndex  sei = oldnf; sei < mesh.GetNSE(); sei++)
+	      mesh[sei].SetIndex (k);
 
 
 	    if (!segments.Size())

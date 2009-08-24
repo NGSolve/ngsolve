@@ -9,8 +9,11 @@
 
 namespace netgen
 {
+#ifdef OLD
 
-extern NgMutex mem_mutex;
+  extern NgMutex mem_mutex;
+
+
 
 class BaseMoveableMem
 {
@@ -97,6 +100,8 @@ protected:
   MoveableMem (const MoveableMem & m) { ; }
   MoveableMem & operator= (const MoveableMem & m) { ; }
 };
+
+#endif
 
 }
 

@@ -574,55 +574,46 @@ namespace netgen
   
   void  InitHPElements(Mesh & mesh, Array<HPRefElement> & elements) 
   { 
-    for(ElementIndex i=0;i<mesh.GetNE();i++) 
+    for(ElementIndex i = 0; i < mesh.GetNE(); i++) 
       {
 	HPRefElement hpel(mesh[i]); 
-	hpel.coarse_elnr=i; 
+	hpel.coarse_elnr = i; 
 	
 	switch (mesh[i].GetType()) 
 	  { 
-	  case PRISM:
-	    hpel.type = HP_PRISM; 
-	    break; 
-	  case HEX:
-	    hpel.type = HP_HEX; 
-	    break; 
-	  case TET: 
-	    hpel.type = HP_TET; 
-	    break; 
-	  case PYRAMID: 
-	    hpel.type = HP_PYRAMID; 
-	    break; 
+	  case PRISM:   hpel.type = HP_PRISM;   break; 
+	  case HEX:     hpel.type = HP_HEX;     break; 
+	  case TET:     hpel.type = HP_TET;     break; 
+	  case PYRAMID: hpel.type = HP_PYRAMID; break; 
 
           default:
             cerr << "HPRefElement: illegal elementtype (1) " << mesh[i].GetType() << endl;
             throw NgException ("HPRefElement: illegal elementtype (1)");
-
 	  } 
 	elements.Append(hpel); 
       }
 	    
-    for(SurfaceElementIndex i=0;i<mesh.GetNSE();i++)
+    for(SurfaceElementIndex i = 0; i < mesh.GetNSE(); i++)
       {
-	HPRefElement hpel(mesh.SurfaceElement(i));
+	HPRefElement hpel(mesh[i]);
 	hpel.coarse_elnr = i; 
-	switch(mesh.SurfaceElement(i).GetType())
+	switch(mesh[i].GetType())
 	  { 
-	  case TRIG: 
-	    hpel.type = HP_TRIG;
-	    break; 
-	  case QUAD: 
-	    hpel.type = HP_QUAD; 
-	    break; 
+	  case TRIG: hpel.type = HP_TRIG; break; 
+	  case QUAD: hpel.type = HP_QUAD; break; 
+
+          default:
+            cerr << "HPRefElement: illegal elementtype (1b) " << mesh[i].GetType() << endl;
+            throw NgException ("HPRefElement: illegal elementtype (1b)");
 	  } 
 	elements.Append(hpel);
       } 
         
-    for(int i=1;i<=mesh.GetNSeg();i++) 
+    for(SegmentIndex i = 0; i < mesh.GetNSeg(); i++) 
       { 
-	Segment & seg = mesh.LineSegment(i); 
-	HPRefElement hpel(seg); 
-	hpel.coarse_elnr = i-1; 
+	Segment & seg = mesh[i];
+	HPRefElement hpel(mesh[i]);
+	hpel.coarse_elnr = i; 
 	hpel.type = HP_SEGM; 
 	hpel.index = seg.edgenr + 10000*seg.si; 
 	if(seg.edgenr >= 10000)
@@ -630,7 +621,6 @@ namespace netgen
 	    throw NgException("assumption that seg.edgenr < 10000 is wrong");
 	  }
 	elements.Append(hpel); 
-
       }
   }
 
@@ -1323,15 +1313,15 @@ namespace netgen
     PrintMessage (1, "HP Refinement called, levels = ", levels);
 
  
-    NgLock mem_lock (mem_mutex,1);
+    // NgLock mem_lock (mem_mutex,1);
 
     mesh.coarsemesh = new Mesh; 
     *mesh.coarsemesh = mesh;
     
-#ifdef CURVEDELEMS_NEW
+    // #ifdef CURVEDELEMS_NEW
     const_cast<CurvedElements&> (mesh.coarsemesh->GetCurvedElements() ).
       BuildCurvedElements (ref, mesh.GetCurvedElements().GetOrder());
-#endif
+    // #endif
 
 
     delete mesh.hpelements;
@@ -1345,7 +1335,7 @@ namespace netgen
     nplevel.Append (mesh.GetNP());
     
     int act_ref=1;
-    bool sing = ClassifyHPElements(mesh,hpelements, act_ref, levels); 
+    bool sing = ClassifyHPElements (mesh,hpelements, act_ref, levels); 
 
     sing = true; // iterate at least once
     while(sing) 
@@ -1578,9 +1568,9 @@ bool CheckSingularities(Mesh & mesh, INDEX_2_HASHTABLE<int> & edges, INDEX_2_HAS
 		       BitArray & cornerpoint, BitArray & edgepoint, INDEX_3_HASHTABLE<int> & faces, INDEX_2_HASHTABLE<int> & face_edges, 
 			INDEX_2_HASHTABLE<int> & surf_edges, Array<int, PointIndex::BASE> & facepoint, int & levels, int & act_ref)
 { 
-  bool sing=0; 
+  bool sing = 0; 
   if (mesh.GetDimension() == 3)
-      {
+    {
 	/*
 	// check, if point has as least 3 different surfs:
 
@@ -1731,48 +1721,47 @@ bool CheckSingularities(Mesh & mesh, INDEX_2_HASHTABLE<int> & edges, INDEX_2_HAS
 
 	for (int i = 1; i <= mesh.GetNP(); i++)
 	  surfonpoint.Elem(i) = INDEX_3(0,0,0);
-      
+	
 	for (int i = 1; i <= mesh.GetNSeg(); i++)
 	  {
 	    const Segment & seg = mesh.LineSegment(i);
 	    int ind = seg.edgenr;
-
-	   
-		if (seg.singedge_left * levels >= act_ref)
-		  {
-		    INDEX_2 i2 (mesh.LineSegment(i)[0], 
-				mesh.LineSegment(i)[1]);
-		    edges.Set(i2,1); 
-		    edgepoint.Set(i2.I1());
-		    edgepoint.Set(i2.I2());
-		    *testout << " singleft " << endl;  
-		    *testout << " mesh.LineSegment(i).domout " << mesh.LineSegment(i).domout << endl;      
-		    *testout << " mesh.LineSegment(i).domin " << mesh.LineSegment(i).domin << endl;      
-		    edgepoint_dom.Set (INDEX_2(mesh.LineSegment(i).domin, i2.I1()), 1);
-		    edgepoint_dom.Set (INDEX_2(mesh.LineSegment(i).domin, i2.I2()), 1);
-		    sing = 1; 
-		    
-		  }
+	    
+	    if (seg.singedge_left * levels >= act_ref)
+	      {
+		INDEX_2 i2 (mesh.LineSegment(i)[0], 
+			    mesh.LineSegment(i)[1]);
+		edges.Set(i2,1); 
+		edgepoint.Set(i2.I1());
+		edgepoint.Set(i2.I2());
+		*testout << " singleft " << endl;  
+		*testout << " mesh.LineSegment(i).domout " << mesh.LineSegment(i).domout << endl;      
+		*testout << " mesh.LineSegment(i).domin " << mesh.LineSegment(i).domin << endl;      
+		edgepoint_dom.Set (INDEX_2(mesh.LineSegment(i).domin, i2.I1()), 1);
+		edgepoint_dom.Set (INDEX_2(mesh.LineSegment(i).domin, i2.I2()), 1);
+		sing = 1; 
 		
-		  if (seg.singedge_right * levels >= act_ref)
-		    {
-		      INDEX_2 i2 (mesh.LineSegment(i)[1], 
-				  mesh.LineSegment(i)[0]);  
-		      edges.Set (i2, 1);
-		      edgepoint.Set(i2.I1());
-		      edgepoint.Set(i2.I2());
-
-		      *testout << " singright " << endl;  
-		      *testout << " mesh.LineSegment(i).domout " << mesh.LineSegment(i).domout << endl;      
-		      *testout << " mesh.LineSegment(i).domin " << mesh.LineSegment(i).domin << endl;      
-		      
-		      edgepoint_dom.Set (INDEX_2(mesh.LineSegment(i).domout, i2.I1()), 1);
-		      edgepoint_dom.Set (INDEX_2(mesh.LineSegment(i).domout, i2.I2()), 1);
-		      sing = 1;
-		    }
-	
+	      }
+	    
+	    if (seg.singedge_right * levels >= act_ref)
+	      {
+		INDEX_2 i2 (mesh.LineSegment(i)[1], 
+			    mesh.LineSegment(i)[0]);  
+		edges.Set (i2, 1);
+		edgepoint.Set(i2.I1());
+		edgepoint.Set(i2.I2());
+		
+		*testout << " singright " << endl;  
+		*testout << " mesh.LineSegment(i).domout " << mesh.LineSegment(i).domout << endl;      
+		*testout << " mesh.LineSegment(i).domin " << mesh.LineSegment(i).domin << endl;      
+		
+		edgepoint_dom.Set (INDEX_2(mesh.LineSegment(i).domout, i2.I1()), 1);
+		edgepoint_dom.Set (INDEX_2(mesh.LineSegment(i).domout, i2.I2()), 1);
+		sing = 1;
+	      }
+	    
 	    // (*testout) << "seg = " << ind << ", " << seg[0] << "-" << seg[1] << endl;
-
+	    
 
 	    if (seg.singedge_left * levels >= act_ref
 		|| seg.singedge_right* levels >= act_ref)
@@ -1797,7 +1786,7 @@ bool CheckSingularities(Mesh & mesh, INDEX_2_HASHTABLE<int> & edges, INDEX_2_HAS
 	    // mark points for refinement that are in corners between two anisotropic edges 
 	    if (surfonpoint.Get(i).I1())
 	      {
-		cornerpoint.Set(i);
+		// cornerpoint.Set(i);    // disabled by JS, Aug 2009
 		edgepoint.Set(i);
 	      }
 	
@@ -1820,10 +1809,8 @@ bool CheckSingularities(Mesh & mesh, INDEX_2_HASHTABLE<int> & edges, INDEX_2_HAS
       }
 
     if (!sing)
-      {
-	cout << "PrepareElements no more to do for actual refinement " << act_ref << endl; 
-	return(sing);
-      } 
+      cout << "PrepareElements no more to do for actual refinement " << act_ref << endl; 
+
     return(sing); 
 }
 
@@ -1831,7 +1818,6 @@ bool CheckSingularities(Mesh & mesh, INDEX_2_HASHTABLE<int> & edges, INDEX_2_HAS
 
   bool ClassifyHPElements (Mesh & mesh, Array<HPRefElement> & elements, int & act_ref, int & levels)
   {
-    
     INDEX_2_HASHTABLE<int> edges(mesh.GetNSeg()+1);
     BitArray edgepoint(mesh.GetNP());
     INDEX_2_HASHTABLE<int> edgepoint_dom(mesh.GetNSeg()+1);

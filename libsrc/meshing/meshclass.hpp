@@ -271,11 +271,8 @@ public:
   int GetNSE () const { return surfelements.Size(); }
   Element2d & SurfaceElement(int i) { return surfelements.Elem(i); }
   const Element2d & SurfaceElement(int i) const { return surfelements.Get(i); }
-
-  Element2d & SurfaceElement(SurfaceElementIndex i)
-  { return surfelements[i]; }
-  const Element2d & SurfaceElement(SurfaceElementIndex i) const
-  { return surfelements[i]; }
+  Element2d & SurfaceElement(SurfaceElementIndex i) { return surfelements[i]; }
+  const Element2d & SurfaceElement(SurfaceElementIndex i) const { return surfelements[i]; }
 
   const Element2d & operator[] (SurfaceElementIndex ei) const
   { return surfelements[ei]; }

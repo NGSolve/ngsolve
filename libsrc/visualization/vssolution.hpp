@@ -243,7 +243,6 @@ private:
 		     int comp, double & val) const;
 
   
-
   bool GetSurfValueComplex (const SolData * data, SurfaceElementIndex elnr,
 			    double lam1, double lam2, 
 			    int comp, double & valr, double & vali) const;
@@ -263,6 +262,7 @@ private:
                            double * val, int sval) const;
   
   double ExtractValue (const SolData * data, int comp, double * values) const;
+  complex<double> ExtractValueComplex (const SolData * data, int comp, double * values) const;
 
 
   Vec<3> GetDeformation (ElementIndex elnr, const Point<3> & p) const;

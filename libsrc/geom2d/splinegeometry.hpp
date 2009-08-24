@@ -34,7 +34,7 @@ extern void PartitionBoundary (const Array < SplineSeg<2>* > & splines,
 extern int printmessage_importance;
 
 template < int D >
-class SplineGeometry
+class SplineGeometry 
 {
   Array < GeomPoint<D> > geompoints;
   Array < SplineSeg<D>* > splines;

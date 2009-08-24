@@ -23,6 +23,8 @@ Visualization
 #include "mvdraw.hpp"
 #include "soldata.hpp"
 
+#include <complex>
+
 namespace netgen
 {
 #include "vssolution.hpp"

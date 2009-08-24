@@ -167,6 +167,7 @@ namespace netgen
     
     {
 
+      /*
     BaseMoveableMem * pm = BaseMoveableMem::first;
     while (pm)
       {
@@ -186,6 +187,7 @@ namespace netgen
 
 	pm = pm->next;
       }
+      */
     }
 
 
