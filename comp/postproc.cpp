@@ -200,7 +200,7 @@ namespace ngcomp
 	}
     }
 
-    cout << "\rpostprocessing element " << ne << "/" << ne << endl;
+    cout << "\rpostprocessing element xx " << ne << "/" << ne << endl;
 
 
     FlatVector<SCAL> fluxi(dimflux, clh);
