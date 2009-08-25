@@ -639,7 +639,7 @@ public:
     static int maintimer = NgProfiler::CreateTimer ("BDBIntegrator::ApplyElementMatrix");
     NgProfiler::RegionTimer reg(maintimer);
 
-    const FEL & fel = dynamic_cast<const FEL&> (bfel);
+    const FEL & fel = static_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
     
     ely = 0;
@@ -651,20 +651,29 @@ public:
 
     const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 
-    void * heapp = lh.GetPointer();
+
+    FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
+    FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
+    
+    eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
+
+
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	const IntegrationPoint & ip = ir.GetIP(i);
+	HeapReset hr (lh);
+
+	// const IntegrationPoint & ip = ir.GetIP(i);
 	
-	SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
+	// SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
+	SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
+	  sip(ir[i], eltrans, pts[i], dxdxi[i]);
 
 	DIFFOP::Apply (fel, sip, elx, hv1, lh);
 	dmatop.Apply (fel, sip, hv1, hv2, lh);
 	DIFFOP::ApplyTrans (fel, sip, hv2, hely, lh);
 
-	double fac = fabs (sip.GetJacobiDet()) * ip.Weight();
+	double fac = fabs (sip.GetJacobiDet()) * ir[i].Weight();
 	ely += fac * hely;
-	lh.CleanUp (heapp);
       }     
   }
 
@@ -681,7 +690,7 @@ public:
 		      void * precomputed,
 		      LocalHeap & locheap) const
   {
-    const FEL & fel = dynamic_cast<const FEL&> (bfel);
+    const FEL & fel = static_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
     
     ely = 0;
