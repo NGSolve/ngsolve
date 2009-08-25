@@ -82,6 +82,9 @@ public:
 };
 
 
+
+
+
 /**
    CSGeometry has the whole geometric information
  */
@@ -303,6 +306,13 @@ public:
 
   Array<BCModification> bcmodifications;
 
+  virtual int GenerateMesh (Mesh*& mesh,
+			    int perfstepsstart, int perfstepsend, char* optstring);
+
+  virtual const Refinement & GetRefinement () const; 
 };
+
+
+
 #endif
 

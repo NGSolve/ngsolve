@@ -54,8 +54,6 @@ public:
 
 
 
-
-
 class RefinementSurfaces : public Refinement
 {
   const CSGeometry & geometry;
@@ -88,7 +86,6 @@ public:
   virtual void ProjectToEdge (Point<3> & p, int surfi1, int surfi2, const EdgePointGeomInfo & egi) const;
 
 };
-
 
 
 #endif

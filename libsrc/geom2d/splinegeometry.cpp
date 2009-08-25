@@ -1247,6 +1247,25 @@ string * SplineGeometry<D> :: BCNamePtr( const int bcnr )
     return bcnames[bcnr-1];
 }
 
+SplineGeometry2d ::  ~SplineGeometry2d()
+{
+  ;
+}
+
+
+int SplineGeometry2d :: GenerateMesh (Mesh*& mesh,
+				      int perfstepsstart, int perfstepsend, char* optstring)
+{
+  cout << "SplineGeometry2d::GenerateMesh : only a dummy" << endl;
+  return 0;
+}
+
+
+const Refinement & SplineGeometry2d :: GetRefinement () const
+{
+  return * new Refinement2d (*this);
+}
+
 
 
   template class SplineGeometry<2>;

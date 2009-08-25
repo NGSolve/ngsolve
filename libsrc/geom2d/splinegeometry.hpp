@@ -125,6 +125,8 @@ public:
   string GetBCName ( const int bcnr ) const;
 
   string * BCNamePtr ( const int bcnr );
+
+
 };
 
 
@@ -134,7 +136,16 @@ void MeshFromSpline2D (SplineGeometry<2> & geometry,
 
 
 
-typedef SplineGeometry<2> SplineGeometry2d;
+class SplineGeometry2d : public SplineGeometry<2>, public NetgenGeometry
+{
+public:
+  virtual ~SplineGeometry2d();
+  
+  virtual int GenerateMesh (Mesh*& mesh,
+			    int perfstepsstart, int perfstepsend, char* optstring);
+  
+  virtual const Refinement & GetRefinement () const; 
+};
 
 
 #endif // _FILE_SPLINEGEOMETRY

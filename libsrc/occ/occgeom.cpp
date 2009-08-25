@@ -1600,6 +1600,20 @@ namespace netgen
     return false;
   }
 
+  extern int OCCGenerateMesh (OCCGeometry & occgeometry, Mesh*& mesh,
+			      int perfstepsstart, int perfstepsend, char* optstring);
+
+  int OCCGeometry :: GenerateMesh (Mesh*& mesh,
+				   int perfstepsstart, int perfstepsend, char* optstring)
+  {
+    return OCCGenerateMesh (*this, mesh, perfstepsstart, perfstepsend, optstring);
+  }
+
+  const Refinement & OCCGeometry :: GetRefinement () const
+  {
+    return * new OCCRefinementSurfaces (*this);
+  }
+
 }
 
 

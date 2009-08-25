@@ -590,7 +590,7 @@ namespace netgen
 
   Revolution :: Revolution(const Point<3> & p0_in,
 			   const Point<3> & p1_in,
-			   const SplineGeometry2d & spline_in) :
+			   const SplineGeometry<2> & spline_in) :
     p0(p0_in), p1(p1_in), splinecurve(spline_in),
     nsplines(spline_in.GetNSplines())
   {

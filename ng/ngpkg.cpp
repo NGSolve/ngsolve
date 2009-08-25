@@ -178,7 +178,7 @@ namespace netgen
   OCCGeometry * occgeometry = NULL;
 #endif
 
-
+  NetgenGeometry * ng_geometry;
 
   Tcl_Interp * tcl_interp;
 
@@ -396,16 +396,12 @@ namespace netgen
     const string filename (argv[1]);
     PrintMessage (1, "Save mesh to file ", filename);
 
-
-    //mesh -> Save (filename);
-
     ofstream outfile(filename.c_str());
     mesh -> Save (outfile);
 
     outfile << endl << endl << "endmesh" << endl << endl;
 
     if (geometry && geometry->GetNSurf()) geometry->SaveSurfaces(outfile);
-
 
     return TCL_OK;
   }
@@ -639,6 +635,7 @@ namespace netgen
 		extern CSGeometry * ParseCSG (istream & istr);
 		// ifstream infile(lgfilename);
 		CSGeometry * hgeom = ParseCSG (infile);
+		ng_geometry = hgeom;
 		if (hgeom)
 		  geometry.Reset (hgeom);
 		else
@@ -668,6 +665,7 @@ namespace netgen
 		// strcpy (geomfilename, lgfilename);
 		PrintMessage (1, "Load stl geometry file ", lgfilename);
 		stlgeometry = STLGeometry :: Load (infile);
+		ng_geometry = stlgeometry;
 		stlgeometry->edgesfound = 0;
 	      }
 	    else if ((strcmp (&lgfilename[strlen(lgfilename)-4], "iges") == 0) ||
@@ -679,6 +677,7 @@ namespace netgen
 		// strcpy (geomfilename, lgfilename);
 		PrintMessage (1, "Load IGES geometry file ", lgfilename);
 		occgeometry = LoadOCC_IGES (lgfilename);
+		ng_geometry = occgeometry;
 #else
 		Tcl_SetResult (interp, (char*)"IGES import requires the OpenCascade geometry kernel. "
 			       "Please install OpenCascade as described in the Netgen-website",
@@ -707,6 +706,7 @@ namespace netgen
 		// strcpy (geomfilename, lgfilename);
 		PrintMessage (1, "Load STEP geometry file ", lgfilename);
 		occgeometry = LoadOCC_STEP (lgfilename);
+		ng_geometry = occgeometry;
 #else
 		Tcl_SetResult (interp, (char*)"IGES import requires the OpenCascade geometry kernel. "
 			       "Please install OpenCascade as described in the Netgen-website",
@@ -723,6 +723,7 @@ namespace netgen
 		// strcpy (geomfilename, lgfilename);
 		PrintMessage (1, "Load BREP geometry file ", lgfilename);
 		occgeometry = LoadOCC_BREP (lgfilename);
+		ng_geometry = occgeometry;
 #else
 		Tcl_SetResult (interp, (char*)"BREP import requires the OpenCascade geometry kernel. "
 			       "Please install OpenCascade as described in the Netgen-website",
@@ -737,6 +738,7 @@ namespace netgen
 
 		PrintMessage (1, "Load stl geometry file ", lgfilename, " in binary format");
 		stlgeometry = STLGeometry :: LoadBinary (infile);
+		ng_geometry = stlgeometry;
 		stlgeometry->edgesfound = 0;
 	      }
 
@@ -746,6 +748,7 @@ namespace netgen
 
 		PrintMessage (1, "Load naomi (F. Kickinger) geometry file ", lgfilename);
 		stlgeometry = STLGeometry :: LoadNaomi (infile);
+		ng_geometry = stlgeometry;
 		stlgeometry->edgesfound = 0;
 	      }
 
@@ -754,6 +757,7 @@ namespace netgen
 		// strcpy (geomfilename, lgfilename);
 		geometry2d.Reset (new SplineGeometry2d());
 		geometry2d -> Load (lgfilename);
+		ng_geometry = geometry2d.Ptr();
 	      }
 	  }
       }
@@ -1330,7 +1334,6 @@ namespace netgen
 		  Tcl_Interp * interp,
 		  int argc, tcl_const char *argv[])
   {
-    static char buf[100];
     if (argc < 2) return TCL_ERROR;
 
     if (strcmp (argv[1], "usedmb") == 0)
@@ -1459,7 +1462,7 @@ namespace netgen
 
     if (!occgeometry)
     {
-	   Tcl_SetResult (interp, (char *)"Ng_SurfaceMeshSize currently supports only OCC (STEP/IGES) Files", TCL_STATIC);
+      Tcl_SetResult (interp, (char *)"Ng_SurfaceMeshSize currently supports only OCC (STEP/IGES) Files", TCL_STATIC);
 	   return TCL_ERROR;
     }
 
@@ -1602,28 +1605,8 @@ namespace netgen
 	return TCL_ERROR;
       }
 
-
-    if (stlgeometry)
-      {
-	RefinementSTLGeometry ref (*stlgeometry);
-	ref.Refine (*mesh);
-      }
-
-    else if (geometry2d)
-      {
-	Refinement2d ref (*geometry2d);
-	ref.Refine (*mesh);
-      }
-
-#ifdef OCCGEOMETRY
-    else if (occgeometry)
-      {
-	OCCRefinementSurfaces ref (*occgeometry);
-	ref.Refine (*mesh);
-      }
-#endif
 #ifdef ACIS
-    else if (acisgeometry)
+    if (acisgeometry)
       {
 	ACISRefinementSurfaces ref (*acisgeometry);
 	ACISMeshOptimize2dSurfaces opt(*acisgeometry);
@@ -1633,10 +1616,7 @@ namespace netgen
 #endif
     else
       {
-	RefinementSurfaces ref (*geometry);
-	MeshOptimize2dSurfaces opt(*geometry);
-	ref.Set2dOptimizer(&opt);
-	ref.Refine (*mesh);
+	ng_geometry -> GetRefinement().Refine(*mesh);
       }
 
     return TCL_OK;
@@ -1656,29 +1636,8 @@ namespace netgen
 	Tcl_SetResult (interp, err_jobrunning, TCL_STATIC);
 	return TCL_ERROR;
       }
-
-    if (stlgeometry)
-      {
-	RefinementSTLGeometry ref (*stlgeometry);
-	ref.MakeSecondOrder (*mesh);
-      }
-#ifdef OCCGEOMETRY
-    else if (occgeometry)
-      {
-	OCCRefinementSurfaces ref (*occgeometry);
-	ref.MakeSecondOrder (*mesh);
-      }
-#endif
-    else if (geometry2d)
-      {
-	Refinement2d ref (*geometry2d);
-	ref.MakeSecondOrder (*mesh);
-      }
-    else
-      {
-	RefinementSurfaces ref (*geometry);
-	ref.MakeSecondOrder (*mesh);
-      }
+    
+    const_cast<Refinement&> (ng_geometry -> GetRefinement()).MakeSecondOrder (*mesh);
 
     return TCL_OK;
   }
@@ -1689,30 +1648,8 @@ namespace netgen
     //  mparam.elementorder = atoi (Tcl_GetVar (interp, "options.elementorder", 0));
     const char * savetask = multithread.task;
 
-    Refinement * ref;
-
-    if (stlgeometry)
-      ref = new RefinementSTLGeometry (*stlgeometry);
-    else if (geometry2d)
-      ref = new Refinement2d (*geometry2d);
-#ifdef OCCGEOMETRY
-    else if (occgeometry)
-      ref = new OCCRefinementSurfaces (*occgeometry);
-#endif
-#ifdef ACIS
-    else if (acisgeometry)
-      {
-	ref = new ACISRefinementSurfaces(*acisgeometry);
-      }
-#endif
-    else
-      {
-	ref = new RefinementSurfaces (*geometry);
-      }
-
-    mesh -> GetCurvedElements().BuildCurvedElements (ref, mparam.elementorder);
-
-    delete ref;
+    Refinement & ref = const_cast<Refinement&> (ng_geometry -> GetRefinement());
+    mesh -> GetCurvedElements().BuildCurvedElements (&ref, mparam.elementorder);
 
     multithread.task = savetask;
     multithread.running = 0;
@@ -1826,21 +1763,8 @@ namespace netgen
     int levels = atoi (argv[1]);
 
 
-    Refinement * ref;
-
-    if (stlgeometry)
-      ref = new RefinementSTLGeometry (*stlgeometry);
-    else if (geometry2d)
-      ref = new Refinement2d (*geometry2d);
-#ifdef OCCGEOMETRY
-    else if (occgeometry)
-      ref = new OCCRefinementSurfaces (*occgeometry);
-#endif
-    else
-      ref = new RefinementSurfaces (*geometry);
-
-
-    HPRefinement (*mesh, ref, levels);
+    Refinement & ref = const_cast<Refinement&> (ng_geometry -> GetRefinement());
+    HPRefinement (*mesh, &ref, levels);
     return TCL_OK;
   }
 
@@ -2157,22 +2081,6 @@ namespace netgen
   }
 
 
-
-
-  extern int GenerateMesh (CSGeometry & geom,
-			   Mesh *& mesh, int perfstepsstart, int perfstepsend,
-			   const char * optstr);
-
-  extern int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh,
-			      int perfstepsstart, int perfstepsend, char* optstring);
-
-#ifdef OCCGEOMETRY
-  extern int OCCGenerateMesh (OCCGeometry & occgeometry, Mesh*& mesh,
-			      int perfstepsstart, int perfstepsend, char* optstring);
-#endif
-
-
-
   static int perfstepsstart;
   static int perfstepsend;
   static char* optstring = NULL;
@@ -2196,116 +2104,56 @@ namespace netgen
 	mparam.Print (*logout);
 #endif
 
-	if (stlgeometry)
-	  {
-#ifdef LOG_STREAM
-	    (*logout) << "STL parameters:" << endl;
-	    stlparam.Print (*logout);
-#endif
-
-	    STLMeshingDummy(stlgeometry, mesh.Ptr(), perfstepsstart, perfstepsend, optstring);
-	  }
-#ifdef OCCGEOMETRY
-	else if (occgeometry)
-	  {
-	    OCCGenerateMesh(*occgeometry, mesh.Ptr(), perfstepsstart, perfstepsend, optstring);
-	  }
-#endif
 #ifdef ACIS
-	else if (acisgeometry)
+	if (acisgeometry)
 	  {
 	    ACISGenerateMesh(*acisgeometry, mesh.Ptr(), perfstepsstart, perfstepsend, optstring);
 	  }
-#endif
-
-	else if (geometry2d)
-	  {
-	    extern void MeshFromSpline2D (SplineGeometry2d & geometry2d,
-					  Mesh *& mesh, MeshingParameters & mp);
-	    MeshFromSpline2D (*geometry2d, mesh.Ptr(), mparam);
-	  }
 	else
+#endif
+	  if (geometry2d)
+	    {
+	      extern void MeshFromSpline2D (SplineGeometry2d & geometry2d,
+					    Mesh *& mesh, MeshingParameters & mp);
+	      MeshFromSpline2D (*geometry2d, mesh.Ptr(), mparam);
+	    }
+	  else
+	    {
+	      int res = ng_geometry -> GenerateMesh (mesh.Ptr(), perfstepsstart, perfstepsend, optstringcsg);
+	      if (res != MESHING3_OK) return 0;
+	    }
+
+	if (mparam.autozrefine && ( (NetgenGeometry*)geometry.Ptr() == ng_geometry))
 	  {
-	    int res =
-	      GenerateMesh (*geometry, mesh.Ptr(), perfstepsstart, perfstepsend, optstringcsg);
-	    if (res != MESHING3_OK) return 0;
-
-	    if(mparam.autozrefine)
-	      {
-		ZRefinementOptions opt;
-		opt.minref = 5;
-		ZRefinement (*mesh, geometry.Ptr(), opt);
-	      }
+	    ZRefinementOptions opt;
+	    opt.minref = 5;
+	    ZRefinement (*mesh, geometry.Ptr(), opt);
+	    mesh -> SetNextMajorTimeStamp();
 	  }
-
-
+	
 	if (mparam.secondorder)
 	  {
-	    if (stlgeometry)
-	      {
-		RefinementSTLGeometry ref (*stlgeometry);
-		ref.MakeSecondOrder (*mesh);
-	      }
-#ifdef OCCGEOMETRY
-	    else if (occgeometry)
-	      {
-		OCCRefinementSurfaces ref (*occgeometry);
-		ref.MakeSecondOrder (*mesh);
-	      }
-#endif
-	    else if (geometry2d)
-	      {
-		Refinement2d ref (*geometry2d);
-		ref.MakeSecondOrder (*mesh);
-	      }
-	    else
-	      {
-		RefinementSurfaces ref (*geometry);
-		ref.MakeSecondOrder (*mesh);
-	      }
+	    const_cast<Refinement&> (ng_geometry -> GetRefinement()).MakeSecondOrder (*mesh);
+	    mesh -> SetNextMajorTimeStamp();
 	  }
 
 	if (mparam.elementorder > 1)
 	  {
-
-	    Refinement * ref;
-
-	    if (stlgeometry)
-	      ref = new RefinementSTLGeometry (*stlgeometry);
-	    else if (geometry2d)
-	      ref = new Refinement2d (*geometry2d);
-#ifdef OCCGEOMETRY
-	    else if (occgeometry)
-	      ref = new OCCRefinementSurfaces (*occgeometry);
-#endif
-#ifdef ACIS
-	    else if (acisgeometry)
-	      ref = new ACISRefinementSurfaces(*acisgeometry);
-#endif
-	    else
-	      ref = new RefinementSurfaces (*geometry);
-
-
-	    mesh -> GetCurvedElements().BuildCurvedElements (ref, mparam.elementorder);
-
-	    // cout << "WARNING: Ng_HighOrder! ref is not deleted for edge projection visualization" << endl;
-
-	    delete ref;
+	    mesh -> GetCurvedElements().BuildCurvedElements (&const_cast<Refinement&> (ng_geometry -> GetRefinement()),
+							     mparam.elementorder);
 
 	    mesh -> SetNextMajorTimeStamp();
-
 	  }
 
 
 	PrintMessage (1, "Meshing done, time = ", GetTime(), " sec");
-#ifdef LOG_STREAM
-	(*logout) << "Meshing done, time = " << GetTime() << endl;
-#endif
       }
+
     catch (NgException e)
       {
 	cout << e.What() << endl;
       }
+
     multithread.task = savetask;
     multithread.running = 0;
 
@@ -5306,15 +5154,3 @@ namespace netgen
 }
 
 
-
-namespace netgen {
-  extern CSGeometry * ParseCSG (istream & istr);
-}
-
-void Netgen_Test ()
-{
-  ifstream infile ("examples/cube.geo");
-  netgen::geometry.Reset (netgen::ParseCSG (infile) );
-  netgen::  geometry -> FindIdenticSurfaces(1e-10);
-  netgen::GenerateMesh (*netgen::geometry.Ptr(), netgen::mesh.Ptr(), 1, 6, "");
-}

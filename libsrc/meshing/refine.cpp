@@ -4,6 +4,13 @@
 
 namespace netgen
 {
+
+  void Refinement :: Refine (Mesh & mesh) const
+  {
+    const_cast<Refinement&> (*this).Refine(mesh);
+  }
+
+
   void Refinement :: Refine (Mesh & mesh)
   {
     // reduce 2nd order

@@ -132,8 +132,24 @@ namespace netgen
   }
 
 
+  extern int CSGGenerateMesh (CSGeometry & geom,
+			      Mesh *& mesh, int perfstepsstart, int perfstepsend,
+			      const char * optstr);
+
+  int CSGeometry :: GenerateMesh (Mesh*& mesh,
+				 int perfstepsstart, int perfstepsend, char* optstring)
+  {
+    return CSGGenerateMesh (*this, mesh, perfstepsstart, perfstepsend, optstring);
+  }
 
 
+  const Refinement & CSGeometry :: GetRefinement () const
+  {
+    // should become class variables
+    RefinementSurfaces * ref = new RefinementSurfaces(*this);
+    ref -> Set2dOptimizer(new MeshOptimize2dSurfaces(*this));
+    return *ref;
+  }
 
   class WritePrimitivesIt : public SolidIterator
   {

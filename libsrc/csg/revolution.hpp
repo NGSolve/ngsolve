@@ -91,7 +91,7 @@ class Revolution : public Primitive
 private:
   Point<3> p0,p1;
   Vec<3> v_axis;
-  const SplineGeometry2d & splinecurve;
+  const SplineGeometry<2> & splinecurve;
   const int nsplines;
 
   // 1 ... torus-like
@@ -106,7 +106,7 @@ private:
 public:
   Revolution(const Point<3> & p0_in,
 	     const Point<3> & p1_in,
-	     const SplineGeometry2d & spline_in);
+	     const SplineGeometry<2> & spline_in);
 
   ~Revolution();
   

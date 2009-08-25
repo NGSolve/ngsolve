@@ -67,6 +67,20 @@ STLGeometry :: ~STLGeometry()
   delete edgedata;
 }
 
+int STLGeometry :: GenerateMesh (Mesh*& mesh,
+				 int perfstepsstart, int perfstepsend, char* optstring)
+{
+  return STLMeshingDummy (this, mesh, perfstepsstart, perfstepsend, optstring);
+}
+
+
+const Refinement & STLGeometry :: GetRefinement () const
+{
+  return * new RefinementSTLGeometry (*this);
+}
+
+
+
 void STLGeometry :: STLInfo(double* data)
 {
   data[0] = GetNT();

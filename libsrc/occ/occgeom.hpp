@@ -169,7 +169,7 @@ namespace netgen
 #define OCCGEOMETRYVISUALIZATIONHALFCHANGE 2
 // == redraw
 
-   class OCCGeometry
+  class OCCGeometry : public NetgenGeometry
    {
       Point<3> center;
 
@@ -336,6 +336,11 @@ namespace netgen
       bool ErrorInSurfaceMeshing ();
 
       void WriteOCC_STL(char * filename);
+
+     virtual int GenerateMesh (Mesh*& mesh,
+			       int perfstepsstart, int perfstepsend, char* optstring);
+     
+     virtual const Refinement & GetRefinement () const;
    };
 
    void PrintContents (OCCGeometry * geom);

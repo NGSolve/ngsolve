@@ -32,8 +32,6 @@ namespace netgen
 #include "meshing2.hpp"
 #include "improve2.hpp"
 
-#include "basegeom.hpp"
-
 
 #include "geomsearch.hpp"
 #include "adfront3.hpp"
@@ -71,6 +69,8 @@ namespace netgen
 #include "paralleltop.hpp"
 // #include "../parallel/parallelmesh.hpp"
 #endif
+
+#include "basegeom.hpp"
 
 
 

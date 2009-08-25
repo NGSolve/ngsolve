@@ -19,7 +19,7 @@
 
 #include "ngexception.hpp"
 #include "parthreads.hpp"
-#include "moveablemem.hpp"
+// #include "moveablemem.hpp"
 #include "dynamicmem.hpp"
 
 #include "template.hpp"

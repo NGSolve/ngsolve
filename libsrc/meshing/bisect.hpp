@@ -46,6 +46,7 @@ public:
   Refinement ();
   virtual ~Refinement ();
   
+  void Refine (Mesh & mesh) const;
   void Refine (Mesh & mesh);
   void Bisect (Mesh & mesh, class BisectionOptions & opt, Array<double> * quality_loss = NULL);
   void MakeSecondOrder (Mesh & mesh);

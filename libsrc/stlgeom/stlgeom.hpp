@@ -436,10 +436,17 @@ namespace netgen
 				    double gh, double fact, double minh);
 
     friend class MeshingSTLSurface;
+
+
+    virtual int GenerateMesh (Mesh*& mesh,
+			      int perfstepsstart, int perfstepsend, char* optstring);
+    
+    virtual const Refinement & GetRefinement () const;
   };
  
 
 #include "meshstlsurface.hpp"
+
 
 
   extern int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh,
