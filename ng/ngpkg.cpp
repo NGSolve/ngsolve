@@ -6,14 +6,6 @@ The interface between the GUI and the netgen library
 
 
 #include <mystdlib.h>
-
-/*
-#ifdef LINUX
-#include <fenv.h>
-#include <dlfcn.h>
-#endif
-*/
-
 #include <myadt.hpp>
 #include <linalg.hpp>
 #include <csg.hpp>
@@ -21,6 +13,7 @@ The interface between the GUI and the netgen library
 #include <geometry2d.hpp>
 #include <stlgeom.hpp>
 #include <meshing.hpp>
+
 
 #ifdef OCCGEOMETRY
 #include <occgeom.hpp>
@@ -38,7 +31,6 @@ The interface between the GUI and the netgen library
 #endif
 
 // #include <parallel.hpp>
-
 
 // to be sure to include the 'right' togl-version
 #include "togl_1_7.h"
@@ -234,9 +226,6 @@ namespace netgen
 #endif
 
 
-#ifdef MODELLER
-  VisualScene * vsmodeller = NULL;
-#endif
 
   VisualScene *vs = &vscross;
 
@@ -1343,14 +1332,6 @@ namespace netgen
   {
     static char buf[100];
     if (argc < 2) return TCL_ERROR;
-    /*
-    if (strcmp (argv[1], "moveable") == 0)
-      {
-	sprintf (buf, "%6.1f", double(BaseMoveableMem::used)/1048576);
-	Tcl_SetResult (interp, buf, TCL_STATIC);
-	return TCL_OK;
-      }
-    */
 
     if (strcmp (argv[1], "usedmb") == 0)
       { // returns string of 512 '0' or '1'
@@ -1364,9 +1345,6 @@ namespace netgen
 	Tcl_SetResult (interp, usedmb, TCL_STATIC);
 	return TCL_OK;
       }
-
-
-
 
     return TCL_ERROR;
   }
@@ -1732,19 +1710,9 @@ namespace netgen
 	ref = new RefinementSurfaces (*geometry);
       }
 
-    // if (!mesh -> coarsemesh)
     mesh -> GetCurvedElements().BuildCurvedElements (ref, mparam.elementorder);
-    /*
-      else
-      {
-      mesh -> coarsemesh -> GetCurvedElements().BuildCurvedElements (ref, mparam.elementorder);
-      mesh -> GetCurvedElements().SetHighOrder(mparam.elementorder);
-      }
-    */
-    delete ref;
 
-    //
-    // cout << "WARNING: Ng_HighOrder! ref is not deleted for edge projection visualization" << endl;
+    delete ref;
 
     multithread.task = savetask;
     multithread.running = 0;
@@ -1769,16 +1737,13 @@ namespace netgen
 	return TCL_ERROR;
       }
 
-
     multithread.running = 1;
     multithread.terminate = 0;
 
     mparam.elementorder = atoi(argv[1]);
 
-    // if(argc > 2 && strcmp(argv[2],"noparallel") == 0)
+
     HighOrderDummy(NULL);
-    // else
-    // RunParallel (HighOrderDummy, NULL);
 
     return TCL_OK;
   }
@@ -1925,9 +1890,8 @@ namespace netgen
 			  Tcl_Interp * interp,
 			  int argc, tcl_const char *argv[])
   {
-    int i;
     double globh = mparam.maxh;
-    for (i = 1; i <= geometry->singpoints.Size(); i++)
+    for (int i = 1; i <= geometry->singpoints.Size(); i++)
       geometry->singpoints.Get(i)->SetMeshSize (*mesh, globh);
     return TCL_OK;
   }

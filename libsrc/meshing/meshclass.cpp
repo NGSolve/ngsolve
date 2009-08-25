@@ -3482,7 +3482,6 @@ namespace netgen
   {
     // static int timer1 = NgProfiler::CreateTimer ("Legaltet2");
 
-
     // Test, whether 4 points have a common surface plus
     // at least 4 edges at the boundary
 
