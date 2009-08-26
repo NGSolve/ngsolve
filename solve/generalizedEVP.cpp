@@ -56,7 +56,7 @@ namespace ngsolve
     }
 
     ///
-    virtual void Do();
+    virtual void Do(LocalHeap & lh);
     ///
     virtual string GetClassName () const
     {
@@ -94,7 +94,7 @@ namespace ngsolve
   }
 
 
-  void NumProcEVP_AM :: Do()
+  void NumProcEVP_AM :: Do(LocalHeap & lh)
   {
     cout << "solve  evp" << endl;
 

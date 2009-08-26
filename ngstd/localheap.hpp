@@ -194,6 +194,11 @@ inline void * operator new (size_t size, ngstd::LocalHeap & lh)
   return lh.Alloc(size);
 }
 
+inline void operator delete (void * p, ngstd::LocalHeap & lh)  
+{
+  ; 
+}
+
 
 
 #endif

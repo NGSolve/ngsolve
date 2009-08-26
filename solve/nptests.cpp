@@ -24,7 +24,7 @@ namespace ngsolve
       return new NumProcApplyMat (pde, flags);
     }
     ///
-    virtual void Do();
+    virtual void Do(LocalHeap & lh);
   };
   
 
@@ -36,7 +36,7 @@ namespace ngsolve
     bfa = apde.GetBilinearForm ("ar");
   }
 
-  void NumProcApplyMat :: Do()
+  void NumProcApplyMat :: Do(LocalHeap & lh)
   {
     const BaseMatrix & mat = bfa->GetMatrix();
     cout << "h = " << mat.Height();

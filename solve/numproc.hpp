@@ -30,9 +30,9 @@ public:
   ///
   virtual ~NumProc();
   ///
-  virtual void Do();
+  /// virtual void Do();
   ///
-  virtual void Do(LocalHeap & lh);
+  virtual void Do(LocalHeap & lh) = 0;
   ///
   virtual void PrintReport (ostream & ost);
   ///
