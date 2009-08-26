@@ -640,7 +640,7 @@ namespace ngsolve
       return new NumProcMarkElements (pde, flags);
     }
     ///
-    virtual void Do();
+    virtual void Do(LocalHeap & lh);
     ///
     virtual string GetClassName () const
     {
@@ -672,7 +672,7 @@ namespace ngsolve
     ;
   }
 
-  void NumProcMarkElements :: Do()
+  void NumProcMarkElements :: Do(LocalHeap & lh)
   {
     cout << "Element marker, " << flush;
 
@@ -819,7 +819,7 @@ Flags visflags;
     }
 
     ///
-    virtual void Do();
+    virtual void Do(LocalHeap & lh);
   };
 
 
@@ -841,7 +841,7 @@ Flags visflags;
   }
 
 
-  void NumProcSetVisual :: Do()
+  void NumProcSetVisual :: Do(LocalHeap & lh)
   {
     /*
       cout << "Set Visualization Flag:" << endl;

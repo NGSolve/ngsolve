@@ -4257,7 +4257,7 @@ namespace ngfem
 
 
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrix<> dshape) const
+			     FlatMatrixFixWidth<3> dshape) const
     {
       double x = ip(0);
       double y = ip(1);

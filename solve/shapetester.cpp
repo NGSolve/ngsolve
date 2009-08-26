@@ -70,11 +70,16 @@ namespace ngsolve
     void SetDof (int adof)
     {
       dof = adof;
-      Do();
+      DoIt();
     }
     
     ///
-    virtual void Do()
+    virtual void Do(LocalHeap & lh)
+    {
+      DoIt();
+    }
+
+    void DoIt ()
     {
       BaseVector & vecu = gfu->GetVector();
       vecu = 0;
@@ -89,6 +94,7 @@ namespace ngsolve
       //gfu->Visualize(gfu->GetName());
       Ng_Redraw ();
     }
+
 
     ///
     virtual string GetClassName () const

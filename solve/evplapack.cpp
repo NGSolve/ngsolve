@@ -39,7 +39,7 @@ namespace ngsolve
       return new NumProcEVPLapack (pde, flags);
     }
 
-    virtual void Do();
+    virtual void Do(LocalHeap & lh);
 
     virtual string GetClassName () const
     {
@@ -75,7 +75,7 @@ namespace ngsolve
   }
 
 
-  void NumProcEVPLapack :: Do()
+  void NumProcEVPLapack :: Do(LocalHeap & lh)
   {
     cout << "solve evp with Lapack" << endl;
 

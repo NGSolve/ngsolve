@@ -24,101 +24,11 @@ to be linked to a mesh handler such as Netgen.
 
 \section{Installing NGSolve as Netgen Add-On}
 
-To install NGSolve together with Netgen, you have to obtain first
-both packages from {\em www.hpfem.jku.at}. 
-The most up to date version is available via CVS checkout.
+Install Netgen and NGsolve as expained on {\tt http://sourceforge.net/apps/mediawiki/ngsolve}
 
-For this, you have to set a environment variable {\tt CVS\_RSH }. 
-On a {\tt tcsh} unix shell you enter
-\begin{verbatim}
-setenv CVS_RSH ssh
-\end{verbatim}
-In a {\tt bash} shell you enter
-\begin{verbatim}
-export CVS_RSH=ssh
-\end{verbatim}
-
-Then you can checkout the sources from the Netgen server:
-\begin{verbatim}
-cvs -d :ext:netgen@thor.sfb013.uni-linz.ac.at:/cvs/netgen co netgen
-\end{verbatim}
-
-This should give you the directory tree netgen. After that, change
-into netgen, and checkout ngsolve:
-
-\begin{verbatim}
-cvs -d :ext:netgen@thor.sfb013.uni-linz.ac.at:/cvs/netgen co ngsolve
-\end{verbatim}
-
-
-You have to modify a makefile to compile and link NGSolve:
-
-\begin{itemize}
-\item
-{\em File libsrc/makefile.mach.LINUX}
-
-Add the flag {\tt -DNGSOLVE} to the {\tt CPLUSPLUSFLAGS2}.
-
-Make sure that the lines \\
-\begin{verbatim}
-goalngs = goalngs
-\end{verbatim}
-and
-\begin{verbatim}
-appngs =  lib/$(MACHINE)/*.o -lngsolvebasic
-\end{verbatim}
-are commented in.
-\end{itemize}
-
-
-% \begin{itemize}
-% {\em File netgen/Makefile:} \\
-% Make sure that the line 
-% \begin{verbatim}
-% appngs =  lib/$(MACHINE)/*.o -lngsolvebasic
-% \end{verbatim}
-% $
-% is commented in (currently line 63). This will link the
-% necessary object and library files.
-%
-%Comment in the line (currently line 91)
-% \begin{verbatim}
-%         cd ngsolve; $(MAKE);
-% \end{verbatim}
-%
-%to compile the NGSolve package.
-%
-% \begin{itemize}
-% \item
-% {\em File netgen/ngtcl/ngappinit:} 
-% Make sure that 
-% \begin{verbatim}
-% #define NGSOLVE
-% \end{verbatim}
-% is commented in (currently line 232). 
-% 
-% \end{itemize}
-
-
-After that, you compile Netgen/NGSolve as you compile
-Netgen:
-
-\begin{verbatim}
-> cd netgen
-> setenv MACHINE LINUX
-> make
-\end{verbatim}
-
-The make includes the machine dependent makefile libsrc/makefile.mach.\$(MACHINE). 
-% $
-Please set MACHINE to the environment most similar to yours.
-
-\bigskip
-
-This should give you the binary {\tt ng}. 
 
 \section{A first demo}
-Start the program 'ng'. There should pop up
+Start the program 'netgen'. There should pop up
 a window with menu items, and a large white visualization area.
 
 Select the menu item {\em Solve $\rightarrow$ Load PDE} and open the PDE file {\em ngsolve/pde\_tutorial/d1\_square.pde}. 

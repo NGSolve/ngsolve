@@ -41,7 +41,7 @@ namespace ngfem
   {
     if(D == 2)
       return new SourceHDivIntegrator<2> (coeffs[0], coeffs[1]);
-    else if (D == 3)
+    else // if (D == 3)
       return new SourceHDivIntegrator<3> (coeffs[0], coeffs[1], coeffs[2]);
   }
 

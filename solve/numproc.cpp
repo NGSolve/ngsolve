@@ -21,16 +21,17 @@ namespace ngsolve
     ;
   }
 
+  /*
   void NumProc :: Do()
   {
     ;
   }
 
-
   void NumProc :: Do (LocalHeap & lh)
   {
     Do();
   }
+  */
 
   void NumProc :: PrintReport (ostream & ost)
   {
@@ -310,7 +311,7 @@ namespace ngsolve
       return new NumProcDrawFlux (pde, flags);
     }
     ///
-    virtual void Do();
+    virtual void Do (LocalHeap & lh);
 
     static void PrintDoc (ostream & ost);
     ///
@@ -412,7 +413,7 @@ namespace ngsolve
     ;
   }
 
-  void NumProcDrawFlux :: Do()
+  void NumProcDrawFlux :: Do(LocalHeap & lh)
   {
     cout << "Num-proc draw flux" << endl;
   }

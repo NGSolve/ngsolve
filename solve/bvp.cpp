@@ -2,13 +2,6 @@
 
 namespace ngsolve
 {
-  using namespace ngsolve;
-  // using namespace ngbla;
-  // using namespace ngla;
-
-
-
-
 
 
   /* *************************** Numproc BVP ********************** */
