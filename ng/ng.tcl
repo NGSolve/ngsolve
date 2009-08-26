@@ -5,9 +5,9 @@ if {[catch {package require Tix } result ]} {
     puts "error : $result"
 }
 
-if {[catch {package require Togl 2.0 }]} {
-    puts "cannot find package Togl 2.0"
-}
+# if {[catch {package require Togl 2.0 }]} {
+#    puts "cannot find package Togl 2.0"
+# }
 
 
 
@@ -274,8 +274,5 @@ if { [file exists startup.tcl] } {
 
 
 
-# if { [catch { source ${ngdir}/demoapp.tcl } result ] } {
-#    puts "cannot load demoapp" 
-#    puts "error: $result"
-# }
+catch { source ${ngdir}/demoapp.tcl } 
 
