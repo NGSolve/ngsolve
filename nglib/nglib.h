@@ -57,6 +57,10 @@ typedef void * Ng_Geometry_2D;
 /// Data type for NETGEN STL geometry
 typedef void * Ng_STL_Geometry;
 
+#ifdef OCCGEOMETRY
+/// Data type for NETGEN OpenCascade geometry
+typedef void * Ng_OCC_Geometry;
+#endif
 
 
 // *** Special Enum types used within Netgen ***********
@@ -543,5 +547,30 @@ DLL_HEADER Ng_Result Ng_ACIS_GenerateSurfaceMesh (Ng_ACIS_Geometry * geom,
 
 #endif
 
+
+
+#ifdef OCCGEOMETRY
+
+// **********************************************************
+// **   OpenCascade Geometry / Meshing Utilities           **
+// **********************************************************
+
+// Create new OCC Geometry Object
+DLL_HEADER Ng_OCC_Geometry * Ng_OCC_NewGeometry ();
+
+// Loads geometry from STEP file
+DLL_HEADER Ng_OCC_Geometry * Ng_OCC_Load_STEP (const char * filename);
+
+// Loads geometry from IGES file
+DLL_HEADER Ng_OCC_Geometry * Ng_OCC_Load_IGES (const char * filename);
+
+// Loads geometry from BREP file
+DLL_HEADER Ng_OCC_Geometry * Ng_OCC_Load_BREP (const char * filename);
+
+// Get the face map of an already loaded OCC geometry
+DLL_HEADER Ng_Result Ng_OCC_GetFMap(Ng_OCC_Geometry * geom, 
+                                    TopTools_IndexedMapOfShape & FMap);
+
+#endif
 
 #endif

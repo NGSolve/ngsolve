@@ -768,6 +768,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\meshing\basegeom.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\meshing\bcfunctions.hpp"
 				>
 			</File>
@@ -796,11 +800,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\csg\csg.hpp"
+				RelativePath="..\libsrc\include\csg.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\csg.hpp"
+				RelativePath="..\libsrc\csg\csg.hpp"
 				>
 			</File>
 			<File
@@ -872,11 +876,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\geometry2d.hpp"
+				RelativePath="..\libsrc\geom2d\geometry2d.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\geom2d\geometry2d.hpp"
+				RelativePath="..\libsrc\include\geometry2d.hpp"
 				>
 			</File>
 			<File
@@ -916,11 +920,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\gprim.hpp"
+				RelativePath="..\libsrc\gprim\gprim.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\gprim\gprim.hpp"
+				RelativePath="..\libsrc\include\gprim.hpp"
 				>
 			</File>
 			<File
@@ -976,11 +980,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\linalg.hpp"
+				RelativePath="..\libsrc\linalg\linalg.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\linalg.hpp"
+				RelativePath="..\libsrc\include\linalg.hpp"
 				>
 			</File>
 			<File
@@ -1004,11 +1008,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\meshing\meshing.hpp"
+				RelativePath="..\libsrc\include\meshing.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\meshing.hpp"
+				RelativePath="..\libsrc\meshing\meshing.hpp"
 				>
 			</File>
 			<File
@@ -1033,10 +1037,6 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\meshing\meshtype.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\general\moveablemem.hpp"
 				>
 			</File>
 			<File
@@ -1104,11 +1104,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\opti.hpp"
+				RelativePath="..\libsrc\linalg\opti.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\opti.hpp"
+				RelativePath="..\libsrc\include\opti.hpp"
 				>
 			</File>
 			<File
@@ -1216,11 +1216,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\stlgeom.hpp"
+				RelativePath="..\libsrc\stlgeom\stlgeom.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\stlgeom\stlgeom.hpp"
+				RelativePath="..\libsrc\include\stlgeom.hpp"
 				>
 			</File>
 			<File
@@ -1284,11 +1284,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\visualization\visual.hpp"
+				RelativePath="..\libsrc\include\visual.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\visual.hpp"
+				RelativePath="..\libsrc\visualization\visual.hpp"
 				>
 			</File>
 			<File
@@ -1555,10 +1555,6 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\meshing\meshtype.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\general\moveablemem.cpp"
 				>
 			</File>
 			<File

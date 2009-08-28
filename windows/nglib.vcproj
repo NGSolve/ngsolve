@@ -99,6 +99,86 @@
 			/>
 		</Configuration>
 		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(SolutionDir)$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="1"
+			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName)_$(PlatformName).htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\nglib&quot;;&quot;$(SolutionDir)..\&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="pthreadVC2_64.lib"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
+				ManifestFile="$(OutDir)\$(TargetFileName).intermediate.manifest"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				OutputManifestFile="$(OutDir)\$(TargetFileName).embed.manifest"
+				ManifestResourceFile="$(OutDir)\$(TargetFileName).embed.manifest.res"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="&quot;$(ProjectDir)\postBuild_nglib.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot;"
+			/>
+		</Configuration>
+		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ProjectName)\$(ConfigurationName)"
 			IntermediateDirectory="$(ProjectName)\$(ConfigurationName)"
@@ -182,11 +262,13 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Debug|x64"
+			Name="Release|x64"
 			OutputDirectory="$(SolutionDir)$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="1"
+			DeleteExtensionsOnClean="*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;$(TargetPath)"
+			WholeProgramOptimization="1"
 			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName)_$(PlatformName).htm"
 			>
 			<Tool
@@ -207,14 +289,20 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\nglib&quot;;&quot;$(SolutionDir)..\&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				EnableEnhancedInstructionSet="1"
 				UsePrecompiledHeader="0"
-				WarningLevel="3"
+				ObjectFile="$(IntDir)\"
+				ProgramDataBaseFileName="$(IntDir)\vc90.pdb"
+				XMLDocumentationFileName="$(IntDir)\"
+				WarningLevel="2"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -229,11 +317,8 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="pthreadVC2_64.lib"
-				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
 				ManifestFile="$(OutDir)\$(TargetFileName).intermediate.manifest"
-				GenerateDebugInformation="true"
-				SubSystem="2"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -262,9 +347,92 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			Name="Release(OCC)|Win32"
+			OutputDirectory="$(SolutionDir)$(ProjectName)\$(ConfigurationName)"
+			IntermediateDirectory="$(ProjectName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="1"
+			DeleteExtensionsOnClean="*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;$(TargetPath)"
+			WholeProgramOptimization="1"
+			BuildLogFile="$(SolutionDir)\BuildLog_$(ProjectName).htm"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="&quot;$(CASROOT)\inc&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\nglib&quot;;&quot;$(SolutionDir)..\&quot;"
+				PreprocessorDefinitions="WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;OCCGEOMETRY;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				EnableEnhancedInstructionSet="1"
+				UsePrecompiledHeader="0"
+				ObjectFile="$(IntDir)\"
+				ProgramDataBaseFileName="$(IntDir)\vc90.pdb"
+				XMLDocumentationFileName="$(IntDir)\"
+				WarningLevel="2"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="pthreadVC2.lib TKernel.lib TKGeomBase.lib TKMath.lib TKG2d.lib TKG3d.lib TKXSBase.lib TKOffset.lib TKFillet.lib TKShHealing.lib TKMesh.lib TKMeshVS.lib TKTopAlgo.lib TKGeomAlgo.lib TKBool.lib TKPrim.lib TKBO.lib TKIGES.lib TKBRep.lib TKSTEPBase.lib TKSTEP.lib TKSTL.lib TKSTEPAttr.lib TKSTEP209.lib TKXDESTEP.lib TKXDEIGES.lib TKXCAF.lib TKDCAF.lib TKLCAF.lib"
+				AdditionalLibraryDirectories="$(CASROOT)\win32\lib;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
+				ManifestFile="$(OutDir)\$(TargetFileName).intermediate.manifest"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				OutputManifestFile="$(OutDir)\$(TargetFileName).embed.manifest"
+				ManifestResourceFile="$(OutDir)\$(TargetFileName).embed.manifest.res"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="&quot;$(ProjectDir)\postBuild_nglib.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release(OCC)|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="1"
 			DeleteExtensionsOnClean="*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;$(TargetPath)"
@@ -564,10 +732,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\general\moveablemem.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\libsrc\meshing\msghandler.cpp"
 				>
 			</File>
@@ -589,6 +753,18 @@
 			</File>
 			<File
 				RelativePath="..\nglib\nglib.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\occgenmesh.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\occgeom.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\occmeshsurf.cpp"
 				>
 			</File>
 			<File
@@ -890,6 +1066,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\meshing\basegeom.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\meshing\bisect.hpp"
 				>
 			</File>
@@ -914,11 +1094,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\csg\csg.hpp"
+				RelativePath="..\libsrc\include\csg.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\csg.hpp"
+				RelativePath="..\libsrc\csg\csg.hpp"
 				>
 			</File>
 			<File
@@ -1030,11 +1210,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\gprim.hpp"
+				RelativePath="..\libsrc\gprim\gprim.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\gprim\gprim.hpp"
+				RelativePath="..\libsrc\include\gprim.hpp"
 				>
 			</File>
 			<File
@@ -1142,10 +1322,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\general\moveablemem.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\libsrc\general\mpi_interface.hpp"
 				>
 			</File>
@@ -1187,6 +1363,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\include\occgeom.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\occmeshsurf.hpp"
 				>
 			</File>
 			<File
@@ -1351,6 +1531,62 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\interface\writeuser.hpp"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Ext Header Files"
+			>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Inter2d.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Inter3d.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop2d.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop3d.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Spliter.hxx"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Ext Source Files"
+			>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Inter2d.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Inter3d.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop2d.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Loop3d.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\occ\Partition_Spliter.cxx"
 				>
 			</File>
 		</Filter>

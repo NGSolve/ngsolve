@@ -20,6 +20,9 @@
 #include <geometry2d.hpp>
 #include <meshing.hpp>
 
+#ifdef OCCGEOMETRY
+#include <occgeom.hpp>
+#endif
 
 
 namespace netgen {
@@ -576,6 +579,77 @@ DLL_HEADER void Ng_STL_AddEdge (Ng_STL_Geometry * geom,
   readedges.Append(Point3d(p1[0],p1[1],p1[2]));
   readedges.Append(Point3d(p2[0],p2[1],p2[2]));
 }
+
+
+
+
+
+
+#ifdef OCCGEOMETRY
+// --------------------- OCC Geometry / Meshing Utility Functions -------------------
+
+// Create new OCC Geometry Object
+DLL_HEADER Ng_OCC_Geometry * Ng_OCC_NewGeometry ()
+{
+  return (Ng_OCC_Geometry*)(void*)new OCCGeometry;
+} 
+
+
+// Loads geometry from STEP File
+DLL_HEADER Ng_OCC_Geometry * Ng_OCC_Load_STEP (const char * filename)
+{
+   Ng_OCC_Geometry * geo = Ng_OCC_NewGeometry();
+   
+   geo = (Ng_OCC_Geometry *)LoadOCC_STEP(filename);
+
+   return (geo);
+}
+
+
+// Loads geometry from IGES File
+DLL_HEADER Ng_OCC_Geometry * Ng_OCC_Load_IGES (const char * filename)
+{
+   Ng_OCC_Geometry * geo = Ng_OCC_NewGeometry();
+   
+   geo = (Ng_OCC_Geometry *)LoadOCC_IGES(filename);
+
+   return (geo);
+}
+
+
+// Loads geometry from BREP File
+DLL_HEADER Ng_OCC_Geometry * Ng_OCC_Load_BREP (const char * filename)
+{
+   Ng_OCC_Geometry * geo = Ng_OCC_NewGeometry();
+   
+   geo = (Ng_OCC_Geometry *)LoadOCC_BREP(filename);
+
+   return (geo);
+}
+
+
+// Extract a 
+DLL_HEADER Ng_Result Ng_OCC_GetFMap(Ng_OCC_Geometry * geom, 
+                                    TopTools_IndexedMapOfShape & FMap)
+{
+   OCCGeometry* occgeom = (OCCGeometry*)geom;
+   FMap = occgeom->fmap;
+
+   if(FMap.Extent())
+   {
+      return NG_OK;
+   }
+   else
+   {
+      return -1;
+   }
+}
+
+// ------------------ End - OCC Geometry / Meshing Utility Functions ----------------
+#endif
+
+
+
 
 
 
