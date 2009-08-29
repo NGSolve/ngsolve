@@ -224,7 +224,7 @@ private:
 
   bool GetValueComplex (const SolData * data, ElementIndex elnr, 
 			double lam1, double lam2, double lam3,
-			int comp, double & valr, double & vali) const;
+			int comp, complex<double> & val) const;
 
   bool GetValues (const SolData * data, ElementIndex elnr, 
 		  double lam1, double lam2, double lam3,
@@ -245,7 +245,7 @@ private:
   
   bool GetSurfValueComplex (const SolData * data, SurfaceElementIndex elnr,
 			    double lam1, double lam2, 
-			    int comp, double & valr, double & vali) const;
+			    int comp, complex<double> & val) const;
 
   bool GetSurfValues (const SolData * data, SurfaceElementIndex elnr,
 		      double lam1, double lam2, 

@@ -1180,7 +1180,7 @@ namespace netgen
               {
                 if (usetexture == 2)
                   for (int ii = 0; ii < npt; ii++)
-                    drawelem = GetSurfValueComplex (sol, sei, pref[ii](0), pref[ii](1), scalcomp, valuesc[ii].real(), valuesc[ii].imag());
+                    drawelem = GetSurfValueComplex (sol, sei, pref[ii](0), pref[ii](1), scalcomp, valuesc[ii]);
                 else
                   for (int ii = 0; ii < npt; ii++)
                     drawelem = GetSurfValue (sol, sei, pref[ii](0), pref[ii](1), scalcomp, values[ii]);
@@ -2791,11 +2791,9 @@ namespace netgen
   bool VisualSceneSolution :: 
   GetValueComplex (const SolData * data, ElementIndex elnr, 
                    double lam1, double lam2, double lam3,
-                   int comp, double & valr, double & vali) const
+                   int comp, complex<double> & val) const
   {
-
-    valr = 0;
-    vali = 0;
+    val = 0.0;
     bool ok = 0;
 
            
@@ -2805,8 +2803,7 @@ namespace netgen
         {
           double values[20];
           ok = data->solclass->GetValue (elnr, lam1, lam2, lam3, values);
-          valr = values[comp-1];
-          vali = values[comp];
+          val = complex<double> (values[comp-1], values[comp]);
           return ok;
         }
       default:
@@ -2980,18 +2977,10 @@ namespace netgen
 
   complex<double> VisualSceneSolution ::  ExtractValueComplex (const SolData * data, int comp, double * values) const
   {
-    double valr, vali;
     if (!data->iscomplex)
-      {
-	valr =  values[comp-1];
-	vali = 0;
-      }
+      return values[comp-1];
     else
-      {
-	valr = values[comp-1];
-	vali = values[comp];
-      }
-    return complex<double> (valr, vali);
+      return complex<double> (values[comp-1], values[comp]);
   }
 
 
@@ -3000,7 +2989,7 @@ namespace netgen
   bool VisualSceneSolution :: 
   GetSurfValueComplex (const SolData * data, SurfaceElementIndex selnr, 
                        double lam1, double lam2, 
-                       int comp, double & valr, double & vali) const
+                       int comp, complex<double> & val) const
   {
     switch (data->soltype)
       {
@@ -3014,15 +3003,9 @@ namespace netgen
           if (ok)
             {
               if (!data->iscomplex)
-                {
-                  valr =  values[comp-1];
-		  vali = 0;
-		}
+                val = values[comp-1];
               else
-                {
-                  valr = values[comp-1];
-                  vali = values[comp];
-                }
+                val = complex<double> (values[comp-1], values[comp]);
             }
           
           return ok;
@@ -4125,7 +4108,8 @@ namespace netgen
     elnrs = -1;
 
     Point<3> p[3];
-    double val[3],vali[3];
+    double val[3];
+    complex<double> valc[3];
 
     for (int i = 0; i < trigs.Size(); i++)
       {
@@ -4166,7 +4150,7 @@ namespace netgen
               {
                 //double valr, vali;
                 ok = GetValueComplex (sol, trig.elnr, ploc(0), ploc(1), ploc(2),
-				      scalcomp, val[j], vali[j]);
+				      scalcomp, valc[j]);
                 
                 //glTexCoord2f ( valr, vali );
               }
@@ -4184,7 +4168,7 @@ namespace netgen
 		    SetOpenGlColor (vals[trig.points[j].locpnr]);
 		}
 	      else
-		glTexCoord2f ( val[j], vali[j] );
+		glTexCoord2f ( valc[j].real(), valc[j].imag() );
 
 	      glVertex3dv (p[j]);
 	    }
