@@ -641,7 +641,7 @@ DLL_HEADER Ng_Result Ng_OCC_GetFMap(Ng_OCC_Geometry * geom,
    }
    else
    {
-      return -1;
+      return NG_ERROR;
    }
 }
 

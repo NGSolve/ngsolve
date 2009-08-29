@@ -74,7 +74,9 @@ enum Ng_Volume_Element_Type
 
 /// Values returned by Netgen functions
 enum Ng_Result 
-   { NG_OK                  = 0, 
+   { 
+     NG_ERROR               = -1,   
+     NG_OK                  = 0, 
      NG_SURFACE_INPUT_ERROR = 1,
      NG_VOLUME_FAILURE      = 2, 
      NG_STL_INPUT_ERROR     = 3,
