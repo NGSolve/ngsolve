@@ -707,7 +707,7 @@ namespace nglib
 
 
 
-   DLL_HEADER void Ng_Meshing_Parameters :: Reset_Meshing_Parameters()
+   DLL_HEADER void Ng_Meshing_Parameters :: Reset_Parameters()
    {
       maxh = 1000;
       fineness = 0.5;
