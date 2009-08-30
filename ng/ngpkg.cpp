@@ -2051,6 +2051,24 @@ namespace netgen
   }
 
 
+
+#ifdef OCCGEOMETRY
+  int Ng_SetOCCParameters  (ClientData clientData,
+			    Tcl_Interp * interp,
+			    int argc, tcl_const char *argv[])
+  {
+    occparam.resthcloseedgefac =
+      atof (Tcl_GetVar (interp, "::stloptions.resthcloseedgefac", 0));
+
+    occparam.resthcloseedgeenable =
+      atoi (Tcl_GetVar (interp, "::stloptions.resthcloseedgeenable", 0));
+
+    return TCL_OK;
+  }
+#endif // OCCGEOMETRY
+
+
+
   int Ng_GetCommandLineParameter  (ClientData clientData,
 				   Tcl_Interp * interp,
 				   int argc, tcl_const char *argv[])
@@ -2200,6 +2218,11 @@ namespace netgen
     multithread.terminate = 0;
 
     Ng_SetSTLParameters (clientData, interp, 0, argv);
+
+#ifdef OCCGEOMETRY
+    Ng_SetOCCParameters (clientData, interp, 0, argv);
+#endif // OCCGEOMETRY
+
     Ng_SetMeshingParameters (clientData, interp, 0, argv);
 
     perfstepsstart = 1;
@@ -3003,6 +3026,11 @@ namespace netgen
   {
 
     Ng_SetSTLParameters (clientData, interp, argc, argv);
+
+#ifdef OCCGEOMETRY
+    Ng_SetOCCParameters (clientData, interp, argc, argv);
+#endif // OCCGEOMETRY
+
     Ng_SetMeshingParameters (clientData, interp, argc, argv);
 
     if (mesh.Ptr() && stlgeometry)
@@ -5011,6 +5039,11 @@ namespace netgen
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
+#ifdef OCCGEOMETRY
+    Tcl_CreateCommand (interp, "Ng_SetOCCParameters", Ng_SetOCCParameters,
+		       (ClientData)NULL,
+		       (Tcl_CmdDeleteProc*) NULL);
+#endif //OCCGEOMETRY
 
 
     Tcl_CreateCommand (interp, "Ng_SelectSurface", Ng_SelectSurface,

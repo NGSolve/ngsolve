@@ -119,6 +119,12 @@ namespace netgen
 #define ENTITYISHIGHLIGHTED 2
 #define ENTITYISDRAWABLE 4
 
+#define OCCGEOMETRYVISUALIZATIONNOCHANGE   0
+#define OCCGEOMETRYVISUALIZATIONFULLCHANGE 1  // Compute transformation matrices and redraw
+#define OCCGEOMETRYVISUALIZATIONHALFCHANGE 2  // Redraw
+
+
+
    class EntityVisualizationCode
    {
       int code;
@@ -156,6 +162,9 @@ namespace netgen
       {  code &= ~ENTITYISDRAWABLE;}
    };
 
+
+
+
    inline double Det3 (double a00, double a01, double a02,
       double a10, double a11, double a12,
       double a20, double a21, double a22)
@@ -163,13 +172,10 @@ namespace netgen
       return a00*a11*a22 + a01*a12*a20 + a10*a21*a02 - a20*a11*a02 - a10*a01*a22 - a21*a12*a00;
    }
 
-#define OCCGEOMETRYVISUALIZATIONNOCHANGE   0
-#define OCCGEOMETRYVISUALIZATIONFULLCHANGE 1
-// == compute transformation matrices and redraw
-#define OCCGEOMETRYVISUALIZATIONHALFCHANGE 2
-// == redraw
 
-  class OCCGeometry : public NetgenGeometry
+
+
+   class OCCGeometry : public NetgenGeometry
    {
       Point<3> center;
 
@@ -337,11 +343,41 @@ namespace netgen
 
       void WriteOCC_STL(char * filename);
 
-     virtual int GenerateMesh (Mesh*& mesh,
-			       int perfstepsstart, int perfstepsend, char* optstring);
-     
-     virtual const Refinement & GetRefinement () const;
+      virtual int GenerateMesh (Mesh*& mesh,
+         int perfstepsstart, int perfstepsend, char* optstring);
+
+      virtual const Refinement & GetRefinement () const;
    };
+
+
+
+   class OCCParameters
+   {
+   public:
+
+      /// Factor for meshing close edges 
+      double resthcloseedgefac;
+
+
+      /// Enable / Disable detection of close edges
+      int resthcloseedgeenable;
+
+
+
+      /*!
+         Default Constructor for the OpenCascade
+         Mesh generation parameter set
+      */
+      OCCParameters();
+
+
+      /*!
+         Dump all the OpenCascade specific meshing parameters 
+         to console
+      */
+      void Print (ostream & ost) const;
+   };
+   
 
    void PrintContents (OCCGeometry * geom);
 
@@ -349,6 +385,7 @@ namespace netgen
    OCCGeometry * LoadOCC_STEP (const char * filename);
    OCCGeometry * LoadOCC_BREP (const char * filename);
 
+   extern OCCParameters occparam;
 }
 
 #endif

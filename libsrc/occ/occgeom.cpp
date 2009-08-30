@@ -853,14 +853,17 @@ namespace netgen
 
 
 
+    facemeshstatus.DeleteAll();
     facemeshstatus.SetSize (fmap.Extent());
     facemeshstatus = 0;
 
     // Philippose - 15/01/2009
+    face_maxh.DeleteAll();
     face_maxh.SetSize (fmap.Extent());
     face_maxh = mparam.maxh;
 
     // Philippose - 17/01/2009
+    face_sel_status.DeleteAll();
     face_sel_status.SetSize (fmap.Extent());
     face_sel_status = 0;
 
@@ -1613,6 +1616,30 @@ namespace netgen
   {
     return * new OCCRefinementSurfaces (*this);
   }
+
+
+
+
+  OCCParameters :: OCCParameters()
+  {
+     resthcloseedgefac = 1;
+     resthcloseedgeenable = 1;
+  }
+
+
+
+
+  void OCCParameters :: Print(ostream & ost) const
+  {
+     ost << "OCC Parameters:" << endl
+         << "close edges: " << resthcloseedgeenable
+         << ", fac = " << resthcloseedgefac << endl;
+  }
+
+
+
+
+  OCCParameters occparam;
 
 }
 
