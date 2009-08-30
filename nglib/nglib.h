@@ -2,7 +2,7 @@
 #define NGLIB
 
 /**************************************************************************/
-/* File:   nglib.hh                                                       */
+/* File:   nglib.h                                                        */
 /* Author: Joachim Schoeberl                                              */
 /* Date:   7. May. 2000                                                   */
 /**************************************************************************/
@@ -60,6 +60,7 @@ typedef void * Ng_STL_Geometry;
 #ifdef OCCGEOMETRY
 /// Data type for NETGEN OpenCascade geometry
 typedef void * Ng_OCC_Geometry;
+typedef void * Ng_OCC_TopTools_IndexedMapOfShape;
 #endif
 
 
@@ -93,9 +94,13 @@ class Ng_Meshing_Parameters
 public:
    double maxh;                //!< Maximum global mesh size limit 
    double fineness;            //!< Mesh density: 0...1 (0 => coarse; 1 => fine)
+   double grading;             //!< Mesh grading: 0...1 (0 => uniform mesh; 1 => aggressive local grading)
    int secondorder;            //!< Generate second-order surface and volume elements
    char * meshsize_filename;   //!< Optional external mesh size file 
    int quad_dominated;         //!< Creates a Quad-dominated mesh 
+   int optsteps_3d;            //!< Number of optimize steps to use for 3-D mesh optimization
+   int optsteps_2d;            //!< Number of optimize steps to use for 2-D mesh optimization
+
 
    /*!
       Default constructor for the Mesh Parameters class
@@ -104,11 +109,24 @@ public:
       class with the following default values
       - #maxh: 1000.0
       - #fineness: 0.5
+      - #grading: 0.3
       - #secondorder: 0.0
-      - #meshsize_filename: 0
+      - #meshsize_filename: null
       - #quad_dominated: 0
+      - #optsteps_2d: 3
+      - #optsteps_3d: 3
    */
    DLL_HEADER Ng_Meshing_Parameters();
+
+
+
+   /*!
+       Reset the meshing parameters to their defaults
+
+       This member function resets all the meshing parameters 
+       of the object to the default values
+   */
+   DLL_HEADER void Reset_Parameters();
 };
 
 
@@ -571,7 +589,7 @@ DLL_HEADER Ng_OCC_Geometry * Ng_OCC_Load_BREP (const char * filename);
 
 // Get the face map of an already loaded OCC geometry
 DLL_HEADER Ng_Result Ng_OCC_GetFMap(Ng_OCC_Geometry * geom, 
-                                    TopTools_IndexedMapOfShape & FMap);
+                                    Ng_OCC_TopTools_IndexedMapOfShape * FMap);
 
 #endif
 
