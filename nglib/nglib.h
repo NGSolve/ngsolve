@@ -92,12 +92,28 @@ enum Ng_Result
 class Ng_Meshing_Parameters 
 {
 public:
-   double maxh;                //!< Maximum global mesh size limit 
+   int uselocalh;              //!< Switch to enable / disable usage of local mesh size modifiers
+
+   double maxh;                //!< Maximum global mesh size allowed
+   double minh;                //!< Minimum global mesh size allowed
+
    double fineness;            //!< Mesh density: 0...1 (0 => coarse; 1 => fine)
    double grading;             //!< Mesh grading: 0...1 (0 => uniform mesh; 1 => aggressive local grading)
+
+   double elementsperedge;     //!< Number of elements to generate per edge of the geometry
+   double elementspercurve;    //!< Elements to generate per curvature radius
+
+   int closeedgeenable;        //!< Enable / Disable mesh refinement at close edges
+   double closeedgefact;       //!< Factor to use for refinement at close edges (STL: larger => finer ; OCC: larger => coarser)
+
    int secondorder;            //!< Generate second-order surface and volume elements
-   char * meshsize_filename;   //!< Optional external mesh size file 
    int quad_dominated;         //!< Creates a Quad-dominated mesh 
+
+   char * meshsize_filename;   //!< Optional external mesh size file 
+
+   int optsurfmeshenable;      //!< Enable / Disable automatic surface mesh optimization
+   int optvolmeshenable;       //!< Enable / Disable automatic volume mesh optimization
+
    int optsteps_3d;            //!< Number of optimize steps to use for 3-D mesh optimization
    int optsteps_2d;            //!< Number of optimize steps to use for 2-D mesh optimization
 
@@ -107,12 +123,19 @@ public:
 
       Note: This constructor initialises the variables in the 
       class with the following default values
+      - #uselocalh: 1
       - #maxh: 1000.0
       - #fineness: 0.5
       - #grading: 0.3
+      - #elementsperedge: 2.0
+      - #elementspercurve: 2.0
+      - #closeedgeenable: 0
+      - #closeedgefact: 2.0
       - #secondorder: 0.0
       - #meshsize_filename: null
       - #quad_dominated: 0
+      - #optsurfmeshenable: 1
+      - #optvolmeshenable: 1
       - #optsteps_2d: 3
       - #optsteps_3d: 3
    */
@@ -543,8 +566,8 @@ DLL_HEADER Ng_Result Ng_STL_MakeEdges (Ng_STL_Geometry * geom,
 
 // generates mesh, empty mesh must be already created.
 DLL_HEADER Ng_Result Ng_STL_GenerateSurfaceMesh (Ng_STL_Geometry * geom,
-                                      Ng_Mesh * mesh,
-                                      Ng_Meshing_Parameters * mp);
+                                                 Ng_Mesh * mesh,
+                                                 Ng_Meshing_Parameters * mp);
 
 
 #ifdef ACIS
@@ -587,10 +610,25 @@ DLL_HEADER Ng_OCC_Geometry * Ng_OCC_Load_IGES (const char * filename);
 // Loads geometry from BREP file
 DLL_HEADER Ng_OCC_Geometry * Ng_OCC_Load_BREP (const char * filename);
 
+// Set the local mesh size based on geometry / topology
+DLL_HEADER Ng_Result Ng_OCC_SetLocalMeshSize (Ng_OCC_Geometry * geom,
+                                              Ng_Mesh * mesh,
+                                              Ng_Meshing_Parameters * mp);
+
+// Mesh the edges and add Face descriptors to prepare for surface meshing
+DLL_HEADER Ng_Result Ng_OCC_GenerateEdgeMesh (Ng_OCC_Geometry * geom,
+                                              Ng_Mesh * mesh,
+                                              Ng_Meshing_Parameters * mp);
+
+// Mesh the surfaces of an OCC geometry
+DLL_HEADER Ng_Result Ng_OCC_GenerateSurfaceMesh (Ng_OCC_Geometry * geom,
+                                                 Ng_Mesh * mesh,
+                                                 Ng_Meshing_Parameters * mp); 
+
 // Get the face map of an already loaded OCC geometry
 DLL_HEADER Ng_Result Ng_OCC_GetFMap(Ng_OCC_Geometry * geom, 
                                     Ng_OCC_TopTools_IndexedMapOfShape * FMap);
 
-#endif
+#endif // OCCGEOMETRY
 
-#endif
+#endif // NGLIB

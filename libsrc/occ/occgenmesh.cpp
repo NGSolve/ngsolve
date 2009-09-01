@@ -17,9 +17,33 @@ namespace netgen
 #define IGNORECURVELENGTH 1e-4
 
 
-   extern OCCParameters occparam;
-
    bool merge_solids = 1;
+
+   double Line :: Dist (Line l)
+   {
+      Vec<3> n = p1-p0;
+      Vec<3> q = l.p1-l.p0;
+      double nq = n*q;
+
+      Point<3> p = p0 + 0.5*n;
+      double lambda = (p-l.p0)*n / nq;
+
+      if (lambda >= 0 && lambda <= 1)
+      {
+         double d = (p-l.p0-lambda*q).Length();
+         //        if (d < 1e-3) d = 1e99;
+         return d;
+      }
+      else
+         return 1e99;
+   }
+
+
+
+   double Line :: Length ()
+   {
+      return (p1-p0).Length();
+   }
 
 
 
@@ -28,6 +52,179 @@ namespace netgen
       return  Point<3> (p.X(), p.Y(), p.Z());
    }
 
+
+
+   double ComputeH (double kappa)
+   {
+      double hret;
+      kappa *= mparam.curvaturesafety;
+
+      if (mparam.maxh * kappa < 1)
+         hret = mparam.maxh;
+      else
+         hret = 1 / kappa;
+
+      if (mparam.maxh < hret)
+         hret = mparam.maxh;
+
+      return (hret);
+   }
+
+
+
+
+   void RestrictHTriangle (gp_Pnt2d & par0, gp_Pnt2d & par1, gp_Pnt2d & par2,
+                           BRepLProp_SLProps * prop, Mesh & mesh, int depth, double h = 0)
+   {
+      int ls = -1;
+
+      gp_Pnt pnt0,pnt1,pnt2;
+
+      prop->SetParameters (par0.X(), par0.Y());
+      pnt0 = prop->Value();
+
+      prop->SetParameters (par1.X(), par1.Y());
+      pnt1 = prop->Value();
+
+      prop->SetParameters (par2.X(), par2.Y());
+      pnt2 = prop->Value();
+
+      double aux;
+      double maxside = pnt0.Distance(pnt1);
+      ls = 2;
+      aux = pnt1.Distance(pnt2);
+      if(aux > maxside)
+      {
+         maxside = aux;
+         ls = 0;
+      }
+      aux = pnt2.Distance(pnt0);
+      if(aux > maxside)
+      {
+         maxside = aux;
+         ls = 1;
+      }
+
+
+
+      gp_Pnt2d parmid;
+
+      parmid.SetX(0.3*(par0.X()+par1.X()+par2.X()));
+      parmid.SetY(0.3*(par0.Y()+par1.Y()+par2.Y()));
+
+      if (depth%3 == 0)
+      {
+         double curvature = 0;
+
+         prop->SetParameters (parmid.X(), parmid.Y());
+         if (!prop->IsCurvatureDefined())
+         {
+            (*testout) << "curvature not defined!" << endl;
+            return;
+         }
+         curvature = max(fabs(prop->MinCurvature()),
+            fabs(prop->MaxCurvature()));
+
+         prop->SetParameters (par0.X(), par0.Y());
+         if (!prop->IsCurvatureDefined())
+         {
+            (*testout) << "curvature not defined!" << endl;
+            return;
+         }
+         curvature = max(curvature,max(fabs(prop->MinCurvature()),
+            fabs(prop->MaxCurvature())));
+
+         prop->SetParameters (par1.X(), par1.Y());
+         if (!prop->IsCurvatureDefined())
+         {
+            (*testout) << "curvature not defined!" << endl;
+            return;
+         }
+         curvature = max(curvature,max(fabs(prop->MinCurvature()),
+            fabs(prop->MaxCurvature())));
+
+         prop->SetParameters (par2.X(), par2.Y());
+         if (!prop->IsCurvatureDefined())
+         {
+            (*testout) << "curvature not defined!" << endl;
+            return;
+         }
+         curvature = max(curvature,max(fabs(prop->MinCurvature()),
+            fabs(prop->MaxCurvature())));
+
+         //(*testout) << "curvature " << curvature << endl;
+
+         if (curvature < 1e-3)
+         {
+            //(*testout) << "curvature too small (" << curvature << ")!" << endl;
+            return;
+            // return war bis 10.2.05 auskommentiert
+         }
+
+
+
+         h = ComputeH (curvature+1e-10);
+
+         if(h < 1e-4*maxside)
+            return;
+
+
+         if (h > 30) return;
+      }
+
+      if (h < maxside && depth < 10)
+      {
+         //cout << "\r h " << h << flush;
+         gp_Pnt2d pm;
+
+         //cout << "h " << h << " maxside " << maxside << " depth " << depth << endl;
+         //cout << "par0 " << par0.X() << " " << par0.Y()
+         //<< " par1 " << par1.X() << " " << par1.Y()
+         //   << " par2 " << par2.X() << " " << par2.Y()<< endl;
+
+         if(ls == 0)
+         {
+            pm.SetX(0.5*(par1.X()+par2.X())); pm.SetY(0.5*(par1.Y()+par2.Y()));
+            RestrictHTriangle(pm, par2, par0, prop, mesh, depth+1, h);
+            RestrictHTriangle(pm, par0, par1, prop, mesh, depth+1, h);
+         }
+         else if(ls == 1)
+         {
+            pm.SetX(0.5*(par0.X()+par2.X())); pm.SetY(0.5*(par0.Y()+par2.Y()));
+            RestrictHTriangle(pm, par1, par2, prop, mesh, depth+1, h);
+            RestrictHTriangle(pm, par0, par1, prop, mesh, depth+1, h);
+         }
+         else if(ls == 2)
+         {
+            pm.SetX(0.5*(par0.X()+par1.X())); pm.SetY(0.5*(par0.Y()+par1.Y()));
+            RestrictHTriangle(pm, par1, par2, prop, mesh, depth+1, h);
+            RestrictHTriangle(pm, par2, par0, prop, mesh, depth+1, h);
+         }
+
+      }
+      else
+      {
+         gp_Pnt pnt;
+         Point3d p3d;
+
+         prop->SetParameters (parmid.X(), parmid.Y());
+         pnt = prop->Value();
+         p3d = Point3d(pnt.X(), pnt.Y(), pnt.Z());
+         mesh.RestrictLocalH (p3d, h);
+
+         p3d = Point3d(pnt0.X(), pnt0.Y(), pnt0.Z());
+         mesh.RestrictLocalH (p3d, h);
+
+         p3d = Point3d(pnt1.X(), pnt1.Y(), pnt1.Z());
+         mesh.RestrictLocalH (p3d, h);
+
+         p3d = Point3d(pnt2.X(), pnt2.Y(), pnt2.Z());
+         mesh.RestrictLocalH (p3d, h);
+
+         //(*testout) << "p = " << p3d << ", h = " << h << ", maxside = " << maxside << endl;
+
+      }
+   }
 
 
 
@@ -53,7 +250,9 @@ namespace netgen
       double olddist = 0;
       double dist = 0;
 
-      for (int i = 1; i <= DIVIDEEDGESECTIONS; i++)
+      int tmpVal = (int)(DIVIDEEDGESECTIONS);
+
+      for (int i = 1; i <= tmpVal; i++)
       {
          oldpnt = pnt;
          pnt = c->Value(s0+(i/double(DIVIDEEDGESECTIONS))*(s1-s0));
@@ -63,7 +262,6 @@ namespace netgen
 
          //(*testout) << "mesh.GetH(Point3d(pnt.X(), pnt.Y(), pnt.Z())) " << mesh.GetH(Point3d(pnt.X(), pnt.Y(), pnt.Z()))
          //	   <<  " pnt.Distance(oldpnt) " << pnt.Distance(oldpnt) << endl;
-
 
          olddist = dist;
          dist = pnt.Distance(oldpnt);
@@ -111,7 +309,7 @@ namespace netgen
 
 
 
-   static void FindEdges (OCCGeometry & geom, Mesh & mesh)
+   void OCCFindEdges (OCCGeometry & geom, Mesh & mesh)
    {
       const char * savetask = multithread.task;
       multithread.task = "Edge meshing";
@@ -178,8 +376,6 @@ namespace netgen
          for (TopExp_Explorer exp2(geom.fmap(i3), TopAbs_WIRE); exp2.More(); exp2.Next())
             for (TopExp_Explorer exp3(exp2.Current(), TopAbs_EDGE); exp3.More(); exp3.Next())
                total++;
-
-
 
 
       int facenr = 0;
@@ -272,8 +468,7 @@ namespace netgen
                Array <double> params;
 
                DivideEdge (edge, mp, params, mesh);
-
-
+ 
                Array <int> pnums;
                pnums.SetSize (mp.Size()+2);
 
@@ -404,7 +599,7 @@ namespace netgen
 
 
 
-   static void OCCMeshSurface (OCCGeometry & geom, Mesh & mesh, int perfstepsend)
+   void OCCMeshSurface (OCCGeometry & geom, Mesh & mesh, int perfstepsend)
    {
       int i, j, k;
       int changed;
@@ -774,339 +969,300 @@ namespace netgen
       multithread.task = savetask;
    }
 
-   double ComputeH (double kappa)
+
+
+   void OCCSetLocalMeshSize(OCCGeometry & geom, Mesh & mesh)
    {
-      double hret;
-      kappa *= mparam.curvaturesafety;
+      mesh.SetGlobalH (mparam.maxh);
+      mesh.SetMinimalH (mparam.minh);
 
-      if (mparam.maxh * kappa < 1)
-         hret = mparam.maxh;
-      else
-         hret = 1 / kappa;
+      Array<double> maxhdom;
+      maxhdom.SetSize (geom.NrSolids());
+      maxhdom = mparam.maxh;
 
-      if (mparam.maxh < hret)
-         hret = mparam.maxh;
+      mesh.SetMaxHDomain (maxhdom);
 
-      return (hret);
-   }
+      Box<3> bb = geom.GetBoundingBox();
+      bb.Increase (bb.Diam()/10);
 
+      mesh.SetLocalH (bb.PMin(), bb.PMax(), 0.5);
 
-   class Line
-   {
-   public:
-      Point<3> p0, p1;
-      double Dist (Line l)
+      if (mparam.uselocalh)
       {
-         Vec<3> n = p1-p0;
-         Vec<3> q = l.p1-l.p0;
-         double nq = n*q;
+         const char * savetask = multithread.task;
+         multithread.percent = 0;
 
-         Point<3> p = p0 + 0.5*n;
-         double lambda = (p-l.p0)*n / nq;
+         mesh.SetLocalH (bb.PMin(), bb.PMax(), mparam.grading);
 
-         if (lambda >= 0 && lambda <= 1)
+         int nedges = geom.emap.Extent();
+
+         double maxedgelen = 0;
+         double minedgelen = 1e99;
+
+         multithread.task = "Setting local mesh size (elements per edge)";
+
+         // setting elements per edge
+
+         for (int i = 1; i <= nedges && !multithread.terminate; i++)
          {
-            double d = (p-l.p0-lambda*q).Length();
-            //        if (d < 1e-3) d = 1e99;
-            return d;
+            TopoDS_Edge e = TopoDS::Edge (geom.emap(i));
+            multithread.percent = 100 * (i-1)/double(nedges);
+            if (BRep_Tool::Degenerated(e)) continue;
+
+            GProp_GProps system;
+            BRepGProp::LinearProperties(e, system);
+            double len = system.Mass();
+
+            if (len < IGNORECURVELENGTH)
+            {
+               (*testout) << "ignored" << endl;
+               continue;
+            }
+
+            double localh = len/mparam.segmentsperedge;
+            double s0, s1;
+
+            // Philippose - 23/01/2009
+            // Find all the parent faces of a given edge
+            // and limit the mesh size of the edge based on the
+            // mesh size limit of the face
+            TopTools_IndexedDataMapOfShapeListOfShape edge_face_map;
+            edge_face_map.Clear();
+
+            TopExp::MapShapesAndAncestors(geom.shape, TopAbs_EDGE, TopAbs_FACE, edge_face_map);
+            const TopTools_ListOfShape& parent_faces = edge_face_map.FindFromKey(e);
+
+            TopTools_ListIteratorOfListOfShape parent_face_list;
+
+            for(parent_face_list.Initialize(parent_faces); parent_face_list.More(); parent_face_list.Next())
+            {
+               TopoDS_Face parent_face = TopoDS::Face(parent_face_list.Value());
+
+               int face_index = geom.fmap.FindIndex(parent_face);
+
+               if(face_index >= 1) localh = min(localh,geom.face_maxh[face_index - 1]);
+            }
+
+            Handle(Geom_Curve) c = BRep_Tool::Curve(e, s0, s1);
+
+            maxedgelen = max (maxedgelen, len);
+            minedgelen = min (minedgelen, len);
+
+            // Philippose - 23/01/2009
+            // Modified the calculation of maxj, because the
+            // method used so far always results in maxj = 2,
+            // which causes the localh to be set only at the
+            // starting, mid and end of the edge.
+            // Old Algorithm:
+            // int maxj = 2 * (int) ceil (localh/len);
+            int maxj = max((int) ceil(len/localh), 2);
+
+            for (int j = 0; j <= maxj; j++)
+            {
+               gp_Pnt pnt = c->Value (s0+double(j)/maxj*(s1-s0));
+               mesh.RestrictLocalH (Point3d(pnt.X(), pnt.Y(), pnt.Z()), localh);
+            }
          }
-         else
-            return 1e99;
+
+         multithread.task = "Setting local mesh size (edge curvature)";
+
+         // setting edge curvature
+
+         int nsections = 20;
+
+         for (int i = 1; i <= nedges && !multithread.terminate; i++)
+         {
+            double maxcur = 0;
+            multithread.percent = 100 * (i-1)/double(nedges);
+            TopoDS_Edge edge = TopoDS::Edge (geom.emap(i));
+            if (BRep_Tool::Degenerated(edge)) continue;
+            double s0, s1;
+            Handle(Geom_Curve) c = BRep_Tool::Curve(edge, s0, s1);
+            BRepAdaptor_Curve brepc(edge);
+            BRepLProp_CLProps prop(brepc, 2, 1e-5);
+
+            for (int j = 1; j <= nsections; j++)
+            {
+               double s = s0 + j/(double) nsections * (s1-s0);
+               prop.SetParameter (s);
+               double curvature = prop.Curvature();
+               if(curvature> maxcur) maxcur = curvature;
+
+               if (curvature >= 1e99)
+                  continue;
+
+               gp_Pnt pnt = c->Value (s);
+
+               mesh.RestrictLocalH (Point3d(pnt.X(), pnt.Y(), pnt.Z()), ComputeH (fabs(curvature)));
+            }
+            // (*testout) << "edge " << i << " max. curvature: " << maxcur << endl;
+         }
+
+         multithread.task = "Setting local mesh size (face curvature)";
+
+         // setting face curvature
+
+         int nfaces = geom.fmap.Extent();
+
+         for (int i = 1; i <= nfaces && !multithread.terminate; i++)
+         {
+            multithread.percent = 100 * (i-1)/double(nfaces);
+            TopoDS_Face face = TopoDS::Face(geom.fmap(i));
+            TopLoc_Location loc;
+            Handle(Geom_Surface) surf = BRep_Tool::Surface (face);
+            Handle(Poly_Triangulation) triangulation = BRep_Tool::Triangulation (face, loc);
+
+            if (triangulation.IsNull()) continue;
+
+            BRepAdaptor_Surface sf(face, Standard_True);
+            BRepLProp_SLProps prop(sf, 2, 1e-5);
+
+            int ntriangles = triangulation -> NbTriangles();
+            for (int j = 1; j <= ntriangles; j++)
+            {
+               gp_Pnt p[3];
+               gp_Pnt2d par[3];
+
+               for (int k = 1; k <=3; k++)
+               {
+                  int n = triangulation->Triangles()(j)(k);
+                  p[k-1] = triangulation->Nodes()(n).Transformed(loc);
+                  par[k-1] = triangulation->UVNodes()(n);
+               }
+
+               //double maxside = 0;
+               //maxside = max (maxside, p[0].Distance(p[1]));
+               //maxside = max (maxside, p[0].Distance(p[2]));
+               //maxside = max (maxside, p[1].Distance(p[2]));
+               //cout << "\rFace " << i << " pos11 ntriangles " << ntriangles << " maxside " << maxside << flush;
+
+               RestrictHTriangle (par[0], par[1], par[2], &prop, mesh, 0);
+               //cout << "\rFace " << i << " pos12 ntriangles " << ntriangles << flush;
+            }
+         }
+
+         // setting close edges
+
+         if (occparam.resthcloseedgeenable)
+         {
+            multithread.task = "Setting local mesh size (close edges)";
+
+            int sections = 100;
+
+            Array<Line> lines(sections*nedges);
+
+            Box3dTree* searchtree =
+               new Box3dTree (bb.PMin(), bb.PMax());
+
+            int nlines = 0;
+            for (int i = 1; i <= nedges && !multithread.terminate; i++)
+            {
+               TopoDS_Edge edge = TopoDS::Edge (geom.emap(i));
+               if (BRep_Tool::Degenerated(edge)) continue;
+
+               double s0, s1;
+               Handle(Geom_Curve) c = BRep_Tool::Curve(edge, s0, s1);
+               BRepAdaptor_Curve brepc(edge);
+               BRepLProp_CLProps prop(brepc, 1, 1e-5);
+               prop.SetParameter (s0);
+
+               gp_Vec d0 = prop.D1().Normalized();
+               double s_start = s0;
+               int count = 0;
+               for (int j = 1; j <= sections; j++)
+               {
+                  double s = s0 + (s1-s0)*(double)j/(double)sections;
+                  prop.SetParameter (s);
+                  gp_Vec d1 = prop.D1().Normalized();
+                  double cosalpha = fabs(d0*d1);
+                  if ((j == sections) || (cosalpha < cos(10.0/180.0*M_PI)))
+                  {
+                     count++;
+                     gp_Pnt p0 = c->Value (s_start);
+                     gp_Pnt p1 = c->Value (s);
+                     lines[nlines].p0 = Point<3> (p0.X(), p0.Y(), p0.Z());
+                     lines[nlines].p1 = Point<3> (p1.X(), p1.Y(), p1.Z());
+
+                     Box3d box;
+                     box.SetPoint (Point3d(lines[nlines].p0));
+                     box.AddPoint (Point3d(lines[nlines].p1));
+
+                     searchtree->Insert (box.PMin(), box.PMax(), nlines+1);
+                     nlines++;
+
+                     s_start = s;
+                     d0 = d1;
+                  }
+               }
+            }
+
+            Array<int> linenums;
+
+            for (int i = 0; i < nlines; i++)
+            {
+               multithread.percent = (100*i)/double(nlines);
+               Line & line = lines[i];
+
+               Box3d box;
+               box.SetPoint (Point3d(line.p0));
+               box.AddPoint (Point3d(line.p1));
+               double maxhline = max (mesh.GetH(box.PMin()),
+                  mesh.GetH(box.PMax()));
+               box.Increase(maxhline);
+
+               double mindist = 1e99;
+               linenums.SetSize(0);
+               searchtree->GetIntersecting(box.PMin(),box.PMax(),linenums);
+
+               for (int j = 0; j < linenums.Size(); j++)
+               {
+                  int num = linenums[j]-1;
+                  if (i == num) continue;
+                  if ((line.p0-lines[num].p0).Length2() < 1e-15) continue;
+                  if ((line.p0-lines[num].p1).Length2() < 1e-15) continue;
+                  if ((line.p1-lines[num].p0).Length2() < 1e-15) continue;
+                  if ((line.p1-lines[num].p1).Length2() < 1e-15) continue;
+                  mindist = min (mindist, line.Dist(lines[num]));
+               }
+
+               mindist *= occparam.resthcloseedgefac;
+
+               if (mindist < 1e-3)
+               {
+                  (*testout) << "extremely small local h: " << mindist
+                     << " --> setting to 1e-3" << endl;
+                  (*testout) << "somewhere near " << line.p0 << " - " << line.p1 << endl;
+                  mindist = 1e-3;
+               }
+
+               mesh.RestrictLocalHLine(line.p0, line.p1, mindist);
+            }
+         }
+
+         multithread.task = savetask;
+
       }
 
-      double Length ()
-      {
-         return (p1-p0).Length();
-      };
-   };
-
-   /*
-   void RestrictHTriangle (gp_Pnt2d & par0, gp_Pnt2d & par1, gp_Pnt2d & par2,
-   BRepLProp_SLProps * prop, Mesh & mesh, const double maxside, int depth, double h = 0)
-   {
-
-
-   gp_Pnt2d parmid;
-
-   parmid.SetX(0.3*(par0.X()+par1.X()+par2.X()));
-   parmid.SetY(0.3*(par0.Y()+par1.Y()+par2.Y()));
-
-   if (depth == 0)
-   {
-   double curvature = 0;
-
-   prop->SetParameters (parmid.X(), parmid.Y());
-   if (!prop->IsCurvatureDefined())
-   {
-   (*testout) << "curvature not defined!" << endl;
-   return;
-   }
-   curvature = max(fabs(prop->MinCurvature()),
-   fabs(prop->MaxCurvature()));
-
-   prop->SetParameters (par0.X(), par0.Y());
-   if (!prop->IsCurvatureDefined())
-   {
-   (*testout) << "curvature not defined!" << endl;
-   return;
-   }
-   curvature = max(curvature,max(fabs(prop->MinCurvature()),
-   fabs(prop->MaxCurvature())));
-
-   prop->SetParameters (par1.X(), par1.Y());
-   if (!prop->IsCurvatureDefined())
-   {
-   (*testout) << "curvature not defined!" << endl;
-   return;
-   }
-   curvature = max(curvature,max(fabs(prop->MinCurvature()),
-   fabs(prop->MaxCurvature())));
-
-   prop->SetParameters (par2.X(), par2.Y());
-   if (!prop->IsCurvatureDefined())
-   {
-   (*testout) << "curvature not defined!" << endl;
-   return;
-   }
-   curvature = max(curvature,max(fabs(prop->MinCurvature()),
-   fabs(prop->MaxCurvature())));
-
-   //(*testout) << "curvature " << curvature << endl;
-
-   if (curvature < 1e-3)
-   {
-   //(*testout) << "curvature too small (" << curvature << ")!" << endl;
-   return;
-   // return war bis 10.2.05 auskommentiert
+      // Philippose - 09/03/2009
+      // Added the capability to load the mesh size from a 
+      // file also for OpenCascade Geometry
+      // Note: 
+      // ** If the "uselocalh" option is ticked in 
+      // the "mesh options...insider" menu, the mesh 
+      // size will be further modified by the topology 
+      // analysis routines.
+      // ** To use the mesh size file as the sole source 
+      // for defining the mesh size, uncheck the "uselocalh"
+      // option.
+      mesh.LoadLocalMeshSize (mparam.meshsizefilename);
    }
 
 
 
-   h = ComputeH (curvature+1e-10);
-
-   if(h < 1e-4*maxside)
-   return;
-
-
-   if (h > 30) return;
-   }
-
-   if (h < maxside) // && depth < 5)
+   int OCCGenerateMesh (OCCGeometry & geom, Mesh *& mesh,
+                        int perfstepsstart, int perfstepsend,
+                        char * optstr)
    {
-   //cout << "\r h " << h << flush;
-   gp_Pnt2d pm0;
-   gp_Pnt2d pm1;
-   gp_Pnt2d pm2;
-
-   //cout << "h " << h << " maxside " << maxside << " depth " << depth << endl;
-   //cout << "par0 " << par0.X() << " " << par0.Y()
-   //<< " par1 " << par1.X() << " " << par1.Y()
-   //   << " par2 " << par2.X() << " " << par2.Y()<< endl;
-
-
-   pm0.SetX(0.5*(par1.X()+par2.X())); pm0.SetY(0.5*(par1.Y()+par2.Y()));
-   pm1.SetX(0.5*(par0.X()+par2.X())); pm1.SetY(0.5*(par0.Y()+par2.Y()));
-   pm2.SetX(0.5*(par1.X()+par0.X())); pm2.SetY(0.5*(par1.Y()+par0.Y()));
-
-   RestrictHTriangle (pm0, pm1, pm2, prop, mesh, 0.5*maxside, depth+1, h);
-   RestrictHTriangle (par0, pm1, pm2, prop, mesh, 0.5*maxside, depth+1, h);
-   RestrictHTriangle (par1, pm0, pm2, prop, mesh, 0.5*maxside, depth+1, h);
-   RestrictHTriangle (par2, pm1, pm0, prop, mesh, 0.5*maxside, depth+1, h);
-   }
-   else
-   {
-   gp_Pnt pnt;
-   Point3d p3d;
-
-   prop->SetParameters (parmid.X(), parmid.Y());
-   pnt = prop->Value();
-   p3d = Point3d(pnt.X(), pnt.Y(), pnt.Z());
-   mesh.RestrictLocalH (p3d, h);
-
-
-   prop->SetParameters (par0.X(), par0.Y());
-   pnt = prop->Value();
-   p3d = Point3d(pnt.X(), pnt.Y(), pnt.Z());
-   mesh.RestrictLocalH (p3d, h);
-
-   prop->SetParameters (par1.X(), par1.Y());
-   pnt = prop->Value();
-   p3d = Point3d(pnt.X(), pnt.Y(), pnt.Z());
-   mesh.RestrictLocalH (p3d, h);
-
-   prop->SetParameters (par2.X(), par2.Y());
-   pnt = prop->Value();
-   p3d = Point3d(pnt.X(), pnt.Y(), pnt.Z());
-   mesh.RestrictLocalH (p3d, h);
-
-   }
-   }
-   */
-
-
-   void RestrictHTriangle (gp_Pnt2d & par0, gp_Pnt2d & par1, gp_Pnt2d & par2,
-      BRepLProp_SLProps * prop, Mesh & mesh, int depth, double h = 0)
-   {
-      int ls = -1;
-
-      gp_Pnt pnt0,pnt1,pnt2;
-
-      prop->SetParameters (par0.X(), par0.Y());
-      pnt0 = prop->Value();
-
-      prop->SetParameters (par1.X(), par1.Y());
-      pnt1 = prop->Value();
-
-      prop->SetParameters (par2.X(), par2.Y());
-      pnt2 = prop->Value();
-
-      double aux;
-      double maxside = pnt0.Distance(pnt1);
-      ls = 2;
-      aux = pnt1.Distance(pnt2);
-      if(aux > maxside)
-      {
-         maxside = aux;
-         ls = 0;
-      }
-      aux = pnt2.Distance(pnt0);
-      if(aux > maxside)
-      {
-         maxside = aux;
-         ls = 1;
-      }
-
-
-
-      gp_Pnt2d parmid;
-
-      parmid.SetX(0.3*(par0.X()+par1.X()+par2.X()));
-      parmid.SetY(0.3*(par0.Y()+par1.Y()+par2.Y()));
-
-      if (depth%3 == 0)
-      {
-         double curvature = 0;
-
-         prop->SetParameters (parmid.X(), parmid.Y());
-         if (!prop->IsCurvatureDefined())
-         {
-            (*testout) << "curvature not defined!" << endl;
-            return;
-         }
-         curvature = max(fabs(prop->MinCurvature()),
-            fabs(prop->MaxCurvature()));
-
-         prop->SetParameters (par0.X(), par0.Y());
-         if (!prop->IsCurvatureDefined())
-         {
-            (*testout) << "curvature not defined!" << endl;
-            return;
-         }
-         curvature = max(curvature,max(fabs(prop->MinCurvature()),
-            fabs(prop->MaxCurvature())));
-
-         prop->SetParameters (par1.X(), par1.Y());
-         if (!prop->IsCurvatureDefined())
-         {
-            (*testout) << "curvature not defined!" << endl;
-            return;
-         }
-         curvature = max(curvature,max(fabs(prop->MinCurvature()),
-            fabs(prop->MaxCurvature())));
-
-         prop->SetParameters (par2.X(), par2.Y());
-         if (!prop->IsCurvatureDefined())
-         {
-            (*testout) << "curvature not defined!" << endl;
-            return;
-         }
-         curvature = max(curvature,max(fabs(prop->MinCurvature()),
-            fabs(prop->MaxCurvature())));
-
-         //(*testout) << "curvature " << curvature << endl;
-
-         if (curvature < 1e-3)
-         {
-            //(*testout) << "curvature too small (" << curvature << ")!" << endl;
-            return;
-            // return war bis 10.2.05 auskommentiert
-         }
-
-
-
-         h = ComputeH (curvature+1e-10);
-
-         if(h < 1e-4*maxside)
-            return;
-
-
-         if (h > 30) return;
-      }
-
-      if (h < maxside && depth < 10)
-      {
-         //cout << "\r h " << h << flush;
-         gp_Pnt2d pm;
-
-         //cout << "h " << h << " maxside " << maxside << " depth " << depth << endl;
-         //cout << "par0 " << par0.X() << " " << par0.Y()
-         //<< " par1 " << par1.X() << " " << par1.Y()
-         //   << " par2 " << par2.X() << " " << par2.Y()<< endl;
-
-         if(ls == 0)
-         {
-            pm.SetX(0.5*(par1.X()+par2.X())); pm.SetY(0.5*(par1.Y()+par2.Y()));
-            RestrictHTriangle(pm, par2, par0, prop, mesh, depth+1, h);
-            RestrictHTriangle(pm, par0, par1, prop, mesh, depth+1, h);
-         }
-         else if(ls == 1)
-         {
-            pm.SetX(0.5*(par0.X()+par2.X())); pm.SetY(0.5*(par0.Y()+par2.Y()));
-            RestrictHTriangle(pm, par1, par2, prop, mesh, depth+1, h);
-            RestrictHTriangle(pm, par0, par1, prop, mesh, depth+1, h);
-         }
-         else if(ls == 2)
-         {
-            pm.SetX(0.5*(par0.X()+par1.X())); pm.SetY(0.5*(par0.Y()+par1.Y()));
-            RestrictHTriangle(pm, par1, par2, prop, mesh, depth+1, h);
-            RestrictHTriangle(pm, par2, par0, prop, mesh, depth+1, h);
-         }
-
-      }
-      else
-      {
-         gp_Pnt pnt;
-         Point3d p3d;
-
-         prop->SetParameters (parmid.X(), parmid.Y());
-         pnt = prop->Value();
-         p3d = Point3d(pnt.X(), pnt.Y(), pnt.Z());
-         mesh.RestrictLocalH (p3d, h);
-
-         p3d = Point3d(pnt0.X(), pnt0.Y(), pnt0.Z());
-         mesh.RestrictLocalH (p3d, h);
-
-         p3d = Point3d(pnt1.X(), pnt1.Y(), pnt1.Z());
-         mesh.RestrictLocalH (p3d, h);
-
-         p3d = Point3d(pnt2.X(), pnt2.Y(), pnt2.Z());
-         mesh.RestrictLocalH (p3d, h);
-
-         //(*testout) << "p = " << p3d << ", h = " << h << ", maxside = " << maxside << endl;
-
-      }
-   }
-
-
-
-
-   int OCCGenerateMesh (OCCGeometry & geom,
-      Mesh *& mesh,
-      int perfstepsstart, int perfstepsend,
-      char * optstr)
-   {
-      // int i, j;
-
       multithread.percent = 0;
 
       if (perfstepsstart <= MESHCONST_ANALYSE)
@@ -1114,289 +1270,8 @@ namespace netgen
          delete mesh;
          mesh = new Mesh();
          mesh->geomtype = Mesh::GEOM_OCC;
-         mesh->SetGlobalH (mparam.maxh);
-         mesh->SetMinimalH (mparam.minh);
 
-         Array<double> maxhdom;
-         maxhdom.SetSize (geom.NrSolids());
-         maxhdom = mparam.maxh;
-
-         mesh->SetMaxHDomain (maxhdom);
-
-         Box<3> bb = geom.GetBoundingBox();
-         bb.Increase (bb.Diam()/10);
-
-         mesh->SetLocalH (bb.PMin(), bb.PMax(), 0.5);
-
-         if (mparam.uselocalh)
-         {
-
-            const char * savetask = multithread.task;
-            multithread.percent = 0;
-
-            mesh->SetLocalH (bb.PMin(), bb.PMax(), mparam.grading);
-
-            int nedges = geom.emap.Extent();
-
-            double maxedgelen = 0;
-            double minedgelen = 1e99;
-
-            multithread.task = "Setting local mesh size (elements per edge)";
-
-            // setting elements per edge
-
-            for (int i = 1; i <= nedges && !multithread.terminate; i++)
-            {
-               TopoDS_Edge e = TopoDS::Edge (geom.emap(i));
-               multithread.percent = 100 * (i-1)/double(nedges);
-               if (BRep_Tool::Degenerated(e)) continue;
-
-               GProp_GProps system;
-               BRepGProp::LinearProperties(e, system);
-               double len = system.Mass();
-
-               if (len < IGNORECURVELENGTH)
-               {
-                  (*testout) << "ignored" << endl;
-                  continue;
-               }
-
-               double localh = len/mparam.segmentsperedge;
-               double s0, s1;
-
-               // Philippose - 23/01/2009
-               // Find all the parent faces of a given edge
-               // and limit the mesh size of the edge based on the
-               // mesh size limit of the face
-               TopTools_IndexedDataMapOfShapeListOfShape edge_face_map;
-               edge_face_map.Clear();
-
-               TopExp::MapShapesAndAncestors(geom.shape, TopAbs_EDGE, TopAbs_FACE, edge_face_map);
-               const TopTools_ListOfShape& parent_faces = edge_face_map.FindFromKey(e);
-
-               TopTools_ListIteratorOfListOfShape parent_face_list;
-
-               for(parent_face_list.Initialize(parent_faces); parent_face_list.More(); parent_face_list.Next())
-               {
-                  TopoDS_Face parent_face = TopoDS::Face(parent_face_list.Value());
-
-                  int face_index = geom.fmap.FindIndex(parent_face);
-
-                  if(face_index >= 1) localh = min(localh,geom.face_maxh[face_index - 1]);
-               }
-
-               Handle(Geom_Curve) c = BRep_Tool::Curve(e, s0, s1);
-
-               maxedgelen = max (maxedgelen, len);
-               minedgelen = min (minedgelen, len);
-
-               // Philippose - 23/01/2009
-               // Modified the calculation of maxj, because the
-               // method used so far always results in maxj = 2,
-               // which causes the localh to be set only at the
-               // starting, mid and end of the edge.
-               // Old Algorithm:
-               // int maxj = 2 * (int) ceil (localh/len);
-               int maxj = max((int) ceil(len/localh), 2);
-
-               for (int j = 0; j <= maxj; j++)
-               {
-                  gp_Pnt pnt = c->Value (s0+double(j)/maxj*(s1-s0));
-                  mesh->RestrictLocalH (Point3d(pnt.X(), pnt.Y(), pnt.Z()), localh);
-               }
-            }
-
-            multithread.task = "Setting local mesh size (edge curvature)";
-
-            // setting edge curvature
-
-            int nsections = 20;
-
-            for (int i = 1; i <= nedges && !multithread.terminate; i++)
-            {
-               double maxcur = 0;
-               multithread.percent = 100 * (i-1)/double(nedges);
-               TopoDS_Edge edge = TopoDS::Edge (geom.emap(i));
-               if (BRep_Tool::Degenerated(edge)) continue;
-               double s0, s1;
-               Handle(Geom_Curve) c = BRep_Tool::Curve(edge, s0, s1);
-               BRepAdaptor_Curve brepc(edge);
-               BRepLProp_CLProps prop(brepc, 2, 1e-5);
-
-               for (int j = 1; j <= nsections; j++)
-               {
-                  double s = s0 + j/(double) nsections * (s1-s0);
-                  prop.SetParameter (s);
-                  double curvature = prop.Curvature();
-                  if(curvature> maxcur) maxcur = curvature;
-
-                  if (curvature >= 1e99)
-                     continue;
-
-                  gp_Pnt pnt = c->Value (s);
-
-                  mesh->RestrictLocalH (Point3d(pnt.X(), pnt.Y(), pnt.Z()),
-                     ComputeH (fabs(curvature)));
-               }
-               // (*testout) << "edge " << i << " max. curvature: " << maxcur << endl;
-            }
-
-            multithread.task = "Setting local mesh size (face curvature)";
-
-            // setting face curvature
-
-            int nfaces = geom.fmap.Extent();
-
-            for (int i = 1; i <= nfaces && !multithread.terminate; i++)
-            {
-               multithread.percent = 100 * (i-1)/double(nfaces);
-               TopoDS_Face face = TopoDS::Face(geom.fmap(i));
-               TopLoc_Location loc;
-               Handle(Geom_Surface) surf = BRep_Tool::Surface (face);
-               Handle(Poly_Triangulation) triangulation = BRep_Tool::Triangulation (face, loc);
-               if (triangulation.IsNull()) continue;
-
-               BRepAdaptor_Surface sf(face, Standard_True);
-               BRepLProp_SLProps prop(sf, 2, 1e-5);
-
-               int ntriangles = triangulation -> NbTriangles();
-               for (int j = 1; j <= ntriangles; j++)
-               {
-                  gp_Pnt p[3];
-                  gp_Pnt2d par[3];
-
-                  for (int k = 1; k <=3; k++)
-                  {
-                     int n = triangulation->Triangles()(j)(k);
-                     p[k-1] = triangulation->Nodes()(n).Transformed(loc);
-                     par[k-1] = triangulation->UVNodes()(n);
-                  }
-
-                  //double maxside = 0;
-                  //maxside = max (maxside, p[0].Distance(p[1]));
-                  //maxside = max (maxside, p[0].Distance(p[2]));
-                  //maxside = max (maxside, p[1].Distance(p[2]));
-                  //cout << "\rFace " << i << " pos11 ntriangles " << ntriangles << " maxside " << maxside << flush;
-
-                  RestrictHTriangle (par[0], par[1], par[2], &prop, *mesh, 0);
-                  //cout << "\rFace " << i << " pos12 ntriangles " << ntriangles << flush;
-               }
-            }
-
-            // setting close edges
-
-            if (occparam.resthcloseedgeenable)
-            {
-               multithread.task = "Setting local mesh size (close edges)";
-
-               int sections = 100;
-
-               Array<Line> lines(sections*nedges);
-
-               Box3dTree* searchtree =
-                  new Box3dTree (bb.PMin(), bb.PMax());
-
-               int nlines = 0;
-               for (int i = 1; i <= nedges && !multithread.terminate; i++)
-               {
-                  TopoDS_Edge edge = TopoDS::Edge (geom.emap(i));
-                  if (BRep_Tool::Degenerated(edge)) continue;
-
-                  double s0, s1;
-                  Handle(Geom_Curve) c = BRep_Tool::Curve(edge, s0, s1);
-                  BRepAdaptor_Curve brepc(edge);
-                  BRepLProp_CLProps prop(brepc, 1, 1e-5);
-                  prop.SetParameter (s0);
-
-                  gp_Vec d0 = prop.D1().Normalized();
-                  double s_start = s0;
-                  int count = 0;
-                  for (int j = 1; j <= sections; j++)
-                  {
-                     double s = s0 + (s1-s0)*(double)j/(double)sections;
-                     prop.SetParameter (s);
-                     gp_Vec d1 = prop.D1().Normalized();
-                     double cosalpha = fabs(d0*d1);
-                     if ((j == sections) || (cosalpha < cos(10.0/180.0*M_PI)))
-                     {
-                        count++;
-                        gp_Pnt p0 = c->Value (s_start);
-                        gp_Pnt p1 = c->Value (s);
-                        lines[nlines].p0 = Point<3> (p0.X(), p0.Y(), p0.Z());
-                        lines[nlines].p1 = Point<3> (p1.X(), p1.Y(), p1.Z());
-
-                        Box3d box;
-                        box.SetPoint (Point3d(lines[nlines].p0));
-                        box.AddPoint (Point3d(lines[nlines].p1));
-
-                        searchtree->Insert (box.PMin(), box.PMax(), nlines+1);
-                        nlines++;
-
-                        s_start = s;
-                        d0 = d1;
-                     }
-                  }
-               }
-
-               Array<int> linenums;
-
-               for (int i = 0; i < nlines; i++)
-               {
-                  multithread.percent = (100*i)/double(nlines);
-                  Line & line = lines[i];
-
-                  Box3d box;
-                  box.SetPoint (Point3d(line.p0));
-                  box.AddPoint (Point3d(line.p1));
-                  double maxhline = max (mesh->GetH(box.PMin()),
-                     mesh->GetH(box.PMax()));
-                  box.Increase(maxhline);
-
-                  double mindist = 1e99;
-                  linenums.SetSize(0);
-                  searchtree->GetIntersecting(box.PMin(),box.PMax(),linenums);
-
-                  for (int j = 0; j < linenums.Size(); j++)
-                  {
-                     int num = linenums[j]-1;
-                     if (i == num) continue;
-                     if ((line.p0-lines[num].p0).Length2() < 1e-15) continue;
-                     if ((line.p0-lines[num].p1).Length2() < 1e-15) continue;
-                     if ((line.p1-lines[num].p0).Length2() < 1e-15) continue;
-                     if ((line.p1-lines[num].p1).Length2() < 1e-15) continue;
-                     mindist = min (mindist, line.Dist(lines[num]));
-                  }
-
-                  mindist *= occparam.resthcloseedgefac;
-
-                  if (mindist < 1e-3)
-                  {
-                     (*testout) << "extremely small local h: " << mindist
-                        << " --> setting to 1e-3" << endl;
-                     (*testout) << "somewhere near " << line.p0 << " - " << line.p1 << endl;
-                     mindist = 1e-3;
-                  }
-
-                  mesh->RestrictLocalHLine(line.p0, line.p1, mindist);
-               }
-            }
-
-            multithread.task = savetask;
-
-         }
-
-         // Philippose - 09/03/2009
-         // Added the capability to load the mesh size from a 
-         // file also for OpenCascade Geometry
-         // Note: 
-         // ** If the "uselocalh" option is ticked in 
-         // the "mesh options...insider" menu, the mesh 
-         // size will be further modified by the topology 
-         // analysis routines.
-         // ** To use the mesh size file as the sole source 
-         // for defining the mesh size, uncheck the "uselocalh"
-         // option.
-         mesh->LoadLocalMeshSize (mparam.meshsizefilename);
+         OCCSetLocalMeshSize(geom,*mesh);
       }
 
       if (multithread.terminate || perfstepsend <= MESHCONST_ANALYSE)
@@ -1404,7 +1279,7 @@ namespace netgen
 
       if (perfstepsstart <= MESHCONST_MESHEDGES)
       {
-         FindEdges (geom, *mesh);
+         OCCFindEdges (geom, *mesh);
 
          /*
          cout << "Removing redundant points" << endl;
@@ -1503,8 +1378,7 @@ namespace netgen
       {
          multithread.task = "Volume meshing";
 
-         MESHING3_RESULT res =
-            MeshVolume (mparam, *mesh);
+         MESHING3_RESULT res = MeshVolume (mparam, *mesh);
 
          ofstream problemfile("occmesh.rep",ios_base::app);
 

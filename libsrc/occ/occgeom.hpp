@@ -80,6 +80,7 @@
 #include "ShapeAnalysis.hxx"
 #include "ShapeBuild_ReShape.hxx"
 
+
 // Philippose - 29/01/2009
 // OpenCascade XDE Support
 // Include support for OpenCascade XDE Features
@@ -162,6 +163,17 @@ namespace netgen
       {  code &= ~ENTITYISDRAWABLE;}
    };
 
+
+
+   class Line
+   {
+   public:
+      Point<3> p0, p1;
+
+      double Dist (Line l);
+
+      double Length ();
+   };
 
 
 
@@ -386,6 +398,20 @@ namespace netgen
    OCCGeometry * LoadOCC_BREP (const char * filename);
 
    extern OCCParameters occparam;
+
+
+   // Philippose - 31.09.2009
+   // External access to the mesh generation functions within the OCC
+   // subsystem (Not sure if this is the best way to implement this....!!)
+   extern int OCCGenerateMesh (OCCGeometry & occgeometry, Mesh*& mesh,
+	                            int perfstepsstart, int perfstepsend, 
+                               char* optstring);
+
+   extern void OCCSetLocalMeshSize(OCCGeometry & geom, Mesh & mesh);
+
+   extern void OCCMeshSurface (OCCGeometry & geom, Mesh & mesh, int perfstepsend);
+
+   extern void OCCFindEdges (OCCGeometry & geom, Mesh & mesh);
 }
 
 #endif
