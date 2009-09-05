@@ -503,13 +503,13 @@ namespace ngstd
 
   bool EvalFunction :: IsComplex () const
   {
-    cout << "evalfunction::iscomplex:" << endl;
+    // cout << "evalfunction::iscomplex:" << endl;
     for (int i = 0; i < program.Size(); i++)
       {
 	EVAL_TOKEN op = program[i].op;
 	if (op == IMAG) return true;
       }
-    cout << "return false" << endl;
+    // cout << "return false" << endl;
     return false;
   }
 

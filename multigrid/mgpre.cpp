@@ -383,7 +383,7 @@ namespace ngmg
         cw = (*cpre) * cres;
 
         *(u.Range (0, cw.Size())) += cw;
-        
+
         smoother->PostSmooth (level, u, f, smoothingsteps);
       }
     else

@@ -207,10 +207,12 @@ namespace ngcomp
 
 	      for (int i = 0; i < nse; i++)
 		{
-		  if (i % 10 == 0)
-		    cout << "\rassemble surface element " << i << "/" << nse << flush;
-		  ma.SetThreadPercentage ( 100.0*(ne+i+1) / (ne+nse) );
-
+#pragma omp critical (linformsurfprint)		    
+		  {
+		    if (i % 10 == 0)
+		      cout << "\rassemble surface element " << i << "/" << nse << flush;
+		    ma.SetThreadPercentage ( 100.0*(ne+i+1) / (ne+nse) );
+		  }
 		  if ( ma.IsGhostSEl ( i ) ) continue;
 
 		  lh.CleanUp();

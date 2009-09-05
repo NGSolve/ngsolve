@@ -134,6 +134,12 @@ namespace ngcomp
 	dnums.Append(j);
     }
   
+    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const
+    {
+      dnums.SetSize(0);
+    }
+
+
 #ifdef PARALLEL
     // virtual void UpdateParallelDofs_hoproc();
     virtual void UpdateParallelDofs_loproc();

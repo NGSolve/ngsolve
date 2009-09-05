@@ -127,7 +127,7 @@ namespace ngfem
     ///
     virtual string Name () const;
 
-    virtual void CheckElement (const FiniteElement & el) { ; }
+    virtual void CheckElement (const FiniteElement & el) const { ; }
 
 
     bool IntegrationAlongCurve (void) const
@@ -716,6 +716,8 @@ namespace ngfem
   
     virtual const BilinearFormIntegrator & GetBFI(void) const {return bfi;}
 
+    virtual void CheckElement (const FiniteElement & el) const { bfi.CheckElement(el); }
+
 
     virtual void
     AssembleElementMatrix (const FiniteElement & fel, 
@@ -1202,8 +1204,10 @@ namespace ngfem
       : lfi(alfi), factor(afactor)
     { ; }
 
-    virtual bool BoundaryForm () const
-    { return lfi.BoundaryForm(); }
+    virtual bool BoundaryForm () const { return lfi.BoundaryForm(); } 
+
+    virtual void CheckElement (const FiniteElement & el) const { lfi.CheckElement(el); }
+
 
     virtual void
     AssembleElementVector (const FiniteElement & fel, 

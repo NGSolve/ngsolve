@@ -120,7 +120,9 @@ namespace ngcomp
 #else
     low_order_space = new  ParallelNedelecFESpace (ma, loflags);
 #endif
-    prol = new ngmg::EdgeProlongation (*static_cast<NedelecFESpace*> (low_order_space));
+
+    if (low_order_space)
+      prol = new ngmg::EdgeProlongation (*static_cast<NedelecFESpace*> (low_order_space));
     
  
    
@@ -185,7 +187,8 @@ namespace ngcomp
     if (order < 0) 
       throw Exception("HCurlHighOrderFESpace::Update() order < 0 !" ) ;
     
-    low_order_space -> Update(lh);
+    if (low_order_space)
+      low_order_space -> Update(lh);
 
     nv = ma.GetNV();
     nel = ma.GetNE();
@@ -1618,6 +1621,57 @@ namespace ngcomp
 
   Array<int> *   HCurlHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
+    cout << "called createdirectsolverclusters" << endl;
+    // 
+    if (precflags.NumFlagDefined ("ds_order"))
+      {
+	int ds_order = int (precflags.GetNumFlag ("ds_order", 1));
+
+	Array<int> & clusters = *new Array<int> (GetNDof());
+	clusters = 0;
+	
+	int ned = ma.GetNEdges();
+	for (int i = 0; i < ned; i++)
+	  clusters[i] = 1;
+
+	for (int i = 0; i < ned; i++)
+	  {
+	    int first = first_edge_dof[i];
+	    int next = first_edge_dof[i+1];
+	    for (int j = 0; (j < ds_order) && (first+j < next) ; j++)
+	      clusters[first+j] = 1;
+	  }
+
+	int nfa = ma.GetNFaces();
+	for (int i = 0; i < nfa; i++)
+	  {
+	    int first = first_face_dof[i];
+	    int next = first_face_dof[i+1];
+	    int p = order_face[i][0];
+	    
+	    // if (usegrad_face[i])
+	    int ii = 0;
+            for (int j = 0; j <= p-2; j++)
+              for (int k = 0; k <= p-2-j; k++, ii++)
+                if (j+k+2 <= ds_order)
+		  clusters[first+ii] = 1;
+	    
+	    // other combination
+	    for (int j = 0; j <= p-2; j++)
+	      for (int k = 0; k <= p-2-j; k++, ii++)
+		if (j+k+2 <= ds_order)
+		  clusters[first+ii] = 1;
+	    
+	    // type 3
+	    for (int j = 0; j <= p-2; j++, ii++)
+	      if (j+2 <= ds_order)
+	      clusters[first+ii] = 1;
+	  }
+
+	return &clusters;
+      }
+
+
     int clustertype = int(precflags.GetNumFlag("ds_cluster",4));  
 
     cout << " DirectSolverCluster Clustertype " << clustertype << endl; 
