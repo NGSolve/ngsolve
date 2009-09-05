@@ -237,7 +237,7 @@ public:
   DMATOP & DMat () { return dmatop; }
   const DMATOP & DMat () const { return dmatop; }
 
-  virtual void CheckElement (const FiniteElement & el)
+  virtual void CheckElement (const FiniteElement & el) const
   {
     if (!dynamic_cast<const FEL*> (&el) )
       throw Exception (string ("Element does not match integrator\n") +
@@ -1370,7 +1370,7 @@ public:
   { ; }
 
   ///
-  virtual void CheckElement (const FiniteElement & el)
+  virtual void CheckElement (const FiniteElement & el) const
   {
     if (!dynamic_cast<const FEL*> (&el) )
       throw Exception (string ("Element does not match integrator\n") +

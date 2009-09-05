@@ -290,6 +290,32 @@ namespace ngbla
 
 
 
+  inline void LapackMultAddAtB (ngbla::FlatMatrix<ngbla::Complex> a, 
+                                ngbla::FlatMatrix<ngbla::Complex> b,
+                                double fac,
+                                ngbla::FlatMatrix<ngbla::Complex> c)
+  { 
+    // c += fac * a * Trans (b);
+    char transa = 'N';
+    char transb = 'T';
+    int m = c.Height();
+    int n = c.Width();
+    int k = a.Height();
+    double alpha[2] = { fac, 0 };
+    double beta[2] = { 1.0, 0 };
+    int lda = a.Width();
+    int ldb = b.Width();
+    int ldc = c.Width();
+
+    zgemm_ (transa, transb, n, m, k, alpha[0], 
+            *(double*)(void*)&b(0,0), ldb, 
+            *(double*)(void*)&a(0,0), lda, beta[0], 
+            *(double*)(void*)&c(0,0), ldc);
+  }
+
+
+
+
   inline void LapackMultAddAB (ngbla::FlatMatrix<ngbla::Complex> a, 
                                ngbla::FlatMatrix<ngbla::Complex> b,
                                double fac,

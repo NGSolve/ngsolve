@@ -904,7 +904,6 @@ void BlockSmoother :: Update (bool force_update)
 void BlockSmoother :: PreSmooth (int level, BaseVector & u, 
 				 const BaseVector & f, int steps) const
 {
-
   if(!inv[level]) 
     jac[level] -> GSSmooth (u, f, steps);
   else
@@ -957,8 +956,12 @@ void BlockSmoother :: PreSmoothResiduum (int level, BaseVector & u,
           for(int i=0;i<steps;i++)
             {
               jac[level] -> GSSmooth (u, f, 1); 
-              Residuum (level, u, f, res);
-              u +=  (*inv[level]) * res;
+
+	      // res = f - biform.GetMatrix(level) * u;
+	      // u += (*inv[level]) * res;
+
+	      Residuum (level, u, f, res);
+	      u +=  (*inv[level]) * res;
             }
           Residuum (level, u, f, res);
         }
@@ -1028,7 +1031,6 @@ void  BlockSmoother :: PostSmooth (int level, BaseVector & u,
              {
                d = f - biform.GetMatrix(level) * u;
                u += (*inv[level]) * d;
-               
                jac[level] -> GSSmoothBack (u, f, 1);
              }
          }

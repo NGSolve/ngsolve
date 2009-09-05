@@ -380,7 +380,8 @@ namespace ngcomp
   {
     if (first_lodof[4] != -1)
       GetNodeDofNrs (NT_CELL, elnr, dnums);
-    throw Exception ("FESpace::GetInnerDofNrs called");
+    throw Exception (string("FESpace::GetInnerDofNrs called for class")+
+		     typeid(*this).name());
   }
 
 
