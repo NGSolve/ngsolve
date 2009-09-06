@@ -112,7 +112,7 @@ namespace ngcomp
     if (ma.GetDimension() == 2)
       {
 	evaluator = new MassIntegrator<2> (&one);
-	boundary_evaluator = 0;
+	boundary_evaluator = new RobinIntegrator<2> (&one);
       }
     else
       {
@@ -462,7 +462,8 @@ namespace ngcomp
       {
 	dirichlet_vertex.SetSize (ma.GetNV());
 	dirichlet_edge.SetSize (ma.GetNEdges());
-	dirichlet_face.SetSize (ma.GetNFaces());
+        if (dim == 3)
+          dirichlet_face.SetSize (ma.GetNFaces());
 	
 	Array<int> vnums, ednums;
 	int fanum;
@@ -478,13 +479,15 @@ namespace ngcomp
 	      {
 		ma.GetSElVertices (i, vnums);
 		ma.GetSElEdges (i, ednums);
-		fanum = ma.GetSElFace (i);
+                if (dim == 3)
+                  fanum = ma.GetSElFace (i);
 
 		for (int j = 0; j < vnums.Size(); j++)
 		  dirichlet_vertex[vnums[j]] = true;
 		for (int j = 0; j < ednums.Size(); j++)
 		  dirichlet_edge[ednums[j]] = true;
-		dirichlet_face[fanum] = true;
+                if (dim == 3)
+                  dirichlet_face[fanum] = true;
 	      }
 	  }
 
@@ -1069,11 +1072,12 @@ namespace ngcomp
         break; 
       case 4: // VE + F + I 
         for (int i = 0; i < ned; i++)
-          {
-            Ng_Node<1> enode = ma.GetNode<1> (i);
-            cnt[enode.vertices[0]] += GetEdgeDofs(i).Size();
-            cnt[enode.vertices[1]] += GetEdgeDofs(i).Size();
-          }
+          if (!IsDirichletEdge(i))
+            {
+              Ng_Node<1> enode = ma.GetNode<1> (i);
+              cnt[enode.vertices[0]] += GetEdgeDofs(i).Size();
+              cnt[enode.vertices[1]] += GetEdgeDofs(i).Size();
+            }
         for (int i = 0; i < nfa; i++)
           cnt[nv+i] = first_face_dof[i+1]-first_face_dof[i];
         for (int i = 0; i < ni; i++)
@@ -1388,15 +1392,16 @@ namespace ngcomp
         break; 
       case 4: // VE + F + I
         for (int i = 0; i < ned; i++)
-          {
-            IntRange range = GetEdgeDofs(i);
-            Ng_Node<1> edge = ma.GetNode<1> (i);
-            int v[2] = { edge.vertices[0], edge.vertices[1] };
-
-            for (int j = 0; j < range.Size(); j ++)
-              for (int k = 0; k < 2; k++)
-                table[v[k]][cnt[v[k]]++] = range.First()+j;
-          }
+          if (!IsDirichletEdge(i))
+            {
+              IntRange range = GetEdgeDofs(i);
+              Ng_Node<1> edge = ma.GetNode<1> (i);
+              int v[2] = { edge.vertices[0], edge.vertices[1] };
+              
+              for (int j = 0; j < range.Size(); j ++)
+                for (int k = 0; k < 2; k++)
+                  table[v[k]][cnt[v[k]]++] = range.First()+j;
+            }
         for (int i = 0; i < nfa; i++)
           {
             IntRange range = GetFaceDofs(i);

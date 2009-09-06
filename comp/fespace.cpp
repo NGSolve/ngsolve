@@ -77,6 +77,7 @@ namespace ngcomp
 	Array<double> db (flags.GetNumListFlag("dirichlet"));
 	for(int i=0; i< db.Size(); i++) 
 	  dirichlet_boundaries.Set (int(db[i])-1);
+        cout << "dirichlet_boundaries" << dirichlet_boundaries << endl;
       }
     
     if(flags.NumListFlagDefined("definedon") || 
