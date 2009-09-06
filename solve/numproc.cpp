@@ -207,6 +207,8 @@ namespace ngsolve
     GridFunction * gfu;
     ///
     CoefficientFunction * coef;
+    ///
+    bool boundary;
   public:
     ///
     NumProcSetValues (PDE & apde, const Flags & flags)
@@ -214,6 +216,7 @@ namespace ngsolve
     {
       gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", NULL));
       coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", NULL));
+      boundary = flags.GetDefineFlag ("boundary");
     }
 
     ///
@@ -227,22 +230,18 @@ namespace ngsolve
     static void PrintDoc (ostream & ost)
     {
       ost << 
-	"\n\nNumproc CalcFlux:\n"		\
+	"\n\nNumproc setvalues:\n"		\
 	"-----------------\n"				\
-	"Computes the natural flux of the bvp:\n\n"	\
-	"- Heat flux for thermic problems\n"		\
-	"- Stresses for mechanical problems\n"		\
-	"- Induction for magnetostatic problems\n\n"	\
+	"Set a gridfunction to given values\n\n" \
 	"Required flags:\n" 
 	"-bilinearform=<bfname>\n" 
 	"    the first integrator for the bf computes the flux\n"	\
-	"-solution=<gfname>\n"						\
-	"    grid-function providing the primal solution field\n"	\
-	"-flux=<gfname>\n"						\
-	"    grid-function used for storing the flux (e.g., vector-valued L2)\n\n" \
+	"-gridfunction=<gfname>\n"						\
+	"    grid-function to be set\n"	\
+	"-coefficient=<coefname>\n"						\
+	"    coefficient providing values\n\n" \
 	"\nOptional flags:\n"						\
-	"-applyd   apply coefficient matrix (compute either strains or stresses, B-field or H-field,..\n" \
-	"-useall   use all integrators for computing the flux, and add up result\n" \
+	"-boundary\n only boundary values are set\n" \
 	  << endl;
     }
     
@@ -253,7 +252,7 @@ namespace ngsolve
 	SetValues (pde.GetMeshAccess(),
 		   *coef,
 		   dynamic_cast<S_GridFunction<double>&> (*gfu), 
-		   false, lh);
+		   boundary, lh);
       /*
       else
 	SetValues (pde.GetMeshAccess(),

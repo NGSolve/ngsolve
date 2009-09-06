@@ -448,6 +448,9 @@ namespace ngcomp
     const BilinearFormIntegrator & bli =
       bound ? (*fes.GetBoundaryEvaluator()) : (*fes.GetEvaluator());
 
+    if (&bli == NULL)
+      throw Exception ("no evaluator available");
+    
     Array<int> cnti(fes.GetNDof());
     cnti = 0;
 
