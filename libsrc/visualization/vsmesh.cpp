@@ -419,7 +419,7 @@ namespace netgen
 	glColor3fv (textcol);
 	glNormal3d (0, 0, 1);
 	glPushAttrib (GL_LIST_BIT);
-	glListBase (fontbase);
+	// glListBase (fontbase);
 
 	char buf[30];
 
@@ -431,7 +431,8 @@ namespace netgen
 
 	      sprintf (buf, "%d", i);
 
-	      glCallLists (strlen (buf), GL_UNSIGNED_BYTE, buf);
+	      // glCallLists (strlen (buf), GL_UNSIGNED_BYTE, buf);
+	      MyOpenGLText (buf);
 	    }
 
 	if (vispar.drawedgenumbers)
@@ -462,7 +463,9 @@ namespace netgen
 		glRasterPos3d (p.X(), p.Y(), p.Z());
 
 		sprintf (buf, "%d", i);
-		glCallLists (strlen (buf), GL_UNSIGNED_BYTE, buf);
+		// glCallLists (strlen (buf), GL_UNSIGNED_BYTE, buf);
+		MyOpenGLText (buf);
+
 	      }
 
 	  }
@@ -493,7 +496,8 @@ namespace netgen
 
 		glRasterPos3d (p.X(), p.Y(), p.Z());
 		sprintf (buf, "%d", i);
-		glCallLists (strlen (buf), GL_UNSIGNED_BYTE, buf);
+		// glCallLists (strlen (buf), GL_UNSIGNED_BYTE, buf);
+		MyOpenGLText (buf);
 	      }
 	  }
 
@@ -577,7 +581,8 @@ namespace netgen
 
 		glRasterPos3d (p.X(), p.Y(), p.Z());
 		sprintf (buf, "%d", i);
-		glCallLists (strlen (buf), GL_UNSIGNED_BYTE, buf);
+		// glCallLists (strlen (buf), GL_UNSIGNED_BYTE, buf);
+		MyOpenGLText (buf);
 
 	      }
 	  }

@@ -31,13 +31,6 @@
 #endif
 
 
-#ifndef NOTCL
-// #include <togl.h>
-// #include "../../togl/togl.h"
-#endif
-
-
-
 
 // part of OpenGL 1.2, but not in Microsoft's OpenGL 1.1 header:
 // GL version sould be checked at runtime

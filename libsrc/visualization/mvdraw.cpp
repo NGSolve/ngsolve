@@ -29,7 +29,15 @@ namespace netgen
   Point3d VisualScene :: center;
   double VisualScene :: rad;
   GLdouble VisualScene :: backcolor;
+
+  /*
+#if TOGL_MAJOR_VERSION!=2
   GLuint VisualScene :: fontbase = 0;
+#else
+  Tcl_Obj * VisualScene :: fontbase = NULL;
+  Togl * VisualScene :: globtogl;
+#endif
+  */
 
   // texture for color decoding
   // GLubyte * VisualScene :: colortexture = NULL;
@@ -740,7 +748,7 @@ namespace netgen
     glColor3fv (textcol);
     
     glPushAttrib (GL_LIST_BIT);
-    glListBase (fontbase);
+    // glListBase (fontbase);
 
     char buf[20];
     for (int i = 0; i <= 4; i++)
@@ -755,7 +763,8 @@ namespace netgen
 	  val = minval + i * (maxval-minval) / 4;
 
 	sprintf (buf, "%8.3e", val);
-	glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+	// glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+	MyOpenGLText (buf);
       }
 
     glPopAttrib ();
@@ -808,19 +817,22 @@ namespace netgen
     glEnd ();
 
     glPushAttrib (GL_LIST_BIT);
-    glListBase (fontbase);
+    // glListBase (fontbase);
 
     char buf[20];
 
     glRasterPos3d (len, 0.0f, 0.0f);
     sprintf (buf, "x");
-    glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+    // glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+    MyOpenGLText (buf);
     glRasterPos3d (0.0f, len, 0.0f);
     sprintf (buf, "y");
-    glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+    // glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+    MyOpenGLText (buf);
     glRasterPos3d (0.0f, 0.0f, len);
     sprintf (buf, "z");
-    glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+    // glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+    MyOpenGLText (buf);
 
     glPopAttrib ();
 
@@ -865,12 +877,13 @@ namespace netgen
     glLineWidth (1.0f);
 
     glPushAttrib (GL_LIST_BIT);
-    glListBase (fontbase);
+    // glListBase (fontbase);
 
     char buf[] = "Netgen " PACKAGE_VERSION;
 
     glRasterPos3d (0.0f, 0.0f, 0.0f);
-    glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+    // glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+    MyOpenGLText (buf);
 
     glPopAttrib ();
 
@@ -1310,7 +1323,7 @@ namespace netgen
 	glColor3fv (textcol);
 	glNormal3d (0, 0, 1);
 	glPushAttrib (GL_LIST_BIT);
-	glListBase (fontbase);
+	// glListBase (fontbase);
 
 	char buf[20];
 	for (int i = 1; i <= mesh->GetNSeg(); i++)
@@ -1323,7 +1336,8 @@ namespace netgen
 	    glRasterPos3d (p.X(), p.Y(), p.Z());
 	  
 	    sprintf (buf, "%d", seg.edgenr);
-	    glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+	    // glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+	    MyOpenGLText (buf);
 	  }
       
 	glPopAttrib ();
@@ -1380,7 +1394,7 @@ namespace netgen
 	glColor3fv (textcol);
 	glNormal3d (0, 0, 1);
 	glPushAttrib (GL_LIST_BIT);
-	glListBase (fontbase);
+	// glListBase (fontbase);
       
 	char buf[20];
 	for (int i = 1; i <= mesh->GetNP(); i++)
@@ -1389,7 +1403,8 @@ namespace netgen
 	    glRasterPos3d (p.X(), p.Y(), p.Z());
 	  
 	    sprintf (buf, "%d", i);
-	    glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+	    // glCallLists (GLsizei(strlen (buf)), GL_UNSIGNED_BYTE, buf);
+	    MyOpenGLText (buf);
 	  }
       
 	glPopAttrib ();

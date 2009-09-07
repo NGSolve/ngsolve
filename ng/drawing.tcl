@@ -6,8 +6,13 @@ set oldmousey 0
 #
 
 # if { 1 } {
+
+# if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect true -create create_cb  -display display_cb -reshape reshape_cb  }] } {    
+#     puts "no OpenGL20" 
+# } {
+
 if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect true }] } {    
-    puts "no OpenGL" 
+     puts "no OpenGL" 
 } {
     #
     pack .ndraw -expand true -fill both -padx 10 -pady 10

@@ -15,6 +15,8 @@ namespace netgen
   extern void Render ();
 
 
+
+
   class VisualScene
   {
   protected:
@@ -42,8 +44,6 @@ namespace netgen
     static int selecttimestamp;
 
   public:
-    static GLuint fontbase;
-    // static Tcl_Obj* fontbase;  // Togl 2.0
 
     // static GLubyte * colortexture;
     static GLuint coltexname;
@@ -91,6 +91,10 @@ namespace netgen
     void Broadcast ();
 #endif 
   };
+
+
+  extern void MyOpenGLText (const char * text);
+
 
 
   class VisualSceneGeometry : public VisualScene

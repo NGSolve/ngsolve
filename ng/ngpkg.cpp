@@ -3116,10 +3116,20 @@ namespace netgen
 
 
   // Togl
+  
+  static int fontbase = 0;
+
+  void MyOpenGLText (const char * text)
+  {
+    glListBase (fontbase);
+    glCallLists (GLsizei(strlen(text)), GL_UNSIGNED_BYTE, text);
+  }
+
+
 
   static void init( struct Togl *togl )
   {
-    VisualScene::fontbase = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
+    fontbase = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
