@@ -1270,8 +1270,34 @@ namespace ngcomp
 	      cnt[i] =  first_edge_dof[i+1] - first_edge_dof[i] - ds_order;
 	      if (cnt[i] < 0) cnt[i] = 0;
 	    }
+
 	  for (i = 0; i < nfa; i++)
-	    cnt[ned+i] = first_face_dof[i+1] - first_face_dof[i] - excl_grads*face_ngrad[i];
+	    {
+	      // cnt[ned+i] = first_face_dof[i+1] - first_face_dof[i] - excl_grads*face_ngrad[i];
+
+	      int first = first_face_dof[i];
+	      int p = order_face[i][0];
+	      
+	      int ii = 0;
+	      for (int j = 0; j <= p-2; j++)
+		for (int k = 0; k <= p-2-j; k++, ii++)
+		  if (j+k+2 > ds_order)
+		    cnt[ned+i]++;
+	      //clusters[first+ii] = 1;
+	      
+	      // other combination
+	      for (int j = 0; j <= p-2; j++)
+		for (int k = 0; k <= p-2-j; k++, ii++)
+		  if (j+k+2 > ds_order)
+		    cnt[ned+i]++;
+	      // clusters[first+ii] = 1;
+	      
+	      // type 3
+	      for (int j = 0; j <= p-2; j++, ii++)
+		if (j+2 > ds_order)
+		  cnt[ned+i]++;
+	      // clusters[first+ii] = 1;
+	    }
 	  break;
 	}
       }
@@ -1636,12 +1662,43 @@ namespace ngcomp
 	  for (i =0; i<ned ; i++)
 	    for (j = first_edge_dof[i]+ds_order; j < first_edge_dof[i+1]; j++)
 	      table[i][cnt[i]++] = j;
-	  
+	  /*
 	  for (i = 0; i < nfa; i++)
 	    { 
 	      int first = first_face_dof[i]; //  + excl_grads*face_ngrad[i]; 
 	      for (j = first; j < first_face_dof[i+1]; j++)
 		table[ned+i][cnt[ned+i]++] = j;
+	    }
+	  */
+	  for (i = 0; i < nfa; i++)
+	    {
+	      // cnt[ned+i] = first_face_dof[i+1] - first_face_dof[i] - excl_grads*face_ngrad[i];
+
+	      int first = first_face_dof[i];
+	      int p = order_face[i][0];
+	      
+	      int ii = first;
+	      for (int j = 0; j <= p-2; j++)
+		for (int k = 0; k <= p-2-j; k++, ii++)
+		  if (j+k+2 > ds_order)
+		    table[ned+i][cnt[ned+i]++] = ii;
+	      // cnt[ned+i]++;
+	      //clusters[first+ii] = 1;
+	      
+	      // other combination
+	      for (int j = 0; j <= p-2; j++)
+		for (int k = 0; k <= p-2-j; k++, ii++)
+		  if (j+k+2 > ds_order)
+		    table[ned+i][cnt[ned+i]++] = ii;
+	      // cnt[ned+i]++;
+	      // clusters[first+ii] = 1;
+	      
+	      // type 3
+	      for (int j = 0; j <= p-2; j++, ii++)
+		if (j+2 > ds_order)
+		  table[ned+i][cnt[ned+i]++] = ii;
+		    // cnt[ned+i]++;
+	      // clusters[first+ii] = 1;
 	    }
 	  break;
 	}      
