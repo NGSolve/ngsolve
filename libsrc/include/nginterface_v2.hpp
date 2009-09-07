@@ -79,7 +79,16 @@ namespace netgen
   DLL_HEADER Ng_Element Ng_GetElement (int nr);
 
 
+  
+  class Ng_Point
+  {
+  public:
+    double * pt;
+    double operator[] (int i)
+    { return pt[i]; }
+  };
 
+  DLL_HEADER Ng_Point Ng_GetPoint (int nr);
 
 
 
@@ -127,8 +136,7 @@ namespace netgen
   
   template <int DIM> 
   DLL_HEADER int Ng_GetElementIndex (int nr);
-  
-  
+
   
   
   /// Curved Elements:

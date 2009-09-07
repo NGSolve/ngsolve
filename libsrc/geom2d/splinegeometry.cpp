@@ -295,6 +295,8 @@ void SplineGeometry<D> :: LoadDataV2 ( ifstream & infile )
           quadmeshing = false;
           tensormeshing.SetSize ( numdomains );
           tensormeshing = false;
+          layer.SetSize ( numdomains );
+          layer = 1;
 
 	  
 	  TestComment ( infile );
@@ -329,6 +331,7 @@ void SplineGeometry<D> :: LoadDataV2 ( ifstream & infile )
 	      maxh[domainnr-1] = flags.GetNumFlag ( "maxh", 1000);
               if (flags.GetDefineFlag("quad")) quadmeshing[domainnr-1] = true;
               if (flags.GetDefineFlag("tensor")) tensormeshing[domainnr-1] = true;
+	      layer[domainnr-1] = int(flags.GetNumFlag ("layer", 1));
 	    }
 	}
     }
@@ -989,10 +992,14 @@ void SplineGeometry<D> :: PartitionBoundary (double h, Mesh & mesh2d)
       pmax(j) = bbox.PMax()(j);
     }
 
-
-  if (printmessage_importance>0)
-    cout << "searchtree from " << pmin << " to " << pmax << endl;
   Point3dTree searchtree (pmin, pmax);
+
+  for (int i = 0; i < splines.Size(); i++)
+    for (int side = 0; side <= 1; side++)
+      {
+	int dom = (side == 0) ? splines[i]->leftdom : splines[i]->rightdom;
+	if (dom != 0) splines[i] -> layer = GetDomainLayer (dom);
+      }
 
   for (int i = 0; i < splines.Size(); i++)
     if (splines[i]->copyfrom == -1)

@@ -195,20 +195,33 @@ namespace netgen
 
 	Meshing2 meshing (Box<3> (pmin, pmax));
 
+	Array<int, PointIndex::BASE> compress(bnp);
+	compress = -1;
+	int cnt = 0;
 	for (PointIndex pi = PointIndex::BASE; pi < bnp+PointIndex::BASE; pi++)
-	  meshing.AddPoint ( (*mesh)[pi], pi);
-      
+	  if ( (*mesh)[pi].GetLayer() == geometry.GetDomainLayer(domnr))
+	    {
+	      meshing.AddPoint ( (*mesh)[pi], pi);
+	      cnt++;
+	      compress[pi] = cnt;
+	    }
 
 	PointGeomInfo gi;
 	gi.trignum = 1;
 	for (SegmentIndex si = 0; si < mesh->GetNSeg(); si++)
 	  {
 	    if ( (*mesh)[si].domin == domnr)
-	      meshing.AddBoundaryElement ( (*mesh)[si][0] + 1 - PointIndex::BASE, 
-					   (*mesh)[si][1] + 1 - PointIndex::BASE, gi, gi);
+	      {
+		meshing.AddBoundaryElement ( compress[(*mesh)[si][0]], 
+					     compress[(*mesh)[si][1]], gi, gi);
+	      }
 	    if ( (*mesh)[si].domout == domnr)
-	      meshing.AddBoundaryElement ( (*mesh)[si][1] + 1 - PointIndex::BASE, 
-					   (*mesh)[si][0] + 1 - PointIndex::BASE, gi, gi);
+	      {
+		meshing.AddBoundaryElement ( compress[(*mesh)[si][1]],
+					     compress[(*mesh)[si][0]], gi, gi);
+		
+	      }
+
 	  }
 
 

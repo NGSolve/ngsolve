@@ -13,8 +13,10 @@
 
 #include <geometry2d.hpp>
 
-namespace netgen
-{
+
+
+
+
 #include "surface.hpp"
 #include "solid.hpp"
 #include "identify.hpp"
@@ -22,16 +24,8 @@ namespace netgen
 #include "csgeom.hpp"
 #include "csgparser.hpp"
 
-#ifndef SMALLLIB
-#define _INCLUDE_MORE
-#endif
-//#ifdef LINUX
-#define _INCLUDE_MORE
-//#endif
 
-#ifdef _INCLUDE_MORE
 #include "triapprox.hpp"
-
 #include "algprim.hpp"
 #include "brick.hpp"
 #include "spline3d.hpp"
@@ -45,7 +39,6 @@ namespace netgen
 #include "specpoin.hpp"
 #include "edgeflw.hpp"
 #include "meshsurf.hpp"
-#endif
-}
+
 
 #endif

@@ -7,6 +7,9 @@
 /* Date:   24. Jul. 96                                                    */
 /**************************************************************************/
 
+namespace netgen
+{
+
 
 void CalcPartition (double l, double h, double h1, double h2,
 		    double hcurve, double elto0, Array<double> & points);
@@ -60,6 +63,14 @@ public:
   bool hpref_left;
   /// perfrom anisotropic refinement (hp-refinement) to edge
   bool hpref_right;
+  ///
+  int layer;
+
+
+  SplineSeg ()
+  {
+    layer = 1;
+  }
 
   /// calculates length of curve
   virtual double Length () const;
@@ -344,10 +355,18 @@ void SplineSeg<D> :: Partition (double h, double elto0,
 
 	    Vec<3> v (1e-4*h, 1e-4*h, 1e-4*h);
 	    searchtree.GetIntersecting (oldmark3 - v, oldmark3 + v, locsearch);
-	    if (locsearch.Size()) pi1 = locsearch[0];
+
+	    for (int k = 0; k < locsearch.Size(); k++)
+	      if ( mesh[PointIndex(locsearch[k])].GetLayer() == layer)
+		pi1 = locsearch[k];
+	    // if (locsearch.Size()) pi1 = locsearch[0];
 	      
 	    searchtree.GetIntersecting (mark3 - v, mark3 + v, locsearch);
-	    if (locsearch.Size()) pi2 = locsearch[0];
+	    for (int k = 0; k < locsearch.Size(); k++)
+	      if ( mesh[PointIndex(locsearch[k])].GetLayer() == layer)
+		pi2 = locsearch[k];
+	    // if (locsearch.Size()) pi2 = locsearch[0];
+
 	    /*	    
 	      for (PointIndex pk = PointIndex::BASE; 
 	      pk < mesh.GetNP()+PointIndex::BASE; pk++)
@@ -363,20 +382,15 @@ void SplineSeg<D> :: Partition (double h, double elto0,
 	    
 	    if (pi1 == -1)
 	      {
-		pi1 = mesh.AddPoint(oldmark3);
+		pi1 = mesh.AddPoint(oldmark3, layer);
 		searchtree.Insert (oldmark3, pi1);
 	      }
 	    if (pi2 == -1)
 	      {
-		pi2 = mesh.AddPoint(mark3);
+		pi2 = mesh.AddPoint(mark3, layer);
 		searchtree.Insert (mark3, pi2);
 	      }
 
-            /*
-            cout << "pi1 = " << pi1 << endl;
-            cout << "pi2 = " << pi2 << endl;
-            cout << "leftdom = " << leftdom << ", rightdom = " << rightdom << endl;
-            */
 	    Segment seg;
 	    seg.edgenr = segnr;
 	    seg.si = bc; // segnr;
@@ -852,6 +866,9 @@ typedef LineSeg<2> LineSegment;
 typedef SplineSeg3<2> SplineSegment3;
 typedef CircleSeg<2> CircleSegment;
 typedef DiscretePointsSeg<2> DiscretePointsSegment;
+
+
+}
 
 
 

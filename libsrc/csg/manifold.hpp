@@ -7,16 +7,23 @@
 /* Date:   7. Aug. 96                                                     */
 /**************************************************************************/
 
-/**
-  Basis class for manifolds in 2d and 3d
-*/
-class Manifold
+namespace netgen
 {
-public:
-  ///
-  Manifold ();
-  ///
-  virtual ~Manifold ();
-};
+
+
+  /**
+     Basis class for manifolds in 2d and 3d
+  */
+  class Manifold
+  {
+  public:
+    ///
+    Manifold ();
+    ///
+    virtual ~Manifold ();
+  };
+
+}
+
 
 #endif

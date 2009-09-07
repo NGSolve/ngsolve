@@ -10,11 +10,10 @@
 #include <myadt.hpp>
 #include <gprim.hpp>
 
-namespace netgen
-{
+
 #include "spline.hpp"
 #include "splinegeometry.hpp"
 #include "geom2dmesh.hpp"
-}
+
 
 #endif

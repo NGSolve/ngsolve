@@ -155,6 +155,13 @@ namespace netgen
   }
 
 
+  DLL_HEADER Ng_Point Ng_GetPoint (int nr)
+  {
+    Ng_Point ret;
+    ret.pt = &mesh->Point(nr + PointIndex::BASE)(0);
+  }
+
+
   template <>
   DLL_HEADER int Ng_GetElementIndex<1> (int nr)
   {
@@ -173,9 +180,6 @@ namespace netgen
   {
     return (*mesh)[ElementIndex(nr)].GetIndex();
   }
-  
-  
-  
   
   
   template <>

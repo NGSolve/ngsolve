@@ -2,10 +2,9 @@
 #define _CSGPARSER_HPP
 
 
+namespace netgen
+{
 
-
-//namespace netgen
-//{
   enum TOKEN_TYPE
     { 
       TOK_MINUS = '-', TOK_LP = '(', OK_RP = ')', TOK_LSP = '[', TOK_RSP = ']',
@@ -94,14 +93,9 @@
   
 
 
-//}
+}
 
 
 
+#endif
 
-
-
-
-
-
-#endif // _CSGPARSER_HPP
