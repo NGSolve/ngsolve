@@ -440,7 +440,6 @@ namespace ngcomp
     ma.PushStatus ("setvalues");
 
     const FESpace & fes = u.GetFESpace();
-    // bool bound = bli.BoundaryForm();
 
     int ne      = bound ? ma.GetNSE() : ma.GetNE();
     int dim     = fes.GetDimension();
@@ -475,15 +474,15 @@ namespace ngcomp
 	    cnt++;
 	    if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
 	      {
-		cout << "\rpostprocessing element " << cnt << "/" << ne << flush;
+		cout << "\rsetvalues element " << cnt << "/" << ne << flush;
 		ma.SetThreadPercentage ( 100.0*cnt / ne );
 		prevtime = clock();
 	      }
 	  }
 
-	  // int eldom = 
-	  // bound ? ma.GetSElIndex(i) : ma.GetElIndex(i);
-	  
+	  if (bound && !fes.IsDirichletBoundary(ma.GetSElIndex(i)))
+	    continue;
+
 	  const FiniteElement & fel = 
 	    bound ? fes.GetSFE(i, lh) : fes.GetFE (i, lh);
 	  
@@ -509,7 +508,6 @@ namespace ngcomp
 	  for (int j = 0; j < ir.GetNIP(); j++)
 	    {
 	      HeapReset hr(lh);
-
 	      double fac;
 	      if (!bound)
 		{
@@ -525,7 +523,6 @@ namespace ngcomp
 		      SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
 		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      coef.Evaluate (sip, fluxi);
-		      // bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
 		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
 		    }
 		}
@@ -536,7 +533,6 @@ namespace ngcomp
 		      SpecificIntegrationPoint<2,3> sip (ir.GetIP(j), eltrans, lh);
 		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      coef.Evaluate (sip, fluxi);
-		      // bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
 		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
 		    }
 		  else
@@ -544,7 +540,6 @@ namespace ngcomp
 		      SpecificIntegrationPoint<1,2> sip (ir.GetIP(j), eltrans, lh);
 		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      coef.Evaluate (sip, fluxi);
-		      // bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
 		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
 		    }
 		}
@@ -552,26 +547,24 @@ namespace ngcomp
 	      elflux += fac * elfluxi;
 	    }
 	  
-	  /*
-	  if (dimflux > 1)
+	  if (dim > 1)
 	    {
-	      FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
+	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
 	      const BlockBilinearFormIntegrator & bbli = 
-		dynamic_cast<const BlockBilinearFormIntegrator&> (fluxbli);
-	      bbli . Block() . AssembleElementMatrix (felflux, eltrans, elmat, lh);
+		dynamic_cast<const BlockBilinearFormIntegrator&> (bli);
+	      bbli . Block() . AssembleElementMatrix (fel, eltrans, elmat, lh);
 	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
 	      
-	      FlatVector<SCAL> hv1(dnumsflux.Size(), lh);
-	      FlatVector<SCAL> hv2(dnumsflux.Size(), lh);
-	      for (int j = 0; j < dimflux; j++)
+	      FlatVector<SCAL> hv1(dnums.Size(), lh);
+	      FlatVector<SCAL> hv2(dnums.Size(), lh);
+	      for (int j = 0; j < dim; j++)
 		{
-		  hv1 = elflux.Slice (j, dimflux);
+		  hv1 = elflux.Slice (j, dim);
 		  invelmat.Mult (hv1, hv2);
-		  elfluxi.Slice(j, dimflux) = hv2;
+		  elfluxi.Slice(j, dim) = hv2;
 		}
 	    }
 	  else
-	  */
 	    {
 	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
 	      bli.AssembleElementMatrix (fel, eltrans, elmat, lh);
@@ -595,7 +588,7 @@ namespace ngcomp
     }
 
     
-    cout << "\rpostprocessing element " << ne << "/" << ne << endl;
+    cout << "\rsetvalues element " << ne << "/" << ne << endl;
 
 
     FlatVector<SCAL> fluxi(dim, clh);

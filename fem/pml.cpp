@@ -43,8 +43,10 @@ namespace ngfem
   double pml_xmin[3] = { -1, -1, -1};
   double pml_xmax[3] = {  1,  1,  1};
 
+  Vec<3> pml_center (0, 0, 0);
+
   /*
-    rect_pml = 0 .... circular pml with radius pml_r
+    rect_pml = 0 .... circular pml with radius pml_r and center pml_center
     rect_pml = 1 .... square pml on square (-pml_x, pml_x)^d
     rect_pml = 2 .... rectangular pml on (pml_xmin, pml_xmax) x (pml_ymin, pml_ymax) x (pml_zmin, pml_zmax)
    */
@@ -196,18 +198,18 @@ namespace ngfem
     : DimSpecificIntegrationPoint<3,Complex> (aip, aeltrans)
   {
     Mat<3,3> hdxdxi;
-    Vec<3> hpoint;
+    Vec<3> hpoint, hvec;
 
     eltrans.CalcPointJacobian (ip, hpoint, hdxdxi, lh);
     // eltrans.CalcJacobian (ip, hdxdxi, lh);
     // eltrans.CalcPoint (ip, hpoint, lh);
 
-    
-    double abs_x = L2Norm (hpoint);
     switch (rect_pml)
       {
       case 0:
 	{
+	  hvec = hpoint - pml_center;
+	  double abs_x = L2Norm (hvec);
 	  if (abs_x <= pml_r)
 	    {
 	      point = hpoint;
@@ -216,9 +218,9 @@ namespace ngfem
 	  else
 	    {
 	      Complex g = 1.+alpha*(1-pml_r/abs_x);
-	      point = g * hpoint;
+	      point = pml_center + g * hvec;
 	      Mat<3,3,Complex> trans =
-		g * Id<3>() + (pml_r*alpha/(abs_x*abs_x*abs_x)) * (hpoint * Trans(hpoint));
+		g * Id<3>() + (pml_r*alpha/(abs_x*abs_x*abs_x)) * (hvec * Trans(hvec));
 	      dxdxi = trans * hdxdxi;
 	      
 	      // dxdxi = g * Id<3>() + (alpha/(abs_x*abs_x*abs_x)) * (hpoint * Trans(hpoint));
@@ -427,6 +429,14 @@ namespace ngfem
   {
     if (GetConstantTable().Used ("pml_r"))
       pml_r = GetConstantTable()["pml_r"];
+
+    if (GetConstantTable().Used ("pml_cx"))
+      pml_center(0) = GetConstantTable()["pml_cx"];
+    if (GetConstantTable().Used ("pml_cy"))
+      pml_center(1) = GetConstantTable()["pml_cy"];
+    if (GetConstantTable().Used ("pml_cz"))
+      pml_center(2) = GetConstantTable()["pml_cz"];
+
     
     if (GetConstantTable().Used ("pml_x"))
       {

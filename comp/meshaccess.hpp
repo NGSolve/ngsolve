@@ -86,6 +86,7 @@ namespace ngcomp
     /// number of distinct boundaries
     int GetNBoundaries () const;
 
+    /*
     ///
     template <int D>
     void GetPoint (int pi, Vec<D> & p) const
@@ -99,6 +100,27 @@ namespace ngcomp
       Ng_GetPoint (pi+1, &p(0)); 
       return p;
     }
+    */
+
+    template <int D>
+    void GetPoint (int pi, Vec<D> & p) const
+    { 
+      Ng_Point pt = Ng_GetPoint (pi);
+      for (int j = 0; j < D; j++)
+	p(j) = pt[j];
+    }
+
+    ///
+    template <int D>
+    Vec<D> GetPoint (int pi) const
+    { 
+      Vec<D> p;
+      Ng_Point pt = Ng_GetPoint (pi);
+      for (int j = 0; j < D; j++)
+	p(j) = pt[j];
+      return p;
+    }
+
 
 
     ///

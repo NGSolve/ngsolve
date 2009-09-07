@@ -1,5 +1,3 @@
-
-
 /**********************************************************************/
 /* File:   fespace.cpp                                                */
 /* Author: Joachim Schoeberl                                          */
@@ -75,8 +73,14 @@ namespace ngcomp
 	dirichlet_boundaries.SetSize (ma.GetNBoundaries());
 	dirichlet_boundaries.Clear();
 	Array<double> db (flags.GetNumListFlag("dirichlet"));
-	for(int i=0; i< db.Size(); i++) 
-	  dirichlet_boundaries.Set (int(db[i])-1);
+	for(int i = 0; i< db.Size(); i++) 
+	  {
+	    int bnd = int(db[i]-1);
+	    if (bnd >= 0 && bnd < dirichlet_boundaries.Size())
+	      dirichlet_boundaries.Set (int(db[i])-1);
+	    else
+	      cerr << "Illegal Dirichlet boundary index " << bnd+1 << endl;
+	  }
         cout << "dirichlet_boundaries" << dirichlet_boundaries << endl;
       }
     
@@ -232,13 +236,6 @@ namespace ngcomp
  #endif
   }
   
-  /*
-  void FESpace :: Update()
-  {
-    throw Exception (string ("FESpace::Update called, but Update(LocalHeap) should be called, fespace = ")
-                     + typeid(*this).name() );
-  }
-  */
 
   void FESpace :: Update(LocalHeap & lh)
   {
@@ -1193,9 +1190,15 @@ namespace ngcomp
   {
     int nd = GetNDof();
     
-    Table<int> * it = new Table<int>(nd,1);
+    Array<int> cnt(nd);
     for (int i = 0; i < nd; i++)
-      (*it)[i][0] = i;
+      cnt[i] = IsDirichletDof(i) ? 0 : 1;
+
+    Table<int> * it = new Table<int>(cnt);
+
+    for (int i = 0; i < nd; i++)
+      if (!IsDirichletDof(i))
+	(*it)[i][0] = i;
 
     return it;
   }
@@ -1219,6 +1222,21 @@ namespace ngcomp
   {
     dirichlet_boundaries = dirbnds;
   }
+
+
+  BitArray * FESpace :: GetFreeDofs () const
+  {
+    if (!dirichlet_dofs.Size())
+      return NULL;
+    else
+      {
+	BitArray * freedofs = new BitArray(dirichlet_dofs);
+	freedofs -> Invert();
+	return freedofs;
+      }
+  }
+
+
 
 
   // Aendern, Bremse!!!
@@ -1672,7 +1690,7 @@ namespace ngcomp
     if (ma.GetDimension() == 2)
       {
 	evaluator = new MassIntegrator<2> (&one);
-	boundary_evaluator = 0;
+	boundary_evaluator = new RobinIntegrator<2> (&one);
       }
     else
       {
@@ -1759,7 +1777,6 @@ namespace ngcomp
 	      }
 	  }
       }
-      
 
     if (timing) Timing();
 
@@ -1816,10 +1833,13 @@ namespace ngcomp
 
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
+
+    /*
     if (dirichlet_dofs.Size())
       for (int j = 0; j < dnums.Size(); j++)
 	if (dnums[j] != -1 && dirichlet_dofs[dnums[j]])
 	  dnums[j] = -1;
+    */
   }
 
 
@@ -1843,10 +1863,13 @@ namespace ngcomp
 
     if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
       dnums = -1;
+
+    /*
     if (dirichlet_dofs.Size())
       for (int j = 0; j < dnums.Size(); j++)
 	if (dnums[j] != -1 && dirichlet_dofs[dnums[j]])
 	  dnums[j] = -1;
+    */
   }
   
 
@@ -1907,6 +1930,7 @@ namespace ngcomp
 
     return &clusters;
   }
+
 
 
 

@@ -63,22 +63,21 @@ namespace ngfem
 	  dofs.Append (Dof (Node(NT_FACE, i), j));
       }
 
-    int ni = 0;
+    int ni;
     INT<3> p = order_cell;
-    if (DIM == 3)
-      switch (eltype)
-        {
-        case ET_TET:  if(p[0] > 3) ni = (p[0]-1)*(p[0]-2)*(p[0]-3)/6;   
-          break;
-        case ET_PRISM: if(p[0]>2 && p[2]>1) ni = (p[0]-1)*(p[0]-2)*(p[2]-1)/2;
-          break;
-        case ET_PYRAMID: if(p[0]>2) ni = (p[0]-1)*(p[0]-2)*(2*p[0]-3)/6;
-          break;
+    switch (ET)
+      {
+      case ET_TET:  if(p[0] > 3) ni = (p[0]-1)*(p[0]-2)*(p[0]-3)/6;   
+	break;
+      case ET_PRISM: if(p[0]>2 && p[2]>1) ni = (p[0]-1)*(p[0]-2)*(p[2]-1)/2;
+	break;
+      case ET_PYRAMID: if(p[0]>2) ni = (p[0]-1)*(p[0]-2)*(2*p[0]-3)/6;
+	break;
         case ET_HEX: if(p[0]>1 && p[1] > 1 && p[2]>1) ni = (p[0]-1)*(p[1]-1)*(p[2]-1);
           break;
-        default:
-          ;
-        }
+      default:
+	ni = 0;
+      }
     
     for (int j = 0; j < ni; j++)
       dofs.Append (Dof (Node(NT_CELL, 0), j));

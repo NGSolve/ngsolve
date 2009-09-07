@@ -992,7 +992,6 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("SparseCholesky::Mult");
     NgProfiler::RegionTimer reg (timer);
 
-
     int n = Height();
     
     const FlatVector<TVX> fx = 
@@ -1063,8 +1062,6 @@ namespace ngla
 	  if (!(*cluster)[i])
 	    fy(i) = 0;
       }
-
-
   }
   
   
@@ -1199,7 +1196,6 @@ namespace ngla
 	for (int i = 0; i < n; i++)
 	  fy(i) += s * hy(order[i]);
       }
-
   }
   
 
