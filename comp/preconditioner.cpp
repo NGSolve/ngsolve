@@ -474,20 +474,28 @@ namespace ngcomp
 
   void DirectPreconditioner :: Update ()
   {
-    cout << "Inverse type = " << inversetype << endl;
     if ( inverse )
       delete inverse;
     try
       {
 // 	inverse = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
 // 	  .InverseMatrix();
-	const BaseSparseMatrix& amatrix = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix());
+	const BaseSparseMatrix & amatrix = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix());
 
 	amatrix.SetInverseType ( inversetype );
 	if ( this->on_proc == -1  || this->on_proc == id )
 	  {
-	    inverse = amatrix.InverseMatrix();
-	    
+	    BitArray * freedofs = bfa->GetFESpace().GetFreeDofs();
+
+	    if (freedofs)
+	      {
+		inverse = amatrix.InverseMatrix(freedofs);
+	      }
+	    else
+	      inverse = amatrix.InverseMatrix();
+
+	    // delete freedofs;
+
 	    if (print)
 	      (*testout) << "inverse = " << endl << (*inverse) << endl;
 	  }
@@ -636,6 +644,7 @@ namespace ngcomp
 // 	bbct = DIRECT_COARSE; break;
 //       }
 
+    if ( block && blocktype == -1 ) blocktype = 0;
     if ( blocktype >= 0 )
       {
 	// new: blocktypes, specified in fespace

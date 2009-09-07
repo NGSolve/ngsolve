@@ -53,7 +53,7 @@ namespace ngcomp
     /// on which boundaries is the space defined ?
     Array<int> definedonbound;
 
-    /// prototype: what are the (homogeneous) Dirichlet boundaries ?
+    /// prototype: what are the Dirichlet boundaries ?
     BitArray dirichlet_boundaries;
 
     /// dofs on Dirichlet boundary
@@ -93,7 +93,6 @@ namespace ngcomp
     int first_lodof[5];
     /// the high order vertex, edge, face, cell dofs on each node start (and end) here ...
     Array<int> first_hodofs[4];
-
 
 
 
@@ -205,6 +204,15 @@ namespace ngcomp
     /// according low-order FESpace (if available)
     const FESpace & LowOrderFESpace () const { return *low_order_space; }
 
+
+    /// non Dirichlet dofs
+    virtual BitArray * GetFreeDofs () const;
+    ///
+    bool IsDirichletDof (int i) const
+    { return dirichlet_dofs.Size() && dirichlet_dofs[i]; }
+
+    bool IsDirichletBoundary (int i) const
+    { return dirichlet_boundaries.Size() && dirichlet_boundaries[i]; }
 
 
     ///

@@ -999,6 +999,10 @@ namespace ngcomp
 	cout << "EDGE-blocks (noClusters)" << endl; 
 	ncnt = nv  + ned;
 	break; 
+      case 21:
+	cout << "wave equation blocks" << endl;
+	ncnt = ned + nfa;
+	break;
       default: 
 	throw Exception("HCurlHoFeSpace:: CreateSmoothingBlocks chosen Blocktype not valid \n Choose blocktype 1-6 "); 
 	ncnt =0; 
@@ -1256,6 +1260,19 @@ namespace ngcomp
 
 	  break;
       
+	}
+     case 21: // wave equation
+	{
+	  int ds_order = precflags.GetNumFlag ("ds_order", 0);
+	  if (ds_order < 0) ds_order = 0;	  
+	  for(i=0;i<ned;i++)
+	    {
+	      cnt[i] =  first_edge_dof[i+1] - first_edge_dof[i] - ds_order;
+	      if (cnt[i] < 0) cnt[i] = 0;
+	    }
+	  for (i = 0; i < nfa; i++)
+	    cnt[ned+i] = first_face_dof[i+1] - first_face_dof[i] - excl_grads*face_ngrad[i];
+	  break;
 	}
       }
     
@@ -1610,7 +1627,24 @@ namespace ngcomp
 	  
 	  break;
 	}
-      
+      case 21: // wave equation
+	{
+	  cnt = 0;
+	  int ds_order = precflags.GetNumFlag ("ds_order", 0);
+	  if (ds_order < 0) ds_order = 0;	  
+	  
+	  for (i =0; i<ned ; i++)
+	    for (j = first_edge_dof[i]+ds_order; j < first_edge_dof[i+1]; j++)
+	      table[i][cnt[i]++] = j;
+	  
+	  for (i = 0; i < nfa; i++)
+	    { 
+	      int first = first_face_dof[i]; //  + excl_grads*face_ngrad[i]; 
+	      for (j = first; j < first_face_dof[i+1]; j++)
+		table[ned+i][cnt[ned+i]++] = j;
+	    }
+	  break;
+	}      
       }
     //(*testout) << "H(Curl)-table = " << table << endl;	
     
@@ -1646,7 +1680,7 @@ namespace ngcomp
 	for (int i = 0; i < nfa; i++)
 	  {
 	    int first = first_face_dof[i];
-	    int next = first_face_dof[i+1];
+	    // int next = first_face_dof[i+1];
 	    int p = order_face[i][0];
 	    
 	    // if (usegrad_face[i])

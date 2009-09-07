@@ -96,6 +96,8 @@ namespace ngcomp
     loflags.SetFlag ("order", 1);
     loflags.SetFlag ("dim", dimension);
     if (iscomplex) loflags.SetFlag ("complex");
+    if (flags.NumListFlagDefined ("dirichlet")) 
+      loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
 
 #ifndef PARALLEL
     low_order_space = new NodalFESpace (ma, loflags);
@@ -460,6 +462,21 @@ namespace ngcomp
 
     if (dirichlet_boundaries.Size())
       {
+	dirichlet_dofs.SetSize (GetNDof());
+	dirichlet_dofs.Clear();
+	Array<int> dnums;
+	for (int i = 0; i < ma.GetNSE(); i++)
+	  {
+	    if (dirichlet_boundaries[ma.GetSElIndex(i)])
+	      {
+		GetSDofNrs (i, dnums);
+		for (int j = 0; j < dnums.Size(); j++)
+		  if (dnums[j] != -1)
+		    dirichlet_dofs.Set (dnums[j]);
+	      }
+	  }
+
+
 	dirichlet_vertex.SetSize (ma.GetNV());
 	dirichlet_edge.SetSize (ma.GetNEdges());
         if (dim == 3)
@@ -1030,6 +1047,11 @@ namespace ngcomp
         ncnt = nv+ned;
         break;
 
+      case 21:
+        cout << "Helmholtz" << endl;
+        ncnt = ned+nfa;
+        break;
+
       default: 
         cout << " Error in H1HOFESpace :: CreateSmoothingBlocks no SmoothingType " << endl; 
         return 0; 
@@ -1038,8 +1060,9 @@ namespace ngcomp
     Array<int> cnt(ncnt); 
     cnt = 0; 
     int nvdof = 1; 
-    for (int i = 0; i < nv; i++)
-      cnt[i] = nvdof; 
+    if (SmoothingType <= 20)
+      for (int i = 0; i < nv; i++)
+	cnt[i] = nvdof; 
       
     int ii =0; 
     switch(SmoothingType)
@@ -1071,6 +1094,8 @@ namespace ngcomp
           cnt[nv+ned+nfa+i] = first_element_dof[i+1]-first_element_dof[i];
         break; 
       case 4: // VE + F + I 
+	for (int i = 0; i < nv; i++)
+          cnt[i] = IsDirichletVertex(i) ? 0 : 1;
         for (int i = 0; i < ned; i++)
           if (!IsDirichletEdge(i))
             {
@@ -1302,13 +1327,24 @@ namespace ngcomp
             }
           break;
         }
+      case 21: // V + E + F + I 
+	int ds_order = precflags.GetNumFlag ("ds_order", 1);
+	if (ds_order < 1) ds_order = 1;
+        for (int i = 0; i < ned; i++)
+	  {
+	    cnt[i] = first_edge_dof[i+1]-first_edge_dof[i]-ds_order+1;
+	    if (cnt[i] < 0) cnt[i] = 0;
+	  }
+        for (int i = 0; i < nfa; i++)
+          cnt[ned+i] = first_face_dof[i+1]-first_face_dof[i];
+        break; 
       }
      
     //    *testout << " cnt " << cnt << endl; 
     
     Table<int> & table = *new Table<int> (cnt); 
     cnt = 0; 
-    if(SmoothingType != 10) 
+    if(SmoothingType != 10 && SmoothingType != 4 && SmoothingType <= 20) 
       {
         for (int i = 0; i < nv; i++)
           table[i][0] = i;
@@ -1391,6 +1427,13 @@ namespace ngcomp
           }
         break; 
       case 4: // VE + F + I
+        for (int i = 0; i < nv; i++)
+	  if (!IsDirichletVertex(i))
+	    {
+	      table[i][0] = i;
+	      cnt[i] = 1;
+	    }
+
         for (int i = 0; i < ned; i++)
           if (!IsDirichletEdge(i))
             {
@@ -1761,6 +1804,25 @@ namespace ngcomp
             }
           break;
         }
+      case 21: // E + F 
+	
+	int ds_order = precflags.GetNumFlag ("ds_order", 1);
+	cout << "ds_order = " << ds_order << endl;
+        for (int i = 0; i < ned; i++)
+          {
+            int first = first_edge_dof[i] + ds_order - 1;
+            int ndof = first_edge_dof[i+1]-first;
+            for (int j = 0; j < ndof; j++)
+              table[i][j] = first+j;
+          }
+        for (int i = 0; i < nfa; i++)
+          {
+            int ndof = first_face_dof[i+1]-first_face_dof[i]; 
+            int first = first_face_dof[i];
+            for (int j = 0; j < ndof; j++)
+              table[ned+i][j] = first+j;
+          }
+        break; 
 
       }
     
@@ -1774,6 +1836,61 @@ namespace ngcomp
   Array<int> * 
   H1HighOrderFESpace :: CreateDirectSolverClusters (const Flags & flags) const
   {
+    if (flags.NumFlagDefined ("ds_order"))
+      {
+	int ds_order = int (flags.GetNumFlag ("ds_order", 1));
+
+	Array<int> & clusters = *new Array<int> (GetNDof());
+	clusters = 0;
+	
+	int ned = ma.GetNEdges();
+	int nv = ma.GetNV();
+
+	for (int i = 0; i < nv; i++)
+	  clusters[i] = 1;
+
+	for (int i = 0; i < ned; i++)
+	  {
+	    int first = first_edge_dof[i];
+	    int next = first_edge_dof[i+1];
+	    for (int j = 0; (j+2 <= ds_order) && (first+j < next) ; j++)
+	      clusters[first+j] = 1;
+	  }
+
+	/*
+	int nfa = ma.GetNFaces();
+	for (int i = 0; i < nfa; i++)
+	  {
+	    int first = first_face_dof[i];
+	    int next = first_face_dof[i+1];
+	    int p = order_face[i][0];
+	    
+	    // if (usegrad_face[i])
+	    int ii = 0;
+            for (int j = 0; j <= p-2; j++)
+              for (int k = 0; k <= p-2-j; k++, ii++)
+                if (j+k+2 <= ds_order)
+		  clusters[first+ii] = 1;
+	    
+	    // other combination
+	    for (int j = 0; j <= p-2; j++)
+	      for (int k = 0; k <= p-2-j; k++, ii++)
+		if (j+k+2 <= ds_order)
+		  clusters[first+ii] = 1;
+	    
+	    // type 3
+	    for (int j = 0; j <= p-2; j++, ii++)
+	      if (j+2 <= ds_order)
+	      clusters[first+ii] = 1;
+	  }
+	*/
+
+	return &clusters;
+      }
+
+
+
+
     // return 0;
 
     int i, j, k;

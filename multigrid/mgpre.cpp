@@ -120,7 +120,6 @@ namespace ngmg
 
   void MultigridPreconditioner :: Update ()
   {
-    cout << "update multigrid" << endl;
     if ( smoother )
       smoother->Update(update_always);
     if (prolongation)
@@ -147,11 +146,18 @@ namespace ngmg
 	      cout << "factor coarse" << endl;
 	      checksumcgpre = checksum;
 	    */
-	    cout << "factor coarse grid matrix" << endl;
 	    delete coarsegridpre;
-	    coarsegridpre =
-	      dynamic_cast<const BaseSparseMatrix&> (biform.GetMatrix(0))
-	      .InverseMatrix();
+
+	    BitArray * freedofs = fespace.GetFreeDofs();
+	    if (!freedofs)
+	      coarsegridpre =
+		dynamic_cast<const BaseSparseMatrix&> (biform.GetMatrix(0)) .InverseMatrix();
+	    else
+	      {
+		coarsegridpre =
+		  dynamic_cast<const BaseSparseMatrix&> (biform.GetMatrix(0)) .InverseMatrix(freedofs);
+	      }
+
 	    /*
 	      }
 	      else
