@@ -267,7 +267,7 @@ namespace netgen
   void CalcPartition (double l, double h, double h1, double h2,
 		      double hcurve, double elto0, Array<double> & points)
   {
-    cout << "calcpart, h = " << h << ", h1 = " << h1 << ", h2 = " << h2 << ", hcurve = " << hcurve << endl;
+    // cout << "calcpart, h = " << h << ", h1 = " << h1 << ", h2 = " << h2 << ", hcurve = " << hcurve << endl;
     int i, j, n, nel;
     double sum, t, dt, fun, fperel, oldf, f;
 

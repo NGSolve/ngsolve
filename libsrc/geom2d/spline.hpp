@@ -372,9 +372,11 @@ void SplineSeg<D> :: Partition (double h, double elto0,
 		searchtree.Insert (mark3, pi2);
 	      }
 
-	    // cout << "pi1 = " << pi1 << endl;
-	    // cout << "pi2 = " << pi2 << endl;
-	  
+            /*
+            cout << "pi1 = " << pi1 << endl;
+            cout << "pi2 = " << pi2 << endl;
+            cout << "leftdom = " << leftdom << ", rightdom = " << rightdom << endl;
+            */
 	    Segment seg;
 	    seg.edgenr = segnr;
 	    seg.si = bc; // segnr;
