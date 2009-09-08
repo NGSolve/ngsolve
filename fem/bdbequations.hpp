@@ -700,11 +700,12 @@ public:
 
 
 /// diagonal tensor, all values are the same
-template <int DIM>
-class DiagDMat : public DMatOp<DiagDMat<DIM> >
+template <int DIM, typename SCAL = double>
+class DiagDMat : public DMatOp<DiagDMat<DIM,SCAL> >
 {
   CoefficientFunction * coef;
 public:
+  typedef SCAL TSCAL;
   DiagDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
 
   DiagDMat (Array<CoefficientFunction*> & acoefs) : coef(acoefs[0]) { ; }
@@ -718,13 +719,44 @@ public:
     for (int i = 0; i < DIM; i++)
       mat(i, i) = val;
   }  
-  
 
   template <typename FEL, typename SIP, class VECX, class VECY>
   void Apply (const FEL & fel, const SIP & sip,
 	      const VECX & x, VECY & y, LocalHeap & lh) const
   {
     double val = Evaluate (*coef, sip);
+    for (int i = 0; i < DIM; i++)
+      y(i) = val * x(i);
+  }
+};
+
+template <int DIM>
+class DiagDMat<DIM, Complex> : public DMatOp<DiagDMat<DIM, Complex> >
+{
+  CoefficientFunction * coef;
+public:
+  typedef Complex TSCAL;
+  DiagDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
+
+  DiagDMat (Array<CoefficientFunction*> & acoefs) : coef(acoefs[0]) { ; }
+
+  template <typename FEL, typename SIP, typename MAT>
+  void GenerateMatrix (const FEL & fel, const SIP & sip,
+		       MAT & mat, LocalHeap & lh) const
+  {
+    typedef typename MAT::TSCAL TRESULT;
+    mat = TRESULT(0);
+    TRESULT val = ReduceComplex<TRESULT> (coef -> EvaluateComplex (sip));
+    for (int i = 0; i < DIM; i++)
+      mat(i, i) = val;
+  }  
+
+  template <typename FEL, typename SIP, class VECX, class VECY>
+  void Apply (const FEL & fel, const SIP & sip,
+	      const VECX & x, VECY & y, LocalHeap & lh) const
+  {
+    typedef typename VECY::TSCAL TRESULT;
+    TRESULT val = ReduceComplex<TRESULT> (coef -> EvaluateComplex (sip));
     for (int i = 0; i < DIM; i++)
       y(i) = val * x(i);
   }
@@ -1969,10 +2001,12 @@ public:
   MassIntegrator (CoefficientFunction * coeff);
   
   ///
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs);
+  /*
   {
     return new MassIntegrator (coeffs[0]);
   }
+  */
 
   virtual int Lumping () const
     { return 1; }
@@ -1980,6 +2014,20 @@ public:
   ///
   virtual string Name () const { return "Mass"; }
 };
+
+
+template <int D>
+class ComplexMassIntegrator 
+  : public T_BDBIntegrator<DiffOpId<D>, DiagDMat<1, Complex>, ScalarFiniteElement<D> >
+{
+public:
+  ComplexMassIntegrator (CoefficientFunction * coeff);
+  virtual string Name () const { return "ComplexMass"; }
+};
+
+
+
+
 
 /// integrator for \f$\int_\Gamma u v \, ds\f$
 template <int D>

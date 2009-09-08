@@ -117,7 +117,7 @@ template <class DMO>
 class DMatOp
 {
 public:
-
+  typedef double TSCAL;
   /// is coefficient tensor symmetric ?
   enum { SYMMETRIC = 1 };
 
@@ -205,6 +205,7 @@ public:
   enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
   enum { DIM_DMAT    = DIFFOP::DIM_DMAT };
   enum { DIM         = DIFFOP::DIM };
+  typedef typename DMATOP::TSCAL TSCAL;
 
   /*
   T_BDBIntegrator  (Array<CoefficientFunction*> & coeffs)
