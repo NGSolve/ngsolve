@@ -34,7 +34,7 @@ The interface between the GUI and the netgen library
 
 // to be sure to include the 'right' togl-version
 #include "togl_1_7.h"
-
+// #include "Togl2/togl.h"
 
 extern bool nodisplay;
 
@@ -3212,6 +3212,89 @@ namespace netgen
 
   // Sorry, Togl 2.0 not supported
 
+  Tcl_Obj * togl_font;
+ 
+  void MyOpenGLText (const char * text)
+  {
+    cout << "togl - text" << endl;
+  }
+  
+
+
+  static int
+  init(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+  {
+    Togl * togl;
+    if (Togl_GetToglFromObj(interp, objv[1], &togl) != TCL_OK) 
+      return TCL_ERROR;
+
+    cout << "call Togl - load font (crash on my Linux64)" << endl;
+    // togl_font = Togl_LoadBitmapFont( togl, "Times"); // TOGL_BITMAP_8_BY_13 );
+    togl_font = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
+    cout << "success" << endl;
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glMatrixMode(GL_MODELVIEW);
+
+    SetVisualScene (Togl_Interp(togl));
+    vs->DrawScene();
+    return TCL_OK;
+  }
+
+  static int
+  zap(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+  {
+    return TCL_OK;
+  }
+
+
+  static int
+  draw(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+  {
+    Togl * togl;
+    if (Togl_GetToglFromObj(interp, objv[1], &togl) != TCL_OK) 
+      return TCL_ERROR;
+    
+
+    SetVisualScene (interp);
+
+    glPushMatrix();
+    glLoadIdentity();
+    // gluLookAt (0, 0, 6, 0, 0, 0, 0, 1, 0);
+    vs->DrawScene();
+    
+    Togl_SwapBuffers(togl);
+    glPopMatrix();
+
+    return TCL_OK;
+  }
+
+  static int
+  reshape(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+  {
+    Togl * togl;
+    if (Togl_GetToglFromObj(interp, objv[1], &togl) != TCL_OK) 
+      return TCL_ERROR;
+
+    int w = Togl_Width (togl);
+    int h = Togl_Height (togl);
+
+    glViewport(0, 0, w, h);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(20.0f, double(w) / h, pnear, pfar);
+    glMatrixMode(GL_MODELVIEW);
+
+    // draw (togl);
+
+    return TCL_OK;
+  }
+
+
+
+
 
 #endif
 
@@ -5137,7 +5220,24 @@ namespace netgen
 	//   Togl_CreateCommand("position",position);
       }
 #else
-    cout << "togl 2.0 setup missing" << endl;
+    if(!nodisplay)
+      {
+	Tcl_CreateObjCommand(interp, "init", init, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "zap", zap, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "draw", draw, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "reshape", reshape, NULL, NULL);
+	/*
+	Togl_CreateFunc( init );
+	Togl_DestroyFunc( zap );
+	Togl_DisplayFunc( draw );
+	Togl_ReshapeFunc( reshape );
+	*/
+	//   Togl_TimerFunc(  idle );
+	// Togl_CreateCommand( (char*)"Ng_SnapShot", Ng_SnapShot);
+	// Togl_CreateCommand( (char*)"Ng_VideoClip", Ng_VideoClip);
+	//   Togl_CreateCommand("position",position);
+      }
+
 #endif
 
 
