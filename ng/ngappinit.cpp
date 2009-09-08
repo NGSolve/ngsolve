@@ -54,10 +54,9 @@ using netgen::RegisterUserFormats;
  * The following variable is a special hack that is needed in order for
  * Sun shared libraries to be used for Tcl.
  */
-#if !defined(__WIN32__) && !defined(MAC_TCL)
+
 // extern "C" int matherr();
-int *tclDummyMathPtr = (int *) matherr;
-#endif
+// int *tclDummyMathPtr = (int *) matherr;
 
 extern "C" int Ng_ServerSocketManagerInit (int port);
 extern "C" int Ng_ServerSocketManagerRun (void);

@@ -1,4 +1,4 @@
-AC_INIT([netgen],[4.9.10],[],[])
+AC_INIT([netgen],[4.9.11-dev],[],[])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -129,6 +129,11 @@ AC_CHECK_HEADER(pthread.h)
 AC_CHECK_HEADER([togl.h])
 AC_CHECK_HEADER([GL/gl.h])
 
+AC_CHECK_FUNCS([pow])
+AC_CHECK_FUNCS([floor])
+AC_CHECK_FUNCS([matherr])
+AC_CHECK_HEADERS([limits.h])
+
 AC_CHECK_LIB(pthread, pthread_create)
 
 
@@ -166,13 +171,6 @@ esac
 AC_SUBST(LIBGLU)
 
 
-	
-
-AC_CHECK_FUNCS([pow])
-AC_CHECK_FUNCS([floor])
-AC_CHECK_HEADERS([limits.h])
-
-
 
 
 AC_CONFIG_FILES(Makefile libsrc/Makefile libsrc/csg/Makefile 
@@ -182,8 +180,5 @@ libsrc/linalg/Makefile libsrc/meshing/Makefile libsrc/occ/Makefile
   libsrc/stlgeom/Makefile
   libsrc/visualization/Makefile ng/Makefile nglib/Makefile
   tutorials/Makefile doc/Makefile windows/Makefile )
-
-
-
 
 AC_OUTPUT

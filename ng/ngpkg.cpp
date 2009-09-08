@@ -132,9 +132,14 @@ namespace netgen
 
 #ifdef FFMPEG
 extern "C" {
+  /*
 #include <ffmpeg/avcodec.h>
 #include <ffmpeg/avformat.h>
 #include <ffmpeg/swscale.h>
+  */
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
 }
 #endif
 
@@ -3478,11 +3483,11 @@ namespace netgen
         context->flags |= CODEC_FLAG_PSNR;
 
         if( avcodec_open( context, codec ) < 0 ) {
+          cout << "can't open codec" << endl;
           avcodec_close( context );
           av_free( context );
           free_buffers( &buff );
           fclose( MPGfile );
-          cout << "can't open codec" << endl;
           return TCL_ERROR;
         }
 
