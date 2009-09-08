@@ -21,6 +21,23 @@ namespace ngfem
     : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (DiagDMat<1> (coeff))
   { ; }
 
+  template <int D> ComplexMassIntegrator<D> ::
+  ComplexMassIntegrator (CoefficientFunction * coeff)
+    : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1, Complex>, ScalarFiniteElement<D> > (DiagDMat<1, Complex> (coeff))
+  { ; }
+
+  template <int D> 
+  Integrator * MassIntegrator<D> :: Create (Array<CoefficientFunction*> & coeffs)
+  {
+    CoefficientFunction * coef = coeffs[0];
+    if (!coef -> IsComplex())
+      return new MassIntegrator (coef);
+    else
+      return new ComplexMassIntegrator<D> (coef);
+  }
+
+
+
   template <int D, typename FEL> LaplaceIntegrator<D,FEL> ::
   LaplaceIntegrator (CoefficientFunction * coeff)
     : T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))

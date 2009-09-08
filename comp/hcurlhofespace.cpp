@@ -1265,12 +1265,13 @@ namespace ngcomp
 	{
 	  int ds_order = precflags.GetNumFlag ("ds_order", 0);
 	  if (ds_order < 0) ds_order = 0;	  
+
 	  for(i=0;i<ned;i++)
 	    {
 	      cnt[i] =  first_edge_dof[i+1] - first_edge_dof[i] - ds_order;
 	      if (cnt[i] < 0) cnt[i] = 0;
 	    }
-
+	  
 	  for (i = 0; i < nfa; i++)
 	    {
 	      // cnt[ned+i] = first_face_dof[i+1] - first_face_dof[i] - excl_grads*face_ngrad[i];
@@ -1670,6 +1671,7 @@ namespace ngcomp
 		table[ned+i][cnt[ned+i]++] = j;
 	    }
 	  */
+
 	  for (i = 0; i < nfa; i++)
 	    {
 	      // cnt[ned+i] = first_face_dof[i+1] - first_face_dof[i] - excl_grads*face_ngrad[i];

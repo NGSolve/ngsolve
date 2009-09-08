@@ -197,7 +197,7 @@ namespace ngstd
 	    break;
 
 	  case IMAG:
-	    throw Exception ("Real Eval called for Complex EvalFunction");
+	    throw Exception ("Real Eval called for Complex EvalFunction\n");
 
 	  case FUNCTION:
 	    stack[stacksize] = (*program[i].operand.fun) (stack[stacksize]);
