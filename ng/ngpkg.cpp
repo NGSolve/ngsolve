@@ -3224,14 +3224,18 @@ namespace netgen
   static int
   init(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
   {
-    Togl * togl;
+    cout << "call init" << endl;
+
+    Togl * togl = NULL;
+
     if (Togl_GetToglFromObj(interp, objv[1], &togl) != TCL_OK) 
       return TCL_ERROR;
 
     cout << "call Togl - load font (crash on my Linux64)" << endl;
     // togl_font = Togl_LoadBitmapFont( togl, "Times"); // TOGL_BITMAP_8_BY_13 );
-    togl_font = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
-    cout << "success" << endl;
+    // togl_font = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
+    // togl_font = Togl_LoadBitmapFont( togl, NULL );
+    // cout << "success" << endl;
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -5196,20 +5200,17 @@ namespace netgen
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-#if TOGL_MAJOR_VERSION==1
-    if (!nodisplay && Togl_Init(interp) == TCL_ERROR) {
-      return TCL_ERROR;
-    }
-#endif
-
 
     /*
      * Specify the C callback functions for widget creation, display,
      * and reshape.
      */
 #if TOGL_MAJOR_VERSION==1
-    if(!nodisplay)
+    if (!nodisplay)
       {
+	if (Togl_Init(interp) == TCL_ERROR) 
+	  return TCL_ERROR;
+	
 	Togl_CreateFunc( init );
 	Togl_DestroyFunc( zap );
 	Togl_DisplayFunc( draw );
@@ -5220,18 +5221,17 @@ namespace netgen
 	//   Togl_CreateCommand("position",position);
       }
 #else
-    if(!nodisplay)
+    if (!nodisplay)
       {
+	if (Togl_Init(interp) == TCL_ERROR) 
+	  return TCL_ERROR;
+	
+	
 	Tcl_CreateObjCommand(interp, "init", init, NULL, NULL);
 	Tcl_CreateObjCommand(interp, "zap", zap, NULL, NULL);
 	Tcl_CreateObjCommand(interp, "draw", draw, NULL, NULL);
 	Tcl_CreateObjCommand(interp, "reshape", reshape, NULL, NULL);
-	/*
-	Togl_CreateFunc( init );
-	Togl_DestroyFunc( zap );
-	Togl_DisplayFunc( draw );
-	Togl_ReshapeFunc( reshape );
-	*/
+	
 	//   Togl_TimerFunc(  idle );
 	// Togl_CreateCommand( (char*)"Ng_SnapShot", Ng_SnapShot);
 	// Togl_CreateCommand( (char*)"Ng_VideoClip", Ng_VideoClip);

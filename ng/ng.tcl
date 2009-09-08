@@ -7,7 +7,7 @@ if {[catch {package require Tix } result ]} {
 
 # if {[catch {package require Togl 2.0 } result ]} {
 #    puts "cannot find package Togl 2.0"
-#    puts "error : $result"
+#     puts "error : $result"
 # }
 
 

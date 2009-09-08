@@ -7,13 +7,11 @@ set oldmousey 0
 
 # if { 1 } {
 
-
-
-
-# if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect true -create init  -display draw -reshape reshape  }] } {    
-
+# use this one for Togl 2.0
+# if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect true -create init  -display draw -reshape reshape  }] } {
 
 if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect true }] } {    
+
     puts "no OpenGL" 
 } {
     #
