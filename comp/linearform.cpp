@@ -90,18 +90,27 @@ namespace ngcomp
       {
 	ma.PushStatus ("Assemble Vector");
 
-	for (int i = 0; i < NumIntegrators(); i++)
-	  if (parts[i] -> BoundaryForm())
-	    {
-	      if (ma.GetNSE())
-		parts[i] -> CheckElement (fespace.GetSFE(0, clh));
-	    }
-	  else
-	    {
-	      if (ma.GetNE())
-		parts[i] -> CheckElement (fespace.GetFE(0, clh));
-	    }
-
+        // check if integrators fit to space
+        for (int i = 0; i < NumIntegrators(); i++)
+          if (parts[i] -> BoundaryForm())
+            {
+              for (int j = 0; j < ma.GetNSE(); j++)
+                {
+                  HeapReset hr(clh);
+                  if (parts[i] -> DefinedOn (ma.GetSElIndex(j)))
+                    parts[i] -> CheckElement (fespace.GetSFE(j, clh));
+                }
+            }
+          else
+            {
+              for (int j = 0; j < ma.GetNE(); j++)
+                {
+                  HeapReset hr(clh);
+                  if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
+                    parts[i] -> CheckElement (fespace.GetFE(j, clh));
+                }
+            }
+        
 
 	AllocateVector();
 
