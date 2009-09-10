@@ -59,8 +59,10 @@ public:
 
   /// evaluate function
   complex<double> Eval (const complex<double> * x = NULL) const;
+
   /// evaluate multi-value function
-  void Eval (const complex<double> * x, complex<double> * y, int ydim) const;
+  template <typename TIN>
+  void Eval (const TIN * x, complex<double> * y, int ydim) const;
 
   /// is expression complex valued ?
   bool IsComplex () const;

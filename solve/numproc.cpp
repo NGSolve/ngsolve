@@ -253,13 +253,11 @@ namespace ngsolve
 		   *coef,
 		   dynamic_cast<S_GridFunction<double>&> (*gfu), 
 		   boundary, lh);
-      /*
       else
 	SetValues (pde.GetMeshAccess(),
 		   *coef,
 		   dynamic_cast<S_GridFunction<Complex>&> (*gfu), 
-		   false, lh);
-      */
+		   boundary, lh);
     }
 
     ///

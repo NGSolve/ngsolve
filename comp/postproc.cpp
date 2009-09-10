@@ -447,6 +447,8 @@ namespace ngcomp
     const BilinearFormIntegrator & bli =
       bound ? (*fes.GetBoundaryEvaluator()) : (*fes.GetEvaluator());
 
+    int dimflux   = bli.DimFlux(); 
+
     if (&bli == NULL)
       throw Exception ("no evaluator available");
     
@@ -499,7 +501,7 @@ namespace ngcomp
 	  
 	  FlatVector<SCAL> elflux(dnums.Size() * dim, lh);
 	  FlatVector<SCAL> elfluxi(dnums.Size() * dim, lh);
-	  FlatVector<SCAL> fluxi(dim, lh);
+	  FlatVector<SCAL> fluxi(dimflux, lh);
 	  
 	  const IntegrationRule & ir = 
 	    GetIntegrationRules().SelectIntegrationRule(fel.ElementType(), 2*fel.Order());
@@ -613,13 +615,11 @@ namespace ngcomp
 				   bool bound,
 				   LocalHeap & clh);
 
-  /*
   template void SetValues<Complex> (const MeshAccess & ma, 
 				    const CoefficientFunction & coef,
 				    S_GridFunction<Complex> & u,
 				    bool bound,
 				    LocalHeap & clh);
-  */
 
 
   template <class SCAL>
