@@ -277,8 +277,8 @@ namespace ngstd
   }
 
 
-
-  void EvalFunction :: Eval (const complex<double> * x, complex<double> * y, int ydim) const
+  template <typename TIN>
+  void EvalFunction :: Eval (const TIN * x, complex<double> * y, int ydim) const
   {
     ArrayMem<complex<double>, 100> stack(program.Size());
 
@@ -482,8 +482,10 @@ namespace ngstd
       y[i] = stack[i];
   }
 
-
-
+  template void EvalFunction :: Eval<double> (const double * x, complex<double> * y, int ydim) const;
+  template void EvalFunction :: Eval<complex<double> > (const complex<double> * x, complex<double> * y, int ydim) const;
+  
+  
 
 
 

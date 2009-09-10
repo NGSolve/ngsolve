@@ -200,6 +200,7 @@ namespace ngfem
       return false;
     }
     virtual int Dimension() const { return fun[0]->Dimension(); }
+
     virtual void Evaluate(const BaseSpecificIntegrationPoint & ip,
 			  FlatVector<> result) const
     {
@@ -211,6 +212,20 @@ namespace ngfem
 	}
       fun[elind]->Eval (&static_cast<const DimSpecificIntegrationPoint<DIM>&>(ip).GetPoint()(0), &result(0), result.Size());
     }
+
+
+    virtual void Evaluate(const BaseSpecificIntegrationPoint & ip,
+			  FlatVector<Complex> result) const
+    {
+      int elind = ip.GetTransformation().GetElementIndex();
+      if (elind < 0 || elind >= fun.Size())
+	{
+	  cerr << "In DomainConstantCoefficientFunction:: Evalutate() element index " << elind << " out of range " 
+	       << "0 - " << fun.Size()-1 << endl;
+	}
+      fun[elind]->Eval (&static_cast<const DimSpecificIntegrationPoint<DIM>&>(ip).GetPoint()(0), &result(0), result.Size());
+    }
+
 
 
   };
