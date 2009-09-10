@@ -498,13 +498,21 @@ namespace ngcomp
     for (int i = 0; i < NumIntegrators(); i++)
       if (parts[i] -> BoundaryForm())
         {
-          if (ma.GetNSE())
-	    parts[i] -> CheckElement (fespace.GetSFE(0, clh));
+          for (int j = 0; j < ma.GetNSE(); j++)
+            {
+              HeapReset hr(clh);
+              if (parts[i] -> DefinedOn (ma.GetSElIndex(j)))
+                parts[i] -> CheckElement (fespace.GetSFE(j, clh));
+            }
         }
       else
         {
-          if (ma.GetNE())
-	    parts[i] -> CheckElement (fespace.GetFE(0, clh));
+          for (int j = 0; j < ma.GetNE(); j++)
+            {
+              HeapReset hr(clh);
+              if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
+                parts[i] -> CheckElement (fespace.GetFE(j, clh));
+            }
         }
 
 
