@@ -234,7 +234,6 @@ namespace ngfem
       }
   }
 
-
   template <ELEMENT_TYPE ET>
   Vec <DIM_CURL_TRAIT<ET_trait<ET>::DIM>::DIM>
   T_HCurlHighOrderFiniteElement<ET> :: 
@@ -250,7 +249,6 @@ namespace ngfem
     static_cast<const HCurlHighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
     return ds.Sum();
   }
-
 
   template <ELEMENT_TYPE ET>
   void T_HCurlHighOrderFiniteElement<ET> :: 
