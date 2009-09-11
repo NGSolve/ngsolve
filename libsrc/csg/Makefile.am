@@ -2,7 +2,7 @@ noinst_HEADERS = algprim.hpp csgparser.hpp extrusion.hpp manifold.hpp \
 singularref.hpp surface.hpp brick.hpp curve2d.hpp gencyl.hpp	      \
 meshsurf.hpp solid.hpp triapprox.hpp csgeom.hpp edgeflw.hpp geoml.hpp \
 polyhedra.hpp specpoin.hpp csg.hpp explicitcurve2d.hpp identify.hpp   \
-revolution.hpp spline3d.hpp
+revolution.hpp spline3d.hpp 
 
 
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
