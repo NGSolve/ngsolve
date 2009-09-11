@@ -63,7 +63,7 @@ namespace ngfem
 	  dofs.Append (Dof (Node(NT_FACE, i), j));
       }
 
-    int ni;
+    int ni = 0;
     INT<3> p = order_cell;
     switch (ET)
       {
@@ -76,7 +76,7 @@ namespace ngfem
         case ET_HEX: if(p[0]>1 && p[1] > 1 && p[2]>1) ni = (p[0]-1)*(p[1]-1)*(p[2]-1);
           break;
       default:
-	ni = 0;
+	;
       }
     
     for (int j = 0; j < ni; j++)

@@ -714,22 +714,25 @@ public:
   void GenerateMatrix (const FEL & fel, const SIP & sip,
 		       MAT & mat, LocalHeap & lh) const
   {
-    mat = 0;
-    double val = Evaluate (*coef, sip);
+    typedef typename MAT::TSCAL TRESULT;
+    mat = TRESULT(0);
+    TSCAL val = coef -> T_Evaluate<TSCAL> (sip);
     for (int i = 0; i < DIM; i++)
-      mat(i, i) = val;
+      mat(i, i) = ConvertTo<TRESULT> (val);
   }  
 
   template <typename FEL, typename SIP, class VECX, class VECY>
   void Apply (const FEL & fel, const SIP & sip,
 	      const VECX & x, VECY & y, LocalHeap & lh) const
   {
-    double val = Evaluate (*coef, sip);
+    typedef typename VECY::TSCAL TRESULT;
+    TSCAL val = coef -> T_Evaluate<TSCAL> (sip);
     for (int i = 0; i < DIM; i++)
-      y(i) = val * x(i);
+      y(i) = ConvertTo<TRESULT> (val * x(i));
   }
 };
 
+/*
 template <int DIM>
 class DiagDMat<DIM, Complex> : public DMatOp<DiagDMat<DIM, Complex> >
 {
@@ -746,7 +749,7 @@ public:
   {
     typedef typename MAT::TSCAL TRESULT;
     mat = TRESULT(0);
-    TRESULT val = ReduceComplex<TRESULT> (coef -> EvaluateComplex (sip));
+    TRESULT val = ReduceComplex<TRESULT> (coef -> T_Evaluate<Complex> (sip));
     for (int i = 0; i < DIM; i++)
       mat(i, i) = val;
   }  
@@ -761,7 +764,7 @@ public:
       y(i) = val * x(i);
   }
 };
-
+*/
 
 
 

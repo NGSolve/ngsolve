@@ -351,7 +351,7 @@ namespace ngcomp
     virtual void AddMatrix (Complex val, const BaseVector & x,
 			    BaseVector & y) const
     {
-      AddMatrix1 (ngbla::ReduceComplex<SCAL> (val), x, y);
+      AddMatrix1 (ConvertTo<SCAL> (val), x, y);
     }
 
 
@@ -378,7 +378,7 @@ namespace ngcomp
 					   const BaseVector & x,
 					   BaseVector & y) const
     {
-      ApplyLinearizedMatrixAdd1 (ReduceComplex<SCAL> (val), lin, x, y);
+      ApplyLinearizedMatrixAdd1 (ConvertTo<SCAL> (val), lin, x, y);
     }
   
 

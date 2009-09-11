@@ -697,7 +697,8 @@ namespace ngcomp
                                   Matrix<> evecs(elmat.Height());
 
                                   for (int j = 0; j < elmat.Height(); j++)
-                                  lami(j) = 1.0 / sqrt (ReduceToReal (elmat(j,j)));
+                                  // lami(j) = 1.0 / sqrt (ReduceToReal (elmat(j,j)));
+				  lami(j) = 1.0 / sqrt (ConvertTo<double> (elmat(j,j)));
                                   for (int j = 0; j < elmat.Height(); j++)
                                   for (int k = 0; k < elmat.Width(); k++)
                                   elmat(j,k) *= lami(j) * lami(k);
