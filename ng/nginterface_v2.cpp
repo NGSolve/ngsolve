@@ -159,6 +159,7 @@ namespace netgen
   {
     Ng_Point ret;
     ret.pt = &mesh->Point(nr + PointIndex::BASE)(0);
+    return ret;
   }
 
 
