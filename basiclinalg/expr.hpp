@@ -389,6 +389,7 @@ namespace ngbla
       : Exception("Assignment of Complex 2 Real") { ; }
   };
 
+  /*
   /// converts Complex to type T. Throw exception if illegal
   template<class T>
   inline T ReduceComplex (Complex x)
@@ -400,9 +401,10 @@ namespace ngbla
   inline double ReduceComplex<double> (Complex x)
   {
     throw Complex2RealException();
-  }
+    }
+  */
 
-
+  /*
   /// converts Complex to type T.
   template<class T>
   inline T ReduceComplex2 (Complex x)
@@ -415,8 +417,9 @@ namespace ngbla
   {
     return x.real()+x.imag();//abs(x);
   }
+  */
 
-
+  /*
   /// converts type T to double. Throw exception if illegal
   template<class T>
   inline double ReduceToReal (T x)
@@ -429,7 +432,37 @@ namespace ngbla
   {
     throw Complex2RealException();
   }
+  */
 
+
+
+
+  template <typename TO>
+  inline TO ConvertTo (double f)
+  {
+    return TO(f);
+  }
+
+  template <typename TO>
+  inline TO ConvertTo (Complex f)
+  {
+    return TO(f);
+  }
+
+
+  template <typename TO>
+  inline TO ConvertTo (const AutoDiff<1, Complex> & f)
+  {
+    return TO(f);
+  }
+
+
+  template <>
+  inline double ConvertTo (Complex f)
+  {
+    throw Complex2RealException();
+  }
+  
 
 
 

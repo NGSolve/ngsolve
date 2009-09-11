@@ -32,6 +32,10 @@ namespace ngfem
     }
 
 
+    template <typename SCAL>
+    inline SCAL T_Evaluate (const BaseSpecificIntegrationPoint & ip) const;
+
+
     virtual double Evaluate (const BaseSpecificIntegrationPoint & ip, const double & t) const
     {
       return Evaluate(ip);
@@ -81,6 +85,22 @@ namespace ngfem
     }
   };
 
+
+  template <>
+  inline double CoefficientFunction :: 
+  T_Evaluate<double> (const BaseSpecificIntegrationPoint & ip) const
+  {
+    return Evaluate (ip);
+  }
+
+  template <>
+  inline Complex CoefficientFunction :: 
+  T_Evaluate<Complex> (const BaseSpecificIntegrationPoint & ip) const
+  {
+    return EvaluateComplex (ip);
+  }
+  
+  
 
 
   template <int S, int R>

@@ -677,12 +677,8 @@ namespace ngla
     FlatVector<TVY> fy (y.Size(), y.Memory());
 
     int h = this->Height();
-    // #pragma omp parallel
-    {
-      // #pragma omp for
-      for (int i = 0; i < h; i++)
-	fy(i) += ReduceComplex<TSCAL> (s) * RowTimesVector (i, fx);
-    }
+    for (int i = 0; i < h; i++)
+      fy(i) += ConvertTo<TSCAL> (s) * RowTimesVector (i, fx);
   }
   
 
@@ -693,11 +689,11 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("SparseMatrix::MultTransAdd Complex");
     NgProfiler::RegionTimer reg (timer);
 
-	FlatVector<TVX> fx (x.Size(), x.Memory());
-	FlatVector<TVY> fy (y.Size(), y.Memory());
-	
-	for (int i = 0; i < this->Height(); i++)
-	  AddRowTransToVector (i, ReduceComplex<TSCAL> (s)*fx(i), fy);
+    FlatVector<TVX> fx (x.Size(), x.Memory());
+    FlatVector<TVY> fy (y.Size(), y.Memory());
+    
+    for (int i = 0; i < this->Height(); i++)
+      AddRowTransToVector (i, ConvertTo<TSCAL> (s)*fx(i), fy);
   }
 
 
