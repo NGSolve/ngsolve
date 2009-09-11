@@ -29,6 +29,15 @@ if { [string length $ngdir] == 0 } {
     set ngdir "." 
 }
 
+set nguserdir ""
+if { [lsearch [array names env] NETGEN_USER_DIR] != -1 } {
+    set nguserdir $env(NETGEN_USER_DIR) 
+}
+if { [string length $nguserdir] == 0 } {
+    set nguserdir "." 
+}
+
+
 
 
 set batchmode [Ng_GetCommandLineParameter batchmode]

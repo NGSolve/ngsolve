@@ -358,7 +358,9 @@ set parallel_netgen 0
 
 
 
-set optfilename ng.opt
+set optfilename [file join $nguserdir ng.opt]
+set inifilename [file join $nguserdir ng.ini]
+
 global env
 if { [llength [array names env NG_OPT]] == 1 } {
     if { [string length $env(NG_OPT)] > 0 } {
@@ -381,7 +383,7 @@ if { [file exists $optfilename] == 1 } {
 
 proc saveoptions { } {
     uplevel 1  {
-	set file ng.opt 
+	set file $optfilename
 	
 	if {$file != ""} {
 	    set datei [open $file w]
@@ -627,25 +629,22 @@ proc saveoptions { } {
 
 # the ini file is saved on demand :
 proc saveinifile { } {
-    uplevel 1  {
-        if {[catch { set datei [open ng.ini w] } result ]} {
-            puts "cannot write to ng.ini file"
-        } {
-            for { set i [.ngmenu.file.recent index last] } { $i >= 1 } { incr i -1 } {
-                puts $datei "recentfile \"[.ngmenu.file.recent entrycget $i -label]\""
-            }
-            close $datei
-        }
+    global inifilename
+    if {[catch { set datei [open $inifilename w] } result ]} {
+	puts "cannot write file $inifilename"
+    } {
+	for { set i [.ngmenu.file.recent index last] } { $i >= 1 } { incr i -1 } {
+	    puts $datei "recentfile \"[.ngmenu.file.recent entrycget $i -label]\""
+	}
+	close $datei
     }    
-
-
 }
 
 
 proc savemeshinifile { } {
     uplevel 1  {
 	if {[catch { set datei [open ngmesh.ini w] } result ]} {
-            puts "cannot write to ng.ini file"
+            puts "cannot write to $inifilename file"
         } {
             for { set i [.ngmenu.file.recentmesh index last] } { $i >= 1 } { incr i -1 } {
                 puts $datei "recentfile \"[.ngmenu.file.recentmesh entrycget $i -label]\""
@@ -655,9 +654,12 @@ proc savemeshinifile { } {
     }    
 }
 
-proc loadinifile { } {
-    if { [file exists ng.ini] == 1 } {
-	set datei [open ng.ini r]
+
+
+proc loadinifile { } { 
+    global inifilename
+    if { [file exists $inifilename] == 1 } {
+	set datei [open $inifilename r]
 	while { [gets $datei line] >= 0 } {
 	    if {[lindex $line 0] == "recentfile"} {
 		set filename [lindex $line 1]
@@ -666,7 +668,6 @@ proc loadinifile { } {
 	}
 	close $datei
     }
-
 }
 
 

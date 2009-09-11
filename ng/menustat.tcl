@@ -131,7 +131,6 @@ proc AddRecentFile { filename } {
     }
 loadinifile;
 
-
 .ngmenu.file add separator
 
 
