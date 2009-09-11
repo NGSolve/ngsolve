@@ -4,6 +4,8 @@ set drawmode rotate
 set selectvisual geometry
 
 set dirname .
+set loadgeomtypevar "All Geometry types"
+
 set basefilename filename
 
 set meshoptions.fineness 3
@@ -383,7 +385,8 @@ proc saveoptions { } {
 	
 	if {$file != ""} {
 	    set datei [open $file w]
-	    
+	    puts $datei "dirname  ${dirname}"
+	    puts $datei "loadgeomtypevar  \"${loadgeomtypevar}\""
 	    puts $datei "meshoptions.fineness  ${meshoptions.fineness}"
 	    puts $datei "meshoptions.firststep ${meshoptions.firststep}"
 	    puts $datei "meshoptions.laststep  ${meshoptions.laststep}" 
