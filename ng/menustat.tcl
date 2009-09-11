@@ -49,7 +49,7 @@ menu .ngmenu.file
 #		{"New Geometry file"   {.ngg} } 
 
 
-	set file [tk_getOpenFile -filetypes $types]
+	set file [tk_getOpenFile -filetypes $types -initialdir $dirname]
 	if {$file != ""} {
 	    AddRecentFile $file
 	    Ng_LoadGeometry $file 
