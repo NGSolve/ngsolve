@@ -68,9 +68,9 @@ namespace ngstd
     /// delete all memory on local heap
     void CleanUp() throw ()
     {
-      // p = data;
       p = data;
-      p += (16 - (long(p) & 15) );
+      // p += (16 - (long(p) & 15) );
+      p += (16 - (size_t(p) & 15) );
     }
 
     /// returns heap-pointer
