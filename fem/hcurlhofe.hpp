@@ -127,10 +127,12 @@ public:
   virtual void CalcMappedCurlShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
                                     FlatMatrixFixWidth<DIM_CURL> curlshape) const;
 
+  /*
   virtual Vec <DIM_CURL_TRAIT<ET_trait<ET>::DIM>::DIM>
   EvaluateCurlShape (const IntegrationPoint & ip, 
                      FlatVector<double> x,
                      LocalHeap & lh) const;
+  */
 };
 
  
