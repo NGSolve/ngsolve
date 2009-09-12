@@ -431,8 +431,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release(OCC)|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="1"
 			DeleteExtensionsOnClean="*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;$(TargetPath)"
@@ -461,8 +461,8 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\nglib&quot;;&quot;$(SolutionDir)..\&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
+				AdditionalIncludeDirectories="&quot;$(CASROOT)\inc&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\nglib&quot;;&quot;$(SolutionDir)..\&quot;"
+				PreprocessorDefinitions="WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;OCCGEOMETRY;_OCC64;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				EnableEnhancedInstructionSet="1"
@@ -484,8 +484,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="pthreadVC2_64.lib"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
+				AdditionalDependencies="pthreadVC2_64.lib TKernel.lib TKGeomBase.lib TKMath.lib TKG2d.lib TKG3d.lib TKXSBase.lib TKOffset.lib TKFillet.lib TKShHealing.lib TKMesh.lib TKMeshVS.lib TKTopAlgo.lib TKGeomAlgo.lib TKBool.lib TKPrim.lib TKBO.lib TKIGES.lib TKBRep.lib TKSTEPBase.lib TKSTEP.lib TKSTL.lib TKSTEPAttr.lib TKSTEP209.lib TKXDESTEP.lib TKXDEIGES.lib TKXCAF.lib TKLCAF.lib"
+				AdditionalLibraryDirectories="$(CASROOT)\win64\lib;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\lib&quot;"
 				ManifestFile="$(OutDir)\$(TargetFileName).intermediate.manifest"
 				TargetMachine="17"
 			/>
@@ -1166,11 +1166,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\geometry2d.hpp"
+				RelativePath="..\libsrc\geom2d\geometry2d.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\geom2d\geometry2d.hpp"
+				RelativePath="..\libsrc\include\geometry2d.hpp"
 				>
 			</File>
 			<File
@@ -1210,11 +1210,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\gprim\gprim.hpp"
+				RelativePath="..\libsrc\include\gprim.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\gprim.hpp"
+				RelativePath="..\libsrc\gprim\gprim.hpp"
 				>
 			</File>
 			<File
@@ -1266,11 +1266,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\linalg.hpp"
+				RelativePath="..\libsrc\include\linalg.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\linalg.hpp"
+				RelativePath="..\libsrc\linalg\linalg.hpp"
 				>
 			</File>
 			<File
@@ -1290,11 +1290,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\meshing.hpp"
+				RelativePath="..\libsrc\meshing\meshing.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\meshing\meshing.hpp"
+				RelativePath="..\libsrc\include\meshing.hpp"
 				>
 			</File>
 			<File
@@ -1330,11 +1330,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\myadt.hpp"
+				RelativePath="..\libsrc\general\myadt.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\general\myadt.hpp"
+				RelativePath="..\libsrc\include\myadt.hpp"
 				>
 			</File>
 			<File
@@ -1370,11 +1370,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\opti.hpp"
+				RelativePath="..\libsrc\linalg\opti.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\opti.hpp"
+				RelativePath="..\libsrc\include\opti.hpp"
 				>
 			</File>
 			<File
