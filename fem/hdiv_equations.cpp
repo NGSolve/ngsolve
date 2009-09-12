@@ -64,12 +64,12 @@ namespace ngfem
 
   template class MassHDivIntegrator<2>;
   template class DivDivHDivIntegrator<2>;
-  template class SourceHDivIntegrator<2>;
+  // template class SourceHDivIntegrator<2>;
   template class DivSourceHDivIntegrator<2>;
 
   template class MassHDivIntegrator<3>;
   template class DivDivHDivIntegrator<3>;
-  template class SourceHDivIntegrator<3>;
+  // template class SourceHDivIntegrator<3>;
   template class DivSourceHDivIntegrator<3>;
 
 
