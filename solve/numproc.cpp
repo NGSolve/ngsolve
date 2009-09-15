@@ -722,7 +722,7 @@ namespace ngsolve
 		    
 		    if (!gfu->GetFESpace().IsComplex())
 		      {
-			FlatVector<double> pflux;
+			FlatVector<double> pflux(bfi.DimFlux(), lh);
 			bool ok =
 			  CalcPointFlux<double> (ma, *gfu, p,
 						 pflux, bfi, applyd, lh, component);
@@ -743,7 +743,7 @@ namespace ngsolve
 		      }
 		    else
 		      {
-			FlatVector<Complex> pflux;
+			FlatVector<Complex> pflux(bfi.DimFlux(), lh);
 			bool ok =
 			  CalcPointFlux (ma, *gfu, p,
 					 pflux, bfi, applyd, lh, component);
@@ -845,7 +845,7 @@ namespace ngsolve
 			
 			if (!gfu->GetFESpace().IsComplex())
 			  {
-			    FlatVector<double> pflux;
+			    FlatVector<double> pflux(bfi.DimFlux(), lh);
                             CalcPointFlux (ma, *gfu, p,
                                            pflux, bfi, applyd, lh, component);
 			    
@@ -859,7 +859,7 @@ namespace ngsolve
 			  }
 			else
 			  {
-			    FlatVector<Complex> pflux;
+			    FlatVector<Complex> pflux(bfi.DimFlux(), lh);
 			    complexflux = true;
                             CalcPointFlux (ma, *gfu, p,
                                            pflux, bfi, applyd, lh, component);
@@ -922,7 +922,7 @@ namespace ngsolve
 
 	    if (!gfu->GetFESpace().IsComplex())
 	      {
-		FlatVector<double> pflux;
+		FlatVector<double> pflux(bfi.DimFlux(), lh);
 		CalcPointFlux (ma, *gfu, point, domains,
 			       pflux, bfi, applyd, lh, component);
 		for (int i = 0; i < pflux.Size(); i++)
@@ -931,7 +931,7 @@ namespace ngsolve
 	      }
 	    else
 	      {
-		FlatVector<Complex> pflux;
+		FlatVector<Complex> pflux(bfi.DimFlux(), lh);
 		CalcPointFlux (ma, *gfu, point, domains,
 			       pflux, bfi, applyd, lh, component);
 		for (int i = 0; i < pflux.Size(); i++)
