@@ -490,10 +490,10 @@ public:
       * (sip.GetJacobian() * Trans (fel.GetCurlShape(sip.IP(), lh)));
   }
 
-  template <typename FEL, typename MAT>
+  template <typename FEL>
   static void GenerateMatrix (const FEL & fel, 
                               const SpecificIntegrationPoint<3,3> & sip,
-			      MAT & mat, LocalHeap & lh)
+			      FlatMatrixFixHeight<3> & mat, LocalHeap & lh)
   {
     FlatMatrixFixWidth<3> hm(fel.GetNDof(), &mat(0,0));
     fel.CalcMappedCurlShape (sip, hm);
