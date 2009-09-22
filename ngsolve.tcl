@@ -104,23 +104,16 @@ if { [catch { NGS_GetData } ] == 0 } {
 
 	    redraw
 	}
-
-    #    .ngmenu.solve add command -label "Test Reissner-Mindlin" \
-	\#	-command { 
-	    #	    NGS_TestRM
-	    #	}
-
-
-
-	    button .bubar.pde -text "Recent" \
-		-command { .ngmenu.solve invoke "Solve Recent PDE"; }
-	    pack .bubar.pde -side right
-
-	    button .bubar.solve -text "Solve" \
-		-command { .ngmenu.solve invoke "Solve PDE"; }
-	    pack .bubar.solve -side right
-
-	    button .bubar.visualize -text "Visual" \
+    
+    button .bubar.pde -text "Recent" \
+        -command { .ngmenu.solve invoke "Solve Recent PDE"; }
+    pack .bubar.pde -side right
+    
+    button .bubar.solve -text "Solve" \
+        -command { .ngmenu.solve invoke "Solve PDE"; }
+    pack .bubar.solve -side right
+    
+    button .bubar.visualize -text "Visual" \
 		-command { visual_dialog }
 	    pack .bubar.visualize -side right
 
@@ -290,8 +283,6 @@ if { [catch { NGS_GetData } ] == 0 } {
                  F. Bachinger, A. Becirovic, H. Egger, R. Gaisbauer, J. Gerstmayr, U. Langer, P. Rajan, A. Sinwel, M. Wabro, S. Zaglmayr"
 		}
 
-
-
 	    proc AddRecentNGSFile { filename } {
 		global progname
 		catch { [.ngmenu.solve.recent delete $filename] }
@@ -305,13 +296,15 @@ if { [catch { NGS_GetData } ] == 0 } {
 		if { [.ngmenu.solve.recent index last] >= 6 } {
 		    .ngmenu.solve.recent delete last }
 		
-		savengsinifile;
+		# savengsinifile;
 	    }
 	    
 
 	    # the ini file is saved  on demand :
 	    global ngsinifilename
+
 	    set ngsinifilename [file join $nguserdir ngs.ini]
+
 
 	    proc savengsinifile { } {
 		global ngsinifilename
@@ -338,12 +331,7 @@ if { [catch { NGS_GetData } ] == 0 } {
 		}
 	    }
 
-
 	    loadngsinifile;
-	    
-
-
-
 
 
 	    proc componentsdialog { } {
