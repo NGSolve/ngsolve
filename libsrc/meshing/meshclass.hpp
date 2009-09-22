@@ -23,13 +23,15 @@ class HPRefElement;
 class Mesh
 {
 public:
-  typedef MoveableArray<MeshPoint,PointIndex::BASE> T_POINTS;
-  typedef MoveableArray<Element> T_VOLELEMENTS;
-  typedef MoveableArray<Element2d> T_SURFELEMENTS;
+  typedef ::netgen::T_POINTS T_POINTS;
+
+  // typedef MoveableArray<MeshPoint,PointIndex::BASE> T_POINTS;
+  // typedef MoveableArray<Element> T_VOLELEMENTS;
+  // typedef MoveableArray<Element2d> T_SURFELEMENTS;
 
   // typedef Array<MeshPoint,PointIndex::BASE> T_POINTS;
-  // typedef Array<Element> T_VOLELEMENTS;
-  // typedef Array<Element2d> T_SURFELEMENTS;
+  typedef Array<Element> T_VOLELEMENTS;
+  typedef Array<Element2d> T_SURFELEMENTS;
 
 
 private:
@@ -82,10 +84,18 @@ private:
   */
   Array<FaceDescriptor> facedecoding;
 
+  
+  /**
+     the edge-index of the line element maps into
+     this table.
+  */
+  Array<EdgeDescriptor> edgedecoding;
+
   /// sub-domain materials 
   Array<char*> materials;
 
-  Array<string*, 0> bcnames;
+  /// labels for boundary conditions
+  Array<string*> bcnames;
 
   /// Periodic surface, close surface, etc. identifications
   Identifications * ident;
@@ -565,6 +575,8 @@ public:
   int AddFaceDescriptor(const FaceDescriptor& fd)
   { return facedecoding.Append(fd); }
 
+  int AddEdgeDescriptor(const EdgeDescriptor & fd)
+  { return edgedecoding.Append(fd) - 1; }
 
   ///
   void SetMaterial (int domnr, const char * mat);
@@ -590,6 +602,10 @@ public:
 
   const FaceDescriptor & GetFaceDescriptor (int i) const
   { return facedecoding.Get(i); }
+
+  const EdgeDescriptor & GetEdgeDescriptor (int i) const
+  { return edgedecoding[i]; }
+
 
   ///
   FaceDescriptor & GetFaceDescriptor (int i) 

@@ -1668,21 +1668,21 @@ bool CheckSingularities(Mesh & mesh, INDEX_2_HASHTABLE<int> & edges, INDEX_2_HAS
 	    const FaceDescriptor & fd = mesh.GetFaceDescriptor (el.GetIndex());
 	  
 	    int domnr = 0;
-	    if (fd.domin_singular * levels < act_ref && fd.domout_singular * levels < act_ref) 
+	    if (fd.DomainInSingular() * levels < act_ref && fd.DomainOutSingular() * levels < act_ref) 
 	      { domnr=0;  continue;}
 	    
-	    if (fd.domin_singular * levels >= act_ref) 
+	    if (fd.DomainInSingular() * levels >= act_ref) 
 	      {
 		domnr = fd.DomainIn();
 		sing = 1;
 	      }
-	    if (fd.domout_singular * levels >= act_ref)
+	    if (fd.DomainOutSingular() * levels >= act_ref)
 	      {
 		domnr = fd.DomainOut();
 		sing = 1; 
 	      } 
-	    if (fd.domin_singular * levels >= act_ref 
-		&& fd.domout_singular * levels >= act_ref) 
+	    if (fd.DomainInSingular() * levels >= act_ref 
+		&& fd.DomainOutSingular() * levels >= act_ref) 
 	      {
 		domnr = -1;
 		sing = 1;

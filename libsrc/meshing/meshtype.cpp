@@ -2270,9 +2270,9 @@ namespace netgen
 
   FaceDescriptor ::  FaceDescriptor(const FaceDescriptor& other)
     : surfnr(other.surfnr), domin(other.domin), domout(other.domout),
-      tlosurf(other.tlosurf), bcprop(other.bcprop), bcname(other.bcname),
-      domin_singular(other.domin_singular), domout_singular(other.domout_singular), 
-      surfcolour(other.surfcolour)
+      tlosurf(other.tlosurf), bcprop(other.bcprop), 
+      surfcolour(other.surfcolour), bcname(other.bcname),
+      domin_singular(other.domin_singular), domout_singular(other.domout_singular)
   { 
     firstelement = -1;
   }
@@ -2337,14 +2337,14 @@ namespace netgen
 
   ostream & operator<<(ostream  & s, const FaceDescriptor & fd)
   {
-    s << "surfnr = " << fd.surfnr 
-      << ", domin = " << fd.domin
-      << ", domout = " << fd.domout
-      << ", tlosurf = " << fd.tlosurf
-      << ", bcprop = " << fd.bcprop
-      << ", domin_sing = " << fd.domin_singular
-      << ", domout_sing = " << fd.domout_singular
-      << ", colour = " << fd.surfcolour;
+    s << "surfnr = " << fd.SurfNr() 
+      << ", domin = " << fd.DomainIn()
+      << ", domout = " << fd.DomainOut()
+      << ", tlosurf = " << fd.TLOSurface()
+      << ", bcprop = " << fd.BCProperty()
+      << ", domin_sing = " << fd.DomainInSingular()
+      << ", domout_sing = " << fd.DomainOutSingular()
+      << ", colour = " << fd.SurfColour();
     return s;
   }
 

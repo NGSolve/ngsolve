@@ -393,9 +393,9 @@ namespace netgen
 	      if (surfs[l] == fd.SurfNr())
 		{
 		  if (geom.singfaces[j]->GetDomainNr() == fd.DomainIn())
-		    fd.domin_singular = 1;
+		    fd.SetDomainInSingular (1);
 		  if (geom.singfaces[j]->GetDomainNr() == fd.DomainOut())
-		    fd.domout_singular = 1;
+		    fd.SetDomainOutSingular (1);
 		}
 	  }
       }

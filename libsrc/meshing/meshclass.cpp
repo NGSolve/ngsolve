@@ -7,9 +7,9 @@ namespace netgen
 
   Mesh :: Mesh ()
   {
-    volelements.SetName ("vol elements");
-    surfelements.SetName ("surf elements");
-    points.SetName ("meshpoints");
+    // volelements.SetName ("vol elements");
+    // surfelements.SetName ("surf elements");
+    // points.SetName ("meshpoints");
 
     boundaryedges = NULL;
     surfelementht = NULL; 

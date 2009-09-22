@@ -443,6 +443,7 @@ namespace netgen
 	      StoreShortEdge (refedges, refedgesinv, 
 			      edgepoints, curvelength, layer, mesh);
 
+
 	    for(int i = 0; i < refedges.Size(); i++)
 	      {
 		refedges[i].surfnr1 = geometry.GetSurfaceClassRepresentant(refedges[i].surfnr1);
@@ -481,7 +482,24 @@ namespace netgen
 		      mesh);
 	  }
 	
-	
+
+	/*
+	  // not available ...
+	for (int i = 0; i < refedges.Size(); i++)
+	  {
+	    EdgeDescriptor ed;
+	    ed.SetSurfNr(0, refedges[i].surfnr1);
+	    ed.SetSurfNr(1, refedges[i].surfnr2);
+	    int hnr = mesh.AddEdgeDescriptor(ed);
+	    if (hnr != refedges[i].edgenr)
+	      {
+		cerr << "edgedescriptor index wrong: new : " << hnr << " old = " << refedges[i].edgenr << endl;
+	      }
+	  }
+	*/
+
+
+
 // 	for(int i=0; i<hsp.Size(); i++)
 // 	  {
 // 	    (*testout) << "pos2 hsp["<<i<<"] ... " << specpoints[hsp[i]].p << endl;

@@ -399,12 +399,17 @@ namespace netgen
 
 
 	debugflag = 
-	  debugparam.haltsegment &&
-	  ( ((debugparam.haltsegmentp1 == gpi1) && (debugparam.haltsegmentp2 == gpi2)) || 
-	    ((debugparam.haltsegmentp1 == gpi2) && (debugparam.haltsegmentp2 == gpi1))) ||
-	  debugparam.haltnode &&
-	  ( (debugparam.haltsegmentp1 == gpi1) || (debugparam.haltsegmentp2 == gpi1));
-
+	  ( 
+	   debugparam.haltsegment &&
+	   ( ((debugparam.haltsegmentp1 == gpi1) && (debugparam.haltsegmentp2 == gpi2)) || 
+	     ((debugparam.haltsegmentp1 == gpi2) && (debugparam.haltsegmentp2 == gpi1))) 
+	   ) 
+	  ||
+	  (
+	   debugparam.haltnode &&
+	   ( (debugparam.haltsegmentp1 == gpi1) || (debugparam.haltsegmentp2 == gpi1))
+	   );
+	
       
 	if (debugparam.haltface && debugparam.haltfacenr == facenr)
 	  {

@@ -269,16 +269,22 @@ int main(int argc, char ** argv)
 
       // lookup user file formats and insert into format list:
       Array<const char*> userformats;
-      RegisterUserFormats (userformats);
+      Array<const char*> extensions;
+      RegisterUserFormats (userformats, extensions);
 
       ostringstream fstr;
+      
+      tcl_const char * exportft = Tcl_GetVar (myinterp, "exportfiletype", 0);
       for (int i = 1; i <= userformats.Size(); i++)
-        fstr << ".ngmenu.file.filetype add radio -label \"" 
-             << userformats.Get(i) << "\" -variable exportfiletype\n";
-
+	{
+	  fstr << ".ngmenu.file.filetype add radio -label \"" 
+	       << userformats.Get(i) << "\" -variable exportfiletype\n";
+	  fstr << "lappend meshexportformats { {" << userformats.Get(i) << "} {" << extensions.Get(i) << "} }\n";
+	}
 
       Tcl_Eval (myinterp, (char*)fstr.str().c_str());
-      Tcl_SetVar (myinterp, "exportfiletype", "Neutral Format", 0);
+      // Tcl_SetVar (myinterp, "exportfiletype", "Neutral Format", 0);
+      Tcl_SetVar (myinterp, "exportfiletype", exportft, 0);
 
 
       // For adding an application, parse the file here,

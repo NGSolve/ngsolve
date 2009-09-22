@@ -15,34 +15,39 @@ namespace netgen
 #include "writeuser.hpp"
 
 
-void RegisterUserFormats (Array<const char*> & names)
+  void RegisterUserFormats (Array<const char*> & names,
+			    Array<const char*> & extensions)
+			    
 {
   const char *types[] =
     {
-      "Neutral Format",
-      "Surface Mesh Format" ,
-      "DIFFPACK Format",
-      "TecPlot Format",
-      "Tochnog Format",
-      "Abaqus Format",
-      "Fluent Format",
-      "Permas Format",
-      "FEAP Format",
-      "Elmer Format",
-      "STL Format",
-      "VRML Format",
-      "Gmsh Format",
-      "Gmsh2 Format",
-      "JCMwave Format",
-      "TET Format",
+      "Neutral Format",  ".mesh",
+      "Surface Mesh Format", ".mesh" ,
+      "DIFFPACK Format", ".mesh",
+      "TecPlot Format", ".mesh",
+      "Tochnog Format", ".mesh",
+      "Abaqus Format", ".mesh",
+      "Fluent Format", ".mesh",
+      "Permas Format", ".mesh",
+      "FEAP Format", ".mesh",
+      "Elmer Format", "*",
+      "STL Format", ".stl",
+      "VRML Format", ".*",
+      "Gmsh Format", ".gmsh",
+      "Gmsh2 Format", ".gmsh2",
+      "JCMwave Format", ".jcm",
+      "TET Format", ".tet",
       //      { "Chemnitz Format" },
       0
     };
-
-  for (int i = 0; types[i]; i++)
-    names.Append (types[i]);
+  
+  for (int i = 0; types[2*i]; i++)
+    {
+      names.Append (types[2*i]);
+      extensions.Append (types[2*i+1]);
+    }
 }
-
+  
 
 
 bool WriteUserFormat (const string & format,

@@ -147,7 +147,7 @@ namespace netgen
       for(int i = 1; i <= numentries; i++)
       {
          int bcnum;
-         double col_red, col_green, col_blue;
+         // double col_red, col_green, col_blue;
 
          ocf >> bcnum;
          // Boundary condition number 0 is reserved for 

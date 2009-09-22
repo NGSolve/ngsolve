@@ -389,6 +389,7 @@ proc saveoptions { } {
 	    set datei [open $file w]
 	    puts $datei "dirname  ${dirname}"
 	    puts $datei "loadgeomtypevar  \"${loadgeomtypevar}\""
+	    puts $datei "exportfiletype  \"${exportfiletype}\""
 	    puts $datei "meshoptions.fineness  ${meshoptions.fineness}"
 	    puts $datei "meshoptions.firststep ${meshoptions.firststep}"
 	    puts $datei "meshoptions.laststep  ${meshoptions.laststep}" 

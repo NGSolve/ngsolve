@@ -280,8 +280,8 @@ ostream & operator<<(ostream  & s, const MeshPoint & pt);
 
 
 
-typedef MoveableArray<MeshPoint,PointIndex::BASE> T_POINTS;
-// typedef Array<MeshPoint,PointIndex::BASE> T_POINTS;
+// typedef MoveableArray<MeshPoint,PointIndex::BASE> T_POINTS;
+typedef Array<MeshPoint,PointIndex::BASE> T_POINTS;
 
 
 class Element2d;
@@ -422,7 +422,7 @@ public:
 
   bool BadElement() const { return badel; }
 
-  friend ostream & operator<<(ostream  & s, const Element2d & el);
+  // friend ostream & operator<<(ostream  & s, const Element2d & el);
   friend class Mesh;
 
 
@@ -785,15 +785,10 @@ public:
    ~Segment()
   { ; }
 
-  friend ostream & operator<<(ostream  & s, const Segment & seg);
+  // friend ostream & operator<<(ostream  & s, const Segment & seg);
 
   PointIndex pnums[3];  // p1, p2, pmid
 
-  /// point index 1
-  // PointIndex p1;
-  /// point index 2
-  // PointIndex p2;    
-  /// edge nr
   int edgenr;
   ///
   double singedge_left;
@@ -875,8 +870,7 @@ public:
 
 
 // class Surface;  
-class FaceDescriptor;
-ostream & operator<< (ostream  & s, const FaceDescriptor & fd);
+// class FaceDescriptor;
 
 ///
 class FaceDescriptor
@@ -902,10 +896,9 @@ class FaceDescriptor
   /// root of linked list 
   SurfaceElementIndex firstelement;
   
-public:
-  ///
   double domin_singular;
   double domout_singular;
+
 public:
   FaceDescriptor();
   FaceDescriptor(int surfnri, int domini, int domouti, int tlosurfi);
@@ -920,6 +913,11 @@ public:
   int DomainOut () const { return domout; }
   int TLOSurface () const { return tlosurf; }
   int BCProperty () const { return bcprop; }
+
+
+  double DomainInSingular() const { return domin_singular; }
+  double DomainOutSingular() const { return domout_singular; }
+
   // Philippose - 06/07/2009
   // Get Surface colour
   Vec3d SurfColour () const { return surfcolour; }
@@ -935,12 +933,32 @@ public:
   // Set the surface colour
   void SetSurfColour (Vec3d colour) { surfcolour = colour; }
 
-  friend ostream & operator<<(ostream  & s, const FaceDescriptor & fd);
+  void SetDomainInSingular (double v) { domin_singular = v; }
+  void SetDomainOutSingular (double v) { domout_singular = v; }
+
+
+  // friend ostream & operator<<(ostream  & s, const FaceDescriptor & fd);
   friend class Mesh;
 };
 
- 
+ostream & operator<< (ostream  & s, const FaceDescriptor & fd);
 
+ 
+class EdgeDescriptor
+{
+  int tlosurf;
+  int surfnr[2];
+public:
+  EdgeDescriptor ()
+    : tlosurf(-1)
+  { surfnr[0] = surfnr[1] = -1; }
+
+  int SurfNr (int i) const { return surfnr[i]; }
+  void SetSurfNr (int i, int nr) { surfnr[i] = nr; }
+
+  int TLOSurface() const { return tlosurf; }
+  void SetTLOSurface (int nr) { tlosurf = nr; }
+};
 
 
 

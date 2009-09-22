@@ -93,9 +93,6 @@ menu .ngmenu.file
 	    lappend types {"ACIS Geometry" {.sat} }
 	}
 
-
-
-#	set file [tk_getSaveFile -filetypes $types -defaultextension ".stl" -initialdir $dirname -initialfile $basefilename ]
 	set file [tk_getSaveFile -filetypes $types -initialdir $dirname -initialfile $basefilename ]
 	if {$file != ""} {
 	    Ng_SaveGeometry $file 
@@ -234,13 +231,23 @@ loadmeshinifile;
 	}
     }
 
+
 .ngmenu.file add command -label "Export Mesh..." \
     -command {
+
+# 	global meshexportformats
+	foreach exportformat $meshexportformats {
+	    if { [lindex $exportformat 0] == $exportfiletype } {
+		set extension [lindex $exportformat 1]
+	    }
+	}
+
 	if { $exportfiletype == "Elmer Format" } {
 	    set file [tk_chooseDirectory]
         } else {
-	    set file [tk_getSaveFile]
+	    set file [tk_getSaveFile  -filetypes "{ \"$exportfiletype\" {$extension} }" ]
 	}
+
 	if {$file != ""} {
 	    Ng_ExportMesh $file $exportfiletype 
 	}
