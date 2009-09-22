@@ -1387,7 +1387,7 @@ public:
     grad = Trans (sip.GetJacobianInverse ()) * 
       Trans (fel.GetDShape(sip.IP(), lh));
     
-    mat = 0;
+    mat = TSCAL (0);
     for (int i = 0; i < nd; i++)
       {
 	mat(0, DIM*i  ) = grad(0, i);

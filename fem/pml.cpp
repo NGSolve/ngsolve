@@ -1099,6 +1099,8 @@ public:
 					PML_MassIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("PML_elasticity", 3, 2,
       					PML_ElasticityIntegrator<3>::Create);
+      GetIntegrators().AddBFIntegrator ("PML_elasticity", 2, 2,
+      					PML_ElasticityIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("PML_laplace", 3, 1,
 					PML_LaplaceIntegrator<3>::Create);
       GetIntegrators().AddBFIntegrator ("PML_mass", 3, 1,
