@@ -222,7 +222,7 @@ set status_percent 0
 set status_filename 0
 set status_tetqualclasses "10 20 30 40 10 20 30 40 10 20 30 40 10 20 30 40 10 20 30 40"
 
-set exportfiletype PERMAS
+set exportfiletype "Neutral Format"
 
 set preproc.facenr 0
 set preproc.selectmode query
