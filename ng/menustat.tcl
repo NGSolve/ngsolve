@@ -245,7 +245,8 @@ loadmeshinifile;
 	if { $exportfiletype == "Elmer Format" } {
 	    set file [tk_chooseDirectory]
         } else {
-	    set file [tk_getSaveFile  -filetypes "{ \"$exportfiletype\" {$extension} }" ]
+#	    set file [tk_getSaveFile  -filetypes "{ \"$exportfiletype\" {$extension} }" ]
+	    set file [tk_getSaveFile  -filetypes "{ \"$exportfiletype\" {*}}" ]
 	}
 
 	if {$file != ""} {
