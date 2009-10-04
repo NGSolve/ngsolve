@@ -13,7 +13,7 @@ namespace netgen
    // Boundary condition number to use if a face does not have a 
    // colour assigned to it, or if the colour is the above defined 
    // default colour
-   #define DEFAULT_BCNUM   0
+   #define DEFAULT_BCNUM   1
 
    // Default tolerance for colour matching (using Euclidean distance)
    #define DEFAULT_EPS     2.5e-05
@@ -142,6 +142,7 @@ namespace netgen
       // as the associated boundary condition number
       Array<Vec3d> bc_colours(numentries);
       Array<int> bc_num(numentries);
+      Array<bool> bc_used(numentries);
       
       // Actually read in the data from the file
       for(int i = 1; i <= numentries; i++)
@@ -150,11 +151,14 @@ namespace netgen
          // double col_red, col_green, col_blue;
 
          ocf >> bcnum;
-         // Boundary condition number 0 is reserved for 
+         // Boundary condition number DEFAULT_BCNUM is reserved for 
          // faces which have the default colour Green (0.0,1.0,0.0)
-         if(bcnum < 1) bcnum = 1;
+         // To prevent confusion, no boundary numbery below this default 
+         // are permitted
+         if(bcnum < (DEFAULT_BCNUM + 1)) bcnum = DEFAULT_BCNUM+1;
 
          bc_num.Elem(i) = bcnum;
+         bc_used.Elem(i) = false;
          ocf >> bc_colours.Elem(i).X() 
              >> bc_colours.Elem(i).Y() 
              >> bc_colours.Elem(i).Z();
@@ -179,7 +183,7 @@ namespace netgen
       // All colours in the geometry which are not specified in the 
       // list will be given boundary condition numbers higher than this 
       // number
-      int max_bcnum = 0;
+      int max_bcnum = DEFAULT_BCNUM;
       for(int i = 1; i <= bc_num.Size();i++)
       {
          if(bc_num.Elem(i) > max_bcnum) max_bcnum = bc_num.Elem(i);
@@ -220,6 +224,7 @@ namespace netgen
                if((ColourMatch(face_colour,bc_colours.Elem(col_index))) && (!bc_assigned))
                {
                   mesh.GetFaceDescriptor(face_index).SetBCProperty(bc_num.Elem(col_index));
+                  bc_used.Elem(col_index) = true;
                   bc_assigned = true;
                   break;
                }
@@ -232,6 +237,7 @@ namespace netgen
                max_bcnum++;
                bc_num.Append(max_bcnum);
                bc_colours.Append(face_colour);
+               bc_used.Append(true);
 
                mesh.GetFaceDescriptor(face_index).SetBCProperty(max_bcnum);
             }
@@ -240,6 +246,25 @@ namespace netgen
          {
             // Set the boundary condition number to the default one
             mesh.GetFaceDescriptor(face_index).SetBCProperty(DEFAULT_BCNUM);
+         }
+      }
+
+      // User Information of the results of the operation
+      Vec3d ref_colour(0.0,1.0,0.0);
+      PrintMessage(3,"Colour based Boundary Condition Property details:");
+      for(int bc_index = 0; bc_index <= bc_num.Size(); bc_index++)
+      {
+         if(bc_index > 0) ref_colour = bc_colours.Elem(bc_index);
+
+         if(bc_index == 0) 
+         {
+            PrintMessage(3, "BC Property: ",DEFAULT_BCNUM);
+            PrintMessage(3, "   RGB Face Colour = ",ref_colour,"","\n");
+         }
+         else if(bc_used.Elem(bc_index))
+         {
+            PrintMessage(3, "BC Property: ",bc_num.Elem(bc_index));
+            PrintMessage(3, "   RGB Face Colour = ",ref_colour,"","\n");
          }
       }
    }
@@ -358,7 +383,7 @@ namespace netgen
 
                if(ColourMatch(face_colour, ref_colour))
                {
-                  mesh.GetFaceDescriptor(face_index).SetBCProperty(i);
+                  mesh.GetFaceDescriptor(face_index).SetBCProperty(i + DEFAULT_BCNUM);
                }
             }
          }
@@ -371,14 +396,13 @@ namespace netgen
       }
 
       // User Information of the results of the operation
+      Vec3d ref_colour(0.0,1.0,0.0);
       PrintMessage(3,"Colour based Boundary Condition Property details:");
       for(int i = 0; i < faces_sorted.Size(); i++)
       {
-         Vec3d ref_colour(0.0,1.0,0.0);
-
          if(colours_sorted[i] > 0) ref_colour = all_colours.Elem(colours_sorted[i]);
 
-         PrintMessage(3, "BC Property: ",i);
+         PrintMessage(3, "BC Property: ",i + DEFAULT_BCNUM);
          PrintMessage(3, "   Nr. of Surface Elements = ", faces_sorted[i]);
          PrintMessage(3, "   Colour Index = ", colours_sorted[i]);
          PrintMessage(3, "   RGB Face Colour = ",ref_colour,"","\n");
@@ -403,6 +427,7 @@ namespace netgen
       // Go directly to the alternate algorithm if no colour profile file was specified
       if(!bccolourfile)
       {
+         PrintMessage(1,"AutoColourBcProps: Using Automatic Colour based boundary property assignment algorithm");
          AutoColourAlg_Sorted(mesh);
       }
       else
@@ -414,7 +439,7 @@ namespace netgen
          if(!ocf)
          {
             PrintMessage(1,"AutoColourBcProps: Error loading Boundary Colour Profile file ", 
-                         bccolourfile, " ....","Switching to alternate algorithm!");
+                         bccolourfile, " ....","Switching to Automatic Assignment algorithm!");
 
             AutoColourAlg_Sorted(mesh);
          }
@@ -422,6 +447,8 @@ namespace netgen
          // based on the colour profile file
          else
          {
+            PrintMessage(1, "AutoColourBcProps: Using Boundary Colour Profile file: ");
+            PrintMessage(1, "  ", bccolourfile);
             AutoColourAlg_UserProfile(mesh, ocf);
          }
       }
