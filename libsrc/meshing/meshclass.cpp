@@ -4980,42 +4980,53 @@ namespace netgen
 
   void Mesh :: GetSurfaceElementsOfFace (int facenr, Array<SurfaceElementIndex> & sei) const
   {
-    static int timer = NgProfiler::CreateTimer ("GetSurfaceElementsOfFace");
-    NgProfiler::RegionTimer reg (timer);
+     static int timer = NgProfiler::CreateTimer ("GetSurfaceElementsOfFace");
+     NgProfiler::RegionTimer reg (timer);
 
-    /*
-      sei.SetSize (0);
-      for (SurfaceElementIndex i = 0; i < GetNSE(); i++)
-      if ( (*this)[i].GetIndex () == facenr && (*this)[i][0] >= PointIndex::BASE &&
-      !(*this)[i].IsDeleted() )
-      sei.Append (i);
 
-      int size1 = sei.Size();
-    */
+     sei.SetSize (0);
+     for (SurfaceElementIndex i = 0; i < GetNSE(); i++)
+     {
+        if ( (*this)[i].GetIndex () == facenr && (*this)[i][0] >= PointIndex::BASE &&
+           !(*this)[i].IsDeleted() )
+        {
+           sei.Append (i);
+        }
+     }
 
-    sei.SetSize(0);
 
-    SurfaceElementIndex si = facedecoding[facenr-1].firstelement;
-    while (si != -1)
-      {
+     /* Philippose - 01/10/2009
+     Commented out the following lines, and activated the originally 
+     commented out lines above because of a bug which causes corruption 
+     of the variable "facedecoding" when a mesh is converted to second order
+     */
+
+     //      int size1 = sei.Size();
+     /*
+     sei.SetSize(0);
+
+     SurfaceElementIndex si = facedecoding[facenr-1].firstelement;
+     while (si != -1)
+     {
         if ( (*this)[si].GetIndex () == facenr && (*this)[si][0] >= PointIndex::BASE &&
              !(*this)[si].IsDeleted() )
-          {
-            sei.Append (si);
-          }
+        {
+           sei.Append (si);
+        }
 
         si = (*this)[si].next;
-      }
+     }
+     */
+     
+     /*
+     // *testout << "with list = " << endl << sei << endl;
 
-    /*
-    // *testout << "with list = " << endl << sei << endl;
-
-    if (size1 != sei.Size()) 
-    {
-    cout << "size mismatch" << endl;
-    exit(1);
-    }
-    */
+     if (size1 != sei.Size()) 
+     {
+        cout << "size mismatch" << endl;
+        exit(1);
+     }
+     */
   }
 
 
