@@ -788,8 +788,20 @@ menu .ngmenu.special
 menu .ngmenu.special.colbndcond 
  .ngmenu.special.colbndcond add command -label "Automatic Assignment" \
     -command { Ng_AutoColourBcProps auto; redraw }
+	
+ .ngmenu.special.colbndcond add separator	
+
+ set ocffile [file join ${ngdir} netgen.ocf];
+ 
+ .ngmenu.special.colbndcond add command -label "Select Colour Profile file" \
+    -command {
+	set types { {"Colour Profile file"   {.ocf}   } }
+	set ocffile [tk_getOpenFile -filetypes $types]
+	if {$ocffile == ""} {
+	    set ocffile [file join ${ngdir} netgen.ocf]; }
+	} 
  .ngmenu.special.colbndcond add command -label "Profile based Assignment" \
-	-command { Ng_AutoColourBcProps profile netgen.ocf; redraw }
+	-command { Ng_AutoColourBcProps profile ${ocffile}; redraw }
 
 
 # menu .mbar.stl.menu

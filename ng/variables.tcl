@@ -663,8 +663,10 @@ proc loadinifile { } {
 	set datei [open $inifilename r]
 	while { [gets $datei line] >= 0 } {
 	    if {[lindex $line 0] == "recentfile"} {
-		set filename [lindex $line 1]
-		AddRecentFile $filename
+		    set filename [lindex $line 1]
+		    if { [file exists $filename] == 1 } {
+		        AddRecentFile $filename
+		    }	
 	    }
 	}
 	close $datei
@@ -677,8 +679,10 @@ proc loadmeshinifile { } {
 	set datei [open ngmesh.ini r]
 	while { [gets $datei line] >= 0 } {
 	    if {[lindex $line 0] == "recentfile"} {
-		set filename [lindex $line 1]
-		AddRecentMeshFile $filename
+		    set filename [lindex $line 1]
+			if { [file exists $filename] == 1 } {
+		        AddRecentMeshFile $filename
+			}	
 	    }
 	}
 	close $datei
