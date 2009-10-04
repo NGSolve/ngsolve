@@ -1,4 +1,4 @@
-# Netgen 4.9.9
+# Netgen Mesher
 # Boundary Condition Colour Profile
 #
 # Name: netgen.ocf
@@ -14,13 +14,19 @@
 # <bc_num2> <R> <G> <B>
 # ....
 # ....
+# NOTE: 
+# * Currently, the default Boundary 
+# Condition number assigned to faces without 
+# any colour defined is "1"
+# * Boundary Condition number "0" is invalid, 
+# and should not be used
 
 boundary_colours
 7
-1	0.0000	0.0000	0.0000
-2	1.0000	0.0000	0.0000
-3	0.0000	0.0000	1.0000
-4	1.0000	1.0000	0.0000
-5	0.0000	1.0000	1.0000
-6	1.0000	0.0000	1.0000
-7	1.0000	1.0000	1.0000
+2	0.0000	0.0000	0.0000
+3	1.0000	0.0000	0.0000
+4	0.0000	0.0000	1.0000
+5	1.0000	1.0000	0.0000
+6	0.0000	1.0000	1.0000
+7	1.0000	0.0000	1.0000
+8	1.0000	1.0000	1.0000
