@@ -1381,12 +1381,13 @@ namespace netgen
 
     if (!apoints.Size()) return;
 
-
+#define VERTSORT
 
 #ifdef VERTSORT
+    Vec<3> dir(1.2, 1.7, 0.9);
     for (int i = 0; i < apoints.Size(); i++)
       for (int j = 0; j < apoints.Size()-1; j++)
-        if (apoints[j](2) > apoints[j+1](2))
+        if ( (dir * Vec<3> (apoints[j])) > (dir * Vec<3> (apoints[j+1])))
           swap (apoints[j], apoints[j+1]);
 #endif
 

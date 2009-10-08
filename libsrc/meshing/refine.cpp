@@ -610,6 +610,7 @@ namespace netgen
       }
 
     mesh.ComputeNVertices();
+    mesh.RebuildSurfaceElementLists();
     return;
 
     int cnttrials = 10;

@@ -40,7 +40,6 @@ namespace netgen
  
 
 
-
 using netgen::parameters;
 using netgen::ngdir;
 using netgen::verbose;
@@ -347,7 +346,6 @@ extern "C" int Ng_Vis_Init (Tcl_Interp * interp);
 
 
 // extern Tcl_PackageInitProc * Tk_SafeInit;
-
 
 /*
  *

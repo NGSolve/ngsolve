@@ -290,6 +290,7 @@ public:
   { return surfelements[ei]; }
 
   
+  void RebuildSurfaceElementLists ();
   void GetSurfaceElementsOfFace (int facenr, Array<SurfaceElementIndex> & sei) const;
 
   ElementIndex AddVolumeElement (const Element & el);

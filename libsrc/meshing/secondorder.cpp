@@ -287,7 +287,7 @@ namespace netgen
       }
 
     mesh.ComputeNVertices();
-  
+    mesh.RebuildSurfaceElementLists();
     //  ValidateSecondOrder (mesh);
   }
 

@@ -3786,7 +3786,7 @@ namespace netgen
 
 
     mesh.ComputeNVertices();
-
+    mesh.RebuildSurfaceElementLists();
   
     
     // update identification tables

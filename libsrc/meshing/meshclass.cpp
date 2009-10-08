@@ -2297,6 +2297,8 @@ namespace netgen
           }
       }
 
+    RebuildSurfaceElementLists ();
+    /*
     for (int i = 0; i < facedecoding.Size(); i++)
       facedecoding[i].firstelement = -1;
     for (int i = surfelements.Size()-1; i >= 0; i--)
@@ -2305,7 +2307,7 @@ namespace netgen
         surfelements[i].next = facedecoding[ind-1].firstelement;
         facedecoding[ind-1].firstelement = i;
       }
-
+    */
 
     timestamp = NextTimeStamp();
     //  Compress();
@@ -4977,6 +4979,19 @@ namespace netgen
     */
   }
 
+
+
+  void Mesh :: RebuildSurfaceElementLists ()
+  {
+    for (int i = 0; i < facedecoding.Size(); i++)
+      facedecoding[i].firstelement = -1;
+    for (int i = surfelements.Size()-1; i >= 0; i--)
+      {
+        int ind = surfelements[i].GetIndex();
+        surfelements[i].next = facedecoding[ind-1].firstelement;
+        facedecoding[ind-1].firstelement = i;
+      }
+  }
 
   void Mesh :: GetSurfaceElementsOfFace (int facenr, Array<SurfaceElementIndex> & sei) const
   {
