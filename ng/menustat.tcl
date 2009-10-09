@@ -48,7 +48,8 @@ menu .ngmenu.file
 #		{"Naomi Geometry"      {.nao} }
 #		{"New Geometry file"   {.ngg} } 
 
-	set file [tk_getOpenFile -filetypes $types -initialdir $dirname -typevariable loadgeomtypevar]
+#	set file [tk_getOpenFile -filetypes $types -initialdir $dirname -typevariable loadgeomtypevar]
+	set file [tk_getOpenFile -filetypes $types -initialdir $dirname]
 	if {$file != ""} {
 	    AddRecentFile $file
 	    Ng_LoadGeometry $file 
