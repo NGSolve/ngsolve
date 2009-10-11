@@ -296,7 +296,7 @@ if { [catch { NGS_GetData } ] == 0 } {
 		if { [.ngmenu.solve.recent index last] >= 6 } {
 		    .ngmenu.solve.recent delete last }
 		
-		# savengsinifile;
+		savengsinifile;
 	    }
 	    
 
@@ -304,7 +304,6 @@ if { [catch { NGS_GetData } ] == 0 } {
 	    global ngsinifilename
 
 	    set ngsinifilename [file join $nguserdir ngs.ini]
-
 
 	    proc savengsinifile { } {
 		global ngsinifilename
