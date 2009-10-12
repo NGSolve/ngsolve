@@ -1219,7 +1219,7 @@ namespace ngsolve
 	    else cout << " (surface)" << endl;
 
 	    double gmin(1e100), gmax(-1e100), gav(0), gvol(0);
-
+	    
 	    for(int i=0; i<domains.Size(); i++)
 	      {
 		dom = domains[i]-1;
@@ -1229,9 +1229,9 @@ namespace ngsolve
 		  {
 		    for(int j=0; j<components; j++)
 		      {
-			if(mini[dom*components*j] < gmin) gmin = mini[dom*components*j];
-			if(maxi[dom*components*j] > gmax) gmax = maxi[dom*components*j];
-			gav += average[(dom)*components*j];
+			if(mini[dom*components+j] < gmin) gmin = mini[dom*components+j];
+			if(maxi[dom*components+j] > gmax) gmax = maxi[dom*components+j];
+			gav += average[(dom)*components+j];
 		      }
 		  }
 		else
@@ -1242,7 +1242,6 @@ namespace ngsolve
 		  }
 	      }
 	    gav /= gvol;
-
 
 	    cout << "min: " << gmin << endl
 		 << "max: " << gmax << endl
