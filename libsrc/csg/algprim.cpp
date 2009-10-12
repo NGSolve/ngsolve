@@ -79,8 +79,12 @@ namespace netgen
 
     p = ap;
     n = an;
-    n.Normalize();
+    CalcData();
+  }
 
+  void Plane :: CalcData()
+  {
+    n.Normalize();
     cxx = cyy = czz = cxy = cxz = cyz = 0;
     cx = n(0); cy = n(1); cz = n(2);
     c1 = - (cx * p(0) + cy * p(1) + cz * p(2));
@@ -100,9 +104,7 @@ namespace netgen
     p = hp;
     n = hn;
 
-    cxx = cyy = czz = cxy = cxz = cyz = 0;
-    cx = n(0); cy = n(1); cz = n(2);
-    c1 = - (cx * p(0) + cy * p(1) + cz * p(2));
+    CalcData();
   }
 
 
@@ -129,11 +131,7 @@ namespace netgen
     n(1) = coeffs.Elem(5);
     n(2) = coeffs.Elem(6);
 
-    n.Normalize();
-
-    cxx = cyy = czz = cxy = cxz = cyz = 0;
-    cx = n(0); cy = n(1); cz = n(2);
-    c1 = - (cx * p(0) + cy * p(1) + cz * p(2));
+    CalcData();
   }
 
   Primitive * Plane :: CreateDefault ()
@@ -158,27 +156,21 @@ namespace netgen
       }
     else
       {
-        //(*testout) << "pos1" << endl;
         if (fabs (s2.CalcFunctionValue(p)) > eps) return 0;
         Vec<3> hv1, hv2;
         hv1 = n.GetNormal ();
         hv2 = Cross (n, hv1);
       
         Point<3> hp = p + hv1;
-        //(*testout) << "pos2" << endl;
-        //(*testout) << "eps " << eps << " s2.CalcFunctionValue(hp) " << s2.CalcFunctionValue(hp) << endl;
         if (fabs (s2.CalcFunctionValue(hp)) > eps) return 0;
-        //(*testout) << "pos3" << endl;
         hp = p + hv2;
         if (fabs (s2.CalcFunctionValue(hp)) > eps) return 0;
       }
 
-    //(*testout) << "pos4" << endl;
     Vec<3> n1, n2;
     n1 = GetNormalVector (p);
     n2 = s2.GetNormalVector (p);
     inv = (n1 * n2 < 0);
-    //(*testout) << "inv " << inv << endl;
     return 1;
   }
 
@@ -205,14 +197,6 @@ namespace netgen
 
   void Plane :: FromPlane (const Point<2> & pplane, Point<3> & p3d, double h) const
   {
-    /*
-      Vec<3> p1p;
-      Point<2> pplane2 = pplane;
-  
-      pplane2 *= h;
-      p1p = pplane2(0) * ex + pplane2(1) * ey;
-      p3d = p1 + p1p;
-    */
     p3d = p1 + (h * pplane(0)) * ex + (h * pplane(1)) * ey;
   }
 
@@ -1124,8 +1108,45 @@ namespace netgen
       }
 
     CalcData();
-    // Print (cout);
   }
+
+  EllipticCylinder :: EllipticCylinder (Array<double> & coeffs)
+  {
+    SetPrimitiveData(coeffs);
+  }
+
+
+
+  void EllipticCylinder :: GetPrimitiveData (const char *& classname, Array<double> & coeffs) const
+  {
+    classname = "ellipticcylinder";
+    coeffs.SetSize (9);
+    coeffs[0] = a(0);
+    coeffs[1] = a(1);
+    coeffs[2] = a(2);
+    coeffs[3] = vl(0);
+    coeffs[4] = vl(1);
+    coeffs[5] = vl(2);
+    coeffs[6] = vs(0);
+    coeffs[7] = vs(1);
+    coeffs[8] = vs(2);
+  }
+
+  void EllipticCylinder :: SetPrimitiveData (Array<double> & coeffs)
+  {
+    a(0) = coeffs[0];
+    a(1) = coeffs[1];
+    a(2) = coeffs[2];
+    vl(0) = coeffs[3];
+    vl(1) = coeffs[4];
+    vl(2) = coeffs[5];
+    vs(0) = coeffs[6];
+    vs(1) = coeffs[7];
+    vs(2) = coeffs[8];
+
+    CalcData();
+  }
+
 
 
   void EllipticCylinder :: CalcData ()

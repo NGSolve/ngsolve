@@ -434,6 +434,16 @@ namespace netgen
 	    delete_them.Append(cylinder);
 	  }
 
+	else if(classname == "ellipticcylinder")
+	  {
+	    EllipticCylinder * cylinder = new EllipticCylinder(coeffs);
+	    AddSurface(cylinder);
+	    delete_them.Append(cylinder);
+	  }
+
+
+
+
 	else if(classname == "cone")
 	  {
 	    Cone * cone = new Cone(dummypoint,dummypoint,dummydouble,dummydouble);

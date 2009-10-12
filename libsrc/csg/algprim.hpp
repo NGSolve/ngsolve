@@ -109,7 +109,8 @@ namespace netgen
     virtual void GetTriangleApproximation 
     (TriangleApproximation & tas, 
      const Box<3> & boundingbox, double facets) const;
-
+  protected:
+    void CalcData();
   };
 
   // typedef Plane Plane;
@@ -238,12 +239,13 @@ namespace netgen
     ///
     EllipticCylinder (const Point<3> & aa,
 		      const Vec<3> & avl, const Vec<3> & avs);
+    EllipticCylinder (Array<double> & coeffs);
 
-    /*
-      static Primitive * CreateDefault ();
-      virtual void GetPrimitiveData (const char *& classname, Array<double> & coeffs) const;
-      virtual void SetPrimitiveData (Array<double> & coeffs);
-    */
+
+    // static Primitive * CreateDefault ();
+    virtual void GetPrimitiveData (const char *& classname, Array<double> & coeffs) const;
+    virtual void SetPrimitiveData (Array<double> & coeffs);
+
     ///
     virtual INSOLID_TYPE BoxInSolid (const BoxSphere<3> & box) const;
     ///
