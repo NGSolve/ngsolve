@@ -1259,6 +1259,40 @@ namespace ngfem
 
           break;
         }
+
+     case ET_PYRAMID:
+        {
+          irx = &SelectIntegrationRule (ET_SEGM, order+2); // in z-direction
+          irz = &SelectIntegrationRule (ET_SEGM, order);
+          iry = &SelectIntegrationRule (ET_SEGM, order);
+
+          nip = irx->GetNIP() * iry->GetNIP() * irz->GetNIP();
+
+          xi.SetSize(nip);
+          weight.SetSize(nip);
+          dxdxi_duffy.SetSize(nip);
+
+          for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
+            for (int i2 = 0; i2 < iry->GetNIP(); i2++)
+              for (int i3 = 0; i3 < irz->GetNIP(); i3++, ii++)
+                {
+		  double z = (*irx)[i1](0);
+                  xi[ii](0) = (*iry)[i2](0)*(1-z);
+                  xi[ii](1) = (*irz)[i3](0)*(1-z);
+                  xi[ii](2) = (*irx)[i1](0);
+                  weight[ii] = sqr(1-z)*(*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight();
+                }
+        
+          Mat<3> id;
+          id = 0;
+          id(0,0) = id(1,1) = id(2,2) = 1;
+        
+          for (int i = 0; i < nip; i++)
+            dxdxi_duffy[i] = id;
+
+          break;
+        }
+
       default:
         {
           stringstream str;

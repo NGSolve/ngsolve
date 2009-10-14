@@ -242,8 +242,9 @@ public:
   {
     if (!dynamic_cast<const FEL*> (&el) )
       throw Exception (string ("Element does not match integrator\n") +
-                       string ("element is ") + typeid(el).name() +
-                       string ("integrator is ") + Name());
+                       string ("element type is ") + typeid(el).name() +
+                       string (" expected type is ") + typeid(FEL).name() +
+                       string (" integrator is ") + Name());
   }
 
 
@@ -1375,7 +1376,8 @@ public:
   {
     if (!dynamic_cast<const FEL*> (&el) )
       throw Exception (string ("Element does not match integrator\n") +
-                       string ("element is ") + typeid(el).name() +
+                       string ("element type is ") + typeid(el).name() +
+                       string (" expected type is ") + typeid(FEL).name() +
                        string ("integrator is ") + Name());
   }
 

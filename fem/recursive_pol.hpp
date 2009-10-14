@@ -1312,6 +1312,34 @@ void DifferentiateJacobiTrans (int n, double alpha, T & inout)
 }
 
 
+template <class T>
+void DifferentiateLegendre (int n, T & inout)
+{
+  for (int i = n; i >= 1; i--)
+    {
+      if (i > 1) inout(i-2) += inout(i);
+      inout(i) *= 2*i-1;
+    }
+  for (int i = 0; i < n; i++)
+    inout(i) = inout(i+1);
+  inout(n) = 0;
+}
+
+template <class T>
+void DifferentiateLegendreTrans (int n, T & inout)
+{
+  for (int i = n-1; i >= 0; i--)
+    inout(i+1) = inout(i);
+  inout(0) = 0;
+
+  for (int i = 1; i <= n; i++)
+    {
+      inout(i) *= (2*i-1);
+      if (i > 1)
+        inout(i) += inout(i-2);
+    }
+}
+
 
 
 
@@ -1708,6 +1736,67 @@ public:
   template <class T>
   static inline void Trans (T & inout) { ; }
 };
+
+
+
+
+
+
+
+
+
+template <int N>
+class TDifferentiateLegendre
+{ 
+public:
+  enum { FLOP = TDifferentiateLegendre<N-1>::FLOP + 3 };
+
+  // (P_i^Al)' = c1 P_i^AL + c2 (P_{i-1}^AL)' + c3 (P_{i-2}^AL)' 
+
+  template <class T>
+  static  ALWAYS_INLINE void Do (T & inout)
+  {
+    double val = inout(N);
+    if (N > 1) inout(N-2) += val;
+    
+    inout(N) *= double (2*N-1);
+    TDifferentiateLegendre<N-1>::Do(inout);
+
+    inout(N-1) = inout(N);
+    inout(N) = 0;
+  }
+
+  template <class T>
+  static  ALWAYS_INLINE void Trans (T & inout)
+  {
+    inout(N) = inout(N-1);
+    inout(N-1) = 0;
+
+    TDifferentiateLegendre<N-1>::Trans(inout);
+
+    inout(N) *= double (2*N-1);
+    if (N > 1) inout(N) += inout(N-2);
+  }
+
+};
+
+template <>
+class TDifferentiateLegendre<0> 
+{ 
+public:
+  enum { FLOP = 0 };
+
+  template <class T>
+  static inline void Do (T & inout) { ; }
+
+  template <class T>
+  static inline void Trans (T & inout) { ; }
+};
+
+
+
+
+
 
 
 
