@@ -304,7 +304,7 @@ if { [catch { NGS_GetData } ] == 0 } {
 	    global ngsinifilename
 
 	    set ngsinifilename [file join $nguserdir ngs.ini]
-
+    
 	    proc savengsinifile { } {
 		global ngsinifilename
 		if {[catch { set datei [open $ngsinifilename w]  } result ]} {

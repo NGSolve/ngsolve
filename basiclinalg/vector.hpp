@@ -704,6 +704,10 @@ namespace ngbla
     /// constructor, no initialization
     FlatVec (T * adata) : data(adata) { ; }
 
+    /// constructor, no initialization
+    FlatVec (Vec<S,T> & v2) : data(&v2(0)) { ; }
+
+
     /// copy vector
     const FlatVec & operator= (const FlatVec & v) const
     {

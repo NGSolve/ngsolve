@@ -200,52 +200,54 @@ namespace ngcomp
   {
     try
       { 
-	FiniteElement * fe;
-	typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
+	L2HighOrderFiniteElement<2> * fe2d = 0;
+	L2HighOrderFiniteElement<3> * fe3d = 0;
 
 	switch (ma.GetElType(elnr))
 	  {
-	  case ET_TET:     fe = new (lh) L2HighOrderFE<ET_TET> (order); break;
-	  case ET_PYRAMID: fe = new (lh) H1HighOrderFE<ET_PYRAMID> (order); break;
-	  case ET_PRISM:   fe = new (lh) L2HighOrderFE<ET_PRISM> (order); break;
-	  case ET_HEX:     fe = new (lh) L2HighOrderFE<ET_HEX> (order); break;
-	  case ET_TRIG:    fe = new (lh) L2HighOrderFE<ET_TRIG> (order); break;
-	  case ET_QUAD:    fe = new (lh) L2HighOrderFE<ET_QUAD> (order); break;
+	  case ET_TET:     fe3d = new (lh) L2HighOrderFE<ET_TET> (); break;
+	  case ET_PYRAMID: fe3d = new (lh) L2HighOrderFE<ET_PYRAMID> (); break;
+	  case ET_PRISM:   fe3d = new (lh) L2HighOrderFE<ET_PRISM> (); break;
+	  case ET_HEX:     fe3d = new (lh) L2HighOrderFE<ET_HEX> (); break;
+	  case ET_TRIG:    fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
+	  case ET_QUAD:    fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
 	  default:
-	    fe = 0; 
+	    {
+	      stringstream str;
+	      str << "L2HighOrderFESpace " << GetClassName() 
+		  << ", undefined eltype " 
+		  << ElementTopology::GetElementName(ma.GetElType(elnr))
+		  << ", order = " << order << endl;
+	      throw Exception (str.str());
+	    }
 	  }
 	
-	if (!fe)
+
+	if (fe2d)
 	  {
-	    stringstream str;
-	    str << "L2HighOrderFESpace " << GetClassName() 
-		<< ", undefined eltype " 
-		<< ElementTopology::GetElementName(ma.GetElType(elnr))
-		<< ", order = " << order << endl;
-	    throw Exception (str.str());
-	  }
+	    ArrayMem<int,12> vnums; // calls GetElPNums -> max 12 for PRISM12
+	    ma.GetElVertices(elnr, vnums);
+ 	    fe2d-> SetVertexNumbers (vnums); 
 
-	ArrayMem<int,12> vnums; // calls GetElPNums -> max 12 for PRISM12
-	ma.GetElVertices(elnr, vnums);
-
-        if (dynamic_cast<L2HighOrderFiniteElement<2>* > (fe))
-          {
-            L2HighOrderFiniteElement<2> * hofe = dynamic_cast<L2HighOrderFiniteElement<2>* > (fe);
- 	    hofe-> SetVertexNumbers (vnums); 
 	    INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
-	    hofe-> SetOrder(p);
-	    hofe-> ComputeNDof(); 
+	    fe2d-> SetOrder(p);
+	    fe2d-> ComputeNDof(); 
+            return *fe2d;
           }
         else
           {
-            L2HighOrderFiniteElement<3> * hofe = dynamic_cast<L2HighOrderFiniteElement<3>* > (fe);
- 	    hofe-> SetVertexNumbers (vnums); 
-	    hofe-> SetOrder(order_inner[elnr]); 
-	    hofe-> ComputeNDof(); 
-            return *hofe;
-          }
+            Ng_Element ngel = ma.GetElement<3> (elnr);
+	    for (int j = 0; j < ngel.vertices.Size(); j++)
+	      fe3d -> SetVertexNumber (j, ngel.vertices[j]);
 
-	return *fe;
+	    // ArrayMem<int,12> vnums; // calls GetElPNums -> max 12 for PRISM12
+	    // ma.GetElVertices(elnr, vnums);
+ 	    // fe3d-> SetVertexNumbers (vnums); 
+
+	    fe3d-> SetOrder(order_inner[elnr]); 
+	    fe3d-> ComputeNDof(); 
+            return *fe3d;
+          }
       } 
     catch (Exception & e)
       {
