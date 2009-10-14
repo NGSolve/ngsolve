@@ -46,10 +46,11 @@ namespace ngfem
       // T & values = const_cast<T&> (const_values);
       S v1, v2, v3;
 
-      if (n >= 0)
-	v2 = values[0] = coefs[0][0];
-      if (n >= 1)
-	v1 = values[1] = (coefs[1][0] + coefs[1][1] * x) * values[0];
+      if (n < 0) return;
+      v2 = values[0] = coefs[0][0];
+
+      if (n == 0) return;
+      v1 = values[1] = (coefs[1][0] + coefs[1][1] * x) * values[0];
 
       /*
       // hat nichts gebracht

@@ -27,11 +27,14 @@ namespace ngfem
     /// global vertex numbers define ordering of vertices
     void SetVertexNumbers (FlatArray<int> & avnums);
 
+    void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
+
     /// set polynomial order
-    void SetOrder (int o);
+    void SetOrder (int o) 
+    { for (int i = 0; i < DIM; i++) order_inner[i] = o; }
 
     /// different orders in differnt directions
-    void SetOrder (INT<DIM> oi);
+    void SetOrder (INT<DIM> oi) { order_inner = oi; }
 
     /// calculate number of dofs
     virtual void ComputeNDof () = 0; 
@@ -165,6 +168,21 @@ namespace ngfem
   */
   template <> 
   class L2HighOrderFE<ET_PRISM> : public T_L2HighOrderFiniteElement<ET_PRISM>
+  {
+  public:
+    L2HighOrderFE () { ; }
+    L2HighOrderFE (int aorder);
+
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx x[3], TFA & shape) const; 
+  };
+
+
+  /**
+     L2 high order pyramid finite element
+  */
+  template <> 
+  class L2HighOrderFE<ET_PYRAMID> : public T_L2HighOrderFiniteElement<ET_PYRAMID>
   {
   public:
     L2HighOrderFE () { ; }
