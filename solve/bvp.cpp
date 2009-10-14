@@ -497,8 +497,8 @@ namespace ngsolve
 	projection(i,i) += 1;
 
       CalcInverse (projection, invprojection);
-      cout << "projection = " << endl << projection << endl;
-      cout << "invprojection = " << endl << invprojection << endl;
+      // cout << "projection = " << endl << projection << endl;
+      // cout << "invprojection = " << endl << invprojection << endl;
     }
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const
@@ -619,7 +619,7 @@ namespace ngsolve
 
   void NumProcConstrainedBVP :: Do(LocalHeap & lh)
   {
-    cout << "solve bvp" << endl;
+    cout << "solve constrained bvp" << endl;
 
     const BaseMatrix & mat = bfa->GetMatrix();
     const BaseVector & vecf = lff->GetVector();

@@ -480,7 +480,6 @@ namespace ngcomp
     for(int j = 0; j<bfi3d.Size(); j++)
       {
 	HeapReset hr(lh);
-
 	FlatVector<SCAL> flux(bfi3d[j] -> DimFlux(), lh);
 	bfi3d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
 
@@ -908,7 +907,8 @@ namespace ngcomp
                   for (int j = 0; j < 2; j++)
                     mdxdxref(i,j) = dxdxref[k*sdxdxref+2*i+j];
 
-                SpecificIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref); 
+		SpecificIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref); 
+		// SpecificIntegrationPoint<2,3> sip (ip, eltrans, x+k*sx, mdxdxref); 
                 
                 for(int j = 0; j<bfi2d.Size(); j++)
                   {
@@ -991,8 +991,6 @@ namespace ngcomp
 
     Analyze(minima,maxima,averages,volumes,component);
     
-    
-    
     for(int i=0; i<ndomains; i++)
       {
 	if(component == -1)
@@ -1003,7 +1001,6 @@ namespace ngcomp
 	else
 	  averages[i] /= volumes[i];
       }
-    
   }
   
 

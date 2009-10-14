@@ -40,8 +40,6 @@ namespace ngcomp
     int dim     = fes.GetDimension();
     int dimflux = fesflux.GetDimension();
 
-    // ElementTransformation eltrans;
-
     const BilinearFormIntegrator & fluxbli =
       bound ? (*fesflux.GetBoundaryEvaluator()) : (*fesflux.GetEvaluator());
 
@@ -60,11 +58,10 @@ namespace ngcomp
       ElementTransformation eltrans;
       Array<int> dnums, dnumsflux;
 
-      void * heapp1 = lh.GetPointer();
 #pragma omp for 
       for (int i = 0; i < ne; i++)
 	{
-
+	  HeapReset hr(lh);
 #pragma omp critical(fluxprojetpercent)
 	  {
 	    cnt++;
@@ -114,66 +111,134 @@ namespace ngcomp
 	    GetIntegrationRules().SelectIntegrationRule(fel.ElementType(), max(fel.Order(),felflux.Order())+felflux.Order());
 	  elflux = 0;
 	  
-	  for (int j = 0; j < ir.GetNIP(); j++)
+	  /*
+	    for (int j = 0; j < ir.GetNIP(); j++)
 	    {
-	      HeapReset hr(lh);
-	      // bli.CalcFlux (fel, eltrans, ir.GetIP(j), elu, fluxi, applyd, lh);
-	      // fluxbli.ApplyBTrans (felflux, eltrans, ir.GetIP(j), fluxi, elfluxi, lh);
-	      double fac;
-	      if (!bound)
+	    HeapReset hr(lh);
+	    double fac;
+	    if (!bound)
+	    {
+	    if (fel.SpatialDim() == 2)
+	    {
+	    SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
+	    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+	    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
+	    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
+	    }
+	    else
+	    {
+	    SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
+	    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+	    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
+	    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
+	    }
+	    }
+	    else
+	    {
+	    if (fel.SpatialDim() == 2)
+	    {
+	    SpecificIntegrationPoint<2,3> sip (ir.GetIP(j), eltrans, lh);
+	    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+	    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
+	    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
+	    }
+	    else
+	    {
+	    SpecificIntegrationPoint<1,2> sip (ir.GetIP(j), eltrans, lh);
+	    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+	    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
+	    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
+	    }
+	    }
+	      
+	    elflux += fac * elfluxi;
+	    }
+	  */
+
+
+
+	  if (!bound)
+	    {
+	      if (fel.SpatialDim() == 2)
 		{
-		  if (fel.SpatialDim() == 2)
+		  FlatArray<Vec<2> > pts(ir.GetNIP(), lh);
+		  FlatArray<Mat<2,2> > dxdxi(ir.GetNIP(), lh);
+		  eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
+
+		  for (int j = 0; j < ir.GetNIP(); j++)
 		    {
-		      SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
-		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+		      HeapReset hr(lh);
+
+		      // SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
+		      SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, pts[j], dxdxi[j]);
+
+		      double fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
 		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-		    }
-		  else
-		    {
-		      SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
-		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
+		      elflux += fac * elfluxi;
 		    }
 		}
 	      else
 		{
-		  if (fel.SpatialDim() == 2)
+		  for (int j = 0; j < ir.GetNIP(); j++)
 		    {
-		      SpecificIntegrationPoint<2,3> sip (ir.GetIP(j), eltrans, lh);
-		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+		      HeapReset hr(lh);
+
+		      SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
+		      double fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
 		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-		    }
-		  else
-		    {
-		      SpecificIntegrationPoint<1,2> sip (ir.GetIP(j), eltrans, lh);
-		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
+		      elflux += fac * elfluxi;
 		    }
 		}
-	      
-	      elflux += fac * elfluxi;
 	    }
-	  
+	  else
+	    {
+	      if (fel.SpatialDim() == 2)
+		{
+		  for (int j = 0; j < ir.GetNIP(); j++)
+		    {
+		      HeapReset hr(lh);
+
+		      SpecificIntegrationPoint<2,3> sip (ir.GetIP(j), eltrans, lh);
+		      double fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
+		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
+		      elflux += fac * elfluxi;
+		    }
+		}
+	      else
+		{
+		  for (int j = 0; j < ir.GetNIP(); j++)
+		    {
+		      HeapReset hr(lh);
+
+		      SpecificIntegrationPoint<1,2> sip (ir.GetIP(j), eltrans, lh);
+		      double fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
+		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
+		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
+		      elflux += fac * elfluxi;
+		    }
+		}
+	    }
+	      
+
 	  if (dimflux > 1)
 	    {
-	    FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
-	    const BlockBilinearFormIntegrator & bbli = 
-	      dynamic_cast<const BlockBilinearFormIntegrator&> (fluxbli);
-	    bbli . Block() . AssembleElementMatrix (felflux, eltrans, elmat, lh);
-	    FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+	      FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
+	      const BlockBilinearFormIntegrator & bbli = 
+		dynamic_cast<const BlockBilinearFormIntegrator&> (fluxbli);
+	      bbli . Block() . AssembleElementMatrix (felflux, eltrans, elmat, lh);
+	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
 	    
-	    FlatVector<SCAL> hv1(dnumsflux.Size(), lh);
-	    FlatVector<SCAL> hv2(dnumsflux.Size(), lh);
-	    for (int j = 0; j < dimflux; j++)
-	      {
-		hv1 = elflux.Slice (j, dimflux);
-		invelmat.Mult (hv1, hv2);
-		elfluxi.Slice(j, dimflux) = hv2;
-	      }
+	      FlatVector<SCAL> hv1(dnumsflux.Size(), lh);
+	      FlatVector<SCAL> hv2(dnumsflux.Size(), lh);
+	      for (int j = 0; j < dimflux; j++)
+		{
+		  hv1 = elflux.Slice (j, dimflux);
+		  invelmat.Mult (hv1, hv2);
+		  elfluxi.Slice(j, dimflux) = hv2;
+		}
 	    }
 	  else
 	    {
@@ -195,12 +260,10 @@ namespace ngcomp
 	    for (int j = 0; j < dnumsflux.Size(); j++)
 	      cnti[dnumsflux[j]]++;
 	  }
-
-	  lh.CleanUp(heapp1);
 	}
     }
-
-    cout << "\rpostprocessing element xx " << ne << "/" << ne << endl;
+    
+    cout << "\rpostprocessing element " << ne << "/" << ne << endl;
 
 
     FlatVector<SCAL> fluxi(dimflux, clh);
@@ -574,7 +637,7 @@ namespace ngcomp
 	      invelmat.Mult (elflux, elfluxi);
 	    }
 	  
-	    fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
+	  fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
 	  
 	  
 #pragma omp critical(fluxprojetadd)
@@ -702,10 +765,10 @@ namespace ngcomp
 
 	double vol; 
 
-	void * heapp = lh.GetPointer();
 
 	for (int j = 0; j < ir.GetNIP(); j++)
 	  {
+	    HeapReset hr(lh);
 	    if (!bound)
 	      {
 		if (fel.SpatialDim() == 2)
@@ -744,9 +807,6 @@ namespace ngcomp
 	    fluxi -= fluxi2;
 	    
 	    elerr += ir.GetIP(j).Weight() * vol * L2Norm2 (fluxi);
-
-
-	    lh.CleanUp (heapp);
 	  }
 
 
@@ -905,7 +965,7 @@ namespace ngcomp
 		    bli2.CalcFlux (fel2, sip, elu2, fluxi2, applyd2, lh);
 		    det = fabs(sip.GetJacobiDet()); 
 		  }
-	 	else
+		else
 		  {
 		    SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
@@ -1056,7 +1116,7 @@ namespace ngcomp
 	
 	for (int j = 0; j < ir.GetNIP(); j++)
 	  {
-	    void * heapp = lh.GetPointer();
+	    HeapReset hr(lh);
 	    if (!bound1)
 	      {
 		if (fel1.SpatialDim() == 2)
@@ -1068,7 +1128,7 @@ namespace ngcomp
 		    fluxi2(0) = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
 		    det = fabs(sip.GetJacobiDet()); 
 		  }
-	 	else
+		else
 		  {
 		    Vec<3> point;
 		    SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
@@ -1087,8 +1147,6 @@ namespace ngcomp
 	    double dx = ir.GetIP(j).Weight() * det; 
 	    
 	    elerr += dx * L2Norm2 (fluxi1);
-	    
-	    lh.CleanUp (heapp);
 	  }
 
 	diff(i) += elerr;
@@ -1184,14 +1242,14 @@ namespace ngcomp
 		    eltrans.CalcPoint(sip.IP(), point, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
 
-                    double real, imag = 0;
+		    double real, imag = 0;
 		    real = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
 		    if ( coef_imag ) imag = const_cast<CoefficientFunction*>(coef_imag)->Evaluate(sip);
-                    fluxi2(0) = Complex(real,imag);
+		    fluxi2(0) = Complex(real,imag);
 
 		    det = fabs(sip.GetJacobiDet()); 
 		  }
-	 	else
+		else
 		  {
 		    Vec<3> point;
 		    SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
@@ -1201,10 +1259,10 @@ namespace ngcomp
 		    // fluxi2(0) = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
 		    // if ( coef_imag ) fluxi2(0).imag() = const_cast<CoefficientFunction*>(coef_imag)->Evaluate(sip);
 
-                    double real, imag = 0;
+		    double real, imag = 0;
 		    real = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
 		    if ( coef_imag ) imag = const_cast<CoefficientFunction*>(coef_imag)->Evaluate(sip);
-                    fluxi2(0) = Complex(real,imag);
+		    fluxi2(0) = Complex(real,imag);
 		    det = fabs(sip.GetJacobiDet());  
 		  }
 	      }
@@ -1297,8 +1355,8 @@ namespace ngcomp
 	  case ET_TET:
 	    elhcurl = gradtet * elh1;
 	    break;
-          default:
-            throw Exception ("CalcGradient: unsupported element");
+	  default:
+	    throw Exception ("CalcGradient: unsupported element");
 	  }
 
 	feshcurl.TransformVec (i, 0, elhcurl, TRANSFORM_RHS);
@@ -1375,8 +1433,8 @@ namespace ngcomp
 	  case ET_TET:
 	    elh1 = Trans (gradtet) * elhcurl;
 	    break;
-          default:
-            throw Exception ("CalcGradientT: unsupported element");
+	  default:
+	    throw Exception ("CalcGradientT: unsupported element");
 	  }
 
 	fesh1.TransformVec (i, 0, elh1, TRANSFORM_RHS);

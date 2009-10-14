@@ -84,6 +84,13 @@ namespace ngstd
 	i[j] = value;
       return *this;
     }
+
+    INT<N> & operator= (INT<N> v2)
+    {
+      for (int j = 0; j < N; j++)
+	i[j] = v2.i[j];
+      return *this;
+    }
   };
 
   /// sort 2 integers

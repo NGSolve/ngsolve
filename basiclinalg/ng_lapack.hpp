@@ -10,6 +10,8 @@
 /****************************************************************************/
 
 
+
+
 namespace ngbla 
 {
   // Interface to lapack functions
@@ -18,10 +20,21 @@ namespace ngbla
 #ifdef LAPACK
 
   // BLAS 1
+  extern "C" {
+    typedef char logical;
+    typedef int integer;
+    typedef float real;
+    typedef double doublereal;
+    typedef Complex doublecomplex;
+    typedef complex<float> singlecomplex;
+    typedef void VOID;
+    typedef int ftnlen;
+    typedef int L_fp;  // ?
+#include "clapack.h"
+  }
 
 
-  extern "C"
-  double ddot_ (int & n, double & x, int & incx, double & y, int & incy);
+  
 
   inline double LapackDot (ngbla::FlatVector<double> x,
                            ngbla::FlatVector<double> y)
@@ -29,17 +42,18 @@ namespace ngbla
     int n = x.Size();
     int incx = 1;
     int incy = 1;
-    return ddot_ (n, x(0), incx, y(0), incy);
+    return ddot_ (&n, &x(0), &incx, &y(0), &incy);
   }
 
 
 
   // BLAS 2
 
+  /*
   extern "C" 
   void dgemv_ (char & trans, int & m, int & n, double & alpha, double & a, int & lda, double & x, int & incx,
                double & beta, double & y, int & incy);
-
+  */
 
   inline void LapackMultAx (ngbla::FlatMatrix<double> a,
                             ngbla::FlatVector<double> x,
@@ -53,7 +67,7 @@ namespace ngbla
     int incx = 1;
     double beta = 0;
     int incy = 1;
-    dgemv_ (trans, m, n, alpha, a(0,0), lda, x(0), incx, beta, y(0), incy);
+    dgemv_ (&trans, &m, &n, &alpha, &a(0,0), &lda, &x(0), &incx, &beta, &y(0), &incy);
   }
 
 
@@ -70,12 +84,14 @@ namespace ngbla
     int incx = 1;
     double beta = 0;
     int incy = 1;
-    dgemv_ (trans, m, n, alpha, a(0,0), lda, x(0), incx, beta, y(0), incy);
+    dgemv_ (&trans, &m, &n, &alpha, &a(0,0), &lda, &x(0), &incx, &beta, &y(0), &incy);
   }
 
 
+  /*
   extern "C"
   void dger_ (int & m, int & n, double & alpha, double & x, int & incx, double & y, int & incy, double & a, int & lda);
+  */
 
   inline void LapackAddxyt (ngbla::FlatMatrix<double> a,
                             double fac,
@@ -89,7 +105,7 @@ namespace ngbla
     int incx = 1;
     int incy = 1;
 
-    dger_ (m, n, alpha, y(0), incx, x(0), incy, a(0,0), lda);
+    dger_ (&m, &n, &alpha, &y(0), &incx, &x(0), &incy, &a(0,0), &lda);
   }
 
 
@@ -99,7 +115,7 @@ namespace ngbla
 
 
 
-
+  /*
   extern "C"
   void dgemm_ (char & transa, char & transb, int & m, int & n, int & k, double & alpha,
                double & a, int & lda, double & b, int & ldb, double & beta, double & c, int & ldc);
@@ -107,7 +123,7 @@ namespace ngbla
   extern "C"
   void zgemm_ (char & transa, char & transb, int & m, int & n, int & k, double & alpha,
                double & a, int & lda, double & b, int & ldb, double & beta, double & c, int & ldc);
-
+  */
 
   inline void LapackMultABt (ngbla::FlatMatrix<double> a, 
                              ngbla::FlatMatrix<double> b,
@@ -124,7 +140,7 @@ namespace ngbla
     int ldb = b.Width();
     int ldc = c.Width();
 
-    dgemm_ (transa, transb, n, m, k, alpha, b(0,0), ldb, a(0,0), lda, beta, c(0,0), ldc);
+    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
 
     /*
       cblas_dgemm (CblasColMajor, CblasTrans, CblasNoTrans, 
@@ -149,7 +165,7 @@ namespace ngbla
     int lda = a.Width();
     int ldb = b.Width();
     int ldc = c.Width();
-    dgemm_ (transa, transb, n, m, k, alpha, b(0,0), ldb, a(0,0), lda, beta, c(0,0), ldc);
+    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
 
@@ -168,7 +184,7 @@ namespace ngbla
     int ldb = b.Width();
     int ldc = c.Width();
 
-    dgemm_ (transa, transb, n, m, k, alpha, b(0,0), ldb, a(0,0), lda, beta, c(0,0), ldc);
+    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
 
@@ -187,7 +203,7 @@ namespace ngbla
     int ldb = b.Width();
     int ldc = c.Width();
 
-    dgemm_ (transa, transb, n, m, k, alpha, b(0,0), ldb, a(0,0), lda, beta, c(0,0), ldc);
+    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
 
@@ -208,16 +224,16 @@ namespace ngbla
     int m = c.Height();
     int n = c.Width();
     int k = a.Width();
-    double alpha[2] =  { 1.0, 0.0 };
-    double beta[2] = { 0.0, 0.0 };
+    Complex alpha(1,0); // double alpha[2] =  { 1.0, 0.0 };
+    Complex beta(0,0);  // double beta[2] = { 0.0, 0.0 };
     int lda = a.Width();
     int ldb = b.Width();
     int ldc = c.Width();
 
-    zgemm_ (transa, transb, n, m, k, alpha[0],  
-            *(double*)(void*)&b(0,0), ldb, 
-            *(double*)(void*)&a(0,0), lda, beta[0], 
-            *(double*)(void*)&c(0,0), ldc);
+    zgemm_ (&transa, &transb, &n, &m, &k, &alpha,  
+            &b(0,0), &ldb, 
+            &a(0,0), &lda, &beta, 
+            &c(0,0), &ldc);
 
   }
 
@@ -240,7 +256,7 @@ namespace ngbla
     int ldb = b.Width();
     int ldc = c.Width();
 
-    dgemm_ (transa, transb, n, m, k, alpha, b(0,0), ldb, a(0,0), lda, beta, c(0,0), ldc);
+    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
 
@@ -260,7 +276,7 @@ namespace ngbla
     int ldb = b.Width();
     int ldc = c.Width();
 
-    dgemm_ (transa, transb, n, m, k, alpha, b(0,0), ldb, a(0,0), lda, beta, c(0,0), ldc);
+    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
 
@@ -276,16 +292,16 @@ namespace ngbla
     int m = c.Height();
     int n = c.Width();
     int k = a.Width();
-    double alpha[2] = { fac, 0 };
-    double beta[2] = { 1.0, 0 };
+    Complex alpha(fac, 0);
+    Complex beta(1,0);
     int lda = a.Width();
     int ldb = b.Width();
     int ldc = c.Width();
 
-    zgemm_ (transa, transb, n, m, k, alpha[0], 
-            *(double*)(void*)&b(0,0), ldb, 
-            *(double*)(void*)&a(0,0), lda, beta[0], 
-            *(double*)(void*)&c(0,0), ldc);
+    zgemm_ (&transa, &transb, &n, &m, &k, &alpha, 
+            &b(0,0), &ldb, 
+            &a(0,0), &lda, &beta, 
+            &c(0,0), &ldc);
   }
 
 
@@ -301,16 +317,16 @@ namespace ngbla
     int m = c.Height();
     int n = c.Width();
     int k = a.Height();
-    double alpha[2] = { fac, 0 };
-    double beta[2] = { 1.0, 0 };
+    Complex alpha(fac, 0); // double alpha[2] = { fac, 0 };
+    Complex beta(1,0);     // double beta[2] = { 1.0, 0 };
     int lda = a.Width();
     int ldb = b.Width();
     int ldc = c.Width();
 
-    zgemm_ (transa, transb, n, m, k, alpha[0], 
-            *(double*)(void*)&b(0,0), ldb, 
-            *(double*)(void*)&a(0,0), lda, beta[0], 
-            *(double*)(void*)&c(0,0), ldc);
+    zgemm_ (&transa, &transb, &n, &m, &k, &alpha, 
+            &b(0,0), &ldb, 
+            &a(0,0), &lda, &beta, 
+            &c(0,0), &ldc);
   }
 
 
@@ -326,22 +342,22 @@ namespace ngbla
     int m = c.Height();
     int n = c.Width();
     int k = a.Width();
-    double alpha[2] = { fac, 0 };
-    double beta[2] = { 1.0, 0 };
+    Complex alpha(fac, 0); // double alpha[2] = { fac, 0 };
+    Complex beta(1,0);    // double beta[2] = { 1.0, 0 };
     int lda = a.Width();
     int ldb = b.Width();
     int ldc = c.Width();
 
-    zgemm_ (transa, transb, n, m, k, alpha[0], 
-            *(double*)(void*)&b(0,0), ldb, 
-            *(double*)(void*)&a(0,0), lda, beta[0], 
-            *(double*)(void*)&c(0,0), ldc);
+    zgemm_ (&transa, &transb, &n, &m, &k, &alpha, 
+            &b(0,0), &ldb, 
+            &a(0,0), &lda, &beta, 
+            &c(0,0), &ldc);
   }
 
 
 
 
-
+  /*
   extern "C"
   void dgetri_ (int & n, double & a, int & lda,
                 int & ipiv, double & work, int & lwork, int & info);
@@ -365,7 +381,7 @@ namespace ngbla
   void dpotrs_ (char & uplo, int & n, int & nrhs, 
                 double & a, int & lda,
                 double & b, int & ldb, int & info);
-
+  */
 
 
 
@@ -379,8 +395,8 @@ namespace ngbla
     double * work = new double[lwork];
     int info;
 
-    dgetrf_ (n, m, a(0,0), lda, *ipiv, info);
-    dgetri_ (n, a(0,0), lda, *ipiv, *work, lwork, info);
+    dgetrf_ (&n, &m, &a(0,0), &lda, ipiv, &info);
+    dgetri_ (&n, &a(0,0), &lda, ipiv, work, &lwork, &info);
 
     delete [] work;
     delete [] ipiv;
@@ -403,8 +419,8 @@ namespace ngbla
     int info;
     // char uplo = 'L';
 
-    dgetrf_ (n, m, a(0,0), lda, *ipiv, info);
-    dgetrs_ (trans, n, nrhs, a(0,0), lda, *ipiv, b(0,0), ldb, info);
+    dgetrf_ (&n, &m, &a(0,0), &lda, ipiv, &info);
+    dgetrs_ (&trans, &n, &nrhs, &a(0,0), &lda, ipiv, &b(0,0), &ldb, &info);
 
     /*
       dpotrf_ (uplo, n, a(0,0), lda, info);
@@ -417,7 +433,7 @@ namespace ngbla
 
 
 
-
+  /*
   extern "C"
   void zgetri_ (int & n, double & a, int & lda,
                 int & ipiv, double & work, int & lwork, int & info);
@@ -431,6 +447,8 @@ namespace ngbla
                 int & ipiv, 
                 double & b, int & ldb, 
                 int & info);
+  */
+
 
   inline void LapackInverse (ngbla::FlatMatrix<ngbla::Complex> a)
   {
@@ -439,16 +457,16 @@ namespace ngbla
     int lda = a.Width();
     int * ipiv = new int[n];
     int lwork = 100*n;
-    double * work = new double[2*lwork];
+    Complex * work = new Complex[lwork];
     int info;
   
     // std::cout << "a = " << std::endl << a << std::endl;
-    zgetrf_ (n, m, *(double*)(void*)&a(0,0), lda, *ipiv, info);
+    zgetrf_ (&n, &m, &a(0,0), &lda, ipiv, &info);
     // std::cout << "factors = " << std::endl << a << std::endl;
 
     if (info != 0)
       std::cout << "ZGETRF::info = " << info << std::endl;
-    zgetri_ (n,  *(double*)(void*)&a(0,0), lda, *ipiv, *work, lwork, info);
+    zgetri_ (&n,  &a(0,0), &lda, ipiv, work, &lwork, &info);
     if (info != 0)
       std::cout << "ZGETRI::info = " << info << std::endl;
   
@@ -477,8 +495,8 @@ namespace ngbla
     int info;
   
 
-    zgetrf_ (n, m,*(double*)(void*)&a(0,0), lda, *ipiv, info);
-    zgetrs_ (trans, n, nrhs, *(double*)(void*)&a(0,0), lda, *ipiv, *(double*)(void*)&b(0,0), ldb, info);
+    zgetrf_ (&n, &m,&a(0,0), &lda, ipiv, &info);
+    zgetrs_ (&trans, &n, &nrhs, &a(0,0), &lda, ipiv, &b(0,0), &ldb, &info);
 
     delete [] work;
     delete [] ipiv;
@@ -486,7 +504,7 @@ namespace ngbla
   }
 
 
-
+  /*
   extern "C"
   void dsyev_(char & jobz, char & uplo, int & n , double & A , int & lda, double & w,
               double & work, int & lwork, int & info); 
@@ -495,22 +513,23 @@ namespace ngbla
   void zgeev_( char *jobvl, char *jobvr, int *n, std::complex<double> *A, int * lda, std::complex<double>* lami, 
                std::complex<double> * vl, int * nvl, std::complex<double> * vr, int * nvr, 
                std::complex<double> * work, int * lwork, double * rwork, int * info);
+  */
 
-  extern "C"
-  void dgeev_( char *jobvl, char *jobvr, int *n, double *A, int * lda, double* lami_re, double *lami_im, 
-               double * vl, int * nvl, double * vr, int * nvr, 
-               double * work, int * lwork, double * rwork, int * info);
+  //  extern "C"
+  // void dgeev_( char *jobvl, char *jobvr, int *n, double *A, int * lda, double* lami_re, double *lami_im, 
+  // double * vl, int * nvl, double * vr, int * nvr, 
+  // double * work, int * lwork,  /* double * rwork, */ int * info);
+
 
 
   inline void LapackEigenValuesSymmetric (ngbla::FlatMatrix<double> a,
                                           ngbla::FlatVector<double> lami,
                                           ngbla::FlatMatrix<double> evecs = ngbla::FlatMatrix<double>(0,0)){
-    char jobz = 'N' , uplo = 'U'; 
+    char jobz, uplo = 'U'; 
     int n = a.Height();
     int lwork=(n+2)*n+1;
  
     double* work = new double[lwork];
-  
     int info; 
  
     double * matA;
@@ -528,7 +547,7 @@ namespace ngbla
         jobz = 'N';
         matA = &a(0,0);
       }
-    dsyev_(jobz, uplo , n , *matA, n, lami(0), *work, lwork, info); 
+    dsyev_(&jobz, &uplo , &n , matA, &n, &lami(0), work, &lwork, &info); 
 
     if (info)
       std::cerr << "LapackEigenValuesSymmetric, info = " << info << std::endl;
@@ -567,7 +586,7 @@ namespace ngbla
         vr =  new double [nvr*n];
       }
 
-    dgeev_(&jobvl, &jobvr, &n, (double*)(void*)&a(0,0), &n, lami_re, lami_im, vl, &nvl, vr, &nvr, work, &lwork, rwork, &info);
+    dgeev_(&jobvl, &jobvr, &n, &a(0,0), &n, lami_re, lami_im, vl, &nvl, vr, &nvr, work, &lwork, /* rwork, */ &info);
   
     if(info != 0) 	
       {
@@ -576,11 +595,7 @@ namespace ngbla
       }
     
     for ( int i = 0; i < lami.Size(); i++ )
-      {
-        lami(i) = ngbla::Complex (lami_re[i], lami_im[i]);
-        // real(lami(i)) = lami_re[i];
-        // imag(lami(i)) = lami_im[i];
-      }
+      lami(i) = ngbla::Complex (lami_re[i], lami_im[i]);
 
     delete[] work; 
     delete[] rwork;
@@ -649,9 +664,10 @@ namespace ngbla
 
 
   // Solve complex generalized eigenvalue problem (QZ) 
+  /*
   extern "C"
   void zggev_(char *jobvl,char* jobvr,int* N,std::complex<double>* A, int* lda,std::complex<double>* B, int* ldb, std::complex<double>* alpha, std::complex<double>* beta, std::complex<double>* vl, int* ldvl, std::complex<double>* vr, int* ldvr, std::complex<double>* work, int* lwork, double* rwork, int* info); 
-
+  */
 
 
   // Attention A,B are overwritten !!! 
@@ -785,28 +801,36 @@ namespace ngbla
 
 
 
-
+  /*
   extern "C"
   void dsygv_(int & itype, char & jobzm, char & uplo , int & n1, double & A , int & n, 
               double & B, int  & nb, double & lami, double & work, int & lwork, int & info); 
+  */
 
   inline void LapackEigenValuesSymmetric (ngbla::FlatMatrix<double> a,
                                           ngbla::FlatMatrix<double> b,
-                                          ngbla::FlatVector<double> lami)
+                                          ngbla::FlatVector<double> lami,
+                                          ngbla::FlatMatrix<double> evecs = ngbla::FlatMatrix<double>(0,0))
   {
     char jobz = 'N' , uplo = 'U'; 
-  
     int n = a.Height();
 
     int lwork=(n+2)*n+1;
- 
     double* work = new double[lwork];
   
     int info; 
     int itype =1; 
 
-    dsygv_(itype, jobz, uplo , n , a(0,0), n, b(0,0), n, 
-           lami(0), *work, lwork, info); 
+    if ( evecs.Height() )
+      jobz = 'V';
+    else
+      jobz = 'N';
+
+    dsygv_(&itype, &jobz, &uplo , &n , &a(0,0), &n, &b(0,0), &n, 
+           &lami(0), work, &lwork, &info); 
+
+    if ( evecs.Height() )
+      evecs = a;
 
     if (info)
       std::cerr << "LapackEigenValuesSymmetric, info = " << info << std::endl;

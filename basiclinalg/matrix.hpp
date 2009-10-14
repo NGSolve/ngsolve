@@ -180,21 +180,19 @@ namespace ngbla
     /// the width
     int Width () const throw() { return w; }
 
-    /*
-      FlatVector<T> Row (int i)
-      {
-      return FlatVector<T> (w, &data[i*w]);
-      }
-    */
-
     const FlatVector<T> Row (int i) const
     {
       return FlatVector<T> (w, &data[i*w]);
     }
 
-    const SliceVector<T> Col (int i)
+    const SliceVector<T> Col (int i) const
     {
       return SliceVector<T> (h, w, &data[i]);
+    }
+
+    const SliceVector<T> Diag () const
+    {
+      return SliceVector<T> (h, w+1, &data[0]);
     }
 
     const FlatMatrix VRange (int first, int next) const
