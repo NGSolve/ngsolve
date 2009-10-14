@@ -136,7 +136,6 @@ namespace ngcomp
 
 #pragma omp parallel
 	    {
-
 	      LocalHeap lh = clh.Split();
 	      
 	      Array<int> dnums;
@@ -157,7 +156,6 @@ namespace ngcomp
 		  }
 		  
 		  HeapReset hr(lh);
-
 		  if ( ma.IsGhostEl( i ) ) continue;
 
 		  const FiniteElement & fel = fespace.GetFE (i, lh);
@@ -224,7 +222,7 @@ namespace ngcomp
 		  }
 		  if ( ma.IsGhostSEl ( i ) ) continue;
 
-		  lh.CleanUp();
+		  HeapReset hr(lh);
 	      
 		  const FiniteElement & fel = fespace.GetSFE (i, lh);
 	      
