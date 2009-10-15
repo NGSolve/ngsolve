@@ -441,10 +441,7 @@ namespace ngsolve
   
 
 
-  namespace
-#ifdef MACOS
-  bvp_cpp
-#endif
+  namespace bvpparallel_cpp
   {
     class Init
     { 

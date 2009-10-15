@@ -4768,10 +4768,7 @@ namespace ngcomp
 
 
   // register FESpaces
-  namespace
-#ifdef MACOS
-  hcurlhdives_cpp
-#endif
+  namespace hcurlhdives_cpp
   {
     class Init
     { 
