@@ -977,10 +977,7 @@ Flags visflags;
   
 
 
-  namespace
-#ifdef MACOS
-  numprocee_cpp
-#endif
+  namespace numprocee_cpp
   {
     class Init
     { 

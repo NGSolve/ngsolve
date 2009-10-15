@@ -2904,10 +2904,7 @@ namespace ngsolve
 
 
 
-  namespace
-#ifdef MACOS
-  numproc_cpp
-#endif
+  namespace numproc_cpp
  {
 
 

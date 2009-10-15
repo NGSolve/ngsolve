@@ -5,10 +5,6 @@
 /* *************************************************************************/
 
 #include <la.hpp>
-//#ifndef MACOS
-//#include <emmintrin.h>
-//#endif
-
 
 namespace ngla
 {

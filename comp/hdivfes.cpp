@@ -226,10 +226,7 @@ namespace ngcomp
 
   
   // register FESpaces
-  namespace
-#ifdef MACOS
-  hdivfes_cpp
-#endif
+  namespace hdivfes_cpp
   {
     class Init
     { 

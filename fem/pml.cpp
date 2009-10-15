@@ -1079,10 +1079,7 @@ public:
 
 
 
-  namespace 
-#ifdef MACOS
-  pml_cpp
-#endif 
+  namespace pml_cpp
  {
     class Init
     { 

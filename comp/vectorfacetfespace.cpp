@@ -873,10 +873,7 @@ namespace ngcomp
 #endif
 
   // register FESpaces
-  namespace
-#ifdef MACOS
-  vectorfacetfespace_cpp
-#endif
+  namespace vectorfacetfespace_cpp
   {
     class Init
     { 
