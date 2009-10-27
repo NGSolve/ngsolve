@@ -35,6 +35,7 @@ namespace netgen
       "VRML Format", ".*",
       "Gmsh Format", ".gmsh",
       "Gmsh2 Format", ".gmsh2",
+      "OpenFOAM 1.5+ Format", "*",
       "JCMwave Format", ".jcm",
       "TET Format", ".tet",
       //      { "Chemnitz Format" },
@@ -108,9 +109,14 @@ bool WriteUserFormat (const string & format,
     WriteGmshFormat (mesh, geom, filename);
 
   // Philippose - 29/01/2009
-  // Added Gmsh v2.xx export capability
+  // Added Gmsh v2.xx Mesh export capability
   else if (format == "Gmsh2 Format")
     WriteGmsh2Format (mesh, geom, filename);
+
+  // Philippose - 25/10/2009
+  // Added OpenFOAM 1.5+ Mesh export capability
+  else if (format == "OpenFOAM 1.5+ Format")
+    WriteOpenFOAM15xFormat (mesh, filename);
 
   else if (format == "JCMwave Format")
     WriteJCMFormat (mesh, geom, filename);

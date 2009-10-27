@@ -144,7 +144,8 @@ loadinifile;
 	    Ng_SetVisParameters
 	    redraw
 	    Ng_ReadStatus; 
-#	    Ng_MeshSizeFromSurfaceMesh 
+#	    Ng_MeshSizeFromSurfaceMesh
+	    wm title . [concat "$progname - " $file] 
 	    set dirname [file dirname $file]
 	    set basefilename [file tail [file rootname $file]]
 	}
@@ -243,8 +244,8 @@ loadmeshinifile;
 	    }
 	}
 
-	if { $exportfiletype == "Elmer Format" } {
-	    set file [tk_chooseDirectory]
+	if { $exportfiletype == "Elmer Format" || $exportfiletype == "OpenFOAM 1.5+ Format"} {
+	    set file [file nativename [tk_chooseDirectory]]
         } else {
 #	    set file [tk_getSaveFile  -filetypes "{ \"$exportfiletype\" {$extension} }" ]
 	    set file [tk_getSaveFile  -filetypes "{ \"$exportfiletype\" {*}}" ]
@@ -866,7 +867,12 @@ button .bubar.surfm -text "Generate Mesh" -command \
 button .bubar.stopm -text "Stop" -command \
     { Ng_StopMeshing;  set stopdemo 1 }
 button .bubar.exitb -text "Quit" \
-    -command { .ngmenu.file invoke "Quit" }
+    -command { 
+	   set ans [tk_messageBox -title "Quit Netgen?" -message "Do you really want to quit Netgen?" -type yesno -default "no" -icon question]
+	   if { $ans == "yes" } {
+	     .ngmenu.file invoke "Quit"; 
+	   }	 
+	}
 pack  .bubar.exitb .bubar.surfm .bubar.stopm -side left
 
 #button .bubar.scan -text "Scan" \
