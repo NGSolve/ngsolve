@@ -991,7 +991,7 @@ namespace netgen
 
 	      int npi = mesh.AddPoint (center);
 
-	      const ELEMENT_FACE * faces = MeshTopology::GetFaces (HEX);
+	      const ELEMENT_FACE * faces = MeshTopology::GetFaces1 (HEX);
 
 	      for (int j = 0; j < 6; j++)  
 		{
@@ -1448,7 +1448,7 @@ namespace netgen
 	  { 
 	    Element el = mesh[i] ;
 	    HPRefElement & hpel = hpelements[mesh[i].hp_elnr];
-	    const ELEMENT_EDGE * edges = MeshTopology::GetEdges (mesh[i].GetType());
+	    const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (mesh[i].GetType());
 	    double dist[3] = {0,0,0}; 
 	    int ord_dir[3] = {0,0,0}; 
 	    int edge_dir[12] = {0,0,0,0,0,0,0,0,0,0,0,0}; 
@@ -1520,7 +1520,7 @@ namespace netgen
 	  { 
 	    Element2d el = mesh[i] ;
 	    HPRefElement & hpel = hpelements[mesh[i].hp_elnr];
-	    const ELEMENT_EDGE * edges = MeshTopology::GetEdges (mesh[i].GetType());
+	    const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (mesh[i].GetType());
 	    double dist[3] = {0,0,0}; 
 	    int ord_dir[3] = {0,0,0}; 
 	    int  edge_dir[4] = {0,0,0,0} ; 
@@ -1637,7 +1637,7 @@ bool CheckSingularities(Mesh & mesh, INDEX_2_HASHTABLE<int> & edges, INDEX_2_HAS
 	for (int i = 1; i <= mesh.GetNE(); i++)
 	  {
 	    const Element & el = mesh.VolumeElement(i);
-	    const ELEMENT_EDGE * eledges = MeshTopology::GetEdges (el.GetType());
+	    const ELEMENT_EDGE * eledges = MeshTopology::GetEdges1 (el.GetType());
 	    int nedges = MeshTopology::GetNEdges (el.GetType());
 	    for (int j = 0; j < nedges; j++)
 	      for (int k = 0; k < nedges; k++)

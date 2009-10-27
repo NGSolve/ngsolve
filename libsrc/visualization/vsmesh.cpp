@@ -1880,7 +1880,7 @@ namespace netgen
 
 	    if (curv.IsHighOrder()) //  && curv.IsElementCurved(ei))
 	      {
-		const ELEMENT_FACE * faces = MeshTopology :: GetFaces (TET);
+		const ELEMENT_FACE * faces = MeshTopology :: GetFaces1 (TET);
 		const Point3d * vertices = MeshTopology :: GetVertices (TET);
 
 		/*
@@ -2084,7 +2084,7 @@ namespace netgen
 	    CurvedElements & curv = mesh->GetCurvedElements();
 	    if (curv.IsHighOrder()) //  && curv.IsElementCurved(ei))
 	      {
-		const ELEMENT_FACE * faces = MeshTopology :: GetFaces (PRISM);
+		const ELEMENT_FACE * faces = MeshTopology :: GetFaces1 (PRISM);
 		const Point3d * vertices = MeshTopology :: GetVertices (PRISM);
 
 		Point<3> grid[11][11];
@@ -2469,7 +2469,7 @@ namespace netgen
 		   glEnd ();
 		*/
 
-		const ELEMENT_FACE * faces = MeshTopology :: GetFaces (HEX);
+		const ELEMENT_FACE * faces = MeshTopology :: GetFaces1 (HEX);
 		const Point3d * vertices = MeshTopology :: GetVertices (HEX);
 
 		Point<3> grid[11][11];
@@ -2618,7 +2618,7 @@ namespace netgen
 	    if (curv.IsHighOrder()) //  && curv.IsElementCurved(ei))
 	      {
 
-		const ELEMENT_FACE * faces = MeshTopology :: GetFaces (PYRAMID);
+		const ELEMENT_FACE * faces = MeshTopology :: GetFaces1 (PYRAMID);
 		const Point3d * vertices = MeshTopology :: GetVertices (PYRAMID);
 
 		Point<3> grid[11][11];

@@ -717,6 +717,27 @@ public:
   }
 };
 
+
+
+template <typename T> 
+inline ostream & operator<< (ostream & ost, const INDEX_2_CLOSED_HASHTABLE<T> & ht)
+{
+  for (int i = 0; i < ht.Size(); i++)
+    if (ht.UsedPos(i))
+      {
+	INDEX_2 hash;
+	T data;
+	ht.GetData (i, hash, data);
+	ost << "hash = " << hash << ", data = " << data << endl;
+      }
+  return ost;
+}
+
+
+
+
+
+
 class BASE_INDEX_3_CLOSED_HASHTABLE
 {
 protected:
@@ -724,7 +745,6 @@ protected:
   int invalid;
 
 protected: 
-  // public:    //SZ
   BASE_INDEX_3_CLOSED_HASHTABLE (int size)
     : hash(size)
   {
@@ -895,6 +915,20 @@ public:
 };
 
 
+
+template <typename T> 
+inline ostream & operator<< (ostream & ost, const INDEX_3_CLOSED_HASHTABLE<T> & ht)
+{
+  for (int i = 0; i < ht.Size(); i++)
+    if (ht.UsedPos(i))
+      {
+	INDEX_3 hash;
+	T data;
+	ht.GetData (i, hash, data);
+	ost << "hash = " << hash << ", data = " << data << endl;
+      }
+  return ost;
+}
 
 
 

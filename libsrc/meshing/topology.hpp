@@ -62,8 +62,10 @@ public:
   static inline int GetNFaces (ELEMENT_TYPE et);
 
   static const Point3d * GetVertices (ELEMENT_TYPE et);
-  inline static const ELEMENT_EDGE * GetEdges (ELEMENT_TYPE et);
-  inline static const ELEMENT_FACE * GetFaces (ELEMENT_TYPE et);
+  inline static const ELEMENT_EDGE * GetEdges1 (ELEMENT_TYPE et);
+  inline static const ELEMENT_EDGE * GetEdges0 (ELEMENT_TYPE et);
+  inline static const ELEMENT_FACE * GetFaces1 (ELEMENT_TYPE et);
+  inline static const ELEMENT_FACE * GetFaces0 (ELEMENT_TYPE et);
 
   
   int GetSegmentEdge (int segnr) const { return abs(segedges[segnr-1]); }
@@ -295,7 +297,7 @@ int MeshTopology :: GetNFaces (ELEMENT_TYPE et)
 
 
 
-const ELEMENT_EDGE * MeshTopology :: GetEdges (ELEMENT_TYPE et)
+const ELEMENT_EDGE * MeshTopology :: GetEdges1 (ELEMENT_TYPE et)
 {
   static int segm_edges[1][2] =
     { { 1, 2 }};
@@ -392,7 +394,113 @@ const ELEMENT_EDGE * MeshTopology :: GetEdges (ELEMENT_TYPE et)
 }
 
 
-const ELEMENT_FACE * MeshTopology :: GetFaces (ELEMENT_TYPE et)
+
+const ELEMENT_EDGE * MeshTopology :: GetEdges0 (ELEMENT_TYPE et)
+{
+  static int segm_edges[1][2] =
+    { { 0, 1 }};
+
+  static int trig_edges[3][2] =
+    { { 2, 0 },
+      { 1, 2 },        
+      { 0, 1 }};
+
+  static int quad_edges[4][2] =
+    { { 0, 1 },
+      { 2, 3 },
+      { 3, 0 },
+      { 1, 2 }};
+
+
+  static int tet_edges[6][2] =
+    { { 3, 0 },
+      { 3, 1 },
+      { 3, 2 }, 
+      { 0, 1 },
+      { 0, 2 },
+      { 1, 2 }};
+
+  static int prism_edges[9][2] =
+    { { 2, 0 },
+      { 0, 1 },
+      { 2, 1 },
+      { 5, 3 },
+      { 3, 4 },
+      { 5, 4 },
+      { 2, 5 },
+      { 0, 3 },
+      { 1, 4 }};
+
+  static int pyramid_edges[8][2] =
+    { { 0, 1 },
+      { 1, 2 },
+      { 0, 3 },
+      { 3, 2 },
+      { 0, 4 },
+      { 1, 4 },
+      { 2, 4 },
+      { 3, 4 }};
+
+  static int hex_edges[12][2] =
+    {
+      { 0, 1 },
+      { 2, 3 },
+      { 3, 0 },
+      { 1, 2 },
+      { 4, 5 },
+      { 6, 7 },
+      { 7, 4 },
+      { 5, 6 },
+      { 0, 4 },
+      { 1, 5 },
+      { 2, 6 },
+      { 3, 7 },
+    };
+
+  switch (et)
+    {
+    case SEGMENT:
+    case SEGMENT3:
+      return segm_edges;
+
+    case TRIG:
+    case TRIG6:
+      return trig_edges;
+
+    case QUAD:
+    case QUAD6:
+    case QUAD8:
+      return quad_edges;
+
+    case TET:
+    case TET10:
+      return tet_edges;
+
+    case PYRAMID:
+      return pyramid_edges;
+
+    case PRISM:
+    case PRISM12:
+      return prism_edges;
+
+    case HEX:
+      return hex_edges;
+    default:
+      cerr << "Ng_ME_GetEdges, illegal element type " << et << endl;
+    }
+   return 0;  
+}
+
+
+
+
+
+
+
+
+
+
+const ELEMENT_FACE * MeshTopology :: GetFaces1 (ELEMENT_TYPE et)
 {
   static const int trig_faces[1][4] = 
     { { 1, 2, 3, 0 } };
@@ -469,6 +577,89 @@ const ELEMENT_FACE * MeshTopology :: GetFaces (ELEMENT_TYPE et)
     }
   return 0;
 }
+
+
+
+
+
+const ELEMENT_FACE * MeshTopology :: GetFaces0 (ELEMENT_TYPE et)
+{
+  static const int trig_faces[1][4] = 
+    { { 0, 1, 2, -1 } };
+  static const int quad_faces[1][4] = 
+    { { 0, 1, 2, 3 } };
+
+  static const int tet_faces[4][4] =
+    { { 3, 1, 2, -1 },
+      { 3, 2, 0, -1 },
+      { 3, 0, 1, -1 },
+      { 0, 2, 1, -1 } };
+  
+  static const int prism_faces[5][4] =
+    {
+      { 0, 2, 1, -1 },
+      { 3, 4, 5, -1 },
+      { 2, 0, 3, 5 },
+      { 0, 1, 4, 3 },
+      { 1, 2, 5, 4 } 
+    };
+
+  static const int pyramid_faces[5][4] =
+    {
+      { 0, 1, 4, -1 },
+      { 1, 2, 4, -1 },
+      { 2, 3, 4, -1 },
+      { 3, 0, 4, -1 },
+      { 0, 3, 2, 1 } 
+    };
+
+  static const int hex_faces[6][4] =
+    {
+      { 0, 3, 2, 1 },
+      { 4, 5, 6, 7 },
+      { 0, 1, 5, 4 },
+      { 1, 2, 6, 5 },
+      { 2, 3, 7, 6 },
+      { 3, 0, 4, 7 }
+    };
+
+
+  
+  switch (et)
+    {
+    case TRIG:
+    case TRIG6:
+      return trig_faces;
+
+    case QUAD:
+    case QUAD6:
+    case QUAD8:
+      return quad_faces;
+
+
+    case TET:
+    case TET10:
+      return tet_faces;
+
+    case PRISM:
+    case PRISM12:
+      return prism_faces;
+
+    case PYRAMID:
+      return pyramid_faces;
+
+    case SEGMENT:
+    case SEGMENT3:
+
+    case HEX:
+      return hex_faces;
+
+    default:
+      cerr << "Ng_ME_GetVertices, illegal element type " << et << endl;
+    }
+  return 0;
+}
+
 
 
 

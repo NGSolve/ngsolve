@@ -545,7 +545,7 @@ namespace netgen
           top.GetSurfaceElementEdges (i+1, edgenrs);
           for (int j = 0; j < edgenrs.Size(); j++)
             edgenrs[j]--;
-          const ELEMENT_EDGE * edges = MeshTopology::GetEdges (el.GetType());
+          const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (el.GetType());
 
           for (int i2 = 0; i2 < edgenrs.Size(); i2++)
             {
@@ -1371,7 +1371,7 @@ namespace netgen
         for (int j = 0; j < 3; j++)
           shapes(j) = lami[j] * lami[j];
 
-        const ELEMENT_EDGE * edges = MeshTopology::GetEdges (TRIG);
+        const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TRIG);
         for (int j = 0; j < 3; j++)
           {
             double wi = edgeweight[info.edgenrs[j]];
@@ -1394,7 +1394,7 @@ namespace netgen
 	  if (info.order == 1) return;
 
 	  int ii = 3;
-	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges (TRIG);
+	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TRIG);
 	  
 	  for (int i = 0; i < 3; i++)
 	    {
@@ -1465,7 +1465,7 @@ namespace netgen
 	  };
 	    
 	  int ii = 4;
-	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges (QUAD);
+	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (QUAD);
 	  
 	  for (int i = 0; i < 4; i++)
 	    {
@@ -1525,7 +1525,7 @@ namespace netgen
             dshapes(j,1) = 2 * lami[j] * dlami[j][1];
           }
 
-        const ELEMENT_EDGE * edges = MeshTopology::GetEdges (TRIG);
+        const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TRIG);
         for (int j = 0; j < 3; j++)
           {
             double wi = edgeweight[info.edgenrs[j]];
@@ -1573,7 +1573,7 @@ namespace netgen
 	  lami[2] = 1-xi(0)-xi(1);
 
 	  int ii = 3;
-	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges (TRIG);
+	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TRIG);
 	  
 	  for (int i = 0; i < 3; i++)
 	    {
@@ -1707,7 +1707,7 @@ namespace netgen
           ArrayMem<double, 20> hshapes(order+1), hdshapes(order+1);
 
 	  int ii = 4;
-	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges (QUAD);
+	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (QUAD);
 	  
 	  for (int i = 0; i < 4; i++)
 	    {
@@ -1987,7 +1987,7 @@ namespace netgen
         for (int j = 0; j < 4; j++)
           shapes(j) = lami[j] * lami[j];
 
-        const ELEMENT_EDGE * edges = MeshTopology::GetEdges (TET);
+        const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TET);
         for (int j = 0; j < 6; j++)
           {
             double wi = edgeweight[info.edgenrs[j]];
@@ -2013,7 +2013,7 @@ namespace netgen
 	  if (info.order == 1) return;
 
 	  int ii = 4;
-	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges (TET);
+	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TET);
 	  for (int i = 0; i < 6; i++)
 	    {
 	      int eorder = edgeorder[info.edgenrs[i]];
@@ -2026,7 +2026,7 @@ namespace netgen
 		  ii += eorder-1;
 		}
 	    }
-	  const ELEMENT_FACE * faces = MeshTopology::GetFaces (TET);
+	  const ELEMENT_FACE * faces = MeshTopology::GetFaces1 (TET);
 	  for (int i = 0; i < 4; i++)
 	    {
 	      int forder = faceorder[info.facenrs[i]];
@@ -2091,7 +2091,7 @@ namespace netgen
 
 
 	  int ii = 6;
- 	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges (PRISM);
+ 	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (PRISM);
 	  for (int i = 0; i < 6; i++)    // horizontal edges
 	    {
 	      int eorder = edgeorder[info.edgenrs[i]];
@@ -2131,7 +2131,7 @@ namespace netgen
 	    }
 
 	  // FACE SHAPES
-	  const ELEMENT_FACE * faces = MeshTopology::GetFaces (PRISM);
+	  const ELEMENT_FACE * faces = MeshTopology::GetFaces1 (PRISM);
 	  for (int i = 0; i < 2; i++)
 	    {
 	      int forder = faceorder[info.facenrs[i]];
@@ -2170,7 +2170,7 @@ namespace netgen
           if (info.order == 1) return;
 
 	  int ii = 5;
-	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges (PYRAMID);
+	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (PYRAMID);
 	  for (int i = 0; i < 4; i++)    // horizontal edges
 	    {
 	      int eorder = edgeorder[info.edgenrs[i]];
@@ -2245,7 +2245,7 @@ namespace netgen
             dshapes(j,2) = 2 * lami[j] * dlami[j][2];
           }
 
-        const ELEMENT_EDGE * edges = MeshTopology::GetEdges (TET);
+        const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TET);
         for (int j = 0; j < 6; j++)
           {
             double wi = edgeweight[info.edgenrs[j]];
@@ -2283,7 +2283,7 @@ namespace netgen
 
 	  double lami[] = { xi(0), xi(1), xi(2), 1-xi(0)-xi(1)-xi(2) };
 	  int ii = 4;
-	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges (TET);
+	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TET);
 	  for (int i = 0; i < 6; i++)
 	    {
 	      int eorder = edgeorder[info.edgenrs[i]];
@@ -2314,7 +2314,7 @@ namespace netgen
 		}
 	    }
 
-	  const ELEMENT_FACE * faces = MeshTopology::GetFaces (TET);
+	  const ELEMENT_FACE * faces = MeshTopology::GetFaces1 (TET);
 	  for (int i = 0; i < 4; i++)
 	    {
 	      int forder = faceorder[info.facenrs[i]];
@@ -2428,7 +2428,7 @@ namespace netgen
 	  if (info.order == 1) return;
 
 
-	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges (PRISM);
+	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (PRISM);
 	  for (int i = 0; i < 6; i++)    // horizontal edges
 	    {
 	      int order = edgeorder[info.edgenrs[i]];
@@ -2502,7 +2502,7 @@ namespace netgen
 
 	  if (info.order == 2) return;
 	  // FACE SHAPES
-	  const ELEMENT_FACE * faces = MeshTopology::GetFaces (PRISM);
+	  const ELEMENT_FACE * faces = MeshTopology::GetFaces1 (PRISM);
 	  for (int i = 0; i < 2; i++)
 	    {
 	      int forder = faceorder[info.facenrs[i]];

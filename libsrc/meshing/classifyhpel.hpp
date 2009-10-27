@@ -455,7 +455,7 @@ HPREF_ELEMENT_TYPE ClassifyPrism(HPRefElement & el, INDEX_2_HASHTABLE<int> & edg
 	    point_sing[p[j]-1] = 1;  
 	}
       
-      const ELEMENT_EDGE * eledges = MeshTopology::GetEdges (PRISM);
+      const ELEMENT_EDGE * eledges = MeshTopology::GetEdges1 (PRISM);
       for(int k=0;k<9;k++)
 	{
 	  INDEX_2 i2 = INDEX_2 :: Sort(el.PNum(p[eledges[k][0]-1]),el.PNum(p[eledges[k][1]-1])); 
@@ -463,7 +463,7 @@ HPREF_ELEMENT_TYPE ClassifyPrism(HPRefElement & el, INDEX_2_HASHTABLE<int> & edg
 	  else edge_sing[k] = face_edges.Used(i2);
 	}
       
-      const ELEMENT_FACE * elfaces  = MeshTopology::GetFaces (PRISM);
+      const ELEMENT_FACE * elfaces  = MeshTopology::GetFaces1 (PRISM);
       for (int k=0;k<5;k++)
 	{
 	  INDEX_3 i3; 
@@ -710,7 +710,7 @@ HPREF_ELEMENT_TYPE ClassifyTrig(HPRefElement & el, INDEX_2_HASHTABLE<int> & edge
             *testout << endl; */
 	}
       
-      const ELEMENT_EDGE * eledges = MeshTopology::GetEdges(TRIG); 
+      const ELEMENT_EDGE * eledges = MeshTopology::GetEdges1(TRIG); 
       
       if(dim==3)
 	{
@@ -1499,8 +1499,8 @@ HPREF_ELEMENT_TYPE ClassifyHex(HPRefElement & el, INDEX_2_HASHTABLE<int> & edges
   // indices of bot,top-faces combinations
   int index[6][2] = {{0,1},{1,0},{2,4},{4,2},{3,5},{5,3}}; 
   int p[8]; 
-  const ELEMENT_FACE * elfaces  = MeshTopology::GetFaces (HEX);
-  const ELEMENT_EDGE * eledges = MeshTopology::GetEdges (HEX);
+  const ELEMENT_FACE * elfaces  = MeshTopology::GetFaces1 (HEX);
+  const ELEMENT_EDGE * eledges = MeshTopology::GetEdges1 (HEX);
   
   for(int m=0;m<6 && type == HP_NONE;m++) 
     for(int j=0;j<4 && type == HP_NONE;j++) 
@@ -1643,8 +1643,8 @@ HPREF_ELEMENT_TYPE ClassifyPyramid(HPRefElement & el, INDEX_2_HASHTABLE<int> & e
   // indices of bot,top-faces combinations
   // int index[6][2] = {{0,1},{1,0},{2,4},{4,2},{3,5},{5,3}}; 
 
-  const ELEMENT_FACE * elfaces  = MeshTopology::GetFaces (PYRAMID);
-  const ELEMENT_EDGE * eledges = MeshTopology::GetEdges (PYRAMID);
+  const ELEMENT_FACE * elfaces  = MeshTopology::GetFaces1 (PYRAMID);
+  const ELEMENT_EDGE * eledges = MeshTopology::GetEdges1 (PYRAMID);
   
   int point_sing[5]={0,0,0,0,0}; 
   int face_sing[5] = {0,0,0,0,0};

@@ -2643,6 +2643,10 @@ namespace netgen
     PrintMessage(1,"Mesh bisection");
     PushStatus("Mesh bisection");
 
+    static int timer = NgProfiler::CreateTimer ("Bisect");
+    NgProfiler::RegionTimer reg1 (timer);
+    
+    
 
     static int localizetimer = NgProfiler::CreateTimer("localize edgepoints");
     NgProfiler::RegionTimer * loct = new NgProfiler::RegionTimer(localizetimer);   
@@ -3524,6 +3528,7 @@ namespace netgen
 	  }
 	while (hangingvol || hangingsurf || hangingedge);
         
+	/*
         if (printmessage_importance>0)
 	  {
 	    ostringstream strstr;
@@ -3536,8 +3541,16 @@ namespace netgen
 	      }
 	    strstr << mesh.GetNP() << " points";
 	    PrintMessage(4,strstr.str());
-	    
 	  }
+	*/
+	PrintMessage (4, mtets.Size(), " tets");
+	PrintMessage (4, mtris.Size(), " trigs");
+	if (mprisms.Size())
+	  {
+	    PrintMessage (4, mprisms.Size(), " prisms");
+	    PrintMessage (4, mquads.Size(), " quads");
+	  }
+	PrintMessage (4, mesh.GetNP(), " points");
       }
 
 
@@ -3858,9 +3871,6 @@ namespace netgen
 
 
     // Check/Repair
-
-	//cout << "Hallo Welt" << endl;
-	//getchar();
 
     static bool repaired_once;
     if(mesh.mglevels == 1)
