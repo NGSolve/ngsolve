@@ -141,9 +141,14 @@ namespace netgen
     Currently, the layer height is calculated using:
     height = h_first_layer * (growth_factor^(num_layers - 1))
 */
-   void GenerateBoundaryLayer (Mesh & mesh)
+   void GenerateBoundaryLayer (Mesh & mesh, MeshingParameters & mp)
    {
       int i, j;
+
+      // Angle between a surface element and a growth-vector below which 
+      // a prism is project onto that surface as a quad
+      // (in degrees)
+      double angleThreshold = 15.0;
       
       cout << "Generate Prismatic Boundary Layers (Experimental)...." << endl;
 
@@ -167,7 +172,13 @@ namespace netgen
          if(surfinp >= 0) surfid.Append(surfinp);
       }
 
-      cout << "Number of surfaces entered = " << surfid.Size() << endl;      
+      cout << "Number of surfaces entered = " << surfid.Size() << endl; 
+      cout << "Selected surfaces are:" << endl;
+
+      for(i = 1; i <= surfid.Size(); i++)
+      {
+         cout << "Surface " << i << ": " << surfid.Elem(i) << endl;
+      }
       
       cout << endl << "Enter number of prism layers: ";
       cin >> prismlayers;
@@ -188,8 +199,18 @@ namespace netgen
       {
          cout << "Generating layer: " << layer << endl;
 
-         //double layerht = hfirst + growthfactor*(layer - 1)*hfirst;
-         double layerht = hfirst*pow(growthfactor,(double)(layer-1));
+         double layerht = hfirst;
+
+         if(growthfactor == 1)
+         {
+            layerht = layer * hfirst;
+         }
+         else
+         {
+            layerht = hfirst*(pow(growthfactor,(layer+1)) - 1)/(growthfactor - 1);
+         }
+
+         cout << "Layer Height = " << layerht << endl;
 
          // Need to store the old number of points and 
          // surface elements because there are new points and 
@@ -200,6 +221,9 @@ namespace netgen
          // Safety measure to ensure no issues with mesh 
          // consistency
          int nseg = mesh.GetNSeg();
+
+         // Update the mesh topology structures
+         mesh.UpdateTopology();
 
          const MeshTopology& meshtopo = mesh.GetTopology();
 
@@ -212,9 +236,6 @@ namespace netgen
          // Growth vectors for the prismatic layer based on 
          // the effective surface normal at a given point
          Array<Vec3d> growthvectors(np);
-
-         // Update the mesh topology structures
-         mesh.UpdateTopology();
 
          // Bit array to identify all the points belonging 
          // to the surface of interest
@@ -242,7 +263,7 @@ namespace netgen
                   bndnodes.Set(sel.PNum(j));
 		  
                   // Vec3d& surfacenormal = Vec3d();   ????
-		  Vec3d surfacenormal;
+                  Vec3d surfacenormal;
 
                   // Calculate the surface normal at the current point 
                   // with respect to the current surface element
@@ -369,8 +390,13 @@ namespace netgen
                         mesh.LineSegment(j)[1] = mapto.Get(seg_p1);
                         mesh.LineSegment(j)[0] = mapto.Get(seg_p2);
 
-                        if(surfangle <= 1.5707)
+                        if(surfangle <= angleThreshold * 3.141592 / 180.0)
                         {
+                           // Since the surface is lower than the threshold, change the effective 
+                           // prism growth vector to match with the surface vector, so that 
+                           // the Quad which is created lies on the original surface
+                           growthvectors.Elem(segpair_p1) = surfelem_vect;
+
                            // Add a quad element to account for the prism volume
                            // element which is going to be added 
                            Element2d sel(QUAD);
@@ -521,24 +547,27 @@ namespace netgen
                   {
                      double sfact = 0.9;
                      Element volel = mesh.VolumeElement(vertelems.Elem(j));
-                     if((volel.GetType() == TET) || (volel.GetType() == TET10))
+                     if(((volel.GetType() == TET) || (volel.GetType() == TET10)) && (!volel.IsDeleted()))
                      {
-                        while((volel.Volume(mesh.Points()) <= 0.0) && (sfact >= 0.0))
-                        {
-                           mesh.Point(i).SetPoint(pointtomove + (sfact * layerht * growthvectors.Elem(i)));
-                           mesh.ImproveMesh();
+                        //while((volel.Volume(mesh.Points()) <= 0.0) && (sfact >= 0.0))
+                        //{
+                        //   mesh.Point(i).SetPoint(pointtomove + (sfact * layerht * growthvectors.Elem(i)));
+                        //   mesh.ImproveMesh();
 
-                           // Try to move the point back by one step but 
-                           // if the volume drops to below zero, double back
-                           mesh.Point(i).SetPoint(pointtomove + ((sfact + 0.1) * layerht * growthvectors.Elem(i)));
-                           if(volel.Volume(mesh.Points()) <= 0.0)
-                           {
-                              mesh.Point(i).SetPoint(pointtomove + (sfact * layerht * growthvectors.Elem(i)));
-                           }
-                           sfact -= 0.1;
-                        }
+                        //   // Try to move the point back by one step but 
+                        //   // if the volume drops to below zero, double back
+                        //   mesh.Point(i).SetPoint(pointtomove + ((sfact + 0.1) * layerht * growthvectors.Elem(i)));
+                        //   if(volel.Volume(mesh.Points()) <= 0.0)
+                        //   {
+                        //      mesh.Point(i).SetPoint(pointtomove + (sfact * layerht * growthvectors.Elem(i)));
+                        //   }
+                        //   sfact -= 0.1;
+                        //}
+                        volel.Delete();
                      }
                   }
+
+                  mesh.Compress();
                }
                else
                {

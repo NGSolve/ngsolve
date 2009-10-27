@@ -399,7 +399,7 @@ namespace netgen
       }
 
     const string filename (argv[1]);
-    PrintMessage (1, "Save mesh to file ", filename);
+    PrintMessage (1, "Save mesh to file ", filename, ".... Please Wait!");
 
     ofstream outfile(filename.c_str());
     mesh -> Save (outfile);
@@ -408,6 +408,7 @@ namespace netgen
 
     if (geometry && geometry->GetNSurf()) geometry->SaveSurfaces(outfile);
 
+    PrintMessage (1, "Save mesh to file .... DONE!");
     return TCL_OK;
   }
 
@@ -465,6 +466,7 @@ namespace netgen
 
     string filename (argv[1]);
     string filetype (argv[2]);
+    PrintMessage (1, "Export mesh to file ", filename, ".... Please Wait!");
 
     if (WriteUserFormat (filetype, *mesh, *geometry, filename))
       {
@@ -474,6 +476,7 @@ namespace netgen
 	return TCL_ERROR;
       }
 
+    PrintMessage (1, "Export mesh to file .... DONE!");
     return TCL_OK;
   }
 
@@ -1868,7 +1871,7 @@ namespace netgen
         return TCL_ERROR;
      }
 
-     GenerateBoundaryLayer (*mesh);
+     GenerateBoundaryLayer (*mesh, mparam);
      return TCL_OK;
   }
 
