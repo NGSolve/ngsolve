@@ -16,60 +16,60 @@
 namespace netgen
 {
 
-void Sort (const Array<double> & values,
-	   Array<int> & order)
-{
-  int n = values.Size();
-  int i, j;
+  void Sort (const Array<double> & values,
+	     Array<int> & order)
+  {
+    int n = values.Size();
+    int i, j;
 
-  order.SetSize (n);
+    order.SetSize (n);
 
-  for (i = 1; i <= n; i++)
-    order.Elem(i) = i;
-  for (i = 1; i <= n-1; i++)
-    for (j = 1; j <= n-1; j++)
-      if (values.Get(order.Elem(j)) > values.Get(order.Elem(j+1)))
-	{
-	  Swap (order.Elem(j), order.Elem(j+1));
-	}
-}
+    for (i = 1; i <= n; i++)
+      order.Elem(i) = i;
+    for (i = 1; i <= n-1; i++)
+      for (j = 1; j <= n-1; j++)
+	if (values.Get(order.Elem(j)) > values.Get(order.Elem(j+1)))
+	  {
+	    Swap (order.Elem(j), order.Elem(j+1));
+	  }
+  }
 
 
-void QickSortRec (const Array<double> & values,
-		  Array<int> & order, 
-		  int left, int right)
-{
-  int i, j;
-  double midval;
+  void QuickSortRec (const Array<double> & values,
+		     Array<int> & order, 
+		     int left, int right)
+  {
+    int i, j;
+    double midval;
 
-  i = left;
-  j = right;
-  midval = values.Get(order.Get((i+j)/2));
+    i = left;
+    j = right;
+    midval = values.Get(order.Get((i+j)/2));
   
-  do
-    {
-      while (values.Get(order.Get(i)) < midval) i++;
-      while (midval < values.Get(order.Get(j))) j--;
+    do
+      {
+	while (values.Get(order.Get(i)) < midval) i++;
+	while (midval < values.Get(order.Get(j))) j--;
       
-      if (i <= j)
-	{
-	  Swap (order.Elem(i), order.Elem(j));
-	  i++; j--;
-	}
-    }
-  while (i <= j);
-  if (left < j) QickSortRec (values, order, left, j);
-  if (i < right) QickSortRec (values, order, i, right);
-}
+	if (i <= j)
+	  {
+	    Swap (order.Elem(i), order.Elem(j));
+	    i++; j--;
+	  }
+      }
+    while (i <= j);
+    if (left < j) QuickSortRec (values, order, left, j);
+    if (i < right) QuickSortRec (values, order, i, right);
+  }
 
-void QickSort (const Array<double> & values,
-	       Array<int> & order)
-{
-  int i, n = values.Size();
-  order.SetSize (n);
-  for (i = 1; i <= n; i++)
-    order.Elem(i) = i;
+  void QuickSort (const Array<double> & values,
+		 Array<int> & order)
+  {
+    int i, n = values.Size();
+    order.SetSize (n);
+    for (i = 1; i <= n; i++)
+      order.Elem(i) = i;
 
-  QickSortRec (values, order, 1, order.Size());
-}
+    QuickSortRec (values, order, 1, order.Size());
+  }
 }

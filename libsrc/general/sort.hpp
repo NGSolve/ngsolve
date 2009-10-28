@@ -14,7 +14,7 @@ namespace netgen
 extern void Sort (const Array<double> & values,
 		  Array<int> & order);
 
-extern void QickSort (const Array<double> & values,
+extern void QuickSort (const Array<double> & values,
 		      Array<int> & order);
 
 

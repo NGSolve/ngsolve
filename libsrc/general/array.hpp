@@ -612,9 +612,9 @@ namespace netgen
 
 
   template <class T, class S>
-  void QickSortRec (FlatArray<T> & data,
-		    FlatArray<T> & slave,
-		    int left, int right)
+  void QuickSortRec (FlatArray<T> & data,
+		     FlatArray<S> & slave,
+		     int left, int right)
   {
     int i = left;
     int j = right;
@@ -633,14 +633,14 @@ namespace netgen
 	  }
       }
     while (i <= j);
-    if (left < j) QickSortRec (data, slave, left, j);
-    if (i < right) QickSortRec (data, slave, i, right);
+    if (left < j) QuickSortRec (data, slave, left, j);
+    if (i < right) QuickSortRec (data, slave, i, right);
   }
 
   template <class T, class S>
-  void QickSort (FlatArray<T> & data, FlatArray<S> & slave)
+  void QuickSort (FlatArray<T> & data, FlatArray<S> & slave)
   {
-    QickSortRec (data, slave, 0, data.Size()-1);
+    QuickSortRec (data, slave, 0, data.Size()-1);
   }
 
 
