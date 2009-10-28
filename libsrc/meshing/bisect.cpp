@@ -666,7 +666,7 @@ namespace netgen
 	// sort edges:
 	Array<int> sorted(cntedges);
       
-	QickSort (edgelength, sorted);
+	QuickSort (edgelength, sorted);
       
 	int cnt = 0;
 	for (i = 1; i <= cntedges; i++)
