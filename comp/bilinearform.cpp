@@ -14,7 +14,7 @@ namespace ngcomp
   using namespace ngcomp;
   using namespace ngparallel;
 
-  // dummy function header
+  // dummy function header 
   void CalcEigenSystem (FlatMatrix<Complex> & elmat, 
 			FlatVector<> & lami, 
 			FlatMatrix<> & evecs)
@@ -514,7 +514,6 @@ namespace ngcomp
                 parts[i] -> CheckElement (fespace.GetFE(j, clh));
             }
         }
-
 
 
     try

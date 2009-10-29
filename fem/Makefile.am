@@ -4,7 +4,7 @@
 #
 
 
-lib_LTLIBRARIES = libngfemng.la libngfem.la
+lib_LTLIBRARIES = libngfem.la libngfemng.la
 
 libngfemng_la_CPPFLAGS = -I$(top_srcdir)/include  $(NETGEN_INCLUDES) $(LAPACK_INCLUDES)
 

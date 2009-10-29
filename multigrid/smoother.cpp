@@ -935,7 +935,6 @@ void BlockSmoother :: PreSmoothResiduum (int level, BaseVector & u,
 
   if(!inv[level]) 
     {
-      *testout << "PreSmoothResiduum" << endl;
       jac[level] -> GSSmoothResiduum (u, f, res, steps);
     }
   else
