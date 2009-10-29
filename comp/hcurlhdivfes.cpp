@@ -529,7 +529,7 @@ namespace ngcomp
   
   Table<int> * NedelecFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
-    CreateSmoothingBlocks (int (precflags.GetNumFlag ("blocktype", 0)));
+    return CreateSmoothingBlocks (int (precflags.GetNumFlag ("loblocktype", SB_AFW)));
   }
 
 
