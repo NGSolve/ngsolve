@@ -1104,7 +1104,8 @@ namespace ngcomp
               cnt[enode.vertices[1]] += GetEdgeDofs(i).Size();
             }
         for (int i = 0; i < nfa; i++)
-          cnt[nv+i] = first_face_dof[i+1]-first_face_dof[i];
+	  if (!IsDirichletFace(i))
+	    cnt[nv+i] = first_face_dof[i+1]-first_face_dof[i];
         for (int i = 0; i < ni; i++)
           cnt[nv+nfa+i] = first_element_dof[i+1]-first_element_dof[i];
         break; 
@@ -1446,12 +1447,13 @@ namespace ngcomp
                   table[v[k]][cnt[v[k]]++] = range.First()+j;
             }
         for (int i = 0; i < nfa; i++)
-          {
-            IntRange range = GetFaceDofs(i);
-            for (int j = 0; j < range.Size(); j++)
-              table[nv+i][j] = range.First()+j;
-            cnt[nv+i] = range.Size();
-          }
+	  if (!IsDirichletFace(i))
+	    {
+	      IntRange range = GetFaceDofs(i);
+	      for (int j = 0; j < range.Size(); j++)
+		table[nv+i][j] = range.First()+j;
+	      cnt[nv+i] = range.Size();
+	    }
         for (int i = 0; i < ni; i++)
           {
             int first = first_element_dof[i];
