@@ -38,11 +38,9 @@ namespace netgen
    // Global Va
    Array<int> OF15x_owner_facelist;
    Array<int> OF15x_owner_celllist;
-   Array<int> OF15x_neighbour_facelist;
    Array<int> OF15x_neighbour_celllist;
    Array<int> OF15x_surfelem_bclist;
-   Array<int> OF15x_surfelem_facelist;
-   Array<int> OF15x_surfelem_celllist;
+   Array<INDEX_2> OF15x_surfelem_lists;
 
 
    void WriteOpenFOAM15xBanner(ofstream & outfile)
@@ -84,22 +82,15 @@ namespace netgen
 
 
 
-   void BuildOpenFOAM15xLists (const Mesh & mesh)
+   bool BuildOpenFOAM15xLists (const Mesh & mesh)
    {
-      ResetTime();
-      cout << endl << "Building Lists.... ";
-
       // Clear all the arrays
       OF15x_owner_facelist.DeleteAll();
       OF15x_owner_celllist.DeleteAll();
-      OF15x_neighbour_facelist.DeleteAll();
       OF15x_neighbour_celllist.DeleteAll();
       OF15x_surfelem_bclist.DeleteAll();
-      OF15x_surfelem_facelist.DeleteAll();
-      OF15x_surfelem_celllist.DeleteAll();
+      OF15x_surfelem_lists.DeleteAll();
 
-
-      int ne = mesh.GetNE();
 
       const_cast<Mesh&> (mesh).BuildElementSearchTree();
       const MeshTopology& meshtopo = mesh.GetTopology();
@@ -107,37 +98,76 @@ namespace netgen
       // Update the mesh topology structures
       const_cast<Mesh&> (mesh).UpdateTopology();
 
+      int ne = mesh.GetNE();
+      int nse = mesh.GetNSE();
+      int totfaces = meshtopo.GetNFaces();
+
+      // Preset the size of the arrays to speed up future operations
+      // Number of internal faces = total faces - num. of surface faces
+      OF15x_owner_facelist.SetSize(totfaces - nse);
+      OF15x_owner_celllist.SetSize(totfaces - nse);
+      OF15x_neighbour_celllist.SetSize(totfaces - nse);
+      OF15x_surfelem_bclist.SetSize(nse);
+      OF15x_surfelem_lists.SetSize(nse);
+
+      // Array used to keep track of Faces which have already been 
+      // processed and added to the Owner list... In addition, also the 
+      // location where the face appears in the Owner list is also stored 
+      // to speed up creation of the Neighbour list
+      Array<int> ownerfaces(totfaces);
+      ownerfaces = 0;
+
+      int owner_ind = 1;
+      int bc_ind = 1;
+
       // Loop through all the volume elements
       for(int elind = 1; elind <= ne; elind++)
       {
+         Element el = mesh.VolumeElement(elind);
+
          Array<int> locfaces;
 
-         Element el = mesh.VolumeElement(elind);
          locfaces.SetSize(el.GetNFaces());
 
          // Get the face numbers of the faces of the current volume element
-         meshtopo.GetElementFaces(elind,locfaces,false);
+         // The values returned are given a sign depending on the orientation 
+         // of the faces. This is used while writing the faces file, to 
+         // determine whether or not to invert the face triangle before writing 
+         // it to file
+         meshtopo.GetElementFaces(elind,locfaces,true);
 
          // Loop through the faces
          for(int i = 1; i <= locfaces.Size(); i++)
          {
+            int absfacenr = abs(locfaces.Elem(i));
+
             // Check if the face is a surface element (boundary face)
             // if not, add the current volume element and the corresponding face into 
             // the owner list
-            if(!(meshtopo.GetFace2SurfaceElement(locfaces.Elem(i))))
+            if(!(meshtopo.GetFace2SurfaceElement(absfacenr)))
             {
-               // If the face is already present in the owner list, append the 
-               // current cell and face to the neighbour list else append it 
-               // as usual into the owner list
-               if(OF15x_owner_facelist.Contains(locfaces.Elem(i)))
+               // Location of the current face in the owner list 
+               // (if it exists... zero otherwise)
+               int ownerface = ownerfaces.Elem(absfacenr);
+
+               // If the face already exists in the owner list, add 
+               // the current cell into the neighbour list, in the 
+               // same location where the face appears in the owner list
+               if(ownerface)
                {
-                  OF15x_neighbour_celllist.Append(elind);
-                  OF15x_neighbour_facelist.Append(locfaces.Elem(i));
+                  OF15x_neighbour_celllist.Elem(ownerface) = elind;
                }
+               // If it is a new face which has not been listed before, 
+               // add the current cell into the owner list, and save 
+               // the index location to be used later by the neighbour list
                else
                {
-                  OF15x_owner_celllist.Append(elind);
-                  OF15x_owner_facelist.Append(locfaces.Elem(i));
+                  OF15x_owner_celllist.Elem(owner_ind) = elind;
+                  OF15x_owner_facelist.Elem(owner_ind) = locfaces.Elem(i);
+                  // Set the bit array to indicate that the face is already processed
+                  ownerfaces.Elem(absfacenr) = owner_ind;
+
+                  owner_ind++;
                }
             }
             // If the face is a boundary face, extract the boundary condition number of the 
@@ -145,40 +175,26 @@ namespace netgen
             // into the various surface elements lists
             else
             {
-               Element2d sel = mesh.SurfaceElement(meshtopo.GetFace2SurfaceElement(locfaces.Elem(i)));
-               OF15x_surfelem_bclist.Append(mesh.GetFaceDescriptor(sel.GetIndex()).BCProperty());
-               OF15x_surfelem_facelist.Append(locfaces.Elem(i));
-               OF15x_surfelem_celllist.Append(elind);
+               Element2d sel = mesh.SurfaceElement(meshtopo.GetFace2SurfaceElement(absfacenr));
+               OF15x_surfelem_bclist.Elem(bc_ind) = mesh.GetFaceDescriptor(sel.GetIndex()).BCProperty();
+               OF15x_surfelem_lists.Elem(bc_ind) = INDEX_2(locfaces.Elem(i),elind);
+
+               bc_ind++;
             }
          }
       }
 
+      // This correction is required in cases where the mesh has been "uniform refined".... for 
+      // some reason, the number of faces reported by Netgen is higher than the actual number 
+      // of faces in the mesh
+      OF15x_owner_facelist.SetSize(owner_ind-1);
+      OF15x_owner_celllist.SetSize(owner_ind-1);
+      OF15x_neighbour_celllist.SetSize(owner_ind-1);
+
+
       // Sort the list of surface elements in ascending order of boundary condition number
-      // also sort the cell list in the same manner (using a temporary array...!)
-      Array<int> OF15x_surfelem_tmplist(OF15x_surfelem_bclist);
-      BubbleSort(OF15x_surfelem_bclist,OF15x_surfelem_facelist);
-      BubbleSort(OF15x_surfelem_tmplist,OF15x_surfelem_celllist);
-      OF15x_surfelem_tmplist.DeleteAll();
-
-      for(int i = 1; i <= OF15x_owner_celllist.Size(); i++)
-      {
-         // Order the list of neighbours according to the order of the faces 
-         // in the owners list by searching and swapping the neighbour cell 
-         // and face array
-         // NOTE: As of now, function "Pos" is zero-based and NOT 1-based!!
-         int ind = OF15x_neighbour_facelist.Pos(OF15x_owner_facelist.Elem(i));
-         if(ind > -1)
-         {
-            int facetmp = OF15x_neighbour_facelist.Elem(i);
-            int celltmp = OF15x_neighbour_celllist.Elem(i);
-
-            // Swap elements in the face and cell lists
-            OF15x_neighbour_facelist.Elem(i) = OF15x_neighbour_facelist.Elem(ind+1);
-            OF15x_neighbour_facelist.Elem(ind+1) = facetmp;
-            OF15x_neighbour_celllist.Elem(i) = OF15x_neighbour_celllist.Elem(ind+1);
-            OF15x_neighbour_celllist.Elem(ind+1) = celltmp;
-         }
-      }
+      // also sort the cell list in the same manner
+      QuickSort(OF15x_surfelem_bclist,OF15x_surfelem_lists);
 
       int rng_start = 1;
       int rng_end = 1;
@@ -199,18 +215,20 @@ namespace netgen
             if(i == OF15x_owner_celllist.Size()) rng_end = i;
 
             FlatArray<int> neisort_celllist = OF15x_neighbour_celllist.Range(rng_start-1,rng_end);
-            FlatArray<int> neisort_facelist = OF15x_neighbour_facelist.Range(rng_start-1,rng_end);
+            FlatArray<int> ownersort_facelist = OF15x_owner_facelist.Range(rng_start-1,rng_end);
 
-            BubbleSort(neisort_celllist,neisort_facelist);
+            // Here, QuickSort seems to fail for some reason, but since the size of 
+            // each array cannot be larger than 4 elements, the performance penalty 
+            // of using the BubbleSort should be negligable
+            BubbleSort(neisort_celllist,ownersort_facelist);
+            //QuickSort(neisort_celllist,ownersort_facelist);
             
             // After sorting out the cell and face lists, replace the old list with the 
             // newly ordered lists
             for(int j = 1; j <= neisort_celllist.Size(); j++)
             {
                OF15x_neighbour_celllist.Elem(rng_start-1+j) = neisort_celllist.Elem(j);
-               OF15x_neighbour_facelist.Elem(rng_start-1+j) = neisort_facelist.Elem(j);
-
-               OF15x_owner_facelist.Elem(rng_start-1+j) = neisort_facelist.Elem(j);
+               OF15x_owner_facelist.Elem(rng_start-1+j) = ownersort_facelist.Elem(j);
             }
 
             // initialise the range variables to the next set of owner cells
@@ -218,9 +236,6 @@ namespace netgen
             rng_end = i;
          }
       }
-
-      cout << "Done (Time elapsed = " << GetTime() << " sec)" << endl;
-
 /*
       ofstream dbg("OpenFOAMDebug.log");
 
@@ -229,8 +244,8 @@ namespace netgen
       for(int i = 1; i <= OF15x_surfelem_bclist.Size(); i++)
       {
          dbg << "bc = " << OF15x_surfelem_bclist.Elem(i) 
-              << " : face = " << OF15x_surfelem_facelist.Elem(i) 
-              << " : cell = " << OF15x_surfelem_celllist.Elem(i) << endl;
+              << " : face = " << OF15x_surfelem_lists.Elem(i).I1()
+              << " : cell = " << OF15x_surfelem_lists.Elem(i).I2() << endl;
       }
 
       dbg << endl << " ------- Owner List ------- " << endl;
@@ -247,12 +262,12 @@ namespace netgen
       for(int i = 1; i <= OF15x_neighbour_celllist.Size(); i++)
       {
          dbg << "Ind:" << i << " :: (" 
-              << OF15x_neighbour_celllist.Elem(i) << " "
-              << OF15x_neighbour_facelist.Elem(i) << ")" << endl;
+              << OF15x_neighbour_celllist.Elem(i) << ")" << endl;
       }
 
       dbg.close();
 */
+      return(false);
    }
 
 
@@ -306,7 +321,7 @@ namespace netgen
 
       outfile << endl << endl;
 
-      int nowners = OF15x_owner_celllist.Size() + OF15x_surfelem_celllist.Size();
+      int nowners = OF15x_owner_celllist.Size() + OF15x_surfelem_lists.Size();
 
       outfile << nowners << endl;
 
@@ -320,9 +335,9 @@ namespace netgen
 
       // Write the owners of the boundary cells to file
       // (Written in order of ascending boundary condition numbers)
-      for(int i = 1; i <= OF15x_surfelem_celllist.Size(); i++)
+      for(int i = 1; i <= OF15x_surfelem_lists.Size(); i++)
       {
-         outfile << OF15x_surfelem_celllist.Elem(i) - 1 << endl;
+         outfile << OF15x_surfelem_lists.Elem(i).I2() - 1 << endl;
       }
       outfile << ")" << endl << endl;
       WriteOpenFOAM15xDividerEnd(outfile);
@@ -353,7 +368,7 @@ namespace netgen
 
       outfile << endl << endl;
 
-      int nfaces = OF15x_owner_facelist.Size() + OF15x_surfelem_facelist.Size();
+      int nfaces = OF15x_owner_facelist.Size() + OF15x_surfelem_lists.Size();
 
       outfile << nfaces << endl;
 
@@ -363,38 +378,35 @@ namespace netgen
       // internal cells and the boundary cells
       for(int i = 1; i <= OF15x_owner_facelist.Size(); i++)
       {
-         int faceind = OF15x_owner_facelist.Elem(i);
+         int face_w_orientation = OF15x_owner_facelist.Elem(i);
+         int facenr = abs(face_w_orientation);
 
          Array<int> facepnts;
-         Array<int> faces;
-         Array<int> faceorient;
 
-         meshtopo.GetElementFaces(OF15x_owner_celllist.Elem(i),faces,false);
-         meshtopo.GetElementFaceOrientations(OF15x_owner_celllist.Elem(i),faceorient);
-
-         meshtopo.GetFaceVertices(faceind,facepnts);
+         meshtopo.GetFaceVertices(facenr,facepnts);
 
          // Get the orientation of the face, and invert it if required
          // for a quad, inversion => swap 1 <=> 2 and 3 <=> 4
          // for a trig, inversion => swap 1 <=> 3
-         int orient = faceorient.Elem(faces.Pos(faceind)+1);
-         if(orient == 0 || orient == 3 || orient == 5 || orient == 6)
+         if(face_w_orientation > 0)
          {
+            int tmppnts = 0;
+
             if(facepnts.Size() == 4)
             {
-               int pnttmp = facepnts.Elem(1);
+               tmppnts = facepnts.Elem(1);
                facepnts.Elem(1) = facepnts.Elem(2);
-               facepnts.Elem(2) = pnttmp;
-
-               pnttmp = facepnts.Elem(3);
+               facepnts.Elem(2) = tmppnts;
+               
+               tmppnts = facepnts.Elem(3);
                facepnts.Elem(3) = facepnts.Elem(4);
-               facepnts.Elem(4) = pnttmp;
+               facepnts.Elem(4) = tmppnts;
             }
             else if(facepnts.Size() == 3)
             {
-               int pnttmp = facepnts.Elem(1);
+               tmppnts = facepnts.Elem(1);
                facepnts.Elem(1) = facepnts.Elem(3);
-               facepnts.Elem(3) = pnttmp;
+               facepnts.Elem(3) = tmppnts;
             }
          }
 
@@ -408,40 +420,37 @@ namespace netgen
          outfile << ")" << endl;
       }
 
-      for(int i = 1; i <= OF15x_surfelem_facelist.Size(); i++)
+      for(int i = 1; i <= OF15x_surfelem_lists.Size(); i++)
       {
-         int faceind = OF15x_surfelem_facelist.Elem(i);
+         int face_w_orientation = OF15x_surfelem_lists.Elem(i).I1();
+         int facenr = abs(face_w_orientation);
 
          Array<int> facepnts;
-         Array<int> faces;
-         Array<int> faceorient;
 
-         meshtopo.GetElementFaces(OF15x_surfelem_celllist.Elem(i),faces,false);
-         meshtopo.GetElementFaceOrientations(OF15x_surfelem_celllist.Elem(i),faceorient);
-
-         meshtopo.GetFaceVertices(faceind,facepnts);
+         meshtopo.GetFaceVertices(facenr,facepnts);
 
          // Get the orientation of the face, and invert it if required
          // for a quad, inversion => swap 1 <=> 2 and 3 <=> 4
          // for a trig, inversion => swap 1 <=> 3
-         int orient = faceorient.Elem(faces.Pos(faceind)+1);
-         if(orient == 0 || orient == 3 || orient == 5 || orient == 6)
+         if(face_w_orientation > 0)
          {
+            int tmppnts = 0;
+
             if(facepnts.Size() == 4)
             {
-               int pnttmp = facepnts.Elem(1);
+               tmppnts = facepnts.Elem(1);
                facepnts.Elem(1) = facepnts.Elem(2);
-               facepnts.Elem(2) = pnttmp;
-
-               pnttmp = facepnts.Elem(3);
+               facepnts.Elem(2) = tmppnts;
+               
+               tmppnts = facepnts.Elem(3);
                facepnts.Elem(3) = facepnts.Elem(4);
-               facepnts.Elem(4) = pnttmp;
+               facepnts.Elem(4) = tmppnts;
             }
             else if(facepnts.Size() == 3)
             {
-               int pnttmp = facepnts.Elem(1);
+               tmppnts = facepnts.Elem(1);
                facepnts.Elem(1) = facepnts.Elem(3);
-               facepnts.Elem(3) = pnttmp;
+               facepnts.Elem(3) = tmppnts;
             }
          }
 
@@ -571,6 +580,12 @@ namespace netgen
       bool error = false;
       char casefiles[256];
 
+      // Make sure that the mesh data has been updated
+      const_cast<Mesh&> (mesh).Compress();
+      const_cast<Mesh&> (mesh).RebuildSurfaceElementLists();
+      const_cast<Mesh&> (mesh).ComputeNVertices();
+
+
       int np = mesh.GetNP();
       int nse = mesh.GetNSE();
       int ne = mesh.GetNE();
@@ -585,22 +600,36 @@ namespace netgen
       }
 
       // OpenFOAM only supports linear meshes!
-      if(mparam.secondorder)
+      if(mparam.secondorder || mesh.GetCurvedElements().IsHighOrder())
       {
          cout << "Export Error: OpenFOAM 1.5+ does not support non-linear elements.... Aborting!" << endl;
          return;
       }
 
+      if((mesh.SurfaceElement(nse/2).GetType() != TRIG) 
+         && (mesh.SurfaceElement(nse/2).GetType() != QUAD)
+         || (mesh.VolumeElement(ne/2).GetType() == TET10)
+         || (mesh.VolumeElement(ne/2).GetType() == PRISM12))
+      {
+         cout << "Export Error: OpenFOAM 1.5+ does not support non-linear elements.... Aborting!" << endl;
+         return;
+      }
+
+
       cout << "Writing OpenFOAM 1.5+ Mesh files to case: " << casename << endl;
 
-      // Create the Case directory if it does not already exist
+      // Create the case directory if it does not already exist
+      // NOTE: This needs to be improved for the Linux variant....!!!
    #ifdef WIN32
       char casedir[256];
       sprintf(casedir, "mkdir %s\\constant\\polyMesh", casename.c_str());
       system(casedir);
    #else
       char casedir[256];
-      sprintf(casedir, "mkdir -p %s/constant/polyMesh", casename.c_str());
+      mkdir(casename.c_str(), S_IRWXU|S_IRWXG);
+      sprintf(casedir, "%s/constant", casename.c_str());
+      mkdir(casedir, S_IRWXU|S_IRWXG);
+      sprintf(casedir, "%s/constant/polyMesh", casename.c_str());
       mkdir(casedir, S_IRWXU|S_IRWXG);
    #endif
 
@@ -621,24 +650,15 @@ namespace netgen
       sprintf(casefiles, "%s/constant/polyMesh/boundary", casename.c_str()); 
       ofstream outfile_bnd(casefiles);
 
+      ResetTime();
+
       // Build the owner, neighbour, faces and boundary lists 
       // from the Netgen mesh
-      BuildOpenFOAM15xLists(mesh);
+      cout << endl << "Building Owner, Neighbour and Face Lists: ";
 
+      error = BuildOpenFOAM15xLists(mesh);
 
-      // Write the "points" file
-      if(outfile_pnts.good() && !error)
-      {
-         cout << "Writing the points file: ";
-         WriteOpenFOAM15xPoints(outfile_pnts,mesh);
-         outfile_pnts.close();
-         cout << "Done!" << endl;
-      }
-      else
-      {
-         cout << "Export Error: Error creating file: points.... Aborting" << endl;
-         error = true;
-      }
+      cout << "Done! (Time Elapsed = " << GetTime() << " sec)" << endl;
 
 
       // Write the "owner" file
@@ -647,7 +667,7 @@ namespace netgen
          cout << "Writing the owner file: ";
          WriteOpenFOAM15xOwner(outfile_own);
          outfile_own.close();
-         cout << "Done!" << endl;
+         cout << "Done! (Time Elapsed = " << GetTime() << " sec)" << endl;
       }
       else
       {
@@ -662,7 +682,7 @@ namespace netgen
          cout << "Writing the neighbour file: ";
          WriteOpenFOAM15xNeighbour(outfile_nei);
          outfile_nei.close();
-         cout << "Done!" << endl;
+         cout << "Done! (Time Elapsed = " << GetTime() << " sec)" << endl;
       }
       else
       {
@@ -677,11 +697,26 @@ namespace netgen
          cout << "Writing the faces file: ";
          WriteOpenFOAM15xFaces(outfile_faces, mesh);
          outfile_faces.close();
-         cout << "Done!" << endl;
+         cout << "Done! (Time Elapsed = " << GetTime() << " sec)" << endl;
       }
       else
       {
          cout << "Export Error: Error creating file: faces.... Aborting" << endl;
+         error = true;
+      }
+
+
+      // Write the "points" file
+      if(outfile_pnts.good() && !error)
+      {
+         cout << "Writing the points file: ";
+         WriteOpenFOAM15xPoints(outfile_pnts,mesh);
+         outfile_pnts.close();
+         cout << "Done! (Time Elapsed = " << GetTime() << " sec)" << endl;
+      }
+      else
+      {
+         cout << "Export Error: Error creating file: points.... Aborting" << endl;
          error = true;
       }
 
@@ -692,7 +727,7 @@ namespace netgen
          cout << "Writing the boundary file: ";
          WriteOpenFOAM15xBoundary(outfile_bnd);
          outfile_bnd.close();
-         cout << "Done!" << endl;
+         cout << "Done! (Time Elapsed = " << GetTime() << " sec)" << endl;
       }
       else
       {
@@ -702,7 +737,7 @@ namespace netgen
 
       if(!error)
       {
-         cout << "OpenFOAM 1.5+ Export successfully completed!" << endl;
+         cout << "OpenFOAM 1.5+ Export successfully completed (Time elapsed = " << GetTime() << " sec) !" << endl;
       }
       else
       {
