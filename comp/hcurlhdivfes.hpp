@@ -77,6 +77,7 @@ public:
   enum { SB_AFW, SB_HIPTMAIR, SB_POTENTIAL, SB_JAC };
   ///
   virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
+  virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
 
   SparseMatrix<double> * CreateGradient() const;
 

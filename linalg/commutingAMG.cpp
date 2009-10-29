@@ -280,6 +280,9 @@ namespace ngla
   
   void AMG_H1 :: Mult (const BaseVector & x, BaseVector & y) const
   {
+    static int timer = NgProfiler::CreateTimer ("H1-AMG::Mult");
+    NgProfiler::RegionTimer reg (timer);
+
     if (inv)
       {
 	y = (*inv) * x;

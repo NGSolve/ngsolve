@@ -1072,14 +1072,14 @@ double MeshAccess :: SurfaceElementVolume (int selnr) const
   if (GetDimension() == 2)
     {
       NeumannIntegrator<2> si( &ccf );
-      FlatVector<> elvec;
+      FlatVector<> elvec (fe->GetNDof(), lh);
       si.AssembleElementVector (*fe, trans, elvec, lh);
       return elvec(0);
     }
   else
     {
       NeumannIntegrator<3> si( &ccf );
-      FlatVector<> elvec;
+      FlatVector<> elvec (fe->GetNDof(), lh);
       si.AssembleElementVector (*fe, trans, elvec, lh);
       return elvec(0);
     }
