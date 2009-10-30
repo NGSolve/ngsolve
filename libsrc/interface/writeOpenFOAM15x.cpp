@@ -35,7 +35,6 @@ namespace netgen
 {
 #include "writeuser.hpp"
 
-   // Global Va
    Array<int> OF15x_owner_facelist;
    Array<int> OF15x_owner_celllist;
    Array<int> OF15x_neighbour_celllist;
@@ -91,12 +90,13 @@ namespace netgen
       OF15x_surfelem_bclist.DeleteAll();
       OF15x_surfelem_lists.DeleteAll();
 
-
-      const_cast<Mesh&> (mesh).BuildElementSearchTree();
       const MeshTopology& meshtopo = mesh.GetTopology();
       
       // Update the mesh topology structures
-      const_cast<Mesh&> (mesh).UpdateTopology();
+      const_cast<MeshTopology&> (meshtopo).SetBuildEdges(true);
+      const_cast<MeshTopology&> (meshtopo).SetBuildFaces(true);
+      const_cast<MeshTopology&> (meshtopo).Update();
+
 
       int ne = mesh.GetNE();
       int nse = mesh.GetNSE();
@@ -141,41 +141,38 @@ namespace netgen
          {
             int absfacenr = abs(locfaces.Elem(i));
 
+            // If the face already exists in the owner list, add 
+            // the current cell into the neighbour list, in the 
+            // same location where the face appears in the owner list
+            int ownerface = ownerfaces.Elem(absfacenr);
+            if(ownerface)
+            {
+               OF15x_neighbour_celllist.Elem(ownerface) = elind;
+               continue;
+            }
+
             // Check if the face is a surface element (boundary face)
             // if not, add the current volume element and the corresponding face into 
             // the owner list
-            if(!(meshtopo.GetFace2SurfaceElement(absfacenr)))
+            int surfelem = meshtopo.GetFace2SurfaceElement(absfacenr);
+            if(!surfelem)
             {
-               // Location of the current face in the owner list 
-               // (if it exists... zero otherwise)
-               int ownerface = ownerfaces.Elem(absfacenr);
-
-               // If the face already exists in the owner list, add 
-               // the current cell into the neighbour list, in the 
-               // same location where the face appears in the owner list
-               if(ownerface)
-               {
-                  OF15x_neighbour_celllist.Elem(ownerface) = elind;
-               }
                // If it is a new face which has not been listed before, 
                // add the current cell into the owner list, and save 
                // the index location to be used later by the neighbour list
-               else
-               {
-                  OF15x_owner_celllist.Elem(owner_ind) = elind;
-                  OF15x_owner_facelist.Elem(owner_ind) = locfaces.Elem(i);
-                  // Set the bit array to indicate that the face is already processed
-                  ownerfaces.Elem(absfacenr) = owner_ind;
+               OF15x_owner_celllist.Elem(owner_ind) = elind;
+               OF15x_owner_facelist.Elem(owner_ind) = locfaces.Elem(i);
+               // Set the bit array to indicate that the face is already processed
+               ownerfaces.Elem(absfacenr) = owner_ind;
 
-                  owner_ind++;
-               }
+               owner_ind++;
             }
             // If the face is a boundary face, extract the boundary condition number of the 
             // face, and append that along with the face number and the current cell 
             // into the various surface elements lists
             else
             {
-               Element2d sel = mesh.SurfaceElement(meshtopo.GetFace2SurfaceElement(absfacenr));
+               Element2d sel = mesh.SurfaceElement(surfelem);
                OF15x_surfelem_bclist.Elem(bc_ind) = mesh.GetFaceDescriptor(sel.GetIndex()).BCProperty();
                OF15x_surfelem_lists.Elem(bc_ind) = INDEX_2(locfaces.Elem(i),elind);
 
@@ -239,30 +236,30 @@ namespace netgen
 /*
       ofstream dbg("OpenFOAMDebug.log");
 
-      dbg << " ------- Boundary List -------- " << endl;
+      dbg << " ------- Boundary List -------- \n";
 
       for(int i = 1; i <= OF15x_surfelem_bclist.Size(); i++)
       {
          dbg << "bc = " << OF15x_surfelem_bclist.Elem(i) 
               << " : face = " << OF15x_surfelem_lists.Elem(i).I1()
-              << " : cell = " << OF15x_surfelem_lists.Elem(i).I2() << endl;
+              << " : cell = " << OF15x_surfelem_lists.Elem(i).I2() << "\n";
       }
 
-      dbg << endl << " ------- Owner List ------- " << endl;
+      dbg << "\n ------- Owner List ------- \n";
 
       for(int i = 1; i <= OF15x_owner_celllist.Size(); i++)
       {
          dbg << "Ind:" << i << " :: (" 
               << OF15x_owner_celllist.Elem(i) << " "
-              << OF15x_owner_facelist.Elem(i) << ")" << endl;
+              << OF15x_owner_facelist.Elem(i) << ")\n";
       }
 
-      dbg << endl << " ----- Neighbour List ----- " << endl;
+      dbg << "\n ----- Neighbour List ----- \n";
 
       for(int i = 1; i <= OF15x_neighbour_celllist.Size(); i++)
       {
-         dbg << "Ind:" << i << " :: (" 
-              << OF15x_neighbour_celllist.Elem(i) << ")" << endl;
+         dbg << "Ind:" << i << " :: " 
+              << OF15x_neighbour_celllist.Elem(i) << "\n";
       }
 
       dbg.close();
@@ -286,20 +283,20 @@ namespace netgen
               << "} \n";
       WriteOpenFOAM15xDividerStart(outfile);
 
-      outfile << endl << endl;
+      outfile << "\n\n";
 
       int nneighbours = OF15x_neighbour_celllist.Size();
 
-      outfile << nneighbours << endl;
+      outfile << nneighbours << "\n";
 
-      outfile << "(" << endl;
+      outfile << "(\n";
 
       // Write the neighbour cells to file
       for(int i = 1; i <= OF15x_neighbour_celllist.Size(); i++)
       {
-         outfile << OF15x_neighbour_celllist.Elem(i) - 1 << endl;
+         outfile << OF15x_neighbour_celllist.Elem(i) - 1 << "\n";
       }
-      outfile << ")" << endl << endl;
+      outfile << ")\n\n";
       WriteOpenFOAM15xDividerEnd(outfile);
    }
 
@@ -319,27 +316,27 @@ namespace netgen
               << "} \n";
       WriteOpenFOAM15xDividerStart(outfile);
 
-      outfile << endl << endl;
+      outfile << "\n\n";
 
       int nowners = OF15x_owner_celllist.Size() + OF15x_surfelem_lists.Size();
 
-      outfile << nowners << endl;
+      outfile << nowners << "\n";
 
-      outfile << "(" << endl;
+      outfile << "(\n";
 
       // Write the owners of the internal cells to file
       for(int i = 1; i <= OF15x_owner_celllist.Size(); i++)
       {
-         outfile << OF15x_owner_celllist.Elem(i) - 1 << endl;
+         outfile << OF15x_owner_celllist.Elem(i) - 1 << "\n";
       }
 
       // Write the owners of the boundary cells to file
       // (Written in order of ascending boundary condition numbers)
       for(int i = 1; i <= OF15x_surfelem_lists.Size(); i++)
       {
-         outfile << OF15x_surfelem_lists.Elem(i).I2() - 1 << endl;
+         outfile << OF15x_surfelem_lists.Elem(i).I2() - 1 << "\n";
       }
-      outfile << ")" << endl << endl;
+      outfile << ")\n\n";
       WriteOpenFOAM15xDividerEnd(outfile);
    }
 
@@ -347,12 +344,7 @@ namespace netgen
 
    void WriteOpenFOAM15xFaces (ofstream & outfile, const Mesh & mesh)
    {
-      const_cast<Mesh&> (mesh).BuildElementSearchTree();
       const MeshTopology& meshtopo = mesh.GetTopology();
-      
-      // Update the mesh topology structures
-      const_cast<Mesh&> (mesh).UpdateTopology();
-
 
       // Write the OpenFOAM standard banner and dividers, etc...
       WriteOpenFOAM15xBanner(outfile);
@@ -366,13 +358,13 @@ namespace netgen
               << "} \n";
       WriteOpenFOAM15xDividerStart(outfile);
 
-      outfile << endl << endl;
+      outfile << "\n\n";
 
       int nfaces = OF15x_owner_facelist.Size() + OF15x_surfelem_lists.Size();
 
-      outfile << nfaces << endl;
+      outfile << nfaces << "\n";
 
-      outfile << "(" << endl;
+      outfile << "(\n";
 
       // Write the faces in the order specified in the owners lists of the 
       // internal cells and the boundary cells
@@ -417,7 +409,7 @@ namespace netgen
             outfile << facepnts.Elem(j)-1;
             if(j != facepnts.Size()) outfile << " ";
          }
-         outfile << ")" << endl;
+         outfile << ")\n";
       }
 
       for(int i = 1; i <= OF15x_surfelem_lists.Size(); i++)
@@ -461,10 +453,10 @@ namespace netgen
             outfile << facepnts.Elem(j)-1;
             if(j != facepnts.Size()) outfile << " ";
          }
-         outfile << ")" << endl;
+         outfile << ")\n";
       }
 
-      outfile << ")" << endl << endl;
+      outfile << ")\n\n";
       WriteOpenFOAM15xDividerEnd(outfile);
    }
 
@@ -486,17 +478,17 @@ namespace netgen
               << "} \n";
       WriteOpenFOAM15xDividerStart(outfile);
 
-      outfile << endl << endl;
+      outfile << "\n\n";
 
       // Number of points in the following list
-      outfile << np << endl;
+      outfile << np << "\n";
 
       outfile.precision(6);
       outfile.setf (ios::fixed, ios::floatfield);
       outfile.setf (ios::showpoint);
 
       // Coordinate list starts here
-      outfile << "(" << endl;
+      outfile << "(\n";
 
       for(int i = 1; i <= np; i++)
       {
@@ -507,9 +499,9 @@ namespace netgen
          outfile << p.X() << " ";
          outfile << p.Y() << " ";
          outfile << p.Z();
-         outfile << ")" << endl;
+         outfile << ")\n";
       }
-      outfile << ")" << endl << endl;
+      outfile << ")\n\n";
       WriteOpenFOAM15xDividerEnd(outfile);
    }
 
@@ -529,13 +521,20 @@ namespace netgen
               << "} \n";
       WriteOpenFOAM15xDividerStart(outfile);
 
-      outfile << endl;
+      outfile << "\n";
 
 
       Array<INDEX_3> bcarray;
       int ind = 1;
 
-      bcarray.Append(INDEX_3(OF15x_surfelem_bclist.Elem(1),1,0));
+      // Since the boundary conditions are already sorted in ascending 
+      // order, the last element will give the maximum number of possible 
+      // boundary condition entries
+      int bcmax = OF15x_surfelem_bclist.Elem(OF15x_surfelem_bclist.Size());
+
+      bcarray.SetSize(bcmax+1);
+
+      bcarray.Elem(ind) = INDEX_3(OF15x_surfelem_bclist.Elem(1),1,0);
             
       for(int i = 2; i <= OF15x_surfelem_bclist.Size(); i++)
       {
@@ -546,12 +545,14 @@ namespace netgen
          else
          {
             ind++;
-            bcarray.Append(INDEX_3(OF15x_surfelem_bclist.Elem(i),1,i-1));
+            bcarray.Elem(ind) = INDEX_3(OF15x_surfelem_bclist.Elem(i),1,i-1);
          }
       }
 
-      outfile << bcarray.Size() << endl;
-      outfile << "(" << endl;
+      bcarray.SetSize(ind);
+
+      outfile << bcarray.Size() << "\n";
+      outfile << "(\n";
 
       int startface = 0;
 
@@ -559,16 +560,16 @@ namespace netgen
       {
          startface = OF15x_owner_celllist.Size() + bcarray.Elem(i).I3();
 
-         outfile << "    patch" << bcarray.Elem(i).I1() << endl
-                 << "    {" << endl
-                 << "        type            patch;" << endl
-                 << "        physicalType    patch;" << endl
-                 << "        nFaces          " << bcarray.Elem(i).I2() << ";" << endl
-                 << "        startFace       " << startface << ";" << endl
-                 << "    }" << endl;
+         outfile << "    patch" << bcarray.Elem(i).I1() << "\n"
+                 << "    {\n"
+                 << "        type            patch;\n"
+                 << "        physicalType    patch;\n"
+                 << "        nFaces          " << bcarray.Elem(i).I2() << ";\n"
+                 << "        startFace       " << startface << ";\n"
+                 << "    }\n";
       }
 
-      outfile << ")" << endl << endl;
+      outfile << ")\n\n";
       WriteOpenFOAM15xDividerEnd(outfile);
    }
 
@@ -582,27 +583,28 @@ namespace netgen
 
       // Make sure that the mesh data has been updated
       const_cast<Mesh&> (mesh).Compress();
+      const_cast<Mesh&> (mesh).CalcSurfacesOfNode();
       const_cast<Mesh&> (mesh).RebuildSurfaceElementLists();
-      const_cast<Mesh&> (mesh).ComputeNVertices();
+      const_cast<Mesh&> (mesh).BuildElementSearchTree();
 
 
       int np = mesh.GetNP();
       int nse = mesh.GetNSE();
       int ne = mesh.GetNE();
 
-      cout << "Write OpenFOAM 1.5+ Mesh Files...." << endl;
+      cout << "Write OpenFOAM 1.5+ Mesh Files....\n";
 
       // Abort if there are no points, surface elements or volume elements
       if((np <= 0) || (ne <= 0) || (nse <= 0))
       {
-         cout << "Export Error: Invalid mesh.... Aborting!" << endl;
+         cout << "Export Error: Invalid mesh.... Aborting!\n";
          return;
       }
 
       // OpenFOAM only supports linear meshes!
       if(mparam.secondorder || mesh.GetCurvedElements().IsHighOrder())
       {
-         cout << "Export Error: OpenFOAM 1.5+ does not support non-linear elements.... Aborting!" << endl;
+         cout << "Export Error: OpenFOAM 1.5+ does not support non-linear elements.... Aborting!\n";
          return;
       }
 
@@ -611,12 +613,12 @@ namespace netgen
          || (mesh.VolumeElement(ne/2).GetType() == TET10)
          || (mesh.VolumeElement(ne/2).GetType() == PRISM12))
       {
-         cout << "Export Error: OpenFOAM 1.5+ does not support non-linear elements.... Aborting!" << endl;
+         cout << "Export Error: OpenFOAM 1.5+ does not support non-linear elements.... Aborting!\n";
          return;
       }
 
 
-      cout << "Writing OpenFOAM 1.5+ Mesh files to case: " << casename << endl;
+      cout << "Writing OpenFOAM 1.5+ Mesh files to case: " << casename << "\n";
 
       // Create the case directory if it does not already exist
       // NOTE: This needs to be improved for the Linux variant....!!!
@@ -654,11 +656,11 @@ namespace netgen
 
       // Build the owner, neighbour, faces and boundary lists 
       // from the Netgen mesh
-      cout << endl << "Building Owner, Neighbour and Face Lists: ";
+      cout << "\nBuilding Owner, Neighbour and Face Lists: ";
 
       error = BuildOpenFOAM15xLists(mesh);
 
-      cout << "Done! (Time Elapsed = " << GetTime() << " sec)" << endl;
+      cout << "Done! (Time Elapsed = " << GetTime() << " sec)\n";
 
 
       // Write the "owner" file
@@ -667,11 +669,11 @@ namespace netgen
          cout << "Writing the owner file: ";
          WriteOpenFOAM15xOwner(outfile_own);
          outfile_own.close();
-         cout << "Done! (Time Elapsed = " << GetTime() << " sec)" << endl;
+         cout << "Done! (Time Elapsed = " << GetTime() << " sec)\n";
       }
       else
       {
-         cout << "Export Error: Error creating file: owner.... Aborting" << endl;
+         cout << "Export Error: Error creating file: owner.... Aborting\n";
          error = true;
       }
 
@@ -682,11 +684,11 @@ namespace netgen
          cout << "Writing the neighbour file: ";
          WriteOpenFOAM15xNeighbour(outfile_nei);
          outfile_nei.close();
-         cout << "Done! (Time Elapsed = " << GetTime() << " sec)" << endl;
+         cout << "Done! (Time Elapsed = " << GetTime() << " sec)\n";
       }
       else
       {
-         cout << "Export Error: Error creating file: neighbour.... Aborting" << endl;
+         cout << "Export Error: Error creating file: neighbour.... Aborting\n";
          error = true;
       }
 
@@ -697,11 +699,11 @@ namespace netgen
          cout << "Writing the faces file: ";
          WriteOpenFOAM15xFaces(outfile_faces, mesh);
          outfile_faces.close();
-         cout << "Done! (Time Elapsed = " << GetTime() << " sec)" << endl;
+         cout << "Done! (Time Elapsed = " << GetTime() << " sec)\n";
       }
       else
       {
-         cout << "Export Error: Error creating file: faces.... Aborting" << endl;
+         cout << "Export Error: Error creating file: faces.... Aborting\n";
          error = true;
       }
 
@@ -712,11 +714,11 @@ namespace netgen
          cout << "Writing the points file: ";
          WriteOpenFOAM15xPoints(outfile_pnts,mesh);
          outfile_pnts.close();
-         cout << "Done! (Time Elapsed = " << GetTime() << " sec)" << endl;
+         cout << "Done! (Time Elapsed = " << GetTime() << " sec)\n";
       }
       else
       {
-         cout << "Export Error: Error creating file: points.... Aborting" << endl;
+         cout << "Export Error: Error creating file: points.... Aborting\n";
          error = true;
       }
 
@@ -727,21 +729,21 @@ namespace netgen
          cout << "Writing the boundary file: ";
          WriteOpenFOAM15xBoundary(outfile_bnd);
          outfile_bnd.close();
-         cout << "Done! (Time Elapsed = " << GetTime() << " sec)" << endl;
+         cout << "Done! (Time Elapsed = " << GetTime() << " sec)\n";
       }
       else
       {
-         cout << "Export Error: Error creating file: boundary.... Aborting" << endl;
+         cout << "Export Error: Error creating file: boundary.... Aborting\n";
          error = true;
       }
 
       if(!error)
       {
-         cout << "OpenFOAM 1.5+ Export successfully completed (Time elapsed = " << GetTime() << " sec) !" << endl;
+         cout << "OpenFOAM 1.5+ Export successfully completed (Time elapsed = " << GetTime() << " sec) !\n";
       }
       else
       {
-         cout << "Error in OpenFOAM 1.5+ Export.... Aborted!" << endl;
+         cout << "Error in OpenFOAM 1.5+ Export.... Aborted!\n";
       }
    }
 }
