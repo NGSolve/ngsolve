@@ -35,6 +35,8 @@ namespace ngla
   using namespace ngla;
   using namespace ngstd;
 
+  int pardiso_msg = 1;
+
 
 namespace pardisofunc
 {
@@ -120,7 +122,7 @@ namespace pardisofunc
 
     int i, j, k, l, rowsize;
     int col;
-    int maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = 1, error;
+    int maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = pardiso_msg, error;
     int * params = const_cast <int*> (&hparams[0]);
 
     params[0] = 1; // no pardiso defaults

@@ -304,24 +304,12 @@ namespace ngcomp
       {
       case ET_SEGM:
         break;
-      case ET_TRIG:
-        fe2d = new (lh.Alloc (sizeof(FacetVolumeTrig)))  FacetVolumeTrig ();
-        break;
-      case ET_QUAD:
-        fe2d = new (lh.Alloc (sizeof(FacetVolumeQuad)))  FacetVolumeQuad ();
-        break;
-      case ET_TET:
-        fe3d = new (lh.Alloc (sizeof(FacetVolumeTet)))  FacetVolumeTet ();
-        break;
-      case ET_PYRAMID:
-        fe3d = new (lh.Alloc (sizeof(FacetVolumePyramid)))  FacetVolumePyramid ();
-        break;
-      case ET_PRISM:
-        fe3d = new (lh.Alloc (sizeof(FacetVolumePrism)))  FacetVolumePrism ();
-        break;
-      case ET_HEX:
-        fe3d = new (lh.Alloc (sizeof(FacetVolumeHex)))  FacetVolumeHex ();
-        break;
+      case ET_TRIG:  fe2d = new (lh) FacetVolumeTrig (); break;
+      case ET_QUAD:  fe2d = new (lh) FacetVolumeQuad (); break;
+      case ET_TET:   fe3d = new (lh) FacetVolumeTet (); break;
+      case ET_PYRAMID: fe3d = new (lh) FacetVolumePyramid (); break;
+      case ET_PRISM: fe3d = new (lh) FacetVolumePrism (); break;
+      case ET_HEX:   fe3d = new (lh) FacetVolumeHex (); break;
       }
 
     if (!fe2d && !fe3d)
@@ -334,16 +322,19 @@ namespace ngcomp
         throw Exception (str.str());
       }
 
-    Array<int> vnums;
+    ArrayMem<int, 12> vnums;
     ArrayMem<int, 6> fanums, order_fa;
     
     ma.GetElVertices(elnr, vnums);
 
+    /*
     if (ma.GetDimension() == 2)
       ma.GetElEdges(elnr, fanums);
     else
       ma.GetElFaces(elnr, fanums);
-    
+    */
+    ma.GetElFacets (elnr, fanums);
+
     order_fa.SetSize(fanums.Size());
     for (int j = 0; j < fanums.Size(); j++)
       order_fa[j] = order_facet[fanums[j]][0]; //SZ not yet anisotropric
@@ -457,22 +448,25 @@ namespace ngcomp
   // ------------------------------------------------------------------------
   void FacetFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-
-    Array<int> fanums; // facet numbers
+    // Array<int> fanums; // facet numbers
+    ArrayMem<int,6> fanums;
     int first,next;
 
     fanums.SetSize(0);
     dnums.SetSize(0);
     
-
+    ma.GetElFacets (elnr, fanums);
+    /*
     if(ma.GetDimension() == 3)
       ma.GetElFaces (elnr, fanums);
     else // dim=2
       ma.GetElEdges (elnr, fanums);
+    */
 
     for(int i=0; i<fanums.Size(); i++)
       {
         dnums.Append(fanums[i]); // low_order
+
         first = first_facet_dof[fanums[i]];
         next = first_facet_dof[fanums[i]+1];
         for(int j=first ; j<next; j++)
