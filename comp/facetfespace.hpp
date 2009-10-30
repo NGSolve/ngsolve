@@ -120,8 +120,6 @@ namespace ngcomp
       dnums.Append(elnum);
       for (int j=first_facet_dof[elnum]; j<first_facet_dof[elnum+1]; j++)
 	dnums.Append(j);
-
-
     }
 
     virtual void GetFaceDofNrs (int felnr, Array<int> & dnums) const

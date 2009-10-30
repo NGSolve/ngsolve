@@ -483,7 +483,6 @@ namespace ngcomp
           dirichlet_face.SetSize (ma.GetNFaces());
 	
 	Array<int> vnums, ednums;
-	int fanum;
 
 	dirichlet_vertex = false;
 	dirichlet_edge = false;
@@ -496,15 +495,17 @@ namespace ngcomp
 	      {
 		ma.GetSElVertices (i, vnums);
 		ma.GetSElEdges (i, ednums);
-                if (dim == 3)
-                  fanum = ma.GetSElFace (i);
 
 		for (int j = 0; j < vnums.Size(); j++)
 		  dirichlet_vertex[vnums[j]] = true;
 		for (int j = 0; j < ednums.Size(); j++)
 		  dirichlet_edge[ednums[j]] = true;
+
                 if (dim == 3)
-                  dirichlet_face[fanum] = true;
+		  {
+		    int fanum = ma.GetSElFace (i);
+		    dirichlet_face[fanum] = true;
+		  }
 	      }
 	  }
 
