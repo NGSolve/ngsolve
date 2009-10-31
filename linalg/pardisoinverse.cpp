@@ -14,15 +14,24 @@ extern "C"
 {
   /* PARDISO prototype. */
 
-#ifndef USE_MKL
+#ifdef USE_MKL
+
+  void F77_FUNC(pardiso)
+    (void * pt, int * maxfct, int * mnum, int * mtype, int * phase, int * n, 
+     double * a, int * ia, int * ja, int * perm, int * nrhs, int * iparam, 
+     int * msglvl, double * b, double * x, int * error);
+
+#else
+
   int F77_FUNC(pardisoinit)
     (void *, int *, int *);
-#endif
 
   int F77_FUNC(pardiso)
     (void * pt, int * maxfct, int * mnum, int * mtype, int * phase, int * n, 
      double * a, int * ia, int * ja, int * perm, int * nrhs, int * iparam, 
      int * msglvl, double * b, double * x, int * error);
+
+#endif
 }
 
 
@@ -38,47 +47,6 @@ namespace ngla
   int pardiso_msg = 1;
 
 
-namespace pardisofunc
-{
-  using namespace pardisofunc;
-  template<class TM>
-  int NumRows(TM entry)
-  {
-    return entry.Height();
-  }
-  int NumRows(double entry) { return 1; }
-  int NumRows(Complex entry) { return 1; }
-
-
-  template<class TM>
-  int NumCols(TM entry)
-  {
-    return entry.Width();
-  }
-  int NumCols(double entry) { return 1; }
-  int NumCols(Complex entry) { return 1; }
-
-
-  template<class TM>
-  typename TM::TSCAL Elem(TM entry, int i, int j)
-  {
-    return entry(i,j);
-  }
-  double Elem (double entry, int i, int j) { return entry; }
-  Complex Elem (Complex entry, int i, int j) { return entry; }
-
-
-  /*
-  template<class TM>
-  int IsComplex(TM entry)
-  {
-    return ( sizeof( Elem(entry,0,0) ) == sizeof( Complex ) );
-  }
-  */
-
-}
-
-  using namespace pardisofunc;
 
   template<class TM, class TV_ROW, class TV_COL>
   PardisoInverse<TM,TV_ROW,TV_COL> :: 
@@ -96,6 +64,8 @@ namespace pardisofunc
 
     (*testout) << "Pardiso, symmetric = " << symmetric << endl;
 
+    if (inner && cluster)
+      throw Exception("PardisoInverse: Cannot use inner and cluster");
 
     if ( (inner && inner->Size() < a.Height()) ||
 	 (cluster && cluster->Size() < a.Height() ) )
@@ -120,8 +90,6 @@ namespace pardisofunc
 
     spd = ( a.GetInverseType() == PARDISOSPD ) ? 1 : 0;
 
-    int i, j, k, l, rowsize;
-    int col;
     int maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = pardiso_msg, error;
     int * params = const_cast <int*> (&hparams[0]);
 
@@ -143,8 +111,7 @@ namespace pardisofunc
     params[26] = 1; // check input matrix
     params[59] = 0; // 0..incore, 1..depending on MKL_PARDISO_MAX_CORE_SIZE, 2..ooc
 
-    for (i = 0; i < 128; i++) pt[i] = 0;
-    int retvalue;
+    for (int i = 0; i < 128; i++) pt[i] = 0;
 
 #ifdef USE_MKL
     //    no init in MKL PARDISO
@@ -154,7 +121,7 @@ namespace pardisofunc
     // 				   NULL, NULL, &error );
 #else
 
-    retvalue = 
+    int retvalue = 
       F77_FUNC(pardisoinit) (pt,  &matrixtype, params); 
 
     // cout << "init success" << endl;
@@ -169,13 +136,13 @@ namespace pardisofunc
 	// 1.) build array 'rowstart':
 	// (a) get nr. of entries for each row
 
-	for ( i=0; i<=height; i++ ) rowstart[i] = 0;
+	for (int i=0; i<=height; i++ ) rowstart[i] = 0;
 
-	for ( i=1; i<=a.Height(); i++ )
+	for (int i=1; i<=a.Height(); i++ )
 	  {
-	    for ( j=0; j<a.GetRowIndices(i-1).Size(); j++ )
+	    for (int j=0; j<a.GetRowIndices(i-1).Size(); j++ )
 	      {
-		col = a.GetRowIndices(i-1)[j];
+		int col = a.GetRowIndices(i-1)[j];
 		if ( i-1 != col )
 		  {
 		    if (  (!inner && !cluster) ||
@@ -184,7 +151,7 @@ namespace pardisofunc
 		           ((*cluster)[i-1] == (*cluster)[col] 
 			    && (*cluster)[i-1] ))  )
 		      {
-			for ( k=0; k<entrysize; k++ )
+			for (int k=0; k<entrysize; k++ )
 			  rowstart[col*entrysize+k+1] += entrysize;
 		      }
 		  }
@@ -192,31 +159,31 @@ namespace pardisofunc
 			  (inner && inner->Test(i-1)) ||
 			  (!inner && cluster && (*cluster)[i-1]) )
 		  {
-		    for ( k=0; k<entrysize; k++ )
+		    for (int k=0; k<entrysize; k++ )
 		      rowstart[col*entrysize+k+1] += entrysize-k;
 		  }
 		else
 		  {
-		    for ( k=0; k<entrysize; k++ )
+		    for (int k=0; k<entrysize; k++ )
 		      rowstart[col*entrysize+k+1] ++;
 		  }
 	      }
 	  }
 	// (b) accumulate
 	rowstart[0] = 1;
-	for ( i=1; i<=height; i++ ) rowstart[i] += rowstart[i-1];
+	for (int i=1; i<=height; i++ ) rowstart[i] += rowstart[i-1];
 	
 	
 	// 2.) build whole matrix:
 	int * counter = new int[height];
-	for ( i=0; i<a.Height(); i++ )
+	for (int i=0; i<a.Height(); i++ )
 	  {
-	    rowsize = a.GetRowIndices(i).Size();
-	    for ( k=0; k<entrysize; k++ ) counter[i*entrysize+k]=0;
+	    // int rowsize = a.GetRowIndices(i).Size();
+	    for (int k=0; k<entrysize; k++ ) counter[i*entrysize+k]=0;
 
-	    for ( j=0; j<a.GetRowIndices(i).Size(); j++ )
+	    for (int j=0; j<a.GetRowIndices(i).Size(); j++ )
 	      {
-		col = a.GetRowIndices(i)[j];
+		int col = a.GetRowIndices(i)[j];
 
 		if ( i != col )
 		  {
@@ -227,13 +194,13 @@ namespace pardisofunc
 			   && (*cluster)[i] ))  )
 		      {
 			TM entry = a(i,col);
-			for ( k=0; k<entrysize; k++)
-			  for ( l=0; l<entrysize; l++ )
+			for (int k=0; k<entrysize; k++)
+			  for (int l=0; l<entrysize; l++ )
 			    {
 			      indices[ rowstart[col*entrysize+k]+
 				       counter[col*entrysize+k]-1 ] = i*entrysize+l+1;
 			      matrix[ rowstart[col*entrysize+k]+
-				      counter[col*entrysize+k]-1 ] = Elem(entry,l,k);
+				      counter[col*entrysize+k]-1 ] = Access(entry,l,k);
 			      counter[col*entrysize+k]++;
 			    }
 		      }
@@ -243,13 +210,13 @@ namespace pardisofunc
 			  (!inner && cluster && (*cluster)[i]) )
 		  {
 		    TM entry = a(i,col);
-		    for ( l=0; l<entrysize; l++ )
-		      for ( k=0; k<=l; k++)
+		    for (int l=0; l<entrysize; l++ )
+		      for (int k=0; k<=l; k++)
 			{
 			  indices[ rowstart[col*entrysize+k]+
 				   counter[col*entrysize+k]-1 ] = i*entrysize+l+1;
 			  matrix[ rowstart[col*entrysize+k]+
-				  counter[col*entrysize+k]-1 ] = Elem(entry,l,k);
+				  counter[col*entrysize+k]-1 ] = Access(entry,l,k);
 			  counter[col*entrysize+k]++;
 			}
 		  }
@@ -257,7 +224,7 @@ namespace pardisofunc
 		  {
 		    // in the case of 'inner' or 'cluster': 1 on the diagonal for
 		    // unused dofs.
-		    for ( l=0; l<entrysize; l++ )
+		    for (int l=0; l<entrysize; l++ )
 		      {
 			indices[ rowstart[col*entrysize+l]+
 				 counter[col*entrysize+l]-1 ] = i*entrysize+l+1;
@@ -289,59 +256,40 @@ namespace pardisofunc
 	// for non-symmetric matrices:
 	int counter = 0, rowelems;
 
-	for ( i=0; i<a.Height(); i++ )
+	for (int i = 0; i < a.Height(); i++ )
 	  {
 	    rowelems = 0;
-	    rowsize = a.GetRowIndices(i).Size();
+	    int rowsize = a.GetRowIndices(i).Size();
 
 	    // get effective number of elements in the row
-            /*
-	    if ( inner || cluster )
-	      {
-		for ( j=0; j<rowsize; j++ )
-		  {
-		    col = a.GetRowIndices(i)[j];
-		    if ( (inner && (inner->Test(i) && inner->Test(col))) ||
-			 (!inner && cluster &&
-		          ((*cluster)[i] == (*cluster)[col] 
-			   && (*cluster)[i])) )
-		      rowelems+=entrysize;
-		    else if ( i == col )
-		      rowelems++;
-		  }
-	      }
-	    else rowelems = rowsize * entrysize;
-            */
+
 	    if ( inner )
 	      {
-		for ( j=0; j<rowsize; j++ )
+		for (int j = 0; j < rowsize; j++)
 		  {
-		    col = a.GetRowIndices(i)[j];
-		    if ( (inner && (inner->Test(i) && inner->Test(col))) ||
-			 (!inner && cluster &&
-		          ((*cluster)[i] == (*cluster)[col] 
-			   && (*cluster)[i])) )
-		      rowelems+=entrysize;
+		    int col = a.GetRowIndices(i)[j];
+		    if (inner->Test(i) && inner->Test(col))
+		      rowelems += entrysize;
 		    else if ( i == col )
 		      rowelems++;
 		  }
 	      }
             else if (cluster)
 	      {
-		for ( j=0; j<rowsize; j++ )
+		for (int j = 0; j < rowsize; j++ )
 		  {
-		    col = a.GetRowIndices(i)[j];
+		    int col = a.GetRowIndices(i)[j];
 		    if ( (*cluster)[i] == (*cluster)[col] && (*cluster)[i])
 		      rowelems+=entrysize;
 		    else if ( i == col )
 		      rowelems++;
 		  }
 	      }
-	    else rowelems = rowsize * entrysize;
+	    else 
+	      rowelems = rowsize * entrysize;
 
 
-
-	    for ( k=0; k<entrysize; k++ )
+	    for (int k = 0; k < entrysize; k++ )
 	      rowstart[i*entrysize+k] = counter+rowelems*k+1;
 	    
 	    //	    (*testout) << "rowelems: " << rowelems << endl;
@@ -363,7 +311,7 @@ namespace pardisofunc
 		      for ( l=0; l<entrysize; l++ )
 			{
 			  indices[counter+rowelems*k+l] = col*entrysize+l+1;
-			  matrix[counter+rowelems*k+l] = Elem(entry,k,l);
+			  matrix[counter+rowelems*k+l] = Access(entry,k,l);
 			}
 
 		    counter+=entrysize;
@@ -384,9 +332,9 @@ namespace pardisofunc
 
             if (inner)
               {
-                for ( j=0; j<rowsize; j++ )
+                for (int j=0; j<rowsize; j++ )
                   {
-                    col = a.GetRowIndices(i)[j];
+                    int col = a.GetRowIndices(i)[j];
                     
                     if ( (!inner && !cluster) ||
                          (inner && ( inner->Test(i) && inner->Test(col) )) ||
@@ -395,11 +343,11 @@ namespace pardisofunc
 		       && (*cluster)[i] )) )
                       {
                         TM entry = a(i,col);
-                        for ( k=0; k<entrysize; k++ )
-                          for ( l=0; l<entrysize; l++ )
+                        for (int k=0; k<entrysize; k++ )
+                          for (int l=0; l<entrysize; l++ )
                             {
                               indices[counter+rowelems*k+l] = col*entrysize+l+1;
-                              matrix[counter+rowelems*k+l] = Elem(entry,k,l);
+                              matrix[counter+rowelems*k+l] = Access(entry,k,l);
                             }
                         
                         counter+=entrysize;
@@ -408,7 +356,7 @@ namespace pardisofunc
                       {
 		    // in the case of 'inner' or 'cluster': 1 on the diagonal for
 		    // unused dofs.
-                        for ( l=0; l<entrysize; l++ )
+                        for (int l=0; l<entrysize; l++ )
                           {
                             indices[counter+rowelems*l+l] = col*entrysize+l+1;
                             matrix[counter+rowelems*l+l] = 1;
@@ -419,24 +367,24 @@ namespace pardisofunc
               }
             else if (cluster)
               {
-                for ( j=0; j<rowsize; j++ )
+                for (int j=0; j<rowsize; j++ )
                   {
-                    col = a.GetRowIndices(i)[j];
+                    int col = a.GetRowIndices(i)[j];
                     
                     if ( (*cluster)[i] == (*cluster)[col] && (*cluster)[i] )
                       {
                         TM entry = a(i,col);
-                        for ( k=0; k<entrysize; k++ )
-                          for ( l=0; l<entrysize; l++ )
+                        for (int k=0; k<entrysize; k++ )
+                          for (int l=0; l<entrysize; l++ )
                             {
                               indices[counter+rowelems*k+l] = col*entrysize+l+1;
-                              matrix[counter+rowelems*k+l] = Elem(entry,k,l);
+                              matrix[counter+rowelems*k+l] = Access(entry,k,l);
                             }
                         counter+=entrysize;
                       }
                     else if ( i == col )
                       {
-                        for ( l=0; l<entrysize; l++ )
+                        for (int l=0; l<entrysize; l++ )
                           {
                             indices[counter+rowelems*l+l] = col*entrysize+l+1;
                             matrix[counter+rowelems*l+l] = 1;
@@ -446,26 +394,25 @@ namespace pardisofunc
                   }
               }
             else
-              for ( j=0; j<rowsize; j++ )
+              for (int j = 0; j < rowsize; j++)
                 {
-                  col = a.GetRowIndices(i)[j];
-                  
-                  TM entry = a(i,col);
-                  for ( k=0; k<entrysize; k++ )
-                    for ( l=0; l<entrysize; l++ )
+                  int col = a.GetRowIndices(i)[j];
+                  // TM entry = a(i,col);
+		  const TM & entry = a.GetRowValue(i,j);
+                  for (int k = 0; k < entrysize; k++)
+                    for (int l = 0; l < entrysize; l++)
                       {
                         indices[counter+rowelems*k+l] = col*entrysize+l+1;
-                        matrix[counter+rowelems*k+l] = Elem(entry,k,l);
+                        matrix[counter+rowelems*k+l] = Access(entry,k,l);
                       }
                   
                   counter+=entrysize;
                 }
 
 
-	    counter += rowelems * ( entrysize-1 );
+	    // counter += rowelems * ( entrysize-1 );    should not be here ???? (JS, Oct 2009)
 	  }
 	rowstart[height] = counter+1;
-
 	
 	/*
 	  (*testout) << endl << "row, rowstart / indices, matrix-entries" << endl;
@@ -479,6 +426,7 @@ namespace pardisofunc
 	*/
 
       }
+
     nze = rowstart[height];
 
     // call pardiso for factorization:
@@ -487,19 +435,13 @@ namespace pardisofunc
 
 
 
-    retvalue = F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &height, 
-				   reinterpret_cast<double *>(matrix),
-				   rowstart, indices, NULL, &nrhs, params, &msglevel,
-				   NULL, NULL, &error );
-
-    if (error != 0)
-      {
-	cout << "retvalue = " << retvalue << endl;
-	cout << "error = " << error << endl;
-      }
+    // retvalue = 
+    F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &height, 
+			reinterpret_cast<double *>(matrix),
+			rowstart, indices, NULL, &nrhs, params, &msglevel,
+			NULL, NULL, &error );
+    
     cout << " done" << endl;
-    // time2 = clock();
-
 
     if ( error != 0 )
       {

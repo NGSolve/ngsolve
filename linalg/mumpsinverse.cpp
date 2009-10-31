@@ -35,12 +35,15 @@ namespace ngla
                 const Array<int> * acluster,
                 bool asymmetric)
   { 
+    static int timer = NgProfiler::CreateTimer ("Mumps Inverse");
+    NgProfiler::RegionTimer reg (timer);
+
     symmetric = asymmetric;
     inner = ainner;
     cluster = acluster;
 
 
-    cout << "Mumps called ..." << endl;
+    cout << "Mumps called ..." << flush;
 
     if ( ( inner && inner->Size() < a.Height() ) ||
 	 ( cluster && cluster->Size() < a.Height() ) )
@@ -317,7 +320,7 @@ namespace ngla
     // dmumps_c(&id);
     mumps_trait<TSCAL>::MumpsFunction (&id);
 
-    cout << "MUMPS version number is " << id.version_number << endl;
+    // cout << "MUMPS version number is " << id.version_number << endl;
 
 
     /* Define the problem on the host */
@@ -341,14 +344,20 @@ namespace ngla
     id.job = JOB_ANALYSIS;
     // dmumps_c(&id);
 
-    cout << "call analysis" << endl;
+    // cout << "call analysis" << endl;
 
     mumps_trait<TSCAL>::MumpsFunction (&id);
 
-    cout << "num floating-point ops = " << id.rinfog[0] << endl;
-    cout << "error-code = " << id.infog[0] << endl;
+    cout << " factor ... " << flush;
+    // cout << "num floating-point ops = " << id.rinfog[0] << endl;
+    if (id.infog[0])
+      {
+	cout << "analysis done" << endl;
+	cout << "error-code = " << id.infog[0] << flush;
+      }
 
-    cout << "analysis done, now factor" << endl;
+
+    // cout << "analysis done, now factor" << endl;
 
     // id.a   = (double*)(void*)matrix; 
     id.a   = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)matrix; 
@@ -360,14 +369,14 @@ namespace ngla
     mumps_trait<TSCAL>::MumpsFunction (&id);
 
 
-    cout << "factorization done" << endl;
-    cout << "error-code = " << id.infog[0] << endl;
-    cout << "info(1) = " << id.info[0] << endl;
-    cout << "info(2) = " << id.info[1] << endl;
-
+    if (id.infog[0] != 0)
+      {
+	cout << " factorization done" << endl;
+	cout << "error-code = " << id.infog[0] << endl;
+	cout << "info(1) = " << id.info[0] << endl;
+	cout << "info(2) = " << id.info[1] << endl;
+      }
     time2 = clock();
-
-
 
 
     /*
@@ -390,6 +399,12 @@ namespace ngla
     delete [] colstart;
     delete [] counter;
     // delete [] rhs;    
+
+
+    delete [] col_indices;
+    delete [] row_indices;
+    delete [] matrix;
+
   }
   
   
@@ -441,6 +456,8 @@ namespace ngla
   void MumpsInverse<TM,TV_ROW,TV_COL> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
+    static int timer = NgProfiler::CreateTimer ("Mumps mult inverse");
+    NgProfiler::RegionTimer reg (timer);
 
     FlatVector<TVX> fx = 
       dynamic_cast<T_BaseVector<TVX> &> (const_cast<BaseVector &> (x)).FV();
@@ -505,6 +522,16 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   MumpsInverse<TM,TV_ROW,TV_COL> :: ~MumpsInverse()
   {
+    cout << "delete mumps-inverse" << endl;
+
+    id.job=JOB_END; 
+    id.par=1; 
+    id.sym=symmetric;
+    id.comm_fortran=USE_COMM_WORLD;
+    // dmumps_c(&id);
+    mumps_trait<TSCAL>::MumpsFunction (&id);
+
+
     /*
     //     Destroy_CompCol_Matrix(&A);
     //     Destroy_SuperMatrix_Store(&B);

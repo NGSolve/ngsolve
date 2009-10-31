@@ -339,6 +339,18 @@ namespace ngla
 	return nul;
     }
 
+    FlatVector<const TM> GetRowValues(int i) const
+    { return FlatVector<const TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
+
+    FlatVector<TM> GetRowValues(int i) 
+    { return FlatVector<TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
+
+    const TM & GetRowValue(int i, int j) const
+    { return data[firsti[i]+j]; }
+
+    TM & GetRowValue(int i, int j) 
+    { return data[firsti[i]+j]; }
+
 
     virtual BaseVector & AsVector() 
     {
