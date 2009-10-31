@@ -492,8 +492,11 @@ namespace pardisofunc
 				   rowstart, indices, NULL, &nrhs, params, &msglevel,
 				   NULL, NULL, &error );
 
-    cout << "retvalue = " << retvalue << endl;
-    cout << "error = " << error << endl;
+    if (error != 0)
+      {
+	cout << "retvalue = " << retvalue << endl;
+	cout << "error = " << error << endl;
+      }
     cout << " done" << endl;
     // time2 = clock();
 
