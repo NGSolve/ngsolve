@@ -997,5 +997,4 @@ namespace netgen
     PrintMessage (3, "Elements after Remove: ", mesh.GetNE());
   }
 
-
 }

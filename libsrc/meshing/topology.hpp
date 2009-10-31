@@ -51,10 +51,8 @@ public:
   void Update();
 
 
-  int GetNEdges () const
-  { return edge2vert.Size(); }
-  int GetNFaces () const
-  { return face2vert.Size(); }
+  int GetNEdges () const { return edge2vert.Size(); }
+  int GetNFaces () const { return face2vert.Size(); }
 
   static inline int GetNVertices (ELEMENT_TYPE et);
   static inline int GetNPoints (ELEMENT_TYPE et);

@@ -4483,6 +4483,7 @@ namespace netgen
 
                     if (strcmp (scalname, newscalname) != 0)
                       Tcl_SetVar ( interp, "::visoptions.scalfunction", newscalname, TCL_GLOBAL_ONLY );
+		    scalname = Tcl_GetVar (interp, "::visoptions.scalfunction", TCL_GLOBAL_ONLY);
                   }
                 if (strcmp (vssolution.soldata[i]->name, vecname) == 0)
                   {
