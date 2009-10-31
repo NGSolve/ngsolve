@@ -35,11 +35,14 @@ namespace netgen
 {
 #include "writeuser.hpp"
 
+   // Global arrays used to maintain the owner, neighbour and face lists 
+   // so that they are accessible across functions
    Array<int> OF15x_owner_facelist;
    Array<int> OF15x_owner_celllist;
    Array<int> OF15x_neighbour_celllist;
    Array<int> OF15x_surfelem_bclist;
    Array<INDEX_2> OF15x_surfelem_lists;
+
 
 
    void WriteOpenFOAM15xBanner(ofstream & outfile)
@@ -97,7 +100,7 @@ namespace netgen
       const_cast<MeshTopology&> (meshtopo).SetBuildFaces(true);
       const_cast<MeshTopology&> (meshtopo).Update();
 
-
+      // Extract important mesh metrics
       int ne = mesh.GetNE();
       int nse = mesh.GetNSE();
       int totfaces = meshtopo.GetNFaces();
@@ -110,6 +113,9 @@ namespace netgen
       OF15x_surfelem_bclist.SetSize(nse);
       OF15x_surfelem_lists.SetSize(nse);
 
+      // Initialise arrays to zero if required
+      OF15x_neighbour_celllist = 0;
+
       // Array used to keep track of Faces which have already been 
       // processed and added to the Owner list... In addition, also the 
       // location where the face appears in the Owner list is also stored 
@@ -117,17 +123,25 @@ namespace netgen
       Array<int> ownerfaces(totfaces);
       ownerfaces = 0;
 
+      // Array to hold the set of local faces of each volume element 
+      // while running through the set of volume elements
+      Array<int> locfaces;
+
+      // Secondary indices used to independently advance the owner 
+      // and boundary condition arrays within the main loop
       int owner_ind = 1;
       int bc_ind = 1;
 
       // Loop through all the volume elements
       for(int elind = 1; elind <= ne; elind++)
       {
+         // Extract the current volume element
          Element el = mesh.VolumeElement(elind);
 
-         Array<int> locfaces;
-
+         // Set the size of the array to the number of faces in the 
+         // current volume element and initialise the elements to 0
          locfaces.SetSize(el.GetNFaces());
+         locfaces = 0;
 
          // Get the face numbers of the faces of the current volume element
          // The values returned are given a sign depending on the orientation 
@@ -139,15 +153,63 @@ namespace netgen
          // Loop through the faces
          for(int i = 1; i <= locfaces.Size(); i++)
          {
+            // The absolute value of a face number (because the faces 
+            // returned by the GetElementFaces function prepend it 
+            // with a sign depending on the face orientation)
             int absfacenr = abs(locfaces.Elem(i));
 
             // If the face already exists in the owner list, add 
             // the current cell into the neighbour list, in the 
             // same location where the face appears in the owner list
-            int ownerface = ownerfaces.Elem(absfacenr);
-            if(ownerface)
+            int owner_face = ownerfaces.Elem(absfacenr);
+            if(owner_face)
             {
-               OF15x_neighbour_celllist.Elem(ownerface) = elind;
+               OF15x_neighbour_celllist.Elem(owner_face) = elind;
+
+               // From this point on, the code within this "if" block 
+               // basically sorts the order of the the Neighbour cells (along 
+               // with the faces list) in ascending order.
+               // The approach used is..... to traverse the owner and neighbour cell lists
+               // up and down, and sort the neighbour cells of a given owner cell 
+               // as the list evolves.
+               // NOTE: A value of "zero" in the neighbour list implies that 
+               // the neighbour has not been found yet, so the "zero" locations need 
+               // to be skipped while sorting in ascending order
+               int curr_owner = OF15x_owner_celllist.Elem(owner_face);
+
+               int peek_loc = owner_face - 1;
+               int new_loc = owner_face;
+
+               // Traversing upwards in the list
+               while((OF15x_owner_celllist.Elem(peek_loc) == curr_owner) && (peek_loc >= 1))
+               {
+                  if((OF15x_neighbour_celllist.Elem(peek_loc) != 0) 
+                     && (OF15x_neighbour_celllist.Elem(new_loc) < OF15x_neighbour_celllist.Elem(peek_loc)))
+                  {
+                     Swap(OF15x_neighbour_celllist.Elem(new_loc),OF15x_neighbour_celllist.Elem(peek_loc));
+                     Swap(OF15x_owner_facelist.Elem(new_loc),OF15x_owner_facelist.Elem(peek_loc));
+                     new_loc = peek_loc;
+                  }
+
+                  peek_loc--;
+               }
+
+               peek_loc = owner_face + 1;
+
+               // Traversing downwards in the list
+               while((OF15x_owner_celllist.Elem(peek_loc) == curr_owner) && (peek_loc <= owner_ind))
+               {
+                  if((OF15x_neighbour_celllist.Elem(peek_loc) != 0) 
+                     && (OF15x_neighbour_celllist.Elem(new_loc) > OF15x_neighbour_celllist.Elem(peek_loc)))
+                  {
+                     Swap(OF15x_neighbour_celllist.Elem(new_loc),OF15x_neighbour_celllist.Elem(peek_loc));
+                     Swap(OF15x_owner_facelist.Elem(new_loc),OF15x_owner_facelist.Elem(peek_loc));
+                     new_loc = peek_loc;
+                  }
+
+                  peek_loc++;
+               }
+
                continue;
             }
 
@@ -162,7 +224,7 @@ namespace netgen
                // the index location to be used later by the neighbour list
                OF15x_owner_celllist.Elem(owner_ind) = elind;
                OF15x_owner_facelist.Elem(owner_ind) = locfaces.Elem(i);
-               // Set the bit array to indicate that the face is already processed
+               // Update the array to indicate that the face is already processed
                ownerfaces.Elem(absfacenr) = owner_ind;
 
                owner_ind++;
@@ -192,7 +254,7 @@ namespace netgen
       // Sort the list of surface elements in ascending order of boundary condition number
       // also sort the cell list in the same manner
       QuickSort(OF15x_surfelem_bclist,OF15x_surfelem_lists);
-
+/*
       int rng_start = 1;
       int rng_end = 1;
 
@@ -233,6 +295,7 @@ namespace netgen
             rng_end = i;
          }
       }
+*/
 /*
       ofstream dbg("OpenFOAMDebug.log");
 
@@ -245,21 +308,14 @@ namespace netgen
               << " : cell = " << OF15x_surfelem_lists.Elem(i).I2() << "\n";
       }
 
-      dbg << "\n ------- Owner List ------- \n";
+      dbg << "\n ------- Owner / Face / Neighbour List ------- \n";
 
       for(int i = 1; i <= OF15x_owner_celllist.Size(); i++)
       {
          dbg << "Ind:" << i << " :: (" 
               << OF15x_owner_celllist.Elem(i) << " "
-              << OF15x_owner_facelist.Elem(i) << ")\n";
-      }
-
-      dbg << "\n ----- Neighbour List ----- \n";
-
-      for(int i = 1; i <= OF15x_neighbour_celllist.Size(); i++)
-      {
-         dbg << "Ind:" << i << " :: " 
-              << OF15x_neighbour_celllist.Elem(i) << "\n";
+              << OF15x_owner_facelist.Elem(i) << "  "
+              << OF15x_neighbour_celllist.Elem(i) << ")\n";
       }
 
       dbg.close();
@@ -366,6 +422,10 @@ namespace netgen
 
       outfile << "(\n";
 
+      // Array to hold the indices of the points of each face to 
+      // flip if required 
+      Array<int> facepnts;
+
       // Write the faces in the order specified in the owners lists of the 
       // internal cells and the boundary cells
       for(int i = 1; i <= OF15x_owner_facelist.Size(); i++)
@@ -373,13 +433,12 @@ namespace netgen
          int face_w_orientation = OF15x_owner_facelist.Elem(i);
          int facenr = abs(face_w_orientation);
 
-         Array<int> facepnts;
-
          meshtopo.GetFaceVertices(facenr,facepnts);
 
          // Get the orientation of the face, and invert it if required
-         // for a quad, inversion => swap 1 <=> 2 and 3 <=> 4
-         // for a trig, inversion => swap 1 <=> 3
+         // Since the faces already have the orientation "embedded" into 
+         // them by means of the prepended sign, only this needs to be 
+         // checked for...
          if(face_w_orientation > 0)
          {
             int tmppnts = 0;
@@ -412,18 +471,17 @@ namespace netgen
          outfile << ")\n";
       }
 
+      // Now append the faces of the surface elements (written in 
+      // ascending order of boundary condition number) also into 
+      // the faces file
       for(int i = 1; i <= OF15x_surfelem_lists.Size(); i++)
       {
          int face_w_orientation = OF15x_surfelem_lists.Elem(i).I1();
          int facenr = abs(face_w_orientation);
 
-         Array<int> facepnts;
-
          meshtopo.GetFaceVertices(facenr,facepnts);
 
          // Get the orientation of the face, and invert it if required
-         // for a quad, inversion => swap 1 <=> 2 and 3 <=> 4
-         // for a trig, inversion => swap 1 <=> 3
          if(face_w_orientation > 0)
          {
             int tmppnts = 0;
