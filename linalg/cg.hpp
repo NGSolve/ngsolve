@@ -88,6 +88,10 @@ namespace ngla
     virtual void Mult (const BaseVector & v, BaseVector & prod) const = 0;
     ///
     virtual BaseVector * CreateVector () const;
+
+
+    virtual int VHeight() const {return a->VWidth();}
+    virtual int VWidth() const {return a->VHeight();}
   };
   
 
