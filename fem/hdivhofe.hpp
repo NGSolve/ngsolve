@@ -221,6 +221,9 @@ public:
 
   virtual void CalcDivShape (const IntegrationPoint & ip, 
                              FlatVector<> divshape) const;
+
+  virtual void CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+				FlatMatrixFixWidth<DIM> shape) const;
 };
 
 

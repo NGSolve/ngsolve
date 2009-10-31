@@ -897,6 +897,22 @@ namespace ngfem
   }
 
 
+  template <ELEMENT_TYPE ET>
+  void T_HDivHighOrderFiniteElement<ET> :: 
+  CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip, FlatMatrixFixWidth<DIM> shape) const
+  {   
+    AutoDiff<DIM> adp[DIM];
+
+    for (int i = 0; i < DIM; i++)
+      adp[i].Value() = sip.IP()(i);
+
+    for (int i = 0; i < DIM; i++)
+      for (int j = 0; j < DIM; j++)
+        adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
+
+    HDivShapeAssign<DIM> ds(shape); 
+    static_cast<const HDivHighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
+  }
 
 
 
