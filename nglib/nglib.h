@@ -631,4 +631,32 @@ DLL_HEADER Ng_Result Ng_OCC_GetFMap(Ng_OCC_Geometry * geom,
 
 #endif // OCCGEOMETRY
 
+
+
+
+
+
+// **********************************************************
+// **   Mesh refinement algorithms                         **
+// **********************************************************
+
+
+// uniform mesh refinement
+DLL_HEADER void Ng_Uniform_Refinement (Ng_Mesh * mesh);
+
+
+// uniform mesh refinement with geometry adaption:
+
+DLL_HEADER void Ng_2D_Uniform_Refinement (Ng_Geometry_2D * geom,
+					  Ng_Mesh * mesh);
+
+DLL_HEADER void Ng_STL_Uniform_Refinement (Ng_STL_Geometry * geom,
+					   Ng_Mesh * mesh);
+
+DLL_HEADER void Ng_CSG_Uniform_Refinement (Ng_CSG_Geometry * geom,
+					   Ng_Mesh * mesh);
+
+
+
+
 #endif // NGLIB

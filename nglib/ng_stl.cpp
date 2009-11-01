@@ -112,5 +112,17 @@ int main (int argc, char ** argv)
    cout << "Saving Mesh in VOL Format...." << endl;
    Ng_SaveMesh(mesh,"test.vol");
 
+
+   // refinement without geomety adaption:
+   // Ng_Uniform_Refinement (mesh);
+
+   // refinement with geomety adaption:   
+   Ng_STL_Uniform_Refinement (stl_geom, mesh);
+
+   cout << "elements after refinement: " << Ng_GetNE(mesh) << endl;
+   cout << "points   after refinement: " << Ng_GetNP(mesh) << endl;
+
+   Ng_SaveMesh(mesh,"test_ref.vol");
+
    return 0;
 }

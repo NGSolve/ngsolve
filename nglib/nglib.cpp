@@ -887,7 +887,48 @@ namespace nglib
       optsteps_3d = 3;
    }
 
+
+
+
+
+
+
+
+
+
+
+
+  DLL_HEADER void Ng_Uniform_Refinement (Ng_Mesh * mesh)
+  {
+    Refinement ref;
+    ref.Refine ( * (Mesh*) mesh );
+  }
+
+  DLL_HEADER void Ng_2D_Uniform_Refinement (Ng_Geometry_2D * geom,
+					 Ng_Mesh * mesh)
+  {
+    ( (SplineGeometry2d*)geom ) -> GetRefinement().Refine ( * (Mesh*) mesh );
+  }
+
+  DLL_HEADER void Ng_STL_Uniform_Refinement (Ng_STL_Geometry * geom,
+					     Ng_Mesh * mesh)
+  {
+    ( (STLGeometry*)geom ) -> GetRefinement().Refine ( * (Mesh*) mesh );
+  }
+
+  DLL_HEADER void Ng_CSG_Uniform_Refinement (Ng_CSG_Geometry * geom,
+					     Ng_Mesh * mesh)
+  {
+    ( (CSGeometry*)geom ) -> GetRefinement().Refine ( * (Mesh*) mesh );
+  }
+
+
+
 } // End of namespace nglib
+
+
+
+
 
 
 
