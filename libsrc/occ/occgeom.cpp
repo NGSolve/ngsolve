@@ -1228,17 +1228,17 @@ namespace netgen
 
 
 
-   char * shapesname[] =
+  const char * shapesname[] =
    {" ", "CompSolids", "Solids", "Shells",
 
    "Faces", "Wires", "Edges", "Vertices"};
 
-   char * shapename[] =
+  const char * shapename[] =
    {" ", "CompSolid", "Solid", "Shell",
    "Face", "Wire", "Edge", "Vertex"};
 
-   char * orientationstring[] =
-   {"+", "-"};
+  const char * orientationstring[] =
+     {"+", "-"};
 
 
 
@@ -1253,7 +1253,7 @@ namespace netgen
 
       TopExp_Explorer e;
       int count = 0;
-      int count2;
+      int count2 = 0;
 
       if (isfree)
          e.Init(sh, l, TopAbs_ShapeEnum(l-1));
@@ -1269,19 +1269,21 @@ namespace netgen
          str << lname2.str() << " ";
 
          switch (e.Current().ShapeType())
-         {
-         case TopAbs_SOLID:
-            count2 = somap.FindIndex(TopoDS::Solid(e.Current())); break;
-         case TopAbs_SHELL:
-            count2 = shmap.FindIndex(TopoDS::Shell(e.Current())); break;
-         case TopAbs_FACE:
-            count2 = fmap.FindIndex(TopoDS::Face(e.Current())); break;
-         case TopAbs_WIRE:
-            count2 = wmap.FindIndex(TopoDS::Wire(e.Current())); break;
-         case TopAbs_EDGE:
-            count2 = emap.FindIndex(TopoDS::Edge(e.Current())); break;
-         case TopAbs_VERTEX:
-            count2 = vmap.FindIndex(TopoDS::Vertex(e.Current())); break;
+	   {
+	   case TopAbs_SOLID:
+	     count2 = somap.FindIndex(TopoDS::Solid(e.Current())); break;
+	   case TopAbs_SHELL:
+	     count2 = shmap.FindIndex(TopoDS::Shell(e.Current())); break;
+	   case TopAbs_FACE:
+	     count2 = fmap.FindIndex(TopoDS::Face(e.Current())); break;
+	   case TopAbs_WIRE:
+	     count2 = wmap.FindIndex(TopoDS::Wire(e.Current())); break;
+	   case TopAbs_EDGE:
+	     count2 = emap.FindIndex(TopoDS::Edge(e.Current())); break;
+	   case TopAbs_VERTEX:
+	     count2 = vmap.FindIndex(TopoDS::Vertex(e.Current())); break;
+	   default:
+	     cout << "RecursiveTopologyTree: Case " << e.Current().ShapeType() << " not handeled" << endl;
          }
 
          int nrsubshapes = 0;
@@ -1349,7 +1351,7 @@ namespace netgen
       int stretchedpinfaces = 0;
       int smoothpinfaces = 0;
       int twistedfaces = 0;
-      int edgessamebutnotidentified = 0;
+      // int edgessamebutnotidentified = 0;
 
       cout << "checking faces ... " << flush;
 
@@ -1453,8 +1455,8 @@ namespace netgen
       cout << "done" << endl;
       cout << "checking edges ... " << flush;
 
-      double dmax;
-      int cnt = 0;
+      // double dmax;
+      // int cnt = 0;
       Array <double> edgeLengths;
       Array <int> order;
       edgeLengths.SetSize (emap.Extent());

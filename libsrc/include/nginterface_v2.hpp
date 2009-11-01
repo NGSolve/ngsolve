@@ -138,7 +138,7 @@ namespace netgen
   DLL_HEADER int Ng_GetElementIndex (int nr);
 
   
-  
+  /*  
   /// Curved Elements:
   /// xi..... DIM_EL local coordinates
   /// sxi ... step xi
@@ -149,7 +149,7 @@ namespace netgen
                                                  const double * xi, int sxi,
                                                  double * x, int sx,
                                                  double * dxdxi, int sdxdxi);
-  
+  */
   
 }
 #endif

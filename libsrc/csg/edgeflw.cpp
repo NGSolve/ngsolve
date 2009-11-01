@@ -33,9 +33,12 @@ namespace netgen
 
   void EdgeCalculation :: Calc(double h, Mesh & mesh)
   {
+    static int timer = NgProfiler::CreateTimer ("CSG: mesh edges");
+    NgProfiler::RegionTimer reg (timer);
+
+
     PrintMessage (1, "Find edges");
     PushStatus ("Find edges");
-
 
     for (int i = 1; i <= mesh.GetNP(); i++)
       meshpoint_tree->Insert (mesh.Point(i), i);

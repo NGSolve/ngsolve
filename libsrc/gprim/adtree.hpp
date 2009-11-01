@@ -447,12 +447,12 @@ class Point3dTree
   ADTree3 * tree;
 
 public:
-  Point3dTree (const Point3d & pmin, const Point3d & pmax);
+  Point3dTree (const Point<3> & pmin, const Point<3> & pmax);
   ~Point3dTree ();
-  void Insert (const Point3d & p, int pi);
+  void Insert (const Point<3> & p, int pi);
   void DeleteElement (int pi) 
     { tree->DeleteElement(pi); }
-  void GetIntersecting (const Point3d & pmin, const Point3d & pmax, 
+  void GetIntersecting (const Point<3> & pmin, const Point<3> & pmax, 
 			Array<int> & pis) const;
   const ADTree3 & Tree() const { return *tree; };
 };
@@ -462,18 +462,18 @@ public:
 class Box3dTree
 {
   ADTree6 * tree;
-  Point3d boxpmin, boxpmax;
+  Point<3> boxpmin, boxpmax;
 public:
-  Box3dTree (const Point3d & apmin, const Point3d & apmax);
+  Box3dTree (const Point<3> & apmin, const Point<3> & apmax);
   ~Box3dTree ();
-  void Insert (const Point3d & bmin, const Point3d & bmax, int pi);
+  void Insert (const Point<3> & bmin, const Point<3> & bmax, int pi);
   void Insert (const Box<3> & box, int pi)
   {
     Insert (box.PMin(), box.PMax(), pi);
   }
   void DeleteElement (int pi) 
     { tree->DeleteElement(pi); }
-  void GetIntersecting (const Point3d & pmin, const Point3d & pmax, 
+  void GetIntersecting (const Point<3> & pmin, const Point<3> & pmax, 
 			Array<int> & pis) const;
 
   const ADTree6 & Tree() const { return *tree; };

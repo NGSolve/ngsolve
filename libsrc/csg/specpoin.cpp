@@ -1365,6 +1365,10 @@ namespace netgen
 			Array<MeshPoint> & apoints, 
 			Array<SpecialPoint> & specpoints)
   {
+    static int timer = NgProfiler::CreateTimer ("CSG: analyze special points");
+    NgProfiler::RegionTimer reg (timer);
+
+
     Array<int> surfind, rep_surfind, surfind2, rep_surfind2, surfind3;
 
     Array<Vec<3> > normalvecs;
@@ -1381,15 +1385,28 @@ namespace netgen
 
     if (!apoints.Size()) return;
 
-#define VERTSORT
 
-#ifdef VERTSORT
-    Vec<3> dir(1.2, 1.7, 0.9);
-    for (int i = 0; i < apoints.Size(); i++)
-      for (int j = 0; j < apoints.Size()-1; j++)
-        if ( (dir * Vec<3> (apoints[j])) > (dir * Vec<3> (apoints[j+1])))
-          swap (apoints[j], apoints[j+1]);
-#endif
+    {
+      /*
+	sort points in the (arbitrary) direction dir
+	important for periodic boundaries: 
+	corner points on the left and the right boundary come in the same ordering
+      */
+      Vec<3> dir(1.2, 1.7, 0.9);
+      
+      Array<double> coord(apoints.Size());
+      for (int i = 0; i < apoints.Size(); i++)
+	coord[i] = dir * Vec<3> (apoints[i]);
+      
+      QuickSort (coord, apoints);
+      
+      /*
+	for (int i = 0; i < apoints.Size(); i++)
+	for (int j = 0; j < apoints.Size()-1; j++)
+	if ( (dir * Vec<3> (apoints[j])) > (dir * Vec<3> (apoints[j+1])))
+	swap (apoints[j], apoints[j+1]);
+      */
+    }
 
 
 
