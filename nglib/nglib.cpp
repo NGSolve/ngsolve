@@ -923,6 +923,15 @@ namespace nglib
   }
 
 
+#ifdef OCCGEOMETRY
+  DLL_HEADER void Ng_OCC_Uniform_Refinement (Ng_OCC_Geometry * geom,
+					     Ng_Mesh * mesh)
+  {
+    ( (OCCGeometry*)geom ) -> GetRefinement().Refine ( * (Mesh*) mesh );
+  }
+#endif
+
+
 
 } // End of namespace nglib
 

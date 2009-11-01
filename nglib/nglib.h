@@ -656,6 +656,10 @@ DLL_HEADER void Ng_STL_Uniform_Refinement (Ng_STL_Geometry * geom,
 DLL_HEADER void Ng_CSG_Uniform_Refinement (Ng_CSG_Geometry * geom,
 					   Ng_Mesh * mesh);
 
+#ifdef OCCGEOMETRY
+DLL_HEADER void Ng_OCC_Uniform_Refinement (Ng_OCC_Geometry * geom,
+					   Ng_Mesh * mesh);
+#endif
 
 
 
