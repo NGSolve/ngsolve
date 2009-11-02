@@ -1,3 +1,6 @@
+# thanks to micket (not yet all proposals included)
+
+
 AC_INIT([netgen],[4.9.12-dev],[],[])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
@@ -7,15 +10,11 @@ AC_PREFIX_DEFAULT(["/opt/netgen"])
 
 
 # Tcl/Tk configuration:
-
 TEA_INIT([3.6])
-
 TEA_PATH_TCLCONFIG
 TEA_LOAD_TCLCONFIG 
-
 TEA_PATH_TKCONFIG
 TEA_LOAD_TKCONFIG
-
 TEA_PUBLIC_TCL_HEADERS
 
 
@@ -34,11 +33,11 @@ LT_INIT
 # OpenCASCADE configuration
 
 AC_ARG_ENABLE([occ], 
-        [  --enable-occ            compile with OpenCascade geometry kernel],
+        [AC_HELP_STRING([--enable-occ],[compile with OpenCascade geometry kernel])],
         [occon=true])
 
 AC_ARG_WITH([occ], 
-        [  --with-occ=dir          use OpenCascade installed in directory dir],
+        [AC_HELP_STRING([--with-occ=dir],[use OpenCascade installed in directory dir])],
         [occdir=$withval] 
 	[occon=true],
 	[occdir=/opt/OpenCASCADE]
@@ -77,7 +76,7 @@ fi
 
 
 AC_ARG_WITH([togl], 
-        [  --with-togl=dir         directory containing libTogl1.7],
+        [AC_HELP_STRING([--with-togl=dir],[directory containing libTogl1.7])],
         [togldir=$withval]
         [togllibfl="-L$withval$"]
         )
@@ -85,15 +84,14 @@ AC_ARG_WITH([togl],
 #        [togllibfl="-L/usr/local/lib/Togl1.7"]
 
 
-
+nglibon=true
 AC_ARG_ENABLE([nglib],
-        [  --enable-nglib          generate shared library nglib],
-        [ nglibon=true ],
-        [ nglibon=false ])
+        [AC_HELP_STRING([--enable-nglib],[generate shared library nglib])],
+        [if test "$enableval" = yes; then nglibon=true; else nglibon=false; fi])
 
 
 AC_ARG_ENABLE([parallel],
-        [  --enable-parallel       enable mpi parallelization],
+        [AC_HELP_STRING([--enable-parallel],[enable mpi parallelization])],
         [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -DPARALLEL  -I/usr/share/metis/Lib -DMETIS")
         AC_SUBST([MPI_LIBS], "-lmetis -L/opt/mpich/ch-p4/lib -lmpich")
         ]
@@ -103,20 +101,23 @@ AC_ARG_ENABLE([parallel],
 #        AC_SUBST([MPI_LIBS], "-L/home/joachim/download/metis-4.0 -lmetis -L/opt/mpich/ch-p4/lib64 -lmpich")             
 
 
-
+jpeglibon=false
 AC_ARG_ENABLE([jpeglib],
         [AS_HELP_STRING([--enable-jpeglib],[enable snapshots using library libjpeg])],
         [AC_SUBST([JPEGLIB_INCLUDES], "-DJPEGLIB")
         AC_CHECK_LIB(jpeg, jpeg_start_compress,  
                      AC_SUBST([JPEGLIB_LIBS], "-ljpeg") , 
                      AC_MSG_ERROR([no usable library libjpeg found]))
+        [if test "$enableval" = yes; then jpeglibon=true; else jpeglibon=false; fi]
         ]       
         )               
 
+ffmpegon=false
 AC_ARG_ENABLE([ffmpeg],
         [AS_HELP_STRING([--enable-ffmpeg],[enable video recording with FFmpeg, uses libavcodec])],
         [AC_SUBST([FFMPEG_INCLUDES], "-DFFMPEG")
         AC_SUBST([FFMPEG_LIBS], "-lavutil -lavformat -lavcodec -lavutil -lswscale -lz -lbz2")
+        [if test "$enableval" = yes; then ffmpegon=true; else ffmpegon=false; fi]
         ]       
         )               
 
@@ -182,3 +183,32 @@ libsrc/linalg/Makefile libsrc/meshing/Makefile libsrc/occ/Makefile
   tutorials/Makefile doc/Makefile windows/Makefile )
 
 AC_OUTPUT
+
+
+
+
+
+
+
+
+AC_MSG_RESULT([
+------------------------------------------------------------------------
+  $PACKAGE $VERSION:  Automatic configuration OK.
+
+  Enabled functionality:
+
+    OCC: ............... $occon
+    JPEGlib: ........... $jpeglibon
+    FFMPEG: ............ $ffmpegon
+    NGLIB: ............. $nglibon
+
+
+  Building:
+
+    Type 'make' to compile $PACKAGE.
+
+    Type 'make install' to install $PACKAGE.
+
+  Example programs will be built but not installed.
+------------------------------------------------------------------------
+])
