@@ -1,3 +1,10 @@
+/*********************************************************************/
+/* File:   vectorfacetfespace.cpp                                    */
+/* Author: A. Sinwel, Joachim Schoeberl                              */
+/* Date:   2008                                                      */
+/*********************************************************************/
+
+
 #include <comp.hpp>
 #include <fem.hpp>
 
@@ -263,24 +270,12 @@ namespace ngcomp
     VectorFacetVolumeFiniteElement * fe = 0;
     switch (ma.GetElType(elnr))
       {
-      case ET_TRIG:
-	fe = new (lh.Alloc (sizeof(VectorFacetVolumeTrig)))  VectorFacetVolumeTrig ();
-        break;
-      case ET_QUAD:
-        fe = new (lh.Alloc (sizeof(VectorFacetVolumeQuad)))  VectorFacetVolumeQuad ();
-        break;
-      case ET_TET:
-        fe = new (lh.Alloc (sizeof(VectorFacetVolumeTet)))  VectorFacetVolumeTet ();
-        break;
-      case ET_PYRAMID:
-        fe = new (lh.Alloc (sizeof(VectorFacetVolumePyramid)))  VectorFacetVolumePyramid ();
-        break;
-      case ET_PRISM:
-        fe = new (lh.Alloc (sizeof(VectorFacetVolumePrism)))  VectorFacetVolumePrism ();
-        break;
-      case ET_HEX:
-        fe = new (lh.Alloc (sizeof(VectorFacetVolumeHex)))  VectorFacetVolumeHex ();
-        break;
+      case ET_TRIG: fe = new (lh)  VectorFacetVolumeTrig (); break;
+      case ET_QUAD: fe = new (lh) VectorFacetVolumeQuad (); break;
+      case ET_TET:  fe = new (lh) VectorFacetVolumeTet (); break;
+      case ET_PYRAMID: fe = new (lh)  VectorFacetVolumePyramid (); break;
+      case ET_PRISM: fe = new (lh)  VectorFacetVolumePrism (); break;
+      case ET_HEX:   fe = new (lh) VectorFacetVolumeHex (); break;
       default:
         throw Exception (string("VectorFacetFESpace::GetFE: unsupported element ")+
                          ElementTopology::GetElementName(ma.GetElType(elnr)));
@@ -316,15 +311,9 @@ namespace ngcomp
 
     switch (ma.GetSElType(selnr))
     {
-      case ET_SEGM:
-        fe = new (lh.Alloc (sizeof(VectorFacetFacetSegm)))  VectorFacetFacetSegm ();
-        break;
-      case ET_TRIG:
-        fe = new (lh.Alloc (sizeof(VectorFacetFacetTrig)))  VectorFacetFacetTrig ();
-        break;
-      case ET_QUAD:
-        fe = new (lh.Alloc (sizeof(VectorFacetFacetQuad)))  VectorFacetFacetQuad ();
-        break;
+      case ET_SEGM: fe = new (lh) VectorFacetFacetSegm (); break;
+      case ET_TRIG: fe = new (lh) VectorFacetFacetTrig (); break;
+      case ET_QUAD: fe = new (lh) VectorFacetFacetQuad (); break;
       default:
         fe = 0;
     }

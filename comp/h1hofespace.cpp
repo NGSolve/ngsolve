@@ -146,6 +146,8 @@ namespace ngcomp
     
   void H1HighOrderFESpace :: Update(LocalHeap & lh)
   {
+    FESpace :: Update (lh);
+
     int maxorder = -1; 
     int minorder = 99; 
 
@@ -475,44 +477,8 @@ namespace ngcomp
 		    dirichlet_dofs.Set (dnums[j]);
 	      }
 	  }
-
-
-	dirichlet_vertex.SetSize (ma.GetNV());
-	dirichlet_edge.SetSize (ma.GetNEdges());
-        if (dim == 3)
-          dirichlet_face.SetSize (ma.GetNFaces());
-	
-	Array<int> vnums, ednums;
-
-	dirichlet_vertex = false;
-	dirichlet_edge = false;
-	dirichlet_face = false;
-
-	for (int i = 0; i < ma.GetNSE(); i++)
-	  {
-	    int ind = ma.GetSElIndex (i);
-	    if (dirichlet_boundaries.Test(ind))
-	      {
-		ma.GetSElVertices (i, vnums);
-		ma.GetSElEdges (i, ednums);
-
-		for (int j = 0; j < vnums.Size(); j++)
-		  dirichlet_vertex[vnums[j]] = true;
-		for (int j = 0; j < ednums.Size(); j++)
-		  dirichlet_edge[ednums[j]] = true;
-
-                if (dim == 3)
-		  {
-		    int fanum = ma.GetSElFace (i);
-		    dirichlet_face[fanum] = true;
-		  }
-	      }
-	  }
-
-	(*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
-	(*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;
-	(*testout) << "Dirichlet_face = " << endl << dirichlet_face << endl;
       }
+
 
 
 

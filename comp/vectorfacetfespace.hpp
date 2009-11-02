@@ -1,6 +1,14 @@
 #ifndef VECTOR_FACET_FESPACE_HPP
 #define VECTOR_FACET_FESPACE_HPP
 
+/*********************************************************************/
+/* File:   vectorfacetfespace.hpp                                    */
+/* Author: A. Sinwel, Joachim Schoeberl                              */
+/* Date:   2008                                                      */
+/*********************************************************************/
+
+
+
 namespace ngcomp
 {
 

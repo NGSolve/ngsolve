@@ -35,9 +35,6 @@ namespace ngcomp
     Array<int> first_face_dof;
     Array<int> first_element_dof;
 
-    Array<bool> dirichlet_vertex;
-    Array<bool> dirichlet_edge;
-    Array<bool> dirichlet_face;
 
     /// relative order to mesh-order
     int rel_order; 
@@ -125,10 +122,6 @@ namespace ngcomp
     int GetFirstEdgeDof(int i) const {return(first_edge_dof[i]);} ; 
     ///
     int GetFirstElementDof(int i) const {return(first_element_dof[i]);} ; 
-
-    bool IsDirichletVertex (int i) const { return dirichlet_vertex.Size() && dirichlet_vertex[i]; }
-    bool IsDirichletEdge (int i) const { return dirichlet_edge.Size() && dirichlet_edge[i]; }
-    bool IsDirichletFace (int i) const { return dirichlet_face.Size() && dirichlet_face[i]; }
 
     void UpdateDofTables ();
     void SetEdgeOrder (int enr, int eo) { order_edge[enr] = eo; }

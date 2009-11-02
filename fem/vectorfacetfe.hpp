@@ -1,6 +1,13 @@
 #ifndef VECTOR_FACET_FE_HPP__
 #define VECTOR_FACET_FE_HPP__
 
+/*********************************************************************/
+/* File:   vectorfacetfe.hpp                                         */
+/* Author: A. Sinwel, (J. Schoeberl)                                 */
+/* Date:   2008                                                      */
+/*********************************************************************/
+
+
 namespace ngfem 
 {
 
