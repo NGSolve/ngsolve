@@ -1276,7 +1276,7 @@ namespace ngcomp
 	    {
 	      // cnt[ned+i] = first_face_dof[i+1] - first_face_dof[i] - excl_grads*face_ngrad[i];
 
-	      int first = first_face_dof[i];
+	      // int first = first_face_dof[i];
 	      int p = order_face[i][0];
 	      
 	      int ii = 0;

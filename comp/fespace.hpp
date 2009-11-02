@@ -59,7 +59,11 @@ namespace ngcomp
     /// dofs on Dirichlet boundary
     BitArray dirichlet_dofs;
 
-  
+
+    Array<bool> dirichlet_vertex;
+    Array<bool> dirichlet_edge;
+    Array<bool> dirichlet_face;
+
   
     /// Reference - element (low order only)
     FiniteElement * tet;
@@ -214,25 +218,20 @@ namespace ngcomp
     bool IsDirichletBoundary (int i) const
     { return dirichlet_boundaries.Size() && dirichlet_boundaries[i]; }
 
-
-    ///
-    // virtual void LockSomeDofs (BaseMatrix & mat) const { };
-
-    /// old style
-    // virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
+    /// is vertex on Dirichlet boundary ?
+    bool IsDirichletVertex (int i) const { return dirichlet_vertex.Size() && dirichlet_vertex[i]; }
+    /// is edge on Dirichlet boundary ?
+    bool IsDirichletEdge (int i) const { return dirichlet_edge.Size() && dirichlet_edge[i]; }
+    /// is face on Dirichlet boundary ?
+    bool IsDirichletFace (int i) const { return dirichlet_face.Size() && dirichlet_face[i]; }
 
     /// 
     virtual Table<int> * CreateSmoothingBlocks (const Flags & flags) const;
     // { return CreateSmoothingBlocks(0); }
 
-    /// for anisotropic plane smoothing, old style
-    // virtual BitArray * CreateIntermediatePlanes (int type = 0) const
-    // { return 0; }
-    //virtual Array<int> * CreateDirectSolverClusters (int type = 0) const
-    //{ return 0; }
+    /// for anisotropic plane smoothing:
     virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const
     { return 0; }
-    //{ return CreateDirectSolverClusters(0); }
 
     virtual void AddDirectSolverClusterDof(int dn) const
     { adddirectsolverdofs.Append(dn); }

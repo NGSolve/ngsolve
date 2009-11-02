@@ -1,3 +1,10 @@
+/*********************************************************************/
+/* File:   vectorfacetfe.cpp                                         */
+/* Author: A. Sinwel, (J. Schoeberl)                                 */
+/* Date:   2008                                                      */
+/*********************************************************************/
+
+
 #include <fem.hpp>
 
 namespace ngfem {
@@ -115,6 +122,9 @@ namespace ngfem {
 
     ScaledLegendrePolynomial (p, 2*xi+eta-1, 1-eta, polx);
     LegendrePolynomial (p, 2*eta-1, poly);
+
+    // *testout << "surface trig, orderinner = " << order_inner[0] << endl;
+
     for (int i = 0; i <= order_inner[0]; i++)
       for (int j = 0; j <= order_inner[0]-i; j++)
 	{
@@ -126,7 +136,7 @@ namespace ngfem {
 	  shape(ii,1) = val * lami[fav[1]].DValue(1);
 	  ii++;
 	}
-    
+    // *testout << "surface trig " << endl << shape << endl;
   }
 
   /**
@@ -347,19 +357,18 @@ namespace ngfem {
     int fanr; 
 
     shape = 0.0;
-    if (fabs(y)<1e-1) 
+    if (fabs(y) < 1e-4) 
       {
 	fanr = 0;
       }
-    else if (fabs(x)<1e-1)
+    else if (fabs(x) < 1e-4)
       {
 	fanr = 1;
       }
-    else if (fabs(1-x-y)<1e-1)
+    else 
       {
 	fanr = 2;
       }
-    else return;
 
     CalcShape ( ip, fanr, shape);
   }
@@ -367,23 +376,17 @@ namespace ngfem {
   void VectorFacetVolumeTrig ::
   CalcShape ( const IntegrationPoint & ip, int fanr, FlatMatrix<> shape ) const
   {
-
     shape = 0.0;
     int first = first_facet_dof[fanr];
-    // int last = first_facet_dof[fanr+1];
-    // the parts of shape where the shapes for this face are stored
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
-    const EDGE * faces = ElementTopology :: GetEdges ( eltype );
-    // const POINT3D * points = ElementTopology :: GetVertices (eltype);
-    // const ELEMENT_TYPE facettype = ElementTopology :: GetFacetType (eltype, fanr);
-    // int nvert = ElementTopology :: GetNVertices (facettype);
+    const EDGE * edges = ElementTopology :: GetEdges ( eltype );
 
-    int  fav[2] = {faces[fanr][0], faces[fanr][1] };
+    int  fav[2] = {edges[fanr][0], edges[fanr][1] };
     int j1 = 0; 
     int j2 = 1; 
-    if(vnums[fav[j1]] > vnums[fav[j2]]) swap(j1,j2);  // fmax > f2 > f1; 
+    if(vnums[fav[j1]] > vnums[fav[j2]]) swap(j1,j2); 
 
     AutoDiff<2> lami[3] = {x, y, 1-x-y};  
 
@@ -391,17 +394,16 @@ namespace ngfem {
     ArrayMem< double, 10> polx(p+1);
     int ii = first;
 
-    AutoDiff<2> xi = lami[fav[j1]];
+    AutoDiff<2> xi = lami[fav[j1]] - lami[fav[j2]];
 
-    LegendrePolynomial (p, 2*xi.Value()-1, polx);
+    LegendrePolynomial (p, xi.Value(), polx);
     for (int i = 0; i <= facet_order[fanr][0]; i++)
-      for (int j = 0; j <= facet_order[fanr][0]-i; j++)
-	{
-	  double val = polx[i];
-	  shape(ii,0) = val * xi.DValue(0);
-	  shape(ii,1) = val * xi.DValue(1);
-	  ii++;
-	}
+      {
+	double val = polx[i];
+	shape(ii,0) = val * xi.DValue(0);
+	shape(ii,1) = val * xi.DValue(1);
+	ii++;
+      }
   }
 
 
@@ -547,14 +549,12 @@ namespace ngfem {
 
     LegendrePolynomial (p, 2*xi.Value()-1, polx);
     for (int i = 0; i <= facet_order[fanr][0]; i++)
-      for (int j = 0; j <= facet_order[fanr][0]-i; j++)
-	{
-	  double val = polx[i];
-	  shape(ii,0) = val * xi.DValue(0);
-	  shape(ii,1) = val * xi.DValue(1);
-	  ii++;
-	}
-    
+      {
+	double val = polx[i];
+	shape(ii,0) = val * xi.DValue(0);
+	shape(ii,1) = val * xi.DValue(1);
+	ii++;
+      }
   }
 
 //   void VectorFacetVolumeQuad :: CalcFacetShape (int afnr, const IntegrationPoint & ip, 
@@ -641,18 +641,18 @@ namespace ngfem {
 
     shape=0.0;
 
-    //   cout << "  FacetVolumeTet::CalcShape: ip=" << ip << endl;
-    if (fabs(x)<1e-1)
+
+    if (fabs(x)<1e-4)
       {
 	// (0,0,0)->(1,0); (0,1,0)->(0,1), (0,0,1)->(0,0)
 	fanr=0;
       }
-    else if (fabs(y)<1e-1)
+    else if (fabs(y)<1e-4)
       {
 	// (0,0,0)->(1,0); (0,0,1)->(0,1); (1,0,0)->(0,0)
 	fanr=1;
       }
-    else if (fabs(z)<1e-1) 
+    else if (fabs(z)<1e-4) 
       {
 	// (0,0,0)->(1,0); (1,0,0)->(0,1); (0,1,0)->(0,0)
 	fanr=2;
@@ -669,7 +669,6 @@ namespace ngfem {
 
 //     CalcFacetShape(fanr, ip2d, shape2d);
 //     TransformFacetToVolumeShape (fanr, shape2d, shape);
-    
 
   }   
 
@@ -737,26 +736,39 @@ namespace ngfem {
     ArrayMem< double, 10> polx(p+1), poly(p+1);
     int ii = first;
 
-    double xi = lami[fav[j1]].Value();
+    AutoDiff<3> adxi  = lami[fav[j1]]-lami[fav[jmax]];
+    AutoDiff<3> adeta = lami[fav[j2]]-lami[fav[jmax]];
+
+    double xi  = lami[fav[j1]].Value();
     double eta = lami[fav[j2]].Value();
 
     ScaledLegendrePolynomial (p, 2*xi+eta-1, 1-eta, polx);
     LegendrePolynomial (p, 2*eta-1, poly);
+
+    /*
+    *testout << "facet_order = " << facet_order[fanr][0] << endl;
+    *testout << "fanr = " << fanr << endl;
+    *testout << "xi, = " << xi << ", eta = " << eta << endl;
+
+    *testout << "polx = " << polx << endl;
+    *testout << "poly = " << poly << endl;
+    */
+
     for (int i = 0; i <= facet_order[fanr][0]; i++)
       for (int j = 0; j <= facet_order[fanr][0]-i; j++)
 	{
 	  double val = polx[i] * poly[j];
-	  shape(ii,0) = val * lami[fav[j1]].DValue(0);
-	  shape(ii,1) = val * lami[fav[j1]].DValue(1);
-	  shape(ii,2) = val * lami[fav[j1]].DValue(2);
+	  shape(ii,0) = val * adxi.DValue(0);
+	  shape(ii,1) = val * adxi.DValue(1);
+	  shape(ii,2) = val * adxi.DValue(2);
 	  ii++;
-	  shape(ii,0) = val * lami[fav[j2]].DValue(0);
-	  shape(ii,1) = val * lami[fav[j2]].DValue(1);
-	  shape(ii,2) = val * lami[fav[j2]].DValue(2);
+	  shape(ii,0) = val * adeta.DValue(0);
+	  shape(ii,1) = val * adeta.DValue(1);
+	  shape(ii,2) = val * adeta.DValue(2);
 	  ii++;
 	}
     
-    
+    // *testout << "shape = " << endl << shape << endl;
   }
 
 

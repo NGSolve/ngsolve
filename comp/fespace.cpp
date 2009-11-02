@@ -239,9 +239,53 @@ namespace ngcomp
 
   void FESpace :: Update(LocalHeap & lh)
   {
-    throw Exception (string ("FESpace::Update (LocalHeap) not overloaded, fespace = ")
-                     + typeid(*this).name() );
-    // Update();
+    if (dirichlet_boundaries.Size())
+      {
+	int dim = ma.GetDimension();
+
+	dirichlet_vertex.SetSize (ma.GetNV());
+	dirichlet_edge.SetSize (ma.GetNEdges());
+        if (dim == 3)
+          dirichlet_face.SetSize (ma.GetNFaces());
+	
+	dirichlet_vertex = false;
+	dirichlet_edge = false;
+	dirichlet_face = false;
+
+	for (int i = 0; i < ma.GetNSE(); i++)
+	  {
+	    int ind = ma.GetSElIndex (i);
+	    if (dirichlet_boundaries.Test(ind))
+	      {
+		Ng_Element ngel = ma.GetSElement(i);
+
+		for (int j = 0; j < ngel.vertices.Size(); j++)
+		  dirichlet_vertex[ngel.vertices[j]] = true;
+
+		for (int j = 0; j < ngel.edges.Size(); j++)
+		  dirichlet_edge[ngel.edges[j]] = true;
+
+		if (dim == 3)
+		  dirichlet_face[ngel.faces[0]] = true;
+		// ma.GetSElVertices (i, vnums);
+		// ma.GetSElEdges (i, ednums);
+                // if (dim == 3)
+		// fanum = ma.GetSElFace (i);
+
+		// for (int j = 0; j < vnums.Size(); j++)
+		// dirichlet_vertex[vnums[j]] = true;
+		// for (int j = 0; j < ednums.Size(); j++)
+		// dirichlet_edge[ednums[j]] = true;			
+
+                // if (dim == 3)
+		// dirichlet_face[fanum] = true;
+	      }
+	  }
+
+	(*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
+	(*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;
+	(*testout) << "Dirichlet_face = " << endl << dirichlet_face << endl;
+      }
   }
   
 
