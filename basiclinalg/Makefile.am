@@ -8,6 +8,6 @@ eigensystem.cpp vecmat.cpp LapackGEP.cpp LapackInterface.hpp
 libngbla_la_LIBADD = $(top_builddir)/ngstd/libngstd.la $(LAPACK_LIBS)
 
 include_HEADERS = bandmatrix.hpp cholesky.hpp matrix.hpp ng_lapack.hpp \
-vector.hpp bla.hpp expr.hpp symmetricmatrix.hpp arch.hpp
+vector.hpp bla.hpp expr.hpp symmetricmatrix.hpp arch.hpp clapack.h 
 
 libngbla_la_LDFLAGS = -avoid-version 

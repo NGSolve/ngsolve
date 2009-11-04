@@ -83,14 +83,6 @@ namespace ngbla
     }
 
     /// copy vector. sizes must match
-    FlatVector & operator= (const FlatVector & v) 
-    {
-      for (int i = 0; i < s; i++)
-	data[i] = v(i);
-      return *this;
-    }
-
-    /// copy vector. sizes must match
     const FlatVector & operator= (const FlatVector & v) const
     {
       for (int i = 0; i < s; i++)
@@ -98,6 +90,15 @@ namespace ngbla
       return *this;
     }
 
+    /*
+    /// copy vector. sizes must match
+    const FlatVector & operator= (const FlatVector & v)
+    {
+      for (int i = 0; i < s; i++)
+	data[i] = v(i);
+      return *this;
+    }
+    */
 
     /// evaluate matrix expression
     template<typename TB>
@@ -848,7 +849,7 @@ namespace ngbla
 
     /// evaluates matrix expression
     template<typename TB>
-    const SliceVector & operator= (const Expr<TB> & v)
+    const SliceVector & operator= (const Expr<TB> & v) const
     {
       return CMCPMatExpr<SliceVector>::operator= (v);
     }
@@ -862,13 +863,14 @@ namespace ngbla
     }
 
     /// copies contents of vector
-    const SliceVector & operator= (const SliceVector<T> & v2) const
+    const SliceVector & operator= (const SliceVector & v2) const
     {
       for (int i = 0; i < s; i++)
 	data[i*dist] = v2(i);
       return *this;
     }
 
+    /*
     template<typename TB>
     const SliceVector & operator= (const Expr<TB> & v) const
     {
@@ -880,7 +882,7 @@ namespace ngbla
 	  data[i*dist] = v.Spec()(i,0);
       return *this;
     }
-
+    */
 
     template<typename TB>
     const SliceVector & operator+= (const Expr<TB> & v) const
