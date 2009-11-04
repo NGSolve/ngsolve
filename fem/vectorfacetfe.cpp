@@ -78,7 +78,7 @@ namespace ngfem {
 
     LegendrePolynomial (order_inner[0], 2*x.Value()-1, polx);
     for ( int i = 0; i <= order_inner[0]; i++ )
-      shape(ii++,0) = polx[i] * x.DValue(0);
+      shape(ii++,0) = 2 * polx[i] * x.DValue(0);
   }
 
 
