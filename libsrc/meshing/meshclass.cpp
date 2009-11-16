@@ -896,7 +896,6 @@ namespace netgen
               }
           }
 
-
         if (strcmp (str, "volumeelements") == 0)
           {
             infile >> n;

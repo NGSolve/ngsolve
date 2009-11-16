@@ -221,16 +221,6 @@ namespace netgen
 
   static void MeshSurface (CSGeometry & geom, Mesh & mesh)
   {
-    /*
-    Point3d pmin, pmax;
-    mesh.GetBox(pmin, pmax);
-    cout << "box = " << pmin << " -  " << pmax << endl;
-    cout << "localhbox = " 
-         << mesh.LocalHFunction().GetBoundingBox().PMin() << " - " 
-         << mesh.LocalHFunction().GetBoundingBox().PMax() 
-         << endl;
-    */
-
     const char * savetask = multithread.task;
     multithread.task = "Surface meshing";
   
@@ -429,7 +419,7 @@ namespace netgen
         double eps = 1e-8 * geom.MaxSize();
 	for (PointIndex pi = PointIndex::BASE; pi < noldp+PointIndex::BASE; pi++)
 	  { 
-	    //if(surf->PointOnSurface(mesh[pi]))
+	    // if(surf->PointOnSurface(mesh[pi]))
 	    meshing.AddPoint (mesh[pi], pi, NULL,
 			      (surf->PointOnSurface(mesh[pi], eps) != 0));
 	  }
@@ -511,18 +501,23 @@ namespace netgen
 	if (segments.Size())   
 	  { 
 	    // surface was meshed, not copied
+
+	    static int timer = NgProfiler::CreateTimer ("total surface mesh optimization");
+	    NgProfiler::RegionTimer reg (timer);
+
+
 	    PrintMessage (2, "Optimize Surface");
 	    for (int i = 1; i <= mparam.optsteps2d; i++)
 	      {
 		if (multithread.terminate) return;
-
+		
 		{
 		  MeshOptimize2dSurfaces meshopt(geom);
 		  meshopt.SetFaceIndex (k);
 		  meshopt.SetImproveEdges (0);
 		  meshopt.SetMetricWeight (mparam.elsizeweight);
 		  meshopt.SetWriteStatus (0);
-
+		  
 		  meshopt.EdgeSwapping (mesh, (i > mparam.optsteps2d/2));
 		}
 		

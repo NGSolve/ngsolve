@@ -232,7 +232,8 @@ class MeshPoint : public Point<3>
 #endif
 
 public:
-  MeshPoint () : layer(1), singular(0.), type(INNERPOINT) 
+  MeshPoint () 
+  // : layer(1), singular(0.), type(INNERPOINT)   // would unnecessarily initialize large arrays !
   { 
 #ifdef PARALLEL
   isghost = 0;

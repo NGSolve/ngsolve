@@ -76,6 +76,10 @@ namespace netgen
   CalcSpecialPoints (const CSGeometry & ageometry, 
 		     Array<MeshPoint> & apoints)
   {
+    static int timer = NgProfiler::CreateTimer ("CSG: find special points");
+    NgProfiler::RegionTimer reg (timer);
+
+
     geometry = &ageometry;
     points = &apoints;
 
@@ -231,7 +235,7 @@ namespace netgen
     // explicit solution for planes only and at most one quadratic
     if (numprim <= 5)
       {
-	int nplane = 0, nquad = 0, quadi = -1;
+	int nplane = 0, nquad = 0, quadi = -1, nsphere = 0;
 	const QuadraticSurface *qsurf = 0, *qsurfi;
 
 	for (int i = 0; i < numprim; i++)
@@ -247,6 +251,9 @@ namespace netgen
 		quadi = i;
 		qsurf = qsurfi;
 	      }
+
+	    if (dynamic_cast<const Sphere*> (qsurfi))
+	      nsphere++;
 	  }
 
 	/*
@@ -371,6 +378,82 @@ namespace netgen
 			  }
 		    }
 	      }
+	    
+	    return;
+	  }
+
+
+
+	if (nsphere == numprim) //  && calccp == false)
+	  {
+	    Array<Point<3> > pts;
+	    Array<int> surfids;
+
+
+	    
+	    for (int k1 = 0; k1 < numprim; k1++)
+	      for (int k2 = 0; k2 < k1; k2++)
+		for (int k3 = 0; k3 < k2; k3++)
+		  {
+		    ComputeCrossPoints (dynamic_cast<const Sphere*> (geometry->GetSurface(locsurf[k1])),
+					dynamic_cast<const Sphere*> (geometry->GetSurface(locsurf[k2])),
+					dynamic_cast<const Sphere*> (geometry->GetSurface(locsurf[k3])),
+					pts);
+		    
+		    for (int j = 0; j < pts.Size(); j++)
+		      if (Dist (pts[j], box.Center()) < box.Diam()/2)
+			{
+			  Solid * tansol;
+			  sol -> TangentialSolid (pts[j], tansol, surfids, 1e-9*size);
+			  
+			  if(!tansol)
+			    continue;
+			  
+			  bool ok1 = false, ok2 = false, ok3 = false;
+			  int rep1 = geometry->GetSurfaceClassRepresentant(locsurf[k1]);
+			  int rep2 = geometry->GetSurfaceClassRepresentant(locsurf[k2]);
+			  int rep3 = geometry->GetSurfaceClassRepresentant(locsurf[k3]);
+			  for(int jj=0; jj<surfids.Size(); jj++)
+			    {
+			      int actrep = geometry->GetSurfaceClassRepresentant(surfids[jj]);
+			      if(actrep == rep1) ok1 = true;
+			      if(actrep == rep2) ok2 = true;
+			      if(actrep == rep3) ok3 = true;				  
+			    }
+			  
+			  
+			  if (tansol && ok1 && ok2 && ok3)
+			    // if (sol -> IsIn (pts[j], 1e-6*size) && !sol->IsStrictIn (pts[j], 1e-6*size))
+			    {
+			      if (AddPoint (pts[j], layer))
+				(*testout) << "cross point found, 1: " << pts[j] << endl;
+			    }  
+			  delete tansol;
+			}
+		  }
+	    
+
+	    for (int k1 = 0; k1 < numprim; k1++)
+	      for (int k2 = 0; k2 < k1; k2++)
+		{
+		  ComputeExtremalPoints (dynamic_cast<const Sphere*> (geometry->GetSurface(locsurf[k1])),
+					 dynamic_cast<const Sphere*> (geometry->GetSurface(locsurf[k2])),
+					 pts);
+		  
+		  for (int j = 0; j < pts.Size(); j++)
+		    if (Dist (pts[j], box.Center()) < box.Diam()/2)
+		      {
+			Solid * tansol;
+			sol -> TangentialSolid (pts[j], tansol, surfids, 1e-9*size);
+			if (tansol)
+			  // sol -> IsIn (pts[j], 1e-6*size) && !sol->IsStrictIn (pts[j], 1e-6*size) )
+			  {
+			    if (AddPoint (pts[j], layer))
+			      (*testout) << "extremal point found, spheres: " << pts[j] << endl;
+			  }  
+			delete tansol;
+		      }
+		}
 	    
 	    return;
 	  }
@@ -1143,6 +1226,83 @@ namespace netgen
 
 
 
+  void SpecialPointCalculation :: 
+  ComputeCrossPoints (const Sphere * sphere1, 
+		      const Sphere * sphere2, 
+		      const Sphere * sphere3, 
+		      Array<Point<3> > & pts)
+  {
+    Mat<2,3> mat;
+    Mat<3,2> inv;
+    Vec<2> rhs;
+    Vec<3> sol, t;
+    Point<3> p0(0,0,0);
+
+    pts.SetSize (0);
+
+
+    Point<3> c1 = sphere1 -> Center();
+    Point<3> c2 = sphere2 -> Center();
+    Point<3> c3 = sphere3 -> Center();
+    double r1 = sphere1 -> Radius();
+    double r2 = sphere2 -> Radius();
+    double r3 = sphere3 -> Radius();
+
+
+    Vec<3> a1 = c2-c1;
+    double b1 = 0.5 * (sqr(r1) - sqr(r2) - Abs2(Vec<3> (c1)) + Abs2(Vec<3> (c2)) );
+
+    Vec<3> a2 = c3-c1;
+    double b2 = 0.5 * (sqr(r1) - sqr(r3) - Abs2(Vec<3> (c1)) + Abs2(Vec<3> (c3)) );
+
+
+    for (int j = 0; j < 3; j++)
+      {
+	mat(0,j) = a1(j);
+	mat(1,j) = a2(j);
+      }
+    
+    rhs(0) = b1;
+    rhs(1) = b2;
+
+
+    CalcInverse (mat, inv);
+    sol = inv * rhs;
+    t = Cross (mat.Row(0), mat.Row(1));
+
+    if (t.Length() > 1e-8)
+      {
+	Point<3> p (sol);
+	// quadratic on  p + s t = 0
+	double quad_a;
+	Vec<3> quad_b;
+	Mat<3> quad_c;
+	
+	quad_a = sphere1 -> CalcFunctionValue(p);
+	sphere1 -> CalcGradient (p, quad_b);
+	sphere1 -> CalcHesse (p, quad_c);
+	
+	double a, b, c;
+	a = quad_a;
+	b = quad_b * t;
+	c = 0.5 * t * (quad_c * t);
+
+	// a  + s b + s^2 c = 0;
+	double disc = b*b-4*a*c;
+	if (disc > 1e-10 * fabs (b))
+	  {
+	    disc = sqrt (disc);
+	    double s1 = (-b-disc) / (2*c);
+	    double s2 = (-b+disc) / (2*c);
+
+	    pts.Append (p + s1 * t);
+	    pts.Append (p + s2 * t);
+	  }
+      }
+  }
+
+
+
 
 
 
@@ -1232,6 +1392,138 @@ namespace netgen
 	  }
       }
   }
+
+
+
+
+
+
+
+  void SpecialPointCalculation :: 
+  ComputeExtremalPoints (const Sphere * sphere1,
+			 const Sphere * sphere2,
+			 Array<Point<3> > & pts)
+  {
+    // 3 equations:
+    // surf1 = 0  <===> |x-c1|^2 - r1^2 = 0;
+    // surf2 = 0  <===> |x-c2|^2 - r2^2 = 0;
+    // (grad 1 x grad 2)(i) = 0  <====> (x-p1) x (p1-p2) . e_i = 0;
+
+    pts.SetSize (0);
+
+    Point<3> c1 = sphere1 -> Center();
+    Point<3> c2 = sphere2 -> Center();
+    double r1 = sphere1 -> Radius();
+    double r2 = sphere2 -> Radius();
+
+    /*
+    *testout << "\n\ncompute extremalpoint, sphere-sphere" << endl;
+    *testout << "c1 = " << c1 << ", r1 = " << r1 << endl;
+    *testout << "c2 = " << c2 << ", r2 = " << r2 << endl;
+    *testout << "dist = " << Abs (c2-c1) << ", r1+r2 = " << r1+r2 << endl;
+    */
+
+    Vec<3> v12 = c2 - c1;
+
+    Vec<3> a1, a2;
+    double b1, b2;
+
+    // eqn: ai . x = bi
+
+    a1 = v12;
+    b1 = 0.5 * (sqr(r1) - sqr(r2) - Abs2(Vec<3> (c1)) + Abs2(Vec<3> (c2)) );
+
+    int dir = 0;
+    for (int j = 1; j < 3; j++)
+      if (fabs (v12(j)) > v12(dir))
+	dir = j;
+    
+    // *testout << "dir = " << dir << endl;
+
+    Vec<3> ei = 0.0;
+    ei(dir) = 1;
+    a2 = Cross (v12, ei);
+    b2 = Vec<3>(c1) * a2;
+    
+    
+    Point<3> p0 (0,0,0);
+    double quad_a;
+    Vec<3> quad_b;
+    Mat<3> quad_c;
+
+    quad_a = sphere1 -> CalcFunctionValue(p0);
+    sphere1 -> CalcGradient (p0, quad_b);
+    sphere1 -> CalcHesse (p0, quad_c);
+    for (int i = 0; i < 3; i++)
+      for (int j = 0; j < 3; j++)
+	quad_c(i,j) *= 0.5;
+
+    
+    // find line of two linear equations:
+    
+    Vec<2> rhs;
+    Vec<3> sol;
+    Mat<2,3> mat;
+    
+    for (int j = 0; j < 3; j++)
+      {
+	mat(0,j) = a1(j);
+	mat(1,j) = a2(j);
+      }
+    rhs(0) = b1;
+    rhs(1) = b2;
+
+
+    // *testout << "mat = " << endl << mat << endl;
+    // *testout << "rhs = " << endl << rhs << endl;
+
+    Vec<3> t = Cross (a1, a2);
+    if (Abs2(t) > 0)
+      {
+	mat.Solve (rhs, sol);
+	
+	/*
+	*testout << "sol = " << endl << sol << endl;
+
+	*testout << "a * sol = " << mat * sol << endl;
+
+	*testout << "c1-sol = " << Abs (Vec<3>(c1)-sol) << endl;
+	*testout << "c2-sol = " << Abs (Vec<3>(c2)-sol) << endl;
+	*/
+
+	// solve quadratic equation along line  sol + alpha t ....
+	double a = quad_a + quad_b * sol + sol * (quad_c * sol);
+	double b = quad_b * t + 2 * (sol * (quad_c * t));
+	double c = t * (quad_c * t);
+
+	// solve a + b alpha + c alpha^2:
+	
+	if (fabs (c) > 1e-32)
+	  {
+	    double disc = sqr (0.5*b/c) - a/c;
+	    if (disc > 0)
+	      {
+		disc = sqrt (disc);
+		double alpha1 = -0.5*b/c + disc;
+		double alpha2 = -0.5*b/c - disc;
+		
+		pts.Append (Point<3> (sol+alpha1*t));
+		pts.Append (Point<3> (sol+alpha2*t));
+
+		// *testout << "pts = " << endl << pts << endl;
+
+		/*
+		  cout << "sol1 = " << sol + alpha1 * t
+		  << ", sol2 = " << sol + alpha2 * t << endl;
+		*/
+	      }
+	  }
+      }
+  }
+
+
+
+
 
 
 
@@ -1445,9 +1737,9 @@ namespace netgen
 	    if (tlo->GetLayer() != apoints[i].GetLayer())
 	      continue;
 	    
+
 	    Solid * locsol;
 	    sol -> TangentialSolid (p, locsol, surfind, ideps*geomsize);
-
 
 
 	    rep_surfind.SetSize (surfind.Size());
@@ -1470,6 +1762,7 @@ namespace netgen
 #endif
 
 	    if (!locsol) continue;
+
 	  
 	    // get all surface indices, 
 	    if (surf)

@@ -161,6 +161,11 @@ namespace netgen
 				const QuadraticSurface * quadric, 
 				Array<Point<3> > & pts);
 
+    void ComputeExtremalPoints (const Sphere * sphere1, 
+				const Sphere * sphere2, 
+				Array<Point<3> > & pts);
+
+
     void ComputeCrossPoints (const Plane * plane1, 
 			     const Plane * plane2, 
 			     const Plane * plane3, 
@@ -169,6 +174,11 @@ namespace netgen
     void ComputeCrossPoints (const Plane * plane1, 
 			     const Plane * plane2, 
 			     const QuadraticSurface * quadratic, 
+			     Array<Point<3> > & pts);
+
+    void ComputeCrossPoints (const Sphere * sphere1, 
+			     const Sphere * sphere2, 
+			     const Sphere * sphere3, 
 			     Array<Point<3> > & pts);
   };
 

@@ -122,7 +122,7 @@ namespace netgen
     ///
     Point<3> c;
     ///
-    double r;
+    double r, invr;
   public:
     ///
     Sphere (const Point<3> & ac, double ar);
@@ -134,6 +134,8 @@ namespace netgen
 
     virtual Primitive * Copy () const;
     virtual void Transform (Transformation<3> & trans);
+
+    virtual double CalcFunctionValue (const Point<3> & point) const;
 
 
     virtual int IsIdentic (const Surface & s2, int & inv, double eps) const;

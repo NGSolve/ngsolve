@@ -196,6 +196,14 @@ namespace netgen
 
   MESHING2_RESULT Meshing2 :: GenerateMesh (Mesh & mesh, double gh, int facenr)
   {
+    static int timer = NgProfiler::CreateTimer ("surface meshing");
+
+    static int timer1 = NgProfiler::CreateTimer ("surface meshing1");
+    static int timer2 = NgProfiler::CreateTimer ("surface meshing2");
+    static int timer3 = NgProfiler::CreateTimer ("surface meshing3");
+    NgProfiler::RegionTimer reg (timer);
+
+
     Array<int> pindex, lindex;
     Array<int> delpoints, dellines;
 
@@ -205,7 +213,6 @@ namespace netgen
     Array<Element2d> locelements;
 
     int z1, z2, oldnp(-1);
-    SurfaceElementIndex sei;
     bool found;
     int rulenr(-1);
     int globind;
@@ -254,7 +261,9 @@ namespace netgen
     double totalarea = Area ();
     double meshedarea = 0;
 
+
     // search tree for surface elements:
+    /*
     for (sei = 0; sei < mesh.GetNSE(); sei++)
       {
 	const Element2d & sel = mesh[sei];
@@ -269,18 +278,45 @@ namespace netgen
 	    box.Add ( mesh[sel[2]] );
 	    surfeltree.Insert (box, sei);
 	  }
-      
-	double trigarea = Cross ( mesh[sel[1]]-mesh[sel[0]],
-				  mesh[sel[2]]-mesh[sel[0]] ).Length() / 2;
-
-
-	if (sel.GetNP() == 4)
-	  trigarea += Cross (Vec3d (mesh.Point (sel.PNum(1)),
-				    mesh.Point (sel.PNum(3))),
-			     Vec3d (mesh.Point (sel.PNum(1)),
-				    mesh.Point (sel.PNum(4)))).Length() / 2;;
-	meshedarea += trigarea;
       }
+    */
+    Array<SurfaceElementIndex> seia;
+    mesh.GetSurfaceElementsOfFace (facenr, seia);
+    for (int i = 0; i < seia.Size(); i++)
+      {
+	const Element2d & sel = mesh[seia[i]];
+
+	if (sel.IsDeleted()) continue;
+
+	Box<3> box;
+	box.Set ( mesh[sel[0]] );
+	box.Add ( mesh[sel[1]] );
+	box.Add ( mesh[sel[2]] );
+	surfeltree.Insert (box, i);
+      }
+
+
+
+
+    if (totalarea > 0 || maxarea > 0)
+      for (SurfaceElementIndex sei = 0; sei < mesh.GetNSE(); sei++)
+	{
+	  const Element2d & sel = mesh[sei];
+	  if (sel.IsDeleted()) continue;
+	
+	  double trigarea = Cross ( mesh[sel[1]]-mesh[sel[0]],
+				    mesh[sel[2]]-mesh[sel[0]] ).Length() / 2;
+	  
+	  
+	  if (sel.GetNP() == 4)
+	    trigarea += Cross (Vec3d (mesh.Point (sel.PNum(1)),
+				      mesh.Point (sel.PNum(3))),
+			       Vec3d (mesh.Point (sel.PNum(1)),
+				      mesh.Point (sel.PNum(4)))).Length() / 2;;
+	  meshedarea += trigarea;
+	}
+
+
 
 
     const char * savetask = multithread.task;
@@ -293,8 +329,12 @@ namespace netgen
 
     double meshedarea_before = meshedarea;
 
+
     while (!adfront ->Empty() && !multithread.terminate)
       {
+	NgProfiler::RegionTimer reg1 (timer1);
+
+
 	if (multithread.terminate)
 	  throw NgException ("Meshing stopped");
 
@@ -370,6 +410,10 @@ namespace netgen
 
 	adfront ->GetLocals (baselineindex, locpoints, mpgeominfo, loclines, 
 			     pindex, lindex, 2*hinner);
+
+
+	NgProfiler::RegionTimer reg2 (timer2);
+
 	//(*testout) << "h for locals: " << 2*hinner << endl;
 	
 
@@ -707,6 +751,9 @@ namespace netgen
 	      }
 	  }
       
+	NgProfiler::RegionTimer reg3 (timer3);
+
+
 	for (int i = 1; i <= locelements.Size() && found; i++)
 	  {
 	    const Element2d & el = locelements.Get(i);
@@ -1451,13 +1498,14 @@ namespace netgen
 
     PrintMessage (3, "Surface meshing done");
 
+
     adfront->PrintOpenSegments (*testout);
 
     multithread.task = savetask;
 
 
-    //  cout << "surfeltree.depth = " << surfeltree.Tree().Depth() << endl;
     EndMesh ();
+
 
     if (!adfront->Empty())
       return MESHING2_GIVEUP;

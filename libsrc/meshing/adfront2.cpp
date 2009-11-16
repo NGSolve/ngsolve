@@ -94,8 +94,9 @@ namespace netgen
     if (mgi)
       cpointsearchtree.Insert (p, pi);
 
-    pointsearchtree.Insert (p, pi);
-
+    if (pointonsurface)
+      pointsearchtree.Insert (p, pi);
+    
     return pi;
   }
 
@@ -287,7 +288,9 @@ namespace netgen
 			     Array<INDEX> & lindex,
 			     double xh)
   {
-    // baselineindex += 1-lines.Begin();
+    static int timer = NgProfiler::CreateTimer ("adfront2::GetLocals");
+    NgProfiler::RegionTimer reg (timer);
+
 
     int pstind;
     Point<3>  midp, p0;
@@ -296,13 +299,12 @@ namespace netgen
     p0 = points[pstind].P();
 
     loclines.Append(lines[baselineindex].L());
-    lindex.Append(baselineindex);  //  +1-lines.Begin());
+    lindex.Append(baselineindex);  
 
-    static Array<int> nearlines;
-    nearlines.SetSize(0);
-    static Array<int> nearpoints;
-    nearpoints.SetSize(0);
+    ArrayMem<int, 1000> nearlines(0);
+    ArrayMem<int, 1000> nearpoints(0);
 
+    // dominating costs !!
     linesearchtree.GetIntersecting (p0 - Vec3d(xh, xh, xh),
 				    p0 + Vec3d(xh, xh, xh),
 				    nearlines);
@@ -310,12 +312,11 @@ namespace netgen
     pointsearchtree.GetIntersecting (p0 - Vec3d(xh, xh, xh),
                                      p0 + Vec3d(xh, xh, xh),
                                      nearpoints);
-
-
-    for (int ii = 1; ii <= nearlines.Size(); ii++)
+    
+    for (int ii = 0; ii < nearlines.Size(); ii++)
       {
-	int i = nearlines.Get(ii);
-	if (lines[i].Valid() && i != baselineindex) //  + 1-lines.Begin())
+	int i = nearlines[ii];
+	if (lines[i].Valid() && i != baselineindex) 
 	  {
             loclines.Append(lines[i].L());
             lindex.Append(i);

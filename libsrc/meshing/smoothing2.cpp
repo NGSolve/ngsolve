@@ -667,14 +667,15 @@ namespace netgen
       }
  
 
-
     static int timer = NgProfiler::CreateTimer ("MeshSmoothing 2D");
-    NgProfiler::RegionTimer reg (timer);
+    static int timer1 = NgProfiler::CreateTimer ("MeshSmoothing 2D start");
 
+    NgProfiler::RegionTimer reg (timer);
+    NgProfiler::StartTimer (timer1);
 
     CheckMeshApproximation (mesh);
 
-    SurfaceElementIndex sei;
+    // SurfaceElementIndex sei;
 
     Array<SurfaceElementIndex> seia;
     mesh.GetSurfaceElementsOfFace (faceindex, seia);
@@ -694,14 +695,17 @@ namespace netgen
     PointGeomInfo ngi;
     Point3d origp;
 
+
+
     Vec3d n1, n2;
     Vector x(2), xedge(1);
 
     Array<MeshPoint, PointIndex::BASE> savepoints(mesh.GetNP());
+
     uselocalh = mparam.uselocalh;
 
-    Array<int, PointIndex::BASE> nelementsonpoint(mesh.GetNP());
 
+    Array<int, PointIndex::BASE> nelementsonpoint(mesh.GetNP());
     nelementsonpoint = 0;
     for (int i = 0; i < seia.Size(); i++)
       {
@@ -711,12 +715,14 @@ namespace netgen
       }
 
     TABLE<SurfaceElementIndex,PointIndex::BASE> elementsonpoint(nelementsonpoint);
+
     for (int i = 0; i < seia.Size(); i++)
       {
 	const Element2d & el = mesh[seia[i]];
 	for (int j = 0; j < el.GetNP(); j++)
 	  elementsonpoint.Add (el[j], seia[i]);
       }
+
 
     loch = mparam.maxh;
     locmetricweight = metricweight;
@@ -813,6 +819,10 @@ namespace netgen
       }
     int cnt = 0;
 
+
+    NgProfiler::StopTimer (timer1);
+
+
     for (PointIndex pi = PointIndex::BASE; pi < mesh.GetNP()+PointIndex::BASE; pi++)
       if (mesh[pi].Type() == SURFACEPOINT)
 	{
@@ -825,9 +835,10 @@ namespace netgen
 	      printeddot = 1;
 	      PrintDot (plotchar);
 	    }
-	
+
 	  if (elementsonpoint[pi].Size() == 0)
 	    continue;
+
 	
 	  sp1 = mesh[pi];
 
@@ -850,7 +861,7 @@ namespace netgen
 	
 	  for (int j = 0; j < elementsonpoint[pi].Size(); j++)
 	    {
-	      sei = elementsonpoint[pi][j];
+	      SurfaceElementIndex sei = elementsonpoint[pi][j];
 	      const Element2d & bel = mesh[sei];
 	      surfi = mesh.GetFaceDescriptor(bel.GetIndex()).SurfNr();
 	    

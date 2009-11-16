@@ -689,7 +689,7 @@ namespace netgen
       case UNION:
 	{
 	  int in1, in2, strin1, strin2;
-	  Solid * tansol1, * tansol2;
+	  Solid * tansol1 = 0, * tansol2 = 0;
 
 	  s1 -> RecTangentialSolid (p, tansol1, surfids, in1, strin1, eps);
 	  s2 -> RecTangentialSolid (p, tansol2, surfids, in2, strin2, eps);
@@ -702,6 +702,11 @@ namespace netgen
 		tansol = tansol1;
 	      else if (tansol2)
 		tansol = tansol2;
+	    }
+	  else
+	    {
+	      delete tansol1;
+	      delete tansol2;
 	    }
 	  in = (in1 || in2);
 	  strin = (strin1 || strin2);

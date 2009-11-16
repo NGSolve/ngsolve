@@ -351,7 +351,8 @@ namespace netgen
   {
     c = ac;
     r = ar;
-  
+    invr = 1.0/r;
+
     cxx = cyy = czz = 0.5 / r;
     cxy = cxz = cyz = 0;
     cx = - c(0) / r;
@@ -377,6 +378,7 @@ namespace netgen
     c(2) = coeffs.Elem(3);
     r = coeffs.Elem(4);
 
+    invr = 1.0/r;
     cxx = cyy = czz = 0.5 / r;
     cxy = cxz = cyz = 0;
     cx = - c(0) / r;
@@ -412,6 +414,10 @@ namespace netgen
   }
 
 
+  double Sphere :: CalcFunctionValue (const Point<3> & point) const
+  {
+    return 0.5* (invr * Abs2 (point-c) - r);
+  }
 
 
   int Sphere :: IsIdentic (const Surface & s2, int & inv, double eps) const
