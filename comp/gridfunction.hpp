@@ -187,24 +187,25 @@ namespace ngcomp
   protected:
     ///
     S_GridFunction<double> & gf;
+    /*
     mutable LocalHeap lh;
     mutable FlatVector<double> elu;
     mutable Array<int> dnums;
     mutable int cache_elnr;
-    mutable int comp;
-
+    */
+    int comp;
   public:
     ///
     GridFunctionCoefficientFunction (GridFunction & agf)
-      : gf(dynamic_cast<S_GridFunction<double>&> (agf)),lh(1000000),comp(0)
+      : gf(dynamic_cast<S_GridFunction<double>&> (agf)),comp(0) // ,lh(1000000)
     { 
-      cache_elnr = -1;
+      // cache_elnr = -1;
     }			
 			
     GridFunctionCoefficientFunction (GridFunction & agf, const int acomp)
-      : gf(dynamic_cast<S_GridFunction<double>&> (agf)),lh(1000000),comp(acomp)
+      : gf(dynamic_cast<S_GridFunction<double>&> (agf)),comp(acomp) // ,lh(1000000)
     { 
-      cache_elnr = -1;
+      // cache_elnr = -1;
     }
 		
     ///

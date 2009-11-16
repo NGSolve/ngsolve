@@ -1101,46 +1101,41 @@ namespace ngcomp
 
 
 
-	      
-#pragma omp critical(assemble_boundary_addelmat)
-			  {
-			    
-			    if (printelmat)
-			      {
-				testout->precision(8);
+			  if (printelmat)
+			    {
+			      testout->precision(8);
 			      
-				(*testout) << "surface-elnum= " << i << endl;
-				(*testout) << "integrator " << bfi.Name() << endl;
-				(*testout) << "dnums = " << endl << dnums << endl;
-				(*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
-				(*testout) << "elmat = " << endl << elmat << endl;
-			      }
-
-		    
-			    if (elmat_ev)
-			      {
-				testout->precision(8);
-
-				(*testout) << "elind = " << eltrans.GetElementIndex() << endl;
+			      (*testout) << "surface-elnum= " << i << endl;
+			      (*testout) << "integrator " << bfi.Name() << endl;
+			      (*testout) << "dnums = " << endl << dnums << endl;
+			      (*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
+			      (*testout) << "elmat = " << endl << elmat << endl;
+			    }
+			  
+			  
+			  if (elmat_ev)
+			    {
+			      testout->precision(8);
+			      
+			      (*testout) << "elind = " << eltrans.GetElementIndex() << endl;
 #ifdef LAPACK
-				LapackEigenSystem(elmat, lh);
+			      LapackEigenSystem(elmat, lh);
 #else
-				Vector<> lami(elmat.Height());
-				Matrix<> evecs(elmat.Height());
-			    
-				CalcEigenSystem (elmat, lami, evecs);
-				(*testout) << "lami = " << endl << lami << endl;
+			      Vector<> lami(elmat.Height());
+			      Matrix<> evecs(elmat.Height());
+			      
+			      CalcEigenSystem (elmat, lami, evecs);
+			      (*testout) << "lami = " << endl << lami << endl;
 #endif
-				// << "evecs = " << endl << evecs << endl;
-			      }
-
-			    // 			for(int k=0; k<elmat.Height(); k++)
-			    // 			  if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
-			    // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
-
-
-			    AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
-			  }
+			      // << "evecs = " << endl << evecs << endl;
+			    }
+			  
+			  // 			for(int k=0; k<elmat.Height(); k++)
+			  // 			  if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
+			  // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
+			  
+			  
+			  AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
 			}
                     }
                 }
@@ -2732,15 +2727,18 @@ namespace ngcomp
                     LocalHeap & lh) 
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*mats.Last());
-  
-    for (int i = 0; i < dnums1.Size(); i++)
-      for (int j = 0; j < dnums2.Size(); j++)
-        if (dnums1[i] != -1 && dnums2[j] != -1 && 
-            dnums1[i] >= dnums2[j])
-          AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
-                                 elmat,
-                                 i,j);
-    //mat(dnums1[i], dnums2[j]) += elmat(i, j);
+
+#pragma omp critical (addelmat)  
+    {
+      for (int i = 0; i < dnums1.Size(); i++)
+	for (int j = 0; j < dnums2.Size(); j++)
+	  if (dnums1[i] != -1 && dnums2[j] != -1 && 
+	      dnums1[i] >= dnums2[j])
+	    AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
+				   elmat,
+				   i,j);
+      //mat(dnums1[i], dnums2[j]) += elmat(i, j);
+    }
   }
 
 

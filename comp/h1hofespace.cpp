@@ -840,10 +840,9 @@ namespace ngcomp
 
     if (ma.GetDimension() == 3)
       dnums += GetFaceDofs (ngel.faces[0]);
+    
 
-
-
-
+    /*
     // what's that (JS) ?
     static bool getall = false;
 
@@ -914,7 +913,87 @@ namespace ngcomp
         //if(!isfirst)
         //  (*testout) << "elnr " << elnr << ", keep_dnum " << keep_dnum << endl;
       }
+    */
 
+    // what's that (JS) ?
+    // I still don't understand it .... but it's now threadsafe
+    if (!DefinedOnBoundary (ma.GetSElIndex (elnr)))
+      dnums = -1;
+
+
+    if(defined_on_one_side_of_bounding_curve.Size() > 0)
+      {
+        Array<bool> keep_dnum(dnums.Size());
+        keep_dnum = true;
+
+        Array<int> vnums;
+        Array<int> neighbours;
+
+        ma.GetSElVertices(elnr,vnums);
+        for(int i=0; i<vnums.Size(); i++)
+          {
+            Array<int> auxn;
+            ma.GetVertexSurfaceElements(vnums[i],auxn);
+            for(int j=0; j<auxn.Size(); j++)
+              if(auxn[j] != elnr)
+                neighbours.Append(auxn[j]);
+          }
+	
+
+        bool isfirst = true;
+        for (int i = 0; i<defined_on_one_side_of_bounding_curve.Size(); i++)
+          {
+            if(defined_on_one_side_of_bounding_curve[i][0] == ma.GetSElIndex (elnr))
+              {
+                if(isfirst)
+                  {
+                    keep_dnum = false;
+                    isfirst = false;
+                  }
+
+                for(int j=0; j<neighbours.Size(); j++)
+                  {
+                    if(ma.GetSElIndex(neighbours[j]) == 
+                       defined_on_one_side_of_bounding_curve[i][1])
+                      {
+                        //(*testout) << "sel " << elnr << " neighbour " << neighbours[j] << endl;
+                        Array<int> neighbour_dnums;
+                        // GetSDofNrs(neighbours[j],neighbour_dnums);
+
+			Ng_Element nbel = ma.GetSElement(neighbours[j]);
+			
+			neighbour_dnums.SetSize(nbel.vertices.Size()); 
+			
+			for (int i = 0; i < nbel.vertices.Size(); i++)
+			  neighbour_dnums[i] = nbel.vertices[i];
+			for (int i = 0; i < nbel.edges.Size(); i++)
+			  neighbour_dnums += GetEdgeDofs (nbel.edges[i]);
+			if (ma.GetDimension() == 3)
+			  neighbour_dnums += GetFaceDofs (nbel.faces[0]);
+
+			
+                        for(int k=0; k<neighbour_dnums.Size(); k++)
+                          {
+                            if(neighbour_dnums[k] == -1)
+                              continue;
+
+                            int pos = dnums.Pos(neighbour_dnums[k]);
+
+                            if(pos >= 0)
+                              keep_dnum[pos] = true;
+                          }
+                      }
+                  }		
+              }
+          }
+
+        for(int i=0; i<dnums.Size(); i++)
+          if(!keep_dnum[i])
+            dnums[i] = -1;
+
+        //if(!isfirst)
+        //  (*testout) << "elnr " << elnr << ", keep_dnum " << keep_dnum << endl;
+      }
   }
   
 
