@@ -3202,8 +3202,8 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     for (int i = 0; i < fea.Size(); i++)
       fea[i] = &spaces[i]->GetFE(elnr, lh);
     
-    void * mem = lh.Alloc (sizeof(CompoundFiniteElement));
-    return *new (mem) CompoundFiniteElement (fea);
+    // void * mem = lh.Alloc (sizeof(CompoundFiniteElement));
+    return *new (lh) CompoundFiniteElement (fea);
   }
 
   
@@ -3337,8 +3337,8 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     ArrayMem<const FiniteElement*, 10> fea(spaces.Size());
     for (int i = 0; i < fea.Size(); i++)
       fea[i] = &spaces[i]->GetSFE(elnr, lh);
-    void * mem = lh.Alloc (sizeof(CompoundFiniteElement));
-    return *new (mem) CompoundFiniteElement (fea);
+    // void * mem = lh.Alloc (sizeof(CompoundFiniteElement));
+    return *new (lh) CompoundFiniteElement (fea);
   }
 
 

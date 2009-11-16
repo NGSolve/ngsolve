@@ -323,7 +323,7 @@ namespace ngcomp
 
   double GridFunctionCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip) const
   {
-    LocalHeapMem<10000> lh2;
+    LocalHeapMem<100000> lh2;
     
     const int elnr = ip.GetTransformation().GetElementNr();
     bool boundary = ip.GetTransformation().Boundary();
@@ -334,30 +334,28 @@ namespace ngcomp
     
     // NgLock lock(gf.Mutex(), 1);
 
+    ArrayMem<int, 50> dnums;
+    if(boundary)
+      fes.GetSDofNrs(elnr, dnums);
+    else
+      fes.GetDofNrs (elnr, dnums);
     
-    if (cache_elnr != elnr)
-      {
-	lh.CleanUp();
-	if(boundary)
-	  fes.GetSDofNrs(elnr, dnums);
-	else
-	  fes.GetDofNrs (elnr, dnums);
+    VectorMem<50> elu(dnums.Size()*dim);
+    // elu.AssignMemory (dnums.Size() * dim, lh);
+
+    gf.GetElementVector (comp, dnums, elu);
     
-	elu.AssignMemory (dnums.Size() * dim, lh);
-	gf.GetElementVector (comp, dnums, elu);
-	
-	fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
-
-	cache_elnr = elnr;
-      }
+    fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
 
 
-    HeapReset hr(lh);
+    // HeapReset hr(lh);
 
     // should be, but not yet tested
     const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
-    FlatVector<double> flux(bfi->DimFlux(), lh);
-    bfi->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh);
+    VectorMem<10> flux(bfi->DimFlux());
+
+    
+    bfi->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh2);
 
     /*
     FlatVector<double> flux;
