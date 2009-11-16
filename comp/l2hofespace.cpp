@@ -19,7 +19,8 @@ To do: *Internal External Dofs (eliminate internal)
 #include <parallelngs.hpp>
 
 #include <../fem/l2hofe.hpp>
-#include <../fem/h1hofe.hpp>
+#include <../fem/l2hofefo.hpp>
+// #include <../fem/h1hofe.hpp>
 
 #ifdef PARALLEL
 extern MPI_Group MPI_HIGHORDER_WORLD;
@@ -200,6 +201,30 @@ namespace ngcomp
   {
     try
       { 
+
+	if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
+	  {
+	    L2HighOrderFiniteElementFO<2> * hofe2d = 0;
+	    switch (order)
+	      {
+	      case 0: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,0> (); break;
+	      case 1: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,1> (); break;
+	      case 2: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,2> (); break;
+	      case 3: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,3> (); break;
+	      case 4: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,4> (); break;
+	      case 5: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,5> (); break;
+	      case 6: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,6> (); break;
+	      }
+	    
+	    Ng_Element ngel = ma.GetElement<2> (elnr);
+	    for (int j = 0; j < 3; j++)
+	      hofe2d->SetVertexNumber (j, ngel.vertices[j]);
+
+	    return *hofe2d;
+	  }
+
+
+
 	L2HighOrderFiniteElement<2> * fe2d = 0;
 	L2HighOrderFiniteElement<3> * fe3d = 0;
 
@@ -393,9 +418,9 @@ namespace ngcomp
     if(flags.NumFlagDefined("relorder"))
       throw Exception("Variable order not implemented for L2SurfaceHighOrderFESpace"); 
     
-    segm = new H1HighOrderFE<ET_SEGM> (order);
-    trig = new H1HighOrderFE<ET_TRIG> (order);
-    quad = new H1HighOrderFE<ET_QUAD> (order);
+    segm = new L2HighOrderFE<ET_SEGM> (order);
+    trig = new L2HighOrderFE<ET_TRIG> (order);
+    quad = new L2HighOrderFE<ET_QUAD> (order);
 
     if (ma.GetDimension() == 2)
       {
@@ -482,7 +507,7 @@ namespace ngcomp
 	throw Exception (str.str());
       }
 
-    dynamic_cast<H1HighOrderFiniteElement<2>*> (fe) -> SetVertexNumbers (vnums);
+    dynamic_cast<L2HighOrderFiniteElement<2>*> (fe) -> SetVertexNumbers (vnums);
 
     return *fe;
   }

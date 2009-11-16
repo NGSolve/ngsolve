@@ -17,6 +17,7 @@
 // ng-soft header files
 #include <fem.hpp>
 #include <../fem/h1hofe.hpp>
+#include <../fem/h1lofe.hpp>
 
 
 using namespace std;

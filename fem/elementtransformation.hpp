@@ -441,10 +441,10 @@ public:
     else
     */
     {
-      Ng_MultiElementTransformation <DIMS,DIMR> (elnr, ipts.Size(),
-                                                 &ipts[0](0), &ipts[1](0)-&ipts[0](0),
-                                                 &point[0](0), &point[1](0)-&point[0](0),
-                                                 &dxdxi[0](0,0), &dxdxi[1](0,0)-&dxdxi[0](0,0));
+      netgen::Ng_MultiElementTransformation <DIMS,DIMR> (elnr, ipts.Size(),
+							 &ipts[0](0), &ipts[1](0)-&ipts[0](0),
+							 &point[0](0), &point[1](0)-&point[0](0),
+							 &dxdxi[0](0,0), &dxdxi[1](0,0)-&dxdxi[0](0,0));
     }
   }
 

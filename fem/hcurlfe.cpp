@@ -10,6 +10,8 @@
 */
 
 #include <fem.hpp>
+#include "hcurllofe.hpp"
+#include "hdivlofe.hpp"
 
 namespace ngfem
 {

@@ -4,6 +4,7 @@
 
 #include <parallelngs.hpp>
 
+#include "../fem/facethofe.hpp"
 
 namespace ngcomp
 {

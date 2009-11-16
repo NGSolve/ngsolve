@@ -13,6 +13,7 @@
 
 #include <parallelngs.hpp>
 
+#include "../fem/h1lofe.hpp"
 
 
 #ifdef PARALLEL
@@ -2260,9 +2261,6 @@ namespace ngcomp
 
 
 
-
-
-
   NonconformingFESpace :: 
   NonconformingFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
@@ -2381,7 +2379,6 @@ namespace ngcomp
       dnums = -1;
   }
   
-
 
 
 
@@ -2748,7 +2745,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
 
 
-
+#ifdef ABC
 
   NonConformingFESpace :: 
       NonConformingFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags)
@@ -3117,6 +3114,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     dnums[0] = surfelementfaces[selnr];
   }
 
+#endif
 
 
 

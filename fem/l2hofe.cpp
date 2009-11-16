@@ -32,7 +32,7 @@ namespace ngfem
 
 
 
-
+  /*
   template <ELEMENT_TYPE ET>
   void T_L2HighOrderFiniteElement<ET> :: 
   CalcShape (const IntegrationPoint & ip, 
@@ -59,7 +59,7 @@ namespace ngfem
       for (int j = 0; j < DIM; j++)
 	dshape(i,j) = sds[i].DValue(j);
   }
-
+  */
 
 
 
@@ -115,7 +115,7 @@ namespace ngfem
     ComputeNDof();
   }
 
-
+  /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & shape) const
   {
@@ -126,7 +126,7 @@ namespace ngfem
     
     LegendrePolynomial (order, 2*x-1, shape);
   }
-  
+  */
 
   /* *********************** Triangle  **********************/
 
@@ -136,7 +136,7 @@ namespace ngfem
     ComputeNDof();
   }
 
-
+  /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
@@ -162,7 +162,7 @@ namespace ngfem
           shape[ii++] = polx[i] * poly[j];
       }
   }
-
+  */
 
   /* *********************** Quadrilateral  **********************/
 
@@ -172,7 +172,7 @@ namespace ngfem
     ComputeNDof();
   }
 
-
+  /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
@@ -204,7 +204,8 @@ namespace ngfem
       for (int j = 0; j <= order_inner[1]; j++)
 	shape[ii++] = polx[i] * poly[j];
   }
-  
+  */
+
   /* *********************** Tetrahedron  **********************/
 
   L2HighOrderFE<ET_TET> :: L2HighOrderFE (int aorder)
@@ -214,6 +215,7 @@ namespace ngfem
   }
 
 
+  /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE<ET_TET> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
@@ -239,7 +241,7 @@ namespace ngfem
 	  }
       }
   }
-
+  */
 
   /* *********************** Prism  **********************/
 
@@ -250,7 +252,7 @@ namespace ngfem
   }
 
 
-
+  /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
@@ -275,7 +277,7 @@ namespace ngfem
         for (int k = 0; k <= q; k++)
           shape[ii++] = polx[i] * poly[j] * polz[k];
   }
-
+  */
 
   /* *********************** Pyramid  **********************/
 
@@ -285,7 +287,7 @@ namespace ngfem
     ComputeNDof();
   }
 
-
+  /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE<ET_PYRAMID> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
@@ -320,7 +322,7 @@ namespace ngfem
 	for (int iy = 0; iy <= order-iz; iy++, ii++)
 	  shape[ii] = polsx(ix) * polsy(iy) * polsz(max(ix,iy), iz);
   }
-
+  */
 
 
 
@@ -335,7 +337,7 @@ namespace ngfem
   }
 
 
-
+  /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE<ET_HEX> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
@@ -357,10 +359,23 @@ namespace ngfem
         for (int k = 0; k <= r; k++)
           shape[ii++] = polx[i] * poly[j] * polz[k];
   }
+  */
+
 
   template class L2HighOrderFiniteElement<1>;
   template class L2HighOrderFiniteElement<2>;
   template class L2HighOrderFiniteElement<3>;
+
+
+  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_SEGM>, ET_SEGM>;
+  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_TRIG>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_QUAD>, ET_QUAD>;
+  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_TET>, ET_TET>;
+  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_PRISM>, ET_PRISM>;
+  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_HEX>, ET_HEX>;
+  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_PYRAMID>, ET_PYRAMID>;
+
+
 
 } // namespace
 

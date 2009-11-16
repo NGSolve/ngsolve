@@ -8,9 +8,11 @@
 /*********************************************************************/
 
 
+#include "thdivfe.hpp"
+
 namespace ngfem
 {
-
+  
 
 #undef HDIV_OLD
 
@@ -19,7 +21,7 @@ namespace ngfem
 
 ///
 template <int DIM>
-class HDivHighOrderFiniteElement : public HDivFiniteElement<DIM>
+class HDivHighOrderFiniteElement : virtual public HDivFiniteElement<DIM>
 {
 protected:
   int vnums[8];
@@ -27,16 +29,6 @@ protected:
   INT<3> order_inner;
   INT<2> order_face[6];  // 3D only
   int order_edge[12];   // 2D only
-
-  /*
-  int ned; // number of edges in element
-  int nv; // number of vertices in element
-  int nf; // number of faces in element
-
-  int ndof_edge;
-  int ndof_face;
-  int ndof_inner;
-  */
 
   // bool augmented;
 
@@ -47,6 +39,7 @@ protected:
 
 
 public:
+  HDivHighOrderFiniteElement () { ; }
   HDivHighOrderFiniteElement (ELEMENT_TYPE aeltype);
 
   void SetVertexNumbers (FlatArray<int> & avnums);
@@ -81,11 +74,8 @@ class HDivHighOrderNormalFiniteElement : public HDivNormalFiniteElement<D>
 
 protected:
   int vnums[4];
-#ifdef HDIV_OLD
-  int order_inner;
-#else
   INT<2> order_inner;
-#endif
+
   int ned; // number of edges in element
   int nv; // number of vertices in element
 
@@ -100,10 +90,7 @@ public:
   void SetVertexNumbers (FlatArray<int> & avnums);
 
   void SetOrderInner (int oi);
-#ifndef HDIV_OLD
   void SetOrderInner (INT<2> oi);
-#endif
-  
 
   virtual void ComputeNDof () = 0;
 
@@ -166,7 +153,9 @@ template <ELEMENT_TYPE ET> class HDivHighOrderFE;
 
 template <ELEMENT_TYPE ET>
 class T_HDivHighOrderFiniteElement 
-  : public HDivHighOrderFiniteElement<ET_trait<ET>::DIM>
+  : public HDivHighOrderFiniteElement<ET_trait<ET>::DIM>,
+    public T_HDivFiniteElement< HDivHighOrderFE<ET>, ET>
+    
 {
 protected:
   enum { DIM = ET_trait<ET>::DIM };
@@ -216,14 +205,7 @@ public:
   virtual void ComputeNDof();
   virtual void GetInternalDofs (Array<int> & idofs) const;
 
-  virtual void CalcShape (const IntegrationPoint & ip, 
-                          FlatMatrixFixWidth<DIM> shape) const;
 
-  virtual void CalcDivShape (const IntegrationPoint & ip, 
-                             FlatVector<> divshape) const;
-
-  virtual void CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
-				FlatMatrixFixWidth<DIM> shape) const;
 };
 
 
@@ -234,18 +216,6 @@ class HDivHighOrderFE<ET_TRIG> : public T_HDivHighOrderFiniteElement<ET_TRIG>
 {
 public:
   HDivHighOrderFE (int aorder);
-  // virtual void ComputeNDof();
-  // virtual void GetInternalDofs (Array<int> & idofs) const;
-
-  /*
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip,
-                          FlatMatrixFixWidth<2> shape) const;
-
-  /// compute Div of shape
-  virtual void CalcDivShape (const IntegrationPoint & ip,
-			     FlatVector<> shape) const;
-  */
 
   /// compute shape
   template<typename Tx, typename TFA>  
@@ -261,8 +231,6 @@ class HDivHighOrderFE<ET_QUAD> : public T_HDivHighOrderFiniteElement<ET_QUAD>
 {
 public:
   HDivHighOrderFE (int aorder);
-  // virtual void ComputeNDof();
-  // virtual void GetInternalDofs (Array<int> & idofs) const;
 
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[2], TFA & shape) const; 

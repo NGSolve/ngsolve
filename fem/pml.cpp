@@ -740,7 +740,7 @@ public:
 
 
 
-
+#ifdef VERYSPECIAL
 
 
 
@@ -1065,7 +1065,7 @@ public:
 
 
 
-
+#endif
 
 
 
@@ -1102,11 +1102,12 @@ public:
 					PML_LaplaceIntegrator<3>::Create);
       GetIntegrators().AddBFIntegrator ("PML_mass", 3, 1,
 					PML_MassIntegrator<3>::Create);
+      /*
       GetIntegrators().AddBFIntegrator ("PML_reducedmass", 2, 1,
 					PML_ReducedMassIntegrator::Create);
       GetIntegrators().AddBFIntegrator ("PML_interpolationmass", 2, 1,
 					PML_InterpolationMassIntegrator::Create);
-
+      */
       GetIntegrators().AddBFIntegrator ("PML_curlcurledge", 3, 1,
 					PML_CurlCurlEdgeIntegrator<3>::Create);
       GetIntegrators().AddBFIntegrator ("PML_curlcurledge", 2, 1,

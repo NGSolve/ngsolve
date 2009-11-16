@@ -7,12 +7,12 @@
 /* Date:   29. Jun. 2009                                              */
 /*********************************************************************/
 
+
+#include "tscalarfe.hpp"
+
+
 namespace ngfem
 {
-
-
-
-
 
   ///
   class FE_Segm0 : public T_ScalarFiniteElement<FE_Segm0,ET_SEGM,1,0>
@@ -353,7 +353,19 @@ namespace ngfem
       shape[3] = 1-x-y-z;
     }
 
-    virtual void GetDofs (Array<Dof> & dofs) const;
+    virtual void GetDofs (Array<Dof> & dofs) const
+    {
+    /*
+    Dof da[] = { Dof (Node (NT_VERTEX, 0), 0),
+		 Dof (Node (NT_VERTEX, 1), 0),
+		 Dof (Node (NT_VERTEX, 2), 0),
+		 Dof (Node (NT_VERTEX, 3), 0) };
+    */	 
+
+      dofs.SetSize (0);
+      for (int i = 0; i < 4; i++)
+	dofs.Append (Dof (Node (NT_VERTEX, i), 0));
+    }
   };
 
 

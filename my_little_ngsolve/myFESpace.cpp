@@ -16,6 +16,8 @@ the global mesh.
 
 #include <comp.hpp>    // provides FESpace, ...
 
+#include "../fem/h1lofe.hpp"
+
 #include "myElement.hpp"
 #include "myFESpace.hpp"
 

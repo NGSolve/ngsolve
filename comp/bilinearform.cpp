@@ -1098,42 +1098,50 @@ namespace ngcomp
 
                           fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
-                          if (printelmat)
-                            {
-                              testout->precision(8);
 
-                              (*testout) << "surface-elnum= " << i << endl;
-                              (*testout) << "integrator " << bfi.Name() << endl;
-                              (*testout) << "dnums = " << endl << dnums << endl;
-                              (*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
-                              (*testout) << "elmat = " << endl << elmat << endl;
-                            }
+
+
+	      
+#pragma omp critical(assemble_boundary_addelmat)
+			  {
+			    
+			    if (printelmat)
+			      {
+				testout->precision(8);
+			      
+				(*testout) << "surface-elnum= " << i << endl;
+				(*testout) << "integrator " << bfi.Name() << endl;
+				(*testout) << "dnums = " << endl << dnums << endl;
+				(*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
+				(*testout) << "elmat = " << endl << elmat << endl;
+			      }
 
 		    
-                          if (elmat_ev)
-                            {
-                              testout->precision(8);
+			    if (elmat_ev)
+			      {
+				testout->precision(8);
 
-                              (*testout) << "elind = " << eltrans.GetElementIndex() << endl;
+				(*testout) << "elind = " << eltrans.GetElementIndex() << endl;
 #ifdef LAPACK
-                              LapackEigenSystem(elmat, lh);
+				LapackEigenSystem(elmat, lh);
 #else
-                              Vector<> lami(elmat.Height());
-                              Matrix<> evecs(elmat.Height());
+				Vector<> lami(elmat.Height());
+				Matrix<> evecs(elmat.Height());
 			    
-                              CalcEigenSystem (elmat, lami, evecs);
-                              (*testout) << "lami = " << endl << lami << endl;
+				CalcEigenSystem (elmat, lami, evecs);
+				(*testout) << "lami = " << endl << lami << endl;
 #endif
-                              // << "evecs = " << endl << evecs << endl;
-                            }
+				// << "evecs = " << endl << evecs << endl;
+			      }
 
-                          // 			for(int k=0; k<elmat.Height(); k++)
-                          // 			  if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
-                          // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
+			    // 			for(int k=0; k<elmat.Height(); k++)
+			    // 			  if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
+			    // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
 
 
-                          AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
-                        }
+			    AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+			  }
+			}
                     }
                 }
                 cout << "\rassemble surface element " << nse << "/" << nse << endl;	  

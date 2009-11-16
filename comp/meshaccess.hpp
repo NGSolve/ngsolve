@@ -12,6 +12,15 @@ namespace ngcomp
 {
 
 
+  using netgen::Ng_Element;
+  using netgen::Ng_Point;
+  using netgen::Ng_Node;
+
+  using netgen::Ng_GetPoint;
+  using netgen::Ng_GetElement;
+  using netgen::Ng_GetNode;
+
+
   /** 
       Access to mesh geometry.
       This class provides topology, as element to vertex,

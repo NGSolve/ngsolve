@@ -523,7 +523,7 @@ namespace ngcomp
 
 
 
-
+  /*
 
 
   ///
@@ -603,7 +603,7 @@ namespace ngcomp
     int GetFineLevelOfFace (int ednr) const { return finelevelofedge[ednr]; }
   };
 
-
+  */
 
 
 

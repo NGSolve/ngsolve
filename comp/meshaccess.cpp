@@ -343,6 +343,13 @@ int MeshAccess :: GetSegmentIndex (int snr) const
 
 void MeshAccess :: GetElVertices (int elnr, Array<int> & vnums) const
 {
+  Ng_Element ngel = (dim == 2) ? GetElement<2> (elnr) : GetElement<3> (elnr);
+  vnums.SetSize (ngel.vertices.Size());
+  for (int j = 0; j < ngel.vertices.Size(); j++)
+    vnums[j] = ngel.vertices[j];
+
+
+  /*
   vnums.SetSize (NG_ELEMENT_MAXPOINTS);
   NG_ELEMENT_TYPE typ = Ng_GetElement (elnr+1, &vnums[0]);
   
@@ -371,6 +378,7 @@ void MeshAccess :: GetElVertices (int elnr, Array<int> & vnums) const
 
   for (int i = 0; i < vnums.Size(); i++)
     vnums[i]--;
+  */
 }
 
   

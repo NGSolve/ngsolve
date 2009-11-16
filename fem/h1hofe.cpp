@@ -171,7 +171,7 @@ namespace ngfem
 
 
 
-
+  /*
   template <ELEMENT_TYPE ET>
   void T_H1HighOrderFiniteElement<ET> :: 
   CalcShape (const IntegrationPoint & ip, 
@@ -230,13 +230,14 @@ namespace ngfem
     DShapeAssign<DIM> ds(dshape); 
     static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
   }
-
+  */
 
 
 
 
   /* *********************** Segment  **********************/
 
+  /*
   template<typename Tx, typename TFA>  
   void H1HighOrderFE<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & shape) const
   {
@@ -249,11 +250,12 @@ namespace ngfem
     INT<2> e = GetEdgeSort (0, vnums);
     T_ORTHOPOL::Calc (order_edge[0], lami[e[1]]-lami[e[0]], shape.Addr(2));
   }
-
+  */
 
 
   /* *********************** Triangle  **********************/
 
+  /*
   template<typename Tx, typename TFA>  
   void H1HighOrderFE<ET_TRIG> :: T_CalcShape (Tx x[2], TFA & shape) const
   {
@@ -288,10 +290,11 @@ namespace ngfem
             shape[ii++] = polx[i] * poly[j];
       }
   }
-
+  */
 
   /* *********************** Quadrilateral  **********************/
 
+  /*
   template<typename Tx, typename TFA>  
   void H1HighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
@@ -334,7 +337,7 @@ namespace ngfem
 	    shape[ii++] = polxi[k] * poleta[j];
       }
   }
-
+*/
 
 
   /* *********************** Tetrahedron  **********************/
@@ -692,6 +695,17 @@ namespace ngfem
   template class H1HighOrderFiniteElement<1>;
   template class H1HighOrderFiniteElement<2>;
   template class H1HighOrderFiniteElement<3>;
+
+
+
+
+  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_SEGM>, ET_SEGM>;
+  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_TRIG>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_QUAD>, ET_QUAD>;
+  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_TET>, ET_TET>;
+  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_PRISM>, ET_PRISM>;
+  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_HEX>, ET_HEX>;
+  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_PYRAMID>, ET_PYRAMID>;
 
 
   template class T_H1HighOrderFiniteElement<ET_SEGM>;

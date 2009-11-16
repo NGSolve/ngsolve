@@ -94,7 +94,7 @@ namespace ngmg
   
 
 
-
+#ifdef OLD
   NonConformingProlongation :: 
   NonConformingProlongation(const MeshAccess & ama, const NonConformingFESpace & aspace)
     : ma(ama), space(aspace)
@@ -332,6 +332,7 @@ namespace ngmg
 
 
 
+#endif
 
 
 

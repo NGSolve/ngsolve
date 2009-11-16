@@ -17,7 +17,7 @@
 #include <nginterface.h>
 #include <nginterface_v2.hpp>
 
-using namespace netgen;
+// using namespace netgen;
 #endif
 
 /**
@@ -54,15 +54,20 @@ namespace ngfem
 #include "elementtransformation.hpp"
 #include "coefficient.hpp"
 
+
 #include "h1lofe.hpp"
 #include "h1hofe.hpp"
 #include "l2hofe.hpp"
+
 #include "hdivfe.hpp"
 #include "hcurlfe.hpp"
-#include "specialelement.hpp"
 
 #include "hdivhofe.hpp"
 #include "hcurlhofe.hpp" 
+
+
+#include "specialelement.hpp"
+
 #include "facetfe.hpp" 
 #include "vectorfacetfe.hpp"
 
