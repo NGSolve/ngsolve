@@ -1,4 +1,5 @@
 #include <fem.hpp>
+#include "facethofe.hpp"
 
 namespace ngfem {
   
@@ -59,6 +60,23 @@ namespace ngfem {
     shape = 0.0;
     facets[fnr]->CalcShape(ip, shape.Range(first_facet_dof[fnr], first_facet_dof[fnr+1]));
   }
+
+
+  template<int D>
+  void FacetVolumeFiniteElement<D> :: 
+  EvaluateFacet (int fnr, const IntegrationRule & ir, FlatVector<> coefs, FlatVector<> values) const
+  {
+    facets[fnr]->Evaluate (ir, coefs.Range(first_facet_dof[fnr], first_facet_dof[fnr+1]), values);
+  }
+
+  template<int D>
+  void FacetVolumeFiniteElement<D> :: 
+  EvaluateFacetTrans (int fnr, const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const
+  {
+    coefs = 0.0;
+    facets[fnr]->EvaluateTrans (ir, values, coefs.Range(first_facet_dof[fnr], first_facet_dof[fnr+1]));
+  }
+
 
 
  
@@ -460,6 +478,7 @@ namespace ngfem {
     Array<int> fvnums(4);  
     const FACE * faces = ElementTopology::GetFaces (ET_PRISM);
 
+    /*
     for (int fnr = 0; fnr < 5; fnr++)
       {
         fvnums[0] = vnums[faces[fnr][0]]; 
@@ -471,6 +490,33 @@ namespace ngfem {
         facets[fnr]->SetOrder(facet_order[fnr]);
         facets[fnr]->ComputeNDof();
       }
+    */
+
+    for (int fnr = 0; fnr < 2; fnr++)
+      {
+        fvnums[0] = vnums[faces[fnr][0]]; 
+        fvnums[1] = vnums[faces[fnr][1]]; 
+        fvnums[2] = vnums[faces[fnr][2]]; 
+        fvnums[3] = vnums[faces[fnr][3]]; 
+   
+        facetst[fnr].SetVertexNumbers(fvnums);
+        facetst[fnr].SetOrder(facet_order[fnr]);
+        facetst[fnr].ComputeNDof();
+      }
+    for (int fnr = 0; fnr < 3; fnr++)
+      {
+        fvnums[0] = vnums[faces[fnr+2][0]]; 
+        fvnums[1] = vnums[faces[fnr+2][1]]; 
+        fvnums[2] = vnums[faces[fnr+2][2]]; 
+        fvnums[3] = vnums[faces[fnr+2][3]]; 
+   
+        facetsq[fnr].SetVertexNumbers(fvnums);
+        facetsq[fnr].SetOrder(facet_order[fnr+2]);
+        facetsq[fnr].ComputeNDof();
+      }
+
+
+
 
 
   }

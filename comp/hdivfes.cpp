@@ -9,6 +9,7 @@
 */
 
 #include <comp.hpp>
+#include <../fem/hdivlofe.hpp>
 
 namespace ngcomp
 {

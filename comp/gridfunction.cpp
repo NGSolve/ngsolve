@@ -384,7 +384,7 @@ namespace ngcomp
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
       ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
-      applyd(aapplyd), cache_elnr(-1), lh(1000000), fel(NULL)
+      applyd(aapplyd), cache_elnr(-1), lh(1000013), fel(NULL)
   { 
     if(abfi2d)
       bfi2d.Append(abfi2d);
@@ -407,7 +407,7 @@ namespace ngcomp
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
       ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
-      applyd(aapplyd), cache_elnr(-1), lh(1000000), fel(NULL)
+      applyd(aapplyd), cache_elnr(-1), lh(1000002), fel(NULL)
   { 
     for(int i=0; i<abfi2d.Size(); i++)
       bfi2d.Append(abfi2d[i]);

@@ -52,8 +52,8 @@ namespace ngfem
       const CompoundFiniteElement & cfel = 
         dynamic_cast<const CompoundFiniteElement&> (fel);
     
-      const L2HighOrderFiniteElement<D> & fel_l2 = 
-        dynamic_cast<const L2HighOrderFiniteElement<D>&> (cfel[0]);
+      const ScalarFiniteElement<D> & fel_l2 = 
+        dynamic_cast<const ScalarFiniteElement<D>&> (cfel[0]);
           const FacetVolumeFiniteElement<D> & fel_facet = 
         dynamic_cast<const FacetVolumeFiniteElement<D> &> (cfel[1]);
     
@@ -225,8 +225,8 @@ namespace ngfem
       const CompoundFiniteElement & cfel = 
         dynamic_cast<const CompoundFiniteElement&> (fel);
     
-      const L2HighOrderFiniteElement<D> & fel_l2 = 
-        dynamic_cast<const L2HighOrderFiniteElement<D>&> (cfel[0]);
+      const ScalarFiniteElement<D> & fel_l2 = 
+        dynamic_cast<const ScalarFiniteElement<D>&> (cfel[0]);
           const FacetVolumeFiniteElement<D> & fel_facet = 
         dynamic_cast<const FacetVolumeFiniteElement<D> &> (cfel[1]);
     

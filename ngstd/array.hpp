@@ -359,6 +359,16 @@ namespace ngstd
       size--;
     }
 
+
+    /// Delete element i. Move all remaining elements forward
+    void RemoveElement (int i)
+    {
+      for(int j = i; j < this->size-1; j++)
+	this->data[i] = this->data[i+1];
+      this->size--;
+    }
+
+
     /// Delete last element. 
     void DeleteLast ()
     {

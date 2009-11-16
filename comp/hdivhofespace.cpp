@@ -18,6 +18,7 @@
 #include <comp.hpp>
 #include <fem.hpp>  
 #include <../fem/hdivhofe.hpp>  
+#include <../fem/hdivhofefo.hpp>  
 
 #ifdef PARALLEL
 #include <parallelngs.hpp>
@@ -497,6 +498,32 @@ namespace ngcomp
 
   const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
+  
+    if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
+      {
+	HDivHighOrderFiniteElementFO<2> * hofe2d = 0;
+	switch (order)
+	  {
+	  case 1: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,1> (); break;
+	  case 2: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,2> (); break;
+	  case 3: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,3> (); break;
+	  case 4: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,4> (); break;
+	  case 5: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,5> (); break;
+	  case 6: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,6> (); break;
+	  }
+	
+	Ng_Element ngel = ma.GetElement<2> (elnr);
+	for (int j = 0; j < 3; j++)
+	  hofe2d->SetVertexNumber (j, ngel.vertices[j]);
+
+        hofe2d -> SetHODivFree (ho_div_free);
+        hofe2d -> ComputeNDof();
+	
+	return *hofe2d;
+      }  
+
+
+
     FiniteElement * fe;
     
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;

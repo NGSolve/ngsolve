@@ -7,6 +7,10 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
+
+#include "tscalarfe.hpp"
+
+
 namespace ngfem
 {
 
@@ -50,12 +54,16 @@ namespace ngfem
 
 
 
+  template <ELEMENT_TYPE ET> class H1HighOrderFE;
+
+
   /**
      Barton-Nackman base class for H1 - high order finite elements
   */
   template <ELEMENT_TYPE ET>
   class T_H1HighOrderFiniteElement : 
     public H1HighOrderFiniteElement<ET_trait<ET>::DIM>, 
+    public T_ScalarFiniteElement2< H1HighOrderFE<ET>, ET >,
     public ET_trait<ET> 
   {
   protected:
@@ -116,24 +124,24 @@ namespace ngfem
     virtual void ComputeNDof();
     virtual void GetInternalDofs (Array<int> & idofs) const;
 
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
+    /*
+      virtual void CalcShape (const IntegrationPoint & ip, 
+      FlatVector<> shape) const;
 
-    virtual double Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const;
+      virtual double Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const;
 
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<DIM> dshape) const;
+      virtual void CalcDShape (const IntegrationPoint & ip, 
+      FlatMatrixFixWidth<DIM> dshape) const;
 
-    virtual void CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
-				   FlatMatrixFixWidth<DIM> dshape) const;
+      virtual void CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
+      FlatMatrixFixWidth<DIM> dshape) const;
+    */
   };
 
 
 
 
 
-
-  template <ELEMENT_TYPE ET> class H1HighOrderFE;
 
 
   /**
@@ -147,11 +155,22 @@ namespace ngfem
     H1HighOrderFE () { ; }
 
     H1HighOrderFE (int aorder)
-    : T_H1HighOrderFiniteElement<ET_SEGM> (aorder) 
+      : T_H1HighOrderFiniteElement<ET_SEGM> (aorder) 
     { ndof = (order+1); }
 
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[1], TFA & shape) const; 
+    void T_CalcShape (Tx hx[1], TFA & shape) const
+    {
+      Tx x = hx[0];
+      Tx lami[2] = { x, 1-x };
+      
+      shape[0] = lami[0];
+      shape[1] = lami[1];
+
+      INT<2> e = GetEdgeSort (0, vnums);
+      T_ORTHOPOL::Calc (order_edge[0], lami[e[1]]-lami[e[0]], shape.Addr(2));
+    }
+    
   };
 
 
@@ -165,11 +184,43 @@ namespace ngfem
     H1HighOrderFE () { ; }
 
     H1HighOrderFE (int aorder)
-    : T_H1HighOrderFiniteElement<ET_TRIG> (aorder) 
+      : T_H1HighOrderFiniteElement<ET_TRIG> (aorder) 
     { ndof = (order+1)*(order+2)/2; }
 
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[2], TFA & shape) const; 
+    void T_CalcShape (Tx x[2], TFA & shape) const
+    {
+      Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
+
+      for (int i = 0; i < 3; i++)
+	shape[i] = lam[i];
+
+      int ii = 3;
+    
+      // edge dofs
+      for (int i = 0; i < N_EDGE; i++)
+	if (order_edge[i] >= 2)
+	  { 
+	    INT<2> e = GetEdgeSort (i, vnums);
+
+	    ii += T_ORTHOPOL::CalcTrigExt (order_edge[i], 
+					   lam[e[1]]-lam[e[0]], 1-lam[e[0]]-lam[e[1]], 
+					   shape.Addr(ii));
+	  }
+
+      int p = order_face[0][0];
+      if (p >= 3)
+	{
+	  INT<4> f = GetFaceSort (0, vnums);
+
+	  ArrayMem<Tx, 20> polx(p-2), poly(p-2);
+	  T_TRIGSHAPES::CalcSplitted (p, lam[f[2]]-lam[f[1]],
+				      lam[f[0]], polx, poly);
+	  for (int i = 0; i <= p-3; i++)
+	    for (int j = 0; j <= p-3-i; j++)
+	      shape[ii++] = polx[i] * poly[j];
+	}
+    }
   };
 
 
@@ -183,11 +234,52 @@ namespace ngfem
     H1HighOrderFE () { ; }
 
     H1HighOrderFE (int aorder)
-    : T_H1HighOrderFiniteElement<ET_QUAD> (aorder) 
+      : T_H1HighOrderFiniteElement<ET_QUAD> (aorder) 
     { ndof = (order+1)*(order+1); }
 
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[2], TFA & shape) const; 
+    void T_CalcShape (Tx hx[2], TFA & shape) const
+    {
+      Tx x = hx[0], y = hx[1];
+      Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
+      Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+    
+
+      // vertex shapes
+      for(int i=0; i < N_VERTEX; i++) shape[i] = lami[i]; 
+      int ii = 4;
+
+      ArrayMem<Tx,20> polxi(order+1), poleta(order+1);
+     
+      // edge dofs
+      for (int i = 0; i < N_EDGE; i++)
+	{
+	  int p = order_edge[i];
+	  INT<2> e = GetEdgeSort (i, vnums);	  
+        
+	  Tx xi = sigma[e[1]]-sigma[e[0]]; 
+	  Tx lam_e = lami[e[0]]+lami[e[1]];
+        
+	  ii += T_ORTHOPOL::CalcMult (p, xi, lam_e, shape.Addr(ii));
+	}    
+    
+      INT<2> p = order_face[0];
+      if (p[0] >= 2 && p[1] >= 2)
+	{
+	  INT<4> f = GetFaceSort (0, vnums);  // vnums[f[0]] > vnums[f[1]] > vnums[f[3]]
+
+	  Tx xi = sigma[f[0]]-sigma[f[1]]; 
+	  Tx eta = sigma[f[0]]-sigma[f[3]]; 
+	
+	  T_ORTHOPOL::Calc(p[0], xi,polxi);
+	  T_ORTHOPOL::Calc(p[1],eta,poleta);
+	
+	  for (int k = 0; k <= p[0]-2; k++)
+	    for (int j = 0; j <= p[1]-2; j++)
+	      shape[ii++] = polxi[k] * poleta[j];
+	}
+    }
+      
   };
 
 

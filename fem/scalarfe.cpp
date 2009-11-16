@@ -100,6 +100,69 @@ namespace ngfem
     return InnerProduct (shape, x);
   }  
   
+  template<int D>
+  Vec<D> ScalarFiniteElement<D> :: 
+  EvaluateGrad (const IntegrationPoint & ip, FlatVector<double> x) const
+  {
+    MatrixFixWidth<D> dshape(ndof);
+    CalcDShape (ip, dshape);
+    Vec<D> grad = Trans (dshape) * x;
+    return grad;
+  }  
+
+
+  template<int D>
+  void ScalarFiniteElement<D> :: 
+  Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
+  {
+    for (int i = 0; i < ir.GetNIP(); i++)
+      vals(i) = Evaluate (ir[i], coefs);
+  }
+
+  template<int D>
+  void ScalarFiniteElement<D> :: 
+  EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<D,double> vals) const
+  {
+    for (int i = 0; i < ir.GetNIP(); i++)
+      vals.Row(i) = EvaluateGrad (ir[i], coefs);
+  }
+
+  template<int D>
+  void ScalarFiniteElement<D> :: 
+  EvaluateTrans (const IntegrationRule & ir, FlatVector<double> vals, FlatVector<double> coefs) const
+  {
+    VectorMem<20, double> shape(ndof);
+    coefs = 0.0;
+    for (int i = 0; i < ir.GetNIP(); i++)
+      {
+	CalcShape (ir[i], shape);
+	coefs += vals(i) * shape;
+      }
+  }
+
+  template<int D>
+  void ScalarFiniteElement<D> :: 
+  EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D,double> vals, FlatVector<double> coefs) const
+  {
+    MatrixFixWidth<D> dshape(ndof);
+    coefs = 0.0;
+    for (int i = 0; i < ir.GetNIP(); i++)
+      {
+	CalcDShape (ir[i], dshape);
+	coefs += dshape * vals.Row(i);
+      }
+  }
+
+
+
+
+
+
+
+
+
+
+
 
   template<int D>
   void ScalarFiniteElement<D> :: CalcDDShape (const IntegrationPoint & ip, 
@@ -128,6 +191,10 @@ namespace ngfem
       }  
   }
 
+
+
+
+  
 
 
   /*
@@ -212,32 +279,12 @@ namespace ngfem
 				  
 
 
-
-  void FE_Tet1 :: GetDofs (Array<Dof> & dofs) const
-  {
-    /*
-    Dof da[] = { Dof (Node (NT_VERTEX, 0), 0),
-		 Dof (Node (NT_VERTEX, 1), 0),
-		 Dof (Node (NT_VERTEX, 2), 0),
-		 Dof (Node (NT_VERTEX, 3), 0) };
-    */	 
-
-    dofs.SetSize (0);
-    for (int i = 0; i < 4; i++)
-      dofs.Append (Dof (Node (NT_VERTEX, i), 0));
-  }
-
-
-
-
-
-
-
+  /*
   template class  FE_TSegmL2<0>;
   template class  FE_TSegmL2<1>;
   template class  FE_TSegmL2<2>;
   template class  FE_TSegmL2<3>;
-
+  */
 
   template class ScalarFiniteElement<1>;
   template class ScalarFiniteElement<2>;

@@ -134,7 +134,7 @@ namespace ngmg
   };
 
 
-
+  /*
   /// Prolongation for non-conforming P1 triangle.
   class NonConformingProlongation : public Prolongation
   {
@@ -160,7 +160,7 @@ namespace ngmg
     ///
     virtual void RestrictInline (int finelevel, BaseVector & v) const;
   };
-
+  */
 
 
   /// Piecewise constant prolongaton.
