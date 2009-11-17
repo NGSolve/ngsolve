@@ -1410,9 +1410,10 @@ namespace ngfem
     const CompoundFiniteElement & fel =
       dynamic_cast<const CompoundFiniteElement&> (bfel);
 
-    FlatMatrix<Complex> mat1;
 
     int nd = fel[comp].GetNDof();
+
+    FlatMatrix<Complex> mat1(nd, locheap);
     FlatVector<Complex> ellin1(nd, locheap);
 
     int base = 0;

@@ -1078,7 +1078,6 @@ public:
 	const FEL & fel = dynamic_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 
-	elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
 	elmat = 0;
 	
 	FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, locheap);
@@ -1145,7 +1144,6 @@ public:
 	const FEL & fel = dynamic_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 
-	elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
 	elmat = 0;
 	
 	FlatMatrixFixHeight<DIM_DMAT, Complex> bmat (ndof * DIM, locheap);
