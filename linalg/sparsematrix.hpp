@@ -352,6 +352,8 @@ namespace ngla
     { return data[firsti[i]+j]; }
 
 
+    void AddElementMatrix(const Array<int> & dnums1, const Array<int> & dnums2, const FlatMatrix<TSCAL> & elmat);
+
     virtual BaseVector & AsVector() 
     {
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)&data[0]);
@@ -504,6 +506,11 @@ namespace ngla
 
     SparseMatrixSymmetricTM (const SparseMatrixSymmetricTM & amat)
       : SparseMatrixTM<TM> (amat) { ; }
+
+
+  public:
+    typedef typename mat_traits<TM>::TSCAL TSCAL;
+    virtual void AddElementMatrix(const Array<int> & dnums, const FlatMatrix<TSCAL> & elmat);
   };
 
 

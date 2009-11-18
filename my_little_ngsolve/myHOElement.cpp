@@ -47,7 +47,7 @@ namespace ngfem
   {
     T lami[2] = { x, 1-x };
     
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 2; i++)
       shape[i] = lami[i];
 
     int ii = 2;
