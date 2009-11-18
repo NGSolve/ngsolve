@@ -490,6 +490,15 @@ namespace ngcomp
   void S_BilinearForm<SCAL> :: DoAssemble (LocalHeap & clh)
   {
     static int mattimer = NgProfiler::CreateTimer ("Matrix assembling");
+
+    static int timer1 = NgProfiler::CreateTimer ("Matrix assembling - 1");
+    static int timer2 = NgProfiler::CreateTimer ("Matrix assembling - 2");
+    static int timer3 = NgProfiler::CreateTimer ("Matrix assembling - 3");
+    
+    static int timerb1 = NgProfiler::CreateTimer ("Matrix assembling bound - 1");
+    static int timerb2 = NgProfiler::CreateTimer ("Matrix assembling bound - 2");
+    static int timerb3 = NgProfiler::CreateTimer ("Matrix assembling bound - 3");
+
     NgProfiler::RegionTimer reg (mattimer);
     
 
@@ -565,6 +574,8 @@ namespace ngcomp
 #pragma omp for 
                   for (int i = 0; i < ne; i++)
                     {
+		      NgProfiler::StartTimer (timer1);
+			      
 		      HeapReset hr (lh);
 		      
 		      if(elmat_ev) *testout << " Assemble Element " << i << endl;  
@@ -616,6 +627,8 @@ namespace ngcomp
                       FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
                       sum_elmat = 0;
                       
+		      NgProfiler::StopTimer (timer1);
+
                       for (int j = 0; j < NumIntegrators(); j++)
                         {
                           HeapReset hr (lh);
@@ -625,14 +638,13 @@ namespace ngcomp
                           if (bfi.BoundaryForm()) continue;
                           if (!bfi.DefinedOn (ma.GetElIndex (i))) continue;
 		      
-                          FlatMatrix<SCAL> elmat;
+                          FlatMatrix<SCAL> elmat(elmat_size, lh);
+
                           try
                             {
                               static int elementtimer = NgProfiler::CreateTimer ("Element matrix integration");
                               NgProfiler::StartTimer (elementtimer);
  
-                              elmat.AssignMemory (elmat_size, elmat_size, lh);
-
                               if (!diagonal)
                                 bfi.AssembleElementMatrix (fel, eltrans, elmat, lh);
                               else
@@ -647,9 +659,7 @@ namespace ngcomp
 
                               NgProfiler::StopTimer (elementtimer);
 			  
-                              // 			    if(elmat.Height() != dnums.Size())
-                              // 			      (*testout) << "OJE" << endl;
-                              if (printelmat) //|| elmat.Height() != dnums.Size())  //  || fel.ElementType() == ET_TET)
+                              if (printelmat) //|| elmat.Height() != dnums.Size()) 
                                 {
                                   testout->precision(8);
                                   (*testout) << "elnum= " << i << endl;
@@ -657,28 +667,11 @@ namespace ngcomp
                                   (*testout) << "integrator " << bfi.Name() << endl;
                                   (*testout) << "dnums = " << endl << dnums << endl;
                                   (*testout) << "elmat = " << endl << elmat << endl;
-			      
-                                  // Matrix<SCAL> invelmat (elmat.Height());
-                                  // CalcInverse (elmat, invelmat);
-                                  // (*testout) << "inv_elmat = " << endl << invelmat << endl;
                                 }
 
-                              /*
-                                int nz = 0;
-                                for (int hi = 0; hi < elmat.Height(); hi++)
-                                for (int hj = 0; hj < elmat.Width(); hj++)
-                                if (fabs (elmat(hi,hj)) < 1e-14) nz++;
-                                (*testout) << "nz = " << nz << endl;
-                                cout << "elmat has " << double(nz) / (elmat.Height()*elmat.Width()) * 100 
-                                << " % zero entries, these are " 
-                                << elmat.Width()-double(nz) / elmat.Height() << " non-zero entries per row" 
-                                << endl;
-                              */
-                              // elmat_ev = 1; 
+
                               if (elmat_ev)
                                 {
-                                  // (*testout) << "elind = " << eltrans.GetElementIndex() << endl;
-		
 #ifdef LAPACK
                                   LapackEigenSystem(elmat, lh);
 #else
@@ -734,6 +727,8 @@ namespace ngcomp
                       // 			  exit(19);
                       // 			}
 
+
+		      NgProfiler::StartTimer (timer3);
 
                       fespace.TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
@@ -934,6 +929,10 @@ namespace ngcomp
                           if (dnums[j] != -1)
                             useddof.Set (dnums[j]);
                       }
+
+
+		      NgProfiler::StopTimer (timer3);
+
                     }
                 }
                 cout << "\rassemble element " << ne << "/" << ne << endl;
@@ -1061,6 +1060,8 @@ namespace ngcomp
                       lh.CleanUp();
 		  
                       if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+
+		      NgProfiler::StartTimer (timerb1);
 		      
                       const FiniteElement & fel = fespace.GetSFE (i, lh);
 		      
@@ -1078,6 +1079,8 @@ namespace ngcomp
                           throw Exception ( "Inconsistent number of degrees of freedom " );
                         }
 
+		      NgProfiler::StopTimer (timerb1);
+
                       for (int j = 0; j < NumIntegrators(); j++)
                         {
                           const BilinearFormIntegrator & bfi = *parts[j];
@@ -1091,6 +1094,8 @@ namespace ngcomp
                             if (dnums[k] != -1)
                               useddof.Set (dnums[k]);
 
+			  NgProfiler::StartTimer (timerb2);
+
                           int elmat_size = dnums.Size()*fespace.GetDimension();
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
                           ;
@@ -1098,7 +1103,7 @@ namespace ngcomp
 
                           fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
-
+			  NgProfiler::StopTimer (timerb2);
 
 
 			  if (printelmat)
@@ -1135,7 +1140,11 @@ namespace ngcomp
 			  // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
 			  
 			  
+			  NgProfiler::StartTimer (timerb3);
+
 			  AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+
+			  NgProfiler::StopTimer (timerb3);
 			}
                     }
                 }
@@ -2349,7 +2358,10 @@ namespace ngcomp
     {
       TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
       //FlatArray<int> colpos(dnums2.Size(), lh);
-      
+
+      mat.AddElementMatrix (dnums1, dnums2, elmat);
+
+#ifdef OLD
       for (int i = 0; i < dnums1.Size(); i++)
         for (int j = 0; j < dnums2.Size(); j++)
           if (dnums1[i] != -1 && dnums2[j] != -1)
@@ -2367,6 +2379,7 @@ namespace ngcomp
                 mij(k,l) += elmat(i*hi+k, j*wi+l);
               */
             }
+#endif
     }
   }
 
@@ -2383,11 +2396,15 @@ namespace ngcomp
     
 #pragma omp critical (addelmat)
     {
+      mat.AddElementMatrix (dnums1, dnums2, elmat);
+
+      /*
       for (int i = 0; i < dnums1.Size(); i++)
         for (int j = 0; j < dnums2.Size(); j++)
           if (dnums1[i] != -1 && dnums2[j] != -1)
             AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
                                    elmat, i, j);
+      */
       //mat(dnums1[i], dnums2[j]) += elmat(i, j);
     }
   }
@@ -2648,6 +2665,9 @@ namespace ngcomp
 
 #pragma omp critical (addelmat)
     {
+      mat.AddElementMatrix (dnums1, elmat);
+
+#ifdef OLD
       for (int i = 0; i < dnums1.Size(); i++)
         for (int j = 0; j < dnums2.Size(); j++)
           if (dnums1[i] != -1 && dnums2[j] != -1 &&
@@ -2667,6 +2687,7 @@ namespace ngcomp
                 mij(k,l) += elmat(i*hi+k, j*wi+l);
               */
             }
+#endif
     }
   }
 
@@ -2685,6 +2706,12 @@ namespace ngcomp
 
 #pragma omp critical (addelmat)
     {
+      static int addtimer = NgProfiler::CreateTimer ("Element matrix insertion, double-double");
+      NgProfiler::RegionTimer reg(addtimer);
+
+      mat.AddElementMatrix (dnums1, elmat);
+
+      /*
       static int addtimer = NgProfiler::CreateTimer ("Element matrix insertion");
       NgProfiler::RegionTimer reg(addtimer);
 
@@ -2693,6 +2720,7 @@ namespace ngcomp
           for (int j = 0; j < dnums2.Size(); j++)
             if (dnums2[j] != -1 && dnums1[i] >= dnums2[j])
               AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]), elmat, i,j);
+      */
     }
     // mat(dnums1[i], dnums2[j]) += elmat(i, j);
   }
@@ -2708,6 +2736,12 @@ namespace ngcomp
   
 #pragma omp critical (addelmat)
     {
+      static int addtimer = NgProfiler::CreateTimer ("Element matrix insertion, Complex-Complex");
+      NgProfiler::RegionTimer reg(addtimer);
+
+      mat.AddElementMatrix (dnums1, elmat);
+
+      /*
       for (int i = 0; i < dnums1.Size(); i++)
         for (int j = 0; j < dnums2.Size(); j++)
           if (dnums1[i] != -1 && dnums2[j] != -1 && 
@@ -2715,6 +2749,7 @@ namespace ngcomp
             AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
                                    elmat,
                                    i,j);
+      */
     }
     //mat(dnums1[i], dnums2[j]) += elmat(i, j);
   }
@@ -2727,17 +2762,21 @@ namespace ngcomp
                     LocalHeap & lh) 
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*mats.Last());
-
 #pragma omp critical (addelmat)  
     {
+      static int addtimer = NgProfiler::CreateTimer ("Element matrix insertion, double-Complex");
+      NgProfiler::RegionTimer reg(addtimer);
+
+      mat.AddElementMatrix (dnums1, elmat);
+    
+      /*
       for (int i = 0; i < dnums1.Size(); i++)
 	for (int j = 0; j < dnums2.Size(); j++)
 	  if (dnums1[i] != -1 && dnums2[j] != -1 && 
 	      dnums1[i] >= dnums2[j])
-	    AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
-				   elmat,
-				   i,j);
+	    AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]), elmat, i,j);
       //mat(dnums1[i], dnums2[j]) += elmat(i, j);
+      */
     }
   }
 

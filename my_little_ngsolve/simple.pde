@@ -17,8 +17,9 @@ define coefficient coef_source
 
 # create an instance of our new FESpace
 
-# define fespace v -type=myfespace -secondorder
-define fespace v -type=myhofespace -order=5
+define fespace v -type=myfespace
+# -secondorder
+# define fespace v -type=myhofespace -order=5
 
 
 define gridfunction u -fespace=v -nested

@@ -526,6 +526,45 @@ namespace ngla
 
 
 
+
+
+
+
+
+  template <class TM, class TSCAL>
+  class Scalar2ElemMatrix 
+  {
+  public:
+    const FlatMatrix<TSCAL> & mat;
+    Scalar2ElemMatrix (const FlatMatrix<TSCAL> & amat) : mat(amat) { ; }
+
+    enum { H = mat_traits<TM>::HEIGHT };
+    enum { W = mat_traits<TM>::WIDTH };
+
+    TM operator() (int i, int j) const
+    {
+      TM ret;
+      for (int k = 0; k < H; k++)
+	for (int l = 0; l < W; l++)
+	  Access(ret, k,l) = mat(i*H+k, j*W+l);
+      return ret;
+    }
+  };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   template <class TM>
   SparseMatrixTM<TM> ::
   SparseMatrixTM (int as, int max_elsperrow)
@@ -624,6 +663,52 @@ namespace ngla
 
 
 
+  template <class TM>
+  void SparseMatrixTM<TM> ::
+  AddElementMatrix(const Array<int> & dnums1, const Array<int> & dnums2, const FlatMatrix<TSCAL> & elmat1)
+  {
+    // cout << "AddelementMatrix not impelmented" << endl;
+
+
+
+    ArrayMem<int, 50> dnums_sort(dnums2.Size()), map(dnums2.Size());
+    dnums_sort = dnums2;
+    for (int i = 0; i < map.Size(); i++)
+      map[i] = i;
+    BubbleSort (dnums2.Size(), &dnums_sort[0], &map[0]);
+    
+    // cout << "sorted: " << endl;
+    // for (int j = 0; j < map.Size(); j++)
+    // cout << dnums[map[j]] << endl;
+    
+    Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
+
+    for (int i = 0; i < dnums1.Size(); i++)
+      if (dnums1[i] != -1)
+	{
+	  FlatArray<int> rowind = this->GetRowIndices(dnums1[i]);
+	  FlatVector<TM> rowvals = this->GetRowValues(dnums1[i]);
+	  
+	  int k = 0;
+	  for (int j1 = 0; j1 < dnums2.Size(); j1++)
+	    {
+	      int j = map[j1];
+	      if (dnums2[j] != -1)
+		{
+		  while (rowind[k] != dnums2[j])
+		    {
+		      k++;
+		      if (k >= rowind.Size())
+			throw Exception ("SparseMatrix::AddElementMatrix: illegal dnums");
+		    }
+		  rowvals(k) += elmat(i,j);
+		}
+	    }
+	}
+
+
+  }
+  
 
 
 
@@ -860,12 +945,55 @@ namespace ngla
 
 
 
+  template <class TM>
+  void SparseMatrixSymmetricTM<TM> ::
+  AddElementMatrix(const Array<int> & dnums, const FlatMatrix<TSCAL> & elmat1)
+  {
+    /*
+    for (int i = 0; i < dnums.Size(); i++)
+      if (dnums[i] != -1)
+	for (int j = 0; j < dnums.Size(); j++)
+	  if (dnums[j] != -1 && dnums[i] >= dnums[j])
+	    (*this)(dnums[i], dnums[j]) += elmat(i,j);
+    */
 
 
+    ArrayMem<int, 50> dnums_sort(dnums.Size()), map(dnums.Size());
+    dnums_sort = dnums;
+    for (int i = 0; i < map.Size(); i++)
+      map[i] = i;
+    BubbleSort (dnums.Size(), &dnums_sort[0], &map[0]);
+    
+    // cout << "sorted: " << endl;
+    // for (int j = 0; j < map.Size(); j++)
+    // cout << dnums[map[j]] << endl;
+    
+    Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
 
-
-
-
+    for (int i = 0; i < dnums.Size(); i++)
+      if (dnums[i] != -1)
+	{
+	  FlatArray<int> rowind = this->GetRowIndices(dnums[i]);
+	  FlatVector<TM> rowvals = this->GetRowValues(dnums[i]);
+	  
+	  int k = 0;
+	  for (int j1 = 0; j1 < dnums.Size(); j1++)
+	    {
+	      int j = map[j1];
+	      if (dnums[j] != -1 && dnums[j] <= dnums[i])
+		{
+		  while (rowind[k] != dnums[j])
+		    {
+		      k++;
+		      if (k >= rowind.Size())
+			throw Exception ("SparseMatrix::AddElementMatrix: illegal dnums");
+		    }
+		  rowvals(k) += elmat(i,j);
+		}
+	    }
+	}
+  }
+  
 
 
   /*
