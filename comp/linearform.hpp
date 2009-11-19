@@ -161,7 +161,7 @@ namespace ngcomp
     virtual ~T_LinearForm ();
 
     ///
-    virtual BaseVector & GetVector () const ;
+    virtual VVector<TV> & GetVector () const ;
 
     ///
     virtual void AllocateVector ();

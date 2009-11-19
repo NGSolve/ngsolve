@@ -120,8 +120,8 @@ namespace ngcomp
 
     virtual bool IsUpdated (void) const;
 
-    virtual BaseVector & GetVector (int comp = 0);
-    virtual const BaseVector & GetVector (int comp = 0) const;
+    virtual VVector<TV> & GetVector (int comp = 0);
+    virtual const VVector<TV> & GetVector (int comp = 0) const;
 
     ///
     virtual void GetElementVector (const Array<int> & dnums,

@@ -214,13 +214,13 @@ namespace ngcomp
   }
   
   template <class TV>
-  BaseVector & T_GridFunction<TV> :: GetVector (int comp)
+  VVector<TV> & T_GridFunction<TV> :: GetVector (int comp)
   {
     return *vec[comp];
   }
 
   template <class TV>
-  const BaseVector & T_GridFunction<TV> :: GetVector (int comp) const
+  const VVector<TV> & T_GridFunction<TV> :: GetVector (int comp) const
   {
     return *vec[comp];
   }
@@ -341,31 +341,17 @@ namespace ngcomp
       fes.GetDofNrs (elnr, dnums);
     
     VectorMem<50> elu(dnums.Size()*dim);
-    // elu.AssignMemory (dnums.Size() * dim, lh);
 
     gf.GetElementVector (comp, dnums, elu);
-    
     fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
 
 
-    // HeapReset hr(lh);
-
-    // should be, but not yet tested
     const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
     VectorMem<10> flux(bfi->DimFlux());
-
     
     bfi->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh2);
 
-    /*
-    FlatVector<double> flux;
-    if(boundary)
-      fes.GetBoundaryEvaluator()->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh);
-    else
-      fes.GetEvaluator()->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh);
-    */
     return flux(0); 
-
   }
 
 
