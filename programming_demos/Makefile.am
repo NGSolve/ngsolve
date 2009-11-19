@@ -1,4 +1,5 @@
-bin_PROGRAMS = demo_std demo_bla demo_fem
+bin_PROGRAMS = demo_std demo_bla demo_fem  
+# demo_comp
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
@@ -15,3 +16,13 @@ demo_fem_SOURCES = demo_fem.cpp
 demo_fem_LDADD = $(top_builddir)/fem/libngfem.la \
 	$(top_builddir)/basiclinalg/libngbla.la \
 	$(top_builddir)/ngstd/libngstd.la $(LAPACK_LIBS)
+
+
+
+# demo_comp_SOURCES = demo_comp.cpp nginterface.cpp nginterface_v2.cpp
+# demo_comp_LDADD = $(top_builddir)/comp/libngcomp.la \
+#	$(top_builddir)/solve/libngsolve.la $(LAPACK_LIBS) \
+#	-L/opt/netgen/lib -lnglib  $(TCL_LIB_SPEC)
+
+# demo_comp_CPPFLAGS = -DNETGEN_ELTRANS -I/opt/netgen/include -I/home/joachim/netgen-mesher/netgen/libsrc/include -I/home/joachim/netgen-mesher/netgen/libsrc/interface  -I$(top_srcdir)/include
+

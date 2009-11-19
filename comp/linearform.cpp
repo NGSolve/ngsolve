@@ -58,8 +58,8 @@ namespace ngcomp
 
   bool LinearForm :: IsAssembled (void) { return assembled; }
 
-  template <class SCAL>
-  BaseVector & T_LinearForm<SCAL> :: GetVector () const 
+  template <class TV>
+  VVector<TV> & T_LinearForm<TV> :: GetVector () const 
   { 
 #ifdef PARALLEL
     const FESpace & afespace = LinearForm :: GetFESpace();

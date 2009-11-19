@@ -35,70 +35,7 @@ using namespace ngsolve;
 
 // #include "/home/joachim/netgen-mesher/netgen/libsrc/include/meshing.hpp"
 // volatile int & running = netgen::multithread.running;
-
-
 // static bool got_exception = false;
-
-/*
-#ifdef _MSC_VER
-
-# ifdef MSVC_EXPRESS
-
-// #include <pthread.h>
-static pthread_t meshingthread;
-static void RunParallel ( void * (*fun)(void *), void * in)
-{
-  if (1)
-    {
-      pthread_attr_t attr;
-      pthread_attr_init (&attr);
-      pthread_attr_setstacksize(&attr, 10000000);
-      pthread_create (&meshingthread, &attr, fun, NULL);
-    }
-  else
-    fun (in);
-}
-
-# else // Using MSVC++ Standard / Profession
-
-// Afx - Threads need different return - value:
-
-static void* (*sfun)(void *);
-static unsigned int fun2 (void * val)
-{
-  sfun (val);
-  return 0;
-}
-
-static void RunParallel ( void* (*fun)(void *), void * in)
-{
-  sfun = fun;
-  if (1)
-    AfxBeginThread (fun2, NULL);
-  else
-    fun (in);
-}
-# endif // MSVC_EXPRESS
-#else
-// #include <pthread.h>
-static pthread_t meshingthread;
-static void RunParallel ( void * (*fun)(void *), void * in)
-{
-  if (1)
-    {
-      pthread_attr_t attr;
-      pthread_attr_init (&attr);
-      pthread_attr_setstacksize(&attr, 10000000);
-      pthread_create (&meshingthread, &attr, fun, NULL);
-    }
-  else
-    fun (in);
-}
-#endif
-*/
-
-
-
 
 
 int NGS_PrintRegistered (ClientData clientData,
