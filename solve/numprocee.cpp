@@ -896,6 +896,7 @@ Flags visflags;
 
     virtual void Do(LocalHeap & lh);
     virtual void PrintReport (ostream & ost);
+    virtual void PrintDoc (ostream & ost);
 
     virtual string GetClassName () const
     {
@@ -958,7 +959,24 @@ Flags visflags;
   }
 
 
-
+  void NumProcPrimalDualErrorEstimator :: PrintDoc (ostream & ost)
+  {
+    ost << 
+      "\n\nNumproc PrimalDual - error estimator:\n" \
+      "---------------------------\n" \
+      "Computes the error comparing flux of a primal unknown and a dual unknown\n\n" \
+      "Required flags:\n" \
+      "-bilinearform=<bfname>\n"
+      "    takes first integrator of bilinearform to compute the flux\n"
+      "-solution=<solname>\n"
+      "    gridfunction storing the finite element solution\n"
+      "-flux=<fluxname>\n"
+      "    gridfunction storing the flux solution\n"
+      "-error=<errname>\n"
+      "    piece-wise constant gridfuntion to store the computed element-wise error\n";
+  }
+  
+  
 
   void NumProcPrimalDualErrorEstimator :: PrintReport (ostream & ost)
   {

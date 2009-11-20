@@ -97,8 +97,12 @@ namespace ngcomp
               for (int j = 0; j < ma.GetNSE(); j++)
                 {
                   HeapReset hr(clh);
-                  if (parts[i] -> DefinedOn (ma.GetSElIndex(j)))
-                    parts[i] -> CheckElement (fespace.GetSFE(j, clh));
+		  if (!parts[i] -> SkeletonForm()){
+		    if (parts[i] -> DefinedOn (ma.GetSElIndex(j)))
+		      parts[i] -> CheckElement (fespace.GetSFE(j, clh));
+		  }else{
+		    //TODO: get aligned volelement and check that
+		  }
                 }
             }
           else
@@ -106,8 +110,14 @@ namespace ngcomp
               for (int j = 0; j < ma.GetNE(); j++)
                 {
                   HeapReset hr(clh);
-                  if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
-                    parts[i] -> CheckElement (fespace.GetFE(j, clh));
+		  if (parts[i] -> SkeletonForm()) 
+		  { 
+		    throw Exception ("There are no LinearformIntegrator which act on the skeleton so far!");
+		  }else
+		  {
+		    if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
+		      parts[i] -> CheckElement (fespace.GetFE(j, clh));
+		  }
                 }
             }
         
@@ -116,18 +126,47 @@ namespace ngcomp
 
 	
 	int ne = ma.GetNE();
+	int nf = ma.GetNFacets();
 	int nse = ma.GetNSE();
 
 	bool hasbound = false;
 	bool hasinner = false;
+	bool hasskeletonbound = false;
+	bool hasskeletoninner = false;
 	
+	//check hasbound, hasinner, hasskeletonbound, hasskeletoninner
 	for (int j = 0; j < parts.Size(); j++)
 	  {
-	    if (parts[j] -> BoundaryForm())
-	      hasbound = true;
-	    else if (!parts[j] -> IntegrationAlongCurve())
-	      hasinner = true;
+	    if (!parts[j] -> SkeletonForm()){
+	      if (parts[j] -> BoundaryForm())
+		hasbound = true;
+	      else 
+		if (!parts[j] -> IntegrationAlongCurve()) //CL: ist das richtig? 
+		  hasinner = true;
+	    }else{
+	      if (parts[j] -> BoundaryForm())
+		hasskeletonbound = true;
+	      else 
+		if (!parts[j] -> IntegrationAlongCurve()) //CL: ist das richtig? 
+		  hasskeletoninner = true;
+	    }
 	  }
+	  
+	*testout << " LINEARFORM TEST:" << endl;
+	*testout << " hasinner = " << hasinner << endl;
+	*testout << " hasouter = " << hasbound << endl;
+	*testout << " hasskeletoninner = " << hasskeletoninner << endl;
+	*testout << " hasskeletonouter = " << hasskeletonbound << endl;
+	
+	int nrcases = 0;
+	int loopsteps = 0;
+	if (hasinner) {nrcases++; loopsteps+=ne;}
+	if (hasbound) {nrcases++; loopsteps+=nse;}
+	if (hasskeletoninner) {nrcases++; loopsteps+=nf;}
+	if (hasskeletonbound) {nrcases++; loopsteps+=nse;}
+	if (fespace.specialelements.Size()>0) {nrcases++; loopsteps+=fespace.specialelements.Size();}
+	int actcase = 0;
+	int gcnt = 0; //global count (for all cases)
 	
 	clock_t prevtime = clock();
 	if (hasinner)
@@ -147,10 +186,11 @@ namespace ngcomp
 #pragma omp critical(printvecasstatus)
 		  {
 		    cnt++;
+		    gcnt++;
 		    if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
 		      {
 			cout << "\rassemble element " << cnt << "/" << ne << flush;
-			ma.SetThreadPercentage ( 100.0*cnt / (ne+nse) );
+			ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
 			prevtime = clock();
 		      }
 		  }
@@ -165,9 +205,10 @@ namespace ngcomp
 		
 		  for (int j = 0; j < parts.Size(); j++)
 		    {
+		      if (parts[j] -> SkeletonForm()) continue;
 		      if (parts[j] -> BoundaryForm()) continue;
-		      if (!parts[j] -> DefinedOn (ma.GetElIndex (i))) continue;
 		      if (parts[j] -> IntegrationAlongCurve()) continue;
+		      if (!parts[j] -> DefinedOn (ma.GetElIndex (i))) continue;
 
                       int elvec_size = dnums.Size()*fespace.GetDimension();
 		      FlatVector<TSCAL> elvec(elvec_size, lh);
@@ -199,7 +240,6 @@ namespace ngcomp
 	    
 	  }
 
-
 	if (hasbound)
 	  {
 
@@ -210,15 +250,15 @@ namespace ngcomp
 	      ElementTransformation eltrans;
 	      
 #pragma omp for	      
-
-
 	      for (int i = 0; i < nse; i++)
 		{
 #pragma omp critical (linformsurfprint)		    
 		  {
+		    gcnt++;
 		    if (i % 10 == 0)
 		      cout << "\rassemble surface element " << i << "/" << nse << flush;
-		    ma.SetThreadPercentage ( 100.0*(ne+i+1) / (ne+nse) );
+
+		    ma.SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
 		  }
 		  if ( ma.IsGhostSEl ( i ) ) continue;
 
@@ -231,6 +271,7 @@ namespace ngcomp
 	      
 		  for (int j = 0; j < parts.Size(); j++)
 		    {
+		      if (parts[j] -> SkeletonForm()) continue;
 		      if (!parts[j] -> BoundaryForm()) continue;
 		      if (!parts[j] -> DefinedOn (ma.GetSElIndex (i))) continue;
 		      if (parts[j] -> IntegrationAlongCurve()) continue;		    
@@ -259,9 +300,89 @@ namespace ngcomp
 		      }
 		    }
 		}
-	    }
-	    cout << "\rassemble surface element " << nse << "/" << nse << endl;	  
-	  }
+		cout << "\rassemble surface element " << nse << "/" << nse << endl;	  
+	      }//end of parallel
+	    }//end of hasbound
+	   
+	if(hasskeletoninner)
+	{
+	  cout << "\rInnerFacetIntegrators not known - cannot handle it yet" << endl;	  
+	}
+	if(hasskeletonbound)
+	{
+#pragma omp parallel
+	  {
+	    LocalHeap lh = clh.Split();
+	    Array<int> dnums;
+	    ElementTransformation eltrans, seltrans;
+	    Array<int> fnums, elnums, vnums;
+	    //Schleife fuer Facet-Integrators: 
+#pragma omp for	      
+	      for (int i = 0; i < nse; i++)
+		{
+#pragma omp critical (linformsurfneighprint)		    
+		  {
+		    gcnt++;
+		    if (i % 10 == 0)
+		      cout << "\rassemble facet surface element " << i << "/" << nse << flush;
+		    ma.SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
+		  }
+		  if ( ma.IsGhostSEl ( i ) ) continue;
+
+		  HeapReset hr(lh);
+		  
+		  
+		  ma.GetSElFacets(i,fnums);
+		  int fac = fnums[0];
+		  ma.GetFacetElements(fac,elnums);
+		  int el = elnums[0];
+		  ma.GetElFacets(el,fnums);
+		  int facnr = 0;
+		  for (int k=0; k<fnums.Size(); k++)
+		    if(fac==fnums[k]) facnr = k;
+		  
+		  const FiniteElement & fel = fespace.GetFE (el, lh);
+		
+		  ma.GetElementTransformation (el, eltrans, lh);
+		  ma.GetSurfaceElementTransformation (i, seltrans, lh);
+		  fespace.GetDofNrs (el, dnums);
+		  ma.GetElVertices (el, vnums);		
+	      
+		  for (int j = 0; j < parts.Size(); j++)
+		    {
+		      if (!parts[j] -> SkeletonForm()) continue;
+		      if (!parts[j] -> BoundaryForm()) continue;
+		      if (!parts[j] -> DefinedOn (ma.GetSElIndex (i))) continue;
+		      if (parts[j] -> IntegrationAlongCurve()) continue;		    
+		  
+		      int elvec_size = dnums.Size()*fespace.GetDimension();
+		      FlatVector<TSCAL> elvec(elvec_size, lh);
+		      dynamic_cast<const FacetLinearFormIntegrator*>(parts[j]) 
+			  -> AssembleFacetVector (fel,facnr,eltrans,vnums,seltrans, elvec, lh);
+		      if (printelvec)
+			{
+			  testout->precision(8);
+
+			  (*testout) << "surface-elnum= " << i << endl;
+			  (*testout) << "integrator " << parts[j]->Name() << endl;
+			  (*testout) << "dnums = " << endl << dnums << endl;
+			  (*testout) << "(vol)element-index = " << eltrans.GetElementIndex() << endl;
+			  (*testout) << "elvec = " << endl << elvec << endl;
+			}
+
+
+		      fespace.TransformVec (i, false, elvec, TRANSFORM_RHS);
+		    
+#pragma omp critical (addelvec3)		    
+		      {
+			AddElementVector (dnums, elvec, parts[j]->CacheComp()-1);
+		      }
+		    }
+		}
+		
+	  }//end of parallel
+	  cout << "\rassemble facet surface element  " << nse << "/" << nse << endl;	  
+	}//endof hasskeletonbound
 
 
 	Array<int> dnums;

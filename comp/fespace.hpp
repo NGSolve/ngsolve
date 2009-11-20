@@ -45,6 +45,9 @@ namespace ngcomp
     /// eliminate element-internal dofs ?
     bool eliminate_internal;
 
+    /// couple (all) neighbouring degrees of freedom (like for jump terms of dg-methods)?
+    bool dgjumps;
+
     /// prolongation operators between multigrid levels
     ngmg::Prolongation *prol;
 
@@ -180,6 +183,7 @@ namespace ngcomp
     /// get dofs on element (=cell) elnr
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
+    virtual bool UsesDGCoupling () const {return dgjumps;};
 
     /// returns surface element for boundary interals
     virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
