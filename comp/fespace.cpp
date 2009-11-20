@@ -51,15 +51,22 @@ namespace ngcomp
     DefineNumListFlag("definedonbound");
     DefineNumFlag ("definedonbound");
     DefineStringListFlag ("definedonbound");
+    DefineDefineFlag("dgjumps");
 
-
-    
     order = int (flags.GetNumFlag ("order", 1));
     dimension = int (flags.GetNumFlag ("dim", 1));
     iscomplex = flags.GetDefineFlag ("complex");
     eliminate_internal = flags.GetDefineFlag("eliminate_internal");
     timing = flags.GetDefineFlag("timing");
-
+    dgjumps = flags.GetDefineFlag("dgjumps");
+    if (dgjumps) 
+      cout << "ATTENTION: flag dgjumps is used!\n This leads to a \
+lot of new non-zero entries in the matrix!\n" << endl;
+    if (dgjumps) 
+      *testout << "ATTENTION: flag dgjumps is used!\n This leads to a \
+lot of new non-zero entries in the matrix!\n" << endl;
+    else *testout << "\n (" << order << ") flag dgjumps is not used!" << endl;
+    
     if(flags.NumListFlagDefined("directsolverdomains"))
       {
 	directsolverclustered.SetSize(ama.GetNDomains());
@@ -488,6 +495,7 @@ namespace ngcomp
     ost << "type  = " << GetClassName() << endl
 	<< "order = " << order << endl
 	<< "dim   = " << dimension << endl
+	<< "dgjmps= " << dgjumps << endl
 	<< "complex = " << iscomplex << endl;
   }
   
@@ -867,18 +875,45 @@ namespace ngcomp
 
     Array<int> cnt(ne+nse+nspecial);
     cnt = 0;
-
+    
+    Array<int> fnums; //facets of one element
+    Array<int> elnums; //elements neighbouring one facet
+    Array<int> nbelems; //neighbour elements
+    
     // domain elemnets (element -> dof)
     for (int i = 0; i < ne; i++)
       {
         if ( ma.IsGhostEl(i)) continue;  // for parallel
 	if (!DefinedOn (ma.GetElIndex(i))) continue;
-        
+      
 	GetExternalDofNrs (i, dnums);
 	for (int j = 0; j < dnums.Size(); j++)
 	  if (dnums[j] != -1)
             cnt[i]++;
+      }	  
+    if (dgjumps)
+    //add dofs of neighbour elements as well
+    for (int i = 0; i < ne; i++)
+      {
+	nbelems.SetSize(0);
+        ma.GetElFacets(i,fnums);
+        for (int j=0; j<fnums.Size();j++)
+	{
+	  ma.GetFacetElements(fnums[j],elnums);
+	  for (int k=0; k<elnums.Size(); k++)
+	    if(elnums[k]!=i) nbelems.Append(elnums[k]);
+	}
+	for (int k=0;k<nbelems.Size();k++){
+	  int elnr=nbelems[k];
+	  if ( ma.IsGhostEl(elnr)) continue;  // for parallel
+	  if (!DefinedOn (ma.GetElIndex(elnr))) continue;
+	  GetExternalDofNrs (elnr, dnums);
+	  for (int j = 0; j < dnums.Size(); j++)
+	    if (dnums[j] != -1)
+	      cnt[elnr]++;
+	}
       }
+
     
     // surface elements (element -> dof)
     for (int i = 0; i < nse; i++)
@@ -915,6 +950,28 @@ namespace ngcomp
 	for (int j = 0; j < dnums.Size(); j++)
 	  if (dnums[j] != -1)
             el2dof[i][cnt[i]++] = dnums[j];
+      }
+    if (dgjumps)
+    //add dofs of neighbour elements as well
+    for (int i = 0; i < ne; i++)
+      {
+	nbelems.SetSize(0);
+        ma.GetElFacets(i,fnums);
+        for (int j=0; j<fnums.Size();j++)
+	{
+	  ma.GetFacetElements(fnums[j],elnums);
+	  for (int k=0; k<elnums.Size(); k++)
+	    if(elnums[k]!=i) nbelems.Append(elnums[k]);
+	}
+	for (int k=0;k<nbelems.Size();k++){
+	  int elnr=nbelems[k];
+	  if ( ma.IsGhostEl(elnr)) continue;
+	  if (!DefinedOn (ma.GetElIndex(elnr))) continue;
+	  GetExternalDofNrs (elnr, dnums);
+	  for (int j = 0; j < dnums.Size(); j++)
+	    if (dnums[j] != -1)
+	      el2dof[i][cnt[i]++] = dnums[j];
+	}
       }
 
     for (int i = 0; i < nse; i++)
@@ -1009,10 +1066,10 @@ namespace ngcomp
     dof_num_el = 0;
     el_num_dof = 0;
 
+
     for (int i = 0; i < ne; i++)
       {
 // 	if (  !ma.IsExchangeEl(i)) continue;
-
 	if (!DefinedOn (ma.GetElIndex(i))) continue;
 	GetExternalDofNrs (i, dnums);
 	for (j = 0; j < dnums.Size(); j++)
@@ -1023,8 +1080,8 @@ namespace ngcomp
 		el_num_dof[i]++;
 	      }
       }
-
-
+    
+    
     Table<int> dof2el (dof_num_el);
     Table<int> el2dof (el_num_dof);
 
@@ -1044,7 +1101,6 @@ namespace ngcomp
 		el2dof[i][el_num_dof[i]++] = dnums[j];
 	      }
       }
-
 
     // generate dof -> surface element table
     dof_num_el = 0;
@@ -1694,6 +1750,7 @@ namespace ngcomp
 	Flags loflags;
 	loflags.SetFlag ("order", 1);
 	loflags.SetFlag ("dim", dimension);
+	if (dgjumps){ *testout << "(NodalFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
 	if (iscomplex) loflags.SetFlag ("complex");
 	low_order_space = new NodalFESpace (ma, loflags);
       }
@@ -3147,7 +3204,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     Flags loflags;
     loflags.SetFlag("order",0.0);
     paralleldofs = 0;
-
+    if (dgjumps){ *testout << "(CompFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
     Array<const FESpace*> lospaces (0);
     for ( int i = 0; i < spaces.Size(); i++)
       if ( &spaces[i]->LowOrderFESpace() )

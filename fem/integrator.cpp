@@ -483,7 +483,6 @@ namespace ngfem
 
 
 
-
   BlockBilinearFormIntegrator :: 
   BlockBilinearFormIntegrator (BilinearFormIntegrator & abfi, int adim, int acomp)
     : bfi(abfi), dim(adim), comp(acomp) 

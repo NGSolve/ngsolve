@@ -44,9 +44,9 @@ namespace ngcomp
     DefineNumFlag("relorder");
     DefineDefineFlag("print"); 
     DefineDefineFlag("l2ho");
-    
+
     if (parseflags) CheckFlags(flags);
-    
+
     var_order = 0; 
     
     print = flags.GetDefineFlag("print"); 
@@ -82,6 +82,7 @@ namespace ngcomp
     Flags loflags;
     loflags.SetFlag ("order", 0.0);
     loflags.SetFlag ("dim", dimension);
+    if (dgjumps){ *testout << "(L2HOFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
     if (iscomplex) loflags.SetFlag ("complex");
 
 #ifndef PARALLEL

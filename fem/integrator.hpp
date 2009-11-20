@@ -68,6 +68,9 @@ namespace ngfem
     /// integrates on the boundary, or on the domain ?
     virtual bool BoundaryForm () const = 0;
 
+    /// integrates just on the skeleton, standard is NO
+    virtual bool SkeletonForm () const {return 0;} 
+
     /// Is Integrator defined on this sub-domain ?
     bool DefinedOn (int mat) const;
 
@@ -505,6 +508,95 @@ namespace ngfem
     */
   };
 
+  
+/*
+  class FacetNeighbourElInfo{
+    public:
+      //finite Element of the neighbour element      
+      const FiniteElement & volumefel; 
+      //local Facet Number from volumeElements view
+      int LocalFacetNr;
+      //Transformation of the neighbouring element
+      const ElementTransformation & eltrans; 
+      //Vertices of the Element
+      FlatArray<int> & ElVertices;
+      bool nonempty;
+      FacetNeighbourElInfo(const FiniteElement & vvolumefel, int lLocalFacetNr, 
+			   const ElementTransformation & eeltrans,
+			   FlatArray<int> & eElVertices):volumefel(vvolumefel),
+			   LocalFacetNr(lLocalFacetNr), eltrans(eeltrans), 
+			   ElVertices(eElVertices), nonempty(true)
+			   {;}
+      FacetNeighbourElInfo():nonempty(false){;};
+      bool IsEmpty(){return !nonempty;}
+  };
+*/
+
+  class FacetBilinearFormIntegrator : public BilinearFormIntegrator
+  {
+    public:
+      
+    FacetBilinearFormIntegrator(Array<CoefficientFunction*> & coeffs) 
+      : BilinearFormIntegrator() { ; }
+
+    ~FacetBilinearFormIntegrator() { ; }
+
+      
+      
+      
+    virtual bool BoundaryForm () const 
+    { return 0; }
+
+    virtual bool SkeletonForm () const 
+    { return 1; }
+    
+    virtual void AssembleElementMatrix (const FiniteElement & fel,
+			   const ElementTransformation & eltrans, 
+			   FlatMatrix<double> & elmat,
+			   LocalHeap & locheap) {
+      throw Exception ("FacetBilinearFormIntegrator can not assemble volumetric element matrices!");
+    }
+    
+
+    virtual void
+    AssembleFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
+			 const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+			 const FiniteElement & volumefel2, int LocalFacetNr2,
+			 const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+			 FlatMatrix<double> & elmat,
+			 LocalHeap & locheap) const{ 
+      throw Exception ("FacetBilinearFormIntegrator::AssembleFacetMatrix for inner facets not implemented!");
+    }
+    virtual void 
+    AssembleFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
+			 const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+			 const FiniteElement & volumefel2, int LocalFacetNr2,
+			 const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,	 
+			 FlatMatrix<Complex> & elmat,
+			 LocalHeap & locheap) const{ 
+      throw Exception ("FacetBilinearFormIntegrator::AssembleFacetMatrix<Complex> for inner facets not implemented!");
+    }
+
+
+    virtual void
+    AssembleFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+			 const ElementTransformation & seltrans,  
+			 FlatMatrix<double> & elmat,
+			 LocalHeap & locheap) const{ 
+      throw Exception ("FacetBilinearFormIntegrator::AssembleFacetMatrix for boundary facets not implemented!");
+    }
+    virtual void 
+    AssembleFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+			 const ElementTransformation & seltrans,  
+			 FlatMatrix<Complex> & elmat,
+			 LocalHeap & locheap) const{ 
+      throw Exception ("FacetBilinearFormIntegrator::AssembleFacetMatrix<Complex> for boundary facets not implemented!");
+    }
+
+
+  };
 
 
 
@@ -1163,9 +1255,49 @@ namespace ngfem
 
 
 
+ class FacetLinearFormIntegrator : public LinearFormIntegrator
+  {
+    public:
+      
+    FacetLinearFormIntegrator(Array<CoefficientFunction*> & coeffs) 
+      : LinearFormIntegrator() { ; }
 
+    ~FacetLinearFormIntegrator() { ; }
 
+    virtual bool BoundaryForm () const 
+    { return 1; }
 
+    virtual bool SkeletonForm () const 
+    { return 1; }
+    
+    virtual void 
+    AssembleElementVector (const FiniteElement & bfel, 
+			   const ElementTransformation & eltrans, 
+			   FlatVector<double> & elvec,
+			   LocalHeap & locheap) const{
+      throw Exception ("FacetLinearFormIntegrator can not assemble volumetric element matrices!");
+    }
+    
+
+    virtual void
+    AssembleFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
+			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+			 const ElementTransformation & seltrans,
+			 FlatVector<double> & elvec,
+			 LocalHeap & locheap) const{ 
+      throw Exception ("FacetLinearFormIntegrator::AssembleFacetVector not implemented!");
+    }
+
+    virtual void 
+    AssembleFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
+			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+			 const ElementTransformation & seltrans,
+			 FlatVector<Complex> & elvec,
+			 LocalHeap & locheap) const { 
+      throw Exception ("FacetLinearFormIntegrator::AssembleFacetVector<complex> not implemented!");
+    }
+			 
+  };  
 
 
 
