@@ -72,8 +72,8 @@ int main ()
 
 
   BaseMatrix & mata = bfa.GetMatrix();
-  VVector<double> & vecf = lff.GetVector();
-  VVector<double> & vecu = gfu.GetVector();
+  T_BaseVector<double> & vecf = lff.GetVector();
+  T_BaseVector<double> & vecu = gfu.GetVector();
   
   BaseMatrix * jacobi = dynamic_cast<const BaseSparseMatrix&> (mata).CreateJacobiPrecond();
 

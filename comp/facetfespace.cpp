@@ -286,6 +286,8 @@ namespace ngcomp
     first_hodofs[ma.GetDimension()-1] = first_facet_dof;
 
 
+    UpdateColoring (lh);
+
 #ifdef PARALLEL
     *testout << "update parallel dofs in facet-fespace, ndof " << ndof << endl;
     UpdateParallelDofs();

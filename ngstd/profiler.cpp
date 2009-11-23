@@ -82,7 +82,7 @@ namespace ngstd
       if (counts[i] != 0 || usedcounter[i] != 0)
 	{
 	  // fprintf(prof,"job %3i calls %8i, time %6.2f sec",i,counts[i],double(tottimes[i]) / CLOCKS_PER_SEC);
-          fprintf(prof,"job %3i calls %8i, time %6.4f sec",i,counts[i],tottimes[i]*fac);
+          fprintf(prof,"job %3i calls %8li, time %6.4f sec",i,counts[i],tottimes[i]*fac);
 	  if(flops[i])
 	    fprintf(prof,", MFlops = %6.2f",flops[i] / (double(tottimes[i])*fac) * 1e-6);
 	  if(usedcounter[i])

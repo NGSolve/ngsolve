@@ -22,6 +22,15 @@ namespace ngfem
   CoefficientFunction :: ~CoefficientFunction ()
   { ; }
 
+  void CoefficientFunction :: 
+  Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
+  {
+    for (int i = 0; i < ir.Size(); i++)
+      Evaluate (ir[i], values.Row(i)); // values(i, 0) = Evaluate (ir[i]);
+  }
+
+
+
     ///
   ConstantCoefficientFunction ::   
   ConstantCoefficientFunction (double aval) 

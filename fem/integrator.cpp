@@ -358,6 +358,41 @@ namespace ngfem
 
 
 
+  void BilinearFormIntegrator :: 
+  CalcFlux (const FiniteElement & fel,
+	    const BaseMappedIntegrationRule & mir,
+	    const FlatVector<double> & elx, 
+	    FlatMatrix<double> & flux,
+	    bool applyd,
+	    LocalHeap & lh) const
+  {
+    for (int l = 0; l < mir.Size(); l++)
+      {
+	FlatVector<> res = flux.Row(l);
+	CalcFlux (fel, mir[l], elx, res, false, lh);
+      }
+  }
+  
+  
+  void BilinearFormIntegrator :: 
+  CalcFlux (const FiniteElement & fel,
+	    const BaseMappedIntegrationRule & mir,
+	    const BaseSpecificIntegrationPoint & bsip,
+	    const FlatVector<Complex> & elx, 
+	    FlatMatrix<Complex> & flux,
+	    bool applyd,
+	    LocalHeap & lh) const
+  {
+    for (int l = 0; l < mir.Size(); l++)
+      {
+	FlatVector<Complex> res = flux.Row(l);
+	CalcFlux (fel, mir[l], elx, res, false, lh);
+      }
+  }
+
+
+
+
 
   void BilinearFormIntegrator :: 
   CalcFluxMulti (const FiniteElement & fel,

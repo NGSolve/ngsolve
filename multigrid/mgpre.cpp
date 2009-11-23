@@ -285,8 +285,8 @@ namespace ngmg
 	    smoother->PreSmoothResiduum (level, u, f, d, smoothingsteps * incsm);
 	    
 
-	    TempVector dt = d.Range (0, fespace.GetNDofLevel(level-1));
-	    TempVector wt = w.Range (0, fespace.GetNDofLevel(level-1));
+	    BaseVector & dt = *d.Range (0, fespace.GetNDofLevel(level-1));
+	    BaseVector & wt = *w.Range (0, fespace.GetNDofLevel(level-1));
 
 	    // smoother->Residuum (level, u, f, d);
 
@@ -300,7 +300,7 @@ namespace ngmg
 
 	    w = 0;
 	    for (j = 1; j <= cycle; j++)
-	      MGM (level-1, *wt, *dt, incsm * incsmooth);
+	      MGM (level-1, wt, dt, incsm * incsmooth);
 	    
 	    prolongation->ProlongateInline (level, w);
 	    u += w;
@@ -311,6 +311,8 @@ namespace ngmg
 	    u.Range (0,w.Size()) += w;
 	    */
 
+	    delete &wt;
+	    delete &dt;
 	    delete &w;
 	    delete &d;
 	    

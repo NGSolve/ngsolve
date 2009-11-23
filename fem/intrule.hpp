@@ -131,22 +131,22 @@ namespace ngfem
   {
   protected:
     /// IP on the reference element
-    const IntegrationPoint & ip;
+    const IntegrationPoint * ip;
     /// 
-    const ElementTransformation & eltrans;
+    const ElementTransformation * eltrans;
 
   public:
     ///
     BaseSpecificIntegrationPoint (const IntegrationPoint & aip,
 				  const ElementTransformation & aeltrans)
-      : ip(aip), eltrans(aeltrans)  { ; }
+      : ip(&aip), eltrans(&aeltrans)  { ; }
 
     ///
-    const IntegrationPoint & IP () const { return ip; }
+    const IntegrationPoint & IP () const { return *ip; }
     ///
-    const ElementTransformation & GetTransformation () const { return eltrans; }
+    const ElementTransformation & GetTransformation () const { return *eltrans; }
     ///
-    int GetIPNr() const { return ip.Nr(); }
+    int GetIPNr() const { return ip->Nr(); }
   };
 
 
@@ -183,7 +183,7 @@ namespace ngfem
     SCAL det;
     /// for boundary points
     Vec<DIMR,SCAL> normalvec;
-    Vec<DIMR,SCAL> tangentialvec;
+    Vec<DIMR,SCAL> tangentialvec;  // for independent integrator
   
  
   public:
@@ -207,6 +207,8 @@ namespace ngfem
 	{
 	  det = Det (dxdxi);
 	  dxidx = Inv (dxdxi);
+	  normalvec = TSCAL(0.0);
+	  tangentialvec = TSCAL(0.0);
 	}
       else
 	{
@@ -230,6 +232,7 @@ namespace ngfem
 	  ata = Trans (dxdxi) * dxdxi;
 	  iata = Inv (ata);
 	  dxidx = iata * Trans (dxdxi);
+	  tangentialvec = TSCAL(0.0);
 	}
     }
   

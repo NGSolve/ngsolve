@@ -255,6 +255,9 @@ namespace ngcomp
 	*testout << " first_facet_dof (facet)  " << first_facet_dof << endl; 
       } 
 
+
+    UpdateColoring (lh);
+
 #ifdef PARALLEL
     *testout << "update parallel dofs in facet-fespace, ndof " << ndof << endl;
     UpdateParallelDofs();

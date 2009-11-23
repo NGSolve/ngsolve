@@ -405,7 +405,8 @@ namespace ngcomp
     delete node2edge;
     
     prol->Update();
-    
+
+    UpdateColoring (lh);
 
 #ifdef PARALLEL
     UpdateParallelDofs();
@@ -1548,6 +1549,9 @@ namespace ngcomp
 
     //  gradientface = 0;
     //  (*testout) << "gradientedges = " << endl << gradientedge << endl;
+
+
+    UpdateColoring (lh);
   }
 
 

@@ -218,6 +218,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     first_lodof[4] = -1;   // indicates that nodes are not used
 
+    element_coloring = NULL;
+
 #ifdef PARALLEL
     paralleldofs = 0;
 #endif
@@ -295,7 +297,64 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	(*testout) << "Dirichlet_face = " << endl << dirichlet_face << endl;
       }
   }
-  
+
+  void FESpace :: UpdateColoring(LocalHeap & lh)
+  {
+    cout << "coloring ... " << flush;
+    Array<int> col(ma.GetNE());
+    Array<int> dofcol(GetNDof());
+    
+    dofcol = -1;
+    col = -1;
+    bool found;
+    Array<int> dnums;
+    int color = 0;
+    do
+      {
+	// cout << "color = " << color << endl;
+	found = false;
+	for (int i = 0; i < ma.GetNE(); i++)
+	  {
+	    if (col[i] >= 0) continue;
+	    GetDofNrs (i, dnums);
+	    bool ok = true;
+	    for (int j = 0; j < dnums.Size(); j++)
+	      if (dnums[j] != -1)
+		if (dofcol[dnums[j]] == color)
+		  {
+		    ok = false;
+		    break;
+		  }
+	    if (ok)
+	      {
+		col[i] = color;
+		for  (int j = 0; j < dnums.Size(); j++)
+		  if (dnums[j] != -1)
+		    dofcol[dnums[j]] = color;
+		found = true;
+	      }
+	    // cout << "element " << i << " dnums = " << dnums << " ok = " << ok << endl;
+	  }
+	color++;
+      }
+    while (found);
+
+    // cout << "col = " << endl << col << endl;
+    color--;
+
+    Array<int> cntcol(color);
+    cntcol = 0;
+    for (int i = 0; i < ma.GetNE(); i++)
+      cntcol[col[i]]++;
+
+    element_coloring = new Table<int> (cntcol);
+    cntcol = 0;
+    for (int i = 0; i < ma.GetNE(); i++)
+      (*element_coloring)[col[i]][cntcol[col[i]]++] = i;
+    
+    cout << "needed " << color << " colors" << endl;
+    // cout << "elcolors = " << endl << (*element_coloring) << endl;
+  }
 
   const FiniteElement & FESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
@@ -1880,6 +1939,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  }
       }
 
+    UpdateColoring (lh);
+
+
     if (timing) Timing();
 
 #ifdef PARALLEL
@@ -2513,6 +2575,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     while (ma.GetNLevels() > ndlevel.Size())
       ndlevel.Append (n_el_dofs * ma.GetNE());
 
+    UpdateColoring (lh);
+
 #ifdef PARALLEL
     UpdateParallelDofs();
 #endif
@@ -2707,6 +2771,8 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
     while (ma.GetNLevels() > ndlevel.Size())
       ndlevel.Append (n_el_dofs * ma.GetNSE());
+
+    UpdateColoring (lh);
 
 #ifdef PARALLEL
     UpdateParallelDofs();  
@@ -3237,6 +3303,8 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
       ndlevel.Append (cummulative_nd.Last());
 
     prol -> Update();
+
+    UpdateColoring (lh);
 
     (*testout) << "Update compound fespace" << endl;
     (*testout) << "cummulative dofs start at " << cummulative_nd << endl;

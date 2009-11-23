@@ -24,17 +24,21 @@ namespace ngcomp
 
     // netgen::SolutionData * vis;
     int cacheblocksize;
+
+
+    Array<BaseVector*> vec;
+
   public:
     ///
     GridFunction (const FESpace & afespace, const string & name, const Flags & flags);
     ///
-    virtual ~GridFunction () { ; }
+    virtual ~GridFunction ();
     ///
-    virtual void Update () = 0;
+    virtual void Update ();
     ///  
-    virtual BaseVector & GetVector (int comp = 0) = 0;
+    virtual BaseVector & GetVector (int comp = 0) { return *(vec[comp]); }
     ///  
-    virtual const BaseVector & GetVector (int comp = 0) const = 0;
+    virtual const BaseVector & GetVector (int comp = 0) const  { return *(vec[comp]); }
 
     ///
     void SetNested (int anested = 1) { nested = anested; }
@@ -70,8 +74,10 @@ namespace ngcomp
     ///
     virtual int GetCacheBlockSize (void) const { return cacheblocksize;}
     ///
-    virtual bool IsUpdated () const { return false; }
-  
+    virtual bool IsUpdated () const; 
+
+
+    virtual GridFunction * GetComponent (int compound_comp) const = 0;
   };
 
 
@@ -85,20 +91,36 @@ namespace ngcomp
   
     ///
     virtual void GetElementVector (const Array<int> & dnums,
-				   FlatVector<SCAL> & elvec) const = 0;
+				   FlatVector<SCAL> & elvec) const
+    { 
+      vec[0] -> GetIndirect (dnums, elvec); 
+    }
+      
     ///
     virtual void SetElementVector (const Array<int> & dnums,
-				   const FlatVector<SCAL> & elvec) = 0;
+				   const FlatVector<SCAL> & elvec) 
+    {
+      vec[0] -> SetIndirect (dnums, elvec);
+    }
 
 
     ///
     virtual void GetElementVector (int comp,
 				   const Array<int> & dnums,
-				   FlatVector<SCAL> & elvec) const = 0;
-    ///
+				   FlatVector<SCAL> & elvec) const 
+    {
+      vec[comp] -> GetIndirect (dnums, elvec);
+    }
+
+
     virtual void SetElementVector (int comp,
 				   const Array<int> & dnums,
-				   const FlatVector<SCAL> & elvec) = 0;
+				   const FlatVector<SCAL> & elvec) 
+    {
+      vec[comp] -> SetIndirect (dnums, elvec);
+    }
+
+    virtual GridFunction * GetComponent (int compound_comp) const;
   };
 
 
@@ -106,71 +128,26 @@ namespace ngcomp
   template <class TV>
   class T_GridFunction : public S_GridFunction<typename mat_traits<TV>::TSCAL>
   {
-  protected:
-    Array<VVector<TV>*> vec;
-  
+    using S_GridFunction<typename mat_traits<TV>::TSCAL>::vec;
+
   public:
     typedef typename mat_traits<TV>::TSCAL TSCAL;
     enum { VDIM = mat_traits<TV>::HEIGHT };
 
     T_GridFunction (const FESpace & afespace, const string & aname, const Flags & flags);
-    virtual ~T_GridFunction ();
+    // virtual ~T_GridFunction ();
 
     virtual void Update ();
 
-    virtual bool IsUpdated (void) const;
+    // virtual bool IsUpdated () const;
 
-    virtual VVector<TV> & GetVector (int comp = 0);
-    virtual const VVector<TV> & GetVector (int comp = 0) const;
-
-    ///
-    virtual void GetElementVector (const Array<int> & dnums,
-				   FlatVector<TSCAL> & elvec) const;
-
-    ///
-    virtual void SetElementVector (const Array<int> & dnums,
-				   const FlatVector<TSCAL> & elvec);
+    virtual T_BaseVector<TV> & GetVector (int comp = 0)
+    { return dynamic_cast<T_BaseVector<TV>&>(*(vec[comp])); }
+    // virtual const T_BaseVector<TV> & GetVector (int comp = 0) const  { return *vec[comp]; }
+    virtual const T_BaseVector<TV> & GetVector (int comp = 0) const
+    { return dynamic_cast<T_BaseVector<TV>&>(*(vec[comp])); }
 
 
-    ///
-    virtual void GetElementVector (int comp,
-				   const Array<int> & dnums,
-				   FlatVector<TSCAL> & elvec) const;
-
-    ///
-    virtual void SetElementVector (int comp,
-				   const Array<int> & dnums,
-				   const FlatVector<TSCAL> & elvec);
-
-
-    /*
-    // only implemented double element-const gf
-    template <int S, int R>
-    double Evaluate (const SpecificIntegrationPoint<S,R> & ip, int comp = 1)
-    {
-    
-    const FESpace & fes = GetFESpace();
-    
-    const ElementTransformation & eltrans = ip.GetElementTransformation();
-    
-    int elnr = eltrans.GetElementNr();
-    
-    const FiniteElement & el = fes.GetFE(elnr);
-    int nd = el.GetNDof();
-    
-    Array<int> dnums (nd); 
-    fes.GetDofNrs (elnr, dnums);
-    
-    Vector<double> elemu (nd);
-    
-    GetVector().GetIndirect (dnums, elemu);
-    fes.TransformVec (elnr, false, elemu, TRANSFORM_SOL);
-    
-    return  InnerProduct (el.GetShape(ip), elemu);
-
-    return 0;
-    }
-    */
     friend class GridFunctionCoefficientFunction;
   };
 
@@ -179,6 +156,18 @@ namespace ngcomp
 					    const string & name, const Flags & flags);
 
 
+
+
+  template <class SCAL>
+  class S_ComponentGridFunction : public S_GridFunction<SCAL>
+  {
+    const S_GridFunction<SCAL> & gf;
+    int comp;
+  public:
+    S_ComponentGridFunction (const S_GridFunction<SCAL> & agf, int acomp);
+    virtual void Update ();
+  };
+  
 
 
 
@@ -212,7 +201,12 @@ namespace ngcomp
     virtual ~GridFunctionCoefficientFunction () {}
 
     virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const;
-  
+
+    virtual void Evaluate(const BaseSpecificIntegrationPoint & ip,
+			  FlatVector<> result) const;
+    
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
+
   };
 
 

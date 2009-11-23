@@ -51,6 +51,22 @@ public:
     y = sip.GetJacobian() * hv;
   }
 
+
+  template <typename FEL, class MIR>
+  static void ApplyIR (const FEL & fel, const MIR & mir,
+		       const FlatVector<double> & x, FlatMatrix<double> & y,
+		       LocalHeap & lh)
+  {
+    fel.Evaluate (mir.IR(), x, FlatMatrixFixWidth<D> (y.Height(), &y(0,0)));
+    for (int i = 0; i < mir.Size(); i++)
+      {
+	Vec<D> hy = (1.0/mir[i].GetJacobiDet()) * mir[i].GetJacobian() * y.Row(i);
+	y.Row(i) = hy;
+      }
+  }
+
+
+
   template <typename FEL, typename SIP, class TVX, class TVY>
   static void ApplyTrans (const FEL & fel, const SIP & sip,
 			  const TVX & x, TVY & y,

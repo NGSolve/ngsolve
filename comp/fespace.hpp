@@ -115,6 +115,8 @@ namespace ngcomp
     Array<int> directfaceclusters;
     Array<int> directelementclusters;
 
+    Table<int> * element_coloring;
+
 #ifdef PARALLEL
     class ngparallel::ParallelDofs * paralleldofs;
 #endif
@@ -139,6 +141,10 @@ namespace ngcomp
 
     /// update dof-table
     virtual void Update(LocalHeap & lh);
+
+    /// update element coloring
+    virtual void UpdateColoring(LocalHeap & lh);
+    const Table<int> & ElementColoring() const { return *element_coloring; }
 
     /// print report to stream
     virtual void PrintReport (ostream & ost);

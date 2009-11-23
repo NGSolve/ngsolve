@@ -349,6 +349,7 @@ namespace ngcomp
 
 
     UpdateDofTables ();
+    UpdateColoring (lh);
 
     if (timing) Timing();
 

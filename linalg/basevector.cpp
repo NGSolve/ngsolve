@@ -142,13 +142,14 @@ namespace ngla
 
 
 
-
-  TempVector BaseVector :: Range (int begin, int end)
+  /*
+  BaseVector * BaseVector :: Range (int begin, int end)
   {
     throw Exception ("BaseVector::Range called");
   }
+  */
 
-  TempVector BaseVector ::Range (int begin, int end) const
+  BaseVector * BaseVector ::Range (int begin, int end) const
   {
     throw Exception ("BaseVector::Range const called");
   }
