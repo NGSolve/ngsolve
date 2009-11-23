@@ -1,0 +1,54 @@
+geometry = doubleglazing.in2d
+mesh = doubleglazing.vol
+
+####################### DISCONTINUOUS GALERKIN DEMO #############
+
+#### the double glazing problem: 
+#### taken from Howard Elman, David Silvester, Andy Wathen: 
+#### Finite Elements and Fast Iterative Solvers 
+#### with applications in incompressible fluid dynamics
+#### 3.1.4 Example
+
+define coefficient lam 
+(0.005),
+
+#for inflow
+define coefficient dirichletcoef
+0, 1, 
+
+define coefficient boundcoeflhs
+1, 1, 
+
+define coefficient boundcoefrhs
+0, 1, 
+
+define coefficient calpha 
+10,10,
+
+#convection velocity
+define coefficient b1 
+(2*y*(1-x*x)),
+
+#convection velocity
+define coefficient b2
+(-2*x*(1-y*y)),
+
+
+define fespace vdisc -l2ho -order=4 -dgjumps 
+define gridfunction udisc -fespace=vdisc
+
+define bilinearform adisc -fespace=vdisc
+DGIP_innfac_laplace lam calpha
+DGIP_bndfac_laplace lam boundcoeflhs calpha
+DG_innfac_convection b1 b2
+DG_bndfac_convection b1 b2
+convection b1 b2
+laplace lam
+
+define linearform fdisc -fespace=vdisc
+DGIP_bndfac_dir lam boundcoefrhs calpha
+DG_bndfac_convdir b1 b2 boundcoefrhs
+
+numproc bvp npdisc -bilinearform=adisc -linearform=fdisc -gridfunction=udisc -solver=direct
+
+numproc visualization npvis -scalarfunction=udisc -subdivision=4 -deformationscale=1
