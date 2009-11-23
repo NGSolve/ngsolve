@@ -225,6 +225,15 @@ public:
     y(0) = fel.Evaluate(sip.IP(), x);
   }
 
+  template <typename FEL, class MIR>
+  static void ApplyIR (const FEL & fel, const MIR & mir,
+		       const FlatVector<double> & x, FlatMatrix<double> & y,
+		       LocalHeap & lh)
+  {
+    fel.Evaluate (mir.IR(), x, FlatVector<> (mir.Size(), &y(0,0)));
+  }
+
+
 
   template <typename FEL, typename SIP, class TVX, class TVY>
   static void ApplyTrans (const FEL & fel, const SIP & sip,
@@ -445,7 +454,7 @@ class DiffOpCurlEdge : public DiffOp<DiffOpCurlEdge<D> >
 };
 
 
-template <> class DiffOpCurlEdge<2> : public DiffOp<DiffOpCurlEdge<2> >
+  template <> class DiffOpCurlEdge<2> : public DiffOp<DiffOpCurlEdge<2> >
 {
 public:
   enum { DIM = 1 };
@@ -473,7 +482,7 @@ public:
   }
 };
 
-template <> class DiffOpCurlEdge<3> : public DiffOp<DiffOpCurlEdge<3> >
+  template <> class DiffOpCurlEdge<3> : public DiffOp<DiffOpCurlEdge<3> >
 {
 public:
   enum { DIM = 1 };

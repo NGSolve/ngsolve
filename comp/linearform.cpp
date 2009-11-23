@@ -721,13 +721,17 @@ namespace ngcomp
 		    const int cachecomp) 
   {
     FlatVector<TV> fv = vec->FV();
+    Scalar2ElemVector<TV, TSCAL> ev(elvec);
 
     if(cachecomp < 0)
       {
 	for (int k = 0; k < dnums.Size(); k++)
 	  if (dnums[k] != -1)
+	    fv(dnums[k]) += ev(k);
+	/*
 	    for (int j = 0; j < HEIGHT; j++)
 	      fv(dnums[k])(j) += elvec(k*HEIGHT+j);
+	*/
       }
     else
       {
@@ -758,7 +762,6 @@ namespace ngcomp
       if (dnums[k] != -1)
 	fv(dnums[k]) += elvec(k);
   }
-  
 
 
 

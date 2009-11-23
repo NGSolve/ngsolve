@@ -445,6 +445,27 @@ namespace ngfem
 	      bool applyd,
 	      LocalHeap & lh) const;
 
+
+    virtual void
+    CalcFlux (const FiniteElement & fel,
+	      const BaseMappedIntegrationRule & mir,
+	      const FlatVector<double> & elx, 
+	      FlatMatrix<double> & flux,
+	      bool applyd,
+	      LocalHeap & lh) const;
+
+
+    virtual void
+    CalcFlux (const FiniteElement & fel,
+	      const BaseMappedIntegrationRule & mir,
+	      const BaseSpecificIntegrationPoint & bsip,
+	      const FlatVector<Complex> & elx, 
+	      FlatMatrix<Complex> & flux,
+	      bool applyd,
+	      LocalHeap & lh) const;
+
+
+
     virtual void
     CalcFluxMulti (const FiniteElement & fel,
 		   const BaseSpecificIntegrationPoint & bsip,

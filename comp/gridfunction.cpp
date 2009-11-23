@@ -26,6 +26,31 @@ namespace ngcomp
     // vis = 0;
   }
 
+  GridFunction :: ~GridFunction()
+  {
+    for (int i = 0; i < vec.Size(); i++)
+      delete vec[i];
+  }
+
+
+
+  void GridFunction :: Update ()
+  {
+    throw Exception("GridFunction::Update not overloaded");
+  }
+
+  bool GridFunction :: IsUpdated () const
+  {
+    int ndof = GetFESpace().GetNDof();
+    for (int i = 0; i < multidim; i++)
+      {
+	if (!vec[i]) return false;
+	if (ndof != vec[i]->Size()) return false;
+      }
+    return true;
+  }
+
+
 
   void GridFunction :: PrintReport (ostream & ost)
   {
@@ -99,6 +124,38 @@ namespace ngcomp
 
 
 
+  template <class SCAL>
+  GridFunction * S_GridFunction<SCAL> :: GetComponent (int compound_comp) const
+  {
+    return new S_ComponentGridFunction<SCAL> (*this, compound_comp);
+  }
+
+
+  template <class SCAL>
+  S_ComponentGridFunction<SCAL> :: S_ComponentGridFunction (const S_GridFunction<SCAL> & agf, int acomp)
+    : S_GridFunction<SCAL> (*dynamic_cast<const CompoundFESpace&> (agf.GetFESpace())[0], agf.GetName(), Flags()),
+      gf(agf), comp(acomp)
+  { 
+    ;
+  }
+  
+
+  template <class SCAL>
+  void S_ComponentGridFunction<SCAL> :: Update()
+  {
+    const CompoundFESpace & cfes = dynamic_cast<const CompoundFESpace&> (gf.GetFESpace());
+
+    int begin = cfes.GetStorageStart(comp);
+    int end = cfes.GetStorageEnd(comp);
+  
+    this -> vec.SetSize (gf.GetMultiDim());
+    for (int i = 0; i < gf.GetMultiDim(); i++)
+      (this->vec)[i] = gf.GetVector(i).Range (begin, end);
+  
+    this -> level_updated = this -> ma.GetNLevels();
+  }
+
+
 
 
 
@@ -107,7 +164,7 @@ namespace ngcomp
   template <class TV>
   T_GridFunction<TV> ::
   T_GridFunction (const FESpace & afespace, const string & aname, const Flags & flags)
-    : S_GridFunction<TSCAL> (afespace, aname, flags), vec(0)
+    : S_GridFunction<TSCAL> (afespace, aname, flags)
   {
     vec.SetSize (this->multidim);
     vec = 0;
@@ -115,14 +172,16 @@ namespace ngcomp
     Visualize (this->name);
   }
 
+  /*
   template <class TV>
   T_GridFunction<TV> :: ~T_GridFunction()
   {
     for (int i = 0; i < vec.Size(); i++)
       delete vec[i];
   }
+  */
 
-
+  /*
   template <class TV>
   bool T_GridFunction<TV> :: IsUpdated (void) const
   {
@@ -134,7 +193,7 @@ namespace ngcomp
 
     return retval;
   }
-
+  */
 
   template <class TV>
   void T_GridFunction<TV> :: Update () 
@@ -149,7 +208,7 @@ namespace ngcomp
 	    if (vec[i] && ndof == vec[i]->Size())
 	      break;
 	    
-	    VVector<TV> * ovec = vec[i];
+	    T_BaseVector<TV> * ovec = dynamic_cast<T_BaseVector<TV>*> (vec[i]);
 	
 #ifdef PARALLEL
 	    *testout << &this->GetFESpace().GetParallelDofs() << endl;
@@ -212,34 +271,53 @@ namespace ngcomp
 	throw e;
       }    
   }
-  
-  template <class TV>
-  VVector<TV> & T_GridFunction<TV> :: GetVector (int comp)
-  {
-    return *vec[comp];
-  }
 
-  template <class TV>
-  const VVector<TV> & T_GridFunction<TV> :: GetVector (int comp) const
-  {
+  /*
+    template <class TV>
+    T_BaseVector<TV> & T_GridFunction<TV> :: GetVector (int comp)
+    {
     return *vec[comp];
-  }
-  
+    }
+
+    template <class TV>
+    const T_BaseVector<TV> & T_GridFunction<TV> :: GetVector (int comp) const
+    {
+    return *vec[comp];
+    }  {
+    return *vec[comp];
+    }
+
+  */
+
+#ifdef OLD
+
+
   ///
   template <class TV>
   void T_GridFunction<TV> ::
   GetElementVector (const Array<int> & dnums,
 		    FlatVector<TSCAL> & elvec) const
   {
-    FlatVector<TV> fv = vec[0]->FV();
+    FlatVector<TV> fv = static_cast<T_BaseVector<TV>*> (vec[0])->FV();
+    Scalar2ElemVector<TV, TSCAL> ev(elvec);
+
     for (int k = 0; k < dnums.Size(); k++)
       if (dnums[k] != -1)
-	for (int j = 0; j < VDIM; j++)
-	  elvec(k*VDIM+j) = Access (fv(dnums[k]),j);
+	ev(k) = fv(dnums[k]);
       else
-	for (int j = 0; j < VDIM; j++)
-	  elvec(k*VDIM+j) = 0;
+	ev(k) = 0.0;
+
+    /*
+      for (int k = 0; k < dnums.Size(); k++)
+      if (dnums[k] != -1)
+      for (int j = 0; j < VDIM; j++)
+      elvec(k*VDIM+j) = Access (fv(dnums[k]),j);
+      else
+      for (int j = 0; j < VDIM; j++)
+      elvec(k*VDIM+j) = 0;
+    */
   }
+
 
   ///
   template <class TV>
@@ -247,7 +325,8 @@ namespace ngcomp
   SetElementVector (const Array<int> & dnums,
 		    const FlatVector<TSCAL> & elvec) 
   {
-    FlatVector<TV> fv = vec[0]->FV();
+    // FlatVector<TV> fv = vec[0]->FV();
+    FlatVector<TV> fv = static_cast<T_BaseVector<TV>*> (vec[0])->FV();
     for (int k = 0; k < dnums.Size(); k++)
       if (dnums[k] != -1)
 	for (int j = 0; j < VDIM; j++)
@@ -268,7 +347,8 @@ namespace ngcomp
       }
 
 
-    FlatVector<TV> fv = vec[comp]->FV();
+    FlatVector<TV> fv = static_cast<T_BaseVector<TV>*> (vec[comp])->FV();
+    // FlatVector<TV> fv = vec[comp]->FV();
     for (int k = 0; k < dnums.Size(); k++)
       if (dnums[k] != -1)
 	for (int j = 0; j < VDIM; j++)
@@ -285,13 +365,15 @@ namespace ngcomp
 		    const Array<int> & dnums,
 		    const FlatVector<TSCAL> & elvec) 
   {
-    FlatVector<TV> fv = vec[comp]->FV();
+    FlatVector<TV> fv = static_cast<T_BaseVector<TV>*> (vec[comp])->FV();
+    // FlatVector<TV> fv = vec[comp]->FV();
     for (int k = 0; k < dnums.Size(); k++)
       if (dnums[k] != -1)
 	for (int j = 0; j < VDIM; j++)
 	  Access (fv(dnums[k]),j) = elvec(k*VDIM+j);
   }
 
+#endif
 
 
 
@@ -300,18 +382,10 @@ namespace ngcomp
   GridFunction * CreateGridFunction (const FESpace * space,
 				     const string & name, const Flags & flags)
   {
-    /*
-      GridFunction * gf;
-      CreateVecObject3 (gf, T_GridFunction, 
-      space->GetDimension(), space->IsComplex(),   
-      *space, name, flags);
-
-      return gf;
-    */
-    
     GridFunction * gf = 
       CreateVecObject  <T_GridFunction, GridFunction, const FESpace, const string, const Flags>
-      (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), space->IsComplex(), *space, name, flags);
+      (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
+       space->IsComplex(), *space, name, flags);
   
     gf->SetCacheBlockSize(int(flags.GetNumFlag("cacheblocksize",1)));
 
@@ -332,7 +406,6 @@ namespace ngcomp
     const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
     const int dim     = fes.GetDimension();
     
-    // NgLock lock(gf.Mutex(), 1);
 
     ArrayMem<int, 50> dnums;
     if(boundary)
@@ -352,6 +425,70 @@ namespace ngcomp
     bfi->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh2);
 
     return flux(0); 
+  }
+
+  void GridFunctionCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip,
+						    FlatVector<> result) const
+  {
+    LocalHeapMem<100000> lh2;
+    
+    const int elnr = ip.GetTransformation().GetElementNr();
+    bool boundary = ip.GetTransformation().Boundary();
+
+    const FESpace & fes = gf.GetFESpace();
+    const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
+    const int dim     = fes.GetDimension();
+    
+
+    ArrayMem<int, 50> dnums;
+    if(boundary)
+      fes.GetSDofNrs(elnr, dnums);
+    else
+      fes.GetDofNrs (elnr, dnums);
+    
+    VectorMem<50> elu(dnums.Size()*dim);
+
+    gf.GetElementVector (comp, dnums, elu);
+    fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
+
+
+    const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
+    // VectorMem<10> flux(bfi->DimFlux());
+    
+    bfi->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, result, false, lh2);
+
+    // return flux(0); 
+  }
+
+
+  void GridFunctionCoefficientFunction :: 
+  Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
+  {
+    LocalHeapMem<100000> lh2;
+    
+    const int elnr = ir.GetTransformation().GetElementNr();
+    bool boundary = ir.GetTransformation().Boundary();
+
+    const FESpace & fes = gf.GetFESpace();
+    const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
+    const int dim     = fes.GetDimension();
+    
+
+    ArrayMem<int, 50> dnums;
+    if(boundary)
+      fes.GetSDofNrs(elnr, dnums);
+    else
+      fes.GetDofNrs (elnr, dnums);
+    
+    VectorMem<50> elu(dnums.Size()*dim);
+
+    gf.GetElementVector (comp, dnums, elu);
+    fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
+
+
+    const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
+
+    bfi->CalcFlux (fel, ir, elu, values, false, lh2);
   }
 
 
@@ -847,7 +984,7 @@ namespace ngcomp
           }
         
         elu.AssignMemory (dnums.Size() * dim, lh);
-        
+
         if(gf->GetCacheBlockSize() == 1)
           {
             gf->GetElementVector (multidimcomponent, dnums, elu);

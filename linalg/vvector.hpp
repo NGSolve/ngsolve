@@ -16,6 +16,27 @@ namespace ngla
     typedef T TELEM;
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
+    T_BaseVector & operator= (TSCAL s1)
+    {
+      BaseVector::operator= (s1);
+      return *this;
+    }
+
+    T_BaseVector & operator= (const T_BaseVector & v2)
+    {
+      BaseVector::operator= (v2);
+      return *this;
+    }
+
+    template <typename T2>
+    T_BaseVector & operator= (const VVecExpr<T2> & v)
+    {
+      BaseVector::operator= (v);
+      return *this;
+    }
+
+
+
     FlatVector<T> FV () const throw()
     {
       return FlatVector<T> (this->size, this->Memory());
@@ -26,20 +47,15 @@ namespace ngla
       return FlatVector<T> (this->size, this->Memory());
     }
 
-
     FlatVector<T> FV (const BaseVector & v2) const
     {
       return FlatVector<T> (v2.Size(), v2.Memory());
     }
 
-    virtual TempVector Range (int begin, int end)
-    {
-      return TempVector (new VFlatVector<T> (end-begin, &FV()[0]+begin));
-    }
   
-    virtual TempVector Range (int begin, int end) const
+    virtual BaseVector * Range (int begin, int end) const
     {
-      return TempVector (new VFlatVector<T> (end-begin, &FV()[0]+begin));
+      return new VFlatVector<T> (end-begin, &FV()[0]+begin);
     }
   
     // create vector, procs is set of processors on which the vector exists

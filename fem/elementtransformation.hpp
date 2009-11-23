@@ -10,230 +10,230 @@
 namespace ngfem
 {
 
-/*
-  Transformation from reference element to actual element
-*/
+  /*
+    Transformation from reference element to actual element
+  */
 
 
 #ifndef NETGEN_ELTRANS
 
-/*
+  /*
     Transformation from reference element to physical element.
     Uses finite element fel to describe mapping
-*/
-class ElementTransformation
-{
-  /// finite element defining transformation.
-  const FiniteElement * fel;
-
-  /// matrix with points, dim * np
-  FlatMatrix<> pointmat;
-  ///
-  bool pointmat_ownmem;
-
-  /// normal vectors (only surfelements)
-  FlatMatrix<> nvmat;
-
-  /// element number
-  int elnr;
-
-  /// material property
-  int elindex;
-
-  bool higher_integration_order;
-public:
-  ///
-  ElementTransformation ()
-    : pointmat(0,0,0), pointmat_ownmem(false), nvmat(0,0,0), higher_integration_order(false)
-  { ; }
-
-  ~ElementTransformation ()
-  {
-    if (pointmat_ownmem) delete [] &pointmat(0,0); 
-  }
-
-  ///
-  void SetElement (const FiniteElement * afel, int aelnr, int aelindex)
-  {
-    fel = afel; 
-    elnr = aelnr; 
-    elindex = aelindex;
-  }
-
-
-  ///
-  const FiniteElement & GetElement () const { return *fel; }
-  ///
-  int GetElementNr () const { return elnr; }
-  ///
-  int GetElementIndex () const { return elindex; }
-
-  void SetHigherIntegrationOrder(void) {higher_integration_order = true;}
-  void UnSetHigherIntegrationOrder(void) {higher_integration_order = false;}
-
-  bool HigherIntegrationOrderSet(void) const
-  {
-    // (*testout) << "eltrans hios " << higher_integration_order << endl;
-    return higher_integration_order;
-  }
-  
-  
-
-
-  ELEMENT_TYPE GetElementType () const
-  { return fel->ElementType(); }
-  
-  ///
-  template <typename T>
-  void CalcJacobian (const IntegrationPoint & ip,
-		     MatExpr<T> & dxdxi,
-		     LocalHeap & lh) const
-  {
-    switch (fel->SpatialDim())
-      {
-      case 1:
-        dxdxi = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetDShape(ip, lh);
-        break;
-      case 2:
-        dxdxi = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetDShape(ip, lh);
-        break;
-      case 3:
-        dxdxi = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetDShape(ip, lh);
-        break;
-      }
-
-  }
-
-  ///
-  template <typename T>
-  void CalcJacobian (const IntegrationPoint & ip,
-		     MatExpr<T> & dxdxi) const
-  {
-    LocalHeap lh(1000);
-    switch (fel->SpatialDim())
-      {
-      case 1:
-        dxdxi = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetDShape(ip, lh);
-        break;
-      case 2:
-        dxdxi = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetDShape(ip, lh);
-        break;
-      case 3:
-        dxdxi = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetDShape(ip, lh);
-        break;
-      }
-  }
-
-
-  ///
-  template <typename T>
-  void CalcPoint (const IntegrationPoint & ip, 
-		  // MatExpr<T> & point,
-                  T & point,
-		  LocalHeap & lh) const
-  {
-    switch (fel->SpatialDim())
-      {
-      case 1:
-        point = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetShape(ip, lh);
-        break;
-      case 2:
-        point = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetShape(ip, lh);
-        break;
-      case 3:
-        point = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetShape(ip, lh);
-        break;
-      }
-
-        // point = pointmat * fel->GetShape(ip, lh);
-  }
-
-  /*
-  template <int D, typename T1, typename T2>
-  void CalcPointJacobian (const IntegrationPoint & ip,
-			  T1 & point, T2 & dxdxi,
-			  LocalHeap & lh) const
   */
-  template <int S, int R>
-  void CalcPointJacobian (const IntegrationPoint & ip,
-			  // T1 & point, T2 & dxdxi,
-                          Vec<R> & point, Mat<R,S> & dxdxi,
-			  LocalHeap & lh) const
+  class ElementTransformation
   {
-    dxdxi = pointmat * static_cast<const ScalarFiniteElement<S>*> (fel)->GetDShape(ip, lh);
-    point = pointmat * static_cast<const ScalarFiniteElement<S>*> (fel)->GetShape(ip, lh);
-    
-    /*
-    // switch (fel->SpatialDim())
+    /// finite element defining transformation.
+    const FiniteElement * fel;
+
+    /// matrix with points, dim * np
+    FlatMatrix<> pointmat;
+    ///
+    bool pointmat_ownmem;
+
+    /// normal vectors (only surfelements)
+    FlatMatrix<> nvmat;
+
+    /// element number
+    int elnr;
+
+    /// material property
+    int elindex;
+
+    bool higher_integration_order;
+  public:
+    ///
+    ElementTransformation ()
+      : pointmat(0,0,0), pointmat_ownmem(false), nvmat(0,0,0), higher_integration_order(false)
+    { ; }
+
+    ~ElementTransformation ()
     {
-      case 1:
-        dxdxi = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetDShape(ip, lh);
-        point = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetShape(ip, lh);
-        break;
-      case 2:
-        dxdxi = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetDShape(ip, lh);
-        point = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetShape(ip, lh);
-        break;
-      case 3:
-        dxdxi = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetDShape(ip, lh);
-        point = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetShape(ip, lh);
-        break;
-      }
+      if (pointmat_ownmem) delete [] &pointmat(0,0); 
+    }
+
+    ///
+    void SetElement (const FiniteElement * afel, int aelnr, int aelindex)
+    {
+      fel = afel; 
+      elnr = aelnr; 
+      elindex = aelindex;
+    }
+
+
+    ///
+    const FiniteElement & GetElement () const { return *fel; }
+    ///
+    int GetElementNr () const { return elnr; }
+    ///
+    int GetElementIndex () const { return elindex; }
+
+    void SetHigherIntegrationOrder(void) {higher_integration_order = true;}
+    void UnSetHigherIntegrationOrder(void) {higher_integration_order = false;}
+
+    bool HigherIntegrationOrderSet(void) const
+    {
+      // (*testout) << "eltrans hios " << higher_integration_order << endl;
+      return higher_integration_order;
+    }
+  
+  
+
+
+    ELEMENT_TYPE GetElementType () const
+    { return fel->ElementType(); }
+  
+    ///
+    template <typename T>
+    void CalcJacobian (const IntegrationPoint & ip,
+		       MatExpr<T> & dxdxi,
+		       LocalHeap & lh) const
+    {
+      switch (fel->SpatialDim())
+	{
+	case 1:
+	  dxdxi = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetDShape(ip, lh);
+	  break;
+	case 2:
+	  dxdxi = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetDShape(ip, lh);
+	  break;
+	case 3:
+	  dxdxi = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetDShape(ip, lh);
+	  break;
+	}
+
+    }
+
+    ///
+    template <typename T>
+    void CalcJacobian (const IntegrationPoint & ip,
+		       MatExpr<T> & dxdxi) const
+    {
+      LocalHeap lh(1000);
+      switch (fel->SpatialDim())
+	{
+	case 1:
+	  dxdxi = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetDShape(ip, lh);
+	  break;
+	case 2:
+	  dxdxi = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetDShape(ip, lh);
+	  break;
+	case 3:
+	  dxdxi = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetDShape(ip, lh);
+	  break;
+	}
+    }
+
+
+    ///
+    template <typename T>
+    void CalcPoint (const IntegrationPoint & ip, 
+		    // MatExpr<T> & point,
+		    T & point,
+		    LocalHeap & lh) const
+    {
+      switch (fel->SpatialDim())
+	{
+	case 1:
+	  point = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetShape(ip, lh);
+	  break;
+	case 2:
+	  point = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetShape(ip, lh);
+	  break;
+	case 3:
+	  point = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetShape(ip, lh);
+	  break;
+	}
+
+      // point = pointmat * fel->GetShape(ip, lh);
+    }
+
+    /*
+      template <int D, typename T1, typename T2>
+      void CalcPointJacobian (const IntegrationPoint & ip,
+      T1 & point, T2 & dxdxi,
+      LocalHeap & lh) const
     */
-  }
+    template <int S, int R>
+    void CalcPointJacobian (const IntegrationPoint & ip,
+			    // T1 & point, T2 & dxdxi,
+			    Vec<R> & point, Mat<R,S> & dxdxi,
+			    LocalHeap & lh) const
+    {
+      dxdxi = pointmat * static_cast<const ScalarFiniteElement<S>*> (fel)->GetDShape(ip, lh);
+      point = pointmat * static_cast<const ScalarFiniteElement<S>*> (fel)->GetShape(ip, lh);
+    
+      /*
+      // switch (fel->SpatialDim())
+      {
+      case 1:
+      dxdxi = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetDShape(ip, lh);
+      point = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetShape(ip, lh);
+      break;
+      case 2:
+      dxdxi = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetDShape(ip, lh);
+      point = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetShape(ip, lh);
+      break;
+      case 3:
+      dxdxi = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetDShape(ip, lh);
+      point = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetShape(ip, lh);
+      break;
+      }
+      */
+    }
 
 
-  template <typename T0, typename T1, typename T2>
-  void CalcMultiPointJacobian (FlatArray<T0> ipts,
-                               FlatArray<T1> point, 
-                               FlatArray<T2> dxdxi,
-                               LocalHeap & lh) const
-  {
-    for (int i = 0; i < ipts.Size(); i++)
-      CalcPointJacobian (IntegrationPoint (ipts[i]), point[i], dxdxi[i], lh);
-  }
+    template <typename T0, typename T1, typename T2>
+    void CalcMultiPointJacobian (FlatArray<T0> ipts,
+				 FlatArray<T1> point, 
+				 FlatArray<T2> dxdxi,
+				 LocalHeap & lh) const
+    {
+      for (int i = 0; i < ipts.Size(); i++)
+	CalcPointJacobian (IntegrationPoint (ipts[i]), point[i], dxdxi[i], lh);
+    }
 
 
 
 
 
-  ///
-  const FlatMatrix<> & PointMatrix () const { return pointmat; }
-  ///
-  FlatMatrix<> & PointMatrix () { return pointmat; }
-  ///
-  void AllocPointMatrix (int spacedim, int vertices)
-  {
-    if (pointmat_ownmem) delete [] &pointmat(0,0);
-    pointmat.AssignMemory (spacedim, vertices, new double[spacedim*vertices]);
-    pointmat_ownmem = 1;
-  }
-  ///
-  const FlatMatrix<> & NVMatrix () const { return nvmat; }
+    ///
+    const FlatMatrix<> & PointMatrix () const { return pointmat; }
+    ///
+    FlatMatrix<> & PointMatrix () { return pointmat; }
+    ///
+    void AllocPointMatrix (int spacedim, int vertices)
+    {
+      if (pointmat_ownmem) delete [] &pointmat(0,0);
+      pointmat.AssignMemory (spacedim, vertices, new double[spacedim*vertices]);
+      pointmat_ownmem = 1;
+    }
+    ///
+    const FlatMatrix<> & NVMatrix () const { return nvmat; }
 
-  template <typename T>
-  void CalcNormalVector (const IntegrationPoint & ip,
-		         T & nv,
-		         LocalHeap & lh) const
-  {
-    for (int i = 0; i < nvmat.Height(); i++)
-      nv(i) = nvmat(i,0) ;
-  }
+    template <typename T>
+    void CalcNormalVector (const IntegrationPoint & ip,
+			   T & nv,
+			   LocalHeap & lh) const
+    {
+      for (int i = 0; i < nvmat.Height(); i++)
+	nv(i) = nvmat(i,0) ;
+    }
 
-  ///
-  int SpaceDim () const
-  {
-    return pointmat.Height(); 
-  }
+    ///
+    int SpaceDim () const
+    {
+      return pointmat.Height(); 
+    }
 
-  bool Boundary(void) const
-  {
-    return pointmat.Height() != fel->SpatialDim();
-  }
+    bool Boundary(void) const
+    {
+      return pointmat.Height() != fel->SpatialDim();
+    }
 
-  void GetSort (FlatArray<int> sort) const
-  { ; }
-};
+    void GetSort (FlatArray<int> sort) const
+    { ; }
+  };
 
 
 
@@ -243,210 +243,174 @@ public:
 
 
 
-/**
-    Transformation from reference element to physical element.
-    Uses Netgen-meshaccess to perform transformation
-*/
-class ElementTransformation
-{
-  /// element number
-  int elnr;
-
-  /// material property
-  int elindex;
-  
-  /// elemente in R^dim
-  int dim;
-  /// is it a boundary element ?
-  bool boundary;
-  /// geometry of element
-  ELEMENT_TYPE eltype;
-
-  const Array<Vec<3> > * pts;
-  const Array<Mat<3,3> > * dxdxis;
-  const Array<int> * first_of_element;
-
-  bool higher_integration_order;
-
-  bool iscurved;
-
-  double buffer[100];
-  bool buffervalid;
-
-public:
-  ///
-  ElementTransformation () { pts = 0; higher_integration_order = false; buffervalid = false; }
-  /*
-  ElementTransformation (Array<Vec<3> > * apts,
-			 Array<Mat<3,3> > * adxdxis,
-			 Array<int> * afirst_of_element)
-    : pts(apts), dxdxis(adxdxis), first_of_element(afirst_of_element) { ; }
+  /**
+     Transformation from reference element to physical element.
+     Uses Netgen-meshaccess to perform transformation
   */
-
-  void SetGeometryData (const Array<Vec<3> > * apts,
-			const Array<Mat<3,3> > * adxdxis,
-			const Array<int> * afirst_of_element)
+  class ElementTransformation
   {
-    pts = apts;
-    dxdxis = adxdxis;
-    first_of_element = afirst_of_element;
-  }
+    /// element number
+    int elnr;
 
-  ///
-  void SetElement (bool aboundary, int aelnr, int aelindex)
-  {
-    boundary = aboundary;
-    elnr = aelnr;
-    elindex = aelindex;
-    dim = Ng_GetDimension();
-    if (boundary)
-      {
-        iscurved = Ng_IsSurfaceElementCurved (elnr+1);
-      }
-    else
-      {
-        iscurved = Ng_IsElementCurved (elnr+1);
-      }
-    buffervalid = 0;
-  }
-
-  void SetElementType (ELEMENT_TYPE aet) { eltype = aet; }
-  ///
-  int GetElementNr () const { return elnr; }
-  ///
-  int GetElementIndex () const { return elindex; }
-  ///
-  ELEMENT_TYPE GetElementType () const { return eltype; }
+    /// material property
+    int elindex;
   
-  ///
-  template <typename T>
-  void CalcJacobian (const IntegrationPoint & ip,
-		     T & dxdxi) const
-  {
-    if (boundary)
-      Ng_GetSurfaceElementTransformation (elnr+1, &ip(0),
-					  0, &dxdxi(0,0));
-    else
-      {
-        Ng_GetBufferedElementTransformation (elnr+1, &ip(0),
-                                             0, &dxdxi(0,0), 
-                                             const_cast<double*> (&buffer[0]), buffervalid);
-        const_cast<bool&> (buffervalid) = true;
-      }
-  }
+    /// elemente in R^dim
+    int dim;
+    /// is it a boundary element ?
+    bool boundary;
+    /// geometry of element
+    ELEMENT_TYPE eltype;
 
-  template <typename T>
-  void CalcJacobian (const IntegrationPoint & ip,
-		     T & dxdxi,
-		     LocalHeap & lh) const
-  {
-    if (boundary)
-      Ng_GetSurfaceElementTransformation (elnr+1, &ip(0),
-					  0, &dxdxi(0,0));
-					  
-    else
-      {
-        Ng_GetBufferedElementTransformation (elnr+1, &ip(0),
-                                             0, &dxdxi(0,0), 
-                                             const_cast<double*> (&buffer[0]), buffervalid);
-        const_cast<bool&> (buffervalid) = true;
-      }
-  }
+    const Array<Vec<3> > * pts;
+    const Array<Mat<3,3> > * dxdxis;
+    const Array<int> * first_of_element;
 
+    bool higher_integration_order;
 
+    bool iscurved;
 
+    double buffer[100];
+    bool buffervalid;
 
-  ///
-  template <typename T>
-  void CalcPoint (const IntegrationPoint & ip,
-		  T & point,
-		  LocalHeap & lh) const
-  {
-    if (boundary)
-      Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), &point(0), 0);
-    else
-      {
-        Ng_GetBufferedElementTransformation (elnr+1, &ip(0), &point(0), 0, 
-                                             const_cast<double*> (&buffer[0]), buffervalid);
-        const_cast<bool&> (buffervalid) = true;
-      }
-  }
-
-
-  // template <int D>
-  // template <typename T1, typename T2>
-  template <int S, int R>
-  void CalcPointJacobian (const IntegrationPoint & ip,
-			  // T1 & point, T2 & dxdxi,
-                          Vec<R> & point, Mat<R,S> & dxdxi,
-			  LocalHeap & lh) const
-  {
-    if (boundary)
-      Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0));
-    else
-      {
-	if (ip.precomputed_geometry && pts)
-	  {
-	    point = (*pts)[ (*first_of_element)[elnr] + ip.Nr()];
-	    dxdxi = (*dxdxis)[ (*first_of_element)[elnr] + ip.Nr()];
-	  }
-	else
-          {
-            Ng_GetBufferedElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0),
-                                                 const_cast<double*> (&buffer[0]), buffervalid);
-            const_cast<bool&> (buffervalid) = true;
-          }
-      }
-  }
-
-
-#ifdef abc
-  template <typename T0, typename T1, typename T2>
-  void CalcMultiPointJacobian (FlatArray<T0> ipts,
-                               FlatArray<T1> point, 
-                               FlatArray<T2> dxdxi,
-                               LocalHeap & lh) const
-  {
-    if (boundary)
-      for (int j = 0; j < ipts.Size(); j++)
-        Ng_GetSurfaceElementTransformation (elnr+1, &ipts[j](0), &point[j](0), &dxdxi[j](0,0));
-
-    else
-      {
-        /*
-        for (int i = 0; i < ipts.Size(); i++)b
-          Ng_GetElementTransformation (elnr+1, &ipts[i](0), &point[i](0), &dxdxi[i](0,0));
-        */
-
-        Ng_GetMultiElementTransformation (elnr+1, ipts.Size(),
-                                          &ipts[0](0), &ipts[1](0)-&ipts[0](0),
-                                          &point[0](0), &point[1](0)-&point[0](0),
-                                          &dxdxi[0](0,0), &dxdxi[1](0,0)-&dxdxi[0](0,0));
-      }
-  }
-#endif
-
-  template <typename T0, int DIMS, int DIMR>
-  void CalcMultiPointJacobian (FlatArray<T0> ipts,
-                               FlatArray<Vec<DIMR> > point, 
-                               FlatArray<Mat<DIMR,DIMS> > dxdxi,
-                               LocalHeap & lh) const
-  {
+  public:
+    ///
+    ElementTransformation () { pts = 0; higher_integration_order = false; buffervalid = false; }
     /*
-    // if (DIMR != DIMS)
-    if (DIMS == 1)
-      for (int j = 0; j < ipts.Size(); j++)
-        Ng_GetSurfaceElementTransformation (elnr+1, &ipts[j](0), &point[j](0), &dxdxi[j](0,0));
-
-    else
+      ElementTransformation (Array<Vec<3> > * apts,
+      Array<Mat<3,3> > * adxdxis,
+      Array<int> * afirst_of_element)
+      : pts(apts), dxdxis(adxdxis), first_of_element(afirst_of_element) { ; }
     */
+
+    void SetGeometryData (const Array<Vec<3> > * apts,
+			  const Array<Mat<3,3> > * adxdxis,
+			  const Array<int> * afirst_of_element)
+    {
+      pts = apts;
+      dxdxis = adxdxis;
+      first_of_element = afirst_of_element;
+    }
+
+    ///
+    void SetElement (bool aboundary, int aelnr, int aelindex)
+    {
+      boundary = aboundary;
+      elnr = aelnr;
+      elindex = aelindex;
+      dim = Ng_GetDimension();
+      if (boundary)
+	{
+	  iscurved = Ng_IsSurfaceElementCurved (elnr+1);
+	}
+      else
+	{
+	  iscurved = Ng_IsElementCurved (elnr+1);
+	}
+      buffervalid = 0;
+    }
+
+    void SetElementType (ELEMENT_TYPE aet) { eltype = aet; }
+    ///
+    int GetElementNr () const { return elnr; }
+    ///
+    int GetElementIndex () const { return elindex; }
+    ///
+    ELEMENT_TYPE GetElementType () const { return eltype; }
+  
+    ///
+    template <typename T>
+    void CalcJacobian (const IntegrationPoint & ip,
+		       T & dxdxi) const
+    {
+      if (boundary)
+	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0),
+					    0, &dxdxi(0,0));
+      else
+	{
+	  Ng_GetBufferedElementTransformation (elnr+1, &ip(0),
+					       0, &dxdxi(0,0), 
+					       const_cast<double*> (&buffer[0]), buffervalid);
+	  const_cast<bool&> (buffervalid) = true;
+	}
+    }
+
+    template <typename T>
+    void CalcJacobian (const IntegrationPoint & ip,
+		       T & dxdxi,
+		       LocalHeap & lh) const
+    {
+      if (boundary)
+	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0),
+					    0, &dxdxi(0,0));
+					  
+      else
+	{
+	  Ng_GetBufferedElementTransformation (elnr+1, &ip(0),
+					       0, &dxdxi(0,0), 
+					       const_cast<double*> (&buffer[0]), buffervalid);
+	  const_cast<bool&> (buffervalid) = true;
+	}
+    }
+
+
+
+
+    ///
+    template <typename T>
+    void CalcPoint (const IntegrationPoint & ip,
+		    T & point,
+		    LocalHeap & lh) const
+    {
+      if (boundary)
+	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), &point(0), 0);
+      else
+	{
+	  Ng_GetBufferedElementTransformation (elnr+1, &ip(0), &point(0), 0, 
+					       const_cast<double*> (&buffer[0]), buffervalid);
+	  const_cast<bool&> (buffervalid) = true;
+	}
+    }
+
+
+    // template <int D>
+    // template <typename T1, typename T2>
+    template <int S, int R>
+    void CalcPointJacobian (const IntegrationPoint & ip,
+			    // T1 & point, T2 & dxdxi,
+			    Vec<R> & point, Mat<R,S> & dxdxi,
+			    LocalHeap & lh) const
+    {
+      if (boundary)
+	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0));
+      else
+	{
+	  if (ip.precomputed_geometry && pts)
+	    {
+	      point = (*pts)[ (*first_of_element)[elnr] + ip.Nr()];
+	      dxdxi = (*dxdxis)[ (*first_of_element)[elnr] + ip.Nr()];
+	    }
+	  else
+	    {
+	      Ng_GetBufferedElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0),
+						   const_cast<double*> (&buffer[0]), buffervalid);
+	      const_cast<bool&> (buffervalid) = true;
+	    }
+	}
+    }
+
+
+    template <typename T0, int DIMS, int DIMR>
+    void CalcMultiPointJacobian (FlatArray<T0> ipts,
+				 FlatArray<Vec<DIMR> > point, 
+				 FlatArray<Mat<DIMR,DIMS> > dxdxi,
+				 LocalHeap & lh) const
     {
       netgen::Ng_MultiElementTransformation <DIMS,DIMR> (elnr, ipts.Size(),
 							 &ipts[0](0), &ipts[1](0)-&ipts[0](0),
 							 &point[0](0), &point[1](0)-&point[0](0),
 							 &dxdxi[0](0,0), &dxdxi[1](0,0)-&dxdxi[0](0,0));
     }
-  }
 
 
 
@@ -457,122 +421,177 @@ public:
 
 
 
-  ///
-  template <typename T>
-  void CalcNormalVector (const IntegrationPoint & ip,
-		         T & nv,
-		         LocalHeap & lh) const
-  {
-    //cout << "calc normal vec" << endl;
-    //cout << "bound = " << boundary << ", dim = " << dim << endl;
-    if (boundary)
-      {
-	if (dim == 2)
-	  {
-	    Mat<2,1> dxdxi;
-	    Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0));
-	    //  cout << "dxdxi = " << dxdxi << endl;
-	    double len = sqrt (sqr (dxdxi(0,0)) + sqr(dxdxi(1,0)));
-	    //nv(0) = dxdxi(1,0) / len;  // original 
-	    //nv(1) = -dxdxi(0,0) / len;
-	    nv(0) = -dxdxi(1,0) / len; //SZ 
-	    nv(1) = dxdxi(0,0) / len;
-	    //cout << "nv = " << nv << endl;
-	    // (*testout)<<"NormalVector="<<nv<<endl;
-	  }
-	else
-	  {
-	    // berechne aus dxdxi
+    ///
+    template <typename T>
+    void CalcNormalVector (const IntegrationPoint & ip,
+			   T & nv,
+			   LocalHeap & lh) const
+    {
+      //cout << "calc normal vec" << endl;
+      //cout << "bound = " << boundary << ", dim = " << dim << endl;
+      if (boundary)
+	{
+	  if (dim == 2)
+	    {
+	      Mat<2,1> dxdxi;
+	      Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0));
+	      //  cout << "dxdxi = " << dxdxi << endl;
+	      double len = sqrt (sqr (dxdxi(0,0)) + sqr(dxdxi(1,0)));
+	      //nv(0) = dxdxi(1,0) / len;  // original 
+	      //nv(1) = -dxdxi(0,0) / len;
+	      nv(0) = -dxdxi(1,0) / len; //SZ 
+	      nv(1) = dxdxi(0,0) / len;
+	      //cout << "nv = " << nv << endl;
+	      // (*testout)<<"NormalVector="<<nv<<endl;
+	    }
+	  else
+	    {
+	      // berechne aus dxdxi
 
-	    Mat<3,2> dxdxi;
-	    Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0));
+	      Mat<3,2> dxdxi;
+	      Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0));
 
-	    nv(0) = dxdxi(1,0) * dxdxi(2,1) - dxdxi(2,0) * dxdxi(1,1);
-	    nv(1) = dxdxi(2,0) * dxdxi(0,1) - dxdxi(0,0) * dxdxi(2,1);
-	    nv(2) = dxdxi(0,0) * dxdxi(1,1) - dxdxi(1,0) * dxdxi(0,1);
-	    nv /= L2Norm (nv);
-	  }
+	      nv(0) = dxdxi(1,0) * dxdxi(2,1) - dxdxi(2,0) * dxdxi(1,1);
+	      nv(1) = dxdxi(2,0) * dxdxi(0,1) - dxdxi(0,0) * dxdxi(2,1);
+	      nv(2) = dxdxi(0,0) * dxdxi(1,1) - dxdxi(1,0) * dxdxi(0,1);
+	      nv /= L2Norm (nv);
+	    }
 
-      }
-  }
+	}
+    }
   
   
-  ///
-  int SpaceDim () const
-  {
-    return dim;
-  }
+    ///
+    int SpaceDim () const
+    {
+      return dim;
+    }
 
-  bool Boundary(void) const
-  {
-    return boundary;
-  }
+    bool Boundary(void) const
+    {
+      return boundary;
+    }
 
 
-  void SetHigherIntegrationOrder(void) {higher_integration_order = true;}
-  void UnSetHigherIntegrationOrder(void) {higher_integration_order = false;}
+    void SetHigherIntegrationOrder(void) {higher_integration_order = true;}
+    void UnSetHigherIntegrationOrder(void) {higher_integration_order = false;}
 
-  bool HigherIntegrationOrderSet(void) const 
-  {
-    return higher_integration_order;
-  }
+    bool HigherIntegrationOrderSet(void) const 
+    {
+      return higher_integration_order;
+    }
   
-  bool IsCurvedElement() const
-  {
-    return iscurved;
-  }
+    bool IsCurvedElement() const
+    {
+      return iscurved;
+    }
 
 
-  void GetSort (FlatArray<int> sort) const
-  {
-    int vnums[12];
-    if (boundary)
-      Ng_GetSurfaceElement (elnr+1, vnums);
-    else
-      Ng_GetElement (elnr+1, vnums);
+    void GetSort (FlatArray<int> sort) const
+    {
+      int vnums[12];
+      if (boundary)
+	Ng_GetSurfaceElement (elnr+1, vnums);
+      else
+	Ng_GetElement (elnr+1, vnums);
 
-    switch (eltype)
-      {
-      case ET_TRIG:
-        for (int i = 0; i < 3; i++) sort[i] = i;
-        if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
-        if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
-        if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
-        // vnums[sort[0]] < vnums[sort[1]] < vnums[sort[2]]
-        break; 
+      switch (eltype)
+	{
+	case ET_TRIG:
+	  for (int i = 0; i < 3; i++) sort[i] = i;
+	  if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+	  if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
+	  if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+	  // vnums[sort[0]] < vnums[sort[1]] < vnums[sort[2]]
+	  break; 
 
-      case ET_TET:
-        for (int i = 0; i < 4; i++) sort[i] = i;
-        if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
-        if (vnums[sort[2]] > vnums[sort[3]]) Swap (sort[2], sort[3]);
-        if (vnums[sort[0]] > vnums[sort[2]]) Swap (sort[0], sort[2]);
-        if (vnums[sort[1]] > vnums[sort[3]]) Swap (sort[1], sort[3]);
-        if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
+	case ET_TET:
+	  for (int i = 0; i < 4; i++) sort[i] = i;
+	  if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+	  if (vnums[sort[2]] > vnums[sort[3]]) Swap (sort[2], sort[3]);
+	  if (vnums[sort[0]] > vnums[sort[2]]) Swap (sort[0], sort[2]);
+	  if (vnums[sort[1]] > vnums[sort[3]]) Swap (sort[1], sort[3]);
+	  if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
 
-        // vnums[sort[0]] < vnums[sort[1]] < vnums[sort[2]] < vnums[sort[3]]
-        break; 
+	  // vnums[sort[0]] < vnums[sort[1]] < vnums[sort[2]] < vnums[sort[3]]
+	  break; 
 
-      case ET_PRISM:
-        for (int i = 0; i < 6; i++) sort[i] = i;
+	case ET_PRISM:
+	  for (int i = 0; i < 6; i++) sort[i] = i;
 
-        if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
-        if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
-        if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+	  if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+	  if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
+	  if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
         
-        if (vnums[sort[3]] > vnums[sort[4]]) Swap (sort[3], sort[4]);
-        if (vnums[sort[4]] > vnums[sort[5]]) Swap (sort[4], sort[5]);
-        if (vnums[sort[3]] > vnums[sort[4]]) Swap (sort[3], sort[4]);
-        break;
+	  if (vnums[sort[3]] > vnums[sort[4]]) Swap (sort[3], sort[4]);
+	  if (vnums[sort[4]] > vnums[sort[5]]) Swap (sort[4], sort[5]);
+	  if (vnums[sort[3]] > vnums[sort[4]]) Swap (sort[3], sort[4]);
+	  break;
 
-      default:
-        throw Exception ("undefined eltype in ElementTransformation::GetSort()\n");
-      }
-  }
-};
+	default:
+	  throw Exception ("undefined eltype in ElementTransformation::GetSort()\n");
+	}
+    }
+  };
 
 
 
 #endif
+
+  class BaseMappedIntegrationRule 
+  { 
+  protected:
+    const IntegrationRule & ir;
+    const ElementTransformation & eltrans;
+    char * baseip;
+    int incr;
+
+  public:
+    BaseMappedIntegrationRule (const IntegrationRule & air,
+			       const ElementTransformation & aeltrans)
+    : ir(air), eltrans(aeltrans) { ; }
+
+    int Size() const { return ir.Size(); }
+    const IntegrationRule & IR() const { return ir; }
+    const ElementTransformation & GetTransformation () const { return eltrans; }
+
+    const BaseSpecificIntegrationPoint & operator[] (int i) const
+    { return *static_cast<const BaseSpecificIntegrationPoint*> ((void*)(baseip+i*incr)); }
+  };
+
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  class MappedIntegrationRule : public BaseMappedIntegrationRule
+  {
+    FlatArray< SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > sips;
+  public:
+    MappedIntegrationRule (const IntegrationRule & ir, 
+			   const ElementTransformation & eltrans, 
+			   LocalHeap & lh)
+      : BaseMappedIntegrationRule (ir, eltrans), sips(ir.GetNIP(), lh)
+    {
+      baseip = (char*)(void*)(BaseSpecificIntegrationPoint*)(&sips[0]);
+      incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
+
+      FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
+      FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
+
+      eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
+
+      for (int i = 0; i < ir.GetNIP(); i++)
+	{
+	  SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> sip(ir[i], eltrans, pts[i], dxdxi[i]); 
+	  sips[i] = sip;
+	}
+    }
+    
+    SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (int i) const
+    { 
+      return sips[i]; // SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, pts[i], dxdxi[i]); 
+    }
+  };
+
+
+
 
 }
 

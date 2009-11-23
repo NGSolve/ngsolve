@@ -89,6 +89,8 @@ namespace ngcomp
       ndlevel.Append (ma.GetNEdges());
     else
       ndlevel.Append (ma.GetNFaces());
+
+    UpdateColoring (lh);
   }
 
   

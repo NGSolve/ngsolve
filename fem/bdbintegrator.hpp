@@ -18,11 +18,13 @@ namespace ngfem
    Base-class for template-polymorphismus.
    Provides application and transpose-application
 */
-template<class DOP>
-class DiffOp
+  template<class DOP>
+  class DiffOp
 {
 public:
-
+  // enum { DIM_ELEMENT = TDOP::DIM_ELEMENT };
+  // enum { DIM_SPACE = TDOP::DIM_SPACE };
+  
   /**
      Computes the B-matrix. 
      The height is DIM_DMAT, the width is fel.GetNDof(). 
@@ -51,6 +53,24 @@ public:
     DOP::GenerateMatrix (fel, sip, mat, lh);
     y = mat * x;
   }
+
+  /// Computes B-matrix times element vector in many points
+  template <typename FEL, class MIR, class TVX, class TVY>
+  static void ApplyIR (const FEL & fel, const MIR & mir,
+		       const TVX & x, TVY & y,
+		       LocalHeap & lh)
+  {
+    typedef typename TVY::TSCAL TSCAL;
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+	HeapReset hr(lh);
+	Apply (fel, mir[i], x, y.Row(i), lh);
+      }
+  }
+
+
+
 
   /// Computes Transpose (B-matrix) times point value
   template <typename FEL, typename SIP, class TVX, class TVY>
@@ -374,21 +394,28 @@ public:
 	
         const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 
+	/*
         FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
         FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
 
         eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
-
+	*/
+	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
+	
         int i = 0;
         for (int i1 = 0; i1 < ir.GetNIP() / BLOCK; i1++)
           {
             for (int i2 = 0; i2 < BLOCK; i++, i2++)
               {
                 HeapReset hr(lh);
-		    
+		/*
                 SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
                   sip(ir[i], eltrans, pts[i], dxdxi[i]);
-                
+		*/
+
+                const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
+
+
                 DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
                 dmatop.GenerateMatrix (fel, sip, dmat, lh);
                 double fac =  
@@ -415,9 +442,12 @@ public:
           {
             HeapReset hr(lh);
             
+	    const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
+	    /*
             SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>
 	      sip(ir[i], eltrans, pts[i], dxdxi[i]);
-            
+	    */
+
             DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
             dmatop.GenerateMatrix (fel, sip, dmat, lh);
             double fac =  
@@ -914,6 +944,48 @@ public:
       }
   }
   
+
+  virtual void
+  CalcFlux (const FiniteElement & bfel,
+	    const BaseMappedIntegrationRule & bmir,
+	    const FlatVector<double> & elx, 
+	    FlatMatrix<double> & flux,
+	    bool applyd,
+	    LocalHeap & lh) const
+  {
+    const FEL & fel = dynamic_cast<const FEL&> (bfel);
+    const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+
+
+    if (applyd)
+      {
+	Vec<DIM_DMAT,double> hv1, hv2;
+	for (int i = 0; i < mir.Size(); i++)
+	  {
+	    DIFFOP::Apply (fel, mir[i], elx, hv1, lh);
+	    dmatop.Apply (fel, mir[i], hv1, hv2, lh);
+	    flux.Row(i) = hv2;
+	  }
+      }
+    else
+      {
+	DIFFOP::ApplyIR (fel, mir, elx, flux, lh);
+	/*
+	Vec<DIM_DMAT,double> hv1;
+	for (int i = 0; i < mir.Size(); i++)
+	  {
+	    DIFFOP::Apply (fel, mir[i], elx, hv1, lh);
+	    flux.Row(i) = hv1;
+	  }
+	*/
+      }
+  }
+  
+
+
+
+
 
 
   virtual void

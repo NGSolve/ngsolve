@@ -327,6 +327,8 @@ namespace ngcomp
  
     
     UpdateDofTables(); 
+    
+    UpdateColoring (lh);
 
 #ifdef PARALLEL
     UpdateParallelDofs();

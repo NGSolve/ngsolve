@@ -716,6 +716,7 @@ namespace ngbla
 	data[i] = v.data[i];
       return *this;
     }
+    /*
     /// copy vector
     FlatVec & operator= (const FlatVec & v) 
     {
@@ -723,6 +724,7 @@ namespace ngbla
 	data[i] = v.data[i];
       return *this;
     }
+    */
 
     /// assign scalar value
     const FlatVec & operator= (TSCAL scal) const
@@ -1159,6 +1161,40 @@ namespace ngbla
 
 
 
+  template <class TV, class TSCAL> class Scalar2ElemVector
+  {
+  public:
+    const FlatVector<TSCAL> & vec;
+    Scalar2ElemVector (const FlatVector<TSCAL> & avec) : vec(avec) { ; }
+
+    enum { H = mat_traits<TV>::HEIGHT };
+
+    FlatVec<H,TSCAL> operator() (int i) const
+    {
+      return FlatVec<H,TSCAL> (&vec(i*H));
+    }
+
+  };
+  
+
+  template <class TSCAL> class Scalar2ElemVector<TSCAL,TSCAL>
+  {
+  public:
+    const FlatVector<TSCAL> & vec;
+    Scalar2ElemVector (const FlatVector<TSCAL> & avec) : vec(avec) { ; }
+
+
+    const TSCAL & operator() (int i) const
+    {
+      return vec(i);
+    }
+
+    TSCAL & operator() (int i)
+    {
+      return vec(i);
+    }
+
+  };
 
 
 

@@ -207,8 +207,8 @@ public:
 
   virtual void SetRandom ();
 
-  virtual TempVector Range (int begin, int end);
-  virtual TempVector Range (int begin, int end) const;
+  // virtual BaseVector * Range (int begin, int end);
+  virtual BaseVector * Range (int begin, int end) const;
 
 
   void GetIndirect (const FlatArray<int> & ind, 

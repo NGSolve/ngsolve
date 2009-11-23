@@ -83,7 +83,7 @@ namespace ngfem
 			    LocalHeap & lh)
     : DimSpecificIntegrationPoint<R,SCAL> (aip, aeltrans)
   {
-    this->eltrans.CalcPointJacobian(this->ip, this->point, dxdxi, lh);
+    this->eltrans->CalcPointJacobian(this->IP(), this->point, dxdxi, lh);
 
     if (S == R)
       {
@@ -205,12 +205,12 @@ namespace ngfem
     Mat<2> jacr, jacl;
     for (int dir = 0; dir < 2; dir++)
       {
-	IntegrationPoint ipr = this->ip;
-	IntegrationPoint ipl = this->ip;
+	IntegrationPoint ipr = *this->ip;
+	IntegrationPoint ipl = *this->ip;
 	ipr(dir) += eps;
 	ipl(dir) -= eps;
-	this->eltrans.CalcJacobian (ipr, jacr);    
-	this->eltrans.CalcJacobian (ipl, jacl);    
+	this->eltrans->CalcJacobian (ipr, jacr);    
+	this->eltrans->CalcJacobian (ipl, jacl);    
 
 	for (int j = 0; j < 2; j++)
 	  {
@@ -231,12 +231,12 @@ namespace ngfem
     Mat<3> jacr, jacl;
     for (int dir = 0; dir < 3; dir++)
       {
-	IntegrationPoint ipr = this->ip;
-	IntegrationPoint ipl = this->ip;
+	IntegrationPoint ipr = this->IP();
+	IntegrationPoint ipl = this->IP();
 	ipr(dir) += eps;
 	ipl(dir) -= eps;
-	this->eltrans.CalcJacobian (ipr, jacr);    
-	this->eltrans.CalcJacobian (ipl, jacl);    
+	this->eltrans->CalcJacobian (ipr, jacr);    
+	this->eltrans->CalcJacobian (ipl, jacl);    
 
 	for (int j = 0; j < 3; j++)
 	  {
