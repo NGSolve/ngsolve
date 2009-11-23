@@ -10,7 +10,10 @@ namespace ngfem
 {
   /** 
       DG for scalar Laplace
-      //TODO: Convection-Integrators
+      //TODO: Convection-Integrators: volume term integrator in B1DB2-Form ? etc..)
+      //TODO: find out why bilinearform -symmetric is not working correctly
+      //TODO: surfaceelementtransformation (orientierung!)
+      //TODO: Gridfunctioncoefficientfunction for conv-bilinearform
   */
   
   using namespace ngfem;
@@ -53,7 +56,7 @@ namespace ngfem
                                         FlatMatrix<double> & elmat,
                                         LocalHeap & lh) const
     {
-      throw Exception("DGIP - not implemented!");
+      throw Exception("DGInnerFacet_LaplaceIntegrator::AssembleElementMatrix - not implemented!");
     }
     
     virtual void AssembleFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
@@ -63,7 +66,10 @@ namespace ngfem
                          FlatMatrix<double> & elmat,
                          LocalHeap & lh) const
     {
-      static int timer = NgProfiler::CreateTimer ("DGFacet laplace boundary");
+      static int timer = NgProfiler::CreateTimer ("DGInnerFacet_LaplaceIntegrator");
+
+      if (LocalFacetNr2==-1) throw Exception("DGFacetLaplaceIntegrator: LocalFacetNr2==1");
+
       NgProfiler::RegionTimer reg (timer);
       const ScalarFiniteElement<D> * fel1_l2 = 
         dynamic_cast<const ScalarFiniteElement<D>*> (&volumefel1);
@@ -72,16 +78,11 @@ namespace ngfem
 
       const ScalarFiniteElement<D> * fel2_l2 = NULL;
       ELEMENT_TYPE eltype2 = eltype1;
-      int nd2 = 0;
 
-      double maxorder = fel1_l2->Order();
-
-      if (LocalFacetNr2!=-1){ //two elements neighbouring the facet? or boundary? 
-        fel2_l2 = dynamic_cast<const ScalarFiniteElement<D>*> (&volumefel2);
-	eltype2 = volumefel2.ElementType();
-        nd2 = fel2_l2->GetNDof();
-	maxorder = max(fel1_l2->Order(),fel2_l2->Order());
-      }
+      fel2_l2 = dynamic_cast<const ScalarFiniteElement<D>*> (&volumefel2);
+      eltype2 = volumefel2.ElementType();
+      int nd2 = fel2_l2->GetNDof();
+      double maxorder = max(fel1_l2->Order(),fel2_l2->Order());
       
       elmat = 0.0;
 
@@ -96,9 +97,11 @@ namespace ngfem
 
       FlatMatrixFixWidth<D> dshape(nd1, lh);
       FlatMatrixFixWidth<D> fac_dshape(nd1, lh);
+      
       Facet2ElementTrafo transform1(eltype1,ElVertices1); 
-      const NORMAL * normals1 = ElementTopology::GetNormals(eltype1);
       Facet2ElementTrafo transform2(eltype2,ElVertices2); 
+
+      const NORMAL * normals1 = ElementTopology::GetNormals(eltype1);
       const NORMAL * normals2 = ElementTopology::GetNormals(eltype2);
 
       HeapReset hr(lh);
@@ -107,10 +110,11 @@ namespace ngfem
       Vec<D> normal_ref1, normal_ref2;
       for (int i=0; i<D; i++){
 	normal_ref1(i) = normals1[LocalFacetNr1][i];
-	normal_ref2(i) = (LocalFacetNr2!=-1) ? normals2[LocalFacetNr2][i] : 0;
+	normal_ref2(i) = normals2[LocalFacetNr2][i];
       }
       const IntegrationRule & ir_facet =
 	SelectIntegrationRule (etfacet, 2*maxorder);
+	
       if (maxorder==0) maxorder=1;
    
       bmat = 0.0;
@@ -133,42 +137,30 @@ namespace ngfem
 	  Vec<D> invjac_normal1 = inv_jac1 * normal1;
 	  mat1_dudn = fel1_l2->GetDShape (sip1.IP(), lh) * invjac_normal1;
 	  
-	  if (LocalFacetNr2!=-1){
-	    //TODO orientierung muss irgendwie noch uebergeben werden!
-	    IntegrationPoint ip2 = (LocalFacetNr2!=-1) ? transform2(LocalFacetNr2, ir_facet[l]) : ip1;
-	    SpecificIntegrationPoint<D,D> sip2 (ip2, eltrans2, lh);
-	    double lam2 = coef_lam->Evaluate(sip2);
-	    if(abs(lam-lam2)>1e-6){
-	      std::cout << "lambda :\t" << lam << "\t=?=\t" << lam2 << std::endl;
-	      cout << "POINTS: " << sip1.GetPoint() << "\t" << sip2.GetPoint() << endl;
-	    }
-
-	    Mat<D> jac2 = sip2.GetJacobian();
-	    Mat<D> inv_jac2 = sip2.GetJacobianInverse();
-	    double det2 = sip2.GetJacobiDet();
-	    
-	    Vec<D> normal2 = det2 * Trans (inv_jac2) * normal_ref2;       
-	    double len2 = L2Norm (normal2); 
-	    if(abs(len1-len2)>1e-6)
-	      std::cout << "len :\t" << len1 << "\t=?=\t" << len2 << std::endl;
-	    normal2 /= len2;
-	    Vec<D> invjac_normal2;;
-	    fel2_l2->CalcShape(sip2.IP(), mat2_shape);
-	    invjac_normal2 = inv_jac2 * normal2;
-	    mat2_dudn = fel2_l2->GetDShape (sip2.IP(), lh) * invjac_normal2;
-	    
-	    bmat.Row(0).Range (0   , nd1)   = 0.5 * mat1_dudn;	    
-	    bmat.Row(0).Range (nd1   , nd1+nd2)   = -0.5 * mat2_dudn;
-	    bmat.Row(1).Range (0   , nd1)   = mat1_shape;
-	    bmat.Row(1).Range (nd1   , nd1+nd2)   = -mat2_shape;
-
-
-// 	      NgProfiler::AddFlops (timer2, XYZ);
-	  }else{
-	    bmat.Row(0).Range (0   , nd1)   = mat1_dudn;
-	    bmat.Row(1).Range (0   , nd1)   = mat1_shape;
-// 	      NgProfiler::AddFlops (timer2, XYZ);
+	  IntegrationPoint ip2 = (LocalFacetNr2!=-1) ? transform2(LocalFacetNr2, ir_facet[l]) : ip1;
+	  SpecificIntegrationPoint<D,D> sip2 (ip2, eltrans2, lh);
+	  double lam2 = coef_lam->Evaluate(sip2);
+	  Mat<D> jac2 = sip2.GetJacobian();
+	  Mat<D> inv_jac2 = sip2.GetJacobianInverse();
+	  double det2 = sip2.GetJacobiDet();
+	  
+	  Vec<D> normal2 = det2 * Trans (inv_jac2) * normal_ref2;       
+	  double len2 = L2Norm (normal2); 
+	  if(abs(len1-len2)>1e-6){
+	    std::cout << "len :\t" << len1 << "\t=?=\t" << len2 << std::endl;
+	    throw Exception ("DGInnerFacet_LaplaceIntegrator: len1!=len2");
 	  }
+	  normal2 /= len2;
+	  Vec<D> invjac_normal2;;
+	  fel2_l2->CalcShape(sip2.IP(), mat2_shape);
+	  invjac_normal2 = inv_jac2 * normal2;
+	  mat2_dudn = fel2_l2->GetDShape (sip2.IP(), lh) * invjac_normal2;
+	  
+	  bmat.Row(0).Range (0   , nd1)   = 0.5 * mat1_dudn;	    
+	  bmat.Row(0).Range (nd1   , nd1+nd2)   = -0.5 * mat2_dudn;
+	  bmat.Row(1).Range (0   , nd1)   = mat1_shape;
+	  bmat.Row(1).Range (nd1   , nd1+nd2)   = -mat2_shape;
+
 	  dmat(0,0) = 0;
 	  dmat(1,0) = -1;
 	  switch (dgtype){
@@ -194,6 +186,318 @@ namespace ngfem
       }
   };
 
+
+
+  template <int D>
+  class ConvectionIntegrator : public BilinearFormIntegrator
+  {
+  protected:
+    CoefficientFunction * coef_conv[D];
+  public:
+    ConvectionIntegrator (Array<CoefficientFunction*> & coeffs) 
+      : BilinearFormIntegrator()
+    { 
+      for (int j = 0; j < D; j++)
+        coef_conv[j] = coeffs[j];
+    }
+
+    virtual ~ConvectionIntegrator () { ; }
+
+    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    {
+      return new ConvectionIntegrator (coeffs);
+    }
+    
+    virtual bool BoundaryForm () const 
+    { return 0; }
+
+    virtual void AssembleElementMatrix (const FiniteElement & fel,
+                                        const ElementTransformation & eltrans, 
+                                        FlatMatrix<double> & elmat,
+                                        LocalHeap & lh) const
+    {
+      static int timer = NgProfiler::CreateTimer ("ConvectionIntegrator");
+
+      NgProfiler::RegionTimer reg (timer);
+
+      const ScalarFiniteElement<D> & fel_l2 = 
+        dynamic_cast<const ScalarFiniteElement<D>&> (fel);
+      ELEMENT_TYPE eltype = fel.ElementType();
+      
+      int nd = fel_l2.GetNDof();
+
+      FlatVector<> shape(nd, lh);
+      FlatMatrixFixWidth<D> dshape(nd, lh);
+      FlatVector<> conv_dshape(nd, lh);
+      
+      FlatMatrixFixHeight<2> bmat(nd, lh);
+      FlatMatrixFixHeight<2> dbmat(nd, lh);
+      Mat<2> dmat;
+          
+      const IntegrationRule & ir_vol =
+        SelectIntegrationRule (eltype, 2*fel_l2.Order());
+      
+      elmat = 0.0;
+
+      for (int l = 0; l < ir_vol.GetNIP(); l++)
+      {
+	HeapReset hr(lh);
+	const SpecificIntegrationPoint<D,D> sip(ir_vol[l], eltrans, lh);
+	Vec<D> conv;
+	for (int j = 0; j < D; j++)
+	  conv(j) = coef_conv[j]->Evaluate(sip);
+	
+	fel_l2.CalcShape (sip.IP(), shape);
+	fel_l2.CalcMappedDShape (sip, dshape);
+	
+	conv_dshape = dshape * conv;
+
+	conv_dshape *= sip.GetJacobiDet() * ir_vol[l].Weight();
+	
+	elmat  -= conv_dshape * Trans (shape);
+      }
+    }//end of AssembleElementMatrix
+    
+  };//end of class 
+
+  
+  
+  
+  template <int D>
+  class DGInnerFacet_ConvectionIntegrator : public FacetBilinearFormIntegrator
+  {
+  protected:
+    Array<CoefficientFunction *> coef_b;
+  public:
+    DGInnerFacet_ConvectionIntegrator (Array<CoefficientFunction*> & coeffs) 
+      : FacetBilinearFormIntegrator(coeffs)
+    { 
+      coef_b.SetSize(D);
+      for (int i=0; i<D; i++)
+	coef_b[i]  = coeffs[i];
+    }
+
+    virtual ~DGInnerFacet_ConvectionIntegrator () { ; }
+    
+    virtual bool BoundaryForm () const 
+    { return 0; }
+    
+    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    {
+      return new DGInnerFacet_ConvectionIntegrator (coeffs);
+    }
+    
+    virtual void AssembleElementMatrix (const FiniteElement & fel,
+                                        const ElementTransformation & eltrans, 
+                                        FlatMatrix<double> & elmat,
+                                        LocalHeap & lh) const
+    {
+      throw Exception("DGInnerFacet_ConvectionIntegrator::AssembleElementMatrix - not implemented!");
+    }
+    
+    virtual void AssembleFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
+			 const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+			 const FiniteElement & volumefel2, int LocalFacetNr2,
+			 const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+                         FlatMatrix<double> & elmat,
+                         LocalHeap & lh) const
+    {
+      static int timer = NgProfiler::CreateTimer ("DGInnerFacet_ConvectionIntegrator");
+      if (LocalFacetNr2==-1) throw Exception ("DGInnerFacet_ConvectionIntegrator: LocalFacetNr2==-1");
+      NgProfiler::RegionTimer reg (timer);
+      const ScalarFiniteElement<D> * fel1_l2 = 
+        dynamic_cast<const ScalarFiniteElement<D>*> (&volumefel1);
+      ELEMENT_TYPE eltype1 = volumefel1.ElementType();
+      int nd1 = fel1_l2->GetNDof();
+
+      const ScalarFiniteElement<D> * fel2_l2 =  
+	dynamic_cast<const ScalarFiniteElement<D>*> (&volumefel2);
+      ELEMENT_TYPE eltype2 = volumefel2.ElementType();
+      eltype2 = volumefel2.ElementType();
+      int nd2 = fel2_l2->GetNDof();
+      double maxorder = max(fel1_l2->Order(),fel2_l2->Order());
+      
+      elmat = 0.0;
+
+      FlatVector<> mat1_shape(nd1, lh);
+      FlatVector<> mat2_shape(nd2, lh);
+      
+      FlatVector<> b1mat(nd1+nd2, lh); //B(v)
+      FlatVector<> b2mat(nd1+nd2, lh); //B(u)
+//       double dmat; //bn
+      FlatMatrixFixWidth<D> dshape(nd1, lh);
+      FlatMatrixFixWidth<D> fac_dshape(nd1, lh);
+      Facet2ElementTrafo transform1(eltype1,ElVertices1); 
+      const NORMAL * normals1 = ElementTopology::GetNormals(eltype1);
+      Facet2ElementTrafo transform2(eltype2,ElVertices2); 
+      const NORMAL * normals2 = ElementTopology::GetNormals(eltype2);
+
+      HeapReset hr(lh);
+      ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
+
+      Vec<D> normal_ref1, normal_ref2;
+      for (int i=0; i<D; i++){
+	normal_ref1(i) = normals1[LocalFacetNr1][i];
+	normal_ref2(i) = normals2[LocalFacetNr2][i];
+      }
+      const IntegrationRule & ir_facet =
+	SelectIntegrationRule (etfacet, 2*maxorder);
+      if (maxorder==0) maxorder=1;
+   
+      b1mat = 0.0;
+      b2mat = 0.0;
+      for (int l = 0; l < ir_facet.GetNIP(); l++)
+	{
+	  IntegrationPoint ip1 = transform1(LocalFacetNr1, ir_facet[l]);
+	  
+	  SpecificIntegrationPoint<D,D> sip1 (ip1, eltrans1, lh);
+
+	  Mat<D> jac1 = sip1.GetJacobian();
+	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
+	  double det1 = sip1.GetJacobiDet();
+
+	  Vec<D> normal1 = det1 * Trans (inv_jac1) * normal_ref1;       
+	  double len1 = L2Norm (normal1);
+	  normal1 /= len1;
+
+	  IntegrationPoint ip2 = transform2(LocalFacetNr2, ir_facet[l]);
+	  SpecificIntegrationPoint<D,D> sip2 (ip2, eltrans2, lh);
+
+	  Mat<D> jac2 = sip2.GetJacobian();
+	  Mat<D> inv_jac2 = sip2.GetJacobianInverse();
+	  double det2 = sip2.GetJacobiDet();
+	  
+	  Vec<D> normal2 = det2 * Trans (inv_jac2) * normal_ref2;       
+	  double len2 = L2Norm (normal2); 
+	  
+	  if(abs(len1-len2)>1e-6){
+	    std::cout << "len :\t" << len1 << "\t=?=\t" << len2 << std::endl;
+	    throw Exception("DGInnerFacet_ConvectionIntegrator: len1 != len2");
+	  }
+	  
+	  normal2 /= len2;
+	  fel1_l2->CalcShape(sip1.IP(), mat1_shape);
+	  fel2_l2->CalcShape(sip2.IP(), mat2_shape);
+	  
+	  double bn = 0;//, bn1 = 0, bn2 = 0;
+	  for (int i=0; i<D;i++){
+	    bn += 0.5 * (coef_b[i]->Evaluate(sip1) + coef_b[i]->Evaluate(sip2) )  * normal1(i);
+	  }
+	  b1mat = 0.0; 
+	  b1mat.Range (0   , nd1)   = mat1_shape;
+	  b1mat.Range (nd1   , nd1+nd2)   = -mat2_shape; //sign for outer normal (bn2 = - bn1)
+	  b2mat = 0.0;
+	  if(bn>0) //flow from 1 to 2 => 1 is upwind direction
+	    b2mat.Range (0   , nd1) = mat1_shape;
+	  else
+	    b2mat.Range (nd1   , nd1+nd2) = mat2_shape;
+	  // dmat = bn;
+	  b1mat *= bn * len1 * ir_facet[l].Weight();
+	  elmat += b1mat * Trans (b2mat);
+	}
+      }
+  };
+
+
+  template <int D>
+  class DGBoundaryFacet_ConvectionIntegrator : public FacetBilinearFormIntegrator
+  {
+  protected:
+    double alpha;   // interior penalyty
+    Array<CoefficientFunction *> coef_b;
+  public:
+    DGBoundaryFacet_ConvectionIntegrator (Array<CoefficientFunction*> & coeffs) 
+      : FacetBilinearFormIntegrator(coeffs)
+    { 
+      coef_b.SetSize(D);
+      for (int i=0; i<D; i++)
+	coef_b[i]  = coeffs[i];
+    }
+
+    virtual ~DGBoundaryFacet_ConvectionIntegrator () { ; }
+    
+    virtual bool BoundaryForm () const 
+    { return 1; }
+    
+    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    {
+      return new DGBoundaryFacet_ConvectionIntegrator (coeffs);
+    }
+    
+    virtual void AssembleElementMatrix (const FiniteElement & fel,
+                                        const ElementTransformation & eltrans, 
+                                        FlatMatrix<double> & elmat,
+                                        LocalHeap & lh) const
+    {
+      throw Exception("DGBoundaryFacet_ConvectionIntegrator::AssembleElementMatrix - not implemented!");
+    }
+    
+    virtual void AssembleFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+ 			 const ElementTransformation & seltrans,
+                         FlatMatrix<double> & elmat,
+                         LocalHeap & lh) const
+    {
+      static int timer = NgProfiler::CreateTimer ("DGBoundaryFacet_ConvectionIntegrator");
+      NgProfiler::RegionTimer reg (timer);
+      const ScalarFiniteElement<D> & fel = 
+        dynamic_cast<const ScalarFiniteElement<D>&> (volumefel);
+      ELEMENT_TYPE eltype = volumefel.ElementType();
+      int nd = fel.GetNDof();
+
+      elmat = 0.0;
+
+      FlatVector<> mat_shape(nd, lh);
+      
+      FlatVector<> b1mat(nd, lh); //B(v)
+      FlatVector<> b2mat(nd, lh); //B(u)
+      double dmat; //bn
+      Facet2ElementTrafo transform(eltype,ElVertices); 
+      const NORMAL * normals = ElementTopology::GetNormals(eltype);
+
+      HeapReset hr(lh);
+      ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, LocalFacetNr);
+
+      Vec<D> normal_ref;
+      for (int i=0; i<D; i++){
+	normal_ref(i) = normals[LocalFacetNr][i];
+      }
+      const IntegrationRule & ir_facet =
+	SelectIntegrationRule (etfacet, 2*fel.Order());
+
+   
+
+      for (int l = 0; l < ir_facet.GetNIP(); l++)
+	{
+	  IntegrationPoint ip = transform(LocalFacetNr, ir_facet[l]);
+	  
+	  SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
+
+	  Mat<D> jac = sip.GetJacobian();
+	  Mat<D> inv_jac = sip.GetJacobianInverse();
+	  double det = sip.GetJacobiDet();
+
+	  Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
+	  double len = L2Norm (normal);
+	  normal /= len;
+	  
+	  double bn = 0;
+	  for (int i=0; i<D;i++){
+	    bn += coef_b[i]->Evaluate(sip) * normal(i);
+	  }
+	  if (bn<0) continue; //on this integration point, there is only inflow
+	  fel.CalcShape(sip.IP(), mat_shape);
+	  b1mat = b2mat = 0.0;	    
+	  b1mat = mat_shape;
+	  b2mat = 0.0;
+	  b2mat = mat_shape;
+	  b1mat *= bn * len * ir_facet[l].Weight();
+	  elmat += b1mat * Trans (b2mat);
+	}
+      }
+  };
+  
+  
   
   template <int D, DG_FORMULATIONS::DGTYPE dgtype>
   class DGBoundaryFacet_LaplaceIntegrator : public FacetBilinearFormIntegrator
@@ -227,7 +531,7 @@ namespace ngfem
                                         FlatMatrix<double> & elmat,
                                         LocalHeap & lh) const
     {
-      throw Exception("DGIP - not implemented!");
+      throw Exception("DGBoundaryFacet_LaplaceIntegrator::AssembleElementMatrix - not implemented!");
     }
     
     virtual void AssembleFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
@@ -236,7 +540,7 @@ namespace ngfem
                          FlatMatrix<double> & elmat,
                          LocalHeap & lh) const
     {
-      static int timer = NgProfiler::CreateTimer ("DGFacet laplace boundary");
+      static int timer = NgProfiler::CreateTimer ("DGBoundaryFacet_LaplaceIntegrator boundary");
       NgProfiler::RegionTimer reg (timer);
       const ScalarFiniteElement<D> * fel1_l2 = 
         dynamic_cast<const ScalarFiniteElement<D>*> (&volumefel);
@@ -358,7 +662,7 @@ namespace ngfem
                                         FlatVector<double> & elvec,
                                         LocalHeap & lh) const
     {
-      throw Exception("DGIP - not implemented!");
+      throw Exception("DGFacet_DirichletBoundaryIntegrator::AssembleElementVector - not implemented!");
     }
     
     virtual void AssembleFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
@@ -366,7 +670,7 @@ namespace ngfem
 			 const ElementTransformation & seltrans,
                          FlatVector<double> & elvec, LocalHeap & lh) const
     {
-      static int timer = NgProfiler::CreateTimer ("DGIPFacet laplace boundary");
+      static int timer = NgProfiler::CreateTimer ("DGFacet_DirichletBoundaryIntegrator");
 
       NgProfiler::RegionTimer reg (timer);
       const ScalarFiniteElement<D> * fel1_l2 = 
@@ -474,7 +778,7 @@ namespace ngfem
                                         FlatVector<double> & elvec,
                                         LocalHeap & lh) const
     {
-      throw Exception("DGIP - not implemented!");
+      throw Exception("DGFacet_NeumannBoundaryIntegrator::AssembleElementVector - not implemented!");
     }
     
     virtual void AssembleFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
@@ -482,7 +786,7 @@ namespace ngfem
 			 const ElementTransformation & seltrans,
                          FlatVector<double> & elvec, LocalHeap & lh) const
     {
-      static int timer = NgProfiler::CreateTimer ("DGIPFacet laplace boundary");
+      static int timer = NgProfiler::CreateTimer ("DGFacet_NeumannBoundaryIntegrator");
 
       NgProfiler::RegionTimer reg (timer);
       const ScalarFiniteElement<D> * fel1_l2 = 
@@ -538,7 +842,103 @@ namespace ngfem
       }
   };
 
+    template <int D>
+  class DGFacet_ConvectionDirichletBoundaryIntegrator : public FacetLinearFormIntegrator
+  {
+  protected:
+    CoefficientFunction *coef_rob;
+    Array<CoefficientFunction *> coef_b;
+  public:
+    DGFacet_ConvectionDirichletBoundaryIntegrator (Array<CoefficientFunction*> & coeffs) 
+      : FacetLinearFormIntegrator(coeffs)
+    { 
+      coef_b.SetSize(D);
+      for (int i=0; i<D; i++)
+	coef_b[i]  = coeffs[i];
+      coef_rob = coeffs[D];
+    }
+    
+    virtual bool BoundaryForm () const 
+    { return 1; }
+    
+    virtual ~DGFacet_ConvectionDirichletBoundaryIntegrator () { ; }
+
+    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    {
+      return new DGFacet_ConvectionDirichletBoundaryIntegrator (coeffs);
+    }
+    
+    virtual void AssembleElementVector (const FiniteElement & fel,
+                                        const ElementTransformation & eltrans, 
+                                        FlatVector<double> & elvec,
+                                        LocalHeap & lh) const
+    {
+      throw Exception("DGFacet_ConvectionDirichletBoundaryIntegrator::AssembleElementVector - not implemented!");
+    }
+    
+    virtual void AssembleFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
+			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+			 const ElementTransformation & seltrans,
+                         FlatVector<double> & elvec, LocalHeap & lh) const
+    {
+       static int timer = NgProfiler::CreateTimer ("DGFacet_ConvectionDirichletBoundaryIntegrator");
+      NgProfiler::RegionTimer reg (timer);
+      const ScalarFiniteElement<D> & fel = 
+        dynamic_cast<const ScalarFiniteElement<D>&> (volumefel);
+      ELEMENT_TYPE eltype = volumefel.ElementType();
+      int nd = fel.GetNDof();
+
+      elvec = 0.0;
+
+      FlatVector<> mat_shape(nd, lh);
+      
+      FlatVector<> b1mat(nd, lh); //B(v)
+      FlatVector<> b2mat(nd, lh); //B(u)
+      double dmat; //bn
+      Facet2ElementTrafo transform(eltype,ElVertices); 
+      const NORMAL * normals = ElementTopology::GetNormals(eltype);
+
+      HeapReset hr(lh);
+      ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, LocalFacetNr);
+
+      Vec<D> normal_ref;
+      for (int i=0; i<D; i++){
+	normal_ref(i) = normals[LocalFacetNr][i];
+      }
+      const IntegrationRule & ir_facet =
+	SelectIntegrationRule (etfacet, 2*fel.Order());
+
    
+
+      for (int l = 0; l < ir_facet.GetNIP(); l++)
+	{
+	  IntegrationPoint ip = transform(LocalFacetNr, ir_facet[l]);
+	  
+	  SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
+
+	  Mat<D> jac = sip.GetJacobian();
+	  Mat<D> inv_jac = sip.GetJacobianInverse();
+	  double det = sip.GetJacobiDet();
+
+	  Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
+	  double len = L2Norm (normal);
+	  normal /= len;
+	  
+	  double bn = 0;
+	  for (int i=0; i<D;i++){
+	    bn += coef_b[i]->Evaluate(sip) * normal(i);
+	  }
+	  double val = coef_rob->Evaluate(sip);
+	  if (bn>0) continue; //on this integration point, there is only inflow
+	  fel.CalcShape(sip.IP(), mat_shape);
+	  
+	  b1mat = mat_shape;
+	  
+	  elvec -= val * bn * len * ir_facet[l].Weight() * b1mat;
+	}
+      }
+  };
+
   
   
   class Init
@@ -549,7 +949,24 @@ namespace ngfem
   
   Init::Init()
   {
-    cout << "DG-IP module (2D trigs only) is loaded" << endl;
+    //Convection Integrator for ScalarFiniteElements //TODO: put this into B1DB2-Form
+    GetIntegrators().AddBFIntegrator ("convection", 2, 2,
+				      ConvectionIntegrator<2>::Create);
+    GetIntegrators().AddBFIntegrator ("convection", 3, 3,
+				      ConvectionIntegrator<3>::Create);
+    GetIntegrators().AddBFIntegrator ("DG_innfac_convection", 2, 2,
+				      DGInnerFacet_ConvectionIntegrator<2>::Create);
+    GetIntegrators().AddBFIntegrator ("DG_innfac_convection", 3, 3,
+				      DGInnerFacet_ConvectionIntegrator<3>::Create);
+    GetIntegrators().AddBFIntegrator ("DG_bndfac_convection", 2, 2,
+				      DGBoundaryFacet_ConvectionIntegrator<2>::Create);
+    GetIntegrators().AddBFIntegrator ("DG_bndfac_convection", 3, 3,
+				      DGBoundaryFacet_ConvectionIntegrator<3>::Create);
+    GetIntegrators().AddLFIntegrator ("DG_bndfac_convdir", 2, 3,
+				      DGFacet_ConvectionDirichletBoundaryIntegrator<2>::Create);
+    GetIntegrators().AddLFIntegrator ("DG_bndfac_convdir", 3, 4,
+				      DGFacet_ConvectionDirichletBoundaryIntegrator<3>::Create);
+				      
     // (symmetric) Interior Penalty method: consistent and stable (and adjoint consistent)
     GetIntegrators().AddBFIntegrator ("DGIP_innfac_laplace", 2, 2,
 				      DGInnerFacet_LaplaceIntegrator<2,DG_FORMULATIONS::IP>::Create);
