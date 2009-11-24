@@ -485,12 +485,10 @@ namespace ngcomp
 	amatrix.SetInverseType ( inversetype );
 	if ( this->on_proc == -1  || this->on_proc == id )
 	  {
-	    BitArray * freedofs = bfa->GetFESpace().GetFreeDofs();
+	    const BitArray * freedofs = bfa->GetFESpace().GetFreeDofs();
 
 	    if (freedofs)
-	      {
-		inverse = amatrix.InverseMatrix(freedofs);
-	      }
+	      inverse = amatrix.InverseMatrix(freedofs);  // change to const BitArray *
 	    else
 	      inverse = amatrix.InverseMatrix();
 

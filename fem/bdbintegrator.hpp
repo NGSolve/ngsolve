@@ -13,118 +13,6 @@ namespace ngfem
 
 
 
-/**
-   Differential Operator.
-   Base-class for template-polymorphismus.
-   Provides application and transpose-application
-*/
-  template<class DOP>
-  class DiffOp
-{
-public:
-  // enum { DIM_ELEMENT = TDOP::DIM_ELEMENT };
-  // enum { DIM_SPACE = TDOP::DIM_SPACE };
-  
-  /**
-     Computes the B-matrix. 
-     The height is DIM_DMAT, the width is fel.GetNDof(). 
-     FEL is the FiniteElement type specified in the BDB-Integrator 
-     sip is the mapped integration point containing the Jacobi-Matrix 
-     MAT is the resulting matrix (usually a FixedHeightMatrix)
-   */
-  template <typename FEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const SIP & sip,
-			      MAT & mat, LocalHeap & lh)
-  {
-    ;
-  }
-
-  /// Computes B-matrix times element vector
-  template <typename FEL, typename SIP, class TVX, class TVY>
-  static void Apply (const FEL & fel, const SIP & sip,
-		     const TVX & x, TVY & y,
-                     LocalHeap & lh)
-  {
-    typedef typename TVY::TSCAL TSCAL;
-
-    HeapReset hr(lh);
-
-    FlatMatrixFixHeight<DOP::DIM_DMAT, TSCAL> mat(DOP::DIM*fel.GetNDof(), lh);
-    DOP::GenerateMatrix (fel, sip, mat, lh);
-    y = mat * x;
-  }
-
-  /// Computes B-matrix times element vector in many points
-  template <typename FEL, class MIR, class TVX, class TVY>
-  static void ApplyIR (const FEL & fel, const MIR & mir,
-		       const TVX & x, TVY & y,
-		       LocalHeap & lh)
-  {
-    typedef typename TVY::TSCAL TSCAL;
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-	HeapReset hr(lh);
-	Apply (fel, mir[i], x, y.Row(i), lh);
-      }
-  }
-
-
-
-
-  /// Computes Transpose (B-matrix) times point value
-  template <typename FEL, typename SIP, class TVX, class TVY>
-  static void ApplyTrans (const FEL & fel, const SIP & sip,
-			  const TVX & x, TVY & y,
-			  LocalHeap & lh) 
-  {
-    typedef typename TVY::TSCAL TSCAL;
-
-    HeapReset hr(lh);
-
-    FlatMatrixFixHeight<DOP::DIM_DMAT, TSCAL> mat(DOP::DIM*fel.GetNDof(), lh);
-    DOP::GenerateMatrix (fel, sip, mat, lh);
-    y = Trans (mat) * x;
-  }
-
-
-
-  /// 
-  template <typename SIP, class TVX>
-  static void Transform (const SIP & sip, TVX & x)
-  {
-    ;
-  }
-
-  template <typename SIP, class TVX>
-  static void TransformT (const SIP & sip, TVX & x)
-  {
-    ;
-  }
-
-  template <typename FEL, class TVD, class TVY, int D>
-  static void ApplyGrid (const FEL & fel, 
-			 const IntegrationRuleTP<D> & ir,
-			 const TVY & hv, 
-			 TVD & dvecs, 
-			 LocalHeap & lh)
-  {
-    ;
-  }
-
-  template <typename FEL, class TVD, class TVY, int D>
-  static void ApplyTransGrid (const FEL & fel, 
-			      const IntegrationRuleTP<D> & ir,
-			      const TVD & dvecs, 
-			      TVY & hv, LocalHeap & lh)
-  {
-    ;
-  }
-
-};
-
-
-
 
 
 
@@ -694,7 +582,7 @@ public:
       {
 	HeapReset hr (lh);
 
-	// const IntegrationPoint & ip = ir.GetIP(i);
+	// const IntegrationPoint & ip = ir[i];
 	
 	// SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
 	SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
@@ -776,7 +664,7 @@ public:
     void * heapp = lh.GetPointer();
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	const IntegrationPoint & ip = ir.GetIP(i);
+	const IntegrationPoint & ip = ir[i];
 	
 	SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
 
@@ -1300,7 +1188,7 @@ public:
 
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	const IntegrationPoint & ip = ir.GetIP(i);
+	const IntegrationPoint & ip = ir[i];
 	
 	SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, locheap);
 
@@ -1376,7 +1264,7 @@ public:
 
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	const IntegrationPoint & ip = ir.GetIP(i);
+	const IntegrationPoint & ip = ir[i];
 	
 	SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, locheap);
 	DIFFOP::Apply (fel, sip, elx, hvx, locheap);

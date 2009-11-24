@@ -233,7 +233,7 @@ namespace ngfem
     
     for (int j = 0; j < linerule.GetNIP(); j++)
       {
-	const IntegrationPoint & ip = linerule.GetIP(j);
+	const IntegrationPoint & ip = linerule[j];
 	
 	p = p1 + ip.Point()[0] * tau;
 	IntegrationPoint ip3d(p, 0);
@@ -296,7 +296,7 @@ namespace ngfem
     
     for (j = 0; j < facerule.GetNIP(); j++)
       {
-	const IntegrationPoint & ip = facerule.GetIP(j);
+	const IntegrationPoint & ip = facerule[j];
 	
 	Vec<2> p2d;
 
@@ -358,7 +358,7 @@ namespace ngfem
     moments = 0;
     for (j = 0; j < rule.GetNIP(); j++)
       {
-	const IntegrationPoint & ip = rule.GetIP(j);
+	const IntegrationPoint & ip = rule[j];
 
 	testfe.CalcShape (ip, testshape);
 
@@ -584,7 +584,7 @@ namespace ngfem
     mathch1 = 0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	const IntegrationPoint & ip = ir.GetIP(i);
+	const IntegrationPoint & ip = ir[i];
 	h1fe.CalcDShape (ip, dshapeh1);
 	hcurlfe.CalcShape (ip, shapehcurl);
 	

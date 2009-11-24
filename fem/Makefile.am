@@ -31,9 +31,9 @@ hdiv_equations.cpp maxwellintegrator.cpp generic_recpol.cpp hdivfe.cpp \
  dynamicmem.cpp hybridDG.cpp DGIntegrators.cpp
 
 
-include_HEADERS = bdbequations.hpp bdbintegrator.hpp coefficient.hpp   \
-elementtopology.hpp elementtransformation.hpp facetfe.hpp	       \
-facethofe.hpp fem.hpp femtypes.hpp finiteelement.hpp		       \
+include_HEADERS = bdbequations.hpp diffop.hpp bdbintegrator.hpp	       \
+coefficient.hpp elementtopology.hpp elementtransformation.hpp	       \
+facetfe.hpp facethofe.hpp fem.hpp femtypes.hpp finiteelement.hpp       \
 generic_recpol.hpp h1hofefo.hpp h1hofe.hpp h1lofe.hpp hcurlfe.hpp      \
 hcurlhofe.hpp hcurllofe.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp \
 integrator.hpp intrule.hpp l2hofefo.hpp l2hofe.hpp pml.hpp	       \

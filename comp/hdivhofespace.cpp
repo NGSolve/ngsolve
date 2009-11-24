@@ -156,6 +156,7 @@ namespace ngcomp
         Array<CoefficientFunction*> coeffs(1);
         coeffs[0] = new ConstantCoefficientFunction(1);
         evaluator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
+        boundary_evaluator = GetIntegrators().CreateBFI("robinhdiv", 2, coeffs);
       }
     else
       {
@@ -328,7 +329,7 @@ namespace ngcomp
     
     UpdateDofTables(); 
     
-    UpdateColoring (lh);
+    FinalizeUpdate (lh);
 
 #ifdef PARALLEL
     UpdateParallelDofs();

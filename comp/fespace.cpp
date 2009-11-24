@@ -298,9 +298,35 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
-  void FESpace :: UpdateColoring(LocalHeap & lh)
+  void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
-    cout << "coloring ... " << flush;
+
+    if (dirichlet_boundaries.Size())
+      {
+	dirichlet_dofs.SetSize (GetNDof());
+	dirichlet_dofs.Clear();
+	Array<int> dnums;
+	for (int i = 0; i < ma.GetNSE(); i++)
+	  {
+	    if (dirichlet_boundaries[ma.GetSElIndex(i)])
+	      {
+		GetSDofNrs (i, dnums);
+		for (int j = 0; j < dnums.Size(); j++)
+		  if (dnums[j] != -1)
+		    dirichlet_dofs.Set (dnums[j]);
+	      }
+	  }
+
+
+	free_dofs.SetSize (GetNDof());
+	free_dofs = dirichlet_dofs;
+	free_dofs.Invert();
+      }
+    
+
+
+
+    *testout << "coloring ... " << flush;
     Array<int> col(ma.GetNE());
     Array<int> dofcol(GetNDof());
     
@@ -352,7 +378,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (int i = 0; i < ma.GetNE(); i++)
       (*element_coloring)[col[i]][cntcol[col[i]]++] = i;
     
-    cout << "needed " << color << " colors" << endl;
+    *testout << "needed " << color << " colors" << endl;
     // cout << "elcolors = " << endl << (*element_coloring) << endl;
   }
 
@@ -1384,16 +1410,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
-  BitArray * FESpace :: GetFreeDofs () const
+  const BitArray * FESpace :: GetFreeDofs () const
   {
-    if (!dirichlet_dofs.Size())
+    if (!free_dofs.Size())
       return NULL;
     else
-      {
-	BitArray * freedofs = new BitArray(dirichlet_dofs);
-	freedofs -> Invert();
-	return freedofs;
-      }
+      return &free_dofs;
   }
 
 
@@ -1939,7 +1961,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  }
       }
 
-    UpdateColoring (lh);
+    FinalizeUpdate (lh);
 
 
     if (timing) Timing();
@@ -2575,7 +2597,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     while (ma.GetNLevels() > ndlevel.Size())
       ndlevel.Append (n_el_dofs * ma.GetNE());
 
-    UpdateColoring (lh);
+    FinalizeUpdate (lh);
 
 #ifdef PARALLEL
     UpdateParallelDofs();
@@ -2772,7 +2794,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     while (ma.GetNLevels() > ndlevel.Size())
       ndlevel.Append (n_el_dofs * ma.GetNSE());
 
-    UpdateColoring (lh);
+    FinalizeUpdate (lh);
 
 #ifdef PARALLEL
     UpdateParallelDofs();  
@@ -3304,7 +3326,37 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
     prol -> Update();
 
-    UpdateColoring (lh);
+    FinalizeUpdate (lh);
+
+    // dirichlet-dofs from sub-spaces
+    bool has_dirichlet_dofs = false;
+    for (int i = 0; i < spaces.Size(); i++)
+      if (spaces[i]->GetFreeDofs()) 
+	has_dirichlet_dofs = true;
+
+    if (has_dirichlet_dofs)
+      {
+	free_dofs.SetSize(GetNDof());
+	free_dofs.Set();
+
+	for (int i = 0; i < spaces.Size(); i++)
+	  {
+	    const BitArray * free_dofs_sub = spaces[i]->GetFreeDofs();
+	    if (free_dofs_sub)
+	      {
+		int base = cummulative_nd[i];
+		int nd = cummulative_nd[i+1] - base;
+		for (int i = 0; i < nd; i++)
+		  if (!free_dofs_sub->Test(i))
+		    free_dofs.Clear (base+i);
+	      }
+	  }
+
+	dirichlet_dofs = free_dofs;
+	dirichlet_dofs.Invert();
+      }
+
+    (*testout) << "free_dofs = " << endl << free_dofs << endl;
 
     (*testout) << "Update compound fespace" << endl;
     (*testout) << "cummulative dofs start at " << cummulative_nd << endl;

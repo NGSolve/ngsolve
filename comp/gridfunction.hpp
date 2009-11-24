@@ -174,31 +174,14 @@ namespace ngcomp
   class GridFunctionCoefficientFunction : public CoefficientFunction
   {
   protected:
-    ///
     S_GridFunction<double> & gf;
-    /*
-    mutable LocalHeap lh;
-    mutable FlatVector<double> elu;
-    mutable Array<int> dnums;
-    mutable int cache_elnr;
-    */
+    DifferentialOperator * diffop;
     int comp;
   public:
-    ///
-    GridFunctionCoefficientFunction (GridFunction & agf)
-      : gf(dynamic_cast<S_GridFunction<double>&> (agf)),comp(0) // ,lh(1000000)
-    { 
-      // cache_elnr = -1;
-    }			
-			
-    GridFunctionCoefficientFunction (GridFunction & agf, const int acomp)
-      : gf(dynamic_cast<S_GridFunction<double>&> (agf)),comp(acomp) // ,lh(1000000)
-    { 
-      // cache_elnr = -1;
-    }
-		
-    ///
-    virtual ~GridFunctionCoefficientFunction () {}
+    GridFunctionCoefficientFunction (GridFunction & agf, int acomp = 0);
+    GridFunctionCoefficientFunction (GridFunction & agf, DifferentialOperator * adiffop, int acomp = 0);
+
+    virtual ~GridFunctionCoefficientFunction ();
 
     virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const;
 

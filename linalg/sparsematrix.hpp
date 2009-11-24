@@ -267,13 +267,13 @@ namespace ngla
 
 
     virtual BaseMatrix * 
-    InverseMatrix (BitArray * subset = 0) const
+    InverseMatrix (const BitArray * subset = 0) const
     { 
       throw Exception ("BaseSparseMatrix::CreateInverse called");
     }
 
     virtual BaseMatrix * 
-    InverseMatrix (Array<int> * clusters) const
+    InverseMatrix (const Array<int> * clusters) const
     { 
       throw Exception ("BaseSparseMatrix::CreateInverse called");
     }
@@ -424,9 +424,9 @@ namespace ngla
       return new BlockJacobiPrecond<TM,TV_ROW,TV_COL> (*this, blocks );
     }
 
-    virtual BaseMatrix * InverseMatrix (BitArray * subset = 0) const;
+    virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;
 
-    virtual BaseMatrix * InverseMatrix (Array<int> * clusters) const;
+    virtual BaseMatrix * InverseMatrix (const Array<int> * clusters) const;
 
     virtual BaseSparseMatrix * Restrict (const SparseMatrixTM<double> & prol,
 					 BaseSparseMatrix* cmat = NULL ) const
@@ -689,9 +689,9 @@ namespace ngla
   
     BaseSparseMatrix & AddMerge (double s, const SparseMatrixSymmetric  & m2);
 
-    virtual BaseMatrix * InverseMatrix (BitArray * subset = 0) const;
+    virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;
 
-    virtual BaseMatrix * InverseMatrix (Array<int> * clusters) const;
+    virtual BaseMatrix * InverseMatrix (const Array<int> * clusters) const;
 
   };
 
@@ -831,9 +831,9 @@ namespace ngla
     ///
     virtual BaseVector * CreateVector () const;
 
-    virtual BaseMatrix * InverseMatrix (BitArray * subset = 0) const;
+    virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;
 
-    virtual BaseMatrix * InverseMatrix (Array<int> * clusters) const;
+    virtual BaseMatrix * InverseMatrix (const Array<int> * clusters) const;
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
@@ -987,9 +987,9 @@ namespace ngla
     ///
     virtual BaseVector * CreateVector () const;
 
-    virtual BaseMatrix * InverseMatrix (BitArray * subset = 0) const;
+    virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;
 
-    virtual BaseMatrix * InverseMatrix (Array<int> * clusters) const;
+    virtual BaseMatrix * InverseMatrix (const Array<int> * clusters) const;
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const

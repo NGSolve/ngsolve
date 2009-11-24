@@ -127,7 +127,9 @@ namespace ngcomp
   template <class SCAL>
   GridFunction * S_GridFunction<SCAL> :: GetComponent (int compound_comp) const
   {
-    return new S_ComponentGridFunction<SCAL> (*this, compound_comp);
+    GridFunction * gf = new S_ComponentGridFunction<SCAL> (*this, compound_comp);
+    if (level_updated != -1) gf->Update();
+    return gf;
   }
 
 
@@ -393,6 +395,33 @@ namespace ngcomp
   }
 
 
+
+  GridFunctionCoefficientFunction :: 
+  GridFunctionCoefficientFunction (GridFunction & agf, int acomp)
+    : gf(dynamic_cast<S_GridFunction<double>&> (agf)),
+      diffop (NULL),
+      comp (acomp) 
+  {
+    ;
+  }
+
+
+
+  GridFunctionCoefficientFunction :: 
+  GridFunctionCoefficientFunction (GridFunction & agf, DifferentialOperator * adiffop, int acomp)
+    : gf(dynamic_cast<S_GridFunction<double>&> (agf)),
+      diffop (adiffop),
+      comp (acomp) 
+  {
+    ;
+  }
+
+  GridFunctionCoefficientFunction :: 
+  ~GridFunctionCoefficientFunction ()
+  {
+    ;
+  }
+
     
 
   double GridFunctionCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip) const
@@ -419,12 +448,19 @@ namespace ngcomp
     fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
 
 
-    const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
-    VectorMem<10> flux(bfi->DimFlux());
-    
-    bfi->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh2);
-
-    return flux(0); 
+    if (diffop)
+      {
+	VectorMem<10> flux(diffop->Dim());
+	diffop->Apply (fel, ip, elu, flux, lh2);
+	return flux(0);
+      }
+    else
+      {
+	const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
+	VectorMem<10> flux(bfi->DimFlux());
+	bfi->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh2);
+	return flux(0); 
+      }
   }
 
   void GridFunctionCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip,
@@ -451,13 +487,16 @@ namespace ngcomp
     gf.GetElementVector (comp, dnums, elu);
     fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
 
+    if (diffop)
+      {
+	diffop->Apply (fel, ip, elu, result, lh2);
+      }
+    else
+      {
+	const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
+	bfi->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, result, false, lh2);
+      }
 
-    const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
-    // VectorMem<10> flux(bfi->DimFlux());
-    
-    bfi->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, result, false, lh2);
-
-    // return flux(0); 
   }
 
 
@@ -485,10 +524,16 @@ namespace ngcomp
     gf.GetElementVector (comp, dnums, elu);
     fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
 
-
-    const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
-
-    bfi->CalcFlux (fel, ir, elu, values, false, lh2);
+    
+    if (diffop)
+      {
+	diffop->Apply (fel, ir, elu, values, lh2);
+      }
+    else
+      {
+	const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
+	bfi->CalcFlux (fel, ir, elu, values, false, lh2);
+      }
   }
 
 

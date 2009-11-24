@@ -73,6 +73,7 @@ namespace ngfem
 
 
 #include "integrator.hpp"
+#include "diffop.hpp"
 #include "bdbintegrator.hpp"
 #include "bdbequations.hpp"
 #include "hdiv_equations.hpp"

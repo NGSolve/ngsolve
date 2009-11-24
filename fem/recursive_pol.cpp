@@ -42,13 +42,13 @@ namespace ngfem
 
 	    for (i = 0; i < ir.GetNIP(); i++)
 	      {
-		double x = ir.GetIP(i)(0);
+		double x = ir[i](0);
 		DerivedLegendrePolynomial (SIZE-2, 2*x-1, diff_leg);
 		for (j = SIZE-1; j >= 1; j--)
 		  diff_leg(j) = 2 * diff_leg(j-1);
 		diff_leg(0) = 0;
 
-		double fac = ir.GetIP(i).Weight();
+		double fac = ir[i].Weight();
 		for (j = 0; j < DIM-1; j++)
 		  fac *= (1-x);
 	    

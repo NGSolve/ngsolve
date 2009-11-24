@@ -48,15 +48,13 @@ namespace ngfem
 
       NgProfiler::RegionTimer reg (timer);
 
-
       const CompoundFiniteElement & cfel = 
         dynamic_cast<const CompoundFiniteElement&> (fel);
-    
       const ScalarFiniteElement<D> & fel_l2 = 
         dynamic_cast<const ScalarFiniteElement<D>&> (cfel[0]);
-          const FacetVolumeFiniteElement<D> & fel_facet = 
+      const FacetVolumeFiniteElement<D> & fel_facet = 
         dynamic_cast<const FacetVolumeFiniteElement<D> &> (cfel[1]);
-    
+      
   
       ELEMENT_TYPE eltype = cfel.ElementType();
       
