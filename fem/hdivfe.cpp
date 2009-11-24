@@ -164,7 +164,7 @@ namespace ngfem
 
        for (j = 0; j < facerule.GetNIP(); j++)
 	 {
-	   const IntegrationPoint & ip = facerule.GetIP(j);
+	   const IntegrationPoint & ip = facerule[j];
 	   Vec<1> p1d;
 	   Vec<2> p2d;
 	   
@@ -228,7 +228,7 @@ namespace ngfem
 
       for (j = 0; j < facerule.GetNIP(); j++)
 	{
-	  const IntegrationPoint & ip = facerule.GetIP(j);
+	  const IntegrationPoint & ip = facerule[j];
 	  
 	  Vec<3> p3d;
 	  p3d = p3 + ip(0) * tau1 + ip(1) * tau2;

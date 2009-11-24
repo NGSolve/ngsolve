@@ -256,7 +256,7 @@ namespace ngcomp
       } 
 
 
-    UpdateColoring (lh);
+    FinalizeUpdate (lh);
 
 #ifdef PARALLEL
     *testout << "update parallel dofs in facet-fespace, ndof " << ndof << endl;

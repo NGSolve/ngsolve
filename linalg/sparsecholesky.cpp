@@ -14,8 +14,8 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   SparseCholesky<TM, TV_ROW, TV_COL> :: 
   SparseCholesky (const SparseMatrix<TM, TV_ROW, TV_COL> & a, 
-		  BitArray * ainner,
-		  Array<int> * acluster,
+		  const BitArray * ainner,
+		  const Array<int> * acluster,
 		  bool allow_refactor)
     : mat(a)
   { 

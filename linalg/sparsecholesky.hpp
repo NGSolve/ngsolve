@@ -36,8 +36,8 @@ namespace ngla
     DynamicMem<TM> lfact;
     DynamicMem<TM> diag;
     ///
-    BitArray * inner;
-    Array<int> * cluster;
+    const BitArray * inner;
+    const Array<int> * cluster;
     ///
     MinimumDegreeOrdering * mdo;
     int maxrow;
@@ -51,8 +51,8 @@ namespace ngla
 
     ///
     SparseCholesky (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
-		    BitArray * ainner = NULL,
-		    Array<int> * acluster = NULL,
+		    const BitArray * ainner = NULL,
+		    const Array<int> * acluster = NULL,
 		    bool allow_refactor = 0);
     ///
     ~SparseCholesky ();

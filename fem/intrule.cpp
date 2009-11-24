@@ -950,8 +950,11 @@ namespace ngfem
           for (int i = 0; i < 3; i++) isort[sort[i]] = i;
           
           nip = irx->GetNIP() * iry->GetNIP();
+	  SetSize(nip);
+	  /*
           xi.SetSize(nip);
           weight.SetSize(nip);
+	  */
 
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++, ii++)
@@ -964,9 +967,13 @@ namespace ngfem
                                   y * (1-x), 
                                   (1-x) * (1-y) };
                 
+		(*this)[ii] = IntegrationPoint (lami[isort[0]], lami[isort[1]], 0,
+						(*irx)[i1].Weight()*(*iry)[i2].Weight()*(1-x));
+		/*
                 xi[ii](0) = lami[isort[0]];
                 xi[ii](1) = lami[isort[1]];
                 weight[ii] = (*irx)[i1].Weight()*(*iry)[i2].Weight()*(1-x);
+		*/
               }
 
           // trig permutation transformation
@@ -1013,16 +1020,23 @@ namespace ngfem
 
           nip = irx->GetNIP() * iry->GetNIP();
 
+	  SetSize(nip);
+	  /*
           xi.SetSize(nip);
           weight.SetSize(nip);
+	  */
           dxdxi_duffy.SetSize(nip);
 
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++, ii++)
               {
+		(*this)[ii] = IntegrationPoint ((*irx)[i1](0), (*iry)[i2](0), 0, 
+						(*irx)[i1].Weight()*(*iry)[i2].Weight());
+		/*
                 xi[ii](0) = (*irx)[i1](0);
                 xi[ii](1) = (*iry)[i2](0);
                 weight[ii] = (*irx)[i1].Weight()*(*iry)[i2].Weight();
+		*/
               }
         
           Mat<2> id;
@@ -1048,7 +1062,7 @@ namespace ngfem
       {
         x.SetSize(nip);
         dxdxi.SetSize(nip);
-        eltrans.CalcMultiPointJacobian (xi, x, dxdxi, lh);
+        eltrans.CalcMultiPointJacobian ( *this, x, dxdxi, lh);
       }
   }
 
@@ -1077,9 +1091,11 @@ namespace ngfem
           
           nip = irx->GetNIP() * iry->GetNIP() * irz->GetNIP();
 
+	  SetSize(nip);
+	  /*
           xi.SetSize(nip);
           weight.SetSize(nip);
-
+	  */
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++)
               for (int i3 = 0; i3 < irz->GetNIP(); i3++, ii++)
@@ -1094,11 +1110,18 @@ namespace ngfem
                                     z * (1-x) * (1-y), 
                                     (1-x)*(1-y)*(1-z) };
                 
+		  (*this)[ii] = IntegrationPoint (lami[isort[0]],
+						  lami[isort[1]],
+						  lami[isort[2]],
+						  (*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight() * 
+						  sqr(1-x) * (1-y) );
+		  /*
                   xi[ii](0) = lami[isort[0]];
                   xi[ii](1) = lami[isort[1]];
                   xi[ii](2) = lami[isort[2]];
                   weight[ii] = (*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight() * 
                     sqr(1-x) * (1-y);
+		  */
                 }
 
 
@@ -1166,9 +1189,12 @@ namespace ngfem
 
 
           nip = irx->GetNIP() * iry->GetNIP() * irz->GetNIP();
-
+	  
+	  SetSize(nip);
+	  /*
           xi.SetSize(nip);
           weight.SetSize(nip);
+	  */
           dxdxi_duffy.SetSize(nip);
 
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
@@ -1181,11 +1207,18 @@ namespace ngfem
                     y = (*irz)[i3](0);
  
                   double lami[] = { x, y *(1-x), (1-x)*(1-y) };
-                
+		  
+ 
+		  (*this)[ii] = IntegrationPoint (lami[isort[0]],
+						  lami[isort[1]],
+						  z,
+						  (*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight() * (1-x));
+		  /*
                   xi[ii](0) = lami[isort[0]];
                   xi[ii](1) = lami[isort[1]];
                   xi[ii](2) = z;
                   weight[ii] = (*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight() * (1-x);
+		  */
                 }
 
 
@@ -1236,18 +1269,28 @@ namespace ngfem
 
           nip = irx->GetNIP() * iry->GetNIP() * irz->GetNIP();
 
+	  SetSize (nip);
+	  /*
           xi.SetSize(nip);
           weight.SetSize(nip);
+	  */
           dxdxi_duffy.SetSize(nip);
 
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++)
               for (int i3 = 0; i3 < irz->GetNIP(); i3++, ii++)
                 {
-                  xi[ii](0) = (*irx)[i1](0);
-                  xi[ii](1) = (*iry)[i2](0);
-                  xi[ii](2) = (*irz)[i3](0);
-                  weight[ii] = (*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight();
+		  (*this)[ii] = IntegrationPoint ((*irx)[i1](0),
+						  (*iry)[i2](0),
+						  (*irz)[i3](0),
+						  (*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight());
+
+		  /*
+		    xi[ii](0) = (*irx)[i1](0);
+		    xi[ii](1) = (*iry)[i2](0);
+		    xi[ii](2) = (*irz)[i3](0);
+		    weight[ii] = (*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight();
+		  */
                 }
         
           Mat<3> id;
@@ -1268,8 +1311,11 @@ namespace ngfem
 
           nip = irx->GetNIP() * iry->GetNIP() * irz->GetNIP();
 
+	  SetSize (nip);
+	  /*
           xi.SetSize(nip);
           weight.SetSize(nip);
+	  */
           dxdxi_duffy.SetSize(nip);
 
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
@@ -1277,10 +1323,17 @@ namespace ngfem
               for (int i3 = 0; i3 < irz->GetNIP(); i3++, ii++)
                 {
 		  double z = (*irx)[i1](0);
+
+		  (*this)[ii] = IntegrationPoint ((*iry)[i2](0)*(1-z),
+						  (*irz)[i3](0)*(1-z),
+						  (*irx)[i1](0),
+						  sqr(1-z)*(*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight());
+		  /*
                   xi[ii](0) = (*iry)[i2](0)*(1-z);
                   xi[ii](1) = (*irz)[i3](0)*(1-z);
                   xi[ii](2) = (*irx)[i1](0);
                   weight[ii] = sqr(1-z)*(*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight();
+		  */
                 }
         
           Mat<3> id;
@@ -1307,7 +1360,7 @@ namespace ngfem
       {
         x.SetSize(nip);
         dxdxi.SetSize(nip);
-        eltrans.CalcMultiPointJacobian (xi, x, dxdxi, lh);
+        eltrans.CalcMultiPointJacobian (*this, x, dxdxi, lh);
       }
   }
 
@@ -1377,9 +1430,11 @@ namespace ngfem
                 }
 
               nip = irx->GetNIP() * iry->GetNIP();
+	      SetSize(nip);
+	      /*
               xi.SetSize(nip);
               weight.SetSize(nip);
-              
+              */
               for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
                 for (int i2 = 0; i2 < iry->GetNIP(); i2++, ii++)
                   {
@@ -1391,9 +1446,14 @@ namespace ngfem
                                       y * (1-x), 
                                       (1-x) * (1-y) };
                     
+		    (*this)[ii] = IntegrationPoint (lami[isort[0]],
+						    lami[isort[1]],
+						    (*irx)[i1].Weight()*(*iry)[i2].Weight());
+		    /*
                     xi[ii](0) = lami[isort[0]];
                     xi[ii](1) = lami[isort[1]];
-                    weight[ii] = (*irx)[i1].Weight()*(*iry)[i2].Weight(); // *(1-x);
+                    weight[ii] = (*irx)[i1].Weight()*(*iry)[i2].Weight(); 
+		    */
                   }
               
               // trig permutation transformation
@@ -1484,9 +1544,11 @@ namespace ngfem
 
           nip = irx->GetNIP() * iry->GetNIP() * irz->GetNIP();
 
+	  SetSize (nip);
+	  /*
           xi.SetSize(nip);
           weight.SetSize(nip);
-
+	  */
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++)
               for (int i3 = 0; i3 < irz->GetNIP(); i3++, ii++)
@@ -1501,11 +1563,18 @@ namespace ngfem
                                     z * (1-x) * (1-y), 
                                     (1-x)*(1-y)*(1-z) };
                 
+		  (*this)[ii] = IntegrationPoint (lami[isort[0]],
+						  lami[isort[1]],
+						  lami[isort[2]],
+						  (*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight() * 
+						  pow (1-x, powx) * pow(1-y, powy));
+		  /*
                   xi[ii](0) = lami[isort[0]];
                   xi[ii](1) = lami[isort[1]];
                   xi[ii](2) = lami[isort[2]];
                   weight[ii] = (*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight() * 
                     pow (1-x, powx) * pow(1-y, powy);
+		  */
                 }
 
 
@@ -2608,8 +2677,8 @@ namespace ngfem
 		for (int i = 0; i < segmrule.GetNIP(); i++)
 		  for (int j = 0; j < segmrule.GetNIP(); j++)
 		    {
-		      const IntegrationPoint & ipsegm1 = segmrule.GetIP(i);
-		      const IntegrationPoint & ipsegm2 = segmrule.GetIP(j);
+		      const IntegrationPoint & ipsegm1 = segmrule[i];
+		      const IntegrationPoint & ipsegm2 = segmrule[j];
 		      point[0] = ipsegm1.Point()[0];
 		      point[1] = ipsegm2.Point()[0];
 		      point[2] = 0;
@@ -2669,9 +2738,9 @@ namespace ngfem
 		  for (int j = 0; j < segmrule.GetNIP(); j++)
 		    for (int l = 0; l < segmrule.GetNIP(); l++)
 		      {
-			const IntegrationPoint & ipsegm1 = segmrule.GetIP(i);
-			const IntegrationPoint & ipsegm2 = segmrule.GetIP(j);
-			const IntegrationPoint & ipsegm3 = segmrule.GetIP(l);
+			const IntegrationPoint & ipsegm1 = segmrule[i]; // .GetIP(i);
+			const IntegrationPoint & ipsegm2 = segmrule[j]; // .GetIP(j);
+			const IntegrationPoint & ipsegm3 = segmrule[l]; // .GetIP(l);
 		      
 			point[0] = ipsegm1.Point()[0];
 			point[1] = ipsegm2.Point()[0];
@@ -2705,8 +2774,8 @@ namespace ngfem
 		for (int i = 0; i < segmrule.GetNIP(); i++)
 		  for (int j = 0; j < trigrule.GetNIP(); j++)
 		    {
-		      const IntegrationPoint & ipsegm = segmrule.GetIP(i);
-		      const IntegrationPoint & iptrig = trigrule.GetIP(j);
+		      const IntegrationPoint & ipsegm = segmrule[i]; // .GetIP(i);
+		      const IntegrationPoint & iptrig = trigrule[j]; // .GetIP(j);
 		      point[0] = iptrig.Point()[0];
 		      point[1] = iptrig.Point()[1];
 		      point[2] = ipsegm.Point()[0];
@@ -2763,8 +2832,8 @@ namespace ngfem
 		for (int i = 0; i < quadrule.GetNIP(); i++)
 		  for (int j = 0; j < segrule.GetNIP(); j++)
 		    {
-		      const IntegrationPoint & ipquad = quadrule.GetIP(i);
-		      const IntegrationPoint & ipseg = segrule.GetIP(j);
+		      const IntegrationPoint & ipquad = quadrule[i]; // .GetIP(i);
+		      const IntegrationPoint & ipseg = segrule[j]; // .GetIP(j);
 		      point[0] = (1-ipseg(0)) * ipquad(0);
 		      point[1] = (1-ipseg(0)) * ipquad(1);
 		      point[2] = ipseg(0);

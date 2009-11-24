@@ -90,7 +90,7 @@ namespace ngcomp
     else
       ndlevel.Append (ma.GetNFaces());
 
-    UpdateColoring (lh);
+    FinalizeUpdate (lh);
   }
 
   

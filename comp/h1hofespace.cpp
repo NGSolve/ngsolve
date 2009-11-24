@@ -349,7 +349,7 @@ namespace ngcomp
 
 
     UpdateDofTables ();
-    UpdateColoring (lh);
+    FinalizeUpdate (lh);
 
     if (timing) Timing();
 
@@ -463,22 +463,7 @@ namespace ngcomp
         (*testout) << "h1 first inner = " << first_element_dof << endl;
       }
 
-    if (dirichlet_boundaries.Size())
-      {
-	dirichlet_dofs.SetSize (GetNDof());
-	dirichlet_dofs.Clear();
-	Array<int> dnums;
-	for (int i = 0; i < ma.GetNSE(); i++)
-	  {
-	    if (dirichlet_boundaries[ma.GetSElIndex(i)])
-	      {
-		GetSDofNrs (i, dnums);
-		for (int j = 0; j < dnums.Size(); j++)
-		  if (dnums[j] != -1)
-		    dirichlet_dofs.Set (dnums[j]);
-	      }
-	  }
-      }
+ 
 
 
 

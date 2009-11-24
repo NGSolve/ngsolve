@@ -284,6 +284,9 @@ namespace ngfem
     /// allocate for nips points
     IntegrationRule (int nips)
       : Array<IntegrationPoint> () { SetAllocSize(nips); }
+    
+    // make it polymorphic
+    virtual ~IntegrationRule() { ; }
 
     ///
     void AddIntegrationPoint (const IntegrationPoint & ip)
@@ -294,11 +297,13 @@ namespace ngfem
     /// number of integration points
     int GetNIP() const { return Size(); }
 
+    /*
     // old style, should be replaced by []
     const IntegrationPoint & GetIP(int i) const
     {
       return (*this)[i];
     }
+    */
   };
 
   inline ostream & operator<< (ostream & ost, const IntegrationRule & ir)
@@ -312,13 +317,13 @@ namespace ngfem
 
 
   template <int D>
-  class IntegrationRuleTP
+  class IntegrationRuleTP : public IntegrationRule
   {
     const IntegrationRule *irx, *iry, *irz;
     // int sort[8];
 
-    ArrayMem<Vec<D>, 100> xi;
-    ArrayMem<double, 100> weight;
+    // ArrayMem<Vec<D>, 100> xi;
+    // ArrayMem<double, 100> weight;
     ArrayMem<Vec<D>, 100> x;
     ArrayMem<Mat<D,D>, 100> dxdxi;
     ArrayMem<Mat<D,D>, 100> dxdxi_duffy;
@@ -340,19 +345,27 @@ namespace ngfem
     const IntegrationRule & GetIRY() const { return *iry; }
     const IntegrationRule & GetIRZ() const { return *irz; }
 
-    int GetNIP() const { return xi.Size(); }
-    double GetWeight (int i) const { return weight[i]; }
-    const Vec<D> GetXi(int i) const { return xi[i]; }
+    int GetNIP() const { return Size(); }
+    double GetWeight (int i) const { return (*this)[i].Weight(); }  // weight[i]; }
+    const Vec<D> GetXi(int i) const 
+    { 
+      Vec<D> ret;
+      for (int j = 0; j < D; j++)
+	ret(j) = (*this)[i](j);
+      return ret;  // return xi[i]; 
+    }
     const Vec<D> GetPoint(int i) const { return x[i]; }
     const Mat<D,D> & GetJacobian(int i) const { return dxdxi[i]; }
     const Mat<D,D> & GetDuffyJacobian(int i) const { return dxdxi_duffy[i]; }
-    IntegrationPoint operator[] (int i) const
+    // IntegrationPoint operator[] (int i) const { return IntegrationRule::operator[](i); }
+    /*
     { 
       if (D == 2)
 	return IntegrationPoint(xi[i](0), xi[i](1), 0, weight[i]); 
       else
 	return IntegrationPoint(xi[i](0), xi[i](1), xi[i](2), weight[i]); 
     }
+    */
   };
 
 

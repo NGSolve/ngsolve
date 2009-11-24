@@ -139,7 +139,7 @@ namespace ngfem
 	  
 	  IntegrationPoint ip2 = (LocalFacetNr2!=-1) ? transform2(LocalFacetNr2, ir_facet[l]) : ip1;
 	  SpecificIntegrationPoint<D,D> sip2 (ip2, eltrans2, lh);
-	  double lam2 = coef_lam->Evaluate(sip2);
+	  // double lam2 = coef_lam->Evaluate(sip2);
 	  Mat<D> jac2 = sip2.GetJacobian();
 	  Mat<D> inv_jac2 = sip2.GetJacobianInverse();
 	  double det2 = sip2.GetJacobiDet();
@@ -451,7 +451,7 @@ namespace ngfem
       
       FlatVector<> b1mat(nd, lh); //B(v)
       FlatVector<> b2mat(nd, lh); //B(u)
-      double dmat; //bn
+      // double dmat; //bn
       Facet2ElementTrafo transform(eltype,ElVertices); 
       const NORMAL * normals = ElementTopology::GetNormals(eltype);
 
@@ -547,8 +547,8 @@ namespace ngfem
       ELEMENT_TYPE eltype1 = volumefel.ElementType();
       int nd1 = fel1_l2->GetNDof();
 
-      const ScalarFiniteElement<D> * fel2_l2 = NULL;
-      ELEMENT_TYPE eltype2 = eltype1;
+      // const ScalarFiniteElement<D> * fel2_l2 = NULL;
+      // ELEMENT_TYPE eltype2 = eltype1;
       int nd2 = 0;
 
       double maxorder = fel1_l2->Order();
@@ -894,7 +894,7 @@ namespace ngfem
       
       FlatVector<> b1mat(nd, lh); //B(v)
       FlatVector<> b2mat(nd, lh); //B(u)
-      double dmat; //bn
+      // double dmat; //bn
       Facet2ElementTrafo transform(eltype,ElVertices); 
       const NORMAL * normals = ElementTopology::GetNormals(eltype);
 

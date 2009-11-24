@@ -265,7 +265,7 @@ namespace ngfem
       for (i = 0; i < rule.GetNIP(); i++)
 	{
 	  ii = 0;
-	  const IntegrationPoint & ip = rule.GetIP(i);
+	  const IntegrationPoint & ip = rule[i];
 
 	  Sx hx = x + z * (-1+2*ip(0)+ip(1));
 	  Sy hy = y + z * ip(1);
@@ -307,7 +307,7 @@ namespace ngfem
       for (i = 0; i < rule.GetNIP(); i++)
 	{
 	  ii = 0;
-	  const IntegrationPoint & ip = rule.GetIP(i);
+	  const IntegrationPoint & ip = rule[i];
 
 	  Sx hx = x + z * (-1+2*ip(0)+ip(1));
 	  Sy hy = y + z * ip(1);

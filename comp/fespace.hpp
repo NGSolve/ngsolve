@@ -61,6 +61,7 @@ namespace ngcomp
 
     /// dofs on Dirichlet boundary
     BitArray dirichlet_dofs;
+    BitArray free_dofs;
 
 
     Array<bool> dirichlet_vertex;
@@ -143,7 +144,7 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh);
 
     /// update element coloring
-    virtual void UpdateColoring(LocalHeap & lh);
+    virtual void FinalizeUpdate(LocalHeap & lh);
     const Table<int> & ElementColoring() const { return *element_coloring; }
 
     /// print report to stream
@@ -220,7 +221,7 @@ namespace ngcomp
 
 
     /// non Dirichlet dofs
-    virtual BitArray * GetFreeDofs () const;
+    virtual const BitArray * GetFreeDofs () const;
     ///
     bool IsDirichletDof (int i) const
     { return dirichlet_dofs.Size() && dirichlet_dofs[i]; }

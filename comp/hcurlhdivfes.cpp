@@ -406,7 +406,7 @@ namespace ngcomp
     
     prol->Update();
 
-    UpdateColoring (lh);
+    FinalizeUpdate (lh);
 
 #ifdef PARALLEL
     UpdateParallelDofs();
@@ -1551,7 +1551,7 @@ namespace ngcomp
     //  (*testout) << "gradientedges = " << endl << gradientedge << endl;
 
 
-    UpdateColoring (lh);
+    FinalizeUpdate (lh);
   }
 
 

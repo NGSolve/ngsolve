@@ -767,7 +767,7 @@ namespace ngla
   // BaseMatrix * SparseMatrix<TM> :: 
   template <class TM, class TV_ROW, class TV_COL>
   BaseMatrix * SparseMatrix<TM,TV_ROW,TV_COL> ::
-  InverseMatrix (BitArray * subset) const
+  InverseMatrix (const BitArray * subset) const
   {
 
     if ( this->GetInverseType() == SUPERLU_DIST )
@@ -808,7 +808,7 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   BaseMatrix * SparseMatrix<TM,TV_ROW,TV_COL> ::
-  InverseMatrix (Array<int> * clusters) const
+  InverseMatrix (const Array<int> * clusters) const
   {
     // #ifndef ASTRID
     // #ifdef USE_SUPERLU
@@ -1407,7 +1407,7 @@ namespace ngla
   
 
   template <class TM, class TV>
-  BaseMatrix * SparseMatrixSymmetric<TM,TV> :: InverseMatrix (BitArray * subset) const
+  BaseMatrix * SparseMatrixSymmetric<TM,TV> :: InverseMatrix (const BitArray * subset) const
   {
     // #ifndef ASTRID
     // #ifdef USE_SUPERLU
@@ -1456,7 +1456,7 @@ namespace ngla
   }
 
   template <class TM, class TV>
-  BaseMatrix * SparseMatrixSymmetric<TM,TV> :: InverseMatrix (Array<int> * clusters) const
+  BaseMatrix * SparseMatrixSymmetric<TM,TV> :: InverseMatrix (const Array<int> * clusters) const
   {
     // #ifndef ASTRID
     // #ifdef USE_SUPERLU

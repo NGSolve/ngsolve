@@ -165,7 +165,7 @@ namespace ngcomp
 	if (hasskeletoninner) {nrcases++; loopsteps+=nf;}
 	if (hasskeletonbound) {nrcases++; loopsteps+=nse;}
 	if (fespace.specialelements.Size()>0) {nrcases++; loopsteps+=fespace.specialelements.Size();}
-	int actcase = 0;
+	// int actcase = 0;
 	int gcnt = 0; //global count (for all cases)
 	
 	clock_t prevtime = clock();
@@ -585,7 +585,7 @@ namespace ngcomp
 	    
 	    for (int j = 0; j < ir.GetNIP(); j++)
 	      {
-		const IntegrationPoint & ip = ir.GetIP(j);
+		const IntegrationPoint & ip = ir[j];
 		SpecificIntegrationPoint<2,3> sip(ip, seltrans, lh);
 		
 		// (*testout) << "point = " << sip.GetPoint() << endl;

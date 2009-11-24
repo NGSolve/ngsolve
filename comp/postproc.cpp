@@ -120,14 +120,14 @@ namespace ngcomp
 	    {
 	    if (fel.SpatialDim() == 2)
 	    {
-	    SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
+	    SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
 	    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 	    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
 	    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
 	    }
 	    else
 	    {
-	    SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
+	    SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
 	    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 	    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
 	    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
@@ -137,14 +137,14 @@ namespace ngcomp
 	    {
 	    if (fel.SpatialDim() == 2)
 	    {
-	    SpecificIntegrationPoint<2,3> sip (ir.GetIP(j), eltrans, lh);
+	    SpecificIntegrationPoint<2,3> sip (ir[j], eltrans, lh);
 	    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 	    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
 	    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
 	    }
 	    else
 	    {
-	    SpecificIntegrationPoint<1,2> sip (ir.GetIP(j), eltrans, lh);
+	    SpecificIntegrationPoint<1,2> sip (ir[j], eltrans, lh);
 	    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 	    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
 	    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
@@ -169,7 +169,7 @@ namespace ngcomp
 		    {
 		      HeapReset hr(lh);
 
-		      // SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
+		      // SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
 		      SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, pts[j], dxdxi[j]);
 
 		      double fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
@@ -184,7 +184,7 @@ namespace ngcomp
 		    {
 		      HeapReset hr(lh);
 
-		      SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
+		      SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
 		      double fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
 		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
@@ -200,7 +200,7 @@ namespace ngcomp
 		    {
 		      HeapReset hr(lh);
 
-		      SpecificIntegrationPoint<2,3> sip (ir.GetIP(j), eltrans, lh);
+		      SpecificIntegrationPoint<2,3> sip (ir[j], eltrans, lh);
 		      double fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
 		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
@@ -213,7 +213,7 @@ namespace ngcomp
 		    {
 		      HeapReset hr(lh);
 
-		      SpecificIntegrationPoint<1,2> sip (ir.GetIP(j), eltrans, lh);
+		      SpecificIntegrationPoint<1,2> sip (ir[j], eltrans, lh);
 		      double fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
 		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
@@ -578,14 +578,14 @@ namespace ngcomp
 		{
 		  if (fel.SpatialDim() == 2)
 		    {
-		      SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
+		      SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
 		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      coef.Evaluate (sip, fluxi);
 		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
 		    }
 		  else
 		    {
-		      SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
+		      SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
 		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      coef.Evaluate (sip, fluxi);
 		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
@@ -595,14 +595,14 @@ namespace ngcomp
 		{
 		  if (fel.SpatialDim() == 2)
 		    {
-		      SpecificIntegrationPoint<2,3> sip (ir.GetIP(j), eltrans, lh);
+		      SpecificIntegrationPoint<2,3> sip (ir[j], eltrans, lh);
 		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      coef.Evaluate (sip, fluxi);
 		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
 		    }
 		  else
 		    {
-		      SpecificIntegrationPoint<1,2> sip (ir.GetIP(j), eltrans, lh);
+		      SpecificIntegrationPoint<1,2> sip (ir[j], eltrans, lh);
 		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      coef.Evaluate (sip, fluxi);
 		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
@@ -773,14 +773,14 @@ namespace ngcomp
 	      {
 		if (fel.SpatialDim() == 2)
 		  {
-		    SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
+		    SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
 		    bli.CalcFlux (fel, sip, elu, fluxi, 1, lh);
 		    fluxbli.CalcFlux (felflux, sip, elflux, fluxi2, 0, lh);
 		    vol = fabs(sip.GetJacobiDet()); 
 		  }
 		else
 		  {
-		    SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
+		    SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
 		    bli.CalcFlux (fel, sip, elu, fluxi, 1, lh);
 		    fluxbli.CalcFlux (felflux, sip, elflux, fluxi2, 0, lh);
 		    vol = fabs(sip.GetJacobiDet()); 
@@ -790,14 +790,14 @@ namespace ngcomp
 	      {
 		if (fel.SpatialDim() == 2)
 		  {
-		    SpecificIntegrationPoint<2,3> sip (ir.GetIP(j), eltrans, lh);
+		    SpecificIntegrationPoint<2,3> sip (ir[j], eltrans, lh);
 		    bli.CalcFlux (fel, sip, elu, fluxi, 1, lh);
 		    fluxbli.CalcFlux (felflux, sip, elflux, fluxi2, 0, lh);
 		    vol = fabs(sip.GetJacobiDet()); 
 		  }
 		else
 		  {
-		    SpecificIntegrationPoint<1,2> sip (ir.GetIP(j), eltrans, lh);
+		    SpecificIntegrationPoint<1,2> sip (ir[j], eltrans, lh);
 		    bli.CalcFlux (fel, sip, elu, fluxi, 1, lh);
 		    fluxbli.CalcFlux (felflux, sip, elflux, fluxi2, 0, lh);
 		    vol = fabs(sip.GetJacobiDet()); 
@@ -806,7 +806,7 @@ namespace ngcomp
 
 	    fluxi -= fluxi2;
 	    
-	    elerr += ir.GetIP(j).Weight() * vol * L2Norm2 (fluxi);
+	    elerr += ir[j].Weight() * vol * L2Norm2 (fluxi);
 	  }
 
 
@@ -960,14 +960,14 @@ namespace ngcomp
 	      {
 		if (fel1.SpatialDim() == 2)
 		  {
-		    SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
+		    SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
 		    bli2.CalcFlux (fel2, sip, elu2, fluxi2, applyd2, lh);
 		    det = fabs(sip.GetJacobiDet()); 
 		  }
 		else
 		  {
-		    SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
+		    SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
 		    bli2.CalcFlux (fel2, sip, elu2, fluxi2, applyd2, lh);
 		    det = fabs(sip.GetJacobiDet());  
@@ -977,14 +977,14 @@ namespace ngcomp
 	      {
 		if (fel1.SpatialDim() == 2)
 		  {
-		    SpecificIntegrationPoint<2,3> sip (ir.GetIP(j), eltrans, lh);
+		    SpecificIntegrationPoint<2,3> sip (ir[j], eltrans, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
 		    bli2.CalcFlux (fel2, sip, elu2, fluxi2, applyd2, lh);
 		    det = fabs(sip.GetJacobiDet()); 
 		  }
 		else
 		  {
-		    SpecificIntegrationPoint<1,2> sip (ir.GetIP(j), eltrans, lh);
+		    SpecificIntegrationPoint<1,2> sip (ir[j], eltrans, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
 		    bli2.CalcFlux (fel2, sip, elu2, fluxi2, applyd2, lh);
 		    det = fabs(sip.GetJacobiDet()); 
@@ -996,7 +996,7 @@ namespace ngcomp
 	    
 	    fluxi1 -= fluxi2;
 	     
-	    double dx = ir.GetIP(j).Weight() * det; 
+	    double dx = ir[j].Weight() * det; 
 	    
 	    elerr += dx * L2Norm2 (fluxi1);
 	    
@@ -1122,7 +1122,7 @@ namespace ngcomp
 		if (fel1.SpatialDim() == 2)
 		  {
 		    Vec<2> point; 
-		    SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
+		    SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
 		    eltrans.CalcPoint(sip.IP(), point, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
 		    fluxi2(0) = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
@@ -1131,7 +1131,7 @@ namespace ngcomp
 		else
 		  {
 		    Vec<3> point;
-		    SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
+		    SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
 		    eltrans.CalcPoint(sip.IP(), point, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
 		    fluxi2(0) = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
@@ -1144,7 +1144,7 @@ namespace ngcomp
 	    
 	    fluxi1 -= fluxi2;
 	     
-	    double dx = ir.GetIP(j).Weight() * det; 
+	    double dx = ir[j].Weight() * det; 
 	    
 	    elerr += dx * L2Norm2 (fluxi1);
 	  }
@@ -1238,7 +1238,7 @@ namespace ngcomp
 		if (fel1.SpatialDim() == 2)
 		  {
 		    Vec<2> point; 
-		    SpecificIntegrationPoint<2,2> sip (ir.GetIP(j), eltrans, lh);
+		    SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
 		    eltrans.CalcPoint(sip.IP(), point, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
 
@@ -1252,7 +1252,7 @@ namespace ngcomp
 		else
 		  {
 		    Vec<3> point;
-		    SpecificIntegrationPoint<3,3> sip (ir.GetIP(j), eltrans, lh);
+		    SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
 		    eltrans.CalcPoint(sip.IP(), point, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
 
@@ -1272,7 +1272,7 @@ namespace ngcomp
 	    
 	    fluxi1 -= fluxi2;
 	     
-	    double dx = ir.GetIP(j).Weight() * det; 
+	    double dx = ir[j].Weight() * det; 
 	    
 	    elerr += dx * L2Norm2 (fluxi1);
 	    
