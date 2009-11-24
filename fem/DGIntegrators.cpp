@@ -12,7 +12,7 @@ namespace ngfem
       DG for scalar Laplace
       //TODO: Convection-Integrators: volume term integrator in B1DB2-Form ? etc..)
       //TODO: find out why bilinearform -symmetric is not working correctly
-      //TODO: surfaceelementtransformation (orientierung!)
+      //TODO: ma.GetFacetElements(i,elnums) does not work after refinement?!
       //TODO: Gridfunctioncoefficientfunction for conv-bilinearform
   */
   
@@ -587,7 +587,7 @@ namespace ngfem
 	  SpecificIntegrationPoint<D,D> sip1 (ip1, eltrans, lh);
 	  double lam = coef_lam->Evaluate(sip1);
 
-	  SpecificIntegrationPoint<D-1,D> sips (ip1, seltrans, lh);
+	  SpecificIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans, lh);
 	  double rob = coef_rob->Evaluate(sips);	  
 	  
 	  Mat<D> jac1 = sip1.GetJacobian();
@@ -707,7 +707,7 @@ namespace ngfem
 	  SpecificIntegrationPoint<D,D> sip1 (ip1, eltrans, lh);
 	  double lam = coef_lam->Evaluate(sip1);
 
-	  SpecificIntegrationPoint<D-1,D> sips (ip1, seltrans, lh);
+	  SpecificIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans, lh);
 	  double rob = coef_rob->Evaluate(sips);
 	  
 	  Mat<D> jac1 = sip1.GetJacobian();
@@ -821,7 +821,7 @@ namespace ngfem
 	  SpecificIntegrationPoint<D,D> sip1 (ip1, eltrans, lh);
 	  double lam = coef_lam->Evaluate(sip1);
 
-	  SpecificIntegrationPoint<D-1,D> sips (ip1, seltrans, lh);
+	  SpecificIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans, lh);
 	  double rob = coef_rob->Evaluate(sips);
 	  
 	  Mat<D> jac1 = sip1.GetJacobian();
@@ -915,6 +915,7 @@ namespace ngfem
 	  IntegrationPoint ip = transform(LocalFacetNr, ir_facet[l]);
 	  
 	  SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
+	  SpecificIntegrationPoint<D-1,D> sipsurf (ir_facet[l], seltrans, lh);
 
 	  Mat<D> jac = sip.GetJacobian();
 	  Mat<D> inv_jac = sip.GetJacobianInverse();
@@ -928,7 +929,7 @@ namespace ngfem
 	  for (int i=0; i<D;i++){
 	    bn += coef_b[i]->Evaluate(sip) * normal(i);
 	  }
-	  double val = coef_rob->Evaluate(sip);
+	  double val = coef_rob->Evaluate(sipsurf);
 	  if (bn>0) continue; //on this integration point, there is only inflow
 	  fel.CalcShape(sip.IP(), mat_shape);
 	  
