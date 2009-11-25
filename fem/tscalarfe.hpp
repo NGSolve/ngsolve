@@ -187,7 +187,7 @@ namespace ngfem
     
   protected:
     enum { DIM = ET_trait<ET>::DIM };
-
+    
     T_ScalarFiniteElement ()
       : ScalarFiniteElement<DIM> (ET, NDOF, ORDER) { ; }
 
@@ -316,9 +316,12 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET>
   class T_ScalarFiniteElement2 : virtual public ScalarFiniteElement<ET_trait<ET>::DIM>
   {
-    enum { DIM = ET_trait<ET>::DIM };
   public:
-    
+    enum { DIM = ET_trait<ET>::DIM };
+    using FiniteElement::eltype;
+
+    T_ScalarFiniteElement2 () { eltype = ET; }
+
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const
     {

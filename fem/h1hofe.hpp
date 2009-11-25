@@ -63,7 +63,6 @@ namespace ngfem
   template <ELEMENT_TYPE ET>
   class T_H1HighOrderFiniteElement : 
     public H1HighOrderFiniteElement<ET_trait<ET>::DIM>, 
-    public T_ScalarFiniteElement2< H1HighOrderFE<ET>, ET >,
     public ET_trait<ET> 
   {
   protected:
@@ -98,13 +97,10 @@ namespace ngfem
     {
       for (int i = 0; i < N_VERTEX; i++)
 	vnums[i] = i;
-      eltype = ET;
     }
 
     T_H1HighOrderFiniteElement (int aorder) 
     {
-      eltype = ET;
-
       for (int i = 0; i < N_VERTEX; i++)
 	vnums[i] = i;
 
@@ -123,21 +119,23 @@ namespace ngfem
 
     virtual void ComputeNDof();
     virtual void GetInternalDofs (Array<int> & idofs) const;
-
-    /*
-      virtual void CalcShape (const IntegrationPoint & ip, 
-      FlatVector<> shape) const;
-
-      virtual double Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const;
-
-      virtual void CalcDShape (const IntegrationPoint & ip, 
-      FlatMatrixFixWidth<DIM> dshape) const;
-
-      virtual void CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
-      FlatMatrixFixWidth<DIM> dshape) const;
-    */
   };
 
+
+
+
+
+  template <ELEMENT_TYPE ET>
+  class T_H1HighOrderFiniteElement2 
+    : public T_H1HighOrderFiniteElement<ET>,
+      public T_ScalarFiniteElement2< H1HighOrderFE<ET>, ET >
+  { 
+  public:    
+    T_H1HighOrderFiniteElement2 () { ; }
+    T_H1HighOrderFiniteElement2 (int aorder) 
+      :  T_H1HighOrderFiniteElement<ET> (aorder) 
+    { ; }
+  };
 
 
 
@@ -149,13 +147,13 @@ namespace ngfem
   */
 
   template <> 
-  class H1HighOrderFE<ET_SEGM> : public T_H1HighOrderFiniteElement<ET_SEGM>
+  class H1HighOrderFE<ET_SEGM> : public T_H1HighOrderFiniteElement2<ET_SEGM>
   {
   public:
     H1HighOrderFE () { ; }
 
     H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement<ET_SEGM> (aorder) 
+      : T_H1HighOrderFiniteElement2<ET_SEGM> (aorder) 
     { ndof = (order+1); }
 
     template<typename Tx, typename TFA>  
@@ -178,13 +176,14 @@ namespace ngfem
      High order triangular finite element
   */
   template <>
-  class H1HighOrderFE<ET_TRIG> : public T_H1HighOrderFiniteElement<ET_TRIG>
+  class H1HighOrderFE<ET_TRIG> 
+    : public T_H1HighOrderFiniteElement2<ET_TRIG>
   {
   public:
     H1HighOrderFE () { ; }
 
     H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement<ET_TRIG> (aorder) 
+      : T_H1HighOrderFiniteElement2<ET_TRIG> (aorder) 
     { ndof = (order+1)*(order+2)/2; }
 
     template<typename Tx, typename TFA>  
@@ -228,13 +227,13 @@ namespace ngfem
      High order quadrilateral finite element
   */
   template <>
-  class H1HighOrderFE<ET_QUAD> : public T_H1HighOrderFiniteElement<ET_QUAD>
+  class H1HighOrderFE<ET_QUAD> : public T_H1HighOrderFiniteElement2<ET_QUAD>
   {
   public:
     H1HighOrderFE () { ; }
 
     H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement<ET_QUAD> (aorder) 
+      : T_H1HighOrderFiniteElement2<ET_QUAD> (aorder) 
     { ndof = (order+1)*(order+1); }
 
     template<typename Tx, typename TFA>  
@@ -287,7 +286,7 @@ namespace ngfem
      High order tetrahedral finite element
   */
   template <>
-  class H1HighOrderFE<ET_TET> : public T_H1HighOrderFiniteElement<ET_TET>
+  class H1HighOrderFE<ET_TET> : public T_H1HighOrderFiniteElement2<ET_TET>
   {
     typedef TetShapesInnerLegendre T_INNERSHAPES;
     typedef TetShapesFaceLegendre T_FACESHAPES;
@@ -300,7 +299,7 @@ namespace ngfem
     H1HighOrderFE () { ; }
 
     H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement<ET_TET> (aorder) 
+      : T_H1HighOrderFiniteElement2<ET_TET> (aorder) 
     { ndof = (order+1)*(order+2)*(order+3)/6; }
 
     template<typename Tx, typename TFA>  
@@ -312,7 +311,7 @@ namespace ngfem
       High order prismatic finite element
   */
   template <>
-  class H1HighOrderFE<ET_PRISM> : public T_H1HighOrderFiniteElement<ET_PRISM>
+  class H1HighOrderFE<ET_PRISM> : public T_H1HighOrderFiniteElement2<ET_PRISM>
   {
     // typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
     // typedef TrigShapesInnerJacobi T_TRIGFACESHAPES;
@@ -322,7 +321,7 @@ namespace ngfem
     H1HighOrderFE () { ; }
 
     H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement<ET_PRISM> (aorder) 
+      : T_H1HighOrderFiniteElement2<ET_PRISM> (aorder) 
     { ndof = (order+1)*(order+2)*(order+1)/2; }
 
     template<typename Tx, typename TFA>  
@@ -335,13 +334,13 @@ namespace ngfem
      High order hexahedral finite element
   */
   template <> 
-  class H1HighOrderFE<ET_HEX> : public T_H1HighOrderFiniteElement<ET_HEX>
+  class H1HighOrderFE<ET_HEX> : public T_H1HighOrderFiniteElement2<ET_HEX>
   {
   public:
     H1HighOrderFE () { ; }
 
     H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement<ET_HEX> (aorder) 
+      : T_H1HighOrderFiniteElement2<ET_HEX> (aorder) 
     { ndof = (order+1)*(order+1)*(order+1); }
 
     template<typename Tx, typename TFA>  
@@ -353,7 +352,7 @@ namespace ngfem
      High order pyramid finite element
   */
   template<>
-  class H1HighOrderFE<ET_PYRAMID> : public T_H1HighOrderFiniteElement<ET_PYRAMID>
+  class H1HighOrderFE<ET_PYRAMID> : public T_H1HighOrderFiniteElement2<ET_PYRAMID>
   {
     // typedef TrigShapesInnerLegendre T_TRIGSHAPES;
 
@@ -361,7 +360,7 @@ namespace ngfem
     H1HighOrderFE () { ; }
 
     H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement<ET_PYRAMID> (aorder) 
+      : T_H1HighOrderFiniteElement2<ET_PYRAMID> (aorder) 
     { ndof = (order+2)*(order+1)*(2*order+3) / 6; }
 
     template<typename Tx, typename TFA>  

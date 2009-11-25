@@ -639,6 +639,16 @@ operator* (const Complex & b, const VVecExpr<TA> & a)
 }
 
 
+template <class TA>
+inline VVecExpr<VScaleExpr<VVecExpr<TA>,double > >
+operator- (const VVecExpr<TA> & a)
+{
+  typedef VScaleExpr<VVecExpr<TA>, double> TRES;
+  return TRES (a, -1);
+}
+
+
+
 
 /* *********************** operator<< ********************** */
 
