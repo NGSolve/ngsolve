@@ -255,12 +255,6 @@ namespace netgen
 
 
 
-  template class  SplineSeg3<2>;
-  template class  SplineSeg3<3>;
-
-
-
-
 
 
 
@@ -337,5 +331,11 @@ namespace netgen
         
     return sqrt(cosalpha + 1.)/(min2(l1,l2)*(1.-cosalpha));
   }
+
+
+
+
+  template class  SplineSeg3<2>;
+  template class  SplineSeg3<3>;
 
 }

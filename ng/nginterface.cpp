@@ -26,10 +26,6 @@
 
 #include "nginterface.h"
 
-// #include <FlexLexer.h>
-
-
-// #include <mystdlib.h>
 
 
 namespace netgen
