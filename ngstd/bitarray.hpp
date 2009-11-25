@@ -49,7 +49,13 @@ public:
 
   /// set bit i
   void Set (int i)
-  { data[Addr(i)] |= Mask(i); }
+  { 
+    unsigned char * p = data+Addr(i);
+    unsigned char mask = Mask(i);
+#pragma omp atomic
+    (*p) |= mask;
+    // data[Addr(i)] |= Mask(i); 
+  }
 
   /// clear bit i
   void Clear (int i)

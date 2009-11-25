@@ -4,6 +4,8 @@
 #include <multigrid.hpp>
 
 
+#include <sys/time.h>
+
 #ifdef PARALLEL
 extern MPI_Group MPI_HIGHORDER_WORLD;
 extern MPI_Comm MPI_HIGHORDER_COMM;
@@ -255,7 +257,6 @@ namespace ngcomp
 	    clock_t starttime;
 	    double time;
 
-
 	    starttime = clock();
 	  
 	    BaseVector & vecf = *mats.Last()->CreateVector();
@@ -274,6 +275,13 @@ namespace ngcomp
 	    cout << " 1 application takes "
 		 << time / steps
 		 << " seconds" << endl;
+
+
+
+
+
+	    
+
 
 
             /*
@@ -335,6 +343,44 @@ namespace ngcomp
 
     if (timing)
       {
+	    cout << "Mapping timing" << endl;
+
+	    timeval dtime;
+	    gettimeofday (&dtime, 0);
+	    double dstarttime = dtime.tv_sec + 1e-6 * dtime.tv_usec;
+	    
+	    const IntegrationRule & ir = 
+	      GetIntegrationRules().SelectIntegrationRule (ET_TET, 2);
+
+
+	    const Table<int> & element_coloring = fespace.ElementColoring();
+	    for (int ic = 0; ic < element_coloring.Size(); ic++)
+	      {
+#pragma omp parallel 
+		{
+		  LocalHeap llh = lh.Split();
+		  ElementTransformation eltrans;
+
+#pragma omp for
+		  for (int ii = 0; ii < element_coloring[ic].Size(); ii++)
+		    {
+		      HeapReset hr(llh);
+		      int i = element_coloring[ic][ii];
+		      ma.GetElementTransformation (i, eltrans, llh);
+		      MappedIntegrationRule<3,3> mir(ir, eltrans, llh);
+		    }
+		}
+	      }
+
+	    gettimeofday (&dtime, 0);
+	    double dendtime = dtime.tv_sec + 1e-6 * dtime.tv_usec;
+	    
+	    cout << "time = " << dendtime - dstarttime << endl;
+
+
+
+
+
 	clock_t starttime;
 	double time;
 	starttime = clock();
@@ -350,7 +396,7 @@ namespace ngcomp
 	    steps++;
 	    time = double(clock() - starttime) / CLOCKS_PER_SEC;
 	  }
-	while (time < 5.0);
+	while (time < 1.0);
 	  
 	cout << " 1 application takes "
 	     << time / steps
@@ -514,28 +560,28 @@ namespace ngcomp
 		if (parts[i] -> DefinedOn (ma.GetSElIndex(j)))
 		  parts[i] -> CheckElement (fespace.GetSFE(j, clh));
 	      }else
-	      {
-		if (!fespace.UsesDGCoupling()) throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
-		//TODO: check aligned volume element
-	      }
+		{
+		  if (!fespace.UsesDGCoupling()) throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
+		  //TODO: check aligned volume element
+		}
 	    }
         }
       else 
         {
 	  if (parts[i] -> SkeletonForm()) 
-	  { 
-	    if (!fespace.UsesDGCoupling()) throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
-	    //TODO: Check each facet for the neighbouring elements - necessary?
-	  }else
-	  {
-	    for (int j = 0; j < ma.GetNE(); j++)
-            {
-              HeapReset hr(clh);
+	    { 
+	      if (!fespace.UsesDGCoupling()) throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
+	      //TODO: Check each facet for the neighbouring elements - necessary?
+	    }else
+	    {
+	      for (int j = 0; j < ma.GetNE(); j++)
+		{
+		  HeapReset hr(clh);
 
-	      if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
-		parts[i] -> CheckElement (fespace.GetFE(j, clh));
+		  if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
+		    parts[i] -> CheckElement (fespace.GetFE(j, clh));
+		}
 	    }
-	  }
         }
 
 
@@ -595,6 +641,8 @@ namespace ngcomp
 	    int actcase = 0;
 	    int gcnt = 0; //global count (for all cases)
 	    clock_t prevtime = clock();
+
+
 	    if (hasinner && !diagonal)
 	      {
 		actcase++;
@@ -605,7 +653,6 @@ namespace ngcomp
 
 		for (int icol = 0; icol < ncolors; icol++)
 		  {
-		    
 #pragma omp parallel 
 		    {
 		      LocalHeap lh = clh.Split();
@@ -627,34 +674,30 @@ namespace ngcomp
 			  
 			  if(elmat_ev) *testout << " Assemble Element " << i << endl;  
 			  
-			  
+
 #pragma omp atomic
 			  cnt++;
-			  
+
+#pragma omp atomic
+			  gcnt++;
+
+
+
 			  if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
 			    {
 #pragma omp critical(printmatasstatus)
 			      {
 				cout << "\rassemble element " << cnt << "/" << ne << flush;
-				ma.SetThreadPercentage ( 100.0*cnt / (ne+nse) );
+				ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
 				prevtime = clock();
 			      }
 			    }
 
-#pragma omp critical(printmatasstatus)
-		      {
-			cnt++;
-			gcnt++;
-			if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
-			  {
-			    cout << "\rassemble element " << cnt << "/" << ne << flush;
-			    ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
-			    prevtime = clock();
-			  }
-                      }
-                      /*
-                        ma.GetTopologicElement (i, tel);
-                        cout << "tel = " << tel << endl;
+
+
+			  /*
+			    ma.GetTopologicElement (i, tel);
+			    cout << "tel = " << tel << endl;
 		      
 			    Array<Dof> dofs;
 			    fespace.GetFE(i, lh).GetDofs(dofs);
@@ -697,7 +740,7 @@ namespace ngcomp
 			      HeapReset hr (lh);
 			      BilinearFormIntegrator & bfi = *parts[j];
 		      
-			  if (bfi.SkeletonForm()) continue;
+			      if (bfi.SkeletonForm()) continue;
 			      if (bfi.BoundaryForm()) continue;
 			      if (!bfi.DefinedOn (ma.GetElIndex (i))) continue;
 		      
@@ -942,33 +985,30 @@ namespace ngcomp
 
 
 
-#pragma omp critical (assemble_modifyf)
-				  {
-				    if (linearform)
-				      {
-					FlatVector<SCAL> elvec (size, lh);
-					linearform -> GetVector().GetIndirect (dnums, elvec);
-				    
-					FlatVector<SCAL> hfi1(sizei, lh);
-					FlatVector<SCAL> hfi2(sizei, lh);
-					FlatVector<SCAL> hfo(sizeo, lh);
-				    
-					for (int k = 0; k < idofs.Size(); k++)
-					  hfi1(k) = elvec(idofs[k]);
-				    
+				  if (linearform)
+				    {
+				      FlatVector<SCAL> elvec (size, lh);
+				      linearform -> GetVector().GetIndirect (dnums, elvec);
+				      
+				      FlatVector<SCAL> hfi1(sizei, lh);
+				      FlatVector<SCAL> hfi2(sizei, lh);
+				      FlatVector<SCAL> hfo(sizeo, lh);
+				      
+				      for (int k = 0; k < idofs.Size(); k++)
+					hfi1(k) = elvec(idofs[k]);
+				      
 #ifdef LAPACK
-					hfo = b * hfi1;
+				      hfo = b * hfi1;
 #else
-					hfi2 = d * hfi1;
-					hfo = b * hfi2;
+				      hfi2 = d * hfi1;
+				      hfo = b * hfi2;
 #endif
-					for (int k = 0; k < odofs.Size(); k++)
-					  elvec(odofs[k]) -= hfo(k);
-				    
-					linearform->GetVector().SetIndirect (dnums, elvec);
-				      }
-				  }
-
+				      for (int k = 0; k < odofs.Size(); k++)
+					elvec(odofs[k]) -= hfo(k);
+				      
+				      linearform->GetVector().SetIndirect (dnums, elvec);
+				    }
+				  
 				  for (int k = 0; k < idofs1.Size(); k++)
 				    dnums[idofs1[k]] = -1;
 				}
@@ -986,21 +1026,17 @@ namespace ngcomp
 
 			  if (element_coloring)
 			    AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
-
-
-#pragma omp critical (setuseddofs)
-			  {
-			    if (!element_coloring)
+			  else
+#pragma omp critical (addvolelement)
+			    {
 			      AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
-
-			    for (int j = 0; j < dnums.Size(); j++)
-			      if (dnums[j] != -1)
-				useddof.Set (dnums[j]);
-			  }
-
+			    }
+			  
+			  for (int j = 0; j < dnums.Size(); j++)
+			    if (dnums[j] != -1)
+			      useddof.Set (dnums[j]);
 
 			  NgProfiler::StopTimer (timer3);
-
 			}
 		    }
 		  }
@@ -1166,8 +1202,8 @@ namespace ngcomp
 
                           int elmat_size = dnums.Size()*fespace.GetDimension();
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
-                          ;
-                          bfi.AssembleElementMatrix (fel, eltrans, elmat, lh);
+
+			  bfi.AssembleElementMatrix (fel, eltrans, elmat, lh);
 
                           fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
@@ -1218,117 +1254,120 @@ namespace ngcomp
 			}
                     }
 		}//endof parallel 
+		cout << "\rassemble surface element " << cnt << "/" << nse << endl;
 	      }//endof hasbound
-	    if (hasskeletonbound){
-	      int cnt = 0;	      
-#pragma omp parallel
+
+	    if (hasskeletonbound)
 	      {
-                LocalHeap lh = clh.Split();
-		Array<int> fnums, elnums, vnums;
-		ElementTransformation eltrans, seltrans;
+		int cnt = 0;	      
+#pragma omp parallel
+		{
+		  LocalHeap lh = clh.Split();
+		  Array<int> fnums, elnums, vnums;
+		  ElementTransformation eltrans, seltrans;
 		
 #pragma omp for 
-		for (int i = 0; i < nse; i++)
-		{
-		  if ( ma.IsGhostSEl ( i ) ) continue;
+		  for (int i = 0; i < nse; i++)
+		    {
+		      if ( ma.IsGhostSEl ( i ) ) continue;
 #pragma omp critical(printmatasstatus2)
-		  {
-		    cnt++;
-		    gcnt++;
-		    if (cnt % 10 == 0)
-		      cout << "\rassemble facet surface element " << cnt << "/" << nse << flush;
-		    ma.SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
-		  }
+		      {
+			cnt++;
+			gcnt++;
+			if (cnt % 10 == 0)
+			  cout << "\rassemble facet surface element " << cnt << "/" << nse << flush;
+			ma.SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
+		      }
 		  
-		  HeapReset hr(lh);
+		      HeapReset hr(lh);
 		      
-		  if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
-		  ma.GetSElFacets(i,fnums);
-		  int fac = fnums[0];
-		  ma.GetFacetElements(fac,elnums);
-		  int el = elnums[0];
-		  ma.GetElFacets(el,fnums);
+		      if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+		      ma.GetSElFacets(i,fnums);
+		      int fac = fnums[0];
+		      ma.GetFacetElements(fac,elnums);
+		      int el = elnums[0];
+		      ma.GetElFacets(el,fnums);
 				  
-		  const FiniteElement & fel = fespace.GetFE (el, lh);
-		  int facnr = 0;
-		  for (int k=0; k<fnums.Size(); k++)
-		    if(fac==fnums[k]) facnr = k;
-		  ma.GetElVertices (el, vnums);	
-		  ma.GetElementTransformation (el, eltrans, lh);
-		  ma.GetSurfaceElementTransformation (i, seltrans, lh);
-		  fespace.GetDofNrs (el, dnums);
-		  if(fel.GetNDof() != dnums.Size())
-		  {
-		    cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
-		    cout << "dnums.Size() = " << dnums.Size() << endl;
+		      const FiniteElement & fel = fespace.GetFE (el, lh);
+		      int facnr = 0;
+		      for (int k=0; k<fnums.Size(); k++)
+			if(fac==fnums[k]) facnr = k;
+		      ma.GetElVertices (el, vnums);	
+		      ma.GetElementTransformation (el, eltrans, lh);
+		      ma.GetSurfaceElementTransformation (i, seltrans, lh);
+		      fespace.GetDofNrs (el, dnums);
+		      if(fel.GetNDof() != dnums.Size())
+			{
+			  cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
+			  cout << "dnums.Size() = " << dnums.Size() << endl;
 
-		    (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
-		    (*testout) << "dnums.Size() = " << dnums.Size() << endl;
-		    (*testout) << "dnums = " << dnums << endl;
-		    throw Exception ( "Inconsistent number of degrees of freedom " );
-		  }
+			  (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+			  (*testout) << "dnums.Size() = " << dnums.Size() << endl;
+			  (*testout) << "dnums = " << dnums << endl;
+			  throw Exception ( "Inconsistent number of degrees of freedom " );
+			}
 
-		  for (int j = 0; j < NumIntegrators(); j++)
-		  {
-		    const BilinearFormIntegrator & bfi = *parts[j];
+		      for (int j = 0; j < NumIntegrators(); j++)
+			{
+			  const BilinearFormIntegrator & bfi = *parts[j];
 	      
-		    if (!bfi.BoundaryForm()) continue;
-		    if (!bfi.SkeletonForm()) continue;
+			  if (!bfi.BoundaryForm()) continue;
+			  if (!bfi.SkeletonForm()) continue;
 
-		    if (!bfi.DefinedOn (ma.GetElIndex (el))) continue;		    
+			  if (!bfi.DefinedOn (ma.GetElIndex (el))) continue;		    
 
-		    for (int k = 0; k < dnums.Size(); k++)
-		      if (dnums[k] != -1)
-			useddof.Set (dnums[k]);
+			  for (int k = 0; k < dnums.Size(); k++)
+			    if (dnums[k] != -1)
+			      useddof.Set (dnums[k]);
 
-		    int elmat_size = dnums.Size()*fespace.GetDimension();
-		    FlatMatrix<SCAL> elmat(elmat_size, lh);
-		    ;
-		    dynamic_cast<const FacetBilinearFormIntegrator&>(bfi)
-		      .AssembleFacetMatrix (fel,facnr,eltrans,vnums, seltrans, elmat, lh);
-		    fespace.TransformMat (i, false, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+			  int elmat_size = dnums.Size()*fespace.GetDimension();
+			  FlatMatrix<SCAL> elmat(elmat_size, lh);
+			  ;
+			  dynamic_cast<const FacetBilinearFormIntegrator&>(bfi)
+			    .AssembleFacetMatrix (fel,facnr,eltrans,vnums, seltrans, elmat, lh);
+			  fespace.TransformMat (i, false, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 		    
-		    if (printelmat)
-		      {
-			testout->precision(8);
+			  if (printelmat)
+			    {
+			      testout->precision(8);
 			
-			(*testout) << "surface-elnum= " << i << endl;
-			(*testout) << "integrator " << bfi.Name() << endl;
-			(*testout) << "dnums = " << endl << dnums << endl;
-			(*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
-			(*testout) << "elmat = " << endl << elmat << endl;
-		      }
+			      (*testout) << "surface-elnum= " << i << endl;
+			      (*testout) << "integrator " << bfi.Name() << endl;
+			      (*testout) << "dnums = " << endl << dnums << endl;
+			      (*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
+			      (*testout) << "elmat = " << endl << elmat << endl;
+			    }
 		    
 		    
-		    if (elmat_ev)
-		      {
-			testout->precision(8);
+			  if (elmat_ev)
+			    {
+			      testout->precision(8);
 			
-			(*testout) << "elind = " << eltrans.GetElementIndex() << endl;
+			      (*testout) << "elind = " << eltrans.GetElementIndex() << endl;
 #ifdef LAPACK
-			LapackEigenSystem(elmat, lh);
+			      LapackEigenSystem(elmat, lh);
 #else
-			Vector<> lami(elmat.Height());
-			Matrix<> evecs(elmat.Height());
+			      Vector<> lami(elmat.Height());
+			      Matrix<> evecs(elmat.Height());
 			
-			CalcEigenSystem (elmat, lami, evecs);
-			(*testout) << "lami = " << endl << lami << endl;
+			      CalcEigenSystem (elmat, lami, evecs);
+			      (*testout) << "lami = " << endl << lami << endl;
 #endif
-			// << "evecs = " << endl << evecs << endl;
-		      }
+			      // << "evecs = " << endl << evecs << endl;
+			    }
 
-		    // 			for(int k=0; k<elmat.Height(); k++)
-		    // 			  if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
-		    // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
+			  // 			for(int k=0; k<elmat.Height(); k++)
+			  // 			  if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
+			  // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
 
-		    AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
-		  }//end for (numintegrators)
-		}//end for nse		    
-	      }//end of parallel
-	      cout << "\rassemble facet surface element " << nse << "/" << nse << endl;	  
-	    }//end of hasskeletonbound
+			  AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+			}//end for (numintegrators)
+		    }//end for nse		    
+		}//end of parallel
+		cout << "\rassemble facet surface element " << nse << "/" << nse << endl;	  
+	      }//end of hasskeletonbound
             if (hasskeletoninner)
-		{
+	      {
                 int cnt = 0;
 #pragma omp parallel 
                 {
@@ -1379,7 +1418,7 @@ namespace ngcomp
 		      dnums=dnums1;
                       fespace.GetDofNrs (el2, dnums2);
 		      for (int d=0; d < dnums2.Size(); d++)
-			  dnums.Append(dnums2[d]);
+			dnums.Append(dnums2[d]);
 		      ma.GetElVertices (el1, vnums1);
 		      ma.GetElVertices (el2, vnums2);
                       if(fel1.GetNDof() != dnums1.Size() || ((elnums.Size()>1) && (fel2.GetNDof() != dnums2.Size() )))
@@ -1454,7 +1493,7 @@ namespace ngcomp
                 }
                 cout << "\rassemble inner facet element " << nf << "/" << nf << endl;	  
               }
-	      ma.SetThreadPercentage ( 100.0 );
+	    ma.SetThreadPercentage ( 100.0 );
 
             if(NumIndependentIntegrators() > 0)
               {
