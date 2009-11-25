@@ -1,7 +1,6 @@
 ########################################################################################
 # solve poisson equation
 #    - eps Delta u = f in Omega,  u=g on Gamma0
-# by means of a mixed-hybrid method (see demo_habrid.cpp for details) 
 ########################################################################################
 
 
