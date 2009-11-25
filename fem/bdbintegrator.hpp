@@ -289,7 +289,7 @@ public:
         eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
 	*/
 	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
-	
+
         int i = 0;
         for (int i1 = 0; i1 < ir.GetNIP() / BLOCK; i1++)
           {

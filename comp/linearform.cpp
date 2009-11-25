@@ -300,8 +300,8 @@ namespace ngcomp
 		      }
 		    }
 		}
-		cout << "\rassemble surface element " << nse << "/" << nse << endl;	  
 	      }//end of parallel
+	    cout << "\rassemble surface element " << nse << "/" << nse << endl;	  
 	    }//end of hasbound
 	   
 	if(hasskeletoninner)
