@@ -77,7 +77,7 @@ namespace ngcomp
 
 
 
-  void GridFunction :: Visualize(const string & name)
+  void GridFunction :: Visualize(const string & given_name)
   {
     if (!visual) return;
 
@@ -109,7 +109,7 @@ namespace ngcomp
 	Ng_SolutionData soldata;
 	Ng_InitSolutionData (&soldata);
 	
-	soldata.name = const_cast<char*> (GetName().c_str());
+	soldata.name = given_name.c_str();
 	soldata.data = 0;
 	soldata.components = vis->GetComponents();
 	soldata.iscomplex = vis->IsComplex();

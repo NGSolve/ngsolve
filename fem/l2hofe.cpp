@@ -32,40 +32,6 @@ namespace ngfem
 
 
 
-  /*
-  template <ELEMENT_TYPE ET>
-  void T_L2HighOrderFiniteElement<ET> :: 
-  CalcShape (const IntegrationPoint & ip, 
-             FlatVector<> shape) const
-  {
-    double pt[DIM];
-    for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-    static_cast<const L2HighOrderFE<ET>*> (this) -> T_CalcShape (pt, shape); 
-  }
-
-  template <ELEMENT_TYPE ET>
-  void T_L2HighOrderFiniteElement<ET> :: 
-  CalcDShape (const IntegrationPoint & ip, 
-              FlatMatrixFixWidth<DIM> dshape) const
-  {
-    AutoDiff<DIM> adp[DIM];
-    for (int i = 0; i < DIM; i++)
-      adp[i] = AutoDiff<DIM> (ip(i), i);
-
-    ArrayMem<AutoDiff<DIM>,40> sds(ndof);
-    static_cast<const L2HighOrderFE<ET>*> (this) -> T_CalcShape (adp, sds);
-
-    for (int i = 0; i < ndof; i++)
-      for (int j = 0; j < DIM; j++)
-	dshape(i,j) = sds[i].DValue(j);
-  }
-  */
-
-
-
-
-
-
 
   template <ELEMENT_TYPE ET>
   void T_L2HighOrderFiniteElement<ET> :: 
