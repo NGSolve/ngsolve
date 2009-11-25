@@ -2201,18 +2201,25 @@ namespace ngcomp
       {
         int ne = ma.GetNE();
       
+	bool hasbound = false;
+	bool hasinner = false;
+	bool hasskeletonbound = false;
+	bool hasskeletoninner = false;
 
-        int hasbound = 0;
-        int hasinner = 0;
-
-        for (int j = 0; j < NumIntegrators(); j++)
-          {
+	for (int j = 0; j < NumIntegrators(); j++)
+	  {
             const BilinearFormIntegrator & bfi = *GetIntegrator(j);
-            if (bfi.BoundaryForm())
-              hasbound = 1;
-            else
-              hasinner = 1;
-          }
+	    if (bfi.BoundaryForm())
+	      if (bfi.SkeletonForm())
+		hasskeletonbound = true;
+	      else
+		hasbound = true;
+	    else
+	      if (bfi.SkeletonForm())
+		hasskeletoninner = true;
+	      else
+		hasinner = true;
+	  }
 
         bool done = false;
         int atempt = 0;
@@ -2269,6 +2276,9 @@ namespace ngcomp
                       ApplyElementMatrix(x,y,val,dnums,eltrans,i,1,cnt,lh,&fel);
                     }
 			
+		if (hasskeletonbound||hasskeletoninner)
+		  throw Exception ("No BilinearFormApplication-Implementation for Facet-Integrators yet");
+		  
                 lh.CleanUp();
                 for (int i = 0; i < fespace.specialelements.Size(); i++)
                   {
@@ -2843,6 +2853,7 @@ namespace ngcomp
           {
             BilinearFormIntegrator & bfi = *this->parts[j];
 	    
+            if (bfi.SkeletonForm()) continue;
             if (type == 0 && bfi.BoundaryForm()) continue;
             if (type == 0 && !bfi.DefinedOn (this->ma.GetElIndex (elnum))) continue;
             if (type == 1 && !bfi.BoundaryForm()) continue;
@@ -3181,6 +3192,7 @@ namespace ngcomp
           {
             BilinearFormIntegrator & bfi = *this->parts[j];
 	    
+            if (bfi.SkeletonForm()) continue;
             if (type == 0 && bfi.BoundaryForm()) continue;
             if (type == 0 && !bfi.DefinedOn (this->ma.GetElIndex (elnum))) continue;
             if (type == 1 && !bfi.BoundaryForm()) continue;
@@ -3424,7 +3436,7 @@ namespace ngcomp
         for (int j = 0; j < this->NumIntegrators(); j++)
           {
             BilinearFormIntegrator & bfi = *this->parts[j];
-	    
+            if (bfi.SkeletonForm()) continue;
             if (type == 0 && bfi.BoundaryForm()) continue;
             if (type == 0 && !bfi.DefinedOn (this->ma.GetElIndex (elnum))) continue;
             if (type == 1 && !bfi.BoundaryForm()) continue;

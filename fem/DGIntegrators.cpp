@@ -12,7 +12,6 @@ namespace ngfem
       DG for scalar Laplace
       //TODO: Convection-Integrators: volume term integrator in B1DB2-Form ? etc..)
       //TODO: find out why bilinearform -symmetric is not working correctly
-      //TODO: ma.GetFacetElements(i,elnums) does not work after refinement?!
       //TODO: Gridfunctioncoefficientfunction for conv-bilinearform
   */
   
