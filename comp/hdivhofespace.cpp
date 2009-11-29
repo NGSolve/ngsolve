@@ -1044,6 +1044,7 @@ namespace ngcomp
   //
   //  0) Jacobi
   //  1) 2d-Vertex / 3d-Edge blocks + F + I  --- default
+  //  2) 2d: edge by edge,  3d: face by face
 
   Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
@@ -1087,6 +1088,19 @@ namespace ngcomp
 	  }
 	break;
 
+      case 2:
+	if( dim == 2 )
+	  {
+	    cout << "Edge blocks" << endl;
+	    ncnt = ned ;
+	  }
+	else
+	  {
+	    cout << "Face blocks" << endl;
+	    ncnt = nfa;
+	  }
+	break;
+
       }
 
 
@@ -1106,7 +1120,7 @@ namespace ngcomp
 	for(int i=0; i<ndof; i++ )
           cnt[i] = 1;
 	break;
-
+	
         //      1 ..... vertex/edge blocks -- E -- I
       case 1:   
 	if( dim == 2 )
@@ -1169,8 +1183,18 @@ namespace ngcomp
 	    
 	  }
 	break;
+      case 2:
+	if( dim == 2 )
+	  {
+	    cerr << "not implemented" << endl;
+	  }
 
-
+	else
+	  {
+	    for(int i=0; i<nfa; i++)
+	      if( fine_facet[i] )
+		cnt[i] += first_facet_dof[i+1] - first_facet_dof[i];
+	  }
       }
 
 
@@ -1279,10 +1303,28 @@ namespace ngcomp
 	  }
 	break;
 
-        //      2 ..... div-free p, loAFW - edges - faces - diag
+      case 2:
+	
+	if ( dim == 2 )
+	  {
+	    cout << "not implemented" << endl;
+	  }
+	
+	else // 3d
 
+	  {
+	    for (int i = 0; i < nfa; i++ )
+	      {
+		first = first_facet_dof[i];
+		int last = first_facet_dof[i+1];
+		for ( int l = first; l < last; l++ )
+		  table[i] [cnt[i]++] = l;
+	      }
+	  }
 	break;
       }
+    
+
 
     //  *testout << table << endl;
     // cout << "sucess " << endl;

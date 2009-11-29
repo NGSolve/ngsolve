@@ -172,6 +172,9 @@ public:
     {
       return *pre;
     }
+
+    virtual const char * ClassName() const
+    { return "Wire-basket Preconditioner"; }
   };
 
 
@@ -184,6 +187,7 @@ public:
     const S_BilinearForm<SCAL> * bfa;
     BaseMatrix * pre;
     string inversetype;
+    bool refelement;
   public:
     BDDCPreconditioner (const PDE * pde, const Flags & aflags,
 			const std::string aname = "bddcprecond");
@@ -207,6 +211,9 @@ public:
     {
       return *pre;
     }
+
+    virtual const char * ClassName() const
+    { return "BDDC Preconditioner"; }
   };
 
 

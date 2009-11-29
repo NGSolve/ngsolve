@@ -793,16 +793,16 @@ namespace ngcomp
 				      // diagonal scaling
 				      Vector<> lami(elmat.Height());
 				      Matrix<> evecs(elmat.Height());
-
+				      
 				      for (int j = 0; j < elmat.Height(); j++)
-				      // lami(j) = 1.0 / sqrt (ReduceToReal (elmat(j,j)));
-				      lami(j) = 1.0 / sqrt (ConvertTo<double> (elmat(j,j)));
+					// lami(j) = 1.0 / sqrt (ReduceToReal (elmat(j,j)));
+					lami(j) = 1.0 / sqrt (ConvertTo<double> (elmat(j,j)));
 				      for (int j = 0; j < elmat.Height(); j++)
-				      for (int k = 0; k < elmat.Width(); k++)
-				      elmat(j,k) *= lami(j) * lami(k);
+					for (int k = 0; k < elmat.Width(); k++)
+					  elmat(j,k) *= lami(j) * lami(k);
 				      CalcEigenSystem (elmat, lami, evecs);
 				      (*testout) << "after diag scaling, lami = " << endl << lami << endl
-				      << "evecs = " << endl << evecs << endl;
+						 << "evecs = " << endl << evecs << endl;
                                   
 				      (*testout) << "ev * elmat * ev^T = " << evecs * elmat * Trans (evecs) << endl;
 				      */
@@ -872,6 +872,11 @@ namespace ngcomp
 
 
 			      fel.GetInternalDofs(idofs1);
+			      if (printelmat) 
+				{
+				  *testout << "eliminate internal" << endl;
+				  *testout << "idofs = " << idofs << endl;
+				}
 			      if (idofs1.Size())
 				{
 				  HeapReset hr (lh);
@@ -898,7 +903,7 @@ namespace ngcomp
 
 				  if (printelmat)
 				    {
-				      (*testout) << "idofs = " << endl << idofs << endl;
+				      // (*testout) << "idofs = " << endl << idofs << endl;
 				      (*testout) << "odofs = " << endl << odofs << endl;
 				    }
 

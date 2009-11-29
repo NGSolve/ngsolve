@@ -470,6 +470,12 @@ namespace ngcomp
       }
   }
 
+
+  void VectorFacetFESpace :: GetInnerDofNrs ( int felnr, Array<int> & dnums ) const
+  {
+    dnums.SetSize(0);
+  }
+
    int VectorFacetFESpace :: GetNFacetDofs ( int felnr ) const
   {
     // number of low_order_dofs = dimension - 1
@@ -504,8 +510,6 @@ namespace ngcomp
     dnums.Append(elnum);
     for (int j=first_facet_dof[elnum]; j<first_facet_dof[elnum+1]; j++)
       dnums.Append(j);
-
-
   }
 
    void VectorFacetFESpace :: GetFaceDofNrs (int felnr, Array<int> & dnums) const
