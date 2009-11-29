@@ -542,6 +542,7 @@ namespace ngfem
               }
           }
       }
+    *testout << "hdiv - getinternal dofs: base = " << base << ", nodf = " << ndof << endl;
     idofs += IntRange (base, ndof);
   }
 

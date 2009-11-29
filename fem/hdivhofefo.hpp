@@ -97,6 +97,12 @@ namespace ngfem
       ndof += (ho_div_free) ? ORDER*(ORDER-1)/2 : ORDER*ORDER-1;
     }
 
+    virtual void GetInternalDofs (Array<int> & idofs) const
+    {
+      idofs.SetSize(0);
+      idofs += IntRange (3*(ORDER+1), ndof);
+    }
+
 
 
     template<typename Tx, typename TFA>  

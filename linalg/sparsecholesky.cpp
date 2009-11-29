@@ -66,7 +66,7 @@ namespace ngla
 	    {
 	      int col = row[j];
 	      if (col <= i)
-		if ( ((*cluster)[i] == (*cluster)[col] && (*cluster)[i]) ||
+		if ( ( ((*cluster)[i] == (*cluster)[col]) && (*cluster)[i]) ||
 		     i == col )
 		  mdo->AddEdge (i, col);
 	    }
@@ -75,6 +75,7 @@ namespace ngla
     if (printstat)
       cout << "start ordering" << endl;
     
+    // mdo -> PrintCliques ();
     mdo->Order();
     
     endtime = clock();

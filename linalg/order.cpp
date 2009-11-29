@@ -48,6 +48,7 @@ namespace ngla
 
   void MinimumDegreeOrdering :: AddEdge (int v1, int v2)
   {
+    // *testout << "Add edge " << v1 << " - " << v2 << endl;
     if (v1 == v2) return;
 
     CliqueEl *p1, *p2;
@@ -159,15 +160,18 @@ namespace ngla
 
   void MinimumDegreeOrdering :: EliminateMasterVertex (int v)
   {
-    // (*testout) << "Eliminate Vertex " << v << ", master = " << master << endl;
+    // (*testout) << "Eliminate Vertex " << v  << endl;
     // (*testout) << "numcliques = " << NumCliques (v)  << endl;
     //  cout << "eliminate vertex " << v << endl;
-    // PrintCliques();
 
+    /*
+    if (v == 174)
+      PrintCliques();
+    */
 
     // int numslaves = NumSlaves (v);
 
-
+    // *testout << "a" << endl;
 
     CliqueEl *p1, *p2, *p3, *p4, *newp;
 
@@ -258,6 +262,8 @@ namespace ngla
     while (p3 != newp);
     
     
+    // *testout << "b" << endl;
+
     // check all cliques of all members of new clique
     p3 = newp;
     do
@@ -357,6 +363,8 @@ namespace ngla
     // PrintCliques();
     }
 
+    // *testout << "c" << endl;
+
     // find connections
     p3 = newp;
     do
@@ -444,6 +452,8 @@ namespace ngla
       while (p3 != newp);      
     }
     
+    // *testout << "d" << endl;
+
 
     int cnt = NumSlaves(v);
     p3 = newp;
@@ -527,6 +537,7 @@ namespace ngla
 	    cliques[v3] = 0;
 	  }
       }
+    // *testout << "z" << endl;
   }
 
 
