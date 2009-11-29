@@ -3485,12 +3485,9 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     ArrayMem<int,500> hdnums;
     dnums.SetSize(0);
 
-    *testout << "getinnerdofs, compound" << endl;
-
     for (int i = 0; i < spaces.Size(); i++)
       {
 	spaces[i]->GetInnerDofNrs (elnr, hdnums);
-        *testout << "gerinnerdofs: " << hdnums << endl;
 	for (int j = 0; j < hdnums.Size(); j++)
 	  if (hdnums[j] != -1)
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
@@ -3514,7 +3511,6 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     ArrayMem<const FiniteElement*, 10> fea(spaces.Size());
     for (int i = 0; i < fea.Size(); i++)
       fea[i] = &spaces[i]->GetSFE(elnr, lh);
-    // void * mem = lh.Alloc (sizeof(CompoundFiniteElement));
     return *new (lh) CompoundFiniteElement (fea);
   }
 

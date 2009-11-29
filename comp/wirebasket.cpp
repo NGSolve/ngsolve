@@ -80,6 +80,9 @@ namespace ngcomp
   template <class SCAL>
   void ElementByElementMatrix<SCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static int timer = NgProfiler::CreateTimer ("EBE-matrix::MultAdd");
+    NgProfiler::RegionTimer reg (timer);
+
     int maxs = 0;
     for (int i = 0; i < dnums.Size(); i++)
       maxs = max2 (maxs, dnums[i].Size());
@@ -173,8 +176,8 @@ namespace ngcomp
       {
         dnums[elnr] = dn;
         elmats[elnr].AssignMemory (s, s, &mat(0,0));
-        *testout << "dnums = " << dnums[elnr] << endl;
-        *testout << "elmats[i] = " << elmats[elnr] << endl;
+        // *testout << "dnums = " << dnums[elnr] << endl;
+        // *testout << "elmats[i] = " << elmats[elnr] << endl;
       }
     /*
       else
@@ -211,15 +214,12 @@ namespace ngcomp
   template <class SCAL>
   void HO_BilinearForm<SCAL> :: AllocateMatrix ()
   {
-    cout << "alloc matrix" << endl;
-    cout << "symmetric = " << this->symmetric << endl;
-
     const FESpace & fespace = this->fespace;
 
     this->mats.Append (new ElementByElementMatrix<SCAL> (fespace.GetNDof(), this->ma.GetNE()+this->ma.GetNSE()));
 
 
-    cout << "generate inexact schur matrix" << endl;
+    // cout << "generate inexact schur matrix" << endl;
     // generate inexact schur matrix
 
     MatrixGraph * graph = 0;
@@ -327,7 +327,6 @@ namespace ngcomp
               }
           }
 
-        cout << "has graph table" << endl;
         // 	(*testout) << "face graph table: " << endl << fa2dof << endl;
         /*    
               for (int i = 0; i < ne; i++)
@@ -410,7 +409,6 @@ namespace ngcomp
           }
 
 
-        cout << "has graph table" << endl;
         // (*testout) << "face graph table: " << endl << fa2dof << endl;
         /*    
               for (int i = 0; i < ne; i++)
@@ -891,9 +889,10 @@ namespace ngcomp
     Array<int> restrict;
     Array<int> multiple;
     BaseMatrix * inv;
-
+    string inversetype;
+    BitArray * free_dofs;
   public:
-    BDDCMatrix (const HO_BilinearForm<double> & abfa)
+    BDDCMatrix (const HO_BilinearForm<double> & abfa, const string & inversetype)
       : bfa(abfa) 
     {
       LocalHeap lh(10000000);
@@ -914,15 +913,19 @@ namespace ngcomp
           fes.GetWireBasketDofNrs (i, lwbdofs);
           for (int j = 0; j < lwbdofs.Size(); j++)
             wbdofs[lwbdofs[j]] = 1;
+	  *testout << "dnums = " << endl << dnums << endl;
+	  *testout << "lwbdofs = " << endl << lwbdofs << endl;
+	  
         }
 
       Table<int> dcdofs(cnt);   // discontinuous dofs
 
       
 
-      int firstdcdof = 0;
-      for (int i = 0; i < wbdofs.Size(); i++)
-        if (wbdofs[i]) firstdcdof = i+1;
+      int firstdcdof = fes.GetNDof();
+      // for (int i = 0; i < wbdofs.Size(); i++)
+      // if (wbdofs[i]) firstdcdof = i+1;
+      int ndcdof = fes.GetNDof();
 
       for (int i = 0; i < ne; i++)
         {
@@ -932,15 +935,18 @@ namespace ngcomp
             {
               if (dnums[j] == -1) continue;
               if (wbdofs[dnums[j]]) continue;
-              dnums[j] = firstdcdof;
+              dnums[j] = ndcdof;
               firstdcdof++;
+	      ndcdof++;
             }
 
           for (int j = 0; j < dnums.Size(); j++)
             dcdofs[i][j] = dnums[j];
         }
 
-      restrict.SetSize(firstdcdof);
+      // *testout << "dcdofs = " << endl << dcdofs << endl;
+
+      restrict.SetSize(ndcdof);
       restrict = -1;
       for (int i = 0; i < ne; i++)
         {
@@ -953,16 +959,27 @@ namespace ngcomp
             }
         }
 
+      // *testout << "restrict = " << endl << restrict << endl;
+
       multiple.SetSize (fes.GetNDof());
       multiple = 0;
       for (int i = 0; i < restrict.Size(); i++)
         if (restrict[i] != -1)
           multiple[restrict[i]]++;
 
+
+      cout << "now build graph" << endl;
+
       MatrixGraph graph(firstdcdof, dcdofs, 1);
+
+      cout << "now allocate matrix" << endl;
+
       SparseMatrixSymmetric<double> dcmat(graph, 1);
-      dcmat.SetInverseType ("sparsecholesky");
+      dcmat = 0.0;
+      dcmat.SetInverseType (inversetype);
       
+      cout << "have matrix" << endl;
+
       for (int i = 0; i < ne; i++)
         {
           FlatMatrix<> elmat = 
@@ -974,8 +991,35 @@ namespace ngcomp
               if (dofs[k] != -1 && dofs[l] != -1 && dofs[k] >= dofs[l])
                 dcmat(dofs[k], dofs[l]) += elmat(k,l);
         }
+      
+      cout << "matrix filled" << endl;
 
-      inv = dcmat.InverseMatrix();
+      for (int i = 0; i < restrict.Size(); i++)
+	if (restrict[i] == -1)
+	  dcmat(i,i) = 1;
+
+      // *testout << "dcmat = " << endl << dcmat << endl;
+      
+
+
+      free_dofs = new BitArray (ndcdof);
+      free_dofs->Clear();
+      
+
+      for (int i = 0; i < ndcdof; i++)
+	{
+	  if (restrict[i] != -1)
+	    if (fes.GetFreeDofs()->Test(restrict[i]))
+	      free_dofs->Set(i);
+	}
+      
+
+
+      // *testout << "dcmat = " << endl << dcmat << endl;
+      // *testout << "restrict = " << endl << restrict << endl;
+      cout << "call inverse" << endl;
+      inv = dcmat.InverseMatrix(free_dofs);
+      cout << "has inverse" << endl;
     }
 
 
@@ -1026,11 +1070,18 @@ namespace ngcomp
     Array<Matrix<>*> inv_int_ref, extension_int_ref, extension_int_ref_trans;
     int ne, ndof;
     
+    string inversetype;
+    bool print;
+
   public:
-    BDDCMatrixRefElement (const S_BilinearForm<double> & abfa)
-      : bfa(abfa) 
+    BDDCMatrixRefElement (const S_BilinearForm<double> & abfa, const string & ainversetype)
+      : bfa(abfa), inversetype (ainversetype)
     {
+      print = true;
       LocalHeap lh(50000000);
+
+      if (print)
+	*testout << "BDDC - Constructor" << endl;
 
       const FESpace & fes = bfa.GetFESpace();
       const MeshAccess & ma = fes.GetMeshAccess();
@@ -1039,7 +1090,8 @@ namespace ngcomp
       ndof = fes.GetNDof();
       Array<int> cnt(ne), cntwb(ne), cntdc(ne), cntinternal(ne), cntexternal(ne);
 
-      Array<int> gwbdofs(ndof), wbdnums, dnums, extdnums, dcdnums, vnums;
+      Array<int> gwbdofs(ndof);
+      Array<int> wbdnums, dnums, extdnums, dcdnums, vnums;
       gwbdofs = 0;
 
       for (int i = 0; i < ne; i++)
@@ -1058,7 +1110,15 @@ namespace ngcomp
             gwbdofs[wbdnums[j]] = 1;
         }
 
-      Table<int> dcdofnrs(cnt);   // discontinuous dofs
+      if (print)
+	{
+	  *testout << "Glocal wirebasket - dofs:" << endl;
+	  *testout << "ndof = " << ndof << endl;
+	  *testout << gwbdofs << endl;
+	}
+
+      // Table<int> dcdofnrs(cnt);   // discontinuous dofs
+      Table<int> dcdofnrs(cntexternal);   // discontinuous dofs
 
       wbdofs = new Table<int>(cntwb);
       dcdofs = new Table<int>(cntdc);
@@ -1073,8 +1133,13 @@ namespace ngcomp
       int totdofs  = fes.GetNDof();
       for (int i = 0; i < ne; i++)
         {
+	  *testout << "element " << i << endl;
+
           fes.GetDofNrs (i, dnums);
           fes.GetExternalDofNrs (i, extdnums);
+
+	  *testout << "dnums = " << endl << dnums << endl;
+	  *testout << "ext dnums = " << endl << extdnums << endl;
 
 	  int nint = 0, next = 0;
 
@@ -1098,13 +1163,28 @@ namespace ngcomp
 
           for (int j = 0; j < extdnums.Size(); j++)
             {
+	      if (extdnums[j] == -1)
+		dcdnums[j] = -1;
+	      else
+		{
+		  if (gwbdofs[extdnums[j]])
+		    dcdnums[j] = extdnums[j];
+		  else
+		    {
+		      dcdnums[j] = totdofs;
+		      totdofs++;
+		    }
+		}
+	      /*
               dcdnums[j] = extdnums[j];
               if (dcdnums[j] == -1) continue;
               if (gwbdofs[dcdnums[j]]) continue;
               dcdnums[j] = totdofs;
               totdofs++;
+	      */
             }
 
+	  *testout << "dcdnums = " << endl << dcdnums << endl;
 
           int wbi = 0, dci = 0;
           for (int j = 0; j < extdnums.Size(); j++)
@@ -1128,13 +1208,21 @@ namespace ngcomp
             dcdofnrs[i][j] = dcdnums[j];
         }
 
+
+      if (print)
+	{
+	  *testout << "dcdofnrs = " << endl;
+	  *testout << dcdofnrs << endl;
+	}
+
       int firstdcdof = fes.GetNDof();      
       
       MatrixGraph graph(firstdcdof, *globwbdofs, 1);
       SparseMatrixSymmetric<double> dcmat(graph, 1);
+      dcmat = 0.0;
       // dcmat.SetInverseType ("sparsecholesky");
-      dcmat.SetInverseType ("pardisospd");
-
+      dcmat.SetInverseType (inversetype);
+      *testout << "dcmat, init = " << dcmat << endl;
 
       elclassnr.SetSize(ne);
 
@@ -1179,6 +1267,9 @@ namespace ngcomp
 
           cout << "assemble class " << classnr << endl;
 
+	  if (print)
+	    *testout << "assemble class " << classnr << endl;
+
           fes.GetDofNrs (i, dnums);
           fes.GetExternalDofNrs (i, extdnums);
 	  
@@ -1192,10 +1283,13 @@ namespace ngcomp
 
           for (int j = 0; j < bfa.NumIntegrators(); j++)
             {
+	      if (bfa.GetIntegrator(j) -> BoundaryForm()) continue;
               bfa.GetIntegrator(j)->AssembleElementMatrix (fel, eltrans, partelmat, lh);
               elmat += partelmat;
             }
 
+	  if (print)
+	    *testout << "elmat = " << endl << elmat << endl;
 	  
           int nwb = (*wbdofs)[i].Size();
           int ndc = (*dcdofs)[i].Size();
@@ -1221,10 +1315,17 @@ namespace ngcomp
             for (int k = 0; k < nint; k++)
               matii(j,k) = elmat((*internaldofs)[i][j], (*internaldofs)[i][k]);
 
+
+	  *testout << "matee = " << endl << matee << endl;
+	  *testout << "matie = " << endl << matie << endl;
+	  *testout << "matii = " << endl << matii << endl;
+
           LapackInverse (matii);
           extie = matii * matie;
           matee -= Trans (matie) * extie;
 	  
+
+	  *testout << "schur-ext = " << endl << matee << endl;
 
           Matrix<> matwbwb(nwb);
           Matrix<> matdcwb(ndc, nwb);
@@ -1245,6 +1346,7 @@ namespace ngcomp
           extdcwb = matdcdc * matdcwb;
           matwbwb -= Trans (matdcwb) * extdcwb;
 
+	  *testout << "schur-wb = " << endl << matwbwb << endl;
           
 	  invdc_ref[classnr] = new Matrix<> (ndc, ndc);
 	  extwb_ref[classnr] = new Matrix<> (ndc, nwb);
@@ -1274,6 +1376,11 @@ namespace ngcomp
                 dcmat(dofs[k], dofs[l]) += matwbwb(k,l);
         }
 
+      if (print)
+	*testout << "disconnected matrix: " << endl 
+		 << dcmat << endl;
+
+
       restrict.SetSize(totdofs);
       restrict = -1;
       for (int i = 0; i < ne; i++)
@@ -1298,7 +1405,17 @@ namespace ngcomp
         if (gwbdofs[i] == 0)
           dcmat(i,i) = 1;
 
-      inv = dcmat.InverseMatrix();
+
+      const BitArray & free_dofs = *fes.GetFreeDofs();
+      for (int i = 0; i < restrict.Size(); i++)
+	if (restrict[i] != -1 && !free_dofs.Test(restrict[i]))
+	  restrict[i] = -1;
+
+
+      cout << "call inverse, type = " << inversetype << endl;
+      cout << "dim = " << dcmat.Height() << endl;
+      inv = dcmat.InverseMatrix(fes.GetFreeDofs());
+      cout << "complete" << endl;
     }
 
 
@@ -1666,6 +1783,7 @@ namespace ngcomp
   {
     bfa = dynamic_cast<const S_BilinearForm<SCAL>*>(pde->GetBilinearForm (aflags.GetStringFlag ("bilinearform", NULL)));
     inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
+    refelement = flags.GetDefineFlag("refelement");
   }
 
 
@@ -1674,8 +1792,10 @@ namespace ngcomp
   Update ()
   {
     cout << "update bddc" << endl;
-    // pre = new BDDCMatrix(*bfa);
-    pre = new BDDCMatrixRefElement(*bfa);
+    if (refelement)
+      pre = new BDDCMatrixRefElement(*bfa, inversetype);
+    else
+      pre = new BDDCMatrix(dynamic_cast<const HO_BilinearForm<double>&> (*bfa), inversetype);
 
     if (test) Test();
     
