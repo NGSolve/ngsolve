@@ -227,9 +227,25 @@ namespace ngbla
 
     /// allocate matrix of size ah * ah
     Matrix (int ah) : FlatMatrix<T> (ah, new T[ah*ah]) { ; }
-
+    
     /// allocate matrix of size ah * aw
     Matrix (int ah, int aw) : FlatMatrix<T> (ah, aw, new T[ah*aw]) { ; }
+
+    /// allocate and copy matrix  
+    Matrix (const Matrix & m2) 
+      : FlatMatrix<T> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
+    {
+      CMCPMatExpr<FlatMatrix<T> >::operator= (m2);
+    }
+
+    /// allocate and compute 
+    template<typename TB>
+    Matrix (const Expr<TB> & m2) 
+      : FlatMatrix<T> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
+    {
+      CMCPMatExpr<FlatMatrix<T> >::operator= (m2);
+    }
+
 
     /// delete memory
     ~Matrix() { delete [] this->data; }

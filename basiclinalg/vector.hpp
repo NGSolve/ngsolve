@@ -90,32 +90,12 @@ namespace ngbla
       return *this;
     }
 
-    /*
-    /// copy vector. sizes must match
-    const FlatVector & operator= (const FlatVector & v)
-    {
-      for (int i = 0; i < s; i++)
-	data[i] = v(i);
-      return *this;
-    }
-    */
-
     /// evaluate matrix expression
     template<typename TB>
     const FlatVector & operator= (const Expr<TB> & v) const
     {
       return CMCPMatExpr<FlatVector>::operator= (v);
     }
-
-    /*
-      template <int S>
-      const FlatVector & operator= (const Vec<S,TSCAL> & v) const
-      { 
-      for (int i = 0; i < S; i++)
-      data[i] = v(i);
-      return *this;
-      }
-    */
 
     /// assign constant value
     const FlatVector & operator= (TSCAL scal) const
@@ -137,19 +117,8 @@ namespace ngbla
       return *this;
     }
 
-    /*
-   /// element access
-   TELEM & operator() (int i) 
-   {
-   #ifdef CHECK_RANGE
-   CheckVecRange(s,i);
-   #endif
-   return data[i]; 
-   }
-    */
-
     /// constant element access
-    /* const */ TELEM & operator() (int i) const
+    TELEM & operator() (int i) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -165,27 +134,6 @@ namespace ngbla
 #endif
       return data[i]; 
     }
-    /*
-   /// element access. index j is ignored
-   TELEM & operator() (int i, int j) 
-   {
-   #ifdef CHECK_RANGE 
-   CheckVecRange(s,i);
-   #endif
-   return data[i]; 
-   }
-    */
-  
-    /*
-   /// element access
-   TELEM & operator[] (int i) 
-   {
-   #ifdef CHECK_RANGE
-   CheckVecRange(s,i);
-   #endif
-   return data[i]; 
-   }
-    */
 
     /// constant element access
     TELEM & operator[] (int i) const
@@ -196,7 +144,6 @@ namespace ngbla
       return data[i]; 
     }
 
-
     // shape functions had a problem with icc v9.1
     const CArray<T> Addr(int i) const
     {
@@ -204,16 +151,12 @@ namespace ngbla
     }
 
     /*
-      T * const  Addr (int i) const    // const not respected by icc ??? (wer war das ?)
+      T * const  Addr (int i) const    // const not respected by icc ???
       {
       return data+i;
       }
     */
 
-
-    /// sub-vector of size next-first, starting at first
-    // const FlatVector<T> Range(int first, int next)
-    // { return FlatVector<T> (next-first, data+first); }
     /// sub-vector of size next-first, starting at first
     const FlatVector<T> Range(int first, int next) const
     { return FlatVector<T> (next-first, data+first); }
@@ -245,7 +188,6 @@ namespace ngbla
     void * Data () { return static_cast<void*>(data); }
 
 
-
     // new for SysVectors:
     typedef FlatVector<T> TV_COL;
     typedef double TV_ROW;
@@ -253,7 +195,7 @@ namespace ngbla
     enum { WIDTH = 1 };
   };
 
-
+  
 
   /**
      A Vector class with memory allocation/deallocation
@@ -269,6 +211,23 @@ namespace ngbla
 
     /// allocate vector
     explicit Vector (int as) : FlatVector<T> (as, new T[as]) { ; }
+
+
+    /// allocate and copy matrix  
+    Vector (const Vector & v2) 
+      : FlatVector<T> (v2.Size(), new T[v2.Size()]) 
+    {
+      FlatVector<T>::operator= (v2);
+    }
+    
+    /// allocate and compute 
+    template<typename TB>
+    Vector (const Expr<TB> & v2) 
+      : FlatVector<T> (v2.Height(), new T[v2.Height()]) 
+    {
+      FlatVector<T>::operator= (v2);
+    }
+
 
     /// deallocate vector
     ~Vector() { delete [] this->data; }

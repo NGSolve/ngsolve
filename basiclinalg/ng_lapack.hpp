@@ -388,6 +388,7 @@ namespace ngbla
   inline void LapackInverse (ngbla::FlatMatrix<double> a)
   {
     int m = a.Height();
+    if (m == 0) return;
     int n = a.Width();
     int lda = a.Width();
     int * ipiv = new int[n];
