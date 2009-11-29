@@ -681,8 +681,6 @@ namespace ngla
 		}
 	    }
 	}
-
-
   }
   
 

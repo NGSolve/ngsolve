@@ -60,7 +60,7 @@ namespace ngfem
       
       int nd_l2 = fel_l2.GetNDof();
       int nd_facet = fel_facet.GetNDof();
-      int nd = nd_l2 + nd_facet;
+      int nd = cfel.GetNDof();  
 
       int base_l2 = 0;
       int base_facet = base_l2+nd_l2;
@@ -181,6 +181,41 @@ namespace ngfem
 	    for (int j = 0; j < facetdofs.Size(); j++)
 	      elmat(facetdofs[i], facetdofs[j]) += comp_elmat(i,j);
         }
+
+
+      // the vertex glue
+      if (const_cast<CompoundFiniteElement&>(cfel).GetNComponents() == 3)
+	{
+	  const ScalarFiniteElement<D> & fel_h1 = 
+	    dynamic_cast<const ScalarFiniteElement<D> &> (cfel[2]);
+
+	  
+	  int nd_h1 = fel_h1.GetNDof();
+	  int base_h1 = nd_l2 + nd_facet;
+	  FlatVector<> vec_h1(nd_h1, lh);
+	  FlatVector<> b_vec(nd, lh);
+
+	  const POINT3D * verts = ElementTopology::GetVertices (eltype);
+	  int nv = ElementTopology::GetNVertices(eltype);
+
+	  double scale = elmat(0,0);
+
+	  for (int i = 0; i < nv; i++)
+	    {
+	      IntegrationPoint ip;
+	      for (int j = 0; j < D; j++)
+		ip(j) = verts[i][j];
+
+	      fel_l2.CalcShape(ip, mat_l2);
+	      fel_h1.CalcShape(ip, vec_h1);
+	      
+	      b_vec = 0.0;
+	      b_vec.Range(0, nd_l2) = mat_l2;
+	      b_vec.Range(base_h1, nd) = -vec_h1;
+
+	      elmat += scale * (b_vec * Trans(b_vec));
+	    }
+	}
     }
   };
 

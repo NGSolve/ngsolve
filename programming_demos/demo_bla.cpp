@@ -32,6 +32,7 @@ int main ()
     for (int j = 0; j < Width(m); j++)
       m(i,j) = i+j;
 
+  
   // do some math:
   v = m * u;
 

@@ -324,6 +324,40 @@ namespace ngfem
 
 
 
+  // compute J_j^{2i+alpha0, beta} (x),  for i+j <= n
+
+  template <class S, class T>
+  void DubinerJacobiPolynomials (int n, S x, int alpha0, int beta, T & values)
+  {
+    for (int i = 0; i <= n; i++)
+      JacobiPolynomial (n-i, x, alpha0+2*i, beta, values.Row(i));
+  }
+
+  
+  template <int n, int i, int alpha0, int beta>
+  class DubinerJacobiPolynomialsFO
+  {
+  public:
+    template <class S, class T>
+    static void Eval (S x, T & values)
+    {
+    DubinerJacobiPolynomialsFO<n, i-1, alpha0, beta>::Eval (x, values);
+    JacobiPolynomialFO<n-i, alpha0+2*i, beta>::Eval (x, values.Row(i));
+    }
+  };
+  
+  template <int n, int alpha0, int beta>
+  class DubinerJacobiPolynomialsFO<n, -1, alpha0, beta>
+  {
+  public:
+  template <class S, class T>
+  static void Eval (S x, T & values)
+    { ; }
+  };
+  
+  
+  
+
 
 
 

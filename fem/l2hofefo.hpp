@@ -55,6 +55,13 @@ namespace ngfem
       eltype = ET;
       order = ORDER;
     }
+
+    virtual void GetInternalDofs (Array<int> & idofs) const
+    {
+      idofs.SetSize(0);
+      idofs += IntRange (0, ndof);
+    }
+
   };
 
 
@@ -91,16 +98,17 @@ namespace ngfem
       Tx y = lami[fav[1]];
       Tx l3 = lami[fav[2]];
       
-      Vec<ORDER+1, Tx> polx, poly;
-      
+      Vec<ORDER+1, Tx> polx;
+      Mat<ORDER+1, ORDER+1, Tx> polsy;
+
       LegendrePolynomialFO<ORDER>::EvalScaled (x-l3, 1-y, polx);
-      LegendrePolynomialFO<ORDER>::Eval (2*y-1, poly);
+      DubinerJacobiPolynomialsFO<ORDER, ORDER, 1,0>::Eval (2*y-1, polsy);
       
       for (int i = 0, ii = 0; i <= ORDER; i++)
 	{
 	  // JacobiPolynomial (n-i, 2*y-1, 2*i+1, 0, poly);
 	  for (int j = 0; j <= ORDER-i; j++)
-	    shape[ii++] = polx[i] * poly[j];
+	    shape[ii++] = polx[i] * polsy(i,j);
 	}
     }
 
