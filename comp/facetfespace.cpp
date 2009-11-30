@@ -993,7 +993,17 @@ namespace ngcomp
       spaces[1] = new FacetFESpace (ma, facetflags);        
 
       Flags h1flags(flags);
-      h1flags.SetFlag ("order", 1);
+      if (ma.GetDimension() == 2)
+	{
+	  h1flags.SetFlag ("order", 1);
+	}
+      else
+	{
+	  h1flags.SetFlag ("order", order);
+	  h1flags.SetFlag ("orderedge", order);
+	  h1flags.SetFlag ("orderinner", 1);
+	  h1flags.SetFlag ("orderface", 1);
+	}
       spaces.Append (new H1HighOrderFESpace (ma, h1flags));        
 
       HybridDGFESpace * fes = new HybridDGFESpace (ma, spaces, flags);
