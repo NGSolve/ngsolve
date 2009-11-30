@@ -202,7 +202,12 @@ namespace ngfem
 		      void * precomputed,
 		      LocalHeap & locheap) const
   {
-    cout << "call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
+    static int cnt = 0;
+    if (cnt < 10)
+      {
+	cout << "call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
+	cnt++;
+      }
     FlatMatrix<double> mat(elx.Size(), locheap);
     AssembleElementMatrix (fel, eltrans, mat, locheap);
     ely = mat * elx;
