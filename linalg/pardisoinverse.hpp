@@ -24,7 +24,12 @@ namespace ngla
   {
     int height, nze, entrysize;
 
+#ifdef USE_PARDISO400    
+    //CL: is this also working on 32-bit architectures?
+    long int pt[128];
+#else
     int pt[128];
+#endif
     int hparams[64];
     int * rowstart, * indices;
     typename mat_traits<TM>::TSCAL * matrix;

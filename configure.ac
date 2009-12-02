@@ -49,11 +49,15 @@ AC_ARG_ENABLE([pardiso],
 #        [AC_SUBST([PARDISO_LIBS], ["-lpardiso_GNU42_EM64T_INT64_P -lgfortran"])]
         )
 
+AC_ARG_ENABLE([pardiso4],
+        [  --enable-pardiso4           enable sparse direct solver pardiso],          
+        [AC_SUBST([PARDISO_INCLUDES], ["$PARDISO_INCLUDES -DUSE_PARDISO400"])]
+        )
 
 AC_ARG_WITH([pardiso],
         [  --with-pardiso=libpardiso.so  enable sparse direct solver pardiso],          
-        [AC_SUBST([PARDISO_INCLUDES], ["-DUSE_PARDISO"])]
-        [AC_SUBST([PARDISO_LIBS], ["$withval -llapack"])]
+        [AC_SUBST([PARDISO_INCLUDES], ["$PARDISO_INCLUDES -DUSE_PARDISO"])]
+        [AC_SUBST([PARDISO_LIBS], ["$withval -llapack -gfortran"])]
 #        [AC_SUBST([PARDISO_LIBS], ["-lpardiso_GNU42_EM64T_INT64_P -lgfortran"])]
         )
 
