@@ -23,9 +23,13 @@ extern "C"
 
 #else
 
-  int F77_FUNC(pardisoinit)
+#ifdef USE_PARDISO400
+extern  int F77_FUNC(pardisoinit)
+    (void *, int *, int *, int *, double *, int *);
+#else
+extern  int F77_FUNC(pardisoinit)
     (void *, int *, int *);
-
+#endif
   int F77_FUNC(pardiso)
     (void * pt, int * maxfct, int * mnum, int * mtype, int * phase, int * n, 
      double * a, int * ia, int * ja, int * perm, int * nrhs, int * iparam, 
@@ -120,10 +124,15 @@ namespace ngla
     // 				   rowstart, indices, NULL, &nrhs, params, &msglevel,
     // 				   NULL, NULL, &error );
 #else
-
-    int retvalue = 
+    int retvalue;
+#ifdef USE_PARDISO400
+    double dparm[64];
+    int solver = 0;
+    F77_FUNC(pardisoinit) (pt,  &matrixtype, &solver, params, dparm, &retvalue); 
+#else
+    retvalue = 
       F77_FUNC(pardisoinit) (pt,  &matrixtype, params); 
-
+#endif
     // cout << "init success" << endl;
     // cout << "retvalue = " << retvalue << endl;
 #endif
@@ -557,7 +566,15 @@ namespace ngla
     
 
 
-
+#ifdef USE_PARDISO400
+    F77_FUNC(pardiso) ( const_cast<long int *>(pt), &maxfct, &mnum, const_cast<int *>(&matrixtype),
+			&phase, const_cast<int *>(&height), 
+			reinterpret_cast<double *>(matrix),
+			rowstart, indices,
+			NULL, &nrhs, params, &msglevel,
+			static_cast<double *>(fx.Data()), 
+			static_cast<double *>(fy.Data()), &error );
+#else
     F77_FUNC(pardiso) ( const_cast<int *>(pt), &maxfct, &mnum, const_cast<int *>(&matrixtype),
 			&phase, const_cast<int *>(&height), 
 			reinterpret_cast<double *>(matrix),
@@ -565,6 +582,7 @@ namespace ngla
 			NULL, &nrhs, params, &msglevel,
 			static_cast<double *>(fx.Data()), 
 			static_cast<double *>(fy.Data()), &error );
+#endif
     if ( error != 0 )
       cout << "Apply Inverse: PARDISO returned error " << error << "!" << endl;
 

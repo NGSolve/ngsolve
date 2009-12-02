@@ -614,6 +614,7 @@ namespace ngcomp
 	  
 	  if (dim > 1)
 	    {
+	      //CL: what about unsymmetric bilinearformintegrators?
 	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
 	      const BlockBilinearFormIntegrator & bbli = 
 		dynamic_cast<const BlockBilinearFormIntegrator&> (bli);
