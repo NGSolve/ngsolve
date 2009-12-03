@@ -647,7 +647,7 @@ namespace ngcomp
 	      {
 		actcase++;
 		int cnt = 0;
-
+		  
 		const Table<int> * element_coloring = &fespace.ElementColoring();
 		int ncolors = (element_coloring) ? element_coloring->Size() : 1;
 
