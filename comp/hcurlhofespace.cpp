@@ -903,7 +903,32 @@ namespace ngcomp
   }
 
   
- 
+  void HCurlHighOrderFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
+  {
+    ArrayMem<int,12> vnums, ednums;
+
+    dnums.SetSize(0);
+
+    ma.GetElEdges (elnr, ednums);
+
+    if (ma.GetDimension() == 2)
+      {
+        for (int i = 0; i < ednums.Size(); i++)
+          if (order_edge[ednums[i]] > 1)
+            dnums.Append (first_edge_dof[ednums[i]]);
+      }
+    else
+      {
+        for (int i = 0; i < ednums.Size(); i++)
+	  {
+	    dnums.Append(ednums[i]);
+	    for (int j = first_edge_dof[ednums[i]]; j < first_edge_dof[ednums[i]+1]; j++)
+	      dnums.Append (j);
+	  }
+      }
+  }
+
+  
 
   void HCurlHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {

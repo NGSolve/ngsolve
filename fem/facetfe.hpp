@@ -13,7 +13,7 @@ namespace ngfem
   /*
    * Facet Finite Elements
    */ 
-
+  
 
 
   template <int D>
@@ -48,6 +48,25 @@ namespace ngfem
     const ScalarFiniteElement<D-1> & GetFacetFE(int fnr) const { return *facets[fnr]; }
 
     virtual void ComputeNDof () = 0;
+  };
+
+
+
+
+  
+  
+  class EdgeVolumeFiniteElement : public FiniteElement
+  {
+  protected:
+    int vnums[8];
+  public:
+    EdgeVolumeFiniteElement (ELEMENT_TYPE aeltype, int order);
+    void SetVertexNumbers (FlatArray<int> & avnums)
+    {
+      for (int i = 0; i < avnums.Size(); i++)
+	vnums[i] = avnums[i];
+    }
+    void CalcEdgeShape(int enr, const IntegrationPoint & ip, FlatVector<> shape) const;
   };
 }
 

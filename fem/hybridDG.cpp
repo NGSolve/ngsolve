@@ -186,6 +186,9 @@ namespace ngfem
       // the vertex glue
       if (const_cast<CompoundFiniteElement&>(cfel).GetNComponents() == 3)
 	{
+	 
+	  if (D == 2)
+	    {
 	  const ScalarFiniteElement<D> & fel_h1 = 
 	    dynamic_cast<const ScalarFiniteElement<D> &> (cfel[2]);
 
@@ -193,9 +196,6 @@ namespace ngfem
 	  int base_h1 = nd_l2 + nd_facet;
 	  FlatVector<> vec_h1(nd_h1, lh);
 	  FlatVector<> b_vec(nd, lh);
-	 
-	  if (D == 2)
-	    {
 	      
 	      const POINT3D * verts = ElementTopology::GetVertices (eltype);
 	      int nv = ElementTopology::GetNVertices(eltype);
@@ -220,15 +220,28 @@ namespace ngfem
 	    }
 	  else
 	    {
+	      /*
+	      const ScalarFiniteElement<D> & fel_h1 = 
+		dynamic_cast<const ScalarFiniteElement<D> &> (cfel[2]);
+	      */
+	      const EdgeVolumeFiniteElement & fel_edge = 
+		dynamic_cast<const EdgeVolumeFiniteElement &> (cfel[2]);
+
+	      int nd_edge = fel_edge.GetNDof();
+	      int base_edge = nd_l2 + nd_facet;
+	      FlatVector<> vec_edge(nd_edge, lh);
+	      FlatVector<> b_vec(nd, lh);
+	      
+
+
 	      const POINT3D * verts = ElementTopology::GetVertices (eltype);
-	      // int nv = ElementTopology::GetNVertices(eltype);
 	      const EDGE * edges = ElementTopology::GetEdges (eltype);
 	      int ned = ElementTopology::GetNEdges(eltype);
 
 	      const IntegrationRule & ir1d = SelectIntegrationRule (ET_SEGM, 2 * fel_l2.Order());
 
 
-	      double scale = 10 * elmat(0,0);
+	      // double scale = 0.01*elmat(0,0);
 	      // *testout << "scale = " << scale << endl;
 	      for (int i = 0; i < ned; i++)
 		{
@@ -246,17 +259,20 @@ namespace ngfem
 		      IntegrationPoint ip (p(0), p(1), p(2), ir1d[k].Weight());
 		      SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
 		      
+		      Vec<3> tau = sip.GetJacobian() * (p2-p1);
+		      double h = L2Norm(tau);
+
 		      fel_l2.CalcShape(ip, mat_l2);
-		      fel_h1.CalcShape(ip, vec_h1);
+		      fel_edge.CalcEdgeShape(i, ip, vec_edge);
 		      
 		      // *testout << "p = " << p << ", vec_h1 = " << vec_h1 << endl;
 		      b_vec = 0.0;
 		      b_vec.Range(0, nd_l2) = mat_l2;
-		      b_vec.Range(base_h1, nd) = -vec_h1;
+		      b_vec.Range(base_edge, nd) = -vec_edge;
 		      
 		      // *testout << "bvec = " << b_vec << endl;
-
-		      elmat += scale * ir1d[k].Weight() * (b_vec * Trans(b_vec));
+		      // cout << "scale = " << scale << ", h = " << h << endl;
+		      elmat += h * ir1d[k].Weight() * (b_vec * Trans(b_vec));
 		    }
 		}
 	    }

@@ -964,7 +964,14 @@ namespace ngcomp
 				
 				      (*testout) << "EV of Schur complement:" << endl;
 #ifdef LAPACK
-				      LapackEigenSystem(a, lh);
+				      // LapackEigenSystem(a, lh);
+
+				      Matrix<SCAL> hmat(a.Height());
+				      Vector<SCAL> lami2(a.Height());
+				      hmat = a;
+				      LapackEigenValuesSymmetric (hmat, lami2);
+				      (*testout) << "lapack ev = " << lami2 << endl;
+
 #else
 				      Vector<> lami(a.Height());
 				      Matrix<> evecs(a.Height());
@@ -973,14 +980,6 @@ namespace ngcomp
 				      (*testout) << "lami = " << endl << lami << endl; // << "evecs = " << endl << evecs << endl;
 #endif
 				
-				
-				      /*
-					Matrix<SCAL> hmat(a.Height());
-					Vector<SCAL> lami2(a.Height());
-					hmat = a;
-					LapackEigenValuesSymmetric (hmat, lami2);
-					(*testout) << "lapack ev = " << lami2 << endl;
-				      */
 				    }
 
 
