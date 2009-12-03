@@ -588,6 +588,7 @@ void MeshAccess :: GetFaceEdges (int fnr, Array<int> & edges) const
 
 void MeshAccess :: GetFaceElements (int fnr, Array<int> & elnums) const
 {
+  /*
   int nel = GetNE();
   int faces[8];
   elnums.SetSize (0);
@@ -597,6 +598,22 @@ void MeshAccess :: GetFaceElements (int fnr, Array<int> & elnums) const
       for (int j = 0; j < nfa; j++)
 	if (faces[j]-1 == fnr)
 	  elnums.Append (i);
+    }
+  */
+  ArrayMem<int, 9> vnums;
+  GetFacePNums(fnr, vnums);
+
+  ArrayMem<int, 50> vels;
+  GetVertexElements (vnums[0], vels);
+
+  int faces[8];
+  elnums.SetSize (0);
+  for (int i = 0; i < vels.Size(); i++)
+    {
+      int nfa = Ng_GetElement_Faces (vels[i]+1, faces, 0);
+      for (int j = 0; j < nfa; j++)
+	if (faces[j]-1 == fnr)
+	  elnums.Append (vels[i]);
     }
 }
 

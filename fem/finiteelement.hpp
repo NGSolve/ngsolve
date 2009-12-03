@@ -131,7 +131,7 @@ namespace ngfem
     /// select i-th component
     const FiniteElement & operator[] (int i) const { return *fea[i]; }
     virtual void GetInternalDofs (Array<int> & idofs) const;
-    int GetNComponents() { return fea.Size(); }
+    int GetNComponents() const { return fea.Size(); }
   };
 
 

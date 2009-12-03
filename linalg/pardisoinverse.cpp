@@ -517,7 +517,6 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("Pardiso Solve");
     NgProfiler::RegionTimer reg (timer);
 
-
     FlatVector<TVX> fx = 
       dynamic_cast<T_BaseVector<TVX> &> (const_cast<BaseVector &> (x)).FV();
     FlatVector<TVX> fy = 

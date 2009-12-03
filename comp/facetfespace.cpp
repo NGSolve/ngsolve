@@ -331,9 +331,9 @@ namespace ngcomp
     ma.GetElVertices(elnr, vnums);
 
     /*
-    if (ma.GetDimension() == 2)
+      if (ma.GetDimension() == 2)
       ma.GetElEdges(elnr, fanums);
-    else
+      else
       ma.GetElFaces(elnr, fanums);
     */
     ma.GetElFacets (elnr, fanums);
@@ -460,9 +460,9 @@ namespace ngcomp
     
     ma.GetElFacets (elnr, fanums);
     /*
-    if(ma.GetDimension() == 3)
+      if(ma.GetDimension() == 3)
       ma.GetElFaces (elnr, fanums);
-    else // dim=2
+      else // dim=2
       ma.GetElEdges (elnr, fanums);
     */
 
@@ -514,10 +514,7 @@ namespace ngcomp
 
     dnums.SetSize(0);
     for (int i = 0; i < facets.Size(); i++)
-      {
-        dnums.Append (facets[i]);
-        // dnums.Append (first_facet_dof[facets[i]]);
-      }
+      dnums.Append (facets[i]);
   }
 
   // ------------------------------------------------------------------------
@@ -967,72 +964,194 @@ namespace ngcomp
 
 
 
-  class HybridDGFESpace : public CompoundFESpace
+
+
+
+  EdgeFESpace :: EdgeFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
+    : FESpace (ama, flags)
   {
-  public:
-    HybridDGFESpace (const MeshAccess & ama, 
+    name = "EdgeFESpace";
+  }
+
+  EdgeFESpace :: ~EdgeFESpace ()
+  {
+    ;
+  }
+
+  ///
+  FESpace * EdgeFESpace :: Create (const MeshAccess & ma, const Flags & flags)
+  {
+    return new EdgeFESpace (ma, flags, true);
+  }
+  ///
+  
+  void EdgeFESpace :: Update(LocalHeap & lh)
+  {
+    ned = ma.GetNEdges();
+    order_edge.SetSize (ned);
+    first_edge_dof.SetSize (ned+1);
+    
+    order_edge = order;
+    for (int i = 0; i <= ned; i++)
+      first_edge_dof[i] = (order+1)*i;
+
+    FinalizeUpdate (lh);
+  }
+
+
+  const FiniteElement & EdgeFESpace :: GetFE (int elnr, LocalHeap & lh) const
+  {
+    EdgeVolumeFiniteElement * fe3d = new (lh) EdgeVolumeFiniteElement (ET_TET, order);
+
+
+    ArrayMem<int, 12> vnums;
+    ma.GetElVertices(elnr, vnums);
+
+    fe3d -> SetVertexNumbers (vnums);
+    return *fe3d;
+  }
+
+
+  const FiniteElement & EdgeFESpace :: GetSFE (int selnr, LocalHeap & lh) const
+  {
+    EdgeVolumeFiniteElement * fe3d = new (lh) EdgeVolumeFiniteElement (ET_TRIG, order);
+
+    ArrayMem<int, 12> vnums;
+    ma.GetSElVertices(selnr, vnums);
+
+    fe3d -> SetVertexNumbers (vnums);
+    return *fe3d;
+  }
+
+
+  void EdgeFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  {
+    ArrayMem<int, 12> enums;
+    ma.GetElEdges(elnr, enums);
+
+    
+    dnums.SetSize(0);
+    for (int i = 0; i < enums.Size(); i++)
+      dnums += IntRange (first_edge_dof[enums[i]], first_edge_dof[enums[i]+1]);
+  }
+
+  void EdgeFESpace :: GetWireBasketDofNrs(int elnr, Array<int> & dnums) const
+  {
+    // GetDofNrs (elnr, dnums);
+
+    ArrayMem<int, 12> enums;
+    ma.GetElEdges(elnr, enums);
+    
+    dnums.SetSize(0);
+    for (int i = 0; i < enums.Size(); i++)
+      dnums += IntRange (first_edge_dof[enums[i]], first_edge_dof[enums[i]+1]);
+  }
+
+  void EdgeFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
+  {
+    ArrayMem<int, 12> enums;
+    ma.GetSElEdges(selnr, enums);
+    
+    dnums.SetSize(0);
+    for (int i = 0; i < enums.Size(); i++)
+      dnums += IntRange (first_edge_dof[enums[i]], first_edge_dof[enums[i]+1]);
+  }
+
+
+  void EdgeFESpace :: GetEdgeDofNrs (int ednum, Array<int> & dnums) const
+  {
+    dnums += IntRange (first_edge_dof[ednum], first_edge_dof[ednum+1]);
+  }
+
+  Table<int> * EdgeFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  {
+    return NULL;
+  }
+  
+  Array<int> * EdgeFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
+  {
+    return NULL;
+  }
+
+
+
+
+
+
+
+
+class HybridDGFESpace : public CompoundFESpace
+{
+public:
+  HybridDGFESpace (const MeshAccess & ama, 
                    const Array<const FESpace*> & aspaces,
                    const Flags & flags)
-      : CompoundFESpace (ama, aspaces, flags)
-    { }
+    : CompoundFESpace (ama, aspaces, flags)
+  { }
 
-    virtual ~HybridDGFESpace () { ; }
+  virtual ~HybridDGFESpace () { ; }
 
-    static FESpace * Create (const MeshAccess & ma, const Flags & flags)
-    {
-      Array<const FESpace*> spaces(2);
+  static FESpace * Create (const MeshAccess & ma, const Flags & flags)
+  {
+    Array<const FESpace*> spaces(2);
 
-      Flags l2flags(flags), facetflags(flags);
+    Flags l2flags(flags), facetflags(flags);
 
-      int order = int (flags.GetNumFlag ("order", 1));
+    int order = int (flags.GetNumFlag ("order", 1));
 
-      l2flags.SetFlag ("orderinner", order);
-      facetflags.SetFlag("orderfacet", order);
+    l2flags.SetFlag ("orderinner", order);
+    facetflags.SetFlag("orderfacet", order);
 
-      spaces[0] = new L2HighOrderFESpace (ma, l2flags);    
-      spaces[1] = new FacetFESpace (ma, facetflags);        
+    spaces[0] = new L2HighOrderFESpace (ma, l2flags);    
+    spaces[1] = new FacetFESpace (ma, facetflags);        
 
-      Flags h1flags(flags);
-      if (ma.GetDimension() == 2)
-	{
-	  h1flags.SetFlag ("order", 1);
-	}
-      else
-	{
-	  h1flags.SetFlag ("order", order);
-	  h1flags.SetFlag ("orderedge", order);
-	  h1flags.SetFlag ("orderinner", 1);
-	  h1flags.SetFlag ("orderface", 1);
-	}
-      spaces.Append (new H1HighOrderFESpace (ma, h1flags));        
+    /*
+    Flags h1flags(flags);
+    if (ma.GetDimension() == 2)
+      {
+	h1flags.SetFlag ("order", 1);
+      }
+    else
+      {
+	h1flags.SetFlag ("order", order);
+	h1flags.SetFlag ("orderedge", order);
+	h1flags.SetFlag ("orderinner", 1);
+	h1flags.SetFlag ("orderface", 1);
+      }
+    spaces.Append (new H1HighOrderFESpace (ma, h1flags));        
+    */
 
-      HybridDGFESpace * fes = new HybridDGFESpace (ma, spaces, flags);
-      return fes;
-    }
+    Flags edgeflags(flags);
+    spaces.Append (new EdgeFESpace (ma, edgeflags));            
+
+    HybridDGFESpace * fes = new HybridDGFESpace (ma, spaces, flags);
+    return fes;
+  }
     
-    virtual string GetClassName () const { return "HybridDGFESpace"; }
-  };
+  virtual string GetClassName () const { return "HybridDGFESpace"; }
+};
 
 
   
-  // ------------------------------------------------------------------------
-  // register FESpaces
-  namespace facefespace_cpp
+// ------------------------------------------------------------------------
+// register FESpaces
+namespace facefespace_cpp
+{
+  class Init
   {
-    class Init
-    {
-    public:
-      Init ();
-    };
+  public:
+    Init ();
+  };
 
-    Init::Init()
-    {
-      GetFESpaceClasses().AddFESpace ("facet", FacetFESpace::Create);
-      GetFESpaceClasses().AddFESpace ("HDG", HybridDGFESpace::Create);
-    }
-
-    Init init;
+  Init::Init()
+  {
+    GetFESpaceClasses().AddFESpace ("facet", FacetFESpace::Create);
+    GetFESpaceClasses().AddFESpace ("edge", EdgeFESpace::Create);
+    GetFESpaceClasses().AddFESpace ("HDG", HybridDGFESpace::Create);
   }
+
+  Init init;
+}
 
 }
 

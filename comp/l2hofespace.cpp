@@ -373,7 +373,7 @@ namespace ngcomp
   void L2HighOrderFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
-    dnums.Append (elnr);
+    // dnums.Append (elnr);
   }
 
   void  L2HighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const

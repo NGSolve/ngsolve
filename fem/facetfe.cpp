@@ -646,6 +646,54 @@ namespace ngfem {
   // }
 
 
+
+
+
+  EdgeVolumeFiniteElement :: EdgeVolumeFiniteElement (ELEMENT_TYPE aeltype, int order)
+    : FiniteElement (ElementTopology::GetSpaceDim(aeltype), aeltype, (order+1) * ElementTopology::GetNEdges (aeltype), order)
+  {
+    ;
+  }
+
+  void EdgeVolumeFiniteElement :: CalcEdgeShape(int enr, const IntegrationPoint & ip, FlatVector<> shape) const
+  {
+    if (eltype == ET_TRIG)
+      {
+	double lami[3] = { ip(0), ip(1), 1-ip(0)-ip(1) };
+	
+	const EDGE & edge = ElementTopology::GetEdges(eltype)[enr];
+	int vs = edge[0], ve = edge[1];
+	if (vnums[vs] > vnums[ve]) swap (vs, ve); 
+	
+	double s = lami[ve] - lami[vs];
+	
+	shape = 0;
+	int base = (order+1) * enr;
+	LegendrePolynomial (order, s, shape.Range(base, base+order+1));
+      }
+    else if (eltype == ET_TET)
+      {
+	double lami[4] = { ip(0), ip(1), ip(2), 1-ip(0)-ip(1)-ip(2) };
+	
+	const EDGE & edge = ElementTopology::GetEdges(eltype)[enr];
+	int vs = edge[0], ve = edge[1];
+	if (vnums[vs] > vnums[ve]) swap (vs, ve);
+	
+	double s = lami[ve] - lami[vs];
+	
+	shape = 0;
+	int base = (order+1) * enr;
+	LegendrePolynomial (order, s, shape.Range(base, base+order+1));
+      }
+
+    else
+      throw Exception ("EdgeVolumeFiniteElement not implemnted only for tets");
+  }
+
+
+
+
+
   
   //template class FacetVolumeFiniteElement<1>;
 

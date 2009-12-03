@@ -139,6 +139,7 @@ namespace ngcomp
     //   virtual void UpdateParallelDofs ();
     //   virtual void UpdateParallelDofs ( LocalHeap & lh);
 
+    virtual void GetWireBasketDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;

@@ -145,10 +145,10 @@ namespace ngcomp
                                                          const Array<int> & dnums2,
                                                          const FlatMatrix<SCAL> & elmat)
   {
-    Array<int> used;
+    ArrayMem<int,50> used;
     for (int i = 0; i < dnums1.Size(); i++)
       if (dnums1[i] >= 0) used.Append(i);
-    
+
     int s = used.Size();
 
     FlatMatrix<SCAL> mat (s, new SCAL[s*s]);
@@ -160,30 +160,11 @@ namespace ngcomp
     for (int i = 0; i < s; i++)
       dn[i] = dnums1[used[i]];
 
-    /*
-      dnums.Append (dn);
-    
-      elmats.SetSize (elmats.Size()+1);
-      elmats.Last().AssignMemory (s, s, &mat(0,0));
-    */
-    /*
-      if (elnr >= elmats.Size())
-      {
-      throw Exception ("EBE Matrix - index too high");
-      }
-    */
     if (elnr < elmats.Size())
       {
         dnums[elnr] = dn;
         elmats[elnr].AssignMemory (s, s, &mat(0,0));
-        // *testout << "dnums = " << dnums[elnr] << endl;
-        // *testout << "elmats[i] = " << elmats[elnr] << endl;
       }
-    /*
-      else
-      cout << "elnr too high, elnr = " << elnr << ", size = " << elmats.Size()
-      << ", dnums = " << dn << endl;
-    */
   }
 
 
@@ -214,10 +195,10 @@ namespace ngcomp
   template <class SCAL>
   void HO_BilinearForm<SCAL> :: AllocateMatrix ()
   {
+    cout << "HO_Biforlm::Allocatematrix" << endl;
     const FESpace & fespace = this->fespace;
 
     this->mats.Append (new ElementByElementMatrix<SCAL> (fespace.GetNDof(), this->ma.GetNE()+this->ma.GetNSE()));
-
 
     // cout << "generate inexact schur matrix" << endl;
     // generate inexact schur matrix
@@ -228,17 +209,18 @@ namespace ngcomp
       {
         int ne = this->ma.GetNE();
         int nfa = this->ma.GetNFaces();
-        Array<int> vnums, ednums, elnums, dnums;
+        Array<int> vnums, ednums, fanums, elnums, dnums;
         Array<int> cnt(nfa+ne);
         cnt = 0;
+
 	
         for (int i = 0; i < nfa; i++)
           {
             this->ma.GetFacePNums (i, vnums);
 
             this->ma.GetFaceEdges (i, ednums);
-            this->ma.GetFaceElements (i, elnums);
-	    
+	    this->ma.GetFaceElements (i, elnums);
+
             /*
             // only for shells
             if ( this->ma.GetElType(elnums[0]) == ET_PRISM 
@@ -288,7 +270,6 @@ namespace ngcomp
         for (int i = 0; i < nfa; i++)
           {
             this->ma.GetFacePNums (i, vnums);
-
             this->ma.GetFaceElements (i, elnums);
 
             /*
@@ -314,7 +295,6 @@ namespace ngcomp
               }
 
             fespace.GetFaceDofNrs (i, dnums);
-
             for (int k = 0; k < dnums.Size(); k++)
               if (dnums[k] != -1) fa2dof[i][ii++] = dnums[k];
 
@@ -326,20 +306,6 @@ namespace ngcomp
                   if (dnums[k] != -1) fa2dof[i][ii++] = dnums[k];
               }
           }
-
-        // 	(*testout) << "face graph table: " << endl << fa2dof << endl;
-        /*    
-              for (int i = 0; i < ne; i++)
-              {
-              fespace.GetExternalDofNrs (i, dnums);
-              int ii = 0;
-              for (int j = 0; j < dnums.Size(); j++)
-              if (dnums[j] != -1)
-              fa2dof[nfa+i][ii++] = dnums[j];
-              }
-        */
-        // (*testout) << "fa2dof = " << endl << fa2dof << endl;
-    
 
         graph = new MatrixGraph (fespace.GetNDof(), fa2dof, this->symmetric);
       }
@@ -435,8 +401,8 @@ namespace ngcomp
     delete graph;
 
     inexact_schur -> AsVector() = 0.0;
-
-    //     (*testout) << "matrix = " << endl << *inexact_schur << endl;
+    
+    cout << "matrix complete" << endl;
   }
 
 
@@ -467,6 +433,7 @@ namespace ngcomp
     
       
       return;
+
       // rest needed for Wirebasket
       
 
@@ -895,7 +862,7 @@ namespace ngcomp
     BDDCMatrix (const HO_BilinearForm<double> & abfa, const string & inversetype)
       : bfa(abfa) 
     {
-      LocalHeap lh(10000000);
+      // LocalHeap lh(10000000);
       const FESpace & fes = bfa.GetFESpace();
       const MeshAccess & ma = fes.GetMeshAccess();
 
@@ -999,13 +966,12 @@ namespace ngcomp
 	  dcmat(i,i) = 1;
 
       // *testout << "dcmat = " << endl << dcmat << endl;
-      
+      *testout << "freedofs = " << *fes.GetFreeDofs() << endl;
 
 
       free_dofs = new BitArray (ndcdof);
       free_dofs->Clear();
       
-
       for (int i = 0; i < ndcdof; i++)
 	{
 	  if (restrict[i] != -1)
@@ -1225,7 +1191,7 @@ namespace ngcomp
       *testout << "dcmat, init = " << dcmat << endl;
 
       elclassnr.SetSize(ne);
-      int maxclass = ne;
+      int maxclass = 32;
 
       invdc_ref.SetSize(maxclass);
       extwb_ref.SetSize(maxclass);
@@ -1301,9 +1267,12 @@ namespace ngcomp
           int nint = (*internaldofs)[i].Size();
           int next = (*externaldofs)[i].Size();
 
-
+	  
 	  // external/internal extension
 
+
+	  *testout << "nint = " << nint << ", next = " << next << ", nwb = " << nwb << ", ndc = " << ndc << endl;
+	  *testout << "wbdofs = " << (*wbdofs)[i] << endl;
 
           Matrix<> matee(next);
           Matrix<> matie(nint, next);
@@ -1419,15 +1388,57 @@ namespace ngcomp
 
       cout << "call inverse, type = " << inversetype << endl;
       cout << "dim = " << dcmat.Height() << endl;
-      inv = dcmat.InverseMatrix(fes.GetFreeDofs());
+
+      
+      inv = dcmat.InverseMatrix(&free_dofs);
+
+#define sometests
+#ifdef sometests
+      Array<int> & directblocks = *new Array<int> (free_dofs.Size());
+      directblocks = 0;
+      int nv = ma.GetNV();
+      int ned = ma.GetNEdges();
+      int nfa = ma.GetNFaces();
+      for (int i = 0; i < directblocks.Size(); i++)
+	if (free_dofs.Test(i))
+	  directblocks[i] = 1;
+
+      for (int i = 0; i < ned; i++)
+	{
+	  fes.GetEdgeDofNrs (i, dnums);
+	  for (int j = 1; j < dnums.Size(); j++)
+	    if (free_dofs.Test(dnums[j]))
+	      directblocks[dnums[j]] = 2+i;
+	}
+
+
+      /*
+      for (int i = 0; i < nfa; i++)
+	{
+	  fes.GetFaceDofNrs (i, dnums);
+	  for (int j = 0; j < dnums.Size(); j++)
+	    if (free_dofs.Test(dnums[j]))
+	      directblocks[dnums[j]] = 1;
+	}
+      */
+
+      *testout << "directblocks = " << endl << directblocks << endl;
+
+
+      inv = dcmat.InverseMatrix(&directblocks);
+      // inv = dcmat.InverseMatrix(&free_dofs);
       cout << "complete" << endl;
 
+      EigenSystem eigen(dcmat, *inv);
+      eigen.Calc();
+      eigen.PrintEigenValues (cout);
       if (print)
 	{
 	  *testout << "restrict = " << endl  << restrict << endl;
 	  *testout << "dcmat = " << endl << dcmat << endl;
 	  *testout << "freedofs = " << endl << *fes.GetFreeDofs() << endl;
 	}
+#endif
     }
 
 
@@ -1657,8 +1668,6 @@ namespace ngcomp
 
 
 
-
-
       lx = 0.0;
       for (int i = 0; i < restrict.Size(); i++)
         if (restrict[i] != -1)
@@ -1745,7 +1754,7 @@ namespace ngcomp
 	    Matrix<> dc1(cnt, invdc.Height());
 	    Matrix<> dc2(cnt, invdc.Height());
 
-	    NgProfiler::AddFlops (timertransx, invdc.Width()*invdc.Height()*cnt);
+	    NgProfiler::AddFlops (timerdc, invdc.Width()*invdc.Height()*cnt);
 		
 	    cnt = 0;	
 	    for (int i = 0; i < ne; i++)
@@ -1855,7 +1864,7 @@ namespace ngcomp
 	    Matrix<> vim(cnt, ext.Width());
 	    Matrix<> vem(cnt, ext.Height());
 
-	    NgProfiler::AddFlops (timertransx, ext.Width()*ext.Height()*cnt);
+	    NgProfiler::AddFlops (timertransy, ext.Width()*ext.Height()*cnt);
 		
 	    cnt = 0;	
 	    for (int i = 0; i < ne; i++)

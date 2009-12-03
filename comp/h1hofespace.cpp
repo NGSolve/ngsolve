@@ -750,11 +750,13 @@ namespace ngcomp
           for (int j = first_edge_dof[ednums[i]]; j < first_edge_dof[ednums[i]+1]; j++)
             dnums.Append (j);
 
+	/*
         ArrayMem<int,12> fanums;
         ma.GetElFaces (elnr, fanums);
         for (int i = 0; i < fanums.Size(); i++)
           if (order_face[fanums[i]][0] > 1)
             dnums.Append (first_face_dof[fanums[i]]);
+	*/
       }
   }
 

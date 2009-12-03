@@ -145,6 +145,75 @@ namespace ngcomp
   
   };
 
+
+
+
+
+
+
+
+
+  class EdgeFESpace : public FESpace 
+  {
+  protected:  
+    int ned;
+  
+    Array<int> first_edge_dof;
+  
+    Array<int> order_edge;
+    Array<bool> fine_edge;
+  
+    int ndof;
+    bool print; 
+  
+  public:
+    ///
+    EdgeFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
+    ///
+    virtual ~EdgeFESpace ();
+    ///
+    static FESpace * Create (const MeshAccess & ma, const Flags & flags);
+    ///
+    virtual string GetClassName () const
+    {
+      return "EdgeFESpace";
+    }
+  
+    ///
+    virtual void Update(LocalHeap & lh);
+    ///
+    virtual int GetNDof () const { return first_edge_dof[ned]; }
+    ///
+    virtual int GetNDofLevel (int level) const { return GetNDof(); }
+    ///
+    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    ///
+    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; 
+    ///
+    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    ///
+    virtual void GetWireBasketDofNrs(int elnr, Array<int> & dnums) const;
+
+    virtual void GetVertexDofNrs ( int elnum, Array<int> & dnums ) const  { dnums.SetSize(0); }
+
+    virtual void GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const;
+
+    virtual void GetFaceDofNrs ( int elnum, Array<int> & dnums ) const  { dnums.SetSize(0); }
+
+    ///
+    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
+    ///
+    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
+    ///
+    virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
+  };     
+
+
+
+
+
+
+
 }
 
 

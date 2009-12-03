@@ -160,7 +160,7 @@ namespace ngla
 
   void MinimumDegreeOrdering :: EliminateMasterVertex (int v)
   {
-    // (*testout) << "Eliminate Vertex " << v  << endl;
+    (*testout) << "Eliminate Vertex " << v  << endl;
     // (*testout) << "numcliques = " << NumCliques (v)  << endl;
     //  cout << "eliminate vertex " << v << endl;
 
