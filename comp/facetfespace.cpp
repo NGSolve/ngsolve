@@ -1101,7 +1101,8 @@ public:
 
     l2flags.SetFlag ("orderinner", order);
     facetflags.SetFlag("orderfacet", order);
-
+    if (flags.NumListFlagDefined ("dirichlet"))
+	facetflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
     spaces[0] = new L2HighOrderFESpace (ma, l2flags);    
     spaces[1] = new FacetFESpace (ma, facetflags);        
 
