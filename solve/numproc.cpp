@@ -233,9 +233,8 @@ namespace ngsolve
 	"\n\nNumproc setvalues:\n"		\
 	"-----------------\n"				\
 	"Set a gridfunction to given values\n\n" \
-	"Required flags:\n" 
-	"-bilinearform=<bfname>\n" 
-	"    the first integrator for the bf computes the flux\n"	\
+	"Required flags:\n"
+ 	"" \
 	"-gridfunction=<gfname>\n"						\
 	"    grid-function to be set\n"	\
 	"-coefficient=<coefname>\n"						\

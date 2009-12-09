@@ -135,7 +135,7 @@ namespace ngcomp
 
   template <class SCAL>
   S_ComponentGridFunction<SCAL> :: S_ComponentGridFunction (const S_GridFunction<SCAL> & agf, int acomp)
-    : S_GridFunction<SCAL> (*dynamic_cast<const CompoundFESpace&> (agf.GetFESpace())[0], agf.GetName(), Flags()),
+    : S_GridFunction<SCAL> (*dynamic_cast<const CompoundFESpace&> (agf.GetFESpace())[acomp], agf.GetName(), Flags()),
       gf(agf), comp(acomp)
   { 
     ;
