@@ -1267,7 +1267,7 @@ namespace ngcomp
 #pragma omp parallel
 		{
 		  LocalHeap lh = clh.Split();
-		  Array<int> fnums, elnums, vnums;
+		  Array<int> fnums, elnums, vnums, dnums;
 		  ElementTransformation eltrans, seltrans;
 		
 #pragma omp for 
@@ -1363,8 +1363,10 @@ namespace ngcomp
 			  // 			for(int k=0; k<elmat.Height(); k++)
 			  // 			  if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
 			  // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
-
-			  AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+#pragma omp critical(addelemfacbnd)
+			  {
+			    AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+			  }
 			}//end for (numintegrators)
 		    }//end for nse		    
 		}//end of parallel
@@ -1490,8 +1492,10 @@ namespace ngcomp
                           // 			  if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
                           // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
 
-
-                          AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+#pragma omp critical(addelemfacin)
+			  {
+			    AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+			  }
                         }
                     }
                 }
