@@ -48,8 +48,8 @@ namespace ngla
   using namespace ngla;
   using namespace ngstd;
 
-  int pardiso_msg = 1;
 
+  int pardiso_msg = 0;
 
 
   template<class TM, class TV_ROW, class TV_COL>
@@ -61,6 +61,8 @@ namespace ngla
   { 
     static int timer = NgProfiler::CreateTimer ("Pardiso Inverse");
     NgProfiler::RegionTimer reg (timer);
+
+    print = bool (pardiso_msg); // false;
 
     symmetric = asymmetric;
     inner = ainner;
@@ -94,7 +96,7 @@ namespace ngla
 
     spd = ( a.GetInverseType() == PARDISOSPD ) ? 1 : 0;
 
-    int maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = pardiso_msg, error;
+    int maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = print, error;
     int * params = const_cast <int*> (&hparams[0]);
 
     params[0] = 1; // no pardiso defaults
@@ -261,7 +263,9 @@ namespace ngla
       }
     else
       {
-        cout << "non-symmetric pardiso, cluster = " << cluster << ", entrysize = " << entrysize << endl;
+	if (print)
+	  cout << "non-symmetric pardiso, cluster = " << cluster << ", entrysize = " << entrysize << endl;
+
 	// for non-symmetric matrices:
 	int counter = 0, rowelems;
 
@@ -684,9 +688,10 @@ namespace ngla
 	else matrixtype = 11;
       }
 
-    cout << "spd = " << int(spd) << ", sym = " << int(symmetric) 
-	 << ", complex = " << int(mat_traits<TM>::IS_COMPLEX)
-	 << ", matrixtype = " << matrixtype << endl;
+    if (print)
+      cout << "spd = " << int(spd) << ", sym = " << int(symmetric) 
+	   << ", complex = " << int(mat_traits<TM>::IS_COMPLEX)
+	   << ", matrixtype = " << matrixtype << endl;
     *testout << "pardiso matrixtype = " << matrixtype << endl;
   }
 

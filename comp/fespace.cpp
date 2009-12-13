@@ -2545,7 +2545,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       hex     = new FE_Hex0;
       trig    = new FE_Trig0;
       quad    = new FE_Quad0;
-      segm    = new FE_SegmDummy;
+      segm    = new FE_Segm0;
 
       n_el_dofs = 1;
     }
