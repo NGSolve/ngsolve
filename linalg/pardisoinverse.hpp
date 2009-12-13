@@ -23,7 +23,7 @@ namespace ngla
   class PardisoInverse : public BaseMatrix
   {
     int height, nze, entrysize;
-
+    bool print;
 #ifdef USE_PARDISO400    
     //CL: is this also working on 32-bit architectures?
     long int pt[128];

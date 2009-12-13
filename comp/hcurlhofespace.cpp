@@ -673,9 +673,9 @@ namespace ngcomp
       {
 	switch (ma.GetSElType(selnr))
 	  {
-	  case ET_SEGM: fe = new (lh) FE_SegmDummy; break; 
-	  case ET_TRIG: fe = new (lh) FE_TrigDummy; break;
-	  case ET_QUAD: fe = new (lh) FE_QuadDummy; break;
+	  case ET_SEGM: fe = new (lh) DummyFE<ET_SEGM>; break; 
+	  case ET_TRIG: fe = new (lh) DummyFE<ET_TRIG>; break;
+	  case ET_QUAD: fe = new (lh) DummyFE<ET_QUAD>; break;
 	  default:
 	    fe = 0;
 	  }

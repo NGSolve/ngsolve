@@ -323,15 +323,18 @@ namespace ngfem
     T_ScalarFiniteElement2 () { eltype = ET; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const
+			    FlatVector<> shape) const;
+    /*
     {
       double pt[DIM];
       for (int i = 0; i < DIM; i++) pt[i] = ip(i);
       static_cast<const FEL*> (this) -> T_CalcShape (pt, shape); 
     }
+    */
 
     virtual double
-    Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
+    Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const;
+    /*
     {
       double pt[DIM];
       for (int i = 0; i < DIM; i++) pt[i] = ip(i);
@@ -342,13 +345,14 @@ namespace ngfem
       static_cast<const FEL*> (this) -> T_CalcShape (pt, eval); 
       return sum;
     }  
+    */
 
-
-    virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
+      virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
+    /*
     {
       double pt[DIM];
       for (int i = 0; i < ir.GetNIP(); i++)
-	{
+      {
 	  for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
 
 	  vals(i) = 0.0;
@@ -356,9 +360,10 @@ namespace ngfem
 	  static_cast<const FEL*> (this) -> T_CalcShape (pt, eval); 
 	}
     }
+    */
 
-
-    virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const
+    virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const;
+    /*
     {
       double pt[DIM];
       coefs = 0.0;
@@ -370,10 +375,11 @@ namespace ngfem
 	  static_cast<const FEL*> (this) -> T_CalcShape (pt, eval); 
 	}
     }
+    */
 
 
-
-    virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const
+    virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const;
+    /*
     {
       AutoDiff<DIM> adp[DIM];
       coefs = 0.0;
@@ -388,10 +394,11 @@ namespace ngfem
 	  static_cast<const FEL*> (this) -> T_CalcShape (adp, eval); 
 	}
     }
-
+    */
 
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<DIM> dshape) const
+			     FlatMatrixFixWidth<DIM> dshape) const;
+    /*
     {
       AutoDiff<DIM> adp[DIM];
       for (int i = 0; i < DIM; i++)
@@ -400,11 +407,12 @@ namespace ngfem
       DShapeAssign<DIM> ds(dshape); 
       static_cast<const FEL*> (this) -> T_CalcShape (adp, ds);
     }
-
+    */
 
     virtual void 
     CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
-                      FlatMatrixFixWidth<DIM> dshape) const
+                      FlatMatrixFixWidth<DIM> dshape) const;
+    /*
     {
       AutoDiff<DIM> adp[DIM];
       
@@ -418,6 +426,7 @@ namespace ngfem
       DShapeAssign<DIM> ds(dshape); 
       static_cast<const FEL*> (this) -> T_CalcShape (adp, ds);
     }
+    */
   };
 
 

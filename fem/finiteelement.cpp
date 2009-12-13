@@ -42,16 +42,20 @@ namespace ngfem
   {
     if (fea.Size() && fea[0])
       {
+	/*
 	int ii = 0;
 	while ( ii < fea.Size() )
 	  {
 	    // do not use dummy elements
-	    if ( dynamic_cast<const FE_SegmDummy *> (fea[ii]) )
+	    if ( dynamic_cast<const DummyFE<ET_SEGM> *> (fea[ii]) )
 	      { ii++; continue; }
 	    dimspace = fea[ii]->SpatialDim();
 	    eltype = fea[ii]->ElementType();
 	    break;
 	  }
+	*/
+	dimspace = fea[0]->SpatialDim();
+	eltype = fea[0]->ElementType();
 	ndof = 0;
 	order = 0;
 	for (int i = 0; i < fea.Size(); i++)

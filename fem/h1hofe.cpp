@@ -8,6 +8,8 @@
 #include <fem.hpp>
 #include <h1hofe.hpp>
 
+#include "tscalarfe.cpp"
+
 namespace ngfem
 {
   using namespace ngfem;
@@ -171,73 +173,10 @@ namespace ngfem
 
 
 
-  /*
-  template <ELEMENT_TYPE ET>
-  void T_H1HighOrderFiniteElement<ET> :: 
-  CalcShape (const IntegrationPoint & ip, 
-             FlatVector<> shape) const
-  {
-    double pt[DIM];
-    for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-    static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (pt, shape); 
-  }
-
-
-  template <ELEMENT_TYPE ET>
-  double T_H1HighOrderFiniteElement<ET> :: 
-  Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
-  {
-    double pt[DIM];
-    for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-
-    double sum = 0.0;
-    EvaluateShape eval(x, &sum); 
-    
-    static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (pt, eval); 
-    return sum;
-  }  
-
-
-  template <ELEMENT_TYPE ET>
-  void T_H1HighOrderFiniteElement<ET> :: 
-  CalcDShape (const IntegrationPoint & ip, 
-              FlatMatrixFixWidth<DIM> dshape) const
-  {
-    AutoDiff<DIM> adp[DIM];
-    for (int i = 0; i < DIM; i++)
-      adp[i] = AutoDiff<DIM> (ip(i), i);
-
-    DShapeAssign<DIM> ds(dshape); 
-    static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
-  }
-
-
-  /// compute dshape, matrix: ndof x spacedim
-  template <ELEMENT_TYPE ET>
-  void T_H1HighOrderFiniteElement<ET> :: 
-  CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
-                    FlatMatrixFixWidth<DIM> dshape) const
-  {
-    AutoDiff<DIM> adp[DIM];
-    
-    for (int i = 0; i < DIM; i++)
-      adp[i].Value() = sip.IP()(i);
-
-    for (int i = 0; i < DIM; i++)
-      for (int j = 0; j < DIM; j++)
-        adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
-
-    DShapeAssign<DIM> ds(dshape); 
-    static_cast<const H1HighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
-  }
-  */
-
-
 
 
   /* *********************** Segment  **********************/
 
-  /*
   template<typename Tx, typename TFA>  
   void H1HighOrderFE<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & shape) const
   {
@@ -250,12 +189,9 @@ namespace ngfem
     INT<2> e = GetEdgeSort (0, vnums);
     T_ORTHOPOL::Calc (order_edge[0], lami[e[1]]-lami[e[0]], shape.Addr(2));
   }
-  */
-
 
   /* *********************** Triangle  **********************/
 
-  /*
   template<typename Tx, typename TFA>  
   void H1HighOrderFE<ET_TRIG> :: T_CalcShape (Tx x[2], TFA & shape) const
   {
@@ -290,11 +226,10 @@ namespace ngfem
             shape[ii++] = polx[i] * poly[j];
       }
   }
-  */
+
 
   /* *********************** Quadrilateral  **********************/
 
-  /*
   template<typename Tx, typename TFA>  
   void H1HighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
@@ -337,11 +272,9 @@ namespace ngfem
 	    shape[ii++] = polxi[k] * poleta[j];
       }
   }
-*/
 
 
   /* *********************** Tetrahedron  **********************/
-
 
   template<typename Tx, typename TFA>  
   void  H1HighOrderFE<ET_TET> :: T_CalcShape (Tx x[3], TFA & shape) const
@@ -386,7 +319,6 @@ namespace ngfem
 
 
   /* *********************** Prism  **********************/
-
 
   template<typename Tx, typename TFA>  
   void  H1HighOrderFE<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & shape) const
@@ -495,6 +427,7 @@ namespace ngfem
 
 
   /* *********************** Hex  **********************/
+
 
   template<typename Tx, typename TFA>  
   void  H1HighOrderFE<ET_HEX> :: T_CalcShape (Tx hx[3], TFA & shape) const
@@ -697,8 +630,6 @@ namespace ngfem
   template class H1HighOrderFiniteElement<3>;
 
 
-
-
   template class T_ScalarFiniteElement2<H1HighOrderFE<ET_SEGM>, ET_SEGM>;
   template class T_ScalarFiniteElement2<H1HighOrderFE<ET_TRIG>, ET_TRIG>;
   template class T_ScalarFiniteElement2<H1HighOrderFE<ET_QUAD>, ET_QUAD>;
@@ -715,5 +646,8 @@ namespace ngfem
   template class T_H1HighOrderFiniteElement<ET_PRISM>;
   template class T_H1HighOrderFiniteElement<ET_PYRAMID>;
   template class T_H1HighOrderFiniteElement<ET_HEX>;
+
+  template class H1HighOrderFE<ET_SEGM>;
+  template class H1HighOrderFE<ET_TET>;
 }
 

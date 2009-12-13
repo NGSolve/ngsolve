@@ -9,6 +9,10 @@
 #include <l2hofefo.hpp>
 
 
+#include "tscalarfe.cpp"
+
+
+
 namespace ngfem
 {
 
@@ -138,7 +142,6 @@ namespace ngfem
 
 
 
-  /*
   
   template class L2HighOrderFiniteElementFO<1>;
   template class L2HighOrderFiniteElementFO<2>;
@@ -160,8 +163,13 @@ namespace ngfem
   template class L2HighOrderFEFO<ET_TRIG,4>;
   template class L2HighOrderFEFO<ET_TRIG,5>; 
   template class L2HighOrderFEFO<ET_TRIG,6>;
-  */
 
-
+  template class T_ScalarFiniteElement2<L2HighOrderFEFO<ET_TRIG,0>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<L2HighOrderFEFO<ET_TRIG,1>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<L2HighOrderFEFO<ET_TRIG,2>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<L2HighOrderFEFO<ET_TRIG,3>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<L2HighOrderFEFO<ET_TRIG,4>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<L2HighOrderFEFO<ET_TRIG,5>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<L2HighOrderFEFO<ET_TRIG,6>, ET_TRIG>;
 }
  

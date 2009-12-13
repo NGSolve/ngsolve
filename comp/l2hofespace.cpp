@@ -289,21 +289,18 @@ namespace ngcomp
     
     switch (ma.GetSElType(elnr))
       {
-      case ET_SEGM: fe = new FE_SegmDummy; break;
-      case ET_TRIG: fe = new FE_SegmDummy ; break;
-      case ET_QUAD: fe = new FE_SegmDummy; break;
+      case ET_SEGM: fe = new DummyFE<ET_SEGM>; break;
+      case ET_TRIG: fe = new DummyFE<ET_TRIG>; break;
+      case ET_QUAD: fe = new DummyFE<ET_QUAD>; break;
+
       default:
-	fe = 0;
-      }
-    
-    if (!fe)
-      {
 	stringstream str;
 	str << "FESpace " << GetClassName() 
 	    << ", undefined surface eltype " << ma.GetSElType(elnr) 
 	    << ", order = " << order << endl;
 	throw Exception (str.str());
       }
+
     return *fe;
   }
  
