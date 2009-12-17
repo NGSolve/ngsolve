@@ -29,6 +29,7 @@ namespace ngcomp
     bool print;
     bool printelvec;
 
+    bool allocated;
     bool assembled;
     bool initialassembling;
 

@@ -18,6 +18,7 @@ namespace ngcomp
     print = flags.GetDefineFlag ("print");
     printelvec = flags.GetDefineFlag ("printelvec");
     assembled = false;
+    allocated = false;
     initialassembling = true;
     cacheblocksize = 1;
   }
@@ -121,8 +122,15 @@ namespace ngcomp
                 }
             }
         
-
-	AllocateVector();
+	if(!allocated || ( this->GetVector().Size() != this->fespace.GetNDof())){
+	  *testout << "allocating vector" << endl;
+	  AllocateVector();
+	  allocated=true;
+	}
+	else{
+	  *testout << "not allocating vector - just setting vec to zero" << endl;
+	  this->GetVector() = TSCAL(0);
+	}
 
 	
 	int ne = ma.GetNE();
@@ -690,6 +698,7 @@ namespace ngcomp
     delete vec;
     vec = new ngla::VVector<TV> (this->fespace.GetNDof());
     (*vec) = TSCAL(0);
+//     allocated=true;
   }
 #else
   template <typename TV>
@@ -702,6 +711,7 @@ namespace ngcomp
     else
       vec = new ParallelVVector<TV> ( afespace.GetNDof(),& afespace.GetParallelDofs());
     (*vec) = TSCAL(0);
+//     allocated=true;
   }
 #endif
 
