@@ -1173,7 +1173,6 @@ namespace ngsolve
 		    scan->ReadNext();
 		}
 
-	      cout << "c" << endl;
 	      bool allconst = 1;
 	      for (int i = 0; i < coeffs.Size(); i++)
 		if (!coeffs[i]->IsConstant())
@@ -1205,7 +1204,6 @@ namespace ngsolve
 		  for (int hi = 0; hi < coeffs.Size(); hi++)
 		    delete coeffs[hi];
 		}
-	      cout << "d" << endl;
 	    }
 
 	  break;
