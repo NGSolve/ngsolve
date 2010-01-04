@@ -61,7 +61,7 @@ HDG_convection bx by
 robin crob -comp=2
 
 
-define preconditioner c -type=direct -bilinearform=a -inverse=mumps
+define preconditioner c -type=direct -bilinearform=a -inverse=pardiso
 # -inverse=pardiso
 
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c

@@ -497,7 +497,7 @@ namespace ngstd
       {
 	EVAL_TOKEN op = program[i].op;
 
-	if (op == VARIABLE || op == GLOBVAR || op == COEFF_FUNC  || op == COMMA)
+	if (op == VARIABLE || op == GLOBVAR || op == COEFF_FUNC  || op == COMMA || op == IMAG)
 	  return false;
       }
     return true;

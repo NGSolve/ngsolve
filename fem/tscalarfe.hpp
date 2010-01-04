@@ -318,7 +318,8 @@ namespace ngfem
   {
   public:
     enum { DIM = ET_trait<ET>::DIM };
-    using FiniteElement::eltype;
+    // using FiniteElement::eltype;
+    using ScalarFiniteElement<DIM>::eltype;
 
     T_ScalarFiniteElement2 () { eltype = ET; }
 

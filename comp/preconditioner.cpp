@@ -304,13 +304,8 @@ namespace ngcomp
     finesmoothingsteps = int (flags.GetNumFlag ("finesmoothingsteps", 1));
 
     tlp = 0;
-
-// #ifdef ASTRID
     inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
-// #endif
-
   }
-
 
  
   MGPreconditioner :: ~MGPreconditioner()
@@ -328,20 +323,14 @@ namespace ngcomp
 
   void MGPreconditioner :: Update ()
   {
-    //cout << "*** MGPreconditioner :: Update()" << endl;
-// #ifdef ASTRID    
     dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType ( inversetype );
-// #endif    
-    // cout << " ** GetLowOrderBilinearForm" << endl;
+
     if (&bfa->GetLowOrderBilinearForm())
       {
 	const BilinearForm * lo_bfa = &bfa->GetLowOrderBilinearForm();
-// #ifdef ASTRID
  	dynamic_cast<const BaseSparseMatrix & > (lo_bfa->GetMatrix()) .SetInverseType ( inversetype );
-// #endif
       }
 
-    //cout << " ** mgp->Update" << endl;  
     mgp->Update();
    
     //cout << " ** if coarsepre: coarsepre = " << coarse_pre << endl;
@@ -359,13 +348,8 @@ namespace ngcomp
 	//cout << "now prepare 2-level" << endl;
 
 	Smoother * fine_smoother = NULL;
-        /*
-	if (smoothertype == "potential")
-	  fine_smoother = new PotentialSmoother (bfa->GetMeshAccess(), *bfa);
-	else
-        */
-	  fine_smoother = new BlockSmoother (bfa->GetMeshAccess(), *bfa, flags);
-	  // fine_smoother = new GSSmoother (bfa->GetMeshAccess(), *bfa);
+
+	fine_smoother = new BlockSmoother (bfa->GetMeshAccess(), *bfa, flags);
 
 	tlp = new TwoLevelMatrix (&bfa->GetMatrix(),
 				  mgp,
@@ -665,7 +649,7 @@ namespace ngcomp
     else
       {
 	jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-	  .CreateJacobiPrecond();
+	  .CreateJacobiPrecond(bfa->GetFESpace().GetFreeDofs());
       }
 
 

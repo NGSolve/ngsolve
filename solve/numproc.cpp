@@ -209,6 +209,8 @@ namespace ngsolve
     CoefficientFunction * coef;
     ///
     bool boundary;
+    ///
+    int component;
   public:
     ///
     NumProcSetValues (PDE & apde, const Flags & flags)
@@ -217,6 +219,7 @@ namespace ngsolve
       gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", NULL));
       coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", NULL));
       boundary = flags.GetDefineFlag ("boundary");
+      component = int (flags.GetNumFlag ("component", 0))-1;
     }
 
     ///
@@ -247,16 +250,23 @@ namespace ngsolve
     ///
     virtual void Do(LocalHeap & lh)
     {
+      GridFunction * hgfu = gfu;
+      if (component != -1)
+	hgfu = gfu->GetComponent(component);
+
       if (!gfu->GetFESpace().IsComplex())
 	SetValues (pde.GetMeshAccess(),
 		   *coef,
-		   dynamic_cast<S_GridFunction<double>&> (*gfu), 
+		   dynamic_cast<S_GridFunction<double>&> (*hgfu), 
 		   boundary, lh);
       else
 	SetValues (pde.GetMeshAccess(),
 		   *coef,
-		   dynamic_cast<S_GridFunction<Complex>&> (*gfu), 
+		   dynamic_cast<S_GridFunction<Complex>&> (*hgfu), 
 		   boundary, lh);
+
+      if (component != -1)
+	delete hgfu;
     }
 
     ///

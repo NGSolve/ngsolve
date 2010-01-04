@@ -2,8 +2,8 @@
 # solve the Poisson equation -Delta u = f
 #
 # with boundary conditions
-#      u = 0  on Gamma1 and Gamma2
-#  du/dn = 0  on Gamma3 and Gamma4
+#      u = 0  on Gamma1
+#  du/dn = 1  on Gamma2
 
 
 # load geometry
@@ -17,39 +17,41 @@ mesh = square.vol
 define coefficient lam
 1,
 
-#
-# Dirichlet boundary conditions are implemented by penalty
-# large value on Gamma1 and Gamma2, on penalty on Gamma3 and Gamma4
-#
-define coefficient penalty
-1e5, 0, 0, 0, 
 
 # coefficient for the source
 define coefficient coef_source
 1,
 
+# coefficient for the Neumann b.c.
+define coefficient coef_neumann
+0, 1,
 
-# define a second order fespace (play around with -order=...)
-define fespace v -order=5
 
-# the solution field ...
+
+# define a finite element space
+# Dirichlet boundary is Gamma_1 
+# play around with -order=...
+define fespace v -order=3 -dirichlet=[1]
+
+# the solution field
 define gridfunction u -fespace=v -nested
 
-# the bilinear-form. 
+# the bilinear-form 
 define bilinearform a -fespace=v -symmetric
 laplace lam
-robin penalty
 
 define linearform f -fespace=v
 source coef_source
+neumann coef_neumann
 
 # define preconditioner c -type=direct -bilinearform=a
-# define preconditioner c -type=local -bilinearform=a
-define preconditioner c -type=multigrid -bilinearform=a -smoothingsteps=1 
+# define preconditioner c -type=local -bilinearform=a 
+define preconditioner c -type=multigrid -bilinearform=a -smoother=block
 
 
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=1000
 
+# for the visualization of the flux
 define bilinearform ag -fespace=v -nonassemble
 laplace lam
 

@@ -61,6 +61,20 @@ namespace ngfem
     : T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, ScalarFiniteElement<D-1> > (DiagDMat<1> (coeff))
   { ; }
 
+  template <int D> ComplexRobinIntegrator<D> ::
+  ComplexRobinIntegrator (CoefficientFunction * coeff)
+    : T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1, Complex>, ScalarFiniteElement<D-1> > (DiagDMat<1, Complex> (coeff))
+  { ; }
+
+  template <int D> 
+  Integrator * RobinIntegrator<D> :: Create (Array<CoefficientFunction*> & coeffs)
+  {
+    CoefficientFunction * coef = coeffs[0];
+    if (!coef -> IsComplex())
+      return new RobinIntegrator (coef);
+    else
+      return new ComplexRobinIntegrator<D> (coef);
+  }
 
 
 

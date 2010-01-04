@@ -1044,15 +1044,15 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("SparseMatrixSymmetric::MultAdd1");
     NgProfiler::RegionTimer reg (timer);
 
-	const FlatVector<TV_ROW> fx = 
-	  dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
-	FlatVector<TV_COL> fy = 
-	  dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
-
-	for (int i = 0; i < this->Height(); i++)
-	  fy(i) += s * RowTimesVectorNoDiag (i, fx);
+    const FlatVector<TV_ROW> fx = 
+      dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
+    FlatVector<TV_COL> fy = 
+      dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
+    
+    for (int i = 0; i < this->Height(); i++)
+      fy(i) += s * RowTimesVectorNoDiag (i, fx);
   }
-
+  
 
   template <class TM, class TV>
   void SparseMatrixSymmetric<TM,TV> :: 
@@ -1060,17 +1060,14 @@ namespace ngla
   {
     static int timer = NgProfiler::CreateTimer ("SparseMatrixSymmetric::MultAdd2");
     NgProfiler::RegionTimer reg (timer);
-
-	const FlatVector<TV_ROW> fx = 
-	  dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
-	FlatVector<TV_COL> fy = 
-	  dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
+    
+    const FlatVector<TV_ROW> fx = 
+      dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
+    FlatVector<TV_COL> fy = 
+      dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
 	
-	for (int i = 0; i < this->Height(); i++)
-	  {
-	    AddRowTransToVector (i, s * fx(i), fy);
-	  }
-
+    for (int i = 0; i < this->Height(); i++)
+      AddRowTransToVector (i, s * fx(i), fy);
   }
 
 

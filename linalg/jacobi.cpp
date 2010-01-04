@@ -45,8 +45,13 @@ namespace ngla
     FlatVector<TV_ROW> fy = 
       dynamic_cast<T_BaseVector<TV_ROW> &> (y).FV();
 
-    for (int i = 0; i < height; i++)
-      fy(i) += s * (invdiag[i] * fx(i));
+    if (!inner)
+      for (int i = 0; i < height; i++)
+	fy(i) += s * (invdiag[i] * fx(i));
+    else
+      for (int i = 0; i < height; i++)
+	if (inner->Test(i))
+	  fy(i) += s * (invdiag[i] * fx(i));
   }
 
 
@@ -72,10 +77,11 @@ namespace ngla
       dynamic_cast<const T_BaseVector<TV_ROW> &> (b).FV();
 
     for (int i = 0; i < height; i++)
-      {
-	TV_ROW ax = mat.RowTimesVector (i, fx);
-	fx(i) += invdiag[i] * (fb(i) - ax);
-      }
+      if (!this->inner || this->inner->Test(i))
+	{
+	  TV_ROW ax = mat.RowTimesVector (i, fx);
+	  fx(i) += invdiag[i] * (fb(i) - ax);
+	}
   }
 
 
@@ -92,12 +98,12 @@ namespace ngla
     const FlatVector<TV_ROW> fb = 
       dynamic_cast<const T_BaseVector<TV_ROW> &> (b).FV();
 
-
     for (int i = height-1; i >= 0; i--)
-      {
-	TV_ROW ax = mat.RowTimesVector (i, fx);
-	fx(i) += invdiag[i] * (fb(i) - ax);
-      }
+      if (!this->inner || this->inner->Test(i))
+	{
+	  TV_ROW ax = mat.RowTimesVector (i, fx);
+	  fx(i) += invdiag[i] * (fb(i) - ax);
+	}
   }
 
   ///
@@ -140,24 +146,28 @@ namespace ngla
 
     // x := b - L^t x
     for (int i = 0; i < this->height; i++)
-      {
-	smat.AddRowTransToVectorNoDiag (i, -fx(i), fx);
-	fx(i) = fb(i);
-      }
+      if (!this->inner || this->inner->Test(i))
+	{
+	  smat.AddRowTransToVectorNoDiag (i, -fx(i), fx);
+	  fx(i) = fb(i);
+	}
+      else
+	fx(i) = TVX(0);
     
     // x := (L+D)^{-1} x
     for (int i = 0; i < this->height; i++)
-      {
-	TVX hv = fx(i) - smat.RowTimesVectorNoDiag (i, fx);
-	fx(i) = this->invdiag[i] * hv;
-      }
+      if (!this->inner || this->inner->Test(i))
+	{
+	  TVX hv = fx(i) - smat.RowTimesVectorNoDiag (i, fx);
+	  fx(i) = this->invdiag[i] * hv;
+	}
   }
 
 
 
   template <class TM, class TV>
   void JacobiPrecondSymmetric<TM,TV> ::
-  GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y, BaseVector & help) const 
+  GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y /* , BaseVector & help */) const 
   {
     static int timer = NgProfiler::CreateTimer ("JacobiPrecondSymmetric::GSSmooth-help");
     NgProfiler::RegionTimer reg (timer);
@@ -168,8 +178,8 @@ namespace ngla
       dynamic_cast<T_BaseVector<TVX> &> (y).FV();
     const FlatVector<TVX> fb = 
       dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-    FlatVector<TVX> fh = 
-      dynamic_cast<const T_BaseVector<TVX> &> (help).FV();
+    // FlatVector<TVX> fh = 
+    // dynamic_cast<const T_BaseVector<TVX> &> (help).FV();
 
     const SparseMatrixSymmetric<TM,TV> & smat =
       dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (this->mat);
@@ -179,14 +189,16 @@ namespace ngla
     // D (x_new-x) = b - L x_new
     // y -= (D+L^t) w
     for (int i = 0; i < this->height; i++)
-      {
-	fh(i) = smat.RowTimesVectorNoDiag (i, fx);
-	TVX d = fy(i) - fh(i);
-	TVX w = this->invdiag[i] * d;
-	
-	fx(i) += w;
-	smat.AddRowTransToVector (i, -w, fy);
-      }
+      if (!this->inner || this->inner->Test(i))
+	{
+	  TVX d = fy(i) - smat.RowTimesVectorNoDiag (i, fx);
+	  TVX w = this->invdiag[i] * d;
+	  
+	  fx(i) += w;
+	  smat.AddRowTransToVector (i, -w, fy);
+	}
+    // else
+    // fx(i) = TVX(0);
   }
 
 
@@ -211,16 +223,23 @@ namespace ngla
       dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (this->mat);
     
     for (int i = this->height-1; i >= 0; i--)
-      {
-	fx(i) = fb(i) - smat.RowTimesVectorNoDiag (i, fx);
-      }
+      if (!this->inner || this->inner->Test(i))
+	{
+	  fx(i) = fb(i) - smat.RowTimesVectorNoDiag (i, fx);
+	}
+      else
+	fx(i) = TVX(0);
+
     
     for (int i = this->height-1; i >= 0; i--)
-      {
-	TVX val = this->invdiag[i] * fx(i);
-	fx(i) = val;
-	smat.AddRowTransToVectorNoDiag (i, -val, fx);
-      }	 
+      if (!this->inner || this->inner->Test(i))
+	{
+	  TVX val = this->invdiag[i] * fx(i);
+	  fx(i) = val;
+	  smat.AddRowTransToVectorNoDiag (i, -val, fx);
+	}	 
+      else
+	fx(i) = TVX(0);
   }
 
   ///

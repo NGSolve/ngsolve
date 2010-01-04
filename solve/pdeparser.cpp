@@ -1063,6 +1063,7 @@ namespace ngsolve
 		{
 		  if (scan->GetToken() == LP)
 		    {
+		      cout << "a" << endl;
 		      EvalFunction * fun = new EvalFunction ();
 		      for (int i = 0; i < pde->GetConstantTable().Size(); i++)
 			fun->DefineConstant (pde->GetConstantTable().GetName(i),
@@ -1071,12 +1072,16 @@ namespace ngsolve
 			fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
 						   &pde->GetVariableTable()[i]);
 		      
+		      cout << "a1" << endl;
 		      fun->Parse (*scan->scanin);
+		      cout << "a2" << endl;
 		      coeffs.Append (fun);
+		      cout << "a3" << endl;
+		      fun -> Print (cout);
 		      if (fun->IsConstant())
 			dcoeffs.Append (fun->Eval ( (double*)(0) ));
 		      scan->ReadNext();
-
+		      cout << "b" << endl;
 		      // fun -> Print(cout);
 		    }
 		  else if (scan->GetToken() == LSB) // polynomial [MW]
@@ -1167,7 +1172,8 @@ namespace ngsolve
 		  if (scan->GetToken() == COMMA) 
 		    scan->ReadNext();
 		}
-	      
+
+	      cout << "c" << endl;
 	      bool allconst = 1;
 	      for (int i = 0; i < coeffs.Size(); i++)
 		if (!coeffs[i]->IsConstant())
@@ -1199,6 +1205,7 @@ namespace ngsolve
 		  for (int hi = 0; hi < coeffs.Size(); hi++)
 		    delete coeffs[hi];
 		}
+	      cout << "d" << endl;
 	    }
 
 	  break;

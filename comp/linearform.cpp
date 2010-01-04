@@ -121,7 +121,7 @@ namespace ngcomp
 		  }
                 }
             }
-        
+
 	if(!allocated || ( this->GetVector().Size() != this->fespace.GetNDof())){
 	  *testout << "allocating vector" << endl;
 	  AllocateVector();
@@ -132,7 +132,6 @@ namespace ngcomp
 	  this->GetVector() = TSCAL(0);
 	}
 
-	
 	int ne = ma.GetNE();
 	int nf = ma.GetNFacets();
 	int nse = ma.GetNSE();
@@ -721,6 +720,7 @@ namespace ngcomp
   {
     delete vec;
     vec = 0;
+    this -> allocated = false;
   }
 
 

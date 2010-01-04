@@ -510,10 +510,10 @@ namespace ngcomp
     const BilinearFormIntegrator & bli =
       bound ? (*fes.GetBoundaryEvaluator()) : (*fes.GetEvaluator());
 
-    int dimflux   = bli.DimFlux(); 
-
     if (&bli == NULL)
       throw Exception ("no evaluator available");
+
+    int dimflux   = bli.DimFlux(); 
     
     Array<int> cnti(fes.GetNDof());
     cnti = 0;
@@ -522,6 +522,7 @@ namespace ngcomp
 
     int cnt = 0;
     clock_t prevtime = clock();
+
 
 #pragma omp parallel 
     {
@@ -653,7 +654,7 @@ namespace ngcomp
 	}
     }
 
-    
+
     cout << "\rsetvalues element " << ne << "/" << ne << endl;
 
 
