@@ -19,7 +19,7 @@ namespace ngla
   {
   public:
     virtual void GSSmooth (BaseVector & x, const BaseVector & b) const = 0;
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y, BaseVector & help) const = 0;
+    virtual void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y /* , BaseVector & help */) const = 0;
     virtual void GSSmoothBack (BaseVector & x, const BaseVector & b) const = 0;
   };
 
@@ -58,7 +58,7 @@ namespace ngla
     virtual void GSSmooth (BaseVector & x, const BaseVector & b) const;
 
     /// computes partial residual y
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y, BaseVector & help) const
+    virtual void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y /* , BaseVector & help */) const
     {
       GSSmooth (x, b);
     }
@@ -95,7 +95,7 @@ namespace ngla
     virtual void GSSmooth (BaseVector & x, const BaseVector & b) const;
 
     /// computes partial residual y
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y, BaseVector & help) const;
+    virtual void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y /* , BaseVector & help */) const;
 
     ///
     virtual void GSSmoothBack (BaseVector & x, const BaseVector & b) const;

@@ -4,14 +4,11 @@ mesh = chip.vol
 define coefficient lam
 1, 1000, 10,
 
-define coefficient penalty
-1e6, 0, 
 
 define coefficient coef_source
 0, 0, 1,
 
-define fespace v -h1ho -order=3
-# define fespace v -order=1
+define fespace v -order=3 -dirichlet=[1]
 define fespace verr -l2 -order=0
 
 define gridfunction u -fespace=v -nested
@@ -19,7 +16,6 @@ define gridfunction err -fespace=verr
 
 define bilinearform a -fespace=v -symmetric
 laplace lam
-robin penalty
 
 define linearform f -fespace=v
 source coef_source
@@ -35,3 +31,4 @@ numproc markelements np4 -error=err -minlevel=1 -factor=0.5
 
 
 
+numproc visualization npv1 -scalarfunction=u -subdivision=2 -nolineartexture

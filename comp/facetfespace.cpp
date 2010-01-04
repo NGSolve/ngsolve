@@ -88,7 +88,7 @@ namespace ngcomp
     if (ma.GetDimension() == 2)
       {
         evaluator = new MassIntegrator<2> (&one);
-        boundary_evaluator = 0;
+        boundary_evaluator = new RobinIntegrator<2> (&one);
       }
     else
       {
@@ -1122,8 +1122,10 @@ public:
     spaces.Append (new H1HighOrderFESpace (ma, h1flags));        
     */
 
+    /*
     Flags edgeflags(flags);
     spaces.Append (new EdgeFESpace (ma, edgeflags));            
+    */
 
     HybridDGFESpace * fes = new HybridDGFESpace (ma, spaces, flags);
     return fes;

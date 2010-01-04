@@ -1159,7 +1159,7 @@ namespace ngla
     hv = 0;
 
     // for (int k = 0; k < 5; k++)
-    jacobi->GSSmooth (y, x, res, hv);
+    jacobi->GSSmooth (y, x, res /* , hv */);
     pmat -> MultAdd1 (-1, y, res);   // update residual
 
     // do potential smoothing:

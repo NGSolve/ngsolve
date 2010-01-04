@@ -207,7 +207,7 @@ namespace ngfem
     AssembleElementMatrix (const FiniteElement & fel,
 			   const ElementTransformation & eltrans, 
 			   FlatMatrix<double> & elmat,
-			   LocalHeap & locheap) const = 0;
+			   LocalHeap & locheap) const;
 
     virtual void
     AssembleElementMatrix (const FiniteElement & fel,
@@ -1054,80 +1054,6 @@ namespace ngfem
 
 
 
-#ifdef NOTAVAILABLE
-
-
-  /*
-    Mixed element matrix assembling.
-    NOT FUNCTIONAL
-    Assembling for mixed bilinear-forms of type $\int (B_2 v) : D (B_1 u) dx$.
-  */
-
-  template <int SPACEDIM = 2, class SCAL = double>
-  class B1DB2Integrator : public BilinearFormIntegrator
-  {
-  public:
-    ///
-    B1DB2Integrator ();
-    ///
-    virtual ~B1DB2Integrator ();
-    ///
-    /*
-      virtual BaseMatrix &
-      AssembleMixedElementMatrix (const FiniteElement & fel1, 
-      const FiniteElement & fel2, 
-      const ElementTransformation & eltrans, 
-      LocalHeap & locheap) const;
-    */
-    ///
-    virtual int GetDimension1 () const = 0;
-    ///
-    virtual int GetDimension2 () const = 0;
-    ///
-    virtual int GetDimensionD1 () const = 0;
-    ///
-    virtual int GetDimensionD2 () const = 0;
-    ///
-    virtual int DiffOrder1 () const { return 0; }
-    ///
-    virtual int DiffOrder2 () const { return 0; }
-
-    ///
-    virtual void GenerateB1Matrix (const FiniteElement & fel,
-				   const SpecificIntegrationPoint<> & sip,
-				   FlatMatrix<> & bmat,
-				   LocalHeap & locheap) const = 0;
-
-    ///
-    virtual void GenerateB2Matrix (const FiniteElement & fel,
-				   const SpecificIntegrationPoint<> & sip,
-				   FlatMatrix<> & bmat,
-				   LocalHeap & locheap) const = 0;
-
-    ///
-    virtual void GenerateDMatrix (const FiniteElement & fel,
-				  const SpecificIntegrationPoint<> & sip,
-				  FlatMatrix<SCAL> & dmat,
-				  LocalHeap & locheap) const = 0;
-
-    ///
-    virtual int Lumping () const
-    { return 0; }
-    ///
-    virtual string Name () const { return string("B1DB2 integrator"); }
-  };
-
-
-#endif
-
-
-
-
-
-
-
-
-
 
   template <int DIM_SPACE>
   class DirichletPenaltyIntegrator : public BilinearFormIntegrator
@@ -1228,9 +1154,6 @@ namespace ngfem
     AssembleElementVector (const FiniteElement & fel,
 			   const ElementTransformation & eltrans, 
 			   FlatVector<Complex> & elvec,
-
-
-
 			   LocalHeap & locheap) const;
 
     virtual void

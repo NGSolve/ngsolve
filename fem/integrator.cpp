@@ -145,12 +145,20 @@ namespace ngfem
   void BilinearFormIntegrator ::
   AssembleElementMatrix (const FiniteElement & fel,
 			 const ElementTransformation & eltrans, 
+			 FlatMatrix<double> & elmat,
+			 LocalHeap & lh) const
+  {
+    throw Exception ("AssembleElementMatrix<double> not overloaded");
+  }
+
+  void BilinearFormIntegrator ::
+  AssembleElementMatrix (const FiniteElement & fel,
+			 const ElementTransformation & eltrans, 
 			 FlatMatrix<Complex> & elmat,
 			 LocalHeap & lh) const
   {
     FlatMatrix<double> rmat (elmat.Height(), elmat.Width(), lh);
     AssembleElementMatrix (fel, eltrans, rmat, lh);
-    // elmat.AssignMemory (rmat.Height(), rmat.Width(), lh);
     elmat = rmat;
   }
 

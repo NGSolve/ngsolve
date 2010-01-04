@@ -255,7 +255,7 @@ public:
   virtual void
   AssembleElementMatrix (const FiniteElement & bfel,
 			 const ElementTransformation & eltrans, 
-			 FlatMatrix<double> & elmat,
+			 FlatMatrix<TSCAL> & elmat,
 			 LocalHeap & lh) const
   {
     // static int timer = NgProfiler::CreateTimer (string ("Elementmatrix, ") + Name());
@@ -273,21 +273,14 @@ public:
 	
         HeapReset hr1(lh);
 	
-        FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, lh);
-        FlatMatrixFixHeight<DIM_DMAT, double> dbmat (ndof * DIM, lh);
+        FlatMatrixFixHeight<DIM_DMAT, TSCAL> bmat (ndof * DIM, lh);
+        FlatMatrixFixHeight<DIM_DMAT, TSCAL> dbmat (ndof * DIM, lh);
 	
-        FlatMatrixFixHeight<DIM_DMAT*BLOCK, double> bbmat (ndof * DIM, lh);
-        FlatMatrixFixHeight<DIM_DMAT*BLOCK, double> bdbmat (ndof * DIM, lh);
-        Mat<DIM_DMAT,DIM_DMAT> dmat;
+        FlatMatrixFixHeight<DIM_DMAT*BLOCK, TSCAL> bbmat (ndof * DIM, lh);
+        FlatMatrixFixHeight<DIM_DMAT*BLOCK, TSCAL> bdbmat (ndof * DIM, lh);
+        Mat<DIM_DMAT,DIM_DMAT, TSCAL> dmat;
 	
         const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
-
-	/*
-        FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
-        FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
-
-        eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
-	*/
 	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
 
         int i = 0;
@@ -296,11 +289,6 @@ public:
             for (int i2 = 0; i2 < BLOCK; i++, i2++)
               {
                 HeapReset hr(lh);
-		/*
-                SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-                  sip(ir[i], eltrans, pts[i], dxdxi[i]);
-		*/
-
                 const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
 
 
@@ -331,10 +319,6 @@ public:
             HeapReset hr(lh);
             
 	    const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
-	    /*
-            SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>
-	      sip(ir[i], eltrans, pts[i], dxdxi[i]);
-	    */
 
             DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
             dmatop.GenerateMatrix (fel, sip, dmat, lh);

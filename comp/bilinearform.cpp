@@ -937,8 +937,9 @@ namespace ngcomp
 				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizei*sizei/3);  // LU fact
 				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizei*sizeo);  
 				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizeo*sizeo);  
-
-			    		    
+				  
+				  
+				  // A := A - B D^{-1} C^T
 				  // new Versions, July 07
 				  LapackAInvBt (d, b);
 				  LapackMultAddABt (b, c, -1, a);
@@ -952,7 +953,7 @@ namespace ngcomp
 				  a -= b * Trans (idc);
 #endif
 			    
-				  if (printelmat) //  || fel.ElementType() == ET_TET)
+				  if (printelmat) 
 				    {
 				      testout->precision(8);
 				      (*testout) << "Schur elmat = " << endl << a << endl;

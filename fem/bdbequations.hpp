@@ -2011,18 +2011,8 @@ class MassIntegrator
 public:
   ///
   MassIntegrator (CoefficientFunction * coeff);
-  
   ///
   static Integrator * Create (Array<CoefficientFunction*> & coeffs);
-  /*
-  {
-    return new MassIntegrator (coeffs[0]);
-  }
-  */
-
-  virtual int Lumping () const
-    { return 1; }
-
   ///
   virtual string Name () const { return "Mass"; }
 };
@@ -2033,7 +2023,9 @@ class ComplexMassIntegrator
   : public T_BDBIntegrator<DiffOpId<D>, DiagDMat<1, Complex>, ScalarFiniteElement<D> >
 {
 public:
+  ///
   ComplexMassIntegrator (CoefficientFunction * coeff);
+  ///
   virtual string Name () const { return "ComplexMass"; }
 };
 
@@ -2047,16 +2039,30 @@ class RobinIntegrator
   : public T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, ScalarFiniteElement<D-1> >
 {
 public:
+  ///
   RobinIntegrator (CoefficientFunction * coeff);
-
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-  {
-    return new RobinIntegrator (coeffs[0]);
-  }
-
+  ///
+  static Integrator * Create (Array<CoefficientFunction*> & coeffs);
+  // {
+  // return new RobinIntegrator (coeffs[0]);
+  // }
+  ///
   virtual bool BoundaryForm () const { return 1; }
+  ///
   virtual string Name () const { return "Robin"; }
 };
+
+template <int D>
+class ComplexRobinIntegrator 
+  : public T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1, Complex>, ScalarFiniteElement<D-1> >
+{
+public:
+  ///
+  ComplexRobinIntegrator (CoefficientFunction * coeff);
+  ///
+  virtual string Name () const { return "ComplexRobin"; }
+};
+
 
 
 
