@@ -175,22 +175,22 @@ public:
       InnerProduct (v2);
   }
 
-  double L2Norm () const
+  virtual double L2Norm () const
   {
     return ngbla::L2Norm (FVDouble());
   }
 
-  BaseVector & Scale (double scal);
-  BaseVector & Scale (Complex scal);
+  virtual BaseVector & Scale (double scal);
+  virtual BaseVector & Scale (Complex scal);
 
-  BaseVector & SetScalar (double scal);
-  BaseVector & SetScalar (Complex scal);
+  virtual BaseVector & SetScalar (double scal);
+  virtual BaseVector & SetScalar (Complex scal);
 
-  BaseVector & Set (double scal, const BaseVector & v);
-  BaseVector & Set (Complex scal, const BaseVector & v);
+  virtual BaseVector & Set (double scal, const BaseVector & v);
+  virtual BaseVector & Set (Complex scal, const BaseVector & v);
 
-  BaseVector & Add (double scal, const BaseVector & v);
-  BaseVector & Add (Complex scal, const BaseVector & v);
+  virtual BaseVector & Add (double scal, const BaseVector & v);
+  virtual BaseVector & Add (Complex scal, const BaseVector & v);
 
   virtual ostream & Print (ostream & ost) const;
   virtual void Save(ostream & ost) const;
