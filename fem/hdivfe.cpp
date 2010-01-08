@@ -108,7 +108,7 @@ namespace ngfem
                    FlatMatrixFixWidth<DIM> shape) const
   {
     CalcShape (sip.IP(), shape);
-    Mat<DIM> trans = (1.0/sip.GetJacobiDet()) * sip.GetJacobian();(1.0/sip.GetJacobiDet()) * sip.GetJacobian();
+    Mat<DIM> trans = (1.0/sip.GetJacobiDet()) * sip.GetJacobian();
     for (int i = 0; i < ndof; i++)
       {
         Vec<DIM> hs = shape.Row(i);
