@@ -1477,7 +1477,10 @@ namespace netgen
     // Update the face mesh sizes to reflect the global maximum mesh size
     for(int i = 1; i <= occgeometry->NrFaces(); i++)
     {
-       occgeometry->SetFaceMaxH(i, min(mparam.maxh,occgeometry->GetFaceMaxH(i)));
+           if(!occgeometry->GetFaceMaxhModified(i))
+           {
+              occgeometry->SetFaceMaxH(i, mparam.maxh);
+           }   
     }
 
     if (strcmp (argv[1], "setsurfms") == 0)

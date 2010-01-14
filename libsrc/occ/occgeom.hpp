@@ -210,6 +210,11 @@ namespace netgen
       // Maximum mesh size for a given face
       // (Used to explicitly define mesh size limits on individual faces)
       Array<double> face_maxh;
+      
+      // Philippose - 14/01/2010
+      // Boolean array to detect whether a face has been explicitly modified 
+      // by the user or not
+      Array<bool> face_maxh_modified;
 
       // Philippose - 15/01/2009
       // Indicates which faces have been selected by the user in geometry mode
@@ -293,6 +298,19 @@ namespace netgen
          if((facenr> 0) && (facenr <= fmap.Extent()))
          {
             face_maxh[facenr-1] = min(mparam.maxh,faceh);
+            
+            // Philippose - 14/01/2010
+            // If the face maxh is greater than or equal to the 
+            // current global maximum, then identify the face as 
+            // not explicitly controlled by the user any more
+            if(faceh >= mparam.maxh)
+            {
+               face_maxh_modified[facenr-1] = 0;
+            }
+            else
+            {
+               face_maxh_modified[facenr-1] = 1;
+            }
          }
       }
 
@@ -309,7 +327,15 @@ namespace netgen
             return 0.0;
          }
       }
-
+      
+      // Philippose - 14/01/2010
+      // Returns the flag whether the given face 
+      // has a mesh size controlled by the user or not
+      bool GetFaceMaxhModified(int facenr)
+      {
+         return face_maxh_modified[facenr-1];
+      }
+      
       // Philippose - 17/01/2009
       // Returns the index of the currently selected face
       int SelectedFace()

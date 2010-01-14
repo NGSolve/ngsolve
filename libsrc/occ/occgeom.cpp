@@ -815,6 +815,12 @@ namespace netgen
       face_maxh.SetSize (fmap.Extent());
       face_maxh = mparam.maxh;
 
+      // Philippose - 15/01/2010      
+      face_maxh_modified.DeleteAll();      
+      face_maxh_modified.SetSize(fmap.Extent());      
+      face_maxh_modified = 0;
+      
+
       // Philippose - 17/01/2009
       face_sel_status.DeleteAll();
       face_sel_status.SetSize (fmap.Extent());
