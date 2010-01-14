@@ -1,1 +1,0 @@
-/configure --with-tcl=/usr/lib64 --with-tk=/usr/lib64 --enable-occ --enable-ffmpeg
