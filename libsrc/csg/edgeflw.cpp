@@ -2,7 +2,7 @@
 #include <meshing.hpp>
 #include <csg.hpp>
 
-#undef DEVELOP
+// #undef DEVELOP
 // #define DEVELOP
 
 namespace netgen
@@ -887,12 +887,7 @@ namespace netgen
 	       Array<Segment> & refedges,
 	       Array<bool> & refedgesinv)
   {
-    int j, k, l;
-    int hi;
-    Point<3> hp;
-    Vec<3> t, a1, a2, m, n;
     Segment seg;
-    Solid * locsol;
     Array<int> locsurfind, locsurfind2;
 
     Array<int> edges_priority;
@@ -908,26 +903,31 @@ namespace netgen
       {
 	(*testout) << "debug edge !!!" << endl;
 	(*testout) << "edgepoints = " << edgepoints << endl;
-	(*testout) << "s1, s2 = " << s1_rep << " - " << s2_rep << endl;
+	(*testout) << "s1, s2 = " << s1 << " - " << s2 << endl;
+	(*testout) << "s1_rep, s2_rep = " << s1_rep << " - " << s2_rep << endl;
       }
 
     refedges.SetSize(0);
     refedgesinv.SetSize(0);
-    hp = Center (edgepoints[0], edgepoints[1]);
+    Point<3> hp = Center (edgepoints[0], edgepoints[1]);
     ProjectToEdge (geometry.GetSurface(s1), geometry.GetSurface(s2), hp);
     
     if (debug)
       *testout << "hp = " << hp << endl;
 
+    Vec<3> t, a1, a2;
     geometry.GetSurface(s1) -> CalcGradient (hp, a1);
     geometry.GetSurface(s2) -> CalcGradient (hp, a2);
     t = Cross (a1, a2);
     t.Normalize();
     if (!pos) t *= -1;    
 
+
   
     for (int i = 0; i < geometry.GetNTopLevelObjects(); i++)
       {
+	Solid * locsol;
+
 	if (geometry.GetTopLevelObject(i)->GetLayer() != layer) 
 	  continue;
       
@@ -967,7 +967,7 @@ namespace netgen
 	    */
 	    locsurfind.SetSize(1);
 	    locsurfind[0] = -1;
-	    for (j = 0; j < geometry.GetNSurf(); j++)
+	    for (int j = 0; j < geometry.GetNSurf(); j++)
 	      if (geometry.GetSurface(j) == surf)
 		{
 		  locsurfind[0] = j;
@@ -983,7 +983,7 @@ namespace netgen
 	  (*testout) << "edge of tlo " << i << ", has " << locsurfind.Size() << " faces." << endl;
       
 
-	for (j = locsurfind.Size()-1; j >= 0; j--)
+	for (int j = locsurfind.Size()-1; j >= 0; j--)
 	  if (fabs (geometry.GetSurface(locsurfind[j])
 		    ->CalcFunctionValue (hp) ) > ideps*size)
 	    locsurfind.Delete(j);
@@ -993,15 +993,14 @@ namespace netgen
 
 
 
-	for (j = 0; j < locsurfind.Size(); j++)
+	for (int j = 0; j < locsurfind.Size(); j++)
 	  {      
 	    int lsi = locsurfind[j];
 	    int rlsi = geometry.GetSurfaceClassRepresentant(lsi);
 	  
-	    Vec<3> rn;
 
 	    // n is outer normal to solid
-	    n = geometry.GetSurface(lsi) -> GetNormalVector (hp);
+	    Vec<3> n = geometry.GetSurface(lsi) -> GetNormalVector (hp);
             if (debug)
               *testout << "n1 = " << n << endl;
 	    if (geometry.GetSurface (lsi)->Inverse())
@@ -1016,7 +1015,7 @@ namespace netgen
 	      }
 	  
 	    // rn is normal to class representant
-	    rn = geometry.GetSurface(rlsi) -> GetNormalVector (hp);
+	    Vec<3> rn = geometry.GetSurface(rlsi) -> GetNormalVector (hp);
 	    if (debug)
 	      {
 		(*testout) << "rn = " << rn << endl;
@@ -1028,7 +1027,8 @@ namespace netgen
 	    bool sameasref = ((n * rn) > 0);
 
 	    //m = Cross (t, rn);
-	    m = Cross (t, n); if(!sameasref) m*=-1.;
+	    Vec<3> m = Cross (t, n); 
+	    if(!sameasref) m*=-1.;
 	    
 	    m.Normalize();
 
@@ -1050,6 +1050,15 @@ namespace netgen
 			     locsol -> VectorIn2 (hp, m, -1. * n, eps) == IS_INSIDE);
  		pre_ok[1] = (locsol -> VectorIn2 (hp, -1.*m, n, eps) == IS_OUTSIDE &&
 			     locsol -> VectorIn2 (hp, -1.*m, -1. * n, eps) == IS_INSIDE);
+		
+		if (debug)
+		  {
+		    *testout << "eps = " << eps << endl;
+		    *testout << "in,1 = " << locsol -> VectorIn2 (hp, m, n, eps) << endl;
+		    *testout << "in,1 = " << locsol -> VectorIn2 (hp, m, -1. * n, eps) << endl;
+		    *testout << "in,1 = " << locsol -> VectorIn2 (hp, -1.*m, n, eps) << endl;
+		    *testout << "in,1 = " << locsol -> VectorIn2 (hp, -1.*m, -1. * n, eps) << endl;
+		  }
  	      }
  	    while(pre_ok[0] && pre_ok[1] && eps > 1e-16*size);
 
@@ -1062,7 +1071,7 @@ namespace netgen
 	    eps = 1e-8*size;
 	    
 
-	    for (k = 1; k <= 2; k ++)
+	    for (int k = 1; k <= 2; k ++)
 	      {
 		bool edgeinv = (k == 2);
 	      
@@ -1107,8 +1116,8 @@ namespace netgen
 		  {
 		    if (debug)
 		      (*testout) << "is true" << endl;
-		    hi = 0;
-		    for (l = 1; !hi && l <= refedges.Size(); l++)
+		    int hi = 0;
+		    for (int l = 1; !hi && l <= refedges.Size(); l++)
 		      {
 			   if (refedges.Get(l).si == rlsi &&     // JS sept 2006
 			       // if (refedges.Get(l).si == lsi &&
@@ -1192,7 +1201,7 @@ namespace netgen
 
     for(int i=0; i<refedges.Size()-1; i++)
       {
-	for(j=i+1; !todelete.Test(i) && j<refedges.Size(); j++)
+	for(int j=i+1; !todelete.Test(i) && j<refedges.Size(); j++)
 	  {
 	    if(todelete.Test(j))
 	      continue;

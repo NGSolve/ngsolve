@@ -869,7 +869,7 @@ namespace netgen
     if(ret1 != DOES_INTERSECT)
       return ret1;
 
-    return VecInSolid(p,v2,eps);
+    return VecInSolid(p,v1+0.01*v2,eps);
   }
   
   int Revolution :: GetNSurfaces() const
