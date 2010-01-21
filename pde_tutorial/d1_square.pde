@@ -34,7 +34,7 @@ define coefficient coef_penalty
 # define a finite element space
 # Dirichlet boundary is Gamma_1 
 # play around with -order=...
-define fespace v -order=2 -dirichlet=[1]
+define fespace v -order=3 -dirichlet=[1]
 
 # the solution field
 define gridfunction u -fespace=v -nested
@@ -48,7 +48,7 @@ define linearform f -fespace=v
 source coef_source
 neumann coef_neumann
 
-define preconditioner c -type=direct -bilinearform=a -inverse=pardiso
+define preconditioner c -type=direct -bilinearform=a
 # define preconditioner c -type=local -bilinearform=a 
 # define preconditioner c -type=multigrid -bilinearform=a -smoother=block
 
