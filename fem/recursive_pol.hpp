@@ -166,6 +166,12 @@ namespace ngfem
       values[n] = (2.0*n-1)/n * x * values[n-1] - (n-1.0)/n * y*y * values[n-2];    
     }
 
+    template <class S, class Sy, class Sc, class T>
+    static void EvalScaledMult (S x, Sy y, Sc c, T & values)
+    {
+      LegendrePolynomialFO<n-1>::EvalScaledMult (x, y, c, values);
+      values[n] = (2.0*n-1)/n * x * values[n-1] - (n-1.0)/n * y*y * values[n-2];    
+    }
 
   };
 
@@ -183,6 +189,10 @@ namespace ngfem
 
     template <class S, class Sy, class T>
     static void EvalScaled (S x, S y, T & values)
+    { ; }
+
+    template <class S, class Sy, class Sc, class T>
+    static void EvalScaledMult (S x, Sy y, Sc c, T & values)
     { ; }
   };
 
@@ -205,6 +215,12 @@ namespace ngfem
     static void EvalScaled (S x, Sy y, T & values)
     { 
       values[0] = 1;
+    }
+
+    template <class S, class Sy, class Sc, class T>
+    static void EvalScaledMult (S x, Sy y, Sc c, T & values)
+    { 
+      values[0] = c;
     }
   };
 
@@ -230,6 +246,13 @@ namespace ngfem
     {
       values[0] = 1;
       values[1] = x;
+    }
+
+    template <class S, class Sy, class Sc, class T>
+    static void EvalScaledMult (S x, Sy y, Sc c, T & values)
+    { 
+      values[0] = c;
+      values[1] = c*x;
     }
   };
 

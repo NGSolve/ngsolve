@@ -647,7 +647,7 @@ namespace ngfem
   template class T_H1HighOrderFiniteElement<ET_PYRAMID>;
   template class T_H1HighOrderFiniteElement<ET_HEX>;
 
-  template class H1HighOrderFE<ET_SEGM>;
-  template class H1HighOrderFE<ET_TET>;
+  // template class H1HighOrderFE<ET_SEGM>;
+  // template class H1HighOrderFE<ET_TET>;
 }
 

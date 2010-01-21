@@ -156,6 +156,8 @@ namespace ngcomp
 	Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = &one;
 	evaluator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
+	if ( !discontinuous )
+	  boundary_evaluator = GetIntegrators().CreateBFI("robinedge",2,coeffs); 
       }
     else if(ma.GetDimension() == 3) 
       {

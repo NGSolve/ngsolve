@@ -31,7 +31,9 @@ namespace ngfem
     static void CalcSplitted (Sx x, Sy y, T & val1, T & val2)
     {
       Sx bub1 = (1-x-y)*(1+x-y);
-      ScaledLegendrePolynomialMult (n-3, x, 1-y, bub1, val1); 
+      // ScaledLegendrePolynomialMult (n-3, x, 1-y, bub1, val1); 
+      LegendrePolynomialFO<n-3>::EvalScaledMult (x, 1-y, bub1, val1); 
+
       // LegendrePolynomialMult (n-3, 2*y-1, y, val2);
       LegendrePolynomialFO<n-3>::EvalMult (2*y-1, y, val2);
     }

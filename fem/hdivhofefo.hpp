@@ -129,7 +129,8 @@ namespace ngfem
 	    { 
 	      AutoDiff<2> xi = lami[e[1]] - lami[e[0]]; 
 	      AutoDiff<2> eta = 1 - lami[e[1]] - lami[e[0]]; 
-	      T_ORTHOPOL::CalcTrigExt(ORDER+1, xi, eta, adpol1); 
+	      // T_ORTHOPOL::CalcTrigExt(ORDER+1, xi, eta, adpol1); 
+	      T_ORTHOPOL::CalcScaled<ORDER+1> (xi, 1-eta, adpol1); 
 	      
 	      for(int j = 0; j < ORDER; j++) 
 		shape[ii++] = Du<2> (adpol1[j]);
@@ -139,16 +140,12 @@ namespace ngfem
       //Inner shapes (Face) 
       if(ORDER > 1) 
 	{
-	  int fav[3] = { 0, 1, 2 }; 
-	  //Sort vertices ... v(f0) < v(f1) < v(f2) 
-	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-	  if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  
-	  
+	  INT<4> fav = GetFaceSort (0, vnums);
+
 	  AutoDiff<2> xi  = lami[fav[2]]-lami[fav[1]];
 	  AutoDiff<2> eta = lami[fav[0]]; 
 	  
-	  TrigShapesInnerLegendre::CalcSplitted(ORDER+1, xi, eta, adpol1,adpol2);
+	  TrigShapesInnerLegendre::CalcSplitted<ORDER+1> (xi, eta, adpol1,adpol2);
 	  
 	  // rotated gradients:
 	  for (int j = 0; j < ORDER-1; j++)

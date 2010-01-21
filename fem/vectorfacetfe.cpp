@@ -734,6 +734,7 @@ namespace ngfem {
 
     int p = facet_order[fanr][0];
     ArrayMem< double, 10> polx(p+1), poly(p+1);
+    Matrix<> polsy(p+1, p+1);
     int ii = first;
 
     AutoDiff<3> adxi  = lami[fav[j1]]-lami[fav[jmax]];
@@ -743,7 +744,8 @@ namespace ngfem {
     double eta = lami[fav[j2]].Value();
 
     ScaledLegendrePolynomial (p, 2*xi+eta-1, 1-eta, polx);
-    LegendrePolynomial (p, 2*eta-1, poly);
+    // LegendrePolynomial (p, 2*eta-1, poly);
+    DubinerJacobiPolynomials (p, 2*eta-1, 1, 0, polsy);
 
     /*
     *testout << "facet_order = " << facet_order[fanr][0] << endl;
@@ -757,7 +759,8 @@ namespace ngfem {
     for (int i = 0; i <= facet_order[fanr][0]; i++)
       for (int j = 0; j <= facet_order[fanr][0]-i; j++)
 	{
-	  double val = polx[i] * poly[j];
+	  // double val = polx[i] * poly[j];
+	  double val = polx[i] * polsy(i, j);
 	  shape(ii,0) = val * adxi.DValue(0);
 	  shape(ii,1) = val * adxi.DValue(1);
 	  shape(ii,2) = val * adxi.DValue(2);
