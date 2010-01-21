@@ -25,6 +25,7 @@ namespace ngcomp
     int nel;
 
     Array<int> first_facet_dof;
+    Array<int> first_inner_dof;  // for highest_order_dc
     int ndof_lo;
 
     int rel_order;
@@ -37,7 +38,7 @@ namespace ngcomp
     bool var_order;
     bool print;
 
-
+    bool highest_order_dc;
 
   public:
     ///
