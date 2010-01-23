@@ -255,15 +255,13 @@ namespace ngsolve
 	hgfu = gfu->GetComponent(component);
 
       if (!gfu->GetFESpace().IsComplex())
-	SetValues (pde.GetMeshAccess(),
-		   *coef,
-		   dynamic_cast<S_GridFunction<double>&> (*hgfu), 
-		   boundary, lh);
+	SetValues<double> (pde.GetMeshAccess(),
+			   *coef, *hgfu, 
+			   boundary, 0, lh);
       else
-	SetValues (pde.GetMeshAccess(),
-		   *coef,
-		   dynamic_cast<S_GridFunction<Complex>&> (*hgfu), 
-		   boundary, lh);
+	SetValues<Complex> (pde.GetMeshAccess(),
+			    *coef, *hgfu,
+			    boundary, 0, lh);
 
       if (component != -1)
 	delete hgfu;

@@ -2535,7 +2535,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     name="ElementFESpace(l2)";
     if (parseflags) CheckFlags(flags);
     
-    int order = int(flags.GetNumFlag ("order", 0));
+    order = int(flags.GetNumFlag ("order", 0));
 
     prol = new ElementProlongation (*this);
 

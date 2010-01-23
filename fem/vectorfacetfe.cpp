@@ -120,20 +120,28 @@ namespace ngfem {
     double xi = lami[fav[0]].Value();
     double eta = lami[fav[1]].Value();
 
+    AutoDiff<2> adxi  = lami[fav[0]]-lami[fav[2]];
+    AutoDiff<2> adeta = lami[fav[1]]-lami[fav[2]];
+
     ScaledLegendrePolynomial (p, 2*xi+eta-1, 1-eta, polx);
-    LegendrePolynomial (p, 2*eta-1, poly);
+
+    Matrix<> polsy(p+1, p+1);
+    DubinerJacobiPolynomials (p, 2*eta-1, 1, 0, polsy);
+
+    // LegendrePolynomial (p, 2*eta-1, poly);
 
     // *testout << "surface trig, orderinner = " << order_inner[0] << endl;
 
     for (int i = 0; i <= order_inner[0]; i++)
       for (int j = 0; j <= order_inner[0]-i; j++)
 	{
-	  double val = polx[i] * poly[j];
-	  shape(ii,0) = val * lami[fav[0]].DValue(0);
-	  shape(ii,1) = val * lami[fav[0]].DValue(1);
+	  // double val = polx[i] * poly[j];
+	  double val = polx[i] * polsy(i,j);
+	  shape(ii,0) = val * adxi.DValue(0);  // lami[fav[0]].DValue(0);
+	  shape(ii,1) = val * adxi.DValue(1);  // lami[fav[0]].DValue(1);
 	  ii++;
-	  shape(ii,0) = val * lami[fav[1]].DValue(0);
-	  shape(ii,1) = val * lami[fav[1]].DValue(1);
+	  shape(ii,0) = val * adeta.DValue(0);  // lami[fav[1]].DValue(0);
+	  shape(ii,1) = val * adeta.DValue(1);  // lami[fav[1]].DValue(1);
 	  ii++;
 	}
     // *testout << "surface trig " << endl << shape << endl;

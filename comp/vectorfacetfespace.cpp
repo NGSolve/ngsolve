@@ -92,6 +92,7 @@ namespace ngcomp
 	Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = &one;
 	evaluator = GetIntegrators().CreateBFI("massvectorfacet", 2, coeffs);
+	boundary_evaluator = GetIntegrators().CreateBFI("robinvectorfacet",2,coeffs); 
       }
     else if(ma.GetDimension() == 3) 
       {
@@ -371,18 +372,19 @@ namespace ngcomp
     ArrayMem<int, 4> ednums;
     
     ma.GetSElVertices(selnr, vnums);
+    int reduceorder = highest_order_dc ? 1 : 0;
     switch (ma.GetSElType(selnr))
     {
       case ET_SEGM:
         fe -> SetVertexNumbers (vnums);
         ma.GetSElEdges(selnr, ednums);
-        fe -> SetOrder (order_facet[ednums[0]][0]); 
+        fe -> SetOrder (order_facet[ednums[0]][0]-reduceorder); 
         fe -> ComputeNDof();
         break;
       case ET_TRIG: 
       case ET_QUAD:
         fe -> SetVertexNumbers (vnums);
-        fe -> SetOrder (order_facet[ma.GetSElFace(selnr)][0]);// SZ not yet anisotropic order for facet fe !!! 
+        fe -> SetOrder (order_facet[ma.GetSElFace(selnr)][0]-reduceorder);
         fe -> ComputeNDof();
         break;
     default:

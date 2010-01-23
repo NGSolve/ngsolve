@@ -154,6 +154,18 @@ namespace ngfem
 
     virtual void
     Apply (const FiniteElement & fel,
+	   const BaseSpecificIntegrationPoint & sip,
+	   FlatVector<Complex> x, 
+	   FlatVector<Complex> flux,
+	   LocalHeap & lh) const
+    {
+      FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
+      CalcMatrix (fel, sip, mat, lh);
+      flux = mat * x;
+    }
+
+    virtual void
+    Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationRule & mir,
 	   FlatVector<double> x, 
 	   FlatMatrix<double> flux,
@@ -178,6 +190,19 @@ namespace ngfem
       CalcMatrix (fel, sip, mat, lh);
       flux = mat * x;
     }
+
+
+    virtual void
+    ApplyTrans (const FiniteElement & fel,
+		const BaseSpecificIntegrationPoint & sip,
+		FlatVector<Complex> flux,
+		FlatVector<Complex> x, 
+		LocalHeap & lh) const 
+    {
+      FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
+      CalcMatrix (fel, sip, mat, lh);
+      flux = mat * x;
+    }
   };
 
 
@@ -185,40 +210,57 @@ namespace ngfem
 
 
 
-  template <typename DIFFOP>
+  template <typename DIFFOP, typename FEL>
   class T_DifferentialOperator : public DifferentialOperator
   {
+  protected:
+    enum { DIM_SPACE   = DIFFOP::DIM_SPACE };
+    enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
+    enum { DIM_DMAT    = DIFFOP::DIM_DMAT };
+    enum { DIM         = DIFFOP::DIM };
+
   public:
     virtual int Dim() const { return DIFFOP::DIM_DMAT; }
-    virtual bool Boundary() const { return DIFFOP::DIM_SPACE > DIFFOP::DIM_ELEMENT; }
+    virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
 
     virtual void
-    CalcMatrix (const FiniteElement & fel,
-		const BaseSpecificIntegrationPoint & sip,
+    CalcMatrix (const FiniteElement & bfel,
+		const BaseSpecificIntegrationPoint & bsip,
 		FlatMatrix<double> mat, 
 		LocalHeap & lh) const
     {
+      const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
+	static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+
+      const FEL & fel = static_cast<const FEL&> (bfel);
+
       DIFFOP::GenerateMatrix (fel, sip, mat, lh);
     }
 
     virtual void
-    Apply (const FiniteElement & fel,
-	   const BaseSpecificIntegrationPoint & sip,
+    Apply (const FiniteElement & bfel,
+	   const BaseSpecificIntegrationPoint & bsip,
 	   FlatVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const
     {
+      const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
+	static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+      const FEL & fel = static_cast<const FEL&> (bfel);
       DIFFOP::Apply (fel, sip, x, flux, lh);
     }
 
 
     virtual void
-    Apply (const FiniteElement & fel,
-	   const BaseMappedIntegrationRule & mir,
+    Apply (const FiniteElement & bfel,
+	   const BaseMappedIntegrationRule & bmir,
 	   FlatVector<double> x, 
 	   FlatMatrix<double> flux,
 	   LocalHeap & lh) const
     {
+      const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+	static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+      const FEL & fel = static_cast<const FEL&> (bfel);
       DIFFOP::ApplyIR (fel, mir, x, flux, lh);
     }
 
@@ -226,12 +268,15 @@ namespace ngfem
 
 
     virtual void
-    ApplyTrans (const FiniteElement & fel,
-		const BaseSpecificIntegrationPoint & sip,
+    ApplyTrans (const FiniteElement & bfel,
+		const BaseSpecificIntegrationPoint & bsip,
 		FlatVector<double> flux,
 		FlatVector<double> x, 
 		LocalHeap & lh) const 
     {
+      const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
+	static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+      const FEL & fel = static_cast<const FEL&> (bfel);
       DIFFOP::ApplyTrans (fel, sip, flux, x, lh);
     }    
   };
