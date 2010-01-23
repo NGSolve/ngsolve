@@ -173,6 +173,43 @@ public:
 };
 
 
+/// Identity for boundary-normal elements, gives q_n n
+template <int D>
+class DiffOpIdVecHDivBoundary : public DiffOp<DiffOpIdVecHDivBoundary<D> >
+{
+public:
+  enum { DIM = 1 };
+  enum { DIM_SPACE = D };
+  enum { DIM_ELEMENT = D-1 };
+  enum { DIM_DMAT = D };
+  enum { DIFFORDER = 0 };
+
+  template <typename FEL, typename SIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+			      MAT & mat, LocalHeap & lh)
+  {
+    mat =  (1.0/sip.GetJacobiDet())*Trans(fel.GetShape (sip.IP(), lh)) * Trans (sip.GetNV());;
+  }
+
+  template <typename FEL, typename SIP, class TVX, class TVY>
+  static void Apply (const FEL & fel, const SIP & sip,
+		     const TVX & x, TVY & y,
+		     LocalHeap & lh)
+  {
+    y = ( (1.0/sip.GetJacobiDet())*(InnerProduct (fel.GetShape (sip.IP(), lh), x) )) * sip.GetNV();
+  }
+
+  template <typename FEL, typename SIP, class TVX, class TVY>
+  static void ApplyTrans (const FEL & fel, const SIP & sip,
+			  const TVX & x, TVY & y,
+			  LocalHeap & lh)
+  {
+    y = ((1.0/sip.GetJacobiDet())* InnerProduct (x, sip.GetNV()) ) * fel.GetShape (sip.IP(), lh);
+  }
+};
+
+
+
 
 /// Integrator for term of zero-th order
 template <int D>
@@ -251,7 +288,7 @@ public:
     
   ///
   virtual string Name () const { return "SourceHDiv"; }
-};
+  };
 */
 
 
@@ -351,6 +388,7 @@ public:
   virtual bool BoundaryForm () const { return 1; }
   virtual string Name () const { return "RobinHDiv"; }
 };
+
 
 }
 

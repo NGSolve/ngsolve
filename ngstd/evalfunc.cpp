@@ -268,7 +268,7 @@ namespace ngstd
 
     if (stacksize != ydim-1)
       {
-	cout << "final stacksize not matching ydim" << endl;
+	cout << "final stacksize is " << stacksize+1 << ", but ydim is " << ydim << endl;
 	return;
       }
 
@@ -474,7 +474,8 @@ namespace ngstd
 
     if (stacksize != ydim-1)
       {
-	cout << "final stacksize not matching ydim" << endl;
+	cout << "final stacksize is " << stacksize+1 << ", but ydim is " << ydim << endl;
+	// cout << "final stacksize not matching ydim" << endl;
 	return;
       }
 

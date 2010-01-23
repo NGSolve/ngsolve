@@ -41,8 +41,9 @@ namespace ngcomp
   template <class SCAL>
   extern void SetValues (const MeshAccess & ma, 
 			 const CoefficientFunction & coef,
-			 S_GridFunction<SCAL> & u,
+			 GridFunction & u,
 			 bool bound,
+			 DifferentialOperator * diffop,   // NULL is FESpace evaluator
 			 LocalHeap & clh);
     
 

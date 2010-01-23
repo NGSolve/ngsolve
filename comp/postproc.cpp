@@ -496,10 +496,13 @@ namespace ngcomp
   template <class SCAL>
   void SetValues (const MeshAccess & ma, 
 		  const CoefficientFunction & coef,
-		  S_GridFunction<SCAL> & u,
+		  GridFunction & bu,
 		  bool bound,
+		  DifferentialOperator * diffop,
 		  LocalHeap & clh)
   {
+    S_GridFunction<SCAL> & u = dynamic_cast<S_GridFunction<SCAL> &> (bu);
+
     ma.PushStatus ("setvalues");
 
     const FESpace & fes = u.GetFESpace();
@@ -513,7 +516,7 @@ namespace ngcomp
     if (&bli == NULL)
       throw Exception ("no evaluator available");
 
-    int dimflux   = bli.DimFlux(); 
+    int dimflux = diffop ? diffop->Dim() : bli.DimFlux(); 
     
     Array<int> cnti(fes.GetNDof());
     cnti = 0;
@@ -582,14 +585,21 @@ namespace ngcomp
 		      SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
 		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      coef.Evaluate (sip, fluxi);
-		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
+		      if (diffop)
+			diffop -> ApplyTrans (fel, sip, fluxi, elfluxi, lh);
+		      else
+			bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
 		    }
 		  else
 		    {
 		      SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
 		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      coef.Evaluate (sip, fluxi);
-		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
+
+		      if (diffop)
+			diffop -> ApplyTrans (fel, sip, fluxi, elfluxi, lh);
+		      else
+			bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
 		    }
 		}
 	      else
@@ -599,14 +609,21 @@ namespace ngcomp
 		      SpecificIntegrationPoint<2,3> sip (ir[j], eltrans, lh);
 		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      coef.Evaluate (sip, fluxi);
-		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
+		      if (diffop)
+			diffop -> ApplyTrans (fel, sip, fluxi, elfluxi, lh);
+		      else
+			bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
 		    }
 		  else
 		    {
 		      SpecificIntegrationPoint<1,2> sip (ir[j], eltrans, lh);
 		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
 		      coef.Evaluate (sip, fluxi);
-		      bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
+
+		      if (diffop)
+			diffop -> ApplyTrans (fel, sip, fluxi, elfluxi, lh);
+		      else
+			bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
 		    }
 		}
 	      
@@ -616,6 +633,7 @@ namespace ngcomp
 	  if (dim > 1)
 	    {
 	      //CL: what about unsymmetric bilinearformintegrators?
+	      //JS: wird nur für L2 (mass)-integrator verwendet, massedge, ...
 	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
 	      const BlockBilinearFormIntegrator & bbli = 
 		dynamic_cast<const BlockBilinearFormIntegrator&> (bli);
@@ -676,14 +694,16 @@ namespace ngcomp
 
   template void SetValues<double> (const MeshAccess & ma, 
 				   const CoefficientFunction & coef,
-				   S_GridFunction<double> & u,
+				   GridFunction & u,
 				   bool bound,
+				   DifferentialOperator * diffop,
 				   LocalHeap & clh);
 
   template void SetValues<Complex> (const MeshAccess & ma, 
 				    const CoefficientFunction & coef,
-				    S_GridFunction<Complex> & u,
+				    GridFunction & u,
 				    bool bound,
+				    DifferentialOperator * diffop,
 				    LocalHeap & clh);
 
 
