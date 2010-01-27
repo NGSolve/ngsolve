@@ -45,7 +45,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\blas&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\lapack&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
-				PreprocessorDefinitions="_DEBUG;NETGEN_ELTRANS;WIN32;LAPACK;MSVC_EXPRESS;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
+				PreprocessorDefinitions="_DEBUG;NETGEN_ELTRANS;WIN32;LAPACK;MSVC_EXPRESS;_WIN32_WINNT=0x0502"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="0"
@@ -126,7 +126,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\blas&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\lapack&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
-				PreprocessorDefinitions="_DEBUG;NETGEN_ELTRANS;WIN32;LAPACK;MSVC_EXPRESS;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
+				PreprocessorDefinitions="_DEBUG;NETGEN_ELTRANS;WIN32;LAPACK;MSVC_EXPRESS;_WIN32_WINNT=0x0502"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="0"
@@ -211,7 +211,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\blas&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\lapack&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
-				PreprocessorDefinitions="NETGEN_ELTRANS;WIN32;LAPACK;MSVC_EXPRESS;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
+				PreprocessorDefinitions="NETGEN_ELTRANS;WIN32;LAPACK;MSVC_EXPRESS;_WIN32_WINNT=0x0502"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -298,7 +298,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\blas&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\lapack&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
-				PreprocessorDefinitions="NETGEN_ELTRANS;WIN32;noLAPACK;MSVC_EXPRESS;WINVER=0x0600;NTDDI_VERSION=NTDDI_VISTA"
+				PreprocessorDefinitions="NETGEN_ELTRANS;WIN32;noLAPACK;MSVC_EXPRESS;_WIN32_WINNT=0x0502"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -478,6 +478,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\fem\DGIntegrators.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\fem\dynamicmem.cpp"
 					>
 				</File>
@@ -543,6 +547,10 @@
 				</File>
 				<File
 					RelativePath="..\fem\l2hofe.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\fem\l2hofefo.cpp"
 					>
 				</File>
 				<File
@@ -896,6 +904,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\basiclinalg\clapack.h"
+					>
+				</File>
+				<File
 					RelativePath="..\basiclinalg\expr.hpp"
 					>
 				</File>
@@ -936,6 +948,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\fem\diffop.hpp"
+					>
+				</File>
+				<File
 					RelativePath="..\fem\elementtopology.hpp"
 					>
 				</File>
@@ -945,6 +961,10 @@
 				</File>
 				<File
 					RelativePath="..\fem\facetfe.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\fem\facethofe.hpp"
 					>
 				</File>
 				<File
@@ -984,6 +1004,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\fem\hcurllofe.hpp"
+					>
+				</File>
+				<File
 					RelativePath="..\fem\hdiv_equations.hpp"
 					>
 				</File>
@@ -996,6 +1020,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\fem\hdivhofefo.hpp"
+					>
+				</File>
+				<File
 					RelativePath="..\fem\integrator.hpp"
 					>
 				</File>
@@ -1005,6 +1033,10 @@
 				</File>
 				<File
 					RelativePath="..\fem\l2hofe.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\fem\l2hofefo.hpp"
 					>
 				</File>
 				<File
@@ -1029,6 +1061,14 @@
 				</File>
 				<File
 					RelativePath="..\fem\specialelement.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\fem\thdivfe.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\fem\tscalarfe.hpp"
 					>
 				</File>
 				<File
