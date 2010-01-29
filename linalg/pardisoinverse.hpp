@@ -22,7 +22,8 @@ namespace ngla
   template<class TM, class TV_ROW, class TV_COL>
   class PardisoInverse : public BaseMatrix
   {
-    int height, nze, entrysize;
+    int height;  // matrix size in scalars
+    int nze, entrysize;
     bool print;
 #ifdef USE_PARDISO400    
     //CL: is this also working on 32-bit architectures?
@@ -61,9 +62,9 @@ namespace ngla
     ///
     virtual ~PardisoInverse ();
     ///
-    int VHeight() const { return height; }
+    int VHeight() const { return height/entrysize; }
     ///
-    int VWidth() const { return height; }
+    int VWidth() const { return height/entrysize; }
     ///
     void Allocate (const Array<int> & aorder, 
 		   const Array<CliqueEl*> & cliques,
@@ -94,7 +95,7 @@ namespace ngla
 
     virtual BaseVector * CreateVector () const
     {
-      return new VVector<TV> (height);
+      return new VVector<TV> (height/entrysize);
     }
   };
 
