@@ -1147,7 +1147,7 @@ namespace ngcomp
 		    SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
 		    eltrans.CalcPoint(sip.IP(), point, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-		    fluxi2(0) = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
+		    const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip,fluxi2);
 		    det = fabs(sip.GetJacobiDet()); 
 		  }
 		else
@@ -1156,7 +1156,7 @@ namespace ngcomp
 		    SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
 		    eltrans.CalcPoint(sip.IP(), point, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-		    fluxi2(0) = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
+		    const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip,fluxi2);
 		    det = fabs(sip.GetJacobiDet());  
 		  }
 	      }
