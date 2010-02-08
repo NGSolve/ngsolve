@@ -18,9 +18,10 @@ void gettimeofday(struct timeval* t,void* timezone)
         t->tv_sec=timebuffer.time;
         t->tv_usec=1000*timebuffer.millitm;
 }
-
 #else
+
 #include <sys/time.h>
+
 #endif
 
 #ifdef PARALLEL
@@ -360,6 +361,8 @@ namespace ngcomp
 
     if (timing)
       {
+
+	/*
 	    cout << "Mapping timing" << endl;
 
 	    timeval dtime;
@@ -393,7 +396,7 @@ namespace ngcomp
 	    double dendtime = dtime.tv_sec + 1e-6 * dtime.tv_usec;
 	    
 	    cout << "time = " << dendtime - dstarttime << endl;
-
+	*/
 
 
 
@@ -1599,10 +1602,11 @@ namespace ngcomp
             for (int i = 0; i < useddof.Size(); i++)
               if (useddof.Test(i))
                 cntused++;
+	    
             cout << "used " << cntused
                  << ", unused = " << useddof.Size()-cntused
                  << ", total = " << useddof.Size() << endl;
-            
+
             ma.PopStatus ();
           }
 

@@ -270,9 +270,11 @@ namespace ngcomp
 	    for (int i = 0; i < ne; i++)
 	      {
 		first_inner_dof[i] = ndof;
-		
-		// only tets supported:
-		ndof += 4*(order+1)*2;
+		switch (ma.GetElType(i))
+		  {
+		  case ET_TET: ndof += 4*(order+1)*2; break;
+		  case ET_PRISM: ndof += 2 * (2*(order+1)+3*(2*order+1)); break;
+		  }
 	      }
 	    first_inner_dof[ne] = ndof;
 	  }
@@ -290,6 +292,7 @@ namespace ngcomp
 	*testout << "*** Update VectorFacetFESpace: General Information" << endl;
 	*testout << " order facet (facet) " << order_facet << endl; 
 	*testout << " first_facet_dof (facet)  " << first_facet_dof << endl; 
+	*testout << " first_inner_dof (facet)  " << first_inner_dof << endl; 
       } 
 
 
@@ -306,16 +309,16 @@ namespace ngcomp
 
   const FiniteElement & VectorFacetFESpace :: GetFE ( int elnr, LocalHeap & lh ) const
   {
-    
-    VectorFacetVolumeFiniteElement * fe = 0;
+    VectorFacetVolumeFiniteElement<2> * fe2d = 0;
+    VectorFacetVolumeFiniteElement<3> * fe3d = 0;
     switch (ma.GetElType(elnr))
       {
-      case ET_TRIG: fe = new (lh)  VectorFacetVolumeTrig (); break;
-      case ET_QUAD: fe = new (lh) VectorFacetVolumeQuad (); break;
-      case ET_TET:  fe = new (lh) VectorFacetVolumeTet (); break;
-      case ET_PYRAMID: fe = new (lh)  VectorFacetVolumePyramid (); break;
-      case ET_PRISM: fe = new (lh)  VectorFacetVolumePrism (); break;
-      case ET_HEX:   fe = new (lh) VectorFacetVolumeHex (); break;
+      case ET_TRIG: fe2d = new (lh)  VectorFacetVolumeTrig (); break;
+      case ET_QUAD: fe2d = new (lh) VectorFacetVolumeQuad (); break;
+      case ET_TET:  fe3d = new (lh) VectorFacetVolumeTet (); break;
+      case ET_PYRAMID: fe3d = new (lh)  VectorFacetVolumePyramid (); break;
+      case ET_PRISM: fe3d = new (lh)  VectorFacetVolumePrism (); break;
+      case ET_HEX:   fe3d = new (lh) VectorFacetVolumeHex (); break;
       default:
         throw Exception (string("VectorFacetFESpace::GetFE: unsupported element ")+
                          ElementTopology::GetElementName(ma.GetElType(elnr)));
@@ -326,23 +329,36 @@ namespace ngcomp
     
     ma.GetElVertices(elnr, vnums);
 
-    if (ma.GetDimension() == 2)
-      ma.GetElEdges(elnr, fanums);
+    if (fe2d)
+      {
+	ma.GetElEdges(elnr, fanums);
+    
+	order_fa.SetSize(fanums.Size());
+	for (int j = 0; j < fanums.Size(); j++)
+	  order_fa[j] = order_facet[fanums[j]][0]; 
+	
+	fe2d -> SetVertexNumbers (vnums);
+	fe2d -> SetOrder (order_fa);
+	fe2d -> ComputeNDof();
+	
+	return *fe2d;
+      }    
     else
-      ma.GetElFaces(elnr, fanums);
+      {
+	ma.GetElFaces(elnr, fanums);
     
-    order_fa.SetSize(fanums.Size());
-    for (int j = 0; j < fanums.Size(); j++)
-      order_fa[j] = order_facet[fanums[j]][0]; //SZ not yet anisotropric
- 
-    fe -> SetVertexNumbers (vnums);
-    fe -> SetOrder (order_fa);
-    fe -> ComputeNDof();
+	order_fa.SetSize(fanums.Size());
+	for (int j = 0; j < fanums.Size(); j++)
+	  order_fa[j] = order_facet[fanums[j]][0]; 
+	
+	fe3d -> SetVertexNumbers (vnums);
+	fe3d -> SetOrder (order_fa);
+	fe3d -> ComputeNDof();
     
-    return *fe;
-    
-
+	return *fe3d;
+      }
   }
+
 
   const FiniteElement & VectorFacetFESpace :: GetSFE ( int selnr, LocalHeap & lh ) const
   {
@@ -468,35 +484,64 @@ namespace ngcomp
 	    fanums.SetSize(0);
 	    dnums.SetSize(0);
 	    
+	    ELEMENT_TYPE et = ma.GetElType (elnr);
 	    ma.GetElFaces (elnr, fanums);
 	    
+	    int innerdof = first_inner_dof[elnr];
 	    for(int i=0; i<fanums.Size(); i++)
 	      {
-		int facetdof = first_facet_dof[fanums[i]];
-		int innerdof = first_inner_dof[elnr];
+		ELEMENT_TYPE ft = ElementTopology::GetFacetType (et, i);
 		
-		for (int j = 0; j <= order; j++)
-		  for (int k = 0; k <= order-j; k++)
-		    {
-		      if (j+k == 0)
+		int facetdof = first_facet_dof[fanums[i]];
+		
+		if (ft == ET_TRIG)
+		  {
+		    for (int j = 0; j <= order; j++)
+		      for (int k = 0; k <= order-j; k++)
 			{
-			  dnums.Append(2*fanums[i]);
-			  dnums.Append(2*fanums[i]+1);
+			  if (j+k == 0)
+			    {
+			      dnums.Append(2*fanums[i]);
+			      dnums.Append(2*fanums[i]+1);
+			    }
+			  else if (j+k < order)
+			    {
+			      dnums.Append (facetdof++);
+			      dnums.Append (facetdof++);
+			    }
+			  else
+			    {
+			      dnums.Append (innerdof++);
+			      dnums.Append (innerdof++);
+			    }
 			}
-		      else if (j+k < order)
+		  }
+		else
+		  {
+		    for (int j = 0; j <= order; j++)
+		      for (int k = 0; k <= order; k++)
 			{
-			  dnums.Append (facetdof++);
-			  dnums.Append (facetdof++);
+			  if (j+k == 0)
+			    {
+			      dnums.Append(2*fanums[i]);
+			      dnums.Append(2*fanums[i]+1);
+			    }
+			  else if ( (j < order) && (k < order) )
+			    {
+			      dnums.Append (facetdof++);
+			      dnums.Append (facetdof++);
+			    }
+			  else
+			    {
+			      dnums.Append (innerdof++);
+			      dnums.Append (innerdof++);
+			    }
 			}
-		      else
-			{
-			  dnums.Append (innerdof++);
-			  dnums.Append (innerdof++);
-			}
-		    }
+		  }
 	      }
 	  }
       }
+    // *testout << "dnums = " << endl << dnums << endl;
   }
 
   void VectorFacetFESpace :: GetWireBasketDofNrs(int elnr, Array<int> & dnums) const

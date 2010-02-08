@@ -516,6 +516,14 @@ namespace ngfem
 
       HDivShapeAssign<DIM> ds(shape); 
       static_cast<const FEL*> (this) -> T_CalcShape (adp, ds);
+
+      /*
+      MatrixFixWidth<DIM> hshape(shape.Height());
+      HDivFiniteElement<DIM>::CalcMappedShape (sip, hshape);
+      *testout << "mapped = " << endl << shape << endl;
+      *testout << "base = " << endl << hshape << endl;
+      *testout << "diff = " << endl << shape-hshape << endl;
+      */
     }
 
       
