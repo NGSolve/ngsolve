@@ -2041,11 +2041,8 @@ namespace netgen
 				       shapes(fnums[1])-shapes(fnums[0]), shapes(fnums[2]), 
 				       shapes(fnums[0])+shapes(fnums[1])+shapes(fnums[2]), &shapes(ii));
 		  ii += (forder-1)*(forder-2)/2;
-		  // CalcScaledEdgeShape (forder, shapes(vi1)-shapes(vi2), shapes(vi1)+shapes(vi2), &shapes(ii));
-		  // ii += forder-1;
 		}
 	    }
-
 
 	  break;
 	}
@@ -2506,6 +2503,7 @@ namespace netgen
 	  for (int i = 0; i < 2; i++)
 	    {
 	      int forder = faceorder[info.facenrs[i]];
+
 	      if ( forder < 3 ) continue;
 	      int ndf = (forder+1)*(forder+2)/2 - 3 - 3*(forder-1);
 
@@ -2530,10 +2528,12 @@ namespace netgen
 		  trans(1,j) = dlami[fav[0]][j];
 		}
 		  
-	      for (int j = 0; j < order-1; j++)
+	      for (int j = 0; j < ndf; j++)
 		{
-		  double ddx = dshapes(ii+j,0);
-		  double ddt = dshapes(ii+j,1);
+		  // double ddx = dshapes(ii+j,0);
+		  // double ddt = dshapes(ii+j,1);
+		  double ddx = dshapei(j,0);
+		  double ddt = dshapei(j,1);
 		  dshapes(ii+j,0) = ddx * trans(0,0) + ddt * trans(1,0);
 		  dshapes(ii+j,1) = ddx * trans(0,1) + ddt * trans(1,1);
 		}
@@ -2677,19 +2677,8 @@ namespace netgen
   void CurvedElements :: 
   GetCoefficients (ElementInfo & info, Vec<3> * coefs) const
   {
-    // cout << "getcoeffs, info.elnr = " << info.elnr << endl;
-    // cout << "getcoeffs, info.nv = " << info.nv << endl;
-
     const Element & el = mesh[info.elnr];
 
-    /*
-      coefs.SetSize (info.ndof);
-      coefs = Vec<3> (0,0,0);
-    */
-    /*
-      for (int i = 0; i < info.ndof; i++)
-      coefs[i] = Vec<3> (0,0,0);
-    */
     for (int i = 0; i < info.nv; i++)
       coefs[i] = Vec<3> (mesh[el[i]]);
 
@@ -3281,8 +3270,6 @@ namespace netgen
 
 
 
-
-
     Vector shapes;
     MatrixFixWidth<3> dshapes;
 
@@ -3332,6 +3319,7 @@ namespace netgen
               x[j*sx+k] = xj(k);
 	  }
       }
+
     if (dxdxi)
       {
 	for (int ip = 0; ip < n; ip++)
@@ -3341,7 +3329,7 @@ namespace netgen
               xij(k) = xi[ip*sxi+k];
 
 	    CalcElementDShapes (info, xij, dshapes);
-            
+
             Mat<3> dxdxij;
             dxdxij = 0.0;
 	    for (int i = 0; i < coefs.Size(); i++)
