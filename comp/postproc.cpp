@@ -659,7 +659,6 @@ namespace ngcomp
 	  
 	  fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
 	  
-	  
 #pragma omp critical(fluxprojetadd)
 	  {
 	    u.GetElementVector (dnums, elflux);

@@ -122,24 +122,24 @@ namespace ngfem
   };
 
 
-
-  class VectorFacetVolumeFiniteElement : public FiniteElement  
+  template <int D>
+  class VectorFacetVolumeFiniteElement : public HCurlFiniteElement<D>
   {
   protected:
     int vnums[8];
     INT<2> facet_order[6]; 
     int first_facet_dof[7];
-    int nv; // num of vertices
-    int nf; // num of facets
+    // int nv; // num of vertices
+    // int nf; // num of facets
+
+    using HCurlFiniteElement<D>::eltype;
+    using HCurlFiniteElement<D>::order;
   
   public:
-    VectorFacetVolumeFiniteElement () :
-      FiniteElement (),
-      nv(0),
-      nf(0)
+    VectorFacetVolumeFiniteElement () // : nv(0), nf(0)
     { ; }
 
-    VectorFacetVolumeFiniteElement (int adim, ELEMENT_TYPE aeltype);
+    VectorFacetVolumeFiniteElement (ELEMENT_TYPE aeltype);
 
     void SetVertexNumbers (FlatArray<int> & avnums);
 
@@ -157,12 +157,9 @@ namespace ngfem
     //   virtual void TransformFacetToVolumeShape ( int fanr, FlatMatrix<> shape1d, 
     // 					     FlatMatrix<> shape ) const;
 
-    virtual void CalcShape(const IntegrationPoint & ip, FlatMatrix<> shape) const = 0;
+    virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<D> shape) const = 0;
+    virtual void CalcShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<D> shape) const = 0;
       
-    //   virtual void SetFacet(int afnr) const = 0; 
-
-    //   virtual void CalcFacetShape(int fnr, const IntegrationPoint & ip, 
-    // 			      FlatMatrix<> shape) const = 0;
 
     virtual void GetFacetDofNrs(int afnr, Array<int>& fdnums) const; 
 
@@ -175,196 +172,80 @@ namespace ngfem
     virtual void ComputeNDof () = 0;
   
     // utility
-    virtual int GetNF() const { return nf; };
-
-    virtual int GetNV() const { return nv; };
-
-    virtual void GetVertexNumbers(Array<int>&) const;
-
-    virtual void GetFacetOrders(Array<INT<2> >&) const;
-  
-    virtual const FlatMatrix<> GetShape (const IntegrationPoint & ip, 
-					 LocalHeap & lh) const = 0;
-
-    virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrix<> shape ) const = 0;
-
-  
+    // virtual int GetNF() const { return nf; };
+    // virtual int GetNV() const { return nv; };
+    // virtual void GetVertexNumbers(Array<int>&) const;
+    // virtual void GetFacetOrders(Array<INT<2> >&) const;
   };
 
 
 
-  class VectorFacetVolumeTrig : public VectorFacetVolumeFiniteElement
+  class VectorFacetVolumeTrig : public VectorFacetVolumeFiniteElement<2>
   {
-  protected:
-    //     int fnr; // active facet
-    //     VectorFacetFacetSegm facet;
   public:
-    VectorFacetVolumeTrig() : VectorFacetVolumeFiniteElement(2, ET_TRIG) { ; };
-   
-    virtual void CalcShape (const IntegrationPoint & ip, FlatMatrix<> shape) const; 
-    //     virtual void CalcFacetShape (int afnr, const IntegrationPoint & ip, 
-    // 				 FlatMatrix<> shape) const; 
-    //     virtual void SetFacet(int afnr) const;
-    
+    VectorFacetVolumeTrig() : VectorFacetVolumeFiniteElement<2>(ET_TRIG) { ; }
     virtual void ComputeNDof();
-
-    //   virtual void TransformFacetToVolumeShape ( int fanr, FlatMatrix<> shape1d, 
-    // 					     FlatMatrix<> shape ) const;
-    virtual const FlatMatrix<> GetShape (const IntegrationPoint & ip, 
-					 LocalHeap & lh) const
-    {
-      FlatMatrix<> shape(ndof, 2, lh);
-      CalcShape (ip, shape);
-      return shape;
-    }
-
-    virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrix<> shape ) const;
-
+   
+    virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<2> shape) const; 
+    virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<2> shape) const;
   };
 
-  // --------------------------------------------------------
-  class VectorFacetVolumeQuad : public VectorFacetVolumeFiniteElement
+
+
+  class VectorFacetVolumeQuad : public VectorFacetVolumeFiniteElement<2>
   {
-  protected:
-    //     int fnr; // active facet
-    //     VectorFacetFacetSegm facet;
   public:
-    VectorFacetVolumeQuad() : VectorFacetVolumeFiniteElement(2, ET_QUAD) { ; };
-   
-    virtual void CalcShape (const IntegrationPoint & ip, FlatMatrix<> shape) const; 
-    //     virtual void CalcFacetShape (int afnr, const IntegrationPoint & ip, 
-    // 				 FlatMatrix<> shape) const; 
-    //     virtual void SetFacet(int afnr) const;
-   
+    VectorFacetVolumeQuad() : VectorFacetVolumeFiniteElement<2> (ET_QUAD) { ; }
     virtual void ComputeNDof();
-
-    //   virtual void TransformFacetToVolumeShape ( int fanr, FlatMatrix<> shape1d, 
-    // 					     FlatMatrix<> shape ) const;
-
-    virtual const FlatMatrix<> GetShape (const IntegrationPoint & ip, 
-					 LocalHeap & lh) const
-    {
-      FlatMatrix<> shape(ndof, 2, lh);
-      CalcShape (ip, shape);
-      return shape;
-    }
-
-    virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrix<> shape ) const;
+   
+    virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<2> shape) const; 
+    virtual void CalcShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<2> shape) const;
   };
 
-  // --------------------------------------------------------
-  class VectorFacetVolumeTet : public VectorFacetVolumeFiniteElement
+
+  class VectorFacetVolumeTet : public VectorFacetVolumeFiniteElement<3>
   {
-  protected:
-    //     int fnr; // active facet
-    //     VectorFacetFacetTrig facet;
   public:
-    VectorFacetVolumeTet() : VectorFacetVolumeFiniteElement(3, ET_TET) { ; };
-   
-    virtual void CalcShape (const IntegrationPoint & ip, FlatMatrix<> shape) const; 
-
-    //     virtual void CalcFacetShape (int afnr, const IntegrationPoint & ip, 
-    // 				 FlatMatrix<> shape) const; 
-    //     virtual void SetFacet(int afnr) const;
-   
+    VectorFacetVolumeTet() : VectorFacetVolumeFiniteElement<3> (ET_TET) { ; }
     virtual void ComputeNDof();
-    //     virtual const FiniteElement & GetFacetFE(int fnr, LocalHeap& lh) const;
-
-    virtual const FlatMatrix<> GetShape (const IntegrationPoint & ip, 
-					 LocalHeap & lh) const
-    {
-      FlatMatrix<> shape(ndof, 3, lh);
-      CalcShape (ip, shape);
-      return shape;
-    }
-    virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrix<> shape ) const;
+   
+    virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const; 
+    virtual void CalcShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape) const;
   };
 
-  // --------------------------------------------------------
-  class VectorFacetVolumeHex : public VectorFacetVolumeFiniteElement
+
+
+  class VectorFacetVolumeHex : public VectorFacetVolumeFiniteElement<3>
   {
-  protected:
-    //     int fnr; // active facet
-    //     VectorFacetFacetQuad facet;
   public:
-    VectorFacetVolumeHex() : VectorFacetVolumeFiniteElement(3, ET_HEX) { ; };
-   
-    virtual void CalcShape (const IntegrationPoint & ip, FlatMatrix<> shape) const; 
-
-    //     virtual void CalcFacetShape (int afnr, const IntegrationPoint & ip, 
-    // 				 FlatMatrix<> shape) const; 
-    //     virtual void SetFacet(int afnr) const;
-   
+    VectorFacetVolumeHex() : VectorFacetVolumeFiniteElement<3>(ET_HEX) { ; };
     virtual void ComputeNDof();
-    //     virtual const FiniteElement & GetFacetFE(int fnr, LocalHeap& lh) const;
-
-    virtual const FlatMatrix<> GetShape (const IntegrationPoint & ip, 
-					 LocalHeap & lh) const
-    {
-      FlatMatrix<> shape(ndof, 3, lh);
-      CalcShape (ip, shape);
-      return shape;
-    }
-    virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrix<> shape ) const;
+   
+    virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const; 
+    virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape ) const;
   };
 
-  // --------------------------------------------------------
-  class VectorFacetVolumePrism : public VectorFacetVolumeFiniteElement
+
+
+  class VectorFacetVolumePrism : public VectorFacetVolumeFiniteElement<3>
   {
-  protected:
-    //     int tnr, qnr; // active facets
-    //     VectorFacetFacetTrig trig;
-    //     VectorFacetFacetQuad quad;
   public:
-    VectorFacetVolumePrism() : VectorFacetVolumeFiniteElement(3, ET_PRISM) 
-    { ; };
-   
-    virtual void CalcShape (const IntegrationPoint & ip, FlatMatrix<> shape) const; 
-
-    //     virtual void CalcFacetShape (int afnr, const IntegrationPoint & ip, 
-    // 				 FlatMatrix<> shape) const; 
-    //     virtual void SetFacet(int afnr) const;
-   
+    VectorFacetVolumePrism() : VectorFacetVolumeFiniteElement<3> (ET_PRISM) { ; };
     virtual void ComputeNDof();
-    //     virtual const FiniteElement & GetFacetFE(int fnr, LocalHeap& lh) const;
-
-    virtual const FlatMatrix<> GetShape (const IntegrationPoint & ip, 
-					 LocalHeap & lh) const
-    {
-      FlatMatrix<> shape(ndof, 3, lh);
-      CalcShape (ip, shape);
-      return shape;
-    }
-    virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrix<> shape ) const;
+   
+    virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const; 
+    virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape) const;
   };
 
-  // --------------------------------------------------------
-  class VectorFacetVolumePyramid : public VectorFacetVolumeFiniteElement
+
+  class VectorFacetVolumePyramid : public VectorFacetVolumeFiniteElement<3>
   {
-  protected:
-    //     int tnr, qnr; // active facets
-    //     VectorFacetFacetTrig trig;
-    //     VectorFacetFacetQuad quad;
   public:
-    VectorFacetVolumePyramid() : VectorFacetVolumeFiniteElement(3, ET_PYRAMID) 
-    { ; };
-   
-    virtual void CalcShape (const IntegrationPoint & ip, FlatMatrix<> shape) const; 
-
-    //     virtual void CalcFacetShape (int afnr, const IntegrationPoint & ip, 
-    // 				 FlatMatrix<> shape) const; 
-    //     virtual void SetFacet(int afnr) const;
-   
+    VectorFacetVolumePyramid() : VectorFacetVolumeFiniteElement<3> (ET_PYRAMID) { ; };
     virtual void ComputeNDof();
-
-    virtual const FlatMatrix<> GetShape (const IntegrationPoint & ip, 
-					 LocalHeap & lh) const
-    {
-      FlatMatrix<> shape(ndof, 3, lh);
-      CalcShape (ip, shape);
-      return shape;
-    }
-    virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrix<> shape ) const;
+   
+    virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const; 
+    virtual void CalcShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape ) const;
   };
 
 }

@@ -259,15 +259,10 @@ namespace ngfem
 
     // Typ 1
     for (int k = 0; k < p[0]; k++)
-      {
-	for (int l = 0; l < p[1]; l++, ii++)
-	  {
-            shape(ii) = 2.*(pol_eta[l].DValue(0)*pol_xi[k].DValue(1)-pol_eta[l].DValue(1)*pol_xi[k].DValue(0));
-	  }
-      }
+      for (int l = 0; l < p[1]; l++, ii++)
+	shape(ii) = 2.*(pol_eta[l].DValue(0)*pol_xi[k].DValue(1)-pol_eta[l].DValue(1)*pol_xi[k].DValue(0));
 
     //Typ 2
-
     for (int k = 0; k < p[0]; k++)
       shape(ii++) = -eta.DValue(0)*pol_xi[k].DValue(1) + eta.DValue(1)*pol_xi[k].DValue(0); 
     for (int k = 0; k < p[1]; k++)
@@ -471,7 +466,9 @@ namespace ngfem
 
         int p = order_inner[0];
         int pc = order_inner[0]; // should be order_inner_curl!!!  
+	int pz = p; // order_inner[2];
 
+	// cout << "ndof, bound = " << ndof << endl;
         switch (ET)
           {   
           case ET_TRIG: case ET_QUAD: // for the compiler
@@ -488,14 +485,20 @@ namespace ngfem
             // SZ: ATTENTION PRISM up to now only using for order_inner[0] !!  
             if (order_inner[0]>0 )
               {
+		ndof += (p+2)*p*(pz+1) + (p+1)*(p+2)*pz/2;
+		if (ho_div_free)
+		  ndof -= (p+1)*(p+2)*(pz+1)/2 - 1;
+		/*
                 // inner_dof horizontal
                 ndof += (order_inner[0]+1)*(3*(order_inner[0]-1)+(order_inner[0]-2)*(order_inner[0]-1));
                 // inner dof vertical
                 ndof += (order_inner[0]-1)*(order_inner[0]+1)*(order_inner[0]+2)/2;
+		*/
               }
             break;
           }
 
+	// cout << "ndof, tot = " << ndof << endl;
 
         order = 0; 
         for (int i = 0; i < ET_trait<ET>::N_FACE; i++)
@@ -506,6 +509,8 @@ namespace ngfem
 
         int pi = max3(order_inner[0], order_inner[1], order_inner[2]);
         if (pi > order) order = pi;
+
+	if (ET != ET_TET) order++;
       }
   }
 
@@ -1007,7 +1012,6 @@ namespace ngfem
 
 
   HDivHighOrderFE<ET_PRISM> :: HDivHighOrderFE (int aorder)
-    : HDivHighOrderFiniteElement<3> (ET_PRISM)
   {
     order_inner = INT<3> (aorder,aorder,aorder);
 
@@ -1017,54 +1021,7 @@ namespace ngfem
     ComputeNDof();
   }
 
-
-  void HDivHighOrderFE<ET_PRISM> :: ComputeNDof()
-  {
-    int i;
-    ndof = 5; // RT_0
-
-
-    // trig_faces
-    for (i=0; i < 2; i++)
-      ndof += (order_face[i][0]*order_face[i][0]+3*order_face[i][0])/2;
-
-    // quad_faces
-    for (i=2; i < 5; i++)
-      ndof +=  order_face[i][0]*order_face[i][1] + order_face[i][0] + order_face[i][1];
-
-    // SZ: ATTENTION PRISM up to now only using for order_inner[0] !!  
-    if (order_inner[0]>0 )
-      {
-	// inner_dof horizontal
-	ndof += (order_inner[0]+1)*(3*(order_inner[0]-1)+(order_inner[0]-2)*(order_inner[0]-1));
-
-	// inner dof vertical
-	ndof += (order_inner[0]-1)*(order_inner[0]+1)*(order_inner[0]+2)/2;
-      }
-
-    //(*testout)<<"Prismen ndof = "<<ndof<<endl;
-    order = 0; // max(order_edges_tang,order_inner);
-
-    for(i=0; i<2; i++)
-      {
-        int pp = order_face[i][0];  
-        if (pp > order)
-          order = pp;
-      }
-      
-    for(i=3; i<5; i++)
-      {
-        int pp = max(order_face[i][0],order_face[i][1]);
-        if (pp > order)
-          order = pp;
-      }
-
-    if (order_inner[0] > order)
-      order = order_inner[0];
-   
-    order++;
-  }
-
+ 
   
   
   
@@ -1072,6 +1029,11 @@ namespace ngfem
   void HDivHighOrderFE<ET_PRISM> :: CalcShape (const IntegrationPoint & ip,
                                                FlatMatrixFixWidth<3> shape) const
   {
+    // shape = 0.0;
+    T_HDivHighOrderFiniteElement<ET_PRISM>::CalcShape (ip, shape);
+    return;
+    // *testout << "t_shape = " << endl << shape << endl;
+
     AutoDiff<2> x (ip(0), 0);
     AutoDiff<2> y (ip(1), 1);
     AutoDiff<1> z (ip(2), 0);
@@ -1096,7 +1058,7 @@ namespace ngfem
 
 
     ArrayMem<AutoDiff<2>,20> adpolxy1(order+1), adpolxy2(order+1), adpolx(order+1), adpoly(order+1);
-    ArrayMem<AutoDiff<1>,20> adpolz(order+1);
+    ArrayMem<AutoDiff<1>,20> adpolz(order+2);
 
     ii = 5;
 
@@ -1329,22 +1291,21 @@ namespace ngfem
     cdlami(2,1) = 1.;
     cdlami(2,0) = -1.;
 
-    if(p>=2)
+
+    if(p>=1)
       {
 	//ArrayMem<double,10> rec_pol(order-1), drec_polx(order-1),  drec_polt(order-1);
 	//ArrayMem<double,10> rec_pol2(order-1), drec_pol2x(order-1), drec_pol2t(order-1);
 
 	// HACK, performed by MW, authorized by SZ
-	ArrayMem<double,10> rec_pol(max2(order-1,p+1)), drec_polx(max2(order-1,p+1)),  drec_polt(max2(order-1,p+1));
-	ArrayMem<double,10> rec_pol2(max2(order-1,p+1)), drec_pol2x(max2(order-1,p+1)), drec_pol2t(max2(order-1,p+1));
-	ArrayMem<double,30> mem(3*order*sizeof(double));
-	ArrayMem<double,30> mem2(3*order*sizeof(double));
-	FlatMatrixFixWidth<3> curl_recpol(order, &mem[0]);
-	FlatMatrixFixWidth<3> curl_recpol2(order, &mem2[0]);
-
+	ArrayMem<double,10> rec_pol(max2(order,p+2)), drec_polx(max2(order,p+2)),  drec_polt(max2(order,p+2));
+	ArrayMem<double,10> rec_pol2(max2(order,p+2)), drec_pol2x(max2(order,p+2)), drec_pol2t(max2(order,p+2));
+	ArrayMem<double,30> mem(3*(order+1)*sizeof(double));
+	ArrayMem<double,30> mem2(3*(order+1)*sizeof(double));
+	FlatMatrixFixWidth<3> curl_recpol(order+1, &mem[0]);
+	FlatMatrixFixWidth<3> curl_recpol2(order+1, &mem2[0]);
 
 	int fav[3] = {0, 1, 2};
-
 
 
 	double ls = x.Value();
@@ -1354,12 +1315,12 @@ namespace ngfem
 
 
 
-	ScaledLegendrePolynomialandDiff(p, le-ls, 1-lo,
+	ScaledLegendrePolynomialandDiff(p+1, le-ls, 1-lo,
 					rec_pol, drec_polx, drec_polt);
-	LegendrePolynomialandDiff(p, 2*lo-1,rec_pol2, drec_pol2x);
-	LegendrePolynomial(p+1,2*z-1,adpolz);
+	LegendrePolynomialandDiff(p+1, 2*lo-1,rec_pol2, drec_pol2x);
+	LegendrePolynomial(p+2,2*z-1,adpolz);
 	// \curl (ls * le * rec_pol), and \curl (lo rec_pol2)
-	for (j = 0; j <= p-1; j++)
+	for (j = 0; j <= p; j++)
 	  {
 	    for (l = 0; l < 2; l++)
 	      {
@@ -1374,303 +1335,194 @@ namespace ngfem
 
 	// curls:
 	for (i = 0; i <= p; i++)
-	  for (j = 0; j <= p-2; j++)
-	    for (k = 0; k <= p-2-j; k++, ii++)
+	  for (j = 0; j <= p-1; j++)
+	    for (k = 0; k <= p-1-j; k++, ii++)
 	      for (l = 0; l < 2; l++)
 		shape(ii, l) = (ls*le*rec_pol[j]*curl_recpol2(k,l) + curl_recpol(j,l)*lo*rec_pol2[k])*adpolz[i].Value();
 
 	// rotations of curls
 	for (i = 0; i <= p; i++)
-	  for (j = 0; j <= p-2; j++)
-	    for (k = 0; k <= p-2-j; k++, ii++)
+	  for (j = 0; j <= p-1; j++)
+	    for (k = 0; k <= p-1-j; k++, ii++)
 	      for (l = 0; l < 2; l++)
 		shape(ii, l) = (ls*le*rec_pol[j]*curl_recpol2(k,l) - curl_recpol(j,l) * lo * rec_pol2[k])*adpolz[i].Value();
 
 	// rec_pol2 * RT_0
 	for (i = 0; i <= p; i++)
-	  for (j = 0; j <= p-2; j++, ii++)
+	  for (j = 0; j <= p-1; j++, ii++)
 	    for (l = 0; l < 2; l++)
 	      shape(ii,l) = (lo*rec_pol2[j] * (ls*clami(fav[1],l)-le*clami(fav[0],l)))*adpolz[i].Value();
-
-
-
-
       }
 
+    // *testout << "horiz, ii = " << ii << endl;
 
-    if (p>=2)
+    if (p>=1)
       {
-	T_ORTHOPOL::Calc (p, 2*z-1, adpolz);
+	T_ORTHOPOL::Calc (p+1, 2*z-1, adpolz);
 
 	ScaledLegendrePolynomial (p+1, x, 1-y, adpolx);
 	LegendrePolynomial (p+1, 2*y-1, adpoly);
 	// const. lowest-order * IntLegendre + 2 X (linear * IntLegendre)
-	for( i = 0; i <= p-2; i++)
+	for( i = 0; i <= p-1; i++)
 	  for ( j = 0; j <= p; j++)
 	    for (k = 0; k <= p-j; k++, ii++)
 	      shape(ii,2) = adpolx[j].Value()*adpoly[k].Value()*adpolz[i].Value();
       }
 
 
-    //(*testout)<<" Prismen ii = "<<ii<<endl;
-    return;
+    // *testout << "total, ii = " << ii << endl;
+    // *testout << "orig shape = " << endl << shape << endl;
 
-
+    T_HDivHighOrderFiniteElement<ET_PRISM>::CalcShape (ip, shape);
   }
-  /*
-    template <class T_ORTHOPOL>
-    void HDivHighOrderPrism<T_ORTHOPOL> :: CalcDivShape (const IntegrationPoint & ip,
-    FlatVector<> divshape) const
-    {
-
-    AutoDiff<2> x (ip(0), 0);
-    AutoDiff<2> y (ip(1), 1);
-    AutoDiff<1> z (ip(2), 0);
-    AutoDiff<2> lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
-    AutoDiff<1> muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
-
-    Mat<6,2> clami(0);
-    clami(0,1) = -1.; clami(3,1) = -1.;
-    clami(1,0) = 1.; clami(4,0) = 1.;
-    clami(2,1) = 1.; clami(5,1) = 1.;
-    clami(2,0) = -1.; clami(5,0) = -1.;
-
-    int i, j, k, l, m, ii, p;
-
-    divshape = 0.0;
 
 
-    const FACE * faces = ElementTopology::GetFaces (ET_PRISM);
-    const EDGE * edges = ElementTopology::GetEdges (ET_PRISM);
+  void HDivHighOrderFE<ET_PRISM> :: CalcDivShape (const IntegrationPoint & ip,
+						       FlatVector<> divshape) const
+  {
+    // HDivFiniteElement<3>::CalcDivShape (ip, divshape);
+    // *testout << "num divshape = " << endl << divshape << endl;
+
+    T_HDivHighOrderFiniteElement<ET_PRISM>::CalcDivShape (ip, divshape);
+    // *testout << "some exact divshape = " << endl << divshape << endl;
+  }
 
 
-    ArrayMem<AutoDiff<2>,20> adpolxy1(order+1), adpolxy2(order+1), adpolx(order+1), adpoly(order+1);
-    ArrayMem<AutoDiff<1>,20> adpolz(order+1);
+  template<typename Tx, typename TFA>  
+  void  HDivHighOrderFE<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  {
+    Tx x = hx[0], y = hx[1], z = hx[2];
 
-    ii = 5;
+    AutoDiff<3> lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
+    AutoDiff<3> muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
+       
+    const FACE * faces = ElementTopology::GetFaces (ET_PRISM); 
 
+    ArrayMem<AutoDiff<3>,20> adpolxy1(order+4),adpolxy2(order+4); 
+    ArrayMem<AutoDiff<3>,20> adpolz(order+4);   
+
+
+    ArrayMem<Tx,10> adpol1(order), adpol2(order), adpol3(order);
+    
     // trig faces
-    for (i = 0; i < 2; i++)
-    {
-    p = order_face[i];
-    int fac = 1;
-    int fav[3] = {faces[i][0], faces[i][1], faces[i][2]};
+    int ii = 5;
+    for (int i = 0; i < 2; i++)
+      {
+	int p = order_face[i][0];
+	int fav[3] = {faces[i][0], faces[i][1], faces[i][2]};
 
-    if(vnums[fav[0]] > vnums[fav[1]]) { swap(fav[0],fav[1]); fac *= -1;}
-    if(vnums[fav[1]] > vnums[fav[2]]) { swap(fav[1],fav[2]); fac *= -1;}
-    if(vnums[fav[0]] > vnums[fav[1]]) { swap(fav[0],fav[1]); fac *= -1;}
+	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
+	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
+	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  	
+	
+	shape[i] = wDu_Cross_Dv<3> (lami[fav[0]], lami[fav[1]], muz[fav[0]]);
 
-    if ( i == 0)
-    divshape(i) = -1.*fac*muz[fav[0]].DValue(0);
-    else
-    divshape(i) = fac*muz[fav[0]].DValue(0);
+	AutoDiff<3> xi = lami[fav[1]]-lami[fav[0]];
+	AutoDiff<3> eta = lami[fav[2]];
 
-    ii += (p*p +3*p)/2;
+	T_TRIGFACESHAPES::CalcSplitted(p+2,xi,eta,adpol1,adpol2); 
+	for (int k = 0; k < adpol1.Size(); k++)
+          adpol1[k] *= 0.5; 
+	
+        // Curl (Type 2) 2*grad v x grad u
+        for (int j = 0; j <= p-1; j++) 
+          for (int k = 0; k <= p-1-j; k++)
+	    shape[ii++] = Du_Cross_Dv<3> (adpol2[k]*muz[fav[2]], adpol1[j]);
 
-    // div(Typ 1) = 0
-    // div ( 2*(grad(adpolxy2[j]*muz) X adpolxy1[i] ) = 0
-    // div (Typ 2) = 0
-    //  div(curl(Ned0*adpolxy2[j]*muz)) = div(grad(adpolxy2[j]*muz) X Ned0 + curlNed0(3)*adpolxy2[j]*muz) = 0
-    }
-
+        // Curl (Type 3) //curl( * v) = nabla v x ned + curl(ned)*v
+        for (int j = 0; j <= p-1; j++)
+	  shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[fav[0]], lami[fav[1]], adpol2[j]*muz[fav[2]]);
+      }    
 
 
     // quad faces
-    for (i = 2; i < 5; i++)
-    {
-    p = order_face[i];
-    int fmax = 0;
-    for (j = 1; j < 4; j++)
-    {
-    if (vnums[faces[i][j]] > vnums[faces[i][fmax]]) fmax = j;
-    }
-    int hf1 = faces[i][(fmax+3)%4];
-    int hf2 = faces[i][(fmax+1)%4];
-
-    int fac = 1;
-    if (vnums[hf1] > vnums[hf2])
-    {
-    fac *= -1;
-    }
-    //div (RT low order shape function)
-    for(j=0; j<2; j++)
-    {
-    divshape(i) = fac*(lami[faces[i][1]].DValue(j)*clami(faces[i][0],j) -
-    lami[faces[i][0]].DValue(j)*clami(faces[i][1],j));
-    }
-    // div (Typ 1) = 0
-    // div (curl(nabla(polxy)*polz - polxy*nabla(polz))) = div (2 * (grad(polz) X grad(polxy)) ) = 0
-
-    // div (Typ 2 ) and (Typ 3) = 0
-    // curl ((ned0trig)*adpolz) = 2*(grad(adpolz) X ned0trig) + 2*curlned0trig*adpolz,
-    // curl((ned0_quad)* adpolxy1) = grad(adpolxy1) X ned0quad     (ned0quad = grad(zeta))
-
-    ii += p*p + 2*p;
-    }
-
-    p = order_inner;
-
-    Mat<3,2> cdlami(0);
-    cdlami(0,1) = -1.;
-    cdlami(1,0) = 1.;
-    cdlami(2,1) = 1.;
-    cdlami(2,0) = -1.;
-
-    if(p>=2)
-    {
-    ArrayMem<double,10> rec_pol(order-1), drec_polx(order-1),  drec_polt(order-1);
-    ArrayMem<double,10> rec_pol2(order-1), drec_pol2x(order-1), drec_pol2t(order-1);
-    ArrayMem<double,30> mem(3*order*sizeof(double));
-    ArrayMem<double,30> mem2(3*order*sizeof(double));
-    FlatMatrixFixWidth<3> curl_recpol(order, &mem[0]);
-    FlatMatrixFixWidth<3> curl_recpol2(order, &mem2[0]);
-
-    int fav[3] = {0, 1, 2};
-
-
-    double ls = x.Value();
-    double le = y.Value();
-    double lo = 1-x.Value()-y.Value();
-
-
-
-
-    ScaledLegendrePolynomialandDiff(p, le-ls, 1-lo,
-    rec_pol, drec_polx, drec_polt);
-    LegendrePolynomialandDiff(p, 2*lo-1,rec_pol2, drec_pol2x);
-    LegendrePolynomial(p+1,2*z-1,adpolz);
-    // \curl (ls * le * rec_pol), and \curl (lo rec_pol2)
-    for (j = 0; j <= p-1; j++)
-    {
-    for (l = 0; l < 2; l++)
-    {
-    curl_recpol(j,l) = ls * le * (drec_polx[j] * (cdlami(fav[1],l) - cdlami(fav[0],l)) -
-    drec_polt[j] * (cdlami(fav[2],l))) +
-    (ls * cdlami(fav[1],l) + le * cdlami(fav[0],l)) * rec_pol[j];
-
-    curl_recpol2(j,l) = lo * (drec_pol2x[j] * 2*cdlami(fav[2],l)) +
-    cdlami(fav[2],l) * rec_pol2[j];
-    }
-    }
-
-    // curls:
-    for (i = 0; i <= p; i++)
-    for (j = 0; j <= p-2; j++)
-    for (k = 0; k <= p-2-j; k++, ii++)
-    for (l = 0; l < 2; l++)
-    shape(ii, l) = (ls*le*rec_pol[j]*curl_recpol2(k,l) + curl_recpol(j,l)*lo*rec_pol2[k])*adpolz[i].Value();
-
-    // rotations of curls
-    for (i = 0; i <= p; i++)
-    for (j = 0; j <= p-2; j++)
-    for (k = 0; k <= p-2-j; k++, ii++)
-    for (l = 0; l < 2; l++)
-    shape(ii, l) = (ls*le*rec_pol[j]*curl_recpol2(k,l) - curl_recpol(j,l) * lo * rec_pol2[k])*adpolz[i].Value();
-
-    // rec_pol2 * RT_0
-    for (i = 0; i <= p; i++)
-    for (j = 0; j <= p-2; j++, ii++)
-    for (l = 0; l < 2; l++)
-    shape(ii,l) = (lo*rec_pol2[j] * (ls*clami(fav[1],l)-le*clami(fav[0],l)))*adpolz[i].Value();
-
-    }
-
-
-    if (p>=2)
-    {
-    T_ORTHOPOL::Calc (p, 2*z-1, adpolz);
-
-    ScaledLegendrePolynomial (p+1, x, 1-y, adpolx);
-    LegendrePolynomial (p+1, 2*y-1, adpoly);
-    // const. lowest-order * IntLegendre + 2 X (linear * IntLegendre)
-    for( i = 0; i <= p-2; i++)
-    for ( j = 0; j <= p; j++)
-    for (k = 0; k <= p-j; k++, ii++)
-    shape(ii,2) = adpolx[j].Value()*adpoly[k].Value()*adpolz[i].Value();
-    }
-    //cout<<"shape.h ="<<shape.Height()<< " ii = "<<ii<<endl;
-
-
-//     for( i = 0; i <= p-1; i++, ii++)
-//     {
-//     shape(ii,2) = 1.* adpolz[i].Value();
-//     }
-
-//     if (p >= 1)
-//     for( i = 0; i <= p-1; i++, ii+=2)
-//     {
-//     shape(ii,2) = x.Value() * adpolz[i].Value();
-//     shape(ii+1,2) = y.Value() * adpolz[i].Value();
-//     }
-
-//     edge dofs H1 * IntLegendre
-//     if (p >=2)
-//     for (i = 0; i < 3; i++)
-//     {
-//     int es = edges[i][0];
-//     int ee = edges[i][1];
-//     if (vnums[es] > vnums[ee]) swap (es, ee);
-//     T_ORTHOPOL::CalcTrigExt (p-1, lami[ee]-lami[es], 1-lami[es]-lami[ee], adpolxy1);
-//     for (j = 0; j <= p-1; j++)
-//     for (k = 0; k <= p-2; k++, ii++)
-//     shape(ii,2) = adpolxy1[k].Value()*adpolz[j].Value();
-//     }
-//     if (p>=3)
-//     {
-//     T_TRIGFACESHAPES::Calc (p, x-y, 1-x-y, adpolxy1);
-//     for (j = 0; j <= p-1; j++)
-//     for (k = 0; k <= p-3; k++, ii++)
-//     shape(ii,2) = adpolxy1[k].Value()*adpolz[j].Value();
-//     }
-
-  //(*testout)<<"shape inner="<<shape<<endl<<endl;
-
-  //   return;
-
-
-  }*/
-
-
-  void HDivHighOrderFE<ET_PRISM> ::
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    if (discontinuous)
+    for (int i = 2; i < 5; i++)
       {
-        idofs.SetSize(0);
-        for (int i=0; i<ndof; i++)
-          idofs.Append(i);
-        return ;
-      }
-    else
-      {
-        idofs.SetSize (0);
+	INT<2> p = order_face[i];
+	 
+	int fmax = 0;
+	for (int j = 1; j < 4; j++)
+	  if (vnums[faces[i][j]] > vnums[faces[i][fmax]]) fmax = j;
 
-        if(order_inner[0] >= 2) // else no inner dofs
+	int fz = 3-fmax; 
+	int ftrig = fmax^1; 
+	int f = faces[i][fmax];
+	int f1 = faces[i][ftrig];
+	int f2 = faces[i][fz];
+
+	AutoDiff<3> xi = lami[faces[i][fmax]]-lami[faces[i][ftrig]]; 
+	AutoDiff<3> eta = 1-lami[faces[i][fmax]]-lami[faces[i][ftrig]]; 
+	AutoDiff<3> zeta = muz[faces[i][fmax]]-muz[faces[i][fz]]; 
+	
+	int pp = int(max2(p[0],p[1]))+1;
+	T_ORTHOPOL::CalcTrigExt(pp,xi,eta,adpolxy1); 
+	T_ORTHOPOL::Calc(pp,zeta,adpolz); 
+
+	double fac = (vnums[faces[i][fz]] > vnums[faces[i][ftrig]]) ? 1 : -1;
+
+	shape[i] = uDvDw_minus_DuvDw<3> (lami[faces[i][fmax]],
+					 lami[faces[i][ftrig]], -0.5*fac*zeta);
+					    
+
+	if (vnums[f1] > vnums[f2])
+	  {
+	    for (int k = 0; k <= p[0]-1; k++)
+	      for (int j = 0; j <= p[1]-1; j++, ii++)
+		shape[ii] = Du_Cross_Dv<3> (adpolxy1[k], -2*adpolz[j]);
+	  }
+	else
+	  {
+	    for (int j = 0; j <= p[1]-1; j++)
+	      for (int k = 0; k <= p[0]-1; k++, ii++)
+		shape[ii] = Du_Cross_Dv<3> (adpolxy1[k],  2*adpolz[j]);
+	  }
+	  
+
+        if (vnums[f1] > vnums[f2])
           {
-            int base = 5; // low order
-      
-            // trig faces
-            for (int i = 0; i < 2; i++)
-              {
-                int p = order_face[i][0];
-                base += (p*p+3*p)/2;  // see ComputeNDof
-              }
+            for (int j= 0; j <= p[0]-1; j++, ii++)
+	      shape[ii] = Du_Cross_Dv<3> (adpolxy1[j], zeta);
+            for(int j=0; j<= p[1]-1;j++,ii++)
+	      shape[ii] = curl_uDvw_minus_Duvw<3> (lami[f1], lami[f], 2*adpolz[j]);
+          }  
+        else
+          {
+            for(int j = 0; j <= p[0]-1; j++,ii++)
+	      shape[ii] = curl_uDvw_minus_Duvw<3> (lami[f1], lami[f], 2*adpolz[j]);
+            for (int j= 0; j <= p[1]-1; j++, ii++)
+	      shape[ii] = Du_Cross_Dv<3> (adpolxy1[j], zeta);
+          }   
+      }    
 
-            // quad faces
-            for (int i=2; i<5; i++)
-              {
-                INT<2> p = order_face[i];
-                base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
-              }
 
-            for (int i=base; i<ndof; i++)
-              idofs.Append(i);
-          }
-        //(*testout) << "idofs = " << idofs << endl;
+    int p = order_inner[0];
+    int pz = order_inner[2];
+    if(p >= 1 && pz >= 1)
+      {
+	T_TRIGFACESHAPES::CalcSplitted(p+2,x-y,1-x-y,adpolxy1,adpolxy2);
+	T_ORTHOPOL::Calc(pz+2,2*z-1,adpolz); 
+	
+
+	for(int i=0;i<=p-1;i++)
+	  for(int j=0;j<=p-1-i;j++)
+	    for(int k=0;k<=pz-1;k++)
+	      {
+                shape[ii++] = curl_uDvw_minus_Duvw<3> (adpolxy1[i],adpolxy2[j],adpolz[k]);
+                shape[ii++] = Du_Cross_Dv<3> (adpolxy1[i],adpolxy2[j]*adpolz[k]);
+	      }
+	
+	for(int j=0;j<=p-1;j++) 
+	  for (int k=0;k<=pz-1;k++) 
+            shape[ii++] = curl_uDvw_minus_Duvw<3> (x,y, adpolxy2[j]*adpolz[k]);
+
+    	for(int i = 0; i <= p-1; i++) 
+	  for(int j = 0; j <= p-1-i; j++) 
+            shape[ii++] = curl_uDvw_minus_Duvw<3> (z,1-z, adpolxy1[i]*adpolxy2[j]);
       }
   }
 
-  
+ 
+
   void HDivHighOrderFE<ET_PRISM> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa >= 5 ) 

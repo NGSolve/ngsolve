@@ -806,7 +806,7 @@ namespace ngfem
           shape[ii] = wuDv_minus_wvDu<3> (lami[fav[1]], lami[fav[2]], adpolxy2[j]*muz[fav[2]]);
       }
     
-    
+
     // quad faces
     for (int i = 2; i < 5; i++)
       {
@@ -868,7 +868,6 @@ namespace ngfem
 	  }
       }
     
-
     if(order_cell[0] > 1 && order_cell[2] > 0) 
       {
 	T_TRIGFACESHAPES::CalcSplitted(order_cell[0]+1,x-y,1-x-y,adpolxy1,adpolxy2);

@@ -518,13 +518,13 @@ namespace ngfem
   class Facet2ElementTrafo
   {
   protected:
-    mutable IntegrationPoint elpoint;  
+    // mutable IntegrationPoint elpoint;  
     ELEMENT_TYPE eltype;
     const POINT3D * points;
     const EDGE * edges;
     const FACE * faces;
     EDGE hedges[4];
-    FACE hfaces[4];
+    FACE hfaces[6];
   public:
     Facet2ElementTrafo(ELEMENT_TYPE aeltype) : eltype(aeltype) 
     {
@@ -577,6 +577,35 @@ namespace ngfem
 	  faces = &hfaces[0];
 	}
 
+
+      if (eltype == ET_PRISM)
+	{
+	  for (int i = 0; i < 2; i++)
+	    {
+	      hfaces[i][0] = faces[i][0];
+	      hfaces[i][1] = faces[i][1];
+	      hfaces[i][2] = faces[i][2];
+	      if (vnums[hfaces[i][0]] > vnums[hfaces[i][1]]) swap (hfaces[i][0], hfaces[i][1]);
+	      if (vnums[hfaces[i][1]] > vnums[hfaces[i][2]]) swap (hfaces[i][1], hfaces[i][2]);
+	      if (vnums[hfaces[i][0]] > vnums[hfaces[i][1]]) swap (hfaces[i][0], hfaces[i][1]);
+	    }
+	  for (int i = 2; i < 5; i++)
+	    {
+	      int jmin = 0;
+	      for (int j = 1; j < 4; j++)
+		if (vnums[faces[i][j]] < vnums[faces[i][jmin]]) jmin = j;
+	      int j1 = (jmin+1)%4;
+	      int j2 = (jmin+2)%4;
+	      int j3 = (jmin+3)%4;
+	      if (vnums[faces[i][j3]] < vnums[faces[i][j1]]) swap (j1, j3);
+
+	      hfaces[i][0] = faces[i][jmin];
+	      hfaces[i][1] = faces[i][j1];
+	      hfaces[i][2] = faces[i][j2];
+	      hfaces[i][3] = faces[i][j3];
+	    }
+	  faces = &hfaces[0];
+	}
 
     }
 
@@ -646,8 +675,9 @@ namespace ngfem
 	      cerr << "  * ipfac = " << ipfac;
 	      cerr << "  * ipvol = " << ipvol;*/
     }
-    const IntegrationPoint & operator()(int fnr, const IntegrationPoint &ip1d) const 
+    const IntegrationPoint operator()(int fnr, const IntegrationPoint &ip1d) const 
     {
+      IntegrationPoint elpoint;
       operator()(fnr, ip1d, elpoint);
       return elpoint;
     }

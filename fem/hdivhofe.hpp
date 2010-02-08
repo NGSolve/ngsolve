@@ -247,7 +247,7 @@ class HDivHighOrderFE<ET_TET> : public T_HDivHighOrderFiniteElement<ET_TET>
    typedef TetShapesInnerLegendre T_INNERSHAPES;
    typedef TetShapesFaceLegendre T_FACESHAPES; 
 public:
-
+  HDivHighOrderFE () { ; }
   HDivHighOrderFE (int aorder);
   // virtual void ComputeNDof();
   // virtual void GetInternalDofs (Array<int> & idofs) const;
@@ -262,22 +262,28 @@ public:
 
 // template <class T_ORTHOPOL = TrigExtensionMonomial>
 template<>
-class HDivHighOrderFE<ET_PRISM> : public HDivHighOrderFiniteElement<3>
+class HDivHighOrderFE<ET_PRISM> : public T_HDivHighOrderFiniteElement<ET_PRISM>
 {
   typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
 public:
-
+  HDivHighOrderFE () { ; }
   HDivHighOrderFE (int aorder);
-  virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
+  // virtual void ComputeNDof();
+  // virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip,
 			  FlatMatrixFixWidth<3> shape) const;
 
   /// compute Div of shape
- // virtual void CalcDivShape (const IntegrationPoint & ip,
-  //			     FlatVector<> shape) const;
+  virtual void CalcDivShape (const IntegrationPoint & ip,
+  			     FlatVector<> shape) const;
+
+  /// compute shape
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx hx[2], TFA & shape) const; 
+
+
   /// compute Div numerical diff
   //void CalcNumDivShape( const IntegrationPoint & ip,
   //			FlatVector<> divshape) const;

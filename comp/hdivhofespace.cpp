@@ -437,7 +437,10 @@ namespace ngcomp
                   inci += pc[0]*(pc[0]+1)*(pc[0]-1)/3 + pc[0]*(pc[0]-1)/2; ;
                 break;
               case ET_PRISM:
-                inci = (p[0]+1)*(3*(p[0]-1)+(p[0]-1)*(p[0]-2))+ (p[0]-1)*(p[0]+1)*(p[0]+2)/2;
+                // inci = (p[0]+1)*(3*(p[0]-1)+(p[0]-1)*(p[0]-2))+ (p[0]-1)*(p[0]+1)*(p[0]+2)/2;
+		inci = (p[0]+2)*p[0]*(p[2]+1) + (p[0]+1)*(p[0]+2)*p[2]/2;
+		if (ho_div_free)
+		  inci -= (p[0]+1)*(p[0]+2)*(p[2]+1)/2 - 1;
                 break;
               case ET_HEX:
                 inci =  2*pc[0]*pc[1]*pc[2] + pc[0]*pc[1] + pc[1]*pc[2] + pc[0]* pc[2]
@@ -535,9 +538,9 @@ namespace ngcomp
     
     switch (ma.GetElType(elnr))
       {
-      case ET_TET: fe = new (lh)  HDivHighOrderFE<ET_TET> (order); break;
+      case ET_TET: fe = new (lh)  HDivHighOrderFE<ET_TET> (); break;
         // case ET_PYRAMID: fe = new (lh)  HDivHighOrderPyramid<ET_PYRAMID> (order);  break;
-      case ET_PRISM: fe = new (lh)  HDivHighOrderFE<ET_PRISM> (order); break;
+      case ET_PRISM: fe = new (lh)  HDivHighOrderFE<ET_PRISM> (); break;
       case ET_HEX:   fe = new (lh)  HDivHighOrderFE<ET_HEX> (order); break;
       case ET_TRIG:  fe = new (lh)  HDivHighOrderFE<ET_TRIG> (order); break;
       case ET_QUAD:  fe = new (lh)  HDivHighOrderFE<ET_QUAD> (order); break;
@@ -752,7 +755,7 @@ namespace ngcomp
     for(int j=first; j<next; j++)
       dnums.Append(j);
     
-    //(*testout) << "hdivspace(sz) el " << elnr << " has dofs " << dnums << endl;
+    // (*testout) << "hdivspace(sz) el " << elnr << " has dofs " << dnums << endl;
   }
 
   void HDivHighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
