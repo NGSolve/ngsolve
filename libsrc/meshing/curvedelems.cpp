@@ -2094,8 +2094,10 @@ namespace netgen
 	      int eorder = edgeorder[info.edgenrs[i]];
 	      if (eorder >= 2)
 		{
-		  int vi1 = (edges[i][0]-1) % 3, vi2 = (edges[i][1]-1) % 3;
+		  int vi1 = (edges[i][0]-1), vi2 = (edges[i][1]-1);
 		  if (el[vi1] > el[vi2]) swap (vi1, vi2);
+		  vi1 = vi1 % 3;
+		  vi2 = vi2 % 3;
 
 		  CalcScaledEdgeShape (eorder, lami[vi1]-lami[vi2], lami[vi1]+lami[vi2], &shapes(ii));
 		  double facz = (i < 3) ? (1-xi(2)) : xi(2);
@@ -2431,8 +2433,10 @@ namespace netgen
 	      int order = edgeorder[info.edgenrs[i]];
 	      if (order >= 2)
 		{
-		  int vi1 = (edges[i][0]-1) % 3, vi2 = (edges[i][1]-1) % 3;
+		  int vi1 = (edges[i][0]-1), vi2 = (edges[i][1]-1);
 		  if (el[vi1] > el[vi2]) swap (vi1, vi2);
+		  vi1 = vi1 % 3;
+		  vi2 = vi2 % 3;
 
 		  Vector shapei(order+1);
 		  CalcScaledEdgeShapeDxDt<3> (order, lami[vi1]-lami[vi2], lami[vi1]+lami[vi2], &dshapes(ii,0) );
@@ -2467,6 +2471,7 @@ namespace netgen
 		  ii += order-1;
 		}
 	    }
+
 	  for (int i = 6; i < 9; i++)    // vertical edges
 	    {
 	      int eorder = edgeorder[info.edgenrs[i]];

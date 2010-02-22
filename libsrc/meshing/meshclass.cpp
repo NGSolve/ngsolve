@@ -2912,17 +2912,12 @@ namespace netgen
     int nmsl = 0;
 
     msf >> nmsp;
+    if(!msf.good())
+      throw NgException ("Mesh-size file error: No points found\n");
+
     if(nmsp > 0)
-      {
-        if(!msf.good())
-          throw NgException ("Mesh-size file error: No points found\n");
-        PrintMessage (4, "Number of mesh-size restriction points: ", nmsp);
-      }
-    else
-      {
-        msf.close();
-        return;
-      }
+      PrintMessage (4, "Number of mesh-size restriction points: ", nmsp);
+
     for (int i = 0; i < nmsp; i++)
       {
         Point3d pi;
@@ -2933,19 +2928,14 @@ namespace netgen
           throw NgException ("Mesh-size file error: Number of points don't match specified list size\n");
         RestrictLocalH (pi, hi);
       }
+
     msf >> nmsl;
+    if(!msf.good())
+      throw NgException ("Mesh-size file error: No line definitions found\n");
+
     if(nmsl > 0)
-      {
-        cout << "Number of line definitions expected = " << nmsl << endl;
-        if(!msf.good())
-          throw NgException ("Mesh-size file error: No line definitions found\n");
-        PrintMessage (4, "Number of mesh-size restriction lines: ", nmsl);
-      }
-    else
-      {
-        msf.close();
-        return;
-      }
+      PrintMessage (4, "Number of mesh-size restriction lines: ", nmsl);
+
     for (int i = 0; i < nmsl; i++)
       {
         Point3d p1, p2;
