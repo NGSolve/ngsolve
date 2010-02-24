@@ -1532,36 +1532,50 @@ namespace ngcomp
 
             clh.CleanUp();
 
-            bool assembledspecialelements(false);
-            for (int i = 0; i < fespace.specialelements.Size(); i++)
-              {
-#pragma omp critical(printmatasstatus2)
+            bool assembledspecialelements = false;
+	    
+	    
+	    int nspecel = 0;
+#pragma omp parallel 
+	    {
+	      LocalHeap lh = clh.Split();
+	      Array<int> dnums;
+	      
+#pragma omp for 
+	      for (int i = 0; i < fespace.specialelements.Size(); i++)
 		{
-		  gcnt++;
-		  if (i % 10 == 0)
-		    cout << "\rassemble special element " << i << "/" << fespace.specialelements.Size() << flush;
-		  ma.SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
+#pragma omp critical(printmatspecel)
+		  {
+		    gcnt++;
+		    nspecel++;
+		    if (i % 10 == 0)
+		      cout << "\rassemble special element " << nspecel << "/" << fespace.specialelements.Size() << flush;
+		    ma.SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
+		  }
+		  
+		  const SpecialElement & el = *fespace.specialelements[i];
+		
+		  el.GetDofNrs (dnums);
+		
+		  FlatMatrix<SCAL> elmat(dnums.Size(), lh);
+		  el.Assemble (elmat, lh);
+		  
+#pragma omp critical(printmatspecel2)
+		  {
+		    for (int j = 0; j < dnums.Size(); j++)
+		      if (dnums[j] != -1)
+			useddof.Set (dnums[j]);
+		    
+		    AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+		  }
+		  
+		  assembledspecialelements = true;
+		  lh.CleanUp();
 		}
-		     
-                const SpecialElement & el = *fespace.specialelements[i];
-		
-                el.GetDofNrs (dnums);
-		
-                for (int j = 0; j < dnums.Size(); j++)
-                  if (dnums[j] != -1)
-                    useddof.Set (dnums[j]);
-	      
-                FlatMatrix<SCAL> elmat;
-                el.Assemble (elmat, clh);
-	      
-                AddElementMatrix (dnums, dnums, elmat, 0, i, clh);
-                assembledspecialelements = true;
-
-                clh.CleanUp();
-              }
-            if(assembledspecialelements) cout << "\rassemble special element " 
-                                              << fespace.specialelements.Size() << "/" << fespace.specialelements.Size() << endl;
-
+	    }
+	    if(assembledspecialelements) cout << "\rassemble special element " 
+					      << fespace.specialelements.Size() << "/" << fespace.specialelements.Size() << endl;
+	    
 	  
             // add eps to avoid empty lines
             FlatMatrix<SCAL> elmat (fespace.GetDimension(), clh);
