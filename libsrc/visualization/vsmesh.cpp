@@ -1784,6 +1784,34 @@ namespace netgen
       glNewList (tetlist, GL_COMPILE);
 
 
+      Vector locms;
+
+      // Philippose - 16/02/2010
+      // Add Mesh size based coloring of 
+      // meshes also for the volume elements
+      if (vispar.colormeshsize)
+      {
+         glEnable (GL_COLOR_MATERIAL);
+         locms.SetSize (mesh->GetNP());
+         maxh = -1;
+         minh = 1e99;
+         for (int i = 1; i <= locms.Size(); i++)
+         {
+            Point3d p = mesh->Point(i);
+            locms(i-1) = mesh->GetH (p);
+            if (locms(i-1) > maxh) maxh = locms(i-1);
+            if (locms(i-1) < minh) minh = locms(i-1);
+         }
+         if (!locms.Size())
+         { 
+            minh = 1; 
+            maxh = 10; 
+         }
+      }
+      else
+         glDisable (GL_COLOR_MATERIAL);
+
+
 
       Array<Element2d> faces;
 
@@ -2002,7 +2030,7 @@ namespace netgen
                }
             }
 
-            else
+            else // Not High Order
 
             {
                Point<3> pts[4];
@@ -2021,23 +2049,62 @@ namespace netgen
 
                glBegin (GL_TRIANGLE_STRIP);
 
-               n = Cross (pts[1]-pts[0], pts[2]-pts[0]);
-               glNormal3dv (n);
-               glVertex3dv (pts[0]);
-               glVertex3dv (pts[1]);
-               glVertex3dv (pts[2]);
+               // Philippose - 16/02/2010
+               // Add Mesh size based coloring of 
+               // meshes also for the volume elements
+               if(vispar.colormeshsize)
+               {
+                  n = Cross (pts[1]-pts[0], pts[2]-pts[0]);
+                  glNormal3dv (n);
 
-               n = Cross (pts[3]-pts[1], pts[2]-pts[1]);
-               glNormal3dv (n);
-               glVertex3dv (pts[3]);
+                  SetOpenGlColor  (locms(el[0]-1), minh, maxh, 0);
+                  glVertex3dv (pts[0]);
 
-               n = Cross (pts[3]-pts[2], pts[0]-pts[2]);
-               glNormal3dv (n);
-               glVertex3dv (pts[0]);
+                  SetOpenGlColor  (locms(el[1]-1), minh, maxh, 0);
+                  glVertex3dv (pts[1]);
 
-               n = Cross (pts[1]-pts[3], pts[0]-pts[3]);
-               glNormal3dv (n);
-               glVertex3dv (pts[1]);
+                  SetOpenGlColor  (locms(el[2]-1), minh, maxh, 0);
+                  glVertex3dv (pts[2]);
+
+                  n = Cross (pts[3]-pts[1], pts[2]-pts[1]);
+                  glNormal3dv (n);
+
+                  SetOpenGlColor  (locms(el[3]-1), minh, maxh, 0);
+                  glVertex3dv (pts[3]);
+
+                  n = Cross (pts[3]-pts[2], pts[0]-pts[2]);
+                  glNormal3dv (n);
+
+                  SetOpenGlColor  (locms(el[0]-1), minh, maxh, 0);
+                  glVertex3dv (pts[0]);
+
+                  n = Cross (pts[1]-pts[3], pts[0]-pts[3]);
+                  glNormal3dv (n);
+
+                  SetOpenGlColor  (locms(el[1]-1), minh, maxh, 0);
+                  glVertex3dv (pts[1]);
+               }
+               else // Do not color mesh based on mesh size
+               {
+                  n = Cross (pts[1]-pts[0], pts[2]-pts[0]);
+                  glNormal3dv (n);
+
+                  glVertex3dv (pts[0]);
+                  glVertex3dv (pts[1]);
+                  glVertex3dv (pts[2]);
+
+                  n = Cross (pts[3]-pts[1], pts[2]-pts[1]);
+                  glNormal3dv (n);
+                  glVertex3dv (pts[3]);
+
+                  n = Cross (pts[3]-pts[2], pts[0]-pts[2]);
+                  glNormal3dv (n);
+                  glVertex3dv (pts[0]);
+
+                  n = Cross (pts[1]-pts[3], pts[0]-pts[3]);
+                  glNormal3dv (n);
+                  glVertex3dv (pts[1]);
+               }
 
                glEnd();
             }
