@@ -915,7 +915,8 @@ namespace netgen
                MeshOptimize2dOCCSurfaces meshopt(geom);
                meshopt.SetFaceIndex (k);
                meshopt.SetImproveEdges (0);
-               meshopt.SetMetricWeight (0.2);
+               meshopt.SetMetricWeight (mparam.elsizeweight);
+               //meshopt.SetMetricWeight (0.2);
                meshopt.SetWriteStatus (0);
 
                //	    (*testout) << "EdgeSwapping (mesh, (i > mparam.optsteps2d/2))" << endl;
@@ -927,7 +928,8 @@ namespace netgen
                MeshOptimize2dOCCSurfaces meshopt(geom);
                meshopt.SetFaceIndex (k);
                meshopt.SetImproveEdges (0);
-               meshopt.SetMetricWeight (0.2);
+               //meshopt.SetMetricWeight (0.2);
+               meshopt.SetMetricWeight (mparam.elsizeweight);
                meshopt.SetWriteStatus (0);
 
                //	    (*testout) << "ImproveMesh (mesh)" << endl;
@@ -938,7 +940,8 @@ namespace netgen
                MeshOptimize2dOCCSurfaces meshopt(geom);
                meshopt.SetFaceIndex (k);
                meshopt.SetImproveEdges (0);
-               meshopt.SetMetricWeight (0.2);
+               //meshopt.SetMetricWeight (0.2);
+               meshopt.SetMetricWeight (mparam.elsizeweight);
                meshopt.SetWriteStatus (0);
 
                //	    (*testout) << "CombineImprove (mesh)" << endl;
@@ -950,7 +953,8 @@ namespace netgen
                MeshOptimize2dOCCSurfaces meshopt(geom);
                meshopt.SetFaceIndex (k);
                meshopt.SetImproveEdges (0);
-               meshopt.SetMetricWeight (0.2);
+               //meshopt.SetMetricWeight (0.2);
+               meshopt.SetMetricWeight (mparam.elsizeweight);
                meshopt.SetWriteStatus (0);
 
                //	    (*testout) << "ImproveMesh (mesh)" << endl;

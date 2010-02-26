@@ -189,7 +189,6 @@ namespace netgen
 
 
 
-
   double teterrpow = 2;
 
   double CalcTetBadness (const Point3d & p1, const Point3d & p2,
@@ -225,8 +224,11 @@ namespace netgen
 	h * h * ( 1 / ll1 + 1 / ll2 + 1 / ll3 + 
 		  1 / ll4 + 1 / ll5 + 1 / ll6 ) - 12;
     
-    if (teterrpow == 2)
-      return err*err;
+    teterrpow = mparam.opterrpow;
+    if(teterrpow < 1) teterrpow = 1;
+    
+    if (teterrpow == 1) return err;
+    if (teterrpow == 2) return err*err;
     return pow (err, teterrpow);
   }
 
@@ -347,12 +349,23 @@ namespace netgen
       }
 
     double errpow;
+
+    teterrpow = mparam.opterrpow;
+    if(teterrpow < 1) teterrpow = 1;
+
+    if (teterrpow == 1)
+    {
+       errpow = err;
+       grad = graderr;
+    }
+
     if (teterrpow == 2)
       {
         errpow = err*err;   
         grad = (2 * err) * graderr;
       }
-    else
+
+    if(teterrpow > 2)
       {
         errpow = pow (err, teterrpow);
         grad = (teterrpow * errpow / err) * graderr;
