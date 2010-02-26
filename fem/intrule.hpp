@@ -682,6 +682,130 @@ namespace ngfem
       return elpoint;
     }
   };
+
+
+
+
+
+
+
+  // transformation of (d-1) dimensional integration points on facets to 
+  // d-dimensional point in volumes
+  class Facet2SurfaceElementTrafo
+  {
+  protected:
+    // mutable IntegrationPoint elpoint;  
+    ELEMENT_TYPE eltype;
+    const POINT3D * points;
+    const EDGE * edges;
+    const FACE * faces;
+    EDGE hedges[4];
+    FACE hfaces[6];
+  public:
+    Facet2SurfaceElementTrafo(ELEMENT_TYPE aeltype) : eltype(aeltype) 
+    {
+      points = ElementTopology::GetVertices (eltype);
+      edges = ElementTopology::GetEdges (eltype);
+      faces = ElementTopology::GetFaces (eltype);
+    }
+    
+    Facet2SurfaceElementTrafo(ELEMENT_TYPE aeltype, FlatArray<int> & vnums) : eltype(aeltype) 
+    {
+      points = ElementTopology::GetVertices (eltype);
+      edges = ElementTopology::GetEdges (eltype);
+      faces = ElementTopology::GetFaces (eltype);
+
+      if (eltype == ET_SEGM)
+	{
+	  hedges[0][0] = edges[0][0];
+	  hedges[0][1] = edges[0][1];
+	  if (vnums[hedges[0][0]] > vnums[hedges[0][1]])
+	    swap (hedges[0][0], hedges[0][1]);
+	  edges = &hedges[0];
+	}
+
+      if (eltype == ET_TRIG)
+	{
+	  hfaces[0][0] = faces[0][0];
+	  hfaces[0][1] = faces[0][1];
+	  hfaces[0][2] = faces[0][2];
+	  if (vnums[hfaces[0][0]] > vnums[hfaces[0][1]]) swap (hfaces[0][0], hfaces[0][1]);
+	  if (vnums[hfaces[0][1]] > vnums[hfaces[0][2]]) swap (hfaces[0][1], hfaces[0][2]);
+	  if (vnums[hfaces[0][0]] > vnums[hfaces[0][1]]) swap (hfaces[0][0], hfaces[0][1]);
+	  
+	  faces = &hfaces[0];
+	}
+
+      if (eltype == ET_QUAD)
+	{
+	  int jmin = 0;
+	  for (int j = 1; j < 4; j++)
+	    if (vnums[faces[0][j]] < vnums[faces[0][jmin]]) jmin = j;
+	  int j1 = (jmin+1)%4;
+	  int j2 = (jmin+2)%4;
+	  int j3 = (jmin+3)%4;
+	  if (vnums[faces[0][j3]] < vnums[faces[0][j1]]) swap (j1, j3);
+	  
+	  hfaces[0][0] = faces[0][jmin];
+	  hfaces[0][1] = faces[0][j1];
+	  hfaces[0][2] = faces[0][j2];
+	  hfaces[0][3] = faces[0][j3];
+	  faces = &hfaces[0];
+	}
+    }
+
+
+    void operator()(const IntegrationPoint &ipfac, IntegrationPoint & ipvol) const 
+    {
+      int fnr = 0;
+      switch (eltype)
+	{
+	case ET_SEGM:
+	  {
+	    const POINT3D & p1 = points[edges[fnr][0]];
+	    const POINT3D & p2 = points[edges[fnr][1]];
+            for (int j = 0; j < 3; j++)
+              ipvol(j) = p2[j] + (ipfac(0))*(p1[j]-p2[j]);
+	    break;
+	  }
+	case ET_TRIG:
+	  {
+	    const POINT3D & p0 = points[faces[fnr][0]];
+	    const POINT3D & p1 = points[faces[fnr][1]];
+	    const POINT3D & p2 = points[faces[fnr][2]];
+	    ipvol(0) = p2[0] + ipfac(0)*(p0[0]-p2[0]) + ipfac(1)*(p1[0]-p2[0]);
+	    ipvol(1) = p2[1] + ipfac(0)*(p0[1]-p2[1]) + ipfac(1)*(p1[1]-p2[1]);
+	    ipvol(2) = p2[2] + ipfac(0)*(p0[2]-p2[2]) + ipfac(1)*(p1[2]-p2[2]);
+	    break;
+	  }
+	case ET_QUAD:
+	  {
+	    const POINT3D & p0 = points[faces[fnr][0]];
+	    const POINT3D & p1 = points[faces[fnr][1]];
+	    const POINT3D & p2 = points[faces[fnr][3]];
+	    ipvol(0) = p0[0] + ipfac(0)*(p1[0]-p0[0]) + ipfac(1)*(p2[0]-p0[0]);
+	    ipvol(1) = p0[1] + ipfac(0)*(p1[1]-p0[1]) + ipfac(1)*(p2[1]-p0[1]);
+	    ipvol(2) = p0[2] + ipfac(0)*(p1[2]-p0[2]) + ipfac(1)*(p2[2]-p0[2]);
+	    break;
+	  }
+	default:
+	  throw Exception ("undefined facet type in Facet2ElementTrafo()\n");
+
+	} 
+      /*      cerr << "*** mapping integrationpoint for element " << eltype << " and facel " << fnr << " of type " << facettype << endl;
+	      cerr << "  * ipfac = " << ipfac;
+	      cerr << "  * ipvol = " << ipvol;*/
+    }
+    const IntegrationPoint operator()(const IntegrationPoint &ip1d) const 
+    {
+      IntegrationPoint elpoint;
+      operator()(ip1d, elpoint);
+      return elpoint;
+    }
+  };
+
+
+
 }
 
 
