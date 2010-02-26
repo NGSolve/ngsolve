@@ -2080,7 +2080,7 @@ namespace netgen
 	  double lami[6] = { xi(0), xi(1), 1-xi(0)-xi(1), xi(0), xi(1), 1-xi(0)-xi(1) };
 	  double lamiz[6] = { 1-xi(2), 1-xi(2), 1-xi(2), xi(2), xi(2), xi(2) };
 	  for (int i = 0; i < 6; i++)
-	    shapes(i) = lami[i%3] * ( (i < 3) ? (1-xi(2)) : xi(2) );
+	    shapes(i) = lami[i] * lamiz[i]; 
 	  for (int i = 6; i < info.ndof; i++)
 	    shapes(i) = 0;
 
@@ -2094,10 +2094,8 @@ namespace netgen
 	      int eorder = edgeorder[info.edgenrs[i]];
 	      if (eorder >= 2)
 		{
-		  int vi1 = (edges[i][0]-1), vi2 = (edges[i][1]-1);
+		  int vi1 = edges[i][0]-1, vi2 = edges[i][1]-1;
 		  if (el[vi1] > el[vi2]) swap (vi1, vi2);
-		  vi1 = vi1 % 3;
-		  vi2 = vi2 % 3;
 
 		  CalcScaledEdgeShape (eorder, lami[vi1]-lami[vi2], lami[vi1]+lami[vi2], &shapes(ii));
 		  double facz = (i < 3) ? (1-xi(2)) : xi(2);
@@ -2113,12 +2111,12 @@ namespace netgen
 	      int eorder = edgeorder[info.edgenrs[i]];
 	      if (eorder >= 2)
 		{
-		  int vi1 = (edges[i][0]-1), vi2 = (edges[i][1]-1);
+		  int vi1 = edges[i][0]-1, vi2 = edges[i][1]-1;
 		  if (el[vi1] > el[vi2]) swap (vi1, vi2);
 
 		  double bubz = lamiz[vi1]*lamiz[vi2];
 		  double polyz = lamiz[vi1] - lamiz[vi2];
-		  double bubxy = lami[(vi1)%3];
+		  double bubxy = lami[vi1];
 
 		  for (int j = 0; j < eorder-1; j++)
 		    {

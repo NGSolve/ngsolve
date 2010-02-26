@@ -65,50 +65,46 @@ namespace netgen
      double globmaxh = mp.maxh;
 
      for (int k = 1; k <= mesh3d.GetNDomains(); k++)
-     {
-        if (multithread.terminate)
+       {
+	 if (multithread.terminate)
            break;
-
-        PrintMessage (2, "");
-        PrintMessage (1, "Meshing subdomain ", k, " of ", mesh3d.GetNDomains());
-        (*testout) << "Meshing subdomain " << k << endl;
-
-        mp.maxh = min2 (globmaxh, mesh3d.MaxHDomain(k));
-
-        mesh3d.CalcSurfacesOfNode();
-        mesh3d.FindOpenElements(k);
-
-        if (!mesh3d.GetNOpenElements())
+	 
+	 PrintMessage (2, "");
+	 PrintMessage (1, "Meshing subdomain ", k, " of ", mesh3d.GetNDomains());
+	 (*testout) << "Meshing subdomain " << k << endl;
+	 
+	 mp.maxh = min2 (globmaxh, mesh3d.MaxHDomain(k));
+	 
+	 mesh3d.CalcSurfacesOfNode();
+	 mesh3d.FindOpenElements(k);
+	 
+	 if (!mesh3d.GetNOpenElements())
            continue;
+	 
+	 
 
-
-
-        Box<3> domain_bbox( Box<3>::EMPTY_BOX ); 
-        /*
-        Point<3> (1e10, 1e10, 1e10),
-        Point<3> (-1e10, -1e10, -1e10));
-        */
-
-        for (SurfaceElementIndex sei = 0; sei < mesh3d.GetNSE(); sei++)
-        {
-           const Element2d & el = mesh3d[sei];
-           if (el.IsDeleted() ) continue;
-
-           if (mesh3d.GetFaceDescriptor(el.GetIndex()).DomainIn() == k ||
-              mesh3d.GetFaceDescriptor(el.GetIndex()).DomainOut() == k)
-
-              for (int j = 0; j < el.GetNP(); j++)
-                 domain_bbox.Add (mesh3d[el[j]]);
-        }
-        domain_bbox.Increase (0.01 * domain_bbox.Diam());
-
-
+	 Box<3> domain_bbox( Box<3>::EMPTY_BOX ); 
+	 
+	 for (SurfaceElementIndex sei = 0; sei < mesh3d.GetNSE(); sei++)
+	   {
+	     const Element2d & el = mesh3d[sei];
+	     if (el.IsDeleted() ) continue;
+	     
+	     if (mesh3d.GetFaceDescriptor(el.GetIndex()).DomainIn() == k ||
+		 mesh3d.GetFaceDescriptor(el.GetIndex()).DomainOut() == k)
+	       
+	       for (int j = 0; j < el.GetNP(); j++)
+		 domain_bbox.Add (mesh3d[el[j]]);
+	   }
+	 domain_bbox.Increase (0.01 * domain_bbox.Diam());
+	 
+	
         for (int qstep = 1; qstep <= 3; qstep++)
-        {
-           if (mesh3d.HasOpenQuads())
-           {
-              string rulefile = ngdir;
-
+	  {
+	    if (mesh3d.HasOpenQuads())
+	      {
+		string rulefile = ngdir;
+		
               const char ** rulep = NULL;
               switch (qstep)
               {
