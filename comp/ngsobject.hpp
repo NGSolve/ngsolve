@@ -13,7 +13,7 @@ namespace ngcomp
 /** 
     NGSolve base class
 */
-class NGS_Object
+class NGS_DLL_HEADER NGS_Object
 {
 protected:
   /// name of the instance

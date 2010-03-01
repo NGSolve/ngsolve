@@ -13,7 +13,7 @@ namespace ngmg
   /** 
       Grid Transfer operators
   */
-  class Prolongation
+  class NGS_DLL_HEADER Prolongation
   {
   public:
     ///

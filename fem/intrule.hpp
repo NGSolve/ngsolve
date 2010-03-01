@@ -275,7 +275,7 @@ namespace ngfem
      An integration rule.
      Contains array of integration points
   */
-  class NGS_DLL_HEADER IntegrationRule : public Array<IntegrationPoint> // ipts
+  class IntegrationRule : public Array<IntegrationPoint> 
   {
   public:
     ///
@@ -296,14 +296,6 @@ namespace ngfem
 
     /// number of integration points
     int GetNIP() const { return Size(); }
-
-    /*
-    // old style, should be replaced by []
-    const IntegrationPoint & GetIP(int i) const
-    {
-      return (*this)[i];
-    }
-    */
   };
 
   inline ostream & operator<< (ostream & ost, const IntegrationRule & ir)

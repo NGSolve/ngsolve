@@ -12,7 +12,7 @@
 namespace ngcomp
 {
 
-  class VectorFacetFESpace : public FESpace
+  class NGS_DLL_HEADER VectorFacetFESpace : public FESpace
   {
   protected:
     /// Level

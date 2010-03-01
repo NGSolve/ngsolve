@@ -28,7 +28,7 @@ namespace ngcomp
       mesh handler.
   */
 
-  class MeshAccess : public BaseStatusHandler
+  class NGS_DLL_HEADER MeshAccess : public BaseStatusHandler
   {
 
     /// buffered global quantities:

@@ -15,7 +15,7 @@ namespace ngcomp
   */
 
 
-  class H1HighOrderFESpace : public FESpace
+  class NGS_DLL_HEADER H1HighOrderFESpace : public FESpace
   {
   protected:
 

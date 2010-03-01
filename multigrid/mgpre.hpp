@@ -21,7 +21,7 @@ namespace ngmg
 
 
   ///
-  class MultigridPreconditioner : public BaseMatrix
+  class NGS_DLL_HEADER MultigridPreconditioner : public BaseMatrix
   {
 
   public:
@@ -140,7 +140,7 @@ namespace ngmg
 
 
   ///
-  class TwoLevelMatrix : public BaseMatrix
+  class NGS_DLL_HEADER TwoLevelMatrix : public BaseMatrix
   {
     ///
     const BaseMatrix * mat;

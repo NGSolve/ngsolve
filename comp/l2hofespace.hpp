@@ -14,7 +14,7 @@ namespace ngcomp
      High Order Finite Element Space for L2 (element by element)
   */
 
-  class L2HighOrderFESpace : public FESpace
+  class NGS_DLL_HEADER L2HighOrderFESpace : public FESpace
   {
   protected:
     // Number of Elements
@@ -97,7 +97,7 @@ namespace ngcomp
 #endif
   };
 
-  class L2SurfaceHighOrderFESpace : public FESpace
+  class NGS_DLL_HEADER L2SurfaceHighOrderFESpace : public FESpace
   {
   protected:
   

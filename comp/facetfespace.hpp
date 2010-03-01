@@ -19,7 +19,7 @@
 namespace ngcomp
 {
 
-  class FacetFESpace : public FESpace 
+  class NGS_DLL_HEADER FacetFESpace : public FESpace 
   {
   protected:  
     // Level
@@ -153,7 +153,7 @@ namespace ngcomp
 
 
 
-  class EdgeFESpace : public FESpace 
+  class NGS_DLL_HEADER EdgeFESpace : public FESpace 
   {
   protected:  
     int ned;
