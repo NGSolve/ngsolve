@@ -215,8 +215,8 @@ namespace ngla
 
 
   /// A virtual base class for all sparse matrices
-  class BaseSparseMatrix : virtual public BaseMatrix, 
-			   public MatrixGraph
+  class NGS_DLL_HEADER BaseSparseMatrix : virtual public BaseMatrix, 
+					  public MatrixGraph
   {
 
   public:
@@ -294,8 +294,8 @@ namespace ngla
 
   /// A general, sparse matrix
   template<class TM>
-  class SparseMatrixTM : public BaseSparseMatrix, 
-			 public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
+  class  NGS_DLL_HEADER SparseMatrixTM : public BaseSparseMatrix, 
+					 public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
     DynamicMem<TM> data;
@@ -379,7 +379,7 @@ namespace ngla
 
 
   template<class TM, class TV_ROW, class TV_COL>
-  class SparseMatrix : virtual public SparseMatrixTM<TM>
+  class NGS_DLL_HEADER SparseMatrix : virtual public SparseMatrixTM<TM>
   {
 
   public:
@@ -490,7 +490,7 @@ namespace ngla
 
   /// A symmetric sparse matrix
   template<class TM>
-  class SparseMatrixSymmetricTM : virtual public SparseMatrixTM<TM>
+  class NGS_DLL_HEADER SparseMatrixSymmetricTM : virtual public SparseMatrixTM<TM>
   {
 
   protected:
@@ -516,8 +516,8 @@ namespace ngla
 
   /// A symmetric sparse matrix
   template<class TM, class TV>
-  class SparseMatrixSymmetric : virtual public SparseMatrixSymmetricTM<TM>, 
-				virtual public SparseMatrix<TM,TV,TV>
+  class NGS_DLL_HEADER SparseMatrixSymmetric : virtual public SparseMatrixSymmetricTM<TM>, 
+					       virtual public SparseMatrix<TM,TV,TV>
   {
 
   public:

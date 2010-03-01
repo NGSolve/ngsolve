@@ -1536,7 +1536,7 @@ namespace ngfem
   };
 
   /// 
-  extern Integrators & GetIntegrators ();
+  extern NGS_DLL_HEADER Integrators & GetIntegrators ();
 
 }
 

@@ -1909,7 +1909,7 @@ public:
 
 /// Integrator for grad u grad v
 template <int D, typename FEL = ScalarFiniteElement<D> >
-class LaplaceIntegrator 
+class NGS_DLL_HEADER LaplaceIntegrator 
   : public T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL>
 {
 public:
@@ -2005,7 +2005,7 @@ public:
 
 ///
 template <int D>
-class MassIntegrator 
+class NGS_DLL_HEADER MassIntegrator 
   : public T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> >
 {
 public:
@@ -2035,7 +2035,7 @@ public:
 
 /// integrator for \f$\int_\Gamma u v \, ds\f$
 template <int D>
-class RobinIntegrator 
+class NGS_DLL_HEADER RobinIntegrator 
   : public T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, ScalarFiniteElement<D-1> >
 {
 public:
@@ -2472,7 +2472,7 @@ public:
 
 /// integrator for \f$\int_\Omega f v \f$
 template <int D, typename FEL = ScalarFiniteElement<D>  >
-class SourceIntegrator 
+class NGS_DLL_HEADER SourceIntegrator 
   : public T_BIntegrator<DiffOpId<D>, DVec<1>, FEL>
 {
 public:
@@ -2494,7 +2494,7 @@ public:
 
 ///
 template <int D, typename FEL = ScalarFiniteElement<D-1> >
-class NeumannIntegrator 
+class NGS_DLL_HEADER NeumannIntegrator 
   : public T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL>
 {
 public:
