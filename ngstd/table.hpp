@@ -18,7 +18,7 @@ namespace ngstd
    Base class of \Ref{Table} container.
    Provides index array pointing to first element in entry. 
  */
-class BaseTable
+class NGS_DLL_HEADER BaseTable
 {
 protected:
   /// number of rows
@@ -117,7 +117,7 @@ inline ostream & operator<< (ostream & s, const Table<T> & table)
 
 
 /// Base class to generic DynamicTable.
-class BaseDynamicTable
+class NGS_DLL_HEADER BaseDynamicTable
 {
 protected:
   

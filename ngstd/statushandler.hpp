@@ -7,7 +7,7 @@ namespace ngstd
   /** Access to statusbar. (and more)
    */
 
-  class BaseStatusHandler
+  class DLL_HEADER BaseStatusHandler
   {
   public:
     virtual void PushStatus (const char * str) const = 0;

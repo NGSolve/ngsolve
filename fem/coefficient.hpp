@@ -15,7 +15,7 @@ namespace ngfem
   */
 
 
-  class CoefficientFunction
+  class NGS_DLL_HEADER CoefficientFunction
   {
   public:
     ///

@@ -17,7 +17,7 @@ namespace ngfem
 
 
   template <int D>
-  class FacetVolumeFiniteElement : public FiniteElement
+  class NGS_DLL_HEADER FacetVolumeFiniteElement : public FiniteElement
   {
   protected:
     int vnums[8];
@@ -55,7 +55,7 @@ namespace ngfem
 
   
   
-  class EdgeVolumeFiniteElement : public FiniteElement
+  class NGS_DLL_HEADER EdgeVolumeFiniteElement : public FiniteElement
   {
   protected:
     int vnums[8];

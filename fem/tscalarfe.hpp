@@ -180,7 +180,7 @@ namespace ngfem
   */
 
   template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
-  class T_ScalarFiniteElement : public ScalarFiniteElement<ET_trait<ET>::DIM>
+  class NGS_DLL_HEADER T_ScalarFiniteElement : public ScalarFiniteElement<ET_trait<ET>::DIM>
   {
 
   public:
@@ -314,7 +314,7 @@ namespace ngfem
 
 
   template <class FEL, ELEMENT_TYPE ET>
-  class T_ScalarFiniteElement2 : virtual public ScalarFiniteElement<ET_trait<ET>::DIM>
+  class NGS_DLL_HEADER T_ScalarFiniteElement2 : virtual public ScalarFiniteElement<ET_trait<ET>::DIM>
   {
   public:
     enum { DIM = ET_trait<ET>::DIM };

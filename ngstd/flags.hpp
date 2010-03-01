@@ -16,7 +16,7 @@ namespace ngstd
       The flag structure maintains string flags, numerical flags,
       define flags, string list flags, num list flags.
   */
-  class Flags 
+  class NGS_DLL_HEADER Flags 
   {
     /// string flags
     SymbolTable<char *> strflags;

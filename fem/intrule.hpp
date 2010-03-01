@@ -11,7 +11,7 @@ namespace ngfem
 {
 
   /// An integration point 
-  class IntegrationPoint
+  class NGS_DLL_HEADER IntegrationPoint
   {
   private:
     /// number within intergration Rule
@@ -120,14 +120,14 @@ namespace ngfem
 
 
 
-  class ElementTransformation;
+  class NGS_DLL_HEADER ElementTransformation;
 
   /**
      Base class for SpecificIntegrationPoint.
      A specific integration point is the mapped point, and stores
      point coordinates, the Jacobimatrix, and the determinant of the Jacobimatrix.
   */
-  class BaseSpecificIntegrationPoint
+  class NGS_DLL_HEADER BaseSpecificIntegrationPoint
   {
   protected:
     /// IP on the reference element
@@ -151,7 +151,7 @@ namespace ngfem
 
 
   template <int R, typename SCAL = double>
-  class DimSpecificIntegrationPoint : public BaseSpecificIntegrationPoint
+  class NGS_DLL_HEADER DimSpecificIntegrationPoint : public BaseSpecificIntegrationPoint
   {
   protected:
     ///
@@ -172,7 +172,7 @@ namespace ngfem
 
   /// ip, dimension source, dimension range
   template <int DIMS = 2, int DIMR = 2, typename SCAL = double> 
-  class SpecificIntegrationPoint : public DimSpecificIntegrationPoint<DIMR,SCAL>
+  class NGS_DLL_HEADER SpecificIntegrationPoint : public DimSpecificIntegrationPoint<DIMR,SCAL>
   {
   private:
     /// Jacobi matrix
@@ -275,7 +275,7 @@ namespace ngfem
      An integration rule.
      Contains array of integration points
   */
-  class IntegrationRule : public Array<IntegrationPoint> // ipts
+  class NGS_DLL_HEADER IntegrationRule : public Array<IntegrationPoint> // ipts
   {
   public:
     ///
@@ -317,7 +317,7 @@ namespace ngfem
 
 
   template <int D>
-  class IntegrationRuleTP : public IntegrationRule
+  class NGS_DLL_HEADER IntegrationRuleTP : public IntegrationRule
   {
     const IntegrationRule *irx, *iry, *irz;
     // int sort[8];
@@ -380,7 +380,7 @@ namespace ngfem
       A global class maintaining integration rules. If a rule of specific
       order is requested for the first time, than the rule is generated.
   */
-  class IntegrationRules
+  class NGS_DLL_HEADER IntegrationRules
   {
     ///
     Array<IntegrationRule*> segmentrules;

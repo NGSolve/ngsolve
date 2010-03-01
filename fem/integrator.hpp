@@ -19,7 +19,7 @@ namespace ngfem
      Base class for linear-form and bilinear-form integrators.
      Provides integration order, restriction to subdomains
   */
-  class Integrator
+  class NGS_DLL_HEADER Integrator
   {
   protected:
     /// define only on some sub-domains
@@ -187,7 +187,7 @@ namespace ngfem
      equations are provided by derived classes. An Integrator can be defined
      in the domain or at the boundary.
   */
-  class BilinearFormIntegrator : public Integrator
+  class NGS_DLL_HEADER BilinearFormIntegrator : public Integrator
   {
   public:
     // typedef double TSCAL;
@@ -553,7 +553,7 @@ namespace ngfem
   };
 */
 
-  class FacetBilinearFormIntegrator : public BilinearFormIntegrator
+  class NGS_DLL_HEADER FacetBilinearFormIntegrator : public BilinearFormIntegrator
   {
     public:
       
@@ -662,7 +662,7 @@ namespace ngfem
 
 
 
-  class BlockBilinearFormIntegrator : public BilinearFormIntegrator
+  class NGS_DLL_HEADER BlockBilinearFormIntegrator : public BilinearFormIntegrator
   {
     BilinearFormIntegrator & bfi;
     int dim;
@@ -806,7 +806,7 @@ namespace ngfem
 
 
 
-  class ComplexBilinearFormIntegrator : public BilinearFormIntegrator
+  class NGS_DLL_HEADER ComplexBilinearFormIntegrator : public BilinearFormIntegrator
   {
     const BilinearFormIntegrator & bfi;
     Complex factor;
@@ -930,7 +930,7 @@ namespace ngfem
 
 
 
-  class CompoundBilinearFormIntegrator : public BilinearFormIntegrator
+  class NGS_DLL_HEADER CompoundBilinearFormIntegrator : public BilinearFormIntegrator
   {
     const BilinearFormIntegrator & bfi;
     int comp;
@@ -1056,7 +1056,7 @@ namespace ngfem
 
 
   template <int DIM_SPACE>
-  class DirichletPenaltyIntegrator : public BilinearFormIntegrator
+  class NGS_DLL_HEADER DirichletPenaltyIntegrator : public BilinearFormIntegrator
   {
     CoefficientFunction * penalty;
   public:
@@ -1134,7 +1134,7 @@ namespace ngfem
   /**
      Integrator for element vector.
   */
-  class LinearFormIntegrator : public Integrator
+  class NGS_DLL_HEADER LinearFormIntegrator : public Integrator
 
   {
   public:
@@ -1199,7 +1199,7 @@ namespace ngfem
 
 
 
- class FacetLinearFormIntegrator : public LinearFormIntegrator
+ class NGS_DLL_HEADER FacetLinearFormIntegrator : public LinearFormIntegrator
   {
     public:
       
@@ -1247,7 +1247,7 @@ namespace ngfem
 
 
 
-  class BlockLinearFormIntegrator : public LinearFormIntegrator
+  class NGS_DLL_HEADER BlockLinearFormIntegrator : public LinearFormIntegrator
   {
     const LinearFormIntegrator & lfi;
     int dim;
@@ -1270,7 +1270,7 @@ namespace ngfem
 
 
 
-  class ComplexLinearFormIntegrator : public LinearFormIntegrator
+  class NGS_DLL_HEADER ComplexLinearFormIntegrator : public LinearFormIntegrator
   {
     const LinearFormIntegrator & lfi;
     Complex factor;
@@ -1350,7 +1350,7 @@ namespace ngfem
 
 
 
-  class CompoundLinearFormIntegrator : public LinearFormIntegrator
+  class NGS_DLL_HEADER CompoundLinearFormIntegrator : public LinearFormIntegrator
   {
     const LinearFormIntegrator & lfi;
     int comp;
@@ -1480,7 +1480,7 @@ namespace ngfem
 
 
   /// container for all integrators
-  class Integrators
+  class NGS_DLL_HEADER Integrators
   {
   public:
 

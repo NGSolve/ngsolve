@@ -21,8 +21,17 @@
    #else
       #define DLL_HEADER   __declspec(dllimport)
    #endif
+
+   #ifdef NGS_EXPORTS
+      #define NGS_DLL_HEADER   __declspec(dllexport)
+   #else
+      #define NGS_DLL_HEADER   __declspec(dllimport)
+   #endif
+
+
 #else
    #define DLL_HEADER 
+   #define NGS_DLL_HEADER 
 #endif
 
 

@@ -18,7 +18,7 @@ namespace ngfem
      Provides application and transpose-application
   */
   template<class DOP>
-  class DiffOp
+  class NGS_DLL_HEADER DiffOp
   {
   public:
     // enum { DIM_ELEMENT = TDOP::DIM_ELEMENT };

@@ -15,7 +15,7 @@ namespace ngstd
      Exception on heap overflow.
      Thrown by allocation on LocalHeap.
   */
-  class LocalHeapOverflow : public Exception
+  class NGS_DLL_HEADER LocalHeapOverflow : public Exception
   {
   public:
     LocalHeapOverflow (size_t size);
@@ -31,7 +31,7 @@ namespace ngstd
      With \Ref{CleanUp}, the pointer is reset to the beginning or to a
      specific position. 
   */
-  class LocalHeap
+  class NGS_DLL_HEADER LocalHeap
   {
     char * data;
     char * p;

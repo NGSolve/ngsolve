@@ -20,7 +20,7 @@ namespace ngfem
 
 
 
-  class SpecialElement
+  class NGS_DLL_HEADER SpecialElement
   {
   public:
     SpecialElement ()
