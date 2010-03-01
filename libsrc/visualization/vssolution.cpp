@@ -1075,18 +1075,6 @@ namespace netgen
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, col_grey);
         
 
-    Array<Point<2> > pref;
-    Array<Point<3> > points;
-    Array<Mat<3,2> > dxdxis;
-
-
-
-    Vec<3> nvs[1100];
-    double values[1100];
-    double mvalues[11000];
-    complex<double> valuesc[11000];
-
-    
     int nse = mesh->GetNSE();
 
     SetTextureMode (usetexture);
@@ -1096,9 +1084,16 @@ namespace netgen
     int n = 1 << subdivisions;
     int npt = sqr(n+1);
 
-    pref.SetSize (npt);
-    points.SetSize (npt);
-    dxdxis.SetSize (npt);
+    Array<Point<2> > pref (npt);
+    Array<Point<3> > points (npt);
+    Array<Mat<3,2> > dxdxis (npt);
+    Array<Vec<3> > nvs(npt);
+    Array<double> values(npt);
+
+    Array<double> mvalues(npt);
+    if (sol && sol->draw_surface) mvalues.SetSize (npt * sol->components);
+
+    Array<complex<double> > valuesc(npt);
 
     for (SurfaceElementIndex sei = 0; sei < nse; sei++)
       {
@@ -1239,10 +1234,6 @@ namespace netgen
     double invn = 1.0 / n;
     npt = (n+1)*(n+2)/2;
 
-    pref.SetSize ( npt );
-    points.SetSize ( npt );
-    dxdxis.SetSize ( npt );
-
 
     for(SurfaceElementIndex sei = 0; sei < nse; sei++)
       {
@@ -1273,7 +1264,6 @@ namespace netgen
               for (int ix = 0; ix <= n-iy; ix++, ii++)
                 pref[ii] = Point<2> (ix*invn, iy*invn);
 
-            npt = (n+1)*(n+2)/2;
             if (curved)
               {
                 mesh->GetCurvedElements().
@@ -1316,10 +1306,10 @@ namespace netgen
 		
                 if (usetexture == 2)
 		  for (int ii = 0; ii < npt; ii++)
-		    valuesc[ii] = ExtractValueComplex(sol, scalcomp, mvalues+ii*sol->components);
+		    valuesc[ii] = ExtractValueComplex(sol, scalcomp, &mvalues[ii*sol->components]);
                 else
 		  for (int ii = 0; ii < npt; ii++)
-		    values[ii] = ExtractValue(sol, scalcomp, mvalues+ii*sol->components);
+		    values[ii] = ExtractValue(sol, scalcomp, &mvalues[ii*sol->components]);
               }
             
             if (deform)
