@@ -15,7 +15,16 @@ namespace ngfem {
   
   typedef std::complex<double> Complex;
 
-  template <int M> NGS_DLL_HEADER
+
+
+template <int M> NGS_DLL_HEADER
+void FastMat (int n, Complex * ba, Complex *  pb, Complex * pc);
+
+template <int M> NGS_DLL_HEADER
+void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double * __restrict__ pc);
+  
+
+  template <int M>
   void FastMat (int n, 
                 double * __restrict__ pa, 
 		double * __restrict__ pb, 
@@ -179,7 +188,7 @@ namespace ngfem {
   */
 
 
-  template <int M>  NGS_DLL_HEADER
+  template <int M> 
   void FastMat (int n, Complex * pa, Complex * pb, Complex * pc)
   {
     Complex * hpa = pa;
