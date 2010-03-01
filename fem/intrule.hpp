@@ -498,11 +498,10 @@ namespace ngfem
 
 
   /// Get a reference to the integration-rules container
-  extern const IntegrationRules & GetIntegrationRules ();
-
-  extern const IntegrationRule & SelectIntegrationRule (ELEMENT_TYPE eltype, int order);
-  extern const IntegrationRule & SelectIntegrationRuleJacobi10 (int order);
-  extern const IntegrationRule & SelectIntegrationRuleJacobi20 (int order);
+  extern NGS_DLL_HEADER const IntegrationRules & GetIntegrationRules ();
+  extern NGS_DLL_HEADER const IntegrationRule & SelectIntegrationRule (ELEMENT_TYPE eltype, int order);
+  extern NGS_DLL_HEADER const IntegrationRule & SelectIntegrationRuleJacobi10 (int order);
+  extern NGS_DLL_HEADER const IntegrationRule & SelectIntegrationRuleJacobi20 (int order);
 
 
   // transformation of (d-1) dimensional integration points on facets to 

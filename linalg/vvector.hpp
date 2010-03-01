@@ -8,7 +8,7 @@ namespace ngla
   /**
      The T_BaseVector specifies the type of the vector element
   */
-  template <typename T = double>
+  template <typename T = double> NGS_DLL_HEADER
   class T_BaseVector : public S_BaseVector<typename mat_traits<T>::TSCAL>
   {
 
@@ -121,7 +121,7 @@ namespace ngla
   /**
      A specific vector based on Vector.
   */
-  template <typename T = double>
+  template <typename T = double> NGS_DLL_HEADER
   class VVector : public T_BaseVector<T>
   {
   protected:

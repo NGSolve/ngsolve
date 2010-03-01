@@ -5,7 +5,7 @@
 #include <emmintrin.h>
 #endif
 
-#include <complex>
+#include <fem.hpp>
 
 #ifdef WIN32
 #define __restrict__ __restrict
@@ -15,7 +15,7 @@ namespace ngfem {
   
   typedef std::complex<double> Complex;
 
-  template <int M>
+  template <int M> NGS_DLL_HEADER
   void FastMat (int n, 
                 double * __restrict__ pa, 
 		double * __restrict__ pb, 
@@ -179,7 +179,7 @@ namespace ngfem {
   */
 
 
-  template <int M>
+  template <int M>  NGS_DLL_HEADER
   void FastMat (int n, Complex * pa, Complex * pb, Complex * pc)
   {
     Complex * hpa = pa;

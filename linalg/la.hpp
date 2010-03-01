@@ -41,18 +41,12 @@ namespace ngla
   using namespace ngstd;
   using namespace ngbla;
 
-  // using namespace ngstd;
-
   using ngstd::BitArray;
   using ngstd::FlatArray;
   using ngstd::Array;
   using ngstd::Table;
   using ngstd::INT;
 }
-  /*
-  using ngbla::BaseMatrix;
-  using ngbla::BaseVector;
-  */
 
 #include "basevector.hpp"
 #include "vvector.hpp"

@@ -15,7 +15,7 @@ namespace ngla
   /**
      The base for all matrices in the linalg.
   */
-  class BaseMatrix
+  class NGS_DLL_HEADER BaseMatrix
   {
   protected:
 

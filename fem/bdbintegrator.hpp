@@ -80,10 +80,10 @@ public:
 #define __restrict__ __restrict
 #endif
 
-template <int M>
+template <int M> NGS_DLL_HEADER
 void FastMat (int n, Complex * ba, Complex *  pb, Complex * pc);
 
-template <int M>
+template <int M> NGS_DLL_HEADER
 void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double * __restrict__ pc);
   
 

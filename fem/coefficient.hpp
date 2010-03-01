@@ -121,7 +121,7 @@ namespace ngfem
 
 
   /// The coefficient is constant everywhere
-  class ConstantCoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER ConstantCoefficientFunction : public CoefficientFunction
   {
     ///
     double val;
@@ -145,7 +145,7 @@ namespace ngfem
 
 
   /// The coefficient is constant in every sub-domain
-  class DomainConstantCoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER DomainConstantCoefficientFunction : public CoefficientFunction
   {
     ///
     Array<double> val;
@@ -171,7 +171,7 @@ namespace ngfem
 
   ///
   template <int DIM>
-  class DomainVariableCoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER DomainVariableCoefficientFunction : public CoefficientFunction
 					    //  : public SpecCoefficientFunction<DomainVariableCoefficientFunction>
   {
     ///
@@ -257,7 +257,7 @@ namespace ngfem
 
   ///
   template <int DIM>
-  class DomainInternalCoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER DomainInternalCoefficientFunction : public CoefficientFunction
   {
     ///
     int matnr;

@@ -62,7 +62,7 @@ public:
 /**
    Base vector for linalg
  */
-class BaseVector
+class NGS_DLL_HEADER BaseVector
 {
 protected:
   /// size of vector
@@ -77,7 +77,7 @@ public:
   virtual ~BaseVector () throw ();
 
   ///
-  template <typename T>
+  template <typename T> 
   BaseVector & operator= (const VVecExpr<T> & v)
   {
     v.AssignTo (1.0, *this);
@@ -296,7 +296,7 @@ public:
    Decision between double or Complex
  */
 template <class SCAL>
-class S_BaseVector : public BaseVector
+class NGS_DLL_HEADER S_BaseVector : public BaseVector
 {
 public:
   S_BaseVector () throw () { ; }
@@ -346,7 +346,7 @@ public:
 
 
 template <>
-class S_BaseVector<Complex> : public BaseVector
+class NGS_DLL_HEADER S_BaseVector<Complex> : public BaseVector
 {
 public:
   S_BaseVector () throw() { ; }

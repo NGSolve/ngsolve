@@ -691,11 +691,11 @@ namespace ngcomp
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
 
-    template <class MAT>
+    template <class MAT> NGS_DLL_HEADER
     void TransformMat (int elnr, bool boundary,
 		       MAT & mat, TRANSFORM_TYPE tt) const;
 
-    template <class VEC>
+    template <class VEC> NGS_DLL_HEADER
     void TransformVec (int elnr, bool boundary,
 		       VEC & vec, TRANSFORM_TYPE tt) const;
 

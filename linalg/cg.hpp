@@ -15,7 +15,7 @@ namespace ngla
   /**
      Krylov Space Solver
   */ 
-  class KrylovSpaceSolver : public BaseMatrix
+  class NGS_DLL_HEADER KrylovSpaceSolver : public BaseMatrix
   {
   protected:
     ///
@@ -97,7 +97,7 @@ namespace ngla
 
   /// The conjugate gradient solver
   template <class IPTYPE>
-  class CGSolver : public KrylovSpaceSolver
+  class NGS_DLL_HEADER CGSolver : public KrylovSpaceSolver
   {
   protected:
     ///
