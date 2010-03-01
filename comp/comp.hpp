@@ -54,7 +54,7 @@ namespace ngcomp
   class MeshAccess;
 }
 
-#include "comp_utils.hpp"
+// #include "comp_utils.hpp"
 #include "ngsobject.hpp"
 #include "meshaccess.hpp"
 #include "fespace.hpp"

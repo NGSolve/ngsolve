@@ -14,7 +14,7 @@ namespace ngmg
       Smoothing iteration for multigrid method.
       Pure virtual base class.
   */
-  class Smoother
+  class NGS_DLL_HEADER Smoother
   {
   protected:
     /// additive or multiplicative smooting

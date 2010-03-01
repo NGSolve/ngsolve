@@ -15,7 +15,7 @@ namespace ngcomp
   */
 
   template <class SCAL>
-  extern void CalcFlux (const MeshAccess & ma, 
+  extern NGS_DLL_HEADER void CalcFlux (const MeshAccess & ma, 
 			const S_GridFunction<SCAL> & u,
 			S_GridFunction<SCAL> & flux,
 			const BilinearFormIntegrator & bli,
@@ -23,7 +23,7 @@ namespace ngcomp
 			int domain);
 
   template <class SCAL>
-  extern void CalcFluxProject (const MeshAccess & ma, 
+  extern NGS_DLL_HEADER void CalcFluxProject (const MeshAccess & ma, 
 			       const S_GridFunction<SCAL> & u,
 			       S_GridFunction<SCAL> & flux,
 			       const BilinearFormIntegrator & bli,
@@ -31,7 +31,7 @@ namespace ngcomp
 			       LocalHeap & lh);
 
   template <class SCAL>
-  extern void CalcFluxProject (const MeshAccess & ma, 
+  extern NGS_DLL_HEADER void CalcFluxProject (const MeshAccess & ma, 
 			       const S_GridFunction<SCAL> & u,
 			       S_GridFunction<SCAL> & flux,
 			       const BilinearFormIntegrator & bli,
@@ -39,7 +39,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  extern void SetValues (const MeshAccess & ma, 
+  extern NGS_DLL_HEADER void SetValues (const MeshAccess & ma, 
 			 const CoefficientFunction & coef,
 			 GridFunction & u,
 			 bool bound,
@@ -49,7 +49,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  extern int CalcPointFlux (const MeshAccess & ma, 
+  extern NGS_DLL_HEADER int CalcPointFlux (const MeshAccess & ma, 
 			    const GridFunction & u,
 			    const FlatVector<double> & point,
 			    FlatVector<SCAL> & flux,
@@ -59,7 +59,7 @@ namespace ngcomp
 			    int component = 0);
 
   template <class SCAL>
-  extern int CalcPointFlux (const MeshAccess & ma, 
+  extern NGS_DLL_HEADER int CalcPointFlux (const MeshAccess & ma, 
 			    const GridFunction & u,
 			    const FlatVector<double> & point,
 			    const Array<int> & domains,
@@ -70,7 +70,7 @@ namespace ngcomp
 			    int component = 0);
 
   template <class SCAL>
-  extern void CalcError (const MeshAccess & ma, 
+  extern NGS_DLL_HEADER void CalcError (const MeshAccess & ma, 
 			 const S_GridFunction<SCAL> & bu,
 			 const S_GridFunction<SCAL> & bflux,
 			 const BilinearFormIntegrator & bli,
@@ -78,7 +78,7 @@ namespace ngcomp
 			 int domain,
 			 LocalHeap & lh);
   template <class SCAL>
-  extern void CalcError (const MeshAccess & ma, 
+  extern NGS_DLL_HEADER void CalcError (const MeshAccess & ma, 
 			 const S_GridFunction<SCAL> & u,
 			 const S_GridFunction<SCAL> & flux,
 			 const BilinearFormIntegrator & bli,
@@ -87,7 +87,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  void CalcDifference (const MeshAccess & ma, 
+  NGS_DLL_HEADER void CalcDifference (const MeshAccess & ma, 
 		       const S_GridFunction<SCAL> & u1,
 		       const S_GridFunction<SCAL> & u2,
 		       const BilinearFormIntegrator & bli1,
@@ -96,7 +96,7 @@ namespace ngcomp
 		       int domain, LocalHeap & lh);
   
   template <class SCAL>
-  void CalcDifference (const MeshAccess & ma, 
+  NGS_DLL_HEADER void CalcDifference (const MeshAccess & ma, 
 		       const S_GridFunction<SCAL> & u1,
 		       const BilinearFormIntegrator & bli1,
 		       const CoefficientFunction * coef_real, 
@@ -107,14 +107,14 @@ namespace ngcomp
 
 
   template <class SCAL>
-  extern void CalcGradient (const MeshAccess & ma,
+  extern NGS_DLL_HEADER void CalcGradient (const MeshAccess & ma,
 			    const FESpace & fesh1,
 			    const S_BaseVector<SCAL> & vech1,
 			    const FESpace & feshcurl,
 			    S_BaseVector<SCAL> & vechcurl);
 
   template <class SCAL>
-  extern void CalcGradientT (const MeshAccess & ma,
+  extern NGS_DLL_HEADER void CalcGradientT (const MeshAccess & ma,
 			     const FESpace & feshcurl,
 			     const S_BaseVector<SCAL> & vechcurl,
 			     const FESpace & fesh1,
@@ -122,7 +122,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  extern void CalcErrorHierarchical (const MeshAccess & ma, 
+  extern NGS_DLL_HEADER void CalcErrorHierarchical (const MeshAccess & ma, 
 				     const S_BilinearForm<SCAL> & bfa,
 				     const S_BilinearForm<SCAL> & bfa2,
 				     const S_LinearForm<SCAL> & lff,

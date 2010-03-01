@@ -17,7 +17,7 @@ namespace ngsolve
 class PDE;
   
 ///
-class NumProc : public NGS_Object
+class NGS_DLL_HEADER NumProc : public NGS_Object
 {
 protected:
   ///
@@ -45,7 +45,7 @@ public:
 
 
 /// Registered numprocs
-class NumProcs
+class NGS_DLL_HEADER NumProcs
 {
 public:
   class NumProcInfo
@@ -76,7 +76,7 @@ public:
 };
 
  
-extern NumProcs & GetNumProcs ();
+extern NGS_DLL_HEADER NumProcs & GetNumProcs ();
 
 
 }

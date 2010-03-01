@@ -14,7 +14,7 @@ namespace ngcomp
   /**
      Base class for preconditioners.
   */
-  class Preconditioner : public NGS_Object
+  class NGS_DLL_HEADER Preconditioner : public NGS_Object
   {
   protected:
     bool test;
@@ -508,7 +508,7 @@ namespace ngcomp
 
 
   /// Registered Preconditioner classes
-  class PreconditionerClasses
+  class NGS_DLL_HEADER PreconditionerClasses
   {
   public:
     struct PreconditionerInfo
@@ -534,7 +534,7 @@ namespace ngcomp
     void Print (ostream & ost) const;
   };
  
-  extern PreconditionerClasses & GetPreconditionerClasses ();
+  extern NGS_DLL_HEADER PreconditionerClasses & GetPreconditionerClasses ();
 
 
 

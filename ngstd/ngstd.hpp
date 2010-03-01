@@ -35,28 +35,17 @@
 #endif
 
 
+#include "dynamicmem.hpp"
 
 namespace netgen
 {
-  // #include "parthreads.hpp"
-  // #include <moveablemem.hpp>
-#include "dynamicmem.hpp"
-
   DLL_HEADER extern ::std::ostream * testout;
-  // extern ::std::ostream * mycout; 
   DLL_HEADER extern int printmessage_importance;
 }
 
 using netgen::printmessage_importance;
-
-// using netgen::MoveableMem;
 using netgen::DynamicMem;
-// using netgen::NgLock;  
-// using netgen::NgMutex;
-
 using netgen::testout;
-// using netgen::mycout; 
-
 
 
 

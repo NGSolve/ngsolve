@@ -14,7 +14,7 @@ namespace ngcomp
       Linearform
   */
 
-  class LinearForm : public NGS_Object
+  class NGS_DLL_HEADER LinearForm : public NGS_Object
   {
   protected:
     ///
@@ -106,7 +106,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  class S_LinearForm : public LinearForm
+  class NGS_DLL_HEADER S_LinearForm : public LinearForm
   {
   public:
     typedef SCAL TSCAL;
@@ -144,7 +144,7 @@ namespace ngcomp
 
   /// Template argument specifies vector type
   template <class TV>
-  class T_LinearForm : public S_LinearForm<typename mat_traits<TV>::TSCAL>
+  class NGS_DLL_HEADER T_LinearForm : public S_LinearForm<typename mat_traits<TV>::TSCAL>
   {
     ///
     ngla::VVector<TV> * vec;

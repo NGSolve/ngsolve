@@ -14,7 +14,7 @@ namespace ngcomp
      HDiv High Order Finite Element Space
   */
 
-  class HDivHighOrderFESpace : public FESpace
+  class NGS_DLL_HEADER HDivHighOrderFESpace : public FESpace
   {
   protected:
     // Level

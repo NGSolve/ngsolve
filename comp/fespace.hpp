@@ -32,7 +32,7 @@ namespace ngcomp
      Provides finite elements, global degrees of freedom, 
      and transformations of element-matrices and element-vectors
   */
-  class FESpace : public NGS_Object
+  class NGS_DLL_HEADER FESpace : public NGS_Object
   {
   protected:
     /// order of finite elements
@@ -367,7 +367,7 @@ namespace ngcomp
      A space of continuous finite elements.
      Supports first and second order finite elements.
   */
-  class NodalFESpace : public FESpace
+  class NGS_DLL_HEADER NodalFESpace : public FESpace
   {
     ///
     Array<int> ndlevel;
@@ -419,7 +419,7 @@ namespace ngcomp
 
 
   ///
-  class NonconformingFESpace : public FESpace
+  class NGS_DLL_HEADER NonconformingFESpace : public FESpace
   {
     ///
     Array<int> ndlevel;
@@ -451,7 +451,7 @@ namespace ngcomp
 
 
   ///
-  class ElementFESpace : public FESpace
+  class NGS_DLL_HEADER ElementFESpace : public FESpace
   {
     ///  Array<int> startelement;
     Array<int> ndlevel;
@@ -494,7 +494,7 @@ namespace ngcomp
 
 
   /// Non-continous fe space on boundary
-  class SurfaceElementFESpace : public FESpace
+  class NGS_DLL_HEADER SurfaceElementFESpace : public FESpace
   {
     ///
     Array<int> ndlevel;
@@ -626,7 +626,7 @@ namespace ngcomp
 
 
   /// A combination of fe-spaces
-  class CompoundFESpace : public FESpace
+  class NGS_DLL_HEADER CompoundFESpace : public FESpace
   {
   protected:
     /// pointer to components
@@ -794,7 +794,7 @@ namespace ngcomp
 
 
   /// Registered FESpace classes
-  class FESpaceClasses
+  class NGS_DLL_HEADER FESpaceClasses
   {
   public:
     struct FESpaceInfo
@@ -818,7 +818,7 @@ namespace ngcomp
     void Print (ostream & ost) const;
   };
  
-  extern FESpaceClasses & GetFESpaceClasses ();
+  extern NGS_DLL_HEADER FESpaceClasses & GetFESpaceClasses ();
 
 
 }

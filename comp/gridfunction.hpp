@@ -13,7 +13,7 @@ namespace ngcomp
   /** 
       Grid-functions
   */
-  class GridFunction : public NGS_Object
+  class NGS_DLL_HEADER GridFunction : public NGS_Object
   {
   protected:
     const FESpace & fespace;
@@ -83,7 +83,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  class S_GridFunction : public GridFunction
+  class NGS_DLL_HEADER S_GridFunction : public GridFunction
   {
   public:
     S_GridFunction (const FESpace & afespace, const string & aname, const Flags & flags)
@@ -126,7 +126,7 @@ namespace ngcomp
 
 
   template <class TV>
-  class T_GridFunction : public S_GridFunction<typename mat_traits<TV>::TSCAL>
+  class NGS_DLL_HEADER T_GridFunction : public S_GridFunction<typename mat_traits<TV>::TSCAL>
   {
     using S_GridFunction<typename mat_traits<TV>::TSCAL>::vec;
 
@@ -159,7 +159,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  class S_ComponentGridFunction : public S_GridFunction<SCAL>
+  class NGS_DLL_HEADER S_ComponentGridFunction : public S_GridFunction<SCAL>
   {
     const S_GridFunction<SCAL> & gf;
     int comp;
@@ -171,7 +171,7 @@ namespace ngcomp
 
 
 
-  class GridFunctionCoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunction
   {
   protected:
     S_GridFunction<double> & gf;
@@ -195,7 +195,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  class VisualizeGridFunction : public netgen::SolutionData
+  class NGS_DLL_HEADER VisualizeGridFunction : public netgen::SolutionData
   {
     const MeshAccess & ma;
     const S_GridFunction<SCAL> * gf;

@@ -53,7 +53,7 @@ namespace ngsolve
   /** 
       Description of partial differential equation
   */
-  class PDE
+  class NGS_DLL_HEADER PDE
   {
     ///
     MeshAccess & ma;

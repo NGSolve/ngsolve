@@ -20,7 +20,7 @@ namespace ngcomp
       In most cases, it is defined on two copies of the same space V,
       but it can also live on V x W.
   */
-  class BilinearForm : public NGS_Object
+  class NGS_DLL_HEADER BilinearForm : public NGS_Object
   {
   protected:
     /// Finite element space
@@ -320,7 +320,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  class S_BilinearForm : public BilinearForm
+  class NGS_DLL_HEADER S_BilinearForm : public BilinearForm
   {
   protected:
   public:
@@ -425,7 +425,7 @@ namespace ngcomp
 
 
   template <class TM, class TV = typename mat_traits<TM>::TV_COL>
-  class T_BilinearForm : public S_BilinearForm<typename mat_traits<TM>::TSCAL>
+  class NGS_DLL_HEADER T_BilinearForm : public S_BilinearForm<typename mat_traits<TM>::TSCAL>
   {
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL;
@@ -486,7 +486,7 @@ namespace ngcomp
 
 
   template <class TM, class TV = typename mat_traits<TM>::TV_COL>
-  class T_BilinearFormSymmetric : public S_BilinearForm<typename mat_traits<TM>::TSCAL>
+  class NGS_DLL_HEADER T_BilinearFormSymmetric : public S_BilinearForm<typename mat_traits<TM>::TSCAL>
   {
 
   public:
@@ -538,7 +538,7 @@ namespace ngcomp
 
 
   template <class TM>
-  class T_BilinearFormDiagonal : public S_BilinearForm<typename mat_traits<TM>::TSCAL>
+  class NGS_DLL_HEADER T_BilinearFormDiagonal : public S_BilinearForm<typename mat_traits<TM>::TSCAL>
   {
 
   public:
@@ -595,7 +595,7 @@ namespace ngcomp
 
 
   ///
-  class BilinearFormApplication : public BaseMatrix
+  class NGS_DLL_HEADER BilinearFormApplication : public BaseMatrix
   {
   protected:
     ///
@@ -626,7 +626,7 @@ namespace ngcomp
   };
 
 
-  class LinearizedBilinearFormApplication : public BilinearFormApplication 
+  class NGS_DLL_HEADER LinearizedBilinearFormApplication : public BilinearFormApplication 
   {
   protected:
     const BaseVector * veclin;
