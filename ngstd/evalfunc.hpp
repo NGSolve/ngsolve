@@ -18,7 +18,7 @@ namespace ngstd
    The evaluatino tree can be filled form an external parser,
    see Addxxx methods.
 */
-class EvalFunction
+class NGS_DLL_HEADER EvalFunction
 {
 
   ///

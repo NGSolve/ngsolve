@@ -17,7 +17,7 @@ namespace ngstd
 
 
 /// Base class for all ng exceptions
-class Exception 
+class NGS_DLL_HEADER Exception 
 {
   /// a verbal description of the exception
   string what;
@@ -36,7 +36,7 @@ public:
 
 
 /// Out of range exception used for arrays, vectors and matrices
-class RangeException : public Exception
+class NGS_DLL_HEADER RangeException : public Exception
 {
 public:
   /// where it occurs, index, minimal and maximal indices

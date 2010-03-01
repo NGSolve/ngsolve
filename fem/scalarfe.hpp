@@ -16,7 +16,7 @@ namespace ngfem
      Provides shape functions and derivaties.
   */
   template <int D>
-  class ScalarFiniteElement : public FiniteElement
+  class NGS_DLL_HEADER ScalarFiniteElement : public FiniteElement
   {
   public:
     virtual string ClassName(void) const {return "ScalarFiniteElement";}

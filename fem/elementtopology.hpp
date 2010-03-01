@@ -57,7 +57,7 @@ namespace ngfem
 
 
   /// Topology and coordinate information of master element:
-  class ElementTopology
+  class NGS_DLL_HEADER ElementTopology
   {
   public:
     /// returns name of element type

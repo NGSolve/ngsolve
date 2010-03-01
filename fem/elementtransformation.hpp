@@ -21,7 +21,7 @@ namespace ngfem
     Transformation from reference element to physical element.
     Uses finite element fel to describe mapping
   */
-  class ElementTransformation
+  class NGS_DLL_HEADER ElementTransformation
   {
     /// finite element defining transformation.
     const FiniteElement * fel;
@@ -247,7 +247,7 @@ namespace ngfem
      Transformation from reference element to physical element.
      Uses Netgen-meshaccess to perform transformation
   */
-  class ElementTransformation
+  class NGS_DLL_HEADER ElementTransformation
   {
     /// element number
     int elnr;
@@ -538,7 +538,7 @@ namespace ngfem
 
 #endif
 
-  class BaseMappedIntegrationRule 
+  class NGS_DLL_HEADER BaseMappedIntegrationRule 
   { 
   protected:
     const IntegrationRule & ir;
@@ -560,7 +560,7 @@ namespace ngfem
   };
 
   template <int DIM_ELEMENT, int DIM_SPACE>
-  class MappedIntegrationRule : public BaseMappedIntegrationRule
+  class NGS_DLL_HEADER MappedIntegrationRule : public BaseMappedIntegrationRule
   {
     FlatArray< SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > sips;
   public:

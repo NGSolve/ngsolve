@@ -15,7 +15,7 @@ namespace ngfem
      Raviart-Thomas, BDM, BDFM
   */
   template <int D>
-  class HDivFiniteElement : public FiniteElement
+  class NGS_DLL_HEADER HDivFiniteElement : public FiniteElement
   {
   public:
     enum { DIM = D };
@@ -123,7 +123,7 @@ namespace ngfem
 
   ///
   template <int D>
-  class HDivNormalFiniteElement : public FiniteElement
+  class NGS_DLL_HEADER HDivNormalFiniteElement : public FiniteElement
   {
   public:
     enum { DIM = D };

@@ -16,7 +16,7 @@ namespace ngstd
 
    Provides bit-operations and whole array operations.
 */
-class BitArray
+class NGS_DLL_HEADER BitArray
 {
   /// number of bits
   int size;

@@ -29,7 +29,7 @@ namespace ngstd
   /**
      A built-in profile
   */
-  class NgProfiler
+  class NGS_DLL_HEADER NgProfiler
   {
     /// maximal number of timers
     enum { SIZE = 1000 };

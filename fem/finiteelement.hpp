@@ -55,7 +55,7 @@ namespace ngfem
       Mainly used as interface. Usually casted to ScalarFiniteElement, HCurlFiniteElement or HDivFiniteElement.
       Provides element shape, space dimension, number of dofs, polynomial order.
   */
-  class FiniteElement
+  class NGS_DLL_HEADER FiniteElement
   {
   protected:
     /// space dimension (1, 2, or 3)
@@ -120,7 +120,7 @@ namespace ngfem
      Useful for mixed finite elements such as Stokes problem: 
      Combine 3 velocity and 1 pressure element
   */
-  class CompoundFiniteElement : public FiniteElement
+  class NGS_DLL_HEADER CompoundFiniteElement : public FiniteElement
   {
   protected:
     /// pointers to the components
@@ -139,7 +139,7 @@ namespace ngfem
 
 
   template <ELEMENT_TYPE ET>
-  class DummyFE : public FiniteElement
+  class NGS_DLL_HEADER DummyFE : public FiniteElement
   {
   public:
     DummyFE ()

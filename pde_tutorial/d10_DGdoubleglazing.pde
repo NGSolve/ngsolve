@@ -49,6 +49,8 @@ define linearform fdisc -fespace=vdisc
 DGIP_bndfac_dir lam boundcoefrhs calpha
 DG_bndfac_convdir b1 b2 boundcoefrhs
 
-numproc bvp npdisc -bilinearform=adisc -linearform=fdisc -gridfunction=udisc -solver=direct
+define preconditioner c -type=direct -bilinearform=adisc -inverse=pardiso
+
+numproc bvp npdisc -bilinearform=adisc -linearform=fdisc -gridfunction=udisc -preconditioner=c
 
 numproc visualization npvis -scalarfunction=udisc -subdivision=4 -deformationscale=1

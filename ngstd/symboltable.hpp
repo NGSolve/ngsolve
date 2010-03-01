@@ -14,7 +14,7 @@ namespace ngstd
   Base class for generic SymbolTable.
   Maintains the array of identifiers.
  */
-class BaseSymbolTable
+class NGS_DLL_HEADER BaseSymbolTable
 {
 protected:
   /// identifiers

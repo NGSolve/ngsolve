@@ -507,10 +507,6 @@ namespace ngsolve
 		scan->Error ("Expected '='");
 	      scan->ReadNext();
 
-	      // cout << "Load Mesh from File " << scan->GetStringValue() << endl;
-	      // Ng_LoadMesh ((char*)scan->GetStringValueC());
-
-	      // string shared = pde->GetDirectory()+dirslash+scan->GetStringValue();
               string shared = scan->GetStringValue() + ".so";
 	      scan->ReadNext();
 
@@ -527,19 +523,6 @@ namespace ngsolve
 #else
               throw Exception ("cannot handle shared libraries");
 #endif
-
-              /*
-              cout << "handle = " << handle << endl;
-              if (!handle)
-                cout << "dlerr = " << dlerror() << endl;
-              */
-
-              /*
-              void (*symbolhandle)();
-              symbolhandle =  ( void (*)() ) dlsym (handle, "My_DL_Init");
-              cout << "symbolhandle = " << (void*)symbolhandle << endl;
-              if (symbolhandle) (*symbolhandle)();
-              */
 
               break;
             }
