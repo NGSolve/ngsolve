@@ -4,6 +4,8 @@
 
 #ifdef HAVE_DLFCN_H 
 #include <dlfcn.h>
+#else
+#include <windows.h>
 #endif
 
 
@@ -506,13 +508,15 @@ namespace ngsolve
 	      if (scan->GetToken() != '=')
 		scan->Error ("Expected '='");
 	      scan->ReadNext();
-
-              string shared = scan->GetStringValue() + ".so";
+		  
+		  string shared = scan->GetStringValue();
 	      scan->ReadNext();
 
-              cout << "load shared library '" << shared << "'" << endl;
 
 #ifdef HAVE_DLFCN_H 
+			  shared += ".so";
+              cout << "load shared library '" << shared << "'" << endl;
+
               void * handle = dlopen (shared.c_str(), RTLD_LAZY);
               if (!handle)
                 {
@@ -521,7 +525,16 @@ namespace ngsolve
                   throw Exception (err.str());
                 }
 #else
-              throw Exception ("cannot handle shared libraries");
+			  shared += ".dll";
+              cout << "load shared library '" << shared << "'" << endl;
+
+			  HINSTANCE handle = LoadLibrary (shared.c_str());
+		      if (!handle)
+			  {
+                 stringstream err;
+                  err << "Cannot load shared library '" << shared << "' \nerrmsg: "; //   << dlerror();
+                  throw Exception (err.str());
+ 			  }
 #endif
 
               break;
