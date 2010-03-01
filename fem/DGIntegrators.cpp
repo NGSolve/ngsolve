@@ -169,12 +169,14 @@ namespace ngfem
 	      break;
 	    case DG_FORMULATIONS::NIPG:
 	      dmat(0,1) = 1; 
-	      dmat(1,1) = alpha * sqr (maxorder) * (len1/det1);
+// 	      dmat(1,1) = alpha * sqr (maxorder) * (len1/det1);
+	      dmat(1,1) = alpha * ((maxorder+1)*(maxorder+D)/D * len1) *(1.0/det1);
 	      break;
 	    case DG_FORMULATIONS::IP:
 	    default:
 	      dmat(0,1) = -1; 
-	      dmat(1,1) = alpha * sqr (maxorder) * (len1/det1);
+// 	      dmat(1,1) = alpha * sqr (maxorder) * (len1/det1);
+	      dmat(1,1) = alpha * ((maxorder+1)*(maxorder+D)/D * len1) *(1.0/det1);
 	      break;	      
 	  }
 	  dmat *= lam * len1 * ir_facet[l].Weight();
@@ -614,12 +616,14 @@ namespace ngfem
 	      break;
 	    case DG_FORMULATIONS::NIPG:
 	      dmat(0,1) = 1; 
-	      dmat(1,1) = alpha * sqr (maxorder) * (len1/det1);
+// 	      dmat(1,1) = alpha * sqr (maxorder) * (len1/det1);
+	      dmat(1,1) = alpha * ((maxorder+1)*(maxorder+D)/D * len1) *(1.0/det1);
 	      break;
 	    case DG_FORMULATIONS::IP:
 	    default:
 	      dmat(0,1) = -1; 
-	      dmat(1,1) = alpha * sqr (maxorder) * (len1/det1);
+// 	      dmat(1,1) = alpha * sqr (maxorder) * (len1/det1);
+	      dmat(1,1) = alpha * ((maxorder+1)*(maxorder+D)/D * len1) *(1.0/det1);
 	      break;	      
 	  }
 	  dmat *= rob * lam * len1 * ir_facet[l].Weight();
@@ -681,7 +685,7 @@ namespace ngfem
       FlatVector<> mat1_shape(nd1, lh);
       FlatVector<> mat1_dudn(nd1, lh);
       
-      Facet2ElementTrafo transform1(eltype1,ElVertices); 
+      Facet2ElementTrafo transform1(eltype1);//,ElVertices); at domain boundaries don't change orientation: orientation should still coincide with the orientation of the surface element transformation
 
       const NORMAL * normals1 = ElementTopology::GetNormals(eltype1);
 
@@ -708,7 +712,6 @@ namespace ngfem
 
 	  SpecificIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans, lh);
 	  double rob = coef_rob->Evaluate(sips);
-	  
 	  Mat<D> jac1 = sip1.GetJacobian();
 	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
 	  double det1 = sip1.GetJacobiDet();
@@ -731,12 +734,14 @@ namespace ngfem
 	      break;
 	    case DG_FORMULATIONS::NIPG:
 	      dvec(0) = 1; 
-	      dvec(1) = alpha * sqr (maxorder) * (len1/det1);
+// 	      dvec(1) = alpha * sqr (maxorder) * (len1/det1);
+	      dvec(1) = alpha * ((maxorder+1)*(maxorder+D)/D * len1) *(1.0/det1);	      
 	      break;
 	    case DG_FORMULATIONS::IP:
 	    default:
 	      dvec(0) = -1;
-	      dvec(1) = alpha* sqr (maxorder) * (len1/det1);
+// 	      dvec(1) = alpha * sqr (maxorder) * (len1/det1);
+	      dvec(1) = alpha * ((maxorder+1)*(maxorder+D)/D * len1) *(1.0/det1);	      
 	      break;	      
 	  }	  
 	  
@@ -797,7 +802,7 @@ namespace ngfem
       FlatVector<> mat1_shape(nd1, lh);
       FlatVector<> mat1_dudn(nd1, lh);
       
-      Facet2ElementTrafo transform1(eltype1,ElVertices); 
+      Facet2ElementTrafo transform1(eltype1);//,ElVertices); at domain boundaries don't change orientation: orientation should still coincide with the orientation of the surface element transformation
 
       const NORMAL * normals1 = ElementTopology::GetNormals(eltype1);
 
@@ -894,7 +899,9 @@ namespace ngfem
       FlatVector<> b1mat(nd, lh); //B(v)
       FlatVector<> b2mat(nd, lh); //B(u)
       // double dmat; //bn
-      Facet2ElementTrafo transform(eltype,ElVertices); 
+//       Facet2ElementTrafo transform(eltype,ElVertices); 
+      Facet2ElementTrafo transform(eltype);//,ElVertices); at domain boundaries don't change orientation: orientation should still coincide with the orientation of the surface element transformation
+
       const NORMAL * normals = ElementTopology::GetNormals(eltype);
 
       HeapReset hr(lh);
