@@ -16,7 +16,7 @@ namespace ngcomp
 
 
 /// Lowest order Nedelec space (edge elements)
-class NGS_DLL_HEADER NedelecFESpace : public FESpace
+class NedelecFESpace : public FESpace
 {
   ///
   Array<ngstd::INT<2> > edgepoints;
