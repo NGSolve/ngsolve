@@ -333,7 +333,7 @@ void Ng_LoadMesh (const char * filename)
   Ng_LoadMeshFromStream(infile);
 }
 
-void Ng_LoadMeshFromString (char * mesh_as_string)
+void Ng_LoadMeshFromString (const char * mesh_as_string)
 {
   istringstream instream(mesh_as_string);
   Ng_LoadMeshFromStream(instream);
