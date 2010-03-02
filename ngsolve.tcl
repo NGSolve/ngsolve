@@ -275,7 +275,7 @@ if { [catch { NGS_GetData } ] == 0 } {
 	    .ngmenu.help add command -label "About..." \
 		-command {
 		    tk_messageBox -message \
-			"This is NETGEN/NGSolve \n mainly written by \n Joachim SchÃ¶berl \n\
+			"This is NETGEN/NGSolve \n mainly written by \n Joachim Schöberl \n\
                  at RWTH Aachen University, Germany \n\
                  and Johannes Kepler University, Linz, Austria \n\
                  supported by the Austrian Science Foundation FWF \n\
