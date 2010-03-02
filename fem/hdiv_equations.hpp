@@ -213,7 +213,7 @@ public:
 
 /// Integrator for term of zero-th order
 template <int D>
-class MassHDivIntegrator
+class NGS_DLL_HEADER MassHDivIntegrator
   : public T_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> >
 {
 public:
@@ -231,7 +231,7 @@ public:
 
 /// Integrator for div u div v
 template <int D>
-class DivDivHDivIntegrator
+class NGS_DLL_HEADER DivDivHDivIntegrator
   : public T_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> >
 {
 public:
@@ -250,7 +250,7 @@ public:
 
 /// source term integrator for \ff div v
 template <int D>
-class DivSourceHDivIntegrator 
+class NGS_DLL_HEADER DivSourceHDivIntegrator 
   : public T_BIntegrator<DiffOpDivHDiv<D>, DVec<1>, HDivFiniteElement<D> >
 {
 public:
@@ -319,7 +319,7 @@ public:
 
 
 template <>
-class SourceHDivIntegrator<2>
+class NGS_DLL_HEADER SourceHDivIntegrator<2>
   : public BaseSourceHDivIntegrator<2> 
 {
 public:
@@ -328,7 +328,7 @@ public:
 };
 
 template <>
-class SourceHDivIntegrator<3>
+class NGS_DLL_HEADER SourceHDivIntegrator<3>
   : public BaseSourceHDivIntegrator<3> 
 {
 public:
@@ -347,7 +347,7 @@ public:
 
 ///
 template <int D, typename FEL = HDivNormalFiniteElement<D-1> >
-class NeumannHDivIntegrator
+class NGS_DLL_HEADER NeumannHDivIntegrator
   : public T_BIntegrator<DiffOpIdHDivBoundary<D>, DVec<1>, FEL>
 {
 public:
@@ -370,7 +370,7 @@ public:
 
 /// integrator for \f$\int_\Gamma \sigma_n \tau_n \, ds\f$
 template <int D>
-class RobinHDivIntegrator
+class NGS_DLL_HEADER RobinHDivIntegrator
   : public T_BDBIntegrator<DiffOpIdHDivBoundary<D>, DiagDMat<1>, HDivNormalFiniteElement<D-1> >
 {
 public:
