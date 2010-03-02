@@ -152,7 +152,7 @@ namespace ngcomp
   };
 
 
-  extern GridFunction * CreateGridFunction (const FESpace * space,
+  extern NGS_DLL_HEADER GridFunction * CreateGridFunction (const FESpace * space,
 					    const string & name, const Flags & flags);
 
 

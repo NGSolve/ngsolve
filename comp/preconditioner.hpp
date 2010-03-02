@@ -82,7 +82,7 @@ namespace ngcomp
      Multigrid preconditioner.
      High level objects, contains a \Ref{MultigridPreconditioner} 
   */
-  class MGPreconditioner : public Preconditioner
+  class NGS_DLL_HEADER MGPreconditioner : public Preconditioner
   {
     ///
     ngmg::MultigridPreconditioner * mgp;

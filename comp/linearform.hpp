@@ -180,7 +180,7 @@ namespace ngcomp
   };
 
 
-  extern LinearForm * CreateLinearForm (const FESpace * space,
+  extern NGS_DLL_HEADER LinearForm * CreateLinearForm (const FESpace * space,
 					const string & name,
 					const Flags & flags);
 
