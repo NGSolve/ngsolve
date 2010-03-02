@@ -322,7 +322,7 @@ namespace ngcomp
 
 
 
-  template <class SCAL>
+  template <class SCAL> 
   int CalcPointFlux (const MeshAccess & ma, 
 		     const GridFunction & bu,
 		     const FlatVector<double> & point,
@@ -429,7 +429,7 @@ namespace ngcomp
   }
   
 
-  template int CalcPointFlux<double> (const MeshAccess & ma, 
+  template NGS_DLL_HEADER int CalcPointFlux<double> (const MeshAccess & ma, 
 				      const GridFunction & u,
 				      const FlatVector<double> & point,
 				      const Array<int> & domains,
@@ -439,7 +439,7 @@ namespace ngcomp
 				      LocalHeap & lh,
 				      int component);
   
-  template int CalcPointFlux<Complex> (const MeshAccess & ma, 
+  template NGS_DLL_HEADER int CalcPointFlux<Complex> (const MeshAccess & ma, 
 				       const GridFunction & u,
 				       const FlatVector<double> & point,
 				       const Array<int> & domains,
@@ -467,7 +467,7 @@ namespace ngcomp
 
 
 
-  template int CalcPointFlux<double> (const MeshAccess & ma, 
+  template NGS_DLL_HEADER int CalcPointFlux<double> (const MeshAccess & ma, 
 				      const GridFunction & u,
 				      const FlatVector<double> & point,
 				      FlatVector<double> & flux,
@@ -476,7 +476,7 @@ namespace ngcomp
 				      LocalHeap & lh,
 				      int component);
   
-  template int CalcPointFlux<Complex> (const MeshAccess & ma, 
+  template NGS_DLL_HEADER int CalcPointFlux<Complex> (const MeshAccess & ma, 
 				       const GridFunction & u,
 				       const FlatVector<double> & point,
 				       FlatVector<Complex> & flux,
@@ -691,14 +691,14 @@ namespace ngcomp
 
 
 
-  template void SetValues<double> (const MeshAccess & ma, 
+  template NGS_DLL_HEADER void SetValues<double> (const MeshAccess & ma, 
 				   const CoefficientFunction & coef,
 				   GridFunction & u,
 				   bool bound,
 				   DifferentialOperator * diffop,
 				   LocalHeap & clh);
 
-  template void SetValues<Complex> (const MeshAccess & ma, 
+  template NGS_DLL_HEADER void SetValues<Complex> (const MeshAccess & ma, 
 				    const CoefficientFunction & coef,
 				    GridFunction & u,
 				    bool bound,

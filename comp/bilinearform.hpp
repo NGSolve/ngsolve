@@ -588,7 +588,7 @@ namespace ngcomp
 
 
 
-  extern BilinearForm * CreateBilinearForm (const FESpace * space,
+  extern NGS_DLL_HEADER BilinearForm * CreateBilinearForm (const FESpace * space,
 					    const string & name,
 					    const Flags & flags);
 
