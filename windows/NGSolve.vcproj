@@ -97,6 +97,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="&quot;$(ProjectDir)\postBuild_ngsolve.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;libngsolve&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -178,6 +179,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="&quot;$(ProjectDir)\postBuild_ngsolve.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;libngsolve&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -264,6 +266,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="&quot;$(ProjectDir)\postBuild_ngsolve.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;libngsolve&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -351,6 +354,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="&quot;$(ProjectDir)\postBuild_ngsolve.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;libngsolve&quot;"
 			/>
 		</Configuration>
 	</Configurations>
