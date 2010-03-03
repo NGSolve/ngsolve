@@ -58,6 +58,38 @@ namespace ngsolve
 #include "pde.hpp"
 
 
+/*
+#ifdef WIN32 
+// trick from http://social.msdn.microsoft.com/Forums/en/vclanguage/thread/ab642c88-2d2d-4f5d-9fd7-2341442d5a46
+// all new/delete allocation is done from ngsolve heap
+
+NGS_DLL_HEADER void * __cdecl my_operator_new_replacement(size_t _count);
+NGS_DLL_HEADER void __cdecl my_operator_delete_replacement(void * _ptr);
+NGS_DLL_HEADER void * __cdecl my_operator_new_array_replacement(size_t _count);
+NGS_DLL_HEADER void __cdecl my_operator_delete_array_replacement(void * _ptr);
+
+#ifndef NGS_EXPORTS
+inline void * __cdecl operator new(size_t _count) {
+    return my_operator_new_replacement(_count);
+}
+inline void __cdecl operator delete(void * _ptr) {
+    my_operator_delete_replacement(_ptr);
+}
+inline void * __cdecl operator new[](size_t _count) {
+    return my_operator_new_array_replacement(_count);
+}
+inline void __cdecl operator delete[](void * _ptr) {
+    my_operator_delete_array_replacement(_ptr);
+}
+
+#endif
+
+#endif
+*/
+
+
+
+
 namespace ngsolve
 {
 #ifdef WIN32
