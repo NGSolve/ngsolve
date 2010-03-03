@@ -767,21 +767,29 @@ void NGSolve_Exit ()
 #ifdef WIN32
 void * __cdecl my_operator_new_replacement(size_t _count)
 {
-  return operator new(_count);
-}
+	void * p = operator new(_count);
+//	cout << "alloc, cnt = " << _count << ", ptr = " << p << endl;
+  return p;
+  }
 
 void __cdecl my_operator_delete_replacement(void * _ptr)
 {
+//  cout << "delete, ptr = " << _ptr << endl;
   delete (_ptr);
 }
 
 void * __cdecl my_operator_new_array_replacement(size_t _count)
 {
-  return operator new[](_count);
+		void * p = operator new[] (_count);
+//	cout << "alloc [], cnt = " << _count << ", ptr = " << p << endl;
+  return p;
+
+//   return operator new[](_count);
 }
 
 void __cdecl my_operator_delete_array_replacement(void * _ptr)
 {
+//  cout << "delete[], ptr = " << _ptr << endl;
   delete [] (_ptr);
 }
 #endif
