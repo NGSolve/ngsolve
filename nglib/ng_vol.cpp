@@ -70,23 +70,23 @@ int main (int argc, char ** argv)
   cout << "meshing done" << endl;
 
   // volume mesh output
-//   np = Ng_GetNP(mesh);
-//   cout << "Points: " << np << endl;
+  np = Ng_GetNP(mesh);
+  cout << "Points: " << np << endl;
 
-//   for (i = 1; i <= np; i++)
-//     {
-//       Ng_GetPoint (mesh, i, point);
-//       cout << i << ": " << point[0] << " " << point[1] << " " << point[2] << endl;
-//     }
+  for (i = 1; i <= np; i++)
+    {
+      Ng_GetPoint (mesh, i, point);
+      cout << i << ": " << point[0] << " " << point[1] << " " << point[2] << endl;
+    }
 
-//   ne = Ng_GetNE(mesh);
-//   cout << "Elements: " << ne << endl;
-//   for (i = 1; i <= ne; i++)
-//     {
-//       Ng_GetVolumeElement (mesh, i, tet);
-//       cout << i << ": " << tet[0] << " " << tet[1] 
-// 	   << " " << tet[2] << " " << tet[3] << endl;
-//     }
+  ne = Ng_GetNE(mesh);
+  cout << "Elements: " << ne << endl;
+  for (i = 1; i <= ne; i++)
+    {
+      Ng_GetVolumeElement (mesh, i, tet);
+      cout << i << ": " << tet[0] << " " << tet[1] 
+	   << " " << tet[2] << " " << tet[3] << endl;
+    }
 
   Ng_SaveMesh(mesh,"test.vol");
 

@@ -4475,7 +4475,6 @@ namespace netgen
     vispar.drawnetgenlogo = atoi (Tcl_GetVar (interp, "::viewoptions.drawnetgenlogo", TCL_GLOBAL_ONLY));
     vispar.stereo = atoi (Tcl_GetVar (interp, "::viewoptions.stereo", TCL_GLOBAL_ONLY));
     vispar.colormeshsize = atoi (Tcl_GetVar (interp, "::viewoptions.colormeshsize", TCL_GLOBAL_ONLY));
-
     VisualScene :: SetBackGroundColor (vispar.whitebackground ? 1 : 0);
 
     strcpy (vispar.selectvisual, Tcl_GetVar (interp, "::selectvisual", TCL_GLOBAL_ONLY));

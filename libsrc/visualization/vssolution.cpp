@@ -580,7 +580,7 @@ namespace netgen
       }
     */
     
-    vispar.colormeshsize = 1;
+    // vispar.colormeshsize = 1;
     
     // recalc clipping plane
     SetClippingPlane ();

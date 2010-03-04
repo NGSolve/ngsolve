@@ -1109,35 +1109,35 @@ namespace netgen
                      }
                   }
                   else // not high order
-                  {
-                     glBegin (GL_TRIANGLES);
-
-                     const Point<3> & lp0 = (*mesh) [el[0]];
-                     const Point<3> & lp1 = (*mesh) [el[1]];
-                     const Point<3> & lp2 = (*mesh) [el[2]];
-
-                     Vec<3> n = Cross (lp1-lp0, lp2-lp0).Normalize();
-                     glNormal3dv (n);
-
-                     if (vispar.colormeshsize)
-                     {
-                        SetOpenGlColor  (locms(el[0]-1), minh, maxh, 0);
-                        glVertex3dv (lp0);
-                        SetOpenGlColor  (locms(el[1]-1), minh, maxh, 0);
-                        glVertex3dv (lp1);
-                        SetOpenGlColor  (locms(el[2]-1), minh, maxh, 0);
-                        glVertex3dv (lp2);
-                     }
-                     else
-                     {
-                        glVertex3dv (lp0);
-                        glVertex3dv (lp1);
-                        glVertex3dv (lp2);
-                     }
-
-                     glEnd();
-                  }
-
+		    {
+		      glBegin (GL_TRIANGLES);
+		      
+		      const Point<3> & lp0 = (*mesh) [el[0]];
+		      const Point<3> & lp1 = (*mesh) [el[1]];
+		      const Point<3> & lp2 = (*mesh) [el[2]];
+		      
+		      Vec<3> n = Cross (lp1-lp0, lp2-lp0).Normalize();
+		      glNormal3dv (n);
+		      
+		      if (vispar.colormeshsize)
+			{
+			  SetOpenGlColor  (locms(el[0]-1), minh, maxh, 0);
+			  glVertex3dv (lp0);
+			  SetOpenGlColor  (locms(el[1]-1), minh, maxh, 0);
+			  glVertex3dv (lp1);
+			  SetOpenGlColor  (locms(el[2]-1), minh, maxh, 0);
+			  glVertex3dv (lp2);
+			}
+		      else
+			{
+			  glVertex3dv (lp0);
+			  glVertex3dv (lp1);
+			  glVertex3dv (lp2);
+			}
+		      
+		      glEnd();
+		    }
+		  
                   break;
                }
             case QUAD:
