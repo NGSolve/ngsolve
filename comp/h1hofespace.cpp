@@ -504,9 +504,6 @@ namespace ngcomp
 
   const FiniteElement & H1HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    H1HighOrderFiniteElement<2> * hofe2d = 0;
-    H1HighOrderFiniteElement<3> * hofe3d = 0;
-
     if (fixed_order && ma.GetElType(elnr) == ET_TRIG && order <= 6)
       {
         H1HighOrderFiniteElementFO<2> * hofe2d = 0;
@@ -526,8 +523,33 @@ namespace ngcomp
         return *hofe2d;
       }
 
+
+    if (fixed_order && ma.GetElType(elnr) == ET_TET && order <= 6)
+      {
+        H1HighOrderFiniteElementFO<3> * hofe3d = 0;
+        switch (order)
+          {
+          case 1: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,1> (); break;
+          case 2: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,2> (); break;
+          case 3: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,3> (); break;
+          case 4: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,4> (); break;
+          case 5: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,5> (); break;
+          case 6: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,6> (); break;
+          }
+    
+        Ng_Element ngel = ma.GetElement<3> (elnr);
+        for (int j = 0; j < 4; j++)
+          hofe3d->SetVertexNumber (j, ngel.vertices[j]);
+        return *hofe3d;
+      }
+
+
+
     try
       {
+	H1HighOrderFiniteElement<2> * hofe2d = 0;
+	H1HighOrderFiniteElement<3> * hofe3d = 0;
+
         switch (ma.GetElType(elnr))
           {
           case ET_TET:     hofe3d = new (lh) H1HighOrderFE<ET_TET> (); break;
@@ -2096,7 +2118,7 @@ namespace ngcomp
     
     Init::Init()
     {
-      GetFESpaceClasses().AddFESpace ("h1hotp", H1HighOrderFESpace::Create);
+      GetFESpaceClasses().AddFESpace ("h1ho", H1HighOrderFESpace::Create);
     }
     
     Init init_h1hofespace;

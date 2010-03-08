@@ -458,7 +458,6 @@ namespace ngfem
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const BaseMappedIntegrationRule & mir,
-	      const BaseSpecificIntegrationPoint & bsip,
 	      const FlatVector<Complex> & elx, 
 	      FlatMatrix<Complex> & flux,
 	      bool applyd,
@@ -488,8 +487,6 @@ namespace ngfem
 
     virtual void
     ApplyBTrans (const FiniteElement & fel,
-		 // const ElementTransformation & eltrans,
-		 // const IntegrationPoint & ip,
 		 const BaseSpecificIntegrationPoint & bsip,
 		 const FlatVector<double> & elx, 
 		 FlatVector<double> & ely,
@@ -497,12 +494,27 @@ namespace ngfem
 
     virtual void
     ApplyBTrans (const FiniteElement & fel,
-		 // const ElementTransformation & eltrans,
-		 // const IntegrationPoint & ip,
 		 const BaseSpecificIntegrationPoint & bsip,
 		 const FlatVector<Complex> & elx, 
 		 FlatVector<Complex> & ely,
 		 LocalHeap & lh) const;
+
+    
+    virtual void
+    ApplyBTrans (const FiniteElement & fel,
+		 const BaseMappedIntegrationRule & mir,
+		 const FlatMatrix<double> & elx, 
+		 FlatVector<double> & ely,
+		 LocalHeap & lh) const;
+
+    virtual void
+    ApplyBTrans (const FiniteElement & fel,
+		 const BaseMappedIntegrationRule & mir,
+		 const FlatMatrix<Complex> & elx, 
+		 FlatVector<Complex> & ely,
+		 LocalHeap & lh) const;
+    
+
 
     virtual void ApplyDMat (const FiniteElement & bfel,
 			    const BaseSpecificIntegrationPoint & bsip,
@@ -516,6 +528,21 @@ namespace ngfem
 			    FlatVector<Complex> & eldx,
 			    LocalHeap & lh) const;
   
+    virtual void ApplyDMat (const FiniteElement & bfel,
+			    const BaseMappedIntegrationRule & mir,
+			    const FlatMatrix<double> & elx, 
+			    FlatMatrix<double> & eldx,
+			    LocalHeap & lh) const;
+
+    virtual void ApplyDMat (const FiniteElement & bfel,
+			    const BaseMappedIntegrationRule & mir,
+			    const FlatMatrix<Complex> & elx, 
+			    FlatMatrix<Complex> & eldx,
+			    LocalHeap & lh) const;
+  
+
+
+
 
     virtual const IntegrationRule & GetIntegrationRule (const FiniteElement & fel,
 							const bool use_higher_integration_order = false) const;
@@ -758,6 +785,14 @@ namespace ngfem
 	      bool applyd,
 	      LocalHeap & lh) const;
 
+    virtual void
+    CalcFlux (const FiniteElement & fel,
+	      const BaseMappedIntegrationRule & mir,
+	      const FlatVector<double> & elx, 
+	      FlatMatrix<double> & flux,
+	      bool applyd,
+	      LocalHeap & lh) const;
+
 
 
     virtual void
@@ -772,6 +807,13 @@ namespace ngfem
 		 const BaseSpecificIntegrationPoint & bsip,
 		 const FlatVector<Complex> & elx, 
 		 FlatVector<Complex> & ely,
+		 LocalHeap & lh) const;
+
+    virtual void
+    ApplyBTrans (const FiniteElement & fel,
+		 const BaseMappedIntegrationRule & mir,
+		 const FlatMatrix<double> & elx, 
+		 FlatVector<double> & ely,
 		 LocalHeap & lh) const;
 
     virtual double Energy (const FiniteElement & fel, 

@@ -162,7 +162,7 @@ public:
 			  FlatVector<double> & eldx,
 			  LocalHeap & lh) const
   {
-    eldx.AssignMemory (DIM_DMAT, lh);
+    // eldx.AssignMemory (DIM_DMAT, lh);
     dmatop.Apply(dynamic_cast<const FEL&> (bfel),
 		 static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bsip),
 		 elx, eldx ,lh);
@@ -174,12 +174,40 @@ public:
 			  FlatVector<Complex> & eldx,
 			  LocalHeap & lh) const
   {
-    eldx.AssignMemory (DIM_DMAT, lh);
+    // eldx.AssignMemory (DIM_DMAT, lh);
     dmatop.Apply(dynamic_cast<const FEL&> (bfel),
 		 static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bsip),
 		 elx,eldx,lh);
   }
 
+  virtual void ApplyDMat (const FiniteElement & bfel,
+			  const BaseMappedIntegrationRule & bmir,
+			  const FlatMatrix<double> & elx, 
+			  FlatMatrix<double> & eldx,
+			  LocalHeap & lh) const
+  {
+    const FEL & fel = static_cast<const FEL&> (bfel);
+    const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+
+    for (int i = 0; i < mir.Size(); i++)
+      dmatop.Apply (fel, mir[i], elx.Row(i), eldx.Row(i), lh);
+  }
+
+
+  virtual void ApplyDMat (const FiniteElement & bfel,
+			  const BaseMappedIntegrationRule & bmir,
+			  const FlatMatrix<Complex> & elx, 
+			  FlatMatrix<Complex> & eldx,
+			  LocalHeap & lh) const
+  {
+    const FEL & fel = static_cast<const FEL&> (bfel);
+    const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+
+    for (int i = 0; i < mir.Size(); i++)
+      dmatop.Apply (fel, mir[i], elx.Row(i), eldx.Row(i), lh);
+  }
 
 
 #ifdef TEXT_BOOK_VERSION
@@ -825,7 +853,7 @@ public:
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    const FEL & fel = dynamic_cast<const FEL&> (bfel);
+    const FEL & fel = static_cast<const FEL&> (bfel);
     const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
       static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
 
@@ -917,11 +945,10 @@ public:
 	       FlatVector<double> & ely,
 	       LocalHeap & lh) const
   {
-    const FEL & fel = dynamic_cast<const FEL&> (bfel);
+    const FEL & fel = static_cast<const FEL&> (bfel);
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
     DIFFOP::ApplyTrans (fel, sip, elx, ely, lh);
-    // ely *= sip.IP().Weight() * fabs (sip.GetJacobiDet());
   }
   
 
@@ -932,12 +959,35 @@ public:
 	       FlatVector<Complex> & ely,
 	       LocalHeap & lh) const
   {
-    const FEL & fel = dynamic_cast<const FEL&> (bfel);
+    const FEL & fel = static_cast<const FEL&> (bfel);
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
     DIFFOP::ApplyTrans (fel, sip, elx, ely, lh);
-    // ely *= sip.IP().Weight() * fabs (sip.GetJacobiDet());
   }
+
+
+  virtual void
+  ApplyBTrans (const FiniteElement & bfel,
+	       const BaseMappedIntegrationRule & bmir,
+	       const FlatMatrix<double> & elx, 
+	       FlatVector<double> & ely,
+	       LocalHeap & lh) const
+  {
+    const FEL & fel = static_cast<const FEL&> (bfel);
+    const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+
+
+    HeapReset hr(lh);
+    FlatVector<> hv(ely.Size(), lh);
+    ely = 0.0;
+    for (int i = 0; i < mir.Size(); i++)
+      {
+	DIFFOP::ApplyTrans (fel, mir[i], elx.Row(i), hv, lh);
+	ely += hv;
+      }
+  }
+
   
 
 

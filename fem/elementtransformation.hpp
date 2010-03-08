@@ -578,15 +578,12 @@ namespace ngfem
       eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
 
       for (int i = 0; i < ir.GetNIP(); i++)
-	{
-	  SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> sip(ir[i], eltrans, pts[i], dxdxi[i]); 
-	  sips[i] = sip;
-	}
+	new (&sips[i]) SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, pts[i], dxdxi[i]); 
     }
     
     SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (int i) const
     { 
-      return sips[i]; // SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, pts[i], dxdxi[i]); 
+      return sips[i]; 
     }
   };
 

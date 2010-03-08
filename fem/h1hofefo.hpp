@@ -119,6 +119,32 @@ namespace ngfem
     void T_CalcShape (Tx x[2], TFA & shape) const; 
   };
 
+
+  /**
+     High order triangular finite element
+  */
+  template <int ORDER>
+  class H1HighOrderFEFO<ET_TET, ORDER> : public T_H1HighOrderFiniteElementFO<ET_TET, ORDER>
+  {
+    using T_H1HighOrderFiniteElementFO<ET_TET, ORDER>::ndof;
+    using T_H1HighOrderFiniteElementFO<ET_TET, ORDER>::vnums; 
+
+    typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
+
+    typedef TetShapesInnerLegendre T_INNERSHAPES;
+    typedef TetShapesFaceLegendre T_FACESHAPES;
+
+
+  public:
+    enum { NDOF = (ORDER+1)*(ORDER+2)*(ORDER+3)/6 };
+    H1HighOrderFEFO () { ndof = NDOF; }
+
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx x[3], TFA & shape) const; 
+  };
+
+
+
 }
 
 

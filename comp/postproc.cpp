@@ -29,6 +29,9 @@ namespace ngcomp
 			const BilinearFormIntegrator & bli,
 			bool applyd, const BitArray & domains, LocalHeap & clh)
   {
+    static int timer = NgProfiler::CreateTimer ("CalcFluxProject");
+    NgProfiler::RegionTimer reg (timer);
+    
     ma.PushStatus ("Post-processing");
 
     const FESpace & fes = u.GetFESpace();
@@ -161,22 +164,23 @@ namespace ngcomp
 	    {
 	      if (fel.SpatialDim() == 2)
 		{
-		  FlatArray<Vec<2> > pts(ir.GetNIP(), lh);
-		  FlatArray<Mat<2,2> > dxdxi(ir.GetNIP(), lh);
-		  eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
+		  MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
+		  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
 
+		  bli.CalcFlux (fel, mir, elu, mfluxi, applyd, lh);
+
+		  for (int j = 0; j < ir.GetNIP(); j++)
+		    mfluxi.Row(j) *= ir[j].Weight() * fabs (mir[j].GetJacobiDet());
+
+		  fluxbli.ApplyBTrans (felflux, mir, mfluxi, elflux, lh);
+		  /*
 		  for (int j = 0; j < ir.GetNIP(); j++)
 		    {
 		      HeapReset hr(lh);
-
-		      // SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
-		      SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, pts[j], dxdxi[j]);
-
-		      double fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-		      elflux += fac * elfluxi;
+		      fluxbli.ApplyBTrans (felflux, mir[j], mfluxi.Row(j), elfluxi, lh);
+		      elflux += elfluxi;
 		    }
+		  */
 		}
 	      else
 		{
@@ -714,6 +718,9 @@ namespace ngcomp
 		  FlatVector<double> & err,
 		  const BitArray & domains, LocalHeap & lh)
   {
+    static int timer = NgProfiler::CreateTimer ("CalcError");
+    NgProfiler::RegionTimer reg (timer);
+
     ma.PushStatus ("Error estimator");
 
     const FESpace & fes = u.GetFESpace();
@@ -736,10 +743,8 @@ namespace ngcomp
     double sum = 0;
     for (int i = 0; i < ne; i++)
       {
-	//	cout << "\rerror element " << i << "/" << ne << flush;
+	HeapReset hr(lh);
 	ma.SetThreadPercentage ( 100.0*i / ne );
-
-	lh.CleanUp();
 
 	int eldom = 
 	  bound ? ma.GetSElIndex(i) : ma.GetElIndex(i);
@@ -781,11 +786,27 @@ namespace ngcomp
 
 	const IntegrationRule & ir = 
 	  SelectIntegrationRule(felflux.ElementType(), 2*felflux.Order());
-	// double vol2 = ma.ElementVolume(i);
-	// SZ sum(integration weights) trig = 1/2  
 
 	double vol; 
 
+	FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
+	FlatMatrix<SCAL> mfluxi2(ir.GetNIP(), dimflux, lh);
+	
+	if (!bound && fel.SpatialDim() == 2)
+	  {
+	    MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
+	    bli.CalcFlux (fel, mir, elu, mfluxi, 0, lh);
+	    fluxbli.CalcFlux (felflux, mir, elflux, mfluxi2, 0, lh);
+	    mfluxi -= mfluxi2;
+
+	    bli.ApplyDMat (fel, mir, mfluxi, mfluxi2, lh);
+
+	    for (int j = 0; j < ir.GetNIP(); j++)
+	      elerr += ir[j].Weight() * fabs(mir[j].GetJacobiDet()) *
+		fabs (InnerProduct (mfluxi.Row(j), mfluxi2.Row(j)));
+	  }
+	else
+	  
 
 	for (int j = 0; j < ir.GetNIP(); j++)
 	  {
@@ -795,16 +816,24 @@ namespace ngcomp
 		if (fel.SpatialDim() == 2)
 		  {
 		    SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
-		    bli.CalcFlux (fel, sip, elu, fluxi, 1, lh);
+		    bli.CalcFlux (fel, sip, elu, fluxi, 0, lh);
 		    fluxbli.CalcFlux (felflux, sip, elflux, fluxi2, 0, lh);
 		    vol = fabs(sip.GetJacobiDet()); 
+
+		    fluxi -= fluxi2;
+		    bli.ApplyDMat (fel, sip, fluxi, fluxi2, lh);
+		    elerr += ir[j].Weight() * vol * fabs (InnerProduct (fluxi, fluxi2));
 		  }
 		else
 		  {
 		    SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
-		    bli.CalcFlux (fel, sip, elu, fluxi, 1, lh);
+		    bli.CalcFlux (fel, sip, elu, fluxi, 0, lh);
 		    fluxbli.CalcFlux (felflux, sip, elflux, fluxi2, 0, lh);
 		    vol = fabs(sip.GetJacobiDet()); 
+
+		    fluxi -= fluxi2;
+		    bli.ApplyDMat (fel, sip, fluxi, fluxi2, lh);
+		    elerr += ir[j].Weight() * vol * fabs(InnerProduct (fluxi, fluxi2));
 		  }
 	      }
 	    else
@@ -812,22 +841,27 @@ namespace ngcomp
 		if (fel.SpatialDim() == 2)
 		  {
 		    SpecificIntegrationPoint<2,3> sip (ir[j], eltrans, lh);
-		    bli.CalcFlux (fel, sip, elu, fluxi, 1, lh);
+		    bli.CalcFlux (fel, sip, elu, fluxi, 0, lh);
 		    fluxbli.CalcFlux (felflux, sip, elflux, fluxi2, 0, lh);
 		    vol = fabs(sip.GetJacobiDet()); 
+
+		    fluxi -= fluxi2;
+		    bli.ApplyDMat (fel, sip, fluxi, fluxi2, lh);
+		    elerr += ir[j].Weight() * vol * fabs(InnerProduct (fluxi, fluxi2));
 		  }
 		else
 		  {
 		    SpecificIntegrationPoint<1,2> sip (ir[j], eltrans, lh);
-		    bli.CalcFlux (fel, sip, elu, fluxi, 1, lh);
+		    bli.CalcFlux (fel, sip, elu, fluxi, 0, lh);
 		    fluxbli.CalcFlux (felflux, sip, elflux, fluxi2, 0, lh);
 		    vol = fabs(sip.GetJacobiDet()); 
+
+
+		    fluxi -= fluxi2;
+		    bli.ApplyDMat (fel, sip, fluxi, fluxi2, lh);
+		    elerr += ir[j].Weight() * vol * fabs(InnerProduct (fluxi, fluxi2));
 		  }
 	      }
-
-	    fluxi -= fluxi2;
-	    
-	    elerr += ir[j].Weight() * vol * L2Norm2 (fluxi);
 	  }
 
 

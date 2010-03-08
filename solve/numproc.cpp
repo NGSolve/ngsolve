@@ -216,8 +216,8 @@ namespace ngsolve
     NumProcSetValues (PDE & apde, const Flags & flags)
     : NumProc (apde)
     {
-      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", NULL));
-      coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", NULL));
+      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+      coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
       boundary = flags.GetDefineFlag ("boundary");
       component = int (flags.GetNumFlag ("component", 0))-1;
     }
