@@ -927,7 +927,8 @@ namespace netgen
       cout << "Preparing visualization (deflection = " << deflection << ") ... " << flush;
 
       BRepTools::Clean (shape);
-      BRepMesh_IncrementalMesh::BRepMesh_IncrementalMesh (shape, deflection, true);
+      // BRepMesh_IncrementalMesh::
+      BRepMesh_IncrementalMesh (shape, deflection, true);
       cout << "done" << endl;
    }
 
@@ -1220,7 +1221,7 @@ namespace netgen
       // Fixed a bug in the OpenCascade XDE Colour handling when 
       // opening BREP Files, since BREP Files have no colour data.
       // Hence, the face_colours Handle needs to be created as a NULL handle.
-      occgeo->face_colours = Handle_XCAFDoc_ColorTool::Handle_XCAFDoc_ColorTool();
+      occgeo->face_colours = Handle_XCAFDoc_ColorTool();
       occgeo->face_colours.Nullify();
       occgeo->changed = 1;
       occgeo->BuildFMap();

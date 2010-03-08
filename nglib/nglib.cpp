@@ -658,7 +658,8 @@ namespace nglib
       OCCGeometry * occgeo = LoadOCC_STEP(filename);
 
       // Create the initial triangulation for the OCC 
-      BRepMesh_IncrementalMesh::BRepMesh_IncrementalMesh(occgeo->shape,0.1);
+      // BRepMesh_IncrementalMesh::
+      BRepMesh_IncrementalMesh(occgeo->shape,0.1);
 
       geo = (Ng_OCC_Geometry *)occgeo;
 
@@ -675,7 +676,8 @@ namespace nglib
       OCCGeometry * occgeo = LoadOCC_IGES(filename);
 
       // Create the initial triangulation for the OCC 
-      BRepMesh_IncrementalMesh::BRepMesh_IncrementalMesh(occgeo->shape,0.1);
+      //  BRepMesh_IncrementalMesh::
+	BRepMesh_IncrementalMesh(occgeo->shape,0.1);
 
       geo = (Ng_OCC_Geometry *)occgeo;
 
@@ -692,7 +694,8 @@ namespace nglib
       OCCGeometry * occgeo = LoadOCC_BREP(filename);
 
       // Create the initial triangulation for the OCC 
-      BRepMesh_IncrementalMesh::BRepMesh_IncrementalMesh(occgeo->shape,0.1);
+      // BRepMesh_IncrementalMesh::
+	BRepMesh_IncrementalMesh(occgeo->shape,0.1);
 
       geo = (Ng_OCC_Geometry *)occgeo;
 

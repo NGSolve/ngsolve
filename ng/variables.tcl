@@ -360,6 +360,7 @@ set parallel_netgen 0
 
 set optfilename [file join $nguserdir ng.opt]
 set inifilename [file join $nguserdir ng.ini]
+set meshinifilename [file join $nguserdir ngmesh.ini]
 
 global env
 if { [llength [array names env NG_OPT]] == 1 } {
@@ -643,15 +644,14 @@ proc saveinifile { } {
 
 
 proc savemeshinifile { } {
-    uplevel 1  {
-	if {[catch { set datei [open ngmesh.ini w] } result ]} {
-            puts "cannot write to $inifilename file"
-        } {
-            for { set i [.ngmenu.file.recentmesh index last] } { $i >= 1 } { incr i -1 } {
-                puts $datei "recentfile \"[.ngmenu.file.recentmesh entrycget $i -label]\""
-            }
-            close $datei
-        }
+    global meshinifilename 
+    if {[catch { set datei [open $meshinifilename w] } result ]} {
+	puts "cannot write file $meshinifilename"
+    } {
+	for { set i [.ngmenu.file.recentmesh index last] } { $i >= 1 } { incr i -1 } {
+	    puts $datei "recentfile \"[.ngmenu.file.recentmesh entrycget $i -label]\""
+	}
+	close $datei
     }    
 }
 
@@ -675,19 +675,19 @@ proc loadinifile { } {
 
 
 proc loadmeshinifile { } {
-    if { [file exists ngmesh.ini] == 1 } {
-	set datei [open ngmesh.ini r]
+    global meshinifilename
+    if { [file exists $meshinifilename] == 1 } {
+	set datei [open $meshinifilename r]
 	while { [gets $datei line] >= 0 } {
 	    if {[lindex $line 0] == "recentfile"} {
-		    set filename [lindex $line 1]
-			if { [file exists $filename] == 1 } {
-		        AddRecentMeshFile $filename
-			}	
+		set filename [lindex $line 1]
+		if { [file exists $filename] == 1 } {
+		    AddRecentMeshFile $filename
+		}	
 	    }
 	}
 	close $datei
     }
-
-}
+ }
 
 

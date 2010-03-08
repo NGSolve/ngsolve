@@ -3160,28 +3160,38 @@ namespace netgen
 	      (*x)[j] += shapes(i) * coefs[i];
 	  }
       }
+
     if (dxdxi)
       {
-	for (int ip = 0; ip < xi->Size(); ip++)
+	if (info.order == 1 && type == TET)
 	  {
-	    CalcElementDShapes (info, (*xi)[ip], dshapes);
-	
-            /*
-              (*dxdxi)[ip] = 0;
-              for (int i = 0; i < coefs.Size(); i++)
-	      for (int j = 0; j < 3; j++)
-              for (int k = 0; k < 3; k++)
-              (*dxdxi)[ip](j,k) += dshapes(i,k) * coefs[i](j);
-            */
-
-	    Mat<3,3> ds;
-            ds = 0;
-	    for (int i = 0; i < coefs.Size(); i++)
-	      for (int j = 0; j < 3; j++)
-		for (int k = 0; k < 3; k++)
-                  ds(j,k) += dshapes(i,k) * coefs[i](j);
-            (*dxdxi)[ip] = ds;
+	    if (xi->Size() > 0)
+	      {
+		CalcElementDShapes (info, (*xi)[0], dshapes);
+		Mat<3,3> ds;
+		ds = 0;
+		for (int i = 0; i < coefs.Size(); i++)
+		  for (int j = 0; j < 3; j++)
+		    for (int k = 0; k < 3; k++)
+		      ds(j,k) += dshapes(i,k) * coefs[i](j);
+	    
+		for (int ip = 0; ip < xi->Size(); ip++)
+		  (*dxdxi)[ip] = ds;
+	      }
 	  }
+	else
+	  for (int ip = 0; ip < xi->Size(); ip++)
+	    {
+	      CalcElementDShapes (info, (*xi)[ip], dshapes);
+	      
+	      Mat<3,3> ds;
+	      ds = 0;
+	      for (int i = 0; i < coefs.Size(); i++)
+		for (int j = 0; j < 3; j++)
+		  for (int k = 0; k < 3; k++)
+		    ds(j,k) += dshapes(i,k) * coefs[i](j);
+	      (*dxdxi)[ip] = ds;
+	    }
       }
   }
 
@@ -3325,25 +3335,53 @@ namespace netgen
 
     if (dxdxi)
       {
-	for (int ip = 0; ip < n; ip++)
+	if (info.order == 1 && type == TET)
 	  {
-            Point<3> xij;
-            for (int k = 0; k < 3; k++)
-              xij(k) = xi[ip*sxi+k];
+	    if (n > 0)
+	      {
 
-	    CalcElementDShapes (info, xij, dshapes);
-
-            Mat<3> dxdxij;
-            dxdxij = 0.0;
-	    for (int i = 0; i < coefs.Size(); i++)
-	      for (int j = 0; j < 3; j++)
+		Point<3> xij;
 		for (int k = 0; k < 3; k++)
-		  dxdxij(j,k) += dshapes(i,k) * coefs[i](j);
-
-
-            for (int j = 0; j < 3; j++)
-              for (int k = 0; k < 3; k++)
-                dxdxi[ip*sdxdxi+3*j+k] = dxdxij(j,k);
+		  xij(k) = xi[k];
+		
+		CalcElementDShapes (info, xij, dshapes);
+		
+		Mat<3> dxdxij;
+		dxdxij = 0.0;
+		for (int i = 0; i < coefs.Size(); i++)
+		  for (int j = 0; j < 3; j++)
+		    for (int k = 0; k < 3; k++)
+		      dxdxij(j,k) += dshapes(i,k) * coefs[i](j);
+		
+		
+		for (int ip = 0; ip < n; ip++)
+		  for (int j = 0; j < 3; j++)
+		    for (int k = 0; k < 3; k++)
+		      dxdxi[ip*sdxdxi+3*j+k] = dxdxij(j,k);
+	      }
+	  }
+	else
+	  {
+	    for (int ip = 0; ip < n; ip++)
+	      {
+		Point<3> xij;
+		for (int k = 0; k < 3; k++)
+		  xij(k) = xi[ip*sxi+k];
+		
+		CalcElementDShapes (info, xij, dshapes);
+		
+		Mat<3> dxdxij;
+		dxdxij = 0.0;
+		for (int i = 0; i < coefs.Size(); i++)
+		  for (int j = 0; j < 3; j++)
+		    for (int k = 0; k < 3; k++)
+		      dxdxij(j,k) += dshapes(i,k) * coefs[i](j);
+		
+		
+		for (int j = 0; j < 3; j++)
+		  for (int k = 0; k < 3; k++)
+		    dxdxi[ip*sdxdxi+3*j+k] = dxdxij(j,k);
+	      }
 	  }
       }
   }
