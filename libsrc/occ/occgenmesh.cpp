@@ -841,9 +841,9 @@ namespace netgen
 
       }
 
-      ofstream problemfile("occmesh.rep");
+//      ofstream problemfile("occmesh.rep");
 
-      problemfile << "SURFACEMESHING" << endl << endl;
+//      problemfile << "SURFACEMESHING" << endl << endl;
 
       if (surfmesherror)
       {
@@ -853,8 +853,8 @@ namespace netgen
             if (geom.facemeshstatus[i-1] == -1)
             {
                cout << "Face " << i << endl;
-               problemfile << "problem with face " << i << endl;
-               problemfile << "vertices: " << endl;
+//               problemfile << "problem with face " << i << endl;
+//               problemfile << "vertices: " << endl;
                TopExp_Explorer exp0,exp1,exp2;
                for ( exp0.Init(TopoDS::Face (geom.fmap(i)), TopAbs_WIRE); exp0.More(); exp0.Next() )
                {
@@ -866,22 +866,22 @@ namespace netgen
                      {
                         TopoDS_Vertex vertex = TopoDS::Vertex(exp2.Current());
                         gp_Pnt point = BRep_Tool::Pnt(vertex);
-                        problemfile << point.X() << " " << point.Y() << " " << point.Z() << endl;
+//                        problemfile << point.X() << " " << point.Y() << " " << point.Z() << endl;
                      }
                   }
                }
-               problemfile << endl;
+//               problemfile << endl;
 
             }
             cout << endl << endl;
             cout << "for more information open IGES/STEP Topology Explorer" << endl;
-            problemfile.close();
+//            problemfile.close();
             throw NgException ("Problem in Surface mesh generation");
       }
       else
       {
-         problemfile << "OK" << endl << endl;
-         problemfile.close();
+//         problemfile << "OK" << endl << endl;
+//         problemfile.close();
       }
 
 
@@ -1384,6 +1384,7 @@ namespace netgen
 
          MESHING3_RESULT res = MeshVolume (mparam, *mesh);
 
+/*
          ofstream problemfile("occmesh.rep",ios_base::app);
 
          problemfile << "VOLUMEMESHING" << endl << endl;
@@ -1394,6 +1395,7 @@ namespace netgen
             << mesh->GetNE() << " elements" << endl << endl;
 
          problemfile.close();
+*/
 
          if (res != MESHING3_OK) return TCL_ERROR;
 
