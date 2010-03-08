@@ -73,3 +73,6 @@ numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c 
 numproc calcflux np2 -bilinearform=a -solution=u -flux=stress -applyd
 
 
+
+
+numproc visualization npv1 -vectorfunction=u -subdivision=2 -nolineartexture -deformationscale=100 -scalarfunction=stress.1

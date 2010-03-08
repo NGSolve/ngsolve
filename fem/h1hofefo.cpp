@@ -292,6 +292,66 @@ namespace ngfem
 
 
 
+
+
+
+
+
+
+
+  template <int ORDER>   template<typename Tx, typename TFA>  
+  void H1HighOrderFEFO<ET_TET, ORDER> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  {
+    Tx lami[4] = { hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };
+
+    for (int i = 0; i < 4; i++)
+      shape[i] = lami[i];
+
+    int ii = 4;
+
+    // edge dofs
+    const EDGE * edges = ElementTopology::GetEdges (ET_TET);
+    for (int i = 0; i < 6; i++)
+      { 
+        int es = edges[i][0], ee = edges[i][1];
+        if (vnums[es] > vnums[ee]) swap (es, ee);
+        
+        ii += T_ORTHOPOL::CalcScaled<ORDER> 
+          (lami[ee]-lami[es], lami[es]+lami[ee], shape.Addr(ii));
+      }
+
+    // face dofs
+    for (int i = 0; i < 4; i++)
+      if (ORDER >= 3)
+	{
+          INT<4> f = ET_trait<ET_TET>::GetFaceSort (i, vnums);
+	  int vop = 6 - f[0] - f[1] - f[2];  	
+          
+	  ii += T_FACESHAPES::Calc (ORDER, 
+				    lami[f[2]]-lami[f[1]],
+				    lami[f[0]], lami[vop],  shape.Addr(ii));
+	}
+
+    if (ORDER >= 4)
+      ii += T_INNERSHAPES::Calc (ORDER,
+                                 lami[0]-lami[3], lami[1], lami[2], 
+                                 shape.Addr(ii) );
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   
   template class H1HighOrderFiniteElementFO<1>;
   template class H1HighOrderFiniteElementFO<2>;
@@ -303,6 +363,14 @@ namespace ngfem
   template class T_H1HighOrderFiniteElementFO<ET_TRIG,4>;
   template class T_H1HighOrderFiniteElementFO<ET_TRIG,5>;
   template class T_H1HighOrderFiniteElementFO<ET_TRIG,6>;
+
+  template class T_H1HighOrderFiniteElementFO<ET_TET,1>;
+  template class T_H1HighOrderFiniteElementFO<ET_TET,2>;
+  template class T_H1HighOrderFiniteElementFO<ET_TET,3>;
+  template class T_H1HighOrderFiniteElementFO<ET_TET,4>;
+  template class T_H1HighOrderFiniteElementFO<ET_TET,5>;
+  template class T_H1HighOrderFiniteElementFO<ET_TET,6>;
+
 
 
   template class H1HighOrderFEFO<ET_TRIG,1>;

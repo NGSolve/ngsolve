@@ -19,6 +19,8 @@ namespace ngsolve
     GridFunction * gferr;
     string filename; 
 
+    ofstream outfile;
+
   public:
     NumProcZZErrorEstimator (PDE & apde, const Flags & flags);
     virtual ~NumProcZZErrorEstimator();
@@ -46,7 +48,8 @@ namespace ngsolve
     bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
     gfu = pde.GetGridFunction (flags.GetStringFlag ("solution", ""));
     gferr = pde.GetGridFunction (flags.GetStringFlag ("error", ""));
-    filename = flags.GetStringFlag ("filename","");
+    filename = flags.GetStringFlag ("filename","error.out");
+    outfile.open (filename.c_str());
   }
 
   NumProcZZErrorEstimator :: ~NumProcZZErrorEstimator()
@@ -123,7 +126,6 @@ namespace ngsolve
     err = 0;
   
     int ndom = ma.GetNDomains();
-    //    for (int k = 4; k <= 4; k++)
     for (int k = 0; k < ndom; k++)
       {
 	if (!bfa->GetFESpace().IsComplex())
@@ -132,7 +134,7 @@ namespace ngsolve
 			     dynamic_cast<const S_GridFunction<double>&> (*gfu), 
 			     dynamic_cast<S_GridFunction<double>&> (*flux), 
 			     *bfi,
-			     1, k, lh);
+			     0, k, lh);
 	  
 	    CalcError (ma, 
 		       dynamic_cast<const S_GridFunction<double>&> (*gfu), 
@@ -146,7 +148,7 @@ namespace ngsolve
 			     dynamic_cast<const S_GridFunction<Complex>&> (*gfu), 
 			     dynamic_cast<S_GridFunction<Complex>&> (*flux), 
 			     *bfi,
-			     1, k, lh);
+			     0, k, lh);
 	  
 	    CalcError (ma,
 		       dynamic_cast<const S_GridFunction<Complex>&> (*gfu), 
@@ -161,16 +163,9 @@ namespace ngsolve
     for (int i = 0; i < err.Size(); i++)
       sum += err(i);
     cout << " estimated error = " << sqrt (sum) << endl;
-    static ofstream errout ("error.out");
-    errout << ma.GetNLevels() 
-	   << "  " << bfa->GetFESpace().GetNDof() 
-	   << "  " << sqrt(double (bfa->GetFESpace().GetNDof())) 
-	   << " " << sqrt(sum) << endl;
 
-    static ofstream ofile (filename.c_str());
-    ofile << ma.GetNLevels() 
-	   << "  " << bfa->GetFESpace().GetNDof() 
-	   << "  " << sqrt(double (bfa->GetFESpace().GetNDof())) 
+    outfile << ma.GetNLevels() 
+	   << "  "<< bfa->GetFESpace().GetNDof() 
 	   << " " << sqrt(sum) << endl;
        
   }

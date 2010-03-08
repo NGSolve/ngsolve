@@ -1092,10 +1092,7 @@ namespace ngfem
           nip = irx->GetNIP() * iry->GetNIP() * irz->GetNIP();
 
 	  SetSize(nip);
-	  /*
-          xi.SetSize(nip);
-          weight.SetSize(nip);
-	  */
+
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++)
               for (int i3 = 0; i3 < irz->GetNIP(); i3++, ii++)
@@ -1115,13 +1112,6 @@ namespace ngfem
 						  lami[isort[2]],
 						  (*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight() * 
 						  sqr(1-x) * (1-y) );
-		  /*
-                  xi[ii](0) = lami[isort[0]];
-                  xi[ii](1) = lami[isort[1]];
-                  xi[ii](2) = lami[isort[2]];
-                  weight[ii] = (*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight() * 
-                    sqr(1-x) * (1-y);
-		  */
                 }
 
 

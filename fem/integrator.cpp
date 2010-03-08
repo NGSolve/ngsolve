@@ -390,7 +390,6 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & fel,
 	    const BaseMappedIntegrationRule & mir,
-	    const BaseSpecificIntegrationPoint & bsip,
 	    const FlatVector<Complex> & elx, 
 	    FlatMatrix<Complex> & flux,
 	    bool applyd,
@@ -472,8 +471,6 @@ namespace ngfem
 
   void BilinearFormIntegrator :: 
   ApplyBTrans (const FiniteElement & fel,
-	       // const ElementTransformation & eltrans,
-	       // const IntegrationPoint & ip,
 	       const BaseSpecificIntegrationPoint & bsip,
 	       const FlatVector<Complex> & elx, 
 	       FlatVector<Complex> & ely,
@@ -483,6 +480,45 @@ namespace ngfem
 	 << typeid(*this).name()
 	 << endl;
   }
+
+  void BilinearFormIntegrator :: 
+  ApplyBTrans (const FiniteElement & fel,
+	       const BaseMappedIntegrationRule & mir,
+	       const FlatMatrix<double> & elx, 
+	       FlatVector<double> & ely,
+	       LocalHeap & lh) const
+  {
+    // cerr << "applybtrans mappedIR - base class" << endl;
+
+    FlatVector<> hv(ely.Size(), lh);
+    ely = 0.0;
+    for (int l = 0; l < mir.Size(); l++)
+      {
+	FlatVector<> elxi = elx.Row(l);
+	ApplyBTrans (fel, mir[l], elxi, hv, lh);
+	ely += hv;
+      }
+  }
+  
+  void BilinearFormIntegrator :: 
+  ApplyBTrans (const FiniteElement & fel,
+	       const BaseMappedIntegrationRule & mir,
+	       const FlatMatrix<Complex> & elx, 
+	       FlatVector<Complex> & ely,
+	       LocalHeap & lh) const
+  {
+    FlatVector<Complex> hv(ely.Size(), lh);
+    ely = 0.0;
+    for (int l = 0; l < mir.Size(); l++)
+      {
+	FlatVector<Complex> elxi = elx.Row(l);
+	ApplyBTrans (fel, mir[l], elxi, hv, lh);
+	ely += hv;
+      }
+  }
+  
+  
+
 
 
   
@@ -498,7 +534,6 @@ namespace ngfem
 	 << endl;
   }
 
-  
   void BilinearFormIntegrator :: 
   ApplyDMat (const FiniteElement & bfel,
 	     const BaseSpecificIntegrationPoint & bsip,
@@ -511,6 +546,37 @@ namespace ngfem
 	 << endl;
 
   }
+
+  
+  void BilinearFormIntegrator :: 
+  ApplyDMat (const FiniteElement & bfel,
+	     const BaseMappedIntegrationRule & mir,
+	     const FlatMatrix<double> & elx, 
+	     FlatMatrix<double> & eldx,
+	     LocalHeap & lh) const
+  {
+    cerr << "ApplyDMat<double>, MappedIR called for class " 
+	 << typeid(*this).name()
+	 << endl;
+
+  }
+
+  void BilinearFormIntegrator :: 
+  ApplyDMat (const FiniteElement & bfel,
+	     const BaseMappedIntegrationRule & mir,
+	     const FlatMatrix<Complex> & elx, 
+	     FlatMatrix<Complex> & eldx,
+	     LocalHeap & lh) const
+  {
+    cerr << "ApplyDMat<Complex>, MappedIR called for class " 
+	 << typeid(*this).name()
+	 << endl;
+  }
+
+  
+
+
+
 
 
 
@@ -1000,9 +1066,41 @@ namespace ngfem
   }
 
 
+  
+
+  void  BlockBilinearFormIntegrator ::
+  CalcFlux (const FiniteElement & fel,
+	    const BaseMappedIntegrationRule & mir,
+	    const FlatVector<double> & elx, 
+	    FlatMatrix<double> & flux,
+	    bool applyd,
+	    LocalHeap & lh) const
+  {
+    int mincomp = 0;
+    int maxcomp = dim-1;
+    if (comp >= 0)
+      mincomp = maxcomp = comp;
+    
+    FlatVector<> selx(elx.Size()/dim, lh);
+    FlatMatrix<> sflux(mir.Size(), bfi.DimFlux(), lh);
+
+    for (int j = mincomp; j <= maxcomp; j++)
+      {
+	for (int i = 0; i < selx.Size(); i++)
+	  selx(i) = elx(dim*i+j);
+	bfi.CalcFlux (fel, mir, selx, sflux, applyd, lh);
+	for (int k = 0; k < mir.Size(); k++)
+	  for (int i = 0; i < sflux.Width(); i++)
+	    flux.Row(k)(dim*i+j) = sflux.Row(k)(i);
+      }
+  }
 
 
-  double BlockBilinearFormIntegrator :: 
+
+
+
+
+double BlockBilinearFormIntegrator :: 
   Energy (const FiniteElement & fel, 
 	  const ElementTransformation & eltrans, 
 	  const FlatVector<double> & elx, 
@@ -1087,6 +1185,39 @@ namespace ngfem
       }
   }
 
+
+  void  BlockBilinearFormIntegrator ::
+  ApplyBTrans (const FiniteElement & fel,
+	       const BaseMappedIntegrationRule & mir,
+	       const FlatMatrix<double> & elx, 
+	       FlatVector<double> & ely,
+	       LocalHeap & lh) const
+  {
+    int mincomp = 0;
+    int maxcomp = dim-1;
+    if (comp >= 0)
+      mincomp = maxcomp = comp;
+
+    FlatMatrix<double> selx(mir.Size(), elx.Width()/dim, lh);
+    FlatVector<double> sely(ely.Size()/dim, lh);
+    ely = 0.0;
+
+    for (int j = mincomp; j <= maxcomp; j++)
+      {
+	for (int i = 0; i < selx.Width(); i++)
+	  selx.Col(i) = elx.Col(dim*i+j);
+
+	bfi.ApplyBTrans (fel, mir, selx, sely, lh);
+	ely.Slice(j, dim) += sely;
+	/*
+	for (int i = 0; i < sely.Size(); i++)
+	  ely(dim*i+j) = sely(i);
+	*/
+      }
+
+
+  }
+  
 
   string BlockBilinearFormIntegrator :: Name () const
   {
