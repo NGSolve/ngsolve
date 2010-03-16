@@ -1012,9 +1012,7 @@ Flags visflags;
     
     
     Init init;
-    
+    int link_it;
   }
   
-
-
 }
