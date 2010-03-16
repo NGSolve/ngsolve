@@ -7,12 +7,33 @@
 /* Date:   5. Jan. 2005                                                  */
 /**************************************************************************/
 
-namespace ngstd
-{
 
-#ifdef USE_TIMEOFDAY
+// Philippose - 27 January 2010
+// Windows does not provide a "sys/time.h" include, 
+// and neither does it define the function "gettimeofday" 
+// anywhere..... This is a workaround...
+#ifdef _WIN32
+#include <sys/timeb.h>
+#include <sys/types.h>
+#include <winsock.h>
+
+void gettimeofday(struct timeval* t,void* timezone)
+{       struct _timeb timebuffer;
+        _ftime( &timebuffer );
+        t->tv_sec=timebuffer.time;
+        t->tv_usec=1000*timebuffer.millitm;
+}
+#else
+
 #include <sys/time.h>
+
 #endif
+
+  /*
+    #ifdef USE_TIMEOFDAY
+    #include <sys/time.h>
+    #endif
+  */
 
 
 #ifdef VTRACE
@@ -23,7 +44,8 @@ namespace ngstd
 #define VT_TRACER(n)
 #endif
 
-
+namespace ngstd
+{
 
 
   /**
