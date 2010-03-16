@@ -326,6 +326,7 @@ namespace netgen
     Vec<3> vab, t0vec, t1vec;
     ///
     double vabl, t0, t1;
+    double cosphi;
   public:
     ///
     Cone (const Point<3> & aa, const Point<3> & ab, double ara, double arb);

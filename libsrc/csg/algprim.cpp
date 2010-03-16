@@ -1338,6 +1338,7 @@ namespace netgen
     //   R(z(P)) = t1vec * P + t1 = rb * z + ra * (1-z)
     //   r(P)^2 =||P-a||^2 - ||a-b||^2 z^2k
 
+    cosphi = vabl / sqrt (vabl*vabl+sqr(ra-rb));
 
     t0vec = vab;
     t0vec /= (vabl * vabl);
@@ -1380,21 +1381,24 @@ namespace netgen
 
   INSOLID_TYPE Cone :: BoxInSolid (const BoxSphere<3> & box) const
   {
-    double rp, dist;
-
     Vec<3> cv(box.Center());
 
-    rp = cv * t1vec + t1;
-    dist = sqrt (CalcFunctionValue(box.Center()) *max2(ra,rb) + rp * rp) - rp;
+    double rzp = cv * t1vec + t1;
+    double dist = sqrt (CalcFunctionValue(box.Center()) *max2(ra,rb) + rzp * rzp) - rzp;
 
-    if (dist - box.Diam() > 0) return IS_OUTSIDE;
-    if (dist + box.Diam() < 0) return IS_INSIDE;
-    return DOES_INTERSECT;
+    dist *= cosphi;
+    INSOLID_TYPE res = DOES_INTERSECT;
+
+    if (dist - box.Diam() > 0) res = IS_OUTSIDE;
+    if (dist + box.Diam() < 0) res = IS_INSIDE;
+
+    return res;
   }
 
 
   double Cone :: HesseNorm () const
   {
+    // cout << "2/minr = " << 2/minr << ",  cxx .. = " << cxx << ", " << cyy << ", " << czz << endl;
     return 2 / minr;
   }
 
