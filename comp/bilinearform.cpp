@@ -3,26 +3,6 @@
 #include <comp.hpp>
 #include <multigrid.hpp>
 
-// Philippose - 27 January 2010
-// Windows does not provide a "sys/time.h" include, 
-// and neither does it define the function "gettimeofday" 
-// anywhere..... This is a workaround...
-#ifdef _WIN32
-#include <sys/timeb.h>
-#include <sys/types.h>
-#include <winsock.h>
-
-void gettimeofday(struct timeval* t,void* timezone)
-{       struct _timeb timebuffer;
-        _ftime( &timebuffer );
-        t->tv_sec=timebuffer.time;
-        t->tv_usec=1000*timebuffer.millitm;
-}
-#else
-
-#include <sys/time.h>
-
-#endif
 
 #ifdef PARALLEL
 extern MPI_Group MPI_HIGHORDER_WORLD;
@@ -145,7 +125,8 @@ namespace ngcomp
   {
     independent_parts.Append (bfi);
     independent_parts_deletable.Append(deletable);
-    Vec<2,int> indices(master_surface,slave); independent_meshindex.Append(indices);
+    Vec<2,int> indices(master_surface,slave); 
+    independent_meshindex.Append(indices);
     if (low_order_bilinear_form)
       low_order_bilinear_form -> AddIndependentIntegrator (independent_parts.Last(),
 							   master_surface,slave,
@@ -194,8 +175,6 @@ namespace ngcomp
     if (mats.Size() == ma.GetNLevels())
       return;
 
-    // if (Integrator::GetCommonIntegrationOrder() > 0)
-    // const_cast<MeshAccess&> (ma).PrecomputeGeometryData (Integrator::GetCommonIntegrationOrder());
 
     if (nonassemble)
       {
@@ -294,35 +273,6 @@ namespace ngcomp
 		 << time / steps
 		 << " seconds" << endl;
 
-
-
-
-
-	    
-
-
-
-            /*
-              VVector<FlatVector<double> > vecf2 (vecf.Size(), vecf.EntrySize());
-              VVector<FlatVector<double> > vecu2 (vecf.Size(), vecf.EntrySize());
-              const BaseSparseMatrix & mat = dynamic_cast<BaseSparseMatrix&> (*mats.Last());
-              SparseMatrixSymmetric<double, FlatVector<> > mat2 (mat, 0);
-              vecu = 1;
-              steps = 0;
-              do
-	      {
-              vecf = (*mats.Last()) * vecu;
-              steps++;
-              time = double(clock() - starttime) / CLOCKS_PER_SEC;
-	      }
-              while (time < 2.0);
-	  
-              cout << " 1 application takes "
-              << time / steps
-              << " seconds" << endl;
-            */
-
-
 	  }
 
 
@@ -361,46 +311,6 @@ namespace ngcomp
 
     if (timing)
       {
-
-	/*
-	    cout << "Mapping timing" << endl;
-
-	    timeval dtime;
-	    gettimeofday (&dtime, 0);
-	    double dstarttime = dtime.tv_sec + 1e-6 * dtime.tv_usec;
-	    
-	    const IntegrationRule & ir = 
-	      GetIntegrationRules().SelectIntegrationRule (ET_TET, 2);
-
-
-	    const Table<int> & element_coloring = fespace.ElementColoring();
-	    for (int ic = 0; ic < element_coloring.Size(); ic++)
-	      {
-#pragma omp parallel 
-		{
-		  LocalHeap llh = lh.Split();
-		  ElementTransformation eltrans;
-
-#pragma omp for
-		  for (int ii = 0; ii < element_coloring[ic].Size(); ii++)
-		    {
-		      HeapReset hr(llh);
-		      int i = element_coloring[ic][ii];
-		      ma.GetElementTransformation (i, eltrans, llh);
-		      MappedIntegrationRule<3,3> mir(ir, eltrans, llh);
-		    }
-		}
-	      }
-
-	    gettimeofday (&dtime, 0);
-	    double dendtime = dtime.tv_sec + 1e-6 * dtime.tv_usec;
-	    
-	    cout << "time = " << dendtime - dstarttime << endl;
-	*/
-
-
-
-
 	clock_t starttime;
 	double time;
 	starttime = clock();
@@ -425,51 +335,6 @@ namespace ngcomp
 	int nze = dynamic_cast<const BaseSparseMatrix &> (*mats.Last()) . NZE();
 	cout << "NZE = " << nze << ", MFLOP = " << double (nze * steps) / time * 1e-6 << endl;
 	cout << "type = " << typeid(*mats.Last()).name() << endl;
-
-
-
-	/*
-
-	VVector<Complex> fc (vecf.Size());
-	VVector<Complex> uc (vecu.Size());
-      	starttime = clock();
-
-	uc = 1;
-	steps = 0;
-	do
-        {
-        fc = (*mats.Last()) * uc;
-        steps++;
-        time = double(clock() - starttime) / CLOCKS_PER_SEC;
-        }
-	while (time < 1.0);
-	  
-	cout << " 1 application takes "
-        << time / steps
-        << " seconds" << endl;
-
-
-	*/
-
-	/*
-          VarBlockSparseMatrix<double> * bsm = 
-	  VarBlockSparseMatrix<double>::Create (dynamic_cast<const SparseMatrix<double>&> (*mats.Last()));
-
-          steps = 0;
-          starttime = clock();
-          do
-	  {
-          vecf = (*bsm) * vecu;
-          steps++;
-          time = double(clock() - starttime) / CLOCKS_PER_SEC;
-	  }
-          while (time < 1.0);
-	  
-          cout << " block matrix, 1 application takes "
-          << time / steps
-          << " seconds" << endl;
-	*/
-
       }
 
     if (galerkin)
@@ -3740,250 +3605,6 @@ namespace ngcomp
 
 
 
-
-
-
-  /*
-
-  void BilinearForm :: AllocateMatrix ()
-  {
-  //  cout << "graphs.s = " << graphs.Size() << ", levels = " << ma.GetNLevels() << endl;
-  
-  if (graphs.Size() == ma.GetNLevels())
-  return;
-
-  int ndof = fespace.GetNDof();
-  int ne = ma.GetNE();
-  int nse = ma.GetNSE();
-
-  MatrixGraph * graph;
-
-
-  // new version
-  graph = const_cast<FESpace&>(fespace).GetGraph (ma.GetNLevels());
-  graphs.Append (graph);
-
-  mats.Append (new SparseMatrix<Mat<1,1> > (*graph));
-
-  if (diagonal)
-  {
-  BaseMatrix * mat;
-  switch (fespace.GetDimension())
-  {
-  case 1:
-  mat = new DiagonalSystemMatrix<SysMatrix1d, SysVector1d> (ndof);
-  break;
-  case 2:
-  mat = new DiagonalSystemMatrix<SysMatrix2d, SysVector2d> (ndof);
-  break;
-  case 3:
-  mat = new DiagonalSystemMatrix<SysMatrix3d, SysVector3d> (ndof);
-  break;
-  case 4:
-  mat = new DiagonalSystemMatrix<SysMatrix4d, SysVector4d> (ndof);
-  break;
-  } 
-  mats.Append (mat);
-  return;
-  }
-
-  if (MixedSpaces())
-  {
-  int ndof2 = fespace2->GetNDof();
-
-  IntTable connecteddofs(ndof2);
-  Array<int> linesize (ndof2);
-  Array<int> dnums1, dnums2;
-      
-  for (int i = 1; i <= ne; i++)
-  {
-  fespace.GetDofNrs (i, dnums1);
-  fespace2->GetDofNrs (i, dnums2);
-
-  for (int j = 1; j <= dnums2.Size(); j++)
-  for (int k = 1; k <= dnums1.Size(); k++)
-  connecteddofs.AddUnique (dnums2.Get(j), dnums1.Get(k));
-  }
-  for (int i = 1; i <= nse; i++)
-  {
-  fespace.GetSDofNrs (i, dnums1);
-  fespace2->GetSDofNrs (i, dnums2);
-
-
-  // 	  (*testout) << "dnums1 = ";
-  // 	  for (int j = 1; j <= dnums1.Size(); j++)
-  // 	    (*testout) << dnums1.Get(j) << " ";
-  // 	  (*testout) << endl;
-  // 	  (*testout) << "dnums2 = ";
-  // 	  for (int j = 1; j <= dnums2.Size(); j++)
-  // 	    (*testout) << dnums2.Get(j) << " ";
-  // 	  (*testout) << endl;
-
-  for (int j = 1; j <= dnums2.Size(); j++)
-  for (int k = 1; k <= dnums1.Size(); k++)
-  connecteddofs.AddUnique (dnums2.Get(j), dnums1.Get(k));
-  }
-      
-
-  for (int i = 1; i <= ndof2; i++)
-  connecteddofs.AddUnique (i, i);
-      
-  for (int i = 1; i <= ndof2; i++)
-  linesize.Elem(i) = connecteddofs.EntrySize(i);
-      
-      
-  graph = new MatrixGraph (linesize);
-  graphs.Append (graph);
-      
-  for (int i = 1; i <= ne; i++)
-  {
-  fespace.GetDofNrs (i, dnums1);
-  fespace2->GetDofNrs (i, dnums2);
-	  
-  for (int j = 1; j <= dnums2.Size(); j++)
-  for (int k = 1; k <= dnums1.Size(); k++)
-  graph->CreatePosition (dnums2.Get(j), dnums1.Get(k));
-  }
-  for (int i = 1; i <= nse; i++)
-  {
-  fespace.GetSDofNrs (i, dnums1);
-  fespace2->GetSDofNrs (i, dnums2);
-	  
-  for (int j = 1; j <= dnums2.Size(); j++)
-  for (int k = 1; k <= dnums1.Size(); k++)
-  graph->CreatePosition (dnums2.Get(j), dnums1.Get(k));
-  }
-
-  //      for (int i = 1; i <= min2(ndof2, ndof); i++)
-  //	graph->CreatePosition (i, i);
-
-
-  }
-  else
-  {
-  graph = const_cast<FESpace&>(fespace).GetGraph (ma.GetNLevels());
-  graphs.Append (graph);
-  }
-      
-  BaseMatrix * mat;
-  cout << "complex = " << fespace.IsComplex() << endl;
-  cout << "mixed = " << MixedSpaces() << endl;
-
-  if (!MixedSpaces())
-  {
-  int sym = symmetric || hermitean;
-  if (!fespace.IsComplex())
-  {
-  switch (fespace.GetDimension())
-  {
-  case 1:
-  mat = new SparseSystemMatrix<SysMatrix1d, SysVector1d> (*graph, sym);
-  break;
-  case 2:
-  mat = new SparseSystemMatrix<SysMatrix2d, SysVector2d> (*graph, sym);
-  break;
-  case 3:
-  mat = new SparseSystemMatrix<SysMatrix3d, SysVector3d> (*graph, sym);
-  break;
-  case 4:
-  mat = new SparseSystemMatrix<SysMatrix4d, SysVector4d> (*graph, sym);
-  break;
-  }
-  }
-  else
-  {
-  switch (fespace.GetDimension())
-  {
-  case 1:
-  cout << "allocate 1d complex" << endl;
-  mat = new ComplexSparseSystemMatrix<SysMatrixC1d, SysVectorC1d> (*graph, sym);
-  break;
-  case 2:
-  mat = new ComplexSparseSystemMatrix<SysMatrixC2d, SysVectorC2d> (*graph, sym);
-  break;
-  case 4:
-  mat = new ComplexSparseSystemMatrix<SysMatrixC4d, SysVectorC4d> (*graph, sym);
-  break;
-  }
-  }
-  }
-  else
-  {
-  switch (fespace.GetDimension())
-  {
-  case 1:
-  mat = new SparseSystemMatrixRectangle<SysVector1d, SysVector1d> 
-  (fespace2->GetNDof(), fespace.GetNDof(), *graph);
-  break;
-  case 2:
-  mat = new SparseSystemMatrixRectangle<SysVector1d, SysVector2d> 
-  (fespace2->GetNDof(), fespace.GetNDof(), *graph);
-  break;	  
-  }
-  //      (*testout) << "mat = " << (*mat) << endl;
-  }
-
-  mat -> SetSymmetric (symmetric);
-  mat -> SetHermitean (hermitean);
-  mats.Append (mat);
-  }
-  */
-
-
-
-  void BilinearForm::WriteMatrix (ostream & ost) const
-  {
-    // Stefan's Pebbles format
-
-    /*
-      ofstream matfile ("helmholtz.re");
-      ofstream matfileim ("helmholtz.im");
-
-      SparseSystemMatrix<SysMatrixC1d,SysVectorC1d> & mata = 
-      (SparseSystemMatrix<SysMatrixC1d,SysVectorC1d> &)
-      *mats.Last();
-
-
-      const MatrixGraph & graph = mata.GetGraph();
-      int n = mata.Height();
-      int row, col;
-      int nne = 0;
-  
-      matfile << n << endl;
-      matfileim << n << endl;
-
-      for (row = 1; row <= n; row++)
-      for (int j = 1; j <= graph.ElementsInLine(row); j++)
-      {
-      col = graph.GetColIndex (row, j);
-      nne++;
-      }
-  
-      matfile << nne << endl;
-      matfile << 1 << endl;
-      matfileim << nne << endl;
-      matfileim << 1 << endl;
-  
-      for (row = 1; row <= n; row++)
-      for (int j = 1; j <= graph.ElementsInLine(row); j++)
-      {
-      col = graph.GetColIndex (row, j);
-      matfile << row << " " << col << " ";
-      matfileim << row << " " << col << " ";
-
-      if (row >= col)
-      {
-      matfile << mata.Elem (row, col).Elem(1) << endl;
-      matfileim << mata.Elem (row, col).Elem(2) << endl;
-      }
-      else
-      {
-      matfile << mata.Elem (col, row).Elem(1) << endl;
-      matfileim << mata.Elem (col, row).Elem(2) << endl;
-      }
-      }
-    */
-  }
 
 
 

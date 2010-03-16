@@ -291,8 +291,6 @@ namespace ngcomp
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
     ///
-    void WriteMatrix (ostream & ost) const;
-    ///
     virtual BaseVector * CreateVector() const = 0;
 
     /// frees matrix 
