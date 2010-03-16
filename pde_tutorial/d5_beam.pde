@@ -38,7 +38,7 @@ define coefficient coef_surface_force_z
 0, 1e5, 
 
 
-define fespace v -dim=3 -order=4 -eliminate_internal 
+define fespace v -dim=3 -order=4 -eliminate_internal  -dirichlet=[1]
 define fespace vp -dim=6  -order=3
 
 define gridfunction u -fespace=v
@@ -46,16 +46,16 @@ define gridfunction stress -fespace=vp
 
 # generate load vector, volume force in z-direction (-comp=3)
 define linearform f -fespace=v
-# source coef_force_z -comp=3 
+# source coef_force_z -comp=1
 neumann coef_surface_force_z -comp=3
 
 
 # define system matrix. robin adds penalty terms to the x,y, and z-components
 define bilinearform a -fespace=v -symmetric  -eliminate_internal -linearform=f
 elasticity E nu
-robin penalty  -comp=1
-robin penalty  -comp=2
-robin penalty  -comp=3
+# robin penalty  -comp=1
+# robin penalty  -comp=2
+# robin penalty  -comp=3
 
 
 # use either a direct factorization, or a multigrid preconditioner.
