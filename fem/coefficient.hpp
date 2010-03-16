@@ -24,6 +24,8 @@ namespace ngfem
     virtual ~CoefficientFunction ();
 
     ///
+    virtual int NumRegions () { return INT_MAX; }
+    ///
     virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const = 0;
     
     ///
@@ -153,6 +155,8 @@ namespace ngfem
     ///
     DomainConstantCoefficientFunction (const Array<double> & aval);
     ///
+    virtual int NumRegions () { return val.Size(); }
+    ///
     virtual ~DomainConstantCoefficientFunction ();
     ///
 
@@ -182,28 +186,17 @@ namespace ngfem
     ///
     virtual ~DomainVariableCoefficientFunction ();
     ///
+    virtual int NumRegions () { return fun.Size(); }
+    ///
     virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const
     {
       int elind = ip.GetTransformation().GetElementIndex();
-      if (elind < 0 || elind >= fun.Size())
-	{
-	  cerr << "In DomainConstantCoefficientFunction:: Evalutate() element index " << elind << " out of range " 
-	       << "0 - " << fun.Size()-1 << endl;
-	  return 0;
-	}
       return fun[elind]->Eval (&static_cast<const DimSpecificIntegrationPoint<DIM>&>(ip).GetPoint()(0));
     }
 
     virtual Complex EvaluateComplex (const BaseSpecificIntegrationPoint & ip) const
     {
       int elind = ip.GetTransformation().GetElementIndex();
-      if (elind < 0 || elind >= fun.Size())
-	{
-	  cerr << "In DomainConstantCoefficientFunction:: Evalutate() element index " << elind << " out of range " 
-	       << "0 - " << fun.Size()-1 << endl;
-	  return 0;
-	}
-
       Vec<DIM, Complex> hp;
       for (int i = 0; i < DIM; i++)
 	hp(i) = static_cast<const DimSpecificIntegrationPoint<DIM>&>(ip).GetPoint()(i);
@@ -230,11 +223,6 @@ namespace ngfem
 			  FlatVector<> result) const
     {
       int elind = ip.GetTransformation().GetElementIndex();
-      if (elind < 0 || elind >= fun.Size())
-	{
-	  cerr << "In DomainConstantCoefficientFunction:: Evalutate() element index " << elind << " out of range " 
-	       << "0 - " << fun.Size()-1 << endl;
-	}
       fun[elind]->Eval (&static_cast<const DimSpecificIntegrationPoint<DIM>&>(ip).GetPoint()(0), &result(0), result.Size());
     }
 
@@ -243,11 +231,6 @@ namespace ngfem
 			  FlatVector<Complex> result) const
     {
       int elind = ip.GetTransformation().GetElementIndex();
-      if (elind < 0 || elind >= fun.Size())
-	{
-	  cerr << "In DomainConstantCoefficientFunction:: Evalutate() element index " << elind << " out of range " 
-	       << "0 - " << fun.Size()-1 << endl;
-	}
       fun[elind]->Eval (&static_cast<const DimSpecificIntegrationPoint<DIM>&>(ip).GetPoint()(0), &result(0), result.Size());
     }
 
@@ -285,7 +268,6 @@ namespace ngfem
     {
       int elind = ip.GetTransformation().GetElementIndex();
       if (elind != matnr && matnr > 0) return 0;
-  
 
       return f(&static_cast<const DimSpecificIntegrationPoint<DIM>&>(ip).GetPoint()(0));
       // return f(&ip.GetPoint().REval(0));
