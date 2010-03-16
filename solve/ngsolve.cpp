@@ -636,6 +636,7 @@ extern "C" int LOCAL_EXPORTS Ngsolve_Init (Tcl_Interp * interp)
 
 namespace ngsolve { 
   namespace bvp_cpp { extern int link_it; }
+  namespace numprocee_cpp { extern int link_it; }
 }
 namespace ngfem {
   namespace bdbequations_cpp { extern int link_it; }
@@ -745,7 +746,7 @@ int NGSolve_Init (Tcl_Interp * interp)
   ngsolve::bvp_cpp::link_it = 0;
   ngfem::bdbequations_cpp::link_it = 0;
   ngfem::link_it_h1hofefo = 0;
-
+  ngsolve::numprocee_cpp::link_it = 0;
 
   return TCL_OK;
 }
