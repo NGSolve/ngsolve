@@ -1295,6 +1295,22 @@ namespace ngsolve
 			dynamic_cast<ngfem::BilinearFormIntegrator*> (info->creator(coeffs));
 		      integrator -> SetName (integrator_name);
 
+		      int numregions = integrator -> BoundaryForm() ? 
+			pde->GetMeshAccess().GetNBoundaries() : pde->GetMeshAccess().GetNDomains();
+		      for (int i = 0; i < info->numcoeffs; i++)
+			{
+			  if (coeffs[i] -> NumRegions () < numregions)
+			    {
+			      stringstream str;
+			      str << "coefficient " << i 
+				  << " of integrator " << integrator_name << " has " 
+				  << coeffs[i]->NumRegions() << " regions, but should be " << numregions;
+			      
+			      throw Exception (str.str());
+			    }
+			}
+
+
 		      if (partflags.NumFlagDefined ("order"))
 			{
 			  integrator -> 
@@ -1423,10 +1439,11 @@ namespace ngsolve
 
 	      if (integrator_token == KW_INTEGRATOR)
 		{
+		  string integrator_name = scan->GetStringValue();
 
 		  const ngfem::Integrators::IntegratorInfo * info =
 		    ngfem::GetIntegrators() 
-		    . GetLFI(scan->GetStringValue(), 
+		    . GetLFI(integrator_name, // scan->GetStringValue(), 
 			     pde->GetMeshAccess().GetDimension());
 		
 		  if (info)
@@ -1461,6 +1478,22 @@ namespace ngsolve
 		    
 		      ngfem::LinearFormIntegrator * integrator = 
 			dynamic_cast<ngfem::LinearFormIntegrator*> (info->creator(coeffs));
+
+		      int numregions = integrator -> BoundaryForm() ? 
+			pde->GetMeshAccess().GetNBoundaries() : pde->GetMeshAccess().GetNDomains();
+		      for (int i = 0; i < info->numcoeffs; i++)
+			{
+			  if (coeffs[i] -> NumRegions () < numregions)
+			    {
+			      stringstream str;
+			      str << "coefficient " << i 
+				  << " of integrator " << integrator_name << " has " 
+				  << coeffs[i]->NumRegions() << " regions, but should be " << numregions;
+			      
+			      throw Exception (str.str());
+			    }
+			}
+
 
 		      (*testout) << "partflags = " << endl << partflags << endl;
 		    
