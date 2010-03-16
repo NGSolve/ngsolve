@@ -86,8 +86,6 @@ namespace ngfem
 
 
 
-
-
   
   
   template <int DIM>
@@ -129,6 +127,43 @@ namespace ngfem
 
 
 
+  
+  template <int DIM>
+  class EvaluateDShapeElement
+  {
+    double data;
+    Vec<DIM> & sum;
+  public:
+    EvaluateDShapeElement (double adata, Vec<DIM> & asum) : data(adata), sum(asum) { ; }
+    void operator= (AutoDiff<DIM> ad) 
+    { 
+      for (int i = 0; i < DIM; i++) 
+        sum(i) += ad.DValue(i) * data;
+    }
+  };
+
+  template <int DIM>
+  class EvaluateDShape
+  {
+    double * coefs;
+    Vec<DIM> & sum;
+  public:
+    EvaluateDShape (FlatVector<> acoefs, Vec<DIM> & asum)
+      : coefs(&acoefs(0)), sum(asum) { ; }
+
+    EvaluateDShape (double * acoefs, Vec<DIM> & asum)
+      : coefs(acoefs), sum(asum) { ; }
+
+    EvaluateDShapeElement<DIM> operator[] (int i) const
+    { return EvaluateDShapeElement<DIM> (coefs[i], sum); }
+
+    const EvaluateDShape Addr (int i) const
+    { return EvaluateDShape (coefs+i, sum); }
+  };
+
+
+
+
 
   
   
@@ -141,7 +176,6 @@ namespace ngfem
     EvaluateDShapeTransElement (double & adata, const Vec<DIM> & afac) : data(adata), fac(afac) { ; }
     void operator= (AutoDiff<DIM> ad) 
     { 
-      // cout << "evaldshapetrans: ad = " << ad << ", fac = " << fac << ", data = " << data <<  ", &data = " << &data << endl;
       for (int i = 0; i < DIM; i++) 
         data += ad.DValue(i) * fac(i);
     }
@@ -194,21 +228,6 @@ namespace ngfem
     virtual ~T_ScalarFiniteElement() { ; }
 
   public:
-
-    /*
-      const FlatVec<NDOF> & GetShape (const IntegrationPoint & ip,
-      LocalHeap & lh) const
-      {
-      ;
-      }
-
-      const Mat<NDOF,DIM> & GetDShape (const IntegrationPoint & ip,
-      LocalHeap & lh) const
-      {
-      ;
-      }
-    */
-
 
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const
@@ -312,122 +331,34 @@ namespace ngfem
      Barton and Nackman Trick for elements with non-static CalcShape method
   */
 
-
   template <class FEL, ELEMENT_TYPE ET>
   class NGS_DLL_HEADER T_ScalarFiniteElement2 : virtual public ScalarFiniteElement<ET_trait<ET>::DIM>
   {
   public:
     enum { DIM = ET_trait<ET>::DIM };
-    // using FiniteElement::eltype;
     using ScalarFiniteElement<DIM>::eltype;
 
     T_ScalarFiniteElement2 () { eltype = ET; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const;
-    /*
-    {
-      double pt[DIM];
-      for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-      static_cast<const FEL*> (this) -> T_CalcShape (pt, shape); 
-    }
-    */
 
-    virtual double
-    Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const;
-    /*
-    {
-      double pt[DIM];
-      for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-
-      double sum = 0.0;
-      EvaluateShape eval(x, &sum); 
-
-      static_cast<const FEL*> (this) -> T_CalcShape (pt, eval); 
-      return sum;
-    }  
-    */
-
-      virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
-    /*
-    {
-      double pt[DIM];
-      for (int i = 0; i < ir.GetNIP(); i++)
-      {
-	  for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
-
-	  vals(i) = 0.0;
-	  EvaluateShape eval(coefs, &vals(i)); 
-	  static_cast<const FEL*> (this) -> T_CalcShape (pt, eval); 
-	}
-    }
-    */
+    virtual double Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const;
+    
+    virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
 
     virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const;
-    /*
-    {
-      double pt[DIM];
-      coefs = 0.0;
-      for (int i = 0; i < ir.GetNIP(); i++)
-	{
-	  for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
 
-	  EvaluateShapeTrans<DIM> eval(coefs, vals(i));
-	  static_cast<const FEL*> (this) -> T_CalcShape (pt, eval); 
-	}
-    }
-    */
-
+    virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<DIM> vals) const;
 
     virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const;
-    /*
-    {
-      AutoDiff<DIM> adp[DIM];
-      coefs = 0.0;
-      for (int i = 0; i < ir.GetNIP(); i++)
-	{
-	  for (int j = 0; j < DIM; j++)
-	    adp[j] = AutoDiff<DIM> (ir[i](j), j);
-
-	  Vec<DIM> val;
-	  val = vals.Row(i);
-	  EvaluateDShapeTrans<DIM> eval(coefs, val);
-	  static_cast<const FEL*> (this) -> T_CalcShape (adp, eval); 
-	}
-    }
-    */
 
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     FlatMatrixFixWidth<DIM> dshape) const;
-    /*
-    {
-      AutoDiff<DIM> adp[DIM];
-      for (int i = 0; i < DIM; i++)
-        adp[i] = AutoDiff<DIM> (ip(i), i);
-      
-      DShapeAssign<DIM> ds(dshape); 
-      static_cast<const FEL*> (this) -> T_CalcShape (adp, ds);
-    }
-    */
 
     virtual void 
     CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
                       FlatMatrixFixWidth<DIM> dshape) const;
-    /*
-    {
-      AutoDiff<DIM> adp[DIM];
-      
-      for (int i = 0; i < DIM; i++)
-        adp[i].Value() = sip.IP()(i);
-      
-      for (int i = 0; i < DIM; i++)
-        for (int j = 0; j < DIM; j++)
-          adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
-      
-      DShapeAssign<DIM> ds(dshape); 
-      static_cast<const FEL*> (this) -> T_CalcShape (adp, ds);
-    }
-    */
   };
 
 

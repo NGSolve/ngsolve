@@ -60,6 +60,21 @@ public:
     y = Trans (sip.GetJacobianInverse()) * hv;
   }
 
+  template <typename FEL, class MIR>
+  static void ApplyIR (const FEL & fel, const MIR & mir,
+		       const FlatVector<double> & x, FlatMatrix<double> & y,
+		       LocalHeap & lh)
+  {
+    FlatMatrixFixWidth<D> grad(mir.Size(), &y(0));
+    fel.EvaluateGrad (mir.IR(), x, grad);
+    for  (int i = 0; i < mir.Size(); i++)
+      {
+	Vec<D> hv = grad.Row(i);
+	grad.Row(i) = Trans (mir[i].GetJacobianInverse()) * hv;
+      }
+  }
+
+
   ///
   template <typename FEL, typename SIP, class TVX, class TVY>
   static void ApplyTrans (const FEL & fel, const SIP & sip,

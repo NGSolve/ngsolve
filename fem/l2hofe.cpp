@@ -14,6 +14,7 @@
 
 namespace ngfem
 {
+
   using namespace ngfem;
 
   template <int D>
@@ -315,6 +316,7 @@ namespace ngfem
           shape[ii++] = polx[i] * poly[j] * polz[k];
   }
 
+
   template class L2HighOrderFiniteElement<1>;
   template class L2HighOrderFiniteElement<2>;
   template class L2HighOrderFiniteElement<3>;
@@ -328,10 +330,7 @@ namespace ngfem
   template class T_ScalarFiniteElement2<L2HighOrderFE<ET_HEX>, ET_HEX>;
   template class T_ScalarFiniteElement2<L2HighOrderFE<ET_PYRAMID>, ET_PYRAMID>;
 
-
-
 } // namespace
-
 
 
 
