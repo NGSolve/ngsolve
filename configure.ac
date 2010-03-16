@@ -37,25 +37,25 @@ AC_ARG_WITH([netgen],
 
 AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])
 AC_ARG_WITH([lapack],
-        [  --with-lapack=lapacklib   linker flags for linking dense linear algebra library LAPACK, default is '-llapack -lblas'],          
+        [AC_HELP_STRING([--with-lapack=lapacklib][linker flags for linking dense linear algebra library LAPACK, default is '-llapack -lblas'])],          
         [AC_SUBST([LAPACK_LIBS], [$withval])],
         [AC_SUBST([LAPACK_LIBS], "-llapack -lblas")],
         )
 
 AC_ARG_ENABLE([pardiso],
-        [  --enable-pardiso           enable sparse direct solver pardiso],          
+        [AC_HELP_STRING([--enable-pardiso],[enable sparse direct solver pardiso])], 
         [AC_SUBST([PARDISO_INCLUDES], ["-DUSE_PARDISO"])]
         [AC_SUBST([PARDISO_LIBS], ["-lpardiso_GNU_IA32 -llapack"])]
 #        [AC_SUBST([PARDISO_LIBS], ["-lpardiso_GNU42_EM64T_INT64_P -lgfortran"])]
         )
 
 AC_ARG_ENABLE([pardiso4],
-        [  --enable-pardiso4           enable sparse direct solver pardiso],          
+        [AC_HELP_STRING([--enable-pardiso4],[enable sparse direct solver pardiso])],
         [AC_SUBST([PARDISO_INCLUDES], ["$PARDISO_INCLUDES -DUSE_PARDISO400"])]
         )
 
 AC_ARG_WITH([pardiso],
-        [  --with-pardiso=libpardiso.so  enable sparse direct solver pardiso],          
+        [AC_HELP_STRING([--with-pardiso=libpardiso.so],[enable sparse direct solver pardiso])],
         [AC_SUBST([PARDISO_INCLUDES], ["$PARDISO_INCLUDES -DUSE_PARDISO"])]
         [AC_SUBST([PARDISO_LIBS], ["$withval -llapack -lblas -lgomp -gfortran"])]
 #        [AC_SUBST([PARDISO_LIBS], ["-lpardiso_GNU42_EM64T_INT64_P -lgfortran"])]
@@ -69,7 +69,7 @@ AC_ARG_ENABLE([MKLpardiso],
 
 
 AC_ARG_ENABLE([mumps],
-        [  --enable-mumps             enable sparse direct solver MUMPS],          
+        [AC_HELP_STRING([--enable-mumps],[enable sparse direct solver MUMPS])],
         [AC_SUBST([MUMPS_INCLUDES], ["-DUSE_MUMPS"])]
         [AC_SUBST([MUMPS_LIBS], ["-L/opt/netgen/lib -ldmumps -lzmumps -lmumps_common -lpord -lmpiseq -lgfortran"])]
         )
