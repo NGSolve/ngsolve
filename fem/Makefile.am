@@ -16,8 +16,7 @@ hcurlfe.cpp intrule.cpp facetfe.cpp hcurlhofe.cpp l2hofe.cpp	      \
 l2hofefo.cpp fastmat.cpp vectorfacetfe.cpp finiteelement.cpp	      \
 scalarfe.cpp hdiv_equations.cpp maxwellintegrator.cpp		      \
 generic_recpol.cpp hdivfe.cpp h1hofe.cpp h1hofefo.cpp hdivhofe.cpp    \
-recursive_pol.cpp hybridDG.cpp DGIntegrators.cpp
-#  pml.cpp
+recursive_pol.cpp hybridDG.cpp DGIntegrators.cpp pml.cpp
 
 libngfem_la_CPPFLAGS = -I$(top_srcdir)/include  $(LAPACK_INCLUDE)
 libngfem_la_LDFLAGS = -avoid-version
@@ -39,6 +38,4 @@ hcurlhofe.hpp hcurllofe.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp \
 integrator.hpp intrule.hpp l2hofefo.hpp l2hofe.hpp	       \
 recursive_pol.hpp recursive_pol_tet.hpp recursive_pol_trig.hpp	       \
 scalarfe.hpp specialelement.hpp thdivfe.hpp tscalarfe.hpp	       \
-vectorfacetfe.hpp tscalarfe.cpp hdivlofe.hpp hdivhofefo.hpp
-
-#  pml.hpp
+vectorfacetfe.hpp tscalarfe.cpp hdivlofe.hpp hdivhofefo.hpp pml.hpp
