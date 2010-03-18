@@ -974,6 +974,8 @@ namespace netgen
   {
     PrintMessage (1, "Calc Triangle Approximation");
 
+    try
+      {
     //    FindIdenticSurfaces (1e-6);
   
     int ntlo = GetNTopLevelObjects();
@@ -1073,7 +1075,18 @@ namespace netgen
 	tams->RemoveUnusedPoints ();
 	PrintMessage (2, "Object ", i, " has ", tams->GetNT(), " triangles");
       }
-
+      }
+    catch (exception)
+      {
+	cerr << "*************************************************************" << endl
+	     << "****   out of memory problem in CSG visualization        ****" << endl
+	     << "****   Restart netgen, and disable                       ****" << endl
+	     << "****   'Draw Geometry' in Geometry -> CSG Options        ****" << endl
+	     << "****   before loading the geometry                       ****" << endl
+	     << "****   meshing will still work !                         ****" << endl
+	     << "*************************************************************" << endl;
+	exit(1);
+      }
     Change();
   }
 
