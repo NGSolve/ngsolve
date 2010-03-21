@@ -378,7 +378,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;$(CASROOT)\inc&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w32\include&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\nglib&quot;;&quot;$(SolutionDir)..\&quot;"
-				PreprocessorDefinitions="WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;OCCGEOMETRY;_WIN32_WINNT=0x0502"
+				PreprocessorDefinitions="WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;_WIN32_WINNT=0x0502"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				EnableEnhancedInstructionSet="1"
@@ -462,7 +462,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;$(CASROOT)\inc&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w64\include&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\nglib&quot;;&quot;$(SolutionDir)..\&quot;"
-				PreprocessorDefinitions="WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;OCCGEOMETRY;_OCC64;_WIN32_WINNT=0x0502"
+				PreprocessorDefinitions="WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;_OCC64;_WIN32_WINNT=0x0502"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				EnableEnhancedInstructionSet="1"
@@ -1170,11 +1170,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\geometry2d.hpp"
+				RelativePath="..\libsrc\geom2d\geometry2d.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\geom2d\geometry2d.hpp"
+				RelativePath="..\libsrc\include\geometry2d.hpp"
 				>
 			</File>
 			<File
@@ -1214,11 +1214,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\gprim\gprim.hpp"
+				RelativePath="..\libsrc\include\gprim.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\gprim.hpp"
+				RelativePath="..\libsrc\gprim\gprim.hpp"
 				>
 			</File>
 			<File
@@ -1270,11 +1270,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\linalg.hpp"
+				RelativePath="..\libsrc\include\linalg.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\linalg.hpp"
+				RelativePath="..\libsrc\linalg\linalg.hpp"
 				>
 			</File>
 			<File
@@ -1294,11 +1294,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\meshing.hpp"
+				RelativePath="..\libsrc\meshing\meshing.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\meshing\meshing.hpp"
+				RelativePath="..\libsrc\include\meshing.hpp"
 				>
 			</File>
 			<File
@@ -1334,11 +1334,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\myadt.hpp"
+				RelativePath="..\libsrc\general\myadt.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\general\myadt.hpp"
+				RelativePath="..\libsrc\include\myadt.hpp"
 				>
 			</File>
 			<File
@@ -1374,11 +1374,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\opti.hpp"
+				RelativePath="..\libsrc\linalg\opti.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\opti.hpp"
+				RelativePath="..\libsrc\include\opti.hpp"
 				>
 			</File>
 			<File
