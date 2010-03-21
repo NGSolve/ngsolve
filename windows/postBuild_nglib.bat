@@ -19,12 +19,17 @@ set PROJ_DIR=%~5
 REM *** Change these Folders if required ***
 REM Check if the environment variable NETGENDIR exists, 
 REM and use it as the installation folder
+set W_WO_OCC=%BUILD_TYPE:~-4,3%
 if defined NETGENDIR (
    echo Environment variable NETGENDIR found: %NETGENDIR%
    set INSTALL_FOLDER=%NETGENDIR%\..
 ) else (
    echo Environment variable NETGENDIR not found.... using default location!!!
-   set INSTALL_FOLDER=%PROJ_DIR%..\..\%PROJ_NAME%-inst_%BUILD_ARCH%
+   if /i "%W_WO_OCC%" == "OCC" (   
+      set INSTALL_FOLDER=%PROJ_DIR%..\..\%PROJ_NAME%-instOCC_%BUILD_ARCH%
+   ) else (
+      set INSTALL_FOLDER=%PROJ_DIR%..\..\%PROJ_NAME%-instNoOCC_%BUILD_ARCH%
+   )   
 )
    
 set NGLIB_LIBINC=%PROJ_DIR%..\nglib
