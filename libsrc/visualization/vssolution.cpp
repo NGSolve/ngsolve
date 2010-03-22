@@ -29,6 +29,19 @@ namespace netgen
     delete solclass;
   }
 
+  bool SolutionData :: GetMultiValue (int elnr, int npts,
+				     const double * xref, int sxref,
+				     const double * x, int sx,
+				     const double * dxdxref, int sdxdxref,
+				     double * values, int svalues)
+  {
+    bool res = false;
+    for (int i = 0; i < npts; i++)
+      res = GetValue (elnr, &xref[i*sxref], &x[i*sx], &dxdxref[i*sdxdxref], &values[i*svalues]);
+    return res;
+  }
+
+
   bool SolutionData :: GetMultiSurfValue (int selnr, int npts,
                                           const double * xref, int sxref,
                                           const double * x, int sx,
@@ -2803,6 +2816,21 @@ namespace netgen
   }
   
 
+  bool VisualSceneSolution :: 
+  GetMultiValues (const SolData * data, ElementIndex elnr, int npt,
+		  const double * xref, int sxref,
+		  const double * x, int sx,
+		  const double * dxdxref, int sdxdxref,
+		  double * val, int sval) const
+  {
+    bool drawelem = false;
+    if (data->soltype == SOL_VIRTUALFUNCTION)
+      drawelem = data->solclass->GetMultiValue(elnr, npt, xref, sxref, x, sx, dxdxref, sdxdxref, val, sval);
+    else
+      for (int i = 0; i < npt; i++)
+        drawelem = GetValues (data, elnr, xref+i*sxref, x+i*sx, dxdxref+i*sdxdxref, val+i*sval);
+    return drawelem;
+  }
 
 
 
@@ -4091,72 +4119,112 @@ namespace netgen
       for (int j = 0; j < 3; j++)
         maxlpnr = max2 (maxlpnr, trigs[i].points[j].locpnr);
 
-    ArrayMem<double, 1000> vals(maxlpnr+1);
-    ArrayMem<int, 1000> elnrs(maxlpnr+1);
-    ArrayMem<bool, 1000> trigok(maxlpnr+1);
+    Array<double> vals(maxlpnr+1);
+    Array<complex<double> > valsc(maxlpnr+1);
+    Array<int> elnrs(maxlpnr+1);
+    Array<bool> trigok(maxlpnr+1);
+    Array<Point<3> > locpoints(maxlpnr+1);
+    Array<Point<3> > globpoints(maxlpnr+1);
+    Array<Mat<3> > jacobi(maxlpnr+1);
+    Array<double> mvalues( (maxlpnr+1) * sol->components);
     trigok = false;
     elnrs = -1;
 
     Point<3> p[3];
-    double val[3];
+    // double val[3];
     complex<double> valc[3];
+    int lastelnr = -1;
+    int nlp = -1;
 
     for (int i = 0; i < trigs.Size(); i++)
       {
-        const ClipPlaneTrig & trig = trigs[i];
 	bool ok = true;
+        const ClipPlaneTrig & trig = trigs[i];
+	if (trig.elnr != lastelnr)
+	  {
+	    lastelnr = trig.elnr;
+	    nlp = -1;
+
+	    for (int ii = i; ii < trigs.Size(); ii++)
+	      {
+		if (trigs[ii].elnr != trig.elnr) break;
+		for (int j = 0; j < 3; j++)
+		  nlp = max (nlp, trigs[ii].points[j].locpnr);
+	      }
+	    nlp++;
+	    locpoints.SetSize (nlp);
+
+	    for (int ii = i; ii < trigs.Size(); ii++)
+	      {
+		if (trigs[ii].elnr != trig.elnr) break;
+		for (int j = 0; j < 3; j++)
+		  locpoints[trigs[ii].points[j].locpnr] = points[trigs[ii].points[j].pnr].lami;
+	      }
+
+	    mesh->GetCurvedElements().
+	      CalcMultiPointElementTransformation (&locpoints, trig.elnr, 
+						   &globpoints, &jacobi);
+
+	    bool
+	      drawelem = GetMultiValues (sol, trig.elnr, nlp, 
+					 &locpoints[0](0), &locpoints[1](0)-&locpoints[0](0),
+					 &globpoints[0](0), &globpoints[1](0)-&globpoints[0](0),
+					 &jacobi[0](0), &jacobi[1](0)-&jacobi[0](0),
+					 &mvalues[0], sol->components);
+	    
+	    if (!drawelem) ok = false;
+	    if (usetexture == 2)
+	      {
+		;
+	      // for (int ii = 0; ii < nlp; ii++)
+	      // valuesc[ii] = ExtractValueComplex(sol, scalcomp, &mvalues[ii*sol->components]);
+	      }
+	    else
+	      for (int ii = 0; ii < nlp; ii++)
+		vals[ii] = ExtractValue(sol, scalcomp, &mvalues[ii*sol->components]);
+	  }
+
         for (int j = 0; ok && j < 3; j++)
           {
             p[j] = points[trig.points[j].pnr].p;
-            Point<3> ploc = points[trig.points[j].pnr].lami;
+	    Point<3> ploc = points[trig.points[j].pnr].lami;
+	    int locpnr = trig.points[j].locpnr;
             
             if (deform)
               p[j] += GetDeformation (trig.elnr, ploc);
             
             if (usetexture != 2 || !sol->iscomplex)
               {
+		;
+		/*
                 if (elnrs[trig.points[j].locpnr] != trig.elnr)
                   {
                     elnrs[trig.points[j].locpnr] = trig.elnr;
 
-                    Point<3> pglob;
-                    Mat<3> trans;
-                    
-                    mesh->GetCurvedElements().
-                      CalcElementTransformation (ploc, trig.elnr, pglob, trans);
-                  
-                    //double val;
-		    ok = GetValue (sol, trig.elnr, &ploc(0), &pglob(0), &trans(0,0), scalcomp, val[j]);
-                    vals[trig.points[j].locpnr] = val[j];
+		    ok = GetValue (sol, trig.elnr, &locpoints[locpnr](0), 
+				   &globpoints[locpnr](0), &jacobi[locpnr](0,0), scalcomp, vals[locpnr]);
+
 		    trigok[trig.points[j].locpnr] = ok;
 		  }
                 else
                   {   
 		    ok = trigok[trig.points[j].locpnr];
-                    //SetOpenGlColor (vals[trig.points[j].locpnr]);
                   }
+		*/
               }
             else
               {
-                //double valr, vali;
                 ok = GetValueComplex (sol, trig.elnr, ploc(0), ploc(1), ploc(2),
 				      scalcomp, valc[j]);
                 
-                //glTexCoord2f ( valr, vali );
               }
-            //glVertex3dv (p);
           }
 
 	if(ok)
 	  for(int j=0; j<3; j++)
 	    {
 	      if (usetexture != 2 || !sol->iscomplex)
-		{
-		  if (elnrs[trig.points[j].locpnr] != trig.elnr)
-		    SetOpenGlColor(val[j]);
-		  else
-		    SetOpenGlColor (vals[trig.points[j].locpnr]);
-		}
+		SetOpenGlColor (vals[trig.points[j].locpnr]);
 	      else
 		glTexCoord2f ( valc[j].real(), valc[j].imag() );
 

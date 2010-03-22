@@ -39,6 +39,13 @@ namespace netgen
                            double * values)
     { return GetValue (selnr, xref[0], xref[1], xref[2], values); }
 
+    virtual bool GetMultiValue (int elnr, int npts,
+				const double * xref, int sxref,
+				const double * x, int sx,
+				const double * dxdxref, int sdxdxref,
+				double * values, int svalues);
+
+
 
     virtual bool GetSurfValue (int /* selnr */,
                                double /* lam1 */, double /* lam2 */, 

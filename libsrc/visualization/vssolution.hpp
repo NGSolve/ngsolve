@@ -234,6 +234,13 @@ private:
 		  const double xref[], const double x[], const double dxdxref[], 
 		  double * values) const;
 
+  bool GetMultiValues (const SolData * data, ElementIndex elnr, int npt,
+		       const double * xref, int sxref,
+		       const double * x, int sx,
+		       const double * dxdxref, int sdxdxref,
+		       double * val, int sval) const;
+
+
   bool GetSurfValue (const SolData * data, SurfaceElementIndex elnr,
 		     double lam1, double lam2, 
 		     int comp, double & val) const;
