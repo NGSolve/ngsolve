@@ -747,6 +747,117 @@ namespace ngcomp
 
 
 
+  template <class SCAL>
+  bool VisualizeGridFunction<SCAL> ::
+  GetMultiValue (int elnr, int npts,
+		 const double * xref, int sxref,
+		 const double * x, int sx,
+		 const double * dxdxref, int sdxdxref,
+		 double * values, int svalues)
+  {
+    try
+      {
+        if (!bfi3d.Size()) return 0;
+        if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
+
+        const FESpace & fes = gf->GetFESpace();
+        int dim = fes.GetDimension();
+	
+        HeapReset hr(lh);
+        	
+	ma.GetElementTransformation (elnr, eltrans, lh);
+	fes.GetDofNrs (elnr, dnums);
+	fel = &fes.GetFE (elnr, lh);
+        
+        elu.AssignMemory (dnums.Size() * dim, lh);
+
+        if(gf->GetCacheBlockSize() == 1)
+          {
+            gf->GetElementVector (multidimcomponent, dnums, elu);
+          }
+        else
+          {
+            FlatVector<SCAL> elu2(dnums.Size()*dim*gf->GetCacheBlockSize(),lh);
+            gf->GetElementVector (0, dnums, elu2);
+            for(int i=0; i<elu.Size(); i++)
+              elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
+          }
+        
+        fes.TransformVec (elnr, false, elu, TRANSFORM_SOL);
+        
+	if (!fes.DefinedOn(eltrans.GetElementIndex()))return 0;
+
+	IntegrationRule ir(npts);
+	for (int i = 0; i < npts; i++)
+	  ir.Append (IntegrationPoint (xref[i*sxref], xref[i*sxref+1], xref[i*sxref+2]));
+
+	ElementTransformation eltrans;
+	ma.GetElementTransformation (elnr, eltrans, lh);
+
+	MappedIntegrationRule<3,3> mir(ir, eltrans, 1, lh);
+
+	for (int k = 0; k < npts; k++)
+	  {
+	    Mat<3,3> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<3,3>;
+	    FlatVec<3> vx( (double*)x + k*sx);
+	    mir[k] = SpecificIntegrationPoint<3,3> (ir[k], eltrans, vx, mdxdxref);
+	  }
+
+	for (int k = 0; k < npts; k++)
+	  for (int i = 0; i < components; i++)
+	    values[k*svalues+i] = 0.0;
+	
+	for(int j = 0; j < bfi3d.Size(); j++)
+	  {
+	    FlatMatrix<SCAL> flux(npts, bfi3d[j]->DimFlux(), lh);
+	    bfi3d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
+	    
+	    for (int k = 0; k < npts; k++)
+	      for (int i = 0; i < components; i++)
+		values[k*svalues+i] += ((double*)(void*)&flux(k,0))[i];
+          }
+
+        return 1; 
+      }
+    catch (Exception & e)
+      {
+        cout << "GetMultiValue caught exception" << endl
+             << e.What();
+
+        return 0;
+      }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   template <class SCAL>
   bool VisualizeGridFunction<SCAL> :: GetSurfValue (int elnr,
@@ -1008,7 +1119,7 @@ namespace ngcomp
         if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
         bool bound = (ma.GetDimension() == 3);
-
+	
         const FESpace & fes = gf->GetFESpace();
         int dim = fes.GetDimension();
 
@@ -1087,15 +1198,47 @@ namespace ngcomp
           }
         else
           {
+	    IntegrationRule ir(npts);
+	    for (int i = 0; i < npts; i++)
+	      ir.Append (IntegrationPoint (xref[i*sxref], xref[i*sxref+1]));
+
+	    ElementTransformation eltrans;
+	    ma.GetElementTransformation (elnr, eltrans, lh);
+
+	    MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
+
+	    for (int k = 0; k < npts; k++)
+	      {
+		Mat<2,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,2>;
+		FlatVec<2> vx( (double*)x + k*sx);
+		mir[k] = SpecificIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
+	      }
+
             for (int k = 0; k < npts; k++)
               for (int i = 0; i < components; i++)
                 values[k*svalues+i] = 0.0;
+	    
+	    for(int j = 0; j<bfi2d.Size(); j++)
+	      {
+		FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
+		bfi2d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
 
+		for (int k = 0; k < npts; k++)
+		  for (int i = 0; i < components; i++)
+		    values[k*svalues+i] += ((double*)(void*)&flux(k,0))[i];
+	      }
+	    
+
+#ifdef ABC
             for (int k = 0; k < npts; k++)
               {
                 HeapReset hr(lh);
-                
-                IntegrationPoint ip(xref[k*sxref], xref[k*sxref+1], 0, 0);
+
+		const IntegrationPoint & ip = ir[k];
+		const SpecificIntegrationPoint<2,2> & sip = mir[k];
+
+		/*
+		IntegrationPoint ip(xref[k*sxref], xref[k*sxref+1], 0, 0);
                 Vec<2> vx;
                 Mat<2,2> mdxdxref;
                 for (int i = 0; i < 2; i++)
@@ -1105,8 +1248,8 @@ namespace ngcomp
                       mdxdxref(i,j) = dxdxref[k*sdxdxref+2*i+j];
                   }
 
-                SpecificIntegrationPoint<2,2> sip (ip, eltrans, vx, mdxdxref); 
-
+		  SpecificIntegrationPoint<2,2> sip (ip, eltrans, vx, mdxdxref); 
+		*/
                 for(int j = 0; j<bfi2d.Size(); j++)
                   {
                     FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
@@ -1115,6 +1258,7 @@ namespace ngcomp
                       values[k*svalues+i] += ((double*)(void*)&flux(0))[i];
                   }
               }
+#endif
           }
 
         return 1; 
