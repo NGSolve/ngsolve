@@ -860,6 +860,7 @@ public:
 
     if (applyd)
       {
+	/*
 	Vec<DIM_DMAT,double> hv1, hv2;
 	for (int i = 0; i < mir.Size(); i++)
 	  {
@@ -867,6 +868,15 @@ public:
 	    dmatop.Apply (fel, mir[i], hv1, hv2, lh);
 	    flux.Row(i) = hv2;
 	  }
+	*/
+	DIFFOP::ApplyIR (fel, mir, elx, flux, lh);
+	Vec<DIM_DMAT,double> hv;
+	for (int i = 0; i < mir.Size(); i++)
+	  {
+	    dmatop.Apply (fel, mir[i], flux.Row(i), hv, lh);
+	    flux.Row(i) = hv;
+	  }
+	
       }
     else
       {
