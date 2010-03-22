@@ -233,6 +233,12 @@ namespace ngcomp
 			   const double xref[], const double x[], const double dxdxref[],
 			   double * values) ;
 
+    virtual bool GetMultiValue (int elnr, int npts,
+				const double * xref, int sxref,
+				const double * x, int sx,
+				const double * dxdxref, int sdxdxref,
+				double * values, int svalues);
+
     virtual bool GetSurfValue (int elnr,
 			       double lam1, double lam2, 
 			       double * values) ;
