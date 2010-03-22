@@ -1297,7 +1297,7 @@ namespace ngsolve
 
 		      int numregions = integrator -> BoundaryForm() ? 
 			pde->GetMeshAccess().GetNBoundaries() : pde->GetMeshAccess().GetNDomains();
-		      for (int i = 0; i < info->numcoeffs; i++)
+		      for (int i = 0; i < coeffs.Size(); i++)
 			{
 			  if (coeffs[i] -> NumRegions () < numregions)
 			    {
@@ -1481,7 +1481,7 @@ namespace ngsolve
 
 		      int numregions = integrator -> BoundaryForm() ? 
 			pde->GetMeshAccess().GetNBoundaries() : pde->GetMeshAccess().GetNDomains();
-		      for (int i = 0; i < info->numcoeffs; i++)
+		      for (int i = 0; i < coeffs.Size(); i++)
 			{
 			  if (coeffs[i] -> NumRegions () < numregions)
 			    {
