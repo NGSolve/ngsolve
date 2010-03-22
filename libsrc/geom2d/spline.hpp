@@ -345,8 +345,12 @@ void SplineSeg<D> :: Partition (double h, double elto0,
       while (j < curvepoints.Size() && (l >= curvepoints[j] || i == n))
 	{
 	  frac = (curvepoints[j]-lold) / (l-lold);
-	  mark = pold + frac * (p-pold);
 	  edgelength = i*dt + (frac-1)*dt;
+	  // mark = pold + frac * (p-pold);
+	  mark = GetPoint (edgelength);
+	  
+	  // cout << "mark = " << mark << " =?= " << GetPoint (edgelength) << endl;
+
 	  {
 	    PointIndex pi1 = -1, pi2 = -1;
 	  

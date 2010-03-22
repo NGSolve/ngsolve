@@ -39,6 +39,7 @@ namespace netgen
 
     geometry.PartitionBoundary (h, *mesh);
 
+
     // marks mesh points for hp-refinement
     for (int i = 0; i < geometry.GetNP(); i++)
       if (geometry.GetPoint(i).hpref)
