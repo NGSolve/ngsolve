@@ -549,7 +549,7 @@ namespace ngfem
   public:
     BaseMappedIntegrationRule (const IntegrationRule & air,
 			       const ElementTransformation & aeltrans)
-    : ir(air), eltrans(aeltrans) { ; }
+      : ir(air), eltrans(aeltrans) { ; }
 
     int Size() const { return ir.Size(); }
     const IntegrationRule & IR() const { return ir; }
@@ -579,6 +579,16 @@ namespace ngfem
 
       for (int i = 0; i < ir.GetNIP(); i++)
 	new (&sips[i]) SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, pts[i], dxdxi[i]); 
+    }
+
+    MappedIntegrationRule (const IntegrationRule & ir, 
+			   const ElementTransformation & eltrans, 
+			   int dummy,
+			   LocalHeap & lh)
+      : BaseMappedIntegrationRule (ir, eltrans), sips(ir.GetNIP(), lh)
+    {
+      baseip = (char*)(void*)(BaseSpecificIntegrationPoint*)(&sips[0]);
+      incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
     }
     
     SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (int i) const

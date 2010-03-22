@@ -195,7 +195,8 @@ namespace ngfem
     ///
     SpecificIntegrationPoint (const IntegrationPoint & aip,
 			      const ElementTransformation & aeltrans,
-			      const Vec<DIMR, SCAL> & ax,
+			      // const Vec<DIMR, SCAL> & ax,
+			      const FlatVec<DIMR, SCAL> ax,
 			      const Mat<DIMR, DIMS, SCAL> & adxdxi)
     // LocalHeap & lh)
       : DimSpecificIntegrationPoint<DIMR,SCAL> (aip, aeltrans)
