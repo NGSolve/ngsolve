@@ -561,6 +561,23 @@ namespace ngstd
           }
   }
 
+  /// bubble sort array
+  template <class T, class S>
+  inline void BubbleSort (FlatArray<T> & data, FlatArray<S> & slave)
+  {
+    for (int i = 0; i < data.Size(); i++)
+      for (int j = i+1; j < data.Size(); j++)
+	if (data[i] > data[j])
+	  {
+	    T hv = data[i];
+	    data[i] = data[j];
+	    data[j] = hv;
+
+	    S hvs = slave[i];
+	    slave[i] = slave[j];
+	    slave[j] = hvs;
+	  }
+  }
 
 
 
