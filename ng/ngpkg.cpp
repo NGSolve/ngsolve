@@ -183,7 +183,7 @@ namespace netgen
   OCCGeometry * occgeometry = NULL;
 #endif
 
-  NetgenGeometry * ng_geometry;
+  NetgenGeometry * ng_geometry = new NetgenGeometry;
 
   Tcl_Interp * tcl_interp;
 
@@ -2149,7 +2149,12 @@ namespace netgen
 	  else
 	    {
 	      int res = ng_geometry -> GenerateMesh (mesh.Ptr(), perfstepsstart, perfstepsend, optstringcsg);
-	      if (res != MESHING3_OK) return 0;
+	      if (res != MESHING3_OK) 
+		{
+		  multithread.task = savetask;
+		  multithread.running = 0;
+		  return 0;
+		}
 	    }
 
 	if (mparam.autozrefine && ( (NetgenGeometry*)geometry.Ptr() == ng_geometry))

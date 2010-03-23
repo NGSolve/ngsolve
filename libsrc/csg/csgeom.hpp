@@ -146,7 +146,7 @@ namespace netgen
   public:
     CSGeometry ();
     CSGeometry (const string & afilename);
-    ~CSGeometry ();
+    virtual ~CSGeometry ();
 
     void Clean ();
 

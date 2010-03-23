@@ -14,10 +14,15 @@ public:
   virtual ~NetgenGeometry () { ; }
 
   virtual int GenerateMesh (Mesh*& mesh,
-			    int perfstepsstart, int perfstepsend, char* optstring) = 0;
+			    int perfstepsstart, int perfstepsend, char* optstring);
 
-  virtual const Refinement & GetRefinement () const = 0;
+  virtual const Refinement & GetRefinement () const;
 };
+
+
+
+
+
 
 
 #endif
