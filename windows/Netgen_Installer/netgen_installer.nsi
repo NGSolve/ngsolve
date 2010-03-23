@@ -659,6 +659,9 @@ Section Uninstall
 	; Remove the Netgen entry from the SOFTWARE registry
 	DeleteRegKey HKCU "SOFTWARE\Netgen\${NETGEN_VER}_${NETGEN_ARCH}"
 	DeleteRegKey /ifempty HKCU "SOFTWARE\Netgen"
+    
+	; Broadcast the changes in the environment variables to the rest of the system
+	SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000    
 SectionEnd	
 
 
