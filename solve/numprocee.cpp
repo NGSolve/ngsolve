@@ -69,7 +69,9 @@ namespace ngsolve
       "-solution=<solname>\n"
       "    gridfunction storing the finite element solution\n"
       "-error=<errname>\n"
-      "    piece-wise constant gridfuntion to store the computed element-wise error\n";
+      "    piece-wise constant gridfuntion to store the computed element-wise error\n"
+      "-filename=<name>\n"
+      "    file to store level, unknowns, estimated error\n";
   }
   
   

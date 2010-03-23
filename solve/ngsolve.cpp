@@ -731,9 +731,20 @@ int NGSolve_Init (Tcl_Interp * interp)
 
 
   const Array<NumProcs::NumProcInfo*> & npi = GetNumProcs().GetNumProcs();
-  Tcl_Eval (interp, "menu .ngmenusolvehelpnp");
+
+  Array<int> sort(npi.Size());
+  Array<string> names(npi.Size());
   for (int i = 0; i < npi.Size(); i++)
     {
+      sort[i] = i;
+      names[i] = npi[i]->name;
+    }
+  BubbleSort (names, sort);
+
+  Tcl_Eval (interp, "menu .ngmenusolvehelpnp");
+  for (int ii = 0; ii < npi.Size(); ii++)
+    {
+      int i = sort[ii];
       string command =
 	".ngmenusolvehelpnp add command -label \"numproc " + npi[i]->name + "\" \
 	-command { tk_messageBox -title \"Help\" -message  [ NGS_Help  numproc " + npi[i]->name + "] -type ok }" ;

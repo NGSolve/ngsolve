@@ -35,11 +35,11 @@ if { [catch { NGS_GetData } ] == 0 } {
     # defined in C++ code:
     .ngmenusolvehelp add cascade -label "Numprocs..." -menu .ngmenusolvehelpnp 
     
-    .ngmenusolvehelp add command -label "Latest News..."  \
-	-command { tk_messageBox -title "Latest News" -message \
-                       { 
-                           06042004 online documentation (JS) 
-                       } -type ok }  ;
+#    .ngmenusolvehelp add command -label "Latest News..."  \
+\#	-command { tk_messageBox -title "Latest News" -message \
+\#                       { 
+#                           06042004 online documentation (JS) 
+#                       } -type ok }  ;
     
 
 
@@ -275,12 +275,12 @@ if { [catch { NGS_GetData } ] == 0 } {
 	    .ngmenu.help add command -label "About..." \
 		-command {
 		    tk_messageBox -message \
-			"This is NETGEN/NGSolve \n mainly written by \n Joachim Schöberl \n\
+			"This is NETGEN/NGSolve \n mainly written by \n Joachim SchÃ¶berl \n\
                  at RWTH Aachen University, Germany \n\
                  and Johannes Kepler University, Linz, Austria \n\
                  supported by the Austrian Science Foundation FWF \n\
                  thanks to \n\
-                 F. Bachinger, A. Becirovic, H. Egger, R. Gaisbauer, J. Gerstmayr, U. Langer, P. Rajan, A. Sinwel, M. Wabro, S. Zaglmayr"
+                 F. Bachinger, A. Becirovic, H. Egger, R. Gaisbauer, J. Gerstmayr, U. Langer, C. Lehrenfeld, P. Rajan, A. Sinwel, M. Wabro, S. Zaglmayr"
 		}
 
 	    proc AddRecentNGSFile { filename } {
