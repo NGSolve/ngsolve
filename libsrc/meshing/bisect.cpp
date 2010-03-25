@@ -2739,7 +2739,6 @@ namespace netgen
 		mesh[sei].SetOrder(ox+2,oy+2);
 	    }
 
-	/*
 	  #ifndef SABINE //Nachbarelemente mit ordx,ordy,ordz 
       
 	  Array<int,PointIndex::BASE> v_order (mesh.GetNP());
@@ -2766,7 +2765,6 @@ namespace netgen
 	  mesh[sei].SetOrder(v_order[mesh[sei][j]]-1);
 	    
 	  #endif
-	*/
 
 	PopStatus();
 	return;
