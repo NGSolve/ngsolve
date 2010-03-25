@@ -201,7 +201,6 @@ namespace ngcomp
 	ma.GetElVertices (i, vnums);
 	ma.GetElEdges (i, eledges);		
 	
-
 	if(dim==3) 
 	  {
 	    ma.GetElFaces(i, elfaces);
