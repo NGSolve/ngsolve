@@ -448,7 +448,8 @@ namespace ngfem {
 
     AutoDiff<2> xi = sigma[fav[j1]] - sigma[fav[j2]];
 
-    LegendrePolynomial (p, 2*xi.Value()-1, polx);
+    // LegendrePolynomial (p, 2*xi.Value()-1, polx);
+    LegendrePolynomial (p, xi.Value(), polx);
     for (int i = 0; i <= facet_order[fanr][0]; i++)
       {
 	double val = polx[i];
