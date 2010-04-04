@@ -1316,7 +1316,6 @@ namespace netgen
 					       &points[0](0), &points[1](0)-&points[0](0),
 					       &dxdxis[0](0), &dxdxis[1](0)-&dxdxis[0](0),
 					       &mvalues[0], sol->components);
-		
                 if (usetexture == 2)
 		  for (int ii = 0; ii < npt; ii++)
 		    valuesc[ii] = ExtractValueComplex(sol, scalcomp, &mvalues[ii*sol->components]);

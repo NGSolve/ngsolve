@@ -111,7 +111,7 @@ namespace netgen
 				      const bool hprefleft = false, const bool hprefright = false,
 				      const int copyfrom = -1);
     void TestComment ( ifstream & infile ) ;
-    void	GetMaterial( const int  domnr, char* & material );
+    void GetMaterial( const int  domnr, char* & material );
 
     double GetDomainMaxh ( const int domnr );
     bool GetDomainQuadMeshing ( int domnr ) 
