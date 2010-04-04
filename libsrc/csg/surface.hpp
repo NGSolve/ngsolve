@@ -11,19 +11,14 @@
 namespace netgen 
 {
 
-  // class DenseMatrix;
-  // class Box3dSphere;
   class TriangleApproximation;
+
 
   /**
      Basis class for implicit surface geometry.
      This class is used for generation of surface meshes
-     in NETGEN as well as for mesh refinement in FEPP.
+     in NETGEN 
   */
-
-
-
-
   class Surface
   {
   protected:
@@ -35,7 +30,7 @@ namespace netgen
     char * name;
     /// boundary condition nr
     int bcprop;
-    ///
+    /// boundary condition label
     string bcname;
   
   public:
@@ -74,7 +69,7 @@ namespace netgen
     //@{
     /**
        Defines tangential plane in ap1.
-       The local x-coordinate axis point to the direction of ap2 */
+       The local x-coordinate axis points to the direction of ap2 */
     virtual void DefineTangentialPlane (const Point<3> & ap1, 
 					const Point<3> & ap2);
 
@@ -88,12 +83,13 @@ namespace netgen
     //@}
 
 
-    /// Move Point p to closes point in surface
+    /// Project point p onto surface (closest point)
     virtual void Project (Point<3> & p) const;
 
-    ///
+    /// Project along direction
     virtual void SkewProject(Point<3> & p, const Vec<3> & direction) const;
 
+    /// Is current surface identic to surface 2 ?
     virtual int IsIdentic (const Surface & /* s2 */, int & /* inv */, 
 			   double /* eps */) const
     { return 0; }

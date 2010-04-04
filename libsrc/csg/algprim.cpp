@@ -1491,7 +1491,6 @@ namespace netgen
   /// Lorenzo Codecasa (codecasa@elet.polimi.it)
   /// April 27th, 2005 
   ///
-  /// begin...
   Torus :: Torus (const Point<3> & ac, const Vec<3> & an, double aR, double ar)
   {
     c = ac;
@@ -1690,21 +1689,6 @@ namespace netgen
         << n(0) << "  " << n(1) << "  " << n(2) << "  "
         << R    << "  " << r    << endl;
   }
-
-  /// end...
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

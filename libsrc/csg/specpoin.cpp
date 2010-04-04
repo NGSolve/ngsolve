@@ -1691,16 +1691,7 @@ namespace netgen
 	coord[i] = dir * Vec<3> (apoints[i]);
       
       QuickSort (coord, apoints);
-      
-      /*
-	for (int i = 0; i < apoints.Size(); i++)
-	for (int j = 0; j < apoints.Size()-1; j++)
-	if ( (dir * Vec<3> (apoints[j])) > (dir * Vec<3> (apoints[j+1])))
-	swap (apoints[j], apoints[j+1]);
-      */
     }
-
-
 
 
 
@@ -1711,8 +1702,6 @@ namespace netgen
       bbox.Add (apoints[i]);
     bbox.Increase (0.1 * bbox.Diam());
 
-    //testout->precision(20);
-    (*testout) << "bbox = " << bbox << endl;
     (*testout) << "points = " << apoints << endl;
 
     Point3dTree searchtree (bbox.PMin(), bbox.PMax());

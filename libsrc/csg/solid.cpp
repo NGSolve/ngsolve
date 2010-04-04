@@ -877,11 +877,7 @@ namespace netgen
 	  INSOLID_TYPE ist = prim->PointInSolid(p, eps);
 
 	  if (ist == DOES_INTERSECT)
-	    {
-	      //(*testout) << "Calling VecInSolid3..." << endl;
-	      ist = prim->VecInSolid3 (p, t, t2, eps);
-	      //(*testout) << "...done" << endl;
-	    }
+	    ist = prim->VecInSolid3 (p, t, t2, eps);
 	  in = (ist == IS_INSIDE || ist == DOES_INTERSECT);
 	  strin = (ist == IS_INSIDE);
 
@@ -1539,7 +1535,6 @@ namespace netgen
 		  prim->GetSurface(j).CalcGradient (p, grad);
 		  if (sqr (grad * v) < 1e-6 * v.Length2() * grad.Length2())
 		    {
-		      //  (*testout) << "p2" << endl;
 		      Mat<3> hesse;
 		      prim->GetSurface(j).CalcHesse (p, hesse);
 		      double hv2 = v2 * grad + v * (hesse * v);
@@ -1549,6 +1544,19 @@ namespace netgen
 			  if (!surfind.Contains (prim->GetSurfaceId(j)))
 			    surfind.Append (prim->GetSurfaceId(j));
 			}
+		      /*
+		      else
+			{
+			  *testout << "QUAD NOT OK" << endl;
+			  *testout << "v = " << v << ", v2 = " << v2 << endl;
+			  *testout << "v * grad = " << v*grad << endl;
+			  *testout << "v2 * grad = " << v2*grad << endl;
+			  *testout << "v H v = " << v*(hesse*v) << endl;
+			  *testout << "grad = " << grad << endl;
+			  *testout << "hesse = " << hesse << endl;
+			  *testout << "hv2 = " << v2 * grad + v * (hesse * v) << endl;
+			}
+		      */
 		    }
 		}
 	    }

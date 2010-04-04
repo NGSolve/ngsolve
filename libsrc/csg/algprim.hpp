@@ -361,79 +361,78 @@ namespace netgen
 
 
 
-  /// Torus 
-	       /// Lorenzo Codecasa (codecasa@elet.polimi.it)
-	       /// April 27th, 2005 
-	       /// 
-	       /// begin...
-	       class Torus : public OneSurfacePrimitive
-	       { 
-		 /// center of the torus
-		 Point<3> c;
-		 /// vector normal to the symmetry plane of the torus
-		 Vec<3> n;
-		 /// Large radius of the torus
-		 double R;
-		 /// Small radius of the torus
-		 double r;
+  /** Torus 
+  /// Lorenzo Codecasa (codecasa@elet.polimi.it)
+  /// April 27th, 2005 
+  */
+  class Torus : public OneSurfacePrimitive
+  { 
+    /// center of the torus
+    Point<3> c;
+    /// vector normal to the symmetry plane of the torus
+    Vec<3> n;
+    /// Large radius of the torus
+    double R;
+    /// Small radius of the torus
+    double r;
   
-	       public:
-		 /// OK
-		 Torus (const Point<3> & ac, const Vec<3> & an, double aR, double ar);
-		 /// OK
-		 const Point<3> & Center () const { return c; }
-		 /// OK
-		 const Vec<3> & NormalToPlane () const { return n; }
-		 /// OK
-		 double LargeRadius () const { return R; }
-		 /// OK
-		 double SmallRadius () const { return r; }
-		 /// OK
-		 virtual double CalcFunctionValue (const Point<3> & point) const;
-		 /// OK
-		 virtual void CalcGradient (const Point<3> & point, Vec<3> & grad) const;
-		 /// OK
-		 virtual void CalcHesse (const Point<3> & point, Mat<3> & hesse) const;
-		 /// OK
-		 virtual double HesseNorm () const;
-		 /// OK
-		 virtual Point<3> GetSurfacePoint () const;
-		 /// OK
-		 virtual void GetPrimitiveData (const char *& classname, 
-						Array<double> & coeffs) const;
-		 /// OK			 
-		 virtual void SetPrimitiveData (Array<double> & coeffs);
-		 /// OK
-		 static Primitive * CreateDefault ();
-		 /// OK
-		 virtual Primitive * Copy () const;
-		 /// OK
-		 virtual void Transform (Transformation<3> & trans);
-		 /// OK
-		 virtual int IsIdentic (const Surface & s2, int & inv, double eps) const;
-		 /// OK
-		 /// virtual void DefineTangentialPlane (const Point<3> & ap1, 
-		 //				      const Point<3> & ap2);
-		 /// OK
-		 /// virtual void ToPlane (const Point<3> & p3d, 
-		 ///			Point<2> & pplane, 
-		 ///			double h, int & zone) const;
-		 /// OK
-		 /// virtual void FromPlane (const Point<2> & pplane, 
-		 //			  Point<3> & p, double h) const;
-		 /// OK
-		 /// virtual void Project (Point<3> & p) const;
-		 /// OK
-		 virtual INSOLID_TYPE BoxInSolid (const BoxSphere<3> & box) const;
-		 /// OK
-		 virtual void GetTriangleApproximation (TriangleApproximation & tas, 
-							const Box<3> & bbox, 
-							double facets) const;
-		 /// OK		 
-		 virtual void Print (ostream & ist) const;
-		 /// OK
-		 virtual void Read (istream & ist);
-	       };
+  public:
+    /// OK
+    Torus (const Point<3> & ac, const Vec<3> & an, double aR, double ar);
+    /// OK
+    const Point<3> & Center () const { return c; }
+    /// OK
+    const Vec<3> & NormalToPlane () const { return n; }
+    /// OK
+    double LargeRadius () const { return R; }
+    /// OK
+    double SmallRadius () const { return r; }
+    /// OK
+    virtual double CalcFunctionValue (const Point<3> & point) const;
+    /// OK
+    virtual void CalcGradient (const Point<3> & point, Vec<3> & grad) const;
+    /// OK
+    virtual void CalcHesse (const Point<3> & point, Mat<3> & hesse) const;
+    /// OK
+    virtual double HesseNorm () const;
+    /// OK
+    virtual Point<3> GetSurfacePoint () const;
+    /// OK
+    virtual void GetPrimitiveData (const char *& classname, 
+				   Array<double> & coeffs) const;
+    /// OK			 
+    virtual void SetPrimitiveData (Array<double> & coeffs);
+    /// OK
+    static Primitive * CreateDefault ();
+    /// OK
+    virtual Primitive * Copy () const;
+    /// OK
+    virtual void Transform (Transformation<3> & trans);
+    /// OK
+    virtual int IsIdentic (const Surface & s2, int & inv, double eps) const;
+    /// OK
+    /// virtual void DefineTangentialPlane (const Point<3> & ap1, 
+    //				      const Point<3> & ap2);
+    /// OK
+    /// virtual void ToPlane (const Point<3> & p3d, 
+    ///			Point<2> & pplane, 
+    ///			double h, int & zone) const;
+    /// OK
+    /// virtual void FromPlane (const Point<2> & pplane, 
+    //			  Point<3> & p, double h) const;
+    /// OK
+    /// virtual void Project (Point<3> & p) const;
+    /// OK
+    virtual INSOLID_TYPE BoxInSolid (const BoxSphere<3> & box) const;
+    /// OK
+    virtual void GetTriangleApproximation (TriangleApproximation & tas, 
+					   const Box<3> & bbox, 
+					   double facets) const;
+    /// OK		 
+    virtual void Print (ostream & ist) const;
+    /// OK
+    virtual void Read (istream & ist);
+  };
 
   /// ...end
 

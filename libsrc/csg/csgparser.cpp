@@ -46,7 +46,7 @@ namespace netgen
       { TOK_ELLIPSOID, "ellipsoid" },
       { TOK_ORTHOBRICK, "orthobrick" },
       { TOK_POLYHEDRON, "polyhedron" },
-      { TOK_TORUS, "torus" },
+      { TOK_TORUS,      "torus" },
 
       { TOK_TUBE,      "tube" },
       { TOK_GENCYL,    "gencyl" },
