@@ -3518,12 +3518,10 @@ proc runtestdialog { } {
     if {[winfo exists .runtest_dlg] == 1} {
 	wm withdraw $w
 	wm deiconify $w
-#	wm geometry $w =270x100
 
 	focus $w 
     } {
 	toplevel $w
-#	wm geometry $w =270x100
 
 # in2d testing #
 	frame $w.in2dframe 

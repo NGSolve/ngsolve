@@ -27,7 +27,7 @@ menu .ngmenu.file
 .ngmenu.file add command -label "Load Geometry..." -accelerator "<l><g>" \
     -command { 
 	set types {
-	    {"All Geometry types"   { .stl .stlb .step .stp .geo .in2d .igs .iges .brep .in2dnew .sat} }
+	    {"All Geometry types"   { .stl .stlb .step .stp .geo .in2d .igs .iges .brep .sat} }
 	    {"IGES Geometry"	{.igs .iges} }
 	    {"BREP OpenCascade Geometry"    {.brep} }
 	    {"STL Geometry"        {.stl} }
@@ -35,7 +35,6 @@ menu .ngmenu.file
 	    {"STEP Geometry"    {.step .stp} }
 	    {"Geometry file"       {.geo} }
 	    {"2D Geometry"   {.in2d } } 
-	    {"2D Geometry New"   {.in2dnew } } 
 	} 
 
 	set ACISavailable [Ng_ACISCommand isACISavailable]
@@ -43,10 +42,6 @@ menu .ngmenu.file
 	    lappend types {"ACIS Geometry" {.sat} }
 	}
 
-#	    {"All Geometry types"  {.stl .stlb .step .stp .geo .in2d .igs .iges .brep .in2dnew} }
-	
-#		{"Naomi Geometry"      {.nao} }
-#		{"New Geometry file"   {.ngg} } 
 	
 	if {[catch {
 	    set file [tk_getOpenFile -filetypes $types -initialdir $dirname -typevariable loadgeomtypevar]
@@ -398,10 +393,10 @@ set videoactive 0
 
 
 ## herbert tcl load menue
-.ngmenu.file add command -label "Run tests ..." \
-    -command { runtestdialog }
+# .ngmenu.file add command -label "Run tests ..." \
+\#    -command { runtestdialog }
 ##
-.ngmenu.file add separator
+# .ngmenu.file add separator
 
 .ngmenu.file add command -label "Quit" -accelerator "<q>" \
     -command { puts "Thank you for using $progname"; Ng_Exit; destroy . }

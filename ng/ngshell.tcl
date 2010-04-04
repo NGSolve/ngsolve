@@ -20,9 +20,12 @@ proc Ng_RunShell {} {
 }
 
 ## global list for help index
-set cmdindex {}
-set hlpindex {}
-set secindex {}
+# ---> global var in variables.tcl
+# set cmdindex {}
+# set hlpindex {}
+# set secindex {}
+
+
 
 # print comd list
 proc Ng_PrintCmdIndex { } {
@@ -51,6 +54,9 @@ proc Ng_RegisterCmd { cmd section syntax {help ""} } {
   global hlpindex
   global cmdindex
   global secindex
+
+    puts "register command $cmd"
+
   if { [lsearch $cmdindex cmd] != -1 } {
     puts "command '$cmd' already defined"
   } else {
@@ -63,6 +69,7 @@ proc Ng_RegisterCmd { cmd section syntax {help ""} } {
 #    puts "registered command $cmd"
   }
 }
+
 
 # general purpose commands
 Ng_RegisterCmd "exit" "general" "exit" "exit Netgen shell mode" 
@@ -247,7 +254,5 @@ proc ngssolvepde {} {
   NGS_SolvePDE 
 }
 
-catch {source "${::ngdir}/ngtcltk/ngtesting.tcl"} errcode
+catch {source "${::ngdir}/ngtesting.tcl"} errcode
 # puts "errcode = $errcode"
-
-

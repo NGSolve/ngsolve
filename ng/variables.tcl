@@ -691,3 +691,9 @@ proc loadmeshinifile { } {
  }
 
 
+
+
+
+set cmdindex {}
+set hlpindex {}
+set secindex {}

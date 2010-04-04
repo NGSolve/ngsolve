@@ -64,7 +64,7 @@ proc ngtest { {t all} {f ""}} {
     }  
   
     puts "\n ** testing in2d files in tutorials/ **"
-    set testdir "$::ngdir/../tutorials"
+    set testdir "$::ngdir/../share/netgen"
     set in2dfiles { demo2d  newin2d  square  v2in2d }
     foreach {tfile} $in2dfiles {
       if {$f != ""} { puts "  * meshing file tutorials/$tfile.in2d..." }
@@ -89,7 +89,7 @@ proc ngtest { {t all} {f ""}} {
     } 
   
     puts "\n ** testing geo files in tutorials/ **"
-    set testdir "$::ngdir/../tutorials"
+    set testdir "$::ngdir/../share/netgen"
     set geofiles { boxcyl          cubemcyl     extrusion  revolution    trafo
                    circle_on_cube  cubemsphere  fichera    sculpture     twobricks
                    cone            cylinder     lshape3d   shaft         twocubes

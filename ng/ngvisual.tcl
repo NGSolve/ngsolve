@@ -1005,59 +1005,8 @@ proc visual_dialog { } {
 
 	toplevel $w
 
-	checkbutton $w.imaginary -text "Imaginary Part" \
-	    -variable visoptions.imaginary \
-	    -command { Ng_Vis_Set parameters; redraw }
 
 	
-	frame $w.texframe
-
-	checkbutton $w.texframe.usetexture -text "Use Textures (" \
-	    -variable visoptions.usetexture \
-	    -command { Ng_Vis_Set parameters; redraw }
-	
-	checkbutton $w.texframe.lintexture -text "Linear )" \
-	    -variable visoptions.lineartexture \
-	    -command { Ng_Vis_Set parametersrange; redraw }
-
-	
-#	pack $w.texframe.usetexture $w.texframe.lintexture -side left -expand yes
-
-
-	checkbutton $w.invcolor -text "Inverse Color" \
-	    -variable visoptions.invcolor \
-	    -command { Ng_Vis_Set parametersrange; redraw }
-	
-	checkbutton $w.redrawperiodic -text "Animate periodic" \
-	    -variable visoptions.redrawperiodic \
-	    -command { 
-		redrawperiodic
-		Ng_Vis_Set parameters; 
-		redraw 
-	    }
-	
-
-	checkbutton $w.logscale -text "Log Scale" \
-	    -variable visoptions.logscale \
-	    -command { Ng_Vis_Set parameters; redraw }
-	
-	checkbutton $w.lineartexture -text "Use Linear Texture" \
-	    -variable visoptions.lineartexture \
-	    -command { Ng_Vis_Set parameters; redraw }
-	
-	scale $w.numcols -orient horizontal -length 100 -from 0 -to 50 \
-	    -resolution 1   \
-	    -variable  visoptions.numtexturecols \
-	    -command { popupcheckredraw visual_dialog_pop1 }
-
-	checkbutton $w.showclipsolution -text "Draw Clipping Plane Solution" \
-	    -variable visoptions.showclipsolution \
-	    -command { Ng_Vis_Set parameters; redraw }
-
-	checkbutton $w.showsurfsolution -text "Draw Surface Solution" \
-	    -variable visoptions.showsurfacesolution \
-	    -command { Ng_Vis_Set parameters; redraw }
-
 
 
 	frame $w.grid -relief groove -borderwidth 3
@@ -1084,7 +1033,6 @@ proc visual_dialog { } {
 
 
 	# pack $w.showclipsolution 
-	pack $w.showsurfsolution
 	pack $w.grid -fill x -ipady 3
 	pack $w.grid.size $w.grid.xoffset $w.grid.yoffset -side left -expand yes
 
@@ -1235,11 +1183,6 @@ proc visual_dialog { } {
 #	pack $w.iso.zpos -side right
 
 
-	checkbutton $w.showcurves -text "Show Curves" \
-	    -variable visoptions.drawpointcurves \
-	    -command { Ng_Vis_Set parameters; redraw }
-
-	pack $w.showcurves
 
 	frame $w.redraw -relief groove -borderwidth 3
 	checkbutton $w.redraw.auto -text "Auto-redraw" \
@@ -1335,14 +1278,10 @@ proc visual_dialog { } {
 	    } 
 	}
 
-
 	$w.scalfun configure -variable visoptions.scalfunction 
 	$w.scalfun configure -command { Ng_Vis_Set parameters; redraw }
 	$w.vecfun configure -variable visoptions.vecfunction
 	$w.vecfun configure -command { Ng_Vis_Set parameters; redraw }
-
-
-#	puts "sclfunction = ${visoptions.scalfunction}"
 
 
 	tixOptionMenu $w.evaluate -label "Evaluate: " \
@@ -1372,12 +1311,71 @@ proc visual_dialog { } {
 		label.anchor e
 	    }	
 
-
 	pack $w.multidimcomp
 
+
+	checkbutton $w.showsurfsolution -text "Draw Surface Vectors" \
+	    -variable visoptions.showsurfacesolution \
+	    -command { Ng_Vis_Set parameters; redraw }
+
+	checkbutton $w.showcurves -text "Show Curves" \
+	    -variable visoptions.drawpointcurves \
+	    -command { Ng_Vis_Set parameters; redraw }
+
+	checkbutton $w.imaginary -text "Imaginary Part" \
+	    -variable visoptions.imaginary \
+	    -command { Ng_Vis_Set parameters; redraw }
+
+	checkbutton $w.logscale -text "Log Scale" \
+	    -variable visoptions.logscale \
+	    -command { Ng_Vis_Set parameters; redraw }
+
+	checkbutton $w.invcolor -text "Inverse Color" \
+	    -variable visoptions.invcolor \
+	    -command { Ng_Vis_Set parametersrange; redraw }
+
+
+	frame $w.texframe
+
+	checkbutton $w.texframe.usetexture -text "Use Textures (" \
+	    -variable visoptions.usetexture \
+	    -command { Ng_Vis_Set parameters; redraw }
+	
+	checkbutton $w.texframe.lintexture -text "Linear )" \
+	    -variable visoptions.lineartexture \
+	    -command { Ng_Vis_Set parametersrange; redraw }
+
+
+	
+	checkbutton $w.lineartexture -text "Use Linear Texture" \
+	    -variable visoptions.lineartexture \
+	    -command { Ng_Vis_Set parameters; redraw }
+	
+	scale $w.numcols -orient horizontal -length 100 -from 0 -to 50 \
+	    -resolution 1   \
+	    -variable  visoptions.numtexturecols \
+	    -command { popupcheckredraw visual_dialog_pop1 }
+
+	checkbutton $w.showclipsolution -text "Draw Clipping Plane Solution" \
+	    -variable visoptions.showclipsolution \
+	    -command { Ng_Vis_Set parameters; redraw }
+
+
+	checkbutton $w.redrawperiodic -text "Animate periodic" \
+	    -variable visoptions.redrawperiodic \
+	    -command { 
+		redrawperiodic
+		Ng_Vis_Set parameters; 
+		redraw 
+	    }
+
+
+	pack $w.showsurfsolution $w.showcurves
 	pack $w.imaginary $w.logscale $w.texframe $w.invcolor $w.redrawperiodic
 	pack $w.texframe.usetexture $w.texframe.lintexture -side left -expand yes
 	
+
+
 
 	frame $w.bu
 	pack $w.bu  -pady 5
@@ -1445,13 +1443,17 @@ proc reset_visual_dialog { } {
 
 
 
-
-
 	  
 	  
 	  checkbutton $w.invcolor -text "Inverse Color" \
 	      -variable visoptions.invcolor \
 	      -command { Ng_Vis_Set parameters; redraw }
+
+	  checkbutton $w.logscale -text "Log Scale" \
+	      -variable visoptions.logscale \
+	      -command { Ng_Vis_Set parameters; redraw }
+	  
+
 	  
 	  checkbutton $w.redrawperiodic -text "Animate periodic" \
 	      -variable visoptions.redrawperiodic \
@@ -1461,11 +1463,6 @@ proc reset_visual_dialog { } {
 		  redraw 
 	      }
 	  
-
-	checkbutton $w.logscale -text "Log Scale" \
-	    -variable visoptions.logscale \
-	    -command { Ng_Vis_Set parameters; redraw }
-
 
 	tixOptionMenu $w.scalfun -label "Scalar Function: " \
 	    -options {
