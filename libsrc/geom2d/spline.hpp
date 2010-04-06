@@ -610,7 +610,6 @@ Vec<D> SplineSeg3<D> :: GetTangent (const double t) const
 template<int D>
 void SplineSeg3<D> :: GetCoeff (Vector & u) const
 {
-  Point<D> p;
   DenseMatrix a(6, 6);
   DenseMatrix ata(6, 6);
   Vector f(6);
@@ -622,7 +621,7 @@ void SplineSeg3<D> :: GetCoeff (Vector & u) const
   double t = 0;
   for (int i = 0; i < 5; i++, t += 0.25)
     {
-      p = GetPoint (t);
+      Point<D> p = GetPoint (t);
       a(i, 0) = p(0) * p(0);
       a(i, 1) = p(1) * p(1);
       a(i, 2) = p(0) * p(1);
@@ -638,6 +637,17 @@ void SplineSeg3<D> :: GetCoeff (Vector & u) const
   u(5) = 1;
   a.MultTrans (u, f);
   ata.Solve (f, u);
+
+  // the sign
+  Point<D> p0 = GetPoint(0);
+  Vec<D> ht = GetTangent(0);
+  Vec<2> tang(ht(0), ht(1));
+
+  double gradx = 2.*u(0)*p0(0) + u(2)*p0(1) + u(3);
+  double grady = 2.*u(1)*p0(1) + u(2)*p0(0) + u(4);
+  Vec<2> gradn (grady, -gradx);
+  
+  if (tang * gradn < 0) u *= -1;
 }
 
 /*

@@ -441,24 +441,20 @@ namespace netgen
 
     int n = int(2.*facets) + 1;
 
-    int i,j;
-    double phi;
-    Point<3> p;
-
-    for(i=0; i<=n; i++)
+    for(int i=0; i<=n; i++)
       {
 	Point<2> sp = spline->GetPoint(double(i)/double(n));
-	for(j=0; j<=n; j++)
+	for(int j=0; j<=n; j++)
 	  {
-	    phi = 2.*M_PI*double(j)/double(n);
+	    double phi = 2.*M_PI*double(j)/double(n);
 	    
-	    p = p0 + sp(0)*v_axis + sp(1)*cos(phi)*v1 + sp(1)*sin(phi)*v2;
+	    Point<3> p = p0 + sp(0)*v_axis + sp(1)*cos(phi)*v1 + sp(1)*sin(phi)*v2;
 	    tas.AddPoint(p);   
 	  }
       }
     
-    for(i=0; i<n; i++)
-      for(j=0; j<n; j++)
+    for(int i=0; i<n; i++)
+      for(int j=0; j<n; j++)
 	{
 	  int pi = (n+1)*i+j;
 
