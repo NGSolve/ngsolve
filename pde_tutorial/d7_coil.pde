@@ -18,7 +18,7 @@ define coefficient sigma
 
 # 1000 Ampere-turns
 define coefficient cs
-( 1000 * y / (x*x+y*y) / 0.16,  1000 * (-x) / (x*x+y*y) / 0.16,  0),   
+( 1000 * y / sqrt(x*x+y*y) / 0.16,  1000 * (-x) / sqrt(x*x+y*y) / 0.16,  0),   
 (0, 0, 0),
 
 
