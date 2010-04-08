@@ -114,6 +114,9 @@ namespace ngcomp
     loflags.SetFlag ("dim", dimension);
     if (iscomplex) loflags.SetFlag ("complex");
     if (discontinuous) loflags.SetFlag ("disontinuous");
+    if (flags.NumListFlagDefined ("dirichlet")) 
+      loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
+
     
 #ifndef PARALLEL
     low_order_space = new  NedelecFESpace (ma, loflags);
@@ -184,6 +187,9 @@ namespace ngcomp
   
   void HCurlHighOrderFESpace :: Update(LocalHeap & lh)
   {
+    FESpace :: Update (lh);
+
+
     const int dim = ma.GetDimension(); 
 
     if (order < 0) 
@@ -1132,7 +1138,7 @@ namespace ngcomp
 	{
 	  // Stack-AFW(hoEdges) and Stack of horiz edges 
 	  for(i=0;i<ned;i++) 
-	    if(fine_edge[i])
+	    if(fine_edge[i] && !IsDirichletEdge(i))
 	      {
 		int pn1, pn2;
 		ma.GetEdgePNums (i,pn1,pn2);
@@ -1150,7 +1156,7 @@ namespace ngcomp
 	  // Stack of horizontal edges: + quadfaces and prism faces 
 	  //  (+ inner) 
 	  for(i=0;i<nfa;i++) 
-	    if(fine_face[i]) 
+	    if(fine_face[i] && !IsDirichletFace(i)) 
 	      cnt[ma.GetClusterRepFace(i)] += first_face_dof[i+1] - first_face_dof[i] - excl_grads*face_ngrad[i]; 
 	     	 
 	  for(i=0;i<ni;i++) 
@@ -1462,7 +1468,7 @@ namespace ngcomp
       case 2: // Clustering with AFW(hoEdges) 
 	{
 	  for(i=0;i<ned;i++) 
-	    if(fine_edge[i])
+	    if(fine_edge[i] && !IsDirichletEdge(i))
 	      {
 		int pn1, pn2;
 		ma.GetEdgePNums (i,pn1,pn2);
@@ -1490,7 +1496,7 @@ namespace ngcomp
 	  // Stack of horizontal edges, quadfaces and prism faces 
 	  //  (+ inner) 
 	  for(i=0;i<nfa;i++) 
-	    if(fine_face[i]) 
+	    if(fine_face[i] && !IsDirichletFace(i)) 
 	      { 
 		int fcl = ma.GetClusterRepFace(i); 
 		int first = first_face_dof[i] + excl_grads*face_ngrad[i];
