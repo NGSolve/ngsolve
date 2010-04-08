@@ -274,22 +274,7 @@ namespace ngcomp
       order_edge = uniform_order_edge; 
     */ 
 
- 
- 
 
-    /*
-    // skip dofs on Dirichlet boundary hack [JS]
-    int nsel = ma.GetNE();
-    for (i = 0; i < nsel; i++)
-    {
-    ma.GetSElEdges (i, eledges);
-    int face = ma.GetSElFace (i);
-	  
-    for (j = 0; j < eledges.Size(); j++) 
-    order_edge[eledges[j]] = 1;  
-    order_face[face] = 1;
-    }
-    */
 
     /* 
        if (ma.GetDimension() == 2 && uniform_order_trig != -1 && uniform_order_quad != -1)

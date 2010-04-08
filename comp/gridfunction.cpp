@@ -1227,38 +1227,6 @@ namespace ngcomp
 		  for (int i = 0; i < components; i++)
 		    values[k*svalues+i] += ((double*)(void*)&flux(k,0))[i];
 	      }
-	    
-
-#ifdef ABC
-            for (int k = 0; k < npts; k++)
-              {
-                HeapReset hr(lh);
-
-		const IntegrationPoint & ip = ir[k];
-		const SpecificIntegrationPoint<2,2> & sip = mir[k];
-
-		/*
-		IntegrationPoint ip(xref[k*sxref], xref[k*sxref+1], 0, 0);
-                Vec<2> vx;
-                Mat<2,2> mdxdxref;
-                for (int i = 0; i < 2; i++)
-                  {
-                    vx(i) = x[k*sx+i];
-                    for (int j = 0; j < 2; j++)
-                      mdxdxref(i,j) = dxdxref[k*sdxdxref+2*i+j];
-                  }
-
-		  SpecificIntegrationPoint<2,2> sip (ip, eltrans, vx, mdxdxref); 
-		*/
-                for(int j = 0; j<bfi2d.Size(); j++)
-                  {
-                    FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
-                    bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
-                    for (int i = 0; i < components; i++)
-                      values[k*svalues+i] += ((double*)(void*)&flux(0))[i];
-                  }
-              }
-#endif
           }
 
         return 1; 
