@@ -459,11 +459,11 @@ namespace netgen
               }
             break;
           default:
-            outfile << "\n";
+            ; // outfile << "\n";
           }
 
 
-        outfile << endl;
+        outfile << "\n";
       }
 
     outfile << "\n" << "\n";
