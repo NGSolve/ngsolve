@@ -172,6 +172,7 @@ namespace ngcomp
 
   void BilinearForm :: Assemble (LocalHeap & lh)
   {
+	  cout << "Assemble called" << endl;
     if (mats.Size() == ma.GetNLevels())
       return;
 
@@ -279,8 +280,22 @@ namespace ngcomp
 	return;
       }
 
+	  try
+	  {
     if (low_order_bilinear_form)
+	{
+	  cout << "call low order assemble" << endl;
       low_order_bilinear_form->Assemble(lh);
+	  cout << "low order assemble returned" << endl;
+	}
+	  }
+    catch (Exception & e)
+      {
+	e.Append (string ("\nthrown by Do loworder ") +
+		  string (GetName()));
+	throw e;
+      }
+
 
     try
       {
@@ -696,9 +711,13 @@ namespace ngcomp
 				}
 			      catch (Exception & e)
 				{
+					cout << "catch it, biform xxx" << endl;
 				  e.Append (string("in Assemble Element Matrix, bfi = ") + 
 					    bfi.Name() + string("\n"));
-				  throw;
+
+				  cout << "rethrow" << endl;
+			      Exception e2 ("my new exception");
+				  throw e2;
 				}
 			      catch (exception & e)
 				{
@@ -1612,6 +1631,7 @@ namespace ngcomp
       }
     catch (Exception & e)
       {
+cout << "catch in AssembleBilinearform 2" << endl;
         e.Append (string ("in Assemble BilinearForm '") + 
                   GetName() + string("'\n"));
         throw;
