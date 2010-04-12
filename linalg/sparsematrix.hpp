@@ -151,7 +151,8 @@ namespace ngla
     MatrixGraph (const MatrixGraph & graph, bool stealgraph);
     /// 
     MatrixGraph (int size, const Table<int> & elements, bool symmetric);
-
+    /// 
+    MatrixGraph (const Table<int> & elements, bool symmetric);
     virtual ~MatrixGraph ();
 
     /// eliminate unused columne indices

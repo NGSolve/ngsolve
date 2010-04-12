@@ -167,7 +167,8 @@ namespace ngfem
 
               dmat(0,0) = 0;
               dmat(1,0) = dmat(0,1) = -1;
-              dmat(1,1) = alpha * sqr (fel_l2.Order()) * (len/det);
+//               dmat(1,1) = alpha * sqr (fel_l2.Order()) * (len/det);
+              dmat(1,1) = alpha * ((fel_l2.Order()+1)*(fel_l2.Order()+D)/D * len) *(1.0/det);
 
 
               dmat *= lam * len * ir_facet[l].Weight();
