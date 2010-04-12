@@ -300,7 +300,106 @@ namespace ngla
   }
 
 
+  MatrixGraph :: MatrixGraph (const Table<int> & dof2dof, 
+				bool symmetric)
+  {
+    static int timer = NgProfiler::CreateTimer ("MatrixGraph");
+    NgProfiler::RegionTimer reg (timer);
 
+    int ndof = dof2dof.Size();
+
+    Array<int> cnt(ndof);
+    cnt = 0;
+    for (int i = 0; i < dof2dof.Size(); i++)
+      {
+        FlatArray<int> dof = dof2dof[i];
+        for (int j = 0; j < dof.Size(); j++)
+          cnt[dof[j]]++;
+      }
+
+    size = ndof;
+    owner = true;
+    
+    firsti.Alloc (size+1);
+    firsti.SetName ("matrix graph, table 1");
+
+    diagi.Alloc (size+1);
+    diagi.SetName ("matrix graph, table 2");
+    
+    nze = 0;
+    for (int i = 0; i < size; i++)
+      {
+	firsti[i] = diagi[i] = nze;
+	nze += cnt[i];
+      }
+    firsti[size] = diagi[size] = nze;
+    
+
+    colnr.Alloc (nze+1);
+    colnr.SetName ("matrix graph");
+    
+    Array<int> mark(ndof);
+
+//     cnt = 0;
+
+    mark = -1;
+
+    if (!symmetric)
+
+      for (int i = 0; i < ndof; i++)
+        {
+          int cnti = firsti[i];
+          mark[i] = i;
+          colnr[cnti++] = i;
+          
+              for (int k = 0; k < dof2dof[i].Size(); k++)
+                {
+                  int d2 = dof2dof[i][k];
+		  if (mark[d2] != i)
+		    {
+		      mark[d2] = i;
+		      colnr[cnti++] = d2;
+		    }
+                }
+        }
+    
+    else
+      for (int i = 0; i < ndof; i++)
+        {
+          int cnti = firsti[i];
+          mark[i] = i;
+          colnr[cnti++] = i;
+          
+              for (int k = 0; k < dof2dof[i].Size(); k++)
+                {
+                  int d2 = dof2dof[i][k];
+		  if(d2<i)
+		  if (mark[d2] != i)
+		    {
+		      mark[d2] = i;
+		      colnr[cnti++] = d2;
+		    }
+                }
+        }
+    
+
+
+    for (int i = 0; i < ndof; i++)
+      QuickSort (GetRowIndices(i));
+
+    colnr[nze] = 0;
+ 
+    // #ifdef ASTRID
+#ifdef USE_PARDISO
+    inversetype = PARDISO;
+#else
+#ifdef USE_SUPERLU
+    inversetype = SUPERLU;
+#else
+    inversetype = SPARSECHOLESKY;
+#endif
+#endif
+  }
   
   MatrixGraph :: ~MatrixGraph ()
   {

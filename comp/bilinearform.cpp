@@ -456,14 +456,15 @@ namespace ngcomp
           for (int j = 0; j < ma.GetNSE(); j++)
             {
               HeapReset hr(clh);
-	      if (!parts[i] -> SkeletonForm()) {
+// 	      if (!parts[i] -> SkeletonForm()) {
 		if (parts[i] -> DefinedOn (ma.GetSElIndex(j)))
 		  parts[i] -> CheckElement (fespace.GetSFE(j, clh));
-	      }else
-		{
-		  if (!fespace.UsesDGCoupling()) throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
+// 	      }else
+// 		{
+		  //DG-bilinearforms can be meaningful even without dgcoupling
+		  //if (!fespace.UsesDGCoupling()) throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
 		  //TODO: check aligned volume element
-		}
+// 		}
 	    }
         }
       else 

@@ -10,7 +10,7 @@ mesh = doubleglazing.vol
 #### 3.1.4 Example
 
 define coefficient lam 
-(0.005),
+(0.005),(0.005),
 
 #for inflow
 define coefficient dirichletcoef
@@ -27,11 +27,11 @@ define coefficient calpha
 
 #convection velocity
 define coefficient b1 
-(2*y*(1-x*x)),
+(2*y*(1-x*x)),(2*y*(1-x*x)),
 
 #convection velocity
 define coefficient b2
-(-2*x*(1-y*y)),
+(-2*x*(1-y*y)),(-2*x*(1-y*y)),
 
 
 define fespace vdisc -l2ho -order=4 -dgjumps 
