@@ -27,7 +27,6 @@ dist_bin_SCRIPTS = dialog.tcl menustat.tcl ngicon.tcl ng.tcl \
 ngvisual.tcl sockets.tcl drawing.tcl nghelp.tcl ngshell.tcl  \
 ngtesting.tcl parameters.tcl variables.tcl netgen.ocf
 
-# netgen_LDFLAGS =  -pg  -static
-netgen_LDFLAGS = -rdynamic -pg  -static
+netgen_LDFLAGS = -rdynamic  -static
 
 
