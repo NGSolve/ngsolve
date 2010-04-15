@@ -1533,7 +1533,7 @@ namespace ngbla
 
   /// Calculate inverse. Gauss elimination with row pivoting
   template <class T, class T2>
-  extern void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv);
+  extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv);
 
 
   inline void CalcInverse (const double & m, double & inv)
