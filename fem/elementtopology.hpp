@@ -23,8 +23,6 @@ namespace ngfem
 		      ET_TRIG = 10, ET_QUAD = 11, 
 		      ET_TET = 20, ET_PYRAMID = 21, ET_PRISM = 22, ET_HEX = 24 };
 
-
-
   /**
      Type of node. 
      vertex nodes are 0 dimensional, 
