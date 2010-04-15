@@ -2,7 +2,7 @@
 #define FILE_POSTPROC
 
 /*********************************************************************/
-/* File:   postproc.hh                                               */
+/* File:   postproc.hpp                                              */
 /* Author: Joachim Schoeberl                                         */
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
@@ -22,13 +22,14 @@ namespace ngcomp
 			bool applyd, bool add,
 			int domain);
 
-  template <class SCAL>
-  extern NGS_DLL_HEADER void CalcFluxProject (const MeshAccess & ma, 
-			       const S_GridFunction<SCAL> & u,
-			       S_GridFunction<SCAL> & flux,
-			       const BilinearFormIntegrator & bli,
-			       bool applyd, int domain,
-			       LocalHeap & lh);
+  // template <class SCAL>
+  extern NGS_DLL_HEADER 
+  void CalcFluxProject (const MeshAccess & ma, 
+			const GridFunction & u,
+			GridFunction & flux,
+			const BilinearFormIntegrator & bli,
+			bool applyd, int domain,
+					      LocalHeap & lh);
 
   template <class SCAL>
   extern NGS_DLL_HEADER void CalcFluxProject (const MeshAccess & ma, 
@@ -38,7 +39,6 @@ namespace ngcomp
 			       bool applyd, const BitArray & domains, LocalHeap & lh);
 
 
-  template <class SCAL>
   extern NGS_DLL_HEADER void SetValues (const MeshAccess & ma, 
 			 const CoefficientFunction & coef,
 			 GridFunction & u,
@@ -69,10 +69,10 @@ namespace ngcomp
 			    LocalHeap & lh,
 			    int component = 0);
 
-  template <class SCAL>
+  // template <class SCAL>
   extern NGS_DLL_HEADER void CalcError (const MeshAccess & ma, 
-			 const S_GridFunction<SCAL> & bu,
-			 const S_GridFunction<SCAL> & bflux,
+			 const GridFunction & bu,
+			 const GridFunction & bflux,
 			 const BilinearFormIntegrator & bli,
 			 FlatVector<double> & err,
 			 int domain,
@@ -94,13 +94,11 @@ namespace ngcomp
 		       const BilinearFormIntegrator & bli2,
 		       FlatVector<double> & diff,
 		       int domain, LocalHeap & lh);
-  
-  template <class SCAL>
+
   NGS_DLL_HEADER void CalcDifference (const MeshAccess & ma, 
-		       const S_GridFunction<SCAL> & u1,
+		       const GridFunction & u1,
 		       const BilinearFormIntegrator & bli1,
-		       const CoefficientFunction * coef_real, 
-		       const CoefficientFunction * coef_imag,
+		       const CoefficientFunction * coef, 
 		       FlatVector<double> & diff,
 		       int domain, LocalHeap & lh);
 
