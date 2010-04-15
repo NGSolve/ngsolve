@@ -42,6 +42,7 @@ namespace ngcomp
     int ne      = bound ? ma.GetNSE() : ma.GetNE();
     int dim     = fes.GetDimension();
     int dimflux = fesflux.GetDimension();
+    int dimfluxvec = bli.DimFlux(); 
 
     const BilinearFormIntegrator & fluxbli =
       bound ? (*fesflux.GetBoundaryEvaluator()) : (*fesflux.GetEvaluator());
@@ -104,7 +105,7 @@ namespace ngcomp
 	  FlatVector<SCAL> elu(dnums.Size() * dim, lh);
 	  FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
 	  FlatVector<SCAL> elfluxi(dnumsflux.Size() * dimflux, lh);
-	  FlatVector<SCAL> fluxi(dimflux, lh);
+	  FlatVector<SCAL> fluxi(dimfluxvec, lh);
 	  
 	  
 	  u.GetElementVector (dnums, elu);
@@ -114,58 +115,13 @@ namespace ngcomp
 	    GetIntegrationRules().SelectIntegrationRule(fel.ElementType(), max(fel.Order(),felflux.Order())+felflux.Order());
 	  elflux = 0;
 	  
-	  /*
-	    for (int j = 0; j < ir.GetNIP(); j++)
-	    {
-	    HeapReset hr(lh);
-	    double fac;
-	    if (!bound)
-	    {
-	    if (fel.SpatialDim() == 2)
-	    {
-	    SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
-	    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-	    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-	    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-	    }
-	    else
-	    {
-	    SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
-	    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-	    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-	    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-	    }
-	    }
-	    else
-	    {
-	    if (fel.SpatialDim() == 2)
-	    {
-	    SpecificIntegrationPoint<2,3> sip (ir[j], eltrans, lh);
-	    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-	    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-	    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-	    }
-	    else
-	    {
-	    SpecificIntegrationPoint<1,2> sip (ir[j], eltrans, lh);
-	    fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-	    bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-	    fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-	    }
-	    }
-	      
-	    elflux += fac * elfluxi;
-	    }
-	  */
-
-
 
 	  if (!bound)
 	    {
 	      if (fel.SpatialDim() == 2)
 		{
 		  MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
-		  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
+		  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimfluxvec, lh);
 
 		  bli.CalcFlux (fel, mir, elu, mfluxi, applyd, lh);
 
@@ -173,14 +129,6 @@ namespace ngcomp
 		    mfluxi.Row(j) *= ir[j].Weight() * fabs (mir[j].GetJacobiDet());
 
 		  fluxbli.ApplyBTrans (felflux, mir, mfluxi, elflux, lh);
-		  /*
-		  for (int j = 0; j < ir.GetNIP(); j++)
-		    {
-		      HeapReset hr(lh);
-		      fluxbli.ApplyBTrans (felflux, mir[j], mfluxi.Row(j), elfluxi, lh);
-		      elflux += elfluxi;
-		    }
-		  */
 		}
 	      else
 		{
@@ -308,7 +256,7 @@ namespace ngcomp
 
 
 
-
+  /*
   template void CalcFluxProject<double> (const MeshAccess & ma, 
 					 const S_GridFunction<double> & bu,
 					 S_GridFunction<double> & bflux,
@@ -320,8 +268,29 @@ namespace ngcomp
 					  S_GridFunction<Complex> & bflux,
 					  const BilinearFormIntegrator & bli,
 					  bool applyd, int domain, LocalHeap & lh);
+  */
 
-
+  void CalcFluxProject (const MeshAccess & ma, 
+			const GridFunction & bu,
+			GridFunction & bflux,
+			const BilinearFormIntegrator & bli,
+			bool applyd, int domain, LocalHeap & lh)
+  {
+    if (bu.GetFESpace().IsComplex())
+      {
+	CalcFluxProject (ma, 
+			 dynamic_cast<const S_GridFunction<Complex>&> (bu),
+			 dynamic_cast<S_GridFunction<Complex>&> (bflux),
+			 bli, applyd, domain, lh);
+      }
+    else
+      {
+	CalcFluxProject (ma, 
+			 dynamic_cast<const S_GridFunction<double>&> (bu),
+			 dynamic_cast<S_GridFunction<double>&> (bflux),
+			 bli, applyd, domain, lh);
+      }
+  }
 
 
 
@@ -346,7 +315,6 @@ namespace ngcomp
 
     bool boundary = bli.BoundaryForm();
 
-    //cout << " point " << point << endl; 
     if(boundary)
       {
 	if(domains.Size() > 0)
@@ -357,8 +325,8 @@ namespace ngcomp
 	
 	if (elnr < 0) return 0;
 
-	Array<int> vnums; 
-	ma.GetSElVertices(elnr, vnums); 
+	// Array<int> vnums; 
+	// ma.GetSElVertices(elnr, vnums); 
 	
 	const S_GridFunction<SCAL> & u = 
 	  dynamic_cast<const S_GridFunction<SCAL>&> (bu);
@@ -397,8 +365,8 @@ namespace ngcomp
        
 	if (elnr < 0) return 0;
 
-	Array<int> vnums; 
-	ma.GetElVertices(elnr, vnums); 
+	// Array<int> vnums; 
+	// ma.GetElVertices(elnr, vnums); 
 	
 	const S_GridFunction<SCAL> & u = 
 	  dynamic_cast<const S_GridFunction<SCAL>&> (bu);
@@ -424,7 +392,6 @@ namespace ngcomp
 	  }
 	
 	fes.TransformVec (elnr, false, elu, TRANSFORM_SOL);
-	
 	
 	bli.CalcFlux (fel, eltrans, ip, elu, flux, applyd, lh);
       }
@@ -692,22 +659,22 @@ namespace ngcomp
     
     ma.PopStatus ();
   }
+  
+  NGS_DLL_HEADER void SetValues (const MeshAccess & ma, 
+				 const CoefficientFunction & coef,
+				 GridFunction & u,
+				 bool bound,
+				 DifferentialOperator * diffop,
+				 LocalHeap & clh)
+  {
+    if (u.GetFESpace().IsComplex())
+      SetValues<Complex> (ma, coef, u, bound, diffop, clh);
+    else
+      SetValues<double> (ma, coef, u, bound, diffop, clh);
+  }
 
 
 
-  template NGS_DLL_HEADER void SetValues<double> (const MeshAccess & ma, 
-				   const CoefficientFunction & coef,
-				   GridFunction & u,
-				   bool bound,
-				   DifferentialOperator * diffop,
-				   LocalHeap & clh);
-
-  template NGS_DLL_HEADER void SetValues<Complex> (const MeshAccess & ma, 
-				    const CoefficientFunction & coef,
-				    GridFunction & u,
-				    bool bound,
-				    DifferentialOperator * diffop,
-				    LocalHeap & clh);
 
 
   template <class SCAL>
@@ -731,6 +698,7 @@ namespace ngcomp
     int ne      = bound ? ma.GetNSE() : ma.GetNE();
     int dim     = fes.GetDimension();
     int dimflux = fesflux.GetDimension();
+    int dimfluxvec = bli.DimFlux(); // fesflux.GetDimension();
 
     const BilinearFormIntegrator & fluxbli =
       bound ? (*fesflux.GetBoundaryEvaluator()) : (*fesflux.GetEvaluator());
@@ -773,8 +741,8 @@ namespace ngcomp
 
 	FlatVector<SCAL> elu(dnums.Size() * dim, lh);
 	FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
-	FlatVector<SCAL> fluxi(dimflux, lh);
-	FlatVector<SCAL> fluxi2(dimflux, lh);
+	FlatVector<SCAL> fluxi(dimfluxvec, lh);
+	FlatVector<SCAL> fluxi2(dimfluxvec, lh);
 
 
 	u.GetElementVector (dnums, elu);
@@ -789,17 +757,18 @@ namespace ngcomp
 
 	double vol; 
 
-	FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
-	FlatMatrix<SCAL> mfluxi2(ir.GetNIP(), dimflux, lh);
+	FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimfluxvec, lh);
+	FlatMatrix<SCAL> mfluxi2(ir.GetNIP(), dimfluxvec, lh);
 	
 	if (!bound && fel.SpatialDim() == 2)
 	  {
 	    MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
-	    bli.CalcFlux (fel, mir, elu, mfluxi, 0, lh);
+	    bli.CalcFlux (fel, mir, elu, mfluxi, 1, lh);
 	    fluxbli.CalcFlux (felflux, mir, elflux, mfluxi2, 0, lh);
+
 	    mfluxi -= mfluxi2;
 
-	    bli.ApplyDMat (fel, mir, mfluxi, mfluxi2, lh);
+	    bli.ApplyDMatInv (fel, mir, mfluxi, mfluxi2, lh);
 
 	    for (int j = 0; j < ir.GetNIP(); j++)
 	      elerr += ir[j].Weight() * fabs(mir[j].GetJacobiDet()) *
@@ -896,19 +865,29 @@ namespace ngcomp
   }
 
 
-  template void CalcError<double> (const MeshAccess & ma, 
-				   const S_GridFunction<double> & bu,
-				   const S_GridFunction<double> & bflux,
-				   const BilinearFormIntegrator & bli,
-				   FlatVector<double> & err,
-				   int domain, LocalHeap & lh);
+  void CalcError (const MeshAccess & ma, 
+		  const GridFunction & bu,
+		  const GridFunction & bflux,
+		  const BilinearFormIntegrator & bli,
+		  FlatVector<double> & err,
+		  int domain, LocalHeap & lh)
+  {
+    if (bu.GetFESpace().IsComplex())
+      {
+	CalcError (ma, 
+		   dynamic_cast<const S_GridFunction<Complex>&> (bu),
+		   dynamic_cast<const S_GridFunction<Complex>&> (bflux),
+		   bli, err, domain, lh);
+      }
+    else
+      {
+	CalcError (ma, 
+		   dynamic_cast<const S_GridFunction<double>&> (bu),
+		   dynamic_cast<const S_GridFunction<double>&> (bflux),
+		   bli, err, domain, lh);
+      }
+  }
   
-  template void CalcError<Complex> (const MeshAccess & ma, 
-				    const S_GridFunction<Complex> & bu,
-				    const S_GridFunction<Complex> & bflux,
-				    const BilinearFormIntegrator & bli,
-				    FlatVector<double> & err,
-				    int domain, LocalHeap & lh);    
 
   template <class SCAL>
   void CalcDifference (const MeshAccess & ma, 
@@ -1047,8 +1026,6 @@ namespace ngcomp
 	      }
 
 	    	  
-	    //  (*testout) << "diff: fluxi = " << fluxi1 << " =?= " << fluxi2 << endl;
-	    
 	    fluxi1 -= fluxi2;
 	     
 	    double dx = ir[j].Weight() * det; 
@@ -1089,22 +1066,7 @@ namespace ngcomp
   void CalcDifference (const MeshAccess & ma, 
 		       const S_GridFunction<SCAL> & u1,
 		       const BilinearFormIntegrator & bli1,
-		       const CoefficientFunction * coef_real, 
-		       const CoefficientFunction * coef_imag,
-		       FlatVector<double> & diff,
-		       int domain, LocalHeap & lh)
-  {
-    ;
-  }
-
-
-
-  template <>
-  void CalcDifference (const MeshAccess & ma, 
-		       const S_GridFunction<double> & u1,
-		       const BilinearFormIntegrator & bli1,
-		       const CoefficientFunction * coef_real, 
-		       const CoefficientFunction * coef_imag,
+		       const CoefficientFunction * coef, 
 		       FlatVector<double> & diff,
 		       int domain, LocalHeap & lh)
   {
@@ -1152,9 +1114,9 @@ namespace ngcomp
 	    fes1.GetDofNrs (i, dnums1);
 	  }
 
-	FlatVector<double> elu1(dnums1.Size() * dim1, lh);
-	FlatVector<double> fluxi1(dimflux1, lh);
-	FlatVector<double> fluxi2(dimflux1, lh);
+	FlatVector<SCAL> elu1(dnums1.Size() * dim1, lh);
+	FlatVector<SCAL> fluxi1(dimflux1, lh);
+	FlatVector<SCAL> fluxi2(dimflux1, lh);
 
 
 	u1.GetElementVector (dnums1, elu1);
@@ -1162,185 +1124,102 @@ namespace ngcomp
 
 	double elerr = 0;
 
-	int io = 5 + fel1.Order();
-
 	const IntegrationRule & ir = 
 	  GetIntegrationRules().SelectIntegrationRule(fel1.ElementType(), 
-						      2*io+2);
+						      2*fel1.Order()+3);
 	double det = 0;
 	
-	for (int j = 0; j < ir.GetNIP(); j++)
+	if (bound1) 
+	  throw Exception ("CalcDifference on boundary not supported");
+
+	if (fel1.SpatialDim() == 2)
 	  {
-	    HeapReset hr(lh);
-	    if (!bound1)
+	    MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
+	    FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux1, lh);
+	    FlatMatrix<SCAL> mfluxi2(ir.GetNIP(), dimflux1, lh);
+	    
+	    bli1.CalcFlux (fel1, mir, elu1, mfluxi, applyd1, lh);
+	    // coef->Evaluate(mir, mfluxi2);
+	    
+	    for (int j = 0; j < ir.GetNIP(); j++)
 	      {
-		if (fel1.SpatialDim() == 2)
-		  {
-		    Vec<2> point; 
-		    SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
-		    eltrans.CalcPoint(sip.IP(), point, lh);
-		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-		    const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip,fluxi2);
-		    det = fabs(sip.GetJacobiDet()); 
-		  }
-		else
-		  {
-		    Vec<3> point;
-		    SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
-		    eltrans.CalcPoint(sip.IP(), point, lh);
-		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-		    const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip,fluxi2);
-		    det = fabs(sip.GetJacobiDet());  
-		  }
+		coef->Evaluate(mir[j],fluxi2);
+		mfluxi2.Row(j) = fluxi2;
 	      }
+	    mfluxi -= mfluxi2;
 
-	    	  
-	    (*testout) << "diff: fluxi = " << fluxi1 << " =?= " << fluxi2 << endl;
+	    for (int j = 0; j < ir.GetNIP(); j++)
+	      {
+		double dx = fabs (mir[j].GetJacobiDet()) * ir[j].Weight();
+		elerr += dx * L2Norm2 (mfluxi.Row(j));
+	      }
 	    
-	    fluxi1 -= fluxi2;
-	     
-	    double dx = ir[j].Weight() * det; 
-	    
-	    elerr += dx * L2Norm2 (fluxi1);
+
+	    diff(i) += elerr;
+	    sum += elerr;
 	  }
 
-	diff(i) += elerr;
-	sum += elerr;
-      }
-    cout << "difference = " << sqrt(sum) << endl;
-    ma.PopStatus ();
-  }
-  
-
-
-
-
-  template <>
-  void CalcDifference (const MeshAccess & ma, 
-		       const S_GridFunction<Complex> & u1,
-		       const BilinearFormIntegrator & bli1,
-		       const CoefficientFunction * coef_real, 
-		       const CoefficientFunction * coef_imag,
-		       FlatVector<double> & diff,
-		       int domain, LocalHeap & lh)
-  {
-    ma.PushStatus ("Calc Difference");
-
-    const FESpace & fes1 = u1.GetFESpace();
-
-    bool bound1 = bli1.BoundaryForm();
-
-
-    int ne      = bound1 ? ma.GetNSE() : ma.GetNE();
-    int dim1    = fes1.GetDimension();
-    int dimflux1 = bli1.DimFlux();
-
-    ElementTransformation eltrans;
-
-    bool applyd1 = 0;
-
-    Array<int> dnums1;
-
-    double sum = 0;
-    for (int i = 0; i < ne; i++)
-      {
-	ma.SetThreadPercentage ( 100.0*i / ne );
-
-	lh.CleanUp();
-
-	int eldom = 
-	  bound1 ? ma.GetSElIndex(i) : ma.GetElIndex(i);
-	
-	if ((domain != -1) && (domain != eldom))
-	  continue;
-
-	const FiniteElement & fel1 = 
-	  bound1 ? fes1.GetSFE(i, lh) : fes1.GetFE (i, lh);
-
-	if (bound1)
-	  {
-	    ma.GetSurfaceElementTransformation (i, eltrans, lh);
-	    fes1.GetSDofNrs (i, dnums1);
-	  }
 	else
 	  {
-	    ma.GetElementTransformation (i, eltrans, lh);
-	    fes1.GetDofNrs (i, dnums1);
-	  }
-
-	FlatVector<Complex> elu1(dnums1.Size() * dim1, lh);
-	FlatVector<Complex> fluxi1(dimflux1, lh);
-	FlatVector<Complex> fluxi2(dimflux1, lh);
-
-
-	u1.GetElementVector (dnums1, elu1);
-	fes1.TransformVec (i, bound1, elu1, TRANSFORM_SOL);
-
-	double elerr = 0;
-
-	int io = 5 + fel1.Order();
-
-	const IntegrationRule & ir = 
-	  GetIntegrationRules().SelectIntegrationRule(fel1.ElementType(), 
-						      2*io+2);
-	double det = 0; 
-	
-	for (int j = 0; j < ir.GetNIP(); j++)
-	  {
-	    void * heapp = lh.GetPointer();
-	    if (!bound1)
+	    for (int j = 0; j < ir.GetNIP(); j++)
 	      {
-		if (fel1.SpatialDim() == 2)
+		HeapReset hr(lh);
+		if (!bound1)
 		  {
-		    Vec<2> point; 
-		    SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
-		    eltrans.CalcPoint(sip.IP(), point, lh);
-		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-
-		    double real, imag = 0;
-		    real = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
-		    if ( coef_imag ) imag = const_cast<CoefficientFunction*>(coef_imag)->Evaluate(sip);
-		    fluxi2(0) = Complex(real,imag);
-
-		    det = fabs(sip.GetJacobiDet()); 
+		    if (fel1.SpatialDim() == 2)
+		      {
+			Vec<2> point; 
+			SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
+			eltrans.CalcPoint(sip.IP(), point, lh);
+			bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
+			const_cast<CoefficientFunction*>(coef)->Evaluate(sip,fluxi2);
+			det = fabs(sip.GetJacobiDet()); 
+		      }
+		    else
+		      {
+			Vec<3> point;
+			SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
+			eltrans.CalcPoint(sip.IP(), point, lh);
+			bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
+			const_cast<CoefficientFunction*>(coef)->Evaluate(sip,fluxi2);
+			det = fabs(sip.GetJacobiDet());  
+		      }
 		  }
-		else
-		  {
-		    Vec<3> point;
-		    SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
-		    eltrans.CalcPoint(sip.IP(), point, lh);
-		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-
-		    // fluxi2(0) = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
-		    // if ( coef_imag ) fluxi2(0).imag() = const_cast<CoefficientFunction*>(coef_imag)->Evaluate(sip);
-
-		    double real, imag = 0;
-		    real = const_cast<CoefficientFunction*>(coef_real)->Evaluate(sip);
-		    if ( coef_imag ) imag = const_cast<CoefficientFunction*>(coef_imag)->Evaluate(sip);
-		    fluxi2(0) = Complex(real,imag);
-		    det = fabs(sip.GetJacobiDet());  
-		  }
-	      }
 
 	    	  
-	    (*testout) << "diff: fluxi = " << fluxi1 << " =?= " << fluxi2 << endl;
+		(*testout) << "diff: fluxi = " << fluxi1 << " =?= " << fluxi2 << endl;
 	    
-	    fluxi1 -= fluxi2;
+		fluxi1 -= fluxi2;
 	     
-	    double dx = ir[j].Weight() * det; 
+		double dx = ir[j].Weight() * det; 
 	    
-	    elerr += dx * L2Norm2 (fluxi1);
-	    
-	    lh.CleanUp (heapp);
-	  }
+		elerr += dx * L2Norm2 (fluxi1);
+	      }
 
-	diff(i) += elerr;
-	sum += elerr;
+	    diff(i) += elerr;
+	    sum += elerr;
+	  }
       }
     cout << "difference = " << sqrt(sum) << endl;
     ma.PopStatus ();
   }
-  
+
+  NGS_DLL_HEADER void CalcDifference (const MeshAccess & ma, 
+				      const GridFunction & u1,
+				      const BilinearFormIntegrator & bfi1,
+				      const CoefficientFunction * coef, 
+				      FlatVector<double> & diff,
+				      int domain, LocalHeap & lh)
+  {
+    if (u1.GetFESpace().IsComplex())
+      CalcDifference (ma, 
+		      dynamic_cast<const S_GridFunction<Complex>&> (u1), 
+		      bfi1, coef, diff, domain, lh);
+    else
+      CalcDifference (ma, 
+		      dynamic_cast<const S_GridFunction<double>&> (u1), 
+		      bfi1, coef, diff, domain, lh);
+  }
 
 
 
