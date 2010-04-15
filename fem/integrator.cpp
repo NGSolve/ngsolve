@@ -574,6 +574,62 @@ namespace ngfem
   }
 
   
+  void BilinearFormIntegrator :: 
+  ApplyDMatInv (const FiniteElement & bfel,
+	     const BaseSpecificIntegrationPoint & bsip,
+	     const FlatVector<double> & elx, 
+	     FlatVector<double> & eldx,
+	     LocalHeap & lh) const
+  {
+    cerr << "ApplyDMatInv<double> called for class " 
+	 << typeid(*this).name()
+	 << endl;
+  }
+
+  void BilinearFormIntegrator :: 
+  ApplyDMatInv (const FiniteElement & bfel,
+	     const BaseSpecificIntegrationPoint & bsip,
+	     const FlatVector<Complex> & elx, 
+	     FlatVector<Complex> & eldx,
+	     LocalHeap & lh) const
+  {
+    cerr << "ApplyDMatInv<Complex> called for class " 
+	 << typeid(*this).name()
+	 << endl;
+
+  }
+
+  
+  void BilinearFormIntegrator :: 
+  ApplyDMatInv (const FiniteElement & bfel,
+		const BaseMappedIntegrationRule & mir,
+		const FlatMatrix<double> & elx, 
+		FlatMatrix<double> & eldx,
+		LocalHeap & lh) const
+  {
+    cerr << "ApplyDMatInv<double>, MappedIR called for class " 
+	 << typeid(*this).name()
+	 << endl;
+
+  }
+
+  void BilinearFormIntegrator :: 
+  ApplyDMatInv (const FiniteElement & bfel,
+		const BaseMappedIntegrationRule & mir,
+		const FlatMatrix<Complex> & elx, 
+		FlatMatrix<Complex> & eldx,
+		LocalHeap & lh) const
+  {
+    cerr << "ApplyDMatInv<Complex>, MappedIR called for class " 
+	 << typeid(*this).name()
+	 << endl;
+  }
+
+  
+
+
+
+
 
 
 
