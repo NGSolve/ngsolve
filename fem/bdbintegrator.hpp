@@ -49,6 +49,20 @@ public:
     y = mat * x;
   }
 
+  template <typename FEL, typename SIP, class TVX, class TVY>
+  void ApplyInv (const FEL & fel, const SIP & sip,
+		 const TVX & x, TVY & y,
+		 LocalHeap & lh) const
+  {
+    Mat<DMO::DIM_DMAT, DMO::DIM_DMAT, double> mat;
+    Mat<DMO::DIM_DMAT, DMO::DIM_DMAT, double> inv;
+
+    static_cast<const DMO*>(this) -> GenerateMatrix (fel, sip, mat, lh);
+    CalcInverse (mat, inv);
+    y = inv * x;
+  }
+
+
   /// apply transpose coefficient tensor
   template <typename FEL, typename SIP, class TVX, class TVY>
   void ApplyTrans (const FEL & fel, const SIP & sip,
@@ -162,8 +176,7 @@ public:
 			  FlatVector<double> & eldx,
 			  LocalHeap & lh) const
   {
-    // eldx.AssignMemory (DIM_DMAT, lh);
-    dmatop.Apply(dynamic_cast<const FEL&> (bfel),
+    dmatop.Apply(static_cast<const FEL&> (bfel),
 		 static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bsip),
 		 elx, eldx ,lh);
   }
@@ -174,8 +187,7 @@ public:
 			  FlatVector<Complex> & eldx,
 			  LocalHeap & lh) const
   {
-    // eldx.AssignMemory (DIM_DMAT, lh);
-    dmatop.Apply(dynamic_cast<const FEL&> (bfel),
+    dmatop.Apply(static_cast<const FEL&> (bfel),
 		 static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bsip),
 		 elx,eldx,lh);
   }
@@ -193,6 +205,25 @@ public:
     for (int i = 0; i < mir.Size(); i++)
       dmatop.Apply (fel, mir[i], elx.Row(i), eldx.Row(i), lh);
   }
+
+
+  virtual void ApplyDMatInv (const FiniteElement & bfel,
+			     const BaseMappedIntegrationRule & bmir,
+			     const FlatMatrix<double> & elx, 
+			     FlatMatrix<double> & eldx,
+			     LocalHeap & lh) const
+  {
+    const FEL & fel = static_cast<const FEL&> (bfel);
+    const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+
+    for (int i = 0; i < mir.Size(); i++)
+      dmatop.ApplyInv (fel, mir[i], elx.Row(i), eldx.Row(i), lh);
+  }
+
+
+
+
 
 
   virtual void ApplyDMat (const FiniteElement & bfel,

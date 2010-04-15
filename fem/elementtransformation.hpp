@@ -565,9 +565,9 @@ namespace ngfem
     FlatArray< SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > sips;
   public:
     MappedIntegrationRule (const IntegrationRule & ir, 
-			   const ElementTransformation & eltrans, 
+			   const ElementTransformation & aeltrans, 
 			   LocalHeap & lh)
-      : BaseMappedIntegrationRule (ir, eltrans), sips(ir.GetNIP(), lh)
+      : BaseMappedIntegrationRule (ir, aeltrans), sips(ir.GetNIP(), lh)
     {
       baseip = (char*)(void*)(BaseSpecificIntegrationPoint*)(&sips[0]);
       incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);

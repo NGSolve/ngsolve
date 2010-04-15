@@ -540,6 +540,29 @@ namespace ngfem
 			    FlatMatrix<Complex> & eldx,
 			    LocalHeap & lh) const;
   
+    virtual void ApplyDMatInv (const FiniteElement & bfel,
+			       const BaseSpecificIntegrationPoint & bsip,
+			       const FlatVector<double> & elx, 
+			       FlatVector<double> & eldx,
+			       LocalHeap & lh) const;
+
+    virtual void ApplyDMatInv (const FiniteElement & bfel,
+			       const BaseSpecificIntegrationPoint & bsip,
+			       const FlatVector<Complex> & elx, 
+			       FlatVector<Complex> & eldx,
+			       LocalHeap & lh) const;
+  
+    virtual void ApplyDMatInv (const FiniteElement & bfel,
+			       const BaseMappedIntegrationRule & mir,
+			       const FlatMatrix<double> & elx, 
+			       FlatMatrix<double> & eldx,
+			       LocalHeap & lh) const;
+
+    virtual void ApplyDMatInv (const FiniteElement & bfel,
+			       const BaseMappedIntegrationRule & mir,
+			       const FlatMatrix<Complex> & elx, 
+			       FlatMatrix<Complex> & eldx,
+			       LocalHeap & lh) const;
 
 
 

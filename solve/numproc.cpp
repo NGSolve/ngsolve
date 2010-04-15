@@ -67,7 +67,7 @@ namespace ngsolve
     /// compute flux, not gradient
     bool applyd;
     ///
-    bool useall;
+    // bool useall;
     ///
     int domain;
   public:
@@ -99,8 +99,8 @@ namespace ngsolve
 	  << "Differential-Op  = " << bfa->GetIntegrator(0)->Name() << endl
 	  << "Gridfunction-In  = " << gfu->GetName() << endl
 	  << "Gridfunction-Out = " << gfflux->GetName() << endl
-	  << "apply coeffs     = " << applyd << endl
-	  << "use all int'rs   = " << useall << endl;
+	  << "apply coeffs     = " << applyd << endl;
+      // << "use all int'rs   = " << useall << endl;
     }
   };
 
@@ -115,7 +115,7 @@ namespace ngsolve
     gfu = pde.GetGridFunction (flags.GetStringFlag ("solution", NULL));
     gfflux = pde.GetGridFunction (flags.GetStringFlag ("flux", NULL));
     applyd = flags.GetDefineFlag ("applyd");
-    useall = flags.GetDefineFlag ("useall");
+    // useall = flags.GetDefineFlag ("useall");
     domain = static_cast<int>(flags.GetNumFlag("domain",0))-1;
   }
 
@@ -142,53 +142,38 @@ namespace ngsolve
       "-flux=<gfname>\n" \
       "    grid-function used for storing the flux (e.g., vector-valued L2)\n\n" \
       "\nOptional flags:\n" \
-      "-applyd   apply coefficient matrix (compute either strains or stresses, B-field or H-field,..\n"\
-      "-useall   use all integrators for computing the flux, and add up result\n"\
+      "-applyd   apply coefficient matrix (compute either strains or stresses, B-field or H-field,..\n"
 	<< endl;
+
+    //      "-useall   use all integrators for computing the flux, and add up result\n" 
   }
 
 
   void NumProcCalcFlux :: Do(LocalHeap & lh)
   {
-    cout << "Num-proc calc flux" << endl;
-
-    if (!useall)
-      {
-	if (!bfa->GetFESpace().IsComplex())
-	  CalcFluxProject (pde.GetMeshAccess(),
-			   dynamic_cast<const S_GridFunction<double>&> (*gfu), 
-			   dynamic_cast<S_GridFunction<double>&> (*gfflux), 
-			   *bfa->GetIntegrator(0),
-			   applyd, domain, lh);
-	else
-	  CalcFluxProject (pde.GetMeshAccess(),
-			   dynamic_cast<const S_GridFunction<Complex>&> (*gfu), 
-			   dynamic_cast<S_GridFunction<Complex>&> (*gfflux), 
-			   *bfa->GetIntegrator(0),
-			   applyd, domain, lh);
-      }
+    CalcFluxProject (pde.GetMeshAccess(), *gfu, *gfflux,
+		     *bfa->GetIntegrator(0),
+		     applyd, domain, lh);
+    
+    /*
+    // useall - version currently not supported
+    gfflux->GetVector() = 0;
+    for (int k = 0; k < bfa->NumIntegrators(); k++)
+    {
+    if (!bfa->GetFESpace().IsComplex())
+    CalcFlux (pde.GetMeshAccess(),
+    dynamic_cast<const S_GridFunction<double>&> (*gfu), 
+    dynamic_cast<S_GridFunction<double>&> (*gfflux), 
+    *bfa->GetIntegrator(k),
+    applyd, 1, domain);
     else
-      {
-	cout << "old style calcflux" << endl;
-	/*
-	gfflux->GetVector() = 0;
-	for (int k = 0; k < bfa->NumIntegrators(); k++)
-	  {
-	    if (!bfa->GetFESpace().IsComplex())
-	      CalcFlux (pde.GetMeshAccess(),
-                        dynamic_cast<const S_GridFunction<double>&> (*gfu), 
-                        dynamic_cast<S_GridFunction<double>&> (*gfflux), 
-                        *bfa->GetIntegrator(k),
-                        applyd, 1, domain);
-	    else
-	      CalcFlux (pde.GetMeshAccess(),
-			dynamic_cast<const S_GridFunction<Complex>&> (*gfu), 
-			dynamic_cast<S_GridFunction<Complex>&> (*gfflux), 
-			*bfa->GetIntegrator(k),
-			applyd, 1, domain);
-	  }
-	*/
-      }
+    CalcFlux (pde.GetMeshAccess(),
+    dynamic_cast<const S_GridFunction<Complex>&> (*gfu), 
+    dynamic_cast<S_GridFunction<Complex>&> (*gfflux), 
+    *bfa->GetIntegrator(k),
+    applyd, 1, domain);
+    }
+    */
   }
 
 
@@ -254,14 +239,8 @@ namespace ngsolve
       if (component != -1)
 	hgfu = gfu->GetComponent(component);
 
-      if (!gfu->GetFESpace().IsComplex())
-	SetValues<double> (pde.GetMeshAccess(),
-			   *coef, *hgfu, 
-			   boundary, 0, lh);
-      else
-	SetValues<Complex> (pde.GetMeshAccess(),
-			    *coef, *hgfu,
-			    boundary, 0, lh);
+      SetValues (pde.GetMeshAccess(), *coef, 
+		 *hgfu, boundary, 0, lh);
 
       if (component != -1)
 	delete hgfu;

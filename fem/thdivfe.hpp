@@ -532,7 +532,6 @@ namespace ngfem
 			   FlatMatrixFixWidth<DIM> vals) const
     {    
       AutoDiff<DIM> adp[DIM];
-
       for (int i = 0; i < ir.GetNIP(); i++)
 	{
 	  for (int j = 0; j < DIM; j++)
@@ -540,7 +539,6 @@ namespace ngfem
 	
 	  HDivEvaluateShape<DIM> ds(coefs);
 	  static_cast<const FEL*> (this) -> T_CalcShape (adp, ds);
-
 	  vals.Row(i) = ds.Sum(); 
 	}
     }

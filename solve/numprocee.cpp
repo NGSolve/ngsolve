@@ -118,7 +118,7 @@ namespace ngsolve
     fesflux -> Update(lh);
 
     Flags flags;
-    //    flags.SetFlag ("novisual");
+    flags.SetFlag ("novisual");
     GridFunction * flux = CreateGridFunction (fesflux, "fluxzz", flags);
     flux->Update();
 
@@ -130,37 +130,11 @@ namespace ngsolve
     int ndom = ma.GetNDomains();
     for (int k = 0; k < ndom; k++)
       {
-	if (!bfa->GetFESpace().IsComplex())
-	  {
-	    CalcFluxProject (ma, 
-			     dynamic_cast<const S_GridFunction<double>&> (*gfu), 
-			     dynamic_cast<S_GridFunction<double>&> (*flux), 
-			     *bfi,
-			     0, k, lh);
-	  
-	    CalcError (ma, 
-		       dynamic_cast<const S_GridFunction<double>&> (*gfu), 
-		       dynamic_cast<const S_GridFunction<double>&> (*flux), 
-		       *bfi,
-		       err, k, lh);
-	  }
-	else
-	  {
-	    CalcFluxProject (ma, 
-			     dynamic_cast<const S_GridFunction<Complex>&> (*gfu), 
-			     dynamic_cast<S_GridFunction<Complex>&> (*flux), 
-			     *bfi,
-			     0, k, lh);
-	  
-	    CalcError (ma,
-		       dynamic_cast<const S_GridFunction<Complex>&> (*gfu), 
-		       dynamic_cast<const S_GridFunction<Complex>&> (*flux), 
-		       *bfi,
-		       err, k, lh);
-	  }
-      
+	CalcFluxProject (ma, *gfu, *flux, *bfi, 1, k, lh);
+	CalcError (ma, *gfu, *flux, *bfi, err, k, lh);
       }
-    // delete flux;
+
+    delete flux;
     double sum = 0;
     for (int i = 0; i < err.Size(); i++)
       sum += err(i);
@@ -345,6 +319,9 @@ namespace ngsolve
       {
 	for (int k = 0; k < ndom; k++)
 	  {
+	    CalcDifference (ma, *gfu1, *bfi1, coef_real, diff, k, lh);
+
+	    /*
 	    if (!bfa1->GetFESpace().IsComplex())
 	      {
 		CalcDifference (ma, 
@@ -361,6 +338,7 @@ namespace ngsolve
 				coef_real, coef_imag,
 				diff, k, lh);
 	      }
+	    */
 	  }
 
       }
@@ -455,8 +433,7 @@ namespace ngsolve
     BilinearFormIntegrator * bfi = bfa->GetIntegrator(0);
 
     Flags fesflags;
-    fesflags.SetFlag ("order", bfa->GetFESpace().GetOrder()+8);
-    // fesflags.SetFlag ("dim", bfi->DimFlux());
+    fesflags.SetFlag ("order", bfa->GetFESpace().GetOrder());
     if (bfa->GetFESpace().IsComplex())
       fesflags.SetFlag ("complex");
 
@@ -466,6 +443,7 @@ namespace ngsolve
     fesflux.Update(lh);
 
     Flags flags;
+    flags.SetFlag ("novisual");
     GridFunction * flux = CreateGridFunction (&fesflux, "fluxzz", flags);
     flux->Update();
 
@@ -473,56 +451,36 @@ namespace ngsolve
       dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
 
     err = 0;
-  
-    if (!bfa->GetFESpace().IsComplex())
-      {
-	CalcFluxProject (ma, 
-			 dynamic_cast<const S_GridFunction<double>&> (*gfu), 
-			 dynamic_cast<S_GridFunction<double>&> (*flux), 
-			 *bfi,
-			 1, -1, lh);
-	  
-	CalcError (ma, 
-		   dynamic_cast<const S_GridFunction<double>&> (*gfu), 
-		   dynamic_cast<const S_GridFunction<double>&> (*flux), 
-		   *bfi,
-		   err, -1, lh);
-      }
-    else
-      {
-	CalcFluxProject (ma, 
-			 dynamic_cast<const S_GridFunction<Complex>&> (*gfu), 
-			 dynamic_cast<S_GridFunction<Complex>&> (*flux), 
-			 *bfi,
-			 1, -1, lh);
-	
-	CalcError (ma,
-		   dynamic_cast<const S_GridFunction<Complex>&> (*gfu), 
-		   dynamic_cast<const S_GridFunction<Complex>&> (*flux), 
-		   *bfi,
-		   err, -1, lh);
-      }
 
-    // delete flux;
+    CalcFluxProject (ma, *gfu, *flux, *bfi, 1, -1, lh);
+    CalcError (ma, *gfu, *flux, *bfi, err, -1, lh);
+
+
+    delete flux;
+    delete &fesflux;
+
     double sum = 0;
     for (int i = 0; i < err.Size(); i++)
       sum += err(i);
     cout << "estimated error = " << sqrt (sum) << endl;
     static ofstream errout ("error.out");
+
     errout << ma.GetNLevels() 
 	   << "  " << bfa->GetFESpace().GetNDof() 
-	   << "  " << sqrt(double (bfa->GetFESpace().GetNDof())) 
 	   << " " << sqrt(sum) << endl;
   }
-
-
-
 
   void NumProcRTZZErrorEstimator :: PrintReport (ostream & ost)
   {
     ost << "NumProcRTZZErrorEstimator:" << endl;
     ost << "Bilinear-form = " << endl;
   }
+
+
+
+
+
+
 
   ///
   class NumProcHierarchicalErrorEstimator : public NumProc
@@ -930,7 +888,9 @@ Flags visflags;
       dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
 
     err = 0;
+    CalcError (ma, *gfu, *gfflux, *bfi, err, -1, lh);
   
+    /*
     if (!bfa->GetFESpace().IsComplex())
       {
 	CalcError (ma, 
@@ -947,7 +907,7 @@ Flags visflags;
 		   *bfi,
 		   err, -1, lh);
       }
-      
+    */
       
     double sum = 0;
     for (int i = 0; i < err.Size(); i++)

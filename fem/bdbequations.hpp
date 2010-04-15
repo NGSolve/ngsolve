@@ -730,6 +730,7 @@ class DiagDMat : public DMatOp<DiagDMat<DIM,SCAL> >
   CoefficientFunction * coef;
 public:
   typedef SCAL TSCAL;
+  enum { DIM_DMAT = DIM };
   DiagDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
 
   DiagDMat (Array<CoefficientFunction*> & acoefs) : coef(acoefs[0]) { ; }
@@ -804,6 +805,7 @@ template <> class OrthoDMat<1> : public DMatOp<OrthoDMat<1> >
 {
   CoefficientFunction * coef;
 public:
+  enum { DIM_DMAT = 1 };
   OrthoDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
 
   template <typename FEL, typename SIP, typename MAT>
@@ -835,6 +837,7 @@ template <> class OrthoDMat<2>: public DMatOp<OrthoDMat<2> >
   CoefficientFunction * coef1;
   CoefficientFunction * coef2;
 public:
+  enum { DIM_DMAT = 2 };
   OrthoDMat (CoefficientFunction * acoef1,
 	CoefficientFunction * acoef2)
     : coef1(acoef1), coef2(acoef2) { ; }
@@ -887,6 +890,7 @@ template <> class OrthoDMat<3> : public DMatOp<OrthoDMat<3> >
   CoefficientFunction * coef2;
   CoefficientFunction * coef3;
 public:
+  enum { DIM_DMAT = 3 };
   OrthoDMat (CoefficientFunction * acoef1,
 	     CoefficientFunction * acoef2)
     : coef1(acoef1), coef2(acoef2), coef3(acoef2) { ; }
