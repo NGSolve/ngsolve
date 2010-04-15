@@ -47,6 +47,7 @@ namespace ngcomp
   using namespace std;
   using namespace ngstd;
   using ngstd::INT;
+  using ngfem::ELEMENT_TYPE;
 
   using namespace ngla;
   using namespace ngfem;
