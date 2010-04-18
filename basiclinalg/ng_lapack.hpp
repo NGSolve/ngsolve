@@ -27,7 +27,13 @@ namespace ngbla
     typedef double doublereal;
     typedef Complex doublecomplex;
     typedef complex<float> singlecomplex;
+
+// Philippose - 17/04/2010
+// Windows SDK defines VOID in the file WinNT.h
+#ifndef VOID
     typedef void VOID;
+#endif
+
     typedef int ftnlen;
     typedef int L_fp;  // ?
 #include "clapack.h"
