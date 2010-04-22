@@ -185,36 +185,36 @@ namespace netgen
   
   template <>
   DLL_HEADER void Ng_MultiElementTransformation<3,3> (int elnr, int npts,
-                                                      const double * xi, int sxi,
-                                                      double * x, int sx,
-                                                      double * dxdxi, int sdxdxi)
+                                                      const double * xi, size_t sxi,
+                                                      double * x, size_t sx,
+                                                      double * dxdxi, size_t sdxdxi)
   {
     mesh->GetCurvedElements().CalcMultiPointElementTransformation (elnr, npts, xi, sxi, x, sx, dxdxi, sdxdxi);
   }
   
   template <>
   DLL_HEADER void Ng_MultiElementTransformation<2,2> (int elnr, int npts,
-                                                      const double * xi, int sxi,
-                                                      double * x, int sx,
-                                                      double * dxdxi, int sdxdxi)
+                                                      const double * xi, size_t sxi,
+                                                      double * x, size_t sx,
+                                                      double * dxdxi, size_t sdxdxi)
   {
     mesh->GetCurvedElements().CalcMultiPointSurfaceTransformation<2> (elnr, npts, xi, sxi, x, sx, dxdxi, sdxdxi);
   }
 
   template <>
   DLL_HEADER void Ng_MultiElementTransformation<2,3> (int elnr, int npts,
-                                                      const double * xi, int sxi,
-                                                      double * x, int sx,
-                                                      double * dxdxi, int sdxdxi)
+                                                      const double * xi, size_t sxi,
+                                                      double * x, size_t sx,
+                                                      double * dxdxi, size_t sdxdxi)
   {
     mesh->GetCurvedElements().CalcMultiPointSurfaceTransformation<3> (elnr, npts, xi, sxi, x, sx, dxdxi, sdxdxi);
   }
 
   template <>
   DLL_HEADER void Ng_MultiElementTransformation<1,2> (int elnr, int npts,
-                                                      const double * xi, int sxi,
-                                                      double * x, int sx,
-                                                      double * dxdxi, int sdxdxi)
+                                                      const double * xi, size_t sxi,
+                                                      double * x, size_t sx,
+                                                      double * dxdxi, size_t sdxdxi)
   {
     for (int ip = 0; ip < npts; ip++)
       {
@@ -235,9 +235,9 @@ namespace netgen
 
   template <>
   DLL_HEADER void Ng_MultiElementTransformation<1,1> (int elnr, int npts,
-                                                      const double * xi, int sxi,
-                                                      double * x, int sx,
-                                                      double * dxdxi, int sdxdxi)
+                                                      const double * xi, size_t sxi,
+                                                      double * x, size_t sx,
+                                                      double * dxdxi, size_t sdxdxi)
   {
     cout << "1D not supported" << endl;
   }

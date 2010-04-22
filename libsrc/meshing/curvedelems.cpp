@@ -2884,9 +2884,9 @@ namespace netgen
   template <int DIM_SPACE>
   void CurvedElements :: 
   CalcMultiPointSurfaceTransformation (SurfaceElementIndex elnr, int npts,
-				       const double * xi, int sxi,
-                                       double * x, int sx,
-                                       double * dxdxi, int sdxdxi)
+				       const double * xi, size_t sxi,
+                                       double * x, size_t sx,
+                                       double * dxdxi, size_t sdxdxi)
   {
     if (mesh.coarsemesh)
       {
@@ -3031,15 +3031,15 @@ namespace netgen
 
   template void CurvedElements :: 
   CalcMultiPointSurfaceTransformation<2> (SurfaceElementIndex elnr, int npts,
-                                          const double * xi, int sxi,
-                                          double * x, int sx,
-                                          double * dxdxi, int sdxdxi);
+                                          const double * xi, size_t sxi,
+                                          double * x, size_t sx,
+                                          double * dxdxi, size_t sdxdxi);
 
   template void CurvedElements :: 
   CalcMultiPointSurfaceTransformation<3> (SurfaceElementIndex elnr, int npts,
-                                          const double * xi, int sxi,
-                                          double * x, int sx,
-                                          double * dxdxi, int sdxdxi);
+                                          const double * xi, size_t sxi,
+                                          double * x, size_t sx,
+                                          double * dxdxi, size_t sdxdxi);
 
 
 
@@ -3200,9 +3200,9 @@ namespace netgen
 
   void  CurvedElements :: 
   CalcMultiPointElementTransformation (ElementIndex elnr, int n,
-                                       const double * xi, int sxi,
-                                       double * x, int sx,
-                                       double * dxdxi, int sdxdxi)
+                                       const double * xi, size_t sxi,
+                                       double * x, size_t sx,
+                                       double * dxdxi, size_t sdxdxi)
   {
     if (mesh.coarsemesh)
       {

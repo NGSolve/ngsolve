@@ -175,9 +175,9 @@ extern "C" {
   /// x ..global coordinates
   /// dxdxi...D x D Jacobian matrix (row major storage)
   DLL_HEADER void Ng_GetMultiElementTransformation (int ei, int n,
-                                                    const double * xi, int sxi,
-                                                    double * x, int sx,
-                                                    double * dxdxi, int sdxdxi);
+                                                    const double * xi, size_t sxi,
+                                                    double * x, size_t sx,
+                                                    double * dxdxi, size_t sdxdxi);
 
   
   

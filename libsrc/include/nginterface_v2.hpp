@@ -130,9 +130,9 @@ namespace netgen
   /// dxdxi...DIM_SPACE x DIM_EL Jacobian matrix (row major storage)
   template <int DIM_EL, int DIM_SPACE> 
   DLL_HEADER void Ng_MultiElementTransformation (int elnr, int npts,
-                                                 const double * xi, int sxi,
-                                                 double * x, int sx,
-                                                 double * dxdxi, int sdxdxi);
+                                                 const double * xi, size_t sxi,
+                                                 double * x, size_t sx,
+                                                 double * dxdxi, size_t sdxdxi);
   
   template <int DIM> 
   DLL_HEADER int Ng_GetElementIndex (int nr);

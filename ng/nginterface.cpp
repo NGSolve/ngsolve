@@ -920,9 +920,9 @@ void Ng_GetBufferedElementTransformation (int ei, const double * xi,
 
 
 void Ng_GetMultiElementTransformation (int ei, int n,
-                                       const double * xi, int sxi,
-                                       double * x, int sx,
-                                       double * dxdxi, int sdxdxi)
+                                       const double * xi, size_t sxi,
+                                       double * x, size_t sx,
+                                       double * dxdxi, size_t sdxdxi)
 {
   if (mesh->GetDimension() == 2)
     mesh->GetCurvedElements().CalcMultiPointSurfaceTransformation<2> (ei-1, n, xi, sxi, x, sx, dxdxi, sdxdxi);

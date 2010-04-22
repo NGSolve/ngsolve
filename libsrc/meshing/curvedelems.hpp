@@ -125,9 +125,9 @@ public:
   
   template <int DIM_SPACE>
   void CalcMultiPointSurfaceTransformation (SurfaceElementIndex elnr, int n,
-                                            const double * xi, int sxi,
-                                            double * x, int sx,
-                                            double * dxdxi, int sdxdxi);
+                                            const double * xi, size_t sxi,
+                                            double * x, size_t sx,
+                                            double * dxdxi, size_t sdxdxi);
 
 
   void CalcMultiPointElementTransformation (Array< Point<3> > * xi, ElementIndex elnr,
@@ -135,9 +135,9 @@ public:
 					    Array< Mat<3,3> > * dxdxi);
 
   void CalcMultiPointElementTransformation (ElementIndex elnr, int n,
-                                            const double * xi, int sxi,
-                                            double * x, int sx,
-                                            double * dxdxi, int sdxdxi);
+                                            const double * xi, size_t sxi,
+                                            double * x, size_t sx,
+                                            double * dxdxi, size_t sdxdxi);
 
 
 
