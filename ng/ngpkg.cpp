@@ -2197,7 +2197,8 @@ namespace netgen
 	if (occgeometry->ErrorInSurfaceMeshing())
 	  {
 	    char script[] = "rebuildoccdialog";
-	    int errcode = Tcl_GlobalEval (tcl_interp, script);
+	    // int errcode = 
+	      Tcl_GlobalEval (tcl_interp, script);
 	  }
       }
 #endif
@@ -3551,18 +3552,13 @@ namespace netgen
         buff.YUV = (uint8_t*)malloc(3*(PIXsize/2));
         buff.MPG = (uint8_t*)malloc(MPGbufsize);
 
-	cout << "z0" << endl;
 
         // Initialize libavcodec:
         //-----------------------
         if( !initialized ) {
-	  cout << "call register" << endl;
           av_register_all();
-	  cout << "reg done" << endl;
           initialized = 1;
         }
-
-	cout << "a" << endl;
 
         // Choose codec:
         //--------------
@@ -3574,13 +3570,9 @@ namespace netgen
           return TCL_ERROR;
         }
 
-	cout << "b" << endl;
-
         // Init codec context etc.:
         //--------------------------
         context = avcodec_alloc_context();
-
-	cout << "b01" << endl;
 
         context->bit_rate = bitrate;
         context->width = nx;
@@ -3591,8 +3583,6 @@ namespace netgen
         context->pix_fmt = PIX_FMT_YUV420P;
         context->flags |= CODEC_FLAG_PSNR;
 
-	cout << "b1" << endl;
-
         if( avcodec_open( context, codec ) < 0 ) {
           cout << "can't open codec" << endl;
           avcodec_close( context );
@@ -3601,8 +3591,6 @@ namespace netgen
           fclose( MPGfile );
           return TCL_ERROR;
         }
-
-	cout << "c" << endl;
 
         YUVpicture = avcodec_alloc_frame();
 
@@ -3734,7 +3722,8 @@ namespace netgen
   static int Ng_VideoClip (struct Togl * togl,
                            int argc, tcl_const char *argv[])
   {
-    return TCL_OK;
+    Tcl_SetResult (Togl_Interp(togl), (char*)"Video not available, Netgen was not compiled with FFMPEG library", TCL_STATIC);
+    return TCL_ERROR;
   }
 #endif
 
