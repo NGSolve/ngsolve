@@ -304,7 +304,7 @@ public:
 
 
 
-#define BLOCK_VERSION
+#define BLOCK_VERSIONxxx
 #ifdef BLOCK_VERSION
 
 
@@ -428,65 +428,47 @@ public:
   AssembleElementMatrix (const FiniteElement & bfel,
 			 const ElementTransformation & eltrans, 
 			 FlatMatrix<double> & elmat,
-			 LocalHeap & locheap) const
+			 LocalHeap & lh) const
   {
     static int timer = NgProfiler::CreateTimer (string ("Elementmatrix, ") + Name());
     NgProfiler::RegionTimer reg (timer);
 
     try
       {
-	// cout << "start assemble, free = " << locheap.Available() << endl;
-
-	const FEL & fel = dynamic_cast<const FEL&> (bfel);
+	const FEL & fel = static_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 
-	const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
+	HeapReset hr(lh);
 
-	// elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
-	// elmat = 0;
-	
-	FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, locheap);
-	FlatMatrixFixHeight<DIM_DMAT, double> dbmat (ndof * DIM, locheap);
+	const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
+	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
+
+	FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, lh);
+	FlatMatrixFixHeight<DIM_DMAT, double> dbmat (ndof * DIM, lh);
 	Mat<DIM_DMAT,DIM_DMAT> dmat;
 
-	FlatMatrix<double> bbmat (ndof * DIM, DIM_DMAT*ir.GetNIP(), locheap);
-	FlatMatrix<double> bdbmat (ndof * DIM, DIM_DMAT*ir.GetNIP(), locheap);
+	FlatMatrix<double> bbmat (ndof * DIM, DIM_DMAT*ir.GetNIP(), lh);
+	FlatMatrix<double> bdbmat (ndof * DIM, DIM_DMAT*ir.GetNIP(), lh);
 
-	void * heapp = locheap.GetPointer();
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
-	    // cout << "assemble, ip loop, free = " << locheap.Available() << endl;
+	    HeapReset hr(lh);
+	    const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
 
-	    SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-	      sip(ir[i], eltrans, locheap);
-            
-	    DIFFOP::GenerateMatrix (fel, sip, bmat, locheap);
-	    dmatop.GenerateMatrix (fel, sip, dmat, locheap);
+	    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
+	    dmatop.GenerateMatrix (fel, sip, dmat, lh);
 	    double fac =  
 	      fabs (sip.GetJacobiDet()) * sip.IP().Weight();
 
 	    dmat *= fac;
 	    dbmat = dmat * bmat;
-	    // dbmat = fac * (dmat * bmat);
 
-	    /*
-	    for (int l = 0; l < ndof*DIM; l++)
-	      for (int k = 0; k < DIM_DMAT; k++)
-		{
-		  bbmat(l, i*DIM_DMAT+k) = bmat(k,l);
-		  bdbmat(l, i*DIM_DMAT+k) = dbmat(k,l);
-		}
-	    */
 	    for (int k = 0; k < DIM_DMAT; k++)
 	      bbmat.Col(i*DIM_DMAT+k) = bmat.Row(k);
 
 	    for (int k = 0; k < DIM_DMAT; k++)
 	      bdbmat.Col(i*DIM_DMAT+k) = dbmat.Row(k);
-
-
-	    locheap.CleanUp (heapp);
 	  }
-
 
 	/*
 	if (DMATOP::SYMMETRIC)
@@ -497,14 +479,6 @@ public:
 
 	LapackMultABt (bbmat, bdbmat, elmat);
 	NgProfiler::AddFlops (timer, long(elmat.Height())*long(elmat.Width())*bbmat.Width());
-
-	/*
-	cblas_dgemm (CblasRowMajor, CblasNoTrans, CblasTrans,
-		     ndof*DIM, ndof*DIM, bbmat.Width(), 1.0,
-		     &bdbmat(0,0), bbmat.Width(), 
-		     &bbmat(0,0), bbmat.Width(),
-		     1.0, &elmat(0,0), ndof*DIM);
-	*/
       } 
     
 

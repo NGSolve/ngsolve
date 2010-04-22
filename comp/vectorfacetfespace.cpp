@@ -274,6 +274,7 @@ namespace ngcomp
 		  {
 		  case ET_TET: ndof += 4*(order+1)*2; break;
 		  case ET_PRISM: ndof += 2 * (2*(order+1)+3*(2*order+1)); break;
+		  default: throw Exception (string("VectorFacetFESpace: Element type not implemented"));
 		  }
 	      }
 	    first_inner_dof[ne] = ndof;
@@ -447,7 +448,6 @@ namespace ngcomp
 	if (ma.GetDimension() == 2)
 	  {
 	    Array<int> fanums; // facet numbers
-	    int first,next;
 	    
 	    fanums.SetSize(0);
 	    dnums.SetSize(0);
@@ -479,7 +479,6 @@ namespace ngcomp
 	else
 	  {
 	    Array<int> fanums; // facet numbers
-	    int first,next;
 	    
 	    fanums.SetSize(0);
 	    dnums.SetSize(0);

@@ -78,6 +78,57 @@ namespace ngcomp
 
 
     virtual GridFunction * GetComponent (int compound_comp) const = 0;
+
+
+    ///
+    virtual void GetElementVector (const Array<int> & dnums,
+				   FlatVector<double> & elvec) const
+    { vec[0] -> GetIndirect (dnums, elvec); }
+      
+    ///
+    virtual void SetElementVector (const Array<int> & dnums,
+				   const FlatVector<double> & elvec) 
+    { vec[0] -> SetIndirect (dnums, elvec); }
+
+
+    ///
+    virtual void GetElementVector (int comp,
+				   const Array<int> & dnums,
+				   FlatVector<double> & elvec) const 
+    { vec[comp] -> GetIndirect (dnums, elvec); }
+
+
+    ///
+    virtual void SetElementVector (int comp,
+				   const Array<int> & dnums,
+				   const FlatVector<double> & elvec) 
+    { vec[comp] -> SetIndirect (dnums, elvec); }
+
+    ///
+    virtual void GetElementVector (const Array<int> & dnums,
+				   FlatVector<Complex> & elvec) const
+    { vec[0] -> GetIndirect (dnums, elvec); }
+      
+    ///
+    virtual void SetElementVector (const Array<int> & dnums,
+				   const FlatVector<Complex> & elvec) 
+    { vec[0] -> SetIndirect (dnums, elvec); }
+
+
+    ///
+    virtual void GetElementVector (int comp,
+				   const Array<int> & dnums,
+				   FlatVector<Complex> & elvec) const 
+    { vec[comp] -> GetIndirect (dnums, elvec); }
+
+
+    ///
+    virtual void SetElementVector (int comp,
+				   const Array<int> & dnums,
+				   const FlatVector<Complex> & elvec) 
+    { vec[comp] -> SetIndirect (dnums, elvec); }
+
+
   };
 
 
@@ -89,36 +140,6 @@ namespace ngcomp
     S_GridFunction (const FESpace & afespace, const string & aname, const Flags & flags)
       : GridFunction (afespace, aname, flags) { ; }
   
-    ///
-    virtual void GetElementVector (const Array<int> & dnums,
-				   FlatVector<SCAL> & elvec) const
-    { 
-      vec[0] -> GetIndirect (dnums, elvec); 
-    }
-      
-    ///
-    virtual void SetElementVector (const Array<int> & dnums,
-				   const FlatVector<SCAL> & elvec) 
-    {
-      vec[0] -> SetIndirect (dnums, elvec);
-    }
-
-
-    ///
-    virtual void GetElementVector (int comp,
-				   const Array<int> & dnums,
-				   FlatVector<SCAL> & elvec) const 
-    {
-      vec[comp] -> GetIndirect (dnums, elvec);
-    }
-
-
-    virtual void SetElementVector (int comp,
-				   const Array<int> & dnums,
-				   const FlatVector<SCAL> & elvec) 
-    {
-      vec[comp] -> SetIndirect (dnums, elvec);
-    }
 
     virtual GridFunction * GetComponent (int compound_comp) const;
   };

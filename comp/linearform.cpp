@@ -556,7 +556,45 @@ namespace ngcomp
 
 
 
+  void LinearForm :: AddElementVector (const Array<int> & dnums,
+				       const FlatVector<double> & elvec,
+				       const int cachecomp)
+  {
+    throw Exception ("LinearForm::AddElementVector: real elvec for complex li-form");
+  }
+  void LinearForm :: SetElementVector (const Array<int> & dnums,
+				       const FlatVector<double> & elvec)
+  {
+    throw Exception ("LinearForm::SetElementVector: real elvec for complex li-form");
+  }
 
+  void LinearForm :: GetElementVector (const Array<int> & dnums,
+				   FlatVector<double> & elvec) const
+  {
+    throw Exception ("LinearForm::GetElementVector: real elvec for complex li-form");
+  }
+
+  
+  void LinearForm :: AddElementVector (const Array<int> & dnums,
+				       const FlatVector<Complex> & elvec,
+				       const int cachecomp)
+  {
+    throw Exception ("LinearForm::AddElementVector: complex elvec for real li-form");
+  }
+
+  void LinearForm :: SetElementVector (const Array<int> & dnums,
+				       const FlatVector<Complex> & elvec)
+  {
+    throw Exception ("LinearForm::SetElementVector: complex elvec for real li-form");
+  }
+
+  void LinearForm :: GetElementVector (const Array<int> & dnums,
+				       FlatVector<Complex> & elvec) const
+  {
+    throw Exception ("LinearForm::GetElementVector: complex elvec for real li-form");
+  }
+
+  
 
 
 

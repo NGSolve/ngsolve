@@ -98,6 +98,25 @@ namespace ngcomp
     ///
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
+
+    virtual void AddElementVector (const Array<int> & dnums,
+				   const FlatVector<double> & elvec,
+				   const int cachecomp = -1);
+    virtual void SetElementVector (const Array<int> & dnums,
+				   const FlatVector<double> & elvec);
+    virtual void GetElementVector (const Array<int> & dnums,
+				   FlatVector<double> & elvec) const;
+
+    virtual void AddElementVector (const Array<int> & dnums,
+				   const FlatVector<Complex> & elvec,
+				   const int cachecomp = -1);
+    virtual void SetElementVector (const Array<int> & dnums,
+				   const FlatVector<Complex> & elvec);
+    virtual void GetElementVector (const Array<int> & dnums,
+				   FlatVector<Complex> & elvec) const;
+
+
+
     virtual void SetCacheBlockSize (const int size)
     {
       cacheblocksize = size;

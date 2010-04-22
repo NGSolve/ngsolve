@@ -18,18 +18,9 @@ namespace ngcomp
   class NGS_DLL_HEADER H1HighOrderFESpace : public FESpace
   {
   protected:
-
-    // Level
     int level;
 
-    // Number of Edges
-    int ned;
-    // Number of Faces
-    int nfa;
-    // Number of Elements
-    int nel;
-    // Number of Vertex
-    int nv;
+    bool print; 
 
     Array<int> first_edge_dof;
     Array<int> first_face_dof;
@@ -59,18 +50,10 @@ namespace ngcomp
   
     Array<int> ndlevel;
 
-    // int augmented;
-
     bool level_adapted_order; 
 
 
-    int loworderindex; 
-
-    bool minext, optext;
-
     Array<INT<2> > defined_on_one_side_of_bounding_curve;
-
-    bool print; 
 
   public:
 

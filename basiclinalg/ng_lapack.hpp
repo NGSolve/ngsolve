@@ -19,7 +19,6 @@ namespace ngbla
 
 #ifdef LAPACK
 
-  // BLAS 1
   extern "C" {
     typedef char logical;
     typedef int integer;
@@ -28,7 +27,7 @@ namespace ngbla
     typedef Complex doublecomplex;
     typedef complex<float> singlecomplex;
 
-// Philippose - 17/04/2010
+
 // Windows SDK defines VOID in the file WinNT.h
 #ifndef VOID
     typedef void VOID;
@@ -36,14 +35,16 @@ namespace ngbla
 
     typedef int ftnlen;
     typedef int L_fp;  // ?
+
+
 #include "clapack.h"
   }
 
 
   
+  // BLAS 1
 
-  inline double LapackDot (ngbla::FlatVector<double> x,
-                           ngbla::FlatVector<double> y)
+  inline double LapackDot (FlatVector<double> x, FlatVector<double> y)
   {
     int n = x.Size();
     int incx = 1;
@@ -75,8 +76,6 @@ namespace ngbla
     int incy = 1;
     dgemv_ (&trans, &m, &n, &alpha, &a(0,0), &lda, &x(0), &incx, &beta, &y(0), &incy);
   }
-
-
 
   inline void LapackMultAtx (ngbla::FlatMatrix<double> a,
                              ngbla::FlatVector<double> x,
@@ -119,21 +118,7 @@ namespace ngbla
 
 
 
-
-
-  /*
-  extern "C"
-  void dgemm_ (char & transa, char & transb, int & m, int & n, int & k, double & alpha,
-               double & a, int & lda, double & b, int & ldb, double & beta, double & c, int & ldc);
-
-  extern "C"
-  void zgemm_ (char & transa, char & transb, int & m, int & n, int & k, double & alpha,
-               double & a, int & lda, double & b, int & ldb, double & beta, double & c, int & ldc);
-  */
-
-  inline void LapackMultABt (ngbla::FlatMatrix<double> a, 
-                             ngbla::FlatMatrix<double> b,
-                             ngbla::FlatMatrix<double> c)
+  inline void LapackMultABt (FlatMatrix<double> a, FlatMatrix<double> b, FlatMatrix<double> c)
   {
     char transa = 'T';
     char transb = 'N';
@@ -147,19 +132,10 @@ namespace ngbla
     int ldc = c.Width();
 
     dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
-
-    /*
-      cblas_dgemm (CblasColMajor, CblasTrans, CblasNoTrans, 
-      c.Width(), c.Height(), a.Width(), 
-      1.0, &b(0,0), b.Width(), &a(0,0), a.Width(), 
-      0.0, &c(0,0), c.Width());
-    */
   }
+  
 
-
-  inline void LapackMultAB (ngbla::FlatMatrix<double> a, 
-                            ngbla::FlatMatrix<double> b,
-                            ngbla::FlatMatrix<double> c)
+  inline void LapackMultAB (FlatMatrix<double> a, FlatMatrix<double> b, FlatMatrix<double> c)
   {
     char transa = 'N';
     char transb = 'N';
