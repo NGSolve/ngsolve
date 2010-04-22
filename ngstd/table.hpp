@@ -18,7 +18,7 @@ namespace ngstd
    Base class of \Ref{Table} container.
    Provides index array pointing to first element in entry. 
  */
-class NGS_DLL_HEADER BaseTable
+class BaseTable
 {
 protected:
   /// number of rows
@@ -27,9 +27,9 @@ protected:
   int * index;
 
 public:  
-  BaseTable (int asize, int entrysize);
-  BaseTable (const FlatArray<int> & entrysize);
-  ~BaseTable ();
+  NGS_DLL_HEADER BaseTable (int asize, int entrysize);
+  NGS_DLL_HEADER BaseTable (const FlatArray<int> & entrysize);
+  NGS_DLL_HEADER ~BaseTable ();
   int * Index() const { return index; }
 };
 
@@ -117,7 +117,7 @@ inline ostream & operator<< (ostream & s, const Table<T> & table)
 
 
 /// Base class to generic DynamicTable.
-class NGS_DLL_HEADER BaseDynamicTable
+class BaseDynamicTable
 {
 protected:
   
@@ -139,18 +139,18 @@ protected:
 
 public:
   ///
-  BaseDynamicTable (int size);
+  NGS_DLL_HEADER BaseDynamicTable (int size);
   ///
-  BaseDynamicTable (const Array<int> & entrysizes, int elemsize);
+  NGS_DLL_HEADER BaseDynamicTable (const Array<int> & entrysizes, int elemsize);
   ///
-  ~BaseDynamicTable ();
+  NGS_DLL_HEADER ~BaseDynamicTable ();
 
   /// Changes Size of table to size, deletes data
-  void SetSize (int size);
+  NGS_DLL_HEADER void SetSize (int size);
   ///
-  void IncSize (int i, int elsize);
+  NGS_DLL_HEADER void IncSize (int i, int elsize);
 
-  void DecSize (int i);
+  NGS_DLL_HEADER void DecSize (int i);
 };
 
 

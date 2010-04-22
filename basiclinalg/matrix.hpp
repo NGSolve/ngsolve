@@ -55,11 +55,11 @@ namespace ngbla
       : h(ah), w(ah), data(adata) { ; }
 
     /// allocates at local heap
-    FlatMatrix (int ah, int aw, LocalHeap & lh) throw (LocalHeapOverflow)
+    FlatMatrix (int ah, int aw, LocalHeap & lh) // throw (LocalHeapOverflow)
       : h(ah), w(aw), data((T*)lh.Alloc(ah*aw*sizeof(T))) { ; }
   
     /// allocates at local heap
-    FlatMatrix (int ah, LocalHeap & lh) throw (LocalHeapOverflow)
+    FlatMatrix (int ah, LocalHeap & lh) // throw (LocalHeapOverflow)
       : h(ah), w(ah), data((T*)lh.Alloc(ah*ah*sizeof(T))) { ; }
   
     /// copy constructor. copies pointers, not contents
@@ -85,7 +85,7 @@ namespace ngbla
     ~FlatMatrix () throw() { ; }
 
     /// set size, and assign mem
-    void AssignMemory (int ah, int aw, LocalHeap & lh)  throw (LocalHeapOverflow)
+    void AssignMemory (int ah, int aw, LocalHeap & lh)  // throw (LocalHeapOverflow)
     {
       h = ah;
       w = aw;
@@ -206,6 +206,23 @@ namespace ngbla
     }
   
   };
+
+
+  /// Calculate inverse. Gauss elimination with row pivoting
+  template <class T, class T2>
+  extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv);
+
+  /**
+     Calculates the inverse of a Matrix.
+  */
+  template <typename T>
+  inline Matrix<T> Inv (const FlatMatrix<T> & m)
+  {
+    Matrix<T> inv(m.Height(),m.Height());
+    CalcInverse (m, inv);
+    return inv;
+  }
+
 
 
 
@@ -451,7 +468,7 @@ namespace ngbla
       : data(adata), h(ah) { ; }
 
     /// allocates at local heap
-    FlatMatrixFixWidth (int ah, LocalHeap & lh) throw (LocalHeapOverflow)
+    FlatMatrixFixWidth (int ah, LocalHeap & lh) // throw (LocalHeapOverflow)
       : data((T*)lh.Alloc(ah*W*sizeof(T))), h(ah) { ; }
   
     /// copy constructor. copies pointers, not contents
@@ -473,7 +490,7 @@ namespace ngbla
     ~FlatMatrixFixWidth () throw() { ; }
 
     /// set size, and assign mem
-    void AssignMemory (int ah, LocalHeap & lh) throw (LocalHeapOverflow)
+    void AssignMemory (int ah, LocalHeap & lh) // throw (LocalHeapOverflow)
     {
       h = ah;
       data = (T*)lh.Alloc(h*W*sizeof(T));
@@ -685,7 +702,7 @@ namespace ngbla
       : data(adata), w(aw) { ; }
 
     /// allocates at local heap
-    FlatMatrixFixHeight (int aw, LocalHeap & lh) throw (LocalHeapOverflow)
+    FlatMatrixFixHeight (int aw, LocalHeap & lh) // throw (LocalHeapOverflow)
       : data((T*)lh.Alloc(aw*H*sizeof(T))), w(aw) { ; }
   
     /// copy constructor. copies pointers, not contents
@@ -698,7 +715,7 @@ namespace ngbla
     ~FlatMatrixFixHeight () throw() { ; }
 
     /// set size, and assign mem
-    void AssignMemory (int aw, LocalHeap & lh) throw (LocalHeapOverflow)
+    void AssignMemory (int aw, LocalHeap & lh) // throw (LocalHeapOverflow)
     {
       w = aw;
       data = (T*)lh.Alloc(w*H*sizeof(T));

@@ -213,11 +213,11 @@ public:
 
 /// Integrator for term of zero-th order
 template <int D>
-class NGS_DLL_HEADER MassHDivIntegrator
+class MassHDivIntegrator
   : public T_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> >
 {
 public:
-  MassHDivIntegrator (CoefficientFunction * coeff);
+  NGS_DLL_HEADER MassHDivIntegrator (CoefficientFunction * coeff);
 
   static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
@@ -231,11 +231,11 @@ public:
 
 /// Integrator for div u div v
 template <int D>
-class NGS_DLL_HEADER DivDivHDivIntegrator
+class DivDivHDivIntegrator
   : public T_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> >
 {
 public:
-  DivDivHDivIntegrator (CoefficientFunction * coeff);
+  NGS_DLL_HEADER DivDivHDivIntegrator (CoefficientFunction * coeff);
 
   static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
@@ -296,7 +296,7 @@ public:
 
 
 template <int D>
-class BaseSourceHDivIntegrator 
+class NGS_DLL_HEADER BaseSourceHDivIntegrator 
   : public T_BIntegrator<DiffOpIdHDiv<D>, DVec<D>, HDivFiniteElement<D> >
 {
 public:
@@ -370,11 +370,11 @@ public:
 
 /// integrator for \f$\int_\Gamma \sigma_n \tau_n \, ds\f$
 template <int D>
-class NGS_DLL_HEADER RobinHDivIntegrator
+class RobinHDivIntegrator
   : public T_BDBIntegrator<DiffOpIdHDivBoundary<D>, DiagDMat<1>, HDivNormalFiniteElement<D-1> >
 {
 public:
-  RobinHDivIntegrator (CoefficientFunction * coeff)
+  NGS_DLL_HEADER RobinHDivIntegrator (CoefficientFunction * coeff)
     : T_BDBIntegrator<DiffOpIdHDivBoundary<D>, DiagDMat<1>, HDivNormalFiniteElement<D-1> > (DiagDMat<1> (coeff))
   { ; }
 

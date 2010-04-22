@@ -1116,7 +1116,7 @@ class DVecBase<N, Complex>
 
 
 template <int N, typename T = double> 
-class DVec { };
+class NGS_DLL_HEADER DVec { };
 
 template <typename T> 
 class DVec<1, T> : public DVecBase<1,T>
@@ -2024,12 +2024,12 @@ public:
 
 ///
 template <int D>
-class NGS_DLL_HEADER MassIntegrator 
+class MassIntegrator 
   : public T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> >
 {
 public:
   ///
-  MassIntegrator (CoefficientFunction * coeff);
+  NGS_DLL_HEADER MassIntegrator (CoefficientFunction * coeff);
   ///
   static Integrator * Create (Array<CoefficientFunction*> & coeffs);
   ///

@@ -73,7 +73,7 @@ namespace ngla
      A specific vector based on Vector.
   */
   template <typename T = double>
-  class VFlatVector : public T_BaseVector<T>
+  class NGS_DLL_HEADER  VFlatVector : public T_BaseVector<T>
   {
   protected:     
     // int s;

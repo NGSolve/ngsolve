@@ -181,7 +181,7 @@ namespace ngla
 
   /// specifies the scalar type.
   template <typename SCAL>
-  class S_BaseMatrix :  virtual public BaseMatrix
+  class NGS_DLL_HEADER S_BaseMatrix :  virtual public BaseMatrix
   {
   public:
     ///

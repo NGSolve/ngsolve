@@ -79,6 +79,14 @@ public:
   /// accesses partial derivative 
   SCAL & DValue (int i) throw() { return dval[i]; }
 
+
+  AutoDiff<D,SCAL> & operator+= (const SCAL & y) throw()
+  {
+	val += y;
+    return *this;
+  }
+
+
   /// 
   AutoDiff<D,SCAL> & operator+= (const AutoDiff<D,SCAL> & y) throw()
   {
