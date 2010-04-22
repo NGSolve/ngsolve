@@ -11,10 +11,13 @@
 namespace netgen
 {
 
+  class BaseDynamicMem;
+
   class BaseDynamicMem
   {
   private:
-    static BaseDynamicMem *first, *last;
+    static BaseDynamicMem *first;
+    static BaseDynamicMem *last;
 
     BaseDynamicMem *prev, *next;
     size_t size;
@@ -22,18 +25,18 @@ namespace netgen
     char * name;
 
   protected:
-    BaseDynamicMem ();
-    ~BaseDynamicMem ();
-    void Alloc (size_t s);
-    void ReAlloc (size_t s);
-    void Free ();
-    char * Ptr() { return ptr; }
-    const char * Ptr() const { return ptr; }
-    void Swap (BaseDynamicMem & m2);
+    NGS_DLL_HEADER BaseDynamicMem ();
+    NGS_DLL_HEADER ~BaseDynamicMem ();
+    NGS_DLL_HEADER void Alloc (size_t s);
+    NGS_DLL_HEADER void ReAlloc (size_t s);
+    NGS_DLL_HEADER void Free ();
+    char * Ptr() const { return ptr; }
+//    const char * Ptr() const { return ptr; }
+    NGS_DLL_HEADER void Swap (BaseDynamicMem & m2);
   public:
-    void SetName (const char * aname);
-    static void Print ();
-    static void GetUsed (int nr, char * ch);
+    NGS_DLL_HEADER void SetName (const char * aname);
+    NGS_DLL_HEADER static void Print ();
+    NGS_DLL_HEADER static void GetUsed (int nr, char * ch);
   };
 
 
@@ -64,22 +67,24 @@ namespace netgen
       BaseDynamicMem::Free ();
     }
 
-    const T * Ptr() const
+/*
+	const T * Ptr() const
     {
       return reinterpret_cast<const T*> (BaseDynamicMem::Ptr());
     }
-
-    T * Ptr()
+*/
+    T * Ptr() const
     {
       return reinterpret_cast<T*> (BaseDynamicMem::Ptr());
     }
 
+	/*
     operator const T* () const
     {
       return reinterpret_cast<const T*> (BaseDynamicMem::Ptr());
     }
-
-    operator T* () 
+*/
+    operator T* () const
     {
       return reinterpret_cast<T*> (BaseDynamicMem::Ptr());
     }

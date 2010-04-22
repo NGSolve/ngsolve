@@ -16,7 +16,6 @@
 using namespace ngparallel;
 #endif
 
-
 using namespace std;
 using namespace ngsolve;
 

@@ -127,7 +127,7 @@ namespace ngfem
      A specific integration point is the mapped point, and stores
      point coordinates, the Jacobimatrix, and the determinant of the Jacobimatrix.
   */
-  class NGS_DLL_HEADER BaseSpecificIntegrationPoint
+  class BaseSpecificIntegrationPoint
   {
   protected:
     /// IP on the reference element
@@ -151,7 +151,7 @@ namespace ngfem
 
 
   template <int R, typename SCAL = double>
-  class NGS_DLL_HEADER DimSpecificIntegrationPoint : public BaseSpecificIntegrationPoint
+  class DimSpecificIntegrationPoint : public BaseSpecificIntegrationPoint
   {
   protected:
     ///
@@ -172,7 +172,7 @@ namespace ngfem
 
   /// ip, dimension source, dimension range
   template <int DIMS = 2, int DIMR = 2, typename SCAL = double> 
-  class NGS_DLL_HEADER SpecificIntegrationPoint : public DimSpecificIntegrationPoint<DIMR,SCAL>
+  class SpecificIntegrationPoint : public DimSpecificIntegrationPoint<DIMR,SCAL>
   {
   private:
     /// Jacobi matrix
@@ -189,7 +189,7 @@ namespace ngfem
   public:
     typedef SCAL TSCAL;
     ///
-    SpecificIntegrationPoint (const IntegrationPoint & aip,
+    NGS_DLL_HEADER SpecificIntegrationPoint (const IntegrationPoint & aip,
 			      const ElementTransformation & aeltrans,
 			      LocalHeap & lh);
     ///
@@ -276,6 +276,7 @@ namespace ngfem
      An integration rule.
      Contains array of integration points
   */
+
   class IntegrationRule : public Array<IntegrationPoint> 
   {
   public:
@@ -310,7 +311,7 @@ namespace ngfem
 
 
   template <int D>
-  class NGS_DLL_HEADER IntegrationRuleTP : public IntegrationRule
+  class IntegrationRuleTP : public IntegrationRule
   {
     const IntegrationRule *irx, *iry, *irz;
     // int sort[8];
@@ -322,11 +323,11 @@ namespace ngfem
     ArrayMem<Mat<D,D>, 100> dxdxi_duffy;
 
   public:
-    IntegrationRuleTP (const ElementTransformation & eltrans,
+    NGS_DLL_HEADER IntegrationRuleTP (const ElementTransformation & eltrans,
 		       int order, bool compute_mapping, LocalHeap & lh);
 
     // tensor product rule for a facet
-    IntegrationRuleTP (ELEMENT_TYPE eltype, FlatArray<int> sort, 
+    NGS_DLL_HEADER IntegrationRuleTP (ELEMENT_TYPE eltype, FlatArray<int> sort, 
 		       NODE_TYPE nt, int nodenr, int order, LocalHeap & lh);
 
     /*

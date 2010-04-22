@@ -128,6 +128,8 @@ namespace ngfem
       public T_ScalarFiniteElement2< H1HighOrderFE<ET>, ET >
   { 
   public:    
+	  using T_H1HighOrderFiniteElement<ET>::GetInternalDofs;
+
     T_H1HighOrderFiniteElement2 () { ; }
     T_H1HighOrderFiniteElement2 (int aorder) 
       :  T_H1HighOrderFiniteElement<ET> (aorder) 

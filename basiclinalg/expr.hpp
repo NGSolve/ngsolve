@@ -518,7 +518,7 @@ namespace ngbla
     int Height() const { return Spec().T::Height(); }
     int Width() const { return Spec().T::Width(); }
 
-    void Dump (ostream & ost) const { Spec().Dump(ost); }
+	void Dump (ostream & ost) const { Spec().T::Dump(ost); }
   };
 
 
@@ -595,6 +595,12 @@ namespace ngbla
   public:
     typedef RefMatExpr<T> TConv;
 
+
+//	typedef typename mat_traits<T>::TELEM TELEM;
+//    typedef typename mat_traits<TELEM>::TSCAL TSCAL;
+
+//	typedef typename T::TSCAL TSCAL;
+
     int Height() const { return Spec().T::Height(); }
     int Width() const { return Spec().T::Width(); }
 
@@ -605,6 +611,8 @@ namespace ngbla
 
     enum { IS_LINEAR = 1 };
 
+	void Dump (ostream & ost) const { ost << "Matrix"; }
+	
     template<typename TB>
     T & operator= (const Expr<TB> & v)
     {
@@ -713,16 +721,17 @@ namespace ngbla
 
 
 
-    T & operator+= (double scal)
+    MatExpr<T> & operator+= (double scal)
     {
       int hw = Height() * Width();
       for (int i = 0; i < hw; i++)
         Spec()(i) += scal;
+	  return *this;
     }
   
 
     template<typename TB>
-    T & operator-= (const Expr<TB> & v)
+    MatExpr<T> & operator-= (const Expr<TB> & v)
     {
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
@@ -1527,13 +1536,10 @@ namespace ngbla
 
   /* **************************** Inverse *************************** */
 
-  template <typename T> class FlatMatrix;
+//  template <typename T> class FlatMatrix;
   template <typename T> class Matrix;
   template <int H, int W, typename T> class Mat;
 
-  /// Calculate inverse. Gauss elimination with row pivoting
-  template <class T, class T2>
-  extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv);
 
 
   inline void CalcInverse (const double & m, double & inv)
@@ -1613,17 +1619,6 @@ namespace ngbla
   inline Mat<H,W,T> Inv (const Mat<H,W,T> & m)
   {
     Mat<H,W,T> inv;
-    CalcInverse (m, inv);
-    return inv;
-  }
-
-  /**
-     Calculates the inverse of a Matrix.
-  */
-  template <typename T>
-  inline Matrix<T> Inv (const FlatMatrix<T> & m)
-  {
-    Matrix<T> inv(m.Height(),m.Height());
     CalcInverse (m, inv);
     return inv;
   }

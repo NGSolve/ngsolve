@@ -14,7 +14,7 @@ namespace ngstd
   Base class for generic SymbolTable.
   Maintains the array of identifiers.
  */
-class NGS_DLL_HEADER BaseSymbolTable
+class BaseSymbolTable
 {
 protected:
   /// identifiers
@@ -22,20 +22,20 @@ protected:
   
 public:
   /// 
-  BaseSymbolTable ();
+  NGS_DLL_HEADER BaseSymbolTable ();
   /// deletes identifiers
-  ~BaseSymbolTable ();
+  NGS_DLL_HEADER ~BaseSymbolTable ();
   /// delete all symbols
-  void DelNames ();
+  NGS_DLL_HEADER void DelNames ();
 
   /// append new name (copy)
-  void AppendName (const char * name);
+  NGS_DLL_HEADER void AppendName (const char * name);
 
   /// Index of symbol name, throws exception if unsued
-  int Index (const char * name) const;
+  NGS_DLL_HEADER int Index (const char * name) const;
 
   /// Index of symbol name, returns -1 if unused
-  int CheckIndex (const char * name) const;
+  NGS_DLL_HEADER int CheckIndex (const char * name) const;
 };
 
 

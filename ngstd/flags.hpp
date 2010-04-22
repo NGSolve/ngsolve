@@ -16,6 +16,9 @@ namespace ngstd
       The flag structure maintains string flags, numerical flags,
       define flags, string list flags, num list flags.
   */
+
+
+
   class NGS_DLL_HEADER Flags 
   {
     /// string flags
@@ -112,6 +115,8 @@ namespace ngstd
     const Array<char*> * GetStringListFlag (int i, const char *& name) const
     { name = strlistflags.GetName(i); return strlistflags[i]; }
   };
+
+
 
   /// Print flags
   inline ostream & operator<< (ostream & s, const Flags & flags)

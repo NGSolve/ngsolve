@@ -379,7 +379,7 @@ namespace ngfem
      number. The number can be with respect to the local element
      numbering, or can be the global numbering on the mesh.
   */
-  class Node
+  class NGS_DLL_HEADER Node
   {
     NODE_TYPE nt;
     int nodenr;

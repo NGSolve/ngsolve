@@ -112,7 +112,7 @@ namespace ngla
   /** 
       The graph of a sparse matrix.
   */
-  class MatrixGraph
+  class NGS_DLL_HEADER MatrixGraph
   {
   protected:
     /// number of rows
@@ -290,9 +290,6 @@ namespace ngla
 
   };
 
-
-
-
   /// A general, sparse matrix
   template<class TM>
   class  NGS_DLL_HEADER SparseMatrixTM : public BaseSparseMatrix, 
@@ -340,10 +337,10 @@ namespace ngla
 	return nul;
     }
 
-    FlatVector<const TM> GetRowValues(int i) const
-    { return FlatVector<const TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
+//    FlatVector<const TM> GetRowValues(int i) const
+//    { return FlatVector<const TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
 
-    FlatVector<TM> GetRowValues(int i) 
+    FlatVector<TM> GetRowValues(int i) const
     { return FlatVector<TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
 
     const TM & GetRowValue(int i, int j) const
@@ -376,6 +373,7 @@ namespace ngla
 
 
   };
+  
 
 
 

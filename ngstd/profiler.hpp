@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <winsock.h>
 
+
 inline void gettimeofday(struct timeval* t,void* timezone)
 {       struct _timeb timebuffer;
         _ftime( &timebuffer );
@@ -51,7 +52,7 @@ namespace ngstd
   /**
      A built-in profile
   */
-  class NGS_DLL_HEADER NgProfiler
+  class NgProfiler
   {
     /// maximal number of timers
     enum { SIZE = 1000 };
@@ -59,13 +60,13 @@ namespace ngstd
     //  static long int tottimes[SIZE];
     // static long int starttimes[SIZE];
 
-    static double tottimes[SIZE];
-    static double starttimes[SIZE];
+    NGS_DLL_HEADER static double tottimes[SIZE];
+    NGS_DLL_HEADER static double starttimes[SIZE];
 
-    static long int counts[SIZE];
-    static double flops[SIZE];
-    static string names[SIZE];
-    static int usedcounter[SIZE];
+    NGS_DLL_HEADER static long int counts[SIZE];
+    NGS_DLL_HEADER static double flops[SIZE];
+    NGS_DLL_HEADER static string names[SIZE];
+    NGS_DLL_HEADER static int usedcounter[SIZE];
 
     int total_timer;
   public: 
@@ -75,7 +76,7 @@ namespace ngstd
     ~NgProfiler();
 
     /// create new timer, use integer index
-    static int CreateTimer (const string & name);
+    NGS_DLL_HEADER static int CreateTimer (const string & name);
 
 
 #ifndef NOPROFILE

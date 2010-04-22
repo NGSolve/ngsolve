@@ -31,7 +31,7 @@ namespace ngstd
      With \Ref{CleanUp}, the pointer is reset to the beginning or to a
      specific position. 
   */
-  class NGS_DLL_HEADER LocalHeap
+  class LocalHeap
   {
     char * data;
     char * p;
@@ -40,7 +40,7 @@ namespace ngstd
 
   public:
     /// Allocate one block of size asize.
-    LocalHeap (size_t asize);
+    NGS_DLL_HEADER LocalHeap (size_t asize);
 
     /// Use provided memory for the LocalHeap
     LocalHeap (char * adata, size_t asize) throw ()
@@ -118,7 +118,7 @@ namespace ngstd
     }
 
     ///
-    void ThrowException() throw (LocalHeapOverflow);
+    NGS_DLL_HEADER void ThrowException() throw (LocalHeapOverflow);
 
     /// free memory (dummy function)
     void Free (void * data) throw () 
