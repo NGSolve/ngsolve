@@ -1536,9 +1536,25 @@ namespace ngbla
 
   /* **************************** Inverse *************************** */
 
-//  template <typename T> class FlatMatrix;
+  template <typename T> class FlatMatrix;
   template <typename T> class Matrix;
   template <int H, int W, typename T> class Mat;
+
+
+  /// Calculate inverse. Gauss elimination with row pivoting
+  template <class T, class T2>
+  extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv);
+
+  /**
+     Calculates the inverse of a Matrix.
+  */
+  template <typename T>
+  inline Matrix<T> Inv (const FlatMatrix<T> & m)
+  {
+    Matrix<T> inv(m.Height(),m.Height());
+    CalcInverse (m, inv);
+    return inv;
+  }
 
 
 
