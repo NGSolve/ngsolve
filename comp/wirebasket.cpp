@@ -1396,9 +1396,9 @@ namespace ngcomp
 #ifdef sometests
       Array<int> & directblocks = *new Array<int> (free_dofs.Size());
       directblocks = 0;
-      int nv = ma.GetNV();
+      // int nv = ma.GetNV();
       int ned = ma.GetNEdges();
-      int nfa = ma.GetNFaces();
+      // int nfa = ma.GetNFaces();
       for (int i = 0; i < directblocks.Size(); i++)
 	if (free_dofs.Test(i))
 	  directblocks[i] = 1;

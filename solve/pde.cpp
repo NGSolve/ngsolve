@@ -271,6 +271,18 @@ namespace ngsolve
       cout << "total bytes " << sumbytes << " in " << sumblocks << " blocks." << endl;
   }
 
+
+
+
+
+
+
+
+
+
+
+
+
   bool PDE ::
   ConstantUsed (const string & aname) const
   {
@@ -283,6 +295,7 @@ namespace ngsolve
     if (constants.Used(name))
       return constants[name]; 
     if (opt) return 0;
+
     stringstream str;
     str << "Constant '" << name << "' not defined\n";
     throw Exception (str.str());
@@ -300,6 +313,7 @@ namespace ngsolve
     if (string_constants.Used(name))
       return *string_constants[name]; 
     if (opt) return string("");
+
     stringstream str;
     str << "String constant '" << name << "' not defined\n";
     throw Exception (str.str());
@@ -319,6 +333,7 @@ namespace ngsolve
 
     static double dummy;
     if (opt) return dummy;
+
     stringstream str;
     str << "Variable '" << name << "' not defined\n";
     throw Exception (str.str());
@@ -341,23 +356,17 @@ namespace ngsolve
       return spaces[name]; 
 
     if (opt) return 0;
-    stringstream str;
-    str << "FESpace '" << name << "' not defined\n";
-    throw Exception (str.str());
+    throw Exception (string("FESpace '") + name + "' not defined\n");
   }
 
   GridFunction * PDE :: 
   GetGridFunction (const string & name, bool opt)
   { 
     if (gridfunctions.Used(name))
-      {
-	return gridfunctions[name]; 
-      }
+      return gridfunctions[name]; 
 
     if (opt) return 0;
-    stringstream str;
-    str << "GridFunction '" << name << "' not defined\n";
-    throw Exception (str.str());
+    throw Exception (string("GridFunction '") + name + "' not defined\n");
   }
 
   BilinearForm * PDE :: 
@@ -367,25 +376,8 @@ namespace ngsolve
       return bilinearforms[name]; 
 
     if (opt) return 0;
-    cout << "name = (" << name << ")" << endl;
-    stringstream str;
-    str << "Bilinear-form '" << name << "' not defined\n";
-    throw Exception (str.str());
+    throw Exception (string("Bilinear-form '") + name + "' not defined\n");
   }
-
-  /*
-    BEMBilinearForm * PDE :: 
-    GetBEMBilinearForm (const string & name, bool opt)
-    { 
-    if (bembilinearforms.Used(name))
-    return bembilinearforms[name]; 
-
-    if (opt) return 0;
-    stringstream str;
-    str << "BEM Bilinear-form '" << name << "' not defined\n";
-    throw Exception (str.str());
-    }
-  */
 
   LinearForm * PDE :: 
   GetLinearForm (const string & name, bool opt)
@@ -394,9 +386,7 @@ namespace ngsolve
       return linearforms[name]; 
 
     if (opt) return 0;
-    stringstream str;
-    str << "Linear-form '" << name << "' not defined\n";
-    throw Exception (str.str());
+    throw Exception (string("Linear-form '") + name + "' not defined\n");
   }
 
   Preconditioner * PDE :: 
@@ -406,9 +396,7 @@ namespace ngsolve
       return preconditioners[name]; 
 
     if (opt) return 0;
-    stringstream str;
-    str << "Preconditioner '" << name << "' not defined\n";
-    throw Exception (str.str());
+    throw Exception (string("Preconditioner '") + name + "' not defined\n");
   }
 
   NumProc * PDE :: 
@@ -418,9 +406,7 @@ namespace ngsolve
       return numprocs[name]; 
 
     if (opt) return 0;
-    stringstream str;
-    str << "Numproc '" << name << "' not defined\n";
-    throw Exception (str.str());
+    throw Exception (string("Numproc '") + name + "' not defined\n");
   }
 
   const CoefficientFunction * PDE :: 
@@ -472,19 +458,6 @@ namespace ngsolve
     throw Exception (str.str());
   }
 
-  /*
-    const BEMBilinearForm * PDE :: 
-    GetBEMBilinearForm (const string & name, bool opt) const
-    { 
-    if (bembilinearforms.Used(name))
-    return bembilinearforms[name]; 
-
-    if (opt) return 0;
-    stringstream str;
-    str << "BEM Bilinear-form '" << name << "' not defined\n";
-    throw Exception (str.str());
-    }
-  */
   const LinearForm * PDE :: 
   GetLinearForm (const string & name, bool opt) const
   { 
@@ -520,6 +493,7 @@ namespace ngsolve
     str << "Numproc '" << name << "' not defined\n";
     throw Exception (str.str());
   }
+
 
 
 
@@ -561,14 +535,6 @@ namespace ngsolve
 
     bool solvebvpstd = true;
 
-    // #ifdef SOCKETS
-    //     if (constants.Used ("clientserver") && constants["clientserver"] > 0.5)
-    //       {
-    // 	SolveBVPClientServer(lh);
-    // 	solvebvpstd = false;
-    //       }
-    // #endif
-
 
     if(solvebvpstd)
       {
@@ -585,12 +551,8 @@ namespace ngsolve
 	      Ng_Refine(NG_REFINE_H);
 	  }
 
-	int secondorder = 0;
 	if (constants.Used ("secondorder"))
-	  {
-	    throw Exception ("secondorder is obsolete \n Please use  'define constant geometryorder = 2' instead");
-	    // secondorder = int (constants["secondorder"]);
-	  }
+	  throw Exception ("secondorder is obsolete \n Please use  'define constant geometryorder = 2' instead");
 	
 	if (constants.Used ("hpref") && levelsolved == -1)
 	  {
@@ -610,18 +572,14 @@ namespace ngsolve
 	      }
 	  }
 
-	int geometryorder = 0;
 
-#ifdef NETGEN_ELTRANS
-	geometryorder = 1;
-	secondorder = 0;
+	int geometryorder = 1;
 	if (constants.Used ("geometryorder"))
 	  geometryorder = int (constants["geometryorder"]);
 
         bool rational = false;
         if (constants.Used ("rationalgeometry"))
           rational = bool (constants["rationalgeometry"]);
-#endif    
 
 
 	if (constants.Used("common_integration_order"))
@@ -630,10 +588,6 @@ namespace ngsolve
               cout << " !!! comminintegrationorder = " << int (constants["common_integration_order"]) << endl;
 	    Integrator::SetCommonIntegrationOrder (int (constants["common_integration_order"]));
 	  }
-
-
-	if (secondorder)
-	  Ng_SecondOrder();
 
 	if (geometryorder)
           Ng_HighOrder (geometryorder, rational);
@@ -945,28 +899,6 @@ namespace ngsolve
 
 
 
-	/* jetzt raus ?
-	   for (int i = 0; i < preconditioners.Size(); i++)
-	   {
-	   try
-	   {
-	   // NgProfiler::RegionTimer timer(preconditioners[i]->GetTimer());
-
-	   if ( preconditioners[i]->LaterUpdate() )
-	   cout << endl << "WARNING: Update of " << preconditioners[i]->ClassName() 
-	   << "  " << preconditioners.GetName(i) << " postponed!" << endl;
-	   else
-	   {	    
-	   cout << "Update " << preconditioners[i]->ClassName() 
-	   << "  " << preconditioners.GetName(i) << endl;
-	   // NgProfiler::RegionTimer timer(preconditioners[i]->GetTimer());
-	   preconditioners[i]->Update();
-	   //	  preconditioners[i]->Test();
-	   }
-	   }
-	*/
-	///////////////////////////
-
 
 	  for (int i = 0; i < preconditioners.Size(); i++)
 	    if(!preconditioners[i]->SkipCleanUp())
@@ -982,16 +914,17 @@ namespace ngsolve
 	  // set solution data
 	  for (int i = 0; i < gridfunctions.Size(); i++)
 	    gridfunctions[i]->Visualize(gridfunctions.GetName(i));
+
 	  Ng_Redraw();
 	  levelsolved++;
       }
-
+    
     if (printmessage_importance>0)
-      cout << "Problem Solved" << endl;
+      cout << "Equation Solved" << endl;
     endtime = clock();
     if (printmessage_importance>0)
       cout << "Total Time = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl << endl;
-
+    
 #ifdef PARALLEL
     MPI_Barrier( MPI_COMM_WORLD );
     if ( id == 0 ) {
@@ -1195,7 +1128,6 @@ namespace ngsolve
 
     space->SetName (name);
     spaces.Set (name, space);
-//     cout << ", type = " << space->GetClassName() << endl;
     todo.Append(space);
 
     return space;
@@ -1287,56 +1219,23 @@ namespace ngsolve
   }
 
 
-    /*
-
-  void PDE :: AddBEMElement (const string & name, Flags & flags)
-  {
-    if (printmessage_importance>0)
-      cout << "add BEM-Element " << name << ", flags = " << flags << endl;
-
-    // BilinearForm * blf = GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-    FESpace * spaced = spaces[flags.GetStringFlag ("fespaced", NULL)];
-    FESpace * spacen = spaces[flags.GetStringFlag ("fespacen", NULL)];
-
-    if (flags.GetDefineFlag ("helmholtz"))
-      {
-	spaced -> specialelements.Append 
-	  (new Helmholtz_BEMElement (*spaced, *spacen,
-				     flags.GetNumFlag ("k", 1.0)));
-      }
-    else
-      spaced -> specialelements.Append
-	(new S_LaplaceBEMElement<double> (*spaced, *spacen));
-  }
-    */
-  
-
  
   LinearForm * PDE :: AddLinearForm (const string & name, Flags & flags)
   {
     if (printmessage_importance>0)
       cout << "add linear-form " << name << endl;
-    //  << ", flags = " << endl;
-    //  flags.PrintFlags (cout);
 
-    const char * spacename = flags.GetStringFlag ("fespace", "");
+    string spacename = flags.GetStringFlag ("fespace", "");
+
     if (!spaces.Used (spacename))
       {
-	cerr << "space " << spacename << " not defined " << endl;
-	return 0;
+	throw Exception (string ("Linear-form '") + name +
+			 "' uses undefined space '" + spacename + "'");
       }
 
     const FESpace * space = spaces[spacename];
 
-    /*
-      LinearForm * lf;
-      CreateVecObject2 (lf, T_LinearForm, 
-      space->GetDimension(), space->IsComplex(),   
-      *space, name);
-      linearforms.Set (name, lf);
-    */
     linearforms.Set (name, CreateLinearForm (space, name, flags));
-
     todo.Append(linearforms[name]);
 
     return linearforms[name];

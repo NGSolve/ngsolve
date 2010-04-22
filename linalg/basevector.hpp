@@ -165,8 +165,8 @@ public:
   int EntrySize() const throw () { return entrysize; }
   virtual void * Memory () const throw () = 0;
 
-  virtual FlatVector<double> FVDouble () const throw() = 0;
-  virtual FlatVector<Complex> FVComplex () const throw() = 0;
+  virtual FlatVector<double> FVDouble () const = 0;
+  virtual FlatVector<Complex> FVComplex () const = 0;
 
   template <class TSCAL>
   TSCAL InnerProduct (const BaseVector & v2) const 

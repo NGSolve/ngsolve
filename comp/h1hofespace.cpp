@@ -34,8 +34,6 @@ namespace ngcomp
     name = "H1HighOrderFESpace(h1ho)";
     // define h1ho flags
     DefineDefineFlag("h1ho");
-    // DefineNumFlag("augmented");
-    DefineDefineFlag("plate");
     DefineNumFlag("relorder");
     DefineNumFlag("orderinner");
     DefineNumFlag("orderface");
@@ -50,14 +48,12 @@ namespace ngcomp
     //  DefineNumListFlag("dom_order_min_z");
     //  DefineNumListFlag("dom_order_max_z");
     DefineNumFlag("smoothing");
-    DefineDefineFlag("minext");
-    DefineDefineFlag("optext");
+    // DefineDefineFlag("minext");
+    // DefineDefineFlag("optext");
     DefineDefineFlag("print");
     DefineDefineFlag("noprint");
     if (parseflags) CheckFlags(flags);
-    
-    // augmented = int (flags.GetNumFlag ("augmented", 0));
-    // plate = int (flags.GetDefineFlag ("plate"));
+
     print = (flags.GetDefineFlag("print")); 
   
     // Variable order space: 
@@ -105,8 +101,8 @@ namespace ngcomp
     low_order_space = new ParallelNodalFESpace (ma, loflags);
 #endif
           
-    minext = flags.GetDefineFlag ("minext");
-    optext = flags.GetDefineFlag ("optext");
+    // minext = flags.GetDefineFlag ("minext");
+    // optext = flags.GetDefineFlag ("optext");
     // fast_pfem = flags.GetDefineFlag ("fast");
     
 
@@ -169,12 +165,12 @@ namespace ngcomp
       }
 
     
-    const int dim = ma.GetDimension();
-    nv = ma.GetNV();
-    ned = ma.GetNEdges();
-    nfa = (dim == 2) ? 0 : ma.GetNFaces();
+    int dim = ma.GetDimension();
+    // int nv = ma.GetNV();
+    int ned = ma.GetNEdges();
+    int nfa = (dim == 2) ? 0 : ma.GetNFaces();
     // nfa = ma.GetNFaces();
-    nel = ma.GetNE();
+    int nel = ma.GetNE();
     
     order_edge.SetSize (ned);
     order_face.SetSize (nfa);
@@ -362,12 +358,11 @@ namespace ngcomp
   void H1HighOrderFESpace :: UpdateDofTables ()
   {
     int dim = ma.GetDimension();
-
-    nv = ma.GetNV();
-    ned = ma.GetNEdges();
-    nfa = (dim == 2) ? 0 : ma.GetNFaces();
+    int nv = ma.GetNV();
+    int ned = ma.GetNEdges();
+    int nfa = (dim == 2) ? 0 : ma.GetNFaces();
     //     nfa = ma.GetNFaces();
-    nel = ma.GetNE();
+    int nel = ma.GetNE();
 
     ndof = nv;
 
@@ -782,42 +777,22 @@ namespace ngcomp
   {
     dnums.SetSize(0);
     dnums += GetEdgeDofs (ednr);
-    /*
-    int first = first_edge_dof[ednr];
-    int next = first_edge_dof[ednr+1];
-    for (int j = first; j < next; j++)
-      dnums.Append (j);
-    */
   }
 
   void H1HighOrderFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     if (ma.GetDimension() < 3) return;
-
     dnums += GetFaceDofs (fanr);
-
-    /*
-    int first = first_face_dof[fanr];
-    int next = first_face_dof[fanr+1];
-    for (int j = first; j < next; j++)
-      dnums.Append (j);
-    */
   }
-
 
   void H1HighOrderFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     dnums += GetElementDofs (elnr);
-
-    /*
-    int first = first_element_dof[elnr];
-    int next = first_element_dof[elnr+1];
-    for (int j = first; j < next; j++)
-      dnums.Append (j);
-    */
   }
+
+
   
   void H1HighOrderFESpace :: 
   GetSDofNrs (int elnr, Array<int> & dnums) const
@@ -836,78 +811,6 @@ namespace ngcomp
       dnums += GetFaceDofs (ngel.faces[0]);
     
 
-    /*
-    // what's that (JS) ?
-    static bool getall = false;
-
-    if (!DefinedOnBoundary (ma.GetSElIndex (elnr)) && !getall)
-      dnums = -1;
-
-
-    if(defined_on_one_side_of_bounding_curve.Size() > 0 && !getall)
-      {
-        Array<bool> keep_dnum(dnums.Size());
-        keep_dnum = true;
-
-        Array<int> vnums;
-        Array<int> neighbours;
-
-        ma.GetSElVertices(elnr,vnums);
-        for(int i=0; i<vnums.Size(); i++)
-          {
-            Array<int> auxn;
-            ma.GetVertexSurfaceElements(vnums[i],auxn);
-            for(int j=0; j<auxn.Size(); j++)
-              if(auxn[j] != elnr)
-                neighbours.Append(auxn[j]);
-          }
-	
-
-        bool isfirst = true;
-        for (int i = 0; i<defined_on_one_side_of_bounding_curve.Size(); i++)
-          {
-            if(defined_on_one_side_of_bounding_curve[i][0] == ma.GetSElIndex (elnr))
-              {
-                if(isfirst)
-                  {
-                    keep_dnum = false;
-                    isfirst = false;
-                  }
-
-                for(int j=0; j<neighbours.Size(); j++)
-                  {
-                    if(ma.GetSElIndex(neighbours[j]) == 
-                       defined_on_one_side_of_bounding_curve[i][1])
-                      {
-                        //(*testout) << "sel " << elnr << " neighbour " << neighbours[j] << endl;
-                        getall = true;
-                        Array<int> neighbour_dnums;
-                        GetSDofNrs(neighbours[j],neighbour_dnums);
-                        getall = false;
-			
-                        for(int k=0; k<neighbour_dnums.Size(); k++)
-                          {
-                            if(neighbour_dnums[k] == -1)
-                              continue;
-
-                            int pos = dnums.Pos(neighbour_dnums[k]);
-
-                            if(pos >= 0)
-                              keep_dnum[pos] = true;
-                          }
-                      }
-                  }		
-              }
-          }
-
-        for(int i=0; i<dnums.Size(); i++)
-          if(!keep_dnum[i])
-            dnums[i] = -1;
-
-        //if(!isfirst)
-        //  (*testout) << "elnr " << elnr << ", keep_dnum " << keep_dnum << endl;
-      }
-    */
 
     // what's that (JS) ?
     // I still don't understand it .... but it's now threadsafe
@@ -990,8 +893,6 @@ namespace ngcomp
       }
   }
   
-
-  
   void H1HighOrderFESpace :: RestrictToOneSideOfBoundingCurve(int index1, int index2)
   {
     defined_on_one_side_of_bounding_curve.Append(INT<2>(index1,index2));
@@ -1001,18 +902,30 @@ namespace ngcomp
     defined_on_one_side_of_bounding_curve.DeleteAll();
   }
 
+
+
+
+
+
   
   Table<int> * H1HighOrderFESpace :: 
-  CreateSmoothingBlocks (const Flags & precflags ) const
+  CreateSmoothingBlocks (const Flags & precflags) const
   {
-    int SmoothingType = int(precflags.GetNumFlag("blocktype",0)); 
+    int smoothing_type = int(precflags.GetNumFlag("blocktype",0)); 
 
     Array<int> ednums, fanums, vnums,f2ed; 
+
+    int dim = ma.GetDimension();
+    int nv = ma.GetNV();
+    int ned = ma.GetNEdges();
+    int nfa = (dim == 2) ? 0 : ma.GetNFaces();
+    int nel = ma.GetNE();
+
     
     int ni = nel, ncnt; 
     if (eliminate_internal) ni = 0; 
    
-    // SmoothingTypes: 
+    // smoothing_types: 
     // 1: 2d V + E + I 
     // 2: 2d VE + I 
     // 3: V + E + F + I 
@@ -1026,12 +939,12 @@ namespace ngcomp
     
     // default smoother
     
-    if (SmoothingType == 0) 
-      SmoothingType = 4; 
+    if (smoothing_type == 0) 
+      smoothing_type = 4; 
 
-    cout << " blocktype " << SmoothingType << endl; 
+    cout << " blocktype " << smoothing_type << endl; 
     cout << " Use H1-Block Smoother:  "; 
-    switch(SmoothingType) 
+    switch(smoothing_type) 
       {
       case 1 : 
         cout << " 2d V + E + I " << endl; 
@@ -1093,19 +1006,18 @@ namespace ngcomp
         break;
 
       default: 
-        cout << " Error in H1HOFESpace :: CreateSmoothingBlocks no SmoothingType " << endl; 
+        cout << " Error in H1HOFESpace :: CreateSmoothingBlocks, blocktype not defined " << endl; 
         return 0; 
       }
     
     Array<int> cnt(ncnt); 
     cnt = 0; 
-    int nvdof = 1; 
-    if (SmoothingType <= 20)
+    if (smoothing_type <= 20)
       for (int i = 0; i < nv; i++)
-	cnt[i] = nvdof; 
+	cnt[i] = 1; 
       
-    int ii =0; 
-    switch(SmoothingType)
+    int ii = 0; 
+    switch (smoothing_type)
       { 
       case 1: // 2d V + E + I 
         for (int i = 0; i < ned; i++, ii++)
@@ -1123,7 +1035,7 @@ namespace ngcomp
               cnt[edge.vertices[1]] += GetEdgeDofs(i).Size();
             }
         for (int i = 0; i < ni; i++)
-          cnt[nv+i] = first_element_dof[i+1]-first_element_dof[i];
+          cnt[nv+i] = GetElementDofs(i).Size(); 
         break; 
       case 3: // V + E + F + I 
         for (int i = 0; i < ned; i++)
@@ -1385,7 +1297,7 @@ namespace ngcomp
     
     Table<int> & table = *new Table<int> (cnt); 
     cnt = 0; 
-    if(SmoothingType != 10 && SmoothingType != 4 && SmoothingType <= 20) 
+    if(smoothing_type != 10 && smoothing_type != 4 && smoothing_type <= 20) 
       {
         for (int i = 0; i < nv; i++)
           table[i][0] = i;
@@ -1399,12 +1311,12 @@ namespace ngcomp
               table[i][j+1] = nv+i*(order-1)+j; 
         */
         for (int i = 0; i < nv; i++)
-          cnt[i] = nvdof;
+          cnt[i] = 1;
       }
  
 
     ii=0; 
-    switch(SmoothingType)
+    switch(smoothing_type)
       {
       case 1:  // 2d: V + E + I
         for (int i = 0; i < ned; i++,ii++)

@@ -7,9 +7,16 @@
 /* Date:   10. Jul. 2000                                             */
 /*********************************************************************/
 
+
+
+namespace ngsolve
+{
+  class PDE;
+}
+
 namespace ngcomp
 {
-
+  using ngsolve::PDE;
 
   /**
      Base class for preconditioners.
