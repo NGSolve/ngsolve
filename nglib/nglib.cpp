@@ -712,6 +712,8 @@ namespace nglib
       OCCGeometry * occgeom = (OCCGeometry*)geom;
       Mesh * me = (Mesh*)mesh;
 
+      me->geomtype = Mesh::GEOM_OCC;
+
       mparam.uselocalh = mp->uselocalh;
 
       mparam.maxh = mp->maxh;
@@ -726,8 +728,11 @@ namespace nglib
       occparam.resthcloseedgeenable = mp->closeedgeenable;
       occparam.resthcloseedgefac = mp->closeedgefact;
 
+      /*
       delete me;
       me = new Mesh;
+      */
+      me -> DeleteMesh();
 
       OCCSetLocalMeshSize(*occgeom, *me);
 

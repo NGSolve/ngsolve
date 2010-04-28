@@ -23,12 +23,17 @@ libnglib_la_LDFLAGS = -avoid-version
 #  -rdynamic
 
 
-bin_PROGRAMS = ng_vol ng_stl
+bin_PROGRAMS = ng_vol ng_stl ng_occ
 ng_vol_SOURCES = ng_vol.cpp
 ng_vol_LDADD = \
 	libnglib.la 
 ng_stl_SOURCES = ng_stl.cpp
 ng_stl_LDADD = \
+	libnglib.la 
+
+
+ng_occ_SOURCES = ng_occ.cpp
+ng_occ_LDADD = \
 	libnglib.la 
 
 
