@@ -728,10 +728,9 @@ namespace nglib
       occparam.resthcloseedgeenable = mp->closeedgeenable;
       occparam.resthcloseedgefac = mp->closeedgefact;
 
-      /*
-      delete me;
-      me = new Mesh;
-      */
+      // delete me;
+      // me = new Mesh;
+
       me -> DeleteMesh();
 
       OCCSetLocalMeshSize(*occgeom, *me);
