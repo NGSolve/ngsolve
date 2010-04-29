@@ -712,13 +712,10 @@ namespace ngcomp
 				}
 			      catch (Exception & e)
 				{
-					cout << "catch it, biform xxx" << endl;
 				  e.Append (string("in Assemble Element Matrix, bfi = ") + 
 					    bfi.Name() + string("\n"));
 
-				  cout << "rethrow" << endl;
-			      Exception e2 ("my new exception");
-				  throw e2;
+				  throw;
 				}
 			      catch (exception & e)
 				{
