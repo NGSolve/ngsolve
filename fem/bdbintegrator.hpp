@@ -246,7 +246,7 @@ public:
   virtual void
   AssembleElementMatrix (const FiniteElement & bfel,
 			 const ElementTransformation & eltrans, 
-			 FlatMatrix<double> & elmat,
+			 FlatMatrix<TSCAL> & elmat,
 			 LocalHeap & locheap) const
   {
 
@@ -257,9 +257,9 @@ public:
         
 	elmat = 0;
 
-	FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, locheap);
-	FlatMatrixFixHeight<DIM_DMAT, double> dbmat (ndof * DIM, locheap);
-	Mat<DIM_DMAT,DIM_DMAT> dmat;
+	FlatMatrixFixHeight<DIM_DMAT, TSCAL> bmat (ndof * DIM, locheap);
+	FlatMatrixFixHeight<DIM_DMAT, TSCAL> dbmat (ndof * DIM, locheap);
+	Mat<DIM_DMAT,DIM_DMAT,TSCAL> dmat;
 
 	const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 
@@ -427,7 +427,7 @@ public:
   virtual void
   AssembleElementMatrix (const FiniteElement & bfel,
 			 const ElementTransformation & eltrans, 
-			 FlatMatrix<double> & elmat,
+			 FlatMatrix<TSCAL> & elmat,
 			 LocalHeap & lh) const
   {
     static int timer = NgProfiler::CreateTimer (string ("Elementmatrix, ") + Name());
@@ -443,12 +443,12 @@ public:
 	const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
 
-	FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, lh);
-	FlatMatrixFixHeight<DIM_DMAT, double> dbmat (ndof * DIM, lh);
-	Mat<DIM_DMAT,DIM_DMAT> dmat;
+	FlatMatrixFixHeight<DIM_DMAT, TSCAL> bmat (ndof * DIM, lh);
+	FlatMatrixFixHeight<DIM_DMAT, TSCAL> dbmat (ndof * DIM, lh);
+	Mat<DIM_DMAT,DIM_DMAT,TSCAL> dmat;
 
-	FlatMatrix<double> bbmat (ndof * DIM, DIM_DMAT*ir.GetNIP(), lh);
-	FlatMatrix<double> bdbmat (ndof * DIM, DIM_DMAT*ir.GetNIP(), lh);
+	FlatMatrix<TSCAL> bbmat (ndof * DIM, DIM_DMAT*ir.GetNIP(), lh);
+	FlatMatrix<TSCAL> bdbmat (ndof * DIM, DIM_DMAT*ir.GetNIP(), lh);
 
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
