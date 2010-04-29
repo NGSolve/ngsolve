@@ -284,9 +284,7 @@ namespace ngcomp
 	  {
     if (low_order_bilinear_form)
 	{
-	  cout << "call low order assemble" << endl;
-      low_order_bilinear_form->Assemble(lh);
-	  cout << "low order assemble returned" << endl;
+	  low_order_bilinear_form->Assemble(lh);
 	}
 	  }
     catch (Exception & e)
