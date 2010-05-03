@@ -130,7 +130,7 @@ namespace ngbla
 #else
 
   template <class T, class T2>
-  void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)
+  void T_CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)
   {
     // Gauss - Jordan - algorithm
     // Algorithm of Stoer, Einf. i. d. Num. Math, S 145
@@ -322,9 +322,27 @@ namespace ngbla
 
 
 
+  template <class T, class T2>
+  void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)
+  {
+    T_CalcInverse (m, inv);
+  }
 
-  template void CalcInverse (const FlatMatrix<double> m, 
+
+/*
+ template void CalcInverse (const FlatMatrix<double> m, 
 			     FlatMatrix<double> inv);
+				 */
+
+
+ NGS_DLL_HEADER void CalcInverse (const FlatMatrix<double> m, 
+			     FlatMatrix<double> inv)
+ {
+	 T_CalcInverse (m, inv);
+ }
+
+
+
   template void CalcInverse (const FlatMatrix<Mat<1,1,double> > m, 
 			     FlatMatrix<Mat<1,1,double> > inv);
 
