@@ -281,7 +281,7 @@ namespace ngla
         }
     
 
-
+#pragma omp parallel for
     for (int i = 0; i < ndof; i++)
       QuickSort (GetRowIndices(i));
 
@@ -382,10 +382,9 @@ namespace ngla
                 }
         }
     
-
-
     for (int i = 0; i < ndof; i++)
       QuickSort (GetRowIndices(i));
+    
 
     colnr[nze] = 0;
  
