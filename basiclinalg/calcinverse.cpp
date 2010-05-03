@@ -323,23 +323,17 @@ namespace ngbla
 
 
   template <class T, class T2>
-  void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)
+  extern void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)
   {
     T_CalcInverse (m, inv);
   }
 
 
-/*
- template void CalcInverse (const FlatMatrix<double> m, 
-			     FlatMatrix<double> inv);
-				 */
-
-
- NGS_DLL_HEADER void CalcInverse (const FlatMatrix<double> m, 
-			     FlatMatrix<double> inv)
- {
-	 T_CalcInverse (m, inv);
- }
+  extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<double> m, 
+					  FlatMatrix<double> inv)
+  {
+    T_CalcInverse (m, inv);
+  }
 
 
 

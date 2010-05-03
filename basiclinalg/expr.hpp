@@ -1545,6 +1545,9 @@ namespace ngbla
   template <class T, class T2>
   extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv);
 
+  extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<double> m, FlatMatrix<double> inv);
+
+
   /**
      Calculates the inverse of a Matrix.
   */
