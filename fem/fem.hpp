@@ -80,5 +80,6 @@ namespace ngfem
 
 // #include "pml.hpp" 
 
+using ngfem::ELEMENT_TYPE;
 
 #endif
