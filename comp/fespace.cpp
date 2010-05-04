@@ -241,6 +241,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete quad;
     delete segm;
 
+    delete element_coloring;
+
  #ifdef PARALLEL
     delete paralleldofs;
  #endif
@@ -373,6 +375,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (int i = 0; i < ma.GetNE(); i++)
       cntcol[col[i]]++;
 
+    delete element_coloring;
     element_coloring = new Table<int> (cntcol);
     cntcol = 0;
     for (int i = 0; i < ma.GetNE(); i++)
