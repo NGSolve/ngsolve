@@ -139,21 +139,13 @@ namespace ngfem
 
 
   template <ELEMENT_TYPE ET>
-  class NGS_DLL_HEADER DummyFE : public FiniteElement
+  class DummyFE : public FiniteElement
   {
   public:
     DummyFE ()
       : FiniteElement(ET_trait<ET>::DIM, ET, 0, 0) { ; }
   };
-  /*
-  typedef DummyFE<ET_SEGM> FE_SegmDummy;
-  typedef DummyFE<ET_TRIG> FE_TrigDummy;
-  typedef DummyFE<ET_QUAD> FE_QuadDummy;
-  typedef DummyFE<ET_TET> FE_TetDummy;
-  typedef DummyFE<ET_HEX> FE_HexDummy;
-  typedef DummyFE<ET_PRISM> FE_PrismDummy;
-  typedef DummyFE<ET_PYRAMID> FE_PyramidDummy;
-  */
+
 }
 
 

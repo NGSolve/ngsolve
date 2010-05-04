@@ -145,7 +145,7 @@ namespace ngfem
   */
 
   template <> 
-  class H1HighOrderFE<ET_SEGM> : public T_H1HighOrderFiniteElement2<ET_SEGM>
+  class NGS_DLL_HEADER H1HighOrderFE<ET_SEGM> : public T_H1HighOrderFiniteElement2<ET_SEGM>
   {
   public:
     H1HighOrderFE () { ; }
@@ -163,7 +163,7 @@ namespace ngfem
      High order triangular finite element
   */
   template <>
-  class H1HighOrderFE<ET_TRIG> 
+  class NGS_DLL_HEADER H1HighOrderFE<ET_TRIG> 
     : public T_H1HighOrderFiniteElement2<ET_TRIG>
   {
   public:
@@ -182,7 +182,7 @@ namespace ngfem
      High order quadrilateral finite element
   */
   template <>
-  class H1HighOrderFE<ET_QUAD> : public T_H1HighOrderFiniteElement2<ET_QUAD>
+  class NGS_DLL_HEADER H1HighOrderFE<ET_QUAD> : public T_H1HighOrderFiniteElement2<ET_QUAD>
   {
   public:
     H1HighOrderFE () { ; }
@@ -200,7 +200,7 @@ namespace ngfem
      High order tetrahedral finite element
   */
   template <>
-  class H1HighOrderFE<ET_TET> : public T_H1HighOrderFiniteElement2<ET_TET>
+  class NGS_DLL_HEADER H1HighOrderFE<ET_TET> : public T_H1HighOrderFiniteElement2<ET_TET>
   {
     typedef TetShapesInnerLegendre T_INNERSHAPES;
     typedef TetShapesFaceLegendre T_FACESHAPES;
@@ -225,7 +225,7 @@ namespace ngfem
       High order prismatic finite element
   */
   template <>
-  class H1HighOrderFE<ET_PRISM> : public T_H1HighOrderFiniteElement2<ET_PRISM>
+  class NGS_DLL_HEADER H1HighOrderFE<ET_PRISM> : public T_H1HighOrderFiniteElement2<ET_PRISM>
   {
     // typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
     // typedef TrigShapesInnerJacobi T_TRIGFACESHAPES;
@@ -248,7 +248,7 @@ namespace ngfem
      High order hexahedral finite element
   */
   template <> 
-  class H1HighOrderFE<ET_HEX> : public T_H1HighOrderFiniteElement2<ET_HEX>
+  class NGS_DLL_HEADER H1HighOrderFE<ET_HEX> : public T_H1HighOrderFiniteElement2<ET_HEX>
   {
   public:
     H1HighOrderFE () { ; }
@@ -266,7 +266,7 @@ namespace ngfem
      High order pyramid finite element
   */
   template<>
-  class H1HighOrderFE<ET_PYRAMID> : public T_H1HighOrderFiniteElement2<ET_PYRAMID>
+  class NGS_DLL_HEADER H1HighOrderFE<ET_PYRAMID> : public T_H1HighOrderFiniteElement2<ET_PYRAMID>
   {
     // typedef TrigShapesInnerLegendre T_TRIGSHAPES;
 

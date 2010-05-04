@@ -214,7 +214,7 @@ namespace ngfem
   */
 
   template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
-  class NGS_DLL_HEADER T_ScalarFiniteElement : public ScalarFiniteElement<ET_trait<ET>::DIM>
+  class T_ScalarFiniteElement : public ScalarFiniteElement<ET_trait<ET>::DIM>
   {
 
   public:
