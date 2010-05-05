@@ -97,7 +97,17 @@ namespace nglib
    // Delete an existing netgen mesh object
    DLL_HEADER void Ng_DeleteMesh (Ng_Mesh * mesh)
    {
-      delete (Mesh*)mesh;
+      if(mesh != NULL)
+      {
+         // Delete the Mesh structures
+         ((Mesh*)mesh)->DeleteMesh();
+
+         // Now delete the Mesh class itself
+         delete (Mesh*)mesh;
+
+         // Set the Ng_Mesh pointer to NULL
+         mesh = NULL;
+      }
    }
 
 
@@ -650,20 +660,29 @@ namespace nglib
 
 
    
+   // Delete the OCC Geometry Object
+   DLL_HEADER Ng_Result Ng_OCC_DeleteGeometry(Ng_OCC_Geometry * geom)
+   {
+      if (geom != NULL)
+      {
+         delete (OCCGeometry*)geom;
+         geom = NULL;
+         return NG_OK;
+      }
+      
+      return NG_ERROR;
+   }
+
+
+   
    // Loads geometry from STEP File
    DLL_HEADER Ng_OCC_Geometry * Ng_OCC_Load_STEP (const char * filename)
    {
-      Ng_OCC_Geometry * geo = Ng_OCC_NewGeometry();
-
+      // Call the STEP File Load function. Note.. the geometry class 
+      // is created and instantiated within the load function
       OCCGeometry * occgeo = LoadOCC_STEP(filename);
 
-      // Create the initial triangulation for the OCC 
-      // BRepMesh_IncrementalMesh::
-      BRepMesh_IncrementalMesh(occgeo->shape,0.1);
-
-      geo = (Ng_OCC_Geometry *)occgeo;
-
-      return (geo);
+      return ((Ng_OCC_Geometry *)occgeo);
    }
 
 
@@ -671,17 +690,11 @@ namespace nglib
    // Loads geometry from IGES File
    DLL_HEADER Ng_OCC_Geometry * Ng_OCC_Load_IGES (const char * filename)
    {
-      Ng_OCC_Geometry * geo = Ng_OCC_NewGeometry();
-
+      // Call the IGES File Load function. Note.. the geometry class 
+      // is created and instantiated within the load function
       OCCGeometry * occgeo = LoadOCC_IGES(filename);
 
-      // Create the initial triangulation for the OCC 
-      //  BRepMesh_IncrementalMesh::
-	BRepMesh_IncrementalMesh(occgeo->shape,0.1);
-
-      geo = (Ng_OCC_Geometry *)occgeo;
-
-      return (geo);
+      return ((Ng_OCC_Geometry *)occgeo);
    }
 
 
@@ -689,22 +702,17 @@ namespace nglib
    // Loads geometry from BREP File
    DLL_HEADER Ng_OCC_Geometry * Ng_OCC_Load_BREP (const char * filename)
    {
-      Ng_OCC_Geometry * geo = Ng_OCC_NewGeometry();
-
+      // Call the BREP File Load function. Note.. the geometry class 
+      // is created and instantiated within the load function
       OCCGeometry * occgeo = LoadOCC_BREP(filename);
 
-      // Create the initial triangulation for the OCC 
-      // BRepMesh_IncrementalMesh::
-	BRepMesh_IncrementalMesh(occgeo->shape,0.1);
-
-      geo = (Ng_OCC_Geometry *)occgeo;
-
-      return (geo);
+      return ((Ng_OCC_Geometry *)occgeo);
    }
 
 
 
-   //
+   // Locally limit the size of the mesh to be generated at various points 
+   // based on the topology of the geometry
    DLL_HEADER Ng_Result Ng_OCC_SetLocalMeshSize (Ng_OCC_Geometry * geom,
                                                  Ng_Mesh * mesh,
                                                  Ng_Meshing_Parameters * mp)
@@ -728,10 +736,9 @@ namespace nglib
       occparam.resthcloseedgeenable = mp->closeedgeenable;
       occparam.resthcloseedgefac = mp->closeedgefact;
 
-      // delete me;
-      // me = new Mesh;
-
-      me -> DeleteMesh();
+      // Delete the mesh structures in order to start with a clean 
+      // slate
+      me->DeleteMesh();
 
       OCCSetLocalMeshSize(*occgeom, *me);
 

@@ -601,6 +601,9 @@ DLL_HEADER Ng_Result Ng_ACIS_GenerateSurfaceMesh (Ng_ACIS_Geometry * geom,
 // Create new OCC Geometry Object
 DLL_HEADER Ng_OCC_Geometry * Ng_OCC_NewGeometry ();
 
+// Delete an OCC Geometry Object
+DLL_HEADER Ng_Result Ng_OCC_DeleteGeometry (Ng_OCC_Geometry * geom);
+
 // Loads geometry from STEP file
 DLL_HEADER Ng_OCC_Geometry * Ng_OCC_Load_STEP (const char * filename);
 
