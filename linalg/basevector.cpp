@@ -617,7 +617,7 @@ SCAL S_BaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
 */
 
 template <class SCAL>
-FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const throw()
+FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const 
 {
   return FlatVector<SCAL> (size * entrysize, Memory());
   /*
@@ -628,31 +628,11 @@ FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const throw()
 }
 
 template <class SCAL>
-FlatVector<Complex> S_BaseVector<SCAL> :: FVComplex () const throw()
+FlatVector<Complex> S_BaseVector<SCAL> :: FVComplex () const
 {
   throw Exception ("FVComplex called for real vector");
 }
 
-
-
-/*
-S_BaseVector<Complex> :: S_BaseVector () throw()
-{
-  ;
-}
-
-S_BaseVector<Complex> :: ~S_BaseVector () throw()
-{
-  ;
-}
-*/
-
-/*
-Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
-{
-  throw Exception ("Inner Product called for S_BaseVector");
-}
-*/
 
 
 
