@@ -315,8 +315,8 @@ public:
 #endif
 
 
-  virtual FlatVector<double> FVDouble () const throw();
-  virtual FlatVector<Complex> FVComplex () const throw();
+  virtual FlatVector<double> FVDouble () const;
+  virtual FlatVector<Complex> FVComplex () const;
 
   virtual FlatVector<SCAL> FVScal () const throw() 
   {
