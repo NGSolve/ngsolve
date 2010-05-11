@@ -741,8 +741,9 @@ namespace ngla
 
 
 
-
+#if MAX_CACHEBLOCKS >= 2
   template class PardisoInverse<double, Vec<2,double>, Vec<2,double> >;
+#endif
 #if MAX_CACHEBLOCKS >= 3
   template class PardisoInverse<double, Vec<3,double>, Vec<3,double> >;
   template class PardisoInverse<double, Vec<4,double>, Vec<4,double> >;
@@ -761,7 +762,9 @@ namespace ngla
   template class PardisoInverse<double, Vec<15,double>, Vec<15,double> >;
 #endif
 
+#if MAX_CACHEBLOCKS >= 2
   template class PardisoInverse<double, Vec<2,Complex>, Vec<2,Complex> >;
+#endif
 #if MAX_CACHEBLOCKS >= 3
   template class PardisoInverse<double, Vec<3,Complex>, Vec<3,Complex> >;
   template class PardisoInverse<double, Vec<4,Complex>, Vec<4,Complex> >;
@@ -780,7 +783,9 @@ namespace ngla
   template class PardisoInverse<double, Vec<15,Complex>, Vec<15,Complex> >;
 #endif
 
+#if MAX_CACHEBLOCKS >= 2
   template class PardisoInverse<Complex, Vec<2,Complex>, Vec<2,Complex> >;
+#endif
 #if MAX_CACHEBLOCKS >= 3
   template class PardisoInverse<Complex, Vec<3,Complex>, Vec<3,Complex> >;
   template class PardisoInverse<Complex, Vec<4,Complex>, Vec<4,Complex> >;
