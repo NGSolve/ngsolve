@@ -517,8 +517,8 @@ namespace ngcomp
 	    int ndof_inner = first_inner_dof[el+1] - first_inner_dof[el];
 	    first_inner_dof[el] = ndof;
 	    ma.GetElEdges(el, edges);
-	    if ( ma.GetDimension() == 3 );
-	    ma.GetElFaces(el, faces);
+	    if ( ma.GetDimension() == 3 )
+	      ma.GetElFaces(el, faces);
 
 	    for ( int ed = 0; ed < edges.Size(); ed++ )
 	      {
