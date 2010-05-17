@@ -355,7 +355,7 @@ namespace ngcomp
       {
 	const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
 	VectorMem<10> flux(bfi->DimFlux());
-	bfi->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, flux, false, lh2);
+	bfi->CalcFlux (fel, ip, elu, flux, false, lh2);
 	return flux(0); 
       }
   }
@@ -391,7 +391,7 @@ namespace ngcomp
     else
       {
 	const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
-	bfi->CalcFlux (fel, ip.GetTransformation(), ip.IP(), elu, result, false, lh2);
+	bfi->CalcFlux (fel, ip, elu, result, false, lh2);
       }
 
   }

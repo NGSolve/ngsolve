@@ -3,7 +3,6 @@
    High Order Finite Element Space for H(Curl) 
 */
 #include <comp.hpp>
-#include <fem.hpp> 
 #include <../fem/hcurlhofe.hpp> 
 #include <multigrid.hpp>
 

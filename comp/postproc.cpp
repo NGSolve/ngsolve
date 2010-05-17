@@ -112,67 +112,21 @@ namespace ngcomp
 	  fes.TransformVec (i, bound, elu, TRANSFORM_SOL);
 	  
 	  const IntegrationRule & ir = 
-	    GetIntegrationRules().SelectIntegrationRule(fel.ElementType(), max(fel.Order(),felflux.Order())+felflux.Order());
-	  elflux = 0;
+	    SelectIntegrationRule(fel.ElementType(), max(fel.Order(),felflux.Order())+felflux.Order());
+
+
+	  BaseMappedIntegrationRule & mir = eltrans(ir, lh);
+	  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimfluxvec, lh);
 	  
+	  bli.CalcFlux (fel, mir, elu, mfluxi, applyd, lh);
+	  
+	  for (int j = 0; j < ir.GetNIP(); j++)
+	    mfluxi.Row(j) *= ir[j].Weight() * mir[j].GetMeasure();
+	  
+	  elflux = 0;
+	  fluxbli.ApplyBTrans (felflux, mir, mfluxi, elflux, lh);
 
-	  if (!bound)
-	    {
-	      if (fel.SpatialDim() == 2)
-		{
-		  MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
-		  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimfluxvec, lh);
 
-		  bli.CalcFlux (fel, mir, elu, mfluxi, applyd, lh);
-
-		  for (int j = 0; j < ir.GetNIP(); j++)
-		    mfluxi.Row(j) *= ir[j].Weight() * fabs (mir[j].GetJacobiDet());
-
-		  fluxbli.ApplyBTrans (felflux, mir, mfluxi, elflux, lh);
-		}
-	      else
-		{
-		  for (int j = 0; j < ir.GetNIP(); j++)
-		    {
-		      HeapReset hr(lh);
-
-		      SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
-		      double fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-		      elflux += fac * elfluxi;
-		    }
-		}
-	    }
-	  else
-	    {
-	      if (fel.SpatialDim() == 2)
-		{
-		  for (int j = 0; j < ir.GetNIP(); j++)
-		    {
-		      HeapReset hr(lh);
-
-		      SpecificIntegrationPoint<2,3> sip (ir[j], eltrans, lh);
-		      double fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-		      elflux += fac * elfluxi;
-		    }
-		}
-	      else
-		{
-		  for (int j = 0; j < ir.GetNIP(); j++)
-		    {
-		      HeapReset hr(lh);
-
-		      SpecificIntegrationPoint<1,2> sip (ir[j], eltrans, lh);
-		      double fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		      bli.CalcFlux (fel, sip, elu, fluxi, applyd, lh);
-		      fluxbli.ApplyBTrans (felflux, sip, fluxi, elfluxi, lh);
-		      elflux += fac * elfluxi;
-		    }
-		}
-	    }
 	      
 
 	  if (dimflux > 1)
@@ -255,21 +209,6 @@ namespace ngcomp
   }
 
 
-
-  /*
-  template void CalcFluxProject<double> (const MeshAccess & ma, 
-					 const S_GridFunction<double> & bu,
-					 S_GridFunction<double> & bflux,
-					 const BilinearFormIntegrator & bli,
-					 bool applyd, int domain, LocalHeap & lh);
-  
-  template void CalcFluxProject<Complex> (const MeshAccess & ma, 
-					  const S_GridFunction<Complex> & bu,
-					  S_GridFunction<Complex> & bflux,
-					  const BilinearFormIntegrator & bli,
-					  bool applyd, int domain, LocalHeap & lh);
-  */
-
   void CalcFluxProject (const MeshAccess & ma, 
 			const GridFunction & bu,
 			GridFunction & bflux,
@@ -307,7 +246,6 @@ namespace ngcomp
 		     int component)// = 0)
   {
     int elnr;
-    //double lami[3];
     Array<int> dnums;
     ElementTransformation eltrans;
 
@@ -354,7 +292,7 @@ namespace ngcomp
 	fes.TransformVec (elnr, true, elu, TRANSFORM_SOL);
 	
 	
-	bli.CalcFlux (fel, eltrans, ip, elu, flux, applyd, lh);
+	bli.CalcFlux (fel, eltrans(ip, lh), elu, flux, applyd, lh);
       }
     else
       {
@@ -393,7 +331,7 @@ namespace ngcomp
 	
 	fes.TransformVec (elnr, false, elu, TRANSFORM_SOL);
 	
-	bli.CalcFlux (fel, eltrans, ip, elu, flux, applyd, lh);
+	bli.CalcFlux (fel, eltrans(ip, lh), elu, flux, applyd, lh);
       }
  
     return 1;
@@ -543,11 +481,39 @@ namespace ngcomp
 	  
 	  const IntegrationRule & ir = 
 	    GetIntegrationRules().SelectIntegrationRule(fel.ElementType(), 2*fel.Order());
-	  elflux = 0;
+
+	  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
+
+
+	  BaseMappedIntegrationRule & mir = eltrans(ir, lh);
+	  coef.Evaluate (mir, mfluxi);
 	  
 	  for (int j = 0; j < ir.GetNIP(); j++)
+	    mfluxi.Row(j) *= ir[j].Weight() * mir[j].GetMeasure();
+
+	  if (diffop)
+	    diffop -> ApplyTrans (fel, mir, mfluxi, elflux, lh);
+	  else
+	    bli.ApplyBTrans (fel, mir, mfluxi, elflux, lh);
+
+
+	  /*
+	  elflux = 0;
+	  for (int j = 0; j < ir.GetNIP(); j++)
 	    {
-	      HeapReset hr(lh);
+	      if (diffop)
+		diffop -> ApplyTrans (fel, mir[j], mfluxi.Row(j), elfluxi, lh);
+	      else
+		bli.ApplyBTrans (fel, mir[j], mfluxi.Row(j), elfluxi, lh);
+
+	      elflux += elfluxi;
+	    }
+	  */
+
+
+
+
+	      /*
 	      double fac;
 	      if (!bound)
 		{
@@ -597,9 +563,7 @@ namespace ngcomp
 			bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
 		    }
 		}
-	      
-	      elflux += fac * elfluxi;
-	    }
+	      */	      
 	  
 	  if (dim > 1)
 	    {
