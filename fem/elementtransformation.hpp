@@ -233,6 +233,46 @@ namespace ngfem
 
     void GetSort (FlatArray<int> sort) const
     { ; }
+
+
+
+    BaseSpecificIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
+    {
+      if (Boundary())
+	{
+	  if (SpaceDim() == 2)
+	    return *new SpecificIntegrationPoint<1,2> (ip, *this, lh);
+	  else
+	    return *new SpecificIntegrationPoint<2,3> (ip, *this, lh);
+	}
+      else
+	{
+	  if (SpaceDim() == 2)
+	    return *new SpecificIntegrationPoint<2,2> (ip, *this, lh);
+	  else
+	    return *new SpecificIntegrationPoint<3,3> (ip, *this, lh);
+	}
+    }
+
+    BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const
+    {
+      if (Boundary())
+	{
+	  if (SpaceDim() == 2)
+	    return *new MappedIntegrationRule<1,2> (ir, *this, lh);
+	  else
+	    return *new MappedIntegrationRule<2,3> (ir, *this, lh);
+	}
+      else
+	{
+	  if (SpaceDim() == 2)
+	    return *new MappedIntegrationRule<2,2> (ir, *this, lh);
+	  else
+	    return *new MappedIntegrationRule<3,3> (ir, *this, lh);
+	}
+    }
+
+
   };
 
 
@@ -532,71 +572,51 @@ namespace ngfem
 	  throw Exception ("undefined eltype in ElementTransformation::GetSort()\n");
 	}
     }
+
+
+
+    BaseSpecificIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
+    {
+      if (boundary)
+	{
+	  if (dim == 2)
+	    return *new SpecificIntegrationPoint<1,2> (ip, *this, lh);
+	  else
+	    return *new SpecificIntegrationPoint<2,3> (ip, *this, lh);
+	}
+      else
+	{
+	  if (dim == 2)
+	    return *new SpecificIntegrationPoint<2,2> (ip, *this, lh);
+	  else
+	    return *new SpecificIntegrationPoint<3,3> (ip, *this, lh);
+	}
+    }
+
+
+    BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const
+    {
+      if (Boundary())
+	{
+	  if (SpaceDim() == 2)
+	    return *new MappedIntegrationRule<1,2> (ir, *this, lh);
+	  else
+	    return *new MappedIntegrationRule<2,3> (ir, *this, lh);
+	}
+      else
+	{
+	  if (SpaceDim() == 2)
+	    return *new MappedIntegrationRule<2,2> (ir, *this, lh);
+	  else
+	    return *new MappedIntegrationRule<3,3> (ir, *this, lh);
+	}
+    }
+
   };
 
 
 
 #endif
-
-  class NGS_DLL_HEADER BaseMappedIntegrationRule 
-  { 
-  protected:
-    const IntegrationRule & ir;
-    const ElementTransformation & eltrans;
-    char * baseip;
-    int incr;
-
-  public:
-    BaseMappedIntegrationRule (const IntegrationRule & air,
-			       const ElementTransformation & aeltrans)
-      : ir(air), eltrans(aeltrans) { ; }
-
-    int Size() const { return ir.Size(); }
-    const IntegrationRule & IR() const { return ir; }
-    const ElementTransformation & GetTransformation () const { return eltrans; }
-
-    const BaseSpecificIntegrationPoint & operator[] (int i) const
-    { return *static_cast<const BaseSpecificIntegrationPoint*> ((void*)(baseip+i*incr)); }
-  };
-
-  template <int DIM_ELEMENT, int DIM_SPACE>
-  class NGS_DLL_HEADER MappedIntegrationRule : public BaseMappedIntegrationRule
-  {
-    FlatArray< SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > sips;
-  public:
-    MappedIntegrationRule (const IntegrationRule & ir, 
-			   const ElementTransformation & aeltrans, 
-			   LocalHeap & lh)
-      : BaseMappedIntegrationRule (ir, aeltrans), sips(ir.GetNIP(), lh)
-    {
-      baseip = (char*)(void*)(BaseSpecificIntegrationPoint*)(&sips[0]);
-      incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
-
-      FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
-      FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
-
-      eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
-
-      for (int i = 0; i < ir.GetNIP(); i++)
-	new (&sips[i]) SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, pts[i], dxdxi[i]); 
-    }
-
-    MappedIntegrationRule (const IntegrationRule & ir, 
-			   const ElementTransformation & eltrans, 
-			   int dummy,
-			   LocalHeap & lh)
-      : BaseMappedIntegrationRule (ir, eltrans), sips(ir.GetNIP(), lh)
-    {
-      baseip = (char*)(void*)(BaseSpecificIntegrationPoint*)(&sips[0]);
-      incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
-    }
-    
-    SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (int i) const
-    { 
-      return sips[i]; 
-    }
-  };
-
 
 
 

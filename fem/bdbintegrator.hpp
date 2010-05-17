@@ -308,9 +308,6 @@ public:
 #ifdef BLOCK_VERSION
 
 
-  /// this is my preferred one !
-
-
   virtual void
   AssembleElementMatrix (const FiniteElement & bfel,
 			 const ElementTransformation & eltrans, 
@@ -721,48 +718,27 @@ public:
     return SelectIntegrationRule (et, order);
   }
 
-  
+
+
+
+
+
+
+
 
 
   virtual void
   CalcFlux (const FiniteElement & bfel,
-	    const ElementTransformation & eltrans,
-	    const IntegrationPoint & ip,
+	    const BaseSpecificIntegrationPoint & bsip,
 	    const FlatVector<double> & elx, 
 	    FlatVector<double> & flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ip, eltrans, lh);
-    CalcFlux (bfel, sip, elx, flux, applyd, lh);
-  }
+    const FEL & fel = static_cast<const FEL&> (bfel);
+    const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
+      static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
 
-
-  virtual void
-  CalcFlux (const FiniteElement & bfel,
-	    const ElementTransformation & eltrans,
-	    const IntegrationPoint & ip,
-	    const FlatVector<Complex> & elx, 
-	    FlatVector<Complex> & flux,
-	    bool applyd,
-	    LocalHeap & lh) const
-  {
-    SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ip, eltrans, lh);
-    CalcFlux (bfel, sip, elx, flux, applyd, lh);
-  }
-
-
-  virtual void
-  CalcFlux (const FiniteElement & bfel,
-	    const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip,
-	    const FlatVector<double> & elx, 
-	    FlatVector<double> & flux,
-	    bool applyd,
-	    LocalHeap & lh) const
-  {
-    const FEL & fel = dynamic_cast<const FEL&> (bfel);
-    
-    // flux.AssignMemory (DIM_DMAT, lh);
     if (applyd)
       {
 	Vec<DIM_DMAT,double> hv1;
@@ -775,6 +751,62 @@ public:
       }
   }
 
+  virtual void
+  CalcFlux (const FiniteElement & bfel,
+	    const BaseMappedIntegrationRule & bmir,
+	    const FlatVector<double> & elx, 
+	    FlatMatrix<double> & flux,
+	    bool applyd,
+	    LocalHeap & lh) const
+  {
+    const FEL & fel = static_cast<const FEL&> (bfel);
+    const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+
+
+    DIFFOP::ApplyIR (fel, mir, elx, flux, lh);
+
+    if (applyd)
+      {
+	Vec<DIM_DMAT,double> hv;
+	for (int i = 0; i < mir.Size(); i++)
+	  {
+	    dmatop.Apply (fel, mir[i], flux.Row(i), hv, lh);
+	    flux.Row(i) = hv;
+	  }
+      }
+  }
+
+  virtual void
+  CalcFlux (const FiniteElement & bfel,
+	    const BaseSpecificIntegrationPoint & bsip,
+	    const FlatVector<Complex> & elx, 
+	    FlatVector<Complex> & flux,
+	    bool applyd,
+	    LocalHeap & lh) const
+  {
+    const FEL & fel = static_cast<const FEL&> (bfel);
+    const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
+      static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+
+    if (applyd)
+      {
+	Vec<DIM_DMAT,Complex> hv1;
+	DIFFOP::Apply (fel, sip, elx, hv1, lh);
+	dmatop.Apply (fel, sip, hv1, flux, lh);
+      }
+    else
+      {
+	DIFFOP::Apply (fel, sip, elx, flux, lh);
+      }
+  }
+  
+
+
+
+
+  
+
 
   virtual void
   CalcFluxMulti (const FiniteElement & bfel,
@@ -785,11 +817,9 @@ public:
 		 bool applyd,
 		 LocalHeap & lh) const
   {
-    const FEL & fel = dynamic_cast<const FEL&> (bfel);
+    const FEL & fel = static_cast<const FEL&> (bfel);
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = 
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
-
-    // flux.AssignMemory (DIM_DMAT * m, lh);
 
     int ndof = fel.GetNDof();
     FlatMatrixFixHeight<DIM_DMAT> bmat (ndof * DIM, lh);
@@ -823,133 +853,6 @@ public:
   }
 
 
-  virtual void
-  CalcFlux (const FiniteElement & bfel,
-	    const BaseSpecificIntegrationPoint & bsip,
-	    const FlatVector<double> & elx, 
-	    FlatVector<double> & flux,
-	    bool applyd,
-	    LocalHeap & lh) const
-  {
-    const FEL & fel = dynamic_cast<const FEL&> (bfel);
-    const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
-      static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
-
-    
-    // flux.AssignMemory (DIM_DMAT, lh);
-    if (applyd)
-      {
-	Vec<DIM_DMAT,double> hv1;
-	DIFFOP::Apply (fel, sip, elx, hv1, lh);
-	dmatop.Apply (fel, sip, hv1, flux, lh);
-      }
-    else
-      {
-	DIFFOP::Apply (fel, sip, elx, flux, lh);
-      }
-  }
-  
-
-  virtual void
-  CalcFlux (const FiniteElement & bfel,
-	    const BaseMappedIntegrationRule & bmir,
-	    const FlatVector<double> & elx, 
-	    FlatMatrix<double> & flux,
-	    bool applyd,
-	    LocalHeap & lh) const
-  {
-    const FEL & fel = static_cast<const FEL&> (bfel);
-    const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
-      static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
-
-
-    if (applyd)
-      {
-	/*
-	Vec<DIM_DMAT,double> hv1, hv2;
-	for (int i = 0; i < mir.Size(); i++)
-	  {
-	    DIFFOP::Apply (fel, mir[i], elx, hv1, lh);
-	    dmatop.Apply (fel, mir[i], hv1, hv2, lh);
-	    flux.Row(i) = hv2;
-	  }
-	*/
-	DIFFOP::ApplyIR (fel, mir, elx, flux, lh);
-	Vec<DIM_DMAT,double> hv;
-	for (int i = 0; i < mir.Size(); i++)
-	  {
-	    dmatop.Apply (fel, mir[i], flux.Row(i), hv, lh);
-	    flux.Row(i) = hv;
-	  }
-	
-      }
-    else
-      {
-	DIFFOP::ApplyIR (fel, mir, elx, flux, lh);
-	/*
-	Vec<DIM_DMAT,double> hv1;
-	for (int i = 0; i < mir.Size(); i++)
-	  {
-	    DIFFOP::Apply (fel, mir[i], elx, hv1, lh);
-	    flux.Row(i) = hv1;
-	  }
-	*/
-      }
-  }
-  
-
-
-
-
-
-
-  virtual void
-  CalcFlux (const FiniteElement & bfel,
-	    const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip,
-	    const FlatVector<Complex> & elx, 
-	    FlatVector<Complex> & flux,
-	    bool applyd,
-	    LocalHeap & lh) const
-  {
-    const FEL & fel = dynamic_cast<const FEL&> (bfel);
-    // flux.AssignMemory (DIM_DMAT, lh);
-    if (applyd)
-      {
-	Vec<DIM_DMAT,Complex> hv1;
-	DIFFOP::Apply (fel, sip, elx, hv1, lh);
-	dmatop.Apply (fel, sip, hv1, flux, lh);
-      }
-    else
-      {
-	DIFFOP::Apply (fel, sip, elx, flux, lh);
-      }
-  }
-  
-
-  virtual void
-  CalcFlux (const FiniteElement & bfel,
-	    const BaseSpecificIntegrationPoint & bsip,
-	    const FlatVector<Complex> & elx, 
-	    FlatVector<Complex> & flux,
-	    bool applyd,
-	    LocalHeap & lh) const
-  {
-    const FEL & fel = dynamic_cast<const FEL&> (bfel);
-    const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
-      static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
-    // flux.AssignMemory (DIM_DMAT, lh);
-    if (applyd)
-      {
-	Vec<DIM_DMAT,Complex> hv1;
-	DIFFOP::Apply (fel, sip, elx, hv1, lh);
-	dmatop.Apply (fel, sip, hv1, flux, lh);
-      }
-    else
-      {
-	DIFFOP::Apply (fel, sip, elx, flux, lh);
-      }
-  }
-  
 
 
 
@@ -963,6 +866,7 @@ public:
     const FEL & fel = static_cast<const FEL&> (bfel);
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+
     DIFFOP::ApplyTrans (fel, sip, elx, ely, lh);
   }
   
@@ -977,6 +881,7 @@ public:
     const FEL & fel = static_cast<const FEL&> (bfel);
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+
     DIFFOP::ApplyTrans (fel, sip, elx, ely, lh);
   }
 
@@ -992,7 +897,8 @@ public:
     const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
       static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
 
-
+    DIFFOP::ApplyTransIR (fel, mir, elx, ely, lh);
+    /*
     HeapReset hr(lh);
     FlatVector<> hv(ely.Size(), lh);
     ely = 0.0;
@@ -1001,6 +907,7 @@ public:
 	DIFFOP::ApplyTrans (fel, mir[i], elx.Row(i), hv, lh);
 	ely += hv;
       }
+    */
   }
 
   

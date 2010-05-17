@@ -134,7 +134,8 @@ namespace ngfem
     const IntegrationPoint * ip;
     /// 
     const ElementTransformation * eltrans;
-
+    /// fabs(det)
+    double measure; 
   public:
     ///
     BaseSpecificIntegrationPoint (const IntegrationPoint & aip,
@@ -147,6 +148,8 @@ namespace ngfem
     const ElementTransformation & GetTransformation () const { return *eltrans; }
     ///
     int GetIPNr() const { return ip->Nr(); }
+    ///
+    double GetMeasure() const { return measure; }
   };
 
 
@@ -235,6 +238,7 @@ namespace ngfem
 	  dxidx = iata * Trans (dxdxi);
 	  tangentialvec = TSCAL(0.0);
 	}
+      this->measure = fabs (det);
     }
   
     ///
@@ -330,11 +334,6 @@ namespace ngfem
     NGS_DLL_HEADER IntegrationRuleTP (ELEMENT_TYPE eltype, FlatArray<int> sort, 
 		       NODE_TYPE nt, int nodenr, int order, LocalHeap & lh);
 
-    /*
-      IntegrationRuleTP (ElementType & etype, int classnr, 
-      int order, LocalHeap & lh);
-    */
-
     const IntegrationRule & GetIRX() const { return *irx; }
     const IntegrationRule & GetIRY() const { return *iry; }
     const IntegrationRule & GetIRZ() const { return *irz; }
@@ -348,18 +347,9 @@ namespace ngfem
 	ret(j) = (*this)[i](j);
       return ret;  // return xi[i]; 
     }
-    const Vec<D> GetPoint(int i) const { return x[i]; }
-    const Mat<D,D> & GetJacobian(int i) const { return dxdxi[i]; }
-    const Mat<D,D> & GetDuffyJacobian(int i) const { return dxdxi_duffy[i]; }
-    // IntegrationPoint operator[] (int i) const { return IntegrationRule::operator[](i); }
-    /*
-    { 
-      if (D == 2)
-	return IntegrationPoint(xi[i](0), xi[i](1), 0, weight[i]); 
-      else
-	return IntegrationPoint(xi[i](0), xi[i](1), xi[i](2), weight[i]); 
-    }
-    */
+    Vec<D> & GetPoint(int i) const { return x[i]; }
+    Mat<D,D> & GetJacobian(int i) const { return dxdxi[i]; }
+    Mat<D,D> & GetDuffyJacobian(int i) const { return dxdxi_duffy[i]; }
   };
 
 
@@ -796,6 +786,81 @@ namespace ngfem
       return elpoint;
     }
   };
+
+
+
+
+
+
+
+
+
+
+
+
+
+  class NGS_DLL_HEADER BaseMappedIntegrationRule 
+  { 
+  protected:
+    const IntegrationRule & ir;
+    const ElementTransformation & eltrans;
+    char * baseip;
+    int incr;
+
+  public:
+    BaseMappedIntegrationRule (const IntegrationRule & air,
+			       const ElementTransformation & aeltrans)
+      : ir(air), eltrans(aeltrans) { ; }
+
+    int Size() const { return ir.Size(); }
+    const IntegrationRule & IR() const { return ir; }
+    const ElementTransformation & GetTransformation () const { return eltrans; }
+
+    const BaseSpecificIntegrationPoint & operator[] (int i) const
+    { return *static_cast<const BaseSpecificIntegrationPoint*> ((void*)(baseip+i*incr)); }
+  };
+
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  class NGS_DLL_HEADER MappedIntegrationRule : public BaseMappedIntegrationRule
+  {
+    FlatArray< SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > sips;
+  public:
+    MappedIntegrationRule (const IntegrationRule & ir, 
+			   const ElementTransformation & aeltrans, 
+			   LocalHeap & lh);
+    /*
+    : BaseMappedIntegrationRule (ir, aeltrans), sips(ir.GetNIP(), lh)
+    {
+      baseip = (char*)(void*)(BaseSpecificIntegrationPoint*)(&sips[0]);
+      incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
+
+      FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
+      FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
+
+      eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
+
+      for (int i = 0; i < ir.GetNIP(); i++)
+	new (&sips[i]) SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, pts[i], dxdxi[i]); 
+    }
+    */
+    MappedIntegrationRule (const IntegrationRule & ir, 
+			   const ElementTransformation & eltrans, 
+			   int dummy,
+			   LocalHeap & lh)
+      : BaseMappedIntegrationRule (ir, eltrans), sips(ir.GetNIP(), lh)
+    {
+      baseip = (char*)(void*)(BaseSpecificIntegrationPoint*)(&sips[0]);
+      incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
+    }
+    
+    SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (int i) const
+    { 
+      return sips[i]; 
+    }
+  };
+
+
+
 
 
 

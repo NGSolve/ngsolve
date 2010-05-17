@@ -410,6 +410,7 @@ namespace ngfem
    }
     */
 
+    /*
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const ElementTransformation & eltrans,
@@ -427,6 +428,8 @@ namespace ngfem
 	      FlatVector<Complex> & flux,
 	      bool applyd,
 	      LocalHeap & lh) const;
+    */
+
 
     virtual void
     CalcFlux (const FiniteElement & fel,

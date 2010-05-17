@@ -313,7 +313,7 @@ namespace ngfem
 
 
 
-
+  /*
   void BilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & fel,
 	    const ElementTransformation & eltrans,
@@ -341,6 +341,8 @@ namespace ngfem
 	 << typeid(*this).name()
 	 << endl;
   }
+  */
+
 
 
   void BilinearFormIntegrator :: 
@@ -923,7 +925,7 @@ namespace ngfem
 	FlatVector<double> selx(elx.Size()/dim, lh);
 	for (int i = 0; i < selx.Size(); i++)
 	  selx(i) = elx(dim*i+comp);
-	bfi.CalcFlux (fel, eltrans, ip, selx, flux, applyd, lh);
+	bfi.CalcFlux (fel, eltrans(ip, lh), selx, flux, applyd, lh);
       }
     else
       {
@@ -934,7 +936,7 @@ namespace ngfem
 	  {
 	    for (int i = 0; i < selx.Size(); i++)
 	      selx(i) = elx(dim*i+j);
-	    bfi.CalcFlux (fel, eltrans, ip, selx, sflux, applyd, lh);
+	    bfi.CalcFlux (fel, eltrans(ip, lh), selx, sflux, applyd, lh);
 	    for (int i = 0; i < sflux.Size(); i++)
 	      flux(dim*i+j) = sflux(i);
 	  }
@@ -974,7 +976,7 @@ namespace ngfem
 	FlatVector<Complex> selx(elx.Size()/dim, lh);
 	for (int i = 0; i < selx.Size(); i++)
 	  selx(i) = elx(dim*i+comp);
-	bfi.CalcFlux (fel, eltrans, ip, selx, flux, applyd, lh);
+	bfi.CalcFlux (fel, eltrans(ip, lh), selx, flux, applyd, lh);
       }
     else
       {
@@ -985,7 +987,7 @@ namespace ngfem
 	  {
 	    for (int i = 0; i < selx.Size(); i++)
 	      selx(i) = elx(dim*i+j);
-	    bfi.CalcFlux (fel, eltrans, ip, selx, sflux, applyd, lh);
+	    bfi.CalcFlux (fel, eltrans(ip, lh), selx, sflux, applyd, lh);
 	    for (int i = 0; i < sflux.Size(); i++)
 	      flux(dim*i+j) = sflux(i);
 	  }
@@ -1513,7 +1515,7 @@ double BlockBilinearFormIntegrator ::
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    bfi.CalcFlux (fel, eltrans, ip, elx, flux, applyd, lh);
+    bfi.CalcFlux (fel, eltrans(ip, lh), elx, flux, applyd, lh);
     flux *= factor;
   }
 
@@ -1838,7 +1840,7 @@ double BlockBilinearFormIntegrator ::
     for (int i = 0; i < selx.Size(); i++)
       selx(i) = elx(base+i);
 
-    bfi.CalcFlux (fel[comp], eltrans, ip, selx, flux, applyd, lh);
+    bfi.CalcFlux (fel[comp], eltrans(ip, lh), selx, flux, applyd, lh);
   }
 
 
@@ -1863,7 +1865,7 @@ double BlockBilinearFormIntegrator ::
     for (int i = 0; i < selx.Size(); i++)
       selx(i) = elx(base+i);
 
-    bfi.CalcFlux (fel[comp], eltrans, ip, selx, flux, applyd, lh);
+    bfi.CalcFlux (fel[comp], eltrans(ip, lh), selx, flux, applyd, lh);
   }
 
 

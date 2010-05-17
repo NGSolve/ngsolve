@@ -29,6 +29,12 @@ namespace ngfem
       Evaluate (ir[i], values.Row(i)); // values(i, 0) = Evaluate (ir[i]);
   }
 
+  void CoefficientFunction :: 
+  Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
+  {
+    for (int i = 0; i < ir.Size(); i++)
+      Evaluate (ir[i], values.Row(i)); 
+  }
 
 
     ///
