@@ -87,6 +87,7 @@ public:
   void GetFaceVertices (int fnr, int * vertices) const;
   void GetEdgeVertices (int enr, int & v1, int & v2) const;
   const int * GetEdgeVerticesPtr (int enr) const { return &edge2vert[enr][0]; }
+  const int * GetFaceVerticesPtr (int fnr) const { return &face2vert[fnr][0]; }
   void GetFaceEdges (int fnr, Array<int> & edges, bool withorientation = false) const;
 
   ELEMENT_TYPE GetFaceType (int fnr) const;

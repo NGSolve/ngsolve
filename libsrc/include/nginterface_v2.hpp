@@ -111,6 +111,40 @@ namespace netgen
   public:
     Ng_Vertices vertices;
   };
+
+
+
+  template <>
+  class Ng_Node<2>
+  {
+    class Ng_Vertices
+    {
+    public:
+      int nv;
+      const int * ptr;
+  
+      int Size() const { return nv; }
+      int operator[] (int i) const { return ptr[i]-1; }
+    };
+
+    class Ng_Edges
+    {
+    public:
+      int ned;
+      const int * ptr;
+  
+      int Size() const { return ned; }
+      int operator[] (int i) const { return ptr[i]-1; }
+    };
+
+
+  public:
+    Ng_Vertices vertices;
+    Ng_Edges edges;
+  };
+
+
+
     
   template <int DIM>
   DLL_HEADER Ng_Node<DIM> Ng_GetNode (int nr);

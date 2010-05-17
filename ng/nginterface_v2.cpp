@@ -263,4 +263,13 @@ namespace netgen
   }
 
 
+
+  template <> DLL_HEADER Ng_Node<2> Ng_GetNode<2> (int nr)
+  {
+    Ng_Node<2> node;
+    node.vertices.ptr = mesh->GetTopology().GetFaceVerticesPtr(nr);
+    node.vertices.nv = (node.vertices.ptr[3] == 0) ? 3 : 4;
+    return node;
+  }
+
 }
