@@ -172,7 +172,6 @@ namespace ngcomp
 
   void BilinearForm :: Assemble (LocalHeap & lh)
   {
-	  cout << "Assemble called" << endl;
     if (mats.Size() == ma.GetNLevels())
       return;
 
