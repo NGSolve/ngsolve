@@ -96,6 +96,7 @@ namespace ngcomp
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
   
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const; 
+    // virtual void CreateSmoothingBlocks2 (SmoothingBlocksCreator & sbc, const Flags & precflags) const; 
     ///
     virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
 

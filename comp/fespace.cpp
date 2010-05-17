@@ -1363,20 +1363,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 #endif
 
 
-  /*
-  Table<int> * FESpace :: CreateSmoothingBlocks (int type) const
-  {
-    int nd = GetNDof();
-    
-    Table<int> * it = new Table<int>(nd,1);
-    for (int i = 0; i < nd; i++)
-      (*it)[i][0] = i;
 
-    return it;
-  }
-  */
+
   Table<int> * FESpace :: CreateSmoothingBlocks (const Flags & flags) const
   {
+    /*
     int nd = GetNDof();
     
     Array<int> cnt(nd);
@@ -1390,7 +1381,45 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	(*it)[i][0] = i;
 
     return it;
+    */
+
+    
+    int nd = GetNDof();
+    TableCreator<int> creator;
+
+    /*
+    for (int mode = 1; mode <= 3; mode++)
+      {
+	creator.SetMode (mode);
+    */
+    for ( ; !creator.Done(); creator++)
+      {
+	for (int i = 0; i < nd; i++)
+	  if (!IsDirichletDof(i))
+	    creator.Add (i, i);
+      }
+    return creator.GetTable();
   }
+
+    
+  /*
+  Table<int> * FESpace :: CreateSmoothingBlocks (const Flags & flags) const
+  {
+    SmoothingBlocksCreator sbc;
+    sbc.SetMode (1);
+    CreateSmoothingBlocks2 (sbc, flags);
+    sbc.SetMode (2);
+    CreateSmoothingBlocks2 (sbc, flags);
+    sbc.SetMode (3);
+    CreateSmoothingBlocks2 (sbc, flags);
+
+    return sbc.GetTable();
+  }
+
+  void FESpace :: CreateSmoothingBlocks2 (SmoothingBlocksCreator & sbc, const Flags & flags) const
+  {
+  }
+  */
 
 
   void FESpace :: SetDefinedOn (const BitArray & defon)
