@@ -27,6 +27,11 @@ namespace ngcomp
 			TRANSFORM_SOL = 8 };
 		     
 
+
+
+
+
+
   /**
      Base class for finite element space.
      Provides finite elements, global degrees of freedom, 
@@ -238,8 +243,6 @@ namespace ngcomp
 
     /// 
     virtual Table<int> * CreateSmoothingBlocks (const Flags & flags) const;
-    // { return CreateSmoothingBlocks(0); }
-
     /// for anisotropic plane smoothing:
     virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const
     { return 0; }
