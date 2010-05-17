@@ -96,7 +96,7 @@ namespace ngfem
       y = 0.0;
       for (int i = 0; i < mir.Size(); i++)
 	{
-	  Apply (fel, mir[i], x.Row(i), hy, lh);
+	  ApplyTrans (fel, mir[i], x.Row(i), hy, lh);
 	  y += hy;
 	}
     }
