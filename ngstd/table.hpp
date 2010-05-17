@@ -113,6 +113,79 @@ inline ostream & operator<< (ostream & s, const Table<T> & table)
 
 
 
+template <class T>
+  class TableCreator
+  {
+    int mode;    // 1 .. cnt, 2 .. cnt entries, 3 .. fill table
+    int nd;
+    Array<int> cnt;
+    Table<T> * table;
+  public:
+    TableCreator()
+    { nd = 0; mode = 1; }
+    
+    Table<T> * GetTable() { return table; }
+
+    bool Done () { return mode > 3; }
+    void operator++(int) { SetMode (mode+1); }
+
+    int GetMode () const { return mode; }
+    void SetMode (int amode) 
+    {
+      mode = amode; 
+      if (mode == 2) 
+	{
+	  cnt.SetSize(nd);
+	  cnt = 0; 
+	}
+      if (mode == 3)
+	{
+	  table = new Table<int> (cnt);
+	  cnt = 0;
+	}
+    }
+
+    void Add (int blocknr, const T & data)
+    {
+      switch (mode)
+	{
+	case 1:
+	  if (blocknr+1 > nd) nd = blocknr+1; 
+	  break;
+	case 2:
+	  cnt[blocknr]++;
+	  break;
+	case 3:
+	  (*table)[blocknr][cnt[blocknr]++] = data;
+	  break;
+	}
+    }
+
+
+    void Add (int blocknr, IntRange range)
+    {
+      switch (mode)
+	{
+	case 1:
+	  if (blocknr+1 > nd) nd = blocknr+1; 
+	  break;
+	case 2:
+	  cnt[blocknr]+=range.Size();
+	  break;
+	case 3:
+	  for (int j = 0; j < range.Size(); j++)
+	    (*table)[blocknr][cnt[blocknr]+j] = range.First()+j;
+	  cnt[blocknr]+=range.Size();
+	  break;
+	}
+    }
+
+  };
+
+
+
+
+
 
 
 
