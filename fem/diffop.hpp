@@ -62,13 +62,8 @@ namespace ngfem
       typedef typename TVY::TSCAL TSCAL;
 
       for (int i = 0; i < mir.Size(); i++)
-	{
-	  HeapReset hr(lh);
-	  Apply (fel, mir[i], x, y.Row(i), lh);
-	}
+	Apply (fel, mir[i], x, y.Row(i), lh);
     }
-
-
 
 
     /// Computes Transpose (B-matrix) times point value
@@ -85,6 +80,28 @@ namespace ngfem
       DOP::GenerateMatrix (fel, sip, mat, lh);
       y = Trans (mat) * x;
     }
+
+
+    /// Computes Transpose (B-matrix) times point value
+    template <typename FEL, typename MIR, class TVX, class TVY>
+    static void ApplyTransIR (const FEL & fel, const MIR & mir,
+			      const TVX & x, TVY & y,
+			      LocalHeap & lh) 
+    {
+      typedef typename TVY::TSCAL TSCAL;
+
+      HeapReset hr(lh);
+      FlatVector<TSCAL> hy(y.Size(), lh);
+
+      y = 0.0;
+      for (int i = 0; i < mir.Size(); i++)
+	{
+	  Apply (fel, mir[i], x.Row(i), hy, lh);
+	  y += hy;
+	}
+    }
+
+
 
 
 
@@ -175,6 +192,16 @@ namespace ngfem
 	Apply (fel, mir[i], x, flux.Row(i), lh);
     }
 
+    virtual void
+    Apply (const FiniteElement & fel,
+	   const BaseMappedIntegrationRule & mir,
+	   FlatVector<Complex> x, 
+	   FlatMatrix<Complex> flux,
+	   LocalHeap & lh) const
+    {
+      for (int i = 0; i < mir.Size(); i++)
+	Apply (fel, mir[i], x, flux.Row(i), lh);
+    }
 
 
 
@@ -202,6 +229,39 @@ namespace ngfem
       FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
       CalcMatrix (fel, sip, mat, lh);
       flux = mat * x;
+    }
+
+
+    virtual void
+    ApplyTrans (const FiniteElement & fel,
+		const BaseMappedIntegrationRule & mir,
+		FlatMatrix<double> flux,
+		FlatVector<double> x, 
+		LocalHeap & lh) const 
+    {
+      FlatVector<double> hx(x.Size(), lh);
+      x = 0.0;
+      for (int i = 0; i < mir.Size(); i++)
+	{
+	  ApplyTrans (fel, mir[i], flux.Row(i), hx, lh);
+	  x += hx;
+	}
+    }
+
+    virtual void
+    ApplyTrans (const FiniteElement & fel,
+		const BaseMappedIntegrationRule & mir,
+		FlatMatrix<Complex> flux,
+		FlatVector<Complex> x, 
+		LocalHeap & lh) const 
+    {
+      FlatVector<Complex> hx(x.Size(), lh);
+      x = 0.0;
+      for (int i = 0; i < mir.Size(); i++)
+	{
+	  ApplyTrans (fel, mir[i], flux.Row(i), hx, lh);
+	  x += hx;
+	}
     }
   };
 

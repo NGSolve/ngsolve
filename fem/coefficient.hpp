@@ -31,6 +31,8 @@ namespace ngfem
     ///
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
 
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
+
 
     ///
     virtual Complex EvaluateComplex (const BaseSpecificIntegrationPoint & ip) const 

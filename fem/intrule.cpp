@@ -148,6 +148,7 @@ namespace ngfem
 	iata = Inv (ata);
 	dxidx = iata * Trans (dxdxi);
       }
+    this->measure = fabs (det);
   }
 
 
@@ -237,7 +238,7 @@ namespace ngfem
 	ipl(dir) -= eps;
 	this->eltrans->CalcJacobian (ipr, jacr);    
 	this->eltrans->CalcJacobian (ipl, jacl);    
-
+	
 	for (int j = 0; j < 3; j++)
 	  {
 	    ddx1(dir,j) = (jacr(0,j) - jacl(0,j) ) / (2*eps);
@@ -284,6 +285,39 @@ namespace ngfem
   template class SpecificIntegrationPoint<2,3>;
   template class SpecificIntegrationPoint<1,3>;
   
+
+
+
+
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: 
+  MappedIntegrationRule (const IntegrationRule & ir, 
+			 const ElementTransformation & aeltrans, 
+			 LocalHeap & lh)
+    : BaseMappedIntegrationRule (ir, aeltrans), sips(ir.GetNIP(), lh)
+  {
+    baseip = (char*)(void*)(BaseSpecificIntegrationPoint*)(&sips[0]);
+      incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
+      
+      FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
+      FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
+
+      eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
+      
+      for (int i = 0; i < ir.GetNIP(); i++)
+	new (&sips[i]) SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, pts[i], dxdxi[i]); 
+  }
+
+  template class MappedIntegrationRule<1,1>;
+  template class MappedIntegrationRule<2,2>;
+  template class MappedIntegrationRule<3,3>;
+  template class MappedIntegrationRule<1,2>;
+  template class MappedIntegrationRule<2,3>;
+
+
+
+
+
   /*
   IntegrationRule :: IntegrationRule (int nips)
     : Array<IntegrationPoint> (nips) 

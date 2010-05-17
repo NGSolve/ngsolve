@@ -419,8 +419,8 @@ namespace ngfem
   };
 
 
-  template class SpecificIntegrationPoint<2,2,AutoDiff<1,Complex> >;
-  template class SpecificIntegrationPoint<3,3,AutoDiff<1,Complex> >;
+  // template class SpecificIntegrationPoint<2,2,AutoDiff<1,Complex> >;
+  // template class SpecificIntegrationPoint<3,3,AutoDiff<1,Complex> >;
 
 
 
