@@ -963,18 +963,18 @@ namespace netgen
 
    char geomfilename[255];
 
-   void MyError (const char * ch)
+   DLL_HEADER void MyError (const char * ch)
    {
       cerr << ch;
    }
 
    //Destination for messages, errors, ...
-   void Ng_PrintDest(const char * s)
+   DLL_HEADER void Ng_PrintDest(const char * s)
    {
       (*mycout) << s << flush;
    }
 
-   double GetTime ()
+   DLL_HEADER double GetTime ()
    {
       return 0;
    }

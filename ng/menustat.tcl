@@ -839,7 +839,7 @@ menu .ngmenu.help
 
 .ngmenu.help add command -label "About..." \
     -command {
-tk_messageBox -message "This is NETGEN \nmainly written by \nJoachim Schöberl \nthanks to \nRobert Gaisbauer, Johannes Gerstmayr, Philippose Rajan"
+tk_messageBox -message "This is NETGEN \nmainly written by \nJoachim Schoeberl \nthanks to \nRobert Gaisbauer, Johannes Gerstmayr, Philippose Rajan"
 }
 
 # tk_menuBar .mbar .mbar.file .mbar.mesh .mbar.test .mbar.help

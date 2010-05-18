@@ -246,7 +246,7 @@ namespace netgen
 
 #ifndef SMALLLIB
   // Destination for messages, errors, ...
-  void Ng_PrintDest(const char * s)
+  DLL_HEADER void Ng_PrintDest(const char * s)
   {
 #ifdef PARALLEL
     int id, ntasks;
@@ -263,7 +263,7 @@ namespace netgen
       (*mycout) << "p" << id << ": " << s << flush ;
   }
 
-  void MyError(const char * ch)
+  DLL_HEADER void MyError(const char * ch)
   {
     cout << ch;
     (*testout) << "Error !!! " << ch << endl << flush;
@@ -277,7 +277,7 @@ namespace netgen
   }
 
 #ifndef SMALLLIB
-  double GetTime ()
+  DLL_HEADER double GetTime ()
   {
     return double(clock() - starttimea) / CLOCKS_PER_SEC;
   }

@@ -13,7 +13,7 @@
 */
 
 ///
-extern double GetTime ();
+DLL_HEADER extern double GetTime ();
 extern void ResetTime ();
 
 ///

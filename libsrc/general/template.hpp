@@ -33,7 +33,7 @@ extern ostream * myerr;
 
 /** Error messages display.
   Error messages are displayed by this function */
-extern void MyError (const char * ch);
+DLL_HEADER extern void MyError (const char * ch);
 
 
 /** Rings the bell.
