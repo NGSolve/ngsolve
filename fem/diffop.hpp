@@ -59,8 +59,6 @@ namespace ngfem
 			 const TVX & x, TVY & y,
 			 LocalHeap & lh)
     {
-      typedef typename TVY::TSCAL TSCAL;
-
       for (int i = 0; i < mir.Size(); i++)
 	Apply (fel, mir[i], x, y.Row(i), lh);
     }
@@ -320,7 +318,7 @@ namespace ngfem
     {
       const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
 	static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
-      const FEL & fel = static_cast<const FEL&> (bfel);
+l      const FEL & fel = static_cast<const FEL&> (bfel);
       DIFFOP::ApplyIR (fel, mir, x, flux, lh);
     }
 

@@ -49,6 +49,25 @@ public:
     y = mat * x;
   }
 
+  template <typename FEL, typename SIP, class TVX>
+  void Apply1 (const FEL & fel, const SIP & sip,
+	       TVX & x, LocalHeap & lh) const
+  {
+    Vec<DMO::DIM_DMAT, typename TVX::TSCAL> y;
+    static_cast<const DMO*>(this) -> Apply (fel, sip, x, y, lh);
+    x = y;
+  }
+
+  template <typename FEL, typename MIR, typename TVX>
+  void ApplyIR (const FEL & fel, const MIR & mir,
+		TVX & x, LocalHeap & lh) const
+  {
+    for (int i = 0; i < mir.Size(); i++)
+      static_cast<const DMO*>(this) -> Apply1 (fel, mir[i], x.Row(i), lh);
+  }
+
+
+
   template <typename FEL, typename SIP, class TVX, class TVY>
   void ApplyInv (const FEL & fel, const SIP & sip,
 		 const TVX & x, TVY & y,
@@ -739,6 +758,7 @@ public:
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
 
+    /*
     if (applyd)
       {
 	Vec<DIM_DMAT,double> hv1;
@@ -749,6 +769,10 @@ public:
       {
 	DIFFOP::Apply (fel, sip, elx, flux, lh);
       }
+    */
+    DIFFOP::Apply (fel, sip, elx, flux, lh);
+    if (applyd)
+      dmatop.Apply1 (fel, sip, flux, lh);
   }
 
   virtual void
@@ -765,7 +789,9 @@ public:
 
 
     DIFFOP::ApplyIR (fel, mir, elx, flux, lh);
-
+    if (applyd)
+      dmatop.ApplyIR (fel, mir, flux, lh);
+    /*
     if (applyd)
       {
 	Vec<DIM_DMAT,double> hv;
@@ -775,6 +801,7 @@ public:
 	    flux.Row(i) = hv;
 	  }
       }
+    */
   }
 
   virtual void

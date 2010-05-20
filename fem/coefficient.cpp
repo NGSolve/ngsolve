@@ -74,6 +74,37 @@ namespace ngfem
     return val[elind]; 
   }
 
+  void DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
+  {
+    int elind = ir[0].GetTransformation().GetElementIndex();
+    
+    if (elind < 0 || elind >= val.Size())
+      {
+	ostringstream ost;
+	ost << "DomainConstantCoefficientFunction: Element index "
+	    << elind << " out of range 0 - " << val.Size()-1 << endl;
+	throw Exception (ost.str());
+      }
+    
+    values = val[elind]; 
+  }
+
+  void DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
+  {
+    int elind = ir[0].GetTransformation().GetElementIndex();
+    
+    if (elind < 0 || elind >= val.Size())
+      {
+	ostringstream ost;
+	ost << "DomainConstantCoefficientFunction: Element index "
+	    << elind << " out of range 0 - " << val.Size()-1 << endl;
+	throw Exception (ost.str());
+      }
+    
+    values = val[elind]; 
+  }
+
+
   DomainConstantCoefficientFunction :: 
   ~DomainConstantCoefficientFunction ()
   { ; }

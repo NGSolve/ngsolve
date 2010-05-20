@@ -111,15 +111,20 @@ namespace ngfem
   
   
 
-
+  /*
   template <int S, int R>
   inline double Evaluate (const CoefficientFunction & fun,
 			  const SpecificIntegrationPoint<S,R> & ip) 
   { 
     return fun.Evaluate(ip); 
   }
-
+  */
   
+  inline double Evaluate (const CoefficientFunction & fun,
+			  const BaseSpecificIntegrationPoint & ip) 
+  { 
+    return fun.Evaluate(ip); 
+  }
 
 
 
@@ -163,6 +168,11 @@ namespace ngfem
     ///
 
     virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const;
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
+
 
     virtual double EvaluateConst () const
     {
