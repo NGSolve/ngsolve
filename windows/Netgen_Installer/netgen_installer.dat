@@ -11,12 +11,13 @@
 # History
 # -------
 # 4.9.13-RC : 17-18/04/2010
+# 4.9.13    : 21/05/2010
 #
 # ------------------------------------------------------------
 
 
 # Version of Netgen to be packaged by the installer
-VERSION=4.9.13-RC
+VERSION=4.9.13
 
 # Root location of the Netgen Sources and binaries 
 # for the various flavours

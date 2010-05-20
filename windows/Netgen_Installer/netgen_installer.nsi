@@ -49,6 +49,7 @@ Var foundTogl
 Var foundPThds
 Var foundOCC
 Var foundLapackBlas
+Var foundMKLLibs
 Var StartMenuFolder
 Var NetgenUserDir
 ; ---------------------------------------
@@ -117,6 +118,15 @@ Var NetgenUserDir
    !error "Error: Netgen Architecture not specified.....Aborting!"
 !endif   
 
+; Part to be added to the "Intel Math Kernel Libraries" DLL for 32-bit or 64-bit architecture
+!if ${NETGEN_ARCH} == ${WIN32_ARCH}
+   !define MKL_ARCH_DIR "-w32"
+!else if ${NETGEN_ARCH} == ${X64_ARCH}   
+   !define MKL_ARCH_DIR "-w64"
+!else
+   !error "Error: Netgen Architecture not specified.....Aborting!"
+!endif
+
 ; Location of the OCC libraries for different architectures
 !if ${NETGEN_ARCH} == ${WIN32_ARCH}
    !define OCC_ARCH "win32"
@@ -177,7 +187,8 @@ Var NetgenUserDir
 
 !define NGSOLVE_SRC        "${NGSOLVE_ROOT}\ngsolve"
 !define NGSOLVE_BIN        "${NGSOLVE_ROOT}\ngsolve-inst_${NETGEN_ARCH}"
-!define NGSOLVE_EXTLIBS    "${NGSOLVE_ROOT}\ext_libs\lapack-blas"
+!define NGSOLVE_LAPACKLIBS "${NGSOLVE_ROOT}\ext_libs\lapack-blas"
+!define NGSOLVE_MKLLIBS    "${NGSOLVE_ROOT}\ext_libs\mkl${MKL_ARCH_DIR}"
 
 !define EXTLIBS_OCC        "${OCC_ROOT}\ros\${OCC_ARCH}\bin"
 
@@ -546,6 +557,7 @@ SectionGroup "Add-On Applications"
 	    ; Check if required libraries are present
 	    ; if not, mark them to be installed too		
 		Call checkLapackBlas
+        Call checkMKLLibs
 	
 		; Copy the DLL and Tcl files to the 
 		; Netgen bin folder
@@ -556,9 +568,14 @@ SectionGroup "Add-On Applications"
 		${If} ${NETGEN_ARCH} != ${X64_ARCH}
             ${If} $foundLapackBlas != "1"
 	            SetOutPath "$INSTDIR\bin"
-	            File ${NGSOLVE_EXTLIBS}\bin\*.dll		 
+	            File ${NGSOLVE_LAPACKLIBS}\bin\*.dll		 
             ${EndIf}
 		${EndIf}
+        
+        ${If} $foundMKLLibs != "1"
+           SetOutPath "$INSTDIR\bin"
+           File ${NGSOLVE_MKLLIBS}\bin\*.dll
+        ${EndIf}   
 		
         ; Copy the NGSolve LIB file to the 
         ; Netgen lib folder
@@ -979,6 +996,30 @@ Function checkLapackBlas
 LapackBlasErrors:
 		StrCpy $foundLapackBlas "0"
 		LogText "Lapack / BLAS Libraries not found on system....installing locally"		
+		ClearErrors
+FunctionEnd
+; ---------------------------------------
+
+
+
+; ---------- Check for Intel Match Kernel Libraries (MKL) DLLs -
+; Checks if the MKL DLLs are available 
+; via the PATH environment variable
+Function checkMKLLibs
+	ClearErrors
+	SearchPath $2 libiomp5md.dll
+	SearchPath $2 mkl_core.dll
+    SearchPath $2 mkl_def.dll
+    SearchPath $2 mkl_intel_thread.dll
+    SearchPath $2 msvcr71.dll
+	IfErrors MKLErrors
+		StrCpy $foundMKLLibs "1"
+		LogText "Math Kernel Libraries (MKL) already installed on system....skipping local installation"		
+		ClearErrors
+		Return
+MKLErrors:
+		StrCpy $foundMKLLibs "0"
+		LogText "Math Kernel Libraries (MKL) not found on system....installing locally"		
 		ClearErrors
 FunctionEnd
 ; ---------------------------------------
