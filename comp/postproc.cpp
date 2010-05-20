@@ -497,74 +497,6 @@ namespace ngcomp
 	    bli.ApplyBTrans (fel, mir, mfluxi, elflux, lh);
 
 
-	  /*
-	  elflux = 0;
-	  for (int j = 0; j < ir.GetNIP(); j++)
-	    {
-	      if (diffop)
-		diffop -> ApplyTrans (fel, mir[j], mfluxi.Row(j), elfluxi, lh);
-	      else
-		bli.ApplyBTrans (fel, mir[j], mfluxi.Row(j), elfluxi, lh);
-
-	      elflux += elfluxi;
-	    }
-	  */
-
-
-
-
-	      /*
-	      double fac;
-	      if (!bound)
-		{
-		  if (fel.SpatialDim() == 2)
-		    {
-		      SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
-		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		      coef.Evaluate (sip, fluxi);
-		      if (diffop)
-			diffop -> ApplyTrans (fel, sip, fluxi, elfluxi, lh);
-		      else
-			bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
-		    }
-		  else
-		    {
-		      SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
-		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		      coef.Evaluate (sip, fluxi);
-
-		      if (diffop)
-			diffop -> ApplyTrans (fel, sip, fluxi, elfluxi, lh);
-		      else
-			bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
-		    }
-		}
-	      else
-		{
-		  if (fel.SpatialDim() == 2)
-		    {
-		      SpecificIntegrationPoint<2,3> sip (ir[j], eltrans, lh);
-		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		      coef.Evaluate (sip, fluxi);
-		      if (diffop)
-			diffop -> ApplyTrans (fel, sip, fluxi, elfluxi, lh);
-		      else
-			bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
-		    }
-		  else
-		    {
-		      SpecificIntegrationPoint<1,2> sip (ir[j], eltrans, lh);
-		      fac = sip.IP().Weight() * fabs (sip.GetJacobiDet());
-		      coef.Evaluate (sip, fluxi);
-
-		      if (diffop)
-			diffop -> ApplyTrans (fel, sip, fluxi, elfluxi, lh);
-		      else
-			bli.ApplyBTrans (fel, sip, fluxi, elfluxi, lh);
-		    }
-		}
-	      */	      
-	  
 	  if (dim > 1)
 	    {
 	      //CL: what about unsymmetric bilinearformintegrators?
@@ -714,90 +646,27 @@ namespace ngcomp
 	flux.GetElementVector (dnumsflux, elflux);
 	fesflux.TransformVec (i, bound, elflux, TRANSFORM_SOL);
 
-	double elerr = 0;
 
 	const IntegrationRule & ir = 
 	  SelectIntegrationRule(felflux.ElementType(), 2*felflux.Order());
 
-	double vol; 
 
 	FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimfluxvec, lh);
 	FlatMatrix<SCAL> mfluxi2(ir.GetNIP(), dimfluxvec, lh);
 	
-	if (!bound && fel.SpatialDim() == 2)
-	  {
-	    MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
-	    bli.CalcFlux (fel, mir, elu, mfluxi, 1, lh);
-	    fluxbli.CalcFlux (felflux, mir, elflux, mfluxi2, 0, lh);
-
-	    mfluxi -= mfluxi2;
-
-	    bli.ApplyDMatInv (fel, mir, mfluxi, mfluxi2, lh);
-
-	    for (int j = 0; j < ir.GetNIP(); j++)
-	      elerr += ir[j].Weight() * fabs(mir[j].GetJacobiDet()) *
-		fabs (InnerProduct (mfluxi.Row(j), mfluxi2.Row(j)));
-	  }
-	else
-	  
-
+	
+	BaseMappedIntegrationRule & mir = eltrans(ir, lh);
+	bli.CalcFlux (fel, mir, elu, mfluxi, 1, lh);
+	fluxbli.CalcFlux (felflux, mir, elflux, mfluxi2, 0, lh);
+	
+	mfluxi -= mfluxi2;
+	
+	bli.ApplyDMatInv (fel, mir, mfluxi, mfluxi2, lh);
+	
+	double elerr = 0;
 	for (int j = 0; j < ir.GetNIP(); j++)
-	  {
-	    HeapReset hr(lh);
-	    if (!bound)
-	      {
-		if (fel.SpatialDim() == 2)
-		  {
-		    SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
-		    bli.CalcFlux (fel, sip, elu, fluxi, 0, lh);
-		    fluxbli.CalcFlux (felflux, sip, elflux, fluxi2, 0, lh);
-		    vol = fabs(sip.GetJacobiDet()); 
-
-		    fluxi -= fluxi2;
-		    bli.ApplyDMat (fel, sip, fluxi, fluxi2, lh);
-		    elerr += ir[j].Weight() * vol * fabs (InnerProduct (fluxi, fluxi2));
-		  }
-		else
-		  {
-		    SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
-		    bli.CalcFlux (fel, sip, elu, fluxi, 0, lh);
-		    fluxbli.CalcFlux (felflux, sip, elflux, fluxi2, 0, lh);
-		    vol = fabs(sip.GetJacobiDet()); 
-
-		    fluxi -= fluxi2;
-		    bli.ApplyDMat (fel, sip, fluxi, fluxi2, lh);
-		    elerr += ir[j].Weight() * vol * fabs(InnerProduct (fluxi, fluxi2));
-		  }
-	      }
-	    else
-	      {
-		if (fel.SpatialDim() == 2)
-		  {
-		    SpecificIntegrationPoint<2,3> sip (ir[j], eltrans, lh);
-		    bli.CalcFlux (fel, sip, elu, fluxi, 0, lh);
-		    fluxbli.CalcFlux (felflux, sip, elflux, fluxi2, 0, lh);
-		    vol = fabs(sip.GetJacobiDet()); 
-
-		    fluxi -= fluxi2;
-		    bli.ApplyDMat (fel, sip, fluxi, fluxi2, lh);
-		    elerr += ir[j].Weight() * vol * fabs(InnerProduct (fluxi, fluxi2));
-		  }
-		else
-		  {
-		    SpecificIntegrationPoint<1,2> sip (ir[j], eltrans, lh);
-		    bli.CalcFlux (fel, sip, elu, fluxi, 0, lh);
-		    fluxbli.CalcFlux (felflux, sip, elflux, fluxi2, 0, lh);
-		    vol = fabs(sip.GetJacobiDet()); 
-
-
-		    fluxi -= fluxi2;
-		    bli.ApplyDMat (fel, sip, fluxi, fluxi2, lh);
-		    elerr += ir[j].Weight() * vol * fabs(InnerProduct (fluxi, fluxi2));
-		  }
-	      }
-	  }
-
-
+	  elerr += ir[j].Weight() * mir[j].GetMeasure() *
+	    fabs (InnerProduct (mfluxi.Row(j), mfluxi2.Row(j)));
 
 	err(i) += elerr;
 	sum += elerr;

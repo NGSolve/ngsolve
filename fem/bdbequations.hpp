@@ -45,7 +45,6 @@ public:
   {
     FlatMatrixFixWidth<D> hm(fel.GetNDof(), &mat(0,0));
     fel.CalcMappedDShape (sip, hm);
-    // mat = Trans (hm);
   }
 
   ///
@@ -212,9 +211,12 @@ public:
   static void GenerateMatrix (const FEL & fel, const SIP & sip,
 			      MAT & mat, LocalHeap & lh)
   {
+    mat.Row(0) = fel.GetShape(sip.IP(), lh);
+    /*
     const FlatVector<> shape = fel.GetShape (sip.IP(), lh);
     for (int j = 0; j < shape.Height(); j++)
       mat(0, j) = shape(j);
+    */
   }
 
   static void GenerateMatrix (const ScalarFiniteElement<D> & fel, 
@@ -322,9 +324,7 @@ public:
     mat = TSCAL(0.); 
     for (int j = 0; j < shape.Height(); j++)
       for (int i = 0; i < SYSDIM; i++)
-	{ 
-	  mat(i, j*SYSDIM+i) = shape(j);
-	}  
+	mat(i, j*SYSDIM+i) = shape(j);
   }
 };
 
@@ -347,11 +347,12 @@ public:
   static void GenerateMatrix (const FEL & fel, const SIP & sip,
 			      MAT & mat, LocalHeap & lh)
   {
+    mat.Row(0) = fel.GetShape(sip.IP(), lh);
+    /*
     const FlatVector<> shape = fel.GetShape (sip.IP(), lh);
     for (int j = 0; j < shape.Height(); j++)
       mat(0, j) =  shape(j);
-
-
+    */
   }
 
   template <typename FEL, typename SIP, class TVX, class TVY>
@@ -746,14 +747,32 @@ public:
       mat(i, i) = ConvertTo<TRESULT> (val);
   }  
 
-  template <typename FEL, typename SIP, class VECX, class VECY>
-  void Apply (const FEL & fel, const SIP & sip,
+  template <typename FEL, class VECX, class VECY>
+  void Apply (const FEL & fel, const BaseSpecificIntegrationPoint & sip,
 	      const VECX & x, VECY & y, LocalHeap & lh) const
   {
     typedef typename VECY::TSCAL TRESULT;
     TSCAL val = coef -> T_Evaluate<TSCAL> (sip);
     for (int i = 0; i < DIM; i++)
       y(i) = ConvertTo<TRESULT> (val * x(i));
+  }
+
+  template <typename FEL, class VECX>
+  void Apply1 (const FEL & fel, const BaseSpecificIntegrationPoint & sip,
+	      const VECX & x, LocalHeap & lh) const
+  {
+    TSCAL val = coef -> T_Evaluate<TSCAL> (sip);
+    x *= ConvertTo<typename VECX::TSCAL> (val);
+  }
+
+  template <typename FEL, typename MIR, typename TVX>
+  void ApplyIR (const FEL & fel, const MIR & mir,
+		TVX & x, LocalHeap & lh) const
+  {
+    FlatMatrix<TSCAL> values(mir.Size(), 1, lh);
+    coef -> Evaluate (mir, values);
+    for (int i = 0; i < mir.Size(); i++)
+      x.Row(i) *=  ConvertTo<typename TVX::TSCAL>  (values(i, 0));
   }
 };
 
@@ -779,8 +798,8 @@ public:
       mat(i, i) = val;
   }  
 
-  template <typename FEL, typename SIP, class VECX, class VECY>
-  void Apply (const FEL & fel, const SIP & sip,
+  template <typename FEL, class VECX, class VECY>
+  void Apply (const FEL & fel, const BaseSpecificIntegrationPoint & sip,
 	      const VECX & x, VECY & y, LocalHeap & lh) const
   {
     typedef typename VECY::TSCAL TRESULT;

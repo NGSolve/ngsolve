@@ -22,14 +22,13 @@ namespace ngcomp
 			bool applyd, bool add,
 			int domain);
 
-  // template <class SCAL>
   extern NGS_DLL_HEADER 
   void CalcFluxProject (const MeshAccess & ma, 
 			const GridFunction & u,
 			GridFunction & flux,
 			const BilinearFormIntegrator & bli,
 			bool applyd, int domain,
-					      LocalHeap & lh);
+			LocalHeap & lh);
 
   template <class SCAL>
   extern NGS_DLL_HEADER void CalcFluxProject (const MeshAccess & ma, 
@@ -39,44 +38,50 @@ namespace ngcomp
 			       bool applyd, const BitArray & domains, LocalHeap & lh);
 
 
-  extern NGS_DLL_HEADER void SetValues (const MeshAccess & ma, 
-			 const CoefficientFunction & coef,
-			 GridFunction & u,
-			 bool bound,
-			 DifferentialOperator * diffop,   // NULL is FESpace evaluator
-			 LocalHeap & clh);
-    
+  extern NGS_DLL_HEADER 
+  void SetValues (const MeshAccess & ma, 
+		  const CoefficientFunction & coef,
+		  GridFunction & u,
+		  bool bound,
+		  DifferentialOperator * diffop,   // NULL is FESpace evaluator
+		  LocalHeap & clh);
+  
 
 
   template <class SCAL>
-  extern NGS_DLL_HEADER int CalcPointFlux (const MeshAccess & ma, 
-			    const GridFunction & u,
-			    const FlatVector<double> & point,
-			    FlatVector<SCAL> & flux,
-			    const BilinearFormIntegrator & bli,
-			    bool applyd,
-			    LocalHeap & lh,
-			    int component = 0);
+  extern NGS_DLL_HEADER
+  int CalcPointFlux (const MeshAccess & ma, 
+		     const GridFunction & u,
+		     const FlatVector<double> & point,
+		     FlatVector<SCAL> & flux,
+		     const BilinearFormIntegrator & bli,
+		     bool applyd,
+		     LocalHeap & lh,
+		     int component = 0);
+
 
   template <class SCAL>
-  extern NGS_DLL_HEADER int CalcPointFlux (const MeshAccess & ma, 
-			    const GridFunction & u,
-			    const FlatVector<double> & point,
-			    const Array<int> & domains,
-			    FlatVector<SCAL> & flux,
-			    const BilinearFormIntegrator & bli,
-			    bool applyd,
-			    LocalHeap & lh,
-			    int component = 0);
+  extern NGS_DLL_HEADER 
+  int CalcPointFlux (const MeshAccess & ma, 
+		     const GridFunction & u,
+		     const FlatVector<double> & point,
+		     const Array<int> & domains,
+		     FlatVector<SCAL> & flux,
+		     const BilinearFormIntegrator & bli,
+		     bool applyd,
+		     LocalHeap & lh,
+		     int component = 0);
 
-  // template <class SCAL>
-  extern NGS_DLL_HEADER void CalcError (const MeshAccess & ma, 
-			 const GridFunction & bu,
-			 const GridFunction & bflux,
-			 const BilinearFormIntegrator & bli,
-			 FlatVector<double> & err,
-			 int domain,
-			 LocalHeap & lh);
+
+  extern NGS_DLL_HEADER 
+  void CalcError (const MeshAccess & ma, 
+		  const GridFunction & bu,
+		  const GridFunction & bflux,
+		  const BilinearFormIntegrator & bli,
+		  FlatVector<double> & err,
+		  int domain,
+		  LocalHeap & lh);
+
   template <class SCAL>
   extern NGS_DLL_HEADER void CalcError (const MeshAccess & ma, 
 			 const S_GridFunction<SCAL> & u,

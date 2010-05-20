@@ -318,29 +318,7 @@ namespace ngsolve
     else
       {
 	for (int k = 0; k < ndom; k++)
-	  {
-	    CalcDifference (ma, *gfu1, *bfi1, coef_real, diff, k, lh);
-
-	    /*
-	    if (!bfa1->GetFESpace().IsComplex())
-	      {
-		CalcDifference (ma, 
-				dynamic_cast<const S_GridFunction<double>&> (*gfu1), 
-				*bfi1,
-				coef_real, coef_imag,
-				diff, k, lh);
-	      }
-	    else
-	      {
-		CalcDifference (ma,
-				dynamic_cast<const S_GridFunction<Complex>&> (*gfu1), 
-				*bfi1, 
-				coef_real, coef_imag,
-				diff, k, lh);
-	      }
-	    */
-	  }
-
+	  CalcDifference (ma, *gfu1, *bfi1, coef_real, diff, k, lh);
       }
    
     double sum = 0;
