@@ -82,7 +82,6 @@ namespace ngfem
 
   void CompoundFiniteElement :: GetInternalDofs (Array<int> & idofs) const
   {
-    *testout << "compound, getinternal dofs" << endl;
     idofs.SetSize (0);
     ArrayMem<int,20> bidofs;
     int base = 0;
@@ -93,7 +92,6 @@ namespace ngfem
 	  idofs.Append (base+bidofs[j]);
 	base += (*this)[i].GetNDof();
       }
-    *testout << idofs << endl;
   }
 
 
