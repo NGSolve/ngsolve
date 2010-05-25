@@ -318,7 +318,7 @@ namespace ngfem
     {
       const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
 	static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
-l      const FEL & fel = static_cast<const FEL&> (bfel);
+      const FEL & fel = static_cast<const FEL&> (bfel);
       DIFFOP::ApplyIR (fel, mir, x, flux, lh);
     }
 
