@@ -1,3 +1,5 @@
+#ifdef OCCGEOMETRY
+
 #include <iostream>
 #include <climits>
 
@@ -140,3 +142,4 @@ int main (int argc, char ** argv)
    return 0;
 }
    
+#endif
