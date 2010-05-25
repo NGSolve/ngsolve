@@ -1106,26 +1106,23 @@ public:
     spaces[0] = new L2HighOrderFESpace (ma, l2flags);    
     spaces[1] = new FacetFESpace (ma, facetflags);        
 
-    /*
-    Flags h1flags(flags);
-    if (ma.GetDimension() == 2)
-      {
-	h1flags.SetFlag ("order", 1);
-      }
-    else
-      {
-	h1flags.SetFlag ("order", order);
-	h1flags.SetFlag ("orderedge", order);
-	h1flags.SetFlag ("orderinner", 1);
-	h1flags.SetFlag ("orderface", 1);
-      }
-    spaces.Append (new H1HighOrderFESpace (ma, h1flags));        
-    */
 
-    /*
-    Flags edgeflags(flags);
-    spaces.Append (new EdgeFESpace (ma, edgeflags));            
-    */
+
+    if (flags.GetDefineFlag ("edges"))
+      {
+	Flags h1flags(flags);
+	if (ma.GetDimension() == 2)
+	  {
+	    h1flags.SetFlag ("order", 1);
+	    spaces.Append (new H1HighOrderFESpace (ma, h1flags));        
+	  }
+	else
+	  {
+	    Flags edgeflags(flags);
+	    spaces.Append (new EdgeFESpace (ma, edgeflags));            
+	  }
+      }
+
 
     HybridDGFESpace * fes = new HybridDGFESpace (ma, spaces, flags);
     return fes;

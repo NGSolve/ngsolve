@@ -253,16 +253,16 @@ namespace ngfem
     template <typename Sx, typename Sy, typename Sz, typename T>
     static int Calc3 (int n, Sx x, Sy y, Sz z, T & values)
     {
-      int ii = 0, i, j, k;
+      int ii = 0;
       ArrayMem<Sx, 20> polx(n+1), poly(n+1);
 
       const IntegrationRule & rule =
 	GetIntegrationRules().SelectIntegrationRule (ET_TRIG, n+2);
 
       for (int ix = 0; ix <= n-3; ix++)
-	for (j = 0; j <= n-3-ix; j++)
+	for (int j = 0; j <= n-3-ix; j++)
 	  values[ii++] = 0;
-      for (i = 0; i < rule.GetNIP(); i++)
+      for (int i = 0; i < rule.GetNIP(); i++)
 	{
 	  ii = 0;
 	  const IntegrationPoint & ip = rule[i];
@@ -278,7 +278,7 @@ namespace ngfem
 	  for (int ix = 0; ix <= n-3; ix++)
 	    {
 	      ScaledJacobiPolynomial (n-3, 2*hy-1, 1, 2*ix+5, 2, poly);
-	      for (j = 0; j <= n-3-ix; j++)
+	      for (int j = 0; j <= n-3-ix; j++)
 		values[ii++] += fac * polx[ix] * poly[j];
 	    }
 	}
@@ -295,7 +295,7 @@ namespace ngfem
     template <typename Sx, typename Sy, typename Sz, typename T>
     static int Calc (int n, Sx x, Sy y, Sz z, T & values)
     {
-      int ii = 0, i, j, k;
+      int ii = 0, i, j;
       ArrayMem<Sx, 20> polx(n+1), poly(n+1);
 
       const IntegrationRule & rule =

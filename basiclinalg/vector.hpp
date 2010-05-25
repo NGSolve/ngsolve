@@ -913,7 +913,7 @@ namespace ngbla
       return data[i*dist]; 
     }
 
-    TELEM * const Addr (int i) const
+    TELEM * Addr (int i) const
     {
       return data+i*dist;
     }
@@ -1086,7 +1086,7 @@ namespace ngbla
       return data[i*DIST]; 
     }
 
-    TELEM * const Addr (int i) const
+    TELEM * Addr (int i) const
     {
       return data+i*DIST;
     }

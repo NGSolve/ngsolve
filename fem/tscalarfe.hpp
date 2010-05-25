@@ -249,6 +249,21 @@ namespace ngfem
       FEL::T_CalcShape (pt, eval); 
       return sum;
     }  
+    
+    virtual void
+    Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
+    {
+      double pt[DIM];
+      for (int i = 0; i < ir.GetNIP(); i++)
+	{
+	  for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
+	  
+	  vals(i) = 0.0;
+	  EvaluateShape eval(coefs, &vals(i)); 
+	  FEL::T_CalcShape (pt, eval); 
+	}
+    }
+
 
 
     static void CalcShapeStat (const IntegrationPoint & ip, 

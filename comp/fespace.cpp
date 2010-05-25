@@ -3390,7 +3390,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 	dirichlet_dofs.Invert();
       }
 
-    (*testout) << "free_dofs = " << endl << free_dofs << endl;
+    // (*testout) << "free_dofs = " << endl << free_dofs << endl;
 
     (*testout) << "Update compound fespace" << endl;
     (*testout) << "cummulative dofs start at " << cummulative_nd << endl;

@@ -8,7 +8,7 @@ lib_LTLIBRARIES = libngfem.la libngfemng.la
 
 libngfemng_la_CPPFLAGS = -I$(top_srcdir)/include  $(NETGEN_INCLUDES) $(LAPACK_INCLUDES)
 
-libngfemng_la_LDFLAGS = -avoid-version -rdynamic 
+libngfemng_la_LDFLAGS = -avoid-version -rdynamic -lgomp
 
 libngfemng_la_SOURCES = bdbequations.cpp recursive_pol_trig.cpp	      \
 coefficient.cpp integrator.cpp specialelement.cpp elementtopology.cpp \
