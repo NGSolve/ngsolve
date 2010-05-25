@@ -115,7 +115,7 @@ namespace ngfem
     template <typename Sx, typename Sy, typename T>
     static int Calc (int n, Sx x, Sy y, T & values)
     {
-      int ii = 0, i, j, k;
+      int ii = 0;
       ArrayMem<Sx, 20> polx(n+1), poly(n+1);
 
       Sx bub = y * (1-x-y) * (1+x-y);
@@ -124,7 +124,7 @@ namespace ngfem
       for (int ix = 0; ix <= n-3; ix++)
 	{
 	  JacobiPolynomial (n-3, 2*y-1, 2*ix+5, 2, poly);
-	  for (j = 0; j <= n-3-ix; j++)
+	  for (int j = 0; j <= n-3-ix; j++)
 	    values[ii++] = bub * polx[ix] * poly[j];
 	}
       return ii;

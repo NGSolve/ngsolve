@@ -51,7 +51,7 @@ private:
   /// forbid copy constructor
   AutoPtr (AutoPtr &) { ; }
   /// forbid assignement operator
-  AutoPtr & operator= (AutoPtr &) { ; }
+  AutoPtr & operator= (AutoPtr &) { return *this; }
 };
 
 }

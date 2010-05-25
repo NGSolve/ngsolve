@@ -1659,12 +1659,10 @@ namespace ngbla
       case 1: 
         {
           return sm(0,0); 
-          break;
         }
       case 2:
         {
           return ( sm(0,0)*sm(1,1) - sm(0,1)*sm(1,0) ); 
-          break;
         }
       case 3:
         {
@@ -1672,7 +1670,6 @@ namespace ngbla
             sm(0) * (sm(4) * sm(8) - sm(5) * sm(7)) +
             sm(1) * (sm(5) * sm(6) - sm(3) * sm(8)) +
             sm(2) * (sm(3) * sm(7) - sm(4) * sm(6));
-          break;
         }
       default:
         {
