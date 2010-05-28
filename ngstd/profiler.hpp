@@ -83,7 +83,6 @@ namespace ngstd
 
 
 #ifdef USE_TIMEOFDAY
-
     static void StartTimer (int nr) 
     { 
       timeval time;

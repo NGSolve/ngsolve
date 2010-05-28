@@ -266,10 +266,6 @@ namespace ngcomp
 	    for (int j = 0; j < ngel.vertices.Size(); j++)
 	      fe3d -> SetVertexNumber (j, ngel.vertices[j]);
 
-	    // ArrayMem<int,12> vnums; // calls GetElPNums -> max 12 for PRISM12
-	    // ma.GetElVertices(elnr, vnums);
- 	    // fe3d-> SetVertexNumbers (vnums); 
-
 	    fe3d-> SetOrder(order_inner[elnr]); 
 	    fe3d-> ComputeNDof(); 
             return *fe3d;

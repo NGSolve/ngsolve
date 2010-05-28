@@ -1103,7 +1103,15 @@ public:
     facetflags.SetFlag("orderfacet", order);
     if (flags.NumListFlagDefined ("dirichlet"))
 	facetflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
-    spaces[0] = new L2HighOrderFESpace (ma, l2flags);    
+
+    
+    const FESpaceClasses::FESpaceInfo * info = GetFESpaceClasses().GetFESpace("l2hotp");
+    if (!info) 
+      info = GetFESpaceClasses().GetFESpace("l2ho");
+    
+    spaces[0] = info->creator(ma, l2flags);
+    // spaces[0] = new L2HighOrderFESpace (ma, l2flags);    
+
     spaces[1] = new FacetFESpace (ma, facetflags);        
 
 

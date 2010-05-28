@@ -1,6 +1,13 @@
 
 #include <solve.hpp>
-// #include <nginterface.h>
+
+#include <tcl.h>
+#if TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>=4
+#define tcl_const const
+#else
+#define tcl_const
+#endif
+
 
 
 namespace ngsolve

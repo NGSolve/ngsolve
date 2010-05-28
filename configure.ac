@@ -1,4 +1,4 @@
-AC_INIT([ngsolve],[4.9.13],[])
+AC_INIT([ngsolve],[4.9.14-dev],[])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
