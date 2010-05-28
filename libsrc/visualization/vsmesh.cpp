@@ -3488,7 +3488,7 @@ namespace netgen
    void VisualSceneMesh :: SetSelectedFace (int asf)
    {
       selface = asf;
-      selecttimestamp = GetTimeStamp();
+      selecttimestamp = NextTimeStamp();
    }
 
 
