@@ -11,6 +11,15 @@
 
 #include <solve.hpp>
 
+#include <tcl.h>
+#if TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>=4
+#define tcl_const const
+#else
+#define tcl_const
+#endif
+
+
+
 #ifdef PARALLEL
 #include <parallelngs.hpp>
 using namespace ngparallel;

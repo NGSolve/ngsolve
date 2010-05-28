@@ -16,7 +16,9 @@
 #include <comp.hpp>
 #include <multigrid.hpp>
 
+class Tcl_Interp;
 
+/*
 #include <tcl.h>
 #if TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>=4
 #define TCL_CONST_IS_CONST
@@ -24,7 +26,7 @@
 #else
 #define tcl_const
 #endif
-
+*/
 
 
 #ifdef WIN32

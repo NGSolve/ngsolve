@@ -122,7 +122,16 @@ namespace ngfem
     L2HighOrderFE (int aorder);
 
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[1], TFA & shape) const;
+    void T_CalcShape (Tx hx[1], TFA & shape) const
+    {
+      Tx x = hx[0];
+      // orient
+      if ( vnums[0] > vnums[1])
+	x = 1-x;
+    
+      LegendrePolynomial (order, 2*x-1, shape);
+    }
+
   };
 
 

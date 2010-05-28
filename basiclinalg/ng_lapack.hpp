@@ -261,6 +261,24 @@ namespace ngbla
     dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
+  inline void LapackMultAddAtB (ngbla::FlatMatrix<double> a, 
+				ngbla::FlatMatrix<double> b,
+				double fac,
+				ngbla::FlatMatrix<double> c)
+  {
+    char transa = 'N';
+    char transb = 'T';
+    int m = c.Height();  // changed n,m
+    int n = c.Width(); 
+    int k = a.Height();
+    double alpha = fac;
+    double beta = 1.0;
+    int lda = a.Width();
+    int ldb = b.Width();
+    int ldc = c.Width();
+
+    dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
+  }
 
 
   inline void LapackMultAddABt (ngbla::FlatMatrix<ngbla::Complex> a, 
@@ -844,6 +862,11 @@ namespace ngbla
                              ngbla::FlatMatrix<double> c)
   { c = a * Trans (b); }
 
+  inline void LapackMultAtB (ngbla::FlatMatrix<double> a, 
+                             ngbla::FlatMatrix<double> b,
+                             ngbla::FlatMatrix<double> c)
+  { c = Trans(a) * b; }
+
 
   inline void LapackMultAB (ngbla::FlatMatrix<double> a, 
                             ngbla::FlatMatrix<double> b,
@@ -856,12 +879,26 @@ namespace ngbla
                              ngbla::FlatMatrix<ngbla::Complex> c)
   { c = a * Trans (b); }
 
+  inline void LapackMultAtB (ngbla::FlatMatrix<Complex> a, 
+                             ngbla::FlatMatrix<Complex> b,
+                             ngbla::FlatMatrix<Complex> c)
+  { c = Trans(a) * b; }
+
+
+
 
   inline void LapackMultAddABt (ngbla::FlatMatrix<double> a, 
                                 ngbla::FlatMatrix<double> b,
                                 double fac,
                                 ngbla::FlatMatrix<double> c)
-  { c += a * Trans (b); }
+  { c += fac * a * Trans (b); }
+
+  inline void LapackMultAddAtB (ngbla::FlatMatrix<double> a, 
+                                ngbla::FlatMatrix<double> b,
+                                double fac,
+                                ngbla::FlatMatrix<double> c)
+  { c += fac * Trans(a) * b; }
+
 
 
   inline void LapackMultAddABt (ngbla::FlatMatrix<ngbla::Complex> a, 
@@ -869,7 +906,7 @@ namespace ngbla
                                 double fac,
                                 ngbla::FlatMatrix<ngbla::Complex> c)
 
-  { c += a * Trans (b); }
+  { c += fac * a * Trans (b); }
 
 
 

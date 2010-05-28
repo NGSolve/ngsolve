@@ -86,6 +86,7 @@ namespace ngfem
     ComputeNDof();
   }
 
+  /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & shape) const
   {
@@ -96,6 +97,7 @@ namespace ngfem
     
     LegendrePolynomial (order, 2*x-1, shape);
   }
+  */
 
   /* *********************** Triangle  **********************/
 
@@ -317,6 +319,8 @@ namespace ngfem
   }
 
 
+
+
   template class L2HighOrderFiniteElement<1>;
   template class L2HighOrderFiniteElement<2>;
   template class L2HighOrderFiniteElement<3>;
@@ -330,6 +334,11 @@ namespace ngfem
   template class T_ScalarFiniteElement2<L2HighOrderFE<ET_HEX>, ET_HEX>;
   template class T_ScalarFiniteElement2<L2HighOrderFE<ET_PYRAMID>, ET_PYRAMID>;
 
+
+  template class T_L2HighOrderFiniteElement<ET_SEGM>;
+  template class L2HighOrderFE<ET_SEGM>;
+
+  L2HighOrderFE<ET_SEGM> segm(10);
 } // namespace
 
 

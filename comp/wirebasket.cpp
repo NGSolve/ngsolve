@@ -986,6 +986,7 @@ namespace ngcomp
       cout << "call inverse" << endl;
       inv = dcmat.InverseMatrix(free_dofs);
       cout << "has inverse" << endl;
+      *testout << "inverse = " << (*inv) << endl;
     }
 
 
@@ -1043,6 +1044,7 @@ namespace ngcomp
     BDDCMatrixRefElement (const S_BilinearForm<double> & abfa, const string & ainversetype)
       : bfa(abfa), inversetype (ainversetype)
     {
+      cout << "BDDC MatrixRefElement" << endl;
       print = true;
       LocalHeap lh(50000000);
 
@@ -1573,6 +1575,7 @@ namespace ngcomp
       static int timerdc = NgProfiler::CreateTimer ("Apply BDDC preconditioner, decoupled");
       static int timerext = NgProfiler::CreateTimer ("Apply BDDC preconditioner, extend");
       static int timerinner = NgProfiler::CreateTimer ("Apply BDDC preconditioner, inner");
+      static int timersolve = NgProfiler::CreateTimer ("Apply BDDC preconditioner, solve");
       NgProfiler::RegionTimer reg (timer);
 
 
@@ -1624,7 +1627,6 @@ namespace ngcomp
 	}
 	*/
 
-
 	for (int cl = 0; cl < inv_int_ref.Size(); cl++)
 	  {
 	    int cnt = 0;
@@ -1665,9 +1667,6 @@ namespace ngcomp
 	  }
       }
 
-
-
-
       lx = 0.0;
       for (int i = 0; i < restrict.Size(); i++)
         if (restrict[i] != -1)
@@ -1678,10 +1677,10 @@ namespace ngcomp
       {
 	NgProfiler::RegionTimer reg(timerrest);
 
-#pragma omp parallel
+	// #pragma omp parallel
 	{
 	  LocalHeap slh = lh.Split();
-#pragma omp for
+	  // #pragma omp for
 	  for (int i = 0; i < ne; i++)
 	    {
 	      HeapReset hr(slh);
@@ -1696,7 +1695,7 @@ namespace ngcomp
 	      
 	      wb = Trans(*extwb_ref[elclassnr[i]]) * dc;
 	      
-#pragma omp critical (bddc_restrict)
+	      // #pragma omp critical (bddc_restrict)
 	      {
 		for (int j = 0; j < wbd.Size(); j++)
 		  lx(wbd[j]) -= wb(j);
@@ -1704,9 +1703,13 @@ namespace ngcomp
 	    }
 	}
       }
-
-      ly = 0.0;
-      ly = (*inv) * lx;
+      
+      {
+	NgProfiler::RegionTimer reg (timersolve);
+	ly = 0.0;
+	ly = (*inv) * lx;
+      }
+	
 
       // solve decoupled
       {
@@ -1769,6 +1772,7 @@ namespace ngcomp
 
 	    // vem = vim * Trans(ext);
 	    LapackMultAB (dc1, invdc, dc2);
+	    // dc2 = dc1 * invdc;
 
 	    cnt = 0;	
 	    for (int i = 0; i < ne; i++)
@@ -1792,10 +1796,10 @@ namespace ngcomp
       {
 	NgProfiler::RegionTimer reg(timerext);
 
-#pragma omp parallel
+	// #pragma omp parallel
 	{
 	  LocalHeap slh = lh.Split();
-#pragma omp for
+	  // #pragma omp for
 	  for (int i = 0; i < ne; i++)
 	    {
 	      HeapReset hr(slh);
@@ -1902,10 +1906,10 @@ namespace ngcomp
 
       {
 	NgProfiler::RegionTimer reg(timerinner);
-#pragma omp parallel
+	// #pragma omp parallel
 	{
 	  LocalHeap slh = lh.Split();
-#pragma omp for
+	  // #pragma omp for
 	  for (int i = 0; i < ne; i++)
 	    {
 	      HeapReset hr(slh);
