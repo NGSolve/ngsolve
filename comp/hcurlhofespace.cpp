@@ -813,11 +813,11 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
   {
-    if (!eliminate_internal) 
-      {
-	GetDofNrs (elnr, dnums);
-	return;
-      }
+//     if (!eliminate_internal) 
+//       {
+// 	GetDofNrs (elnr, dnums);
+// 	return;
+//       }
 
 
     Ng_Element ngel = ma.GetElement (elnr);
@@ -978,6 +978,7 @@ namespace ngcomp
   Table<int> * HCurlHighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const
   {
+    bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
     int i, j, k, first,ii;
     int ncnt; 
     int ni = nel;

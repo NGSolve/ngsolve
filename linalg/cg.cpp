@@ -586,7 +586,6 @@ namespace ngla
 	int n = 0;
 	SCAL al, be, wd, wdn, kss;
 	double err;
-
 	if (initialize)
 	  {
 	    u = 0.0;
@@ -616,7 +615,6 @@ namespace ngla
 	double lwstart = log(Abs(wdn));
 	double lerr = log(err);
 	
-
 	while (n++ < maxsteps && Abs(wdn) > err && !(sh && sh->ShouldTerminate()))
 	  {
 	    w = (*a) * s;

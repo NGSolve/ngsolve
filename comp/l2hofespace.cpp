@@ -328,11 +328,11 @@ namespace ngcomp
   
   void  L2HighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
   {
-    if (!eliminate_internal) 
-      {
-	GetDofNrs (elnr, dnums);
-	return;
-      }
+//     if (!eliminate_internal) 
+//       {
+// 	GetDofNrs (elnr, dnums);
+// 	return;
+//       }
     dnums.SetSize(0);
   }
 

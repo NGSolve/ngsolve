@@ -838,6 +838,8 @@ namespace ngcomp
 
         Flags flags;
         flags.SetFlag ("blocktype", smoothingtype);
+	if (bfa->UsesEliminateInternal())
+	  flags.SetFlag("eliminate_internal");	
         Table<int> * blocktable = bfa->GetFESpace().CreateSmoothingBlocks(flags);
         pre = mat.  CreateBlockJacobiPrecond (*blocktable);
       }
@@ -858,9 +860,10 @@ namespace ngcomp
     BaseMatrix * inv;
     string inversetype;
     BitArray * free_dofs;
+    const MeshAccess & ma;
   public:
     BDDCMatrix (const HO_BilinearForm<double> & abfa, const string & inversetype)
-      : bfa(abfa) 
+      : ma(abfa.GetFESpace().GetMeshAccess()),bfa(abfa) 
     {
       // LocalHeap lh(10000000);
       const FESpace & fes = bfa.GetFESpace();
@@ -937,12 +940,21 @@ namespace ngcomp
 
       cout << "now build graph" << endl;
 
-      MatrixGraph graph(firstdcdof, dcdofs, 1);
+      MatrixGraph graph(firstdcdof, dcdofs, bfa.IsSymmetric());
 
       cout << "now allocate matrix" << endl;
 
-      SparseMatrixSymmetric<double> dcmat(graph, 1);
-      dcmat = 0.0;
+      SparseMatrix<double> * pdcmat;
+      if (bfa.IsSymmetric()){
+	pdcmat = new SparseMatrixSymmetric<double>(graph,1);
+	cout << "symmetric" << endl;
+      }
+      else{
+	pdcmat = new SparseMatrix<double>(graph,1);
+	cout << "nonsymmetric" << endl;
+      }
+      SparseMatrix<double>& dcmat=*pdcmat;
+
       dcmat.SetInverseType (inversetype);
       
       cout << "have matrix" << endl;
@@ -955,7 +967,7 @@ namespace ngcomp
           FlatArray<int> dofs = dcdofs[i];
           for (int k = 0; k < dofs.Size(); k++)
             for (int l = 0; l < dofs.Size(); l++)
-              if (dofs[k] != -1 && dofs[l] != -1 && dofs[k] >= dofs[l])
+              if (dofs[k] != -1 && dofs[l] != -1 && (!bfa.IsSymmetric() || dofs[k] >= dofs[l]))
                 dcmat(dofs[k], dofs[l]) += elmat(k,l);
         }
       
@@ -980,16 +992,17 @@ namespace ngcomp
 	}
       
 
-
       // *testout << "dcmat = " << endl << dcmat << endl;
       // *testout << "restrict = " << endl << restrict << endl;
       cout << "call inverse" << endl;
       inv = dcmat.InverseMatrix(free_dofs);
       cout << "has inverse" << endl;
       *testout << "inverse = " << (*inv) << endl;
+      delete pdcmat;
     }
 
-
+    ~BDDCMatrix(){delete inv;}
+    
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {
       FlatVector<> fx = x.FVDouble();

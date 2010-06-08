@@ -47,9 +47,6 @@ namespace ngcomp
     /// complex space
     bool iscomplex;
 
-    /// eliminate element-internal dofs ?
-    bool eliminate_internal;
-
     /// couple (all) neighbouring degrees of freedom (like for jump terms of dg-methods)?
     bool dgjumps;
 
@@ -134,7 +131,6 @@ namespace ngcomp
        -order=<int>:  finite element order \\
        -dim=<int>:    number of components \\
        -complex:      complex space \\
-       -eliminate_internal:  eliminate internal dofs \\
        -dirichlet=<int-list>: dirichlet boundaries, 1-based \\
     */
     FESpace (const MeshAccess & ama, const Flags & flags, 

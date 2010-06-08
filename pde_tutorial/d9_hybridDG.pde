@@ -15,7 +15,7 @@ define constant heapsize = 10000000
 
 
 # ho-fespace: compound space for (u, lambda) ######
-define fespace v -type=HDG -order=3 -noeliminate_internal
+define fespace v -type=HDG -order=3
 
 
 define gridfunction u -fespace=v
@@ -55,7 +55,7 @@ neumann cneu -comp=2
 # source cf -comp=1
 
 
-define bilinearform a -fespace=v -noeliminate_internal -linearform=f -printelmat
+define bilinearform a -fespace=v -eliminate_internal -linearform=f -printelmat
 HDG_laplace one alpha
 HDG_convection bx by
 robin crob -comp=2
