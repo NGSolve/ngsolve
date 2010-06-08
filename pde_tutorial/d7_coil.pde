@@ -23,8 +23,7 @@ define coefficient cs
 
 
 
-define fespace v -type=hcurlho -order=4 -eliminate_internal -nograds -dirichlet=[1]
-
+define fespace v -type=hcurlho -order=4 -nograds -dirichlet=[1]
 
 define gridfunction u -fespace=v  -novisual
 

@@ -630,6 +630,8 @@ namespace ngcomp
     if ( blocktype >= 0 )
       {
 	// new: blocktypes, specified in fespace
+	if (bfa->UsesEliminateInternal())
+	  flags.SetFlag("eliminate_internal");
 	Table<int> * blocks = bfa->GetFESpace().CreateSmoothingBlocks(flags);
 	jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
 	  .CreateBlockJacobiPrecond(*blocks, 0, coarse_pre, parallel);

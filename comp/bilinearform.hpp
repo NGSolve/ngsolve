@@ -204,6 +204,7 @@ namespace ngcomp
 
 
     bool HasLowOrderBilinearForm(void) const {return low_order_bilinear_form != NULL;}
+    bool UsesEliminateInternal(void) const {return eliminate_internal;}
 
     const BilinearForm & GetLowOrderBilinearForm() const
     {
@@ -231,6 +232,9 @@ namespace ngcomp
     ///
     int GetNLevels() const
     { return mats.Size(); }
+
+    bool IsSymmetric(void) const {return symmetric;}
+
 
     void SetNonAssemble (bool na = true)
     { nonassemble = na; }

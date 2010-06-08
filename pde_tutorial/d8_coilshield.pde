@@ -24,7 +24,7 @@ define coefficient penalty
 #1e+6, 0, 0, 0, 0, 0
 
 
-define fespace v -hcurlho -order=5  -nograds -eliminate_internal
+define fespace v -hcurlho -order=5  -nograds
 
 define gridfunction u -fespace=v
 

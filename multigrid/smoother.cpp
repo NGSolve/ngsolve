@@ -720,7 +720,9 @@ namespace ngmg
       }
     if (jac.Size() == level && !force_update)
       return;
-
+    
+    if (biform.UsesEliminateInternal())
+      flags.SetFlag("eliminate_internal");
     Table<int> * it = biform.GetFESpace().CreateSmoothingBlocks(flags);
 
 

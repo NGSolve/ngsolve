@@ -761,12 +761,12 @@ namespace ngcomp
   {
     dnums.SetSize(0); 
     
-    if (!eliminate_internal) 
-      {
-        GetDofNrs (elnr, dnums);
-        return;
-      }
-    
+//     if (!eliminate_internal) 
+//       {
+//         GetDofNrs (elnr, dnums);
+//         return;
+//       }
+//     
     if(discont) 
       {
         return; 

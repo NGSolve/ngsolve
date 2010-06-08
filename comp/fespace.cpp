@@ -40,8 +40,8 @@ namespace ngcomp
     DefineNumFlag("dim");
     DefineDefineFlag("vec");
     DefineDefineFlag("complex");
-    DefineDefineFlag("eliminate_internal");
-    DefineDefineFlag("noeliminate_internal");
+/*    DefineDefineFlag("eliminate_internal");
+    DefineDefineFlag("noeliminate_internal");*/
     DefineDefineFlag("timing");
     DefineNumListFlag("directsolverdomains");
     DefineNumListFlag("dirichlet");
@@ -56,7 +56,7 @@ namespace ngcomp
     order = int (flags.GetNumFlag ("order", 1));
     dimension = int (flags.GetNumFlag ("dim", 1));
     iscomplex = flags.GetDefineFlag ("complex");
-    eliminate_internal = flags.GetDefineFlag("eliminate_internal");
+//     eliminate_internal = flags.GetDefineFlag("eliminate_internal");
     timing = flags.GetDefineFlag("timing");
     dgjumps = flags.GetDefineFlag("dgjumps");
     if (dgjumps) 
@@ -1557,7 +1557,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     // no updating of parallel dofs for the low-order processor 0
     // or in case of only one processor
-
 
     if ( paralleldofs == 0 ) 
       paralleldofs = new ParallelDofs (*this);
