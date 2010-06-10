@@ -25,6 +25,10 @@ namespace ngcomp
 			TRANSFORM_MAT_LEFT_RIGHT = 3,
 			TRANSFORM_RHS = 4,
 			TRANSFORM_SOL = 8 };
+
+  enum COUPLING_TYPE {  LOCAL = 0,
+			INTERFACE = 1,
+			WIREBASKET = 2 };
 		     
 
 
@@ -170,6 +174,9 @@ namespace ngcomp
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
     /// get dof-nrs of the element
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    /// get coupling types of dofs
+    virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & dnums) const;
+
     /// get remaining dofs after static condensation
     virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
 
@@ -319,8 +326,6 @@ namespace ngcomp
     { return boundary_evaluator; }
 
 
-    /// generates matrix graph
-    virtual MatrixGraph * GetGraph (int level, bool symmetric);
 
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
     Array<SpecialElement*> specialelements;
@@ -328,7 +333,7 @@ namespace ngcomp
     void AppendSpecialElement (SpecialElement * spel)
     { specialelements.Append (spel); }
 
-
+    const Array<SpecialElement*> & GetSpecialElements() const {return specialelements;}
 
 #ifdef PARALLEL
     virtual void UpdateParallelDofs ();
@@ -340,8 +345,7 @@ namespace ngcomp
   
     virtual void UpdateParallelDofs_hoproc();
     virtual void UpdateParallelDofs_loproc();
-  
-    MatrixGraph * GetConsistentGraph (int level, bool symmetric);
+
 #endif
 
 
@@ -675,10 +679,11 @@ namespace ngcomp
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-    virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
+//     virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
+    
+    virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;
 
-
-    virtual void GetWireBasketDofNrs (int vnr, Array<int> & dnums) const;
+//     virtual void GetWireBasketDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;

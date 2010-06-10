@@ -1193,18 +1193,7 @@ namespace ngsolve
   
     if (!space2)
       {
-	if (!flags.GetDefineFlag ("ho"))
-          {
-            bilinearforms.Set (name, CreateBilinearForm (space, name, flags));
-          }
-	else if ( flags.GetDefineFlag("ho") && space->IsComplex() )
-	  {
-	    bilinearforms.Set (name, new HO_BilinearForm<Complex> (*space, name, flags));
-	  }
-	else if ( flags.GetDefineFlag("ho") )
-	  {
-	    bilinearforms.Set (name, new HO_BilinearForm<double> (*space, name, flags));
-	  }
+	bilinearforms.Set (name, CreateBilinearForm (space, name, flags));
       }
 
     //  else

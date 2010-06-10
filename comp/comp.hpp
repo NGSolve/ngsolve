@@ -66,6 +66,7 @@ namespace ngcomp
 
 #include "preconditioner.hpp"
 #include "wirebasket.hpp"
+#include "bddc.hpp"
 
 
 

@@ -5,7 +5,7 @@
    Disont space has no extra low-order block(!), all dofs internal! 
    Flags:
    -order  : uniform order 
-   -relorder : varialbe order relative to mesh-order 
+   -relorder : variable order relative to mesh-order 
    (on facets maximum order of facet-patch elements, also for discont)
    -curl_order,relcurlorder: orders of curl fields in uniform/variable version 
    -disontinuous (DefineFlag) : discontinuous space 
@@ -756,16 +756,16 @@ namespace ngcomp
     
     // (*testout) << "hdivspace(sz) el " << elnr << " has dofs " << dnums << endl;
   }
-
+/*
   void HDivHighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
   {
-    dnums.SetSize(0); 
-    
-//     if (!eliminate_internal) 
-//       {
-//         GetDofNrs (elnr, dnums);
-//         return;
-//       }
+
+      dnums.SetSize(0); 
+//       if (!eliminate_internal) 
+      {
+        GetDofNrs (elnr, dnums);
+        return;
+      }
 //     
     if(discont) 
       {
@@ -800,6 +800,53 @@ namespace ngcomp
       
         return;
       }
+  }*/
+
+
+  void  HDivHighOrderFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
+  {
+    ctypes.SetSize(0); 
+
+    int first,next;
+    if(discont) 
+      {
+	// lowest_order included in inner 
+      	first = first_inner_dof[elnr];
+	next = first_inner_dof[elnr+1];
+	for(int j=first; j<next; j++)
+	  ctypes.Append(LOCAL);
+	return;
+      } 
+    
+    Array<int> fanums;
+    if(ma.GetDimension() == 3)
+      ma.GetElFaces (elnr, fanums);
+    else
+      ma.GetElEdges (elnr, fanums); 
+      
+    if(order < 0)
+      throw Exception(" HDivHighOrderFESpace :: GetDofNrs() order < 0 ");
+
+    //Raviart-Thomas
+    for (int i = 0; i < fanums.Size(); i++)
+      ctypes.Append(WIREBASKET);
+
+    // facets
+    for(int i=0; i<fanums.Size(); i++)
+      {
+	first = first_facet_dof[fanums[i]];
+	next = first_facet_dof[fanums[i]+1];
+	for(int j=first ; j<next; j++)
+	  ctypes.Append(INTERFACE);
+      }
+    //inner
+    first = first_inner_dof[elnr];
+    next = first_inner_dof[elnr+1];
+    for(int j=first; j<next; j++)
+      ctypes.Append(LOCAL);
+
+    
+//     cout << "ctypes = " << ctypes << endl; getchar();
   }
 
   void HDivHighOrderFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
@@ -1241,18 +1288,18 @@ namespace ngcomp
 
   }
 
-  void HDivHighOrderFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
-  {
-    ArrayMem<int,12> facets;
-
-    dnums.SetSize(0);
-    if ( discont ) return;
-
-    ma.GetElFacets (elnr, facets);
-
-    for (int i = 0; i < facets.Size(); i++)
-      dnums.Append (facets[i]);
-  }
+//   void HDivHighOrderFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
+//   {
+//     ArrayMem<int,12> facets;
+// 
+//     dnums.SetSize(0);
+//     if ( discont ) return;
+// 
+//     ma.GetElFacets (elnr, facets);
+// 
+//     for (int i = 0; i < facets.Size(); i++)
+//       dnums.Append (facets[i]);
+//   }
 
 #ifdef PARALLEL
 

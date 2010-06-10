@@ -139,7 +139,9 @@ namespace ngcomp
     /// for static condensation of internal bubbles
     void SetLinearForm (LinearForm * alf)
     { linearform = alf; }
-
+    
+    /// generates matrix graph
+    virtual MatrixGraph * GetGraph (int level, bool symmetric);
     ///
     void Assemble (LocalHeap & lh);
     ///
@@ -308,7 +310,9 @@ namespace ngcomp
 
 
 #ifdef PARALLEL
-
+  
+    MatrixGraph * GetConsistentGraph (int level, bool symmetric);
+    
     virtual void AllocateConsistentMatrix () = 0;
 
 #endif
@@ -648,6 +652,39 @@ namespace ngcomp
 
   };
 
+
+  template<class SCAL>
+  class ElementByElement_BilinearForm : public S_BilinearForm<SCAL>
+  {
+  public:
+    ElementByElement_BilinearForm (const FESpace & afespace, const string & aname,
+		    const Flags & flags);
+    virtual ~ElementByElement_BilinearForm ();
+    
+    virtual void AllocateMatrix ();
+    virtual BaseVector * CreateVector() const;
+    
+    virtual void AddElementMatrix (const Array<int> & dnums1,
+				  const Array<int> & dnums2,
+				  const FlatMatrix<SCAL> & elmat,
+				  bool inner_element, int elnr,
+				  LocalHeap & lh);    
+
+
+  #ifdef PARALLEL
+    virtual void AllocateConsistentMatrix ()
+    { 
+      ; 
+    }
+
+    virtual void BuildConsistentMatrix (LocalHeap & lh) 
+    { ; }
+  #endif
+
+  };
+  
+  
+  
 }
 
 

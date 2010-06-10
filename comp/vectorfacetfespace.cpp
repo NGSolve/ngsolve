@@ -543,26 +543,26 @@ namespace ngcomp
     // *testout << "dnums = " << endl << dnums << endl;
   }
 
-  void VectorFacetFESpace :: GetWireBasketDofNrs(int elnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
-    Array<int> facets;
-
-    if ( ma.GetDimension() == 2 )
-      {
-	ma.GetElEdges ( elnr, dnums );
-      }
-    else // 3D
-      {
-	ma.GetElFaces ( elnr, facets );
-	for ( int i = 0; i < facets.Size(); i++ )
-	  {
-	    dnums.Append( 2 * facets[i] );
-	    dnums.Append ( 2*facets[i] + 1 );
-	  }
-      }
-    return;
-  }
+//   void VectorFacetFESpace :: GetWireBasketDofNrs(int elnr, Array<int> & dnums) const
+//   {
+//     dnums.SetSize(0);
+//     Array<int> facets;
+// 
+//     if ( ma.GetDimension() == 2 )
+//       {
+// 	ma.GetElEdges ( elnr, dnums );
+//       }
+//     else // 3D
+//       {
+// 	ma.GetElFaces ( elnr, facets );
+// 	for ( int i = 0; i < facets.Size(); i++ )
+// 	  {
+// 	    dnums.Append( 2 * facets[i] );
+// 	    dnums.Append ( 2*facets[i] + 1 );
+// 	  }
+//       }
+//     return;
+//   }
 
   ///
   void VectorFacetFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
@@ -637,10 +637,144 @@ namespace ngcomp
     return ( first_facet_dof[felnr+1] - first_facet_dof[felnr] + dimension - 1);
   }
 
-   void VectorFacetFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
+  void  VectorFacetFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
   {
-    GetDofNrs ( elnr, dnums);
+   if (!highest_order_dc)
+      {
+	Array<int> fanums; // facet numbers
+	int first,next;
+	
+	fanums.SetSize(0);
+	ctypes.SetSize(0);
+	
+	
+	if(ma.GetDimension() == 3)
+	  ma.GetElFaces (elnr, fanums);
+	else // dim=2
+	  ma.GetElEdges (elnr, fanums);
+	
+	for(int i=0; i<fanums.Size(); i++)
+	  {
+	    if ( ma.GetDimension() == 2 )
+	      ctypes.Append(WIREBASKET); // low_order
+	    else
+	      {
+		ctypes.Append(WIREBASKET);
+		ctypes.Append(WIREBASKET);
+	      }
+	    
+	    first = first_facet_dof[fanums[i]];
+	    next = first_facet_dof[fanums[i]+1];
+	    for(int j=first ; j<next; j++)
+	      ctypes.Append(INTERFACE);
+	  }
+      }
+    else
+      {
+	if (ma.GetDimension() == 2)
+	  {
+	    Array<int> fanums; // facet numbers
+	    
+	    fanums.SetSize(0);
+	    ctypes.SetSize(0);
+	    
+	    ma.GetElEdges (elnr, fanums);
+	    
+	    for(int i=0; i<fanums.Size(); i++)
+	      {
+		int facetdof = first_facet_dof[fanums[i]];
+		int innerdof = first_inner_dof[elnr];
+		
+		for (int j = 0; j <= order; j++)
+		  {
+		    if (j == 0)
+		      {
+			ctypes.Append(WIREBASKET);
+		      }
+		    else if (j < order)
+		      {
+			ctypes.Append (INTERFACE);
+		      }
+		    else
+		      {
+			ctypes.Append (LOCAL);
+		      }
+		  }
+	      }
+	  }
+	else
+	  {
+	    Array<int> fanums; // facet numbers
+	    
+	    fanums.SetSize(0);
+	    ctypes.SetSize(0);
+	    
+	    ELEMENT_TYPE et = ma.GetElType (elnr);
+	    ma.GetElFaces (elnr, fanums);
+	    
+	    int innerdof = first_inner_dof[elnr];
+	    for(int i=0; i<fanums.Size(); i++)
+	      {
+		ELEMENT_TYPE ft = ElementTopology::GetFacetType (et, i);
+		
+		int facetdof = first_facet_dof[fanums[i]];
+		
+		if (ft == ET_TRIG)
+		  {
+		    for (int j = 0; j <= order; j++)
+		      for (int k = 0; k <= order-j; k++)
+			{
+			  if (j+k == 0)
+			    {
+			      ctypes.Append(WIREBASKET);
+			      ctypes.Append(WIREBASKET);
+			    }
+			  else if (j+k < order)
+			    {
+			      ctypes.Append (INTERFACE);
+			      ctypes.Append (INTERFACE);
+			    }
+			  else
+			    {
+			      ctypes.Append (LOCAL);
+			      ctypes.Append (LOCAL);
+			    }
+			}
+		  }
+		else
+		  {
+		    for (int j = 0; j <= order; j++)
+		      for (int k = 0; k <= order; k++)
+			{
+			  if (j+k == 0)
+			    {
+			      ctypes.Append(WIREBASKET);
+			      ctypes.Append(WIREBASKET);
+			    }
+			  else if ( (j < order) && (k < order) )
+			    {
+			      ctypes.Append (INTERFACE);
+			      ctypes.Append (INTERFACE);
+			    }
+			  else
+			    {
+			      ctypes.Append (LOCAL);
+			      ctypes.Append (LOCAL);
+			    }
+			}
+		  }
+	      }
+	  }
+      }
+    
   }
+
+//    void VectorFacetFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
+//   {
+//     GetDofNrs ( elnr, dnums);
+//   }
+//   
+  
   ///
    void VectorFacetFESpace :: GetVertexNumbers(int elnr, Array<int>& vnums) 
   { ma.GetElVertices(elnr, vnums); };
