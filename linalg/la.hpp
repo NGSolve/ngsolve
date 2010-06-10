@@ -61,6 +61,7 @@ namespace ngla
 #include "blockjacobi.hpp"
 #include "commutingAMG.hpp"
 #include "special_matrix.hpp"
+#include "elementbyelement.hpp"
 #include "cg.hpp"
 #include "chebyshev.hpp"
 #include "eigen.hpp"

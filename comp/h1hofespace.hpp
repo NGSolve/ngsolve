@@ -84,14 +84,13 @@ namespace ngcomp
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
-    virtual void GetWireBasketDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
-    ///
-    virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;
+
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
   

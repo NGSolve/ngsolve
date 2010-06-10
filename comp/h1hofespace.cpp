@@ -695,7 +695,7 @@ namespace ngcomp
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
   }
-
+/*
 
   void  H1HighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
   {
@@ -722,10 +722,6 @@ namespace ngcomp
       dnums = -1;
   }
 
-
-
-
-
   void H1HighOrderFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
   {
     ArrayMem<int,12> vnums, ednums;
@@ -751,16 +747,35 @@ namespace ngcomp
           for (int j = first_edge_dof[ednums[i]]; j < first_edge_dof[ednums[i]+1]; j++)
             dnums.Append (j);
 
-	/*
-	  ArrayMem<int,12> fanums;
-	  ma.GetElFaces (elnr, fanums);
-	  for (int i = 0; i < fanums.Size(); i++)
-          if (order_face[fanums[i]][0] > 1)
-	  dnums.Append (first_face_dof[fanums[i]]);
-	*/
       }
-  }
+  }*/
 
+  void  H1HighOrderFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
+  {
+    Ng_Element ngel = ma.GetElement(elnr);
+
+    ctypes.SetSize(ngel.vertices.Size()); 
+    for (int i = 0; i < ngel.vertices.Size(); i++)
+      ctypes[i] = WIREBASKET;
+
+    for (int i = 0; i < ngel.edges.Size(); i++){
+      IntRange range = GetEdgeDofs (ngel.edges[i]);
+      for (int j=range.First();j<range.Next();j++)
+	ctypes.Append(INTERFACE);
+    }
+
+    if (ma.GetDimension() == 3)
+      for (int i = 0; i < ngel.faces.Size(); i++){
+	IntRange range = GetFaceDofs (ngel.faces[i]);
+	for (int j=range.First();j<range.Next();j++)
+	  ctypes.Append(INTERFACE);
+      }
+
+    IntRange range = GetElementDofs (elnr);
+    for (int j=range.First();j<range.Next();j++)
+      ctypes.Append(LOCAL);
+
+  }
 
 
 

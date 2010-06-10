@@ -810,7 +810,7 @@ namespace ngcomp
       dnums = -1;
   }
  
-
+/*
   void HCurlHighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
   {
 //     if (!eliminate_internal) 
@@ -840,7 +840,40 @@ namespace ngcomp
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
   }
- 
+ */
+
+  void  HCurlHighOrderFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
+  {
+    Ng_Element ngel = ma.GetElement (elnr);
+    ctypes.SetSize(0);
+     
+      //Nedelec0
+    if ( !discontinuous )
+      for (int i = 0; i < ngel.edges.Size(); i++) 
+	ctypes.Append(WIREBASKET);	
+      
+    //edges
+    for (int i = 0; i < ngel.edges.Size(); i++)
+    {
+      IntRange range = GetEdgeDofs (ngel.edges[i]);
+      for (int j=range.First();j<range.Next();j++)
+      ctypes.Append(INTERFACE);
+    }
+      
+    // faces 
+    if (ma.GetDimension() == 3)
+      for (int i = 0; i < ngel.faces.Size(); i++){
+	IntRange range = GetFaceDofs (ngel.faces[i]);
+	for (int j=range.First();j<range.Next();j++)
+	  ctypes.Append(INTERFACE); //NOGRAD / GRAD
+      }      
+    
+    IntRange range = GetElementDofs (elnr);
+    for (int j=range.First();j<range.Next();j++)
+      ctypes.Append(LOCAL);
+  }
+
+
 
 
   void HCurlHighOrderFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
@@ -910,30 +943,30 @@ namespace ngcomp
   }
 
   
-  void HCurlHighOrderFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
-  {
-    ArrayMem<int,12> vnums, ednums;
-
-    dnums.SetSize(0);
-
-    ma.GetElEdges (elnr, ednums);
-
-    if (ma.GetDimension() == 2)
-      {
-        for (int i = 0; i < ednums.Size(); i++)
-          if (order_edge[ednums[i]] > 1)
-            dnums.Append (first_edge_dof[ednums[i]]);
-      }
-    else
-      {
-        for (int i = 0; i < ednums.Size(); i++)
-	  {
-	    dnums.Append(ednums[i]);
-	    for (int j = first_edge_dof[ednums[i]]; j < first_edge_dof[ednums[i]+1]; j++)
-	      dnums.Append (j);
-	  }
-      }
-  }
+//   void HCurlHighOrderFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
+//   {
+//     ArrayMem<int,12> vnums, ednums;
+// 
+//     dnums.SetSize(0);
+// 
+//     ma.GetElEdges (elnr, ednums);
+// 
+//     if (ma.GetDimension() == 2)
+//       {
+//         for (int i = 0; i < ednums.Size(); i++)
+//           if (order_edge[ednums[i]] > 1)
+//             dnums.Append (first_edge_dof[ednums[i]]);
+//       }
+//     else
+//       {
+//         for (int i = 0; i < ednums.Size(); i++)
+// 	  {
+// 	    dnums.Append(ednums[i]);
+// 	    for (int j = first_edge_dof[ednums[i]]; j < first_edge_dof[ednums[i]+1]; j++)
+// 	      dnums.Append (j);
+// 	  }
+//       }
+//   }
 
   
 
