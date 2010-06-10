@@ -356,7 +356,7 @@ namespace ngfem
       JacobiPolynomial (n-i, x, alpha0+2*i, beta, values.Row(i));
   }
 
-  
+
   template <int n, int i, int alpha0, int beta>
   class DubinerJacobiPolynomialsFO
   {
@@ -378,6 +378,25 @@ namespace ngfem
     { ; }
   };
   
+  
+  template <int ALPHA0, int BETA, class S, class T>
+  void DubinerJacobiPolynomials2 (int n, S x, T & values)
+  {
+    switch (n)
+      {
+      case 0: DubinerJacobiPolynomialsFO<0, 0, ALPHA0, BETA>::Eval (x, values); break;
+      case 1: DubinerJacobiPolynomialsFO<1, 1, ALPHA0, BETA>::Eval (x, values); break;
+      case 2: DubinerJacobiPolynomialsFO<2, 2, ALPHA0, BETA>::Eval (x, values); break;
+      case 3: DubinerJacobiPolynomialsFO<3, 3, ALPHA0, BETA>::Eval (x, values); break;
+      case 4: DubinerJacobiPolynomialsFO<4, 4, ALPHA0, BETA>::Eval (x, values); break;
+      case 5: DubinerJacobiPolynomialsFO<5, 5, ALPHA0, BETA>::Eval (x, values); break;
+      case 6: DubinerJacobiPolynomialsFO<6, 6, ALPHA0, BETA>::Eval (x, values); break;
+      case 7: DubinerJacobiPolynomialsFO<7, 7, ALPHA0, BETA>::Eval (x, values); break;
+      case 8: DubinerJacobiPolynomialsFO<8, 8, ALPHA0, BETA>::Eval (x, values); break;
+      default: DubinerJacobiPolynomials (n, x, ALPHA0, BETA, values);
+      }
+  }
+
   
   
 

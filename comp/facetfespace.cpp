@@ -451,65 +451,22 @@ namespace ngcomp
   // ------------------------------------------------------------------------
   void FacetFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    // Array<int> fanums; // facet numbers
     ArrayMem<int,6> fanums;
-    int first,next;
-
-    fanums.SetSize(0);
-    dnums.SetSize(0);
-    
     ma.GetElFacets (elnr, fanums);
-    /*
-      if(ma.GetDimension() == 3)
-      ma.GetElFaces (elnr, fanums);
-      else // dim=2
-      ma.GetElEdges (elnr, fanums);
-    */
 
+    dnums.SetSize(0);
     for(int i=0; i<fanums.Size(); i++)
       {
         dnums.Append(fanums[i]); // low_order
 
-        first = first_facet_dof[fanums[i]];
-        next = first_facet_dof[fanums[i]+1];
-        for(int j=first ; j<next; j++)
-          dnums.Append(j);
+	dnums += IntRange (first_facet_dof[fanums[i]],
+			   first_facet_dof[fanums[i]+1]);
       }
-
-    
-    // old 
-    /*
-      if(ma.GetDimension() == 3)
-      {
-      ma.GetElFaces (elnr, fdnums);
-      for(int i=0; i<fdnums.Size(); i++)
-      {
-      for (int j=0; j<fdnums.Size(); j++
-      first = first_facet_dof[fdnums[i]];
-      next = first_facet_dof[fdnums[i]+1];
-      for(int j=first ; j<next; j++)
-      dnums.Append(j);
-      }
-      }
-      else // 2D
-      {
-      ma.GetElEdges (elnr, ednums); //neu
-      for (int i = 0; i < ednums.Size(); i++)
-      {
-      first = first_facet_dof[ednums[i]];
-      next = first_facet_dof[ednums[i]+1];
-
-      for (int j = first; j <next; j++)
-      dnums.Append (j);
-      }
-      }
-    */
-    //     cout << "** GetDofNrs(" << elnr << "): " << dnums << endl;
   }
 
   void FacetFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
   {
-    ArrayMem<int,12> facets;
+    ArrayMem<int,6> facets;
     ma.GetElFacets (elnr, facets);
 
     dnums.SetSize(0);

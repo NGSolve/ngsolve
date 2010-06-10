@@ -3572,7 +3572,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   {
     int base = 0;
     int i, j, k; 
-    LocalHeapMem<10005> lh;
+    LocalHeapMem<100005> lh;
     for (i = 0; i < spaces.Size(); i++)
       {
 	int nd;
@@ -3616,7 +3616,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   void CompoundFESpace::TransformVec (int elnr, bool boundary,
 				      VEC & vec, TRANSFORM_TYPE tt) const
   {
-    LocalHeapMem<10006> lh;
+    LocalHeapMem<100006> lh;
     for (int i = 0, base = 0; i < spaces.Size(); i++)
       {
 	int nd = boundary ? 

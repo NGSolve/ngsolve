@@ -88,7 +88,7 @@ namespace ngfem
 
   
   
-  template <int DIM>
+  // template <int DIM>
   class EvaluateShapeTransElement
   {
     double & data;
@@ -101,7 +101,7 @@ namespace ngfem
     }
   };
 
-  template <int DIM>
+  // template <int DIM>
   class EvaluateShapeTrans
   {
     double * coefs;
@@ -113,8 +113,8 @@ namespace ngfem
     EvaluateShapeTrans (double * acoefs, const double & afac)
       : coefs(acoefs), fac(afac) { ; }
 
-    EvaluateShapeTransElement<DIM> operator[] (int i) const
-    { return EvaluateShapeTransElement<DIM> (coefs[i], fac); }
+    EvaluateShapeTransElement operator[] (int i) const
+    { return EvaluateShapeTransElement (coefs[i], fac); }
 
     const EvaluateShapeTrans Addr (int i) const
     { return EvaluateShapeTrans (coefs+i, fac); }
@@ -374,6 +374,25 @@ namespace ngfem
     virtual void 
     CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
                       FlatMatrixFixWidth<DIM> dshape) const;
+
+
+    template <typename TFA>
+    void SetZero (TFA & shape, int first, int next) const
+    {
+      for (int i = first; i < next; i++)
+	shape[i] = 0.0;
+    }
+
+    void SetZero (EvaluateShape & shape, int first, int next) const
+    {
+      ;
+    }
+
+    void SetZero (EvaluateShapeTrans & shape, int first, int next) const
+    {
+      ;
+    }
+
   };
 
 

@@ -661,7 +661,7 @@ namespace ngcomp
         int dim = fes.GetDimension();
 	
         HeapReset hr(lh);
-        	
+	
 	ma.GetElementTransformation (elnr, eltrans, lh);
 	fes.GetDofNrs (elnr, dnums);
 	fel = &fes.GetFE (elnr, lh);
@@ -703,9 +703,11 @@ namespace ngcomp
 	for (int k = 0; k < npts; k++)
 	  for (int i = 0; i < components; i++)
 	    values[k*svalues+i] = 0.0;
-	
+
 	for(int j = 0; j < bfi3d.Size(); j++)
 	  {
+	    HeapReset hr(lh);
+
 	    FlatMatrix<SCAL> flux(npts, bfi3d[j]->DimFlux(), lh);
 	    bfi3d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
 	    

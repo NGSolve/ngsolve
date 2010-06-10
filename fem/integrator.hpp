@@ -1113,6 +1113,15 @@ namespace ngfem
 	      LocalHeap & lh) const;
 
 
+    virtual void
+    CalcFlux (const FiniteElement & fel,
+	      const BaseMappedIntegrationRule & mir,
+	      const FlatVector<double> & elx, 
+	      FlatMatrix<double> & flux,
+	      bool applyd,
+	      LocalHeap & lh) const;
+
+
     virtual string Name () const;
   };
 
