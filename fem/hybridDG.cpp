@@ -159,6 +159,8 @@ namespace ngfem
 	    comp_elmat = 0;
 	    bmat = 0.0;
 
+	    const_cast<FacetVolumeFiniteElement<D>&> (fel_facet).SelectFace (k);
+
 	    for (int l = 0; l < ir_facet.GetNIP(); l++)
 	      {
 		IntegrationPoint ip = transform(k, ir_facet[l]);
@@ -175,6 +177,7 @@ namespace ngfem
 		normal /= len;
 
 		fel_facet.CalcFacetShape(k, ir_facet[l], mat_facet);
+		// fel_facet.CalcShape(ip, mat_facet);
 		fel_l2.CalcShape(sip.IP(), mat_l2);
 
 		Vec<D> invjac_normal = inv_jac * normal;
@@ -189,16 +192,14 @@ namespace ngfem
 
 		dmat(0,0) = 0;
 		dmat(1,0) = dmat(0,1) = -1;
-		//               dmat(1,1) = alpha * sqr (fel_l2.Order()) * (len/det);
+		// dmat(1,1) = alpha * sqr (fel_l2.Order()) * (len/det);
 		dmat(1,1) = alpha * ((fel_l2.Order()+1)*(fel_l2.Order()+D)/D * len) *(1.0/det);
 
 
 		dmat *= lam * len * ir_facet[l].Weight();
-		// comp_dbmat = dmat * comp_bmat;
 
 		comp_bmats.VRange (2*l, 2*l+2) = comp_bmat;
 		comp_dbmats.VRange (2*l, 2*l+2) = dmat * comp_bmat;
-		// comp_elmat += Trans (comp_bmat) * comp_dbmat;
 
 		NgProfiler::AddFlops (timer2, nd*nd*4);
 	      }
@@ -282,6 +283,8 @@ namespace ngfem
 		      Vec<3> p = p1 + ir1d[k](0) * (p2-p1);
 		      IntegrationPoint ip (p(0), p(1), p(2), ir1d[k].Weight());
 		      SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
+		      double lam = coef_lam->Evaluate(sip);
+
 		      
 		      Vec<3> tau = sip.GetJacobian() * (p2-p1);
 		      double h = L2Norm(tau);
@@ -293,7 +296,7 @@ namespace ngfem
 		      b_vec.Range(0, nd_l2) = mat_l2;
 		      b_vec.Range(base_edge, nd) = -vec_edge;
 		      
-		      db_vec = h * ir1d[k].Weight() * b_vec;
+		      db_vec = (alpha * lam * h * ir1d[k].Weight()) * b_vec;
 		      // elmat += db_vec * Trans(b_vec);
 		      bmats.Row(k) = b_vec;
 		      dbmats.Row(k) = db_vec;
@@ -315,7 +318,21 @@ namespace ngfem
     {
       static int timer = NgProfiler::CreateTimer ("HDG apply laplace");
       static int timer1 = NgProfiler::CreateTimer ("HDG apply laplace volume");
+
+      static int timer1a = NgProfiler::CreateTimer ("HDG apply laplace volume a");
+      static int timer1b = NgProfiler::CreateTimer ("HDG apply laplace volume b");
+      static int timer1c = NgProfiler::CreateTimer ("HDG apply laplace volume c");
+      static int timer1d = NgProfiler::CreateTimer ("HDG apply laplace volume d");
+      static int timer1e = NgProfiler::CreateTimer ("HDG apply laplace volume e");
+
+
       static int timer2 = NgProfiler::CreateTimer ("HDG apply laplace boundary");
+      static int timer2a = NgProfiler::CreateTimer ("HDG apply laplace boundary a");
+      static int timer2b = NgProfiler::CreateTimer ("HDG apply laplace boundary b");
+      static int timer2c = NgProfiler::CreateTimer ("HDG apply laplace boundary c");
+      static int timer2d = NgProfiler::CreateTimer ("HDG apply laplace boundary d");
+
+
       static int timer3 = NgProfiler::CreateTimer ("HDG apply laplace edge glue");
 
       NgProfiler::RegionTimer reg (timer);
@@ -348,17 +365,26 @@ namespace ngfem
 	NgProfiler::RegionTimer reg (timer1);     
 	HeapReset hr(lh);
 
-	/*
-	const IntegrationRule & ir_vol =
-	  SelectIntegrationRule (eltype, 2*fel_l2.Order());
-	*/
+	NgProfiler::StartTimer (timer1a);
+
 	IntegrationRuleTP<D> ir_vol(eltrans, 2*fel_l2.Order(), false, lh);
+
+	NgProfiler::StopTimer (timer1a);
+
+
+	NgProfiler::StartTimer (timer1e);
 	MappedIntegrationRule<D,D> mir_vol(ir_vol, eltrans, lh);
+	NgProfiler::StopTimer (timer1e);
+
+	NgProfiler::StartTimer (timer1b);
 
 	FlatMatrixFixWidth<D> grad(ir_vol.GetNIP(), lh);
 	
 	fel_l2.EvaluateGrad (ir_vol, elx.Range(base_l2, base_l2+nd_l2), grad);
 	
+	NgProfiler::StopTimer (timer1b);
+	NgProfiler::StartTimer (timer1c);
+
 	for (int l = 0; l < ir_vol.GetNIP(); l++)
 	  {
 	    const SpecificIntegrationPoint<D,D> & sip = mir_vol[l];
@@ -372,7 +398,13 @@ namespace ngfem
 	    grad.Row(l) = gi;
 	  }
 
+
+	NgProfiler::StopTimer (timer1c);
+	NgProfiler::StartTimer (timer1d);
+
 	fel_l2.EvaluateGradTrans (ir_vol, grad, ely.Range(base_l2, base_l2+nd_l2));	
+
+	NgProfiler::StopTimer (timer1d);
       }
 
       
@@ -395,15 +427,16 @@ namespace ngfem
 	for (int k = 0; k < nfacet; k++)
 
 	  {
+	    NgProfiler::StartTimer (timer2a);
+	
 	    HeapReset hr(lh);
-	    ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+	    // ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
 
 	    const_cast<FacetVolumeFiniteElement<D>&> (fel_facet).SelectFace (k);
 
 	    Vec<D> normal_ref;
 	    for (int i=0; i<D; i++)
 	      normal_ref(i) = normals[k][i];
-
 
 	    /*
 	    const IntegrationRule & ir_facet =
@@ -429,12 +462,25 @@ namespace ngfem
 
 	    FlatVector<> shapes_l2(ir_vol.Size(), lh);
 	    FlatVector<> shapes_facet(ir_vol.Size(), lh);
-	    FlatVector<> shapes_facet2(ir_vol.Size(), lh);
 	    FlatMatrixFixWidth<D> grad_l2(ir_vol.Size(), lh);
 
+	    NgProfiler::StopTimer (timer2a);
+	    NgProfiler::StartTimer (timer2b);
+
+
 	    fel_l2.Evaluate (ir_vol, elx.Range(base_l2, base_l2+nd_l2), shapes_l2);
+
+	    NgProfiler::StopTimer (timer2b);
+	    NgProfiler::StartTimer (timer2c);
+
 	    fel_l2.EvaluateGrad (ir_vol, elx.Range(base_l2, base_l2+nd_l2), grad_l2);
+
+	    NgProfiler::StopTimer (timer2c);
+	    NgProfiler::StartTimer (timer2d);
+
 	    fel_facet.Evaluate (ir_vol, elx.Range(base_facet, base_facet+nd_facet), shapes_facet);
+
+	    NgProfiler::StopTimer (timer2d);
 
 	    for (int l = 0; l < ir_vol.GetNIP(); l++)
 	      {
@@ -477,9 +523,7 @@ namespace ngfem
 	    fel_l2.EvaluateGradTrans (ir_vol, grad_l2, hely);
 	    ely.Range (base_l2, base_l2+nd_l2) += hely;
 
-
 	    FlatVector<> hely_facet(nd_facet, lh);
-	    // fel_facet.EvaluateFacetTrans (k, ir_facet, shapes_facet, hely_facet);
 	    fel_facet.EvaluateTrans (ir_vol, shapes_facet, hely_facet);
 	    ely.Range (base_facet, base_facet+nd_facet) += hely_facet;
 
@@ -561,6 +605,7 @@ namespace ngfem
 		      Vec<3> p = p1 + ir1d[k](0) * (p2-p1);
 		      IntegrationPoint ip (p(0), p(1), p(2), ir1d[k].Weight());
 		      SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
+		      double lam = coef_lam->Evaluate(sip);
 		      
 		      Vec<3> tau = sip.GetJacobian() * (p2-p1);
 		      double h = L2Norm(tau);
@@ -573,7 +618,7 @@ namespace ngfem
 		      b_vec.Range(base_edge, nd) = -vec_edge;
 		      
 		      double hv = InnerProduct (b_vec, elx);
-		      hv *=  h * ir1d[k].Weight();
+		      hv *=  alpha * lam * h * ir1d[k].Weight();
 		      ely += hv * b_vec;
 		    }
 		}
@@ -802,6 +847,21 @@ namespace ngfem
       GetIntegrators().AddBFIntegrator ("HDG_convection", 3, 3,
                                         HDG_ConvectionIntegrator<3>::Create);
 
+
+      /*
+      Matrix<> pols(11,11);
+      static int timer = NgProfiler::CreateTimer ("dubiner");
+      static int timer2 = NgProfiler::CreateTimer ("dubiner2");
+      NgProfiler::StartTimer (timer);
+      for (int i = 0; i < 1000000; i++)
+	DubinerJacobiPolynomials (7, 0.7, 1, 0, pols);
+      NgProfiler::StopTimer (timer);
+
+      NgProfiler::StartTimer (timer2);
+      for (int i = 0; i < 1000000; i++)
+	DubinerJacobiPolynomials2<1,0> (7, 0.7, pols);
+      NgProfiler::StopTimer (timer2);
+      */
     }
     
     Init init;

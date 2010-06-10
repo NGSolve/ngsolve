@@ -1720,7 +1720,7 @@ double BlockBilinearFormIntegrator ::
 		      LocalHeap & locheap) const
   {
     const CompoundFiniteElement & fel =
-      dynamic_cast<const CompoundFiniteElement&> (bfel);
+      static_cast<const CompoundFiniteElement&> (bfel);
 
     int nd = fel[comp].GetNDof();
     FlatVector<Complex> elx1(nd, locheap);
@@ -1755,7 +1755,7 @@ double BlockBilinearFormIntegrator ::
 				LocalHeap & locheap) const
   {
     const CompoundFiniteElement & fel =
-      dynamic_cast<const CompoundFiniteElement&> (bfel);
+      static_cast<const CompoundFiniteElement&> (bfel);
 
     int nd = fel[comp].GetNDof();
     FlatVector<double> ellin1(nd, locheap);
@@ -1790,7 +1790,7 @@ double BlockBilinearFormIntegrator ::
 				LocalHeap & locheap) const
   {
     const CompoundFiniteElement & fel =
-      dynamic_cast<const CompoundFiniteElement&> (bfel);
+      static_cast<const CompoundFiniteElement&> (bfel);
 
     int nd = fel[comp].GetNDof();
     FlatVector<Complex> ellin1(nd, locheap);
@@ -1829,18 +1829,14 @@ double BlockBilinearFormIntegrator ::
 	    LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =
-      dynamic_cast<const CompoundFiniteElement&> (bfel);
-    
-    FlatVector<double> selx(fel[comp].GetNDof(), lh);
+      static_cast<const CompoundFiniteElement&> (bfel);
     
     int base = 0;
     for (int i = 0; i < comp; i++)
       base += fel[i].GetNDof();
 
-    for (int i = 0; i < selx.Size(); i++)
-      selx(i) = elx(base+i);
-
-    bfi.CalcFlux (fel[comp], eltrans(ip, lh), selx, flux, applyd, lh);
+    bfi.CalcFlux (fel[comp], eltrans(ip, lh), elx.Range (base, base+fel[comp].GetNDof()), 
+		  flux, applyd, lh);
   }
 
 
@@ -1854,18 +1850,14 @@ double BlockBilinearFormIntegrator ::
 	    LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =
-      dynamic_cast<const CompoundFiniteElement&> (bfel);
+      static_cast<const CompoundFiniteElement&> (bfel);
     
-    FlatVector<Complex> selx(fel[comp].GetNDof(), lh);
-
     int base = 0;
     for (int i = 0; i < comp; i++)
       base += fel[i].GetNDof();
 
-    for (int i = 0; i < selx.Size(); i++)
-      selx(i) = elx(base+i);
-
-    bfi.CalcFlux (fel[comp], eltrans(ip, lh), selx, flux, applyd, lh);
+    bfi.CalcFlux (fel[comp], eltrans(ip, lh), elx.Range (base, base+fel[comp].GetNDof()), 
+		  flux, applyd, lh);
   }
 
 
@@ -1879,18 +1871,14 @@ double BlockBilinearFormIntegrator ::
 	    LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =
-      dynamic_cast<const CompoundFiniteElement&> (bfel);
+      static_cast<const CompoundFiniteElement&> (bfel);
     
-    FlatVector<double> selx(fel[comp].GetNDof(), lh);
-
     int base = 0;
     for (int i = 0; i < comp; i++)
       base += fel[i].GetNDof();
 
-    for (int i = 0; i < selx.Size(); i++)
-      selx(i) = elx(base+i);
-
-    bfi.CalcFlux (fel[comp], ip, selx, flux, applyd, lh);
+    bfi.CalcFlux (fel[comp], ip, elx.Range (base, base+fel[comp].GetNDof()), 
+		  flux, applyd, lh);
   }
 
 
@@ -1903,21 +1891,42 @@ double BlockBilinearFormIntegrator ::
 	    LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =
-      dynamic_cast<const CompoundFiniteElement&> (bfel);
+      static_cast<const CompoundFiniteElement&> (bfel);
     
-    FlatVector<Complex> selx(fel[comp].GetNDof(), lh);
+    // FlatVector<Complex> selx(fel[comp].GetNDof(), lh);
 
     int base = 0;
     for (int i = 0; i < comp; i++)
       base += fel[i].GetNDof();
 
+    /*
     for (int i = 0; i < selx.Size(); i++)
       selx(i) = elx(base+i);
+    */
 
-    bfi.CalcFlux (fel[comp], ip, selx, flux, applyd, lh);
+    bfi.CalcFlux (fel[comp], ip, elx.Range (base, base+fel[comp].GetNDof()), 
+		  flux, applyd, lh);
   }
 
 
+  void CompoundBilinearFormIntegrator :: 
+  CalcFlux (const FiniteElement & bfel,
+	    const BaseMappedIntegrationRule & mir,
+	    const FlatVector<double> & elx, 
+	    FlatMatrix<double> & flux,
+	    bool applyd,
+	    LocalHeap & lh) const
+  {
+    const CompoundFiniteElement & fel =
+      static_cast<const CompoundFiniteElement&> (bfel);
+    
+    int base = 0;
+    for (int i = 0; i < comp; i++)
+      base += fel[i].GetNDof();
+
+    bfi.CalcFlux (fel[comp], mir, elx.Range (base, base+fel[comp].GetNDof()), 
+		  flux, applyd, lh);
+  }
 
 
   string CompoundBilinearFormIntegrator :: Name () const

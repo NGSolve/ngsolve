@@ -53,7 +53,7 @@ namespace ngfem
       {
 	for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
 
-	EvaluateShapeTrans<DIM> eval(coefs, vals(i));
+	EvaluateShapeTrans eval(coefs, vals(i));
 	static_cast<const FEL*> (this) -> T_CalcShape (pt, eval); 
       }
   }

@@ -1059,7 +1059,7 @@ namespace ngcomp
     {
       cout << "BDDC MatrixRefElement" << endl;
       print = true;
-      LocalHeap lh(50000000);
+      LocalHeap lh(500000000);
 
       if (print)
 	*testout << "BDDC - Constructor" << endl;
@@ -1157,11 +1157,11 @@ namespace ngcomp
 		    }
 		}
 	      /*
-              dcdnums[j] = extdnums[j];
-              if (dcdnums[j] == -1) continue;
-              if (gwbdofs[dcdnums[j]]) continue;
-              dcdnums[j] = totdofs;
-              totdofs++;
+		dcdnums[j] = extdnums[j];
+		if (dcdnums[j] == -1) continue;
+		if (gwbdofs[dcdnums[j]]) continue;
+		dcdnums[j] = totdofs;
+		totdofs++;
 	      */
             }
 
@@ -1206,7 +1206,7 @@ namespace ngcomp
       *testout << "dcmat, init = " << dcmat << endl;
 
       elclassnr.SetSize(ne);
-      int maxclass = 32;
+      int maxclass = ne; // 32;
 
       invdc_ref.SetSize(maxclass);
       extwb_ref.SetSize(maxclass);
@@ -1244,7 +1244,7 @@ namespace ngcomp
               if (vnums[sort[1]] > vnums[sort[2]]) { Swap (sort[1], sort[2]); classnr += 2; }
               if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); classnr += 4; }
             }
-	  //  classnr = i;
+	  // classnr = i;
 
           elclassnr[i] = classnr;
           if (invdc_ref[classnr]) continue;
@@ -1403,42 +1403,85 @@ namespace ngcomp
 
       cout << "call inverse, type = " << inversetype << endl;
       cout << "dim = " << dcmat.Height() << endl;
-
-      
+      /*
       inv = dcmat.InverseMatrix(&free_dofs);
-
+      return;
+      */
 #define sometests
 #ifdef sometests
+
       Array<int> & directblocks = *new Array<int> (free_dofs.Size());
       directblocks = 0;
       // int nv = ma.GetNV();
       int ned = ma.GetNEdges();
-      // int nfa = ma.GetNFaces();
+      int nfa = ma.GetNFaces();
       for (int i = 0; i < directblocks.Size(); i++)
 	if (free_dofs.Test(i))
 	  directblocks[i] = 1;
 
-      for (int i = 0; i < ned; i++)
-	{
-	  fes.GetEdgeDofNrs (i, dnums);
-	  for (int j = 1; j < dnums.Size(); j++)
-	    if (free_dofs.Test(dnums[j]))
-	      directblocks[dnums[j]] = 2+i;
-	}
-
+      
+      directblocks = 0;
 
       /*
-      for (int i = 0; i < nfa; i++)
+      for (int i = 0; i < ne; i++)
 	{
-	  fes.GetFaceDofNrs (i, dnums);
+	  fes.GetDofNrs (i, dnums);
+	  if (!dnums.Size()) continue;
+
+	  if (free_dofs.Test(dnums[0]))
+	    directblocks[dnums[0]] = 1;
+
 	  for (int j = 0; j < dnums.Size(); j++)
 	    if (free_dofs.Test(dnums[j]))
 	      directblocks[dnums[j]] = 1;
 	}
       */
 
-      *testout << "directblocks = " << endl << directblocks << endl;
+      for (int i = 0; i < nfa; i++)
+	{
+	  fes.GetFaceDofNrs (i, dnums);
+	  if (!dnums.Size()) continue;
 
+	  if (free_dofs.Test(dnums[0]))
+	    directblocks[dnums[0]] = 1;
+
+	  /*
+	  for (int j = 1; j < dnums.Size(); j++)
+	    if (free_dofs.Test(dnums[j]))
+	      directblocks[dnums[j]] = 1;
+	  */
+	}
+
+
+
+      for (int i = 0; i < ned; i++)
+	{
+	  fes.GetEdgeDofNrs (i, dnums);
+	  if (!dnums.Size()) continue;
+
+	  if (free_dofs.Test(dnums[0]))
+	    directblocks[dnums[0]] = 1;
+	  for (int j = 1; j < dnums.Size(); j++)
+	    if (free_dofs.Test(dnums[j]))
+	      directblocks[dnums[j]] = i;
+	}
+      
+      cout << "directblocks.Size() = " << directblocks.Size() << endl;
+      cout << "freedofs.Size() = " << free_dofs.Size() << endl;
+      cout << "mat.size = " << dcmat.Height() << endl;
+
+      /*
+      *testout << "directblocks,1 = " << endl << directblocks << endl;
+      
+      directblocks = 0;
+      for (int i = 0; i < directblocks.Size(); i++)
+	if (free_dofs.Test(i)) 
+	  directblocks[i] = 1;
+
+      *testout << "dcmat = " << endl << dcmat << endl;
+      *testout << "directblocks = " << endl << directblocks << endl;
+      *testout << "freedofs = " << endl << free_dofs << endl;
+      */
 
       inv = dcmat.InverseMatrix(&directblocks);
       // inv = dcmat.InverseMatrix(&free_dofs);
@@ -1593,7 +1636,7 @@ namespace ngcomp
 
 
 
-      LocalHeap lh(100000);
+      LocalHeap lh(1000014);
       FlatVector<> fx = x.FVDouble();
       FlatVector<> fy = y.FVDouble();
 
@@ -1609,34 +1652,34 @@ namespace ngcomp
 
 	/*
 
-#pragma omp parallel
+	#pragma omp parallel
 	{
-	  LocalHeap slh = lh.Split();
-#pragma omp for
-	  for (int cl = 0; cl < inv_int_ref.Size(); cl++)
-	  for (int i = 0; i < ne; i++)
-	    {
-	      if (elclassnr[i] != cl) continue;
+	LocalHeap slh = lh.Split();
+	#pragma omp for
+	for (int cl = 0; cl < inv_int_ref.Size(); cl++)
+	for (int i = 0; i < ne; i++)
+	{
+	if (elclassnr[i] != cl) continue;
 
-	      HeapReset hr(slh);
-	      FlatArray<int> dint = (*globinternaldofs)[i];
-	      FlatArray<int> dext = (*globexternaldofs)[i];
+	HeapReset hr(slh);
+	FlatArray<int> dint = (*globinternaldofs)[i];
+	FlatArray<int> dext = (*globexternaldofs)[i];
 	      
-	      FlatVector<> vi(dint.Size(), slh);
-	      FlatVector<> ve(dext.Size(), slh);
+	FlatVector<> vi(dint.Size(), slh);
+	FlatVector<> ve(dext.Size(), slh);
 	      
-	      for (int j = 0; j < dint.Size(); j++)
-		vi(j) = transx(dint[j]);
+	for (int j = 0; j < dint.Size(); j++)
+	vi(j) = transx(dint[j]);
 	      
-	      ve = (*extension_int_ref_trans[elclassnr[i]]) * vi;
+	ve = (*extension_int_ref_trans[elclassnr[i]]) * vi;
 
-#pragma omp critical (bddc_transx)
-	      {
-		for (int j = 0; j < ve.Size(); j++)
-		  transx(dext[j]) -= ve(j);
-		NgProfiler::AddFlops (timertransx, dint.Size()*dext.Size());
-	      }
-	    }
+	#pragma omp critical (bddc_transx)
+	{
+	for (int j = 0; j < ve.Size(); j++)
+	transx(dext[j]) -= ve(j);
+	NgProfiler::AddFlops (timertransx, dint.Size()*dext.Size());
+	}
+	}
 	}
 	*/
 
@@ -1731,32 +1774,32 @@ namespace ngcomp
 	/*
 
 
-#pragma omp parallel
+	#pragma omp parallel
 	{
-	  LocalHeap slh = lh.Split();
-#pragma omp for
-	  for (int cl = 0; cl < inv_int_ref.Size(); cl++)
-	  for (int i = 0; i < ne; i++)
-	    {
-	      if (elclassnr[i] != cl) continue;
-	      HeapReset hr(slh);
-	      FlatArray<int> dcd = (*globdcdofs)[i];
+	LocalHeap slh = lh.Split();
+	#pragma omp for
+	for (int cl = 0; cl < inv_int_ref.Size(); cl++)
+	for (int i = 0; i < ne; i++)
+	{
+	if (elclassnr[i] != cl) continue;
+	HeapReset hr(slh);
+	FlatArray<int> dcd = (*globdcdofs)[i];
 	      
-	      FlatVector<> dc1(dcd.Size(), slh);
-	      FlatVector<> dc2(dcd.Size(), slh);
+	FlatVector<> dc1(dcd.Size(), slh);
+	FlatVector<> dc2(dcd.Size(), slh);
 	      
-	      for (int j = 0; j < dcd.Size(); j++)
-		dc1(j) = lx(dcd[j]);
+	for (int j = 0; j < dcd.Size(); j++)
+	dc1(j) = lx(dcd[j]);
 	      
-	      // dc2 = Trans(*invdc[i]) * dc1;
-	      dc2 = (*invdc_ref[elclassnr[i]]) * dc1;
+	// dc2 = Trans(*invdc[i]) * dc1;
+	dc2 = (*invdc_ref[elclassnr[i]]) * dc1;
 	      
-	      for (int j = 0; j < dcd.Size(); j++)
-		ly(dcd[j]) += s * dc2(j);
+	for (int j = 0; j < dcd.Size(); j++)
+	ly(dcd[j]) += s * dc2(j);
 	      
-	      NgProfiler::AddFlops (timerdc, sqr (dcd.Size()));
-	    }
-	   }
+	NgProfiler::AddFlops (timerdc, sqr (dcd.Size()));
+	}
+	}
 	*/
 
 	for (int cl = 0; cl < inv_int_ref.Size(); cl++)
@@ -1842,30 +1885,30 @@ namespace ngcomp
       {
 	NgProfiler::RegionTimer reg(timertransy);
 	/*
-#pragma omp parallel
-	{
+	  #pragma omp parallel
+	  {
 	  LocalHeap slh = lh.Split();
-#pragma omp for
+	  #pragma omp for
 	  for (int cl = 0; cl < inv_int_ref.Size(); cl++)
-	    for (int i = 0; i < ne; i++)
-	    {
-	      if (elclassnr[i] != cl) continue;
-	      HeapReset hr(slh);
-	      FlatArray<int> dint = (*globinternaldofs)[i];
-	      FlatArray<int> dext = (*globexternaldofs)[i];
+	  for (int i = 0; i < ne; i++)
+	  {
+	  if (elclassnr[i] != cl) continue;
+	  HeapReset hr(slh);
+	  FlatArray<int> dint = (*globinternaldofs)[i];
+	  FlatArray<int> dext = (*globexternaldofs)[i];
 	      
-	      FlatVector<> vi(dint.Size(), slh);
-	      FlatVector<> ve(dext.Size(), slh);
+	  FlatVector<> vi(dint.Size(), slh);
+	  FlatVector<> ve(dext.Size(), slh);
 	      
-	      for (int j = 0; j < dext.Size(); j++)
-		ve(j) = transy(dext[j]);
+	  for (int j = 0; j < dext.Size(); j++)
+	  ve(j) = transy(dext[j]);
 	      
-	      vi = (*extension_int_ref[elclassnr[i]]) * ve;
+	  vi = (*extension_int_ref[elclassnr[i]]) * ve;
 	      
-	      for (int j = 0; j < dint.Size(); j++)
-		transy(dint[j]) -= vi(j);
-	    }
-	}
+	  for (int j = 0; j < dint.Size(); j++)
+	  transy(dint[j]) -= vi(j);
+	  }
+	  }
 	*/
 
 

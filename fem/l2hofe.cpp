@@ -191,7 +191,13 @@ namespace ngfem
     // no orientation necessary
     int n=order;
     ArrayMem<Tx, 20> polx(n+1), poly(n+1), polz(n+1);
-    
+
+    /*
+    ArrayMem<Tx, 400> polsz_mem( (n+1)*(n+1) );
+    FlatMatrix<Tx> polsz (n+1, &polsz_mem[0]);
+    DubinerJacobiPolynomials2<2, 0> (n, 2*z-1, polsz);
+    */
+
     // Polynomials orthogonal w.r.t L2 inner product
     ScaledLegendrePolynomial ( n, 2*x+y+z-1, 1-y-z, polx);
   
@@ -203,6 +209,7 @@ namespace ngfem
 	    JacobiPolynomial(n, 2*z-1, 2*i+2*j+2, 0, polz);
 	    for (int k = 0; k <= order-i-j; k++)
 	      shape[ii++] = polx[i] * poly[j] * polz[k];
+	    // shape[ii++] = polx[i] * poly[j] * polsz(i+j, k);
 	  }
       }
   }
