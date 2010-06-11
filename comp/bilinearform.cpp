@@ -1593,7 +1593,11 @@ namespace ngcomp
 				  // new Versions, July 07
 				  LapackAInvBt (d, b);
 				  LapackMultAddABt (b, c, -1, a);
-				  if (keep_internal) throw Exception ("keep internal not yet active for LAPACK");
+				  if (keep_internal){
+				    
+				    throw Exception ("keep internal not yet active for LAPACK");
+				    
+				  }
 			    
 #else
 				  FlatMatrix<SCAL> invd(sizei, sizei, lh);
@@ -1602,18 +1606,19 @@ namespace ngcomp
 				  d = invd;
 				  if (keep_internal) 
 				  { 
-				    throw Exception ("keep internal not yet active!!!");
-				    Array<COUPLING_TYPE> ctypes;
-				    Array<int> dnums;
-				    fespace.GetDofCouplingTypes(i,ctypes);
-// 				    fespace.
-				    FlatMatrix<SCAL> he (sizeo, sizei, lh);
-				    he = -1.0 * invd * Trans(c);
-				    harmonicext->AddElementMatrix(i,he);
-				    FlatMatrix<SCAL> het (sizei, sizeo, lh);
-				    het = b * invd;
-				    harmonicexttrans->AddElementMatrix(i,het);
-				    solverinner->AddElementMatrix(i,invd);
+				    throw Exception ("keep internal not yet active for NONLAPACK");
+// 				    Array<int> idnums;
+// 				    Array<int> ednums;
+// 				    fespace.GetDofNrs(i,idnums,LOCAL_DOF);
+// 				    fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
+// // 				    fespace.
+// 				    FlatMatrix<SCAL> he (sizeo, sizei, lh);
+// 				    he = -1.0 * invd * Trans(c);
+// 				    harmonicext->AddElementMatrix(i,ednums,idnums,he);
+// 				    FlatMatrix<SCAL> het (sizei, sizeo, lh);
+// 				    het = b * invd;
+// 				    harmonicexttrans->AddElementMatrix(i,idnums,ednums,het);
+// 				    innersolve->AddElementMatrix(i,idnums,idnums,invd);
 				  }
 
 				  idc = c * Trans (invd);
