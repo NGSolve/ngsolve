@@ -458,10 +458,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     GetDofNrs(elnr, dnums);
     ctypes.SetSize(dnums.Size());
     for (int i=0;i<dnums.Size();i++)
-      ctypes[i] = INTERFACE;
+      ctypes[i] = INTERFACE_DOF;
   }
 
-  void FESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
+  void FESpace :: GetDofNrs (int elnr, Array<int> & dnums,COUPLING_TYPE ctype) const
   {
       Array<int> alldnums; 
       Array<COUPLING_TYPE> couptype;
@@ -469,25 +469,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       GetDofCouplingTypes(elnr, couptype);
       dnums.SetSize(0);
       for (int i=0;i<alldnums.Size();i++){
-	if (couptype[i] >= INTERFACE)
+	if ( (couptype[i] & ctype) != 0){
 	  dnums.Append(alldnums[i]);
+	}
       }
-  }
-
-  void FESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
-  {
-      Array<int> alldnums; 
-      Array<COUPLING_TYPE> couptype;
-      GetDofNrs(elnr, alldnums);
-      GetDofCouplingTypes(elnr, couptype);
-      dnums.SetSize(0);
-      for (int i=0;i<alldnums.Size();i++){
-	if (couptype[i] >= WIREBASKET)
-	  dnums.Append(alldnums[i]);
-      }    
-    // throw Exception ("FESpace::GetWireBasketDofNrs called");
-//     throw Exception (string("FESpace::GetWireBasketDofNrs called, type = ")
-//                      +typeid(this).name());
   }
 
   void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const
@@ -2731,21 +2716,6 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
       }
   }
 
-//   void CompoundFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
-//   {
-//     ArrayMem<int,500> hdnums;
-//     dnums.SetSize(0);
-//     for (int i = 0; i < spaces.Size(); i++)
-//       {
-// 	spaces[i]->GetExternalDofNrs (elnr, hdnums);
-// 	for (int j = 0; j < hdnums.Size(); j++)
-// 	  if (hdnums[j] != -1)
-// 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
-// 	  else
-// 	    dnums.Append (-1);
-//       }
-//   }
-
   void CompoundFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
   {
     ArrayMem<COUPLING_TYPE,500> hctypes;
@@ -2757,27 +2727,9 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 	  if (hctypes[j] != -1)
 	    ctypes.Append (hctypes[j]);
 	  else
-	    ctypes.Append (LOCAL);
+	    ctypes.Append (LOCAL_DOF);
       }
   }
-
-
-
-//   void CompoundFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
-//   {
-//     ArrayMem<int,500> hdnums;
-//     dnums.SetSize(0);
-//     for (int i = 0; i < spaces.Size(); i++)
-//       {
-// 	spaces[i]->GetWireBasketDofNrs (elnr, hdnums);
-// 	for (int j = 0; j < hdnums.Size(); j++)
-// 	  if (hdnums[j] != -1)
-// 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
-// 	  else
-// 	    dnums.Append (-1);
-//       }
-//   }
-// 
 
 
   void CompoundFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const

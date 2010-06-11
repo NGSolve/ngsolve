@@ -48,6 +48,10 @@ namespace ngcomp
     /// low order bilinear-form, 0 if not used
     BilinearForm * low_order_bilinear_form;
 
+    ElementByElementMatrix<double> * harmonicext;
+    ElementByElementMatrix<double> * harmonicexttrans;
+    ElementByElementMatrix<double> * innersolve;
+    
     /// modify linear form due to static condensation
     LinearForm * linearform;
 
@@ -70,6 +74,7 @@ namespace ngcomp
     bool printelmat;
     bool elmat_ev;
     bool eliminate_internal;
+    bool keep_internal;
   
 
     bool precompute;
@@ -207,6 +212,7 @@ namespace ngcomp
 
     bool HasLowOrderBilinearForm(void) const {return low_order_bilinear_form != NULL;}
     bool UsesEliminateInternal(void) const {return eliminate_internal;}
+    bool UsesKeepInternal(void) const {return keep_internal;}
 
     const BilinearForm & GetLowOrderBilinearForm() const
     {
@@ -262,6 +268,8 @@ namespace ngcomp
 
     void SetEliminateInternal (bool eliminate) 
     { eliminate_internal = eliminate; }
+    void SetKeepInternal (bool keep) 
+    { keep_internal = keep; }
 
     void SetPrint (bool ap);
     void SetPrintElmat (bool ap);

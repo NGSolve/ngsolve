@@ -810,38 +810,6 @@ namespace ngcomp
       dnums = -1;
   }
  
-/*
-  void HCurlHighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
-  {
-//     if (!eliminate_internal) 
-//       {
-// 	GetDofNrs (elnr, dnums);
-// 	return;
-//       }
-
-
-    Ng_Element ngel = ma.GetElement (elnr);
-    dnums.SetSize(0);
-     
-      //Nedelec0
-    if ( !discontinuous )
-      for (int i = 0; i < ngel.edges.Size(); i++) 
-	dnums.Append (ngel.edges[i]);
-        
-    //edges
-    for (int i = 0; i < ngel.edges.Size(); i++) 
-      dnums += GetEdgeDofs(ngel.edges[i]); 
-       
-    // faces 
-    if (ma.GetDimension() == 3)
-      for(int i = 0; i < ngel.faces.Size(); i++)     
-        dnums += GetFaceDofs(ngel.faces[i]);  
-    
-    if (!DefinedOn (ma.GetElIndex (elnr)))
-      dnums = -1;
-  }
- */
-
   void  HCurlHighOrderFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
   {
     Ng_Element ngel = ma.GetElement (elnr);
@@ -850,14 +818,14 @@ namespace ngcomp
       //Nedelec0
     if ( !discontinuous )
       for (int i = 0; i < ngel.edges.Size(); i++) 
-	ctypes.Append(WIREBASKET);	
+	ctypes.Append(WIREBASKET_DOF);	
       
     //edges
     for (int i = 0; i < ngel.edges.Size(); i++)
     {
       IntRange range = GetEdgeDofs (ngel.edges[i]);
       for (int j=range.First();j<range.Next();j++)
-      ctypes.Append(INTERFACE);
+      ctypes.Append(INTERFACE_DOF);
     }
       
     // faces 
@@ -865,12 +833,12 @@ namespace ngcomp
       for (int i = 0; i < ngel.faces.Size(); i++){
 	IntRange range = GetFaceDofs (ngel.faces[i]);
 	for (int j=range.First();j<range.Next();j++)
-	  ctypes.Append(INTERFACE); //NOGRAD / GRAD
+	  ctypes.Append(INTERFACE_DOF); //NOGRAD / GRAD
       }      
     
     IntRange range = GetElementDofs (elnr);
     for (int j=range.First();j<range.Next();j++)
-      ctypes.Append(LOCAL);
+      ctypes.Append(LOCAL_DOF);
   }
 
 
@@ -943,33 +911,6 @@ namespace ngcomp
   }
 
   
-//   void HCurlHighOrderFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
-//   {
-//     ArrayMem<int,12> vnums, ednums;
-// 
-//     dnums.SetSize(0);
-// 
-//     ma.GetElEdges (elnr, ednums);
-// 
-//     if (ma.GetDimension() == 2)
-//       {
-//         for (int i = 0; i < ednums.Size(); i++)
-//           if (order_edge[ednums[i]] > 1)
-//             dnums.Append (first_edge_dof[ednums[i]]);
-//       }
-//     else
-//       {
-//         for (int i = 0; i < ednums.Size(); i++)
-// 	  {
-// 	    dnums.Append(ednums[i]);
-// 	    for (int j = first_edge_dof[ednums[i]]; j < first_edge_dof[ednums[i]+1]; j++)
-// 	      dnums.Append (j);
-// 	  }
-//       }
-//   }
-
-  
-
   void HCurlHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);

@@ -15,19 +15,25 @@ namespace ngla
 
   
   template <class SCAL> class ElementByElementMatrix;
-
+//TODO: Optimization for symmteric matrices
   
   template <class SCAL>
-  ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int ane) 
+  ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int ane, bool isymmetric) 
   {
+    symmetric=isymmetric;
     height = h; 
     ne = ane; 
     elmats.SetSize(ne);
-    dnums.SetSize(ne);
+    rowdnums.SetSize(ne);
+//     if (!symmetric)
+    coldnums.SetSize(ne);
+
     for (int i = 0; i < ne; i++)
       {
         elmats[i].AssignMemory (0, 0, NULL);
-        dnums[i] = FlatArray<int> (0, NULL);
+        rowdnums[i] = FlatArray<int> (0, NULL);
+// 	if (!symmetric)
+	coldnums[i] = FlatArray<int> (0, NULL);
       }
   }
   
@@ -39,28 +45,36 @@ namespace ngla
     NgProfiler::RegionTimer reg (timer);
 
     int maxs = 0;
-    for (int i = 0; i < dnums.Size(); i++)
-      maxs = max2 (maxs, dnums[i].Size());
-
+    for (int i = 0; i < rowdnums.Size(); i++)
+      maxs = max2 (maxs, rowdnums[i].Size());
+    for (int i = 0; i < coldnums.Size(); i++)
+      maxs = max2 (maxs, coldnums[i].Size());
+    
     ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
       
     FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
     FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
 
-    for (int i = 0; i < dnums.Size(); i++)
+    for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
       {
-        FlatArray<int> di (dnums[i]);
-        FlatVector<SCAL> hv1(di.Size(), &mem1[0]);
-        FlatVector<SCAL> hv2(di.Size(), &mem2[0]);
+        FlatArray<int> rdi (rowdnums[i]);
+        FlatArray<int> cdi (coldnums[i]);
+/*        FlatArray<int> cditmp (coldnums[i]);
+	FlatArray<int> * coldi;
+	if (symmetric) coldi = &rdi; else coldi= &cditmp;
+        FlatArray<int> cdi (*coldi);*/
+	
+        FlatVector<SCAL> hv1(cdi.Size(), &mem1[0]);
+        FlatVector<SCAL> hv2(rdi.Size(), &mem2[0]);
 	  
-        for (int j = 0; j < di.Size(); j++)
-          hv1(j) = vx (di[j]);
+        for (int j = 0; j < cdi.Size(); j++)
+          hv1(j) = vx (cdi[j]);
 
         hv2 = elmats[i] * hv1;
         hv2 *= s;
 
-        for (int j = 0; j < dnums[i].Size(); j++)
-          vy (di[j]) += hv2[j];
+        for (int j = 0; j < rowdnums[i].Size(); j++)
+          vy (cdi[j]) += hv2[j];
       }
   }
 
@@ -68,7 +82,9 @@ namespace ngla
   BaseMatrix *  ElementByElementMatrix<SCAL> :: InverseMatrix ( BitArray * subset ) const
   {
     cout << "wird das tatsaechlich verwendet ???" << endl;
-    ElementByElementMatrix<SCAL> * invmat = new ElementByElementMatrix<SCAL> (height, ne);
+    throw Exception ("not available any longer!");
+    return NULL;
+/*    ElementByElementMatrix<SCAL> * invmat = new ElementByElementMatrix<SCAL> (height, ne);
 
     int maxs = 0;
     for (int i = 0; i < dnums.Size(); i++)
@@ -91,34 +107,44 @@ namespace ngla
         lh.CleanUp();
       }
   
-    return invmat;
+    return invmat;*/
   }
   
   template <class SCAL>
   void ElementByElementMatrix<SCAL> :: AddElementMatrix (int elnr,
-                                                         const Array<int> & dnums1,
-                                                         const Array<int> & dnums2,
+                                                         const Array<int> & rowdnums_in,
+                                                         const Array<int> & coldnums_in,
                                                          const FlatMatrix<SCAL> & elmat)
   {
-    ArrayMem<int,50> used;
-    for (int i = 0; i < dnums1.Size(); i++)
-      if (dnums1[i] >= 0) used.Append(i);
+    ArrayMem<int,50> usedrows;
+    for (int i = 0; i < rowdnums_in.Size(); i++)
+      if (rowdnums_in[i] >= 0) usedrows.Append(i);
+    int sr = usedrows.Size();
 
-    int s = used.Size();
+    ArrayMem<int,50> usedcols;
+    for (int i = 0; i < coldnums_in.Size(); i++)
+      if (coldnums_in[i] >= 0) usedcols.Append(i);
+    int sc = usedcols.Size();
 
-    FlatMatrix<SCAL> mat (s, new SCAL[s*s]);
-    for (int i = 0; i < s; i++)
-      for (int j = 0; j < s; j++)
-        mat(i,j) = elmat(used[i], used[j]);
+    FlatMatrix<SCAL> mat (sr,sc, new SCAL[sr*sc]);
+    for (int i = 0; i < sr; i++)
+      for (int j = 0; j < sc; j++)
+        mat(i,j) = elmat(usedrows[i], usedcols[j]);
 
-    FlatArray<int> dn(s, new int[s]);
-    for (int i = 0; i < s; i++)
-      dn[i] = dnums1[used[i]];
+    FlatArray<int> dnr(sr, new int[sr]);
+    for (int i = 0; i < sr; i++)
+      dnr[i] = rowdnums_in[usedrows[i]];
+    
+    FlatArray<int> dnc(sc, new int[sc]);
+    for (int j = 0; j < sc; j++)
+      dnc[j] = coldnums_in[usedcols[j]];
 
     if (elnr < elmats.Size())
       {
-        dnums[elnr] = dn;
-        elmats[elnr].AssignMemory (s, s, &mat(0,0));
+        rowdnums[elnr] = dnr;
+//         if (!symmetric)
+	coldnums[elnr] = dnc;
+        elmats[elnr].AssignMemory (sr, sc, &mat(0,0));
       }
   }
 

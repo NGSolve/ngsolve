@@ -78,14 +78,6 @@ public:
     { return "Wire-basket Preconditioner"; }
   };
 
-
-
-
-
-
-
-
-
 }
 
 #endif

@@ -25,10 +25,20 @@ namespace ngcomp
 			TRANSFORM_MAT_LEFT_RIGHT = 3,
 			TRANSFORM_RHS = 4,
 			TRANSFORM_SOL = 8 };
-
-  enum COUPLING_TYPE {  LOCAL = 0,
-			INTERFACE = 1,
-			WIREBASKET = 2 };
+  /**
+    coupling types: Each degree of freedom is either
+     - a local degree of freedom 
+     - an interface degree of freedom 
+     or
+     - a wirebasket degree of freedom
+  */
+  enum COUPLING_TYPE {  LOCAL_DOF = 1,
+			INTERFACE_DOF = 2,
+			NONWIREBASKET_DOF = 3,
+			WIREBASKET_DOF = 4,
+			EXTERNAL_DOF = 6,
+			ANY_DOF = 7
+		      };
 		     
 
 
@@ -176,12 +186,8 @@ namespace ngcomp
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     /// get coupling types of dofs
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & dnums) const;
-
-    /// get remaining dofs after static condensation
-    virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
-
-    /// experiments with new preconditioners
-    virtual void GetWireBasketDofNrs (int vnr, Array<int> & dnums) const;
+    /// get dof-nrs of the element of certain coupling type
+    void GetDofNrs (int elnr, Array<int> & dnums,COUPLING_TYPE ctype) const;
 
     /// get dofs on nr'th node of type nt.
     virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const;
@@ -679,11 +685,9 @@ namespace ngcomp
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-//     virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
-    
+    ///
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;
-
-//     virtual void GetWireBasketDofNrs (int vnr, Array<int> & dnums) const;
+    ///
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;

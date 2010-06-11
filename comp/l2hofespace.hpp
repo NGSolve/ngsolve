@@ -79,7 +79,6 @@ namespace ngcomp
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;
-//     virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
 
     int GetFirstInnerDof(int elnr) const  
     {return (first_element_dof[elnr]);}

@@ -329,25 +329,15 @@ namespace ngcomp
   void  L2HighOrderFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
   { 
     ctypes.SetSize(0);
-//     if (lowirebasket) ctypes.Append (WIREBASKET);
-    ctypes.Append (LOCAL); // lowest_order 
+//     if (lowirebasket) ctypes.Append (WIREBASKET_DOF);
+    ctypes.Append (LOCAL_DOF); // lowest_order 
     int first = first_element_dof[elnr];
     int neldofs = first_element_dof[elnr+1] - first;
 
     for (int j = 0; j < neldofs; j++)
-      ctypes.Append (LOCAL);
+      ctypes.Append (LOCAL_DOF);
   }
   
-  
-//   void  L2HighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
-//   {
-// //     if (!eliminate_internal) 
-//     GetDofNrs (elnr, dnums);
-//     return;
-// //     dnums.SetSize(0);
-//   }
-
-
   void L2HighOrderFESpace :: 
   GetSDofNrs (int elnr, Array<int> & dnums) const
   {
@@ -373,12 +363,6 @@ namespace ngcomp
       }
     return &table;
   }
-
-//   void L2HighOrderFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
-//   {
-//     dnums.SetSize(0);
-//     // dnums.Append (elnr);
-//   }
 
   void  L2HighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   { 

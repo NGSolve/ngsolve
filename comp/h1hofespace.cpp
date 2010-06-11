@@ -695,60 +695,6 @@ namespace ngcomp
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
   }
-/*
-
-  void  H1HighOrderFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
-  {
-//     if (!eliminate_internal) 
-//       {
-//         GetDofNrs (elnr, dnums);
-//         return;
-//       }
-
-    Ng_Element ngel = ma.GetElement(elnr);
-
-    dnums.SetSize(ngel.vertices.Size()); 
-    for (int i = 0; i < ngel.vertices.Size(); i++)
-      dnums[i] = ngel.vertices[i];
-
-    for (int i = 0; i < ngel.edges.Size(); i++)
-      dnums += GetEdgeDofs (ngel.edges[i]);
-
-    if (ma.GetDimension() == 3)
-      for (int i = 0; i < ngel.faces.Size(); i++)
-        dnums += GetFaceDofs (ngel.faces[i]);
-
-    if (!DefinedOn (ma.GetElIndex (elnr)))
-      dnums = -1;
-  }
-
-  void H1HighOrderFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
-  {
-    ArrayMem<int,12> vnums, ednums;
-
-    dnums.SetSize(0);
-
-    ma.GetElVertices (elnr, vnums);
-    ma.GetElEdges (elnr, ednums);
-
-    for (int i = 0; i < vnums.Size(); i++)
-      dnums.Append (vnums[i]);
-
-    if (ma.GetDimension() == 2)
-      {
-        for (int i = 0; i < ednums.Size(); i++)
-          if (order_edge[ednums[i]] > 1)
-            dnums.Append (first_edge_dof[ednums[i]]);
-      }
-
-    if (ma.GetDimension() == 3)
-      {
-        for (int i = 0; i < ednums.Size(); i++)
-          for (int j = first_edge_dof[ednums[i]]; j < first_edge_dof[ednums[i]+1]; j++)
-            dnums.Append (j);
-
-      }
-  }*/
 
   void  H1HighOrderFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
   {
@@ -756,24 +702,24 @@ namespace ngcomp
 
     ctypes.SetSize(ngel.vertices.Size()); 
     for (int i = 0; i < ngel.vertices.Size(); i++)
-      ctypes[i] = WIREBASKET;
+      ctypes[i] = WIREBASKET_DOF;
 
     for (int i = 0; i < ngel.edges.Size(); i++){
       IntRange range = GetEdgeDofs (ngel.edges[i]);
       for (int j=range.First();j<range.Next();j++)
-	ctypes.Append(INTERFACE);
+	ctypes.Append(INTERFACE_DOF);
     }
 
     if (ma.GetDimension() == 3)
       for (int i = 0; i < ngel.faces.Size(); i++){
 	IntRange range = GetFaceDofs (ngel.faces[i]);
 	for (int j=range.First();j<range.Next();j++)
-	  ctypes.Append(INTERFACE);
+	  ctypes.Append(INTERFACE_DOF);
       }
 
     IntRange range = GetElementDofs (elnr);
     for (int j=range.First();j<range.Next();j++)
-      ctypes.Append(LOCAL);
+      ctypes.Append(LOCAL_DOF);
 
   }
 

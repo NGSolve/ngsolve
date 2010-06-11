@@ -84,9 +84,6 @@ namespace ngcomp
     { return (first_facet_dof[felnr+1]-first_facet_dof[felnr] + 1); }
     ///
     virtual void  GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;    
-    //  virtual void GetWireBasketDofNrs(int elnr, Array<int> & dnums) const;
-    ///
-    //  virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
     ///
@@ -193,8 +190,7 @@ namespace ngcomp
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     ///
-//     virtual void GetWireBasketDofNrs(int elnr, Array<int> & dnums) const;
-    virtual void  GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;    
+    virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;    
 
     virtual void GetVertexDofNrs ( int elnum, Array<int> & dnums ) const  { dnums.SetSize(0); }
 

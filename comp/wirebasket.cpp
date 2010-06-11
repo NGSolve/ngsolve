@@ -74,7 +74,7 @@ namespace ngcomp
 
             for (int j = 0; j < elnums.Size(); j++)
               {
-                fespace.GetWireBasketDofNrs (elnums[j], dnums);
+		fespace.GetDofNrs(elnums[j],dnums,WIREBASKET_DOF);
                 for (int k = 0; k < dnums.Size(); k++)
                   if (dnums[k] != -1) cnt[i]++;
               }
@@ -126,7 +126,7 @@ namespace ngcomp
 
             for (int j = 0; j < elnums.Size(); j++)
               {
-                fespace.GetWireBasketDofNrs (elnums[j], dnums);
+		fespace.GetDofNrs(elnums[j],dnums,WIREBASKET_DOF);
                 for (int k = 0; k < dnums.Size(); k++)
                   if (dnums[k] != -1) fa2dof[i][ii++] = dnums[k];
               }
@@ -164,7 +164,7 @@ namespace ngcomp
             this->ma.GetEdgeElements (i, elnums);
             for (int j = 0; j < elnums.Size(); j++)
               {
-                fespace.GetWireBasketDofNrs (elnums[j], dnums);
+		fespace.GetDofNrs(elnums[j],dnums,WIREBASKET_DOF);
                 for (int k = 0; k < dnums.Size(); k++)
                   if (dnums[k] != -1) cnt[i]++;
               }
@@ -193,7 +193,7 @@ namespace ngcomp
             this->ma.GetEdgeElements (i, elnums);
             for (int j = 0; j < elnums.Size(); j++)
               {
-                fespace.GetWireBasketDofNrs (elnums[j], dnums);
+		fespace.GetDofNrs(elnums[j],dnums,WIREBASKET_DOF);
                 for (int k = 0; k < dnums.Size(); k++)
                   if (dnums[k] != -1) fa2dof[i][ii++] = dnums[k];
               }
@@ -274,7 +274,7 @@ namespace ngcomp
           Array<int> usedi, unusedi, wirebasketdofs;
         
 #ifdef WB_EXTRA
-          this->fespace.GetWireBasketDofNrs (elnr, wirebasketdofs);
+	  this->fespace.GetDofNrs(elnr,wirebasketdofs,WIREBASKET_DOF);
           
 	  
           for (int j = 0; j < dnums1.Size(); j++)
@@ -368,7 +368,7 @@ namespace ngcomp
 
                   // this->ma.GetElPNums (elnr, vnums);   // all vertices
 
-                  this->fespace.GetWireBasketDofNrs (elnr, useddofs);
+		  this->fespace.GetDofNrs(elnr,useddofs,WIREBASKET_DOF);
 
                   this->ma.GetFaceEdges (fanums[i], ednums);
 	    
@@ -475,7 +475,7 @@ namespace ngcomp
                   usedi.SetSize (0);
                   unusedi.SetSize (0);
 
-                  this->fespace.GetWireBasketDofNrs (elnr, useddofs);
+		  this->fespace.GetDofNrs(elnr,useddofs,WIREBASKET_DOF);
                     
                   int vi[2];
                   this->ma.GetEdgePNums (ednums[i], vi[0], vi[1]);
