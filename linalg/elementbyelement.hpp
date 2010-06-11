@@ -19,12 +19,13 @@ namespace ngla
   class ElementByElementMatrix : public BaseMatrix
   {
     Array<FlatMatrix<SCAL> > elmats;
-    Array<FlatArray<int> > dnums;
+    Array<FlatArray<int> > rowdnums;
+    Array<FlatArray<int> > coldnums;
     int height;
     int ne;
-
+    bool symmetric;
   public:
-    ElementByElementMatrix (int h, int ane);
+    ElementByElementMatrix (int h, int ane, bool isymmetric=true);
 
     virtual int VHeight() const { return height; }
     virtual int VWidth() const { return height; }
@@ -52,9 +53,17 @@ namespace ngla
       return elmats[elnum];
     }
 
-    const FlatArray<int> GetElementDNums ( int elnum ) const
+    const FlatArray<int> GetElementRowDNums ( int elnum ) const
     {
-      return dnums[elnum]; 
+      return rowdnums[elnum]; 
+    }
+
+    const FlatArray<int> GetElementColumnDNums ( int elnum ) const
+    {
+      if (symmetric)
+	return rowdnums[elnum]; 
+      else
+	return coldnums[elnum]; 
     }
 
     virtual ostream & Print (ostream & ost) const

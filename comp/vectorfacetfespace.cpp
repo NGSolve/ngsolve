@@ -543,27 +543,6 @@ namespace ngcomp
     // *testout << "dnums = " << endl << dnums << endl;
   }
 
-//   void VectorFacetFESpace :: GetWireBasketDofNrs(int elnr, Array<int> & dnums) const
-//   {
-//     dnums.SetSize(0);
-//     Array<int> facets;
-// 
-//     if ( ma.GetDimension() == 2 )
-//       {
-// 	ma.GetElEdges ( elnr, dnums );
-//       }
-//     else // 3D
-//       {
-// 	ma.GetElFaces ( elnr, facets );
-// 	for ( int i = 0; i < facets.Size(); i++ )
-// 	  {
-// 	    dnums.Append( 2 * facets[i] );
-// 	    dnums.Append ( 2*facets[i] + 1 );
-// 	  }
-//       }
-//     return;
-//   }
-
   ///
   void VectorFacetFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
@@ -656,17 +635,17 @@ namespace ngcomp
 	for(int i=0; i<fanums.Size(); i++)
 	  {
 	    if ( ma.GetDimension() == 2 )
-	      ctypes.Append(WIREBASKET); // low_order
+	      ctypes.Append(WIREBASKET_DOF); // low_order
 	    else
 	      {
-		ctypes.Append(WIREBASKET);
-		ctypes.Append(WIREBASKET);
+		ctypes.Append(WIREBASKET_DOF);
+		ctypes.Append(WIREBASKET_DOF);
 	      }
 	    
 	    first = first_facet_dof[fanums[i]];
 	    next = first_facet_dof[fanums[i]+1];
 	    for(int j=first ; j<next; j++)
-	      ctypes.Append(INTERFACE);
+	      ctypes.Append(INTERFACE_DOF);
 	  }
       }
     else
@@ -689,15 +668,15 @@ namespace ngcomp
 		  {
 		    if (j == 0)
 		      {
-			ctypes.Append(WIREBASKET);
+			ctypes.Append(WIREBASKET_DOF);
 		      }
 		    else if (j < order)
 		      {
-			ctypes.Append (INTERFACE);
+			ctypes.Append (INTERFACE_DOF);
 		      }
 		    else
 		      {
-			ctypes.Append (LOCAL);
+			ctypes.Append (LOCAL_DOF);
 		      }
 		  }
 	      }
@@ -726,18 +705,18 @@ namespace ngcomp
 			{
 			  if (j+k == 0)
 			    {
-			      ctypes.Append(WIREBASKET);
-			      ctypes.Append(WIREBASKET);
+			      ctypes.Append(WIREBASKET_DOF);
+			      ctypes.Append(WIREBASKET_DOF);
 			    }
 			  else if (j+k < order)
 			    {
-			      ctypes.Append (INTERFACE);
-			      ctypes.Append (INTERFACE);
+			      ctypes.Append (INTERFACE_DOF);
+			      ctypes.Append (INTERFACE_DOF);
 			    }
 			  else
 			    {
-			      ctypes.Append (LOCAL);
-			      ctypes.Append (LOCAL);
+			      ctypes.Append (LOCAL_DOF);
+			      ctypes.Append (LOCAL_DOF);
 			    }
 			}
 		  }
@@ -748,18 +727,18 @@ namespace ngcomp
 			{
 			  if (j+k == 0)
 			    {
-			      ctypes.Append(WIREBASKET);
-			      ctypes.Append(WIREBASKET);
+			      ctypes.Append(WIREBASKET_DOF);
+			      ctypes.Append(WIREBASKET_DOF);
 			    }
 			  else if ( (j < order) && (k < order) )
 			    {
-			      ctypes.Append (INTERFACE);
-			      ctypes.Append (INTERFACE);
+			      ctypes.Append (INTERFACE_DOF);
+			      ctypes.Append (INTERFACE_DOF);
 			    }
 			  else
 			    {
-			      ctypes.Append (LOCAL);
-			      ctypes.Append (LOCAL);
+			      ctypes.Append (LOCAL_DOF);
+			      ctypes.Append (LOCAL_DOF);
 			    }
 			}
 		  }
@@ -768,12 +747,6 @@ namespace ngcomp
       }
     
   }
-
-//    void VectorFacetFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
-//   {
-//     GetDofNrs ( elnr, dnums);
-//   }
-//   
   
   ///
    void VectorFacetFESpace :: GetVertexNumbers(int elnr, Array<int>& vnums) 

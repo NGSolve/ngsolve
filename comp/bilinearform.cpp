@@ -44,6 +44,7 @@ namespace ngcomp
     printelmat = 0;
     elmat_ev = 0;
     eliminate_internal = 0;
+    keep_internal = 0;
 
 
     SetGalerkin( flags.GetDefineFlag( "project" ) );
@@ -60,6 +61,7 @@ namespace ngcomp
     SetElmatEigenValues (flags.GetDefineFlag ("elmatev")); 
     if (flags.GetDefineFlag ("timing")) SetTiming (1);
     if (flags.GetDefineFlag ("eliminate_internal")) SetEliminateInternal (1);
+    if (flags.GetDefineFlag ("keep_internal")) SetKeepInternal (1);
 
     precompute = flags.GetDefineFlag ("precompute");
   }
@@ -86,6 +88,7 @@ namespace ngcomp
     printelmat = 0;
     elmat_ev = 0;
     eliminate_internal = 0;
+    keep_internal = 0;
 
 
     SetGalerkin( flags.GetDefineFlag( "project" ) );
@@ -103,6 +106,7 @@ namespace ngcomp
  
     if (flags.GetDefineFlag ("timing")) SetTiming (1);
     if (flags.GetDefineFlag ("eliminate_internal")) SetEliminateInternal (1);
+    if (flags.GetDefineFlag ("keep_internal")) SetKeepInternal (1);
 
     precompute = flags.GetDefineFlag ("precompute");
   }
@@ -547,7 +551,7 @@ namespace ngcomp
 	if (!fespace.DefinedOn (ma.GetElIndex(i))) continue;
 
 	if (eliminate_internal)
-	  fespace.GetExternalDofNrs (i, dnums);
+	  fespace.GetDofNrs (i, dnums, EXTERNAL_DOF);
 	else
 	  fespace.GetDofNrs (i, dnums);
 	for (int j = 0; j < dnums.Size(); j++)
@@ -571,7 +575,7 @@ namespace ngcomp
 	  if ( ma.IsGhostEl(elnr)) continue;  // for parallel
 	  if (!fespace.DefinedOn (ma.GetElIndex(elnr))) continue;
 	  if (eliminate_internal)
-	    fespace.GetExternalDofNrs (elnr, dnums);
+	  fespace.GetDofNrs (i, dnums, EXTERNAL_DOF);
 	  else
 	    fespace.GetDofNrs (elnr, dnums);
 	  for (int j = 0; j < dnums.Size(); j++)
@@ -612,7 +616,7 @@ namespace ngcomp
         if ( ma.IsGhostEl(i)) continue;
 	if (!fespace.DefinedOn (ma.GetElIndex(i))) continue;
 	if (eliminate_internal)
-	  fespace.GetExternalDofNrs (i, dnums);
+	  fespace.GetDofNrs (i, dnums, EXTERNAL_DOF);
 	else
 	  fespace.GetDofNrs (i, dnums);
 	for (int j = 0; j < dnums.Size(); j++)
@@ -698,7 +702,7 @@ namespace ngcomp
 // 	if (  !ma.IsExchangeEl(i)) continue;
 	if (!fespace.DefinedOn (ma.GetElIndex(i))) continue;
 	if (eliminate_internal)
-	  fespace.GetExternalDofNrs (i, dnums);
+	  fespace.GetDofNrs (i, dnums, EXTERNAL_DOF);
 	else
 	  fespace.GetDofNrs (i, dnums);
 	for (j = 0; j < dnums.Size(); j++)
@@ -721,7 +725,7 @@ namespace ngcomp
 // 	if (  !ma.IsExchangeEl(i)) continue;
 	if (!fespace.DefinedOn (ma.GetElIndex(i))) continue;
 	if (eliminate_internal)
-	  fespace.GetExternalDofNrs (i, dnums);
+	  fespace.GetDofNrs (i, dnums, EXTERNAL_DOF);
 	else
 	  fespace.GetDofNrs (i, dnums);
 	    
@@ -1135,6 +1139,7 @@ namespace ngcomp
 	<< "nonassemble = " << nonassemble << endl
 	<< "printelmat = " << printelmat << endl
 	<< "eliminate_internal = " << eliminate_internal << endl
+	<< "keep_internal = " << keep_internal << endl
 	<< "integrators: " << endl;
   
     for (int i = 0; i < parts.Size(); i++)
@@ -1288,6 +1293,13 @@ namespace ngcomp
 		const Table<int> * element_coloring = &fespace.ElementColoring();
 		int ncolors = (element_coloring) ? element_coloring->Size() : 1;
 
+		if (eliminate_internal&&keep_internal)
+		  {
+		    harmonicext = new ElementByElementMatrix<double>(ndof, ne);
+		    harmonicexttrans = new ElementByElementMatrix<double>(ndof, ne);
+		    innersolve = new ElementByElementMatrix<double>(ndof, ne);
+		  }
+		
 		for (int icol = 0; icol < ncolors; icol++)
 		  {
 #pragma omp parallel 
@@ -1581,14 +1593,32 @@ namespace ngcomp
 				  // new Versions, July 07
 				  LapackAInvBt (d, b);
 				  LapackMultAddABt (b, c, -1, a);
+				  if (keep_internal) throw Exception ("keep internal not yet active for LAPACK");
 			    
 #else
 				  FlatMatrix<SCAL> invd(sizei, sizei, lh);
 				  FlatMatrix<SCAL> idc(sizeo, sizei, lh);
 				  CalcInverse (d, invd);
 				  d = invd;
+				  if (keep_internal) 
+				  { 
+				    throw Exception ("keep internal not yet active!!!");
+				    Array<COUPLING_TYPE> ctypes;
+				    Array<int> dnums;
+				    fespace.GetDofCouplingTypes(i,ctypes);
+// 				    fespace.
+				    FlatMatrix<SCAL> he (sizeo, sizei, lh);
+				    he = -1.0 * invd * Trans(c);
+				    harmonicext->AddElementMatrix(i,he);
+				    FlatMatrix<SCAL> het (sizei, sizeo, lh);
+				    het = b * invd;
+				    harmonicexttrans->AddElementMatrix(i,het);
+				    solverinner->AddElementMatrix(i,invd);
+				  }
+
 				  idc = c * Trans (invd);
 				  a -= b * Trans (idc);
+				  
 #endif
 			    
 				  if (printelmat) 

@@ -476,33 +476,14 @@ namespace ngcomp
 
     for(int i=0; i<fanums.Size(); i++)
       {
-        ctypes.Append(WIREBASKET); // low_order
+        ctypes.Append(WIREBASKET_DOF); // low_order
 
         first = first_facet_dof[fanums[i]];
         next = first_facet_dof[fanums[i]+1];
         for(int j=first ; j<next; j++)
-          ctypes.Append(INTERFACE);
+          ctypes.Append(INTERFACE_DOF);
       }    
   }
-
-//   void FacetFESpace :: GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
-//   {
-//     ArrayMem<int,12> facets;
-//     ma.GetElFacets (elnr, facets);
-// 
-//     dnums.SetSize(0);
-//     for (int i = 0; i < facets.Size(); i++)
-//       dnums.Append (facets[i]);
-//   }
-
-  // ------------------------------------------------------------------------
-  //   void FacetFESpace :: GetExternalDofNrs (int elnr, Array<int> & dnums) const
-  //   {
-  //     GetDofNrs(elnr, dnums);
-  //   }
-
-
-
 
   // ------------------------------------------------------------------------
   void FacetFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
@@ -1022,22 +1003,11 @@ namespace ngcomp
 
     ctypes.SetSize(0);
     for (int i = 0; i < enums.Size(); i++){
-      ctypes.Append(WIREBASKET);
+      ctypes.Append(WIREBASKET_DOF);
       for (int j = first_edge_dof[enums[i]]+1; j<first_edge_dof[enums[i]+1]; j++)
-	ctypes.Append(INTERFACE);
+	ctypes.Append(INTERFACE_DOF);
     }
   }
-//   void EdgeFESpace :: GetWireBasketDofNrs(int elnr, Array<int> & dnums) const
-//   {
-//     // GetDofNrs (elnr, dnums);
-// 
-//     ArrayMem<int, 12> enums;
-//     ma.GetElEdges(elnr, enums);
-//     
-//     dnums.SetSize(0);
-//     for (int i = 0; i < enums.Size(); i++)
-//       dnums += IntRange (first_edge_dof[enums[i]], first_edge_dof[enums[i]+1]);
-//   }
 
   void EdgeFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {

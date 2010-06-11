@@ -93,8 +93,6 @@ namespace ngcomp
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
     /// 
     virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
-
-//     virtual void GetExternalDofNrs (int elnr, Array<int> & dnums) const;
     /// 
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
     /// 

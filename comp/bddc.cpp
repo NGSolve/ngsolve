@@ -30,10 +30,10 @@ namespace ngcomp
 
       for (int i = 0; i < ne; i++)
         {
-          fes.GetExternalDofNrs (i, dnums);
+          fes.GetDofNrs (i, dnums, EXTERNAL_DOF);	  
           cnt[i] = dnums.Size();
 
-          fes.GetWireBasketDofNrs (i, lwbdofs);
+	  fes.GetDofNrs(i,lwbdofs,WIREBASKET_DOF);
           for (int j = 0; j < lwbdofs.Size(); j++)
             wbdofs[lwbdofs[j]] = 1;
 	  *testout << "dnums = " << endl << dnums << endl;
@@ -52,7 +52,7 @@ namespace ngcomp
 
       for (int i = 0; i < ne; i++)
         {
-          fes.GetExternalDofNrs (i, dnums);
+          fes.GetDofNrs (i, dnums, EXTERNAL_DOF);	  
 
           for (int j = 0; j < dnums.Size(); j++)
             {
@@ -73,7 +73,7 @@ namespace ngcomp
       restrict = -1;
       for (int i = 0; i < ne; i++)
         {
-          fes.GetExternalDofNrs (i, dnums);
+          fes.GetDofNrs (i, dnums, EXTERNAL_DOF);	  
 
           for (int j = 0; j < dnums.Size(); j++)
             {
@@ -232,8 +232,8 @@ namespace ngcomp
       for (int i = 0; i < ne; i++)
         {
           fes.GetDofNrs (i, dnums);
-          fes.GetExternalDofNrs (i, extdnums);
-          fes.GetWireBasketDofNrs (i, wbdnums);
+	  fes.GetDofNrs (i, extdnums, EXTERNAL_DOF);	  
+	  fes.GetDofNrs (i, wbdnums, WIREBASKET_DOF);	  
 
           cnt[i] = dnums.Size();
           cntwb[i] = wbdnums.Size();
@@ -271,7 +271,8 @@ namespace ngcomp
 	  *testout << "element " << i << endl;
 
           fes.GetDofNrs (i, dnums);
-          fes.GetExternalDofNrs (i, extdnums);
+          fes.GetDofNrs (i, extdnums, EXTERNAL_DOF);
+
 
 	  *testout << "dnums = " << endl << dnums << endl;
 	  *testout << "ext dnums = " << endl << extdnums << endl;
@@ -409,7 +410,7 @@ namespace ngcomp
 	    *testout << "assemble class " << classnr << endl;
 
           fes.GetDofNrs (i, dnums);
-          fes.GetExternalDofNrs (i, extdnums);
+          fes.GetDofNrs (i, extdnums, EXTERNAL_DOF);
 	  
           Matrix<> elmat(dnums.Size());
           Matrix<> partelmat(dnums.Size());
@@ -529,7 +530,7 @@ namespace ngcomp
       for (int i = 0; i < ne; i++)
         {
           // fes.GetDofNrs (i, dnums);
-          fes.GetExternalDofNrs (i, extdnums);
+          fes.GetDofNrs (i, extdnums, EXTERNAL_DOF);
 
           for (int j = 0; j < extdnums.Size(); j++)
             {
