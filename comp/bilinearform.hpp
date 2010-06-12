@@ -48,10 +48,6 @@ namespace ngcomp
     /// low order bilinear-form, 0 if not used
     BilinearForm * low_order_bilinear_form;
 
-    ElementByElementMatrix<double> * harmonicext;
-    ElementByElementMatrix<double> * harmonicexttrans;
-    ElementByElementMatrix<double> * innersolve;
-    
     /// modify linear form due to static condensation
     LinearForm * linearform;
 
@@ -68,6 +64,9 @@ namespace ngcomp
     ///
     Array< Vec<2,int> > independent_meshindex;
 
+    BaseMatrix * harmonicext;
+    BaseMatrix * harmonicexttrans;
+    BaseMatrix * innersolve;
     ///
     bool timing;
     bool print;
@@ -209,6 +208,23 @@ namespace ngcomp
       return *mats[level];
     }
 
+    ///  
+    BaseMatrix & GetHarmonicExtension () const 
+    { 
+      return *harmonicext; 
+    }
+
+    ///  
+    BaseMatrix & GetHarmonicExtensionTrans () const
+    { 
+      return *harmonicexttrans; 
+    }
+    ///  
+    BaseMatrix & GetInnerSolve () const
+    { 
+      return *innersolve; 
+    }
+
 
     bool HasLowOrderBilinearForm(void) const {return low_order_bilinear_form != NULL;}
     bool UsesEliminateInternal(void) const {return eliminate_internal;}
@@ -337,6 +353,8 @@ namespace ngcomp
   class NGS_DLL_HEADER S_BilinearForm : public BilinearForm
   {
   protected:
+
+        
   public:
     S_BilinearForm (const FESpace & afespace, const string & aname,
 		    const Flags & flags)

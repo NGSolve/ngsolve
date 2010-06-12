@@ -15,8 +15,7 @@ namespace ngla
 
   
   template <class SCAL> class ElementByElementMatrix;
-//TODO: Optimization for symmteric matrices
-  
+//TODO: Optimization for symmteric matrices -> MultAddTrans
   template <class SCAL>
   ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int ane, bool isymmetric) 
   {
@@ -41,6 +40,7 @@ namespace ngla
   template <class SCAL>
   void ElementByElementMatrix<SCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+//     cout << " ElementByElementMatrix<SCAL> :: MultAdd here " << endl << flush;
     static int timer = NgProfiler::CreateTimer ("EBE-matrix::MultAdd");
     NgProfiler::RegionTimer reg (timer);
 
@@ -59,22 +59,18 @@ namespace ngla
       {
         FlatArray<int> rdi (rowdnums[i]);
         FlatArray<int> cdi (coldnums[i]);
-/*        FlatArray<int> cditmp (coldnums[i]);
-	FlatArray<int> * coldi;
-	if (symmetric) coldi = &rdi; else coldi= &cditmp;
-        FlatArray<int> cdi (*coldi);*/
 	
         FlatVector<SCAL> hv1(cdi.Size(), &mem1[0]);
         FlatVector<SCAL> hv2(rdi.Size(), &mem2[0]);
 	  
         for (int j = 0; j < cdi.Size(); j++)
           hv1(j) = vx (cdi[j]);
-
+	
         hv2 = elmats[i] * hv1;
         hv2 *= s;
-
-        for (int j = 0; j < rowdnums[i].Size(); j++)
-          vy (cdi[j]) += hv2[j];
+        for (int j = 0; j < rowdnums[i].Size(); j++){
+          vy (rdi[j]) += hv2[j];
+	}
       }
   }
 
