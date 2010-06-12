@@ -9,6 +9,8 @@ extern MPI_Group MPI_HIGHORDER_WORLD;
 extern MPI_Comm MPI_HIGHORDER_COMM;
 #endif
 
+//TODO: keep_internal: optimization for symmetric matrices!
+
 namespace ngcomp
 {
   using namespace ngcomp;
@@ -1295,9 +1297,9 @@ namespace ngcomp
 
 		if (eliminate_internal&&keep_internal)
 		  {
-		    harmonicext = new ElementByElementMatrix<double>(ndof, ne);
-		    harmonicexttrans = new ElementByElementMatrix<double>(ndof, ne);
-		    innersolve = new ElementByElementMatrix<double>(ndof, ne);
+		    harmonicext = new ElementByElementMatrix<SCAL>(ndof, ne);
+		    harmonicexttrans = new ElementByElementMatrix<SCAL>(ndof, ne);
+		    innersolve = new ElementByElementMatrix<SCAL>(ndof, ne);
 		  }
 		
 		for (int icol = 0; icol < ncolors; icol++)
@@ -1591,13 +1593,30 @@ namespace ngcomp
 				  
 				  // A := A - B D^{-1} C^T
 				  // new Versions, July 07
-				  LapackAInvBt (d, b);
-				  LapackMultAddABt (b, c, -1, a);
-				  if (keep_internal){
-				    
-				    throw Exception ("keep internal not yet active for LAPACK");
-				    
+				  if (!keep_internal){
+				    LapackAInvBt (d, b);
+				    LapackMultAddABt (b, c, -1, a);
 				  }
+				  else
+				  {
+				    LapackInverse (d);
+
+				    Array<int> idnums;
+				    Array<int> ednums;
+				    fespace.GetDofNrs(i,idnums,LOCAL_DOF);
+				    fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
+				    FlatMatrix<SCAL> he (sizei, sizeo, lh);
+				    he = -1.0 * d * Trans(c);
+				    static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)->AddElementMatrix(i,idnums,ednums,he);
+				    
+				    FlatMatrix<SCAL> het (sizeo, sizei, lh);
+				    het = -1.0 * b * d;
+				    static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)->AddElementMatrix(i,ednums,idnums,het);
+
+				    static_cast<ElementByElementMatrix<SCAL>*>(innersolve)->AddElementMatrix(i,idnums,idnums,d);
+				    
+				    LapackMultAddAB (b, he, 1.0, a);
+				  }				  
 			    
 #else
 				  FlatMatrix<SCAL> invd(sizei, sizei, lh);
@@ -1606,19 +1625,17 @@ namespace ngcomp
 				  d = invd;
 				  if (keep_internal) 
 				  { 
-				    throw Exception ("keep internal not yet active for NONLAPACK");
-// 				    Array<int> idnums;
-// 				    Array<int> ednums;
-// 				    fespace.GetDofNrs(i,idnums,LOCAL_DOF);
-// 				    fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
-// // 				    fespace.
-// 				    FlatMatrix<SCAL> he (sizeo, sizei, lh);
-// 				    he = -1.0 * invd * Trans(c);
-// 				    harmonicext->AddElementMatrix(i,ednums,idnums,he);
-// 				    FlatMatrix<SCAL> het (sizei, sizeo, lh);
-// 				    het = b * invd;
-// 				    harmonicexttrans->AddElementMatrix(i,idnums,ednums,het);
-// 				    innersolve->AddElementMatrix(i,idnums,idnums,invd);
+				    Array<int> idnums;
+				    Array<int> ednums;
+				    fespace.GetDofNrs(i,idnums,LOCAL_DOF);
+				    fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
+				    FlatMatrix<SCAL> he (sizei, sizeo, lh);
+				    he = -1.0 * invd * Trans(c);
+				    static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)->AddElementMatrix(i,idnums,ednums,he);
+				    FlatMatrix<SCAL> het (sizeo, sizei, lh);
+				    het = -1.0 * b * invd;
+				    static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)->AddElementMatrix(i,ednums,idnums,het);
+				    static_cast<ElementByElementMatrix<SCAL>*>(innersolve)->AddElementMatrix(i,idnums,idnums,d);
 				  }
 
 				  idc = c * Trans (invd);
@@ -1663,11 +1680,11 @@ namespace ngcomp
 
 
 
-				  if (linearform)
+				  if (linearform&& (!keep_internal ))
 				    {
+				      
 				      FlatVector<SCAL> elvec (size, lh);
 				      linearform -> GetVector().GetIndirect (dnums, elvec);
-				      
 				      FlatVector<SCAL> hfi1(sizei, lh);
 				      FlatVector<SCAL> hfi2(sizei, lh);
 				      FlatVector<SCAL> hfo(sizeo, lh);
@@ -1685,11 +1702,13 @@ namespace ngcomp
 					elvec(odofs[k]) -= hfo(k);
 				      
 				      linearform->GetVector().SetIndirect (dnums, elvec);
+				      
 				    }
 				  
 				  for (int k = 0; k < idofs1.Size(); k++)
 				    dnums[idofs1[k]] = -1;
 				}
+				
 			      NgProfiler::StopTimer (statcondtimer);
 			    }
 
@@ -1716,10 +1735,18 @@ namespace ngcomp
 
 			  NgProfiler::StopTimer (timer3);
 			}
-		    }
-		  }
+		    }//end of parallel
+		  }//end loop over colors
 
                 cout << "\rassemble element " << ne << "/" << ne << endl;
+
+		if (linearform && keep_internal)
+		  {
+		    cout << "\rmodifying condensated rhs";
+		    linearform -> GetVector() += GetHarmonicExtensionTrans() * linearform -> GetVector();
+		    cout << "\t done" << endl;
+		  }
+		
               }
             //(*testout) << "useddof0 " << useddof << endl;
 
@@ -2449,12 +2476,32 @@ cout << "catch in AssembleBilinearform 2" << endl;
         clock_t prevtime = clock();
         if (hasinner)
           {
-            int cnt = 0;
+	    if (keep_internal){
+	      cout << "compute internal element ... ";
+	      
+/*	      //Set u_inner to zero
+	      for (int i = 0; i < ne; i++){
+		HeapReset hr(clh);
+		Array<int> dnums;
+		fespace.GetDofNrs (i, dnums, LOCAL_DOF);		
+		FlatVector<SCAL> elu (dnums.Size(), clh);
+		elu = 0.0;
+		u.SetIndirect (dnums, elu);
+	      }
+*/
+	      u += GetInnerSolve() * linearform -> GetVector();
+	      u += GetHarmonicExtension() * u;
+	      cout << "done" << endl;
+	    }
+	    else
+	    {  
+	    
+	      int cnt = 0;
 #pragma omp parallel
-            {
-              LocalHeap lh = clh.Split();
-              Array<int> dnums, idofs;
-              ElementTransformation eltrans;
+	      {
+		LocalHeap lh = clh.Split();
+		Array<int> dnums, idofs;
+		ElementTransformation eltrans;
 	      
 	      
 #pragma omp for
@@ -2465,109 +2512,110 @@ cout << "catch in AssembleBilinearform 2" << endl;
                   if ( ma.IsGhostEl( i ) ) {continue;}
 		
 #pragma omp critical(printinternalstatus)
-                  {
-                    cnt++;
-                    if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
-                      {
-                        cout << "\rcompute internal element " << cnt << "/" << ne << flush;
-                        ma.SetThreadPercentage ( 100.0*cnt / ne );
-                        prevtime = clock();
-                      }
-                  }
-	      
-                  HeapReset hr(lh);
-	      
-                  if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
-		  
-                  const FiniteElement & fel = fespace.GetFE (i, lh);
-	      
-                  ma.GetElementTransformation (i, eltrans, lh);
-                  fespace.GetDofNrs (i, dnums);
-	      
-                  int elmat_size = dnums.Size()*fespace.GetDimension();
-                  FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
-                  sum_elmat = 0;
-                  for (int j = 0; j < NumIntegrators(); j++)
-                    {
-                      HeapReset hr(lh);
-                      const BilinearFormIntegrator & bfi = *parts[j];
-		  
-                      if (bfi.BoundaryForm()) continue;
-                      if (!bfi.DefinedOn (ma.GetElIndex (i))) continue;
-		  
-                      FlatMatrix<SCAL> elmat(elmat_size, lh);
-                      bfi.AssembleElementMatrix (fel, eltrans, elmat, lh);
-		  
-                      sum_elmat += elmat;
-                    }
-	      
-                  fespace.TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
-	      
-                  fel.GetInternalDofs(idofs);
-
-                  // (*testout) << "compute internal element = " << i << endl;
-                  //		(*testout) << "mat = " << endl << sum_elmat << endl;
-
-                  if (idofs.Size())
-                    {
-                      int dim = sum_elmat.Height() / dnums.Size();
-		  
-                      FlatVector<SCAL> elf (sum_elmat.Height(), lh);
-                      FlatVector<SCAL> elu (sum_elmat.Height(), lh);
-                      FlatVector<SCAL> resi(dim*idofs.Size(), lh);
-                      FlatVector<SCAL> wi(dim*idofs.Size(), lh);
-
-                      FlatMatrix<SCAL> ai(dim*idofs.Size(), lh);
-		  
-                      linearform->GetVector().GetIndirect (dnums, elf);
-                      u.GetIndirect (dnums, elu);
-		  
-
-                      // compute residuum
-                      elf -= sum_elmat * elu;
-
-                      for (int jj = 0; jj < idofs.Size(); jj++)
-                        for (int j = 0; j < dim; j++)
-                          {
-                            for (int kk = 0; kk < idofs.Size(); kk++)
-                              for (int k = 0; k < dim; k++)
-                                {
-                                  ai(jj*dim+j, kk*dim+k) =
-                                    sum_elmat(idofs[jj]*dim+j, idofs[kk]*dim+k);
-                                }
-                            resi(jj*dim+j) = elf(idofs[jj]*dim+j);
-                          }
+		    {
+		      cnt++;
+		      if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
+			{
+			  cout << "\rcompute internal element " << cnt << "/" << ne << flush;
+			  ma.SetThreadPercentage ( 100.0*cnt / ne );
+			  prevtime = clock();
+			}
+		    }
 		
+		    HeapReset hr(lh);
+		
+		    if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
+		    
+		    const FiniteElement & fel = fespace.GetFE (i, lh);
+		
+		    ma.GetElementTransformation (i, eltrans, lh);
+		    fespace.GetDofNrs (i, dnums);
+		
+		    int elmat_size = dnums.Size()*fespace.GetDimension();
+		    FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
+		    sum_elmat = 0;
+		    for (int j = 0; j < NumIntegrators(); j++)
+		      {
+			HeapReset hr(lh);
+			const BilinearFormIntegrator & bfi = *parts[j];
+		    
+			if (bfi.BoundaryForm()) continue;
+			if (!bfi.DefinedOn (ma.GetElIndex (i))) continue;
+		    
+			FlatMatrix<SCAL> elmat(elmat_size, lh);
+			bfi.AssembleElementMatrix (fel, eltrans, elmat, lh);
+		    
+			sum_elmat += elmat;
+		      }
+		
+		    fespace.TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
+		
+		    fel.GetInternalDofs(idofs);
 
-                      //		    *testout << "residuum = " << resi << endl;
+		    // (*testout) << "compute internal element = " << i << endl;
+		    //		(*testout) << "mat = " << endl << sum_elmat << endl;
 
-                      // CholeskyFactors<SCAL> inv_ai(ai);
-                      // inv_ai.Mult (resi, wi);
+		    if (idofs.Size())
+		      {
+			int dim = sum_elmat.Height() / dnums.Size();
+		    
+			FlatVector<SCAL> elf (sum_elmat.Height(), lh);
+			FlatVector<SCAL> elu (sum_elmat.Height(), lh);
+			FlatVector<SCAL> resi(dim*idofs.Size(), lh);
+			FlatVector<SCAL> wi(dim*idofs.Size(), lh);
+
+			FlatMatrix<SCAL> ai(dim*idofs.Size(), lh);
+		    
+			linearform->GetVector().GetIndirect (dnums, elf);
+			u.GetIndirect (dnums, elu);
+		    
+
+			// compute residuum
+			elf -= sum_elmat * elu;
+
+			for (int jj = 0; jj < idofs.Size(); jj++)
+			  for (int j = 0; j < dim; j++)
+			    {
+			      for (int kk = 0; kk < idofs.Size(); kk++)
+				for (int k = 0; k < dim; k++)
+				  {
+				    ai(jj*dim+j, kk*dim+k) =
+				      sum_elmat(idofs[jj]*dim+j, idofs[kk]*dim+k);
+				  }
+			      resi(jj*dim+j) = elf(idofs[jj]*dim+j);
+			    }
+		  
+
+			//		    *testout << "residuum = " << resi << endl;
+
+			// CholeskyFactors<SCAL> inv_ai(ai);
+			// inv_ai.Mult (resi, wi);
 		    
 #ifdef LAPACK
-                      FlatMatrix<SCAL> mresi(1,resi.Size(), &resi(0));
-                      LapackAInvBt (ai, mresi, 'T');
-                      wi = resi;
+			FlatMatrix<SCAL> mresi(1,resi.Size(), &resi(0));
+			LapackAInvBt (ai, mresi, 'T');
+			wi = resi;
 #else
-                      FlatMatrix<SCAL> inv_ai(dim*idofs.Size(), lh);
-                      CalcInverse (ai, inv_ai);
-                      wi = inv_ai * resi;
+			FlatMatrix<SCAL> inv_ai(dim*idofs.Size(), lh);
+			CalcInverse (ai, inv_ai);
+			wi = inv_ai * resi;
 #endif
 
+		      
+			//		    *testout << "inv_ai = " << endl << inv_ai << endl;
+		      
+			for (int jj = 0; jj < idofs.Size(); jj++)
+			  for (int j = 0; j < dim; j++)
+			    elu(idofs[jj]*dim+j) += wi(jj*dim+j);
 		    
-                      //		    *testout << "inv_ai = " << endl << inv_ai << endl;
-		    
-                      for (int jj = 0; jj < idofs.Size(); jj++)
-                        for (int j = 0; j < dim; j++)
-                          elu(idofs[jj]*dim+j) += wi(jj*dim+j);
-		  
-                      //		    *testout << "elu = " << endl << elu << endl;
+			//		    *testout << "elu = " << endl << elu << endl;
 
-                      u.SetIndirect (dnums, elu);
-                    }
-                }
-            }
+			u.SetIndirect (dnums, elu);
+		      }
+		  }//end of sum over elements
+	      }//end of parallel
             cout << "\rcompute internal element " << ne << "/" << ne << endl;
+	    }//end of keep_internal-if
           }
 	  
         ma.SetThreadPercentage ( 100.0 );
