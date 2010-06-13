@@ -9,8 +9,6 @@ extern MPI_Group MPI_HIGHORDER_WORLD;
 extern MPI_Comm MPI_HIGHORDER_COMM;
 #endif
 
-//TODO: keep_internal: optimization for symmetric matrices!
-
 namespace ngcomp
 {
   using namespace ngcomp;
@@ -1298,7 +1296,8 @@ namespace ngcomp
 		if (eliminate_internal&&keep_internal)
 		  {
 		    harmonicext = new ElementByElementMatrix<SCAL>(ndof, ne);
-		    harmonicexttrans = new ElementByElementMatrix<SCAL>(ndof, ne);
+		    if (!symmetric)
+		      harmonicexttrans = new ElementByElementMatrix<SCAL>(ndof, ne);
 		    innersolve = new ElementByElementMatrix<SCAL>(ndof, ne);
 		  }
 		
@@ -1609,10 +1608,11 @@ namespace ngcomp
 				    he = -1.0 * d * Trans(c);
 				    static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)->AddElementMatrix(i,idnums,ednums,he);
 				    
-				    FlatMatrix<SCAL> het (sizeo, sizei, lh);
-				    het = -1.0 * b * d;
-				    static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)->AddElementMatrix(i,ednums,idnums,het);
-
+				    if (!symmetric){
+				      FlatMatrix<SCAL> het (sizeo, sizei, lh);
+				      het = -1.0 * b * d;
+				      static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)->AddElementMatrix(i,ednums,idnums,het);
+				    }
 				    static_cast<ElementByElementMatrix<SCAL>*>(innersolve)->AddElementMatrix(i,idnums,idnums,d);
 				    
 				    LapackMultAddAB (b, he, 1.0, a);
@@ -1632,9 +1632,11 @@ namespace ngcomp
 				    FlatMatrix<SCAL> he (sizei, sizeo, lh);
 				    he = -1.0 * invd * Trans(c);
 				    static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)->AddElementMatrix(i,idnums,ednums,he);
-				    FlatMatrix<SCAL> het (sizeo, sizei, lh);
-				    het = -1.0 * b * invd;
-				    static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)->AddElementMatrix(i,ednums,idnums,het);
+				    if (!symmetric){
+				      FlatMatrix<SCAL> het (sizeo, sizei, lh);
+				      het = -1.0 * b * invd;
+				      static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)->AddElementMatrix(i,ednums,idnums,het);
+				    }
 				    static_cast<ElementByElementMatrix<SCAL>*>(innersolve)->AddElementMatrix(i,idnums,idnums,d);
 				  }
 
@@ -1743,7 +1745,11 @@ namespace ngcomp
 		if (linearform && keep_internal)
 		  {
 		    cout << "\rmodifying condensated rhs";
-		    linearform -> GetVector() += GetHarmonicExtensionTrans() * linearform -> GetVector();
+		    if (symmetric)
+// 		      linearform -> GetVector() += Trans(GetHarmonicExtension()) * linearform -> GetVector(); //TODO: <= this way
+		      GetHarmonicExtension().MultTransAdd(1.0,linearform -> GetVector(),linearform -> GetVector());
+		    else
+		      linearform -> GetVector() += GetHarmonicExtensionTrans() * linearform -> GetVector();
 		    cout << "\t done" << endl;
 		  }
 		

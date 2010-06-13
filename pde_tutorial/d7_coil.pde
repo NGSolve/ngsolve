@@ -31,7 +31,7 @@ define linearform f -fespace=v
 sourceedge cs  -definedon=1
 
 
-define bilinearform a -fespace=v -symmetric -linearform=f -eliminate_internal 
+define bilinearform a -fespace=v -symmetric -linearform=f -eliminate_internal -keep_internal
 curlcurledge nu 
 massedge sigma
 
