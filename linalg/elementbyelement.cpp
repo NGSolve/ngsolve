@@ -15,7 +15,6 @@ namespace ngla
 
   
   template <class SCAL> class ElementByElementMatrix;
-//TODO: Optimization for symmteric matrices -> MultAddTrans
   template <class SCAL>
   ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int ane, bool isymmetric) 
   {
@@ -73,6 +72,45 @@ namespace ngla
 	}
       }
   }
+
+  
+  template <class SCAL>
+  void ElementByElementMatrix<SCAL> :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+//     cout << " ElementByElementMatrix<SCAL> :: MultTansAdd here " << endl << flush;
+    static int timer = NgProfiler::CreateTimer ("EBE-matrix::MultTransAdd");
+    NgProfiler::RegionTimer reg (timer);
+
+    int maxs = 0;
+    for (int i = 0; i < rowdnums.Size(); i++)
+      maxs = max2 (maxs, rowdnums[i].Size());
+    for (int i = 0; i < coldnums.Size(); i++)
+      maxs = max2 (maxs, coldnums[i].Size());
+    
+    ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
+      
+    FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
+    FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
+
+    for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
+      {
+        FlatArray<int> rdi (rowdnums[i]);
+        FlatArray<int> cdi (coldnums[i]);
+	
+        FlatVector<SCAL> hv1(rdi.Size(), &mem1[0]);
+        FlatVector<SCAL> hv2(cdi.Size(), &mem2[0]);
+	  
+        for (int j = 0; j < rdi.Size(); j++)
+          hv1(j) = vx (rdi[j]);
+	
+        hv2 = Trans(elmats[i]) * hv1;
+        hv2 *= s;
+        for (int j = 0; j < coldnums[i].Size(); j++){
+          vy (cdi[j]) += hv2[j];
+	}
+      }
+  }
+
 
   template <class SCAL>
   BaseMatrix *  ElementByElementMatrix<SCAL> :: InverseMatrix ( BitArray * subset ) const

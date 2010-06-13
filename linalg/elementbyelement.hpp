@@ -36,6 +36,7 @@ namespace ngla
     }
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
 
     void AddElementMatrix (int elnr,
                            const Array<int> & dnums1,
