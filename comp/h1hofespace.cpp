@@ -708,18 +708,27 @@ namespace ngcomp
       ctypes[i] = WIREBASKET_DOF;
     }
 
-    for (int i = 0; i < ngel.edges.Size(); i++){
-      IntRange range = GetEdgeDofs (ngel.edges[i]);
-      if (range.First()<range.Next()){
-	if (wb_loedge && (ma.GetDimension() == 2))
-	  ctypes.Append(WIREBASKET_DOF);
-	else
+    if (ma.GetDimension() != 3){
+      for (int i = 0; i < ngel.edges.Size(); i++){
+	IntRange range = GetEdgeDofs (ngel.edges[i]);
+	if (range.First()<range.Next()){
+	  if (wb_loedge)
+	    ctypes.Append(WIREBASKET_DOF);
+	  else
+	    ctypes.Append(INTERFACE_DOF);
+	}
+	for (int j=range.First()+1;j<range.Next();j++)
 	  ctypes.Append(INTERFACE_DOF);
       }
-      for (int j=range.First()+1;j<range.Next();j++)
-	ctypes.Append(INTERFACE_DOF);
     }
-
+    else
+    {
+      for (int i = 0; i < ngel.edges.Size(); i++){
+	IntRange range = GetEdgeDofs (ngel.edges[i]);
+	for (int j=range.First();j<range.Next();j++)
+	  ctypes.Append(WIREBASKET_DOF);
+      }
+    }
     if (ma.GetDimension() == 3)
       for (int i = 0; i < ngel.faces.Size(); i++){
 	IntRange range = GetFaceDofs (ngel.faces[i]);
