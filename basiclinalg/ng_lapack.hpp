@@ -77,6 +77,23 @@ namespace ngbla
     dgemv_ (&trans, &m, &n, &alpha, &a(0,0), &lda, &x(0), &incx, &beta, &y(0), &incy);
   }
 
+  inline void LapackMultAx (ngbla::FlatMatrix<Complex> a,
+                            ngbla::FlatVector<Complex> x,
+                            ngbla::FlatVector<Complex> y)
+  {
+    char trans = 'T';
+    int m = a.Width();
+    int n = a.Height();
+    Complex alpha(1,0);
+    int lda = a.Width();
+    int incx = 1;
+    Complex beta(0, 0);
+    int incy = 1;
+    zgemv_ (&trans, &m, &n, &alpha, &a(0,0), &lda, &x(0), &incx, &beta, &y(0), &incy);
+  }
+
+
+
   inline void LapackMultAtx (ngbla::FlatMatrix<double> a,
                              ngbla::FlatVector<double> x,
                              ngbla::FlatVector<double> y)

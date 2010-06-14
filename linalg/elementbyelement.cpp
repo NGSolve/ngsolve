@@ -59,17 +59,21 @@ namespace ngla
         FlatArray<int> rdi (rowdnums[i]);
         FlatArray<int> cdi (coldnums[i]);
 	
+	if (!rdi.Size() || !cdi.Size()) continue;
+
         FlatVector<SCAL> hv1(cdi.Size(), &mem1[0]);
         FlatVector<SCAL> hv2(rdi.Size(), &mem2[0]);
 	  
         for (int j = 0; j < cdi.Size(); j++)
           hv1(j) = vx (cdi[j]);
 	
-        hv2 = elmats[i] * hv1;
-        hv2 *= s;
-        for (int j = 0; j < rowdnums[i].Size(); j++){
-          vy (rdi[j]) += hv2[j];
-	}
+	hv2 = elmats[i] * hv1;
+	// LapackMultAx (elmats[i], hv1, hv2);
+
+        for (int j = 0; j < rowdnums[i].Size(); j++)
+          vy (rdi[j]) += s*hv2[j];
+
+	NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
       }
   }
 
