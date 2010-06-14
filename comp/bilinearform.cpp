@@ -1746,8 +1746,7 @@ namespace ngcomp
 		  {
 		    cout << "\rmodifying condensated rhs";
 		    if (symmetric)
-// 		      linearform -> GetVector() += Trans(GetHarmonicExtension()) * linearform -> GetVector(); //TODO: <= this way
-		      GetHarmonicExtension().MultTransAdd(1.0,linearform -> GetVector(),linearform -> GetVector());
+ 		      linearform -> GetVector() += Transpose(GetHarmonicExtension()) * linearform -> GetVector();
 		    else
 		      linearform -> GetVector() += GetHarmonicExtensionTrans() * linearform -> GetVector();
 		    cout << "\t done" << endl;

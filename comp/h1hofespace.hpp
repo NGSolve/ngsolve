@@ -31,7 +31,7 @@ namespace ngcomp
     int rel_order; 
     bool var_order; 
     bool fixed_order;
-
+    bool wb_loedge;
     Array<int> order_edge;
     Array<INT<2> > order_face;
     Array<INT<3> > order_inner;
