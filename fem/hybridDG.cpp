@@ -819,6 +819,7 @@ namespace ngfem
 	      elmat(facetdofs[i], facetdofs[j]) += comp_elmat(i,j);
         }
     }
+    //TODO: Vertex glue
   };
 
 

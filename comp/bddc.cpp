@@ -14,6 +14,11 @@ namespace ngcomp
     string inversetype;
     BitArray * free_dofs;
     const MeshAccess & ma;
+    BaseMatrix * subassembled_harmonicext;
+    BaseMatrix * subassembled_harmonicexttrans;
+    BaseMatrix * subassembled_innersolve;    
+    ///number of global wirebasket degrees of freedom    
+    int nglobalwbdof;
   public:
     BDDCMatrix (const ElementByElement_BilinearForm<double> & abfa, const string & inversetype)
       : ma(abfa.GetFESpace().GetMeshAccess()),bfa(abfa) 
@@ -21,55 +26,67 @@ namespace ngcomp
       // LocalHeap lh(10000000);
       const FESpace & fes = bfa.GetFESpace();
       const MeshAccess & ma = fes.GetMeshAccess();
-
       int ne = ma.GetNE();
-      Array<int> cnt(ne);
+      if (!bfa.UsesKeepInternal()) throw ("please use keep_internal");
+      Array<int> cnt(ne); //count number of (external) dofs on each element
+      Array<int> wbdcnt(ne); //count number of wirebasket dofs on each element
 
-      Array<int> wbdofs(fes.GetNDof()), lwbdofs, dnums;
-      wbdofs = 0;
-
+      Array<int> wbdofs(fes.GetNDof()); //assignment: dof -> global number of the wirebasket dof (-1 for non-wirebasket-dofs)
+      wbdofs = -1;
+      Array<int> lwbdofs, dnums; //local (on one element) wirebasket (all) dofs
+      nglobalwbdof = 0; 
       for (int i = 0; i < ne; i++)
         {
           fes.GetDofNrs (i, dnums, EXTERNAL_DOF);	  
           cnt[i] = dnums.Size();
 
 	  fes.GetDofNrs(i,lwbdofs,WIREBASKET_DOF);
-          for (int j = 0; j < lwbdofs.Size(); j++)
-            wbdofs[lwbdofs[j]] = 1;
-	  *testout << "dnums = " << endl << dnums << endl;
-	  *testout << "lwbdofs = " << endl << lwbdofs << endl;
-	  
+	  wbdcnt[i] = lwbdofs.Size();	  
+          for (int j = 0; j < lwbdofs.Size(); j++){
+	    if (wbdofs[lwbdofs[j]] == -1){
+	      wbdofs[lwbdofs[j]] = nglobalwbdof++;
+	    }
+	  }
+// 	  *testout << "dnums = " << endl << dnums << endl;
+// 	  *testout << "lwbdofs = " << endl << lwbdofs << endl;
         }
 
-      Table<int> dcdofs(cnt);   // discontinuous dofs
+      Table<int> dcdofs2(cnt);   // discontinuous dofs on each element
+      Table<int> el2wbdofs(wbdcnt);   // wirebasket dofs on each element
 
-      
-
-      int firstdcdof = fes.GetNDof();
-      // for (int i = 0; i < wbdofs.Size(); i++)
-      // if (wbdofs[i]) firstdcdof = i+1;
-      int ndcdof = fes.GetNDof();
+      int ndcdof2 = nglobalwbdof;
+      int ncdofs = fes.GetNDof();
 
       for (int i = 0; i < ne; i++)
-        {
-          fes.GetDofNrs (i, dnums, EXTERNAL_DOF);	  
+      {
+	fes.GetDofNrs (i, dnums, EXTERNAL_DOF);	  
+	int wbd = 0;
+	for (int j = 0; j < dnums.Size(); j++)
+	  {
+	    if (dnums[j] == -1) continue;
+	    if (wbdofs[dnums[j]]!=-1) {
+	      el2wbdofs[i][wbd++] = wbdofs[dnums[j]];
+	      dnums[j] = wbdofs[dnums[j]];
+	      continue;
+	    }
+	    dnums[j] = ndcdof2;
+	    ndcdof2++;
+	  }
 
-          for (int j = 0; j < dnums.Size(); j++)
-            {
-              if (dnums[j] == -1) continue;
-              if (wbdofs[dnums[j]]) continue;
-              dnums[j] = ndcdof;
-              firstdcdof++;
-	      ndcdof++;
-            }
+	for (int j = 0; j < dnums.Size(); j++){
+	  dcdofs2[i][j] = dnums[j];
+	}
+      }
 
-          for (int j = 0; j < dnums.Size(); j++)
-            dcdofs[i][j] = dnums[j];
-        }
+       *testout << "dcdofs2 = " << endl << dcdofs2 << endl;
+       *testout << "el2wbdofs = " << endl << el2wbdofs << endl;
 
-      // *testout << "dcdofs = " << endl << dcdofs << endl;
-
-      restrict.SetSize(ndcdof);
+      subassembled_harmonicext = new ElementByElementMatrix<double>(ndcdof2, ne);
+      if (!bfa.IsSymmetric())
+	subassembled_harmonicexttrans = new ElementByElementMatrix<double>(ndcdof2, ne);
+      subassembled_innersolve = new ElementByElementMatrix<double>(ndcdof2, ne);
+      
+      restrict.SetSize(ndcdof2);
       restrict = -1;
       for (int i = 0; i < ne; i++)
         {
@@ -77,12 +94,13 @@ namespace ngcomp
 
           for (int j = 0; j < dnums.Size(); j++)
             {
-              if (dnums[j] != -1)
-                restrict[dcdofs[i][j]] = dnums[j];
+              if (dnums[j] != -1){
+                restrict[dcdofs2[i][j]] = dnums[j];
+	      }
             }
         }
 
-      // *testout << "restrict = " << endl << restrict << endl;
+//       *testout << "restrict = " << endl << restrict << endl;
 
       multiple.SetSize (fes.GetNDof());
       multiple = 0;
@@ -90,25 +108,27 @@ namespace ngcomp
         if (restrict[i] != -1)
           multiple[restrict[i]]++;
 
+//       *testout << "multiple = " << endl << multiple << endl;
 
       cout << "now build graph" << endl;
 
-      MatrixGraph graph(firstdcdof, dcdofs, bfa.IsSymmetric());
 
+      MatrixGraph graph(nglobalwbdof, el2wbdofs, bfa.IsSymmetric());
+//       *testout << " nglobalwbdof " << nglobalwbdof << endl;
       cout << "now allocate matrix" << endl;
 
-      SparseMatrix<double> * pdcmat;
+      SparseMatrix<double> * pwbmat;
       if (bfa.IsSymmetric()){
-	pdcmat = new SparseMatrixSymmetric<double>(graph,1);
+	pwbmat = new SparseMatrixSymmetric<double>(graph,1);
 	cout << "symmetric" << endl;
       }
       else{
-	pdcmat = new SparseMatrix<double>(graph,1);
+	pwbmat = new SparseMatrix<double>(graph,1);
 	cout << "nonsymmetric" << endl;
       }
-      SparseMatrix<double>& dcmat=*pdcmat;
+      SparseMatrix<double>& wbmat=*pwbmat;
 
-      dcmat.SetInverseType (inversetype);
+      wbmat.SetInverseType (inversetype);
       
       cout << "have matrix" << endl;
 
@@ -117,63 +137,132 @@ namespace ngcomp
           FlatMatrix<> elmat = 
             dynamic_cast<const ElementByElementMatrix<double>&> (bfa.GetMatrix()) . GetElementMatrix (i);
 
-          FlatArray<int> dofs = dcdofs[i];
-          for (int k = 0; k < dofs.Size(); k++)
-            for (int l = 0; l < dofs.Size(); l++)
-              if (dofs[k] != -1 && dofs[l] != -1 && (!bfa.IsSymmetric() || dofs[k] >= dofs[l]))
-                dcmat(dofs[k], dofs[l]) += elmat(k,l);
+	  FlatArray<int> dofs2 = dcdofs2[i];
+	  Array<int> idnums; idnums.SetSize(0); //global dofs
+	  Array<int> wdnums; wdnums.SetSize(0); //global dofs
+	  Array<int> localwbdofs; localwbdofs.SetSize(0); //local dofs
+	  Array<int> localintdofs; localintdofs.SetSize(0); //local dofs  
+          for (int k = 0; k < dofs2.Size(); k++){
+	    if (dofs2[k]<nglobalwbdof){
+	      localwbdofs.Append(k);
+	      wdnums.Append(dofs2[k]);
+	    }
+	    else{
+	      localintdofs.Append(k);
+	      idnums.Append(dofs2[k]);
+	    }
+	  }
+	  int sizew = localwbdofs.Size();
+	  int sizei = localintdofs.Size();
+	  Matrix<double> a(sizew, sizew);
+	  Matrix<double> b(sizew, sizei);
+	  Matrix<double> c(sizei, sizew);
+	  Matrix<double> d(sizei, sizei);
+	  for (int k = 0; k < sizew; k++)
+	    for (int l = 0; l < sizew; l++)
+	      a(k,l) = elmat(localwbdofs[k], localwbdofs[l]);
+    
+	  for (int k = 0; k < sizew; k++)
+	    for (int l = 0; l < sizei; l++)
+	      {
+		b(k,l) = elmat(localwbdofs[k], localintdofs[l]);
+		c(l,k) = elmat(localintdofs[l], localwbdofs[k]);
+	      }
+
+	  for (int k = 0; k < sizei; k++)
+	    for (int l = 0; l < sizei; l++)
+	      d(k,l) = elmat(localintdofs[k], localintdofs[l]);
+	    
+#ifdef LAPACK
+	  LapackInverse (d);
+#else
+	  Matrix<double> invd(size);
+	  CalcInverse (d, invd);	  
+	  d = invd;
+#endif //LAPACK
+	  Matrix<double> he (sizei, sizew);
+	  he = -1.0 * d * c;
+	  static_cast<ElementByElementMatrix<double>*>(subassembled_harmonicext)->AddElementMatrix(i,idnums,wdnums,he);
+	  
+	  if (!bfa.IsSymmetric()){
+	    Matrix<double> het (sizew, sizei);
+	    het = -1.0 * b * d;
+	    static_cast<ElementByElementMatrix<double>*>(subassembled_harmonicexttrans)->AddElementMatrix(i,wdnums,idnums,het);
+	  }
+	  static_cast<ElementByElementMatrix<double>*>(subassembled_innersolve)->AddElementMatrix(i,idnums,idnums,d);
+#ifdef LAPACK	  
+	  LapackMultAddAB (b, he, 1.0, a);
+#else
+	  a += b*he;
+#endif //LAPACK
+	  for (int k = 0; k < wdnums.Size(); k++)
+            for (int l = 0; l < wdnums.Size(); l++)
+              if (wdnums[k] != -1 && wdnums[l] != -1 && (!bfa.IsSymmetric() || wdnums[k] >= wdnums[l]))
+                wbmat(wdnums[k], wdnums[l]) += a(k,l);	  
+
         }
       
       cout << "matrix filled" << endl;
-
-      for (int i = 0; i < restrict.Size(); i++)
-	if (restrict[i] == -1)
-	  dcmat(i,i) = 1;
-
-      // *testout << "dcmat = " << endl << dcmat << endl;
-      *testout << "freedofs = " << *fes.GetFreeDofs() << endl;
-
-
-      free_dofs = new BitArray (ndcdof);
+//       *testout << "wbmat = " << endl << wbmat << endl;
+      
+      free_dofs = new BitArray (nglobalwbdof);
       free_dofs->Clear();
       
-      for (int i = 0; i < ndcdof; i++)
+      for (int i = 0; i < nglobalwbdof; i++)
 	{
 	  if (restrict[i] != -1)
 	    if (fes.GetFreeDofs()->Test(restrict[i]))
 	      free_dofs->Set(i);
 	}
-      
+      *testout << "free_dofs = " << *free_dofs << endl;
 
-      // *testout << "dcmat = " << endl << dcmat << endl;
+      // *testout << "wbmat = " << endl << wbmat << endl;
       // *testout << "restrict = " << endl << restrict << endl;
       cout << "call inverse" << endl;
-      inv = dcmat.InverseMatrix(free_dofs);
+      inv = wbmat.InverseMatrix(free_dofs);
       cout << "has inverse" << endl;
-      *testout << "inverse = " << (*inv) << endl;
-      delete pdcmat;
+//       *testout << "inverse2 = " << (*inv) << endl;
+      delete pwbmat;
     }
 
     ~BDDCMatrix(){delete inv;}
     
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {
+      const FESpace & fes = bfa.GetFESpace();      
       FlatVector<> fx = x.FVDouble();
       FlatVector<> fy = y.FVDouble();
 
-      VVector<> lx(restrict.Size());
-      VVector<> ly(restrict.Size());
+      VVector<> lx2(restrict.Size());
+      VVector<> ly2(restrict.Size());
 
       for (int i = 0; i < restrict.Size(); i++)
-        if (restrict[i] != -1)
-          lx(i) = fx(restrict[i]) / multiple[restrict[i]];
+        if (restrict[i] != -1 && fes.GetFreeDofs()->Test(restrict[i]))
+          lx2(i) = fx(restrict[i]) / multiple[restrict[i]];
+	else
+	   lx2(i) = 0.0;
+	
+      if (bfa.IsSymmetric())
+	lx2 += Transpose(*subassembled_harmonicext) * lx2; 
+      else
+	lx2 += *subassembled_harmonicexttrans * lx2;
+      
+      ly2 = 0.0;
+      *(ly2.Range(0,nglobalwbdof)) = (*inv) * *(lx2.Range(0,nglobalwbdof));
+      ly2 += *subassembled_innersolve * lx2;
+      ly2 += *subassembled_harmonicext * ly2;
 
-      ly = (*inv) * lx;
-            
+      for (int i = 0; i < restrict.Size(); i++)
+	{
+	  if (restrict[i] != -1 && !fes.GetFreeDofs()->Test(restrict[i]))
+	    ly2(i) = 0.0;
+	}
+
       fy = 0.0;
-      for (int i = 0; i < restrict.Size(); i++)
+      for (int i = 0; i < restrict.Size(); i++){
         if (restrict[i] != -1)
-          fy(restrict[i]) += ly(i) / multiple[restrict[i]];
+          fy(restrict[i]) += s * ly2(i) / multiple[restrict[i]];
+      }
     }
 
   };

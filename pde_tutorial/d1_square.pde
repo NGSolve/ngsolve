@@ -34,21 +34,25 @@ define coefficient coef_penalty
 # define a finite element space
 # Dirichlet boundary is Gamma_1 
 # play around with -order=...
-define fespace v -order=3 -dirichlet=[1]
+define fespace v -order=3 -dirichlet=[1,2]
 
 # the solution field
 define gridfunction u -fespace=v -nested
 
-# the bilinear-form 
-define bilinearform a -fespace=v -symmetric
-laplace lam
-robin coef_penalty
-
 define linearform f -fespace=v
 source coef_source
-neumann coef_neumann
+# neumann coef_neumann
 
-define preconditioner c -type=direct -bilinearform=a
+# the bilinear-form 
+define bilinearform a -fespace=v -eliminate_internal -keep_internal -symmetric -ebe -linearform=f
+laplace lam
+# robin coef_penalty
+
+
+
+define preconditioner c -type=bddc -bilinearform=a -test
+
+#define preconditioner c -type=direct -bilinearform=a
 # define preconditioner c -type=local -bilinearform=a 
 # define preconditioner c -type=multigrid -bilinearform=a -smoother=block
 
