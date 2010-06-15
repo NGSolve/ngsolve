@@ -27,7 +27,9 @@ namespace ngcomp
       const FESpace & fes = bfa.GetFESpace();
       const MeshAccess & ma = fes.GetMeshAccess();
       int ne = ma.GetNE();
-      if (!bfa.UsesKeepInternal()) throw ("please use keep_internal");
+      
+//       if (!bfa.UsesKeepInternal()) throw Exception("please use keep_internal");
+      
       Array<int> cnt(ne); //count number of (external) dofs on each element
       Array<int> wbdcnt(ne); //count number of wirebasket dofs on each element
 
@@ -51,10 +53,10 @@ namespace ngcomp
 // 	  *testout << "lwbdofs = " << endl << lwbdofs << endl;
         }
 
-      Table<int> dcdofs2(cnt);   // discontinuous dofs on each element
+      Table<int> dcdofs(cnt);   // discontinuous dofs on each element
       Table<int> el2wbdofs(wbdcnt);   // wirebasket dofs on each element
 
-      int ndcdof2 = nglobalwbdof;
+      int ndcdof = nglobalwbdof;
       int ncdofs = fes.GetNDof();
 
       for (int i = 0; i < ne; i++)
@@ -69,24 +71,25 @@ namespace ngcomp
 	      dnums[j] = wbdofs[dnums[j]];
 	      continue;
 	    }
-	    dnums[j] = ndcdof2;
-	    ndcdof2++;
+	    dnums[j] = ndcdof;
+	    ndcdof++;
 	  }
 
 	for (int j = 0; j < dnums.Size(); j++){
-	  dcdofs2[i][j] = dnums[j];
+	  dcdofs[i][j] = dnums[j];
 	}
       }
 
-       *testout << "dcdofs2 = " << endl << dcdofs2 << endl;
+       *testout << "dcdofs = " << endl << dcdofs << endl;
        *testout << "el2wbdofs = " << endl << el2wbdofs << endl;
 
-      subassembled_harmonicext = new ElementByElementMatrix<double>(ndcdof2, ne);
+      subassembled_harmonicext = new ElementByElementMatrix<double>(ndcdof, ne);
       if (!bfa.IsSymmetric())
-	subassembled_harmonicexttrans = new ElementByElementMatrix<double>(ndcdof2, ne);
-      subassembled_innersolve = new ElementByElementMatrix<double>(ndcdof2, ne);
+	subassembled_harmonicexttrans = new ElementByElementMatrix<double>(ndcdof, ne);
+      subassembled_innersolve = new ElementByElementMatrix<double>(ndcdof, ne, true);
       
-      restrict.SetSize(ndcdof2);
+//        *testout << "test " << endl;
+      restrict.SetSize(ndcdof);
       restrict = -1;
       for (int i = 0; i < ne; i++)
         {
@@ -95,7 +98,7 @@ namespace ngcomp
           for (int j = 0; j < dnums.Size(); j++)
             {
               if (dnums[j] != -1){
-                restrict[dcdofs2[i][j]] = dnums[j];
+                restrict[dcdofs[i][j]] = dnums[j];
 	      }
             }
         }
@@ -137,7 +140,7 @@ namespace ngcomp
           FlatMatrix<> elmat = 
             dynamic_cast<const ElementByElementMatrix<double>&> (bfa.GetMatrix()) . GetElementMatrix (i);
 
-	  FlatArray<int> dofs2 = dcdofs2[i];
+	  FlatArray<int> dofs2 = dcdofs[i];
 	  Array<int> idnums; idnums.SetSize(0); //global dofs
 	  Array<int> wdnums; wdnums.SetSize(0); //global dofs
 	  Array<int> localwbdofs; localwbdofs.SetSize(0); //local dofs
@@ -152,6 +155,7 @@ namespace ngcomp
 	      idnums.Append(dofs2[k]);
 	    }
 	  }
+
 	  int sizew = localwbdofs.Size();
 	  int sizei = localintdofs.Size();
 	  Matrix<double> a(sizew, sizew);
@@ -161,40 +165,53 @@ namespace ngcomp
 	  for (int k = 0; k < sizew; k++)
 	    for (int l = 0; l < sizew; l++)
 	      a(k,l) = elmat(localwbdofs[k], localwbdofs[l]);
-    
-	  for (int k = 0; k < sizew; k++)
-	    for (int l = 0; l < sizei; l++)
-	      {
-		b(k,l) = elmat(localwbdofs[k], localintdofs[l]);
-		c(l,k) = elmat(localintdofs[l], localwbdofs[k]);
-	      }
-
-	  for (int k = 0; k < sizei; k++)
-	    for (int l = 0; l < sizei; l++)
-	      d(k,l) = elmat(localintdofs[k], localintdofs[l]);
 	    
+	  if (idnums.Size())
+	  {      
+	    for (int k = 0; k < sizew; k++)
+	      for (int l = 0; l < sizei; l++)
+		{
+		  b(k,l) = elmat(localwbdofs[k], localintdofs[l]);
+		  c(l,k) = elmat(localintdofs[l], localwbdofs[k]);
+		}
+
+	    for (int k = 0; k < sizei; k++)
+	      for (int l = 0; l < sizei; l++)
+		d(k,l) = elmat(localintdofs[k], localintdofs[l]);
+	      
 #ifdef LAPACK
-	  LapackInverse (d);
+	    LapackInverse (d);
 #else
-	  Matrix<double> invd(size);
-	  CalcInverse (d, invd);	  
-	  d = invd;
+	    Matrix<double> invd(size);
+	    CalcInverse (d, invd);	  
+	    d = invd;
 #endif //LAPACK
-	  Matrix<double> he (sizei, sizew);
-	  he = -1.0 * d * c;
-	  static_cast<ElementByElementMatrix<double>*>(subassembled_harmonicext)->AddElementMatrix(i,idnums,wdnums,he);
-	  
-	  if (!bfa.IsSymmetric()){
-	    Matrix<double> het (sizew, sizei);
-	    het = -1.0 * b * d;
-	    static_cast<ElementByElementMatrix<double>*>(subassembled_harmonicexttrans)->AddElementMatrix(i,wdnums,idnums,het);
-	  }
-	  static_cast<ElementByElementMatrix<double>*>(subassembled_innersolve)->AddElementMatrix(i,idnums,idnums,d);
+	    Matrix<double> he (sizei, sizew);
 #ifdef LAPACK	  
-	  LapackMultAddAB (b, he, 1.0, a);
+	    he = 0.0;
+	    LapackMultAddAB(d,c,-1.0,he);
+#else	  
+	    he = -1.0 * d * c;
+#endif	 
+	    static_cast<ElementByElementMatrix<double>*>(subassembled_harmonicext)->AddElementMatrix(i,idnums,wdnums,he);
+	    
+	    if (!bfa.IsSymmetric()){
+	      Matrix<double> het (sizew, sizei);
+#ifdef LAPACK	    
+	      het = 0.0;
+	      LapackMultAddAB(b,d,-1.0,het);
+#else	    
+	      het = -1.0 * b * d;
+#endif	    
+	      static_cast<ElementByElementMatrix<double>*>(subassembled_harmonicexttrans)->AddElementMatrix(i,wdnums,idnums,het);
+	    }
+	    static_cast<ElementByElementMatrix<double>*>(subassembled_innersolve)->AddElementMatrix(i,idnums,idnums,d);
+#ifdef LAPACK	  
+	    LapackMultAddAB (b, he, 1.0, a);
 #else
-	  a += b*he;
+	    a += b*he;
 #endif //LAPACK
+	  }
 	  for (int k = 0; k < wdnums.Size(); k++)
             for (int l = 0; l < wdnums.Size(); l++)
               if (wdnums[k] != -1 && wdnums[l] != -1 && (!bfa.IsSymmetric() || wdnums[k] >= wdnums[l]))
@@ -211,7 +228,7 @@ namespace ngcomp
       for (int i = 0; i < nglobalwbdof; i++)
 	{
 	  if (restrict[i] != -1)
-	    if (fes.GetFreeDofs()->Test(restrict[i]))
+	    if ((fes.GetFreeDofs()==NULL) || fes.GetFreeDofs()->Test(restrict[i]))
 	      free_dofs->Set(i);
 	}
       *testout << "free_dofs = " << *free_dofs << endl;
@@ -237,7 +254,8 @@ namespace ngcomp
       VVector<> ly2(restrict.Size());
 
       for (int i = 0; i < restrict.Size(); i++)
-        if (restrict[i] != -1 && fes.GetFreeDofs()->Test(restrict[i]))
+//         if (restrict[i] != -1 && fes.GetFreeDofs()->Test(restrict[i]))
+	if (restrict[i] != -1 && ( (!fes.GetFreeDofs()) || (fes.GetFreeDofs()->Test(restrict[i])) ))	  
           lx2(i) = fx(restrict[i]) / multiple[restrict[i]];
 	else
 	   lx2(i) = 0.0;
@@ -254,7 +272,7 @@ namespace ngcomp
 
       for (int i = 0; i < restrict.Size(); i++)
 	{
-	  if (restrict[i] != -1 && !fes.GetFreeDofs()->Test(restrict[i]))
+	  if (restrict[i] != -1 && ( (fes.GetFreeDofs()) && (!fes.GetFreeDofs()->Test(restrict[i])) ))
 	    ly2(i) = 0.0;
 	}
 

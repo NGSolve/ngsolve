@@ -23,14 +23,12 @@ namespace ngla
     ne = ane; 
     elmats.SetSize(ne);
     rowdnums.SetSize(ne);
-//     if (!symmetric)
     coldnums.SetSize(ne);
 
     for (int i = 0; i < ne; i++)
       {
         elmats[i].AssignMemory (0, 0, NULL);
         rowdnums[i] = FlatArray<int> (0, NULL);
-// 	if (!symmetric)
 	coldnums[i] = FlatArray<int> (0, NULL);
       }
   }
@@ -53,9 +51,9 @@ namespace ngla
       
     FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
     FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
-
     for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
       {
+	if ((rowdnums[i].Size() == 0) || (coldnums[i].Size() == 0)) continue; 
         FlatArray<int> rdi (rowdnums[i]);
         FlatArray<int> cdi (coldnums[i]);
 	
@@ -84,7 +82,6 @@ namespace ngla
 //     cout << " ElementByElementMatrix<SCAL> :: MultTansAdd here " << endl << flush;
     static int timer = NgProfiler::CreateTimer ("EBE-matrix::MultTransAdd");
     NgProfiler::RegionTimer reg (timer);
-
     int maxs = 0;
     for (int i = 0; i < rowdnums.Size(); i++)
       maxs = max2 (maxs, rowdnums[i].Size());
@@ -98,6 +95,7 @@ namespace ngla
 
     for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
       {
+	if ((rowdnums[i].Size() == 0) || (coldnums[i].Size() == 0)) continue; 
         FlatArray<int> rdi (rowdnums[i]);
         FlatArray<int> cdi (coldnums[i]);
 	
@@ -108,9 +106,8 @@ namespace ngla
           hv1(j) = vx (rdi[j]);
 	
         hv2 = Trans(elmats[i]) * hv1;
-        hv2 *= s;
         for (int j = 0; j < coldnums[i].Size(); j++){
-          vy (cdi[j]) += hv2[j];
+          vy (cdi[j]) += s * hv2[j];
 	}
       }
   }
@@ -147,7 +144,7 @@ namespace ngla
   
     return invmat;*/
   }
-  
+
   template <class SCAL>
   void ElementByElementMatrix<SCAL> :: AddElementMatrix (int elnr,
                                                          const Array<int> & rowdnums_in,
@@ -184,6 +181,7 @@ namespace ngla
 	coldnums[elnr] = dnc;
         elmats[elnr].AssignMemory (sr, sc, &mat(0,0));
       }
+      
   }
 
 

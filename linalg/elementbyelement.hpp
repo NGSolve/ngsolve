@@ -25,7 +25,7 @@ namespace ngla
     int ne;
     bool symmetric;
   public:
-    ElementByElementMatrix (int h, int ane, bool isymmetric=true);
+    ElementByElementMatrix (int h, int ane, bool isymmetric=false);
 
     virtual int VHeight() const { return height; }
     virtual int VWidth() const { return height; }
@@ -42,7 +42,7 @@ namespace ngla
                            const Array<int> & dnums1,
 			   const Array<int> & dnums2,
 			   const FlatMatrix<SCAL> & elmat);
-    
+
 
     virtual BaseVector & AsVector() 
     {

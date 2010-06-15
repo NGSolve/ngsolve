@@ -548,7 +548,7 @@ namespace ngfem
 	      const POINT3D * verts = ElementTopology::GetVertices (eltype);
 	      int nv = ElementTopology::GetNVertices(eltype);
 
-	      double scale = 1; // elmat(0,0);
+	      double scale = alpha; // elmat(0,0);
 	      FlatMatrix<> elmat (nd, lh);
 	      elmat = 0.0;
 
