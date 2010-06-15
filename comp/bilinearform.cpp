@@ -1605,12 +1605,16 @@ namespace ngcomp
 				    fespace.GetDofNrs(i,idnums,LOCAL_DOF);
 				    fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
 				    FlatMatrix<SCAL> he (sizei, sizeo, lh);
-				    he = -1.0 * d * Trans(c);
+				    he=0.0;
+				    LapackMultAddABt (d, c, -1, he);
+// 				    he = -1.0 * d * Trans(c);
 				    static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)->AddElementMatrix(i,idnums,ednums,he);
 				    
 				    if (!symmetric){
 				      FlatMatrix<SCAL> het (sizeo, sizei, lh);
-				      het = -1.0 * b * d;
+				      het = 0.0;
+				      LapackMultAddAB (b, d, -1, het);
+// 				      het = -1.0 * b * d;
 				      static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)->AddElementMatrix(i,ednums,idnums,het);
 				    }
 				    static_cast<ElementByElementMatrix<SCAL>*>(innersolve)->AddElementMatrix(i,idnums,idnums,d);
