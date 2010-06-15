@@ -286,60 +286,51 @@ namespace ngfem
 
     void operator= (const uDvDw_Cyclic<DIM> & uvw) 
     { 
-      cout << "not implemented 63601" << endl;
-      /*
-	AutoDiff<3> hv =
+      // cout << "not implemented 63601" << endl;
+      
+      AutoDiff<3> hv =
         uvw.u.Value() * Cross (uvw.v, uvw.w) +
         uvw.v.Value() * Cross (uvw.w, uvw.u) +
         uvw.w.Value() * Cross (uvw.u, uvw.v);
-
-	for (int i = 0; i < 3; i++)
-        data[i] = hv.DValue(i);
-      */
+      
+      for (int i = 0; i < 3; i++)
+        sum(i) += (*coefs) * hv.DValue(i);
     }
 
     void operator= (const Du_Cross_Dv<DIM> & uv) 
     { 
-      cout << "not implemented 63602" << endl;
-      /*
-	AutoDiff<3> hv = Cross (uv.u, uv.v);
-	for (int i = 0; i < 3; i++)
-        data[i] = hv.DValue(i);
-      */
+      // cout << "not implemented 63602" << endl;
+      
+      AutoDiff<3> hv = Cross (uv.u, uv.v);
+      for (int i = 0; i < 3; i++)
+        sum(i) += (*coefs) * hv.DValue(i);
     }
 
     void operator= (const wDu_Cross_Dv<DIM> & uvw) 
     { 
-      cout << "not implemented 63603" << endl;
-      /*
-	AutoDiff<3> hv = Cross (uvw.u, uvw.v);
-	for (int i = 0; i < 3; i++)
-        data[i] = uvw.w.Value() * hv.DValue(i);
-      */
+      AutoDiff<3> hv = Cross (uvw.u, uvw.v);
+      for (int i = 0; i < 3; i++)
+        sum(i) += (*coefs) * hv.DValue(i);
+
     }
 
 
     void operator= (const uDvDw_minus_DuvDw<DIM> & uvw) 
     { 
-      cout << "not implemented 63604" << endl;
-      /*
-	AutoDiff<3> hv =
+      AutoDiff<3> hv =
         uvw.u.Value() * Cross (uvw.v, uvw.w) +
         uvw.v.Value() * Cross (uvw.w, uvw.u);
 
-	for (int i = 0; i < 3; i++)
-        data[i] = hv.DValue(i);
-      */
+      for (int i = 0; i < 3; i++)
+        sum(i) += (*coefs) * hv.DValue(i);
     }
 
     void operator= (const curl_uDvw_minus_Duvw<DIM> & uvw) 
     { 
-      cout << "not implemented 63605" << endl;
-      /*
-	AutoDiff<3> hv = Cross (uvw.u*uvw.w, uvw.v) - Cross (uvw.v*uvw.w, uvw.u);
-	for (int i = 0; i < 3; i++)
-        data[i] = hv.DValue(i);
-      */
+      AutoDiff<3> hv = Cross (uvw.u*uvw.w, uvw.v) - Cross (uvw.v*uvw.w, uvw.u);
+      for (int i = 0; i < 3; i++)
+        sum(i) += (*coefs) * hv.DValue(i);
+
     }
   };
 
