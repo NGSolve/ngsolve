@@ -21,7 +21,7 @@ namespace ngcomp
     int nglobalwbdof;
   public:
     BDDCMatrix (const ElementByElement_BilinearForm<double> & abfa, const string & inversetype)
-      : ma(abfa.GetFESpace().GetMeshAccess()),bfa(abfa) 
+      : bfa(abfa), ma(abfa.GetFESpace().GetMeshAccess())
     {
       // LocalHeap lh(10000000);
       const FESpace & fes = bfa.GetFESpace();
@@ -307,6 +307,7 @@ namespace ngcomp
     Table<int> *globwbdofs, *globdcdofs, *globinternaldofs, *globexternaldofs;
 
     Array<int> elclassnr;
+    Table<int> * els_of_class;
     Array<Matrix<>*> invdc_ref, extwb_ref, schurwb_ref;
     Array<Matrix<>*> inv_int_ref, extension_int_ref, extension_int_ref_trans;
     int ne, ndof;
@@ -616,6 +617,13 @@ namespace ngcomp
 	  *(extension_int_ref_trans[classnr]) = Trans(extie);
         }
 
+      TableCreator<int> creator;
+      for ( ; !creator.Done(); creator++)
+	{
+	  for (int i = 0; i < ne; i++)
+	    creator.Add (elclassnr[i], i);
+	}
+      els_of_class = creator.GetTable();
 
       for (int i = 0; i < ne; i++)
         {
@@ -665,10 +673,10 @@ namespace ngcomp
 
       cout << "call inverse, type = " << inversetype << endl;
       cout << "dim = " << dcmat.Height() << endl;
-      /*
+
       inv = dcmat.InverseMatrix(&free_dofs);
       return;
-      */
+
 #define sometests
 #ifdef sometests
 
@@ -763,126 +771,6 @@ namespace ngcomp
 
 
 
-    /*
-      virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
-      {
-      static int timer = NgProfiler::CreateTimer ("Apply BDDC preconditioner");
-      static int timerrest = NgProfiler::CreateTimer ("Apply BDDC preconditioner, restrict");
-      static int timerdc = NgProfiler::CreateTimer ("Apply BDDC preconditioner, decoupled");
-      static int timerext = NgProfiler::CreateTimer ("Apply BDDC preconditioner, extend");
-      NgProfiler::RegionTimer reg (timer);
-
-      LocalHeap lh(100000);
-      FlatVector<> fx = x.FVDouble();
-      FlatVector<> fy = y.FVDouble();
-
-      VVector<> lx(restrict.Size());
-      VVector<> ly(restrict.Size());
-
-      lx = 0.0;
-      for (int i = 0; i < restrict.Size(); i++)
-      if (restrict[i] != -1)
-      lx(i) = fx(restrict[i]) / multiple[restrict[i]];
-
-
-      // restrict
-      NgProfiler::StartTimer (timerrest);
-      #pragma omp parallel
-      {
-      LocalHeap lh(100000);
-      #pragma omp for
-      for (int i = 0; i < ne; i++)
-      {
-      HeapReset hr(lh);
-      FlatArray<int> wbd = (*globwbdofs)[i];
-      FlatArray<int> dcd = (*globdcdofs)[i];
-
-      FlatVector<> wb(wbd.Size(), lh);
-      FlatVector<> dc(dcd.Size(), lh);
-
-      for (int j = 0; j < dcd.Size(); j++)
-      dc(j) = lx(dcd[j]);
-          
-      // wb = Trans(*extwb[i]) * dc;
-      wb = Trans(*extwb_ref[elclassnr[i]]) * dc;
-          
-      for (int j = 0; j < wbd.Size(); j++)
-      lx(wbd[j]) -= wb(j);
-
-      NgProfiler::AddFlops (timer, 2*wbd.Size()*dcd.Size());
-      NgProfiler::AddFlops (timerrest, wbd.Size()*dcd.Size());
-      }
-      }
-      NgProfiler::StopTimer (timerrest);
-
-      ly = 0.0;
-      ly = (*inv) * lx;
-
-
-      // solve decoupled
-      NgProfiler::StartTimer (timerdc);
-      #pragma omp parallel
-      {
-      LocalHeap lh(100000);
-      #pragma omp for
-      for (int i = 0; i < ne; i++)
-      {
-      HeapReset hr(lh);
-      FlatArray<int> dcd = (*globdcdofs)[i];
-            
-      FlatVector<> dc1(dcd.Size(), lh);
-      FlatVector<> dc2(dcd.Size(), lh);
-            
-      for (int j = 0; j < dcd.Size(); j++)
-      dc1(j) = lx(dcd[j]);
-            
-      // dc2 = Trans(*invdc[i]) * dc1;
-      dc2 = (*invdc_ref[elclassnr[i]]) * dc1;
-            
-      for (int j = 0; j < dcd.Size(); j++)
-      ly(dcd[j]) = dc2(j);
-            
-      NgProfiler::AddFlops (timer, sqr(dcd.Size()));
-      NgProfiler::AddFlops (timerdc, sqr(dcd.Size()));
-      }
-      }
-      NgProfiler::StopTimer (timerdc);
-
-      // extend
-      NgProfiler::StartTimer (timerext);
-      #pragma omp parallel
-      {
-      LocalHeap lh(100000);
-      #pragma omp for
-      for (int i = 0; i < ne; i++)
-      {
-      HeapReset hr(lh);
-      FlatArray<int> wbd = (*globwbdofs)[i];
-      FlatArray<int> dcd = (*globdcdofs)[i];
-
-      FlatVector<> wb(wbd.Size(), lh);
-      FlatVector<> dc(dcd.Size(), lh);
-      for (int j = 0; j < wbd.Size(); j++)
-      wb(j) = ly(wbd[j]);
-
-      // dc = (*extwb[i]) * wb;
-      dc = (*extwb_ref[elclassnr[i]]) * wb;
-
-      for (int j = 0; j < dcd.Size(); j++)
-      ly(dcd[j]) -= dc(j);
-      NgProfiler::AddFlops (timerext, wbd.Size()*dcd.Size());
-      }
-      }
-      NgProfiler::StopTimer (timerext);
-
-      fy = 0.0;
-      for (int i = 0; i < restrict.Size(); i++)
-      if (restrict[i] != -1)
-      fy(restrict[i]) += ly(i) / multiple[restrict[i]];
-      }
-    */
-
-
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {
@@ -895,8 +783,6 @@ namespace ngcomp
       static int timerinner = NgProfiler::CreateTimer ("Apply BDDC preconditioner, inner");
       static int timersolve = NgProfiler::CreateTimer ("Apply BDDC preconditioner, solve");
       NgProfiler::RegionTimer reg (timer);
-
-
 
       LocalHeap lh(1000014);
       FlatVector<> fx = x.FVDouble();
@@ -912,79 +798,36 @@ namespace ngcomp
 	NgProfiler::RegionTimer reg(timertransx);
 	transx = 1.0 * x;
 
-	/*
 
-	#pragma omp parallel
-	{
-	LocalHeap slh = lh.Split();
-	#pragma omp for
-	for (int cl = 0; cl < inv_int_ref.Size(); cl++)
-	for (int i = 0; i < ne; i++)
-	{
-	if (elclassnr[i] != cl) continue;
-
-	HeapReset hr(slh);
-	FlatArray<int> dint = (*globinternaldofs)[i];
-	FlatArray<int> dext = (*globexternaldofs)[i];
-	      
-	FlatVector<> vi(dint.Size(), slh);
-	FlatVector<> ve(dext.Size(), slh);
-	      
-	for (int j = 0; j < dint.Size(); j++)
-	vi(j) = transx(dint[j]);
-	      
-	ve = (*extension_int_ref_trans[elclassnr[i]]) * vi;
-
-	#pragma omp critical (bddc_transx)
-	{
-	for (int j = 0; j < ve.Size(); j++)
-	transx(dext[j]) -= ve(j);
-	NgProfiler::AddFlops (timertransx, dint.Size()*dext.Size());
-	}
-	}
-	}
-	*/
-
-	for (int cl = 0; cl < inv_int_ref.Size(); cl++)
+	for (int cl = 0; cl < els_of_class->Size(); cl++)
 	  {
-	    int cnt = 0;
-	    for (int i = 0; i < ne; i++)
-	      if (elclassnr[i] == cl) cnt++;
-	    if (cnt == 0) continue;
+	    FlatArray<int> els = (*els_of_class)[cl];
+	    if (!els.Size()) continue;
 
 	    const Matrix<> & ext = (*extension_int_ref_trans[cl]);
-	    Matrix<> vim(cnt, ext.Width());
-	    Matrix<> vem(cnt, ext.Height());
+	    Matrix<> vim(els.Size(), ext.Width());
+	    Matrix<> vem(els.Size(), ext.Height());
 
-	    NgProfiler::AddFlops (timertransx, ext.Width()*ext.Height()*cnt);
-		
-	    cnt = 0;	
-	    for (int i = 0; i < ne; i++)
+	    NgProfiler::AddFlops (timertransx, ext.Width()*ext.Height()*els.Size());
+
+	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
-		if (elclassnr[i] != cl) continue;
-		FlatArray<int> dint = (*globinternaldofs)[i];
-		
+		FlatArray<int> dint = (*globinternaldofs)[els[ii]];
 		for (int j = 0; j < dint.Size(); j++)
-		  vim(cnt, j) = transx(dint[j]);
-		cnt++;
+		  vim(ii, j) = transx(dint[j]);
 	      }
 
 	    // vem = vim * Trans(ext);
 	    LapackMultABt (vim, ext, vem);
 
-	    cnt = 0;	
-	    for (int i = 0; i < ne; i++)
+	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
-		if (elclassnr[i] != cl) continue;
-		FlatArray<int> dext = (*globexternaldofs)[i];
-
+		FlatArray<int> dext = (*globexternaldofs)[els[ii]];
 		for (int j = 0; j < dext.Size(); j++)
-		  transx(dext[j]) -= vem(cnt,j);
-		cnt++;
+		  transx(dext[j]) -= vem(ii,j);
 	      }
 	  }
       }
-
       lx = 0.0;
       for (int i = 0; i < restrict.Size(); i++)
         if (restrict[i] != -1)
@@ -995,30 +838,33 @@ namespace ngcomp
       {
 	NgProfiler::RegionTimer reg(timerrest);
 
-	// #pragma omp parallel
-	{
-	  LocalHeap slh = lh.Split();
-	  // #pragma omp for
-	  for (int i = 0; i < ne; i++)
-	    {
-	      HeapReset hr(slh);
-	      FlatArray<int> wbd = (*globwbdofs)[i];
-	      FlatArray<int> dcd = (*globdcdofs)[i];
-	      
-	      FlatVector<> wb(wbd.Size(), slh);
-	      FlatVector<> dc(dcd.Size(), slh);
+	for (int cl = 0; cl < els_of_class->Size(); cl++)
+	  {
+	    FlatArray<int> els = (*els_of_class)[cl];
+	    if (!els.Size()) continue;
+
+	    const Matrix<> & ext = (*extwb_ref[cl]);
+	    Matrix<> v1(els.Size(), ext.Height());
+	    Matrix<> v2(els.Size(), ext.Width());
 	    
-	      for (int j = 0; j < dcd.Size(); j++)
-		dc(j) = lx(dcd[j]);
-	      
-	      wb = Trans(*extwb_ref[elclassnr[i]]) * dc;
-	      
-	      // #pragma omp critical (bddc_restrict)
+	    NgProfiler::AddFlops (timerrest, v1.Width()*v2.Width()*els.Size());
+		
+	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
-		for (int j = 0; j < wbd.Size(); j++)
-		  lx(wbd[j]) -= wb(j);
+		FlatArray<int> dc = (*globdcdofs)[els[ii]];
+		for (int j = 0; j < dc.Size(); j++)
+		  v1(ii, j) = lx(dc[j]);
 	      }
-	    }
+
+	    LapackMultAB (v1, ext, v2);
+
+	    for (int ii = 0; ii < els.Size(); ii++)
+	      {
+		FlatArray<int> wb = (*globwbdofs)[els[ii]];
+		
+		for (int j = 0; j < wb.Size(); j++)
+		  lx(wb[j]) -= v2(ii, j);
+	      }
 	}
       }
       
@@ -1027,224 +873,150 @@ namespace ngcomp
 	ly = 0.0;
 	ly = (*inv) * lx;
       }
-	
-
+      
       // solve decoupled
       {
 	NgProfiler::RegionTimer reg(timerdc);
 
-	/*
-
-
-	#pragma omp parallel
-	{
-	LocalHeap slh = lh.Split();
-	#pragma omp for
-	for (int cl = 0; cl < inv_int_ref.Size(); cl++)
-	for (int i = 0; i < ne; i++)
-	{
-	if (elclassnr[i] != cl) continue;
-	HeapReset hr(slh);
-	FlatArray<int> dcd = (*globdcdofs)[i];
-	      
-	FlatVector<> dc1(dcd.Size(), slh);
-	FlatVector<> dc2(dcd.Size(), slh);
-	      
-	for (int j = 0; j < dcd.Size(); j++)
-	dc1(j) = lx(dcd[j]);
-	      
-	// dc2 = Trans(*invdc[i]) * dc1;
-	dc2 = (*invdc_ref[elclassnr[i]]) * dc1;
-	      
-	for (int j = 0; j < dcd.Size(); j++)
-	ly(dcd[j]) += s * dc2(j);
-	      
-	NgProfiler::AddFlops (timerdc, sqr (dcd.Size()));
-	}
-	}
-	*/
-
-	for (int cl = 0; cl < inv_int_ref.Size(); cl++)
+	for (int cl = 0; cl < els_of_class->Size(); cl++)
 	  {
-	    int cnt = 0;
-	    for (int i = 0; i < ne; i++)
-	      if (elclassnr[i] == cl) cnt++;
-	    if (cnt == 0) continue;
+	    FlatArray<int> els = (*els_of_class)[cl];
+	    if (!els.Size()) continue;
 
 	    const Matrix<> & invdc = (*invdc_ref[cl]);
-	    Matrix<> dc1(cnt, invdc.Height());
-	    Matrix<> dc2(cnt, invdc.Height());
+	    Matrix<> dc1(els.Size(), invdc.Height());
+	    Matrix<> dc2(els.Size(), invdc.Height());
 
-	    NgProfiler::AddFlops (timerdc, invdc.Width()*invdc.Height()*cnt);
+	    NgProfiler::AddFlops (timerdc, invdc.Width()*invdc.Height()*els.Size());
 		
-	    cnt = 0;	
-	    for (int i = 0; i < ne; i++)
+	    for (int i = 0; i < els.Size(); i++)
 	      {
-		if (elclassnr[i] != cl) continue;
-		FlatArray<int> dcd = (*globdcdofs)[i];
+		FlatArray<int> dcd = (*globdcdofs)[els[i]];
 
 		for (int j = 0; j < dcd.Size(); j++)
-		  dc1(cnt, j) = lx(dcd[j]);
-		cnt++;
+		  dc1(i, j) = lx(dcd[j]);
 	      }
 
-	    // vem = vim * Trans(ext);
 	    LapackMultAB (dc1, invdc, dc2);
-	    // dc2 = dc1 * invdc;
 
-	    cnt = 0;	
-	    for (int i = 0; i < ne; i++)
+	    for (int i = 0; i < els.Size(); i++)
 	      {
-		if (elclassnr[i] != cl) continue;
-		FlatArray<int> dcd = (*globdcdofs)[i];
+		FlatArray<int> dcd = (*globdcdofs)[els[i]];
 		
 		for (int j = 0; j < dcd.Size(); j++)
-		  ly(dcd[j]) += s*dc2(cnt, j);
-		cnt++;
+		  ly(dcd[j]) += dc2(i, j);
 	      }
 
 	  }
-
-
-
-
       }
 
       // extend
       {
 	NgProfiler::RegionTimer reg(timerext);
 
-	// #pragma omp parallel
-	{
-	  LocalHeap slh = lh.Split();
-	  // #pragma omp for
-	  for (int i = 0; i < ne; i++)
-	    {
-	      HeapReset hr(slh);
-	      FlatArray<int> wbd = (*globwbdofs)[i];
-	      FlatArray<int> dcd = (*globdcdofs)[i];
-	      
-	      FlatVector<> wb(wbd.Size(), slh);
-	      FlatVector<> dc(dcd.Size(), slh);
-	      for (int j = 0; j < wbd.Size(); j++)
-		wb(j) = ly(wbd[j]);
-	      
-	      // dc = (*extwb[i]) * wb;
-	      dc = (*extwb_ref[elclassnr[i]]) * wb;
-	      
-	      for (int j = 0; j < dcd.Size(); j++)
-		ly(dcd[j]) -= dc(j);
-	    }
+	for (int cl = 0; cl < els_of_class->Size(); cl++)
+	  {
+	    FlatArray<int> els = (*els_of_class)[cl];
+	    if (!els.Size()) continue;
+
+	    const Matrix<> & ext = (*extwb_ref[cl]);
+	    Matrix<> v1(els.Size(), ext.Width());
+	    Matrix<> v2(els.Size(), ext.Height());
+	    
+	    NgProfiler::AddFlops (timerext, v1.Width()*v2.Width()*els.Size());
+		
+	    for (int ii = 0; ii < els.Size(); ii++)
+	      {
+		FlatArray<int> wb = (*globwbdofs)[els[ii]];
+		for (int j = 0; j < wb.Size(); j++)
+		  v1(ii, j) = ly(wb[j]);
+	      }
+
+	    LapackMultABt (v1, ext, v2);
+
+	    for (int ii = 0; ii < els.Size(); ii++)
+	      {
+		FlatArray<int> dc = (*globdcdofs)[els[ii]];
+		
+		for (int j = 0; j < dc.Size(); j++)
+		  ly(dc[j]) -= v2(ii, j);
+	      }
 	}
       }
 
       transy = 0.0;
       for (int i = 0; i < restrict.Size(); i++)
 	if (restrict[i] != -1)
-	  transy(restrict[i]) += s * ly(i) / multiple[restrict[i]];
+	  transy(restrict[i]) += ly(i) / multiple[restrict[i]];
 
       
       {
 	NgProfiler::RegionTimer reg(timertransy);
-	/*
-	  #pragma omp parallel
-	  {
-	  LocalHeap slh = lh.Split();
-	  #pragma omp for
-	  for (int cl = 0; cl < inv_int_ref.Size(); cl++)
-	  for (int i = 0; i < ne; i++)
-	  {
-	  if (elclassnr[i] != cl) continue;
-	  HeapReset hr(slh);
-	  FlatArray<int> dint = (*globinternaldofs)[i];
-	  FlatArray<int> dext = (*globexternaldofs)[i];
-	      
-	  FlatVector<> vi(dint.Size(), slh);
-	  FlatVector<> ve(dext.Size(), slh);
-	      
-	  for (int j = 0; j < dext.Size(); j++)
-	  ve(j) = transy(dext[j]);
-	      
-	  vi = (*extension_int_ref[elclassnr[i]]) * ve;
-	      
-	  for (int j = 0; j < dint.Size(); j++)
-	  transy(dint[j]) -= vi(j);
-	  }
-	  }
-	*/
 
-
-
-	for (int cl = 0; cl < inv_int_ref.Size(); cl++)
+	for (int cl = 0; cl < els_of_class->Size(); cl++)
 	  {
-	    int cnt = 0;
-	    for (int i = 0; i < ne; i++)
-	      if (elclassnr[i] == cl) cnt++;
-	    if (cnt == 0) continue;
+	    FlatArray<int> els = (*els_of_class)[cl];
+	    if (!els.Size()) continue;
 
 	    const Matrix<> & ext = (*extension_int_ref_trans[cl]);
-	    Matrix<> vim(cnt, ext.Width());
-	    Matrix<> vem(cnt, ext.Height());
+	    Matrix<> vim(els.Size(), ext.Width());
+	    Matrix<> vem(els.Size(), ext.Height());
 
-	    NgProfiler::AddFlops (timertransy, ext.Width()*ext.Height()*cnt);
+	    NgProfiler::AddFlops (timertransy, ext.Width()*ext.Height()*els.Size());
 		
-	    cnt = 0;	
-	    for (int i = 0; i < ne; i++)
+	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
-		if (elclassnr[i] != cl) continue;
-		FlatArray<int> dext = (*globexternaldofs)[i];
-
+		FlatArray<int> dext = (*globexternaldofs)[els[ii]];
 		for (int j = 0; j < dext.Size(); j++)
-		  vem(cnt, j) = transy(dext[j]);
-		cnt++;
+		  vem(ii, j) = transy(dext[j]);
 	      }
 
-	    // vem = vim * Trans(ext);
 	    LapackMultAB (vem, ext, vim);
 
-	    cnt = 0;	
-	    for (int i = 0; i < ne; i++)
+	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
-		if (elclassnr[i] != cl) continue;
-		FlatArray<int> dint = (*globinternaldofs)[i];
+		FlatArray<int> dint = (*globinternaldofs)[els[ii]];
 		
 		for (int j = 0; j < dint.Size(); j++)
-		  transy(dint[j]) -= vim(cnt, j);
-		cnt++;
+		  transy(dint[j]) -= vim(ii, j);
 	      }
 
 	  }
-
-
-
-
       }
       
       y += s * transy;
 
       {
 	NgProfiler::RegionTimer reg(timerinner);
-	// #pragma omp parallel
-	{
-	  LocalHeap slh = lh.Split();
-	  // #pragma omp for
-	  for (int i = 0; i < ne; i++)
-	    {
-	      HeapReset hr(slh);
-	      FlatArray<int> dint = (*globinternaldofs)[i];
-	      
-	      FlatVector<> v1(dint.Size(), slh);
-	      FlatVector<> v2(dint.Size(), slh);
-            
-	      for (int j = 0; j < dint.Size(); j++)
-		v1(j) = fx(dint[j]);
-            
-	      v2 = (*inv_int_ref[elclassnr[i]]) * v1;
-            
-	      for (int j = 0; j < dint.Size(); j++)
-		fy(dint[j]) += s * v2(j);
-	    }
-	}
+
+	for (int cl = 0; cl < els_of_class->Size(); cl++)
+	  {
+	    FlatArray<int> els = (*els_of_class)[cl];
+	    if (!els.Size()) continue;
+
+	    const Matrix<> & inv_int = (*inv_int_ref[cl]);
+	    Matrix<> v1(els.Size(), inv_int.Width());
+	    Matrix<> v2(els.Size(), inv_int.Width());
+
+	    NgProfiler::AddFlops (timerinner, v1.Width()*v2.Width()*els.Size());
+		
+	    for (int ii = 0; ii < els.Size(); ii++)
+	      {
+		FlatArray<int> dint = (*globinternaldofs)[els[ii]];
+		for (int j = 0; j < dint.Size(); j++)
+		  v1(ii, j) = fx(dint[j]);
+	      }
+
+	    LapackMultAB (v1, inv_int, v2);
+
+	    for (int ii = 0; ii < els.Size(); ii++)
+	      {
+		FlatArray<int> dint = (*globinternaldofs)[els[ii]];
+		for (int j = 0; j < dint.Size(); j++)
+		  fy(dint[j]) += s * v2(ii, j);
+	      }
+
+	  }
       }
     }
 
