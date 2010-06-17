@@ -99,6 +99,9 @@ namespace ngla
     int maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = print, error;
     int * params = const_cast <int*> (&hparams[0]);
 
+    for (int i = 0; i < 64; i++)
+      params[i] = 0;
+
     params[0] = 1; // no pardiso defaults
     params[2] = 8; // 1 processor (?)
 
@@ -459,6 +462,46 @@ namespace ngla
     if ( error != 0 )
       {
 	cout << "Setup and Factorization: PARDISO returned error " << error << "!" << endl;
+	
+	string errmsg;
+	switch (error)
+	  {
+	  case -1: errmsg = "input inconsistent"; break;
+	  case -2: errmsg = "not enough memory"; break;
+	  case -3: errmsg = "reordering problem"; break;
+	  case -4: errmsg = "zero pivot, numerical factorization or iterative refinement problem"; break;
+	  case -5: errmsg = "unclassified (internal) error"; break;
+	  case -6: errmsg = "preordering failed"; break;
+	  default: 
+	    ;
+	  }
+	
+	cout << "err = " << errmsg << endl;
+
+	switch (error)
+	  {
+	  case -4: 
+	    {
+	      cout << "iparam(20) = " << params[19] << endl; break;
+	    }
+	  default:
+	    ;
+	  }
+
+	ofstream err("pardiso.err");
+	err << "ngsolve-matrix = " << endl << a << endl;
+	err << "pardiso matrix = " << endl;
+	for (int i = 0; i < height; i++)
+	  {
+	    err << "Row " << i << " start " << rowstart[i] << ": ";
+	    if ( inner ) err << " free=" << inner->Test(i) << " ";
+	    if ( cluster ) err << " cluster=" << (*cluster)[i] << " ";
+	    for (int j = rowstart[i]; j < rowstart[i+1]; j++)
+	      err << "c=" << indices[j-1]-1 << ", v=" << matrix[j-1] << "   ";
+	    err << "\n";
+	  }
+	
+	cout << "wrote matrix to file 'pardiso.err', please check" << endl;
 	throw Exception("PardisoInverse: Setup and Factorization failed.");
       }
 
