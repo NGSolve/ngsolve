@@ -251,6 +251,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: Update(LocalHeap & lh)
   {
+    for (int i=0; i< specialelements.Size(); i++)
+      delete specialelements[i]; 
+    specialelements.SetSize(0);
+    
     if (dirichlet_boundaries.Size())
       {
 	int dim = ma.GetDimension();
@@ -2630,6 +2634,8 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
   void CompoundFESpace :: Update(LocalHeap & lh)
   {
+    FESpace :: Update (lh);
+    
     cummulative_nd.SetSize (spaces.Size()+1);
     cummulative_nd[0] = 0;
     for (int i = 0; i < spaces.Size(); i++)
