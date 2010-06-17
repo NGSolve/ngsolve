@@ -1136,8 +1136,7 @@ public:
 		clusters[dnums[0]+basefac]=1;
 	      }else{
 		spaces[2]->GetEdgeDofNrs(i,dnums);
-		for (int l=0; l<2/*dnums.Size()*/; l++)
-		  clusters[dnums[l]+baseh1]=1;
+		clusters[dnums[0]+baseh1]=1;
 	      }
 	    }
 		      
@@ -1169,7 +1168,6 @@ public:
     int ned = ma.GetNEdges();
     int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
     int ni = (eliminate_internal) ? 0 : ma.GetNE(); 
-   
     cout << " blocktype " << smoothing_type << endl; 
     cout << " Use HDG-Block Smoother:  "; 
 
@@ -1215,7 +1213,17 @@ public:
 		    }//end-if isdirichletvertex
 		  }
 		}
-		  
+	    for (int i = 0; i < nfa; i++)
+	      if (!IsDirichletFace(i))
+	      {
+		dnums.SetSize(0);
+		GetFaceDofNrs(i,dnums);
+		Ng_Node<2> face = ma.GetNode<2> (i);
+		for (int k = 0; k < face.vertices.Size(); k++)
+		  if (! IsDirichletVertex(face.vertices[k]) ){
+		    creator.Add (face.vertices[k], dnums[0]);	
+		  }
+	      }		  
 	    break; 	    
 	  }
       }
