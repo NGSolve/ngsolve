@@ -889,6 +889,7 @@ namespace ngcomp
   CreateSmoothingBlocks (const Flags & precflags) const
   {
     bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
+    bool subassembled = precflags.GetDefineFlag("subassembled");
     // smoothing_types: 
     // 1: 2d V + E + I 
     // 2: 2d VE + I 
@@ -902,7 +903,7 @@ namespace ngcomp
     // 10:V + EF + FI 
 
     int smoothing_type = int(precflags.GetNumFlag("blocktype",4)); 
-
+    if (subassembled) smoothing_type = 51;
 
     int nv = ma.GetNV();
     int ned = ma.GetNEdges();
@@ -1294,7 +1295,7 @@ namespace ngcomp
 	    }
 	    
 	  case 21: // E + F 
-		
+	  {
 	    if (creator.GetMode() == 1)
 	      cout << "Helmholtz" << endl;
 		
@@ -1315,8 +1316,36 @@ namespace ngcomp
 		
 	    break; 
 	  }
+	  case 51: 
+	  //for BDDC: we have only the condensated (after subassembling) dofs, 
+	  //and build patches around each vertex Vertices + Edges
+		
+	    if (creator.GetMode() == 1)
+	      cout << "BDDC-Edges-around-Vertex-Block" << endl;
+		
+// 	    int ds_order = precflags.GetNumFlag ("ds_order", 1);
+// 	    cout << "ds_order = " << ds_order << endl;
+// 		
+	    for (int i = 0; i < nv; i++)
+	      if (!IsDirichletVertex(i))
+		creator.Add (i, i);
+	    for (int i = 0; i < ned; i++)
+	      if (!IsDirichletEdge(i))
+		{
+// 		  creator.Add (nv+i, GetEdgeDofs(i));
+		  Ng_Node<1> edge = ma.GetNode<1> (i);
+		  for (int k = 0; k < 2; k++){
+		    if (GetEdgeDofs(i).Next() > GetEdgeDofs(i).First())
+		      if (ma.GetDimension() == 2)
+			creator.Add (edge.vertices[k], GetEdgeDofs(i).First());
+		      else
+			creator.Add (edge.vertices[k], GetEdgeDofs(i));
+		  }
+		}
+		  
+	    break; 	    
+	  }
       }
-	    
     return creator.GetTable();
   }
 
@@ -1328,6 +1357,18 @@ namespace ngcomp
   Array<int> * 
   H1HighOrderFESpace :: CreateDirectSolverClusters (const Flags & flags) const
   {
+    if (flags.GetDefineFlag("subassembled"))
+    {
+	cout << "creating bddc-coarse grid(vertices)" << endl;
+	Array<int> & clusters = *new Array<int> (GetNDof());
+	clusters = 0;
+	int nv = ma.GetNV();
+	for (int i = 0; i < nv; i++)
+	  if (!IsDirichletVertex(i))
+	    clusters[i] = 1;		
+	return &clusters;	
+    }
+    
     if (flags.NumFlagDefined ("ds_order"))
       {
 	int ds_order = int (flags.GetNumFlag ("ds_order", 1));

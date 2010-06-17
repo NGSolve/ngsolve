@@ -120,6 +120,8 @@ namespace ngcomp
   // ------------------------------------------------------------------------
   void FacetFESpace :: Update(LocalHeap & lh)
   {
+    FESpace :: Update (lh);
+    
     if(print) 
       *testout << " FacetFEspace with order " << order << " rel_order " << rel_order << " var_order " << var_order << endl; 
 
@@ -532,8 +534,6 @@ namespace ngcomp
             dnums.Append(j);
             }*/
   }
-
-
 
   // ------------------------------------------------------------------------
   Table<int> * FacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
@@ -948,6 +948,8 @@ namespace ngcomp
   
   void EdgeFESpace :: Update(LocalHeap & lh)
   {
+    FESpace :: Update (lh);
+    
     ned = ma.GetNEdges();
     order_edge.SetSize (ned);
     first_edge_dof.SetSize (ned+1);
@@ -1003,9 +1005,8 @@ namespace ngcomp
 
     ctypes.SetSize(0);
     for (int i = 0; i < enums.Size(); i++){
-      ctypes.Append(WIREBASKET_DOF);
-      for (int j = first_edge_dof[enums[i]]+1; j<first_edge_dof[enums[i]+1]; j++)
-	ctypes.Append(INTERFACE_DOF);
+      for (int j = first_edge_dof[enums[i]]; j<first_edge_dof[enums[i]+1]; j++)
+ 	ctypes.Append(WIREBASKET_DOF);
     }
   }
 
@@ -1044,12 +1045,16 @@ namespace ngcomp
 
 class HybridDGFESpace : public CompoundFESpace
 {
+protected:
+  bool withedges;
 public:
   HybridDGFESpace (const MeshAccess & ama, 
                    const Array<const FESpace*> & aspaces,
                    const Flags & flags)
     : CompoundFESpace (ama, aspaces, flags)
-  { }
+  { 
+    withedges = (aspaces.Size()==3);
+  }
 
   virtual ~HybridDGFESpace () { ; }
 
@@ -1077,7 +1082,6 @@ public:
     spaces[1] = new FacetFESpace (ma, facetflags);        
 
 
-
     if (flags.GetDefineFlag ("edges"))
       {
 	Flags h1flags(flags);
@@ -1097,7 +1101,131 @@ public:
     HybridDGFESpace * fes = new HybridDGFESpace (ma, spaces, flags);
     return fes;
   }
-    
+
+
+  virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const
+  {
+    if (flags.GetDefineFlag("subassembled"))
+    {
+	cout << "creating bddc-coarse grid(vertices)" << endl;
+	Array<int> & clusters = *new Array<int> (GetNDof());
+	clusters = 0;
+	int nv = ma.GetNV();
+	int ned = ma.GetNEdges();
+	int nfa = ma.GetNFaces();
+	int basefac = spaces[0]->GetNDof();;
+	int baseh1 = basefac + spaces[1]->GetNDof();
+	  
+	Array<int> dnums;
+	//low order: 2D: vertices
+	if (ma.GetDimension() == 2 && withedges)
+	  for (int i = 0; i < nv; i++)
+	    if (!IsDirichletVertex(i) && spaces.Size()>2){
+	      spaces[2]->GetVertexDofNrs(i,dnums);
+	      clusters[dnums[0]+baseh1]=1;
+	    }
+	    
+	//low order: l.o. edges (2D: from facet-space, 3D: from edge-space)
+	if (ma.GetDimension() == 2 || ((ma.GetDimension() == 3) && withedges))
+	  for (int i = 0; i < ned; i++)
+	    if (!IsDirichletEdge(i))
+	    {
+	      dnums.SetSize(0);
+	      if (ma.GetDimension() == 2){
+		spaces[1]->GetEdgeDofNrs(i,dnums);
+		clusters[dnums[0]+basefac]=1;
+	      }else{
+		spaces[2]->GetEdgeDofNrs(i,dnums);
+		for (int l=0; l<2/*dnums.Size()*/; l++)
+		  clusters[dnums[l]+baseh1]=1;
+	      }
+	    }
+		      
+	//low order: 3D: l.o. face
+	if (ma.GetDimension() == 3)
+	  for (int i = 0; i < nfa; i++)
+	    if (!IsDirichletFace(i))
+	    {
+		dnums.SetSize(0);
+		spaces[1]->GetFaceDofNrs(i,dnums);
+// 		for (int l=0; l<dnums.Size(); l++)
+// 		  clusters[dnums[l]+basefac]=1;		
+		clusters[dnums[0]+basefac]=1;
+	      //end-if isdirichletvertex
+	    }
+	return &clusters;	
+    }
+    else throw Exception("HDG::CreateDirectSolverClusters");
+  }
+
+  virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const
+  {
+    bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
+    bool subassembled = precflags.GetDefineFlag("subassembled");
+    int smoothing_type = int(precflags.GetNumFlag("blocktype",4)); 
+    if (subassembled) smoothing_type = 51;
+
+    int nv = ma.GetNV();
+    int ned = ma.GetNEdges();
+    int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
+    int ni = (eliminate_internal) ? 0 : ma.GetNE(); 
+   
+    cout << " blocktype " << smoothing_type << endl; 
+    cout << " Use HDG-Block Smoother:  "; 
+
+    TableCreator<int> creator;
+    for ( ; !creator.Done(); creator++)
+      {
+	switch (smoothing_type)
+	  {
+	  case 51: 
+	  //for BDDC: we have only the condensated (after subassembling) dofs, 
+	  //and build patches around each vertex Vertices + Edges
+		
+	    if (creator.GetMode() == 1)
+	      cout << "BDDC-Edges-around-Vertex-Block" << endl;
+		
+// 	    int ds_order = precflags.GetNumFlag ("ds_order", 1);
+// 	    cout << "ds_order = " << ds_order << endl;
+// 		
+            Array<int> dnums;
+	    if (ma.GetDimension() == 2)
+	      for (int i = 0; i < nv; i++)
+		if (!IsDirichletVertex(i)){
+		  GetVertexDofNrs(i,dnums);
+		  creator.Add (i, dnums[0]);
+		}
+	    for (int i = 0; i < ned; i++)
+	      if (!IsDirichletEdge(i))
+		{
+// 		  creator.Add (nv+i, GetEdgeDofs(i));
+		  Ng_Node<1> edge = ma.GetNode<1> (i);
+		  for (int k = 0; k < 2; k++){
+		    dnums.SetSize(0);
+		    if (! IsDirichletVertex(edge.vertices[k]) ){
+		      if (ma.GetDimension() == 2){
+			GetEdgeDofNrs(i,dnums);
+			creator.Add (edge.vertices[k], dnums[0]);
+		      }
+		      else{
+			GetEdgeDofNrs(i,dnums);
+			for (int l=0;l<dnums.Size();l++)
+			  creator.Add (edge.vertices[k], dnums[l]);
+		      }
+		    }//end-if isdirichletvertex
+		  }
+		}
+		  
+	    break; 	    
+	  }
+      }
+	    
+    return creator.GetTable();
+  }
+
+
+
+
   virtual string GetClassName () const { return "HybridDGFESpace"; }
 };
 

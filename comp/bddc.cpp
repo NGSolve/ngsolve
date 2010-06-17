@@ -11,6 +11,7 @@ namespace ngcomp
     Array<int> restrict;
     Array<int> multiple;
     BaseMatrix * inv;
+    BaseMatrix * inv_coarse;
     string inversetype;
     BitArray * free_dofs;
     const MeshAccess & ma;
@@ -19,16 +20,23 @@ namespace ngcomp
     BaseMatrix * subassembled_innersolve;    
     ///number of global wirebasket degrees of freedom    
     int nglobalwbdof;
+    bool block;
+    SparseMatrix<double> * pwbmat;    
+    BaseVector * tmp;
   public:
-    BDDCMatrix (const ElementByElement_BilinearForm<double> & abfa, const string & inversetype)
-      : bfa(abfa), ma(abfa.GetFESpace().GetMeshAccess())
+    BDDCMatrix (const ElementByElement_BilinearForm<double> & abfa, const string & inversetype, bool ablock)
+      : bfa(abfa), ma(abfa.GetFESpace().GetMeshAccess()), block(ablock)
     {
+      pwbmat = NULL;
+      inv = NULL;
+      inv_coarse = NULL;
+      tmp = NULL;
       // LocalHeap lh(10000000);
       const FESpace & fes = bfa.GetFESpace();
       const MeshAccess & ma = fes.GetMeshAccess();
       int ne = ma.GetNE();
       
-//       if (!bfa.UsesKeepInternal()) throw Exception("please use keep_internal");
+      if (!bfa.UsesEliminateInternal()) throw Exception("please use eliminate_internal for the bilinearform");
       
       Array<int> cnt(ne); //count number of (external) dofs on each element
       Array<int> wbdcnt(ne); //count number of wirebasket dofs on each element
@@ -37,6 +45,7 @@ namespace ngcomp
       wbdofs = -1;
       Array<int> lwbdofs, dnums; //local (on one element) wirebasket (all) dofs
       nglobalwbdof = 0; 
+      
       for (int i = 0; i < ne; i++)
         {
           fes.GetDofNrs (i, dnums, EXTERNAL_DOF);	  
@@ -120,7 +129,6 @@ namespace ngcomp
 //       *testout << " nglobalwbdof " << nglobalwbdof << endl;
       cout << "now allocate matrix" << endl;
 
-      SparseMatrix<double> * pwbmat;
       if (bfa.IsSymmetric()){
 	pwbmat = new SparseMatrixSymmetric<double>(graph,1);
 	cout << "symmetric" << endl;
@@ -232,17 +240,44 @@ namespace ngcomp
 	      free_dofs->Set(i);
 	}
       *testout << "free_dofs = " << *free_dofs << endl;
-
-      // *testout << "wbmat = " << endl << wbmat << endl;
-      // *testout << "restrict = " << endl << restrict << endl;
-      cout << "call inverse" << endl;
-      inv = wbmat.InverseMatrix(free_dofs);
+      if (block){
+	Flags flags;
+	flags.SetFlag("subassembled");
+	Table<int> & blocks = *(bfa.GetFESpace().CreateSmoothingBlocks(flags));
+	for (int i = 0; i < blocks.Size(); i++){
+	  for (int j = 0; j < blocks[i].Size(); j++)
+	    blocks[i][j] = wbdofs[blocks[i][j]];
+	}
+	cout << "call block-jacobi inverse" << endl;
+	inv = wbmat.CreateBlockJacobiPrecond(blocks, 0, 0, 0);      
+	cout << "has inverse" << endl;
+	cout << "call directsolverclusters inverse" << endl;
+	Array<int> & clusters = *(bfa.GetFESpace().CreateDirectSolverClusters(flags));
+// 	*testout << " clusters = \n " << clusters << endl;
+	Array<int> & condclusters = *new Array<int>(nglobalwbdof);
+	for (int i=0; i< clusters.Size(); i++)
+	  condclusters[wbdofs[i]] = clusters[i];
+// 	*testout << " condclusters = \n " << condclusters << endl;
+	
+	inv_coarse = wbmat.InverseMatrix(&condclusters);
+	tmp = new VVector<>(nglobalwbdof);
+      }
+      else
+      {
+	cout << "call inverse" << endl;
+	inv = wbmat.InverseMatrix(free_dofs);
+      }
       cout << "has inverse" << endl;
 //       *testout << "inverse2 = " << (*inv) << endl;
-      delete pwbmat;
     }
 
-    ~BDDCMatrix(){delete inv;}
+    ~BDDCMatrix()
+    {
+      if (inv) delete inv;
+      if (pwbmat) delete pwbmat;
+      if (inv_coarse) delete inv_coarse;
+      if (tmp) delete tmp;
+    }
     
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {
@@ -265,8 +300,25 @@ namespace ngcomp
       else
 	lx2 += *subassembled_harmonicexttrans * lx2;
       
-      ly2 = 0.0;
-      *(ly2.Range(0,nglobalwbdof)) = (*inv) * *(lx2.Range(0,nglobalwbdof));
+      BaseVector & subx = *(lx2.Range(0,nglobalwbdof));
+      BaseVector & suby = *(ly2.Range(0,nglobalwbdof));
+      BaseVector & res = *tmp;
+       ly2 = 0.0;
+      if (block){
+	if (true) //GS
+	{
+	  dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothResiduum (suby, subx, res,1);
+	  if (inv_coarse)
+	    suby += (*inv_coarse) * res; 
+	  dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothBack (suby, subx);
+	}else{ //jacobi only (old)
+	  suby = (*inv) * subx;
+	}
+      }
+      else
+      {
+	suby = (*inv) * subx;
+      }
       ly2 += *subassembled_innersolve * lx2;
       ly2 += *subassembled_harmonicext * ly2;
 
@@ -1042,6 +1094,7 @@ namespace ngcomp
     bfa = dynamic_cast<const S_BilinearForm<SCAL>*>(pde->GetBilinearForm (aflags.GetStringFlag ("bilinearform", NULL)));
     inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
     refelement = flags.GetDefineFlag("refelement");
+    block = flags.GetDefineFlag("block");
   }
 
 
@@ -1053,7 +1106,7 @@ namespace ngcomp
     if (refelement)
       pre = new BDDCMatrixRefElement(*bfa, inversetype);
     else
-      pre = new BDDCMatrix(dynamic_cast<const ElementByElement_BilinearForm<double>&> (*bfa), inversetype);
+      pre = new BDDCMatrix(dynamic_cast<const ElementByElement_BilinearForm<double>&> (*bfa), inversetype, block);
 
     if (test) Test();
     
