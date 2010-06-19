@@ -29,7 +29,11 @@ namespace ngfem
       Sx bub1 = sqr (1-y-z) - sqr(x);
       ScaledLegendrePolynomialMult (n-4, x, 1-y-z, bub1, val1);
       ScaledLegendrePolynomialMult (n-4, 2*y - (1-z) , (1-z), y, val2); 
-      LegendrePolynomialMult (n-4, 2*z-1, z, val3);
+
+      // LegendrePolynomialMult (n-4, 2*z-1, z, val3);
+      LegendrePolynomial leg;
+      leg.EvalMult (n-4, 2*z-1, z, val3);
+
       /*
 	ScaledLegendrePolynomial (n-4, x, 1-y-z, val1);
 	// Sx bub1 = (1-x-y-z) * (1+x-y-z);

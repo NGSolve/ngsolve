@@ -5,13 +5,14 @@
 /*********************************************************************/
 
 
+
 #include <fem.hpp>
 namespace ngfem
 {
   using namespace ngfem;
 
 
-
+#ifdef OLD
   
   template <int DIM>
   double VertexExtensionOptimal<DIM> :: coefs[SIZE][SIZE];
@@ -128,6 +129,8 @@ namespace ngfem
 	  }
       }
 }
+
+#endif
 
   /*
 
@@ -445,9 +448,12 @@ namespace ngfem
 
 
 
-
+  /*
   VertexExtensionOptimal<2> dummy_vextopt2;
   VertexExtensionOptimal<3> dummy_vextopt3;
+  */
+
+
 
   Array<ConvertJacobi::d2*> ConvertJacobi::coefs_reducealpha;
   Array<ConvertJacobi::d2*> ConvertJacobi::coefs_reducealphafac;
@@ -550,6 +556,7 @@ namespace ngfem
       Init ()
       {
 	IntegratedLegendreMonomialExt :: CalcCoeffs();
+
 
         /*
         int n = 10;

@@ -25,7 +25,9 @@ namespace ngfem
     ///
     ScalarFiniteElement (ELEMENT_TYPE aeltype, 
 			 int andof = 0, int aorder = 0)
-      : FiniteElement (D, aeltype, andof, aorder) { ; }
+      : FiniteElement (D, aeltype, andof, aorder) 
+    { ; }
+
     ///
     virtual ~ScalarFiniteElement () { ; }
 

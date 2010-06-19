@@ -128,7 +128,7 @@ namespace ngfem
       public T_ScalarFiniteElement2< H1HighOrderFE<ET>, ET >
   { 
   public:    
-	  using T_H1HighOrderFiniteElement<ET>::GetInternalDofs;
+    using T_H1HighOrderFiniteElement<ET>::GetInternalDofs;
 
     T_H1HighOrderFiniteElement2 () { ; }
     T_H1HighOrderFiniteElement2 (int aorder) 
@@ -203,12 +203,6 @@ namespace ngfem
   class NGS_DLL_HEADER H1HighOrderFE<ET_TET> : public T_H1HighOrderFiniteElement2<ET_TET>
   {
     typedef TetShapesInnerLegendre T_INNERSHAPES;
-    typedef TetShapesFaceLegendre T_FACESHAPES;
-
-    // typedef TetShapesInnerJacobi T_INNERSHAPES;
-    // typedef TetShapesFaceJacobi T_FACESHAPES;
-    // typedef TetShapesFaceOpt1 T_FACESHAPES;
-
   public:
     H1HighOrderFE () { ; }
 
@@ -227,10 +221,6 @@ namespace ngfem
   template <>
   class NGS_DLL_HEADER H1HighOrderFE<ET_PRISM> : public T_H1HighOrderFiniteElement2<ET_PRISM>
   {
-    // typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
-    // typedef TrigShapesInnerJacobi T_TRIGFACESHAPES;
-    // typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
-
   public:
     H1HighOrderFE () { ; }
 
@@ -268,8 +258,6 @@ namespace ngfem
   template<>
   class NGS_DLL_HEADER H1HighOrderFE<ET_PYRAMID> : public T_H1HighOrderFiniteElement2<ET_PYRAMID>
   {
-    // typedef TrigShapesInnerLegendre T_TRIGSHAPES;
-
   public:
     H1HighOrderFE () { ; }
 

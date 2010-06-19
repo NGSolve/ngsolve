@@ -16,6 +16,469 @@ namespace ngfem
 
 
 
+
+  
+  template <class REC, int N>
+  class CEvalFO
+  {
+  public:
+    template <class S, class T>
+    ALWAYS_INLINE static void Eval (const REC & pol, S x, T & values, S & p1, S & p2) 
+    {
+      S p3;
+      CEvalFO<REC,N-1>::Eval (pol, x, values, p2, p3);
+      values[N] = p1 = ( pol.A(N) * x + pol.B(N)) * p2 + pol.C(N) * p3;
+    }
+
+
+    template <class S, class Sc, class T>
+    ALWAYS_INLINE static void EvalMult (const REC & pol, S x, Sc c, T & values, S & p1, S & p2) 
+    {
+      S p3;
+      CEvalFO<REC,N-1>::EvalMult (pol, x, c, values, p2, p3);
+      values[N] = p1 = ( pol.A(N) * x + pol.B(N)) * p2 + pol.C(N) * p3;
+    }
+
+
+    template <class S, class Sy, class T>
+    ALWAYS_INLINE static void EvalScaled (const REC & pol, S x, Sy y, T & values, S & p1, S & p2) 
+    {
+      S p3;
+      CEvalFO<REC,N-1>::EvalScaled (pol, x, y, values, p2, p3);
+      values[N] = p1 = ( pol.A(N) * x + pol.B(N) * y) * p2 + pol.C(N)*y*y * p3;
+    }
+
+
+    template <class S, class Sy, class Sc, class T>
+    ALWAYS_INLINE static void EvalScaledMult (const REC & pol, S x, Sy y, Sc c, T & values, S & p1, S & p2) 
+    {
+      S p3;
+      CEvalFO<REC,N-1>::EvalScaledMult (pol, x, y, c, values, p2, p3);
+      values[N] = p1 = ( pol.A(N) * x + pol.B(N) * y) * p2 + pol.C(N)*y*y * p3;
+    }
+
+
+  };
+
+
+  template <class REC>
+  class CEvalFO<REC, -1>
+    {
+    public:
+      template <class S, class T>
+      ALWAYS_INLINE static void Eval (const REC & pol, S x, T & values, S & /* p1 */, S & /* p2 */) 
+      { ; }
+
+      template <class S, class Sc, class T>
+      ALWAYS_INLINE static void EvalMult (const REC & pol, S x, Sc c, T & values, S & /* p1 */, S & /* p2 */) 
+      { ; }
+
+
+      template <class S, class Sy, class T>
+      ALWAYS_INLINE static void EvalScaled (const REC & pol, S x, Sy y, T & values, S & /* p1 */, S & /* p2 */) 
+      { ; }
+
+      template <class S, class Sy, class Sc, class T>
+      ALWAYS_INLINE static void EvalScaledMult (const REC & pol, S x, Sy y, Sc c, T & values, S & /* p1 */, S & /* p2 */) 
+      { ; }
+
+    };
+
+
+  template <class REC>
+  class CEvalFO<REC, 0>
+    {
+    public:
+      template <class S, class T>
+      ALWAYS_INLINE static void Eval (const REC & pol, S x, T & values, S & p1, S & /* p2 */) 
+      {
+	values[0] = p1 = pol.P0(x);
+      }
+
+      template <class S, class Sc, class T>
+      ALWAYS_INLINE static void EvalMult (const REC & pol, S x, Sc c, T & values, S & p1, S & /* p2 */) 
+      {
+	values[0] = p1 = c * pol.P0(x);
+      }
+
+
+      template <class S, class Sy, class T>
+      ALWAYS_INLINE static void EvalScaled (const REC & pol, S x, Sy y, T & values, S & p1, S & /* p2 */) 
+      {
+	values[0] = p1 = pol.P0(x);
+      }
+
+      template <class S, class Sy, class Sc, class T>
+      ALWAYS_INLINE static void EvalScaledMult (const REC & pol, S x, Sy y, Sc c, T & values, S & p1, S & /* p2 */) 
+      {
+	values[0] = p1 = c * pol.P0(x);
+      }
+
+    };
+
+  template <class REC>
+  class CEvalFO<REC, 1>
+  {
+  public:
+    template <class S, class T>
+    ALWAYS_INLINE static void Eval (const REC & pol, S x, T & values, S & p1, S & p2) 
+    {
+      values[0] = p2 = pol.P0(x);
+      values[1] = p1 = pol.P1(x);
+    }
+
+    template <class S, class Sc, class T>
+    ALWAYS_INLINE static void EvalMult (const REC & pol, S x, Sc c, T & values, S & p1, S & p2) 
+    {
+      values[0] = p2 = c * pol.P0(x);
+      values[1] = p1 = c * pol.P1(x);
+    }
+
+    template <class S, class Sy, class T>
+    ALWAYS_INLINE static void EvalScaled (const REC & pol, S x, Sy y, T & values, S & p1, S & p2) 
+    {
+      values[0] = p2 = pol.P0(x);
+      values[1] = p1 = pol.P1(x);
+    }
+
+    template <class S, class Sy, class Sc, class T>
+    ALWAYS_INLINE static void EvalScaledMult (const REC & pol, S x, Sy y, Sc c, T & values, S & p1, S & p2) 
+    {
+      values[0] = p2 = c * pol.P0(x);
+      values[1] = p1 = c * pol.P1(x);
+    }
+  };
+  
+
+
+
+
+  // P_i = (a_i x + b_i) P_{i-1} + c_i P_{i-2}
+  template<class REC>
+  class RecursivePolynomial
+  {
+  public:
+    template <int N, class S, class T>
+    ALWAYS_INLINE void EvalFO (S x, T & values) const
+    {
+      S p1, p2;
+      CEvalFO<REC, N>::Eval (static_cast<const REC&> (*this), x, values, p1, p2);
+    }
+
+
+    template <class S>
+    ALWAYS_INLINE static void EvalNext (int i, S x, S & p1, S & p2)
+    {
+      S pnew = (REC::A(i) * x + REC::B(i)) * p1 + REC::C(i) * p2;
+      p2 = p1;
+      p1 = pnew;
+    }
+
+    template <class S, class Sy>
+    ALWAYS_INLINE void EvalScaledNext (int i, S x, Sy y, S & p1, S & p2) const
+    {
+      const REC & pol = static_cast<const REC&> (*this);
+      S pnew = (pol.A(i) * x + pol.B(i) * y) * p1 + pol.C(i) * y*y*p2;
+      p2 = p1;
+      p1 = pnew;
+    }
+
+    template <class S, class T>
+    void Eval (int n, S x, T & values) const
+    {
+      EvalMult (n, x, 1.0, values);
+    }
+
+
+    template <class S, class Sc, class T>
+    void EvalMult (int n, S x, Sc c, T & values) const
+    {
+     const REC & pol = static_cast<const REC&> (*this);
+      S p1, p2;
+
+      if (n < 0) return;
+
+      values[0] = p2 = c * pol.P0(x);
+      if (n < 1) return;
+
+      values[1] = p1 = c * pol.P1(x);
+      if (n < 2) return;
+
+      EvalNext(2, x, p1, p2);
+      values[2] = p1;
+      if (n < 3) return;
+
+      EvalNext(3, x, p1, p2);
+      values[3] = p1;
+      if (n < 4) return;
+
+      EvalNext(4, x, p1, p2);
+      values[4] = p1;
+      if (n < 5) return;
+
+      EvalNext(5, x, p1, p2);
+      values[5] = p1;
+      if (n < 6) return;
+
+      EvalNext(6, x, p1, p2);
+      values[6] = p1;
+      if (n < 7) return;
+
+      EvalNext(7, x, p1, p2);
+      values[7] = p1;
+      if (n < 8) return;
+
+      EvalNext(8, x, p1, p2);
+      values[8] = p1;
+      if (n < 9) return;
+
+      EvalNext(9, x, p1, p2);
+      values[9] = p1;
+      if (n < 10) return;
+
+      EvalNext(10, x, p1, p2);
+      values[10] = p1;
+      if (n < 11) return;
+
+      EvalNext(11, x, p1, p2);
+      values[11] = p1;
+      if (n < 12) return;
+
+
+      for (int i = 12; i <= n; i++)
+	{	
+	  EvalNext (i, x, p1, p2);
+	  values[i] = p1;
+	}
+
+      /*
+      const REC & pol = static_cast<const REC&> (*this);
+
+      if (n < 0) return;
+
+      switch (n)
+	{
+	case 0: EvalMultFO<0> (x, c, values); return;
+	case 1: EvalMultFO<1> (x, c, values); return;
+	case 2: EvalMultFO<2> (x, c, values); return;
+	case 3: EvalMultFO<3> (x, c, values); return;
+	case 4: EvalMultFO<4> (x, c, values); return;
+	case 5: EvalMultFO<5> (x, c, values); return;
+	case 6: EvalMultFO<6> (x, c, values); return;
+	case 7: EvalMultFO<7> (x, c, values); return;
+	default:
+	  S p1, p2, p3;
+	  CEvalFO<REC, 8>::EvalMult (pol, x, c, values, p1, p2);
+
+	  for (int i = 9; i <= n; i++)
+	    {
+	      p3 = p2; p2 = p1;
+	      p1 = (pol.A(i) * x + pol.B(i)) * p2 + pol.C(i) * p3;
+	      values[i] = p1;
+	    }
+	}
+      */
+    }
+
+    template <int N, class S, class Sc, class T>
+    ALWAYS_INLINE void EvalMultFO (S x, Sc c, T & values) const
+    {
+      S p1, p2;
+      CEvalFO<REC, N>::EvalMult (static_cast<const REC&> (*this), x, c, values, p1, p2);
+    }
+
+
+
+
+
+    template <class S, class Sy, class T>
+    void EvalScaled (int n, S x, Sy y, T & values)
+    {
+      EvalScaledMult (n, x, y, 1.0, values);
+    }
+
+    template <int N, class S, class Sy, class T>
+    ALWAYS_INLINE void EvalScaledFO (S x, Sy y, T & values) const
+    {
+      S p1, p2;
+      CEvalFO<REC, N>::EvalScaled (static_cast<const REC&> (*this), x, y, values, p1, p2);
+    }
+
+
+
+    template <class S, class Sy, class Sc, class T>
+    void EvalScaledMult (int n, S x, Sy y, Sc c, T & values)
+    {
+    const REC & pol = static_cast<const REC&> (*this);
+      S p1, p2;
+
+      if (n < 0) return;
+
+      values[0] = p2 = c * pol.P0(x);
+      if (n < 1) return;
+
+      values[1] = p1 = c * pol.P1(x);
+      if (n < 2) return;
+
+      EvalScaledNext(2, x, y, p1, p2);
+      values[2] = p1;
+      if (n < 3) return;
+
+      EvalScaledNext(3, x, y, p1, p2);
+      values[3] = p1;
+      if (n < 4) return;
+
+      EvalScaledNext(4, x, y, p1, p2);
+      values[4] = p1;
+      if (n < 5) return;
+
+      EvalScaledNext(5, x, y, p1, p2);
+      values[5] = p1;
+      if (n < 6) return;
+
+      EvalScaledNext(6, x, y, p1, p2);
+      values[6] = p1;
+      if (n < 7) return;
+
+      EvalScaledNext(7, x, y, p1, p2);
+      values[7] = p1;
+      if (n < 8) return;
+
+      EvalScaledNext(8, x, y, p1, p2);
+      values[8] = p1;
+
+      for (int i = 9; i <= n; i++)
+	{	
+	  EvalScaledNext (i, x, y, p1, p2);
+	  values[i] = p1;
+	}
+      /*
+      const REC & pol = static_cast<const REC&> (*this);
+
+      if (n < 0) return;
+
+      switch (n)
+	{
+	case 0: EvalScaledMultFO<0> (x, y, c, values); return;
+	case 1: EvalScaledMultFO<1> (x, y, c, values); return;
+	case 2: EvalScaledMultFO<2> (x, y, c, values); return;
+	case 3: EvalScaledMultFO<3> (x, y, c, values); return;
+	case 4: EvalScaledMultFO<4> (x, y, c, values); return;
+	case 5: EvalScaledMultFO<5> (x, y, c, values); return;
+	case 6: EvalScaledMultFO<6> (x, y, c, values); return;
+	case 7: EvalScaledMultFO<7> (x, y, c, values); return;
+	default:
+	  S p1, p2, p3;
+	  CEvalFO<REC, 8>::EvalScaledMult (pol, x, y, c, values, p1, p2);
+
+	  for (int i = 9; i <= n; i++)
+	    {
+	      p3 = p2; p2 = p1;
+	      p1 = (pol.A(i) * x + pol.B(i) * y) * p2 + pol.C(i)*y*y * p3;
+	      values[i] = p1;
+	    }
+	}
+      */
+    }
+
+    template <int N, class S, class Sy, class Sc, class T>
+    ALWAYS_INLINE void EvalScaledMultFO (S x, Sy y, Sc c,T & values) const
+    {
+      S p1, p2;
+      CEvalFO<REC, N>::EvalScaledMult (static_cast<const REC&> (*this), x, y, c, values, p1, p2);
+    }
+  };
+
+
+
+  class LegendrePolynomial : public RecursivePolynomial<LegendrePolynomial>
+  {
+  public:
+    LegendrePolynomial () { ; }
+
+    template <class S, class T>
+    inline LegendrePolynomial (int n, S x, T & values)
+    {
+      Eval (n, x, values);
+    }
+
+    template <class S>
+    static S P0(S x)  { return S(1.0); }
+    template <class S>
+    static S P1(S x)  { return x; }
+    
+    static double A (int i) { return 2.0-1.0/i; }
+    static double B (int i) { return 0; }
+    static double C (int i) { return 1.0/i-1.0; }
+  };
+    
+    
+
+
+
+
+  template <int al, int be>
+  class JacobiPolynomialFix : public RecursivePolynomial<JacobiPolynomialFix<al,be> >
+  {
+  public:
+    JacobiPolynomialFix () { ; }
+
+    template <class S, class T>
+    inline JacobiPolynomialFix (int n, S x, T & values)
+    {
+      Eval (n, x, values);
+    }
+
+    
+    template <class S>
+    static ALWAYS_INLINE S P0(S x) { return S(1.0); }
+    template <class S>
+    static ALWAYS_INLINE S P1(S x) { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
+      
+    static ALWAYS_INLINE double A (int i) 
+    { i--; return (2.0*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+    static ALWAYS_INLINE double B (int i)
+    { i--; return (2.0*i+al+be+1)*(al*al-be*be) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+    static ALWAYS_INLINE double C (int i) 
+    { i--; return -2.0*(i+al)*(i+be) * (2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+  };
+
+
+
+
+
+  /*
+  class JacobiPolynomial2 : public RecursivePolynomial<JacobiPolynomial2>
+  {
+    double al, be;
+  public:
+    JacobiPolynomial2 (double aal, double abe) : al(aal), be(abe) { ; }
+
+    template <class S>
+    S P0(S x) const { return S(1.0); }
+    template <class S>
+    S P1(S x) const { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
+      
+    double A (int i) const 
+    { i--; return (2.0*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+    double B (int i) const
+    { i--; return (2.0*i+al+be+1)*(al*al-be*be) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+    double C (int i) const 
+    { i--; return -2.0*(i+al)*(i+be) * (2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+  };
+  */
+
+
+
+
+
+
+
+
+
+
+
+
   /**
      Legendre polynomials P_i on (-1,1), 
      up to order n --> n+1 values
@@ -27,7 +490,7 @@ namespace ngfem
      P_2 = -1/2 + 3/2 x^2
   */
   template <class S, class T>
-  inline void LegendrePolynomial (int n, S x, T & values)
+  inline void LegendrePolynomial1 (int n, S x, T & values)
   {
     S p1, p2;
 
@@ -76,9 +539,16 @@ namespace ngfem
   }
 
 
+  template <class S, class Sc, class T>
+  inline void LegendrePolynomialMult (int n, S x, Sc c , T & values)
+  {
+    LegendrePolynomial leg;
+    leg.EvalMult (n, x, c, values);
+  }
 
 
 
+#ifdef V1
   /**
      c P_i 
   */
@@ -137,10 +607,6 @@ namespace ngfem
 
 
 
-
-
-
-
   template <int n>
   class LegendrePolynomialFO
   {
@@ -176,7 +642,7 @@ namespace ngfem
   };
 
 
-  template <> class LegendrePolynomialFO<-1>
+    template <> class LegendrePolynomialFO<-1>
   {
   public:
     template <class S, class T>
@@ -255,13 +721,13 @@ namespace ngfem
       values[1] = c*x;
     }
   };
+#endif
 
 
 
 
 
-
-
+#ifdef V1
   template <int n, int alpha, int beta>
   class JacobiPolynomialFO
   {
@@ -341,7 +807,7 @@ namespace ngfem
     }
     */
   };
-
+#endif
 
 
 
@@ -350,7 +816,7 @@ namespace ngfem
   // compute J_j^{2i+alpha0, beta} (x),  for i+j <= n
 
   template <class S, class T>
-  void DubinerJacobiPolynomials (int n, S x, int alpha0, int beta, T & values)
+  void DubinerJacobiPolynomials1 (int n, S x, int alpha0, int beta, T & values)
   {
     for (int i = 0; i <= n; i++)
       JacobiPolynomial (n-i, x, alpha0+2*i, beta, values.Row(i));
@@ -364,17 +830,38 @@ namespace ngfem
     template <class S, class T>
     static void Eval (S x, T & values)
     {
-    DubinerJacobiPolynomialsFO<n, i-1, alpha0, beta>::Eval (x, values);
-    JacobiPolynomialFO<n-i, alpha0+2*i, beta>::Eval (x, values.Row(i));
+      DubinerJacobiPolynomialsFO<n, i-1, alpha0, beta>::Eval (x, values);
+      // JacobiPolynomialFO<n-i, alpha0+2*i, beta>::Eval (x, values.Row(i));
+
+      JacobiPolynomialFix<alpha0+2*i, beta> jac;
+      S p1, p2;
+      CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::Eval (jac, x, values.Row(i), p1, p2);
     }
+
+
+    template <class S, class St, class T>
+    static void EvalScaled (S x, St t, T & values)
+    {
+      DubinerJacobiPolynomialsFO<n, i-1, alpha0, beta>::EvalScaled (x, t, values);
+      // JacobiPolynomialFO<n-i, alpha0+2*i, beta>::Eval (x, values.Row(i));
+
+      JacobiPolynomialFix<alpha0+2*i, beta> jac;
+      S p1, p2;
+      CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::EvalScaled (jac, x, t, values.Row(i), p1, p2);
+    }
+
+    
   };
   
   template <int n, int alpha0, int beta>
   class DubinerJacobiPolynomialsFO<n, -1, alpha0, beta>
   {
   public:
-  template <class S, class T>
-  static void Eval (S x, T & values)
+    template <class S, class T>
+    static void Eval (S x, T & values)
+    { ; }
+    template <class S, class St, class T>
+    static void EvalScaled (S x, St t, T & values)
     { ; }
   };
   
@@ -393,7 +880,120 @@ namespace ngfem
       case 6: DubinerJacobiPolynomialsFO<6, 6, ALPHA0, BETA>::Eval (x, values); break;
       case 7: DubinerJacobiPolynomialsFO<7, 7, ALPHA0, BETA>::Eval (x, values); break;
       case 8: DubinerJacobiPolynomialsFO<8, 8, ALPHA0, BETA>::Eval (x, values); break;
-      default: DubinerJacobiPolynomials (n, x, ALPHA0, BETA, values);
+      case 9: DubinerJacobiPolynomialsFO<9, 9, ALPHA0, BETA>::Eval (x, values); break;
+      case 10: DubinerJacobiPolynomialsFO<10, 10, ALPHA0, BETA>::Eval (x, values); break;
+      default: DubinerJacobiPolynomials1 (n, x, ALPHA0, BETA, values);
+      }
+  }
+
+
+
+  template <int ALPHA0, int BETA, int DIAG, int ORDER = DIAG>
+  class DubinerJacobiPolynomialsDiag
+  {
+  public:
+    template<class S, class Thelp, class T>
+    ALWAYS_INLINE static void Step (S x, Thelp & help, T & values)
+    {
+      DubinerJacobiPolynomialsDiag<ALPHA0, BETA, DIAG, ORDER-1>::Step (x, help, values);
+      typedef JacobiPolynomialFix<ALPHA0+2*(DIAG-ORDER), BETA> REC;
+      
+      if (ORDER == 0)
+	help[DIAG-ORDER][0] = REC::P0(x);
+      else if (ORDER == 1)
+	{
+	  help[DIAG-ORDER][0] = REC::P1(x);
+	  help[DIAG-ORDER][1] = REC::P0(x);
+	}
+      else
+	{
+	  REC::EvalNext (ORDER, x, help[DIAG-ORDER][0], help[DIAG-ORDER][1]);
+	}
+      values(DIAG-ORDER, ORDER) = help[DIAG-ORDER][0];
+    }
+  };
+
+  template <int ALPHA0, int BETA, int DIAG>
+  class DubinerJacobiPolynomialsDiag<ALPHA0, BETA, DIAG, -1>
+  {
+  public:
+    template<class S, class Thelp, class T>
+    ALWAYS_INLINE static void Step (S x, Thelp & help, T & values) {;}
+  };
+
+  
+  template <int ALPHA0, int BETA, class S, class T>
+  void DubinerJacobiPolynomials (int n, S x, T & values)
+  {
+    S help[20][2];
+    if (n < 0) return;
+    DubinerJacobiPolynomialsDiag<ALPHA0, BETA, 0>::Step (x, help, values);
+
+    if (n < 1) return;
+    DubinerJacobiPolynomialsDiag<ALPHA0, BETA, 1>::Step (x, help, values);
+
+    if (n < 2) return;
+    DubinerJacobiPolynomialsDiag<ALPHA0, BETA, 2>::Step (x, help, values);
+
+    if (n < 3) return;
+    DubinerJacobiPolynomialsDiag<ALPHA0, BETA, 3>::Step (x, help, values);
+
+    if (n < 4) return;
+    DubinerJacobiPolynomialsDiag<ALPHA0, BETA, 4>::Step (x, help, values);
+
+    if (n < 5) return;
+    DubinerJacobiPolynomialsDiag<ALPHA0, BETA, 5>::Step (x, help, values);
+
+    if (n < 6) return;
+    DubinerJacobiPolynomialsDiag<ALPHA0, BETA, 6>::Step (x, help, values);
+
+    if (n < 7) return;
+    DubinerJacobiPolynomialsDiag<ALPHA0, BETA, 7>::Step (x, help, values);
+
+    if (n < 8) return;
+    DubinerJacobiPolynomialsDiag<ALPHA0, BETA, 8>::Step (x, help, values);
+
+    if (n < 9) return;
+    DubinerJacobiPolynomialsDiag<ALPHA0, BETA, 9>::Step (x, help, values);
+
+    if (n < 10) return;
+    DubinerJacobiPolynomialsDiag<ALPHA0, BETA, 10>::Step (x, help, values);
+
+    if (n < 11) return;
+
+    DubinerJacobiPolynomials1 (n, x, ALPHA0, BETA, values);
+  }
+
+
+
+
+
+
+  template <class S, class St, class T>
+  void DubinerJacobiPolynomialsScaled1 (int n, S x, St t, int alpha0, int beta, T & values)
+  {
+    for (int i = 0; i <= n; i++)
+      ScaledJacobiPolynomial (n-i, x, t, alpha0+2*i, beta, values.Row(i));
+  }
+
+
+  
+  
+  template <int ALPHA0, int BETA, class S, class St, class T>
+  void DubinerJacobiPolynomialsScaled (int n, S x, St t, T & values)
+  {
+    switch (n)
+      {
+      case 0: DubinerJacobiPolynomialsFO<0, 0, ALPHA0, BETA>::EvalScaled (x, t, values); break;
+      case 1: DubinerJacobiPolynomialsFO<1, 1, ALPHA0, BETA>::EvalScaled (x, t, values); break;
+      case 2: DubinerJacobiPolynomialsFO<2, 2, ALPHA0, BETA>::EvalScaled (x, t, values); break;
+      case 3: DubinerJacobiPolynomialsFO<3, 3, ALPHA0, BETA>::EvalScaled (x, t, values); break;
+      case 4: DubinerJacobiPolynomialsFO<4, 4, ALPHA0, BETA>::EvalScaled (x, t, values); break;
+      case 5: DubinerJacobiPolynomialsFO<5, 5, ALPHA0, BETA>::EvalScaled (x, t, values); break;
+      case 6: DubinerJacobiPolynomialsFO<6, 6, ALPHA0, BETA>::EvalScaled (x, t, values); break;
+      case 7: DubinerJacobiPolynomialsFO<7, 7, ALPHA0, BETA>::EvalScaled (x, t, values); break;
+      case 8: DubinerJacobiPolynomialsFO<8, 8, ALPHA0, BETA>::EvalScaled (x, t, values); break;
+      default: DubinerJacobiPolynomialsScaled1 (n, x, t, ALPHA0, BETA, values);
       }
   }
 
@@ -401,6 +1001,64 @@ namespace ngfem
   
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+  class DubinerBasis
+  {
+  public:
+    template <class S, class T>
+    void Eval (int n, S x, S y, T & values)
+    {
+      EvalMult (n, x, y, 1.0, values);
+    }
+
+    template <class S, class Sc, class T>
+    void EvalMult (int n, S x, S y, Sc c, T & values)
+    {
+      ArrayMem<S, 20> poly(n+1);
+      ArrayMem<S, 400> polx_mem( sqr(n+1) );
+      FlatMatrix<S> polx(n+1,n+1, &polx_mem[0]);
+
+      LegendrePolynomial leg;
+      leg.EvalScaledMult (n, 2*y+x-1, 1-x, c, poly);
+
+      DubinerJacobiPolynomials<1,0> (n, 2*x-1, polx);
+
+      for (int i = 0, ii = 0; i <= n; i++)
+	for (int j = 0; j <= n-i; j++)
+	  values[ii++] = poly[j] * polx(j, i);
+    }
+
+
+    template <class S, class St, class Sc, class T>
+    void EvalScaledMult (int n, S x, S y, St t, Sc c, T & values)
+    {
+      ArrayMem<S, 20> poly(n+1);
+      ArrayMem<S, 400> polx_mem( sqr(n+1) );
+      FlatMatrix<S> polx(n+1,n+1, &polx_mem[0]);
+
+      LegendrePolynomial leg;
+      leg.EvalScaledMult (n, 2*y+x-1, t-x, c, poly);
+
+      DubinerJacobiPolynomialsScaled<1,0> (n, 2*x-1, t, polx);
+
+      for (int i = 0, ii = 0; i <= n; i++)
+	for (int j = 0; j <= n-i; j++)
+	  values[ii++] = poly[j] * polx(j, i);
+    }
+
+
+  };
 
 
 
@@ -458,6 +1116,7 @@ namespace ngfem
   }
 
 
+#ifdef USEDXXX
   /**
      Derived Legendre polynomials on (-1,1)
      value[i] (x) = d/dx P_{i+1}
@@ -467,7 +1126,7 @@ namespace ngfem
   {
     GegenbauerPolynomial<S,T> (n, x, 1.5, values);
   }
-
+#endif
 
 
 
@@ -1086,7 +1745,7 @@ namespace ngfem
 
 
 
-
+#ifdef OLD
 
 
   /*
@@ -1234,6 +1893,9 @@ namespace ngfem
       return 1;
     }
   };
+
+#endif
+
 
   /**
      Compute triangle edge-shape functions

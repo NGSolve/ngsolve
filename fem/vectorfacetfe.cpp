@@ -122,7 +122,7 @@ namespace ngfem {
     ScaledLegendrePolynomial (p, 2*xi+eta-1, 1-eta, polx);
 
     Matrix<> polsy(p+1, p+1);
-    DubinerJacobiPolynomials (p, 2*eta-1, 1, 0, polsy);
+    DubinerJacobiPolynomials<1,0> (p, 2*eta-1, polsy);
 
     // LegendrePolynomial (p, 2*eta-1, poly);
 
@@ -542,7 +542,7 @@ namespace ngfem {
     int ii = first_facet_dof[fanr];
 
     ScaledLegendrePolynomial (p, 2*xi+eta-1, 1-eta, polx);
-    DubinerJacobiPolynomials (p, 2*eta-1, 1, 0, polsy);
+    DubinerJacobiPolynomials<1,0> (p, 2*eta-1, polsy);
 
     for (int i = 0; i <= facet_order[fanr][0]; i++)
       for (int j = 0; j <= facet_order[fanr][0]-i; j++)
@@ -640,7 +640,7 @@ namespace ngfem {
 	Matrix<> polsy(p+1, p+1);
 	
 	ScaledLegendrePolynomial (p, 2*xi+eta-1, 1-eta, polx);
-	DubinerJacobiPolynomials (p, 2*eta-1, 1, 0, polsy);
+	DubinerJacobiPolynomials<1,0> (p, 2*eta-1, polsy);
 	
 	int ii = first_facet_dof[fanr];
 	for (int i = 0; i <= facet_order[fanr][0]; i++)

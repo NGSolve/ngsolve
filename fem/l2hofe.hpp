@@ -96,14 +96,6 @@ namespace ngfem
     }
 
     virtual void ComputeNDof();
-
-    /*
-      virtual void CalcShape (const IntegrationPoint & ip, 
-      FlatVector<> shape) const;
-
-      virtual void CalcDShape (const IntegrationPoint & ip, 
-      FlatMatrixFixWidth<DIM> dshape) const;
-    */
   };
 
 
@@ -146,10 +138,19 @@ namespace ngfem
     L2HighOrderFE (int aorder);
 
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[2], TFA & shape) const;
+    void T_CalcShape (Tx hx[2], TFA & shape) const
+    {
+      Tx lam[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
+      
+      INT<4> f = GetFaceSort (0, vnums);
+      
+      int p = order_inner[0];
+      DubinerBasis dub;
+      dub.Eval (p, lam[f[0]], lam[f[1]], shape);
+    }
   };
-
-
+  
+    
   /**
      L2 high order quadrilateral finite element
   */

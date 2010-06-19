@@ -107,6 +107,7 @@ namespace ngfem
     ComputeNDof();
   }
 
+  /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
@@ -132,6 +133,9 @@ namespace ngfem
           shape[ii++] = polx[i] * poly[j];
       }
   }
+  */
+
+
 
   /* *********************** Quadrilateral  **********************/
 
@@ -182,8 +186,50 @@ namespace ngfem
   }
 
   template<typename Tx, typename TFA>  
-  void L2HighOrderFE<ET_TET> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void L2HighOrderFE<ET_TET> :: T_CalcShape (Tx x[3], TFA & shape) const
   {
+    Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
+    
+    int sort[4];
+    for (int i = 0; i < 4; i++) sort[i] = i;
+    
+    if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+    if (vnums[sort[2]] > vnums[sort[3]]) Swap (sort[2], sort[3]);
+    if (vnums[sort[0]] > vnums[sort[2]]) Swap (sort[0], sort[2]);
+    if (vnums[sort[1]] > vnums[sort[3]]) Swap (sort[1], sort[3]);
+    if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
+
+    Tx lamis[4];
+    for (int i = 0; i < 4; i++)
+      lamis[i] = lami[sort[i]];
+
+    ArrayMem<Tx, 20> memx(sqr(order+1));
+    ArrayMem<Tx, 20> memy(sqr(order+1));
+
+    FlatMatrix<Tx> polsx(order+1, &memx[0]);
+    FlatMatrix<Tx> polsy(order+1, &memy[0]);
+    VectorMem<10, Tx> polsz(order+1);
+    
+    for (int i = 0; i <= order; i++)
+      JacobiPolynomial (order, 2*lamis[0]-1, 2*i+2, 0, polsx.Row(i));
+    for (int i = 0; i <= order; i++)
+      ScaledJacobiPolynomial (order, lamis[1]-lamis[2]-lamis[3], 1-lamis[0], 2*i+1, 0, polsy.Row(i));
+
+    ScaledLegendrePolynomial (order, lamis[2]-lamis[3], lamis[2]+lamis[3], polsz);
+
+    for (int i = 0, ii = 0; i <= order; i++)
+      for (int j = 0; j <= order-i; j++)
+	for (int k = 0; k <= order-i-j; k++, ii++)
+	  shape[ii] = polsz(k) * polsy(k, j) * polsx(j+k, i);
+    /*
+      for (int i = 0; i < ndof; i++)
+      sds[i] =
+      polsx(tet2tensor[i][1]+tet2tensor[i][2]+tet2tensor[i][3], tet2tensor[i][0]) 
+      * polsy(tet2tensor[i][2]+tet2tensor[i][3], tet2tensor[i][1])
+      * polsz(tet2tensor[i][2]) ;
+      */
+    
+    /*
     Tx x = hx[0];
     Tx y = hx[1];
     Tx z = hx[2];
@@ -191,12 +237,6 @@ namespace ngfem
     // no orientation necessary
     int n=order;
     ArrayMem<Tx, 20> polx(n+1), poly(n+1), polz(n+1);
-
-    /*
-    ArrayMem<Tx, 400> polsz_mem( (n+1)*(n+1) );
-    FlatMatrix<Tx> polsz (n+1, &polsz_mem[0]);
-    DubinerJacobiPolynomials2<2, 0> (n, 2*z-1, polsz);
-    */
 
     // Polynomials orthogonal w.r.t L2 inner product
     ScaledLegendrePolynomial ( n, 2*x+y+z-1, 1-y-z, polx);
@@ -212,6 +252,7 @@ namespace ngfem
 	    // shape[ii++] = polx[i] * poly[j] * polsz(i+j, k);
 	  }
       }
+    */
   }
 
 
