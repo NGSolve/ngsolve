@@ -478,7 +478,8 @@ namespace ngcomp
 
     for(int i=0; i<fanums.Size(); i++)
       {
-        ctypes.Append(WIREBASKET_DOF); // low_order
+        // ctypes.Append(WIREBASKET_DOF); // low_order
+	ctypes.Append(INTERFACE_DOF); // low_order
 
         first = first_facet_dof[fanums[i]];
         next = first_facet_dof[fanums[i]+1];
@@ -576,6 +577,7 @@ namespace ngcomp
 
     clusters.SetSize(ndof);
     clusters = 0;
+    
     for (int i = 0; i < nfa; i++)
       clusters[i] = 1;
     
@@ -964,7 +966,7 @@ namespace ngcomp
 
   const FiniteElement & EdgeFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    EdgeVolumeFiniteElement * fe3d = new (lh) EdgeVolumeFiniteElement (ET_TET, order);
+    EdgeVolumeFiniteElement<3> * fe3d = new (lh) EdgeVolumeTet (order);
 
 
     ArrayMem<int, 12> vnums;
@@ -977,7 +979,7 @@ namespace ngcomp
 
   const FiniteElement & EdgeFESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
-    EdgeVolumeFiniteElement * fe3d = new (lh) EdgeVolumeFiniteElement (ET_TRIG, order);
+    EdgeVolumeFiniteElement<2> * fe3d = new (lh) EdgeVolumeTrig (order);
 
     ArrayMem<int, 12> vnums;
     ma.GetSElVertices(selnr, vnums);
@@ -1072,9 +1074,10 @@ public:
 	facetflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
 
     
-    const FESpaceClasses::FESpaceInfo * info = GetFESpaceClasses().GetFESpace("l2hotp");
-    if (!info) 
-      info = GetFESpaceClasses().GetFESpace("l2ho");
+    const FESpaceClasses::FESpaceInfo * info;
+    info = GetFESpaceClasses().GetFESpace("DGhotp");
+    if (!info) info = GetFESpaceClasses().GetFESpace("l2hotp");
+    if (!info) info = GetFESpaceClasses().GetFESpace("l2ho");
     
     spaces[0] = info->creator(ma, l2flags);
     // spaces[0] = new L2HighOrderFESpace (ma, l2flags);    
@@ -1139,7 +1142,8 @@ public:
 		clusters[dnums[0]+baseh1]=1;
 	      }
 	    }
-		      
+
+	/*
 	//low order: 3D: l.o. face
 	if (ma.GetDimension() == 3)
 	  for (int i = 0; i < nfa; i++)
@@ -1152,6 +1156,8 @@ public:
 		clusters[dnums[0]+basefac]=1;
 	      //end-if isdirichletvertex
 	    }
+	*/
+
 	return &clusters;	
     }
     else throw Exception("HDG::CreateDirectSolverClusters");
@@ -1213,6 +1219,8 @@ public:
 		    }//end-if isdirichletvertex
 		  }
 		}
+
+	    /*
 	    for (int i = 0; i < nfa; i++)
 	      if (!IsDirichletFace(i))
 	      {
@@ -1224,8 +1232,58 @@ public:
 		    creator.Add (face.vertices[k], dnums[0]);	
 		  }
 	      }		  
+	    */
 	    break; 	    
 	  }
+
+
+
+
+	switch (smoothing_type)
+	  {
+	  case 52: 
+	    //for BDDC: we have only the condensated (after subassembling) dofs, 
+	    //and build patches around each vertex Vertices + Edges
+		
+	    if (creator.GetMode() == 1)
+	      cout << "BDDC-Faces-around-Edges" << endl;
+		
+	    if (ma.GetDimension() == 2)
+	      {
+		;
+	      }
+
+	    else
+	      
+	      {
+		Array<int> dnums, ednums;
+
+		for (int i = 0; i < ned; i++)
+		  if (!IsDirichletEdge(i))
+		    {
+		      GetEdgeDofNrs(i,dnums);
+		      for (int l=0;l<dnums.Size();l++)
+			creator.Add (i, dnums[l]);
+		    }
+		/*
+		for (int i = 0; i < nfa; i++)
+		  if (!IsDirichletFace(i))
+		    {
+		      GetFaceDofNrs(i,dnums);
+		      ma.GetFaceEdges (i, ednums);
+
+		      for (int k = 0; k < ednums.Size(); k++)
+			if (! IsDirichletEdge(ednums[k]) ){
+			  creator.Add (ednums[k], dnums[0]);	
+			}
+		    }
+		*/
+		break; 	    
+	      }
+
+	  }
+
+	
       }
 	    
     return creator.GetTable();

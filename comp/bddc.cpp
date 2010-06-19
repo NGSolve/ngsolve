@@ -2,6 +2,8 @@
 #include <solve.hpp>
 
 #include <bddc.hpp>
+
+
 namespace ngcomp
 {
 
@@ -353,10 +355,13 @@ namespace ngcomp
     const S_BilinearForm<double> & bfa;
     Array<int> restrict;
     Array<int> multiple;
-    BaseMatrix * inv;
+    BaseMatrix * inv, *inv_coarse;
     
     Table<int> *wbdofs, *dcdofs, *internaldofs, *externaldofs;
     Table<int> *globwbdofs, *globdcdofs, *globinternaldofs, *globexternaldofs;
+
+    Table<int> *interface_dofs;
+    Table<double> *weighting;
 
     Array<int> elclassnr;
     Table<int> * els_of_class;
@@ -367,12 +372,16 @@ namespace ngcomp
     string inversetype;
     bool print;
 
+    bool block;
+    BitArray * free_dofs_wb;
+
   public:
     BDDCMatrixRefElement (const S_BilinearForm<double> & abfa, const string & ainversetype)
       : bfa(abfa), inversetype (ainversetype)
     {
       cout << "BDDC MatrixRefElement" << endl;
       print = true;
+      block = true;
       LocalHeap lh(500000000);
 
       if (print)
@@ -514,7 +523,9 @@ namespace ngcomp
       int firstdcdof = fes.GetNDof();      
       
       MatrixGraph graph(firstdcdof, *globwbdofs, 1);
-      SparseMatrixSymmetric<double> dcmat(graph, 1);
+      SparseMatrixSymmetric<double> & dcmat 
+	= *new SparseMatrixSymmetric<double> (graph, 1);
+
       dcmat = 0.0;
       // dcmat.SetInverseType ("sparsecholesky");
       dcmat.SetInverseType (inversetype);
@@ -564,7 +575,7 @@ namespace ngcomp
           elclassnr[i] = classnr;
           if (invdc_ref[classnr]) continue;
 
-          cout << "assemble class " << classnr << endl;
+          cout << "assemble class " << classnr << " " << flush;
 
 	  if (print)
 	    *testout << "assemble class " << classnr << endl;
@@ -597,7 +608,7 @@ namespace ngcomp
           int nint = (*internaldofs)[i].Size();
           int next = (*externaldofs)[i].Size();
 
-	  
+	  cout << " wb = " << nwb << " nifs = " << ndc << " loc = " << nint << endl;
 	  // external/internal extension
 
 
@@ -718,18 +729,114 @@ namespace ngcomp
 
 
       const BitArray & free_dofs = *fes.GetFreeDofs();
+
+      
+      // Table<int> *interface_dofs;
+      // Table<double> *weighting;
+      Array<int> cnt_interface(ne);
+      cnt_interface = 0;
+
+      for (int i = 0; i < ne; i++)
+	cnt_interface[i] = (*globdcdofs)[i].Size();
+      
+      interface_dofs = new Table<int> (cnt_interface);
+      weighting = new Table<double> (cnt_interface);
+
+      for (int i = 0; i < ne; i++)
+	{
+	  FlatArray<int> dc = (*globdcdofs)[i];
+	  for (int j = 0; j < dc.Size(); j++)
+	    {
+	      int rest = restrict[dc[j]];
+
+	      if (rest == -1) cout << "rest == -1" << endl;
+	      if (multiple[rest] <= 0) cout << "multiplie = " << multiple[rest] << endl;
+
+	      (*interface_dofs)[i][j] = rest;
+
+	      if (free_dofs.Test(rest))
+		(*weighting)[i][j] = 1.0 / multiple[rest];
+	      else
+		(*weighting)[i][j] = 0.0;
+	    }
+	}
+
+      cout << "tables filled" << endl;
+
+
+
+
       for (int i = 0; i < restrict.Size(); i++)
 	if (restrict[i] != -1 && !free_dofs.Test(restrict[i]))
 	  restrict[i] = -1;
 
 
+      free_dofs_wb = new BitArray (free_dofs.Size());
+
+      free_dofs_wb -> Clear();
+      for (int i = 0; i < firstdcdof; i++)
+        if (gwbdofs[i] != 0)
+	  free_dofs_wb->Set(i);
+      free_dofs_wb -> And (free_dofs);
+
+      
+
+
+
+
       cout << "call inverse, type = " << inversetype << endl;
       cout << "dim = " << dcmat.Height() << endl;
 
-      inv = dcmat.InverseMatrix(&free_dofs);
+
+
+      if (block)
+	{
+	  Flags flags;
+	  flags.SetFlag("subassembled");
+	  Table<int> & blocks = *(bfa.GetFESpace().CreateSmoothingBlocks(flags));
+	  /*
+	  for (int i = 0; i < blocks.Size(); i++){
+	    for (int j = 0; j < blocks[i].Size(); j++)
+	      blocks[i][j] = wbdofs[blocks[i][j]];
+	  }
+	  */
+	  cout << "call block-jacobi inverse" << endl;
+	  inv = dcmat.CreateBlockJacobiPrecond(blocks, 0, 0, 0);      
+
+	  cout << "dc.height = " << dcmat.Height() << endl;
+	  cout << "inv.height = " << inv->Height() << endl;
+
+	  cout << "has inverse" << endl;
+	  cout << "call directsolverclusters inverse" << endl;
+	  Array<int> & clusters = *(bfa.GetFESpace().CreateDirectSolverClusters(flags));
+	  // 	*testout << " clusters = \n " << clusters << endl;
+	  /*
+	  Array<int> & condclusters = *new Array<int>(nglobalwbdof);
+	  for (int i=0; i< clusters.Size(); i++)
+	    condclusters[wbdofs[i]] = clusters[i];
+	  inv_coarse = dcmat.InverseMatrix(&condclusters);
+	  */
+	  // 	*testout << " condclusters = \n " << condclusters << endl;
+	  inv_coarse = dcmat.InverseMatrix(&clusters);
+	  // tmp = new VVector<>(nglobalwbdof);
+
+	  for (int i = 0; i < clusters.Size(); i++)
+	    if (clusters[i] && !free_dofs_wb->Test(i))
+	      cout << "wrong dirichet bc" << endl;
+	}
+      else
+	{
+	  cout << "call inverse" << endl;
+	  inv = dcmat.InverseMatrix(free_dofs_wb);
+	}
+
+      // inv = dcmat.InverseMatrix(&free_dofs);
       return;
 
-#define sometests
+
+
+
+#define sometestsxx
 #ifdef sometests
 
       Array<int> & directblocks = *new Array<int> (free_dofs.Size());
@@ -759,7 +866,7 @@ namespace ngcomp
 	}
       */
 
-      for (int i = 0; i < nfa; i++)
+      for (int i = 0; i < -nfa; i++)
 	{
 	  fes.GetFaceDofNrs (i, dnums);
 	  if (!dnums.Size()) continue;
@@ -785,7 +892,7 @@ namespace ngcomp
 	    directblocks[dnums[0]] = 1;
 	  for (int j = 1; j < dnums.Size(); j++)
 	    if (free_dofs.Test(dnums[j]))
-	      directblocks[dnums[j]] = i;
+	      directblocks[dnums[j]] = i+2;
 	}
       
       cout << "directblocks.Size() = " << directblocks.Size() << endl;
@@ -826,29 +933,55 @@ namespace ngcomp
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {
+      // cout << "Multadd, |x| = " << L2Norm(x) << ", |y| = " << L2Norm(y) << endl;
       static int timer = NgProfiler::CreateTimer ("Apply BDDC preconditioner");
       static int timertransx = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx");
+      static int timertransx1a = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - lapack");
+      static int timertransx1b = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - read");
+      static int timertransx1c = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - write");
+      static int timertransx1d = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - indices");
+
       static int timertransy = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy");
+      static int timertransyr = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy - read");
+      static int timertransyw = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy - write");
+      static int timertransyi = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy - ind");
+
+
       static int timerrest = NgProfiler::CreateTimer ("Apply BDDC preconditioner, restrict");
       static int timerdc = NgProfiler::CreateTimer ("Apply BDDC preconditioner, decoupled");
       static int timerext = NgProfiler::CreateTimer ("Apply BDDC preconditioner, extend");
       static int timerinner = NgProfiler::CreateTimer ("Apply BDDC preconditioner, inner");
       static int timersolve = NgProfiler::CreateTimer ("Apply BDDC preconditioner, solve");
+      static int timeretc = NgProfiler::CreateTimer ("Apply BDDC preconditioner, etc");
       NgProfiler::RegionTimer reg (timer);
 
-      LocalHeap lh(1000014);
+
       FlatVector<> fx = x.FVDouble();
       FlatVector<> fy = y.FVDouble();
 
       VVector<> transx(ndof);
       VVector<> transy(ndof);
-
-      VVector<> lx(restrict.Size());
-      VVector<> ly(restrict.Size());
       
+      int maxmem = 0;
+      for (int cl = 0; cl < els_of_class->Size(); cl++)
+	{
+	  FlatArray<int> els = (*els_of_class)[cl];
+	  if (!els.Size()) continue;
+	  
+	  const Matrix<> & ext = (*extension_int_ref_trans[cl]);
+	  int mem = els.Size() * max (ext.Height(), ext.Width());
+
+	  maxmem = max(maxmem,mem);
+	}
+      
+      Vector<> hmem1(maxmem);
+      Vector<> hmem2(maxmem);
+      
+
       {
 	NgProfiler::RegionTimer reg(timertransx);
-	transx = 1.0 * x;
+	transx.FV() = fx;  
+
 
 
 	for (int cl = 0; cl < els_of_class->Size(); cl++)
@@ -857,37 +990,65 @@ namespace ngcomp
 	    if (!els.Size()) continue;
 
 	    const Matrix<> & ext = (*extension_int_ref_trans[cl]);
-	    Matrix<> vim(els.Size(), ext.Width());
-	    Matrix<> vem(els.Size(), ext.Height());
+
+	    FlatMatrix<> vim(els.Size(), ext.Width(), &hmem1(0));
+	    FlatMatrix<> vem(els.Size(), ext.Height(), &hmem2(0));
 
 	    NgProfiler::AddFlops (timertransx, ext.Width()*ext.Height()*els.Size());
+	    NgProfiler::AddFlops (timertransx1a, ext.Width()*ext.Height()*els.Size());
+
+	    NgProfiler::StartTimer(timertransx1b);
 
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
 		FlatArray<int> dint = (*globinternaldofs)[els[ii]];
+		FlatVector<> vim_row = vim.Row(ii);
+
 		for (int j = 0; j < dint.Size(); j++)
-		  vim(ii, j) = transx(dint[j]);
+		  vim_row(j) = transx(dint[j]);
 	      }
 
-	    // vem = vim * Trans(ext);
+	    NgProfiler::StopTimer(timertransx1b);
+
+
+	    NgProfiler::AddLoads (timertransx1b, els.Size()*vim.Width()*12);
+	    NgProfiler::AddStores (timertransx1b, els.Size()*vim.Width()*8);
+
+
+
+	    NgProfiler::StartTimer(timertransx1a);
+
 	    LapackMultABt (vim, ext, vem);
 
-	    for (int ii = 0; ii < els.Size(); ii++)
+	    NgProfiler::StopTimer(timertransx1a);
+
+	    NgProfiler::StartTimer(timertransx1c);
+	    for (int i = 0, ii = 0; i < els.Size(); i++)
 	      {
-		FlatArray<int> dext = (*globexternaldofs)[els[ii]];
-		for (int j = 0; j < dext.Size(); j++)
-		  transx(dext[j]) -= vem(ii,j);
+		FlatArray<int> dext = (*globexternaldofs)[els[i]];
+
+		for (int j = 0; j < dext.Size(); j++, ii++)
+		  transx(dext[j]) -= vem(ii);
 	      }
+
+	    NgProfiler::StopTimer(timertransx1c);
+
+
+
+
+
+
+
+
+
+	    NgProfiler::AddLoads (timertransx1c, els.Size()*vem.Width()*20);
+	    NgProfiler::AddStores (timertransx1c, els.Size()*vem.Width()*8);
 	  }
       }
-      lx = 0.0;
-      for (int i = 0; i < restrict.Size(); i++)
-        if (restrict[i] != -1)
-          lx(i) = transx(restrict[i]) / multiple[restrict[i]];
 
 
       // restrict
-      {
+      { 
 	NgProfiler::RegionTimer reg(timerrest);
 
 	for (int cl = 0; cl < els_of_class->Size(); cl++)
@@ -903,9 +1064,11 @@ namespace ngcomp
 		
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
-		FlatArray<int> dc = (*globdcdofs)[els[ii]];
-		for (int j = 0; j < dc.Size(); j++)
-		  v1(ii, j) = lx(dc[j]);
+		FlatArray<int> ifs = (*interface_dofs)[els[ii]];
+		FlatArray<double> w = (*weighting)[els[ii]];
+
+		for (int j = 0; j < ifs.Size(); j++)
+		  v1(ii,j) = w[j] * transx(ifs[j]);
 	      }
 
 	    LapackMultAB (v1, ext, v2);
@@ -915,52 +1078,52 @@ namespace ngcomp
 		FlatArray<int> wb = (*globwbdofs)[els[ii]];
 		
 		for (int j = 0; j < wb.Size(); j++)
-		  lx(wb[j]) -= v2(ii, j);
+		  transx(wb[j]) -= v2(ii, j);
 	      }
 	}
       }
-      
+
+
+      transy = 0.0;
+
+  
+
       {
+	// cout << "|lx| = " << L2Norm(lx) << flush;
 	NgProfiler::RegionTimer reg (timersolve);
-	ly = 0.0;
-	ly = (*inv) * lx;
+
+	BaseVector & subx = *(transx.Range(0, inv->Height()));
+	BaseVector & suby = *(transy.Range(0, inv->Height()));
+	VVector<> res(inv->Height());
+
+	if (block)
+	  {
+	    if (false) //GS
+	      {
+		// cout << "start GS" << endl;
+		dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothResiduum (suby, subx, res,1);
+	    // cout << "GS done" << endl;
+
+		if (inv_coarse)
+		  suby += (*inv_coarse) * res; 
+
+		// cout << "inv_coarse done" << endl;
+		dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothBack (suby, subx);
+	      }
+	    else{ //jacobi only (old)
+	      suby = (*inv) * subx;
+	      suby += (*inv_coarse) * subx; 
+	  }
+	}
+	else
+	  {
+	    suby = (*inv) * subx;
+	  }
+
+
+	// cout << ", |ly| = " << L2Norm(ly) << endl;
       }
       
-      // solve decoupled
-      {
-	NgProfiler::RegionTimer reg(timerdc);
-
-	for (int cl = 0; cl < els_of_class->Size(); cl++)
-	  {
-	    FlatArray<int> els = (*els_of_class)[cl];
-	    if (!els.Size()) continue;
-
-	    const Matrix<> & invdc = (*invdc_ref[cl]);
-	    Matrix<> dc1(els.Size(), invdc.Height());
-	    Matrix<> dc2(els.Size(), invdc.Height());
-
-	    NgProfiler::AddFlops (timerdc, invdc.Width()*invdc.Height()*els.Size());
-		
-	    for (int i = 0; i < els.Size(); i++)
-	      {
-		FlatArray<int> dcd = (*globdcdofs)[els[i]];
-
-		for (int j = 0; j < dcd.Size(); j++)
-		  dc1(i, j) = lx(dcd[j]);
-	      }
-
-	    LapackMultAB (dc1, invdc, dc2);
-
-	    for (int i = 0; i < els.Size(); i++)
-	      {
-		FlatArray<int> dcd = (*globdcdofs)[els[i]];
-		
-		for (int j = 0; j < dcd.Size(); j++)
-		  ly(dcd[j]) += dc2(i, j);
-	      }
-
-	  }
-      }
 
       // extend
       {
@@ -981,27 +1144,66 @@ namespace ngcomp
 	      {
 		FlatArray<int> wb = (*globwbdofs)[els[ii]];
 		for (int j = 0; j < wb.Size(); j++)
-		  v1(ii, j) = ly(wb[j]);
+		  v1(ii, j) = transy(wb[j]);
 	      }
 
 	    LapackMultABt (v1, ext, v2);
 
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
-		FlatArray<int> dc = (*globdcdofs)[els[ii]];
-		
-		for (int j = 0; j < dc.Size(); j++)
-		  ly(dc[j]) -= v2(ii, j);
+		FlatArray<int> ifs = (*interface_dofs)[els[ii]];
+		FlatArray<double> w = (*weighting)[els[ii]];
+
+		for (int j = 0; j < ifs.Size(); j++)
+		  transy(ifs[j]) -= w[j] * v2(ii,j);
 	      }
 	}
       }
 
-      transy = 0.0;
-      for (int i = 0; i < restrict.Size(); i++)
-	if (restrict[i] != -1)
-	  transy(restrict[i]) += ly(i) / multiple[restrict[i]];
+ 
 
-      
+
+    // solve decoupled
+      {
+	NgProfiler::RegionTimer reg(timerdc);
+
+	for (int cl = 0; cl < els_of_class->Size(); cl++)
+	  {
+	    FlatArray<int> els = (*els_of_class)[cl];
+	    if (!els.Size()) continue;
+
+	    const Matrix<> & invdc = (*invdc_ref[cl]);
+	    Matrix<> dc1(els.Size(), invdc.Height());
+	    Matrix<> dc2(els.Size(), invdc.Height());
+
+	    NgProfiler::AddFlops (timerdc, invdc.Width()*invdc.Height()*els.Size());
+		
+	    for (int ii = 0; ii < els.Size(); ii++)
+	      {
+		FlatArray<int> ifs = (*interface_dofs)[els[ii]];
+		FlatArray<double> w = (*weighting)[els[ii]];
+
+		for (int j = 0; j < ifs.Size(); j++)
+		  dc1(ii,j) = w[j] * transx(ifs[j]);
+	      }
+
+	    LapackMultAB (dc1, invdc, dc2);
+
+	    for (int ii = 0; ii < els.Size(); ii++)
+	      {
+		FlatArray<int> ifs = (*interface_dofs)[els[ii]];
+		FlatArray<double> w = (*weighting)[els[ii]];
+
+		for (int j = 0; j < ifs.Size(); j++)
+		  transy(ifs[j]) += w[j] * dc2(ii,j);
+	      }
+	  }
+      }
+
+
+
+
+
       {
 	NgProfiler::RegionTimer reg(timertransy);
 
@@ -1016,6 +1218,10 @@ namespace ngcomp
 
 	    NgProfiler::AddFlops (timertransy, ext.Width()*ext.Height()*els.Size());
 		
+
+
+	    NgProfiler::StartTimer (timertransyr);
+
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
 		FlatArray<int> dext = (*globexternaldofs)[els[ii]];
@@ -1023,7 +1229,13 @@ namespace ngcomp
 		  vem(ii, j) = transy(dext[j]);
 	      }
 
+	    NgProfiler::StopTimer (timertransyr);
+
+
 	    LapackMultAB (vem, ext, vim);
+
+
+	    NgProfiler::StartTimer (timertransyw);
 
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
@@ -1033,10 +1245,11 @@ namespace ngcomp
 		  transy(dint[j]) -= vim(ii, j);
 	      }
 
+	    NgProfiler::StopTimer (timertransyw);
+
 	  }
       }
       
-      y += s * transy;
 
       {
 	NgProfiler::RegionTimer reg(timerinner);
@@ -1056,7 +1269,7 @@ namespace ngcomp
 	      {
 		FlatArray<int> dint = (*globinternaldofs)[els[ii]];
 		for (int j = 0; j < dint.Size(); j++)
-		  v1(ii, j) = fx(dint[j]);
+		  v1(ii, j) = transx(dint[j]);
 	      }
 
 	    LapackMultAB (v1, inv_int, v2);
@@ -1065,11 +1278,13 @@ namespace ngcomp
 	      {
 		FlatArray<int> dint = (*globinternaldofs)[els[ii]];
 		for (int j = 0; j < dint.Size(); j++)
-		  fy(dint[j]) += s * v2(ii, j);
+		  transy(dint[j]) += v2(ii, j);
 	      }
 
 	  }
       }
+
+      y += s * transy;
     }
 
   };
@@ -1114,6 +1329,8 @@ namespace ngcomp
 
   template class BDDCPreconditioner<double>;
     
+
+
   namespace bddc_cpp
   {
    

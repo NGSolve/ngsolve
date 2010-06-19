@@ -447,7 +447,7 @@ namespace ngcomp
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
       ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
-      applyd(aapplyd), cache_elnr(-1), lh(1000013), fel(NULL)
+      applyd(aapplyd), cache_elnr(-1), lh(10000013), fel(NULL)
   { 
     if(abfi2d)
       bfi2d.Append(abfi2d);
@@ -470,7 +470,7 @@ namespace ngcomp
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
       ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
-      applyd(aapplyd), cache_elnr(-1), lh(1000002), fel(NULL)
+      applyd(aapplyd), cache_elnr(-1), lh(10000002), fel(NULL)
   { 
     for(int i=0; i<abfi2d.Size(); i++)
       bfi2d.Append(abfi2d[i]);
@@ -688,8 +688,8 @@ namespace ngcomp
 	for (int i = 0; i < npts; i++)
 	  ir.Append (IntegrationPoint (xref[i*sxref], xref[i*sxref+1], xref[i*sxref+2]));
 
-	ElementTransformation eltrans;
-	ma.GetElementTransformation (elnr, eltrans, lh);
+	// ElementTransformation eltrans;
+	// ma.GetElementTransformation (elnr, eltrans, lh);
 
 	MappedIntegrationRule<3,3> mir(ir, eltrans, 1, lh);
 
@@ -722,7 +722,6 @@ namespace ngcomp
       {
         cout << "GetMultiValue caught exception" << endl
              << e.What();
-
         return 0;
       }
   }

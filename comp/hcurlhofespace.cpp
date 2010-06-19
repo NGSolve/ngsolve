@@ -825,7 +825,7 @@ namespace ngcomp
     {
       IntRange range = GetEdgeDofs (ngel.edges[i]);
       for (int j=range.First();j<range.Next();j++)
-      ctypes.Append(INTERFACE_DOF);
+	ctypes.Append(WIREBASKET_DOF);
     }
       
     // faces 
