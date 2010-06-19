@@ -15,6 +15,8 @@ namespace ngstd
   double NgProfiler::starttimes[SIZE];
   long int NgProfiler::counts[SIZE];
   double NgProfiler::flops[SIZE];
+  double NgProfiler::loads[SIZE];
+  double NgProfiler::stores[SIZE];
   string NgProfiler::names[SIZE];
   int NgProfiler::usedcounter[SIZE];
   
@@ -85,6 +87,10 @@ namespace ngstd
           fprintf(prof,"job %3i calls %8li, time %6.4f sec",i,counts[i],tottimes[i]*fac);
 	  if(flops[i])
 	    fprintf(prof,", MFlops = %6.2f",flops[i] / (double(tottimes[i])*fac) * 1e-6);
+	  if(loads[i])
+	    fprintf(prof,", MLoads = %6.2f",loads[i] / (double(tottimes[i])*fac) * 1e-6);
+	  if(stores[i])
+	    fprintf(prof,", MStores = %6.2f",stores[i] / (double(tottimes[i])*fac) * 1e-6);
 	  if(usedcounter[i])
 	    fprintf(prof," %s",names[i].c_str());
 	  fprintf(prof,"\n");
