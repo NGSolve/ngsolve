@@ -1066,6 +1066,9 @@ namespace ngla
   void SparseCholesky<TM, TV_ROW, TV_COL> :: 
   MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
   {
+    static int timer = NgProfiler::CreateTimer ("SparseCholesky::MultAdd");
+    NgProfiler::RegionTimer reg (timer);
+
     int n = Height();
     
 

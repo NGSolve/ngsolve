@@ -65,6 +65,8 @@ namespace ngstd
 
     NGS_DLL_HEADER static long int counts[SIZE];
     NGS_DLL_HEADER static double flops[SIZE];
+    NGS_DLL_HEADER static double loads[SIZE];
+    NGS_DLL_HEADER static double stores[SIZE];
     NGS_DLL_HEADER static string names[SIZE];
     NGS_DLL_HEADER static int usedcounter[SIZE];
 
@@ -121,11 +123,15 @@ namespace ngstd
 
     /// if you know number of flops, provide them to obtain the MFlop - rate
     static void AddFlops (int nr, double aflops) { flops[nr] += aflops; }
+    static void AddLoads (int nr, double aloads) { loads[nr] += aloads; }
+    static void AddStores (int nr, double astores) { stores[nr] += astores; }
 #else
 
     static void StartTimer (int nr) { ; }
     static void StopTimer (int nr) { ; }
     static void AddFlops (int nr, double aflops) { ; };
+    static void AddLoads (int nr, double aflops) { ; };
+    static void AddStores (int nr, double aflops) { ; };
 #endif
 
     static double GetTime (int nr)
