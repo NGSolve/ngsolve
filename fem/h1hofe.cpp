@@ -181,13 +181,16 @@ namespace ngfem
   void H1HighOrderFE<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & shape) const
   {
     Tx x = hx[0];
-    Tx lami[2] = { x, 1-x };
+    Tx lam[2] = { x, 1-x };
 
-    shape[0] = lami[0];
-    shape[1] = lami[1];
+    shape[0] = lam[0];
+    shape[1] = lam[1];
 
     INT<2> e = GetEdgeSort (0, vnums);
-    T_ORTHOPOL::Calc (order_edge[0], lami[e[1]]-lami[e[0]], shape.Addr(2));
+
+    LegendrePolynomial leg;
+    leg.EvalMult (order_edge[0]-2, 
+		  lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape.Addr(2));
   }
 
   /* *********************** Triangle  **********************/
@@ -207,10 +210,11 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{ 
           INT<2> e = GetEdgeSort (i, vnums);
-
-	  ii += T_ORTHOPOL::CalcTrigExt (order_edge[i], 
-					 lam[e[1]]-lam[e[0]], 1-lam[e[0]]-lam[e[1]], 
-                                         shape.Addr(ii));
+	  LegendrePolynomial leg;
+	  leg.EvalScaledMult (order_edge[i]-2, 
+			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+			      lam[e[0]]*lam[e[1]], shape.Addr(ii));
+	  ii += order_edge[i]-1;
 	}
 
     int p = order_face[0][0];
@@ -218,12 +222,8 @@ namespace ngfem
       {
         INT<4> f = GetFaceSort (0, vnums);
 
-        ArrayMem<Tx, 20> polx(p-2), poly(p-2);
-        T_TRIGSHAPES::CalcSplitted (p, lam[f[2]]-lam[f[1]],
-                                    lam[f[0]], polx, poly);
-        for (int i = 0; i <= p-3; i++)
-          for (int j = 0; j <= p-3-i; j++)
-            shape[ii++] = polx[i] * poly[j];
+	DubinerBasis dub;
+	dub.EvalMult (p-3, lam[f[0]], lam[f[1]], lam[f[0]]*lam[f[1]]*lam[f[2]], shape.Addr(ii));
       }
   }
 
@@ -234,12 +234,12 @@ namespace ngfem
   void H1HighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1];
-    Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
+    Tx lam[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
     Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
     
 
     // vertex shapes
-    for(int i=0; i < N_VERTEX; i++) shape[i] = lami[i]; 
+    for(int i=0; i < N_VERTEX; i++) shape[i] = lam[i]; 
     int ii = 4;
 
     ArrayMem<Tx,20> polxi(order+1), poleta(order+1);
@@ -251,9 +251,12 @@ namespace ngfem
         INT<2> e = GetEdgeSort (i, vnums);	  
         
         Tx xi = sigma[e[1]]-sigma[e[0]]; 
-        Tx lam_e = lami[e[0]]+lami[e[1]];
-        
-        ii += T_ORTHOPOL::CalcMult (p, xi, lam_e, shape.Addr(ii));
+        Tx lam_e = lam[e[0]]+lam[e[1]];
+        Tx bub = 0.25 * lam_e * (1 - xi*xi);
+
+	LegendrePolynomial leg;
+	leg.EvalMult (p-2, xi, bub, shape.Addr(ii));
+	ii += p-1;
       }    
     
     INT<2> p = order_face[0];
@@ -279,13 +282,13 @@ namespace ngfem
   template<typename Tx, typename TFA>  
   void  H1HighOrderFE<ET_TET> :: T_CalcShape (Tx x[3], TFA & shape) const
   {
-    Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
+    Tx lam[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
 
     ArrayMem<Tx, 20> polx(order+1), poly(order+1), polz(order+1); 
 
     // vertex shapes
     for (int i = 0; i < 4; i++)
-      shape[i] = lami[i];
+      shape[i] = lam[i];
     int ii = 4; 
 
     // edge dofs
@@ -293,8 +296,11 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{
           INT<2> e = GetEdgeSort (i, vnums);
-	  ii += T_ORTHOPOL::CalcTrigExt (order_edge[i], lami[e[1]]-lami[e[0]], 
-					 1-lami[e[0]]-lami[e[1]], shape.Addr(ii) );
+	  LegendrePolynomial leg;
+	  leg.EvalScaledMult (order_edge[i]-2, 
+			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+			      lam[e[0]]*lam[e[1]], shape.Addr(ii));
+	  ii += order_edge[i]-1;
 	}
 
     // face dofs
@@ -304,14 +310,16 @@ namespace ngfem
           INT<4> f = GetFaceSort (i, vnums);
 	  int vop = 6 - f[0] - f[1] - f[2];  	
           
-	  ii += T_FACESHAPES::Calc (order_face[i][0], 
-				    lami[f[2]]-lami[f[1]],
-				    lami[f[0]], lami[vop],  shape.Addr(ii));
+	  DubinerBasis dub;
+	  int p = order_face[i][0];
+	  dub.EvalScaledMult (p-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
+			      lam[f[0]]*lam[f[1]]*lam[f[2]], shape.Addr(ii));
+	  ii += (p-2)*(p-1)/2;
 	}
 
     if (order_cell[0] >= 4)
       ii += T_INNERSHAPES::Calc (order_cell[0], 
-                                 lami[0]-lami[3], lami[1], lami[2], 
+                                 lam[0]-lam[3], lam[1], lam[2], 
                                  shape.Addr(ii) );
   }
 
@@ -324,12 +332,12 @@ namespace ngfem
   void  H1HighOrderFE<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
-    Tx lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
+    Tx lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
     Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
     
     // vertex shapes
     for (int i = 0; i < 6; i++)
-      shape[i] = lami[i] * muz[i];
+      shape[i] = lam[i] * muz[i];
 
     int ii = 6;
 
@@ -339,14 +347,13 @@ namespace ngfem
 	{
           INT<2> e = GetEdgeSort (i, vnums);
 
-	  Tx xi = lami[e[1]]-lami[e[0]]; 
-	  Tx eta = lami[e[0]]+lami[e[1]]; 
+	  Tx xi = lam[e[1]]-lam[e[0]]; 
+	  Tx eta = lam[e[0]]+lam[e[1]]; 
 
-          ii += T_ORTHOPOL::CalcTrigExtMult (order_edge[i], 
-                                             xi, 
-                                             1-eta, 
-                                             muz[e[1]], 
-                                             shape.Addr(ii));
+	  LegendrePolynomial leg;
+	  leg.EvalScaledMult (order_edge[i]-2, xi, eta, 
+			      lam[e[0]]*lam[e[1]]*muz[e[1]], shape.Addr(ii));
+	  ii += order_edge[i]-1;
 	}
     
     // vertical edges
@@ -354,8 +361,11 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{
           INT<2> e = GetEdgeSort (i, vnums);
-          ii += T_ORTHOPOL::CalcMult (order_edge[i], 
-                                      muz[e[1]]-muz[e[0]], lami[e[1]], shape.Addr(ii));
+	  LegendrePolynomial leg;
+	  leg.EvalMult (order_edge[i]-2, 
+			muz[e[1]]-muz[e[0]], 
+			muz[e[0]]*muz[e[1]]*lam[e[1]], shape.Addr(ii));
+	  ii += order_edge[i]-1;
 	}
     
 
@@ -366,15 +376,13 @@ namespace ngfem
     for (int i = 0; i < 2; i++)
       if (order_face[i][0] >= 3)
 	{
-	  int fav[3] = { faces[i][0], faces[i][1], faces[i][2] };
-	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-	  if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	
-	  
-	  ii += T_TRIGSHAPES::CalcMult (order_face[i][0], 
-                                        lami[fav[2]]-lami[fav[1]], lami[fav[0]], 
-                                        muz[fav[2]], 
-                                        shape.Addr(ii));
+          INT<4> f = GetFaceSort (i, vnums);
+
+	  DubinerBasis dub;
+	  int p = order_face[i][0];
+	  dub.EvalMult (p-3, lam[f[0]], lam[f[1]],
+			lam[0]*lam[1]*lam[2]*muz[f[2]], shape.Addr(ii));
+	  ii += (p-2)*(p-1)/2;
 	}
    
     // quad face dofs
@@ -391,8 +399,8 @@ namespace ngfem
 	  int fz = 3-fmax; 
 	  int ftrig = fmax^1; 
 	  
-	  Tx xi = lami[faces[i][fmax]] - lami[faces[i][ftrig]]; 
-	  Tx eta = 1-lami[faces[i][fmax]]-lami[faces[i][ftrig]]; 
+	  Tx xi = lam[faces[i][fmax]] - lam[faces[i][ftrig]]; 
+	  Tx eta = 1-lam[faces[i][fmax]]-lam[faces[i][ftrig]]; 
 	  Tx zeta = muz[faces[i][fmax]]-muz[faces[i][fz]]; 
 	  
 	  T_ORTHOPOL::CalcTrigExt (pp, xi, eta, polx);  
@@ -434,13 +442,13 @@ namespace ngfem
   { 
     Tx x = hx[0], y = hx[1], z = hx[2];
 
-    Tx lami[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
+    Tx lam[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
 		(1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z}; 
     Tx sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
 		 (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z}; 
 
     // vertex shapes
-    for(int i=0; i<8; i++) shape[i] = lami[i]; 
+    for(int i=0; i<8; i++) shape[i] = lam[i]; 
     int ii = 8;
 
     ArrayMem<Tx,20> polx(order+1), poly(order+1), polz(order+1);
@@ -449,14 +457,25 @@ namespace ngfem
     for (int i = 0; i < N_EDGE; i++)
       if (order_edge[i] >= 2)
 	{
+	  int p = order_edge[i];
           INT<2> e = GetEdgeSort (i, vnums);	  
 
 	  Tx xi = sigma[e[1]]-sigma[e[0]]; 
-	  Tx lam_e = lami[e[0]]+lami[e[1]];
+	  Tx lam_e = lam[e[0]]+lam[e[1]];
+	  Tx bub = 0.25 * lam_e * (1 - xi*xi);
+	  
+	  LegendrePolynomial leg;
+	  leg.EvalMult (p-2, xi, bub, shape.Addr(ii));
+	  ii += p-1;
+
+	/*
+	  Tx xi = sigma[e[1]]-sigma[e[0]]; 
+	  Tx lam_e = lam[e[0]]+lam[e[1]];
 
 	  ii += T_ORTHOPOL::CalcMult (order_edge[i], 
                                       xi, lam_e, 
                                       shape.Addr(ii));
+	*/
 	}
      
     for (int i = 0; i < N_FACE; i++)
@@ -468,7 +487,7 @@ namespace ngfem
 
 	  Tx lam_f = 0;
 	  for (int j = 0; j < 4; j++)
-	    lam_f += lami[f[j]];
+	    lam_f += lam[f[j]];
 
 	  Tx xi  = sigma[f[0]] - sigma[f[1]]; 
 	  Tx eta = sigma[f[0]] - sigma[f[3]];
@@ -525,10 +544,11 @@ namespace ngfem
 
 
     //horizontal edge dofs 
-    const EDGE * edges = ElementTopology::GetEdges (ET_PYRAMID);
+    // const EDGE * edges = ElementTopology::GetEdges (ET_PYRAMID);
     for (int i = 0; i < 4; i++)
       if (order_edge[i] >= 2)
 	{
+	  /*
 	  int es = edges[i][0], ee = edges[i][1];
 	  if (vnums[es] > vnums[ee]) swap (es, ee);
 
@@ -537,17 +557,43 @@ namespace ngfem
 
           ii += T_ORTHOPOL::CalcTrigExtMult (order_edge[i], lam*(1-z), z, lam_edge, 
                                              shape.Addr(ii));
+	  */
+
+	  int p = order_edge[i];
+	  INT<2> e = GetEdgeSort (i, vnums);	  
+
+	  Tx xi = sigma[e[1]]-sigma[e[0]]; 
+	  Tx lam_e = lambda[e[0]]+lambda[e[1]];
+	  Tx bub = 0.25 * lam_e * (1 - xi*xi)*(1-z)*(1-z);
+	  
+	  LegendrePolynomial leg;
+	  leg.EvalScaledMult (p-2, xi*(1-z), 1-z, bub, shape.Addr(ii));
+	  ii += p-1;
 	}
     
     // vertical edges
     for (int i = 4; i < 8; i++) 
       if (order_edge[i] >= 2)
 	{
+	  /*
 	  int es = edges[i][0], ee = edges[i][1];
 	  if (vnums[es] > vnums[ee]) swap (es, ee);
 	  
 	  ii += T_ORTHOPOL::CalcTrigExt (order_edge[i], lambda3d[ee]-lambda3d[es],  
 					 1-lambda3d[es]-lambda3d[ee], shape.Addr(ii));
+	  */
+
+
+	  int p = order_edge[i];
+	  INT<2> e = GetEdgeSort (i, vnums);	  
+
+	  Tx xi = lambda3d[e[1]]-lambda3d[e[0]]; 
+	  Tx lam_e = lambda3d[e[0]]+lambda3d[e[1]];
+	  Tx bub = 0.25 * (lam_e*lam_e-xi*xi);
+	  
+	  LegendrePolynomial leg;
+	  leg.EvalScaledMult (p-2, xi, lam_e, bub, shape.Addr(ii));
+	  ii += p-1;
 	}
 
 
@@ -566,11 +612,20 @@ namespace ngfem
 	  if(vnums[faces[i][fav[0]]] > vnums[faces[i][fav[1]]]) swap(fav[0],fav[1]); 
 	  if(vnums[faces[i][fav[1]]] > vnums[faces[i][fav[2]]]) swap(fav[1],fav[2]);
 	  if(vnums[faces[i][fav[0]]] > vnums[faces[i][fav[1]]]) swap(fav[0],fav[1]); 	
-          
+
+	  /*
 	  int ndf = T_TRIGSHAPES::CalcMult
 	    (p, bary[fav[2]]-bary[fav[1]], bary[fav[0]], lam_face, shape.Addr(ii));
 	  
 	  ii += ndf;
+	  */
+	  Tx bub = lam_face * bary[0]*bary[1]*bary[2];
+	  
+	  DubinerBasis dub;
+	  dub.EvalMult (p-3, bary[fav[0]], bary[fav[1]], bub, shape.Addr(ii));
+	  ii += (p-2)*(p-1)/2;
+
+
 	}
     
     // quad face dof

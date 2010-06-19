@@ -1410,11 +1410,14 @@ namespace ngfem
     int nip;
 
     static IntegrationRule ir0, ir1;
-    if (ir0.GetNIP() == 0)
-      {
-        ir0.AddIntegrationPoint (IntegrationPoint (0.0, 0, 0, 1.0));
-        ir1.AddIntegrationPoint (IntegrationPoint (1.0, 0, 0, 1.0));
-      }
+#pragma omp critical(intruletpfacet)
+    {
+      if (ir0.GetNIP() == 0)
+	{
+	  ir0.AddIntegrationPoint (IntegrationPoint (0.0, 0, 0, 1.0));
+	  ir1.AddIntegrationPoint (IntegrationPoint (1.0, 0, 0, 1.0));
+	}
+    }
 
     switch (eltype)
       {
@@ -1520,59 +1523,108 @@ namespace ngfem
         }
       case ET_TET:
         {
-          if (nt != NT_FACE) break;
-          // int sort[4];
-          // eltrans.GetSort (FlatArray<int> (4, sort) );
-          int isort[4];
-          for (int i = 0; i < 4; i++) isort[sort[i]] = i;
-          
-          const FACE & face = ElementTopology::GetFaces (ET_TET)[nodenr];
-          FACE sface;
-          sface[0] = isort[face[0]];
-          sface[1] = isort[face[1]];
-          sface[2] = isort[face[2]];
-          if (sface[0] > sface[1]) swap (sface[0], sface[1]);
-          if (sface[1] > sface[2]) swap (sface[1], sface[2]);
-          if (sface[0] > sface[1]) swap (sface[0], sface[1]);
+	  int isort[4];
+	  for (int i = 0; i < 4; i++) isort[sort[i]] = i;
 
-          irx = iry = irz = 0;
-          int powx = 0, powy = 0;
-          if (sface[0] == 1 && sface[1] == 2 && sface[2] == 3)
-            {
-              powy = 1;
-              irx = &ir0;
-              iry = &SelectIntegrationRule (ET_SEGM, order+1);
-              irz = &SelectIntegrationRule (ET_SEGM, order);
-            }
-          if (sface[0] == 0 && sface[1] == 2 && sface[2] == 3)
-            {
-              powx = 1;
-              irx = &SelectIntegrationRule (ET_SEGM, order+1);
-              iry = &ir0;
-              irz = &SelectIntegrationRule (ET_SEGM, order);
-            }
-          if (sface[0] == 0 && sface[1] == 1 && sface[2] == 3)
-            {
-              powx = 1;
-              irx = &SelectIntegrationRule (ET_SEGM, order+1);
-              iry = &SelectIntegrationRule (ET_SEGM, order);
-              irz = &ir0;
-            }
-          if (sface[0] == 0 && sface[1] == 1 && sface[2] == 2)
-            {
-              powx = 1;
-              irx = &SelectIntegrationRule (ET_SEGM, order+1);
-              iry = &SelectIntegrationRule (ET_SEGM, order);
-              irz = &ir1;
-            }
+	  irx = iry = irz = 0;
+	  int powx = 0, powy = 0;
+
+
+          if (nt == NT_FACE)
+	    {
+	      const FACE & face = ElementTopology::GetFaces (ET_TET)[nodenr];
+	      FACE sface;
+	      sface[0] = isort[face[0]];
+	      sface[1] = isort[face[1]];
+	      sface[2] = isort[face[2]];
+	      if (sface[0] > sface[1]) swap (sface[0], sface[1]);
+	      if (sface[1] > sface[2]) swap (sface[1], sface[2]);
+	      if (sface[0] > sface[1]) swap (sface[0], sface[1]);
+	      
+	      if (sface[0] == 1 && sface[1] == 2 && sface[2] == 3)
+		{
+		  powy = 1;
+		  irx = &ir0;
+		  iry = &SelectIntegrationRule (ET_SEGM, order+1);
+		  irz = &SelectIntegrationRule (ET_SEGM, order);
+		}
+	      if (sface[0] == 0 && sface[1] == 2 && sface[2] == 3)
+		{
+		  powx = 1;
+		  irx = &SelectIntegrationRule (ET_SEGM, order+1);
+		  iry = &ir0;
+		  irz = &SelectIntegrationRule (ET_SEGM, order);
+		}
+	      if (sface[0] == 0 && sface[1] == 1 && sface[2] == 3)
+		{
+		  powx = 1;
+		  irx = &SelectIntegrationRule (ET_SEGM, order+1);
+		  iry = &SelectIntegrationRule (ET_SEGM, order);
+		  irz = &ir0;
+		}
+	      if (sface[0] == 0 && sface[1] == 1 && sface[2] == 2)
+		{
+		  powx = 1;
+		  irx = &SelectIntegrationRule (ET_SEGM, order+1);
+		  iry = &SelectIntegrationRule (ET_SEGM, order);
+		  irz = &ir1;
+		}
+	    }
+
+	  else if (nt == NT_EDGE)
+	    {
+	      const EDGE & edge = ElementTopology::GetEdges (ET_TET)[nodenr];
+	      EDGE sedge;
+	      sedge[0] = isort[edge[0]];
+	      sedge[1] = isort[edge[1]];
+	      if (sedge[0] > sedge[1]) swap (sedge[0], sedge[1]);
+
+
+	      if (sedge[0] == 0 && sedge[1] == 1)
+		{
+		  irx = &SelectIntegrationRule (ET_SEGM, order);
+		  iry = &ir1;
+		  irz = &ir0;
+		}
+	      if (sedge[0] == 0 && sedge[1] == 2)
+		{
+		  irx = &SelectIntegrationRule (ET_SEGM, order);
+		  iry = &ir0;
+		  irz = &ir1;
+		}
+	      if (sedge[0] == 0 && sedge[1] == 3)
+		{
+		  irx = &SelectIntegrationRule (ET_SEGM, order);
+		  iry = &ir0;
+		  irz = &ir0;
+		}
+	      if (sedge[0] == 1 && sedge[1] == 2)
+		{
+		  irx = &ir0;
+		  iry = &SelectIntegrationRule (ET_SEGM, order);
+		  irz = &ir1;
+		}
+	      if (sedge[0] == 1 && sedge[1] == 3)
+		{
+		  irx = &ir0;
+		  iry = &SelectIntegrationRule (ET_SEGM, order);
+		  irz = &ir0;
+		}
+	      if (sedge[0] == 2 && sedge[1] == 3)
+		{
+		  irx = &ir0;
+		  iry = &ir0;
+		  irz = &SelectIntegrationRule (ET_SEGM, order);
+		}
+	    }
+
+
+
 
           nip = irx->GetNIP() * iry->GetNIP() * irz->GetNIP();
 
 	  SetSize (nip);
-	  /*
-          xi.SetSize(nip);
-          weight.SetSize(nip);
-	  */
+
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++)
               for (int i3 = 0; i3 < irz->GetNIP(); i3++, ii++)
@@ -1592,13 +1644,6 @@ namespace ngfem
 						  lami[isort[2]],
 						  (*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight() * 
 						  pow (1-x, powx) * pow(1-y, powy));
-		  /*
-                  xi[ii](0) = lami[isort[0]];
-                  xi[ii](1) = lami[isort[1]];
-                  xi[ii](2) = lami[isort[2]];
-                  weight[ii] = (*irx)[i1].Weight()*(*iry)[i2].Weight()*(*irz)[i3].Weight() * 
-                    pow (1-x, powx) * pow(1-y, powy);
-		  */
                 }
 
 

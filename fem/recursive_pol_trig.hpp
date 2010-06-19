@@ -12,9 +12,15 @@ namespace ngfem
     template <typename Sx, typename Sy, typename T>
     static void CalcSplitted (int n, Sx x, Sy y, T & val1, T & val2)
     {
+      LegendrePolynomial leg;
+
       Sx bub1 = (1-x-y)*(1+x-y);
-      ScaledLegendrePolynomialMult (n-3, x, 1-y, bub1, val1); 
-      LegendrePolynomialMult (n-3, 2*y-1, y, val2);
+      // ScaledLegendrePolynomialMult (n-3, x, 1-y, bub1, val1); 
+      leg.EvalScaledMult (n-3, x, 1-y, bub1, val1); 
+
+      //LegendrePolynomialMult (n-3, 2*y-1, y, val2);
+      leg.EvalMult (n-3, 2*y-1, y, val2);
+
       /*
 	ScaledLegendrePolynomial (n-3, x, 1-y, val1); 
 	for (int i = 0; i <= n-3; i++)
@@ -32,10 +38,13 @@ namespace ngfem
     {
       Sx bub1 = (1-x-y)*(1+x-y);
       // ScaledLegendrePolynomialMult (n-3, x, 1-y, bub1, val1); 
-      LegendrePolynomialFO<n-3>::EvalScaledMult (x, 1-y, bub1, val1); 
+      // LegendrePolynomialFO<n-3>::EvalScaledMult (x, 1-y, bub1, val1); 
+      LegendrePolynomial leg;
+      leg.EvalScaledMultFO<n-3> (x, 1-y, bub1, val1);
 
       // LegendrePolynomialMult (n-3, 2*y-1, y, val2);
-      LegendrePolynomialFO<n-3>::EvalMult (2*y-1, y, val2);
+      // LegendrePolynomialFO<n-3>::EvalMult (2*y-1, y, val2);
+      leg.EvalMultFO<n-3> (2*y-1, y, val2);
     }
 
 

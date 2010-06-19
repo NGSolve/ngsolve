@@ -68,26 +68,16 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[3], TFA & shape) const
     {
-      Tx lami[4] = { hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };
+      Tx lam[4] = { hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };
 
       INT<4> f = GetFaceSort (facenr, vnums);
-      Tx x = lami[f[0]], y=lami[f[1]];
-      
-      int n = order;
-      ArrayMem<Tx, 20> polx(n+1), poly(n+1);
-      
-      ScaledLegendrePolynomial (n, 2*x+y-1, 1-y, polx);
 
-      for (int i = 0; i < ndof; i++)
-	shape[i] = 0.0;
-
+      SetZero (shape, 0, ndof);
+      
+      DubinerBasis dub;
+      int p = facet_order[facenr];
       int ii = first_facet_dof[facenr];
-      for (int i = 0; i <= n; i++)
-	{
-	  JacobiPolynomial (n-i, 2*y-1, 2*i+1, 0, poly);
-	  for (int j = 0; j <= n-i; j++)
-	    shape[ii++] = polx[i] * poly[j];
-	}
+      dub.Eval (p, lam[f[0]], lam[f[1]], shape.Addr(ii));
     }
   };
 

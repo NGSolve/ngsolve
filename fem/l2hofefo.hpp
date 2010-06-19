@@ -101,7 +101,10 @@ namespace ngfem
       Vec<ORDER+1, Tx> polx;
       Mat<ORDER+1, ORDER+1, Tx> polsy;
 
-      LegendrePolynomialFO<ORDER>::EvalScaled (x-l3, 1-y, polx);
+      // LegendrePolynomialFO<ORDER>::EvalScaled (x-l3, 1-y, polx);
+      LegendrePolynomial leg;
+      leg.EvalScaledFO<ORDER> (x-l3, 1-y, polx);
+
       DubinerJacobiPolynomialsFO<ORDER, ORDER, 1,0>::Eval (2*y-1, polsy);
       
       for (int i = 0, ii = 0; i <= ORDER; i++)
