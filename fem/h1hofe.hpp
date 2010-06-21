@@ -85,9 +85,8 @@ namespace ngfem
     using ET_trait<ET>::GetFaceSort;
     using ET_trait<ET>::PolDimension;
 
-    typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
-
-    typedef TrigShapesInnerLegendre T_TRIGSHAPES;
+    // typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
+    // typedef TrigShapesInnerLegendre T_TRIGSHAPES;
     // typedef TrigShapesInnerJacobi T_TRIGSHAPES;
 
   public:
@@ -186,7 +185,6 @@ namespace ngfem
   template <>
   class NGS_DLL_HEADER H1HighOrderFE_Shape<ET_TET> : public H1HighOrderFE<ET_TET>
   {
-    typedef TetShapesInnerLegendre T_INNERSHAPES;
   public:
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[], TFA & shape) const; 

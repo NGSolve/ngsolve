@@ -309,12 +309,12 @@ namespace ngcomp
       {
       case ET_SEGM:
         break;
-      case ET_TRIG:  fe2d = new (lh) FacetVolumeTrig (); break;
-      case ET_QUAD:  fe2d = new (lh) FacetVolumeQuad (); break;
-      case ET_TET:   fe3d = new (lh) FacetVolumeTet (); break;
-      case ET_PYRAMID: fe3d = new (lh) FacetVolumePyramid (); break;
-      case ET_PRISM: fe3d = new (lh) FacetVolumePrism (); break;
-      case ET_HEX:   fe3d = new (lh) FacetVolumeHex (); break;
+      case ET_TRIG:    fe2d = new (lh) FacetFE<ET_TRIG> (); break;
+      case ET_QUAD:    fe2d = new (lh) FacetFE<ET_QUAD> (); break;
+      case ET_TET:     fe3d = new (lh) FacetFE<ET_TET> (); break;
+      case ET_PYRAMID: fe3d = new (lh) FacetFE<ET_PYRAMID> (); break;
+      case ET_PRISM:   fe3d = new (lh) FacetFE<ET_PRISM> (); break;
+      case ET_HEX:     fe3d = new (lh) FacetFE<ET_HEX> (); break;
       }
 
     if (!fe2d && !fe3d)
@@ -1056,6 +1056,21 @@ public:
     : CompoundFESpace (ama, aspaces, flags)
   { 
     withedges = (aspaces.Size()==3);
+
+
+    static ConstantCoefficientFunction one(1);
+    if (ma.GetDimension() == 2)
+      {
+        evaluator = new MassIntegrator<2> (&one);
+        boundary_evaluator = new RobinIntegrator<2> (&one);
+      }
+    else
+      {
+        evaluator = new MassIntegrator<3> (&one);
+        boundary_evaluator = new RobinIntegrator<3> (&one);
+      }
+    evaluator = new CompoundBilinearFormIntegrator (*evaluator, 0);
+    boundary_evaluator = new CompoundBilinearFormIntegrator (*boundary_evaluator, 1);
   }
 
   virtual ~HybridDGFESpace () { ; }
@@ -1115,7 +1130,7 @@ public:
 	clusters = 0;
 	int nv = ma.GetNV();
 	int ned = ma.GetNEdges();
-	int nfa = ma.GetNFaces();
+	// int nfa = ma.GetNFaces();
 	int basefac = spaces[0]->GetNDof();;
 	int baseh1 = basefac + spaces[1]->GetNDof();
 	  
@@ -1172,8 +1187,8 @@ public:
 
     int nv = ma.GetNV();
     int ned = ma.GetNEdges();
-    int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
-    int ni = (eliminate_internal) ? 0 : ma.GetNE(); 
+    // int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
+    // int ni = (eliminate_internal) ? 0 : ma.GetNE(); 
     cout << " blocktype " << smoothing_type << endl; 
     cout << " Use HDG-Block Smoother:  "; 
 

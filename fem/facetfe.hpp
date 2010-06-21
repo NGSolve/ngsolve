@@ -27,7 +27,7 @@ namespace ngfem
 
     ScalarFiniteElement<D-1> * facets[6];
 
-    mutable int facenr;
+    mutable int facetnr;
 
   public:
     FacetVolumeFiniteElement (ELEMENT_TYPE aeltype);
@@ -43,7 +43,7 @@ namespace ngfem
     void EvaluateFacetTrans (int fnr, const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const;
     
     
-    void SelectFace (int afn) const { facenr = afn; }
+    void SelectFacet (int afn) const { facetnr = afn; }
 
 
     void GetFacetDofNrs(int afnr, Array<int>& fdnums) const; 
