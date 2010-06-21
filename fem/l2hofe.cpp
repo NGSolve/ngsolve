@@ -79,7 +79,6 @@ namespace ngfem
 
   /* *********************** Segment  **********************/
 
-
   /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_SEGM> :: T_CalcShape (Tx x[], TFA & shape) const
@@ -94,7 +93,6 @@ namespace ngfem
 
   /* *********************** Triangle  **********************/
 
-
   /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx x[], TFA & shape) const
@@ -108,7 +106,6 @@ namespace ngfem
     DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
   }
   */
-
 
   /* *********************** Quadrilateral  **********************/
 

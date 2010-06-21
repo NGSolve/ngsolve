@@ -86,15 +86,14 @@ namespace ngfem {
    * FacetVolumeTrig
    ****************************************************************************/
 
-  FacetVolumeTrig :: FacetVolumeTrig()
-    : FacetVolumeFiniteElement<2> (ET_TRIG) 
+  FacetFE<ET_TRIG> :: FacetFE()
   { 
     for (int i = 0; i < 3; i++)
       facets[i] = &facets2[i];
   };
 
 
-  void FacetVolumeTrig::ComputeNDof() 
+  void FacetFE<ET_TRIG>::ComputeNDof() 
   {
     ndof = 0;
     for (int i=0; i < 3; i++)
@@ -123,8 +122,7 @@ namespace ngfem {
    * FacetVolumeQuad
    ****************************************************************************/
 
-  FacetVolumeQuad :: FacetVolumeQuad()
-    : FacetVolumeFiniteElement<2> (ET_QUAD) 
+  FacetFE<ET_QUAD> :: FacetFE()
   { 
     for (int i = 0; i < 4; i++)
       facets[i] = &facets2[i];
@@ -133,7 +131,7 @@ namespace ngfem {
 
   // -------------------------------------------------------------------------------
   /*
-    void FacetVolumeQuad::CalcShape (const IntegrationPoint & ip, FlatVector<> shape) const
+    void FacetFE<ET_QUAD>::CalcShape (const IntegrationPoint & ip, FlatVector<> shape) const
     {
     // topology: points = 0:(0,0), 1:(1,0), 2:(1,1), 3:(0,1)
     //           edges = 0:(0,1), 1:(2,3), 2:(3,0), 4:(1,2)
@@ -175,18 +173,18 @@ namespace ngfem {
   */
  
   /*
-    void FacetVolumeQuad::CalcFacetShape (int afnr, const IntegrationPoint & ip, FlatVector<> shape) const
+    void FacetFE<ET_QUAD>::CalcFacetShape (int afnr, const IntegrationPoint & ip, FlatVector<> shape) const
     {
     SetFacet(afnr);
     shape=0.0;
     facet.CalcShape(ip, shape.Range(first_facet_dof[afnr], first_facet_dof[afnr+1]));
     }
    
-    void FacetVolumeQuad::SetFacet(int afnr) const
+    void FacetFE<ET_QUAD>::SetFacet(int afnr) const
     {
     if (fnr == afnr) return;
   
-    FacetVolumeQuad * quad=const_cast<FacetVolumeQuad*>(this);
+    FacetFE<ET_QUAD> * quad=const_cast<FacetFE<ET_QUAD>*>(this);
     quad->fnr = afnr;
     const EDGE * edges = ElementTopology::GetEdges (eltype);
     Array<int> fvnums(2);
@@ -198,7 +196,7 @@ namespace ngfem {
     }  
   */
 
-  void FacetVolumeQuad::ComputeNDof() 
+  void FacetFE<ET_QUAD>::ComputeNDof() 
   {
     ndof = 0;
     for (int i=0; i < 4; i++)
@@ -230,15 +228,15 @@ namespace ngfem {
    * FacetVolumeTet
    ****************************************************************************/
 
-  FacetVolumeTet :: FacetVolumeTet()
-    : FacetVolumeFiniteElement<3> (ET_TET) 
+  FacetFE<ET_TET> :: FacetFE()
   {
+    ;
     for (int i = 0; i < 4; i++)
       facets[i] = &facets2[i];
   };
 
 
-  void FacetVolumeTet::ComputeNDof() 
+  void FacetFE<ET_TET>::ComputeNDof() 
   {
     ndof = 0;
     for (int i = 0; i < 4; i++)
@@ -247,7 +245,6 @@ namespace ngfem {
         ndof += ( (facet_order[i]+1) * (facet_order[i]+2) ) / 2;
       }
     first_facet_dof[4] = ndof;
-
 
     Array<int> fvnums(3);  
     const FACE * faces = ElementTopology::GetFaces (eltype);
@@ -272,8 +269,7 @@ namespace ngfem {
    ****************************************************************************/
   // -------------------------------------------------------------------------------
 
-  FacetVolumeHex :: FacetVolumeHex()
-    : FacetVolumeFiniteElement<3> (ET_HEX) 
+  FacetFE<ET_HEX> :: FacetFE()
   {
     for (int i = 0; i < 6; i++)
       facets[i] = &facetsq[i];
@@ -281,26 +277,26 @@ namespace ngfem {
 
 
   /*
-    void FacetVolumeHex::CalcShape (const IntegrationPoint & ip, FlatVector<> shape) const
+    void FacetFE<ET_HEX>::CalcShape (const IntegrationPoint & ip, FlatVector<> shape) const
     {
-    cout << "error: CalcShape not implemented yet for FacetVolumeHex" << endl;
+    cout << "error: CalcShape not implemented yet for FacetFE<ET_HEX>" << endl;
     exit(0);
     }
   */
 
   /*
-    void FacetVolumeHex::CalcFacetShape (int afnr, const IntegrationPoint & ip, FlatVector<> shape) const
+    void FacetFE<ET_HEX>::CalcFacetShape (int afnr, const IntegrationPoint & ip, FlatVector<> shape) const
     {
     shape=0.0;
     SetFacet(afnr);
     facet.CalcShape(ip, shape.Range(first_facet_dof[afnr], first_facet_dof[afnr+1]));
     }
    
-    void FacetVolumeHex::SetFacet(int afnr) const
+    void FacetFE<ET_HEX>::SetFacet(int afnr) const
     {
     if (fnr == afnr) return;
   
-    FacetVolumeHex * hex=const_cast<FacetVolumeHex*>(this);
+    FacetFE<ET_HEX> * hex=const_cast<FacetFE<ET_HEX>*>(this);
     hex->fnr = afnr;
     Array<int> fvnums(4);  
     const FACE * faces = ElementTopology::GetFaces (eltype);
@@ -315,7 +311,7 @@ namespace ngfem {
     }  
   */
 
-  void FacetVolumeHex::ComputeNDof()  
+  void FacetFE<ET_HEX>::ComputeNDof()  
   {
     ndof = 0;
     for (int i=0; i < 6; i++)
@@ -343,7 +339,7 @@ namespace ngfem {
 
   }
 
-  // const FiniteElement & FacetVolumeHex::GetFacetFE(int fnr, LocalHeap& lh) const
+  // const FiniteElement & FacetFE<ET_HEX>::GetFacetFE(int fnr, LocalHeap& lh) const
   // {
   //   FacetFacetQuad* fe = new(lh.Alloc(sizeof(FacetFacetQuad))) FacetFacetQuad();
   //    
@@ -365,100 +361,20 @@ namespace ngfem {
    ****************************************************************************/
   // -------------------------------------------------------------------------------
 
-  FacetVolumePrism :: FacetVolumePrism()
-    : FacetVolumeFiniteElement<3> (ET_PRISM) 
+  FacetFE<ET_PRISM> :: FacetFE()
   {
+    ;
+    /*
     for (int i = 0; i < 2; i++)
       facets[i] = &facetst[i];
     for (int i = 0; i < 3; i++)
       facets[i+2] = &facetsq[i];
+    */
   };
 
 
-  /*
-    void FacetVolumePrism::CalcShape (const IntegrationPoint & ip3d, FlatVector<> shape) const
-    {  
-    //   topology: points = 0:()
-    IntegrationPoint ip2d;  
-    double x=ip3d(0), y=ip3d(1), z=ip3d(2);
 
-    shape = 0.0;
-    if (fabs(y)<1e-12) // front
-    {
-    ip2d(0) = x; ip2d(1) = z;
-    CalcFacetShape(2, ip2d, shape);
-    }
-    else if (fabs(x)<1e-12) // left
-    {
-    ip2d(0) = 1-y; ip2d(1)=z;
-    CalcFacetShape(4, ip2d, shape);
-    }
-    else if (fabs(1-x-y)<1e-12) // right
-    {
-    ip2d(0) = (1-x+y)*0.5; ip2d(1) = z;
-    CalcFacetShape(3, ip2d, shape);
-    }
-    else if (fabs(z)<1e-12) // botom
-    {
-    ip2d(0) = 1-x-y; ip2d(1) = y;
-    CalcFacetShape(0, ip2d, shape);
-    }
-    else if (fabs(z)>1-1e-12) // top
-    {
-    ip2d(0) = x; ip2d(1) = y;
-    CalcFacetShape(1, ip2d, shape);
-    }
-    } 
-  */
-
-  /*
-    void FacetVolumePrism::CalcFacetShape (int afnr, const IntegrationPoint & ip, FlatVector<> shape) const
-    {
-    shape=0.0;
-    SetFacet(afnr);
-    if (afnr < 2) //
-    trig.CalcShape(ip, shape.Range(first_facet_dof[afnr], first_facet_dof[afnr+1]));
-    else // quad
-    quad.CalcShape(ip, shape.Range(first_facet_dof[afnr], first_facet_dof[afnr+1]));
-    }
-   
-    void FacetVolumePrism::SetFacet(int afnr) const
-    {
-    if (qnr == afnr || tnr == afnr) return;
-  
-    FacetVolumePrism * prism=const_cast<FacetVolumePrism*>(this);
-    if (afnr < 2) // triangles
-    {
-    prism->tnr = afnr;
-    Array<int> fvnums(3);  
-    const FACE * faces = ElementTopology::GetFaces (eltype);
-
-    fvnums[0] = vnums[faces[afnr][0]]; 
-    fvnums[1] = vnums[faces[afnr][1]]; 
-    fvnums[2] = vnums[faces[afnr][2]]; 
-   
-    prism->trig.SetVertexNumbers(fvnums);
-    prism->trig.SetOrder(facet_order[tnr]);
-    }
-    else // quad face
-    {
-    prism->qnr = afnr;
-    Array<int> fvnums(4);  
-    const FACE * faces = ElementTopology::GetFaces (eltype);
-
-    fvnums[0] = vnums[faces[afnr][0]]; 
-    fvnums[1] = vnums[faces[afnr][1]]; 
-    fvnums[2] = vnums[faces[afnr][2]]; 
-    fvnums[3] = vnums[faces[afnr][3]]; 
-   
-    prism->quad.SetVertexNumbers(fvnums);
-    prism->quad.SetOrder(facet_order[qnr]);
-    }
-    }  
-  */
-
-
-  void FacetVolumePrism::ComputeNDof() 
+  void FacetFE<ET_PRISM>::ComputeNDof() 
   {
     ndof = 0;
     // triangles
@@ -476,22 +392,9 @@ namespace ngfem {
   
     first_facet_dof[5] = ndof;
 
+    /*
     Array<int> fvnums(4);  
     const FACE * faces = ElementTopology::GetFaces (ET_PRISM);
-
-    /*
-      for (int fnr = 0; fnr < 5; fnr++)
-      {
-      fvnums[0] = vnums[faces[fnr][0]]; 
-      fvnums[1] = vnums[faces[fnr][1]]; 
-      fvnums[2] = vnums[faces[fnr][2]]; 
-      fvnums[3] = vnums[faces[fnr][3]]; 
-   
-      facets[fnr]->SetVertexNumbers(fvnums);
-      facets[fnr]->SetOrder(facet_order[fnr]);
-      facets[fnr]->ComputeNDof();
-      }
-    */
 
     for (int fnr = 0; fnr < 2; fnr++)
       {
@@ -515,14 +418,14 @@ namespace ngfem {
         facetsq[fnr].SetOrder(facet_order[fnr+2]);
         facetsq[fnr].ComputeNDof();
       }
-
+    */
 
 
 
 
   }
 
-  // const FiniteElement & FacetVolumePrism::GetFacetFE(int fnr, LocalHeap& lh) const
+  // const FiniteElement & FacetFE<ET_PRISM>::GetFacetFE(int fnr, LocalHeap& lh) const
   // {
   //    
   //   const FACE * faces = ElementTopology::GetFaces (eltype);
@@ -561,7 +464,7 @@ namespace ngfem {
     }
   */
  
-  void FacetVolumePyramid::CalcFacetShape (int afnr, const IntegrationPoint & ip, FlatVector<> shape) const
+  void FacetFE<ET_PYRAMID>::CalcFacetShape (int afnr, const IntegrationPoint & ip, FlatVector<> shape) const
   {
     shape=0.0;
     SetFacet(afnr);
@@ -571,11 +474,11 @@ namespace ngfem {
       quad.CalcShape(ip, shape.Range(first_facet_dof[afnr], first_facet_dof[afnr+1]));
   }
    
-  void FacetVolumePyramid::SetFacet(int afnr) const
+  void FacetFE<ET_PYRAMID>::SetFacet(int afnr) const
   {
     if (qnr == afnr || tnr == afnr) return;
   
-    FacetVolumePyramid * pyramid=const_cast<FacetVolumePyramid*>(this);
+    FacetFE<ET_PYRAMID> * pyramid=const_cast<FacetFE<ET_PYRAMID>*>(this);
     if (afnr < 4) // triangles
       {
         pyramid->tnr = afnr;
@@ -604,7 +507,7 @@ namespace ngfem {
   }  
 
 
-  void FacetVolumePyramid::ComputeNDof() 
+  void FacetFE<ET_PYRAMID>::ComputeNDof() 
   {
     ndof = 0;
     // triangles
@@ -613,6 +516,7 @@ namespace ngfem {
         first_facet_dof[i] = ndof;
         ndof += ( (facet_order[i]+1) * (facet_order[i]+2) ) / 2;
       }
+
     //quad - basis
     first_facet_dof[4] = ndof;
     ndof += (facet_order[4]+1) * (facet_order[4]+1);
@@ -621,30 +525,21 @@ namespace ngfem {
     first_facet_dof[5] = ndof;
   }
 
-  // const FiniteElement & FacetVolumePyramid::GetFacetFE(int fnr, LocalHeap& lh) const
-  // {
-  //   const FACE * faces = ElementTopology::GetFaces (eltype);
-  //   if (fnr < 4) // triangle
-  //   {
-  //     FacetFacetTrig* fe = new(lh.Alloc(sizeof(FacetFacetTrig))) FacetFacetTrig();
-  //     Array<int> fvnums(3);
-  //     for (int i=0; i<3; i++)
-  //       fvnums[i] = vnums[faces[fnr][i]]; 
-  //     fe->SetVertexNumbers(fvnums);
-  //     fe->SetOrder(facet_order[fnr]);
-  //     return *fe;
-  //   }
-  //   else // facet 5: quad
-  //   {
-  //     FacetFacetQuad* fe = new(lh.Alloc(sizeof(FacetFacetQuad))) FacetFacetQuad();
-  //     Array<int> fvnums(4);
-  //     for (int i=0; i<4; i++)
-  //       fvnums[i] = vnums[faces[fnr][i]]; 
-  //     fe->SetVertexNumbers(fvnums);
-  //     fe->SetOrder(facet_order[fnr]);
-  //     return *fe;
-  //   }
-  // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

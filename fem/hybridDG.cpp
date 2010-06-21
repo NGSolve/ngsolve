@@ -99,7 +99,7 @@ namespace ngfem
 
 	    bmats.VRange(l*D, (l+1)*D) = Trans(dshape);
 	    dbmats.VRange(l*D, (l+1)*D) = 
-	      (lam * sip.GetJacobiDet() * ir_vol[l].Weight()) * Trans(dshape);
+	      (lam * sip.GetMeasure() * ir_vol[l].Weight()) * Trans(dshape);
 	  }
 
 	NgProfiler::RegionTimer reg1a (timer1a);     
@@ -158,7 +158,7 @@ namespace ngfem
 	    comp_elmat = 0;
 	    bmat = 0.0;
 
-	    const_cast<FacetVolumeFiniteElement<D>&> (fel_facet).SelectFace (k);
+	    fel_facet.SelectFacet (k);
 
 	    for (int l = 0; l < ir_facet.GetNIP(); l++)
 	      {
@@ -168,16 +168,16 @@ namespace ngfem
               
 		Mat<D> jac = sip.GetJacobian();
 		Mat<D> inv_jac = sip.GetJacobianInverse();
-		double det = sip.GetJacobiDet();
+		double det = sip.GetMeasure();
 
 
 		Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
 		double len = L2Norm (normal);
 		normal /= len;
 
-		fel_facet.CalcFacetShape(k, ir_facet[l], mat_facet);
-		// fel_facet.CalcShape(ip, mat_facet);
-		fel_l2.CalcShape(sip.IP(), mat_l2);
+		//fel_facet.CalcFacetShape(k, ir_facet[l], mat_facet);
+		fel_facet.CalcShape(ip, mat_facet);
+		fel_l2.CalcShape(ip, mat_l2);
 
 		Vec<D> invjac_normal = inv_jac * normal;
 		mat_dudn = fel_l2.GetDShape (sip.IP(), lh) * invjac_normal;
@@ -396,7 +396,7 @@ namespace ngfem
 	  {
 	    HeapReset hr(lh);
 
-	    fel_facet.SelectFace (k);
+	    fel_facet.SelectFacet (k);
 
 	    Vec<D> normal_ref;
 	    for (int i=0; i<D; i++)
