@@ -2652,6 +2652,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     FinalizeUpdate (lh);
 
     // dirichlet-dofs from sub-spaces
+    // ist das umsonst ? (JS)
     bool has_dirichlet_dofs = false;
     for (int i = 0; i < spaces.Size(); i++)
       if (spaces[i]->GetFreeDofs()) 

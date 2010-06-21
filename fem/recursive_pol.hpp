@@ -23,38 +23,38 @@ namespace ngfem
   {
   public:
     template <class S, class T>
-    ALWAYS_INLINE static void Eval (const REC & pol, S x, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void Eval (S x, T & values, S & p1, S & p2) 
     {
       S p3;
-      CEvalFO<REC,N-1>::Eval (pol, x, values, p2, p3);
-      values[N] = p1 = ( pol.A(N) * x + pol.B(N)) * p2 + pol.C(N) * p3;
+      CEvalFO<REC,N-1>::Eval (x, values, p2, p3);
+      values[N] = p1 = ( REC::A(N) * x + REC::B(N)) * p2 + REC::C(N) * p3;
     }
 
 
     template <class S, class Sc, class T>
-    ALWAYS_INLINE static void EvalMult (const REC & pol, S x, Sc c, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void EvalMult (S x, Sc c, T & values, S & p1, S & p2) 
     {
       S p3;
-      CEvalFO<REC,N-1>::EvalMult (pol, x, c, values, p2, p3);
-      values[N] = p1 = ( pol.A(N) * x + pol.B(N)) * p2 + pol.C(N) * p3;
+      CEvalFO<REC,N-1>::EvalMult (x, c, values, p2, p3);
+      values[N] = p1 = ( REC::A(N) * x + REC::B(N)) * p2 + REC::C(N) * p3;
     }
 
 
     template <class S, class Sy, class T>
-    ALWAYS_INLINE static void EvalScaled (const REC & pol, S x, Sy y, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void EvalScaled (S x, Sy y, T & values, S & p1, S & p2) 
     {
       S p3;
-      CEvalFO<REC,N-1>::EvalScaled (pol, x, y, values, p2, p3);
-      values[N] = p1 = ( pol.A(N) * x + pol.B(N) * y) * p2 + pol.C(N)*y*y * p3;
+      CEvalFO<REC,N-1>::EvalScaled (x, y, values, p2, p3);
+      values[N] = p1 = ( REC::A(N) * x + REC::B(N) * y) * p2 + REC::C(N)*y*y * p3;
     }
 
 
     template <class S, class Sy, class Sc, class T>
-    ALWAYS_INLINE static void EvalScaledMult (const REC & pol, S x, Sy y, Sc c, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T & values, S & p1, S & p2) 
     {
       S p3;
-      CEvalFO<REC,N-1>::EvalScaledMult (pol, x, y, c, values, p2, p3);
-      values[N] = p1 = ( pol.A(N) * x + pol.B(N) * y) * p2 + pol.C(N)*y*y * p3;
+      CEvalFO<REC,N-1>::EvalScaledMult (x, y, c, values, p2, p3);
+      values[N] = p1 = ( REC::A(N) * x + REC::B(N) * y) * p2 + REC::C(N)*y*y * p3;
     }
 
 
@@ -66,20 +66,20 @@ namespace ngfem
     {
     public:
       template <class S, class T>
-      ALWAYS_INLINE static void Eval (const REC & pol, S x, T & values, S & /* p1 */, S & /* p2 */) 
+      ALWAYS_INLINE static void Eval (S x, T & values, S & /* p1 */, S & /* p2 */) 
       { ; }
 
       template <class S, class Sc, class T>
-      ALWAYS_INLINE static void EvalMult (const REC & pol, S x, Sc c, T & values, S & /* p1 */, S & /* p2 */) 
+      ALWAYS_INLINE static void EvalMult (S x, Sc c, T & values, S & /* p1 */, S & /* p2 */) 
       { ; }
 
 
       template <class S, class Sy, class T>
-      ALWAYS_INLINE static void EvalScaled (const REC & pol, S x, Sy y, T & values, S & /* p1 */, S & /* p2 */) 
+      ALWAYS_INLINE static void EvalScaled (S x, Sy y, T & values, S & /* p1 */, S & /* p2 */) 
       { ; }
 
       template <class S, class Sy, class Sc, class T>
-      ALWAYS_INLINE static void EvalScaledMult (const REC & pol, S x, Sy y, Sc c, T & values, S & /* p1 */, S & /* p2 */) 
+      ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T & values, S & /* p1 */, S & /* p2 */) 
       { ; }
 
     };
@@ -90,28 +90,28 @@ namespace ngfem
     {
     public:
       template <class S, class T>
-      ALWAYS_INLINE static void Eval (const REC & pol, S x, T & values, S & p1, S & /* p2 */) 
+      ALWAYS_INLINE static void Eval (S x, T & values, S & p1, S & /* p2 */) 
       {
-	values[0] = p1 = pol.P0(x);
+	values[0] = p1 = REC::P0(x);
       }
 
       template <class S, class Sc, class T>
-      ALWAYS_INLINE static void EvalMult (const REC & pol, S x, Sc c, T & values, S & p1, S & /* p2 */) 
+      ALWAYS_INLINE static void EvalMult (S x, Sc c, T & values, S & p1, S & /* p2 */) 
       {
-	values[0] = p1 = c * pol.P0(x);
+	values[0] = p1 = c * REC::P0(x);
       }
 
 
       template <class S, class Sy, class T>
-      ALWAYS_INLINE static void EvalScaled (const REC & pol, S x, Sy y, T & values, S & p1, S & /* p2 */) 
+      ALWAYS_INLINE static void EvalScaled (S x, Sy y, T & values, S & p1, S & /* p2 */) 
       {
-	values[0] = p1 = pol.P0(x);
+	values[0] = p1 = REC::P0(x);
       }
 
       template <class S, class Sy, class Sc, class T>
-      ALWAYS_INLINE static void EvalScaledMult (const REC & pol, S x, Sy y, Sc c, T & values, S & p1, S & /* p2 */) 
+      ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T & values, S & p1, S & /* p2 */) 
       {
-	values[0] = p1 = c * pol.P0(x);
+	values[0] = p1 = c * REC::P0(x);
       }
 
     };
@@ -121,31 +121,31 @@ namespace ngfem
   {
   public:
     template <class S, class T>
-    ALWAYS_INLINE static void Eval (const REC & pol, S x, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void Eval (S x, T & values, S & p1, S & p2) 
     {
-      values[0] = p2 = pol.P0(x);
-      values[1] = p1 = pol.P1(x);
+      values[0] = p2 = REC::P0(x);
+      values[1] = p1 = REC::P1(x);
     }
 
     template <class S, class Sc, class T>
-    ALWAYS_INLINE static void EvalMult (const REC & pol, S x, Sc c, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void EvalMult (S x, Sc c, T & values, S & p1, S & p2) 
     {
-      values[0] = p2 = c * pol.P0(x);
-      values[1] = p1 = c * pol.P1(x);
+      values[0] = p2 = c * REC::P0(x);
+      values[1] = p1 = c * REC::P1(x);
     }
 
     template <class S, class Sy, class T>
-    ALWAYS_INLINE static void EvalScaled (const REC & pol, S x, Sy y, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void EvalScaled (S x, Sy y, T & values, S & p1, S & p2) 
     {
-      values[0] = p2 = pol.P0(x);
-      values[1] = p1 = pol.P1(x);
+      values[0] = p2 = REC::P0(x);
+      values[1] = p1 = REC::P1(x);
     }
 
     template <class S, class Sy, class Sc, class T>
-    ALWAYS_INLINE static void EvalScaledMult (const REC & pol, S x, Sy y, Sc c, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T & values, S & p1, S & p2) 
     {
-      values[0] = p2 = c * pol.P0(x);
-      values[1] = p1 = c * pol.P1(x);
+      values[0] = p2 = c * REC::P0(x);
+      values[1] = p1 = c * REC::P1(x);
     }
   };
   
@@ -159,10 +159,10 @@ namespace ngfem
   {
   public:
     template <int N, class S, class T>
-    ALWAYS_INLINE void EvalFO (S x, T & values) const
+    ALWAYS_INLINE static void EvalFO (S x, T & values) 
     {
       S p1, p2;
-      CEvalFO<REC, N>::Eval (static_cast<const REC&> (*this), x, values, p1, p2);
+      CEvalFO<REC, N>::Eval (x, values, p1, p2);
     }
 
 
@@ -175,33 +175,31 @@ namespace ngfem
     }
 
     template <class S, class Sy>
-    ALWAYS_INLINE void EvalScaledNext (int i, S x, Sy y, S & p1, S & p2) const
+    ALWAYS_INLINE static void EvalScaledNext (int i, S x, Sy y, S & p1, S & p2)
     {
-      const REC & pol = static_cast<const REC&> (*this);
-      S pnew = (pol.A(i) * x + pol.B(i) * y) * p1 + pol.C(i) * y*y*p2;
+      S pnew = (REC::A(i) * x + REC::B(i) * y) * p1 + REC::C(i) * y*y*p2;
       p2 = p1;
       p1 = pnew;
     }
 
     template <class S, class T>
-    void Eval (int n, S x, T & values) const
+    static void Eval (int n, S x, T & values) 
     {
       EvalMult (n, x, 1.0, values);
     }
 
 
     template <class S, class Sc, class T>
-    void EvalMult (int n, S x, Sc c, T & values) const
+    static void EvalMult (int n, S x, Sc c, T & values) 
     {
-     const REC & pol = static_cast<const REC&> (*this);
       S p1, p2;
 
       if (n < 0) return;
 
-      values[0] = p2 = c * pol.P0(x);
+      values[0] = p2 = c * REC::P0(x);
       if (n < 1) return;
 
-      values[1] = p1 = c * pol.P1(x);
+      values[1] = p1 = c * REC::P1(x);
       if (n < 2) return;
 
       EvalNext(2, x, p1, p2);
@@ -273,7 +271,7 @@ namespace ngfem
 	  for (int i = 9; i <= n; i++)
 	    {
 	      p3 = p2; p2 = p1;
-	      p1 = (pol.A(i) * x + pol.B(i)) * p2 + pol.C(i) * p3;
+	      p1 = (REC::A(i) * x + REC::B(i)) * p2 + REC::C(i) * p3;
 	      values[i] = p1;
 	    }
 	}
@@ -281,10 +279,10 @@ namespace ngfem
     }
 
     template <int N, class S, class Sc, class T>
-    ALWAYS_INLINE void EvalMultFO (S x, Sc c, T & values) const
+    ALWAYS_INLINE static void EvalMultFO (S x, Sc c, T & values) 
     {
       S p1, p2;
-      CEvalFO<REC, N>::EvalMult (static_cast<const REC&> (*this), x, c, values, p1, p2);
+      CEvalFO<REC, N>::EvalMult (x, c, values, p1, p2);
     }
 
 
@@ -292,32 +290,31 @@ namespace ngfem
 
 
     template <class S, class Sy, class T>
-    void EvalScaled (int n, S x, Sy y, T & values)
+    static void EvalScaled (int n, S x, Sy y, T & values)
     {
       EvalScaledMult (n, x, y, 1.0, values);
     }
 
     template <int N, class S, class Sy, class T>
-    ALWAYS_INLINE void EvalScaledFO (S x, Sy y, T & values) const
+    ALWAYS_INLINE static void EvalScaledFO (S x, Sy y, T & values) 
     {
       S p1, p2;
-      CEvalFO<REC, N>::EvalScaled (static_cast<const REC&> (*this), x, y, values, p1, p2);
+      CEvalFO<REC, N>::EvalScaled (x, y, values, p1, p2);
     }
 
 
 
     template <class S, class Sy, class Sc, class T>
-    void EvalScaledMult (int n, S x, Sy y, Sc c, T & values)
+    static void EvalScaledMult (int n, S x, Sy y, Sc c, T & values)
     {
-    const REC & pol = static_cast<const REC&> (*this);
       S p1, p2;
 
       if (n < 0) return;
 
-      values[0] = p2 = c * pol.P0(x);
+      values[0] = p2 = c * REC::P0(x);
       if (n < 1) return;
 
-      values[1] = p1 = c * pol.P1(x);
+      values[1] = p1 = c * REC::P1(x);
       if (n < 2) return;
 
       EvalScaledNext(2, x, y, p1, p2);
@@ -374,7 +371,7 @@ namespace ngfem
 	  for (int i = 9; i <= n; i++)
 	    {
 	      p3 = p2; p2 = p1;
-	      p1 = (pol.A(i) * x + pol.B(i) * y) * p2 + pol.C(i)*y*y * p3;
+	      p1 = (REC::A(i) * x + REC::B(i) * y) * p2 + REC::C(i)*y*y * p3;
 	      values[i] = p1;
 	    }
 	}
@@ -382,10 +379,10 @@ namespace ngfem
     }
 
     template <int N, class S, class Sy, class Sc, class T>
-    ALWAYS_INLINE void EvalScaledMultFO (S x, Sy y, Sc c,T & values) const
+    ALWAYS_INLINE static void EvalScaledMultFO (S x, Sy y, Sc c,T & values) 
     {
       S p1, p2;
-      CEvalFO<REC, N>::EvalScaledMult (static_cast<const REC&> (*this), x, y, c, values, p1, p2);
+      CEvalFO<REC, N>::EvalScaledMult (x, y, c, values, p1, p2);
     }
   };
 
@@ -835,7 +832,7 @@ namespace ngfem
 
       JacobiPolynomialFix<alpha0+2*i, beta> jac;
       S p1, p2;
-      CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::Eval (jac, x, values.Row(i), p1, p2);
+      CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::Eval (x, values.Row(i), p1, p2);
     }
 
 
@@ -847,7 +844,7 @@ namespace ngfem
 
       JacobiPolynomialFix<alpha0+2*i, beta> jac;
       S p1, p2;
-      CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::EvalScaled (jac, x, t, values.Row(i), p1, p2);
+      CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::EvalScaled (x, t, values.Row(i), p1, p2);
     }
 
     
@@ -1017,13 +1014,13 @@ namespace ngfem
   {
   public:
     template <class S, class T>
-    void Eval (int n, S x, S y, T & values)
+    static void Eval (int n, S x, S y, T & values)
     {
       EvalMult (n, x, y, 1.0, values);
     }
 
     template <class S, class Sc, class T>
-    void EvalMult (int n, S x, S y, Sc c, T & values)
+    static void EvalMult (int n, S x, S y, Sc c, T & values)
     {
       ArrayMem<S, 20> poly(n+1);
       ArrayMem<S, 400> polx_mem( sqr(n+1) );
@@ -1041,7 +1038,7 @@ namespace ngfem
 
 
     template <class S, class St, class Sc, class T>
-    void EvalScaledMult (int n, S x, S y, St t, Sc c, T & values)
+    static void EvalScaledMult (int n, S x, S y, St t, Sc c, T & values)
     {
       ArrayMem<S, 20> poly(n+1);
       ArrayMem<S, 400> polx_mem( sqr(n+1) );

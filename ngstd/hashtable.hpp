@@ -23,9 +23,11 @@ namespace ngstd
     ///
     INT () { }
 
-    /// init i[0]
+    /// init all
     INT (int ai1)
-    { i[0] = ai1; }
+    { 
+      for (int j = 0; j < N; j++) { i[j] = ai1; }
+    }
 
     /// init i[0], i[1]
     INT (int ai1, int ai2)

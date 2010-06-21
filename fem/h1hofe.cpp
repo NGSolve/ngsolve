@@ -178,25 +178,24 @@ namespace ngfem
   /* *********************** Segment  **********************/
 
   template<typename Tx, typename TFA>  
-  void H1HighOrderFE<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & shape) const
+  void H1HighOrderFE_Shape<ET_SEGM> :: T_CalcShape (Tx x[], TFA & shape) const
   {
-    Tx x = hx[0];
-    Tx lam[2] = { x, 1-x };
+    Tx lam[2] = { x[0], 1-x[0] };
 
     shape[0] = lam[0];
     shape[1] = lam[1];
 
     INT<2> e = GetEdgeSort (0, vnums);
 
-    LegendrePolynomial leg;
-    leg.EvalMult (order_edge[0]-2, 
-		  lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape.Addr(2));
+    LegendrePolynomial::EvalMult (order_edge[0]-2, 
+				  lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape.Addr(2));
+
   }
 
   /* *********************** Triangle  **********************/
 
   template<typename Tx, typename TFA>  
-  void H1HighOrderFE<ET_TRIG> :: T_CalcShape (Tx x[2], TFA & shape) const
+  void H1HighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx x[], TFA & shape) const
   {
     Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
 
@@ -210,10 +209,10 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{ 
           INT<2> e = GetEdgeSort (i, vnums);
-	  LegendrePolynomial leg;
-	  leg.EvalScaledMult (order_edge[i]-2, 
-			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-			      lam[e[0]]*lam[e[1]], shape.Addr(ii));
+
+	  LegendrePolynomial::EvalScaledMult (order_edge[i]-2, 
+					      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+					      lam[e[0]]*lam[e[1]], shape.Addr(ii));
 	  ii += order_edge[i]-1;
 	}
 
@@ -222,8 +221,7 @@ namespace ngfem
       {
         INT<4> f = GetFaceSort (0, vnums);
 
-	DubinerBasis dub;
-	dub.EvalMult (p-3, lam[f[0]], lam[f[1]], lam[f[0]]*lam[f[1]]*lam[f[2]], shape.Addr(ii));
+	DubinerBasis::EvalMult (p-3, lam[f[0]], lam[f[1]], lam[f[0]]*lam[f[1]]*lam[f[2]], shape.Addr(ii));
       }
   }
 
@@ -231,7 +229,7 @@ namespace ngfem
   /* *********************** Quadrilateral  **********************/
 
   template<typename Tx, typename TFA>  
-  void H1HighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  void H1HighOrderFE_Shape<ET_QUAD> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1];
     Tx lam[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
@@ -254,8 +252,7 @@ namespace ngfem
         Tx lam_e = lam[e[0]]+lam[e[1]];
         Tx bub = 0.25 * lam_e * (1 - xi*xi);
 
-	LegendrePolynomial leg;
-	leg.EvalMult (p-2, xi, bub, shape.Addr(ii));
+	LegendrePolynomial::EvalMult (p-2, xi, bub, shape.Addr(ii));
 	ii += p-1;
       }    
     
@@ -280,7 +277,7 @@ namespace ngfem
   /* *********************** Tetrahedron  **********************/
 
   template<typename Tx, typename TFA>  
-  void  H1HighOrderFE<ET_TET> :: T_CalcShape (Tx x[3], TFA & shape) const
+  void H1HighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx x[], TFA & shape) const
   {
     Tx lam[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
 
@@ -296,10 +293,10 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{
           INT<2> e = GetEdgeSort (i, vnums);
-	  LegendrePolynomial leg;
-	  leg.EvalScaledMult (order_edge[i]-2, 
-			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-			      lam[e[0]]*lam[e[1]], shape.Addr(ii));
+
+	  LegendrePolynomial::EvalScaledMult (order_edge[i]-2, 
+					      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+					      lam[e[0]]*lam[e[1]], shape.Addr(ii));
 	  ii += order_edge[i]-1;
 	}
 
@@ -310,10 +307,9 @@ namespace ngfem
           INT<4> f = GetFaceSort (i, vnums);
 	  int vop = 6 - f[0] - f[1] - f[2];  	
           
-	  DubinerBasis dub;
 	  int p = order_face[i][0];
-	  dub.EvalScaledMult (p-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
-			      lam[f[0]]*lam[f[1]]*lam[f[2]], shape.Addr(ii));
+	  DubinerBasis::EvalScaledMult (p-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
+					lam[f[0]]*lam[f[1]]*lam[f[2]], shape.Addr(ii));
 	  ii += (p-2)*(p-1)/2;
 	}
 
@@ -329,7 +325,7 @@ namespace ngfem
   /* *********************** Prism  **********************/
 
   template<typename Tx, typename TFA>  
-  void  H1HighOrderFE<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void  H1HighOrderFE_Shape<ET_PRISM> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
@@ -350,9 +346,8 @@ namespace ngfem
 	  Tx xi = lam[e[1]]-lam[e[0]]; 
 	  Tx eta = lam[e[0]]+lam[e[1]]; 
 
-	  LegendrePolynomial leg;
-	  leg.EvalScaledMult (order_edge[i]-2, xi, eta, 
-			      lam[e[0]]*lam[e[1]]*muz[e[1]], shape.Addr(ii));
+	  LegendrePolynomial::EvalScaledMult (order_edge[i]-2, xi, eta, 
+					      lam[e[0]]*lam[e[1]]*muz[e[1]], shape.Addr(ii));
 	  ii += order_edge[i]-1;
 	}
     
@@ -361,10 +356,12 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{
           INT<2> e = GetEdgeSort (i, vnums);
-	  LegendrePolynomial leg;
-	  leg.EvalMult (order_edge[i]-2, 
-			muz[e[1]]-muz[e[0]], 
-			muz[e[0]]*muz[e[1]]*lam[e[1]], shape.Addr(ii));
+
+	  LegendrePolynomial::
+	    EvalMult (order_edge[i]-2, 
+		      muz[e[1]]-muz[e[0]], 
+		      muz[e[0]]*muz[e[1]]*lam[e[1]], shape.Addr(ii));
+
 	  ii += order_edge[i]-1;
 	}
     
@@ -378,10 +375,11 @@ namespace ngfem
 	{
           INT<4> f = GetFaceSort (i, vnums);
 
-	  DubinerBasis dub;
+
 	  int p = order_face[i][0];
-	  dub.EvalMult (p-3, lam[f[0]], lam[f[1]],
-			lam[0]*lam[1]*lam[2]*muz[f[2]], shape.Addr(ii));
+	  DubinerBasis::
+	    EvalMult (p-3, lam[f[0]], lam[f[1]],
+		      lam[0]*lam[1]*lam[2]*muz[f[2]], shape.Addr(ii));
 	  ii += (p-2)*(p-1)/2;
 	}
    
@@ -438,7 +436,7 @@ namespace ngfem
 
 
   template<typename Tx, typename TFA>  
-  void  H1HighOrderFE<ET_HEX> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void  H1HighOrderFE_Shape<ET_HEX> :: T_CalcShape (Tx hx[], TFA & shape) const
   { 
     Tx x = hx[0], y = hx[1], z = hx[2];
 
@@ -448,7 +446,9 @@ namespace ngfem
 		 (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z}; 
 
     // vertex shapes
-    for(int i=0; i<8; i++) shape[i] = lam[i]; 
+    for (int i=0; i<8; i++) 
+      shape[i] = lam[i]; 
+
     int ii = 8;
 
     ArrayMem<Tx,20> polx(order+1), poly(order+1), polz(order+1);
@@ -464,18 +464,9 @@ namespace ngfem
 	  Tx lam_e = lam[e[0]]+lam[e[1]];
 	  Tx bub = 0.25 * lam_e * (1 - xi*xi);
 	  
-	  LegendrePolynomial leg;
-	  leg.EvalMult (p-2, xi, bub, shape.Addr(ii));
+	  LegendrePolynomial::
+	    EvalMult (p-2, xi, bub, shape.Addr(ii));
 	  ii += p-1;
-
-	/*
-	  Tx xi = sigma[e[1]]-sigma[e[0]]; 
-	  Tx lam_e = lam[e[0]]+lam[e[1]];
-
-	  ii += T_ORTHOPOL::CalcMult (order_edge[i], 
-                                      xi, lam_e, 
-                                      shape.Addr(ii));
-	*/
 	}
      
     for (int i = 0; i < N_FACE; i++)
@@ -519,7 +510,7 @@ namespace ngfem
   /* ******************************** Pyramid  ************************************ */
 
   template<typename Tx, typename TFA>  
-  void  H1HighOrderFE<ET_PYRAMID> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void  H1HighOrderFE_Shape<ET_PYRAMID> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
 
@@ -543,22 +534,10 @@ namespace ngfem
     int ii = 5;
 
 
-    //horizontal edge dofs 
-    // const EDGE * edges = ElementTopology::GetEdges (ET_PYRAMID);
+    // horizontal edge dofs 
     for (int i = 0; i < 4; i++)
       if (order_edge[i] >= 2)
 	{
-	  /*
-	  int es = edges[i][0], ee = edges[i][1];
-	  if (vnums[es] > vnums[ee]) swap (es, ee);
-
-	  Tx lam = sigma[ee]-sigma[es]; 
-	  Tx lam_edge = lambda[es] + lambda[ee];
-
-          ii += T_ORTHOPOL::CalcTrigExtMult (order_edge[i], lam*(1-z), z, lam_edge, 
-                                             shape.Addr(ii));
-	  */
-
 	  int p = order_edge[i];
 	  INT<2> e = GetEdgeSort (i, vnums);	  
 
@@ -566,8 +545,8 @@ namespace ngfem
 	  Tx lam_e = lambda[e[0]]+lambda[e[1]];
 	  Tx bub = 0.25 * lam_e * (1 - xi*xi)*(1-z)*(1-z);
 	  
-	  LegendrePolynomial leg;
-	  leg.EvalScaledMult (p-2, xi*(1-z), 1-z, bub, shape.Addr(ii));
+	  LegendrePolynomial::
+	    EvalScaledMult (p-2, xi*(1-z), 1-z, bub, shape.Addr(ii));
 	  ii += p-1;
 	}
     
@@ -575,15 +554,6 @@ namespace ngfem
     for (int i = 4; i < 8; i++) 
       if (order_edge[i] >= 2)
 	{
-	  /*
-	  int es = edges[i][0], ee = edges[i][1];
-	  if (vnums[es] > vnums[ee]) swap (es, ee);
-	  
-	  ii += T_ORTHOPOL::CalcTrigExt (order_edge[i], lambda3d[ee]-lambda3d[es],  
-					 1-lambda3d[es]-lambda3d[ee], shape.Addr(ii));
-	  */
-
-
 	  int p = order_edge[i];
 	  INT<2> e = GetEdgeSort (i, vnums);	  
 
@@ -591,8 +561,8 @@ namespace ngfem
 	  Tx lam_e = lambda3d[e[0]]+lambda3d[e[1]];
 	  Tx bub = 0.25 * (lam_e*lam_e-xi*xi);
 	  
-	  LegendrePolynomial leg;
-	  leg.EvalScaledMult (p-2, xi, lam_e, bub, shape.Addr(ii));
+	  LegendrePolynomial::
+	    EvalScaledMult (p-2, xi, lam_e, bub, shape.Addr(ii));
 	  ii += p-1;
 	}
 
@@ -613,16 +583,10 @@ namespace ngfem
 	  if(vnums[faces[i][fav[1]]] > vnums[faces[i][fav[2]]]) swap(fav[1],fav[2]);
 	  if(vnums[faces[i][fav[0]]] > vnums[faces[i][fav[1]]]) swap(fav[0],fav[1]); 	
 
-	  /*
-	  int ndf = T_TRIGSHAPES::CalcMult
-	    (p, bary[fav[2]]-bary[fav[1]], bary[fav[0]], lam_face, shape.Addr(ii));
-	  
-	  ii += ndf;
-	  */
 	  Tx bub = lam_face * bary[0]*bary[1]*bary[2];
 	  
-	  DubinerBasis dub;
-	  dub.EvalMult (p-3, bary[fav[0]], bary[fav[1]], bub, shape.Addr(ii));
+	  DubinerBasis::
+	    EvalMult (p-3, bary[fav[0]], bary[fav[1]], bub, shape.Addr(ii));
 	  ii += (p-2)*(p-1)/2;
 
 
@@ -684,14 +648,13 @@ namespace ngfem
   template class H1HighOrderFiniteElement<2>;
   template class H1HighOrderFiniteElement<3>;
 
-
-  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_SEGM>, ET_SEGM>;
-  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_TRIG>, ET_TRIG>;
-  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_QUAD>, ET_QUAD>;
-  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_TET>, ET_TET>;
-  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_PRISM>, ET_PRISM>;
-  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_HEX>, ET_HEX>;
-  template class T_ScalarFiniteElement2<H1HighOrderFE<ET_PYRAMID>, ET_PYRAMID>;
+  template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_SEGM>, ET_SEGM>;
+  template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_TRIG>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_QUAD>, ET_QUAD>;
+  template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_TET>, ET_TET>;
+  template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
+  template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_HEX>, ET_HEX>;
+  template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
 
 
   template class T_H1HighOrderFiniteElement<ET_SEGM>;
@@ -701,6 +664,8 @@ namespace ngfem
   template class T_H1HighOrderFiniteElement<ET_PRISM>;
   template class T_H1HighOrderFiniteElement<ET_PYRAMID>;
   template class T_H1HighOrderFiniteElement<ET_HEX>;
+
+
 
   // template class H1HighOrderFE<ET_SEGM>;
   // template class H1HighOrderFE<ET_TET>;

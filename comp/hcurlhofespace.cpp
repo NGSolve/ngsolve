@@ -975,6 +975,44 @@ namespace ngcomp
       SmoothingType = 5;
 
 
+
+
+
+
+    if (precflags.GetDefineFlag("subassembled"))
+      {
+	
+	TableCreator<int> creator;
+	for ( ; !creator.Done(); creator++)
+	  {
+
+	    if (creator.GetMode() == 1)
+	      cout << "High order AFW blocks " << endl;
+		
+	    for (int i = 0; i < ned; i++)
+	      if (!IsDirichletEdge(i) && fine_edge[i])
+		{
+		  Ng_Node<1> edge = ma.GetNode<1> (i);
+		  for (int k = 0; k < 2; k++)
+		    {
+		      creator.Add (edge.vertices[k], i);
+		      creator.Add (edge.vertices[k], GetEdgeDofs(i));
+		    }
+		}
+	  }
+
+	
+	return creator.GetTable();
+      }
+
+
+
+
+
+
+
+
+
     cout << "SmoothingType " << SmoothingType << endl; 
     cout << " Use H(Curl)-Block smoothing " ;
     switch(SmoothingType) 
@@ -1787,6 +1825,27 @@ namespace ngcomp
 
     Array<int> ednums, fnums, pnums;
 
+
+
+
+
+    if (precflags.GetDefineFlag("subassembled"))
+      {
+
+	Array<int> & clusters = *new Array<int> (GetNDof());
+	clusters = 0;
+
+
+	for (int i = 0; i < ned; i++)
+	  if (!IsDirichletEdge(i) && fine_edge[i])
+	    clusters[i] = 1;
+
+	return &clusters;
+      }
+
+
+
+
     int i, j, k;
     bool hasprism = false;
 
@@ -2173,9 +2232,6 @@ namespace ngcomp
 		    for(j= first ; j<next; j++)
 		      clusters[j] = 1; 
 		  } 
-	  
-	    
-	    
 	      }
 	    break; 
 	  case 5:  // just like the old hcurl horizontal only constant ... 
