@@ -25,7 +25,10 @@ namespace ngfem
     HDivFiniteElement (ELEMENT_TYPE aeltype, int andof, int aorder)
       : FiniteElement (DIM, aeltype, andof, aorder) { ; } 
 
-    HDivFiniteElement () { dimspace = D; }
+    HDivFiniteElement () 
+    {
+      ; // dimspace = D; 
+    }
 
     ///
     virtual ~HDivFiniteElement () { ; }

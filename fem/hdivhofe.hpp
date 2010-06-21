@@ -163,7 +163,7 @@ protected:
   using HDivFiniteElement<DIM>::ndof;
   using HDivFiniteElement<DIM>::order;
   using HDivFiniteElement<DIM>::eltype;
-  using HDivFiniteElement<DIM>::dimspace;
+  // using HDivFiniteElement<DIM>::dimspace;
 
   using HDivHighOrderFiniteElement<DIM>::order_edge;
   using HDivHighOrderFiniteElement<DIM>::order_face;
@@ -181,7 +181,7 @@ public:
   {
     for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
       vnums[i] = i;
-    dimspace = DIM;
+    // dimspace = DIM;
     eltype = ET;
   }
 
@@ -198,7 +198,7 @@ public:
 
     for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
       vnums[i] = i;
-    dimspace = DIM;
+    // dimspace = DIM;
     eltype = ET;
   }
 

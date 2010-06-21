@@ -54,7 +54,7 @@ namespace ngfem
 	    break;
 	  }
 	*/
-	dimspace = fea[0]->SpatialDim();
+	// dimspace = fea[0]->SpatialDim();
 	eltype = fea[0]->ElementType();
 	ndof = 0;
 	order = 0;
@@ -75,7 +75,7 @@ namespace ngfem
 	cout << "WARNING: CompoundFE, undefined components" << endl;
 	ndof = 0;
 	order = 0;
-	dimspace = 0;
+	// dimspace = 0;
 	eltype = ET_TRIG;
       }
   }

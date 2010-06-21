@@ -72,7 +72,7 @@ protected:
   using HCurlFiniteElement<DIM>::ndof;
   using HCurlFiniteElement<DIM>::order;
   using HCurlFiniteElement<DIM>::eltype;
-  using HCurlFiniteElement<DIM>::dimspace;
+  // using HCurlFiniteElement<DIM>::dimspace;
 
   using HCurlHighOrderFiniteElement<DIM>::vnums;
   using HCurlHighOrderFiniteElement<DIM>::order_edge;
@@ -106,7 +106,7 @@ public:
   {
     for (int i = 0; i < N_VERTEX; i++)
       vnums[i] = i;
-    dimspace = DIM;
+    // dimspace = DIM;
     eltype = ET;
   }
 

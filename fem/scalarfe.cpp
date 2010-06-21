@@ -34,7 +34,7 @@ namespace ngfem
       }
     
     int nd = GetNDof();
-    int sdim = SpatialDim();
+    int sdim = D;
 
     double eps = 2e-5;
     ArrayMem<double, 100> hm1(nd), hm2(nd), hm3(nd), hm4(nd);
@@ -169,7 +169,7 @@ namespace ngfem
                                               FlatMatrix<> ddshape) const
   {
     int nd = GetNDof();
-    int sdim = SpatialDim();
+    int sdim = D;
 
     double eps = 1e-7;
     Matrix<> dshape1(nd, sdim), dshape2(nd, sdim);
@@ -266,11 +266,11 @@ namespace ngfem
 			   LocalHeap & lh) const
   {
     coefs = 0.0;
-    FlatVector<> v(SpatialDim(), lh);
+    FlatVector<> v(D, lh);
     void * heapp = lh.GetPointer();
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	for (int j = 0; j < SpatialDim(); j++)
+	for (int j = 0; j < D; j++)
 	  v(j) = gridvalues(i,j);
 	coefs += GetDShape(ir[i], lh) * v;
 	lh.CleanUp (heapp);

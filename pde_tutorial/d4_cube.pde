@@ -43,7 +43,7 @@ robin penalty
 
 # define preconditioner c -type=direct -bilinearform=a
 # define preconditioner c -type=local -bilinearform=a
-define preconditioner c -type=multigrid -bilinearform=a -smoothingsteps=1 -smoother=block -notest 
+define preconditioner c -type=multigrid -bilinearform=a -smoothingsteps=1 -smoother=block -notest -blocktype=9
 # define preconditioner c -type=amg -bilinearform=a -coefe=lam -notiming -test
 
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=200 -noprint -prec=1e-8

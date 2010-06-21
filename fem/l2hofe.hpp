@@ -70,7 +70,7 @@ namespace ngfem
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
     using ScalarFiniteElement<DIM>::eltype;
-    using ScalarFiniteElement<DIM>::dimspace;
+    // using ScalarFiniteElement<DIM>::dimspace;
 
     using L2HighOrderFiniteElement<DIM>::vnums;
     using L2HighOrderFiniteElement<DIM>::order_inner;
@@ -91,7 +91,7 @@ namespace ngfem
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
 	vnums[i] = i;
-      dimspace = DIM;
+      // dimspace = DIM;
       eltype = ET;
     }
 
@@ -99,7 +99,7 @@ namespace ngfem
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
 	vnums[i] = i;
-      dimspace = DIM;
+      // dimspace = DIM;
       eltype = ET;
 
       order = aorder;

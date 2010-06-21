@@ -1147,9 +1147,14 @@ namespace ngcomp
 	      for (int i = 0; i < nfa; i++)
 		if (!IsDirichletFace(i))
 		  {
+		    Ng_Node<2> face = ma.GetNode<2> (i);
+		    for (int k = 0; k < face.edges.Size(); k++)
+		      creator.Add (face.edges[k], GetFaceDofs(i));
+		    /*
 		    ma.GetFaceEdges (i, f2ed);
 		    for (int k = 0; k < f2ed.Size(); k++)
 		      creator.Add (nv+f2ed[k], GetFaceDofs(i));
+		    */
 		  }
 		  
 	      for (int i = 0; i < ni; i++)
