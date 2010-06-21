@@ -278,8 +278,14 @@ namespace ngfem
   template class L2HighOrderFiniteElement<2>;
   template class L2HighOrderFiniteElement<3>;
 
-  template class L2HighOrderFE<ET_SEGM>;
-
+  template NGS_DLL_HEADER class L2HighOrderFE<ET_SEGM>;
+  template NGS_DLL_HEADER class L2HighOrderFE<ET_TRIG>;
+  template NGS_DLL_HEADER class L2HighOrderFE<ET_QUAD>;
+  template NGS_DLL_HEADER class L2HighOrderFE<ET_TET>;
+  template NGS_DLL_HEADER class L2HighOrderFE<ET_PRISM>;
+  template NGS_DLL_HEADER class L2HighOrderFE<ET_PYRAMID>;
+  template NGS_DLL_HEADER class L2HighOrderFE<ET_HEX>;
+ 
 
   template class T_L2HighOrderFiniteElement<ET_SEGM>;
   template class T_L2HighOrderFiniteElement<ET_TRIG>;

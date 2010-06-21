@@ -120,7 +120,7 @@ namespace ngfem
 
 
   template <ELEMENT_TYPE ET> 
-  class  NGS_DLL_HEADER L2HighOrderFE :  public T_L2HighOrderFiniteElement<ET>,
+  class NGS_DLL_HEADER L2HighOrderFE :  public T_L2HighOrderFiniteElement<ET>,
 					 public T_ScalarFiniteElement2< L2HighOrderFE_Shape<ET>, ET >
 
   {   
