@@ -825,7 +825,7 @@ namespace ngcomp
 	    void * heapp = lh.GetPointer();
 	    if (!bound1)
 	      {
-		if (fel1.SpatialDim() == 2)
+		if (ma.GetDimension() == 2)
 		  {
 		    SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
@@ -842,7 +842,7 @@ namespace ngcomp
 	      }
 	    else 
 	      {
-		if (fel1.SpatialDim() == 2)
+		if (ma.GetDimension() == 3)
 		  {
 		    SpecificIntegrationPoint<2,3> sip (ir[j], eltrans, lh);
 		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
@@ -965,7 +965,7 @@ namespace ngcomp
 	if (bound1) 
 	  throw Exception ("CalcDifference on boundary not supported");
 
-	if (fel1.SpatialDim() == 2)
+	if (ma.GetDimension() == 2)
 	  {
 	    MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
 	    FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux1, lh);
@@ -999,7 +999,7 @@ namespace ngcomp
 		HeapReset hr(lh);
 		if (!bound1)
 		  {
-		    if (fel1.SpatialDim() == 2)
+		    if (ma.GetDimension() == 2)
 		      {
 			Vec<2> point; 
 			SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);

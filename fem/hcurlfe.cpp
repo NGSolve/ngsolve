@@ -213,7 +213,7 @@ namespace ngfem
     MatrixFixWidth<DIM> shape(ndof);
     Vector<> shapetau(ndof);
     Vector<> testshape(test_ndof);
-    Vector<> tau(dimspace), p1(dimspace), p2(dimspace), p(dimspace);
+    Vector<> tau(D), p1(D), p2(D), p(D);
     
     const IntegrationRule & linerule = 
       GetIntegrationRules().SelectIntegrationRule (ET_SEGM, order);
@@ -222,7 +222,7 @@ namespace ngfem
     const EDGE & edge = ElementTopology::GetEdges (ElementType()) [enr];
     
     
-    for (int j = 0; j < dimspace; j++)
+    for (int j = 0; j < D; j++)
       {
 	p1(j) = points[edge[0]][j];
 	p2(j) = points[edge[1]][j];
@@ -264,7 +264,7 @@ namespace ngfem
     MatrixFixWidth<DIM> shape(ndof);
     Matrix<> shapetau(ndof, 2);
     MatrixFixWidth<2> testshape(test_ndof);
-    Matrix<> tau(dimspace, 2);
+    Matrix<> tau(D, 2);
     
     const IntegrationRule & facerule = 
       GetIntegrationRules().SelectIntegrationRule (testfe.ElementType(), order);
@@ -272,9 +272,9 @@ namespace ngfem
     const POINT3D * points = ElementTopology::GetVertices (ElementType());
     const FACE & face = ElementTopology::GetFaces (ElementType()) [fnr];
     
-    Vector<> p1(dimspace), p2(dimspace), p3(dimspace), p(dimspace);
+    Vector<> p1(D), p2(D), p3(D), p(D);
 
-    for (j = 0; j < dimspace; j++)
+    for (j = 0; j < D; j++)
       {
 	if (testfe.ElementType() == ET_TRIG)
 	  {

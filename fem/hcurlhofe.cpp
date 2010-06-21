@@ -150,7 +150,7 @@ namespace ngfem
 
     for (int i = 0; i < N_VERTEX; i++)
       vnums[i] = i;
-    dimspace = DIM;
+    // dimspace = DIM;
     eltype = ET;
   }
 

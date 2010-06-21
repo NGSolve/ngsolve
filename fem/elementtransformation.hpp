@@ -89,7 +89,7 @@ namespace ngfem
 		       MatExpr<T> & dxdxi,
 		       LocalHeap & lh) const
     {
-      switch (fel->SpatialDim())
+      switch (ElementTopology::GetSpaceDim (fel->ElementType()))
 	{
 	case 1:
 	  dxdxi = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetDShape(ip, lh);
@@ -110,7 +110,7 @@ namespace ngfem
 		       MatExpr<T> & dxdxi) const
     {
       LocalHeap lh(1000);
-      switch (fel->SpatialDim())
+      switch (ElementTopology::GetSpaceDim (fel->ElementType())) 
 	{
 	case 1:
 	  dxdxi = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetDShape(ip, lh);
@@ -132,7 +132,7 @@ namespace ngfem
 		    T & point,
 		    LocalHeap & lh) const
     {
-      switch (fel->SpatialDim())
+      switch (ElementTopology::GetSpaceDim (fel->ElementType())) 
 	{
 	case 1:
 	  point = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetShape(ip, lh);
@@ -228,7 +228,7 @@ namespace ngfem
 
     bool Boundary(void) const
     {
-      return pointmat.Height() != fel->SpatialDim();
+      return pointmat.Height() != ElementTopology::GetSpaceDim (fel->ElementType());
     }
 
     void GetSort (FlatArray<int> sort) const

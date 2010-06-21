@@ -59,7 +59,7 @@ namespace ngfem
   {
   protected:
     /// space dimension (1, 2, or 3)
-    int dimspace;
+    // int dimspace;
     /// element geometry (trig, quad, ...)
     ELEMENT_TYPE eltype;
     /// number of degrees of freedom
@@ -72,14 +72,14 @@ namespace ngfem
 
     /// constructor
     FiniteElement (int adimspace, ELEMENT_TYPE aeltype, int andof, int aorder)
-      : dimspace(adimspace), eltype(aeltype), ndof(andof), order(aorder)
+      : /* dimspace(adimspace), */ eltype(aeltype), ndof(andof), order(aorder)
     { ; }
 
     /// virtual destructor
     virtual ~FiniteElement () { ; }
 
     /// Space dimension (1, 2 or 3)
-    int SpatialDim () const { return dimspace; }
+    // int SpatialDim () const { return dimspace; }
 
     /// Number of degrees-of-freedom
     int GetNDof () const 

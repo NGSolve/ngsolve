@@ -72,10 +72,10 @@ namespace ngfem
     FlatMatrixFixWidth<DIM> shape3(ndof, &hm3[0]);
     FlatMatrixFixWidth<DIM> shape4(ndof, &hm4[0]);
     
-    FlatMatrix<> dshapei(ndof,dimspace, &hmi[0]);
+    FlatMatrix<> dshapei(ndof,D, &hmi[0]);
     divshape = 0;
 
-    for (int i = 0; i < dimspace; i++)
+    for (int i = 0; i < D; i++)
       {
 	IntegrationPoint ip1 = ip;
 	IntegrationPoint ip2 = ip;
@@ -135,7 +135,7 @@ namespace ngfem
     int j;
     
     int test_ndof = testfe.GetNDof();
-    int dim = SpatialDim();
+    int dim = D;
    
    MatrixFixWidth<DIM> shape(ndof);
    Matrix<> shapen(ndof, 1);

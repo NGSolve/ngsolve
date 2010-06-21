@@ -21,7 +21,7 @@ namespace ngfem
   public:
     virtual string ClassName(void) const {return "ScalarFiniteElement";}
     ///
-    ScalarFiniteElement () { dimspace = D; }
+    ScalarFiniteElement () { ; } // dimspace = D; }
     ///
     ScalarFiniteElement (ELEMENT_TYPE aeltype, 
 			 int andof = 0, int aorder = 0)
@@ -77,7 +77,7 @@ namespace ngfem
     */
     const FlatMatrix<> GetDDShape (const IntegrationPoint & ip, LocalHeap & lh) const
     {
-      FlatMatrix<> ddshape(ndof, dimspace*dimspace, lh);
+      FlatMatrix<> ddshape(ndof, D*D, lh);
       CalcDDShape (ip, ddshape);
       return ddshape;
     }

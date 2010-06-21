@@ -44,7 +44,7 @@ namespace ngfem
     using HDivFiniteElement<DIM>::ndof;
     using HDivFiniteElement<DIM>::order;
     using HDivFiniteElement<DIM>::eltype;
-    using HDivFiniteElement<DIM>::dimspace;
+    // using HDivFiniteElement<DIM>::dimspace;
 
     using HDivHighOrderFiniteElementFO<DIM>::vnums;
     using HDivHighOrderFiniteElementFO<DIM>::ho_div_free;
@@ -66,7 +66,7 @@ namespace ngfem
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
 	vnums[i] = i;
       ho_div_free = false;
-      dimspace = DIM;
+      // dimspace = DIM;
       eltype = ET;
       order = ORDER;
     }

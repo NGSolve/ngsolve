@@ -69,7 +69,7 @@ namespace ngfem
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
     using ScalarFiniteElement<DIM>::eltype;
-    using ScalarFiniteElement<DIM>::dimspace;
+    // using ScalarFiniteElement<DIM>::dimspace;
 
     using H1HighOrderFiniteElement<DIM>::vnums;
     using H1HighOrderFiniteElement<DIM>::order_edge;
