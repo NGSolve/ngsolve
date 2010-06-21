@@ -54,8 +54,6 @@ namespace ngfem
 
 
 
-  template <ELEMENT_TYPE ET> class H1HighOrderFE;
-
 
   /**
      Barton-Nackman base class for H1 - high order finite elements
@@ -85,6 +83,7 @@ namespace ngfem
     using ET_trait<ET>::FaceType;
     using ET_trait<ET>::GetEdgeSort;
     using ET_trait<ET>::GetFaceSort;
+    using ET_trait<ET>::PolDimension;
 
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 
@@ -101,6 +100,9 @@ namespace ngfem
 
     T_H1HighOrderFiniteElement (int aorder) 
     {
+      ndof = PolDimension
+ (aorder);
+
       for (int i = 0; i < N_VERTEX; i++)
 	vnums[i] = i;
 
@@ -121,19 +123,20 @@ namespace ngfem
 
 
 
+  template <ELEMENT_TYPE ET> class H1HighOrderFE_Shape;
 
-  template <ELEMENT_TYPE ET>
-  class T_H1HighOrderFiniteElement2 
-    : public T_H1HighOrderFiniteElement<ET>,
-      public T_ScalarFiniteElement2< H1HighOrderFE<ET>, ET >
-  { 
-  public:    
-    using T_H1HighOrderFiniteElement<ET>::GetInternalDofs;
 
-    T_H1HighOrderFiniteElement2 () { ; }
-    T_H1HighOrderFiniteElement2 (int aorder) 
-      :  T_H1HighOrderFiniteElement<ET> (aorder) 
-    { ; }
+
+  template <ELEMENT_TYPE ET> 
+  class  NGS_DLL_HEADER H1HighOrderFE :  public T_H1HighOrderFiniteElement<ET>,
+					 public T_ScalarFiniteElement2< H1HighOrderFE_Shape<ET>, ET >
+
+  {   
+  public:
+    H1HighOrderFE () { ; }
+
+    H1HighOrderFE (int aorder)
+      : T_H1HighOrderFiniteElement<ET> (aorder) { ; }
   };
 
 
@@ -145,17 +148,11 @@ namespace ngfem
   */
 
   template <> 
-  class NGS_DLL_HEADER H1HighOrderFE<ET_SEGM> : public T_H1HighOrderFiniteElement2<ET_SEGM>
+  class H1HighOrderFE_Shape<ET_SEGM> : public H1HighOrderFE<ET_SEGM>
   {
   public:
-    H1HighOrderFE () { ; }
-
-    H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement2<ET_SEGM> (aorder) 
-    { ndof = (order+1); }
-
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[1], TFA & shape) const;
+    void T_CalcShape (Tx hx[], TFA & shape) const;
   };
 
 
@@ -163,18 +160,11 @@ namespace ngfem
      High order triangular finite element
   */
   template <>
-  class NGS_DLL_HEADER H1HighOrderFE<ET_TRIG> 
-    : public T_H1HighOrderFiniteElement2<ET_TRIG>
+  class H1HighOrderFE_Shape<ET_TRIG> : public H1HighOrderFE<ET_TRIG>
   {
   public:
-    H1HighOrderFE () { ; }
-
-    H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement2<ET_TRIG> (aorder) 
-    { ndof = (order+1)*(order+2)/2; }
-
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[2], TFA & shape) const;
+    void T_CalcShape (Tx x[], TFA & shape) const;
   };
 
 
@@ -182,17 +172,11 @@ namespace ngfem
      High order quadrilateral finite element
   */
   template <>
-  class NGS_DLL_HEADER H1HighOrderFE<ET_QUAD> : public T_H1HighOrderFiniteElement2<ET_QUAD>
+  class NGS_DLL_HEADER H1HighOrderFE_Shape<ET_QUAD> : public H1HighOrderFE<ET_QUAD>
   {
   public:
-    H1HighOrderFE () { ; }
-
-    H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement2<ET_QUAD> (aorder) 
-    { ndof = (order+1)*(order+1); }
-
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[2], TFA & shape) const;
+    void T_CalcShape (Tx hx[], TFA & shape) const;
   };
 
 
@@ -200,18 +184,12 @@ namespace ngfem
      High order tetrahedral finite element
   */
   template <>
-  class NGS_DLL_HEADER H1HighOrderFE<ET_TET> : public T_H1HighOrderFiniteElement2<ET_TET>
+  class NGS_DLL_HEADER H1HighOrderFE_Shape<ET_TET> : public H1HighOrderFE<ET_TET>
   {
     typedef TetShapesInnerLegendre T_INNERSHAPES;
   public:
-    H1HighOrderFE () { ; }
-
-    H1HighOrderFE (int aorder)
-    : T_H1HighOrderFiniteElement2<ET_TET> (aorder) 
-    { ndof = (aorder+1)*(aorder+2)*(aorder+3)/6; }
-
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[3], TFA & shape) const; 
+    void T_CalcShape (Tx hx[], TFA & shape) const; 
   };
 
 
@@ -219,17 +197,11 @@ namespace ngfem
       High order prismatic finite element
   */
   template <>
-  class NGS_DLL_HEADER H1HighOrderFE<ET_PRISM> : public T_H1HighOrderFiniteElement2<ET_PRISM>
+  class H1HighOrderFE_Shape<ET_PRISM> : public H1HighOrderFE<ET_PRISM>
   {
   public:
-    H1HighOrderFE () { ; }
-
-    H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement2<ET_PRISM> (aorder) 
-    { ndof = (order+1)*(order+2)*(order+1)/2; }
-
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[3], TFA & shape) const; 
+    void T_CalcShape (Tx hx[], TFA & shape) const; 
   };
 
 
@@ -238,35 +210,23 @@ namespace ngfem
      High order hexahedral finite element
   */
   template <> 
-  class NGS_DLL_HEADER H1HighOrderFE<ET_HEX> : public T_H1HighOrderFiniteElement2<ET_HEX>
+  class H1HighOrderFE_Shape<ET_HEX> : public H1HighOrderFE<ET_HEX>
   {
   public:
-    H1HighOrderFE () { ; }
-
-    H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement2<ET_HEX> (aorder) 
-    { ndof = (order+1)*(order+1)*(order+1); }
-
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[3], TFA & shape) const; 
+    void T_CalcShape (Tx hx[], TFA & shape) const; 
   };
 
 
   /**
      High order pyramid finite element
   */
-  template<>
-  class NGS_DLL_HEADER H1HighOrderFE<ET_PYRAMID> : public T_H1HighOrderFiniteElement2<ET_PYRAMID>
+  template <>
+  class H1HighOrderFE_Shape<ET_PYRAMID> : public H1HighOrderFE<ET_PYRAMID>
   {
   public:
-    H1HighOrderFE () { ; }
-
-    H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement2<ET_PYRAMID> (aorder) 
-    { ndof = (order+2)*(order+1)*(2*order+3) / 6; }
-
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[3], TFA & shape) const; 
+    void T_CalcShape (Tx hx[], TFA & shape) const; 
   };
 }
 

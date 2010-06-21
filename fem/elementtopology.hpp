@@ -510,9 +510,10 @@ namespace ngfem
     enum { N_VERTEX = 2 };
     enum { N_EDGE = 1 };
     enum { N_FACE = 0 };
+
+    static int PolDimension (int order) { return order+1; }
+
     static ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
-
-
 
     static INT<2> GetEdge (int /* i */)
     {
@@ -551,6 +552,9 @@ namespace ngfem
     enum { N_VERTEX = 3 };
     enum { N_EDGE = 3 };
     enum { N_FACE = 1 };
+
+    static int PolDimension (int order) { return (order+1)*(order+2)/2; }
+
     static ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
     
     template <typename Tx, typename Tlam>
@@ -603,6 +607,10 @@ namespace ngfem
     enum { N_VERTEX = 4 };
     enum { N_EDGE = 4 };
     enum { N_FACE = 1 };
+
+    static int PolDimension (int order) { return (order+1)*(order+1); }
+
+
     static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
 
 
@@ -667,6 +675,10 @@ namespace ngfem
     enum { N_VERTEX = 4 };
     enum { N_EDGE = 6 };
     enum { N_FACE = 4 };
+
+    static int PolDimension (int order) { return (order+1)*(order+2)*(order+3)/6; }
+
+
     static ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
 
 
@@ -721,6 +733,9 @@ namespace ngfem
     enum { N_VERTEX = 6 };
     enum { N_EDGE = 9 };
     enum { N_FACE = 5 };
+
+    static int PolDimension (int order) { return (order+1)*(order+2)*(order+1)/2; }
+
     static ELEMENT_TYPE FaceType(int i) { return (i < 2) ? ET_TRIG : ET_QUAD; }
 
 
@@ -807,7 +822,7 @@ namespace ngfem
     enum { N_FACE = 5 };
     static ELEMENT_TYPE FaceType(int i) { return (i < 4) ? ET_TRIG : ET_QUAD; }
 
-
+    static int PolDimension (int order) { return (order+2)*(order+1)*(2*order+3) / 6; }
 
     static INT<2> GetEdge (int i)
     {
@@ -850,6 +865,8 @@ namespace ngfem
     enum { N_EDGE = 12 };
     enum { N_FACE = 6 };
     static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
+
+    static int PolDimension (int order) { return (order+1)*(order+2)*(order+1)/2; }
 
 
     static INT<2> GetEdge (int i)

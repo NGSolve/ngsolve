@@ -74,10 +74,9 @@ namespace ngfem
 
       SetZero (shape, 0, ndof);
       
-      DubinerBasis dub;
       int p = facet_order[facenr];
       int ii = first_facet_dof[facenr];
-      dub.Eval (p, lam[f[0]], lam[f[1]], shape.Addr(ii));
+      DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape.Addr(ii));
     }
   };
 

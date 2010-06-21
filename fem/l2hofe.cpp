@@ -80,113 +80,66 @@ namespace ngfem
   /* *********************** Segment  **********************/
 
 
-  L2HighOrderFE<ET_SEGM> :: L2HighOrderFE (int aorder)
-  {
-    order_inner = INT<1> (aorder);
-    ComputeNDof();
-  }
-
   /*
   template<typename Tx, typename TFA>  
-  void L2HighOrderFE<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & shape) const
+  void L2HighOrderFE_Shape<ET_SEGM> :: T_CalcShape (Tx x[], TFA & shape) const
   {
-    Tx x = hx[0];
-    // orient
-    if ( vnums[0] > vnums[1])
-      x = 1-x;
-    
-    LegendrePolynomial (order, 2*x-1, shape);
+    Tx lam[2] = { x[0], 1-x[0] };
+
+    INT<2> e = GetEdgeSort (0, vnums);
+
+    LegendrePolynomial (order, lam[e[1]]-lam[e[0]], shape);
   }
   */
 
   /* *********************** Triangle  **********************/
 
-  L2HighOrderFE<ET_TRIG> :: L2HighOrderFE (int aorder)
-  {
-    order_inner = INT<2> (aorder,aorder); 
-    ComputeNDof();
-  }
 
   /*
   template<typename Tx, typename TFA>  
-  void L2HighOrderFE<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  void L2HighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx x[], TFA & shape) const
   {
-    Tx x = hx[0];
-    Tx y = hx[1];
+    Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
     
-    Tx lami[3] = { x, y, 1-x-y };
-    int fav[3] = { 0, 1, 2};
-    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-    if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	
-    x = lami[fav[0]]; y=lami[fav[1]];
-     
-    int n = order_inner[0];
-    ArrayMem<Tx, 20> polx(n+1), poly(n+1);
+    INT<4> f = GetFaceSort (0, vnums);
+    
+    int p = order_inner[0];
 
-    ScaledLegendrePolynomial (n, 2*x+y-1, 1-y, polx);
-    
-    for (int i = 0, ii = 0; i <= order_inner[0]; i++)
-      {
-        JacobiPolynomial (n-i, 2*y-1, 2*i+1, 0, poly);
-        for (int j = 0; j <= order_inner[0]-i; j++)
-          shape[ii++] = polx[i] * poly[j];
-      }
+    DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
   }
   */
 
 
-
   /* *********************** Quadrilateral  **********************/
 
-  L2HighOrderFE<ET_QUAD> :: L2HighOrderFE (int aorder)
-  {
-    order_inner = INT<2>(aorder,aorder);
-    ComputeNDof();
-  }
-
   template<typename Tx, typename TFA>  
-  void L2HighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  void L2HighOrderFE_Shape<ET_QUAD> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
-    Tx x = hx[0];
-    Tx y = hx[1];
-    
-    // orient: copied from h1
-    // Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
+    Tx x = hx[0], y = hx[1];
 
     Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
-    int fmax = 0; 
-    for (int j = 1; j < 4; j++)
-      if (vnums[j] > vnums[fmax]) fmax = j;
-    int f1 = (fmax+3)%4; 
-    int f2 = (fmax+1)%4; 
-    if(vnums[f2] > vnums[f1]) swap(f1,f2);  // fmax > f1 > f2; 
-    x = sigma[fmax]-sigma[f1]; 
-    y = sigma[fmax]-sigma[f2]; 
     
-    int ii = 0;
+    INT<4> f = GetFaceSort (0, vnums);  
+    
+    Tx xi = sigma[f[0]]-sigma[f[1]]; 
+    Tx eta = sigma[f[0]]-sigma[f[3]]; 
+    
     
     int n = max(order_inner[0],order_inner[1]);
     ArrayMem<Tx, 20> polx(n+1), poly(n+1);
 
-    LegendrePolynomial (n, x, polx);
-    LegendrePolynomial (n, y, poly);
+    LegendrePolynomial (n, xi, polx);
+    LegendrePolynomial (n, eta, poly);
     
-    for (int i = 0; i <= order_inner[0]; i++)
+    for (int i = 0, ii = 0; i <= order_inner[0]; i++)
       for (int j = 0; j <= order_inner[1]; j++)
 	shape[ii++] = polx[i] * poly[j];
   }
 
   /* *********************** Tetrahedron  **********************/
 
-  L2HighOrderFE<ET_TET> :: L2HighOrderFE (int aorder)
-  {
-    order_inner = INT<3>(aorder, aorder, aorder);
-    ComputeNDof();
-  }
-
   template<typename Tx, typename TFA>  
-  void L2HighOrderFE<ET_TET> :: T_CalcShape (Tx x[3], TFA & shape) const
+  void L2HighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx x[], TFA & shape) const
   {
     Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
     
@@ -221,51 +174,14 @@ namespace ngfem
       for (int j = 0; j <= order-i; j++)
 	for (int k = 0; k <= order-i-j; k++, ii++)
 	  shape[ii] = polsz(k) * polsy(k, j) * polsx(j+k, i);
-    /*
-      for (int i = 0; i < ndof; i++)
-      sds[i] =
-      polsx(tet2tensor[i][1]+tet2tensor[i][2]+tet2tensor[i][3], tet2tensor[i][0]) 
-      * polsy(tet2tensor[i][2]+tet2tensor[i][3], tet2tensor[i][1])
-      * polsz(tet2tensor[i][2]) ;
-      */
-    
-    /*
-    Tx x = hx[0];
-    Tx y = hx[1];
-    Tx z = hx[2];
-    
-    // no orientation necessary
-    int n=order;
-    ArrayMem<Tx, 20> polx(n+1), poly(n+1), polz(n+1);
-
-    // Polynomials orthogonal w.r.t L2 inner product
-    ScaledLegendrePolynomial ( n, 2*x+y+z-1, 1-y-z, polx);
-  
-    for (int i = 0, ii = 0; i <= order; i++)
-      {
-	ScaledJacobiPolynomial (n, 2*y+z-1, 1-z, 2*i+1, 0, poly);
-	for (int j = 0; j <= order-i; j++)
-	  {
-	    JacobiPolynomial(n, 2*z-1, 2*i+2*j+2, 0, polz);
-	    for (int k = 0; k <= order-i-j; k++)
-	      shape[ii++] = polx[i] * poly[j] * polz[k];
-	    // shape[ii++] = polx[i] * poly[j] * polsz(i+j, k);
-	  }
-      }
-    */
   }
 
 
   /* *********************** Prism  **********************/
 
-  L2HighOrderFE<ET_PRISM> :: L2HighOrderFE (int aorder)
-  {
-    order_inner = INT<3>(aorder, aorder, aorder);
-    ComputeNDof();
-  }
 
   template<typename Tx, typename TFA>  
-  void L2HighOrderFE<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void L2HighOrderFE_Shape<ET_PRISM> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
     Tx x = hx[0];
     Tx y = hx[1];
@@ -292,14 +208,9 @@ namespace ngfem
 
   /* *********************** Pyramid  **********************/
 
-  L2HighOrderFE<ET_PYRAMID> :: L2HighOrderFE (int aorder)
-  {
-    order_inner = INT<3>(aorder, aorder, aorder);
-    ComputeNDof();
-  }
 
   template<typename Tx, typename TFA>  
-  void L2HighOrderFE<ET_PYRAMID> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void L2HighOrderFE_Shape<ET_PYRAMID> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
     Tx x = hx[0];
     Tx y = hx[1];
@@ -338,14 +249,9 @@ namespace ngfem
 
   /* *********************** Hex  **********************/
 
-  L2HighOrderFE<ET_HEX> :: L2HighOrderFE (int aorder)
-  {
-    order_inner = INT<3>(aorder, aorder, aorder);
-    ComputeNDof();
-  }
 
   template<typename Tx, typename TFA>  
-  void L2HighOrderFE<ET_HEX> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void L2HighOrderFE_Shape<ET_HEX> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
     
@@ -368,25 +274,30 @@ namespace ngfem
 
 
 
-
   template class L2HighOrderFiniteElement<1>;
   template class L2HighOrderFiniteElement<2>;
   template class L2HighOrderFiniteElement<3>;
 
-
-  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_SEGM>, ET_SEGM>;
-  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_TRIG>, ET_TRIG>;
-  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_QUAD>, ET_QUAD>;
-  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_TET>, ET_TET>;
-  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_PRISM>, ET_PRISM>;
-  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_HEX>, ET_HEX>;
-  template class T_ScalarFiniteElement2<L2HighOrderFE<ET_PYRAMID>, ET_PYRAMID>;
+  template class L2HighOrderFE<ET_SEGM>;
 
 
   template class T_L2HighOrderFiniteElement<ET_SEGM>;
-  template class L2HighOrderFE<ET_SEGM>;
+  template class T_L2HighOrderFiniteElement<ET_TRIG>;
+  template class T_L2HighOrderFiniteElement<ET_QUAD>; 
+  template class T_L2HighOrderFiniteElement<ET_TET>;
+  template class T_L2HighOrderFiniteElement<ET_PRISM>;
+  template class T_L2HighOrderFiniteElement<ET_PYRAMID>;
+  template class T_L2HighOrderFiniteElement<ET_HEX>;
 
-  L2HighOrderFE<ET_SEGM> segm(10);
+
+  template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_SEGM>, ET_SEGM>;
+  template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_QUAD>, ET_QUAD>;
+  template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_TET>, ET_TET>;
+  template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
+  template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_HEX>, ET_HEX>;
+  template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
+
 } // namespace
 
 

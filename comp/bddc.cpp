@@ -255,11 +255,11 @@ namespace ngcomp
 	cout << "has inverse" << endl;
 	cout << "call directsolverclusters inverse" << endl;
 	Array<int> & clusters = *(bfa.GetFESpace().CreateDirectSolverClusters(flags));
-// 	*testout << " clusters = \n " << clusters << endl;
+ 	*testout << " clusters = \n " << clusters << endl;
 	Array<int> & condclusters = *new Array<int>(nglobalwbdof);
 	for (int i=0; i< clusters.Size(); i++)
 	  condclusters[wbdofs[i]] = clusters[i];
-// 	*testout << " condclusters = \n " << condclusters << endl;
+ 	*testout << " condclusters = \n " << condclusters << endl;
 	
 	inv_coarse = wbmat.InverseMatrix(&condclusters);
 	tmp = new VVector<>(nglobalwbdof);
@@ -283,9 +283,17 @@ namespace ngcomp
     
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {
+      static int timer = NgProfiler::CreateTimer ("Apply BDDC preconditioner");
+      static int timerifs = NgProfiler::CreateTimer ("Apply BDDC preconditioner - apply ifs");
+      static int timerwb = NgProfiler::CreateTimer ("Apply BDDC preconditioner - wb solve");
+      static int timeretc = NgProfiler::CreateTimer ("Apply BDDC preconditioner - etc");
+      NgProfiler::RegionTimer reg (timer);
+
       const FESpace & fes = bfa.GetFESpace();      
       FlatVector<> fx = x.FVDouble();
       FlatVector<> fy = y.FVDouble();
+
+      NgProfiler::StartTimer (timeretc);
 
       VVector<> lx2(restrict.Size());
       VVector<> ly2(restrict.Size());
@@ -296,18 +304,23 @@ namespace ngcomp
           lx2(i) = fx(restrict[i]) / multiple[restrict[i]];
 	else
 	   lx2(i) = 0.0;
+
+
+      NgProfiler::StopTimer (timeretc);
 	
       if (bfa.IsSymmetric())
 	lx2 += Transpose(*subassembled_harmonicext) * lx2; 
       else
 	lx2 += *subassembled_harmonicexttrans * lx2;
+
+      NgProfiler::StartTimer (timerwb);
       
       BaseVector & subx = *(lx2.Range(0,nglobalwbdof));
       BaseVector & suby = *(ly2.Range(0,nglobalwbdof));
       BaseVector & res = *tmp;
        ly2 = 0.0;
       if (block){
-	if (true) //GS
+	if (false) //GS
 	{
 	  dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothResiduum (suby, subx, res,1);
 	  if (inv_coarse)
@@ -315,14 +328,24 @@ namespace ngcomp
 	  dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothBack (suby, subx);
 	}else{ //jacobi only (old)
 	  suby = (*inv) * subx;
+	  suby += (*inv_coarse) * subx; 
 	}
       }
       else
       {
 	suby = (*inv) * subx;
       }
+
+      NgProfiler::StopTimer (timerwb);
+
+      NgProfiler::StartTimer (timerifs);
       ly2 += *subassembled_innersolve * lx2;
+      NgProfiler::StopTimer (timerifs);
+
       ly2 += *subassembled_harmonicext * ly2;
+
+
+      NgProfiler::StartTimer (timeretc);
 
       for (int i = 0; i < restrict.Size(); i++)
 	{
@@ -335,6 +358,8 @@ namespace ngcomp
         if (restrict[i] != -1)
           fy(restrict[i]) += s * ly2(i) / multiple[restrict[i]];
       }
+
+      NgProfiler::StopTimer (timeretc);
     }
 
   };
