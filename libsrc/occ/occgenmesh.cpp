@@ -15,6 +15,7 @@ namespace netgen
 
 #define DIVIDEEDGESECTIONS 1000
 #define IGNORECURVELENGTH 1e-4
+#define VSMALL 1e-10
 
 
    bool merge_solids = 1;
@@ -26,7 +27,7 @@ namespace netgen
       double nq = n*q;
 
       Point<3> p = p0 + 0.5*n;
-      double lambda = (p-l.p0)*n / nq;
+      double lambda = (p-l.p0)*n / (nq + VSMALL);
 
       if (lambda >= 0 && lambda <= 1)
       {
@@ -62,7 +63,7 @@ namespace netgen
       if (mparam.maxh * kappa < 1)
          hret = mparam.maxh;
       else
-         hret = 1 / kappa;
+         hret = 1 / (kappa + VSMALL);
 
       if (mparam.maxh < hret)
          hret = mparam.maxh;
@@ -633,7 +634,7 @@ namespace netgen
          }
 
          (*testout) << "mesh face " << k << endl;
-         multithread.percent = 100 * k / (mesh.GetNFD()+1e-10);
+         multithread.percent = 100 * k / (mesh.GetNFD() + VSMALL);
          geom.facemeshstatus[k-1] = -1;
 
 
@@ -901,7 +902,7 @@ namespace netgen
          //      if (k != 36) continue;
 
          //      (*testout) << "optimize face " << k << endl;
-         multithread.percent = 100 * k / (mesh.GetNFD()+1e-10);
+         multithread.percent = 100 * k / (mesh.GetNFD() + VSMALL);
 
          FaceDescriptor & fd = mesh.GetFaceDescriptor(k);
 
@@ -1229,7 +1230,7 @@ namespace netgen
                   mindist = min (mindist, line.Dist(lines[num]));
                }
 
-               mindist *= occparam.resthcloseedgefac;
+               mindist /= (occparam.resthcloseedgefac + VSMALL);
 
                if (mindist < 1e-3)
                {
