@@ -115,9 +115,9 @@ namespace ngla
 	for (int i = 0; i < nze; i++)
 	  colnr[i] = graph.colnr[i];
       }
-    // #ifdef ASTRID
+
+
     inversetype = agraph.GetInverseType();
-    // #endif
   }
 
 
@@ -1762,27 +1762,21 @@ namespace ngla
 
 
 
-
-  // #ifdef ASTRID
-  void MatrixGraph::
+  INVERSETYPE MatrixGraph::
   SetInverseType ( string ainversetype ) const
   {
-    MatrixGraph & matrix = const_cast<MatrixGraph & > (*this);
-    if ( ainversetype == "pardiso" )
-      matrix.SetInverseType ( PARDISO );
-    else if (ainversetype == "pardisospd" )
-      matrix.SetInverseType ( PARDISOSPD );
-    else if (ainversetype == "superlu" )
-      matrix.SetInverseType ( SUPERLU );
-    else if ( ainversetype == "superlu_dist" )
-      matrix.SetInverseType ( SUPERLU_DIST );
-    else if ( ainversetype == "mumps" )
-      matrix.SetInverseType ( MUMPS );
-    else
-      matrix.SetInverseType ( SPARSECHOLESKY );
-  }
-  // #endif
+    INVERSETYPE old_invtype = inversetype;
 
+    // MatrixGraph & matrix = const_cast<MatrixGraph & > (*this);
+    if ( ainversetype == "pardiso" ) SetInverseType ( PARDISO );
+    else if ( ainversetype == "pardisospd" ) SetInverseType ( PARDISOSPD );
+    else if ( ainversetype == "superlu" ) SetInverseType ( SUPERLU );
+    else if ( ainversetype == "superlu_dist" ) SetInverseType ( SUPERLU_DIST );
+    else if ( ainversetype == "mumps" ) SetInverseType ( MUMPS );
+    else SetInverseType ( SPARSECHOLESKY );
+
+    return old_invtype;
+  }
 
 
   // compiled in separate file, for testing only
