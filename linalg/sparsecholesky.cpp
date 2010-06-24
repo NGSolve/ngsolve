@@ -72,6 +72,13 @@ namespace ngla
 	    }
 	}
 
+    for (int i = 0; i < n; i++)
+      if (a.GetPositionTest (i,i) == -1)
+	{
+	  mdo->AddEdge (i, i);
+	  *testout << "add unsused position " << i << endl;
+	}
+
     if (printstat)
       cout << "start ordering" << endl;
     
@@ -110,6 +117,15 @@ namespace ngla
     
     starttime = endtime;
 
+    TM id;
+    id = 0.0;
+    SetIdentity(id);
+    
+
+    for (int i = 0; i < n; i++)
+      if (a.GetPositionTest (i,i) == -1)
+	SetOrig (i, i, id);
+
 
     if (!inner && !cluster)
       for (int i = 0; i < n; i++)
@@ -126,8 +142,13 @@ namespace ngla
 	  {
 	    int col = a.GetRowIndices(i)[j];
 	    if (col <= i)
-	      if ( (inner->Test(i) && inner->Test(col)) || i==col)
-		SetOrig (i, col, a.GetRow(i)[j]);
+	      {
+		if ( (inner->Test(i) && inner->Test(col)) )
+		  SetOrig (i, col, a.GetRow(i)[j]);
+		else
+		  if (i==col)
+		    SetOrig (i, col, id);
+	      }
 	  }
     else
       for (int i = 0; i < n; i++)
@@ -147,6 +168,27 @@ namespace ngla
       cout << "do factor " << flush;
     
     Factor(); 
+
+
+
+    for (int i = 0; i < n; i++)
+      if (a.GetPositionTest (i,i) == -1)
+	diag[order[i]] = TM(0.0);
+
+    if (inner)
+      {
+	for (int i = 0; i < n; i++)
+	  if (!inner->Test(i))
+	    diag[order[i]] = TM(0.0);
+      }
+
+    if (cluster)
+      {
+	for (int i = 0; i < n; i++)
+	  if (!(*cluster)[i])
+	    diag[order[i]] = TM(0.0);
+      }
+
 
     if (printstat)
       cout << "done" << endl;
@@ -1046,6 +1088,7 @@ namespace ngla
     for (int i = 0; i < n; i++)
       fy(i) = hy(order[i]);
 
+    /*
     if (inner)
       {
 	for (int i = 0; i < n; i++)
@@ -1059,6 +1102,7 @@ namespace ngla
 	  if (!(*cluster)[i])
 	    fy(i) = 0;
       }
+    */
   }
   
   
@@ -1178,7 +1222,7 @@ namespace ngla
 
 
 
-
+    /*
     if (inner)
       {
 	for (int i = 0; i < n; i++)
@@ -1192,10 +1236,12 @@ namespace ngla
 	    fy(i) += s * hy(order[i]);
       }
     else
+    */
       {
 	for (int i = 0; i < n; i++)
 	  fy(i) += s * hy(order[i]);
       }
+
   }
   
 
@@ -1226,6 +1272,7 @@ namespace ngla
     Vector<TVX> hvec(n);
     typedef typename mat_traits<TVX>::TSCAL TSCAL;
     hvec = TSCAL(0);
+
     if (inner)
       {
 	for (int i = 0; i < n; i++)
@@ -1348,6 +1395,7 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   void SparseCholesky<TM, TV_ROW, TV_COL> :: Set (int i, int j, const TM & val)
   {
+    *testout << "sparse cholesky, set (" << i << ", " << j << ") = " << val << endl;
     if (i == j)
       {
 	diag[i] = val;
