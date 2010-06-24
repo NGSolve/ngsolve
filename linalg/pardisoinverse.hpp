@@ -42,6 +42,8 @@ namespace ngla
 
     //
     void SetMatrixType(); // TM entry);
+
+    BitArray used;
   
   public:
     typedef typename mat_traits<TM>::TV_COL TV;

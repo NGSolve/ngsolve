@@ -116,7 +116,7 @@ namespace ngla
   {
     static int timer = NgProfiler::CreateTimer ("MatrixGraph");
     NgProfiler::RegionTimer reg (timer);
-    bool includediag = false;
+    bool includediag = (&rowelements == &colelements);
     
     int ndof = asize;
     
