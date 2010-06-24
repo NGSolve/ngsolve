@@ -127,7 +127,7 @@ namespace ngcomp
       cout << "now build graph" << endl;
 
 
-      MatrixGraph graph(nglobalwbdof, el2wbdofs, bfa.IsSymmetric());
+      MatrixGraph graph(nglobalwbdof, el2wbdofs, el2wbdofs, bfa.IsSymmetric());
 //       *testout << " nglobalwbdof " << nglobalwbdof << endl;
       cout << "now allocate matrix" << endl;
 
@@ -320,7 +320,7 @@ namespace ngcomp
       BaseVector & res = *tmp;
        ly2 = 0.0;
       if (block){
-	if (false) //GS
+	if (true) //GS
 	{
 	  dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothResiduum (suby, subx, res,1);
 	  if (inv_coarse)
@@ -547,7 +547,7 @@ namespace ngcomp
 
       int firstdcdof = fes.GetNDof();      
       
-      MatrixGraph graph(firstdcdof, *globwbdofs, 1);
+      MatrixGraph graph(firstdcdof, *globwbdofs,  *globwbdofs, 1);
       SparseMatrixSymmetric<double> & dcmat 
 	= *new SparseMatrixSymmetric<double> (graph, 1);
 

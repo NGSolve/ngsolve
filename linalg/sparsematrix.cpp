@@ -14,64 +14,20 @@ namespace ngla
 {
   using namespace ngla;
 
-  MatrixGraph :: MatrixGraph (int as, int max_elsperrow)
-  {
-    size = as;
-    nze = as * max_elsperrow;
-
-    // colnr = new int[as*max_elsperrow+1];
-    colnr.Alloc (as*max_elsperrow+1);
-    colnr.SetName ("matrix graph");
-
-    // firsti = new int[as+1];
-    firsti.Alloc (as+1);
-    firsti.SetName ("matrix graph, table 1");
-
-    // diagi = new int[as+1];
-    diagi.Alloc (as+1);
-    diagi.SetName ("matrix graph, table 2");
-
-    owner = true;
-    
-    for (int i = 0; i < as*max_elsperrow; i++)
-      colnr[i] = -1;
-    colnr[as*max_elsperrow] = 0;
-    
-    for (int i = 0; i < as+1; i++)
-      {
-	firsti[i] = i*max_elsperrow;
-	diagi[i] = i*max_elsperrow;
-      }
-
-#ifdef USE_PARDISO
-    inversetype = PARDISO;
-#else
-#ifdef USE_SUPERLU
-    inversetype = SUPERLU;
-#else
-    inversetype = SPARSECHOLESKY;
-#endif
-#endif
-  }
-  
   MatrixGraph :: MatrixGraph (const Array<int> & elsperrow)
   {
     size = elsperrow.Size();
     owner = true;
-    
     firsti.Alloc (size+1);
     firsti.SetName ("matrix graph, table 1");
 
-    diagi.Alloc (size+1);
-    diagi.SetName ("matrix graph, table 2");
-    
     nze = 0;
     for (int i = 0; i < size; i++)
       {
-	firsti[i] = diagi[i] = nze;
+	firsti[i] = nze;
 	nze += elsperrow[i];
       }
-    firsti[size] = diagi[size] = nze;
+    firsti[size] = nze;
     
     colnr.Alloc (nze+1);
     colnr.SetName ("matrix graph");
@@ -89,6 +45,44 @@ namespace ngla
 #endif
 #endif
   }
+                                                                                                                                                                                                                  
+  MatrixGraph :: MatrixGraph (int as, int max_elsperrow)                                                                                                                                                      
+  {                                                                                                                                                                                                           
+    size = as;                                                                                                                                                                                                
+    nze = as * max_elsperrow;                                                                                                                                                                                 
+                                                                                                                                                                                                              
+    // colnr = new int[as*max_elsperrow+1];
+    colnr.Alloc (as*max_elsperrow+1);
+    colnr.SetName ("matrix graph");
+
+    // firsti = new int[as+1];
+    firsti.Alloc (as+1);
+    firsti.SetName ("matrix graph, table 1");
+
+
+    owner = true;
+    
+    for (int i = 0; i < as*max_elsperrow; i++)
+      colnr[i] = -1;
+    colnr[as*max_elsperrow] = 0;
+    
+    for (int i = 0; i < as+1; i++)
+      {
+       firsti[i] = i*max_elsperrow;
+      }
+
+#ifdef USE_PARDISO
+    inversetype = PARDISO;
+#else
+#ifdef USE_SUPERLU
+    inversetype = SUPERLU;
+#else
+    inversetype = SPARSECHOLESKY;
+#endif
+#endif
+  }
+  
+
     
   MatrixGraph :: MatrixGraph (const MatrixGraph & agraph, bool stealgraph)
   {
@@ -100,57 +94,49 @@ namespace ngla
     if (stealgraph)
       {
 	firsti.Swap (graph.firsti);
-	diagi.Swap (graph.diagi);
 	colnr.Swap (graph.colnr);
       }
     else
       {
 	firsti.Alloc (size+1);
-	diagi.Alloc (size);
 	colnr.Alloc (nze);
 	for (int i = 0; i < size+1; i++)
 	  firsti[i] = graph.firsti[i];
-	for (int i = 0; i < size; i++)
-	  diagi[i] = graph.diagi[i];
 	for (int i = 0; i < nze; i++)
 	  colnr[i] = graph.colnr[i];
       }
-
-
     inversetype = agraph.GetInverseType();
   }
 
 
 
-  MatrixGraph ::   MatrixGraph (int asize, const Table<int> & elements, 
+  MatrixGraph ::   MatrixGraph (int asize, const Table<int> & rowelements, 
+				const Table<int> & colelements, 
 				bool symmetric)
   {
     static int timer = NgProfiler::CreateTimer ("MatrixGraph");
     NgProfiler::RegionTimer reg (timer);
-
+    bool includediag = false;
+    
     int ndof = asize;
-
-    Array<int> cnt(ndof);
-    cnt = 0;
-    for (int i = 0; i < elements.Size(); i++)
-      {
-        FlatArray<int> el = elements[i];
-        for (int j = 0; j < el.Size(); j++)
-          cnt[el[j]]++;
+    
+    TableCreator<int> creator(ndof);
+    for ( ; !creator.Done(); creator++)
+      {    
+      for (int i = 0; i < rowelements.Size(); i++)
+	{
+	  FlatArray<int> el = rowelements[i];
+	  for (int j = 0; j < el.Size(); j++){
+	    creator.Add(el[j],i);
+	  }
+	}
       }
-        
-    Table<int> dof2element(cnt);
-    cnt = 0;
-
-    for (int i = 0; i < elements.Size(); i++)
-      {
-        FlatArray<int> el = elements[i];
-        for (int j = 0; j < el.Size(); j++)
-          dof2element[el[j]][cnt[el[j]]++] = i;
-      }
-
+    
+    Table<int> & dof2element = *(creator.GetTable());
+  
     Array<int> mark(ndof);
 
+    Array<int> cnt(ndof);
     cnt = 0;
     mark = -1;
 
@@ -158,12 +144,12 @@ namespace ngla
       
       for (int i = 0; i < ndof; i++)
         {
-          int cnti = 1;
-          mark[i] = i;
+          int cnti = includediag? 1 : 0;
+          mark[i] = includediag? i : -1;
           for (int j = 0; j < dof2element[i].Size(); j++)
             {
               int elnr = dof2element[i][j];
-              FlatArray<int> el = elements[elnr];
+              FlatArray<int> el = colelements[elnr];
               for (int k = 0; k < el.Size(); k++)
                 {
                   int d2 = el[k];
@@ -181,16 +167,16 @@ namespace ngla
       
       for (int i = 0; i < ndof; i++)
         {
-          int cnti = 1;
-          mark[i] = i;
+          int cnti = includediag? 1 : 0;
+          mark[i] = includediag? i : -1;
           for (int j = 0; j < dof2element[i].Size(); j++)
             {
               int elnr = dof2element[i][j];
-              FlatArray<int> el = elements[elnr];
+              FlatArray<int> el = colelements[elnr];
               for (int k = 0; k < el.Size(); k++)
                 {
                   int d2 = el[k];
-                  if (d2 < i)
+                  if (d2 <= i && ((!includediag) || (d2<i) ))
                     if (mark[d2] != i)
                       {
                         mark[d2] = i;
@@ -210,16 +196,13 @@ namespace ngla
     firsti.Alloc (size+1);
     firsti.SetName ("matrix graph, table 1");
 
-    diagi.Alloc (size+1);
-    diagi.SetName ("matrix graph, table 2");
-    
     nze = 0;
     for (int i = 0; i < size; i++)
       {
-	firsti[i] = diagi[i] = nze;
+	firsti[i] = nze;
 	nze += cnt[i];
       }
-    firsti[size] = diagi[size] = nze;
+    firsti[size] = nze;
     
 
     colnr.Alloc (nze+1);
@@ -234,13 +217,13 @@ namespace ngla
       for (int i = 0; i < ndof; i++)
         {
           int cnti = firsti[i];
-          mark[i] = i;
-          colnr[cnti++] = i;
+          mark[i] = includediag? i : -1;
+          if (includediag) colnr[cnti++] = i;
           
           for (int j = 0; j < dof2element[i].Size(); j++)
             {
               int elnr = dof2element[i][j];
-              FlatArray<int> el = elements[elnr];
+              FlatArray<int> el = colelements[elnr];
               
               for (int k = 0; k < el.Size(); k++)
                 {
@@ -249,6 +232,7 @@ namespace ngla
 		    {
 		      mark[d2] = i;
 		      colnr[cnti++] = d2;
+			*testout << "ndof = " << i << "\t colnr... " << d2 << endl;
 		    }
                 }
             }
@@ -259,27 +243,26 @@ namespace ngla
       for (int i = 0; i < ndof; i++)
         {
           int cnti = firsti[i];
-          mark[i] = i;
-          colnr[cnti++] = i;
-          
+          mark[i] = includediag? i : -1;
+	  if (includediag) colnr[cnti++] = i;
           for (int j = 0; j < dof2element[i].Size(); j++)
             {
               int elnr = dof2element[i][j];
-              FlatArray<int> el = elements[elnr];
+              FlatArray<int> el = colelements[elnr];
               
               for (int k = 0; k < el.Size(); k++)
                 {
                   int d2 = el[k];
-                  if (d2 < i)
+                  if (d2 <= i && ((!includediag) || (d2<i) ))
                     if (mark[d2] != i)
                       {
                         mark[d2] = i;
                         colnr[cnti++] = d2;
+			*testout << "ndof = " << i << "\t colnr... " << d2 << endl;
                       }
                 }
             }
         }
-    
 
 #pragma omp parallel for
     for (int i = 0; i < ndof; i++)
@@ -323,16 +306,13 @@ namespace ngla
     firsti.Alloc (size+1);
     firsti.SetName ("matrix graph, table 1");
 
-    diagi.Alloc (size+1);
-    diagi.SetName ("matrix graph, table 2");
-    
     nze = 0;
     for (int i = 0; i < size; i++)
       {
-	firsti[i] = diagi[i] = nze;
+	firsti[i] = nze;
 	nze += cnt[i];
       }
-    firsti[size] = diagi[size] = nze;
+    firsti[size] = nze;
     
 
     colnr.Alloc (nze+1);
@@ -636,14 +616,11 @@ namespace ngla
 
 
 
-
-
-
   template <class TM>
   SparseMatrixTM<TM> ::
   SparseMatrixTM (int as, int max_elsperrow)
     : BaseMatrix(),
-      BaseSparseMatrix (as, max_elsperrow), 
+      BaseSparseMatrix (as, max_elsperrow),
       S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
       /* asvec(nze, data), */ nul(TSCAL(0))
   {
@@ -651,6 +628,7 @@ namespace ngla
     data.Alloc (nze);
     data.SetName ("sparse matrix");
   }
+
 
 
   template <class TM>

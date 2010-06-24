@@ -68,6 +68,8 @@ namespace ngcomp
 
     void UpdateDofTables(); 
 
+    void UpdateCouplingDofArray();   
+    
     virtual string GetClassName () const
     {
       return "HDivHighOrderFESpace";
@@ -85,8 +87,6 @@ namespace ngcomp
     virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; // 2D: array =0.;
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-    ///
-    virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
     ///

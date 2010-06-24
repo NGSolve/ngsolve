@@ -89,8 +89,6 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
-    virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;
-
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
   
@@ -107,6 +105,9 @@ namespace ngcomp
     int GetFirstElementDof(int i) const {return(first_element_dof[i]);} ; 
 
     void UpdateDofTables ();
+    ///
+    void UpdateCouplingDofArray();    
+    
     void SetEdgeOrder (int enr, int eo) { order_edge[enr] = eo; }
     void SetFaceOrder (int fnr, int fo) { order_face[fnr] = INT<2> (fo, fo); }
     void SetFaceOrder (int fnr, int ox, int oy) { order_face[fnr] = INT<2> (ox, oy); }

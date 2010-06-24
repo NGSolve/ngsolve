@@ -123,6 +123,8 @@ template <class T>
   public:
     TableCreator()
     { nd = 0; mode = 1; }
+    TableCreator(int acnt)
+    { nd = acnt; SetMode(2); }
     
     Table<T> * GetTable() { return table; }
 

@@ -296,7 +296,7 @@ namespace ngcomp
 	*testout << " first_inner_dof (facet)  " << first_inner_dof << endl; 
       } 
 
-
+    UpdateCouplingDofArray();
     FinalizeUpdate (lh);
 
 #ifdef PARALLEL
@@ -307,6 +307,124 @@ namespace ngcomp
 #endif
 
   }
+
+
+  void  VectorFacetFESpace :: UpdateCouplingDofArray ()
+  {
+    ctofdof.SetSize(ndof);
+    ctofdof = WIREBASKET_DOF;
+    if (!highest_order_dc)
+      {
+	int first,next;
+	for(int facet=0; facet<ma.GetNFacets(); facet++)
+	  {
+	    if ( ma.GetDimension() == 2 )
+	      ctofdof[facet] = WIREBASKET_DOF; // low_order
+	    else
+	      {
+		ctofdof[2*facet] = WIREBASKET_DOF;
+		ctofdof[2*facet+1] = WIREBASKET_DOF;
+	      }
+	    
+	    first = first_facet_dof[facet];
+	    next = first_facet_dof[facet+1];
+	    for(int j=first ; j<next; j++)
+	      ctofdof[j] = INTERFACE_DOF;
+	  }
+      }
+    else
+      {
+	if (ma.GetDimension() == 2)
+	  {
+	    for(int facet=0; facet<ma.GetNFacets(); facet++)
+	      {
+		int facetdof = first_facet_dof[facet];
+	
+		for (int j = 0; j <= order; j++)
+		  {
+		    if (j == 0)
+		      {
+			ctofdof[facetdof+j] = WIREBASKET_DOF;
+		      }
+		    else if (j < order)
+		      {
+			ctofdof[facetdof+j] = INTERFACE_DOF;
+		      }
+		    else
+		      {
+			ctofdof[facetdof+j] = LOCAL_DOF;
+		      }
+		  }
+	      }
+	  }
+	else
+	  {
+	    Array<int> fanums; // facet numbers
+	    fanums.SetSize(0);
+	    
+	    for(int elnr=0; elnr<ma.GetNE(); elnr++)
+	    {
+	      ELEMENT_TYPE et = ma.GetElType (elnr);
+	      ma.GetElFaces (elnr, fanums);
+	      
+// 	      int innerdof = first_inner_dof[elnr];
+	      for(int i=0; i<fanums.Size(); i++)
+		{
+		  ELEMENT_TYPE ft = ElementTopology::GetFacetType (et, i);
+		  
+		  int facetdof = first_facet_dof[fanums[i]];
+		  
+		  if (ft == ET_TRIG)
+		    {
+		      for (int j = 0; j <= order; j++)
+			for (int k = 0; k <= order-j; k++)
+			  {
+			    if (j+k == 0)
+			      {
+				ctofdof[facetdof++] = WIREBASKET_DOF;
+				ctofdof[facetdof++] = WIREBASKET_DOF;
+			      }
+			    else if (j+k < order)
+			      {
+				ctofdof[facetdof++] = INTERFACE_DOF;
+				ctofdof[facetdof++] = INTERFACE_DOF;
+			      }
+			    else
+			      {
+				ctofdof[facetdof++] = LOCAL_DOF;
+				ctofdof[facetdof++] = LOCAL_DOF;
+			      }
+			  }
+		    }
+		  else
+		    {
+		      for (int j = 0; j <= order; j++)
+			for (int k = 0; k <= order; k++)
+			  {
+			    if (j+k == 0)
+			      {
+				ctofdof[facetdof++] = WIREBASKET_DOF;
+				ctofdof[facetdof++] = WIREBASKET_DOF;
+			      }
+			    else if ( (j < order) && (k < order) )
+			      {
+				ctofdof[facetdof++] = INTERFACE_DOF;
+				ctofdof[facetdof++] = INTERFACE_DOF;
+			      }
+			    else //highest order
+			      {
+				ctofdof[facetdof++] = LOCAL_DOF;
+				ctofdof[facetdof++] = LOCAL_DOF;
+			      }
+			  }
+		    }
+		}//end of fanums-loop
+	     }
+	  }//end of 3D
+      }
+      *testout << " ctofdof = \n" << ctofdof << endl;
+  }
+
 
   const FiniteElement & VectorFacetFESpace :: GetFE ( int elnr, LocalHeap & lh ) const
   {
@@ -616,137 +734,6 @@ namespace ngcomp
     return ( first_facet_dof[felnr+1] - first_facet_dof[felnr] + dimension - 1);
   }
 
-  void  VectorFacetFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
-  {
-   if (!highest_order_dc)
-      {
-	Array<int> fanums; // facet numbers
-	int first,next;
-	
-	fanums.SetSize(0);
-	ctypes.SetSize(0);
-	
-	
-	if(ma.GetDimension() == 3)
-	  ma.GetElFaces (elnr, fanums);
-	else // dim=2
-	  ma.GetElEdges (elnr, fanums);
-	
-	for(int i=0; i<fanums.Size(); i++)
-	  {
-	    if ( ma.GetDimension() == 2 )
-	      ctypes.Append(WIREBASKET_DOF); // low_order
-	    else
-	      {
-		ctypes.Append(WIREBASKET_DOF);
-		ctypes.Append(WIREBASKET_DOF);
-	      }
-	    
-	    first = first_facet_dof[fanums[i]];
-	    next = first_facet_dof[fanums[i]+1];
-	    for(int j=first ; j<next; j++)
-	      ctypes.Append(INTERFACE_DOF);
-	  }
-      }
-    else
-      {
-	if (ma.GetDimension() == 2)
-	  {
-	    Array<int> fanums; // facet numbers
-	    
-	    fanums.SetSize(0);
-	    ctypes.SetSize(0);
-	    
-	    ma.GetElEdges (elnr, fanums);
-	    
-	    for(int i=0; i<fanums.Size(); i++)
-	      {
-		int facetdof = first_facet_dof[fanums[i]];
-		int innerdof = first_inner_dof[elnr];
-		
-		for (int j = 0; j <= order; j++)
-		  {
-		    if (j == 0)
-		      {
-			ctypes.Append(WIREBASKET_DOF);
-		      }
-		    else if (j < order)
-		      {
-			ctypes.Append (INTERFACE_DOF);
-		      }
-		    else
-		      {
-			ctypes.Append (LOCAL_DOF);
-		      }
-		  }
-	      }
-	  }
-	else
-	  {
-	    Array<int> fanums; // facet numbers
-	    
-	    fanums.SetSize(0);
-	    ctypes.SetSize(0);
-	    
-	    ELEMENT_TYPE et = ma.GetElType (elnr);
-	    ma.GetElFaces (elnr, fanums);
-	    
-	    int innerdof = first_inner_dof[elnr];
-	    for(int i=0; i<fanums.Size(); i++)
-	      {
-		ELEMENT_TYPE ft = ElementTopology::GetFacetType (et, i);
-		
-		int facetdof = first_facet_dof[fanums[i]];
-		
-		if (ft == ET_TRIG)
-		  {
-		    for (int j = 0; j <= order; j++)
-		      for (int k = 0; k <= order-j; k++)
-			{
-			  if (j+k == 0)
-			    {
-			      ctypes.Append(WIREBASKET_DOF);
-			      ctypes.Append(WIREBASKET_DOF);
-			    }
-			  else if (j+k < order)
-			    {
-			      ctypes.Append (INTERFACE_DOF);
-			      ctypes.Append (INTERFACE_DOF);
-			    }
-			  else
-			    {
-			      ctypes.Append (LOCAL_DOF);
-			      ctypes.Append (LOCAL_DOF);
-			    }
-			}
-		  }
-		else
-		  {
-		    for (int j = 0; j <= order; j++)
-		      for (int k = 0; k <= order; k++)
-			{
-			  if (j+k == 0)
-			    {
-			      ctypes.Append(WIREBASKET_DOF);
-			      ctypes.Append(WIREBASKET_DOF);
-			    }
-			  else if ( (j < order) && (k < order) )
-			    {
-			      ctypes.Append (INTERFACE_DOF);
-			      ctypes.Append (INTERFACE_DOF);
-			    }
-			  else
-			    {
-			      ctypes.Append (LOCAL_DOF);
-			      ctypes.Append (LOCAL_DOF);
-			    }
-			}
-		  }
-	      }
-	  }
-      }
-    
-  }
   
   ///
    void VectorFacetFESpace :: GetVertexNumbers(int elnr, Array<int>& vnums) 

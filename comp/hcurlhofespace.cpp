@@ -379,7 +379,7 @@ namespace ngcomp
 
 
     UpdateDofTables(); 
-
+    UpdateCouplingDofArray();
     FinalizeUpdate (lh);
 
     if (timing) Timing();    
@@ -565,6 +565,45 @@ namespace ngcomp
 	
 	
       } 
+  }
+
+  void  HCurlHighOrderFESpace :: UpdateCouplingDofArray ()
+  {
+    
+    ctofdof.SetSize(ndof);
+    ctofdof = WIREBASKET_DOF;
+    
+    if(discontinuous) 
+    {
+      ctofdof = LOCAL_DOF;
+      return;
+    } 
+    int first, next;
+    for (int edge = 0; edge < ma.GetNEdges(); edge++) {
+      ctofdof[edge] = WIREBASKET_DOF; //Nedelec0
+      IntRange range = GetEdgeDofs (edge);
+      first = range.First();
+      next = range.Next();
+      for (int j=first; j<next;j++)
+	ctofdof[j] = WIREBASKET_DOF;
+    }
+      
+    // faces 
+    if (ma.GetDimension() == 3)
+      for (int face = 0; face < ma.GetNFaces(); face++){
+	IntRange range = GetFaceDofs (face);
+	first = range.First();
+	next = range.Next();
+	for (int j=first;j<next;j++)
+	  ctofdof[j] = INTERFACE_DOF; //NOGRAD / GRAD
+      }      
+    
+    for (int el = 0; el < ma.GetNE(); el++){
+      IntRange range = GetElementDofs (el);
+      for (int j=range.First();j<range.Next();j++)
+	ctofdof[j] = LOCAL_DOF;
+    }
+    *testout << "ctofdof = \n" << ctofdof << endl;
   }
 
   
@@ -810,37 +849,6 @@ namespace ngcomp
       dnums = -1;
   }
  
-  void  HCurlHighOrderFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
-  {
-    Ng_Element ngel = ma.GetElement (elnr);
-    ctypes.SetSize(0);
-     
-      //Nedelec0
-    if ( !discontinuous )
-      for (int i = 0; i < ngel.edges.Size(); i++) 
-	ctypes.Append(WIREBASKET_DOF);	
-      
-    //edges
-    for (int i = 0; i < ngel.edges.Size(); i++)
-    {
-      IntRange range = GetEdgeDofs (ngel.edges[i]);
-      for (int j=range.First();j<range.Next();j++)
-	ctypes.Append(WIREBASKET_DOF);
-    }
-      
-    // faces 
-    if (ma.GetDimension() == 3)
-      for (int i = 0; i < ngel.faces.Size(); i++){
-	IntRange range = GetFaceDofs (ngel.faces[i]);
-	for (int j=range.First();j<range.Next();j++)
-	  ctypes.Append(INTERFACE_DOF); //NOGRAD / GRAD
-      }      
-    
-    IntRange range = GetElementDofs (elnr);
-    for (int j=range.First();j<range.Next();j++)
-      ctypes.Append(LOCAL_DOF);
-  }
-
 
 
 

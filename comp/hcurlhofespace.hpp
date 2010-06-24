@@ -130,15 +130,13 @@ namespace ngcomp
 
     bool GetNoGrads() const {return nograds;};
     void UpdateDofTables(); 
-  
+    void UpdateCouplingDofArray();
     int GetMaxOrder() const {return maxorder;}; 
     int GetMinOrder() const {return minorder;}; 
 
     //   virtual void UpdateParallelDofs ();
     //   virtual void UpdateParallelDofs ( LocalHeap & lh);
 
-    virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;
-    
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
