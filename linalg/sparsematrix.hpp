@@ -680,6 +680,9 @@ namespace ngla
 	vec(colnr[j]) += Trans(data[j]) * el;
       */
       int last = this->firsti[row+1];
+      int first = this->firsti[row];
+      if (first == last) return;
+
       if (this->colnr[last-1] == row) last--;
 
       int nj = last - this->firsti[row];

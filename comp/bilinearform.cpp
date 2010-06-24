@@ -36,7 +36,7 @@ namespace ngcomp
     hermitean = 0;
     nonassemble = 0;
     SetEpsRegularization (0);
-    SetUnusedDiag (1);
+    SetUnusedDiag (0);
     low_order_bilinear_form = 0;
     linearform = 0;
     timing = 0;
@@ -53,7 +53,7 @@ namespace ngcomp
     if (flags.GetDefineFlag ("nonsym"))  SetSymmetric (0);
     if (flags.GetDefineFlag ("nonmultilevel")) SetMultiLevel (0);
     SetHermitean (flags.GetDefineFlag ("hermitean"));
-    SetUnusedDiag (flags.GetNumFlag ("unuseddiag",1));
+    SetUnusedDiag (flags.GetNumFlag ("unuseddiag",0));
     SetEpsRegularization (flags.GetNumFlag ("regularization",0));
   
     SetPrint (flags.GetDefineFlag ("print"));
