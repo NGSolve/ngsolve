@@ -287,7 +287,7 @@ namespace ngcomp
       first_hodofs[i].SetSize(0);
     first_hodofs[ma.GetDimension()-1] = first_facet_dof;
 
-
+    UpdateCouplingDofArray();
     FinalizeUpdate (lh);
 
 #ifdef PARALLEL
@@ -297,6 +297,23 @@ namespace ngcomp
 
   }
 
+
+  void FacetFESpace :: UpdateCouplingDofArray()
+  {
+    ctofdof.SetSize(ndof);
+    ctofdof = INTERFACE_DOF;
+
+    int first,next;
+
+    for (int facet = 0; facet < ma.GetNFacets(); facet++){
+      first = first_facet_dof[facet];
+      next = first_facet_dof[facet+1];
+//       ctofdof[facet] = WIREBASKET_DOF;
+      ctofdof[facet] = INTERFACE_DOF;
+      for (int j=first; j<next; j++)
+	ctofdof[j] = INTERFACE_DOF;
+    }
+  }
 
 
   // ------------------------------------------------------------------------
@@ -464,28 +481,6 @@ namespace ngcomp
 	dnums += IntRange (first_facet_dof[fanums[i]],
 			   first_facet_dof[fanums[i]+1]);
       }
-  }
-
-  void  FacetFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
-  {
-    ArrayMem<int,6> fanums;
-    int first,next;
-
-    fanums.SetSize(0);
-    ctypes.SetSize(0);
-    
-    ma.GetElFacets (elnr, fanums);
-
-    for(int i=0; i<fanums.Size(); i++)
-      {
-        // ctypes.Append(WIREBASKET_DOF); // low_order
-	ctypes.Append(INTERFACE_DOF); // low_order
-
-        first = first_facet_dof[fanums[i]];
-        next = first_facet_dof[fanums[i]+1];
-        for(int j=first ; j<next; j++)
-          ctypes.Append(INTERFACE_DOF);
-      }    
   }
 
   // ------------------------------------------------------------------------
@@ -959,10 +954,14 @@ namespace ngcomp
     order_edge = order;
     for (int i = 0; i <= ned; i++)
       first_edge_dof[i] = (order+1)*i;
-
+    UpdateCouplingDofArray();
     FinalizeUpdate (lh);
   }
 
+  void EdgeFESpace :: UpdateCouplingDofArray(){
+    ctofdof.SetSize(ndof);
+    ctofdof = WIREBASKET_DOF;
+  }
 
   const FiniteElement & EdgeFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
@@ -998,18 +997,6 @@ namespace ngcomp
     dnums.SetSize(0);
     for (int i = 0; i < enums.Size(); i++)
       dnums += IntRange (first_edge_dof[enums[i]], first_edge_dof[enums[i]+1]);
-  }
-  
-  void EdgeFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
-  {
-    ArrayMem<int, 12> enums;
-    ma.GetElEdges(elnr, enums);
-
-    ctypes.SetSize(0);
-    for (int i = 0; i < enums.Size(); i++){
-      for (int j = first_edge_dof[enums[i]]; j<first_edge_dof[enums[i]+1]; j++)
- 	ctypes.Append(WIREBASKET_DOF);
-    }
   }
 
   void EdgeFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
@@ -1102,9 +1089,9 @@ public:
 
     if (flags.GetDefineFlag ("edges"))
       {
-	Flags h1flags(flags);
 	if (ma.GetDimension() == 2)
 	  {
+	    Flags h1flags(flags);
 	    h1flags.SetFlag ("order", 1);
 	    spaces.Append (new H1HighOrderFESpace (ma, h1flags));        
 	  }
@@ -1182,22 +1169,22 @@ public:
   {
     bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
     bool subassembled = precflags.GetDefineFlag("subassembled");
-    int smoothing_type = int(precflags.GetNumFlag("blocktype",4)); 
-    if (subassembled) smoothing_type = 51;
-
+    int smoothing_type = int(precflags.GetNumFlag("blocktype",1)); 
+    COUPLING_TYPE dof_mode = eliminate_internal? (subassembled? WIREBASKET_DOF : EXTERNAL_DOF) : ANY_DOF;
     int nv = ma.GetNV();
     int ned = ma.GetNEdges();
     // int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
     // int ni = (eliminate_internal) ? 0 : ma.GetNE(); 
     cout << " blocktype " << smoothing_type << endl; 
     cout << " Use HDG-Block Smoother:  "; 
+    Array<int> dnums;
 
     TableCreator<int> creator;
     for ( ; !creator.Done(); creator++)
       {
 	switch (smoothing_type)
 	  {
-	  case 51: 
+	  case 1: 
 	  //for BDDC: we have only the condensated (after subassembling) dofs, 
 	  //and build patches around each vertex Vertices + Edges
 		
@@ -1207,13 +1194,16 @@ public:
 // 	    int ds_order = precflags.GetNumFlag ("ds_order", 1);
 // 	    cout << "ds_order = " << ds_order << endl;
 // 		
-            Array<int> dnums;
 	    if (ma.GetDimension() == 2)
+	    {  
 	      for (int i = 0; i < nv; i++)
 		if (!IsDirichletVertex(i)){
+		  dnums.SetSize(0);
 		  GetVertexDofNrs(i,dnums);
-		  creator.Add (i, dnums[0]);
+		  if (GetDofCouplingType(dnums[0])==dof_mode)
+		    creator.Add (i, dnums[0]);
 		}
+	    }
 	    for (int i = 0; i < ned; i++)
 	      if (!IsDirichletEdge(i))
 		{
@@ -1224,12 +1214,14 @@ public:
 		    if (! IsDirichletVertex(edge.vertices[k]) ){
 		      if (ma.GetDimension() == 2){
 			GetEdgeDofNrs(i,dnums);
-			creator.Add (edge.vertices[k], dnums[0]);
+			if (GetDofCouplingType(dnums[0])==dof_mode)
+			  creator.Add (edge.vertices[k], dnums[0]);
 		      }
 		      else{
 			GetEdgeDofNrs(i,dnums);
 			for (int l=0;l<dnums.Size();l++)
-			  creator.Add (edge.vertices[k], dnums[l]);
+			  if (GetDofCouplingType(dnums[l])==dof_mode)
+			    creator.Add (edge.vertices[k], dnums[l]);
 		      }
 		    }//end-if isdirichletvertex
 		  }
@@ -1249,14 +1241,7 @@ public:
 	      }		  
 	    */
 	    break; 	    
-	  }
-
-
-
-
-	switch (smoothing_type)
-	  {
-	  case 52: 
+	  case 2: 
 	    //for BDDC: we have only the condensated (after subassembling) dofs, 
 	    //and build patches around each vertex Vertices + Edges
 		
@@ -1293,8 +1278,8 @@ public:
 			}
 		    }
 		*/
-		break; 	    
 	      }
+	      break; 	    
 
 	  }
 

@@ -58,6 +58,8 @@ namespace ngcomp
     /// 
     virtual void UpdateDofTables();
     ///
+    virtual void UpdateCouplingDofArray();    
+    ///
     virtual int GetNDof () const;
     ///
     virtual int GetNDofLevel (int level) const;
@@ -77,8 +79,6 @@ namespace ngcomp
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
-
-    virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;
 
     int GetFirstInnerDof(int elnr) const  
     {return (first_element_dof[elnr]);}

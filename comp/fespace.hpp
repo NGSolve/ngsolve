@@ -133,6 +133,7 @@ namespace ngcomp
     Array<int> directelementclusters;
 
     Table<int> * element_coloring;
+    Array<COUPLING_TYPE> ctofdof;
 
 #ifdef PARALLEL
     class ngparallel::ParallelDofs * paralleldofs;
@@ -186,6 +187,10 @@ namespace ngcomp
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     /// get coupling types of dofs
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & dnums) const;
+    
+    /// get coupling types of dof
+    virtual COUPLING_TYPE GetDofCouplingType (int dof) const; 
+    
     /// get dof-nrs of the element of certain coupling type
     void GetDofNrs (int elnr, Array<int> & dnums,COUPLING_TYPE ctype) const;
 
@@ -661,6 +666,8 @@ namespace ngcomp
     ///
     virtual void Update(LocalHeap & lh);
     ///
+    virtual void UpdateCouplingDofArray();
+    ///
     virtual int GetNDof () const
     { return ndlevel.Last(); }
     ///
@@ -685,8 +692,6 @@ namespace ngcomp
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-    ///
-    virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;
     ///
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;

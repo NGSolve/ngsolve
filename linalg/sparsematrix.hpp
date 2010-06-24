@@ -129,10 +129,6 @@ namespace ngla
     // int * firsti;
     DynamicMem<int> firsti;
   
-    /// position of diagonal element
-    //   int * diagi;
-    DynamicMem<int> diagi;
-
     /// row has same non-zero elements as previous row
     Array<int> same_nze;
 
@@ -143,14 +139,14 @@ namespace ngla
     mutable INVERSETYPE inversetype;
 
   public:
-    /// matrix of hight as, uniform number of els/row
-    MatrixGraph (int as, int max_elsperrow);
     /// arbitrary number of els/row
     MatrixGraph (const Array<int> & elsperrow);
+    /// matrix of hight as, uniform number of els/row
+    MatrixGraph (int as, int max_elsperrow);    
     /// shadow matrix graph
     MatrixGraph (const MatrixGraph & graph, bool stealgraph);
     /// 
-    MatrixGraph (int size, const Table<int> & elements, bool symmetric);
+    MatrixGraph (int size, const Table<int> & rowelements, const Table<int> & colelements, bool symmetric);
     /// 
     MatrixGraph (const Table<int> & elements, bool symmetric);
     virtual ~MatrixGraph ();
@@ -225,10 +221,12 @@ namespace ngla
   {
 
   public:
+    
     BaseSparseMatrix (int as, int max_elsperrow)
       : MatrixGraph (as, max_elsperrow)
     { ; }
-
+    
+    
     BaseSparseMatrix (const Array<int> & elsperrow)
       : MatrixGraph (elsperrow)
     { ; }
@@ -650,6 +648,8 @@ namespace ngla
     TV_COL RowTimesVectorNoDiag (int row, const FlatVector<TVX> & vec) const
     {
       int last = this->firsti[row+1];
+      int first = this->firsti[row];
+      if (last == first) return TVY(0);
       if (this->colnr[last-1] == row) last--;
 
       /*
@@ -665,7 +665,7 @@ namespace ngla
 
       typedef typename mat_traits<TVY>::TSCAL TTSCAL;
       TVY sum = TTSCAL(0);
-      for (int j = this->firsti[row]; j < last; j++, colpi++, datap++)
+      for (int j = first; j < last; j++, colpi++, datap++)
 	sum += *datap * vecp[*colpi];
       return sum;
     }

@@ -132,7 +132,7 @@ namespace ngcomp
               }
           }
 
-        graph = new MatrixGraph (fespace.GetNDof(), fa2dof, this->symmetric);
+        graph = new MatrixGraph (fespace.GetNDof(), fa2dof, fa2dof, this->symmetric);
       }
     
     else
@@ -214,7 +214,7 @@ namespace ngcomp
         // (*testout) << "fa2dof = " << endl << fa2dof << endl;
     
 
-        graph = new MatrixGraph (fespace.GetNDof(), fa2dof, this->symmetric);
+        graph = new MatrixGraph (fespace.GetNDof(), fa2dof, fa2dof, this->symmetric);
       }
 
 

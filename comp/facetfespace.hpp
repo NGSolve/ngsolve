@@ -61,6 +61,7 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh);
   
     //  virtual void UpdateDofTables();
+    virtual void UpdateCouplingDofArray();    
     ///
     virtual int GetNDof () const;
     ///
@@ -82,8 +83,6 @@ namespace ngcomp
     ///
     virtual int GetNFacetDofs (int felnr) const 
     { return (first_facet_dof[felnr+1]-first_facet_dof[felnr] + 1); }
-    ///
-    virtual void  GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;    
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
     ///
@@ -180,6 +179,8 @@ namespace ngcomp
     ///
     virtual void Update(LocalHeap & lh);
     ///
+    virtual void UpdateCouplingDofArray();    
+    ///
     virtual int GetNDof () const { return first_edge_dof[ned]; }
     ///
     virtual int GetNDofLevel (int level) const { return GetNDof(); }
@@ -189,8 +190,6 @@ namespace ngcomp
     virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; 
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-    ///
-    virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;    
 
     virtual void GetVertexDofNrs ( int elnum, Array<int> & dnums ) const  { dnums.SetSize(0); }
 

@@ -97,7 +97,7 @@ namespace ngcomp
     if (flags.GetDefineFlag ("nonsym"))  SetSymmetric (0);
     if (flags.GetDefineFlag ("nonmultilevel")) SetMultiLevel (0);
     SetHermitean (flags.GetDefineFlag ("hermitean"));
-    SetUnusedDiag (flags.GetNumFlag ("unuseddiag",1));
+    SetUnusedDiag (flags.GetNumFlag ("unuseddiag",0));
   
     SetPrint (flags.GetDefineFlag ("print"));
     SetPrintElmat (flags.GetDefineFlag ("printelmat"));
@@ -667,7 +667,7 @@ namespace ngcomp
       }
 
     
-    MatrixGraph * graph = new MatrixGraph (ndof, el2dof, symmetric);
+    MatrixGraph * graph = new MatrixGraph (ndof, el2dof,el2dof, symmetric);
 
     graph -> FindSameNZE();
 

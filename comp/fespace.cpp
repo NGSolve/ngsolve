@@ -223,6 +223,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 #ifdef PARALLEL
     paralleldofs = 0;
 #endif
+    ctofdof.SetSize(0);
   }
 
   
@@ -254,7 +255,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (int i=0; i< specialelements.Size(); i++)
       delete specialelements[i]; 
     specialelements.SetSize(0);
-    
     if (dirichlet_boundaries.Size())
       {
 	int dim = ma.GetDimension();
@@ -302,6 +302,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	(*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;
 	(*testout) << "Dirichlet_face = " << endl << dirichlet_face << endl;
       }
+            
   }
 
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
@@ -387,6 +388,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     *testout << "needed " << color << " colors" << endl;
     // cout << "elcolors = " << endl << (*element_coloring) << endl;
+    
   }
 
   const FiniteElement & FESpace :: GetFE (int elnr, LocalHeap & lh) const
@@ -455,14 +457,30 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
-  void FESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
+  /// get coupling type of dof
+  COUPLING_TYPE FESpace :: GetDofCouplingType (int dof) const 
   {
-    Array<int> dnums;   
-    LocalHeapMem<10003> lh;  
+    if (ctofdof.Size()==0) //this is the standard case if the FESpace does not specify anything.
+      return WIREBASKET_DOF;
+    if (dof >= ctofdof.Size()) throw Exception("FESpace::GetDofCouplingType out of range. Did you set up ctofdof?");
+      return ctofdof[dof];
+  }
+
+  /// get coupling types of dofs
+  void  FESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
+  { 
+    Array<int> dnums;
     GetDofNrs(elnr, dnums);
     ctypes.SetSize(dnums.Size());
-    for (int i=0;i<dnums.Size();i++)
-      ctypes[i] = INTERFACE_DOF;
+    if (ctofdof.Size()==0){
+      for (int i=0;i<dnums.Size();i++)
+	ctypes[i] = INTERFACE_DOF;
+    }
+    else
+    {
+      for (int i=0; i<dnums.Size(); i++)
+	ctypes[i] = ctofdof[dnums[i]];
+    }
   }
 
   void FESpace :: GetDofNrs (int elnr, Array<int> & dnums,COUPLING_TYPE ctype) const
@@ -2649,6 +2667,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
     prol -> Update();
 
+    UpdateCouplingDofArray();
     FinalizeUpdate (lh);
 
     // dirichlet-dofs from sub-spaces
@@ -2693,7 +2712,13 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
   }
 
-
+  void CompoundFESpace :: UpdateCouplingDofArray(){
+    ctofdof.SetSize(this->GetNDof());
+    for (int i = 0; i < spaces.Size(); i++)
+	for (int j=0; j< spaces[i]->GetNDof();j++)
+	  ctofdof[cummulative_nd[i]+j] = spaces[i]->GetDofCouplingType(j);
+//     *testout << " ctofdof = \n" << ctofdof << endl;
+  }
 
 
 
@@ -2720,21 +2745,6 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 	    dnums.Append (hdnums[j]+cummulative_nd[i]);
 	  else
 	    dnums.Append (-1);
-      }
-  }
-
-  void CompoundFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
-  {
-    ArrayMem<COUPLING_TYPE,500> hctypes;
-    ctypes.SetSize(0);
-    for (int i = 0; i < spaces.Size(); i++)
-      {
-	spaces[i]->GetDofCouplingTypes (elnr, hctypes);
-	for (int j = 0; j < hctypes.Size(); j++)
-	  if (hctypes[j] != -1)
-	    ctypes.Append (hctypes[j]);
-	  else
-	    ctypes.Append (LOCAL_DOF);
       }
   }
 

@@ -327,7 +327,7 @@ namespace ngcomp
  
     
     UpdateDofTables(); 
-    
+    UpdateCouplingDofArray();
     FinalizeUpdate (lh);
 
 #ifdef PARALLEL
@@ -500,6 +500,33 @@ namespace ngcomp
     //    prol->Update();
   }
 
+  void HDivHighOrderFESpace :: UpdateCouplingDofArray()
+  {
+    ctofdof.SetSize(ndof);
+    if(discont) 
+    {
+      ctofdof = LOCAL_DOF;
+      return;
+    } 
+
+    ctofdof = WIREBASKET_DOF;
+
+    int first,next;
+
+    for (int facet = 0; facet < ma.GetNFacets(); facet++){
+      first = first_facet_dof[facet];
+      next = first_facet_dof[facet+1];
+      ctofdof[facet] = WIREBASKET_DOF;
+      for (int j=first; j<next; j++)
+	ctofdof[j] = INTERFACE_DOF;
+    }
+
+    for (int el = 0; el < ma.GetNE(); el ++){
+      for (int j=first_inner_dof[el];j<first_inner_dof[el+1];j++)
+	ctofdof[j] = LOCAL_DOF;
+    }
+//     *testout << "ctofdof = \n" << ctofdof << endl;
+  }
 
   const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
@@ -757,51 +784,6 @@ namespace ngcomp
     // (*testout) << "hdivspace(sz) el " << elnr << " has dofs " << dnums << endl;
   }
 
-  void  HDivHighOrderFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
-  {
-    ctypes.SetSize(0); 
-
-    int first,next;
-    if(discont) 
-      {
-	// lowest_order included in inner 
-      	first = first_inner_dof[elnr];
-	next = first_inner_dof[elnr+1];
-	for(int j=first; j<next; j++)
-	  ctypes.Append(LOCAL_DOF);
-	return;
-      } 
-    
-    Array<int> fanums;
-    if(ma.GetDimension() == 3)
-      ma.GetElFaces (elnr, fanums);
-    else
-      ma.GetElEdges (elnr, fanums); 
-      
-    if(order < 0)
-      throw Exception(" HDivHighOrderFESpace :: GetDofNrs() order < 0 ");
-
-    //Raviart-Thomas
-    for (int i = 0; i < fanums.Size(); i++)
-      ctypes.Append(WIREBASKET_DOF);
-
-    // facets
-    for(int i=0; i<fanums.Size(); i++)
-      {
-	first = first_facet_dof[fanums[i]];
-	next = first_facet_dof[fanums[i]+1];
-	for(int j=first ; j<next; j++)
-	  ctypes.Append(INTERFACE_DOF);
-      }
-    //inner
-    first = first_inner_dof[elnr];
-    next = first_inner_dof[elnr+1];
-    for(int j=first; j<next; j++)
-      ctypes.Append(LOCAL_DOF);
-
-    
-//     cout << "ctypes = " << ctypes << endl; getchar();
-  }
 
   void HDivHighOrderFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {

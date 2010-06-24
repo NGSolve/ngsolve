@@ -77,7 +77,7 @@ namespace ngcomp
     }
 
     virtual void Update(LocalHeap& lh);
-
+    virtual void UpdateCouplingDofArray();
     virtual int GetNDof() const { return ndof; }
 
     virtual int GetNDofLevel ( int i ) const { return ndlevel[i]; }
@@ -93,7 +93,6 @@ namespace ngcomp
     virtual int GetNFacetDofs ( int felnr ) const;
 
     virtual void GetDofNrs ( int elnr, Array<int> & dnums ) const;
-    virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const;
 
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
     ///

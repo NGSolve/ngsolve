@@ -113,6 +113,7 @@ namespace ngcomp
   
   void L2HighOrderFESpace :: Update(LocalHeap & lh)
   {
+    FESpace::Update(lh);
     if(low_order_space) low_order_space -> Update(lh);
                   
     nel = ma.GetNE();
@@ -146,12 +147,26 @@ namespace ngcomp
 
     if(low_order_space) prol->Update();
 
+    UpdateCouplingDofArray();
     FinalizeUpdate (lh);
 
 #ifdef PARALLEL
     UpdateParallelDofs();
 #endif
   } 
+  
+  void L2HighOrderFESpace :: UpdateCouplingDofArray()
+  {
+    ctofdof.SetSize(ndof);
+    ctofdof = WIREBASKET_DOF;
+    for (int i=0; i<ma.GetNE(); i++){
+      ctofdof[i] = LOCAL_DOF; //lowest order (constants)
+      int first = first_element_dof[i];
+      int next = first_element_dof[i+1];
+      for (int j = first; j < next; j++)
+	ctofdof[j] = LOCAL_DOF; //higher order
+    }
+  }
 
   void L2HighOrderFESpace :: UpdateDofTables()
   {
@@ -324,18 +339,6 @@ namespace ngcomp
     
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
-  }
-  
-  void  L2HighOrderFESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
-  { 
-    ctypes.SetSize(0);
-//     if (lowirebasket) ctypes.Append (WIREBASKET_DOF);
-    ctypes.Append (LOCAL_DOF); // lowest_order 
-    int first = first_element_dof[elnr];
-    int neldofs = first_element_dof[elnr+1] - first;
-
-    for (int j = 0; j < neldofs; j++)
-      ctypes.Append (LOCAL_DOF);
   }
   
   void L2HighOrderFESpace :: 
