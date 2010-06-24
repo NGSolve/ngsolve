@@ -53,7 +53,7 @@ namespace ngcomp
     if (flags.GetDefineFlag ("nonsym"))  SetSymmetric (0);
     if (flags.GetDefineFlag ("nonmultilevel")) SetMultiLevel (0);
     SetHermitean (flags.GetDefineFlag ("hermitean"));
-    SetUnusedDiag (flags.GetNumFlag ("unuseddiag",0));
+    SetUnusedDiag (flags.GetNumFlag ("unuseddiag",1));
     SetEpsRegularization (flags.GetNumFlag ("regularization",0));
   
     SetPrint (flags.GetDefineFlag ("print"));
@@ -97,7 +97,7 @@ namespace ngcomp
     if (flags.GetDefineFlag ("nonsym"))  SetSymmetric (0);
     if (flags.GetDefineFlag ("nonmultilevel")) SetMultiLevel (0);
     SetHermitean (flags.GetDefineFlag ("hermitean"));
-    SetUnusedDiag (flags.GetNumFlag ("unuseddiag",0));
+    SetUnusedDiag (flags.GetNumFlag ("unuseddiag",1));
   
     SetPrint (flags.GetDefineFlag ("print"));
     SetPrintElmat (flags.GetDefineFlag ("printelmat"));

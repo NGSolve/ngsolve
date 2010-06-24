@@ -446,10 +446,33 @@ namespace ngla
 
     nze = rowstart[height];
 
+    
+    {
+      int n = a.Height();
+      used.SetSize (n);
+      used.Set();
+      
+      for (int i = 0; i < n; i++)
+	if (a.GetPositionTest (i,i) == -1)
+	  used.Clear(i);
+      
+      if (inner)
+	for (int i = 0; i < n; i++)
+	  if (!inner->Test(i))
+	    used.Clear(i);
+      
+      if (cluster)
+	for (int i = 0; i < n; i++)
+	  if (!(*cluster)[i])
+	    used.Clear(i);
+    }
+
     // call pardiso for factorization:
     // time1 = clock();
     cout << "call pardiso ..." << flush;
 
+
+    
 
 
     // retvalue = 
@@ -633,6 +656,12 @@ namespace ngla
     if ( error != 0 )
       cout << "Apply Inverse: PARDISO returned error " << error << "!" << endl;
 
+    for (int i=0; i<height/entrysize; i++)
+      if (!used.Test(i))
+	for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0;
+    
+
+    /*
     if (inner)
       {
 	for (int i=0; i<height/entrysize; i++)
@@ -645,7 +674,7 @@ namespace ngla
 	  if (!(*cluster)[i]) 
 	    for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0;
       }
-
+    */
 
   }
   
