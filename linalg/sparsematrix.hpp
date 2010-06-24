@@ -140,7 +140,7 @@ namespace ngla
     bool owner;
 
     /// sparse direct solver
-    INVERSETYPE inversetype;
+    mutable INVERSETYPE inversetype;
 
   public:
     /// matrix of hight as, uniform number of els/row
@@ -192,10 +192,14 @@ namespace ngla
 
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
-    virtual void SetInverseType ( INVERSETYPE ainversetype )
-    { inversetype = ainversetype; }
+    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const
+    {
+      INVERSETYPE old_invtype = inversetype;
+      inversetype = ainversetype; 
+      return old_invtype;
+    }
 
-    virtual void SetInverseType ( string ainversetype ) const;
+    virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
 
     virtual INVERSETYPE  GetInverseType () const
     { return inversetype; }

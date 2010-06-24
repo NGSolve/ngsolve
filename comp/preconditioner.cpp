@@ -323,13 +323,14 @@ namespace ngcomp
 
   void MGPreconditioner :: Update ()
   {
-    dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType ( inversetype );
+    const BilinearForm * lo_bfa = &bfa->GetLowOrderBilinearForm();
 
-    if (&bfa->GetLowOrderBilinearForm())
-      {
-	const BilinearForm * lo_bfa = &bfa->GetLowOrderBilinearForm();
- 	dynamic_cast<const BaseSparseMatrix & > (lo_bfa->GetMatrix()) .SetInverseType ( inversetype );
-      }
+    INVERSETYPE invtype, loinvtype;
+    invtype = dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType ( inversetype );
+    if (lo_bfa)
+      loinvtype = dynamic_cast<const BaseSparseMatrix & > (lo_bfa->GetMatrix()) .SetInverseType ( inversetype );
+
+
 
     mgp->Update();
    
@@ -367,6 +368,10 @@ namespace ngcomp
     if (test) Test();
     if (mgtest) MgTest();
     //cout << " ** done MGPreconditioner :: Update" << endl;
+
+    dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType ( invtype );
+    if (lo_bfa)
+      dynamic_cast<const BaseSparseMatrix & > (lo_bfa->GetMatrix()) .SetInverseType ( loinvtype );
   }
   
   

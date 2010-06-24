@@ -94,6 +94,7 @@ namespace ngla
     indices = new int[a.NZE() * entrysize * entrysize ];
     matrix = new TSCAL[a.NZE() * entrysize * entrysize ];     
 
+    *testout << "matrix.InverseTpye = " <<  a.GetInverseType() << endl;
     spd = ( a.GetInverseType() == PARDISOSPD ) ? 1 : 0;
 
     int maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = print, error;
