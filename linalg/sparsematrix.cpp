@@ -232,7 +232,6 @@ namespace ngla
 		    {
 		      mark[d2] = i;
 		      colnr[cnti++] = d2;
-			*testout << "ndof = " << i << "\t colnr... " << d2 << endl;
 		    }
                 }
             }
@@ -258,7 +257,6 @@ namespace ngla
                       {
                         mark[d2] = i;
                         colnr[cnti++] = d2;
-			*testout << "ndof = " << i << "\t colnr... " << d2 << endl;
                       }
                 }
             }
@@ -751,7 +749,7 @@ namespace ngla
 		    {
 		      k++;
 		      if (k >= rowind.Size())
-			throw Exception ("SparseMatrix::AddElementMatrix: illegal dnums");
+			throw Exception ("SparseMatrixTM::AddElementMatrix: illegal dnums");
 		    }
 		  rowvals(k) += elmat(i,j);
 		}
@@ -1036,7 +1034,7 @@ namespace ngla
 		    {
 		      k++;
 		      if (k >= rowind.Size())
-			throw Exception ("SparseMatrix::AddElementMatrix: illegal dnums");
+			throw Exception ("SparseMatrixSymmetricTM::AddElementMatrix: illegal dnums");
 		    }
 		  rowvals(k) += elmat(i,j);
 		}
