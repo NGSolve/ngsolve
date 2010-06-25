@@ -322,6 +322,7 @@ namespace ngcomp
       *testout << "free_dofs = " << *free_dofs << endl;
       if (block){
 	Flags flags;
+	flags.SetFlag("eliminate_internal");
 	flags.SetFlag("subassembled");
 	Table<int> & blocks = *(bfa.GetFESpace().CreateSmoothingBlocks(flags));
 // 	for (int i = 0; i < blocks.Size(); i++){
@@ -575,6 +576,7 @@ namespace ngcomp
       *testout << "free_dofs = " << *free_dofs << endl;
       if (block){
 	Flags flags;
+	flags.SetFlag("eliminate_internal");
 	flags.SetFlag("subassembled");
 	Table<int> & blocks = *(bfa.GetFESpace().CreateSmoothingBlocks(flags));
 	for (int i = 0; i < blocks.Size(); i++){
@@ -1222,6 +1224,7 @@ namespace ngcomp
       if (block)
 	{
 	  Flags flags;
+	  flags.SetFlag("eliminate_internal");
 	  flags.SetFlag("subassembled");
 	  Table<int> & blocks = *(bfa.GetFESpace().CreateSmoothingBlocks(flags));
 	  /*
