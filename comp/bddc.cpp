@@ -23,12 +23,340 @@ namespace ngcomp
     ///number of global wirebasket degrees of freedom    
     int nglobalwbdof;
     bool block;
+    bool ebe;
     SparseMatrix<double> * pwbmat;    
     BaseVector * tmp;
+    BaseVector * tmp2;
   public:
-    BDDCMatrix (const ElementByElement_BilinearForm<double> & abfa, const string & inversetype, bool ablock)
-      : bfa(abfa), ma(abfa.GetFESpace().GetMeshAccess()), block(ablock)
+    
+    void NEBEConstructor()  
     {
+      pwbmat = NULL;
+      inv = NULL;
+      inv_coarse = NULL;
+      tmp = NULL;
+      tmp2 = NULL;
+      // LocalHeap lh(10000000);
+      const FESpace & fes = bfa.GetFESpace();
+      const MeshAccess & ma = fes.GetMeshAccess();
+      int ne = ma.GetNE();
+      
+      if (!bfa.UsesEliminateInternal()) throw Exception("please use eliminate_internal for the bilinearform");
+      
+      Array<int> cnt(ne); //count number of (external) dofs on each element
+      Array<int> wbdcnt(ne); //count number of wirebasket dofs on each element
+      Array<int> ifcnt(ne); //count number of interface dofs on each element
+
+      Array<int> wbdofs(fes.GetNDof()); //assignment: dof -> global number of the wirebasket dof (-1 for non-wirebasket-dofs)
+      Array<int> ifdofs(fes.GetNDof()); //assignment: dof -> global number of the interface dof (-1 for non-wirebasket-dofs)
+      wbdofs = -1;
+      Array<int> lwbdofs, lifdofs, dnums; //local (on one element) wirebasket (all) dofs
+      
+      for (int i = 0; i < ne; i++)
+        {
+//           fes.GetDofNrs (i, dnums, EXTERNAL_DOF);	  
+//           cnt[i] = dnums.Size();
+          fes.GetDofNrs (i, lifdofs, INTERFACE_DOF);	  
+          ifcnt[i] = lifdofs.Size();
+	  fes.GetDofNrs(i,lwbdofs,WIREBASKET_DOF);
+	  wbdcnt[i] = lwbdofs.Size();	
+
+// 	  }
+        }
+      int ndof = fes.GetNDof();
+//       Table<int> dcdofs(cnt);   // discontinuous dofs on each element
+      Table<int> el2wbdofs(wbdcnt);   // wirebasket dofs on each element
+      Table<int> el2ifdofs(ifcnt);   // interface dofs on each element
+      Table<int> el2dcifdofs(ifcnt);   // interface dofs on each element
+      int dcifdofs = 0;
+      BitArray ifdof(ndof);
+      ifdof.Clear();
+      BitArray wbdof(ndof);
+      wbdof.Clear();
+      int nifdofs = 0;
+      int nwbdofs = 0;
+
+      multiple.SetSize (fes.GetNDof());
+      multiple = 1;
+
+      for (int i = 0; i < ne; i++)
+        {
+//           fes.GetDofNrs (i, dnums, EXTERNAL_DOF);	  
+//           cnt[i] = dnums.Size();
+
+	  fes.GetDofNrs (i, lifdofs, INTERFACE_DOF);
+	  for (int j = 0; j< lifdofs.Size();j++)
+	  {
+	    el2ifdofs[i][j] = lifdofs[j];
+	    if (!ifdof.Test(lifdofs[j])){
+	      ifdof.Set(lifdofs[j]);
+	      nifdofs++;
+	    }else{
+	      multiple[lifdofs[j]]++;
+	    }
+	    ifdof.Set(lifdofs[j]);
+	    el2dcifdofs[i][j] = dcifdofs++; 
+	  }
+
+	  fes.GetDofNrs(i,lwbdofs,WIREBASKET_DOF);
+	  for (int j = 0; j< lwbdofs.Size();j++)
+	  {
+	    el2wbdofs[i][j] = lwbdofs[j];
+	    if (!wbdof.Test(lwbdofs[j]))
+	    {
+	      wbdof.Set(lwbdofs[j]);
+	      nwbdofs++;
+	    }	  
+	  }
+        }
+      
+
+
+//       for (int i = 0; i < ne; i++)
+//       {
+// 	fes.GetDofNrs (i, dnums, EXTERNAL_DOF);	  
+// 	int wbd = 0;
+// 	for (int j = 0; j < dnums.Size(); j++)
+// 	  {
+// 	    if (dnums[j] == -1) continue;
+// 	    if (wbdofs[dnums[j]]!=-1) {
+// 	      el2wbdofs[i][wbd++] = wbdofs[dnums[j]];
+// 	      dnums[j] = wbdofs[dnums[j]];
+// 	      continue;
+// 	    }
+// 	    dnums[j] = ndcdof;
+// 	    ndcdof++;
+// 	  }
+// 
+// 	for (int j = 0; j < dnums.Size(); j++){
+// 	  dcdofs[i][j] = dnums[j];
+// 	}
+//       }
+
+//        *testout << "dcdofs = " << endl << dcdofs << endl;
+       *testout << "el2wbdofs = " << endl << el2wbdofs << endl;
+       *testout << "el2ifdofs = " << endl << el2ifdofs << endl;
+       
+      MatrixGraph graph_harmonicext(ndof, el2ifdofs, el2wbdofs, false);
+      MatrixGraph graph_harmonicexttrans(ndof, el2wbdofs, el2ifdofs, false); //TODO if symmetric: rausoptimieren
+      MatrixGraph graph_innersolve(ndof, el2ifdofs, el2ifdofs, bfa.IsSymmetric());
+      
+      subassembled_harmonicext = new SparseMatrix<double>(graph_harmonicext, 1);
+      if (!bfa.IsSymmetric())
+	subassembled_harmonicexttrans = new SparseMatrix<double>(graph_harmonicexttrans, 1);
+      if (!bfa.IsSymmetric())
+	subassembled_innersolve = new SparseMatrix<double>(graph_innersolve, 1);
+      else
+	subassembled_innersolve = new SparseMatrixSymmetric<double>(graph_innersolve, 1);
+//        *testout << "test " << endl;
+//       restrict.SetSize(ndcdof);
+//       restrict = -1;
+//       for (int i = 0; i < ne; i++)
+//         {
+//           fes.GetDofNrs (i, dnums, EXTERNAL_DOF);	  
+// 
+//           for (int j = 0; j < dnums.Size(); j++)
+//             {
+//               if (dnums[j] != -1){
+//                 restrict[dcdofs[i][j]] = dnums[j];
+// 	      }
+//             }
+//         }
+
+//       *testout << "restrict = " << endl << restrict << endl;
+
+//       *testout << "multiple = " << endl << multiple << endl;
+
+      cout << "now build graph" << endl;
+
+
+      MatrixGraph graph_wbschur(ndof, el2wbdofs, el2wbdofs, bfa.IsSymmetric());
+//       *testout << " nglobalwbdof " << nglobalwbdof << endl;
+      cout << "now allocate matrix" << endl;
+
+      if (bfa.IsSymmetric()){
+	pwbmat = new SparseMatrixSymmetric<double>(graph_wbschur,1);
+	cout << "symmetric" << endl;
+      }
+      else{
+	pwbmat = new SparseMatrix<double>(graph_wbschur,1);
+	cout << "nonsymmetric" << endl;
+      }
+      SparseMatrix<double>& wbmat=*pwbmat;
+
+      wbmat.SetInverseType (inversetype);
+      
+      cout << "have matrix" << endl;
+
+      for (int i = 0; i < ne; i++)
+        {
+          FlatMatrix<> elmat = 
+            dynamic_cast<const ElementByElementMatrix<double>&> (bfa.GetMatrix()) . GetElementMatrix (i);
+
+// 	  FlatArray<int> dofs2 = dcdofs[i];
+	  Array<int> interfacedofs; interfacedofs = el2ifdofs[i];
+	  Array<int> wirebasketdofs; wirebasketdofs = el2wbdofs[i];
+	  Array<int> localwbdofs; localwbdofs.SetSize(0); //local dofs
+	  Array<int> localintdofs; localintdofs.SetSize(0); //local dofs 
+	  Array<int> ldnums;
+	  fes.GetDofNrs (i, ldnums, EXTERNAL_DOF);
+	  
+          for (int k = 0; k < ldnums.Size(); k++){
+	    if (wbdof.Test(ldnums[k])){
+	      localwbdofs.Append(k);
+	    }
+	    else{
+	      localintdofs.Append(k);
+	    }
+	  }
+
+	  int sizew = localwbdofs.Size();
+	  int sizei = localintdofs.Size();
+	  Matrix<double> a(sizew, sizew);
+	  Matrix<double> b(sizew, sizei);
+	  Matrix<double> c(sizei, sizew);
+	  Matrix<double> d(sizei, sizei);
+	  for (int k = 0; k < sizew; k++)
+	    for (int l = 0; l < sizew; l++)
+	      a(k,l) = elmat(localwbdofs[k], localwbdofs[l]);
+	    
+	  if (el2ifdofs[i].Size())
+	  {      
+	    for (int k = 0; k < sizew; k++)
+	      for (int l = 0; l < sizei; l++)
+		{
+		  b(k,l) = elmat(localwbdofs[k], localintdofs[l]);
+		  c(l,k) = elmat(localintdofs[l], localwbdofs[k]);
+		}
+
+	    for (int k = 0; k < sizei; k++)
+	      for (int l = 0; l < sizei; l++)
+		d(k,l) = elmat(localintdofs[k], localintdofs[l]);
+	      
+#ifdef LAPACK
+	    LapackInverse (d);
+#else
+	    Matrix<double> invd(size);
+	    CalcInverse (d, invd);	  
+	    d = invd;
+#endif //LAPACK
+	    Matrix<double> he (sizei, sizew);
+#ifdef LAPACK	  
+	    he = 0.0;
+	    LapackMultAddAB(d,c,-1.0,he);
+#else	  
+	    he = -1.0 * d * c;
+#endif	 
+
+#ifdef LAPACK	  
+	    LapackMultAddAB (b, he, 1.0, a);
+#else
+	    a += b*he;
+#endif //LAPACK
+
+	    //R * E
+	    for (int k = 0; k < sizei; k++)
+	      for (int l = 0; l < sizew; l++)
+		if ((fes.GetFreeDofs()) && (!fes.GetFreeDofs()->Test(el2ifdofs[i][k])))
+		  he(k,l) = 0.0;
+		else
+		  he(k,l) /= multiple[ el2ifdofs[i][k] ];
+// 	      dynamic_cast<SparseMatrix<double>*>(subassembled_harmonicext)->Print(*testout);
+	    dynamic_cast<SparseMatrix<double>*>(subassembled_harmonicext)->AddElementMatrix(interfacedofs,wirebasketdofs,he);
+// 	       cout << "done" << endl;
+
+	    
+	    if (!bfa.IsSymmetric()){
+	      Matrix<double> het (sizew, sizei);
+#ifdef LAPACK	    
+	      het = 0.0;
+	      LapackMultAddAB(b,d,-1.0,het);
+#else	    
+	      het = -1.0 * b * d;
+#endif	    
+	      //E * R^T
+	      for (int k = 0; k < sizew; k++)
+		for (int l = 0; l < sizei; l++)
+		  if ((fes.GetFreeDofs()) && (!fes.GetFreeDofs()->Test(el2ifdofs[i][l])))
+		    het(k,l) = 0.0;
+		  else
+		    het(k,l) /= multiple[ el2ifdofs[i][l] ];
+	      
+	      dynamic_cast<SparseMatrix<double>*>(subassembled_harmonicexttrans)->AddElementMatrix(wirebasketdofs,interfacedofs,het);
+	    }
+	    for (int k = 0; k < sizei; k++)
+	      for (int l = 0; l < sizei; l++)
+		if ((fes.GetFreeDofs()) && ((!fes.GetFreeDofs()->Test(el2ifdofs[i][l])) || (!fes.GetFreeDofs()->Test(el2ifdofs[i][k]))))
+		  d(k,l) = 0.0;
+		else
+		  d(k,l) /= multiple[ el2ifdofs[i][k] ] * multiple[ el2ifdofs[i][l] ];	    
+	    if (bfa.IsSymmetric())
+	      dynamic_cast<SparseMatrixSymmetric<double>*>(subassembled_innersolve)->AddElementMatrix(interfacedofs,d);
+	    else
+	      dynamic_cast<SparseMatrix<double>*>(subassembled_innersolve)->AddElementMatrix(interfacedofs,interfacedofs,d);
+	  }
+	  
+	  if (bfa.IsSymmetric())
+	    dynamic_cast<SparseMatrixSymmetric<double>&>(wbmat).AddElementMatrix(wirebasketdofs,a);
+	  else
+	    dynamic_cast<SparseMatrix<double>&>(wbmat).AddElementMatrix(wirebasketdofs,wirebasketdofs,a);
+// 	  for (int k = 0; k < el2wbdofs[i].Size(); k++)
+//             for (int l = 0; l < el2wbdofs[i].Size(); l++)
+//               if (el2wbdofs[i][k] != -1 && el2wbdofs[i][l] != -1 && (!bfa.IsSymmetric() || el2wbdofs[i][k] >= el2wbdofs[i][l]))
+//                 wbmat(el2wbdofs[i][k], el2wbdofs[i][l]) += a(k,l);	  
+
+        }
+      
+      free_dofs = new BitArray (ndof);
+      free_dofs->Clear();
+
+      for (int i = 0; i < ndof; i++)
+	{
+	  if (wbdof.Test(i)){
+	    if ((fes.GetFreeDofs()==NULL) || fes.GetFreeDofs()->Test(i))
+	      free_dofs->Set(i);
+	  }
+	}
+
+	
+      *testout << "free_dofs = " << *free_dofs << endl;
+      if (block){
+	Flags flags;
+	flags.SetFlag("subassembled");
+	Table<int> & blocks = *(bfa.GetFESpace().CreateSmoothingBlocks(flags));
+// 	for (int i = 0; i < blocks.Size(); i++){
+// 	  for (int j = 0; j < blocks[i].Size(); j++)
+// 	    blocks[i][j] = wbdofs[blocks[i][j]];
+// 	}
+	cout << "call block-jacobi inverse" << endl;
+	inv = wbmat.CreateBlockJacobiPrecond(blocks, 0, 0, 0);      
+	cout << "has inverse" << endl;
+	cout << "call directsolverclusters inverse" << endl;
+	Array<int> & clusters = *(bfa.GetFESpace().CreateDirectSolverClusters(flags));
+ 	*testout << " clusters = \n " << clusters << endl;
+/*	Array<int> & condclusters = *new Array<int>(nglobalwbdof);
+	for (int i=0; i< clusters.Size(); i++)
+	  condclusters[wbdofs[i]] = clusters[i];*/
+//  	*testout << " condclusters = \n " << condclusters << endl;
+	
+	inv_coarse = wbmat.InverseMatrix(&clusters);
+// 	inv_coarse = wbmat.InverseMatrix(free_dofs);
+	tmp = new VVector<>(ndof);
+	tmp2 = new VVector<>(ndof);
+      }
+      else
+      {
+	cout << "call inverse" << endl;
+	inv = wbmat.InverseMatrix(free_dofs);
+	tmp = new VVector<>(ndof);
+      }
+      cout << "has inverse" << endl;
+//       *testout << "inverse2 = " << (*inv) << endl;
+    };
+
+    
+   void EBEConstructor()
+   {
       pwbmat = NULL;
       inv = NULL;
       inv_coarse = NULL;
@@ -42,10 +370,13 @@ namespace ngcomp
       
       Array<int> cnt(ne); //count number of (external) dofs on each element
       Array<int> wbdcnt(ne); //count number of wirebasket dofs on each element
+      Array<int> wifcnt(ne); //count number of wirebasket dofs on each element
 
       Array<int> wbdofs(fes.GetNDof()); //assignment: dof -> global number of the wirebasket dof (-1 for non-wirebasket-dofs)
+      Array<int> ifdofs(fes.GetNDof()); //assignment: dof -> global number of the interface dof (-1 for non-wirebasket-dofs)
       wbdofs = -1;
-      Array<int> lwbdofs, dnums; //local (on one element) wirebasket (all) dofs
+      ifdofs = -1;
+      Array<int> lwbdofs, lifdofs, dnums; //local (on one element) wirebasket (all) dofs
       nglobalwbdof = 0; 
       
       for (int i = 0; i < ne; i++)
@@ -55,6 +386,8 @@ namespace ngcomp
 
 	  fes.GetDofNrs(i,lwbdofs,WIREBASKET_DOF);
 	  wbdcnt[i] = lwbdofs.Size();	  
+	  fes.GetDofNrs(i,lifdofs,INTERFACE_DOF);
+	  wifcnt[i] = lifdofs.Size();	  
           for (int j = 0; j < lwbdofs.Size(); j++){
 	    if (wbdofs[lwbdofs[j]] == -1){
 	      wbdofs[lwbdofs[j]] = nglobalwbdof++;
@@ -66,6 +399,7 @@ namespace ngcomp
 
       Table<int> dcdofs(cnt);   // discontinuous dofs on each element
       Table<int> el2wbdofs(wbdcnt);   // wirebasket dofs on each element
+      Table<int> el2ifdofs(wifcnt);   // interface dofs on each element
 
       int ndcdof = nglobalwbdof;
       int ncdofs = fes.GetNDof();
@@ -94,11 +428,6 @@ namespace ngcomp
        *testout << "dcdofs = " << endl << dcdofs << endl;
        *testout << "el2wbdofs = " << endl << el2wbdofs << endl;
 
-      subassembled_harmonicext = new ElementByElementMatrix<double>(ndcdof, ne);
-      if (!bfa.IsSymmetric())
-	subassembled_harmonicexttrans = new ElementByElementMatrix<double>(ndcdof, ne);
-      subassembled_innersolve = new ElementByElementMatrix<double>(ndcdof, ne, true);
-      
 //        *testout << "test " << endl;
       restrict.SetSize(ndcdof);
       restrict = -1;
@@ -123,27 +452,29 @@ namespace ngcomp
           multiple[restrict[i]]++;
 
 //       *testout << "multiple = " << endl << multiple << endl;
+	cout << "now build graph" << endl;
+	MatrixGraph graph(nglobalwbdof, el2wbdofs, el2wbdofs, bfa.IsSymmetric());
+	cout << "now allocate matrix" << endl;
+	if (bfa.IsSymmetric()){
+	  pwbmat = new SparseMatrixSymmetric<double>(graph,1);
+	  cout << "symmetric" << endl;
+	}
+	else{
+	  pwbmat = new SparseMatrix<double>(graph,1);
+	  cout << "nonsymmetric" << endl;
+	}
 
-      cout << "now build graph" << endl;
-
-
-      MatrixGraph graph(nglobalwbdof, el2wbdofs, el2wbdofs, bfa.IsSymmetric());
-//       *testout << " nglobalwbdof " << nglobalwbdof << endl;
-      cout << "now allocate matrix" << endl;
-
-      if (bfa.IsSymmetric()){
-	pwbmat = new SparseMatrixSymmetric<double>(graph,1);
-	cout << "symmetric" << endl;
-      }
-      else{
-	pwbmat = new SparseMatrix<double>(graph,1);
-	cout << "nonsymmetric" << endl;
-      }
       SparseMatrix<double>& wbmat=*pwbmat;
 
       wbmat.SetInverseType (inversetype);
       
       cout << "have matrix" << endl;
+      
+      subassembled_harmonicext = new ElementByElementMatrix<double>(ndcdof, ne);
+      if (!bfa.IsSymmetric())
+	subassembled_harmonicexttrans = new ElementByElementMatrix<double>(ndcdof, ne);
+      subassembled_innersolve = new ElementByElementMatrix<double>(ndcdof, ne, true);
+
 
       for (int i = 0; i < ne; i++)
         {
@@ -272,6 +603,21 @@ namespace ngcomp
       cout << "has inverse" << endl;
 //       *testout << "inverse2 = " << (*inv) << endl;
     }
+      
+          
+    
+    
+    BDDCMatrix (const ElementByElement_BilinearForm<double> & abfa, const string & inversetype, bool ablock, bool aebe)
+      : bfa(abfa), ma(abfa.GetFESpace().GetMeshAccess()), block(ablock), ebe(aebe)
+   {
+      if(ebe) 
+	EBEConstructor();
+      else
+	NEBEConstructor();
+   }
+
+      
+      
 
     ~BDDCMatrix()
     {
@@ -279,10 +625,69 @@ namespace ngcomp
       if (pwbmat) delete pwbmat;
       if (inv_coarse) delete inv_coarse;
       if (tmp) delete tmp;
+      if (tmp2) delete tmp2;
     }
+    
+    virtual void MultAddNEBE (double s, const BaseVector & x, BaseVector & y) const
+    {
+      static int timer = NgProfiler::CreateTimer ("Apply BDDC preconditioner");
+      static int timerifs = NgProfiler::CreateTimer ("Apply BDDC preconditioner - apply ifs");
+      static int timerwb = NgProfiler::CreateTimer ("Apply BDDC preconditioner - wb solve");
+      static int timeretc = NgProfiler::CreateTimer ("Apply BDDC preconditioner - etc");
+      NgProfiler::RegionTimer reg (timer);
+
+      const FESpace & fes = bfa.GetFESpace();      
+      FlatVector<> fx = x.FVDouble();
+      FlatVector<> fy = y.FVDouble();
+
+      NgProfiler::StartTimer (timeretc);
+
+      NgProfiler::StopTimer (timeretc);
+      fy = fx;
+
+      if (bfa.IsSymmetric())
+	y += Transpose(*subassembled_harmonicext) * x; 
+      else
+	y += *subassembled_harmonicexttrans * x;
+      NgProfiler::StartTimer (timerwb);
+      
+            
+      *tmp = 0;
+      
+      if (block){
+// 	throw Exception("noch nicht!");
+	if (true) //GS
+	{
+	  dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothResiduum (*tmp, y, *tmp2 ,1);
+	  if (inv_coarse)
+	    *tmp += (*inv_coarse) * *tmp2; 
+	  dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothBack (*tmp, y);
+	}else{ //jacobi only (old)
+	  *tmp = (*inv) * y;
+	  *tmp += (*inv_coarse) * y; 
+	}
+      }
+      else
+      {
+	//TODO fy = 0 an allen sowieso stellen
+	*tmp = (*inv) * y;
+      }
+
+      NgProfiler::StopTimer (timerwb);
+
+      NgProfiler::StartTimer (timerifs);
+      *tmp += *subassembled_innersolve * y;
+      NgProfiler::StopTimer (timerifs);
+
+      y = *tmp;
+      y += *subassembled_harmonicext * *tmp;
+
+    }    
+    
     
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {
+      if (!ebe) {MultAddNEBE(s,x,y);return;}
       static int timer = NgProfiler::CreateTimer ("Apply BDDC preconditioner");
       static int timerifs = NgProfiler::CreateTimer ("Apply BDDC preconditioner - apply ifs");
       static int timerwb = NgProfiler::CreateTimer ("Apply BDDC preconditioner - wb solve");
@@ -1335,6 +1740,7 @@ namespace ngcomp
     inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
     refelement = flags.GetDefineFlag("refelement");
     block = flags.GetDefineFlag("block");
+    ebe = flags.GetDefineFlag("ebe");
   }
 
 
@@ -1346,7 +1752,7 @@ namespace ngcomp
     if (refelement)
       pre = new BDDCMatrixRefElement(*bfa, inversetype);
     else
-      pre = new BDDCMatrix(dynamic_cast<const ElementByElement_BilinearForm<double>&> (*bfa), inversetype, block);
+      pre = new BDDCMatrix(dynamic_cast<const ElementByElement_BilinearForm<double>&> (*bfa), inversetype, block,ebe);
 
     if (test) Test();
     

@@ -1137,13 +1137,15 @@ public:
 	    {
 	      dnums.SetSize(0);
 	      if (ma.GetDimension() == 2){
-		spaces[1]->GetEdgeDofNrs(i,dnums);
-		clusters[dnums[0]+basefac]=1;
+// 		spaces[1]->GetEdgeDofNrs(i,dnums);
+// 		clusters[dnums[0]+basefac]=1;
 	      }else{
 		spaces[2]->GetEdgeDofNrs(i,dnums);
 		clusters[dnums[0]+baseh1]=1;
 	      }
 	    }
+
+
 
 	/*
 	//low order: 3D: l.o. face

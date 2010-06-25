@@ -17,6 +17,7 @@ namespace ngcomp
     string inversetype;
     bool refelement;
     bool block;
+    bool ebe;
   public:
     BDDCPreconditioner (const PDE * pde, const Flags & aflags,
 			const std::string aname = "bddcprecond");
