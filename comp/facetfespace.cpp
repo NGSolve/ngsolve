@@ -1177,6 +1177,7 @@ public:
     int ned = ma.GetNEdges();
     // int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
     // int ni = (eliminate_internal) ? 0 : ma.GetNE(); 
+    cout << " dof_mode " << dof_mode << endl; 
     cout << " blocktype " << smoothing_type << endl; 
     cout << " Use HDG-Block Smoother:  "; 
     Array<int> dnums;
