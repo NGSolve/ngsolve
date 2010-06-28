@@ -603,7 +603,7 @@ namespace ngcomp
       for (int j=range.First();j<range.Next();j++)
 	ctofdof[j] = LOCAL_DOF;
     }
-    *testout << "ctofdof = \n" << ctofdof << endl;
+//     *testout << "ctofdof = \n" << ctofdof << endl;
   }
 
   

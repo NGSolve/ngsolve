@@ -255,6 +255,7 @@ namespace ngcomp
     /// is face on Dirichlet boundary ?
     bool IsDirichletFace (int i) const { return dirichlet_face.Size() && dirichlet_face[i]; }
 
+    void GetFilteredDofs(COUPLING_TYPE doffilter, BitArray & output, bool freedofsonly=true) const;
     /// 
     virtual Table<int> * CreateSmoothingBlocks (const Flags & flags) const;
     /// for anisotropic plane smoothing:

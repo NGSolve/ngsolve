@@ -54,10 +54,10 @@ namespace ngcomp
     if(flags.NumFlagDefined("order") && flags.NumFlagDefined("relorder")) 
       {
 	if(var_order)
-	  cerr << " WARNING: H1HoFeSpace: inconsistent flags: variableorder, order and relorder "
+	  cerr << " WARNING: FacetFESpace: inconsistent flags: variableorder, order and relorder "
 	       << "-> variable order space with rel_order " << rel_order << "is used, but order is ignored " << endl; 
 	else 
-	  cerr << " WARNING: H1HoFeSpace: inconsistent flags: order and rel_order "
+	  cerr << " WARNING: FacetFESpace: inconsistent flags: order and rel_order "
 	       << "-> uniform order space with order " << order << " is used " << endl; 
       }
 
@@ -1069,12 +1069,13 @@ public:
     Flags l2flags(flags), facetflags(flags);
 
     int order = int (flags.GetNumFlag ("order", 1));
-
+    
     l2flags.SetFlag ("orderinner", order);
     facetflags.SetFlag("orderfacet", order);
     if (flags.NumListFlagDefined ("dirichlet"))
 	facetflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
 
+    if (flags.NumFlagDefined ("relorder")) facetflags.SetFlag("variableorder");
     
     const FESpaceClasses::FESpaceInfo * info;
     info = GetFESpaceClasses().GetFESpace("DGhotp");
@@ -1173,16 +1174,17 @@ public:
     bool subassembled = precflags.GetDefineFlag("subassembled");
     int smoothing_type = int(precflags.GetNumFlag("blocktype",1)); 
     COUPLING_TYPE dof_mode = eliminate_internal? (subassembled? WIREBASKET_DOF : EXTERNAL_DOF) : ANY_DOF;
+    BitArray filter;
+    GetFilteredDofs(dof_mode, filter, true);
+    
     int nv = ma.GetNV();
     int ned = ma.GetNEdges();
-    // int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
-    // int ni = (eliminate_internal) ? 0 : ma.GetNE(); 
     cout << " dof_mode " << dof_mode << endl; 
     cout << " blocktype " << smoothing_type << endl; 
     cout << " Use HDG-Block Smoother:  "; 
     Array<int> dnums;
 
-    TableCreator<int> creator;
+    FilteredTableCreator creator(&filter);
     for ( ; !creator.Done(); creator++)
       {
 	switch (smoothing_type)
@@ -1193,56 +1195,38 @@ public:
 		
 	    if (creator.GetMode() == 1)
 	      cout << "BDDC-Edges-around-Vertex-Block" << endl;
-		
-// 	    int ds_order = precflags.GetNumFlag ("ds_order", 1);
-// 	    cout << "ds_order = " << ds_order << endl;
-// 		
+	    
 	    if (ma.GetDimension() == 2)
 	    {  
-	      for (int i = 0; i < nv; i++)
-		if (!IsDirichletVertex(i)){
+	      for (int i = 0; i < nv; i++) //Vertices to vertex-blocks
+		if (!IsDirichletVertex(i))
+		{
 		  dnums.SetSize(0);
 		  GetVertexDofNrs(i,dnums);
-		  if (GetDofCouplingType(dnums[0])==dof_mode)
-		    creator.Add (i, dnums[0]);
+		  creator.Add (i, dnums[0]);
 		}
 	    }
-	    for (int i = 0; i < ned; i++)
-	      if (!IsDirichletEdge(i))
-		{
-// 		  creator.Add (nv+i, GetEdgeDofs(i));
-		  Ng_Node<1> edge = ma.GetNode<1> (i);
-		  for (int k = 0; k < 2; k++){
-		    dnums.SetSize(0);
-		    if (! IsDirichletVertex(edge.vertices[k]) ){
-		      if (ma.GetDimension() == 2){
-			GetEdgeDofNrs(i,dnums);
-			if (GetDofCouplingType(dnums[0])==dof_mode)
-			  creator.Add (edge.vertices[k], dnums[0]);
-		      }
-		      else{
-			GetEdgeDofNrs(i,dnums);
-			for (int l=0;l<dnums.Size();l++)
-			  if (GetDofCouplingType(dnums[l])==dof_mode)
-			    creator.Add (edge.vertices[k], dnums[l]);
-		      }
-		    }//end-if isdirichletvertex
-		  }
-		}
-
-	    /*
-	    for (int i = 0; i < nfa; i++)
-	      if (!IsDirichletFace(i))
+	    for (int i = 0; i < ned; i++) //adjacent edges to vertex-blocks
 	      {
-		dnums.SetSize(0);
-		GetFaceDofNrs(i,dnums);
-		Ng_Node<2> face = ma.GetNode<2> (i);
-		for (int k = 0; k < face.vertices.Size(); k++)
-		  if (! IsDirichletVertex(face.vertices[k]) ){
-		    creator.Add (face.vertices[k], dnums[0]);	
-		  }
-	      }		  
-	    */
+		Ng_Node<1> edge = ma.GetNode<1> (i);
+		for (int k = 0; k < 2; k++){
+		  dnums.SetSize(0);
+		  if (! IsDirichletVertex(edge.vertices[k]) ){
+		    if (ma.GetDimension() == 2){
+		      GetEdgeDofNrs(i,dnums);
+		      if ( (GetDofCouplingType(dnums[0]) & dof_mode) != 0)		
+			creator.Add (edge.vertices[k], dnums[0]);
+		    }
+		    else{
+		      GetEdgeDofNrs(i,dnums);
+		      for (int l=0;l<dnums.Size();l++)
+			if ( (GetDofCouplingType(dnums[l]) & dof_mode) != 0)		
+			  creator.Add (edge.vertices[k], dnums[l]);
+		    }
+		  }//end-if isdirichletvertex
+		}
+	      }
+
 	    break; 	    
 	  case 2: 
 	    //for BDDC: we have only the condensated (after subassembling) dofs, 
@@ -1268,27 +1252,10 @@ public:
 		      for (int l=0;l<dnums.Size();l++)
 			creator.Add (i, dnums[l]);
 		    }
-		/*
-		for (int i = 0; i < nfa; i++)
-		  if (!IsDirichletFace(i))
-		    {
-		      GetFaceDofNrs(i,dnums);
-		      ma.GetFaceEdges (i, ednums);
-
-		      for (int k = 0; k < ednums.Size(); k++)
-			if (! IsDirichletEdge(ednums[k]) ){
-			  creator.Add (ednums[k], dnums[0]);	
-			}
-		    }
-		*/
 	      }
 	      break; 	    
-
 	  }
-
-	
       }
-	    
     return creator.GetTable();
   }
 
