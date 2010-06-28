@@ -144,4 +144,18 @@ namespace ngstd
   
     line.size--;
   }
+  
+  void FilteredTableCreator::Add (int blocknr, const int & data)
+  {
+    if (!takedofs||takedofs->Test(data))
+      TableCreator<int>::Add(blocknr,data);
+  }
+
+  void FilteredTableCreator::Add (int blocknr, IntRange range)
+  {
+    for (int i=range.First(); i<range.Next();i++)
+      if (!takedofs||takedofs->Test(i))
+	TableCreator<int>::Add(blocknr,i);
+  }  
+  
 }

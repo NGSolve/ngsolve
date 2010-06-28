@@ -668,6 +668,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
+  void FESpace::GetFilteredDofs(COUPLING_TYPE doffilter, BitArray & output, bool freedofsonly) const{
+    int ndof = GetNDof();
+    output.SetSize(ndof);
+    output.Clear();
+    if (ctofdof.Size()>0)
+      for (int i = 0; i < ndof; i++)
+	if ((ctofdof[i] & doffilter) != 0)
+	  output.Set(i);
+    if (freedofsonly && !free_dofs.Size()) output.And(free_dofs);
+  }
 
 
 

@@ -328,8 +328,9 @@ namespace ngcomp
 	    
 	    first = first_facet_dof[facet];
 	    next = first_facet_dof[facet+1];
-	    for(int j=first ; j<next; j++)
+	    for(int j=first ; j<next; j++){
 	      ctofdof[j] = INTERFACE_DOF;
+	    }
 	  }
       }
     else
@@ -344,15 +345,15 @@ namespace ngcomp
 		  {
 		    if (j == 0)
 		      {
-			ctofdof[facetdof+j] = WIREBASKET_DOF;
+			ctofdof[facetdof++] = WIREBASKET_DOF;
 		      }
 		    else if (j < order)
 		      {
-			ctofdof[facetdof+j] = INTERFACE_DOF;
+			ctofdof[facetdof++] = INTERFACE_DOF;
 		      }
 		    else
 		      {
-			ctofdof[facetdof+j] = LOCAL_DOF;
+			ctofdof[facetdof++] = LOCAL_DOF;
 		      }
 		  }
 	      }
@@ -378,7 +379,7 @@ namespace ngcomp
 		    {
 		      for (int j = 0; j <= order; j++)
 			for (int k = 0; k <= order-j; k++)
-			  {
+			  { 
 			    if (j+k == 0)
 			      {
 				ctofdof[facetdof++] = WIREBASKET_DOF;

@@ -116,6 +116,7 @@ inline ostream & operator<< (ostream & s, const Table<T> & table)
 template <class T>
   class TableCreator
   {
+  protected:  
     int mode;    // 1 .. cnt, 2 .. cnt entries, 3 .. fill table
     int nd;
     Array<int> cnt;
@@ -182,6 +183,19 @@ template <class T>
 	}
     }
 
+  };
+
+  class BitArray;
+  
+  class FilteredTableCreator : public TableCreator<int>
+  {
+  protected:
+    BitArray* takedofs;  
+  public:
+    FilteredTableCreator(BitArray* atakedofs):TableCreator<int>(),takedofs(atakedofs){};
+    FilteredTableCreator(int acnt, BitArray* atakedofs):TableCreator<int>(acnt),takedofs(atakedofs){};
+    void Add (int blocknr, const int & data);
+    void Add (int blocknr, IntRange range);
   };
 
 
