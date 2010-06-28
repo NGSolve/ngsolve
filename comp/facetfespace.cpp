@@ -1195,37 +1195,38 @@ public:
 		
 	    if (creator.GetMode() == 1)
 	      cout << "BDDC-Edges-around-Vertex-Block" << endl;
-	    
+		
+// 	    int ds_order = precflags.GetNumFlag ("ds_order", 1);
+// 	    cout << "ds_order = " << ds_order << endl;
+// 		
 	    if (ma.GetDimension() == 2)
 	    {  
-	      for (int i = 0; i < nv; i++) //Vertices to vertex-blocks
-		if (!IsDirichletVertex(i))
-		{
+	      for (int i = 0; i < nv; i++)
+		if (!IsDirichletVertex(i)){
 		  dnums.SetSize(0);
 		  GetVertexDofNrs(i,dnums);
 		  creator.Add (i, dnums[0]);
 		}
 	    }
-	    for (int i = 0; i < ned; i++) //adjacent edges to vertex-blocks
-	      {
-		Ng_Node<1> edge = ma.GetNode<1> (i);
-		for (int k = 0; k < 2; k++){
-		  dnums.SetSize(0);
-		  if (! IsDirichletVertex(edge.vertices[k]) ){
-		    if (ma.GetDimension() == 2){
-		      GetEdgeDofNrs(i,dnums);
-		      if ( (GetDofCouplingType(dnums[0]) & dof_mode) != 0)		
+	    for (int i = 0; i < ned; i++)
+	      if (!IsDirichletEdge(i))
+		{
+		  Ng_Node<1> edge = ma.GetNode<1> (i);
+		  for (int k = 0; k < 2; k++){
+		    dnums.SetSize(0);
+		    if (! IsDirichletVertex(edge.vertices[k]) ){
+		      if (ma.GetDimension() == 2){
+			GetEdgeDofNrs(i,dnums);
 			creator.Add (edge.vertices[k], dnums[0]);
-		    }
-		    else{
-		      GetEdgeDofNrs(i,dnums);
-		      for (int l=0;l<dnums.Size();l++)
-			if ( (GetDofCouplingType(dnums[l]) & dof_mode) != 0)		
+		      }
+		      else{
+			GetEdgeDofNrs(i,dnums);
+			for (int l=0;l<dnums.Size();l++)
 			  creator.Add (edge.vertices[k], dnums[l]);
-		    }
-		  }//end-if isdirichletvertex
+		      }
+		    }//end-if isdirichletvertex
+		  }
 		}
-	      }
 
 	    break; 	    
 	  case 2: 
