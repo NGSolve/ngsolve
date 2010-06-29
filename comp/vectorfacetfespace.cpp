@@ -104,7 +104,9 @@ namespace ngcomp
 
 
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
-
+    if (highest_order_dc) {
+      *testout << "highest_order_dc is active!" << endl;
+    }
 
     // Update();
   }
