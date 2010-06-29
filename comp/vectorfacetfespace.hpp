@@ -108,6 +108,7 @@ namespace ngcomp
 
     virtual int GetFirstFacetDof(int fanr) const;
 
+    virtual bool UsesHighestOrderDiscontinuous() const {return highest_order_dc;};
 
     virtual void GetVertexDofNrs ( int elnum, Array<int> & dnums ) const;
     virtual void GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const;

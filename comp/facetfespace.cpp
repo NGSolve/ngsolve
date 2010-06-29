@@ -959,7 +959,7 @@ namespace ngcomp
   }
 
   void EdgeFESpace :: UpdateCouplingDofArray(){
-    ctofdof.SetSize(ndof);
+    ctofdof.SetSize(first_edge_dof[ned]);
     ctofdof = WIREBASKET_DOF;
   }
 
