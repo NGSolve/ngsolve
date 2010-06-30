@@ -1298,6 +1298,8 @@ namespace ngcomp
 		    harmonicext = new ElementByElementMatrix<SCAL>(ndof, ne);
 		    if (!symmetric)
 		      harmonicexttrans = new ElementByElementMatrix<SCAL>(ndof, ne);
+		    else
+		      harmonicexttrans = new Transpose(*harmonicext);
 		    innersolve = new ElementByElementMatrix<SCAL>(ndof, ne);
 		  }
 		
@@ -1749,10 +1751,7 @@ namespace ngcomp
 		if (linearform && keep_internal)
 		  {
 		    cout << "\rmodifying condensated rhs";
-		    if (symmetric)
- 		      linearform -> GetVector() += Transpose(GetHarmonicExtension()) * linearform -> GetVector();
-		    else
-		      linearform -> GetVector() += GetHarmonicExtensionTrans() * linearform -> GetVector();
+		    linearform -> GetVector() += GetHarmonicExtensionTrans() * linearform -> GetVector();
 		    cout << "\t done" << endl;
 		  }
 		
