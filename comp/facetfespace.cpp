@@ -1012,6 +1012,7 @@ namespace ngcomp
 
   void EdgeFESpace :: GetEdgeDofNrs (int ednum, Array<int> & dnums) const
   {
+    dnums.SetSize(0);
     dnums += IntRange (first_edge_dof[ednum], first_edge_dof[ednum+1]);
   }
 

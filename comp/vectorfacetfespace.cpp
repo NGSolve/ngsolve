@@ -119,6 +119,7 @@ namespace ngcomp
 
   void VectorFacetFESpace :: Update(LocalHeap& lh)
   {
+    FESpace::Update(lh);
     if ( print ) 
       *testout << "VectorFacetFESpace, order " << order << endl 
 	       << "rel_order " << rel_order << ", var_order " << var_order << endl;
