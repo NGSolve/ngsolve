@@ -302,6 +302,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	(*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;
 	(*testout) << "Dirichlet_face = " << endl << dirichlet_face << endl;
       }
+      else 
+	(*testout) << "No Dirichlet boundaries!" << endl;
             
   }
 
@@ -676,7 +678,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
       for (int i = 0; i < ndof; i++)
 	if ((ctofdof[i] & doffilter) != 0)
 	  output.Set(i);
-    if (freedofsonly && !free_dofs.Size()) output.And(free_dofs);
+    if (freedofsonly && free_dofs.Size()) {
+      output.And(free_dofs);
+    }
   }
 
 

@@ -191,6 +191,7 @@ namespace ngcomp
 
   void HDivHighOrderFESpace :: Update(LocalHeap & lh)
   {
+    FESpace::Update(lh);
     // In discontinuous spaces the order on edges and faces  
     // are also set to the maximal order of adjacent elements  
     // and not to the element order (Motivation: Equilibrated_EE) 

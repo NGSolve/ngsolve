@@ -512,7 +512,7 @@ namespace ngcomp
 	    if ((fes.GetFreeDofs()==NULL) || fes.GetFreeDofs()->Test(restrict[i]))
 	      free_dofs->Set(i);
 	}
-      *testout << "free_dofs = " << *free_dofs << endl;
+      *testout << "wb_free_dofs = " << *free_dofs << endl;
       if (block){
 	Flags flags;
 	flags.SetFlag("eliminate_internal");
