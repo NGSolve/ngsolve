@@ -316,117 +316,30 @@ namespace ngcomp
   {
     ctofdof.SetSize(ndof);
     ctofdof = WIREBASKET_DOF;
-    if (!highest_order_dc)
+    int first,next;
+    for(int facet=0; facet<ma.GetNFacets(); facet++)
       {
-	int first,next;
-	for(int facet=0; facet<ma.GetNFacets(); facet++)
-	  {
-	    if ( ma.GetDimension() == 2 )
-	      ctofdof[facet] = WIREBASKET_DOF; // low_order
-	    else
-	      {
-		ctofdof[2*facet] = WIREBASKET_DOF;
-		ctofdof[2*facet+1] = WIREBASKET_DOF;
-	      }
-	    
-	    first = first_facet_dof[facet];
-	    next = first_facet_dof[facet+1];
-	    for(int j=first ; j<next; j++){
-	      ctofdof[j] = INTERFACE_DOF;
-	    }
-	  }
-      }
-    else
-      {
-	if (ma.GetDimension() == 2)
-	  {
-	    for(int facet=0; facet<ma.GetNFacets(); facet++)
-	      {
-		int facetdof = first_facet_dof[facet];
-	
-		for (int j = 0; j <= order; j++)
-		  {
-		    if (j == 0)
-		      {
-			ctofdof[facetdof++] = WIREBASKET_DOF;
-		      }
-		    else if (j < order)
-		      {
-			ctofdof[facetdof++] = INTERFACE_DOF;
-		      }
-		    else
-		      {
-			ctofdof[facetdof++] = LOCAL_DOF;
-		      }
-		  }
-	      }
-	  }
+	if ( ma.GetDimension() == 2 )
+	  ctofdof[facet] = WIREBASKET_DOF; // low_order
 	else
 	  {
-	    Array<int> fanums; // facet numbers
-	    fanums.SetSize(0);
-	    
-	    for(int elnr=0; elnr<ma.GetNE(); elnr++)
-	    {
-	      ELEMENT_TYPE et = ma.GetElType (elnr);
-	      ma.GetElFaces (elnr, fanums);
-	      
-// 	      int innerdof = first_inner_dof[elnr];
-	      for(int i=0; i<fanums.Size(); i++)
-		{
-		  ELEMENT_TYPE ft = ElementTopology::GetFacetType (et, i);
-		  
-		  int facetdof = first_facet_dof[fanums[i]];
-		  
-		  if (ft == ET_TRIG)
-		    {
-		      for (int j = 0; j <= order; j++)
-			for (int k = 0; k <= order-j; k++)
-			  { 
-			    if (j+k == 0)
-			      {
-				ctofdof[facetdof++] = WIREBASKET_DOF;
-				ctofdof[facetdof++] = WIREBASKET_DOF;
-			      }
-			    else if (j+k < order)
-			      {
-				ctofdof[facetdof++] = INTERFACE_DOF;
-				ctofdof[facetdof++] = INTERFACE_DOF;
-			      }
-			    else
-			      {
-				ctofdof[facetdof++] = LOCAL_DOF;
-				ctofdof[facetdof++] = LOCAL_DOF;
-			      }
-			  }
-		    }
-		  else
-		    {
-		      for (int j = 0; j <= order; j++)
-			for (int k = 0; k <= order; k++)
-			  {
-			    if (j+k == 0)
-			      {
-				ctofdof[facetdof++] = WIREBASKET_DOF;
-				ctofdof[facetdof++] = WIREBASKET_DOF;
-			      }
-			    else if ( (j < order) && (k < order) )
-			      {
-				ctofdof[facetdof++] = INTERFACE_DOF;
-				ctofdof[facetdof++] = INTERFACE_DOF;
-			      }
-			    else //highest order
-			      {
-				ctofdof[facetdof++] = LOCAL_DOF;
-				ctofdof[facetdof++] = LOCAL_DOF;
-			      }
-			  }
-		    }
-		}//end of fanums-loop
-	     }
-	  }//end of 3D
+	    ctofdof[2*facet] = WIREBASKET_DOF;
+	    ctofdof[2*facet+1] = WIREBASKET_DOF;
+	  }
+	
+	first = first_facet_dof[facet];
+	next = first_facet_dof[facet+1];
+	for(int j=first ; j<next; j++){
+	  ctofdof[j] = INTERFACE_DOF;
+	}
       }
-      *testout << " ctofdof = \n" << ctofdof << endl;
+    if (highest_order_dc)	  
+      for(int el=0; el<ma.GetNE(); el++)	      
+      {
+	for (int k = first_inner_dof[el]; k < first_inner_dof[el+1]; k++)
+	  ctofdof[k] = LOCAL_DOF;
+      }	  
+    *testout << " VECTORFACETFESPACE - ctofdof = \n" << ctofdof << endl;
   }
 
 
@@ -463,7 +376,7 @@ namespace ngcomp
 	fe2d -> SetVertexNumbers (vnums);
 	fe2d -> SetOrder (order_fa);
 	fe2d -> ComputeNDof();
-	
+	fe2d -> SetHighestOrderDC(highest_order_dc);
 	return *fe2d;
       }    
     else
@@ -477,6 +390,7 @@ namespace ngcomp
 	fe3d -> SetVertexNumbers (vnums);
 	fe3d -> SetOrder (order_fa);
 	fe3d -> ComputeNDof();
+	fe3d -> SetHighestOrderDC(highest_order_dc);
     
 	return *fe3d;
       }

@@ -45,7 +45,7 @@ namespace ngfem
     virtual const FlatMatrix<> GetShape (const IntegrationPoint & ip, 
 					 LocalHeap & lh) const = 0;
     // const int * GetVNums() const { return vnums; }
-  
+ 
   };
 
 
@@ -131,16 +131,17 @@ namespace ngfem
     int first_facet_dof[7];
     // int nv; // num of vertices
     // int nf; // num of facets
-
+    bool highest_order_dc;
     using HCurlFiniteElement<D>::eltype;
     using HCurlFiniteElement<D>::order;
   
   public:
     VectorFacetVolumeFiniteElement () // : nv(0), nf(0)
-    { ; }
+    { highest_order_dc=false; }
 
     VectorFacetVolumeFiniteElement (ELEMENT_TYPE aeltype);
 
+    void SetHighestOrderDC(bool set){highest_order_dc=set;}
     void SetVertexNumbers (FlatArray<int> & avnums);
 
     void SetOrder(int ao);
@@ -170,7 +171,10 @@ namespace ngfem
       return first_facet_dof[afnr];}; 
   
     virtual void ComputeNDof () = 0;
-  
+
+    /// degrees of freedom sitting inside the element, used for static condensation
+    virtual void GetInternalDofs (Array<int> & idofs) const;
+    
     // utility
     // virtual int GetNF() const { return nf; };
     // virtual int GetNV() const { return nv; };
