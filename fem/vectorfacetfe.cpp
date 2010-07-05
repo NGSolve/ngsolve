@@ -235,6 +235,31 @@ namespace ngfem {
     */
   }
 
+  /// degrees of freedom sitting inside the element, used for static condensation
+  
+  template <int D>
+  void VectorFacetVolumeFiniteElement<D>::
+  GetInternalDofs (Array<int> & idofs) const{
+    idofs.SetSize(0);
+    if (highest_order_dc){
+      if (D==2){
+	for (int i=0; i<ElementTopology::GetNFacets(eltype); i++)
+	  idofs.Append(first_facet_dof[i+1]-1);   
+      }else{
+	for (int i=0; i<ElementTopology::GetNFacets(eltype); i++){
+	  int pos = first_facet_dof[i]-2;
+	  int fac = 4 - ElementTopology::GetNVertices(ElementTopology::GetFaceType(eltype,i));
+	  for (int k = 0; k <= facet_order[i][0]; k++){
+	    pos += 2*(facet_order[i][0]+1-fac*k);
+	    idofs.Append(pos);
+	    idofs.Append(pos+1);
+	  }
+	}
+      }//end if Dimension
+    }
+  }
+
+
   template <int D>
   void VectorFacetVolumeFiniteElement<D> :: 
   SetVertexNumbers (FlatArray<int> & avnums)

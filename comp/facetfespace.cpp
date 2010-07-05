@@ -1232,7 +1232,7 @@ public:
 	    break; 	    
 	  case 2: 
 	    //for BDDC: we have only the condensated (after subassembling) dofs, 
-	    //and build patches around each vertex Vertices + Edges
+	    //and build patches around each edge: [Faces?!] + Edges
 		
 	    if (creator.GetMode() == 1)
 	      cout << "BDDC-Faces-around-Edges" << endl;
