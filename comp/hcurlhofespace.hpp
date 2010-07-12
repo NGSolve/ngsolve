@@ -166,7 +166,6 @@ namespace ngcomp
 #endif
 
 
-  protected:
     IntRange GetEdgeDofs (int nr) const
     {
       return IntRange (first_edge_dof[nr], 

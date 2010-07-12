@@ -2733,7 +2733,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 	ctofdof[cummulative_nd[i]+j] = spaces[i]->GetDofCouplingType(j);	
       }
     }
-//      *testout << "CompoundFESpace :: UpdateCouplingDofArray() presents \n ctofdof = \n" << ctofdof << endl;
+    *testout << "CompoundFESpace :: UpdateCouplingDofArray() presents \n ctofdof = \n" << ctofdof << endl;
   }
 
 

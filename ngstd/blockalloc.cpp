@@ -33,6 +33,18 @@ namespace ngstd
       delete [] bablocks[i];
   }
 
+  void * BlockAllocator :: Alloc ()
+  {
+    nels++;
+    if (!freelist)
+      Alloc2 ();
+
+    void * p = freelist;
+    freelist = *(void**)freelist;
+    return p;
+  }
+
+
   void * BlockAllocator :: Alloc2 ()
   {
     // cout << "blockallocator, alloc2 size = " << size << ", blocks = " << blocks << endl;
@@ -56,13 +68,32 @@ namespace ngstd
 	  return (void*)freelist;
   }
 
-  /*
+
   void BlockAllocator :: Free (void * p)
   {
-    //  delete [] p;
+    nels--;
     *(void**)p = freelist;
     freelist = p;
   }
-  */
+
+
+  void BlockAllocator :: Print (ostream * ost) const
+  {
+    int cnt = -1;
+    void * p = freelist;
+
+    while (p && cnt++ < 10)
+      {
+	*ost << "el " << cnt << " = " << p << endl;
+	void * newp = *(void**)p;
+	if (p == newp) 
+	  {
+	    cerr << "defect freelist, p = newp" << endl;
+	    exit(1);
+	  }
+	p = newp;
+      }
+  }
+
 }
 

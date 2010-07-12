@@ -34,7 +34,8 @@ public:
   ~BlockAllocator ();
 
   /// Return pointer to new element
-  void * Alloc ()
+  void * Alloc ();
+  /*
   {
     nels++;
     if (!freelist)
@@ -44,17 +45,23 @@ public:
     freelist = *(void**)freelist;
     return p;
   }
+  */
+
 
   /// Send memory to free-list
-  void Free (void * p)
+  void Free (void * p);
+  /*
   {
     nels--;
     *(void**)p = freelist;
     freelist = p;
   }
+  */
 
   /// number of allocated elements
   int NumElements () { return nels; }
+
+  void Print (ostream * ost) const;
 private:
   void * Alloc2 ();
 };

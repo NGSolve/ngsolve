@@ -44,17 +44,15 @@ source coef_source
 # neumann coef_neumann
 
 # the bilinear-form 
-define bilinearform a -fespace=v -eliminate_internal -keep_internal -symmetric -ebe -linearform=f
+define bilinearform a -fespace=v -eliminate_internal -keep_internal -symmetric -linearform=f
 laplace lam
 # robin coef_penalty
 
 
 
-define preconditioner c -type=bddc -bilinearform=a -test
-
-#define preconditioner c -type=direct -bilinearform=a
+# define preconditioner c -type=direct -bilinearform=a
 # define preconditioner c -type=local -bilinearform=a 
-# define preconditioner c -type=multigrid -bilinearform=a -smoother=block
+define preconditioner c -type=multigrid -bilinearform=a -smoother=block
 
 
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=1000

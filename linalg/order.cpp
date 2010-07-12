@@ -160,28 +160,38 @@ namespace ngla
 
   void MinimumDegreeOrdering :: EliminateMasterVertex (int v)
   {
-    (*testout) << "Eliminate Vertex " << v  << endl;
-    // (*testout) << "numcliques = " << NumCliques (v)  << endl;
-    //  cout << "eliminate vertex " << v << endl;
+    // (*testout) << "Eliminate Master Vertex " << v  << endl;
 
     /*
-    if (v == 174)
+    if (v == 361611)
+      PrintCliques();
+    if (v == 397582)
       PrintCliques();
     */
 
     // int numslaves = NumSlaves (v);
 
-    // *testout << "a" << endl;
 
-    CliqueEl *p1, *p2, *p3, *p4, *newp;
-
-
-    {
     // clear used-field
-    p1 = cliques[v];
-    while (p1)
+    /*
+      CliqueEl * p1 = cliques[v];
+      while (p1)
       {
-	p2 = p1;
+      CliqueEl * p2 = p1;
+      do
+      {
+      vertices[p2->GetVertexNr()].SetUsed (0);
+      p2->eliminate = 1;
+      p2 = p2->next;
+      }
+      while (p2 != p1);
+      p1 = p1->nextcl;
+      }
+    */
+    
+    for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
+      {
+	CliqueEl * p2 = p1;
 	do
 	  {
 	    vertices[p2->GetVertexNr()].SetUsed (0);
@@ -189,12 +199,15 @@ namespace ngla
 	    p2 = p2->next;
 	  }
 	while (p2 != p1);
-	p1 = p1->nextcl;
       }
+    
 
-  
+
+
     //  new clique is union of cliques of vertex v
-    newp = NULL;
+    CliqueEl * newp = NULL;
+
+    /*
     p1 = cliques[v];
     while (p1)
       {
@@ -204,7 +217,7 @@ namespace ngla
 	    if (!vertices[p2->GetVertexNr()].Used() && p2->GetVertexNr() != v)
 	      {
 		// p3 = new CliqueEl;
-		p3 = (CliqueEl*)ball.Alloc();
+		CliqueEl * p3 = (CliqueEl*)ball.Alloc();
 
 		p3 -> next = newp;
 		p3 -> vnr = p2->GetVertexNr();
@@ -222,14 +235,45 @@ namespace ngla
 	while (p2 != p1);
 	p1 = p1->nextcl;
       }
+    */
+
+
+
+
+    for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
+      {
+	CliqueEl * p2 = p1;
+	do
+	  {
+	    if (!vertices[p2->GetVertexNr()].Used() && p2->GetVertexNr() != v)
+	      {
+		// CliqueEl * p3 = new CliqueEl;
+		CliqueEl * p3 = (CliqueEl*)ball.Alloc();
+
+		p3 -> next = newp;
+		p3 -> vnr = p2->GetVertexNr();
+		p3 -> eliminate = 0;
+	      
+		p3 -> nextcl = NULL;
+		p3 -> flag = 0;
+
+		newp = p3;
+
+		vertices[p2->GetVertexNr()].SetUsed(1);
+	      }
+	    p2 = p2->next;
+	  }
+	while (p2 != p1);
+      }
+
 
 
     if (!newp)
       {
-	p1 = cliques[v];
+	CliqueEl * p1 = cliques[v];
 	while (p1)
 	  {
-	    p2 = p1->GetNextClique();
+	    CliqueEl * p2 = p1->GetNextClique();
 	    // delete p1;
 	    ball.Free(p1);
 	    p1 = p2;
@@ -243,13 +287,20 @@ namespace ngla
 
 
 
+	
     // close new clique
-    p3 = newp;
-    while (p3->next)
-      p3 = p3->next;
-    p3->next = newp;
+    {
+      CliqueEl * p3 = newp;
+      while (p3->next) p3 = p3->next;
+      p3->next = newp;
+    }
 
 
+    CliqueEl *p1, *p2, *p3, *p4;
+
+
+
+    {
     // find dominated cliques
 
     // set flag for new clique
@@ -261,8 +312,6 @@ namespace ngla
       }
     while (p3 != newp);
     
-    
-    // *testout << "b" << endl;
 
     // check all cliques of all members of new clique
     p3 = newp;
@@ -337,7 +386,6 @@ namespace ngla
 	      {
 		CliqueEl * hp = p1->nextcl;
 		p1->nextcl = p1->nextcl->nextcl;
-		// delete hp;
 		ball.Free (hp);
 	      }
 	    p1 = p1->nextcl;
@@ -354,16 +402,13 @@ namespace ngla
     while (p1)
       {
 	p2 = p1->GetNextClique();
-	// delete p1;
 	ball.Free (p1);
 	p1 = p2;
       }
 
     cliques[v] = NULL;
-    // PrintCliques();
     }
 
-    // *testout << "c" << endl;
 
     // find connections
     p3 = newp;
@@ -452,8 +497,6 @@ namespace ngla
       while (p3 != newp);      
     }
     
-    // *testout << "d" << endl;
-
 
     int cnt = NumSlaves(v);
     p3 = newp;
@@ -497,8 +540,6 @@ namespace ngla
 
 
 
-
-
     // disconnect slaves 
     cnt = 0;
     p3 = newp;
@@ -509,35 +550,33 @@ namespace ngla
       }
     while (p3 != newp);
 
+
     p3 = newp;
     for (int i = 0; i < cnt; i++)
       {
 	int v3 = p3->GetVertexNr();
+
 	p3 = p3->next;
 
 	if (!IsMaster (v3))
 	  {
-	    p1 = cliques[v3];
-	    while (p1)
+	    for (CliqueEl * p1 = cliques[v3]; p1; )
 	      {
-		p2 = p1;
-		while (1)
-		  {
-		    if (p2->next == p1)
-		      {
-			p2->next = p2->next->next;
-			break;
-		      }
-		    p2 = p2->next;
-		  }
-		p2 = p1;
-		p1 = p1->nextcl;
-		ball.Free (p2);
+		for (CliqueEl * p2 = p1; true; p2=p2->next)
+		  if (p2->next == p1)
+		    {
+		      p2->next = p2->next->next;
+		      break;
+		    }
+
+		CliqueEl * hp = p1;
+	        p1 = p1->nextcl;
+
+		ball.Free (hp);
 	      }
 	    cliques[v3] = 0;
 	  }
       }
-    // *testout << "z" << endl;
   }
 
 

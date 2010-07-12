@@ -636,7 +636,7 @@ extern "C" int NGSolve_Init (Tcl_Interp * interp);
 extern "C" void NGSolve_Exit ();
 
 // tcl package dynamic load
-extern "C" int LOCAL_EXPORTS Ngsolve_Init (Tcl_Interp * interp)
+extern "C" int NGS_DLL_HEADER Ngsolve_Init (Tcl_Interp * interp)
 {
   return NGSolve_Init(interp);
 }
