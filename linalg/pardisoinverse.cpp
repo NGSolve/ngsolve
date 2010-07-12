@@ -153,26 +153,26 @@ namespace ngla
 
 	for (int i=0; i<=height; i++ ) rowstart[i] = 0;
 
-	for (int i=1; i<=a.Height(); i++ )
+	for (int i=0; i < a.Height(); i++ )
 	  {
-	    for (int j=0; j<a.GetRowIndices(i-1).Size(); j++ )
+	    for (int j = 0; j < a.GetRowIndices(i).Size(); j++ )
 	      {
-		int col = a.GetRowIndices(i-1)[j];
-		if ( i-1 != col )
+		int col = a.GetRowIndices(i)[j];
+		if ( i != col )
 		  {
 		    if (  (!inner && !cluster) ||
-			  (inner && (inner->Test(i-1) && inner->Test(col) ) ) ||
+			  (inner && (inner->Test(i) && inner->Test(col) ) ) ||
 			  (!inner && cluster && 
-		           ((*cluster)[i-1] == (*cluster)[col] 
-			    && (*cluster)[i-1] ))  )
+		           ((*cluster)[i] == (*cluster)[col] 
+			    && (*cluster)[i] ))  )
 		      {
 			for (int k=0; k<entrysize; k++ )
 			  rowstart[col*entrysize+k+1] += entrysize;
 		      }
 		  }
 		else if ( (!inner && !cluster) || 
-			  (inner && inner->Test(i-1)) ||
-			  (!inner && cluster && (*cluster)[i-1]) )
+			  (inner && inner->Test(i)) ||
+			  (!inner && cluster && (*cluster)[i]) )
 		  {
 		    for (int k=0; k<entrysize; k++ )
 		      rowstart[col*entrysize+k+1] += entrysize-k;

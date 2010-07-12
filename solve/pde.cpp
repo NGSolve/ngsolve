@@ -519,6 +519,12 @@ namespace ngsolve
     size_t heapsize = 1000000;
     if (constants.Used ("heapsize"))
       heapsize = size_t(constants["heapsize"]);
+
+#ifdef _OPENMP
+    heapsize *= omp_get_max_threads();
+#endif
+    
+
     LocalHeap lh(heapsize);
 
     clock_t starttime, endtime;
