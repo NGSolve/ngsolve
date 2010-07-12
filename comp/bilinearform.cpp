@@ -172,360 +172,13 @@ namespace ngcomp
   }
 
 
-#ifdef OLD
-  MatrixGraph * FESpace :: GetGraph (int level, bool symmetric)
-  {
-    static int timer = NgProfiler::CreateTimer ("FESpace::GetGraph");
-    static int timer2 = NgProfiler::CreateTimer ("FESpace::GetGraph 2");
-
-    NgProfiler::RegionTimer reg (timer);
-
-
-    int ndof = GetNDof();
-    int ne = GetMeshAccess().GetNE();
-    int nse = GetMeshAccess().GetNSE();
-
-    Array<int> linesize (ndof);
-    Array<int> dnums;
-
-    Array<int> dof_num_el (ndof);
-    Array<int> el_num_dof (ne);
-
-    PrintReport (*testout);
-
-    // generate dof -> volume element table
-    dof_num_el = 0;
-    el_num_dof = 0;
-
-    for (int i = 0; i < ne; i++)
-      {
-        if ( ma.IsGhostEl(i)) continue;  // for parallel
-	if (!DefinedOn (ma.GetElIndex(i))) continue;
-
-	GetExternalDofNrs (i, dnums);
-	for (int j = 0; j < dnums.Size(); j++)
-	  if (dnums[j] != -1)
-	    {
-	      dof_num_el[dnums[j]]++;
-	      el_num_dof[i]++;
-	    }
-      }
-
-    Table<int> dof2el (dof_num_el);
-    Table<int> el2dof (el_num_dof);
-
-    dof_num_el = 0;
-    el_num_dof = 0;
-    for (int i = 0; i < ne; i++)
-      {
-        if ( ma.IsGhostEl(i)) continue;
-	if (!DefinedOn (ma.GetElIndex(i))) continue;
-
-	GetExternalDofNrs (i, dnums);
-	for (int j = 0; j < dnums.Size(); j++)
-	  if (dnums[j] != -1)
-	    {
-	      dof2el[dnums[j]][dof_num_el[dnums[j]]++] = i;
-	      el2dof[i][el_num_dof[i]++] = dnums[j];
-	    }
-      }
-
-
-    // generate dof -> surface element table
-    dof_num_el = 0;
-    for (int i = 0; i < nse; i++)
-      {
-	if ( ma.IsGhostSEl(i)) continue;
-	if (!DefinedOnBoundary (ma.GetSElIndex(i))) continue;
-
-	GetSDofNrs (i, dnums);
-	for (int j = 0; j < dnums.Size(); j++)
-	  if (dnums[j] != -1)
-	    dof_num_el[dnums[j]]++;
-      }
-
-
-    Table<int> dof2sel (dof_num_el);
-
-    dof_num_el = 0;
-    for (int i = 0; i < nse; i++)
-      {
-	if ( ma.IsGhostSEl(i)) continue;
-	if (!DefinedOnBoundary (ma.GetSElIndex(i))) continue;
-
-	GetSDofNrs (i, dnums);
-	for (int j = 0; j < dnums.Size(); j++)
-	  if (dnums[j] != -1)
-	    {
-	      dof2sel[dnums[j]][dof_num_el[dnums[j]]] = i;
-	      dof_num_el[dnums[j]]++;
-	    }
-      }
-
-    // generate dof -> special element table
-    dof_num_el = 0;
-    for (int i = 0; i < specialelements.Size(); i++)
-      {
-	if(i%10 == 0) cout << "\rgetting special element dofs " << i << "/" << specialelements.Size() << flush;
-	specialelements[i]->GetDofNrs (dnums);
-
-	for (int j = 0; j < dnums.Size(); j++)
-	  if (dnums[j] != -1)
-	    dof_num_el[dnums[j]]++;
-      }
-    if(specialelements.Size() > 0) 
-      cout << "\rgetting special element dofs " << specialelements.Size() << "/" << specialelements.Size() << endl;
-
-    Table<int> dof2specel (dof_num_el);
-
-    dof_num_el = 0;
-    for (int i = 0; i < specialelements.Size(); i++)
-      {
-	specialelements[i]->GetDofNrs (dnums);
-	    
-	for (int j = 0; j < dnums.Size(); j++)
-	  if (dnums[j] != -1)
-	    {
-	      dof2specel[dnums[j]][dof_num_el[dnums[j]]] = i;
-	      dof_num_el[dnums[j]]++;
-	      //		  dof2el.Add (dnums[j], i);
-	    }
-      }
 
 
 
-    // dof 2 BEM element
-    dof_num_el = 0;
-	
-    GetBEMDofNrs (dnums);
-    for (int j = 0; j < dnums.Size(); j++)
-      if (dnums[j] != -1)
-	dof_num_el[dnums[j]]++;
-
-    DynamicTable<int> dof_2_BEM_el (dof_num_el);
-    GetBEMDofNrs (dnums);
-	    
-    for (int j = 0; j < dnums.Size(); j++)
-      if (dnums[j] != -1)
-	dof_2_BEM_el.Add (dnums[j], 0);
-
-
-    Array<int> elflags(ndof);
-    elflags = -1;
-
-    NgProfiler::RegionTimer reg2 (timer2);
-
-
-    for (int i = 0; i < ndof; i++)
-      {
-	linesize[i] = 1;
-	elflags[i] = i;
-	for (int j = 0; j < dof2el[i].Size(); j++)
-	  {
-	    int elnr = dof2el[i][j];
-
-            /*
-	    GetDofNrs (elnr, dnums);
-	    for (int k = 0; k < dnums.Size(); k++)
-	      if (dnums[k] != -1 &&
-		  (!symmetric || dnums[k] <= i))
-		{
-		  if (elflags[dnums[k]] != i)
-		    {
-		      elflags[dnums[k]] = i;
-		      linesize[i]++;
-		    }
-		}
-            */
-
-	    FlatArray<int> dnums2 = el2dof[elnr];
-	    for (int k = 0; k < dnums2.Size(); k++)
-	      {
-		int dnumk = dnums2[k];
-		if (!symmetric || dnumk <= i)
-		  {
-		    if (elflags[dnumk] != i)
-		      {
-			elflags[dnumk] = i;
-			linesize[i]++;
-		      }
-		  }
-	      }
-	  }
-
-	for (int j = 0; j < dof2sel[i].Size(); j++)
-	  {
-	    int elnr = dof2sel[i][j];
-	    GetSDofNrs (elnr, dnums);
-	    for (int k = 0; k < dnums.Size(); k++)
-	      if (dnums[k] != -1 &&
-		  (!symmetric || dnums[k] <= i))
-		{
-		  if (elflags[dnums[k]] != i)
-		    {
-		      elflags[dnums[k]] = i;
-		      linesize[i]++;
-		    }
-		}
-	  }
-
-
-	for (int j = 0; j < dof2specel[i].Size(); j++)
-	  {
-	    int elnr = dof2specel[i][j];
-	    specialelements[elnr]->GetDofNrs (dnums);
-	    for (int k = 0; k < dnums.Size(); k++)
-	      if (dnums[k] != -1 &&
-		  (!symmetric || dnums[k] <= i))
-		{
-		  if (elflags[dnums[k]] != i)
-		    {
-		      elflags[dnums[k]] = i;
-		      linesize[i]++;
-		    }
-		}
-	  }
-
-
-	for (int j = 0; j < dof_2_BEM_el[i].Size(); j++)
-	  {
-	    int elnr = dof_2_BEM_el[i][j];
-	    GetBEMDofNrs (/* elnr, */ dnums);
-	    for (int k = 0; k < dnums.Size(); k++)
-	      if (dnums[k] != -1 &&
-		  (!symmetric || dnums[k] <= i))
-		{
-		  if (elflags[dnums[k]] != i)
-		    {
-		      elflags[dnums[k]] = i;
-		      linesize[i]++;
-		    }
-		}
-	  }
-	    
-      }
-
-    int cnt = 0;
-    for (int l = 0; l < linesize.Size(); l++)
-      cnt += linesize[l];
-
-    MatrixGraph * graph = new MatrixGraph (linesize);
-
-    //      graph->Print (cout);
-
-    Array<int> help(ndof);
-    elflags = -1;
-      
-    for (int i = 0; i < ndof; i++)
-      {
-	int * data = graph->GetRowIndicesPointer(i);
-	*data = i;
-	data++;
-	elflags[i] = i;
-
-	for (int j = 0; j < dof2el[i].Size(); j++)
-	  {
-	    int elnr = dof2el[i][j];
-	    /*
-	    GetDofNrs (elnr, dnums);
-	    for (int k = 0; k < dnums.Size(); k++)
-	      if (dnums[k] != -1 &&
-		  (!symmetric || dnums[k] <= i))
-		{
-		  if (elflags[dnums[k]] != i)
-		    {
-		      elflags[dnums[k]] = i;
-		      *data = dnums[k];
-		      data++;
-		    }
-		}
-	    */
-
-	    FlatArray<int> dnums2 = el2dof[elnr];
-	    for (int k = 0; k < dnums2.Size(); k++)
-	      {
-		int dnumk = dnums2[k];
-		if (!symmetric || dnumk <= i)
-		  {
-		    if (elflags[dnumk] != i)
-		      {
-			elflags[dnumk] = i;
-			*data = dnumk;
-			data++;
-		      }
-		  }
-	      }
-	  }
-	  
-	for (int j = 0; j < dof2sel[i].Size(); j++)
-	  {
-	    int elnr = dof2sel[i][j];
-	    GetSDofNrs (elnr, dnums);
-	    for (int k = 0; k < dnums.Size(); k++)
-	      if (dnums[k] != -1 &&
-		  (!symmetric || dnums[k] <= i))
-		{
-		  if (elflags[dnums[k]] != i)
-		    {
-		      elflags[dnums[k]] = i;
-		      *data = dnums[k];
-		      data++;
-		    }
-		}
-	  }
-	  
-
-
-	for (int j = 0; j < dof2specel[i].Size(); j++)
-	  {
-	    int elnr = dof2specel[i][j];
-	    specialelements[elnr]->GetDofNrs (dnums);
-	    for (int k = 0; k < dnums.Size(); k++)
-	      if (dnums[k] != -1 &&
-		  (!symmetric || dnums[k] <= i))
-		{
-		  if (elflags[dnums[k]] != i)
-		    {
-		      elflags[dnums[k]] = i;
-		      *data = dnums[k];
-		      data++;
-		    }
-		}
-	  }
-	  
-
-
-	for (int j = 0; j < dof_2_BEM_el[i].Size(); j++)
-	  {
-	    int elnr = dof_2_BEM_el[i][j];
-	    GetBEMDofNrs (/* elnr, */ dnums);
-	    for (int k = 0; k < dnums.Size(); k++)
-	      if (dnums[k] != -1 &&
-		  (!symmetric || dnums[k] <= i))
-		{
-		  if (elflags[dnums[k]] != i)
-		    {
-		      elflags[dnums[k]] = i;
-		      *data = dnums[k];
-		      data++;
-		    }
-		}
-	  }
-
-	// MergeSort (linesize[i], graph->GetRowIndicesPointer(i), &help[0]);
-        QuickSort (graph->GetRowIndices(i));
-      }
-
-
-    graph -> FindSameNZE();
-
-    return graph;
-  }
-#endif
 
   MatrixGraph * BilinearForm :: GetGraph (int level, bool symmetric)
   {
-    static int timer = NgProfiler::CreateTimer ("FESpace::GetGraph");
+    static int timer = NgProfiler::CreateTimer ("BilinearForm::GetGraph");
     NgProfiler::RegionTimer reg (timer);
 
 
@@ -533,141 +186,81 @@ namespace ngcomp
     int ne = GetMeshAccess().GetNE();
     int nse = GetMeshAccess().GetNSE();
     const Array<SpecialElement*> & specialelements = fespace.GetSpecialElements();
-    int nspecial = specialelements.Size();
     
     Array<int> dnums;
-
-    Array<int> cnt(ne+nse+nspecial);
-    cnt = 0;
-    
     Array<int> fnums; //facets of one element
     Array<int> elnums; //elements neighbouring one facet
     Array<int> nbelems; //neighbour elements
-    
-    // domain elemnets (element -> dof)
-    for (int i = 0; i < ne; i++)
-      {
-        if ( ma.IsGhostEl(i)) continue;  // for parallel
-	if (!fespace.DefinedOn (ma.GetElIndex(i))) continue;
 
-	if (eliminate_internal)
-	  fespace.GetDofNrs (i, dnums, EXTERNAL_DOF);
-	else
-	  fespace.GetDofNrs (i, dnums);
-	for (int j = 0; j < dnums.Size(); j++)
-	  if (dnums[j] != -1)
-            cnt[i]++;
-      }	  
-    if (fespace.UsesDGCoupling())
-    //add dofs of neighbour elements as well
-    for (int i = 0; i < ne; i++)
+
+
+    TableCreator<int> creator;
+    for ( ; !creator.Done(); creator++)
       {
-	nbelems.SetSize(0);
-        ma.GetElFacets(i,fnums);
-        for (int j=0; j<fnums.Size();j++)
-	{
-	  ma.GetFacetElements(fnums[j],elnums);
-	  for (int k=0; k<elnums.Size(); k++)
-	    if(elnums[k]!=i) nbelems.Append(elnums[k]);
-	}
-	for (int k=0;k<nbelems.Size();k++){
-	  int elnr=nbelems[k];
-	  if ( ma.IsGhostEl(elnr)) continue;  // for parallel
-	  if (!fespace.DefinedOn (ma.GetElIndex(elnr))) continue;
-	  if (eliminate_internal)
-	  fespace.GetDofNrs (i, dnums, EXTERNAL_DOF);
-	  else
-	    fespace.GetDofNrs (elnr, dnums);
-	  for (int j = 0; j < dnums.Size(); j++)
-	    if (dnums[j] != -1)
-	      cnt[elnr]++;
-	}
+	
+	for (int i = 0; i < ne; i++)
+	  {
+	    if ( ma.IsGhostEl(i)) continue;
+	    if (!fespace.DefinedOn (ma.GetElIndex(i))) continue;
+
+	    if (eliminate_internal)
+	      fespace.GetDofNrs (i, dnums, EXTERNAL_DOF);
+	    else
+	      fespace.GetDofNrs (i, dnums);
+
+	    for (int j = 0; j < dnums.Size(); j++)
+	      if (dnums[j] != -1)
+		creator.Add (i, dnums[j]);
+	  }
+	
+	
+	if (fespace.UsesDGCoupling())
+	  //add dofs of neighbour elements as well
+	  for (int i = 0; i < ne; i++)
+	    {
+	      nbelems.SetSize(0);
+	      ma.GetElFacets(i,fnums);
+
+	      for (int j=0; j<fnums.Size();j++)
+		{
+		  ma.GetFacetElements(fnums[j],elnums);
+		  for (int k=0; k<elnums.Size(); k++)
+		    if(elnums[k]!=i) nbelems.Append(elnums[k]);
+		}
+
+	      for (int k=0;k<nbelems.Size();k++){
+		int elnr=nbelems[k];
+		if ( ma.IsGhostEl(elnr)) continue;
+		if (!fespace.DefinedOn (ma.GetElIndex(elnr))) continue;
+		fespace.GetDofNrs (elnr, dnums);
+		for (int j = 0; j < dnums.Size(); j++)
+		  if (dnums[j] != -1)
+		    creator.Add (i, dnums[j]);
+	      }
+	    }
+
+	for (int i = 0; i < nse; i++)
+	  {
+	    if ( ma.IsGhostSEl(i)) continue;
+	    if (!fespace.DefinedOnBoundary (ma.GetSElIndex(i))) continue;
+	    
+	    fespace.GetSDofNrs (i, dnums);
+	    for (int j = 0; j < dnums.Size(); j++)
+	      if (dnums[j] != -1)
+		creator.Add (ne+i, dnums[j]);
+	  }
+
+	for (int i = 0; i < specialelements.Size(); i++)
+	  {
+	    specialelements[i]->GetDofNrs (dnums);
+	    
+	    for (int j = 0; j < dnums.Size(); j++)
+	      if (dnums[j] != -1)
+		creator.Add (ne+nse+i, dnums[j]);
+	  }
       }
 
-    
-    // surface elements (element -> dof)
-    for (int i = 0; i < nse; i++)
-      {
-	if ( ma.IsGhostSEl(i)) continue;
-	if (!fespace.DefinedOnBoundary (ma.GetSElIndex(i))) continue;
-
-	fespace.GetSDofNrs (i, dnums);
-	for (int j = 0; j < dnums.Size(); j++)
-	  if (dnums[j] != -1)
-	    cnt[ne+i]++;
-      }
-
-    // special elements (element -> dof)
-    for (int i = 0; i < specialelements.Size(); i++)
-      {
-	specialelements[i]->GetDofNrs (dnums);
-
-	for (int j = 0; j < dnums.Size(); j++)
-	  if (dnums[j] != -1)
-	    cnt[ne+nse+i]++;
-      }
-
-    
-    Table<int> el2dof(cnt);
-
-    cnt = 0;
-    for (int i = 0; i < ne; i++)
-      {
-        if ( ma.IsGhostEl(i)) continue;
-	if (!fespace.DefinedOn (ma.GetElIndex(i))) continue;
-	if (eliminate_internal)
-	  fespace.GetDofNrs (i, dnums, EXTERNAL_DOF);
-	else
-	  fespace.GetDofNrs (i, dnums);
-	for (int j = 0; j < dnums.Size(); j++)
-	  if (dnums[j] != -1)
-            el2dof[i][cnt[i]++] = dnums[j];
-      }
-    if (fespace.UsesDGCoupling())
-      //add dofs of neighbour elements as well
-      for (int i = 0; i < ne; i++)
-      {
-	nbelems.SetSize(0);
-        ma.GetElFacets(i,fnums);
-        for (int j=0; j<fnums.Size();j++)
-	{
-	  ma.GetFacetElements(fnums[j],elnums);
-	  for (int k=0; k<elnums.Size(); k++)
-	    if(elnums[k]!=i) nbelems.Append(elnums[k]);
-	}
-	for (int k=0;k<nbelems.Size();k++){
-	  int elnr=nbelems[k];
-	  if ( ma.IsGhostEl(elnr)) continue;
-	  if (!fespace.DefinedOn (ma.GetElIndex(elnr))) continue;
-	  fespace.GetDofNrs (elnr, dnums);
-	  for (int j = 0; j < dnums.Size(); j++)
-	    if (dnums[j] != -1)
-	      el2dof[i][cnt[i]++] = dnums[j];
-	}
-      }
-
-    for (int i = 0; i < nse; i++)
-      {
-	if ( ma.IsGhostSEl(i)) continue;
-	if (!fespace.DefinedOnBoundary (ma.GetSElIndex(i))) continue;
-        
-	fespace.GetSDofNrs (i, dnums);
-	for (int j = 0; j < dnums.Size(); j++)
-	  if (dnums[j] != -1)
-            el2dof[ne+i][cnt[ne+i]++] = dnums[j];
-      }
-
-    for (int i = 0; i < specialelements.Size(); i++)
-      {
-	specialelements[i]->GetDofNrs (dnums);
-
-	for (int j = 0; j < dnums.Size(); j++)
-	  if (dnums[j] != -1)
-            el2dof[ne+nse+i][cnt[ne+nse+i]++] = dnums[j];
-      }
-
-    
-    MatrixGraph * graph = new MatrixGraph (ndof, el2dof,el2dof, symmetric);
+    MatrixGraph * graph = new MatrixGraph (ndof, *creator.GetTable(), *creator.GetTable(), symmetric);
 
     graph -> FindSameNZE();
 
@@ -1358,10 +951,7 @@ namespace ngcomp
 			    << " == global dof-node " << tel.GlobalNode (dofs[i].GetNode()) << endl;
 			  */
                       
-			  if ( ma.IsGhostEl( i ) ) {continue;}
-		
-			  // lh.CleanUp(heapp);
-		  
+			  if (ma.IsGhostEl(i) ) { continue; }
 			  if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
 
 
@@ -1369,7 +959,7 @@ namespace ngcomp
 			  ma.GetElementTransformation (i, eltrans, lh);
 			  fespace.GetDofNrs (i, dnums);
 
-			  if(fel.GetNDof() != dnums.Size())
+			  if (fel.GetNDof() != dnums.Size())
 			    {
 			      cout << "fel:GetNDof() = " << fel.GetNDof() << endl;
 			      cout << "dnums.Size() = " << dnums.Size() << endl;
@@ -1439,25 +1029,6 @@ namespace ngcomp
 				      CalcEigenSystem (elmat, lami, evecs);
 				      (*testout) << "lami = " << endl << lami << endl;
 #endif
-				      //< "evecs = " << endl << evecs << endl;
-                                  
-				      /*
-				      // diagonal scaling
-				      Vector<> lami(elmat.Height());
-				      Matrix<> evecs(elmat.Height());
-				      
-				      for (int j = 0; j < elmat.Height(); j++)
-					// lami(j) = 1.0 / sqrt (ReduceToReal (elmat(j,j)));
-					lami(j) = 1.0 / sqrt (ConvertTo<double> (elmat(j,j)));
-				      for (int j = 0; j < elmat.Height(); j++)
-					for (int k = 0; k < elmat.Width(); k++)
-					  elmat(j,k) *= lami(j) * lami(k);
-				      CalcEigenSystem (elmat, lami, evecs);
-				      (*testout) << "after diag scaling, lami = " << endl << lami << endl
-						 << "evecs = " << endl << evecs << endl;
-                                  
-				      (*testout) << "ev * elmat * ev^T = " << evecs * elmat * Trans (evecs) << endl;
-				      */
 				    } 
 			  
 				}
@@ -1479,20 +1050,13 @@ namespace ngcomp
 			    }
 
 
-			  // 		    for(int iii=0; iii<dnums.Size()*fespace.GetDimension(); iii++)
-			  // 		      if(fabs(sum_elmat(iii,iii)) < 1e-20) 
-			  // 			{
-			  // 			  (*testout) << "sum_elmat " << endl << sum_elmat << endl;
-			  // 			  exit(19);
-			  // 			}
-
 
 			  NgProfiler::StopTimer (timer2);
 			  NgProfiler::StartTimer (timer3);
 
 			  fespace.TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
-		    
+
 			  if (elmat_ev)
 			    {
 			
@@ -1507,15 +1071,8 @@ namespace ngcomp
 			      CalcEigenSystem (sum_elmat, lami, evecs);
 			      (*testout) << "lami = " << endl << lami << endl ; // << "evecs = " << endl << evecs << endl;
 #endif
-			
-			      /*
-				Matrix<SCAL> hmat(sum_elmat.Height());
-				hmat = sum_elmat;
-				Vector<SCAL> lami2(sum_elmat.Height());
-				LapackEigenValuesSymmetric (hmat, lami2);
-				(*testout) << "lapack ev = " << lami2 << endl;
-			      */
 			    }
+
 
 
 			  if (eliminate_internal)
@@ -1530,6 +1087,7 @@ namespace ngcomp
 				  *testout << "eliminate internal" << endl;
 				  *testout << "idofs = " << idofs << endl;
 				}
+
 			      if (idofs1.Size())
 				{
 				  HeapReset hr (lh);
@@ -1609,7 +1167,7 @@ namespace ngcomp
 				    FlatMatrix<SCAL> he (sizei, sizeo, lh);
 				    he=0.0;
 				    LapackMultAddABt (d, c, -1, he);
-// 				    he = -1.0 * d * Trans(c);
+				    // 				    he = -1.0 * d * Trans(c);
 				    static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)->AddElementMatrix(i,idnums,ednums,he);
 				    
 				    if (!symmetric){
@@ -1645,7 +1203,7 @@ namespace ngcomp
 				    }
 				    static_cast<ElementByElementMatrix<SCAL>*>(innersolve)->AddElementMatrix(i,idnums,idnums,d);
 				  }
-
+				  
 				  idc = c * Trans (invd);
 				  a -= b * Trans (idc);
 				  
@@ -1680,14 +1238,14 @@ namespace ngcomp
 #endif
 				
 				    }
-
-
+				  
+				  
 				  for (int k = 0; k < odofs.Size(); k++)
 				    for (int l = 0; l < odofs.Size(); l++)
 				      sum_elmat(odofs[k], odofs[l]) = a(k,l);
 
-
-
+				  
+				  
 				  if (linearform&& (!keep_internal ))
 				    {
 				      
@@ -2456,12 +2014,14 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
 
   template <class SCAL>
-  void S_BilinearForm<SCAL> :: ComputeInternal (BaseVector & u, LocalHeap & clh) const
+  void S_BilinearForm<SCAL> :: ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & clh) const
   {
     if (!eliminate_internal) return;
+
+    /*
     if (!linearform)
       throw Exception ("ComputeInternal needs a linear-form");
-
+    */
 
     static int timer = NgProfiler::CreateTimer ("Compute Internal");
     NgProfiler::RegionTimer reg (timer);
@@ -2497,7 +2057,13 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		u.SetIndirect (dnums, elu);
 	      }
 */
-	      u += GetInnerSolve() * linearform -> GetVector();
+
+	      if (linearform)
+		u += GetInnerSolve() * linearform -> GetVector();
+	      else
+		u += GetInnerSolve() * f;
+
+
 	      u += GetHarmonicExtension() * u;
 	      cout << "done" << endl;
 	    }
@@ -2574,7 +2140,10 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
 			FlatMatrix<SCAL> ai(dim*idofs.Size(), lh);
 		    
-			linearform->GetVector().GetIndirect (dnums, elf);
+			if (linearform)
+			  linearform->GetVector().GetIndirect (dnums, elf);
+			else
+			  f.GetIndirect (dnums, elf);
 			u.GetIndirect (dnums, elu);
 		    
 

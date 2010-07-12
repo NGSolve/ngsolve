@@ -379,7 +379,7 @@ namespace ngsolve
 
     NgProfiler::StopTimer (solvetimer);
 
-    bfa -> ComputeInternal (vecu, lh);
+    bfa -> ComputeInternal (vecu, vecf, lh);
 
     if (print)
       (*testout) << "Solution = " << endl << vecu << endl;
@@ -703,7 +703,7 @@ namespace ngsolve
     delete invmat;
 
 
-    bfa -> ComputeInternal (vecu, lh);
+    bfa -> ComputeInternal (vecu, vecf, lh);
   }
 
 

@@ -1395,7 +1395,7 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   void SparseCholesky<TM, TV_ROW, TV_COL> :: Set (int i, int j, const TM & val)
   {
-    *testout << "sparse cholesky, set (" << i << ", " << j << ") = " << val << endl;
+    // *testout << "sparse cholesky, set (" << i << ", " << j << ") = " << val << endl;
     if (i == j)
       {
 	diag[i] = val;

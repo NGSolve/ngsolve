@@ -791,6 +791,7 @@ namespace ngsolve
 		      
 		      fun->Parse (*scan->scanin);
 		      funs.Set (mat,fun);
+		      *testout << "set material " << mat << " to evalfunc" << endl;
 // 		      if (fun->IsConstant())
 // 			val = fun->Eval (NULL);
 // 		      else
@@ -811,7 +812,7 @@ namespace ngsolve
 		      EvalFunction * fun = new EvalFunction ();
 		      fun->AddConstant (val);
 		      funs.Set (mat,fun);
-		      
+		      *testout << "set material " << mat << " to constant evalfunc" << endl;
 		    }
 		  scan->ReadNext();
 
@@ -844,17 +845,22 @@ namespace ngsolve
 		  bool used = false;
 		  for(int j=0; !used && j<funs.Size(); j++)
 		    {
+		      // *testout << "check pattern, mat = '" << mat << "', name = '" << funs.GetName(j) << "'" << endl;
 		      used = StringFitsPattern(mat,funs.GetName(j));
 		      if(used)
 			{
 			  //(*testout) << "\"" << mat << "\" fits \"" << funs.GetName(j) << "\"" << endl;
 			  fun = funs[j];
+			  // *testout << "pattern match, mat = " << mat << " fun.name = " << funs.GetName(j) << endl;
 			}
 		    }
 		  if(!used)
 		    {
 		      if (funs.Used ("default"))
-			fun = funs["default"];
+			{
+			  fun = funs["default"];
+			  // *testout << "use default value for mat " << mat << endl;
+			}
 		      else
 			throw Exception (string ("No value defined for material ")+mat);
 		    }

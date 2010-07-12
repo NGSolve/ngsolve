@@ -295,7 +295,7 @@ namespace ngcomp
     void GalerkinProjection ();
 
 
-    virtual void ComputeInternal (BaseVector & u, LocalHeap & lh) const = 0;
+    virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const = 0;
   
     ///
     void SetEpsRegularization(double val)
@@ -416,7 +416,7 @@ namespace ngcomp
 
     virtual double Energy (const BaseVector & x) const;
 
-    virtual void ComputeInternal (BaseVector & u, LocalHeap & lh) const;
+    virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const;
 
     ///
     virtual void DoAssemble (LocalHeap & lh);
