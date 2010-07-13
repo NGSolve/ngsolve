@@ -254,7 +254,7 @@ public:
   
   /// compute shape
   template<typename Tx, typename TFA>  
-  void T_CalcShape (Tx hx[2], TFA & shape) const; 
+  void T_CalcShape (Tx hx[], TFA & shape) const; 
 
   virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
@@ -271,6 +271,7 @@ public:
   // virtual void ComputeNDof();
   // virtual void GetInternalDofs (Array<int> & idofs) const;
 
+  /*
   /// compute shape
   virtual void CalcShape (const IntegrationPoint & ip,
 			  FlatMatrixFixWidth<3> shape) const;
@@ -278,10 +279,11 @@ public:
   /// compute Div of shape
   virtual void CalcDivShape (const IntegrationPoint & ip,
   			     FlatVector<> shape) const;
+  */
 
   /// compute shape
   template<typename Tx, typename TFA>  
-  void T_CalcShape (Tx hx[2], TFA & shape) const; 
+  void T_CalcShape (Tx hx[], TFA & shape) const; 
 
 
   /// compute Div numerical diff

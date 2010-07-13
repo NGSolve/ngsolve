@@ -830,7 +830,7 @@ namespace ngfem
 
 
   template<typename Tx, typename TFA>  
-  void  HDivHighOrderFE<ET_TET> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void  HDivHighOrderFE<ET_TET> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lami[4] = { x, y, z, 1-x-y-z };
@@ -948,7 +948,7 @@ namespace ngfem
 
  
   
-  
+  #ifdef ABC
   
   //SZ : Attention PRISMA has still isotropic inner_order
   void HDivHighOrderFE<ET_PRISM> :: CalcShape (const IntegrationPoint & ip,
@@ -1311,10 +1311,10 @@ namespace ngfem
     T_HDivHighOrderFiniteElement<ET_PRISM>::CalcDivShape (ip, divshape);
     // *testout << "some exact divshape = " << endl << divshape << endl;
   }
-
+#endif
 
   template<typename Tx, typename TFA>  
-  void  HDivHighOrderFE<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void  HDivHighOrderFE<ET_PRISM> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
 
