@@ -50,8 +50,11 @@ namespace ngcomp
       
       for (int i = 0; i < ne; i++)
         {
-          fes.GetDofNrs (i, lifdofs, INTERFACE_DOF);	  
-          ifcnt[i] = lifdofs.Size();
+          fes.GetDofNrs (i, lifdofs, INTERFACE_DOF);
+	  int lifcnt = 0;
+	  for (int j = 0; j < lifdofs.Size(); j++)
+	    if(fes.GetFreeDofs()->Test(lifdofs[j])){ lifcnt++;}
+          ifcnt[i] = lifcnt;
 	  fes.GetDofNrs(i,lwbdofs,WIREBASKET_DOF);
 	  wbdcnt[i] = lwbdofs.Size();	
         }
@@ -75,16 +78,17 @@ namespace ngcomp
       for (int i = 0; i < ne; i++)
         {
 	  fes.GetDofNrs (i, lifdofs, INTERFACE_DOF);
+	  int lifcnt = 0;
 	  for (int j = 0; j< lifdofs.Size();j++)
 	  {
-	    el2ifdofs[i][j] = lifdofs[j];
-	    if (!ifdof.Test(lifdofs[j])){
+	    if (!ifdof.Test(lifdofs[j])&&fes.GetFreeDofs()->Test(lifdofs[j])){
 	      ifdof.Set(lifdofs[j]);
 	      nifdofs++;
 	    }else{
 	      multiple[lifdofs[j]]++;
 	    }
-	    ifdof.Set(lifdofs[j]);
+	    if (fes.GetFreeDofs()->Test(lifdofs[j]))
+	      el2ifdofs[i][lifcnt++] = lifdofs[j];
 	  }
 
 	  fes.GetDofNrs(i,lwbdofs,WIREBASKET_DOF);
@@ -154,7 +158,7 @@ namespace ngcomp
 	    if (wbdof.Test(ldnums[k])){
 	      localwbdofs.Append(k);
 	    }
-	    else{
+	    else if (ifdof.Test(ldnums[k])){
 	      localintdofs.Append(k);
 	    }
 	  }
@@ -206,8 +210,10 @@ namespace ngcomp
 	    //R * E
 	    for (int k = 0; k < sizei; k++)
 	      for (int l = 0; l < sizew; l++)
-		if ((fes.GetFreeDofs()) && (!fes.GetFreeDofs()->Test(el2ifdofs[i][k])))
+		if ((fes.GetFreeDofs()) && (!fes.GetFreeDofs()->Test(el2ifdofs[i][k]))){ //TEST:NIE
+		  cout << "((fes.GetFreeDofs()) && (!fes.GetFreeDofs()->Test(el2ifdofs[i][k]))) == true" << endl;
 		  he(k,l) = 0.0;
+		}
 		else
 		  he(k,l) /= multiple[ el2ifdofs[i][k] ];
 		
@@ -224,8 +230,10 @@ namespace ngcomp
 	      //E * R^T
 	      for (int k = 0; k < sizew; k++)
 		for (int l = 0; l < sizei; l++)
-		  if ((fes.GetFreeDofs()) && (!fes.GetFreeDofs()->Test(el2ifdofs[i][l])))
+		  if ((fes.GetFreeDofs()) && (!fes.GetFreeDofs()->Test(el2ifdofs[i][l]))) { //TEST:NIE
+		    cout << "((fes.GetFreeDofs()) && (!fes.GetFreeDofs()->Test(el2ifdofs[i][l]))) == true" << endl;
 		    het(k,l) = 0.0;
+		  }
 		  else
 		    het(k,l) /= multiple[ el2ifdofs[i][l] ];
 	      
@@ -234,8 +242,10 @@ namespace ngcomp
 	    //R * A_ii^(-1) * R^T
 	    for (int k = 0; k < sizei; k++)
 	      for (int l = 0; l < sizei; l++)
-		if ((fes.GetFreeDofs()) && ((!fes.GetFreeDofs()->Test(el2ifdofs[i][l])) || (!fes.GetFreeDofs()->Test(el2ifdofs[i][k]))))
+		if ((fes.GetFreeDofs()) && ((!fes.GetFreeDofs()->Test(el2ifdofs[i][l])) || (!fes.GetFreeDofs()->Test(el2ifdofs[i][k])))) { //TEST:NIE
+		  cout << "((fes.GetFreeDofs()) && ((!fes.GetFreeDofs()->Test(el2ifdofs[i][l])) || (!fes.GetFreeDofs()->Test(el2ifdofs[i][k])))) == true" << endl;
 		  d(k,l) = 0.0;
+		}
 		else
 		  d(k,l) /= multiple[ el2ifdofs[i][k] ] * multiple[ el2ifdofs[i][l] ];	    
 	    if (bfa.IsSymmetric())
