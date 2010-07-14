@@ -724,8 +724,7 @@ namespace ngfem
     AutoDiff<3> muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
        
        
-    const EDGE * edges = ElementTopology::GetEdges (ET_PRISM);
-    const FACE * faces = ElementTopology::GetFaces (ET_PRISM); 
+
 
     ArrayMem<AutoDiff<3>,20> adpolxy1(order+3),adpolxy2(order+3); 
     ArrayMem<AutoDiff<3>,20> adpolz(order+3);   
@@ -736,20 +735,19 @@ namespace ngfem
     for (int i = 0; i < 6; i++)
       {
 	int p = order_edge[i]; 
-        int es = edges[i][0], ee = edges[i][1]; 
-	if (vnums[es] > vnums[ee]) swap (es, ee);
+        INT<2> e = GetEdgeSort (i, vnums);	  
 	
 	//Nedelec0
-        shape[i] = wuDv_minus_wvDu<3> (lami[es], lami[ee], muz[ee]);
+        shape[i] = wuDv_minus_wvDu<3> (lami[e[0]], lami[e[1]], muz[e[1]]);
    
 	//high order \nabla (P_edge(x,y) * muz)
 	if(usegrad_edge[i])
 	  {
-	    T_ORTHOPOL::CalcTrigExt(p+1, lami[ee]-lami[es],
-				    1-lami[es]-lami[ee],adpolxy1);
+	    T_ORTHOPOL::CalcTrigExt(p+1, lami[e[1]]-lami[e[0]],
+				    1-lami[e[0]]-lami[e[1]],adpolxy1);
 	    
 	    for(int j = 0; j <= p-1; j++)
-              shape[ii++] = Du<3> (adpolxy1[j] * muz[ee]);
+              shape[ii++] = Du<3> (adpolxy1[j] * muz[e[1]]);
 	  }
       }
 
@@ -757,21 +755,22 @@ namespace ngfem
     for (int i = 6; i < 9; i++)
       {
 	int p = order_edge[i]; 
-        int es = edges[i][0], ee = edges[i][1];
-	if (vnums[es] > vnums[ee]) swap (es, ee);
+        INT<2> e = GetEdgeSort (i, vnums);	  
 
-        shape[i] = wuDv_minus_wvDu<3> (muz[es], muz[ee], lami[ee]);
+        shape[i] = wuDv_minus_wvDu<3> (muz[e[0]], muz[e[1]], lami[e[1]]);
 	
 	//high order edges:  \nabla (T_ORTHOPOL^{p+1}(2z-1) * lami(x,y))
 	if(usegrad_edge[i])
 	  {
-	    T_ORTHOPOL::Calc (p+1, muz[ee]-muz[es], adpolz);
+	    T_ORTHOPOL::Calc (p+1, muz[e[1]]-muz[e[0]], adpolz);
 	    
 	    for (int j = 0; j < p; j++)
-              shape[ii++] = Du<3> (adpolz[j] * lami[ee]);
+              shape[ii++] = Du<3> (adpolz[j] * lami[e[1]]);
 	  }
       }
 
+
+    const FACE * faces = ElementTopology::GetFaces (ET_PRISM); 
 
     // trig face shapes
     for (int i = 0; i < 2; i++)
@@ -779,12 +778,8 @@ namespace ngfem
 	int p = order_face[i][0];
 	if (p < 2) continue;
 
-	int fav[3] = {faces[i][0], faces[i][1], faces[i][2]};
+	INT<4> fav = GetFaceSort (i, vnums);
 
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  	
-	
 	AutoDiff<3> xi = lami[fav[2]]-lami[fav[1]];
 	AutoDiff<3> eta = lami[fav[0]]; // 1-lami[f2]-lami[f1];
 	

@@ -310,7 +310,7 @@ namespace ngfem
     { 
       AutoDiff<3> hv = Cross (uvw.u, uvw.v);
       for (int i = 0; i < 3; i++)
-        sum(i) += (*coefs) * hv.DValue(i);
+        sum(i) += (*coefs) * uvw.w.Value() * hv.DValue(i);
 
     }
 
