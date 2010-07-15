@@ -350,8 +350,8 @@ namespace ngsolve
       ma.PushStatus ("Direct solver");
 
       
-    clock_t starttime, endtime;
-    starttime = clock();
+    double starttime, endtime;
+    starttime = WallTime(); // clock();
 
     if (solver != DIRECT)
       invmat->Mult (vecf, vecu);
@@ -364,9 +364,9 @@ namespace ngsolve
     if (print)
       (*testout) << "Solution = " << endl << vecu << endl;
 
-    endtime = clock();
-    cout << "Solution time = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
-    *testout << "Solution time = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
+    endtime = WallTime(); // clock();
+    cout << "Solution time = " << endtime - starttime << " sec wall time" << endl;
+    *testout << "Solution time = " << endtime - starttime << endl;
     
     if (solver != DIRECT)
       {

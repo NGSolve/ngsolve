@@ -613,7 +613,7 @@ namespace ngcomp
       NgProfiler::StartTimer (timerwb);
 	*tmp = 0;
 	if (block){
-	  if (false) //GS
+	  if (true) //GS
 	  {
 	    dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothResiduum (*tmp, y, *tmp2 ,1);
 	    if (inv_coarse)

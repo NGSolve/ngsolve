@@ -24,17 +24,27 @@ inline void gettimeofday(struct timeval* t,void* timezone)
         t->tv_sec=timebuffer.time;
         t->tv_usec=1000*timebuffer.millitm;
 }
+
+inline double WallTime ()
+{
+  struct _timeb timebuffer;
+  _ftime( &timebuffer );
+  return timebuffer.time+1000*timebuffer.millitm;
+}
+
+
 #else
 
 #include <sys/time.h>
 
-#endif
+inline double WallTime ()
+{
+  timeval time;
+  gettimeofday (&time, 0);
+  return time.tv_sec + 1e-6 * time.tv_usec;
+}
 
-  /*
-    #ifdef USE_TIMEOFDAY
-    #include <sys/time.h>
-    #endif
-  */
+#endif
 
 
 #ifdef VTRACE
