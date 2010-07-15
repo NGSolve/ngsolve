@@ -323,8 +323,10 @@ namespace ngcomp
 	  ctofdof[facet] = WIREBASKET_DOF; // low_order
 	else
 	  {
-	    ctofdof[2*facet] = WIREBASKET_DOF;
-	    ctofdof[2*facet+1] = WIREBASKET_DOF;
+	    // ctofdof[2*facet] = WIREBASKET_DOF;
+	    // ctofdof[2*facet+1] = WIREBASKET_DOF;
+	    ctofdof[2*facet] = INTERFACE_DOF;
+	    ctofdof[2*facet+1] = INTERFACE_DOF;
 	  }
 	
 	first = first_facet_dof[facet];

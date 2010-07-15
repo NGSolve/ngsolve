@@ -1431,11 +1431,13 @@ namespace ngfem
 	for(int i=0;i<=p-1;i++)
 	  for(int j=0;j<=p-1-i;j++)
 	    for(int k=0;k<=pz-1;k++)
-	      {
-                shape[ii++] = curl_uDvw_minus_Duvw<3> (adpolxy1[i],adpolxy2[j],adpolz[k]);
-                shape[ii++] = Du_Cross_Dv<3> (adpolxy1[i],adpolxy2[j]*adpolz[k]);
-	      }
-	
+	      shape[ii++] = Du_Cross_Dv<3> (adpolxy1[i],adpolxy2[j]*adpolz[k]);
+
+	for(int i=0;i<=p-1;i++)
+	  for(int j=0;j<=p-1-i;j++)
+	    for(int k=0;k<=pz-1;k++)
+	      shape[ii++] = curl_uDvw_minus_Duvw<3> (adpolxy1[i],adpolxy2[j],adpolz[k]);
+
 	for(int j=0;j<=p-1;j++) 
 	  for (int k=0;k<=pz-1;k++) 
             shape[ii++] = curl_uDvw_minus_Duvw<3> (x,y, adpolxy2[j]*adpolz[k]);

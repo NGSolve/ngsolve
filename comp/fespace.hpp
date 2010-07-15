@@ -684,6 +684,10 @@ namespace ngcomp
     int GetStorageEnd(int spacenr) const
     { return cummulative_nd[spacenr+1]; }
 
+    IntRange GetRange (int spacenr) 
+    { 
+      return IntRange(cummulative_nd[spacenr], cummulative_nd[spacenr+1]);
+    }
 
     ///
     const FESpace * operator[] (int i) const { return spaces[i]; }

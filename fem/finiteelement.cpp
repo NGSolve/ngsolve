@@ -26,10 +26,12 @@ namespace ngfem
   { ; }
   */
 
+  /*
   void FiniteElement :: GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize(0);
   }
+  */
   
   void FiniteElement :: GetDofs (Array<Dof> & dofs) const
   {
@@ -42,19 +44,6 @@ namespace ngfem
   {
     if (fea.Size() && fea[0])
       {
-	/*
-	int ii = 0;
-	while ( ii < fea.Size() )
-	  {
-	    // do not use dummy elements
-	    if ( dynamic_cast<const DummyFE<ET_SEGM> *> (fea[ii]) )
-	      { ii++; continue; }
-	    dimspace = fea[ii]->SpatialDim();
-	    eltype = fea[ii]->ElementType();
-	    break;
-	  }
-	*/
-	// dimspace = fea[0]->SpatialDim();
 	eltype = fea[0]->ElementType();
 	ndof = 0;
 	order = 0;
@@ -75,11 +64,12 @@ namespace ngfem
 	cout << "WARNING: CompoundFE, undefined components" << endl;
 	ndof = 0;
 	order = 0;
-	// dimspace = 0;
 	eltype = ET_TRIG;
       }
   }
 
+
+    /*
   void CompoundFiniteElement :: GetInternalDofs (Array<int> & idofs) const
   {
     idofs.SetSize (0);
@@ -93,7 +83,7 @@ namespace ngfem
 	base += (*this)[i].GetNDof();
       }
   }
-
+    */
 
 
 

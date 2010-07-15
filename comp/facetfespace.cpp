@@ -82,6 +82,10 @@ namespace ngcomp
 	rel_order = -1;  
 	order = 0;  
       }
+
+    highest_order_dc = flags.GetDefineFlag("highest_order_dc");
+
+
     
     // TODO: Evaluator for shape tester 
     static ConstantCoefficientFunction one(1);
@@ -137,6 +141,7 @@ namespace ngcomp
     
     order_facet.SetSize(nfa);
     order_facet = INT<2> (p,p);
+
     fine_facet.SetSize(nfa);
     fine_facet = 0; 
     
@@ -225,8 +230,24 @@ namespace ngcomp
           {
             first_facet_dof[i] = ndof;
             ndof += order_facet[i][0];
+	    if (highest_order_dc) ndof--;
           }
         first_facet_dof[nfa] = ndof;
+
+	if (highest_order_dc)
+	  {
+	    int ne = ma.GetNE();
+	    first_inner_dof.SetSize(ne+1);
+	    for (int i = 0; i < ne; i++)
+	      {
+		first_inner_dof[i] = ndof;
+		
+		// only trigs supported:
+		ndof += 3;
+	      }
+	    first_inner_dof[ne] = ndof;
+	  }
+	
       } // 2D
     else  // 3D
       {
@@ -253,22 +274,17 @@ namespace ngcomp
         first_facet_dof[nfa] = ndof;
       } // 3D
 
-    //HERBERT: h1hofe code. is that correct ??
+
     while (ma.GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
       
-    //HERBERT: no prolongation so far       
-    //prol->Update();
     if(print)
       {
 	*testout << "*** Update FAcetFESpace: General Information" << endl;
 	*testout << " order facet (facet) " << order_facet << endl; 
 	*testout << " first_facet_dof (facet)  " << first_facet_dof << endl; 
       } 
-    /* 
-       cout << "    ne = " << nel << ", nfa = " << nfa << ", ncfa=" << ncfa << ", ndof=" << ndof << endl;
-       cout << "    order_facet = " << order_facet << endl;*/
 
 
 
@@ -303,16 +319,21 @@ namespace ngcomp
     ctofdof.SetSize(ndof);
     ctofdof = INTERFACE_DOF;
 
-    int first,next;
+    for (int facet = 0; facet < ma.GetNFacets(); facet++)
+      {
+	int first = first_facet_dof[facet];
+	int next = first_facet_dof[facet+1];
 
-    for (int facet = 0; facet < ma.GetNFacets(); facet++){
-      first = first_facet_dof[facet];
-      next = first_facet_dof[facet+1];
-//       ctofdof[facet] = WIREBASKET_DOF;
-      ctofdof[facet] = INTERFACE_DOF;
-      for (int j=first; j<next; j++)
-	ctofdof[j] = INTERFACE_DOF;
-    }
+	ctofdof[facet] = WIREBASKET_DOF;
+	// ctofdof[facet] = INTERFACE_DOF;
+	
+	for (int j=first; j<next; j++)
+	  ctofdof[j] = INTERFACE_DOF;
+      }
+
+    if (highest_order_dc)
+      ctofdof.Range(first_inner_dof[0], ndof) = LOCAL_DOF;
+    *testout << "FacetFESpace, ctofdof = " << endl << ctofdof << endl;
   }
 
 
@@ -369,6 +390,7 @@ namespace ngcomp
     if (ma.GetDimension() == 2)
       {
         fe2d -> SetVertexNumbers (vnums);
+	// fe2d -> SetHighestOrderDC (highest_order_dc);
         fe2d -> SetOrder (order_fa);
         fe2d -> ComputeNDof();
         return *fe2d;
@@ -474,12 +496,39 @@ namespace ngcomp
     ma.GetElFacets (elnr, fanums);
 
     dnums.SetSize(0);
-    for(int i=0; i<fanums.Size(); i++)
-      {
-        dnums.Append(fanums[i]); // low_order
 
-	dnums += IntRange (first_facet_dof[fanums[i]],
-			   first_facet_dof[fanums[i]+1]);
+    if (!highest_order_dc)
+      {
+	for(int i=0; i<fanums.Size(); i++)
+	  {
+	    dnums.Append(fanums[i]); // low_order
+	    
+	    dnums += IntRange (first_facet_dof[fanums[i]],
+			       first_facet_dof[fanums[i]+1]);
+	  }
+      }
+    else
+      {
+	if (ma.GetDimension() == 2)
+	  {
+	    int innerdof = first_inner_dof[elnr];
+	    for(int i=0; i<fanums.Size(); i++)
+	      {
+		dnums.Append(fanums[i]); // low_order
+		
+		dnums += IntRange (first_facet_dof[fanums[i]],
+				   first_facet_dof[fanums[i]+1]);
+
+		dnums.Append (innerdof);
+		innerdof++;
+	      }
+	  }
+	else
+	  {
+	    cerr << "highest_order_dc not supported for 3d" << endl;
+	    exit(1);
+	  }
+	
       }
   }
 
@@ -958,9 +1007,11 @@ namespace ngcomp
     FinalizeUpdate (lh);
   }
 
-  void EdgeFESpace :: UpdateCouplingDofArray(){
+  void EdgeFESpace :: UpdateCouplingDofArray()
+  {
     ctofdof.SetSize(first_edge_dof[ned]);
     ctofdof = WIREBASKET_DOF;
+    // ctofdof = INTERFACE_DOF;
   }
 
   const FiniteElement & EdgeFESpace :: GetFE (int elnr, LocalHeap & lh) const

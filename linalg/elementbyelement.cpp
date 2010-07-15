@@ -37,7 +37,6 @@ namespace ngla
   template <class SCAL>
   void ElementByElementMatrix<SCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-//     cout << " ElementByElementMatrix<SCAL> :: MultAdd here " << endl << flush;
     static int timer = NgProfiler::CreateTimer ("EBE-matrix::MultAdd");
     NgProfiler::RegionTimer reg (timer);
 
@@ -51,9 +50,9 @@ namespace ngla
       
     FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
     FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
+
     for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
       {
-	if ((rowdnums[i].Size() == 0) || (coldnums[i].Size() == 0)) continue; 
         FlatArray<int> rdi (rowdnums[i]);
         FlatArray<int> cdi (coldnums[i]);
 	
@@ -68,7 +67,7 @@ namespace ngla
 	hv2 = elmats[i] * hv1;
 	// LapackMultAx (elmats[i], hv1, hv2);
 
-        for (int j = 0; j < rowdnums[i].Size(); j++)
+        for (int j = 0; j < rdi.Size(); j++)
           vy (rdi[j]) += s*hv2[j];
 
 	NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
