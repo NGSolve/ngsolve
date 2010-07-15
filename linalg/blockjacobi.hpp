@@ -993,31 +993,6 @@ namespace ngla
       int bs = row.Size();
       if (bs == 0) return;
 
-      /*
-	static TVX di_mem[1000];   // warum so ? wird sonst beim icc der array-constructor aufgerufen ?
-	static TVX wi_mem[1000];
-
-	TVX * di_mem_ptr;
-	TVX * wi_mem_ptr;
-	bool allocated;
-    
-	if(bs <= 1000)
-	{
-	di_mem_ptr = di_mem;
-	wi_mem_ptr = wi_mem;
-	allocated = false;
-	}
-	else
-	{
-	di_mem_ptr = new TVX[bs];
-	wi_mem_ptr = new TVX[bs];
-	allocated = true;
-	}
-
-	FlatVector<TVX> di(bs,di_mem_ptr);
-	FlatVector<TVX> wi(bs,wi_mem_ptr);
-      */
-
       VectorMem<1000,TVX> di (bs);
       VectorMem<1000,TVX> wi (bs);
 
@@ -1046,14 +1021,6 @@ namespace ngla
 	  x(row[j]) += wi(j);
 	  mat.AddRowTransToVector (row[j], -wi(j), y);
 	}
-
-      /*
-	if(allocated)
-	{
-	delete [] wi_mem_ptr;
-	delete [] di_mem_ptr;
-	}
-      */
     }
 
     ///

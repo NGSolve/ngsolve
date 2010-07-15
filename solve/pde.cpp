@@ -527,8 +527,12 @@ namespace ngsolve
 
     LocalHeap lh(heapsize);
 
+    /*
     clock_t starttime, endtime;
     starttime = clock();
+    */
+    double starttime, endtime;
+    starttime = WallTime();
 
 #ifdef PARALLEL
     double startwtime, endwtime;
@@ -927,9 +931,12 @@ namespace ngsolve
     
     if (printmessage_importance>0)
       cout << "Equation Solved" << endl;
-    endtime = clock();
+    // endtime = clock();
+    endtime = WallTime();
+
     if (printmessage_importance>0)
-      cout << "Total Time = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl << endl;
+      // cout << "Total Time = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl << endl;
+      cout << "Total Time = " << endtime-starttime << " sec wall time" << endl << endl;
     
 #ifdef PARALLEL
     MPI_Barrier( MPI_COMM_WORLD );

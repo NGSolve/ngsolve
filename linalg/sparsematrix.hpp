@@ -382,8 +382,14 @@ namespace ngla
   template<class TM, class TV_ROW, class TV_COL>
   class NGS_DLL_HEADER SparseMatrix : virtual public SparseMatrixTM<TM>
   {
-
   public:
+    using SparseMatrixTM<TM>::firsti;
+    using SparseMatrixTM<TM>::colnr;
+    using SparseMatrixTM<TM>::data;
+
+    // using MatrixGraph::firsti;
+
+
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV_ROW TVX;
     typedef TV_COL TVY;
@@ -446,9 +452,9 @@ namespace ngla
 	return sum;
       */
 
-      int nj = (this->firsti)[row+1] - (this->firsti)[row];
-      const int * colpi = (this->colnr)+(this->firsti)[row];
-      const TM * datap = (this->data)+(this->firsti)[row];
+      int nj = firsti[row+1] - firsti[row];
+      const int * colpi = colnr+firsti[row];
+      const TM * datap = data+firsti[row];
       const TVX * vecp = &vec(0);
     
       typedef typename mat_traits<TVY>::TSCAL TTSCAL;
@@ -469,9 +475,9 @@ namespace ngla
       hvec(colnr[j]) += Trans(data[j]) * el;
       */
 
-      int nj = (this->firsti)[row+1] - (this->firsti)[row];
-      const int * colpi = (this->colnr)+(this->firsti)[row];
-      const TM * datap = (this->data)+(this->firsti)[row];
+      int nj = firsti[row+1] - firsti[row];
+      const int * colpi = colnr+firsti[row];
+      const TM * datap = data+firsti[row];
       TVX * vecp = &vec(0);
       for (int j = 0; j < nj; j++, colpi++, datap++)
 	vecp[*colpi] += Trans(*datap) * el;
@@ -522,6 +528,11 @@ namespace ngla
   {
 
   public:
+    using SparseMatrixTM<TM>::firsti;
+    using SparseMatrixTM<TM>::colnr;
+    using SparseMatrixTM<TM>::data;
+
+
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV TV_COL;
     typedef TV TV_ROW;
@@ -647,20 +658,13 @@ namespace ngla
 
     TV_COL RowTimesVectorNoDiag (int row, const FlatVector<TVX> & vec) const
     {
-      int last = this->firsti[row+1];
-      int first = this->firsti[row];
+      int last = firsti[row+1];
+      int first = firsti[row];
       if (last == first) return TVY(0);
-      if (this->colnr[last-1] == row) last--;
+      if (colnr[last-1] == row) last--;
 
-      /*
-	TV_COL sum = TSCAL(0);
-	for (int j = this->firsti[row]; j < last; j++)
-	sum += this->data[j] * vec(this->colnr[j]);
-	return sum;
-      */
-
-      const int * colpi = this->colnr+this->firsti[row];
-      const TM * datap = this->data+this->firsti[row];
+      const int * colpi = colnr+firsti[row];
+      const TM * datap = data+firsti[row];
       const TVX * vecp = &vec(0);
 
       typedef typename mat_traits<TVY>::TSCAL TTSCAL;
