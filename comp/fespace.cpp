@@ -2726,13 +2726,14 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
   }
 
-  void CompoundFESpace :: UpdateCouplingDofArray(){
+  void CompoundFESpace :: UpdateCouplingDofArray()
+  {
     ctofdof.SetSize(this->GetNDof());
-    for (int i = 0; i < spaces.Size(); i++){
-      for (int j=0; j< spaces[i]->GetNDof();j++){
+
+    for (int i = 0; i < spaces.Size(); i++)
+      for (int j=0; j< spaces[i]->GetNDof();j++)
 	ctofdof[cummulative_nd[i]+j] = spaces[i]->GetDofCouplingType(j);	
-      }
-    }
+
     *testout << "CompoundFESpace :: UpdateCouplingDofArray() presents \n ctofdof = \n" << ctofdof << endl;
   }
 

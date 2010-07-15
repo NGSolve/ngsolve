@@ -58,6 +58,19 @@ namespace ngstd
 
 
 
+  /// a range of intergers
+  class IntRange
+  {
+    int first, next;
+  public: 
+    IntRange (int f, int n) : first(f), next(n) {;} 
+    int First() const { return first; }
+    int Next() const { return next; }
+    int Size() const { return next-first; }
+  };
+
+
+
 
   /**
      A simple array container.
@@ -193,6 +206,13 @@ namespace ngstd
     {
       return FlatArray<T> (end-start, data+start);
     }
+
+    /// takes range starting from position start of end-start elements
+    const FlatArray<T> Range (class IntRange range) const
+    {
+      return FlatArray<T> (range.Size(), data+range.First());
+    }
+
 
     /// first position of element elem, returns -1 if element not contained in array 
     int Pos(const T & elem) const
@@ -513,18 +533,6 @@ namespace ngstd
 
 
 
-
-
-  /// an range of intergers
-  class IntRange
-  {
-    int first, next;
-  public: 
-    IntRange (int f, int n) : first(f), next(n) {;} 
-    int First() const { return first; }
-    int Next() const { return next; }
-    int Size() const { return next-first; }
-  };
 
   /// append integers to array
   inline Array<int> & operator+= (Array<int> & array, const IntRange & range)

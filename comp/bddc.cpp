@@ -138,6 +138,7 @@ namespace ngcomp
       
       SparseMatrix<double>& wbmat=*pwbmat;
 
+
       wbmat.SetInverseType (inversetype);
       
       cout << "have matrix" << endl << endl;
@@ -146,7 +147,7 @@ namespace ngcomp
         {
           FlatMatrix<> elmat = 
             dynamic_cast<const ElementByElementMatrix<double>&> (bfa.GetMatrix()) . GetElementMatrix (i);
-
+	  
 	  Array<int> interfacedofs; interfacedofs = el2ifdofs[i];
 	  Array<int> wirebasketdofs; wirebasketdofs = el2wbdofs[i];
 	  Array<int> localwbdofs; localwbdofs.SetSize(0); //local dofs
@@ -261,6 +262,8 @@ namespace ngcomp
 
         }
       
+      cout << "matrix filed" << endl;
+
       free_dofs = new BitArray (ndof);
       free_dofs->Clear();
 
@@ -271,9 +274,8 @@ namespace ngcomp
 	      free_dofs->Set(i);
 	  }
 	}
-
 	
-      *testout << "free_dofs = " << *free_dofs << endl;
+
       if (block){
 	//Smoothing Blocks
 	Flags flags;
@@ -548,7 +550,6 @@ namespace ngcomp
       }
       else
       {
-	cout << "call inverse" << endl;
 	inv = wbmat.InverseMatrix(free_dofs);
       }
       cout << "has inverse" << endl;
@@ -558,8 +559,8 @@ namespace ngcomp
           
     
     
-    BDDCMatrix (const ElementByElement_BilinearForm<double> & abfa, const string & inversetype, bool ablock, bool aebe)
-      : bfa(abfa), ma(abfa.GetFESpace().GetMeshAccess()), block(ablock), ebe(aebe)
+    BDDCMatrix (const ElementByElement_BilinearForm<double> & abfa, const string & ainversetype, bool ablock, bool aebe)
+      : bfa(abfa), ma(abfa.GetFESpace().GetMeshAccess()), block(ablock), ebe(aebe), inversetype(ainversetype)
    {
       pwbmat = NULL;
       inv = NULL;
@@ -621,7 +622,7 @@ namespace ngcomp
 	  }else{ //jacobi only (old)
 	    *tmp = (*inv) * y;
 	    *tmp += (*inv_coarse) * y; 
-	  }
+ 	  }
 	}
 	else
 	{
@@ -1704,7 +1705,7 @@ namespace ngcomp
   void BDDCPreconditioner<SCAL> ::
   Update ()
   {
-    cout << "update bddc" << endl;
+    cout << "update bddc, inversetype = " << inversetype << endl;
     if (refelement)
       pre = new BDDCMatrixRefElement(*bfa, inversetype);
     else

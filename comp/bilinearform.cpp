@@ -181,7 +181,6 @@ namespace ngcomp
     static int timer = NgProfiler::CreateTimer ("BilinearForm::GetGraph");
     NgProfiler::RegionTimer reg (timer);
 
-
     int ndof = fespace.GetNDof();
     int ne = GetMeshAccess().GetNE();
     int nse = GetMeshAccess().GetNSE();
@@ -259,6 +258,7 @@ namespace ngcomp
 		creator.Add (ne+nse+i, dnums[j]);
 	  }
       }
+
 
     MatrixGraph * graph = new MatrixGraph (ndof, *creator.GetTable(), *creator.GetTable(), symmetric);
 
@@ -1081,12 +1081,24 @@ namespace ngcomp
 			      NgProfiler::StartTimer (statcondtimer);
 
 
-			      fel.GetInternalDofs(idofs1);
+			      // fel.GetInternalDofs(idofs1);
+			      fespace.GetDofNrs (i, idofs1, LOCAL_DOF);
+			      for (int j = 0; j < idofs1.Size(); j++)
+				for (int k = 0; k < dnums.Size(); k++)
+				  if (dnums[k] == idofs1[j])
+				    {
+				      idofs1[j] = k; 
+				      break;
+				    }
+
 			      if (printelmat) 
 				{
 				  *testout << "eliminate internal" << endl;
-				  *testout << "idofs = " << idofs << endl;
+				  *testout << "idofs1 = " << idofs1 << endl;
 				}
+			      
+			      
+
 
 			      if (idofs1.Size())
 				{
@@ -1099,6 +1111,8 @@ namespace ngcomp
 				  for (int j = 0; j < idofs1.Size(); j++)
 				    for (int jj = 0; jj < dim; jj++)
 				      idofs.Append (dim*idofs1[j]+jj);
+
+				  *testout << "idofs = " << idofs << endl;
 
 				  int sizei = idofs.Size();
 				  int sizeo = size - sizei;
@@ -2124,7 +2138,18 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		
 		    fespace.TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 		
-		    fel.GetInternalDofs(idofs);
+		    // fel.GetInternalDofs(idofs);
+		    fespace.GetDofNrs (i, idofs, LOCAL_DOF);
+		    for (int j = 0; j < idofs.Size(); j++)
+		      for (int k = 0; k < dnums.Size(); k++)
+			if (dnums[k] == idofs[j])
+			  {
+			    idofs[j] = k; 
+			    break;
+			  }
+
+
+
 
 		    // (*testout) << "compute internal element = " << i << endl;
 		    //		(*testout) << "mat = " << endl << sum_elmat << endl;

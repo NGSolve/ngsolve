@@ -164,7 +164,7 @@ namespace ngla
         }
     
     else
-      
+      {
       for (int i = 0; i < ndof; i++)
         {
           int cnti = includediag? 1 : 0;
@@ -186,8 +186,7 @@ namespace ngla
             }
           cnt[i] = cnti;
         }
-
-
+      }
 
 
     size = ndof;
@@ -208,7 +207,6 @@ namespace ngla
     colnr.Alloc (nze+1);
     colnr.SetName ("matrix graph");
     
-
 
     mark = -1;
 
@@ -262,13 +260,13 @@ namespace ngla
             }
         }
 
+
 #pragma omp parallel for
     for (int i = 0; i < ndof; i++)
       QuickSort (GetRowIndices(i));
 
     colnr[nze] = 0;
  
-    // #ifdef ASTRID
 #ifdef USE_PARDISO
     inversetype = PARDISO;
 #else
@@ -1096,19 +1094,20 @@ namespace ngla
   {
     static int timer = NgProfiler::CreateTimer ("SparseMatrixSymmetric::MultAdd");
     NgProfiler::RegionTimer reg (timer);
+    NgProfiler::AddFlops (timer, 2*this->nze);
 
-	const FlatVector<TV_ROW> fx = 
-	  dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
-	FlatVector<TV_COL> fy = 
-	  dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
-
-	for (int i = 0; i < this->Height(); i++)
-	  {
-	    fy(i) += s * RowTimesVector (i, fx);
-	    AddRowTransToVectorNoDiag (i, s * fx(i), fy);
-	  }
+    const FlatVector<TV_ROW> fx = 
+      dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
+    FlatVector<TV_COL> fy = 
+      dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
+    
+    for (int i = 0; i < this->Height(); i++)
+      {
+	fy(i) += s * RowTimesVector (i, fx);
+	AddRowTransToVectorNoDiag (i, s * fx(i), fy);
+      }
   }
-
+  
 
 
   template <class TM, class TV>

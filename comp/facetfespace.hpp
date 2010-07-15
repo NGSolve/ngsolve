@@ -32,6 +32,7 @@ namespace ngcomp
     int nel;
   
     Array<int> first_facet_dof;
+    Array<int> first_inner_dof;  // for highest_order_dc
   
     // relative order to mesh-order
     int rel_order; 
@@ -43,7 +44,8 @@ namespace ngcomp
     Array<int> ndlevel;
     bool var_order; 
     bool print; 
-  
+    bool highest_order_dc;
+    
   public:
     ///
     FacetFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
@@ -196,6 +198,7 @@ namespace ngcomp
     virtual void GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const;
 
     virtual void GetFaceDofNrs ( int elnum, Array<int> & dnums ) const  { dnums.SetSize(0); }
+    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const { dnums.SetSize(0); }
 
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;

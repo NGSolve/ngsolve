@@ -25,6 +25,10 @@ namespace ngfem
     int facet_order[6]; 
     int first_facet_dof[7];
 
+    // bool highest_order_dc;
+    using ScalarFiniteElement<D>::eltype;
+    using ScalarFiniteElement<D>::order;
+
     ScalarFiniteElement<D-1> * facets[6];
 
     mutable int facetnr;
@@ -33,6 +37,8 @@ namespace ngfem
     FacetVolumeFiniteElement (ELEMENT_TYPE aeltype);
 
     void SetVertexNumbers (FlatArray<int> & avnums);
+    // void SetHighestOrderDC(bool set){highest_order_dc=set;}
+
     void SetOrder (int ao);
     void SetOrder (FlatArray<int> & ao);
     int GetFacetOrder (int j) const { return facet_order[j]; }
@@ -53,6 +59,9 @@ namespace ngfem
     const ScalarFiniteElement<D-1> & GetFacetFE(int fnr) const { return *facets[fnr]; }
 
     virtual void ComputeNDof () = 0;
+
+    // virtual void GetInternalDofs (Array<int> & idofs) const; 
+
   };
 
 

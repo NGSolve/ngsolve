@@ -72,38 +72,20 @@ namespace ngfem
 
     /// constructor
     FiniteElement (int adimspace, ELEMENT_TYPE aeltype, int andof, int aorder)
-      : /* dimspace(adimspace), */ eltype(aeltype), ndof(andof), order(aorder)
+      : eltype(aeltype), ndof(andof), order(aorder)
     { ; }
 
     /// virtual destructor
     virtual ~FiniteElement () { ; }
 
-    /// Space dimension (1, 2 or 3)
-    // int SpatialDim () const { return dimspace; }
-
     /// Number of degrees-of-freedom
-    int GetNDof () const 
-    { 
-      // if (needs_update) 
-      // throw NeedsUpdateException ();
-      // const_cast<FiniteElement&> (*this).ComputeNDof();
-      return ndof; 
-    }
+    int GetNDof () const { return ndof; }
 
     /// maximal polynomial order
-    int Order () const 
-    { 
-      // if (needs_update)
-      // throw NeedsUpdateException ();
-      // const_cast<FiniteElement&> (*this).ComputeNDof();
-      return order; 
-    }
+    int Order () const { return order; }
 
     /// geometry of element
     ELEMENT_TYPE ElementType() const { return eltype; }
-
-    /// degrees of freedom sitting inside the element, used for static condensation
-    virtual void GetInternalDofs (Array<int> & idofs) const;
 
     /// get dof description
     virtual void GetDofs (Array<Dof> & dofs) const;
@@ -128,16 +110,22 @@ namespace ngfem
   public:
     /// 
     CompoundFiniteElement (Array<const FiniteElement*> & afea);
+
+    /// number of components
+    int GetNComponents() const { return fea.Size(); }
+
     /// select i-th component
     const FiniteElement & operator[] (int i) const { return *fea[i]; }
-    virtual void GetInternalDofs (Array<int> & idofs) const;
-    int GetNComponents() const { return fea.Size(); }
+
+    // virtual void GetInternalDofs (Array<int> & idofs) const;
   };
 
 
 
 
-
+  /**
+     a placeholder finite element
+   */
   template <ELEMENT_TYPE ET>
   class DummyFE : public FiniteElement
   {
