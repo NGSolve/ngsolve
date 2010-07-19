@@ -107,6 +107,7 @@ namespace ngstd
 	  names[i] = name;
 	  return i;
 	}
+    throw Exception ("no more timer available");
     return -1;
   }
 

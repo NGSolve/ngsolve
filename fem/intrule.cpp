@@ -1118,7 +1118,7 @@ namespace ngfem
           iry = &SelectIntegrationRuleJacobi10 (order);
           irz = &SelectIntegrationRule (ET_SEGM, order);
           
-          int sort[4], isort[4];
+          int sort[4] = { 1, 2, 3, 4}, isort[4];   // compiler warnings
           eltrans.GetSort (FlatArray<int> (4, sort) );
           for (int i = 0; i < 4; i++) isort[sort[i]] = i;
           
