@@ -486,14 +486,17 @@ public:
 	      bdbmat.Col(i*DIM_DMAT+k) = dbmat.Row(k);
 	  }
 
-	/*
-	if (DMATOP::SYMMETRIC)
-	  elmat += Symmetric ( bdbmat * Trans (bbmat));
+	
+	if (ndof < 20)
+	  {
+	    if (DMATOP::SYMMETRIC)
+	      elmat = Symmetric ( bdbmat * Trans (bbmat));
+	    else
+	      elmat = bbmat * Trans (bdbmat); 
+	  }
 	else
-	  elmat += bbmat * Trans (bdbmat); 
-	*/
+	  LapackMultABt (bbmat, bdbmat, elmat);
 
-	LapackMultABt (bbmat, bdbmat, elmat);
 	NgProfiler::AddFlops (timer, long(elmat.Height())*long(elmat.Width())*bbmat.Width());
       } 
     

@@ -190,6 +190,7 @@ namespace ngla
 
     virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const
     {
+
       INVERSETYPE old_invtype = inversetype;
       inversetype = ainversetype; 
       return old_invtype;

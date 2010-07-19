@@ -103,7 +103,7 @@ namespace ngcomp
 #else
     low_order_space = new ParallelNodalFESpace (ma, loflags);
 #endif
-          
+
     // minext = flags.GetDefineFlag ("minext");
     // optext = flags.GetDefineFlag ("optext");
     // fast_pfem = flags.GetDefineFlag ("fast");
