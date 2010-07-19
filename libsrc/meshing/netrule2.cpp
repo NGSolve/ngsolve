@@ -95,18 +95,12 @@ void netrule :: SetFreeZoneTransformation (const Vector & devp, int tolclass)
 	}
       else
 	{
-	  vn /= sqrt (len2);    // should not be necessary
+	  vn /= sqrt (len2);    // scaling necessary ?
 
 	  freesetinequ(i,0) = vn.X(); 
 	  freesetinequ(i,1) = vn.Y(); 
 	  freesetinequ(i,2) = -(p1.X() * vn.X() + p1.Y() * vn.Y());
 	}
-
-      /*
-      freesetinequ(i,0) = vn.X(); 
-      freesetinequ(i,1) = vn.Y(); 
-      freesetinequ(i,2) = -(p1.X() * vn.X() + p1.Y() * vn.Y());
-      */
     }
 }
 

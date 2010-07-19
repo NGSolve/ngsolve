@@ -26,45 +26,71 @@ namespace netgen
     virtual ~SolutionData ()
     { ; }
 
-    int GetComponents() { return components; }
-    bool IsComplex() { return iscomplex; }
+    int GetComponents() 
+    { 
+      return components; 
+    }
+
+    bool IsComplex() 
+    {
+      return iscomplex; 
+    }
 
     virtual bool GetValue (int /* elnr */, 
                            double /* lam1 */, double /* lam2 */, double /* lam3 */,
                            double * /* values */) 
-    { return false; }
+    { 
+      return false; 
+    }
 
     virtual bool GetValue (int selnr,
                            const double xref[], const double x[], const double dxdxref[],
                            double * values)
-    { return GetValue (selnr, xref[0], xref[1], xref[2], values); }
+    {
+      return GetValue (selnr, xref[0], xref[1], xref[2], values); 
+    }
 
     virtual bool GetMultiValue (int elnr, int npts,
 				const double * xref, int sxref,
 				const double * x, int sx,
 				const double * dxdxref, int sdxdxref,
-				double * values, int svalues);
+				double * values, int svalues)
+    {
+      bool res = false;
+      for (int i = 0; i < npts; i++)
+	res = GetValue (elnr, &xref[i*sxref], &x[i*sx], &dxdxref[i*sdxdxref], &values[i*svalues]);
+      return res;
+    }
 
 
 
     virtual bool GetSurfValue (int /* selnr */,
                                double /* lam1 */, double /* lam2 */, 
                                double * /* values */)
-    { return false; }
+    { 
+      return false; 
+    }
 
 
     virtual bool GetSurfValue (int selnr,
                                const double xref[], const double x[], const double dxdxref[],
                                double * values)
-    { return GetSurfValue (selnr, xref[0], xref[1], values); }
+    { 
+      return GetSurfValue (selnr, xref[0], xref[1], values); 
+    }
 
 
     virtual bool GetMultiSurfValue (int selnr, int npts,
                                     const double * xref, int sxref,
                                     const double * x, int sx,
                                     const double * dxdxref, int sdxdxref,
-                                    double * values, int svalues);
-
+                                    double * values, int svalues)
+    {
+      bool res = false;
+      for (int i = 0; i < npts; i++)
+	res = GetSurfValue (selnr, &xref[i*sxref], &x[i*sx], &dxdxref[i*sdxdxref], &values[i*svalues]);
+      return res;
+    }
 
     void SetMultiDimComponent (int mc)
     { multidimcomponent = mc; }

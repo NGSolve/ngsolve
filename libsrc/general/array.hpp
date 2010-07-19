@@ -393,6 +393,16 @@ namespace netgen
       Array<T>::operator= (val);
       return *this;
     }
+
+    /// array copy
+    ArrayMem & operator= (const FlatArray<T> & a2)
+    {
+      SetSize (a2.Size());
+      for (int i = 0; i < this->size; i++)
+	(*this)[i] = a2[i];
+      return *this;
+    }
+
   };
 
 
@@ -603,7 +613,7 @@ namespace netgen
 	    T hv = data[i];
 	    data[i] = data[j];
 	    data[j] = hv;
-
+	    
 	    S hvs = slave[i];
 	    slave[i] = slave[j];
 	    slave[j] = hvs;

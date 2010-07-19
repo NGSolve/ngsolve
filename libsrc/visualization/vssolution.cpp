@@ -29,6 +29,7 @@ namespace netgen
     delete solclass;
   }
 
+  /*
   bool SolutionData :: GetMultiValue (int elnr, int npts,
 				     const double * xref, int sxref,
 				     const double * x, int sx,
@@ -53,6 +54,7 @@ namespace netgen
       res = GetSurfValue (selnr, &xref[i*sxref], &x[i*sx], &dxdxref[i*sdxdxref], &values[i*svalues]);
     return res;
   }
+  */
   
   VisualSceneSolution :: VisualSceneSolution ()
     : VisualScene()

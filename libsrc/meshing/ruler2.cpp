@@ -5,634 +5,711 @@ namespace netgen
 {
 
 
-static double CalcElementBadness (const Array<Point2d> & points,
-				  const Element2d & elem)
-{
-  // badness = sqrt(3) /36 * circumference^2 / area - 1 +
-  //           h / li + li / h - 2
+  static double CalcElementBadness (const Array<Point2d> & points,
+				    const Element2d & elem)
+  {
+    // badness = sqrt(3) /36 * circumference^2 / area - 1 +
+    //           h / li + li / h - 2
 
-  Vec2d v12, v13, v23;
-  double l12, l13, l23, cir, area;
-  static const double c = sqrt(3.0) / 36;
+    Vec2d v12, v13, v23;
+    double l12, l13, l23, cir, area;
+    static const double c = sqrt(3.0) / 36;
 
-  v12 = points.Get(elem.PNum(2)) - points.Get(elem.PNum(1));
-  v13 = points.Get(elem.PNum(3)) - points.Get(elem.PNum(1));
-  v23 = points.Get(elem.PNum(3)) - points.Get(elem.PNum(2));
+    v12 = points.Get(elem.PNum(2)) - points.Get(elem.PNum(1));
+    v13 = points.Get(elem.PNum(3)) - points.Get(elem.PNum(1));
+    v23 = points.Get(elem.PNum(3)) - points.Get(elem.PNum(2));
 
-  l12 = v12.Length();
-  l13 = v13.Length();
-  l23 = v23.Length();
+    l12 = v12.Length();
+    l13 = v13.Length();
+    l23 = v23.Length();
 
-  cir = l12 + l13 + l23;
-  area = 0.5 * (v12.X() * v13.Y() - v12.Y() * v13.X());
-  if (area < 1e-6)
-    {
-      return 1e8;
-    }
+    cir = l12 + l13 + l23;
+    area = 0.5 * (v12.X() * v13.Y() - v12.Y() * v13.X());
+    if (area < 1e-6)
+      {
+	return 1e8;
+      }
 
-  if (testmode)
-    {
-      (*testout) << "l = " << l12 << " + " << l13 << " + " << l23 << " = " 
-		 << cir << ", area = " << area << endl;
-      (*testout) << "shapeerr = " << 10 * (c * cir * cir / area - 1) << endl
-		 << "sizeerr = " << 1/l12 + l12 + 1/l13 + l13 + 1/l23 + l23 - 6
-		 << endl;
-    }
+    if (testmode)
+      {
+	(*testout) << "l = " << l12 << " + " << l13 << " + " << l23 << " = " 
+		   << cir << ", area = " << area << endl;
+	(*testout) << "shapeerr = " << 10 * (c * cir * cir / area - 1) << endl
+		   << "sizeerr = " << 1/l12 + l12 + 1/l13 + l13 + 1/l23 + l23 - 6
+		   << endl;
+      }
 
-  return 10 * (c * cir * cir / area - 1)
-    + 1/l12 + l12 + 1/l13 + l13 + 1/l23 + l23 - 6;
-}
-
-
-
-int Meshing2 ::ApplyRules (Array<Point2d> & lpoints, 
-			   Array<int> & legalpoints,
-			   int maxlegalpoint,
-			   Array<INDEX_2> & llines,
-			   int maxlegalline,
-			   Array<Element2d> & elements,
-			   Array<INDEX> & dellines, int tolerance)
-{
-  int i, j, ri, nlok, npok, incnpok, refpi, locli = 0;
-
-  double maxerr = 0.5 + 0.3 * tolerance;
-  double minelerr = 2 + 0.5 * tolerance * tolerance;
+    return 10 * (c * cir * cir / area - 1)
+      + 1/l12 + l12 + 1/l13 + l13 + 1/l23 + l23 - 6;
+  }
 
 
-  bool ok;
-  int found;   // rule number
-  Vector oldu, newu;
-  Point2d np;
-  Vec2d linevec;
-  int oldnp;
-  INDEX_2 loclin;
-  double hf, elerr;
-  int noldlp, noldll;
-  int loctestmode;
 
-  static Array<int> pused, pmap, pfixed;
-  static Array<int, 1> lmap, lused;
-  static Array<int> pnearness, lnearness;
+  int Meshing2 ::ApplyRules (Array<Point2d> & lpoints, 
+			     Array<int> & legalpoints,
+			     int maxlegalpoint,
+			     Array<INDEX_2> & llines1,
+			     int maxlegalline,
+			     Array<Element2d> & elements,
+			     Array<INDEX> & dellines, int tolerance)
+  {
+    static int timer = NgProfiler::CreateTimer ("meshing2::ApplyRules");
+    NgProfiler::RegionTimer reg (timer);
+
+
+
+    double maxerr = 0.5 + 0.3 * tolerance;
+    double minelerr = 2 + 0.5 * tolerance * tolerance;
+
+    int noldlp = lpoints.Size();
+    int noldll = llines1.Size();
+
+
+    ArrayMem<int,100> pused(maxlegalpoint), lused(maxlegalline);
+    ArrayMem<int,100> pnearness(noldlp), lnearness(llines1.Size());
+
+    ArrayMem<int, 20> pmap, pfixed, lmap;
   
-  static Array<Point2d> tempnewpoints;
-  static Array<INDEX_2> tempnewlines;
-  static Array<int> tempdellines;
-  static Array<Element2d> tempelements;
+    ArrayMem<Point2d,100> tempnewpoints;
+    ArrayMem<INDEX_2,100> tempnewlines;
+    ArrayMem<int,100> tempdellines;
+    ArrayMem<Element2d,100> tempelements;
 
 
+    elements.SetSize (0);
+    dellines.SetSize (0);
 
-  elements.SetSize (0);
-  dellines.SetSize (0);
+    testmode = debugparam.debugoutput;
 
-  noldlp = lpoints.Size();
-  noldll = llines.Size();
+#ifdef LOCDEBUG
+    int loctestmode = testmode;
 
-  pused.SetSize (maxlegalpoint);
-  lused.SetSize (maxlegalline);
-  pnearness.SetSize (noldlp);
-  lnearness.SetSize (llines.Size());
+    if (loctestmode)
+      {
+	(*testout) << endl << endl << "Check new environment" << endl;
+	(*testout) << "tolerance = " << tolerance << endl;
+	for (int i = 1; i <= lpoints.Size(); i++)
+	  (*testout) << "P" << i << " = " << lpoints.Get(i) << endl;
+	(*testout) << endl;
+	for (int i = 1; i <= llines1.Size(); i++)
+	  (*testout) << "(" << llines1.Get(i).I1() << "-" << llines1.Get(i).I2() << ")" << endl;
+      }
+#endif
 
+    // check every rule
 
-  testmode = debugparam.debugoutput;
-  loctestmode = testmode;
+    int found = 0;   // rule number
 
-  if (loctestmode)
-    {
-      (*testout) << endl << endl << "Check new environment" << endl;
-      (*testout) << "tolerance = " << tolerance << endl;
-      for (i = 1; i <= lpoints.Size(); i++)
-	(*testout) << "P" << i << " = " << lpoints.Get(i) << endl;
-      (*testout) << endl;
-      for (i = 1; i <= llines.Size(); i++)
-	(*testout) << "(" << llines.Get(i).I1() << "-" << llines.Get(i).I2() << ")" << endl;
-    }
-
-  // check every rule
-
-  found = 0;
-
+    pnearness = 1000;
   
-  for (i = 1; i <= noldlp; i++)
-    pnearness.Set(i, 1000);
-  
-  for (j = 1; j <= 2; j++)
-    pnearness.Set(llines.Get(1).I(j), 0);
+    for (int j = 0; j < 2; j++)
+      pnearness.Set(llines1[0][j], 0);
+
+
+
+    enum { MAX_NEARNESS = 3 };
+
+    for (int cnt = 0; cnt < MAX_NEARNESS; cnt++)
+      {
+	bool ok = true;
+	for (int i = 0; i < maxlegalline; i++)
+	  {
+	    const INDEX_2 & hline = llines1[i];
+
+	    int minn = min2 (pnearness.Get(hline[0]),  pnearness.Get(hline[1]));
+
+	    for (int j = 0; j < 2; j++)
+	      if (pnearness.Get(hline[j]) > minn+1)
+		{
+		  ok = false;
+		  pnearness.Set(hline[j], minn+1);
+		}
+	  }
+	if (!ok) break;
+      }
+
+
+    for (int i = 0; i < maxlegalline; i++)
+      lnearness[i] = pnearness.Get(llines1[i][0]) + pnearness.Get(llines1[i][1]);
+
+
+    // resort lines after lnearness
+    Array<INDEX_2> llines(llines1.Size());
+    Array<int> sortlines(llines1.Size());
+    int lnearness_class[MAX_NEARNESS];
+
+    for (int j = 0; j < MAX_NEARNESS; j++)
+      lnearness_class[j] = 0;
+    for (int i = 0; i < maxlegalline; i++)
+      if (lnearness[i] < MAX_NEARNESS)
+	lnearness_class[lnearness[i]]++;
     
+    int cumm = 0;
+    for (int j = 0; j < MAX_NEARNESS; j++)
+      {
+	int hcnt = lnearness_class[j];
+	lnearness_class[j] = cumm;
+	cumm += hcnt;
+      }
 
-  do
-    {
-      ok = 1;
-      for (i = 1; i <= maxlegalline; i++)
+    for (int i = 0; i < maxlegalline; i++)
+      if (lnearness[i] < MAX_NEARNESS)
 	{
-	  const INDEX_2 & hline = llines.Get(i);
-
-	  /*
-	  int minn = INT_MAX-1;
-	  for (j = 1; j <= 2; j++)
-	    {
-	      int hi = pnearness.Get(hline.I(j));
-	      if (hi < minn) minn = hi;
-	    }
-	  */
-	  int minn = pnearness.Get(hline.I1());
-	  int minn2 = pnearness.Get(hline.I2());
-	  if (minn2 < minn)
-	    minn = minn2;
-
-	  /*
-	  for (j = 1; j <= 2; j++)
-	    {
-	      int hpi = hline.I(j);
-	      if (pnearness.Get(hpi) > minn+1)
-		{
-		  ok = 0;
-		  pnearness.Set(hpi, minn+1);
-		}
-	    }
-	  */
-	  int hpi = hline.I1();
-	  if (pnearness.Get(hpi) > minn+1)
-	    {
-	      ok = 0;
-	      pnearness.Set(hpi, minn+1);
-	    }
-	  hpi = hline.I2();
-	  if (pnearness.Get(hpi) > minn+1)
-	    {
-	      ok = 0;
-	      pnearness.Set(hpi, minn+1);
-	    }
+	  llines[lnearness_class[lnearness[i]]] = llines1[i];
+	  sortlines[lnearness_class[lnearness[i]]] = i+1;
+	  lnearness_class[lnearness[i]]++;
 	}
-    }
-  while (!ok);
-  
-  for (i = 1; i <= maxlegalline /* lnearness.Size() */; i++)
-    {
-      lnearness.Set(i, 0);
-      for (j = 1; j <= 2; j++)
-	lnearness.Elem(i) += pnearness.Get(llines.Get(i).I(j));
-    }
+      else
+	{
+	  llines[cumm] = llines1[i];
+	  sortlines[cumm] = i+1;
+	  cumm++;
+	}
+
+    for (int i = maxlegalline; i < llines1.Size(); i++)
+      {
+	llines[cumm] = llines1[i];
+	sortlines[cumm] = i+1;
+	cumm++;
+      }
+
+    for (int i = 0; i < maxlegalline; i++)
+      lnearness[i] = pnearness.Get(llines[i][0]) + pnearness.Get(llines[i][1]);
 
 
-  for (ri = 1; ri <= rules.Size(); ri++)
-    {
-      netrule * rule = rules.Get(ri);
 
-      if (loctestmode)
-	(*testout) << "Rule " << rule->Name() << endl;
 
-      if (rule->GetQuality() > tolerance) continue;
+    static bool firsttime = true;
+    static int timers[100];
+    static int timers2[100];
+    static int timers3[100];
+    if (firsttime)
+      {
+	for (int ri = 0; ri < rules.Size(); ri++)
+	  timers[ri] = NgProfiler::CreateTimer (string("netrule ")+rules[ri]->Name());
+	for (int ri = 0; ri < rules.Size(); ri++)
+	  timers2[ri] = NgProfiler::CreateTimer (string("netrule,mapped ")+rules[ri]->Name());
+	for (int ri = 0; ri < rules.Size(); ri++)
+	  timers3[ri] = NgProfiler::CreateTimer (string("netrule,lines mapped ")+rules[ri]->Name());
+	firsttime = false;
+      }
 
-      pmap.SetSize (rule->GetNP());
-      lmap.SetSize (rule->GetNL());
+    lused = 0;
+    pused = 0;
+
+
+    static int timer1 = NgProfiler::CreateTimer ("meshing2::ApplyRules 1");
+    NgProfiler::RegionTimer reg1 (timer1);
+
+
+    for (int ri = 1; ri <= rules.Size(); ri++)
+      {
+	NgProfiler::RegionTimer reg(timers[ri-1]);
+	netrule * rule = rules.Get(ri);
+
+#ifdef LOCDEBUG
+	if (loctestmode)
+	  (*testout) << "Rule " << rule->Name() << endl;
+#endif
+
+	if (rule->GetQuality() > tolerance) continue;
+
+	pmap.SetSize (rule->GetNP());
+	lmap.SetSize (rule->GetNL());
       
-      lused = 0;
-      pused = 0;
-      pmap = 0;
-      lmap = 0;
+	pmap = 0;
+	lmap = 0;
 
-      lused[1] = 1;   // .Set (1, 1);
-      lmap[1] = 1;    // .Set (1, 1);
+	lused[0] = 1; 
+	lmap[0] = 1;  
 
-      for (j = 0; j < 2; j++)
-	{
-          pmap.Elem(rule->GetLine(1)[j]) = llines[0][j];
-          pused.Elem(llines[0][j])++;
-	}
+	for (int j = 0; j < 2; j++)
+	  {
+	    pmap.Elem(rule->GetLine(1)[j]) = llines[0][j];
+	    pused.Elem(llines[0][j])++;
+	  }
 
 
-      nlok = 2;
 
-      while (nlok >= 2)
-	{
+	int nlok = 2;
 
-	  if (nlok <= rule->GetNOldL())
 
-	    {
-	      ok = 0;
-	      while (!ok && lmap.Get(nlok) < maxlegalline  /* llines.Size() */)
-		{
-		  lmap.Elem(nlok)++;
-		  locli = lmap.Get(nlok);
+	bool ok = false;
 
-		  if (!lused.Get(locli) && 
-		      lnearness.Get(locli) <= rule->GetLNearness (nlok) )
-		    {
-		      ok = 1;
+	while (nlok >= 2)
+	  {
 
-		      loclin = llines.Get(locli);
-                      linevec = lpoints.Get(loclin.I2()) - lpoints.Get(loclin.I1());
+	    if (nlok <= rule->GetNOldL())
 
-		      if (rule->CalcLineError (nlok, linevec) > maxerr)
-			{
-			  ok = 0;
-			  if(loctestmode)
-			    (*testout) << "not ok pos1" << endl;
-			}
+	      {
+		ok = 0;
+		
+		int maxline = (rule->GetLNearness(nlok) < MAX_NEARNESS) ? lnearness_class[rule->GetLNearness(nlok)] : maxlegalline;
+		// int maxline = maxlegalline;
 
-		      for (j = 0; j < 2 && ok; j++)
-			{
-			  // refpi = rule->GetPointNr (nlok, j);
-                          refpi = rule->GetLine(nlok)[j];
+		while (!ok && lmap.Get(nlok) < maxline)
+		  {
+		    lmap.Elem(nlok)++;
+		    int locli = lmap.Get(nlok);
 
-			  if (pmap.Get(refpi) != 0)
-			    {
-			      if (pmap.Get(refpi) != loclin[j])
-				{
-				  ok = 0;
-				  if(loctestmode)
-				    (*testout) << "not ok pos2" << endl;
-				}
-			    }
-			  else
-			    {
-			      if (rule->CalcPointDist (refpi, lpoints.Get(loclin[j])) > maxerr
-				  || !legalpoints.Get(loclin[j])
-				  || pused.Get(loclin[j]))
-				{
-				  ok = 0;
-				  if(loctestmode)
-				    {
-				      (*testout) << "nok pos3" << endl;
-				      //if(rule->CalcPointDist (refpi, lpoints.Get(loclin[j])) > maxerr)
-				      //(*testout) << "r1" << endl;
-				      //if(!legalpoints.Get(loclin[j]))
-				      //(*testout) << "r2 legalpoints " << legalpoints << " loclin " << loclin << " j " << j << endl;
-				      //if(pused.Get(loclin[j]))
-				      //(*testout) << "r3" << endl;
-				    }
-				}
-			    }
-			}
-		    }
-		}
+		    if (lnearness.Get(locli) > rule->GetLNearness (nlok) ) continue;
+		    if (lused.Get(locli)) continue;
 
-	      if (ok)
-		{
-		  lused.Elem (locli) = 1;
-		  for (j = 0; j < 2; j++)
-		    {
-		      pmap.Set(rule->GetLine (nlok)[j], loclin[j]);
-		      pused.Elem(loclin[j])++;
-		    }
 
-		  nlok++;
-		}
-	      else
-		{
-		  lmap.Elem(nlok) = 0;
-		  nlok--;
+		    ok = 1;
 
-		  lused.Elem (lmap.Get(nlok)) = 0;
-		  for (j = 0; j < 2; j++)
-		    {
-		      pused.Elem(llines.Get(lmap.Get(nlok))[j]) --;
-		      if (! pused.Get (llines.Get (lmap.Get (nlok))[j]))
-			pmap.Set (rule->GetLine (nlok)[j], 0);
-		    }
-		}
-	    }
+		    INDEX_2 loclin = llines.Get(locli);
+		    Vec2d linevec = lpoints.Get(loclin.I2()) - lpoints.Get(loclin.I1());
 
-	  else
+		    if (rule->CalcLineError (nlok, linevec) > maxerr)
+		      {
+			ok = 0;
+#ifdef LOCDEBUG
+			if(loctestmode)
+			  (*testout) << "not ok pos1" << endl;
+#endif
+			continue;
+		      }
 
-	    {
+		    for (int j = 0; j < 2; j++)
+		      {
+			int refpi = rule->GetLine(nlok)[j];
 
-	      // all lines are mapped !!
+			if (pmap.Get(refpi) != 0)
+			  {
+			    if (pmap.Get(refpi) != loclin[j])
+			      {
+				ok = 0;
+#ifdef LOCDEBUG
+				if(loctestmode)
+				  (*testout) << "not ok pos2" << endl;
+#endif
+				break;
+			      }
+			  }
+			else
+			  {
+			    if (rule->CalcPointDist (refpi, lpoints.Get(loclin[j])) > maxerr
+				|| !legalpoints.Get(loclin[j])
+				|| pused.Get(loclin[j]))
+			      {
+				ok = 0;
+#ifdef LOCDEBUG
+				if(loctestmode)
+				  {
+				    (*testout) << "nok pos3" << endl;
+				    //if(rule->CalcPointDist (refpi, lpoints.Get(loclin[j])) > maxerr)
+				    //(*testout) << "r1" << endl;
+				    //if(!legalpoints.Get(loclin[j]))
+				    //(*testout) << "r2 legalpoints " << legalpoints << " loclin " << loclin << " j " << j << endl;
+				    //if(pused.Get(loclin[j]))
+				    //(*testout) << "r3" << endl;
+				  }
+#endif
+				break;
+			      }
+			  }
+		      }
+		  }
 
-	      // map also all points:
+		if (ok)
+		  {
+		    int locli = lmap.Get(nlok);
+		    INDEX_2 loclin = llines.Get(locli);
 
-	      npok = 1;
-	      incnpok = 1;
+		    lused.Elem (locli) = 1;
+		    for (int j = 0; j < 2; j++)
+		      {
+			pmap.Set(rule->GetLine (nlok)[j], loclin[j]);
+			pused.Elem(loclin[j])++;
+		      }
 
-	      pfixed.SetSize (pmap.Size());
-	      for (i = 0; i < pmap.Size(); i++)
-		pfixed[i] = (pmap[i] >= 1);
+		    nlok++;
+		  }
+		else
+		  {
+		    lmap.Elem(nlok) = 0;
+		    nlok--;
 
-	      while (npok >= 1)
-		{
+		    lused.Elem (lmap.Get(nlok)) = 0;
+		    for (int j = 0; j < 2; j++)
+		      {
+			pused.Elem(llines.Get(lmap.Get(nlok))[j]) --;
+			if (! pused.Get (llines.Get (lmap.Get (nlok))[j]))
+			  pmap.Set (rule->GetLine (nlok)[j], 0);
+		      }
+		  }
+	      }
 
-		  if (npok <= rule->GetNOldP())
+	    else
 
-		    {
-		      if (pfixed.Get(npok))
+	      {
+		NgProfiler::RegionTimer reg(timers3[ri-1]);
 
-			{
-			  if (incnpok)
-			    npok++;
-			  else
-			    npok--;
-			}
+		// all lines are mapped !!
 
-		      else
+		// map also all points:
 
-			{
-			  ok = 0;
+		int npok = 1;
+		int incnpok = 1;
 
-			  if (pmap.Get(npok))
-			    pused.Elem(pmap.Get(npok))--;
+		pfixed.SetSize (pmap.Size());
+		for (int i = 0; i < pmap.Size(); i++)
+		  pfixed[i] = (pmap[i] >= 1);
+ 
+		while (npok >= 1)
+		  {
 
-			  while (!ok && pmap.Get(npok) < maxlegalpoint)
-			    {
-			      ok = 1;
+		    if (npok <= rule->GetNOldP())
 
-			      pmap.Elem(npok)++;
+		      {
+			if (pfixed.Get(npok))
 
-			      if (pused.Get(pmap.Get(npok)))
-				{
-				  ok = 0;
-				}
-			      else
-				{
-				  if (rule->CalcPointDist (npok, lpoints.Get(pmap.Get(npok))) > maxerr 
-				      || !legalpoints.Get(pmap.Get(npok))) 
-                                    
-                                    ok = 0;
-				}
-			    }
-
-			  if (ok)
-			    {
-			      pused.Elem(pmap.Get(npok))++;
+			  {
+			    if (incnpok)
 			      npok++;
-			      incnpok = 1;
-			    }
-
-			  else
-
-			    {
-			      pmap.Elem(npok) = 0;
+			    else
 			      npok--;
-			      incnpok = 0;
-			    }
-			}
-		    }
+			  }
 
-		  else
+			else
 
-		    {
-		      if (ok)
-			foundmap.Elem(ri)++; 
+			  {
+			    ok = 0;
 
-		      if (loctestmode)
-			(*testout) << "lines and points mapped" << endl;
+			    if (pmap.Get(npok))
+			      pused.Elem(pmap.Get(npok))--;
+
+			    while (!ok && pmap.Get(npok) < maxlegalpoint)
+			      {
+				ok = 1;
+
+				pmap.Elem(npok)++;
+
+				if (pused.Get(pmap.Get(npok)))
+				  {
+				    ok = 0;
+				  }
+				else
+				  {
+				    if (rule->CalcPointDist (npok, lpoints.Get(pmap.Get(npok))) > maxerr 
+					|| !legalpoints.Get(pmap.Get(npok))) 
+                                    
+				      ok = 0;
+				  }
+			      }
+
+			    if (ok)
+			      {
+				pused.Elem(pmap.Get(npok))++;
+				npok++;
+				incnpok = 1;
+			      }
+
+			    else
+
+			      {
+				pmap.Elem(npok) = 0;
+				npok--;
+				incnpok = 0;
+			      }
+			  }
+		      }
+
+		    else
+
+		      {
+			NgProfiler::RegionTimer reg(timers2[ri-1]);
+
+			npok = rule->GetNOldP();
+			incnpok = 0;
+
+			if (ok)
+			  foundmap.Elem(ri)++; 
+
+#ifdef LOCDEBUG
+			if (loctestmode)
+			  (*testout) << "lines and points mapped" << endl;
+#endif
+
+			ok = 1;
+
+			// check orientations
+
+			for (int i = 1; i <= rule->GetNOrientations(); i++)
+			  {
+			    if (CW (lpoints.Get(pmap.Get(rule->GetOrientation(i).i1)),
+				    lpoints.Get(pmap.Get(rule->GetOrientation(i).i2)),
+				    lpoints.Get(pmap.Get(rule->GetOrientation(i).i3))) )
+			      {
+				ok = 0;
+#ifdef LOCDEBUG
+				if (loctestmode)
+				  (*testout) << "Orientation " << i << " not ok" << endl;
+#endif
+				break;
+			      }
+			  }
 
 
-		      ok = 1;
+			if (!ok) continue;
 
-		      // check orientations
-
-		      for (i = 1; i <= rule->GetNOrientations() && ok; i++)
-			{
-			  if (CW (lpoints.Get(pmap.Get(rule->GetOrientation(i).i1)),
-				  lpoints.Get(pmap.Get(rule->GetOrientation(i).i2)),
-				  lpoints.Get(pmap.Get(rule->GetOrientation(i).i3))) )
-			    {
-			      ok = 0;
-			      if (loctestmode)
-				(*testout) << "Orientation " << i << " not ok" << endl;
-			    }
-			}
-
-		      if (ok)
-			{
-			  oldu.SetSize (2 * rule->GetNOldP());
-			  
-			  for (int i = 1; i <= rule->GetNOldP(); i++)
-			    {
-			      Vec2d ui(rule->GetPoint(i), lpoints.Get(pmap.Get(i)));
-			      oldu (2*i-2) = ui.X();
-			      oldu (2*i-1) = ui.Y();
-			    }
-			  
-			  rule -> SetFreeZoneTransformation (oldu, tolerance);
-			}
+			Vector oldu (2 * rule->GetNOldP());
 		      
+			for (int i = 1; i <= rule->GetNOldP(); i++)
+			  {
+			    Vec2d ui(rule->GetPoint(i), lpoints.Get(pmap.Get(i)));
+			    oldu (2*i-2) = ui.X();
+			    oldu (2*i-1) = ui.Y();
+			  }
+		      
+			rule -> SetFreeZoneTransformation (oldu, tolerance);
 
-		      if (ok && !rule->ConvexFreeZone())
-			{
-			  ok = 0;
-			  if (loctestmode) 
-			    (*testout) << "freezone not convex" << endl;
-
-			  /*
-			  static int cnt = 0;
-			  cnt++;
-			  if (cnt % 100 == 0)
-			    {
+		      
+			if (!ok) continue;
+			if (!rule->ConvexFreeZone())
+			  {
+			    ok = 0;
+#ifdef LOCDEBUG
+			    if (loctestmode) 
+			      (*testout) << "freezone not convex" << endl;
+#endif
+			    /*
+			      static int cnt = 0;
+			      cnt++;
+			      if (cnt % 100 == 0)
+			      {
 			      cout << "freezone not convex, cnt = " << cnt << "; rule = " << rule->Name() << endl;
 			      (*testout) << "freezone not convex, cnt = " << cnt << "; rule = " << rule->Name() << endl;
 			      (*testout) << "tol = " << tolerance << endl;
 			      (*testout) << "maxerr = " << maxerr << "; minerr = " << minelerr << endl;
 			      (*testout) << "freezone = " << rule->GetTransFreeZone() << endl;
-			    }
-			  */
-			}
+			      }
+			    */
+			  }
 
-		      // check freezone:
+			// check freezone:
+			if (!ok) continue;
+			for (int i = 1; i <= maxlegalpoint && ok; i++)
+			  {
+			    if ( !pused.Get(i) &&
+				 rule->IsInFreeZone (lpoints.Get(i)) )
+			      {
+				ok = 0;
+#ifdef LOCDEBUG
+				if (loctestmode)
+				  (*testout) << "Point " << i << " in freezone" << endl;
+#endif
+				break;
+			      }
+			  }
 
-		      for (i = 1; i <= maxlegalpoint && ok; i++)
+			if (!ok) continue;
+			for (int i = maxlegalpoint+1; i <= lpoints.Size(); i++)
+			  {
+			    if ( rule->IsInFreeZone (lpoints.Get(i)) )
+			      {
+				ok = 0;
+#ifdef LOCDEBUG
+				if (loctestmode)
+				  (*testout) << "Point " << i << " in freezone" << endl;
+#endif
+				break;
+			      }
+			  }
+
+
+			if (!ok) continue;
+			for (int i = 1; i <= maxlegalline; i++)
+			  {
+			    if (!lused.Get(i) && 
+				rule->IsLineInFreeZone (lpoints.Get(llines.Get(i).I1()),
+							lpoints.Get(llines.Get(i).I2())))
+			      {
+				ok = 0;
+#ifdef LOCDEBUG
+				if (loctestmode)
+				  (*testout) << "line " << llines.Get(i).I1() << "-"
+					     << llines.Get(i).I2() << " in freezone" << endl;
+#endif
+				break;
+			      }
+			  }
+
+			if (!ok) continue;
+
+			for (int i = maxlegalline+1; i <= llines.Size(); i++)
+			  {
+			    if (rule->IsLineInFreeZone (lpoints.Get(llines.Get(i).I1()),
+							lpoints.Get(llines.Get(i).I2())))
+			      {
+				ok = 0;
+#ifdef LOCDEBUG
+				if (loctestmode)
+				  (*testout) << "line " << llines.Get(i).I1() << "-"
+					     << llines.Get(i).I2() << " in freezone" << endl;
+#endif
+				break;
+			      }
+			  }
+
+
+			/*
+			// check orientations
+
+			for (i = 1; i <= rule->GetNOrientations() && ok; i++)
 			{
-			  if ( !pused.Get(i) &&
-			       rule->IsInFreeZone (lpoints.Get(i)) )
-			    {
-			      ok = 0;
-			      if (loctestmode)
-				(*testout) << "Point " << i << " in freezone" << endl;
-			    }
-			}
-
-
-		      for (i = maxlegalpoint+1; i <= lpoints.Size() && ok; i++)
+			if (CW (lpoints.Get(pmap.Get(rule->GetOrientation(i).i1)),
+			lpoints.Get(pmap.Get(rule->GetOrientation(i).i2)),
+			lpoints.Get(pmap.Get(rule->GetOrientation(i).i3))) )
 			{
-			  if ( rule->IsInFreeZone (lpoints.Get(i)) )
-			    {
-			      ok = 0;
-			      if (loctestmode)
-				(*testout) << "Point " << i << " in freezone" << endl;
-			    }
+			ok = 0;
+			if (loctestmode)
+			(*testout) << "Orientation " << i << " not ok" << endl;
 			}
-
-		      for (i = 1; i <= maxlegalline && ok; i++)
-			{
-			  if (!lused.Get(i) && 
-			      rule->IsLineInFreeZone (lpoints.Get(llines.Get(i).I1()),
-						      lpoints.Get(llines.Get(i).I2())))
-			    {
-			      ok = 0;
-			      if (loctestmode)
-				(*testout) << "line " << llines.Get(i).I1() << "-"
-					   << llines.Get(i).I2() << " in freezone" << endl;
-			    }
 			}
-		      for (i = maxlegalline+1; i <= llines.Size() && ok; i++)
-			{
-			  if (rule->IsLineInFreeZone (lpoints.Get(llines.Get(i).I1()),
-						      lpoints.Get(llines.Get(i).I2())))
-			    {
-			      ok = 0;
-			      if (loctestmode)
-				(*testout) << "line " << llines.Get(i).I1() << "-"
-					   << llines.Get(i).I2() << " in freezone" << endl;
-			    }
-			}
+			*/
 
 
-		      /*
-		      // check orientations
+			if (!ok) continue;
 
-		      for (i = 1; i <= rule->GetNOrientations() && ok; i++)
-			{
-			  if (CW (lpoints.Get(pmap.Get(rule->GetOrientation(i).i1)),
-				  lpoints.Get(pmap.Get(rule->GetOrientation(i).i2)),
-				  lpoints.Get(pmap.Get(rule->GetOrientation(i).i3))) )
-			    {
-			      ok = 0;
-			      if (loctestmode)
-				(*testout) << "Orientation " << i << " not ok" << endl;
-			    }
-			}
-		      */
+#ifdef LOCDEBUG
+			if (loctestmode)
+			  (*testout) << "rule ok" << endl;
+#endif
 
+			// Setze neue Punkte:
+			if (rule->GetNOldP() < rule->GetNP())
+			  {
+			    Vector newu(rule->GetOldUToNewU().Height());
+			    rule->GetOldUToNewU().Mult (oldu, newu);
+			    
+			    int oldnp = rule->GetNOldP();
+			    for (int i = oldnp + 1; i <= rule->GetNP(); i++)
+			      {
+				Point2d np = rule->GetPoint(i);
+				np.X() += newu (2 * (i-oldnp) - 2);
+				np.Y() += newu (2 * (i-oldnp) - 1);
+				
+				pmap.Elem(i) = lpoints.Append (np);
+			      }
+			  }
 
-		      if (ok)
-			{
-			  if (loctestmode)
-			    (*testout) << "rule ok" << endl;
+			// Setze neue Linien:
 
-			  //			  newu = rule->GetOldUToNewU() * oldu;
-			  if (rule->GetNOldP() < rule->GetNP())
-			    {
-			      newu.SetSize (rule->GetOldUToNewU().Height());
-			      rule->GetOldUToNewU().Mult (oldu, newu);
-			    }
-
-			  // Setze neue Punkte:
-
-			  oldnp = rule->GetNOldP();
-
-			  for (i = oldnp + 1; i <= rule->GetNP(); i++)
-			    {
-			      np = rule->GetPoint(i);
-			      np.X() += newu (2 * (i-oldnp) - 2);
-			      np.Y() += newu (2 * (i-oldnp) - 1);
-
-			      pmap.Elem(i) = lpoints.Append (np);
-			    }
-
-			  // Setze neue Linien:
-
-			  for (i = rule->GetNOldL() + 1; i <= rule->GetNL(); i++)
-			    {
-			      llines.Append (INDEX_2 (pmap.Get(rule->GetLine (i)[0]),
-						      pmap.Get(rule->GetLine (i)[1])));
-			    }
+			for (int i = rule->GetNOldL() + 1; i <= rule->GetNL(); i++)
+			  {
+			    llines.Append (INDEX_2 (pmap.Get(rule->GetLine (i)[0]),
+						    pmap.Get(rule->GetLine (i)[1])));
+			  }
 
 
-			  // delete old lines:
-                          for (i = 1; i <= rule->GetNDelL(); i++)
-                            dellines.Append (lmap.Get(rule->GetDelLine(i)));
+			// delete old lines:
+			for (int i = 1; i <= rule->GetNDelL(); i++)
+			  dellines.Append (sortlines.Elem (lmap.Get(rule->GetDelLine(i))));
+			// dellines.Append (lmap.Get(rule->GetDelLine(i))));
 
-                          // dellines.Append (lmap[rule->GetDelLines()]);
-                          // lmap[rule->GetDelLines()];
-
-
-			  // insert new elements:
-
-			  for (i = 1; i <= rule->GetNE(); i++)
-			    {
-			      elements.Append (rule->GetElement(i));
-			      for (j = 1; j <= elements.Get(i).GetNP(); j++)
-				elements.Elem(i).PNum(j) = pmap.Get(elements.Get(i).PNum(j));
-			    }
+			// dellines.Append (lmap.Elem(rule->GetDelLines()));
+			// lmap[rule->GetDelLines()];
 
 
-			  elerr = 0;
-			  for (i = 1; i <= elements.Size(); i++)
-			    {
-			      if (!mparam.quad)
-				hf = CalcElementBadness (lpoints, elements.Get(i));
-			      else
-				hf = elements.Get(i).CalcJacobianBadness (lpoints) * 5;
-			      if (loctestmode)
-				(*testout) << "r " << rule->Name() << "bad = " << hf << endl;
-			      if (hf > elerr) elerr = hf;
-			    }
+			// insert new elements:
 
-			  if (loctestmode)
-			    (*testout) << "error = " << elerr;
+			for (int i = 1; i <= rule->GetNE(); i++)
+			  {
+			    elements.Append (rule->GetElement(i));
+			    for (int j = 1; j <= elements.Get(i).GetNP(); j++)
+			      elements.Elem(i).PNum(j) = pmap.Get(elements.Get(i).PNum(j));
+			  }
 
 
-			  canuse.Elem(ri) ++;
+			double elerr = 0;
+			for (int i = 1; i <= elements.Size(); i++)
+			  {
+			    double hf;
+			    if (!mparam.quad)
+			      hf = CalcElementBadness (lpoints, elements.Get(i));
+			    else
+			      hf = elements.Get(i).CalcJacobianBadness (lpoints) * 5;
+#ifdef LOCDEBUG
+			    if (loctestmode)
+			      (*testout) << "r " << rule->Name() << "bad = " << hf << endl;
+#endif
+			    if (hf > elerr) elerr = hf;
+			  }
 
-			  if (elerr < 0.99*minelerr)
-			    {
+#ifdef LOCDEBUG
+			if (loctestmode)
+			  (*testout) << "error = " << elerr;
+#endif
 
-			      if (loctestmode)
-				{
-				  (*testout) << "rule = " << rule->Name() << endl;
-				  (*testout) << "class = " << tolerance << endl;
-				  (*testout) << "lpoints: " << endl;
-				  for (i = 1; i <= lpoints.Size(); i++)
-				    (*testout) << lpoints.Get(i) << endl;
-				  (*testout) << "llines: " << endl;
-				  for (i = 1; i <= llines.Size(); i++)
-				    (*testout) << llines.Get(i).I1() << " " << llines.Get(i).I2() << endl;
+			canuse.Elem(ri) ++;
 
-				  (*testout) << "Freezone: ";
-				  for (i = 1; i <= rule -> GetTransFreeZone().Size(); i++)
-				    (*testout) << rule->GetTransFreeZone().Get(i) << endl;
-				}
+			if (elerr < 0.99*minelerr)
+			  {
+#ifdef LOCDEBUG
+			    if (loctestmode)
+			      {
+				(*testout) << "rule = " << rule->Name() << endl;
+				(*testout) << "class = " << tolerance << endl;
+				(*testout) << "lpoints: " << endl;
+				for (int i = 1; i <= lpoints.Size(); i++)
+				  (*testout) << lpoints.Get(i) << endl;
+				(*testout) << "llines: " << endl;
+				for (int i = 1; i <= llines.Size(); i++)
+				  (*testout) << llines.Get(i).I1() << " " << llines.Get(i).I2() << endl;
 
+				(*testout) << "Freezone: ";
+				for (int i = 1; i <= rule -> GetTransFreeZone().Size(); i++)
+				  (*testout) << rule->GetTransFreeZone().Get(i) << endl;
+			      }
+#endif
 
-			      minelerr = elerr;
-			      found = ri;
+			    minelerr = elerr;
+			    found = ri;
 
-                              tempnewpoints = lpoints.Range (noldlp, lpoints.Size());
-                              tempnewlines = llines.Range (noldll, llines.Size());
-                              tempdellines = dellines;
-                              tempelements = elements;
-			    }
+			    tempnewpoints = lpoints.Range (noldlp, lpoints.Size());
+			    tempnewlines = llines.Range (noldll, llines.Size());
+			    tempdellines = dellines;
+			    tempelements = elements;
+			  }
 
-			  lpoints.SetSize (noldlp);
-			  llines.SetSize (noldll);
-			  dellines.SetSize (0);
-			  elements.SetSize (0);
-			  ok = 0;
-			}
+			lpoints.SetSize (noldlp);
+			llines.SetSize (noldll);
+			dellines.SetSize (0);
+			elements.SetSize (0);
+			ok = 0;
+		      }
+		  }
 
-		      npok = rule->GetNOldP();
-		      incnpok = 0;
-		    }
-		}
+		nlok = rule->GetNOldL();
 
-	      nlok = rule->GetNOldL();
+		lused.Set (lmap.Get(nlok), 0);
 
-	      lused.Set (lmap.Get(nlok), 0);
+		for (int j = 1; j <= 2; j++)
+		  {
+		    int refpi = rule->GetPointNr (nlok, j);
+		    pused.Elem(pmap.Get(refpi))--;
 
-	      for (j = 1; j <= 2; j++)
-		{
-		  refpi = rule->GetPointNr (nlok, j);
-		  pused.Elem(pmap.Get(refpi))--;
-
-		  if (pused.Get(pmap.Get(refpi)) == 0)
-                    pmap.Set(refpi, 0);
-		}
-	    }
-	}
-    }
-
-
-  if (found)
-    {
-      lpoints.Append (tempnewpoints);
-      llines.Append (tempnewlines);
-      dellines.Append (tempdellines);
-      elements.Append (tempelements);
-    }
+		    if (pused.Get(pmap.Get(refpi)) == 0)
+		      pmap.Set(refpi, 0);
+		  }
+	      }
+	  }
+      }
 
 
-  return found;
-}
+    if (found)
+      {
+	lpoints.Append (tempnewpoints);
+	llines1.Append (tempnewlines);
+	dellines.Append (tempdellines);
+	elements.Append (tempelements);
+      }
+
+
+    return found;
+  }
 
 
 

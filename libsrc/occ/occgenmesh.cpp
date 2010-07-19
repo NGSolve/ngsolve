@@ -20,6 +20,8 @@ namespace netgen
 
    bool merge_solids = 1;
 
+
+  // can you please explain what you intend to compute here (JS) !!!
    double Line :: Dist (Line l)
    {
       Vec<3> n = p1-p0;

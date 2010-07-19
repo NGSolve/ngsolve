@@ -211,7 +211,7 @@ namespace netgen
 		edgeflag[i2] = i;
 		edgenr[i2] = ednr;
 	      }
-	    for (int j = 0; j << vert2vertcoarse[i].Size(); j++)
+	    for (int j = 0; j < vert2vertcoarse[i].Size(); j++)      // fix by Markus
 	      {
 		int v2 = vert2vertcoarse[i][j];
 		if (edgeflag[v2] < i)
