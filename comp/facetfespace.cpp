@@ -1252,34 +1252,26 @@ public:
 // 	    cout << "ds_order = " << ds_order << endl;
 // 		
 	    if (ma.GetDimension() == 2)
-	    {  
-	      for (int i = 0; i < nv; i++)
-		if (!IsDirichletVertex(i)){
+	      {  
+		for (int i = 0; i < nv; i++)
+		{
 		  dnums.SetSize(0);
 		  GetVertexDofNrs(i,dnums);
-		  creator.Add (i, dnums[0]);
+		  if (dnums.Size()>0)
+		    creator.Add (i, dnums[0]);
 		}
-	    }
+	      }
 	    for (int i = 0; i < ned; i++)
-	      if (!IsDirichletEdge(i))
-		{
-		  Ng_Node<1> edge = ma.GetNode<1> (i);
-		  for (int k = 0; k < 2; k++){
-		    dnums.SetSize(0);
-		    if (! IsDirichletVertex(edge.vertices[k]) ){
-		      if (ma.GetDimension() == 2){
-			GetEdgeDofNrs(i,dnums);
-			creator.Add (edge.vertices[k], dnums[0]);
-		      }
-		      else{
-			GetEdgeDofNrs(i,dnums);
-			for (int l=0;l<dnums.Size();l++)
-			  creator.Add (edge.vertices[k], dnums[l]);
-		      }
-		    }//end-if isdirichletvertex
+	      {
+		Ng_Node<1> edge = ma.GetNode<1> (i);
+		for (int k = 0; k < 2; k++){
+		  dnums.SetSize(0);
+		  if (ma.GetDimension() == 2){
+		    GetEdgeDofNrs(i,dnums);
+		    creator.Add (edge.vertices[k], dnums[0]);
 		  }
 		}
-
+	      }
 	    break; 	    
 	  case 2: 
 	    //for BDDC: we have only the condensated (after subassembling) dofs, 
