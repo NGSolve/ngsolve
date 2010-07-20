@@ -2743,11 +2743,61 @@ namespace netgen
     ;
   }
 
+
+  template <int DIM_SPACE>
+  void CurvedElements :: 
+  CalcMultiPointSegmentTransformation (SegmentIndex elnr, int n,
+				       const double * xi, size_t sxi,
+				       double * x, size_t sx,
+				       double * dxdxi, size_t sdxdxi)
+  {
+    for (int ip = 0; ip < n; ip++)
+      {
+        Point<3> xg;
+        Vec<3> dx;
+
+        // mesh->GetCurvedElements().
+	CalcSegmentTransformation (xi[ip*sxi], elnr, xg, dx);
+      
+        if (x)
+          for (int i = 0; i < DIM_SPACE; i++)
+            x[ip*sx+i] = xg(i);
+	  
+        if (dxdxi)
+          for (int i=0; i<DIM_SPACE; i++)
+            dxdxi[ip*sdxdxi+i] = dx(i);
+      }
+  }
+
+  template void CurvedElements :: 
+  CalcMultiPointSegmentTransformation<2> (SegmentIndex elnr, int npts,
+                                          const double * xi, size_t sxi,
+                                          double * x, size_t sx,
+                                          double * dxdxi, size_t sdxdxi);
+
+  template void CurvedElements :: 
+  CalcMultiPointSegmentTransformation<3> (SegmentIndex elnr, int npts,
+                                          const double * xi, size_t sxi,
+                                          double * x, size_t sx,
+                                          double * dxdxi, size_t sdxdxi);
+
+
+
   void CurvedElements :: 
   CalcMultiPointSurfaceTransformation (Array< Point<2> > * xi, SurfaceElementIndex elnr,
 				       Array< Point<3> > * x,
 				       Array< Mat<3,2> > * dxdxi)
   {
+    double * px = (x) ? &(*x)[0](0) : NULL;
+    double * pdxdxi = (dxdxi) ? &(*dxdxi)[0](0) : NULL;
+
+    CalcMultiPointSurfaceTransformation <3> (elnr, xi->Size(),
+					     &(*xi)[0](0), 2, 
+					     px, 3,
+					     pdxdxi, 6);
+					    
+    return;
+#ifdef OLD
     if (mesh.coarsemesh)
       {
 	const HPRefElement & hpref_el =
@@ -2876,6 +2926,7 @@ namespace netgen
             (*dxdxi)[ip] = ds;
 	  }
       }
+#endif
   }
 
 
@@ -2918,8 +2969,7 @@ namespace netgen
                                                           &coarse_xi[0](0), &coarse_xi[1](0)-&coarse_xi[0](0), 
                                                           x, sx, dxdxi, sdxdxi);
 
-        Mat<2,2> trans;
-        Mat<3,2> dxdxic;
+        // Mat<3,2> dxdxic;
 	if (dxdxi)
 	  {
 	    MatrixFixWidth<2> dlami(4);
@@ -2930,6 +2980,7 @@ namespace netgen
                 Point<2> hxi(xi[pi*sxi], xi[pi*sxi+1]);
 		mesh[elnr].GetDShapeNew ( hxi, dlami);	  
 		
+		Mat<2,2> trans;
 		trans = 0;
 		for (int k = 0; k < 2; k++)
 		  for (int l = 0; l < 2; l++)
@@ -3052,12 +3103,22 @@ namespace netgen
 
 
 
-
   void CurvedElements :: 
   CalcMultiPointElementTransformation (Array< Point<3> > * xi, ElementIndex elnr,
 				       Array< Point<3> > * x,
 				       Array< Mat<3,3> > * dxdxi)
   {
+    double * px = (x) ? &(*x)[0](0) : NULL;
+    double * pdxdxi = (dxdxi) ? &(*dxdxi)[0](0) : NULL;
+
+    CalcMultiPointElementTransformation (elnr, xi->Size(),
+					 &(*xi)[0](0), 3, 
+					 px, 3,
+					 pdxdxi, 9);
+    
+    return;
+#ifdef OLD
+
     if (mesh.coarsemesh)
       {
 	const HPRefElement & hpref_el =
@@ -3193,8 +3254,8 @@ namespace netgen
 	      (*dxdxi)[ip] = ds;
 	    }
       }
+#endif
   }
-
 
 
 

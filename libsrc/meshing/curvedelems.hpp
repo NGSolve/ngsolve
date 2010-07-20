@@ -119,16 +119,22 @@ public:
 					    Array<Point<3> > * x,
 					    Array<Vec<3> > * dxdxi);
 
+  template <int DIM_SPACE>
+  void CalcMultiPointSegmentTransformation (SegmentIndex elnr, int n,
+                                            const double * xi, size_t sxi,
+                                            double * x, size_t sx,
+                                            double * dxdxi, size_t sdxdxi);
+
+
   void CalcMultiPointSurfaceTransformation (Array< Point<2> > * xi, SurfaceElementIndex elnr,
 					    Array< Point<3> > * x,
 					    Array< Mat<3,2> > * dxdxi);
-  
+
   template <int DIM_SPACE>
   void CalcMultiPointSurfaceTransformation (SurfaceElementIndex elnr, int n,
                                             const double * xi, size_t sxi,
                                             double * x, size_t sx,
                                             double * dxdxi, size_t sdxdxi);
-
 
   void CalcMultiPointElementTransformation (Array< Point<3> > * xi, ElementIndex elnr,
 					    Array< Point<3> > * x,

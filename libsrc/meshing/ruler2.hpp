@@ -29,6 +29,8 @@ private:
   ///
   Array<Point2d> freezone, freezonelimit;
   ///
+  Array<Array<Point2d>*> freezone_i;
+  ///
   Array<Point2d> transfreezone;
 
   ///

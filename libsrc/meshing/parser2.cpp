@@ -407,8 +407,6 @@ void netrule :: LoadRule (istream & ist)
     }
   while (!ist.eof() && strcmp (buf, "endrule") != 0);
 
-  //(*testout) << "loadr1" << endl;
-
   oldutonewu.SetSize (2 * (points.Size() - noldp), 2 * noldp);
   oldutofreearea.SetSize (2 * freezone.Size(), 2 * noldp);
   oldutofreearealimit.SetSize (2 * freezone.Size(), 2 * noldp);
@@ -428,8 +426,6 @@ void netrule :: LoadRule (istream & ist)
   freesetinequ.SetSize (freezone.Size());
 
 
-  //(*testout) << "loadr2" << endl;
-
   {
     char ok;
     int minn;
@@ -441,7 +437,6 @@ void netrule :: LoadRule (istream & ist)
     for (j = 1; j <= 2; j++)
       pnearness.Elem(GetPointNr (1, j)) = 0;
 
-    //(*testout) << "loadr3" << endl;
     do
       {
 	ok = 1;
@@ -461,7 +456,6 @@ void netrule :: LoadRule (istream & ist)
 	  }
       }
     while (!ok);
-    //(*testout) << "loadr4" << endl;
 
     lnearness.SetSize (noldl);
 
@@ -472,19 +466,25 @@ void netrule :: LoadRule (istream & ist)
 	  lnearness.Elem(i) += pnearness.Get(GetPointNr (i, j));
       }
   }
-  //(*testout) << "loadr5" << endl;
 
   oldutofreearea_i.SetSize (10);
+  freezone_i.SetSize (10);
+
   for (i = 0; i < oldutofreearea_i.Size(); i++)
     {
+      double lam1 = 1.0/(i+1);
+
       oldutofreearea_i[i] = new DenseMatrix (oldutofreearea.Height(), oldutofreearea.Width());
       DenseMatrix & mati = *oldutofreearea_i[i];
       for (j = 0; j < oldutofreearea.Height(); j++)
 	for (int k = 0; k < oldutofreearea.Width(); k++)
-	  mati(j,k) = 1.0 / (i+1) * oldutofreearea(j,k) + (1 - 1.0/(i+1)) * oldutofreearealimit(j,k);
-    }
+	  mati(j,k) = lam1 * oldutofreearea(j,k) + (1 - lam1) * oldutofreearealimit(j,k);
 
-  //(*testout) << "loadr6" << endl;
+      freezone_i[i] = new Array<Point2d> (freezone.Size());
+      Array<Point2d> & fzi = *freezone_i[i];
+      for (int j = 0; j < freezone.Size(); j++)
+	fzi[j] = freezonelimit[j] + lam1 * (freezone[j] - freezonelimit[j]);
+    }
 }
 
 

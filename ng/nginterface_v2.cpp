@@ -216,6 +216,8 @@ namespace netgen
                                                       double * x, size_t sx,
                                                       double * dxdxi, size_t sdxdxi)
   {
+    mesh->GetCurvedElements().CalcMultiPointSegmentTransformation<2> (elnr, npts, xi, sxi, x, sx, dxdxi, sdxdxi);
+    /*
     for (int ip = 0; ip < npts; ip++)
       {
         Point<3> xg;
@@ -231,6 +233,7 @@ namespace netgen
           for (int i=0; i<2; i++)
             dxdxi[ip*sdxdxi+i] = dx(i);
       }
+    */
   }
 
   template <>
