@@ -42,15 +42,15 @@ namespace ngstd
     /// Deletes all flags
     void DeleteFlags ();
     /// Sets string flag, overwrite if exists
-    void SetFlag (const char * name, const char * val);
+    Flags & SetFlag (const char * name, const char * val);
     /// Sets numerical flag, overwrite if exists
-    void SetFlag (const char * name, double val);
+    Flags &  SetFlag (const char * name, double val);
     /// Sets boolean flag
-    void SetFlag (const char * name);
+    Flags &  SetFlag (const char * name);
     /// Sets string array flag
-    void SetFlag (const char * name, const Array<char*> & val);
+    Flags &  SetFlag (const char * name, const Array<char*> & val);
     /// Sets double array flag
-    void SetFlag (const char * name, const Array<double> & val);
+    Flags &  SetFlag (const char * name, const Array<double> & val);
   
     /// Save flags to file
     void SaveFlags (const char * filename) const;

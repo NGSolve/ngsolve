@@ -73,25 +73,28 @@ namespace ngstd
     numlistflags.DeleteAll();
   }
   
-  void Flags :: SetFlag (const char * name, const char * val)
+  Flags & Flags :: SetFlag (const char * name, const char * val)
   {
     char * hval = new char[strlen (val) + 1];
     strcpy (hval, val);
     strflags.Set (name, hval);
+    return *this;
   }
   
-  void Flags :: SetFlag (const char * name, double val)
+  Flags & Flags :: SetFlag (const char * name, double val)
   {
     numflags.Set (name, val);
+    return *this;
   }
   
-  void Flags :: SetFlag (const char * name)
+  Flags & Flags :: SetFlag (const char * name)
   {
     defflags.Set (name, 1);
+    return *this;
   }
 
 
-  void Flags :: SetFlag (const char * name, const Array<char*> & val)
+  Flags & Flags :: SetFlag (const char * name, const Array<char*> & val)
   {
     Array<char*> * strarray = new Array<char*>;
     for (int i = 0; i < val.Size(); i++)
@@ -99,14 +102,16 @@ namespace ngstd
 	strarray->Append (new char[strlen(val[i])+1]);
 	strcpy (strarray->Last(), val[i]);
       }
-    strlistflags.Set (name, strarray);
+    strlistflags.Set (name, strarray);    
+    return *this;
   }
 
-  void Flags :: SetFlag (const char * name, const Array<double> & val)
+  Flags & Flags :: SetFlag (const char * name, const Array<double> & val)
   {
     Array<double> * numarray = new Array<double>(val);
 
     numlistflags.Set (name, numarray);
+    return *this;
   }
 
 
