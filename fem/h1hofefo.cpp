@@ -237,9 +237,21 @@ namespace ngfem
       { 
         int es = edges[i][0], ee = edges[i][1];
         if (vnums[es] > vnums[ee]) swap (es, ee);
+	INT<2> e (es, ee);
+
+	// INT<2> e = GetEdgeSort (i, vnums);
+	
+	LegendrePolynomial::EvalScaledMult (ORDER-2, 
+					    lami[e[1]]-lami[e[0]], lami[e[0]]+lami[e[1]], 
+					    lami[e[0]]*lami[e[1]], shape.Addr(ii));
+	ii += ORDER-1;
+	/*
+        int es = edges[i][0], ee = edges[i][1];
+        if (vnums[es] > vnums[ee]) swap (es, ee);
         
         ii += T_ORTHOPOL::CalcScaled<ORDER> 
           (lami[ee]-lami[es], lami[es]+lami[ee], shape.Addr(ii));
+	  */
       }
 
     // inner dofs
@@ -272,9 +284,22 @@ namespace ngfem
       { 
         int es = edges[i][0], ee = edges[i][1];
         if (vnums[es] > vnums[ee]) swap (es, ee);
+	INT<2> e (es, ee);
+
+	// INT<2> e = GetEdgeSort (i, vnums);
+	
+	LegendrePolynomial::EvalScaledMult (0, 
+					    lami[e[1]]-lami[e[0]], lami[e[0]]+lami[e[1]], 
+					    lami[e[0]]*lami[e[1]], shape.Addr(ii));
+	ii += 1;
+
+	/*
+        int es = edges[i][0], ee = edges[i][1];
+        if (vnums[es] > vnums[ee]) swap (es, ee);
         
         ii += T_ORTHOPOL::CalcScaled<2> 
           (lami[ee]-lami[es], lami[es]+lami[ee], shape.Addr(ii));
+	*/
       }
   }
 

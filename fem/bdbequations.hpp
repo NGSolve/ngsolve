@@ -1376,6 +1376,8 @@ class RotSymLaplaceDMat : public DMatOp<RotSymLaplaceDMat<DIM> >
 {
   CoefficientFunction * coef;
 public:
+  enum { DIM_DMAT = DIM };
+
   RotSymLaplaceDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
 
   template <typename FEL, typename SIP, typename MAT>

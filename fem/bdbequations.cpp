@@ -134,6 +134,9 @@ namespace ngfem
   template class LaplaceIntegrator<2>;
   template class LaplaceIntegrator<3>;
 
+  template class RotSymLaplaceIntegrator<2>;
+  template class RotSymLaplaceIntegrator<3>;
+
   template class LaplaceBoundaryIntegrator<2>;
   template class LaplaceBoundaryIntegrator<3>;
 
@@ -170,9 +173,11 @@ namespace ngfem
 					LaplaceIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("laplace", 3, 1,
 					LaplaceIntegrator<3>::Create);
-      /*
       GetIntegrators().AddBFIntegrator ("rotsymlaplace", 2, 1,
 					RotSymLaplaceIntegrator<2>::Create);
+      GetIntegrators().AddBFIntegrator ("rotsymlaplace", 3, 1,
+					RotSymLaplaceIntegrator<3>::Create);
+      /*
       GetIntegrators().AddBFIntegrator ("ortholaplace", 2, 2,
 					OrthoLaplaceIntegrator<2>::Create);
       */
