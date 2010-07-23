@@ -339,6 +339,16 @@ public:
 
 
 
+template <int D>
+class NGS_DLL_HEADER SourceHDivIntegratorN 
+  : public T_BIntegrator<DiffOpIdHDiv<D>, DVecN<D>, HDivFiniteElement<D> >
+{
+public:
+  SourceHDivIntegratorN(CoefficientFunction * coeff)
+    : T_BIntegrator<DiffOpIdHDiv<D>, DVecN<D>, HDivFiniteElement<D> > (DVecN<D> (coeff)) { ; }
+  virtual string Name () const { return "VecSourceHDiv"; }
+};
+
 
 
 

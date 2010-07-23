@@ -1133,6 +1133,27 @@ class DVecBase<N, Complex>
   }  
 };
 
+// template <typename T = double> 
+// class DVecVec
+// {
+//  protected:
+//   CoefficientFunction * coefs;
+//  public:
+//   typedef T TSCAL; 
+//   
+//   DVecVec (CoefficientFunction * acoef)
+//   { 
+//     coefs = acoef;
+//   }
+//   
+//   template <typename FEL, typename SIP, typename VEC>
+//   void GenerateVector (const FEL & fel, const SIP & sip,
+// 		       VEC & vec, LocalHeap & lh) const
+//   {
+//       coefs -> Evaluate (sip,vec);
+//   }  
+// };
+
 
 template <int N, typename T = double> 
 class NGS_DLL_HEADER DVec { };
