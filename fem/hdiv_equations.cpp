@@ -39,6 +39,12 @@ namespace ngfem
   Integrator * BaseSourceHDivIntegrator<D> ::
   Create (Array<CoefficientFunction*> & coeffs)
   {
+    if ((coeffs.Size()==1) && (coeffs[0]->Dimension() == D)){
+      if(D == 2)
+	return new SourceHDivIntegratorN<2> (coeffs[0]);
+      else // if (D == 3)
+	return new SourceHDivIntegratorN<3> (coeffs[0]);
+    }
     if(D == 2)
       return new SourceHDivIntegrator<2> (coeffs[0], coeffs[1]);
     else // if (D == 3)
@@ -58,18 +64,18 @@ namespace ngfem
                         CoefficientFunction * coeff2)
     : BaseSourceHDivIntegrator<2> (DVec<2> (coeff1, coeff2))
   { ; }
-  
-
 
 
   template class MassHDivIntegrator<2>;
   template class DivDivHDivIntegrator<2>;
   // template class SourceHDivIntegrator<2>;
+  template class SourceHDivIntegratorN<2>;
   template class DivSourceHDivIntegrator<2>;
 
   template class MassHDivIntegrator<3>;
   template class DivDivHDivIntegrator<3>;
   // template class SourceHDivIntegrator<3>;
+  template class SourceHDivIntegratorN<3>;
   template class DivSourceHDivIntegrator<3>;
 
 

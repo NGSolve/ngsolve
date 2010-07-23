@@ -319,7 +319,18 @@ namespace ngcomp
     ;
   }
 
-    
+  int GridFunctionCoefficientFunction::Dimension() const{ 
+    int res = -1;
+    if (diffop==NULL){
+      res = gf.GetFESpace().GetEvaluator()->DimFlux();
+    }
+    else{
+      res = diffop->Dim();
+    }
+    return res;
+  }
+
+  
 
   double GridFunctionCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip) const
   {

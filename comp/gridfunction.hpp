@@ -203,7 +203,8 @@ namespace ngcomp
     GridFunctionCoefficientFunction (GridFunction & agf, DifferentialOperator * adiffop, int acomp = 0);
 
     virtual ~GridFunctionCoefficientFunction ();
-
+//     virtual bool IsComplex() const; 
+    virtual int Dimension() const;
     virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const;
 
     virtual void Evaluate(const BaseSpecificIntegrationPoint & ip,
