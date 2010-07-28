@@ -2446,7 +2446,7 @@ namespace ngcomp
 	h1defb.Set(i);
     fesh1.SetDefinedOnBoundary(h1defb);
 
-    LocalHeap lh(100008);
+    LocalHeap lh(100008, "HCurlHOFeSpace::CreateGradient");
     fesh1.Update(lh);
      
     int ned = ma.GetNEdges(); 

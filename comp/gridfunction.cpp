@@ -334,7 +334,7 @@ namespace ngcomp
 
   double GridFunctionCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip) const
   {
-    LocalHeapMem<100000> lh2;
+    LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction - evaluate");
     
     const int elnr = ip.GetTransformation().GetElementNr();
     bool boundary = ip.GetTransformation().Boundary();
@@ -374,7 +374,7 @@ namespace ngcomp
   void GridFunctionCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip,
 						    FlatVector<> result) const
   {
-    LocalHeapMem<100000> lh2;
+    LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction, Eval 2");
     
     const int elnr = ip.GetTransformation().GetElementNr();
     bool boundary = ip.GetTransformation().Boundary();
@@ -411,7 +411,7 @@ namespace ngcomp
   void GridFunctionCoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
-    LocalHeapMem<100000> lh2;
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
     
     const int elnr = ir.GetTransformation().GetElementNr();
     bool boundary = ir.GetTransformation().Boundary();
@@ -458,7 +458,7 @@ namespace ngcomp
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
       ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
-      applyd(aapplyd), cache_elnr(-1), lh(10000013), fel(NULL)
+      applyd(aapplyd), cache_elnr(-1), lh(10000013, "VisualizedGridFunction 2"), fel(NULL)
   { 
     if(abfi2d)
       bfi2d.Append(abfi2d);
@@ -481,7 +481,7 @@ namespace ngcomp
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
       ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
-      applyd(aapplyd), cache_elnr(-1), lh(10000002), fel(NULL)
+      applyd(aapplyd), cache_elnr(-1), lh(10000002, "VisualizeGridFunction"), fel(NULL)
   { 
     for(int i=0; i<abfi2d.Size(); i++)
       bfi2d.Append(abfi2d[i]);
@@ -1213,7 +1213,7 @@ namespace ngcomp
     Array<double> posz;
     ELEMENT_TYPE cache_type = ET_SEGM;
 	
-    LocalHeapMem<10000> lh2;
+    LocalHeapMem<10000> lh2("Gridfunction - Analyze");
 	
     val = new double[components];
 			

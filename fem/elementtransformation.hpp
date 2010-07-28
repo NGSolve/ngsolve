@@ -109,7 +109,7 @@ namespace ngfem
     void CalcJacobian (const IntegrationPoint & ip,
 		       MatExpr<T> & dxdxi) const
     {
-      LocalHeap lh(1000);
+      LocalHeap lh(1000, "calc jac");
       switch (ElementTopology::GetSpaceDim (fel->ElementType())) 
 	{
 	case 1:

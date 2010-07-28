@@ -557,7 +557,7 @@ namespace ngla
     */
 
     {
-      LocalHeap lh (20000 + 5*sizeof(int)*maxbs); 
+      LocalHeap lh (20000 + 5*sizeof(int)*maxbs, "blockjacobi-heap"); 
       Array<int> block_inv(amat.Height());
       block_inv = -1;
 

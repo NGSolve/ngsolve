@@ -63,7 +63,7 @@ int main ()
   // ******************** Local Heaps ************************
 
   // initialize heap memory handler with 1000 bytes
-  LocalHeap lh(1000);
+  LocalHeap lh(1000, "demo - localheap");
 
   int * ip = lh.Alloc<int> (5);
   cout << "available: " << lh.Available() << endl;

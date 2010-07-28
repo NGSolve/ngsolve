@@ -133,7 +133,7 @@ int main ()
 
 
 
-  LocalHeap lh(10000);
+  LocalHeap lh(10000, "demobla - localheap");
   FlatMatrix<Mat<2,2,double> > m2(2, lh), invm2(2, lh);
   m2 = 0;
   for (int i = 0; i < m2.Height(); i++)
