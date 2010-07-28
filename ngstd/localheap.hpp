@@ -37,18 +37,20 @@ namespace ngstd
     char * p;
     size_t totsize;
     bool owner;
+    const char * name;
 
   public:
     /// Allocate one block of size asize.
-    NGS_DLL_HEADER LocalHeap (size_t asize);
+    NGS_DLL_HEADER LocalHeap (size_t asize, const char * aname);
 
     /// Use provided memory for the LocalHeap
-    LocalHeap (char * adata, size_t asize) throw ()
+    LocalHeap (char * adata, size_t asize, const char  * aname) throw ()
     {
       totsize = asize;
       data = adata;
       owner = 0;
       // p = data;
+      name = aname;
       CleanUp();
     }
 
@@ -141,7 +143,7 @@ namespace ngstd
 #endif
       size_t freemem = totsize - (p - data);
       size_t size_of_piece = freemem / pieces;
-      return LocalHeap (p + i * size_of_piece, size_of_piece);
+      return LocalHeap (p + i * size_of_piece, size_of_piece, name);
     }
   };
 
@@ -156,7 +158,7 @@ namespace ngstd
   {
     char mem[S];
   public:
-    LocalHeapMem () throw () : LocalHeap (mem, S) { ; }
+    LocalHeapMem (const char * aname) throw () : LocalHeap (mem, S, aname) { ; }
   };
 
 

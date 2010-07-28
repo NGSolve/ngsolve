@@ -1045,7 +1045,7 @@ double MeshAccess :: ElementVolume (int elnr) const
     }
   
   char d[10000];
-  LocalHeap lh(d, 10000);
+  LocalHeap lh(d, 10000, "MeshAccess - elementvolume");
 
   ElementTransformation trans;
   GetElementTransformation (elnr, trans, lh);
@@ -1088,7 +1088,7 @@ double MeshAccess :: SurfaceElementVolume (int selnr) const
     }
 
   char d[10000];
-  LocalHeap lh(d, 10000);
+  LocalHeap lh(d, 10000, "MeshAccess - surfaceelementvolume");
 
   ElementTransformation trans;
   GetSurfaceElementTransformation (selnr, trans, lh);

@@ -261,12 +261,14 @@ namespace ngfem
   //////////////////
 
   FileCoefficientFunction :: FileCoefficientFunction ()
+    : lh2("FileCoefficientFunction")
   {
     writeips = false;
   }
 
   
   FileCoefficientFunction :: FileCoefficientFunction (const string & filename)
+    : lh2("FileCoefficientFunction")
   {
     StartWriteIps(filename);
   }
@@ -275,6 +277,7 @@ namespace ngfem
 						      const string & ainfofilename,
 						      const string & avaluesfilename,
 						      const bool loadvalues)
+    : lh2("FileCoefficientFunction")
   {
     ipfilename = aipfilename;
     infofilename = ainfofilename;

@@ -12,18 +12,20 @@ namespace ngstd
   using namespace ngstd;
 
 
-  LocalHeap :: LocalHeap (size_t asize)
+  LocalHeap :: LocalHeap (size_t asize, const char * aname)
   {
     totsize = asize;
     data = new char[asize];
     p = data;
     owner = 1;
+    name = aname;
   }
 
   void LocalHeap :: ThrowException() throw (LocalHeapOverflow)
   {
     cout << "allocated: " << (p-data) << endl;
     cout << "throw LocalHeapOverflow, totsize = "<< totsize << endl;
+    cout << "heap name = " << name << endl;
     throw LocalHeapOverflow(totsize);
   }
 

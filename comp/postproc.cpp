@@ -1143,7 +1143,7 @@ namespace ngcomp
 
     int ne = ma.GetNE();
     Array<int> dnumsh1, dnumshcurl;
-    LocalHeap lh(100000);
+    LocalHeap lh(100000, "CalcGradient");
     
     for (int i = 0; i < ne; i++)
       {
@@ -1221,7 +1221,7 @@ namespace ngcomp
 
     int ne = ma.GetNE();
     Array<int> dnumsh1, dnumshcurl;
-    LocalHeap lh(100000);
+    LocalHeap lh(100000, "CalcGradientT");
     
     vechcurl = vechcurl1;
     vech1.SetScalar(0); //  = SCAL(0);

@@ -1058,7 +1058,7 @@ namespace ngcomp
 
     Array<int> ednums(12), edorient(12);
     Array<int> fanums(12), faorient(12);
-    LocalHeap lh (10000);
+    LocalHeap lh (10000, "CommutingAMG");
     ElementTransformation eltrans;
     IntegrationPoint ip(0, 0, 0, 0);
 

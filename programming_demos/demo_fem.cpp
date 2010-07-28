@@ -87,7 +87,7 @@ int main ()
   // ***************** element matrix integration
 
   // own memory management
-  LocalHeap lh(10000);
+  LocalHeap lh(10000, "demofem - localheap");
 
   // reference finite element
   // FE_Trig1 trig;

@@ -768,7 +768,7 @@ namespace ngcomp
       cout << "BDDC MatrixRefElement" << endl;
       print = true;
       block = true;
-      LocalHeap lh(500000000);
+      LocalHeap lh(500000000, "BDDC - MatrixRefEleemnt");
 
       if (print)
 	*testout << "BDDC - Constructor" << endl;

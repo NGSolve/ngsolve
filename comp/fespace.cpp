@@ -434,7 +434,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     TopologicElement topel;
     ma.GetTopologicElement (elnr, topel);
 
-    LocalHeapMem<10003> lh;
+    LocalHeapMem<10003> lh("FESpace - GetDofNrs");
     ArrayMem<Dof, 100> dofs;
 
     GetFE (elnr, lh) . GetDofs(dofs);
@@ -652,7 +652,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     starttime = clock();
     steps = 0;
-    LocalHeap lh (100000);
+    LocalHeap lh (100000, "FESpace - Timing");
     do
       {
         for (int i = 0; i < ma.GetNE(); i++)
@@ -2870,7 +2870,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   {
     int base = 0;
     int i, j, k; 
-    LocalHeapMem<100005> lh;
+    LocalHeapMem<100005> lh("CompoundFESpace - transformmat");
     for (i = 0; i < spaces.Size(); i++)
       {
 	int nd;
@@ -2914,7 +2914,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   void CompoundFESpace::TransformVec (int elnr, bool boundary,
 				      VEC & vec, TRANSFORM_TYPE tt) const
   {
-    LocalHeapMem<100006> lh;
+    LocalHeapMem<100006> lh("CompoundFESpace - transformvec");
     for (int i = 0, base = 0; i < spaces.Size(); i++)
       {
 	int nd = boundary ? 

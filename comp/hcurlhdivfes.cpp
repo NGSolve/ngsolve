@@ -470,7 +470,7 @@ namespace ngcomp
   {
     int nd;
     ArrayMem<int,12> enums, eorient;
-    LocalHeapMem<1000> lh;
+    LocalHeapMem<1000> lh("NedelecFEspace - transformmat");
 
     if (boundary)
       {
@@ -507,7 +507,7 @@ namespace ngcomp
     // int ena[12], eoa[12];
     // Array<int> enums(12, ena), eorient(12, eoa);
     ArrayMem<int,12> enums, eorient;
-    LocalHeapMem<1000> lh;
+    LocalHeapMem<1000> lh("NedelecFESpace - transformvec");
 
     if (boundary)
       {
@@ -1630,7 +1630,7 @@ namespace ngcomp
     ma.GetElEdges (elnr, enums);
     ma.GetElFaces (elnr, fnums, forient);
 
-    LocalHeapMem<1000> lh;
+    LocalHeapMem<1000> lh("NedelecFESpace2, GetDofNrs");
     int nd = GetFE (elnr, lh).GetNDof();
     dnums.SetSize(nd);
     dnums = -1;
@@ -1919,7 +1919,7 @@ namespace ngcomp
     ma.GetSElFace (selnr, fnum, forient);
     ma.GetSElEdges (selnr, enums, eorient);
 
-    LocalHeapMem<1000> lh;
+    LocalHeapMem<1000> lh("NedelecFESpace2, GetSDofNrs");
     int nd = GetSFE (selnr, lh).GetNDof();
     dnums.SetSize(nd);
     dnums = -1;
@@ -2347,7 +2347,7 @@ namespace ngcomp
     ELEMENT_TYPE et;
     ArrayMem<int,12> enums, eorient;
     ArrayMem<int,6> fnums, forient;
-    LocalHeapMem<1000> lh;
+    LocalHeapMem<1000> lh("NedelecFESpace2 - TransformMat");
 
     if (boundary)
       {
@@ -2404,7 +2404,7 @@ namespace ngcomp
     */
     ArrayMem<int,12> enums, eorient;
     ArrayMem<int,6> fnums, forient;
-    LocalHeapMem<1000> lh;
+    LocalHeapMem<1000> lh ("Nedelecfespace2, transformvec");
 
     if (boundary)
       {

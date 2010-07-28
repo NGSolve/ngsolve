@@ -526,7 +526,7 @@ namespace ngcomp
 	    int ne = ma.GetNE();
 	    int nse = ma.GetNSE();
       
-	    LocalHeap lh (20000000);
+	    LocalHeap lh (20000000, "biform - assemble");
 	    
 	    int hasbound = 0;
 	    int hasinner = 0;
@@ -2582,7 +2582,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
                 if (hasinner)
 #pragma omp parallel
                   {
-                    LocalHeap lh(lh_size);
+                    LocalHeap lh(lh_size, "biform-AddMatrix (a)");
                     Array<int> dnums;
                     ElementTransformation eltrans;
                     
@@ -2603,7 +2603,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
                       }
                   }
 
-                LocalHeap lh (lh_size);
+                LocalHeap lh (lh_size, "biform-AddMatrix (b)");
                 Array<int> dnums;
                 ElementTransformation eltrans;
       
@@ -2677,7 +2677,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
       
         int ne = ma.GetNE();
         int dim = GetFESpace().GetDimension(); 
-        LocalHeap lh (2000000);
+        LocalHeap lh (2000000, "biform-ApplyLinearized");
 
         int hasbound = 0;
         int hasinner = 0;
@@ -2803,7 +2803,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
         int ne = ma.GetNE();
       
-        LocalHeap lh (2000000);
+        LocalHeap lh (2000000, "biform-energy");
 
         int hasbound = 0;
         int hasinner = 0;

@@ -150,7 +150,7 @@ namespace ngsolve
     else
       infile.open(filename.c_str(), ios_base::binary);
 
-    LocalHeap lh(100009);
+    LocalHeap lh(100009, "PDE - Loadsolution");
     for (int i = 0; i < spaces.Size(); i++)
       spaces[i]->Update(lh);
     for (int i = 0; i < gridfunctions.Size(); i++)
@@ -525,7 +525,7 @@ namespace ngsolve
 #endif
     
 
-    LocalHeap lh(heapsize);
+    LocalHeap lh(heapsize, "PDE - main heap");
 
     /*
     clock_t starttime, endtime;
