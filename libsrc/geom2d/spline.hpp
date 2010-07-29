@@ -258,7 +258,7 @@ template<int D>
 class DiscretePointsSeg : public SplineSeg<D>
 {
   Array<Point<D> > pts;
-  GeomPoint<D> p1, p2;
+  GeomPoint<D> p1n, p2n;
 public:
   ///
   DiscretePointsSeg (const Array<Point<D> > & apts);
@@ -267,9 +267,9 @@ public:
   ///
   virtual Point<D> GetPoint (double t) const;
   ///
-  virtual const GeomPoint<D> & StartPI () const { return p1; };
+  virtual const GeomPoint<D> & StartPI () const { return p1n; };
   ///
-  virtual const GeomPoint<D> & EndPI () const { return p2; }
+  virtual const GeomPoint<D> & EndPI () const { return p2n; }
   ///
   virtual void GetCoeff (Vector & coeffs) const {;}
 
@@ -323,7 +323,7 @@ void SplineSeg<D> :: Partition (double h, double elto0,
   double h2 = min (EndPI().hmax, h/EndPI().refatpoint);
   double hcurve = min (hmax, h/reffak);
 
-  //  cout << "Partition, l = " << l << ", h = " << h << endl;
+
   CalcPartition (l, h, h1, h2, hcurve, elto0, curvepoints);
   //  cout << "curvepoints = " << curvepoints << endl;
 
@@ -847,11 +847,13 @@ DiscretePointsSeg<D> ::   DiscretePointsSeg (const Array<Point<D> > & apts)
 { 
   for(int i=0; i<D; i++)
     {
-      p1(i) = apts[0](i);
-      p2(i) = apts.Last()(i);
+      p1n(i) = apts[0](i);
+      p2n(i) = apts.Last()(i);
     }
-  p1.refatpoint = true;
-  p2.refatpoint = true;
+  p1n.refatpoint = 1;
+  p2n.refatpoint = 1;
+  p1n.hmax = 1e99;
+  p2n.hmax = 1e99;
 }
 
 
