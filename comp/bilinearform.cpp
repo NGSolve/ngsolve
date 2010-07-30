@@ -107,6 +107,7 @@ namespace ngcomp
     if (flags.GetDefineFlag ("timing")) SetTiming (1);
     if (flags.GetDefineFlag ("eliminate_internal")) SetEliminateInternal (1);
     if (flags.GetDefineFlag ("keep_internal")) SetKeepInternal (1);
+    if (flags.GetDefineFlag ("store_inner")) SetStoreInner (1);
 
     precompute = flags.GetDefineFlag ("precompute");
   }
@@ -733,6 +734,7 @@ namespace ngcomp
 	<< "printelmat = " << printelmat << endl
 	<< "eliminate_internal = " << eliminate_internal << endl
 	<< "keep_internal = " << keep_internal << endl
+	<< "store_inner = " << store_inner << endl
 	<< "integrators: " << endl;
   
     for (int i = 0; i < parts.Size(); i++)
@@ -894,6 +896,8 @@ namespace ngcomp
 		    else
 		      harmonicexttrans = new Transpose(*harmonicext);
 		    innersolve = new ElementByElementMatrix<SCAL>(ndof, ne);
+		    if (store_inner)
+		      innermatrix = new ElementByElementMatrix<SCAL>(ndof, ne);
 		  }
 		
 		for (int icol = 0; icol < ncolors; icol++)
@@ -1173,11 +1177,12 @@ namespace ngcomp
 				  else
 				  {
 				    LapackInverse (d);
-
 				    Array<int> idnums;
 				    Array<int> ednums;
 				    fespace.GetDofNrs(i,idnums,LOCAL_DOF);
 				    fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
+				    if (store_inner)
+				      static_cast<ElementByElementMatrix<SCAL>*>(innermatrix)->AddElementMatrix(i,idnums,idnums,d);
 				    FlatMatrix<SCAL> he (sizei, sizeo, lh);
 				    he=0.0;
 				    LapackMultAddABt (d, c, -1, he);
@@ -1200,13 +1205,15 @@ namespace ngcomp
 				  FlatMatrix<SCAL> invd(sizei, sizei, lh);
 				  FlatMatrix<SCAL> idc(sizeo, sizei, lh);
 				  CalcInverse (d, invd);
-				  d = invd;
 				  if (keep_internal) 
 				  { 
 				    Array<int> idnums;
 				    Array<int> ednums;
 				    fespace.GetDofNrs(i,idnums,LOCAL_DOF);
 				    fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
+				    if (store_inner)
+				      static_cast<ElementByElementMatrix<SCAL>*>(innermatrix)->AddElementMatrix(i,idnums,idnums,d);
+				    d = invd;
 				    FlatMatrix<SCAL> he (sizei, sizeo, lh);
 				    he = -1.0 * invd * Trans(c);
 				    static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)->AddElementMatrix(i,idnums,ednums,he);
