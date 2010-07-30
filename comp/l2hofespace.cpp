@@ -44,6 +44,7 @@ namespace ngcomp
     DefineNumFlag("relorder");
     DefineDefineFlag("print"); 
     DefineDefineFlag("l2ho");
+    DefineDefineFlag("all_dofs_together");
 
     if (parseflags) CheckFlags(flags);
 
@@ -78,6 +79,7 @@ namespace ngcomp
       evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
 
     fast_pfem = flags.GetDefineFlag ("fast");
+    all_dofs_together = flags.GetDefineFlag ("all_dofs_together");
 
     Flags loflags;
     loflags.SetFlag ("order", 0.0);
@@ -159,17 +161,31 @@ namespace ngcomp
   {
     ctofdof.SetSize(ndof);
     ctofdof = WIREBASKET_DOF;
-    for (int i=0; i<ma.GetNE(); i++){
-      ctofdof[i] = LOCAL_DOF; //lowest order (constants)
-      int first = first_element_dof[i];
-      int next = first_element_dof[i+1];
-      for (int j = first; j < next; j++)
-	ctofdof[j] = LOCAL_DOF; //higher order
-    }
+
+    if (!all_dofs_together)
+      for (int i=0; i<ma.GetNE(); i++)
+	{
+	  ctofdof[i] = LOCAL_DOF; //lowest order (constants)
+	  int first = first_element_dof[i];
+	  int next = first_element_dof[i+1];
+	  for (int j = first; j < next; j++)
+	    ctofdof[j] = LOCAL_DOF; //higher order
+	}
+    else
+      for (int i=0; i<ma.GetNE(); i++)
+	{
+	  int first = first_element_dof[i];
+	  int next = first_element_dof[i+1];
+	  if (next > first)
+	    ctofdof[first] = LOCAL_DOF;  //lowest order (constants)
+	  for (int j = first+1; j < next; j++)
+	    ctofdof[j] = LOCAL_DOF;
+	}
   }
 
   void L2HighOrderFESpace :: UpdateDofTables()
   {
+    ndof = all_dofs_together ? 0 : nel;
     first_element_dof.SetSize(nel+1);
     for (int i = 0; i < nel; i++)
       {
@@ -199,7 +215,8 @@ namespace ngcomp
           default:  // for the compiler
             break;
 	  }
-	ndof--; // subtract constant 
+	if (!all_dofs_together)
+	  ndof--; // subtract constant 
       }
     first_element_dof[nel] = ndof;
 
@@ -330,7 +347,8 @@ namespace ngcomp
   void L2HighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
-    dnums.Append (elnr); // lowest_order 
+    if (!all_dofs_together)
+      dnums.Append (elnr); // lowest_order 
     int first = first_element_dof[elnr];
     int neldofs = first_element_dof[elnr+1] - first;
 
