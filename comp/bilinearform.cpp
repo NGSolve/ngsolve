@@ -62,6 +62,7 @@ namespace ngcomp
     if (flags.GetDefineFlag ("timing")) SetTiming (1);
     if (flags.GetDefineFlag ("eliminate_internal")) SetEliminateInternal (1);
     if (flags.GetDefineFlag ("keep_internal")) SetKeepInternal (1);
+    if (flags.GetDefineFlag ("store_inner")) SetStoreInner (1);
 
     precompute = flags.GetDefineFlag ("precompute");
   }
