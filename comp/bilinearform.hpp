@@ -67,6 +67,7 @@ namespace ngcomp
     BaseMatrix * harmonicext;
     BaseMatrix * harmonicexttrans;
     BaseMatrix * innersolve;
+    BaseMatrix * innermatrix;
     ///
     bool timing;
     bool print;
@@ -74,7 +75,8 @@ namespace ngcomp
     bool elmat_ev;
     bool eliminate_internal;
     bool keep_internal;
-  
+    ///should A_ii itself be stored?!
+    bool store_inner; 
 
     bool precompute;
     Array<void*> precomputed_data;
@@ -224,11 +226,17 @@ namespace ngcomp
     { 
       return *innersolve; 
     }
+    ///  
+    BaseMatrix & GetInnerMatrix () const
+    { 
+      return *innermatrix; 
+    }
 
 
     bool HasLowOrderBilinearForm(void) const {return low_order_bilinear_form != NULL;}
     bool UsesEliminateInternal(void) const {return eliminate_internal;}
     bool UsesKeepInternal(void) const {return keep_internal;}
+    bool UsesStoreInner(void) const {return store_inner;}
 
     const BilinearForm & GetLowOrderBilinearForm() const
     {
@@ -286,7 +294,8 @@ namespace ngcomp
     { eliminate_internal = eliminate; }
     void SetKeepInternal (bool keep) 
     { keep_internal = keep; }
-
+    void SetStoreInner (bool storei) 
+    { store_inner = storei; }
     void SetPrint (bool ap);
     void SetPrintElmat (bool ap);
     void SetElmatEigenValues (bool ee);
