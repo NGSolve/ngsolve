@@ -34,7 +34,7 @@ namespace ngcomp
     // printing bool 
     bool print; 
     bool fast_pfem;
-
+    bool all_dofs_together;
   public:
 
     L2HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);

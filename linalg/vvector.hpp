@@ -151,12 +151,13 @@ namespace ngla
       BaseVector::operator= (v2);
       return *this;
     }
-
+    /*
     T & operator() (int i)
     {
       return data[i];
     }
-    const T & operator() (int i) const
+    */
+    T & operator() (int i) const
     {
       return data[i];
     }
