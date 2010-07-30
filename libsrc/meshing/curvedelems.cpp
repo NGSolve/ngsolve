@@ -1822,6 +1822,26 @@ namespace netgen
     const Element & el = mesh[elnr];
     ELEMENT_TYPE type = el.GetType();
     
+    int nfaces = MeshTopology::GetNFaces (type);
+    if (nfaces > 4)
+      { // not a tet
+	const ELEMENT_FACE * faces = MeshTopology::GetFaces0 (type);
+	for (int j = 0; j < nfaces; j++)
+	  {
+	    if (faces[j][3] != -1)
+	      {  // a quad face
+		Point<3> pts[4];
+		for (int k = 0; k < 4; k++)
+		  pts[k] = mesh.Point(el[faces[j][k]]);
+		Vec<3> twist = (pts[1] - pts[0]) - (pts[2]-pts[3]);
+		if (twist.Length() > 1e-8 * (pts[1]-pts[0]).Length())
+		  return true;
+	      }
+	  }
+      }
+      
+    
+
     ElementInfo info;
     info.elnr = elnr;
     info.order = order;
