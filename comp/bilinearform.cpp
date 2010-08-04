@@ -1177,13 +1177,13 @@ namespace ngcomp
 				  }
 				  else
 				  {
-				    LapackInverse (d);
 				    Array<int> idnums;
 				    Array<int> ednums;
 				    fespace.GetDofNrs(i,idnums,LOCAL_DOF);
 				    fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
 				    if (store_inner)
 				      static_cast<ElementByElementMatrix<SCAL>*>(innermatrix)->AddElementMatrix(i,idnums,idnums,d);
+				    LapackInverse (d);
 				    FlatMatrix<SCAL> he (sizei, sizeo, lh);
 				    he=0.0;
 				    LapackMultAddABt (d, c, -1, he);
