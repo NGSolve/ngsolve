@@ -656,6 +656,11 @@
 					RelativePath="..\linalg\vvector.cpp"
 					>
 				</File>
+				<File
+					RelativePath="..\linalg\elementbyelement.cpp"
+					>
+				</File>
+
 			</Filter>
 			<Filter
 				Name="multigrid"
@@ -1196,6 +1201,10 @@
 				</File>
 				<File
 					RelativePath="..\linalg\vvector.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\linalg\elementbyelement.hpp"
 					>
 				</File>
 			</Filter>
