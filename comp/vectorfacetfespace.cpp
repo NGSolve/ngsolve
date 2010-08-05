@@ -492,11 +492,10 @@ namespace ngcomp
 	    
 	    ma.GetElEdges (elnr, fanums);
 	    
+	    int innerdof = first_inner_dof[elnr];
 	    for(int i=0; i<fanums.Size(); i++)
 	      {
 		int facetdof = first_facet_dof[fanums[i]];
-		int innerdof = first_inner_dof[elnr];
-		
 		for (int j = 0; j <= order; j++)
 		  {
 		    if (j == 0)
