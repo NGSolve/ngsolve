@@ -233,12 +233,14 @@ namespace ngcomp
 	  {
 	    int ne = ma.GetNE();
 	    first_inner_dof.SetSize(ne+1);
+	    Array<int> fnums;
 	    for (int i = 0; i < ne; i++)
 	      {
 		first_inner_dof[i] = ndof;
 		
 		// only trigs supported:
-		ndof += 3;
+		ma.GetElFacets(i,fnums);
+		ndof += fnums.Size();
 	      }
 	    first_inner_dof[ne] = ndof;
 	  }

@@ -187,7 +187,7 @@ template <class T>
 
   class BitArray;
   
-  class FilteredTableCreator : public TableCreator<int>
+  class NGS_DLL_HEADER FilteredTableCreator : public TableCreator<int>
   {
   protected:
     BitArray* takedofs;  

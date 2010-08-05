@@ -175,7 +175,7 @@ namespace ngla
 
   /// The conjugate gradient solver
   template <class IPTYPE>
-  class GMRESSolver : public KrylovSpaceSolver
+  class NGS_DLL_HEADER GMRESSolver : public KrylovSpaceSolver
   {
   public:
     typedef typename SCAL_TRAIT<IPTYPE>::SCAL SCAL;
