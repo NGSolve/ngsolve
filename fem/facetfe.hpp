@@ -20,7 +20,6 @@ namespace ngfem
   class NGS_DLL_HEADER FacetVolumeFiniteElement : virtual public ScalarFiniteElement<D>
   {
   protected:
-    using ScalarFiniteElement<D>::order;
     int vnums[8];
     int facet_order[6]; 
     int first_facet_dof[7];

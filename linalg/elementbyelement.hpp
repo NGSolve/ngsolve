@@ -16,7 +16,7 @@ namespace ngla
 
 
   template <class SCAL>
-  class ElementByElementMatrix : public BaseMatrix
+  class NGS_DLL_HEADER ElementByElementMatrix : public BaseMatrix
   {
     Array<FlatMatrix<SCAL> > elmats;
     Array<FlatArray<int> > rowdnums;

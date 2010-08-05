@@ -38,6 +38,7 @@ namespace ngfem
   {
   protected:
     L2HighOrderFE<ET_SEGM> facets2[3];
+    using FiniteElement::eltype;    
   public:
     FacetFE(); 
     virtual void ComputeNDof();
@@ -64,6 +65,7 @@ namespace ngfem
   {
   protected:
     L2HighOrderFE<ET_SEGM> facets2[4];
+    using FiniteElement::eltype;    
   public:
     FacetFE();
     virtual void ComputeNDof();
@@ -91,6 +93,7 @@ namespace ngfem
   {
   protected:
     L2HighOrderFE<ET_TRIG> facets2[4];
+    using FiniteElement::eltype;
   public:
     FacetFE(); 
     virtual void ComputeNDof();
@@ -117,7 +120,8 @@ namespace ngfem
   class FacetFE<ET_HEX> : public FacetFiniteElement_Family<ET_HEX>
   {
   protected:
-    L2HighOrderFE<ET_QUAD> facetsq[6];
+    L2HighOrderFE<ET_QUAD> facetsq[6]; 
+    using FiniteElement::eltype;
   public:
     FacetFE();
     virtual void ComputeNDof();
@@ -137,7 +141,7 @@ namespace ngfem
   protected:
     L2HighOrderFE<ET_TRIG> facetst[2];
     L2HighOrderFE<ET_QUAD> facetsq[3];
-
+    using FiniteElement::eltype;
   public:
     FacetFE();
     virtual void ComputeNDof();
@@ -186,6 +190,7 @@ namespace ngfem
     int tnr, qnr; // active facets
     L2HighOrderFE<ET_TRIG> trig;
     L2HighOrderFE<ET_QUAD> quad;
+    using FiniteElement::eltype;    
   public:
     FacetFE() : FacetFiniteElement_Family<ET_PYRAMID> () {  qnr=tnr=-1; };
     
