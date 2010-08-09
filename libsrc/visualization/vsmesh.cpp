@@ -1040,7 +1040,7 @@ namespace netgen
                glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcol);
             }
 
-            bool drawel = !el.IsDeleted();
+            bool drawel = (!el.IsDeleted() & el.IsVisible());
 
             if (checkvicinity)
                for (int j = 0; j < el.GetNP(); j++)
@@ -1388,7 +1388,8 @@ namespace netgen
       {
          const Element2d & el = (*mesh)[sei];
 
-         bool drawel = !el.IsDeleted();
+         bool drawel = (!el.IsDeleted() & el.IsVisible());
+
          if (checkvicinity)
             for (int j = 0; j < el.GetNP(); j++)
                if (!stlgeometry->Vicinity(el.GeomInfoPi(j+1).trignum))
