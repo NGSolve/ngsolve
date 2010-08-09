@@ -115,6 +115,7 @@ namespace netgen
 
       if(!header_found)
       {
+         ocf.close();
          throw NgException("AutoColourAlg_UserProfile: Invalid or empty Boundary Colour Profile file\n");
          return;
       }
@@ -125,6 +126,7 @@ namespace netgen
       {
          if(!ocf.good())
          {
+            ocf.close();
             throw NgException("AutoColourAlg_UserProfile: Invalid or empty Boundary Colour Profile file\n");
             return;
          }
@@ -133,8 +135,8 @@ namespace netgen
       }
       else
       {
-         PrintMessage(3, "AutoColourAlg_UserProfile: No Boundary Colour entries found.... no changes made!");
          ocf.close();
+         PrintMessage(3, "AutoColourAlg_UserProfile: No Boundary Colour entries found.... no changes made!");
          return;
       }
 
@@ -164,7 +166,11 @@ namespace netgen
              >> bc_colours.Elem(i).Z();
 
          if(!ocf.good())
+         {
+            ocf.close();
             throw NgException("Boundary Colour file error: Number of entries do not match specified list size!!\n");
+            return;
+         }
 
          // Bound checking of the values
          // The RGB values should be between 0.0 and 1.0
@@ -450,6 +456,12 @@ namespace netgen
             PrintMessage(1, "AutoColourBcProps: Using Boundary Colour Profile file: ");
             PrintMessage(1, "  ", bccolourfile);
             AutoColourAlg_UserProfile(mesh, ocf);
+
+            // Make sure the file is closed before exiting the function
+            if(ocf.is_open())
+            {
+               ocf.close();
+            }
          }
       }
    }

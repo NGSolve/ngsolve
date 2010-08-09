@@ -788,6 +788,11 @@ menu .ngmenu.special
 .ngmenu.special add cascade -label "Colour-based boundary conditions" -menu .ngmenu.special.colbndcond
 
 menu .ngmenu.special.colbndcond 
+ .ngmenu.special.colbndcond add command -label "Inspect Colours in mesh" \
+    -command { currmeshcoloursdialog }
+    
+ .ngmenu.special.colbndcond add separator	
+    
  .ngmenu.special.colbndcond add command -label "Automatic Assignment" \
     -command { Ng_AutoColourBcProps auto; redraw }
 	

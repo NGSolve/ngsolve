@@ -44,6 +44,10 @@ namespace netgen
    */
    //extern void OCCAutoColourBcProps(Mesh & mesh, OCCGeometry & occgeometry, const char *occcolourfile);
    extern void AutoColourBcProps(Mesh & mesh, const char *bccolourfile);
+
+   extern void GetFaceColours(Mesh & mesh, Array<Vec3d> & face_colours);
+
+   extern bool ColourMatch(Vec3d col1, Vec3d col2, double eps = 2.5e-05);
 }
 #endif
 

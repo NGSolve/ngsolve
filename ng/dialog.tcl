@@ -1531,6 +1531,99 @@ proc bcpropdialog { } {
 
 
 #
+# Philippose - 25/07/2010
+# Display the face colours currently 
+# available in the mesh
+#
+proc currmeshcoloursdialog { } {
+
+    set w .currmeshcolours_dlg
+    
+    if {[winfo exists .currmeshcolours_dlg] == 1} {
+	wm withdraw $w
+	wm deiconify $w
+	focus $w 
+    } {
+	toplevel $w
+
+	global facecolslist
+
+	frame $w.facecols -borderwidth 3
+	pack $w.facecols -side top -expand yes -fill x -fill y        
+    
+	listbox $w.facecols.list -yscroll "$w.facecols.scroll set" -selectmode single -setgrid 1 -width 32 -height 12
+	scrollbar $w.facecols.scroll -command "$w.facecols.list yview"
+	pack $w.facecols.scroll -side right -fill y
+	pack $w.facecols.list -side left -expand 1 -fill both
+    
+	Ng_CurrentFaceColours getcolours facecolslist
+	set i 1
+	foreach el $facecolslist {
+	    set hel [format "%d: (%.4f %.4f %.4f)" $i [ lindex $el 0 ] [ lindex $el 1 ] [ lindex $el 2 ]]
+	    incr i
+	    $w.facecols.list insert end $hel }
+
+	frame $w.bu1
+    pack $w.bu1
+    
+    button $w.bu1.showonly -text "show only" -command {
+        Ng_CurrentFaceColours showonly [.currmeshcolours_dlg.facecols.list curselection]
+        redraw
+    }
+    button $w.bu1.hideonly -text "hide only" -command {
+        Ng_CurrentFaceColours hideonly [.currmeshcolours_dlg.facecols.list curselection]
+        redraw
+    }
+    pack $w.bu1.showonly $w.bu1.hideonly -fill x -padx 3 -pady 3 -side left
+    
+    frame $w.bu2
+    pack $w.bu2
+    
+    button $w.bu2.showalso -text "show" -command {
+        Ng_CurrentFaceColours showalso [.currmeshcolours_dlg.facecols.list curselection]
+        redraw
+    }
+    button $w.bu2.hidealso -text "hide" -command {
+        Ng_CurrentFaceColours hidealso [.currmeshcolours_dlg.facecols.list curselection]
+        redraw
+    }
+    pack $w.bu2.showalso $w.bu2.hidealso -fill x -padx 3 -pady 3 -side left
+    
+    frame $w.bu3
+    pack $w.bu3
+    
+    button $w.bu3.showall -text "show all" -command {
+        Ng_CurrentFaceColours showall
+        redraw
+    }
+    button $w.bu3.hideall -text "hide all" -command {
+        Ng_CurrentFaceColours hideall
+        redraw
+    }
+    pack $w.bu3.showall $w.bu3.hideall -fill x -padx 3 -pady 3 -side left 
+    
+    frame $w.bu4
+    pack $w.bu4
+    
+	button $w.bu4.close -text "close" -command {
+	    destroy .currmeshcolours_dlg
+	}
+    pack $w.bu4.close -pady 3 -side right
+	
+    pack $w.bu4 -side bottom
+    
+	wm withdraw $w
+	wm geom $w +100+100
+	wm deiconify $w
+	wm title $w "Inspect Mesh Colours"	
+	focus $w
+    }
+}
+
+
+
+
+#
 #  Philippose - 30/01/2009
 #  Local Surface Mesh Size Selection
 #  (Currently only supports OCC Geometry)

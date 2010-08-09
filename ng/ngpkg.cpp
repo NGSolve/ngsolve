@@ -1555,6 +1555,178 @@ namespace netgen
 
 
 
+  // Philippose - 25/07/2010
+  // TCL interface function for extracting and eventually 
+  // setting or editing the current colours present in the mesh
+  int Ng_CurrentFaceColours (ClientData clientData,
+                             Tcl_Interp * interp,
+                             int argc, tcl_const char *argv[])
+  {
+     if(argc < 1)
+     {
+        Tcl_SetResult (interp, (char *)"Ng_GetCurrentFaceColours needs arguments", TCL_STATIC);
+        return TCL_ERROR;
+     }
+
+     if(!mesh.Ptr())
+     {
+        Tcl_SetResult (interp, (char *)"Ng_GetCurrentFaceColours: Valid netgen mesh required...please mesh the Geometry first", TCL_STATIC);
+	     return TCL_ERROR;
+     }
+
+     if(strcmp(argv[1], "getcolours") == 0)
+     {
+        stringstream outVar;
+        Array<Vec3d> face_colours;
+        GetFaceColours(*mesh, face_colours);
+
+        for(int i = 0; i < face_colours.Size();i++)
+        {
+           outVar << "{ " << face_colours[i].X(1)
+                  << " "  << face_colours[i].X(2)
+                  << " "  << face_colours[i].X(3)
+                  << " } ";
+        }
+
+        tcl_const char * valuevar = argv[2];
+        Tcl_SetVar  (interp, valuevar, (char*)outVar.str().c_str(), 0);
+     }
+
+     if(strcmp(argv[1], "showalso") == 0)
+     {
+        Array<Vec3d> face_colours;
+        GetFaceColours(*mesh,face_colours);
+
+        int colourind = atoi (argv[2]);
+
+        for(int i = 1; i <= mesh->GetNFD(); i++)
+        {
+           Array<SurfaceElementIndex> surfElems;
+           mesh->GetSurfaceElementsOfFace(i,surfElems);
+
+           if(ColourMatch(face_colours[colourind],mesh->GetFaceDescriptor(i).SurfColour()))
+           {
+              for(int j = 0; j < surfElems.Size(); j++)
+              {
+                 mesh->SurfaceElement(surfElems[j]).Visible(1);
+              }
+           }
+        }
+
+        mesh->SetNextTimeStamp();
+     }
+
+     if(strcmp(argv[1], "hidealso") == 0)
+     {
+        Array<Vec3d> face_colours;
+        GetFaceColours(*mesh,face_colours);
+
+        int colourind = atoi (argv[2]);
+
+        for(int i = 1; i <= mesh->GetNFD(); i++)
+        {
+           Array<SurfaceElementIndex> surfElems;
+           mesh->GetSurfaceElementsOfFace(i,surfElems);
+
+           if(ColourMatch(face_colours[colourind],mesh->GetFaceDescriptor(i).SurfColour()))
+           {
+              for(int j = 0; j < surfElems.Size(); j++)
+              {
+                 mesh->SurfaceElement(surfElems[j]).Visible(0);
+              }
+           }
+        }
+
+        mesh->SetNextTimeStamp();
+     }
+
+     if(strcmp(argv[1], "showonly") == 0)
+     {
+        Array<Vec3d> face_colours;
+        GetFaceColours(*mesh,face_colours);
+
+        int colourind = atoi (argv[2]);
+
+        for(int i = 1; i <= mesh->GetNFD(); i++)
+        {
+           Array<SurfaceElementIndex> surfElems;
+           mesh->GetSurfaceElementsOfFace(i,surfElems);
+
+           if(ColourMatch(face_colours[colourind],mesh->GetFaceDescriptor(i).SurfColour()))
+           {
+              for(int j = 0; j < surfElems.Size(); j++)
+              {
+                 mesh->SurfaceElement(surfElems[j]).Visible(1);
+              }
+           }
+           else
+           {
+              for(int j = 0; j < surfElems.Size(); j++)
+              {
+                 mesh->SurfaceElement(surfElems[j]).Visible(0);
+              }
+           }
+        }
+
+        mesh->SetNextTimeStamp();
+     }
+
+     if(strcmp(argv[1], "hideonly") == 0)
+     {
+        Array<Vec3d> face_colours;
+        GetFaceColours(*mesh,face_colours);
+
+        int colourind = atoi (argv[2]);
+
+        for(int i = 1; i <= mesh->GetNFD(); i++)
+        {
+           Array<SurfaceElementIndex> surfElems;
+           mesh->GetSurfaceElementsOfFace(i,surfElems);
+
+           if(ColourMatch(face_colours[colourind],mesh->GetFaceDescriptor(i).SurfColour()))
+           {
+              for(int j = 0; j < surfElems.Size(); j++)
+              {
+                 mesh->SurfaceElement(surfElems[j]).Visible(0);
+              }
+           }
+           else
+           {
+              for(int j = 0; j < surfElems.Size(); j++)
+              {
+                 mesh->SurfaceElement(surfElems[j]).Visible(1);
+              }
+           }
+        }
+
+        mesh->SetNextTimeStamp();
+     }
+
+     if(strcmp(argv[1], "showall") == 0)
+     {
+        for(int i = 1; i <= mesh->GetNSE(); i++)
+        {
+           mesh->SurfaceElement(i).Visible(1);
+        }
+
+        mesh->SetNextTimeStamp();
+     }
+
+     if(strcmp(argv[1], "hideall") == 0)
+     {
+        for(int i = 1; i <= mesh->GetNSE(); i++)
+        {
+           mesh->SurfaceElement(i).Visible(0);
+        }
+
+        mesh->SetNextTimeStamp();
+     }
+
+     return TCL_OK;
+  }
+
+
+
 
   // Philippose - 10/03/2009
   // TCL interface function for the Automatic Colour-based
@@ -4940,6 +5112,13 @@ namespace netgen
     Tcl_CreateCommand (interp, "Ng_AutoColourBcProps", Ng_AutoColourBcProps,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
+
+    // Philippose - 25/07/2010
+    // Register the TCL Interface Command for handling the face colours 
+    // present in the mesh
+    Tcl_CreateCommand(interp, "Ng_CurrentFaceColours", Ng_CurrentFaceColours,
+                      (ClientData)NULL,
+                      (Tcl_CmdDeleteProc*) NULL);
     
 
     // meshing
