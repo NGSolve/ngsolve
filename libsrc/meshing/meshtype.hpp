@@ -309,6 +309,11 @@ class Element2d
   bool strongrefflag:1;
   bool deleted:1;  // element is deleted
 
+  // Philippose - 08 August 2010
+  // Set a new property for each element, to 
+  // control whether it is visible or not
+  bool visible:1;  // element visible
+
   /// order for hp-FEM
   unsigned int orderx:6;
   unsigned int ordery:6;
@@ -465,6 +470,13 @@ public:
     return deleted; 
   }
 
+  // Philippose - 08 August 2010
+  // Access functions for the new property: visible
+  void Visible(bool vis = 1) 
+  { visible = vis; }
+  bool IsVisible () const 
+  { return visible; }
+   
   void SetRefinementFlag (bool rflag = 1) 
   { refflag = rflag; }
   bool TestRefinementFlag () const

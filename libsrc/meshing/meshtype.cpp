@@ -141,6 +141,7 @@ namespace netgen
     index = 0;
     badel = 0;
     deleted = 0;
+    visible = 1;
     typ = TRIG;
     orderx = ordery = 1;
     refflag = 1;
@@ -162,6 +163,7 @@ namespace netgen
     index = 0;
     badel = 0;
     deleted = 0;
+    visible = 1;
     switch (np)
       {
       case 3: typ = TRIG; break;
@@ -190,6 +192,7 @@ namespace netgen
     index = 0;
     badel = 0;
     deleted = 0;
+    visible = 1;
     orderx = ordery = 1;
     refflag = 1;
     strongrefflag = false;
@@ -219,6 +222,7 @@ namespace netgen
     refflag = 1;
     strongrefflag = false;
     deleted = 0;
+    visible = 1;
     orderx = ordery = 1;
 
 #ifdef PARALLEL
@@ -246,6 +250,7 @@ namespace netgen
     refflag = 1;
     strongrefflag = false;
     deleted = 0;
+    visible = 1;
     orderx = ordery = 1;
 
 #ifdef PARALLEL
