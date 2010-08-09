@@ -1549,12 +1549,11 @@ proc currmeshcoloursdialog { } {
 	global facecolslist
 
 	frame $w.facecols -borderwidth 3
-	pack $w.facecols -side top -expand yes -fill x -fill y        
     
 	listbox $w.facecols.list -yscroll "$w.facecols.scroll set" -selectmode single -setgrid 1 -width 32 -height 12
 	scrollbar $w.facecols.scroll -command "$w.facecols.list yview"
 	pack $w.facecols.scroll -side right -fill y
-	pack $w.facecols.list -side left -expand 1 -fill both
+	pack $w.facecols.list -side left -expand yes -fill both
     
 	Ng_CurrentFaceColours getcolours facecolslist
 	set i 1
@@ -1563,9 +1562,7 @@ proc currmeshcoloursdialog { } {
 	    incr i
 	    $w.facecols.list insert end $hel }
 
-	frame $w.bu1
-    pack $w.bu1
-    
+	frame $w.bu1 -borderwidth 3
     button $w.bu1.showonly -text "show only" -command {
         Ng_CurrentFaceColours showonly [.currmeshcolours_dlg.facecols.list curselection]
         redraw
@@ -1574,43 +1571,38 @@ proc currmeshcoloursdialog { } {
         Ng_CurrentFaceColours hideonly [.currmeshcolours_dlg.facecols.list curselection]
         redraw
     }
-    pack $w.bu1.showonly $w.bu1.hideonly -fill x -padx 3 -pady 3 -side left
-    
-    frame $w.bu2
-    pack $w.bu2
-    
-    button $w.bu2.showalso -text "show" -command {
+    button $w.bu1.showalso -text "show" -command {
         Ng_CurrentFaceColours showalso [.currmeshcolours_dlg.facecols.list curselection]
         redraw
     }
-    button $w.bu2.hidealso -text "hide" -command {
+    button $w.bu1.hidealso -text "hide" -command {
         Ng_CurrentFaceColours hidealso [.currmeshcolours_dlg.facecols.list curselection]
         redraw
     }
-    pack $w.bu2.showalso $w.bu2.hidealso -fill x -padx 3 -pady 3 -side left
+    pack $w.bu1.showonly $w.bu1.hideonly $w.bu1.showalso $w.bu1.hidealso -expand yes -fill x -padx 2 -pady 2 -side left    
     
-    frame $w.bu3
-    pack $w.bu3
-    
-    button $w.bu3.showall -text "show all" -command {
+    frame $w.bu2
+    button $w.bu2.showall -text "show all" -command {
         Ng_CurrentFaceColours showall
         redraw
     }
-    button $w.bu3.hideall -text "hide all" -command {
+    button $w.bu2.hideall -text "hide all" -command {
         Ng_CurrentFaceColours hideall
         redraw
     }
-    pack $w.bu3.showall $w.bu3.hideall -fill x -padx 3 -pady 3 -side left 
+    pack $w.bu2.showall $w.bu2.hideall -expand yes -fill x -padx 2 -pady 2 -side left 
     
-    frame $w.bu4
-    pack $w.bu4
-    
-	button $w.bu4.close -text "close" -command {
+    frame $w.bu3
+	button $w.bu3.close -text "close" -command {
 	    destroy .currmeshcolours_dlg
 	}
-    pack $w.bu4.close -pady 3 -side right
-	
-    pack $w.bu4 -side bottom
+    pack $w.bu3.close -expand yes -fill x -pady 3 -side right
+
+
+	pack $w.facecols -side top -expand yes -fill x -fill y
+    pack $w.bu3 -side bottom
+    pack $w.bu2 -side bottom    
+    pack $w.bu1 -expand yes -fill x -side left    
     
 	wm withdraw $w
 	wm geom $w +100+100
