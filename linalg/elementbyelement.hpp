@@ -24,9 +24,14 @@ namespace ngla
     int height;
     int ne;
     bool symmetric;
+    bool disjointrows;
+    bool disjointcols;
   public:
     ElementByElementMatrix (int h, int ane, bool isymmetric=false);
+    ElementByElementMatrix (int h, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols);
 
+    void SetDisjointRows(bool newval){disjointrows=newval;}
+    void SetDisjointCols(bool newval){disjointcols=newval;}
     virtual int VHeight() const { return height; }
     virtual int VWidth() const { return height; }
 

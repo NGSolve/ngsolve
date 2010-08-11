@@ -782,6 +782,9 @@ namespace ngcomp
     for(int j=first; j<next; j++)
       dnums.Append(j);
     
+    
+    if (!DefinedOn (ma.GetElIndex (elnr)))
+      dnums = -1;
     // (*testout) << "hdivspace(sz) el " << elnr << " has dofs " << dnums << endl;
   }
 

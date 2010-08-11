@@ -24,7 +24,8 @@ namespace ngla
     elmats.SetSize(ne);
     rowdnums.SetSize(ne);
     coldnums.SetSize(ne);
-
+    disjointrows = false;
+    disjointcols = false;
     for (int i = 0; i < ne; i++)
       {
         elmats[i].AssignMemory (0, 0, NULL);
@@ -33,6 +34,25 @@ namespace ngla
       }
   }
   
+  template <class SCAL>
+  ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols) 
+  {
+    symmetric=isymmetric;
+    height = h; 
+    ne = ane; 
+    elmats.SetSize(ne);
+    rowdnums.SetSize(ne);
+    coldnums.SetSize(ne);
+    disjointrows = adisjointrows;
+    disjointcols = adisjointcols;
+    for (int i = 0; i < ne; i++)
+      {
+        elmats[i].AssignMemory (0, 0, NULL);
+        rowdnums[i] = FlatArray<int> (0, NULL);
+	coldnums[i] = FlatArray<int> (0, NULL);
+      }
+  }
+    
   
   template <class SCAL>
   void ElementByElementMatrix<SCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -45,33 +65,68 @@ namespace ngla
       maxs = max2 (maxs, rowdnums[i].Size());
     for (int i = 0; i < coldnums.Size(); i++)
       maxs = max2 (maxs, coldnums[i].Size());
-    
-    ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
-      
-    FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
-    FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
 
-    for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
-      {
-        FlatArray<int> rdi (rowdnums[i]);
-        FlatArray<int> cdi (coldnums[i]);
-	
-	if (!rdi.Size() || !cdi.Size()) continue;
+    if (disjointrows)
+    {
+      #pragma omp parallel
+	  {    
+	    ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
+	      
+	    FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
+	    FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
 
-        FlatVector<SCAL> hv1(cdi.Size(), &mem1[0]);
-        FlatVector<SCAL> hv2(rdi.Size(), &mem2[0]);
+      #pragma omp for
+	    for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
+	      {
+		FlatArray<int> rdi (rowdnums[i]);
+		FlatArray<int> cdi (coldnums[i]);
+		
+		if (!rdi.Size() || !cdi.Size()) continue;
+
+		FlatVector<SCAL> hv1(cdi.Size(), &mem1[0]);
+		FlatVector<SCAL> hv2(rdi.Size(), &mem2[0]);
+		  
+		for (int j = 0; j < cdi.Size(); j++)
+		  hv1(j) = vx (cdi[j]);
+		
+		hv2 = elmats[i] * hv1;
+		// LapackMultAx (elmats[i], hv1, hv2);
+
+		for (int j = 0; j < rdi.Size(); j++)
+		  vy (rdi[j]) += s*hv2[j];
+		
+		NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
+	      }
+	  }//end of parallel    
 	  
-        for (int j = 0; j < cdi.Size(); j++)
-          hv1(j) = vx (cdi[j]);
+    }
+    else
+    {    
+      ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
 	
-	hv2 = elmats[i] * hv1;
-	// LapackMultAx (elmats[i], hv1, hv2);
+      FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
+      FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
 
-        for (int j = 0; j < rdi.Size(); j++)
-          vy (rdi[j]) += s*hv2[j];
+      for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
+	{
+	  FlatArray<int> rdi (rowdnums[i]);
+	  FlatArray<int> cdi (coldnums[i]);
+	  
+	  if (!rdi.Size() || !cdi.Size()) continue;
 
-	NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
-      }
+	  FlatVector<SCAL> hv1(cdi.Size(), &mem1[0]);
+	  FlatVector<SCAL> hv2(rdi.Size(), &mem2[0]);
+	    
+	  for (int j = 0; j < cdi.Size(); j++)
+	    hv1(j) = vx (cdi[j]);
+	  
+	  hv2 = elmats[i] * hv1;
+	  // LapackMultAx (elmats[i], hv1, hv2);
+	  for (int j = 0; j < rdi.Size(); j++)
+	    vy (rdi[j]) += s*hv2[j];
+	  NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
+	}
+    }
   }
 
   
@@ -87,28 +142,61 @@ namespace ngla
     for (int i = 0; i < coldnums.Size(); i++)
       maxs = max2 (maxs, coldnums[i].Size());
     
-    ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
-      
-    FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
-    FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
+    if (disjointcols)
+    {
+    #pragma omp parallel
+	{
+	  ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
+	    
+	  FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
+	  FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
 
-    for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
-      {
-	if ((rowdnums[i].Size() == 0) || (coldnums[i].Size() == 0)) continue; 
-        FlatArray<int> rdi (rowdnums[i]);
-        FlatArray<int> cdi (coldnums[i]);
+    #pragma omp  for    
+	  for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
+	    {
+	      if ((rowdnums[i].Size() == 0) || (coldnums[i].Size() == 0)) continue; 
+	      FlatArray<int> rdi (rowdnums[i]);
+	      FlatArray<int> cdi (coldnums[i]);
+	      
+	      FlatVector<SCAL> hv1(rdi.Size(), &mem1[0]);
+	      FlatVector<SCAL> hv2(cdi.Size(), &mem2[0]);
+		
+	      for (int j = 0; j < rdi.Size(); j++)
+		hv1(j) = vx (rdi[j]);
+	      
+	      hv2 = Trans(elmats[i]) * hv1;
+	      
+	      for (int j = 0; j < coldnums[i].Size(); j++)
+		vy (cdi[j]) += s * hv2[j];
+	      NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
+	    }
+	}//end of parallel
+    }
+    else
+    {
+      ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
 	
-        FlatVector<SCAL> hv1(rdi.Size(), &mem1[0]);
-        FlatVector<SCAL> hv2(cdi.Size(), &mem2[0]);
+      FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
+      FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
+
+      for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
+	{
+	  if ((rowdnums[i].Size() == 0) || (coldnums[i].Size() == 0)) continue; 
+	  FlatArray<int> rdi (rowdnums[i]);
+	  FlatArray<int> cdi (coldnums[i]);
 	  
-        for (int j = 0; j < rdi.Size(); j++)
-          hv1(j) = vx (rdi[j]);
-	
-        hv2 = Trans(elmats[i]) * hv1;
-        for (int j = 0; j < coldnums[i].Size(); j++){
-          vy (cdi[j]) += s * hv2[j];
+	  FlatVector<SCAL> hv1(rdi.Size(), &mem1[0]);
+	  FlatVector<SCAL> hv2(cdi.Size(), &mem2[0]);
+	    
+	  for (int j = 0; j < rdi.Size(); j++)
+	    hv1(j) = vx (rdi[j]);
+	  
+	  hv2 = Trans(elmats[i]) * hv1;
+	  for (int j = 0; j < coldnums[i].Size(); j++)
+	    vy (cdi[j]) += s * hv2[j];
+	  NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
 	}
-      }
+    }
   }
 
 
