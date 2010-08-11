@@ -579,6 +579,9 @@ namespace ngcomp
 	      }
 	  }
       }
+      
+    if (!DefinedOn (ma.GetElIndex (elnr)))
+      dnums = -1;
     // *testout << "dnums = " << endl << dnums << endl;
   }
 
