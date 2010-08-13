@@ -340,6 +340,9 @@ namespace ngcomp
     bool boundary = ip.GetTransformation().Boundary();
 
     const FESpace & fes = gf.GetFESpace();
+    
+    if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex())) return 0;
+    
     const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
     const int dim     = fes.GetDimension();
     
@@ -380,6 +383,9 @@ namespace ngcomp
     bool boundary = ip.GetTransformation().Boundary();
 
     const FESpace & fes = gf.GetFESpace();
+    
+    if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex())) { result = 0.0; return;};
+    
     const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
     const int dim     = fes.GetDimension();
     
@@ -417,6 +423,9 @@ namespace ngcomp
     bool boundary = ir.GetTransformation().Boundary();
 
     const FESpace & fes = gf.GetFESpace();
+    
+    if (!fes.DefinedOn(ir.GetTransformation().GetElementIndex())) { values = 0.0; return;};
+    
     const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
     const int dim     = fes.GetDimension();
     
