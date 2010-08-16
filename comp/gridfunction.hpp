@@ -27,6 +27,8 @@ namespace ngcomp
 
 
     Array<BaseVector*> vec;
+    ///GridFunctions if GridFunctions is a compound GridFunction
+    Array<GridFunction*> comp;
 
   public:
     ///
@@ -150,6 +152,7 @@ namespace ngcomp
   class NGS_DLL_HEADER T_GridFunction : public S_GridFunction<typename mat_traits<TV>::TSCAL>
   {
     using S_GridFunction<typename mat_traits<TV>::TSCAL>::vec;
+    using S_GridFunction<typename mat_traits<TV>::TSCAL>::comp;
 
   public:
     typedef typename mat_traits<TV>::TSCAL TSCAL;

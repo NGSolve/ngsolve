@@ -619,12 +619,13 @@ namespace ngfem
   class HDG_ConvectionIntegrator : public BilinearFormIntegrator
   {
   protected:
-    CoefficientFunction * coef_conv[D];
+    Array<CoefficientFunction *> coef_conv;
   public:
     HDG_ConvectionIntegrator (Array<CoefficientFunction*> & coeffs) 
       : BilinearFormIntegrator()
     { 
-      for (int j = 0; j < D; j++)
+      coef_conv.SetSize(coeffs.Size());
+      for (int j = 0; j < coeffs.Size(); j++)
         coef_conv[j] = coeffs[j];
     }
 
@@ -692,9 +693,12 @@ namespace ngfem
           HeapReset hr(lh);
           const SpecificIntegrationPoint<D,D> sip(ir_vol[l], eltrans, lh);
           Vec<D> conv;
-          for (int j = 0; j < D; j++)
-            conv(j) = coef_conv[j]->Evaluate(sip);
-          
+          if (coef_conv.Size()>1){
+	          for (int j = 0; j < D; j++)
+  	          conv(j) = coef_conv[j]->Evaluate(sip);
+  	      }else{
+  	        coef_conv[0]->Evaluate(sip,conv);
+          }
           fel_l2.CalcShape (sip.IP(), shape);
           fel_l2.CalcMappedDShape (sip, dshape);
           
@@ -753,8 +757,14 @@ namespace ngfem
               SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
 
               Vec<D> conv;
-              for (int j = 0; j < D; j++)
-                conv(j) = coef_conv[j]->Evaluate(sip);
+				      if (coef_conv.Size()>1){
+					      for (int j = 0; j < D; j++)
+					        conv(j) = coef_conv[j]->Evaluate(sip);
+					    }else{
+					      coef_conv[0]->Evaluate(sip,conv);
+				      }
+
+
 
               Mat<D> jac = sip.GetJacobian();
               Mat<D> inv_jac = sip.GetJacobianInverse();
@@ -826,8 +836,12 @@ namespace ngfem
       GetIntegrators().AddBFIntegrator ("HDG_laplace", 3, 2,
                                         HDG_LaplaceIntegrator<3>::Create);
 
+      GetIntegrators().AddBFIntegrator ("HDG_convection", 2, 1,
+                                        HDG_ConvectionIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("HDG_convection", 2, 2,
                                         HDG_ConvectionIntegrator<2>::Create);
+      GetIntegrators().AddBFIntegrator ("HDG_convection", 3, 1,
+                                        HDG_ConvectionIntegrator<3>::Create);
       GetIntegrators().AddBFIntegrator ("HDG_convection", 3, 3,
                                         HDG_ConvectionIntegrator<3>::Create);
 
