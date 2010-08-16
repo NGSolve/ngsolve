@@ -517,7 +517,7 @@ namespace ngsolve
 			  shared += ".so";
               cout << "load shared library '" << shared << "'" << endl;
 
-              void * handle = dlopen (shared.c_str(), RTLD_LAZY);
+              void * handle = dlopen (shared.c_str(), RTLD_LAZY | RTLD_GLOBAL);
               if (!handle)
                 {
                   stringstream err;
