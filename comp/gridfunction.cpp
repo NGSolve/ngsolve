@@ -127,9 +127,14 @@ namespace ngcomp
   template <class SCAL>
   GridFunction * S_GridFunction<SCAL> :: GetComponent (int compound_comp) const
   {
-    GridFunction * gf = new S_ComponentGridFunction<SCAL> (*this, compound_comp);
+/*    GridFunction * gf = new S_ComponentGridFunction<SCAL> (*this, compound_comp);
     if (level_updated != -1) gf->Update();
-    return gf;
+    return gf;*/
+    
+    if (!comp.Size() || comp.Size() < compound_comp)
+      throw Exception("GetComponent: compound_comp does not exist!");
+    else
+      return comp[compound_comp];
   }
 
 
@@ -172,6 +177,15 @@ namespace ngcomp
     vec = 0;
 
     Visualize (this->name);
+    
+    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&GridFunction :: GetFESpace());
+    if (cfe){
+      int nsp = cfe->GetNSpaces();
+      comp.SetSize(nsp);
+      for (int i = 0; i < nsp; i++){
+	comp[i] = new S_ComponentGridFunction<TSCAL> (*this, i);
+      }
+    }    
   }
 
   /*
@@ -259,7 +273,14 @@ namespace ngcomp
               (vec[i]) -> SetStatus ( NOT_PARALLEL );
           }
 #endif
-
+	const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&GridFunction :: GetFESpace());
+	if (cfe){
+	  int nsp = cfe->GetNSpaces();
+// 	  comp.SetSize(nsp);
+	  for (int i = 0; i < nsp; i++){
+	    comp[i]->Update();
+	  }
+	}
       }
     catch (exception & e)
       {

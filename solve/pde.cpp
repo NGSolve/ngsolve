@@ -1174,6 +1174,22 @@ namespace ngsolve
     GridFunction * gf = CreateGridFunction (space, name, flags);
     gridfunctions.Set (name, gf);
 
+
+    CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf));
+    AddCoefficientFunction(name,coef);
+    
+    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&(gf->GetFESpace()));
+    if (cfe){
+      int nsp = cfe->GetNSpaces();
+      for (int i = 0; i < nsp; i++){
+	std::stringstream sstr;
+	sstr << i+1;
+	string nname(name+"."+sstr.str());
+	CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf->GetComponent(i)));
+	AddCoefficientFunction(nname,coef);
+      }
+    }
+    
     todo.Append(gf);
 
     return gf;
@@ -1183,6 +1199,22 @@ namespace ngsolve
   {
     gf -> SetName (name);
     gridfunctions.Set (name, gf);
+    
+    CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf));
+    AddCoefficientFunction(name,coef);
+    
+    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&(gf->GetFESpace()));
+    if (cfe){
+      int nsp = cfe->GetNSpaces();
+      for (int i = 0; i < nsp; i++){
+	std::stringstream sstr;
+	sstr << i+1;
+	string nname(name+"."+sstr.str());
+	CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf->GetComponent(i)));
+	AddCoefficientFunction(nname,coef);
+      }
+    }
+    
     todo.Append(gf);
   }
 
