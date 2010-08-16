@@ -426,6 +426,7 @@ namespace ngfem
       Eval (n, x, values);
     }
 
+
     
     template <class S>
     static ALWAYS_INLINE S P0(S x) { return S(1.0); }
@@ -863,6 +864,63 @@ namespace ngfem
   };
   
   
+
+
+
+
+
+  template <int n, int i, int alpha0, int beta>
+  class DubinerJacobiPolynomialsPowFO
+  {
+  public:
+    template <class S, class T>
+    static S Eval (S x, T & values)
+    {
+      S power = DubinerJacobiPolynomialsPowFO<n, i-1, alpha0, beta>::Eval (x, values);
+      S p1, p2;
+      CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::EvalMult (x, power, values.Row(i), p1, p2);
+      return power * (x+1)/2;
+    }
+
+
+    template <class S, class St, class T>
+    static S EvalScaled (S x, St t, T & values)
+    {
+      S power = DubinerJacobiPolynomialsPowFO<n, i-1, alpha0, beta>::EvalScaled (x, t, values);
+      S p1, p2;
+      CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::EvalScaledMult (x, t, power, values.Row(i), p1, p2);
+      return power * (x+1)/2;
+    }
+  };
+  
+  template <int n, int alpha0, int beta>
+  class DubinerJacobiPolynomialsPowFO<n, -1, alpha0, beta>
+  {
+  public:
+    template <class S, class T>
+    static S Eval (S x, T & values)
+    { return 1.0; }
+    template <class S, class St, class T>
+    static S EvalScaled (S x, St t, T & values)
+    { return 1.0; }
+  };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   template <int ALPHA0, int BETA, class S, class T>
   void DubinerJacobiPolynomials2 (int n, S x, T & values)
   {

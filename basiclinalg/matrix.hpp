@@ -445,8 +445,7 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
     /// nothing done in default constructor
-    FlatMatrixFixWidth () throw()
-      : data(0), h(0) { ; }
+    FlatMatrixFixWidth () throw() { ; }
   
     /// set height and mem
     FlatMatrixFixWidth (int ah, T * adata) throw()
