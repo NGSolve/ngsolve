@@ -32,6 +32,7 @@ namespace netgen
       "FEAP Format", ".mesh",
       "Elmer Format", "*",
       "STL Format", ".stl",
+      "STL Extended Format", ".stl",
       "VRML Format", ".*",
       "Gmsh Format", ".gmsh",
       "Gmsh2 Format", ".gmsh2",
@@ -92,6 +93,13 @@ bool WriteUserFormat (const string & format,
 
   else if (format == "STL Format")
     WriteSTLFormat (mesh, filename);
+
+  // Philippose - 16 August 2010
+  // Added additional STL Export in which
+  // each face of the geometry is treated
+  // as a separate "solid" entity
+  else if (format == "STL Extended Format")
+	WriteSTLExtFormat (mesh, filename);
 
   else if (format == "VRML Format")
     WriteVRMLFormat (mesh, 1, filename);
@@ -328,6 +336,84 @@ void WriteSTLFormat (const Mesh & mesh,
   outfile << "endsolid" << endl;
 }
 
+
+
+
+
+/*
+ *  Philippose - 16 August 2010
+ *  Save surface mesh as STL file
+ *  with a separate solid definition
+ *  for each face
+ *  - This helps in splitting up the
+ *    STL into named boundary faces
+ *    when using a third-party mesher
+ */
+
+void WriteSTLExtFormat (const Mesh & mesh,
+		     const string & filename)
+{
+  cout << "\nWrite STL Surface Mesh (with separated boundary faces)" << endl;
+
+  ofstream outfile (filename.c_str());
+
+  outfile.precision(10);
+
+  Array<int> faceBCs;
+
+  // Collect the BC numbers used in the mesh
+  for(int faceNr = 1; faceNr <= mesh.GetNFD(); faceNr++)
+  {
+	  int bcNum = mesh.GetFaceDescriptor(faceNr).BCProperty();
+
+	  if(!faceBCs.Contains(bcNum))
+	  {
+		  faceBCs.Append(bcNum);
+	  }
+  }
+
+  // Now actually write the data to file
+  for(int bcInd = 1; bcInd <= faceBCs.Size(); bcInd++)
+  {
+      outfile << "solid Boundary_" << faceBCs.Elem(bcInd) << "\n";
+
+      for(int faceNr = 1;faceNr <= mesh.GetNFD(); faceNr++)
+      {
+    	  if(mesh.GetFaceDescriptor(faceNr).BCProperty() != faceBCs.Elem(bcInd))
+    	  {
+    		  continue;
+    	  }
+
+          Array<SurfaceElementIndex> faceSei;
+          mesh.GetSurfaceElementsOfFace(faceNr,faceSei);
+
+          for (int i = 0; i < faceSei.Size(); i++)
+          {
+        	  outfile << "facet normal ";
+        	  const Point3d& p1 = mesh.Point(mesh.SurfaceElement(faceSei[i]).PNum(1));
+        	  const Point3d& p2 = mesh.Point(mesh.SurfaceElement(faceSei[i]).PNum(2));
+        	  const Point3d& p3 = mesh.Point(mesh.SurfaceElement(faceSei[i]).PNum(3));
+
+        	  Vec3d normal = Cross(p2-p1,p3-p1);
+        	  if (normal.Length() != 0)
+        	  {
+        		  normal /= (normal.Length());
+        	  }
+
+        	  outfile << normal.X() << " " << normal.Y() << " " << normal.Z() << "\n";
+        	  outfile << "outer loop\n";
+
+        	  outfile << "vertex " << p1.X() << " " << p1.Y() << " " << p1.Z() << "\n";
+        	  outfile << "vertex " << p2.X() << " " << p2.Y() << " " << p2.Z() << "\n";
+        	  outfile << "vertex " << p3.X() << " " << p3.Y() << " " << p3.Z() << "\n";
+
+        	  outfile << "endloop\n";
+        	  outfile << "endfacet\n";
+          }
+      }
+      outfile << "endsolid Boundary_" << faceBCs.Elem(bcInd) << "\n";
+  }
+}
 
 
 

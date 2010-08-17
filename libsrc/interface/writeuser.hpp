@@ -40,6 +40,16 @@ extern
 void WriteSTLFormat (const Mesh & mesh,
                      const string & filename);
 
+
+// Philippose - 16 August 2010
+// Added the STL Extended format in which
+// each face of the geometry is treated as
+// a separate "solid" entity in the STL file
+extern
+void WriteSTLExtFormat (const Mesh & mesh,
+                        const string & filename);
+
+
 extern
 void WriteVRMLFormat (const Mesh & mesh,
                       bool faces,
