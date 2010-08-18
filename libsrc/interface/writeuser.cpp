@@ -349,7 +349,6 @@ void WriteSTLFormat (const Mesh & mesh,
  *    STL into named boundary faces
  *    when using a third-party mesher
  */
-
 void WriteSTLExtFormat (const Mesh & mesh,
 		     const string & filename)
 {
@@ -359,33 +358,45 @@ void WriteSTLExtFormat (const Mesh & mesh,
 
   outfile.precision(10);
 
+  int numBCs = 0;
+
   Array<int> faceBCs;
+  TABLE<int> faceBCMapping;
+
+  faceBCs.SetSize(mesh.GetNFD());
+  faceBCMapping.SetSize(mesh.GetNFD());
+
+  faceBCs = -1;
 
   // Collect the BC numbers used in the mesh
   for(int faceNr = 1; faceNr <= mesh.GetNFD(); faceNr++)
   {
 	  int bcNum = mesh.GetFaceDescriptor(faceNr).BCProperty();
 
-	  if(!faceBCs.Contains(bcNum))
+	  if(faceBCs.Pos(bcNum) < 0)
 	  {
-		  faceBCs.Append(bcNum);
+        numBCs++;
+		  faceBCs.Set(numBCs,bcNum);
+        faceBCMapping.Add1(numBCs,faceNr);        
 	  }
+     else
+     {
+        faceBCMapping.Add1(faceBCs.Pos(bcNum)+1,faceNr);
+     }
   }
+
+  faceBCs.SetSize(numBCs);
+  faceBCMapping.ChangeSize(numBCs);
 
   // Now actually write the data to file
   for(int bcInd = 1; bcInd <= faceBCs.Size(); bcInd++)
   {
       outfile << "solid Boundary_" << faceBCs.Elem(bcInd) << "\n";
 
-      for(int faceNr = 1;faceNr <= mesh.GetNFD(); faceNr++)
+      for(int faceNr = 1;faceNr <= faceBCMapping.EntrySize(bcInd); faceNr++)
       {
-    	  if(mesh.GetFaceDescriptor(faceNr).BCProperty() != faceBCs.Elem(bcInd))
-    	  {
-    		  continue;
-    	  }
-
           Array<SurfaceElementIndex> faceSei;
-          mesh.GetSurfaceElementsOfFace(faceNr,faceSei);
+          mesh.GetSurfaceElementsOfFace(faceBCMapping.Get(bcInd,faceNr),faceSei);
 
           for (int i = 0; i < faceSei.Size(); i++)
           {
