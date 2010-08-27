@@ -198,7 +198,8 @@ namespace ngcomp
   class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunction
   {
   protected:
-    S_GridFunction<double> & gf;
+    // S_GridFunction<double> & gf;
+    GridFunction & gf;
     DifferentialOperator * diffop;
     int comp;
   public:
