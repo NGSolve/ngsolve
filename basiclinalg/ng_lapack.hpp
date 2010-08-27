@@ -729,8 +729,8 @@ namespace ngbla
   
     int info = 0;
 
-    int ii; 
-    ii=0; 
+    // int ii; 
+    // ii=0; 
    
     // if(balancing) zggbal_(&job,&n, A, &n , B, &n, &ilo, &ihi,  lscale, rscale, work2, &info) ; 
   

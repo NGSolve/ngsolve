@@ -316,7 +316,7 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (GridFunction & agf, int acomp)
-    : gf(dynamic_cast<S_GridFunction<double>&> (agf)),
+    : gf(agf), // gf(dynamic_cast<S_GridFunction<double>&> (agf)),
       diffop (NULL),
       comp (acomp) 
   {
@@ -327,7 +327,7 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (GridFunction & agf, DifferentialOperator * adiffop, int acomp)
-    : gf(dynamic_cast<S_GridFunction<double>&> (agf)),
+    : gf(agf), // gf(dynamic_cast<S_GridFunction<double>&> (agf)),
       diffop (adiffop),
       comp (acomp) 
   {

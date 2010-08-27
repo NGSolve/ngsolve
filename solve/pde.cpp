@@ -1174,8 +1174,8 @@ namespace ngsolve
     GridFunction * gf = CreateGridFunction (space, name, flags);
     gridfunctions.Set (name, gf);
 
-
     CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf));
+
     AddCoefficientFunction(name,coef);
     
     const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&(gf->GetFESpace()));
@@ -1189,9 +1189,8 @@ namespace ngsolve
 	AddCoefficientFunction(nname,coef);
       }
     }
-    
-    todo.Append(gf);
 
+    todo.Append(gf);
     return gf;
   }
 
