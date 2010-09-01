@@ -266,12 +266,14 @@ namespace ngcomp
 
       free_dofs = new BitArray (ndof);
       free_dofs->Clear();
-
+      int cntfreedofs=0;
       for (int i = 0; i < ndof; i++)
 	{
 	  if (wbdof.Test(i)){
-	    if ((fes.GetFreeDofs()==NULL) || fes.GetFreeDofs()->Test(i))
+	    if ((fes.GetFreeDofs()==NULL) || fes.GetFreeDofs()->Test(i)){
 	      free_dofs->Set(i);
+	      cntfreedofs ++;
+	    }
 	  }
 	}
 	
@@ -305,7 +307,7 @@ namespace ngcomp
       }
       else
       {
-	cout << "call wirebasket inverse" << endl;
+	cout << "call wirebasket inverse ( with " << cntfreedofs << " free dofs )" << endl;
 	inv = wbmat.InverseMatrix(free_dofs);
 	cout << "has inverse" << endl;
 	tmp = new VVector<>(ndof);

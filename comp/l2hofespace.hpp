@@ -53,6 +53,7 @@ namespace ngcomp
       return "L2HighOrderFESpace";
     }
 
+    bool AllDofsTogether(){return all_dofs_together;};
     ///
     virtual void Update(LocalHeap & lh);
     /// 

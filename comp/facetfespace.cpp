@@ -1123,6 +1123,10 @@ public:
     int order = int (flags.GetNumFlag ("order", 1));
     
     l2flags.SetFlag ("orderinner", order);
+    if (flags.GetDefineFlag("l2_dofs_together")){
+      l2flags.SetFlag ("all_dofs_together");
+      cout << "l2_dofs_together active" << endl; 
+    }
     facetflags.SetFlag("orderfacet", order);
     if (flags.NumListFlagDefined ("dirichlet"))
 	facetflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
