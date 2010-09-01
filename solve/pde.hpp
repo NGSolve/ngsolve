@@ -230,7 +230,7 @@ namespace ngsolve
     ///
     GridFunction * AddGridFunction (const string & name, Flags & flags);
     ///
-    void AddGridFunction (const string & name, GridFunction * gf);
+    void AddGridFunction (const string & name, GridFunction * gf, bool addcf = false);
     ///
     BilinearForm * AddBilinearForm (const string & name, Flags & flags);
     ///

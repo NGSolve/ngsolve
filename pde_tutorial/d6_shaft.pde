@@ -30,7 +30,7 @@ define fespace vp -dim=6 -order=2
 define fespace vmises -dim=1 -order=1
 define fespace verr -l2 -order=0
 
-define gridfunction u -fespace=v -nested
+define gridfunction u -fespace=v -nested #-addcoef
 define gridfunction p -fespace=vp
 define gridfunction mises -fespace=vmises
 define gridfunction error -fespace=verr

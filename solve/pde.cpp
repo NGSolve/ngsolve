@@ -1174,46 +1174,48 @@ namespace ngsolve
     GridFunction * gf = CreateGridFunction (space, name, flags);
     gridfunctions.Set (name, gf);
 
-    CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf));
-
-    AddCoefficientFunction(name,coef);
-    
-    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&(gf->GetFESpace()));
-    if (cfe){
-      int nsp = cfe->GetNSpaces();
-      for (int i = 0; i < nsp; i++){
-	std::stringstream sstr;
-	sstr << i+1;
-	string nname(name+"."+sstr.str());
-	CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf->GetComponent(i)));
-	AddCoefficientFunction(nname,coef);
+    if (flags.GetDefineFlag("addcoef")){
+      CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf));
+      AddCoefficientFunction(name,coef);
+      
+      const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&(gf->GetFESpace()));
+      if (cfe){
+	int nsp = cfe->GetNSpaces();
+	for (int i = 0; i < nsp; i++){
+	  std::stringstream sstr;
+	  sstr << i+1;
+	  string nname(name+"."+sstr.str());
+	  CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf->GetComponent(i)));
+	  AddCoefficientFunction(nname,coef);
+	}
       }
     }
+    todo.Append(gf);
 
     todo.Append(gf);
     return gf;
   }
 
-  void PDE :: AddGridFunction (const string & name, GridFunction * gf)
+  void PDE :: AddGridFunction (const string & name, GridFunction * gf, bool addcf)
   {
     gf -> SetName (name);
     gridfunctions.Set (name, gf);
-    
-    CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf));
-    AddCoefficientFunction(name,coef);
-    
-    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&(gf->GetFESpace()));
-    if (cfe){
-      int nsp = cfe->GetNSpaces();
-      for (int i = 0; i < nsp; i++){
-	std::stringstream sstr;
-	sstr << i+1;
-	string nname(name+"."+sstr.str());
-	CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf->GetComponent(i)));
-	AddCoefficientFunction(nname,coef);
+    if (addcf){    
+      CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf));
+      AddCoefficientFunction(name,coef);
+      
+      const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&(gf->GetFESpace()));
+      if (cfe){
+	int nsp = cfe->GetNSpaces();
+	for (int i = 0; i < nsp; i++){
+	  std::stringstream sstr;
+	  sstr << i+1;
+	  string nname(name+"."+sstr.str());
+	  CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf->GetComponent(i)));
+	  AddCoefficientFunction(nname,coef);
+	}
       }
     }
-    
     todo.Append(gf);
   }
 

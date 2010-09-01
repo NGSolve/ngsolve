@@ -237,6 +237,7 @@ namespace ngsolve
 	"    coefficient providing values\n\n" \
 	"\nOptional flags:\n"						\
 	"-boundary\n only boundary values are set\n" \
+	"-component=<comp>\n set only this component (of CompoundFESpace)\n" \
 	  << endl;
     }
     
