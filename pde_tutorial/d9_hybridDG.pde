@@ -37,14 +37,8 @@ define coefficient alpha
 2,
 
 
-define coefficient bx
-500,
-
-define coefficient by
-100,
-
-
-
+define coefficient b
+(500,100),
 
 define coefficient cf 
 1,
@@ -57,7 +51,7 @@ neumann cneu -comp=2
 
 define bilinearform a -fespace=v -eliminate_internal -linearform=f -printelmat
 HDG_laplace one alpha
-HDG_convection bx by
+HDG_convection b
 robin crob -comp=2
 
 
