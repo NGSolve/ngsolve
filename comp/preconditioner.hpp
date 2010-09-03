@@ -146,7 +146,7 @@ namespace ngcomp
 
 
   ///
-  class DirectPreconditioner : public Preconditioner
+  class NGS_DLL_HEADER DirectPreconditioner : public Preconditioner
   {
     ///
     BilinearForm * bfa;

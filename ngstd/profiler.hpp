@@ -156,7 +156,7 @@ namespace ngstd
     /// change name
     static void SetName (int nr, const string & name) { names[nr] = name; }
     /// print profile
-    static void Print (FILE * ost);
+    NGS_DLL_HEADER static void Print (FILE * ost);
     //static void Print (ostream & ost);
 
     /**

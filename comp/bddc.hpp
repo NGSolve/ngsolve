@@ -10,7 +10,7 @@
 namespace ngcomp
 {
   template <class SCAL>
-  class BDDCPreconditioner : public Preconditioner
+  class NGS_DLL_HEADER BDDCPreconditioner : public Preconditioner
   {
     const S_BilinearForm<SCAL> * bfa;
     BaseMatrix * pre;
