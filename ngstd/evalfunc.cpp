@@ -246,7 +246,7 @@ namespace ngstd
 	    
 	  case COMMA:
 	    break;
-	    /*
+
 	  case BESSELJ0:
 	    stack[stacksize] = bessj0 (stack[stacksize]);
 	    break;
@@ -259,7 +259,6 @@ namespace ngstd
 	  case BESSELY1:
 	    stack[stacksize] = bessy1 (stack[stacksize]);
 	    break;
-	    */
 
 	  default:
 	    cerr << "undefined operation for EvalFunction" << endl;
