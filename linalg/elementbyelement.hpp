@@ -26,10 +26,11 @@ namespace ngla
     bool symmetric;
     bool disjointrows;
     bool disjointcols;
+    BitArray clone;
   public:
     ElementByElementMatrix (int h, int ane, bool isymmetric=false);
     ElementByElementMatrix (int h, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols);
-
+    ~ElementByElementMatrix(); 
     void SetDisjointRows(bool newval){disjointrows=newval;}
     void SetDisjointCols(bool newval){disjointcols=newval;}
     virtual int VHeight() const { return height; }
@@ -47,7 +48,11 @@ namespace ngla
                            const Array<int> & dnums1,
 			   const Array<int> & dnums2,
 			   const FlatMatrix<SCAL> & elmat);
-
+			   
+    void AddCloneElementMatrix(int elnr,
+                           const Array<int> & dnums1,
+			   const Array<int> & dnums2,
+			   int refelnr);
 
     virtual BaseVector & AsVector() 
     {
