@@ -18,6 +18,8 @@ namespace ngla
   template <class SCAL>
   ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int ane, bool isymmetric) 
   {
+    clone.SetSize(ane);
+    clone.Clear();
     symmetric=isymmetric;
     height = h; 
     ne = ane; 
@@ -37,6 +39,8 @@ namespace ngla
   template <class SCAL>
   ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols) 
   {
+    clone.SetSize(ane);
+    clone.Clear();
     symmetric=isymmetric;
     height = h; 
     ne = ane; 
@@ -52,7 +56,20 @@ namespace ngla
 	coldnums[i] = FlatArray<int> (0, NULL);
       }
   }
-    
+
+
+  template <class SCAL>
+  ElementByElementMatrix<SCAL> :: ~ElementByElementMatrix ()
+  {
+    for (int i = 0; i < ne; i++)
+    {
+      if (!clone.Test(i)){
+	delete [] &(elmats[i](0,0));
+	delete [] &(rowdnums[i])[0];
+	delete [] &(coldnums[i])[0];
+      }
+    }
+  }
   
   template <class SCAL>
   void ElementByElementMatrix<SCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -271,6 +288,44 @@ namespace ngla
       
   }
 
+  template <class SCAL>
+  void ElementByElementMatrix<SCAL> :: AddCloneElementMatrix (int elnr,
+                                                         const Array<int> & rowdnums_in,
+                                                         const Array<int> & coldnums_in,
+                                                         int refelnr)
+  {
+    ArrayMem<int,50> usedrows;
+    for (int i = 0; i < rowdnums_in.Size(); i++)
+      if (rowdnums_in[i] >= 0) usedrows.Append(i);
+    int sr = usedrows.Size();
+
+    ArrayMem<int,50> usedcols;
+    for (int i = 0; i < coldnums_in.Size(); i++)
+      if (coldnums_in[i] >= 0) usedcols.Append(i);
+    int sc = usedcols.Size();
+
+//     FlatMatrix<SCAL> mat (sr,sc, new SCAL[sr*sc]);
+//     for (int i = 0; i < sr; i++)
+//       for (int j = 0; j < sc; j++)
+//         mat(i,j) = elmat(usedrows[i], usedcols[j]);
+
+    FlatArray<int> dnr(sr, new int[sr]);
+    for (int i = 0; i < sr; i++)
+      dnr[i] = rowdnums_in[usedrows[i]];
+    
+    FlatArray<int> dnc(sc, new int[sc]);
+    for (int j = 0; j < sc; j++)
+      dnc[j] = coldnums_in[usedcols[j]];
+
+    if (elnr < elmats.Size())
+      {
+        rowdnums[elnr] = dnr;
+//         if (!symmetric)
+	coldnums[elnr] = dnc;
+        elmats[elnr].AssignMemory (sr, sc, &elmats[refelnr](0,0));
+	clone.Set(elnr);
+      }
+  }
 
   template <class SCAL>
   BaseBlockJacobiPrecond * ElementByElementMatrix<SCAL> :: 
