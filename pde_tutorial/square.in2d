@@ -14,4 +14,4 @@ segments
 1	0	2	4	1	-bc=2
 
 materials 
-1       dom1    -maxh=2
+1       dom1    -maxh=0.2

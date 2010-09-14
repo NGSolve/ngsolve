@@ -26,15 +26,11 @@ define coefficient coef_source
 define coefficient coef_neumann
 0, 1,
 
-define coefficient coef_penalty
-1e5, 1e5, 1e5, 1e5,
-
-
 
 # define a finite element space
 # Dirichlet boundary is Gamma_1 
 # play around with -order=...
-define fespace v -order=3 -dirichlet=[1,2]
+define fespace v -order=3 -dirichlet=[1]
 
 # the solution field
 define gridfunction u -fespace=v -nested
@@ -46,8 +42,6 @@ source coef_source
 # the bilinear-form 
 define bilinearform a -fespace=v -eliminate_internal -keep_internal -symmetric -linearform=f
 laplace lam
-# robin coef_penalty
-
 
 
 # define preconditioner c -type=direct -bilinearform=a

@@ -6,7 +6,7 @@
 
 
 #include <fem.hpp>
-#include <l2hofe.hpp>
+#include "l2hofe.hpp"
 
 
 #include "tscalarfe.cpp"
@@ -35,6 +35,51 @@ namespace ngfem
   }
 
 
+  template <int D>
+  void L2HighOrderFiniteElement<D>:: 
+  CalcTraceMatrix (int facet, FlatMatrix<> & trace) const
+  {
+    ELEMENT_TYPE ftype = ElementTopology::GetFacetType (eltype, facet);
+    Facet2ElementTrafo f2el(eltype, FlatArray<int> (8, const_cast<int*> (vnums)) );
+    const IntegrationRule & ir = SelectIntegrationRule (ftype, 2*order);
+
+    FiniteElement * facetfe = NULL;
+    L2HighOrderFiniteElement<1> * fel1d = NULL;
+    L2HighOrderFiniteElement<2> * fel2d = NULL;
+    switch (ftype)
+      {
+      case ET_SEGM : facetfe = fel1d = new L2HighOrderFE<ET_SEGM> (order); break;
+      case ET_TRIG : facetfe = fel2d = new L2HighOrderFE<ET_TRIG> (order); break;
+      case ET_QUAD : facetfe = fel2d = new L2HighOrderFE<ET_QUAD> (order); break;
+      default:
+	;
+      }
+    
+    if (D == 2)
+      {
+	fel1d->SetVertexNumber (0, 1);
+	fel1d->SetVertexNumber (1, 0);
+      }
+    Vector<> shape(ndof);
+    Vector<> fshape(facetfe->GetNDof());
+    Vector<> norms(facetfe->GetNDof());
+
+    trace = 0.0;
+    norms = 0.0;
+    for (int i = 0; i < ir.Size(); i++)
+      {
+	static_cast<const ScalarFiniteElement<D-1>*> (facetfe) -> CalcShape (ir[i], fshape);
+	static_cast<const ScalarFiniteElement<D>*> (this) -> CalcShape (f2el (facet, ir[i]), shape);
+	trace += ir[i].Weight() * fshape * Trans (shape);
+	for (int j = 0; j < norms.Size(); j++)
+	  norms(j) += ir[i].Weight() * sqr (fshape(j));
+      }
+
+    for (int j = 0; j < fshape.Size(); j++)
+      trace.Row(j) /= norms(j);
+
+    delete facetfe;
+  }
 
 
 
@@ -75,6 +120,12 @@ namespace ngfem
   }
 
 
+
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  typename L2HighOrderFE<ET,SHAPES>::TPRECOMP L2HighOrderFE<ET,SHAPES>::precomp;
+
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  typename L2HighOrderFE<ET,SHAPES>::TPRECOMP_TRACE L2HighOrderFE<ET,SHAPES>::precomp_trace(320);
 
 
   /* *********************** Segment  **********************/
