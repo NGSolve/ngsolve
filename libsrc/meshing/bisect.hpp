@@ -49,6 +49,8 @@ public:
   void Refine (Mesh & mesh) const;
   void Refine (Mesh & mesh);
   void Bisect (Mesh & mesh, class BisectionOptions & opt, Array<double> * quality_loss = NULL);
+
+  void MakeSecondOrder (Mesh & mesh) const;
   void MakeSecondOrder (Mesh & mesh);
 
   virtual void PointBetween (const Point<3> & p1, const Point<3> & p2, double secpoint, 

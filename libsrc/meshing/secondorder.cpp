@@ -5,7 +5,10 @@
 namespace netgen
 {
 
-
+  void Refinement :: MakeSecondOrder (Mesh & mesh) const
+  {
+    const_cast<Refinement&> (*this).MakeSecondOrder(mesh);
+  }
 
   
   void Refinement :: MakeSecondOrder (Mesh & mesh)
