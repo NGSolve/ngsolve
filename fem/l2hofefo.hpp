@@ -8,6 +8,7 @@
 /*********************************************************************/
 
 #include "tscalarfe.hpp"
+#include "l2hofe.hpp"
 
 
 namespace ngfem
@@ -17,6 +18,7 @@ namespace ngfem
      High order finite elements for L2 of fixed order
   */
 
+  /*
   template<int DIM>
   class L2HighOrderFiniteElementFO : virtual public ScalarFiniteElement<DIM>
   {
@@ -26,24 +28,26 @@ namespace ngfem
   public:
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
   };
-
+  */
 
   template <ELEMENT_TYPE ET, int ORDER> class L2HighOrderFEFO;
 
   template <ELEMENT_TYPE ET, int ORDER>
   class T_L2HighOrderFiniteElementFO : 
-    public L2HighOrderFiniteElementFO<ET_trait<ET>::DIM>,
-    public T_ScalarFiniteElement2< L2HighOrderFEFO<ET,ORDER>, ET >
+    public L2HighOrderFiniteElement<ET_trait<ET>::DIM>,
+    public T_ScalarFiniteElement2< L2HighOrderFEFO<ET,ORDER>, ET >,
+    public ET_trait<ET> 
   {
   protected:
+    typedef L2HighOrderFEFO<ET,ORDER> SHAPES;
+
     enum { DIM = ET_trait<ET>::DIM };
 
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
     using ScalarFiniteElement<DIM>::eltype;
-    // using ScalarFiniteElement<DIM>::dimspace;
 
-    using L2HighOrderFiniteElementFO<DIM>::vnums;
+    using L2HighOrderFiniteElement<DIM>::vnums;
 
   public:
 
@@ -51,9 +55,9 @@ namespace ngfem
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
 	vnums[i] = i;
-      // dimspace = DIM;
       eltype = ET;
       order = ORDER;
+      ndof = L2HighOrderFEFO<ET, ORDER>::NDOF;
     }
 
     virtual void GetInternalDofs (Array<int> & idofs) const
@@ -62,6 +66,46 @@ namespace ngfem
       idofs += IntRange (0, ndof);
     }
 
+
+
+    virtual void PrecomputeShapes (const IntegrationRule & ir) 
+    {
+      int classnr =  ET_trait<ET>::GetClassNr (vnums);
+
+      PrecomputedScalShapes<DIM> * pre = new  PrecomputedScalShapes<DIM> (ir.GetNIP(), ndof);
+
+      Mat<SHAPES::NDOF, DIM> dshapes;
+      for (int i = 0; i < ir.GetNIP(); i++)
+	{
+	  CalcShape (ir[i], pre->shapes.Row(i));
+	  CalcDShape (ir[i], dshapes);
+	  pre->dshapes.VRange (DIM*i, DIM*(i+1)) = Trans (dshapes);
+	}
+
+      SHAPES::precomp.Add (classnr, order, ir.GetNIP(), pre);
+    }
+
+    void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
+    {
+      int classnr =  ET_trait<ET>::GetClassNr (vnums);
+
+      PrecomputedScalShapes<DIM> * pre = SHAPES::precomp.Get (classnr, order, ir.GetNIP());
+      if (pre)
+	vals = FlatMatrixFixWidth<SHAPES::NDOF> (pre->shapes) * coefs;
+      else
+	T_ScalarFiniteElement2< SHAPES, ET > :: Evaluate (ir, coefs, vals);
+    }
+
+    virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const
+    {
+      int classnr =  ET_trait<ET>::GetClassNr (vnums);
+
+      PrecomputedScalShapes<DIM> * pre = SHAPES::precomp.Get (classnr, order, ir.GetNIP());
+      if (pre)
+	coefs = Trans (FlatMatrixFixWidth<SHAPES::NDOF> (pre->dshapes)) * FlatVector<> (DIM*SHAPES::NDOF, &values(0,0));
+      else
+	T_ScalarFiniteElement2< SHAPES, ET > :: EvaluateGradTrans (ir, values, coefs);
+    }
   };
 
 
@@ -80,39 +124,28 @@ namespace ngfem
     typedef TrigShapesInnerLegendre T_TRIGSHAPES;
 
   public:
-    enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
-    L2HighOrderFEFO () { ndof = NDOF; }
+    static PrecomputedShapesContainer<PrecomputedScalShapes<2> > precomp;
 
+    enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[2], TFA & shape) const
     {
       Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
-      
-      int fav[3] = { 0, 1, 2};
-      if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-      if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-      if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	
-      
-      Tx x = lami[fav[0]]; 
-      Tx y = lami[fav[1]];
-      Tx l3 = lami[fav[2]];
-      
+      INT<4> f = GetFaceSort (0, vnums);
+      Tx x = lami[f[0]],  y = lami[f[1]],  l3 = lami[f[2]];
+
       Vec<ORDER+1, Tx> polx;
       Mat<ORDER+1, ORDER+1, Tx> polsy;
 
-      // LegendrePolynomialFO<ORDER>::EvalScaled (x-l3, 1-y, polx);
       LegendrePolynomial leg;
       leg.EvalScaledFO<ORDER> (x-l3, 1-y, polx);
 
       DubinerJacobiPolynomialsFO<ORDER, ORDER, 1,0>::Eval (2*y-1, polsy);
       
       for (int i = 0, ii = 0; i <= ORDER; i++)
-	{
-	  // JacobiPolynomial (n-i, 2*y-1, 2*i+1, 0, poly);
-	  for (int j = 0; j <= ORDER-i; j++)
-	    shape[ii++] = polx[i] * polsy(i,j);
-	}
+	for (int j = 0; j <= ORDER-i; j++)
+	  shape[ii++] = polx[i] * polsy(i,j);
     }
 
   };

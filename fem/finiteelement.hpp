@@ -92,6 +92,8 @@ namespace ngfem
 
     /// the name of the element family
     virtual string ClassName() const {return "FiniteElement";}
+
+    virtual void PrecomputeShapes (const IntegrationRule & ir) { ; }
   };
 
 

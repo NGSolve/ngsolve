@@ -7,7 +7,7 @@
 /* Date:   2008                                                      */
 /*********************************************************************/
 
-
+#include "facetfe.hpp"
 #include "l2hofe.hpp"
 #include "tscalarfe.cpp"
 

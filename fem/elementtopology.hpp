@@ -542,7 +542,20 @@ namespace ngfem
       return GetFace(0);
     }
 
+    template <typename TVN>
+    static int GetClassNr (const TVN & vnums)
+    {
+      int classnr = 0;
+      int sort[3] = { 0, 1 };
+      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); classnr += 1; }
+      return classnr;
+    }
 
+    template <typename TVN>
+    static int GetFacetClassNr (int facet, const TVN & vnums)
+    {
+      return facet;
+    } 
   };
 
   template<> class ET_trait<ET_TRIG>
@@ -598,6 +611,23 @@ namespace ngfem
       return f;
     }
 
+
+    template <typename TVN>
+    static int GetClassNr (const TVN & vnums)
+    {
+      int classnr = 0;
+      int sort[3] = { 0, 1, 2 };
+      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); classnr += 1; }
+      if (vnums[sort[1]] > vnums[sort[2]]) { Swap (sort[1], sort[2]); classnr += 2; }
+      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[1], sort[2]); classnr += 2; }
+      return classnr;
+    }
+
+    template <typename TVN>
+    static int GetFacetClassNr (int facet, const TVN & vnums)
+    {
+      return GetClassNr (vnums) * 3 + facet;
+    } 
   };
 
   template<> class ET_trait<ET_QUAD>
@@ -665,6 +695,29 @@ namespace ngfem
 
       return f;
     }
+
+
+    template <typename TVN>
+    static int GetClassNr (const TVN & vnums)
+    {
+      int classnr = 0;
+
+      int sort[4] = { 0, 1, 2, 3 };
+      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); classnr += 1; }
+      if (vnums[sort[2]] > vnums[sort[3]]) { Swap (sort[2], sort[3]); classnr += 2; }
+      if (vnums[sort[0]] > vnums[sort[2]]) { Swap (sort[0], sort[2]); classnr += 4; }
+      if (vnums[sort[1]] > vnums[sort[3]]) { Swap (sort[1], sort[3]); classnr += 8; }
+      if (vnums[sort[1]] > vnums[sort[2]]) { Swap (sort[1], sort[2]); classnr += 16; }
+
+      return classnr;
+    }
+
+    
+    template <typename TVN>
+    static int GetFacetClassNr (int facet, const TVN & vnums)
+    {
+      return GetClassNr (vnums) * 4 + facet;
+    }
   };
 
 
@@ -724,6 +777,30 @@ namespace ngfem
 
       return f;
     }
+
+
+    template <typename TVN>
+    static int GetClassNr (const TVN & vnums)
+    {
+      int classnr = 0;
+
+      int sort[4] = { 0, 1, 2, 3 };
+      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); classnr += 1; }
+      if (vnums[sort[2]] > vnums[sort[3]]) { Swap (sort[2], sort[3]); classnr += 2; }
+      if (vnums[sort[0]] > vnums[sort[2]]) { Swap (sort[0], sort[2]); classnr += 4; }
+      if (vnums[sort[1]] > vnums[sort[3]]) { Swap (sort[1], sort[3]); classnr += 8; }
+      if (vnums[sort[1]] > vnums[sort[2]]) { Swap (sort[1], sort[2]); classnr += 16; }
+
+      return classnr;
+    }
+
+    template <typename TVN>
+    static int GetFacetClassNr (int facet, const TVN & vnums)
+    {
+      return GetClassNr (vnums) * 4 + facet;
+    }
+
+
   };
 
   template<> class ET_trait<ET_PRISM>
@@ -805,8 +882,17 @@ namespace ngfem
 	}
     }
 
+    template <typename TVN>
+    static int GetClassNr (const TVN & vnums)
+    {
+      return 0;
+    }
 
-
+    template <typename TVN>
+    static int GetFacetClassNr (int facet, const TVN & vnums)
+    {
+      return 0;
+    }
 
   };
 
@@ -887,13 +973,17 @@ namespace ngfem
 	}
     }
 
+    template <typename TVN>
+    static int GetClassNr (const TVN & vnums)
+    {
+      return 0;
+    }
 
-
-
-
-
-
-
+    template <typename TVN>
+    static int GetFacetClassNr (int facet, const TVN & vnums)
+    {
+      return 0;
+    }
 
   };
 
@@ -973,6 +1063,20 @@ namespace ngfem
       
       return INT<4> (f[fmax], f[f1], f[fop], f[f2]);
     }
+
+
+    template <typename TVN>
+    static int GetClassNr (const TVN & vnums)
+    {
+      return 0;
+    }
+
+    template <typename TVN>
+    static int GetFacetClassNr (int facet, const TVN & vnums)
+    {
+      return 0;
+    }
+
   };
 }
 

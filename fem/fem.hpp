@@ -48,6 +48,8 @@ namespace ngfem
 #include "recursive_pol_trig.hpp"
 #include "recursive_pol_tet.hpp"
 
+// #include "precomp.hpp"
+
 #include "finiteelement.hpp"
 #include "scalarfe.hpp"
 
@@ -57,7 +59,7 @@ namespace ngfem
 
 #include "h1lofe.hpp"
 #include "h1hofe.hpp"
-#include "l2hofe.hpp"
+// #include "l2hofe.hpp"
 
 #include "hdivfe.hpp"
 #include "hcurlfe.hpp"
@@ -68,7 +70,7 @@ namespace ngfem
 
 #include "specialelement.hpp"
 
-#include "facetfe.hpp" 
+// #include "facetfe.hpp" 
 #include "vectorfacetfe.hpp"
 
 

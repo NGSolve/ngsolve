@@ -879,7 +879,7 @@ namespace ngfem
       S power = DubinerJacobiPolynomialsPowFO<n, i-1, alpha0, beta>::Eval (x, values);
       S p1, p2;
       CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::EvalMult (x, power, values.Row(i), p1, p2);
-      return power * (x+1)/2;
+      return power * (1-x)/2;
     }
 
 
@@ -889,7 +889,7 @@ namespace ngfem
       S power = DubinerJacobiPolynomialsPowFO<n, i-1, alpha0, beta>::EvalScaled (x, t, values);
       S p1, p2;
       CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::EvalScaledMult (x, t, power, values.Row(i), p1, p2);
-      return power * (x+1)/2;
+      return power * (1-x)/2;
     }
   };
   

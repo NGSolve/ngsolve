@@ -1,4 +1,5 @@
 #include <fem.hpp>
+#include "facetfe.hpp"
 #include "facethofe.hpp"
 
 namespace ngfem {
