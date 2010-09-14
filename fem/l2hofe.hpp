@@ -176,30 +176,25 @@ namespace ngfem
     {
       for (int f = 0; f < ElementTopology::GetNFacets(ET); f++)
 	{
-	  cout << "f = " << f << endl;
 	  int classnr =  ET_trait<ET>::GetFacetClassNr (f, vnums);
-	  cout << "classnr = " << classnr << endl;
-	  cout << "hash.size = " << precomp_trace.Size() << endl;
+
 	  if (precomp_trace.Used (INT<2> (order, classnr)))
 	    continue;
-	  
-	  cout << "need to compute" << endl;
+
 	  ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (ET, f);
 	  int nf;
 	  switch (etfacet)
 	    {
-	    case ET_SEGM: nf = order+1;
-	    case ET_TRIG: nf = (order+1)*(order+2)/2;
-	    case ET_QUAD: nf = sqr(order+1);
+	    case ET_SEGM: nf = order+1; break;
+	    case ET_TRIG: nf = (order+1)*(order+2)/2; break;
+	    case ET_QUAD: nf = sqr(order+1); break;
 	    default: nf = 0;
 	    }
+	  
 
 	  Matrix<> * trace = new Matrix<>(nf, ndof);
 	  L2HighOrderFiniteElement<DIM>::CalcTraceMatrix (f, *trace);
-	  
-	  cout << "set trace, order = " << order << ", classnr = " << classnr << endl;
 	  precomp_trace.Set (INT<2> (order, classnr), trace);
-	  cout << "has sest" << endl;
 	}
     }
     
@@ -245,10 +240,8 @@ namespace ngfem
     virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
     {
       int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
-      cout << "get trace, order = " << order << ", classnr = " << classnr << endl;
       if (precomp_trace.Used (INT<2> (order, classnr)))
 	{
-	  cout << "mat = " << endl << (*precomp_trace.Get (INT<2> (order, classnr))) << endl;
 	  fcoefs = (*precomp_trace.Get (INT<2> (order, classnr))) * coefs;
 	}
       else
