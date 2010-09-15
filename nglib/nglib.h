@@ -40,7 +40,7 @@
 #define NG_VOLUME_ELEMENT_MAXPOINTS 10
 
 /// Maximum allowed number of nodes per surface element
-#define NG_SURFACE_ELEMENT_MAXPOINTS 6
+#define NG_SURFACE_ELEMENT_MAXPOINTS 8
 
 
 
@@ -67,7 +67,7 @@ typedef void * Ng_OCC_TopTools_IndexedMapOfShape;
 // *** Special Enum types used within Netgen ***********
 /// Currently implemented surface element types
 enum Ng_Surface_Element_Type 
-   { NG_TRIG = 1, NG_QUAD = 2, NG_TRIG6 = 3 };
+   { NG_TRIG = 1, NG_QUAD = 2, NG_TRIG6 = 3, NG_QUAD6 = 4, NG_QUAD8 = 5 };
 
 /// Currently implemented volume element types
 enum Ng_Volume_Element_Type 
@@ -532,8 +532,9 @@ DLL_HEADER int Ng_GetNSeg_2D (Ng_Mesh * mesh);
 //  return point coordinates
 DLL_HEADER void Ng_GetPoint_2D (Ng_Mesh * mesh, int num, double * x);
 
-// return 2d triangles
-DLL_HEADER void Ng_GetElement_2D (Ng_Mesh * mesh, int num, int * pi, int * matnum = NULL);
+// return 2d elements
+DLL_HEADER Ng_Surface_Element_Type 
+Ng_GetElement_2D (Ng_Mesh * mesh, int num, int * pi, int * matnum = NULL);
 
 // return 2d boundary segment
 DLL_HEADER void Ng_GetSegment_2D (Ng_Mesh * mesh, int num, int * pi, int * matnum = NULL);

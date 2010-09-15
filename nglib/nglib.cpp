@@ -228,7 +228,16 @@ namespace nglib
       {
       case 3: et = NG_TRIG; break;
       case 4: et = NG_QUAD; break;
-      case 6: et = NG_TRIG6; break;
+      case 6: 
+         switch (el.GetNV())
+         {
+         case 3: et = NG_TRIG6; break;
+         case 4: et = NG_QUAD6; break;
+         default:
+            et = NG_TRIG6; break;
+         }
+         break;
+      case 8: et = NG_QUAD8; break;
       default:
          et = NG_TRIG; break; // for the compiler
       }
@@ -377,13 +386,36 @@ namespace nglib
 
 
 
-   DLL_HEADER void Ng_GetElement_2D (Ng_Mesh * mesh, int num, int * pi, int * matnum)
+   DLL_HEADER Ng_Surface_Element_Type
+      Ng_GetElement_2D (Ng_Mesh * mesh, int num, int * pi, int * matnum)
    {
       const Element2d & el = ((Mesh*)mesh)->SurfaceElement(num);
-      for (int i = 1; i <= 3; i++)
+      for (int i = 1; i <= el.GetNP(); i++)
          pi[i-1] = el.PNum(i);
+
+      Ng_Surface_Element_Type et;
+      switch (el.GetNP())
+      {
+      case 3: et = NG_TRIG; break;
+      case 4: et = NG_QUAD; break;
+      case 6: 
+         switch (el.GetNV())
+         {
+         case 3: et = NG_TRIG6; break;
+         case 4: et = NG_QUAD6; break;
+         default:
+            et = NG_TRIG6; break;
+         }
+         break;
+      case 8: et = NG_QUAD8; break;
+      default:
+         et = NG_TRIG; break; // for the compiler
+      }
+
       if (matnum)
          *matnum = el.GetIndex();
+
+      return et;
    }
 
 
