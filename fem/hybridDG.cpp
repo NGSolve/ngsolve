@@ -175,8 +175,8 @@ namespace ngfem
 		double len = L2Norm (normal);
 		normal /= len;
 
-		//fel_facet.CalcFacetShape(k, ir_facet[l], mat_facet);
-		fel_facet.CalcShape(ip, mat_facet);
+		fel_facet.CalcFacetShape(k, ir_facet[l], mat_facet);
+// 		fel_facet.CalcShape(ip, mat_facet);
 		fel_l2.CalcShape(ip, mat_l2);
 
 		Vec<D> invjac_normal = inv_jac * normal;
