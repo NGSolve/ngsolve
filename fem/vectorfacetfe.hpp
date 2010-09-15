@@ -63,7 +63,7 @@ namespace ngfem
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrix<> shape) const;
-
+			    
     virtual const FlatMatrix<> GetShape (const IntegrationPoint & ip, 
 					 LocalHeap & lh) const
     {
@@ -160,7 +160,9 @@ namespace ngfem
 
     virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<D> shape) const = 0;
     virtual void CalcShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<D> shape) const = 0;
-      
+    
+    virtual int GetNExtraShapes( int facet) const {return 0;}
+    virtual void CalcExtraShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<D> xshape) const {xshape = 0.0;}
 
     virtual void GetFacetDofNrs(int afnr, Array<int>& fdnums) const; 
 
@@ -192,6 +194,8 @@ namespace ngfem
    
     virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<2> shape) const; 
     virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<2> shape) const;
+    virtual int GetNExtraShapes( int facet) const {return 1;};
+    virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<2> xshape) const;
   };
 
 
@@ -204,6 +208,9 @@ namespace ngfem
    
     virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<2> shape) const; 
     virtual void CalcShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<2> shape) const;
+    virtual int GetNExtraShapes( int facet) const {return 1;};
+    virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<2> xshape) const;
+    
   };
 
 
@@ -215,6 +222,8 @@ namespace ngfem
    
     virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const; 
     virtual void CalcShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape) const;
+    virtual int GetNExtraShapes( int facet) const {return 2*(facet_order[facet][0]+2);};
+    virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
   };
 
 
@@ -227,6 +236,8 @@ namespace ngfem
    
     virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const; 
     virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape ) const;
+//     virtual int GetNExtraShapes( int facet) const {return 2*(2*facet_order[facet][0]+3);};
+//     virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
   };
 
 
@@ -239,6 +250,8 @@ namespace ngfem
    
     virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const; 
     virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape) const;
+//     virtual int GetNExtraShapes( int facet) const;
+//     virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
   };
 
 
@@ -250,6 +263,9 @@ namespace ngfem
    
     virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const; 
     virtual void CalcShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape ) const;
+//     virtual int GetNExtraShapes( int facet) const;
+//     virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
+    
   };
 
 }

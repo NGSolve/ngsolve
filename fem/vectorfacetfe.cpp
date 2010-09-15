@@ -405,6 +405,36 @@ namespace ngfem {
       }
   }
 
+  void VectorFacetVolumeTrig ::
+  CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> xshape ) const
+  {
+    xshape = 0.0;
+    int first = first_facet_dof[fanr];
+
+    AutoDiff<2> x(ip(0), 0), y(ip(1),1);
+
+    const EDGE * edges = ElementTopology :: GetEdges ( eltype );
+
+    int  fav[2] = {edges[fanr][0], edges[fanr][1] };
+    int j1 = 0; 
+    int j2 = 1; 
+    if(vnums[fav[j1]] > vnums[fav[j2]]) swap(j1,j2); 
+
+    AutoDiff<2> lami[3] = {x, y, 1-x-y};  
+
+    int p = facet_order[fanr][0];
+    
+    ArrayMem< double, 10> polx(p+2);
+    int ii = first;
+
+    AutoDiff<2> xi = lami[fav[j1]] - lami[fav[j2]];
+
+    LegendrePolynomial (p+1, xi.Value(), polx);
+    
+    double val = polx[p+1];
+    xshape(0,0) = val * xi.DValue(0);
+    xshape(0,1) = val * xi.DValue(1);
+  }
 
 
     
@@ -490,7 +520,41 @@ namespace ngfem {
       }
   }
 
-    
+
+
+  void VectorFacetVolumeQuad ::
+  CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> xshape ) const
+  {
+    xshape = 0.0;
+
+    AutoDiff<2> x(ip(0), 0), y(ip(1),1);
+
+    const EDGE * faces = ElementTopology :: GetEdges ( eltype );
+    // const POINT3D * points = ElementTopology :: GetVertices (eltype);
+    // const ELEMENT_TYPE facettype = ElementTopology :: GetFacetType (eltype, fanr);
+    // int nvert = ElementTopology :: GetNVertices (facettype);
+
+    int  fav[2] = {faces[fanr][0], faces[fanr][1] };
+    int j1 = 0; 
+    int j2 = 1; 
+    if(vnums[fav[j1]] > vnums[fav[j2]]) swap(j1,j2);  // fmax > f2 > f1; 
+
+    AutoDiff<2> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+
+    int p = facet_order[fanr][0];
+    ArrayMem< double, 10> polx(p+2);
+    int ii = first_facet_dof[fanr];
+
+    AutoDiff<2> xi = sigma[fav[j1]] - sigma[fav[j2]];
+
+    // LegendrePolynomial (p, 2*xi.Value()-1, polx);
+    LegendrePolynomial (p+1, xi.Value(), polx);
+    double val = polx[p+1];
+    xshape(0,0) = val * xi.DValue(0);
+    xshape(0,1) = val * xi.DValue(1);
+  }
+
+
   void VectorFacetVolumeQuad :: ComputeNDof()
   {
     ndof = 0;
@@ -589,6 +653,59 @@ namespace ngfem {
 	  ii++;
 	}
   }
+
+
+  void VectorFacetVolumeTet ::
+  CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> xshape ) const
+  {
+    xshape = 0.0;
+
+
+    AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
+    AutoDiff<3> lami[4] = { x, y, z, 1-x-y-z };
+
+    const FACE * faces = ElementTopology :: GetFaces ( eltype );
+
+
+    int fav[3] = {faces[fanr][0], faces[fanr][1], faces[fanr][2]};
+    
+    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
+    if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
+    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  	
+    
+    AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
+    AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
+    double xi = lami[fav[0]].Value();
+    double eta = lami[fav[1]].Value();
+
+
+    int p = facet_order[fanr][0];
+    ArrayMem< double, 10> polx(p+2), poly(p+2);
+    Matrix<> polsy(p+2, p+2);
+//     int ii = first_facet_dof[fanr];
+    int ii = 0;
+
+    ScaledLegendrePolynomial (p+1, 2*xi+eta-1, 1-eta, polx);
+    DubinerJacobiPolynomials<1,0> (p+1, 2*eta-1, polsy);
+
+    for (int i = 0; i <= p+1; i++)
+    {
+      int j = p+1-i;
+      double val = polx[i] * polsy(i, j);
+      xshape(ii,0) = val * adxi.DValue(0);
+      xshape(ii,1) = val * adxi.DValue(1);
+      xshape(ii,2) = val * adxi.DValue(2);
+      ii++;
+      xshape(ii,0) = val * adeta.DValue(0);
+      xshape(ii,1) = val * adeta.DValue(1);
+      xshape(ii,2) = val * adeta.DValue(2);
+      ii++;
+    }
+
+  }
+
+
+
 
 
   void VectorFacetVolumeTet :: ComputeNDof() 
@@ -723,8 +840,105 @@ namespace ngfem {
 	    }	
       }
   }
+  /*
+  int VectorFacetVolumePrism ::
+  GetNExtraShapes ( int fanr) const
+  {
+    if (fanr < 2) //trig shape
+      return 2*(facet_order[facet][0]+2);
+    else //quad shape
+      return 2*(2*facet_order[facet][0]+3);
+  }
+  */
+  /*
+  void VectorFacetVolumePrism ::
+  CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> shape ) const
+  {
+    AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
 
+    AutoDiff<3> lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
+    AutoDiff<3> muz[6]  = { 1-z, 1-z, 1-z, z, z, z }; 
 
+    const FACE * faces = ElementTopology::GetFaces (ET_PRISM); 
+    xshape = 0.0;
+
+    // trig face shapes
+    if (fanr < 2)
+      {
+	int p = facet_order[fanr][0];
+
+	int fav[3] = {faces[fanr][0], faces[fanr][1], faces[fanr][2]};
+
+	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
+	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
+	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  	
+	
+	AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
+	AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
+	double xi = lami[fav[0]].Value();
+	double eta = lami[fav[1]].Value();
+	
+	ArrayMem< double, 10> polx(p+2), poly(p+2);
+	Matrix<> polsy(p+2, p+2);
+	
+	ScaledLegendrePolynomial (p+1, 2*xi+eta-1, 1-eta, polx);
+	DubinerJacobiPolynomials<1,0> (p+1, 2*eta-1, polsy);
+	
+	int ii = 0;
+	for (int i = 0; i <= p+1; i++)
+	{
+	  int j= p+1-i;
+	  double val = polx[i] * polsy(i, j);
+	  xshape(ii,0) = val * adxi.DValue(0);
+	  xshape(ii,1) = val * adxi.DValue(1);
+	  xshape(ii,2) = val * adxi.DValue(2);
+	  ii++;
+	  xshape(ii,0) = val * adeta.DValue(0);
+	  xshape(ii,1) = val * adeta.DValue(1);
+	  xshape(ii,2) = val * adeta.DValue(2);
+	  ii++;
+	}
+      }
+    else
+      // quad faces
+      {
+	int p = facet_order[fanr][0];
+	 
+	int fmax = 0;
+	for (int j = 1; j < 4; j++)
+	  if (vnums[faces[fanr][j]] > vnums[faces[fanr][fmax]]) fmax = j;
+
+	int fz = 3-fmax; 
+	int ftrig = fmax^1; 
+	AutoDiff<3> xi = lami[faces[fanr][fmax]]-lami[faces[fanr][ftrig]]; 
+	AutoDiff<3> eta = 1-lami[faces[fanr][fmax]]-lami[faces[fanr][ftrig]]; 
+	AutoDiff<3> zeta = muz[faces[fanr][fmax]]-muz[faces[fanr][fz]]; 
+	
+	ArrayMem< double, 10> polx(p+2), poly(p+2);
+	LegendrePolynomial (p+1, xi.Value(), polx);
+	LegendrePolynomial (p+1, zeta.Value(), poly);
+
+	int ii = 0;
+	for (int i = 0; i <= p+1; i++)
+	{
+	  for (int j = (i==p+1)?0:p+1; j <= p+1; j++)
+	  {
+	    double val = polx[i] * poly[j];
+	    shape(ii,0) = val * xi.DValue(0);
+	    shape(ii,1) = val * xi.DValue(1);
+	    shape(ii,2) = val * xi.DValue(2);
+	    ii++;
+	    shape(ii,0) = val * zeta.DValue(0);
+	    shape(ii,1) = val * zeta.DValue(1);
+	    shape(ii,2) = val * zeta.DValue(2);
+	    ii++;
+	  }
+	}	
+      }
+  }
+  */
+  
+  
   void VectorFacetVolumePrism::ComputeNDof() 
   {
     ndof = 0;
