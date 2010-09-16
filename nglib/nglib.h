@@ -254,6 +254,35 @@ DLL_HEADER void Ng_SaveMesh(Ng_Mesh * mesh, const char* filename);
 */
 DLL_HEADER Ng_Mesh * Ng_LoadMesh(const char* filename);
 
+
+/*! \brief Merge a Netgen VOL Mesh from disk into an existing mesh in memory
+
+    A Netgen mesh saved in the internal VOL format can be merged 
+    into an existing Netgen Mesh structure using this function. 
+
+    \param mesh       Name of the Mesh structure already existent in memory
+    \param filename   Pointer to a character array containing the 
+                      name of the file to load
+    \return Ng_Result Status of the merge operation
+*/
+DLL_HEADER Ng_Result Ng_MergeMesh(Ng_Mesh * mesh, const char* filename);
+
+
+/*! \brief Merge one Netgen Mesh into another Netgen Mesh in the case 
+    when both are already in memory
+
+    (NOTE: FUNCTION STILL WORK IN PROGRESS!!!)
+
+    This function can be used to merge two Netgen meshes already present 
+    in memory.
+
+    \param mesh1      Parent Mesh structure into which the second mesh 
+                      will be merged
+    \param mesh2      Child mesh structure which will get merged into 
+                      the parent mesh
+    \return Ng_Result Status of the merge operation
+*/
+DLL_HEADER Ng_Result Ng_MergeMesh(Ng_Mesh * mesh1, Ng_Mesh * mesh2);
 // ------------------------------------------------------------------
 
 

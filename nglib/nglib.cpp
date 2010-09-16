@@ -134,6 +134,56 @@ namespace nglib
 
 
 
+   // Merge another mesh file into the currently loaded one
+   DLL_HEADER Ng_Result Ng_MergeMesh( Ng_Mesh* mesh, const char* filename)
+   {
+      Ng_Result status = NG_OK;
+
+      ifstream infile(filename);
+      Mesh * m = (Mesh*)mesh;
+
+      if(!infile.good())
+      {
+         status = NG_FILE_NOT_FOUND;
+      }
+
+      if(!m)
+      {
+         status = NG_ERROR;
+      }
+
+      if(status == NG_OK)
+      {
+         const int num_pts = m->GetNP();
+         const int face_offset = m->GetNFD();
+
+         m->Merge(infile, face_offset);
+
+         if(m->GetNP() > num_pts)
+         {
+            status = NG_OK;
+         }
+         else
+         {
+            status = NG_ERROR;
+         }
+      }
+
+      return status;
+   }
+
+
+
+
+   // Merge another mesh file into the currently loaded one
+   DLL_HEADER Ng_Result Ng_MergeMesh( Ng_Mesh* mesh1, Ng_Mesh* mesh2)
+   {
+      return NG_ERROR;
+   }
+
+
+
+
    // Manually add a point to an existing mesh object
    DLL_HEADER void Ng_AddPoint (Ng_Mesh * mesh, double * x)
    {
