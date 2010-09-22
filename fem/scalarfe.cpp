@@ -286,7 +286,6 @@ namespace ngfem
   template class  FE_TSegmL2<3>;
   */
 
-  template class ScalarFiniteElement<0>;
   template class ScalarFiniteElement<1>;
   template class ScalarFiniteElement<2>;
   template class ScalarFiniteElement<3>;
