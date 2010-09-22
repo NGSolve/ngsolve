@@ -409,7 +409,7 @@ namespace ngfem {
   CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> xshape ) const
   {
     xshape = 0.0;
-    int first = first_facet_dof[fanr];
+    // int first = first_facet_dof[fanr];
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
@@ -425,7 +425,7 @@ namespace ngfem {
     int p = facet_order[fanr][0];
     
     ArrayMem< double, 10> polx(p+2);
-    int ii = first;
+    // int ii = first;
 
     AutoDiff<2> xi = lami[fav[j1]] - lami[fav[j2]];
 
@@ -543,7 +543,7 @@ namespace ngfem {
 
     int p = facet_order[fanr][0];
     ArrayMem< double, 10> polx(p+2);
-    int ii = first_facet_dof[fanr];
+    // int ii = first_facet_dof[fanr];
 
     AutoDiff<2> xi = sigma[fav[j1]] - sigma[fav[j2]];
 

@@ -43,33 +43,38 @@ namespace ngfem
     Facet2ElementTrafo f2el(eltype, FlatArray<int> (8, const_cast<int*> (vnums)) );
     const IntegrationRule & ir = SelectIntegrationRule (ftype, 2*order);
 
-    FiniteElement * facetfe = NULL;
-    L2HighOrderFiniteElement<1> * fel1d = NULL;
-    L2HighOrderFiniteElement<2> * fel2d = NULL;
+    // FiniteElement * facetfe = NULL;
+    L2HighOrderFiniteElement<1> * facetfe1 = NULL;
+    L2HighOrderFiniteElement<2> * facetfe2 = NULL;
     switch (ftype)
       {
-      case ET_SEGM : facetfe = fel1d = new L2HighOrderFE<ET_SEGM> (order); break;
-      case ET_TRIG : facetfe = fel2d = new L2HighOrderFE<ET_TRIG> (order); break;
-      case ET_QUAD : facetfe = fel2d = new L2HighOrderFE<ET_QUAD> (order); break;
+      case ET_SEGM : facetfe1 = new L2HighOrderFE<ET_SEGM> (order); break;
+      case ET_TRIG : facetfe2 = new L2HighOrderFE<ET_TRIG> (order); break;
+      case ET_QUAD : facetfe2 = new L2HighOrderFE<ET_QUAD> (order); break;
       default:
 	;
       }
     
     if (D == 2)
       {
-	fel1d->SetVertexNumber (0, 1);
-	fel1d->SetVertexNumber (1, 0);
+	facetfe1->SetVertexNumber (0, 1);
+	facetfe1->SetVertexNumber (1, 0);
       }
+
+    int ndof_facet = trace.Height();
     Vector<> shape(ndof);
-    Vector<> fshape(facetfe->GetNDof());
-    Vector<> norms(facetfe->GetNDof());
+    Vector<> fshape(ndof_facet);
+    Vector<> norms(ndof_facet);
 
     trace = 0.0;
     norms = 0.0;
     for (int i = 0; i < ir.Size(); i++)
       {
-	static_cast<const ScalarFiniteElement<D-1>*> (facetfe) -> CalcShape (ir[i], fshape);
-	static_cast<const ScalarFiniteElement<D>*> (this) -> CalcShape (f2el (facet, ir[i]), shape);
+	if (D == 2)
+	  facetfe1 -> CalcShape (ir[i], fshape);
+	else
+	  facetfe2 -> CalcShape (f2el (facet, ir[i]), shape);
+
 	trace += ir[i].Weight() * fshape * Trans (shape);
 	for (int j = 0; j < norms.Size(); j++)
 	  norms(j) += ir[i].Weight() * sqr (fshape(j));
@@ -78,7 +83,8 @@ namespace ngfem
     for (int j = 0; j < fshape.Size(); j++)
       trace.Row(j) /= norms(j);
 
-    delete facetfe;
+    delete facetfe1;
+    delete facetfe2;
   }
 
 
