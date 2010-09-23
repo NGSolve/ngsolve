@@ -13,8 +13,6 @@
     Advancing front class for surfaces
 
 */
-class AdFront2
-{
 
   ///
   class FrontPoint2
@@ -163,6 +161,8 @@ class AdFront2
   };
 
 
+class AdFront2
+{
 
   ///
   Array<FrontPoint2> points;  /// front points
@@ -202,6 +202,11 @@ public:
   }
   ///
   int GetNFL () const { return nfl; }
+
+  const FrontLine & GetLine (int nr) { return lines[nr]; }
+  const FrontPoint2 & GetPoint (int nr) { return points[nr]; }
+
+
   ///
   int SelectBaseLine (Point<3> & p1, Point<3> & p2, 
 		      const PointGeomInfo *& geominfo1,
@@ -250,6 +255,18 @@ public:
   {
     return points[pi].GlobalIndex();
   }
+
+
+  /// is Point p inside Surface (flat geometry only)
+  bool Inside (const Point<2> & p) const;
+
+  bool SameSide (const Point<2> & lp1, const Point<2> & lp2, 
+		 const Array<int> * testfaces = NULL) const
+  {
+    return Inside (lp1) == Inside (lp2);
+  }
+
+
   ///
   void SetStartFront ();
   ///

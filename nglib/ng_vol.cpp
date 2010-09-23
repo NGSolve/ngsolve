@@ -63,7 +63,7 @@ int main (int argc, char ** argv)
   Ng_Meshing_Parameters mp;
   mp.maxh = 1e6;
   mp.fineness = 1;
-  mp.secondorder = 0;
+  mp.second_order = 0;
 
   cout << "start meshing" << endl;
   Ng_GenerateVolumeMesh (mesh, &mp);

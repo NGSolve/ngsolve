@@ -1082,7 +1082,7 @@ void Meshing3 :: BlockFill (Mesh & mesh, double gh)
 }
 
 
-
+/*
 static const AdFront3 * locadfront;
 static int TestInner (const Point3d & p)
 {
@@ -1092,62 +1092,45 @@ static int TestSameSide (const Point3d & p1, const Point3d & p2)
 {
   return locadfront->SameSide (p1, p2);
 }
-
+*/
 
 
 
 void Meshing3 :: BlockFillLocalH (Mesh & mesh, 
 				  const MeshingParameters & mp)
 {
-  int i, j;
-  
   double filldist = mp.filldist;
 
   (*testout) << "blockfill local h" << endl;
   (*testout) << "rel filldist = " << filldist << endl;
   PrintMessage (3, "blockfill local h");
 
-  /*  
-  (*mycout) << "boxes: " << mesh.LocalHFunction().GetNBoxes() << endl
-	    << "filldist = " << filldist << endl;
-  */
-  Array<Point3d> npoints;
+
+  Array<Point<3> > npoints;
   
   adfront -> CreateTrees();
 
-  Point3d mpmin, mpmax;
-  // mesh.GetBox (mpmin, mpmax);
-  bool firstp = 1;
-
+  Box<3> bbox ( Box<3>::EMPTY_BOX );
   double maxh = 0;
-  for (i = 1; i <= adfront->GetNF(); i++)
+
+  for (int i = 1; i <= adfront->GetNF(); i++)
     {
       const MiniElement2d & el = adfront->GetFace(i);
-      for (j = 1; j <= 3; j++)
+      for (int j = 1; j <= 3; j++)
 	{
 	  const Point3d & p1 = adfront->GetPoint (el.PNumMod(j));
 	  const Point3d & p2 = adfront->GetPoint (el.PNumMod(j+1));
-	  double hi = Dist (p1, p2);
-	  if (hi > maxh)
-	    {
-	      maxh = hi;
-	      //(*testout) << "reducing maxh to " << maxh << " because of " << p1 << " and " << p2 << endl;
-	    }
 
-	  if (firstp)
-	    {
-	      mpmin = p1;
-	      mpmax = p1;
-	      firstp = 0;
-	    }
-	  else
-	    {
-	      mpmin.SetToMin  (p1);
-	      mpmax.SetToMax  (p1);
-	    }
+	  double hi = Dist (p1, p2);
+	  if (hi > maxh) maxh = hi;
+
+	  bbox.Add (p1);
 	}
     }
 
+
+  Point3d mpmin = bbox.PMin();
+  Point3d mpmax = bbox.PMax();
   Point3d mpc = Center (mpmin, mpmax);
   double d = max3(mpmax.X()-mpmin.X(), 
 		  mpmax.Y()-mpmin.Y(), 
@@ -1158,53 +1141,41 @@ void Meshing3 :: BlockFillLocalH (Mesh & mesh,
 
   LocalH loch2 (mpmin, mpmax, 1);
 
+  if (mp.maxh < maxh) maxh = mp.maxh;
 
-  if (mp.maxh < maxh)
-    {
-      maxh = mp.maxh;
-      //(*testout) << "reducing maxh to " << maxh << " because of mp.maxh" << endl;
-    }
-
-  int changed;
+  bool changed;
   do 
     {
       mesh.LocalHFunction().ClearFlags();
 
-      for (i = 1; i <= adfront->GetNF(); i++)
+      for (int i = 1; i <= adfront->GetNF(); i++)
 	{
 	  const MiniElement2d & el = adfront->GetFace(i);
-	  Point3d pmin = adfront->GetPoint (el.PNum(1));
-	  Point3d pmax = pmin;
 	  
-	  for (j = 2; j <= 3; j++)
-	    {
-	      const Point3d & p = adfront->GetPoint (el.PNum(j));
-	      pmin.SetToMin (p);
-	      pmax.SetToMax (p);
-	    }
-	  
+	  Box<3> bbox (adfront->GetPoint (el[0]));
+	  bbox.Add (adfront->GetPoint (el[1]));
+	  bbox.Add (adfront->GetPoint (el[2]));
 
-	  double filld = filldist * Dist (pmin, pmax);
-	  
-	  pmin = pmin - Vec3d (filld, filld, filld);
-	  pmax = pmax + Vec3d (filld, filld, filld);
-	  //	  (*testout) << "cut : " << pmin << " - " << pmax << endl;
-	  mesh.LocalHFunction().CutBoundary (pmin, pmax);
+
+	  double filld = filldist * bbox.Diam();
+	  bbox.Increase (filld);
+      
+      	  mesh.LocalHFunction().CutBoundary (bbox); // .PMin(), bbox.PMax());
 	}
 
-      locadfront = adfront;
+      //      locadfront = adfront;
       mesh.LocalHFunction().FindInnerBoxes (adfront, NULL);
 
       npoints.SetSize(0);
       mesh.LocalHFunction().GetInnerPoints (npoints);
 
-      changed = 0;
-      for (i = 1; i <= npoints.Size(); i++)
+      changed = false;
+      for (int i = 1; i <= npoints.Size(); i++)
 	{
 	  if (mesh.LocalHFunction().GetH(npoints.Get(i)) > 1.5 * maxh)
 	    {
 	      mesh.LocalHFunction().SetH (npoints.Get(i), maxh);
-	      changed = 1;
+	      changed = true;
 	    }
 	}
     }
@@ -1212,7 +1183,7 @@ void Meshing3 :: BlockFillLocalH (Mesh & mesh,
 
   if (debugparam.slowchecks)
     (*testout) << "Blockfill with points: " << endl;
-  for (i = 1; i <= npoints.Size(); i++)
+  for (int i = 1; i <= npoints.Size(); i++)
     {
       if (meshbox.IsIn (npoints.Get(i)))
 	{
@@ -1238,13 +1209,13 @@ void Meshing3 :: BlockFillLocalH (Mesh & mesh,
   
   loch2.ClearFlags();
 
-  for (i = 1; i <= adfront->GetNF(); i++)
+  for (int i = 1; i <= adfront->GetNF(); i++)
     {
       const MiniElement2d & el = adfront->GetFace(i);
       Point3d pmin = adfront->GetPoint (el.PNum(1));
       Point3d pmax = pmin;
       
-      for (j = 2; j <= 3; j++)
+      for (int j = 2; j <= 3; j++)
 	{
 	  const Point3d & p = adfront->GetPoint (el.PNum(j));
 	  pmin.SetToMin (p);
@@ -1254,13 +1225,13 @@ void Meshing3 :: BlockFillLocalH (Mesh & mesh,
       loch2.SetH (Center (pmin, pmax), Dist (pmin, pmax));
     }
 
-  for (i = 1; i <= adfront->GetNF(); i++)
+  for (int i = 1; i <= adfront->GetNF(); i++)
     {
       const MiniElement2d & el = adfront->GetFace(i);
       Point3d pmin = adfront->GetPoint (el.PNum(1));
       Point3d pmax = pmin;
       
-      for (j = 2; j <= 3; j++)
+      for (int j = 2; j <= 3; j++)
 	{
 	  const Point3d & p = adfront->GetPoint (el.PNum(j));
 	  pmin.SetToMin (p);
@@ -1270,16 +1241,17 @@ void Meshing3 :: BlockFillLocalH (Mesh & mesh,
       double filld = filldist * Dist (pmin, pmax);
       pmin = pmin - Vec3d (filld, filld, filld);
       pmax = pmax + Vec3d (filld, filld, filld);
-      loch2.CutBoundary (pmin, pmax);
+      // loch2.CutBoundary (pmin, pmax);
+      loch2.CutBoundary (Box<3> (pmin, pmax)); // pmin, pmax);
     }
 
-  locadfront = adfront;
+  // locadfront = adfront;
   loch2.FindInnerBoxes (adfront, NULL);
 
   npoints.SetSize(0);
   loch2.GetOuterPoints (npoints);
   
-  for (i = 1; i <= npoints.Size(); i++)
+  for (int i = 1; i <= npoints.Size(); i++)
     {
       if (meshbox.IsIn (npoints.Get(i)))
 	{

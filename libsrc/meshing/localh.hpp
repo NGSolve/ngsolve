@@ -13,12 +13,6 @@
 /// box for grading
 class GradingBox
 {
-  /*
-  /// xmin
-  float x1[3];
-  /// xmax
-  float x2[3];
-  */
   /// xmid
   float xmid[3];
   /// half edgelength
@@ -30,6 +24,8 @@ class GradingBox
   ///
   double hopt;
   ///
+public:
+
   struct 
   {
     unsigned int cutboundary:1;
@@ -37,19 +33,23 @@ class GradingBox
     unsigned int oldcell:1;
     unsigned int pinner:1;
   } flags;
-public:
+
   ///
   GradingBox (const double * ax1, const double * ax2);
   ///
   void DeleteChilds();
   ///
-  friend class LocalH;
 
+  Point<3> PMid() const { return Point<3> (xmid[0], xmid[1], xmid[2]); }
+  double H2() const { return h2; }
+
+  friend class LocalH;
 
   static BlockAllocator ball;
   void * operator new(size_t);
   void operator delete (void *);
 };
+
 
 
 
@@ -70,6 +70,8 @@ public:
   ///
   LocalH (const Point3d & pmin, const Point3d & pmax, double grading);
   ///
+  LocalH (const Box<3> & box, double grading);
+  ///
   ~LocalH();
   ///
   void Delete();
@@ -83,13 +85,18 @@ public:
   double GetMinH (const Point3d & pmin, const Point3d & pmax) const;
 
   /// mark boxes intersecting with boundary-box
-  void CutBoundary (const Point3d & pmin, const Point3d & pmax)
-    { CutBoundaryRec (pmin, pmax, root); }
-
+  // void CutBoundary (const Point3d & pmin, const Point3d & pmax)
+  // { CutBoundaryRec (pmin, pmax, root); }
+  void CutBoundary (const Box<3> & box)
+  { CutBoundaryRec (box.PMin(), box.PMax(), root); }
+  
   /// find inner boxes
-  void FindInnerBoxes ( // int (*sameside)(const Point3d & p1, const Point3d & p2),
-		       class AdFront3 * adfront,
+  void FindInnerBoxes (class AdFront3 * adfront,
 		       int (*testinner)(const Point3d & p1));
+
+  void FindInnerBoxes (class AdFront2 * adfront,
+		       int (*testinner)(const Point<2> & p1));
+
 
   /// clears all flags 
   void ClearFlags ()
@@ -99,10 +106,10 @@ public:
   void WidenRefinement ();
 
   /// get points in inner elements
-  void GetInnerPoints (Array<Point3d> & points);
+  void GetInnerPoints (Array<Point<3> > & points);
 
   /// get points in outer closure
-  void GetOuterPoints (Array<Point3d> & points);
+  void GetOuterPoints (Array<Point<3> > & points);
 
   ///
   void Convexify ();
@@ -131,6 +138,18 @@ private:
 			   Array<int> & finds, int nfinbox);
 
 
+
+  void FindInnerBoxesRec ( int (*inner)(const Point<2> & p),
+			   GradingBox * box);
+
+  ///
+  void FindInnerBoxesRec2 (GradingBox * box,
+			   class AdFront2 * adfront,
+			   Array<Box<3> > & faceboxes,
+			   Array<int> & finds, int nfinbox);
+
+
+
   ///
   void SetInnerBoxesRec (GradingBox * box);
 
@@ -139,7 +158,26 @@ private:
   
   ///
   void ConvexifyRec (GradingBox * box);
+
+  friend ostream & operator<< (ostream & ost, const LocalH & loch);
 };
 
+
+
+
+inline ostream & operator<< (ostream & ost, const GradingBox & box)
+{
+  ost << "gradbox, pmid = " << box.PMid() << ", h2 = " << box.H2() 
+      << " cutbound = " << box.flags.cutboundary << " isinner = " << box.flags.isinner 
+      << endl;
+  return ost;
+}
+
+inline ostream & operator<< (ostream & ost, const LocalH & loch)
+{
+  for (int i = 0; i < loch.boxes.Size(); i++)
+    ost << "box[" << i << "] = " << *(loch.boxes[i]);
+  return ost;
+}
 
 #endif

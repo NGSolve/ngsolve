@@ -54,6 +54,10 @@ public:
   /// 
   MESHING2_RESULT GenerateMesh (Mesh & mesh, double gh, int facenr);
 
+  void Delaunay (Mesh & mesh, int domainnr, const MeshingParameters & mp);
+  void BlockFillLocalH (Mesh & mesh, const MeshingParameters & mp);
+
+
   ///
   void AddPoint (const Point3d & p, PointIndex globind, MultiPointGeomInfo * mgi = NULL,
 		 bool pointonsurface = true);

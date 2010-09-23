@@ -197,6 +197,14 @@ protected:
   Point<D> pmin, pmax;
 public:
   Box () { ; }
+
+  Box ( const Point<D> & p1)
+  {
+    for (int i = 0; i < D; i++)
+      pmin(i) = pmax(i) = p1(i);
+  }
+
+
   Box ( const Point<D> & p1, const Point<D> & p2)
   {
     for (int i = 0; i < D; i++)

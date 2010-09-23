@@ -4365,7 +4365,7 @@ namespace netgen
 
 
 
-    if(el.GetType() == TET || el.GetType() == TET10)
+    if (el.GetType() == TET)
       {
         retval = (lam(0) > -eps && 
                   lam(1) > -eps && 

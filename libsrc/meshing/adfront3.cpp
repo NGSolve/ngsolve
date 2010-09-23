@@ -772,7 +772,7 @@ void AdFront3 :: SetStartFront (int /* baseelnp */)
 
 bool AdFront3 :: Inside (const Point<3> & p) const
 {
-  int i, cnt;
+  int cnt;
   Vec3d n, v1, v2;
   DenseMatrix a(3), ainv(3);
   Vector b(3), u(3);
@@ -783,7 +783,7 @@ bool AdFront3 :: Inside (const Point<3> & p) const
   n.Z() = -0.43989;
 
   cnt = 0;
-  for (i = 1; i <= faces.Size(); i++)
+  for (int i = 1; i <= faces.Size(); i++)
     if (faces.Get(i).Valid())
       {
 	const Point<3> & p1 = points[faces.Get(i).Face().PNum(1)].P();
@@ -827,36 +827,29 @@ bool AdFront3 :: Inside (const Point<3> & p) const
 int AdFront3 :: SameSide (const Point<3> & lp1, const Point<3> & lp2,
 			  const Array<int> * testfaces) const
 {
-  int i, ii, cnt;
-
   const Point<3> *line[2];
   line[0] = &lp1;
   line[1] = &lp2;
 
 
-  cnt = 0;
-
   Point3d pmin(lp1);
   Point3d pmax(lp1);
   pmin.SetToMin (lp2);
   pmax.SetToMax (lp2);
-
-  static Array<int> aprif;
+  
+  ArrayMem<int, 100> aprif;
   aprif.SetSize(0);
   
   if (!testfaces)
     facetree->GetIntersecting (pmin, pmax, aprif);
   else
-    {
-      for (i = 1; i <= testfaces->Size(); i++)
-	aprif.Append (testfaces->Get(i));
-    }
+    for (int i = 1; i <= testfaces->Size(); i++)
+      aprif.Append (testfaces->Get(i));
 
-  //  (*testout) << "test ss, p1,p2 = " << lp1 << lp2 << ", inters = " << aprif.Size() << endl;
-  //  for (i = 1; i <= faces.Size(); i++)
-  for (ii = 1; ii <= aprif.Size(); ii++)
+  int cnt = 0;
+  for (int ii = 1; ii <= aprif.Size(); ii++)
     {
-      i = aprif.Get(ii);
+      int i = aprif.Get(ii);
       
       if (faces.Get(i).Valid())
 	{
@@ -867,7 +860,6 @@ int AdFront3 :: SameSide (const Point<3> & lp1, const Point<3> & lp2,
 	  	  
 	  if (IntersectTriangleLine (&tri[0], &line[0]))
 	    cnt++;
-	  
 	}
     }
 

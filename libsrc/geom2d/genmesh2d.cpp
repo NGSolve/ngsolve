@@ -227,8 +227,13 @@ namespace netgen
 
 
 	mparam.checkoverlap = 0;
-
-	meshing.GenerateMesh (*mesh, h, domnr);
+	
+	/*
+	if (!mparam.quad)
+	  meshing.Delaunay (*mesh, domnr, mparam);
+	else
+	*/
+	  meshing.GenerateMesh (*mesh, h, domnr);
 
 	for (SurfaceElementIndex sei = oldnf; sei < mesh->GetNSE(); sei++)
 	  (*mesh)[sei].SetIndex (domnr);

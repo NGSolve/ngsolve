@@ -496,6 +496,8 @@ proc saveoptions { } {
 	    puts $datei "stloptions.recalchopt  ${stloptions.recalchopt}" 
 	    
 	    puts $datei "visoptions.subdivisions ${visoptions.subdivisions}"
+	    puts $datei "visoptions.autoredraw ${visoptions.autoredraw}"
+	    puts $datei "visoptions.autoredrawtime ${visoptions.autoredrawtime}"
 
 
 	    # trafo options   

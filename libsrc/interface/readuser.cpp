@@ -43,6 +43,7 @@ namespace netgen
           {
             Point3d p;
             in >> p.X() >> p.Y() >> p.Z();
+	    p.Z() *= 10;
             mesh.AddPoint (p);
           }
 

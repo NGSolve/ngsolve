@@ -15,14 +15,15 @@ clusters.hpp hprefinement.hpp improve3.hpp meshtype.hpp		      \
 
 METASOURCES = AUTO
 noinst_LTLIBRARIES = libmesh.la
-libmesh_la_SOURCES = adfront2.cpp adfront3.cpp bisect.cpp boundarylayer.cpp    \
-	clusters.cpp curvedelems.cpp delaunay.cpp geomsearch.cpp global.cpp    \
-	 hprefinement.cpp improve2.cpp improve2gen.cpp improve3.cpp localh.cpp \
-	meshclass.cpp meshfunc.cpp meshfunc2d.cpp meshing2.cpp meshing3.cpp    \
-	meshtool.cpp meshtype.cpp msghandler.cpp netrule2.cpp		       \
-	netrule3.cpp parser2.cpp parser3.cpp prism2rls.cpp		       \
-	pyramid2rls.cpp pyramidrls.cpp quadrls.cpp refine.cpp		       \
-	ruler2.cpp ruler3.cpp secondorder.cpp smoothing2.5.cpp		       \
-	smoothing2.cpp smoothing3.cpp specials.cpp tetrarls.cpp		       \
-	topology.cpp triarls.cpp validate.cpp zrefine.cpp bcfunctions.cpp      \
+libmesh_la_SOURCES = adfront2.cpp adfront3.cpp bisect.cpp boundarylayer.cpp \
+	clusters.cpp curvedelems.cpp delaunay.cpp delaunay2d.cpp	    \
+	geomsearch.cpp global.cpp hprefinement.cpp improve2.cpp		    \
+	improve2gen.cpp improve3.cpp localh.cpp meshclass.cpp		    \
+	meshfunc.cpp meshfunc2d.cpp meshing2.cpp meshing3.cpp		    \
+	meshtool.cpp meshtype.cpp msghandler.cpp netrule2.cpp		    \
+	netrule3.cpp parser2.cpp parser3.cpp prism2rls.cpp		    \
+	pyramid2rls.cpp pyramidrls.cpp quadrls.cpp refine.cpp		    \
+	ruler2.cpp ruler3.cpp secondorder.cpp smoothing2.5.cpp		    \
+	smoothing2.cpp smoothing3.cpp specials.cpp tetrarls.cpp		    \
+	topology.cpp triarls.cpp validate.cpp zrefine.cpp bcfunctions.cpp   \
 	parallelmesh.cpp  paralleltop.cpp  paralleltop.hpp basegeom.cpp 

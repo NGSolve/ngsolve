@@ -8,8 +8,8 @@
 
 namespace netgen
 {
-  AdFront2::FrontPoint2 :: FrontPoint2 (const Point<3> & ap, PointIndex agi,
-					MultiPointGeomInfo * amgi, bool aonsurface)
+  FrontPoint2 :: FrontPoint2 (const Point<3> & ap, PointIndex agi,
+			      MultiPointGeomInfo * amgi, bool aonsurface)
   {
     p = ap;
     globalindex = agi;
@@ -463,5 +463,46 @@ namespace netgen
 	ost << lines[i].L().I1() << " - " << lines[i].L().I2() << endl;
 
     ost << flush;
+  }
+
+
+  bool AdFront2 :: Inside (const Point<2> & p) const
+  {
+    int cnt;
+    Vec<2> n;
+    Vec<3> v1;
+    DenseMatrix a(2), ainv(2);
+    Vector b(2), u(2);
+    
+    // random numbers:
+    n(0) = 0.123871;
+    n(1) = 0.15432;
+    
+    cnt = 0;
+    for (int i = 0; i < lines.Size(); i++)
+      if (lines[i].Valid())
+	{
+	  const Point<3> & p1 = points[lines[i].L().I1()].P();
+	  const Point<3> & p2 = points[lines[i].L().I2()].P();
+	  
+	  v1 = p2 - p1;
+	  
+	  a(0, 0) = v1(0);
+	  a(1, 0) = v1(1);
+	  
+	  a(0, 1) = -n(0);
+	  a(1, 1) = -n(1);
+
+	  b(0) = p(0) - p1(0);
+	  b(1) = p(1) - p1(1);
+	  
+	  CalcInverse (a, ainv);
+	  ainv.Mult (b, u);
+	  
+	  if (u(0) >= 0 && u(0) <= 1 && u(1) > 0)
+	    cnt++;
+	}
+    
+    return ((cnt % 2) != 0);
   }
 }

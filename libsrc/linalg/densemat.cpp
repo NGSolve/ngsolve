@@ -262,6 +262,7 @@ namespace netgen
         if (det == 0)
           {
             (*myerr) << "CalcInverse: Matrix singular" << endl;
+            (*testout) << "CalcInverse: Matrix singular" << endl;
             return;
           }
 
@@ -488,6 +489,7 @@ namespace netgen
             if (max < 1e-20)
               {
                 cerr << "Inverse matrix: matrix singular" << endl;
+                *testout << "Inverse matrix: matrix singular" << endl;
                 return;
               }
 	  

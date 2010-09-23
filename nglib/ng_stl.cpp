@@ -66,7 +66,7 @@ int main (int argc, char ** argv)
    Ng_Meshing_Parameters mp;
    mp.maxh = 1.0e+6;
    mp.fineness = 0.4;
-   mp.secondorder = 0;
+   mp.second_order = 0;
 
    cout << "Initialise the STL Geometry structure...." << endl;
    ng_res = Ng_STL_InitSTLGeometry(stl_geom);
