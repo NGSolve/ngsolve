@@ -73,7 +73,9 @@ namespace ngfem
 	if (D == 2)
 	  facetfe1 -> CalcShape (ir[i], fshape);
 	else
-	  facetfe2 -> CalcShape (f2el (facet, ir[i]), shape);
+	  facetfe2 -> CalcShape (ir[i], fshape);
+
+	this -> CalcShape (f2el (facet, ir[i]), shape);
 
 	trace += ir[i].Weight() * fshape * Trans (shape);
 	for (int j = 0; j < norms.Size(); j++)

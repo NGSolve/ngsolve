@@ -239,7 +239,7 @@ namespace ngcomp
 	/*
 	if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
 	  {
-	    L2HighOrderFiniteElementFO<2> * hofe2d = 0;
+	    L2HighOrderFiniteElement<2> * hofe2d = 0;
 	    switch (order)
 	      {
 	      case 0: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,0> (); break;
