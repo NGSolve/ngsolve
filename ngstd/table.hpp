@@ -143,7 +143,7 @@ template <class T>
 	}
       if (mode == 3)
 	{
-	  table = new Table<int> (cnt);
+	  table = new Table<T> (cnt);
 	  cnt = 0;
 	}
     }

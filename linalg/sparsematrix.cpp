@@ -293,7 +293,8 @@ namespace ngla
       {
         FlatArray<int> dof = dof2dof[i];
         for (int j = 0; j < dof.Size(); j++)
-          cnt[dof[j]]++;
+	  if (!symmetric || dof[j]>=i)
+	    cnt[dof[j]]++;
       }
 
     size = ndof;
