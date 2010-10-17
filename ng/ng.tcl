@@ -285,4 +285,5 @@ if { [file exists startup.tcl] } {
 
 
 catch { source ${ngdir}/demoapp.tcl } 
+catch { source ${ngdir}/dropsexp.tcl } 
 
