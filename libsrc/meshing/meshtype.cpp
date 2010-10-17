@@ -302,6 +302,12 @@ namespace netgen
           Swap (pnum[1], pnum[2]);
           break;
         }
+      case TRIG6:
+        {
+          Swap (pnum[1], pnum[2]);
+          Swap (pnum[4], pnum[5]);
+          break;
+        }
       case QUAD:
         {
           Swap (pnum[0], pnum[3]);

@@ -1802,6 +1802,10 @@ namespace netgen
 	ng_geometry -> GetRefinement().Refine(*mesh);
       }
 
+//redo second order refinement if desired
+    if (mparam.secondorder)
+      const_cast<Refinement&> (ng_geometry->GetRefinement()).MakeSecondOrder(*mesh);
+
     return TCL_OK;
   }
 
