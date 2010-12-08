@@ -62,6 +62,12 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("Pardiso Inverse");
     NgProfiler::RegionTimer reg (timer);
 
+
+    if (getenv ("PARDISOMSG"))
+      pardiso_msg = 1;
+
+
+
     print = bool (pardiso_msg); // false;
 
     symmetric = asymmetric;
