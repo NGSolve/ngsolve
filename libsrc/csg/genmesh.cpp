@@ -653,14 +653,9 @@ namespace netgen
 
 
 
-
-
-
-
-  int CSGGenerateMesh (CSGeometry & geom,
-		       Mesh *& mesh,
-		       int perfstepsstart, int perfstepsend,
-		       const char * optstr)
+  int CSGGenerateMesh (CSGeometry & geom, 
+		       Mesh *& mesh, MeshingParameters & mparam,
+		       int perfstepsstart, int perfstepsend)
   {
     if (mesh && mesh->GetNSE() &&
 	!geom.GetNSolids())

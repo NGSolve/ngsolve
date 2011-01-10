@@ -67,16 +67,42 @@ STLGeometry :: ~STLGeometry()
   delete edgedata;
 }
 
-int STLGeometry :: GenerateMesh (Mesh*& mesh,
-				 int perfstepsstart, int perfstepsend, char* optstring)
+void STLGeometry :: Save (string filename) const
 {
-  return STLMeshingDummy (this, mesh, perfstepsstart, perfstepsend, optstring);
+  const char  * cfilename = filename.c_str();
+  if (strlen(cfilename) < 4) 
+    throw NgException ("illegal filename");
+
+  if (strlen(cfilename) > 3 &&
+      strcmp (&cfilename[strlen(cfilename)-3], "stl") == 0)
+    {
+      STLTopology::Save (cfilename);
+    }
+  else if (strlen(cfilename) > 4 &&
+	   strcmp (&cfilename[strlen(cfilename)-4], "stlb") == 0)
+    {
+      SaveBinary (cfilename,"Binary STL Geometry");
+      
+    }
+  else if (strlen(cfilename) > 4 &&
+	   strcmp (&cfilename[strlen(cfilename)-4], "stle") == 0)
+    {
+      SaveSTLE (cfilename);
+    }
+}
+
+
+
+int STLGeometry :: GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
+				 int perfstepsstart, int perfstepsend)
+{
+  return STLMeshingDummy (this, mesh, mparam, perfstepsstart, perfstepsend);
 }
 
 
 const Refinement & STLGeometry :: GetRefinement () const
 {
-  return * new RefinementSTLGeometry (*this);
+  return RefinementSTLGeometry (*this);
 }
 
 

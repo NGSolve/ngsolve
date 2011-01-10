@@ -3,6 +3,13 @@ stltool.hpp stltopology.hpp
 
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
-noinst_LTLIBRARIES = libstl.la
+
+noinst_LTLIBRARIES = libstl.la libstlvis.la
+
 libstl_la_SOURCES = meshstlsurface.cpp stlgeom.cpp stlgeomchart.cpp \
 	stlgeommesh.cpp stlline.cpp stltool.cpp stltopology.cpp
+
+
+libstlvis_la_SOURCES = stlpkg.cpp vsstl.cpp
+
+

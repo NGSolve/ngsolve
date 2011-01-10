@@ -428,7 +428,7 @@ namespace netgen
   }
 
 
-  void CurvedElements :: BuildCurvedElements(Refinement * ref, int aorder,
+  void CurvedElements :: BuildCurvedElements(const Refinement * ref, int aorder,
                                              bool arational)
   {
     order = aorder;

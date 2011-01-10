@@ -1233,6 +1233,38 @@ namespace netgen
    }
 
 
+  void OCCGeometry :: Save (string sfilename) const
+  {
+    const char * filename = sfilename.c_str();
+    if (strlen(filename) < 4) 
+      throw NgException ("illegal filename");
+    
+    if (strcmp (&filename[strlen(filename)-3], "igs") == 0)
+      {
+	IGESControl_Writer writer("millimeters", 1);
+	writer.AddShape (shape);
+	writer.Write (filename);
+      }
+    else if (strcmp (&filename[strlen(filename)-3], "stp") == 0)
+      {
+	STEPControl_Writer writer;
+	writer.Transfer (shape, STEPControl_AsIs);
+	writer.Write (filename);
+      }
+    else if (strcmp (&filename[strlen(filename)-3], "stl") == 0)
+      {
+	StlAPI_Writer writer;
+	writer.ASCIIMode() = Standard_True;
+	writer.Write (shape, filename);
+      }
+    else if (strcmp (&filename[strlen(filename)-4], "stlb") == 0)
+      {
+	StlAPI_Writer writer;
+	writer.ASCIIMode() = Standard_False;
+	writer.Write (shape, filename);
+      }
+  }
+
 
 
   const char * shapesname[] =
@@ -1532,10 +1564,10 @@ namespace netgen
 
 
 
-   int OCCGeometry :: GenerateMesh (Mesh*& mesh,
-      int perfstepsstart, int perfstepsend, char* optstring)
+  int OCCGeometry :: GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
+      int perfstepsstart, int perfstepsend)
    {
-      return OCCGenerateMesh (*this, mesh, perfstepsstart, perfstepsend, optstring);
+     return OCCGenerateMesh (*this, mesh, mparam, perfstepsstart, perfstepsend);
    }
 
 

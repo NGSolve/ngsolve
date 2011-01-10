@@ -152,7 +152,7 @@ namespace netgen
 
 
   void RepairBisection(Mesh & mesh, Array<ElementIndex> & bad_elements, 
-		       const BitArray & isnewpoint, Refinement & refinement,
+		       const BitArray & isnewpoint, const Refinement & refinement,
 		       const Array<double> & pure_badness, 
 		       double max_worsening, const bool uselocalworsening,
 		       const Array< Array<int,PointIndex::BASE>* > & idmaps)

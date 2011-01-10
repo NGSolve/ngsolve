@@ -10,7 +10,7 @@ namespace netgen
   extern const char * pyramidrules2[];
 
 
-  extern double teterrpow; 
+  // extern double teterrpow; 
   MESHING3_RESULT MeshVolume (MeshingParameters & mp, Mesh& mesh3d)
   {
      int i, oldne;
@@ -249,7 +249,7 @@ namespace netgen
               mesh3d.CalcSurfacesOfNode();
               mesh3d.FindOpenElements(k);
 
-              teterrpow = 2;
+              // teterrpow = 2;
               if (mesh3d.GetNOpenElements() != 0)
               {
                  meshed = 0;
@@ -650,7 +650,7 @@ namespace netgen
 
 	MeshOptimize3d optmesh;
 
-	teterrpow = mp.opterrpow;
+	// teterrpow = mp.opterrpow;
 	for (size_t j = 1; j <= strlen(mp.optimize3d); j++)
 	  {
 	    if (multithread.terminate)

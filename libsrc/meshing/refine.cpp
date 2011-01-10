@@ -43,7 +43,6 @@ namespace netgen
 	else
 	  {
 	    Point<3> pnew;
-
 	    PointBetween (mesh.Point (el[0]),
 			  mesh.Point (el[1]), 0.5,
 			  el.surfnr1, el.surfnr2,

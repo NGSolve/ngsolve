@@ -5,7 +5,7 @@
 namespace netgen
 {
 
-
+  /*
   extern void InitDrawMesh ();
   extern void DrawMesh ();
   extern void MouseMove(int oldx, int oldy,
@@ -13,8 +13,7 @@ namespace netgen
                         char mode);
 
   extern void Render ();
-
-
+  */
 
 
   class VisualScene
@@ -97,100 +96,10 @@ namespace netgen
 
 
 
-  class VisualSceneGeometry : public VisualScene
-  {
-    Array<int> trilists;
-    int selsurf;
-  public:
-    VisualSceneGeometry ();
-    virtual ~VisualSceneGeometry ();
-
-    virtual void SelectSurface (int aselsurf);
-    virtual void BuildScene (int zoomall = 0);
-    virtual void DrawScene ();
-  };
-
-
-
-  class VisualSceneSTLGeometry : public VisualScene
-  {
-    Array<int> trilists;
-  
-  public:
-    VisualSceneSTLGeometry ();
-    virtual ~VisualSceneSTLGeometry ();
-
-    virtual void BuildScene (int zoomall = 0);
-    virtual void DrawScene ();
-  };
-
-
-  class VisualSceneGeometry2d : public VisualScene
-  {
-  public:
-    VisualSceneGeometry2d ();
-    virtual ~VisualSceneGeometry2d ();
-
-    virtual void BuildScene (int zoomall = 0);
-    virtual void DrawScene ();
-  };
-
-
-#ifdef OCCGEOMETRY
-  class VisualSceneOCCGeometry : public VisualScene
-  {
-    Array<int> trilists;
-    Array<int> linelists;
-    int selsurf;
-  public:
-    VisualSceneOCCGeometry ();
-    virtual ~VisualSceneOCCGeometry ();
-
-    virtual void BuildScene (int zoomall = 0);
-    virtual void DrawScene ();
-    virtual void MouseDblClick (int px, int py);
-  };
-#endif
 
 
 
 
-
-
-
-
-
-
-#ifdef STEP
-  class VisualSceneSTEPGeometry : public VisualScene
-  {
-    Array<int> gllists;
-  
-  public:
-    VisualSceneSTEPGeometry ();
-    virtual ~VisualSceneSTEPGeometry ();
-
-    virtual void BuildScene (int zoomall = 0);
-    virtual void DrawScene ();
-  };
-#endif
-
-
-  class VisualSceneSTLMeshing : public VisualScene
-  {
-    Array<int> trilists;
-    int selecttrig, nodeofseltrig;
-
-  public:
-    VisualSceneSTLMeshing ();
-    virtual ~VisualSceneSTLMeshing ();
-
-    virtual void BuildScene (int zoomall = 0);
-    virtual void DrawScene ();
-    virtual void MouseDblClick (int px, int py);
-
-    int seltria;
-  };
 
 
 
@@ -294,10 +203,6 @@ namespace netgen
 
 
 
-
-
-
-
   class VisualSceneSpecPoints : public VisualScene
   {
   public:
@@ -309,6 +214,12 @@ namespace netgen
 
     double len;
   };
+
+
+
+
+
+
 
   // extern struct Tcl_Interp * hinterp;
 

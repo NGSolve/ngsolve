@@ -233,7 +233,6 @@ class MeshPoint : public Point<3>
 
 public:
   MeshPoint () 
-  // : layer(1), singular(0.), type(INNERPOINT)   // would unnecessarily initialize large arrays !
   { 
 #ifdef PARALLEL
   isghost = 0;
@@ -276,17 +275,17 @@ public:
 
 };
 
-ostream & operator<<(ostream  & s, const MeshPoint & pt);
+inline ostream & operator<<(ostream  & s, const MeshPoint & pt)
+{ 
+  return (s << Point<3> (pt)); 
+}
 
 
 
 
-// typedef MoveableArray<MeshPoint,PointIndex::BASE> T_POINTS;
-typedef Array<MeshPoint,PointIndex::BASE> T_POINTS;
+typedef Array<MeshPoint, PointIndex::BASE> T_POINTS;
 
 
-class Element2d;
-ostream & operator<<(ostream  & s, const Element2d & el);
 
 /**
   Triangle element for surface mesh generation.
@@ -435,6 +434,7 @@ public:
   /// get number of 'integration points'
   int GetNIP () const;
   void GetIntegrationPoint (int ip, Point2d & p, double & weight) const;
+
   void GetTransformation (int ip, const Array<Point2d> & points,
 			  class DenseMatrix & trans) const;
   void GetTransformation (int ip, class DenseMatrix & pmat,
@@ -507,9 +507,11 @@ public:
 #else
   bool IsGhost () const { return false; }
 #endif
-
-
 };
+
+
+ostream & operator<<(ostream  & s, const Element2d & el);
+
 
 
 
@@ -526,8 +528,7 @@ public:
 
 
 
-class Element;
-ostream & operator<<(ostream  & s, const Element & el);
+
 
 
 
@@ -700,6 +701,7 @@ public:
   /// get number of 'integration points'
   int GetNIP () const;
   void GetIntegrationPoint (int ip, Point<3> & p, double & weight) const;
+
   void GetTransformation (int ip, const T_POINTS & points,
 			  class DenseMatrix & trans) const;
   void GetTransformation (int ip, class DenseMatrix & pmat,
@@ -724,7 +726,7 @@ public:
 				      int pi, Vec<3> & grad) const;
 
   ///
-  friend ostream & operator<<(ostream  & s, const Element & el);
+  // friend ostream & operator<<(ostream  & s, const Element & el);
 
   void SetRefinementFlag (bool rflag = 1) 
   { flags.refflag = rflag; }
@@ -777,12 +779,14 @@ public:
   bool IsGhost () const { return false; }
 #endif
 
-  friend class Mesh;
+  // friend class Mesh;
 };
 
+ostream & operator<<(ostream  & s, const Element & el);
 
-class Segment;
-ostream & operator<<(ostream  & s, const Segment & seg);
+
+
+
 
 
 /**
@@ -880,6 +884,10 @@ public:
   PointIndex & operator[] (int i) { return pnums[i]; }
   const PointIndex & operator[] (int i) const { return pnums[i]; }
 };
+
+ostream & operator<<(ostream  & s, const Segment & seg);
+
+
 
 
 // class Surface;  

@@ -1260,15 +1260,22 @@ SplineGeometry2d ::  ~SplineGeometry2d()
 }
 
 
-int SplineGeometry2d :: GenerateMesh (Mesh*& mesh,
-				      int perfstepsstart, int perfstepsend, char* optstring)
+extern void MeshFromSpline2D (SplineGeometry2d & geometry,
+			      Mesh *& mesh, 
+			      MeshingParameters & mp);
+
+
+int SplineGeometry2d :: GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
+				      int perfstepsstart, int perfstepsend)
 {
-  cout << "SplineGeometry2d::GenerateMesh : only a dummy" << endl;
+  cout << "SplineGeometry2d::GenerateMesh not only a dummy" << endl;
+
+  MeshFromSpline2D (*this, mesh, mparam);
   return 0;
 }
 
 
-const Refinement & SplineGeometry2d :: GetRefinement () const
+Refinement & SplineGeometry2d :: GetRefinement () const
 {
   return * new Refinement2d (*this);
 }

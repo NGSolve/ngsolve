@@ -82,6 +82,13 @@ catch {
     source ${ngdir}/drawing.tcl
 }
 
+source ${ngdir}/csgeom.tcl
+source ${ngdir}/stlgeom.tcl
+source ${ngdir}/occgeom.tcl
+source ${ngdir}/acisgeom.tcl
+
+
+
 catch { 
     source ${ngdir}/nghelp.tcl
 }

@@ -276,9 +276,9 @@ public:
   static STLGeometry * Load (istream & ist);
   static STLGeometry * LoadBinary (istream & ist);
 
-  void Save (const char* filename);
-  void SaveBinary (const char* filename, const char* aname);
-  void SaveSTLE (const char * filename); // stores trigs and edges
+  void Save (const char* filename) const;
+  void SaveBinary (const char* filename, const char* aname) const;
+  void SaveSTLE (const char * filename) const; // stores trigs and edges
   
   virtual void InitSTLGeometry (const Array<STLReadTriangle> & readtrigs);
 

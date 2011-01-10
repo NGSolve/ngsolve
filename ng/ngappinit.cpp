@@ -36,6 +36,7 @@ namespace netgen
 {
 #include "writeuser.hpp"
   extern string ngdir;
+  Flags parameters;
 }
  
 
@@ -99,9 +100,10 @@ int main(int argc, char ** argv)
     {
       cout << "NETGEN-" << PACKAGE_VERSION << endl;
       
-      cout << "Developed at RWTH Aachen University, Germany" << endl
-           << "and Johannes Kepler University Linz, Austria" << endl;
-
+      cout << "Developed by Joachim Schoeberl at" << endl
+	   << "2010-xxxx Vienna UT" << endl
+	   << "2006-2010 RWTH Aachen University" << endl
+           << "1996-2006 Johannes Kepler University Linz" << endl;
       
 #ifdef OCCGEOMETRY
       cout << "Including OpenCascade geometry kernel" << endl;

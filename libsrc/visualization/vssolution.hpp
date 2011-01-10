@@ -290,7 +290,6 @@ public:
 		     const Point<3> & p2, 
 		     const Point<3> & p3,
 		     double val1, double val2, double val3);
-  // double minval, double maxval, int n);
 
   // draw isolines between lines (p1,p2) and (p3,p4)
   void DrawIsoLines2 (const Point<3> & p1, 
@@ -299,15 +298,11 @@ public:
 		      const Point<3> & p4,
 		      double val1, double val2, double val3, double val4);
 
-  // double minval, double maxval, int n);
-		     
 
   void DrawClipPlaneTrigs (const SolData * sol, int comp,
                            const Array<ClipPlaneTrig> & trigs, 
                            const Array<ClipPlanePoint> & points);
 			  
-  // void SetOpenGlColor(double val, double valmin, double valmax, int logscale = 0);
-
   void SetOpenGlColor(double val);
 
   // 0 .. non, 1 .. scalar, 2 .. complex

@@ -44,7 +44,7 @@ public:
   // void SetHighOrder (int aorder) { order=aorder; }
   void SetIsHighOrder (bool ho) { ishighorder = ho; }
   
-  void BuildCurvedElements(Refinement * ref, int aorder, bool arational = false);
+  void BuildCurvedElements(const Refinement * ref, int aorder, bool arational = false);
 
   int GetOrder () { return order; }
 

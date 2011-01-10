@@ -922,20 +922,18 @@ double Opti3EdgeMinFunction :: FuncGrad (const Vector & x, Vector & grad) const
 
 
 
-extern double teterrpow;
 double CalcTotalBad (const Mesh::T_POINTS & points, 
 		     const Mesh::T_VOLELEMENTS & elements)
 {
-  int i;
   double sum = 0;
   double elbad;
   
   tets_in_qualclass.SetSize(20);
-  for (i = 1; i <= 20; i++)
-    tets_in_qualclass.Elem(i) = 0;
+  tets_in_qualclass = 0;
 
+  double teterrpow = mparam.opterrpow;
 
-  for (i = 1; i <= elements.Size(); i++)
+  for (int i = 1; i <= elements.Size(); i++)
     {
       elbad = pow (max2(CalcBad (points, elements.Get(i), 0),1e-10),
 		   1/teterrpow);

@@ -137,11 +137,11 @@ namespace netgen
 
   };
 
-
+  /*
   void MeshFromSpline2D (SplineGeometry<2> & geometry,
 			 Mesh *& mesh, 
 			 MeshingParameters & mp);
-
+  */
 
 
   class SplineGeometry2d : public SplineGeometry<2>, public NetgenGeometry
@@ -149,10 +149,10 @@ namespace netgen
   public:
     virtual ~SplineGeometry2d();
   
-    virtual int GenerateMesh (Mesh*& mesh,
-			      int perfstepsstart, int perfstepsend, char* optstring);
+    virtual int GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
+			      int perfstepsstart, int perfstepsend);
   
-    virtual const Refinement & GetRefinement () const; 
+    virtual Refinement & GetRefinement () const; 
   };
 
 }

@@ -62,7 +62,7 @@ namespace netgen
   public:
     NG_ELEMENT_TYPE type;
     NG_ELEMENT_TYPE GetType() const { return type; }
-
+    
     Ng_Points points;      // all points
     Ng_Vertices vertices;
     Ng_Edges edges;

@@ -8,21 +8,15 @@ The interface between the GUI and the netgen library
 #include <mystdlib.h>
 #include <myadt.hpp>
 #include <linalg.hpp>
-#include <csg.hpp>
 
-#include <geometry2d.hpp>
-#include <stlgeom.hpp>
 #include <meshing.hpp>
 
 
-#ifdef OCCGEOMETRY
-#include <occgeom.hpp>
-#endif
-
-#include "../libsrc/meshing/bcfunctions.hpp"
-
 #include <incvis.hpp>
 #include <visual.hpp>
+
+
+#include <csg.hpp>
 
 
 #ifdef SOCKETS
@@ -152,6 +146,7 @@ extern "C" void NGSolve_Exit();
 
 namespace netgen
 {
+  extern Flags parameters;
 
   NetgenOutStream operator<< ( ostream & ost, Imp  imp )
   {
@@ -172,20 +167,9 @@ namespace netgen
 
   // global variable mesh (should not be used in libraries)
   AutoPtr<Mesh> mesh;
-
-  // geometry: either CSG, or, if an other is non-null,
-  // then the other
-  AutoPtr<CSGeometry> geometry (new CSGeometry(""));
-  STLGeometry * stlgeometry = NULL;
-  AutoPtr<SplineGeometry2d> geometry2d (0);
-
-#ifdef OCCGEOMETRY
-  OCCGeometry * occgeometry = NULL;
-#endif
-
   NetgenGeometry * ng_geometry = new NetgenGeometry;
-
   Tcl_Interp * tcl_interp;
+
 
 #ifdef SOCKETS
   AutoPtr<ClientSocket> clientsocket;
@@ -195,40 +179,18 @@ namespace netgen
   AutoPtr<ServerSocketUserNetgen> serversocketusernetgen;
 #endif
 
-  // OpenGL near and far clipping planes
-  extern double pnear;
-  extern double pfar;
 
 
   // visualization scenes, pointer vs selects which one is drawn:
 
   static VisualScene vscross;
-  static VisualSceneGeometry vsgeom;
-  static VisualSceneGeometry2d vsgeom2d;
-#ifdef OPENGL
-  static VisualSceneSTLGeometry vsstlgeom;
-  extern VisualSceneSTLMeshing vsstlmeshing;
-#endif
-
-#ifdef OCCGEOMETRY
-  static VisualSceneOCCGeometry vsoccgeom;
-#endif
-
-
-
-#ifdef OPENGL
   extern VisualSceneSurfaceMeshing vssurfacemeshing;
-#endif
   extern VisualSceneMesh vsmesh;
   extern VisualSceneMeshDoctor vsmeshdoc;
+
   static VisualSceneSpecPoints vsspecpoints;
 
   VisualSceneSolution vssolution;
-
-
-#ifdef STEP
-  static VisualSceneSTEPGeometry vsstepgeom;
-#endif
 
 
 
@@ -236,9 +198,8 @@ namespace netgen
 
 
 
-  static char * err_needsmesh = (char*) "This operation needs a mesh";
-  static char * err_needsstlgeometry = (char*) "This operation needs an STL geometry";
-  static char * err_jobrunning = (char*) "Meshing Job already running";
+  char * err_needsmesh = (char*) "This operation needs a mesh";
+  char * err_jobrunning = (char*) "Meshing Job already running";
 
 
 
@@ -295,23 +256,10 @@ namespace netgen
     if (strcmp (argv[1], "mesh") == 0)
       mesh.Reset();
 
-
     if (strcmp (argv[1], "geom") == 0)
       {
-	geometry.Reset (new CSGeometry (""));
-
-	if (stlgeometry)
-	  {
-	    delete stlgeometry;
-	    stlgeometry = NULL;
-	  }
-#ifdef OCCGEOMETRY
-	if (occgeometry)
-	  {
-	    delete occgeometry;
-	    occgeometry = NULL;
-	  }
-#endif
+	delete ng_geometry;
+	ng_geometry = new NetgenGeometry;
       }
 
     return TCL_OK;
@@ -345,32 +293,33 @@ namespace netgen
 	//mesh -> Load (filename);
 	ifstream infile(filename.c_str());
 	mesh -> Load(infile);
+
+	for (int i = 0; i < geometryregister.Size(); i++)
+	  {
+	    NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (infile);
+	    if (hgeom)
+	      {
+		delete ng_geometry;
+		ng_geometry = hgeom;
+		break;
+	      }
+	  }
+	
+	/*
 	string auxstring;
 	if(infile.good())
 	  {
 	    infile >> auxstring;
 	    if(auxstring == "csgsurfaces")
 	      {
-		if (geometry)
-		  geometry.Reset (new CSGeometry (""));
-		if (stlgeometry)
-		  {
-		    delete stlgeometry;
-		    stlgeometry = NULL;
-		  }
-#ifdef OCCGEOMETRY
-		if (occgeometry)
-		  {
-		    delete occgeometry;
-		    occgeometry = NULL;
-		  }
-#endif
-		geometry2d.Reset (0);
-
-
+		CSGeometry * geometry = new CSGeometry ("");
 		geometry -> LoadSurfaces(infile);
+
+		delete ng_geometry;
+		ng_geometry = geometry;
 	      }
 	  }
+	*/
       }
     catch (NgException e)
       {
@@ -406,7 +355,11 @@ namespace netgen
 
     outfile << endl << endl << "endmesh" << endl << endl;
 
+    ng_geometry -> SaveToMeshFile (outfile);
+    /*
+    CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry);
     if (geometry && geometry->GetNSurf()) geometry->SaveSurfaces(outfile);
+    */
 
     PrintMessage (1, "Save mesh to file .... DONE!");
     return TCL_OK;
@@ -426,10 +379,13 @@ namespace netgen
 
     try
       {
+	CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry);
+    
 	//mesh -> Merge (filename);
 	ifstream infile(filename.c_str());
 	const int offset = (geometry) ? geometry->GetNSurf() : 0;
 	mesh -> Merge(infile,offset);
+
 	string auxstring;
 	if(infile.good())
 	  {
@@ -468,7 +424,8 @@ namespace netgen
     string filetype (argv[2]);
     PrintMessage (1, "Export mesh to file ", filename, ".... Please Wait!");
 
-    if (WriteUserFormat (filetype, *mesh, *geometry, filename))
+    // CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry);
+    if (WriteUserFormat (filetype, *mesh, *ng_geometry, filename))
       {
 	ostringstream ost;
 	ost << "Sorry, nothing known about file format " << filetype << endl;
@@ -583,6 +540,15 @@ namespace netgen
 
 
 
+  int Ng_SetNextTimeStamp  (ClientData clientData,
+			    Tcl_Interp * interp,
+			    int argqc, tcl_const char *argv[])
+  {
+    if (mesh.Ptr())
+      mesh -> SetNextTimeStamp();
+    return TCL_OK;
+  }
+
 
 
 
@@ -606,25 +572,22 @@ namespace netgen
     (*statout) << lgfilename << " & " << endl;
 #endif
 
-    if (geometry)
-      geometry.Reset (new CSGeometry (""));
-    if (stlgeometry)
-      {
-	delete stlgeometry;
-	stlgeometry = NULL;
-      }
-#ifdef OCCGEOMETRY
-    if (occgeometry)
-      {
-	delete occgeometry;
-	occgeometry = NULL;
-      }
-#endif
-    geometry2d.Reset (0);
-
 
     try
       {
+	for (int i = 0; i < geometryregister.Size(); i++)
+	  {
+	    NetgenGeometry * hgeom = geometryregister[i]->Load (lgfilename);
+	    if (hgeom)
+	      {
+		delete ng_geometry;
+		ng_geometry = hgeom;
+		
+		mesh.Reset();
+		return TCL_OK;
+	      }
+	  }
+
 
 	ifstream infile(lgfilename);
 
@@ -634,64 +597,15 @@ namespace netgen
 	  }
 	else
 	  {
-	    if (strcmp (&lgfilename[strlen(lgfilename)-3], "geo") == 0)
-	      {
-		// strcpy (geomfilename, lgfilename);
-		PrintMessage (1, "Load geometry file ", lgfilename);
-
-
-		extern CSGeometry * ParseCSG (istream & istr);
-		// ifstream infile(lgfilename);
-		CSGeometry * hgeom = ParseCSG (infile);
-		ng_geometry = hgeom;
-		if (hgeom)
-		  geometry.Reset (hgeom);
-		else
-		  {
-		    geometry.Reset (new CSGeometry (""));
-		    Tcl_SetResult (interp, (char*)"geo-file should start with 'algebraic3d'", TCL_STATIC);
-		    return TCL_ERROR;
-		  }
-
-		//geometry -> FindIdenticSurfaces(geometry->GetIdEps() * geometry->MaxSize()); // 1e-8*geometry->MaxSize()
-		geometry -> FindIdenticSurfaces(1e-8 * geometry->MaxSize()); // 1e-8*geometry->MaxSize()
-	      }
-	    else if (strcmp (&lgfilename[strlen(lgfilename)-3], "ngg") == 0)
-	      {
-		//		strcpy (geomfilename, lgfilename);
-
-		PrintMessage (1, "Load new geometry file ", lgfilename);
-		geometry.Reset (new CSGeometry(""));
-		geometry -> Load (infile);
-	      }
-
-	    // strcpy (geomfilename, lgfilename);
-	    // (*mycout) << "Load geometry file " << lgfilename << endl;
-
-	    else if (strcmp (&lgfilename[strlen(lgfilename)-3], "stl") == 0)
-	      {
-		// strcpy (geomfilename, lgfilename);
-		PrintMessage (1, "Load stl geometry file ", lgfilename);
-		stlgeometry = STLGeometry :: Load (infile);
-		ng_geometry = stlgeometry;
-		stlgeometry->edgesfound = 0;
-	      }
-	    else if ((strcmp (&lgfilename[strlen(lgfilename)-4], "iges") == 0) ||
+	    if ((strcmp (&lgfilename[strlen(lgfilename)-4], "iges") == 0) ||
 		     (strcmp (&lgfilename[strlen(lgfilename)-3], "igs") == 0) ||
 		     (strcmp (&lgfilename[strlen(lgfilename)-3], "IGS") == 0) ||
 		     (strcmp (&lgfilename[strlen(lgfilename)-4], "IGES") == 0))
 	      {
-#ifdef OCCGEOMETRY
-		// strcpy (geomfilename, lgfilename);
-		PrintMessage (1, "Load IGES geometry file ", lgfilename);
-		occgeometry = LoadOCC_IGES (lgfilename);
-		ng_geometry = occgeometry;
-#else
 		Tcl_SetResult (interp, (char*)"IGES import requires the OpenCascade geometry kernel. "
 			       "Please install OpenCascade as described in the Netgen-website",
 			       TCL_STATIC);
 		return TCL_ERROR;
-#endif
 	      }
 
 	    else if (strcmp (&lgfilename[strlen(lgfilename)-3], "sat") == 0)
@@ -710,65 +624,24 @@ namespace netgen
 		PrintMessage (1, "Load STEP geometry file ", lgfilename);
 		acisgeometry = netgen::LoadACIS_STEP (lgfilename);
 #else
-#ifdef OCCGEOMETRY
-		// strcpy (geomfilename, lgfilename);
-		PrintMessage (1, "Load STEP geometry file ", lgfilename);
-		occgeometry = LoadOCC_STEP (lgfilename);
-		ng_geometry = occgeometry;
-#else
 		Tcl_SetResult (interp, (char*)"IGES import requires the OpenCascade geometry kernel. "
 			       "Please install OpenCascade as described in the Netgen-website",
 			       TCL_STATIC);
 		return TCL_ERROR;
-#endif
 #endif
 	      }
 	    else if ((strcmp (&lgfilename[strlen(lgfilename)-4], "brep") == 0) ||
 		     (strcmp (&lgfilename[strlen(lgfilename)-4], "Brep") == 0) ||
 		     (strcmp (&lgfilename[strlen(lgfilename)-4], "BREP") == 0))
 	      {
-#ifdef OCCGEOMETRY
-		// strcpy (geomfilename, lgfilename);
-		PrintMessage (1, "Load BREP geometry file ", lgfilename);
-		occgeometry = LoadOCC_BREP (lgfilename);
-		ng_geometry = occgeometry;
-#else
 		Tcl_SetResult (interp, (char*)"BREP import requires the OpenCascade geometry kernel. "
 			       "Please install OpenCascade as described in the Netgen-website",
 			       TCL_STATIC);
 		return TCL_ERROR;
-#endif
-	      }
-
-	    else if (strcmp (&lgfilename[strlen(lgfilename)-4], "stlb") == 0)
-	      {
-		// strcpy (geomfilename, lgfilename);
-
-		PrintMessage (1, "Load stl geometry file ", lgfilename, " in binary format");
-		stlgeometry = STLGeometry :: LoadBinary (infile);
-		ng_geometry = stlgeometry;
-		stlgeometry->edgesfound = 0;
-	      }
-
-	    else if (strcmp (&lgfilename[strlen(lgfilename)-3], "nao") == 0)
-	      {
-		// strcpy (geomfilename, lgfilename);
-
-		PrintMessage (1, "Load naomi (F. Kickinger) geometry file ", lgfilename);
-		stlgeometry = STLGeometry :: LoadNaomi (infile);
-		ng_geometry = stlgeometry;
-		stlgeometry->edgesfound = 0;
-	      }
-
-	    else if (strcmp (&lgfilename[strlen(lgfilename)-4], "in2d") == 0)
-	      {
-		// strcpy (geomfilename, lgfilename);
-		geometry2d.Reset (new SplineGeometry2d());
-		geometry2d -> Load (lgfilename);
-		ng_geometry = geometry2d.Ptr();
 	      }
 	  }
       }
+
     catch (NgException e)
       {
 	Tcl_SetResult (interp, const_cast<char*> (e.What().c_str()), TCL_VOLATILE);
@@ -776,7 +649,6 @@ namespace netgen
       }
 
     mesh.Reset();
-
     return TCL_OK;
   }
 
@@ -796,6 +668,17 @@ namespace netgen
     if (argc == 2)
       {
 	const char * cfilename = argv[1];
+
+	try
+	  {
+	    ng_geometry -> Save (string (cfilename));
+	  }
+	catch (NgException e)
+	  {
+	    Tcl_SetResult (interp, const_cast<char*> (e.What().c_str()), TCL_VOLATILE);
+	    return TCL_ERROR;
+	  }
+
 	PrintMessage (1, "Save geometry to file ", cfilename);
 
 	if (strlen(cfilename) < 4) {cout << "ERROR: can not recognise file format!!!" << endl;}
@@ -811,482 +694,25 @@ namespace netgen
 		  }
 	      }
 #endif
-#ifdef OCCGEOMETRY
-	    if (occgeometry)
+	    /*
+	    if (strcmp (&cfilename[strlen(cfilename)-3], "ngg") == 0)
 	      {
-		char * filename = const_cast<char*> (argv[1]);
-		if (strcmp (&filename[strlen(filename)-3], "igs") == 0)
+		CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry);
+		if (geometry)
 		  {
-		    IGESControl_Writer writer("millimeters", 1);
-		    writer.AddShape (occgeometry->shape);
-		    writer.Write (filename);
-		  }
-		else if (strcmp (&filename[strlen(filename)-3], "stp") == 0)
-		  {
-		    STEPControl_Writer writer;
-		    writer.Transfer (occgeometry->shape, STEPControl_AsIs);
-		    writer.Write (filename);
-		  }
-		else if (strcmp (&filename[strlen(filename)-3], "stl") == 0)
-		  {
-		    StlAPI_Writer writer;
-		    writer.ASCIIMode() = Standard_True;
-		    writer.Write (occgeometry->shape, filename);
-		  }
-		else if (strcmp (&filename[strlen(filename)-4], "stlb") == 0)
-		  {
-		    StlAPI_Writer writer;
-		    writer.ASCIIMode() = Standard_False;
-		    writer.Write (occgeometry->shape, filename);
+		    ofstream of(cfilename);
+		    geometry->Save (of);
 		  }
 	      }
-	    else
-#endif
-	      if (strcmp (&cfilename[strlen(cfilename)-3], "ngg") == 0)
-		{
-		  if (geometry)
-		    {
-		      ofstream of(cfilename);
-		      geometry->Save (of);
-		    }
-		}
-	      else if (strlen(cfilename) > 3 &&
-		       strcmp (&cfilename[strlen(cfilename)-3], "stl") == 0)
-		{
-		  if (stlgeometry)
-		    stlgeometry->Save (cfilename);
-		}
-	      else if (strlen(cfilename) > 4 &&
-		       strcmp (&cfilename[strlen(cfilename)-4], "stlb") == 0)
-		{
-		  if (stlgeometry)
-		    stlgeometry->SaveBinary (cfilename,"Binary STL Geometry");
-		}
-	      else if (strlen(cfilename) > 4 &&
-		       strcmp (&cfilename[strlen(cfilename)-4], "stle") == 0)
-		{
-		  if (stlgeometry)
-		    stlgeometry->SaveSTLE (cfilename);
-		}
+	    */
 	  }
       }
 
-    else
-      {
-	if (geometry)
-	  geometry->Save (cout);
-      }
     return TCL_OK;
   }
 
 
 
-  int Ng_ParseGeometry (ClientData clientData,
-			Tcl_Interp * interp,
-			int argc, tcl_const char *argv[])
-  {
-#ifdef OCCGEOMETRY
-    if (!stlgeometry && !geometry2d && !occgeometry)
-#else
-      if (!stlgeometry && !geometry2d)
-#endif
-	{
-          double detail = atof (Tcl_GetVar (interp, "::geooptions.detail", 0));
-          double facets = atof (Tcl_GetVar (interp, "::geooptions.facets", 0));
-	  Box<3> box (geometry->BoundingBox());
-
-          if (atoi (Tcl_GetVar (interp, "::geooptions.drawcsg", 0)))
-	    geometry->CalcTriangleApproximation(box, detail, facets);
-	}
-    return TCL_OK;
-  }
-
-
-
-
-  /*
-    NgLock * ngpkg_lock = NULL;
-
-
-    int Ng_Lock (ClientData clientData,
-    Tcl_Interp * interp,
-    int argc, tcl_const char *argv[])
-    {
-    delete ngpkg_lock;
-    ngpkg_lock = NULL;
-
-    if(strcmp (argv[1], "mesh") == 0)
-    {
-    ngpkg_lock = new NgLock(mesh->Mutex());
-    }
-    else if(strcmp (argv[1], "unlock") == 0)
-    {
-    ;
-    }
-
-    return TCL_OK;
-    }
-  */
-
-  int Ng_GeometryOptions (ClientData clientData,
-			  Tcl_Interp * interp,
-			  int argc, tcl_const char *argv[])
-  {
-    const char * command = argv[1];
-
-    if (strcmp (command, "get") == 0)
-      {
-	char buf[20];
-	Point3d pmin = geometry->BoundingBox ().PMin();
-	Point3d pmax = geometry->BoundingBox ().PMax();
-
-	sprintf (buf, "%5.1lf", pmin.X());
-        Tcl_SetVar (interp, "::geooptions.minx", buf, 0);
-	sprintf (buf, "%5.1lf", pmin.Y());
-        Tcl_SetVar (interp, "::geooptions.miny", buf, 0);
-	sprintf (buf, "%5.1lf", pmin.Z());
-        Tcl_SetVar (interp, "::geooptions.minz", buf, 0);
-
-	sprintf (buf, "%5.1lf", pmax.X());
-        Tcl_SetVar (interp, "::geooptions.maxx", buf, 0);
-	sprintf (buf, "%5.1lf", pmax.Y());
-        Tcl_SetVar (interp, "::geooptions.maxy", buf, 0);
-	sprintf (buf, "%5.1lf", pmax.Z());
-        Tcl_SetVar (interp, "::geooptions.maxz", buf, 0);
-      }
-    else if (strcmp (command, "set") == 0)
-      {
-        Point<3> pmin (atof (Tcl_GetVar (interp, "::geooptions.minx", 0)),
-                       atof (Tcl_GetVar (interp, "::geooptions.miny", 0)),
-                       atof (Tcl_GetVar (interp, "::geooptions.minz", 0)));
-        Point<3> pmax (atof (Tcl_GetVar (interp, "::geooptions.maxx", 0)),
-                       atof (Tcl_GetVar (interp, "::geooptions.maxy", 0)),
-                       atof (Tcl_GetVar (interp, "::geooptions.maxz", 0)));
-	Box<3> box (pmin, pmax);
-	geometry -> SetBoundingBox (box);
-	CSGeometry::SetDefaultBoundingBox (box);
-      }
-
-    return TCL_OK;
-  }
-
-
-
-
-
-  // attempt of a simple modeller
-
-  int Ng_CreatePrimitive (ClientData clientData,
-			  Tcl_Interp * interp,
-			  int argc, tcl_const char *argv[])
-  {
-    tcl_const char * classname = argv[1];
-    tcl_const char * name = argv[2];
-
-    cout << "Create primitive, class = " << classname
-	 << ", name = " << name << endl;
-
-    Primitive * nprim = Primitive::CreatePrimitive (classname);
-    Solid * nsol = new Solid (nprim);
-
-    char sname[100];
-    for (int j = 1; j <= nprim->GetNSurfaces(); j++)
-      {
-	sprintf (sname, "%s,%d", name, j);
-	geometry -> AddSurface (sname, &nprim->GetSurface(j));
-	nprim -> SetSurfaceId (j, geometry->GetNSurf());
-      }
-
-    geometry->SetSolid (name, nsol);
-
-    return TCL_OK;
-  }
-
-
-  int Ng_SetPrimitiveData (ClientData clientData,
-			   Tcl_Interp * interp,
-			   int argc, tcl_const char *argv[])
-  {
-    tcl_const char * name = argv[1];
-    tcl_const char * value = argv[2];
-
-    Array<double> coeffs;
-
-
-    cout << "Set primitive data, name = " << name
-	 << ", value = " << value  << endl;
-
-
-    istringstream vst (value);
-    double val;
-    while (!vst.eof())
-      {
-	vst >> val;
-	coeffs.Append (val);
-      }
-
-    ((Primitive*)
-     geometry->GetSolid (name)->GetPrimitive())->SetPrimitiveData (coeffs);
-
-    return TCL_OK;
-  }
-
-
-
-  int Ng_SetSolidData (ClientData clientData,
-		       Tcl_Interp * interp,
-		       int argc, tcl_const char *argv[])
-  {
-    tcl_const char * name = argv[1];
-    tcl_const char * val = argv[2];
-
-    cout << "Set Solid Data, name = " << name
-	 << ", value = " << val << endl;
-
-    istringstream vst (val);
-
-    Solid * nsol = Solid::CreateSolid (vst, geometry->GetSolids());
-    geometry->SetSolid (name, nsol);
-
-    return TCL_OK;
-  }
-
-
-  int Ng_GetPrimitiveData (ClientData clientData,
-			   Tcl_Interp * interp,
-			   int argc, tcl_const char *argv[])
-  {
-    tcl_const char * name = argv[1];
-    tcl_const char * classnamevar = argv[2];
-    tcl_const char * valuevar = argv[3];
-
-    const char * classname;
-
-    Array<double> coeffs;
-
-    geometry->GetSolid (name)->GetPrimitive()->GetPrimitiveData (classname, coeffs);
-
-    ostringstream vst;
-    for (int i = 1; i <= coeffs.Size(); i++)
-      vst << coeffs.Get(i) << " ";
-
-    cout << "GetPrimitiveData, name = " << name
-	 << ", classnamevar = " << classnamevar
-	 << ", classname = " << classname << endl
-	 << " valuevar = " << valuevar
-	 << ", values = " << vst.str() << endl;
-
-    Tcl_SetVar  (interp, classnamevar, (char*)classname, 0);
-    Tcl_SetVar  (interp, valuevar, (char*)vst.str().c_str(), 0);
-
-    return TCL_OK;
-  }
-
-  int Ng_GetSolidData (ClientData clientData,
-		       Tcl_Interp * interp,
-		       int argc, tcl_const char *argv[])
-  {
-    tcl_const char * name = argv[1];
-    tcl_const char * valuevar = argv[2];
-
-    ostringstream vst;
-
-    const Solid * sol = geometry->GetSolid (name);
-    sol->GetSolidData (vst);
-
-    cout << "GetSolidData, name = " << name << ", data = " << vst.str() << endl;
-
-    Tcl_SetVar  (interp, valuevar, (char*)vst.str().c_str(), 0);
-
-    return TCL_OK;
-  }
-
-
-  int Ng_GetPrimitiveList (ClientData clientData,
-			   Tcl_Interp * interp,
-			   int argc, tcl_const char *argv[])
-  {
-    tcl_const char * valuevar = argv[1];
-    int i;
-
-    stringstream vst;
-
-    for (i = 1; i <= geometry->GetNSolids(); i++)
-      {
-	const Solid * sol = geometry->GetSolid(i);
-	if (sol->GetPrimitive())
-	  vst << sol->Name() << " ";
-      }
-
-    cout << "primnames = " << vst.str() << endl;
-
-    Tcl_SetVar  (interp, valuevar, (char*)vst.str().c_str(), 0);
-
-    return TCL_OK;
-  }
-
-
-
-  int Ng_GetSurfaceList (ClientData clientData,
-			 Tcl_Interp * interp,
-			 int argc, tcl_const char *argv[])
-  {
-    tcl_const char * valuevar = argv[1];
-    int i;
-
-    stringstream vst;
-
-    for (i = 1; i <= geometry->GetNSurf(); i++)
-      {
-	const Surface * surf = geometry->GetSurface(i);
-	vst << surf->Name() << " ";
-      }
-
-    cout << "surfnames = " << vst.str() << endl;
-
-    Tcl_SetVar  (interp, valuevar, (char*)vst.str().c_str(), 0);
-
-    return TCL_OK;
-  }
-
-
-  int Ng_GetSolidList (ClientData clientData,
-		       Tcl_Interp * interp,
-		       int argc, tcl_const char *argv[])
-  {
-    tcl_const char * valuevar = argv[1];
-    int i;
-
-    stringstream vst;
-
-    for (i = 1; i <= geometry->GetNSolids(); i++)
-      {
-	const Solid * sol = geometry->GetSolid(i);
-	if (!sol->GetPrimitive())
-	  vst << sol->Name() << " ";
-      }
-
-    cout << "solnames = " << vst.str() << endl;
-
-    Tcl_SetVar  (interp, valuevar, (char*)vst.str().c_str(), 0);
-
-    return TCL_OK;
-  }
-
-
-  int Ng_TopLevel (ClientData clientData,
-		   Tcl_Interp * interp,
-		   int argc, tcl_const char *argv[])
-  {
-    int i;
-    /*
-      for (i = 0; i < argc; i++)
-      cout << argv[i] << ", ";
-      cout << endl;
-    */
-
-    if (strcmp (argv[1], "getlist") == 0)
-      {
-	stringstream vst;
-
-	for (i = 0; i < geometry->GetNTopLevelObjects(); i++)
-	  {
-	    const Solid * sol;
-	    const Surface * surf;
-	    geometry->GetTopLevelObject (i, sol, surf);
-
-	    if (!surf)
-	      vst << "{ " << sol->Name() << " } ";
-	    else
-	      vst << "{ " << sol->Name() << " " << surf->Name() << " } ";
-	  }
-
-	tcl_const char * valuevar = argv[2];
-	Tcl_SetVar  (interp, valuevar, (char*)vst.str().c_str(), 0);
-      }
-
-    if (strcmp (argv[1], "set") == 0)
-      {
-	tcl_const char * solname = argv[2];
-	tcl_const char * surfname = argv[3];
-	Solid * sol = (Solid*)geometry->GetSolid (solname);
-	Surface * surf = (Surface*)geometry->GetSurface (surfname);
-	geometry->SetTopLevelObject (sol, surf);
-      }
-
-    if (strcmp (argv[1], "remove") == 0)
-      {
-	tcl_const char * solname = argv[2];
-	tcl_const char * surfname = argv[3];
-	Solid * sol = (Solid*)geometry->GetSolid (solname);
-	Surface * surf = (Surface*)geometry->GetSurface (surfname);
-	geometry->RemoveTopLevelObject (sol, surf);
-      }
-
-    if (strcmp (argv[1], "setprop") == 0)
-      {
-	tcl_const char * solname = argv[2];
-	tcl_const char * surfname = argv[3];
-	tcl_const char * propvar = argv[4];
-	Solid * sol = (Solid*)geometry->GetSolid (solname);
-	Surface * surf = (Surface*)geometry->GetSurface (surfname);
-	TopLevelObject * tlo = geometry->GetTopLevelObject (sol, surf);
-
-	if (!tlo) return TCL_OK;
-
-	char varname[50];
-	sprintf (varname, "%s(red)", propvar);
-	double red = atof (Tcl_GetVar (interp, varname, 0));
-	sprintf (varname, "%s(blue)", propvar);
-	double blue = atof (Tcl_GetVar (interp, varname, 0));
-	sprintf (varname, "%s(green)", propvar);
-	double green = atof (Tcl_GetVar (interp, varname, 0));
-	tlo -> SetRGB (red, green, blue);
-
-	sprintf (varname, "%s(visible)", propvar);
-	tlo -> SetVisible (bool(atoi (Tcl_GetVar (interp, varname, 0))));
-	sprintf (varname, "%s(transp)", propvar);
-	tlo -> SetTransparent (bool(atoi (Tcl_GetVar (interp, varname, 0))));
-      }
-
-    if (strcmp (argv[1], "getprop") == 0)
-      {
-	tcl_const char * solname = argv[2];
-	tcl_const char * surfname = argv[3];
-	tcl_const char * propvar = argv[4];
-
-	Solid * sol = (Solid*)geometry->GetSolid (solname);
-	Surface * surf = (Surface*)geometry->GetSurface (surfname);
-	TopLevelObject * tlo = geometry->GetTopLevelObject (sol, surf);
-
-	if (!tlo) return TCL_OK;
-
-	char varname[50], varval[10];
-
-	sprintf (varname, "%s(red)", propvar);
-	sprintf (varval, "%lf", tlo->GetRed());
-	Tcl_SetVar (interp, varname, varval, 0);
-
-	sprintf (varname, "%s(green)", propvar);
-	sprintf (varval, "%lf", tlo->GetGreen());
-	Tcl_SetVar (interp, varname, varval, 0);
-
-	sprintf (varname, "%s(blue)", propvar);
-	sprintf (varval, "%lf", tlo->GetBlue());
-	Tcl_SetVar (interp, varname, varval, 0);
-
-	sprintf (varname, "%s(visible)", propvar);
-	sprintf (varval, "%d", tlo->GetVisible());
-	Tcl_SetVar (interp, varname, varval, 0);
-
-	sprintf (varname, "%s(transp)", propvar);
-	sprintf (varval, "%d", tlo->GetTransparent());
-	Tcl_SetVar (interp, varname, varval, 0);
-      }
-
-
-    return TCL_OK;
-  }
 
 
 
@@ -1451,326 +877,6 @@ namespace netgen
 
 
 
-  // Philippose - 30/01/2009
-  // TCL interface function for the Local Face Mesh size
-  // definition functionality
-  int Ng_SurfaceMeshSize (ClientData clientData,
-		                    Tcl_Interp * interp,
-		                    int argc, tcl_const char *argv[])
-  {
-#ifdef OCCGEOMETRY
-
-    static char buf[100];
-
-    if (argc < 2)
-    {
-	   Tcl_SetResult (interp, (char *)"Ng_SurfaceMeshSize needs arguments", TCL_STATIC);
-	   return TCL_ERROR;
-    }
-
-    if (!occgeometry)
-    {
-      Tcl_SetResult (interp, (char *)"Ng_SurfaceMeshSize currently supports only OCC (STEP/IGES) Files", TCL_STATIC);
-	   return TCL_ERROR;
-    }
-
-    // Update the face mesh sizes to reflect the global maximum mesh size
-    for(int i = 1; i <= occgeometry->NrFaces(); i++)
-    {
-           if(!occgeometry->GetFaceMaxhModified(i))
-           {
-              occgeometry->SetFaceMaxH(i, mparam.maxh);
-           }   
-    }
-
-    if (strcmp (argv[1], "setsurfms") == 0)
-    {
-	   int facenr = atoi (argv[2]);
-	   double surfms = atof (argv[3]);
-	   if (occgeometry && facenr >= 1 && facenr <= occgeometry->NrFaces())
-	     occgeometry->SetFaceMaxH(facenr, surfms);
-
-    }
-
-    if (strcmp (argv[1], "setall") == 0)
-    {
-	   double surfms = atof (argv[2]);
-	   if (occgeometry)
-	   {
-	     int nrFaces = occgeometry->NrFaces();
-	     for (int i = 1; i <= nrFaces; i++)
-	      occgeometry->SetFaceMaxH(i, surfms);
-	   }
-    }
-
-    if (strcmp (argv[1], "getsurfms") == 0)
-    {
-	   int facenr = atoi (argv[2]);
-	   if (occgeometry && facenr >= 1 && facenr <= occgeometry->NrFaces())
-	   {
-	     sprintf (buf, "%5.2f", occgeometry->GetFaceMaxH(facenr));
-	   }
-	   else
-	   {
-	     sprintf (buf, "%5.2f", mparam.maxh);
-	   }
-	   Tcl_SetResult (interp, buf, TCL_STATIC);
-    }
-
-    if (strcmp (argv[1], "getactive") == 0)
-    {
-	   sprintf (buf, "%d", occgeometry->SelectedFace());
-	   Tcl_SetResult (interp, buf, TCL_STATIC);
-    }
-
-    if (strcmp (argv[1], "setactive") == 0)
-    {
-	   int facenr = atoi (argv[2]);
-	   if (occgeometry && facenr >= 1 && facenr <= occgeometry->NrFaces())
-	   {
-	     occgeometry->SetSelectedFace (facenr);
-
-        occgeometry->LowLightAll();
-        occgeometry->fvispar[facenr-1].Highlight();
-        occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-	   }
-    }
-
-    if (strcmp (argv[1], "getnfd") == 0)
-    {
-	   if (occgeometry)
-	     sprintf (buf, "%d", occgeometry->NrFaces());
-	   else
-	     sprintf (buf, "0");
-	   Tcl_SetResult (interp, buf, TCL_STATIC);
-    }
-    return TCL_OK;
-#else // No OCCGEOMETRY 
-
-    Tcl_SetResult (interp, (char *)"Ng_SurfaceMeshSize currently supports only OCC (STEP/IGES) Files", TCL_STATIC);
-    return TCL_ERROR;
-    
-#endif // OCCGEOMETRY
-  }
-
-
-
-  // Philippose - 25/07/2010
-  // TCL interface function for extracting and eventually 
-  // setting or editing the current colours present in the mesh
-  int Ng_CurrentFaceColours (ClientData clientData,
-                             Tcl_Interp * interp,
-                             int argc, tcl_const char *argv[])
-  {
-     if(argc < 1)
-     {
-        Tcl_SetResult (interp, (char *)"Ng_GetCurrentFaceColours needs arguments", TCL_STATIC);
-        return TCL_ERROR;
-     }
-
-     if(!mesh.Ptr())
-     {
-        Tcl_SetResult (interp, (char *)"Ng_GetCurrentFaceColours: Valid netgen mesh required...please mesh the Geometry first", TCL_STATIC);
-	     return TCL_ERROR;
-     }
-
-     if(strcmp(argv[1], "getcolours") == 0)
-     {
-        stringstream outVar;
-        Array<Vec3d> face_colours;
-        GetFaceColours(*mesh, face_colours);
-
-        for(int i = 0; i < face_colours.Size();i++)
-        {
-           outVar << "{ " << face_colours[i].X(1)
-                  << " "  << face_colours[i].X(2)
-                  << " "  << face_colours[i].X(3)
-                  << " } ";
-        }
-
-        tcl_const char * valuevar = argv[2];
-        Tcl_SetVar  (interp, valuevar, (char*)outVar.str().c_str(), 0);
-     }
-
-     if(strcmp(argv[1], "showalso") == 0)
-     {
-        Array<Vec3d> face_colours;
-        GetFaceColours(*mesh,face_colours);
-
-        int colourind = atoi (argv[2]);
-
-        for(int i = 1; i <= mesh->GetNFD(); i++)
-        {
-           Array<SurfaceElementIndex> surfElems;
-           mesh->GetSurfaceElementsOfFace(i,surfElems);
-
-           if(ColourMatch(face_colours[colourind],mesh->GetFaceDescriptor(i).SurfColour()))
-           {
-              for(int j = 0; j < surfElems.Size(); j++)
-              {
-                 mesh->SurfaceElement(surfElems[j]).Visible(1);
-              }
-           }
-        }
-
-        mesh->SetNextTimeStamp();
-     }
-
-     if(strcmp(argv[1], "hidealso") == 0)
-     {
-        Array<Vec3d> face_colours;
-        GetFaceColours(*mesh,face_colours);
-
-        int colourind = atoi (argv[2]);
-
-        for(int i = 1; i <= mesh->GetNFD(); i++)
-        {
-           Array<SurfaceElementIndex> surfElems;
-           mesh->GetSurfaceElementsOfFace(i,surfElems);
-
-           if(ColourMatch(face_colours[colourind],mesh->GetFaceDescriptor(i).SurfColour()))
-           {
-              for(int j = 0; j < surfElems.Size(); j++)
-              {
-                 mesh->SurfaceElement(surfElems[j]).Visible(0);
-              }
-           }
-        }
-
-        mesh->SetNextTimeStamp();
-     }
-
-     if(strcmp(argv[1], "showonly") == 0)
-     {
-        Array<Vec3d> face_colours;
-        GetFaceColours(*mesh,face_colours);
-
-        int colourind = atoi (argv[2]);
-
-        for(int i = 1; i <= mesh->GetNFD(); i++)
-        {
-           Array<SurfaceElementIndex> surfElems;
-           mesh->GetSurfaceElementsOfFace(i,surfElems);
-
-           if(ColourMatch(face_colours[colourind],mesh->GetFaceDescriptor(i).SurfColour()))
-           {
-              for(int j = 0; j < surfElems.Size(); j++)
-              {
-                 mesh->SurfaceElement(surfElems[j]).Visible(1);
-              }
-           }
-           else
-           {
-              for(int j = 0; j < surfElems.Size(); j++)
-              {
-                 mesh->SurfaceElement(surfElems[j]).Visible(0);
-              }
-           }
-        }
-
-        mesh->SetNextTimeStamp();
-     }
-
-     if(strcmp(argv[1], "hideonly") == 0)
-     {
-        Array<Vec3d> face_colours;
-        GetFaceColours(*mesh,face_colours);
-
-        int colourind = atoi (argv[2]);
-
-        for(int i = 1; i <= mesh->GetNFD(); i++)
-        {
-           Array<SurfaceElementIndex> surfElems;
-           mesh->GetSurfaceElementsOfFace(i,surfElems);
-
-           if(ColourMatch(face_colours[colourind],mesh->GetFaceDescriptor(i).SurfColour()))
-           {
-              for(int j = 0; j < surfElems.Size(); j++)
-              {
-                 mesh->SurfaceElement(surfElems[j]).Visible(0);
-              }
-           }
-           else
-           {
-              for(int j = 0; j < surfElems.Size(); j++)
-              {
-                 mesh->SurfaceElement(surfElems[j]).Visible(1);
-              }
-           }
-        }
-
-        mesh->SetNextTimeStamp();
-     }
-
-     if(strcmp(argv[1], "showall") == 0)
-     {
-        for(int i = 1; i <= mesh->GetNSE(); i++)
-        {
-           mesh->SurfaceElement(i).Visible(1);
-        }
-
-        mesh->SetNextTimeStamp();
-     }
-
-     if(strcmp(argv[1], "hideall") == 0)
-     {
-        for(int i = 1; i <= mesh->GetNSE(); i++)
-        {
-           mesh->SurfaceElement(i).Visible(0);
-        }
-
-        mesh->SetNextTimeStamp();
-     }
-
-     return TCL_OK;
-  }
-
-
-
-
-  // Philippose - 10/03/2009
-  // TCL interface function for the Automatic Colour-based
-  // definition of boundary conditions for OCC Geometry
-  int Ng_AutoColourBcProps (ClientData clientData,
-		                      Tcl_Interp * interp,
-		                      int argc, tcl_const char *argv[])
-  {
-     if(argc < 1)
-     {
-        Tcl_SetResult (interp, (char *)"Ng_AutoColourBcProps needs arguments", TCL_STATIC);
-        return TCL_ERROR;
-     }
-
-     if(!mesh.Ptr())
-     {
-        Tcl_SetResult (interp, (char *)"Ng_AutoColourBcProps: Valid netgen mesh required...please mesh the Geometry first", TCL_STATIC);
-	     return TCL_ERROR;
-     }
-
-     if(strcmp(argv[1], "auto") == 0)
-     {
-        AutoColourBcProps(*mesh, 0);
-     }
-
-     if(strcmp(argv[1], "profile") == 0)
-     {
-        AutoColourBcProps(*mesh, argv[2]);
-     }
-
-     return TCL_OK;
-  }
-                          
-                          
-  
-  int Ng_SetNextTimeStamp  (ClientData clientData,
-			    Tcl_Interp * interp,
-			    int argqc, tcl_const char *argv[])
-  {
-    if (mesh.Ptr())
-      mesh -> SetNextTimeStamp();
-    return TCL_OK;
-  }
-
 
 
   int Ng_Refine  (ClientData clientData,
@@ -1796,8 +902,8 @@ namespace netgen
 	ref.Set2dOptimizer(&opt);
 	ref.Refine (*mesh);
       }
-#endif
     else
+#endif
       {
 	ng_geometry -> GetRefinement().Refine(*mesh);
       }
@@ -1876,7 +982,7 @@ namespace netgen
 
   void * ValidateDummy (void *)
   {
-    RefinementSTLGeometry ref (*stlgeometry);
+    Refinement & ref = const_cast<Refinement&> (ng_geometry -> GetRefinement());
     ref.ValidateSecondOrder (*mesh);
 
     multithread.running = 0;
@@ -1927,7 +1033,7 @@ namespace netgen
 
     if (argc >= 2) opt.minref = atoi (argv[1]);
 
-    ZRefinement (*mesh, geometry.Ptr(), opt);
+    ZRefinement (*mesh, ng_geometry, opt);
 
     return TCL_OK;
   }
@@ -1997,38 +1103,8 @@ namespace netgen
     return TCL_OK;
   }
 
-  int Ng_SingularPointMS (ClientData clientData,
-			  Tcl_Interp * interp,
-			  int argc, tcl_const char *argv[])
-  {
-    double globh = mparam.maxh;
-    for (int i = 1; i <= geometry->singpoints.Size(); i++)
-      geometry->singpoints.Get(i)->SetMeshSize (*mesh, globh);
-    return TCL_OK;
-  }
 
 
-
-  int Ng_SingularEdgeMS (ClientData clientData,
-			 Tcl_Interp * interp,
-			 int argc, tcl_const char *argv[])
-  {
-    if (!mesh.Ptr())
-      {
-	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
-	return TCL_ERROR;
-      }
-    if (multithread.running)
-      {
-	Tcl_SetResult (interp, err_jobrunning, TCL_STATIC);
-	return TCL_ERROR;
-      }
-
-    double globh = mparam.maxh;
-    for (int i = 1; i <= geometry->singedges.Size(); i++)
-      geometry->singedges.Get(i)->SetMeshSize (*mesh, globh);
-    return TCL_OK;
-  }
 
 
   // Philippose Rajan - 13 June 2009
@@ -2173,87 +1249,6 @@ namespace netgen
 
 
 
-  int Ng_SetSTLParameters  (ClientData clientData,
-			    Tcl_Interp * interp,
-			    int argc, tcl_const char *argv[])
-  {
-
-    stlparam.yangle =
-      atof (Tcl_GetVar (interp, "::stloptions.yangle", 0));
-    stlparam.contyangle =
-      atof (Tcl_GetVar (interp, "::stloptions.contyangle", 0));
-    stlparam.edgecornerangle =
-      atof (Tcl_GetVar (interp, "::stloptions.edgecornerangle", 0));
-    stlparam.chartangle =
-      atof (Tcl_GetVar (interp, "::stloptions.chartangle", 0));
-    stlparam.outerchartangle =
-      atof (Tcl_GetVar (interp, "::stloptions.outerchartangle", 0));
-
-    stlparam.usesearchtree =
-      atoi (Tcl_GetVar (interp, "::stloptions.usesearchtree", 0));
-
-
-    stlparam.atlasminh =
-      atof (Tcl_GetVar (interp, "::stloptions.atlasminh", 0));
-
-    stlparam.resthsurfcurvfac =
-      atof (Tcl_GetVar (interp, "::stloptions.resthsurfcurvfac", 0));
-    stlparam.resthsurfcurvenable =
-      atoi (Tcl_GetVar (interp, "::stloptions.resthsurfcurvenable", 0));
-
-    stlparam.resthatlasfac =
-      atof (Tcl_GetVar (interp, "::stloptions.resthatlasfac", 0));
-    stlparam.resthatlasenable =
-      atoi (Tcl_GetVar (interp, "::stloptions.resthatlasenable", 0));
-
-    stlparam.resthchartdistfac =
-      atof (Tcl_GetVar (interp, "::stloptions.resthchartdistfac", 0));
-    stlparam.resthchartdistenable =
-      atoi (Tcl_GetVar (interp, "::stloptions.resthchartdistenable", 0));
-
-    stlparam.resthlinelengthfac =
-      atof (Tcl_GetVar (interp, "::stloptions.resthlinelengthfac", 0));
-    stlparam.resthlinelengthenable =
-      atoi (Tcl_GetVar (interp, "::stloptions.resthlinelengthenable", 0));
-
-    stlparam.resthcloseedgefac =
-      atof (Tcl_GetVar (interp, "::stloptions.resthcloseedgefac", 0));
-    stlparam.resthcloseedgeenable =
-      atoi (Tcl_GetVar (interp, "::stloptions.resthcloseedgeenable", 0));
-
-    stlparam.resthedgeanglefac =
-      atof (Tcl_GetVar (interp, "::stloptions.resthedgeanglefac", 0));
-    stlparam.resthedgeangleenable =
-      atoi (Tcl_GetVar (interp, "::stloptions.resthedgeangleenable", 0));
-
-    stlparam.resthsurfmeshcurvfac =
-      atof (Tcl_GetVar (interp, "::stloptions.resthsurfmeshcurvfac", 0));
-    stlparam.resthsurfmeshcurvenable =
-      atoi (Tcl_GetVar (interp, "::stloptions.resthsurfmeshcurvenable", 0));
-
-    stlparam.recalc_h_opt =
-      atoi (Tcl_GetVar (interp, "::stloptions.recalchopt", 0));
-    //  stlparam.Print (cout);
-    return TCL_OK;
-  }
-
-
-
-#ifdef OCCGEOMETRY
-  int Ng_SetOCCParameters  (ClientData clientData,
-			    Tcl_Interp * interp,
-			    int argc, tcl_const char *argv[])
-  {
-    occparam.resthcloseedgefac =
-      atof (Tcl_GetVar (interp, "::stloptions.resthcloseedgefac", 0));
-
-    occparam.resthcloseedgeenable =
-      atoi (Tcl_GetVar (interp, "::stloptions.resthcloseedgeenable", 0));
-
-    return TCL_OK;
-  }
-#endif // OCCGEOMETRY
-
 
 
   int Ng_GetCommandLineParameter  (ClientData clientData,
@@ -2288,6 +1283,7 @@ namespace netgen
 
   static int perfstepsstart;
   static int perfstepsend;
+
   static char* optstring = NULL;
   static char* optstringcsg = NULL;
 
@@ -2316,15 +1312,17 @@ namespace netgen
 	  }
 	else
 #endif
-	  if (geometry2d)
+	  /*
+	    if (geometry2d)
 	    {
 	      extern void MeshFromSpline2D (SplineGeometry2d & geometry2d,
-					    Mesh *& mesh, MeshingParameters & mp);
+	      Mesh *& mesh, MeshingParameters & mp);
 	      MeshFromSpline2D (*geometry2d, mesh.Ptr(), mparam);
-	    }
-	  else
+	      }
+	      else
+	  */
 	    {
-	      int res = ng_geometry -> GenerateMesh (mesh.Ptr(), perfstepsstart, perfstepsend, optstringcsg);
+	      int res = ng_geometry -> GenerateMesh (mesh.Ptr(), mparam, perfstepsstart, perfstepsend);
 	      if (res != MESHING3_OK) 
 		{
 		  multithread.task = savetask;
@@ -2333,11 +1331,11 @@ namespace netgen
 		}
 	    }
 
-	if (mparam.autozrefine && ( (NetgenGeometry*)geometry.Ptr() == ng_geometry))
+	if (mparam.autozrefine)
 	  {
 	    ZRefinementOptions opt;
 	    opt.minref = 5;
-	    ZRefinement (*mesh, geometry.Ptr(), opt);
+	    ZRefinement (*mesh, ng_geometry, opt);
 	    mesh -> SetNextMajorTimeStamp();
 	  }
 	
@@ -2367,23 +1365,19 @@ namespace netgen
     multithread.task = savetask;
     multithread.running = 0;
 
-#ifdef OCCGEOMETRY
-    if (occgeometry)
+#ifdef OCCGEOMETRYorig
+    // currently not active
+    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry);
+    if (occgeometry && occgeometry->ErrorInSurfaceMeshing())
       {
-	if (occgeometry->ErrorInSurfaceMeshing())
-	  {
-	    char script[] = "rebuildoccdialog";
-	    // int errcode = 
-	      Tcl_GlobalEval (tcl_interp, script);
-	  }
+	char script[] = "rebuildoccdialog";
+	Tcl_GlobalEval (tcl_interp, script);
       }
 #endif
-
-
     return NULL;
   }
 
-
+  
   int MeshingVal(tcl_const char* str)
   {
     if (strcmp(str, "ag") == 0) {return MESHCONST_ANALYSE;}
@@ -2396,6 +1390,8 @@ namespace netgen
     cout << "TCL TK ERROR, wrong meshing value, return='" << str << "'" << endl;
     return 0;
   }
+
+
 
   int Ng_GenerateMesh  (ClientData clientData,
 			Tcl_Interp * interp,
@@ -2410,11 +1406,9 @@ namespace netgen
     multithread.running = 1;
     multithread.terminate = 0;
 
-    Ng_SetSTLParameters (clientData, interp, 0, argv);
+    for (int i = 0; i < geometryregister.Size(); i++)
+      geometryregister[i] -> SetParameters (interp);
 
-#ifdef OCCGEOMETRY
-    Ng_SetOCCParameters (clientData, interp, 0, argv);
-#endif // OCCGEOMETRY
 
     Ng_SetMeshingParameters (clientData, interp, 0, argv);
 
@@ -2698,18 +1692,14 @@ namespace netgen
 
   void * BisectDummy (void *)
   {
-    Refinement * ref;
+    const Refinement & ref = ng_geometry->GetRefinement();
     MeshOptimize2d * opt = NULL;
-    if (stlgeometry)
-      ref = new RefinementSTLGeometry(*stlgeometry);
-#ifdef OCCGEOMETRY
-    else if (occgeometry)
-      ref = new OCCRefinementSurfaces (*occgeometry);
-#endif
+
+    /*
 #ifdef ACIS
-    else if (acisgeometry)
+    if (acisgeometry)
       {
-	ref = new ACISRefinementSurfaces(*acisgeometry);
+	// ref = new ACISRefinementSurfaces(*acisgeometry);
 	opt = new ACISMeshOptimize2dSurfaces(*acisgeometry);
 	ref->Set2dOptimizer(opt);
       }
@@ -2720,17 +1710,18 @@ namespace netgen
 	opt = new MeshOptimize2dSurfaces(*geometry);
 	ref->Set2dOptimizer(opt);
       }
+    */
 
     if(!mesh->LocalHFunctionGenerated())
       mesh->CalcLocalH();
 
     mesh->LocalHFunction().SetGrading (mparam.grading);
-    ref -> Bisect (*mesh, biopt);
+    ref . Bisect (*mesh, biopt);
     mesh -> UpdateTopology();
-    mesh -> GetCurvedElements().BuildCurvedElements (ref, mparam.elementorder);
+    mesh -> GetCurvedElements().BuildCurvedElements (&ref, mparam.elementorder);
 
     multithread.running = 0;
-    delete ref;
+
     delete opt;
     return NULL;
   }
@@ -2830,415 +1821,12 @@ namespace netgen
 
 
 
-
-
-  int Ng_STLDoctor (ClientData clientData,
-		    Tcl_Interp * interp,
-		    int argc, tcl_const char *argv[])
-  {
-    //cout << "STL doctor" << endl;
-
-
-    stldoctor.drawmeshededges =
-      atoi (Tcl_GetVar (interp, "::stldoctor.drawmeshededges", 0));
-
-    stldoctor.geom_tol_fact =
-      atof (Tcl_GetVar (interp, "::stldoctor.geom_tol_fact", 0));
-
-
-    stldoctor.useexternaledges =
-      atoi (Tcl_GetVar (interp, "::stldoctor.useexternaledges", 0));
-
-    stldoctor.showfaces =
-      atoi (Tcl_GetVar (interp, "::stldoctor.showfaces", 0));
-
-    stldoctor.conecheck =
-      atoi (Tcl_GetVar (interp, "::stldoctor.conecheck", 0));
-
-    stldoctor.spiralcheck =
-      atoi (Tcl_GetVar (interp, "::stldoctor.spiralcheck", 0));
-
-    stldoctor.selectwithmouse =
-      atoi (Tcl_GetVar (interp, "::stldoctor.selectwithmouse", 0));
-
-    stldoctor.showedgecornerpoints =
-      atoi (Tcl_GetVar (interp, "::stldoctor.showedgecornerpoints", 0));
-
-    stldoctor.showmarkedtrigs =
-      atoi (Tcl_GetVar (interp, "::stldoctor.showmarkedtrigs", 0));
-
-    stldoctor.showtouchedtrigchart =
-      atoi (Tcl_GetVar (interp, "::stldoctor.showtouchedtrigchart", 0));
-
-    //cout << "smt=" << stldoctor.showmarkedtrigs << endl;
-
-    stldoctor.dirtytrigfact =
-      atof (Tcl_GetVar (interp, "::stldoctor.dirtytrigfact", 0));
-
-    stldoctor.smoothnormalsweight =
-      atof (Tcl_GetVar (interp, "::stldoctor.smoothnormalsweight", 0));
-
-    stldoctor.smoothangle =
-      atof (Tcl_GetVar (interp, "::stldoctor.smoothangle", 0));
-
-    stldoctor.selectmode =
-      atoi (Tcl_GetVar (interp, "::stldoctor.selectmode", 0));
-
-    stldoctor.edgeselectmode =
-      atoi (Tcl_GetVar (interp, "::stldoctor.edgeselectmode", 0));
-
-    stldoctor.longlinefact =
-      atoi (Tcl_GetVar (interp, "::stldoctor.longlinefact", 0));
-
-    stldoctor.showexcluded =
-      atoi (Tcl_GetVar (interp, "::stldoctor.showexcluded", 0));
-
-
-
-    if (!stldoctor.selectwithmouse)
-      {
-	stldoctor.selecttrig =
-	  atoi (Tcl_GetVar (interp, "::stldoctor.selecttrig", 0));
-
-	stldoctor.nodeofseltrig =
-	  atoi (Tcl_GetVar (interp, "::stldoctor.nodeofseltrig", 0));
-      }
-
-    stldoctor.showvicinity =
-      atoi (Tcl_GetVar (interp, "::stldoctor.showvicinity", 0));
-
-    stldoctor.vicinity =
-      atoi (Tcl_GetVar (interp, "::stldoctor.vicinity", 0));
-
-
-    if (argc >= 2)
-      {
-	if (!stlgeometry)
-	  {
-	    Tcl_SetResult (interp, err_needsstlgeometry, TCL_STATIC);
-	    return TCL_ERROR;
-	  }
-
-	if (strcmp (argv[1], "destroy0trigs") == 0)
-	  {
-	    stlgeometry->DestroyDirtyTrigs();
-	  }
-	else if (strcmp (argv[1], "movepointtomiddle") == 0)
-	  {
-	    stlgeometry->MoveSelectedPointToMiddle();
-	  }
-	else if (strcmp (argv[1], "calcnormals") == 0)
-	  {
-	    stlgeometry->CalcNormalsFromGeometry();
-	  }
-	else if (strcmp (argv[1], "showchartnum") == 0)
-	  {
-	    stlgeometry->ShowSelectedTrigChartnum();
-	  }
-	else if (strcmp (argv[1], "showcoords") == 0)
-	  {
-	    stlgeometry->ShowSelectedTrigCoords();
-	  }
-	else if (strcmp (argv[1], "loadmarkedtrigs") == 0)
-	  {
-	    stlgeometry->LoadMarkedTrigs();
-	  }
-	else if (strcmp (argv[1], "savemarkedtrigs") == 0)
-	  {
-	    stlgeometry->SaveMarkedTrigs();
-	  }
-	else if (strcmp (argv[1], "neighbourangles") == 0)
-	  {
-	    stlgeometry->NeighbourAnglesOfSelectedTrig();
-	  }
-	else if (strcmp (argv[1], "vicinity") == 0)
-	  {
-	    stlgeometry->CalcVicinity(stldoctor.selecttrig);
-	  }
-	else if (strcmp (argv[1], "markdirtytrigs") == 0)
-	  {
-	    stlgeometry->MarkDirtyTrigs();
-	  }
-	else if (strcmp (argv[1], "smoothdirtytrigs") == 0)
-	  {
-	    stlgeometry->SmoothDirtyTrigs();
-	  }
-	else if (strcmp (argv[1], "smoothrevertedtrigs") == 0)
-	  {
-	    stlgeometry->GeomSmoothRevertedTrigs();
-	  }
-	else if (strcmp (argv[1], "invertselectedtrig") == 0)
-	  {
-	    stlgeometry->InvertTrig(stlgeometry->GetSelectTrig());
-	  }
-	else if (strcmp (argv[1], "deleteselectedtrig") == 0)
-	  {
-	    stlgeometry->DeleteTrig(stlgeometry->GetSelectTrig());
-	  }
-	else if (strcmp (argv[1], "smoothgeometry") == 0)
-	  {
-	    stlgeometry->SmoothGeometry();
-	  }
-	else if (strcmp (argv[1], "orientafterselectedtrig") == 0)
-	  {
-	    stlgeometry->OrientAfterTrig(stlgeometry->GetSelectTrig());
-	  }
-	else if (strcmp (argv[1], "marktoperrortrigs") == 0)
-	  {
-	    stlgeometry->MarkTopErrorTrigs();
-	  }
-	else if (strcmp (argv[1], "exportedges") == 0)
-	  {
-	    stlgeometry->ExportEdges();
-	  }
-	else if (strcmp (argv[1], "importedges") == 0)
-	  {
-	    stlgeometry->ImportEdges();
-	  }
-	else if (strcmp (argv[1], "importexternaledges") == 0)
-	  {
-	    stlgeometry->ImportExternalEdges(argv[2]);
-	  }
-	else if (strcmp (argv[1], "loadedgedata") == 0)
-	  {
-	    if (argc >= 3)
-	      {
-		stlgeometry->LoadEdgeData(argv[2]);
-	      }
-	  }
-	else if (strcmp (argv[1], "saveedgedata") == 0)
-	  {
-	    if (argc >= 3)
-	      {
-		stlgeometry->SaveEdgeData(argv[2]);
-	      }
-	  }
-
-	else if (strcmp (argv[1], "buildexternaledges") == 0)
-	  {
-	    stlgeometry->BuildExternalEdgesFromEdges();
-	  }
-	else if (strcmp (argv[1], "smoothnormals") == 0)
-	  {
-	    stlgeometry->SmoothNormals();
-	  }
-	else if (strcmp (argv[1], "marknonsmoothnormals") == 0)
-	  {
-	    stlgeometry->MarkNonSmoothNormals();
-	  }
-	else if (strcmp (argv[1], "addexternaledge") == 0)
-	  {
-	    stlgeometry->AddExternalEdgeAtSelected();
-	  }
-	else if (strcmp (argv[1], "addgeomline") == 0)
-	  {
-	    stlgeometry->AddExternalEdgesFromGeomLine();
-	  }
-	else if (strcmp (argv[1], "addlonglines") == 0)
-	  {
-	    stlgeometry->AddLongLinesToExternalEdges();
-	  }
-	else if (strcmp (argv[1], "addclosedlines") == 0)
-	  {
-	    stlgeometry->AddClosedLinesToExternalEdges();
-	  }
-	else if (strcmp (argv[1], "addnotsinglelines") == 0)
-	  {
-	    stlgeometry->AddAllNotSingleLinesToExternalEdges();
-	  }
-	else if (strcmp (argv[1], "deletedirtyexternaledges") == 0)
-	  {
-	    stlgeometry->DeleteDirtyExternalEdges();
-	  }
-	else if (strcmp (argv[1], "deleteexternaledge") == 0)
-	  {
-	    stlgeometry->DeleteExternalEdgeAtSelected();
-	  }
-	else if (strcmp (argv[1], "deletevicexternaledge") == 0)
-	  {
-	    stlgeometry->DeleteExternalEdgeInVicinity();
-	  }
-
-	else if (strcmp (argv[1], "addlonglines") == 0)
-	  {
-	    stlgeometry->STLDoctorLongLinesToCandidates();
-	  }
-	else if (strcmp (argv[1], "deletedirtyedges") == 0)
-	  {
-	    stlgeometry->STLDoctorDirtyEdgesToCandidates();
-	  }
-	else if (strcmp (argv[1], "undoedgechange") == 0)
-	  {
-	    stlgeometry->UndoEdgeChange();
-	  }
-	else if (strcmp (argv[1], "buildedges") == 0)
-	  {
-	    stlgeometry->STLDoctorBuildEdges();
-	  }
-	else if (strcmp (argv[1], "confirmedge") == 0)
-	  {
-	    stlgeometry->STLDoctorConfirmEdge();
-	  }
-	else if (strcmp (argv[1], "candidateedge") == 0)
-	  {
-	    stlgeometry->STLDoctorCandidateEdge();
-	  }
-	else if (strcmp (argv[1], "excludeedge") == 0)
-	  {
-	    stlgeometry->STLDoctorExcludeEdge();
-	  }
-	else if (strcmp (argv[1], "undefinededge") == 0)
-	  {
-	    stlgeometry->STLDoctorUndefinedEdge();
-	  }
-	else if (strcmp (argv[1], "setallundefinededges") == 0)
-	  {
-	    stlgeometry->STLDoctorSetAllUndefinedEdges();
-	  }
-	else if (strcmp (argv[1], "erasecandidateedges") == 0)
-	  {
-	    stlgeometry->STLDoctorEraseCandidateEdges();
-	  }
-	else if (strcmp (argv[1], "confirmcandidateedges") == 0)
-	  {
-	    stlgeometry->STLDoctorConfirmCandidateEdges();
-	  }
-	else if (strcmp (argv[1], "confirmedtocandidateedges") == 0)
-	  {
-	    stlgeometry->STLDoctorConfirmedToCandidateEdges();
-	  }
-      }
-
-    return TCL_OK;
-  }
-
-
-
-
-
   extern int Ng_MeshDoctor (ClientData clientData,
 			    Tcl_Interp * interp,
 			    int argc, tcl_const char *argv[]);
 
 
-  int Ng_STLInfo  (ClientData clientData,
-		   Tcl_Interp * interp,
-		   int argc, tcl_const char *argv[])
-  {
-    double data[10];
-    static char buf[20];
 
-    if (!stlgeometry)
-      {
-	Tcl_SetResult (interp, err_needsstlgeometry, TCL_STATIC);
-	return TCL_ERROR;
-      }
-
-
-
-    if (stlgeometry)
-      {
-	stlgeometry->STLInfo(data);
-	//      cout << "NT=" << data[0] << endl;
-
-	if (argc == 2)
-	  {
-	    if (strcmp (argv[1], "status") == 0)
-	      {
-		switch (stlgeometry->GetStatus())
-		  {
-		  case STLGeometry::STL_GOOD:
-		    strcpy (buf, "GOOD"); break;
-		  case STLGeometry::STL_WARNING:
-		    strcpy (buf, "WARNING"); break;
-		  case STLGeometry::STL_ERROR:
-		    strcpy (buf, "ERROR"); break;
-		  }
-		Tcl_SetResult (interp, buf, TCL_STATIC);
-		return TCL_OK;
-	      }
-	    if (strcmp (argv[1], "statustext") == 0)
-	      {
-		Tcl_SetResult (interp, (char*)stlgeometry->GetStatusText().c_str(), TCL_STATIC);
-		return TCL_OK;
-	      }
-	    if (strcmp (argv[1], "topology_ok") == 0)
-	      {
-		sprintf (buf, "%d", stlgeometry->Topology_Ok());
-		Tcl_SetResult (interp, buf, TCL_STATIC);
-	      }
-	    if (strcmp (argv[1], "orientation_ok") == 0)
-	      {
-		sprintf (buf, "%d", stlgeometry->Orientation_Ok());
-		Tcl_SetResult (interp, buf, TCL_STATIC);
-	      }
-	  }
-      }
-    else
-      {
-	data[0] = 0;
-	data[1] = 0;
-	data[2] = 0;
-	data[3] = 0;
-	data[4] = 0;
-	data[5] = 0;
-	data[6] = 0;
-	data[7] = 0;
-      }
-
-
-
-
-    sprintf (buf, "%i", (int)data[0]);
-    Tcl_SetVar (interp, argv[1], buf, 0);
-
-    sprintf (buf, "%5.3g", data[1]);
-    Tcl_SetVar (interp, argv[2], buf, 0);
-    sprintf (buf, "%5.3g", data[2]);
-    Tcl_SetVar (interp, argv[3], buf, 0);
-    sprintf (buf, "%5.3g", data[3]);
-    Tcl_SetVar (interp, argv[4], buf, 0);
-
-    sprintf (buf, "%5.3g", data[4]);
-    Tcl_SetVar (interp, argv[5], buf, 0);
-    sprintf (buf, "%5.3g", data[5]);
-    Tcl_SetVar (interp, argv[6], buf, 0);
-    sprintf (buf, "%5.3g", data[6]);
-    Tcl_SetVar (interp, argv[7], buf, 0);
-
-    sprintf (buf, "%i", (int)data[7]);
-    Tcl_SetVar (interp, argv[8], buf, 0);
-
-    return TCL_OK;
-  }
-
-
-  int Ng_STLCalcLocalH  (ClientData clientData,
-			 Tcl_Interp * interp,
-			 int argc, tcl_const char *argv[])
-  {
-
-    Ng_SetSTLParameters (clientData, interp, argc, argv);
-
-#ifdef OCCGEOMETRY
-    Ng_SetOCCParameters (clientData, interp, argc, argv);
-#endif // OCCGEOMETRY
-
-    Ng_SetMeshingParameters (clientData, interp, argc, argv);
-
-    if (mesh.Ptr() && stlgeometry)
-      {
-	mesh -> SetLocalH (stlgeometry->GetBoundingBox().PMin() - Vec3d(10, 10, 10),
-			   stlgeometry->GetBoundingBox().PMax() + Vec3d(10, 10, 10),
-			   mparam.grading);
-	stlgeometry -> RestrictLocalH(*mesh, mparam.maxh);
-
-	if (stlparam.resthsurfmeshcurvenable)
-	  mesh -> CalcLocalHFromSurfaceCurvature (stlparam.resthsurfmeshcurvfac);
-      }
-
-    return TCL_OK;
-  }
 
 
 
@@ -3269,24 +1857,22 @@ namespace netgen
       {
 	if (strcmp (vismode, "geometry") == 0)
 	  {
-	    if (stlgeometry != NULL)
-	      vs = &vsstlmeshing;
-	    else if (geometry2d)
-	      vs = &vsgeom2d;
+	    for (int i = 0; i < geometryregister.Size(); i++)
+	      {
+		VisualScene * hvs = geometryregister[i]->GetVisualScene (ng_geometry);
+		if (hvs)
+		  {
+		    vs = hvs;
+		    return;
+		  }
+	      }
 
-#ifdef OCCGEOMETRY
-	    else if (occgeometry)
-	      vs = &vsoccgeom;
-#endif // OCCGEOMETRY
 #ifdef ACIS
 	    else if (acisgeometry)
 	      vs = &vsacisgeom;
 #endif // ACIS
-	    else
-	      vs = &vsgeom;
-
-	    // vs = &vsstlgeom;
 	  }
+	
 	if (strcmp (vismode, "mesh") == 0)
 	  {
 	    if (!meshdoctor.active)
@@ -3294,7 +1880,8 @@ namespace netgen
 	    else
 	      vs = &vsmeshdoc;
 	  }
-          // if (strcmp (vismode, "surfmeshing") == 0) vs = &vssurfacemeshing;
+
+	// if (strcmp (vismode, "surfmeshing") == 0) vs = &vssurfacemeshing;
 	if (strcmp (vismode, "specpoints") == 0) vs = &vsspecpoints;
 	//      if (strcmp (vismode, "solution") == 0) vs = &vssolution;
       }
@@ -3387,6 +1974,11 @@ namespace netgen
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
+    
+    // OpenGL near and far clipping planes
+    double pnear = 0.1;
+    double pfar = 10;
+
     gluPerspective(20.0f, double(w) / h, pnear, pfar);
     glMatrixMode(GL_MODELVIEW);
 
@@ -3476,6 +2068,11 @@ namespace netgen
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
+
+    // OpenGL near and far clipping planes
+    double pnear = 0.1;
+    double pfar = 10;
+
     gluPerspective(20.0f, double(w) / h, pnear, pfar);
     glMatrixMode(GL_MODELVIEW);
 
@@ -3680,7 +2277,8 @@ namespace netgen
     static AVFrame *YUVpicture = NULL;
     static AVFrame *RGBpicture = NULL;
     static int bytes, PIXsize, stride;
-    static int y, nx, ny, ox, oy, viewp[4];
+    static int y, nx, ny;
+    // static int ox, oy, viewp[4];
     static int i_state = STATE_READY;
     static int initialized = 0;
     static int count_frames = 0;
@@ -3890,6 +2488,7 @@ namespace netgen
 
         return TCL_OK;
       }
+    return TCL_OK;
   }
 
 
@@ -4003,6 +2602,7 @@ namespace netgen
   }
 
 
+
   int Ng_Metis (ClientData clientData,
 		Tcl_Interp * interp,
 		int argc, tcl_const char *argv[])
@@ -4090,67 +2690,6 @@ namespace netgen
 
 
 
-
-  int Ng_SetOCCVisParameters  (ClientData clientData,
-			       Tcl_Interp * interp,
-			       int argc, tcl_const char *argv[])
-  {
-#ifdef OCCGEOMETRY
-    int showvolume;
-
-    showvolume = atoi (Tcl_GetVar (interp, "::occoptions.showvolumenr", 0));
-
-    if (showvolume != vispar.occshowvolumenr)
-      {
-	if (showvolume < 0 || showvolume > occgeometry->NrSolids())
-	  {
-	    char buf[20];
-	    sprintf (buf, "%5i", vispar.occshowvolumenr);
-            Tcl_SetVar (interp, "::occoptions.showvolumenr", buf, 0);
-	  }
-	else
-	  {
-	    vispar.occshowvolumenr = showvolume;
-	    if (occgeometry)
-	      occgeometry -> changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-	  }
-      }
-
-    int temp;
-
-    temp = atoi (Tcl_GetVar (interp, "::occoptions.visproblemfaces", 0));
-
-    if ((bool) temp != vispar.occvisproblemfaces)
-      {
-	vispar.occvisproblemfaces = temp;
-	if (occgeometry)
-	  occgeometry -> changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-      }
-
-    vispar.occshowsurfaces = atoi (Tcl_GetVar (interp, "::occoptions.showsurfaces", 0));
-    vispar.occshowedges = atoi (Tcl_GetVar (interp, "::occoptions.showedges", 0));
-    vispar.occzoomtohighlightedentity = atoi (Tcl_GetVar (interp, "::occoptions.zoomtohighlightedentity", 0));
-    vispar.occdeflection = pow(10.0,-1-atof (Tcl_GetVar (interp, "::occoptions.deflection", 0)));
-
-#endif
-
-
-
-
-
-#ifdef ACIS
-    vispar.ACISshowfaces = atoi (Tcl_GetVar (interp, "::occoptions.showsurfaces", 0));
-    vispar.ACISshowedges = atoi (Tcl_GetVar (interp, "::occoptions.showedges", 0));
-    vispar.ACISshowsolidnr = atoi (Tcl_GetVar (interp, "::occoptions.showsolidnr", 0));
-    vispar.ACISshowsolidnr2 = atoi (Tcl_GetVar (interp, "::occoptions.showsolidnr2", 0));
-
-#endif
-
-
-
-    return TCL_OK;
-  }
-
   void SelectFaceInOCCDialogTree (int facenr)
   {
     char script[50];
@@ -4159,435 +2698,6 @@ namespace netgen
   }
 
 
-
-  int Ng_GetOCCData (ClientData clientData,
-		     Tcl_Interp * interp,
-		     int argc, tcl_const char *argv[])
-  {
-#ifdef OCCGEOMETRY
-
-    static char buf[1000];
-    buf[0] = 0;
-    stringstream str;
-
-    if (argc >= 2)
-      {
-	if (strcmp (argv[1], "getentities") == 0)
-	  {
-	    if (occgeometry)
-	      {
-		occgeometry->GetTopologyTree(str);
-	      }
-	  }
-      }
-
-    Tcl_SetResult (interp, (char*)str.str().c_str(), TCL_VOLATILE);
-
-#endif
-    return TCL_OK;
-  }
-
-  int Ng_OCCCommand (ClientData clientData,
-		     Tcl_Interp * interp,
-		     int argc, tcl_const char *argv[])
-  {
-#ifdef OCCGEOMETRY
-
-    stringstream str;
-    if (argc >= 2)
-      {
-	if (strcmp (argv[1], "isoccgeometryloaded") == 0)
-	  {
-	    if (occgeometry)
-	      str << "1 " << flush;
-	    else str << "0 " << flush;
-
-	    Tcl_SetResult (interp, (char*)str.str().c_str(), TCL_VOLATILE);
-	  }
-	if (occgeometry)
-	  {
-	    if (strcmp (argv[1], "buildvisualizationmesh") == 0)
-	      {
-		occgeometry->BuildVisualizationMesh(vispar.occdeflection);
-		occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-	      }
-	    if (strcmp (argv[1], "mesherror") == 0)
-	      {
-		if (occgeometry->ErrorInSurfaceMeshing())
-		  str << 1;
-		else
-		  str << 0;
-	      }
-	    if (strcmp (argv[1], "sewfaces") == 0)
-	      {
-		cout << "Before operation:" << endl;
-		occgeometry->PrintNrShapes();
-		occgeometry->SewFaces();
-		occgeometry->BuildFMap();
-		cout << endl << "After operation:" << endl;
-		occgeometry->PrintNrShapes();
-		occgeometry->BuildVisualizationMesh(vispar.occdeflection);
-		occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-	      }
-	    if (strcmp (argv[1], "makesolid") == 0)
-	      {
-		cout << "Before operation:" << endl;
-		occgeometry->PrintNrShapes();
-		occgeometry->MakeSolid();
-		occgeometry->BuildFMap();
-		cout << endl << "After operation:" << endl;
-		occgeometry->PrintNrShapes();
-		occgeometry->BuildVisualizationMesh(vispar.occdeflection);
-		occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-	      }
-	    if (strcmp (argv[1], "upgradetopology") == 0)
-	      {
-		cout << "Before operation:" << endl;
-		occgeometry->PrintNrShapes();
-		occgeometry->SewFaces();
-		occgeometry->MakeSolid();
-		occgeometry->BuildFMap();
-		cout << endl << "After operation:" << endl;
-		occgeometry->PrintNrShapes();
-		occgeometry->BuildVisualizationMesh(vispar.occdeflection);
-		occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-	      }
-	    if (strcmp (argv[1], "shapehealing") == 0)
-	      {
-		occgeometry->tolerance =
-		  atof (Tcl_GetVar (interp, "::occoptions.tolerance", 0));
-		occgeometry->fixsmalledges =
-		  atoi (Tcl_GetVar (interp, "::occoptions.fixsmalledges", 0));
-		occgeometry->fixspotstripfaces =
-		  atoi (Tcl_GetVar (interp, "::occoptions.fixspotstripfaces", 0));
-		occgeometry->sewfaces =
-		  atoi (Tcl_GetVar (interp, "::occoptions.sewfaces", 0));
-		occgeometry->makesolids =
-		  atoi (Tcl_GetVar (interp, "::occoptions.makesolids", 0));
-		occgeometry->splitpartitions =
-		  atoi (Tcl_GetVar (interp, "::occoptions.splitpartitions", 0));
-
-		//	      cout << "Before operation:" << endl;
-		//	      occgeometry->PrintNrShapes();
-		occgeometry->HealGeometry();
-		occgeometry->BuildFMap();
-		//	      cout << endl << "After operation:" << endl;
-		//	      occgeometry->PrintNrShapes();
-		occgeometry->BuildVisualizationMesh(vispar.occdeflection);
-		occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-	      }
-
-
-	    if (strcmp (argv[1], "highlightentity") == 0)
-	      {
-		if (strcmp (argv[2], "Face") == 0)
-		  {
-		    int nr = atoi (argv[3]);
-		    occgeometry->LowLightAll();
-
-		    occgeometry->fvispar[nr-1].Highlight();
-		    if (vispar.occzoomtohighlightedentity)
-		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONFULLCHANGE;
-		    else
-		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-		  }
-		if (strcmp (argv[2], "Shell") == 0)
-		  {
-		    int nr = atoi (argv[3]);
-		    occgeometry->LowLightAll();
-
-		    TopExp_Explorer exp;
-		    for (exp.Init (occgeometry->shmap(nr), TopAbs_FACE);
-			 exp.More(); exp.Next())
-		      {
-			int i = occgeometry->fmap.FindIndex (TopoDS::Face(exp.Current()));
-			occgeometry->fvispar[i-1].Highlight();
-		      }
-		    if (vispar.occzoomtohighlightedentity)
-		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONFULLCHANGE;
-		    else
-		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-		  }
-		if (strcmp (argv[2], "Solid") == 0)
-		  {
-		    int nr = atoi (argv[3]);
-		    occgeometry->LowLightAll();
-
-		    TopExp_Explorer exp;
-		    for (exp.Init (occgeometry->somap(nr), TopAbs_FACE);
-			 exp.More(); exp.Next())
-		      {
-			int i = occgeometry->fmap.FindIndex (TopoDS::Face(exp.Current()));
-			occgeometry->fvispar[i-1].Highlight();
-		      }
-		    if (vispar.occzoomtohighlightedentity)
-		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONFULLCHANGE;
-		    else
-		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-		  }
-		/*
-		  if (strcmp (argv[2], "CompSolid") == 0)
-		  {
-		  int nr = atoi (argv[3]);
-		  occgeometry->LowLightAll();
-
-		  TopExp_Explorer exp;
-		  for (exp.Init (occgeometry->cmap(nr), TopAbs_FACE);
-		  exp.More(); exp.Next())
-		  {
-		  int i = occgeometry->fmap.FindIndex (TopoDS::Face(exp.Current()));
-		  occgeometry->fvispar[i-1].Highlight();
-		  }
-		  occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-		  }
-		*/
-
-		if (strcmp (argv[2], "Edge") == 0)
-		  {
-		    int nr = atoi (argv[3]);
-		    occgeometry->LowLightAll();
-
-		    occgeometry->evispar[nr-1].Highlight();
-		    if (vispar.occzoomtohighlightedentity)
-		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONFULLCHANGE;
-		    else
-		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-		  }
-		if (strcmp (argv[2], "Wire") == 0)
-		  {
-		    int nr = atoi (argv[3]);
-		    occgeometry->LowLightAll();
-
-		    TopExp_Explorer exp;
-		    for (exp.Init (occgeometry->wmap(nr), TopAbs_EDGE);
-			 exp.More(); exp.Next())
-		      {
-			int i = occgeometry->emap.FindIndex (TopoDS::Edge(exp.Current()));
-			occgeometry->evispar[i-1].Highlight();
-		      }
-		    if (vispar.occzoomtohighlightedentity)
-		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONFULLCHANGE;
-		    else
-		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-		  }
-
-		if (strcmp (argv[2], "Vertex") == 0)
-		  {
-		    int nr = atoi (argv[3]);
-		    occgeometry->LowLightAll();
-
-		    occgeometry->vvispar[nr-1].Highlight();
-		    if (vispar.occzoomtohighlightedentity)
-		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONFULLCHANGE;
-		    else
-		      occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-		  }
-
-	      }
-
-
-
-	    if (strcmp (argv[1], "show") == 0)
-	      {
-		int nr = atoi (argv[3]);
-		occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-
-		if (strcmp (argv[2], "Face") == 0)
-		  {
-		    occgeometry->fvispar[nr-1].Show();
-		  }
-		if (strcmp (argv[2], "Shell") == 0)
-		  {
-		    TopExp_Explorer exp;
-		    for (exp.Init (occgeometry->shmap(nr), TopAbs_FACE);
-			 exp.More(); exp.Next())
-		      {
-			int i = occgeometry->fmap.FindIndex (TopoDS::Face(exp.Current()));
-			occgeometry->fvispar[i-1].Show();
-		      }
-		  }
-		if (strcmp (argv[2], "Solid") == 0)
-		  {
-		    TopExp_Explorer exp;
-		    for (exp.Init (occgeometry->somap(nr), TopAbs_FACE);
-			 exp.More(); exp.Next())
-		      {
-			int i = occgeometry->fmap.FindIndex (TopoDS::Face(exp.Current()));
-			occgeometry->fvispar[i-1].Show();
-		      }
-		  }
-		if (strcmp (argv[2], "Edge") == 0)
-		  {
-		    occgeometry->evispar[nr-1].Show();
-		  }
-		if (strcmp (argv[2], "Wire") == 0)
-		  {
-		    TopExp_Explorer exp;
-		    for (exp.Init (occgeometry->wmap(nr), TopAbs_EDGE);
-			 exp.More(); exp.Next())
-		      {
-			int i = occgeometry->emap.FindIndex (TopoDS::Edge(exp.Current()));
-			occgeometry->evispar[i-1].Show();
-		      }
-		  }
-	      }
-
-
-	    if (strcmp (argv[1], "hide") == 0)
-	      {
-		int nr = atoi (argv[3]);
-		occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-
-		if (strcmp (argv[2], "Face") == 0)
-		  {
-		    occgeometry->fvispar[nr-1].Hide();
-		  }
-		if (strcmp (argv[2], "Shell") == 0)
-		  {
-		    TopExp_Explorer exp;
-		    for (exp.Init (occgeometry->shmap(nr), TopAbs_FACE);
-			 exp.More(); exp.Next())
-		      {
-			int i = occgeometry->fmap.FindIndex (TopoDS::Face(exp.Current()));
-			occgeometry->fvispar[i-1].Hide();
-		      }
-		  }
-		if (strcmp (argv[2], "Solid") == 0)
-		  {
-		    TopExp_Explorer exp;
-		    for (exp.Init (occgeometry->somap(nr), TopAbs_FACE);
-			 exp.More(); exp.Next())
-		      {
-			int i = occgeometry->fmap.FindIndex (TopoDS::Face(exp.Current()));
-			occgeometry->fvispar[i-1].Hide();
-		      }
-		  }
-		if (strcmp (argv[2], "Edge") == 0)
-		  {
-		    occgeometry->evispar[nr-1].Hide();
-		  }
-		if (strcmp (argv[2], "Wire") == 0)
-		  {
-		    TopExp_Explorer exp;
-		    for (exp.Init (occgeometry->wmap(nr), TopAbs_EDGE);
-			 exp.More(); exp.Next())
-		      {
-			int i = occgeometry->emap.FindIndex (TopoDS::Edge(exp.Current()));
-			occgeometry->evispar[i-1].Hide();
-		      }
-		  }
-	      }
-
-
-
-	    if (strcmp (argv[1], "findsmallentities") == 0)
-	      {
-		stringstream str("");
-		occgeometry->CheckIrregularEntities(str);
-		Tcl_SetResult (interp, (char*)str.str().c_str(), TCL_VOLATILE);
-	      }
-	    if (strcmp (argv[1], "getunmeshedfaceinfo") == 0)
-	      {
-		occgeometry->GetUnmeshedFaceInfo(str);
-		Tcl_SetResult (interp, (char*)str.str().c_str(), TCL_VOLATILE);
-	      }
-	    if (strcmp (argv[1], "getnotdrawablefaces") == 0)
-	      {
-		occgeometry->GetNotDrawableFaces(str);
-		Tcl_SetResult (interp, (char*)str.str().c_str(), TCL_VOLATILE);
-	      }
-	    if (strcmp (argv[1], "redrawstatus") == 0)
-	      {
-		int i = atoi (argv[2]);
-		occgeometry->changed = i;
-	      }
-	    if (strcmp (argv[1], "swaporientation") == 0)
-	      {
-		IGESControl_Writer writer("millimeters", 1);
-		writer.AddShape (occgeometry->shape);
-		writer.Write ("1.igs");
-		/*
-		  int nr = atoi (argv[3]);
-
-		  //	      const_cast<TopoDS_Shape&> (occgeometry->fmap(nr)).Reverse();
-
-		  Handle_ShapeBuild_ReShape rebuild = new ShapeBuild_ReShape;
-		  rebuild->Apply(occgeometry->shape);
-
-		  TopoDS_Shape sh;
-
-		  //	      if (strcmp (argv[2], "CompSolid") == 0) sh = occgeometry->cmap(nr);
-		  if (strcmp (argv[2], "Solid") == 0) sh = occgeometry->somap(nr);
-		  if (strcmp (argv[2], "Shell") == 0) sh = occgeometry->shmap(nr);
-		  if (strcmp (argv[2], "Face") == 0) sh = occgeometry->fmap(nr);
-		  if (strcmp (argv[2], "Wire") == 0) sh = occgeometry->wmap(nr);
-		  if (strcmp (argv[2], "Edge") == 0) sh = occgeometry->emap(nr);
-
-		  rebuild->Replace(sh, sh.Reversed(), Standard_False);
-
-		  TopoDS_Shape newshape = rebuild->Apply(occgeometry->shape, TopAbs_SHELL, 1);
-		  occgeometry->shape = newshape;
-
-		  occgeometry->BuildFMap();
-		  occgeometry->BuildVisualizationMesh();
-		  occgeometry->changed = OCCGEOMETRYVISUALIZATIONHALFCHANGE;
-		*/
-	      }
-	    if (strcmp (argv[1], "marksingular") == 0)
-	      {
-		int nr = atoi (argv[3]);
-		cout << "marking " << argv[2] << " " << nr << endl;
-		char buf[2]; buf[0] = '0'; buf[1] = 0;
-		bool sing = false;
-		if (strcmp (argv[2], "Face") == 0)
-		  sing = occgeometry->fsingular[nr-1] = !occgeometry->fsingular[nr-1];
-		if (strcmp (argv[2], "Edge") == 0)
-		  sing = occgeometry->esingular[nr-1] = !occgeometry->esingular[nr-1];
-		if (strcmp (argv[2], "Vertex") == 0)
-		  sing = occgeometry->vsingular[nr-1] = !occgeometry->vsingular[nr-1];
-
-		if (sing) buf[0] = '1';
-
-                Tcl_SetVar (interp, "::ismarkedsingular", buf, 0);
-
-		stringstream str;
-		occgeometry->GetTopologyTree (str);
-
-		char* cstr = (char*)str.str().c_str();
-
-		(*testout) << cstr << endl;
-
-		char helpstr[1000];
-
-		while (strchr (cstr, '}'))
-		  {
-		    strncpy (helpstr, cstr+2, strlen(strchr(cstr+2, '}')));
-		    (*testout) << "***" << cstr << "***" << endl;
-		    cstr = strchr (cstr, '}');
-		  }
-	      }
-	  }
-      }
-
-#endif
-    return TCL_OK;
-  }
-
-
-
-#ifdef OCCGEOMETRY
-
-  void OCCConstructGeometry (OCCGeometry & geom);
-
-  int Ng_OCCConstruction (ClientData clientData,
-			  Tcl_Interp * interp,
-			  int argc, tcl_const char *argv[])
-  {
-    if (occgeometry)
-      OCCConstructGeometry (*occgeometry);
-    return TCL_OK;
-  }
-#endif
 
 
 
@@ -4751,12 +2861,9 @@ namespace netgen
     vsspecpoints.len =
       atof (Tcl_GetVar (interp, "::viewoptions.specpointvlen", TCL_GLOBAL_ONLY));
 
-
-
-
-#ifdef OCCGEOMETRY
     vispar.occdeflection = pow(10.0,-1-atof (Tcl_GetVar (interp, "::occoptions.deflection", TCL_GLOBAL_ONLY)));
-#endif
+
+
 
 #ifdef PARALLELGL
     vsmesh.Broadcast ();
@@ -4765,16 +2872,6 @@ namespace netgen
     return TCL_OK;
   }
 
-
-
-  int Ng_SelectSurface (ClientData clientData,
-			Tcl_Interp * interp,
-			int argc, tcl_const char *argv[])
-  {
-    int surfnr = atoi (argv[1]);
-    vsgeom.SelectSurface (surfnr);
-    return TCL_OK;
-  }
 
 
   int Ng_BuildFieldLines (ClientData clientData,
@@ -4917,14 +3014,6 @@ namespace netgen
 
 
 
-
-    delete stlgeometry;
-    stlgeometry = NULL;
-
-    geometry.Reset (0);
-    geometry2d.Reset (0);
-
-
 #ifdef ACIS
     outcome res;
     res = api_terminate_faceter();
@@ -4944,7 +3033,6 @@ namespace netgen
 #endif
 
 #ifdef PARALLEL
-
     for ( int dest = 1; dest < ntasks; dest++)
       MyMPI_Send ( "end", dest );
 #endif
@@ -4984,6 +3072,10 @@ namespace netgen
 
 
   extern "C" int Ng_Init (Tcl_Interp * interp);
+  extern "C" int Ng_CSG_Init (Tcl_Interp * interp);
+  extern "C" int Ng_STL_Init (Tcl_Interp * interp);
+  extern "C" int Ng_OCC_Init (Tcl_Interp * interp);
+  extern "C" int Ng_Geom2d_Init (Tcl_Interp * interp);
 
   //   int main_Eero (ClientData clientData,
   // 	       Tcl_Interp * interp,
@@ -4996,6 +3088,11 @@ namespace netgen
     if(serversocketmanager.Good())
       serversocketusernetgen.Reset(new ServerSocketUserNetgen (serversocketmanager, mesh, geometry));
 #endif
+
+    Ng_CSG_Init(interp);
+    Ng_STL_Init(interp);
+    Ng_OCC_Init(interp);
+    Ng_Geom2d_Init(interp);
 
     tcl_interp = interp;
 
@@ -5020,9 +3117,6 @@ namespace netgen
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-    Tcl_CreateCommand (interp, "Ng_ParseGeometry", Ng_ParseGeometry,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
 
     Tcl_CreateCommand (interp, "Ng_LoadMesh", Ng_LoadMesh,
 		       (ClientData)NULL,
@@ -5060,69 +3154,9 @@ namespace netgen
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-    Tcl_CreateCommand (interp, "Ng_GeometryOptions", Ng_GeometryOptions,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-
-    // geometry
-    Tcl_CreateCommand (interp, "Ng_CreatePrimitive", Ng_CreatePrimitive,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_SetPrimitiveData", Ng_SetPrimitiveData,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_GetPrimitiveData", Ng_GetPrimitiveData,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_GetPrimitiveList", Ng_GetPrimitiveList,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-
-    Tcl_CreateCommand (interp, "Ng_GetSurfaceList", Ng_GetSurfaceList,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
 
 
 
-    Tcl_CreateCommand (interp, "Ng_SetSolidData", Ng_SetSolidData,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_GetSolidData", Ng_GetSolidData,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_GetSolidList", Ng_GetSolidList,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-
-    Tcl_CreateCommand (interp, "Ng_TopLevel", Ng_TopLevel,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    // Philippose - 30/01/2009
-    // Register the TCL Interface Command for local face mesh size
-    // definition
-    Tcl_CreateCommand (interp, "Ng_SurfaceMeshSize", Ng_SurfaceMeshSize,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_AutoColourBcProps", Ng_AutoColourBcProps,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    // Philippose - 25/07/2010
-    // Register the TCL Interface Command for handling the face colours 
-    // present in the mesh
-    Tcl_CreateCommand(interp, "Ng_CurrentFaceColours", Ng_CurrentFaceColours,
-                      (ClientData)NULL,
-                      (Tcl_CmdDeleteProc*) NULL);
     
 
     // meshing
@@ -5214,13 +3248,6 @@ namespace netgen
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-    Tcl_CreateCommand (interp, "Ng_SingularEdgeMS", Ng_SingularEdgeMS,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_SingularPointMS", Ng_SingularPointMS,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
 
     Tcl_CreateCommand (interp, "Ng_GenerateBoundaryLayer", Ng_GenerateBoundaryLayer,
 		       (ClientData)NULL,
@@ -5246,9 +3273,6 @@ namespace netgen
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-    Tcl_CreateCommand (interp, "Ng_STLDoctor", Ng_STLDoctor,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
 
     Tcl_CreateCommand (interp, "Ng_MeshDoctor", Ng_MeshDoctor,
 		       (ClientData)NULL,
@@ -5258,37 +3282,8 @@ namespace netgen
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-    Tcl_CreateCommand (interp, "Ng_STLInfo", Ng_STLInfo,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
 
 
-    Tcl_CreateCommand (interp, "Ng_STLCalcLocalH",
-		       Ng_STLCalcLocalH,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_SetOCCVisParameters",
-		       Ng_SetOCCVisParameters,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_GetOCCData",
-		       Ng_GetOCCData,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-#ifdef OCCGEOMETRY
-    Tcl_CreateCommand (interp, "Ng_OCCConstruction",
-		       Ng_OCCConstruction,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-#endif
-
-    Tcl_CreateCommand (interp, "Ng_OCCCommand",
-		       Ng_OCCCommand,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
 
     Tcl_CreateCommand (interp, "Ng_ACISCommand",
 		       Ng_ACISCommand,
@@ -5331,21 +3326,6 @@ namespace netgen
 		       (Tcl_CmdDeleteProc*) NULL);
 
     Tcl_CreateCommand (interp, "Ng_SetDebugParameters", Ng_SetDebugParameters,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_SetSTLParameters", Ng_SetSTLParameters,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-#ifdef OCCGEOMETRY
-    Tcl_CreateCommand (interp, "Ng_SetOCCParameters", Ng_SetOCCParameters,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-#endif //OCCGEOMETRY
-
-
-    Tcl_CreateCommand (interp, "Ng_SelectSurface", Ng_SelectSurface,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
@@ -5470,6 +3450,8 @@ namespace netgen
     mycout = &cout;
 
     testmode = 0;
+
+
 
 #ifdef ACIS
     outcome res;

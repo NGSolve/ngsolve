@@ -134,7 +134,7 @@ PointBetween (const Point<3> & p1, const Point<3> & p2, double secpoint,
 	      int surfi, 
 	      const PointGeomInfo & gi1, 
 	      const PointGeomInfo & gi2,
-	      Point<3> & newp, PointGeomInfo & newgi)
+	      Point<3> & newp, PointGeomInfo & newgi) const
 {
   Point<3> hnewp;
   hnewp = p1+secpoint*(p2-p1);
@@ -152,7 +152,7 @@ PointBetween (const Point<3> & p1, const Point<3> & p2, double secpoint,
 	      int surfi1, int surfi2, 
 	      const EdgePointGeomInfo & ap1, 
 	      const EdgePointGeomInfo & ap2,
-	      Point<3> & newp, EdgePointGeomInfo & newgi)
+	      Point<3> & newp, EdgePointGeomInfo & newgi) const
 {
   Point<3> hnewp = p1+secpoint*(p2-p1);
   //(*testout) << "hnewp " << hnewp << " s1 " << surfi1 << " s2 " << surfi2 << endl;
@@ -192,7 +192,7 @@ Vec<3> RefinementSurfaces :: GetNormal (const Point<3> & p, int surfi1,
 
 
 
-void RefinementSurfaces :: ProjectToSurface (Point<3> & p, int surfi)
+void RefinementSurfaces :: ProjectToSurface (Point<3> & p, int surfi) const
 {
   if (surfi != -1)
     geometry.GetSurface (surfi) -> Project (p);

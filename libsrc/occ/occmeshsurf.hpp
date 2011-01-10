@@ -181,17 +181,17 @@ public:
 			     int surfi, 
 			     const PointGeomInfo & gi1, 
 			     const PointGeomInfo & gi2,
-			     Point<3> & newp, PointGeomInfo & newgi);
+			     Point<3> & newp, PointGeomInfo & newgi) const;
 
   virtual void PointBetween (const Point<3> & p1, const Point<3> & p2, double secpoint,
 			     int surfi1, int surfi2, 
 			     const EdgePointGeomInfo & ap1, 
 			     const EdgePointGeomInfo & ap2,
-			     Point<3> & newp, EdgePointGeomInfo & newgi);
+			     Point<3> & newp, EdgePointGeomInfo & newgi) const;
 
-  virtual void ProjectToSurface (Point<3> & p, int surfi);
+  virtual void ProjectToSurface (Point<3> & p, int surfi) const;
 
-  virtual void ProjectToSurface (Point<3> & p, int surfi, PointGeomInfo & gi);
+  virtual void ProjectToSurface (Point<3> & p, int surfi, PointGeomInfo & gi) const;
 };
 
 

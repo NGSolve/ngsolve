@@ -4,14 +4,6 @@
 
 namespace netgen
 {
-
-
-  ostream & operator<<(ostream  & s, const MeshPoint & pt)
-  {
-    s << Point<3> (pt);
-    return s;
-  }
-
   int MultiPointGeomInfo :: 
   AddPointGeomInfo (const PointGeomInfo & gi)
   {
@@ -475,7 +467,6 @@ namespace netgen
   }
 
 
-
   void Element2d :: GetShape (const Point2d & p, Vector & shape) const
   {
     if (shape.Size() != GetNP())
@@ -571,7 +562,6 @@ namespace netgen
         PrintSysError ("Element2d::GetDShape, illegal type ", typ);
       }
   }
-
 
 
 
@@ -863,6 +853,7 @@ namespace netgen
 
 
 
+
   void Element2d :: ComputeIntegrationPointData () const
   {
     switch (np)
@@ -893,7 +884,6 @@ namespace netgen
           }
       }
   }
-
 
 
 
@@ -1750,7 +1740,6 @@ namespace netgen
   }
 
 
-
   void Element :: GetShape (const Point<3> & hp, Vector & shape) const
   {
     Point3d p = hp;
@@ -1907,7 +1896,6 @@ namespace netgen
 
 
 
-
   void Element :: 
   GetDShape (const Point<3> & hp, DenseMatrix & dshape) const
   {
@@ -1935,7 +1923,6 @@ namespace netgen
           dshape(i-1, j) = (shaper(j) - shapel(j)) / (2 * eps);
       }
   }
-
 
 
   void Element :: 
@@ -2001,13 +1988,6 @@ namespace netgen
                   DenseMatrix & pmat) const
   {
     int np = GetNP();
-    /*
-      if (pmat.Width() != np || pmat.Height() != 3)
-      {
-      cerr << "Element::GetPointMatrix: sizes don't fit" << endl;
-      return;
-      }
-    */
     for (int i = 1; i <= np; i++)
       {
         const Point3d & p = points.Get(PNum(i));
@@ -2020,11 +2000,8 @@ namespace netgen
 
 
 
-
-
   double Element :: CalcJacobianBadness (const T_POINTS & points) const
   {
-    int i, j;
     int nip = GetNIP();
     static DenseMatrix trans(3,3);
     static DenseMatrix pmat;
@@ -2033,13 +2010,13 @@ namespace netgen
     GetPointMatrix (points, pmat);
 
     double err = 0;
-    for (i = 1; i <= nip; i++)
+    for (int i = 1; i <= nip; i++)
       {
         GetTransformation (i, pmat, trans);
 
         // Frobenius norm
         double frob = 0;
-        for (j = 1; j <= 9; j++)
+        for (int j = 1; j <= 9; j++)
           frob += sqr (trans.Get(j));
         frob = sqrt (frob);
         frob /= 3;
@@ -2220,7 +2197,6 @@ namespace netgen
 
 
 
-
   void Element :: ComputeIntegrationPointData () const
   {
     switch (GetType())
@@ -2259,7 +2235,6 @@ namespace netgen
           }
       }
   }
-
 
 
 

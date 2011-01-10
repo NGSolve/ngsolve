@@ -1024,7 +1024,7 @@ PointBetween  (const Point<3> & p1, const Point<3> & p2, double secpoint,
 	       int surfi, 
 	       const PointGeomInfo & gi1, 
 	       const PointGeomInfo & gi2,
-	       Point<3> & newp, PointGeomInfo & newgi)
+	       Point<3> & newp, PointGeomInfo & newgi) const
 {
   newp = p1+secpoint*(p2-p1);
 
@@ -1087,7 +1087,7 @@ PointBetween (const Point<3> & p1, const Point<3> & p2, double secpoint,
 	      int surfi1, int surfi2, 
 	      const EdgePointGeomInfo & gi1, 
 	      const EdgePointGeomInfo & gi2,
-	      Point<3> & newp, EdgePointGeomInfo & newgi)
+	      Point<3> & newp, EdgePointGeomInfo & newgi) const
 {
   /*
   (*testout) << "edge-between: p1 = " << p1 << ", p2 = " << p2
@@ -1113,14 +1113,14 @@ PointBetween (const Point<3> & p1, const Point<3> & p2, double secpoint,
 }
 
 
-void RefinementSTLGeometry :: ProjectToSurface (Point<3> & p, int surfi)
+void RefinementSTLGeometry :: ProjectToSurface (Point<3> & p, int surfi) const
 {
   cout << "RefinementSTLGeometry :: ProjectToSurface not implemented!" << endl;
 };
 
 
 void RefinementSTLGeometry :: ProjectToSurface (Point<3> & p, int surfi,
-						PointGeomInfo & gi)
+						PointGeomInfo & gi) const
 {
   ((STLGeometry&)geom).SelectChartOfTriangle (gi.trignum);
   gi.trignum = geom.Project (p);

@@ -3,17 +3,7 @@
 
 #include <meshing.hpp>
 #include <csg.hpp>
-#include <geometry2d.hpp>
-#include <stlgeom.hpp>
 
-
-#ifdef OCCGEOMETRY
-#include <occgeom.hpp>
-#endif
-
-#ifdef ACIS
-#include <acisgeom.hpp>
-#endif
 
 #ifdef SOCKETS
 #include "../sockets/sockets.hpp"
@@ -32,19 +22,14 @@ namespace netgen
 {
 #include "writeuser.hpp"
 
-	extern AutoPtr<Mesh> mesh;
+  extern NetgenGeometry * ng_geometry;
+  extern AutoPtr<Mesh> mesh;
+
 #ifndef NOTCL
-  extern VisualSceneMesh vsmesh;
   extern Tcl_Interp * tcl_interp;
 #endif
 
-  extern AutoPtr<SplineGeometry2d> geometry2d;
-  extern AutoPtr<CSGeometry> geometry;
-  extern STLGeometry * stlgeometry;
 
-#ifdef OCCGEOMETRY
-  extern OCCGeometry * occgeometry;
-#endif
 #ifdef ACIS
   extern ACISGeometry * acisgeometry;
 #endif
@@ -59,6 +44,9 @@ namespace netgen
   //extern Array< AutoPtr < ServerInfo > > servers;
   extern Array< ServerInfo* > servers;
 #endif
+
+extern void Render ();
+
 }
 
 
@@ -145,130 +133,30 @@ using namespace netgen;
 
 void Ng_LoadGeometry (const char * filename)
 {
-  //  if (printmessage_importance>0)
-  // cout << "CALLED NG LOAD GEOMETRY" << endl; 
-  
-  geometry.Reset (new CSGeometry ());
-  geometry2d.Reset ();
 
-#ifdef OCCGEOMETRY
-  delete occgeometry;
-  occgeometry = 0;
-#endif
-#ifdef ACIS
-  delete acisgeometry;
-  acisgeometry = 0;
-#endif
-  
+  for (int i = 0; i < geometryregister.Size(); i++)
+    {
+      NetgenGeometry * hgeom = geometryregister[i]->Load (filename);
+      if (hgeom)
+	{
+	  delete ng_geometry;
+	  ng_geometry = hgeom;
+	  
+	  mesh.Reset();
+	  return;
+	}
+    }
+
   // he: if filename is empty, return
   // can be used to reset geometry
   if (strcmp(filename,"")==0) 
-    return;
-     
-  PrintMessage (1, "Load geometry from file ", filename);
-
-  ifstream infile (filename);
-  
-  if ((strcmp (&filename[strlen(filename)-3], "geo") == 0) ||
-      (strcmp (&filename[strlen(filename)-3], "GEO") == 0) ||
-      (strcmp (&filename[strlen(filename)-3], "Geo") == 0))
     {
- 
-
-      geometry.Reset( netgen::ParseCSG(infile) );   
-
-      if (!geometry)
-	{
-	  geometry.Reset (new CSGeometry ());
-	  //throw NgException ("input file not found");
-	  cerr << "Error: input file \"" << filename << "\" not found" << endl;
-	}
-
-      geometry -> FindIdenticSurfaces(1e-6);
-
-#ifdef PARALLEL
-      int id, rc, ntasks;
-      MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-      MPI_Comm_rank(MPI_COMM_WORLD, &id);
-      if ( id > 0 )
-	{
-	  geometry->CalcTriangleApproximation ( geometry->BoundingBox(), 0.001, 20 );
-	  return;
-	}
-#endif
-
-      Box<3> box (geometry->BoundingBox());
-#ifdef NOTCL
-      double detail = 0.001;
-      double facets = 20;
-      geometry->CalcTriangleApproximation(box, detail, facets);
-      
-#else
-      double detail = atof (Tcl_GetVar (tcl_interp, "::geooptions.detail", 0));
-      double facets = atof (Tcl_GetVar (tcl_interp, "::geooptions.facets", 0));
-      
-      if (atoi (Tcl_GetVar (tcl_interp, "::geooptions.drawcsg", 0)))
-	geometry->CalcTriangleApproximation(box, detail, facets);
-#endif
+      delete ng_geometry;
+      ng_geometry = new NetgenGeometry();
+      return;
     }
 
-  else if (strcmp (&filename[strlen(filename)-4], "in2d") == 0)
-    {
-      geometry2d.Reset (new SplineGeometry2d());
-      geometry2d -> Load (filename);
-    }
-
-  else if ((strcmp (&filename[strlen(filename)-3], "stl") == 0) ||
-	   (strcmp (&filename[strlen(filename)-3], "STL") == 0) ||
-	   (strcmp (&filename[strlen(filename)-3], "Stl") == 0))
-    {
-      stlgeometry = STLGeometry :: Load (infile);
-      stlgeometry->edgesfound = 0;
-      Mesh meshdummy;
-      stlgeometry->Clear();
-      stlgeometry->BuildEdges();
-      stlgeometry->MakeAtlas(meshdummy);
-      stlgeometry->CalcFaceNums();
-      stlgeometry->AddFaceEdges();
-      stlgeometry->LinkEdges();
-    }
-
-#ifdef OCCGEOMETRY
-  else if ((strcmp (&filename[strlen(filename)-4], "iges") == 0) ||
-	   (strcmp (&filename[strlen(filename)-3], "igs") == 0) ||
-	   (strcmp (&filename[strlen(filename)-3], "IGS") == 0) ||
-	   (strcmp (&filename[strlen(filename)-4], "IGES") == 0))
-    {
-      PrintMessage (1, "Load IGES geometry file ", filename);
-      occgeometry = LoadOCC_IGES (filename);
-    }
-  else if ((strcmp (&filename[strlen(filename)-4], "step") == 0) ||
-	   (strcmp (&filename[strlen(filename)-3], "stp") == 0) ||
-	   (strcmp (&filename[strlen(filename)-3], "STP") == 0) ||
-	   (strcmp (&filename[strlen(filename)-4], "STEP") == 0))
-    {
-      PrintMessage (1, "Load STEP geometry file ", filename);
-      occgeometry = LoadOCC_STEP (filename);
-    }
-#endif
-
-#ifdef ACIS
-  else if (
-		  strcmp (&filename[strlen(filename)-3], "sat") == 0 ||
-		  ( strlen(filename) >= 7 && strcmp ( &filename[ strlen( filename)-7 ], "sat.tet" ) == 0 )
-		)
-    {
-      PrintMessage (1, "Load ACIS geometry file ", filename);
-      acisgeometry = LoadACIS_SAT (filename);
-    }
-#endif
-  else
-    {
-      //throw NgException("Unknown geometry extension");
-		cerr << "Error: Unknown geometry extension \"" << filename[strlen(filename)-3] << "\"" << endl;
-    }
-
-
+  cerr << "cannot load geometry '" << filename << "'" << endl;
 }                          
 
 
@@ -276,12 +164,27 @@ void Ng_LoadMeshFromStream ( istream & input )
 {
   mesh.Reset (new Mesh());
   mesh -> Load(input);
+  
+  for (int i = 0; i < geometryregister.Size(); i++)
+    {
+      NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (input);
+      if (hgeom)
+	{
+	  delete ng_geometry;
+	  ng_geometry = hgeom;
+	  break;
+	}
+    }
+
+
+#ifdef LOADOLD
   if(input.good())
     {
       string auxstring;
       input >> auxstring;
       if(auxstring == "csgsurfaces")
 	{
+	  /*
 	  if (geometry)
             {
               geometry.Reset (new CSGeometry (""));
@@ -306,11 +209,16 @@ void Ng_LoadMeshFromStream ( istream & input )
 	    }
 #endif
  	  geometry2d.Reset (0);
-	  
- 	  geometry -> LoadSurfaces(input);
+	  */
+ 	  // geometry -> LoadSurfaces(input);
+	  CSGeometry * geometry = new CSGeometry ("");
+	  geometry -> LoadSurfaces(input);
+
+	  delete ng_geometry;
+	  ng_geometry = geometry;
 	}
     }
- 
+#endif 
 }
 
 
@@ -681,9 +589,10 @@ void Ng_GetNormalVector (int sei, int locpi, double * nv)
       p = mesh->Point (mesh->SurfaceElement(sei).PNum(locpi));
 
       int surfi = mesh->GetFaceDescriptor(mesh->SurfaceElement(sei).GetIndex()).SurfNr();
-
+      
       (*testout) << "surfi = " << surfi << endl;
-#ifdef OCCGEOMETRY
+#ifdef OCCGEOMETRYxxx
+      OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry);
       if (occgeometry)
 	{
 	  PointGeomInfo gi = mesh->SurfaceElement(sei).GeomInfoPi(locpi);
@@ -692,8 +601,8 @@ void Ng_GetNormalVector (int sei, int locpi, double * nv)
 	  nv[1] = n(1);
 	  nv[2] = n(2);
 	}
-      else
 #endif
+      CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry);
       if (geometry)
 	{
 	  (*testout) << "geometry defined" << endl;
@@ -843,7 +752,6 @@ void Ng_GetElementTransformation (int ei, const double * xi,
 
       mesh->GetCurvedElements().CalcElementTransformation (xl, ei-1, xg, dx);
 
-      // still 1-based arrays
       if (x)
 	{
 	  for (int i = 0; i < 3; i++)
@@ -1122,9 +1030,13 @@ void Ng_Refine (NG_REFINEMENT_TYPE reftype)
     biopt.refine_p = 1;
   if (reftype == NG_REFINE_HP)
     biopt.refine_hp = 1;
-  Refinement * ref;
+
+  const Refinement & ref = ng_geometry->GetRefinement();
+
+  // Refinement * ref;
   MeshOptimize2d * opt = NULL;
 
+  /*
   if (geometry2d)
     ref = new Refinement2d(*geometry2d);
   else if (stlgeometry)
@@ -1151,20 +1063,22 @@ void Ng_Refine (NG_REFINEMENT_TYPE reftype)
     {
       ref = new Refinement();
     }
+  */
 
-
-  ref -> Bisect (*mesh, biopt);
+  ref.Bisect (*mesh, biopt);
 
   mesh -> UpdateTopology();
   mesh -> GetCurvedElements().SetIsHighOrder (false);
 
   // mesh -> GetCurvedElements().BuildCurvedElements (ref, mparam.elementorder);
-  delete ref;
+  // delete ref;
   delete opt;
 }
 
 void Ng_SecondOrder ()
 {
+  const_cast<Refinement&> (ng_geometry->GetRefinement()).MakeSecondOrder(*mesh);
+  /*
   if (stlgeometry)
     {
       RefinementSTLGeometry ref (*stlgeometry);
@@ -1190,7 +1104,7 @@ void Ng_SecondOrder ()
       Refinement ref;
       ref.MakeSecondOrder (*mesh);
     }
-
+  */
   mesh -> UpdateTopology();
 }
 
@@ -1229,6 +1143,9 @@ void Ng_HPRefinement (int levels, double parameter)
 void Ng_HPRefinement (int levels, double parameter, bool setorders,
                       bool ref_level)
 {
+  Refinement & ref = const_cast<Refinement&> (ng_geometry -> GetRefinement());
+  HPRefinement (*mesh, &ref, levels);
+  /*
   Refinement * ref;
 
   if (stlgeometry)
@@ -1238,15 +1155,15 @@ void Ng_HPRefinement (int levels, double parameter, bool setorders,
   else
     ref = new RefinementSurfaces (*geometry);
 
-
   HPRefinement (*mesh, ref, levels, parameter, setorders, ref_level);
+  */
 }
 
 
 void Ng_HighOrder (int order, bool rational)
 {
   NgLock meshlock (mesh->MajorMutex(), true);
-
+  /*
   Refinement * ref;
 
   if (stlgeometry)
@@ -1267,11 +1184,12 @@ void Ng_HighOrder (int order, bool rational)
     {
        ref = new RefinementSurfaces (*geometry);
     }
- 
+  */
   // cout << "parameter 1: " << argv[1] << " (conversion to int = " << atoi(argv[1]) << ")" << endl;
  
 
-  mesh -> GetCurvedElements().BuildCurvedElements (ref, order, rational);
+  mesh -> GetCurvedElements().BuildCurvedElements (&const_cast<Refinement&> (ng_geometry -> GetRefinement()),
+						   order, rational);
   mesh -> SetNextMajorTimeStamp();
 
   /*
@@ -1279,7 +1197,7 @@ void Ng_HighOrder (int order, bool rational)
     mesh -> GetCurvedElements().BuildCurvedElements (ref, order, rational);
   */
 
-  delete ref;
+  // delete ref;
 }
 
 
@@ -2289,8 +2207,9 @@ int Ng_Bisect_WithInfo ( const char * refinementfile, double ** qualityloss, int
   biopt.femcode = "fepp";
   biopt.refinementfilename = refinementfile;
   
-  Refinement * ref;
+  Refinement * ref = const_cast<Refinement*> (&ng_geometry -> GetRefinement());
   MeshOptimize2d * opt = NULL;
+  /*
   if (stlgeometry)
     ref = new RefinementSTLGeometry(*stlgeometry);
 #ifdef OCCGEOMETRY
@@ -2311,7 +2230,26 @@ int Ng_Bisect_WithInfo ( const char * refinementfile, double ** qualityloss, int
       opt = new MeshOptimize2dSurfaces(*geometry);
       ref->Set2dOptimizer(opt);
     }
-  
+  */
+#ifdef ACIS
+  if (acisgeometry)
+    {
+      // ref = new ACISRefinementSurfaces(*acisgeometry);
+      opt = new ACISMeshOptimize2dSurfaces(*acisgeometry);
+      ref->Set2dOptimizer(opt);
+    }
+  else
+#endif
+    {
+      // ref = new RefinementSurfaces(*geometry);
+      CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry);
+      if (geometry)
+	{
+	  opt = new MeshOptimize2dSurfaces(*geometry);
+	  ref->Set2dOptimizer(opt);
+	}
+    }
+
   if(!mesh->LocalHFunctionGenerated())
     mesh->CalcLocalH();
   

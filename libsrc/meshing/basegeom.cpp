@@ -4,9 +4,17 @@
 namespace netgen
 {
 
+  Array<GeometryRegister*> geometryregister;
+
+  GeometryRegister :: ~GeometryRegister()
+  { ; }
+
+
+
+
   
-  int NetgenGeometry :: GenerateMesh (Mesh*& mesh,
-				      int perfstepsstart, int perfstepsend, char* optstring)
+  int NetgenGeometry :: GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
+				      int perfstepsstart, int perfstepsend)
   {
     if (!mesh) return 1;
 
@@ -48,4 +56,11 @@ namespace netgen
   {
     return *new Refinement;;
   }
+
+
+  void NetgenGeometry :: Save (string filename) const
+  {
+    throw NgException("Cannot save geometry - no geometry available");
+  }
+
 }

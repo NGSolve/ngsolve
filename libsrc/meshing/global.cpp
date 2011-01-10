@@ -17,8 +17,7 @@ namespace netgen
   ostream * myerr = &cerr;
 
 
-  // Flags globflags; // not used anymoure
-  Flags parameters;
+  //  Flags parameters;
 
 
   int silentflag = 0;

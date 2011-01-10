@@ -24,7 +24,7 @@ namespace netgen
 		int surfi, 
 		const PointGeomInfo & gi1, 
 		const PointGeomInfo & gi2,
-		Point<3> & newp, PointGeomInfo & newgi)
+		Point<3> & newp, PointGeomInfo & newgi) const
   {
     newp = p1+secpoint*(p2-p1);
     newgi.trignum = 1;
@@ -37,7 +37,7 @@ namespace netgen
 		int surfi1, int surfi2, 
 		const EdgePointGeomInfo & ap1, 
 		const EdgePointGeomInfo & ap2,
-		Point<3> & newp, EdgePointGeomInfo & newgi)
+		Point<3> & newp, EdgePointGeomInfo & newgi) const
   {
     Point<2> p2d;
   
@@ -68,7 +68,7 @@ namespace netgen
   }
 
 
-  void Refinement2d :: ProjectToSurface (Point<3> & p, int surfi, const PointGeomInfo & /* gi */)
+  void Refinement2d :: ProjectToSurface (Point<3> & p, int surfi, const PointGeomInfo & /* gi */) const
   {
     p(2) = 0;
   }

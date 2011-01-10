@@ -8,6 +8,8 @@
 namespace netgen
 {
 
+
+
   int CSGeometry :: changeval = 0;
 
 
@@ -132,19 +134,21 @@ namespace netgen
   }
 
 
-  extern int CSGGenerateMesh (CSGeometry & geom,
-			      Mesh *& mesh, int perfstepsstart, int perfstepsend,
-			      const char * optstr);
+  extern int CSGGenerateMesh (CSGeometry & geom, 
+			      Mesh *& mesh, MeshingParameters & mparam,
+			      int perfstepsstart, int perfstepsend);
 
-  int CSGeometry :: GenerateMesh (Mesh*& mesh,
-				 int perfstepsstart, int perfstepsend, char* optstring)
+
+  int CSGeometry :: GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
+				 int perfstepsstart, int perfstepsend)
   {
-    return CSGGenerateMesh (*this, mesh, perfstepsstart, perfstepsend, optstring);
+    return CSGGenerateMesh (*this, mesh, mparam, perfstepsstart, perfstepsend);
   }
 
 
   const Refinement & CSGeometry :: GetRefinement () const
   {
+    cout << "get CSGeometry - Refinement" << endl;
     // should become class variables
     RefinementSurfaces * ref = new RefinementSurfaces(*this);
     ref -> Set2dOptimizer(new MeshOptimize2dSurfaces(*this));
@@ -182,9 +186,13 @@ namespace netgen
   }
 
 
-
+  void CSGeometry :: Save (string filename) const
+  {
+    fstream ost (filename.c_str());
+    Save (ost);
+  }
   
-  void CSGeometry :: Save (ostream & ost) 
+  void CSGeometry :: Save (ostream & ost) const
   {
     ost << "boundingbox "
 	<< boundingbox.PMin()(0) << " "
@@ -326,7 +334,7 @@ namespace netgen
 
 
 
-  void CSGeometry :: SaveSurfaces (ostream & out)
+  void CSGeometry :: SaveSurfaces (ostream & out) const
   {
     if(singfaces.Size() > 0 || singedges.Size() > 0 || singpoints.Size() > 0)
       {
@@ -483,6 +491,10 @@ namespace netgen
   }
     
 
+  void CSGeometry :: SaveToMeshFile (ostream & ost) const
+  {
+    SaveSurfaces (ost);
+  }
 
 
 
@@ -969,8 +981,7 @@ namespace netgen
 
 
   void CSGeometry :: 
-  CalcTriangleApproximation(const Box<3> & aboundingbox,
-			    double detail, double facets)
+  CalcTriangleApproximation(double detail, double facets)
   {
     PrintMessage (1, "Calc Triangle Approximation");
 
@@ -1011,7 +1022,7 @@ namespace netgen
 	      continue;
 
 	    TriangleApproximation tas;
-	    GetSurface (j) -> GetTriangleApproximation (tas, aboundingbox, facets);
+	    GetSurface (j) -> GetTriangleApproximation (tas, boundingbox, facets);
 
 	    int oldnp = tams -> GetNP();
 
@@ -1454,7 +1465,7 @@ namespace netgen
 
 
   void CSGeometry :: 
-  IterateAllSolids (SolidIterator & it, bool only_once)
+  IterateAllSolids (SolidIterator & it, bool only_once) const
   {
     if (only_once)
       {

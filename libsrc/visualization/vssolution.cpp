@@ -29,32 +29,6 @@ namespace netgen
     delete solclass;
   }
 
-  /*
-  bool SolutionData :: GetMultiValue (int elnr, int npts,
-				     const double * xref, int sxref,
-				     const double * x, int sx,
-				     const double * dxdxref, int sdxdxref,
-				     double * values, int svalues)
-  {
-    bool res = false;
-    for (int i = 0; i < npts; i++)
-      res = GetValue (elnr, &xref[i*sxref], &x[i*sx], &dxdxref[i*sdxdxref], &values[i*svalues]);
-    return res;
-  }
-
-
-  bool SolutionData :: GetMultiSurfValue (int selnr, int npts,
-                                          const double * xref, int sxref,
-                                          const double * x, int sx,
-                                          const double * dxdxref, int sdxdxref,
-                                          double * values, int svalues)
-  {
-    bool res = false;
-    for (int i = 0; i < npts; i++)
-      res = GetSurfValue (selnr, &xref[i*sxref], &x[i*sx], &dxdxref[i*sdxdxref], &values[i*svalues]);
-    return res;
-  }
-  */
   
   VisualSceneSolution :: VisualSceneSolution ()
     : VisualScene()
@@ -231,9 +205,9 @@ namespace netgen
         ofstream surf_ost(surf_fn.c_str());
 
         surf_ost << "# vtk DataFile Version 1.0\n"
-            << "NGSolve surface mesh\n"
-            << "ASCII\n"
-            << "DATASET UNSTRUCTURED_GRID\n\n";
+		 << "NGSolve surface mesh\n"
+		 << "ASCII\n"
+		 << "DATASET UNSTRUCTURED_GRID\n\n";
 
         surf_ost << "POINTS " << mesh->GetNP() << " float\n";
         for (PointIndex pi = PointIndex::BASE; pi < mesh->GetNP()+PointIndex::BASE; pi++)
@@ -327,30 +301,30 @@ namespace netgen
           }
 
         /*
-        ost << "POINT_DATA " << mesh->GetNP() << "\n";
-        for (int i = 0; i < soldata.Size(); i++)
+	  ost << "POINT_DATA " << mesh->GetNP() << "\n";
+	  for (int i = 0; i < soldata.Size(); i++)
           {
-            ost << "VECTORS bfield float\n";
-            SolutionData & sol = *(soldata[i] -> solclass);
+	  ost << "VECTORS bfield float\n";
+	  SolutionData & sol = *(soldata[i] -> solclass);
             
-            for (PointIndex pi = PointIndex::BASE; 
-                 pi < mesh->GetNP()+PointIndex::BASE; pi++)
-              {
-                double values[3], sumvalues[3] = { 0, 0, 0 };
+	  for (PointIndex pi = PointIndex::BASE; 
+	  pi < mesh->GetNP()+PointIndex::BASE; pi++)
+	  {
+	  double values[3], sumvalues[3] = { 0, 0, 0 };
 
-                FlatArray<int> els = mesh->GetTopology().GetVertexElements(pi);
+	  FlatArray<int> els = mesh->GetTopology().GetVertexElements(pi);
 
-                for (int j = 0; j < els.Size(); j++)
-                  {
-                    sol.GetValue (els[j]-1, 0.25, 0.25, 0.25, values);
-                    for (int k = 0; k < 3; k++)
-                      sumvalues[k] += values[k];
-                  }
-                for (int k = 0; k < 3; k++)
-                  sumvalues[k] /= els.Size();
+	  for (int j = 0; j < els.Size(); j++)
+	  {
+	  sol.GetValue (els[j]-1, 0.25, 0.25, 0.25, values);
+	  for (int k = 0; k < 3; k++)
+	  sumvalues[k] += values[k];
+	  }
+	  for (int k = 0; k < 3; k++)
+	  sumvalues[k] /= els.Size();
                 
-                ost << sumvalues[0] << " "  << sumvalues[1] << " "  << sumvalues[2] << "\n";
-              }
+	  ost << sumvalues[0] << " "  << sumvalues[1] << " "  << sumvalues[2] << "\n";
+	  }
           }
         */
       } 
@@ -586,12 +560,12 @@ namespace netgen
       }
 
     /*
-    if (!cone_list)
+      if (!cone_list)
       {
-        cone_list = glGenLists (1);
-        glNewList (cone_list, GL_COMPILE);
-        DrawCone (Point<3> (0,0,0), Point<3> (0,0,1), 0.4);
-        glEndList();
+      cone_list = glGenLists (1);
+      glNewList (cone_list, GL_COMPILE);
+      DrawCone (Point<3> (0,0,0), Point<3> (0,0,1), 0.4);
+      glEndList();
       }
     */
     
@@ -919,11 +893,10 @@ namespace netgen
                         
                           DrawIsoLines (points[index[0]], points[index[1]], points[index[2]],
                                         values[index[0]], values[index[1]], values[index[2]]);
-                          // minval, maxval, numisolines);
+
                           if (ix < n-iy-1) 
                             DrawIsoLines (points[index[3]], points[index[4]], points[index[5]],
                                           values[index[3]], values[index[4]], values[index[5]]);
-                          // minval, maxval, numisolines);
                         }    
                   }
               
@@ -969,10 +942,8 @@ namespace netgen
                         {
                           DrawIsoLines (points[ii], points[ii+1], points[ii+n+1],
                                         values[ii], values[ii+1], values[ii+n+1]);
-                          // minval, maxval, numisolines);
                           DrawIsoLines (points[ii+1], points[ii+n+2], points[ii+n+1],
                                         values[ii+1], values[ii+n+2], values[ii+n+1]);
-                          // minval, maxval, numisolines);
                         }       
                   }
               }
@@ -1011,7 +982,7 @@ namespace netgen
                                   pts[trig.points[2].pnr].p,
                                   // trig.points[1].p,
                                   // trig.points[2].p,
-                                  vali[0], vali[1], vali[2]); // , minval, maxval, numisolines);
+                                  vali[0], vali[1], vali[2]);
                 }
             glEndList ();
           }
@@ -1136,22 +1107,6 @@ namespace netgen
           {
             bool curved = curv.IsSurfaceElementCurved (sei);
 
-            Point<3> lpi[4];
-            Vec<3> vx, vy, vtwist;
-            
-            if (! curved)
-              {
-                for (int k = 0; k < 4; k++)
-                  GetPointDeformation (el[k]-1, lpi[k]);
-                
-                vx = lpi[1]-lpi[0];
-                vy = lpi[3]-lpi[0];
-                vtwist = (lpi[0]-lpi[1]) + (lpi[2]-lpi[3]);
-              }
-	    
-            //             Vec<3> nv = Cross (lpi[1]-lpi[0], Center (lpi[2],lpi[3]) - lpi[0]);
-            //             nv.Normalize();
-            //             glNormal3dv (nv);
 
             for (int iy = 0, ii = 0; iy <= n; iy++)
               for (int ix = 0; ix <= n; ix++, ii++)
@@ -1171,6 +1126,16 @@ namespace netgen
                 }
             else
               {
+		Point<3> lpi[4];
+		Vec<3> vx, vy, vtwist;
+		
+		for (int k = 0; k < 4; k++)
+		  GetPointDeformation (el[k]-1, lpi[k]);
+		
+		vx = lpi[1]-lpi[0];
+		vy = lpi[3]-lpi[0];
+		vtwist = (lpi[0]-lpi[1]) + (lpi[2]-lpi[3]);
+
                 for (int ii = 0; ii < npt; ii++)
                   {
                     double x = pref[ii](0);
@@ -1407,7 +1372,7 @@ namespace netgen
         bool curved = curv.IsSurfaceElementCurved (sei);
 
         int nv = (el.GetType() == TRIG || el.GetType() == TRIG6) ? 3 : 4;
-        
+        /*
         Point<3> p1, p2, p3, p4;
         if (!curved)
           {
@@ -1416,6 +1381,7 @@ namespace netgen
             p3 = (*mesh)[el[2]];
             if (nv == 4) p4 = (*mesh)[el[3]];
           }
+	*/
 
         for (int k = 0; k < nv; k++)
           {
@@ -1434,12 +1400,12 @@ namespace netgen
 
             glBegin (GL_LINE_STRIP);
 
-            if (curved)
+            // if (curved)
               {
                 for (int ix = 0; ix <= n; ix++)
                   ptsloc[ix] = p0 + (double(ix) / n) * vtau;
                     
-                mesh->GetCurvedElements().
+                mesh->GetCurvedElements(). 
                   CalcMultiPointSurfaceTransformation (&ptsloc, sei, &ptsglob, 0);
 
                 for (int ix = 0; ix <= n; ix++)
@@ -1449,6 +1415,7 @@ namespace netgen
                     glVertex3dv (ptsglob[ix]);
                   }
               }
+	      /*
             else
               {
                 for (int ix = 0; ix <= n; ix++)
@@ -1468,6 +1435,7 @@ namespace netgen
                     glVertex3dv (pnt);
                   }
               }
+	      */
             glEnd ();
           }
       }
@@ -1697,7 +1665,6 @@ namespace netgen
                                         points[1] = edgep[cpe2];
                                         points[2] = edgep[cpe3];
 
-
                                         Vec<3> normal = Cross (points[2]-points[0], points[1]-points[0]);
                                         if ( ( (normal * (p2-p1)) > 0 ) == ( nodevali[lpi1] < 0) )
                                           normal *= -1;
@@ -1709,8 +1676,6 @@ namespace netgen
                                       }
                                     else
                                       {
-                                        // glNormal3dv (grads[teti[0]]);
-                                        
                                         glNormal3dv (normp[cpe1]);
                                         glVertex3dv (edgep[cpe1]);
                                         glNormal3dv (normp[cpe2]);
@@ -1989,19 +1954,19 @@ namespace netgen
             else if (el.GetType() == QUAD)
               {
                 /*
-                Array < Point<3> > lp(3);
+		  Array < Point<3> > lp(3);
 
-                lp[0] = mesh->Point(el[0]);
-                lp[1] = mesh->Point(el[1]);
-                lp[2] = mesh->Point(el[2]);
+		  lp[0] = mesh->Point(el[0]);
+		  lp[1] = mesh->Point(el[1]);
+		  lp[2] = mesh->Point(el[2]);
 
-                DrawTrigSurfaceVectors(lp,pmin,pmax,sei,vsol);
+		  DrawTrigSurfaceVectors(lp,pmin,pmax,sei,vsol);
 
-                lp[0] = mesh->Point(el[0]);
-                lp[1] = mesh->Point(el[2]);
-                lp[2] = mesh->Point(el[3]);
+		  lp[0] = mesh->Point(el[0]);
+		  lp[1] = mesh->Point(el[2]);
+		  lp[2] = mesh->Point(el[3]);
 
-                DrawTrigSurfaceVectors(lp,pmin,pmax,sei,vsol);
+		  DrawTrigSurfaceVectors(lp,pmin,pmax,sei,vsol);
                 */
                 
                 Point<3> lp[4];
@@ -2303,91 +2268,8 @@ namespace netgen
         ArrayMem<double,20> values(data->components);
         ok = GetValues (data, elnr, xref, x, dxdxref, &values[0]);
 
-        switch (evalfunc)
-          {
-          case FUNC_ABS:
-            {
-              for (int ci = 0; ci < data->components; ci++)
-                val += sqr (values[ci]);
-              val = sqrt (val);
-              break;
-            }
-          case FUNC_ABS_TENSOR:
-            {
-              int d = 0;
-              switch (data->components)
-                {
-                case 1: d = 1; break;
-                case 3: d = 2; break;
-                case 6: d = 3; break;
-                }
-              int ci;
-              for (ci = 0; ci < d; ci++)
-                val += sqr (values[ci]);
-              for (ci = d; ci < data->components; ci++)
-                val += 2*sqr (values[ci]);
-              val = sqrt (val);
-              break;
-            }
-
-          case FUNC_MISES:
-            {
-              int d = 0;
-              switch(data->components)
-                {
-                case 1: d = 1; break;
-                case 3: d = 2; break;
-                case 6: d = 3; break;
-                }
-              int ci;
-              double trace = 0.;
-              for (ci = 0; ci < d; ci++)
-                trace += 1./3.*(values[ci]);
-              for (ci = 0; ci < d; ci++)
-                val += sqr (values[ci]-trace);
-              for (ci = d; ci < data->components; ci++)
-                val += 2.*sqr (values[ci]);
-              val = sqrt (val);
-              break;
-            }
-          case FUNC_MAIN:
-            {
-              int d = 0;
-              switch(data->components)
-                {
-                case 1: d = 1; break;
-                case 3: d = 2; break;
-                case 6: d = 3; break;
-                }
-              Mat<3,3> m ;
-              Vec<3> ev;
-              int ci;
-              for (ci = 0; ci < d; ci++)
-                m(ci,ci) = (values[ci]);
-              m(0,1) = m(1,0) = values[3];
-              m(0,2) = m(2,0) = values[4];
-              m(1,2) = m(2,1) = values[5];
-
-              EigenValues (m, ev);
-              double help;
-              for (int i=0; i<d; i++)
-                {
-                  for (int j=d-1; i<j; j--)
-                    {
-                      if ( abs(ev(j)) > abs(ev(j-1)) )
-                        {
-                          help = ev(j);
-                          ev(j) = ev(j-1);
-                          ev(j-1) = help;
-                        }
-                    }
-                }
-              val = (ev(0));
-              break;
-            }
-          }
-
-        return ok;      
+	val = ExtractValue (data, 0, &values[0]);
+	return ok;
       }
 
 
@@ -2552,92 +2434,8 @@ namespace netgen
       {
         ArrayMem<double,20> values(data->components);
         ok = GetValues (data, elnr, lam1, lam2, lam3, &values[0]);
-
-        switch (evalfunc)
-          {
-          case FUNC_ABS:
-            {
-              for (int ci = 0; ci < data->components; ci++)
-                val += sqr (values[ci]);
-              val = sqrt (val);
-              break;
-            }
-          case FUNC_ABS_TENSOR:
-            {
-              int d = 0;
-              switch (data->components)
-                {
-                case 1: d = 1; break;
-                case 3: d = 2; break;
-                case 6: d = 3; break;
-                }
-              int ci;
-              for (ci = 0; ci < d; ci++)
-                val += sqr (values[ci]);
-              for (ci = d; ci < data->components; ci++)
-                val += 2*sqr (values[ci]);
-              val = sqrt (val);
-              break;
-            }
-
-          case FUNC_MISES:
-            {
-              int d = 0;
-              switch(data->components)
-                {
-                case 1: d = 1; break;
-                case 3: d = 2; break;
-                case 6: d = 3; break;
-                }
-              int ci;
-              double trace = 0.;
-              for (ci = 0; ci < d; ci++)
-                trace += 1./3.*(values[ci]);
-              for (ci = 0; ci < d; ci++)
-                val += sqr (values[ci]-trace);
-              for (ci = d; ci < data->components; ci++)
-                val += 2.*sqr (values[ci]);
-              val = sqrt (val);
-              break;
-            }
-          case FUNC_MAIN:
-            {
-              int d = 0;
-              switch(data->components)
-                {
-                case 1: d = 1; break;
-                case 3: d = 2; break;
-                case 6: d = 3; break;
-                }
-              Mat<3,3> m ;
-              Vec<3> ev;
-              int ci;
-              for (ci = 0; ci < d; ci++)
-                m(ci,ci) = (values[ci]);
-              m(0,1) = m(1,0) = values[3];
-              m(0,2) = m(2,0) = values[4];
-              m(1,2) = m(2,1) = values[5];
-
-              EigenValues (m, ev);
-              double help;
-              for (int i=0; i<d; i++)
-                {
-                  for (int j=d-1; i<j; j--)
-                    {
-                      if ( abs(ev(j)) > abs(ev(j-1)) )
-                        {
-                          help = ev(j);
-                          ev(j) = ev(j-1);
-                          ev(j-1) = help;
-                        }
-                    }
-                }
-              val = (ev(0));
-              break;
-            }
-          }
-
-        return ok;      
+	val = ExtractValue (data, 0, &values[0]);
+	return ok;
       }
 
 
@@ -3046,103 +2844,8 @@ namespace netgen
         val = 0;
         ArrayMem<double,20> values(data->components);
         ok = GetSurfValues (data, selnr, lam1, lam2, &values[0]);
-        // ok = 1;
-        // values[0] = 1.0;
-
-        switch (evalfunc)
-          {
-          case FUNC_ABS:
-            {
-              for (int ci = 0; ci < data->components; ci++)
-                val += sqr (values[ci]);
-              val = sqrt (val);
-              break;
-            }
-          case FUNC_ABS_TENSOR:
-            {
-              int d = 0;
-              switch (data->components)
-                {
-                case 1: d = 1; break;
-                case 3: d = 2; break;
-                case 6: d = 3; break;
-                }
-              int ci;
-              for (ci = 0; ci < d; ci++)
-                val += sqr (values[ci]);
-              for (ci = d; ci < data->components; ci++)
-                val += 2*sqr (values[ci]);
-              val = sqrt (val);
-              break;
-            }
-
-          case FUNC_MISES:
-            {
-              int d = 0;
-              switch(data->components)
-                {
-                case 1: d = 1; break;
-                case 3: d = 2; break;
-                case 6: d = 3; break;
-                }
-              int ci;
-              double trace = 0.;
-              for (ci = 0; ci < d; ci++)
-                trace += 1./3.*(values[ci]);
-              for (ci = 0; ci < d; ci++)
-                val += sqr (values[ci]-trace);
-              for (ci = d; ci < data->components; ci++)
-                val += 2.*sqr (values[ci]);
-              val = sqrt (val);
-              break;
-            }
-          case FUNC_MAIN:
-            {
-              int d = 0;
-              switch(data->components)
-                {
-                case 1: d = 1; break;
-                case 3: d = 2; break;
-                case 6: d = 3; break;
-                }
-              Mat<3,3> m ;
-              Vec<3> ev;
-              int ci;
-              for (ci = 0; ci < d; ci++)
-                m(ci,ci) = (values[ci]);
-              m(0,1) = m(1,0) = values[3];
-              m(0,2) = m(2,0) = values[4];
-              m(1,2) = m(2,1) = values[5];
-
-              EigenValues (m, ev);
-              double help;
-              for (int i=0; i<d; i++)
-                {
-                  for (int j=d-1; i<j; j--)
-                    {
-                      if ( abs(ev(j)) > abs(ev(j-1)) )
-                        {
-                          help = ev(j);
-                          ev(j) = ev(j-1);
-                          ev(j-1) = help;
-                        }
-                    }
-                }
-              val = (ev(0));
-              break;
-            }
-          }
-
-        return ok;      
-
-
-        /*
-          int ci;
-          double val = 0;
-          for (ci = 1; ci <= data->components; ci++)
-          val += sqr (GetSurfValue (data, selnr, lam1, lam2, ci));
-          return sqrt (val);
-        */
+	val = ExtractValue (data, 0, &values[0]);
+	return ok;
       }
 
 
@@ -3375,101 +3078,8 @@ namespace netgen
         val = 0;
         ArrayMem<double,20> values(data->components);
         ok = GetSurfValues (data, selnr, xref, x, dxdxref, &values[0]);
-
-        switch (evalfunc)
-          {
-          case FUNC_ABS:
-            {
-              for (int ci = 0; ci < data->components; ci++)
-                val += sqr (values[ci]);
-              val = sqrt (val);
-              break;
-            }
-          case FUNC_ABS_TENSOR:
-            {
-              int d = 0;
-              switch (data->components)
-                {
-                case 1: d = 1; break;
-                case 3: d = 2; break;
-                case 6: d = 3; break;
-                }
-              int ci;
-              for (ci = 0; ci < d; ci++)
-                val += sqr (values[ci]);
-              for (ci = d; ci < data->components; ci++)
-                val += 2*sqr (values[ci]);
-              val = sqrt (val);
-              break;
-            }
-
-          case FUNC_MISES:
-            {
-              int d = 0;
-              switch(data->components)
-                {
-                case 1: d = 1; break;
-                case 3: d = 2; break;
-                case 6: d = 3; break;
-                }
-              int ci;
-              double trace = 0.;
-              for (ci = 0; ci < d; ci++)
-                trace += 1./3.*(values[ci]);
-              for (ci = 0; ci < d; ci++)
-                val += sqr (values[ci]-trace);
-              for (ci = d; ci < data->components; ci++)
-                val += 2.*sqr (values[ci]);
-              val = sqrt (val);
-              break;
-            }
-          case FUNC_MAIN:
-            {
-              int d = 0;
-              switch(data->components)
-                {
-                case 1: d = 1; break;
-                case 3: d = 2; break;
-                case 6: d = 3; break;
-                }
-              Mat<3,3> m ;
-              Vec<3> ev;
-              int ci;
-              for (ci = 0; ci < d; ci++)
-                m(ci,ci) = (values[ci]);
-              m(0,1) = m(1,0) = values[3];
-              m(0,2) = m(2,0) = values[4];
-              m(1,2) = m(2,1) = values[5];
-
-              EigenValues (m, ev);
-              double help;
-              for (int i=0; i<d; i++)
-                {
-                  for (int j=d-1; i<j; j--)
-                    {
-                      if ( abs(ev(j)) > abs(ev(j-1)) )
-                        {
-                          help = ev(j);
-                          ev(j) = ev(j-1);
-                          ev(j-1) = help;
-                        }
-                    }
-                }
-              val = (ev(0));
-              break;
-            }
-          }
-
-        return ok;      
-
-
-        /*
-          int ci;
-          double val = 0;
-          for (ci = 1; ci <= data->components; ci++)
-          val += sqr (GetSurfValue (data, selnr, lam1, lam2, ci));
-          return sqrt (val);
-        */
+	val = ExtractValue (data, 0, &values[0]);
+	return ok;
       }
 
 
@@ -4174,13 +3784,7 @@ namespace netgen
 					 &mvalues[0], sol->components);
 	    
 	    if (!drawelem) ok = false;
-	    if (usetexture == 2)
-	      {
-		;
-	      // for (int ii = 0; ii < nlp; ii++)
-	      // valuesc[ii] = ExtractValueComplex(sol, scalcomp, &mvalues[ii*sol->components]);
-	      }
-	    else
+	    if (usetexture != 2)
 	      for (int ii = 0; ii < nlp; ii++)
 		vals[ii] = ExtractValue(sol, scalcomp, &mvalues[ii*sol->components]);
 	  }
@@ -4189,35 +3793,14 @@ namespace netgen
           {
             p[j] = points[trig.points[j].pnr].p;
 	    Point<3> ploc = points[trig.points[j].pnr].lami;
-	    int locpnr = trig.points[j].locpnr;
             
             if (deform)
               p[j] += GetDeformation (trig.elnr, ploc);
             
-            if (usetexture != 2 || !sol->iscomplex)
-              {
-		;
-		/*
-                if (elnrs[trig.points[j].locpnr] != trig.elnr)
-                  {
-                    elnrs[trig.points[j].locpnr] = trig.elnr;
-
-		    ok = GetValue (sol, trig.elnr, &locpoints[locpnr](0), 
-				   &globpoints[locpnr](0), &jacobi[locpnr](0,0), scalcomp, vals[locpnr]);
-
-		    trigok[trig.points[j].locpnr] = ok;
-		  }
-                else
-                  {   
-		    ok = trigok[trig.points[j].locpnr];
-                  }
-		*/
-              }
-            else
+            if (usetexture == 2 && sol->iscomplex)
               {
                 ok = GetValueComplex (sol, trig.elnr, ploc(0), ploc(1), ploc(2),
 				      scalcomp, valc[j]);
-                
               }
           }
 
@@ -4485,7 +4068,6 @@ namespace netgen
                   int argc, tcl_const char *argv[])
 
   {
-    int i;
     if (argc >= 2)
       {
         if (strcmp (argv[1], "parameters") == 0)
@@ -4525,7 +4107,7 @@ namespace netgen
             const char * pch = strchr(scalname,'.');
             pointpos = int(pch-scalname+1);
 
-            for (i = 0; i < vssolution.soldata.Size(); i++)
+            for (int i = 0; i < vssolution.soldata.Size(); i++)
               {
                 if ( (strlen (vssolution.soldata[i]->name) == pointpos-1) &&
                      (strncmp (vssolution.soldata[i]->name, scalname, pointpos-1) == 0) )

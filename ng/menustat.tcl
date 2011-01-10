@@ -412,10 +412,10 @@ set videoactive 0
 menu .ngmenu.mesh
 .ngmenu.mesh add command -label "Generate Mesh" -accelerator "<g><m>" \
     -command { 
-	Ng_GenerateMesh ${meshoptions.firststep} ${meshoptions.laststep}
-	Ng_ReadStatus
 	set selectvisual mesh
 	Ng_SetVisParameters
+	Ng_GenerateMesh ${meshoptions.firststep} ${meshoptions.laststep}
+	Ng_ReadStatus
 	redraw
     }
 
@@ -526,67 +526,8 @@ menu .ngmenu.mesh.surfoptstep
 #####################################################
 
 menu .ngmenu.geometry
-.ngmenu.geometry add command -label "Scan CSG Geometry" -command { Ng_ParseGeometry }
-.ngmenu.geometry add command -label "CSG Options..." -command geometryoptionsdialog
-# only intern version !
-# .ngmenu.geometry add separator
-# .ngmenu.geometry add command -label "New Primitive"  \
-#     -command newprimitivedialog -accelerator "<n><p>"
-# .ngmenu.geometry add command -label "Edit Primitive" \
-#     -command editprimitivedialog -accelerator "<e><p>"
-# .ngmenu.geometry add command -label "Edit Solid" \
-#     -command newsoliddialog -accelerator "<e><s>"
-# .ngmenu.geometry add command -label "Choose Top Level " \
-#     -command topleveldialog 
-# .ngmenu.geometry add command -label "Identify" \
-#     -command identifydialog 
-.ngmenu.geometry add command -label "CSG Properties..." \
-    -command topleveldialog2 
 
-.ngmenu.geometry add separator
 
-.ngmenu.geometry add command -label "STL Doctor..." \
-    -command { stldoctordialog; }
-
-.ngmenu.geometry add command -label "STL Info" \
-    -command {
-	set notriangles 0
-	set minx 0
-	set maxx 0
-	set miny 0
-	set maxy 0
-	set minz 0
-	set maxz 0
-	set trigscons 0
-	Ng_STLInfo notriangles minx maxx miny maxy minz maxz trigscons
-	set msgtext "NO STL-Triangles : $notriangles\nGeometry:\nX = $minx - $maxx\nY = $miny - $maxy\nZ = $minz - $maxz\nConsistency Check = $trigscons\n"
-	set msgtext "$msgtext Status: [Ng_STLInfo status]"
-	tk_messageBox -title "STL Info" -message  $msgtext -type ok 
-    }
-
-.ngmenu.geometry add separator
-
-.ngmenu.geometry add command -label "IGES/STEP Topology Explorer/Doctor..." \
-    -command { occdialog; }
-
-# Philippose - 30/01/2009
-# Add menu item for local face mesh size definition in the 
-# TCL Gui
-.ngmenu.geometry add command -label "Edit Face Mesh Size..." \
-    -command { surfacemeshsizedialog }
-
-.ngmenu.geometry add command -label "OCC Construction" \
-    -command { Ng_OCCConstruction; }
-
-if { [Ng_ACISCommand isACISavailable] == "yes" } {
-    .ngmenu.geometry add command -label "ACIS Topology Explorer..." \
-        -command { acisdialog; }
-
-    .ngmenu.geometry add command -label "ACIS combine all" \
-        -command { Ng_ACISCommand combineall }
-    .ngmenu.geometry add command -label "ACIS Create CT" \
-        -command { Ng_ACISCommand createct }
-}
 
 
 
@@ -864,13 +805,19 @@ pack .bubar -side top -fill x
 
 button .bubar.testb -text "Test" -command { Ng_SaveGeometry }
 button .bubar.surfm -text "Generate Mesh" -command \
-    { set selectvisual mesh; 
-	Ng_SetVisParameters;
-	Ng_GenerateMesh ${meshoptions.firststep} ${meshoptions.laststep}
-	redraw 
+    { 
+	.ngmenu.mesh invoke "Generate Mesh"; 
+#	set selectvisual mesh; 
+#	Ng_SetVisParameters;
+#	Ng_GenerateMesh ${meshoptions.firststep} ${meshoptions.laststep}
+#	redraw 
     }
 button .bubar.stopm -text "Stop" -command \
-    { Ng_StopMeshing;  set stopdemo 1 }
+    { 
+	# Ng_StopMeshing;  
+	set multithread_terminate 1;
+	set stopdemo 1;
+    }
 button .bubar.exitb -text "Quit" \
     -command { 
 	   set ans [tk_messageBox -title "Quit Netgen?" -message "Do you really want to quit Netgen?" -type yesno -default "no" -icon question]

@@ -150,11 +150,14 @@ namespace netgen
 
     void Clean ();
 
-    void Save (ostream & ost);
+    virtual void Save (string filename) const;
+    void Save (ostream & ost) const;
     void Load (istream & ist);
 
-    void SaveSurfaces (ostream & out);
+    void SaveSurfaces (ostream & out) const;
     void LoadSurfaces (istream & in);
+
+    virtual void SaveToMeshFile (ostream & ost) const;
 
     int GetChangeVal() { return changeval; }
     void Change() { changeval++; }
@@ -200,10 +203,10 @@ namespace netgen
     }
 
     TopLevelObject * GetTopLevelObject (const Solid * sol, const Surface * surf = NULL);
-    TopLevelObject * GetTopLevelObject (int nr)
+    TopLevelObject * GetTopLevelObject (int nr) const
     { return toplevelobjects[nr]; }
-    const TopLevelObject * GetTopLevelObject (int nr) const
-    { return toplevelobjects[nr]; }
+    // const TopLevelObject * GetTopLevelObject (int nr) const
+    // { return toplevelobjects[nr]; }
     void RemoveTopLevelObject (Solid * sol, Surface * surf = NULL); 
 
 
@@ -237,8 +240,7 @@ namespace netgen
 
 
     ///
-    void CalcTriangleApproximation(const Box<3> & boundingbox,
-				   double detail, double facets);
+    void CalcTriangleApproximation(double detail, double facets);
 
     ///
     void FindIdenticSurfaces (double eps);
@@ -270,7 +272,7 @@ namespace netgen
     }
   
 
-    void IterateAllSolids (SolidIterator & it, bool only_once = false);
+    void IterateAllSolids (SolidIterator & it, bool only_once = false) const;
 
     void RefineTriangleApprox (Solid * locsol, 
 			       int surfind,
@@ -309,11 +311,15 @@ namespace netgen
 
     Array<BCModification> bcmodifications;
 
-    virtual int GenerateMesh (Mesh*& mesh,
-			      int perfstepsstart, int perfstepsend, char* optstring);
+    virtual int GenerateMesh (Mesh*& mesh, MeshingParameters & mparam, 
+			      int perfstepsstart, int perfstepsend);
 
     virtual const Refinement & GetRefinement () const; 
   };
+
+
+  
+
 
 }
 

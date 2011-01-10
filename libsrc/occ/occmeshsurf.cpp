@@ -666,7 +666,7 @@ namespace netgen
 		int surfi, 
 		const PointGeomInfo & gi1, 
 		const PointGeomInfo & gi2,
-		Point<3> & newp, PointGeomInfo & newgi)
+		Point<3> & newp, PointGeomInfo & newgi) const
   {
     Point<3> hnewp;
     hnewp = p1+secpoint*(p2-p1);
@@ -697,7 +697,7 @@ namespace netgen
 		int surfi1, int surfi2, 
 		const EdgePointGeomInfo & ap1, 
 		const EdgePointGeomInfo & ap2,
-		Point<3> & newp, EdgePointGeomInfo & newgi)
+		Point<3> & newp, EdgePointGeomInfo & newgi) const
   {
     double s0, s1;
 
@@ -711,13 +711,13 @@ namespace netgen
   };
 
 
-  void OCCRefinementSurfaces :: ProjectToSurface (Point<3> & p, int surfi)
+  void OCCRefinementSurfaces :: ProjectToSurface (Point<3> & p, int surfi) const
   {
     if (surfi > 0)
       geometry.Project (surfi, p);
   };
 
-  void OCCRefinementSurfaces :: ProjectToSurface (Point<3> & p, int surfi, PointGeomInfo & gi)
+  void OCCRefinementSurfaces :: ProjectToSurface (Point<3> & p, int surfi, PointGeomInfo & gi) const
   {
     if (surfi > 0)
       if (!geometry.FastProject (surfi, p, gi.u, gi.v))

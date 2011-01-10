@@ -1329,9 +1329,8 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
 }
 
 
-//void * STLMeshingDummy (void *)
-int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh,
-			    int perfstepsstart, int perfstepsend, char* optstring)
+int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh, MeshingParameters & mparam,
+			    int perfstepsstart, int perfstepsend)
 {
   if (perfstepsstart > perfstepsend) return 0;
 
@@ -1433,6 +1432,7 @@ int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh,
 	      PrintWarning("Surface optimization with meshed volume is dangerous!!!"); 
 	    }
 
+	  /*
 	  if (!optstring || strlen(optstring) == 0)
 	    {
 	      mparam.optimize2d = "smcm";
@@ -1441,6 +1441,7 @@ int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh,
 	    {
 	      mparam.optimize2d = optstring;
 	    }
+	  */
 
 	  STLSurfaceOptimization (*stlgeometry, *mesh, mparam);
 	  
@@ -1555,6 +1556,7 @@ int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh,
 	      return 0; 
 	    }
 
+	  /*
 	  if (!optstring || strlen(optstring) == 0)
 	    {
 	      mparam.optimize3d = "cmdmstm";
@@ -1563,7 +1565,7 @@ int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh,
 	    {
 	      mparam.optimize3d = optstring;
 	    }
-
+	  */
 
 	  OptimizeVolume (mparam, *mesh);
 	  

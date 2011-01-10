@@ -69,11 +69,9 @@ namespace netgen
 #include "paralleltop.hpp"
 // #include "../parallel/parallelmesh.hpp"
 #endif
+}
+
 
 #include "basegeom.hpp"
-
-
-
-}
 
 #endif

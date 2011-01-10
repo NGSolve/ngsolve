@@ -31,7 +31,7 @@ extern void BisectTets (Mesh &, const CSGeometry *,
 extern void BisectTetsCopyMesh (Mesh &, const class CSGeometry *,
 				BisectionOptions & opt);
 
-extern void ZRefinement (Mesh &, const CSGeometry *,
+extern void ZRefinement (Mesh &, const class NetgenGeometry *,
 			 ZRefinementOptions & opt);
 
 
@@ -48,7 +48,7 @@ public:
   
   void Refine (Mesh & mesh) const;
   void Refine (Mesh & mesh);
-  void Bisect (Mesh & mesh, class BisectionOptions & opt, Array<double> * quality_loss = NULL);
+  void Bisect (Mesh & mesh, class BisectionOptions & opt, Array<double> * quality_loss = NULL) const;
 
   void MakeSecondOrder (Mesh & mesh) const;
   void MakeSecondOrder (Mesh & mesh);
@@ -57,13 +57,13 @@ public:
 			     int surfi, 
 			     const PointGeomInfo & gi1, 
 			     const PointGeomInfo & gi2,
-			     Point<3> & newp, PointGeomInfo & newgi);
+			     Point<3> & newp, PointGeomInfo & newgi) const;
 
   virtual void PointBetween (const Point<3> & p1, const Point<3> & p2, double secpoint,
 			     int surfi1, int surfi2, 
 			     const EdgePointGeomInfo & ap1, 
 			     const EdgePointGeomInfo & ap2,
-			     Point<3> & newp, EdgePointGeomInfo & newgi);
+			     Point<3> & newp, EdgePointGeomInfo & newgi) const;
 
   virtual Vec<3> GetTangent (const Point<3> & p, int surfi1, int surfi2,
                              const EdgePointGeomInfo & egi) const;
@@ -72,9 +72,9 @@ public:
                             const PointGeomInfo & gi) const;
 
 
-  virtual void ProjectToSurface (Point<3> & p, int surfi);
+  virtual void ProjectToSurface (Point<3> & p, int surfi) const;
 
-  virtual void ProjectToSurface (Point<3> & p, int surfi, const PointGeomInfo & /* gi */)
+  virtual void ProjectToSurface (Point<3> & p, int surfi, const PointGeomInfo & /* gi */) const
   {
     ProjectToSurface (p, surfi);
   }
@@ -86,7 +86,7 @@ public:
   void ValidateRefinedMesh (Mesh & mesh, 
 			    Array<INDEX_2> & parents);
 
-  MeshOptimize2d * Get2dOptimizer(void)
+  MeshOptimize2d * Get2dOptimizer(void) const
   {
     return optimizer2d;
   }

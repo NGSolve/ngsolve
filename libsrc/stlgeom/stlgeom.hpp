@@ -172,6 +172,7 @@ namespace netgen
 
     void Clear();
 
+    virtual void Save (string filename) const;
 
 
     void STLInfo(double* data);
@@ -438,8 +439,8 @@ namespace netgen
     friend class MeshingSTLSurface;
 
 
-    virtual int GenerateMesh (Mesh*& mesh,
-			      int perfstepsstart, int perfstepsend, char* optstring);
+    virtual int GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
+			      int perfstepsstart, int perfstepsend);
     
     virtual const Refinement & GetRefinement () const;
   };
@@ -449,8 +450,8 @@ namespace netgen
 
 
 
-  extern int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh,
-			      int perfstepsstart, int perfstepsend, char* optstring);
+  extern int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh, MeshingParameters & mparam,
+			      int perfstepsstart, int perfstepsend);
 
 
 }

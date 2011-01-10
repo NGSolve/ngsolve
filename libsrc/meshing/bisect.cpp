@@ -2638,7 +2638,7 @@ namespace netgen
 
   void Refinement :: Bisect (Mesh & mesh, 
 			     BisectionOptions & opt,
-			     Array<double> * quality_loss)
+			     Array<double> * quality_loss) const
   {
     PrintMessage(1,"Mesh bisection");
     PushStatus("Mesh bisection");
@@ -4027,7 +4027,7 @@ namespace netgen
 				   int surfi, 
 				   const PointGeomInfo & gi1, 
 				   const PointGeomInfo & gi2,
-				   Point<3> & newp, PointGeomInfo & newgi)
+				   Point<3> & newp, PointGeomInfo & newgi) const
   {
     newp = p1+secpoint*(p2-p1);
   }
@@ -4036,8 +4036,9 @@ namespace netgen
 				   int surfi1, int surfi2, 
 				   const EdgePointGeomInfo & ap1, 
 				   const EdgePointGeomInfo & ap2,
-				   Point<3> & newp, EdgePointGeomInfo & newgi)
+				   Point<3> & newp, EdgePointGeomInfo & newgi) const
   {
+    cout << "base class edge point between" << endl;
     newp = p1+secpoint*(p2-p1);
   }
 
@@ -4057,7 +4058,7 @@ namespace netgen
   }
 
 
-  void Refinement :: ProjectToSurface (Point<3> & p, int surfi)
+  void Refinement :: ProjectToSurface (Point<3> & p, int surfi) const
   {
     if (printmessage_importance>0)
       cerr << "Refinement :: ProjectToSurface    ERROR: no geometry set" << endl;

@@ -3,15 +3,19 @@ include_HEADERS =
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL  -D$(TOGL_WINDOWINGSYSTEM) $(OCCFLAGS)  $(TCL_INCLUDES) $(MPI_INCLUDES) $(FFMPEG_INCLUDES) $(JPEGLIB_INCLUDES)
 
 bin_PROGRAMS = netgen
-netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp nginterface.cpp nginterface_v2.cpp parallelfunc.cpp parallelinterface.cpp demoview.hpp parallelfunc.hpp togl_1_7.h
+netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp nginterface.cpp nginterface_v2.cpp parallelfunc.cpp parallelinterface.cpp demoview.hpp parallelfunc.hpp togl_1_7.h ng_occ.hpp ng_stl.hpp
 
 
 netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
+	$(top_builddir)/libsrc/csg/libcsgvis.la \
 	$(top_builddir)/libsrc/csg/libcsg.la \
+	$(top_builddir)/libsrc/geom2d/libgeom2dvis.la \
 	$(top_builddir)/libsrc/geom2d/libgeom2d.la \
 	$(top_builddir)/libsrc/interface/libinterface.la \
-	$(top_builddir)/libsrc/stlgeom/libstl.la \
+	$(top_builddir)/libsrc/occ/liboccvis.la \
 	$(top_builddir)/libsrc/occ/libocc.la \
+	$(top_builddir)/libsrc/stlgeom/libstlvis.la \
+	$(top_builddir)/libsrc/stlgeom/libstl.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
 	$(top_builddir)/libsrc/linalg/libla.la \
@@ -23,9 +27,10 @@ netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
 #
 #
 
-dist_bin_SCRIPTS = dialog.tcl menustat.tcl ngicon.tcl ng.tcl \
-ngvisual.tcl sockets.tcl drawing.tcl nghelp.tcl ngshell.tcl  \
-ngtesting.tcl parameters.tcl variables.tcl netgen.ocf
+dist_bin_SCRIPTS = dialog.tcl menustat.tcl ngicon.tcl ng.tcl	  \
+ngvisual.tcl sockets.tcl drawing.tcl nghelp.tcl ngshell.tcl	  \
+ngtesting.tcl parameters.tcl variables.tcl csgeom.tcl stlgeom.tcl \
+occgeom.tcl acisgeom.tcl netgen.ocf
 
 netgen_LDFLAGS = -rdynamic  -static
 

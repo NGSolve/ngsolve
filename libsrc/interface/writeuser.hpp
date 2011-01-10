@@ -158,7 +158,7 @@ extern void RegisterUserFormats (Array<const char*> & names,
 
 extern bool WriteUserFormat (const string & format,
                              const Mesh & mesh,
-                             const CSGeometry & geom,
+                             const NetgenGeometry & geom,
                              const string & filename);
 
 #endif

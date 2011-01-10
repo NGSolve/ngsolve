@@ -20,12 +20,11 @@ extern void ResetTime ();
 extern int testmode;
 
 /// calling parameters
-extern Flags parameters;
+// extern Flags parameters;
 
 extern MeshingParameters mparam;
 
 extern Array<int> tets_in_qualclass;
-
 
 class multithreadt
 {

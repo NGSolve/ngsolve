@@ -43,19 +43,6 @@ namespace netgen
     int Begin() const { return BASE; }
     int End() const { return size+BASE; }
 
-    /*
-   /// access array. 
-   T & operator[] (int i) 
-   { 
-   #ifdef DEBUG
-   if (i-BASE < 0 || i-BASE >= size)
-   cout << "array<" << typeid(T).name() << "> out of range, i = " << i << ", s = " << size << endl;
-   #endif
-
-   return data[i-BASE]; 
-   }
-    */
-
     /// Access array. BASE-based
     T & operator[] (int i) const
     {
@@ -66,12 +53,6 @@ namespace netgen
 
       return data[i-BASE]; 
     }
-
-    /*
-      template <int B2>
-      IndirectArray<T, BASE, B2> operator[] (const FlatArray<int, B2> & ind) 
-      { return IndirectArray<T, BASE, B2>  (*this, ind); }
-    */
 
     /// Access array, one-based  (old fashioned)
     T & Elem (int i)
@@ -109,8 +90,6 @@ namespace netgen
 
       ((T*)data)[i-1] = el; 
     }
-
-
 
     /// access first element
     T & First () const
@@ -180,6 +159,9 @@ namespace netgen
   class Array : public FlatArray<T, BASE>
   {
   protected:
+    using FlatArray<T,BASE>::size;
+    using FlatArray<T,BASE>::data;
+
     /// physical size of array
     int allocsize;
     /// memory is responsibility of container
@@ -207,9 +189,9 @@ namespace netgen
     explicit Array (const Array<T> & a2)
       : FlatArray<T, BASE> (a2.Size(), a2.Size() ? new T[a2.Size()] : 0)
     {
-      allocsize = this->size;
+      allocsize = size;
       ownmem = 1;
-      for (int i = BASE; i < this->size+BASE; i++)
+      for (int i = BASE; i < size+BASE; i++)
 	(*this)[i] = a2[i];
     }
 
@@ -219,7 +201,7 @@ namespace netgen
     ~Array()
     {
       if (ownmem)
-	delete [] this->data;
+	delete [] data;
     }
 
     /// Change logical size. If necessary, do reallocation. Keeps contents.
@@ -227,7 +209,7 @@ namespace netgen
     {
       if (nsize > allocsize) 
 	ReSize (nsize);
-      this->size = nsize; 
+      size = nsize; 
     }
 
     /// Change physical size. Keeps logical size. Keeps contents.
@@ -241,35 +223,23 @@ namespace netgen
     /// Add element at end of array. reallocation if necessary.
     int Append (const T & el)
     {
-      if (this->size == allocsize) 
-	ReSize (this->size+1);
-      this->data[this->size] = el;
-      this->size++;
-      return this->size;
+      if (size == allocsize) 
+	ReSize (size+1);
+      data[size] = el;
+      size++;
+      return size;
     }
 
     template <typename T2, int B2>
     void Append (FlatArray<T2, B2> a2)
     {
-      if (this->size+a2.Size() > allocsize)
-	ReSize (this->size+a2.Size());
+      if (size+a2.Size() > allocsize)
+	ReSize (size+a2.Size());
       for (int i = 0; i < a2.Size(); i++)
-	this->data[this->size+i] = a2[i+B2];
-      this->size += a2.Size();
+	data[size+i] = a2[i+B2];
+      size += a2.Size();
     }
 
-
-    /*
-      template <int B1, int B2>
-      void Append (const IndirectArray<T,B1,B2> & a2)
-      {
-      if (this->size+a2.Size() > allocsize)
-      ReSize (this->size+a2.Size());
-      for (int i = 0; i < a2.Size(); i++)
-      this->data[this->size+i] = a2[i+B2];
-      this->size += a2.Size();
-      }
-    */
 
     /// Delete element i (0-based). Move last element to position i.
     void Delete (int i)
@@ -278,8 +248,8 @@ namespace netgen
       RangeCheck (i+1);
 #endif
 
-      this->data[i] = this->data[this->size-1];
-      this->size--;
+      data[i] = data[size-1];
+      size--;
       //    DeleteElement (i+1);
     }
 
@@ -291,23 +261,23 @@ namespace netgen
       RangeCheck (i);
 #endif
 
-      this->data[i-1] = this->data[this->size-1];
-      this->size--;
+      data[i-1] = data[size-1];
+      size--;
     }
 
     /// Delete last element. 
     void DeleteLast ()
     {
-      this->size--;
+      size--;
     }
 
     /// Deallocate memory
     void DeleteAll ()
     {
       if (ownmem)
-	delete [] this->data;
-      this->data = 0;
-      this->size = allocsize = 0;
+	delete [] data;
+      data = 0;
+      size = allocsize = 0;
     }
 
     /// Fill array with val
@@ -321,7 +291,7 @@ namespace netgen
     Array & operator= (const Array & a2)
     {
       SetSize (a2.Size());
-      for (int i = BASE; i < this->size+BASE; i++)
+      for (int i = BASE; i < size+BASE; i++)
 	(*this)[i] = a2[i];
       return *this;
     }
@@ -330,7 +300,7 @@ namespace netgen
     Array & operator= (const FlatArray<T> & a2)
     {
       SetSize (a2.Size());
-      for (int i = BASE; i < this->size+BASE; i++)
+      for (int i = BASE; i < size+BASE; i++)
 	(*this)[i] = a2[i];
       return *this;
     }
@@ -344,21 +314,21 @@ namespace netgen
       int nsize = 2 * allocsize;
       if (nsize < minsize) nsize = minsize;
 
-      if (this->data)
+      if (data)
 	{
 	  T * p = new T[nsize];
 	
-	  int mins = (nsize < this->size) ? nsize : this->size; 
-	  memcpy (p, this->data, mins * sizeof(T));
+	  int mins = (nsize < size) ? nsize : size; 
+	  memcpy (p, data, mins * sizeof(T));
 
 	  if (ownmem)
-	    delete [] this->data;
+	    delete [] data;
 	  ownmem = 1;
-	  this->data = p;
+	  data = p;
 	}
       else
 	{
-	  this->data = new T[nsize];
+	  data = new T[nsize];
 	  ownmem = 1;
 	}
     
@@ -371,6 +341,10 @@ namespace netgen
   template <class T, int S> 
   class ArrayMem : public Array<T>
   {
+    using Array<T>::size;
+    using Array<T>::data;
+    using Array<T>::ownmem;
+
     // T mem[S];     // Intel C++ calls dummy constructor
     // char mem[S*sizeof(T)];
     double mem[(S*sizeof(T)+7) / 8];
@@ -379,13 +353,13 @@ namespace netgen
     explicit ArrayMem(int asize = 0)
       : Array<T> (S, static_cast<T*> (static_cast<void*>(&mem[0])))
     {
-      this->size = asize;
+      size = asize;
       if (asize > S)
 	{
-	  this->data = new T[asize];
-	  this->ownmem = 1;
+	  data = new T[asize];
+	  ownmem = 1;
 	}
-      // this->SetSize (asize);
+      // SetSize (asize);
     }
 
     ArrayMem & operator= (const T & val)  
@@ -398,7 +372,7 @@ namespace netgen
     ArrayMem & operator= (const FlatArray<T> & a2)
     {
       SetSize (a2.Size());
-      for (int i = 0; i < this->size; i++)
+      for (int i = 0; i < size; i++)
 	(*this)[i] = a2[i];
       return *this;
     }

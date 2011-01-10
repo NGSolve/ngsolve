@@ -203,7 +203,7 @@ namespace netgen
       // the system
       Handle_XCAFDoc_ColorTool face_colours;
 
-      int changed;
+     mutable int changed;
       Array<int> facemeshstatus;
 
       // Philippose - 15/01/2009
@@ -240,6 +240,10 @@ namespace netgen
          emap.Clear();
          vmap.Clear();
       }
+
+
+     virtual void Save (string filename) const;
+
 
       void BuildFMap();
 
@@ -379,10 +383,10 @@ namespace netgen
       void GetNotDrawableFaces (stringstream & str);
       bool ErrorInSurfaceMeshing ();
 
-      void WriteOCC_STL(char * filename);
+     void WriteOCC_STL(char * filename);
 
-      virtual int GenerateMesh (Mesh*& mesh,
-         int perfstepsstart, int perfstepsend, char* optstring);
+     virtual int GenerateMesh (Mesh*& mesh, MeshingParameters & mparam, 
+         int perfstepsstart, int perfstepsend);
 
       virtual const Refinement & GetRefinement () const;
    };
@@ -430,10 +434,10 @@ namespace netgen
    // External access to the mesh generation functions within the OCC
    // subsystem (Not sure if this is the best way to implement this....!!)
    extern int OCCGenerateMesh (OCCGeometry & occgeometry, Mesh*& mesh,
-	                            int perfstepsstart, int perfstepsend, 
-                               char* optstring);
+			       MeshingParameters & mparam,
+			       int perfstepsstart, int perfstepsend);
 
-   extern void OCCSetLocalMeshSize(OCCGeometry & geom, Mesh & mesh);
+  extern void OCCSetLocalMeshSize(OCCGeometry & geom, Mesh & mesh);
 
    extern void OCCMeshSurface (OCCGeometry & geom, Mesh & mesh, int perfstepsend);
 
