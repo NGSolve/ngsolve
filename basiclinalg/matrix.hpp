@@ -21,6 +21,9 @@ namespace ngbla
   extern void CheckMatRange(int h, int w, int i, int j);
 
 
+  // compatibility (for a while)
+#define VRange Rows
+#define HRange Cols
 
   /**
      A simple matrix.
