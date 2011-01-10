@@ -389,13 +389,17 @@ namespace ngmg
     ///
     CompoundProlongation(const CompoundFESpace * aspace,
 			 Array<const Prolongation*> & aprols);
-
     ///
     virtual ~CompoundProlongation();
     // { ; }
   
     ///
     virtual void Update ();
+
+    void AddProlongation (const Prolongation * prol)
+    {
+      prols.Append (prol);
+    }
 
     ///
     virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const

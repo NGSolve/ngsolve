@@ -271,7 +271,7 @@ namespace ngfem
   }
 #endif  
   
-  const NORMAL * ElementTopology::GetNormals(ELEMENT_TYPE et)
+  NORMAL * ElementTopology::GetNormals(ELEMENT_TYPE et)
   {
     // length of normal: 
     //  in 2d:  length of edge (sum of intweights = 1)

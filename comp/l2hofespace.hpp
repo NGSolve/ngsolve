@@ -69,6 +69,9 @@ namespace ngcomp
     ///
     virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
     ///
+    ///
+    virtual const FiniteElement & GetFacetFE (int fnr, LocalHeap & lh) const;
+
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
@@ -81,16 +84,22 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
+
+    IntRange GetElementDofs (int nr) const
+    {
+      return IntRange (first_element_dof[nr], 
+                       first_element_dof[nr+1]);
+    }
+
+    /*
     int GetFirstInnerDof(int elnr) const  
-    {return (first_element_dof[elnr]);}
+    { return (first_element_dof[elnr]); }
 
   
     virtual int GetNElemDofs(int elnr) const 
-    {
-      return(first_element_dof[elnr+1] - first_element_dof[elnr]+1); 
-    }
-
-  
+    { return(first_element_dof[elnr+1] - first_element_dof[elnr]+1); }
+    */
+ 
 #ifdef PARALLEL
     virtual void UpdateParallelDofs_hoproc();
     virtual void UpdateParallelDofs_loproc();
@@ -156,7 +165,6 @@ namespace ngcomp
 
     virtual bool VarOrder() const { return var_order; } 
     virtual int GetRelOrder() const { return rel_order; }   
-
 
   };
 

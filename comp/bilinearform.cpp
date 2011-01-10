@@ -176,12 +176,10 @@ namespace ngcomp
 
 
 
-
-
   MatrixGraph * BilinearForm :: GetGraph (int level, bool symmetric)
   {
-    static int timer = NgProfiler::CreateTimer ("BilinearForm::GetGraph");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer ("BilinearForm::GetGraph");
+    RegionTimer reg (timer);
 
     int ndof = fespace.GetNDof();
     int ne = GetMeshAccess().GetNE();
@@ -793,36 +791,26 @@ namespace ngcomp
           for (int j = 0; j < ma.GetNSE(); j++)
             {
               HeapReset hr(clh);
-// 	      if (!parts[i] -> SkeletonForm()) {
-		if (parts[i] -> DefinedOn (ma.GetSElIndex(j)))
-		  parts[i] -> CheckElement (fespace.GetSFE(j, clh));
-// 	      }else
-// 		{
-		  //DG-bilinearforms can be meaningful even without dgcoupling
-		  //if (!fespace.UsesDGCoupling()) throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
-		  //TODO: check aligned volume element
-// 		}
+	      if (parts[i] -> DefinedOn (ma.GetSElIndex(j)))
+		parts[i] -> CheckElement (fespace.GetSFE(j, clh));
 	    }
         }
-      else 
-        {
-	  if (parts[i] -> SkeletonForm()) 
-	    { 
-	      if (!fespace.UsesDGCoupling()) throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
-	      //TODO: Check each facet for the neighbouring elements - necessary?
-	    }else
+      else if (parts[i] -> SkeletonForm()) 
+	{ 
+	  if (!fespace.UsesDGCoupling()) throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
+	  //TODO: Check each facet for the neighbouring elements - necessary?
+	}
+      else
+	{
+	  for (int j = 0; j < ma.GetNE(); j++)
 	    {
-	      for (int j = 0; j < ma.GetNE(); j++)
-		{
-		  HeapReset hr(clh);
-
-		  if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
-		    parts[i] -> CheckElement (fespace.GetFE(j, clh));
-		}
+	      HeapReset hr(clh);
+	      if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
+		parts[i] -> CheckElement (fespace.GetFE(j, clh));
 	    }
-        }
-
-
+	}
+    
+    
     try
       {
 	if (!MixedSpaces())
@@ -907,7 +895,6 @@ namespace ngcomp
 		    {
 		      LocalHeap lh = clh.Split();
 		      
-		      ElementTransformation eltrans;
 		      Array<int> dnums, idofs, idofs1, odofs;
 		      
 		      int nec = (element_coloring) ? (*element_coloring)[icol].Size() : ne;
@@ -961,7 +948,7 @@ namespace ngcomp
 
 
 			  const FiniteElement & fel = fespace.GetFE (i, lh);
-			  ma.GetElementTransformation (i, eltrans, lh);
+			  ElementTransformation eltrans = ma.GetTrafo (i);
 			  fespace.GetDofNrs (i, dnums);
 
 			  if (fel.GetNDof() != dnums.Size())
@@ -999,7 +986,7 @@ namespace ngcomp
 				  NgProfiler::StartTimer (elementtimer);
  
 				  if (!diagonal)
-				    bfi.AssembleElementMatrix (fel, eltrans, elmat, lh);
+				    bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
 				  else
 				    {
 				      FlatVector<double> diag;
@@ -1496,7 +1483,7 @@ namespace ngcomp
                           int elmat_size = dnums.Size()*fespace.GetDimension();
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
 
-			  bfi.AssembleElementMatrix (fel, eltrans, elmat, lh);
+			  bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
 
                           fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
@@ -2139,7 +2126,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 			if (!bfi.DefinedOn (ma.GetElIndex (i))) continue;
 		    
 			FlatMatrix<SCAL> elmat(elmat_size, lh);
-			bfi.AssembleElementMatrix (fel, eltrans, elmat, lh);
+			bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
 		    
 			sum_elmat += elmat;
 		      }

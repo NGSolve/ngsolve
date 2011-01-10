@@ -314,7 +314,7 @@ namespace ngcomp
     delete tlp;
   }
 
-  void MGPreconditioner :: FreeSmootherMem(void)
+  void MGPreconditioner :: FreeSmootherMem ()
   {
     if(mgp) mgp->FreeMem();
     if(tlp) tlp->FreeMem();
@@ -326,27 +326,22 @@ namespace ngcomp
     const BilinearForm * lo_bfa = &bfa->GetLowOrderBilinearForm();
 
     INVERSETYPE invtype, loinvtype;
-    invtype = dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType ( inversetype );
+    invtype = dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType (inversetype);
     if (lo_bfa)
-      loinvtype = dynamic_cast<const BaseSparseMatrix & > (lo_bfa->GetMatrix()) .SetInverseType ( inversetype );
-
+      loinvtype = dynamic_cast<const BaseSparseMatrix & > (lo_bfa->GetMatrix()) .SetInverseType (inversetype);
 
 
     mgp->Update();
-   
-    //cout << " ** if coarsepre: coarsepre = " << coarse_pre << endl;
+
     if (coarse_pre)
       {
 	mgp->SetCoarseGridPreconditioner (&coarse_pre->GetMatrix());
 	mgp->SetOwnCoarseGridPreconditioner(false);
       }
 
-    //cout << " ** bfa.GetLowOrderBilinearform=" << &bfa->GetLowOrderBilinearForm() << endl;
     if (&bfa->GetLowOrderBilinearForm() || ntasks > 1)
       {
 	delete tlp;
-
-	//cout << "now prepare 2-level" << endl;
 
 	Smoother * fine_smoother = NULL;
 
@@ -363,11 +358,9 @@ namespace ngcomp
     else
       tlp = 0;
 
-    //cout << " ** almost end" << endl;
     if (timing) Timing();
     if (test) Test();
     if (mgtest) MgTest();
-    //cout << " ** done MGPreconditioner :: Update" << endl;
 
     dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType ( invtype );
     if (lo_bfa)

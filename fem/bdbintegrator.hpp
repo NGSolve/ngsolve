@@ -263,7 +263,7 @@ public:
 #ifdef TEXT_BOOK_VERSION
 
   virtual void
-  AssembleElementMatrix (const FiniteElement & bfel,
+  CalcElementMatrix (const FiniteElement & bfel,
 			 const ElementTransformation & eltrans, 
 			 FlatMatrix<TSCAL> & elmat,
 			 LocalHeap & locheap) const
@@ -302,7 +302,7 @@ public:
 
     catch (Exception & e)
       {
-	e.Append ("in AssembleElementMatrix - textbook, type = ");
+	e.Append ("in CalcElementMatrix - textbook, type = ");
 	e.Append (typeid(*this).name());
 	e.Append ("\n");
 	throw;
@@ -310,7 +310,7 @@ public:
     catch (exception & e)
       {
 	Exception e2(e.what());
-	e2.Append ("\nin AssembleElementMatrix - textbook, type = ");
+	e2.Append ("\nin CalcElementMatrix - textbook, type = ");
 	e2.Append (typeid(*this).name());
 	e2.Append ("\n");
 	throw e2;
@@ -328,7 +328,7 @@ public:
 
 
   virtual void
-  AssembleElementMatrix (const FiniteElement & bfel,
+  CalcElementMatrix (const FiniteElement & bfel,
 			 const ElementTransformation & eltrans, 
 			 FlatMatrix<TSCAL> & elmat,
 			 LocalHeap & lh) const
@@ -420,7 +420,7 @@ public:
 
     catch (Exception & e)
       {
-	e.Append ("in AssembleElementMatrix - blockversion, type = ");
+	e.Append ("in CalcElementMatrix - blockversion, type = ");
 	e.Append (typeid(*this).name());
 	e.Append ("\n");
 	throw;
@@ -428,7 +428,7 @@ public:
     catch (exception & e)
       {
 	Exception e2(e.what());
-	e2.Append ("\nin AssembleElementMatrix - blockversion, type = ");
+	e2.Append ("\nin CalcElementMatrix - blockversion, type = ");
 	e2.Append (typeid(*this).name());
 	e2.Append ("\n");
 	throw e2;
@@ -441,7 +441,7 @@ public:
   // one matrix matrix multiplication
   ///
   virtual void
-  AssembleElementMatrix (const FiniteElement & bfel,
+  CalcElementMatrix (const FiniteElement & bfel,
 			 const ElementTransformation & eltrans, 
 			 FlatMatrix<TSCAL> & elmat,
 			 LocalHeap & lh) const
@@ -503,7 +503,7 @@ public:
 
     catch (Exception & e)
       {
-	e.Append ("in AssembleElementMatrix - lapack, type = ");
+	e.Append ("in CalcElementMatrix - lapack, type = ");
 	e.Append (typeid(*this).name());
 	e.Append ("\n");
 	throw;
@@ -511,7 +511,7 @@ public:
     catch (exception & e)
       {
 	Exception e2(e.what());
-	e2.Append ("\nin AssembleElementMatrix - lapack, type = ");
+	e2.Append ("\nin CalcElementMatrix - lapack, type = ");
 	e2.Append (typeid(*this).name());
 	e2.Append ("\n");
 	throw e2;
@@ -1339,10 +1339,10 @@ public:
 
   ///
   virtual void
-  AssembleElementVector (const FiniteElement & bfel,
-			 const ElementTransformation & eltrans, 
-			 FlatVector<TSCAL> & elvec,
-			 LocalHeap & lh) const
+  CalcElementVector (const FiniteElement & bfel,
+		     const ElementTransformation & eltrans, 
+		     FlatVector<TSCAL> & elvec,
+		     LocalHeap & lh) const
   {
     try
       {
@@ -1378,7 +1378,7 @@ public:
     
     catch (Exception & e)
       {
-        e.Append ("in AssembleElementVector, type = ");
+        e.Append ("in CalcElementVector, type = ");
 	e.Append (typeid(*this).name());
 	e.Append ("\n");
 	throw;
@@ -1386,7 +1386,7 @@ public:
     catch (exception & e)
       {
         Exception e2(e.what());
-	e2.Append ("\nin AssembleElementVector, type = ");
+	e2.Append ("\nin CalcElementVector, type = ");
 	e2.Append (typeid(*this).name());
 	e2.Append ("\n");
 	throw e2;

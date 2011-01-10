@@ -12,32 +12,6 @@
 
 namespace ngfem
 {
-  using namespace ngfem;
-
-  template<int D>
-  void H1HighOrderFiniteElement<D>::
-  SetOrderFace (FlatArray<int> & of)
-  {
-    for (int i = 0; i < of.Size(); i++)
-      order_face[i] = INT<2>(of[i],of[i]);
-  }
-
-  template<int D>
-  void H1HighOrderFiniteElement<D>::
-  SetOrderFace (FlatArray<INT<2> > & of)
-  {
-    for (int i = 0; i < of.Size(); i++)
-      order_face[i] = of[i];
-  }
-  
-  template<int D>
-  void H1HighOrderFiniteElement<D>::
-  SetOrderEdge (FlatArray<int> & oe)
-  {
-    for (int i = 0; i < oe.Size(); i++)
-      order_edge[i] = oe[i];
-  }
-
   template <ELEMENT_TYPE ET>
   void T_H1HighOrderFiniteElement<ET> :: 
   GetDofs (Array<Dof> & dofs) const
@@ -53,36 +27,17 @@ namespace ngfem
 
     for (int i = 0; i < N_FACE; i++)
       {
-        INT<2> p = order_face[i];
-
-        int nf;
-        if (FaceType (i) == ET_TRIG)
-          nf = (p[0]-1)*(p[0]-2) / 2;
-        else
-          nf = (p[0]-1)*(p[1]-1);
-
+        int nf = ::ngfem::PolBubbleDimension (FaceType(i), order_face[i]);
 	for (int j = 0; j < nf; j++)
 	  dofs.Append (Dof (Node(NT_FACE, i), j));
       }
 
-    int ni = 0;
-    INT<3> p = order_cell;
-    switch (ET)
+    if (DIM == 3)
       {
-      case ET_TET:  if(p[0] > 3) ni = (p[0]-1)*(p[0]-2)*(p[0]-3)/6;   
-	break;
-      case ET_PRISM: if(p[0]>2 && p[2]>1) ni = (p[0]-1)*(p[0]-2)*(p[2]-1)/2;
-	break;
-      case ET_PYRAMID: if(p[0]>2) ni = (p[0]-1)*(p[0]-2)*(2*p[0]-3)/6;
-	break;
-        case ET_HEX: if(p[0]>1 && p[1] > 1 && p[2]>1) ni = (p[0]-1)*(p[1]-1)*(p[2]-1);
-          break;
-      default:
-	;
+	int ni = ::ngfem::PolBubbleDimension (ET, order_cell);
+	for (int j = 0; j < ni; j++)
+	  dofs.Append (Dof (Node(NT_CELL, 0), j));
       }
-    
-    for (int j = 0; j < ni; j++)
-      dofs.Append (Dof (Node(NT_CELL, 0), j));
   }
 
 
@@ -96,42 +51,15 @@ namespace ngfem
       ndof += order_edge[i] - 1;
     
     for (int i = 0; i < N_FACE; i++)
-      if (FaceType(i) == ET_TRIG)
-        ndof += (order_face[i][0]-1)*(order_face[i][0]-2) / 2;
-      else
-        ndof += (order_face[i][0]-1)*(order_face[i][1]-1);
-    
-    switch (ET)
-      {
-      case ET_TET: 
-        ndof += (order_cell[0]-1)*(order_cell[0]-2)*(order_cell[0]-3) / 6; 
-        break;
-      case ET_PRISM:
-        ndof += (order_cell[0]-1)*(order_cell[0]-2)/2*(order_cell[2]-1);
-        break;
-      case ET_PYRAMID:
-        ndof += (order_cell[0]-1)*(order_cell[0]-2)*(2*order_cell[0]-3) / 6; 
-        break;
-      case ET_HEX:
-        ndof += (order_cell[0]-1)*(order_cell[1]-1)*(order_cell[2]-1);
-        break;
-      default:
-        ;
-      }
-    
-    order = 1;
-    for (int i = 0; i < N_EDGE; i++)
-      order = max(order, order_edge[i]);
+      ndof += ::ngfem::PolBubbleDimension (FaceType(i), order_face[i]);
 
-    for (int i = 0; i < N_FACE; i++)
-      order = max(order, max (order_face[i][0], order_face[i][1]));
-    
     if (DIM == 3)
-      {
-	order = max(order, order_cell[0]);
-	order = max(order, order_cell[1]);
-	order = max(order, order_cell[2]);
-      }
+      ndof += ::ngfem::PolBubbleDimension (ET, order_cell);
+
+    order = 1;
+    for (int i = 0; i < N_EDGE; i++) order = max(order, order_edge[i]);
+    for (int i = 0; i < N_FACE; i++) order = max(order, max (order_face[i])); 
+    if (DIM == 3) order = max (order, max (order_cell));
   }
 
 
@@ -140,37 +68,12 @@ namespace ngfem
   GetInternalDofs (Array<int> & idofs) const
   {
     int ni = 0;
-    switch (ET)
-      {
-      case ET_SEGM: 
-        ni = order_edge[0]-1;
-        break;
-      case ET_TRIG: 
-        ni = (order_face[0][0]-1)*(order_face[0][0]-2) / 2; 
-        break;
-      case ET_QUAD: 
-        ni = (order_face[0][0]-1)*(order_face[0][1]-1);
-        break;
-      case ET_TET: 
-        ni = (order_cell[0]-1)*(order_cell[0]-2)*(order_cell[0]-3) / 6;
-        break;
-      case ET_PRISM: 
-        ni = (order_cell[0]-1)*(order_cell[0]-2)/2*(order_cell[2]-1);
-        break;
-      case ET_PYRAMID:
-        ni = (order_cell[0]-1)*(order_cell[0]-2)*(2*order_cell[0]-3) / 6; 
-        break;
-      case ET_HEX: 
-        ni = (order_cell[0]-1)*(order_cell[1]-1)*(order_cell[2]-1);
-        break;
-      }
-    
-    idofs.SetSize (0);
-    for (int i = 0; i < ni; i++)
-      idofs.Append (ndof-ni+i);
+    if (DIM == 1) ni = order_edge[0]-1; 
+    if (DIM == 2) ni = ::ngfem::PolBubbleDimension (ET, order_face[0]); 
+    if (DIM == 3) ni = ::ngfem::PolBubbleDimension (ET, order_cell); 
+
+    idofs = IntRange (ndof-ni, ndof);
   }
-
-
 
 
 
@@ -239,7 +142,6 @@ namespace ngfem
     // vertex shapes
     for(int i=0; i < N_VERTEX; i++) shape[i] = lam[i]; 
     int ii = 4;
-
      
     // edge dofs
     for (int i = 0; i < N_EDGE; i++)
@@ -423,13 +325,9 @@ namespace ngfem
 	int nf = (p[0]-1)*(p[0]-2)/2;
 	ArrayMem<Tx,20> pol_trig(nf);
 
-	// int nf = T_TRIGSHAPES::Calc (order_cell[0], x-y, 1-x-y, pol_trig);
-	
 	DubinerBasis::EvalMult (p[0]-3, x, y, x*y*(1-x-y),pol_trig);
-
-
-	// T_ORTHOPOL:: Calc(order_cell[2], 2*z-1, polz);
 	LegendrePolynomial::EvalMult (order_cell[2]-2, 2*z-1, z*(1-z), polz);
+
 	for (int i = 0; i < nf; i++)
 	  for (int k = 0; k < order_cell[2]-1; k++)
 	    shape[ii++] = pol_trig[i] * polz[k];
@@ -454,7 +352,7 @@ namespace ngfem
 		 (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z}; 
 
     // vertex shapes
-    for (int i=0; i<8; i++) 
+    for (int i = 0; i < 8; i++) 
       shape[i] = lam[i]; 
 
     int ii = 8;
@@ -472,8 +370,7 @@ namespace ngfem
 	  Tx lam_e = lam[e[0]]+lam[e[1]];
 	  Tx bub = 0.25 * lam_e * (1 - xi*xi);
 	  
-	  LegendrePolynomial::
-	    EvalMult (p-2, xi, bub, shape.Addr(ii));
+	  LegendrePolynomial::EvalMult (p-2, xi, bub, shape.Addr(ii));
 	  ii += p-1;
 	}
      
@@ -674,4 +571,3 @@ namespace ngfem
   template class T_H1HighOrderFiniteElement<ET_PYRAMID>;
   template class T_H1HighOrderFiniteElement<ET_HEX>;
 }
-

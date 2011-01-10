@@ -52,11 +52,12 @@ public:
   {
   public:
     string name;
+    int dim;
 
     NumProc* (*creator)(PDE & pde, const Flags & flags);
     void (*printdoc) (ostream & ost);
     
-    NumProcInfo (const string & aname,
+    NumProcInfo (const string & aname, int adim, 
 		 NumProc* (*acreator)(PDE & pde, const Flags & flags),
 		 void (*aprintdoc) (ostream & ost));
   };
@@ -68,15 +69,37 @@ public:
   void AddNumProc (const string & aname, 
 		   NumProc* (*acreator)(PDE & pde, const Flags & flags),
 		   void (*printdoc) (ostream & ost) = NumProc::PrintDoc);
-  
+
+
+  void AddNumProc (const string & aname, int dim, 
+		   NumProc* (*acreator)(PDE & pde, const Flags & flags),
+		   void (*printdoc) (ostream & ost) = NumProc::PrintDoc);
+
   const Array<NumProcInfo*> & GetNumProcs() { return npa; }
-  const NumProcInfo * GetNumProc(const string & name);
+  const NumProcInfo * GetNumProc(const string & name, int dim);
 
   void Print (ostream & ost) const;
 };
 
  
 extern NGS_DLL_HEADER NumProcs & GetNumProcs ();
+
+
+template <typename NP>
+class RegisterNumProc
+{
+public:
+  RegisterNumProc (string label, int dim = -1)
+  {
+    GetNumProcs().AddNumProc (label, dim, Create, NP::PrintDoc);
+    cout << "register numproc '" << label << "'" << endl;
+  }
+  
+  static NumProc * Create (PDE & pde, const Flags & flags)
+  {
+    return new NP (pde, flags);
+  }
+};
 
 
 }

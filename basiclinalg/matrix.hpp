@@ -12,6 +12,8 @@ namespace ngbla
 
   template <int H, int W, typename T> class Mat;
   template <typename T> class SliceMatrix;
+  template <typename T> class DoubleSliceMatrix;
+
 
   ///
   extern void CheckMatRange(int h, int w, int i);
@@ -195,6 +197,7 @@ namespace ngbla
       return SliceVector<T> (h, w+1, &data[0]);
     }
 
+    /*
     const FlatMatrix VRange (int first, int next) const
     {
       return FlatMatrix (next-first, w, data+first*w);
@@ -204,6 +207,18 @@ namespace ngbla
     {
       return SliceMatrix<T> (h, next-first, w, data+first);
     }
+    */
+
+    const FlatMatrix Rows (int first, int next) const
+    {
+      return FlatMatrix (next-first, w, data+first*w);
+    }
+
+    const SliceMatrix<T> Cols (int first, int next) const
+    {
+      return SliceMatrix<T> (h, next-first, w, data+first);
+    }
+
   
   };
 
@@ -582,7 +597,7 @@ namespace ngbla
       return FixSliceVector<W,T> (h, &data[i]);
     }
 
-
+    /*
     const FlatMatrixFixWidth VRange (int first, int next) const
     {
       return FlatMatrixFixWidth (next-first, data+first*W);
@@ -592,6 +607,19 @@ namespace ngbla
     {
       return SliceMatrix<T> (h, next-first, W, data+first);
     }
+    */
+
+    const FlatMatrixFixWidth Rows (int first, int next) const
+    {
+      return FlatMatrixFixWidth (next-first, data+first*W);
+    }
+
+    const SliceMatrix<T> Cols (int first, int next) const
+    {
+      return SliceMatrix<T> (h, next-first, W, data+first);
+    }
+
+
   };
 
 
@@ -798,11 +826,22 @@ namespace ngbla
       return FlatVec<H,T> ( data+i*H ); 
     }
 
-
     const SliceVector<T> Row (int i)
     {
       return SliceVector<T> (w, H, &data[i]);
     }
+
+    const DoubleSliceMatrix<T> Rows (int first, int next) const
+    {
+      return DoubleSliceMatrix<T> (next-first, w, 1, H, data+first);
+    }
+
+    const FlatMatrixFixHeight<H,T> Cols (int first, int next) const
+    {
+      return FlatMatrixFixHeight<H,T> (next-first, data+first*H);
+    }
+
+
 
 
     enum { IS_LINEAR = 0 };
@@ -932,6 +971,7 @@ namespace ngbla
     int Width () const throw() { return w; }
 
 
+    /*
     const SliceMatrix VRange (int first, int next) const
     {
       return SliceMatrix (next-first, w, dist, data+first*dist);
@@ -941,8 +981,114 @@ namespace ngbla
     {
       return SliceMatrix<T> (h, next-first, dist, data+first);
     }
+    */
+
+    const SliceMatrix Rows (int first, int next) const
+    {
+      return SliceMatrix (next-first, w, dist, data+first*dist);
+    }
+
+    const SliceMatrix<T> Cols (int first, int next) const
+    {
+      return SliceMatrix<T> (h, next-first, dist, data+first);
+    }
 
   };
+
+
+
+
+
+  template <typename T = double>
+  class DoubleSliceMatrix : public CMCPMatExpr<DoubleSliceMatrix<T> >
+  {
+  protected:
+    /// the height
+    int h;
+    /// the width
+    int w;
+    /// the distance
+    int distr, distc;
+    /// the data
+    T * data;
+  public:
+
+    /// element type
+    typedef T TELEM;
+    /// scalar type of elements (double or Complex)
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    enum { IS_LINEAR = 0 };
+
+    /// set height, width, and mem
+    DoubleSliceMatrix (int ah, int aw, int adistr, int adistc, T * adata) throw ()
+      : h(ah), w(aw), distr(adistr), distc(adistc), data(adata) { ; }
+  
+    /// assign contents
+    template<typename TB>
+    const DoubleSliceMatrix & operator= (const Expr<TB> & m) const
+    {
+      return CMCPMatExpr<DoubleSliceMatrix>::operator= (m);
+    }
+
+    /// assign constant
+    DoubleSliceMatrix & operator= (TSCAL s) throw()
+    {
+      for (int i = 0; i < h; i++)
+        for (int j = 0; j < w; j++)
+          data[i*distr+j*distc] = s;
+      return *this;
+    }
+
+    /// access operator
+    TELEM & operator() (int i, int j) const
+    {
+#ifdef CHECK_RANGE
+      CheckMatRange(h,w,i,j);
+#endif
+      return data[i*distr+j*distc]; 
+    }
+
+    /// access operator, linear access
+    TELEM & operator() (int i) const
+    {
+#ifdef CHECK_RANGE
+      CheckMatRange(h,w,i);
+#endif
+      return data[i]; 
+    }
+
+    /// the height
+    int Height () const throw() { return h; }
+
+    /// the width
+    int Width () const throw() { return w; }
+
+    /*
+    const DoubleSliceMatrix VRange (int first, int next) const
+    {
+      return DoubleSliceMatrix (next-first, w, distr, distc, data+first*distr);
+    }
+
+    const DoubleSliceMatrix<T> HRange (int first, int next) const
+    {
+      return DoubleSliceMatrix<T> (h, next-first, distr, distc, data+first*distc);
+    }
+    */
+
+    const DoubleSliceMatrix Rows (int first, int next) const
+    {
+      return DoubleSliceMatrix (next-first, w, distr, distc, data+first*distr);
+    }
+
+    const DoubleSliceMatrix<T> Cols (int first, int next) const
+    {
+      return DoubleSliceMatrix<T> (h, next-first, distr, distc, data+first*distc);
+    }
+
+  };
+
+
+
 
 
 

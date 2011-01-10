@@ -432,6 +432,14 @@ namespace ngstd
       return *this;
     }
 
+    /// fill array with first, first+1, ... 
+    Array & operator= (const IntRange & range)
+    {
+      SetSize (range.Next()-range.First());
+      for (int i = 0; i < size; i++)
+        (*this)[i] = range.First()+i;
+      return *this;
+    }
 
 
   private:

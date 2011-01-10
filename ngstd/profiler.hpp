@@ -153,6 +153,11 @@ namespace ngstd
 #endif
     }
 
+    static long int GetCounts (int nr)
+    {
+      return counts[nr];
+    }
+
     /// change name
     static void SetName (int nr, const string & name) { names[nr] = name; }
     /// print profile
@@ -172,6 +177,48 @@ namespace ngstd
       /// stop timer
       ~RegionTimer () { StopTimer (nr); }
     };
+  };
+
+
+
+  
+
+  class Timer
+  {
+    int timernr;
+  public:
+    Timer (const string & name)
+    {
+      timernr = NgProfiler::CreateTimer (name);
+    }
+    void Start () 
+    {
+      NgProfiler::StartTimer (timernr);
+    }
+    void Stop () 
+    {
+      NgProfiler::StopTimer (timernr);
+    }
+
+    double GetTime () { return NgProfiler::GetTime(timernr); }
+    long int GetCounts () { return NgProfiler::GetCounts(timernr); }
+
+    operator int () { return timernr; }
+  };
+
+  
+  /**
+     Timer object.
+       Start / stop timer at constructor / destructor.
+  */
+  class RegionTimer
+  {
+    Timer & timer;
+  public:
+    /// start timer
+    RegionTimer (Timer & atimer) : timer(atimer) { timer.Start(); }
+    /// stop timer
+    ~RegionTimer () { timer.Stop(); }
   };
 
 }

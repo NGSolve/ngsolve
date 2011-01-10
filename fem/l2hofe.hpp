@@ -35,21 +35,22 @@ namespace ngfem
 
   public:
     /// global vertex numbers define ordering of vertices
-    void SetVertexNumbers (FlatArray<int> & avnums);
+    template <typename TA>
+    void SetVertexNumbers (const TA & avnums)
+    { for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; }
+
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
 
     /// set polynomial order
-    void SetOrder (int o) 
-    { for (int i = 0; i < DIM; i++) order_inner[i] = o; }
+    void SetOrder (int p)  { order_inner = p; }
 
     /// different orders in differnt directions
-    void SetOrder (INT<DIM> oi) { order_inner = oi; }
+    void SetOrder (INT<DIM> p) { order_inner = p; }
 
     /// calculate number of dofs
     virtual void ComputeNDof () = 0; 
   
     virtual void GetInternalDofs (Array<int> & idofs) const; 
-
 
     virtual void PrecomputeTrace () = 0;
 
@@ -109,16 +110,11 @@ namespace ngfem
   public:
 
     T_L2HighOrderFiniteElement () 
-    {
-      for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
-	vnums[i] = i;
-      eltype = ET;
-    }
+    { eltype = ET; }
 
     T_L2HighOrderFiniteElement (int aorder) 
     {
-      for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
-	vnums[i] = i;
+      for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
       eltype = ET;
 
       order = aorder;
@@ -209,7 +205,7 @@ namespace ngfem
 	{
 	  CalcShape (ir[i], pre->shapes.Row(i));
 	  CalcDShape (ir[i], dshapes);
-	  pre->dshapes.VRange (DIM*i, DIM*(i+1)) = Trans (dshapes);
+	  pre->dshapes.Rows (DIM*i, DIM*(i+1)) = Trans (dshapes);
 	}
 
       precomp.Add (classnr, order, ir.GetNIP(), pre);
@@ -248,7 +244,32 @@ namespace ngfem
 	L2HighOrderFiniteElement<DIM>::GetTrace (facet, coefs, fcoefs);
     }
 
+    virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
+    {
+      int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
+      if (precomp_trace.Used (INT<2> (order, classnr)))
+	{
+	  coefs = Trans(*precomp_trace.Get (INT<2> (order, classnr))) * fcoefs;
+	}
+      else
+	L2HighOrderFiniteElement<DIM>::GetTraceTrans (facet, fcoefs, coefs);
+    }
+
+
+
   };
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

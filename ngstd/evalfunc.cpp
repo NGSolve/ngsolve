@@ -763,17 +763,25 @@ namespace ngstd
 	  AddOperation (op);
 	  break;
 	}
-      case ATAN2:
+      case ATAN2:  // needs 2 arguments
 	{
 	  EVAL_TOKEN op = GetToken();
 	  ReadNext();
-	  ReadNext();
-	  ParseExpression();
-	  ReadNext();
-	  ParseExpression();
-	  ReadNext(); 
+	  ParsePrimary();       // a COMMA expr is an expression 
 	  AddOperation (op);
 	  break;
+
+	  /*
+	  EVAL_TOKEN op = GetToken();
+	  ReadNext();
+	  ReadNext();      
+	  ParseExpression();
+	  ReadNext();        //  ','
+	  ParseExpression();
+	  ReadNext();        //  ')'
+	  AddOperation (op);
+	  break;
+	  */
 	}
       default:
         return;
