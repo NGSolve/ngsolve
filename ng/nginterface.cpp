@@ -841,10 +841,7 @@ void Ng_GetElementTransformation (int ei, const double * xi,
       Point<3> xg;
       Mat<3,3> dx;
 
-      cout << "call calceltrafo" << endl;
       mesh->GetCurvedElements().CalcElementTransformation (xl, ei-1, xg, dx);
-      cout << "xg = " << xg << endl << ", dx = " << dx << endl;
-
 
       // still 1-based arrays
       if (x)
