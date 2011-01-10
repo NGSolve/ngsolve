@@ -3091,7 +3091,9 @@ namespace netgen
 
     Ng_CSG_Init(interp);
     Ng_STL_Init(interp);
+#ifdef OCCGEOMETRY
     Ng_OCC_Init(interp);
+#endif
     Ng_Geom2d_Init(interp);
 
     tcl_interp = interp;

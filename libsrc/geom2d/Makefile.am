@@ -1,6 +1,7 @@
 noinst_HEADERS = geom2dmesh.hpp  spline2d.hpp splinegeometry.hpp  spline.hpp geometry2d.hpp vsgeom2d.hpp
 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  $(TCL_INCLUDES)
+
 METASOURCES = AUTO
 noinst_LTLIBRARIES = libgeom2d.la libgeom2dvis.la
 

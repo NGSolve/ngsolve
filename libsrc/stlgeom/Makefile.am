@@ -1,7 +1,7 @@
 noinst_HEADERS = meshstlsurface.hpp stlgeom.hpp stlline.hpp \
 stltool.hpp stltopology.hpp
 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include $(TCL_INCLUDES)
 METASOURCES = AUTO
 
 noinst_LTLIBRARIES = libstl.la libstlvis.la

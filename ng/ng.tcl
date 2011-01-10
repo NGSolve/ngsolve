@@ -118,7 +118,9 @@ Ng_SetVisParameters
 Ng_SetDebugParameters
 Ng_STLDoctor
 Ng_GeometryOptions set
-Ng_SetOCCVisParameters
+catch {
+    Ng_SetOCCVisParameters
+}
 
 if { $batchmode != "defined" } {
     catch { 

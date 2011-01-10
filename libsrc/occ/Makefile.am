@@ -8,7 +8,7 @@ Partition_Inter3d.jxx Partition_Loop3d.jxx Partition_Spliter.jxx \
 utilities.h
 
 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  $(OCCFLAGS) 
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  $(OCCFLAGS) $(TCL_INCLUDES)
 
 # $(OCC_INC_FLAG)
 

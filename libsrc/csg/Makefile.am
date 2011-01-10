@@ -5,7 +5,7 @@ polyhedra.hpp specpoin.hpp csg.hpp explicitcurve2d.hpp identify.hpp   \
 revolution.hpp spline3d.hpp 
 
 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  $(TCL_INCLUDES)
 METASOURCES = AUTO
 
 noinst_LTLIBRARIES = libcsg.la  libcsgvis.la 
