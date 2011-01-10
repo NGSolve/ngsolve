@@ -23,6 +23,41 @@ namespace ngfem
 		      ET_TRIG = 10, ET_QUAD = 11, 
 		      ET_TET = 20, ET_PYRAMID = 21, ET_PRISM = 22, ET_HEX = 24 };
 
+
+
+#ifdef NETGEN_ELTRANS
+  inline ELEMENT_TYPE ConvertElementType (NG_ELEMENT_TYPE type)
+  {
+    switch (type)
+      {
+      case NG_SEGM: case NG_SEGM3:
+	return ET_SEGM;
+
+      case NG_TRIG: case NG_TRIG6: 
+	return ET_TRIG;
+	
+      case NG_QUAD:
+      case NG_QUAD6:
+	return ET_QUAD;
+	
+      case NG_TET:
+      case NG_TET10:
+	return ET_TET;
+
+      case NG_PRISM:
+      case NG_PRISM12:
+	return ET_PRISM;
+
+      case NG_PYRAMID:
+	return ET_PYRAMID;
+
+      case NG_HEX:
+	return ET_HEX;
+      }
+  }
+#endif
+
+
   /**
      Type of node. 
      vertex nodes are 0 dimensional, 
@@ -361,7 +396,7 @@ namespace ngfem
     }
 
     /// return normals on facets
-    static const NORMAL * GetNormals(ELEMENT_TYPE et);
+    static NORMAL * GetNormals(ELEMENT_TYPE et);
   
     /// returns number of edge from vertex v1 to vertex v2
     static int GetEdgeNr (ELEMENT_TYPE et, int v1, int v2);
@@ -512,6 +547,7 @@ namespace ngfem
     enum { N_FACE = 0 };
 
     static int PolDimension (int order) { return order+1; }
+    static int PolBubbleDimension (INT<1> order) { return order[0]-1; }
 
     static ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
 
@@ -567,6 +603,8 @@ namespace ngfem
     enum { N_FACE = 1 };
 
     static int PolDimension (int order) { return (order+1)*(order+2)/2; }
+    static int PolDimension (INT<2> order) { return (order[0]+1)*(order[0]+2)/2; }
+    static int PolBubbleDimension (INT<2> order) { return (order[0]-1)*(order[0]-2)/2; }
 
     static ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
     
@@ -639,6 +677,8 @@ namespace ngfem
     enum { N_FACE = 1 };
 
     static int PolDimension (int order) { return (order+1)*(order+1); }
+    static int PolDimension (INT<2> order) { return (order[0]+1)*(order[1]+1); }
+    static int PolBubbleDimension (INT<2> order) { return (order[0]-1)*(order[1]-1); }
 
 
     static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
@@ -730,7 +770,7 @@ namespace ngfem
     enum { N_FACE = 4 };
 
     static int PolDimension (int order) { return (order+1)*(order+2)*(order+3)/6; }
-
+    static int PolBubbleDimension (INT<3> p) { return (p[0] <= 3) ? 0 : (p[0]-1)*(p[0]-2)*(p[0]-3)/6;  }
 
     static ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
 
@@ -812,9 +852,9 @@ namespace ngfem
     enum { N_FACE = 5 };
 
     static int PolDimension (int order) { return (order+1)*(order+2)*(order+1)/2; }
+    static int PolBubbleDimension (INT<3> p) { return (p[0] <= 2) ? 0 : (p[0]-1)*(p[0]-2)*(p[2]-1)/2; }
 
     static ELEMENT_TYPE FaceType(int i) { return (i < 2) ? ET_TRIG : ET_QUAD; }
-
 
 
     static INT<2> GetEdge (int i)
@@ -906,6 +946,7 @@ namespace ngfem
     static ELEMENT_TYPE FaceType(int i) { return (i < 4) ? ET_TRIG : ET_QUAD; }
 
     static int PolDimension (int order) { return (order+2)*(order+1)*(2*order+3) / 6; }
+    static int PolBubbleDimension (INT<3> p) { return (p[0] <= 2) ? 0 :  (p[0]-1)*(p[0]-2)*(2*p[0]-3)/6; }
 
     static INT<2> GetEdge (int i)
     {
@@ -999,7 +1040,7 @@ namespace ngfem
     static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
 
     static int PolDimension (int order) { return (order+1)*(order+2)*(order+1)/2; }
-
+    static int PolBubbleDimension (INT<3> p) { return (p[0] <= 1) ? 0 : (p[0]-1)*(p[1]-1)*(p[2]-1); }
 
     static INT<2> GetEdge (int i)
     {
@@ -1078,6 +1119,40 @@ namespace ngfem
     }
 
   };
+
+
+  inline int PolBubbleDimension (ELEMENT_TYPE ET, const INT<1> & order)
+  {
+    switch (ET)
+      {
+      case ET_SEGM: return ET_trait<ET_SEGM>::PolBubbleDimension (order);
+      default: return 0;
+      }
+  }
+
+  inline int PolBubbleDimension (ELEMENT_TYPE ET, const INT<2> & order)
+  {
+    switch (ET)
+      {
+      case ET_TRIG: return ET_trait<ET_TRIG>::PolBubbleDimension (order);
+      case ET_QUAD: return ET_trait<ET_QUAD>::PolBubbleDimension (order);
+      default: return 0;
+      }
+  }
+
+  inline int PolBubbleDimension (ELEMENT_TYPE ET, const INT<3> & order)
+  {
+    switch (ET)
+      {
+      case ET_TET: return ET_trait<ET_TET>::PolBubbleDimension (order);
+      case ET_PRISM: return ET_trait<ET_PRISM>::PolBubbleDimension (order);
+      case ET_PYRAMID: return ET_trait<ET_PYRAMID>::PolBubbleDimension (order);
+      case ET_HEX: return ET_trait<ET_HEX>::PolBubbleDimension (order);
+      default: return 0;
+      }
+  }
+
+
 }
 
 #endif

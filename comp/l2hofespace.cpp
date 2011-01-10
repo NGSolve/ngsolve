@@ -259,6 +259,57 @@ namespace ngcomp
 	  }
 	*/
 
+	if (ma.GetDimension() == 2)
+	  {
+	    L2HighOrderFiniteElement<2> * fe2d = 0;
+
+            Ng_Element ngel = ma.GetElement<2> (elnr);
+
+	    switch (ConvertElementType (ngel.GetType()))
+	      {
+	      case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
+	      case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
+	      default:
+		;
+	      }
+
+	    fe2d -> SetVertexNumbers (ngel.vertices);
+	    fe2d -> SetOrder (INT<2> (order_inner[elnr][0], order_inner[elnr][1]));
+	    fe2d -> ComputeNDof(); 
+            return *fe2d;
+	  }
+	
+	else
+	  {
+	    L2HighOrderFiniteElement<3> * fe3d = 0;
+            Ng_Element ngel = ma.GetElement<3> (elnr);
+
+	    // switch (ma.GetElType(elnr))
+	    switch (ConvertElementType (ngel.GetType()))
+	      {
+	      case ET_TET:     fe3d = new (lh) L2HighOrderFE<ET_TET> (); break;
+	      case ET_PYRAMID: fe3d = new (lh) L2HighOrderFE<ET_PYRAMID> (); break;
+	      case ET_PRISM:   fe3d = new (lh) L2HighOrderFE<ET_PRISM> (); break;
+	      case ET_HEX:     fe3d = new (lh) L2HighOrderFE<ET_HEX> (); break;
+	      default:
+		{
+		  stringstream str;
+		  str << "L2HighOrderFESpace " << GetClassName() 
+		      << ", undefined eltype " 
+		      << ElementTopology::GetElementName(ma.GetElType(elnr))
+		      << ", order = " << order << endl;
+		  throw Exception (str.str());
+		}
+	      }
+	    
+	    fe3d -> SetVertexNumbers (ngel.vertices);
+	    fe3d -> SetOrder(order_inner[elnr]); 
+	    fe3d -> ComputeNDof(); 
+            return *fe3d;
+          }
+
+
+	/*	
 	L2HighOrderFiniteElement<2> * fe2d = 0;
 	L2HighOrderFiniteElement<3> * fe3d = 0;
 
@@ -280,17 +331,16 @@ namespace ngcomp
 	      throw Exception (str.str());
 	    }
 	  }
-	
 
 	if (fe2d)
 	  {
-	    ArrayMem<int,12> vnums; // calls GetElPNums -> max 12 for PRISM12
-	    ma.GetElVertices(elnr, vnums);
- 	    fe2d-> SetVertexNumbers (vnums); 
+            Ng_Element ngel = ma.GetElement<2> (elnr);
+	    for (int j = 0; j < ngel.vertices.Size(); j++)
+	      fe2d -> SetVertexNumber (j, ngel.vertices[j]);
 
 	    INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
-	    fe2d-> SetOrder(p);
-	    fe2d-> ComputeNDof(); 
+	    fe2d -> SetOrder(p);
+	    fe2d -> ComputeNDof(); 
             return *fe2d;
           }
         else
@@ -299,10 +349,11 @@ namespace ngcomp
 	    for (int j = 0; j < ngel.vertices.Size(); j++)
 	      fe3d -> SetVertexNumber (j, ngel.vertices[j]);
 
-	    fe3d-> SetOrder(order_inner[elnr]); 
-	    fe3d-> ComputeNDof(); 
+	    fe3d -> SetOrder(order_inner[elnr]); 
+	    fe3d -> ComputeNDof(); 
             return *fe3d;
           }
+	*/
       } 
     catch (Exception & e)
       {
@@ -311,6 +362,56 @@ namespace ngcomp
 	throw; 
       }
   }
+
+
+
+
+
+
+  const FiniteElement & L2HighOrderFESpace :: GetFacetFE (int fnr, LocalHeap & lh) const
+  {
+    L2HighOrderFiniteElement<1> * fe1d = 0;
+    L2HighOrderFiniteElement<2> * fe2d = 0;
+
+    ArrayMem<int,4> vnums;
+    ma.GetFacetPNums (fnr, vnums);
+
+    switch (vnums.Size())
+      {
+      case 2: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
+      case 3: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
+      case 4: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
+      default:
+	    {
+	      stringstream str;
+	      str << "L2HighOrderFESpace " << GetClassName() 
+		  << ", undefined facet-eltype" << endl;
+	      throw Exception (str.str());
+	    }
+      }
+    
+    if (fe1d)
+      {
+	fe1d-> SetVertexNumbers (vnums); 
+	fe1d-> SetOrder(order);
+	fe1d-> ComputeNDof(); 
+	return *fe1d;
+      }
+    else
+      {
+	fe2d-> SetVertexNumbers (vnums); 
+	fe2d-> SetOrder(order);
+	fe2d-> ComputeNDof(); 
+	return *fe2d;
+      }
+  } 
+
+
+
+
+
+
+
  
   const FiniteElement & L2HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   {
@@ -491,6 +592,45 @@ namespace ngcomp
 
   const FiniteElement & L2SurfaceHighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   {
+    if (ma.GetDimension() == 2)
+      {
+	L2HighOrderFiniteElement<1> * fe1d = 0;
+	
+	Ng_Element ngel = ma.GetElement<1> (elnr);
+
+	switch (ConvertElementType (ngel.GetType()))
+	  {
+	  case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
+	  default:
+	    ;
+	  }
+
+	fe1d -> SetVertexNumbers (ngel.vertices);
+	fe1d -> SetOrder (INT<1> (order));
+	fe1d -> ComputeNDof(); 
+	return *fe1d;
+      }
+    else
+      {
+	L2HighOrderFiniteElement<2> * fe2d = 0;
+	
+	Ng_Element ngel = ma.GetElement<2> (elnr);
+	
+	switch (ConvertElementType (ngel.GetType()))
+	  {
+	  case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
+	  case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
+	  default:
+	    ;
+	  }
+	
+	fe2d -> SetVertexNumbers (ngel.vertices);
+	fe2d -> SetOrder (INT<2> (order));
+	fe2d -> ComputeNDof(); 
+	return *fe2d;
+      }
+	/*
+
     FiniteElement * fe = 0;
     
     switch (ma.GetSElType(elnr))
@@ -521,6 +661,7 @@ namespace ngcomp
     dynamic_cast<L2HighOrderFiniteElement<2>*> (fe) -> SetVertexNumbers (vnums);
 
     return *fe;
+	*/
   }
  
   const FiniteElement & L2SurfaceHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const

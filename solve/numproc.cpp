@@ -2837,10 +2837,10 @@ namespace ngsolve
 
 
   NumProcs::NumProcInfo::
-  NumProcInfo (const string & aname,
+  NumProcInfo (const string & aname, int adim, 
 	       NumProc* (*acreator)(PDE & pde, const Flags & flags),
 	       void (*aprintdoc) (ostream & ost) )
-    : name(aname), creator(acreator), printdoc(aprintdoc)
+    : name(aname), dim(adim), creator(acreator), printdoc(aprintdoc)
   {
     ;
   }
@@ -2861,15 +2861,26 @@ namespace ngsolve
 	      NumProc* (*acreator)(PDE & pde, const Flags & flags),
 	      void (*printdoc) (ostream & ost) )
   {
-    npa.Append (new NumProcInfo(aname, acreator, printdoc));
+    npa.Append (new NumProcInfo(aname, -1, acreator, printdoc));
   }
 
+  void NumProcs :: 
+  AddNumProc (const string & aname, int adim, 
+	      NumProc* (*acreator)(PDE & pde, const Flags & flags),
+	      void (*printdoc) (ostream & ost) )
+  {
+    npa.Append (new NumProcInfo(aname, adim, acreator, printdoc));
+  }
+
+
+
   const NumProcs::NumProcInfo * 
-  NumProcs::GetNumProc(const string & name)
+  NumProcs::GetNumProc(const string & name, int dim)
   {
     for (int i = 0; i < npa.Size(); i++)
       {
-	if (name == npa[i]->name)
+	if (name == npa[i]->name &&
+	    ( (dim == npa[i]->dim) || (npa[i]->dim==-1) ))
 	  return npa[i];
       }
     return 0;

@@ -801,7 +801,7 @@ void MeshAccess :: GetVertexElements (int vnr, Array<int> & elnrs) const
 
 void MeshAccess ::
 GetElementTransformation (int elnr, ElementTransformation & eltrans,
-			  LocalHeap & lh) const
+			  LocalHeap & /* lh */) const
 {
   int elind = Ng_GetElementIndex (elnr+1)-1;
   eltrans.SetElement (0, elnr, elind);
@@ -816,6 +816,27 @@ GetElementTransformation (int elnr, ElementTransformation & eltrans,
   else
     eltrans.UnSetHigherIntegrationOrder();
 }
+
+
+ElementTransformation MeshAccess :: GetTrafo (int elnr) const
+
+{
+  ElementTransformation eltrans;
+
+  int elind = Ng_GetElementIndex (elnr+1)-1;
+  eltrans.SetElement (0, elnr, elind);
+  eltrans.SetElementType (GetElType(elnr));
+
+  if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
+    eltrans.SetHigherIntegrationOrder();
+  else
+    eltrans.UnSetHigherIntegrationOrder();
+
+  return eltrans;
+}
+
+
+
 
 #else
 
@@ -909,12 +930,26 @@ GetElementTransformation (int elnr, ElementTransformation & eltrans,
 
 void MeshAccess ::
 GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans,
-				 LocalHeap & lh) const
+				 LocalHeap & /* lh */) const
 {
   int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
   eltrans.SetElement (1, elnr, elind);
   eltrans.SetElementType (GetSElType(elnr));
 }    
+
+
+ElementTransformation MeshAccess :: GetSurfaceTrafo (int elnr) const
+
+{
+  ElementTransformation eltrans;
+
+  int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
+  eltrans.SetElement (1, elnr, elind);
+  eltrans.SetElementType (GetSElType(elnr));
+
+  return eltrans;
+}
+
 
 #else
 

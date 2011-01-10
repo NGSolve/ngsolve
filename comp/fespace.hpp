@@ -653,11 +653,15 @@ namespace ngcomp
   public:
     ///
     CompoundFESpace (const MeshAccess & ama,
+		     const Flags & flags, bool parseflags=false);
+    /// 
+    CompoundFESpace (const MeshAccess & ama,
 		     const Array<const FESpace*> & aspaces,
 		     const Flags & flags, bool parseflags=false);
     ///
     virtual ~CompoundFESpace ();
-
+    /// 
+    void AddSpace (const FESpace * fes);
     ///
     virtual string GetClassName () const
     {
@@ -839,6 +843,21 @@ namespace ngcomp
   extern NGS_DLL_HEADER FESpaceClasses & GetFESpaceClasses ();
 
 
+  template <typename FES>
+  class RegisterFESpace
+  {
+  public:
+    RegisterFESpace (string label)
+    {
+      GetFESpaceClasses().AddFESpace (label, Create);
+      cout << "register fespace '" << label << "'" << endl;
+    }
+    
+    static FESpace * Create (const MeshAccess & ma, const Flags & flags)
+    {
+      return new FES (ma, flags);
+    }
+  };
 }
 
 

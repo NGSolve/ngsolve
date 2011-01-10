@@ -14,16 +14,11 @@
 
 namespace ngfem
 {
-
-  using namespace ngfem;
-
+  /*
   template <int D>
   void L2HighOrderFiniteElement<D> :: 
   SetVertexNumbers (FlatArray<int> & avnums)
-  {
-    for (int i=0; i<avnums.Size(); i++)
-      vnums[i] = avnums[i];
-  }
+  */
 
   template <int D>
   void L2HighOrderFiniteElement<D>:: 
@@ -54,13 +49,14 @@ namespace ngfem
       default:
 	;
       }
-    
+
+    /*
     if (D == 2)
       {
 	facetfe1->SetVertexNumber (0, 1);
 	facetfe1->SetVertexNumber (1, 0);
       }
-
+    */
     int ndof_facet = trace.Height();
     Vector<> shape(ndof);
     Vector<> fshape(ndof_facet);

@@ -158,8 +158,13 @@ namespace ngbla
     */
 
     /// sub-vector of size next-first, starting at first
-    const FlatVector<T> Range(int first, int next) const
+    const FlatVector<T> Range (int first, int next) const
     { return FlatVector<T> (next-first, data+first); }
+
+    /// sub-vector given by range
+    const FlatVector<T> Range (IntRange range) const
+    { return FlatVector<T> (range.Next()-range.First(), data+range.First()); }
+
 
     /// vector size
     int Size () const { return s; }

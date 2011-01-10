@@ -297,16 +297,17 @@ namespace ngfem
     : BaseMappedIntegrationRule (ir, aeltrans), sips(ir.GetNIP(), lh)
   {
     baseip = (char*)(void*)(BaseSpecificIntegrationPoint*)(&sips[0]);
-      incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
+    incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
       
-      FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
-      FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
-
-      eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
-      
-      for (int i = 0; i < ir.GetNIP(); i++)
-	new (&sips[i]) SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, pts[i], dxdxi[i]); 
+    FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
+    FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
+    
+    eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
+    
+    for (int i = 0; i < ir.GetNIP(); i++)
+      new (&sips[i]) SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, pts[i], dxdxi[i]); 
   }
+
 
   template class MappedIntegrationRule<1,1>;
   template class MappedIntegrationRule<2,2>;

@@ -39,10 +39,10 @@ namespace ngfem
     virtual bool BoundaryForm () const 
     { return 0; }
 
-    virtual void AssembleElementMatrix (const FiniteElement & fel,
-                                        const ElementTransformation & eltrans, 
-                                        FlatMatrix<double> & elmat,
-                                        LocalHeap & lh) const
+    virtual void CalcElementMatrix (const FiniteElement & fel,
+				    const ElementTransformation & eltrans, 
+				    FlatMatrix<double> & elmat,
+				    LocalHeap & lh) const
     {
       static int timer = NgProfiler::CreateTimer ("HDG laplace");
       static int timer1 = NgProfiler::CreateTimer ("HDG laplace volume");
@@ -97,8 +97,8 @@ namespace ngfem
 	    
 	    fel_l2.CalcMappedDShape (sip, dshape);
 
-	    bmats.VRange(l*D, (l+1)*D) = Trans(dshape);
-	    dbmats.VRange(l*D, (l+1)*D) = 
+	    bmats.Rows(l*D, (l+1)*D) = Trans(dshape);
+	    dbmats.Rows(l*D, (l+1)*D) = 
 	      (lam * sip.GetMeasure() * ir_vol[l].Weight()) * Trans(dshape);
 	  }
 
@@ -107,7 +107,7 @@ namespace ngfem
 	// mat_gradgrad = Trans (dbmats) * bmats;
         LapackMultAtB (dbmats, bmats, mat_gradgrad);
 
-	elmat.HRange(base_l2, base_l2+nd_l2).VRange(base_l2,base_l2+nd_l2) 
+	elmat.Cols(base_l2, base_l2+nd_l2).Rows(base_l2,base_l2+nd_l2) 
 	  += mat_gradgrad;
       }
 
@@ -197,8 +197,8 @@ namespace ngfem
 
 		dmat *= lam * len * ir_facet[l].Weight();
 
-		comp_bmats.VRange (2*l, 2*l+2) = comp_bmat;
-		comp_dbmats.VRange (2*l, 2*l+2) = dmat * comp_bmat;
+		comp_bmats.Rows (2*l, 2*l+2) = comp_bmat;
+		comp_dbmats.Rows (2*l, 2*l+2) = dmat * comp_bmat;
 
 		NgProfiler::AddFlops (timer2, nd*nd*4);
 	      }
@@ -639,10 +639,10 @@ namespace ngfem
     virtual bool BoundaryForm () const 
     { return 0; }
 
-    virtual void AssembleElementMatrix (const FiniteElement & fel,
-                                        const ElementTransformation & eltrans, 
-                                        FlatMatrix<double> & elmat,
-                                        LocalHeap & lh) const
+    virtual void CalcElementMatrix (const FiniteElement & fel,
+				    const ElementTransformation & eltrans, 
+				    FlatMatrix<double> & elmat,
+				    LocalHeap & lh) const
     {
       static int timer = NgProfiler::CreateTimer ("HDG convection");
       static int timer2 = NgProfiler::CreateTimer ("HDG convection boundary");
@@ -693,12 +693,13 @@ namespace ngfem
           HeapReset hr(lh);
           const SpecificIntegrationPoint<D,D> sip(ir_vol[l], eltrans, lh);
           Vec<D> conv;
-          if (coef_conv.Size()>1){
-	          for (int j = 0; j < D; j++)
-  	          conv(j) = coef_conv[j]->Evaluate(sip);
-  	      }else{
-  	        coef_conv[0]->Evaluate(sip,conv);
-          }
+
+          if (coef_conv.Size()>1)
+	    for (int j = 0; j < D; j++)
+	      conv(j) = coef_conv[j]->Evaluate(sip);
+	  else
+	    coef_conv[0]->Evaluate(sip,conv);
+
           fel_l2.CalcShape (sip.IP(), shape);
           fel_l2.CalcMappedDShape (sip, dshape);
           
@@ -710,7 +711,7 @@ namespace ngfem
           mat_l2 -= conv_dshape * Trans (shape);
         }
       
-      elmat.HRange(base_l2, base_l2+nd_l2).VRange(base_l2,base_l2+nd_l2) 
+      elmat.Cols(base_l2, base_l2+nd_l2).Rows(base_l2,base_l2+nd_l2) 
         = mat_l2;
       // = Trans (mat_l2);
 
@@ -755,15 +756,13 @@ namespace ngfem
             {
               IntegrationPoint ip = transform(k, ir_facet[l]);
               SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
-
+	      
               Vec<D> conv;
-				      if (coef_conv.Size()>1){
-					      for (int j = 0; j < D; j++)
-					        conv(j) = coef_conv[j]->Evaluate(sip);
-					    }else{
-					      coef_conv[0]->Evaluate(sip,conv);
-				      }
-
+	      if (coef_conv.Size()>1)
+		for (int j = 0; j < D; j++)
+		  conv(j) = coef_conv[j]->Evaluate(sip);
+	      else
+		coef_conv[0]->Evaluate(sip,conv);
 
 
               Mat<D> jac = sip.GetJacobian();

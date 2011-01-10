@@ -220,7 +220,7 @@ namespace ngcomp
                       int elvec_size = dnums.Size()*fespace.GetDimension();
 		      FlatVector<TSCAL> elvec(elvec_size, lh);
 		  
-		      parts[j] -> AssembleElementVector (fel, eltrans, elvec, lh);
+		      parts[j] -> CalcElementVector (fel, eltrans, elvec, lh);
                  
 		      if (printelvec)
 			{
@@ -285,7 +285,7 @@ namespace ngcomp
 		  
                       int elvec_size = dnums.Size()*fespace.GetDimension();
 		      FlatVector<TSCAL> elvec(elvec_size, lh);
-		      parts[j] -> AssembleElementVector (fel, eltrans, elvec, lh);
+		      parts[j] -> CalcElementVector (fel, eltrans, elvec, lh);
 		      if (printelvec)
 			{
 			  testout->precision(8);

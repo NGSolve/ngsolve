@@ -607,9 +607,10 @@ namespace ngsolve
 	      Flags flags;
 	      CheckFlags (flags);
 	      
-	      if (GetNumProcs().GetNumProc(npid))
+	      int dim = pde->GetMeshAccess().GetDimension();
+	      if (GetNumProcs().GetNumProc(npid, dim))
 		{
-		  pde -> AddNumProc (name, GetNumProcs().GetNumProc(npid)->creator(*pde, flags));
+		  pde -> AddNumProc (name, GetNumProcs().GetNumProc(npid, dim)->creator(*pde, flags));
 // #ifdef SOCKETS
 // 		  if(pde -> ConstantUsed ("clientserver") && pde -> GetConstant("clientserver") > 0.5)
 // 		    pde -> GetClientSocketAccess().CheckNumProc(name,flags,pde->GetNumProc(name)->GetCallPosition());

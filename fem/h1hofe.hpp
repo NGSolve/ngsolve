@@ -29,22 +29,26 @@ namespace ngfem
     using ScalarFiniteElement<DIM>::eltype;
 
   public:
-    void SetVertexNumbers (const FlatArray<int> & avnums)
-    {
-      for (int i = 0; i < avnums.Size(); i++)
-        vnums[i] = avnums[i];
-    }
+    template <typename TA> 
+    void SetVertexNumbers (const TA & avnums)
+    { for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; }
 
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
 
-    void SetOrderCell (int oi)   { order_cell = INT<3> (oi,oi,oi); }
+    void SetOrderCell (int oi)   { order_cell = oi; }
     void SetOrderCell (INT<3> oi)  { order_cell = oi; }
 
-    void SetOrderFace (FlatArray<int> & of);
-    void SetOrderFace (FlatArray<INT<2> > & of);
+    void SetOrderFace (FlatArray<int> & of)
+    { for (int i = 0; i < of.Size(); i++) order_face[i] = of[i]; }
+
+    void SetOrderFace (FlatArray<INT<2> > & of)
+    { for (int i = 0; i < of.Size(); i++) order_face[i] = of[i]; }
+
     void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
 
-    void SetOrderEdge (FlatArray<int> & oe);
+    void SetOrderEdge (FlatArray<int> & oe)
+    { for (int i = 0; i < oe.Size(); i++) order_edge[i] = oe[i]; }
+
     void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
 
 
@@ -69,7 +73,6 @@ namespace ngfem
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
     using ScalarFiniteElement<DIM>::eltype;
-    // using ScalarFiniteElement<DIM>::dimspace;
 
     using H1HighOrderFiniteElement<DIM>::vnums;
     using H1HighOrderFiniteElement<DIM>::order_edge;
@@ -84,34 +87,21 @@ namespace ngfem
     using ET_trait<ET>::GetEdgeSort;
     using ET_trait<ET>::GetFaceSort;
     using ET_trait<ET>::PolDimension;
-
-    // typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
-    // typedef TrigShapesInnerLegendre T_TRIGSHAPES;
-    // typedef TrigShapesInnerJacobi T_TRIGSHAPES;
+    using ET_trait<ET>::PolBubbleDimension;
 
   public:
 
-    T_H1HighOrderFiniteElement () 
-    {
-      for (int i = 0; i < N_VERTEX; i++)
-	vnums[i] = i;
-    }
+    T_H1HighOrderFiniteElement () { ; }
 
     T_H1HighOrderFiniteElement (int aorder) 
     {
-      ndof = PolDimension
- (aorder);
+      ndof = PolDimension (aorder);
 
-      for (int i = 0; i < N_VERTEX; i++)
-	vnums[i] = i;
+      for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
+      for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
+      for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;   
+      if (DIM == 3) order_cell = aorder; 
 
-      for (int i = 0; i < N_EDGE; i++)
-        order_edge[i] = aorder;
-      for (int i = 0; i < N_FACE; i++)
-        order_face[i] = INT<2> (aorder,aorder);
-      if (DIM == 3)
-        order_cell = INT<3> (aorder,aorder,aorder);
-      
       order = aorder;
     }
 
@@ -119,6 +109,9 @@ namespace ngfem
     virtual void ComputeNDof();
     virtual void GetInternalDofs (Array<int> & idofs) const;
   };
+
+
+
 
 
 
@@ -137,7 +130,6 @@ namespace ngfem
     H1HighOrderFE (int aorder)
       : T_H1HighOrderFiniteElement<ET> (aorder) { ; }
   };
-
 
 
 

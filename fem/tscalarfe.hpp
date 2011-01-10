@@ -13,7 +13,7 @@ namespace ngfem
   // Barton and Nackman Trick
 
   
-  
+  /*
   template <int DIM>
   class DShapeElement
   {
@@ -46,6 +46,38 @@ namespace ngfem
     const DShapeAssign Addr (int i) const
     { return DShapeAssign (dshape+i*DIM); } 
   };
+  */
+  template <int DIM>
+  class DShapeElement
+  {
+    FlatVec<DIM> data;
+  public:
+    DShapeElement (FlatVec<DIM> adata) : data(adata) { ; }
+    void operator= (AutoDiff<DIM> ad) 
+    { 
+      for (int i = 0; i < DIM; i++) 
+        data(i) = ad.DValue(i); 
+    }
+  };
+
+
+
+  template <int DIM>
+  class DShapeAssign
+  {
+    FlatMatrixFixWidth<DIM> dshape;
+  public:
+    DShapeAssign (FlatMatrixFixWidth<DIM> mat) : dshape(mat) { ; }
+    // DShapeAssign (double * adshape) { dshape = adshape; }
+
+    DShapeElement<DIM> operator[] (int i) const
+    { return DShapeElement<DIM> (dshape.Row(i)); }
+
+    const DShapeAssign Addr (int i) const
+    { return DShapeAssign (dshape.Rows(i, dshape.Height())); }
+  };
+
+
 
   
 

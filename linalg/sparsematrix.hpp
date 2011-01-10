@@ -141,7 +141,7 @@ namespace ngla
   public:
     /// arbitrary number of els/row
     MatrixGraph (const Array<int> & elsperrow);
-    /// matrix of hight as, uniform number of els/row
+    /// matrix of height as, uniform number of els/row
     MatrixGraph (int as, int max_elsperrow);    
     /// shadow matrix graph
     MatrixGraph (const MatrixGraph & graph, bool stealgraph);

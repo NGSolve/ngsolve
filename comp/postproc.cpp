@@ -134,7 +134,7 @@ namespace ngcomp
 	      FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
 	      const BlockBilinearFormIntegrator & bbli = 
 		dynamic_cast<const BlockBilinearFormIntegrator&> (fluxbli);
-	      bbli . Block() . AssembleElementMatrix (felflux, eltrans, elmat, lh);
+	      bbli . Block() . CalcElementMatrix (felflux, eltrans, elmat, lh);
 	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
 	    
 	      FlatVector<SCAL> hv1(dnumsflux.Size(), lh);
@@ -149,7 +149,7 @@ namespace ngcomp
 	  else
 	    {
 	      FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
-	      fluxbli.AssembleElementMatrix (felflux, eltrans, elmat, lh);
+	      fluxbli.CalcElementMatrix (felflux, eltrans, elmat, lh);
 	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
 	      invelmat.Mult (elflux, elfluxi);
 	    }
@@ -549,7 +549,7 @@ namespace ngcomp
 	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
 	      const BlockBilinearFormIntegrator & bbli = 
 		dynamic_cast<const BlockBilinearFormIntegrator&> (bli);
-	      bbli . Block() . AssembleElementMatrix (fel, eltrans, elmat, lh);
+	      bbli . Block() . CalcElementMatrix (fel, eltrans, elmat, lh);
 	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
 	      
 	      FlatVector<SCAL> hv1(dnums.Size(), lh);
@@ -564,7 +564,7 @@ namespace ngcomp
 	  else
 	    {
 	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
-	      bli.AssembleElementMatrix (fel, eltrans, elmat, lh);
+	      bli.CalcElementMatrix (fel, eltrans, elmat, lh);
 	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
 	      invelmat.Mult (elflux, elfluxi);
 	    }

@@ -248,7 +248,7 @@ namespace ngfem
 	shapetau = shape * tau;
 
 	// moments += ChangeSize(ip.Weight() * (testshape * Trans (shapetau)),moments.Height(),moments.Width());
-        moments.VRange(0, testshape.Height()) += ip.Weight() * (testshape * Trans (shapetau));
+        moments.Rows(0, testshape.Height()) += ip.Weight() * (testshape * Trans (shapetau));
       }
   }
 

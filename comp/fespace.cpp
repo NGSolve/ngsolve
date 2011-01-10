@@ -2617,6 +2617,35 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
 
 
+  CompoundFESpace :: CompoundFESpace (const MeshAccess & ama,
+				      const Flags & flags, bool parseflags)
+    : FESpace (ama, flags)
+  {
+    name="CompoundFESpaces";
+    DefineDefineFlag("compound");
+    DefineStringListFlag("spaces");
+    if(parseflags) CheckFlags(flags);
+    
+    Array<const Prolongation*> prols;
+    prol = new CompoundProlongation (this, prols);
+
+#ifdef PARALLEL
+    if ( ntasks == 1 ) return;
+    Flags loflags;
+    loflags.SetFlag("order",0.0);
+    paralleldofs = 0;
+    if (dgjumps){ *testout << "(CompFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
+    /*
+    Array<const FESpace*> lospaces (0);
+    for ( int i = 0; i < spaces.Size(); i++)
+      if ( &spaces[i]->LowOrderFESpace() )
+	lospaces . Append ( &spaces[i]->LowOrderFESpace() );
+      else
+	{ low_order_space = 0; return; }
+    */
+    low_order_space = new CompoundFESpace(ma, lospaces, flags, parseflags);
+#endif
+  }
 
 
 
@@ -2657,7 +2686,11 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   }
 
 
-
+  void CompoundFESpace :: AddSpace (const FESpace * fes)
+  {
+    spaces.Append (fes);
+    dynamic_cast<CompoundProlongation*> (prol) -> AddProlongation (fes->GetProlongation());
+  }
 
   CompoundFESpace :: ~CompoundFESpace ()
   {

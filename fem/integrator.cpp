@@ -171,7 +171,7 @@ namespace ngfem
     cout << "base class, assemble diag" << endl;
 
     FlatMatrix<> elmat(diag.Size(), lh);
-    AssembleElementMatrix (fel, eltrans, elmat, lh);
+    CalcElementMatrix (fel, eltrans, elmat, lh);
 
     diag.AssignMemory (elmat.Height(), lh);
     for (int i = 0; i < diag.Size(); i++)
@@ -187,7 +187,7 @@ namespace ngfem
 				   FlatMatrix<double> & elmat,
 				   LocalHeap & locheap) const
   {
-    AssembleElementMatrix (fel, eltrans, elmat, locheap);
+    CalcElementMatrix (fel, eltrans, elmat, locheap);
   }
 
   void BilinearFormIntegrator ::
@@ -197,7 +197,7 @@ namespace ngfem
 				   FlatMatrix<Complex> & elmat,
 				   LocalHeap & locheap) const
   {
-    AssembleElementMatrix (fel, eltrans, elmat, locheap);
+    CalcElementMatrix (fel, eltrans, elmat, locheap);
   }
 
 
@@ -217,7 +217,7 @@ namespace ngfem
 	cnt++;
       }
     FlatMatrix<double> mat(elx.Size(), locheap);
-    AssembleElementMatrix (fel, eltrans, mat, locheap);
+    CalcElementMatrix (fel, eltrans, mat, locheap);
     ely = mat * elx;
   }
 
@@ -231,7 +231,7 @@ namespace ngfem
   {
     //cout << "call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
     FlatMatrix<Complex> mat(elx.Size(), locheap);
-    AssembleElementMatrix (fel, eltrans, mat, locheap);
+    CalcElementMatrix (fel, eltrans, mat, locheap);
     ely = mat * elx;
   }
 
@@ -676,13 +676,13 @@ namespace ngfem
   }
 
   void BlockBilinearFormIntegrator ::
-  AssembleElementMatrix (const FiniteElement & bfel,
-			 const ElementTransformation & eltrans,
-			 FlatMatrix<double> & elmat,
-			 LocalHeap & locheap) const
+  CalcElementMatrix (const FiniteElement & bfel,
+		     const ElementTransformation & eltrans,
+		     FlatMatrix<double> & elmat,
+		     LocalHeap & locheap) const
   {
     FlatMatrix<double> mat1(bfel.GetNDof(), locheap);
-    bfi.AssembleElementMatrix (bfel, eltrans, mat1, locheap);
+    bfi.CalcElementMatrix (bfel, eltrans, mat1, locheap);
     
     // elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, locheap);
     elmat = 0;
@@ -702,13 +702,13 @@ namespace ngfem
 
 
   void BlockBilinearFormIntegrator :: 
-  AssembleElementMatrix (const FiniteElement & bfel, 
-			 const ElementTransformation & eltrans, 
-			 FlatMatrix<Complex> & elmat,
-			 LocalHeap & locheap) const
+  CalcElementMatrix (const FiniteElement & bfel, 
+		     const ElementTransformation & eltrans, 
+		     FlatMatrix<Complex> & elmat,
+		     LocalHeap & locheap) const
   {
     FlatMatrix<Complex> mat1(bfel.GetNDof(), locheap);
-    bfi.AssembleElementMatrix (bfel, eltrans, mat1, locheap);
+    bfi.CalcElementMatrix (bfel, eltrans, mat1, locheap);
     
     // elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, locheap);
     elmat = 0;
@@ -1299,7 +1299,7 @@ double BlockBilinearFormIntegrator ::
   }
 
   void NormalBilinearFormIntegrator :: 
-  AssembleElementMatrix (const FiniteElement & bfel,
+  CalcElementMatrix (const FiniteElement & bfel,
 			 const ElementTransformation & eltrans, 
 			 FlatMatrix<double> & elmat,
 			 LocalHeap & locheap) const
@@ -1377,10 +1377,10 @@ double BlockBilinearFormIntegrator ::
   
 
   void ComplexBilinearFormIntegrator :: 
-  AssembleElementMatrix (const FiniteElement & fel,
-			 const ElementTransformation & eltrans, 
-			 FlatMatrix<double> & elmat,
-			 LocalHeap & locheap) const
+  CalcElementMatrix (const FiniteElement & fel,
+		     const ElementTransformation & eltrans, 
+		     FlatMatrix<double> & elmat,
+		     LocalHeap & locheap) const
   {
     throw Exception ("ComplexBilinearFormIntegrator: cannot assemble double matrix");
   }
@@ -1388,15 +1388,13 @@ double BlockBilinearFormIntegrator ::
 
 
   void ComplexBilinearFormIntegrator :: 
-  AssembleElementMatrix (const FiniteElement & fel,
-			 const ElementTransformation & eltrans, 
-			 FlatMatrix<Complex> & elmat,
-			 LocalHeap & locheap) const
+  CalcElementMatrix (const FiniteElement & fel,
+		     const ElementTransformation & eltrans, 
+		     FlatMatrix<Complex> & elmat,
+		     LocalHeap & locheap) const
   {
     FlatMatrix<double> rmat(elmat.Height(), locheap);
-    bfi.AssembleElementMatrix (fel, eltrans, rmat, locheap);
-    // elmat.AssignMemory (rmat.Height(), rmat.Width(), locheap);
-     
+    bfi.CalcElementMatrix (fel, eltrans, rmat, locheap);
     elmat = factor * rmat; 
   }  
 
@@ -1554,32 +1552,34 @@ double BlockBilinearFormIntegrator ::
   
 
   void CompoundBilinearFormIntegrator :: 
-  AssembleElementMatrix (const FiniteElement & bfel,
-			 const ElementTransformation & eltrans, 
-			 FlatMatrix<double> & elmat,
-			 LocalHeap & locheap) const
+  CalcElementMatrix (const FiniteElement & bfel,
+		     const ElementTransformation & eltrans, 
+		     FlatMatrix<double> & elmat,
+		     LocalHeap & locheap) const
   {
     const CompoundFiniteElement & fel =
       dynamic_cast<const CompoundFiniteElement&> (bfel);
 
     FlatMatrix<double> mat1(fel[comp].GetNDof(), locheap);
-    bfi.AssembleElementMatrix (fel[comp], eltrans, mat1, locheap);
-    
-    // elmat.AssignMemory (fel.GetNDof(), fel.GetNDof(), locheap);
+    bfi.CalcElementMatrix (fel[comp], eltrans, mat1, locheap);
+
     elmat = 0;
     
     int base = 0;
     for (int i = 0; i < comp; i++)
       base += fel[i].GetNDof();
 
+    elmat.Rows (base, base+mat1.Height()).Cols (base, base+mat1.Width()) = mat1;
+    /*
     for (int i = 0; i < mat1.Height(); i++)
       for (int j = 0; j < mat1.Width(); j++)
 	elmat(base+i, base+j) = mat1(i,j);
-     }  
+    */
+  }  
 
 
   void CompoundBilinearFormIntegrator :: 
-  AssembleElementMatrix (const FiniteElement & bfel,
+  CalcElementMatrix (const FiniteElement & bfel,
 			 const ElementTransformation & eltrans, 
 			 FlatMatrix<Complex> & elmat,
 			 LocalHeap & locheap) const
@@ -1588,19 +1588,20 @@ double BlockBilinearFormIntegrator ::
       dynamic_cast<const CompoundFiniteElement&> (bfel);
 
     FlatMatrix<Complex> mat1(fel[comp].GetNDof(), locheap);
+    bfi.CalcElementMatrix (fel[comp], eltrans, mat1, locheap);
 
-    bfi.AssembleElementMatrix (fel[comp], eltrans, mat1, locheap);
-    
-    // elmat.AssignMemory (fel.GetNDof(), fel.GetNDof(), locheap);
     elmat = 0;
     
     int base = 0;
     for (int i = 0; i < comp; i++)
       base += fel[i].GetNDof();
 
+    elmat.Rows (base, base+mat1.Height()).Cols (base, base+mat1.Width()) = mat1;
+    /*
     for (int i = 0; i < mat1.Height(); i++)
       for (int j = 0; j < mat1.Width(); j++)
 	elmat(base+i, base+j) = mat1(i,j);
+    */
   }  
 
 
@@ -1985,14 +1986,13 @@ double BlockBilinearFormIntegrator ::
   }
 
   void BlockLinearFormIntegrator :: 
-  AssembleElementVector (const FiniteElement & bfel, 
-			 const ElementTransformation & eltrans, 
-			 FlatVector<double> & elvec,
-			 LocalHeap & locheap) const
+  CalcElementVector (const FiniteElement & bfel, 
+		     const ElementTransformation & eltrans, 
+		     FlatVector<double> & elvec,
+		     LocalHeap & locheap) const
   {
     FlatVector<double> vec1(bfel.GetNDof(), locheap);
-    lfi.AssembleElementVector (bfel, eltrans, vec1, locheap);
-    // elvec.AssignMemory (vec1.Size()*dim, locheap);
+    lfi.CalcElementVector (bfel, eltrans, vec1, locheap);
     elvec = 0;
     if (comp == -1)
       for (int i = 0; i < vec1.Size(); i++)

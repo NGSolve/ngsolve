@@ -79,7 +79,7 @@ namespace ngfem
 	{
 	  CalcShape (ir[i], pre->shapes.Row(i));
 	  CalcDShape (ir[i], dshapes);
-	  pre->dshapes.VRange (DIM*i, DIM*(i+1)) = Trans (dshapes);
+	  pre->dshapes.Rows (DIM*i, DIM*(i+1)) = Trans (dshapes);
 	}
 
       SHAPES::precomp.Add (classnr, order, ir.GetNIP(), pre);
