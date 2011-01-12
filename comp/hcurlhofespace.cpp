@@ -153,24 +153,9 @@ namespace ngcomp
 
     // Evaluator 
     static ConstantCoefficientFunction one(1);
-    if (ma.GetDimension() == 2)
-      {
-	Array<CoefficientFunction*> coeffs(1);
-	coeffs[0] = &one;
-	evaluator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
-	if ( !discontinuous )
-	  boundary_evaluator = GetIntegrators().CreateBFI("robinedge",2,coeffs); 
-      }
-    else if(ma.GetDimension() == 3) 
-      {
-	Array<CoefficientFunction*> coeffs(1); 
-	coeffs[0] = &one;
-	evaluator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
-	if ( !discontinuous )
-	  boundary_evaluator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
-	
-      }
-
+    evaluator = GetIntegrators().CreateBFI("massedge", ma.GetDimension(), &one);
+    if ( !discontinuous )
+      boundary_evaluator = GetIntegrators().CreateBFI("robinedge", ma.GetDimension(), &one); 
   }
   
   HCurlHighOrderFESpace :: ~HCurlHighOrderFESpace ()

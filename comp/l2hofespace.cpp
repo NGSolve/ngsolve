@@ -70,10 +70,8 @@ namespace ngcomp
 	throw Exception ("Flag 'variableorder' for l2ho is obsolete. \n  Either choose uniform order by -order= .. \n -relorder=.. for relative mesh order "); 
       }
     
-    if (ma.GetDimension() == 2)
-      evaluator = new MassIntegrator<2> (new ConstantCoefficientFunction(1));
-    else
-      evaluator = new MassIntegrator<3> (new ConstantCoefficientFunction(1));
+    static ConstantCoefficientFunction one(1);
+    evaluator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
 
     if (dimension > 1)
       evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
