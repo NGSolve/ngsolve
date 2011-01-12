@@ -2064,7 +2064,14 @@ double BlockBilinearFormIntegrator ::
     return bfi;
   }
 
-
+  BilinearFormIntegrator * 
+  Integrators::CreateBFI(const string & name, int dim, 
+			 CoefficientFunction * coef) const
+  {
+    Array<CoefficientFunction*> coeffs(1);
+    coeffs[0] = coef;
+    return CreateBFI (name, dim, coeffs);
+  }
 
   void Integrators :: 
   AddLFIntegrator (const string & aname, int aspacedim, int anumcoeffs,
@@ -2095,6 +2102,16 @@ double BlockBilinearFormIntegrator ::
     lfi -> SetName (name);
     return lfi;
   }
+
+  LinearFormIntegrator * 
+  Integrators::CreateLFI(const string & name, int dim, 
+			 CoefficientFunction * coef) const
+  {
+    Array<CoefficientFunction*> coeffs(1);
+    coeffs[0] = coef;
+    return CreateLFI (name, dim, coeffs);
+  }
+
 
 
 

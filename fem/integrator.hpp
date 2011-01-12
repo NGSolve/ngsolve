@@ -1584,6 +1584,9 @@ namespace ngfem
     ///
     BilinearFormIntegrator * CreateBFI(const string & name, int dim,
 				       Array<CoefficientFunction*> & coeffs) const;
+    ///
+    BilinearFormIntegrator * CreateBFI(const string & name, int dim,
+				       CoefficientFunction * coef) const;
 
     ///
     const Array<IntegratorInfo*> & GetLFIs() const { return lfis; }
@@ -1592,6 +1595,9 @@ namespace ngfem
     ///
     LinearFormIntegrator * CreateLFI(const string & name, int dim,
 				     Array<CoefficientFunction*> & coeffs) const;
+
+    LinearFormIntegrator * CreateLFI(const string & name, int dim,
+				     CoefficientFunction * coef) const;
 
     ///
     void Print (ostream & ost) const;

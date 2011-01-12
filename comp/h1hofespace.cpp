@@ -110,16 +110,8 @@ namespace ngcomp
     
 
     static ConstantCoefficientFunction one(1);
-    if (ma.GetDimension() == 2)
-      {
-	evaluator = new MassIntegrator<2> (&one);
-	boundary_evaluator = new RobinIntegrator<2> (&one);
-      }
-    else
-      {
-	evaluator = new MassIntegrator<3> (&one);
-	boundary_evaluator = new RobinIntegrator<3> (&one);
-      }
+    evaluator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
+    boundary_evaluator = GetIntegrators().CreateBFI("robin", ma.GetDimension(), &one);
 
     if (dimension > 1)
       {
