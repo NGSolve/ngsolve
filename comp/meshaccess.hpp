@@ -536,6 +536,46 @@ namespace ngcomp
 #endif
   };
 
+
+
+
+
+
+  inline ELEMENT_TYPE ConvertElementType (NG_ELEMENT_TYPE type)
+  {
+    switch (type)
+      {
+      case NG_SEGM: case NG_SEGM3:
+	return ET_SEGM;
+
+      case NG_TRIG: case NG_TRIG6: 
+	return ET_TRIG;
+	
+      case NG_QUAD:
+      case NG_QUAD6:
+	return ET_QUAD;
+	
+      case NG_TET:
+      case NG_TET10:
+	return ET_TET;
+
+      case NG_PRISM:
+      case NG_PRISM12:
+	return ET_PRISM;
+
+      case NG_PYRAMID:
+	return ET_PYRAMID;
+
+      case NG_HEX:
+	return ET_HEX;
+      }
+    
+    return ET_TRIG;  // return something for the  compiler
+  }
+
+
+
+
 }
 
 #endif

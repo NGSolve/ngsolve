@@ -21,9 +21,15 @@ namespace ngfem
     : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (DiagDMat<1> (coeff))
   { ; }
 
+  template <int D>  MassIntegrator<D> :: 
+  MassIntegrator (Array<CoefficientFunction*> & coeffs)
+    : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (coeffs)
+  { ; }
+
+
   template <int D> ComplexMassIntegrator<D> ::
   ComplexMassIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1, Complex>, ScalarFiniteElement<D> > (DiagDMat<1, Complex> (coeff))
+    : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (DiagDMat<1> (coeff))
   { ; }
 
   template <int D> 
@@ -42,6 +48,12 @@ namespace ngfem
   LaplaceIntegrator (CoefficientFunction * coeff)
     : T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
   { ; }
+
+  template <int D, typename FEL> LaplaceIntegrator<D,FEL> ::
+  LaplaceIntegrator (Array<CoefficientFunction*> & coeffs)
+    : T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> (coeffs)
+  { ; }
+
 
   template <int D, typename FEL> LaplaceBoundaryIntegrator<D,FEL> ::
   LaplaceBoundaryIntegrator (CoefficientFunction * coeff)
@@ -63,7 +75,7 @@ namespace ngfem
 
   template <int D> ComplexRobinIntegrator<D> ::
   ComplexRobinIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1, Complex>, ScalarFiniteElement<D-1> > (DiagDMat<1, Complex> (coeff))
+    : T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, ScalarFiniteElement<D-1> > (DiagDMat<1> (coeff))
   { ; }
 
   template <int D> 
@@ -84,11 +96,18 @@ namespace ngfem
     : T_BIntegrator<DiffOpId<D>, DVec<1>, FEL> (DVec<1> (coeff))
   { ; }
 
+  template <int D, typename FEL> SourceIntegrator<D,FEL> ::
+  SourceIntegrator (Array<CoefficientFunction*> & coeffs)
+    : T_BIntegrator<DiffOpId<D>, DVec<1>, FEL> (coeffs)
+  { ; }
+  
+
   template <int D, typename FEL> ComplexSourceIntegrator<D,FEL> ::
   ComplexSourceIntegrator (CoefficientFunction * coeff)
     : T_BIntegrator<DiffOpId<D>, DVec<1, Complex>, FEL> (DVec<1, Complex> (coeff))
   { ; }
 
+  /*
   template <int D, typename FEL> 
   Integrator * SourceIntegrator<D,FEL> :: Create (Array<CoefficientFunction*> & coeffs)
   {
@@ -98,7 +117,7 @@ namespace ngfem
     else
       return new ComplexSourceIntegrator<D,FEL> (coef);
   }
-
+  */
 
 
   template <int D, typename FEL> NeumannIntegrator<D,FEL> ::
@@ -169,10 +188,25 @@ namespace ngfem
     
     Init::Init()
     {
+      static RegisterBilinearFormIntegrator<LaplaceIntegrator<2> > initlap2 ("laplace", 2, 1);
+      static RegisterBilinearFormIntegrator<LaplaceIntegrator<3> > initlap3 ("laplace", 3, 1);
+      static RegisterBilinearFormIntegrator<MassIntegrator<2> > initmass2 ("mass", 2, 1);
+      static RegisterBilinearFormIntegrator<MassIntegrator<3> > initmass3 ("mass", 3, 1);
+
+
+      static RegisterLinearFormIntegrator<SourceIntegrator<2> > initsource2 ("source", 2, 1);
+      static RegisterLinearFormIntegrator<SourceIntegrator<3> > initsource3 ("source", 3, 1);
+
+
+
+
+      /*
       GetIntegrators().AddBFIntegrator ("laplace", 2, 1,
 					LaplaceIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("laplace", 3, 1,
 					LaplaceIntegrator<3>::Create);
+      */
+
       GetIntegrators().AddBFIntegrator ("rotsymlaplace", 2, 1,
 					RotSymLaplaceIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("rotsymlaplace", 3, 1,
@@ -187,10 +221,15 @@ namespace ngfem
 					OrthoLaplaceIntegrator<3>::Create);
       
 
+
+      /*
       GetIntegrators().AddBFIntegrator ("mass", 2, 1,
 					MassIntegrator<2>::Create);
+
       GetIntegrators().AddBFIntegrator ("mass", 3, 1,
 					MassIntegrator<3>::Create);
+      */
+
       /*
       GetIntegrators().AddBFIntegrator ("divdiv", 2, 1,
 					DivDivIntegrator<2>::Create);
@@ -238,10 +277,12 @@ namespace ngfem
       */
 
 
+      /*
       GetIntegrators().AddLFIntegrator ("source", 2, 1,
 					SourceIntegrator<2>::Create);
       GetIntegrators().AddLFIntegrator ("source", 3, 1,
 					SourceIntegrator<3>::Create);
+      */
       GetIntegrators().AddLFIntegrator("gradsource", 3, 3, 
 				       GradSourceIntegrator<3>::Create); 
 
