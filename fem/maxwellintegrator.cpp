@@ -42,8 +42,40 @@ namespace ngfem
 
 
 
+
+  template <int D, typename FEL> SourceEdgeIntegrator<D,FEL> ::
+  SourceEdgeIntegrator (CoefficientFunction * coeff)
+    : T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> (DVec<D> (coeff))
+  { ; }
+
+  template <int D, typename FEL> SourceEdgeIntegrator<D,FEL> ::
+  SourceEdgeIntegrator (CoefficientFunction * coef1,
+			CoefficientFunction * coef2)
+    : T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> (DVec<D> (coef1, coef2))
+  { ; }
+
+  template <int D, typename FEL> SourceEdgeIntegrator<D,FEL> ::
+  SourceEdgeIntegrator (CoefficientFunction * coef1,
+			CoefficientFunction * coef2,
+			CoefficientFunction * coef3)
+    : T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> (DVec<D> (coef1, coef2, coef3))
+  { ; }
+
+  template <int D, typename FEL> SourceEdgeIntegrator<D,FEL> ::
+  SourceEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
+    : T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> (coeffs)
+  { ; }
+
+
+
+
+
+
+  /*
   template class SourceEdgeIntegrator<2>;
   template class SourceEdgeIntegrator<3>;
+  */
+
 
   namespace maxwellint {
 
@@ -52,6 +84,9 @@ namespace ngfem
 
     static RegisterBilinearFormIntegrator<MassEdgeIntegrator<2> > initmasse2 ("massedge", 2, 1);
     static RegisterBilinearFormIntegrator<MassEdgeIntegrator<3> > initmasse3 ("massedge", 3, 1);
+
+    static RegisterLinearFormIntegrator<SourceEdgeIntegrator<2> > initse2 ("sourceedge", 2, 2);
+    static RegisterLinearFormIntegrator<SourceEdgeIntegrator<3> > initse3 ("sourceedge", 3, 3);
 
 
     class Init
@@ -91,10 +126,14 @@ namespace ngfem
 					MassEdgeAnisotropicIntegrator<3>::Create);
 
 
+      /*
       GetIntegrators().AddLFIntegrator ("sourceedge", 3, 3,
 					SourceEdgeIntegrator<3>::Create);
       GetIntegrators().AddLFIntegrator ("sourceedge", 2, 2,
 					SourceEdgeIntegrator<2>::Create);
+      */
+
+
       GetIntegrators().AddLFIntegrator ("neumannedge", 3, 3,
 					NeumannEdgeIntegrator<3>::Create);
       GetIntegrators().AddLFIntegrator ("neumannedge", 2, 2,

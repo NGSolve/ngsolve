@@ -517,7 +517,7 @@ namespace ngfem
 
 
 
-
+#ifdef ABCxxx
 
   template <int D, typename FEL = HCurlFiniteElement<D> >
   class SourceEdgeIntegratorN
@@ -573,7 +573,6 @@ namespace ngfem
       */
 
 
-
   template <int D, typename FEL = HCurlFiniteElement<D> >
   class SourceEdgeIntegrator;
 
@@ -588,7 +587,8 @@ namespace ngfem
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       if (coeffs.Size() == 1 && coeffs[0]->Dimension() == D)
-	return new SourceEdgeIntegratorN<D,FEL> (coeffs[0]); 
+	return new SourceEdgeIntegrator<D,FEL> (coeffs[0]); 
+	// return new SourceEdgeIntegratorN<D,FEL> (coeffs[0]); 
 
       if (D==2) 
 	return new SourceEdgeIntegrator<2,FEL> (coeffs[0], coeffs[1]); 
@@ -605,6 +605,8 @@ namespace ngfem
     : public BaseSourceEdgeIntegrator<2,FEL> // T_BIntegrator<DiffOpIdEdge<2>, DVec<2>, FEL>
   {
   public:
+    SourceEdgeIntegrator (CoefficientFunction * coeff1)
+      : BaseSourceEdgeIntegrator<2,FEL> (DVec<2> (coeff1)) { ; }
     SourceEdgeIntegrator (CoefficientFunction * coeff1,
 			  CoefficientFunction * coeff2)
       : BaseSourceEdgeIntegrator<2,FEL> (DVec<2> (coeff1, coeff2)) { ; }
@@ -615,11 +617,40 @@ namespace ngfem
     : public BaseSourceEdgeIntegrator<3,FEL>
   {
   public:
+    SourceEdgeIntegrator (CoefficientFunction * coeff1)
+      : BaseSourceEdgeIntegrator<3,FEL> (DVec<3> (coeff1)) { ; }
     SourceEdgeIntegrator (CoefficientFunction * coeff1,
 			  CoefficientFunction * coeff2,
 			  CoefficientFunction * coeff3)
       : BaseSourceEdgeIntegrator<3,FEL> (DVec<3> (coeff1, coeff2, coeff3)) { ; }
   };
+
+#endif
+
+
+
+
+
+  template <int D, typename FEL = HCurlFiniteElement<D> >
+  class NGS_DLL_HEADER SourceEdgeIntegrator
+    : public T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL>
+  {
+  public:
+    SourceEdgeIntegrator (Array<CoefficientFunction*> & coeffs);
+    SourceEdgeIntegrator (CoefficientFunction * coeff1);
+
+    SourceEdgeIntegrator (CoefficientFunction * coeff1,
+			  CoefficientFunction * coeff2);
+
+    SourceEdgeIntegrator (CoefficientFunction * coeff1,
+			  CoefficientFunction * coeff2,
+			  CoefficientFunction * coeff3);
+
+    virtual string Name () const { return "SourceEdge"; }
+  };
+
+
+
 
 
 
