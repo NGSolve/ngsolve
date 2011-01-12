@@ -662,7 +662,9 @@ int NGSolve_Init (Tcl_Interp * interp)
   cout << "NGSolve-" << VERSION << endl;
 
 #ifdef LAPACK
-  cout << "Using Lapack" << endl;
+  cout << "Using Lapack xxx" << endl;
+#else
+  cout << "sorry, no lapack" << endl; 
 #endif
 
 #ifdef USE_PARDISO
@@ -766,6 +768,8 @@ int NGSolve_Init (Tcl_Interp * interp)
   ngfem::bdbequations_cpp::link_it = 0;
   ngfem::link_it_h1hofefo = 0;
   ngsolve::numprocee_cpp::link_it = 0;
+
+
 
   return TCL_OK;
 }
