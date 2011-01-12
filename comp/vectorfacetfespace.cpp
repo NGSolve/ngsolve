@@ -20,7 +20,7 @@ namespace ngcomp
 
 
   VectorFacetFESpace :: VectorFacetFESpace ( const MeshAccess & ama, const Flags & flags, 
-		       bool parseflags )
+					     bool parseflags )
     : FESpace(ama, flags )
   {
     name = "VectorFESpace";
@@ -46,7 +46,7 @@ namespace ngcomp
     order =  int (flags.GetNumFlag ("order",0)); 
     
     if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order")) 
-       var_order = 1; 
+      var_order = 1; 
     else 
       var_order = 0;
     
@@ -291,8 +291,8 @@ namespace ngcomp
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
       
-      //no prolongation so far       
-      //prol->Update();
+    //no prolongation so far       
+    //prol->Update();
 
     if(print)
       {
@@ -340,10 +340,10 @@ namespace ngcomp
       }
     if (highest_order_dc)	  
       for(int el=0; el<ma.GetNE(); el++)	      
-      {
-	for (int k = first_inner_dof[el]; k < first_inner_dof[el+1]; k++)
-	  ctofdof[k] = LOCAL_DOF;
-      }	  
+	{
+	  for (int k = first_inner_dof[el]; k < first_inner_dof[el+1]; k++)
+	    ctofdof[k] = LOCAL_DOF;
+	}	  
     *testout << " VECTORFACETFESPACE - ctofdof = \n" << ctofdof << endl;
   }
 
@@ -408,23 +408,23 @@ namespace ngcomp
     VectorFacetFacetFiniteElement * fe = 0;
 
     switch (ma.GetSElType(selnr))
-    {
+      {
       case ET_SEGM: fe = new (lh) VectorFacetFacetSegm (); break;
       case ET_TRIG: fe = new (lh) VectorFacetFacetTrig (); break;
       case ET_QUAD: fe = new (lh) VectorFacetFacetQuad (); break;
       default:
         fe = 0;
-    }
+      }
      
     if (!fe)
-    {
-      stringstream str;
-      str << "VectorFacetFESpace " << GetClassName()
-          << ", undefined eltype "
-          << ElementTopology::GetElementName(ma.GetSElType(selnr))
-          << ", order = " << order << endl;
-      throw Exception (str.str());
-    }
+      {
+	stringstream str;
+	str << "VectorFacetFESpace " << GetClassName()
+	    << ", undefined eltype "
+	    << ElementTopology::GetElementName(ma.GetSElType(selnr))
+	    << ", order = " << order << endl;
+	throw Exception (str.str());
+      }
      
     ArrayMem<int,4> vnums;
     ArrayMem<int, 4> ednums;
@@ -432,7 +432,7 @@ namespace ngcomp
     ma.GetSElVertices(selnr, vnums);
     int reduceorder = highest_order_dc ? 1 : 0;
     switch (ma.GetSElType(selnr))
-    {
+      {
       case ET_SEGM:
         fe -> SetVertexNumbers (vnums);
         ma.GetSElEdges(selnr, ednums);
@@ -445,9 +445,9 @@ namespace ngcomp
         fe -> SetOrder (order_facet[ma.GetSElFace(selnr)][0]-reduceorder);
         fe -> ComputeNDof();
         break;
-    default:
-      throw Exception ("VectorFacetFESpace::GetSFE: unsupported element");
-    }
+      default:
+	throw Exception ("VectorFacetFESpace::GetSFE: unsupported element");
+      }
     return *fe;
     
   }
@@ -631,7 +631,7 @@ namespace ngcomp
   void VectorFacetFESpace :: GetFacetDofNrs ( int felnr, Array<int> & dnums ) const
   {
     dnums.SetSize(0);
-    if ( dimension == 3 )
+    if ( ma.GetDimension() == 3 )
       {
 	dnums.Append( 2*felnr );
 	dnums.Append (2*felnr+1);
@@ -641,10 +641,8 @@ namespace ngcomp
 
     int first = first_facet_dof[felnr];
     int next = first_facet_dof[felnr+1];
-    for ( int j = first; j < next; j++ )
-      {
-	dnums.Append(j);
-      }
+    for (int j = first; j < next; j++ )
+      dnums.Append(j);
   }
 
 
@@ -653,29 +651,31 @@ namespace ngcomp
     dnums.SetSize(0);
   }
 
-   int VectorFacetFESpace :: GetNFacetDofs ( int felnr ) const
+  int VectorFacetFESpace :: GetNFacetDofs ( int felnr ) const
   {
     // number of low_order_dofs = dimension - 1
     return ( first_facet_dof[felnr+1] - first_facet_dof[felnr] + dimension - 1);
   }
 
   
+  void VectorFacetFESpace :: GetVertexNumbers(int elnr, Array<int>& vnums) 
+  { 
+    ma.GetElVertices(elnr, vnums); 
+  };
+
   ///
-   void VectorFacetFESpace :: GetVertexNumbers(int elnr, Array<int>& vnums) 
-  { ma.GetElVertices(elnr, vnums); };
-  ///
-   INT<2> VectorFacetFESpace :: GetFacetOrder(int fnr) 
+  INT<2> VectorFacetFESpace :: GetFacetOrder(int fnr) 
   { return order_facet[fnr]; };
+  
+  int VectorFacetFESpace :: GetFirstFacetDof(int fanr) const {return (first_facet_dof[fanr]);}; 
 
-   int VectorFacetFESpace :: GetFirstFacetDof(int fanr) const {return (first_facet_dof[fanr]);}; 
 
-
-   void VectorFacetFESpace :: GetVertexDofNrs ( int elnum, Array<int> & dnums ) const
+  void VectorFacetFESpace :: GetVertexDofNrs ( int elnum, Array<int> & dnums ) const
   {
     dnums.SetSize(0);
   }
 
-   void VectorFacetFESpace :: GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const
+  void VectorFacetFESpace :: GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const
   {
     dnums.SetSize(0);
     if ( ma.GetDimension() == 3 )
@@ -686,7 +686,7 @@ namespace ngcomp
       dnums.Append(j);
   }
 
-   void VectorFacetFESpace :: GetFaceDofNrs (int felnr, Array<int> & dnums) const
+  void VectorFacetFESpace :: GetFaceDofNrs (int felnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     if ( ma.GetDimension() == 2 ) return;
@@ -698,11 +698,11 @@ namespace ngcomp
   }
 
 #ifdef PARALLEL
-   void VectorFacetFESpace :: UpdateParallelDofs_hoproc()
-   { 
-     // ******************************
-     // update exchange dofs 
-     // ******************************
+  void VectorFacetFESpace :: UpdateParallelDofs_hoproc()
+  { 
+    // ******************************
+    // update exchange dofs 
+    // ******************************
     *testout << "VectorFacetFESpace::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
     Array<int> nexdof(ntasks);
@@ -732,8 +732,8 @@ namespace ngcomp
 
     paralleldofs->SetNExDof(nexdof);
 
-//     paralleldofs->localexchangedof = new Table<int> (nexdof);
-//     paralleldofs->distantexchangedof = new Table<int> (nexdof);
+    //     paralleldofs->localexchangedof = new Table<int> (nexdof);
+    //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
     Array<int> ** owndofs, ** distantdofs;
@@ -757,31 +757,31 @@ namespace ngcomp
     // *****************
 
 
-   for ( int face = 0; face < ma.GetNFaces(); face++ )
+    for ( int face = 0; face < ma.GetNFaces(); face++ )
       if ( parallelma->IsExchangeFace ( face ) )
-      {
-	Array<int> dnums;
-	GetFaceDofNrs ( face, dnums );
-	if ( dnums.Size() == 0 ) continue;
+	{
+	  Array<int> dnums;
+	  GetFaceDofNrs ( face, dnums );
+	  if ( dnums.Size() == 0 ) continue;
 
- 	for ( int i=0; i<dnums.Size(); i++ )
- 	  (*(paralleldofs->sorted_exchangedof))[id][exdof++] = dnums[i];
+	  for ( int i=0; i<dnums.Size(); i++ )
+	    (*(paralleldofs->sorted_exchangedof))[id][exdof++] = dnums[i];
 
-	for ( int dest = 1; dest < ntasks; dest++ )
-	  {
-	    int distface = parallelma -> GetDistantFaceNum ( dest, face );
-	    if( distface < 0 ) continue;
+	  for ( int dest = 1; dest < ntasks; dest++ )
+	    {
+	      int distface = parallelma -> GetDistantFaceNum ( dest, face );
+	      if( distface < 0 ) continue;
 
-	    owndofs[dest]->Append ( distface );
-	    owndofs[dest]->Append (int(paralleldofs->IsGhostDof(dnums[0])) );
-	    for ( int i=0; i<dnums.Size(); i++)
-	      {
-		paralleldofs->SetExchangeDof ( dest, dnums[i] );
-		paralleldofs->SetExchangeDof ( dnums[i] );
-		owndofs[dest]->Append ( dnums[i] );
-	      }
-  	  }
-      }   
+	      owndofs[dest]->Append ( distface );
+	      owndofs[dest]->Append (int(paralleldofs->IsGhostDof(dnums[0])) );
+	      for ( int i=0; i<dnums.Size(); i++)
+		{
+		  paralleldofs->SetExchangeDof ( dest, dnums[i] );
+		  paralleldofs->SetExchangeDof ( dnums[i] );
+		  owndofs[dest]->Append ( dnums[i] );
+		}
+	    }
+	}   
 
 
     for ( int sender = 1; sender < ntasks; sender ++ )
@@ -801,7 +801,7 @@ namespace ngcomp
 	  
       }
 
-     for( int dest=1; dest<ntasks; dest++) 
+    for( int dest=1; dest<ntasks; dest++) 
       {
 	if ( dest == id ) continue;
 	MPI_Wait(recvrequest+dest, &status);
@@ -814,12 +814,12 @@ namespace ngcomp
 	    int isdistghost = (*distantdofs[dest])[ii++];
 	    Array<int> dnums;
 	    GetFaceDofNrs (fanum, dnums);
-// 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
-// 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
+	    // 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
+	    // 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
 	    (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[0];
 	    cnt_nexdof[dest]++;
-// 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[1];
-// 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii+1];
+	    // 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[1];
+	    // 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii+1];
 	    (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[1];
 	    if ( dest < id && !isdistghost )
 	      {
@@ -840,8 +840,8 @@ namespace ngcomp
 	    ii += 2; 
 	    for ( int i=2; i<dnums.Size(); i++)
 	      {
-// 		(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
-// 		(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
+		// 		(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
+		// 		(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = (*distantdofs[dest])[ii];
 		(*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
 		if ( dest < id && !isdistghost )
 		  paralleldofs->ismasterdof.Clear ( dnums[i] ) ;
@@ -852,37 +852,37 @@ namespace ngcomp
 
 
 
-     /*******************************
+    /*******************************
 
          update low order space
 
-     *****************************/
+    *****************************/
 
-     if ( order == 0 ) return;
+    if ( order == 0 ) return;
 
-     int ndof_lo = 2*ma.GetNFaces();
+    int ndof_lo = 2*ma.GetNFaces();
 
-     // all dofs are exchange dofs
-     nexdof = ndof_lo;
+    // all dofs are exchange dofs
+    nexdof = ndof_lo;
      
-     exdof = 0;
-     cnt_nexdof = 0;
+    exdof = 0;
+    cnt_nexdof = 0;
      
 
-     // *****************
-     // Parallel Face dofs
-     // *****************
+    // *****************
+    // Parallel Face dofs
+    // *****************
      
-     owndofs[0]->SetSize(1);
-     (*owndofs[0])[0] = ndof;
-     distantdofs[0]->SetSize(0);
+    owndofs[0]->SetSize(1);
+    (*owndofs[0])[0] = ndof;
+    distantdofs[0]->SetSize(0);
      
-     // find local and distant dof numbers for face exchange dofs
-     for ( int face = 0; face < ma.GetNFaces(); face++ )
-       {
-	 int dest = 0;
+    // find local and distant dof numbers for face exchange dofs
+    for ( int face = 0; face < ma.GetNFaces(); face++ )
+      {
+	int dest = 0;
 	 
-	 int distface = parallelma -> GetDistantFaceNum ( dest, face );
+	int distface = parallelma -> GetDistantFaceNum ( dest, face );
 	owndofs[0]->Append ( distface );
 	paralleldofs->SetExchangeDof ( dest, face );
 	owndofs[0]->Append ( face );
@@ -899,12 +899,12 @@ namespace ngcomp
     while ( ii < distantdofs[0]->Size() )
       {
 	int fanum = (*distantdofs[0])[ii++];
-// 	(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = 2*fanum;
-// 	(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = 2*(*distantdofs[0])[ii];
+	// 	(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = 2*fanum;
+	// 	(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = 2*(*distantdofs[0])[ii];
 	(*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = 2*fanum;
 	cnt_nexdof[dest]++;
-// 	(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = 2*fanum+1;
-// 	(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = 2*(*distantdofs[0])[ii]+1;
+	// 	(*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = 2*fanum+1;
+	// 	(*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = 2*(*distantdofs[0])[ii]+1;
 	(*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = 2*fanum+1;
 	ii++; cnt_nexdof[dest]++;
       }
@@ -913,16 +913,16 @@ namespace ngcomp
       QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
 
     for ( int i = 0; i < ntasks; i++ )
-       delete distantdofs[i], owndofs[i];
+      delete distantdofs[i], owndofs[i];
 
-     delete [] owndofs, distantdofs;
-     delete [] sendrequest, recvrequest;
+    delete [] owndofs, distantdofs;
+    delete [] sendrequest, recvrequest;
 
 
-   }
+  }
 
-   void VectorFacetFESpace :: UpdateParallelDofs_loproc()
-   { 
+  void VectorFacetFESpace :: UpdateParallelDofs_loproc()
+  { 
     *testout << "VectorFacetFESpace::UpdateParallelDofs_loproc" << endl;
 
     const MeshAccess & ma = (*this). GetMeshAccess();
@@ -950,8 +950,8 @@ namespace ngcomp
 
     paralleldofs->SetNExDof(nexdof);
 
-//     paralleldofs->localexchangedof = new Table<int> (nexdof);
-//     paralleldofs->distantexchangedof = new Table<int> (nexdof);
+    //     paralleldofs->localexchangedof = new Table<int> (nexdof);
+    //     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
 
@@ -979,8 +979,8 @@ namespace ngcomp
     // find local and distant dof numbers for face exchange dofs
     for ( int face = 0; face < ma.GetNFaces(); face++ )
       {
-// 	(*(paralleldofs->localexchangedof))[id][exdof++] = 2*face;
-// 	(*(paralleldofs->localexchangedof))[id][exdof++] = 2*face+1;
+	// 	(*(paralleldofs->localexchangedof))[id][exdof++] = 2*face;
+	// 	(*(paralleldofs->localexchangedof))[id][exdof++] = 2*face+1;
 	(*(paralleldofs->sorted_exchangedof))[id][exdof++] = 2*face;
 	(*(paralleldofs->sorted_exchangedof))[id][exdof++] = 2*face+1;
 
@@ -1017,12 +1017,12 @@ namespace ngcomp
 	while ( ii < distantdofs[dest]->Size() )
 	  {
 	    int fanum = (*distantdofs[dest])[ii++];
-// 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = 2*fanum;
-// 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = 2*(*distantdofs[dest])[ii];
+	    // 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = 2*fanum;
+	    // 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = 2*(*distantdofs[dest])[ii];
 	    (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = 2*fanum;
 	    cnt_nexdof[dest]++;
-// 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = 2*fanum+1;
-// 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = 2*(*distantdofs[dest])[ii]+1;
+	    // 	    (*(paralleldofs->localexchangedof))[dest][ cnt_nexdof[dest] ] = 2*fanum+1;
+	    // 	    (*(paralleldofs->distantexchangedof))[dest][ cnt_nexdof[dest] ] = 2*(*distantdofs[dest])[ii]+1;
 	    (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = 2*fanum+1;
 	    ii++; cnt_nexdof[dest]++;
 	     
@@ -1032,13 +1032,13 @@ namespace ngcomp
     for ( int dest = id+1; dest < ntasks; dest++ )
       QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
 
-     for ( int i = 0; i < ntasks; i++ )
-       delete distantdofs[i], owndofs[i];
+    for ( int i = 0; i < ntasks; i++ )
+      delete distantdofs[i], owndofs[i];
 
-     delete [] owndofs, distantdofs;
-     delete [] sendrequest, recvrequest;
+    delete [] owndofs, distantdofs;
+    delete [] sendrequest, recvrequest;
 
-   }
+  }
 
 #endif
 
