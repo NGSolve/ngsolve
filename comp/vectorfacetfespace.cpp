@@ -86,19 +86,20 @@ namespace ngcomp
       }
 
     // Evaluator for shape tester 
+    evaluator = NULL;
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
 	Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = &one;
-	evaluator = GetIntegrators().CreateBFI("massvectorfacet", 2, coeffs);
+	// evaluator = GetIntegrators().CreateBFI("massvectorfacet", 2, coeffs);
 	boundary_evaluator = GetIntegrators().CreateBFI("robinvectorfacet",2,coeffs); 
       }
     else if(ma.GetDimension() == 3) 
       {
 	Array<CoefficientFunction*> coeffs(1); 
 	coeffs[0] = &one;
-	evaluator = GetIntegrators().CreateBFI("massvectorfacet",3,coeffs); 
+	// evaluator = GetIntegrators().CreateBFI("massvectorfacet",3,coeffs); 
 	boundary_evaluator = GetIntegrators().CreateBFI("robinvectorfacet",3,coeffs); 
       }
 
