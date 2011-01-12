@@ -276,27 +276,41 @@ namespace ngcomp
 
 
     void TransformMat (int elnr, bool boundary,
-		       FlatMatrix<double> & mat, TRANSFORM_TYPE type) const
+		       const FlatMatrix<double> & mat, TRANSFORM_TYPE type) const
     {
       VTransformMR (elnr, boundary, mat, type);
     }
   
     void TransformMat (int elnr, bool boundary,
-		       FlatMatrix<Complex> & mat, TRANSFORM_TYPE type) const
+		       const FlatMatrix<Complex> & mat, TRANSFORM_TYPE type) const
+    {
+      VTransformMC (elnr, boundary, mat, type);
+    }
+
+    void TransformMat (int elnr, bool boundary,
+		       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
+    {
+      VTransformMR (elnr, boundary, mat, type);
+    }
+  
+    void TransformMat (int elnr, bool boundary,
+		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
     {
       VTransformMC (elnr, boundary, mat, type);
     }
   
 
+  
+
 
     void TransformVec (int elnr, bool boundary,
-		       FlatVector<double> & vec, TRANSFORM_TYPE type) const
+		       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
     {
       VTransformVR (elnr, boundary, vec, type);
     }
   
     void TransformVec (int elnr, bool boundary,
-		       FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
+		       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
     {
       VTransformVC (elnr, boundary, vec, type);
     }
@@ -304,21 +318,30 @@ namespace ngcomp
 
     template < int S, class T >
     void TransformVec (int elnr, bool boundary,
-		       FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const;
+		       const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const;
 
   
 
     virtual void VTransformMR (int elnr, bool boundary,
-			       FlatMatrix<double> & mat, TRANSFORM_TYPE type) const
+			       const FlatMatrix<double> & mat, TRANSFORM_TYPE type) const
     { ; }
     virtual void VTransformMC (int elnr, bool boundary,
-			       FlatMatrix<Complex> & mat, TRANSFORM_TYPE type) const
+			       const FlatMatrix<Complex> & mat, TRANSFORM_TYPE type) const
     { ; }
+
+    virtual void VTransformMR (int elnr, bool boundary,
+			       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
+    { ; }
+    virtual void VTransformMC (int elnr, bool boundary,
+			       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
+    { ; }
+
+
     virtual void VTransformVR (int elnr, bool boundary,
-			       FlatVector<double> & vec, TRANSFORM_TYPE type) const
+			       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
     { ; }
     virtual void VTransformVC (int elnr, bool boundary,
-			       FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
+			       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
     { ; }
   
   
@@ -688,7 +711,7 @@ namespace ngcomp
     int GetStorageEnd(int spacenr) const
     { return cummulative_nd[spacenr+1]; }
 
-    IntRange GetRange (int spacenr) 
+    IntRange GetRange (int spacenr) const
     { 
       return IntRange(cummulative_nd[spacenr], cummulative_nd[spacenr+1]);
     }
@@ -723,25 +746,38 @@ namespace ngcomp
 
 
     virtual void VTransformMR (int elnr, bool boundary,
-			       FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const 
+			       const FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const 
     {
       TransformMat (elnr, boundary, mat, tt);
     }
 
     virtual void VTransformMC (int elnr, bool boundary,
-			       FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
+			       const FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
     {
       TransformMat (elnr, boundary, mat, tt);
     }
 
+    virtual void VTransformMR (int elnr, bool boundary,
+			       const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
+    {
+      TransformMat (elnr, boundary, mat, tt);
+    }
+
+    virtual void VTransformMC (int elnr, bool boundary,
+			       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
+    {
+      TransformMat (elnr, boundary, mat, tt);
+    }
+
+
     virtual void VTransformVR (int elnr, bool boundary,
-			       FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
+			       const FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
     {
       TransformVec (elnr, boundary, vec, tt);
     }
 
     virtual void VTransformVC (int elnr, bool boundary,
-			       FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
+			       const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
     {
       TransformVec (elnr, boundary, vec, tt);
     }

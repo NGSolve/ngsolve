@@ -263,7 +263,7 @@ namespace ngsolve
             }
           case DIRECT:
             cout << "direct solve for real system" << endl;
-            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(); 
+            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs()); 
             break;
           }
       }
@@ -297,7 +297,7 @@ namespace ngsolve
             }
           case DIRECT:
             cout << "direct solve for real system" << endl;
-            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(); 
+            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs()); 
             break;
           }
       }
@@ -331,7 +331,7 @@ namespace ngsolve
             }
           case DIRECT:
             cout << "direct solve for real system" << endl;
-            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(); 
+            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs()); 
             break;
           }
       }
@@ -356,8 +356,14 @@ namespace ngsolve
     if (solver != DIRECT)
       invmat->Mult (vecf, vecu);
     else 
-      invmat2->Mult (vecf, vecu);
-    
+      {
+
+	BaseVector & hv = *vecu.CreateVector();
+	hv = vecf - mat * vecu;
+	vecu += (*invmat2) * hv;
+	delete &hv;
+	// vecu = (*invmat2) * vecf;
+      }
 
     ma.PopStatus ();
     

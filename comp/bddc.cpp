@@ -562,7 +562,7 @@ namespace ngcomp
     
     
     BDDCMatrix (const ElementByElement_BilinearForm<double> & abfa, const string & ainversetype, bool ablock, bool aebe)
-      : bfa(abfa), ma(abfa.GetFESpace().GetMeshAccess()), block(ablock), ebe(aebe), inversetype(ainversetype)
+      : bfa(abfa), inversetype(ainversetype), ma(abfa.GetFESpace().GetMeshAccess()),block(ablock), ebe(aebe)
    {
       pwbmat = NULL;
       inv = NULL;

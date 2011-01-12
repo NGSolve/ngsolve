@@ -102,10 +102,12 @@ namespace ngfem
   { ; }
   
 
+  /*
   template <int D, typename FEL> ComplexSourceIntegrator<D,FEL> ::
   ComplexSourceIntegrator (CoefficientFunction * coeff)
     : T_BIntegrator<DiffOpId<D>, DVec<1, Complex>, FEL> (DVec<1, Complex> (coeff))
   { ; }
+  */
 
   /*
   template <int D, typename FEL> 
@@ -126,10 +128,12 @@ namespace ngfem
   { ; }
 
 
+  /*
   template <int D, typename FEL> ComplexNeumannIntegrator<D,FEL> ::
   ComplexNeumannIntegrator (CoefficientFunction * coeff)
     : T_BIntegrator<DiffOpIdBoundary<D>, DVec<1, Complex>, FEL> (DVec<1, Complex> (coeff))
   { ; }
+  */
 
   template <int D, typename FEL> 
   Integrator * NeumannIntegrator<D,FEL> ::
@@ -138,8 +142,10 @@ namespace ngfem
     CoefficientFunction * coef = coeffs[0];
     if (!coef -> IsComplex())
       return new NeumannIntegrator (coef);
+    /*
     else
       return new ComplexNeumannIntegrator<D,FEL> (coef);
+    */
   }
 
 
