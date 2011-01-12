@@ -1128,18 +1128,18 @@ namespace ngfem
 					MassEdgeIntegrator<2, VectorFacetVolumeFiniteElement<2> >::Create);
       */
 
-
       GetIntegrators().AddBFIntegrator ("robinvectorfacet", 3, 1,
 					RobinEdgeIntegrator<3, VectorFacetFacetFiniteElement>::Create);
       GetIntegrators().AddBFIntegrator ("robinvectorfacet", 2, 1,
 					RobinEdgeIntegrator<2, VectorFacetFacetFiniteElement>::Create);      
-      
+
       /*
       GetIntegrators().AddLFIntegrator ("sourcevectorfacet", 3, 3,
 					SourceEdgeIntegrator<3, VectorFacetVolumeFiniteElement<3> >::Create);
       GetIntegrators().AddLFIntegrator ("sourcevectorfacet", 2, 2,
 					SourceEdgeIntegrator<2, VectorFacetVolumeFiniteElement<2> >::Create);
        */
+
       GetIntegrators().AddLFIntegrator ("neumannvectorfacet", 3, 3,
 					NeumannEdgeIntegrator<3, VectorFacetFacetFiniteElement>::Create);
       GetIntegrators().AddLFIntegrator ("neumannvectorfacet", 2, 2,
