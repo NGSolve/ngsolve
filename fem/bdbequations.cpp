@@ -140,7 +140,7 @@ namespace ngfem
   Create (Array<CoefficientFunction*> & coeffs)
   {
     CoefficientFunction * coef = coeffs[0];
-    if (!coef -> IsComplex())
+    // if (!coef -> IsComplex())
       return new NeumannIntegrator (coef);
     /*
     else

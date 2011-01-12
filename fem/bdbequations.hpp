@@ -920,25 +920,30 @@ class DVecBase<N, Complex>
 template <int N>
 class NGS_DLL_HEADER DVec  // : public DVecBase<N,T>
 {
-  typedef CoefficientFunction * pcf;
-  // CoefficientFunction * coefs[N];
-  pcf coefs[N];
-
+  CoefficientFunction * coefs[N];
+  bool vectorial;
 public:
   DVec (Array<CoefficientFunction*> & acoeffs)
   {
-    for (int i = 0; i < N; i++)
-      coefs[i] = acoeffs[i];
+    vectorial = (N > 1) && (N == acoeffs[0]->Dimension());
+
+    if (vectorial)
+      coefs[0] = acoeffs[0];
+    else
+      for (int i = 0; i < N; i++)
+	coefs[i] = acoeffs[i];
   }
   
   DVec (CoefficientFunction * acoef)
   { 
+    vectorial = (N > 1) && (N == acoef->Dimension());
     coefs[0] = acoef;
   }
 
   DVec (CoefficientFunction * acoef1,
 	CoefficientFunction * acoef2)
   { 
+    vectorial = false;
     coefs[0] = acoef1;
     coefs[1] = acoef2;
   }
@@ -947,6 +952,8 @@ public:
 	CoefficientFunction * acoef2,
 	CoefficientFunction * acoef3)
   { 
+    vectorial = false;
+
     coefs[0] = acoef1;
     coefs[1] = acoef2;
     coefs[2] = acoef3;
@@ -959,14 +966,20 @@ public:
   {
     typedef typename VEC::TSCAL TSCAL;
 
-    for (int i = 0; i < N; i++)
+    if (vectorial)
       {
-	CoefficientFunction * hp = coefs[i];
-	vec(i) = hp -> T_Evaluate<double> (sip);
-	// vec(i) = coefs[i] -> T_Evaluate<TSCAL> (sip);
+	Vec<N,TSCAL> hv;
+	coefs[0] -> Evaluate (sip, hv);
+	vec = hv;
       }
+    else
+      for (int i = 0; i < N; i++)
+	{
+	  CoefficientFunction * hp = coefs[i];
+	  vec(i) = hp -> T_Evaluate<TSCAL> (sip);
+	  // vec(i) = coefs[i] -> T_Evaluate<TSCAL> (sip);   // why not ????
+	}
   }  
-
 };
 
 

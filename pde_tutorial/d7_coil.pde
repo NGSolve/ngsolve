@@ -1,3 +1,4 @@
+
 geometry = coil.geo
 mesh = coil.vol
 
