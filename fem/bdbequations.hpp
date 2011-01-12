@@ -860,7 +860,7 @@ public:
 
 
 
-
+/*
 template <int N, typename TSCAL> 
 class DVecBase 
 {
@@ -892,6 +892,8 @@ class DVecBase<N, Complex>
       vec(i) = ConvertTo<TRESULT> (coefs[i] -> EvaluateComplex (sip));
   }  
 };
+*/
+
 
 // template <typename T = double> 
 // class DVecVec
@@ -915,11 +917,12 @@ class DVecBase<N, Complex>
 // };
 
 
-template <int N, typename T = double> 
-class NGS_DLL_HEADER DVec  : public DVecBase<N,T>
+template <int N>
+class NGS_DLL_HEADER DVec  // : public DVecBase<N,T>
 {
-  using DVecBase<N,T>::coefs;
-  typedef T TSCAL;
+  typedef CoefficientFunction * pcf;
+  // CoefficientFunction * coefs[N];
+  pcf coefs[N];
 
 public:
   DVec (Array<CoefficientFunction*> & acoeffs)
@@ -948,6 +951,22 @@ public:
     coefs[1] = acoef2;
     coefs[2] = acoef3;
   }
+
+
+  template <typename FEL, typename SIP, typename VEC>
+  void GenerateVector (const FEL & fel, const SIP & sip,
+		       VEC & vec, LocalHeap & lh) const
+  {
+    typedef typename VEC::TSCAL TSCAL;
+
+    for (int i = 0; i < N; i++)
+      {
+	CoefficientFunction * hp = coefs[i];
+	vec(i) = hp -> T_Evaluate<double> (sip);
+	// vec(i) = coefs[i] -> T_Evaluate<TSCAL> (sip);
+      }
+  }  
+
 };
 
 
@@ -1680,6 +1699,7 @@ public:
   virtual string Name () const { return "Source"; }
 };
 
+/*
 template <int D, typename FEL = ScalarFiniteElement<D>  >
 class ComplexSourceIntegrator 
   : public T_BIntegrator<DiffOpId<D>, DVec<1, Complex>, FEL>
@@ -1688,7 +1708,7 @@ public:
   ComplexSourceIntegrator (CoefficientFunction * coeff);
   virtual string Name () const { return "ComplexSource"; }
 };
-
+*/
 
 
 ///
@@ -1707,6 +1727,7 @@ public:
   virtual string Name () const { return "Neumann"; }
 };
 
+/*
 template <int D, typename FEL = ScalarFiniteElement<D-1>  >
 class ComplexNeumannIntegrator 
   : public T_BIntegrator<DiffOpIdBoundary<D>, DVec<1, Complex>, FEL>
@@ -1716,7 +1737,7 @@ public:
   virtual bool BoundaryForm () const { return 1; }
   virtual string Name () const { return "ComplexNeumann"; }
 };
-
+*/
 
 
 

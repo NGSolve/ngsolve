@@ -117,7 +117,6 @@ namespace ngcomp
   {
     FESpace::Update(lh);
     if(low_order_space) low_order_space -> Update(lh);
-                  
     nel = ma.GetNE();
     order_inner.SetSize(nel); 
  
@@ -142,7 +141,6 @@ namespace ngcomp
     ndof = nel;
     
     UpdateDofTables();
-
     while (ma.GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
@@ -219,8 +217,7 @@ namespace ngcomp
 	  ndof--; // subtract constant 
       }
     first_element_dof[nel] = ndof;
-
-
+    
     if(print) 
       *testout << " first_element dof (l2hofe) " << first_element_dof << endl;  
 

@@ -173,6 +173,8 @@ namespace ngla
             {
               int elnr = dof2element[i][j];
               FlatArray<int> el = colelements[elnr];
+
+	      /*
               for (int k = 0; k < el.Size(); k++)
                 {
                   int d2 = el[k];
@@ -183,11 +185,22 @@ namespace ngla
                         cnti++;
                       }
                 }
+	      */
+	      
+	      for (int k = 0; k < el.Size(); k++)
+		{
+		  int d2 = el[k];
+		  if (d2 <= i)
+		    if (mark[d2] != i)
+		      {
+			mark[d2] = i;
+			cnti++;
+		      }
+		}
             }
           cnt[i] = cnti;
         }
       }
-
 
     size = ndof;
     owner = true;
@@ -247,6 +260,7 @@ namespace ngla
               int elnr = dof2element[i][j];
               FlatArray<int> el = colelements[elnr];
               
+	      /*
               for (int k = 0; k < el.Size(); k++)
                 {
                   int d2 = el[k];
@@ -257,9 +271,20 @@ namespace ngla
                         colnr[cnti++] = d2;
                       }
                 }
+	      */
+
+	      for (int k = 0; k < el.Size(); k++)
+		{
+		  int d2 = el[k];
+		  if (d2 <= i)
+		    if (mark[d2] != i)
+		      {
+			mark[d2] = i;
+			colnr[cnti++] = d2;
+		      }
+		}
             }
         }
-
 
 #pragma omp parallel for
     for (int i = 0; i < ndof; i++)
@@ -996,6 +1021,10 @@ namespace ngla
   void SparseMatrixSymmetricTM<TM> ::
   AddElementMatrix(const Array<int> & dnums, const FlatMatrix<TSCAL> & elmat1)
   {
+    static int timer = NgProfiler::CreateTimer ("SparseMatrixSymmetric::AddElementMatrix");
+    NgProfiler::RegionTimer reg (timer);
+
+
     /*
     for (int i = 0; i < dnums.Size(); i++)
       if (dnums[i] != -1)
@@ -1011,12 +1040,12 @@ namespace ngla
       map[i] = i;
     BubbleSort (dnums.Size(), &dnums_sort[0], &map[0]);
     
-    // cout << "sorted: " << endl;
-    // for (int j = 0; j < map.Size(); j++)
-    // cout << dnums[map[j]] << endl;
-    
     Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
 
+    int first_used = 0;
+    while (first_used < dnums.Size() && dnums[map[first_used]] == -1) first_used++;
+    
+    /*
     for (int i = 0; i < dnums.Size(); i++)
       if (dnums[i] != -1)
 	{
@@ -1024,21 +1053,38 @@ namespace ngla
 	  FlatVector<TM> rowvals = this->GetRowValues(dnums[i]);
 	  
 	  int k = 0;
-	  for (int j1 = 0; j1 < dnums.Size(); j1++)
+	  for (int j1 = first_used; j1 < dnums.Size(); j1++)
 	    {
-	      int j = map[j1];
-	      if (dnums[j] != -1 && dnums[j] <= dnums[i])
+	      if (dnums_sort[j1] > dnums[i]) break;
+
+	      while (rowind[k] != dnums_sort[j1])
 		{
-		  while (rowind[k] != dnums[j])
-		    {
-		      k++;
-		      if (k >= rowind.Size())
-			throw Exception ("SparseMatrixSymmetricTM::AddElementMatrix: illegal dnums");
-		    }
-		  rowvals(k) += elmat(i,j);
+		  k++;
+		  if (k >= rowind.Size())
+		    throw Exception ("SparseMatrixSymmetricTM::AddElementMatrix: illegal dnums");
 		}
+	      rowvals(k) += elmat(i, map[j1]);
+	      k++;
 	    }
 	}
+    */
+
+    for (int i1 = first_used; i1 < dnums.Size(); i1++)
+      {
+	FlatArray<int> rowind = this->GetRowIndices(dnums_sort[i1]);
+	FlatVector<TM> rowvals = this->GetRowValues(dnums_sort[i1]);
+	
+	for (int j1 = first_used, k = 0; j1 <= i1; j1++, k++)
+	  {
+	    while (rowind[k] != dnums_sort[j1])
+	      {
+		k++;
+		if (k >= rowind.Size())
+		  throw Exception ("SparseMatrixSymmetricTM::AddElementMatrix: illegal dnums");
+	      }
+	    rowvals(k) += elmat(map[i1], map[j1]);
+	  }
+      }
   }
   
 

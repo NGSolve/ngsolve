@@ -196,7 +196,6 @@ namespace ngcomp
     TableCreator<int> creator;
     for ( ; !creator.Done(); creator++)
       {
-	
 	for (int i = 0; i < ne; i++)
 	  {
 	    if ( ma.IsGhostEl(i)) continue;
@@ -249,6 +248,7 @@ namespace ngcomp
 		creator.Add (ne+i, dnums[j]);
 	  }
 
+
 	for (int i = 0; i < specialelements.Size(); i++)
 	  {
 	    specialelements[i]->GetDofNrs (dnums);
@@ -258,7 +258,6 @@ namespace ngcomp
 		creator.Add (ne+nse+i, dnums[j]);
 	  }
       }
-
 
     MatrixGraph * graph = new MatrixGraph (ndof, *creator.GetTable(), *creator.GetTable(), symmetric);
 
@@ -1433,6 +1432,20 @@ namespace ngcomp
                     {
                       if ( ma.IsGhostSEl ( i ) ) continue;
 		      
+#pragma omp critical(printmatasstatus)
+		      {
+			cnt++;
+			gcnt++;
+			if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
+			  {
+			    {
+			      cout << "\rassemble surface element " << cnt << "/" << nse << flush;
+			      ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
+			      prevtime = clock();
+			    }
+			  }
+		      }
+		      /*
 #pragma omp critical(printmatasstatus2)
                       {
                         cnt++;
@@ -1441,7 +1454,10 @@ namespace ngcomp
                           cout << "\rassemble surface element " << cnt << "/" << nse << flush;
                         ma.SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
                       }
-		      
+		      */
+
+
+
                       lh.CleanUp();
 		  
                       if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
@@ -1484,7 +1500,6 @@ namespace ngcomp
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
 
 			  bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
-
                           fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
 			  NgProfiler::StopTimer (timerb2);

@@ -503,6 +503,7 @@ namespace ngcomp
 	      }
 	  }
 
+
 	  if (bound && !fes.IsDirichletBoundary(ma.GetSElIndex(i)))
 	    continue;
 
@@ -569,6 +570,7 @@ namespace ngcomp
 	      invelmat.Mult (elflux, elfluxi);
 	    }
 	  
+
 	  fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
 	  
 #pragma omp critical(fluxprojetadd)

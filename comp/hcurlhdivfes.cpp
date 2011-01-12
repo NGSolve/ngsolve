@@ -483,18 +483,16 @@ namespace ngcomp
 	nd = GetFE (elnr, lh).GetNDof();
       }
 
-    int i, j, k, l;
-
     if (tt & TRANSFORM_MAT_LEFT)
-      for (k = 0; k < dimension; k++)
-	for (i = 0; i < nd; i++)
-	  for (j = 0; j < mat.Width(); j++)
+      for (int k = 0; k < dimension; k++)
+	for (int i = 0; i < nd; i++)
+	  for (int j = 0; j < mat.Width(); j++)
 	    mat(k+i*dimension, j) *= eorient[i];
 
     if (tt & TRANSFORM_MAT_RIGHT)
-      for (l = 0; l < dimension; l++)
-	for (i = 0; i < mat.Height(); i++)
-	  for (j = 0; j < nd; j++)
+      for (int l = 0; l < dimension; l++)
+	for (int i = 0; i < mat.Height(); i++)
+	  for (int j = 0; j < nd; j++)
 	    mat(i, l+j*dimension) *= eorient[j];
   }
 
@@ -2434,18 +2432,25 @@ namespace ngcomp
 
 
   template
-  void NedelecFESpace2::TransformVec<FlatVector<double> >
-  (int elnr, bool boundary, FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
+  void NedelecFESpace2::TransformVec<const FlatVector<double> >
+  (int elnr, bool boundary, const FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
   template
-  void NedelecFESpace2::TransformVec<FlatVector<Complex> >
-  (int elnr, bool boundary, FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
+  void NedelecFESpace2::TransformVec<const FlatVector<Complex> >
+  (int elnr, bool boundary, const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
 
   template
-  void NedelecFESpace2::TransformMat<FlatMatrix<double> > 
-  (int elnr, bool boundary, FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+  void NedelecFESpace2::TransformMat<const FlatMatrix<double> > 
+  (int elnr, bool boundary, const FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
   template
-  void NedelecFESpace2::TransformMat<FlatMatrix<Complex> > 
-  (int elnr, bool boundary, FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+  void NedelecFESpace2::TransformMat<const FlatMatrix<Complex> > 
+  (int elnr, bool boundary, const FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+
+  template
+  void NedelecFESpace2::TransformMat<const SliceMatrix<double> > 
+  (int elnr, bool boundary, const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+  template
+  void NedelecFESpace2::TransformMat<const SliceMatrix<Complex> > 
+  (int elnr, bool boundary, const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
 
 
 

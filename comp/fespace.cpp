@@ -776,7 +776,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   // Aendern, Bremse!!!
   template < int S, class T >
   void FESpace :: TransformVec (int elnr, bool boundary,
-				FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const
+				const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const
   {
     //cout << "Achtung, Bremse" << endl;
 
@@ -795,62 +795,62 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<2,double> >& vec, TRANSFORM_TYPE type) const;
+				      const FlatVector< Vec<2,double> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<3,double> >& vec, TRANSFORM_TYPE type) const;
+				      const FlatVector< Vec<3,double> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<4,double> >& vec, TRANSFORM_TYPE type) const;
+				      const FlatVector< Vec<4,double> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<5,double> >& vec, TRANSFORM_TYPE type) const;
+				      const FlatVector< Vec<5,double> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<6,double> >& vec, TRANSFORM_TYPE type) const;
+				      const FlatVector< Vec<6,double> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<7,double> >& vec, TRANSFORM_TYPE type) const;
+				      const FlatVector< Vec<7,double> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<8,double> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<8,double> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<9,double> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<9,double> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<10,double> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<10,double> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<11,double> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<11,double> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<12,double> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<12,double> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<13,double> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<13,double> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<14,double> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<14,double> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<15,double> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<15,double> >& vec, TRANSFORM_TYPE type) const;
 
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<2,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<2,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<3,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<3,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<4,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<4,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<5,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<5,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<6,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<6,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<7,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<7,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<8,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<8,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<9,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<9,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<10,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<10,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<11,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<11,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<12,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<12,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<13,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<13,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<14,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<14,Complex> >& vec, TRANSFORM_TYPE type) const;
   template void FESpace::TransformVec(int elnr, bool boundary,
-					FlatVector< Vec<15,Complex> >& vec, TRANSFORM_TYPE type) const;
+					const FlatVector< Vec<15,Complex> >& vec, TRANSFORM_TYPE type) const;
 
 
 #ifdef PARALLEL
@@ -2902,22 +2902,23 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 				      MAT & mat, TRANSFORM_TYPE tt) const
   {
     int base = 0;
-    int i, j, k; 
+    // int j, k; 
     LocalHeapMem<100005> lh("CompoundFESpace - transformmat");
-    for (i = 0; i < spaces.Size(); i++)
+    for (int i = 0; i < spaces.Size(); i++)
       {
-	int nd;
-	if (boundary)
-	  nd = spaces[i]->GetSFE(elnr, lh).GetNDof();
-	else
-	  nd = spaces[i]->GetFE(elnr, lh).GetNDof();
+	int nd = boundary  ?
+	  spaces[i]->GetSFE(elnr, lh).GetNDof()
+	  : spaces[i]->GetFE(elnr, lh).GetNDof();
 
 	lh.CleanUp();
 
+	/*
 	typedef typename MAT::TSCAL TSCAL;
 	Matrix<TSCAL> rmat(nd, mat.Width());
 	Matrix<TSCAL> cmat(mat.Height(), nd);
+	*/ 
 
+	/*
 	for (j = 0; j < nd; j++)
 	  for (k = 0; k < mat.Width(); k++)
 	    rmat(j,k) = mat(base+j, k);
@@ -2927,8 +2928,11 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 	for (j = 0; j < nd; j++)
 	  for (k = 0; k < mat.Width(); k++)
 	    mat(base+j, k) = rmat(j,k);
+	*/
 
+	spaces[i]->TransformMat (elnr, boundary, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
 
+	/*
 	for (j = 0; j < nd; j++)
 	  for (k = 0; k < mat.Height(); k++)
 	    cmat(k,j) = mat(k,base+j);
@@ -2938,6 +2942,9 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 	for (j = 0; j < nd; j++)
 	  for (k = 0; k < mat.Height(); k++)
 	    mat(k,base+j) = cmat(k,j);
+	*/
+	spaces[i]->TransformMat (elnr, boundary, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
+
 
 	base += nd;
       }
