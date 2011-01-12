@@ -16,7 +16,7 @@
 #include <comp.hpp>
 #include <multigrid.hpp>
 
-class Tcl_Interp;
+struct Tcl_Interp;
 
 /*
 #include <tcl.h>
