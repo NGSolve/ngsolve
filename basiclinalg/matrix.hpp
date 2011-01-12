@@ -844,6 +844,10 @@ namespace ngbla
       return FlatMatrixFixHeight<H,T> (next-first, data+first*H);
     }
 
+    const FlatMatrixFixWidth<H,T> Trans () const
+    {
+      return FlatMatrixFixWidth<H,T> (w, data);
+    }
 
 
 

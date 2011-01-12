@@ -42,7 +42,10 @@ namespace ngfem
 
 
     template <typename SCAL>
-    inline SCAL T_Evaluate (const BaseSpecificIntegrationPoint & ip) const;
+    inline SCAL T_Evaluate (const BaseSpecificIntegrationPoint & ip) const
+    {
+      return SCAL (Evaluate (ip));
+    }
 
 
     virtual double Evaluate (const BaseSpecificIntegrationPoint & ip, const double & t) const

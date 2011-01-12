@@ -1121,10 +1121,14 @@ namespace ngfem
     Init::Init()
     {
              
+      /*
       GetIntegrators().AddBFIntegrator ("massvectorfacet", 3, 1,
 					MassEdgeIntegrator<3, VectorFacetVolumeFiniteElement<3> >::Create);
       GetIntegrators().AddBFIntegrator ("massvectorfacet", 2, 1,
 					MassEdgeIntegrator<2, VectorFacetVolumeFiniteElement<2> >::Create);
+      */
+
+
       GetIntegrators().AddBFIntegrator ("robinvectorfacet", 3, 1,
 					RobinEdgeIntegrator<3, VectorFacetFacetFiniteElement>::Create);
       GetIntegrators().AddBFIntegrator ("robinvectorfacet", 2, 1,

@@ -16,13 +16,43 @@ int link_maxwellintegrator;
   
 namespace ngfem
 {
+  template <int D, typename FEL>
+  CurlCurlEdgeIntegrator<D,FEL> :: CurlCurlEdgeIntegrator (CoefficientFunction * coeff)
+    : T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, FEL>
+  (DiagDMat<DIM_CURL_TRAIT<D>::DIM> (coeff))
+  { ; }
+  
+  template <int D, typename FEL>
+  CurlCurlEdgeIntegrator<D,FEL> :: CurlCurlEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
+    : T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, FEL> (coeffs)
+  { ; }
+  
 
-  using namespace ngfem;
+
+  template <int D, typename FEL>
+  MassEdgeIntegrator<D,FEL> :: MassEdgeIntegrator (CoefficientFunction * coeff)
+    : T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
+  { ; }
+  
+  template <int D, typename FEL>
+  MassEdgeIntegrator<D,FEL> :: MassEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
+    : T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, FEL> (coeffs)
+  { ; }
+  
+
+
 
   template class SourceEdgeIntegrator<2>;
   template class SourceEdgeIntegrator<3>;
 
   namespace maxwellint {
+
+    static RegisterBilinearFormIntegrator<CurlCurlEdgeIntegrator<2> > initcce2 ("curlcurledge", 2, 1);
+    static RegisterBilinearFormIntegrator<CurlCurlEdgeIntegrator<3> > initcce3 ("curlcurledge", 3, 1);
+
+    static RegisterBilinearFormIntegrator<MassEdgeIntegrator<2> > initmasse2 ("massedge", 2, 1);
+    static RegisterBilinearFormIntegrator<MassEdgeIntegrator<3> > initmasse3 ("massedge", 3, 1);
+
 
     class Init
     { 
@@ -33,18 +63,22 @@ namespace ngfem
     
     Init::Init()
     {
+      /*
       GetIntegrators().AddBFIntegrator ("curlcurledge", 3, 1,
 					CurlCurlEdgeIntegrator<3>::Create);
       GetIntegrators().AddBFIntegrator ("curlcurledge", 2, 1,
 					CurlCurlEdgeIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("curlcurlboundaryedge", 3, 1,
-					CurlCurlBoundaryEdgeIntegrator::Create);
-      GetIntegrators().AddBFIntegrator ("orthocurlcurledge", 3, 3,
-					CurlCurlEdgeOrthoIntegrator<3>::Create);
+
       GetIntegrators().AddBFIntegrator ("massedge", 3, 1,
 					MassEdgeIntegrator<3>::Create);
       GetIntegrators().AddBFIntegrator ("massedge", 2, 1,
 					MassEdgeIntegrator<2>::Create);
+
+      */
+      GetIntegrators().AddBFIntegrator ("curlcurlboundaryedge", 3, 1,
+					CurlCurlBoundaryEdgeIntegrator::Create);
+      GetIntegrators().AddBFIntegrator ("orthocurlcurledge", 3, 3,
+					CurlCurlEdgeOrthoIntegrator<3>::Create);
       GetIntegrators().AddBFIntegrator ("orthomassedge", 2, 2,
 					MassEdgeOrthoIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("orthomassedge", 3, 3,

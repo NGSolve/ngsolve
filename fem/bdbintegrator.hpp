@@ -146,13 +146,11 @@ public:
   enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
   enum { DIM_DMAT    = DIFFOP::DIM_DMAT };
   enum { DIM         = DIFFOP::DIM };
-  typedef typename DMATOP::TSCAL TSCAL;
+  // typedef typename DMATOP::TSCAL TSCAL;
 
-  /*
   T_BDBIntegrator  (Array<CoefficientFunction*> & coeffs)
   : dmatop(coeffs)
   { ; }
-  */
 
   ///
   T_BDBIntegrator (const DMATOP & admat)
@@ -258,6 +256,27 @@ public:
     for (int i = 0; i < mir.Size(); i++)
       dmatop.Apply (fel, mir[i], elx.Row(i), eldx.Row(i), lh);
   }
+
+
+
+  virtual void
+  CalcElementMatrix (const FiniteElement & bfel,
+		     const ElementTransformation & eltrans, 
+		     FlatMatrix<double> & elmat,
+		     LocalHeap & lh) const
+  {
+    T_CalcElementMatrix<double> (bfel, eltrans, elmat, lh);
+  }
+    
+  virtual void
+  CalcElementMatrix (const FiniteElement & bfel,
+		     const ElementTransformation & eltrans, 
+		     FlatMatrix<Complex> & elmat,
+		     LocalHeap & lh) const
+  {
+    T_CalcElementMatrix<Complex> (bfel, eltrans, elmat, lh);
+  }
+
 
 
 #ifdef TEXT_BOOK_VERSION
@@ -440,11 +459,11 @@ public:
 #else // blockversion
   // one matrix matrix multiplication
   ///
-  virtual void
-  CalcElementMatrix (const FiniteElement & bfel,
-			 const ElementTransformation & eltrans, 
-			 FlatMatrix<TSCAL> & elmat,
-			 LocalHeap & lh) const
+  template <typename TSCAL>
+  void T_CalcElementMatrix (const FiniteElement & bfel,
+			    const ElementTransformation & eltrans, 
+			    FlatMatrix<TSCAL> & elmat,
+			    LocalHeap & lh) const
   {
     static int timer = NgProfiler::CreateTimer (string ("Elementmatrix, ") + Name());
     NgProfiler::RegionTimer reg (timer);
@@ -473,17 +492,19 @@ public:
 
 	    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
 	    dmatop.GenerateMatrix (fel, sip, dmat, lh);
-	    double fac =  
-	      fabs (sip.GetJacobiDet()) * sip.IP().Weight();
+	    dmat *= fabs (sip.GetJacobiDet()) * sip.IP().Weight();
 
-	    dmat *= fac;
-	    dbmat = dmat * bmat;
-
-	    for (int k = 0; k < DIM_DMAT; k++)
+	    /*
+	      dbmat = dmat * bmat;
+	      
+	      for (int k = 0; k < DIM_DMAT; k++)
 	      bbmat.Col(i*DIM_DMAT+k) = bmat.Row(k);
-
+	      
 	    for (int k = 0; k < DIM_DMAT; k++)
 	      bdbmat.Col(i*DIM_DMAT+k) = dbmat.Row(k);
+	    */
+	    bbmat.Cols(i*DIM_DMAT, (i+1)*DIM_DMAT) = Trans (bmat);
+	    bdbmat.Cols(i*DIM_DMAT, (i+1)*DIM_DMAT) = Trans (dmat * bmat);
 	  }
 
 	
@@ -761,18 +782,7 @@ public:
     const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
       static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
 
-    /*
-    if (applyd)
-      {
-	Vec<DIM_DMAT,double> hv1;
-	DIFFOP::Apply (fel, sip, elx, hv1, lh);
-	dmatop.Apply (fel, sip, hv1, flux, lh);
-      }
-    else
-      {
-	DIFFOP::Apply (fel, sip, elx, flux, lh);
-      }
-    */
+
     DIFFOP::Apply (fel, sip, elx, flux, lh);
     if (applyd)
       dmatop.Apply1 (fel, sip, flux, lh);
@@ -794,17 +804,6 @@ public:
     DIFFOP::ApplyIR (fel, mir, elx, flux, lh);
     if (applyd)
       dmatop.ApplyIR (fel, mir, flux, lh);
-    /*
-    if (applyd)
-      {
-	Vec<DIM_DMAT,double> hv;
-	for (int i = 0; i < mir.Size(); i++)
-	  {
-	    dmatop.Apply (fel, mir[i], flux.Row(i), hv, lh);
-	    flux.Row(i) = hv;
-	  }
-      }
-    */
   }
 
   virtual void
@@ -831,8 +830,6 @@ public:
       }
   }
   
-
-
 
 
   
@@ -1304,7 +1301,7 @@ public:
   enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
   enum { DIM_DMAT = DIFFOP::DIM_DMAT };
   enum { DIM = DIFFOP::DIM };
-  typedef typename DVecOp::TSCAL TSCAL;
+  // typedef typename DVecOp::TSCAL TSCAL;
 
   ///
   T_BIntegrator (const DVecOp & advec)
@@ -1337,12 +1334,33 @@ public:
 
 
 
-  ///
   virtual void
   CalcElementVector (const FiniteElement & bfel,
 		     const ElementTransformation & eltrans, 
-		     FlatVector<TSCAL> & elvec,
+		     FlatVector<double> & elvec,
 		     LocalHeap & lh) const
+  {
+    T_CalcElementVector<double> (bfel, eltrans, elvec, lh);
+  }
+
+  virtual void
+  CalcElementVector (const FiniteElement & bfel,
+		     const ElementTransformation & eltrans, 
+		     FlatVector<Complex> & elvec,
+		     LocalHeap & lh) const
+  {
+    T_CalcElementVector<Complex> (bfel, eltrans, elvec, lh);
+  }
+
+
+
+  ///
+
+  template <typename TSCAL>
+  void T_CalcElementVector (const FiniteElement & bfel,
+			    const ElementTransformation & eltrans, 
+			    FlatVector<TSCAL> & elvec,
+			    LocalHeap & lh) const
   {
     try
       {
@@ -1360,13 +1378,12 @@ public:
         FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
         FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
 
-
         eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
 
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
             HeapReset hr(lh);
-            SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, pts[i], dxdxi[i]); // , lh);
+            SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, pts[i], dxdxi[i]);
 
 	    dvecop.GenerateVector (fel, sip, dvec, lh);
 	    DIFFOP::ApplyTrans (fel, sip, dvec, hv, lh);
@@ -1396,13 +1413,37 @@ public:
 
 
 
+
   virtual void
   AssembleElementVectorIndependent (const FiniteElement & gfel, 
 				    const BaseSpecificIntegrationPoint & s_sip,
 				    const BaseSpecificIntegrationPoint & g_sip,
-				    FlatVector<TSCAL> & elvec,
+				    FlatVector<double> & elvec,
 				    LocalHeap & locheap,
 				    const bool curveint = false) const
+  {
+    T_AssembleElementVectorIndependent (gfel, s_sip, g_sip, elvec, locheap, curveint);
+  }
+
+  virtual void
+  AssembleElementVectorIndependent (const FiniteElement & gfel, 
+				    const BaseSpecificIntegrationPoint & s_sip,
+				    const BaseSpecificIntegrationPoint & g_sip,
+				    FlatVector<Complex> & elvec,
+				    LocalHeap & locheap,
+				    const bool curveint = false) const
+  {
+    T_AssembleElementVectorIndependent (gfel, s_sip, g_sip, elvec, locheap, curveint);
+  }
+
+
+  template <typename TSCAL>
+  void T_AssembleElementVectorIndependent (const FiniteElement & gfel, 
+					   const BaseSpecificIntegrationPoint & s_sip,
+					   const BaseSpecificIntegrationPoint & g_sip,
+					   FlatVector<TSCAL> & elvec,
+					   LocalHeap & locheap,
+					   const bool curveint = false) const
   {
     const FEL & fel = dynamic_cast<const FEL&> (gfel);
     int ndof = fel.GetNDof();
