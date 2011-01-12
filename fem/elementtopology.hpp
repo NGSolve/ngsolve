@@ -571,7 +571,7 @@ namespace ngfem
     enum { N_EDGE = 3 };
     enum { N_FACE = 1 };
 
-    static int PolDimension (int order) { return (order+1)*(order+2)/2; }
+    // static int PolDimension (int order) { return (order+1)*(order+2)/2; }
     static int PolDimension (INT<2> order) { return (order[0]+1)*(order[0]+2)/2; }
     static int PolBubbleDimension (INT<2> order) { return (order[0]-1)*(order[0]-2)/2; }
 
@@ -645,7 +645,7 @@ namespace ngfem
     enum { N_EDGE = 4 };
     enum { N_FACE = 1 };
 
-    static int PolDimension (int order) { return (order+1)*(order+1); }
+    // static int PolDimension (int order) { return (order+1)*(order+1); }
     static int PolDimension (INT<2> order) { return (order[0]+1)*(order[1]+1); }
     static int PolBubbleDimension (INT<2> order) { return (order[0]-1)*(order[1]-1); }
 
@@ -1008,8 +1008,8 @@ namespace ngfem
     enum { N_FACE = 6 };
     static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
 
-    static int PolDimension (int order) { return (order+1)*(order+2)*(order+1)/2; }
-    static int PolBubbleDimension (INT<3> p) { return (p[0] <= 1) ? 0 : (p[0]-1)*(p[1]-1)*(p[2]-1); }
+    static inline int PolDimension (int order) { return (order+1)*(order+2)*(order+1)/2; }
+    static inline int PolBubbleDimension (INT<3> p) { return (p[0] <= 1) ? 0 : (p[0]-1)*(p[1]-1)*(p[2]-1); }
 
     static INT<2> GetEdge (int i)
     {
