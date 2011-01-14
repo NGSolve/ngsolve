@@ -60,9 +60,6 @@ namespace ngcomp
     timing = flags.GetDefineFlag("timing");
     dgjumps = flags.GetDefineFlag("dgjumps");
     if (dgjumps) 
-      cout << "ATTENTION: flag dgjumps is used!\n This leads to a \
-lot of new non-zero entries in the matrix!\n" << endl;
-    if (dgjumps) 
       *testout << "ATTENTION: flag dgjumps is used!\n This leads to a \
 lot of new non-zero entries in the matrix!\n" << endl;
     else *testout << "\n (" << order << ") flag dgjumps is not used!" << endl;
