@@ -183,6 +183,17 @@ namespace ngfem
 
 
   // standard integratos:
+
+  static RegisterBilinearFormIntegrator<LaplaceIntegrator<2> > initlap2 ("laplace", 2, 1);
+  static RegisterBilinearFormIntegrator<LaplaceIntegrator<3> > initlap3 ("laplace", 3, 1);
+  static RegisterBilinearFormIntegrator<MassIntegrator<2> > initmass2 ("mass", 2, 1);
+  static RegisterBilinearFormIntegrator<MassIntegrator<3> > initmass3 ("mass", 3, 1);
+  
+  
+  static RegisterLinearFormIntegrator<SourceIntegrator<2> > initsource2 ("source", 2, 1);
+  static RegisterLinearFormIntegrator<SourceIntegrator<3> > initsource3 ("source", 3, 1);
+  
+
   
   namespace bdbequations_cpp
   {
@@ -194,15 +205,6 @@ namespace ngfem
     
     Init::Init()
     {
-      static RegisterBilinearFormIntegrator<LaplaceIntegrator<2> > initlap2 ("laplace", 2, 1);
-      static RegisterBilinearFormIntegrator<LaplaceIntegrator<3> > initlap3 ("laplace", 3, 1);
-      static RegisterBilinearFormIntegrator<MassIntegrator<2> > initmass2 ("mass", 2, 1);
-      static RegisterBilinearFormIntegrator<MassIntegrator<3> > initmass3 ("mass", 3, 1);
-
-
-      static RegisterLinearFormIntegrator<SourceIntegrator<2> > initsource2 ("source", 2, 1);
-      static RegisterLinearFormIntegrator<SourceIntegrator<3> > initsource3 ("source", 3, 1);
-
 
 
 
