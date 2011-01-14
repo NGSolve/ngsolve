@@ -58,8 +58,8 @@ namespace ngfem
 
     order = 1;
     for (int i = 0; i < N_EDGE; i++) order = max(order, order_edge[i]);
-    for (int i = 0; i < N_FACE; i++) order = max(order, max (order_face[i])); 
-    if (DIM == 3) order = max (order, max (order_cell));
+    for (int i = 0; i < N_FACE; i++) order = max(order, Max (order_face[i])); 
+    if (DIM == 3) order = max (order, Max (order_cell));
   }
 
 

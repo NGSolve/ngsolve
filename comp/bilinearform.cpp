@@ -769,17 +769,17 @@ namespace ngcomp
   template <class SCAL>
   void S_BilinearForm<SCAL> :: DoAssemble (LocalHeap & clh)
   {
-    static int mattimer = NgProfiler::CreateTimer ("Matrix assembling");
+    static Timer mattimer("Matrix assembling");
 
-    static int timer1 = NgProfiler::CreateTimer ("Matrix assembling - 1");
-    static int timer2 = NgProfiler::CreateTimer ("Matrix assembling - 2");
+    static Timer timer1 ("Matrix assembling - 1");
+    static Timer timer2 ("Matrix assembling - 2");
     static int timer3 = NgProfiler::CreateTimer ("Matrix assembling - 3");
     
     static int timerb1 = NgProfiler::CreateTimer ("Matrix assembling bound - 1");
     static int timerb2 = NgProfiler::CreateTimer ("Matrix assembling bound - 2");
     static int timerb3 = NgProfiler::CreateTimer ("Matrix assembling bound - 3");
 
-    NgProfiler::RegionTimer reg (mattimer);
+    RegionTimer reg (mattimer);
     
 
 
@@ -904,7 +904,7 @@ namespace ngcomp
 			  int i = (element_coloring) ? (*element_coloring)[icol][ii] : ii;
 			  
 			  
-			  NgProfiler::StartTimer (timer1);
+			  timer1.Start();
 			  
 			  HeapReset hr (lh);
 			  
@@ -965,7 +965,7 @@ namespace ngcomp
 			  FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
 			  sum_elmat = 0;
                       
-			  NgProfiler::StopTimer (timer1);
+			  timer1.Stop();
 			  NgProfiler::StartTimer (timer2);
 
 			  for (int j = 0; j < NumIntegrators(); j++)
@@ -989,7 +989,7 @@ namespace ngcomp
 				  else
 				    {
 				      FlatVector<double> diag;
-				      bfi.AssembleElementMatrixDiag (fel, eltrans, diag, lh);
+				      bfi.CalcElementMatrixDiag (fel, eltrans, diag, lh);
 				      // elmat.AssignMemory (diag.Size(), diag.Size(), lh);
 				      elmat = 0.0;
 				      for (int k = 0; k < diag.Size(); k++)
@@ -1373,7 +1373,7 @@ namespace ngcomp
                             double time;
                             starttime = clock();
 			  
-                            bfi.AssembleElementMatrixDiag (fel, eltrans, diag, clh);
+                            bfi.CalcElementMatrixDiag (fel, eltrans, diag, clh);
 			  
                             time = double(clock() - starttime) / CLOCKS_PER_SEC;
                             // cout << "time = " << time << endl;
@@ -2325,7 +2325,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		  
                     try
                       {
-                        bfi.AssembleLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
+                        bfi.CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
 
                         if (printelmat) 
                           {
@@ -2428,7 +2428,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
                     if (!bfi.BoundaryForm()) continue;
 
 		  
-                    bfi.AssembleLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
+                    bfi.CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
 		  	  
                     fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
                     AddElementMatrix (dnums, dnums, elmat, 0, i, lh);

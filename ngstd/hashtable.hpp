@@ -152,7 +152,7 @@ namespace ngstd
   // using ngstd::max;
 
   template <int D>
-  inline int max (const INT<D> & i)
+  inline int Max (const INT<D> & i)
   {
     if (D == 0) return 0;
     int m = i[0];

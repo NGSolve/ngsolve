@@ -816,10 +816,17 @@ namespace ngfem
 
 
 
+  static RegisterBilinearFormIntegrator<HDG_LaplaceIntegrator<2> > initlap2 ("HDG_laplace", 2, 2);
+  static RegisterBilinearFormIntegrator<HDG_LaplaceIntegrator<3> > initlap3 ("HDG_laplace", 3, 2);
 
+  static RegisterBilinearFormIntegrator<HDG_ConvectionIntegrator<2> > initconv21 ("HDG_convection", 2, 1);
+  static RegisterBilinearFormIntegrator<HDG_ConvectionIntegrator<2> > initconv22 ("HDG_convection", 2, 2);
+
+  static RegisterBilinearFormIntegrator<HDG_ConvectionIntegrator<3> > initconv31 ("HDG_convection", 2, 1);
+  static RegisterBilinearFormIntegrator<HDG_ConvectionIntegrator<3> > initconv33 ("HDG_convection", 3, 3);
   
 
-  
+  /*
   namespace inithdg
   {
     class Init
@@ -843,26 +850,10 @@ namespace ngfem
                                         HDG_ConvectionIntegrator<3>::Create);
       GetIntegrators().AddBFIntegrator ("HDG_convection", 3, 3,
                                         HDG_ConvectionIntegrator<3>::Create);
-
-
-      /*
-      Matrix<> pols(11,11);
-      static int timer = NgProfiler::CreateTimer ("dubiner");
-      static int timer2 = NgProfiler::CreateTimer ("dubiner2");
-      NgProfiler::StartTimer (timer);
-      for (int i = 0; i < 1000000; i++)
-	DubinerJacobiPolynomials (7, 0.7, 1, 0, pols);
-      NgProfiler::StopTimer (timer);
-
-      NgProfiler::StartTimer (timer2);
-      for (int i = 0; i < 1000000; i++)
-	DubinerJacobiPolynomials2<1,0> (7, 0.7, pols);
-      NgProfiler::StopTimer (timer2);
-      */
     }
     
     Init init;
   }
-
+  */
 }
 

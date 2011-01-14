@@ -209,12 +209,7 @@ namespace ngfem
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<Complex> & elmat,
-		       LocalHeap & locheap) const
-    {
-      AssembleElementMatrix (fel, eltrans, elmat, locheap);
-    }
-
-
+		       LocalHeap & locheap) const;
 
 
     /*
@@ -227,12 +222,13 @@ namespace ngfem
 			   FlatMatrix<double> & elmat,
 			   LocalHeap & locheap) const;
 
+    /*
     virtual void
     AssembleElementMatrix (const FiniteElement & fel,
 			   const ElementTransformation & eltrans, 
 			   FlatMatrix<Complex> & elmat,
 			   LocalHeap & locheap) const;
-
+    */
 
 
 
@@ -316,27 +312,27 @@ namespace ngfem
 
 
     virtual void
-    AssembleElementMatrixDiag (const FiniteElement & fel,
-			       const ElementTransformation & eltrans, 
-			       FlatVector<double> & diag,
-			       LocalHeap & lh) const;
+    CalcElementMatrixDiag (const FiniteElement & fel,
+			   const ElementTransformation & eltrans, 
+			   FlatVector<double> & diag,
+			   LocalHeap & lh) const;
 
 
 
 
     virtual void
-    AssembleLinearizedElementMatrix (const FiniteElement & fel, 
-				     const ElementTransformation & eltrans, 
-				     FlatVector<double> & elveclin,
-				     FlatMatrix<double> & elmat,
-				     LocalHeap & locheap) const;
+    CalcLinearizedElementMatrix (const FiniteElement & fel, 
+				 const ElementTransformation & eltrans, 
+				 FlatVector<double> & elveclin,
+				 FlatMatrix<double> & elmat,
+				 LocalHeap & locheap) const;
 
     virtual void
-    AssembleLinearizedElementMatrix (const FiniteElement & fel, 
-				     const ElementTransformation & eltrans, 
-				     FlatVector<Complex> & elveclin,
-				     FlatMatrix<Complex> & elmat,
-				     LocalHeap & locheap) const;
+    CalcLinearizedElementMatrix (const FiniteElement & fel, 
+				 const ElementTransformation & eltrans, 
+				 FlatVector<Complex> & elveclin,
+				 FlatMatrix<Complex> & elmat,
+				 LocalHeap & locheap) const;
 
 
     virtual void *  
@@ -372,7 +368,7 @@ namespace ngfem
     {
       //cout << "call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
       FlatMatrix<T> mat;
-      AssembleElementMatrix (fel, eltrans, mat, locheap);
+      CalcElementMatrix (fel, eltrans, mat, locheap);
       ely = mat * elx;
     }
 
@@ -593,10 +589,10 @@ namespace ngfem
     virtual bool SkeletonForm () const 
     { return 1; }
     
-    virtual void AssembleElementMatrix (const FiniteElement & fel,
-			   const ElementTransformation & eltrans, 
-			   FlatMatrix<double> & elmat,
-			   LocalHeap & locheap) {
+    virtual void CalcElementMatrix (const FiniteElement & fel,
+				    const ElementTransformation & eltrans, 
+				    FlatMatrix<double> & elmat,
+				    LocalHeap & locheap) {
       throw Exception ("FacetBilinearFormIntegrator can not assemble volumetric element matrices!");
     }
     
@@ -731,17 +727,17 @@ namespace ngfem
 			LocalHeap & locheap) const;
 
     virtual void
-    AssembleLinearizedElementMatrix (const FiniteElement & bfel,
-				     const ElementTransformation & eltrans,
-				     FlatVector<double> & elveclin,
-				     FlatMatrix<double> & elmat,
-				     LocalHeap & locheap) const;
+    CalcLinearizedElementMatrix (const FiniteElement & bfel,
+				 const ElementTransformation & eltrans,
+				 FlatVector<double> & elveclin,
+				 FlatMatrix<double> & elmat,
+				 LocalHeap & locheap) const;
     virtual void
-    AssembleLinearizedElementMatrix (const FiniteElement & bfel, 
-				     const ElementTransformation & eltrans, 
-				     FlatVector<Complex> & elveclin,
-				     FlatMatrix<Complex> & elmat,
-				     LocalHeap & locheap) const;
+    CalcLinearizedElementMatrix (const FiniteElement & bfel, 
+				 const ElementTransformation & eltrans, 
+				 FlatVector<Complex> & elveclin,
+				 FlatMatrix<Complex> & elmat,
+				 LocalHeap & locheap) const;
 
 
     virtual void
@@ -983,14 +979,14 @@ namespace ngfem
 
 
     virtual void
-    AssembleLinearizedElementMatrix (const FiniteElement & fel, 
-				     const ElementTransformation & eltrans, 
-				     FlatVector<double> & elveclin,
-				     FlatMatrix<double> & elmat,
-				     LocalHeap & locheap) const;
-
+    CalcLinearizedElementMatrix (const FiniteElement & fel, 
+				 const ElementTransformation & eltrans, 
+				 FlatVector<double> & elveclin,
+				 FlatMatrix<double> & elmat,
+				 LocalHeap & locheap) const;
+    
     virtual void
-    AssembleLinearizedElementMatrix (const FiniteElement & fel, 
+    CalcLinearizedElementMatrix (const FiniteElement & fel, 
 				     const ElementTransformation & eltrans, 
 				     FlatVector<Complex> & elveclin,
 				     FlatMatrix<Complex> & elmat,
@@ -1114,7 +1110,7 @@ namespace ngfem
     { return "DirichletPenalty"; }
 
     virtual void
-    AssembleElementMatrix (const FiniteElement & fel, 
+    CalcElementMatrix (const FiniteElement & fel, 
 			   const ElementTransformation & eltrans, 
 			   FlatMatrix<double> & elmat,
 			   LocalHeap & locheap) const
@@ -1200,11 +1196,7 @@ namespace ngfem
     CalcElementVector (const FiniteElement & fel,
 		       const ElementTransformation & eltrans, 
 		       FlatVector<Complex> & elvec,
-		       LocalHeap & locheap) const
-    {
-      AssembleElementVector (fel, eltrans, elvec, locheap);
-    }
-
+		       LocalHeap & locheap) const;
 
 
     // old version:
@@ -1278,7 +1270,7 @@ namespace ngfem
     { return 1; }
     
     virtual void 
-    AssembleElementVector (const FiniteElement & bfel, 
+    CalcElementVector (const FiniteElement & bfel, 
 			   const ElementTransformation & eltrans, 
 			   FlatVector<double> & elvec,
 			   LocalHeap & locheap) const{
