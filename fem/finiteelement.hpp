@@ -119,6 +119,13 @@ namespace ngfem
     /// select i-th component
     const FiniteElement & operator[] (int i) const { return *fea[i]; }
 
+    IntRange GetRange (int comp) const
+    {
+      int base = 0;
+      for (int i = 0; i < comp; i++)
+	base += fea[i]->GetNDof();
+      return IntRange (base, base+fea[comp]->GetNDof());
+    }
     // virtual void GetInternalDofs (Array<int> & idofs) const;
   };
 

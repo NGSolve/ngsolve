@@ -83,50 +83,50 @@ namespace ngcomp
 
 
     ///
-    virtual void GetElementVector (const Array<int> & dnums,
+    virtual void GetElementVector (const FlatArray<int> & dnums,
 				   FlatVector<double> & elvec) const
     { vec[0] -> GetIndirect (dnums, elvec); }
       
     ///
-    virtual void SetElementVector (const Array<int> & dnums,
+    virtual void SetElementVector (const FlatArray<int> & dnums,
 				   const FlatVector<double> & elvec) 
     { vec[0] -> SetIndirect (dnums, elvec); }
 
 
     ///
     virtual void GetElementVector (int comp,
-				   const Array<int> & dnums,
+				   const FlatArray<int> & dnums,
 				   FlatVector<double> & elvec) const 
     { vec[comp] -> GetIndirect (dnums, elvec); }
 
 
     ///
     virtual void SetElementVector (int comp,
-				   const Array<int> & dnums,
+				   const FlatArray<int> & dnums,
 				   const FlatVector<double> & elvec) 
     { vec[comp] -> SetIndirect (dnums, elvec); }
 
     ///
-    virtual void GetElementVector (const Array<int> & dnums,
+    virtual void GetElementVector (const FlatArray<int> & dnums,
 				   FlatVector<Complex> & elvec) const
     { vec[0] -> GetIndirect (dnums, elvec); }
       
     ///
-    virtual void SetElementVector (const Array<int> & dnums,
+    virtual void SetElementVector (const FlatArray<int> & dnums,
 				   const FlatVector<Complex> & elvec) 
     { vec[0] -> SetIndirect (dnums, elvec); }
 
 
     ///
     virtual void GetElementVector (int comp,
-				   const Array<int> & dnums,
+				   const FlatArray<int> & dnums,
 				   FlatVector<Complex> & elvec) const 
     { vec[comp] -> GetIndirect (dnums, elvec); }
 
 
     ///
     virtual void SetElementVector (int comp,
-				   const Array<int> & dnums,
+				   const FlatArray<int> & dnums,
 				   const FlatVector<Complex> & elvec) 
     { vec[comp] -> SetIndirect (dnums, elvec); }
 

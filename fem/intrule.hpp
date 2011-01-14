@@ -123,11 +123,11 @@ namespace ngfem
   class NGS_DLL_HEADER ElementTransformation;
 
   /**
-     Base class for SpecificIntegrationPoint.
+     Base class for MappedIntegrationPoint.
      A specific integration point is the mapped point, and stores
      point coordinates, the Jacobimatrix, and the determinant of the Jacobimatrix.
   */
-  class BaseSpecificIntegrationPoint
+  class BaseMappedIntegrationPoint
   {
   protected:
     /// IP on the reference element
@@ -138,7 +138,7 @@ namespace ngfem
     double measure; 
   public:
     ///
-    BaseSpecificIntegrationPoint (const IntegrationPoint & aip,
+    BaseMappedIntegrationPoint (const IntegrationPoint & aip,
 				  const ElementTransformation & aeltrans)
       : ip(&aip), eltrans(&aeltrans)  { ; }
 
@@ -150,20 +150,22 @@ namespace ngfem
     int GetIPNr() const { return ip->Nr(); }
     ///
     double GetMeasure() const { return measure; }
+    ///
+    double GetWeight() const { return measure * ip->Weight(); }
   };
 
 
   template <int R, typename SCAL = double>
-  class DimSpecificIntegrationPoint : public BaseSpecificIntegrationPoint
+  class DimMappedIntegrationPoint : public BaseMappedIntegrationPoint
   {
   protected:
     ///
     Vec<R,SCAL> point;
   public:
     ///
-    DimSpecificIntegrationPoint (const IntegrationPoint & aip,
+    DimMappedIntegrationPoint (const IntegrationPoint & aip,
 				 const ElementTransformation & aeltrans)
-      : BaseSpecificIntegrationPoint (aip, aeltrans)
+      : BaseMappedIntegrationPoint (aip, aeltrans)
     { ; }
     ///
     const Vec<R,SCAL> GetPoint () const { return point; }
@@ -175,7 +177,7 @@ namespace ngfem
 
   /// ip, dimension source, dimension range
   template <int DIMS = 2, int DIMR = 2, typename SCAL = double> 
-  class SpecificIntegrationPoint : public DimSpecificIntegrationPoint<DIMR,SCAL>
+  class MappedIntegrationPoint : public DimMappedIntegrationPoint<DIMR,SCAL>
   {
   private:
     /// Jacobi matrix
@@ -192,17 +194,17 @@ namespace ngfem
   public:
     typedef SCAL TSCAL;
     ///
-    NGS_DLL_HEADER SpecificIntegrationPoint (const IntegrationPoint & aip,
+    NGS_DLL_HEADER MappedIntegrationPoint (const IntegrationPoint & aip,
 			      const ElementTransformation & aeltrans,
 			      LocalHeap & lh);
     ///
-    SpecificIntegrationPoint (const IntegrationPoint & aip,
+    MappedIntegrationPoint (const IntegrationPoint & aip,
 			      const ElementTransformation & aeltrans,
 			      // const Vec<DIMR, SCAL> & ax,
 			      const FlatVec<DIMR, SCAL> ax,
 			      const Mat<DIMR, DIMS, SCAL> & adxdxi)
     // LocalHeap & lh)
-      : DimSpecificIntegrationPoint<DIMR,SCAL> (aip, aeltrans)
+      : DimMappedIntegrationPoint<DIMR,SCAL> (aip, aeltrans)
     {
       this->point = ax;
       dxdxi = adxdxi;
@@ -266,7 +268,7 @@ namespace ngfem
 
 
   template <int DIMS, int DIMR, typename SCAL> 
-  inline ostream & operator<< (ostream & ost, const SpecificIntegrationPoint<DIMS,DIMR,SCAL> & sip)
+  inline ostream & operator<< (ostream & ost, const MappedIntegrationPoint<DIMS,DIMR,SCAL> & sip)
   {
     ost << sip.GetPoint() << ", dxdxi = " << sip.GetJacobian();
     return ost;
@@ -816,14 +818,14 @@ namespace ngfem
     const IntegrationRule & IR() const { return ir; }
     const ElementTransformation & GetTransformation () const { return eltrans; }
 
-    const BaseSpecificIntegrationPoint & operator[] (int i) const
-    { return *static_cast<const BaseSpecificIntegrationPoint*> ((void*)(baseip+i*incr)); }
+    const BaseMappedIntegrationPoint & operator[] (int i) const
+    { return *static_cast<const BaseMappedIntegrationPoint*> ((void*)(baseip+i*incr)); }
   };
 
   template <int DIM_ELEMENT, int DIM_SPACE>
   class NGS_DLL_HEADER MappedIntegrationRule : public BaseMappedIntegrationRule
   {
-    FlatArray< SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > sips;
+    FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > sips;
   public:
     MappedIntegrationRule (const IntegrationRule & ir, 
 			   const ElementTransformation & aeltrans, 
@@ -835,17 +837,19 @@ namespace ngfem
 			   LocalHeap & lh)
       : BaseMappedIntegrationRule (ir, eltrans), sips(ir.GetNIP(), lh)
     {
-      baseip = (char*)(void*)(BaseSpecificIntegrationPoint*)(&sips[0]);
+      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&sips[0]);
       incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
     }
     
-    SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (int i) const
+    MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (int i) const
     { 
       return sips[i]; 
     }
   };
 
-
+#define SpecificIntegrationPoint MappedIntegrationPoint 
+#define BaseSpecificIntegrationPoint BaseMappedIntegrationPoint 
+#define DimSpecificIntegrationPoint DimMappedIntegrationPoint 
 
 
 

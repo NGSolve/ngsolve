@@ -15,18 +15,20 @@ define constant heapsize = 10000000
 
 
 # ho-fespace: compound space for (u, lambda) ######
-define fespace v -type=HDG -order=3
+define fespace v -type=HDG -order=3 -dirichlet=[1,2]
 
 
 define gridfunction u -fespace=v
 
 
-## boundary terms ########################################
-define coefficient crob
-1e10, 1e10, 
 
-define coefficient cneu
-0, (1e10*y * (1-y)), 0, 0,  
+
+## boundary terms ########################################
+
+define coefficient coef_dirichlet
+0, (y * (1-y)), 0, 0,  
+
+numproc setvalues npsv -coefficient=coef_dirichlet -gridfunction=u -boundary -comp=2
 
 
 ## some coefficients #####################################
@@ -45,14 +47,12 @@ define coefficient cf
 
 
 define linearform f -fespace=v
-neumann cneu -comp=2
 # source cf -comp=1
 
 
 define bilinearform a -fespace=v -eliminate_internal -linearform=f -printelmat
 HDG_laplace one alpha
 HDG_convection b
-robin crob -comp=2
 
 
 define preconditioner c -type=direct -bilinearform=a -inverse=pardiso

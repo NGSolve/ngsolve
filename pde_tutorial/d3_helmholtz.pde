@@ -21,7 +21,7 @@ define coefficient coef_dirichlet
 define fespace v -order=3 -complex -dirichlet=[1,2]
 define gridfunction u -fespace=v -nested
 
-define bilinearform a -fespace=v
+define bilinearform a -fespace=v -symmetric
 laplace coef_lam
 mass coef_mass
 robin absorb
@@ -30,10 +30,10 @@ define linearform f -fespace=v
 neumann coef_source
 
 
-define preconditioner c -type=direct -bilinearform=a
+define preconditioner c -type=direct -bilinearform=a  # -inverse=pardiso
 
 numproc setvalues npsv -coefficient=coef_dirichlet -gridfunction=u -boundary
-numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -qmr -maxsteps=5000
+numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -cg -maxsteps=5000
 
 
 

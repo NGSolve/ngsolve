@@ -818,19 +818,28 @@ GetElementTransformation (int elnr, ElementTransformation & eltrans,
 }
 
 
-ElementTransformation MeshAccess :: GetTrafo (int elnr) const
+ElementTransformation MeshAccess :: GetTrafo (int elnr, bool boundary) const
 
 {
   ElementTransformation eltrans;
 
-  int elind = Ng_GetElementIndex (elnr+1)-1;
-  eltrans.SetElement (0, elnr, elind);
-  eltrans.SetElementType (GetElType(elnr));
-
-  if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
-    eltrans.SetHigherIntegrationOrder();
+  if (!boundary)
+    {
+      int elind = Ng_GetElementIndex (elnr+1)-1;
+      eltrans.SetElement (0, elnr, elind);
+      eltrans.SetElementType (GetElType(elnr));
+      
+      if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
+	eltrans.SetHigherIntegrationOrder();
+      else
+	eltrans.UnSetHigherIntegrationOrder();
+    }
   else
-    eltrans.UnSetHigherIntegrationOrder();
+    {
+      int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
+      eltrans.SetElement (1, elnr, elind);
+      eltrans.SetElementType (GetSElType(elnr));
+    }
 
   return eltrans;
 }
@@ -938,6 +947,7 @@ GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans,
 }    
 
 
+/*
 ElementTransformation MeshAccess :: GetSurfaceTrafo (int elnr) const
 
 {
@@ -949,6 +959,7 @@ ElementTransformation MeshAccess :: GetSurfaceTrafo (int elnr) const
 
   return eltrans;
 }
+*/
 
 
 #else

@@ -183,8 +183,28 @@ namespace ngcomp
   
     /// returns finite element. attention: should be thread-safe, but is not always
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+
+
     /// get dof-nrs of the element
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+
+    ///
+    void GetDofNrs (int elnr, FlatArray<int> dnums) const
+    {
+      Array<int> hdnums(dnums.Size(), &dnums[0]);
+      GetDofNrs (elnr, hdnums);
+    }
+
+    void GetDofNrs (int elnr, FlatArray<int> dnums, bool boundary) const
+    {
+      Array<int> hdnums(dnums.Size(), &dnums[0]);
+      if (boundary)
+	GetSDofNrs (elnr, hdnums);
+      else
+	GetDofNrs (elnr, hdnums);
+    }
+
+
     /// get coupling types of dofs
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & dnums) const;
     
@@ -215,6 +235,14 @@ namespace ngcomp
     virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
     /// returns dofs of sourface element
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const = 0;
+
+    ///
+    void GetSDofNrs (int elnr, FlatArray<int> dnums) const
+    {
+      Array<int> hdnums(dnums.Size(), &dnums[0]);
+      GetSDofNrs (elnr, hdnums);
+    }
+
 
     /// is the FESpace defined for this sub-domain nr ?
     bool DefinedOn (int domnr) const
