@@ -222,7 +222,17 @@ namespace ngbla
       return SliceMatrix<T> (h, next-first, w, data+first);
     }
 
-  
+
+    const FlatMatrix Rows (IntRange range) const
+    {
+      return FlatMatrix (range.Next()-range.First(), w, data+range.First()*w);
+    }
+
+    const SliceMatrix<T> Cols (IntRange range) const
+    {
+      return SliceMatrix<T> (h, range.Next()-range.First(), w, data+range.First());
+    }
+
   };
 
 

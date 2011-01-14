@@ -61,13 +61,8 @@ numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c
 
 
 
+
 # visualization
-
-define bilinearform drawu -fespace=v -nonassemble
-mass one -comp=1
-
-# numproc drawflux df1 -bilinearform=drawsigma -solution=u -label=sigma
-numproc drawflux df2 -bilinearform=drawu -solution=u -label=u
 
 ## automatic visualizaiton for 2D
 numproc visualization vis1 -scalarfunction=u -subdivision=2
