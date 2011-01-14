@@ -1,5 +1,3 @@
-puts "Parsing ng.tcl"
-
 if {[catch {package require Tix } result ]} {
     puts "cannot find package Tix"
     puts "error : $result"
