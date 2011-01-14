@@ -304,7 +304,7 @@ namespace ngcomp
     first_hodofs[ma.GetDimension()-1] = first_facet_dof;
 
     UpdateCouplingDofArray();
-    FinalizeUpdate (lh);
+    // FinalizeUpdate (lh);
 
 #ifdef PARALLEL
     *testout << "update parallel dofs in facet-fespace, ndof " << ndof << endl;
@@ -1004,7 +1004,7 @@ namespace ngcomp
     for (int i = 0; i <= ned; i++)
       first_edge_dof[i] = (order+1)*i;
     UpdateCouplingDofArray();
-    FinalizeUpdate (lh);
+    // FinalizeUpdate (lh);
   }
 
   void EdgeFESpace :: UpdateCouplingDofArray()
@@ -1090,7 +1090,7 @@ protected:
   bool withedges;
 public:
   HybridDGFESpace (const MeshAccess & ama, 
-                   const Array<const FESpace*> & aspaces,
+                   const Array<FESpace*> & aspaces,
                    const Flags & flags)
     : CompoundFESpace (ama, aspaces, flags)
   { 
@@ -1116,7 +1116,7 @@ public:
 
   static FESpace * Create (const MeshAccess & ma, const Flags & flags)
   {
-    Array<const FESpace*> spaces(2);
+    Array<FESpace*> spaces(2);
 
     Flags l2flags(flags), facetflags(flags);
 

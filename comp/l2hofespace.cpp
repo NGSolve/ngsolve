@@ -146,7 +146,7 @@ namespace ngcomp
     if(low_order_space) prol->Update();
 
     UpdateCouplingDofArray();
-    FinalizeUpdate (lh);
+    // FinalizeUpdate (lh);
 
 #ifdef PARALLEL
     UpdateParallelDofs();

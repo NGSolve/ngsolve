@@ -668,7 +668,7 @@ namespace ngcomp
   {
   protected:
     /// pointer to components
-    Array<const FESpace*> spaces;
+    Array<FESpace*> spaces;
     /// cummlated #dofs of components
     Array<int> cummulative_nd;
     /// 
@@ -679,12 +679,12 @@ namespace ngcomp
 		     const Flags & flags, bool parseflags=false);
     /// 
     CompoundFESpace (const MeshAccess & ama,
-		     const Array<const FESpace*> & aspaces,
+		     const Array<FESpace*> & aspaces,
 		     const Flags & flags, bool parseflags=false);
     ///
     virtual ~CompoundFESpace ();
     /// 
-    void AddSpace (const FESpace * fes);
+    void AddSpace (FESpace * fes);
     ///
     virtual string GetClassName () const
     {
@@ -693,6 +693,8 @@ namespace ngcomp
 
     ///
     virtual void Update(LocalHeap & lh);
+    virtual void FinalizeUpdate(LocalHeap & lh);
+
     ///
     virtual void UpdateCouplingDofArray();
     ///
