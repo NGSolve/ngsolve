@@ -1619,7 +1619,7 @@ namespace ngcomp
 			  FlatMatrix<SCAL> elmat(elmat_size, lh);
 			  ;
 			  dynamic_cast<const FacetBilinearFormIntegrator&>(bfi)
-			    .AssembleFacetMatrix (fel,facnr,eltrans,vnums, seltrans, elmat, lh);
+			    .CalcFacetMatrix (fel,facnr,eltrans,vnums, seltrans, elmat, lh);
 			  fespace.TransformMat (i, false, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 		    
 			  if (printelmat)
@@ -1742,7 +1742,7 @@ namespace ngcomp
                           int elmat_size = (dnums1.Size()+dnums2.Size())*fespace.GetDimension();
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
                           dynamic_cast<const FacetBilinearFormIntegrator&>(bfi)
-			    .AssembleFacetMatrix (fel1,facnr1,eltrans1,vnums1,
+			    .CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
 						  fel2,facnr2,eltrans2,vnums2, elmat, lh);
 			  *testout << "elmat : \n" << elmat << endl;
                           fespace.TransformMat (i, false, elmat, TRANSFORM_MAT_LEFT_RIGHT);

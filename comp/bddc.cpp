@@ -982,7 +982,7 @@ namespace ngcomp
           for (int j = 0; j < bfa.NumIntegrators(); j++)
             {
 	      if (bfa.GetIntegrator(j) -> BoundaryForm()) continue;
-              bfa.GetIntegrator(j)->AssembleElementMatrix (fel, eltrans, partelmat, lh);
+              bfa.GetIntegrator(j)->CalcElementMatrix (fel, eltrans, partelmat, lh);
               elmat += partelmat;
             }
 
