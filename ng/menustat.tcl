@@ -62,7 +62,9 @@ menu .ngmenu.file
 	    set dirname [file dirname $file]
 	    set basefilename [file tail [file rootname $file]]
 
-	    rebuildoccdialog
+	    if { $hasocc == "yes" } {
+		rebuildoccdialog
+	    }
 	}
     }
 

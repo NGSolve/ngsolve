@@ -14,7 +14,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  $(OCCFLAGS) $(TCL_INCLUDES)
 
 METASOURCES = AUTO
 
-noinst_LTLIBRARIES = libocc.la liboccvis.la
+lib_LTLIBRARIES = libocc.la liboccvis.la
 
 libocc_la_SOURCES = Partition_Inter2d.cxx Partition_Inter3d.cxx \
 	Partition_Loop.cxx Partition_Loop2d.cxx Partition_Loop3d.cxx Partition_Spliter.cxx \

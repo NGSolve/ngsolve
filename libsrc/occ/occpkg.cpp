@@ -15,7 +15,7 @@
 #include "vsocc.hpp"
 
 
-extern "C" int Ng_OCC_Init (Tcl_Interp * interp);
+extern "C" int Ng_occ_Init (Tcl_Interp * interp);
 
 
 
@@ -958,7 +958,7 @@ namespace netgen
 
 using namespace netgen;
 
-int Ng_OCC_Init (Tcl_Interp * interp)
+int Ng_occ_Init (Tcl_Interp * interp)
 {
   geometryregister.Append (new OCCGeometryRegister);
 

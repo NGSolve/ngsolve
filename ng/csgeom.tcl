@@ -16,11 +16,6 @@
 .ngmenu.geometry add command -label "CSG Properties..." \
     -command topleveldialog2 
 
-.ngmenu.geometry add separator
-
-
-
-
 
 
 

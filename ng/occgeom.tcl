@@ -1,6 +1,16 @@
+if { [catch { load liboccvis[info sharedlibextension] Ng_OCC } result ] } {
+#    puts "cannot load occ" 
+#    puts "error: $result"
+} {
+    puts "OCC module loaded"
+    set hasocc yes
+}
+
+
+.ngmenu.geometry add separator
+
 .ngmenu.geometry add command -label "IGES/STEP Topology Explorer/Doctor..." \
     -command { occdialog; }
-
 
 
 # Philippose - 30/01/2009

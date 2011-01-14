@@ -12,6 +12,8 @@ if {[catch {package require Tix } result ]} {
 
 
 
+
+
 # userlevel 1..standard user 2..power-user 3..developer
 
 set userlevel 3
@@ -84,7 +86,10 @@ catch {
 
 source ${ngdir}/csgeom.tcl
 source ${ngdir}/stlgeom.tcl
-source ${ngdir}/occgeom.tcl
+
+set hasocc no
+catch { source ${ngdir}/occgeom.tcl }
+
 source ${ngdir}/acisgeom.tcl
 
 
@@ -107,7 +112,7 @@ catch {
 
 
 set zugstange 0
-catch { source ${ngdir}/trafo/menu.tcl }
+catch { source ${ngdir}/trafo/menu.tcl } 
 
 
 
@@ -118,9 +123,11 @@ Ng_SetVisParameters
 Ng_SetDebugParameters
 Ng_STLDoctor
 Ng_GeometryOptions set
-catch {
+
+if { $hasocc == "yes" } {
     Ng_SetOCCVisParameters
 }
+
 
 if { $batchmode != "defined" } {
     catch { 

@@ -1,3 +1,5 @@
+.ngmenu.geometry add separator
+
 .ngmenu.geometry add command -label "STL Doctor..." \
     -command { stldoctordialog; }
 
@@ -17,4 +19,3 @@
 	tk_messageBox -title "STL Info" -message  $msgtext -type ok 
     }
 
-.ngmenu.geometry add separator
