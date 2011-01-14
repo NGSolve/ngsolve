@@ -1581,12 +1581,15 @@ double BlockBilinearFormIntegrator ::
     bfi.CalcElementMatrix (fel[comp], eltrans, mat1, lh);
 
     elmat = 0;
-    
+    /*
     int base = 0;
     for (int i = 0; i < comp; i++)
       base += fel[i].GetNDof();
-
     elmat.Rows (base, base+mat1.Height()).Cols (base, base+mat1.Width()) = mat1;
+    */
+    IntRange range = fel.GetRange (comp);
+    elmat.Rows (range).Cols(range) = mat1;
+
     /*
     for (int i = 0; i < mat1.Height(); i++)
       for (int j = 0; j < mat1.Width(); j++)
