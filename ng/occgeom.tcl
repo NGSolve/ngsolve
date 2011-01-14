@@ -1,10 +1,13 @@
 if { [catch { load liboccvis[info sharedlibextension] Ng_OCC } result ] } {
 #    puts "cannot load occ" 
 #    puts "error: $result"
+
+    # dummy 
+    proc rebuildoccdialog { } { }
 } {
     puts "OCC module loaded"
     set hasocc yes
-}
+
 
 
 .ngmenu.geometry add separator
@@ -22,15 +25,6 @@ if { [catch { load liboccvis[info sharedlibextension] Ng_OCC } result ] } {
 
 # .ngmenu.geometry add command -label "OCC Construction" \
     #     -command { Ng_OCCConstruction; }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -441,3 +435,4 @@ proc occdialog { } {
 }
 
 
+}

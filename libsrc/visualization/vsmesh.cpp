@@ -79,8 +79,10 @@ namespace netgen
 
     lock = NULL;
 
-    clock_t starttime, endtime;
-    starttime = clock();
+    static int timer = NgProfiler::CreateTimer ("VSMesh::DrawScene");
+
+    NgProfiler::RegionTimer reg (timer);
+
 
     BuildScene();
 
@@ -147,7 +149,7 @@ namespace netgen
 	if (filledtimestamp < mesh->GetTimeStamp () ||
             filledtimestamp < selecttimestamp)
 	  {
-            BuildFilledList ();
+            BuildFilledList (false);
 	  }
 
 
@@ -233,7 +235,6 @@ namespace netgen
       }
 
 
-
     if (vispar.drawidentified)
       {
 	glPolygonOffset (1, -1);
@@ -256,7 +257,6 @@ namespace netgen
 	BuildEdgeList();
 	glCallList (edgelist);
       }
-
 
     if (selpoint > 0 && selpoint <= mesh->GetNP())
       {
@@ -299,18 +299,15 @@ namespace netgen
     DrawCoordinateCross ();
     DrawNetgenLogo ();
 
+
     if (lock)
       {
 	lock -> UnLock();
 	delete lock;
 	lock = NULL;
       }
-
+    
     glFinish();
-
-
-    endtime = clock();
-    // cout << 1.0 / (double(endtime - starttime)/CLOCKS_PER_SEC) << " frames/sec" << endl;
   }
 
 
@@ -328,7 +325,9 @@ namespace netgen
 	lock -> Lock();
       }
 
-    int i, j;
+    static int timer = NgProfiler::CreateTimer ("VSMesh::BuildScene");
+    NgProfiler::RegionTimer reg (timer);
+
 
 
     Point3d pmin, pmax;
@@ -430,7 +429,7 @@ namespace netgen
 	char buf[30];
 
 	if (vispar.drawpointnumbers)
-	  for (i = 1; i <= mesh->GetNP(); i++)
+	  for (int i = 1; i <= mesh->GetNP(); i++)
             {
 	      const Point3d & p = mesh->Point(i);
 	      glRasterPos3d (p.X(), p.Y(), p.Z());
@@ -459,7 +458,7 @@ namespace netgen
 	    */
 
 	    const MeshTopology & top = mesh->GetTopology();
-	    for (i = 1; i <= top.GetNEdges(); i++)
+	    for (int i = 1; i <= top.GetNEdges(); i++)
 	      {
 		int v1, v2;
 		top.GetEdgeVertices (i, v1, v2);
@@ -481,7 +480,7 @@ namespace netgen
 	  {
 	    const MeshTopology & top = mesh->GetTopology();
 	    Array<int> v;
-	    for (i = 1; i <= top.GetNFaces(); i++)
+	    for (int i = 1; i <= top.GetNFaces(); i++)
 	      {
 		top.GetFaceVertices (i, v);
 		const Point3d & p1 = mesh->Point(v.Elem(1));
@@ -512,7 +511,7 @@ namespace netgen
 	if (vispar.drawelementnumbers)
 	  {
 	    Array<int> v;
-	    for (i = 1; i <= mesh->GetNE(); i++)
+	    for (int i = 1; i <= mesh->GetNE(); i++)
 	      {
 		// const ELEMENTTYPE & eltype = mesh->ElementType(i);
 		Array<int> pnums;
@@ -614,7 +613,7 @@ namespace netgen
 	static float badelcol[] = { 1.0f, 0.0f, 1.0f, 1.0f };
 	glLineWidth (1.0f);
 
-	for (i = 1; i <= mesh->GetNE(); i++)
+	for (int i = 1; i <= mesh->GetNE(); i++)
 	  {
             if (mesh->VolumeElement(i).flags.badel ||
 		mesh->VolumeElement(i).flags.illegal ||
@@ -632,7 +631,7 @@ namespace netgen
 		  {
 		    glBegin (GL_TRIANGLES);
 
-		    for (j = 1; j <= faces.Size(); j++)
+		    for (int j = 1; j <= faces.Size(); j++)
 		      {
 			Element2d & face = faces.Elem(j);
 			const Point3d & lp1 = mesh->Point (el.PNum(face.PNum(1)));
@@ -653,7 +652,7 @@ namespace netgen
 
 
 
-	for (i = 1; i <= mesh->GetNE(); i++)
+	for (int i = 1; i <= mesh->GetNE(); i++)
 	  {
             if (mesh->VolumeElement(i).flags.badel)
 	      {
@@ -671,18 +670,18 @@ namespace netgen
 	  }
 
 
-	for (i = 1; i <= mesh->GetNE(); i++)
+	for (int i = 1; i <= mesh->GetNE(); i++)
 	  {
             Element el = mesh->VolumeElement (i);
             int hascp = 0;
-            for (j = 1; j <= el.GetNP(); j++)
+            for (int j = 1; j <= el.GetNP(); j++)
 	      if (el.PNum(j) == vispar.centerpoint)
 		hascp = 1;
 
             if (hascp)
 	      {
 		(*testout) << "draw el " << i << " : ";
-		for (j = 1; j <= el.GetNP(); j++)
+		for (int j = 1; j <= el.GetNP(); j++)
                   (*testout) << el.PNum(j) << " ";
 		(*testout) << endl;
 
@@ -696,7 +695,7 @@ namespace netgen
 			{ 2, 4 },
 			{ 3, 4 } } ;
 
-		    for (j = 0; j < 6; j++)
+		    for (int j = 0; j < 6; j++)
 		      {
 			glBegin (GL_LINES);
 			const Point3d & p1 = mesh->Point (el.PNum(et[j][0]));
@@ -724,7 +723,7 @@ namespace netgen
 			{ 3, 10 },
 			{ 4, 10 } };
 
-		    for (j = 0; j < 12; j++)
+		    for (int j = 0; j < 12; j++)
 		      {
 			glBegin (GL_LINES);
 			const Point3d & p1 = mesh->Point (el.PNum(et[j][0]));
@@ -738,14 +737,14 @@ namespace netgen
 	  }
 
 
-	for (i = 1; i <= mesh->GetNSE(); i++)
+	for (int i = 1; i <= mesh->GetNSE(); i++)
 	  {
             Element2d el = mesh->SurfaceElement(i);
             if (!el.BadElement())
 	      continue;
 
             int drawel = 1;
-            for (j = 1; j <= el.GetNP(); j++)
+            for (int j = 1; j <= el.GetNP(); j++)
 	      if (!el.PNum(j))
 		drawel = 0;
 
@@ -798,7 +797,7 @@ namespace netgen
 		    { 2, 4 }, { 3, 4 } };
 
 		  glBegin (GL_LINES);
-		  for (j = 0; j < 6; j++)
+		  for (int j = 0; j < 6; j++)
 		    {
 		      glVertex3dv ( mesh->Point (el.PNum(lines[j][0])) );
 		      glVertex3dv ( mesh->Point (el.PNum(lines[j][0])) );
@@ -816,7 +815,7 @@ namespace netgen
 
 		  glBegin (GL_LINES);
 
-		  for (j = 0; j < 6; j++)
+		  for (int j = 0; j < 6; j++)
 		    {
 		      const Point3d & lp1 = mesh->Point (el.PNum(lines[j][0]));
 		      const Point3d & lp2 = mesh->Point (el.PNum(lines[j][1]));
@@ -856,8 +855,8 @@ namespace netgen
 	      mesh->GetIdentifications().GetIdentifiedPoints();
             if (&idpts)
 	      {
-		for (i = 1; i <= idpts.GetNBags(); i++)
-                  for (j = 1; j <= idpts.GetBagSize(i); j++)
+		for (int i = 1; i <= idpts.GetNBags(); i++)
+                  for (int j = 1; j <= idpts.GetBagSize(i); j++)
 		    {
 		      INDEX_2 pts;
 		      int val;
@@ -893,7 +892,7 @@ namespace netgen
 
 
 
-  void VisualSceneMesh :: BuildFilledList()
+  void VisualSceneMesh :: BuildFilledList (bool names)
   {
     static int timer = NgProfiler::CreateTimer ("Mesh::BuildFilledList");
     NgProfiler::RegionTimer reg (timer);
@@ -940,9 +939,6 @@ namespace netgen
 #endif
 
 
-    // clock_t starttime, endtime;
-    // starttime = clock();
-
     if (!lock)
       {
 	lock = new NgLock (mesh->Mutex());
@@ -957,7 +953,6 @@ namespace netgen
     filledlist = glGenLists (1);
     glNewList (filledlist, GL_COMPILE);
 
-    // cout << "I am p " << id << " and got filledlist " << filledlist << endl;
       
 #ifdef STLGEOM
     STLGeometry * stlgeometry = dynamic_cast<STLGeometry*> (ng_geometry);
@@ -1000,50 +995,69 @@ namespace netgen
     GLfloat mat_coll_transp_sel[] = { 1, 0, 0, 0.3 };
 #endif
 
+    GLint rendermode;
+    glGetIntegerv (GL_RENDER_MODE, &rendermode);
+
     CurvedElements & curv = mesh->GetCurvedElements();
+
     int hoplotn = 1 << vispar.subdivisions;
+    
+    Array<SurfaceElementIndex> seia;
 
-    for (int col = 1; col <= 2; col++)
+
+    for (int faceindex = 1; faceindex <= mesh->GetNFD(); faceindex++)
       {
-	if (col == 2)
-	  glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcolsel);
-	else
-	  glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcol);
+	const FaceDescriptor & fd = mesh->GetFaceDescriptor(faceindex);
+	mesh->GetSurfaceElementsOfFace (faceindex, seia);
 
-	for (SurfaceElementIndex sei = 0; sei < mesh->GetNSE(); sei++)
-	  {
-            const Element2d & el = (*mesh)[sei];
+	
+	// Philippose - 06/07/2009
+	// Modified the colour system to integrate the face colours into 
+	// the mesh data structure, rather than limit it to the OCC geometry 
+	// structure... allows other geometry types to use face colours too
+
+	matcol[0] = mesh->GetFaceDescriptor(faceindex).SurfColour().X();
+	matcol[1] = mesh->GetFaceDescriptor(faceindex).SurfColour().Y();
+	matcol[2] = mesh->GetFaceDescriptor(faceindex).SurfColour().Z();
+	matcol[3] = 1.0;
+
+	if (faceindex == selface)
+	  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, matcolsel);
+	else
+	  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, matcol);
+	
 
 #ifdef PARALLEL
-            if ( el.IsGhost() )
-	      {
-		if ( col == 2 )
-                  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_coll_transp_sel);
-		else
-                  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_coll_transp);
-	      }
-            else
-	      {
-		if (col == 2)
-                  glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcolsel);
-		else
-                  glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcol);
-	      }
+	if ( el.IsGhost() )
+	  {
+	    if ( faceindex == selface )
+	      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_coll_transp_sel);
+	    else
+	      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_coll_transp);
+	  }
+	else
+	  {
+	    if ( faceindex == selface )
+	      glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcolsel);
+	    else
+	      glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcol);
+	  }
 #endif
+	
+	bool simpletrig = !names && !curv.IsHighOrder();
+	for (int hi = 0; hi < seia.Size(); hi++)
+	  if ((*mesh)[seia[hi]].GetType() != TRIG)
+	    simpletrig = false;
 
-            // Philippose - 06/07/2009
-            // Modified the colour system to integrate the face colours into 
-            // the mesh data structure, rather than limit it to the OCC geometry 
-            // structure... allows other geometry types to use face colours too
-            if(col == 1)
-	      {
-		matcol[0] = mesh->GetFaceDescriptor(el.GetIndex()).SurfColour().X();
-		matcol[1] = mesh->GetFaceDescriptor(el.GetIndex()).SurfColour().Y();
-		matcol[2] = mesh->GetFaceDescriptor(el.GetIndex()).SurfColour().Z();
+	if (simpletrig)
+	  glBegin (GL_TRIANGLES);
 
-		matcol[3] = 1.0;
-		glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcol);
-	      }
+	
+	for (int hi = 0; hi < seia.Size(); hi++)
+	  {
+	    SurfaceElementIndex sei = seia[hi];
+
+            const Element2d & el = (*mesh)[sei];
 
             bool drawel = (!el.IsDeleted() & el.IsVisible());
 
@@ -1056,14 +1070,9 @@ namespace netgen
 
             if (!drawel)
 	      continue;
-
-            if (vispar.colormeshsize && col == 2)
-	      continue;
-            if (!vispar.colormeshsize &&
-		(col == 2) != (el.GetIndex() == selface))
-	      continue;
-
-            glLoadName (sei+1);
+	    
+	    if (names)
+	      glLoadName (sei+1);
 
             switch (el.GetType())
 	      {
@@ -1117,7 +1126,8 @@ namespace netgen
 		    }
                   else // not high order
 		    {
-		      glBegin (GL_TRIANGLES);
+		      if (!simpletrig)
+			glBegin (GL_TRIANGLES);
 		      
 		      const Point<3> & lp0 = (*mesh) [el[0]];
 		      const Point<3> & lp1 = (*mesh) [el[1]];
@@ -1142,7 +1152,8 @@ namespace netgen
 			  glVertex3dv (lp2);
 			}
 		      
-		      glEnd();
+		      if (!simpletrig)
+			glEnd();
 		    }
 		  
                   break;
@@ -1308,11 +1319,16 @@ namespace netgen
 		PrintSysError ("Cannot draw (2) surface element of type ",
 			       int(el.GetType()));
 	      }
+	    
 
-
-
+	    
 	  }
+	
+	if (simpletrig)
+	  glEnd ();
       }
+    
+
     glLoadName (0);
     glEndList ();
 
@@ -1376,6 +1392,7 @@ namespace netgen
     linetimestamp = NextTimeStamp();
 
 #ifdef STLGEOM
+    xxx
     STLGeometry * stlgeometry = dynamic_cast<STLGeometry*> (ng_geometry);
     bool checkvicinity = (stlgeometry != NULL) && stldoctor.showvicinity;
 #endif
@@ -3138,19 +3155,20 @@ namespace netgen
 
   void VisualSceneMesh :: MouseDblClick (int px, int py)
   {
+    BuildFilledList (true);
+
+    MouseDblClickSelect(px,py,clipplane,backcolor,transformationmat,center,rad,
+			filledlist,selelement,selface,seledge,selpoint,selpoint2,locpi);
+
+
+    selecttimestamp = NextTimeStamp();
+
     if(lock)
       {
 	lock->UnLock();
 	delete lock;
 	lock = NULL;
       }
-
-
-
-    MouseDblClickSelect(px,py,clipplane,backcolor,transformationmat,center,rad,
-			filledlist,selelement,selface,seledge,selpoint,selpoint2,locpi);
-
-    selecttimestamp = NextTimeStamp();
 
     /*
       int i, hits;
@@ -3397,7 +3415,6 @@ namespace netgen
       }
 
     //  SetClippingPlane();
-
     glCallList (displaylist);
 
     glDisable (GL_POLYGON_OFFSET_FILL);
@@ -3414,7 +3431,6 @@ namespace netgen
 
 
     hits = glRenderMode (GL_RENDER);
-
     //cout << "hits = " << hits << endl;
 
     int minname = 0;

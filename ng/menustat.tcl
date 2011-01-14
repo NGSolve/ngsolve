@@ -120,7 +120,8 @@ proc AddRecentFile { filename } {
 		  wm title . [concat \" $progname - $filename \"];
                   set dirname {[file dirname $filename]};
                   set basefilename {[file tail [file rootname $filename]]};
-                  rebuildoccdialog;"
+        	  rebuildoccdialog;"
+
     
     if { [.ngmenu.file.recent index last] >= 6 } {
 	.ngmenu.file.recent delete last }

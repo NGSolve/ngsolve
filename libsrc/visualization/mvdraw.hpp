@@ -185,7 +185,7 @@ namespace netgen
     { return selelement; }
     int SelectedPoint () const
     { return selpoint; }
-    void BuildFilledList();
+    void BuildFilledList (bool names);
     // private:
     void BuildLineList();
     void BuildEdgeList();

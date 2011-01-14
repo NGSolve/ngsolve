@@ -4035,7 +4035,7 @@ namespace netgen
   void VisualSceneSolution :: MouseDblClick (int px, int py)
   {
     vsmesh.SetClippingPlane();
-    vsmesh.BuildFilledList();
+    // vsmesh.BuildFilledList();
     vsmesh.MouseDblClick(px,py);
   }
 

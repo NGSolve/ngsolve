@@ -488,6 +488,8 @@ public:
   { return strongrefflag; }
 
   
+  SurfaceElementIndex NextElement() { return next; }
+
   bool operator==(const Element2d & el2) const;
 
   int HasFace(const Element2d& el) const;
@@ -957,7 +959,7 @@ public:
   void SetDomainInSingular (double v) { domin_singular = v; }
   void SetDomainOutSingular (double v) { domout_singular = v; }
 
-
+  SurfaceElementIndex FirstElement() { return firstelement; }
   // friend ostream & operator<<(ostream  & s, const FaceDescriptor & fd);
   friend class Mesh;
 };
