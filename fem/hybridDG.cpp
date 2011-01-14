@@ -31,11 +31,6 @@ namespace ngfem
 
     virtual ~HDG_LaplaceIntegrator () { ; }
 
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      return new HDG_LaplaceIntegrator (coeffs);
-    }
-    
     virtual bool BoundaryForm () const 
     { return 0; }
 
@@ -98,8 +93,8 @@ namespace ngfem
 	    fel_l2.CalcMappedDShape (sip, dshape);
 
 	    bmats.Rows(l*D, (l+1)*D) = Trans(dshape);
-	    dbmats.Rows(l*D, (l+1)*D) = 
-	      (lam * sip.GetMeasure() * ir_vol[l].Weight()) * Trans(dshape);
+	    dbmats.Rows(l*D, (l+1)*D) = (lam * sip.GetWeight()) * Trans(dshape);
+	      // (lam * sip.GetMeasure() * ir_vol[l].Weight()) * Trans(dshape);
 	  }
 
 	NgProfiler::RegionTimer reg1a (timer1a);     
@@ -631,11 +626,6 @@ namespace ngfem
 
     virtual ~HDG_ConvectionIntegrator () { ; }
 
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      return new HDG_ConvectionIntegrator (coeffs);
-    }
-    
     virtual bool BoundaryForm () const 
     { return 0; }
 
@@ -824,36 +814,5 @@ namespace ngfem
 
   static RegisterBilinearFormIntegrator<HDG_ConvectionIntegrator<3> > initconv31 ("HDG_convection", 2, 1);
   static RegisterBilinearFormIntegrator<HDG_ConvectionIntegrator<3> > initconv33 ("HDG_convection", 3, 3);
-  
-
-  /*
-  namespace inithdg
-  {
-    class Init
-    { 
-    public: 
-      Init ();
-    };
-    
-    Init::Init()
-    {
-      GetIntegrators().AddBFIntegrator ("HDG_laplace", 2, 2,
-                                        HDG_LaplaceIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("HDG_laplace", 3, 2,
-                                        HDG_LaplaceIntegrator<3>::Create);
-
-      GetIntegrators().AddBFIntegrator ("HDG_convection", 2, 1,
-                                        HDG_ConvectionIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("HDG_convection", 2, 2,
-                                        HDG_ConvectionIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("HDG_convection", 3, 1,
-                                        HDG_ConvectionIntegrator<3>::Create);
-      GetIntegrators().AddBFIntegrator ("HDG_convection", 3, 3,
-                                        HDG_ConvectionIntegrator<3>::Create);
-    }
-    
-    Init init;
-  }
-  */
 }
 

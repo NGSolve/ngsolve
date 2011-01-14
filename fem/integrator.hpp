@@ -196,9 +196,9 @@ namespace ngfem
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<double> & elmat,
-		       LocalHeap & locheap) const
+		       LocalHeap & lh) const
     {
-      AssembleElementMatrix (fel, eltrans, elmat, locheap);
+      AssembleElementMatrix (fel, eltrans, elmat, lh);
     }
 
     /**
@@ -209,7 +209,7 @@ namespace ngfem
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<Complex> & elmat,
-		       LocalHeap & locheap) const;
+		       LocalHeap & lh) const;
 
 
     /*
@@ -220,14 +220,14 @@ namespace ngfem
     AssembleElementMatrix (const FiniteElement & fel,
 			   const ElementTransformation & eltrans, 
 			   FlatMatrix<double> & elmat,
-			   LocalHeap & locheap) const;
+			   LocalHeap & lh) const;
 
     /*
     virtual void
     AssembleElementMatrix (const FiniteElement & fel,
 			   const ElementTransformation & eltrans, 
 			   FlatMatrix<Complex> & elmat,
-			   LocalHeap & locheap) const;
+			   LocalHeap & lh) const;
     */
 
 
@@ -243,7 +243,7 @@ namespace ngfem
 				      const IntegrationPoint & ip_master_element,
 				      const IntegrationPoint & ip_slave,
 				      FlatMatrix<double> & elmat,
-				      LocalHeap & locheap) const
+				      LocalHeap & lh) const
     {;}
     virtual void
     ApplyElementMatrixIndependent (const FiniteElement & bfel_master,
@@ -257,7 +257,7 @@ namespace ngfem
 				   const IntegrationPoint & ip_slave,
 				   const FlatVector<double> & elx,
 				   Vector<double> & result,
-				   LocalHeap & locheap) const
+				   LocalHeap & lh) const
     {;}
     virtual void
     AssembleElementMatrixIndependent (const FiniteElement & bfel_master,
@@ -270,14 +270,14 @@ namespace ngfem
 				      const IntegrationPoint & ip_master_element,
 				      const IntegrationPoint & ip_slave,
 				      FlatMatrix<Complex> & elmat,
-				      LocalHeap & locheap) const
+				      LocalHeap & lh) const
     {
       FlatMatrix<double> rmat;
       AssembleElementMatrixIndependent(bfel_master,bfel_master_element,bfel_slave,
 				       eltrans_master, eltrans_master_element, eltrans_slave,
 				       ip_master, ip_master_element, ip_slave,
-				       rmat, locheap);
-      elmat.AssignMemory(rmat.Height(), rmat.Width(), locheap);
+				       rmat, lh);
+      elmat.AssignMemory(rmat.Height(), rmat.Width(), lh);
       elmat = rmat;
     }
 
@@ -289,7 +289,7 @@ namespace ngfem
 				      const IntegrationPoint & ip_master,
 				      const IntegrationPoint & ip_slave,
 				      FlatMatrix<double> & elmat,
-				      LocalHeap & locheap) const
+				      LocalHeap & lh) const
     {;}
     virtual void
     AssembleElementMatrixIndependent (const FiniteElement & bfel_master,
@@ -299,14 +299,14 @@ namespace ngfem
 				      const IntegrationPoint & ip_master,
 				      const IntegrationPoint & ip_slave,
 				      FlatMatrix<Complex> & elmat,
-				      LocalHeap & locheap) const
+				      LocalHeap & lh) const
     {
       FlatMatrix<double> rmat;
       AssembleElementMatrixIndependent(bfel_master,bfel_slave,
 				       eltrans_master, eltrans_slave,
 				       ip_master, ip_slave,
-				       rmat, locheap);
-      elmat.AssignMemory(rmat.Height(), rmat.Width(), locheap);
+				       rmat, lh);
+      elmat.AssignMemory(rmat.Height(), rmat.Width(), lh);
       elmat = rmat;
     }
 
@@ -325,20 +325,20 @@ namespace ngfem
 				 const ElementTransformation & eltrans, 
 				 FlatVector<double> & elveclin,
 				 FlatMatrix<double> & elmat,
-				 LocalHeap & locheap) const;
+				 LocalHeap & lh) const;
 
     virtual void
     CalcLinearizedElementMatrix (const FiniteElement & fel, 
 				 const ElementTransformation & eltrans, 
 				 FlatVector<Complex> & elveclin,
 				 FlatMatrix<Complex> & elmat,
-				 LocalHeap & locheap) const;
+				 LocalHeap & lh) const;
 
 
     virtual void *  
     PrecomputeData (const FiniteElement & fel, 
 		    const ElementTransformation & eltrans, 
-		    LocalHeap & locheap) const { return 0; }
+		    LocalHeap & lh) const { return 0; }
   
 
     virtual void 
@@ -347,7 +347,7 @@ namespace ngfem
 			const FlatVector<double> & elx, 
 			FlatVector<double> & ely,
 			void * precomputed,
-			LocalHeap & locheap) const;
+			LocalHeap & lh) const;
 
     virtual void 
     ApplyElementMatrix (const FiniteElement & fel, 
@@ -355,7 +355,7 @@ namespace ngfem
 			const FlatVector<Complex> & elx, 
 			FlatVector<Complex> & ely,
 			void * precomputed,
-			LocalHeap & locheap) const;
+			LocalHeap & lh) const;
 
 
     template < int S, class T>
@@ -364,11 +364,11 @@ namespace ngfem
 			     const FlatVector< Vec<S,T> > & elx, 
 			     FlatVector< Vec<S,T> > & ely,
 			     void * precomputed,
-			     LocalHeap & locheap) const
+			     LocalHeap & lh) const
     {
       //cout << "call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
       FlatMatrix<T> mat;
-      CalcElementMatrix (fel, eltrans, mat, locheap);
+      CalcElementMatrix (fel, eltrans, mat, lh);
       ely = mat * elx;
     }
 
@@ -379,7 +379,7 @@ namespace ngfem
 				  const FlatVector<double> & ellin,
 				  const FlatVector<double> & elx, 
 				  FlatVector<double> & ely,
-				  LocalHeap & locheap) const;
+				  LocalHeap & lh) const;
 
     virtual void 
     ApplyLinearizedElementMatrix (const FiniteElement & fel, 
@@ -387,26 +387,26 @@ namespace ngfem
 				  const FlatVector<Complex> & ellin, 
 				  const FlatVector<Complex> & elx, 
 				  FlatVector<Complex> & ely,
-				  LocalHeap & locheap) const;
+				  LocalHeap & lh) const;
 
 
 
     virtual double Energy (const FiniteElement & fel, 
 			   const ElementTransformation & eltrans, 
 			   const FlatVector<double> & elx, 
-			   LocalHeap & locheap) const;
+			   LocalHeap & lh) const;
 
     virtual double Energy (const FiniteElement & fel, 
 			   const ElementTransformation & eltrans, 
 			   const FlatVector<Complex> & elx, 
-			   LocalHeap & locheap) const;
+			   LocalHeap & lh) const;
 
 
 
 
     virtual void
     CalcFlux (const FiniteElement & fel,
-	      const BaseSpecificIntegrationPoint & bsip,
+	      const BaseMappedIntegrationPoint & bmip,
 	      const FlatVector<double> & elx, 
 	      FlatVector<double> & flux,
 	      bool applyd,
@@ -415,7 +415,7 @@ namespace ngfem
 
     virtual void
     CalcFlux (const FiniteElement & fel,
-	      const BaseSpecificIntegrationPoint & bsip,
+	      const BaseMappedIntegrationPoint & bmip,
 	      const FlatVector<Complex> & elx, 
 	      FlatVector<Complex> & flux,
 	      bool applyd,
@@ -443,7 +443,7 @@ namespace ngfem
 
     virtual void
     CalcFluxMulti (const FiniteElement & fel,
-		   const BaseSpecificIntegrationPoint & bsip,
+		   const BaseMappedIntegrationPoint & bmip,
 		   int m,
 		   const FlatVector<double> & elx, 
 		   FlatVector<double> & flux,
@@ -453,7 +453,7 @@ namespace ngfem
 
     virtual void
     CalcFluxMulti (const FiniteElement & fel,
-		   const BaseSpecificIntegrationPoint & bsip,
+		   const BaseMappedIntegrationPoint & bmip,
 		   int m,
 		   const FlatVector<Complex> & elx, 
 		   FlatVector<Complex> & flux,
@@ -463,14 +463,14 @@ namespace ngfem
 
     virtual void
     ApplyBTrans (const FiniteElement & fel,
-		 const BaseSpecificIntegrationPoint & bsip,
+		 const BaseMappedIntegrationPoint & bmip,
 		 const FlatVector<double> & elx, 
 		 FlatVector<double> & ely,
 		 LocalHeap & lh) const;
 
     virtual void
     ApplyBTrans (const FiniteElement & fel,
-		 const BaseSpecificIntegrationPoint & bsip,
+		 const BaseMappedIntegrationPoint & bmip,
 		 const FlatVector<Complex> & elx, 
 		 FlatVector<Complex> & ely,
 		 LocalHeap & lh) const;
@@ -493,13 +493,13 @@ namespace ngfem
 
 
     virtual void ApplyDMat (const FiniteElement & bfel,
-			    const BaseSpecificIntegrationPoint & bsip,
+			    const BaseMappedIntegrationPoint & bmip,
 			    const FlatVector<double> & elx, 
 			    FlatVector<double> & eldx,
 			    LocalHeap & lh) const;
 
     virtual void ApplyDMat (const FiniteElement & bfel,
-			    const BaseSpecificIntegrationPoint & bsip,
+			    const BaseMappedIntegrationPoint & bmip,
 			    const FlatVector<Complex> & elx, 
 			    FlatVector<Complex> & eldx,
 			    LocalHeap & lh) const;
@@ -517,13 +517,13 @@ namespace ngfem
 			    LocalHeap & lh) const;
   
     virtual void ApplyDMatInv (const FiniteElement & bfel,
-			       const BaseSpecificIntegrationPoint & bsip,
+			       const BaseMappedIntegrationPoint & bmip,
 			       const FlatVector<double> & elx, 
 			       FlatVector<double> & eldx,
 			       LocalHeap & lh) const;
 
     virtual void ApplyDMatInv (const FiniteElement & bfel,
-			       const BaseSpecificIntegrationPoint & bsip,
+			       const BaseMappedIntegrationPoint & bmip,
 			       const FlatVector<Complex> & elx, 
 			       FlatVector<Complex> & eldx,
 			       LocalHeap & lh) const;
@@ -592,7 +592,7 @@ namespace ngfem
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
 				    FlatMatrix<double> & elmat,
-				    LocalHeap & locheap) {
+				    LocalHeap & lh) {
       throw Exception ("FacetBilinearFormIntegrator can not assemble volumetric element matrices!");
     }
     
@@ -603,7 +603,7 @@ namespace ngfem
 			 const FiniteElement & volumefel2, int LocalFacetNr2,
 			 const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
 			 FlatMatrix<double> & elmat,
-			 LocalHeap & locheap) const{ 
+			 LocalHeap & lh) const{ 
       throw Exception ("FacetBilinearFormIntegrator::AssembleFacetMatrix for inner facets not implemented!");
     }
     virtual void 
@@ -612,7 +612,7 @@ namespace ngfem
 			 const FiniteElement & volumefel2, int LocalFacetNr2,
 			 const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,	 
 			 FlatMatrix<Complex> & elmat,
-			 LocalHeap & locheap) const{ 
+			 LocalHeap & lh) const{ 
       throw Exception ("FacetBilinearFormIntegrator::AssembleFacetMatrix<Complex> for inner facets not implemented!");
     }
 
@@ -622,7 +622,7 @@ namespace ngfem
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 			 const ElementTransformation & seltrans,  
 			 FlatMatrix<double> & elmat,
-			 LocalHeap & locheap) const{ 
+			 LocalHeap & lh) const{ 
       throw Exception ("FacetBilinearFormIntegrator::AssembleFacetMatrix for boundary facets not implemented!");
     }
     virtual void 
@@ -630,7 +630,7 @@ namespace ngfem
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 			 const ElementTransformation & seltrans,  
 			 FlatMatrix<Complex> & elmat,
-			 LocalHeap & locheap) const{ 
+			 LocalHeap & lh) const{ 
       throw Exception ("FacetBilinearFormIntegrator::AssembleFacetMatrix<Complex> for boundary facets not implemented!");
     }
 
@@ -659,15 +659,15 @@ namespace ngfem
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<double> & elmat,
-		       LocalHeap & locheap) const
+		       LocalHeap & lh) const
     {
       int ndof = fel.GetNDof();
 
-      // elmat.AssignMemory (ndof, ndof, locheap);
+      // elmat.AssignMemory (ndof, ndof, lh);
       elmat = 0;
-      SpecificIntegrationPoint<3,3> sip (GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 0)[0], 
-					 eltrans, locheap);
-      double val = Evaluate (*coef, sip);
+      MappedIntegrationPoint<3,3> mip (GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 0)[0], 
+					 eltrans, lh);
+      double val = Evaluate (*coef, mip);
       elmat = 0;
       for (int i = 0; i < ndof; i++)
 	elmat(i,i) = val;
@@ -702,13 +702,13 @@ namespace ngfem
     CalcElementMatrix (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<double> & elmat,
-		       LocalHeap & locheap) const;
+		       LocalHeap & lh) const;
 
     virtual void
     CalcElementMatrix (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<Complex> & elmat,
-		       LocalHeap & locheap) const;
+		       LocalHeap & lh) const;
     
     virtual void 
     ApplyElementMatrix (const FiniteElement & bfel, 
@@ -716,7 +716,7 @@ namespace ngfem
 			const FlatVector<double> & elx, 
 			FlatVector<double> & ely,
 			void * precomputed,
-			LocalHeap & locheap) const;
+			LocalHeap & lh) const;
 
     virtual void 
     ApplyElementMatrix (const FiniteElement & bfel, 
@@ -724,20 +724,20 @@ namespace ngfem
 			const FlatVector<Complex> & elx, 
 			FlatVector<Complex> & ely,
 			void * precomputed,
-			LocalHeap & locheap) const;
+			LocalHeap & lh) const;
 
     virtual void
     CalcLinearizedElementMatrix (const FiniteElement & bfel,
 				 const ElementTransformation & eltrans,
 				 FlatVector<double> & elveclin,
 				 FlatMatrix<double> & elmat,
-				 LocalHeap & locheap) const;
+				 LocalHeap & lh) const;
     virtual void
     CalcLinearizedElementMatrix (const FiniteElement & bfel, 
 				 const ElementTransformation & eltrans, 
 				 FlatVector<Complex> & elveclin,
 				 FlatMatrix<Complex> & elmat,
-				 LocalHeap & locheap) const;
+				 LocalHeap & lh) const;
 
 
     virtual void
@@ -762,7 +762,7 @@ namespace ngfem
 
     virtual void
     CalcFlux (const FiniteElement & fel,
-	      const BaseSpecificIntegrationPoint & bsip,
+	      const BaseMappedIntegrationPoint & bmip,
 	      const FlatVector<double> & elx, 
 	      FlatVector<double> & flux,
 	      bool applyd,
@@ -770,7 +770,7 @@ namespace ngfem
 
     virtual void
     CalcFlux (const FiniteElement & fel,
-	      const BaseSpecificIntegrationPoint & bsip,
+	      const BaseMappedIntegrationPoint & bmip,
 	      const FlatVector<Complex> & elx, 
 	      FlatVector<Complex> & flux,
 	      bool applyd,
@@ -788,14 +788,14 @@ namespace ngfem
 
     virtual void
     ApplyBTrans (const FiniteElement & bfel,
-		 const BaseSpecificIntegrationPoint & bsip,
+		 const BaseMappedIntegrationPoint & bmip,
 		 const FlatVector<double> & elx, 
 		 FlatVector<double> & ely,
 		 LocalHeap & lh) const;
 
     virtual void
     ApplyBTrans (const FiniteElement & bfel,
-		 const BaseSpecificIntegrationPoint & bsip,
+		 const BaseMappedIntegrationPoint & bmip,
 		 const FlatVector<Complex> & elx, 
 		 FlatVector<Complex> & ely,
 		 LocalHeap & lh) const;
@@ -810,7 +810,7 @@ namespace ngfem
     virtual double Energy (const FiniteElement & fel, 
 			   const ElementTransformation & eltrans, 
 			   const FlatVector<double> & elx, 
-			   LocalHeap & locheap) const;
+			   LocalHeap & lh) const;
 
     virtual string Name () const;
   };
@@ -851,13 +851,13 @@ namespace ngfem
     CalcElementMatrix (const FiniteElement & fel, 
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<double> & elmat,
-		       LocalHeap & locheap) const;
+		       LocalHeap & lh) const;
 
     virtual void
     CalcElementMatrix (const FiniteElement & fel, 
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<Complex> & elmat,
-		       LocalHeap & locheap) const;
+		       LocalHeap & lh) const;
     
     virtual void
     AssembleElementMatrixIndependent (const FiniteElement & bfel_master,
@@ -870,7 +870,7 @@ namespace ngfem
 				      const IntegrationPoint & ip_master_element,
 				      const IntegrationPoint & ip_slave,
 				      FlatMatrix<double> & elmat,
-				      LocalHeap & locheap) const;
+				      LocalHeap & lh) const;
 
     virtual void
     AssembleElementMatrixIndependent (const FiniteElement & bfel_master,
@@ -883,7 +883,7 @@ namespace ngfem
 				      const IntegrationPoint & ip_master_element,
 				      const IntegrationPoint & ip_slave,
 				      FlatMatrix<Complex> & elmat,
-				      LocalHeap & locheap) const;
+				      LocalHeap & lh) const;
 
     virtual void
     AssembleElementMatrixIndependent (const FiniteElement & bfel_master,
@@ -893,7 +893,7 @@ namespace ngfem
 				      const IntegrationPoint & ip_master,
 				      const IntegrationPoint & ip_slave,
 				      FlatMatrix<double> & elmat,
-				      LocalHeap & locheap) const;
+				      LocalHeap & lh) const;
 
     virtual void
     AssembleElementMatrixIndependent (const FiniteElement & bfel_master,
@@ -903,7 +903,7 @@ namespace ngfem
 				      const IntegrationPoint & ip_master,
 				      const IntegrationPoint & ip_slave,
 				      FlatMatrix<Complex> & elmat,
-				      LocalHeap & locheap) const;
+				      LocalHeap & lh) const;
 
   
 
@@ -913,7 +913,7 @@ namespace ngfem
 			const FlatVector<Complex> & elx, 
 			FlatVector<Complex> & ely,
 			void * precomputed,
-			LocalHeap & locheap) const;
+			LocalHeap & lh) const;
 
     virtual void
     CalcFlux (const FiniteElement & fel,
@@ -927,7 +927,7 @@ namespace ngfem
 
     virtual void
     CalcFlux (const FiniteElement & fel,
-	      const BaseSpecificIntegrationPoint & bsip,
+	      const BaseMappedIntegrationPoint & bmip,
 	      const FlatVector<Complex> & elx, 
 	      FlatVector<Complex> & flux,
 	      bool applyd,
@@ -969,13 +969,13 @@ namespace ngfem
     CalcElementMatrix (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<double> & elmat,
-		       LocalHeap & locheap) const;
+		       LocalHeap & lh) const;
 
     virtual void
     CalcElementMatrix (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<Complex> & elmat,
-		       LocalHeap & locheap) const;
+		       LocalHeap & lh) const;
 
 
     virtual void
@@ -983,14 +983,14 @@ namespace ngfem
 				 const ElementTransformation & eltrans, 
 				 FlatVector<double> & elveclin,
 				 FlatMatrix<double> & elmat,
-				 LocalHeap & locheap) const;
+				 LocalHeap & lh) const;
     
     virtual void
     CalcLinearizedElementMatrix (const FiniteElement & fel, 
 				     const ElementTransformation & eltrans, 
 				     FlatVector<Complex> & elveclin,
 				     FlatMatrix<Complex> & elmat,
-				     LocalHeap & locheap) const;
+				     LocalHeap & lh) const;
 
     virtual void
     ApplyElementMatrix (const FiniteElement & bfel, 
@@ -998,7 +998,7 @@ namespace ngfem
 			const FlatVector<double> & elx,
 			FlatVector<double> & ely,
 			void * precomputed,
-			LocalHeap & locheap) const;
+			LocalHeap & lh) const;
 
     virtual void
     ApplyElementMatrix (const FiniteElement & bfel, 
@@ -1006,7 +1006,7 @@ namespace ngfem
 			const FlatVector<Complex> & elx,
 			FlatVector<Complex> & ely,
 			void * precomputed,
-			LocalHeap & locheap) const;
+			LocalHeap & lh) const;
 
     virtual void
     ApplyLinearizedElementMatrix (const FiniteElement & bfel, 
@@ -1014,7 +1014,7 @@ namespace ngfem
 				  const FlatVector<double> & ellin,
 				  const FlatVector<double> & elx,
 				  FlatVector<double> & ely,
-				  LocalHeap & locheap) const;
+				  LocalHeap & lh) const;
 
     virtual void
     ApplyLinearizedElementMatrix (const FiniteElement & bfel, 
@@ -1022,7 +1022,7 @@ namespace ngfem
 				  const FlatVector<Complex> & ellin,
 				  const FlatVector<Complex> & elx,
 				  FlatVector<Complex> & ely,
-				  LocalHeap & locheap) const;
+				  LocalHeap & lh) const;
 
     /*
     virtual void
@@ -1046,7 +1046,7 @@ namespace ngfem
 
     virtual void
     CalcFlux (const FiniteElement & fel,
-	      const BaseSpecificIntegrationPoint & bsip,
+	      const BaseMappedIntegrationPoint & bmip,
 	      const FlatVector<double> & elx, 
 	      FlatVector<double> & flux,
 	      bool applyd,
@@ -1055,7 +1055,7 @@ namespace ngfem
 
     virtual void
     CalcFlux (const FiniteElement & fel,
-	      const BaseSpecificIntegrationPoint & bsip,
+	      const BaseMappedIntegrationPoint & bmip,
 	      const FlatVector<Complex> & elx, 
 	      FlatVector<Complex> & flux,
 	      bool applyd,
@@ -1079,6 +1079,20 @@ namespace ngfem
 	      bool applyd,
 	      LocalHeap & lh) const;
 
+
+    virtual void
+    ApplyBTrans (const FiniteElement & fel,
+		 const BaseMappedIntegrationPoint & bmip,
+		 const FlatVector<double> & elx, 
+		 FlatVector<double> & ely,
+		 LocalHeap & lh) const;
+
+    virtual void
+    ApplyBTrans (const FiniteElement & fel,
+		 const BaseMappedIntegrationPoint & bmip,
+		 const FlatVector<Complex> & elx, 
+		 FlatVector<Complex> & ely,
+		 LocalHeap & lh) const;
 
     virtual string Name () const;
   };
@@ -1113,16 +1127,16 @@ namespace ngfem
     CalcElementMatrix (const FiniteElement & fel, 
 			   const ElementTransformation & eltrans, 
 			   FlatMatrix<double> & elmat,
-			   LocalHeap & locheap) const
+			   LocalHeap & lh) const
     {
       int ndof = fel.GetNDof();
 
-      // elmat.AssignMemory (ndof, ndof, locheap);
+      // elmat.AssignMemory (ndof, ndof, lh);
     
       const IntegrationRule & ir = GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 0);
-      SpecificIntegrationPoint<DIM_SPACE-1,DIM_SPACE> sip (ir[0], eltrans, locheap);
+      MappedIntegrationPoint<DIM_SPACE-1,DIM_SPACE> mip (ir[0], eltrans, lh);
 
-      double val = Evaluate (*penalty, sip);
+      double val = Evaluate (*penalty, mip);
 
       elmat = 0;
       for (int i = 0; i < ndof; i++)
@@ -1136,11 +1150,11 @@ namespace ngfem
 			const FlatVector<Complex> & elx, 
 			FlatVector<Complex> & ely,
 			void * precomputed,
-			LocalHeap & locheap) const
+			LocalHeap & lh) const
     {
       const IntegrationRule & ir = GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 0);
-      SpecificIntegrationPoint<DIM_SPACE-1,DIM_SPACE> sip (ir[0], eltrans, locheap);
-      double val = Evaluate (*penalty, sip);
+      MappedIntegrationPoint<DIM_SPACE-1,DIM_SPACE> mip (ir[0], eltrans, lh);
+      double val = Evaluate (*penalty, mip);
 
       ely = val * elx;
     }
@@ -1186,9 +1200,9 @@ namespace ngfem
     CalcElementVector (const FiniteElement & fel,
 		       const ElementTransformation & eltrans, 
 		       FlatVector<double> & elvec,
-		       LocalHeap & locheap) const
+		       LocalHeap & lh) const
     {
-      AssembleElementVector (fel, eltrans, elvec, locheap);
+      AssembleElementVector (fel, eltrans, elvec, lh);
     }
 
 
@@ -1196,7 +1210,7 @@ namespace ngfem
     CalcElementVector (const FiniteElement & fel,
 		       const ElementTransformation & eltrans, 
 		       FlatVector<Complex> & elvec,
-		       LocalHeap & locheap) const;
+		       LocalHeap & lh) const;
 
 
     // old version:
@@ -1204,20 +1218,20 @@ namespace ngfem
     AssembleElementVector (const FiniteElement & fel,
 			   const ElementTransformation & eltrans, 
 			   FlatVector<double> & elvec,
-			   LocalHeap & locheap) const;
+			   LocalHeap & lh) const;
 
     virtual void 
     AssembleElementVector (const FiniteElement & fel,
 			   const ElementTransformation & eltrans, 
 			   FlatVector<Complex> & elvec,
-			   LocalHeap & locheap) const;
+			   LocalHeap & lh) const;
 
     virtual void
     AssembleElementVectorIndependent (const FiniteElement & gfel,
-				      const BaseSpecificIntegrationPoint & s_sip,
-				      const BaseSpecificIntegrationPoint & g_sip,
+				      const BaseMappedIntegrationPoint & s_mip,
+				      const BaseMappedIntegrationPoint & g_mip,
 				      FlatVector<double> & elvec,
-				      LocalHeap & locheap,
+				      LocalHeap & lh,
 				      const bool curveint = false) const
     {
       cerr << "AssembleElementVectorIndependent called for base-class!" << endl;
@@ -1226,14 +1240,14 @@ namespace ngfem
   
     virtual void
     AssembleElementVectorIndependent (const FiniteElement & gfel,
-				      const BaseSpecificIntegrationPoint & s_sip,
-				      const BaseSpecificIntegrationPoint & g_sip,
+				      const BaseMappedIntegrationPoint & s_mip,
+				      const BaseMappedIntegrationPoint & g_mip,
 				      FlatVector<Complex> & elvec,
-				      LocalHeap & locheap,
+				      LocalHeap & lh,
 				      const bool curveint = false) const
     {
-      FlatVector<double> rvec(elvec.Size(), locheap);
-      AssembleElementVectorIndependent (gfel, s_sip, g_sip, rvec, locheap,curveint);
+      FlatVector<double> rvec(elvec.Size(), lh);
+      AssembleElementVectorIndependent (gfel, s_mip, g_mip, rvec, lh,curveint);
       elvec = rvec;
     }
 
@@ -1273,7 +1287,7 @@ namespace ngfem
     CalcElementVector (const FiniteElement & bfel, 
 			   const ElementTransformation & eltrans, 
 			   FlatVector<double> & elvec,
-			   LocalHeap & locheap) const{
+			   LocalHeap & lh) const{
       throw Exception ("FacetLinearFormIntegrator can not assemble volumetric element matrices!");
     }
     
@@ -1283,7 +1297,7 @@ namespace ngfem
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 			 const ElementTransformation & seltrans,
 			 FlatVector<double> & elvec,
-			 LocalHeap & locheap) const{ 
+			 LocalHeap & lh) const{ 
       throw Exception ("FacetLinearFormIntegrator::AssembleFacetVector not implemented!");
     }
 
@@ -1292,7 +1306,7 @@ namespace ngfem
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 			 const ElementTransformation & seltrans,
 			 FlatVector<Complex> & elvec,
-			 LocalHeap & locheap) const { 
+			 LocalHeap & lh) const { 
       throw Exception ("FacetLinearFormIntegrator::AssembleFacetVector<complex> not implemented!");
     }
 			 
@@ -1318,7 +1332,7 @@ namespace ngfem
     CalcElementVector (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatVector<double> & elvec,
-		       LocalHeap & locheap) const;
+		       LocalHeap & lh) const;
   };
 
 
@@ -1344,7 +1358,7 @@ namespace ngfem
     CalcElementVector (const FiniteElement & fel, 
 		       const ElementTransformation & eltrans, 
 		       FlatVector<double> & elvec,
-		       LocalHeap & locheap) const
+		       LocalHeap & lh) const
     {
       throw Exception ("ComplexLinearFormIntegrator: cannot assemble double vector");
     }
@@ -1353,20 +1367,20 @@ namespace ngfem
     CalcElementVector (const FiniteElement & fel, 
 		       const ElementTransformation & eltrans, 
 		       FlatVector<Complex> & elvec,
-		       LocalHeap & locheap) const
+		       LocalHeap & lh) const
     {
-      FlatVector<Complex> rvec(elvec.Size(), locheap);
-      lfi.CalcElementVector (fel, eltrans, rvec, locheap);
+      FlatVector<Complex> rvec(elvec.Size(), lh);
+      lfi.CalcElementVector (fel, eltrans, rvec, lh);
       elvec = factor * rvec;
     }  
 
 
     virtual void
     AssembleElementVectorIndependent (const FiniteElement & gfel, 
-				      const BaseSpecificIntegrationPoint & s_sip,
-				      const BaseSpecificIntegrationPoint & g_sip,
+				      const BaseMappedIntegrationPoint & s_mip,
+				      const BaseMappedIntegrationPoint & g_mip,
 				      FlatVector<double> & elvec,
-				      LocalHeap & locheap,
+				      LocalHeap & lh,
 				      const bool curveint = false) const
     {
       throw Exception ("ComplexLinearFormIntegrator: cannot assemble double vector");
@@ -1375,17 +1389,17 @@ namespace ngfem
 
     virtual void
     AssembleElementVectorIndependent (const FiniteElement & gfel, 
-				      const BaseSpecificIntegrationPoint & s_sip,
-				      const BaseSpecificIntegrationPoint & g_sip,
+				      const BaseMappedIntegrationPoint & s_mip,
+				      const BaseMappedIntegrationPoint & g_mip,
 				      FlatVector<Complex> & elvec,
-				      LocalHeap & locheap,
+				      LocalHeap & lh,
 				      const bool curveint = false) const
     { 
       FlatVector<double> rvec;
 
-      lfi.AssembleElementVectorIndependent (gfel, s_sip, g_sip,
-					    rvec, locheap, curveint);
-      elvec.AssignMemory (rvec.Size(), locheap);
+      lfi.AssembleElementVectorIndependent (gfel, s_mip, g_mip,
+					    rvec, lh, curveint);
+      elvec.AssignMemory (rvec.Size(), lh);
       elvec = factor * rvec;
     }
 
@@ -1394,9 +1408,7 @@ namespace ngfem
 
     virtual string Name () const
     {
-      return
-	string ("ComplexIntegrator (") + lfi.Name() +
-	string (")");
+      return string ("ComplexIntegrator (") + lfi.Name() + ")";
     }
 
   };
@@ -1420,15 +1432,15 @@ namespace ngfem
     CalcElementVector (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatVector<double> & elvec,
-		       LocalHeap & locheap) const
+		       LocalHeap & lh) const
     {
       const CompoundFiniteElement & fel =
 	dynamic_cast<const CompoundFiniteElement&> (bfel);
 
-      FlatVector<double> vec1(fel[comp].GetNDof(), locheap);
-      lfi.CalcElementVector (fel[comp], eltrans, vec1, locheap);
+      FlatVector<double> vec1(fel[comp].GetNDof(), lh);
+      lfi.CalcElementVector (fel[comp], eltrans, vec1, lh);
     
-      elvec.AssignMemory (fel.GetNDof(), locheap);
+      elvec.AssignMemory (fel.GetNDof(), lh);
       elvec = 0;
 
       int base = 0;
@@ -1444,15 +1456,15 @@ namespace ngfem
     CalcElementVector (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatVector<Complex> & elvec,
-		       LocalHeap & locheap) const
+		       LocalHeap & lh) const
     {
       const CompoundFiniteElement & fel =
 	dynamic_cast<const CompoundFiniteElement&> (bfel);
 
-      FlatVector<Complex> vec1(fel[comp].GetNDof(), locheap);
-      lfi.CalcElementVector (fel[comp], eltrans, vec1, locheap);
+      FlatVector<Complex> vec1(fel[comp].GetNDof(), lh);
+      lfi.CalcElementVector (fel[comp], eltrans, vec1, lh);
     
-      elvec.AssignMemory (fel.GetNDof(), locheap);
+      elvec.AssignMemory (fel.GetNDof(), lh);
       elvec = 0;
 
       int base = 0;
@@ -1465,10 +1477,10 @@ namespace ngfem
 
     virtual void
     AssembleElementVectorIndependent (const FiniteElement & gfel,
-				      const BaseSpecificIntegrationPoint & s_sip,
-				      const BaseSpecificIntegrationPoint & g_sip,
+				      const BaseMappedIntegrationPoint & s_mip,
+				      const BaseMappedIntegrationPoint & g_mip,
 				      FlatVector<double> & elvec,
-				      LocalHeap & locheap,
+				      LocalHeap & lh,
 				      const bool curveint = false) const
     {
       const CompoundFiniteElement & fel =
@@ -1476,9 +1488,9 @@ namespace ngfem
 
       int i;
       FlatVector<double> vec1;
-      lfi.AssembleElementVectorIndependent (fel[comp], s_sip, g_sip, vec1, locheap, curveint);
+      lfi.AssembleElementVectorIndependent (fel[comp], s_mip, g_mip, vec1, lh, curveint);
     
-      elvec.AssignMemory (fel.GetNDof(), locheap);
+      elvec.AssignMemory (fel.GetNDof(), lh);
       elvec = 0;
 
       int base = 0;
@@ -1490,27 +1502,26 @@ namespace ngfem
     }
     virtual void
     AssembleElementVectorIndependent (const FiniteElement & gfel,
-				      const BaseSpecificIntegrationPoint & s_sip,
-				      const BaseSpecificIntegrationPoint & g_sip,
+				      const BaseMappedIntegrationPoint & s_mip,
+				      const BaseMappedIntegrationPoint & g_mip,
 				      FlatVector<Complex> & elvec,
-				      LocalHeap & locheap,
+				      LocalHeap & lh,
 				      const bool curveint = false) const
     {
       const CompoundFiniteElement & fel =
 	dynamic_cast<const CompoundFiniteElement&> (gfel);
 
-      int i;
       FlatVector<Complex> vec1;
-      lfi.AssembleElementVectorIndependent (fel[comp], s_sip, g_sip, vec1, locheap, curveint);
+      lfi.AssembleElementVectorIndependent (fel[comp], s_mip, g_mip, vec1, lh, curveint);
     
-      elvec.AssignMemory (fel.GetNDof(), locheap);
+      elvec.AssignMemory (fel.GetNDof(), lh);
       elvec = 0;
 
       int base = 0;
-      for (i = 0; i < comp; i++)
+      for (int i = 0; i < comp; i++)
 	base += fel[i].GetNDof();
 
-      for (i = 0; i < vec1.Size(); i++)
+      for (int i = 0; i < vec1.Size(); i++)
 	elvec(base+i) = vec1(i);
     }
 
@@ -1519,9 +1530,7 @@ namespace ngfem
 
     virtual string Name () const
     {
-      return
-	string ("CompoundIntegrator (") + lfi.Name() +
-	string (")");
+      return string ("CompoundIntegrator (") + lfi.Name() + ")";
     }
   };
 

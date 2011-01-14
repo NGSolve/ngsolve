@@ -405,14 +405,14 @@ namespace ngcomp
 				   LocalHeap & lh) const;
 
     ///
-    ElementTransformation GetTrafo (int elnr) const;
+    ElementTransformation GetTrafo (int elnr, bool boundary) const;
 
     ///
     void GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans,
 					  LocalHeap & lh) const;
 
     ///
-    ElementTransformation GetSurfaceTrafo (int elnr) const;
+    // ElementTransformation GetSurfaceTrafo (int elnr) const;
   
     void SetPointSearchStartElement(const int el) const;
 

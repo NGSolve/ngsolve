@@ -59,7 +59,7 @@ namespace ngcomp
     {
       LocalHeap lh = clh.Split();
       
-      ElementTransformation eltrans;
+      // ElementTransformation eltrans;
       Array<int> dnums, dnumsflux;
 
 #pragma omp for 
@@ -89,15 +89,17 @@ namespace ngcomp
 	  const FiniteElement & felflux = 
 	    bound ? fesflux.GetSFE(i, lh) : fesflux.GetFE (i, lh);
 	  
+	  ElementTransformation eltrans = ma.GetTrafo (i, bound);
+	  
 	  if (bound)
 	    {
-	      ma.GetSurfaceElementTransformation (i, eltrans, lh);
+	      // ma.GetSurfaceElementTransformation (i, eltrans, lh);
 	      fes.GetSDofNrs (i, dnums);
 	      fesflux.GetSDofNrs (i, dnumsflux);
 	    }
 	  else
 	    {
-	      ma.GetElementTransformation (i, eltrans, lh);
+	      // ma.GetElementTransformation (i, eltrans, lh);
 	      fes.GetDofNrs (i, dnums);
 	      fesflux.GetDofNrs (i, dnumsflux);
 	    }
@@ -485,8 +487,7 @@ namespace ngcomp
     {
       LocalHeap lh = clh.Split();
       
-      ElementTransformation eltrans;
-      Array<int> dnums;
+      // Array<int> dnums;
 
 #pragma omp for 
       for (int i = 0; i < ne; i++)
@@ -507,20 +508,13 @@ namespace ngcomp
 	  if (bound && !fes.IsDirichletBoundary(ma.GetSElIndex(i)))
 	    continue;
 
-	  const FiniteElement & fel = 
-	    bound ? fes.GetSFE(i, lh) : fes.GetFE (i, lh);
+	  const FiniteElement & fel = bound ? fes.GetSFE(i, lh) : fes.GetFE (i, lh);
+	  FlatArray<int> dnums(fel.GetNDof(), lh);
+
+	  ElementTransformation eltrans = ma.GetTrafo (i, bound); 
+	  fes.GetDofNrs (i, dnums, bound);
 	  
-	  if (bound)
-	    {
-	      ma.GetSurfaceElementTransformation (i, eltrans, lh);
-	      fes.GetSDofNrs (i, dnums);
-	    }
-	  else
-	    {
-	      ma.GetElementTransformation (i, eltrans, lh);
-	      fes.GetDofNrs (i, dnums);
-	    }
-	  
+
 	  FlatVector<SCAL> elflux(dnums.Size() * dim, lh);
 	  FlatVector<SCAL> elfluxi(dnums.Size() * dim, lh);
 	  FlatVector<SCAL> fluxi(dimflux, lh);
@@ -545,8 +539,6 @@ namespace ngcomp
 
 	  if (dim > 1)
 	    {
-	      //CL: what about unsymmetric bilinearformintegrators?
-	      //JS: wird nur für L2 (mass)-integrator verwendet, massedge, ...
 	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
 	      const BlockBilinearFormIntegrator & bbli = 
 		dynamic_cast<const BlockBilinearFormIntegrator&> (bli);
