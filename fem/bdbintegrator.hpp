@@ -530,7 +530,7 @@ public:
 
 
   virtual void
-  AssembleElementMatrixDiag (const FiniteElement & bfel,
+  CalcElementMatrixDiag (const FiniteElement & bfel,
 			     const ElementTransformation & eltrans, 
 			     FlatVector<double> & diag,
 			     LocalHeap & locheap) const
@@ -572,7 +572,7 @@ public:
 
     catch (Exception & e)
       {
-	e.Append ("in AssembleElementMatrixDiag, type = ");
+	e.Append ("in CalcElementMatrixDiag, type = ");
 	e.Append (typeid(*this).name());
 	e.Append ("\n");
 	throw;
@@ -580,7 +580,7 @@ public:
     catch (exception & e)
       {
 	Exception e2(e.what());
-	e2.Append ("\nin AssembleElementMatrixDiag, type = ");
+	e2.Append ("\nin CalcElementMatrixDiag, type = ");
 	e2.Append (typeid(*this).name());
 	e2.Append ("\n");
 	throw e2;
@@ -1399,30 +1399,30 @@ public:
 
 
   virtual void
-  AssembleElementVectorIndependent (const FiniteElement & gfel, 
+  CalcElementVectorIndependent (const FiniteElement & gfel, 
 				    const BaseMappedIntegrationPoint & s_sip,
 				    const BaseMappedIntegrationPoint & g_sip,
 				    FlatVector<double> & elvec,
 				    LocalHeap & locheap,
 				    const bool curveint = false) const
   {
-    T_AssembleElementVectorIndependent (gfel, s_sip, g_sip, elvec, locheap, curveint);
+    T_CalcElementVectorIndependent (gfel, s_sip, g_sip, elvec, locheap, curveint);
   }
 
   virtual void
-  AssembleElementVectorIndependent (const FiniteElement & gfel, 
+  CalcElementVectorIndependent (const FiniteElement & gfel, 
 				    const BaseMappedIntegrationPoint & s_sip,
 				    const BaseMappedIntegrationPoint & g_sip,
 				    FlatVector<Complex> & elvec,
 				    LocalHeap & locheap,
 				    const bool curveint = false) const
   {
-    T_AssembleElementVectorIndependent (gfel, s_sip, g_sip, elvec, locheap, curveint);
+    T_CalcElementVectorIndependent (gfel, s_sip, g_sip, elvec, locheap, curveint);
   }
 
 
   template <typename TSCAL>
-  void T_AssembleElementVectorIndependent (const FiniteElement & gfel, 
+  void T_CalcElementVectorIndependent (const FiniteElement & gfel, 
 					   const BaseMappedIntegrationPoint & s_sip,
 					   const BaseMappedIntegrationPoint & g_sip,
 					   FlatVector<TSCAL> & elvec,

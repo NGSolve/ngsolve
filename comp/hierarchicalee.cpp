@@ -66,7 +66,7 @@ namespace ngcomp
 	  {
 	    if (lff.GetIntegrator(j) -> BoundaryForm()) continue;
 	    FlatVector<SCAL> elvec;
-	    lff.GetIntegrator(j) -> AssembleElementVector (feltest, eltrans, elvec, lh);
+	    lff.GetIntegrator(j) -> CalcElementVector (feltest, eltrans, elvec, lh);
 	    elres += elvec;
 	  }
 	
@@ -83,7 +83,7 @@ namespace ngcomp
 	    if (bfa2.GetIntegrator(j) -> BoundaryForm()) continue;
 	    FlatVector<SCAL> elvec (dnumstest.Size()*dim, lh);
 
-	    bfa2.GetIntegrator(j) -> AssembleElementMatrixDiag (feltest, eltrans, elvec, lh);
+	    bfa2.GetIntegrator(j) -> CalcElementMatrixDiag (feltest, eltrans, elvec, lh);
 	    eldiag += elvec;
 	  }
 

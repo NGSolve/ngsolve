@@ -1102,14 +1102,14 @@ double MeshAccess :: ElementVolume (int elnr) const
     {
       SourceIntegrator<2> si( &ccf );
       FlatVector<> elvec(fe->GetNDof(), lh);
-      si.AssembleElementVector (*fe, trans, elvec, lh);
+      si.CalcElementVector (*fe, trans, elvec, lh);
       return elvec(0);
     }
   else
     {
       SourceIntegrator<3> si( &ccf );
       FlatVector<> elvec(fe->GetNDof(), lh);
-      si.AssembleElementVector (*fe, trans, elvec, lh);
+      si.CalcElementVector (*fe, trans, elvec, lh);
       return elvec(0);
     }
 }
@@ -1144,14 +1144,14 @@ double MeshAccess :: SurfaceElementVolume (int selnr) const
     {
       NeumannIntegrator<2> si( &ccf );
       FlatVector<> elvec (fe->GetNDof(), lh);
-      si.AssembleElementVector (*fe, trans, elvec, lh);
+      si.CalcElementVector (*fe, trans, elvec, lh);
       return elvec(0);
     }
   else
     {
       NeumannIntegrator<3> si( &ccf );
       FlatVector<> elvec (fe->GetNDof(), lh);
-      si.AssembleElementVector (*fe, trans, elvec, lh);
+      si.CalcElementVector (*fe, trans, elvec, lh);
       return elvec(0);
     }
 }

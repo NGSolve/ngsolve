@@ -333,8 +333,8 @@ void NumProcTestJS :: Do()
       {
 	locheap.CleanUp(heapp);
 	ma.GetElementTransformation (1, eltrans, locheap);
-	bfi->AssembleElementMatrix(trig, eltrans, elmat, locheap);
-	//	elvec.Assign (lfi->AssembleElementVector (trig, eltrans, locheap));
+	bfi->CalcElementMatrix(trig, eltrans, elmat, locheap);
+	//	elvec.Assign (lfi->CalcElementVector (trig, eltrans, locheap));
 	// AssembleLaplace2 (eltrans, elmat, &locheap);
       }
 

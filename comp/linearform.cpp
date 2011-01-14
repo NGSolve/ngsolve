@@ -365,7 +365,7 @@ namespace ngcomp
 		      int elvec_size = dnums.Size()*fespace.GetDimension();
 		      FlatVector<TSCAL> elvec(elvec_size, lh);
 		      dynamic_cast<const FacetLinearFormIntegrator*>(parts[j]) 
-			  -> AssembleFacetVector (fel,facnr,eltrans,vnums,seltrans, elvec, lh);
+			  -> CalcFacetVector (fel,facnr,eltrans,vnums,seltrans, elvec, lh);
 		      if (printelvec)
 			{
 			  testout->precision(8);

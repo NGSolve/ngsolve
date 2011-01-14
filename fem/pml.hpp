@@ -87,7 +87,7 @@ namespace ngfem
 
     ///
     virtual void
-    AssembleElementMatrix (const FiniteElement & bfel, 
+    CalcElementMatrix (const FiniteElement & bfel, 
 			   const ElementTransformation & eltrans, 
 			   FlatMatrix<double> & elmat,
 			   LocalHeap & locheap) const
@@ -97,7 +97,7 @@ namespace ngfem
 
     ///
     virtual void
-    AssembleElementMatrix (const FiniteElement & bfel, 
+    CalcElementMatrix (const FiniteElement & bfel, 
 			   const ElementTransformation & eltrans, 
 			   FlatMatrix<Complex> & elmat,
 			   LocalHeap & locheap) const
@@ -143,7 +143,7 @@ namespace ngfem
 
       catch (Exception & e)
 	{
-	  e.Append ("in AssembleElementMatrix, type = ");
+	  e.Append ("in CalcElementMatrix, type = ");
 	  e.Append (typeid(*this).name());
 	  e.Append ("\n");
 	  throw;
@@ -151,7 +151,7 @@ namespace ngfem
       catch (exception & e)
 	{
 	  Exception e2(e.what());
-	  e2.Append ("\nin AssembleElementMatrix, type = ");
+	  e2.Append ("\nin CalcElementMatrix, type = ");
 	  e2.Append (typeid(*this).name());
 	  e2.Append ("\n");
 	  throw e2;

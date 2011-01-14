@@ -2,7 +2,9 @@
 /* File:   DGIntegrators.cpp                                         */
 /* Author: Christoph Lehrenfeld                                      */
 /* Date:   17. Nov. 2009                                             */
+/* see also: http://sourceforge.net/apps/mediawiki/ngsolve/index.php?title=Discontinuous_Galerkin_Methods_from_the_PDE_file */
 /*********************************************************************/
+
 
 #include <fem.hpp>
 
@@ -50,15 +52,15 @@ namespace ngfem
       return new DGInnerFacet_LaplaceIntegrator (coeffs);
     }
     
-    virtual void AssembleElementMatrix (const FiniteElement & fel,
+    virtual void CalcElementMatrix (const FiniteElement & fel,
                                         const ElementTransformation & eltrans, 
                                         FlatMatrix<double> & elmat,
                                         LocalHeap & lh) const
     {
-      throw Exception("DGInnerFacet_LaplaceIntegrator::AssembleElementMatrix - not implemented!");
+      throw Exception("DGInnerFacet_LaplaceIntegrator::CalcElementMatrix - not implemented!");
     }
     
-    virtual void AssembleFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
+    virtual void CalcFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
 			 const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
 			 const FiniteElement & volumefel2, int LocalFacetNr2,
 			 const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
@@ -212,7 +214,7 @@ namespace ngfem
     virtual bool BoundaryForm () const 
     { return 0; }
 
-    virtual void AssembleElementMatrix (const FiniteElement & fel,
+    virtual void CalcElementMatrix (const FiniteElement & fel,
                                         const ElementTransformation & eltrans, 
                                         FlatMatrix<double> & elmat,
                                         LocalHeap & lh) const
@@ -257,7 +259,7 @@ namespace ngfem
 	
 	elmat  -= conv_dshape * Trans (shape);
       }
-    }//end of AssembleElementMatrix
+    }//end of CalcElementMatrix
     
   };//end of class 
 
@@ -288,15 +290,15 @@ namespace ngfem
       return new DGInnerFacet_ConvectionIntegrator (coeffs);
     }
     
-    virtual void AssembleElementMatrix (const FiniteElement & fel,
+    virtual void CalcElementMatrix (const FiniteElement & fel,
                                         const ElementTransformation & eltrans, 
                                         FlatMatrix<double> & elmat,
                                         LocalHeap & lh) const
     {
-      throw Exception("DGInnerFacet_ConvectionIntegrator::AssembleElementMatrix - not implemented!");
+      throw Exception("DGInnerFacet_ConvectionIntegrator::CalcElementMatrix - not implemented!");
     }
     
-    virtual void AssembleFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
+    virtual void CalcFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
 			 const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
 			 const FiniteElement & volumefel2, int LocalFacetNr2,
 			 const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
@@ -419,21 +421,24 @@ namespace ngfem
     
     virtual bool BoundaryForm () const 
     { return 1; }
+    //there are no new couplings involved just because of boundary integrals!
+    virtual bool SkeletonForm () const 
+    { return 0; }
     
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       return new DGBoundaryFacet_ConvectionIntegrator (coeffs);
     }
     
-    virtual void AssembleElementMatrix (const FiniteElement & fel,
+    virtual void CalcElementMatrix (const FiniteElement & fel,
                                         const ElementTransformation & eltrans, 
                                         FlatMatrix<double> & elmat,
                                         LocalHeap & lh) const
     {
-      throw Exception("DGBoundaryFacet_ConvectionIntegrator::AssembleElementMatrix - not implemented!");
+      throw Exception("DGBoundaryFacet_ConvectionIntegrator::CalcElementMatrix - not implemented!");
     }
     
-    virtual void AssembleFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+    virtual void CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
  			 const ElementTransformation & seltrans,
                          FlatMatrix<double> & elmat,
@@ -519,6 +524,10 @@ namespace ngfem
     
     virtual bool BoundaryForm () const 
     { return 1; }
+
+    //there are no new couplings involved just because of boundary integrals!
+    virtual bool SkeletonForm () const 
+    { return 0; }
     
     virtual ~DGBoundaryFacet_LaplaceIntegrator () { ; }
 
@@ -527,15 +536,15 @@ namespace ngfem
       return new DGBoundaryFacet_LaplaceIntegrator (coeffs);
     }
     
-    virtual void AssembleElementMatrix (const FiniteElement & fel,
+    virtual void CalcElementMatrix (const FiniteElement & fel,
                                         const ElementTransformation & eltrans, 
                                         FlatMatrix<double> & elmat,
                                         LocalHeap & lh) const
     {
-      throw Exception("DGBoundaryFacet_LaplaceIntegrator::AssembleElementMatrix - not implemented!");
+      throw Exception("DGBoundaryFacet_LaplaceIntegrator::CalcElementMatrix - not implemented!");
     }
     
-    virtual void AssembleFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+    virtual void CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
  			 const ElementTransformation & seltrans,
                          FlatMatrix<double> & elmat,
@@ -660,15 +669,15 @@ namespace ngfem
       return new DGFacet_DirichletBoundaryIntegrator (coeffs);
     }
     
-    virtual void AssembleElementVector (const FiniteElement & fel,
+    virtual void CalcElementVector (const FiniteElement & fel,
                                         const ElementTransformation & eltrans, 
                                         FlatVector<double> & elvec,
                                         LocalHeap & lh) const
     {
-      throw Exception("DGFacet_DirichletBoundaryIntegrator::AssembleElementVector - not implemented!");
+      throw Exception("DGFacet_DirichletBoundaryIntegrator::CalcElementVector - not implemented!");
     }
     
-    virtual void AssembleFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
+    virtual void CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 			 const ElementTransformation & seltrans,
                          FlatVector<double> & elvec, LocalHeap & lh) const
@@ -769,7 +778,7 @@ namespace ngfem
     
     virtual bool BoundaryForm () const 
     { return 1; }
-    
+
     virtual ~DGFacet_NeumannBoundaryIntegrator () { ; }
 
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
@@ -777,15 +786,15 @@ namespace ngfem
       return new DGFacet_NeumannBoundaryIntegrator (coeffs);
     }
     
-    virtual void AssembleElementVector (const FiniteElement & fel,
+    virtual void CalcElementVector (const FiniteElement & fel,
                                         const ElementTransformation & eltrans, 
                                         FlatVector<double> & elvec,
                                         LocalHeap & lh) const
     {
-      throw Exception("DGFacet_NeumannBoundaryIntegrator::AssembleElementVector - not implemented!");
+      throw Exception("DGFacet_NeumannBoundaryIntegrator::CalcElementVector - not implemented!");
     }
     
-    virtual void AssembleFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
+    virtual void CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 			 const ElementTransformation & seltrans,
                          FlatVector<double> & elvec, LocalHeap & lh) const
@@ -861,7 +870,7 @@ namespace ngfem
 	coef_b[i]  = coeffs[i];
       coef_rob = coeffs[D];
     }
-    
+
     virtual bool BoundaryForm () const 
     { return 1; }
     
@@ -872,15 +881,15 @@ namespace ngfem
       return new DGFacet_ConvectionDirichletBoundaryIntegrator (coeffs);
     }
     
-    virtual void AssembleElementVector (const FiniteElement & fel,
+    virtual void CalcElementVector (const FiniteElement & fel,
                                         const ElementTransformation & eltrans, 
                                         FlatVector<double> & elvec,
                                         LocalHeap & lh) const
     {
-      throw Exception("DGFacet_ConvectionDirichletBoundaryIntegrator::AssembleElementVector - not implemented!");
+      throw Exception("DGFacet_ConvectionDirichletBoundaryIntegrator::CalcElementVector - not implemented!");
     }
     
-    virtual void AssembleFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
+    virtual void CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 			 const ElementTransformation & seltrans,
                          FlatVector<double> & elvec, LocalHeap & lh) const
@@ -980,13 +989,13 @@ namespace ngfem
     GetIntegrators().AddBFIntegrator ("DGIP_innfac_laplace", 3, 2,
 				      DGInnerFacet_LaplaceIntegrator<3,DG_FORMULATIONS::IP>::Create);
     GetIntegrators().AddBFIntegrator ("DGIP_bndfac_laplace", 2, 3,
-				      DGBoundaryFacet_LaplaceIntegrator<2,DG_FORMULATIONS::IP>::Create);
+				      DGBoundaryFacet_LaplaceIntegrator<2,DG_FORMULATIONS::IP>::Create); //todo: rename in Nitsche
     GetIntegrators().AddBFIntegrator ("DGIP_bndfac_laplace", 3, 3,
-				      DGBoundaryFacet_LaplaceIntegrator<3,DG_FORMULATIONS::IP>::Create);
+				      DGBoundaryFacet_LaplaceIntegrator<3,DG_FORMULATIONS::IP>::Create); //todo: rename in Nitsche
     GetIntegrators().AddLFIntegrator ("DGIP_bndfac_dir", 2, 3,
-				      DGFacet_DirichletBoundaryIntegrator<2,DG_FORMULATIONS::IP>::Create);
+				      DGFacet_DirichletBoundaryIntegrator<2,DG_FORMULATIONS::IP>::Create); //todo: rename in Nitsche
     GetIntegrators().AddLFIntegrator ("DGIP_bndfac_dir", 3, 3,
-				      DGFacet_DirichletBoundaryIntegrator<3,DG_FORMULATIONS::IP>::Create);
+				      DGFacet_DirichletBoundaryIntegrator<3,DG_FORMULATIONS::IP>::Create); //todo: rename in Nitsche
     GetIntegrators().AddLFIntegrator ("DGIP_bndfac_neumann", 2, 2,
 				      DGFacet_NeumannBoundaryIntegrator<2>::Create);
     GetIntegrators().AddLFIntegrator ("DGIP_bndfac_neumann", 3, 2,
