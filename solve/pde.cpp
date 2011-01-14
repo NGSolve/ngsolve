@@ -152,7 +152,10 @@ namespace ngsolve
 
     LocalHeap lh(100009, "PDE - Loadsolution");
     for (int i = 0; i < spaces.Size(); i++)
-      spaces[i]->Update(lh);
+      {
+	spaces[i]->Update(lh);
+	spaces[i]->FinalizeUpdate(lh);
+      }
     for (int i = 0; i < gridfunctions.Size(); i++)
       {
 	gridfunctions[i]->Update();
@@ -652,6 +655,7 @@ namespace ngsolve
 		      }
 
 		    fes -> Update(lh);
+		    fes -> FinalizeUpdate(lh);
 		    lh.CleanUp();
 
 		    if (fes->GetDimension() == 1)
@@ -1048,7 +1052,7 @@ namespace ngsolve
 	if (type == "compound")
 	  {
 	    const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
-	    Array<const FESpace*> cspaces (spacenames.Size());
+	    Array<FESpace*> cspaces (spacenames.Size());
 	    for (int i = 0; i < cspaces.Size(); i++)
 	      cspaces[i] = GetFESpace (spacenames[i]);
 	    space = new CompoundFESpace (GetMeshAccess(), cspaces, flags);
@@ -1094,7 +1098,7 @@ namespace ngsolve
 	const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
         if (printmessage_importance>0)
           cout << "   spaces=" << spacenames << endl;
-	Array<const FESpace*> cspaces (spacenames.Size());
+	Array<FESpace*> cspaces (spacenames.Size());
 	for (int i = 0; i < cspaces.Size(); i++)
 	  cspaces[i] = GetFESpace (spacenames[i]);
 	space = new CompoundFESpace (GetMeshAccess(), cspaces, flags);

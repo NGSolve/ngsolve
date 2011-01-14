@@ -137,6 +137,9 @@ namespace ngcomp
     
   void H1HighOrderFESpace :: Update(LocalHeap & lh)
   {
+    static Timer timer ("H1HighOrderFESpace::Update");
+    RegionTimer reg(timer);
+
     FESpace :: Update (lh);
 
     int maxorder = -1; 
@@ -286,7 +289,7 @@ namespace ngcomp
       order_face = INT<2>(uniform_order_face,uniform_order_face); 
     if(uniform_order_edge > -1) 
       order_edge = uniform_order_edge; 
-    
+
 
     for(int i=0;i<ned;i++) if(!fine_edge[i]) {order_edge[i] = 1;}
     if(dim == 3) for(int i=0;i<nfa;i++) if(!fine_face[i]) order_face[i] = INT<2> (1,1); 
@@ -322,10 +325,13 @@ namespace ngcomp
 #endif 
 
 
-
     UpdateDofTables ();
+
+
     UpdateCouplingDofArray ();
-    FinalizeUpdate (lh);
+
+
+    // FinalizeUpdate (lh);
 
     if (timing) Timing();
 
@@ -347,7 +353,6 @@ namespace ngcomp
       }
 
 #endif
-
   }
 
 

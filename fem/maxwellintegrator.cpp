@@ -69,6 +69,8 @@ namespace ngfem
 
 
 
+  template class MassEdgeIntegrator<2>;
+  template class MassEdgeIntegrator<3>;
 
 
   /*

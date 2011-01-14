@@ -309,6 +309,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
+    if (low_order_space) low_order_space -> FinalizeUpdate(lh);
 
     if (dirichlet_boundaries.Size())
       {
@@ -1312,7 +1313,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  }
       }
 
-    FinalizeUpdate (lh);
+    // FinalizeUpdate (lh);
 
 
     if (timing) Timing();
@@ -1950,7 +1951,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     while (ma.GetNLevels() > ndlevel.Size())
       ndlevel.Append (n_el_dofs * ma.GetNE());
 
-    FinalizeUpdate (lh);
+    // FinalizeUpdate (lh);
 
 #ifdef PARALLEL
     UpdateParallelDofs();
@@ -2147,7 +2148,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     while (ma.GetNLevels() > ndlevel.Size())
       ndlevel.Append (n_el_dofs * ma.GetNSE());
 
-    FinalizeUpdate (lh);
+    // FinalizeUpdate (lh);
 
 #ifdef PARALLEL
     UpdateParallelDofs();  
@@ -2654,7 +2655,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
 
   CompoundFESpace :: CompoundFESpace (const MeshAccess & ama,
-				      const Array<const FESpace*> & aspaces,
+				      const Array<FESpace*> & aspaces,
 				      const Flags & flags, bool parseflags)
     : FESpace (ama, flags), spaces(aspaces)
   {
@@ -2686,7 +2687,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   }
 
 
-  void CompoundFESpace :: AddSpace (const FESpace * fes)
+  void CompoundFESpace :: AddSpace (FESpace * fes)
   {
     spaces.Append (fes);
     dynamic_cast<CompoundProlongation*> (prol) -> AddProlongation (fes->GetProlongation());
@@ -2715,7 +2716,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     prol -> Update();
 
     UpdateCouplingDofArray();
-    FinalizeUpdate (lh);
+    // FinalizeUpdate (lh);
 
     // dirichlet-dofs from sub-spaces
     // ist das umsonst ? (JS)
@@ -2758,6 +2759,16 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 #endif
 
   }
+
+
+  void CompoundFESpace :: FinalizeUpdate(LocalHeap & lh)
+  {
+    for (int i = 0; i < spaces.Size(); i++)
+      spaces[i] -> FinalizeUpdate(lh);
+    FESpace::FinalizeUpdate (lh);
+  }
+
+
 
   void CompoundFESpace :: UpdateCouplingDofArray()
   {
