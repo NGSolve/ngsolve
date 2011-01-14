@@ -97,7 +97,7 @@ namespace ngcomp
     if (iscomplex) loflags.SetFlag ("complex");
     if (flags.NumListFlagDefined ("dirichlet")) 
       loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
-
+    if (dgjumps){ *testout << "(L2HOFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
 #ifndef PARALLEL
     low_order_space = new NodalFESpace (ma, loflags);
 #else
