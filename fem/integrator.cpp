@@ -2086,6 +2086,115 @@ ely.Range (base, base+fel[comp].GetNDof());
 
 
 
+  void CompoundLinearFormIntegrator ::  
+  CalcElementVector (const FiniteElement & bfel, 
+		     const ElementTransformation & eltrans, 
+		     FlatVector<double> & elvec,
+		     LocalHeap & lh) const
+  {
+    const CompoundFiniteElement & fel =
+      dynamic_cast<const CompoundFiniteElement&> (bfel);
+
+    FlatVector<double> vec1(fel[comp].GetNDof(), lh);
+    lfi.CalcElementVector (fel[comp], eltrans, vec1, lh);
+    
+    elvec.AssignMemory (fel.GetNDof(), lh);
+    elvec = 0;
+
+    int base = 0;
+    for (int i = 0; i < comp; i++)
+      base += fel[i].GetNDof();
+
+    for (int i = 0; i < vec1.Size(); i++)
+      elvec(base+i) = vec1(i);
+  }  
+
+
+
+  void CompoundLinearFormIntegrator ::  
+  CalcElementVector (const FiniteElement & bfel, 
+		     const ElementTransformation & eltrans, 
+		     FlatVector<Complex> & elvec,
+		     LocalHeap & lh) const
+  {
+    const CompoundFiniteElement & fel =
+      dynamic_cast<const CompoundFiniteElement&> (bfel);
+
+    FlatVector<Complex> vec1(fel[comp].GetNDof(), lh);
+    lfi.CalcElementVector (fel[comp], eltrans, vec1, lh);
+    
+    elvec.AssignMemory (fel.GetNDof(), lh);
+    elvec = 0;
+
+    int base = 0;
+    for (int i = 0; i < comp; i++)
+      base += fel[i].GetNDof();
+
+    for (int i = 0; i < vec1.Size(); i++)
+      elvec(base+i) = vec1(i);
+  }  
+
+
+  void CompoundLinearFormIntegrator ::  
+  AssembleElementVectorIndependent (const FiniteElement & gfel,
+				    const BaseMappedIntegrationPoint & s_mip,
+				    const BaseMappedIntegrationPoint & g_mip,
+				    FlatVector<double> & elvec,
+				    LocalHeap & lh,
+				    const bool curveint) const
+  {
+    const CompoundFiniteElement & fel =
+      dynamic_cast<const CompoundFiniteElement&> (gfel);
+
+    int i;
+    FlatVector<double> vec1;
+    lfi.AssembleElementVectorIndependent (fel[comp], s_mip, g_mip, vec1, lh, curveint);
+    
+    elvec.AssignMemory (fel.GetNDof(), lh);
+    elvec = 0;
+
+    int base = 0;
+    for (i = 0; i < comp; i++)
+      base += fel[i].GetNDof();
+
+    for (i = 0; i < vec1.Size(); i++)
+      elvec(base+i) = vec1(i);
+  }
+
+  void CompoundLinearFormIntegrator ::  
+  AssembleElementVectorIndependent (const FiniteElement & gfel,
+				    const BaseMappedIntegrationPoint & s_mip,
+				    const BaseMappedIntegrationPoint & g_mip,
+				    FlatVector<Complex> & elvec,
+				    LocalHeap & lh,
+				    const bool curveint) const
+  {
+    const CompoundFiniteElement & fel =
+      dynamic_cast<const CompoundFiniteElement&> (gfel);
+
+    FlatVector<Complex> vec1;
+    lfi.AssembleElementVectorIndependent (fel[comp], s_mip, g_mip, vec1, lh, curveint);
+    
+    elvec.AssignMemory (fel.GetNDof(), lh);
+    elvec = 0;
+
+    int base = 0;
+    for (int i = 0; i < comp; i++)
+      base += fel[i].GetNDof();
+
+    for (int i = 0; i < vec1.Size(); i++)
+      elvec(base+i) = vec1(i);
+  }
+
+
+
+
+
+
+
+
+
+
   Integrators::IntegratorInfo::
   IntegratorInfo (const string & aname,
 		   int aspacedim, int anumcoeffs,
