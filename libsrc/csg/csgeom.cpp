@@ -148,7 +148,7 @@ namespace netgen
 
   const Refinement & CSGeometry :: GetRefinement () const
   {
-    cout << "get CSGeometry - Refinement" << endl;
+    // cout << "get CSGeometry - Refinement" << endl;
     // should become class variables
     RefinementSurfaces * ref = new RefinementSurfaces(*this);
     ref -> Set2dOptimizer(new MeshOptimize2dSurfaces(*this));
