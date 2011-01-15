@@ -188,20 +188,20 @@ namespace ngcomp
     /// get dof-nrs of the element
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
+    /*
     ///
     void GetDofNrs (int elnr, FlatArray<int> dnums) const
     {
       Array<int> hdnums(dnums.Size(), &dnums[0]);
       GetDofNrs (elnr, hdnums);
     }
-
-    void GetDofNrs (int elnr, FlatArray<int> dnums, bool boundary) const
+    */
+    void GetDofNrs (int elnr, Array<int> & dnums, bool boundary) const
     {
-      Array<int> hdnums(dnums.Size(), &dnums[0]);
       if (boundary)
-	GetSDofNrs (elnr, hdnums);
+	GetSDofNrs (elnr, dnums);
       else
-	GetDofNrs (elnr, hdnums);
+	GetDofNrs (elnr, dnums);
     }
 
 
@@ -236,13 +236,14 @@ namespace ngcomp
     /// returns dofs of sourface element
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const = 0;
 
+    /*
     ///
     void GetSDofNrs (int elnr, FlatArray<int> dnums) const
     {
       Array<int> hdnums(dnums.Size(), &dnums[0]);
       GetSDofNrs (elnr, hdnums);
     }
-
+    */
 
     /// is the FESpace defined for this sub-domain nr ?
     bool DefinedOn (int domnr) const

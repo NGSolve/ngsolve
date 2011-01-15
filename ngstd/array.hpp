@@ -292,6 +292,15 @@ namespace ngstd
       ownmem = 0;
     }
 
+    /// Generate array in user data
+    Array(int asize, LocalHeap & lh)
+      : FlatArray<T> (asize, lh)
+    {
+      allocsize = asize; 
+      ownmem = 0;
+    }
+
+
     /// array copy 
     explicit Array (const Array<T> & a2)
       : FlatArray<T> (a2.Size(), a2.Size() ? new T[a2.Size()] : 0)

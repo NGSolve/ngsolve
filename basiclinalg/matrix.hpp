@@ -1102,6 +1102,17 @@ namespace ngbla
       return DoubleSliceMatrix<T> (h, next-first, distr, distc, data+first*distc);
     }
 
+    const DoubleSliceMatrix Rows (IntRange range) const
+    {
+      return Rows(range.First(), range.Next());
+    }
+
+    const DoubleSliceMatrix<T> Cols (IntRange range) const
+    {
+      return Cols(range.First(), range.Next());
+    }
+
+
   };
 
 

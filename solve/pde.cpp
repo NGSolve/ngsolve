@@ -1194,7 +1194,6 @@ namespace ngsolve
 	}
       }
     }
-    todo.Append(gf);
 
     todo.Append(gf);
     return gf;

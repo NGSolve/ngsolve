@@ -306,6 +306,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
+    static Timer timer ("FESpace::FinalizeUpdate");
+    RegionTimer reg (timer);
+
+
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
 
     if (dirichlet_boundaries.Size())
@@ -342,6 +346,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
     bool found;
     Array<int> dnums;
     int color = 0;
+
+
+    TableCreator<int> creator;
+    for ( ; !creator.Done(); creator++)
+      {
+	for (int i = 0; i < ma.GetNE(); i++)
+	  {
+	    GetDofNrs (i, dnums);	
+	    for (int j = 0; j < dnums.Size(); j++)
+	      if (dnums[j] != -1)
+		creator.Add (i, dnums[j]);
+	  }
+      }
+    Table<int> & el2dof = *creator.GetTable();
+
     do
       {
 	// cout << "color = " << color << endl;
@@ -349,21 +368,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	for (int i = 0; i < ma.GetNE(); i++)
 	  {
 	    if (col[i] >= 0) continue;
-	    GetDofNrs (i, dnums);
+	    FlatArray<int> dnums = el2dof[i];  // GetDofNrs (i, dnums);
 	    bool ok = true;
 	    for (int j = 0; j < dnums.Size(); j++)
-	      if (dnums[j] != -1)
-		if (dofcol[dnums[j]] == color)
-		  {
-		    ok = false;
-		    break;
-		  }
+	      if (dofcol[dnums[j]] == color)
+		{
+		  ok = false;
+		  break;
+		}
 	    if (ok)
 	      {
 		col[i] = color;
 		for  (int j = 0; j < dnums.Size(); j++)
-		  if (dnums[j] != -1)
-		    dofcol[dnums[j]] = color;
+		  dofcol[dnums[j]] = color;
 		found = true;
 	      }
 	    // cout << "element " << i << " dnums = " << dnums << " ok = " << ok << endl;
@@ -371,6 +388,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	color++;
       }
     while (found);
+
+    delete &el2dof;
+
 
     // cout << "col = " << endl << col << endl;
     color--;
@@ -387,8 +407,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       (*element_coloring)[col[i]][cntcol[col[i]]++] = i;
     
     *testout << "needed " << color << " colors" << endl;
-    // cout << "elcolors = " << endl << (*element_coloring) << endl;
-    
   }
 
   const FiniteElement & FESpace :: GetFE (int elnr, LocalHeap & lh) const
