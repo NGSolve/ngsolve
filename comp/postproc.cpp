@@ -509,8 +509,8 @@ namespace ngcomp
 	    continue;
 
 	  const FiniteElement & fel = bound ? fes.GetSFE(i, lh) : fes.GetFE (i, lh);
-	  FlatArray<int> dnums(fel.GetNDof(), lh);
-
+	  Array<int> dnums(fel.GetNDof(), lh);
+	  
 	  ElementTransformation eltrans = ma.GetTrafo (i, bound); 
 	  fes.GetDofNrs (i, dnums, bound);
 	  
