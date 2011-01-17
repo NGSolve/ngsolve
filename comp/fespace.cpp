@@ -307,10 +307,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
     static Timer timer ("FESpace::FinalizeUpdate");
-    RegionTimer reg (timer);
-
 
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
+
+    RegionTimer reg (timer);
 
     if (dirichlet_boundaries.Size())
       {
@@ -338,64 +338,58 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
     *testout << "coloring ... " << flush;
+
     Array<int> col(ma.GetNE());
-    Array<int> dofcol(GetNDof());
-    
-    dofcol = -1;
     col = -1;
+
     bool found;
     Array<int> dnums;
-    int color = 0;
+    int maxcolor = 0;
 
 
-    TableCreator<int> creator;
-    for ( ; !creator.Done(); creator++)
-      {
-	for (int i = 0; i < ma.GetNE(); i++)
-	  {
-	    GetDofNrs (i, dnums);	
-	    for (int j = 0; j < dnums.Size(); j++)
-	      if (dnums[j] != -1)
-		creator.Add (i, dnums[j]);
-	  }
-      }
-    Table<int> & el2dof = *creator.GetTable();
-
+    int basecol = 0;
+    Array<unsigned int> mask(GetNDof());
+    
     do
       {
-	// cout << "color = " << color << endl;
+	mask = 0;
 	found = false;
+	
 	for (int i = 0; i < ma.GetNE(); i++)
 	  {
 	    if (col[i] >= 0) continue;
-	    FlatArray<int> dnums = el2dof[i];  // GetDofNrs (i, dnums);
-	    bool ok = true;
+	    GetDofNrs (i, dnums);	
+
+	    unsigned check = 0;
 	    for (int j = 0; j < dnums.Size(); j++)
-	      if (dofcol[dnums[j]] == color)
-		{
-		  ok = false;
-		  break;
-		}
-	    if (ok)
+	      check |= mask[dnums[j]];
+
+	    if (check != UINT_MAX) // 0xFFFFFFFF)
 	      {
-		col[i] = color;
-		for  (int j = 0; j < dnums.Size(); j++)
-		  dofcol[dnums[j]] = color;
 		found = true;
+		unsigned checkbit = 1;
+		int color = basecol;
+		while (check & checkbit)
+		  {
+		    color++;
+		    checkbit *= 2;
+		  }
+		// *testout << "set color = " << color << endl;
+		col[i] = color;
+		if (color > maxcolor) maxcolor = color;
+		
+		for  (int j = 0; j < dnums.Size(); j++)
+		  mask[dnums[j]] |= checkbit;
 	      }
-	    // cout << "element " << i << " dnums = " << dnums << " ok = " << ok << endl;
 	  }
-	color++;
+	
+	basecol += 8*sizeof(unsigned int); // 32;
       }
     while (found);
 
-    delete &el2dof;
+    // int color = maxcolor+1;
 
-
-    // cout << "col = " << endl << col << endl;
-    color--;
-
-    Array<int> cntcol(color);
+    Array<int> cntcol(maxcolor+1);
     cntcol = 0;
     for (int i = 0; i < ma.GetNE(); i++)
       cntcol[col[i]]++;
@@ -406,7 +400,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (int i = 0; i < ma.GetNE(); i++)
       (*element_coloring)[col[i]][cntcol[col[i]]++] = i;
     
-    *testout << "needed " << color << " colors" << endl;
+    *testout << "needed " << maxcolor+1 << " colors" << endl;
   }
 
   const FiniteElement & FESpace :: GetFE (int elnr, LocalHeap & lh) const
