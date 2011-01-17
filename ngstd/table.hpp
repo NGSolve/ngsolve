@@ -123,9 +123,9 @@ template <class T>
     Table<T> * table;
   public:
     TableCreator()
-    { nd = 0; mode = 1; }
+    { nd = 0; mode = 1; table = NULL; }
     TableCreator(int acnt)
-    { nd = acnt; SetMode(2); }
+    { nd = acnt; table = NULL; SetMode(2); }
     
     Table<T> * GetTable() { return table; }
 
