@@ -697,7 +697,11 @@ namespace ngsolve
 	    scan->Error ("Expected a number");
 
 	  if(sval == "")
-	    pde->AddConstant (name, val);
+	    {
+	      pde->AddConstant (name, val);
+	      pde->AddCoefficientFunction
+		(name, new ConstantCoefficientFunction(val));
+	    }
 	  else
 	    pde->AddStringConstant (name, sval);
 	    
