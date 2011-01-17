@@ -794,7 +794,7 @@ namespace ngcomp
 		parts[i] -> CheckElement (fespace.GetSFE(j, clh));
 	    }
         }
-      else if (parts[i] -> SkeletonForm()) 
+      else if (parts[i] -> SkeletonForm() && !parts[i] -> BoundaryForm()) 
 	{ 
 	  if (!fespace.UsesDGCoupling()) throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
 	  //TODO: Check each facet for the neighbouring elements - necessary?
@@ -1487,7 +1487,7 @@ namespace ngcomp
                           const BilinearFormIntegrator & bfi = *parts[j];
 		    
                           if (!bfi.BoundaryForm()) continue;
-
+                          if (bfi.SkeletonForm()) continue;
                           if (!bfi.DefinedOn (ma.GetSElIndex (i))) continue;		    
 
                           for (int k = 0; k < dnums.Size(); k++)
@@ -1609,7 +1609,7 @@ namespace ngcomp
 			  if (!bfi.BoundaryForm()) continue;
 			  if (!bfi.SkeletonForm()) continue;
 
-			  if (!bfi.DefinedOn (ma.GetElIndex (el))) continue;		    
+			  if (!bfi.DefinedOn (ma.GetSElIndex(i) )) continue;		    
 
 			  for (int k = 0; k < dnums.Size(); k++)
 			    if (dnums[k] != -1)

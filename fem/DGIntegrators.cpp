@@ -401,7 +401,7 @@ namespace ngfem
       }
   };
 
-
+// TODO: This doesn't have to be a FacetLinearFormIntegrator if the normal is available anyway!
   template <int D>
   class DGBoundaryFacet_ConvectionIntegrator : public FacetBilinearFormIntegrator
   {
@@ -421,10 +421,7 @@ namespace ngfem
     
     virtual bool BoundaryForm () const 
     { return 1; }
-    //there are no new couplings involved just because of boundary integrals!
-    virtual bool SkeletonForm () const 
-    { return 0; }
-    
+  
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       return new DGBoundaryFacet_ConvectionIntegrator (coeffs);
@@ -511,24 +508,18 @@ namespace ngfem
   protected:
     double alpha;   // interior penalyty
     CoefficientFunction *coef_lam;
-    CoefficientFunction *coef_rob;
   public:
     DGBoundaryFacet_LaplaceIntegrator (Array<CoefficientFunction*> & coeffs) 
       : FacetBilinearFormIntegrator(coeffs)
     { 
       coef_lam  = coeffs[0];
-      coef_rob  = coeffs[1];
       if (dgtype!=DG_FORMULATIONS::BO)
-	alpha = coeffs[2] -> EvaluateConst();
+	alpha = coeffs[1] -> EvaluateConst();
     }
     
     virtual bool BoundaryForm () const 
     { return 1; }
 
-    //there are no new couplings involved just because of boundary integrals!
-    virtual bool SkeletonForm () const 
-    { return 0; }
-    
     virtual ~DGBoundaryFacet_LaplaceIntegrator () { ; }
 
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
@@ -598,7 +589,6 @@ namespace ngfem
 	  double lam = coef_lam->Evaluate(sip1);
 
 	  SpecificIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans, lh);
-	  double rob = coef_rob->Evaluate(sips);	  
 	  
 	  Mat<D> jac1 = sip1.GetJacobian();
 	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
@@ -635,7 +625,7 @@ namespace ngfem
 	      dmat(1,1) = alpha * ((maxorder+1)*(maxorder+D)/D * len1) *(1.0/det1);
 	      break;	      
 	  }
-	  dmat *= rob * lam * len1 * ir_facet[l].Weight();
+	  dmat *= lam * len1 * ir_facet[l].Weight();
 	  dbmat = dmat * bmat;
 	  elmat += Trans (bmat) * dbmat;
 	}
@@ -649,13 +639,13 @@ namespace ngfem
   protected:
     double alpha;   // interior penalyty
     CoefficientFunction *coef_lam;
-    CoefficientFunction *coef_rob;
+    CoefficientFunction *coef_dir;
   public:
     DGFacet_DirichletBoundaryIntegrator (Array<CoefficientFunction*> & coeffs) 
       : FacetLinearFormIntegrator(coeffs)
     { 
       coef_lam  = coeffs[0];
-      coef_rob  = coeffs[1];
+      coef_dir  = coeffs[1];
       alpha = coeffs[2] -> EvaluateConst();
     }
     
@@ -683,7 +673,6 @@ namespace ngfem
                          FlatVector<double> & elvec, LocalHeap & lh) const
     {
       static int timer = NgProfiler::CreateTimer ("DGFacet_DirichletBoundaryIntegrator");
-
       NgProfiler::RegionTimer reg (timer);
       const ScalarFiniteElement<D> * fel1_l2 = 
         dynamic_cast<const ScalarFiniteElement<D>*> (&volumefel);
@@ -720,7 +709,8 @@ namespace ngfem
 	  double lam = coef_lam->Evaluate(sip1);
 
 	  SpecificIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans, lh);
-	  double rob = coef_rob->Evaluate(sips);
+	  double dir = coef_dir->Evaluate(sips);
+
 	  Mat<D> jac1 = sip1.GetJacobian();
 	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
 	  double det1 = sip1.GetJacobiDet();
@@ -754,7 +744,7 @@ namespace ngfem
 	      break;	      
 	  }	  
 	  
-	  double fac = len1*ir_facet[l].Weight()*lam*rob;
+	  double fac = len1*ir_facet[l].Weight()*lam*dir;
 	  elvec += (fac * dvec(0))*mat1_dudn;
 	  elvec += (fac * dvec(1) ) * mat1_shape;
 	}
@@ -767,13 +757,11 @@ namespace ngfem
   {
   protected:
     CoefficientFunction *coef_lam;
-    CoefficientFunction *coef_rob;
   public:
     DGFacet_NeumannBoundaryIntegrator (Array<CoefficientFunction*> & coeffs) 
       : FacetLinearFormIntegrator(coeffs)
     { 
       coef_lam  = coeffs[0];
-      coef_rob  = coeffs[1];
     }
     
     virtual bool BoundaryForm () const 
@@ -835,7 +823,6 @@ namespace ngfem
 	  double lam = coef_lam->Evaluate(sip1);
 
 	  SpecificIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans, lh);
-	  double rob = coef_rob->Evaluate(sips);
 	  
 	  Mat<D> jac1 = sip1.GetJacobian();
 	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
@@ -849,13 +836,14 @@ namespace ngfem
 
 	  Vec<D> invjac_normal1 = inv_jac1 * normal1;
 
-	  double fac = len1*ir_facet[l].Weight()*lam*rob;
+	  double fac = len1*ir_facet[l].Weight()*lam;
 	  elvec += fac *  mat1_shape;
 	}
       }
   };
 
-    template <int D>
+// TODO: This doesn't have to be a FacetLinearFormIntegrator if the normal is available anyway!
+  template <int D>
   class DGFacet_ConvectionDirichletBoundaryIntegrator : public FacetLinearFormIntegrator
   {
   protected:
@@ -955,91 +943,48 @@ namespace ngfem
       }
   };
 
+//convection:  
+  static RegisterBilinearFormIntegrator<ConvectionIntegrator<2> > initconv_bf_inner_vol_2d ("convection", 2, 2);
+  static RegisterBilinearFormIntegrator<ConvectionIntegrator<3> > initconv_bf_inner_vol_3d ("convection", 3, 3);
+  static RegisterBilinearFormIntegrator<DGInnerFacet_ConvectionIntegrator<2> > initconv_bf_inner_fac_2d ("DG_innfac_convection", 2, 2);
+  static RegisterBilinearFormIntegrator<DGInnerFacet_ConvectionIntegrator<3> > initconv_bf_inner_fac_3d ("DG_innfac_convection", 3, 3);
+  static RegisterBilinearFormIntegrator<DGBoundaryFacet_ConvectionIntegrator<2> > initconv_bf_bound_fac_2d ("DG_bndfac_convection", 2, 2);
+  static RegisterBilinearFormIntegrator<DGBoundaryFacet_ConvectionIntegrator<3> > initconv_bf_bound_fac_3d ("DG_bndfac_convection", 3, 3);
+  static RegisterLinearFormIntegrator<DGFacet_ConvectionDirichletBoundaryIntegrator<2> > initconv_lf_bound_fac_2d ("DG_bndfac_convdir", 2, 3);
+  static RegisterLinearFormIntegrator<DGFacet_ConvectionDirichletBoundaryIntegrator<3> > initconv_lf_bound_fac_3d ("DG_bndfac_convdir", 3, 4);
+
+//laplace
+  static RegisterBilinearFormIntegrator<DGInnerFacet_LaplaceIntegrator<2,DG_FORMULATIONS::IP> > initlap_bf_inner_fac_2d ("DGIP_innfac_laplace", 2, 2);
+  static RegisterBilinearFormIntegrator<DGInnerFacet_LaplaceIntegrator<3,DG_FORMULATIONS::IP> > initlap_bf_inner_fac_3d ("DGIP_innfac_laplace", 3, 2);
+  static RegisterBilinearFormIntegrator<DGBoundaryFacet_LaplaceIntegrator<2,DG_FORMULATIONS::IP> > initlap_bf_outer_fac_2d ("DGIP_bndfac_laplace", 2, 2);
+  static RegisterBilinearFormIntegrator<DGBoundaryFacet_LaplaceIntegrator<3,DG_FORMULATIONS::IP> > initlap_bf_outer_fac_3d ("DGIP_bndfac_laplace", 3, 2);
+  static RegisterLinearFormIntegrator<DGFacet_DirichletBoundaryIntegrator<2,DG_FORMULATIONS::IP> > initlap_lf_outer_fac_2d ("DGIP_bndfac_dir", 2, 3);
+  static RegisterLinearFormIntegrator<DGFacet_DirichletBoundaryIntegrator<3,DG_FORMULATIONS::IP> > initlap_lf_outer_fac_3d ("DGIP_bndfac_dir", 3, 3);
+  static RegisterLinearFormIntegrator<DGFacet_NeumannBoundaryIntegrator<2> > initneu_lf_outer_fac_2d ("DGIP_bndfac_neumann", 2, 2);
+  static RegisterLinearFormIntegrator<DGFacet_NeumannBoundaryIntegrator<3> > initneu_lf_outer_fac_3d ("DGIP_bndfac_neumann", 3, 2);
+
+// as nitsche  
+//those integrators may also be useful/used without DG being involved and thereby the designation "nitsche" is more appropriate here:
+  static RegisterBilinearFormIntegrator<DGBoundaryFacet_LaplaceIntegrator<2,DG_FORMULATIONS::IP> > initlap_bf_nitsche_2d ("nitsche", 2, 2);
+  static RegisterBilinearFormIntegrator<DGBoundaryFacet_LaplaceIntegrator<3,DG_FORMULATIONS::IP> > initlap_bf_nitsche_3d ("nitsche", 3, 2);
+  static RegisterLinearFormIntegrator<DGFacet_DirichletBoundaryIntegrator<2,DG_FORMULATIONS::IP> > initlap_lf_nitsche_2d ("nitsche", 2, 3);
+  static RegisterLinearFormIntegrator<DGFacet_DirichletBoundaryIntegrator<3,DG_FORMULATIONS::IP> > initlap_lf_nitsche_3d ("nitsche", 3, 3);
   
-  
-  class Init
-  { 
-  public: 
-    Init ();
-  };
-  
-  Init::Init()
-  {
-    //Convection Integrator for ScalarFiniteElements //TODO: put this into B1DB2-Form
-    GetIntegrators().AddBFIntegrator ("convection", 2, 2,
-				      ConvectionIntegrator<2>::Create);
-    GetIntegrators().AddBFIntegrator ("convection", 3, 3,
-				      ConvectionIntegrator<3>::Create);
-    GetIntegrators().AddBFIntegrator ("DG_innfac_convection", 2, 2,
-				      DGInnerFacet_ConvectionIntegrator<2>::Create);
-    GetIntegrators().AddBFIntegrator ("DG_innfac_convection", 3, 3,
-				      DGInnerFacet_ConvectionIntegrator<3>::Create);
-    GetIntegrators().AddBFIntegrator ("DG_bndfac_convection", 2, 2,
-				      DGBoundaryFacet_ConvectionIntegrator<2>::Create);
-    GetIntegrators().AddBFIntegrator ("DG_bndfac_convection", 3, 3,
-				      DGBoundaryFacet_ConvectionIntegrator<3>::Create);
-    GetIntegrators().AddLFIntegrator ("DG_bndfac_convdir", 2, 3,
-				      DGFacet_ConvectionDirichletBoundaryIntegrator<2>::Create);
-    GetIntegrators().AddLFIntegrator ("DG_bndfac_convdir", 3, 4,
-				      DGFacet_ConvectionDirichletBoundaryIntegrator<3>::Create);
-				      
-    // (symmetric) Interior Penalty method: consistent and stable (and adjoint consistent)
-    GetIntegrators().AddBFIntegrator ("DGIP_innfac_laplace", 2, 2,
-				      DGInnerFacet_LaplaceIntegrator<2,DG_FORMULATIONS::IP>::Create);
-    GetIntegrators().AddBFIntegrator ("DGIP_innfac_laplace", 3, 2,
-				      DGInnerFacet_LaplaceIntegrator<3,DG_FORMULATIONS::IP>::Create);
-    GetIntegrators().AddBFIntegrator ("DGIP_bndfac_laplace", 2, 3,
-				      DGBoundaryFacet_LaplaceIntegrator<2,DG_FORMULATIONS::IP>::Create); //todo: rename in Nitsche
-    GetIntegrators().AddBFIntegrator ("DGIP_bndfac_laplace", 3, 3,
-				      DGBoundaryFacet_LaplaceIntegrator<3,DG_FORMULATIONS::IP>::Create); //todo: rename in Nitsche
-    GetIntegrators().AddLFIntegrator ("DGIP_bndfac_dir", 2, 3,
-				      DGFacet_DirichletBoundaryIntegrator<2,DG_FORMULATIONS::IP>::Create); //todo: rename in Nitsche
-    GetIntegrators().AddLFIntegrator ("DGIP_bndfac_dir", 3, 3,
-				      DGFacet_DirichletBoundaryIntegrator<3,DG_FORMULATIONS::IP>::Create); //todo: rename in Nitsche
-    GetIntegrators().AddLFIntegrator ("DGIP_bndfac_neumann", 2, 2,
-				      DGFacet_NeumannBoundaryIntegrator<2>::Create);
-    GetIntegrators().AddLFIntegrator ("DGIP_bndfac_neumann", 3, 2,
-				      DGFacet_NeumannBoundaryIntegrator<3>::Create);
-				      
 /*    // nonsymmteric Interior Penalty method: consistent and stable
+  static RegisterBilinearFormIntegrator<DGInnerFacet_LaplaceIntegrator<2,DG_FORMULATIONS::NIPG> > initlap_bf_inner_fac_2d_nipg ("DGNIPG_innerfac_laplace", 2, 2);
+  static RegisterBilinearFormIntegrator<DGInnerFacet_LaplaceIntegrator<3,DG_FORMULATIONS::NIPG> > initlap_bf_inner_fac_3d_nipg ("DGNIPG_innerfac_laplace", 3, 2);
+  static RegisterBilinearFormIntegrator<DGBoundaryFacet_LaplaceIntegrator<2,DG_FORMULATIONS::NIPG> > initlap_bf_outer_fac_2d_nipg ("DGNIPG_boundfac_laplace", 2, 2);
+  static RegisterBilinearFormIntegrator<DGBoundaryFacet_LaplaceIntegrator<3,DG_FORMULATIONS::NIPG> > initlap_bf_outer_fac_3d_nipg ("DGNIPG_boundfac_laplace", 3, 2);
+  static RegisterBilinearFormIntegrator<DGFacet_DirichletBoundaryIntegrator<2,DG_FORMULATIONS::NIPG> > initlap_lf_outer_fac_2d_nipg ("DGNIPG_boundfac_dir", 2, 3);
+  static RegisterBilinearFormIntegrator<DGFacet_DirichletBoundaryIntegrator<3,DG_FORMULATIONS::NIPG> > initlap_lf_outer_fac_3d_nipg ("DGNIPG_boundfac_dir", 3, 3);
 
-    GetIntegrators().AddBFIntegrator ("DGNIPG_innerfac_laplace", 2, 2,
-				      DGInnerFacet_LaplaceIntegrator<2,DG_FORMULATIONS::NIPG>::Create);
-    GetIntegrators().AddBFIntegrator ("DGNIPG_innerfac_laplace", 3, 2,
-				      DGInnerFacet_LaplaceIntegrator<3,DG_FORMULATIONS::NIPG>::Create);
-    GetIntegrators().AddBFIntegrator ("DGNIPG_boundfac_laplace", 2, 3,
-				      DGBoundaryFacet_LaplaceIntegrator<2,DG_FORMULATIONS::NIPG>::Create);
-    GetIntegrators().AddBFIntegrator ("DGNIPG_boundfac_laplace", 3, 3,
-				      DGBoundaryFacet_LaplaceIntegrator<3,DG_FORMULATIONS::NIPG>::Create);
-    GetIntegrators().AddLFIntegrator ("DGNIPG_boundfac_dir", 2, 3,
-				      DGFacet_DirichletBoundaryIntegrator<2,DG_FORMULATIONS::NIPG>::Create);
-    GetIntegrators().AddLFIntegrator ("DGNIPG_boundfac_dir", 3, 3,
-				      DGFacet_DirichletBoundaryIntegrator<3,DG_FORMULATIONS::NIPG>::Create);
-    GetIntegrators().AddLFIntegrator ("DGNIPG_boundfac_neumann", 2, 2,
-				      DGFacet_NeumannBoundaryIntegrator<2>::Create);
-    GetIntegrators().AddLFIntegrator ("DGNIPG_boundfac_neumann", 3, 2,
-				      DGFacet_NeumannBoundaryIntegrator<3>::Create);
     // Baumann-Oden method: (only) consistent
+  static RegisterBilinearFormIntegrator<DGInnerFacet_LaplaceIntegrator<2,DG_FORMULATIONS::BO> > initlap_bf_inner_fac_2d_bo ("DGBO_innerfac_laplace", 2, 2);
+  static RegisterBilinearFormIntegrator<DGInnerFacet_LaplaceIntegrator<3,DG_FORMULATIONS::BO> > initlap_bf_inner_fac_3d_bo ("DGBO_innerfac_laplace", 3, 2);
+  static RegisterBilinearFormIntegrator<DGBoundaryFacet_LaplaceIntegrator<2,DG_FORMULATIONS::BO> > initlap_bf_outer_fac_2d_bo ("DGBO_boundfac_laplace", 2, 1);
+  static RegisterBilinearFormIntegrator<DGBoundaryFacet_LaplaceIntegrator<3,DG_FORMULATIONS::BO> > initlap_bf_outer_fac_3d_bo ("DGBO_boundfac_laplace", 3, 1);
+  static RegisterBilinearFormIntegrator<DGFacet_DirichletBoundaryIntegrator<2,DG_FORMULATIONS::BO> > initlap_lf_outer_fac_2d_bo ("DGBO_boundfac_dir", 2, 3);
+  static RegisterBilinearFormIntegrator<DGFacet_DirichletBoundaryIntegrator<3,DG_FORMULATIONS::BO> > initlap_lf_outer_fac_3d_bo ("DGBO_boundfac_dir", 3, 3);
+*/					 
 
-    GetIntegrators().AddBFIntegrator ("DGBO_innerfac_laplace", 2, 2,
-				      DGInnerFacet_LaplaceIntegrator<2,DG_FORMULATIONS::BO>::Create);
-    GetIntegrators().AddBFIntegrator ("DGBO_innerfac_laplace", 3, 2,
-				      DGInnerFacet_LaplaceIntegrator<3,DG_FORMULATIONS::BO>::Create);
-    GetIntegrators().AddBFIntegrator ("DGBO_boundfac_laplace", 2, 3,
-				      DGBoundaryFacet_LaplaceIntegrator<2,DG_FORMULATIONS::BO>::Create);
-    GetIntegrators().AddBFIntegrator ("DGBO_boundfac_laplace", 3, 3,
-				      DGBoundaryFacet_LaplaceIntegrator<3,DG_FORMULATIONS::BO>::Create);
-    GetIntegrators().AddLFIntegrator ("DGBO_boundfac_dir", 2, 3,
-				      DGFacet_DirichletBoundaryIntegrator<2,DG_FORMULATIONS::BO>::Create);
-    GetIntegrators().AddLFIntegrator ("DGBO_boundfac_dir", 3, 3,
-				      DGFacet_DirichletBoundaryIntegrator<3,DG_FORMULATIONS::BO>::Create);
-    GetIntegrators().AddLFIntegrator ("DGBO_boundfac_neumann", 2, 2,
-				      DGFacet_NeumannBoundaryIntegrator<2>::Create);
-    GetIntegrators().AddLFIntegrator ("DGBO_boundfac_neumann", 3, 2,
-				      DGFacet_NeumannBoundaryIntegrator<3>::Create);*/
-					 
-					 
-  }//end of init-constructor
-  
-  Init init;
 }; //end of namespace ngfem
