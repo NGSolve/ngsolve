@@ -16,12 +16,6 @@ define coefficient lam
 define coefficient dirichletcoef
 0, 1, 
 
-define coefficient boundcoeflhs
-1, 1, 
-
-define coefficient boundcoefrhs
-0, 1, 
-
 define coefficient calpha 
 10,10,
 
@@ -39,15 +33,15 @@ define gridfunction udisc -fespace=vdisc
 
 define bilinearform adisc -fespace=vdisc
 DGIP_innfac_laplace lam calpha
-DGIP_bndfac_laplace lam boundcoeflhs calpha
+DGIP_bndfac_laplace lam calpha -definedon=[1,2]
 DG_innfac_convection b1 b2
 DG_bndfac_convection b1 b2
 convection b1 b2
 laplace lam
 
 define linearform fdisc -fespace=vdisc
-DGIP_bndfac_dir lam boundcoefrhs calpha
-DG_bndfac_convdir b1 b2 boundcoefrhs
+DGIP_bndfac_dir lam dirichletcoef calpha -definedon=2
+DG_bndfac_convdir b1 b2 dirichletcoef -definedon=2
 
 define preconditioner c -type=direct -bilinearform=adisc -inverse=pardiso
 

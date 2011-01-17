@@ -1366,18 +1366,22 @@ namespace ngsolve
 			    (*integrator, Complex(0,1));
 			}
 
-
-		      if (partflags.NumFlagDefined ("definedon"))
+		      if (partflags.NumFlagDefined ("definedon") || partflags.NumListFlagDefined("definedon"))
 			{
-			  int domain = int(partflags.GetNumFlag("definedon", 0));
 			  int size = max2 (pde->GetMeshAccess().GetNDomains(), 
 					   pde->GetMeshAccess().GetNBoundaries());
 			  BitArray definedon(size);
 			  definedon.Clear();
-			  definedon.Set(domain-1);
-			  (*testout) << "definedon = " << definedon << endl;
+
+			  if(partflags.NumFlagDefined ("definedon"))
+			    definedon.Set(int(partflags.GetNumFlag("definedon", 0))-1);
+			  
+			  if(partflags.NumListFlagDefined("definedon"))
+			    for(int i=0; i<partflags.GetNumListFlag("definedon").Size(); i++)
+			      definedon.Set(int(partflags.GetNumListFlag("definedon")[i])-1);
 			  integrator->SetDefinedOn (definedon);
 			}
+
 
 		      // integrator -> SetFastIntegration (partflags.GetDefineFlag("fast"),
 		      // partflags.GetDefineFlag("checkfast"));
