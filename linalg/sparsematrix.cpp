@@ -305,7 +305,7 @@ namespace ngla
 
 
   MatrixGraph :: MatrixGraph (const Table<int> & dof2dof, 
-				bool symmetric)
+			      bool symmetric)
   {
     static int timer = NgProfiler::CreateTimer ("MatrixGraph");
     NgProfiler::RegionTimer reg (timer);
@@ -336,7 +336,6 @@ namespace ngla
       }
     firsti[size] = nze;
     
-
     colnr.Alloc (nze+1);
     colnr.SetName ("matrix graph");
     
@@ -372,22 +371,21 @@ namespace ngla
           mark[i] = i;
           colnr[cnti++] = i;
           
-              for (int k = 0; k < dof2dof[i].Size(); k++)
-                {
-                  int d2 = dof2dof[i][k];
-		  if(d2<i)
-		  if (mark[d2] != i)
-		    {
-		      mark[d2] = i;
-		      colnr[cnti++] = d2;
-		    }
-                }
+	  for (int k = 0; k < dof2dof[i].Size(); k++)
+	    {
+	      int d2 = dof2dof[i][k];
+	      if(d2<i)
+		if (mark[d2] != i)
+		  {
+		    mark[d2] = i;
+		    colnr[cnti++] = d2;
+		  }
+	    }
         }
     
     for (int i = 0; i < ndof; i++)
       QuickSort (GetRowIndices(i));
     
-
     colnr[nze] = 0;
  
     // #ifdef ASTRID
