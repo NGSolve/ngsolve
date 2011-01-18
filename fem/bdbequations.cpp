@@ -27,10 +27,12 @@ namespace ngfem
   { ; }
 
 
-  template <int D> ComplexMassIntegrator<D> ::
+  /*
+    template <int D> ComplexMassIntegrator<D> ::
   ComplexMassIntegrator (CoefficientFunction * coeff)
     : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (DiagDMat<1> (coeff))
   { ; }
+
 
   template <int D> 
   Integrator * MassIntegrator<D> :: Create (Array<CoefficientFunction*> & coeffs)
@@ -41,7 +43,7 @@ namespace ngfem
     else
       return new ComplexMassIntegrator<D> (coef);
   }
-
+  */
 
 
   template <int D, typename FEL> LaplaceIntegrator<D,FEL> ::

@@ -1426,12 +1426,13 @@ public:
   NGS_DLL_HEADER MassIntegrator (Array<CoefficientFunction*> & coeffs);
     
   ///
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs);
+  // static Integrator * Create (Array<CoefficientFunction*> & coeffs);
   ///
   virtual string Name () const { return "Mass"; }
 };
 
 
+/*
 template <int D>
 class ComplexMassIntegrator 
 // : public T_BDBIntegrator<DiffOpId<D>, DiagDMat<1, Complex>, ScalarFiniteElement<D> >
@@ -1443,7 +1444,7 @@ public:
   ///
   virtual string Name () const { return "ComplexMass"; }
 };
-
+*/
 
 
 
