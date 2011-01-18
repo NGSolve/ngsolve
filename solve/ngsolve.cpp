@@ -147,6 +147,14 @@ int NGS_LoadPDE (ClientData clientData,
 		 Tcl_Interp * interp,
 		 int argc, tcl_const char *argv[])
 {
+
+  if (Ng_IsRunning())
+    {
+      Tcl_SetResult (interp, (char*)"Thread already running", TCL_STATIC);
+      return TCL_ERROR;
+    }
+
+
 #ifdef PARALLEL
   MPI_Comm_size ( MPI_COMM_WORLD,  & (ngparallel::ntasks) );
   MPI_Comm_rank ( MPI_COMM_WORLD,  & (ngparallel::id ) );
