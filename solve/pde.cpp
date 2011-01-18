@@ -38,6 +38,8 @@ namespace ngsolve
   {
     levelsolved = -1;
     SetGood (true);
+
+    AddConstant ("pi", M_PI);
   }
   
   PDE :: ~PDE()
