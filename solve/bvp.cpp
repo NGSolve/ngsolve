@@ -262,7 +262,7 @@ namespace ngsolve
               break;
             }
           case DIRECT:
-            cout << "direct solve for real system" << endl;
+            cout << "direct solve for complex system" << endl;
             invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs()); 
             break;
           }
@@ -296,7 +296,7 @@ namespace ngsolve
               break;
             }
           case DIRECT:
-            cout << "direct solve for real system" << endl;
+            cout << "direct solve for complex system" << endl;
             invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs()); 
             break;
           }
@@ -330,7 +330,7 @@ namespace ngsolve
               break;
             }
           case DIRECT:
-            cout << "direct solve for real system" << endl;
+            cout << "direct solve for complex system" << endl;
             invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs()); 
             break;
           }
