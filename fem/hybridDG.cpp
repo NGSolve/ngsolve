@@ -161,7 +161,7 @@ namespace ngfem
 		SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
 		double lam = coef_lam->Evaluate(sip);
               
-		Mat<D> jac = sip.GetJacobian();
+		// Mat<D> jac = sip.GetJacobian();
 		Mat<D> inv_jac = sip.GetJacobianInverse();
 		double det = sip.GetMeasure();
 
@@ -437,7 +437,6 @@ namespace ngfem
 		const SpecificIntegrationPoint<D,D> & sip = mir[l];
 		double lam = coef_lam->Evaluate(sip);
               
-		Mat<D> jac = sip.GetJacobian();
 		Mat<D> inv_jac = sip.GetJacobianInverse();
 		double det = sip.GetJacobiDet();
 
@@ -755,7 +754,7 @@ namespace ngfem
 		coef_conv[0]->Evaluate(sip,conv);
 
 
-              Mat<D> jac = sip.GetJacobian();
+              // Mat<D> jac = sip.GetJacobian();
               Mat<D> inv_jac = sip.GetJacobianInverse();
               double det = sip.GetJacobiDet();
 
