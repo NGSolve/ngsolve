@@ -330,7 +330,7 @@ namespace ngla
     
     Factor(); 
   }
-
+ 
 
 
 
@@ -340,7 +340,7 @@ namespace ngla
     static int factor_timer = NgProfiler::CreateTimer ("SparseCholesky::Factor");
     NgProfiler::RegionTimer reg (factor_timer);
 
-    clock_t starttime, starttime1;
+    clock_t starttime; // , starttime1;
     double time1 = 0, time2 = 0;
 
     
@@ -360,7 +360,7 @@ namespace ngla
 
     double flops1 = 0;
     double flops2 = 0;
-    starttime1 = clock();
+    // starttime1 = clock();
 
     for (int i1 = 0; i1 < n;  )
       {
