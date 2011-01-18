@@ -632,6 +632,16 @@ namespace ngbla
       return SliceMatrix<T> (h, next-first, W, data+first);
     }
 
+    const FlatMatrixFixWidth Rows (IntRange range) const
+    {
+      return Rows (range.First(), range.Next());
+    }
+
+    const SliceMatrix<T> Cols (IntRange range) const
+    {
+      return Cols (range.First(), range.Next());
+    }
+
 
   };
 
@@ -854,6 +864,18 @@ namespace ngbla
       return FlatMatrixFixHeight<H,T> (next-first, data+first*H);
     }
 
+    const DoubleSliceMatrix<T> Rows (IntRange range) const
+    {
+      return Rows (range.First(), range.Next());
+    }
+
+    const FlatMatrixFixHeight<H,T> Cols (IntRange range) const
+    {
+      return Cols (range.First(), range.Next());
+    }
+
+
+
     const FlatMatrixFixWidth<H,T> Trans () const
     {
       return FlatMatrixFixWidth<H,T> (w, data);
@@ -1008,6 +1030,16 @@ namespace ngbla
     const SliceMatrix<T> Cols (int first, int next) const
     {
       return SliceMatrix<T> (h, next-first, dist, data+first);
+    }
+
+    const SliceMatrix Rows (IntRange range) const
+    {
+      return Rows (range.First(), range.Next());
+    }
+
+    const SliceMatrix<T> Cols (IntRange range) const
+    {
+      return Cols (range.First(), range.Next());
     }
 
   };
