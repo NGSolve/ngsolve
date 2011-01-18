@@ -14,15 +14,14 @@ mesh = square.vol
 
 
 # coefficient for Laplae
-define coefficient lam
-1,
+define constant lam = 1
 
 
 # coefficient for the source
 define coefficient coef_source
-1,
+(x*sin(pi*y)),
 
-# coefficient for the Neumann b.c.
+# coefficient for the Neumann b.c., one value per boundary region
 define coefficient coef_neumann
 0, 1,
 
