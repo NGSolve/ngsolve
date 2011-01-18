@@ -817,7 +817,6 @@ namespace ngfem {
 	int fz = 3-fmax; 
 	int ftrig = fmax^1; 
 	AutoDiff<3> xi = lami[faces[fanr][fmax]]-lami[faces[fanr][ftrig]]; 
-	AutoDiff<3> eta = 1-lami[faces[fanr][fmax]]-lami[faces[fanr][ftrig]]; 
 	AutoDiff<3> zeta = muz[faces[fanr][fmax]]-muz[faces[fanr][fz]]; 
 	
 	ArrayMem< double, 10> polx(p+1), poly(p+1);
