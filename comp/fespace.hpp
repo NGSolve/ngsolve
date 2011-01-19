@@ -188,14 +188,7 @@ namespace ngcomp
     /// get dof-nrs of the element
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
-    /*
-    ///
-    void GetDofNrs (int elnr, FlatArray<int> dnums) const
-    {
-      Array<int> hdnums(dnums.Size(), &dnums[0]);
-      GetDofNrs (elnr, hdnums);
-    }
-    */
+    /// get dof-nrs of domain or boundary element elnr
     void GetDofNrs (int elnr, Array<int> & dnums, bool boundary) const
     {
       if (boundary)

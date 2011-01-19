@@ -796,26 +796,26 @@ void MeshAccess :: GetVertexElements (int vnr, Array<int> & elnrs) const
 
   
 
-
-#ifdef NETGEN_ELTRANS
-
 void MeshAccess ::
-GetElementTransformation (int elnr, ElementTransformation & eltrans,
-			  LocalHeap & /* lh */) const
+GetElementTransformation (int elnr, ElementTransformation & eltrans) const
 {
   int elind = Ng_GetElementIndex (elnr+1)-1;
   eltrans.SetElement (0, elnr, elind);
   eltrans.SetElementType (GetElType(elnr));
-  /*
-  if (pts.Size())
-    eltrans.SetGeometryData (&pts, &dxdxis, &first_of_element);
-  */
 
   if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
     eltrans.SetHigherIntegrationOrder();
   else
     eltrans.UnSetHigherIntegrationOrder();
 }
+
+void MeshAccess ::
+GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans) const
+{
+  int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
+  eltrans.SetElement (1, elnr, elind);
+  eltrans.SetElementType (GetSElType(elnr));
+}    
 
 
 ElementTransformation MeshAccess :: GetTrafo (int elnr, bool boundary) const
@@ -847,221 +847,7 @@ ElementTransformation MeshAccess :: GetTrafo (int elnr, bool boundary) const
 
 
 
-#else
 
-void MeshAccess :: 
-GetElementTransformation (int elnr, ElementTransformation & eltrans,
-			  LocalHeap & lh) const
-{
-  FE_Segm1 segm1;
-  FE_Segm2 segm2;
-
-  FE_Trig1 trig1;
-  FE_Trig2 trig2;
-
-  FE_Quad1 quad1;
-  FE_Quad2aniso quad2aniso;
-
-  static FE_Tet1 tet1;
-  static FE_Tet2 tet2;
-
-  static FE_Prism1 prism1;
-  static FE_Prism2aniso prism2;
-
-  static FE_Pyramid1 pyramid1;
-  static FE_Hex1 hex1;
-
-
-  int elind = Ng_GetElementIndex (elnr+1)-1;
-  int pnums[NG_ELEMENT_MAXPOINTS];
-  int np;
-
-  NG_ELEMENT_TYPE et = Ng_GetElement (elnr+1, pnums);
-
-  switch (et)
-    {
-    case NG_TRIG:
-      eltrans.SetElement (&trig1, elnr, elind); break;
-    case NG_TRIG6:
-      eltrans.SetElement (&trig2, elnr, elind); break;
-    case NG_QUAD:
-      eltrans.SetElement (&quad1, elnr, elind); break;
-    case NG_QUAD6:
-      eltrans.SetElement (&quad2aniso, elnr, elind); break;
-
-    case NG_TET:
-      eltrans.SetElement (&tet1, elnr, elind); break;
-    case NG_TET10:
-      eltrans.SetElement (&tet2, elnr, elind); break;
-    case NG_PRISM:
-      eltrans.SetElement (&prism1, elnr, elind); break;
-    case NG_PRISM12:
-      eltrans.SetElement (&prism2, elnr, elind); break;
-    case NG_PYRAMID:
-      eltrans.SetElement (&pyramid1, elnr, elind); break;
-    case NG_HEX:
-      eltrans.SetElement (&hex1, elnr, elind); break;
-
-    default:
-      cerr << "element transformation for element " << int(et)
-	   << " not defined" << endl;
-    }
-
-  np = eltrans.GetElement().GetNDof();
-
-  double point[3];
-  int i, j;
-
-  int dim = GetDimension();
-  
-  FlatMatrix<> & pmat = const_cast<FlatMatrix<>&> (eltrans.PointMatrix());
-  pmat.AssignMemory (dim, np, lh);
-
-  for (i = 0; i < np; i++)
-    {
-      Ng_GetPoint (pnums[i], point);
-      for (j = 0; j < dim; j++)
-	pmat(j, i) = point[j];
-    }
-
-
-  if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
-    eltrans.SetHigherIntegrationOrder();
-  else
-    eltrans.UnSetHigherIntegrationOrder();
-}
-
-#endif
-
-
-
-#ifdef NETGEN_ELTRANS
-
-void MeshAccess ::
-GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans,
-				 LocalHeap & /* lh */) const
-{
-  int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
-  eltrans.SetElement (1, elnr, elind);
-  eltrans.SetElementType (GetSElType(elnr));
-}    
-
-
-/*
-ElementTransformation MeshAccess :: GetSurfaceTrafo (int elnr) const
-
-{
-  ElementTransformation eltrans;
-
-  int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
-  eltrans.SetElement (1, elnr, elind);
-  eltrans.SetElementType (GetSElType(elnr));
-
-  return eltrans;
-}
-*/
-
-
-#else
-
-void MeshAccess :: 
-GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans, 
-				 LocalHeap & lh) const
-{
-  FE_Segm1 segm1;
-  FE_Segm2 segm2;
-
-  FE_Trig1 trig1;
-  FE_Trig2 trig2;
-
-  FE_Quad1 quad1;
-  FE_Quad2aniso quad2aniso;
-
-  try
-    {
-      int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
-      
-      int np;
-      int pnums[NG_SURFACE_ELEMENT_MAXPOINTS];
-      
-      NG_ELEMENT_TYPE et = Ng_GetSurfaceElement (elnr+1, pnums);
-      switch (et)
-	{
-	case NG_SEGM:
-	  eltrans.SetElement (&segm1, elnr, elind); break;
-	case NG_SEGM3:
-	  eltrans.SetElement (&segm2, elnr, elind); break;
-	  
-	case NG_TRIG:
-	  eltrans.SetElement (&trig1, elnr, elind); break;
-	case NG_TRIG6:
-	  eltrans.SetElement (&trig2, elnr, elind); break;
-	case NG_QUAD:
-	  eltrans.SetElement (&quad1, elnr, elind); break;
-	case NG_QUAD6:
-	  eltrans.SetElement (&quad2aniso, elnr, elind); break;
-	  
-	default:
-	  cerr << "surface element transformation for element " 
-	       << int(et)
-	       << " not defined" << endl;
-	}
-
-      np = eltrans.GetElement().GetNDof();
-
-	
-      FlatMatrix<> & pmat = const_cast<FlatMatrix<>&> (eltrans.PointMatrix());
-      FlatMatrix<> & nvmat = const_cast<FlatMatrix<>&> (eltrans.NVMatrix());
-      
-      int dim = GetDimension();
-      
-      pmat.AssignMemory (dim, np, lh);
-      nvmat.AssignMemory (dim, np, lh);
-      
-      double point[3], nv[3];
-      int i, j;
-      
-      for (i = 0; i < np; i++)
-	{
-	  Ng_GetPoint (pnums[i], point);
-	  for (j = 0; j < dim; j++)
-	    pmat(j, i) = point[j];
-	  
-	  Ng_GetNormalVector (elnr+1, i+1, nv);
-	  for (j = 0; j < dim; j++)
-	    nvmat(j, i) = nv[j];
-	}
-      
-      if (dim == 2)
-	{
-	  double tx = pmat(0,1)-pmat(0,0);
-	  double ty = pmat(1,1)-pmat(1,0);
-	  double len = sqrt (tx*tx+ty*ty);
-	  if (len != 0)
-	    { tx /= len; ty /= len; }
-	  for (i = 0; i < np; i++)
-	    {
-	      nvmat(0,i) = ty;
-	      nvmat(1,i) = -tx;
-	    }
-	}
-    }
-  catch (Exception & e)
-    {
-      stringstream ost;
-      ost << "in GetSurfaceElementTransformation" << endl;
-      e.Append (ost.str());
-      throw;
-    }
-  catch (exception & e)
-    {
-      throw (Exception (string(e.what()) +
-			string("\n in GetSurfaceElementTransformation\n")));
-    }
-
-}
-
-#endif
 
 
 

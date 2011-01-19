@@ -38,8 +38,7 @@ int main ()
   // integrate  x*y  over triangle [(0,0), (1,0), (0,1)]
   // with integrationrule of order 10 
 
-  const IntegrationRule & ir = 
-    GetIntegrationRules().SelectIntegrationRule (ET_TRIG, 10);
+  const IntegrationRule & ir = SelectIntegrationRule (ET_TRIG, 10);
 
   cout << "number of ipts = " << ir.GetNIP() << endl;
 
@@ -63,13 +62,11 @@ int main ()
   for(double x = 0; x <= 1.0001; x += 0.1)
     {
       IntegrationPoint ip(x);
-      seg.CalcShape(ip,shapess);
-      for(int i=0; i<seg.GetNDof(); i++)
+      seg.CalcShape (ip,shapess);
+      for(int i = 0; i < seg.GetNDof(); i++)
 	outf << shapess(i) << " ";
       outf << endl;
-    }
-  outf.close();
-
+    } 
 
   
   FE_Quad1 quad;
@@ -112,15 +109,15 @@ int main ()
   cout << "PointMatrix = " << endl << eltrans.PointMatrix() << endl;
 
  
-  FlatMatrix<double> elmat_lap (trig.GetNDof(), lh);
-  laplace.AssembleElementMatrix (trig, eltrans, elmat_lap, lh);
+  Matrix<double> elmat_lap (trig.GetNDof());
+  laplace.CalcElementMatrix (trig, eltrans, elmat_lap, lh);
 
   cout << "elmat laplace = " << endl << elmat_lap << endl;
 
 
 
-  FlatMatrix<double> elmat_mass(trig.GetNDof(), lh);
-  mass.AssembleElementMatrix (trig, eltrans, elmat_mass, lh);
+  Matrix<double> elmat_mass(trig.GetNDof());
+  mass.CalcElementMatrix (trig, eltrans, elmat_mass, lh);
   
   cout << "elmat mass = " << endl << elmat_mass << endl;
 
