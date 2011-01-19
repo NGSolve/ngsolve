@@ -206,7 +206,7 @@ namespace ngcomp
 		  if ( ma.IsGhostEl( i ) ) continue;
 
 		  const FiniteElement & fel = fespace.GetFE (i, lh);
-		  ma.GetElementTransformation (i, eltrans, lh);
+		  ma.GetElementTransformation (i, eltrans);
 		      
 		  fespace.GetDofNrs (i, dnums);
 		
@@ -273,7 +273,7 @@ namespace ngcomp
 	      
 		  const FiniteElement & fel = fespace.GetSFE (i, lh);
 	      
-		  ma.GetSurfaceElementTransformation (i, eltrans, lh);
+		  ma.GetSurfaceElementTransformation (i, eltrans);
 		  fespace.GetSDofNrs (i, dnums);
 	      
 		  for (int j = 0; j < parts.Size(); j++)
@@ -350,8 +350,8 @@ namespace ngcomp
 		  
 		  const FiniteElement & fel = fespace.GetFE (el, lh);
 		
-		  ma.GetElementTransformation (el, eltrans, lh);
-		  ma.GetSurfaceElementTransformation (i, seltrans, lh);
+		  ma.GetElementTransformation (el, eltrans);
+		  ma.GetSurfaceElementTransformation (i, seltrans);
 		  fespace.GetDofNrs (el, dnums);
 		  ma.GetElVertices (el, vnums);		
 	      
@@ -619,7 +619,7 @@ namespace ngcomp
 	    lh.CleanUp();
 	    
 	    const FiniteElement & sfel = fespace.GetSFE (i, lh);
-	    ma.GetSurfaceElementTransformation (i, seltrans, lh);
+	    ma.GetSurfaceElementTransformation (i, seltrans);
 	      	
 	    // (*testout) << "el = " << i << ", ind = " << ma.GetSElIndex(i) << endl;
 	    if (!parts[0]->DefinedOn (ma.GetSElIndex(i))) continue;
@@ -644,7 +644,7 @@ namespace ngcomp
 		if (elnr == -1) continue;
 		
 		const FiniteElement & gfel = fespace.GetFE (elnr, lh);
-		ma.GetElementTransformation (elnr, geltrans, lh);
+		ma.GetElementTransformation (elnr, geltrans);
 		SpecificIntegrationPoint<3,3> gsip(gip, geltrans, lh);
 		
 		// (*testout) << " =?= p = " << gsip.GetPoint() << endl;

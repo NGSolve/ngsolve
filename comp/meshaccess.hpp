@@ -401,15 +401,33 @@ namespace ngcomp
 
 
     ///
-    void GetElementTransformation (int elnr, ElementTransformation & eltrans,
-				   LocalHeap & lh) const;
+    void GetElementTransformation (int elnr, ElementTransformation & eltrans) const;
 
     ///
     ElementTransformation GetTrafo (int elnr, bool boundary) const;
 
     ///
+    void GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans) const;
+
+
+
+
+
+    // compatibility for a while ...
+    void GetElementTransformation (int elnr, ElementTransformation & eltrans,
+				   LocalHeap & lh) const
+    {
+      GetElementTransformation (elnr, eltrans);
+    }
+
     void GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans,
-					  LocalHeap & lh) const;
+					  LocalHeap & lh) const
+    {
+      GetSurfaceElementTransformation (elnr, eltrans);
+    }
+    
+
+
 
     ///
     // ElementTransformation GetSurfaceTrafo (int elnr) const;
