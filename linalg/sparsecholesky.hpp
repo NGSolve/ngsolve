@@ -14,10 +14,15 @@
 namespace ngla
 {
 
-  class BaseSparseCholesky : public BaseMatrix
+  class SparseFactorization : public BaseMatrix
   { 
+  protected:
+    const BitArray * inner;
+    const Array<int> * cluster;
+    const BaseSparseMatrix & matrix;
   public:
-    virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const = 0;
+    SparseFactorization (const BaseSparseMatrix & amatrix) : matrix(amatrix) { ; }
+    virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const;
   };
 
 
@@ -27,7 +32,7 @@ namespace ngla
      ordering algorithm
   */
   template<class TM, class TV_ROW, class TV_COL>
-  class SparseCholesky : public BaseSparseCholesky
+  class SparseCholesky : public SparseFactorization
   {
     int height, nze;
 
@@ -35,9 +40,6 @@ namespace ngla
     ///
     DynamicMem<TM> lfact;
     DynamicMem<TM> diag;
-    ///
-    const BitArray * inner;
-    const Array<int> * cluster;
     ///
     MinimumDegreeOrdering * mdo;
     int maxrow;
@@ -79,7 +81,7 @@ namespace ngla
        u += w
        y -= (L+D)^T w
     **/
-    virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const;
+    // virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const;
     ///
     virtual ostream & Print (ostream & ost) const;
 
