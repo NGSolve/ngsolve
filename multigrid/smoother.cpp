@@ -837,7 +837,8 @@ namespace ngmg
       }
     else
       {
-	BaseSparseCholesky* scinv = dynamic_cast<BaseSparseCholesky*> (inv[level]);
+	// BaseSparseCholesky* scinv = dynamic_cast<BaseSparseCholesky*> (inv[level]);
+	SparseFactorization * scinv = dynamic_cast<SparseFactorization*> (inv[level]);
 	if (scinv)
 	  {
 	    for(int i=0;i<steps;i++)
@@ -911,7 +912,7 @@ namespace ngmg
       {
 	BaseVector & d = *f.CreateVector();
 
-	BaseSparseCholesky* scinv = dynamic_cast<BaseSparseCholesky*> (inv[level]);
+	SparseFactorization * scinv = dynamic_cast<SparseFactorization*> (inv[level]);
 	if (scinv)
 	  {
 	    d = f;

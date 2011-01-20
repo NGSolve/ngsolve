@@ -1157,7 +1157,9 @@ namespace ngla
 
   template <class TM, class TV>
   void SparseMatrixSymmetric<TM,TV> :: 
-  MultAdd1 (double s, const BaseVector & x, BaseVector & y) const
+  MultAdd1 (double s, const BaseVector & x, BaseVector & y,
+	    const BitArray * inner,
+	    const Array<int> * cluster) const
   {
     static int timer = NgProfiler::CreateTimer ("SparseMatrixSymmetric::MultAdd1");
     NgProfiler::RegionTimer reg (timer);
@@ -1167,14 +1169,29 @@ namespace ngla
     FlatVector<TV_COL> fy = 
       dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
     
-    for (int i = 0; i < this->Height(); i++)
-      fy(i) += s * RowTimesVectorNoDiag (i, fx);
+    if (inner)
+      {
+	for (int i = 0; i < this->Height(); i++)
+	  if (inner->Test(i))
+	    fy(i) += s * RowTimesVectorNoDiag (i, fx);
+      }
+    else if (cluster)
+      {
+	for (int i = 0; i < this->Height(); i++)
+	  if ( (*cluster)[i])
+	    fy(i) += s * RowTimesVectorNoDiag (i, fx);
+      }
+    else
+      for (int i = 0; i < this->Height(); i++)
+	fy(i) += s * RowTimesVectorNoDiag (i, fx);
   }
   
 
   template <class TM, class TV>
   void SparseMatrixSymmetric<TM,TV> :: 
-  MultAdd2 (double s, const BaseVector & x, BaseVector & y) const
+  MultAdd2 (double s, const BaseVector & x, BaseVector & y,
+	    const BitArray * inner,
+	    const Array<int> * cluster) const
   {
     static int timer = NgProfiler::CreateTimer ("SparseMatrixSymmetric::MultAdd2");
     NgProfiler::RegionTimer reg (timer);
@@ -1184,8 +1201,22 @@ namespace ngla
     FlatVector<TV_COL> fy = 
       dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
 	
-    for (int i = 0; i < this->Height(); i++)
-      AddRowTransToVector (i, s * fx(i), fy);
+
+    if (inner)
+      {
+	for (int i = 0; i < this->Height(); i++)
+	  if (inner->Test(i))
+	    AddRowTransToVector (i, s * fx(i), fy);
+      }
+    else if (cluster)
+      {
+	for (int i = 0; i < this->Height(); i++)
+	  if ( (*cluster)[i])
+	    AddRowTransToVector (i, s * fx(i), fy);
+      }
+    else
+      for (int i = 0; i < this->Height(); i++)
+	AddRowTransToVector (i, s * fx(i), fy);
   }
 
 

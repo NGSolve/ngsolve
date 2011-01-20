@@ -645,13 +645,19 @@ namespace ngla
     /*
       y += s L * x
     */
-    virtual void MultAdd1 (double s, const BaseVector & x, BaseVector & y) const;
+    virtual void MultAdd1 (double s, const BaseVector & x, BaseVector & y,
+			   const BitArray * ainner = NULL,
+			   const Array<int> * acluster = NULL) const;
 
 
     /*
       y += s (D + L^T) * x
     */
-    virtual void MultAdd2 (double s, const BaseVector & x, BaseVector & y) const;
+    virtual void MultAdd2 (double s, const BaseVector & x, BaseVector & y,
+			   const BitArray * ainner = NULL,
+			   const Array<int> * acluster = NULL) const;
+    
+
 
 
 

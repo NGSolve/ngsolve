@@ -92,12 +92,16 @@ namespace ngla
 
 
     // to split mat x vec for symmetric matrices
-    virtual void MultAdd1 (double s, const BaseVector & x, BaseVector & y) const
+    virtual void MultAdd1 (double s, const BaseVector & x, BaseVector & y,
+			   const BitArray * ainner = NULL,
+			   const Array<int> * acluster = NULL) const
     {
       MultAdd (s, x, y);
     }
 
-    virtual void MultAdd2 (double s, const BaseVector & x, BaseVector & y) const
+    virtual void MultAdd2 (double s, const BaseVector & x, BaseVector & y,
+			   const BitArray * ainner = NULL,
+			   const Array<int> * acluster = NULL) const
     {
       ;
     }

@@ -58,6 +58,7 @@ namespace ngla
 		  const BitArray * ainner,
 		  const Array<int> * acluster,
 		  int asymmetric)
+    : SparseFactorization (a)
   { 
     static int timer = NgProfiler::CreateTimer ("Pardiso Inverse");
     NgProfiler::RegionTimer reg (timer);
@@ -544,7 +545,7 @@ namespace ngla
     */
   }
   
-  
+  /*
   template<class TM, class TV_ROW, class TV_COL>
   PardisoInverse<TM,TV_ROW,TV_COL> :: 
   PardisoInverse (const Array<int> & aorder, 
@@ -554,7 +555,6 @@ namespace ngla
   {
     Allocate (aorder, cliques, vertices);
   }
-  
 
   
   template<class TM, class TV_ROW, class TV_COL>
@@ -565,6 +565,7 @@ namespace ngla
   {
     cout << "PardisoInverse::Allocate not implemented!" << endl;
   }
+  */
   
 
   template<class TM, class TV_ROW, class TV_COL>
@@ -689,6 +690,9 @@ namespace ngla
 
 
 
+
+
+  /*
   template<class TM, class TV_ROW, class TV_COL>
   void PardisoInverse<TM,TV_ROW,TV_COL> :: Set (int i, int j, const TM & val)
   {
@@ -703,6 +707,8 @@ namespace ngla
     static TM dummy(0.0);
     return dummy;
   }
+  */
+
 
   template<class TM, class TV_ROW, class TV_COL>
   ostream & PardisoInverse<TM,TV_ROW,TV_COL> :: Print (ostream & ost) const

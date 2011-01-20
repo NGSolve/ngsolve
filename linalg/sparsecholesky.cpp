@@ -17,7 +17,7 @@ namespace ngla
 		  const BitArray * ainner,
 		  const Array<int> * acluster,
 		  bool allow_refactor)
-    : mat(a)
+    : SparseFactorization (a), mat(a)
   { 
     // (*testout) << "matrix = " << a << endl;
     // (*testout) << "diag a = ";
@@ -1251,129 +1251,26 @@ namespace ngla
 
 
   
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseCholesky<TM, TV_ROW, TV_COL> :: 
-  Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const
+  // template <class TM, class TV_ROW, class TV_COL>
+  // void SparseCholesky<TM, TV_ROW, TV_COL> :: 
+  void SparseFactorization  :: 
+  Smooth (BaseVector & u, const BaseVector & /* f */, BaseVector & y) const
   {
-    int n = Height();
+    BaseVector & hvec1 = *u.CreateVector();
+    BaseVector & hvec2 = *u.CreateVector();
+
+    hvec1 = 1.0 * y;
+    matrix.MultAdd1 (-1, u, hvec1, inner, cluster);
     
-    // const FlatVector<TVX> ff = 
-    // dynamic_cast<const T_BaseVector<TVX> &> (f).FV();
-    FlatVector<TVX> fu = 
-      dynamic_cast<T_BaseVector<TVX> &> (u).FV();
-    FlatVector<TVX> fy = 
-      dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+    hvec2 = (*this) * hvec1;
+    u += hvec2;
     
+    matrix.MultAdd2 (-1, hvec2, y, inner, cluster);
 
-    const SparseMatrixSymmetric<TM, TV_ROW> & smat = 
-      dynamic_cast<const SparseMatrixSymmetric<TM,TV_ROW> &> (mat);
-      
-
-    Vector<TVX> hvec(n);
-    typedef typename mat_traits<TVX>::TSCAL TSCAL;
-    hvec = TSCAL(0);
-
-    if (inner)
-      {
-	for (int i = 0; i < n; i++)
-	  if (inner->Test(i))
-	    hvec(order[i]) = fy(i) - smat.RowTimesVectorNoDiag (i, fu);
-      }
-    else if (cluster)
-      {
-	for (int i = 0; i < n; i++)
-	  {
-	    if ((*cluster)[i])
-	      hvec(order[i]) = fy(i) - smat.RowTimesVectorNoDiag (i, fu);
-	  }
-      }
-    else
-      for (int i = 0; i < n; i++)
-	hvec(order[i]) = fy(i) - smat.RowTimesVectorNoDiag (i, fu);
-      
-
-    TVX hv;
-    TVX * hhvec = &hvec(0);
-
-    const TM * hlfact = &lfact[0];
-    const TM * hdiag = &diag[0];
-    const int * hrowindex2 = &rowindex2[0];
-    const int * hfirstinrow = &firstinrow[0];
-    const int * hfirstinrow_ri = &firstinrow_ri[0];
-    
-    int j = 0;
-    for (int i = 0; i < n; i++)
-      {
-	TVX val = hvec(i);
-	int last = hfirstinrow[i+1];
-	int j_ri = hfirstinrow_ri[i];
-	while (j < last)
-	  {
-	    hhvec[hrowindex2[j_ri]] -= Trans (hlfact[j]) * val;
-	    j++;
-	    j_ri++;
-	  }
-      }
-  
-    for (int i = 0; i < n; i++)
-      {
-	hv = hdiag[i] * hhvec[i];
-	hhvec[i] = hv;
-      }
-
-    for (int i = n-1; i >= 0; i--)
-      {
-	int minj = hfirstinrow[i];
-	int maxj = hfirstinrow[i+1];
-	int j_ri = hfirstinrow_ri[i];
-
-	TVX sum;
-	sum = 0.0;
-	
-	for (j = minj; j < maxj; j++, j_ri++)
-	  sum += lfact[j] * hvec(rowindex2[j_ri]);
-	
-	hvec(i) -= sum;
-      }
-
-
-
-
-    if (inner)
-      {
-	for (int i = 0; i < n; i++)
-	  if (inner->Test(i))
-	    fu(i) += hvec(order[i]);
-      }
-    else if (cluster)
-      {
-	for (int i = 0; i < n; i++)
-	  if ((*cluster)[i])
-	    {
-	      fu(i) += hvec(order[i]);
-	      smat.AddRowTransToVector (i, -hvec(order[i]), fy);
-	    }
-      }
-    else
-      {
-	for (int i = 0; i < n; i++)
-	  fu(i) += hvec(order[i]);
-      }
+    delete & hvec2;
+    delete & hvec1;
   }
   
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
