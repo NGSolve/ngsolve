@@ -38,9 +38,6 @@ private:
   /// point coordinates
   T_POINTS points;
 
-  /// type of element, set in calcsurfacesofnode
-  // Array<ELEMENTTYPE> eltyps;
-
   /// line-segments at edges
   Array<Segment> segments;
   /// surface elements, 2d-inner elements
