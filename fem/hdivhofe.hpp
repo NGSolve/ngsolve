@@ -34,6 +34,7 @@ protected:
 
   bool discontinuous;
   bool ho_div_free;
+  bool only_ho_div;
 
   typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 
@@ -50,7 +51,8 @@ public:
   void SetOrderInner (INT<3> oi); 
 
   void SetDiscontinuous (bool disc) { discontinuous = disc; };  
-  void SetHODivFree (bool aho_div_free) { ho_div_free = aho_div_free; };  
+  void SetHODivFree (bool aho_div_free) { ho_div_free = aho_div_free; only_ho_div = only_ho_div && !ho_div_free;};  
+  void SetOnlyHODiv (bool aonly_ho_div) { only_ho_div = aonly_ho_div; ho_div_free = ho_div_free && !only_ho_div;};  
 
   virtual void ComputeNDof () = 0;
   
@@ -169,6 +171,7 @@ protected:
   using HDivHighOrderFiniteElement<DIM>::order_face;
   using HDivHighOrderFiniteElement<DIM>::order_inner;
   using HDivHighOrderFiniteElement<DIM>::ho_div_free;
+  using HDivHighOrderFiniteElement<DIM>::only_ho_div;
   using HDivHighOrderFiniteElement<DIM>::discontinuous;
 
 
