@@ -84,6 +84,8 @@ namespace ngcomp
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
     ///
+    virtual const FiniteElement & GetHODivFE (int elnr, LocalHeap & lh) const;
+    ///
     virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; // 2D: array =0.;
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;

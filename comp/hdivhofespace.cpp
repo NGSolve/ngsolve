@@ -649,6 +649,131 @@ namespace ngcomp
     return *fe;
   }
 
+  const FiniteElement & HDivHighOrderFESpace :: GetHODivFE (int elnr, LocalHeap & lh) const
+  {
+    if (!ho_div_free) throw Exception ("You don't have hodivfree active. You are not allow to call GetHODivFE");
+    if (ma.GetElType(elnr) == ET_TRIG && order <= 6 && 0)
+      {
+	HDivHighOrderFiniteElementFO<2> * hofe2d = 0;
+	switch (order)
+	  {
+	  case 1: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,1> (); break;
+	  case 2: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,2> (); break;
+	  case 3: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,3> (); break;
+	  case 4: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,4> (); break;
+	  case 5: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,5> (); break;
+	  case 6: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,6> (); break;
+	  }
+	
+	Ng_Element ngel = ma.GetElement<2> (elnr);
+	for (int j = 0; j < 3; j++)
+	  hofe2d->SetVertexNumber (j, ngel.vertices[j]);
+
+        hofe2d -> SetOnlyHODiv (true);
+        hofe2d -> ComputeNDof();
+	
+	return *hofe2d;
+      }  
+
+
+
+    FiniteElement * fe;
+    
+    typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
+    // typedef TrigExtensionMonomial T_ORTHOPOL;
+    
+
+    
+    switch (ma.GetElType(elnr))
+      {
+      case ET_TET: fe = new (lh)  HDivHighOrderFE<ET_TET> (); break;
+        // case ET_PYRAMID: fe = new (lh)  HDivHighOrderPyramid<ET_PYRAMID> (order);  break;
+      case ET_PRISM: fe = new (lh)  HDivHighOrderFE<ET_PRISM> (); break;
+      case ET_HEX:   fe = new (lh)  HDivHighOrderFE<ET_HEX> (order); break;
+      case ET_TRIG:  fe = new (lh)  HDivHighOrderFE<ET_TRIG> (order); break;
+      case ET_QUAD:  fe = new (lh)  HDivHighOrderFE<ET_QUAD> (order); break;
+      default:
+	fe = 0; 
+      }
+  
+    if (!fe)
+      {
+	stringstream str;
+	str << "HDivHighOrderFESpace " << GetClassName() 
+	    << ", undefined eltype " 
+	    << ElementTopology::GetElementName(ma.GetElType(elnr))
+	    << ", order = " << order << endl;
+	throw Exception (str.str());
+      }
+    
+    Array<int> vnums;
+    ma.GetElVertices(elnr, vnums);
+    if ( ma.GetDimension() == 2)
+      {
+	
+	HDivHighOrderFiniteElement<2> * hofe =
+	  dynamic_cast<HDivHighOrderFiniteElement<2>*> (fe);
+	ArrayMem<int, 12> ednums, order_ed;
+	
+	ma.GetElEdges(elnr, ednums);
+	order_ed.SetSize (ednums.Size());
+	
+	for (int j = 0; j < ednums.Size(); j++)
+	  order_ed[j] = order_facet[ednums[j]][0];
+      
+#ifdef PARALLEL
+	if ( ntasks > 1 )
+	  for ( int i = 0; i < vnums.Size(); i++ )
+	    vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
+#endif
+	hofe -> SetVertexNumbers (vnums);
+	hofe -> SetOrderEdge (order_ed);
+	
+	// #ifndef NEW_HDIVFE // old version 
+	//  hofe -> SetOrderInner (order_inner[elnr][0]);
+	// hofe -> SetDiscontinuous(discont); 
+	// #else
+        // new anisotropic FE
+	hofe -> SetOrderInner (order_inner[elnr]); 
+	//hofe -> SetOrderInnerCurl (order_inner_curl[elnr]);
+	hofe -> SetDiscontinuous(discont); 
+        hofe -> SetOnlyHODiv (true);
+	hofe -> ComputeNDof();
+      }
+    else // dim=3
+      {
+	HDivHighOrderFiniteElement<3> * hofe =
+	  dynamic_cast<HDivHighOrderFiniteElement<3>*> (fe);
+	
+	ArrayMem<int, 6> fanums; 
+	ArrayMem<INT<2>, 6> order_fa;
+	ma.GetElFaces(elnr, fanums);
+	order_fa.SetSize (fanums.Size());
+	
+	for (int j = 0; j < fanums.Size(); j++)
+	  order_fa[j] = order_facet[fanums[j]];
+
+#ifdef PARALLEL
+	if ( ntasks > 1 )
+	  for ( int i = 0; i < vnums.Size(); i++ )
+	    vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
+#endif
+	hofe -> SetVertexNumbers (vnums);
+	
+	hofe -> SetOrderFace (order_fa);
+	hofe -> SetOrderInner (order_inner[elnr]);
+	//hofe -> SetOrderInnerCurl (order_inner_curl[elnr]); // under construction
+	hofe -> SetDiscontinuous(discont); 
+        hofe -> SetOnlyHODiv (ho_div_free);
+	hofe -> ComputeNDof();
+      }
+    return *fe;
+  }
+
+
+
+
+
   const FiniteElement & HDivHighOrderFESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
     FiniteElement * fe = 0;

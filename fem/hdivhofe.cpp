@@ -51,6 +51,7 @@ namespace ngfem
       vnums[i] = i;
 
     ho_div_free = 0;
+    only_ho_div = 0;
   }
 
 
@@ -415,32 +416,43 @@ namespace ngfem
   {
     if (DIM == 2)
       {
-        ndof = ET_trait<ET>::N_EDGE;
-        
-        for(int i = 0; i < ET_trait<ET>::N_EDGE; i++)
-          ndof += order_edge[i];
-        
-        if (ET == ET_TRIG)
+        if (only_ho_div){
+          if (ET == ET_TRIG)
+            ndof = order_inner[0]*(order_inner[0]+1)/2 - 1;
+          else
           {
-            if (order_inner[0] > 1)
-              { 
-                if (ho_div_free)
-                  ndof += order_inner[0]*(order_inner[0]-1)/2;
-                else
-                  ndof += order_inner[0]*order_inner[0]-1;
-              }
+            ndof = order_inner[0]*order_inner[1] + order_inner[0] + order_inner[1];
           }
+          return;
+        }
         else
-          {  // quad
-            INT<2> p(order_inner[0], order_inner[1]);
+        {
+          ndof = ET_trait<ET>::N_EDGE;
+          
+          for(int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+            ndof += order_edge[i];
+          
+          if (ET == ET_TRIG)
+            {
+              if (order_inner[0] > 1)
+                { 
+                  if (ho_div_free)
+                    ndof += order_inner[0]*(order_inner[0]-1)/2;
+                  else
+                    ndof += order_inner[0]*order_inner[0]-1;
+                }
+            }
+          else
+            {  // quad
+              INT<2> p(order_inner[0], order_inner[1]);
 
-            int ni = ho_div_free
-              ? p[0]*p[1] 
-              : 2*p[0]*p[1] + p[0] + p[1];
-            
-            ndof += ni; 
-          }
-       
+              int ni = ho_div_free
+                ? p[0]*p[1] 
+                : 2*p[0]*p[1] + p[0] + p[1];
+              
+              ndof += ni; 
+            }
+        }
         order = 0; 
         for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
           if (order_edge[i] > order)
@@ -453,51 +465,74 @@ namespace ngfem
       }
     else
       {
-        ndof = ET_trait<ET>::N_FACE;
-
-        for(int i = 0; i < ET_trait<ET>::N_FACE; i++)
-          {
-            INT<2> p = order_face[i];
-            if (ET_trait<ET>::FaceType(i) == ET_TRIG)
-              ndof += (p[0]*p[0]+3*p[0])/2;
-            else
-              ndof +=  p[0]*p[1] + p[0] + p[1];
-          }
 
         int p = order_inner[0];
         int pc = order_inner[0]; // should be order_inner_curl!!!  
-	int pz = p; // order_inner[2];
+        int pz = p; // order_inner[2];
 
-	// cout << "ndof, bound = " << ndof << endl;
-        switch (ET)
-          {   
-          case ET_TRIG: case ET_QUAD: // for the compiler
-            break;
+        if (only_ho_div){
+          switch (ET)
+            {   
+            case ET_TRIG: case ET_QUAD: // for the compiler
+              break;
+            case ET_TET: 
+                ndof = p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
+              break;
+            case ET_PRISM:
+              if (order_inner[0]>0 )
+                ndof = (p+1)*(p+2)*(pz+1)/2 - 1;
+              /*
+                  // inner_dof horizontal
+                  ndof += (order_inner[0]+1)*(3*(order_inner[0]-1)+(order_inner[0]-2)*(order_inner[0]-1));
+                  // inner dof vertical
+                  ndof += (order_inner[0]-1)*(order_inner[0]+1)*(order_inner[0]+2)/2;
+              */
+              break;
+            }
+        }
+        else
+        {
+          ndof = ET_trait<ET>::N_FACE;
 
-          case ET_TET: 
-            if(pc > 1) 
-              ndof += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
-            if(p > 1 && !ho_div_free) 
-              ndof += p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
-            break;
+          for(int i = 0; i < ET_trait<ET>::N_FACE; i++)
+            {
+              INT<2> p = order_face[i];
+              if (ET_trait<ET>::FaceType(i) == ET_TRIG)
+                ndof += (p[0]*p[0]+3*p[0])/2;
+              else
+                ndof +=  p[0]*p[1] + p[0] + p[1];
+            }
 
-          case ET_PRISM:
-            // SZ: ATTENTION PRISM up to now only using for order_inner[0] !!  
-            if (order_inner[0]>0 )
-              {
-		ndof += (p+2)*p*(pz+1) + (p+1)*(p+2)*pz/2;
-		if (ho_div_free)
-		  ndof -= (p+1)*(p+2)*(pz+1)/2 - 1;
-		/*
-                // inner_dof horizontal
-                ndof += (order_inner[0]+1)*(3*(order_inner[0]-1)+(order_inner[0]-2)*(order_inner[0]-1));
-                // inner dof vertical
-                ndof += (order_inner[0]-1)*(order_inner[0]+1)*(order_inner[0]+2)/2;
-		*/
-              }
-            break;
-          }
+        // cout << "ndof, bound = " << ndof << endl;
+          switch (ET)
+            {   
+            case ET_TRIG: case ET_QUAD: // for the compiler
+              break;
 
+            case ET_TET: 
+              if(pc > 1) 
+                ndof += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
+              if(p > 1 && !ho_div_free) 
+                ndof += p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
+              break;
+
+            case ET_PRISM:
+              // SZ: ATTENTION PRISM up to now only using for order_inner[0] !!  
+              if (order_inner[0]>0 )
+                {
+              ndof += (p+2)*p*(pz+1) + (p+1)*(p+2)*pz/2;
+              if (ho_div_free)
+                ndof -= (p+1)*(p+2)*(pz+1)/2 - 1;
+              /*
+                  // inner_dof horizontal
+                  ndof += (order_inner[0]+1)*(3*(order_inner[0]-1)+(order_inner[0]-2)*(order_inner[0]-1));
+                  // inner dof vertical
+                  ndof += (order_inner[0]-1)*(order_inner[0]+1)*(order_inner[0]+2)/2;
+              */
+                }
+              break;
+            }
+        }
 	// cout << "ndof, tot = " << ndof << endl;
 
         order = 0; 
@@ -608,34 +643,38 @@ namespace ngfem
   template<typename Tx, typename TFA>  
   void  HDivHighOrderFE<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
+    if (only_ho_div && (order_inner[0] <= 1)) return;
     Tx x = hx[0], y = hx[1];
     Tx lami[3] = { x, y, 1-x-y };
 
     ArrayMem<AutoDiff<2>,10> adpol1(order),adpol2(order);	
 	
     int ii = 3; 
-    const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
-    for (int i = 0; i < 3; i++)
-      {
-	int es = edges[i][0], ee = edges[i][1];
-	if (vnums[es] > vnums[ee])  swap (es, ee);
+    if (!only_ho_div){
+      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+      for (int i = 0; i < 3; i++)
+        {
+        int es = edges[i][0], ee = edges[i][1];
+        if (vnums[es] > vnums[ee])  swap (es, ee);
 
-	//Nedelec low order edge shape function 
-        shape[i] = uDv_minus_vDu<2> (lami[es], lami[ee]);
+        //Nedelec low order edge shape function 
+          shape[i] = uDv_minus_vDu<2> (lami[es], lami[ee]);
 
-	int p = order_edge[i]; 
-	//HO-Edge shapes (Gradient Fields)   
-	if(p > 0) //  && usegrad_edge[i]) 
-	  { 
-	    AutoDiff<2> xi = lami[ee] - lami[es]; 
-	    AutoDiff<2> eta = 1 - lami[ee] - lami[es]; 
-	    T_ORTHOPOL::CalcTrigExt(p+1, xi, eta, adpol1); 
-	   
-	    for(int j = 0; j < p; j++) 
-              shape[ii++] = Du<2> (adpol1[j]);
-	  }
-      }   
-
+        int p = order_edge[i]; 
+        //HO-Edge shapes (Gradient Fields)   
+        if(p > 0) //  && usegrad_edge[i]) 
+          { 
+            AutoDiff<2> xi = lami[ee] - lami[es]; 
+            AutoDiff<2> eta = 1 - lami[ee] - lami[es]; 
+            T_ORTHOPOL::CalcTrigExt(p+1, xi, eta, adpol1); 
+           
+            for(int j = 0; j < p; j++) 
+                shape[ii++] = Du<2> (adpol1[j]);
+          }
+        }   
+    }
+    else
+      ii = 0;
     //Inner shapes (Face) 
     int p = order_inner[0];      
     if(p > 1) 
@@ -651,11 +690,12 @@ namespace ngfem
 
         TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
 	
-	// rotated gradients:
-        for (int j = 0; j < p-1; j++)
-          for (int k = 0; k < p-1-j; k++, ii++)
-            shape[ii] = Du<2> (adpol1[j] * adpol2[k]);
-        
+        if (!only_ho_div){
+        // rotated gradients:
+          for (int j = 0; j < p-1; j++)
+            for (int k = 0; k < p-1-j; k++, ii++)
+              shape[ii] = Du<2> (adpol1[j] * adpol2[k]);
+        }
         
         if (!ho_div_free)
           {
@@ -712,6 +752,8 @@ namespace ngfem
   template<typename Tx, typename TFA>  
   void  HDivHighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
+
+    if (only_ho_div && (order_inner[0]<=1 && order_inner[1]<=1)) return;
     Tx x = hx[0], y = hx[1];
 
     AutoDiff<2> lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
@@ -720,29 +762,32 @@ namespace ngfem
     int ii = 4;
     ArrayMem<AutoDiff<2>, 10> pol_xi(order+2), pol_eta(order+2);
 
-    // edges
-    const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
-    for (int i = 0; i < 4; i++)
-      {
-	int p = order_edge[i]; 
-	int es = edges[i][0], ee = edges[i][1];
-	if (vnums[es] > vnums[ee]) swap (es, ee);
-
-	AutoDiff<2> xi  = sigma[ee]-sigma[es];
-	AutoDiff<2> lam_e = lami[ee]+lami[es];  // attention in [0,1]
-
-	// Nedelec0-shapes
-        shape[i] = uDv<2> (0.5 * lam_e, xi); 
-
-	// High Order edges ... Gradient fields 
-	// if(usegrad_edge[i])
+    if (!only_ho_div){
+      // edges
+      const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
+      for (int i = 0; i < 4; i++)
         {
-          T_ORTHOPOL::Calc (p+1, xi, pol_xi);  
-          for (int j = 0; j < p; j++)
-            shape[ii++] = Du<2> (pol_xi[j] * lam_e);
+        int p = order_edge[i]; 
+        int es = edges[i][0], ee = edges[i][1];
+        if (vnums[es] > vnums[ee]) swap (es, ee);
+
+        AutoDiff<2> xi  = sigma[ee]-sigma[es];
+        AutoDiff<2> lam_e = lami[ee]+lami[es];  // attention in [0,1]
+
+        // Nedelec0-shapes
+          shape[i] = uDv<2> (0.5 * lam_e, xi); 
+
+        // High Order edges ... Gradient fields 
+        // if(usegrad_edge[i])
+          {
+            T_ORTHOPOL::Calc (p+1, xi, pol_xi);  
+            for (int j = 0; j < p; j++)
+              shape[ii++] = Du<2> (pol_xi[j] * lam_e);
+          }
         }
-      }
-     
+    }
+    else
+      ii = 0;
     // INT<2> p = order_face[0]; // (order_cell[0],order_cell[1]);
     INT<2> p (order_inner[0], order_inner[1]); // (order_cell[0],order_cell[1]);
     int fmax = 0; 
@@ -759,13 +804,16 @@ namespace ngfem
     
     T_ORTHOPOL::Calc(p[0]+1, xi,pol_xi);
     T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
-    
-    //Gradient fields 
-    // if(usegrad_face[0])
-    for (int k = 0; k < p[0]; k++)
-      for (int j= 0; j < p[1]; j++)
-        shape[ii++] = Du<2> (pol_xi[k]*pol_eta[j]);
-    
+
+    if (!only_ho_div)
+    {    
+      //Gradient fields 
+      // if(usegrad_face[0])
+      for (int k = 0; k < p[0]; k++)
+        for (int j= 0; j < p[1]; j++)
+          shape[ii++] = Du<2> (pol_xi[k]*pol_eta[j]);
+    }
+
     if (!ho_div_free)
       {
         //Rotation of Gradient fields 
@@ -832,50 +880,54 @@ namespace ngfem
   template<typename Tx, typename TFA>  
   void  HDivHighOrderFE<ET_TET> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
+    if (only_ho_div && order_inner[0]<=1) return;
     Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lami[4] = { x, y, z, 1-x-y-z };
 
     ArrayMem<Tx,10> adpol1(order), adpol2(order), adpol3(order);
 	
     int ii = 4; 
-    const FACE * faces = ElementTopology::GetFaces (ET_TET);
-    for (int i = 0; i < 4; i++)
-      {
-	int p = order_face[i][0];
+    if (!only_ho_div)
+    {
+      const FACE * faces = ElementTopology::GetFaces (ET_TET);
+      for (int i = 0; i < 4; i++)
+        {
+        int p = order_face[i][0];
 
-        int fav[3];
-        for(int j = 0; j < 3; j++) fav[j]=faces[i][j];
-        
-        //Sort vertices  first edge op minimal vertex
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-        if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-        int fop = 6 - fav[0] - fav[1] - fav[2];
-        
-	// RT lowest order
-        shape[i] = uDvDw_Cyclic<3> (lami[fav[0]], lami[fav[1]], lami[fav[2]]);
-
-        Tx xi = lami[fav[1]]-lami[fav[0]];
-        Tx eta = lami[fav[2]];
-        Tx zeta = lami[fop];  
-      
-        T_FACESHAPES::CalcSplitted (p+2, xi, eta, zeta, adpol1, adpol2); 
-
-        // Compability WITH TRIG!! 
-        for (int k = 0; k < adpol1.Size(); k++)
-          adpol1[k] *= 0.5; 
+          int fav[3];
+          for(int j = 0; j < 3; j++) fav[j]=faces[i][j];
           
-        // Curl (Type 2) 2*grad v x grad u
-        for (int j = 0; j <= p-1; j++) 
-          for (int k = 0; k <= p-1-j; k++)
-            shape[ii++] = Du_Cross_Dv<3> (adpol2[k], adpol1[j]);
+          //Sort vertices  first edge op minimal vertex
+          if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
+          if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
+          if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
+          int fop = 6 - fav[0] - fav[1] - fav[2];
+          
+        // RT lowest order
+          shape[i] = uDvDw_Cyclic<3> (lami[fav[0]], lami[fav[1]], lami[fav[2]]);
 
-        // Curl (Type 3) //curl( * v) = nabla v x ned + curl(ned)*v
-        for (int j = 0; j <= p-1; j++)
-          shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[fav[0]], lami[fav[1]], adpol2[j]);
-      }
+          Tx xi = lami[fav[1]]-lami[fav[0]];
+          Tx eta = lami[fav[2]];
+          Tx zeta = lami[fop];  
+        
+          T_FACESHAPES::CalcSplitted (p+2, xi, eta, zeta, adpol1, adpol2); 
 
-    
+          // Compability WITH TRIG!! 
+          for (int k = 0; k < adpol1.Size(); k++)
+            adpol1[k] *= 0.5; 
+            
+          // Curl (Type 2) 2*grad v x grad u
+          for (int j = 0; j <= p-1; j++) 
+            for (int k = 0; k <= p-1-j; k++)
+              shape[ii++] = Du_Cross_Dv<3> (adpol2[k], adpol1[j]);
+
+          // Curl (Type 3) //curl( * v) = nabla v x ned + curl(ned)*v
+          for (int j = 0; j <= p-1; j++)
+            shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[fav[0]], lami[fav[1]], adpol2[j]);
+        }
+    }
+    else
+      ii = 0;
     // cell-based shapes 
     int p = order_inner[0];
     int pc = order_inner[0]; // should be order_inner_curl  
@@ -884,25 +936,26 @@ namespace ngfem
       {
         T_INNERSHAPES::CalcSplitted(pp+2, lami[0]-lami[3], lami[1], lami[2], adpol1, adpol2, adpol3 );
       
-        // Curl-Fields 
-        for (int i = 0; i <= pc-2; i++)
-          for (int j = 0; j <= pc-2-i; j++)
-            for (int k = 0; k <= pc-2-i-j; k++)
-              {
-                // grad v  x  grad (uw)
-                shape[ii++] = Du_Cross_Dv<3> (adpol2[j], adpol1[i]*adpol3[k]);
-      
-                // grad w  x  grad (uv)
-                shape[ii++] = Du_Cross_Dv<3> (adpol3[k], adpol1[i]*adpol2[j]);
-              }     
+        if (!only_ho_div){
+          // Curl-Fields 
+          for (int i = 0; i <= pc-2; i++)
+            for (int j = 0; j <= pc-2-i; j++)
+              for (int k = 0; k <= pc-2-i-j; k++)
+                {
+                  // grad v  x  grad (uw)
+                  shape[ii++] = Du_Cross_Dv<3> (adpol2[j], adpol1[i]*adpol3[k]);
+        
+                  // grad w  x  grad (uv)
+                  shape[ii++] = Du_Cross_Dv<3> (adpol3[k], adpol1[i]*adpol2[j]);
+                }     
 
 
-        // Type 1 : Curl(T3)
-        // ned = lami[0] * nabla(lami[3]) - lami[3] * nabla(lami[0]) 
-        for (int j= 0; j <= pc-2; j++)
-          for (int k = 0; k <= pc-2-j; k++)
-            shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[0], lami[3], adpol2[j]*adpol3[k]);
-
+          // Type 1 : Curl(T3)
+          // ned = lami[0] * nabla(lami[3]) - lami[3] * nabla(lami[0]) 
+          for (int j= 0; j <= pc-2; j++)
+            for (int k = 0; k <= pc-2-j; k++)
+              shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[0], lami[3], adpol2[j]*adpol3[k]);
+        }
 
         if (!ho_div_free)
           { 
