@@ -1326,13 +1326,7 @@ public:
   ///
   LaplaceIntegrator (CoefficientFunction * coeff);
   LaplaceIntegrator (Array<CoefficientFunction*> & coeffs);
-
-  /*
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-  {
-    return new LaplaceIntegrator (coeffs[0]);
-  }
-  */
+  virtual ~LaplaceIntegrator ();
   virtual string Name () const { return "Laplace"; }
 };
 
@@ -1417,17 +1411,15 @@ public:
 
 ///
 template <int D>
-class MassIntegrator 
+class NGS_DLL_HEADER MassIntegrator 
   : public T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> >
 {
 public:
   ///
-  NGS_DLL_HEADER MassIntegrator (CoefficientFunction * coeff);
-  NGS_DLL_HEADER MassIntegrator (Array<CoefficientFunction*> & coeffs);
-    
-  ///
-  // static Integrator * Create (Array<CoefficientFunction*> & coeffs);
-  ///
+  MassIntegrator (CoefficientFunction * coeff);
+  MassIntegrator (Array<CoefficientFunction*> & coeffs);
+  virtual ~MassIntegrator (Array<CoefficientFunction*> & coeffs);
+
   virtual string Name () const { return "Mass"; }
 };
 
@@ -1709,20 +1701,9 @@ class NGS_DLL_HEADER SourceIntegrator
 public:
   SourceIntegrator (CoefficientFunction * coeff);
   SourceIntegrator (Array<CoefficientFunction*> & coeffs);
-  // static Integrator * Create (Array<CoefficientFunction*> & coeffs);
+  virtual ~SourceIntegrator ();
   virtual string Name () const { return "Source"; }
 };
-
-/*
-template <int D, typename FEL = ScalarFiniteElement<D>  >
-class ComplexSourceIntegrator 
-  : public T_BIntegrator<DiffOpId<D>, DVec<1, Complex>, FEL>
-{
-public:
-  ComplexSourceIntegrator (CoefficientFunction * coeff);
-  virtual string Name () const { return "ComplexSource"; }
-};
-*/
 
 
 ///
@@ -1733,8 +1714,8 @@ class NGS_DLL_HEADER NeumannIntegrator
 public:
   ///
   NeumannIntegrator (CoefficientFunction * coeff);
-
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs);
+  NeumannIntegrator (Array<CoefficientFunction*> & coeffs);
+  virtual ~NeumannIntegrator ();
   ///  
   virtual bool BoundaryForm () const { return 1; }
   ///

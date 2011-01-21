@@ -129,6 +129,11 @@ namespace ngfem
     : T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL> (DVec<1> (coeff))
   { ; }
 
+  template <int D, typename FEL> NeumannIntegrator<D,FEL> ::
+  NeumannIntegrator (Array<CoefficientFunction*> coeffs)
+    : T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL> (DVec<1> (coeffs))
+  { ; }
+
 
   /*
   template <int D, typename FEL> ComplexNeumannIntegrator<D,FEL> ::
