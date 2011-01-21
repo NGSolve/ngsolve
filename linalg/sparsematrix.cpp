@@ -633,6 +633,10 @@ namespace ngla
 
 
 
+  BaseSparseMatrix :: ~BaseSparseMatrix ()
+  { 
+    ;
+  }
 
 
 

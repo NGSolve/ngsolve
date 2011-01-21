@@ -268,7 +268,7 @@ public:
   {
     T_CalcElementMatrix<double> (bfel, eltrans, elmat, lh);
   }
-    
+
   virtual void
   CalcElementMatrix (const FiniteElement & bfel,
 		     const ElementTransformation & eltrans, 
@@ -277,7 +277,6 @@ public:
   {
     T_CalcElementMatrix<Complex> (bfel, eltrans, elmat, lh);
   }
-
 
 
 #ifdef TEXT_BOOK_VERSION
@@ -940,11 +939,6 @@ public:
   }
   */
 };
-
-
-
-
-
 
 
 
