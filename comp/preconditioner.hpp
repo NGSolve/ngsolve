@@ -21,7 +21,7 @@ namespace ngcomp
   /**
      Base class for preconditioners.
   */
-  class NGS_DLL_HEADER Preconditioner : public NGS_Object
+  class NGS_DLL_HEADER Preconditioner : public NGS_Object, public BaseMatrix
   {
   protected:
     bool test;
@@ -60,8 +60,17 @@ namespace ngcomp
     ///
     virtual void CleanUpLevel () { ; }
     ///
-    virtual const BaseMatrix & GetMatrix() const = 0;
+    virtual const BaseMatrix & GetMatrix() const
+    {
+      return *this; 
+    }
     ///
+    virtual void Mult (const BaseVector & x, BaseVector & y) const
+    {
+      GetMatrix().Mult(x, y);
+    }
+
+
     virtual const BaseMatrix & GetAMatrix() const
     { throw Exception ("Preconditioner, A-Matrix not available"); }
 
@@ -543,7 +552,21 @@ namespace ngcomp
  
   extern NGS_DLL_HEADER PreconditionerClasses & GetPreconditionerClasses ();
 
-
+  template <typename PRECOND>
+  class RegisterPreconditioner
+  {
+  public:
+    RegisterPreconditioner (string label)
+    {
+      GetPreconditionerClasses().AddPreconditioner (label, Create);
+      cout << "register preconditioner '" << label << "'" << endl;
+    }
+    
+    static Preconditioner * Create (const PDE & pde, const Flags & flags)
+    {
+      return new PRECOND (pde, flags);
+    }
+  };
 
 }
 
