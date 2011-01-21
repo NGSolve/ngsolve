@@ -241,7 +241,7 @@ namespace ngla
       : BaseMatrix(amat), MatrixGraph (amat, 0)
     { ; }   
 
-
+    virtual ~BaseSparseMatrix ();
 
     BaseSparseMatrix & operator= (double s)
     {

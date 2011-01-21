@@ -168,6 +168,29 @@ namespace ngla
     throw Exception (err.str());
   }
 
+   // to split mat x vec for symmetric matrices
+  void BaseMatrix :: MultAdd1 (double s, const BaseVector & x, BaseVector & y,
+			       const BitArray * ainner,
+			       const Array<int> * acluster) const
+  {
+    MultAdd (s, x, y);
+  }
+
+  void BaseMatrix :: MultAdd2 (double s, const BaseVector & x, BaseVector & y,
+			       const BitArray * ainner,
+			       const Array<int> * acluster) const
+  {
+    ;
+  }
+  
+
+
+
+
+
+
+
+
 // #ifdef PARALLEL
 //   ngparallel::ParallelDofs * BaseMatrix :: GetParallelDofs ( )
 //   { return paralleldofs; }
