@@ -1410,15 +1410,15 @@ public:
 
 
 ///
-template <int D>
+template <int D, typename FEL = ScalarFiniteElement<D> >
 class NGS_DLL_HEADER MassIntegrator 
-  : public T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> >
+  : public T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, FEL >
 {
 public:
   ///
   MassIntegrator (CoefficientFunction * coeff);
   MassIntegrator (Array<CoefficientFunction*> & coeffs);
-  virtual ~MassIntegrator (Array<CoefficientFunction*> & coeffs);
+  virtual ~MassIntegrator ();
 
   virtual string Name () const { return "Mass"; }
 };
@@ -1442,15 +1442,20 @@ public:
 
 
 /// integrator for \f$\int_\Gamma u v \, ds\f$
-template <int D>
+  template <int D, typename FEL = ScalarFiniteElement<D-1> >
 class NGS_DLL_HEADER RobinIntegrator 
-  : public T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, ScalarFiniteElement<D-1> >
+  : public T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, FEL>
 {
+  typedef T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, FEL> BASE;
 public:
   ///
   RobinIntegrator (CoefficientFunction * coeff);
   ///
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs);
+  RobinIntegrator (Array<CoefficientFunction*> & coeffs);
+  ///
+  virtual ~RobinIntegrator ();
+  ///
+  // static Integrator * Create (Array<CoefficientFunction*> & coeffs);
   // {
   // return new RobinIntegrator (coeffs[0]);
   // }

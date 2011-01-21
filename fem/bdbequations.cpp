@@ -16,34 +16,19 @@ namespace ngfem
   
 
 
-  template <int D>  MassIntegrator<D> :: 
+  template <int D, typename FEL>  MassIntegrator<D,FEL> :: 
   MassIntegrator (CoefficientFunction * coeff)
     : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (DiagDMat<1> (coeff))
   { ; }
 
-  template <int D>  MassIntegrator<D> :: 
+  template <int D, typename FEL>  MassIntegrator<D, FEL> :: 
   MassIntegrator (Array<CoefficientFunction*> & coeffs)
     : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (coeffs)
   { ; }
 
-
-  /*
-    template <int D> ComplexMassIntegrator<D> ::
-  ComplexMassIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (DiagDMat<1> (coeff))
-  { ; }
+  template <int D, typename FEL>  MassIntegrator<D, FEL> :: ~MassIntegrator () { ; }
 
 
-  template <int D> 
-  Integrator * MassIntegrator<D> :: Create (Array<CoefficientFunction*> & coeffs)
-  {
-    CoefficientFunction * coef = coeffs[0];
-    if (!coef -> IsComplex())
-      return new MassIntegrator (coef);
-    else
-      return new ComplexMassIntegrator<D> (coef);
-  }
-  */
 
 
   template <int D, typename FEL> LaplaceIntegrator<D,FEL> ::
@@ -55,6 +40,11 @@ namespace ngfem
   LaplaceIntegrator (Array<CoefficientFunction*> & coeffs)
     : T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> (coeffs)
   { ; }
+
+  template <int D, typename FEL> LaplaceIntegrator<D,FEL> :: ~LaplaceIntegrator () { ; }
+
+
+
 
 
   template <int D, typename FEL> LaplaceBoundaryIntegrator<D,FEL> ::
@@ -70,25 +60,24 @@ namespace ngfem
 
 
 
-  template <int D> RobinIntegrator<D> ::
+
+  
+  template <int D, typename FEL> RobinIntegrator<D,FEL> ::
   RobinIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, ScalarFiniteElement<D-1> > (DiagDMat<1> (coeff))
+    : BASE(DiagDMat<1> (coeff))
+  { ; }
+  
+
+  template <int D, typename FEL> RobinIntegrator<D,FEL> ::
+  RobinIntegrator (Array<CoefficientFunction*> & coeffs)
+    : BASE(coeffs)
   { ; }
 
-  template <int D> ComplexRobinIntegrator<D> ::
-  ComplexRobinIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, ScalarFiniteElement<D-1> > (DiagDMat<1> (coeff))
-  { ; }
+  template <int D, typename FEL> RobinIntegrator<D,FEL> :: ~RobinIntegrator () { ; }
 
-  template <int D> 
-  Integrator * RobinIntegrator<D> :: Create (Array<CoefficientFunction*> & coeffs)
-  {
-    CoefficientFunction * coef = coeffs[0];
-    if (!coef -> IsComplex())
-      return new RobinIntegrator (coef);
-    else
-      return new ComplexRobinIntegrator<D> (coef);
-  }
+
+
+
 
 
 
@@ -103,25 +92,10 @@ namespace ngfem
     : T_BIntegrator<DiffOpId<D>, DVec<1>, FEL> (coeffs)
   { ; }
   
+  template <int D, typename FEL>  SourceIntegrator<D,FEL> :: ~SourceIntegrator () { ; }
 
-  /*
-  template <int D, typename FEL> ComplexSourceIntegrator<D,FEL> ::
-  ComplexSourceIntegrator (CoefficientFunction * coeff)
-    : T_BIntegrator<DiffOpId<D>, DVec<1, Complex>, FEL> (DVec<1, Complex> (coeff))
-  { ; }
-  */
 
-  /*
-  template <int D, typename FEL> 
-  Integrator * SourceIntegrator<D,FEL> :: Create (Array<CoefficientFunction*> & coeffs)
-  {
-    CoefficientFunction * coef = coeffs[0];
-    if (!coef -> IsComplex())
-      return new SourceIntegrator (coef);
-    else
-      return new ComplexSourceIntegrator<D,FEL> (coef);
-  }
-  */
+
 
 
   template <int D, typename FEL> NeumannIntegrator<D,FEL> ::
@@ -130,30 +104,13 @@ namespace ngfem
   { ; }
 
   template <int D, typename FEL> NeumannIntegrator<D,FEL> ::
-  NeumannIntegrator (Array<CoefficientFunction*> coeffs)
+  NeumannIntegrator (Array<CoefficientFunction*> & coeffs)
     : T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL> (DVec<1> (coeffs))
   { ; }
 
+  template <int D, typename FEL>  NeumannIntegrator<D,FEL> :: ~NeumannIntegrator () { ; }
 
-  /*
-  template <int D, typename FEL> ComplexNeumannIntegrator<D,FEL> ::
-  ComplexNeumannIntegrator (CoefficientFunction * coeff)
-    : T_BIntegrator<DiffOpIdBoundary<D>, DVec<1, Complex>, FEL> (DVec<1, Complex> (coeff))
-  { ; }
-  */
 
-  template <int D, typename FEL> 
-  Integrator * NeumannIntegrator<D,FEL> ::
-  Create (Array<CoefficientFunction*> & coeffs)
-  {
-    CoefficientFunction * coef = coeffs[0];
-    // if (!coef -> IsComplex())
-      return new NeumannIntegrator (coef);
-    /*
-    else
-      return new ComplexNeumannIntegrator<D,FEL> (coef);
-    */
-  }
 
 
 
@@ -195,10 +152,14 @@ namespace ngfem
   static RegisterBilinearFormIntegrator<LaplaceIntegrator<3> > initlap3 ("laplace", 3, 1);
   static RegisterBilinearFormIntegrator<MassIntegrator<2> > initmass2 ("mass", 2, 1);
   static RegisterBilinearFormIntegrator<MassIntegrator<3> > initmass3 ("mass", 3, 1);
+  static RegisterBilinearFormIntegrator<RobinIntegrator<2> > initrobin2 ("robin", 2, 1);
+  static RegisterBilinearFormIntegrator<RobinIntegrator<3> > initrobin3 ("robin", 3, 1);
   
   
   static RegisterLinearFormIntegrator<SourceIntegrator<2> > initsource2 ("source", 2, 1);
   static RegisterLinearFormIntegrator<SourceIntegrator<3> > initsource3 ("source", 3, 1);
+  static RegisterLinearFormIntegrator<NeumannIntegrator<2> > initneumann2 ("neumann", 2, 1);
+  static RegisterLinearFormIntegrator<NeumannIntegrator<3> > initneumann3 ("neumann", 3, 1);
   
 
   
@@ -254,11 +215,12 @@ namespace ngfem
 					CurlCurl3dIntegrator<>::Create);
       */
 
+      /*
       GetIntegrators().AddBFIntegrator ("robin", 2, 1,
 					RobinIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("robin", 3, 1,
 					RobinIntegrator<3>::Create);
-
+      */
       GetIntegrators().AddBFIntegrator ("laplaceboundary", 2, 1,
 					LaplaceBoundaryIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("laplaceboundary", 3, 1,
@@ -301,11 +263,12 @@ namespace ngfem
       GetIntegrators().AddLFIntegrator("gradsource", 3, 3, 
 				       GradSourceIntegrator<3>::Create); 
 
+      /*
       GetIntegrators().AddLFIntegrator ("neumann", 2, 1,
 					NeumannIntegrator<2>::Create);
       GetIntegrators().AddLFIntegrator ("neumann", 3, 1,
 					NeumannIntegrator<3>::Create);
-
+      */
       GetIntegrators().AddLFIntegrator ("normalneumann", 2, 1,
 					NormalNeumannIntegrator<2>::Create);
       GetIntegrators().AddLFIntegrator ("normalneumann", 3, 1,
