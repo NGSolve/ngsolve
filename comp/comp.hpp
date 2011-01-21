@@ -65,7 +65,7 @@ namespace ngcomp
 #include "vectorfacetfespace.hpp"
 
 #include "preconditioner.hpp"
-#include "wirebasket.hpp"
+// #include "wirebasket.hpp"
 #include "bddc.hpp"
 
 
