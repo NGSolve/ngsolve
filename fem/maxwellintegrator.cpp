@@ -100,18 +100,6 @@ namespace ngfem
     
     Init::Init()
     {
-      /*
-      GetIntegrators().AddBFIntegrator ("curlcurledge", 3, 1,
-					CurlCurlEdgeIntegrator<3>::Create);
-      GetIntegrators().AddBFIntegrator ("curlcurledge", 2, 1,
-					CurlCurlEdgeIntegrator<2>::Create);
-
-      GetIntegrators().AddBFIntegrator ("massedge", 3, 1,
-					MassEdgeIntegrator<3>::Create);
-      GetIntegrators().AddBFIntegrator ("massedge", 2, 1,
-					MassEdgeIntegrator<2>::Create);
-
-      */
       GetIntegrators().AddBFIntegrator ("curlcurlboundaryedge", 3, 1,
 					CurlCurlBoundaryEdgeIntegrator::Create);
       GetIntegrators().AddBFIntegrator ("orthocurlcurledge", 3, 3,
@@ -126,15 +114,6 @@ namespace ngfem
 					RobinEdgeIntegrator<2>::Create);      
       GetIntegrators().AddBFIntegrator ("massedgeanisotropic", 3, 6,
 					MassEdgeAnisotropicIntegrator<3>::Create);
-
-
-      /*
-      GetIntegrators().AddLFIntegrator ("sourceedge", 3, 3,
-					SourceEdgeIntegrator<3>::Create);
-      GetIntegrators().AddLFIntegrator ("sourceedge", 2, 2,
-					SourceEdgeIntegrator<2>::Create);
-      */
-
 
       GetIntegrators().AddLFIntegrator ("neumannedge", 3, 3,
 					NeumannEdgeIntegrator<3>::Create);

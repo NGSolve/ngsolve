@@ -173,38 +173,17 @@ namespace ngfem
     
     Init::Init()
     {
-
-
-
-      /*
-      GetIntegrators().AddBFIntegrator ("laplace", 2, 1,
-					LaplaceIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("laplace", 3, 1,
-					LaplaceIntegrator<3>::Create);
-      */
-
       GetIntegrators().AddBFIntegrator ("rotsymlaplace", 2, 1,
 					RotSymLaplaceIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("rotsymlaplace", 3, 1,
 					RotSymLaplaceIntegrator<3>::Create);
-      /*
-      GetIntegrators().AddBFIntegrator ("ortholaplace", 2, 2,
-					OrthoLaplaceIntegrator<2>::Create);
-      */
+
+
       GetIntegrators().AddBFIntegrator ("ortholaplace", 2, 2,
 					OrthoLaplaceIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("ortholaplace", 3, 3,
 					OrthoLaplaceIntegrator<3>::Create);
       
-
-
-      /*
-      GetIntegrators().AddBFIntegrator ("mass", 2, 1,
-					MassIntegrator<2>::Create);
-
-      GetIntegrators().AddBFIntegrator ("mass", 3, 1,
-					MassIntegrator<3>::Create);
-      */
 
       /*
       GetIntegrators().AddBFIntegrator ("divdiv", 2, 1,
@@ -215,12 +194,7 @@ namespace ngfem
 					CurlCurl3dIntegrator<>::Create);
       */
 
-      /*
-      GetIntegrators().AddBFIntegrator ("robin", 2, 1,
-					RobinIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("robin", 3, 1,
-					RobinIntegrator<3>::Create);
-      */
+
       GetIntegrators().AddBFIntegrator ("laplaceboundary", 2, 1,
 					LaplaceBoundaryIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("laplaceboundary", 3, 1,
@@ -246,29 +220,10 @@ namespace ngfem
       GetIntegrators().AddBFIntegrator ("orthocylelasticity", 3, 10,
 					OrthotropicCylElasticityIntegrator<3>::Create);
       
-      /*
-      GetIntegrators().AddBFIntegrator ("dirichletpenalty", 3, 1,
-					DirichletPenaltyIntegrator<3>::Create);
-      GetIntegrators().AddBFIntegrator ("dirichletpenalty", 2, 1,
-					DirichletPenaltyIntegrator<2>::Create);
-      */
 
-
-      /*
-      GetIntegrators().AddLFIntegrator ("source", 2, 1,
-					SourceIntegrator<2>::Create);
-      GetIntegrators().AddLFIntegrator ("source", 3, 1,
-					SourceIntegrator<3>::Create);
-      */
       GetIntegrators().AddLFIntegrator("gradsource", 3, 3, 
 				       GradSourceIntegrator<3>::Create); 
 
-      /*
-      GetIntegrators().AddLFIntegrator ("neumann", 2, 1,
-					NeumannIntegrator<2>::Create);
-      GetIntegrators().AddLFIntegrator ("neumann", 3, 1,
-					NeumannIntegrator<3>::Create);
-      */
       GetIntegrators().AddLFIntegrator ("normalneumann", 2, 1,
 					NormalNeumannIntegrator<2>::Create);
       GetIntegrators().AddLFIntegrator ("normalneumann", 3, 1,
