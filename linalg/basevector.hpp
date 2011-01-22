@@ -240,7 +240,7 @@ public:
   
 
 
-  virtual const PARALLEL_STATUS Status () const 
+  virtual PARALLEL_STATUS Status () const 
   { return NOT_PARALLEL; }
 
   virtual void SetStatus ( PARALLEL_STATUS astatus )

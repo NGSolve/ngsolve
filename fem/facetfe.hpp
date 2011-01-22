@@ -76,9 +76,9 @@ namespace ngfem
     int vnums[8];
     mutable int edgenr;
 
-    using FiniteElement :: order;
-    using FiniteElement :: eltype;
-    using FiniteElement :: ndof;
+    using ScalarFiniteElement<DIM> :: order;
+    using ScalarFiniteElement<DIM> :: eltype;
+    using ScalarFiniteElement<DIM> :: ndof;
   public:
     EdgeVolumeFiniteElement (ELEMENT_TYPE aeltype, int aorder);
     void SetVertexNumbers (FlatArray<int> & avnums)

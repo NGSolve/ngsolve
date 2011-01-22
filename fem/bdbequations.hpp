@@ -1340,12 +1340,6 @@ class LaplaceBoundaryIntegrator
 public:
   ///
   LaplaceBoundaryIntegrator (CoefficientFunction * coeff);
-  /*
-    : T_BDBIntegrator<DiffOpGradientBoundary<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
-  {
-    ;
-  }
-  */
 
   static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
@@ -1366,10 +1360,7 @@ class RotSymLaplaceIntegrator
 public:
   ///
   RotSymLaplaceIntegrator (CoefficientFunction * coeff);
-  /*
-    : T_BDBIntegrator<DiffOpGradient<D>, RotSymLaplaceDMat<D>, FEL> (RotSymLaplaceDMat<D> (coeff))
-  { ; }
-  */
+
   static Integrator * Create (Array<CoefficientFunction*> & coeffs)
   {
     return new RotSymLaplaceIntegrator (coeffs[0]);
@@ -1417,26 +1408,15 @@ class NGS_DLL_HEADER MassIntegrator
 public:
   ///
   MassIntegrator (CoefficientFunction * coeff);
+  ///
   MassIntegrator (Array<CoefficientFunction*> & coeffs);
+  ///
   virtual ~MassIntegrator ();
-
+  ///
   virtual string Name () const { return "Mass"; }
 };
 
 
-/*
-template <int D>
-class ComplexMassIntegrator 
-// : public T_BDBIntegrator<DiffOpId<D>, DiagDMat<1, Complex>, ScalarFiniteElement<D> >
-  : public T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> >
-{
-public:
-  ///
-  ComplexMassIntegrator (CoefficientFunction * coeff);
-  ///
-  virtual string Name () const { return "ComplexMass"; }
-};
-*/
 
 
 
@@ -1455,30 +1435,11 @@ public:
   ///
   virtual ~RobinIntegrator ();
   ///
-  // static Integrator * Create (Array<CoefficientFunction*> & coeffs);
-  // {
-  // return new RobinIntegrator (coeffs[0]);
-  // }
-  ///
   virtual bool BoundaryForm () const { return 1; }
   ///
   virtual string Name () const { return "Robin"; }
 };
 
-
-/*
-template <int D>
-class ComplexRobinIntegrator 
-// : public T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1, Complex>, ScalarFiniteElement<D-1> >
-  : public T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, ScalarFiniteElement<D-1> >
-{
-public:
-  ///
-  ComplexRobinIntegrator (CoefficientFunction * coeff);
-  ///
-  virtual string Name () const { return "ComplexRobin"; }
-};
-*/
 
 
 
@@ -1504,7 +1465,7 @@ public:
 */
 
 
-/// Elasticity operator $(e_{11},e_{22},2 e_{12})$
+/// 
 template <int D> 
 class DiffOpDiv : public DiffOp<DiffOpDiv<D> >
 {
@@ -1729,18 +1690,6 @@ public:
   virtual string Name () const { return "Neumann"; }
 };
 
-/*
-template <int D, typename FEL = ScalarFiniteElement<D-1>  >
-class ComplexNeumannIntegrator 
-  : public T_BIntegrator<DiffOpIdBoundary<D>, DVec<1, Complex>, FEL>
-{
-public:
-  ComplexNeumannIntegrator (CoefficientFunction * coeff);
-  virtual bool BoundaryForm () const { return 1; }
-  virtual string Name () const { return "ComplexNeumann"; }
-};
-*/
-
 
 
 
@@ -1797,66 +1746,6 @@ public:
 
 
 
-
-
-
-#ifdef NOTAVAILABLE
-///
-class DivIntegrator : public B1DB2Integrator<>
-{
-  ///
-  CoefficientFunction * coeff;
-  ///
-  int dim;
-
-public:
-  ///
-  DivIntegrator (int adim, CoefficientFunction * acoeff);
-  ///
-  ~DivIntegrator ();
-
-  ///
-  virtual int GetDimension1 () const  
-  { return dim; }
-  ///
-  virtual int GetDimension2 () const  
-  { return 1; }
-
-  ///
-  virtual int GetDimensionD1 () const 
-  { return 1; }
-  ///
-  virtual int GetDimensionD2 () const 
-  { return 1; }
-
-  ///
-  virtual int DiffOrder1 () const { return 1; }
-  ///
-  virtual int DiffOrder2 () const { return 0; }
-
-
-  ///
-  virtual void GenerateB1Matrix (const FiniteElement & fel,
-				 const SpecificIntegrationPoint<> & ip,
-				 ngbla::FlatMatrix<> & bmat,
-				 LocalHeap & lh) const;
-  ///
-  virtual void GenerateB2Matrix (const FiniteElement & fel,
-				 const SpecificIntegrationPoint<> & ip,
-				 ngbla::FlatMatrix<> & bmat,
-				 LocalHeap & lh) const;
-  ///
-  virtual void GenerateDMatrix (const FiniteElement & fel,
-				const SpecificIntegrationPoint<> & ip,
-				ngbla::FlatMatrix<> & dmat,
-				LocalHeap & lh) const;
-
-
-  ///
-  virtual string Name () const { return "Div"; }
-};
-
-#endif
 
 
 }

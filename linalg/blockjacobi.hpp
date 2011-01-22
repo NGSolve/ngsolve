@@ -239,8 +239,6 @@ namespace ngla
     virtual void GSSmooth (BaseVector & x, const BaseVector & b,
 			   int steps = 1) const 
     {
-      int i, j, k;
-
       const FlatVector<TVX> fb = 
 	dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
       FlatVector<TVX> fx = 
@@ -248,8 +246,8 @@ namespace ngla
 
       Vector<TVX> hxmax(maxbs);
       Vector<TVX> hymax(maxbs);
-      for (k = 0; k < steps; k++)
-	for (i = 0; i < blocktable.Size(); i++)
+      for (int k = 0; k < steps; k++)
+	for (int i = 0; i < blocktable.Size(); i++)
 	  {
 	    int bs = blocktable[i].Size();
 	    if (!bs) continue;
@@ -257,7 +255,7 @@ namespace ngla
 	    FlatVector<TVX> hx(bs, &hxmax(0));
 	    FlatVector<TVX> hy(bs, &hymax(0));
 	  
-	    for (j = 0; j < bs; j++)
+	    for (int j = 0; j < bs; j++)
 	      {
 		int jj = blocktable[i][j];
 		hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
@@ -265,7 +263,7 @@ namespace ngla
 	  
 	    hy = (*invdiag[i]) * hx;
 	  
-	    for (j = 0; j < bs; j++)
+	    for (int j = 0; j < bs; j++)
 	      fx(blocktable[i][j]) += hy(j);
 	  }
     }
@@ -285,8 +283,6 @@ namespace ngla
     virtual void GSSmoothBack (BaseVector & x, const BaseVector & b,
 			       int steps = 1) const 
     {
-      int i, j, k;
-
       const FlatVector<TVX> fb = 
 	dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
       FlatVector<TVX> fx = 
@@ -295,8 +291,8 @@ namespace ngla
       Vector<TVX> hxmax(maxbs);
       Vector<TVX> hymax(maxbs);
 
-      for (k = 0; k < steps; k++)
-	for (i = blocktable.Size()-1; i >= 0; i--)
+      for (int k = 0; k < steps; k++)
+	for (int i = blocktable.Size()-1; i >= 0; i--)
 	  {
 	    int bs = blocktable[i].Size();
 	    if (!bs) continue;
@@ -304,7 +300,7 @@ namespace ngla
 	    FlatVector<TVX> hx(bs, &hxmax(0));
 	    FlatVector<TVX> hy(bs, &hymax(0));
 	  
-	    for (j = 0; j < bs; j++)
+	    for (int j = 0; j < bs; j++)
 	      {
 		int jj = blocktable[i][j];
 		hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
@@ -312,7 +308,7 @@ namespace ngla
 
 	    hy = (*invdiag[i]) * hx;
 	  
-	    for (j = 0; j < bs; j++)
+	    for (int j = 0; j < bs; j++)
 	      fx(blocktable[i][j]) += hy(j);
 	  }  
     }
