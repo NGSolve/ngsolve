@@ -837,13 +837,12 @@ namespace ngmg
       }
     else
       {
-	// BaseSparseCholesky* scinv = dynamic_cast<BaseSparseCholesky*> (inv[level]);
 	SparseFactorization * scinv = dynamic_cast<SparseFactorization*> (inv[level]);
 	if (scinv)
 	  {
 	    for(int i=0;i<steps;i++)
 	      {
-		jac[level] -> GSSmooth (u, f, res); 
+		jac[level] -> GSSmoothPartial (u, f, res); 
 		scinv -> Smooth (u, f, res);
 	      }  
           
@@ -863,38 +862,6 @@ namespace ngmg
 	      }
 	    Residuum (level, u, f, res);
 	  }
-
-	/*
-	  #ifdef USE_PARDISO
-	  for(int i=0;i<steps;i++)
-	  {
-	  jac[level] -> GSSmooth (u, f, 1); 
-	  Residuum (level, u, f, res);
-	  u +=  (*inv[level]) * res;
-	  }
-	  Residuum (level, u, f, res);
-	  #else 
-	  #  ifdef USE_SUPERLU
-	  for(int i=0;i<steps;i++)
-	  {
-	  jac[level] -> GSSmooth (u, f, 1); 
-	  Residuum (level, u, f, res);
-	  u +=  (*inv[level]) * res;
-	  }
-	  Residuum (level, u, f, res);
-	  #  else      
-	  // he: das funktioniert nicht mit pardiso und superlu
-	  //    pardisoinverse keine abgeleitete klasse von basesparsecholseky ist ... 
-	  for(int i=0;i<steps;i++)
-	  {
-	  jac[level] -> GSSmooth (u, f, res); 
-	  dynamic_cast<BaseSparseCholesky&> (*inv[level]).Smooth (u, f, res);
-	  }  
-      
-	  biform.GetMatrix (level).MultAdd1 (-1, u, res);
-	  #  endif
-	  #endif
-	*/
       }
   }
 
@@ -917,10 +884,10 @@ namespace ngmg
 	  {
 	    d = f;
 	    biform.GetMatrix (level).MultAdd2 (-1, u, d);
-	    for(int i=0;i<steps;i++)
+	    for (int i = 0; i < steps; i++)
 	      {
 		scinv -> Smooth (u, f, d);
-		jac[level] -> GSSmoothBack (u, f, d); 
+		jac[level] -> GSSmoothBackPartial (u, f, d); 
 	      }
 	  }
 	else

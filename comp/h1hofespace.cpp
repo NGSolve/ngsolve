@@ -129,12 +129,14 @@ namespace ngcomp
     ;
   }
 
+  /*
   FESpace * H1HighOrderFESpace :: 
   Create (const MeshAccess & ma, const Flags & flags)
   {
     return new H1HighOrderFESpace (ma, flags, true); // true: parse flags
   }
-    
+  */
+
   void H1HighOrderFESpace :: Update(LocalHeap & lh)
   {
     static Timer timer ("H1HighOrderFESpace::Update");
@@ -498,8 +500,9 @@ namespace ngcomp
     {
       for (int edge = 0; edge < ma.GetNEdges(); edge++){
 	IntRange range = GetEdgeDofs (edge);
-	for (int j=range.First();j<range.Next();j++)
-	  ctofdof[j] = (WIREBASKET_DOF);
+	ctofdof.Range(range) = INTERFACE_DOF; // WIREBASKET_DOF;
+	if (range.Next() > range.First())
+	  ctofdof[range.First()] = WIREBASKET_DOF;
       }
     }
     if (ma.GetDimension() == 3)
@@ -1599,6 +1602,9 @@ namespace ngcomp
   }
 #endif
 
+  static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
+
+  /*
   // register FESpaces
   namespace h1hofespace_cpp
   {
@@ -1615,5 +1621,5 @@ namespace ngcomp
     
     Init init_h1hofespace;
   }
-  
+  */
 }

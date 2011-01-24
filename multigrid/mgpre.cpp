@@ -383,9 +383,9 @@ namespace ngmg
 
     if ( ntasks == 1 )
       {
-        //    smoother->PreSmooth (level, u, f, smoothingsteps);
+        // smoother->PreSmooth (level, u, f, smoothingsteps);
+        // res = f - (*mat) * u;    
         smoother->PreSmoothResiduum (level, u, f, res, smoothingsteps);
-        // res = f - (*mat) * u;    // zur Sicheheit
 
         cres = *res.Range (0, cres.Size());
         cw = (*cpre) * cres;

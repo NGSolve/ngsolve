@@ -35,9 +35,8 @@ namespace ngla
     virtual void GSSmooth (BaseVector & x, const BaseVector & b,
 			   int steps = 1) const = 0;
 
-    /// performs steps Gauss-Seidel steps for the equation A x = b with partial residuum y
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b,
-			   BaseVector & y) const 
+    /// performs steps Gauss-Seidel steps for the equation A x = b with partial residual y
+    virtual void GSSmoothPartial (BaseVector & x, const BaseVector & b, BaseVector & y) const 
     {
       GSSmooth (x, b, 1);
     }
@@ -51,8 +50,7 @@ namespace ngla
     virtual void GSSmoothBack (BaseVector & x, const BaseVector & b,
 			       int steps = 1) const = 0;
 
-    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b,
-			       BaseVector & y) const 
+    virtual void GSSmoothBackPartial (BaseVector & x, const BaseVector & b, BaseVector & y) const 
     {
       GSSmoothBack (x, b, 1);
     }
@@ -425,7 +423,8 @@ namespace ngla
 
 #ifdef SYMCHOLESKY
 
- 
+  // this version stores the blocks as full Cholesky - factors
+
   ///
   template <class TM, class TV>
   class BlockJacobiPrecondSymmetric : 
@@ -528,8 +527,8 @@ namespace ngla
 
 
 
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b,
-			   BaseVector & y) const 
+    virtual void GSSmoothPartial (BaseVector & x, const BaseVector & b,
+				  BaseVector & y) const 
     {
       const FlatVector<TVX> fb = 
 	dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
@@ -579,8 +578,8 @@ namespace ngla
 	  SmoothBlock (i, fx, fb, fy);
     }
 
-    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b,
-			       BaseVector & y) const 
+    virtual void GSSmoothBackPartial (BaseVector & x, const BaseVector & b,
+				      BaseVector & y) const 
     {
       const FlatVector<TVX> fb = 
 	dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
@@ -704,8 +703,8 @@ namespace ngla
 			   int steps = 1) const ;
 
   
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b,
-			   BaseVector & y) const ;
+    virtual void GSSmoothPartial (BaseVector & x, const BaseVector & b,
+				  BaseVector & y) const ;
 
     ///
     virtual void GSSmoothResiduum (BaseVector & x, const BaseVector & b,
@@ -717,8 +716,8 @@ namespace ngla
 
 
 
-    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b,
-			       BaseVector & y) const ;
+    virtual void GSSmoothBackPartial (BaseVector & x, const BaseVector & b,
+				      BaseVector & y) const ;
 
 
 
@@ -782,6 +781,7 @@ namespace ngla
 
 #else
 
+  // this version stores the blocks as full banded Cholesky - factors
 
   ///
   template <class TM, class TV>
@@ -822,41 +822,10 @@ namespace ngla
     void ComputeBlockFactor (FlatArray<int> block, int bw, FlatBandCholeskyFactors<TM> & inv) const;
   
     ///
-    virtual void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
-    {
-      static int timer = NgProfiler::CreateTimer ("BlockJacobiSymmetric::MultAdd");
-      NgProfiler::RegionTimer reg (timer);
-
-      const FlatVector<TVX> fx = dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
-      FlatVector<TVX> fy       = dynamic_cast<T_BaseVector<TVX> &> (y).FV();
-
-      Vector<TVX> hxmax(maxbs);
-      Vector<TVX> hymax(maxbs);
-
-      for (int i = 0; i < blocktable.Size(); i++)
-	{
-	  int bs = blocktable[i].Size();
-	  if (!bs) continue;
-
-	  FlatVector<TVX> hx(bs, &hxmax(0));
-	  FlatVector<TVX> hy(bs, &hymax(0));
-
-	  for (int j = 0; j < bs; j++)
-	    hx(j) = fx(blocktable[i][j]);
-	
-	  InvDiag(i).Mult (hx, hy);
-
-	  for (int j = 0; j < bs; j++)
-	    fy(blocktable[i][j]) += s * hy(j);
-	}
-    }
+    virtual void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const;
 
     ///
-    virtual void MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
-    {
-      MultAdd (s, x, y);
-    }
-
+    virtual void MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const;
 
     ///
     virtual BaseVector * CreateVector () const 
@@ -873,151 +842,35 @@ namespace ngla
 
     ///
     virtual void GSSmooth (BaseVector & x, const BaseVector & b,
-			   int steps = 1) const 
-    {
-      const FlatVector<TVX> fb = 
-	dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-      FlatVector<TVX> fx = 
-	dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-
-      Vector<TVX> fy(fx.Size());
-
-      // y = b - (D L^T) x
-
-      fy = fb;
-      for (int j = 0; j < mat.Height(); j++)
-	mat.AddRowTransToVector (j, -fx(j), fy);
-
-      for (int k = 1; k <= steps; k++)
-	for (int i = 0; i < blocktable.Size(); i++)
-	  SmoothBlock (i, fx, fb, fy);
-    }
+			   int steps = 1) const;
   
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b,
-			   BaseVector & y) const 
-    {
-      const FlatVector<TVX> fb = 
-	dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-      FlatVector<TVX> fx = 
-	dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-      FlatVector<TVX> fy = 
-	dynamic_cast<T_BaseVector<TVX> &> (y).FV();
-
-      for (int i = 0; i < blocktable.Size(); i++)
-	SmoothBlock (i, fx, fb, fy);
-    }
+    virtual void GSSmoothPartial (BaseVector & x, const BaseVector & b,
+				  BaseVector & y) const;
   
 
 
     ///
     virtual void GSSmoothResiduum (BaseVector & x, const BaseVector & b,
-				   BaseVector & res, int steps = 1) const 
-    {
-      const FlatVector<TVX> fb = 
-	dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-      FlatVector<TVX> fx = 
-	dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-      FlatVector<TVX> fres = 
-	dynamic_cast<T_BaseVector<TVX> &> (res).FV();
+				   BaseVector & res, int steps = 1) const;
 
-      // Vector<TVX> fy(fx.Size());
-
-      // y = b - (D L^T) x
-
-      fres = fb;
-
-      // for (int j = 0; j < mat.Height(); j++)
-      // mat.AddRowTransToVector (j, -fx(j), fres);
-
-      for (int k = 1; k <= steps; k++)
-	for (int i = 0; i < blocktable.Size(); i++)
-	  SmoothBlock (i, fx, fb, fres);
-
-      for (int j = 0; j < mat.Height(); j++)
-	fres(j) -= mat.RowTimesVectorNoDiag (j, fx);
-
-      // res = b - mat * x;
-    }
-  
   
     ///
     virtual void GSSmoothBack (BaseVector & x, const BaseVector & b,
-			       int steps = 1) const 
-    {
-      const FlatVector<TVX> fb = 
-	dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-      FlatVector<TVX> fx = 
-	dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+			       int steps = 1) const; 
+ 
 
-      Vector<TVX> fy(fx.Size());
-
-      // y = b - (D L^T) x
-      fy = fb;
-      for (int j = 0; j < mat.Height(); j++)
-	mat.AddRowTransToVector (j, -fx(j), fy);
-
-      for (int k = 1; k <= steps; k++)
-	for (int i = blocktable.Size()-1; i >= 0; i--)
-	  SmoothBlock (i, fx, fb, fy);
-    }
-
-
-    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b,
-			       BaseVector & y) const 
-    {
-      const FlatVector<TVX> fb = 
-	dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-      FlatVector<TVX> fx = 
-	dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-      FlatVector<TVX> fy = 
-	dynamic_cast<T_BaseVector<TVX> &> (y).FV();
-
-      for (int i = blocktable.Size()-1; i >= 0; i--)
-	SmoothBlock (i, fx, fb, fy);
-    }
+    virtual void GSSmoothBackPartial (BaseVector & x, const BaseVector & b,
+				      BaseVector & y) const; 
+ 
 
 
 
 
     void SmoothBlock (int i, 
 		      FlatVector<TVX> & x,
-		      const FlatVector<TVX> & b,
-		      FlatVector<TVX> & y) const
-    {
-      FlatArray<int> row = blocktable[i];
-
-      int bs = row.Size();
-      if (bs == 0) return;
-
-      VectorMem<1000,TVX> di (bs);
-      VectorMem<1000,TVX> wi (bs);
-
-      // di = P_i (y - L x)
-      for (int j = 0; j < bs; j++)
-	di(j) = y(row[j]) - mat.RowTimesVectorNoDiag (row[j], x);
-    
-      if (!lowmem)
-	InvDiag(i).Mult (di, wi);
-      else
-	{
-	  int bw = blockbw[i];
-	  int bs = blocktable[i].Size();
-	  ArrayMem<TM, 10000/sizeof(TM)+1> mem(bs*bw);
-	  FlatBandCholeskyFactors<TM> inv(bs, bw, &mem[0]);
-
-	  ComputeBlockFactor (blocktable[i], bw, inv);
-
-	  inv.Mult (di, wi);
-	}
-      // x += P_i w
-      // y -= (D L^t) P_i w
-
-      for (int j = 0; j < bs; j++)
-	{
-	  x(row[j]) += wi(j);
-	  mat.AddRowTransToVector (row[j], -wi(j), y);
-	}
-    }
+		      // const FlatVector<TVX> & b,
+		      FlatVector<TVX> & y) const;
+ 
 
     ///
     virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,
@@ -1121,8 +974,8 @@ namespace ngla
 			   int steps = 1) const ;
 
   
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b,
-			   BaseVector & y) const ;
+    virtual void GSSmoothPartial (BaseVector & x, const BaseVector & b,
+				  BaseVector & y) const ;
 
     ///
     virtual void GSSmoothResiduum (BaseVector & x, const BaseVector & b,
@@ -1134,14 +987,14 @@ namespace ngla
 
 
 
-    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b,
-			       BaseVector & y) const ;
+    virtual void GSSmoothBackPartial (BaseVector & x, const BaseVector & b,
+				      BaseVector & y) const ;
 
 
-
+    /// x ... solution, y ... partial residual
     void SmoothBlock (int i, 
 		      FlatVector<TVX> & x,
-		      const FlatVector<TVX> & b,
+		      // const FlatVector<TVX> & b,
 		      FlatVector<TVX> & y) const;
 
     ///
