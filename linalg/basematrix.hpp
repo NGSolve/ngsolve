@@ -91,45 +91,22 @@ namespace ngla
 
 
 
-    // to split mat x vec for symmetric matrices
+    /**
+       to split mat x vec for symmetric matrices
+       only rows with inner or cluster true need by added (but more can be ...)
+    */
     virtual void MultAdd1 (double s, const BaseVector & x, BaseVector & y,
 			   const BitArray * ainner = NULL,
 			   const Array<int> * acluster = NULL) const;
 
+    /// only cols with inner or cluster true need by added (but more can be ...)
     virtual void MultAdd2 (double s, const BaseVector & x, BaseVector & y,
 			   const BitArray * ainner = NULL,
 			   const Array<int> * acluster = NULL) const;
-
-    /*
-    // parallel methods --> ParallelBaseMatrix
-
-    virtual BaseMatrix * ConsistentMat () { cerr << "ERROR -- BaseMatrix::ConsistentMat() called" << endl; return 0; }
-    virtual const BaseMatrix * ConsistentMat () const  { cerr << "ERROR -- BaseMatrix::ConsistentMat() called" << endl; return 0; }
-
-    virtual void SetConsistentMat ( BaseMatrix * aconsistentmat )
-    { cerr << "ERROR -- BaseMatrix::SetConsistentMat called" << endl; }
-
-    virtual void AllocateConsistentMat ()
-    { cerr << "ERROR -- BaseMatrix::AllocateConsistentMat called" << endl; }
-
-    virtual void  AllocateConsistentMat ( const ngla::MatrixGraph & graph )
-    { cerr << "ERROR -- BaseMatrix::AllocateConsistentMat(const MatrixGraph&) called" << endl; }
-
-    virtual void CalcConsistentMat () 
-    { cerr << "ERROR -- BaseMatrix::CalcConsistentMat called" << endl; }
-
-    virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs );
-
-    virtual const ngparallel::ParallelDofs * GetParallelDofs ( ) const { return paralleldofs; }
-
-    virtual bool IsParallelMatrix() const
-    {
-    (*testout) << "PARALLELDOFS " <<  paralleldofs << endl;
-    if ( paralleldofs ) return true;
-    else return false;
-    }
-    */
   };
+
+
+
 
   class ParallelBaseMatrix : virtual public BaseMatrix
   {

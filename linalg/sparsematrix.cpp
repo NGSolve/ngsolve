@@ -679,8 +679,7 @@ namespace ngla
     : BaseMatrix(),
       BaseSparseMatrix (agraph, stealgraph), 
       S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
-      /* data(new TM[nze]), */
-      /* asvec(nze, data), */ nul(TSCAL(0))
+      nul(TSCAL(0))
   { 
     // data = new TM[nze];
     data.Alloc (nze);
@@ -697,8 +696,7 @@ namespace ngla
     : BaseMatrix(amat),
       BaseSparseMatrix (amat), 
       S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
-      /* data(new TM[nze]), */
-      /* asvec(nze, data), */ nul(TSCAL(0)) 
+      nul(TSCAL(0)) 
   { 
     // BaseMoveableMem::Print ();
     // data = new TM[nze];

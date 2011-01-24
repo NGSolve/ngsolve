@@ -333,9 +333,9 @@ namespace ngla
           }
 
         /*
-    for (int i = 0; i < blocktable.Size(); i++)
-      {
-	cout << "\rBuilding block " << i ;
+	  for (int i = 0; i < blocktable.Size(); i++)
+	  {
+	  cout << "\rBuilding block " << i ;
         */
 
 
@@ -354,14 +354,14 @@ namespace ngla
 	  for (int k = 0; k < bs; k++)
 	    blockmat(j,k) = mat(blocktable[i][j], blocktable[i][k]);
 	
-// 	(*testout) << "juhu, block " << i << " has L2norm " << L2Norm(blockmat) << endl;	
-// 	(*testout) << "block = " << blocktable[i] << endl;
-// 	(*testout) << "blockmat = " << endl << blockmat << endl;
+	// 	(*testout) << "juhu, block " << i << " has L2norm " << L2Norm(blockmat) << endl;	
+	// 	(*testout) << "block = " << blocktable[i] << endl;
+	// 	(*testout) << "blockmat = " << endl << blockmat << endl;
 	
         CalcInverse (blockmat, *invdiag[i]);
 	
-// 	(*testout) << "inv = " << endl << *invdiag[i] << endl;
-// 	(*testout) << "prod = " << endl << (blockmat * *invdiag[i]) << endl;
+	// 	(*testout) << "inv = " << endl << *invdiag[i] << endl;
+	// 	(*testout) << "prod = " << endl << (blockmat * *invdiag[i]) << endl;
       }
     cout << "\rBlockJacobi Preconditioner built" << endl;
   }
@@ -378,6 +378,9 @@ namespace ngla
 
 
 #ifdef SYMCHOLESKY
+
+  ist nicht definiert
+
 
   ///
   template <class TM, class TV>
@@ -551,8 +554,8 @@ namespace ngla
     for (int i = 0; i < NBLOCKS; i++)
       memneed[i] = 0;
     /*
-    int starti[NBLOCKS];
-    for (int i = 0; i < NBLOCKS; i++)
+      int starti[NBLOCKS];
+      for (int i = 0; i < NBLOCKS; i++)
       starti[i] = memneed[i] = 0;
     */
 
@@ -702,9 +705,9 @@ namespace ngla
 
     inv.Factor (blockmat);
 
-//       (*testout) << "block = " << block << endl
-//       << "mat = " << blockmat << endl
-//       << "inv = " << endl << inv << endl;
+    //       (*testout) << "block = " << block << endl
+    //       << "mat = " << blockmat << endl
+    //       << "inv = " << endl << inv << endl;
 
 
 
@@ -730,6 +733,204 @@ namespace ngla
       (*testout) << endl;
     */
   } 
+
+
+
+
+
+
+
+
+  template <class TM, class TV>
+  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
+  {
+    static int timer = NgProfiler::CreateTimer ("BlockJacobiSymmetric::MultAdd");
+    NgProfiler::RegionTimer reg (timer);
+
+    const FlatVector<TVX> fx = dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
+    FlatVector<TVX> fy       = dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+
+    Vector<TVX> hxmax(maxbs);
+    Vector<TVX> hymax(maxbs);
+
+    for (int i = 0; i < blocktable.Size(); i++)
+      {
+	int bs = blocktable[i].Size();
+	if (!bs) continue;
+
+	FlatVector<TVX> hx(bs, &hxmax(0));
+	FlatVector<TVX> hy(bs, &hymax(0));
+
+	for (int j = 0; j < bs; j++)
+	  hx(j) = fx(blocktable[i][j]);
+	
+	InvDiag(i).Mult (hx, hy);
+
+	for (int j = 0; j < bs; j++)
+	  fy(blocktable[i][j]) += s * hy(j);
+      }
+  }
+
+
+  template <class TM, class TV>
+  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
+  {
+    MultAdd (s, x, y);
+  }
+  
+
+
+  template <class TM, class TV>
+  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  GSSmooth (BaseVector & x, const BaseVector & b, int steps) const 
+  {
+    static Timer timer ("BlockJacobiPrecondSymmetric::GSSmooth");
+    RegionTimer reg(timer);
+
+    const FlatVector<TVX> fb = 
+      dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
+    FlatVector<TVX> fx = 
+      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+
+    Vector<TVX> fy(fx.Size());
+
+    // y = b - (D L^T) x
+
+    fy = fb;
+    for (int j = 0; j < mat.Height(); j++)
+      mat.AddRowTransToVector (j, -fx(j), fy);
+
+    for (int k = 1; k <= steps; k++)
+      for (int i = 0; i < blocktable.Size(); i++)
+	SmoothBlock (i, fx, /* fb, */ fy);
+  }
+  
+  template <class TM, class TV>
+  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  GSSmoothPartial (BaseVector & x, const BaseVector & b,
+	    BaseVector & y) const 
+  {
+    static Timer timer ("BlockJacobiPrecondSymmetric::GSSmooth - partial res");
+    RegionTimer reg(timer);
+
+    FlatVector<TVX> fx = 
+      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+    FlatVector<TVX> fy = 
+      dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+
+    for (int i = 0; i < blocktable.Size(); i++)
+      SmoothBlock (i, fx, fy);
+  }
+  
+
+
+  ///
+  template <class TM, class TV>
+  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  GSSmoothResiduum (BaseVector & x, const BaseVector & b,
+		    BaseVector & res, int steps) const 
+  {
+    static Timer timer ("BlockJacobiPrecondSymmetric::GSSmooth - residuum");
+    RegionTimer reg(timer);
+
+
+    // x is 0 on input
+    // b is res
+    
+    res = b;
+
+    // res is partial residual
+    for (int k = 1; k <= steps; k++)
+      GSSmoothPartial (x, b, res);
+
+    mat.MultAdd1 (-1, x, res);
+    // res = b - mat * x;
+  }
+  
+  ///
+  template <class TM, class TV>
+  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  GSSmoothBack (BaseVector & x, const BaseVector & b,
+		int steps) const 
+  {
+    static Timer timer ("BlockJacobiPrecondSymmetric::SmoothBack");
+    RegionTimer reg(timer);
+
+    VVector<TVX> y(x.Size());
+
+    // y = b - (D L^T) x
+    y = 1.0*b;
+    mat.MultAdd2 (-1, x, y);
+
+    for (int k = 1; k <= steps; k++)
+      GSSmoothBackPartial (x, b, y);
+  }
+
+
+  template <class TM, class TV>
+  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  GSSmoothBackPartial (BaseVector & x, const BaseVector & b,
+		       BaseVector & y) const 
+  {
+    static Timer timer ("BlockJacobiPrecondSymmetric::GSSmoothBack - partial res");
+    RegionTimer reg(timer);
+
+    FlatVector<TVX> fx = 
+      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+    FlatVector<TVX> fy = 
+      dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+
+    for (int i = blocktable.Size()-1; i >= 0; i--)
+      SmoothBlock (i, fx, fy);
+  }
+
+
+
+  template <class TM, class TV>
+  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  SmoothBlock (int i, 
+	       FlatVector<TVX> & x,
+	       FlatVector<TVX> & y) const
+  {
+    FlatArray<int> row = blocktable[i];
+
+    int bs = row.Size();
+    if (bs == 0) return;
+
+    VectorMem<1000,TVX> di (bs);
+    VectorMem<1000,TVX> wi (bs);
+
+    // di = P_i (y - L x)
+    for (int j = 0; j < bs; j++)
+      di(j) = y(row[j]) - mat.RowTimesVectorNoDiag (row[j], x);
+    
+    if (!lowmem)
+      InvDiag(i).Mult (di, wi);
+    else
+      {
+	int bw = blockbw[i];
+	int bs = blocktable[i].Size();
+	ArrayMem<TM, 10000/sizeof(TM)+1> mem(bs*bw);
+	FlatBandCholeskyFactors<TM> inv(bs, bw, &mem[0]);
+
+	ComputeBlockFactor (blocktable[i], bw, inv);
+
+	inv.Mult (di, wi);
+      }
+
+    // x += P_i w
+    // y -= (D L^t) P_i w
+    for (int j = 0; j < bs; j++)
+      {
+	x(row[j]) += wi(j);
+	mat.AddRowTransToVector (row[j], -wi(j), y);
+      }
+  }
+
+
+
 
 
 #endif // symcholesky
