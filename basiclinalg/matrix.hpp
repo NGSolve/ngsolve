@@ -969,6 +969,10 @@ namespace ngbla
     SliceMatrix (int ah, int aw, int adist, T * adata) throw ()
       : h(ah), w(aw), dist(adist), data(adata) { ; }
   
+    SliceMatrix (const FlatMatrix<T> & mat)
+      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(&mat(0,0))
+    { ; }
+
     /// assign contents
     template<typename TB>
     const SliceMatrix & operator= (const Expr<TB> & m) const

@@ -297,17 +297,19 @@ namespace ngcomp
     { return directelementclusters; }
 
 
+    /*
     void TransformMat (int elnr, bool boundary,
 		       const FlatMatrix<double> & mat, TRANSFORM_TYPE type) const
     {
       VTransformMR (elnr, boundary, mat, type);
-    }
+    } 
   
     void TransformMat (int elnr, bool boundary,
 		       const FlatMatrix<Complex> & mat, TRANSFORM_TYPE type) const
     {
       VTransformMC (elnr, boundary, mat, type);
     }
+    */
 
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
@@ -343,13 +345,14 @@ namespace ngcomp
 		       const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const;
 
   
-
+    /*
     virtual void VTransformMR (int elnr, bool boundary,
 			       const FlatMatrix<double> & mat, TRANSFORM_TYPE type) const
     { ; }
     virtual void VTransformMC (int elnr, bool boundary,
 			       const FlatMatrix<Complex> & mat, TRANSFORM_TYPE type) const
     { ; }
+    */
 
     virtual void VTransformMR (int elnr, bool boundary,
 			       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
@@ -769,6 +772,7 @@ namespace ngcomp
 		       VEC & vec, TRANSFORM_TYPE tt) const;
 
 
+    /*
     virtual void VTransformMR (int elnr, bool boundary,
 			       const FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const 
     {
@@ -780,6 +784,7 @@ namespace ngcomp
     {
       TransformMat (elnr, boundary, mat, tt);
     }
+    */
 
     virtual void VTransformMR (int elnr, bool boundary,
 			       const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 

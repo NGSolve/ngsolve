@@ -2983,8 +2983,8 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 	
 	lh.CleanUp();
 
-	VEC svec (nd, &vec(base));
-	spaces[i]->TransformVec (elnr, boundary, svec, tt);
+	// VEC svec (nd, &vec(base));
+	spaces[i]->TransformVec (elnr, boundary, vec.Range(base, base+nd), tt);
 	base += nd;
       }
   }
