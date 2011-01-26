@@ -2922,7 +2922,6 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 				      MAT & mat, TRANSFORM_TYPE tt) const
   {
     int base = 0;
-    // int j, k; 
     LocalHeapMem<100005> lh("CompoundFESpace - transformmat");
     for (int i = 0; i < spaces.Size(); i++)
       {
@@ -2932,39 +2931,8 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
 	lh.CleanUp();
 
-	/*
-	typedef typename MAT::TSCAL TSCAL;
-	Matrix<TSCAL> rmat(nd, mat.Width());
-	Matrix<TSCAL> cmat(mat.Height(), nd);
-	*/ 
-
-	/*
-	for (j = 0; j < nd; j++)
-	  for (k = 0; k < mat.Width(); k++)
-	    rmat(j,k) = mat(base+j, k);
-
-	spaces[i]->TransformMat (elnr, boundary, rmat, TRANSFORM_MAT_LEFT);
-
-	for (j = 0; j < nd; j++)
-	  for (k = 0; k < mat.Width(); k++)
-	    mat(base+j, k) = rmat(j,k);
-	*/
-
 	spaces[i]->TransformMat (elnr, boundary, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
-
-	/*
-	for (j = 0; j < nd; j++)
-	  for (k = 0; k < mat.Height(); k++)
-	    cmat(k,j) = mat(k,base+j);
-
-	spaces[i]->TransformMat (elnr, boundary, cmat, TRANSFORM_MAT_RIGHT);
-
-	for (j = 0; j < nd; j++)
-	  for (k = 0; k < mat.Height(); k++)
-	    mat(k,base+j) = cmat(k,j);
-	*/
 	spaces[i]->TransformMat (elnr, boundary, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
-
 
 	base += nd;
       }
