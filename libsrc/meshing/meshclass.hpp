@@ -191,11 +191,7 @@ public:
   void DeleteMesh();
   
   ///
-  void ClearSurfaceElements()
-  { 
-    surfelements.SetSize(0); 
-    timestamp = NextTimeStamp();
-  }
+  void ClearSurfaceElements();
 
   ///
   void ClearVolumeElements()

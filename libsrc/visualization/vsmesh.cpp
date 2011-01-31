@@ -136,8 +136,6 @@ namespace netgen
 
     glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 
-
-
     // glPolygonOffset (1,10);
     glPolygonOffset (2,2);
     glEnable (GL_POLYGON_OFFSET_FILL);
@@ -208,9 +206,6 @@ namespace netgen
     glLineWidth (1.0f);
     glColor3f (0.0f, 0.0f, 0.0f);
     glDisable (GL_LINE_SMOOTH);
-
-
-
 
 
     if (vispar.drawoutline)
@@ -897,8 +892,6 @@ namespace netgen
     static int timer = NgProfiler::CreateTimer ("Mesh::BuildFilledList");
     NgProfiler::RegionTimer reg (timer);
 
-    // cout << "buildilled" << endl;
-
 #ifdef PARALLELGL
     cout << "buildfillelist, id = " << id << ", nse = " << mesh -> GetNSE() << endl;
 
@@ -1010,7 +1003,6 @@ namespace netgen
 	const FaceDescriptor & fd = mesh->GetFaceDescriptor(faceindex);
 	mesh->GetSurfaceElementsOfFace (faceindex, seia);
 
-	
 	// Philippose - 06/07/2009
 	// Modified the colour system to integrate the face colours into 
 	// the mesh data structure, rather than limit it to the OCC geometry 
@@ -1392,7 +1384,6 @@ namespace netgen
     linetimestamp = NextTimeStamp();
 
 #ifdef STLGEOM
-    xxx
     STLGeometry * stlgeometry = dynamic_cast<STLGeometry*> (ng_geometry);
     bool checkvicinity = (stlgeometry != NULL) && stldoctor.showvicinity;
 #endif

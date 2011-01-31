@@ -137,6 +137,16 @@ namespace netgen
   }
 
 
+  void Mesh :: ClearSurfaceElements()
+  { 
+    surfelements.SetSize(0); 
+    for (int i = 0; i < facedecoding.Size(); i++)
+      facedecoding[i].firstelement = -1;
+
+    timestamp = NextTimeStamp();
+  }
+
+
 
   PointIndex Mesh :: AddPoint (const Point3d & p, int layer)
   { 
