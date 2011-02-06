@@ -35,8 +35,6 @@ template<> class SCAL_TRAIT<ComplexConjugate2>
 };
 
 
-enum PARALLEL_STATUS { DISTRIBUTED, CUMULATED, NOT_PARALLEL };
-
 
 /**
    Base class to linalg expression templates
@@ -74,7 +72,7 @@ public:
   ///
   BaseVector () throw ()  { ; }
   ///
-  virtual ~BaseVector () throw ();
+  virtual ~BaseVector ();
 
   ///
   template <typename T> 
@@ -239,7 +237,7 @@ public:
   
   
 
-
+  /*
   virtual PARALLEL_STATUS Status () const 
   { return NOT_PARALLEL; }
 
@@ -255,15 +253,18 @@ public:
     return 0;
   }
 
+
   virtual void PrintParallelDofs() const
   { cerr << "ERROR -- PrintParallelDofs called for BaseVector, is not parallel" << endl; }
-
+ 
   virtual bool IsParallelVector () const
   { 
     if ( this->Status() == NOT_PARALLEL ) return false;
     return true;
   }
+  */
 
+  /*
   virtual void PrintStatus ( ostream & ost ) const
   { cerr << "ERROR -- PrintStatus called for BaseVector, is not parallel" << endl; }
 
@@ -286,7 +287,7 @@ public:
     if ( aparalleldofs == 0 ) return;
     cerr << "ERROR -- SetParallelDofs called for BaseVector, is not parallel" << endl; 
   }
-
+  */
 
 };
 
@@ -296,24 +297,19 @@ public:
    Decision between double or Complex
  */
 template <class SCAL>
-class NGS_DLL_HEADER S_BaseVector : public BaseVector
+class NGS_DLL_HEADER S_BaseVector : virtual public BaseVector
 {
 public:
   S_BaseVector () throw () { ; }
-  virtual ~S_BaseVector() throw() { ; }
+  virtual ~S_BaseVector() { ; }
 
   S_BaseVector & operator= (double s);
 
-#ifdef PARALLEL
-  SCAL InnerProduct (const BaseVector & v2) const;
-#else
-  inline SCAL InnerProduct (const BaseVector & v2) const
+  virtual SCAL InnerProduct (const BaseVector & v2) const
   {
     return ngbla::InnerProduct (FVScal(), 
 				dynamic_cast<const S_BaseVector&>(v2).FVScal());
   }
-#endif
-
 
   virtual FlatVector<double> FVDouble () const;
   virtual FlatVector<Complex> FVComplex () const;
@@ -346,22 +342,17 @@ public:
 
 
 template <>
-class NGS_DLL_HEADER S_BaseVector<Complex> : public BaseVector
+class NGS_DLL_HEADER S_BaseVector<Complex> : virtual public BaseVector
 {
 public:
   S_BaseVector () throw() { ; }
-  ~S_BaseVector () throw() { ; }
+  ~S_BaseVector () { ; }
 
-
-#ifdef PARALLEL
-  Complex InnerProduct (const BaseVector & v2) const;
-#else
-  Complex InnerProduct (const BaseVector & v2) const
+  virtual Complex InnerProduct (const BaseVector & v2) const
   {
     return ngbla::InnerProduct (FVScal(), 
 				dynamic_cast<const S_BaseVector&>(v2).FVScal());
   }
-#endif
 
   virtual FlatVector<double> FVDouble () const throw();
   virtual FlatVector<Complex> FVComplex () const throw();

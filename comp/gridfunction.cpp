@@ -233,7 +233,7 @@ namespace ngcomp
 	    else
 #endif
  	      vec[i] = new VVector<TV> (ndof);
-
+	    
 
 	    if (this->nested && ovec && this->GetFESpace().GetProlongation())
 	      {
@@ -266,12 +266,16 @@ namespace ngcomp
         const FESpace & afespace = GridFunction :: GetFESpace();
         for ( int i = 0; i < vec.Size(); i++ )
           {
-            (vec[i]) -> SetParallelDofs ( &afespace.GetParallelDofs() );
-            if ( &(afespace.GetParallelDofs() ) )
-              (vec[i]) -> SetStatus ( CUMULATED );
-            else
-              (vec[i]) -> SetStatus ( NOT_PARALLEL );
-          }
+	    ParallelBaseVector * parvec = dynamic_cast<ParallelBaseVector*> (vec[i]);
+            if (parvec)
+	      {
+		parvec -> SetParallelDofs ( &afespace.GetParallelDofs() );
+		if ( &(afespace.GetParallelDofs() ) )
+		  parvec -> SetStatus ( CUMULATED );
+		else
+		  parvec -> SetStatus ( NOT_PARALLEL );
+	      }
+	  }
 #endif
 	const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&GridFunction :: GetFESpace());
 	if (cfe){

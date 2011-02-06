@@ -1,18 +1,10 @@
-#include <parallelngs.hpp>
-
 #include <comp.hpp>
 #include <multigrid.hpp>
 
 
-#ifdef PARALLEL
-extern MPI_Group MPI_HIGHORDER_WORLD;
-extern MPI_Comm MPI_HIGHORDER_COMM;
-#endif
-
 namespace ngcomp
 {
   using namespace ngcomp;
-  using namespace ngparallel;
 
   // dummy function header 
   void CalcEigenSystem (FlatMatrix<Complex> & elmat, 
@@ -269,9 +261,9 @@ namespace ngcomp
 
 
 #ifdef PARALLEL
-  MatrixGraph * FESpace :: GetConsistentGraph (int level, bool symmetric)
+  MatrixGraph * BilinearForm :: GetConsistentGraph (int level, bool symmetric)
   {
-    int i, j, k;
+    int j, k;
     int ndof = fespace.GetNDof();
     int ne = GetMeshAccess().GetNE();
     int nse = GetMeshAccess().GetNSE();
@@ -299,7 +291,7 @@ namespace ngcomp
 	  fespace.GetDofNrs (i, dnums);
 	for (j = 0; j < dnums.Size(); j++)
 	  if (dnums[j] != -1)
-	    if ( this->paralleldofs->IsExchangeDof(dnums[j]) ) 
+	    if ( fespace.GetParallelDofs().IsExchangeDof(dnums[j]) ) 
 	      {
 		dof_num_el[dnums[j]]++;
 		el_num_dof[i]++;
@@ -323,7 +315,7 @@ namespace ngcomp
 	    
 	for (j = 0; j < dnums.Size(); j++)
 	  if (dnums[j] != -1)
-	    if ( this->paralleldofs->IsExchangeDof(dnums[j]) ) 
+	    if ( fespace.GetParallelDofs().IsExchangeDof(dnums[j]) ) 
 	      {
 		dof2el[dnums[j]][dof_num_el[dnums[j]]++] = i;
 		el2dof[i][el_num_dof[i]++] = dnums[j];
@@ -339,7 +331,7 @@ namespace ngcomp
 
 	for (j = 0; j < dnums.Size(); j++)
 	  if (dnums[j] != -1)
-	    if ( this->paralleldofs->IsExchangeDof(dnums[j]) ) 
+	    if ( fespace.GetParallelDofs().IsExchangeDof(dnums[j]) ) 
 	      dof_num_el[dnums[j]]++;
       }
 
@@ -354,7 +346,7 @@ namespace ngcomp
 	    
 	for (j = 0; j < dnums.Size(); j++)
 	  if (dnums[j] != -1)
-	    if ( this->paralleldofs->IsExchangeDof(dnums[j]) )
+	    if ( fespace.GetParallelDofs().IsExchangeDof(dnums[j]) )
 	      {
 		dof2sel[dnums[j]][dof_num_el[dnums[j]]] = i;
 		dof_num_el[dnums[j]]++;
@@ -818,9 +810,6 @@ namespace ngcomp
 	    ma.PushStatus ("Assemble Matrix");
  
 	    Array<int> dnums, idofs, idofs1, odofs;
-	    // ElementTransformation eltrans;
-            // TopologicElement tel;
-
 
 	    int ndof = fespace.GetNDof();
 	    BitArray useddof(ndof);
@@ -851,6 +840,7 @@ namespace ngcomp
 		  else
 		    hasinner = true;
 	      }
+
 	    *testout << " BILINEARFORM TEST:" << endl;
 	    *testout << " hasinner = " << hasinner << endl;
 	    *testout << " hasouter = " << hasbound << endl;
@@ -930,19 +920,7 @@ namespace ngcomp
 			    }
 
 
-
-			  /*
-			    ma.GetTopologicElement (i, tel);
-			    cout << "tel = " << tel << endl;
-		      
-			    Array<Dof> dofs;
-			    fespace.GetFE(i, lh).GetDofs(dofs);
-			    for (int i = 0; i < dofs.Size(); i++)
-			    cout << "local dof-node = " << dofs[i].GetNode() 
-			    << " == global dof-node " << tel.GlobalNode (dofs[i].GetNode()) << endl;
-			  */
-                      
-			  if (ma.IsGhostEl(i) ) { continue; }
+			  if (ma.IsGhostEl(i)) continue;
 			  if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
 
 
@@ -990,7 +968,6 @@ namespace ngcomp
 				    {
 				      FlatVector<double> diag;
 				      bfi.CalcElementMatrixDiag (fel, eltrans, diag, lh);
-				      // elmat.AssignMemory (diag.Size(), diag.Size(), lh);
 				      elmat = 0.0;
 				      for (int k = 0; k < diag.Size(); k++)
 					elmat(k,k) = diag(k);
@@ -998,12 +975,12 @@ namespace ngcomp
 
 				  NgProfiler::StopTimer (elementtimer);
 			  
-				  if (printelmat) //|| elmat.Height() != dnums.Size()) 
+				  if (printelmat)
 				    {
 				      testout->precision(8);
-				      (*testout) << "elnum= " << i << endl;
-				      (*testout) << "eltype " << fel.ElementType() << endl;
-				      (*testout) << "integrator " << bfi.Name() << endl;
+				      (*testout) << "elnum = " << i << endl;
+				      (*testout) << "eltype = " << fel.ElementType() << endl;
+				      (*testout) << "integrator = " << bfi.Name() << endl;
 				      (*testout) << "dnums = " << endl << dnums << endl;
 				      (*testout) << "elmat = " << endl << elmat << endl;
 				    }
@@ -1050,9 +1027,7 @@ namespace ngcomp
 
 			  if (elmat_ev)
 			    {
-			
 			      (*testout) << "sum matrix:" << endl;
-			
 #ifdef LAPACK
 			      LapackEigenSystem(sum_elmat, lh);
 #else
@@ -1060,7 +1035,7 @@ namespace ngcomp
 			      Matrix<> evecs(sum_elmat.Height());
 			
 			      CalcEigenSystem (sum_elmat, lami, evecs);
-			      (*testout) << "lami = " << endl << lami << endl ; // << "evecs = " << endl << evecs << endl;
+			      (*testout) << "lami = " << endl << lami << endl ;
 #endif
 			    }
 
@@ -1254,7 +1229,7 @@ namespace ngcomp
 
 				  
 				  
-				  if (linearform&& (!keep_internal ))
+				  if (linearform && (!keep_internal ))
 				    {
 				      
 				      FlatVector<SCAL> elvec (size, lh);
@@ -1322,10 +1297,6 @@ namespace ngcomp
 		  }
 		
               }
-            //(*testout) << "useddof0 " << useddof << endl;
-
-	  
-
 
 
 
@@ -2010,7 +1981,7 @@ namespace ngcomp
         if ( id > 0 )
           {
             ParallelBaseMatrix & pbm = dynamic_cast<ParallelBaseMatrix &>(*mats.Last());
-            pbm . CalcConsistentMat(lh);
+            pbm . CalcConsistentMat(clh);
           }
 #endif
 
@@ -2952,9 +2923,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
     if (this->mats.Size() == this->ma.GetNLevels())
       return;
 
-    MatrixGraph * graph =
-//       const_cast<FESpace&>(this->fespace).
-      GetGraph (this->ma.GetNLevels()-1, false);
+    MatrixGraph * graph = GetGraph (this->ma.GetNLevels()-1, false);
 
 #ifdef PARALLEL
     if ( ntasks > 1 )
@@ -2984,7 +2953,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
     if ( id > 0 )
       {
         MatrixGraph * consistentgraph = 
-          const_cast<FESpace&>(this->fespace).GetConsistentGraph(this->ma.GetNLevels()-1, false);
+          // const_cast<FESpace&>(this->fespace).
+	  GetConsistentGraph(this->ma.GetNLevels()-1, false);
         ParallelBaseMatrix& pbm = dynamic_cast<ParallelBaseMatrix&>(*this->mats.Last());
         pbm . AllocateConsistentMat(*consistentgraph);
         delete consistentgraph;
@@ -3286,12 +3256,9 @@ cout << "catch in AssembleBilinearform 2" << endl;
     if (this->mats.Size() == this->ma.GetNLevels())
       return;
 
-    MatrixGraph * graph = 
-//       const_cast<FESpace&>(this->fespace).
-      GetGraph (this->ma.GetNLevels()-1, true);
+    MatrixGraph * graph = GetGraph (this->ma.GetNLevels()-1, true);
 
 
-    // graphs.Append (graph);
 #ifdef PARALLEL
     if ( ntasks > 1 )
       this->mats.Append ( new ParallelSparseMatrixSymmetric<TM,TV> 
@@ -3321,7 +3288,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
     if ( id > 0 )
       {
         MatrixGraph * consistentgraph = 
-          const_cast<FESpace&>(this->fespace).GetConsistentGraph(this->ma.GetNLevels()-1, true);
+          // const_cast<FESpace&>(this->fespace).
+	  GetConsistentGraph(this->ma.GetNLevels()-1, true);
         ParallelBaseMatrix& pbm = dynamic_cast<ParallelBaseMatrix&>(*this->mats.Last());
         pbm . AllocateConsistentMat(*consistentgraph);
         delete consistentgraph;
@@ -4176,13 +4144,23 @@ cout << "catch in AssembleBilinearform 2" << endl;
   {
 #ifdef PARALLEL
     if ( ntasks > 1 )
-      v.AllReduce(&hoprocs);
+      {
+	const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector*> (&v);
+	if (parv)
+	  parv -> AllReduce(&hoprocs);
+      }
 #endif
+
     prod = 0;
     bf -> AddMatrix (1, v, prod);
+
 #ifdef PARALLEL
     if ( ntasks > 1 )
-      prod.SetStatus(DISTRIBUTED);
+      {
+	ParallelBaseVector * parprod = dynamic_cast<ParallelBaseVector*> (&prod);
+	if (parprod)
+	  parprod->SetStatus(DISTRIBUTED);
+      }
 #endif
   }
 
@@ -4191,12 +4169,23 @@ cout << "catch in AssembleBilinearform 2" << endl;
   {
 #ifdef PARALLEL
     if ( ntasks > 1 )
-      v.AllReduce(&hoprocs);
+      {
+	const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector*> (&v);
+	if (parv)
+	  parv -> AllReduce(&hoprocs);
+      }
 #endif
+
     bf -> AddMatrix (val, v, prod);
+
+
 #ifdef PARALLEL
     if ( ntasks > 1 )
-      prod.SetStatus(DISTRIBUTED);
+      {
+	ParallelBaseVector * parprod = dynamic_cast<ParallelBaseVector*> (&prod);
+	if (parprod)
+	  parprod->SetStatus(DISTRIBUTED);
+      }
 #endif
   }
 
@@ -4205,12 +4194,23 @@ cout << "catch in AssembleBilinearform 2" << endl;
   {
 #ifdef PARALLEL
     if ( ntasks > 1 )
-      v.AllReduce(&hoprocs);
+      {
+	const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector*> (&v);
+	if (parv)
+	  parv -> AllReduce(&hoprocs);
+      }
 #endif
+
     bf -> AddMatrix (val, v, prod);
+
+
 #ifdef PARALLEL
     if ( ntasks > 1 )
-      prod.SetStatus(DISTRIBUTED);
+      {
+	ParallelBaseVector * parprod = dynamic_cast<ParallelBaseVector*> (&prod);
+	if (parprod)
+	  parprod->SetStatus(DISTRIBUTED);
+      }
 #endif
   }
 

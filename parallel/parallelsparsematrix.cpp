@@ -15,6 +15,61 @@ namespace ngla
   using namespace ngla;
   using namespace ngparallel;
 
+
+
+
+
+
+
+
+// #ifdef PARALLEL
+//   ngparallel::ParallelDofs * BaseMatrix :: GetParallelDofs ( )
+//   { return paralleldofs; }
+
+//   const ngparallel::ParallelDofs * BaseMatrix :: GetParallelDofs ( ) const
+//   { return paralleldofs; }
+// #endif
+
+  ParallelBaseMatrix :: ParallelBaseMatrix()
+  {
+    ;
+  }
+
+  ParallelBaseMatrix :: ParallelBaseMatrix ( const ParallelBaseMatrix & amat )
+    : paralleldofs ( amat.GetParallelDofs() )
+  {
+    ;
+  }
+
+  ParallelBaseMatrix :: ParallelBaseMatrix ( const ngparallel::ParallelDofs * aparalleldofs )
+    : paralleldofs ( aparalleldofs )
+  {
+    ;
+  }
+  
+  ParallelBaseMatrix :: ~ParallelBaseMatrix ()
+  {
+    ;
+  }
+
+  void ParallelBaseMatrix :: SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs )
+  {
+    paralleldofs = aparalleldofs;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   template <class TM, class TV_ROW, class TV_COL>
   BaseBlockJacobiPrecond * ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateBlockJacobiPrecond ( Table<int> & blocks,
@@ -131,7 +186,7 @@ namespace ngla
 	    // sort indices w.r.t. sortedexchangedofs
 	    int nsri = sortedrowindices.Size();
 
-	    int hv;
+	    // int hv;
 	    for (int i = 0; i < nsri; i++)
 	      for (int j = i+1; j < nsri; j++)
 		if (row2sorted[i] > row2sorted[j])
@@ -246,7 +301,7 @@ namespace ngla
 
 	    FlatArray<int> rowindices =(*consistentmat).GetRowIndices(row);
 
-	    int ii = 0;
+	    // int ii = 0;
 
 	    for ( int colind = 0; colind < numvalues; colind++ )
 	      {
@@ -828,7 +883,7 @@ namespace ngla
   // BaseMatrix * SparseMatrix<TM> :: 
   template <class TM, class TV_ROW, class TV_COL>
   BaseMatrix * ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
-  InverseMatrix (BitArray * subset) const
+  InverseMatrix (const BitArray * subset) const
   {
     if ( this-> GetInverseType() == SUPERLU_DIST )
 #ifdef USE_SUPERLU_DIST
@@ -863,7 +918,7 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   BaseMatrix * ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
-  InverseMatrix (Array<int> * clusters) const
+  InverseMatrix (const Array<int> * clusters) const
   {
     if ( this->GetInverseType() == SUPERLU_DIST )
 #ifdef USE_SUPERLU_DIST
@@ -894,7 +949,7 @@ namespace ngla
 
 
   template <class TM, class TV>
-  BaseMatrix * ParallelSparseMatrixSymmetric<TM,TV> :: InverseMatrix (BitArray * subset) const
+  BaseMatrix * ParallelSparseMatrixSymmetric<TM,TV> :: InverseMatrix (const BitArray * subset) const
   {
     if ( this->GetInverseType() == SUPERLU_DIST )
 #ifdef USE_SUPERLU_DIST
@@ -925,7 +980,7 @@ namespace ngla
   }
 
   template <class TM, class TV>
-  BaseMatrix * ParallelSparseMatrixSymmetric<TM,TV> :: InverseMatrix (Array<int> * clusters) const
+  BaseMatrix * ParallelSparseMatrixSymmetric<TM,TV> :: InverseMatrix (const Array<int> * clusters) const
   {
     if ( this->GetInverseType() == SUPERLU_DIST )
 #ifdef USE_SUPERLU_DIST
@@ -960,8 +1015,11 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   void ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
-  MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  MultAdd (double s, const BaseVector & bx, BaseVector & by) const
   {
+    const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
+    ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);
+    
     x.AllReduce(&hoprocs);
     ParallelDofs & paralleldofs = *x.GetParallelDofs();
     
@@ -969,17 +1027,19 @@ namespace ngla
     FlatVector<TVY> fy (y.Size(), y.Memory());
     
     for (int i = 0; i < this->Height(); i++)
-	  if ( !paralleldofs.IsGhostDof(i) )
-	    fy(i) += s * SparseMatrix<TM,TV_ROW,TV_COL> ::RowTimesVector (i, fx);
+      if ( !paralleldofs.IsGhostDof(i) )
+	fy(i) += s * SparseMatrix<TM,TV_ROW,TV_COL> ::RowTimesVector (i, fx);
     
     y.SetStatus ( DISTRIBUTED );
   }
   
   template <class TM, class TV_ROW, class TV_COL>
   void ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
-  MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  MultTransAdd (double s, const BaseVector & bx, BaseVector & by) const
   {
-    
+    const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
+    ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
+
     x.AllReduce(&hoprocs);
     ParallelDofs & paralleldofs = *x.GetParallelDofs();
     
@@ -996,28 +1056,33 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   void ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
-  MultAdd (Complex s, const BaseVector & x, BaseVector & y) const
+  MultAdd (Complex s, const BaseVector & bx, BaseVector & by) const
   {
+    const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
+    ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
 
-	x.AllReduce(&hoprocs);
-	ParallelDofs & paralleldofs = *x.GetParallelDofs();
 
-	FlatVector<TVX> fx (x.Size(), x.Memory());
-	FlatVector<TVY> fy (y.Size(), y.Memory());
-	
-	for (int i = 0; i < this->Height(); i++)
-	  if ( !paralleldofs.IsGhostDof(i) )
-	    fy(i) += ReduceComplex<TSCAL> (s) * SparseMatrix<TM,TV_ROW,TV_COL> ::RowTimesVector (i, fx);
-
-	y.SetStatus ( DISTRIBUTED );
+    x.AllReduce(&hoprocs);
+    ParallelDofs & paralleldofs = *x.GetParallelDofs();
+    
+    FlatVector<TVX> fx (x.Size(), x.Memory());
+    FlatVector<TVY> fy (y.Size(), y.Memory());
+    
+    for (int i = 0; i < this->Height(); i++)
+      if ( !paralleldofs.IsGhostDof(i) )
+	fy(i) += ConvertTo<TSCAL> (s) * SparseMatrix<TM,TV_ROW,TV_COL> ::RowTimesVector (i, fx);
+    
+    y.SetStatus ( DISTRIBUTED );
 
   }
   
 
   template <class TM, class TV_ROW, class TV_COL>
   void ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
-  MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
+  MultTransAdd (Complex s, const BaseVector & bx, BaseVector & by) const
   {
+    const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
+    ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
 
 	x.AllReduce(&hoprocs);
 	ParallelDofs & paralleldofs = *x.GetParallelDofs();
@@ -1027,7 +1092,7 @@ namespace ngla
 	
 	for (int i = 0; i < this->Height(); i++)
 	  if ( !paralleldofs.IsGhostDof(i) )
-	    SparseMatrix<TM,TV_ROW,TV_COL> ::AddRowTransToVector (i, ReduceComplex<TSCAL> (s)*fx(i), fy);
+	    SparseMatrix<TM,TV_ROW,TV_COL> ::AddRowTransToVector (i, ConvertTo<TSCAL> (s)*fx(i), fy);
 
 	y.SetStatus ( DISTRIBUTED );
 
@@ -1037,8 +1102,12 @@ namespace ngla
 
   template <class TM, class TV>
   void ParallelSparseMatrixSymmetric<TM,TV> :: 
-  MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  MultAdd (double s, const BaseVector & bx, BaseVector & by) const
   {
+    const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
+    ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
+
+
 	x.AllReduce(&hoprocs);
 	ParallelDofs & paralleldofs = *(x.GetParallelDofs());
 
@@ -1060,8 +1129,11 @@ namespace ngla
 
   template <class TM, class TV>
   void ParallelSparseMatrixSymmetric<TM,TV> :: 
-  MultAdd1 (double s, const BaseVector & x, BaseVector & y) const
+  MultAdd1 (double s, const BaseVector & bx, BaseVector & by) const
   {
+    const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
+    ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
+
 	x.AllReduce(&hoprocs);
 	ParallelDofs & paralleldofs = *(x.GetParallelDofs());
 	
@@ -1081,8 +1153,12 @@ namespace ngla
 
   template <class TM, class TV>
   void ParallelSparseMatrixSymmetric<TM,TV> :: 
-  MultAdd2 (double s, const BaseVector & x, BaseVector & y) const
+  MultAdd2 (double s, const BaseVector & bx, BaseVector & by) const
   {
+    const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
+    ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
+
+
 	x.AllReduce(&hoprocs);
 	ParallelDofs & paralleldofs = *(x.GetParallelDofs());
 	

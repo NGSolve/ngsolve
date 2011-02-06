@@ -13,29 +13,13 @@
 #include <parallelngs.hpp>
 #include <la.hpp>
 
-#ifdef PARALLEL
-extern MPI_Group MPI_HIGHORDER_WORLD;
-extern MPI_Comm MPI_HIGHORDER_COMM;
-#endif
 
 namespace ngla
 {
   using namespace ngla;
   using namespace ngparallel;
 
-  /*
-  BaseVector :: BaseVector () throw()
-  {
-    ;
-  }
-
-  BaseVector :: ~BaseVector () throw()
-  {
-    ;
-  }
-  */
-
-  BaseVector :: ~BaseVector () throw ()
+  BaseVector :: ~BaseVector () 
   { 
     ;
   }
@@ -73,47 +57,56 @@ namespace ngla
   BaseVector & BaseVector :: SetScalar (double scal)
   {
     FVDouble() = scal;
+    /*
     if ( IsParallelVector() )
       this->SetStatus(CUMULATED);
     else
       this->SetStatus(NOT_PARALLEL);
+    */
     return *this;
   }
 
   BaseVector & BaseVector :: SetScalar (Complex scal)
   {
     FVComplex() = scal;
+    /*
     if ( IsParallelVector() )
       this->SetStatus(CUMULATED);
     else
       this->SetStatus(NOT_PARALLEL);
+    */
     return *this;
   }
 
   BaseVector & BaseVector :: Set (double scal, const BaseVector & v)
   {
     FVDouble() = scal * v.FVDouble();
+    /*
     if ( v.IsParallelVector() )
       this->SetParallelDofs (v.GetParallelDofs());
     else 
       this->SetParallelDofs(0);
     this->SetStatus(v.Status());
+    */
     return *this;
   }
 
   BaseVector & BaseVector :: Set (Complex scal, const BaseVector & v)
   {
     FVComplex() = scal * v.FVComplex();
+    /*
     if ( v.IsParallelVector() )
       this->SetParallelDofs(v.GetParallelDofs());
     else
       this->SetParallelDofs(0);
     this->SetStatus(v.Status());
+    */
     return *this;
   }
     
   BaseVector & BaseVector :: Add (double scal, const BaseVector & v)
   {
+    /*
     if ( (*this).Status() != v.Status() )
       {
         if ( (*this).Status() == DISTRIBUTED )
@@ -121,12 +114,14 @@ namespace ngla
         else 
           v.AllReduce(&hoprocs);
       }
+    */
     FVDouble() += scal * v.FVDouble();
     return *this;
   }
 
   BaseVector & BaseVector :: Add (Complex scal, const BaseVector & v)
   {
+    /*
     if ( (*this).Status() != v.Status() )
       {
         if ( (*this).Status() == DISTRIBUTED )
@@ -134,6 +129,7 @@ namespace ngla
         else 
           v.AllReduce(&hoprocs);
       }
+    */
     FVComplex() += scal * v.FVComplex();
     return *this;
   }
@@ -652,116 +648,6 @@ FlatVector<Complex> S_BaseVector<Complex> :: FVComplex () const throw()
 }
 
 
-
-
-#ifdef PARALLEL
-
-
-template <class SCAL>
-SCAL S_BaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
-{
-  SCAL globalsum = 0;
-  if ( id == 0 && ntasks > 1 )
-    {
-#ifdef SCALASCA
-#pragma pomp inst begin (scalarproduct_p0)
-#endif
-      if (this->Status() == v2.Status() && this->Status() == DISTRIBUTED )
-	{
-	  this->AllReduce(&hoprocs);
-	}
-      // two cumulated vectors -- distribute one
-      else if ( this->Status() == v2.Status() && this->Status() == CUMULATED )
-	Distribute();
-      MyMPI_Recv ( globalsum, 1 );
-
-#ifdef SCALASCA
-#pragma pomp inst end (scalarproduct_p0)
-#endif
-    }
-  else
-    {
-#ifdef SCALASCA
-#pragma pomp inst begin (scalarproduct)
-#endif
-
-      // not parallel
-      if ( this->Status() == NOT_PARALLEL && v2.Status() == NOT_PARALLEL )
-	return ngbla::InnerProduct (FVScal(), 
-				    dynamic_cast<const S_BaseVector&>(v2).FVScal());
-      // two distributed vectors -- cumulate one
-      else if ( this->Status() == v2.Status() && this->Status() == DISTRIBUTED )
-	{
-	  this->AllReduce(&hoprocs);
-	}
-      // two cumulated vectors -- distribute one
-      else if ( this->Status() == v2.Status() && this->Status() == CUMULATED )
-	Distribute();
-
-      SCAL localsum = ngbla::InnerProduct (FVScal(), 
-					   dynamic_cast<const S_BaseVector&>(v2).FVScal());
-      MPI_Datatype MPI_SCAL = MyGetMPIType<SCAL>();
-      
-      MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, MPI_HIGHORDER_COMM); //MPI_COMM_WORLD);
-      if ( id == 1 )
-	MyMPI_Send( globalsum, 0 );
-
-#ifdef SCALASCA
-#pragma pomp inst end (scalarproduct)
-#endif
-    }
-  
-  return globalsum;
-}
-
-
-
-
-Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
-{
-
-#ifdef SCALASCA
-#pragma pomp inst begin (scalarproduct)
-#endif
-
-  // not parallel
-  if ( this->Status() == NOT_PARALLEL && v2.Status() == NOT_PARALLEL )
-    return ngbla::InnerProduct (FVScal(), 
-				dynamic_cast<const S_BaseVector&>(v2).FVScal());
-  // two distributed vectors -- cumulate one
-  else if (this->Status() == v2.Status() && this->Status() == DISTRIBUTED )
-    {
-      this->AllReduce(&hoprocs);
-    }
-  // two cumulated vectors -- distribute one
-  else if ( this->Status() == v2.Status() && this->Status() == CUMULATED )
-    Distribute();
-
-  Complex localsum ;
-  Complex globalsum = 0;
-  if ( id == 0 )
-    localsum = 0;
-  else 
-    localsum = ngbla::InnerProduct (FVComplex(), 
-				    dynamic_cast<const S_BaseVector&>(v2).FVComplex());
-   MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  //MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, MPI_HIGHORDER_WORLD);
- 
-#ifdef SCALASCA
-#pragma pomp inst end (scalarproduct)
-#endif
-
-  return globalsum;
-}
-
-
-// template
-// Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const;
-
-//template <>
-// Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
-
-#endif
 
 
 template class S_BaseVector<double>;

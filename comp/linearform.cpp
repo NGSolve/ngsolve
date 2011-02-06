@@ -64,11 +64,15 @@ namespace ngcomp
   { 
 #ifdef PARALLEL
     const FESpace & afespace = LinearForm :: GetFESpace();
-    vec -> SetParallelDofs ( &afespace.GetParallelDofs() );
-    if ( &(afespace.GetParallelDofs()) )
-      vec -> SetStatus (DISTRIBUTED);
-    else
-      vec -> SetStatus ( NOT_PARALLEL );
+    ParallelBaseVector * parvec = dynamic_cast<ParallelBaseVector*> (vec);
+    if (parvec)
+      {
+	parvec -> SetParallelDofs ( &afespace.GetParallelDofs() );
+	if ( &(afespace.GetParallelDofs()) )
+	  parvec -> SetStatus (DISTRIBUTED);
+	else
+	  parvec -> SetStatus ( NOT_PARALLEL );
+      }
 #endif
     return *vec; 
   }

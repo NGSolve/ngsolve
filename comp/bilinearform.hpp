@@ -343,7 +343,7 @@ namespace ngcomp
 
 
 #ifdef PARALLEL
-  
+  protected:
     MatrixGraph * GetConsistentGraph (int level, bool symmetric);
     
     virtual void AllocateConsistentMatrix () = 0;
@@ -472,7 +472,7 @@ namespace ngcomp
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV TV_COL;
     typedef SparseMatrix<TM,TV,TV> TMATRIX;
-
+    
   protected:
 
   public:
@@ -534,8 +534,9 @@ namespace ngcomp
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV TV_COL;
     typedef SparseMatrixSymmetric<TM,TV> TMATRIX;
-
+    
   protected:
+    
 
   public:
     T_BilinearFormSymmetric (const FESpace & afespace, const string & aname,

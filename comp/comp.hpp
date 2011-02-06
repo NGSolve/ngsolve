@@ -14,6 +14,7 @@
 #include <fem.hpp>
 #include <la.hpp>
 
+
 #include <soldata.hpp>
 
 
@@ -65,9 +66,16 @@ namespace ngcomp
 #include "vectorfacetfespace.hpp"
 
 #include "preconditioner.hpp"
-// #include "wirebasket.hpp"
 #include "bddc.hpp"
 
+
+
+#include <parallelngs.hpp>
+
+namespace ngcomp
+{
+  using namespace ngparallel;
+}
 
 
 #endif

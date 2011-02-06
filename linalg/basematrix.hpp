@@ -108,50 +108,6 @@ namespace ngla
 
 
 
-  class ParallelBaseMatrix : virtual public BaseMatrix
-  {
-  protected:
-    const ngparallel::ParallelDofs * paralleldofs;
-
-  public:
-
-    /// constructor
-    ParallelBaseMatrix ();
-    /// copy-constructor
-    ParallelBaseMatrix ( const ParallelBaseMatrix & amat );
-    ///
-    ParallelBaseMatrix ( const ngparallel::ParallelDofs * aparalleldofs );
-    /// destructor
-    virtual ~ParallelBaseMatrix ();
-
-    virtual BaseMatrix * ConsistentMat () { cerr << "ERROR -- ParallelBaseMatrix::ConsistentMat() called" << endl; return 0; }
-    virtual const BaseMatrix * ConsistentMat () const  
-    { cerr << "ERROR -- ParallelBaseMatrix::ConsistentMat() called" << endl; return 0; }
-
-    virtual void SetConsistentMat ( BaseMatrix * aconsistentmat )
-    { cerr << "ERROR -- ParallelBaseMatrix::SetConsistentMat called" << endl; }
-
-    virtual void AllocateConsistentMat ()
-    { cerr << "ERROR -- ParallelBaseMatrix::AllocateConsistentMat called" << endl; }
-
-    virtual void  AllocateConsistentMat ( const class MatrixGraph & graph )
-    { cerr << "ERROR -- ParallelBaseMatrix::AllocateConsistentMat(const MatrixGraph&) called" << endl; }
-
-    virtual void CalcConsistentMat (LocalHeap & lh) 
-    { cerr << "ERROR -- ParallelBaseMatrix::CalcConsistentMat called" << endl; }
-
-    virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs );
-
-    virtual const ngparallel::ParallelDofs * GetParallelDofs ( ) const { return paralleldofs; }
-
-    virtual bool IsParallelMatrix() const
-    {
-      (*testout) << "PARALLELDOFS " <<  paralleldofs << endl;
-      if ( paralleldofs ) return true;
-      else return false;
-    }
-
-  };
 
 
   /// specifies the scalar type.

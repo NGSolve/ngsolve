@@ -603,14 +603,13 @@ namespace ngcomp
             Ng_Element ngel = ma.GetElement<2> (elnr);
         
 #ifdef PARALLEL
-            for (int j = 0; j < ngel.vertices.Size())
-              if (ntasks > 1)
-                for (int j = 0; j < ngel.vertices.Size(); j++)
-                  hofe2d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, ngel.vertices[j]));
-              else
+	    if (ntasks > 1)
+	      for (int j = 0; j < ngel.vertices.Size(); j++)
+		hofe2d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, ngel.vertices[j]));
+	    else
 #endif
-                for (int j = 0; j < ngel.vertices.Size(); j++)
-                  hofe2d -> SetVertexNumber (j, ngel.vertices[j]);
+	      for (int j = 0; j < ngel.vertices.Size(); j++)
+		hofe2d -> SetVertexNumber (j, ngel.vertices[j]);
             
             for (int j = 0; j < ngel.edges.Size(); j++)
               hofe2d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
@@ -629,14 +628,12 @@ namespace ngcomp
             Ng_Element ngel = ma.GetElement<3> (elnr);
 
 #ifdef PARALLEL
-            for (int j = 0; j < ngel.vertices.Size())
-              if (ntasks > 1)
-                for (int j = 0; j < ngel.vertices.Size(); j++)
-                  hofe3d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, ngel.vertices[i]));
-              else
+	    if (ntasks > 1)
+	      for (int j = 0; j < ngel.vertices.Size(); j++)
+		hofe3d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, ngel.vertices[j]));
+	    else
 #endif
-                for (int j = 0; j < ngel.vertices.Size(); j++)
-                  hofe3d -> SetVertexNumber (j, ngel.vertices[j]);
+	      hofe3d -> SetVertexNumbers (ngel.vertices);
 
             for (int j = 0; j < ngel.edges.Size(); j++)
               hofe3d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
@@ -679,12 +676,6 @@ namespace ngcomp
   
     Ng_Element ngel = ma.GetSElement(elnr);
     
-#ifdef PARALLEL
-    if ( ntasks > 1 )
-      for ( int i = 0; i < vnums.Size(); i++ )
-        vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
-    cout << "have to set vertex numbers!!!" << endl;
-#endif 
     
     if (ma.GetDimension() == 2)
       {
@@ -699,8 +690,16 @@ namespace ngcomp
       }
     else
       {
-        for (int j = 0; j < ngel.vertices.Size(); j++)
-          hofe2d -> SetVertexNumber (j, ngel.vertices[j]);
+
+#ifdef PARALLEL
+	if ( ntasks > 1 )
+
+	  for (int j = 0; j < ngel.vertices.Size(); j++)
+	    hofe2d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, (ngel.vertices[j])));
+
+	else
+#endif 
+	  hofe2d -> SetVertexNumbers (ngel.vertices);
 
         for (int j = 0; j < ngel.edges.Size(); j++)
           hofe2d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
@@ -1164,11 +1163,11 @@ namespace ngcomp
 		    for (int k = 0; k < f2ed.Size(); k++)
 		      creator.Add (nv+f2ed[k], GetFaceDofs(i));
 		  }
-		  
+	      
 	      for (int i = 0; i < ni; i++)
 		creator.Add (nv+ned+i, GetElementDofs(i));
 		  
-	      break;
+	      break; 
 	    }
 
 
@@ -1602,24 +1601,7 @@ namespace ngcomp
   }
 #endif
 
-  static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
 
-  /*
-  // register FESpaces
-  namespace h1hofespace_cpp
-  {
-    class Init
-    { 
-    public: 
-      Init ();
-    };
-    
-    Init::Init()
-    {
-      GetFESpaceClasses().AddFESpace ("h1ho", H1HighOrderFESpace::Create);
-    }
-    
-    Init init_h1hofespace;
-  }
-  */
+
+  static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
 }

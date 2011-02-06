@@ -50,12 +50,6 @@
 #endif
 
 
-
-// 
-// Use Robert's high order curved elements
-// #define NETGEN_ELTRANS  ---> now in Makefile
-
-
 // use Cholesky-Factors for block smoother
 // undef = band - Cholesky, usually faster and less mem
 // define only for special needs (mixed smoother)
