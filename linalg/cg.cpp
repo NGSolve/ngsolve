@@ -14,9 +14,6 @@
 
 namespace ngla
 {
-  using namespace ngla;
-  //  using namespace ngparallel;
-
   inline double Abs (const double & v)
   {
     return fabs (v);

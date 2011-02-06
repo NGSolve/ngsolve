@@ -7,17 +7,10 @@
 /* 
    Implementation of VVector
 */
-#include <parallelngs.hpp>
-
 #include <la.hpp>
-#include <ngstd.hpp>
 
 namespace ngla
 {
-  using namespace ngla;
-  using namespace ngparallel;
-
-
   template <typename T>
   VFlatVector<T> :: VFlatVector () throw()
   { 
