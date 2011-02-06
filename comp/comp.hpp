@@ -34,6 +34,8 @@ namespace ngparallel
   class ParallelDofs;
   class ParallelMeshAccess;
 }
+using ngparallel::ParallelDofs;
+using ngparallel::ParallelMeshAccess;
 #endif
 
 
@@ -69,13 +71,13 @@ namespace ngcomp
 #include "bddc.hpp"
 
 
-
+#ifdef PARALLEL
 #include <parallelngs.hpp>
-
 namespace ngcomp
 {
   using namespace ngparallel;
 }
+#endif
 
 
 #endif
