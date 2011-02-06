@@ -9,16 +9,12 @@
 */
 
 
-
-#include <parallelngs.hpp>
+// #include <parallelngs.hpp>
 #include <la.hpp>
 
 
 namespace ngla
 {
-  using namespace ngla;
-  using namespace ngparallel;
-
   BaseVector :: ~BaseVector () 
   { 
     ;

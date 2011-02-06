@@ -10,15 +10,8 @@
 
 #include <la.hpp>
 
-#ifdef PARALLEL
-#include <parallelngs.hpp>
-#endif
-
 namespace ngla
 {
-  using namespace ngla;
-  using namespace ngparallel;
-
   BaseMatrix :: BaseMatrix()
   {
     ;
