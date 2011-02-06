@@ -136,7 +136,7 @@ namespace ngcomp
     Array<COUPLING_TYPE> ctofdof;
 
 #ifdef PARALLEL
-    class ngparallel::ParallelDofs * paralleldofs;
+    ParallelDofs * paralleldofs;
 #endif
   
   public:

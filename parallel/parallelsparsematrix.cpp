@@ -1385,6 +1385,60 @@ namespace ngla
   template class ParallelSparseMatrix<double, Vec<15,Complex>, Vec<15,Complex> >;
 #endif
 
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  class ParallelRichardsonPreconditioner : public Preconditioner
+  {
+  public:
+    ParallelRichardsonPreconditioner (const PDE & pde, const Flags & flags);
+    virtual void Update();
+    
+    virtual void Mult (const BaseVector & f, BaseVector & u) const
+    {
+      u = 1.0 * f;
+      
+      MPI_Barrier( MPI_COMM_WORLD );
+
+      if (id == 0)
+	u.FVDouble() = 0.0;
+
+      MPI_Barrier( MPI_COMM_WORLD );
+
+      // jacobi -> Mult (f, u);
+    }
+
+  };
+
+
+  ParallelRichardsonPreconditioner :: 
+  ParallelRichardsonPreconditioner (const PDE & pde, const Flags & flags)
+    : Preconditioner (&pde, flags)
+  {
+    cout << "Constructor of ParallelRichardsonPreconditioner" << endl;
+  }
+  
+  void ParallelRichardsonPreconditioner :: Update()
+  {
+    ;
+  }
+
+  static RegisterPreconditioner<ParallelRichardsonPreconditioner> initpre ("richardson");
+
+
 }
 
 

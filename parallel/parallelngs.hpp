@@ -47,16 +47,17 @@ namespace netgen {
 using namespace netgen;
 
 
+/*
 namespace ngcomp
 {
   class FESpace;
 }
-
+*/
 
 namespace ngparallel
 {
   // using namespace ngsolve;
-  using namespace ngparallel;
+  // using namespace ngparallel;
   using namespace ngcomp;
   using namespace ngbla;
 
