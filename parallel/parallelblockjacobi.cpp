@@ -8,8 +8,6 @@
 #include <parallelngs.hpp>
 #include <la.hpp>
 
-extern MPI_Group MPI_HIGHORDER_WORLD;
-extern MPI_Comm MPI_HIGHORDER_COMM;
 
 namespace ngla
 {
@@ -80,7 +78,7 @@ namespace ngla
   ParallelBaseBlockJacobiPrecond ( Table<int> & ablocktable,
 				   const ParallelDofs * aparalleldofs,
 				   const Preconditioner * acoarsegridprecond )
-    : ParallelBaseMatrix(aparalleldofs), BaseBlockJacobiPrecond (ablocktable)
+    : BaseBlockJacobiPrecond (ablocktable), ParallelBaseMatrix(aparalleldofs)
   {
     usecoarsegrid = bool(acoarsegridprecond);
     if ( acoarsegridprecond )
@@ -107,7 +105,8 @@ namespace ngla
     int ndof = this->paralleldofs->GetNDof();
     BitArray iscolor(ndof);
 
-    int maxcolors = 1000, ncolor = 0;
+    // int maxcolors = 1000;
+    int ncolor = 0;
     Array< BitArray* > dofcolors (0), recvdofcolors(0);
 
     int blockcolor;
@@ -368,8 +367,8 @@ namespace ngla
   ParallelBlockJacobiPrecond (const ParallelSparseMatrix<TM,TV_ROW,TV_COL> & amat,
 		      Table<int> & ablocktable, const Preconditioner * acoarsegridprecond)
     :  BaseBlockJacobiPrecond(ablocktable), 
-       ParallelBaseBlockJacobiPrecond(ablocktable, amat.GetParallelDofs(), acoarsegridprecond), 
        ParallelBaseMatrix(amat.GetParallelDofs()),
+       ParallelBaseBlockJacobiPrecond(ablocktable, amat.GetParallelDofs(), acoarsegridprecond), 
        mat(amat), 
        invdiag(ablocktable.Size())
   { 
@@ -443,8 +442,13 @@ namespace ngla
   ///
   template <class TM, class TV_ROW, class TV_COL>
   void ParallelBlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
+  MultAdd (TSCAL s, const BaseVector & bx, BaseVector & by) const 
   {
+
+    const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
+    ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);
+
+
     if ( id > 0 )
       {
 	(*testout) << "BlockJacobi: MultAdd" << endl;
@@ -654,8 +658,11 @@ namespace ngla
   ///
   template <class TM, class TV_ROW, class TV_COL>
   void ParallelBlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
+  MultTransAdd (TSCAL s, const BaseVector & bx, BaseVector & by) const 
   {
+    const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
+    ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);
+
     if ( id > 0 )
       {
 	(*testout) << "BlockJacobi: MultAdd" << endl;
@@ -864,19 +871,24 @@ namespace ngla
   ///
   template <class TM, class TV_ROW, class TV_COL>
   void ParallelBlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  GSSmooth (BaseVector & x, const BaseVector & b,
+  GSSmooth (BaseVector & bx, const BaseVector & bb,
 	    int steps) const 
   {
+    ParallelBaseVector & x = dynamic_cast<ParallelBaseVector&> (bx);
+    const ParallelBaseVector & b = dynamic_cast<const ParallelBaseVector&> (bb);
+
+
+
     int i, j, k;
 
     const FlatVector<TVX> fb = 
       dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
     FlatVector<TVX> fx = 
       dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-    BaseVector & w = *x.CreateVector(&hoprocs);
+    ParallelBaseVector & w = dynamic_cast<ParallelBaseVector&> (*x.CreateVector(&hoprocs));
     FlatVector<TVX> fw =
       dynamic_cast<T_BaseVector<TVX> &> (w).FV();
-    BaseVector & w2 = *x.CreateVector(&hoprocs);
+    ParallelBaseVector & w2 = dynamic_cast<ParallelBaseVector&> (*x.CreateVector(&hoprocs));
     FlatVector<TVX> fw2 =
       dynamic_cast<T_BaseVector<TVX> &> (w2).FV();
     Array<int> loprocs(0);
@@ -939,9 +951,13 @@ namespace ngla
   ///
   template <class TM, class TV_ROW, class TV_COL>
   void ParallelBlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  GSSmoothBack (BaseVector & x, const BaseVector & b,
+  GSSmoothBack (BaseVector & bx, const BaseVector & bb,
 			     int steps) const 
   {
+    ParallelBaseVector & x = dynamic_cast<ParallelBaseVector&> (bx);
+    const ParallelBaseVector & b = dynamic_cast<const ParallelBaseVector&> (bb);
+
+
     int i, j, k;
 
     const FlatVector<TVX> fb = 
@@ -949,10 +965,10 @@ namespace ngla
     FlatVector<TVX> fx = 
       dynamic_cast<T_BaseVector<TVX> &> (x).FV();
 
-    BaseVector & w = *x.CreateVector(&hoprocs);
+    ParallelBaseVector & w = dynamic_cast<ParallelBaseVector&> (*x.CreateVector(&hoprocs));
+    ParallelBaseVector & w2 = dynamic_cast<ParallelBaseVector&> (*x.CreateVector(&hoprocs));
     FlatVector<TVX> fw =
       dynamic_cast<T_BaseVector<TVX> &> (w).FV();
-    BaseVector & w2 = *x.CreateVector(&hoprocs);
     FlatVector<TVX> fw2 =
       dynamic_cast<T_BaseVector<TVX> &> (w2).FV();
     Array<int> loprocs(0);
@@ -1256,8 +1272,8 @@ namespace ngla
   ParallelBlockJacobiPrecondSymmetric (const ParallelSparseMatrixSymmetric<TM,TV> & amat, 
 			       Table<int> & ablocktable, const Preconditioner * acoarsegridprecond)
     :  BaseBlockJacobiPrecond ( ablocktable),
-       ParallelBaseBlockJacobiPrecond(ablocktable, amat.GetParallelDofs(), acoarsegridprecond), 
        ParallelBaseMatrix(amat.GetParallelDofs()),
+       ParallelBaseBlockJacobiPrecond(ablocktable, amat.GetParallelDofs(), acoarsegridprecond), 
        mat(amat)
 				      // ParallelBaseMatrix(amat.GetParallelDofs())
   { 
@@ -1273,7 +1289,7 @@ namespace ngla
 	lowmem = false;
     
 	// int i;
-	int sumnn = 0;
+	// int sumnn = 0;
 	int maxbs = 0;
 
 	int n = blocktable.Size();
@@ -1300,7 +1316,7 @@ namespace ngla
 	  starti[i] = memneed[i] = 0;
 
 	{
-	  LocalHeap lh (20000 + 5*sizeof(int)*maxbs); //  + sizeof(int)*amat.Height());
+	  LocalHeap lh (20000 + 5*sizeof(int)*maxbs, "parblockjacobi"); //  + sizeof(int)*amat.Height());
 	  Array<int> block_inv(amat.Height());
 	  block_inv = -1;
 
@@ -1408,15 +1424,16 @@ namespace ngla
   ParallelBlockJacobiPrecondSymmetric (const ParallelSparseMatrixSymmetric<TM,TV> & amat, 
 			       const FlatVector<TVX> & constraint,
 			       Table<int> & ablocktable, const Preconditioner * acoarsegridprecond)
-    : ParallelBaseBlockJacobiPrecond(ablocktable, amat.GetParallelDofs(), acoarsegridprecond), 
-      mat(amat),
-      BaseBlockJacobiPrecond(ablocktable)
+    : 
+    BaseBlockJacobiPrecond(ablocktable),
+    ParallelBaseBlockJacobiPrecond(ablocktable, amat.GetParallelDofs(), acoarsegridprecond), 
+    mat(amat)
   {
     throw Exception ("BlockJacPrecondSym with constraints not available for banded blocks, please define SYMCHOLESKY in blocjacobi.hpp");
 
     // directsolver = adirectsolver;
 
-    const SparseMatrixSymmetric<TM,TV>* consistmat = dynamic_cast<const SparseMatrixSymmetric<TM,TV>*> (amat.ConsistentMat());
+    // const SparseMatrixSymmetric<TM,TV>* consistmat = dynamic_cast<const SparseMatrixSymmetric<TM,TV>*> (amat.ConsistentMat());
   }
 
 
@@ -1534,8 +1551,12 @@ namespace ngla
 
   template <class TM, class TV>
   void ParallelBlockJacobiPrecondSymmetric<TM,TV> :: 
-  MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
+  MultAdd (TSCAL s, const BaseVector & bx, BaseVector & by) const 
   {
+    const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
+    ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);
+    
+
     if ( id > 0 )
       {
 	(*testout) << "BlockJacobiSymmetric: MultAdd" << endl;
@@ -1823,14 +1844,15 @@ namespace ngla
 // #else
     for (int k = 1; k <= steps; k++)
       for (int i = 0; i < blocktable.Size(); i++)
-	SmoothBlock (i, fx, fb, fy);
+	cout << "smoothblock, todo" << endl;
+	//	SmoothBlock (i, fx, fb, fy);
     //#endif
   }
   
-   template <class TM, class TV>
+  template <class TM, class TV>
   void ParallelBlockJacobiPrecondSymmetric<TM,TV> :: 
-   GSSmooth (BaseVector & x, const BaseVector & b,
-			 BaseVector & y) const 
+   GSSmoothPartial (BaseVector & x, const BaseVector & b,
+		    BaseVector & y) const 
   {
     const FlatVector<TVX> fb = 
       dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
@@ -1891,7 +1913,8 @@ namespace ngla
 //       }
 // #else
     for (int i = 0; i < blocktable.Size(); i++)
-      SmoothBlock (i, fx, fb, fy);
+      cout << "sb-to, 2q34" << endl;
+      // SmoothBlock (i, fx, fb, fy);
 // #endif
   }
   
@@ -1979,7 +2002,8 @@ namespace ngla
     *testout << "gssmoothresiduum, this version" << endl;
     for (int k = 1; k <= steps; k++)
       for (int i = 0; i < blocktable.Size(); i++)
-	SmoothBlock (i, fx, fb, fres);
+	cout << "sb - to asfasd" << endl;
+	// SmoothBlock (i, fx, fb, fres);
 
     for (int j = 0; j < mat.Height(); j++)
       fres(j) -= mat.RowTimesVectorNoDiag (j, fx);
@@ -2068,15 +2092,16 @@ namespace ngla
 // #else
     for (int k = 1; k <= steps; k++)
       for (int i = blocktable.Size()-1; i >= 0; i--)
-	SmoothBlock (i, fx, fb, fy);
+	cout << "sb - to , sadf" << endl;
+	// SmoothBlock (i, fx, fb, fy);
 // #endif
   }
 
 
     template <class TM, class TV>
-  void ParallelBlockJacobiPrecondSymmetric<TM,TV> :: 
-GSSmoothBack (BaseVector & x, const BaseVector & b,
-			     BaseVector & y) const 
+    void ParallelBlockJacobiPrecondSymmetric<TM,TV> :: 
+    GSSmoothBackPartial (BaseVector & x, const BaseVector & b,
+			 BaseVector & y) const 
   {
     const FlatVector<TVX> fb = 
       dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
@@ -2140,7 +2165,8 @@ GSSmoothBack (BaseVector & x, const BaseVector & b,
 // #else
     *testout << "gssmoothback, this version" << endl;
     for (int i = blocktable.Size()-1; i >= 0; i--)
-      SmoothBlock (i, fx, fb, fy);
+      cout << "sb - to sdafsad" << endl;
+      //SmoothBlock (i, fx, fb, fy);
 // #endif
 
   }
@@ -2151,7 +2177,7 @@ GSSmoothBack (BaseVector & x, const BaseVector & b,
   void ParallelBlockJacobiPrecondSymmetric<TM,TV> :: 
   SmoothBlock (int i, 
 	       FlatVector<TVX> & x,
-	       const FlatVector<TVX> & b,
+	       // const FlatVector<TVX> & b,
 	       FlatVector<TVX> & y) const
   {
     FlatArray<int> row = blocktable[i];

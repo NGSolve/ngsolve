@@ -393,8 +393,9 @@ namespace ngsolve
 
     ma.PopStatus ();
 
-    vecu.Distribute();
-    vecu.AllReduce(&hoprocs);
+    ParallelBaseVector * paru = dynamic_cast<ParallelBaseVector*> (&vecu);
+    paru->Distribute();
+    paru->AllReduce(&hoprocs);
     
     endtime = clock();
     cout << "Solution time = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
@@ -412,7 +413,7 @@ namespace ngsolve
     else
       delete invmat2;
 
-    bfa -> ComputeInternal (vecu, lh);
+    bfa -> ComputeInternal (vecu, vecf, lh);
     
     if (print)
       (*testout) << "Solution = " << endl << vecu << endl;

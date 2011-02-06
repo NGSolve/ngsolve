@@ -1,9 +1,12 @@
 #ifdef PARALLEL
 
 #include <parallelngs.hpp>
-#include <parallel.hpp>
-#include "../parallel/parallelinterface.hpp"
+// #include <parallel.hpp>
+// #include "../parallel/parallelinterface.hpp"
 
+namespace netgen {
+#include <parallelinterface.hpp>
+}
 namespace ngparallel
 {
 

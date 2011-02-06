@@ -13,7 +13,29 @@ extern AutoPtr<PDE>  pde;
 extern MeshAccess * ma;
 extern ParallelMeshAccess * ngparallel::parallelma;
 
-extern int ngparallel::id, ngparallel::ntasks;
+// extern int ngparallel::id, ngparallel::ntasks;
+
+
+/*
+// extern void (*NGS_ParallelRun_Ptr) ( const string & message ) = NULL;
+// void NGS_ParallelRun ( const string & message );
+
+
+namespace myns {
+class Init
+{
+public:
+  Init ()
+  {
+    cerr << "Init NGS" << endl;
+    NGS_ParallelRun_Ptr = &NGS_ParallelRun;
+  }
+};
+Init init;
+}
+*/
+
+
 void NGS_ParallelRun ( const string & message )
 {
   MPI_Status status;
@@ -46,6 +68,7 @@ void NGS_ParallelRun ( const string & message )
     {
       try
 	{
+	  cout << "parallel solve bvp" << endl;
 	  pde -> SolveBVP();
 	}
       catch (exception & e)
@@ -559,7 +582,7 @@ template <>
 
 
 
-//*********complex
+// *********complex
 template <>
  MPI_Datatype * GetMPIType<Vec<1, Complex> > ( )
   {

@@ -19,9 +19,6 @@
 
 using namespace ngmg; 
 
-#ifdef PARALLEL
-extern MPI_Comm MPI_HIGHORDER_COMM;
-#endif
 
 namespace ngcomp
 {
@@ -797,9 +794,8 @@ namespace ngcomp
       {
 	*testout << "NedelecFESpace::UpdateParallelDofs_loproc -- discontinuous" << endl;
 	
-	const MeshAccess & ma = (*this). GetMeshAccess();
-	
-	int ndof = GetNDof();
+	// const MeshAccess & ma = (*this). GetMeshAccess();
+	// int ndof = GetNDof();
 	
 	// Find number of exchange dofs
 	Array<int> nexdof(ntasks); 
@@ -936,8 +932,7 @@ namespace ngcomp
 	Array<int> nexdof(ntasks);
 	nexdof = 0;
 	
-	const MeshAccess & ma = (*this). GetMeshAccess();
-	
+	// const MeshAccess & ma = (*this). GetMeshAccess();
 	paralleldofs->SetNExDof(nexdof);
 	
 // 	paralleldofs->localexchangedof = new Table<int> (nexdof);

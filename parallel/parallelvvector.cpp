@@ -2,6 +2,8 @@
 
 
 #include <parallelngs.hpp>
+#include <la.hpp>
+
 
 namespace ngla
 {
@@ -10,9 +12,231 @@ namespace ngla
 
 
 
+
+
+
+  BaseVector & ParallelBaseVector :: SetScalar (double scal)
+  {
+    FVDouble() = scal;
+    if ( IsParallelVector() )
+      this->SetStatus(CUMULATED);
+    else
+      this->SetStatus(NOT_PARALLEL);
+    return *this;
+  }
+
+  BaseVector & ParallelBaseVector :: SetScalar (Complex scal)
+  {
+    FVComplex() = scal;
+    if ( IsParallelVector() )
+      this->SetStatus(CUMULATED);
+    else
+      this->SetStatus(NOT_PARALLEL);
+    return *this;
+  }
+
+  BaseVector & ParallelBaseVector :: Set (double scal, const BaseVector & v)
+  {
+    FVDouble() = scal * v.FVDouble();
+    const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector *> (&v);
+
+    if ( parv && parv->IsParallelVector() )
+      {
+	this->SetParallelDofs (parv->GetParallelDofs());
+	this->SetStatus(parv->Status());
+      }
+    else 
+      {
+	this->SetParallelDofs(0);
+	this->SetStatus(NOT_PARALLEL);
+      }
+    return *this;
+  }
+
+  BaseVector & ParallelBaseVector :: Set (Complex scal, const BaseVector & v)
+  {
+    FVComplex() = scal * v.FVComplex();
+    const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector *> (&v);
+
+    if ( parv->IsParallelVector() )
+      this->SetParallelDofs(parv->GetParallelDofs());
+    else
+      this->SetParallelDofs(0);
+
+    this->SetStatus(parv->Status());
+    return *this;
+  }
+    
+  BaseVector & ParallelBaseVector :: Add (double scal, const BaseVector & v)
+  {
+    const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector *> (&v);
+
+    if ( (*this).Status() != parv->Status() )
+      {
+        if ( (*this).Status() == DISTRIBUTED )
+          AllReduce(&hoprocs);
+        else 
+          parv->AllReduce(&hoprocs);
+      }
+    FVDouble() += scal * parv->FVDouble();
+    return *this;
+  }
+
+  BaseVector & ParallelBaseVector :: Add (Complex scal, const BaseVector & v)
+  {
+    const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector *> (&v);
+
+    if ( (*this).Status() != parv->Status() )
+      {
+        if ( (*this).Status() == DISTRIBUTED )
+          AllReduce(&hoprocs);
+        else 
+          parv->AllReduce(&hoprocs);
+      }
+    FVComplex() += scal * parv->FVComplex();
+    return *this;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+template <class SCAL>
+SCAL S_ParallelBaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
+{
+  const ParallelBaseVector * parv2 = dynamic_cast<const ParallelBaseVector *> (&v2);
+
+  SCAL globalsum = 0;
+  if ( id == 0 && ntasks > 1 )
+    {
+#ifdef SCALASCA
+#pragma pomp inst begin (scalarproduct_p0)
+#endif
+      if (this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
+	{
+	  this->AllReduce(&hoprocs);
+	}
+      // two cumulated vectors -- distribute one
+      else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
+	this->Distribute();
+      MyMPI_Recv ( globalsum, 1 );
+
+#ifdef SCALASCA
+#pragma pomp inst end (scalarproduct_p0)
+#endif
+    }
+  else
+    {
+#ifdef SCALASCA
+#pragma pomp inst begin (scalarproduct)
+#endif
+
+      // not parallel
+      if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
+	return ngbla::InnerProduct (this->FVScal(), 
+				    dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
+      // two distributed vectors -- cumulate one
+      else if ( this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
+	{
+	  this->AllReduce(&hoprocs);
+	}
+      // two cumulated vectors -- distribute one
+      else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
+	this->Distribute();
+
+      SCAL localsum = ngbla::InnerProduct (this->FVScal(), 
+					   dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
+      MPI_Datatype MPI_SCAL = MyGetMPIType<SCAL>();
+      
+      MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, MPI_HIGHORDER_COMM); //MPI_COMM_WORLD);
+      if ( id == 1 )
+	MyMPI_Send( globalsum, 0 );
+
+#ifdef SCALASCA
+#pragma pomp inst end (scalarproduct)
+#endif
+    }
+  
+  return globalsum;
+}
+
+
+
+
+template <>
+Complex S_ParallelBaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
+{
+  const ParallelBaseVector * parv2 = dynamic_cast<const ParallelBaseVector *> (&v2);
+  
+#ifdef SCALASCA
+#pragma pomp inst begin (scalarproduct)
+#endif
+
+  // not parallel
+  if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
+    return ngbla::InnerProduct (FVScal(), 
+				dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVScal());
+  // two distributed vectors -- cumulate one
+  else if (this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
+    {
+      this->AllReduce(&hoprocs);
+    }
+  // two cumulated vectors -- distribute one
+  else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
+    Distribute();
+
+  Complex localsum ;
+  Complex globalsum = 0;
+  if ( id == 0 )
+    localsum = 0;
+  else 
+    localsum = ngbla::InnerProduct (FVComplex(), 
+				    dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex());
+   MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  //MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, MPI_HIGHORDER_WORLD);
+ 
+#ifdef SCALASCA
+#pragma pomp inst end (scalarproduct)
+#endif
+
+  return globalsum;
+}
+
+
+
+
+// template
+// Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const;
+
+//template <>
+// Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
+
+
+template class S_ParallelBaseVector<double>;
+template class S_ParallelBaseVector<Complex>;
+
+
+
+
+
+
+
+
+
+
   template <typename T>
   ParallelVFlatVector<T> :: ParallelVFlatVector () 
-    : paralleldofs(0)
   { 
     ;
   }
@@ -20,7 +244,7 @@ namespace ngla
 
   template <typename T>
   ParallelVFlatVector<T> :: ParallelVFlatVector (int as, T * adata)
-    : VFlatVector<T>(as, adata), paralleldofs(0)
+    : VFlatVector<T>(as, adata)
   { 
     ;
   }
@@ -28,26 +252,26 @@ namespace ngla
 
   template <typename T>
   ParallelVFlatVector<T> :: ParallelVFlatVector (int as, T * adata, ParallelDofs * aparalleldofs)
-    : VFlatVector<T> (as, adata), paralleldofs(aparalleldofs)
+    : VFlatVector<T> (as, adata)
   { 
     this -> SetParallelDofs ( aparalleldofs );
   }
 
   template <typename T>
-  ParallelVFlatVector<T> :: ParallelVFlatVector (int as, T * adata,
-						 ParallelDofs * aparalleldofs,
-						 PARALLEL_STATUS astatus)
-    : VFlatVector<T> (as, adata),
-      status(astatus),
-      paralleldofs(aparalleldofs)
+  ParallelVFlatVector<T> :: 
+  ParallelVFlatVector (int as, T * adata,
+		       ParallelDofs * aparalleldofs,
+		       PARALLEL_STATUS astatus)
+    : VFlatVector<T> (as, adata)
   {
+    status = astatus;
     this -> SetParallelDofs ( aparalleldofs );
   }
 
 
   template <typename T>
   ParallelVVector<T> :: ParallelVVector (int as)
-    : VVector<T> (as), paralleldofs(0)
+    : VVector<T> (as)
   { 
     this -> paralleldofs  = 0;
   }
@@ -55,8 +279,8 @@ namespace ngla
   template <typename T>
   ParallelVVector<T> :: ParallelVVector (int as, ParallelDofs * aparalleldofs )
    
-    : VVector<T> (as),
-      paralleldofs(aparalleldofs)
+    : VVector<T> (as)
+					// paralleldofs(aparalleldofs)
   {
     if ( aparalleldofs != 0 )
       {
@@ -74,8 +298,9 @@ namespace ngla
   template <typename T>
   ParallelVVector<T> :: ParallelVVector (int as, ngparallel::ParallelDofs * aparalleldofs,
 					 PARALLEL_STATUS astatus ) 
-    : VVector<T> (as), status(astatus)
+    : VVector<T> (as)
   {
+    status = astatus;
     this -> SetParallelDofs ( aparalleldofs );
   }
 
@@ -164,8 +389,8 @@ namespace ngla
 #pragma pomp inst begin (vvector_setparalleldofs)
 #endif
   
-    sendvector_size . SetSize(ntasks);
-    recvvector_size . SetSize(ntasks);
+    this -> sendvector_size . SetSize(ntasks);
+    this -> recvvector_size . SetSize(ntasks);
     recvvector_size = 0;
   
     Array<MPI_Request> sendintrequest(ntasks);
@@ -307,7 +532,7 @@ namespace ngla
 	for ( int isender = 0; isender < nexprocs; isender ++)
 	  {
 	    int sender = exprocs[isender];
-	    int ii = 0; 
+	    // int ii = 0; 
 	    if ( ! paralleldofs->IsExchangeProc ( sender ) ) continue; 
 	    constvec -> IRecvVec ( sender, recvrequest[isender] );
 	    MPI_Wait( &recvrequest[isender], &status);
@@ -450,7 +675,7 @@ namespace ngla
 	for ( int isender = 0; isender < nexprocs; isender ++)
 	  {
 	    int sender = exprocs[isender];
-	    int ii = 0; 
+	    // int ii = 0; 
 	    if ( ! paralleldofs->IsExchangeProc ( sender ) ) continue; 
 	    constvec -> IRecvVec ( sender, recvrequest[isender] );
 	    MPI_Status status;
@@ -475,7 +700,7 @@ namespace ngla
   {
     if ( status != CUMULATED ) return;
     ParallelVFlatVector * constflatvec = const_cast<ParallelVFlatVector<T> * > (this);
-    T * constvec = const_cast<T * > (this->Data());
+    T * constvec = const_cast<T * > (this->data);
     constflatvec->SetStatus(DISTRIBUTED);
     
     for ( int dof = 0; dof < paralleldofs->GetNDof(); dof ++ )
@@ -553,16 +778,18 @@ void ParallelVVector<T> :: PrintParallelDofs () const
 }
 
 
+  /*
 template <typename T>
 void ParallelVFlatVector<T> :: SetStatus ( PARALLEL_STATUS astatus )
 { 
   status = astatus; 
 }
 
+
 template <typename T>
 void ParallelVVector<T> :: SetStatus ( PARALLEL_STATUS astatus ) 
 { status = astatus; }
-
+  */
 
 
 template <typename T>
@@ -644,7 +871,7 @@ BaseVector * ParallelVVector<T> :: CreateVector ( const Array<int> * procs ) con
   {
     FlatArray<int> exdofs = paralleldofs->GetSortedExchangeDofs(sender);
     for (int i = 0; i < exdofs.Size(); i++)
-      this->Data()[exdofs[i]] += (*this->recvvalues)[sender][i];
+      this->data[exdofs[i]] += (*this->recvvalues)[sender][i];
   }
 
 
@@ -667,6 +894,7 @@ template class ParallelVFlatVector<Vec<7,double> >;
 template class ParallelVFlatVector<Vec<7,Complex> >;
 template class ParallelVFlatVector<Vec<8,double> >;
 template class ParallelVFlatVector<Vec<8,Complex> >;
+  /*
 template class ParallelVFlatVector<Vec<9,double> >;
 template class ParallelVFlatVector<Vec<9,Complex> >;
 
@@ -676,7 +904,7 @@ template class ParallelVFlatVector<Vec<18,double> >;
 template class ParallelVFlatVector<Vec<18,Complex> >;
 template class ParallelVFlatVector<Vec<24,double> >;
 template class ParallelVFlatVector<Vec<24,Complex> >;
-
+  */
 
 template class ParallelVVector<double>;
 template class ParallelVVector<Complex>;
@@ -697,18 +925,20 @@ template class ParallelVVector<Vec<7,double> >;
 template class ParallelVVector<Vec<7,Complex> >;
 template class ParallelVVector<Vec<8,double> >;
 template class ParallelVVector<Vec<8,Complex> >;
+
+  /*
 template class ParallelVVector<Vec<9,double> >;
 template class ParallelVVector<Vec<9,Complex> >;
 template class ParallelVVector<Vec<10,double> >;
 template class ParallelVVector<Vec<10,Complex> >;
-template class ParallelVVector<Vec<11,double> >;
-template class ParallelVVector<Vec<11,Complex> >;
-template class ParallelVVector<Vec<15,double> >;
-template class ParallelVVector<Vec<15,Complex> >;
-template class ParallelVVector<Vec<13,double> >;
-template class ParallelVVector<Vec<13,Complex> >;
-template class ParallelVVector<Vec<14,double> >;
-template class ParallelVVector<Vec<14,Complex> >;
+  // template class ParallelVVector<Vec<11,double> >;
+  // template class ParallelVVector<Vec<11,Complex> >;
+  // template class ParallelVVector<Vec<15,double> >;
+  // template class ParallelVVector<Vec<15,Complex> >;
+  // template class ParallelVVector<Vec<13,double> >;
+  // template class ParallelVVector<Vec<13,Complex> >;
+  // template class ParallelVVector<Vec<14,double> >;
+  // template class ParallelVVector<Vec<14,Complex> >;
 
 template class ParallelVVector<Vec<12,double> >;
 template class ParallelVVector<Vec<12,Complex> >;
@@ -716,7 +946,7 @@ template class ParallelVVector<Vec<18,double> >;
 template class ParallelVVector<Vec<18,Complex> >;
 template class ParallelVVector<Vec<24,double> >;
 template class ParallelVVector<Vec<24,Complex> >;
-
+  */
   
   //  template class ParallelVFlatVector<FlatVector<double> >;
   // template class ParallelVVector<FlatVector<double> >;

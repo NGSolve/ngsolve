@@ -211,16 +211,20 @@ template class VFlatVector<Vec<7,double> >;
 template class VFlatVector<Vec<7,Complex> >;
 template class VFlatVector<Vec<8,double> >;
 template class VFlatVector<Vec<8,Complex> >;
+
+  /*
 template class VFlatVector<Vec<9,double> >;
 template class VFlatVector<Vec<9,Complex> >;
-
 template class VFlatVector<Vec<12,double> >;
 template class VFlatVector<Vec<12,Complex> >;
+  */
+  
+  /*
 template class VFlatVector<Vec<18,double> >;
 template class VFlatVector<Vec<18,Complex> >;
 template class VFlatVector<Vec<24,double> >;
 template class VFlatVector<Vec<24,Complex> >;
-
+  */
 
 template class VVector<double>;
 template class VVector<Complex>;
@@ -241,6 +245,7 @@ template class VVector<Vec<7,double> >;
 template class VVector<Vec<7,Complex> >;
 template class VVector<Vec<8,double> >;
 template class VVector<Vec<8,Complex> >;
+  /*
 template class VVector<Vec<9,double> >;
 template class VVector<Vec<9,Complex> >;
 template class VVector<Vec<10,double> >;
@@ -249,7 +254,9 @@ template class VVector<Vec<11,double> >;
 template class VVector<Vec<11,Complex> >;
 template class VVector<Vec<12,double> >;
 template class VVector<Vec<12,Complex> >;
+  */
 
+  /*
 template class VVector<Vec<13,double> >;
 template class VVector<Vec<13,Complex> >;
 template class VVector<Vec<14,double> >;
@@ -275,7 +282,7 @@ template class VVector<Vec<23,double> >;
 template class VVector<Vec<23,Complex> >;
 template class VVector<Vec<24,double> >;
 template class VVector<Vec<24,Complex> >;
-
+  */
   
   // template class VFlatVector<FlatVector<double> >;
   // template class VVector<FlatVector<double> >;

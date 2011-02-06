@@ -4,13 +4,8 @@
 #include <bla.hpp>
 
 
+
 /*
-#ifdef LAPACK
-#include "../lapack/LapackGEP.hpp"
-#endif
-*/
-
-
 #ifdef PARALLEL
 #undef SEEK_SET
 #undef SEEK_CUR
@@ -19,19 +14,19 @@
 #endif
 
 
-
-
-
 namespace ngparallel
 {
   class ParallelDofs;
 }
+*/
+
 
 namespace ngcomp
 {
   class Preconditioner;
   class LocalPreconditioner;
 }
+
 /** namespace for linear algebra.
  */
 

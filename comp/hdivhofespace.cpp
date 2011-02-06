@@ -126,7 +126,7 @@ namespace ngcomp
     curl_order = order;
         
 #ifdef PARALLEL
-    Flags loflags;
+    // Flags loflags;
     loflags.SetFlag("order",0.0);
     if ( IsComplex() )
       loflags.SetFlag("complex");

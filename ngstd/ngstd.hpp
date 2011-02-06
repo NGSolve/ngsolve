@@ -13,8 +13,6 @@
 
 #include <ngs_stdcpp_include.hpp>
 
-
-
 #ifdef WIN32
    #ifdef NGINTERFACE_EXPORTS
       #define DLL_HEADER   __declspec(dllexport)
@@ -63,6 +61,26 @@ namespace ngstd
 }
 
 #include <ngs_defines.hpp>
+
+
+
+
+#ifndef PARALLEL
+
+enum { id = 0 };
+enum { ntasks = 1 };
+
+#else
+
+namespace netgen {
+  extern int id, ntasks;
+}
+using netgen::id;
+using netgen::ntasks;
+
+#endif
+
+
   
 #include "templates.hpp"
 #include "exception.hpp"

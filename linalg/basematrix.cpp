@@ -189,43 +189,6 @@ namespace ngla
 
 
 
-
-
-// #ifdef PARALLEL
-//   ngparallel::ParallelDofs * BaseMatrix :: GetParallelDofs ( )
-//   { return paralleldofs; }
-
-//   const ngparallel::ParallelDofs * BaseMatrix :: GetParallelDofs ( ) const
-//   { return paralleldofs; }
-// #endif
-
-  ParallelBaseMatrix :: ParallelBaseMatrix()
-  {
-    ;
-  }
-
-  ParallelBaseMatrix :: ParallelBaseMatrix ( const ParallelBaseMatrix & amat )
-    : paralleldofs ( amat.GetParallelDofs() )
-  {
-    ;
-  }
-
-  ParallelBaseMatrix :: ParallelBaseMatrix ( const ngparallel::ParallelDofs * aparalleldofs )
-    : paralleldofs ( aparalleldofs )
-  {
-    ;
-  }
-  
-  ParallelBaseMatrix :: ~ParallelBaseMatrix ()
-  {
-    ;
-  }
-
-  void ParallelBaseMatrix :: SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs )
-  {
-    paralleldofs = aparalleldofs;
-  }
-
   template<>
   S_BaseMatrix<double> :: S_BaseMatrix () 
   { ; }

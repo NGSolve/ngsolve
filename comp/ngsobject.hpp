@@ -135,9 +135,9 @@ template <template <class T> class Object, class Base, class ARG, class ARG2, cl
 Base * CreateVecObject (int dim, bool iscomplex, ARG & arg, ARG2 & arg2, ARG3 & arg3)
 {
   if (!iscomplex)
-    return TCreateVecObject3S<Object, Base, double, ARG, ARG2, ARG3, 24>::Create (dim, arg, arg2, arg3);
+    return TCreateVecObject3S<Object, Base, double, ARG, ARG2, ARG3, 8>::Create (dim, arg, arg2, arg3);
   else
-    return TCreateVecObject3S<Object, Base, Complex, ARG, ARG2, ARG3, 24>::Create (dim, arg, arg2, arg3);
+    return TCreateVecObject3S<Object, Base, Complex, ARG, ARG2, ARG3, 8>::Create (dim, arg, arg2, arg3);
 }
 
 

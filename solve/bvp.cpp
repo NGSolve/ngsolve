@@ -1,4 +1,5 @@
 #include "../include/solve.hpp"
+#include <parallelngs.hpp>
 
 namespace ngsolve
 {
@@ -371,13 +372,19 @@ namespace ngsolve
       (*testout) << "Solution = " << endl << vecu << endl;
 
     endtime = WallTime(); // clock();
-    cout << "Solution time = " << endtime - starttime << " sec wall time" << endl;
+#ifdef PARALLEL
+    if (id == 0)
+#endif
+      {
+	cout << "Solution time = " << endtime - starttime << " sec wall time" << endl;
+	if (solver != DIRECT)
+	  cout << "Iterations: " << invmat->GetSteps() << endl;
+      }
+
     *testout << "Solution time = " << endtime - starttime << endl;
-    
     if (solver != DIRECT)
       {
-        cout << "Iterations: " << invmat->GetSteps() << endl;
-        *testout << "Iterations: " << invmat->GetSteps() << endl;
+	*testout << "Iterations: " << invmat->GetSteps() << endl;
         delete invmat;
       }
     else

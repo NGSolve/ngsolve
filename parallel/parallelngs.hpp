@@ -13,14 +13,16 @@
 
 
 
-#ifndef PARALLEL
 
 #include <ngstd.hpp>
 
+
+#ifndef PARALLEL
+
 namespace ngparallel
 {
-  enum { id = 0 };
-  enum { ntasks = 1 };
+  // enum { id = 0 };
+  // enum { ntasks = 1 };
   extern ngstd::Array<int> hoprocs;
 }
 
@@ -37,6 +39,14 @@ namespace ngparallel
 #include <comp.hpp>
 #include <la.hpp>
 
+namespace netgen {
+  // extern int id, ntasks;
+  extern MPI_Group MPI_HIGHORDER_WORLD;
+  extern MPI_Comm MPI_HIGHORDER_COMM;
+}
+using namespace netgen;
+
+
 namespace ngcomp
 {
   class FESpace;
@@ -45,13 +55,12 @@ namespace ngcomp
 
 namespace ngparallel
 {
-  using namespace ngsolve;
+  // using namespace ngsolve;
   using namespace ngparallel;
   using namespace ngcomp;
   using namespace ngbla;
 
-  extern int id, ntasks;
-  extern ParallelMeshAccess * parallelma;
+  extern class ParallelMeshAccess * parallelma;
   extern Array<int> hoprocs;
 
 
@@ -391,8 +400,13 @@ inline void MyMPI_Recv ( T *& s, int & len, int src)
 #include "paralleldofs.hpp"
 }
 
+
+#include "parallelvector.hpp"
+#include "parallelsparsematrix.hpp"
+
+
 namespace ngla
-{
+{ 
 #include "superlu_dist.hpp"
 }
 

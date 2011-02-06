@@ -1,5 +1,5 @@
 /**************************************************************************/
-/* File:   cg.cc                                                          */
+/* File:   cg.cpp                                                         */
 /* Author: Joachim Schoeberl                                              */
 /* Date:   5. Jul. 96                                                     */
 /**************************************************************************/
@@ -11,12 +11,11 @@
 */ 
 
 #include <la.hpp>
-#include <parallelngs.hpp>
 
 namespace ngla
 {
   using namespace ngla;
-  using namespace ngparallel;
+  //  using namespace ngparallel;
 
   inline double Abs (const double & v)
   {
@@ -643,7 +642,7 @@ namespace ngla
 
 	    if ( id == 0 )
 	      if (printrates ) cout << n << " " << sqrt (Abs (wdn)) << endl;
-	    if(sh)
+	    if ( sh )
 	      sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
 						(lwstart-log(Abs(wdn)))/(lwstart-lerr)));
 	  } 

@@ -16,10 +16,8 @@
 #include "../fem/h1lofe.hpp"
 
 
-#ifdef PARALLEL
-extern MPI_Group MPI_HIGHORDER_WORLD;
-extern MPI_Comm MPI_HIGHORDER_COMM;
-#endif
+
+
 
 using namespace ngmg;
 
@@ -932,7 +930,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
       {
-	if ( eliminate_internal && nt == NT_CELL ) break;
+	// if ( eliminate_internal && nt == NT_CELL ) break;
 	for ( int nr = 0; nr < ma.GetNNodes(nt); nr++ )
 	  {
 	    if ( !parallelma->IsExchangeNode ( nt, nr ) ) continue;
@@ -978,7 +976,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
       {
-	if ( eliminate_internal && nt == NT_CELL ) break;
+	// if ( eliminate_internal && nt == NT_CELL ) break;
 
 	for ( int dest = 0; dest < ntasks; dest++)
 	  {
@@ -1114,7 +1112,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
       {
-	if ( eliminate_internal && nt == NT_CELL ) break;
+	// if ( eliminate_internal && nt == NT_CELL ) break;
 
 	int n_lo = GetNLowOrderNodeDofs(nt);
 	if ( !n_lo ) continue;
@@ -1166,7 +1164,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
       }
     for ( int i = 0; i < ntasks; i++ )
-      delete distantdofs[i], owndofs[i];
+      {
+	delete distantdofs[i];
+	delete owndofs[i];
+      }
 
     delete [] owndofs;
     delete [] distantdofs;
@@ -1581,10 +1582,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
       QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
 
      for ( int i = 0; i < ntasks; i++ )
-       delete distantdofs[i], owndofs[i];
+       {
+	 delete distantdofs[i];
+	 delete owndofs[i];
+       }
 
-     delete [] owndofs, distantdofs;
-     delete [] sendrequest, recvrequest;
+     delete [] owndofs;
+     delete distantdofs;
+     delete [] sendrequest;
+     delete recvrequest;
   }
 
   void NodalFESpace :: UpdateParallelDofs_hoproc ()
@@ -1753,10 +1759,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
       QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
 
      for ( int i = 0; i < ntasks; i++ )
-       delete distantdofs[i], owndofs[i];
+       {
+	 delete distantdofs[i];
+	 delete owndofs[i];
+       }
 
-     delete [] owndofs, distantdofs;
-     delete [] sendrequest, recvrequest;
+     delete [] owndofs;
+     delete distantdofs;
+     delete [] sendrequest;
+     delete recvrequest;
 
   }
 #endif
@@ -2653,7 +2664,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
       else
 	{ low_order_space = 0; return; }
     */
-    low_order_space = new CompoundFESpace(ma, lospaces, flags, parseflags);
+    low_order_space = new CompoundFESpace(ma, flags, parseflags);
 #endif
   }
 
@@ -2685,7 +2696,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     loflags.SetFlag("order",0.0);
     paralleldofs = 0;
     if (dgjumps){ *testout << "(CompFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
-    Array<const FESpace*> lospaces (0);
+    Array<FESpace*> lospaces (0);
     for ( int i = 0; i < spaces.Size(); i++)
       if ( &spaces[i]->LowOrderFESpace() )
 	lospaces . Append ( &spaces[i]->LowOrderFESpace() );
@@ -3273,10 +3284,15 @@ void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
       QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
 
      for ( int i = 0; i < ntasks; i++ )
-       delete distantdofs[i], owndofs[i];
+       {
+	 delete distantdofs[i];
+	 delete owndofs[i];
+       }
 
-     delete [] owndofs, distantdofs;
-     delete [] sendrequest, recvrequest;
+     delete [] owndofs;
+     delete [] distantdofs;
+     delete [] sendrequest;
+     delete [] recvrequest;
   }
 
   void ParallelNodalFESpace :: UpdateParallelDofs_hoproc ()

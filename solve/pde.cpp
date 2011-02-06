@@ -512,6 +512,9 @@ namespace ngsolve
 #ifdef PARALLEL
     MPI_Comm_size ( MPI_COMM_WORLD, &ntasks);
     MPI_Comm_rank ( MPI_COMM_WORLD, &id );
+
+    cout << "ntasks = " << ntasks << ", id = " << id << endl;
+
     hoprocs.SetSize(ntasks-1);
     for ( int i = 0; i<ntasks-1; i++ )
       hoprocs[i] = i+1;
@@ -543,6 +546,7 @@ namespace ngsolve
     double startwtime, endwtime;
 
     MPI_Barrier( MPI_COMM_WORLD );
+
     if ( id == 0 ) 
       startwtime = MPI_Wtime();
     MPI_Barrier( MPI_COMM_WORLD );
@@ -935,22 +939,21 @@ namespace ngsolve
 	  levelsolved++;
       }
     
-    if (printmessage_importance>0)
-      cout << "Equation Solved" << endl;
     // endtime = clock();
     endtime = WallTime();
 
-    if (printmessage_importance>0)
-      // cout << "Total Time = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl << endl;
-      cout << "Total Time = " << endtime-starttime << " sec wall time" << endl << endl;
-    
+
 #ifdef PARALLEL
     MPI_Barrier( MPI_COMM_WORLD );
-    if ( id == 0 ) {
-      endwtime = MPI_Wtime();
-      printf( "WALL CLOCK TIME = %f\n", double(endwtime-startwtime) );
-    }
+    if ( id == 0 ) 
+      // endwtime = MPI_Wtime();
 #endif
+
+      if (printmessage_importance>0)
+	{
+	  cout << "Equation Solved" << endl;
+	  cout << "Total Time = " << endtime-starttime << " sec wall time" << endl << endl;
+	}
   }
 
 

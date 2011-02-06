@@ -1,19 +1,20 @@
 #ifdef PARALLEL
 
-#include <mystdlib.h>
-#include <parallelngs.hpp>
+// #include <mystdlib.h>
+// #include <parallelngs.hpp>
+
 #include <comp.hpp>
 
 namespace ngparallel
 {
-  using namespace ngparallel;
+  // using namespace ngparallel;
   using namespace ngcomp;
 
 
   ParallelDofs :: ParallelDofs( const FESpace & afespace) : fespace ( afespace )
   {
-    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-    MPI_Comm_rank(MPI_COMM_WORLD, &id);
+    // MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+    // MPI_Comm_rank(MPI_COMM_WORLD, &id);
 
     ndof = 0;
     isexchangedof.SetSize(0);;
