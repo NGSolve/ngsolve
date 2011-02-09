@@ -229,14 +229,6 @@ namespace ngcomp
     /// returns dofs of sourface element
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const = 0;
 
-    /*
-    ///
-    void GetSDofNrs (int elnr, FlatArray<int> dnums) const
-    {
-      Array<int> hdnums(dnums.Size(), &dnums[0]);
-      GetSDofNrs (elnr, hdnums);
-    }
-    */
 
     /// is the FESpace defined for this sub-domain nr ?
     bool DefinedOn (int domnr) const
@@ -297,20 +289,6 @@ namespace ngcomp
     { return directelementclusters; }
 
 
-    /*
-    void TransformMat (int elnr, bool boundary,
-		       const FlatMatrix<double> & mat, TRANSFORM_TYPE type) const
-    {
-      VTransformMR (elnr, boundary, mat, type);
-    } 
-  
-    void TransformMat (int elnr, bool boundary,
-		       const FlatMatrix<Complex> & mat, TRANSFORM_TYPE type) const
-    {
-      VTransformMC (elnr, boundary, mat, type);
-    }
-    */
-
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
     {
@@ -322,8 +300,6 @@ namespace ngcomp
     {
       VTransformMC (elnr, boundary, mat, type);
     }
-  
-
   
 
 
@@ -345,14 +321,6 @@ namespace ngcomp
 		       const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const;
 
   
-    /*
-    virtual void VTransformMR (int elnr, bool boundary,
-			       const FlatMatrix<double> & mat, TRANSFORM_TYPE type) const
-    { ; }
-    virtual void VTransformMC (int elnr, bool boundary,
-			       const FlatMatrix<Complex> & mat, TRANSFORM_TYPE type) const
-    { ; }
-    */
 
     virtual void VTransformMR (int elnr, bool boundary,
 			       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
@@ -386,7 +354,6 @@ namespace ngcomp
     { return boundary_evaluator; }
 
 
-
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
     Array<SpecialElement*> specialelements;
 
@@ -396,16 +363,13 @@ namespace ngcomp
     const Array<SpecialElement*> & GetSpecialElements() const {return specialelements;}
 
 #ifdef PARALLEL
+    ParallelDofs & GetParallelDofs () const { return *paralleldofs; }
+
     virtual void UpdateParallelDofs ();
     virtual void UpdateParallelDofs ( LocalHeap & lh );
-    virtual ngparallel::ParallelDofs & GetParallelDofs () const
-    { return *paralleldofs; }
 
-    virtual void ResetParallelDofs ();
-  
     virtual void UpdateParallelDofs_hoproc();
     virtual void UpdateParallelDofs_loproc();
-
 #endif
 
 
@@ -441,8 +405,6 @@ namespace ngcomp
     NodalFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
     ///
     virtual ~NodalFESpace ();
-
-    static FESpace * Create (const MeshAccess & ma, const Flags & flags);
 
     ///
     virtual string GetClassName () const
@@ -493,9 +455,6 @@ namespace ngcomp
 
     virtual string GetClassName () const
     { return "Nonconforming FESpace"; }
-
-    static FESpace * Create (const MeshAccess & ma, const Flags & flags)
-    { return new NonconformingFESpace (ma, flags, true); }
 
     ///
     virtual void Update(LocalHeap & lh);
@@ -597,95 +556,6 @@ namespace ngcomp
 
 
 
-  /*
-
-
-  ///
-  class NonConformingFESpace : public FESpace
-  {
-    ///
-    FE_NcSegm1 segm1;
-    ///
-    FE_NcTrig1 trig1;
-    ///
-    FE_NcTet1 tet1;
-
-    ///
-    HashTable<ngstd::INT<2>,int> *node2face2d;
-    ///
-    HashTable<ngstd::INT<3>,int> *node2face3d;
-    ///
-    Array<ngstd::INT<2> > faces;
-    ///
-    Array<int[4]> elementfaces;
-    ///
-    Array<int> surfelementfaces;
-
-    ///
-    Array<int[5]> parentfaces;
-
-    ///
-    Array<short int> finelevelofedge;
-    ///
-    Array<int> nflevel;
-  
-  public:
-    ///
-    NonConformingFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags=false);
-
-    ///
-    ~NonConformingFESpace ();
-
-    ///
-    virtual string GetClassName() const
-    { return "Non-conforming"; }
-
-    ///
-    virtual void Update(LocalHeap & lh);
-
-    ///
-    virtual int GetNDof () const;
-    ///
-    virtual int GetNDofLevel (int level) const;
-
-    ///
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
-    ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-
-    ///
-    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
-    ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
-
-    ///
-    int GetFacePoint1 (int fnr) const { return faces[fnr][0]; }
-    ///
-    int GetFacePoint2 (int fnr) const { return faces[fnr][1]; }
-
-    ///
-    int GetParentFace1 (int fnr) const { return parentfaces[fnr][0]; }
-    ///
-    int GetParentFace2 (int fnr) const { return parentfaces[fnr][1]; }
-    ///
-    int GetParentFace3 (int fnr) const { return parentfaces[fnr][2]; }
-    ///
-    int GetParentFace4 (int fnr) const { return parentfaces[fnr][3]; }
-    ///
-    int GetParentFace5 (int fnr) const { return parentfaces[fnr][4]; }
-    ///
-    int GetFineLevelOfFace (int ednr) const { return finelevelofedge[ednr]; }
-  };
-
-  */
-
-
-
-
-
-
-
-
 
 
   /// A combination of fe-spaces
@@ -771,21 +641,6 @@ namespace ngcomp
     void TransformVec (int elnr, bool boundary,
 		       VEC & vec, TRANSFORM_TYPE tt) const;
 
-
-    /*
-    virtual void VTransformMR (int elnr, bool boundary,
-			       const FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const 
-    {
-      TransformMat (elnr, boundary, mat, tt);
-    }
-
-    virtual void VTransformMC (int elnr, bool boundary,
-			       const FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
-    {
-      TransformMat (elnr, boundary, mat, tt);
-    }
-    */
-
     virtual void VTransformMR (int elnr, bool boundary,
 			       const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
     {
@@ -812,11 +667,10 @@ namespace ngcomp
     }
 
     inline int GetNSpaces () const { return spaces.Size(); } 
-#ifdef PARALLEL
 
+#ifdef PARALLEL
     virtual void UpdateParallelDofs_hoproc();
     virtual void UpdateParallelDofs_loproc();
-
 #endif
   };
 

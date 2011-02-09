@@ -952,21 +952,12 @@ void L2HighOrderFESpace :: UpdateParallelDofs_hoproc()
   {
     *testout << "L2HOFESpace::UpdateParallelDofs_loproc" << endl;
 
-    const MeshAccess & ma = (*this). GetMeshAccess();
-
-    int ndof = GetNDof();
-
     // Find number of exchange dofs
     Array<int> nexdof(ntasks); 
     nexdof = 0;
 
     paralleldofs->SetNExDof(nexdof);
-
-//     paralleldofs->localexchangedof = new Table<int> (nexdof);
-//     paralleldofs->distantexchangedof = new Table<int> (nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
-
- 
   }
 #endif // PARALLEL
 

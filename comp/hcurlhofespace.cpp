@@ -6,21 +6,11 @@
 #include <../fem/hcurlhofe.hpp> 
 #include <multigrid.hpp>
 
-#ifdef PARALLEL
-#include <parallelngs.hpp>
-#endif
-
-#ifdef PARALLEL
-extern MPI_Comm MPI_HIGHORDER_COMM;
-#endif
 
 namespace ngcomp 
 {
   using namespace ngcomp; 
 
-#ifdef PARALLEL
-  using namespace ngparallel;
-#endif
 
   HCurlHighOrderFESpace ::  
   HCurlHighOrderFESpace (const MeshAccess & ama, const Flags & aflags, bool parseflags)

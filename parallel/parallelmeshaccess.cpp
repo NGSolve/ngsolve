@@ -19,22 +19,7 @@ namespace ngparallel
    ;
   }
 
-
-//   int ParallelMeshAccess :: Glob2Loc_SurfEl ( int globnum )
-//   { return netgen::NgPar_Glob2Loc_SurfEl ( globnum ); }
-
-//   int ParallelMeshAccess :: Glob2Loc_VolEl ( int globnum )
-//   { return netgen::NgPar_Glob2Loc_VolEl ( globnum ); }
-
-//   int ParallelMeshAccess :: Glob2Loc_Segm ( int globnum )
-//   { return netgen::NgPar_Glob2Loc_Segm ( globnum ); }
-
-//   int ParallelMeshAccess ::Glob2Loc_Vert ( int globnum )
-//   { return netgen::NgPar_Glob2Loc_Vert ( globnum ); }
-
-
-
-  int ParallelMeshAccess ::GetDistantNodeNum ( int proc, NODE_TYPE nt, int locnum ) const
+  int ParallelMeshAccess ::GetDistantNodeNum (int proc, NODE_TYPE nt, int locnum) const
   {
     switch (nt)
       {
@@ -53,19 +38,20 @@ namespace ngparallel
     distnums.SetSize( netgen::NgPar_GetNDistantNodeNums(nt, locnum) );
     int nr = netgen::NgPar_GetDistantNodeNums ( nt, locnum, &distnums[0][0] );
     return nr;
-//     distnums.SetSize(nr);
   }
 
-  int  ParallelMeshAccess ::GetDistantPNum ( const int & proc, const int & locpnum ) const
-  {return netgen::NgPar_GetDistantPNum ( proc, locpnum ); }
+  int  ParallelMeshAccess ::GetDistantPNum ( int proc, int locpnum ) const
+  {
+    return netgen::NgPar_GetDistantPNum ( proc, locpnum ); 
+  }
 
-  int  ParallelMeshAccess ::GetDistantEdgeNum ( const int & proc, const int & locedgenum ) const
+  int  ParallelMeshAccess ::GetDistantEdgeNum ( int proc, int locedgenum ) const
   { return netgen::NgPar_GetDistantEdgeNum ( proc, locedgenum ); }
 
-  int  ParallelMeshAccess ::GetDistantFaceNum ( const int & proc, const int & locfacenum ) const
+  int  ParallelMeshAccess ::GetDistantFaceNum ( int proc, int locfacenum ) const
   { return netgen::NgPar_GetDistantFaceNum ( proc, locfacenum ); }
 
-  int  ParallelMeshAccess ::GetDistantElNum ( const int & proc, const int & locelnum ) const
+  int  ParallelMeshAccess ::GetDistantElNum ( int proc, int locelnum ) const
   { return netgen::NgPar_GetDistantElNum ( proc, locelnum ); }
 
   bool ParallelMeshAccess :: IsExchangeNode ( NODE_TYPE nt, int nr ) const
@@ -80,37 +66,55 @@ namespace ngparallel
     return 0;
   }
 
-  bool ParallelMeshAccess ::IsExchangeFace ( const int fnr ) const 
-  { return netgen::NgPar_IsExchangeFace ( fnr ); }
+  bool ParallelMeshAccess ::IsExchangeFace ( int fnr ) const 
+  { 
+    return netgen::NgPar_IsExchangeFace ( fnr ); 
+  }
 
-  bool ParallelMeshAccess ::IsExchangeVert (const int vnum ) const 
-  { return netgen::NgPar_IsExchangeVert ( vnum ); }
+  bool ParallelMeshAccess ::IsExchangeVert (int vnum ) const 
+  {
+    return netgen::NgPar_IsExchangeVert ( vnum ); 
+  }
 
-  bool ParallelMeshAccess ::IsExchangeEdge (const int ednum ) const
-  { return netgen::NgPar_IsExchangeEdge ( ednum ); }
+  bool ParallelMeshAccess ::IsExchangeEdge (int ednum ) const
+  { 
+    return netgen::NgPar_IsExchangeEdge ( ednum ); 
+  }
 
-  bool ParallelMeshAccess ::IsExchangeElement (const int elnum ) const
-  { return netgen::NgPar_IsExchangeElement ( elnum ); }
+  bool ParallelMeshAccess ::IsExchangeElement (int elnum ) const
+  { 
+    return netgen::NgPar_IsExchangeElement ( elnum ); 
+  }
 
   void ParallelMeshAccess :: PrintParallelMeshTopology () const
-  { netgen::NgPar_PrintParallelMeshTopology (); }
+  { 
+    netgen::NgPar_PrintParallelMeshTopology (); 
+  }
 
 
 
 
-  bool ParallelMeshAccess :: IsElementInPartition ( const int elnum, const int dest ) const
-  { return netgen::NgPar_IsElementInPartition ( elnum, dest ); }
+  bool ParallelMeshAccess :: IsElementInPartition ( int elnum, int dest ) const
+  { 
+    return netgen::NgPar_IsElementInPartition ( elnum, dest ); 
+  }
 
   int ParallelMeshAccess :: GetLoc2Glob_VolEl ( int locnum )
-  { return NgPar_GetLoc2Glob_VolEl ( locnum ); }
+  { 
+    return NgPar_GetLoc2Glob_VolEl ( locnum ); 
+  }
 
 
 
-  bool ParallelMeshAccess :: IsGhostFace ( const int facenum ) const
-  { return NgPar_IsGhostFace ( facenum );}
+  bool ParallelMeshAccess :: IsGhostFace ( int facenum ) const
+  { 
+    return NgPar_IsGhostFace ( facenum );
+  }
 
-  bool ParallelMeshAccess :: IsGhostEdge ( const int edgenum ) const
-  {return NgPar_IsGhostEdge ( edgenum ); }
+  bool ParallelMeshAccess :: IsGhostEdge ( int edgenum ) const
+  {
+    return NgPar_IsGhostEdge ( edgenum ); 
+  }
 }
 
 
