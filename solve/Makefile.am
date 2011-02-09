@@ -14,7 +14,7 @@ $(top_builddir)/parallel/libparallel.la		\
 $(top_builddir)/linalg/libngla.la		\
 $(top_builddir)/basiclinalg/libngbla.la		\
 $(top_builddir)/multigrid/libngmg.la		\
- $(PARDISO_LIBS) $(MUMPS_LIBS) $(LAPACK_LIBS)
+ $(PARDISO_LIBS) $(MUMPS_LIBS) $(LAPACK_LIBS) 
 
 
 include_HEADERS = numproc.hpp pde.hpp solve.hpp 

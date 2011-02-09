@@ -22,7 +22,7 @@ namespace ngla
   protected:
     ParallelDofs * paralleldofs;
     
-    PARALLEL_STATUS status;
+    mutable PARALLEL_STATUS status;
     Array<int> sendvector_size;
     Array<int> recvvector_size;
     
@@ -47,7 +47,7 @@ namespace ngla
       return status; 
     }
 
-    virtual void SetStatus ( PARALLEL_STATUS astatus )
+    virtual void SetStatus ( PARALLEL_STATUS astatus ) const
     {
       status = astatus;
     }
@@ -78,20 +78,23 @@ namespace ngla
     virtual void PrintStatus ( ostream & ost ) const
     { cerr << "ERROR -- PrintStatus called for BaseVector, is not parallel" << endl; }
     
-    virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs=0 ) const
-    { cerr << "ERROR -- AllReduce called for BaseVector, is not parallel" << endl; }
+    virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs=0 ) const;
     
     virtual void Distribute() const
     { cerr << "ERROR -- Distribute called for BaseVector, is not parallel" << endl; }
     
-    virtual void ISend ( const int dest, int & request )
-    { cerr << "ERROR -- ISend called for BaseVector, is not parallel" << endl; }
-    virtual void Send ( const int dest )
-    { cerr << "ERROR -- Send called for BaseVector, is not parallel" << endl; }
+    virtual void ISend ( int dest, int & request ) const;
+    virtual void Send ( int dest ) const;
     
-    virtual void IRecvVec ( const int dest, int & request )
+    virtual void IRecvVec ( int dest, int & request )
+    { cerr << "ERROR -- IRecvVec called for BaseVector, is not parallel" << endl; }
+
+    virtual void RecvVec ( int dest )
     { cerr << "ERROR -- IRecvVec called for BaseVector, is not parallel" << endl; }
     
+    virtual void AddRecvValues( int sender )
+    { cerr << "ERROR -- AddRecvValues called for BaseVector, is not parallel" << endl; }
+
     virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs, const Array<int> * procs =0 )
     { 
       if ( aparalleldofs == 0 ) return;
@@ -142,7 +145,7 @@ namespace ngla
     /// values from reduceprocs are added up,
     /// vectors in sendtoprocs are set to the cumulated values
     /// default pointer 0 means send to proc 0
-    virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs = 0 ) const;
+    // virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs = 0 ) const;
 
     virtual void Distribute() const;
 
@@ -156,20 +159,22 @@ namespace ngla
 	ost << "CUMULATED" << endl ;
     }
 
-    virtual void ISend ( const int dest, MPI_Request & request );
-    virtual void Send ( const int dest );
+    // virtual void ISend ( int dest, MPI_Request & request ) const;
+    // virtual void Send ( int dest ) const;
 
-    virtual void  IRecvVec ( const int dest, MPI_Request & request );
+    virtual void  IRecvVec ( int dest, MPI_Request & request );
+    virtual void  RecvVec ( int dest );
 
+    /*
     const T & RecvValue( int dest, int i ) const { return (*recvvalues)[dest][i] ; }
-
     T & RecvValue( int dest, int i ) { return (*recvvalues)[dest][i] ; }
+    */
 
     virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const;
 
     virtual ostream & Print (ostream & ost) const;
 
-    void AddRecvValues( int sender );
+    virtual void AddRecvValues( int sender );
 
   };
 
@@ -218,7 +223,7 @@ namespace ngla
     /// values from reduceprocs are added up,
     /// vectors in sendtoprocs are set to the cumulated values
     /// default pointer 0 means send to proc 0
-    virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs = 0 ) const;
+    // virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs = 0 ) const;
 
     virtual void Distribute() const;
 
@@ -232,22 +237,25 @@ namespace ngla
 	ost << "CUMULATED" << endl ;
     }
 
-    virtual void ISend ( const int dest, MPI_Request & request );
-    virtual void Send ( const int dest );
+    // virtual void ISend ( int dest, MPI_Request & request ) const;
+    // virtual void Send ( int dest ) const;
 
-    virtual void IRecvVec ( const int dest, MPI_Request & request );
+    virtual void IRecvVec ( int dest, MPI_Request & request );
+    virtual void RecvVec ( int dest );
 
+    /*
     const T & RecvValue( int dest, int i ) const
     { return (*recvvalues)[dest][i] ; }
 
     T & RecvValue( int dest, int i ) 
     { return (*recvvalues)[dest][i] ; }
+    */
 
     virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const;
 
     virtual ostream & Print (ostream & ost) const;
 
-    void AddRecvValues( int sender );
+    virtual void AddRecvValues( int sender );
   };
 #endif
 

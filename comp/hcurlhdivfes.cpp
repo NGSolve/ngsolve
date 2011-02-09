@@ -141,13 +141,11 @@ namespace ngcomp
     if (order >= 2)
       {
 	NedelecFESpace2 * ned2fespace = new NedelecFESpace2 ( ma, flags, true );
-	ned2fespace -> ResetParallelDofs ();
 	return ned2fespace;
       }
     else
       {
         NedelecFESpace * nedfespace = new NedelecFESpace ( ma, flags, true );
-	nedfespace -> ResetParallelDofs ();
 	return nedfespace;
       }
 #else
@@ -3427,9 +3425,7 @@ namespace ngcomp
       {
 	*testout << "ParallelNedelecFESpace::UpdateParallelDofs_loproc -- discontinuous" << endl;
 	
-	const MeshAccess & ma = (*this). GetMeshAccess();
-	
-	int ndof = GetNDof();
+	// int ndof = GetNDof();
 	
 	// Find number of exchange dofs
 	Array<int> nexdof(ntasks); 
@@ -3564,8 +3560,6 @@ namespace ngcomp
 	// Find number of exchange dofs
 	Array<int> nexdof(ntasks);
 	nexdof = 0;
-	
-	const MeshAccess & ma = (*this). GetMeshAccess();
 	
 	paralleldofs->SetNExDof(nexdof);
 	

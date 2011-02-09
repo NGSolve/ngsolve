@@ -125,9 +125,6 @@ namespace ngcomp
     void RestrictToOneSideOfBoundingCurve(int index1, int index2);
     void DeleteOneSideRestrictions(void);
 
-#ifdef PARALLEL
-    virtual void UpdateParallelDofs_loproc();
-#endif
     
   protected:
     IntRange GetEdgeDofs (int nr) const

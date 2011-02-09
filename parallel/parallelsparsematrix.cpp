@@ -455,10 +455,10 @@ namespace ngla
   ParallelSparseMatrixSymmetric<TM,TV> ::
    ParallelSparseMatrixSymmetric (const ParallelSparseMatrixSymmetric & amat)
     : SparseMatrixTM<TM> (amat) , 
-       SparseMatrix<TM,TV,TV> (amat),
        SparseMatrixSymmetricTM<TM> (amat),
-      ParallelSparseMatrix<TM,TV,TV> (amat),
-      SparseMatrixSymmetric<TM,TV> (amat)
+       SparseMatrix<TM,TV,TV> (amat),
+      SparseMatrixSymmetric<TM,TV> (amat),
+      ParallelSparseMatrix<TM,TV,TV> (amat)
   {
     const SparseMatrixSymmetric<TM,TV> & consistmat = 
       dynamic_cast<const SparseMatrixSymmetric<TM,TV> &>(*amat.ConsistentMat());
@@ -541,7 +541,7 @@ namespace ngla
 #pragma pomp inst begin(allreduceho)
 #endif
 
-    const ParallelDofs & paralleldofs = *this->GetParallelDofs();
+    // const ParallelDofs & paralleldofs = *this->GetParallelDofs();
 
     Array<int> ** sendfirsti, ** sendcolnr, **recvfirsti, **recvcolnr;
     Array<TM> ** sendvalues, **recvvalues;
@@ -610,7 +610,7 @@ namespace ngla
 	    // sort
 	    int nsri = sortedrowindices.Size();
 
-	    int hv;
+	    // int hv;
 	    for (int i = 0; i < nsri; i++)
 	      for (int j = i+1; j < nsri; j++)
 		if (row2sorted[i] > row2sorted[j])
@@ -744,8 +744,6 @@ namespace ngla
 	    int numvalues = (*recvfirsti[sender])[exdofnr+1] - (*recvfirsti[sender])[exdofnr];
 
 	    FlatArray<int> rowindices =(*consistentmat).GetRowIndices(row);
-
-	    int ii = 0;
 
 	    for ( int colind = 0; colind < numvalues; colind++ )
 	      {
@@ -885,6 +883,7 @@ namespace ngla
   BaseMatrix * ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
   InverseMatrix (const BitArray * subset) const
   {
+    /*
     if ( this-> GetInverseType() == SUPERLU_DIST )
 #ifdef USE_SUPERLU_DIST
       return new SuperLU_DIST_Inverse<TM,TV_ROW,TV_COL> (*this, subset);
@@ -910,6 +909,7 @@ namespace ngla
 #endif
       }
     else
+    */
       return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, subset);
   }
 
@@ -920,6 +920,7 @@ namespace ngla
   BaseMatrix * ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
   InverseMatrix (const Array<int> * clusters) const
   {
+    /*
     if ( this->GetInverseType() == SUPERLU_DIST )
 #ifdef USE_SUPERLU_DIST
       return new SuperLU_DIST_Inverse<TM,TV_ROW,TV_COL> (*this, 0, clusters);
@@ -944,6 +945,7 @@ namespace ngla
 #endif
       }
     else
+*/
       return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, 0, clusters);
   }
 
@@ -951,6 +953,7 @@ namespace ngla
   template <class TM, class TV>
   BaseMatrix * ParallelSparseMatrixSymmetric<TM,TV> :: InverseMatrix (const BitArray * subset) const
   {
+    /*
     if ( this->GetInverseType() == SUPERLU_DIST )
 #ifdef USE_SUPERLU_DIST
       return new SuperLU_DIST_Inverse<TM,TV_ROW,TV_COL> (*this, subset, 0, 1);
@@ -975,6 +978,7 @@ namespace ngla
 #endif
       }
     else
+    */
       return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, subset);
     // #endif
   }

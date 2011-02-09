@@ -7,7 +7,7 @@ paralleldofs.cpp parallelmeshaccess.cpp parallelngs.cpp	      \
 parallelsparsematrix.cpp parallelvvector.cpp superlu_dist.cpp
 
 
-# libparallel_la_LIBADD = $(top_builddir)/linalg/libngla.la
+libparallel_la_LIBADD = $(top_builddir)/comp/libngcomp.la
 
 include_HEADERS = paralleldofs.hpp parallelmeshaccess.hpp \
 parallelngs.hpp superlu_dist.hpp

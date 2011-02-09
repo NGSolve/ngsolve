@@ -222,16 +222,16 @@ namespace ngla
   
     ParallelSparseMatrixSymmetric (const Array<int> & elsperrow)
       : SparseMatrixTM<TM> (elsperrow) , 
-	SparseMatrix<TM,TV,TV> (elsperrow),
 	SparseMatrixSymmetricTM<TM> (elsperrow),
+	SparseMatrix<TM,TV,TV> (elsperrow),
 	SparseMatrixSymmetric<TM,TV> (elsperrow),
 	ParallelSparseMatrix<TM,TV,TV> (elsperrow)
     {     consistentmat = 0; }
 
     ParallelSparseMatrixSymmetric (const MatrixGraph & agraph, bool stealgraph)
       : SparseMatrixTM<TM> (agraph, stealgraph) , 
-	SparseMatrix<TM,TV,TV> (agraph, stealgraph),
 	SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
+	SparseMatrix<TM,TV,TV> (agraph, stealgraph),
 	SparseMatrixSymmetric<TM,TV> (agraph, stealgraph),
 	ParallelSparseMatrix<TM,TV,TV> (agraph, stealgraph)
     {     consistentmat = 0; }
@@ -250,24 +250,24 @@ namespace ngla
 
     ParallelSparseMatrixSymmetric (int as, int max_elsperrow, SparseMatrixSymmetric<TM,TV> * aconsistentmat )
       : SparseMatrixTM<TM> (as, max_elsperrow) , 
-	SparseMatrix<TM,TV,TV> (as, max_elsperrow),
 	SparseMatrixSymmetricTM<TM> (as, max_elsperrow),
+	SparseMatrix<TM,TV,TV> (as, max_elsperrow),
 	SparseMatrixSymmetric<TM,TV> (as, max_elsperrow) ,
 	ParallelSparseMatrix<TM,TV,TV> (as, max_elsperrow)
     {     consistentmat = aconsistentmat; }
   
     ParallelSparseMatrixSymmetric (const Array<int> & elsperrow, SparseMatrixSymmetric<TM,TV> * aconsistentmat )
       : SparseMatrixTM<TM> (elsperrow) , 
-	SparseMatrix<TM,TV,TV> (elsperrow),
 	SparseMatrixSymmetricTM<TM> (elsperrow),
+	SparseMatrix<TM,TV,TV> (elsperrow),
 	SparseMatrixSymmetric<TM,TV> (elsperrow),
 	ParallelSparseMatrix<TM,TV,TV> (elsperrow)
     {     consistentmat = aconsistentmat; }
 
     ParallelSparseMatrixSymmetric (const MatrixGraph & agraph, bool stealgraph, SparseMatrixSymmetric<TM,TV> * aconsistentmat )
       : SparseMatrixTM<TM> (agraph, stealgraph) , 
-	SparseMatrix<TM,TV,TV> (agraph, stealgraph),
 	SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
+	SparseMatrix<TM,TV,TV> (agraph, stealgraph),
 	SparseMatrixSymmetric<TM,TV> (agraph, stealgraph),
 	ParallelSparseMatrix<TM,TV,TV> (agraph, stealgraph)
     {     consistentmat = aconsistentmat; }
@@ -276,10 +276,10 @@ namespace ngla
 				   const ngparallel::ParallelDofs * aparalleldofs,
 				   SparseMatrixSymmetric<TM,TV> * aconsistentmat )
       : SparseMatrixTM<TM> (agraph, stealgraph) , 
-	SparseMatrix<TM,TV,TV> (agraph, stealgraph),
 	SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
-	ParallelSparseMatrix<TM,TV,TV> (agraph, stealgraph,aparalleldofs),
-	SparseMatrixSymmetric<TM,TV> (agraph, stealgraph)
+	SparseMatrix<TM,TV,TV> (agraph, stealgraph),
+	SparseMatrixSymmetric<TM,TV> (agraph, stealgraph),
+	ParallelSparseMatrix<TM,TV,TV> (agraph, stealgraph,aparalleldofs)
     {     consistentmat = aconsistentmat; }
 
 

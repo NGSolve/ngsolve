@@ -10,7 +10,6 @@
 
 #include <comp.hpp>
 #include <multigrid.hpp> 
-#include <parallelngs.hpp>
 #include "../fem/h1hofe.hpp"
 #include "../fem/h1hofefo.hpp"
 
@@ -25,7 +24,6 @@ namespace ngfem
 namespace ngcomp
 {
   using namespace ngcomp;
-  using namespace ngparallel;
 
   H1HighOrderFESpace ::  
   H1HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
@@ -328,8 +326,7 @@ namespace ngcomp
 
 
     UpdateDofTables ();
-
-
+    
     UpdateCouplingDofArray ();
 
 
@@ -337,23 +334,9 @@ namespace ngcomp
 
     if (timing) Timing();
 
-#ifdef PARALLEL
-    try
-      {
-	UpdateParallelDofs();
-      }
-    catch (exception & e)
-      {
-	throw Exception (e.what() + 
-			 string ("\nthrown by H1HoFESpace, UpdateParallelDofs "));
-      }
-    catch (Exception & e)
-      {
-	e.Append (string ("\nthrown by allocate matrix ") +
-		  string ("\nthrown by H1HoFESpace, UpdateParallelDofs "));
-	throw;
-      }
 
+#ifdef PARALLEL
+    UpdateParallelDofs();
 #endif
   }
 
@@ -601,15 +584,8 @@ namespace ngcomp
         if (ma.GetDimension() == 2)
           {
             Ng_Element ngel = ma.GetElement<2> (elnr);
-        
-#ifdef PARALLEL
-	    if (ntasks > 1)
-	      for (int j = 0; j < ngel.vertices.Size(); j++)
-		hofe2d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, ngel.vertices[j]));
-	    else
-#endif
-	      for (int j = 0; j < ngel.vertices.Size(); j++)
-		hofe2d -> SetVertexNumber (j, ngel.vertices[j]);
+
+	    hofe2d -> SetVertexNumbers (ngel.vertices);
             
             for (int j = 0; j < ngel.edges.Size(); j++)
               hofe2d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
@@ -634,6 +610,27 @@ namespace ngcomp
 	    else
 #endif
 	      hofe3d -> SetVertexNumbers (ngel.vertices);
+
+	    /*
+#ifdef PARALLEL
+	    if (ntasks > 1)
+	      {
+		Array<int> globdofs(ngel.vertices.Size());
+		for (int j = 0; j < ngel.vertices.Size(); j++)
+		  globdofs[j] = parallelma->GetDistantPNum(0, ngel.vertices[j]);
+		for (int j = 0; j < ngel.vertices.Size(); j++)
+		  for (int k = 0; k < ngel.vertices.Size(); k++)
+		    if ( (ngel.vertices[j] < ngel.vertices[k]) != 
+			 (globdofs[j] < globdofs[k]) )
+		      {
+			cerr << "ordering of local/global vertices is inconsistent" << endl;
+			exit(1);
+		      }
+	      }
+		  
+#endif
+	    hofe3d -> SetVertexNumbers (ngel.vertices);
+	    */
 
             for (int j = 0; j < ngel.edges.Size(); j++)
               hofe3d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
@@ -690,16 +687,14 @@ namespace ngcomp
       }
     else
       {
-
 #ifdef PARALLEL
-	if ( ntasks > 1 )
-
+	if (ntasks > 1)
 	  for (int j = 0; j < ngel.vertices.Size(); j++)
-	    hofe2d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, (ngel.vertices[j])));
-
+	    hofe2d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, ngel.vertices[j]));
 	else
-#endif 
-	  hofe2d -> SetVertexNumbers (ngel.vertices);
+#endif
+
+	hofe2d -> SetVertexNumbers (ngel.vertices);
 
         for (int j = 0; j < ngel.edges.Size(); j++)
           hofe2d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
@@ -1585,21 +1580,6 @@ namespace ngcomp
     return &clusters;
   }
 
-
-
-
-
-
-#ifdef PARALLEL
-
-  void H1HighOrderFESpace :: UpdateParallelDofs_loproc()
-  {
-    *testout << "H1Ho::UpdateParallelDofs_loproc" << endl;
-    // lo-proc should never use high order space
-    return;
- 
-  }
-#endif
 
 
 

@@ -11,8 +11,6 @@
 #include <comp.hpp>
 #include <multigrid.hpp>
 
-#include <parallelngs.hpp>
-
 #include "../fem/h1lofe.hpp"
 
 
@@ -24,9 +22,6 @@ using namespace ngmg;
 namespace ngcomp
 {
   using namespace ngcomp;
-  using namespace ngparallel;
-
-
 
 
   FESpace :: FESpace (const MeshAccess & ama, const Flags & flags, bool checkflags)
@@ -216,7 +211,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     element_coloring = NULL;
 
 #ifdef PARALLEL
-    paralleldofs = 0;
+    paralleldofs = NULL;
 #endif
     ctofdof.SetSize(0);
   }
@@ -330,6 +325,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	free_dofs.SetSize (GetNDof());
 	free_dofs = dirichlet_dofs;
 	free_dofs.Invert();
+
+	*testout << "freedofs = " << endl << free_dofs << endl;
       }
     
 
@@ -513,7 +510,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	dnums.SetSize(0);
 	for (int i = 0; i < lodofs_per_node[nt]; i++)
-	  dnums.Append (first_lodof[nt] + i);
+	  dnums.Append (first_lodof[nt]+nr*lodofs_per_node[nt] + i);
 	if (first_hodofs[nt].Size())
 	  for (int i = first_hodofs[nt][nr]; i < first_hodofs[nt][nr+1]; i++)
 	    dnums.Append (i);
@@ -865,45 +862,31 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void FESpace :: UpdateParallelDofs ( )
   {
     if  ( ntasks == 1 ) 
-      {
-	if ( paralleldofs ) delete paralleldofs;
-	paralleldofs = 0;
-	return;
-      }
-
-    if ( id == 0 )
-      {
-	if ( paralleldofs == 0 ) 
-	  paralleldofs = new ParallelDofs (*this);
-	paralleldofs -> Update();
-
-	(*this).UpdateParallelDofs_loproc();
-
-	this->paralleldofs->UpdateMPIType();
-	return;
-      }
-
-    // no updating of parallel dofs for the low-order processor 0
-    // or in case of only one processor
+      return;
 
     if ( paralleldofs == 0 ) 
       paralleldofs = new ParallelDofs (*this);
+    
+    if ( id == 0 )
+      {
+	paralleldofs -> Update();
+	(*this).UpdateParallelDofs_loproc();
+      }
+    else
+      {
+	paralleldofs -> Update();
+	(*this). UpdateParallelDofs_hoproc();
+      }
 
-    paralleldofs -> Update();
-    (*this). UpdateParallelDofs_hoproc();
     this->paralleldofs->UpdateMPIType();
+
+    this->paralleldofs->Print();
   }
+
 
   void FESpace :: UpdateParallelDofs ( LocalHeap & lh )
   {
     cout << "UPDATE PARALLELDOF (LH) NOT IMPLEMENTED!!!!" << endl;
-  }
-
-
-
-  void FESpace :: ResetParallelDofs ()
-  {
-    paralleldofs = 0;
   }
 
   void FESpace :: UpdateParallelDofs_loproc()
@@ -916,7 +899,26 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // ******************************
     // update exchange dofs 
     // ******************************
-    *testout << "FESpace::UpdateParallelDofs_hoproc" << endl;
+
+    bool print = true;
+
+    if (print)
+      {
+	*testout << "FESpace::UpdateParallelDofs_hoproc" << endl;
+      
+	for (int node = 0; node < ma.GetNNodes (NT_VERTEX); node++)
+	  {
+	    *testout << "distnode[" << node << "] = " << endl;
+	    Array<int[2]> distantnodenums;
+	    parallelma -> GetDistantNodeNums (NT_VERTEX, node, distantnodenums);
+	    for (int j = 0; j < distantnodenums.Size(); j++)
+	      *testout << distantnodenums[j][0] << " " << distantnodenums[j][1] << endl;
+	  }
+      }
+    
+
+
+
     // Find number of exchange dofs
     Array<int> nexdof(ntasks);
     nexdof = 0;
@@ -931,23 +933,25 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
       {
 	// if ( eliminate_internal && nt == NT_CELL ) break;
-	for ( int nr = 0; nr < ma.GetNNodes(nt); nr++ )
+	for ( int nr = 0; nr < ma.GetNNodes (nt); nr++ )
 	  {
-	    if ( !parallelma->IsExchangeNode ( nt, nr ) ) continue;
+	    if ( !parallelma->IsExchangeNode (nt, nr) ) continue;
 	    
-	    GetNodeDofNrs ( nt, nr, dnums );
+	    GetNodeDofNrs (nt, nr, dnums);
 	    nexdof[id] += dnums.Size();
 	    
-	    for ( int dest = 1; dest < ntasks; dest ++ )
-	      if (  parallelma -> GetDistantNodeNum ( dest, nt, nr ) >= 0 )
+	    for (int dest = 1; dest < ntasks; dest++)
+	      if (parallelma -> GetDistantNodeNum (dest, nt, nr) >= 0 )
 		nexdof[dest] += dnums.Size(); 
 	  }
       }
 
-    nexdof[0] = LowOrderFESpace() . GetNDof();
+    nexdof[0] = LowOrderFESpace().GetNDof();
+
+    if (print)
+      *testout << "nexdof = " << nexdof << endl;
 
     paralleldofs->SetNExDof(nexdof);
-
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
     Array<int> ** owndofs, ** distantdofs;
@@ -1012,35 +1016,36 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		}
 	    } 
 
+	
+	for (int dest = 1; dest < ntasks; dest++)
+	  if (dest != id)
+	    distantdofs[dest]->SetSize(owndofs[dest]->Size());
 
-	for ( int dest = 1; dest < ntasks; dest ++ )
-	  if ( dest != id )
+	for (int dest = 1; dest < ntasks; dest ++ )
+	  if (dest != id)
 	    {
 	      MyMPI_ISend ( *owndofs[dest], dest, sendrequest[dest]);
+	      MyMPI_IRecv ( FlatArray<int> (*distantdofs[dest]), dest, recvrequest[dest]);
 	    }
-	
-	for ( int sender = 1; sender < ntasks; sender ++ )
-	  if ( sender != id )
-	    {
-	      MyMPI_IRecv ( *distantdofs[sender], sender, recvrequest[sender]);
-	    }
-	
-	for( int dest=1; dest<ntasks; dest++) 
+
+
+
+	for (int dest = 1; dest < ntasks; dest++) 
 	  {
 	    ii = 1;
-	    if ( dest == id ) continue;
-	    MPI_Wait ( &recvrequest[dest], &status );
+	    if (dest == id) continue;
+	    MPI_Wait (&recvrequest[dest], &status);
 
 	    // low order dofs first
 	    int n_lo = GetNLowOrderNodeDofs (nt);
-	    if ( n_lo )
-	      while ( ii < distantdofs[dest]->Size() )
+	    if (n_lo)
+	      while (ii < distantdofs[dest]->Size())
 		{
 		  int nodenum = (*distantdofs[dest])[ii++];
 		  int isdistghost = (*distantdofs[dest])[ii++];
 		  Array<int> dnums, lodnums;
 		  GetNodeDofNrs (nt, nodenum, dnums);
-		  for ( int i = 0; i < n_lo; i++ )
+		  for (int i = 0; i < n_lo; i++ )
 		    {
 		      (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
 		      if ( dest < id && !isdistghost )
@@ -1065,16 +1070,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		    (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
 		    if ( dest < id && !isdistghost )
 		      paralleldofs->ismasterdof.Clear ( dnums[i] ) ;
-		    ii++; cnt_nexdof[dest]++;
+		    ii++; 
+		    cnt_nexdof[dest]++;
 		  }
 	      }
-	    
-	    
 	  }
 
 	for ( int dest = 1; dest < ntasks; dest ++ )
 	  if ( dest != id )
 	    MPI_Wait ( &sendrequest[dest], &status );
+
+	if (print)
+	  for (int dest = 1; dest < ntasks; dest++)
+	    {
+	      *testout << "owndofs[" << dest << "] = " << endl << *owndofs[dest] << endl;
+	      *testout << "distdofs[" << dest << "] = " << endl << *distantdofs[dest] << endl;
+	    }
       }
 
 
@@ -1085,8 +1096,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
+    for ( int i = 0; i < ntasks; i++ )
+      {
+	delete distantdofs[i];
+	delete owndofs[i];
+      }
 
-
+    delete [] owndofs;
+    delete [] distantdofs;
 
 
 
@@ -1110,6 +1127,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // Parallel Node dofs
     // *****************
 
+    Array<int> owndofs0, distantdofs0;
+
     for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
       {
 	// if ( eliminate_internal && nt == NT_CELL ) break;
@@ -1119,9 +1138,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	int dest = 0;
 
-	owndofs[0]->SetSize(1);
-	(*owndofs[0])[0] = GetNDof();
-	distantdofs[0]->SetSize(0);
+	owndofs0.SetSize(1);
+	owndofs0[0] = GetNDof();
     
 	// find local and distant dof numbers for vertex exchange dofs
 	for ( int node = 0; node < ma.GetNNodes(nt); node++ )
@@ -1130,47 +1148,47 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	    Array<int[2]> distantnodenums;
 	    parallelma -> GetDistantNodeNums ( nt, node, distantnodenums);
-	    owndofs[0]->Append (distantnodenums[0][1] );
+	    owndofs0.Append (distantnodenums[0][1] );
 
 	    for ( int i = 0; i < n_lo; i++ )
 	      {
 		paralleldofs->SetExchangeDof ( dest, dnums[i]  );
-		owndofs[0]->Append ( dnums[i] );
+		owndofs0.Append ( dnums[i] );
 	      }
 	  }
 	
-	
-	MyMPI_ISend ( *owndofs[0], dest, sendrequest[dest]);
-	MyMPI_IRecv ( *distantdofs[0], dest, recvrequest[dest] );
-	
+	distantdofs0.SetSize(owndofs0.Size());
+
+	MyMPI_ISend ( owndofs0, dest, sendrequest[dest]);
+	MyMPI_IRecv ( FlatArray<int> (distantdofs0), dest, recvrequest[dest] );
+
 	MPI_Wait ( &recvrequest[dest], &status );
 	
 	ii = 1;
-	while ( ii < distantdofs[0]->Size() )
+	while ( ii < distantdofs0.Size() )
 	  {
 	    if ( dest == id ) continue;
-	    paralleldofs -> SetDistNDof( dest, (*distantdofs[dest])[0]) ;
-	    int nodenum = (*distantdofs[dest])[ii++];
+	    paralleldofs -> SetDistNDof( dest, distantdofs0[0]) ;
+	    int nodenum = distantdofs0[ii++];
 	    Array<int> dnums, lodnums;
 	    GetNodeDofNrs (nt, nodenum, dnums);
 	    
+	    *testout << "ii = " << ii << ", nt = " << int(nt) << ", nodenum = " << nodenum << ", dnums = " << endl << dnums << endl;
 	    for ( int i = 0; i < n_lo; i++ )
 	      {
 		(*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
-		ii++; cnt_nexdof[dest]++;
+		ii++; 
+		cnt_nexdof[dest]++;
 	      }
 	  }
 
-
-      }
-    for ( int i = 0; i < ntasks; i++ )
-      {
-	delete distantdofs[i];
-	delete owndofs[i];
+	*testout << "owndofs0 = " << endl << owndofs0 << endl;
+	*testout << "distdofs0 = " << endl << distantdofs0 << endl;
       }
 
-    delete [] owndofs;
-    delete [] distantdofs;
+
+    *testout << "sorted exdofs = " << endl
+	     << *paralleldofs->sorted_exchangedof << endl;
   }
 #endif
 
@@ -1193,7 +1211,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	Flags loflags;
 	loflags.SetFlag ("order", 1);
 	loflags.SetFlag ("dim", dimension);
-	if (dgjumps){ *testout << "(NodalFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
+	if (dgjumps) loflags.SetFlag ("dgjumps");
 	if (iscomplex) loflags.SetFlag ("complex");
 	low_order_space = new NodalFESpace (ma, loflags);
       }
@@ -1248,12 +1266,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
 	boundary_evaluator = new BlockBilinearFormIntegrator (*boundary_evaluator, dimension);  
       }
-
-
-#ifdef PARALLEL
-    paralleldofs = 0;
-#endif
-
   }
 
   NodalFESpace :: ~NodalFESpace ()
@@ -1261,12 +1273,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ;
   }
 
+  /*
   FESpace * NodalFESpace :: 
   Create (const MeshAccess & ma, const Flags & flags)
   {
     return new NodalFESpace (ma, flags, true);
   }
-
+  */
 
   int NodalFESpace :: GetNDof () const
   {
@@ -1322,8 +1335,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	      }
 	  }
       }
-
-    // FinalizeUpdate (lh);
 
 
     if (timing) Timing();
@@ -1381,13 +1392,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
-
-    /*
-    if (dirichlet_dofs.Size())
-      for (int j = 0; j < dnums.Size(); j++)
-	if (dnums[j] != -1 && dirichlet_dofs[dnums[j]])
-	  dnums[j] = -1;
-    */
   }
 
 
@@ -1411,17 +1415,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
       dnums = -1;
-
-    /*
-    if (dirichlet_dofs.Size())
-      for (int j = 0; j < dnums.Size(); j++)
-	if (dnums[j] != -1 && dirichlet_dofs[dnums[j]])
-	  dnums[j] = -1;
-    */
   }
   
-
-
 
   void NodalFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
@@ -1675,21 +1670,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
      for ( int sender = 1; sender < ntasks; sender ++ )
-      {
-       if ( id == sender )
-          for ( int dest = 1; dest < ntasks; dest ++ )
-            if ( dest != id )
-              {
-		MyMPI_ISend ( (*owndofs[dest]), dest, sendrequest[dest] );
-              }
-	  
-        if ( id != sender )
-          {
-	    int n2;
-	    MyMPI_IRecv ( *distantdofs[sender], sender, recvrequest[sender]);
-          }
- 	  
+       {
+	 if ( id == sender )
+	   for ( int dest = 1; dest < ntasks; dest ++ )
+	     if ( dest != id )
+	       {
+		 MyMPI_ISend ( (*owndofs[dest]), dest, sendrequest[dest] );
+	       }
 	 
+	 if ( id != sender )
+	   {
+	     MyMPI_IRecv ( *distantdofs[sender], sender, recvrequest[sender]);
+	   }
       }
 
     int ii = 1;
@@ -2073,8 +2065,6 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   void ElementFESpace :: UpdateParallelDofs_loproc()
   {
     *testout << "Element::UpdateParallelDofs_loproc" << endl;
-
-    const MeshAccess & ma = (*this). GetMeshAccess();
 
     int ndof = GetNDof();
 
@@ -2808,8 +2798,6 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     ArrayMem<const FiniteElement*, 10> fea(spaces.Size());
     for (int i = 0; i < fea.Size(); i++)
       fea[i] = &spaces[i]->GetFE(elnr, lh);
-    
-    // void * mem = lh.Alloc (sizeof(CompoundFiniteElement));
     return *new (lh) CompoundFiniteElement (fea);
   }
 
@@ -3011,18 +2999,20 @@ void CompoundFESpace::TransformMat<FlatMatrix<Complex> >
   }
   */
 
-  ParallelElementFESpace :: ParallelElementFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags)
+  ParallelElementFESpace :: 
+  ParallelElementFESpace (const MeshAccess & ama, 
+			  const Flags& flags, bool parseflags)
     : ElementFESpace (ama, flags, parseflags)
   {
     ;
   }
 
-void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
+  void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
   {
-
-     // ******************************
-     // update exchange dofs 
-     // ******************************
+    
+    // ******************************
+    // update exchange dofs 
+    // ******************************
     *testout << "Element::UpdateParallelDofs_hoproc" << endl;
     // Find number of exchange dofs
     Array<int> nexdof(ntasks);
@@ -3387,12 +3377,7 @@ void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
               }
 	  
         if ( id != sender )
-          {
-	    int n2;
-	    MyMPI_IRecv ( *distantdofs[sender], sender, recvrequest[sender]);
-          }
- 	  
-	 
+	  MyMPI_IRecv ( *distantdofs[sender], sender, recvrequest[sender]);
       }
 
     int ii = 1;
@@ -3420,10 +3405,15 @@ void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
       QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
 
      for ( int i = 0; i < ntasks; i++ )
-       delete distantdofs[i], owndofs[i];
+       {
+	 delete distantdofs[i];
+	 delete owndofs[i];
+       }
 
-     delete [] owndofs, distantdofs;
-     delete [] sendrequest, recvrequest;
+     delete [] owndofs;
+     delete distantdofs;
+     delete [] sendrequest;
+     delete recvrequest;
   }
 
 #endif // PARALLEL
@@ -3493,32 +3483,8 @@ void ParallelElementFESpace :: UpdateParallelDofs_hoproc()
 
   // standard fespaces:
 
-
-
-
-
-    
-  // register FESpaces
-  namespace fespace_cpp
-  {
-     
-    class Init
-    { 
-    public: 
-      Init ();
-    };
-    
-    Init::Init()
-    {
-      GetFESpaceClasses().AddFESpace ("nonconforming", NonconformingFESpace::Create);
-      GetFESpaceClasses().AddFESpace ("nodal", NodalFESpace::Create);
-    }
-    
-    Init init;
-  }
-
-
-
+  static RegisterFESpace<NodalFESpace> initnodalfes ("nodal");
+  static RegisterFESpace<NonconformingFESpace> initncfes ("nonconforming");
 
 }
 

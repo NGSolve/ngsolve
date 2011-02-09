@@ -102,129 +102,209 @@ namespace ngla
 
 
 
+  /// values from reduceprocs are added up,
+  /// vectors in sendtoprocs are set to the cumulated values
+  /// default pointer 0 means send to proc 0
+  void ParallelBaseVector :: AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs ) const 
+  {
+    if ( status != DISTRIBUTED ) return;
 
+    (*testout) << "ALLREDUCE" << endl;
+    
+    MPI_Status status;
 
-
-
-
-
-
-
-
-
-template <class SCAL>
-SCAL S_ParallelBaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
-{
-  const ParallelBaseVector * parv2 = dynamic_cast<const ParallelBaseVector *> (&v2);
-
-  SCAL globalsum = 0;
-  if ( id == 0 && ntasks > 1 )
-    {
-#ifdef SCALASCA
-#pragma pomp inst begin (scalarproduct_p0)
-#endif
-      if (this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
-	{
-	  this->AllReduce(&hoprocs);
-	}
-      // two cumulated vectors -- distribute one
-      else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
-	this->Distribute();
-      MyMPI_Recv ( globalsum, 1 );
-
-#ifdef SCALASCA
-#pragma pomp inst end (scalarproduct_p0)
-#endif
-    }
-  else
-    {
-#ifdef SCALASCA
-#pragma pomp inst begin (scalarproduct)
-#endif
-
-      // not parallel
-      if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
-	return ngbla::InnerProduct (this->FVScal(), 
-				    dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
-      // two distributed vectors -- cumulate one
-      else if ( this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
-	{
-	  this->AllReduce(&hoprocs);
-	}
-      // two cumulated vectors -- distribute one
-      else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
-	this->Distribute();
-
-      SCAL localsum = ngbla::InnerProduct (this->FVScal(), 
-					   dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
-      MPI_Datatype MPI_SCAL = MyGetMPIType<SCAL>();
-      
-      MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, MPI_HIGHORDER_COMM); //MPI_COMM_WORLD);
-      if ( id == 1 )
-	MyMPI_Send( globalsum, 0 );
-
-#ifdef SCALASCA
-#pragma pomp inst end (scalarproduct)
-#endif
-    }
-  
-  return globalsum;
-}
-
-
-
-
-template <>
-Complex S_ParallelBaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
-{
-  const ParallelBaseVector * parv2 = dynamic_cast<const ParallelBaseVector *> (&v2);
-  
-#ifdef SCALASCA
-#pragma pomp inst begin (scalarproduct)
-#endif
-
-  // not parallel
-  if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
-    return ngbla::InnerProduct (FVScal(), 
-				dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVScal());
-  // two distributed vectors -- cumulate one
-  else if (this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
-    {
-      this->AllReduce(&hoprocs);
-    }
-  // two cumulated vectors -- distribute one
-  else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
-    Distribute();
-
-  Complex localsum ;
-  Complex globalsum = 0;
-  if ( id == 0 )
-    localsum = 0;
-  else 
-    localsum = ngbla::InnerProduct (FVComplex(), 
-				    dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex());
-   MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  //MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, MPI_HIGHORDER_WORLD);
+    Array<int> exprocs(0);
+    
+    // find which processors to communicate with
+    for ( int i = 0; i < reduceprocs->Size(); i++)
+      if ( paralleldofs->IsExchangeProc((*reduceprocs)[i]) )
+	exprocs.Append((*reduceprocs)[i]);
+    
+    int nexprocs = exprocs.Size();
+    
+    ParallelBaseVector * constvec = const_cast<ParallelBaseVector * > (this);
+    
+    Array<MPI_Request> sendrequest(nexprocs), recvrequest(nexprocs);
  
-#ifdef SCALASCA
-#pragma pomp inst end (scalarproduct)
-#endif
+    Array<int> sendto_exprocs(0);
+    if ( sendtoprocs )
+      {
+	for ( int i = 0; i < sendtoprocs->Size(); i++ )
+	  if ( paralleldofs->IsExchangeProc((*sendtoprocs)[i]) 
+	       || (*sendtoprocs)[i] == id )
+	    sendto_exprocs.Append((*sendtoprocs)[i] );
+      }
+    else
+      sendto_exprocs.Append(0);
 
-  return globalsum;
-}
+    // if the vectors are distributed, reduce
+    if ( reduceprocs->Contains(id) && this->Status() == DISTRIBUTED )
+      {
+	// send 
+	for ( int idest = 0; idest < nexprocs; idest ++ ) 
+          constvec->ISend ( exprocs[idest], sendrequest[idest] );
+
+	// receive	
+	for ( int isender=0; isender < nexprocs; isender++)
+          constvec -> IRecvVec ( exprocs[isender], recvrequest[isender] );
+
+        // wait till everything is sent 
+	for ( int isender = 0;  isender < nexprocs; isender ++)
+	  MPI_Wait ( &sendrequest[isender], &status);
+
+	// cumulate
+	// MPI_Waitany --> wait for first receive, not necessarily the one with smallest id
+	for ( int cntexproc=0; cntexproc < nexprocs; cntexproc++ )
+	  {
+	    int sender, isender;
+	    MPI_Waitany ( nexprocs, &recvrequest[0], &isender, &status); 
+	    sender = exprocs[isender];
+
+	    constvec->AddRecvValues(sender);
+	  } 
+      }
+
+    constvec->SetStatus(CUMULATED);
+ 
+    // +++++++++++++++
+    // 
+    // now send vector to the sendto-procs
+
+    if ( reduceprocs->Contains(id) )
+      {
+	nexprocs = sendto_exprocs.Size();
+
+	for ( int idest = 0; idest < nexprocs; idest++ )
+	  {
+	    int dest = sendto_exprocs[idest];
+	    if ( ! paralleldofs->IsExchangeProc(dest) ) continue;
+	    constvec->Send ( dest );
+	  }
+      }
+    else if ( sendto_exprocs.Contains(id) )
+      {
+	for ( int isender = 0; isender < nexprocs; isender ++)
+	  {
+	    int sender = exprocs[isender];
+	    // int ii = 0; 
+	    if ( ! paralleldofs->IsExchangeProc ( sender ) ) continue; 
+	    constvec -> IRecvVec ( sender, recvrequest[isender] );
+	    MPI_Wait( &recvrequest[isender], &status);
+
+	    constvec -> AddRecvValues(sender);
+	  }
+      }
+  }
+  
 
 
 
 
-// template
-// Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const;
-
-//template <>
-// Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
 
 
-template class S_ParallelBaseVector<double>;
-template class S_ParallelBaseVector<Complex>;
+
+
+
+
+
+
+
+
+
+
+
+
+
+  template <class SCAL>
+  SCAL S_ParallelBaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
+  {
+    const ParallelBaseVector * parv2 = dynamic_cast<const ParallelBaseVector *> (&v2);
+
+    SCAL globalsum = 0;
+    if ( id == 0 && ntasks > 1 )
+      {
+	if (this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
+	  {
+	    this->AllReduce(&hoprocs);
+	  }
+	// two cumulated vectors -- distribute one
+	else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
+	  this->Distribute();
+	MyMPI_Recv ( globalsum, 1 );
+      }
+    else
+      {
+	// not parallel
+	if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
+	  return ngbla::InnerProduct (this->FVScal(), 
+				      dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
+	// two distributed vectors -- cumulate one
+	else if ( this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
+	  {
+	    this->AllReduce(&hoprocs);
+	  }
+	// two cumulated vectors -- distribute one
+	else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
+	  this->Distribute();
+
+	SCAL localsum = ngbla::InnerProduct (this->FVScal(), 
+					     dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
+	MPI_Datatype MPI_SCAL = MyGetMPIType<SCAL>();
+      
+	MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, MPI_HIGHORDER_COMM); //MPI_COMM_WORLD);
+	if ( id == 1 )
+	  MyMPI_Send( globalsum, 0 );
+      }
+  
+    return globalsum;
+  }
+
+
+
+
+  template <>
+  Complex S_ParallelBaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
+  {
+    const ParallelBaseVector * parv2 = dynamic_cast<const ParallelBaseVector *> (&v2);
+  
+    // not parallel
+    if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
+      return ngbla::InnerProduct (FVScal(), 
+				  dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVScal());
+    // two distributed vectors -- cumulate one
+    else if (this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
+      {
+	this->AllReduce(&hoprocs);
+      }
+    // two cumulated vectors -- distribute one
+    else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
+      Distribute();
+
+    Complex localsum ;
+    Complex globalsum = 0;
+    if ( id == 0 )
+      localsum = 0;
+    else 
+      localsum = ngbla::InnerProduct (FVComplex(), 
+				      dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex());
+    MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    //MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, MPI_HIGHORDER_WORLD);
+ 
+    return globalsum;
+  }
+
+
+
+
+  // template
+  // Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const;
+
+  //template <>
+  // Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
+
+
+  template class S_ParallelBaseVector<double>;
+  template class S_ParallelBaseVector<Complex>;
 
 
 
@@ -373,7 +453,7 @@ template class S_ParallelBaseVector<Complex>;
       }
 
     this->recvvalues = new Table<T>(recvvector_size); 
- }
+  }
 
 
 
@@ -442,109 +522,110 @@ template class S_ParallelBaseVector<Complex>;
   }
 
 
+  /*
+
   /// values from reduceprocs are added up,
   /// vectors in sendtoprocs are set to the cumulated values
   /// default pointer 0 means send to proc 0
   template <typename T>
   void ParallelVVector<T> :: AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs ) const 
   {
-    // in case of one process only, return
-    if ( status != DISTRIBUTED ) return;
-    (*testout) << "ALLREDUCE" << endl;
+  // in case of one process only, return
+  if ( status != DISTRIBUTED ) return;
+  (*testout) << "ALLREDUCE" << endl;
     
-#ifdef SCALASCA
-#pragma pomp inst begin (vvector_allreduce)
-#endif
+  #ifdef SCALASCA
+  #pragma pomp inst begin (vvector_allreduce)
+  #endif
 
-    MPI_Status status;
+  MPI_Status status;
 
-    Array<int> exprocs(0);
+  Array<int> exprocs(0);
     
-    // find which processors to communicate with
-    for ( int i = 0; i < reduceprocs->Size(); i++)
-      if ( paralleldofs->IsExchangeProc((*reduceprocs)[i]) )
-	exprocs.Append((*reduceprocs)[i]);
+  // find which processors to communicate with
+  for ( int i = 0; i < reduceprocs->Size(); i++)
+  if ( paralleldofs->IsExchangeProc((*reduceprocs)[i]) )
+  exprocs.Append((*reduceprocs)[i]);
     
-    int nexprocs = exprocs.Size();
+  int nexprocs = exprocs.Size();
     
-    ParallelVVector<T> * constvec = const_cast<ParallelVVector<T> * > (this);
+  ParallelVVector<T> * constvec = const_cast<ParallelVVector<T> * > (this);
     
-    Array<MPI_Request> sendrequest(nexprocs), recvrequest(nexprocs);
+  Array<MPI_Request> sendrequest(nexprocs), recvrequest(nexprocs);
 
-    Array<int> sendto_exprocs(0);
-    if ( sendtoprocs )
-      {
-	for ( int i = 0; i < sendtoprocs->Size(); i++ )
-	  if ( paralleldofs->IsExchangeProc((*sendtoprocs)[i]) 
-	       || (*sendtoprocs)[i] == id )
-	    sendto_exprocs.Append((*sendtoprocs)[i] );
-      }
-    else
-      sendto_exprocs.Append(0);
-
-    // if the vectors are distributed, reduce
-    if ( reduceprocs->Contains(id) && this->Status() == DISTRIBUTED )
-      {
-	// send 
-	for ( int idest = 0; idest < nexprocs; idest ++ ) 
-          constvec->ISend ( exprocs[idest], sendrequest[idest] );
-
-	// receive	
-	for ( int isender=0; isender < nexprocs; isender++)
-          constvec -> IRecvVec ( exprocs[isender], recvrequest[isender] );
-
-        // warten bis alles abgeschickt, danach darf man erst aufaddieren (JS)
-	for ( int isender = 0;  isender < nexprocs; isender ++)
-	  MPI_Wait ( &sendrequest[isender], &status);
-
-
-	// cumulate
-	// MPI_Waitany --> wait for first receive, not necessarily the one with smallest id
-	for ( int cntexproc=0; cntexproc < nexprocs; cntexproc++ )
-	  {
-	    int sender, isender;
-	    MPI_Waitany ( nexprocs, &recvrequest[0], &isender, &status); 
-	    sender = exprocs[isender];
-
-	    constvec->AddRecvValues(sender);
-	  } 
-      }
-
-    constvec->SetStatus(CUMULATED);
-
-    // +++++++++++++++
-    // 
-    // now send vector to the sendto-procs
-
-    if ( reduceprocs->Contains(id) )
-      {
-	nexprocs = sendto_exprocs.Size();
-
-	for ( int idest = 0; idest < nexprocs; idest++ )
-	  {
-	    int dest = sendto_exprocs[idest];
-	    if ( ! paralleldofs->IsExchangeProc(dest) ) continue;
-	    constvec->Send ( dest );
-	  }
-      }
-    else if ( sendto_exprocs.Contains(id) )
-      {
-	for ( int isender = 0; isender < nexprocs; isender ++)
-	  {
-	    int sender = exprocs[isender];
-	    // int ii = 0; 
-	    if ( ! paralleldofs->IsExchangeProc ( sender ) ) continue; 
-	    constvec -> IRecvVec ( sender, recvrequest[isender] );
-	    MPI_Wait( &recvrequest[isender], &status);
-
-	    constvec -> AddRecvValues(sender);
-	  }
-      }
-#ifdef SCALASCA
-#pragma pomp inst end (vvector_horeduce)
-#endif
+  Array<int> sendto_exprocs(0);
+  if ( sendtoprocs )
+  {
+  for ( int i = 0; i < sendtoprocs->Size(); i++ )
+  if ( paralleldofs->IsExchangeProc((*sendtoprocs)[i]) 
+  || (*sendtoprocs)[i] == id )
+  sendto_exprocs.Append((*sendtoprocs)[i] );
   }
-  
+  else
+  sendto_exprocs.Append(0);
+
+  // if the vectors are distributed, reduce
+  if ( reduceprocs->Contains(id) && this->Status() == DISTRIBUTED )
+  {
+  // send 
+  for ( int idest = 0; idest < nexprocs; idest ++ ) 
+  constvec->ISend ( exprocs[idest], sendrequest[idest] );
+
+  // receive	
+  for ( int isender=0; isender < nexprocs; isender++)
+  constvec -> IRecvVec ( exprocs[isender], recvrequest[isender] );
+
+  // wait till everything is sent 
+  for ( int isender = 0;  isender < nexprocs; isender ++)
+  MPI_Wait ( &sendrequest[isender], &status);
+
+  // cumulate
+  // MPI_Waitany --> wait for first receive, not necessarily the one with smallest id
+  for ( int cntexproc=0; cntexproc < nexprocs; cntexproc++ )
+  {
+  int sender, isender;
+  MPI_Waitany ( nexprocs, &recvrequest[0], &isender, &status); 
+  sender = exprocs[isender];
+
+  constvec->AddRecvValues(sender);
+  } 
+  }
+
+  constvec->SetStatus(CUMULATED);
+ 
+  // +++++++++++++++
+  // 
+  // now send vector to the sendto-procs
+
+  if ( reduceprocs->Contains(id) )
+  {
+  nexprocs = sendto_exprocs.Size();
+
+  for ( int idest = 0; idest < nexprocs; idest++ )
+  {
+  int dest = sendto_exprocs[idest];
+  if ( ! paralleldofs->IsExchangeProc(dest) ) continue;
+  constvec->Send ( dest );
+  }
+  }
+  else if ( sendto_exprocs.Contains(id) )
+  {
+  for ( int isender = 0; isender < nexprocs; isender ++)
+  {
+  int sender = exprocs[isender];
+  // int ii = 0; 
+  if ( ! paralleldofs->IsExchangeProc ( sender ) ) continue; 
+  constvec -> IRecvVec ( sender, recvrequest[isender] );
+  MPI_Wait( &recvrequest[isender], &status);
+
+  constvec -> AddRecvValues(sender);
+  }
+  }
+  #ifdef SCALASCA
+  #pragma pomp inst end (vvector_allreduce)
+  #endif
+  }
+  */  
 
 
 
@@ -554,143 +635,142 @@ template class S_ParallelBaseVector<Complex>;
   template <typename T>
   void ParallelVVector<T> :: Distribute() const
   {
-    if (  status != CUMULATED ) return;
+    if (status != CUMULATED) return;
 
-    *testout << "distribute! " << endl;
+    // *testout << "distribute! " << endl;
     // *testout << "vector before distributing " << *this << endl;
 
-    ParallelVVector<T> * constvec = const_cast<ParallelVVector<T> * > (this);
-    constvec->SetStatus(DISTRIBUTED);
+    this -> SetStatus(DISTRIBUTED);
 
     for ( int dof = 0; dof < paralleldofs->GetNDof(); dof ++ )
       if ( ! paralleldofs->IsMasterDof ( dof ) )
-	(*constvec)(dof) = 0;
+	(*this)(dof) = 0;
 
     //   *testout << "distributed vector " << *constvec << endl;
   }
 
 
-
-  /// values from reduceprocs are added up,
+  /*
+ /// values from reduceprocs are added up,
   /// vectors in sendtoprocs are set to the cumulated values
   /// default pointer 0 means send to proc 0
   template <typename T>
   void ParallelVFlatVector<T> :: AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs ) const 
   {
-    // in case of one process only, return
-    if ( status != DISTRIBUTED ) return;
+  // in case of one process only, return
+  if ( status != DISTRIBUTED ) return;
 
-#ifdef SCALASCA
-#pragma pomp inst begin (vvector_allreduce)
-#endif
+  #ifdef SCALASCA
+  #pragma pomp inst begin (vvector_allreduce)
+  #endif
 
-    Array<int> exprocs(0);
-    int nexprocs;
-    MPI_Status status;
+  Array<int> exprocs(0);
+  int nexprocs;
+  MPI_Status status;
 
-    // find which processors to communicate with
-    for ( int i = 0; i < reduceprocs->Size(); i++)
-      if ( paralleldofs->IsExchangeProc((*reduceprocs)[i]) )
-	exprocs.Append((*reduceprocs)[i]);
+  // find which processors to communicate with
+  for ( int i = 0; i < reduceprocs->Size(); i++)
+  if ( paralleldofs->IsExchangeProc((*reduceprocs)[i]) )
+  exprocs.Append((*reduceprocs)[i]);
     
-    nexprocs = exprocs.Size();
-    int cntexproc = 0;
+  nexprocs = exprocs.Size();
+  int cntexproc = 0;
     
-    ParallelVFlatVector<T> * constvec = const_cast<ParallelVFlatVector<T> * > (this);
+  ParallelVFlatVector<T> * constvec = const_cast<ParallelVFlatVector<T> * > (this);
     
-    MPI_Request * sendrequest, *recvrequest;
-    sendrequest = new MPI_Request[nexprocs];
-    recvrequest = new MPI_Request[nexprocs];
+  MPI_Request * sendrequest, *recvrequest;
+  sendrequest = new MPI_Request[nexprocs];
+  recvrequest = new MPI_Request[nexprocs];
     
-    Array<int> sendto_exprocs(0);
-    if ( sendtoprocs )
-      {
-	for ( int i = 0; i < sendtoprocs->Size(); i++ )
-	  if ( paralleldofs->IsExchangeProc((*sendtoprocs)[i]) )
-	    sendto_exprocs.Append((*sendtoprocs)[i] );
-      }
-    else
-      sendto_exprocs.Append(0);
-
-    // if the vectors are distributed, reduce
-    if ( this->status == DISTRIBUTED && reduceprocs->Contains(id) )
-      {
-	(*testout) << "reduce! high order" << endl;
-	constvec->SetStatus(CUMULATED);
-	
-	// send 
-	for ( int idest = 0; idest < nexprocs; idest ++ ) 
-	  {
-	    int dest = exprocs[idest];
-
-	    constvec->ISend ( dest, sendrequest[idest] );
-	  }
-
-	// receive	
-	for ( int isender=0; isender < nexprocs; isender++)
-	  {
-	    int sender = exprocs[isender];
-	    constvec -> IRecvVec ( sender, recvrequest[isender] );
-	  }
-    
-
-	// cumulate
-    
-	// MPI_Waitany --> wait for first receive, not necessarily the one with smallest id
-
-	for ( cntexproc=0; cntexproc < nexprocs; cntexproc++ )
-	  {
-	    int sender, isender;
-	    MPI_Waitany ( nexprocs, &recvrequest[0], &isender, &status); 
-	    sender = exprocs[isender];
-	    MPI_Wait ( sendrequest+isender, &status );
-
-	    constvec->AddRecvValues(sender);
-	  } 
-	
-      }
-
-
-    // +++++++++++++++
-    // 
-    // now send vector to the sendto-procs
-
-
-    if ( reduceprocs->Contains(id) )
-      {
-	nexprocs = sendto_exprocs.Size();
-	delete [] sendrequest; delete [] recvrequest;
-	sendrequest = new MPI_Request[nexprocs];
-	recvrequest = new MPI_Request[nexprocs];
-	    
-	for ( int idest = 0; idest < nexprocs; idest++ )
-	  {
-	    int dest = sendto_exprocs[idest];
-	    if ( ! paralleldofs->IsExchangeProc(dest) ) continue;
-	    constvec->Send ( dest );
-	  }
-      }
-    else if ( sendto_exprocs. Contains(id) )
-      {
-	for ( int isender = 0; isender < nexprocs; isender ++)
-	  {
-	    int sender = exprocs[isender];
-	    // int ii = 0; 
-	    if ( ! paralleldofs->IsExchangeProc ( sender ) ) continue; 
-	    constvec -> IRecvVec ( sender, recvrequest[isender] );
-	    MPI_Status status;
-	    MPI_Wait(recvrequest+isender, &status);
-	    
-	    constvec -> AddRecvValues(sender);
-	  }
-      }
-
-#ifdef SCALASCA
-#pragma pomp inst end (vvector_horeduce)
-#endif
-    delete [] recvrequest; delete []sendrequest;
+  Array<int> sendto_exprocs(0);
+  if ( sendtoprocs )
+  {
+  for ( int i = 0; i < sendtoprocs->Size(); i++ )
+  if ( paralleldofs->IsExchangeProc((*sendtoprocs)[i]) )
+  sendto_exprocs.Append((*sendtoprocs)[i] );
   }
-  
+  else
+  sendto_exprocs.Append(0);
+
+  // if the vectors are distributed, reduce
+  if ( this->status == DISTRIBUTED && reduceprocs->Contains(id) )
+  {
+  (*testout) << "reduce! high order" << endl;
+  constvec->SetStatus(CUMULATED);
+	
+  // send 
+  for ( int idest = 0; idest < nexprocs; idest ++ ) 
+  {
+  int dest = exprocs[idest];
+
+  constvec->ISend ( dest, sendrequest[idest] );
+  }
+
+  // receive	
+  for ( int isender=0; isender < nexprocs; isender++)
+  {
+  int sender = exprocs[isender];
+  constvec -> IRecvVec ( sender, recvrequest[isender] );
+  }
+    
+
+  // cumulate
+    
+  // MPI_Waitany --> wait for first receive, not necessarily the one with smallest id
+
+  for ( cntexproc=0; cntexproc < nexprocs; cntexproc++ )
+  {
+  int sender, isender;
+  MPI_Waitany ( nexprocs, &recvrequest[0], &isender, &status); 
+  sender = exprocs[isender];
+  MPI_Wait ( sendrequest+isender, &status );
+
+  constvec->AddRecvValues(sender);
+  } 
+	
+  }
+
+
+  // +++++++++++++++
+  // 
+  // now send vector to the sendto-procs
+
+
+  if ( reduceprocs->Contains(id) )
+  {
+  nexprocs = sendto_exprocs.Size();
+  delete [] sendrequest; delete [] recvrequest;
+  sendrequest = new MPI_Request[nexprocs];
+  recvrequest = new MPI_Request[nexprocs];
+	    
+  for ( int idest = 0; idest < nexprocs; idest++ )
+  {
+  int dest = sendto_exprocs[idest];
+  if ( ! paralleldofs->IsExchangeProc(dest) ) continue;
+  constvec->Send ( dest );
+  }
+  }
+  else if ( sendto_exprocs. Contains(id) )
+  {
+  for ( int isender = 0; isender < nexprocs; isender ++)
+  {
+  int sender = exprocs[isender];
+  // int ii = 0; 
+  if ( ! paralleldofs->IsExchangeProc ( sender ) ) continue; 
+  constvec -> IRecvVec ( sender, recvrequest[isender] );
+  MPI_Status status;
+  MPI_Wait(recvrequest+isender, &status);
+	    
+  constvec -> AddRecvValues(sender);
+  }
+  }
+
+  #ifdef SCALASCA
+  #pragma pomp inst end (vvector_horeduce)
+  #endif
+  delete [] recvrequest; delete []sendrequest;
+  }
+  */
 
 
 
@@ -712,45 +792,20 @@ template class S_ParallelBaseVector<Complex>;
 
 
 
-
-  template <typename T>
-  void ParallelVVector<T> :: ISend ( const int dest, MPI_Request & request )
+  void ParallelBaseVector :: ISend ( int dest, int & request ) const
   {
     MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
-    MPI_Isend( & (this->data[0]), 1, mpi_t, dest, 2000, MPI_COMM_WORLD, &request);
+    MPI_Isend( Memory(), 1, mpi_t, dest, 2000, MPI_COMM_WORLD, &request);
   }
 
-
-
-  template <typename T>
-  void ParallelVFlatVector<T> :: ISend ( const int dest, MPI_Request & request )
+  void ParallelBaseVector :: Send ( int dest ) const
   {
     MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
-    MPI_Isend( & (this->data[0]), 1, mpi_t, dest, 2000, MPI_COMM_WORLD, &request);
+    MPI_Send( Memory(), 1, mpi_t, dest, 2001, MPI_COMM_WORLD);
   }
 
-
-
   template <typename T>
-  void ParallelVVector<T> :: Send ( const int dest )
-  {
-    MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
-    MPI_Send( & (this->data[0]), 1, mpi_t, dest, 2001, MPI_COMM_WORLD);
-  }
-
-
-
-  template <typename T>
-  void ParallelVFlatVector<T> :: Send ( const int dest )
-  {
-    MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
-    MPI_Send( & (this->data[0]), 1, mpi_t, dest, 2001, MPI_COMM_WORLD);
-  }
-
-
-
-  template <typename T>
-  void ParallelVVector<T> :: IRecvVec ( const int dest, MPI_Request & request )
+  void ParallelVVector<T> :: IRecvVec ( int dest, MPI_Request & request )
   {
     MPI_Datatype MPI_T = MyGetMPIType<T> ();
     MPI_Irecv( &( (*this->recvvalues)[dest][0]), recvvector_size[dest], MPI_T, dest, 
@@ -758,57 +813,69 @@ template class S_ParallelBaseVector<Complex>;
   }
 
   template <typename T>
-  void ParallelVFlatVector<T> :: IRecvVec ( const int dest, MPI_Request & request )
+  void ParallelVFlatVector<T> :: IRecvVec ( int dest, MPI_Request & request )
   {
     MPI_Datatype MPI_T = MyGetMPIType<T> ();
     MPI_Irecv(&( (*this->recvvalues)[dest][0]), recvvector_size[dest], MPI_T, 
 	      dest, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
   }
 
-template <typename T>
-void ParallelVFlatVector<T> :: PrintParallelDofs () const
-{ 
-  paralleldofs->Print(); 
-}
+  template <typename T>
+  void ParallelVVector<T> :: RecvVec ( int dest)
+  {
+    MPI_Status status;
 
-template <typename T>
-void ParallelVVector<T> :: PrintParallelDofs () const
-{ 
-  paralleldofs->Print(); 
-}
+    MPI_Datatype MPI_T = MyGetMPIType<T> ();
+    MPI_Recv( &( (*this->recvvalues)[dest][0]), recvvector_size[dest], MPI_T, dest, 
+	      MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+  }
 
+  template <typename T>
+  void ParallelVFlatVector<T> :: RecvVec ( int dest) 
+  {
+    MPI_Status status;
 
-  /*
-template <typename T>
-void ParallelVFlatVector<T> :: SetStatus ( PARALLEL_STATUS astatus )
-{ 
-  status = astatus; 
-}
-
-
-template <typename T>
-void ParallelVVector<T> :: SetStatus ( PARALLEL_STATUS astatus ) 
-{ status = astatus; }
-  */
+    MPI_Datatype MPI_T = MyGetMPIType<T> ();
+    MPI_Recv(&( (*this->recvvalues)[dest][0]), recvvector_size[dest], MPI_T, 
+	     dest, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+  }
 
 
-template <typename T>
-BaseVector * ParallelVVector<T> :: CreateVector ( const Array<int> * procs ) const
-{
-  ParallelVVector<T> * parvec;
+
+
+
+  template <typename T>
+  void ParallelVFlatVector<T> :: PrintParallelDofs () const
+  { 
+    paralleldofs->Print(); 
+  }
+
+  template <typename T>
+  void ParallelVVector<T> :: PrintParallelDofs () const
+  { 
+    paralleldofs->Print(); 
+  }
+
+
+
+
+  template <typename T>
+  BaseVector * ParallelVVector<T> :: CreateVector ( const Array<int> * procs ) const
+  {
+    ParallelVVector<T> * parvec;
   
-  parvec = new ParallelVVector<T> (this->size);
-  parvec->SetStatus( this->Status() );
+    parvec = new ParallelVVector<T> (this->size);
+    parvec->SetStatus( this->Status() );
   
-  // *testout << "procs... " << procs << endl;
-  if( this->Status() != NOT_PARALLEL )
-    {
-      ParallelDofs * aparalleldofs = this-> GetParallelDofs();
-      parvec->SetParallelDofs ( aparalleldofs, procs );
-    }
-  return parvec;
+    // *testout << "procs... " << procs << endl;
+    if( this->Status() != NOT_PARALLEL )
+      {
+	ParallelDofs * aparalleldofs = this-> GetParallelDofs();
+	parvec->SetParallelDofs ( aparalleldofs, procs );
+      }
+    return parvec;
   
-}
+  }
 
 
 
@@ -861,8 +928,16 @@ BaseVector * ParallelVVector<T> :: CreateVector ( const Array<int> * procs ) con
   void ParallelVVector<T> :: AddRecvValues( int sender )
   {
     FlatArray<int> exdofs = paralleldofs->GetSortedExchangeDofs(sender);
-    for (int i = 0; i < exdofs.Size(); i++)
-      (*this) (exdofs[i]) +=  (*this->recvvalues)[sender][i];
+    if (sender != 0)
+      {
+	for (int i = 0; i < exdofs.Size(); i++)
+	  (*this) (exdofs[i]) +=  (*this->recvvalues)[sender][i];
+      }
+    else
+      {
+	for (int i = 0; i < exdofs.Size(); i++)
+	  (*this)(i) += (*this->recvvalues)[0][i];
+      }
   }
 
 
@@ -870,82 +945,91 @@ BaseVector * ParallelVVector<T> :: CreateVector ( const Array<int> * procs ) con
   void ParallelVFlatVector<T> :: AddRecvValues( int sender )
   {
     FlatArray<int> exdofs = paralleldofs->GetSortedExchangeDofs(sender);
-    for (int i = 0; i < exdofs.Size(); i++)
-      this->data[exdofs[i]] += (*this->recvvalues)[sender][i];
+    if (sender != 0)
+      {
+	for (int i = 0; i < exdofs.Size(); i++)
+	  this->data[exdofs[i]] += (*this->recvvalues)[sender][i];
+      }
+    else
+      {
+	for (int i = 0; i < exdofs.Size(); i++)
+	  this->data[i] += (*this->recvvalues)[0][i];
+	// (*this).Range (0, (*this->recvvalues).Size()) += (*this->recvvalues)[sender];
+      }
   }
 
 
-template class ParallelVFlatVector<double>;
-template class ParallelVFlatVector<Complex>;
-template class ParallelVFlatVector<Vec<1,double> >;
-template class ParallelVFlatVector<Vec<1,Complex> >;
-template class ParallelVFlatVector<Vec<2,double> >;
-template class ParallelVFlatVector<Vec<2,Complex> >;
-template class ParallelVFlatVector<Vec<3,double> >;
-template class ParallelVFlatVector<Vec<3,Complex> >;
-template class ParallelVFlatVector<Vec<4,double> >;
-template class ParallelVFlatVector<Vec<4,Complex> >;
+  template class ParallelVFlatVector<double>;
+  template class ParallelVFlatVector<Complex>;
+  template class ParallelVFlatVector<Vec<1,double> >;
+  template class ParallelVFlatVector<Vec<1,Complex> >;
+  template class ParallelVFlatVector<Vec<2,double> >;
+  template class ParallelVFlatVector<Vec<2,Complex> >;
+  template class ParallelVFlatVector<Vec<3,double> >;
+  template class ParallelVFlatVector<Vec<3,Complex> >;
+  template class ParallelVFlatVector<Vec<4,double> >;
+  template class ParallelVFlatVector<Vec<4,Complex> >;
 
-template class ParallelVFlatVector<Vec<5,double> >;
-template class ParallelVFlatVector<Vec<5,Complex> >;
-template class ParallelVFlatVector<Vec<6,double> >;
-template class ParallelVFlatVector<Vec<6,Complex> >;
-template class ParallelVFlatVector<Vec<7,double> >;
-template class ParallelVFlatVector<Vec<7,Complex> >;
-template class ParallelVFlatVector<Vec<8,double> >;
-template class ParallelVFlatVector<Vec<8,Complex> >;
+  template class ParallelVFlatVector<Vec<5,double> >;
+  template class ParallelVFlatVector<Vec<5,Complex> >;
+  template class ParallelVFlatVector<Vec<6,double> >;
+  template class ParallelVFlatVector<Vec<6,Complex> >;
+  template class ParallelVFlatVector<Vec<7,double> >;
+  template class ParallelVFlatVector<Vec<7,Complex> >;
+  template class ParallelVFlatVector<Vec<8,double> >;
+  template class ParallelVFlatVector<Vec<8,Complex> >;
   /*
-template class ParallelVFlatVector<Vec<9,double> >;
-template class ParallelVFlatVector<Vec<9,Complex> >;
+    template class ParallelVFlatVector<Vec<9,double> >;
+    template class ParallelVFlatVector<Vec<9,Complex> >;
 
-template class ParallelVFlatVector<Vec<12,double> >;
-template class ParallelVFlatVector<Vec<12,Complex> >;
-template class ParallelVFlatVector<Vec<18,double> >;
-template class ParallelVFlatVector<Vec<18,Complex> >;
-template class ParallelVFlatVector<Vec<24,double> >;
-template class ParallelVFlatVector<Vec<24,Complex> >;
+    template class ParallelVFlatVector<Vec<12,double> >;
+    template class ParallelVFlatVector<Vec<12,Complex> >;
+    template class ParallelVFlatVector<Vec<18,double> >;
+    template class ParallelVFlatVector<Vec<18,Complex> >;
+    template class ParallelVFlatVector<Vec<24,double> >;
+    template class ParallelVFlatVector<Vec<24,Complex> >;
   */
 
-template class ParallelVVector<double>;
-template class ParallelVVector<Complex>;
-template class ParallelVVector<Vec<1,double> >;
-template class ParallelVVector<Vec<1,Complex> >;
-template class ParallelVVector<Vec<2,double> >;
-template class ParallelVVector<Vec<2,Complex> >;
-template class ParallelVVector<Vec<3,double> >;
-template class ParallelVVector<Vec<3,Complex> >;
-template class ParallelVVector<Vec<4,double> >;
-template class ParallelVVector<Vec<4,Complex> >;
+  template class ParallelVVector<double>;
+  template class ParallelVVector<Complex>;
+  template class ParallelVVector<Vec<1,double> >;
+  template class ParallelVVector<Vec<1,Complex> >;
+  template class ParallelVVector<Vec<2,double> >;
+  template class ParallelVVector<Vec<2,Complex> >;
+  template class ParallelVVector<Vec<3,double> >;
+  template class ParallelVVector<Vec<3,Complex> >;
+  template class ParallelVVector<Vec<4,double> >;
+  template class ParallelVVector<Vec<4,Complex> >;
 
-template class ParallelVVector<Vec<5,double> >;
-template class ParallelVVector<Vec<5,Complex> >;
-template class ParallelVVector<Vec<6,double> >;
-template class ParallelVVector<Vec<6,Complex> >;
-template class ParallelVVector<Vec<7,double> >;
-template class ParallelVVector<Vec<7,Complex> >;
-template class ParallelVVector<Vec<8,double> >;
-template class ParallelVVector<Vec<8,Complex> >;
+  template class ParallelVVector<Vec<5,double> >;
+  template class ParallelVVector<Vec<5,Complex> >;
+  template class ParallelVVector<Vec<6,double> >;
+  template class ParallelVVector<Vec<6,Complex> >;
+  template class ParallelVVector<Vec<7,double> >;
+  template class ParallelVVector<Vec<7,Complex> >;
+  template class ParallelVVector<Vec<8,double> >;
+  template class ParallelVVector<Vec<8,Complex> >;
 
   /*
-template class ParallelVVector<Vec<9,double> >;
-template class ParallelVVector<Vec<9,Complex> >;
-template class ParallelVVector<Vec<10,double> >;
-template class ParallelVVector<Vec<10,Complex> >;
-  // template class ParallelVVector<Vec<11,double> >;
-  // template class ParallelVVector<Vec<11,Complex> >;
-  // template class ParallelVVector<Vec<15,double> >;
-  // template class ParallelVVector<Vec<15,Complex> >;
-  // template class ParallelVVector<Vec<13,double> >;
-  // template class ParallelVVector<Vec<13,Complex> >;
-  // template class ParallelVVector<Vec<14,double> >;
-  // template class ParallelVVector<Vec<14,Complex> >;
+    template class ParallelVVector<Vec<9,double> >;
+    template class ParallelVVector<Vec<9,Complex> >;
+    template class ParallelVVector<Vec<10,double> >;
+    template class ParallelVVector<Vec<10,Complex> >;
+    // template class ParallelVVector<Vec<11,double> >;
+    // template class ParallelVVector<Vec<11,Complex> >;
+    // template class ParallelVVector<Vec<15,double> >;
+    // template class ParallelVVector<Vec<15,Complex> >;
+    // template class ParallelVVector<Vec<13,double> >;
+    // template class ParallelVVector<Vec<13,Complex> >;
+    // template class ParallelVVector<Vec<14,double> >;
+    // template class ParallelVVector<Vec<14,Complex> >;
 
-template class ParallelVVector<Vec<12,double> >;
-template class ParallelVVector<Vec<12,Complex> >;
-template class ParallelVVector<Vec<18,double> >;
-template class ParallelVVector<Vec<18,Complex> >;
-template class ParallelVVector<Vec<24,double> >;
-template class ParallelVVector<Vec<24,Complex> >;
+    template class ParallelVVector<Vec<12,double> >;
+    template class ParallelVVector<Vec<12,Complex> >;
+    template class ParallelVVector<Vec<18,double> >;
+    template class ParallelVVector<Vec<18,Complex> >;
+    template class ParallelVVector<Vec<24,double> >;
+    template class ParallelVVector<Vec<24,Complex> >;
   */
   
   //  template class ParallelVFlatVector<FlatVector<double> >;

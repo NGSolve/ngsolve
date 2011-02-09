@@ -913,10 +913,15 @@ namespace ngcomp
       QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
 
     for ( int i = 0; i < ntasks; i++ )
-      delete distantdofs[i], owndofs[i];
+      {
+	delete distantdofs[i];
+	delete owndofs[i];
+      }
 
-    delete [] owndofs, distantdofs;
-    delete [] sendrequest, recvrequest;
+    delete [] owndofs;
+    delete [] distantdofs;
+    delete [] sendrequest;
+    delete [] recvrequest;
 
 
   }
@@ -1028,16 +1033,20 @@ namespace ngcomp
 	     
 	  }
       }
-
+    
     for ( int dest = id+1; dest < ntasks; dest++ )
       QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
 
     for ( int i = 0; i < ntasks; i++ )
-      delete distantdofs[i], owndofs[i];
+      {
+	delete distantdofs[i];
+	delete owndofs[i];
+      }
 
-    delete [] owndofs, distantdofs;
-    delete [] sendrequest, recvrequest;
-
+    delete [] owndofs;
+    delete [] distantdofs;
+    delete [] sendrequest;
+    delete [] recvrequest;
   }
 
 #endif

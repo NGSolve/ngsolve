@@ -451,7 +451,7 @@ namespace ngla
 
     if ( id > 0 )
       {
-	(*testout) << "BlockJacobi: MultAdd" << endl;
+	(*testout) << "ParallelBlockJacobi: MultAdd" << endl;
 
 #ifdef SCALASCA
 #pragma pomp inst begin(blockjacobi_multadd)
@@ -553,17 +553,22 @@ namespace ngla
  	      fy(blocktable[i][j]) += s * hy(j);
 	  }
 
+
+	cout << "bin hier, id = " << id << endl;
+	MPI_Barrier(MPI_COMM_WORLD);
+
 	if ( usecoarsegrid )
 	  {
 	    // 5*  recv and add parallel values from lo proc for vecy
 	    // --> Additive lo-preconditioning
 	    int sender = 0;
 	    
-	    vecy -> IRecvVec ( sender, recvrequests[0] );
+	    // vecy -> IRecvVec ( sender, recvrequests[0] );
+	    vecy -> RecvVec ( sender );
 	
 	    // wait for non-blocking communication to end
-	    MPI_Wait ( &sendrequests[0], &status ); 
-	    MPI_Wait ( &recvrequests[0], &status ); 
+	    // MPI_Wait ( &sendrequests[0], &status ); 
+	    // MPI_Wait ( &recvrequests[0], &status ); 
 	    
 	    // add values -> cumulated vector
 	    vecy -> AddRecvValues(sender);
@@ -627,6 +632,10 @@ namespace ngla
 	    constvecx -> AddRecvValues(sender);	    
 	  }
 
+	cout << "bin hier, id = " << id << endl;
+	MPI_Barrier(MPI_COMM_WORLD);
+
+
 	if ( this->usecoarsegrid )
 	  {
 	    // *3 mult with inverse sparse matrix --> this is the same, no matter if 
@@ -640,12 +649,12 @@ namespace ngla
 	    
 	    for ( int dest = 1; dest < ntasks; dest ++ ) // an alle dests
 	      {
-// 		vecy -> ISend ( dest, request );
-// 		sendrequests.Append(request);
+		// vecy -> ISend ( dest, request );
+		// sendrequests.Append(request);
 		vecy -> Send ( dest );
 	      }
 	  }
-	
+	 
 
 	if ( ! (x.Status() == NOT_PARALLEL) )
 	  y.SetStatus ( CUMULATED );
@@ -1278,6 +1287,9 @@ namespace ngla
 				      // ParallelBaseMatrix(amat.GetParallelDofs())
   { 
     cout << "parallel block band jac sym, constr called, #blocks = " << blocktable.Size() << endl;
+
+    *testout << "parallelblockJacobiSymmetric, blocks = " << endl << ablocktable << endl;
+
 //     const_cast<ParallelSparseMatrixSymmetric<TM,TV> &> (mat).SetInverseType(SPARSECHOLESKY);
 
     // directsolver = adirectsolver;
@@ -1320,7 +1332,7 @@ namespace ngla
 	  Array<int> block_inv(amat.Height());
 	  block_inv = -1;
 
-	      MatrixGraph * commongraph = MergeGraphs ( mat, *consistmat );
+	  MatrixGraph * commongraph = MergeGraphs ( mat, *consistmat );
 	  for (int i = 0; i < blocktable.Size(); i++)
 	    {
 	      int bs = blocktable[i].Size();
@@ -1334,7 +1346,7 @@ namespace ngla
 	      lh.CleanUp();
 
 	    }
-	      delete commongraph;
+	  delete commongraph;
 	}
 
 	/* 
@@ -1554,16 +1566,19 @@ namespace ngla
   MultAdd (TSCAL s, const BaseVector & bx, BaseVector & by) const 
   {
     const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
+    ParallelBaseVector & ncx = const_cast<ParallelBaseVector&> (x);
     ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);
     
 
     if ( id > 0 )
       {
-	(*testout) << "BlockJacobiSymmetric: MultAdd" << endl;
-
+	(*testout) << "ParallelBlockJacobiSymmetric: MultAdd xx" << endl;
+	
 #ifdef SCALASCA
 #pragma pomp inst begin(blockjacobisym_multadd)
 #endif
+
+	// *testout << "y = " << endl << y << endl;
 
 	x.Distribute();
 	
@@ -1572,12 +1587,14 @@ namespace ngla
 	// cumulate vector x --> 
 	// vector y is cumulated vector in the end
 	// x is distributed again
-
+	
+	/*
 	const ParallelVVector<TVX> * vecx = dynamic_cast<const ParallelVVector<TVX> *> (&x);
 	ParallelVVector<TVX> * vecy = dynamic_cast<ParallelVVector<TVX> *> (&y);
 	ParallelVVector<TVX> * constvecx = const_cast<ParallelVVector<TVX> *> (vecx);
-	
-	constvecx->SetStatus(CUMULATED);
+	*/
+
+	x.SetStatus(CUMULATED);
 	
 	Array<MPI_Request> sendrequests(0), recvrequests(0);
 	MPI_Request request;
@@ -1587,7 +1604,7 @@ namespace ngla
 	for ( int dest = 0; dest < ntasks; dest ++ ) // an alle dests
 	  {
 	    if ( dest == id || !paralleldofs.IsExchangeProc ( dest ) ) continue;
-	    constvecx -> ISend ( dest, request );
+	    x.ISend ( dest, request );
 	    sendrequests.Append(request);
 	  }
 	
@@ -1605,17 +1622,17 @@ namespace ngla
 	    if ( paralleldofs.ContainsParallelDof ( blocktable[i] ) ) continue;
 	    int bs = blocktable[i].Size();
 	    if (!bs) continue;
-
+	    
 	    FlatVector<TVX> hx(bs, &hxmax(0));
 	    FlatVector<TVX> hy(bs, &hymax(0));
 	    
-	for (int j = 0; j < bs; j++)
-	  hx(j) = fx(blocktable[i][j]);
-       
- 
-	InvDiag(i).Mult (hx, hy);
- 	    for (int j = 0; j < bs; j++)
- 	      fy(blocktable[i][j]) += s * hy(j);
+	    for (int j = 0; j < bs; j++)
+	      hx(j) = fx(blocktable[i][j]);
+	    
+	    InvDiag(i).Mult (hx, hy);
+
+	    for (int j = 0; j < bs; j++)
+	      fy(blocktable[i][j]) += s * hy(j);
 	  }
 	
 	// 3*  recv and add parallel values from ho procs for vecx
@@ -1623,7 +1640,7 @@ namespace ngla
 	  if ( sender != id )
 	    {
 	      if ( ! paralleldofs.IsExchangeProc ( sender ) ) continue; // wenn ich gern zuhören möchte
-	      constvecx -> IRecvVec ( sender, request );
+	      ncx.IRecvVec ( sender, request );
 	      recvrequests.Append(request);
 	    }
 
@@ -1637,10 +1654,14 @@ namespace ngla
 	    sender = status.MPI_SOURCE;
 	    MPI_Wait ( &sendrequests[index], &status ); 
 
-	    constvecx -> AddRecvValues(sender);
+	    ncx.AddRecvValues(sender);
 	  }
 
+	// *testout << "cumulated vecx = " << endl << *constvecx << endl;
+
 	// 4*  apply block preconditioner to blocks containing parallel dofs
+
+	// *testout << "y, after1 = " << endl << y << endl;
 
 	for (int i = 0; i < blocktable.Size(); i++)
 	  {
@@ -1648,7 +1669,7 @@ namespace ngla
 	    int bs = blocktable[i].Size();
 	    if (!bs) continue;
 	    
-	    FlatVector<TVX> hx(bs, &hxmax(0));
+	    FlatVector<TVX> hx(bs, &hxmax(0)); 
 	    FlatVector<TVX> hy(bs, &hymax(0));
 	    
 	    for (int j = 0; j < bs; j++)
@@ -1657,28 +1678,30 @@ namespace ngla
 	    InvDiag(i).Mult (hx, hy);
 
 	    for (int j = 0; j < bs; j++)
-	      {
-		fy(blocktable[i][j]) += s * hy(j);
-	      }
+	      fy(blocktable[i][j]) += s * hy(j);
 	  }
+
+	// *testout << "y, after2 = " << endl << y << endl;
 
 	if ( usecoarsegrid )
 	  {
 	    // 5*  recv and add parallel values from lo proc for vecy
 	    // --> Additive lo-preconditioning
-	    int sender = 0;
 
-	    vecy -> IRecvVec ( sender, recvrequests[sender] );
+	    // constvecx -> Send (0);
+	    y.RecvVec (0);
+
+	    // vecy -> IRecvVec ( sender, recvrequests[sender] );
 	    // wait for non-blocking communication to end
-	    MPI_Wait ( &sendrequests[0], &status ); 
-	    MPI_Wait ( &recvrequests[0], &status ); 
+	    // MPI_Wait ( &sendrequests[0], &status ); 
+	    // MPI_Wait ( &recvrequests[0], &status ); 
 	    
 	    // add values -> cumulated vector
-	    vecy -> AddRecvValues(sender);
-	    
+	    y.AddRecvValues (0);
 	  }
 	y.SetStatus ( CUMULATED );
 	
+	// *testout << "y, after3 = " << endl << y << endl;
 	
 	x.Distribute();
 	
@@ -1690,7 +1713,7 @@ namespace ngla
       }
     else // id == 0, coarse grid direct solver
       {
-	(*testout) << "BlockJacobiSymmetric -- LowOrder :: Mult " << endl;
+	(*testout) << "BlockJacobiSymmetric -- LowOrder :: Mult xx " << endl;
 	
 	// parallel computations like cumulate... only if 
 	// more than on proc are used
@@ -1700,12 +1723,7 @@ namespace ngla
 	// vector y is cumulated vector in the end
 	// x is distributed again
 	
-	const ParallelVVector<TVX> * vecx = dynamic_cast<const ParallelVVector<TVX> *> (&x);
-	ParallelVVector<TVX> * vecy = dynamic_cast<ParallelVVector<TVX> *> (&y);
-	ParallelVVector<TVX> * constvecx = const_cast<ParallelVVector<TVX> *> (vecx);
-	
-	
-	constvecx->SetStatus(CUMULATED);
+	ncx.SetStatus(CUMULATED);
 		
 	Array<MPI_Request> sendrequests(0), recvrequests(0);
 	MPI_Request request;
@@ -1718,13 +1736,13 @@ namespace ngla
 	  if ( sender != id )
 	    {
 	      if ( ! paralleldofs.IsExchangeProc ( sender ) ) continue;
-	      constvecx -> IRecvVec ( sender, request );
+	      ncx.IRecvVec ( sender, request );
 	      recvrequests.Append(request);
 	    }
 	
 	// set x = 0, then add the values from the high-order procs
 	// --> cumulated vector x
-	constvecx -> FVDouble() = 0.0;
+	ncx.FVDouble() = 0.0;
 
 	for ( int isender = 0; isender < recvrequests.Size(); isender++ )
 	  {
@@ -1732,13 +1750,16 @@ namespace ngla
 	    MPI_Waitany ( recvrequests.Size(), &recvrequests[0], &index, &status);
 	    sender = status.MPI_SOURCE;
 
-	    constvecx -> AddRecvValues(sender);
+	    ncx.AddRecvValues(sender);
 	  }
+
 
 	// *3 mult with inverse sparse matrix --> this is the same, no matter if 
 	//    parallel or not parallel
 	if ( this->usecoarsegrid )
 	  {
+	    *testout << "coarse precond, vecx = " << endl << x << endl;
+
 	    this->coarsegridprecond -> Mult(x, y);
 	    
 	    // now the sequential part is done, 
@@ -1746,19 +1767,17 @@ namespace ngla
 	    
 	    // 4* add result to high-order procs -- send
 	    
-	    
+	    *testout << "coarse precond, vecy = " << endl << y << endl;
+
 	    for ( int dest = 1; dest < ntasks; dest ++ ) // an alle dests
-	      {
-		vecy -> Send ( dest );
-	      }
+	      y.Send ( dest );
 	  }
+	else
+	  *testout << "no coarse" << endl;
 	
-// 	delete [] sendrequests; delete[] recvrequests; delete[] stati;
-	
-	if ( ! (x.Status() == NOT_PARALLEL) )
+	if (x.Status() != NOT_PARALLEL) 
 	  y.SetStatus ( CUMULATED );
 	x.Distribute();
-	
       }
 
   }

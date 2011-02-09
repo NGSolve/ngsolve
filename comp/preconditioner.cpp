@@ -638,13 +638,6 @@ namespace ngcomp
     else if (block)
       {
 	cout << "\nFlag block deprecated: use -blocktype=<typeno> instead" << endl;
-	// old version of creatin smoothing blocks
-        /*
-	Table<int> * blocks = bfa->GetFESpace().CreateSmoothingBlocks();
-	jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-	  .CreateBlockJacobiPrecond(*blocks, 0, coarse_pre, parallel);
-	dynamic_cast<BaseBlockJacobiPrecond&> (*jacobi) . InitCoarseType(ct);
-        */
       }
     else
       {
