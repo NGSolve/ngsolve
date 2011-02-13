@@ -145,10 +145,12 @@ namespace netgen
    {
       int i, j;
 
+      ofstream dbg("BndLayerDebug.log");
+
       // Angle between a surface element and a growth-vector below which 
       // a prism is project onto that surface as a quad
       // (in degrees)
-      double angleThreshold = 15.0;
+      double angleThreshold = 5.0;
       
       cout << "Generate Prismatic Boundary Layers (Experimental)...." << endl;
 
@@ -190,7 +192,7 @@ namespace netgen
 
       cout << "Enter layer growth / shrink factor: ";
       cin >> growthfactor;
-      if(growthfactor <= 0.0) growthfactor = 1.0;
+      if(growthfactor <= 0.0) growthfactor = 0.5;
 
       cout << "Old NP: " << mesh.GetNP() << endl;
       cout << "Old NSE: " << mesh.GetNSE() << endl;
@@ -198,6 +200,11 @@ namespace netgen
       for(int layer = prismlayers; layer >= 1; layer--)
       {
          cout << "Generating layer: " << layer << endl;
+
+         const MeshTopology& meshtopo = mesh.GetTopology();
+         const_cast<MeshTopology &> (meshtopo).SetBuildEdges(true);
+         const_cast<MeshTopology &> (meshtopo).SetBuildFaces(true);
+         const_cast<MeshTopology &> (meshtopo).Update();
 
          double layerht = hfirst;
 
@@ -221,11 +228,6 @@ namespace netgen
          // Safety measure to ensure no issues with mesh 
          // consistency
          int nseg = mesh.GetNSeg();
-
-         // Update the mesh topology structures
-         mesh.UpdateTopology();
-
-         const MeshTopology& meshtopo = mesh.GetTopology();
 
          // Indicate which points need to be remapped
          BitArray bndnodes(np);
@@ -296,6 +298,7 @@ namespace netgen
             else
             {
                mapto.Elem(i) = 0;
+               growthvectors.Elem(i) = Vec3d(0,0,0);
             }
          }
 
@@ -372,16 +375,27 @@ namespace netgen
                            }
                         }
 
-                        Vec3d surfelem_vect1, surfelem_vect2, surfelem_vect;
+                        Vec3d surfelem_vect, surfelem_vect1;
                         
-                        surfelem_vect1 = mesh.Point(pnum_commelem) - mesh.Point(segpair_p1);
-                        surfelem_vect2 = mesh.Point(pnum_commelem) - mesh.Point(segpair_p2);
-                        surfelem_vect1.Normalize();
-                        surfelem_vect2.Normalize();
-                        surfelem_vect = surfelem_vect1 + surfelem_vect2;
+                        Element2d & commsel = mesh.SurfaceElement(pnt_commelem);
+
+                        dbg << "NP= " << commsel.GetNP() << " : ";
+
+                        for(int k = 1; k <= commsel.GetNP(); k++)
+                        {
+                           GetSurfaceNormal(mesh,commsel,k,surfelem_vect1);
+                           surfelem_vect += surfelem_vect1;
+                        }
+
                         surfelem_vect.Normalize();
 
                         double surfangle = Angle(growthvectors.Elem(segpair_p1),surfelem_vect);
+
+                        dbg << "V1= " << surfelem_vect1 
+                            << " : V2= " << surfelem_vect1
+                            << " : V= " << surfelem_vect
+                            << " : GV= " << growthvectors.Elem(segpair_p1)
+                            << " : Angle= " << surfangle * 180 / 3.141592;
 
                   
                         // remap the segments to the new points
@@ -390,12 +404,14 @@ namespace netgen
                         mesh.LineSegment(j)[1] = mapto.Get(seg_p1);
                         mesh.LineSegment(j)[0] = mapto.Get(seg_p2);
 
-                        if(surfangle <= angleThreshold * 3.141592 / 180.0)
+                        if((surfangle < (90 + angleThreshold) * 3.141592 / 180.0)
+                           && (surfangle > (90 - angleThreshold) * 3.141592 / 180.0))
                         {
+                           dbg << " : quad\n";
                            // Since the surface is lower than the threshold, change the effective 
                            // prism growth vector to match with the surface vector, so that 
                            // the Quad which is created lies on the original surface
-                           growthvectors.Elem(segpair_p1) = surfelem_vect;
+                           //growthvectors.Elem(segpair_p1) = surfelem_vect;
 
                            // Add a quad element to account for the prism volume
                            // element which is going to be added 
@@ -410,6 +426,7 @@ namespace netgen
                         }
                         else
                         {
+                           dbg << "\n";
                            for (int k = 1; k <= pnt1_elems.Size(); k++)
                            {
                               Element2d & pnt_sel = mesh.SurfaceElement(pnt1_elems.Elem(k));
@@ -585,6 +602,8 @@ namespace netgen
       cout << "Num of Quads: " << numquads << endl;
       cout << "Num of Prisms: " << numprisms << endl;
       cout << "Boundary Layer Generation....Done!" << endl;
+
+      dbg.close();
    }
 
 }
