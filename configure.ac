@@ -1,4 +1,4 @@
-AC_INIT([netgen],[4.9.13],[],[])
+AC_INIT([netgen],[4.9.14-dev],[],[])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -24,8 +24,6 @@ AC_LANG([C++])
 AC_PROG_CXX
 AC_PROG_LIBTOOL
 LT_INIT
-
-
 
 # OpenCASCADE configuration
 
@@ -93,6 +91,12 @@ AC_ARG_ENABLE([parallel],
         AC_SUBST([MPI_LIBS], "-L/usr/lib64/mpi/gcc/openmpi/lib64 -lmpi_cxx -lmetis")
         ]
         )       
+
+
+#        [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -I/usr/include/mpich2 -I/usr/include/metis -DPARALLEL  -I/usr/share/metis/Lib -DMETIS -DVTRACE -I/usr/local/include/vampirtrace")
+#        AC_SUBST([MPI_LIBS], "-lmetis -L/opt/mpich/ch-p4/lib -lmpich")
+
+# -lvt -lvt-mpi -lvt-mpi-unify")
 #        [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -DPARALLEL -I/usr/include/metis -DMETIS")
 #        AC_SUBST([MPI_LIBS], " -L/opt/mpich/ch-p4/lib64 -lmpich -lmetis")
 #        [AC_SUBST([MPI_INCLUDES], "-DPARALLEL -DNO_PARALLEL_THREADS -I/opt/mpich/include")
@@ -154,7 +158,7 @@ case "${TEA_WINDOWINGSYSTEM}" in
 		;;
 	x11)
 		AC_SUBST(TOGL_WINDOWINGSYSTEM,TOGL_X11)
-		TEA_ADD_LIBS([-lGL -lXmu])
+		TEA_ADD_LIBS([-lGL])
 		LIBGLU=-lGLU
 		;;
 	win32)

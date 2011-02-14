@@ -9,12 +9,6 @@ extern "C" {
 
   // this interface is 0-base  !!
 
-//   // these functions have O(N) complexity 
-//   int NgPar_Glob2Loc_SurfEl ( int globnum ) ;
-//   int NgPar_Glob2Loc_VolEl ( int globnum )  ;
-//   int NgPar_Glob2Loc_Segm ( int globnum )  ;
-//   int NgPar_Glob2Loc_Vert ( int globnum ) ;
-
 
   int NgPar_GetLoc2Glob_VolEl ( int locnum );
 

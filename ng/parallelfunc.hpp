@@ -9,7 +9,7 @@ void LoadPDEParallel ( const char*  filename );
 
 
 #ifdef NGSOLVE
-void NGS_ParallelRun ( const string & message);
+// void NGS_ParallelRun ( const string & message);
 #endif
 
 #endif

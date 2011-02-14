@@ -5,13 +5,16 @@
 
 #include "../libsrc/include/parallelinterface.hpp"
 
+
+
 namespace netgen
 {
+
+
   extern AutoPtr<Mesh> mesh;
+}
   
-  
-  
-  
+
 //   int NgPar_Glob2Loc_SurfEl ( int globnum ) 
 //   { 
 //     return mesh->GetParallelTopology().Glob2Loc_SurfEl(globnum+1) - 1; 
@@ -31,7 +34,6 @@ namespace netgen
 //   { 
 //     return mesh->GetParallelTopology().Glob2Loc_Vert(globnum+1) -1;
 //   }
-}  
 
   using namespace netgen;
   

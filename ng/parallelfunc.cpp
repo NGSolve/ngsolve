@@ -1,3 +1,5 @@
+#define NGSOLVE
+
 #ifdef PARALLEL
 
 #include "dlfcn.h"
@@ -53,6 +55,7 @@
 void (*NGS_ParallelRun) (const string & message) = NULL;
 
 
+// extern void NGS_ParallelRun ( const string & message );
 
 namespace netgen
 {
@@ -69,6 +72,7 @@ void Parallel_Exit();
 
 namespace netgen {
   extern AutoPtr<Mesh>  mesh;
+  extern VisualSceneMesh vsmesh;
 }
 
 using namespace netgen;
@@ -245,13 +249,11 @@ void ParallelRun()
 		
 		display = XOpenDisplay (displname.c_str());
 		
-		/*
 		  PrintMessage (3, "displ - name = ", displname);
 		  PrintMessage (3, "display = ", display,
 		  " display props: ",
 		  " screen w = ", XDisplayWidth (display, 0),
 		  " , h = ", XDisplayHeight (display, 0));
-		*/
 
 		Window win;
 		int wx, wy;
@@ -331,10 +333,10 @@ void ParallelRun()
 		  cerr << "no VISINFO found" << endl;
 
                 // context = glXCreateContext( display, visinfo, 0, /* curContext, */ False );
-		context = glXCreateContext( display, visinfo, glXImportContextEXT ( display, contextid ), False );
-                // cout << "context = " << context << endl;
-
-                glXMakeCurrent (display, curDrawable, context);
+		context = glXCreateContext( display, visinfo, glXImportContextEXT ( display, contextid ), False);
+		// cout << "context = " << context << endl;
+		
+		glXMakeCurrent (display, curDrawable, context);
 
 
 #else
@@ -348,7 +350,7 @@ void ParallelRun()
 			      " imported context ", context);
 
 
-		// glXMakeCurrent (display, curDrawable, context);
+		glXMakeCurrent (display, curDrawable, context);
 #endif
 
 		// PrintMessage (1, "redraw - init complete");
@@ -371,7 +373,7 @@ void ParallelRun()
 	    if (redraw_cmd == "filledlist")
 	      {
 		glXMakeCurrent (display, curDrawable, context);
-		vsmesh.BuildFilledList (0);
+		vsmesh.BuildFilledList (false);
 		glXMakeCurrent (display, None, NULL);
 	      }
 
@@ -394,7 +396,7 @@ void ParallelRun()
 
 	else if ( message ==  "end" )
 	      {
-		PrintMessage (1, "EXIT");
+		// PrintMessage (1, "EXIT");
 		test = false;
 		// end netgen
 		Ng_Exit();

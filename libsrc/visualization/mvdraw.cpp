@@ -753,6 +753,7 @@ namespace netgen
 	    
 	    displname = XDisplayName (0);
 	    /*
+
 	    cout << "Init Parallel GL" << endl;
 	    cout << "DisplayName = " << displname << endl;
 	    cout << "current display = " << dpy << endl;
@@ -763,6 +764,7 @@ namespace netgen
 	    cout << "isdirect = " << glXIsDirect ( dpy, ctx ) << endl;                  
 	    cout << "extensionstring = " << glXQueryExtensionsString( dpy, 0 ) << endl;
 	    */
+
 
 	    Array<MPI_Request> request(ntasks);
 	    MPI_Status status;
@@ -806,14 +808,5 @@ namespace netgen
     vssolution.Broadcast ();
   }
 #endif 
-
-
-
-
-
-
-
-
-
 
 }

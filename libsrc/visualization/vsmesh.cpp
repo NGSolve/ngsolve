@@ -1019,8 +1019,8 @@ namespace netgen
 	  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, matcol);
 	
 
-#ifdef PARALLEL
 	/*
+#ifdef PARALLEL
 	if ( el.IsGhost() )
 	  {
 	    if ( faceindex == selface )
@@ -1028,15 +1028,8 @@ namespace netgen
 	    else
 	      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_coll_transp);
 	  }
-	else
-	*/
-	  {
-	    if ( faceindex == selface )
-	      glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcolsel);
-	    else
-	      glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcol);
-	  }
 #endif
+	*/
 	
 	bool simpletrig = !names && !curv.IsHighOrder();
 	for (int hi = 0; hi < seia.Size(); hi++)
