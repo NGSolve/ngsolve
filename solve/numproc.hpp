@@ -92,7 +92,7 @@ public:
   RegisterNumProc (string label, int dim = -1)
   {
     GetNumProcs().AddNumProc (label, dim, Create, NP::PrintDoc);
-    cout << "register numproc '" << label << "'" << endl;
+    // cout << "register numproc '" << label << "'" << endl;
   }
   
   static NumProc * Create (PDE & pde, const Flags & flags)

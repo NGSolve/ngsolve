@@ -13,29 +13,10 @@ namespace ngcomp
   using namespace ngcomp;
   using namespace ngparallel;
 
-  /*
-  Preconditioner :: Preconditioner ()
-  {
-    test = false;
-    timing = false;
-    print = false;
-    laterupdate = false;
-    testresult_ok = testresult_min = testresult_max = NULL;
-  }
- 
 
-  Preconditioner :: Preconditioner (const Flags & aflags)
-    :flags(aflags) 
-  {
-    test = flags.GetDefineFlag ("test");
-    timing = flags.GetDefineFlag ("timing");
-    print = flags.GetDefineFlag ("print");
-    laterupdate = flags.GetDefineFlag ("laterupdate");
-    testresult_ok = testresult_min = testresult_max = NULL;
-  }
-  */  
-
-  Preconditioner :: Preconditioner (const PDE * const apde, const Flags & aflags, const string aname)
+  
+  Preconditioner :: Preconditioner (const PDE * const apde, const Flags & aflags, 
+				    const string aname)
     : NGS_Object(apde->GetMeshAccess(), aname), flags(aflags)
   {
     test = flags.GetDefineFlag ("test");
@@ -632,8 +613,8 @@ namespace ngcomp
 	  flags.SetFlag("eliminate_internal");
 	Table<int> * blocks = bfa->GetFESpace().CreateSmoothingBlocks(flags);
 	jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-	  .CreateBlockJacobiPrecond(*blocks, 0, coarse_pre, parallel);
-	dynamic_cast<BaseBlockJacobiPrecond&> (*jacobi) . InitCoarseType(ct);
+	  .CreateBlockJacobiPrecond(*blocks, 0, coarse_pre, parallel, bfa->GetFESpace().GetFreeDofs());
+	dynamic_cast<BaseBlockJacobiPrecond&> (*jacobi) . InitCoarseType(ct, bfa->GetFESpace().GetFreeDofs());
       }
     else if (block)
       {

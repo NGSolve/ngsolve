@@ -96,11 +96,12 @@ namespace ngcomp
     if (flags.NumListFlagDefined ("dirichlet")) 
       loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
     if (dgjumps){ *testout << "(L2HOFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
-#ifndef PARALLEL
+    // #ifndef PARALLEL
     low_order_space = new NodalFESpace (ma, loflags);
-#else
-    low_order_space = new ParallelNodalFESpace (ma, loflags);
-#endif
+    // #else
+    // low_order_space = new ParallelNodalFESpace (ma, loflags);
+    // #endif
+    low_order_space -> SetLowOrderSpace (true);
 
     // minext = flags.GetDefineFlag ("minext");
     // optext = flags.GetDefineFlag ("optext");
@@ -145,23 +146,7 @@ namespace ngcomp
     int maxorder = -1; 
     int minorder = 99; 
 
-    try
-      {
-	if (low_order_space)
-	  low_order_space -> Update(lh);
-      }
-    catch (exception & e)
-      {
-	throw Exception (e.what() + 
-			 string ("\nthrown by H1HoFESpace, UpdateLowOrderSpace "));
-      }
-    catch (Exception & e)
-      {
-	e.Append (string ("\nthrown by allocate matrix ") +
-		  string ("\nthrown by H1HoFESpace, UpdateLowOrderSpace "));
-	throw;
-      }
-
+    if (low_order_space) low_order_space -> Update(lh);
     
     int dim = ma.GetDimension();
     // int nv = ma.GetNV();
@@ -321,7 +306,6 @@ namespace ngcomp
     order = maxorder;
 
     cout << " H1FESPACE : " << minorder << " <= order <= " << maxorder << endl;  
- 
 #endif 
 
 
@@ -329,15 +313,12 @@ namespace ngcomp
     
     UpdateCouplingDofArray ();
 
-
-    // FinalizeUpdate (lh);
-
-    if (timing) Timing();
-
-
 #ifdef PARALLEL
     UpdateParallelDofs();
 #endif
+
+
+    if (timing) Timing();
   }
 
 

@@ -559,7 +559,7 @@ namespace ngcomp
     RegisterPreconditioner (string label)
     {
       GetPreconditionerClasses().AddPreconditioner (label, Create);
-      cout << "register preconditioner '" << label << "'" << endl;
+      // cout << "register preconditioner '" << label << "'" << endl;
     }
     
     static Preconditioner * Create (const PDE & pde, const Flags & flags)
