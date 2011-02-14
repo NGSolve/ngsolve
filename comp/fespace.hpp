@@ -108,7 +108,8 @@ namespace ngcomp
 
     /// if non-zero, pointer to low order space
     FESpace * low_order_space;
-
+    ///
+    bool is_low_order_space;
 
     /// new node concept. primarily started for parallelization 
     /// how many low-order dofs per vertex, edge, face, cell ...
@@ -251,7 +252,10 @@ namespace ngcomp
     FESpace & LowOrderFESpace () { return *low_order_space; }
     /// according low-order FESpace (if available)
     const FESpace & LowOrderFESpace () const { return *low_order_space; }
-
+    ///
+    void SetLowOrderSpace (bool los) { is_low_order_space = los; }
+    ///
+    bool IsLowOrderSpace () const { return is_low_order_space; }
 
     /// non Dirichlet dofs
     virtual const BitArray * GetFreeDofs () const;
@@ -434,7 +438,7 @@ namespace ngcomp
 
 #ifdef PARALLEL
     virtual void UpdateParallelDofs_hoproc();
-    virtual void UpdateParallelDofs_loproc();
+    // virtual void UpdateParallelDofs_loproc();
 #endif
   };
 
@@ -727,7 +731,7 @@ namespace ngcomp
 
 
     virtual void UpdateParallelDofs_hoproc();
-    virtual void UpdateParallelDofs_loproc();
+    // virtual void UpdateParallelDofs_loproc();
 
   };
 
@@ -769,7 +773,7 @@ namespace ngcomp
     RegisterFESpace (string label)
     {
       GetFESpaceClasses().AddFESpace (label, Create);
-      cout << "register fespace '" << label << "'" << endl;
+      // cout << "register fespace '" << label << "'" << endl;
     }
     
     static FESpace * Create (const MeshAccess & ma, const Flags & flags)

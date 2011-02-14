@@ -792,7 +792,7 @@ namespace ngla
 
 
 
-  void ParallelBaseVector :: ISend ( int dest, int & request ) const
+  void ParallelBaseVector :: ISend ( int dest, MPI_Request & request ) const
   {
     MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
     MPI_Isend( Memory(), 1, mpi_t, dest, 2000, MPI_COMM_WORLD, &request);
@@ -928,7 +928,8 @@ namespace ngla
   void ParallelVVector<T> :: AddRecvValues( int sender )
   {
     FlatArray<int> exdofs = paralleldofs->GetSortedExchangeDofs(sender);
-    if (sender != 0)
+    // if (sender != 0)
+    if (1)
       {
 	for (int i = 0; i < exdofs.Size(); i++)
 	  (*this) (exdofs[i]) +=  (*this->recvvalues)[sender][i];
@@ -945,7 +946,8 @@ namespace ngla
   void ParallelVFlatVector<T> :: AddRecvValues( int sender )
   {
     FlatArray<int> exdofs = paralleldofs->GetSortedExchangeDofs(sender);
-    if (sender != 0)
+    // if (sender != 0)
+    if (1)
       {
 	for (int i = 0; i < exdofs.Size(); i++)
 	  this->data[exdofs[i]] += (*this->recvvalues)[sender][i];

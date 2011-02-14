@@ -444,11 +444,9 @@ namespace ngstd
 	  case SQRT:
 	    stack[stacksize] = sqrt (stack[stacksize]);
 	    break;
-	    /*
 	  case STEP:
-	    stack[stacksize] = (stack[stacksize] >= 0) ? 1 : 0;
+	    stack[stacksize] = (stack[stacksize].real() >= 0) ? 1 : 0;
 	    break;
-	    */
 	  case COMMA:
 	    break;
 	    /*
@@ -467,7 +465,7 @@ namespace ngstd
 	    */
 
 	  default:
-	    cerr << "undefined operation for EvalFunction" << endl;
+	    cerr << "undefined operation for EvalFunction, complex, op = " << program[i].op << endl;
 	  }
       }
 

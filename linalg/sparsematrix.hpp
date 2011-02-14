@@ -242,7 +242,9 @@ namespace ngla
     virtual BaseBlockJacobiPrecond * 
     CreateBlockJacobiPrecond (Table<int> & blocks,
 			      const BaseVector * constraint = 0,
-			      const ngcomp::Preconditioner * acoarsegridprecond = 0, bool parallel  = 1 ) const
+			      const ngcomp::Preconditioner * acoarsegridprecond = 0, 
+			      bool parallel  = 1,
+			      const BitArray * freedofs = NULL) const
     { 
       throw Exception ("BaseSparseMatrix::CreateBlockJacobiPrecond");
     }
@@ -405,7 +407,8 @@ namespace ngla
     virtual BaseBlockJacobiPrecond * 
     CreateBlockJacobiPrecond (Table<int> & blocks,
 			      const BaseVector * constraint = 0,
-			      const ngcomp::Preconditioner * acoarsegridprecond = 0, bool parallel  = 1 ) const
+			      const ngcomp::Preconditioner * acoarsegridprecond = 0, bool parallel  = 1,
+			      const BitArray * freedofs = NULL) const
     { 
       return new BlockJacobiPrecond<TM,TV_ROW,TV_COL> (*this, blocks );
     }
@@ -597,7 +600,8 @@ namespace ngla
     virtual BaseBlockJacobiPrecond * 
     CreateBlockJacobiPrecond (Table<int> & blocks,
 			      const BaseVector * constraint = 0,
-			      const ngcomp::Preconditioner * acoarsegridprecond = 0, bool parallel  = 1 ) const
+			      const ngcomp::Preconditioner * acoarsegridprecond = 0, bool parallel  = 1,
+			      const BitArray * freedofs = NULL) const
     { 
       if (!constraint)
 	return new BlockJacobiPrecondSymmetric<TM,TV> (*this, blocks);

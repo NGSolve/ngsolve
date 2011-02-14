@@ -77,7 +77,8 @@ namespace ngla
   ParallelBaseBlockJacobiPrecond :: 
   ParallelBaseBlockJacobiPrecond ( Table<int> & ablocktable,
 				   const ParallelDofs * aparalleldofs,
-				   const Preconditioner * acoarsegridprecond )
+				   const Preconditioner * acoarsegridprecond,
+				   const BitArray * freedofs)
     : BaseBlockJacobiPrecond (ablocktable), ParallelBaseMatrix(aparalleldofs)
   {
     usecoarsegrid = bool(acoarsegridprecond);
@@ -365,7 +366,8 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   ParallelBlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
   ParallelBlockJacobiPrecond (const ParallelSparseMatrix<TM,TV_ROW,TV_COL> & amat,
-		      Table<int> & ablocktable, const Preconditioner * acoarsegridprecond)
+			      Table<int> & ablocktable, const Preconditioner * acoarsegridprecond,
+			      const BitArray * freedofs)
     :  BaseBlockJacobiPrecond(ablocktable), 
        ParallelBaseMatrix(amat.GetParallelDofs()),
        ParallelBaseBlockJacobiPrecond(ablocktable, amat.GetParallelDofs(), acoarsegridprecond), 
@@ -1024,13 +1026,13 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   void ParallelBlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  InitCoarseType ( string act) 
+  InitCoarseType ( string act, const BitArray * freedofs) 
   {
     if ( strcmp ( act.c_str(), "DIRECT_COARSE") == 0 )
       {
 	ct = DIRECT_COARSE;
 	if ( id == 0 )
-	  coarsegridprecond = mat.InverseMatrix();
+	  coarsegridprecond = mat.InverseMatrix(freedofs);
 	usecoarsegrid = true;
       }
     else if ( strcmp ( act.c_str(), "NO_COARSE") == 0 )
@@ -1242,14 +1244,17 @@ namespace ngla
   }
 
   template <class TM,TV>
+
+hugasd asdf 
+
   ParallelBlockJacobiPrecondSymmetric<TM,TV> ::
-  InitCoarseType ( string act) 
+  InitCoarseType ( string act, const BitArray * freedofs) 
   {
     if ( strcmp ( act.c_str(), "DIRECT_COARSE") == 0 )
       {
 	ct = DIRECT_COARSE;
 	if ( id == 0 )
-	  coarsegridprecond = mat.InverseMatrix();
+	  coarsegridprecond = mat.InverseMatrix(freedofs);
 	usecoarsegrid = true;
       }
     else if ( strcmp ( act.c_str(), "NO_COARSE") == 0 )
@@ -1279,7 +1284,8 @@ namespace ngla
   template <class TM, class TV>
   ParallelBlockJacobiPrecondSymmetric<TM,TV> ::
   ParallelBlockJacobiPrecondSymmetric (const ParallelSparseMatrixSymmetric<TM,TV> & amat, 
-			       Table<int> & ablocktable, const Preconditioner * acoarsegridprecond)
+				       Table<int> & ablocktable, const Preconditioner * acoarsegridprecond,
+				       const BitArray * freedofs)
     :  BaseBlockJacobiPrecond ( ablocktable),
        ParallelBaseMatrix(amat.GetParallelDofs()),
        ParallelBaseBlockJacobiPrecond(ablocktable, amat.GetParallelDofs(), acoarsegridprecond), 
@@ -1434,8 +1440,9 @@ namespace ngla
   template <class TM, class TV>
   ParallelBlockJacobiPrecondSymmetric<TM,TV> ::
   ParallelBlockJacobiPrecondSymmetric (const ParallelSparseMatrixSymmetric<TM,TV> & amat, 
-			       const FlatVector<TVX> & constraint,
-			       Table<int> & ablocktable, const Preconditioner * acoarsegridprecond)
+				       const FlatVector<TVX> & constraint,
+				       Table<int> & ablocktable, const Preconditioner * acoarsegridprecond,
+				       const BitArray * freedofs)
     : 
     BaseBlockJacobiPrecond(ablocktable),
     ParallelBaseBlockJacobiPrecond(ablocktable, amat.GetParallelDofs(), acoarsegridprecond), 
@@ -2238,13 +2245,17 @@ namespace ngla
 
   template <class TM, class TV>
   void ParallelBlockJacobiPrecondSymmetric<TM,TV> :: 
-  InitCoarseType ( string act) 
+  InitCoarseType ( string act, const BitArray * freedofs) 
   {
     if ( strcmp ( act.c_str(), "DIRECT_COARSE") == 0 )
       {
 	ct = DIRECT_COARSE;
+	if (freedofs) 
+	  *testout << "freedofs = " << endl << freedofs << endl;
+	else
+	  *testout << "no freedofs set" << endl;
 	if ( id == 0 )
-	  coarsegridprecond = mat.InverseMatrix();
+	  coarsegridprecond = mat.InverseMatrix(freedofs);
 	usecoarsegrid = true;
       }
     else if ( strcmp ( act.c_str(), "NO_COARSE") == 0 )

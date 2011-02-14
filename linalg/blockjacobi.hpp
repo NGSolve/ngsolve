@@ -85,7 +85,7 @@ namespace ngla
 	}
     }
 
-    virtual void InitCoarseType ( string act) 
+    virtual void InitCoarseType (string act, const BitArray * freedofs) 
     {
       cerr << "BaseBlockJacobiPrecond :: InitCoarseType not implemented!" << endl;
     }

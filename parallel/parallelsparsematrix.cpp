@@ -74,11 +74,12 @@ namespace ngla
   BaseBlockJacobiPrecond * ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateBlockJacobiPrecond ( Table<int> & blocks,
 			     const BaseVector * constraint, 
-			     const Preconditioner * acoarsegridprecond , bool parallel) const
+			     const Preconditioner * acoarsegridprecond , bool parallel,
+			     const BitArray * freedofs) const
   { 
     if ( parallel )
       return new ParallelBlockJacobiPrecond<TM,TV_ROW,TV_COL> 
-	(*this, blocks, acoarsegridprecond);
+	(*this, blocks, acoarsegridprecond, freedofs);
     else
       return new BlockJacobiPrecond<TM,TV_ROW,TV_COL>
 	(*this, blocks);
@@ -789,13 +790,14 @@ namespace ngla
   BaseBlockJacobiPrecond * ParallelSparseMatrixSymmetric<TM, TV> ::
   CreateBlockJacobiPrecond ( Table<int> & blocks,
 			     const BaseVector * constraint , 
-			     const Preconditioner * acoarsegridprecond , bool parallel ) const
+			     const Preconditioner * acoarsegridprecond , bool parallel,
+			     const BitArray * freedofs) const
   { 
     if ( parallel )
       {
 	if (!constraint)
 	  return new ParallelBlockJacobiPrecondSymmetric<TM,TV> 
-	    (*this, blocks, acoarsegridprecond);
+	    (*this, blocks, acoarsegridprecond, freedofs);
 	else
 	  return new ParallelBlockJacobiPrecondSymmetric<TM,TV> 
 	    (*this,

@@ -1034,23 +1034,22 @@ namespace ngsolve
 	  {
 	    if (type == GetFESpaceClasses().GetFESpaces()[i]->name)
 	      {
+		space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
+
 		if ( id == 0 && ntasks > 1)
 		  {
-		    FESpace * hospace = GetFESpaceClasses().GetFESpaces()[i]-> creator ( ma, flags) ;
+		    FESpace * hospace = space;
 		    // low order space if existent
-		    space = & (hospace -> LowOrderFESpace()) ;
+		    space = & hospace -> LowOrderFESpace();
+
 		    // else space, but with  order 0
 		    if ( space == 0 )
 		      {
 			flags.SetFlag("order",0.0);
-			if ( hospace->IsComplex() )
-			  flags.SetFlag("complex");
-			
+			if ( hospace->IsComplex() ) flags.SetFlag("complex");
 			space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
 		      }
 		  }
-		else
-		  space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
 	      }
 	  }
 	

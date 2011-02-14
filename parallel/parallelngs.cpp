@@ -14,7 +14,7 @@ extern MeshAccess * ma;
 extern ParallelMeshAccess * ngparallel::parallelma;
 
 
-
+extern "C" void NGS_ParallelRun ( const string & message );
 
 void NGS_ParallelRun ( const string & message )
 {

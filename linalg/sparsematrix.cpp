@@ -114,8 +114,9 @@ namespace ngla
 				const Table<int> & colelements, 
 				bool symmetric)
   {
-    static int timer = NgProfiler::CreateTimer ("MatrixGraph");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("MatrixGraph");
+    RegionTimer reg (timer);
+
     bool includediag = (&rowelements == &colelements);
     
     int ndof = asize;
@@ -307,8 +308,8 @@ namespace ngla
   MatrixGraph :: MatrixGraph (const Table<int> & dof2dof, 
 			      bool symmetric)
   {
-    static int timer = NgProfiler::CreateTimer ("MatrixGraph");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer ("MatrixGraph");
+    RegionTimer reg (timer);
 
     int ndof = dof2dof.Size();
 
@@ -790,8 +791,8 @@ namespace ngla
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static int timer = NgProfiler::CreateTimer ("SparseMatrix::MultAdd");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("SparseMatrix::MultAdd");
+    RegionTimer reg (timer);
 
     FlatVector<TVX> fx (x.Size(), x.Memory());
     FlatVector<TVY> fy (y.Size(), y.Memory());
@@ -809,17 +810,14 @@ namespace ngla
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static int timer = NgProfiler::CreateTimer ("SparseMatrix::MultTransAdd");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer ("SparseMatrix::MultTransAdd");
+    RegionTimer reg (timer);
 
-	FlatVector<TVX> fx (x.Size(), x.Memory());
-	FlatVector<TVX> fy (y.Size(), y.Memory());
-	
-	
-	for (int i = 0; i < this->Height(); i++)
-	  AddRowTransToVector (i, s*fx(i), fy);
-	
-
+    FlatVector<TVX> fx (x.Size(), x.Memory());
+    FlatVector<TVX> fy (y.Size(), y.Memory());
+    
+    for (int i = 0; i < this->Height(); i++)
+      AddRowTransToVector (i, s*fx(i), fy);
   }
 
 
@@ -827,8 +825,8 @@ namespace ngla
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (Complex s, const BaseVector & x, BaseVector & y) const
   {
-    static int timer = NgProfiler::CreateTimer ("SparseMatrix::MultAdd Complex");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("SparseMatrix::MultAdd Complex");
+    RegionTimer reg (timer);
 
     FlatVector<TVX> fx (x.Size(), x.Memory());
     FlatVector<TVY> fy (y.Size(), y.Memory());
@@ -843,8 +841,8 @@ namespace ngla
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
   {
-    static int timer = NgProfiler::CreateTimer ("SparseMatrix::MultTransAdd Complex");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("SparseMatrix::MultTransAdd Complex");
+    RegionTimer reg (timer);
 
     FlatVector<TVX> fx (x.Size(), x.Memory());
     FlatVector<TVY> fy (y.Size(), y.Memory());
@@ -1021,8 +1019,8 @@ namespace ngla
   void SparseMatrixSymmetricTM<TM> ::
   AddElementMatrix(const Array<int> & dnums, const FlatMatrix<TSCAL> & elmat1)
   {
-    static int timer = NgProfiler::CreateTimer ("SparseMatrixSymmetric::AddElementMatrix");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer ("SparseMatrixSymmetric::AddElementMatrix");
+    RegionTimer reg (timer);
 
 
     /*
@@ -1032,7 +1030,6 @@ namespace ngla
 	  if (dnums[j] != -1 && dnums[i] >= dnums[j])
 	    (*this)(dnums[i], dnums[j]) += elmat(i,j);
     */
-
 
     ArrayMem<int, 50> dnums_sort(dnums.Size()), map(dnums.Size());
     dnums_sort = dnums;
@@ -1045,30 +1042,6 @@ namespace ngla
     int first_used = 0;
     while (first_used < dnums.Size() && dnums[map[first_used]] == -1) first_used++;
     
-    /*
-    for (int i = 0; i < dnums.Size(); i++)
-      if (dnums[i] != -1)
-	{
-	  FlatArray<int> rowind = this->GetRowIndices(dnums[i]);
-	  FlatVector<TM> rowvals = this->GetRowValues(dnums[i]);
-	  
-	  int k = 0;
-	  for (int j1 = first_used; j1 < dnums.Size(); j1++)
-	    {
-	      if (dnums_sort[j1] > dnums[i]) break;
-
-	      while (rowind[k] != dnums_sort[j1])
-		{
-		  k++;
-		  if (k >= rowind.Size())
-		    throw Exception ("SparseMatrixSymmetricTM::AddElementMatrix: illegal dnums");
-		}
-	      rowvals(k) += elmat(i, map[j1]);
-	      k++;
-	    }
-	}
-    */
-
     for (int i1 = first_used; i1 < dnums.Size(); i1++)
       {
 	FlatArray<int> rowind = this->GetRowIndices(dnums_sort[i1]);

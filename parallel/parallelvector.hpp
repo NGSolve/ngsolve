@@ -83,10 +83,10 @@ namespace ngla
     virtual void Distribute() const
     { cerr << "ERROR -- Distribute called for BaseVector, is not parallel" << endl; }
     
-    virtual void ISend ( int dest, int & request ) const;
+    virtual void ISend ( int dest, MPI_Request & request ) const;
     virtual void Send ( int dest ) const;
     
-    virtual void IRecvVec ( int dest, int & request )
+    virtual void IRecvVec ( int dest, MPI_Request & request )
     { cerr << "ERROR -- IRecvVec called for BaseVector, is not parallel" << endl; }
 
     virtual void RecvVec ( int dest )

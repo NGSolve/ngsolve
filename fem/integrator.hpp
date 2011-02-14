@@ -1547,7 +1547,7 @@ namespace ngfem
     RegisterBilinearFormIntegrator (string label, int dim, int numcoeffs)
     {
       GetIntegrators().AddBFIntegrator (label, dim, numcoeffs, Create);
-      cout << "register bf-integrator '" << label << "'" << endl;
+      // cout << "register bf-integrator '" << label << "'" << endl;
     }
     
     static Integrator * Create (Array<CoefficientFunction*> & coefs)
@@ -1565,7 +1565,7 @@ namespace ngfem
     RegisterLinearFormIntegrator (string label, int dim, int numcoeffs)
     {
       GetIntegrators().AddLFIntegrator (label, dim, numcoeffs, Create);
-      cout << "register lf-integrator '" << label << "'" << endl;
+      // cout << "register lf-integrator '" << label << "'" << endl;
     }
     
     static Integrator * Create (Array<CoefficientFunction*> & coefs)

@@ -171,7 +171,8 @@ namespace ngla
     virtual BaseBlockJacobiPrecond * 
     CreateBlockJacobiPrecond ( Table<int> & blocks,
 			       const BaseVector * constraint = 0, 
-			       const ngcomp::Preconditioner * acoarsegridprecond = 0, bool parallel = 1) const;
+			       const ngcomp::Preconditioner * acoarsegridprecond = 0, bool parallel = 1,
+			       const BitArray * freedofs = NULL) const;
     //   { 
     //     if ( parallel )
     //       return new ParallelBlockJacobiPrecond<TM,TV_ROW,TV_COL> 
@@ -299,7 +300,8 @@ namespace ngla
     virtual BaseBlockJacobiPrecond * 
     CreateBlockJacobiPrecond ( Table<int> & blocks,
 			       const BaseVector * constraint = 0, 
-			       const ngcomp::Preconditioner * acoarsegridprecond = 0, bool parallel  = 1) const;
+			       const ngcomp::Preconditioner * acoarsegridprecond = 0, bool parallel  = 1,
+			       const BitArray * freedofs = NULL) const;
     //   { 
     //     if ( parallel )
     //       {
@@ -388,7 +390,8 @@ namespace ngla
     /// 
     ParallelBaseBlockJacobiPrecond (Table<int> & ablocktable, 
 				    const ngparallel::ParallelDofs * aparalleldofs,
-				    const ngcomp::Preconditioner * acoarsegridprecond = 0);
+				    const ngcomp::Preconditioner * acoarsegridprecond = 0,
+				    const BitArray * freedofs  = NULL);
 
     /// deletes the inverse matrix coarsegridprecond
     virtual ~ParallelBaseBlockJacobiPrecond ();
@@ -435,7 +438,8 @@ namespace ngla
 
     ///
     ParallelBlockJacobiPrecond (const ParallelSparseMatrix<TM,TV_ROW,TV_COL> & amat,
-				Table<int> & ablocktable, const ngcomp::Preconditioner * acoarsegridprecond);
+				Table<int> & ablocktable, const ngcomp::Preconditioner * acoarsegridprecond,
+				const BitArray * freedofs = NULL);
     ///
     virtual ~ParallelBlockJacobiPrecond ();
 
@@ -490,7 +494,7 @@ namespace ngla
       mu.Append (new MemoryUsageStruct ("BlockJac", nels*sizeof(TM), blocktable.Size()));
     }
 
-    virtual void InitCoarseType ( string act);
+    virtual void InitCoarseType ( string act, const BitArray * freedofs);
   };
 
 #endif
@@ -521,11 +525,13 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
     ParallelBlockJacobiPrecondSymmetric (const ParallelSparseMatrixSymmetric<TM,TV> & amat,
-					 Table<int> & ablocktable, const ngcomp::Preconditioner * acoarsegridprecond = 0);
+					 Table<int> & ablocktable, const ngcomp::Preconditioner * acoarsegridprecond = 0,
+					 const BitArray * freedofs);
 
     ParallelBlockJacobiPrecondSymmetric (const ParallelSparseMatrixSymmetric<TM,TV> & amat, 
 					 const FlatVector<TVX> & constraint,
-					 Table<int> & ablocktable, const ngcomp::Preconditioner * acoarsegridprecond = 0);
+					 Table<int> & ablocktable, const ngcomp::Preconditioner * acoarsegridprecond = 0,
+					 const BitArray * freedofs);
     ///
     virtual ~ParallelBlockJacobiPrecondSymmetric ();
 
@@ -623,7 +629,7 @@ namespace ngla
       mu.Append (new MemoryUsageStruct ("BlockJacSym", nels*sizeof(TM), blocktable.Size()));
     }
 
-    virtual void InitCoarseType ( string act) ;
+    virtual void InitCoarseType ( string act, const BitArray * freedofs) ;
 
   };
 
@@ -659,11 +665,13 @@ namespace ngla
   
     ///
     ParallelBlockJacobiPrecondSymmetric (const ParallelSparseMatrixSymmetric<TM,TV> & amat,
-					 Table<int> & ablocktable, const ngcomp::Preconditioner * acoarsegridprecond = 0);
+					 Table<int> & ablocktable, const ngcomp::Preconditioner * acoarsegridprecond = 0,
+					 const BitArray * freedofs = NULL);
     ///
     ParallelBlockJacobiPrecondSymmetric (const ParallelSparseMatrixSymmetric<TM,TV> & amat, 
 					 const FlatVector<TVX> & constraint,
-					 Table<int> & ablocktable, const ngcomp::Preconditioner * acoarsegridprecond = 0);
+					 Table<int> & ablocktable, const ngcomp::Preconditioner * acoarsegridprecond = 0,
+					 const BitArray * freedofs = NULL);
     ///
     virtual ~ParallelBlockJacobiPrecondSymmetric ();
   
@@ -735,7 +743,7 @@ namespace ngla
       ;
     }
 
-    virtual void InitCoarseType ( string act) ;
+    virtual void InitCoarseType ( string act, const BitArray * freedofs) ;
 
   
   };
