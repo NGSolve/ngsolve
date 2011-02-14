@@ -5,13 +5,16 @@
 
 
 #ifdef METIS
-namespace metis { extern "C" {
+namespace metis 
+{
+  extern "C" {
 #include <metis.h>
-} }
+  } 
+}
+using namespace metis;
+
 #endif
 
-
-using namespace metis;
 
 namespace netgen
 {
@@ -309,8 +312,6 @@ namespace netgen
   
 
 
-
-
   
   
   // distribute the mesh to the slave processors
@@ -326,7 +327,12 @@ namespace netgen
 
 
     // partition mesh
+#ifdef METIS
     ParallelMetis ();
+#else
+    for (ElementIndex ei = 0; ei < GetNE(); ei++)
+      (*this)[ei].SetPartition(ntasks * ei/GetNE() + 1);
+#endif
 
 #ifdef SCALASCA
 #pragma pomp inst end(metis)
@@ -349,7 +355,7 @@ namespace netgen
 
 
 
-
+#ifdef METIS
   void Mesh :: ParallelMetis ( )  
   {
     int timer = NgProfiler::CreateTimer ("Mesh::Partition");
@@ -475,12 +481,12 @@ namespace netgen
     delete [] epart; 
     delete [] npart;
   }
-
+#endif
 
 
   void Mesh :: PartHybridMesh () //  Array<int> & neloc ) 
   {
-
+#ifdef METIS
     int ne = GetNE();
     
     int nn = GetNP();
@@ -571,11 +577,15 @@ namespace netgen
     delete [] xadj;
     delete [] part;
     delete [] adjacency;
+#else
+    cout << "parthybridmesh not available" << endl;
+#endif
   }
 
 
   void Mesh :: PartDualHybridMesh ( ) // Array<int> & neloc ) 
   {
+#ifdef METIS
     int ne = GetNE();
     
     // int nn = GetNP();
@@ -677,6 +687,10 @@ namespace netgen
     delete [] xadj;
     delete [] part;
     delete [] adjacency;
+#else
+    cout << "partdualmesh not available" << endl;
+#endif
+
   }
 
 
@@ -685,6 +699,7 @@ namespace netgen
 
   void Mesh :: PartDualHybridMesh2D ( ) 
   {
+#ifdef METIS
     int ne = GetNSE();
     int nv = GetNV();
 
@@ -758,6 +773,10 @@ namespace netgen
 
     for (SurfaceElementIndex sei = 0; sei < ne; sei++)
       (*this) [sei].SetPartition (part[sei]+1);
+#else
+    cout << "partdualmesh not available" << endl;
+#endif
+
   }
 
 

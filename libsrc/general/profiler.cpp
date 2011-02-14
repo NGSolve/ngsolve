@@ -41,7 +41,6 @@ namespace netgen
     // which leads to an "order of destruction"-problem,
     // thus we use the C-variant:
 
-
     if (getenv ("NGPROFILE"))
       {
 	char filename[100];

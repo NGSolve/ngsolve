@@ -137,7 +137,7 @@ namespace netgen
       for(int elind = 1; elind <= ne; elind++)
       {
          // Extract the current volume element
-         const Element & el = mesh.VolumeElement(elind);
+	// const Element & el = mesh.VolumeElement(elind);
 
          // Get the face numbers of the faces of the current volume element
          // The values returned are given a sign depending on the orientation 
@@ -596,7 +596,6 @@ namespace netgen
 
    void WriteOpenFOAM15xFormat (const Mesh & mesh, const string & casename)
    {
-      int i,j;
       bool error = false;
       char casefiles[256];
 
@@ -627,8 +626,8 @@ namespace netgen
          return;
       }
 
-      if((mesh.SurfaceElement(nse/2).GetType() != TRIG) 
-         && (mesh.SurfaceElement(nse/2).GetType() != QUAD)
+      if(( (mesh.SurfaceElement(nse/2).GetType() != TRIG) 
+	   && (mesh.SurfaceElement(nse/2).GetType() != QUAD) )
          || (mesh.VolumeElement(ne/2).GetType() == TET10)
          || (mesh.VolumeElement(ne/2).GetType() == PRISM12))
       {

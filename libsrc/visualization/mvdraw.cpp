@@ -752,7 +752,7 @@ namespace netgen
 	    GLXContextID xid = glXGetContextIDEXT (ctx);
 	    
 	    displname = XDisplayName (0);
-	    
+	    /*
 	    cout << "Init Parallel GL" << endl;
 	    cout << "DisplayName = " << displname << endl;
 	    cout << "current display = " << dpy << endl;
@@ -762,6 +762,7 @@ namespace netgen
 	    cout << "contextid = " << xid << endl;
 	    cout << "isdirect = " << glXIsDirect ( dpy, ctx ) << endl;                  
 	    cout << "extensionstring = " << glXQueryExtensionsString( dpy, 0 ) << endl;
+	    */
 
 	    Array<MPI_Request> request(ntasks);
 	    MPI_Status status;

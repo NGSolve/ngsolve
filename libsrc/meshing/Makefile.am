@@ -14,7 +14,9 @@ clusters.hpp hprefinement.hpp improve3.hpp meshtype.hpp		      \
 
 
 METASOURCES = AUTO
-noinst_LTLIBRARIES = libmesh.la
+
+lib_LTLIBRARIES = libmesh.la
+
 libmesh_la_SOURCES = adfront2.cpp adfront3.cpp bisect.cpp boundarylayer.cpp \
 	clusters.cpp curvedelems.cpp delaunay.cpp delaunay2d.cpp	    \
 	geomsearch.cpp global.cpp hprefinement.cpp improve2.cpp		    \

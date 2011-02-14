@@ -1,5 +1,7 @@
 #ifdef PARALLEL
 
+#include "dlfcn.h"
+
 #ifdef OCCGEOMETRY
 #include <occgeom.hpp>
 #endif
@@ -29,7 +31,6 @@
 #endif
 
 
-
 #include <geometry2d.hpp>
 #include <stlgeom.hpp>
 
@@ -48,11 +49,8 @@
 #include "parallelfunc.hpp"
 
 
-
-
-
-
-
+// extern "C" void NGS_ParallelRun (const string & message);
+void (*NGS_ParallelRun) (const string & message) = NULL;
 
 
 
@@ -71,49 +69,17 @@ void Parallel_Exit();
 
 namespace netgen {
   extern AutoPtr<Mesh>  mesh;
-
-  // geometry: either CSG, or, if an other is non-null, 
-  // then the other
-  extern AutoPtr<CSGeometry> geometry ;
-
-  extern STLGeometry * stlgeometry;
-  extern AutoPtr<SplineGeometry2d> geometry2d ;
-
-#ifdef OCCGEOMETRY
-  extern OCCGeometry * occgeometry;
-#endif
-
-#ifdef ACIS
-  extern ACISGeometry * acisgeometry;
-#endif
-
 }
 
 using namespace netgen;
 using netgen::RegisterUserFormats;
 
+
+
 #ifdef PARALLEL
 void Ng_Exit ()
 {
-#ifdef NGSOLVE
-  Parallel_Exit();
-#endif
-
-  delete stlgeometry;
-  stlgeometry = NULL;
-   
-
-#ifdef OCCGEOMETRY 
-  delete occgeometry; 
-  occgeometry = 0;
-#endif
-
-
-  geometry.Reset (NULL);
-  geometry2d.Reset (NULL);
-    
-  //    delete testout;
-  return;
+  // Parallel_Exit();
 }
 #endif
 
@@ -152,15 +118,31 @@ void ParallelRun()
 #pragma pomp inst end (message)
 #endif
 
-#ifdef NGSOLVE
 
       if ( message.compare(0, 3, "ngs") == 0 ) 
         {
-          PrintMessage ( 2, "Starting NgSolve routine ", message ) ;
-          NGS_ParallelRun (message);
+          PrintMessage ( 1, "Starting NgSolve routine ", message ) ;
+
+	  if (NGS_ParallelRun == NULL)
+	    {
+	      void * handle = dlopen ("libngsolve.so", RTLD_NOW | RTLD_GLOBAL);
+	      if (!handle)
+		{
+		  cerr << "cannot load shared library libngsolve.so" << endl;
+		  exit(1);
+		}
+	      
+	      NGS_ParallelRun = (void (*) (const string & message))  dlsym (handle, "NGS_ParallelRun");
+	      
+	      if (!NGS_ParallelRun)
+		{
+		  cerr << "cannot bind function NGS_ParallelRun" << endl;
+		  exit(1);
+		}
+	    }
+          (*NGS_ParallelRun) (message);
         }
       else
-#endif
 	
         if ( message == "mesh" )
           {
@@ -274,14 +256,16 @@ void ParallelRun()
 		Window win;
 		int wx, wy;
 		unsigned int ww, wh, bw, depth;
-		cout << "got drawable: " << curDrawable << endl;
+		// cout << "got drawable: " << curDrawable << endl;
 		
 		XGetGeometry(display, curDrawable, &win,
 			     &wx, &wy, &ww, &wh,
 			     &bw, &depth);
 		
+		/*
                 cout << "P" << id << ": window-props:  x = " << wx << ", y = " << wy 
                      << ", w = " << ww << ", h = " << wh << ", depth = " << depth << endl;
+		*/
 		
 #define VISUAL
 #ifdef VISUAL
@@ -348,7 +332,7 @@ void ParallelRun()
 
                 // context = glXCreateContext( display, visinfo, 0, /* curContext, */ False );
 		context = glXCreateContext( display, visinfo, glXImportContextEXT ( display, contextid ), False );
-                cout << "context = " << context << endl;
+                // cout << "context = " << context << endl;
 
                 glXMakeCurrent (display, curDrawable, context);
 
@@ -387,7 +371,7 @@ void ParallelRun()
 	    if (redraw_cmd == "filledlist")
 	      {
 		glXMakeCurrent (display, curDrawable, context);
-		vsmesh.BuildFilledList();
+		vsmesh.BuildFilledList (0);
 		glXMakeCurrent (display, None, NULL);
 	      }
 

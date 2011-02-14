@@ -976,9 +976,9 @@ void SplineGeometry<D> :: LoadData ( ifstream & infile )
 
 
 
-template<int D>
-void SplineGeometry<D> :: PartitionBoundary (double h, Mesh & mesh2d)
+void SplineGeometry2d :: PartitionBoundary (double h, Mesh & mesh2d)
 {
+  enum { D = 2 };
   Box<D> bbox;
   GetBoundingBox (bbox);
   double dist = Dist (bbox.PMin(), bbox.PMax());

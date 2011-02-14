@@ -7,7 +7,7 @@ AC_PREFIX_DEFAULT(["/opt/netgen"])
 
 
 # Tcl/Tk configuration:
-TEA_INIT([3.6])
+TEA_INIT([3.9])
 TEA_PATH_TCLCONFIG
 TEA_LOAD_TCLCONFIG 
 TEA_PATH_TKCONFIG
@@ -89,11 +89,15 @@ AC_ARG_ENABLE([nglib],
 
 AC_ARG_ENABLE([parallel],
         [AC_HELP_STRING([--enable-parallel],[enable mpi parallelization])],
-        [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -DPARALLEL  -I/usr/share/metis/Lib -DMETIS")
-        AC_SUBST([MPI_LIBS], "-lmetis -L/opt/mpich/ch-p4/lib -lmpich")
+        [AC_SUBST([MPI_INCLUDES], "-I/usr/lib64/mpi/gcc/openmpi/include -DPARALLEL -I/usr/include/metis -DMETIS")
+        AC_SUBST([MPI_LIBS], "-L/usr/lib64/mpi/gcc/openmpi/lib64 -lmpi_cxx -lmetis")
         ]
         )       
-
+#        [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -DPARALLEL -I/usr/include/metis -DMETIS")
+#        AC_SUBST([MPI_LIBS], " -L/opt/mpich/ch-p4/lib64 -lmpich -lmetis")
+#        [AC_SUBST([MPI_INCLUDES], "-DPARALLEL -DNO_PARALLEL_THREADS -I/opt/mpich/include")
+#        AC_SUBST([MPI_LIBS], "")
+# -lmetis
 #        [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -DPARALLEL  -I/home/joachim/download/metis-4.0/Lib -DMETIS")
 #        AC_SUBST([MPI_LIBS], "-L/home/joachim/download/metis-4.0 -lmetis -L/opt/mpich/ch-p4/lib64 -lmpich")             
 

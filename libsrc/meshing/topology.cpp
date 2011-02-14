@@ -7,6 +7,44 @@
 namespace netgen
 {
 
+
+
+  template <class T>
+  void QuickSortRec (FlatArray<T> & data,
+		     int left, int right)
+  {
+    int i = left;
+    int j = right;
+    T midval = data[(left+right)/2];
+  
+    do
+      {
+	while (data[i] < midval) i++;
+	while (midval < data[j]) j--;
+      
+	if (i <= j)
+	  {
+	    Swap (data[i], data[j]);
+	    i++; j--;
+	  }
+      }
+    while (i <= j);
+    if (left < j) QuickSortRec (data, left, j);
+    if (i < right) QuickSortRec (data, i, right);
+  }
+
+  template <class T>
+  void QuickSort (FlatArray<T> & data)
+  {
+    if (data.Size() > 1)
+      QuickSortRec (data, 0, data.Size()-1);
+  }
+
+
+
+
+
+
   MeshTopology ::  MeshTopology (const Mesh & amesh)
     : mesh(amesh)
   {
@@ -85,8 +123,7 @@ namespace netgen
     for (ElementIndex ei = 0; ei < ne; ei++)
       {
 	const Element & el = mesh[ei];
-	int nelv = el.GetNV();
-	for (int j = 0; j < nelv; j++)
+	for (int j = 0; j < el.GetNV(); j++)
 	  cnt[el[j]]++;
       }
 
@@ -94,8 +131,7 @@ namespace netgen
     for (ElementIndex ei = 0; ei < ne; ei++)
       {
 	const Element & el = mesh[ei];
-	int nelv = el.GetNV();
-	for (int j = 0; j < nelv; j++)
+	for (int j = 0; j < el.GetNV(); j++)
 	  vert2element->AddSave (el[j], ei+1);
       }
 
@@ -103,8 +139,7 @@ namespace netgen
     for (SurfaceElementIndex sei = 0; sei < nse; sei++)
       {
 	const Element2d & el = mesh[sei];
-	int nelv = el.GetNV();
-	for (int j = 0; j < nelv; j++)
+	for (int j = 0; j < el.GetNV(); j++)
 	  cnt[el[j]]++;
       }
 
@@ -112,8 +147,7 @@ namespace netgen
     for (SurfaceElementIndex sei = 0; sei < nse; sei++)
       {
 	const Element2d & el = mesh[sei];
-	int nelv = el.GetNV();
-	for (int j = 0; j < nelv; j++)
+	for (int j = 0; j < el.GetNV(); j++)
 	  vert2surfelement->AddSave (el[j], sei+1);
       }
 
@@ -133,7 +167,6 @@ namespace netgen
 	vert2segment->AddSave (seg[1], i);
       }
 
-  
 
     if (buildedges)
       {
@@ -197,6 +230,8 @@ namespace netgen
 
 	Array<int,PointIndex::BASE> edgenr(nv);
 	Array<int,PointIndex::BASE> edgeflag(nv);
+	Array<int> vertex2;
+
 	edgeflag = 0;
 
 	ned = edge2vert.Size();
@@ -204,6 +239,8 @@ namespace netgen
 
 	for (int i = PointIndex::BASE; i < nv+PointIndex::BASE; i++)
 	  {
+	    vertex2.SetSize (0);
+
 	    for (int j = 0; j < vert2edge[i].Size(); j++)
 	      {
 		int ednr = vert2edge[i][j];
@@ -211,15 +248,95 @@ namespace netgen
 		edgeflag[i2] = i;
 		edgenr[i2] = ednr;
 	      }
+
 	    for (int j = 0; j < vert2vertcoarse[i].Size(); j++)      // fix by Markus
 	      {
 		int v2 = vert2vertcoarse[i][j];
 		if (edgeflag[v2] < i)
 		  {
-		    ned++;
-		    edgenr[v2] = ned;
+		    *testout << "do we really need that ??????????????" << endl;
+		    // ned++;
+		    // edgenr[v2] = ned;
 		    edgeflag[v2] = i;
-		    missing.Append (INDEX_3(i,v2,ned));
+		    vertex2.Append (v2);
+		    // missing.Append (INDEX_3(i,v2,ned));
+		  }
+	      }
+
+	    for (int j = 0; j < (*vert2element)[i].Size(); j++)
+	      {
+		int elnr = (*vert2element)[i][j];
+		const Element & el = mesh.VolumeElement (elnr);
+
+		int neledges = GetNEdges (el.GetType());
+		const ELEMENT_EDGE * eledges = GetEdges0 (el.GetType());
+	  
+		for (int k = 0; k < neledges; k++)
+		  {
+		    INDEX_2 edge(el[eledges[k][0]], el[eledges[k][1]]);
+		    edge.Sort();
+		    if (edge.I1() != i) continue;
+	     
+		    if (edgeflag[edge.I2()] < i)
+		      {
+			vertex2.Append (edge.I2());
+			edgeflag[edge.I2()] = i;
+		      }
+		  }
+	      }
+
+	    for (int j = 0; j < (*vert2surfelement)[i].Size(); j++)
+	      {
+		int elnr = (*vert2surfelement)[i][j];
+		const Element2d & el = mesh.SurfaceElement (elnr);
+
+		int neledges = GetNEdges (el.GetType());
+		const ELEMENT_EDGE * eledges = GetEdges0 (el.GetType());
+	  
+		for (int k = 0; k < neledges; k++)
+		  {
+		    INDEX_2 edge(el[eledges[k][0]], el[eledges[k][1]]);
+		    edge.Sort();
+		    if (edge.I1() != i) continue;
+	     
+		    if (edgeflag[edge.I2()] < i)
+		      {
+			vertex2.Append (edge.I2());
+			edgeflag[edge.I2()] = i;
+		      }
+		  }
+	      }
+
+	    for (int j = 0; j < (*vert2segment)[i].Size(); j++)
+	      {
+		int elnr = (*vert2segment)[i][j];
+		const Segment & el = mesh.LineSegment (elnr);
+
+		INDEX_2 edge(el[0], el[1]);
+		edge.Sort();
+		if (edge.I1() != i) continue;
+	     
+		if (edgeflag[edge.I2()] < i)
+		  {
+		    vertex2.Append (edge.I2());
+		    edgeflag[edge.I2()] = i;
+		  }   
+	      }
+
+	    
+	    QuickSort (vertex2);
+	    for (int j = 0; j < vertex2.Size(); j++)
+	      edgenr[vertex2[j]] = ++ned;
+
+	    for (int j = 0; j < vert2vertcoarse[i].Size(); j++)      // fix by Markus
+	      {
+		int v2 = vert2vertcoarse[i][j];
+		if (edgeflag[v2] < i)
+		  {
+		    // ned++;
+		    // edgenr[v2] = ned;
+		    // edgeflag[v2] = i;
+		    missing.Append (INDEX_3(i,v2,edgenr[v2]));
 		  }
 	      }
 
@@ -240,13 +357,6 @@ namespace netgen
 	     
 		    if (edge.I1() != i)
 		      continue;
-	     
-		    if (edgeflag[edge.I2()] < i)
-		      {
-			ned++;
-			edgenr[edge.I2()] = ned;
-			edgeflag[edge.I2()] = i;
-		      }
 
 		    int edgenum = edgenr[edge.I2()];
 		    if (edgedir) edgenum *= -1;
@@ -269,16 +379,8 @@ namespace netgen
 		    int edgedir = (edge.I1() > edge.I2());
 		    if (edgedir) swap (edge.I1(), edge.I2());
 	     
-		    if (edge.I1() != i)
-		      continue;
-	     
-		    if (edgeflag[edge.I2()] < i)
-		      {
-			ned++;
-			edgenr[edge.I2()] = ned;
-			edgeflag[edge.I2()] = i;
-		      }
-	      
+		    if (edge.I1() != i) continue;
+
 		    int edgenum = edgenr[edge.I2()];
 		    if (edgedir) edgenum *= -1;
 		    surfedges.Elem(elnr)[k] = edgenum;
@@ -295,21 +397,14 @@ namespace netgen
 		int edgedir = (edge.I1() > edge.I2());
 		if (edgedir) swap (edge.I1(), edge.I2());
 	      
-		if (edge.I1() != i)
-		  continue;
-	     
-		if (edgeflag[edge.I2()] < i)
-		  {
-		    ned++;
-		    edgenr[edge.I2()] = ned;
-		    edgeflag[edge.I2()] = i;
-		  }   
-		int edgenum = edgenr[edge.I2()];
+		if (edge.I1() != i) continue;
 
+		int edgenum = edgenr[edge.I2()];
 		if (edgedir) edgenum *= -1;
 		segedges.Elem(elnr) = edgenum;
 	      }
 	  }
+
 
 
 	edge2vert.SetSize (ned);
@@ -333,6 +428,11 @@ namespace netgen
 		edge2vert.Elem(edgenum)[1] = edge.I2();
 	      }
 	  }
+
+	*testout << "edge 2 vert:" << endl;
+	for (int i = 0; i < edge2vert.Size(); i++)
+	  *testout << edge2vert[i][0] << " " << edge2vert[i][1] << endl;
+
 	for (int i = 1; i <= nse; i++)
 	  {
 	    const Element2d & el = mesh.SurfaceElement (i);

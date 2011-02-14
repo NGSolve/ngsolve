@@ -10,7 +10,6 @@ namespace netgen
   extern AutoPtr<Mesh> mesh;
   
   
-  using namespace netgen;
   
   
 //   int NgPar_Glob2Loc_SurfEl ( int globnum ) 
@@ -32,7 +31,9 @@ namespace netgen
 //   { 
 //     return mesh->GetParallelTopology().Glob2Loc_Vert(globnum+1) -1;
 //   }
-  
+}  
+
+  using namespace netgen;
   
   int NgPar_GetLoc2Glob_VolEl ( int locnum )
   { 
@@ -152,6 +153,6 @@ namespace netgen
     return mesh -> GetParallelTopology().IsGhostEdge ( edgenum+1); 
   }
 
-}
+
 
 #endif

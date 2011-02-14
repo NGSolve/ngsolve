@@ -38,6 +38,7 @@ namespace netgen
   template < int D >
   class SplineGeometry 
   {
+  protected:
     Array < GeomPoint<D> > geompoints;
     Array < SplineSeg<D>* > splines;
     double elto0;
@@ -48,7 +49,6 @@ namespace netgen
     Array<bool> tensormeshing;
     Array<int> layer;
 
-  private:
     void AppendSegment(SplineSeg<D> * spline, const int leftdomain, const int rightdomain,
 		       const int bc,
 		       const double reffac, const bool hprefleft, const bool hprefright,
@@ -65,7 +65,6 @@ namespace netgen
     void LoadDataNew ( ifstream & infile );
     void LoadDataV2 ( ifstream & infile );
 
-    void PartitionBoundary (double h, Mesh & mesh2d);
 
     void GetRawData (Array<double> & raw_data) const;
 
@@ -151,6 +150,8 @@ namespace netgen
   
     virtual int GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
 			      int perfstepsstart, int perfstepsend);
+
+    void PartitionBoundary (double h, Mesh & mesh2d);
   
     virtual Refinement & GetRefinement () const; 
   };

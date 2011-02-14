@@ -1020,6 +1020,7 @@ namespace netgen
 	
 
 #ifdef PARALLEL
+	/*
 	if ( el.IsGhost() )
 	  {
 	    if ( faceindex == selface )
@@ -1028,6 +1029,7 @@ namespace netgen
 	      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_coll_transp);
 	  }
 	else
+	*/
 	  {
 	    if ( faceindex == selface )
 	      glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, matcolsel);
@@ -1894,9 +1896,20 @@ namespace netgen
 
     for (ElementIndex ei = 0; ei < mesh->GetNE(); ei++)
       {
-	if (vispar.drawtetsdomain > 0 &&
-            vispar.drawtetsdomain != (*mesh)[ei].GetIndex())
-	  continue;
+	if (vispar.drawtetsdomain > 0)
+	  {
+	    int tetid = 
+#ifdef PARALLEL
+	      vispar.drawmetispartition ? 
+	      (*mesh)[ei].GetPartition() 
+	      :
+#endif
+	      (*mesh)[ei].GetIndex();
+	    
+	    if (vispar.drawtetsdomain != tetid)
+	      continue;
+	  }
+
 
 	const Element & el = (*mesh)[ei];
 

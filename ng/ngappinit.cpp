@@ -129,8 +129,8 @@ int main(int argc, char ** argv)
 
 
 #ifdef PARALLEL
-      cout << "Including MPI " << endl;
-      cout << "Using " <<  netgen::ntasks << " processor" 
+      cout << "Running MPI - parallel using " 
+	   << netgen::ntasks << " processor" 
            << ((netgen::ntasks > 1) ? "s " : " ") << endl;
 #endif
     }
