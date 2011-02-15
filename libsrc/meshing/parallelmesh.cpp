@@ -52,15 +52,15 @@ namespace netgen
     int nelglob, nelloc, nvglob, nedglob, nfaglob;
 
     // receive global values
-    MPI_Bcast( &nelglob, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    MPI_Bcast( &nvglob, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    MPI_Bcast( &nedglob, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    MPI_Bcast( &nfaglob, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    MPI_Bcast( &dimension, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    MyMPI_Recv ( nelloc, 0 );
+    MPI_Bcast (&nelglob, 1, MPI_INT, 0, MPI_COMM_WORLD); 
+    MPI_Bcast (&nvglob, 1, MPI_INT, 0, MPI_COMM_WORLD); 
+    MPI_Bcast (&nedglob, 1, MPI_INT, 0, MPI_COMM_WORLD); 
+    MPI_Bcast (&nfaglob, 1, MPI_INT, 0, MPI_COMM_WORLD); 
+    MPI_Bcast (&dimension, 1, MPI_INT, 0, MPI_COMM_WORLD); 
+    MyMPI_Recv (nelloc, 0);
 
-    paralleltop -> SetNVGlob ( nvglob );
-    paralleltop -> SetNEGlob ( nelglob );
+    paralleltop -> SetNVGlob (nvglob);
+    paralleltop -> SetNEGlob (nelglob);
 
     INDEX_CLOSED_HASHTABLE<int> glob2loc_vert_ht (1);
 
@@ -69,7 +69,7 @@ namespace netgen
     // int ve = 0;
     while (!endmesh)
       {
-	MyMPI_Recv ( st, 0 );
+	MyMPI_Recv (st, 0);
 
 	// receive vertices
         if (st == "vertex")
@@ -77,14 +77,14 @@ namespace netgen
 	    NgProfiler::RegionTimer reg(timer_pts);
 
             Array<double> pointarray;
-            MyMPI_Recv ( pointarray, 0 );
+            MyMPI_Recv (pointarray, 0);
 
 	    int numvert = pointarray.Size() / 5;
 	    paralleltop -> SetNV (numvert);
 
             glob2loc_vert_ht.SetSize (3*numvert+1);
 
-	    for ( int vert=0; vert<numvert; vert++ )
+	    for (int vert = 0; vert < numvert; vert++)
 	      {
 		int globvert = int (pointarray[ vert*5 ]);
 		paralleltop->SetLoc2Glob_Vert ( vert+1, globvert  );
@@ -99,25 +99,23 @@ namespace netgen
 	      }
 
 	    Array<int> dist_pnums;
-	    MyMPI_Recv ( dist_pnums, 0);
+	    MyMPI_Recv (dist_pnums, 0);
 
 	    for (int hi = 0; hi < dist_pnums.Size(); hi += 3)
-	      {
-		paralleltop ->
-		  SetDistantPNum ( dist_pnums[hi+1], dist_pnums[hi], dist_pnums[hi+2]);
-	      }
+	      paralleltop ->
+		SetDistantPNum (dist_pnums[hi+1], dist_pnums[hi], dist_pnums[hi+2]);
  	  }
 
-	if ( strcmp (st.c_str(), "volumeelements" ) == 0 )
+	if (strcmp (st.c_str(), "volumeelements" ) == 0 )
 	  {
 	    NgProfiler::RegionTimer reg(timer_els);
-
+	    
 	    *testout << "receiving elements" << endl;
 
 	    Element el;
 
             Array<int> elarray;
-            MyMPI_Recv ( elarray, 0);
+            MyMPI_Recv (elarray, 0);
 
 	    int ind = 0;
 	    int elnum = 1;
@@ -125,7 +123,7 @@ namespace netgen
 
 	    paralleltop -> SetNE (nelloc);
 
-	    while ( ind < elarray.Size() )
+	    while (ind < elarray.Size())
 	      {
 		paralleltop->SetLoc2Glob_VolEl ( elnum,  elarray[ind++]);
 
@@ -290,21 +288,21 @@ namespace netgen
 
     NgProfiler::StartTimer (timerloc2);
 
-      CalcSurfacesOfNode ();
+    CalcSurfacesOfNode ();
 
     NgProfiler::StopTimer (timerloc2);
 
-      //  BuildConnectedNodes ();
+    //  BuildConnectedNodes ();
      
-      topology -> Update();
+    topology -> Update();
 
 //       UpdateOverlap();
-      clusters -> Update();
-      
-      SetNextMajorTimeStamp();
-      
-      // paralleltop->Print();
-
+    clusters -> Update();
+    
+    SetNextMajorTimeStamp();
+    
+    // paralleltop->Print();
+    
 #ifdef SCALASCA
 #pragma pomp inst end(loadmesh)
 #endif
@@ -816,7 +814,7 @@ namespace netgen
 
     MPI_Request sendrequest[ntasks];
 
-    for ( int dest = 1; dest < ntasks; dest++)
+    for (int dest = 1; dest < ntasks; dest++)
       MyMPI_Send ("mesh", dest);
 
     // MPI_Barrier (MPI_COMM_WORLD);
@@ -832,12 +830,12 @@ namespace netgen
     int nedges = (GetTopology().GetNEdges());
     int nfaces = GetTopology().GetNFaces();
     int dim = dimension;
-    MPI_Bcast( &nel, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    MPI_Bcast( &nv, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    MPI_Bcast( &nedges, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    MPI_Bcast( &nfaces, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    MPI_Bcast( &dim, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    for ( int dest = 1; dest < ntasks; dest++ )
+    MPI_Bcast(&nel, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
+    MPI_Bcast(&nv, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
+    MPI_Bcast(&nedges, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
+    MPI_Bcast(&nfaces, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
+    MPI_Bcast(&dim, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
+    for (int dest = 1; dest < ntasks; dest++)
       MyMPI_Send (num_els_on_proc[dest], dest);
 
 

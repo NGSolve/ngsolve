@@ -43,7 +43,8 @@ class VisualSceneSolution : public VisualScene
 
   int surfellist;
   int linelist;
-  int clipplanelist;
+  int clipplanelist_scal;
+  int clipplanelist_vec;
   int isolinelist;
   int clipplane_isolinelist;
   int surface_vector_list;
@@ -299,10 +300,8 @@ public:
 		      double val1, double val2, double val3, double val4);
 
 
-  void DrawClipPlaneTrigs (const SolData * sol, int comp,
-                           const Array<ClipPlaneTrig> & trigs, 
-                           const Array<ClipPlanePoint> & points);
-			  
+  void DrawClipPlaneTrigs (); // const SolData * sol, int comp);
+		  
   void SetOpenGlColor(double val);
 
   // 0 .. non, 1 .. scalar, 2 .. complex

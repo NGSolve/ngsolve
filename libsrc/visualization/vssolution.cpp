@@ -35,7 +35,8 @@ namespace netgen
   {
     surfellist = 0;
     linelist = 0;
-    clipplanelist = 0;
+    clipplanelist_scal = 0;
+    clipplanelist_vec = 0;
     isolinelist = 0;
     clipplane_isolinelist = 0;
     surface_vector_list = 0;
@@ -417,7 +418,12 @@ namespace netgen
       }
 
     if (showclipsolution)
-      glCallList (clipplanelist);
+      {
+	if (clipsolution == 1)
+	  glCallList (clipplanelist_scal);
+	if (clipsolution == 2)
+	  glCallList (clipplanelist_vec);
+      }
 
 
     if (draw_fieldlines)
@@ -696,32 +702,17 @@ namespace netgen
             // lock->Lock();
           }
 
-        if (clipplanelist)
-          glDeleteLists (clipplanelist, 1);
-      
-
-        clipplanelist = glGenLists (1);
-        glNewList (clipplanelist, GL_COMPILE);
       
         if (vispar.clipenable && clipsolution == 1 && sol)
-          {
-            glDisable(GL_CLIP_PLANE0);
-          
-            Array<ClipPlaneTrig> cpt;
-            Array<ClipPlanePoint> pts;
-            GetClippingPlaneTrigs (cpt, pts);
-          
-            glNormal3d (-clipplane[0], -clipplane[1], -clipplane[2]);
-            glColor3d (1.0, 1.0, 1.0);
+	  DrawClipPlaneTrigs (); // sol, scalcomp);
 
-            SetTextureMode (usetexture);
 
-            DrawClipPlaneTrigs (sol, scalcomp, cpt, pts);
-
-            glEnable(GL_CLIP_PLANE0);
-          }
+        if (clipplanelist_vec)
+          glDeleteLists (clipplanelist_vec, 1);
       
-      
+        clipplanelist_vec = glGenLists (1);
+        glNewList (clipplanelist_vec, GL_COMPILE);
+
         if (vispar.clipenable && clipsolution == 2 && vsol)
           {
             SetTextureMode (usetexture);
@@ -3719,10 +3710,65 @@ namespace netgen
 
 
   void VisualSceneSolution :: 
-  DrawClipPlaneTrigs (const SolData * sol, int comp,
-                      const Array<ClipPlaneTrig> & trigs, 
-                      const Array<ClipPlanePoint> & points)
+  DrawClipPlaneTrigs () // const SolData * sol, int comp)
   {
+#ifdef PARALLELGL
+
+    if (id == 0 && ntasks > 1)
+      {
+	InitParallelGL();
+
+	Array<int> parlists (ntasks);
+
+	for ( int dest = 1; dest < ntasks; dest++ )
+	  {
+	    MyMPI_Send ("redraw", dest);
+	    MyMPI_Send ("clipplanetrigs", dest);
+	  }
+	for ( int dest = 1; dest < ntasks; dest++ )
+	  MyMPI_Recv (parlists[dest], dest);
+
+	if (clipplanelist_scal)
+	  glDeleteLists (clipplanelist_scal, 1);
+
+	clipplanelist_scal = glGenLists (1);
+	glNewList (clipplanelist_scal, GL_COMPILE);
+	
+	for ( int dest = 1; dest < ntasks; dest++ )
+	  glCallList (parlists[dest]);
+	
+	glEndList();
+	return;
+      }
+#endif
+
+
+
+
+
+    if (clipplanelist_scal)
+      glDeleteLists (clipplanelist_scal, 1);
+    
+    clipplanelist_scal = glGenLists (1);
+    glNewList (clipplanelist_scal, GL_COMPILE);
+
+
+    Array<ClipPlaneTrig> trigs;
+    Array<ClipPlanePoint> points;
+    GetClippingPlaneTrigs (trigs, points);
+	    
+    glNormal3d (-clipplane[0], -clipplane[1], -clipplane[2]);
+    glColor3d (1.0, 1.0, 1.0);
+    
+    SetTextureMode (usetexture);
+
+    SolData * sol = NULL;
+
+    if (scalfunction != -1) 
+      sol = soldata[scalfunction];
+
+
+
     glBegin (GL_TRIANGLES);
 
     int maxlpnr = 0;
@@ -3817,6 +3863,15 @@ namespace netgen
 
       }
     glEnd();
+
+    glEndList ();
+
+
+#ifdef PARALLELGL
+    glFinish();
+    if (id > 0)
+      MyMPI_Send (clipplanelist_scal, 0);
+#endif
   }
 
 
@@ -4058,6 +4113,11 @@ namespace netgen
     MyMPI_Bcast (maxval);
     MyMPI_Bcast (numisolines);
     MyMPI_Bcast (subdivisions);
+
+    MyMPI_Bcast (clipplane[0]);
+    MyMPI_Bcast (clipplane[1]);
+    MyMPI_Bcast (clipplane[2]);
+    MyMPI_Bcast (clipplane[3]);
   }
   
 #endif
@@ -4320,6 +4380,11 @@ namespace netgen
           }
 
       }
+
+    
+    vsmesh.SetClippingPlane ();  // for computing parameters
+    vssolution.SetClippingPlane ();  // for computing parameters
+    glDisable(GL_CLIP_PLANE0);
 
 #ifdef PARALLELGL
     vsmesh.Broadcast ();

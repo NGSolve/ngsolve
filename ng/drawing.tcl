@@ -72,6 +72,7 @@ proc popupcheckredraw2 { vari boolvar { x 0 } } {
 	set varname 0
     } {
 	Ng_SetVisParameters
+	Ng_Vis_Set parameters
 	if { $boolvar == 1 } { redraw }
 	Ng_SetVisParameters
     }

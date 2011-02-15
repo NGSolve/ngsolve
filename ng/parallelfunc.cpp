@@ -249,11 +249,13 @@ void ParallelRun()
 		
 		display = XOpenDisplay (displname.c_str());
 		
+		/*
 		  PrintMessage (3, "displ - name = ", displname);
 		  PrintMessage (3, "display = ", display,
 		  " display props: ",
 		  " screen w = ", XDisplayWidth (display, 0),
 		  " , h = ", XDisplayHeight (display, 0));
+		*/
 
 		Window win;
 		int wx, wy;
@@ -328,7 +330,6 @@ void ParallelRun()
 		      break;
 		    }
 		  }
-
 		if (!visinfo)
 		  cerr << "no VISINFO found" << endl;
 
@@ -365,26 +366,26 @@ void ParallelRun()
 
 	    if (redraw_cmd == "linelist")
 	      {
-		glXMakeCurrent (display, curDrawable, context);
+		// glXMakeCurrent (display, curDrawable, context);
 		vsmesh.BuildLineList();
-		glXMakeCurrent (display, None, NULL);
+		// glXMakeCurrent (display, None, NULL);
 	      }
 
 	    if (redraw_cmd == "filledlist")
 	      {
-		glXMakeCurrent (display, curDrawable, context);
 		vsmesh.BuildFilledList (false);
-		glXMakeCurrent (display, None, NULL);
 	      }
 
 
 	    if (redraw_cmd == "solsurfellist")
 	      {
-		glXMakeCurrent (display, curDrawable, context);
 		vssolution.DrawSurfaceElements();
-		glXMakeCurrent (display, None, NULL);
 	      }
 
+	    if (redraw_cmd == "clipplanetrigs")
+	      {
+		vssolution.DrawClipPlaneTrigs();
+	      }
 	    
 	  }
 #endif
