@@ -1772,7 +1772,7 @@ namespace ngfem
 
 
     
-    rule = new IntegrationRule (1);
+    rule = new IntegrationRule; //  (1);
     ip = IntegrationPoint (qf_trig_order1_points[0],
                            qf_trig_order1_weights[0]);
     ip.SetNr (0);
@@ -1781,7 +1781,7 @@ namespace ngfem
     trigrules[0] = rule;
 
 
-    rule = new IntegrationRule (1);
+    rule = new IntegrationRule; //  (1);
     ip = IntegrationPoint (qf_trig_order1_points[0],
                            qf_trig_order1_weights[0]);
     ip.SetNr (0);
@@ -1802,7 +1802,7 @@ namespace ngfem
 	1.0/6.0, 1.0/6.0 , 1.0/6.0
       };
     
-    rule = new IntegrationRule (3);
+    rule = new IntegrationRule; // (3);
     for (i = 0; i < 3; i++)
       {
 	ip = IntegrationPoint (qf_tria_order2_points[i],
@@ -1832,7 +1832,7 @@ namespace ngfem
 	0.111690794839005, 0.111690794839005, 0.111690794839005
       };
 
-    rule = new IntegrationRule (6);
+    rule = new IntegrationRule; //  (6);
     for (i = 0; i < 6; i++)
       {
 	ip = IntegrationPoint (qf_trig_order4_points[i],
@@ -1845,7 +1845,7 @@ namespace ngfem
     trigrules[3] = rule;
 
 
-    rule = new IntegrationRule (6);
+    rule = new IntegrationRule; // (6);
     for (i = 0; i < 6; i++)
       {
 	ip = IntegrationPoint (qf_trig_order4_points[i],
@@ -1885,7 +1885,7 @@ namespace ngfem
 	0.041425537809187, 0.041425537809187, 0.041425537809187 
       };
   
-    rule = new IntegrationRule (12);
+    rule = new IntegrationRule; // (12);
     for (i = 0; i < 12; i++)
       {
 	ip = IntegrationPoint (qf_trig_order6_points[i],
@@ -1897,7 +1897,7 @@ namespace ngfem
 
     trigrules[5] = rule;
 
-    rule = new IntegrationRule (12);
+    rule = new IntegrationRule; // (12);
     for (i = 0; i < 12; i++)
       {
 	ip = IntegrationPoint (qf_trig_order6_points[i],
@@ -1969,7 +1969,7 @@ namespace ngfem
     trignodalrules.SetSize(12);
     for (p = 1; p <= trignodalrules.Size(); p++)
       {
-	rule = new IntegrationRule ((p+1)*(p+2)/2);
+	rule = new IntegrationRule; // ((p+1)*(p+2)/2);
 	int nelp = (p*p+3*p+2) / 2;
       
 	int lami[3];
@@ -2053,7 +2053,7 @@ namespace ngfem
 	1.0/6.0
       };
     
-    rule = new IntegrationRule (1);
+    rule = new IntegrationRule; // (1);
 
     ip = IntegrationPoint (qf_tetra_order1_points[0],
 			       qf_tetra_order1_weights[0]);
@@ -2079,7 +2079,7 @@ namespace ngfem
       { 1.0/24.0, 1.0/24.0, 1.0/24.0, 1.0/24.0 };
     
     /*
-      rule = new IntegrationRule (4);
+      rule = new IntegrationRule; // (4);
       for (i = 0; i < 4; i++)
       {
       ip = IntegrationPoint (qf_tetra_order2_points[i],
@@ -2091,7 +2091,7 @@ namespace ngfem
 
       tetrules[1] = rule;
     */
-    rule = new IntegrationRule (1);
+    rule = new IntegrationRule; // (1);
     for (i = 0; i < 1; i++)
       {
 	ip = IntegrationPoint (qf_tetra_order1_points[i],
@@ -2106,7 +2106,7 @@ namespace ngfem
 
 
 
-    rule = new IntegrationRule (4);
+    rule = new IntegrationRule; //  (4);
     for (i = 0; i < 4; i++)
       {
 	ip = IntegrationPoint (qf_tetra_order2_points[i],
@@ -2148,7 +2148,7 @@ namespace ngfem
 	0.012248840519394, 0.012248840519394, 0.012248840519394, 0.012248840519394
       };
 
-    rule = new IntegrationRule (14);
+    rule = new IntegrationRule; // (14);
     for (i = 0; i < 14; i++)
       {
 	ip = IntegrationPoint (qf_tetra_order5_points[i],
@@ -2160,7 +2160,7 @@ namespace ngfem
 
     tetrules[3] = rule;
 
-    rule = new IntegrationRule (14);
+    rule = new IntegrationRule; // (14);
     for (i = 0; i < 14; i++)
       {
 	ip = IntegrationPoint (qf_tetra_order5_points[i],
@@ -2181,7 +2181,7 @@ namespace ngfem
     for (p = 3; p <= tetnodalrules.Size(); p++)
       {
 	int nelp = (p*p*p + 6 * p * p + 11 * p + 6) / 6;
-	rule = new IntegrationRule (nelp);
+	rule = new IntegrationRule; // (nelp);
       
 	int lami[4];
 	double xi[4];
@@ -2210,7 +2210,7 @@ namespace ngfem
 	{ 0, 0, 1 },
 	{ 0, 0, 0 } };
       
-    rule = new IntegrationRule (4);
+    rule = new IntegrationRule; // (4);
     for (i = 0; i < 4; i++)
       {
 	ip = IntegrationPoint (tet1pts[i], 1.0 / (6.0 * 4));
@@ -2221,7 +2221,7 @@ namespace ngfem
 
     tetnodalrules[0] = rule;
 
-    rule = new IntegrationRule (4);
+    rule = new IntegrationRule; // (4);
     for (i = 0; i < 4; i++)
       {
 	ip = IntegrationPoint (tet1pts[i], 1.0 / (6.0 * 4));
@@ -2663,7 +2663,7 @@ namespace ngfem
 	      {
 		Array<double> xi, wi;
 		ComputeGaussRule (order/2+1, xi, wi);
-		IntegrationRule * rule = new IntegrationRule (xi.Size());
+		IntegrationRule * rule = new IntegrationRule; //  (xi.Size());
 		double xip[3] = { 0, 0, 0 };
 		for (int j = 0; j < xi.Size(); j++)
 		  {
@@ -2685,7 +2685,7 @@ namespace ngfem
 		// ComputeGaussRule (order/2+2, xx, wx);
 		ComputeGaussRule (order/2+1, xy, wy);
 
-		IntegrationRule * trigrule = new IntegrationRule(xx.Size()*xy.Size());
+		IntegrationRule * trigrule = new IntegrationRule; // (xx.Size()*xy.Size());
 	      
 		int ii = 0;
 		for (int i = 0; i < xx.Size(); i++)
@@ -2705,7 +2705,7 @@ namespace ngfem
 
 		/*
 		  const IntegrationRule & segmrule = SelectIntegrationRule (ET_SEGM, order+1);
-		  IntegrationRule * trigrule = new IntegrationRule(segmrule.GetNIP()*segmrule.GetNIP());
+		  IntegrationRule * trigrule = new IntegrationRule; // (segmrule.GetNIP()*segmrule.GetNIP());
 	
 		  double point[3], weight;
 	      
@@ -2738,7 +2738,7 @@ namespace ngfem
 	    case ET_QUAD:
 	      {
 		const IntegrationRule & segmrule = SelectIntegrationRule (ET_SEGM, order);
-		IntegrationRule * quadrule = new IntegrationRule(segmrule.GetNIP()*segmrule.GetNIP());
+		IntegrationRule * quadrule = new IntegrationRule; // (segmrule.GetNIP()*segmrule.GetNIP());
 	      
 		double point[3], weight;
 
@@ -2773,7 +2773,7 @@ namespace ngfem
 		ComputeGaussJacobiRule (order/2+1, xy, wy, 1, 0);
 		ComputeGaussJacobiRule (order/2+1, xx, wx, 2, 0);
 
-		IntegrationRule * tetrule = new IntegrationRule(xx.Size()*xy.Size()*xz.Size());
+		IntegrationRule * tetrule = new IntegrationRule; // (xx.Size()*xy.Size()*xz.Size());
 	      
 		int ii = 0;
 		for (int i = 0; i < xx.Size(); i++)
@@ -2799,7 +2799,7 @@ namespace ngfem
 		const IntegrationRule & segmrule = SelectIntegrationRule (ET_SEGM, order);
 
 		IntegrationRule * hexrule = 
-		  new IntegrationRule(segmrule.GetNIP()*segmrule.GetNIP()*segmrule.GetNIP());
+		  new IntegrationRule; //(segmrule.GetNIP()*segmrule.GetNIP()*segmrule.GetNIP());
 	
 		double point[3], weight;
 		int ii = 0;
@@ -2835,7 +2835,7 @@ namespace ngfem
 		const IntegrationRule & trigrule = SelectIntegrationRule (ET_TRIG, order);
 
 		IntegrationRule * prismrule = 
-		  new IntegrationRule(segmrule.GetNIP()*trigrule.GetNIP());
+		  new IntegrationRule; // (segmrule.GetNIP()*trigrule.GetNIP());
       
 		double point[3], weight;
 	      
@@ -2893,7 +2893,7 @@ namespace ngfem
 		const IntegrationRule & segrule = SelectIntegrationRule (ET_SEGM, order+2);
 
 		IntegrationRule * pyramidrule = 
-		  new IntegrationRule(quadrule.GetNIP()*segrule.GetNIP());
+		  new IntegrationRule; // (quadrule.GetNIP()*segrule.GetNIP());
 	
 		double point[3], weight;
 	      
@@ -2958,7 +2958,7 @@ namespace ngfem
 	  Array<double> xi, wi;
 	  // ComputeGaussRule (order/2+1, xi, wi);
 	  ComputeGaussJacobiRule (order/2+1, xi, wi, 1, 0);
-	  IntegrationRule * rule = new IntegrationRule (xi.Size());
+	  IntegrationRule * rule = new IntegrationRule; // (xi.Size());
 	  double xip[3] = { 0, 0, 0 };
 	  for (int j = 0; j < xi.Size(); j++)
 	    {
@@ -3008,7 +3008,7 @@ namespace ngfem
 	  Array<double> xi, wi;
 	  // ComputeGaussRule (order/2+1, xi, wi);
 	  ComputeGaussJacobiRule (order/2+1, xi, wi, 2, 0);
-	  IntegrationRule * rule = new IntegrationRule (xi.Size());
+	  IntegrationRule * rule = new IntegrationRule; // (xi.Size());
 	  double xip[3] = { 0, 0, 0 };
 	  for (int j = 0; j < xi.Size(); j++)
 	    {

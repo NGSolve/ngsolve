@@ -1585,9 +1585,11 @@ hugasd asdf
 #pragma pomp inst begin(blockjacobisym_multadd)
 #endif
 
-	// *testout << "y = " << endl << y << endl;
+	// *testout << "x = " << endl << x << endl;
 
 	x.Distribute();
+	x.SetStatus(CUMULATED);
+
 	
 	ParallelDofs & paralleldofs = *x.GetParallelDofs();
 
@@ -1595,27 +1597,28 @@ hugasd asdf
 	// vector y is cumulated vector in the end
 	// x is distributed again
 	
-	/*
-	const ParallelVVector<TVX> * vecx = dynamic_cast<const ParallelVVector<TVX> *> (&x);
-	ParallelVVector<TVX> * vecy = dynamic_cast<ParallelVVector<TVX> *> (&y);
-	ParallelVVector<TVX> * constvecx = const_cast<ParallelVVector<TVX> *> (vecx);
-	*/
-
-	x.SetStatus(CUMULATED);
 	
-	Array<MPI_Request> sendrequests(0), recvrequests(0);
+	Array<MPI_Request> sendrequests, recvrequests;
 	MPI_Request request;
 	MPI_Status status;
 	
 	// 1*  send parallel values for x
-	for ( int dest = 0; dest < ntasks; dest ++ ) // an alle dests
-	  {
-	    if ( dest == id || !paralleldofs.IsExchangeProc ( dest ) ) continue;
-	    x.ISend ( dest, request );
-	    sendrequests.Append(request);
-	  }
+	for (int dest = 0; dest < ntasks; dest++)
+	  if (dest != id && paralleldofs.IsExchangeProc (dest))
+	    {
+	      x.ISend (dest, request);
+	      sendrequests.Append (request);
+	    }
+
+	// 3*  recv and add parallel values from ho procs for vecx
+	for (int sender = 1; sender < ntasks; sender++)
+	  if (sender != id &&paralleldofs.IsExchangeProc ( sender ) )
+	    {
+	      ncx.IRecvVec (sender, request);
+	      recvrequests.Append(request);
+	    }
 	
-	const FlatVector<TVX> fx = 
+	const FlatVector<TVX> fx =
 	  dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
 	FlatVector<TVX> fy = 
 	  dynamic_cast<T_BaseVector<TVX> &> (y).FV();
@@ -1642,33 +1645,23 @@ hugasd asdf
 	      fy(blocktable[i][j]) += s * hy(j);
 	  }
 	
-	// 3*  recv and add parallel values from ho procs for vecx
-	for ( int sender = 1; sender < ntasks; sender++)
-	  if ( sender != id )
-	    {
-	      if ( ! paralleldofs.IsExchangeProc ( sender ) ) continue; // wenn ich gern zuhören möchte
-	      ncx.IRecvVec ( sender, request );
-	      recvrequests.Append(request);
-	    }
-
 
 // 	// add values -> cumulated vector x -->
 // 	// after blockpreconditioner, also y is cumulated
-	for ( int isender = 0; isender < recvrequests.Size(); isender++ )
+	for (int isender = 0, index = 0; isender < recvrequests.Size(); isender++)
 	  {
-	    int sender, index;
-	    MPI_Waitany ( recvrequests.Size(), &recvrequests[0], &index, &status);
-	    sender = status.MPI_SOURCE;
-	    MPI_Wait ( &sendrequests[index], &status ); 
-
-	    ncx.AddRecvValues(sender);
+	    MPI_Waitany (recvrequests.Size(), &recvrequests[0], &index, &status);
+	    ncx.AddRecvValues(status.MPI_SOURCE);
 	  }
+
+	for (int hi = 0, index = 0; hi < sendrequests.Size(); hi++)
+	  MPI_Waitany (sendrequests.Size(), &sendrequests[0], &index, &status );  
+
 
 	// *testout << "cumulated vecx = " << endl << *constvecx << endl;
 
 	// 4*  apply block preconditioner to blocks containing parallel dofs
 
-	// *testout << "y, after1 = " << endl << y << endl;
 
 	for (int i = 0; i < blocktable.Size(); i++)
 	  {
@@ -1715,8 +1708,6 @@ hugasd asdf
 #ifdef SCALASCA
 #pragma pomp inst end(blockjacobisym_multadd)
 #endif
-
-// 	delete [] sendrequests; delete [] recvrequests; delete[] stati;
       }
     else // id == 0, coarse grid direct solver
       {
@@ -1765,7 +1756,7 @@ hugasd asdf
 	//    parallel or not parallel
 	if ( this->usecoarsegrid )
 	  {
-	    *testout << "coarse precond, vecx = " << endl << x << endl;
+	    // *testout << "coarse precond, vecx = " << endl << x << endl;
 
 	    this->coarsegridprecond -> Mult(x, y);
 	    
@@ -1774,7 +1765,7 @@ hugasd asdf
 	    
 	    // 4* add result to high-order procs -- send
 	    
-	    *testout << "coarse precond, vecy = " << endl << y << endl;
+	    // *testout << "coarse precond, vecy = " << endl << y << endl;
 
 	    for ( int dest = 1; dest < ntasks; dest ++ ) // an alle dests
 	      y.Send ( dest );

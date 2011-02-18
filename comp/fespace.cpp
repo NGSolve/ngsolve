@@ -1076,13 +1076,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	for ( int nr = 0; nr < ma.GetNNodes (nt); nr++ )
 	  {
 	    if ( !parallelma->IsExchangeNode (nt, nr) ) continue;
-	    
+	    *testout << "nt,nr = " << int(nt) << ", " << nr;
+
 	    GetNodeDofNrs (nt, nr, dnums);
 	    nexdof[id] += dnums.Size();
 	    
 	    for (int dest = 1; dest < ntasks; dest++)
 	      if (parallelma -> GetDistantNodeNum (dest, nt, nr) >= 0 )
-		nexdof[dest] += dnums.Size(); 
+		{
+		  *testout << " P" << dest;
+		  nexdof[dest] += dnums.Size(); 
+		}
+	    *testout << endl;
 	  }
       }
 
