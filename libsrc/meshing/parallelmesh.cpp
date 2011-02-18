@@ -935,6 +935,7 @@ namespace netgen
     NgProfiler::StopTimer (timer2);
     NgProfiler::StartTimer (timer3);
 
+
     for (int dest = 1; dest < ntasks; dest++)
       {
 	FlatArray<PointIndex> verts = verts_of_proc[dest];

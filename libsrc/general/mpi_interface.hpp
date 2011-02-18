@@ -209,7 +209,6 @@ extern MPI_Comm MPI_HIGHORDER_COMM;
     if ( !size ) return;
     MPI_Bcast (&s[0], size, MyGetMPIType<T>(), root, comm);
   }
-    
 
   template <class T, class T2>
   inline void MyMPI_Allgather (const T & send, FlatArray<T2> recv, MPI_Comm comm)

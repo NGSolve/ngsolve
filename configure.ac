@@ -158,7 +158,7 @@ case "${TEA_WINDOWINGSYSTEM}" in
 		;;
 	x11)
 		AC_SUBST(TOGL_WINDOWINGSYSTEM,TOGL_X11)
-		TEA_ADD_LIBS([-lGL])
+		TEA_ADD_LIBS([-lGL -lXmu])
 		LIBGLU=-lGLU
 		;;
 	win32)

@@ -1,14 +1,8 @@
 #include <mystdlib.h>
-
 #include "meshing.hpp"
-
-#define DEBUG
 
 namespace netgen
 {
-
-
-
   template <class T>
   void QuickSortRec (FlatArray<T> & data,
 		     int left, int right)
@@ -429,9 +423,11 @@ namespace netgen
 	      }
 	  }
 
+	/*
 	*testout << "edge 2 vert:" << endl;
 	for (int i = 0; i < edge2vert.Size(); i++)
 	  *testout << edge2vert[i][0] << " " << edge2vert[i][1] << endl;
+	  */
 
 	for (int i = 1; i <= nse; i++)
 	  {
@@ -1079,34 +1075,8 @@ namespace netgen
 
 	face2vert.SetAllocSize (face2vert.Size());
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	// face table complete
 
-
-
-	/*
-	 *testout << "face2vert: ";
-	 face2vert.PrintMemInfo(cout);
-	 *testout  << "faces: ";
-	 faces.PrintMemInfo(cout);
-	 *testout << "hashtable: ";
-	 vert2face.PrintMemInfo(cout);
-	*/
 
 #ifdef PARALLEL
 	(*testout) << " RESET Paralleltop" << endl;
