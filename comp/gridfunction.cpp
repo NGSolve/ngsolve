@@ -729,7 +729,7 @@ namespace ngcomp
         
 	if (!fes.DefinedOn(eltrans.GetElementIndex()))return 0;
 
-	IntegrationRule ir(npts);
+	IntegrationRule ir; // (npts);
 	for (int i = 0; i < npts; i++)
 	  ir.Append (IntegrationPoint (xref[i*sxref], xref[i*sxref+1], xref[i*sxref+2]));
 
@@ -1141,7 +1141,7 @@ namespace ngcomp
           }
         else
           {
-	    IntegrationRule ir(npts);
+	    IntegrationRule ir; // (npts);
 	    for (int i = 0; i < npts; i++)
 	      ir.Append (IntegrationPoint (xref[i*sxref], xref[i*sxref+1]));
 

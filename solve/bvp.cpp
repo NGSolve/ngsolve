@@ -44,12 +44,6 @@ namespace ngsolve
     ///
     virtual ~NumProcBVP();
 
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcBVP (pde, flags);
-    }
-
-
     ///
     virtual void Do(LocalHeap & lh);
     ///
@@ -173,8 +167,8 @@ namespace ngsolve
 
   void NumProcBVP :: Do(LocalHeap & lh)
   {
-    static int solvetimer = NgProfiler::CreateTimer ("Equation solving");
-    NgProfiler::StartTimer (solvetimer);
+    static Timer timer("Equation solving");
+    timer.Start();
 
     if (!lff->IsAssembled()) lff->Assemble(lh);
 
@@ -183,7 +177,6 @@ namespace ngsolve
     const BaseMatrix & mat = bfa->GetMatrix();
     const BaseVector & vecf = lff->GetVector();
     BaseVector & vecu = gfu->GetVector();
-
 
 
     if (print)
@@ -390,15 +383,12 @@ namespace ngsolve
     else
       delete invmat2;
 
-    NgProfiler::StopTimer (solvetimer);
+    timer.Stop();
 
     bfa -> ComputeInternal (vecu, vecf, lh);
 
     if (print)
       (*testout) << "Solution = " << endl << vecu << endl;
-    
-
-  
   }
 
 
@@ -448,11 +438,6 @@ namespace ngsolve
     NumProcConstrainedBVP (PDE & apde, const Flags & flags);
     ///
     virtual ~NumProcConstrainedBVP();
-
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcConstrainedBVP (pde, flags);
-    }
 
     ///
     virtual void Do(LocalHeap & lh);
@@ -721,31 +706,6 @@ namespace ngsolve
 
 
 
-
-
-
-  
-
-
-  namespace bvp_cpp
-  {
-    class Init
-    { 
-    public: 
-      Init ();
-    };
-    
-    Init::Init()
-    {
-      GetNumProcs().AddNumProc ("bvp", NumProcBVP::Create, NumProcBVP::PrintDoc);
-      GetNumProcs().AddNumProc ("constrainedbvp", NumProcConstrainedBVP::Create, NumProcConstrainedBVP::PrintDoc);
-    }
-    
-    
-    Init init;
-    int link_it;
-  }
-  
-
-
+  static RegisterNumProc<NumProcBVP> npinitbvp("bvp");
+  static RegisterNumProc<NumProcConstrainedBVP> npinitbvp2("constrainedbvp");
 }

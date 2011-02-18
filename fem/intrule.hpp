@@ -289,10 +289,12 @@ namespace ngfem
     ///
     IntegrationRule () { ; }
 
+    /*
     /// allocate for nips points
     IntegrationRule (int nips)
       : Array<IntegrationPoint> () { SetAllocSize(nips); }
-    
+    */
+
     // make it polymorphic
     virtual ~IntegrationRule() { ; }
 
