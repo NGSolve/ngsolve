@@ -20,5 +20,9 @@ libocc_la_SOURCES = Partition_Inter2d.cxx Partition_Inter3d.cxx \
 	Partition_Loop.cxx Partition_Loop2d.cxx Partition_Loop3d.cxx Partition_Spliter.cxx \
 	occconstruction.cpp occgenmesh.cpp occgeom.cpp occmeshsurf.cpp
 
+libocc_la_LIBADD = $(OCCLIBS)
+
 liboccvis_la_SOURCES = occpkg.cpp vsocc.cpp
+liboccvis_la_LIBADD = libocc.la
+
 

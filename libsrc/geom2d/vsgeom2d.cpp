@@ -3,18 +3,14 @@
 
 #include <myadt.hpp>
 #include <meshing.hpp>
-#include <csg.hpp>
-#include <stlgeom.hpp>
 
+#include <geometry2d.hpp>
 #include <visual.hpp>
 
 #include "vsgeom2d.hpp"
 
 namespace netgen
 {
-
-
-
 
 
   /* *********************** Draw 2D Geometry **************** */

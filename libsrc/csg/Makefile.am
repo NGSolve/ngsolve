@@ -8,7 +8,7 @@ revolution.hpp spline3d.hpp vscsg.hpp
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  $(TCL_INCLUDES)
 METASOURCES = AUTO
 
-noinst_LTLIBRARIES = libcsg.la  libcsgvis.la 
+lib_LTLIBRARIES = libcsg.la  libcsgvis.la 
 
 
 libcsg_la_SOURCES = algprim.cpp brick.cpp   \
@@ -18,6 +18,8 @@ manifold.cpp meshsurf.cpp polyhedra.cpp revolution.cpp singularref.cpp \
 solid.cpp specpoin.cpp spline3d.cpp surface.cpp triapprox.cpp
 
 
-
 libcsgvis_la_SOURCES = vscsg.cpp csgpkg.cpp
+
+
+libcsgvis_la_LIBADD = libcsg.la  $(top_builddir)/libsrc/geom2d/libgeom2d.la 
 

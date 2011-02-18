@@ -15,7 +15,7 @@ in geom2d only 2D - Geometry classes (with material properties etc.)
 
 #ifndef _FILE_SPLINEGEOMETRY
 #define _FILE_SPLINEGEOMETRY
-#include "../csg/csgparser.hpp"
+// #include "../csg/csgparser.hpp"
 
 
 namespace netgen
@@ -38,7 +38,8 @@ namespace netgen
   template < int D >
   class SplineGeometry 
   {
-  protected:
+    // protected:
+  public:  
     Array < GeomPoint<D> > geompoints;
     Array < SplineSeg<D>* > splines;
     double elto0;
@@ -59,7 +60,7 @@ namespace netgen
 
     int Load (const Array<double> & raw_data, const int startpos = 0);
     void Load (const char * filename);
-    void CSGLoad (CSGScanner & scan);
+    // void CSGLoad (CSGScanner & scan);
 
     void LoadData( ifstream & infile );
     void LoadDataNew ( ifstream & infile );

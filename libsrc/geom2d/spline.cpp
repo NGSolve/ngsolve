@@ -5,9 +5,9 @@ Spline curve for Mesh generator
 */
 
 #include <mystdlib.h>
-#include <csg.hpp>
 #include <linalg.hpp>
 #include <meshing.hpp>
+#include <geometry2d.hpp>
 
 namespace netgen
 {

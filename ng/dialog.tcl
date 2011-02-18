@@ -2494,50 +2494,6 @@ proc printlatestwarning { } {
 }
 
 
-# for parallel visualization, overlapping meshes...
-proc paralleldialog { } {
-
-    set w .parallel_dlg
-    
-    if {[winfo exists .parallel_dlg] == 1} {
-	wm withdraw $w
-	wm deiconify $w
-	wm geometry $w =270x100
-
-	focus $w 
-    } {
-
-	toplevel $w
-	wm geometry $w =270x100
-
-# 	frame $w.buttons -relief groove -borderwidth 3 -width 300
-# 	pack $w.buttons 
-	set ww $w
-
-	button $ww.visallb -text "View All"   -width 20 -command\
-	    { Ng_VisualizeAll; } 
-	pack $ww.visallb  
-	
-	button $ww.visoneb -text "View One"   -width 20 -command \
-	    { Ng_VisualizeOne; } 
-	pack $ww.visoneb  
-	
-	button $ww.overlap -text "overlap++"    -width 20 -command \
-	    { Ng_IncrOverlap; }
-	
-	pack $ww.overlap 
-	
-	wm withdraw $w
-	wm geom $w +100+100
-	wm deiconify $w
-	wm title $w "Parallel Netgen"
-	focus .parallel_dlg 
-    }
-}
-
-
-# paralleldialog
-#wm withdraw $w
 
 proc runtestdialog { } {
     source $::ngdir/ngshell.tcl

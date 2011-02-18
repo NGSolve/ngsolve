@@ -595,8 +595,8 @@ namespace netgen
 
 using namespace netgen;
 
-extern "C" int Ng_STL_Init (Tcl_Interp * interp);
-int Ng_STL_Init (Tcl_Interp * interp)
+extern "C" int Ng_stl_Init (Tcl_Interp * interp);
+int Ng_stl_Init (Tcl_Interp * interp)
 {
   geometryregister.Append (new STLGeometryRegister);
 

@@ -1,3 +1,9 @@
+if { [catch { load libstlvis[info sharedlibextension] Ng_STL } result ] } {
+    puts "cannot load stl" 
+    puts "error: $result"
+}
+
+
 .ngmenu.geometry add separator
 
 .ngmenu.geometry add command -label "STL Doctor..." \

@@ -24,7 +24,6 @@ The interface between the GUI and the netgen library
 #include "../libsrc/sockets/socketmanager.hpp"
 #endif
 
-// #include <parallel.hpp>
 
 // to be sure to include the 'right' togl-version
 #include "togl_1_7.h"
@@ -2012,10 +2011,10 @@ namespace netgen
       return TCL_ERROR;
 
     cout << "call Togl - load font (crash on my Linux64)" << endl;
-    // togl_font = Togl_LoadBitmapFont( togl, "Times"); // TOGL_BITMAP_8_BY_13 );
+    togl_font = Togl_LoadBitmapFont( togl, "Times"); // TOGL_BITMAP_8_BY_13 );
     // togl_font = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
     // togl_font = Togl_LoadBitmapFont( togl, NULL );
-    // cout << "success" << endl;
+    cout << "success" << endl;
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -2882,91 +2881,7 @@ namespace netgen
     return TCL_OK;
   }
 
-#ifdef PARALLEL
-  int Ng_VisualizeAll (ClientData clientData,
-                       Tcl_Interp * interp,
-                       int argc, tcl_const char *argv[])
-  {
-    int id, rc, ntasks;
-    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-    MPI_Comm_rank(MPI_COMM_WORLD, &id);
 
-    string visualizationmode = Tcl_GetVar (interp, "::selectvisual", 0);
-    string scalfun = Tcl_GetVar (interp, "::visoptions.scalfunction", 0);
-    for ( int dest = 1; dest < ntasks; dest++)
-      {
-	MyMPI_Send ( "visualize", dest );
-	MyMPI_Send ( visualizationmode, dest);
-	if ( visualizationmode == "solution" )
-	  MyMPI_Send ( scalfun, dest);
-      }
-    return TCL_OK;
-  }
-
-  int Ng_VisualizeOne (ClientData clientData,
-                       Tcl_Interp * interp,
-                       int argc, tcl_const char *argv[])
-  {
-    int id, rc, ntasks;
-    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-    MPI_Comm_rank(MPI_COMM_WORLD, &id);
-
-    string visualizationmode = Tcl_GetVar (interp, "::selectvisual", 0);
-    string scalfun = Tcl_GetVar (interp, "::visoptions.scalfunction", 0);
-
-    MyMPI_Send ( "visualize", 1 );
-    MyMPI_Send ( visualizationmode, 1);
-
-    if ( visualizationmode == "solution" )
-      MyMPI_Send ( scalfun, 1);
-    return TCL_OK;
-  }
-
-  int Ng_IncrOverlap ( ClientData clientDate,
-		       Tcl_Interp * interp,
-		       int argc, tcl_const char * argv[] )
-  {
-    int id, rc, ntasks;
-    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-    MPI_Comm_rank(MPI_COMM_WORLD, &id);
-
-    for ( int dest = 1; dest < ntasks; dest++)
-      {
-	MyMPI_Send ( "overlap++", dest );
-      }
-    mesh->UpdateOverlap();
-    return TCL_OK;
-
-  }
-
-  int Ng_SetSelectVisual (  ClientData clientDate,
-                            Tcl_Interp * interp,
-			    int argc, tcl_const char * argv[] )
-  {
-    string visualizationmode;
-    MyMPI_Recv ( visualizationmode, 0);
-    Tcl_SetVar (interp, "::selectvisual", visualizationmode.c_str(), 0);
-    return TCL_OK;
-  }
-
-  int Ng_SetScalarFunction (  ClientData clientDate,
-                              Tcl_Interp * interp,
-                              int argc, tcl_const char * argv[] )
-  {
-    string visualizationmode;
-    string scalarfun;
-    visualizationmode = Tcl_GetVar (interp, "::selectvisual", 0);
-
-    if ( visualizationmode == "solution" )
-      {
-	MyMPI_Recv ( scalarfun, 0);
-        Tcl_SetVar (interp, "::visoptions.scalfunction", scalarfun.c_str(), 0);
-      }
-    return TCL_OK;
-  }
-
-
-#endif
 
   int Ng_IsParallel (ClientData clientData,
                      Tcl_Interp * interp,
@@ -3073,7 +2988,7 @@ namespace netgen
 
   extern "C" int Ng_Init (Tcl_Interp * interp);
   extern "C" int Ng_CSG_Init (Tcl_Interp * interp);
-  extern "C" int Ng_STL_Init (Tcl_Interp * interp);
+  // extern "C" int Ng_stl_Init (Tcl_Interp * interp);
 
 #ifdef OCCGEOMETRY
   // extern "C" int Ng_occ_Init (Tcl_Interp * interp);
@@ -3094,11 +3009,8 @@ namespace netgen
 #endif
 
     Ng_CSG_Init(interp);
-    Ng_STL_Init(interp);
+    // Ng_stl_Init(interp);
 
-#ifdef OCCGEOMETRY
-    // Ng_occ_Init(interp);
-#endif
 
     Ng_Geom2d_Init(interp);
 
@@ -3358,29 +3270,6 @@ namespace netgen
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
 
-
-#ifdef PARALLEL
-    Tcl_CreateCommand (interp, "Ng_VisualizeAll", Ng_VisualizeAll,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_VisualizeOne", Ng_VisualizeOne,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_IncrOverlap", Ng_IncrOverlap,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_SetSelectVisual", Ng_SetSelectVisual,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_SetScalarFunction",  Ng_SetScalarFunction,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
-#endif
     Tcl_CreateCommand (interp, "Ng_IsParallel", Ng_IsParallel,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);

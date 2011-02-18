@@ -1,6 +1,6 @@
 include_HEADERS = 
 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL  -D$(TOGL_WINDOWINGSYSTEM) $(OCCFLAGS)  $(TCL_INCLUDES) $(MPI_INCLUDES) $(FFMPEG_INCLUDES) $(JPEGLIB_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL  -D$(TOGL_WINDOWINGSYSTEM)  $(TCL_INCLUDES) $(MPI_INCLUDES) $(FFMPEG_INCLUDES) $(JPEGLIB_INCLUDES)
 
 bin_PROGRAMS = netgen
 netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp nginterface.cpp nginterface_v2.cpp parallelfunc.cpp parallelinterface.cpp demoview.hpp parallelfunc.hpp togl_1_7.h
@@ -8,20 +8,19 @@ netgen_SOURCES = demoview.cpp ngappinit.cpp ngpkg.cpp onetcl.cpp nginterface.cpp
 
 netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
 	$(top_builddir)/libsrc/csg/libcsgvis.la \
-	$(top_builddir)/libsrc/csg/libcsg.la \
 	$(top_builddir)/libsrc/geom2d/libgeom2dvis.la \
-	$(top_builddir)/libsrc/geom2d/libgeom2d.la \
 	$(top_builddir)/libsrc/interface/libinterface.la \
-	$(top_builddir)/libsrc/stlgeom/libstlvis.la \
-	$(top_builddir)/libsrc/stlgeom/libstl.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
 	$(top_builddir)/libsrc/linalg/libla.la \
 	$(top_builddir)/libsrc/general/libgen.la \
-	$(OCCLIBS) -L$(TK_BIN_DIR)/Togl1.7 $(TOGLLIBDIR) -lTogl1.7 $(LIBGLU) $(TK_LIB_SPEC) $(TCL_LIB_SPEC) $(MPI_LIBS) $(FFMPEG_LIBS) $(JPEGLIB_LIBS) $(PKG_LIBS)
+	-L$(TK_BIN_DIR)/Togl1.7 $(TOGLLIBDIR) -lTogl1.7 $(LIBGLU) $(TK_LIB_SPEC) $(TCL_LIB_SPEC) $(MPI_LIBS) $(FFMPEG_LIBS) $(JPEGLIB_LIBS) $(PKG_LIBS)
 #
 #	$(top_builddir)/libsrc/occ/liboccvis.la 
 #	$(top_builddir)/libsrc/occ/libocc.la 
+#	$(top_builddir)/libsrc/stlgeom/libstlvis.la 
+#	$(top_builddir)/libsrc/stlgeom/libstl.la 
+#	$(top_builddir)/libsrc/geom2d/libgeom2d.la 
 
 
 # add for static linkage of ngsolve:

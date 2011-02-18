@@ -833,17 +833,6 @@ pack  .bubar.exitb .bubar.surfm .bubar.stopm -side left
 #button .bubar.scan -text "Scan" \
 #    -command { Ng_ParseGeometry; set selectvisual geometry; Ng_SetVisParameters; redraw }
 
-# fuer parallel - buttons :)
-Ng_IsParallel;
-if { $parallel_netgen } {
-#    catch{ 
-#    source ${ngdir}/ngtcltk/parallel_dialog.tcl
-#    }
-    button .bubar.visallb -text "Parallel" -command \
-	{ paralleldialog; redraw } 
-    pack .bubar.visallb -side left 
-}
-
 button .bubar.zoomall -text "Zoom All" \
     -command { Ng_ZoomAll; redraw }
 

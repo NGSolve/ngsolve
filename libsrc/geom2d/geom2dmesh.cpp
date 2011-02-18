@@ -1,8 +1,7 @@
 #include <mystdlib.h>
-
-#include <csg.hpp>
-#include <geometry2d.hpp>
 #include <meshing.hpp>
+
+#include <geometry2d.hpp>
 
 namespace netgen
 {

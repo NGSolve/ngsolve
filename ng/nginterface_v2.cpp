@@ -1,19 +1,6 @@
 #include <mystdlib.h>
-
-
 #include <meshing.hpp>
-#include <csg.hpp>
-#include <geometry2d.hpp>
-#include <stlgeom.hpp>
 
-
-#ifdef OCCGEOMETRY
-#include <occgeom.hpp>
-#endif
-
-#ifdef ACIS
-#include <acisgeom.hpp>
-#endif
 
 #ifdef SOCKETS
 #include "../sockets/sockets.hpp"
@@ -27,11 +14,6 @@
 #include "nginterface.h"
 #include "nginterface_v2.hpp"
 
-// #include <FlexLexer.h>
-
-
-// #include <mystdlib.h>
-
 
 namespace netgen
 {
@@ -43,16 +25,6 @@ namespace netgen
   extern Tcl_Interp * tcl_interp;
 #endif
 
-  extern AutoPtr<SplineGeometry2d> geometry2d;
-  extern AutoPtr<CSGeometry> geometry;
-  extern STLGeometry * stlgeometry;
-
-#ifdef OCCGEOMETRY
-  extern OCCGeometry * occgeometry;
-#endif
-#ifdef ACIS
-  extern ACISGeometry * acisgeometry;
-#endif
 
 #ifdef OPENGL
   extern VisualSceneSolution vssolution;
@@ -217,23 +189,6 @@ namespace netgen
                                                       double * dxdxi, size_t sdxdxi)
   {
     mesh->GetCurvedElements().CalcMultiPointSegmentTransformation<2> (elnr, npts, xi, sxi, x, sx, dxdxi, sdxdxi);
-    /*
-    for (int ip = 0; ip < npts; ip++)
-      {
-        Point<3> xg;
-        Vec<3> dx;
-
-        mesh->GetCurvedElements().CalcSegmentTransformation (xi[ip*sxi], elnr, xg, dx);
-      
-        if (x)
-          for (int i = 0; i < 2; i++)
-            x[ip*sx+i] = xg(i);
-	  
-        if (dxdxi)
-          for (int i=0; i<2; i++)
-            dxdxi[ip*sdxdxi+i] = dx(i);
-      }
-    */
   }
 
   template <>
@@ -257,15 +212,12 @@ namespace netgen
     return mesh->GetTopology().GetNFaces();
   }
 
-
   template <> DLL_HEADER Ng_Node<1> Ng_GetNode<1> (int nr)
   {
     Ng_Node<1> node;
     node.vertices.ptr = mesh->GetTopology().GetEdgeVerticesPtr(nr);
     return node;
   }
-
-
 
   template <> DLL_HEADER Ng_Node<2> Ng_GetNode<2> (int nr)
   {

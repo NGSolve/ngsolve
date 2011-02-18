@@ -7,9 +7,6 @@
 
 namespace netgen
 {
-  //using namespace netgen;
-
-
   static kwstruct defkw[] =
     {
       { TOK_RECO,    "algebraic3d" },
@@ -695,6 +692,65 @@ namespace netgen
   }
 
 
+  template <int D>
+  void LoadSpline (SplineGeometry<D> & spline, CSGScanner & scan)
+  {
+    double hd;
+    Point<D> x;
+    int nump, numseg;
+    
+    //scan.ReadNext();
+    scan >> nump >> ';';
+    
+    hd = 1;
+    spline.geompoints.SetSize(nump);
+    for(int i = 0; i<nump; i++)
+      {
+	if(D==2)
+	  scan >> x(0) >> ',' >> x(1) >> ';';
+	else if(D==3)
+	  scan >> x(0) >> ',' >> x(1) >> ',' >> x(2) >> ';';
+	
+	spline.geompoints[i] = GeomPoint<D>(x,hd);
+      }
+    
+    scan >> numseg;// >> ';';
+
+    spline.splines.SetSize(numseg);
+
+  int pnums,pnum1,pnum2,pnum3;
+    
+
+  for(int i = 0; i<numseg; i++)
+    {
+      scan >> ';' >> pnums >> ',';
+      if (pnums == 2)
+	{
+	  scan >> pnum1 >> ',' >> pnum2;// >> ';';
+	  spline.splines[i] = new LineSeg<D>(spline.geompoints[pnum1-1],
+					     spline.geompoints[pnum2-1]);
+	}
+      else if (pnums == 3)
+	{
+	  scan >> pnum1 >> ',' >> pnum2 >> ',' 
+	       >> pnum3;// >> ';';
+	  spline.splines[i] = new SplineSeg3<D>(spline.geompoints[pnum1-1],
+						spline.geompoints[pnum2-1],
+						spline.geompoints[pnum3-1]);
+	}
+      else if (pnums == 4)
+	{
+	  scan >> pnum1 >> ',' >> pnum2 >> ',' 
+	       >> pnum3;// >> ';';
+	  spline.splines[i] = new CircleSeg<D>(spline.geompoints[pnum1-1],
+					       spline.geompoints[pnum2-1],
+					       spline.geompoints[pnum3-1]);
+	}
+    }
+  }
+
+
+
 
   void ParseFlags (CSGScanner & scan, Flags & flags)
   {
@@ -1118,7 +1174,8 @@ namespace netgen
 		ParseChar (scan, '(');
 		
 		SplineGeometry<2> * newspline = new SplineGeometry<2>;
-		newspline->CSGLoad(scan);
+		// newspline->CSGLoad(scan);
+		LoadSpline (*newspline, scan);
 
 		ParseChar (scan, ')');
 		ParseChar (scan, ';');
@@ -1143,7 +1200,8 @@ namespace netgen
 		ParseChar (scan, '(');
 		
 		SplineGeometry<3> * newspline = new SplineGeometry<3>;
-		newspline->CSGLoad(scan);
+		// newspline->CSGLoad(scan);
+		LoadSpline (*newspline, scan);
 
 		ParseChar (scan, ')');
 		ParseChar (scan, ';');

@@ -1,12 +1,13 @@
 #include <mystdlib.h>
 #include <myadt.hpp>
 #include <linalg.hpp>
-#include <csg.hpp>
 
 
 #include <incvis.hpp>
-#include <visual.hpp>
+#include <meshing.hpp>
+#include <geometry2d.hpp>
 
+#include <visual.hpp>
 #include "vsgeom2d.hpp"
 
 

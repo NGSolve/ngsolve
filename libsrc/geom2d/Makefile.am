@@ -10,4 +10,6 @@ libgeom2d_la_SOURCES = genmesh2d.cpp geom2dmesh.cpp spline.cpp \
 
 
 libgeom2dvis_la_SOURCES = geom2dpkg.cpp vsgeom2d.cpp
+libgeom2dvis_la_LIBADD = libgeom2d.la
+
 

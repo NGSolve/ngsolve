@@ -1,6 +1,6 @@
 if { [catch { load liboccvis[info sharedlibextension] Ng_OCC } result ] } {
-#    puts "cannot load occ" 
-#    puts "error: $result"
+    puts "cannot load occ" 
+    puts "error: $result"
 
     # dummy 
     proc rebuildoccdialog { } { }
