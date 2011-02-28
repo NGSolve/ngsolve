@@ -85,7 +85,7 @@ catch {
 
 
 if { [catch { load libgeom2dvis[info sharedlibextension] Ng_Geom2d } result ] } {
-    puts "cannot load 2d meshing mordule" 
+    puts "cannot load 2d meshing module" 
     puts "error: $result"
 }
 

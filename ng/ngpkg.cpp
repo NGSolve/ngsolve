@@ -26,8 +26,8 @@ The interface between the GUI and the netgen library
 
 
 // to be sure to include the 'right' togl-version
-#include "togl_1_7.h"
-// #include "Togl2/togl.h"
+// #include "togl_1_7.h"
+#include "togl_2_0.h"
 
 extern bool nodisplay;
 
@@ -1921,27 +1921,27 @@ namespace netgen
   // Sorry, Togl 2.0 not supported
 
   Tcl_Obj * togl_font;
- 
+  Togl * togl = NULL;
+
   void MyOpenGLText (const char * text)
   {
-    cout << "togl - text" << endl;
+    // cout << "togl - text: " << text << endl;
+    Togl_WriteChars (togl, togl_font, text, strlen(text));
   }
   
-
-
   static int
   init(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
   {
     cout << "call init" << endl;
 
-    Togl * togl = NULL;
 
     if (Togl_GetToglFromObj(interp, objv[1], &togl) != TCL_OK) 
       return TCL_ERROR;
 
-    cout << "call Togl - load font (crash on my Linux64)" << endl;
-    // togl_font = Togl_LoadBitmapFont( togl, "Times"); // TOGL_BITMAP_8_BY_13 );
-    // togl_font = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
+    cout << "call Togl - load font (crashes on my OpenSuse Linux64)" << endl;
+    // togl_font = Togl_LoadBitmapFont( togl, "Helvetica"); 
+    // togl_font = Togl_LoadBitmapFont( togl, "Times"); 
+    togl_font = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
     // togl_font = Togl_LoadBitmapFont( togl, NULL );
     cout << "success" << endl;
 
@@ -1964,19 +1964,14 @@ namespace netgen
   static int
   draw(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
   {
-    Togl * togl;
-    if (Togl_GetToglFromObj(interp, objv[1], &togl) != TCL_OK) 
-      return TCL_ERROR;
-    
-
     SetVisualScene (interp);
 
     glPushMatrix();
+
     glLoadIdentity();
-    // gluLookAt (0, 0, 6, 0, 0, 0, 0, 1, 0);
     vs->DrawScene();
-    
     Togl_SwapBuffers(togl);
+
     glPopMatrix();
 
     return TCL_OK;
@@ -1985,10 +1980,6 @@ namespace netgen
   static int
   reshape(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
   {
-    Togl * togl;
-    if (Togl_GetToglFromObj(interp, objv[1], &togl) != TCL_OK) 
-      return TCL_ERROR;
-
     int w = Togl_Width (togl);
     int h = Togl_Height (togl);
 
@@ -2003,8 +1994,6 @@ namespace netgen
 
     gluPerspective(20.0f, double(w) / h, pnear, pfar);
     glMatrixMode(GL_MODELVIEW);
-
-    // draw (togl);
 
     return TCL_OK;
   }

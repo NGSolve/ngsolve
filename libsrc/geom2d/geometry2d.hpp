@@ -11,7 +11,7 @@
 #include <gprim.hpp>
 
 
-#include "../gprim/spline.hpp"
+// #include "../gprim/spline.hpp"
 #include "../gprim/splinegeometry.hpp"
 #include "geom2dmesh.hpp"
 
@@ -22,7 +22,7 @@ namespace netgen
   class SplineSegExt : public SplineSeg<2>
   {
   public:
-    const SplineSeg & seg;
+    const SplineSeg<2> & seg;
     
     /// left domain
     int leftdom;
@@ -43,7 +43,7 @@ namespace netgen
     ///
     int layer;
 
-    SplineSegExt (const SplineSeg & hseg) 
+    SplineSegExt (const SplineSeg<2> & hseg) 
       : seg(hseg)
     {
       layer = 1;
