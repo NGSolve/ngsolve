@@ -26,8 +26,8 @@ The interface between the GUI and the netgen library
 
 
 // to be sure to include the 'right' togl-version
-// #include "togl_1_7.h"
-#include "togl_2_0.h"
+#include "togl_1_7.h"
+// #include "togl_2_0.h"
 
 extern bool nodisplay;
 
