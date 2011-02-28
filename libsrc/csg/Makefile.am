@@ -21,5 +21,6 @@ solid.cpp specpoin.cpp spline3d.cpp surface.cpp triapprox.cpp
 libcsgvis_la_SOURCES = vscsg.cpp csgpkg.cpp
 
 
-libcsgvis_la_LIBADD = libcsg.la  $(top_builddir)/libsrc/geom2d/libgeom2d.la 
+libcsgvis_la_LIBADD = libcsg.la
+#   $(top_builddir)/libsrc/geom2d/libgeom2d.la 
 

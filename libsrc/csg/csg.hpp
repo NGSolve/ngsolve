@@ -11,9 +11,9 @@
 #include <gprim.hpp>
 #include <meshing.hpp>
 
-#include <geometry2d.hpp>
-
-
+// #include <geometry2d.hpp>
+#include "../gprim/spline.hpp"
+#include "../gprim/splinegeometry.hpp"
 
 
 

@@ -34,6 +34,7 @@ public:
 #ifdef MSVC_EXPRESS
 // #include <pthread.h>
 
+
 class NgMutex
 {
   pthread_mutex_t mut;

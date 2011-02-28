@@ -6,13 +6,278 @@
 namespace netgen
 {
 
-  // static Array<Point<2> > points2;
-  //  static Array<int> lp1, lp2;
-
-
   extern void Optimize2d (Mesh & mesh, MeshingParameters & mp);
 
 
+
+
+
+
+
+  void CalcPartition (double l, double h, double h1, double h2,
+		      double hcurve, double elto0, Array<double> & points);
+
+  // partitionizes spline curve
+  void Partition (const SplineSegExt & spline,
+		  double h, double elto0,
+		  Mesh & mesh, Point3dTree & searchtree, int segnr) 
+  {
+    enum { D = 2 };
+    int i, j;
+    double l; // , r1, r2, ra;
+    double lold, dt, frac;
+    int n = 100;
+    Point<D> p, pold, mark, oldmark;
+    Array<double> curvepoints;
+    double edgelength, edgelengthold;
+    l = spline.Length();
+
+    double h1 = min (spline.StartPI().hmax, h/spline.StartPI().refatpoint);
+    double h2 = min (spline.EndPI().hmax, h/spline.EndPI().refatpoint);
+    double hcurve = min (spline.hmax, h/spline.reffak);
+
+
+    CalcPartition (l, h, h1, h2, hcurve, elto0, curvepoints);
+    //  cout << "curvepoints = " << curvepoints << endl;
+
+    dt = 1.0 / n;
+
+    l = 0;
+    j = 1;
+
+    pold = spline.GetPoint (0);
+    lold = 0;
+    oldmark = pold;
+    edgelengthold = 0;
+    Array<int> locsearch;
+    
+    for (i = 1; i <= n; i++)
+      {
+	p = spline.GetPoint (i*dt);
+	l = lold + Dist (p, pold);
+	while (j < curvepoints.Size() && (l >= curvepoints[j] || i == n))
+	  {
+	    frac = (curvepoints[j]-lold) / (l-lold);
+	    edgelength = i*dt + (frac-1)*dt;
+	    // mark = pold + frac * (p-pold);
+	    mark = spline.GetPoint (edgelength);
+	  
+	    // cout << "mark = " << mark << " =?= " << GetPoint (edgelength) << endl;
+
+	    {
+	      PointIndex pi1 = -1, pi2 = -1;
+	  
+	      Point3d mark3(mark(0), mark(1), 0);
+	      Point3d oldmark3(oldmark(0), oldmark(1), 0);
+
+	      Vec<3> v (1e-4*h, 1e-4*h, 1e-4*h);
+	      searchtree.GetIntersecting (oldmark3 - v, oldmark3 + v, locsearch);
+
+	      for (int k = 0; k < locsearch.Size(); k++)
+		if ( mesh[PointIndex(locsearch[k])].GetLayer() == spline.layer)
+		  pi1 = locsearch[k];
+	      // if (locsearch.Size()) pi1 = locsearch[0];
+	      
+	      searchtree.GetIntersecting (mark3 - v, mark3 + v, locsearch);
+	      for (int k = 0; k < locsearch.Size(); k++)
+		if ( mesh[PointIndex(locsearch[k])].GetLayer() == spline.layer)
+		  pi2 = locsearch[k];
+	      // if (locsearch.Size()) pi2 = locsearch[0];
+
+	      /*	    
+		for (PointIndex pk = PointIndex::BASE; 
+		pk < mesh.GetNP()+PointIndex::BASE; pk++)
+		{
+		if (Dist (mesh[pk], oldmark3) < 1e-4 * h) pi1 = pk;
+		if (Dist (mesh[pk], mark3) < 1e-4 * h) pi2 = pk;
+		}
+	      */
+	    
+	      
+	      //	    cout << "pi1 = " << pi1 << endl;
+	      //	    cout << "pi2 = " << pi2 << endl;
+	    
+	      if (pi1 == -1)
+		{
+		  pi1 = mesh.AddPoint(oldmark3, spline.layer);
+		  searchtree.Insert (oldmark3, pi1);
+		}
+	      if (pi2 == -1)
+		{
+		  pi2 = mesh.AddPoint(mark3, spline.layer);
+		  searchtree.Insert (mark3, pi2);
+		}
+
+	      Segment seg;
+	      seg.edgenr = segnr;
+	      seg.si = spline.bc; // segnr;
+	      seg[0] = pi1;
+	      seg[1] = pi2;
+	      seg.domin = spline.leftdom;
+	      seg.domout = spline.rightdom;
+	      seg.epgeominfo[0].edgenr = segnr;
+	      seg.epgeominfo[0].dist = edgelengthold;
+	      seg.epgeominfo[1].edgenr = segnr;
+	      seg.epgeominfo[1].dist = edgelength;
+	      seg.singedge_left = spline.hpref_left;
+	      seg.singedge_right = spline.hpref_right;
+	      mesh.AddSegment (seg);
+	    }
+	
+	    oldmark = mark;
+	    edgelengthold = edgelength;
+	    j++;
+	  }
+    
+	pold = p;
+	lold = l;
+      }
+  }
+
+
+
+  void SplineGeometry2d :: PartitionBoundary (double h, Mesh & mesh2d)
+  {
+    enum { D = 2 };
+    Box<D> bbox;
+    GetBoundingBox (bbox);
+    double dist = Dist (bbox.PMin(), bbox.PMax());
+    Point<3> pmin;
+    Point<3> pmax;
+  
+    pmin(2) = -dist; pmax(2) = dist;
+    for(int j=0;j<D;j++)
+      {
+	pmin(j) = bbox.PMin()(j);
+	pmax(j) = bbox.PMax()(j);
+      }
+
+    Point3dTree searchtree (pmin, pmax);
+
+    for (int i = 0; i < splines.Size(); i++)
+      for (int side = 0; side <= 1; side++)
+	{
+	  int dom = (side == 0) ? GetSpline(i).leftdom : GetSpline(i).rightdom;
+	  if (dom != 0) GetSpline(i).layer = GetDomainLayer (dom);
+	}
+
+    for (int i = 0; i < splines.Size(); i++)
+      if (GetSpline(i).copyfrom == -1)
+	{
+	  // astrid - set boundary meshsize to  domain meshsize h
+	  // if no domain mesh size is given, the max h value from the bounding box is used
+	  double minimum = min2 ( GetDomainMaxh ( GetSpline(i).leftdom ), GetDomainMaxh ( GetSpline(i).rightdom ) );
+	  double maximum = max2 ( GetDomainMaxh ( GetSpline(i).leftdom ), GetDomainMaxh ( GetSpline(i).rightdom ) );
+	  minimum = min2 ( minimum, h );
+	  maximum = min2 ( maximum, h);
+	  if ( minimum > 0 )
+	    // GetSpline(i).Partition(minimum, elto0, mesh2d, searchtree, i+1);
+	    Partition(GetSpline(i), minimum, elto0, mesh2d, searchtree, i+1);	    
+	  else if ( maximum > 0 )
+	    // GetSpline(i).Partition(maximum, elto0, mesh2d, searchtree, i+1);
+	    Partition(GetSpline(i), maximum, elto0, mesh2d, searchtree, i+1);
+	  else
+	    // GetSpline(i).Partition(h, elto0, mesh2d, searchtree, i+1);
+	    Partition(GetSpline(i), h, elto0, mesh2d, searchtree, i+1);
+	}
+      else
+	{
+	  CopyEdgeMesh (GetSpline(i).copyfrom, i+1, mesh2d, searchtree);
+	}
+  }
+
+
+
+
+
+
+  void SplineGeometry2d :: CopyEdgeMesh (int from, int to, Mesh & mesh, Point3dTree & searchtree)
+  {
+    const int D = 2;
+    int i;
+
+    Array<int, PointIndex::BASE> mappoints (mesh.GetNP());
+    Array<double, PointIndex::BASE> param (mesh.GetNP());
+    mappoints = -1;
+    param = 0;
+
+    Point3d pmin, pmax;
+    mesh.GetBox (pmin, pmax);
+    double diam2 = Dist2(pmin, pmax);
+
+    if (printmessage_importance>0)
+      cout << "copy edge, from = " << from << " to " << to << endl;
+  
+    for (i = 1; i <= mesh.GetNSeg(); i++)
+      {
+	const Segment & seg = mesh.LineSegment(i);
+	if (seg.edgenr == from)
+	  {
+	    mappoints.Elem(seg[0]) = 1;
+	    param.Elem(seg[0]) = seg.epgeominfo[0].dist;
+
+	    mappoints.Elem(seg[1]) = 1;
+	    param.Elem(seg[1]) = seg.epgeominfo[1].dist;
+	  }
+      }
+
+    bool mapped = false;
+    for (i = 1; i <= mappoints.Size(); i++)
+      {
+	if (mappoints.Get(i) != -1)
+	  {
+	    Point<D> newp = splines.Get(to)->GetPoint (param.Get(i));
+	    Point<3> newp3;
+	    for(int j=0; j<min2(D,3); j++)
+	      newp3(j) = newp(j);
+	    for(int j=min2(D,3); j<3; j++)
+	      newp3(j) = 0;
+	  
+	    int npi = -1;
+	  
+	    for (PointIndex pi = PointIndex::BASE; 
+		 pi < mesh.GetNP()+PointIndex::BASE; pi++)
+	      if (Dist2 (mesh.Point(pi), newp3) < 1e-12 * diam2)
+		npi = pi;
+	  
+	    if (npi == -1)
+	      {
+		npi = mesh.AddPoint (newp3);
+		searchtree.Insert (newp3, npi);
+	      }
+
+	    mappoints.Elem(i) = npi;
+
+	    mesh.GetIdentifications().Add (i, npi, to);
+	    mapped = true;
+	  }
+      }
+    if(mapped)
+      mesh.GetIdentifications().SetType(to,Identifications::PERIODIC);
+
+    // copy segments
+    int oldnseg = mesh.GetNSeg();
+    for (i = 1; i <= oldnseg; i++)
+      {
+	const Segment & seg = mesh.LineSegment(i);
+	if (seg.edgenr == from)
+	  {
+	    Segment nseg;
+	    nseg.edgenr = to;
+	    nseg.si = GetSpline(to-1).bc;      // splines.Get(to)->bc;
+	    nseg[0] = mappoints.Get(seg[0]);
+	    nseg[1] = mappoints.Get(seg[1]);
+	    nseg.domin = GetSpline(to-1).leftdom;
+	    nseg.domout = GetSpline(to-1).rightdom;
+	  
+	    nseg.epgeominfo[0].edgenr = to;
+	    nseg.epgeominfo[0].dist = param.Get(seg[0]);
+	    nseg.epgeominfo[1].edgenr = to;
+	    nseg.epgeominfo[1].dist = param.Get(seg[1]);
+	    mesh.AddSegment (nseg);
+	  }
+      }
+  }
 
 
 

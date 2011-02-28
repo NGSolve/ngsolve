@@ -13,10 +13,10 @@ namespace netgen
 
   class Refinement2d : public Refinement
   {
-    const SplineGeometry2d & geometry;
+    const class SplineGeometry2d & geometry;
 
   public:
-    Refinement2d (const SplineGeometry2d & ageometry);
+    Refinement2d (const class SplineGeometry2d & ageometry);
     virtual ~Refinement2d ();
   
     virtual void PointBetween (const Point<3> & p1, const Point<3> & p2, double secpoint,

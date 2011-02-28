@@ -32,78 +32,8 @@ The interface between the GUI and the netgen library
 extern bool nodisplay;
 
 
-#include <nginterface.h>
-
-
-
-#ifdef _MSC_VER
-// Philippose - 30/01/2009
-// MSVC Express Edition Support
-#ifdef MSVC_EXPRESS
-
-// #include <pthread.h>
-
-  static pthread_t meshingthread;
-  void RunParallel ( void * (*fun)(void *), void * in)
-  {
-    if (netgen::mparam.parthread)
-     {
-	     pthread_attr_t attr;
-	     pthread_attr_init (&attr);
-	     // the following call can be removed if not available:
-	     pthread_attr_setstacksize(&attr, 1000000);
-	     //pthread_create (&meshingthread, &attr, fun, NULL);
-	     pthread_create (&meshingthread, &attr, fun, in);
-     }
-     else
-     fun (in);
-  }
-
-#else // Using MS VC++ Standard / Enterprise / Professional edition
-
-  // Afx - Threads need different return - value:
-
-  static void* (*sfun)(void *);
-  unsigned int fun2 (void * val)
-  {
-    sfun (val);
-    return 0;
-  }
-
-  void RunParallel ( void* (*fun)(void *), void * in)
-  {
-    sfun = fun;
-    if (netgen::mparam.parthread)
-      AfxBeginThread (fun2, in);
-    //AfxBeginThread (fun2, NULL);
-    else
-      fun (in);
-  }
-
-#endif // #ifdef MSVC_EXPRESS
-
-#else  // For #ifdef _MSC_VER
-
-// #include <pthread.h>
-
-  static pthread_t meshingthread;
-  void RunParallel ( void * (*fun)(void *), void * in)
-  {
-    if (netgen::mparam.parthread)
-      {
-	pthread_attr_t attr;
-	pthread_attr_init (&attr);
-	// the following call can be removed if not available:
-	pthread_attr_setstacksize(&attr, 1000000);
-	//pthread_create (&meshingthread, &attr, fun, NULL);
-	pthread_create (&meshingthread, &attr, fun, in);
-      }
-    else
-      fun (in);
-  }
-
-#endif // #ifdef _MSC_VER
-
+// #include <nginterface.h>
+extern "C" void RunParallel ( void * (*fun)(void *), void * in);
 
 
 
@@ -164,9 +94,8 @@ namespace netgen
   }
 
 
-  // global variable mesh (should not be used in libraries)
-  AutoPtr<Mesh> mesh;
-  NetgenGeometry * ng_geometry = new NetgenGeometry;
+  extern NetgenGeometry * ng_geometry;
+  extern AutoPtr<Mesh> mesh;
   Tcl_Interp * tcl_interp;
 
 
@@ -2011,7 +1940,7 @@ namespace netgen
       return TCL_ERROR;
 
     cout << "call Togl - load font (crash on my Linux64)" << endl;
-    togl_font = Togl_LoadBitmapFont( togl, "Times"); // TOGL_BITMAP_8_BY_13 );
+    // togl_font = Togl_LoadBitmapFont( togl, "Times"); // TOGL_BITMAP_8_BY_13 );
     // togl_font = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
     // togl_font = Togl_LoadBitmapFont( togl, NULL );
     cout << "success" << endl;
@@ -2994,7 +2923,7 @@ namespace netgen
   // extern "C" int Ng_occ_Init (Tcl_Interp * interp);
 #endif
 
-  extern "C" int Ng_Geom2d_Init (Tcl_Interp * interp);
+  // extern "C" int Ng_Geom2d_Init (Tcl_Interp * interp);
 
   //   int main_Eero (ClientData clientData,
   // 	       Tcl_Interp * interp,
@@ -3012,7 +2941,7 @@ namespace netgen
     // Ng_stl_Init(interp);
 
 
-    Ng_Geom2d_Init(interp);
+    // Ng_Geom2d_Init(interp);
 
     tcl_interp = interp;
 

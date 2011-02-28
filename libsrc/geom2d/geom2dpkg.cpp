@@ -11,7 +11,7 @@
 #include "vsgeom2d.hpp"
 
 
-extern "C" int Ng_CSG_Init (Tcl_Interp * interp);
+// extern "C" int Ng_CSG_Init (Tcl_Interp * interp);
 
 namespace netgen
 {
@@ -63,10 +63,10 @@ namespace netgen
 }
 
 
-using namespace netgen;
-extern "C" int Ng_Geom2d_Init (Tcl_Interp * interp);
+ using namespace netgen;
+extern "C" int Ng_geom2d_Init (Tcl_Interp * interp);
 
-int Ng_Geom2d_Init (Tcl_Interp * interp)
+int Ng_geom2d_Init (Tcl_Interp * interp)
 {
   geometryregister.Append (new SplineGeometryRegister);
 }

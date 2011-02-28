@@ -10,7 +10,6 @@
 namespace netgen
 {
 
-
   class VisualSceneGeometry2d : public VisualScene
   {
     const class SplineGeometry2d * geometry2d;
@@ -21,8 +20,6 @@ namespace netgen
     virtual void BuildScene (int zoomall = 0);
     virtual void DrawScene ();
   };
-
-
 
 }
 

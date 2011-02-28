@@ -73,7 +73,7 @@ namespace netgen
 
     for (int i = 1; i <= geometry2d->GetSplines().Size(); i++)
       {
-	int other = geometry2d->GetSplines().Get(i)->copyfrom;
+	int other = geometry2d->GetSpline(i-1).copyfrom;
 	if (other != -1)
 	  {
 	    geometry2d->GetSplines().Get(i)->GetPoints (6, points);
@@ -112,11 +112,4 @@ namespace netgen
 
     CalcTransformationMatrices();
   }
-
-
-
-
-
-
-
 }
