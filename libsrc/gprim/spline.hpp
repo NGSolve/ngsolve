@@ -11,8 +11,6 @@ namespace netgen
 {
 
 
-  void CalcPartition (double l, double h, double h1, double h2,
-		      double hcurve, double elto0, Array<double> & points);
 
   /*
     Spline curves for 2D mesh generation
@@ -47,31 +45,7 @@ namespace netgen
   class SplineSeg
   {
   public:
-    /// left domain
-    int leftdom;
-    /// right domain
-    int rightdom;
-    /// refinement at line
-    double reffak;
-    /// maximal h;
-    double hmax;
-    /// boundary condition number
-    int bc;
-    /// copy spline mesh from other spline (-1.. do not copy)
-    int copyfrom;
-    /// perfrom anisotropic refinement (hp-refinement) to edge
-    bool hpref_left;
-    /// perfrom anisotropic refinement (hp-refinement) to edge
-    bool hpref_right;
-    ///
-    int layer;
-
-
-    SplineSeg ()
-    {
-      layer = 1;
-    }
-
+    SplineSeg () { ; }
     /// calculates length of curve
     virtual double Length () const;
     /// returns point at curve, 0 <= t <= 1
@@ -83,9 +57,8 @@ namespace netgen
 				 Point<D> & point,
 				 Vec<D> & first,
 				 Vec<D> & second) const {;}
-    /// partitionizes curve
-    void Partition (double h, double elto0,
-		    Mesh & mesh, Point3dTree & searchtree, int segnr) const;
+
+
     /// returns initial point on curve
     virtual const GeomPoint<D> & StartPI () const = 0;
     /// returns terminal point on curve
@@ -99,7 +72,7 @@ namespace netgen
 
     virtual void GetCoeff (Vector & coeffs) const = 0;
 
-    virtual void GetPoints (int n, Array<Point<D> > & points);
+    virtual void GetPoints (int n, Array<Point<D> > & points) const;
 
     /** calculates (2D) lineintersections:
 	for lines $$ a x + b y + c = 0 $$ the interecting points are calculated
@@ -279,9 +252,6 @@ namespace netgen
 
 
 
-
-
-
   // calculates length of spline-curve
   template<int D>
   double SplineSeg<D> :: Length () const
@@ -303,126 +273,8 @@ namespace netgen
   }
 
 
-
-  // partitionizes spline curve
   template<int D>
-  void SplineSeg<D> :: Partition (double h, double elto0,
-				  Mesh & mesh, Point3dTree & searchtree, int segnr) const
-  {
-    int i, j;
-    double l; // , r1, r2, ra;
-    double lold, dt, frac;
-    int n = 100;
-    Point<D> p, pold, mark, oldmark;
-    Array<double> curvepoints;
-    double edgelength, edgelengthold;
-    l = Length();
-
-    double h1 = min (StartPI().hmax, h/StartPI().refatpoint);
-    double h2 = min (EndPI().hmax, h/EndPI().refatpoint);
-    double hcurve = min (hmax, h/reffak);
-
-
-    CalcPartition (l, h, h1, h2, hcurve, elto0, curvepoints);
-    //  cout << "curvepoints = " << curvepoints << endl;
-
-    dt = 1.0 / n;
-
-    l = 0;
-    j = 1;
-
-    pold = GetPoint (0);
-    lold = 0;
-    oldmark = pold;
-    edgelengthold = 0;
-    Array<int> locsearch;
-
-    for (i = 1; i <= n; i++)
-      {
-	p = GetPoint (i*dt);
-	l = lold + Dist (p, pold);
-	while (j < curvepoints.Size() && (l >= curvepoints[j] || i == n))
-	  {
-	    frac = (curvepoints[j]-lold) / (l-lold);
-	    edgelength = i*dt + (frac-1)*dt;
-	    // mark = pold + frac * (p-pold);
-	    mark = GetPoint (edgelength);
-	  
-	    // cout << "mark = " << mark << " =?= " << GetPoint (edgelength) << endl;
-
-	    {
-	      PointIndex pi1 = -1, pi2 = -1;
-	  
-	      Point3d mark3(mark(0), mark(1), 0);
-	      Point3d oldmark3(oldmark(0), oldmark(1), 0);
-
-	      Vec<3> v (1e-4*h, 1e-4*h, 1e-4*h);
-	      searchtree.GetIntersecting (oldmark3 - v, oldmark3 + v, locsearch);
-
-	      for (int k = 0; k < locsearch.Size(); k++)
-		if ( mesh[PointIndex(locsearch[k])].GetLayer() == layer)
-		  pi1 = locsearch[k];
-	      // if (locsearch.Size()) pi1 = locsearch[0];
-	      
-	      searchtree.GetIntersecting (mark3 - v, mark3 + v, locsearch);
-	      for (int k = 0; k < locsearch.Size(); k++)
-		if ( mesh[PointIndex(locsearch[k])].GetLayer() == layer)
-		  pi2 = locsearch[k];
-	      // if (locsearch.Size()) pi2 = locsearch[0];
-
-	      /*	    
-		for (PointIndex pk = PointIndex::BASE; 
-		pk < mesh.GetNP()+PointIndex::BASE; pk++)
-		{
-		if (Dist (mesh[pk], oldmark3) < 1e-4 * h) pi1 = pk;
-		if (Dist (mesh[pk], mark3) < 1e-4 * h) pi2 = pk;
-		}
-	      */
-	    
-
-	      //	    cout << "pi1 = " << pi1 << endl;
-	      //	    cout << "pi2 = " << pi2 << endl;
-	    
-	      if (pi1 == -1)
-		{
-		  pi1 = mesh.AddPoint(oldmark3, layer);
-		  searchtree.Insert (oldmark3, pi1);
-		}
-	      if (pi2 == -1)
-		{
-		  pi2 = mesh.AddPoint(mark3, layer);
-		  searchtree.Insert (mark3, pi2);
-		}
-
-	      Segment seg;
-	      seg.edgenr = segnr;
-	      seg.si = bc; // segnr;
-	      seg[0] = pi1;
-	      seg[1] = pi2;
-	      seg.domin = leftdom;
-	      seg.domout = rightdom;
-	      seg.epgeominfo[0].edgenr = segnr;
-	      seg.epgeominfo[0].dist = edgelengthold;
-	      seg.epgeominfo[1].edgenr = segnr;
-	      seg.epgeominfo[1].dist = edgelength;
-	      seg.singedge_left = hpref_left;
-	      seg.singedge_right = hpref_right;
-	      mesh.AddSegment (seg);
-	    }
-	
-	    oldmark = mark;
-	    edgelengthold = edgelength;
-	    j++;
-	  }
-    
-	pold = p;
-	lold = l;
-      }
-  }
-
-
-  template<int D>
-  void SplineSeg<D> :: GetPoints (int n, Array<Point<D> > & points)
+  void SplineSeg<D> :: GetPoints (int n, Array<Point<D> > & points) const
   {
     points.SetSize (n);
     if (n >= 2)
@@ -873,19 +725,7 @@ namespace netgen
     return pts[segnr] + rest*Vec<D>(pts[segnr+1]-pts[segnr]);
   }
 
-  
-
-  typedef GeomPoint<2> GeomPoint2d;
-  typedef SplineSeg<2> SplineSegment;
-  typedef LineSeg<2> LineSegment;
-  typedef SplineSeg3<2> SplineSegment3;
-  typedef CircleSeg<2> CircleSegment;
-  typedef DiscretePointsSeg<2> DiscretePointsSegment;
-
-
 }
-
-
 
 
 #endif

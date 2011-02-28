@@ -6,13 +6,11 @@ Spline curve for Mesh generator
 
 #include <mystdlib.h>
 #include <linalg.hpp>
-#include <meshing.hpp>
-#include <geometry2d.hpp>
+#include <gprim.hpp>
+#include "spline.hpp"
 
 namespace netgen
 {
-#include "spline.hpp"
-
 
   // just for testing (JS)
   template <int D>
@@ -236,73 +234,12 @@ namespace netgen
       (b2p - b2*fac1) * v2 +
       (b3p - b3*fac1) * v3;
 
-    /*
-      second = (b1pp/w - b1p*fac1 - b1*fac2) * v1 +
-      (b2pp/w - b2p*fac1 - b2*fac2) * v2 +
-      (b3pp/w - b3p*fac1 - b3*fac2) * v3;
-    */
-    // JS: 2 was missing
     second = (b1pp/w - 2*b1p*fac1 - b1*fac2) * v1 +
       (b2pp/w - 2*b2p*fac1 - b2*fac2) * v2 +
       (b3pp/w - 2*b3p*fac1 - b3*fac2) * v3;
-
   }
 
 
-
-
-
-
-
-
-
-
-
-  void CalcPartition (double l, double h, double h1, double h2,
-		      double hcurve, double elto0, Array<double> & points)
-  {
-    // cout << "calcpart, h = " << h << ", h1 = " << h1 << ", h2 = " << h2 << ", hcurve = " << hcurve << endl;
-    int i, j, n, nel;
-    double sum, t, dt, fun, fperel, oldf, f;
-
-    n = 1000;
-
-    points.SetSize (0);
-
-    sum = 0;
-    dt = l / n;
-    t = 0.5 * dt;
-    for (i = 1; i <= n; i++)
-      {
-	fun = min3 (hcurve, t/elto0 + h1, (l-t)/elto0 + h2);
-	sum += dt / fun;
-	t += dt;
-      }
-
-    nel = int (sum+1);
-    fperel = sum / nel;
-
-    points.Append (0);
-
-    i = 1;
-    oldf = 0;
-    t = 0.5 * dt;
-    for (j = 1; j <= n && i < nel; j++)
-      {
-	fun = min3 (hcurve, t/elto0 + h1, (l-t)/elto0 + h2);
-
-	f = oldf + dt / fun;
-
-	while (f > i * fperel && i < nel)
-	  {
-	    points.Append ( (l/n) * (j-1 +  (i * fperel - oldf) / (f - oldf)) );
-	    i++;
-	  }
-	oldf = f;
-	t += dt;
-      }
-    points.Append (l);
-  }
 
   template<>
   double SplineSeg3<2> :: MaxCurvature(void) const
@@ -337,5 +274,12 @@ namespace netgen
 
   template class  SplineSeg3<2>;
   template class  SplineSeg3<3>;
+
+
+
+
+
+
+
 
 }
