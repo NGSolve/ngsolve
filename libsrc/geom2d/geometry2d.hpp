@@ -12,9 +12,8 @@
 
 
 // #include "../gprim/spline.hpp"
-#include "../gprim/splinegeometry.hpp"
+// #include "../gprim/splinegeometry.hpp"
 #include "geom2dmesh.hpp"
-
 
 namespace netgen
 {

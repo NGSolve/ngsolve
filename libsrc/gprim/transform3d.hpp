@@ -11,6 +11,9 @@
   Affine - Linear mapping in 3D space
  */
 
+namespace netgen
+{
+
 class Transformation3d;
 ostream & operator<< (ostream & ost, Transformation3d & trans);
 
@@ -185,6 +188,6 @@ template <int D>
 ostream & operator<< (ostream & ost, Transformation<D> & trans);
 
 
-
+}
 
 #endif

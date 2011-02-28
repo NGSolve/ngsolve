@@ -9,13 +9,15 @@
 /* *************************************************************************/
 
 
+namespace netgen
+{
 
 /**
   Alternating Digital Tree
  */
 
-#include "../include/mystdlib.h"
-#include "../include/myadt.hpp"
+// #include "../include/mystdlib.h"
+// #include "../include/myadt.hpp"
 
 class ADTreeNode
 {
@@ -478,4 +480,7 @@ public:
 
   const ADTree6 & Tree() const { return *tree; };
 };
+
+}
+
 #endif

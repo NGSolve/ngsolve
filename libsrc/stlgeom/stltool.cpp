@@ -856,7 +856,8 @@ void STLBoundarySeg :: Swap ()
 
 
 STLBoundary :: STLBoundary (STLGeometry * ageometry)
-  : boundary(), geometry(ageometry)
+  : // boundary(), 
+    geometry(ageometry)
 {
   ;
 }

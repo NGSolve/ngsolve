@@ -1,13 +1,6 @@
-#include <mystdlib.h>
-
-#include <myadt.hpp>
-#include <linalg.hpp>
-#include <gprim.hpp>
-
 #include <meshing.hpp>
 
 #include "stlgeom.hpp"
-
 
 namespace netgen
 {
@@ -39,12 +32,14 @@ void STLMeshing (STLGeometry & geom,
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-STLGeometry :: STLGeometry()
+  STLGeometry :: STLGeometry()
+  /*
   : edges(), edgesperpoint(),
     normals(),  externaledges(),
     atlas(), chartmark(), 
     lines(), outerchartspertrig(), vicinity(), markedtrigs(), markedsegs(),
     lineendpoints(), spiralpoints(), selectedmultiedge()
+  */
 {
 	edgedata = new STLEdgeDataList(*this);
   externaledges.SetSize(0);

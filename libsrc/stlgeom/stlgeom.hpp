@@ -21,9 +21,7 @@
 */
 
 
-#include <gprim.hpp>
 #include <meshing.hpp>
-
 
 
 namespace netgen
@@ -35,7 +33,7 @@ namespace netgen
 #include "stltopology.hpp"
 #include "stltool.hpp"
 #include "stlline.hpp"
-
+ 
 
 
 

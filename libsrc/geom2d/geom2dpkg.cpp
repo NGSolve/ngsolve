@@ -1,15 +1,8 @@
-#include <mystdlib.h>
-#include <myadt.hpp>
-#include <linalg.hpp>
-
-
-#include <incvis.hpp>
 #include <meshing.hpp>
 #include <geometry2d.hpp>
-
 #include <visual.hpp>
-#include "vsgeom2d.hpp"
 
+#include "vsgeom2d.hpp"
 
 // extern "C" int Ng_CSG_Init (Tcl_Interp * interp);
 

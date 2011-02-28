@@ -8,19 +8,26 @@
 /* *************************************************************************/
 
 
-namespace netgen
-{
+#include <myadt.hpp>
+#include <linalg.hpp>
+
+
+
+
 #include "geomobjects.hpp"
 #include "geomops.hpp"
 #include "geomfuncs.hpp"
 
 #include "geom2d.hpp"
 #include "geom3d.hpp"
+
 #include "geomtest3d.hpp"
-// #include "rot3d.hpp"
 #include "transform3d.hpp"
-// #include "reftrans.hpp"
+
 #include "adtree.hpp"
-}
+
+#include "spline.hpp"
+#include "splinegeometry.hpp"
+
 
 #endif

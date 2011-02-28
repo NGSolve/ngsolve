@@ -4,8 +4,6 @@
 
 */
 
-
-#include <mystdlib.h>
 #include <meshing.hpp>
 #include <geometry2d.hpp>
 

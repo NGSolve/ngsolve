@@ -1,16 +1,10 @@
-#include <mystdlib.h>
 #include <meshing.hpp>
 #include <geometry2d.hpp>
-
 
 namespace netgen
 {
 
   extern void Optimize2d (Mesh & mesh, MeshingParameters & mp);
-
-
-
-
 
 
 

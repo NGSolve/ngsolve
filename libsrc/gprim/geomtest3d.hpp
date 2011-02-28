@@ -8,6 +8,9 @@
 /* *************************************************************************/
 
 
+namespace netgen
+{
+
 
 extern int
 IntersectTriangleLine (const Point<3> ** tri, const Point<3> ** line);
@@ -79,5 +82,6 @@ extern double MinDistTP2 (const Point3d & tp1, const Point3d & tp2,
 extern double MinDistLL2 (const Point3d & l1p1, const Point3d & l1p2,
 			  const Point3d & l2p1, const Point3d & l2p2);
 
+}
 
 #endif

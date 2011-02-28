@@ -1,9 +1,4 @@
-#include <mystdlib.h>
-#include "incvis.hpp"
-
-#include <myadt.hpp>
 #include <meshing.hpp>
-
 #include <geometry2d.hpp>
 #include <visual.hpp>
 
