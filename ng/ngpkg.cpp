@@ -2906,7 +2906,11 @@ namespace netgen
 
   extern "C" int Ng_Init (Tcl_Interp * interp);
   extern "C" int Ng_CSG_Init (Tcl_Interp * interp);
-  // extern "C" int Ng_stl_Init (Tcl_Interp * interp);
+
+#ifdef _MSC_VER
+  extern "C" int Ng_stl_Init (Tcl_Interp * interp);
+  extern "C" int Ng_geom2d_Init (Tcl_Interp * interp);
+#endif
 
 #ifdef OCCGEOMETRY
   // extern "C" int Ng_occ_Init (Tcl_Interp * interp);
@@ -2927,7 +2931,10 @@ namespace netgen
 #endif
 
     Ng_CSG_Init(interp);
-    // Ng_stl_Init(interp);
+#ifdef _MSC_VER
+    Ng_stl_Init(interp);
+    Ng_geom2d_Init (interp);
+#endif
 
 
     // Ng_Geom2d_Init(interp);
