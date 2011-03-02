@@ -1529,7 +1529,7 @@ namespace netgen
 
 
 // #define OPENGL
-#ifdef OPENGL
+#ifdef OPENGLxx
 
 /* *********************** Draw Surface Meshing **************** */
 
