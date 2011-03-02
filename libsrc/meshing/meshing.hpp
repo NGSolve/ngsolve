@@ -12,20 +12,22 @@
 
 namespace netgen
 {
-
-  extern int printmessage_importance;
+  // extern int printmessage_importance;
 
   class CSGeometry;
+  class NetgenGeometry;
+}
   
   
 #include "msghandler.hpp"
-
 #include "meshtype.hpp"
 #include "localh.hpp"
 #include "meshclass.hpp"
 #include "global.hpp"
 
 
+namespace netgen
+{
 #include "meshtool.hpp"
 #include "ruler2.hpp"
 #include "adfront2.hpp"
@@ -37,17 +39,12 @@ namespace netgen
 #include "adfront3.hpp"
 #include "ruler3.hpp"
 
-#ifndef SMALLLIB
 #define _INCLUDE_MORE
-#endif
-#ifdef LINUX
-#define _INCLUDE_MORE
-#endif
 
-#ifdef _INCLUDE_MORE
+
 #include "meshing3.hpp"
 #include "improve3.hpp"
-#endif
+
 #include "findip.hpp"
 #include "findip2.hpp"
 
@@ -55,23 +52,20 @@ namespace netgen
 #include "curvedelems.hpp"
 #include "clusters.hpp"
 
-#ifdef _INCLUDE_MORE
 #include "meshfunc.hpp"
-#endif
+
 #include "bisect.hpp"
 #include "hprefinement.hpp"
 #include "boundarylayer.hpp"
 #include "specials.hpp"
+}
 
 #include "validate.hpp"
+#include "basegeom.hpp"
 
 #ifdef PARALLEL
 #include "paralleltop.hpp"
-// #include "../parallel/parallelmesh.hpp"
 #endif
-}
 
-
-#include "basegeom.hpp"
 
 #endif
