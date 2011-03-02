@@ -554,6 +554,7 @@ namespace netgen
     virtual VisualScene * GetVisualScene (const NetgenGeometry * geom) const;
   };
 
+	extern CSGeometry * ParseCSG (istream & istr);
 
   NetgenGeometry *  CSGeometryRegister :: Load (string filename) const
   {
@@ -562,7 +563,6 @@ namespace netgen
       {
 	PrintMessage (1, "Load CSG geometry file ", cfilename);
 	
-	extern CSGeometry * ParseCSG (istream & istr);
 
 	ifstream infile(cfilename);
 
