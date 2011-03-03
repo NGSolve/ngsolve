@@ -11,7 +11,7 @@ namespace netgen
 {
 
 
-  extern void MyError (const char * ch);
+  extern DLL_HEADER void MyError (const char * ch);
 
   class Point3d;
   class Vec3d;

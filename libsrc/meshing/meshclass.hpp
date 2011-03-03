@@ -182,9 +182,9 @@ namespace netgen
 
 
     ///
-    Mesh();
+    DLL_HEADER Mesh();
     ///
-    ~Mesh();
+    DLL_HEADER ~Mesh();
 
     Mesh & operator= (const Mesh & mesh2);
   
@@ -214,8 +214,8 @@ namespace netgen
     void SetAllocSize(int nnodes, int nsegs, int nsel, int nel);
 
 
-    PointIndex AddPoint (const Point3d & p, int layer = 1);
-    PointIndex AddPoint (const Point3d & p, int layer, POINTTYPE type);
+    DLL_HEADER PointIndex AddPoint (const Point3d & p, int layer = 1);
+    DLL_HEADER PointIndex AddPoint (const Point3d & p, int layer, POINTTYPE type);
 #ifdef PARALLEL
     PointIndex AddPoint (const Point3d & p, bool aisghost, int layer = 1);
     PointIndex AddPoint (const Point3d & p, bool aisghost, int layer, POINTTYPE type);
@@ -234,7 +234,7 @@ namespace netgen
     T_POINTS & Points() { return points; }
 
 
-    SegmentIndex AddSegment (const Segment & s);
+    DLL_HEADER SegmentIndex AddSegment (const Segment & s);
     void DeleteSegment (int segnr)
     {
       segments.Elem(segnr)[0] = PointIndex::BASE-1;
@@ -257,7 +257,7 @@ namespace netgen
 
 
 
-    SurfaceElementIndex AddSurfaceElement (const Element2d & el);
+    DLL_HEADER SurfaceElementIndex AddSurfaceElement (const Element2d & el);
     void DeleteSurfaceElement (int eli)
     { 
       surfelements.Elem(eli).Delete();
@@ -284,10 +284,10 @@ namespace netgen
     { return surfelements[ei]; }
 
   
-    void RebuildSurfaceElementLists ();
-    void GetSurfaceElementsOfFace (int facenr, Array<SurfaceElementIndex> & sei) const;
+    DLL_HEADER void RebuildSurfaceElementLists ();
+    DLL_HEADER void GetSurfaceElementsOfFace (int facenr, Array<SurfaceElementIndex> & sei) const;
 
-    ElementIndex AddVolumeElement (const Element & el);
+    DLL_HEADER ElementIndex AddVolumeElement (const Element & el);
 
     int GetNE () const { return volelements.Size(); }
 
@@ -311,10 +311,10 @@ namespace netgen
 
 
     ///
-    double ElementError (int eli) const;
+    DLL_HEADER double ElementError (int eli) const;
 
     /// 
-    void AddLockedPoint (PointIndex pi);
+    DLL_HEADER void AddLockedPoint (PointIndex pi);
     ///
     void ClearLockedPoints ();
 
@@ -341,7 +341,7 @@ namespace netgen
        boundary elements without inner element.
        Results are stored in openelements.
        if dom == 0, all sub-domains, else subdomain dom */
-    void FindOpenElements (int dom = 0);
+    DLL_HEADER void FindOpenElements (int dom = 0);
 
   
     /**
@@ -349,11 +349,11 @@ namespace netgen
        and surface elements without neighbours.
        store in opensegmentsy
     */
-    void FindOpenSegments (int surfnr = 0);
+    DLL_HEADER void FindOpenSegments (int surfnr = 0);
     /**
        remove one layer of surface elements
     */
-    void RemoveOneLayerSurfaceElements ();
+    DLL_HEADER void RemoveOneLayerSurfaceElements ();
 
 
     int GetNOpenSegments () { return opensegments.Size(); }
@@ -363,43 +363,43 @@ namespace netgen
        Checks overlap of boundary
        return == 1, iff overlap
     */
-    int CheckOverlappingBoundary ();
+    DLL_HEADER int CheckOverlappingBoundary ();
     /**
        Checks consistent boundary
        return == 0, everything ok
     */
-    int CheckConsistentBoundary () const;
+    DLL_HEADER int CheckConsistentBoundary () const;
 
     /*
       checks element orientation
     */
-    int CheckVolumeMesh () const;
+    DLL_HEADER int CheckVolumeMesh () const;
 
 
     /**
        finds average h of surface surfnr if surfnr > 0,
        else of all surfaces.
     */
-    double AverageH (int surfnr = 0) const;
+    DLL_HEADER double AverageH (int surfnr = 0) const;
     /// Calculates localh 
-    void CalcLocalH ();
+    DLL_HEADER void CalcLocalH ();
     ///
-    void SetLocalH (const Point3d & pmin, const Point3d & pmax, double grading);
+    DLL_HEADER void SetLocalH (const Point3d & pmin, const Point3d & pmax, double grading);
     ///
-    void RestrictLocalH (const Point3d & p, double hloc);
+    DLL_HEADER void RestrictLocalH (const Point3d & p, double hloc);
     ///
-    void RestrictLocalHLine (const Point3d & p1, const Point3d & p2, 
+    DLL_HEADER void RestrictLocalHLine (const Point3d & p1, const Point3d & p2, 
 			     double hloc);
     /// number of elements per radius
-    void CalcLocalHFromSurfaceCurvature(double elperr);
+    DLL_HEADER void CalcLocalHFromSurfaceCurvature(double elperr);
     ///
-    void CalcLocalHFromPointDistances(void);
+    DLL_HEADER void CalcLocalHFromPointDistances(void);
     ///
-    void RestrictLocalH (resthtype rht, int nr, double loch);
+    DLL_HEADER void RestrictLocalH (resthtype rht, int nr, double loch);
     ///
-    void LoadLocalMeshSize (const char * meshsizefilename);
+    DLL_HEADER void LoadLocalMeshSize (const char * meshsizefilename);
     ///
-    void SetGlobalH (double h);
+    DLL_HEADER void SetGlobalH (double h);
     ///
     void SetMinimalH (double h);
     ///
@@ -416,10 +416,10 @@ namespace netgen
     bool LocalHFunctionGenerated(void) const { return (lochfunc != NULL); }
 
     /// Find bounding box
-    void GetBox (Point3d & pmin, Point3d & pmax, int dom = -1) const;
+    DLL_HEADER void GetBox (Point3d & pmin, Point3d & pmax, int dom = -1) const;
 
     /// Find bounding box of points of typ ptyp or less
-    void GetBox (Point3d & pmin, Point3d & pmax, POINTTYPE ptyp ) const;
+    DLL_HEADER void GetBox (Point3d & pmin, Point3d & pmax, POINTTYPE ptyp ) const;
 
     ///
     int GetNOpenElements() const
@@ -470,7 +470,7 @@ namespace netgen
     /**
        Remove unused points. etc.
     */
-    void Compress ();
+    DLL_HEADER void Compress ();
 
     ///
     void Save (ostream & outfile) const;
@@ -574,13 +574,13 @@ namespace netgen
     { return edgedecoding.Append(fd) - 1; }
 
     ///
-    void SetMaterial (int domnr, const char * mat);
+    DLL_HEADER void SetMaterial (int domnr, const char * mat);
     ///
     const char * GetMaterial (int domnr) const;
     
-    void SetNBCNames ( int nbcn );
+    DLL_HEADER void SetNBCNames ( int nbcn );
 
-    void SetBCName ( int bcnr, const string & abcname );
+    DLL_HEADER void SetBCName ( int bcnr, const string & abcname );
 
     string GetBCName ( int bcnr ) const;
 

@@ -25,12 +25,14 @@
 
 
 #ifdef WIN32
-    #define DLL_HEADER   __declspec(dllexport)
+   #ifdef NGINTERFACE_EXPORTS
+      #define DLL_HEADER   __declspec(dllexport)
+   #else
+      #define DLL_HEADER   __declspec(dllimport)
+   #endif
 #else
-    #define DLL_HEADER 
+   #define DLL_HEADER 
 #endif
-
-
 
 
 #define noDEMOVERSION

@@ -39,8 +39,8 @@ namespace netgen
 
 
 
-  extern int GetTimeStamp();
-  extern int NextTimeStamp();
+  extern DLL_HEADER int GetTimeStamp();
+  extern DLL_HEADER int NextTimeStamp();
 
   class PointGeomInfo
   {
@@ -335,7 +335,7 @@ namespace netgen
     ///
     Element2d (int anp);
     ///
-    Element2d (ELEMENT_TYPE type);
+    DLL_HEADER Element2d (ELEMENT_TYPE type);
     ///
     Element2d (int pi1, int pi2, int pi3);
     ///
@@ -802,8 +802,8 @@ namespace netgen
   {
   public:
     ///
-    Segment();
-    Segment (const Segment& other);
+    DLL_HEADER Segment();
+    DLL_HEADER Segment (const Segment& other);
 
     ~Segment()
     { ; }
@@ -927,13 +927,13 @@ namespace netgen
     double domout_singular;
 
   public:
-    FaceDescriptor();
-    FaceDescriptor(int surfnri, int domini, int domouti, int tlosurfi);
-    FaceDescriptor(const Segment & seg);
-    FaceDescriptor(const FaceDescriptor& other);
-    ~FaceDescriptor()  { ; }
+    DLL_HEADER FaceDescriptor();
+    DLL_HEADER FaceDescriptor(int surfnri, int domini, int domouti, int tlosurfi);
+    DLL_HEADER FaceDescriptor(const Segment & seg);
+    DLL_HEADER FaceDescriptor(const FaceDescriptor& other);
+    DLL_HEADER ~FaceDescriptor()  { ; }
 
-    int SegmentFits (const Segment & seg);
+    DLL_HEADER int SegmentFits (const Segment & seg);
 
     int SurfNr () const { return surfnr; }
     int DomainIn () const { return domin; }
@@ -1231,17 +1231,17 @@ namespace netgen
 
   public:
     ///
-    Identifications (class Mesh & amesh);
+    DLL_HEADER Identifications (class Mesh & amesh);
     ///
-    ~Identifications ();
+    DLL_HEADER ~Identifications ();
 
-    void Delete ();
+    DLL_HEADER void Delete ();
 
     /*
       Identify points pi1 and pi2, due to
       identification nr identnr
     */
-    void Add (PointIndex pi1, PointIndex pi2, int identnr);
+    DLL_HEADER void Add (PointIndex pi1, PointIndex pi2, int identnr);
 
 
     int Get (PointIndex pi1, PointIndex pi2) const;

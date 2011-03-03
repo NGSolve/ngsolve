@@ -28,10 +28,10 @@ namespace netgen
     int nr;
 
   public:
-    Identification (int anr, const CSGeometry & ageom);
-    virtual ~Identification ();
-    virtual void Print (ostream & ost) const = 0;
-    virtual void GetData (ostream & ost) const = 0;
+    DLL_HEADER Identification (int anr, const CSGeometry & ageom);
+    DLL_HEADER virtual ~Identification ();
+    DLL_HEADER virtual void Print (ostream & ost) const = 0;
+    DLL_HEADER virtual void GetData (ostream & ost) const = 0;
 
     /// obsolete
     //  virtual void IdentifySpecialPoints (Array<class SpecialPoint> & points);

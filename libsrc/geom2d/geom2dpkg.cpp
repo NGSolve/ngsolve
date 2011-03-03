@@ -8,7 +8,9 @@
 
 namespace netgen
 {
-  extern NetgenGeometry * ng_geometry;
+	
+
+  extern DLL_HEADER NetgenGeometry * ng_geometry;
   static VisualSceneGeometry2d vsgeom2d;
 
 

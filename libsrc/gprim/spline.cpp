@@ -270,6 +270,66 @@ namespace netgen
   }
 
 
+  template<int D>
+  void SplineSeg3<D> :: LineIntersections (const double a, const double b, const double c,
+					   Array < Point<D> > & points, const double eps) const
+  {
+    points.SetSize(0);
+
+    double t;
+
+    const double c1 = a*p1(0) - sqrt(2.)*a*p2(0) + a*p3(0) 
+      + b*p1(1) - sqrt(2.)*b*p2(1) + b*p3(1) 
+      + (2.-sqrt(2.))*c;
+    const double c2 = -2.*a*p1(0) + sqrt(2.)*a*p2(0) -2.*b*p1(1) + sqrt(2.)*b*p2(1) + (sqrt(2.)-2.)*c;
+    const double c3 = a*p1(0) + b*p1(1) + c;
+
+    if(fabs(c1) < 1e-20)
+      {
+	if(fabs(c2) < 1e-20)
+	  return;
+
+	t = -c3/c2;
+	if((t > -eps) && (t < 1.+eps))
+	  points.Append(GetPoint(t));
+	return;
+      }
+
+    const double discr = c2*c2-4.*c1*c3;
+
+    if(discr < 0)
+      return;
+
+    if(fabs(discr/(c1*c1)) < 1e-14)
+      {
+	t = -0.5*c2/c1;
+	if((t > -eps) && (t < 1.+eps))
+	  points.Append(GetPoint(t));
+	return;
+      }
+
+    t = (-c2 + sqrt(discr))/(2.*c1);
+    if((t > -eps) && (t < 1.+eps))
+      points.Append(GetPoint(t));
+
+    t = (-c2 - sqrt(discr))/(2.*c1);
+    if((t > -eps) && (t < 1.+eps))
+      points.Append(GetPoint(t));
+  }
+
+
+  template < int D >
+  void SplineSeg3<D> :: GetRawData (Array<double> & data) const
+  {
+    data.Append(3);
+    for(int i=0; i<D; i++)
+      data.Append(p1[i]);
+    for(int i=0; i<D; i++)
+      data.Append(p2[i]);
+    for(int i=0; i<D; i++)
+      data.Append(p3[i]);
+  }
+
 
 
   template class  SplineSeg3<2>;

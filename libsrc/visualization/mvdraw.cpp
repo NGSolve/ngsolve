@@ -22,9 +22,9 @@
 
 namespace netgen
 {
-  Point3d VisualScene :: center;
-  double VisualScene :: rad;
-  GLdouble VisualScene :: backcolor;
+  DLL_HEADER Point3d VisualScene :: center;
+  DLL_HEADER double VisualScene :: rad;
+  DLL_HEADER GLdouble VisualScene :: backcolor;
 
   /*
 #if TOGL_MAJOR_VERSION!=2
@@ -97,8 +97,8 @@ namespace netgen
   }
 
 
-  extern void Render();
-  void Render ()
+  extern DLL_HEADER void Render();
+  DLL_HEADER void Render ()
   {
     multithread.redraw = 1;
   }

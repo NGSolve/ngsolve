@@ -17,8 +17,8 @@ extern "C" int Ng_CSG_Init (Tcl_Interp * interp);
 
 namespace netgen
 {
-  extern NetgenGeometry * ng_geometry;
-  extern AutoPtr<Mesh> mesh;
+  extern DLL_HEADER NetgenGeometry * ng_geometry;
+  extern DLL_HEADER AutoPtr<Mesh> mesh;
 
   static VisualSceneGeometry vsgeom;
  

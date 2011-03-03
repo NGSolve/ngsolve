@@ -13,7 +13,7 @@ struct Tcl_Interp;
 namespace netgen
 {
 
-  class NetgenGeometry
+  class DLL_HEADER NetgenGeometry
   {
   public:
     virtual ~NetgenGeometry () { ; }
@@ -31,7 +31,7 @@ namespace netgen
 
 
 
-  class GeometryRegister
+  class DLL_HEADER GeometryRegister
   {
   public:
     virtual ~GeometryRegister();
@@ -42,7 +42,7 @@ namespace netgen
     virtual void SetParameters (Tcl_Interp * interp) { ; }
   };
 
-  extern Array<GeometryRegister*> geometryregister; 
+  extern DLL_HEADER Array<GeometryRegister*> geometryregister; 
 }
 
 

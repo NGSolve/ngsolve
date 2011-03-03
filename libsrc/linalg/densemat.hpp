@@ -21,16 +21,16 @@ protected:
 
 public:
   ///
-  DenseMatrix ();
+  DLL_HEADER DenseMatrix ();
   ///
-  DenseMatrix (int h, int w = 0);
+  DLL_HEADER DenseMatrix (int h, int w = 0);
   ///
-  DenseMatrix (const DenseMatrix & m2);
+  DLL_HEADER DenseMatrix (const DenseMatrix & m2);
   ///
-  ~DenseMatrix ();
+  DLL_HEADER ~DenseMatrix ();
 
   ///
-  void SetSize (int h, int w = 0);
+  DLL_HEADER void SetSize (int h, int w = 0);
 
   int Height() const { return height; }
   int Width() const {return width; }
@@ -41,19 +41,19 @@ public:
   double operator() (int i) const { return data[i]; }
 
   ///
-  DenseMatrix & operator= (const DenseMatrix & m2);
+  DLL_HEADER DenseMatrix & operator= (const DenseMatrix & m2);
   ///
-  DenseMatrix & operator+= (const DenseMatrix & m2);
+  DLL_HEADER DenseMatrix & operator+= (const DenseMatrix & m2);
   ///
-  DenseMatrix & operator-= (const DenseMatrix & m2);
+  DLL_HEADER DenseMatrix & operator-= (const DenseMatrix & m2);
 
   ///
-  DenseMatrix & operator= (double v);
+  DLL_HEADER DenseMatrix & operator= (double v);
   ///
-  DenseMatrix & operator*= (double v);
+  DLL_HEADER DenseMatrix & operator*= (double v);
 
   ///
-  void Mult (const FlatVector & v, FlatVector & prod) const
+  DLL_HEADER void Mult (const FlatVector & v, FlatVector & prod) const
   {
     double sum;
     const double * mp, * sp;
@@ -106,11 +106,11 @@ public:
   }
 
   ///
-  void MultTrans (const Vector & v, Vector & prod) const;
+  DLL_HEADER void MultTrans (const Vector & v, Vector & prod) const;
   ///
-  void Residuum (const Vector & x, const Vector & b, Vector & res) const;
+  DLL_HEADER void Residuum (const Vector & x, const Vector & b, Vector & res) const;
   ///
-  double Det () const;
+  DLL_HEADER double Det () const;
 
   ///
   friend DenseMatrix operator* (const DenseMatrix & m1, const DenseMatrix & m2);
@@ -122,17 +122,17 @@ public:
   ///
   friend void Mult (const DenseMatrix & m1, const DenseMatrix & m2, DenseMatrix & m3);
   ///
-  friend void CalcInverse (const DenseMatrix & m1, DenseMatrix & m2);
+//  friend void CalcInverse (const DenseMatrix & m1, DenseMatrix & m2);
   ///
   friend void CalcAAt (const DenseMatrix & a, DenseMatrix & m2);
   ///
-  friend void CalcAtA (const DenseMatrix & a, DenseMatrix & m2);
+//  friend void CalcAtA (const DenseMatrix & a, DenseMatrix & m2);
   ///
   friend void CalcABt (const DenseMatrix & a, const DenseMatrix & b, DenseMatrix & m2);
   ///
   friend void CalcAtB (const DenseMatrix & a, const DenseMatrix & b, DenseMatrix & m2);
   ///
-  void Solve (const Vector & b, Vector & x) const;
+  DLL_HEADER void Solve (const Vector & b, Vector & x) const;
   ///
   void SolveDestroy (const Vector & b, Vector & x);
   ///
@@ -270,8 +270,8 @@ extern ostream & operator<< (ostream & ost, const MatrixFixWidth<WIDTH> & m)
 };
 
 
-extern void CalcAtA (const DenseMatrix & a, DenseMatrix & m2);
-extern void CalcInverse (const DenseMatrix & m1, DenseMatrix & m2);
+extern DLL_HEADER void CalcAtA (const DenseMatrix & a, DenseMatrix & m2);
+extern DLL_HEADER void CalcInverse (const DenseMatrix & m1, DenseMatrix & m2);
 
 
 #endif

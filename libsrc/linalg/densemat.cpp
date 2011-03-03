@@ -244,12 +244,12 @@ namespace netgen
   {
     double det;
 
-    if (m1.width != m1.height)
+    if (m1.Width() != m1.Height())
       {
         (*myerr) << "CalcInverse: matrix not symmetric" << endl;
         return;
       }
-    if (m1.width != m2.width || m1.height != m2.height)
+    if (m1.Width() != m2.Width() || m1.Height() != m2.Height())
       {
         (*myerr) << "CalcInverse: dim(m2) != dim(m1)" << endl;
         return;
@@ -267,7 +267,7 @@ namespace netgen
           }
 
         det = 1.0 / det;
-        switch (m1.width)
+        switch (m1.Width())
           {
           case 1:
             {

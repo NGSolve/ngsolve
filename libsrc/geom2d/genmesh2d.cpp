@@ -528,7 +528,7 @@ namespace netgen
     mesh -> SetNextMajorTimeStamp();
 
 
-    extern void Render();
+    extern DLL_HEADER void Render();
     Render();
   }
 

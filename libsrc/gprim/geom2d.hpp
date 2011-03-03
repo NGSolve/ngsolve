@@ -41,10 +41,10 @@ namespace netgen
   inline Vec2d operator- (const Vec2d & p1, const Vec2d & v);
   inline Vec2d operator+ (const Vec2d & p1, const Vec2d & v);
   inline Vec2d operator* (double scal, const Vec2d & v);
-  double Angle (const Vec2d & v);
-  double FastAngle (const Vec2d & v);
-  double Angle (const Vec2d & v1, const Vec2d & v2);
-  double FastAngle (const Vec2d & v1, const Vec2d & v2);
+  DLL_HEADER double Angle (const Vec2d & v);
+  DLL_HEADER double FastAngle (const Vec2d & v);
+  DLL_HEADER double Angle (const Vec2d & v1, const Vec2d & v2);
+  DLL_HEADER double FastAngle (const Vec2d & v1, const Vec2d & v2);
   ostream & operator<<(ostream  & s, const Vec2d & v);
   double Dist2(const Line2d & g, const Line2d & h );		// GH
   int Near (const Point2d & p1, const Point2d & p2, const double eps);
@@ -54,8 +54,8 @@ namespace netgen
   int IsOnLongLine (const Line2d & l, const Point2d & p);
   int Hit (const Line2d & l1, const Line2d & l2, double heps = EPSGEOM);
   ostream & operator<<(ostream  & s, const Line2d & l);
-  Point2d CrossPoint (const PLine2d & l1, const PLine2d & l2);
-  Point2d CrossPoint (const Line2d & l1, const Line2d & l2);
+  DLL_HEADER Point2d CrossPoint (const PLine2d & l1, const PLine2d & l2);
+  DLL_HEADER Point2d CrossPoint (const Line2d & l1, const Line2d & l2);
   int Parallel (const PLine2d & l1, const PLine2d & l2, double peps = EPSGEOM);
   int IsOnLine (const PLine2d & l, const Point2d & p, double heps = EPSGEOM);
   int IsOnLongLine (const PLine2d & l, const Point2d & p);
@@ -290,13 +290,13 @@ namespace netgen
     ///						Angle in [0,2*PI)
 
     ///
-    friend double Angle (const Vec2d & v);
+    friend DLL_HEADER double Angle (const Vec2d & v);
     ///
-    friend double FastAngle (const Vec2d & v);
+    friend DLL_HEADER double FastAngle (const Vec2d & v);
     ///
-    friend double Angle (const Vec2d & v1, const Vec2d & v2);
+    friend DLL_HEADER double Angle (const Vec2d & v1, const Vec2d & v2);
     ///
-    friend double FastAngle (const Vec2d & v1, const Vec2d & v2);
+    friend DLL_HEADER double FastAngle (const Vec2d & v1, const Vec2d & v2);
 
     ///
     friend ostream & operator<<(ostream  & s, const Vec2d & v);
@@ -356,7 +356,7 @@ namespace netgen
     friend double Dist2(const Line2d & g, const Line2d & h );		// GH
 
     ///
-    friend Point2d CrossPoint (const Line2d & l1, const Line2d & l2);
+    friend DLL_HEADER Point2d CrossPoint (const Line2d & l1, const Line2d & l2);
     /// returns 1 iff parallel
     friend int CrossPointBarycentric (const Line2d & l1, const Line2d & l2,
 				      double & lam1, double & lam2);

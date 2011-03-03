@@ -19,19 +19,19 @@ namespace netgen
   class VisualScene
   {
   protected:
-    static Point3d center;
-    static double rad;
+    static DLL_HEADER Point3d center;
+    static DLL_HEADER double rad;
 
     static float lookatmat[16];
     static float transmat[16];
     static float rotmat[16];
     static float centermat[16];
-    static float transformationmat[16];
+    static DLL_HEADER float transformationmat[16];
 
     GLdouble clipplane[4];
 
     int changeval;
-    static GLdouble backcolor;
+    static DLL_HEADER GLdouble backcolor;
 
     static int selface;
     static int selelement;
@@ -52,42 +52,42 @@ namespace netgen
 
 
   public:
-    VisualScene ();
-    virtual ~VisualScene();
+    DLL_HEADER VisualScene ();
+    DLL_HEADER virtual ~VisualScene();
 
-    virtual void BuildScene (int zoomall = 0);
-    virtual void DrawScene ();
+    DLL_HEADER virtual void BuildScene (int zoomall = 0);
+    DLL_HEADER virtual void DrawScene ();
   
-    void CalcTransformationMatrices();
-    void StandardRotation (const char * dir);
-    void ArbitraryRotation (const Array<double> & alpha, const Array<Vec3d> & vec);
-    void ArbitraryRotation (const double alpha, const Vec3d & vec);
+    DLL_HEADER void CalcTransformationMatrices();
+    DLL_HEADER void StandardRotation (const char * dir);
+    DLL_HEADER void ArbitraryRotation (const Array<double> & alpha, const Array<Vec3d> & vec);
+    DLL_HEADER void ArbitraryRotation (const double alpha, const Vec3d & vec);
 
-    void MouseMove(int oldx, int oldy,
+    DLL_HEADER void MouseMove(int oldx, int oldy,
                    int newx, int newy,
                    char mode);
 
-    void LookAt (const Point<3> & cam, const Point<3> & obj,
+    DLL_HEADER void LookAt (const Point<3> & cam, const Point<3> & obj,
                  const Point<3> & camup);
 
-    void SetClippingPlane ();
+    DLL_HEADER void SetClippingPlane ();
 
-    virtual void MouseDblClick (int px, int py);
+    DLL_HEADER virtual void MouseDblClick (int px, int py);
 
-    void SetLight ();
+    DLL_HEADER void SetLight ();
     static void SetBackGroundColor (double col)
     { backcolor = col; }
 
-    void CreateTexture (int ncols, int linear, int typ = GL_DECAL);
-    void DrawColorBar (double minval, double maxval, int logscale = 0, bool linear = 1);
-    void DrawCoordinateCross ();
-    void DrawNetgenLogo ();
-    void SetOpenGlColor(double val, double valmin, double valmax, int logscale = 0);
+    DLL_HEADER void CreateTexture (int ncols, int linear, int typ = GL_DECAL);
+    DLL_HEADER void DrawColorBar (double minval, double maxval, int logscale = 0, bool linear = 1);
+    DLL_HEADER void DrawCoordinateCross ();
+    DLL_HEADER void DrawNetgenLogo ();
+    DLL_HEADER void SetOpenGlColor(double val, double valmin, double valmax, int logscale = 0);
 
 
 #ifdef PARALLELGL
-    void InitParallelGL ();
-    void Broadcast ();
+    DLL_HEADER void InitParallelGL ();
+    DLL_HEADER void Broadcast ();
 #endif 
   };
 

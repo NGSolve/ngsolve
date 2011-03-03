@@ -60,7 +60,7 @@ namespace netgen
       
 	glBegin (GL_LINE_STRIP);
 	for (int j = 0; j < points.Size(); j++)
-	  glVertex3f (points[j](0), points[j](1), 0);
+	  glVertex3d (points[j](0), points[j](1), 0);
 	glEnd(); 
       }
 
@@ -76,8 +76,8 @@ namespace netgen
 	    glBegin (GL_LINES);
 	    for (int j = 1; j < 5; j++)
 	      {
-		glVertex3f (points[j](0), points[j](1), 0);
-		glVertex3f (otherpoints[j](0), otherpoints[j](1), 0);
+		glVertex3d (points[j](0), points[j](1), 0);
+		glVertex3d (otherpoints[j](0), otherpoints[j](1), 0);
 	      }
 	    glEnd ();
 	  }

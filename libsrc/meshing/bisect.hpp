@@ -38,7 +38,7 @@ extern void ZRefinement (Mesh &, const class NetgenGeometry *,
 
 
 
-class Refinement
+class DLL_HEADER Refinement
 {
   MeshOptimize2d * optimizer2d;
 

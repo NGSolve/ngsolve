@@ -4,7 +4,7 @@
 namespace netgen
 {
 
-  void Optimize2d (Mesh & mesh, MeshingParameters & mp)
+  DLL_HEADER void Optimize2d (Mesh & mesh, MeshingParameters & mp)
   {
     int i;
 
