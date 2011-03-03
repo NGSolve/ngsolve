@@ -320,7 +320,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w64\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w64\include&quot;;$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;MSVC_EXPRESS;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -1076,11 +1076,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\general\myadt.hpp"
+				RelativePath="..\libsrc\include\myadt.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\myadt.hpp"
+				RelativePath="..\libsrc\general\myadt.hpp"
 				>
 			</File>
 			<File
@@ -1224,6 +1224,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\gprim\spline.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\geom2d\spline2d.hpp"
 				>
 			</File>
@@ -1233,6 +1237,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\geom2d\splinegeometry.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\gprim\splinegeometry.hpp"
 				>
 			</File>
 			<File
@@ -1312,11 +1320,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\visualization\visual.hpp"
+				RelativePath="..\libsrc\include\visual.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\visual.hpp"
+				RelativePath="..\libsrc\visualization\visual.hpp"
 				>
 			</File>
 			<File
@@ -1482,27 +1490,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\geom2d\genmesh2d.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\libsrc\gprim\geom2d.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\geom2d\geom2dmesh.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\geom2d\geom2dpkg.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\libsrc\gprim\geom3d.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\geom2d\geometry2d.cpp"
 				>
 			</File>
 			<File
@@ -1879,10 +1871,6 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\visualization\vsfieldlines.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\geom2d\vsgeom2d.cpp"
 				>
 			</File>
 			<File
