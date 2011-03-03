@@ -509,7 +509,7 @@ namespace netgen
      	glTexImage1D (GL_TEXTURE_1D, 0, 4, ncols, 0, GL_RGBA, GL_UNSIGNED_BYTE, colortexture);
 	glTexImage2D (GL_TEXTURE_2D, 0, 4, ncols, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, colortexture);
 
-	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, typ);  // DECAL or MODULATE
+	glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, typ);  // DECAL or MODULATE
 	
 	GLfloat bcol[] = { 1, 1, 1, 1.0 };
 	glTexParameterfv (GL_TEXTURE_1D, GL_TEXTURE_BORDER_COLOR, bcol);
