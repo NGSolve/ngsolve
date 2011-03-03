@@ -58,8 +58,12 @@ namespace netgen
 }
 
 
- using namespace netgen;
+using namespace netgen;
+#ifdef WIN32
+extern "C" __declspec(dllexport) int Ng_geom2d_Init (Tcl_Interp * interp);
+#else
 extern "C" int Ng_geom2d_Init (Tcl_Interp * interp);
+#endif
 
 int Ng_geom2d_Init (Tcl_Interp * interp)
 {
