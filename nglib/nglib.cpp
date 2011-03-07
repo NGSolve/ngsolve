@@ -22,6 +22,8 @@
 #include <occgeom.hpp>
 #endif
 
+#include <nginterface.h>
+
 
 namespace netgen {
    extern void MeshFromSpline2D (SplineGeometry2d & geometry,
@@ -1207,4 +1209,13 @@ namespace netgen
       ; 
    }
 } // End of namespace netgen
+
+
+
+
+void Ng_Redraw () { ; }
+void Ng_ClearSolutionData () { ; }
+void Ng_SetSolutionData (Ng_SolutionData * soldata) { ; }
+void Ng_InitSolutionData (Ng_SolutionData * soldata) { ; }
+
 

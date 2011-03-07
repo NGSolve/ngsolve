@@ -31,9 +31,8 @@ The interface between the GUI and the netgen library
 
 extern bool nodisplay;
 
-
-// #include <nginterface.h>
-extern "C" void RunParallel ( void * (*fun)(void *), void * in);
+#include <nginterface.h>
+// extern "C" void RunParallel ( void * (*fun)(void *), void * in);
 
 
 
@@ -2637,6 +2636,157 @@ namespace netgen
 #endif
 
 
+  // from ng_interface
+  void Ng_SetVisualizationParameter (const char * name, const char * value)
+  {
+    // #ifdef OPENGL
+    // #ifndef NOTCL
+    char buf[100];
+    sprintf (buf, "visoptions.%s", name);
+    if (printmessage_importance>0)
+      {
+	cout << "name = " << name << ", value = " << value << endl;
+	cout << "set tcl-variable " << buf << " to " << value << endl;
+      }
+    Tcl_SetVar (tcl_interp, buf, const_cast<char*> (value), 0);
+    Tcl_Eval (tcl_interp, "Ng_Vis_Set parameters;");
+    // #endif
+    // #endif
+  }
+}
+
+
+using namespace netgen;
+  void Ng_InitSolutionData (Ng_SolutionData * soldata)
+{
+
+  soldata -> name = NULL;
+  soldata -> data = NULL;
+  soldata -> components = 1;
+  soldata -> dist = 1;
+  soldata -> order = 1;
+  soldata -> iscomplex = 0;
+  soldata -> draw_surface = 1;
+  soldata -> draw_volume = 1;
+  soldata -> soltype = NG_SOLUTION_NODAL;
+  soldata -> solclass = 0;
+}
+
+void Ng_SetSolutionData (Ng_SolutionData * soldata)
+{
+#ifdef OPENGL
+  //   vssolution.ClearSolutionData ();
+  VisualSceneSolution::SolData * vss = new VisualSceneSolution::SolData;
+
+  vss->name = new char[strlen (soldata->name)+1];
+  strcpy (vss->name, soldata->name);
+
+  vss->data = soldata->data;
+  vss->components = soldata->components;
+  vss->dist = soldata->dist;
+  vss->order = soldata->order;
+  vss->iscomplex = bool(soldata->iscomplex);
+  vss->draw_surface = soldata->draw_surface;
+  vss->draw_volume = soldata->draw_volume;
+  vss->soltype = VisualSceneSolution::SolType (soldata->soltype);
+  vss->solclass = soldata->solclass;
+  vssolution.AddSolutionData (vss);
+#endif
+}
+
+void Ng_ClearSolutionData ()
+{
+#ifdef OPENGL
+  vssolution.ClearSolutionData();
+#endif
+}
+
+
+
+namespace netgen
+{
+  extern void Render ();
+}
+
+void Ng_Redraw ()
+{
+#ifdef OPENGL
+  extern bool nodisplay; // he: global in ngappinit.cpp
+  if (!nodisplay)
+    {
+      netgen::vssolution.UpdateSolutionTimeStamp();
+      Render();
+    }
+#endif
+}
+
+
+
+
+
+namespace netgen
+{
+
+
+int firsttime = 1;
+int animcnt = 0;
+void PlayAnimFile(const char* name, int speed, int maxcnt)
+{
+  //extern Mesh * mesh;
+
+  /*
+    if (mesh.Ptr()) mesh->DeleteMesh();
+    if (!mesh.Ptr()) mesh = new Mesh();
+  */
+  mesh.Reset (new Mesh());
+
+  int ne, np, i;
+
+  char str[80];
+  char str2[80];
+
+  //int tend = 5000;
+  //  for (ti = 1; ti <= tend; ti++)
+  //{
+  int rti = (animcnt%(maxcnt-1)) + 1;
+  animcnt+=speed;
+  
+  sprintf(str2,"%05i.sol",rti);
+  strcpy(str,"mbssol/");
+  strcat(str,name);
+  strcat(str,str2);
+
+  if (printmessage_importance>0)
+    cout << "read file '" << str << "'" << endl;
+  
+  ifstream infile(str);
+  infile >> ne;
+  for (i = 1; i <= ne; i++)
+    {
+      int j;
+      Element2d tri(TRIG);
+      tri.SetIndex(1); //faceind
+      
+      for (j = 1; j <= 3; j++)
+	infile >> tri.PNum(j);
+
+      infile >> np;
+      for (i = 1; i <= np; i++)
+	{
+	  Point3d p;
+	  infile >> p.X() >> p.Y() >> p.Z();
+	  if (firsttime)
+	    mesh->AddPoint (p);
+	  else
+	    mesh->Point(i) = Point<3> (p);
+	}
+
+      //firsttime = 0;
+      Ng_Redraw();
+    }
+}
+
+
 
 
   int Ng_SetVisParameters  (ClientData clientData,
@@ -2916,7 +3066,7 @@ namespace netgen
   // extern "C" int Ng_occ_Init (Tcl_Interp * interp);
 #endif
 
-  // extern "C" int Ng_Geom2d_Init (Tcl_Interp * interp);
+  // extern "C" int Ng_Geom2d_Init (Tcl_Interp * interp); 
 
   //   int main_Eero (ClientData clientData,
   // 	       Tcl_Interp * interp,

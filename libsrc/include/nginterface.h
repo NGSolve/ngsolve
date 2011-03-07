@@ -215,6 +215,8 @@ extern "C" {
   DLL_HEADER const NG_EDGE * Ng_ME_GetEdges (NG_ELEMENT_TYPE et);
   DLL_HEADER const NG_FACE * Ng_ME_GetFaces (NG_ELEMENT_TYPE et);
 
+  DLL_HEADER void Ng_UpdateTopology();
+
   DLL_HEADER int Ng_GetNEdges();
   DLL_HEADER int Ng_GetNFaces();
 
@@ -391,6 +393,10 @@ extern "C" {
   // if qualityloss is not equal to NULL at input, a (1-based) list of qualitylosses (due to projection)
   // is saved in *qualityloss, its size is the return value
   DLL_HEADER int Ng_Bisect_WithInfo ( const char * refinementfile, double ** qualityloss);
+
+  typedef void * Ng_Mesh;
+  DLL_HEADER Ng_Mesh Ng_SelectMesh (Ng_Mesh mesh);
+
 #ifdef __cplusplus
 }
 #endif
