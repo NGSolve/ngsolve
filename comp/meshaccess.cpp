@@ -29,6 +29,7 @@ namespace ngcomp
 
   MeshAccess :: MeshAccess ()
   {
+    Ng_UpdateTopology();  // for netgen/ngsolve stand alone (pillendose)
     UpdateBuffers();
   }
 

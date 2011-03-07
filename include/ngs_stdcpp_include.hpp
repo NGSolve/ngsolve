@@ -4,8 +4,10 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-#else
-#define VERSION "4.9.13"
+#endif
+
+#ifndef VERSION
+#define VERSION "4.9.14-dev"
 #endif
 
 
