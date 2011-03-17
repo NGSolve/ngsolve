@@ -440,10 +440,6 @@
 					RelativePath="..\comp\vectorfacetfespace.cpp"
 					>
 				</File>
-				<File
-					RelativePath="..\comp\wirebasket.cpp"
-					>
-				</File>
 			</Filter>
 			<Filter
 				Name="basiclinalg"
@@ -889,10 +885,6 @@
 				</File>
 				<File
 					RelativePath="..\comp\vectorfacetfespace.hpp"
-					>
-				</File>
-				<File
-					RelativePath="..\comp\wirebasket.hpp"
 					>
 				</File>
 			</Filter>
