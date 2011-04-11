@@ -107,7 +107,6 @@ namespace ngfem
 	  const FEL & fel = static_cast<const FEL&> (bfel);
 	  int ndof = fel.GetNDof();
 
-	  // elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
 	  elmat = 0;
 	
 	  FlatMatrixFixHeight<DIM_DMAT, Complex> bmat (ndof * DIM, locheap);
