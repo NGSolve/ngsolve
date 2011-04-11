@@ -387,6 +387,22 @@ namespace ngfem
   }
 
 
+  void BilinearFormIntegrator :: 
+  CalcFlux (const FiniteElement & fel,
+	    const FiniteElement & felflux,
+	    const ElementTransformation & eltrans,
+	    const FlatVector<> & elx, 
+	    FlatVector<> & flux,
+	    bool applyd,
+	    LocalHeap & lh) const
+  {
+    cerr << "calcflux<double> fel-fel called for base class " 
+	 << typeid(*this).name()
+	 << endl;
+  }
+  
+
+
 
   void BilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & fel,

@@ -602,6 +602,172 @@ namespace ngfem
 	    }
 	}
     }
+
+
+
+    virtual void
+    CalcFlux (const FiniteElement & fel,
+	      const FiniteElement & felflux,
+	      const ElementTransformation & eltrans,
+	      const FlatVector<> & elu, 
+	      FlatVector<> & elflux,
+	      bool applyd,
+	      LocalHeap & lh) const
+    {
+      static Timer timer1 ("hdg - calcflux");
+      static Timer timer_solve ("hdg - calcflux solve");
+      static Timer timer_el ("hdg - calcflux el");
+      static Timer timer_facet ("hdg - calcflux facet");
+
+      RegionTimer rt (timer1);
+
+
+      const IntegrationRule & ir = 
+	SelectIntegrationRule(fel.ElementType(), max(fel.Order(),felflux.Order())+felflux.Order());
+
+      MappedIntegrationRule<D,D> mir (ir, eltrans, lh);
+
+      const ScalarFiniteElement<D> & fel_l2 = 
+	dynamic_cast<const ScalarFiniteElement<D>&> 
+	(dynamic_cast<const CompoundFiniteElement&> (fel)[0]);
+
+      const FacetVolumeFiniteElement<D> & fel_facet = 
+        dynamic_cast<const FacetVolumeFiniteElement<D> &>
+	(dynamic_cast<const CompoundFiniteElement&> (fel)[1]);
+
+
+      const HDivFiniteElement<D> & hdfelflux = 
+	dynamic_cast<const HDivFiniteElement<D>&> (felflux);
+
+
+      int ndflux = felflux.GetNDof();
+      int ndu = fel.GetNDof();
+      int ndut = fel_l2.GetNDof();
+
+
+      FlatMatrix<double> elmat(ndflux, lh);
+      FlatMatrix<double> helmat(ndflux, lh);
+      FlatVector<> elflux1 (ndflux, lh);
+      FlatMatrixFixWidth<D> shape (ndflux, lh);
+      FlatMatrixFixWidth<D> dshape (ndut, lh);
+      FlatVector<> shapen (ndflux, lh);
+
+      elmat = 0;
+      elflux1 = 0;
+
+      timer_el.Start();
+
+      FlatMatrixFixWidth<D> gradm(ir.GetNIP(), lh);
+      fel_l2.EvaluateGrad (ir, elu.Range(0, ndut), gradm);
+
+      for (int i = 0; i < ir.GetNIP(); i++)
+	{
+	  Vec<D> grad = Trans (mir[i].GetJacobianInverse()) * gradm.Row(i);
+	  grad *= coef_lam->Evaluate(mir[i]) * mir[i].GetWeight();
+	  
+	  hdfelflux.CalcMappedShape (mir[i], shape);
+	  elmat += mir[i].GetWeight() * shape * Trans(shape);
+	  elflux1 += shape * grad;
+	}
+
+      timer_el.Stop();
+
+      timer_facet.Start();
+
+      ELEMENT_TYPE eltype = fel_l2.ElementType();
+      
+      int nfacet = ElementTopology::GetNFacets(eltype);
+
+      int sort[D+1];
+      eltrans.GetSort (FlatArray<int> (D+1,&sort[0]));
+      
+      Facet2ElementTrafo transform(eltype);
+      const NORMAL * normals = ElementTopology::GetNormals(eltype);
+
+      Mat<2> dmat;
+      
+      for (int k = 0; k < nfacet; k++)
+	{
+	  HeapReset hr(lh);
+
+	  fel_facet.SelectFacet (k);
+	  
+	  Vec<D> normal_ref;
+	  for (int i=0; i<D; i++)
+	    normal_ref(i) = normals[k][i];
+
+
+	  ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+	  
+	  const IntegrationRule & ir_facet =
+	    SelectIntegrationRule (etfacet, 2*fel_l2.Order());
+	  
+	  IntegrationRule ir_vol;
+	  
+	  for (int l = 0; l < ir_facet.GetNIP(); l++)
+	    {
+	      IntegrationPoint ip = transform(k, ir_facet[l]);
+	      ip.SetWeight (ir_facet[l].Weight());
+	      ir_vol.Append (ip);
+	    }
+
+	  MappedIntegrationRule<D,D> mir(ir_vol, eltrans, lh);
+
+
+	  FlatVector<> shapes_l2(ir_vol.Size(), lh);
+	  FlatVector<> shapes_facet(ir_vol.Size(), lh);
+	  FlatMatrixFixWidth<D> grad_l2(ir_vol.Size(), lh);
+	  
+
+	  fel_l2.Evaluate (ir_vol, elu.Range(0, ndut), shapes_l2);
+	  fel_l2.EvaluateGrad (ir_vol, elu.Range(0, ndut), grad_l2);
+	  fel_facet.Evaluate (ir_vol, elu.Range(ndut, ndu), shapes_facet);
+	  
+	  helmat = 0.0;
+	  for (int l = 0; l < ir_facet.GetNIP(); l++)
+	    {
+	      const SpecificIntegrationPoint<D,D> & sip = mir[l];
+	      double lam = coef_lam->Evaluate(sip);
+
+              
+	      Mat<D> inv_jac = sip.GetJacobianInverse();
+	      double det = sip.GetJacobiDet();
+
+	      
+	      Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
+	      double len = L2Norm (normal);
+	      normal /= len;
+	      
+	      Vec<D> invjac_normal = inv_jac * normal;
+		
+	      dmat(0,0) = 0;
+	      dmat(1,0) = dmat(0,1) = -1;
+	      dmat(1,1) = alpha * ((fel_l2.Order()+1)*(fel_l2.Order()+D)/D * len) *(1.0/det);
+	      // dmat *= lam * len * ir_vol[l].Weight();
+
+	      Vec<2> hv1, hv2;
+	      hv1(0) = InnerProduct (grad_l2.Row(l), invjac_normal);
+	      hv1(1) = shapes_l2(l) - shapes_facet(l);
+	      dmat *= lam;
+	      
+	      hv2 = dmat * hv1;
+	      
+	      hdfelflux.CalcMappedShape (sip, shape);
+	      
+	      shapen = shape * normal;
+
+	      elmat += 1e6*sip.GetWeight() * shapen * Trans(shapen);
+	      elflux1 -= 1e6*sip.GetWeight() * hv2(1) * shapen;
+	    }
+	}
+
+      timer_facet.Stop();
+      timer_solve.Start();
+      FlatCholeskyFactors<double> invelmat(elmat, lh);
+      invelmat.Mult (elflux1, elflux);
+      timer_solve.Stop();
+    }
+
   };
 
 
