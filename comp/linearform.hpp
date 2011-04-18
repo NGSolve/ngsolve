@@ -181,7 +181,10 @@ namespace ngcomp
     virtual ~T_LinearForm ();
 
     ///
-    virtual VVector<TV> & GetVector () const ;
+    virtual BaseVector & GetVector () const;
+
+    // msvc 2008 cannot do that
+    // virtual VVector<TV> & GetVector () const;
 
     ///
     virtual void AllocateVector ();
