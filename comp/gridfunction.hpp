@@ -165,12 +165,14 @@ namespace ngcomp
 
     // virtual bool IsUpdated () const;
 
+    /*
+      // msvc 2008 crashes with that
     virtual T_BaseVector<TV> & GetVector (int comp = 0)
     { return dynamic_cast<T_BaseVector<TV>&>(*(vec[comp])); }
     // virtual const T_BaseVector<TV> & GetVector (int comp = 0) const  { return *vec[comp]; }
     virtual const T_BaseVector<TV> & GetVector (int comp = 0) const
     { return dynamic_cast<T_BaseVector<TV>&>(*(vec[comp])); }
-
+    */
 
     friend class GridFunctionCoefficientFunction;
   };
