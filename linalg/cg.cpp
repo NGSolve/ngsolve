@@ -544,6 +544,7 @@ namespace ngla
       dim = 7;
     else if(dynamic_cast<VVector< Vec<8, SCAL> >* >(&u))
       dim = 8;
+    /*
     else if(dynamic_cast<VVector< Vec<9, SCAL> >* >(&u))
       dim = 9;
     else if(dynamic_cast<VVector< Vec<10, SCAL> >* >(&u))
@@ -558,7 +559,7 @@ namespace ngla
       dim = 14;
     else if(dynamic_cast<VVector< Vec<15, SCAL> >* >(&u))
       dim = 15;
-
+    */
     //cout << "useseed: " << useseed << " dim: " << dim << endl;
 
     if(useseed && dim != 1)
