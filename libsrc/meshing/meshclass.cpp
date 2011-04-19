@@ -863,13 +863,21 @@ namespace netgen
             PrintMessage (3, n, " surface elements");
             for (i = 1; i <= n; i++)
               {
-                int j;
                 int surfnr, bcp, domin, domout, nep, faceind = 0;
 
                 infile >> surfnr >> bcp >> domin >> domout;
                 surfnr--;
 
-                for (j = 1; j <= facedecoding.Size(); j++)
+		bool invert_el = false;
+		/*
+		if (domin == 0) 
+		  {
+		    invert_el = true;
+		    Swap (domin, domout);
+		  }
+		*/
+
+                for (int j = 1; j <= facedecoding.Size(); j++)
                   if (GetFaceDescriptor(j).SurfNr() == surfnr &&
                       GetFaceDescriptor(j).BCProperty() == bcp &&
                       GetFaceDescriptor(j).DomainIn() == domin &&
@@ -888,19 +896,21 @@ namespace netgen
                 Element2d tri(nep);
                 tri.SetIndex(faceind);
 
-                for (j = 1; j <= nep; j++)
+                for (int j = 1; j <= nep; j++)
                   infile >> tri.PNum(j);
 
                 if (strcmp (str, "surfaceelementsgi") == 0)
-                  for (j = 1; j <= nep; j++)
+                  for (int j = 1; j <= nep; j++)
                     infile >> tri.GeomInfoPi(j).trignum;
 
                 if (strcmp (str, "surfaceelementsuv") == 0)
-                  for (j = 1; j <= nep; j++)
+                  for (int j = 1; j <= nep; j++)
                     infile >> tri.GeomInfoPi(j).u >> tri.GeomInfoPi(j).v;
 
                 if (invertsurf)
                   tri.Invert();
+		if (invert_el)
+		  tri.Invert();
 
                 AddSurfaceElement (tri);
               }
