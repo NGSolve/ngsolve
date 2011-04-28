@@ -141,7 +141,7 @@ namespace netgen
   {
     ///
     GeomPoint<D> p1, p2, p3;
-
+    double weight;
     mutable double proj_latest_t;
   public:
     ///
@@ -405,101 +405,6 @@ namespace netgen
 
 
 
-
-  template<int D>
-  SplineSeg3<D> :: SplineSeg3 (const GeomPoint<D> & ap1, 
-			       const GeomPoint<D> & ap2,
-			       const GeomPoint<D> & ap3)
-    : p1(ap1), p2(ap2), p3(ap3)
-  {
-    proj_latest_t = 0.5;
-  }
-
-  template<int D>
-  inline Point<D> SplineSeg3<D> :: GetPoint (double t) const
-  {
-    double x, y, w;
-    double b1, b2, b3;
-
-    b1 = (1-t)*(1-t);
-    b2 = sqrt(2.0) * t * (1-t);
-    b3 = t * t;
-
-    x = p1(0) * b1 + p2(0) * b2 + p3(0) * b3;
-    y = p1(1) * b1 + p2(1) * b2 + p3(1) * b3;
-    w = b1 + b2 + b3;
-
-    if(D==3)
-      {
-	double z = p1(2) * b1 + p2(2) * b2 + p3(2) * b3;
-	return Point<D> (x/w, y/w, z/w);
-      }
-    else
-      return Point<D> (x/w, y/w);
-  }
-
-
-
-
-  template<int D>
-  Vec<D> SplineSeg3<D> :: GetTangent (const double t) const
-  {
-    const double b1 = (1.-t)*((sqrt(2.)-2.)*t-sqrt(2.));
-    const double b2 = sqrt(2.)*(1.-2.*t);
-    const double b3 = t*((sqrt(2.)-2)*t+2.);
-
-
-    Vec<D> retval;
-    for(int i=0; i<D; i++) 
-      retval(i) = b1*p1(i) + b2*p2(i) + b3*p3(i);
-
-    return retval;
-
-  }
-
-
-  template<int D>
-  void SplineSeg3<D> :: GetCoeff (Vector & u) const
-  {
-    DenseMatrix a(6, 6);
-    DenseMatrix ata(6, 6);
-    Vector f(6);
-
-    u.SetSize(6);
-
-    //  ata.SetSymmetric(1);
-
-    double t = 0;
-    for (int i = 0; i < 5; i++, t += 0.25)
-      {
-	Point<D> p = GetPoint (t);
-	a(i, 0) = p(0) * p(0);
-	a(i, 1) = p(1) * p(1);
-	a(i, 2) = p(0) * p(1);
-	a(i, 3) = p(0);
-	a(i, 4) = p(1);
-	a(i, 5) = 1;
-      }
-    a(5, 0) = 1;
-
-    CalcAtA (a, ata);
-
-    u = 0;
-    u(5) = 1;
-    a.MultTrans (u, f);
-    ata.Solve (f, u);
-
-    // the sign
-    Point<D> p0 = GetPoint(0);
-    Vec<D> ht = GetTangent(0);
-    Vec<2> tang(ht(0), ht(1));
-
-    double gradx = 2.*u(0)*p0(0) + u(2)*p0(1) + u(3);
-    double grady = 2.*u(1)*p0(1) + u(2)*p0(0) + u(4);
-    Vec<2> gradn (grady, -gradx);
-  
-    if (tang * gradn < 0) u *= -1;
-  }
 
   /*
     template<int D>

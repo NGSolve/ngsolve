@@ -33,6 +33,109 @@ namespace netgen
   }
 
 
+  
+
+
+
+  template<int D>
+  SplineSeg3<D> :: SplineSeg3 (const GeomPoint<D> & ap1, 
+			       const GeomPoint<D> & ap2,
+			       const GeomPoint<D> & ap3)
+    : p1(ap1), p2(ap2), p3(ap3)
+  {
+    weight = Dist (p1, p3) / sqrt (0.5 * (Dist2 (p1, p2) + Dist2 (p2, p3)));
+    // weight = sqrt(2);
+    // cout << "weight = " << weight << endl;
+    proj_latest_t = 0.5;
+  }
+
+  template<int D>
+  inline Point<D> SplineSeg3<D> :: GetPoint (double t) const
+  {
+    double x, y, w;
+    double b1, b2, b3;
+
+    b1 = (1-t)*(1-t);
+    b2 = weight * t * (1-t);
+    b3 = t * t;
+
+    x = p1(0) * b1 + p2(0) * b2 + p3(0) * b3;
+    y = p1(1) * b1 + p2(1) * b2 + p3(1) * b3;
+    w = b1 + b2 + b3;
+
+    if(D==3)
+      {
+	double z = p1(2) * b1 + p2(2) * b2 + p3(2) * b3;
+	return Point<D> (x/w, y/w, z/w);
+      }
+    else
+      return Point<D> (x/w, y/w);
+  }
+
+
+
+
+  template<int D>
+  Vec<D> SplineSeg3<D> :: GetTangent (const double t) const
+  {
+    const double b1 = (1.-t)*((weight-2.)*t-weight);
+    const double b2 = weight*(1.-2.*t);
+    const double b3 = t*((weight-2)*t+2.);
+
+
+    Vec<D> retval;
+    for(int i=0; i<D; i++) 
+      retval(i) = b1*p1(i) + b2*p2(i) + b3*p3(i);
+
+    return retval;
+
+  }
+
+
+  template<int D>
+  void SplineSeg3<D> :: GetCoeff (Vector & u) const
+  {
+    DenseMatrix a(6, 6);
+    DenseMatrix ata(6, 6);
+    Vector f(6);
+
+    u.SetSize(6);
+
+    //  ata.SetSymmetric(1);
+
+    double t = 0;
+    for (int i = 0; i < 5; i++, t += 0.25)
+      {
+	Point<D> p = GetPoint (t);
+	a(i, 0) = p(0) * p(0);
+	a(i, 1) = p(1) * p(1);
+	a(i, 2) = p(0) * p(1);
+	a(i, 3) = p(0);
+	a(i, 4) = p(1);
+	a(i, 5) = 1;
+      }
+    a(5, 0) = 1;
+
+    CalcAtA (a, ata);
+
+    u = 0;
+    u(5) = 1;
+    a.MultTrans (u, f);
+    ata.Solve (f, u);
+
+    // the sign
+    Point<D> p0 = GetPoint(0);
+    Vec<D> ht = GetTangent(0);
+    Vec<2> tang(ht(0), ht(1));
+
+    double gradx = 2.*u(0)*p0(0) + u(2)*p0(1) + u(3);
+    double grady = 2.*u(1)*p0(1) + u(2)*p0(0) + u(4);
+    Vec<2> gradn (grady, -gradx);
+  
+    if (tang * gradn < 0) u *= -1;
+  }
+
+  
 
 
   template<int D>
@@ -208,20 +311,20 @@ namespace netgen
     Vec<D> v1(p1), v2(p2), v3(p3);
 
     double b1 = (1.-t)*(1.-t);
-    double b2 = sqrt(2.)*t*(1.-t);
+    double b2 = weight*t*(1.-t);
     double b3 = t*t;
     double w = b1+b2+b3;
     b1 *= 1./w; b2 *= 1./w; b3 *= 1./w;
 
     double b1p = 2.*(t-1.);
-    double b2p = sqrt(2.)*(1.-2.*t);
+    double b2p = weight*(1.-2.*t);
     double b3p = 2.*t;
     const double wp = b1p+b2p+b3p;
     const double fac1 = wp/w;
     b1p *= 1./w; b2p *= 1./w; b3p *= 1./w;
 
     const double b1pp = 2.;
-    const double b2pp = -2.*sqrt(2.);
+    const double b2pp = -2.*weight;
     const double b3pp = 2.;
     const double wpp = b1pp+b2pp+b3pp;
     const double fac2 = (wpp*w-2.*wp*wp)/(w*w);
@@ -278,10 +381,10 @@ namespace netgen
 
     double t;
 
-    const double c1 = a*p1(0) - sqrt(2.)*a*p2(0) + a*p3(0) 
-      + b*p1(1) - sqrt(2.)*b*p2(1) + b*p3(1) 
-      + (2.-sqrt(2.))*c;
-    const double c2 = -2.*a*p1(0) + sqrt(2.)*a*p2(0) -2.*b*p1(1) + sqrt(2.)*b*p2(1) + (sqrt(2.)-2.)*c;
+    const double c1 = a*p1(0) - weight*a*p2(0) + a*p3(0) 
+      + b*p1(1) - weight*b*p2(1) + b*p3(1) 
+      + (2.-weight)*c;
+    const double c2 = -2.*a*p1(0) + weight*a*p2(0) -2.*b*p1(1) + weight*b*p2(1) + (weight-2.)*c;
     const double c3 = a*p1(0) + b*p1(1) + c;
 
     if(fabs(c1) < 1e-20)
