@@ -1495,6 +1495,7 @@ namespace netgen
   {
     c = ac;
     n = an;
+    n.Normalize();
     R = aR;
     r = ar;
   }
@@ -1568,16 +1569,31 @@ namespace netgen
 
   double Torus :: CalcFunctionValue (const Point<3> & point) const
   {
+    /*
+    // original version
     Vec<3> v1 = point - c;
-    double a1 = v1(0) * v1(0) + v1(1) * v1(1) + v1(2) * v1(2);
-    double a2 = n(0) * v1(0) + n(1) * v1(1) + n(2) * v1(2);
+    double a1 = Abs2 (v1);         // v1(0) * v1(0) + v1(1) * v1(1) + v1(2) * v1(2);
+    double a2 = n * v1;            // n(0) * v1(0) + n(1) * v1(1) + n(2) * v1(2);
     double a3 = a1 + R * R - r * r;
-    double a4 = n(0) * n(0) + n(1) * n(1) + n(2) * n(2);
+    double a4 = Abs2 (n);          // n(0) * n(0) + n(1) * n(1) + n(2) * n(2);
+
     return ( a3 * a3 -4 * R * R * ( a1 - a2 * a2 / a4 ) ) / ( R * R * R );
+    */
+
+    
+    // JS, April 2011
+    Vec<3> v1 = point-c;
+    double abs2 = Abs2(v1);
+    double tau = v1 * n;
+    double rho = sqrt (abs2 - tau*tau);
+    return sqr (R - rho) + tau*tau - r*r;
+
+    // double val2 = sqr (tau*tau + sqr (R - rho) -r*r) / (R*R*R);
   }
 
   void Torus :: CalcGradient (const Point<3> & point, Vec<3> & grad) const
   {
+    /*
     Vec<3> v1 = point - c;
     double a1 = v1(0) * v1(0) + v1(1) * v1(1) + v1(2) * v1(2);
     double a2 = n(0) * v1(0) + n(1) * v1(1) + n(2) * v1(2);
@@ -1586,10 +1602,25 @@ namespace netgen
     grad(0) = ( 4 * a3 * v1(0) + 8 * R * R * a2 / a4 * n(0) ) / ( R * R * R );
     grad(1) = ( 4 * a3 * v1(1) + 8 * R * R * a2 / a4 * n(1) ) / ( R * R * R );
     grad(2) = ( 4 * a3 * v1(2) + 8 * R * R * a2 / a4 * n(2) ) / ( R * R * R );
+    */
+
+    Vec<3> v1 = point-c;
+    double abs2 = Abs2(v1);
+    double tau = v1 * n;
+    double rho = sqrt (abs2 - tau*tau);
+    double func = sqr (R - rho) + tau*tau - r*r;
+
+    Vec<3> gradabs2 = 2 * v1;
+    Vec<3> gradtau = n;
+    Vec<3> gradrho = 0.5 / rho * (gradabs2 - 2 * tau * gradtau);
+    grad = -2 * (R - rho) * gradrho  + 2 * tau * gradtau;
   }
 
   void Torus :: CalcHesse (const Point<3> & point, Mat<3> & hesse) const
   {
+    Surface::CalcHesse (point, hesse);
+    return;
+
     Vec<3> v1 = point - c;
     double a1 = v1(0) * v1(0) + v1(1) * v1(1) + v1(2) * v1(2);
     double a3 = a1 - R * R - r * r;
@@ -1604,7 +1635,8 @@ namespace netgen
 
   double Torus :: HesseNorm () const
   {	
-    return  ( 2 / r + 2 / ( R - r ) );
+    return 4/(r*r);
+    // return  ( 2 / r + 2 / ( R - r ) );
   }
 
   Point<3> Torus :: GetSurfacePoint () const
@@ -1634,9 +1666,9 @@ namespace netgen
   INSOLID_TYPE Torus :: BoxInSolid (const BoxSphere<3> & box) const
   {
     Vec<3> v1 = box.Center() - c;
-    double a1 = v1(0) * v1(0) + v1(1) * v1(1) + v1(2) * v1(2);
-    double a2 = n(0) * v1(0) + n(1) * v1(1) + n(2) * v1(2);
-    double a4 = n(0) * n(0) + n(1) * n(1) + n(2) * n(2);
+    double a1 = Abs2(v1);        // v1(0) * v1(0) + v1(1) * v1(1) + v1(2) * v1(2);
+    double a2 = n * v1;          // n(0) * v1(0) + n(1) * v1(1) + n(2) * v1(2);
+    double a4 = Abs2(n);         // n(0) * n(0) + n(1) * n(1) + n(2) * n(2);
  
     double dist = sqrt( a1 + R * R - 2 * R * sqrt( a1 - a2 * a2 / a4) );
 
