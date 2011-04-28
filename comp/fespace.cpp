@@ -2954,15 +2954,13 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
     (*testout) << "Update compound fespace" << endl;
     (*testout) << "cummulative dofs start at " << cummulative_nd << endl;
-
+    (*testout) << "dof coupling types " << ctofdof << endl;
 #ifdef PARALLEL
     if (low_order_space)
       low_order_space -> Update(lh);
     UpdateParallelDofs();
 #endif
-
   }
-
 
   void CompoundFESpace :: FinalizeUpdate(LocalHeap & lh)
   {
