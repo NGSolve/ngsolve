@@ -648,7 +648,6 @@ namespace netgen
 		    spline = new CircleSeg<D> (geompoints[hi1-1],
 					       geompoints[hi2-1],
 					       geompoints[hi3-1]);
-		    break;
 		  }
 		else if (strcmp (buf, "discretepoints") == 0)
 		  {
