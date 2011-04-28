@@ -358,10 +358,30 @@ namespace netgen
 
     glColor3d (1, 0, 0);
     glBegin (GL_LINES);
+    int edges[12][2] = 
+      { { 0, 1 },
+	{ 2, 3 },
+	{ 4, 5 },
+	{ 6, 7 },
+	{ 0, 2 },
+	{ 1, 3 },
+	{ 4, 6 },
+	{ 5, 7 },
+	{ 0, 4 },
+	{ 1, 5 },
+	{ 2, 6 },
+	{ 3, 7 } };
     for (int i = 0; i < boxes.Size(); i++)
       {
+	for (int j = 0; j < 12; j++)
+	  {
+	    glVertex3dv ( boxes[i].GetPointNr(edges[j][0]) );
+	    glVertex3dv ( boxes[i].GetPointNr(edges[j][1]) );
+	  }
+	/*
 	glVertex3dv ( boxes[i].PMin() );
 	glVertex3dv ( boxes[i].PMax() );
+	*/
       }
     glEnd();
 
@@ -465,7 +485,9 @@ namespace netgen
       }
 
 
-
+    
+    
+    
 
     glPopMatrix();
 
