@@ -27,7 +27,7 @@ namespace netgen
 
   void ProjectToEdge (const Surface * f1, const Surface * f2, Point<3> & hp);
 
-
+  enum { check_crosspoint = 5 };
 
   SpecialPoint :: SpecialPoint (const SpecialPoint & sp)
   {
@@ -233,7 +233,7 @@ namespace netgen
 
 
     // explicit solution for planes only and at most one quadratic
-    if (numprim <= 5)
+    if (numprim <= check_crosspoint)
       {
 	int nplane = 0, nquad = 0, quadi = -1, nsphere = 0;
 	const QuadraticSurface *qsurf = 0, *qsurfi;
@@ -464,7 +464,7 @@ namespace netgen
     possiblecrossp = (numprim >= 3) && calccp;
     surecrossp = 0;
 
-    if (possiblecrossp && (locsurf.Size() <= 5 || level > 50))
+    if (possiblecrossp && (locsurf.Size() <= check_crosspoint || level > 50))
       {
 	decision = 1;
 	surecrossp = 0;
@@ -484,6 +484,11 @@ namespace netgen
 		   geometry->GetSurface(locsurf.Get(k2)), 
 		   geometry->GetSurface(locsurf.Get(k3)), box );
 	      
+#ifdef DEVELOP
+		(*testout) << "k1,2,3 = " << k1 << "," << k2 << "," << k3 << ", nc = " << nc << ", deg = " << deg << endl;
+#endif
+
+
 		if (!nc && !deg) decision = 0;
 		if (nc) surecrossp = 1;
 	      }
@@ -565,7 +570,7 @@ namespace netgen
     possibleexp = (numprim >= 2) && calcep;
 
     // (*testout) << "l = " << level << "locsize = " << locsurf.Size() << " possexp = " << possibleexp << "\n";
-    if (possibleexp && (numprim <= 5 || level >= 50))
+    if (possibleexp && (numprim <= check_crosspoint || level >= 50))
       {
 	decision = 1;
 	sureexp = 0;
@@ -713,6 +718,7 @@ namespace netgen
         *testout << "check Newton: " << "beta = " << beta << ", gamma = " << gamma << ", eta = " << eta << endl;
         double rad = 1.0 / (beta * gamma);
         *testout << "rad = " << rad << endl;
+	*testout << "rs = " << rs << endl;
 #endif
         
 	return (beta * gamma * eta < 0.1) && (2 > box.Diam()*beta*gamma);
