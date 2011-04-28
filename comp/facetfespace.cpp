@@ -84,7 +84,8 @@ namespace ngcomp
       }
 
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
-
+    if (order == 0)
+      highest_order_dc = false;
 
     
     // TODO: Evaluator for shape tester 
@@ -310,7 +311,6 @@ namespace ngcomp
     *testout << "update parallel dofs in facet-fespace, ndof " << ndof << endl;
     UpdateParallelDofs();
 #endif
-
   }
 
 
@@ -329,7 +329,13 @@ namespace ngcomp
 	
 	for (int j=first; j<next; j++)
 	  ctofdof[j] = INTERFACE_DOF;
+
+	/*
+	for (int j=0; j < (next-first)/2; j++)
+	  ctofdof[first+j] = WIREBASKET_DOF;
+	*/
       }
+
 
     if (highest_order_dc)
       ctofdof.Range(first_inner_dof[0], ndof) = LOCAL_DOF;
@@ -1100,7 +1106,6 @@ public:
   { 
     withedges = (aspaces.Size()==3);
 
-
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
@@ -1225,7 +1230,29 @@ public:
 
 	return &clusters;	
     }
-    else throw Exception("HDG::CreateDirectSolverClusters");
+    else
+      {
+	Array<int> & clusters = *new Array<int> (GetNDof());
+	clusters = 0;
+
+	Array<int> dnums;
+	int nfa = ma.GetNFacets();
+
+	for (int i = 0; i < nfa; i++)
+	  {
+	    if (ma.GetDimension() == 2)
+	      GetEdgeDofNrs (i, dnums);
+	    else
+	      GetFaceDofNrs (i, dnums);
+
+	    clusters[dnums[0]] = 1;
+	  }
+
+	const BitArray & freedofs = *GetFreeDofs();
+	for (int i = 0; i < freedofs.Size(); i++)
+	  if (!freedofs.Test(i)) clusters[i] = 0;
+	return &clusters;
+      }
   }
 
   virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const
@@ -1307,6 +1334,34 @@ public:
 		    }
 	      }
 	      break; 	    
+
+
+	  case 3: 
+	    // facet-by-facet
+		
+	    if (creator.GetMode() == 1)
+	      cout << "Facet-by-facet blocks" << endl;
+		
+	    
+	    Array<int> dnums;
+	    int nfa = ma.GetNFacets();
+	    for (int i = 0; i < nfa; i++)
+	      {
+		if (ma.GetDimension() == 2)
+		  {
+		    if (IsDirichletEdge (i)) continue;
+		    GetEdgeDofNrs (i, dnums);
+		  }
+		else
+		  {
+		    if (IsDirichletFace (i)) continue;
+		    GetFaceDofNrs (i, dnums);
+		  }
+
+		for (int l = 0; l < dnums.Size(); l++)
+		  creator.Add (i, dnums[l]);
+	      }
+	    break; 	    
 	  }
       }
     return creator.GetTable();
