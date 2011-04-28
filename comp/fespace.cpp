@@ -3177,6 +3177,41 @@ template
 void CompoundFESpace::TransformMat<FlatMatrix<Complex> > 
 (int elnr, bool boundary, FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
 
+template
+void CompoundFESpace::TransformMat<SliceMatrix<double> > 
+(int elnr, bool boundary, SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+template
+void CompoundFESpace::TransformMat<SliceMatrix<Complex> > 
+(int elnr, bool boundary, SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+
+
+  void CompoundFESpace::VTransformMR (int elnr, bool boundary,
+				      const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
+  {
+    TransformMat (elnr, boundary, mat, tt);
+  }
+  
+  void CompoundFESpace::VTransformMC (int elnr, bool boundary,
+				      const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
+  {
+    TransformMat (elnr, boundary, mat, tt);
+  }
+  
+
+  void CompoundFESpace::VTransformVR (int elnr, bool boundary,
+				      const FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
+  {
+    TransformVec (elnr, boundary, vec, tt);
+  }
+  
+  void CompoundFESpace::VTransformVC (int elnr, bool boundary,
+				      const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
+  {
+    TransformVec (elnr, boundary, vec, tt);
+  }
+
+
+
 
 
 #ifdef PARALLEL

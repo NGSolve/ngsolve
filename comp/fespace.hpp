@@ -646,29 +646,13 @@ namespace ngcomp
 		       VEC & vec, TRANSFORM_TYPE tt) const;
 
     virtual void VTransformMR (int elnr, bool boundary,
-			       const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
-    {
-      TransformMat (elnr, boundary, mat, tt);
-    }
-
+			       const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
     virtual void VTransformMC (int elnr, bool boundary,
-			       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
-    {
-      TransformMat (elnr, boundary, mat, tt);
-    }
-
-
+			       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
     virtual void VTransformVR (int elnr, bool boundary,
-			       const FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
-    {
-      TransformVec (elnr, boundary, vec, tt);
-    }
-
+			       const FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
     virtual void VTransformVC (int elnr, bool boundary,
-			       const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
-    {
-      TransformVec (elnr, boundary, vec, tt);
-    }
+			       const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
 
     inline int GetNSpaces () const { return spaces.Size(); } 
 
