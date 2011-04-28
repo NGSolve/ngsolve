@@ -450,6 +450,13 @@ namespace netgen
 	  }
 
 
+	else if(classname == "torus")
+	  {
+	    Torus * torus = new Torus(dummypoint,dummyvec,dummydouble, dummydouble);
+	    torus->SetPrimitiveData(coeffs);
+	    AddSurface(torus);
+	    delete_them.Append(torus);
+	  }
 
 
 	else if(classname == "cone")
