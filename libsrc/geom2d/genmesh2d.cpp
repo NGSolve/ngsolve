@@ -30,7 +30,6 @@ namespace netgen
     double h2 = min (spline.EndPI().hmax, h/spline.EndPI().refatpoint);
     double hcurve = min (spline.hmax, h/spline.reffak);
 
-
     CalcPartition (l, h, h1, h2, hcurve, elto0, curvepoints);
     //  cout << "curvepoints = " << curvepoints << endl;
 
