@@ -780,7 +780,8 @@ namespace ngla
   {
     if ( status != CUMULATED ) return;
     ParallelVFlatVector * constflatvec = const_cast<ParallelVFlatVector<T> * > (this);
-    T * constvec = const_cast<T * > (this->data);
+    // T * constvec = const_cast<T * > (this->pdata);
+    T * constvec = this->FV().Addr(0);
     constflatvec->SetStatus(DISTRIBUTED);
     
     for ( int dof = 0; dof < paralleldofs->GetNDof(); dof ++ )
@@ -899,7 +900,6 @@ namespace ngla
   template < class T >
   ostream & ParallelVVector<T> :: Print (ostream & ost) const
   {
-    ost << "addr = " << &this->FV()(0) << endl;
     const PARALLEL_STATUS status = this->Status();
     if ( status == NOT_PARALLEL )
       ost << "NOT PARALLEL" << endl;
@@ -913,7 +913,6 @@ namespace ngla
   template < class T >
   ostream & ParallelVFlatVector<T> :: Print (ostream & ost) const
   {
-    ost << "addr = " << &this->FV()(0) << endl;
     const PARALLEL_STATUS status = this->Status();
     if ( status == NOT_PARALLEL )
       ost << "NOT PARALLEL" << endl;
@@ -950,12 +949,12 @@ namespace ngla
     if (1)
       {
 	for (int i = 0; i < exdofs.Size(); i++)
-	  this->data[exdofs[i]] += (*this->recvvalues)[sender][i];
+	  this->FV()(exdofs[i]) += (*this->recvvalues)[sender][i];
       }
     else
       {
 	for (int i = 0; i < exdofs.Size(); i++)
-	  this->data[i] += (*this->recvvalues)[0][i];
+	  this->FV()(i) += (*this->recvvalues)[0][i];
 	// (*this).Range (0, (*this->recvvalues).Size()) += (*this->recvvalues)[sender];
       }
   }
