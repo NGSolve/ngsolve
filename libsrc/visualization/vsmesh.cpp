@@ -1000,7 +1000,7 @@ namespace netgen
 
     for (int faceindex = 1; faceindex <= mesh->GetNFD(); faceindex++)
       {
-	const FaceDescriptor & fd = mesh->GetFaceDescriptor(faceindex);
+	// const FaceDescriptor & fd = mesh->GetFaceDescriptor(faceindex);
 	mesh->GetSurfaceElementsOfFace (faceindex, seia);
 
 	// Philippose - 06/07/2009
@@ -1852,29 +1852,28 @@ namespace netgen
       shownode.Set();
 
 
-#ifdef PARALLEL
-
-    static float tetcols[][8] =
-      {
-	{ 1.0f, 1.0f, 0.0f, 1.0f },
-	{ 1.0f, 0.0f, 0.0f, 1.0f },
-	{ 0.0f, 1.0f, 0.0f, 1.0f },
-	{ 0.0f, 0.0f, 1.0f, 1.0f },
-	{ 1.0f, 1.0f, 0.0f, 0.3f },
-	{ 1.0f, 0.0f, 0.0f, 0.3f },
-	{ 0.0f, 1.0f, 0.0f, 0.3f },
-	{ 0.0f, 0.0f, 1.0f, 0.3f }
-      };
-
-#else
     static float tetcols[][4] =
       {
 	{ 1.0f, 1.0f, 0.0f, 1.0f },
 	{ 1.0f, 0.0f, 0.0f, 1.0f },
 	{ 0.0f, 1.0f, 0.0f, 1.0f },
 	{ 0.0f, 0.0f, 1.0f, 1.0f }
+	/*
+	{ 1.0f, 1.0f, 0.0f, 0.3f },
+	{ 1.0f, 0.0f, 0.0f, 0.3f },
+	{ 0.0f, 1.0f, 0.0f, 0.3f },
+	{ 0.0f, 0.0f, 1.0f, 0.3f }
+	*/
       };
-#endif
+
+    static float tetcols_ghost[4][4];
+
+    for (int j = 0; j < 4; j++)
+      {
+	for (int i = 0; i < 3; i++)
+	  tetcols_ghost[j][i] = tetcols[j][i];
+	tetcols_ghost[j][3] = 0.3; 
+      }
 
 
     CurvedElements & curv = mesh->GetCurvedElements();
@@ -1887,22 +1886,17 @@ namespace netgen
 
     int hoplotn = max (2, 1 << vispar.subdivisions);
 
+
+
     for (ElementIndex ei = 0; ei < mesh->GetNE(); ei++)
       {
 	if (vispar.drawtetsdomain > 0)
 	  {
-	    int tetid = 
-#ifdef PARALLEL
-	      vispar.drawmetispartition ? 
-	      (*mesh)[ei].GetPartition() 
-	      :
-#endif
-	      (*mesh)[ei].GetIndex();
+	    int tetid = vispar.drawmetispartition ? 
+	      (*mesh)[ei].GetPartition() : (*mesh)[ei].GetIndex();
 	    
-	    if (vispar.drawtetsdomain != tetid)
-	      continue;
+	    if (vispar.drawtetsdomain != tetid) continue;
 	  }
-
 
 	const Element & el = (*mesh)[ei];
 
@@ -1915,29 +1909,15 @@ namespace netgen
 		drawtet = 0;
             if (!drawtet) continue;
 
-
             int ind = el.GetIndex() % 4;
 
-
-#ifdef PARALLEL
-            if (vispar.drawmetispartition && (el.GetPartition()!=-1))
+            if (vispar.drawmetispartition && el.GetPartition()!=-1)
 	      ind = el.GetPartition() % 4;
-            // (*testout) << "ind (" << i << ") = " << ind << endl;
-
 
             if ( el.IsGhost() )
-	      {
-		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, tetcols[ind+4]);
-	      }
+	      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, tetcols_ghost[ind]);
             else
-	      {
-		glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, tetcols[ind]);
-	      }
-#else
-            glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, tetcols[ind]);
-#endif
-
-
+	      glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, tetcols[ind]);
 
 
             if (curv.IsHighOrder()) //  && curv.IsElementCurved(ei))
@@ -2084,52 +2064,48 @@ namespace netgen
 		    n = Cross (pts[1]-pts[0], pts[2]-pts[0]);
 		    glNormal3dv (n);
 
-		    SetOpenGlColor  (locms(el[0]-1), minh, maxh, 0);
+		    SetOpenGlColor (locms(el[0]-1), minh, maxh, 0);
 		    glVertex3dv (pts[0]);
 
-		    SetOpenGlColor  (locms(el[1]-1), minh, maxh, 0);
+		    SetOpenGlColor (locms(el[1]-1), minh, maxh, 0);
 		    glVertex3dv (pts[1]);
 
-		    SetOpenGlColor  (locms(el[2]-1), minh, maxh, 0);
+		    SetOpenGlColor (locms(el[2]-1), minh, maxh, 0);
 		    glVertex3dv (pts[2]);
 
 		    n = Cross (pts[3]-pts[1], pts[2]-pts[1]);
 		    glNormal3dv (n);
 
-		    SetOpenGlColor  (locms(el[3]-1), minh, maxh, 0);
+		    SetOpenGlColor (locms(el[3]-1), minh, maxh, 0);
 		    glVertex3dv (pts[3]);
 
 		    n = Cross (pts[3]-pts[2], pts[0]-pts[2]);
 		    glNormal3dv (n);
 
-		    SetOpenGlColor  (locms(el[0]-1), minh, maxh, 0);
+		    SetOpenGlColor (locms(el[0]-1), minh, maxh, 0);
 		    glVertex3dv (pts[0]);
 
 		    n = Cross (pts[1]-pts[3], pts[0]-pts[3]);
 		    glNormal3dv (n);
 
-		    SetOpenGlColor  (locms(el[1]-1), minh, maxh, 0);
+		    SetOpenGlColor (locms(el[1]-1), minh, maxh, 0);
 		    glVertex3dv (pts[1]);
 		  }
 		else // Do not color mesh based on mesh size
 		  {
-		    n = Cross (pts[1]-pts[0], pts[2]-pts[0]);
-		    glNormal3dv (n);
+		    glNormal3dv (Cross (pts[1]-pts[0], pts[2]-pts[0]));
 
 		    glVertex3dv (pts[0]);
 		    glVertex3dv (pts[1]);
 		    glVertex3dv (pts[2]);
 
-		    n = Cross (pts[3]-pts[1], pts[2]-pts[1]);
-		    glNormal3dv (n);
+		    glNormal3dv (Cross (pts[3]-pts[1], pts[2]-pts[1]));
 		    glVertex3dv (pts[3]);
 
-		    n = Cross (pts[3]-pts[2], pts[0]-pts[2]);
-		    glNormal3dv (n);
+		    glNormal3dv (Cross (pts[3]-pts[2], pts[0]-pts[2]));
 		    glVertex3dv (pts[0]);
 
-		    n = Cross (pts[1]-pts[3], pts[0]-pts[3]);
-		    glNormal3dv (n);
+		    glNormal3dv (Cross (pts[1]-pts[3], pts[0]-pts[3]));
 		    glVertex3dv (pts[1]);
 		  }
 

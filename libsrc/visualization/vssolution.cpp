@@ -337,10 +337,6 @@ namespace netgen
 
   void VisualSceneSolution :: DrawScene ()
   {
-    clock_t starttime, endtime;
-    starttime = clock();
-
-
     if (!mesh) 
       {
         VisualScene::DrawScene();      
@@ -504,9 +500,6 @@ namespace netgen
     
     // delete lock;
     // mem_lock.UnLock();
-
-    endtime = clock();
-    //    cout << 1.0 / (double(endtime - starttime)/CLOCKS_PER_SEC) << " frames/sec" << endl;
   }
   
 
@@ -1033,18 +1026,12 @@ namespace netgen
 
     
     const SolData * sol = NULL;
-    const SolData * vsol = NULL;
     
     if (scalfunction != -1)
       sol = soldata[scalfunction];
-    if (vecfunction != -1)
-      vsol = soldata[vecfunction];
     
     if (mesh->GetTimeStamp () > solutiontimestamp)
-      {
-        sol = NULL;
-        vsol = NULL;
-      }
+      sol = NULL;
 
     glLineWidth (1.0f);
 
@@ -1360,13 +1347,13 @@ namespace netgen
 
 	if ( el . IsGhost() ) continue;
 
-        bool curved = curv.IsSurfaceElementCurved (sei);
+        // bool curved = curv.IsSurfaceElementCurved (sei);
 
         int nv = (el.GetType() == TRIG || el.GetType() == TRIG6) ? 3 : 4;
         /*
         Point<3> p1, p2, p3, p4;
         if (!curved)
-          {
+	{
             p1 = (*mesh)[el[0]];
             p2 = (*mesh)[el[1]];
             p3 = (*mesh)[el[2]];
@@ -1396,8 +1383,7 @@ namespace netgen
                 for (int ix = 0; ix <= n; ix++)
                   ptsloc[ix] = p0 + (double(ix) / n) * vtau;
                     
-                mesh->GetCurvedElements(). 
-                  CalcMultiPointSurfaceTransformation (&ptsloc, sei, &ptsglob, 0);
+                curv.CalcMultiPointSurfaceTransformation (&ptsloc, sei, &ptsglob, 0);
 
                 for (int ix = 0; ix <= n; ix++)
                   {
