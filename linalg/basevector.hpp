@@ -166,6 +166,9 @@ public:
   virtual FlatVector<double> FVDouble () const = 0;
   virtual FlatVector<Complex> FVComplex () const = 0;
 
+  template <typename T>
+  FlatVector<T> FV () const;
+
   template <class TSCAL>
   TSCAL InnerProduct (const BaseVector & v2) const 
   {
@@ -205,9 +208,7 @@ public:
 
   virtual void SetRandom ();
 
-  // virtual BaseVector * Range (int begin, int end);
   virtual BaseVector * Range (int begin, int end) const;
-
 
   void GetIndirect (const FlatArray<int> & ind, 
 		    const FlatVector<double> & v) const;
@@ -222,18 +223,83 @@ public:
   void AddIndirect (const FlatArray<int> & ind, 
 		    const FlatVector<Complex> & v);
 
+
+
   template<int S>
   void GetIndirect (const Array<int> & ind, 
-		    FlatVector< Vec<S,double> > & v) const;
+		    FlatVector< Vec<S,double> > & v) const
+  { 
+    FlatVector<double> fv = FVDouble();
+    // int es = EntrySize();
+    for (int i = 0, ii = 0; i < ind.Size(); i++)
+      if (ind[i] != -1)
+	{
+	  int base = S * ind[i];
+	  for (int j = 0; j < S; j++)
+	    v[ii++] = fv[base++];
+	}
+      else
+	{
+	  for (int j = 0; j < S; j++)
+	    v[ii++] = 0;
+	}
+  }
+
+    
   template<int S>
   void GetIndirect (const Array<int> & ind, 
-		    FlatVector< Vec<S,Complex> > & v) const;
+		    FlatVector< Vec<S,Complex> > & v) const
+  { 
+    FlatVector<Complex> fv = FVComplex();
+    // int es = EntrySize() / 2;
+    for (int i = 0, ii = 0; i < ind.Size(); i++)
+      if (ind[i] != -1)
+	{
+	  int base = S * ind[i];
+	  for (int j = 0; j < S; j++)
+	    v[ii++] = fv[base++];
+	}
+      else
+	{
+	  for (int j = 0; j < S; j++)
+	    v[ii++] = 0.0;
+	}
+  }
+
+
   template<int S>
   void AddIndirect (const Array<int> & ind, 
-		    const FlatVector< Vec<S,double> > & v);
+		    const FlatVector< Vec<S,double> > & v)
+  { 
+    FlatVector<double> fv = FVDouble();
+    // int es = EntrySize();
+    
+    for (int i = 0; i < ind.Size(); i++)
+      if (ind[i] != -1)
+	{
+	  int base = S * ind[i];
+	  for (int j = 0; j < S; j++)
+	    fv[base++] += v[i](j);
+	}
+   }
+
   template<int S>
   void AddIndirect (const Array<int> & ind, 
-		    const FlatVector< Vec<S,Complex> > & v);
+		    const FlatVector< Vec<S,Complex> > & v)
+  { 
+    FlatVector<Complex> fv = FVComplex();
+    // if(EntrySize() != 2*S)
+    //       throw Exception("BaseVector::AddIndirect() wrong dimensions");
+
+    for (int i = 0; i < ind.Size(); i++)
+      if (ind[i] != -1)
+	{
+	  int base = S * ind[i];
+	  for (int j = 0; j < S; j++)
+	    fv[base++] += v[i](j);
+	}
+  }
+  
   
   
 
@@ -290,6 +356,30 @@ public:
   */
 
 };
+
+
+
+template <>
+inline FlatVector<double> BaseVector::FV<double> () const
+{
+  return FVDouble();
+}
+
+template <>
+inline FlatVector<Complex> BaseVector::FV<Complex> () const
+{
+  return FVComplex();
+}
+
+template <typename T>
+inline FlatVector<T> BaseVector::FV () const
+{
+  typedef typename mat_traits<T>::TSCAL TSCAL;
+  return FlatVector<T> (Size(), FV<TSCAL>().Addr(0));
+}
+
+
+
 
 
 

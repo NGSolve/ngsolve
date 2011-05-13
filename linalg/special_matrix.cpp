@@ -49,10 +49,10 @@ namespace ngla
   {
     try
       {
-	const FlatVector<TVC> cx =
-	  dynamic_cast<const T_BaseVector<TVC>&> (x).FV();
-	FlatVector<TVC> cy =
-	  dynamic_cast<T_BaseVector<TVC>&> (y).FV();
+	const FlatVector<TVC> cx = x.FV<TVC> ();
+	// dynamic_cast<const T_BaseVector<TVC>&> (x).FV();
+	FlatVector<TVC> cy = y.FV<TVC> ();
+	// dynamic_cast<T_BaseVector<TVC>&> (y).FV();
 
 	VVector<TVR> & hhx = const_cast<VVector<TVR>&> (hx);
 	VVector<TVR> & hhy = const_cast<VVector<TVR>&> (hy);
@@ -94,10 +94,10 @@ namespace ngla
   void  Real2ComplexMatrix<double,Complex> :: 
   MultAdd (Complex s, const BaseVector & x, BaseVector & y) const
   {
-    const FlatVector<Complex> cx =
-      dynamic_cast<const T_BaseVector<Complex>&> (x).FV();
-    FlatVector<Complex> cy =
-      dynamic_cast<T_BaseVector<Complex>&> (y).FV();
+    const FlatVector<Complex> cx =x.FV<Complex> ();
+    // dynamic_cast<const T_BaseVector<Complex>&> (x).FV();
+    FlatVector<Complex> cy =y.FV<Complex> ();
+    // dynamic_cast<T_BaseVector<Complex>&> (y).FV();
 
     VVector<double> & hhx = const_cast<VVector<double>&> (hx);
     VVector<double> & hhy = const_cast<VVector<double>&> (hy);
@@ -171,10 +171,10 @@ namespace ngla
   void  Sym2NonSymMatrix<TVR> :: 
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    const FlatVector<TVR> cx =
-      dynamic_cast<const T_BaseVector<TVR>&> (x).FV();
-    FlatVector<TVR> cy =
-      dynamic_cast<T_BaseVector<TVR>&> (y).FV();
+    const FlatVector<TVR> cx = x.FV<TVR> ();
+    // dynamic_cast<const T_BaseVector<TVR>&> (x).FV();
+    FlatVector<TVR> cy = y.FV<TVR> ();
+    // dynamic_cast<T_BaseVector<TVR>&> (y).FV();
 
     VVector<TVR> & hhx = const_cast<VVector<TVR>&> (hx);
     VVector<TVR> & hhy = const_cast<VVector<TVR>&> (hy);
@@ -238,10 +238,10 @@ namespace ngla
   void  Small2BigNonSymMatrix<TVSMALL,TVBIG> :: 
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    const FlatVector<TVBIG> cx =
-      dynamic_cast<const T_BaseVector<TVBIG>&> (x).FV();
-    FlatVector<TVBIG> cy =
-      dynamic_cast<T_BaseVector<TVBIG>&> (y).FV();
+    const FlatVector<TVBIG> cx = x.FV<TVBIG> ();
+    // dynamic_cast<const T_BaseVector<TVBIG>&> (x).FV();
+    FlatVector<TVBIG> cy = y.FV<TVBIG> ();
+    // dynamic_cast<T_BaseVector<TVBIG>&> (y).FV();
 
     VVector<TVSMALL> & hhx1 = const_cast<VVector<TVSMALL>&> (hx1);
     VVector<TVSMALL> & hhx2 = const_cast<VVector<TVSMALL>&> (hx2);
@@ -280,10 +280,10 @@ namespace ngla
   void  Small2BigNonSymMatrix<double, Vec<2,double> > :: 
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    const FlatVector<Vec<2,double> > cx =
-      dynamic_cast<const T_BaseVector<Vec<2,double> >&> (x).FV();
-    FlatVector<Vec<2,double> > cy =
-      dynamic_cast<T_BaseVector<Vec<2,double> >&> (y).FV();
+    const FlatVector<Vec<2,double> > cx = x.FV<Vec<2,double> > ();
+    // dynamic_cast<const T_BaseVector<Vec<2,double> >&> (x).FV();
+    FlatVector<Vec<2,double> > cy = y.FV< Vec<2,double> > ();
+    // dynamic_cast<T_BaseVector<Vec<2,double> >&> (y).FV();
 
     VVector<double> & hhx1 = const_cast<VVector<double>&> (hx1);
     VVector<double> & hhx2 = const_cast<VVector<double>&> (hx2);

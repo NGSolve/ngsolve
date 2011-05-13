@@ -595,10 +595,10 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("Pardiso Solve");
     NgProfiler::RegionTimer reg (timer);
 
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (const_cast<BaseVector &> (x)).FV();
-    FlatVector<TVX> fy = 
-      dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (const_cast<BaseVector &> (x)).FV();
+    FlatVector<TVX> fy = y.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
     
 
     int maxfct = 1, mnum = 1, phase = 33, nrhs = 1, msglevel = 0, error;
@@ -665,7 +665,7 @@ namespace ngla
 
     for (int i=0; i<height/entrysize; i++)
       if (!used.Test(i))
-	for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0;
+	for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0.0;
     
 
     /*

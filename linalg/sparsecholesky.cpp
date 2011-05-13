@@ -1033,17 +1033,17 @@ namespace ngla
 
     int n = Height();
     
-    const FlatVector<TVX> fx = 
-      dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
-    FlatVector<TVX> fy = 
-      dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+    const FlatVector<TVX> fx = x.FV<TVX> ();
+    // dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
+    FlatVector<TVX> fy = y.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
     
     Vector<TVX> hy(n);
     for (int i = 0; i < n; i++)
       hy(order[i]) = fx(i);
 
     TVX hv;
-    TVX * hhy = &hy(0);
+    TVX * hhy = hy.Addr(0);
 
     const TM * hlfact = &lfact[0];
     const TM * hdiag = &diag[0];
@@ -1116,10 +1116,10 @@ namespace ngla
     int n = Height();
     
 
-    const FlatVector<TVX> fx = 
-      dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
-    FlatVector<TVX> fy = 
-      dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+    const FlatVector<TVX> fx = x.FV<TVX> ();
+    // dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
+    FlatVector<TVX> fy = y.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
     
     Vector<TVX> hy(n);
     for (int i = 0; i < n; i++)
@@ -1127,7 +1127,7 @@ namespace ngla
 
     TVX hv;
 
-    TVX * hhy = &hy(0);
+    TVX * hhy = hy.Addr(0);
 
 
 

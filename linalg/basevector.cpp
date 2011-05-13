@@ -201,7 +201,7 @@ namespace ngla
       fv(i) = double (rand()) / RAND_MAX;
   }
   
-  
+  /*  
   template<int S>
   void BaseVector :: GetIndirect (const Array<int> & ind, 
 				  FlatVector< Vec<S,double> > & v) const 
@@ -247,6 +247,7 @@ namespace ngla
 	    v[i](j) = 0;
 	}
   }
+  */
 
   void BaseVector :: GetIndirect (const FlatArray<int> & ind, 
 				  const FlatVector<double> & v) const 
@@ -322,6 +323,7 @@ namespace ngla
 	ii += es;
   }
 
+  /*
   template<int S>
   void BaseVector :: AddIndirect (const Array<int> & ind, 
 				  const FlatVector< Vec<S,double> > & v) 
@@ -354,7 +356,7 @@ namespace ngla
 	    fv[base++] += v[i](j);
 	}
   }
-  
+  */  
 
   void BaseVector :: AddIndirect (const FlatArray<int> & ind, 
 				  const FlatVector<double> & v) 
@@ -391,7 +393,7 @@ namespace ngla
   }
   
 
-
+  /*
   template void BaseVector::GetIndirect(const Array<int> & ind, 
 					   FlatVector< Vec<2,double> > & v) const;
   template void BaseVector::GetIndirect(const Array<int> & ind, 
@@ -510,6 +512,7 @@ namespace ngla
 					   const FlatVector< Vec<14,Complex> > & v);
   template void BaseVector::AddIndirect(const Array<int> & ind, 
 					   const FlatVector< Vec<15,Complex> > & v);
+  */
 
 
 
