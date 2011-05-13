@@ -39,7 +39,7 @@ namespace netgen
     cout << "bbox = " << bbox << endl;
 
 
-    Point<3> mpc = bbox.Center();
+    // Point<3> mpc = bbox.Center();
     bbox.Increase (bbox.Diam()/2);
     Box<3> meshbox = bbox;
     

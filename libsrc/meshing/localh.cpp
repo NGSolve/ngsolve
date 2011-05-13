@@ -323,7 +323,7 @@ namespace netgen
     Point3d rpmid(root->xmid[0], root->xmid[1], root->xmid[2]);
     Vec3d rv(root->h2, root->h2, root->h2);
     Point3d rx2 = rpmid + rv;
-    Point3d rx1 = rpmid - rv;
+    // Point3d rx1 = rpmid - rv;
 
 
     root->flags.pinner = !adfront->SameSide (rpmid, rx2);
@@ -477,7 +477,7 @@ namespace netgen
     Point<2> rpmid(root->xmid[0], root->xmid[1], root->xmid[2]);
     Vec<2> rv(root->h2, root->h2);
     Point<2> rx2 = rpmid + rv;
-    Point<2> rx1 = rpmid - rv;
+    // Point<2> rx1 = rpmid - rv;
 
 
     root->flags.pinner = !adfront->SameSide (rpmid, rx2);

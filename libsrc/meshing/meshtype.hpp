@@ -770,22 +770,20 @@ namespace netgen
       return flags.deleted; 
     }
 
+
+
 #ifdef PARALLEL
     int GetPartition () const { return partitionNumber; }
     void SetPartition (int nr) { partitionNumber = nr; }; 
-#endif
 
-    int hp_elnr;
-
-#ifdef PARALLEL
     bool IsGhost () const { return isghost; }
-
     void SetGhost ( const bool aisghost ) { isghost = aisghost; }
 #else
     bool IsGhost () const { return false; }
+    int GetPartition () const { return 0; }
 #endif
 
-    // friend class Mesh;
+    int hp_elnr;
   };
 
   ostream & operator<<(ostream  & s, const Element & el);

@@ -1,7 +1,6 @@
 #include <mystdlib.h>
 #include "meshing.hpp"
 
-
 namespace netgen
 {
 
@@ -38,6 +37,7 @@ namespace netgen
     geomtype = NO_GEOM;
 
     bcnames.SetSize(0);
+
 #ifdef PARALLEL
     paralleltop = new ParallelMeshTopology (*this);
 #endif
