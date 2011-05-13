@@ -404,19 +404,19 @@ namespace ngcomp
 
   const FiniteElement & VectorFacetFESpace :: GetSFE ( int selnr, LocalHeap & lh ) const
   {
-    
-    VectorFacetFacetFiniteElement * fe = 0;
+    VectorFacetFacetFiniteElement<1> * fe1d = 0;
+    VectorFacetFacetFiniteElement<2> * fe2d = 0;
 
     switch (ma.GetSElType(selnr))
       {
-      case ET_SEGM: fe = new (lh) VectorFacetFacetSegm (); break;
-      case ET_TRIG: fe = new (lh) VectorFacetFacetTrig (); break;
-      case ET_QUAD: fe = new (lh) VectorFacetFacetQuad (); break;
+      case ET_SEGM: fe1d = new (lh) VectorFacetFacetSegm (); break;
+      case ET_TRIG: fe2d = new (lh) VectorFacetFacetTrig (); break;
+      case ET_QUAD: fe2d = new (lh) VectorFacetFacetQuad (); break;
       default:
-        fe = 0;
+        ;
       }
      
-    if (!fe)
+    if (!fe1d && !fe2d)
       {
 	stringstream str;
 	str << "VectorFacetFESpace " << GetClassName()
@@ -434,22 +434,22 @@ namespace ngcomp
     switch (ma.GetSElType(selnr))
       {
       case ET_SEGM:
-        fe -> SetVertexNumbers (vnums);
+        fe1d -> SetVertexNumbers (vnums);
         ma.GetSElEdges(selnr, ednums);
-        fe -> SetOrder (order_facet[ednums[0]][0]-reduceorder); 
-        fe -> ComputeNDof();
+        fe1d -> SetOrder (order_facet[ednums[0]][0]-reduceorder); 
+        fe1d -> ComputeNDof();
+	return *fe1d;
         break;
       case ET_TRIG: 
       case ET_QUAD:
-        fe -> SetVertexNumbers (vnums);
-        fe -> SetOrder (order_facet[ma.GetSElFace(selnr)][0]-reduceorder);
-        fe -> ComputeNDof();
+        fe2d -> SetVertexNumbers (vnums);
+        fe2d -> SetOrder (order_facet[ma.GetSElFace(selnr)][0]-reduceorder);
+        fe2d -> ComputeNDof();
+	return *fe2d;
         break;
       default:
 	throw Exception ("VectorFacetFESpace::GetSFE: unsupported element");
       }
-    return *fe;
-    
   }
 
   void VectorFacetFESpace :: GetDofNrs(int elnr, Array<int> & dnums) const
