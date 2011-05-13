@@ -1,4 +1,3 @@
-
 #ifdef LAPACK
 #include <iostream>
 #include <complex>
@@ -307,12 +306,7 @@ namespace ngbla
   
     int info = 0;
 
-    int ii; 
-    ii=0; 
-   
     if(balancing) zggbal_(&job,&n, at, &n , bt, &n, &ilo, &ihi,  lscale, rscale, work2, &info) ; 
-  
-  
   
     if(info == 0 ) 
       {  
@@ -457,9 +451,6 @@ namespace ngbla
   
     int info = 0;
 
-    int ii; 
-    ii=0; 
-   
 
     double abnrm, bbnrm; // 1-norm of A and B 
     

@@ -1227,7 +1227,7 @@ namespace ngbla
         {
           sum = a(i,0) * b(0,j);
           for (int k = 1; k < wa; k++)
-            sum += a(i,k) * b(k, j);
+            sum += a(i,k) * b(k,j);
         }
       else
         sum = TSCAL(0);
