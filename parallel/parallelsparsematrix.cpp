@@ -22,13 +22,13 @@ namespace ngla
 
 
 
-// #ifdef PARALLEL
-//   ngparallel::ParallelDofs * BaseMatrix :: GetParallelDofs ( )
-//   { return paralleldofs; }
+  // #ifdef PARALLEL
+  //   ngparallel::ParallelDofs * BaseMatrix :: GetParallelDofs ( )
+  //   { return paralleldofs; }
 
-//   const ngparallel::ParallelDofs * BaseMatrix :: GetParallelDofs ( ) const
-//   { return paralleldofs; }
-// #endif
+  //   const ngparallel::ParallelDofs * BaseMatrix :: GetParallelDofs ( ) const
+  //   { return paralleldofs; }
+  // #endif
 
   ParallelBaseMatrix :: ParallelBaseMatrix()
   {
@@ -197,18 +197,18 @@ namespace ngla
 		  }
 	    // end sort
 
-// 	    for ( int sedind = 0; sedind < sortedexchangedof.Size(); sedind++ )
-// 	      {
-// 		// see if sortedexchangedof is present in this row
-// 		int col = sortedexchangedof[sedind];
-// 		if ( !rowindices.Contains(col) ) continue;
+	    // 	    for ( int sedind = 0; sedind < sortedexchangedof.Size(); sedind++ )
+	    // 	      {
+	    // 		// see if sortedexchangedof is present in this row
+	    // 		int col = sortedexchangedof[sedind];
+	    // 		if ( !rowindices.Contains(col) ) continue;
 
-// 		// indexnr im sortedexdof an die sendcolnr anhaengen
-// 		// append entry(row,col) to sendvalues
-// 		// counter indexnr ++
+	    // 		// indexnr im sortedexdof an die sendcolnr anhaengen
+	    // 		// append entry(row,col) to sendvalues
+	    // 		// counter indexnr ++
 
 
-// 		sendcolnr[dest] -> Append ( sedind );
+	    // 		sendcolnr[dest] -> Append ( sedind );
 	    for ( int ind = 0; ind <  nsri; ind++ )
 	      {
 		int col = sortedrowindices[ind];
@@ -333,17 +333,17 @@ namespace ngla
     delete [] sendfirequest;delete [] sendcnrequest;delete [] sendvalrequest;
     delete [] recvfirequest;delete [] recvcnrequest;delete [] recvvalrequest; 
 
-//     for ( int dest = 1; dest < ntasks; dest++ )
-//       {
-// 	delete sendfirsti[dest]; delete sendcolnr[dest]; delete sendvalues[dest];
-// 	delete recvfirsti[dest]; delete recvcolnr[dest]; delete recvvalues[dest];
-//       }
+    //     for ( int dest = 1; dest < ntasks; dest++ )
+    //       {
+    // 	delete sendfirsti[dest]; delete sendcolnr[dest]; delete sendvalues[dest];
+    // 	delete recvfirsti[dest]; delete recvcolnr[dest]; delete recvvalues[dest];
+    //       }
 
 
     delete [] sendfirsti; delete [] sendcolnr; delete [] sendvalues;
     delete [] recvfirsti; delete [] recvcolnr; delete [] recvvalues;
 
-//     *testout << "consistentmat " << endl <<  *consistentmat << endl;
+    //     *testout << "consistentmat " << endl <<  *consistentmat << endl;
     
   }
 
@@ -454,10 +454,10 @@ namespace ngla
 
   template <class TM, class TV>
   ParallelSparseMatrixSymmetric<TM,TV> ::
-   ParallelSparseMatrixSymmetric (const ParallelSparseMatrixSymmetric & amat)
+  ParallelSparseMatrixSymmetric (const ParallelSparseMatrixSymmetric & amat)
     : SparseMatrixTM<TM> (amat) , 
-       SparseMatrixSymmetricTM<TM> (amat),
-       SparseMatrix<TM,TV,TV> (amat),
+      SparseMatrixSymmetricTM<TM> (amat),
+      SparseMatrix<TM,TV,TV> (amat),
       SparseMatrixSymmetric<TM,TV> (amat),
       ParallelSparseMatrix<TM,TV,TV> (amat)
   {
@@ -621,14 +621,14 @@ namespace ngla
 		  }
 	    // end sort
 	    
-// 	    for ( int sedind = 0; sedind < sortedexchangedof.Size(); sedind++ )
-// 	      {
-// 		// see if sortedexchangedof is present in this row
-// 		int col = sortedexchangedof[sedind];
+	    // 	    for ( int sedind = 0; sedind < sortedexchangedof.Size(); sedind++ )
+	    // 	      {
+	    // 		// see if sortedexchangedof is present in this row
+	    // 		int col = sortedexchangedof[sedind];
 		
-// 		if ( !rowindices.Contains(col) ) continue;
-// 		*testout << "juhu, colind " << col <<  endl;	    
-// 		sendcolnr[dest] -> Append(sedind);
+	    // 		if ( !rowindices.Contains(col) ) continue;
+	    // 		*testout << "juhu, colind " << col <<  endl;	    
+	    // 		sendcolnr[dest] -> Append(sedind);
 
 	    for ( int ind = 0; ind <  nsri; ind++ )
 	      {
@@ -651,28 +651,28 @@ namespace ngla
 	      }
 
 
-// 	    for ( int colind = 0; colind < rowindices.Size(); colind++)
-// 	      {
-// 		int col = rowindices[colind];
-// 		if ( ! paralleldofs.IsExchangeDof ( dest, col ) ) continue;
+	    // 	    for ( int colind = 0; colind < rowindices.Size(); colind++)
+	    // 	      {
+	    // 		int col = rowindices[colind];
+	    // 		if ( ! paralleldofs.IsExchangeDof ( dest, col ) ) continue;
 
-// 		// col -> distcol
-// 		// distcol an die sendcolnr anhaengen
-// 		// append entry(row,col) to sendvalues
-// 		// counter indexnr ++
+	    // 		// col -> distcol
+	    // 		// distcol an die sendcolnr anhaengen
+	    // 		// append entry(row,col) to sendvalues
+	    // 		// counter indexnr ++
 
 
-// 		sendcolnr[dest] -> Append ( col );
-// 		int pos = this->GetPositionTest ( row, col);
-// 		if ( (paralleldofs.IsGhostDof( row ) && paralleldofs.IsGhostDof(col)) || pos < 0 )
-// 		  {
-// 		    sendvalues[dest] -> Append ( zero );
-// 		    (*consistentmat)(row,col) = zero;
-// 		  }
-// 		else
-// 		  sendvalues[dest] -> Append ( (*this)[pos] );
-// 		indexnr ++; 
-// 	      }
+	    // 		sendcolnr[dest] -> Append ( col );
+	    // 		int pos = this->GetPositionTest ( row, col);
+	    // 		if ( (paralleldofs.IsGhostDof( row ) && paralleldofs.IsGhostDof(col)) || pos < 0 )
+	    // 		  {
+	    // 		    sendvalues[dest] -> Append ( zero );
+	    // 		    (*consistentmat)(row,col) = zero;
+	    // 		  }
+	    // 		else
+	    // 		  sendvalues[dest] -> Append ( (*this)[pos] );
+	    // 		indexnr ++; 
+	    // 	      }
  
 	  }
 	(sendfirsti[dest]) -> Append( indexnr );
@@ -693,7 +693,7 @@ namespace ngla
     for ( int idest = 0; idest < exprocs.Size(); idest ++ ) 
       {
 	int dest = exprocs[idest];
-// 	if ( ! paralleldofs.IsExchangeProc ( dest ) || dest == id ) continue; 
+	// 	if ( ! paralleldofs.IsExchangeProc ( dest ) || dest == id ) continue; 
 	MyMPI_ISend ( *(sendfirsti[dest]), dest, sendfirequest[dest]);
 	MyMPI_ISend ( *(sendcolnr[dest]), dest, sendcnrequest[dest]);
 	MyMPI_ISend ( *(sendvalues[dest]), dest, sendvalrequest[dest]);
@@ -707,7 +707,7 @@ namespace ngla
 	MyMPI_IRecv ( *(recvvalues[sender]), sender, recvvalrequest[sender]);
       }
 
-  for ( int isender = 0; isender < exprocs.Size(); isender++)
+    for ( int isender = 0; isender < exprocs.Size(); isender++)
       {
 	int sender = exprocs [ isender ];
 	MPI_Status status;
@@ -800,8 +800,7 @@ namespace ngla
 	    (*this, blocks, acoarsegridprecond, freedofs);
 	else
 	  return new ParallelBlockJacobiPrecondSymmetric<TM,TV> 
-	    (*this,
-	     dynamic_cast<const T_BaseVector<TVX>&>(*constraint).FV(),
+	    (*this, constraint->FV<TVX>(),
 	     blocks, acoarsegridprecond);
       }
     else
@@ -811,8 +810,7 @@ namespace ngla
 	    (*this, blocks);
 	else
 	  return new BlockJacobiPrecondSymmetric<TM,TV> 
-	    (*this,
-	     dynamic_cast<const T_BaseVector<TVX>&>(*constraint).FV(),
+	    (*this, constraint->FV<TVX>(),
 	     blocks);
       }
 
@@ -886,33 +884,33 @@ namespace ngla
   InverseMatrix (const BitArray * subset) const
   {
     /*
-    if ( this-> GetInverseType() == SUPERLU_DIST )
-#ifdef USE_SUPERLU_DIST
+      if ( this-> GetInverseType() == SUPERLU_DIST )
+      #ifdef USE_SUPERLU_DIST
       return new SuperLU_DIST_Inverse<TM,TV_ROW,TV_COL> (*this, subset);
-#else
-    throw Exception ("ParallelSparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
-#endif
+      #else
+      throw Exception ("ParallelSparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
+      #endif
 
 
-    else if (  BaseSparseMatrix :: GetInverseType()  == SUPERLU )
+      else if (  BaseSparseMatrix :: GetInverseType()  == SUPERLU )
       {
-#ifdef USE_SUPERLU
-	return new SuperLUInverse<TM,TV_ROW,TV_COL> (*this, subset);
-#else
-	throw Exception ("ParallelSparseMatrix::InverseMatrix:  SuperLUInverse not available");
-#endif
+      #ifdef USE_SUPERLU
+      return new SuperLUInverse<TM,TV_ROW,TV_COL> (*this, subset);
+      #else
+      throw Exception ("ParallelSparseMatrix::InverseMatrix:  SuperLUInverse not available");
+      #endif
       }
-    else if (  BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
+      else if (  BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
-#ifdef USE_PARDISO
-	return new PardisoInverse<TM,TV_ROW,TV_COL> (*this, subset);
-#else
-	throw Exception ("ParallelSparseMatrix::InverseMatrix:  PardisoInverse not available");
-#endif
+      #ifdef USE_PARDISO
+      return new PardisoInverse<TM,TV_ROW,TV_COL> (*this, subset);
+      #else
+      throw Exception ("ParallelSparseMatrix::InverseMatrix:  PardisoInverse not available");
+      #endif
       }
-    else
+      else
     */
-      return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, subset);
+    return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, subset);
   }
 
   // template <class TM>
@@ -923,32 +921,32 @@ namespace ngla
   InverseMatrix (const Array<int> * clusters) const
   {
     /*
-    if ( this->GetInverseType() == SUPERLU_DIST )
-#ifdef USE_SUPERLU_DIST
+      if ( this->GetInverseType() == SUPERLU_DIST )
+      #ifdef USE_SUPERLU_DIST
       return new SuperLU_DIST_Inverse<TM,TV_ROW,TV_COL> (*this, 0, clusters);
-#else
-    throw Exception ("ParallelSparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
-#endif
+      #else
+      throw Exception ("ParallelSparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
+      #endif
 
-    else if (  BaseSparseMatrix :: GetInverseType()  == SUPERLU )
+      else if (  BaseSparseMatrix :: GetInverseType()  == SUPERLU )
       {
-#ifdef USE_SUPERLU
-	return new SuperLUInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters);
-#else
-	throw Exception ("ParallelSparseMatrix::InverseMatrix:  SuperLUInverse not available");
-#endif
+      #ifdef USE_SUPERLU
+      return new SuperLUInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters);
+      #else
+      throw Exception ("ParallelSparseMatrix::InverseMatrix:  SuperLUInverse not available");
+      #endif
       }
-    else if (  BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
+      else if (  BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
-#ifdef USE_PARDISO
-	return new PardisoInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters);
-#else
-	throw Exception ("ParallelSparseMatrix::InverseMatrix:  PardisoInverse not available");
-#endif
+      #ifdef USE_PARDISO
+      return new PardisoInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters);
+      #else
+      throw Exception ("ParallelSparseMatrix::InverseMatrix:  PardisoInverse not available");
+      #endif
       }
-    else
-*/
-      return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, 0, clusters);
+      else
+    */
+    return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, 0, clusters);
   }
 
 
@@ -956,32 +954,32 @@ namespace ngla
   BaseMatrix * ParallelSparseMatrixSymmetric<TM,TV> :: InverseMatrix (const BitArray * subset) const
   {
     /*
-    if ( this->GetInverseType() == SUPERLU_DIST )
-#ifdef USE_SUPERLU_DIST
+      if ( this->GetInverseType() == SUPERLU_DIST )
+      #ifdef USE_SUPERLU_DIST
       return new SuperLU_DIST_Inverse<TM,TV_ROW,TV_COL> (*this, subset, 0, 1);
-#else
-    throw Exception ("ParallelSparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
-#endif
+      #else
+      throw Exception ("ParallelSparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
+      #endif
 
-    if (  BaseSparseMatrix :: GetInverseType()  == SUPERLU )
+      if (  BaseSparseMatrix :: GetInverseType()  == SUPERLU )
       {
-#ifdef USE_SUPERLU
-	return new SuperLUInverse<TM,TV_ROW,TV_COL> (*this, subset, 0, 1);
-#else
-	throw Exception ("ParallelSparseMatrix::InverseMatrix:  SuperLUInverse not available");
-#endif
+      #ifdef USE_SUPERLU
+      return new SuperLUInverse<TM,TV_ROW,TV_COL> (*this, subset, 0, 1);
+      #else
+      throw Exception ("ParallelSparseMatrix::InverseMatrix:  SuperLUInverse not available");
+      #endif
       }
-    else if ( BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
+      else if ( BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
-#ifdef USE_PARDISO
-	return new PardisoInverse<TM,TV_ROW,TV_COL> (*this, subset, 0, 1);
-#else
-	throw Exception ("ParallelSparseMatrix::InverseMatrix:  PardisoInverse not available");
-#endif
+      #ifdef USE_PARDISO
+      return new PardisoInverse<TM,TV_ROW,TV_COL> (*this, subset, 0, 1);
+      #else
+      throw Exception ("ParallelSparseMatrix::InverseMatrix:  PardisoInverse not available");
+      #endif
       }
-    else
+      else
     */
-      return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, subset);
+    return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, subset);
     // #endif
   }
 
@@ -1023,6 +1021,7 @@ namespace ngla
   void ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (double s, const BaseVector & bx, BaseVector & by) const
   {
+    cout << "multadd, nonsym" << endl;
     const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
     ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);
     
@@ -1050,13 +1049,13 @@ namespace ngla
     ParallelDofs & paralleldofs = *x.GetParallelDofs();
     
     FlatVector<TVX> fx (x.Size(), x.Memory());
-	FlatVector<TVY> fy (y.Size(), y.Memory());
+    FlatVector<TVY> fy (y.Size(), y.Memory());
 	
-	for (int i = 0; i < this->Height(); i++)
-	  if ( !paralleldofs.IsGhostDof(i) )
-	    SparseMatrix<TM,TV_ROW,TV_COL> ::AddRowTransToVector (i, s*fx(i), fy);
+    for (int i = 0; i < this->Height(); i++)
+      if ( !paralleldofs.IsGhostDof(i) )
+	SparseMatrix<TM,TV_ROW,TV_COL> ::AddRowTransToVector (i, s*fx(i), fy);
 	
-	y.SetStatus ( DISTRIBUTED );
+    y.SetStatus ( DISTRIBUTED );
   }
 
 
@@ -1079,7 +1078,6 @@ namespace ngla
 	fy(i) += ConvertTo<TSCAL> (s) * SparseMatrix<TM,TV_ROW,TV_COL> ::RowTimesVector (i, fx);
     
     y.SetStatus ( DISTRIBUTED );
-
   }
   
 
@@ -1090,17 +1088,17 @@ namespace ngla
     const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
     ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
 
-	x.AllReduce(&hoprocs);
-	ParallelDofs & paralleldofs = *x.GetParallelDofs();
+    x.AllReduce(&hoprocs);
+    ParallelDofs & paralleldofs = *x.GetParallelDofs();
 
-	FlatVector<TVX> fx (x.Size(), x.Memory());
-	FlatVector<TVY> fy (y.Size(), y.Memory());
+    FlatVector<TVX> fx (x.Size(), x.Memory());
+    FlatVector<TVY> fy (y.Size(), y.Memory());
 	
-	for (int i = 0; i < this->Height(); i++)
-	  if ( !paralleldofs.IsGhostDof(i) )
-	    SparseMatrix<TM,TV_ROW,TV_COL> ::AddRowTransToVector (i, ConvertTo<TSCAL> (s)*fx(i), fy);
+    for (int i = 0; i < this->Height(); i++)
+      if ( !paralleldofs.IsGhostDof(i) )
+	SparseMatrix<TM,TV_ROW,TV_COL> ::AddRowTransToVector (i, ConvertTo<TSCAL> (s)*fx(i), fy);
 
-	y.SetStatus ( DISTRIBUTED );
+    y.SetStatus ( DISTRIBUTED );
 
   }
 
@@ -1110,25 +1108,25 @@ namespace ngla
   void ParallelSparseMatrixSymmetric<TM,TV> :: 
   MultAdd (double s, const BaseVector & bx, BaseVector & by) const
   {
+    cout << "mult add sym" << endl;
     const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
     ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
 
+    x.AllReduce(&hoprocs);
+    ParallelDofs & paralleldofs = *(x.GetParallelDofs());
 
-	x.AllReduce(&hoprocs);
-	ParallelDofs & paralleldofs = *(x.GetParallelDofs());
-
-	const FlatVector<TV_ROW> fx = 
-	  dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
-	FlatVector<TV_COL> fy = 
-	  dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
+    const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
+    // dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
+    FlatVector<TV_COL> fy = y.FV<TV_COL>();
 	
-	for (int i = 0; i < this->Height(); i++)
-	  if ( !paralleldofs.IsGhostDof(i) )
-	    {
-	      fy(i) += s * RowTimesVector (i, fx);
-	      AddRowTransToVectorNoDiag (i, s * fx(i), fy);
-	    }
-	y.SetStatus ( DISTRIBUTED );
+    for (int i = 0; i < this->Height(); i++)
+      if ( !paralleldofs.IsGhostDof(i) )
+	{
+	  fy(i) += s * RowTimesVector (i, fx);
+	  AddRowTransToVectorNoDiag (i, s * fx(i), fy);
+	}
+    y.SetStatus ( DISTRIBUTED );
+    cout << "mult add sym, done" << endl;
   }
 
 
@@ -1137,23 +1135,24 @@ namespace ngla
   void ParallelSparseMatrixSymmetric<TM,TV> :: 
   MultAdd1 (double s, const BaseVector & bx, BaseVector & by) const
   {
+    cout << "multadd1" << endl;
     const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
     ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
 
-	x.AllReduce(&hoprocs);
-	ParallelDofs & paralleldofs = *(x.GetParallelDofs());
+    x.AllReduce(&hoprocs);
+    ParallelDofs & paralleldofs = *(x.GetParallelDofs());
 	
-	const FlatVector<TV_ROW> fx = 
-	  dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
-	FlatVector<TV_COL> fy = 
-	  dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
+    const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
+    // dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
+    FlatVector<TV_COL> fy = y.FV<TV_COL> ();
+    // dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
 	
-	for (int i = 0; i < this->Height(); i++)
-	  if ( !paralleldofs.IsGhostDof(i) )
-	    fy(i) += s * RowTimesVectorNoDiag (i, fx);
+    for (int i = 0; i < this->Height(); i++)
+      if ( !paralleldofs.IsGhostDof(i) )
+	fy(i) += s * RowTimesVectorNoDiag (i, fx);
 	
-	y.SetStatus ( DISTRIBUTED );
-
+    y.SetStatus ( DISTRIBUTED );
+    cout << "multadd1 done" << endl;
   }
 
 
@@ -1165,21 +1164,21 @@ namespace ngla
     ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
 
 
-	x.AllReduce(&hoprocs);
-	ParallelDofs & paralleldofs = *(x.GetParallelDofs());
+    x.AllReduce(&hoprocs);
+    ParallelDofs & paralleldofs = *(x.GetParallelDofs());
 	
-	const FlatVector<TV_ROW> fx = 
-	  dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
-	FlatVector<TV_COL> fy = 
-	  dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
+    const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
+    // dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
+    FlatVector<TV_COL> fy = y.FV<TV_COL> ();
+    // dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
 	
-	for (int i = 0; i < this->Height(); i++)
-	  if ( !paralleldofs.IsGhostDof(i) )
-	    {
-	      AddRowTransToVector (i, s * fx(i), fy);
-	    }
+    for (int i = 0; i < this->Height(); i++)
+      if ( !paralleldofs.IsGhostDof(i) )
+	{
+	  AddRowTransToVector (i, s * fx(i), fy);
+	}
 	
-	y.SetStatus ( DISTRIBUTED );
+    y.SetStatus ( DISTRIBUTED );
 
   }
 

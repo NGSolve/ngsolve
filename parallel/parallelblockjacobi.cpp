@@ -485,10 +485,10 @@ namespace ngla
 	    sendrequests.Append(request);
 	  }
 	
-	const FlatVector<TVX> fx = 
-	  dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
-	FlatVector<TVX> fy = 
-	  dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+	const FlatVector<TVX> fx = x.FV<TVX> ();
+	// dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
+	FlatVector<TVX> fy = y.FV<TVX> ();
+	// dynamic_cast<T_BaseVector<TVX> &> (y).FV();
 	
 	Vector<TVX> hxmax(maxbs);
 	Vector<TVX> hymax(maxbs);
@@ -500,8 +500,8 @@ namespace ngla
 	    int bs = blocktable[i].Size();
 	    if (!bs) continue;
 
-	    FlatVector<TVX> hx(bs, &hxmax(0));
-	    FlatVector<TVX> hy(bs, &hymax(0));
+	    FlatVector<TVX> hx(bs, hxmax.Addr(0));
+	    FlatVector<TVX> hy(bs, hymax.Addr(0));
 	    
 	    for (int j = 0; j < bs; j++)
 	      hx(j) = fx(blocktable[i][j]);	
@@ -544,8 +544,8 @@ namespace ngla
 	    int bs = blocktable[i].Size();
 	    if (!bs) continue;
 	    
-	    FlatVector<TVX> hx(bs, &hxmax(0));
-	    FlatVector<TVX> hy(bs, &hymax(0));
+	    FlatVector<TVX> hx(bs, hxmax.Addr(0));
+	    FlatVector<TVX> hy(bs, hymax.Addr(0));
 	    
 	    for (int j = 0; j < bs; j++)
 	      hx(j) = fx(blocktable[i][j]);	
@@ -709,10 +709,10 @@ namespace ngla
 	    sendrequests.Append(request);
 	  }
 	
-	const FlatVector<TVX> fx = 
-	  dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
-	FlatVector<TVX> fy = 
-	  dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+	const FlatVector<TVX> fx = x.FV<TVX> ();
+	  // dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
+	FlatVector<TVX> fy = y.FV<TVX> ();
+	// dynamic_cast<T_BaseVector<TVX> &> (y).FV();
 	
 	Vector<TVX> hxmax(maxbs);
 	Vector<TVX> hymax(maxbs);
@@ -724,8 +724,8 @@ namespace ngla
 	    int bs = blocktable[i].Size();
 	    if (!bs) continue;
 
-	    FlatVector<TVX> hx(bs, &hxmax(0));
-	    FlatVector<TVX> hy(bs, &hymax(0));
+	    FlatVector<TVX> hx(bs, hxmax.Addr(0));
+	    FlatVector<TVX> hy(bs, hymax.Addr(0));
 	    
 	    for (int j = 0; j < bs; j++)
 	      hx(j) = fx(blocktable[i][j]);	
@@ -765,8 +765,8 @@ namespace ngla
 	    int bs = blocktable[i].Size();
 	    if (!bs) continue;
 	    
-	    FlatVector<TVX> hx(bs, &hxmax(0));
-	    FlatVector<TVX> hy(bs, &hymax(0));
+	    FlatVector<TVX> hx(bs, hxmax.Addr(0));
+	    FlatVector<TVX> hy(bs, hymax.Addr(0));
 	    
 	    for (int j = 0; j < bs; j++)
 	      hx(j) = fx(blocktable[i][j]);	
@@ -892,16 +892,14 @@ namespace ngla
 
     int i, j, k;
 
-    const FlatVector<TVX> fb = 
-      dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+    const FlatVector<TVX> fb = b.FV<TVX> ();
+      // dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
+    FlatVector<TVX> fx = x.FV<TVX> ();
     ParallelBaseVector & w = dynamic_cast<ParallelBaseVector&> (*x.CreateVector(&hoprocs));
-    FlatVector<TVX> fw =
-      dynamic_cast<T_BaseVector<TVX> &> (w).FV();
+    FlatVector<TVX> fw = w.FV<TVX> ();
     ParallelBaseVector & w2 = dynamic_cast<ParallelBaseVector&> (*x.CreateVector(&hoprocs));
-    FlatVector<TVX> fw2 =
-      dynamic_cast<T_BaseVector<TVX> &> (w2).FV();
+    FlatVector<TVX> fw2 = w2.FV<TVX> ();
+
     Array<int> loprocs(0);
 
     x.AllReduce(&hoprocs, &loprocs);
@@ -924,8 +922,8 @@ namespace ngla
 		int bs = blocktable[i].Size();
 		if (!bs) continue;
 		
-		FlatVector<TVX> hx(bs, &hxmax(0));
-		FlatVector<TVX> hy(bs, &hymax(0));
+		FlatVector<TVX> hx(bs, hxmax.Addr(0));
+		FlatVector<TVX> hy(bs, hymax.Addr(0));
 		
 		for (j = 0; j < bs; j++)
 		  {
@@ -971,17 +969,15 @@ namespace ngla
 
     int i, j, k;
 
-    const FlatVector<TVX> fb = 
-      dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+    const FlatVector<TVX> fb = b.FV<TVX> ();
+    // dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
 
     ParallelBaseVector & w = dynamic_cast<ParallelBaseVector&> (*x.CreateVector(&hoprocs));
     ParallelBaseVector & w2 = dynamic_cast<ParallelBaseVector&> (*x.CreateVector(&hoprocs));
-    FlatVector<TVX> fw =
-      dynamic_cast<T_BaseVector<TVX> &> (w).FV();
-    FlatVector<TVX> fw2 =
-      dynamic_cast<T_BaseVector<TVX> &> (w2).FV();
+    FlatVector<TVX> fw = w.FV<TVX> ();
+    FlatVector<TVX> fw2 = w2.FV<TVX> ();
     Array<int> loprocs(0);
 
     x.AllReduce(&hoprocs, &loprocs);
@@ -1004,8 +1000,8 @@ namespace ngla
 		int bs = blocktable[i].Size();
 		if (!bs) continue;
 		
-		FlatVector<TVX> hx(bs, &hxmax(0));
-		FlatVector<TVX> hy(bs, &hymax(0));
+		FlatVector<TVX> hx(bs, hxmax.Addr(0));
+		FlatVector<TVX> hy(bs, hymax.Addr(0));
 	
 		for (j = 0; j < bs; j++)
 		  {
@@ -1572,6 +1568,7 @@ hugasd asdf
   void ParallelBlockJacobiPrecondSymmetric<TM,TV> :: 
   MultAdd (TSCAL s, const BaseVector & bx, BaseVector & by) const 
   {
+    cout << "parallelblockjacobiprecondsy, multadd" << endl;
     const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
     ParallelBaseVector & ncx = const_cast<ParallelBaseVector&> (x);
     ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);
@@ -1618,10 +1615,8 @@ hugasd asdf
 	      recvrequests.Append(request);
 	    }
 	
-	const FlatVector<TVX> fx =
-	  dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
-	FlatVector<TVX> fy = 
-	  dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+	const FlatVector<TVX> fx = x.FV<TVX> ();
+	FlatVector<TVX> fy = y.FV<TVX> ();
 	
 	Vector<TVX> hxmax(maxbs);
 	Vector<TVX> hymax(maxbs);
@@ -1633,8 +1628,8 @@ hugasd asdf
 	    int bs = blocktable[i].Size();
 	    if (!bs) continue;
 	    
-	    FlatVector<TVX> hx(bs, &hxmax(0));
-	    FlatVector<TVX> hy(bs, &hymax(0));
+	    FlatVector<TVX> hx(bs, hxmax.Addr(0));
+	    FlatVector<TVX> hy(bs, hymax.Addr(0));
 	    
 	    for (int j = 0; j < bs; j++)
 	      hx(j) = fx(blocktable[i][j]);
@@ -1669,8 +1664,8 @@ hugasd asdf
 	    int bs = blocktable[i].Size();
 	    if (!bs) continue;
 	    
-	    FlatVector<TVX> hx(bs, &hxmax(0)); 
-	    FlatVector<TVX> hy(bs, &hymax(0));
+	    FlatVector<TVX> hx(bs, hxmax.Addr(0)); 
+	    FlatVector<TVX> hy(bs, hymax.Addr(0));
 	    
 	    for (int j = 0; j < bs; j++)
 	      hx(j) = fx(blocktable[i][j]);
@@ -1777,7 +1772,7 @@ hugasd asdf
 	  y.SetStatus ( CUMULATED );
 	x.Distribute();
       }
-
+    cout << "parallelblockjacobiprecondsy, multadd done" << endl;
   }
 
 
@@ -1787,14 +1782,10 @@ hugasd asdf
   GSSmooth (BaseVector & x, const BaseVector & b,
 	    int steps ) const 
   {
-    const FlatVector<TVX> fb = 
-      dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-
-    T_BaseVector<TVX> & y = dynamic_cast< T_BaseVector<TVX> & > 
-      (*(x.CreateVector(&hoprocs)) );
-    FlatVector<TVX> fy = y.FV();
+    const FlatVector<TVX> fb = b.FV<TVX> ();
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    BaseVector & y = *x.CreateVector(&hoprocs);
+    FlatVector<TVX> fy = y.FV<TVX>();
 
    (*testout ) << "Block Jacobi Precond Symmetric: GSSmooth" << endl;
 
@@ -1871,12 +1862,12 @@ hugasd asdf
    GSSmoothPartial (BaseVector & x, const BaseVector & b,
 		    BaseVector & y) const 
   {
-    const FlatVector<TVX> fb = 
-      dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-    FlatVector<TVX> fy = 
-      dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+    const FlatVector<TVX> fb = b.FV<TVX> ();
+    // dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+    FlatVector<TVX> fy = y.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
    (*testout ) << "Block Jacobi Precond Symmetric - GSSmooth2" << endl;
 
 // #ifdef PARALLEL
@@ -1943,13 +1934,9 @@ hugasd asdf
     GSSmoothResiduum (BaseVector & x, const BaseVector & b,
                       BaseVector & res, int steps) const 
   {
-    const FlatVector<TVX> fb = 
-      dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-    FlatVector<TVX> fres = 
-      dynamic_cast<T_BaseVector<TVX> &> (res).FV();
-    
+    FlatVector<TVX> fb = b.FV<TVX> ();
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    FlatVector<TVX> fres = res.FV<TVX> ();
 
     fres = fb;
 
@@ -2037,14 +2024,12 @@ hugasd asdf
   GSSmoothBack (BaseVector & x, const BaseVector & b,
 		int steps) const 
   {
-    const FlatVector<TVX> fb = 
-      dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+    FlatVector<TVX> fb = b.FV<TVX> ();
+    FlatVector<TVX> fx = x.FV<TVX> ();
 
-    T_BaseVector<TVX> & y = dynamic_cast< T_BaseVector<TVX> & > 
-      (*(x.CreateVector(&hoprocs)) );
-    FlatVector<TVX> fy = y.FV();
+    // T_BaseVector<TVX> & y = dynamic_cast< T_BaseVector<TVX> & > (*(x.CreateVector(&hoprocs)) );
+    BaseVector & y = *x.CreateVector(&hoprocs);
+    FlatVector<TVX> fy = y.FV<TVX>();
 
    (*testout ) << "Block Jacobi Precond Symmetric 2 - GSSmooth" << endl;
 
@@ -2120,12 +2105,9 @@ hugasd asdf
     GSSmoothBackPartial (BaseVector & x, const BaseVector & b,
 			 BaseVector & y) const 
   {
-    const FlatVector<TVX> fb = 
-      dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-    FlatVector<TVX> fy = 
-      dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+    const FlatVector<TVX> fb = b.FV<TVX> ();
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    FlatVector<TVX> fy = y.FV<TVX> ();
 
 // #ifdef PARALLEL
 //     int doneblocks = 0;
