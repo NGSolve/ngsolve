@@ -126,7 +126,7 @@ namespace ngfem
 	  SpecificIntegrationPoint<D,D> sip1 (ip1, eltrans1, lh);
 	  double lam = coef_lam->Evaluate(sip1);
 
-	  Mat<D> jac1 = sip1.GetJacobian();
+	  // Mat<D> jac1 = sip1.GetJacobian();
 	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
 	  double det1 = sip1.GetJacobiDet();
 
@@ -141,7 +141,7 @@ namespace ngfem
 	  IntegrationPoint ip2 = (LocalFacetNr2!=-1) ? transform2(LocalFacetNr2, ir_facet[l]) : ip1;
 	  SpecificIntegrationPoint<D,D> sip2 (ip2, eltrans2, lh);
 	  // double lam2 = coef_lam->Evaluate(sip2);
-	  Mat<D> jac2 = sip2.GetJacobian();
+	  // Mat<D> jac2 = sip2.GetJacobian();
 	  Mat<D> inv_jac2 = sip2.GetJacobianInverse();
 	  double det2 = sip2.GetJacobiDet();
 	  
@@ -355,7 +355,7 @@ namespace ngfem
 	  
 	  SpecificIntegrationPoint<D,D> sip1 (ip1, eltrans1, lh);
 
-	  Mat<D> jac1 = sip1.GetJacobian();
+	  // Mat<D> jac1 = sip1.GetJacobian();
 	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
 	  double det1 = sip1.GetJacobiDet();
 
@@ -366,7 +366,7 @@ namespace ngfem
 	  IntegrationPoint ip2 = transform2(LocalFacetNr2, ir_facet[l]);
 	  SpecificIntegrationPoint<D,D> sip2 (ip2, eltrans2, lh);
 
-	  Mat<D> jac2 = sip2.GetJacobian();
+	  // Mat<D> jac2 = sip2.GetJacobian();
 	  Mat<D> inv_jac2 = sip2.GetJacobianInverse();
 	  double det2 = sip2.GetJacobiDet();
 	  
@@ -476,7 +476,7 @@ namespace ngfem
 	  
 	  SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
 
-	  Mat<D> jac = sip.GetJacobian();
+	  // Mat<D> jac = sip.GetJacobian();
 	  Mat<D> inv_jac = sip.GetJacobianInverse();
 	  double det = sip.GetJacobiDet();
 
@@ -590,7 +590,7 @@ namespace ngfem
 
 	  SpecificIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans, lh);
 	  
-	  Mat<D> jac1 = sip1.GetJacobian();
+	  // Mat<D> jac1 = sip1.GetJacobian();
 	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
 	  double det1 = sip1.GetJacobiDet();
 
@@ -711,7 +711,7 @@ namespace ngfem
 	  SpecificIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans, lh);
 	  double dir = coef_dir->Evaluate(sips);
 
-	  Mat<D> jac1 = sip1.GetJacobian();
+	  // Mat<D> jac1 = sip1.GetJacobian();
 	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
 	  double det1 = sip1.GetJacobiDet();
 
@@ -824,7 +824,7 @@ namespace ngfem
 
 	  SpecificIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans, lh);
 	  
-	  Mat<D> jac1 = sip1.GetJacobian();
+	  // Mat<D> jac1 = sip1.GetJacobian();
 	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
 	  double det1 = sip1.GetJacobiDet();
 
@@ -834,7 +834,7 @@ namespace ngfem
 
 	  fel1_l2->CalcShape(sip1.IP(), mat1_shape);
 
-	  Vec<D> invjac_normal1 = inv_jac1 * normal1;
+	  // Vec<D> invjac_normal1 = inv_jac1 * normal1;
 
 	  double fac = len1*ir_facet[l].Weight()*lam;
 	  elvec += fac *  mat1_shape;
@@ -920,7 +920,7 @@ namespace ngfem
 	  SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
 	  SpecificIntegrationPoint<D-1,D> sipsurf (ir_facet[l], seltrans, lh);
 
-	  Mat<D> jac = sip.GetJacobian();
+	  // Mat<D> jac = sip.GetJacobian();
 	  Mat<D> inv_jac = sip.GetJacobianInverse();
 	  double det = sip.GetJacobiDet();
 

@@ -49,7 +49,7 @@ namespace ngfem
     rect_pml = 0 .... circular pml with radius pml_r and center pml_center
     rect_pml = 1 .... square pml on square (-pml_x, pml_x)^d
     rect_pml = 2 .... rectangular pml on (pml_xmin, pml_xmax) x (pml_ymin, pml_ymax) x (pml_zmin, pml_zmax)
-   */
+  */
   int rect_pml = 0;
   
 
@@ -239,8 +239,8 @@ namespace ngfem
 	    {
 	      Complex g = 1.+ alpha * (1.0-3.0/abs_x);  
 	      point = g * hpoint;
-	    dxdxi = g * Id<3>();
-	    dxdxi(0,0) += 3.0*alpha/(abs_x*abs_x*abs_x) * hpoint(0);
+	      dxdxi = g * Id<3>();
+	      dxdxi(0,0) += 3.0*alpha/(abs_x*abs_x*abs_x) * hpoint(0);
 	    }
 	  break;
 	}
@@ -499,579 +499,198 @@ namespace ngfem
 
 
 
-
-/// 
-template <int D, typename FEL = ScalarFiniteElement<D> >
-class PML_LaplaceIntegrator 
-  : public PML_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL>
-{
-public:
-  ///
-  PML_LaplaceIntegrator (CoefficientFunction * coeff)
-    : PML_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
+  template <int D, typename FEL = ScalarFiniteElement<D> >
+  class PML_LaplaceIntegrator 
+    : public PML_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL>
   {
-    ;
-  }
+  public:
+    PML_LaplaceIntegrator (Array<CoefficientFunction*> & coefs)
+      : PML_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coefs[0]))
+    { ; }
   
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    virtual string Name () const { return "PML_Laplace"; }
+  };
+
+
+
+  template <int D, typename FEL = ScalarFiniteElement<D> >
+  class PML_MassIntegrator 
+    : public PML_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, FEL>
   {
-    return new PML_LaplaceIntegrator (coeffs[0]);
-  }
-
-  ///
-  virtual string Name () const { return "PML_Laplace"; }
-};
-
-
+  public:
+    PML_MassIntegrator (Array<CoefficientFunction*> & coefs)
+      : PML_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, FEL> (DiagDMat<1> (coefs[0]))
+    { ; }
+    virtual string Name () const { return "PML_Mass"; }
+  };
 
 
-/// 
-template <int D, typename FEL = ScalarFiniteElement<D> >
-class PML_ElasticityIntegrator 
-  : public PML_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, FEL>
-{
-public:
-  ///
-  PML_ElasticityIntegrator (CoefficientFunction * coefe,
-                            CoefficientFunction * coefnu)
-    : PML_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, FEL> (ElasticityDMat<D> (coefe, coefnu))
+
+
+  template <int D, typename FEL = ScalarFiniteElement<D> >
+  class PML_ElasticityIntegrator 
+    : public PML_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, FEL>
   {
-    ;
-  }
+  public:
+    PML_ElasticityIntegrator (Array<CoefficientFunction*> & coefs)
+      : PML_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, FEL> (ElasticityDMat<D> (coefs[0], coefs[1]))
+    { ; }
   
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-  {
-    return new PML_ElasticityIntegrator (coeffs[0], coeffs[1]);
-  }
-
-  ///
-  virtual string Name () const { return "PML_Elasticity"; }
-};
+    virtual string Name () const { return "PML_Elasticity"; }
+  };
 
 
 
 
-
-/// 
-template <int D, typename FEL = ScalarFiniteElement<D> >
-class PML_MassIntegrator 
-  : public PML_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, FEL>
-{
-public:
-  ///
-  PML_MassIntegrator (CoefficientFunction * coeff)
-    : PML_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, FEL> (DiagDMat<1> (coeff))
-  {
-    ;
-  }
+  /*
+ ///
+ class PML_ElasticityIntegrator
+ : public PML_BDBIntegrator<DiffOpStrain<2>, PlaneStressDMat, ScalarFiniteElement>
+ {
+ public:
+ ///
+ PML_ElasticityIntegrator (CoefficientFunction * coefe,
+ CoefficientFunction * coefnu)
+ : PML_BDBIntegrator<DiffOpStrain<2>, PlaneStressDMat, ScalarFiniteElement> 
+ (PlaneStressDMat (coefe, coefnu))
+ { ; }
   
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+ static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+ {
+ return new PML_ElasticityIntegrator (coeffs[0], coeffs[1]);
+ }
+
+
+
+ ///
+ virtual string Name () const { return "Elasticity"; }
+ };
+  */
+
+
+
+  template <int D>
+  class PML_CurlCurlEdgeIntegrator
+    : public PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> >
   {
-    return new PML_MassIntegrator (coeffs[0]);
-  }
-
-  ///
-  virtual string Name () const { return "PML_Mass"; }
-};
-
-
-
-/*
-///
-class PML_ElasticityIntegrator
-  : public PML_BDBIntegrator<DiffOpStrain<2>, PlaneStressDMat, ScalarFiniteElement>
-{
-public:
-  ///
-  PML_ElasticityIntegrator (CoefficientFunction * coefe,
-			    CoefficientFunction * coefnu)
-    : PML_BDBIntegrator<DiffOpStrain<2>, PlaneStressDMat, ScalarFiniteElement> 
-  (PlaneStressDMat (coefe, coefnu))
-  { ; }
+  public:
+    ///
+    PML_CurlCurlEdgeIntegrator (CoefficientFunction * coef)
+      : PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> > 
+    (DiagDMat<DIM_CURL_TRAIT<D>::DIM> (coef))
+    { ; }
   
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    {
+      return new PML_CurlCurlEdgeIntegrator (coeffs[0]);
+    }
+
+    virtual string Name () const { return "PML_CurlCurlEdge"; }
+  };
+
+
+  template <int D>
+  class PML_MassEdgeIntegrator
+    : public PML_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElement<D> >
   {
-    return new PML_ElasticityIntegrator (coeffs[0], coeffs[1]);
-  }
-
-
-
-  ///
-  virtual string Name () const { return "Elasticity"; }
-};
-*/
-
-
-
-template <int D>
-class PML_CurlCurlEdgeIntegrator
-  : public PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> >
-{
-public:
-  ///
-  PML_CurlCurlEdgeIntegrator (CoefficientFunction * coef)
-    : PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> > 
-  (DiagDMat<DIM_CURL_TRAIT<D>::DIM> (coef))
-  { ; }
+  public:
+    PML_MassEdgeIntegrator (CoefficientFunction * coef)
+      : PML_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElement<D> > 
+    (DiagDMat<D> (coef))
+    { ; }
   
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    {
+      return new PML_MassEdgeIntegrator (coeffs[0]);
+    }
+
+    ///
+    virtual string Name () const { return "PML_Massedge"; }
+  };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  ///
+  template <int D>
+  class PML_DivDivHDivIntegrator
+    : public PML_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> >
   {
-    return new PML_CurlCurlEdgeIntegrator (coeffs[0]);
-  }
-
-  virtual string Name () const { return "PML_CurlCurlEdge"; }
-};
-
-
-template <int D>
-class PML_MassEdgeIntegrator
-  : public PML_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElement<D> >
-{
-public:
-  PML_MassEdgeIntegrator (CoefficientFunction * coef)
-    : PML_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElement<D> > 
-  (DiagDMat<D> (coef))
-  { ; }
+  public:
+    ///
+    PML_DivDivHDivIntegrator (CoefficientFunction * coef)
+      : PML_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> > 
+    (DiagDMat<1> (coef))
+    { ; }
   
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    {
+      return new PML_DivDivHDivIntegrator (coeffs[0]);
+    }
+
+    ///
+    virtual string Name () const { return "PML_DivDivHDiv"; }
+  };
+
+
+  ///
+  template<int D>
+  class PML_MassHDivIntegrator
+    : public PML_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> >
   {
-    return new PML_MassEdgeIntegrator (coeffs[0]);
-  }
-
-  ///
-  virtual string Name () const { return "PML_Massedge"; }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-///
-template <int D>
-class PML_DivDivHDivIntegrator
-  : public PML_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> >
-{
-public:
-  ///
-  PML_DivDivHDivIntegrator (CoefficientFunction * coef)
-    : PML_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> > 
-  (DiagDMat<1> (coef))
-  { ; }
+  public:
+    ///
+    PML_MassHDivIntegrator (CoefficientFunction * coef)
+      : PML_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> > 
+    (DiagDMat<D> (coef))
+    { ; }
   
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    {
+      return new PML_MassHDivIntegrator (coeffs[0]);
+    }
+
+    ///
+    virtual string Name () const { return "PML_MassHDiv"; }
+  };
+
+
+
+
+
+  ///
+  template<int D>
+  class PML_RobinHDivIntegrator
+    : public PML_BDBIntegrator<DiffOpIdHDivBoundary<D>, DiagDMat<1>, HDivNormalFiniteElement<D-1> >
   {
-    return new PML_DivDivHDivIntegrator (coeffs[0]);
-  }
-
-  ///
-  virtual string Name () const { return "PML_DivDivHDiv"; }
-};
-
-
-///
-template<int D>
-class PML_MassHDivIntegrator
-  : public PML_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> >
-{
-public:
-  ///
-  PML_MassHDivIntegrator (CoefficientFunction * coef)
-    : PML_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> > 
-  (DiagDMat<D> (coef))
-  { ; }
+  public:
+    ///
+    PML_RobinHDivIntegrator (CoefficientFunction * coef)
+      : PML_BDBIntegrator<DiffOpIdHDivBoundary<D>, DiagDMat<1>, HDivNormalFiniteElement<D-1> > 
+    (DiagDMat<1> (coef))
+    { ; }
   
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-  {
-    return new PML_MassHDivIntegrator (coeffs[0]);
-  }
-
-  ///
-  virtual string Name () const { return "PML_MassHDiv"; }
-};
-
-
-
-
-
-///
-template<int D>
-class PML_RobinHDivIntegrator
-  : public PML_BDBIntegrator<DiffOpIdHDivBoundary<D>, DiagDMat<1>, HDivNormalFiniteElement<D-1> >
-{
-public:
-  ///
-  PML_RobinHDivIntegrator (CoefficientFunction * coef)
-    : PML_BDBIntegrator<DiffOpIdHDivBoundary<D>, DiagDMat<1>, HDivNormalFiniteElement<D-1> > 
-  (DiagDMat<1> (coef))
-  { ; }
-  
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-  {
-    return new PML_RobinHDivIntegrator (coeffs[0]);
-  }
-
-  ///
-  virtual string Name () const { return "PML_RobinHDiv"; }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#ifdef VERYSPECIAL
-
-
-
-
-class PML_ReducedMassIntegrator : public BilinearFormIntegrator
-{
-  DiagDMat<1> dmatop;
-  CoefficientFunction * coef;
-public:
-  
-  enum { DIM_SPACE   = 2 };
-  enum { DIM_ELEMENT = 2 };
-  enum { DIM_DMAT    = 1 };
-  enum { DIM         = 1 };
-  
-
-  PML_ReducedMassIntegrator (CoefficientFunction * acoef)
-    : BilinearFormIntegrator(), dmatop(acoef), coef(acoef)
-  { ; }
-
-  ///
-  virtual ~PML_ReducedMassIntegrator ()
-  { ; }
-
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-  {
-    return new PML_ReducedMassIntegrator (coeffs[0]);
-  }
-
-  virtual bool BoundaryForm () const
-  { return 0; }
-
-  ///
-  virtual void
-  CalcElementMatrix (const FiniteElement & bfel, 
-			 const ElementTransformation & eltrans, 
-			 FlatMatrix<double> & elmat,
-			 LocalHeap & locheap) const
-  {
-    throw Exception ("PML cannot generae real matrices");
-  }
-
-  ///
-  virtual void
-  CalcElementMatrix (const FiniteElement & bfel, 
-			 const ElementTransformation & eltrans, 
-			 FlatMatrix<Complex> & elmat,
-			 LocalHeap & locheap) const
-  {
-
-    FE_Trig2 trig;
-    ScalarFiniteElement<2> & felq = trig;
-    const ScalarFiniteElement<2> & fel = dynamic_cast<const ScalarFiniteElement<2> &> (bfel);
-    int ndof = fel.GetNDof();
-    int ndofq = felq.GetNDof();
-
-    elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
-    elmat = 0;
-	
-    FlatMatrix<Complex> matb(ndofq, ndof, locheap);
-    FlatMatrix<Complex> matc(ndofq, ndofq, locheap);
-    FlatMatrix<Complex> matcinv(ndofq, ndofq, locheap);
-
-
-    const IntegrationRule & ir = 
-      GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 6);
-    
-    matb = 0;
-    matc = 0;
-    void * heapp = locheap.GetPointer();
-    for (int i = 0; i < ir.GetNIP(); i++)
-      {
-	SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> 
-	  sip(ir[i], eltrans, locheap);
-	SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,double> 
-	  sip_real(ir[i], eltrans, locheap);
-	
-	
-	const FlatVector<> shape = fel.GetShape (sip.IP(), locheap);
-	const FlatVector<> shapeq = felq.GetShape (sip.IP(), locheap);
-	
-
-	double val = Evaluate (*coef, sip_real);
-	Complex fac = sip.GetJacobiDet() * sip.IP().Weight();
-	
-	matb += fac * (shapeq * Trans (shape));
-	matc += (fac/val) * (shapeq * Trans (shapeq));
-	locheap.CleanUp (heapp);
-      }
-
-    CalcInverse (matc, matcinv);
-    elmat = Trans (matb) * matcinv * matb;
-
-    /*
-    try
-      {
-	const ScalarFiniteElement & fel = dynamic_cast<const ScalarFiniteElement&> (bfel);
-	int ndof = fel.GetNDof();
-
-	elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
-	elmat = 0;
-	
-	FlatMatrixFixHeight<DIM_DMAT, Complex> bmat (ndof * DIM, locheap);
-	FlatMatrixFixHeight<DIM_DMAT, Complex> dbmat (ndof * DIM, locheap);
-
-	Mat<DIM_DMAT,DIM_DMAT, Complex> dmat;
-
-	const IntegrationRule & ir = 
-	  GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 2);
-
-	void * heapp = locheap.GetPointer();
-	for (int i = 0; i < ir.GetNIP(); i++)
-	  {
-	    SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> 
-	      sip(ir[i], eltrans, locheap);
-	    SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,double> 
-	      sip_real(ir[i], eltrans, locheap);
-
-
-	    const FlatVector<> shape = fel.GetShape (sip.IP(), locheap);
-	    for (int j = 0; j < shape.Height(); j++)
-	      bmat(0, j) = shape(j);
-	    
-	    dmatop.GenerateMatrix (fel, sip_real, dmat, locheap);
-	    Complex fac = sip.GetJacobiDet() * sip.IP().Weight();
-
-	    dbmat = dmat * bmat;
-	    elmat += fac * (Trans (dbmat) * bmat);
-
-	    locheap.CleanUp (heapp);
-	  } 
-      }
-
-    catch (Exception & e)
-      {
-	e.Append ("in CalcElementMatrix, type = ");
-	e.Append (typeid(*this).name());
-	e.Append ("\n");
-	throw;
-      }
-    catch (exception & e)
-      {
-	Exception e2(e.what());
-	e2.Append ("\nin CalcElementMatrix, type = ");
-	e2.Append (typeid(*this).name());
-	e2.Append ("\n");
-	throw e2;
-      }
-    */
-  }
-
-
-  ///
-  virtual int GetDimension () const
-  { return 1; }
-
-  ///
-  virtual int Lumping () const
-    { return 0; }
-  ///
-  virtual string Name () const { return "PML_ReducedMass integrator"; }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-class PML_InterpolationMassIntegrator : public BilinearFormIntegrator
-{
-  DiagDMat<1> dmatop;
-  CoefficientFunction * coef;
-public:
-  
-  enum { DIM_SPACE   = 2 };
-  enum { DIM_ELEMENT = 2 };
-  enum { DIM_DMAT    = 1 };
-  enum { DIM         = 1 };
-  
-
-  PML_InterpolationMassIntegrator (CoefficientFunction * acoef)
-    : BilinearFormIntegrator(), dmatop(acoef), coef(acoef)
-  { ; }
-
-  ///
-  virtual ~PML_InterpolationMassIntegrator ()
-  { ; }
-
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-  {
-    return new PML_InterpolationMassIntegrator (coeffs[0]);
-  }
-
-  virtual bool BoundaryForm () const
-  { return 0; }
-
-  ///
-  virtual void
-  CalcElementMatrix (const FiniteElement & bfel, 
-			 const ElementTransformation & eltrans, 
-			 FlatMatrix<double> & elmat,
-			 LocalHeap & locheap) const
-  {
-    throw Exception ("PML cannot generae real matrices");
-  }
-
-  ///
-  virtual void
-  CalcElementMatrix (const FiniteElement & bfel, 
-			 const ElementTransformation & eltrans, 
-			 FlatMatrix<Complex> & elmat,
-			 LocalHeap & locheap) const
-  {
-
-    FE_Trig1 trig;
-    ScalarFiniteElement<2> & felq = trig;
-    const ScalarFiniteElement<2> & fel = dynamic_cast<const ScalarFiniteElement<2> &> (bfel);
-    int ndof = fel.GetNDof();
-    int ndofq = felq.GetNDof();
-
-    elmat.AssignMemory (ndof*DIM, ndof*DIM, locheap);
-    elmat = 0;
-
-    FlatMatrix<Complex> matm(ndofq, ndofq, locheap);
-
-    FlatMatrix<Complex> matb(ndofq, ndof, locheap);
-    FlatMatrix<Complex> matb2(ndofq, ndof, locheap);
-    FlatMatrix<Complex> matc(ndofq, ndofq, locheap);
-    FlatMatrix<Complex> matcinv(ndofq, ndofq, locheap);
-
-    const IntegrationRule & ir = 
-      GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 6);
-    const IntegrationRule & irseg = 
-      GetIntegrationRules().SelectIntegrationRule (ET_SEGM, 0);
-    
-    matm = 0;
-    matb = 0;
-    matc = 0;
-
-    FlatVector<> shapee (3, locheap);
-
-
-    void * heapp = locheap.GetPointer();
-    for (int i = 0; i < ir.GetNIP(); i++)
-      {
-	SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> 
-	  sip(ir[i], eltrans, locheap);
-	SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,double> 
-	  sip_real(ir[i], eltrans, locheap);
-	
-	const FlatVector<> shape = fel.GetShape (sip.IP(), locheap);
-	const FlatVector<> shapeq = felq.GetShape (sip.IP(), locheap);
-
-	double val = Evaluate (*coef, sip_real);
-	Complex fac = sip.GetJacobiDet() * sip.IP().Weight() * val;
-	
-	matm += fac * (shapeq * Trans (shapeq));
-	locheap.CleanUp (heapp);
-      }
-
-
-    const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
-    const POINT3D * points = ElementTopology::GetVertices (ET_TRIG);
-    for (int en = 0; en < 3; en++)
-      for (int i = 0; i < irseg.GetNIP(); i++)
-	{
-	  int v1 = edges[en][0];
-	  int v2 = edges[en][1];
-	  double lam = irseg[i](0);
-	  IntegrationPoint ip(lam*points[v1][0]+(1-lam)*points[v2][0],
-			      lam*points[v1][1]+(1-lam)*points[v2][1], 0, 0);
-	  
-	  SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> 
-	    sip(ip, eltrans, locheap);
-	  SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,double> 
-	    sip_real(ip, eltrans, locheap);
-	  
-	  const FlatVector<> shape = fel.GetShape (sip.IP(), locheap);
-	  const FlatVector<> shapeq = felq.GetShape (sip.IP(), locheap);
-
-	  shapee = 0.0;
-	  shapee(en) = 1;
-
-	  Complex fac = irseg[i].Weight();
-
-	  matb += fac * (shapee * Trans (shape));
-	  matc += fac * (shapee * Trans (shapeq));
-	  locheap.CleanUp (heapp);
-	}
-
-
-    CalcInverse (matc, matcinv);
-    matb2 = matcinv * matb;
-    elmat = Trans (matb2) * matm * matb2;
-
-    (*testout) << "matb = " << endl << matb << endl
-	       << "matc = " << endl << matc << endl
-	       << "matb2 = " << endl << matb2 << endl
-	       << "matm = " << endl << matm << endl;
-  }
-
-
-  ///
-  virtual int GetDimension () const
-  { return 1; }
-
-  ///
-  virtual int Lumping () const
-    { return 0; }
-  ///
-  virtual string Name () const { return "PML_InterpolationMass integrator"; }
-};
-
-
-
-
-
-
-#endif
-
-
-
-
-
-
+    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    {
+      return new PML_RobinHDivIntegrator (coeffs[0]);
+    }
+
+    ///
+    virtual string Name () const { return "PML_RobinHDiv"; }
+  };
 
 
 
@@ -1080,7 +699,17 @@ public:
 
 
   namespace pml_cpp
- {
+  {
+    static RegisterBilinearFormIntegrator<PML_LaplaceIntegrator<2> > initpmllap2 ("PML_laplace", 2, 1);
+    static RegisterBilinearFormIntegrator<PML_LaplaceIntegrator<3> > initpmllap3 ("PML_laplace", 3, 1);
+
+    static RegisterBilinearFormIntegrator<PML_MassIntegrator<2> > initpmlmass2 ("PML_mass", 2, 1);
+    static RegisterBilinearFormIntegrator<PML_MassIntegrator<3> > initpmlmass3 ("PML_mass", 3, 1);
+
+    static RegisterBilinearFormIntegrator<PML_ElasticityIntegrator<2> > initpmlel2 ("PML_elasticity", 2, 2);
+    static RegisterBilinearFormIntegrator<PML_ElasticityIntegrator<3> > initpmlel3 ("PML_elasticity", 3, 2);
+
+
     class Init
     { 
     public: 
@@ -1090,24 +719,13 @@ public:
 
     Init::Init()
     {
-      GetIntegrators().AddBFIntegrator ("PML_laplace", 2, 1,
-					PML_LaplaceIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("PML_mass", 2, 1,
-					PML_MassIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("PML_elasticity", 3, 2,
-      					PML_ElasticityIntegrator<3>::Create);
-      GetIntegrators().AddBFIntegrator ("PML_elasticity", 2, 2,
-      					PML_ElasticityIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("PML_laplace", 3, 1,
-					PML_LaplaceIntegrator<3>::Create);
-      GetIntegrators().AddBFIntegrator ("PML_mass", 3, 1,
-					PML_MassIntegrator<3>::Create);
       /*
-      GetIntegrators().AddBFIntegrator ("PML_reducedmass", 2, 1,
-					PML_ReducedMassIntegrator::Create);
-      GetIntegrators().AddBFIntegrator ("PML_interpolationmass", 2, 1,
-					PML_InterpolationMassIntegrator::Create);
+	GetIntegrators().AddBFIntegrator ("PML_elasticity", 3, 2,
+	PML_ElasticityIntegrator<3>::Create);
+	GetIntegrators().AddBFIntegrator ("PML_elasticity", 2, 2,
+	PML_ElasticityIntegrator<2>::Create);
       */
+
       GetIntegrators().AddBFIntegrator ("PML_curlcurledge", 3, 1,
 					PML_CurlCurlEdgeIntegrator<3>::Create);
       GetIntegrators().AddBFIntegrator ("PML_curlcurledge", 2, 1,
@@ -1127,5 +745,5 @@ public:
     Init init;
     
   }
- }
+}
 

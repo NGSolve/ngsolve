@@ -87,6 +87,10 @@ namespace ngfem
     static RegisterBilinearFormIntegrator<MassEdgeIntegrator<2> > initmasse2 ("massedge", 2, 1);
     static RegisterBilinearFormIntegrator<MassEdgeIntegrator<3> > initmasse3 ("massedge", 3, 1);
 
+    static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<2> > initrobin2 ("robinedge", 2, 1);
+    static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<3> > initrobin3 ("robinedge", 3, 1);
+
+
     static RegisterLinearFormIntegrator<SourceEdgeIntegrator<2> > initse2 ("sourceedge", 2, 2);
     static RegisterLinearFormIntegrator<SourceEdgeIntegrator<3> > initse3 ("sourceedge", 3, 3);
 
@@ -108,10 +112,12 @@ namespace ngfem
 					MassEdgeOrthoIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("orthomassedge", 3, 3,
 					MassEdgeOrthoIntegrator<3>::Create);
+      /*
       GetIntegrators().AddBFIntegrator ("robinedge", 3, 1,
 					RobinEdgeIntegrator<3>::Create);
       GetIntegrators().AddBFIntegrator ("robinedge", 2, 1,
 					RobinEdgeIntegrator<2>::Create);      
+      */
       GetIntegrators().AddBFIntegrator ("massedgeanisotropic", 3, 6,
 					MassEdgeAnisotropicIntegrator<3>::Create);
 

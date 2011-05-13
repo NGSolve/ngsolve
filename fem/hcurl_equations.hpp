@@ -260,9 +260,15 @@ namespace ngfem
     {
       typedef typename TVX::TSCAL TSCAL;
 
-      Vec<D-1,TSCAL> hx;
+      Vec<DIM_ELEMENT,TSCAL> hx;
       hx = sip.GetJacobianInverse() * x;
       y = fel.GetShape (sip.IP(),lh) * hx;
+
+      /*
+      FlatMatrixFixWidth<DIM_ELEMENT> mshape (y.Height(), &hv(0)); 
+      FlatMatrix<> mshape2 (y.Height(), DIM_ELEMENT, &hv(0)); 
+      y = mshape2 * hx; 
+      */
     }
   };
 
@@ -494,11 +500,16 @@ namespace ngfem
     RobinEdgeIntegrator (CoefficientFunction * coeff)
       : T_BDBIntegrator<DiffOpIdBoundaryEdge<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
     { ; }
-  
+    RobinEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
+      : T_BDBIntegrator<DiffOpIdBoundaryEdge<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeffs[0]))
+    { ; }
+
+    /*
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       return new RobinEdgeIntegrator (coeffs[0]);
     }
+    */
 
     ///
     virtual bool BoundaryForm () const { return 1; }
@@ -581,6 +592,13 @@ namespace ngfem
       : T_BIntegrator<DiffOpIdBoundaryEdge<D>,DVec<D>, FEL> 
     (DVec<D> (coeff1, coeff2))
     { ; }
+
+    NeumannEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
+      : T_BIntegrator<DiffOpIdBoundaryEdge<D>,DVec<D>, FEL> 
+    (DVec<D> (coeffs))
+    { ; }
+      
+
 
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
