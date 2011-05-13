@@ -1,4 +1,3 @@
-
 /**************************************************************************/
 /* File:   ngsolve.cpp                                                    */
 /* Author: Joachim Schoeberl                                              */
@@ -670,7 +669,7 @@ int NGSolve_Init (Tcl_Interp * interp)
   cout << "NGSolve-" << VERSION << endl;
 
 #ifdef LAPACK
-  cout << "Using Lapack xxx" << endl;
+  cout << "Using Lapack" << endl;
 #else
   cout << "sorry, no lapack" << endl; 
 #endif
