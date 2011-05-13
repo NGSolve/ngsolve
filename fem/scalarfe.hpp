@@ -123,20 +123,6 @@ namespace ngfem
   };
 
 
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
 }
 
 #endif

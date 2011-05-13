@@ -38,24 +38,12 @@ namespace ngfem
 			    const ElementTransformation & aeltrans,
 			    LocalHeap & lh);
 
-
-
   
   template <>
   SpecificIntegrationPoint<2,2,AutoDiff<1,Complex> > :: 
   SpecificIntegrationPoint (const IntegrationPoint & aip,
 			    const ElementTransformation & aeltrans,
 			    LocalHeap & lh);
-
-
-
-
-  /*
-    template <>
-    SpecificIntegrationPoint<2,2,Complex> :: 
-    ~SpecificIntegrationPoint ();
-  */
-
 
 
 
@@ -159,9 +147,6 @@ namespace ngfem
 
 
 
-
-
-
     virtual void 
     ApplyElementMatrix (const FiniteElement & bfel, 
 			const ElementTransformation & eltrans, 
@@ -169,9 +154,7 @@ namespace ngfem
 			FlatVector<double> & ely,
 			void * precomputed,
 			LocalHeap & locheap) const
-    {
-      ;
-    }
+    { ; }
 
 
     virtual void 
@@ -246,23 +229,12 @@ namespace ngfem
     }
 
 
-
-
-
-
-
-
-
-
     ///
-    virtual int GetDimension () const
-    { return DIM; }
-
+    virtual int GetDimension () const { return DIM; }
     ///
-    virtual int Lumping () const
-    { return 0; }
+    virtual int Lumping () const { return 0; }
     ///
-    virtual string Name () const { return "BDB integrator"; }
+    virtual string Name () const { return "PML-BDB integrator"; }
   };
 
 }

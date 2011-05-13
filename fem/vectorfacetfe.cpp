@@ -12,7 +12,8 @@ namespace ngfem {
 
   using namespace ngfem;
 
-  VectorFacetFacetFiniteElement ::
+  template <int D>
+  VectorFacetFacetFiniteElement<D> ::
   VectorFacetFacetFiniteElement (int dim, ELEMENT_TYPE aeltype) :
     FiniteElement (dim, aeltype, -1, -1 )
   {
@@ -21,22 +22,25 @@ namespace ngfem {
     order_inner = INT<2> (-1, -1);
   }
 
-  void VectorFacetFacetFiniteElement ::
+  template <int D>
+  void VectorFacetFacetFiniteElement<D> ::
   SetVertexNumbers (FlatArray<int> & avnums)
   {
     for ( int i = 0; i < avnums.Size(); i++ )
       vnums[i] = avnums[i];
   }
 
-  void VectorFacetFacetFiniteElement ::
+  template <int D>
+  void VectorFacetFacetFiniteElement<D> ::
   SetOrder (int aorder)
   {
     order = aorder;
     order_inner = INT<2> (aorder, aorder);
     ComputeNDof();
   }
-  
-  void VectorFacetFacetFiniteElement ::
+
+  template <int D>  
+  void VectorFacetFacetFiniteElement<D> ::
   SetOrder (INT<2> oi)
   {
     order = max2 (oi[0], oi[1]);
@@ -45,10 +49,12 @@ namespace ngfem {
   }
 
 
+
+
   /* **************************** Facet Segm ********************************* */
 
   VectorFacetFacetSegm :: VectorFacetFacetSegm (int aorder) :
-    VectorFacetFacetFiniteElement (1, ET_SEGM )
+    VectorFacetFacetFiniteElement<1> (1, ET_SEGM )
   {
     order = aorder;
     order_inner = INT<2> (aorder, aorder);
@@ -63,7 +69,7 @@ namespace ngfem {
 
 
   void VectorFacetFacetSegm :: CalcShape (const IntegrationPoint & ip, 
-					  FlatMatrix<> shape) const
+					  FlatMatrixFixWidth<1> shape) const
   {
     AutoDiff<1> x (ip(0),0);
     ArrayMem<double, 10>  polx(order_inner[0]+1);
@@ -82,7 +88,7 @@ namespace ngfem {
   /* **************************** Facet Trig ********************************* */
 
   VectorFacetFacetTrig :: VectorFacetFacetTrig (int aorder) :
-    VectorFacetFacetFiniteElement (2, ET_TRIG)
+    VectorFacetFacetFiniteElement<2> (2, ET_TRIG)
   {
     order = aorder;
     order_inner = INT<2> ( aorder, aorder);
@@ -97,7 +103,7 @@ namespace ngfem {
   }
 
   void VectorFacetFacetTrig :: CalcShape (const IntegrationPoint & ip, 
-					  FlatMatrix<> shape) const
+					  FlatMatrixFixWidth<2> shape) const
   {
     AutoDiff<2> x (ip(0), 0);
     AutoDiff<2> y (ip(1), 1);
@@ -148,7 +154,7 @@ namespace ngfem {
   /* **************************** Facet Quad ********************************* */
 
   VectorFacetFacetQuad :: VectorFacetFacetQuad (int aorder) :
-    VectorFacetFacetFiniteElement (2, ET_QUAD)
+    VectorFacetFacetFiniteElement<2> (2, ET_QUAD)
   {
     order = aorder;
     order_inner = INT<2> (aorder, aorder);
@@ -163,7 +169,7 @@ namespace ngfem {
 
   /// compute shape
   void VectorFacetFacetQuad :: CalcShape (const IntegrationPoint & ip, 
-					  FlatMatrix<> shape) const
+					  FlatMatrixFixWidth<2> shape) const
   {
     AutoDiff<2> x (ip(0), 0);
     AutoDiff<2> y (ip(1), 1);
@@ -234,6 +240,15 @@ namespace ngfem {
       }
     */
   }
+
+
+  template <int D>
+  void  VectorFacetVolumeFiniteElement<D>::
+  CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<D> shape) const
+  {
+    cerr << "VectorFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled" << endl;
+  }
+
 
   /// degrees of freedom sitting inside the element, used for static condensation
   
@@ -344,11 +359,13 @@ namespace ngfem {
   template class VectorFacetVolumeFiniteElement<2>;
   template class VectorFacetVolumeFiniteElement<3>;
 
+  template class VectorFacetFacetFiniteElement<1>;
+  template class VectorFacetFacetFiniteElement<2>;
 
 
 
 
-
+  /*
   void VectorFacetVolumeTrig :: 
   CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<2> shape) const
   {
@@ -371,6 +388,8 @@ namespace ngfem {
 
     CalcShape ( ip, fanr, shape);
   }
+  */
+
 
   void VectorFacetVolumeTrig ::
   CalcShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> shape ) const
@@ -452,7 +471,7 @@ namespace ngfem {
   
 
   //--------------------------------------------------
-
+  /*
   void VectorFacetVolumeQuad :: 
   CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<2> shape) const
   {
@@ -483,6 +502,7 @@ namespace ngfem {
       }
     CalcShape(ip, fnr, shape);
   }
+  */
 
   void VectorFacetVolumeQuad ::
   CalcShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> shape ) const
@@ -569,7 +589,7 @@ namespace ngfem {
   
 
 
-
+  /*
   void VectorFacetVolumeTet::
   CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const
   {
@@ -606,6 +626,7 @@ namespace ngfem {
 
     CalcShape ( ip, fanr, shape );
   }   
+  */
 
   void VectorFacetVolumeTet ::
   CalcShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> shape ) const
@@ -723,7 +744,7 @@ namespace ngfem {
 
 
   // -------------------------------------------------------------------------------
-
+  /*
   void VectorFacetVolumePrism::
   CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const
   {  
@@ -756,7 +777,8 @@ namespace ngfem {
     CalcShape ( ip, fanr, shape );
     ;
   } 
-   
+  */
+
   void VectorFacetVolumePrism ::
   CalcShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> shape ) const
   {
@@ -962,7 +984,7 @@ namespace ngfem {
 
 
   // --------------------------------------------
-
+  /*
   void VectorFacetVolumeHex::
   CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const
   {
@@ -1006,6 +1028,7 @@ namespace ngfem {
     CalcShape ( ip, fanr, shape );
     ;
   }
+  */
 
   void VectorFacetVolumeHex ::
   CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape ) const
@@ -1027,6 +1050,7 @@ namespace ngfem {
   }
 
 
+  /*
   // -------------------------------------------------------------------------------
   void VectorFacetVolumePyramid::
   CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const
@@ -1035,7 +1059,8 @@ namespace ngfem {
     cout << "error in VectorFacetVolumePyramid::CalcShape: not implemented!" << endl;
     exit(0);
   }
-   
+  */
+
   void VectorFacetVolumePyramid ::
   CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape ) const
   {
@@ -1098,15 +1123,19 @@ namespace ngfem {
     first_facet_dof[4] = ndof;
   }
 
+
+
+  static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<3, VectorFacetFacetFiniteElement<2> >  > initrvf3 ("robinvectorfacet", 3, 1);
+  static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<2, VectorFacetFacetFiniteElement<1> >  > initrvf2 ("robinvectorfacet", 2, 1);
+
+  static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<3, VectorFacetFacetFiniteElement<2> >  > initnvf3 ("neumannvectorfacet", 3, 1);
+  static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<2, VectorFacetFacetFiniteElement<1> >  > initnvf2 ("neumannvectorfacet", 2, 1);
 }
 
 
-
+#ifdef OLDINIT
 namespace ngfem
 {
-
-  using namespace ngfem;
-
 
   namespace vectorfacetint {
 
@@ -1128,9 +1157,9 @@ namespace ngfem
       */
 
       GetIntegrators().AddBFIntegrator ("robinvectorfacet", 3, 1,
-					RobinEdgeIntegrator<3, VectorFacetFacetFiniteElement>::Create);
+					RobinEdgeIntegrator<3, VectorFacetFacetFiniteElement<2> >::Create);
       GetIntegrators().AddBFIntegrator ("robinvectorfacet", 2, 1,
-					RobinEdgeIntegrator<2, VectorFacetFacetFiniteElement>::Create);      
+					RobinEdgeIntegrator<2, VectorFacetFacetFiniteElement<1> >::Create);      
 
       /*
       GetIntegrators().AddLFIntegrator ("sourcevectorfacet", 3, 3,
@@ -1140,13 +1169,13 @@ namespace ngfem
        */
 
       GetIntegrators().AddLFIntegrator ("neumannvectorfacet", 3, 3,
-					NeumannEdgeIntegrator<3, VectorFacetFacetFiniteElement>::Create);
+					NeumannEdgeIntegrator<3, VectorFacetFacetFiniteElement<2> >::Create);
       GetIntegrators().AddLFIntegrator ("neumannvectorfacet", 2, 2,
-					NeumannEdgeIntegrator<2, VectorFacetFacetFiniteElement>::Create);
+					NeumannEdgeIntegrator<2, VectorFacetFacetFiniteElement<1> >::Create);
     }
 
     Init init;
   }
 }
-
+#endif
 
