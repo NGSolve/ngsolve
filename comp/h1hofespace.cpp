@@ -409,11 +409,6 @@ namespace ngcomp
         (*testout) << "h1 first inner = " << first_element_dof << endl;
       }
 
- 
-
-
-
-
     lodofs_per_node[0] = 1;
     for (int i = 1; i < 4; i++) lodofs_per_node[i] = 0;
     first_lodof[0] = 0;
@@ -428,10 +423,11 @@ namespace ngcomp
       }
     else
       first_hodofs[2] = first_element_dof;
-    
+
     while (ma.GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
+
     prol->Update();
   }
 
