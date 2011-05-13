@@ -9,22 +9,20 @@ namespace netgen
 
 Transformation3d :: Transformation3d ()
 {
-  int i, j;
-  for (i = 0; i < 3; i++)
+  for (int i = 0; i < 3; i++)
     {
       offset[i] = 0;
-      for (j = 0; j < 3; j++)
+      for (int j = 0; j < 3; j++)
 	lin[i][j] = 0;
     }
 }
 
 Transformation3d :: Transformation3d (const Vec3d & translate)
 {
-  int i, j;
-  for (i = 0; i < 3; i++)
-    for (j = 0; j < 3; j++)
+  for (int i = 0; i < 3; i++)
+    for (int j = 0; j < 3; j++)
       lin[i][j] = 0;
-  for (i = 0; i < 3; i++)
+  for (int i = 0; i < 3; i++)
     {
       offset[i] = translate.X(i+1);
       lin[i][i] = 1;
@@ -54,7 +52,7 @@ Transformation3d (const Point3d & c, double alpha,
   ht.Combine (ht2, r1);
   Combine (ht, tcinv);
 
- cout << "Rotation - Transformation:" << (*this) << endl;
+  // cout << "Rotation - Transformation:" << (*this) << endl;
   //  (*testout) << "Rotation - Transformation:" << (*this) << endl;
 }
 
@@ -63,22 +61,20 @@ Transformation3d (const Point3d & c, double alpha,
 
 Transformation3d :: Transformation3d (const Point3d ** pp)
 {
-  int i, j;
-  for (i = 1; i <= 3; i++)
+  for (int i = 1; i <= 3; i++)
     {
       offset[i-1] = (*pp[0]).X(i);
-      for (j = 1; j <= 3; j++)
+      for (int j = 1; j <= 3; j++)
 	lin[i-1][j-1] = (*pp[j]).X(i) - (*pp[0]).X(i);
     }
 }
 
 Transformation3d :: Transformation3d (const Point3d pp[])
 {
-  int i, j;
-  for (i = 1; i <= 3; i++)
+  for (int i = 1; i <= 3; i++)
     {
       offset[i-1] = pp[0].X(i);
-      for (j = 1; j <= 3; j++)
+      for (int j = 1; j <= 3; j++)
 	lin[i-1][j-1] = pp[j].X(i) - pp[0].X(i);
     }
 }
@@ -88,12 +84,11 @@ void Transformation3d :: CalcInverse (Transformation3d & inv) const
 {
   static DenseMatrix a(3), inva(3);
   static Vector b(3), sol(3);
-  int i, j;
   
   for (int i = 0; i < 3; i++)
     {
       b(i) = offset[i];
-      for (j = 0; j < 3; j++)
+      for (int j = 0; j < 3; j++)
 	a(i, j) = lin[i][j];
     }
 
@@ -103,7 +98,7 @@ void Transformation3d :: CalcInverse (Transformation3d & inv) const
   for (int i = 0; i < 3; i++)
     {
       inv.offset[i] = -sol(i);
-      for (j = 0; j < 3; j++)
+      for (int j = 0; j < 3; j++)
 	inv.lin[i][j] = inva(i, j);
     }
 }
@@ -112,23 +107,21 @@ void Transformation3d :: CalcInverse (Transformation3d & inv) const
 void  Transformation3d:: 
 Combine (const Transformation3d & ta, const Transformation3d & tb)
 {
-  int i, j, k;
-
   // o = o_a+ m_a o_b
   // m = m_a m_b
 
-  for (i = 0; i <= 2; i++)
+  for (int i = 0; i <= 2; i++)
     {
       offset[i] = ta.offset[i];
-      for (j = 0; j <= 2; j++)
+      for (int j = 0; j <= 2; j++)
 	offset[i] += ta.lin[i][j] * tb.offset[j];
     }
   
-  for (i = 0; i <= 2; i++)
-    for (j = 0; j <= 2; j++)
+  for (int i = 0; i <= 2; i++)
+    for (int j = 0; j <= 2; j++)
       {
 	lin[i][j] = 0;
-	for (k = 0; k <= 2; k++)
+	for (int k = 0; k <= 2; k++)
 	  lin[i][j] += ta.lin[i][k] * tb.lin[k][j];
       }
 }
@@ -157,14 +150,13 @@ void Transformation3d :: SetAxisRotation (int dir, double alpha)
 
 ostream & operator<< (ostream & ost, Transformation3d & trans)
 {
-  int i, j;
   ost << "offset = ";
-  for (i = 0; i <= 2; i++)
+  for (int i = 0; i <= 2; i++)
     ost << trans.offset[i] << " ";
   ost << endl << "linear = " << endl;
-  for (i = 0; i <= 2; i++)
+  for (int i = 0; i <= 2; i++)
     {
-      for (j = 0; j <= 2; j++)
+      for (int j = 0; j <= 2; j++)
 	ost << trans.lin[i][j] << " ";
       ost << endl;
     }
