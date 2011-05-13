@@ -122,8 +122,8 @@ namespace ngsolve
     GridFunction * flux = CreateGridFunction (fesflux, "fluxzz", flags);
     flux->Update();
 
-    FlatVector<double> err = 
-      dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
+    FlatVector<double> err = gferr->GetVector().FV<double>();
+    // dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
 
     err = 0;
   
@@ -284,8 +284,8 @@ namespace ngsolve
       throw Exception ("Difference: Bilinearform1 needs an integrator");
 
     BilinearFormIntegrator * bfi1 = bfa1->GetIntegrator(0);
-    FlatVector<double> diff =
-      dynamic_cast<T_BaseVector<double>&> (gfdiff->GetVector()).FV();
+    FlatVector<double> diff = gfdiff->GetVector().FV<double> ();
+      // dynamic_cast<T_BaseVector<double>&> (gfdiff->GetVector()).FV();
     diff = 0;
 
     int ndom = ma.GetNDomains();
@@ -425,8 +425,8 @@ namespace ngsolve
     GridFunction * flux = CreateGridFunction (&fesflux, "fluxzz", flags);
     flux->Update();
 
-    FlatVector<double> err = 
-      dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
+    FlatVector<double> err = gferr->GetVector().FV<double>();
+      // dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
 
     err = 0;
 
@@ -617,16 +617,16 @@ namespace ngsolve
 
 
     int i;
-    FlatVector<double> err =
-      dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
+    FlatVector<double> err = gferr->GetVector().FV<double> ();
+      // dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
 
     double maxerr = 0;
     double toterr = 0;
 
     if (gferr2)
       {
-	const FlatVector<double> & err2 =
-	  dynamic_cast<T_BaseVector<double>&> (gferr2->GetVector()).FV();
+	const FlatVector<double> & err2 = gferr2->GetVector().FV<double>();
+	// dynamic_cast<T_BaseVector<double>&> (gferr2->GetVector()).FV();
       
 	for (i = 0; i < err.Size(); i++)
 	  {
@@ -862,31 +862,12 @@ Flags visflags;
 
     BilinearFormIntegrator * bfi = bfa->GetIntegrator(0);
 
-    FlatVector<double> err = 
-      dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
+    FlatVector<double> err = gferr->GetVector().FV<double>();
+      // dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
 
     err = 0;
     CalcError (ma, *gfu, *gfflux, *bfi, err, -1, lh);
   
-    /*
-    if (!bfa->GetFESpace().IsComplex())
-      {
-	CalcError (ma, 
-		   dynamic_cast<const S_GridFunction<double>&> (*gfu), 
-		   dynamic_cast<const S_GridFunction<double>&> (*gfflux), 
-		   *bfi,
-		   err, -1, lh);
-      }
-    else
-      {
-	CalcError (ma,
-		   dynamic_cast<const S_GridFunction<Complex>&> (*gfu), 
-		   dynamic_cast<const S_GridFunction<Complex>&> (*gfflux), 
-		   *bfi,
-		   err, -1, lh);
-      }
-    */
-      
     double sum = 0;
     for (int i = 0; i < err.Size(); i++)
       sum += err(i);
