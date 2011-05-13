@@ -1,6 +1,6 @@
 noinst_HEADERS = writeuser.hpp
 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface $(TCL_INCLUDES) -DOPENGL
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface  $(MPI_INCLUDES) $(TCL_INCLUDES) -DOPENGL
 METASOURCES = AUTO
 lib_LTLIBRARIES = libinterface.la
 libinterface_la_SOURCES = nginterface.cpp nginterface_v2.cpp \

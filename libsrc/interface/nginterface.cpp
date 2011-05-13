@@ -1,6 +1,5 @@
 #include <mystdlib.h>
 
-
 #include <meshing.hpp>
 #include <csg.hpp>
 
