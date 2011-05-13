@@ -4,7 +4,7 @@
 #ifdef PARALLEL
 #include <parallelngs.hpp>
 #endif
-
+ 
 namespace ngcomp
 {
   using namespace ngcomp;
@@ -224,7 +224,8 @@ namespace ngcomp
 	    if (vec[i] && ndof == vec[i]->Size())
 	      break;
 	    
-	    T_BaseVector<TV> * ovec = dynamic_cast<T_BaseVector<TV>*> (vec[i]);
+	    // T_BaseVector<TV> * ovec = dynamic_cast<T_BaseVector<TV>*> (vec[i]);
+	    BaseVector * ovec = vec[i];
 	
 #ifdef PARALLEL
 	    *testout << &this->GetFESpace().GetParallelDofs() << endl;
