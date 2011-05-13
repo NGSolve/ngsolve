@@ -748,8 +748,10 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("BlockJacobiSymmetric::MultAdd");
     NgProfiler::RegionTimer reg (timer);
 
-    const FlatVector<TVX> fx = dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
-    FlatVector<TVX> fy       = dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+    const FlatVector<TVX> fx = x.FV<TVX> ();
+      // dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
+    FlatVector<TVX> fy       = y.FV<TVX> ();
+      // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
 
     Vector<TVX> hxmax(maxbs);
     Vector<TVX> hymax(maxbs);
@@ -759,8 +761,8 @@ namespace ngla
 	int bs = blocktable[i].Size();
 	if (!bs) continue;
 
-	FlatVector<TVX> hx(bs, &hxmax(0));
-	FlatVector<TVX> hy(bs, &hymax(0));
+	FlatVector<TVX> hx(bs, hxmax.Addr(0));
+	FlatVector<TVX> hy(bs, hymax.Addr(0));
 
 	for (int j = 0; j < bs; j++)
 	  hx(j) = fx(blocktable[i][j]);
@@ -789,10 +791,10 @@ namespace ngla
     static Timer timer ("BlockJacobiPrecondSymmetric::GSSmooth");
     RegionTimer reg(timer);
 
-    const FlatVector<TVX> fb = 
-      dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+    const FlatVector<TVX> fb = b.FV<TVX> ();
+    // dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
 
     Vector<TVX> fy(fx.Size());
 
@@ -815,10 +817,10 @@ namespace ngla
     static Timer timer ("BlockJacobiPrecondSymmetric::GSSmooth - partial res");
     RegionTimer reg(timer);
 
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-    FlatVector<TVX> fy = 
-      dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+    FlatVector<TVX> fy = y.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
 
     for (int i = 0; i < blocktable.Size(); i++)
       SmoothBlock (i, fx, fy);
@@ -877,10 +879,10 @@ namespace ngla
     static Timer timer ("BlockJacobiPrecondSymmetric::GSSmoothBack - partial res");
     RegionTimer reg(timer);
 
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-    FlatVector<TVX> fy = 
-      dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+    FlatVector<TVX> fy = y.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
 
     for (int i = blocktable.Size()-1; i >= 0; i--)
       SmoothBlock (i, fx, fy);

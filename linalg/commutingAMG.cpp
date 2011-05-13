@@ -427,7 +427,7 @@ namespace ngla
     HashTable<INT<3>, int> faceht (f2v.Size());
     HashTable<INT<4>, int> qfaceht (f2v.Size());
 
-    bool quadfacesexist = false;
+    // bool quadfacesexist = false;
     
     for (int i = 0; i < f2v.Size(); i++)
       {
@@ -442,7 +442,7 @@ namespace ngla
 	    INT<4> hv  (f2v[i][0], f2v[i][1], f2v[i][2], f2v[i][3]);
 	    hv.Sort();
 	    qfaceht.Set (hv, i);
-	    quadfacesexist = true;
+	    // quadfacesexist = true;
 	  }
       }
 

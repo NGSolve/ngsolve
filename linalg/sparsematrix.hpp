@@ -37,9 +37,8 @@ namespace ngla
   class JacobiPrecondSymmetric;
 
 
-
-
   class BaseBlockJacobiPrecond;
+
   template<class TM, 
 	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
 	   class TV_COL = typename mat_traits<TM>::TV_COL>
@@ -48,36 +47,9 @@ namespace ngla
   template<class TM, 
 	   class TV = typename mat_traits<TM>::TV_ROW>
   class BlockJacobiPrecondSymmetric;
- 
 
 
 
-  template<class TM, 
-	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
-	   class TV_COL = typename mat_traits<TM>::TV_COL>
-  class SparseCholesky;
-
-  template<class TM, 
-	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
-	   class TV_COL = typename mat_traits<TM>::TV_COL>
-  class PardisoInverse;
-
-  template<class TM, 
-	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
-	   class TV_COL = typename mat_traits<TM>::TV_COL>
-  class MumpsInverse;
-
-  template<class TM, 
-	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
-	   class TV_COL = typename mat_traits<TM>::TV_COL>
-  class SuperLUInverse;
-
-
-  template<class TM, 
-	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
-	   class TV_COL = typename mat_traits<TM>::TV_COL>
-  class SuperLU_DIST_Inverse;
-  //template <class TM> class SuperLUInverse;
 
   // sets the solver which is used for InverseMatrix
   enum INVERSETYPE { PARDISO, PARDISOSPD, SPARSECHOLESKY, SUPERLU, SUPERLU_DIST, MUMPS };
@@ -320,8 +292,6 @@ namespace ngla
 	return nul;
     }
 
-//    FlatVector<const TM> GetRowValues(int i) const
-//    { return FlatVector<const TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
 
     FlatVector<TM> GetRowValues(int i) const
     { return FlatVector<TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
@@ -414,7 +384,6 @@ namespace ngla
     }
 
     virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;
-
     virtual BaseMatrix * InverseMatrix (const Array<int> * clusters) const;
 
     virtual BaseSparseMatrix * Restrict (const SparseMatrixTM<double> & prol,
@@ -428,16 +397,17 @@ namespace ngla
     inline TVY RowTimesVector (int row, const FlatVector<TVX> & vec) const
     {
       /*
-	TVY sum = TSCAL(0);
-	for (int j = firsti[row]; j < firsti[row+1]; j++)
+      typedef typename mat_traits<TVY>::TSCAL TTSCAL;
+      TVY sum = TTSCAL(0);
+      for (int j = firsti[row]; j < firsti[row+1]; j++)
 	sum += data[j] * vec(colnr[j]);
-	return sum;
+      return sum;
       */
 
       int nj = firsti[row+1] - firsti[row];
       const int * colpi = colnr+firsti[row];
       const TM * datap = data+firsti[row];
-      const TVX * vecp = &vec(0);
+      const TVX * vecp = vec.Addr(0);
     
       typedef typename mat_traits<TVY>::TSCAL TTSCAL;
       TVY sum = TTSCAL(0);
@@ -449,18 +419,18 @@ namespace ngla
     ///
     void AddRowTransToVector (int row, TVY el, FlatVector<TVX> & vec) const
     {
-      /*
       // cannot be optimized by the compiler, since hvec could alias
       // the matrix --> keyword 'restrict' will hopefully solve this problem
       
+      /*
       for (int j = firsti[row]; j < firsti[row+1]; j++)
-      hvec(colnr[j]) += Trans(data[j]) * el;
+	vec(colnr[j]) += Trans(data[j]) * el;
       */
 
       int nj = firsti[row+1] - firsti[row];
       const int * colpi = colnr+firsti[row];
       const TM * datap = data+firsti[row];
-      TVX * vecp = &vec(0);
+      TVX * vecp = vec.Addr(0);
       for (int j = 0; j < nj; j++, colpi++, datap++)
 	vecp[*colpi] += Trans(*datap) * el;
     }
@@ -483,7 +453,6 @@ namespace ngla
   {
 
   protected:
-
     SparseMatrixSymmetricTM (int as, int max_elsperrow)
       : SparseMatrixTM<TM> (as, max_elsperrow) { ; }
 
@@ -495,7 +464,6 @@ namespace ngla
 
     SparseMatrixSymmetricTM (const SparseMatrixSymmetricTM & amat)
       : SparseMatrixTM<TM> (amat) { ; }
-
 
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL;
@@ -521,16 +489,6 @@ namespace ngla
     typedef TV TVY;
     typedef TV TVX;
 
-    /*
-   ///
-   SparseMatrixSymmetric (int as, int max_elsperrow);
-   ///
-   SparseMatrixSymmetric (const Array<int> & elsperrow);
-   ///
-   SparseMatrixSymmetric (const MatrixGraph & agraph, bool stealgraph);
-   ///
-   SparseMatrixSymmetric (const SparseMatrixSymmetric & agraph);
-    */
 
     SparseMatrixSymmetric (int as, int max_elsperrow)
       : SparseMatrixTM<TM> (as, max_elsperrow) , 
@@ -607,7 +565,7 @@ namespace ngla
 	return new BlockJacobiPrecondSymmetric<TM,TV> (*this, blocks);
       else
 	return new BlockJacobiPrecondSymmetric<TM,TV> 
-	  (*this, dynamic_cast<const T_BaseVector<TVX>&>(*constraint).FV(),
+	  (*this, constraint->FV<TVX>(), // dynamic_cast<const T_BaseVector<TVX>&>(*constraint).FV(),
 	   blocks);
     }
 
@@ -652,36 +610,46 @@ namespace ngla
       if (last == first) return TVY(0);
       if (colnr[last-1] == row) last--;
 
-      const int * colpi = colnr+firsti[row];
-      const TM * datap = data+firsti[row];
-      const TVX * vecp = &vec(0);
-
       typedef typename mat_traits<TVY>::TSCAL TTSCAL;
       TVY sum = TTSCAL(0);
+
+      /*
+      for (int j = first; j < last; j++)
+	sum += data[j] * vec(colnr[j]);
+      */
+      const int * colpi = colnr+firsti[row];
+      const TM * datap = data+firsti[row];
+      const TVX * vecp = vec.Addr(0);
+
       for (int j = first; j < last; j++, colpi++, datap++)
 	sum += *datap * vecp[*colpi];
+
       return sum;
     }
 
     void AddRowTransToVectorNoDiag (int row, TVY el, FlatVector<TVX> & vec) const
     {
       /*
-	int last = firsti[row+1];
-	if (colnr[last-1] == row) last--;
-    
-	for (int j = firsti[row]; j < last; j++)
-	vec(colnr[j]) += Trans(data[j]) * el;
-      */
       int last = this->firsti[row+1];
       int first = this->firsti[row];
       if (first == last) return;
 
       if (this->colnr[last-1] == row) last--;
 
-      int nj = last - this->firsti[row];
-      const int * colpi = this->colnr+this->firsti[row];
-      const TM * datap = this->data+this->firsti[row];
-      TVX * vecp = &vec(0);
+      for (int j = firsti[row]; j < last; j++)
+	vec(colnr[j]) += Trans(data[j]) * el;
+      */
+
+      int last = firsti[row+1];
+      int first = firsti[row];
+      if (first == last) return;
+
+      if (colnr[last-1] == row) last--;
+
+      int nj = last - firsti[row];
+      const int * colpi = colnr+firsti[row];
+      const TM * datap = data+firsti[row];
+      TVX * vecp = vec.Addr(0);
       for (int j = 0; j < nj; j++, colpi++, datap++)
 	vecp[*colpi] += Trans(*datap) * el;
     }
@@ -689,14 +657,8 @@ namespace ngla
     BaseSparseMatrix & AddMerge (double s, const SparseMatrixSymmetric  & m2);
 
     virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;
-
     virtual BaseMatrix * InverseMatrix (const Array<int> * clusters) const;
-
   };
-
-
-
-
 
 
 
@@ -729,13 +691,7 @@ namespace ngla
     static VarBlockSparseMatrix * Create (const SparseMatrix<TM> & sm);
     virtual ~VarBlockSparseMatrix ();
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-
-
   };
-
-
-
-
 }
 
 #endif

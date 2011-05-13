@@ -794,18 +794,15 @@ namespace ngla
     static Timer timer("SparseMatrix::MultAdd");
     RegionTimer reg (timer);
 
-    FlatVector<TVX> fx (x.Size(), x.Memory());
-    FlatVector<TVY> fy (y.Size(), y.Memory());
+    FlatVector<TVX> fx = x.FV<TVX> ();  // (x.Size(), x.Memory());
+    FlatVector<TVY> fy = y.FV<TVY> ();  // (y.Size(), y.Memory());
     
     int h = this->Height();
-    // #pragma omp parallel
-    {
-      // #pragma omp for
-      for (int i = 0; i < h; i++)
-	fy(i) += s * RowTimesVector (i, fx);
-    }
+    for (int i = 0; i < h; i++)
+      fy(i) += s * RowTimesVector (i, fx);
   }
   
+
   template <class TM, class TV_ROW, class TV_COL>
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -813,8 +810,8 @@ namespace ngla
     static Timer timer ("SparseMatrix::MultTransAdd");
     RegionTimer reg (timer);
 
-    FlatVector<TVX> fx (x.Size(), x.Memory());
-    FlatVector<TVX> fy (y.Size(), y.Memory());
+    FlatVector<TVX> fx = x.FV<TVX> (); // (x.Size(), x.Memory());
+    FlatVector<TVX> fy = y.FV<TVY> (); // (y.Size(), y.Memory());
     
     for (int i = 0; i < this->Height(); i++)
       AddRowTransToVector (i, s*fx(i), fy);
@@ -828,8 +825,8 @@ namespace ngla
     static Timer timer("SparseMatrix::MultAdd Complex");
     RegionTimer reg (timer);
 
-    FlatVector<TVX> fx (x.Size(), x.Memory());
-    FlatVector<TVY> fy (y.Size(), y.Memory());
+    FlatVector<TVX> fx = x.FV<TVX> (); //  (x.Size(), x.Memory());
+    FlatVector<TVY> fy = y.FV<TVY> (); // (y.Size(), y.Memory());
 
     int h = this->Height();
     for (int i = 0; i < h; i++)
@@ -844,8 +841,8 @@ namespace ngla
     static Timer timer("SparseMatrix::MultTransAdd Complex");
     RegionTimer reg (timer);
 
-    FlatVector<TVX> fx (x.Size(), x.Memory());
-    FlatVector<TVY> fy (y.Size(), y.Memory());
+    FlatVector<TVX> fx = x.FV<TVX>(); //  (x.Size(), x.Memory());
+    FlatVector<TVY> fy = y.FV<TVY>(); // (y.Size(), y.Memory());
     
     for (int i = 0; i < this->Height(); i++)
       AddRowTransToVector (i, ConvertTo<TSCAL> (s)*fx(i), fy);
@@ -1116,11 +1113,16 @@ namespace ngla
     NgProfiler::RegionTimer reg (timer);
     NgProfiler::AddFlops (timer, 2*this->nze);
 
+    /*
     const FlatVector<TV_ROW> fx = 
       dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
     FlatVector<TV_COL> fy = 
       dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
-    
+    */
+
+    const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
+    FlatVector<TV_COL> fy = y.FV<TV_COL> ();
+
     for (int i = 0; i < this->Height(); i++)
       {
 	fy(i) += s * RowTimesVector (i, fx);
@@ -1139,10 +1141,10 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("SparseMatrixSymmetric::MultAdd1");
     NgProfiler::RegionTimer reg (timer);
 
-    const FlatVector<TV_ROW> fx = 
-      dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
-    FlatVector<TV_COL> fy = 
-      dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
+    const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
+      // dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
+    FlatVector<TV_COL> fy = y.FV<TV_COL> ();
+      // dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
     
     if (inner)
       {
@@ -1171,11 +1173,10 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("SparseMatrixSymmetric::MultAdd2");
     NgProfiler::RegionTimer reg (timer);
     
-    const FlatVector<TV_ROW> fx = 
-      dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
-    FlatVector<TV_COL> fy = 
-      dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
-	
+    const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
+    // dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
+    FlatVector<TV_COL> fy = y.FV<TV_COL> ();
+    // dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
 
     if (inner)
       {

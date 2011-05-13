@@ -4,6 +4,10 @@
 /* Date:   25. Aug. 2002                                             */
 /*********************************************************************/
 
+
+we don't need this file anymore
+
+
 /* 
    Implementation of VVector
 */
@@ -11,6 +15,7 @@
 
 namespace ngla
 {
+  /*
   template <typename T>
   VFlatVector<T> :: VFlatVector () throw()
   { 
@@ -26,15 +31,15 @@ namespace ngla
 
   }
 
-
-
   template <typename T>
   VFlatVector<T> :: ~VFlatVector() throw()
   { 
     ;
   }
+  */
 
 
+  /*
   template <typename T>
   VVector<T> :: VVector (int as) 
     : data(as)
@@ -48,19 +53,22 @@ namespace ngla
 
   }
 
-
   template <typename T>
   VVector<T> :: ~VVector() throw()
   { 
     ;
   }
+  */
 
+  /*
   template <typename T>
   BaseVector * T_BaseVector<T> :: CreateVector ( const Array<int> * procs ) const
   {
     VVector<T> * vec = new VVector<T> (this->size);
     return vec;
   }
+  */
+
 // #else 
 //   template <typename T>
 //   BaseVector * T_BaseVector<T> :: CreateVector ( const Array<int> * procs ) const
@@ -91,6 +99,7 @@ namespace ngla
 // #endif
 
 
+  /*
   template <typename T>
   void VVector<T> :: SetSize(int as)
   {
@@ -98,7 +107,7 @@ namespace ngla
     this->size = as;
     data.Alloc (this->size);
   }
-
+  */
 
 
 
@@ -134,6 +143,7 @@ namespace ngla
   */
 
 
+  /*
   template < class T >
   ostream & T_BaseVector<T> :: Print (ostream & ost) const
   {
@@ -149,13 +159,13 @@ namespace ngla
 // #endif
     return (ost << FV() << endl);
   }
+  */
 
 
 
 
 
-
-
+#ifdef LATESTOUT
 template class T_BaseVector<double>;
 template class T_BaseVector<Complex>;
 template class T_BaseVector<Vec<1,double> >;
@@ -184,7 +194,9 @@ template class T_BaseVector<Vec<18,double> >;
 template class T_BaseVector<Vec<18,Complex> >;
 template class T_BaseVector<Vec<24,double> >;
 template class T_BaseVector<Vec<24,Complex> >;
+#endif
 
+  #ifdef LATESTOUT
 template class VFlatVector<double>;
 template class VFlatVector<Complex>;
 template class VFlatVector<Vec<1,double> >;
@@ -204,7 +216,8 @@ template class VFlatVector<Vec<7,double> >;
 template class VFlatVector<Vec<7,Complex> >;
 template class VFlatVector<Vec<8,double> >;
 template class VFlatVector<Vec<8,Complex> >;
-
+#endif
+  
   /*
 template class VFlatVector<Vec<9,double> >;
 template class VFlatVector<Vec<9,Complex> >;
@@ -219,6 +232,7 @@ template class VFlatVector<Vec<24,double> >;
 template class VFlatVector<Vec<24,Complex> >;
   */
 
+#ifdef LATESTOUT
 template class VVector<double>;
 template class VVector<Complex>;
 template class VVector<Vec<1,double> >;
@@ -238,6 +252,9 @@ template class VVector<Vec<7,double> >;
 template class VVector<Vec<7,Complex> >;
 template class VVector<Vec<8,double> >;
 template class VVector<Vec<8,Complex> >;
+#endif
+
+
   /*
 template class VVector<Vec<9,double> >;
 template class VVector<Vec<9,Complex> >;

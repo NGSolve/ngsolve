@@ -40,10 +40,10 @@ namespace ngla
   void JacobiPrecond<TM,TV_ROW,TV_COL> ::
   MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
   {
-    const FlatVector<TV_ROW> fx = 
-      dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
-    FlatVector<TV_ROW> fy = 
-      dynamic_cast<T_BaseVector<TV_ROW> &> (y).FV();
+    const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
+    // dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
+    FlatVector<TV_ROW> fy = y.FV<TV_ROW> ();
+    // dynamic_cast<T_BaseVector<TV_ROW> &> (y).FV();
 
     if (!inner)
       for (int i = 0; i < height; i++)
@@ -71,10 +71,10 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("JacobiPrecond::GSSmooth");
     NgProfiler::RegionTimer reg (timer);
 
-    FlatVector<TV_ROW> fx = 
-      dynamic_cast<T_BaseVector<TV_ROW> &> (x).FV();
-    const FlatVector<TV_ROW> fb = 
-      dynamic_cast<const T_BaseVector<TV_ROW> &> (b).FV();
+    FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
+    // dynamic_cast<T_BaseVector<TV_ROW> &> (x).FV();
+    const FlatVector<TV_ROW> fb = b.FV<TV_ROW> ();
+    // dynamic_cast<const T_BaseVector<TV_ROW> &> (b).FV();
 
     for (int i = 0; i < height; i++)
       if (!this->inner || this->inner->Test(i))
@@ -93,10 +93,10 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("JacobiPrecond::GSSmoothBack");
     NgProfiler::RegionTimer reg (timer);
 
-    FlatVector<TV_ROW> fx = 
-      dynamic_cast<T_BaseVector<TV_ROW> &> (x).FV();
-    const FlatVector<TV_ROW> fb = 
-      dynamic_cast<const T_BaseVector<TV_ROW> &> (b).FV();
+    FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
+      // dynamic_cast<T_BaseVector<TV_ROW> &> (x).FV();
+    const FlatVector<TV_ROW> fb = b.FV<TV_ROW> ();
+      //dynamic_cast<const T_BaseVector<TV_ROW> &> (b).FV();
 
     for (int i = height-1; i >= 0; i--)
       if (!this->inner || this->inner->Test(i))
@@ -136,10 +136,10 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("JacobiPrecondSymmetric::GSSmooth");
     NgProfiler::RegionTimer reg (timer);
 
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-    const FlatVector<TVX> fb = 
-      dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+    const FlatVector<TVX> fb = b.FV<TVX> ();
+    // dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
 
     const SparseMatrixSymmetric<TM,TV> & smat =
       dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (this->mat);
@@ -169,15 +169,15 @@ namespace ngla
   void JacobiPrecondSymmetric<TM,TV> ::
   GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y /* , BaseVector & help */) const 
   {
-    static int timer = NgProfiler::CreateTimer ("JacobiPrecondSymmetric::GSSmooth-help");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("JacobiPrecondSymmetric::GSSmooth-help");
+    RegionTimer reg (timer);
 
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-    FlatVector<TVX> fy = 
-      dynamic_cast<T_BaseVector<TVX> &> (y).FV();
-    const FlatVector<TVX> fb = 
-      dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
+    FlatVector<TVX> fx = x.FV<TVX> ();
+      // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+    FlatVector<TVX> fy = y.FV<TVX> ();
+      // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+    // const FlatVector<TVX> fb = 
+    // dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
     // FlatVector<TVX> fh = 
     // dynamic_cast<const T_BaseVector<TVX> &> (help).FV();
 
@@ -214,10 +214,10 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("JacobiPrecondSymmetric::GSSmoothBack");
     NgProfiler::RegionTimer reg (timer);
 
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-    const FlatVector<TVX> fb = 
-      dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
+    const FlatVector<TVX> fb = b.FV<TVX> ();
+    // dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
 
     const SparseMatrixSymmetric<TM,TV> & smat =
       dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (this->mat);
