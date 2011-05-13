@@ -193,8 +193,8 @@ namespace ngbla
     template <class TVX, class TVY>
     void Mult (const FlatVector<TVX> & x, FlatVector<TVY> & y) const
     {
-      const TVX * hx = &x(0);
-      TVY * hy = &y(0);
+      const TVX * hx = x.Addr(0);
+      TVY * hy = y.Addr(0);
       const T * hm = &mem[0];
 
       for (int i = 0; i < n; i++)

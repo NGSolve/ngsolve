@@ -13,6 +13,7 @@ namespace ngbla
 
 
   template <int S, class T> class Vec;
+  template <int S, typename T> class FlatVec;
   template <class T> class SysVector;
   template <class T> class FlatVector;
   template <class T> class Vector;
@@ -200,6 +201,185 @@ namespace ngbla
     enum { WIDTH = 1 };
   };
 
+
+
+
+
+
+
+
+  template <int S, typename T>
+  class FlatVector<Vec<S, T> > : public CMCPMatExpr<FlatVector<Vec<S, T> > > 
+  {
+  protected:
+    /// vector size
+    int s;
+    /// the data
+    T * data;
+  public:
+    /// element type
+    typedef Vec<S,T> TELEM;
+    /// scalar of element type
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+
+    /// default constructor does nothing
+    FlatVector () { ; }
+    /// set size and mem
+    FlatVector (unsigned int as, T * adata) : s(as), data(adata) { ; }
+
+    /// set size and mem
+    FlatVector (unsigned int as, void * adata) : s(as), data(static_cast<T*> (adata)) { ; }
+
+    /*
+    /// put FlatVector over fixed size vector
+    template <int S>
+    FlatVector (const Vec<S,TSCAL> & v)
+      : s(v.Size()), data(const_cast<T*>(&v(0)))
+    { ; }
+    */
+
+    /// allocate FlatVector on local heap
+    FlatVector (int as, LocalHeap & lh) 
+      : s(as), data((T*)lh.Alloc(s*S*sizeof(T))) { ; }
+
+    /*
+    /// put FlatVector over systemvector
+    FlatVector (const SysVector<TSCAL> & sv)
+      : s(sv.Size()*sv.BlockSize() / mat_traits<T>::VDIM), 
+	data (sv(0))
+    {
+      ;
+    }
+    */
+
+    /// assign memory for vector on local heap
+    void AssignMemory (int as, LocalHeap & lh) 
+    {
+      s = as;
+      data = (T*)lh.Alloc(s*S*sizeof(T));
+    }
+
+    /// assign memory for vector
+    void AssignMemory (int as, T * mem) 
+    {
+      s = as;
+      data = mem;
+    }
+
+    /// copy vector. sizes must match
+    const FlatVector & operator= (const FlatVector & v) const
+    {
+      for (int i = 0; i < s; i++)
+	(*this)(i) = v(i);
+      return *this;
+    }
+
+    /// evaluate matrix expression
+    template<typename TB>
+    const FlatVector & operator= (const Expr<TB> & v) const
+    {
+      return CMCPMatExpr<FlatVector>::operator= (v);
+    }
+
+    /// assign constant value
+    const FlatVector & operator= (TSCAL scal) const
+    {
+      for (int i = 0; i < s; i++)
+	(*this)(i) = scal; 
+      return *this;
+    }
+
+    template<typename TB>
+    const FlatVector & operator+= (const Expr<TB> & v) const
+    {
+      if (TB::IS_LINEAR)
+	for (int i = 0; i < s; i++)
+	  (*this)(i) += v.Spec()(i);
+      else
+	for (int i = 0; i < s; i++)
+	  (*this)(i) += v.Spec()(i,0);
+      return *this;
+    }
+
+    /// constant element access
+    FlatVec<S,T> operator() (int i) const
+    {
+      return FlatVec<S,T> (data+i*S); 
+    }
+
+    /// element access. index j is ignored
+    FlatVec<S,T> operator() (int i, int j) const
+    {
+      return FlatVec<S,T> (data+i*S); 
+    }
+
+    /// constant element access
+    FlatVec<S,T> operator[] (int i) const
+    {
+      return FlatVec<S,T> (data+i*S); 
+    }
+
+
+    // shape functions had a problem with icc v9.1
+
+    const CArray<Vec<S,T> > Addr(int i) const
+    {
+      return CArray<Vec<S,T> > (static_cast<Vec<S,T>*> ((void*) (data+i*S))); 
+    }
+    /*
+    const CArray<T> Addr(int i) const
+    {
+      return CArray<T> (data+i*S); 
+    }
+    */
+
+    /// sub-vector of size next-first, starting at first
+    const FlatVector<Vec<S,T> > Range (int first, int next) const
+    { return FlatVector<Vec<S,T> > (next-first, data+S*first); }
+
+    /// sub-vector given by range
+    const FlatVector<Vec<S,T> > Range (IntRange range) const
+    { return FlatVector<Vec<S,T> > (range.Next()-range.First(), data+S*range.First()); }
+
+    /// vector size
+    int Size () const { return s; }
+
+    /// vector is matrix of height size
+    int Height () const { return s; }
+
+    /// vector is matrix of with 1
+    int Width () const { return 1; }
+
+    /*
+    /// take a slice of the vector. Take elements first+i * dist. 
+    SliceVector<T> Slice (int first, int dist)
+    {
+      return SliceVector<T> (s/dist, dist, data+first);
+    }
+
+    /// take a slice of the vector. Take elements first+i * dist. 
+    const SliceVector<T> Slice (int first, int dist) const
+    {
+      return SliceVector<T> (s/dist, dist, data+first);
+    }
+    */
+
+    /// access to data
+    const void * Data () const { return static_cast<const void*>(data); }
+    /// access to data
+    void * Data () { return static_cast<void*>(data); }
+
+    // new for SysVectors:
+    // typedef FlatVector<T> TV_COL;
+    // typedef double TV_ROW;
+    enum { HEIGHT = 1 };
+    enum { WIDTH = 1 };
+  };
+
+
+
+
+
   
 
   /**
@@ -265,6 +445,74 @@ namespace ngbla
     {
       FlatVector<T>::operator= (static_cast<FlatVector<T> >(v2));
       // MatExpr<FlatVector<T> >::operator= (v2);  // does not work, we don't know why
+      return *this;
+    }
+
+  };
+
+
+
+
+
+  template <int S, typename T>
+  class Vector<Vec<S,T> > : public FlatVector<Vec<S,T> >
+  {
+  public:
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+
+    /// default constructor
+    Vector () : FlatVector<Vec<S,T> > (0, (T*)0) { ; }
+
+    /// allocate vector
+    explicit Vector (int as) : FlatVector<Vec<S,T> > (as, new T[as*S]) { ; }
+
+
+    /// allocate and copy matrix  
+    Vector (const Vector & v2) 
+      : FlatVector<Vec<S,T> > (v2.Size(), new T[S*v2.Size()]) 
+    {
+      FlatVector<Vec<S,T> >::operator= (v2);
+    }
+    
+    /// allocate and compute 
+    template<typename TB>
+    Vector (const Expr<TB> & v2) 
+      : FlatVector<Vec<S,T> > (v2.Height(), new T[S*v2.Height()]) 
+    {
+      FlatVector<Vec<S,T> >::operator= (v2);
+    }
+
+    /// deallocate vector
+    ~Vector() { delete [] this->data; }
+
+    /// set vector to constant values
+    Vector & operator= (TSCAL scal)
+    {
+      FlatVector<Vec<S,T> >::operator= (scal);
+      return *this;
+    }
+
+    /// set vector size
+    void SetSize(int as)
+    {
+      if (this->s == as) return;
+      delete [] this->data;
+      this->s = as;
+      this->data = new T[S*this->s];
+    }
+
+    /// evaluate matrix expression
+    template<typename TB>
+    Vector & operator= (const Expr<TB> & v)
+    {
+      MatExpr<FlatVector<Vec<S,T> > >::operator= (v);
+      return *this;
+    }
+
+    Vector & operator= (const Vector & v2)
+    {
+      FlatVector<Vec<S,T> >::operator= (static_cast<FlatVector<Vec<S,T> > >(v2));
+      // MatExpr<FlatVector<Vec<S,T> > >::operator= (v2);  // does not work, we don't know why
       return *this;
     }
 
@@ -680,15 +928,6 @@ namespace ngbla
 	data[i] = v.data[i];
       return *this;
     }
-    /*
-    /// copy vector
-    FlatVec & operator= (const FlatVec & v) 
-    {
-      for (int i = 0; i < S; i++)
-	data[i] = v.data[i];
-      return *this;
-    }
-    */
 
     /// assign scalar value
     const FlatVec & operator= (TSCAL scal) const
@@ -733,7 +972,6 @@ namespace ngbla
       return data[i]; 
     }
 
-
     /// access vector
     TELEM & operator() (int i, int j) const 
     {
@@ -762,14 +1000,6 @@ namespace ngbla
       ost << " " << setw(7) << v(i);
     return ost;
   }
-
-
-
-
-
-
-
-
 
 
 
