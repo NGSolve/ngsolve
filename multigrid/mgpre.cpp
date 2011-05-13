@@ -288,6 +288,7 @@ namespace ngmg
 	    BaseVector & dt = *d.Range (0, fespace.GetNDofLevel(level-1));
 	    BaseVector & wt = *w.Range (0, fespace.GetNDofLevel(level-1));
 
+
 	    // smoother->Residuum (level, u, f, d);
 
 	    /*
