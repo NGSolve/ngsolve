@@ -12,9 +12,9 @@ namespace netgen
 {
 
 
-STLTopology :: STLTopology()
+  STLTopology :: STLTopology()
   : trias(), topedges(), points(), ht_topedges(NULL), 
-    neighbourtrigs(), trigsperpoint()
+    trigsperpoint(), neighbourtrigs()
 {
   ;
 }
@@ -473,7 +473,7 @@ void STLTopology :: InitSTLGeometry(const Array<STLReadTriangle> & readtrigs)
     {
       const STLReadTriangle & t = readtrigs[i];
       STLTriangle st;
-      Vec<3> n = t.Normal();
+      // Vec<3> n = t.Normal();
       st.SetNormal (t.Normal());
 
       for (k = 0; k < 3; k++)
