@@ -147,79 +147,12 @@ namespace ngfem
 
 
 
-  template <int DIM>
-  class Du
-  {
-  public:
-    const AutoDiff<DIM> & u;
-    Du (const AutoDiff<DIM> & au)
-      : u(au) { ; }
-  };
-
-  template <int DIM>
-  class uDv
-  {
-  public:
-    const AutoDiff<DIM> & u, v;
-    uDv (const AutoDiff<DIM> & au, 
-         const AutoDiff<DIM> & av)
-      : u(au), v(av) { ; }
-  };
-
-
-  template <int DIM>
-  class uDv_minus_vDu
-  {
-  public:
-    const AutoDiff<DIM> & u, v;
-    uDv_minus_vDu (const AutoDiff<DIM> & au, 
-                   const AutoDiff<DIM> & av)
-      : u(au), v(av) { ; }
-  };
-
-  template <int DIM>
-  class wuDv_minus_wvDu
-  {
-  public:
-    const AutoDiff<DIM> & u, v, w;
-    wuDv_minus_wvDu (const AutoDiff<DIM> & au, 
-                     const AutoDiff<DIM> & av,
-                     const AutoDiff<DIM> & aw)
-      : u(au), v(av), w(aw) { ; }
-  };
 
 
 
 
-  template <int DIM>
-  class HCurlShapeElement
-  {
-    double * data;
-  public:
-    HCurlShapeElement (double * adata) : data(adata) { ; }
 
-    void operator= (const Du<DIM> & uv) 
-    { for (int i = 0; i < DIM; i++) 
-        data[i] = uv.u.DValue(i); }
 
-    void operator= (const uDv<DIM> & uv) 
-    { for (int i = 0; i < DIM; i++) 
-        data[i] = uv.u.Value() * uv.v.DValue(i); }
-
-    void operator= (const uDv_minus_vDu<DIM> & uv) 
-    { for (int i = 0; i < DIM; i++) 
-        data[i] = 
-          uv.u.Value() * uv.v.DValue(i)
-          -uv.v.Value() * uv.u.DValue(i); }
-
-    void operator= (const wuDv_minus_wvDu<DIM> & uv) 
-    { for (int i = 0; i < DIM; i++) 
-        data[i] = 
-          uv.w.Value() * uv.u.Value() * uv.v.DValue(i)
-          -uv.w.Value() * uv.v.Value() * uv.u.DValue(i); }
-  };
-
-  
   // hv.DValue() = (grad u) x (grad v) 
   inline AutoDiff<3> Cross (const AutoDiff<3> & u,
 			    const AutoDiff<3> & v)
@@ -243,73 +176,173 @@ namespace ngfem
 
 
 
+
+
+
+
+  template <int DIM>
+  class Du
+  {
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+
+  public:
+    const AutoDiff<DIM> & u;
+
+    Du (const AutoDiff<DIM> & au)
+      : u(au) { ; }
+
+    Vec<DIM> Value () const
+    {
+      Vec<DIM> val;
+      for (int j = 0; j < DIM; j++)
+	val(j) = u.DValue(j);
+      return val;
+    }
+
+    Vec<DIM_CURL> CurlValue () const
+    {
+      return Vec<DIM> (0.0);
+    }
+  };
+
+
+
+
+  template <int DIM>
+  class uDv
+  {
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+
+  public:
+    const AutoDiff<DIM> & u, v;
+
+    uDv (const AutoDiff<DIM> & au, 
+         const AutoDiff<DIM> & av)
+      : u(au), v(av) { ; }
+
+    Vec<DIM> Value () const
+    {
+      Vec<DIM> val;
+      for (int j = 0; j < DIM; j++)
+	val(j) = u.Value() * v.DValue(j);
+      return val;
+    }
+
+    Vec<DIM_CURL> CurlValue () const
+    {
+      AutoDiff<DIM_CURL> hd = Cross (u, v);
+      Vec<DIM_CURL> val;
+      for (int i = 0; i < DIM_CURL; i++) 
+        val(i) = hd.DValue(i);
+      return val;
+    }
+  };
+
+
+
+  template <int DIM>
+  class uDv_minus_vDu
+  {
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+
+  public:
+    const AutoDiff<DIM> & u, v;
+
+    uDv_minus_vDu (const AutoDiff<DIM> & au, 
+                   const AutoDiff<DIM> & av)
+      : u(au), v(av) { ; }
+
+    Vec<DIM> Value () const
+    {
+      Vec<DIM> val;
+      for (int j = 0; j < DIM; j++)
+	val(j) = u.Value() * v.DValue(j) - v.Value() * u.DValue(j);
+      return val;
+    }
+
+    Vec<DIM_CURL> CurlValue () const
+    {
+      AutoDiff<DIM_CURL> hd = Cross (u, v);
+      Vec<DIM_CURL> val;
+      for (int i = 0; i < DIM_CURL; i++) 
+        val(i) = 2 * hd.DValue(i);
+      return val;
+    }
+  };
+
+
+  template <int DIM>
+  class wuDv_minus_wvDu
+  {
+    enum { DIM_CURL = (DIM * (DIM-1))/2 };
+
+  public:
+    const AutoDiff<DIM> & u, v, w;
+
+    wuDv_minus_wvDu (const AutoDiff<DIM> & au, 
+                     const AutoDiff<DIM> & av,
+                     const AutoDiff<DIM> & aw)
+      : u(au), v(av), w(aw) { ; }
+
+    Vec<DIM> Value () const
+    {
+      Vec<DIM> val;
+      for (int j = 0; j < DIM; j++)
+	val(j) = w.Value() * (u.Value() * v.DValue(j) - v.Value() * u.DValue(j));
+      return val;
+    }
+
+    Vec<DIM_CURL> CurlValue () const
+    {
+      AutoDiff<DIM_CURL> hd = Cross (u*w, v) + Cross(u, v*w);
+      Vec<DIM_CURL> val;
+      for (int i = 0; i < DIM_CURL; i++) 
+        val(i) = 2 * hd.DValue(i);
+      return val;
+    }
+  };
+
+
+
+
+
+
+  template <int DIM>
+  class HCurlShapeElement
+  {
+    FlatVec<DIM> data;
+  public:
+    HCurlShapeElement (FlatVec<DIM> adata) : data(adata) { ; }
+
+    template <typename F1>
+    void operator= (F1 form1)  { data = form1.Value(); }
+  };
+
   template <int DIM>
   class HCurlCurlShapeElement
   {
-    double * data;
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
+    FlatVec<DIM_CURL> data;
   public:
-    HCurlCurlShapeElement (double * adata) : data(adata) { ; }
+    HCurlCurlShapeElement (FlatVec<DIM_CURL> adata) : data(adata) { ; }
 
-    void operator= (const Du<DIM> & uv) 
-    { for (int i = 0; i < DIM; i++) 
-        data[i] = 0; }
-
-    void operator= (const uDv<DIM> & uv) 
-    {
-      AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
-      for (int i = 0; i < DIM_CURL; i++) 
-        data[i] = hd.DValue(i);
-    }
-
-    void operator= (const uDv_minus_vDu<DIM> & uv) 
-    {
-      AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
-      for (int i = 0; i < DIM_CURL; i++) 
-        data[i] = 2*hd.DValue(i);
-    }
-
-    void operator= (const wuDv_minus_wvDu<DIM> & uv) 
-    {
-      AutoDiff<DIM_CURL> hd = Cross (uv.u*uv.w, uv.v) + Cross(uv.u, uv.v*uv.w);
-      for (int i = 0; i < DIM_CURL; i++) 
-        data[i] = hd.DValue(i);
-    }
+    template <typename F1>
+    void operator= (F1 form1)  { data = form1.CurlValue(); }
   };
+
 
   template <int DIM>
   class HCurlEvaluateCurlElement
   {
-    const double * coefs;
+    const double & coef;
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
     Vec<DIM_CURL> & sum;
   public:
-    HCurlEvaluateCurlElement (const double * acoefs, Vec<DIM_CURL> & asum)
-      : coefs(acoefs), sum(asum) { ; }
+    HCurlEvaluateCurlElement (const double & acoef, Vec<DIM_CURL> & asum)
+      : coef(acoef), sum(asum) { ; }
 
-    void operator= (const Du<DIM> & uv) 
-    { ; }
-
-    void operator= (const uDv<DIM> & uv) 
-    {
-      AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
-      for (int i = 0; i < DIM_CURL; i++) 
-        sum[i] += *coefs * hd.DValue(i);
-    }
-
-    void operator= (const uDv_minus_vDu<DIM> & uv) 
-    {
-      AutoDiff<DIM_CURL> hd = Cross (uv.u, uv.v);
-      for (int i = 0; i < DIM_CURL; i++) 
-        sum[i] += 2 * *coefs * hd.DValue(i);
-    }
-
-    void operator= (const wuDv_minus_wvDu<DIM> & uv) 
-    {
-      AutoDiff<DIM_CURL> hd = Cross (uv.u*uv.w, uv.v) + Cross(uv.u, uv.v*uv.w);
-      for (int i = 0; i < DIM_CURL; i++) 
-        sum[i] += *coefs * hd.DValue(i);
-    }
+    template <typename F1>
+    void operator= (F1 form1)  { sum += coef * form1.CurlValue(); }
   };
 
 
@@ -317,41 +350,37 @@ namespace ngfem
   template <int DIM>
   class HCurlShapeAssign
   {
-    double * dshape;
+    FlatMatrixFixWidth<DIM> shape; 
   public:
-    HCurlShapeAssign (FlatMatrixFixWidth<DIM> mat)
-    { dshape = &mat(0,0); }
+    HCurlShapeAssign (FlatMatrixFixWidth<DIM> mat) : shape(mat) { ; }
 
     HCurlShapeElement<DIM> operator[] (int i) const
-    { return HCurlShapeElement<DIM> (dshape + i*DIM); }
+    { return HCurlShapeElement<DIM> (shape.Row(i)); }
   };
-
 
   template <int DIM>
   class HCurlCurlShapeAssign
   {
-    double * dshape;
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
+    FlatMatrixFixWidth<DIM_CURL> cshape; 
   public:
-    HCurlCurlShapeAssign (FlatMatrixFixWidth<DIM_CURL> mat)
-    { dshape = &mat(0,0); }
+    HCurlCurlShapeAssign (FlatMatrixFixWidth<DIM_CURL> mat) : cshape(mat) { ; }
 
-    HCurlCurlShapeElement<DIM> operator[] (int i) const
-    { return HCurlCurlShapeElement<DIM> (dshape + i*DIM_CURL); }
+    HCurlCurlShapeElement<DIM> operator[] (int i) const 
+    { return HCurlCurlShapeElement<DIM> (cshape.Row(i)); }
   };
 
   template <int DIM>
   class HCurlEvaluateCurl
   {
-    const double * coefs;
+    FlatVector<> coefs;
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
     Vec<DIM_CURL> sum;
   public:
-    HCurlEvaluateCurl (FlatVector<> acoefs)
-    { coefs = &acoefs(0); sum = 0.0; }
+    HCurlEvaluateCurl (FlatVector<> acoefs) : coefs(acoefs), sum(0.0) { ; }
 
     HCurlEvaluateCurlElement<DIM> operator[] (int i) 
-    { return HCurlEvaluateCurlElement<DIM> (coefs+i, sum); }
+    { return HCurlEvaluateCurlElement<DIM> (coefs(i), sum); }
 
     Vec<DIM_CURL> Sum() { return sum; }
   };
@@ -413,7 +442,6 @@ namespace ngfem
     }
 
 
-
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
                                 FlatMatrixFixWidth<DIM_CURL> curlshape) const
     {
@@ -461,19 +489,10 @@ namespace ngfem
 
 
 
-
-
-
-
   template <int D>
   extern void ComputeGradientMatrix (const ScalarFiniteElement<D> & h1fe,
 				     const HCurlFiniteElement<D> & hcurlfe,
 				     FlatMatrix<> gradient);
-
-
-
-
-
 
 }
 

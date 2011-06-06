@@ -254,9 +254,6 @@ namespace ngfem
       else
 	L2HighOrderFiniteElement<DIM>::GetTraceTrans (facet, fcoefs, coefs);
     }
-
-
-
   };
 
 
@@ -305,7 +302,6 @@ namespace ngfem
       int p = order_inner[0];
       DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
     }
-
   };
   
     
@@ -367,11 +363,6 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx x[], TFA & shape) const;
   };
-
-
-
-
-
 }
 
 #endif
