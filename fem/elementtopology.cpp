@@ -340,6 +340,83 @@ namespace ngfem
     str << "Ng_GetNormals, illegal element type " << et << "\n";
     throw Exception (str.str());
   }
+
+
+  template <int D>
+  FlatVector< Vec<D> > ElementTopology::GetNormals(ELEMENT_TYPE et)
+  {
+    // length of normal: 
+    //  in 2d:  length of edge (sum of intweights = 1)
+    //  in 3d:  area of parallelogramm (sum of intweights = 1(quad), 1/2 trig)
+    // this is property is preserved by piola transformation: n = det(F) * F^(-T) n_ref
+
+    static double trig_normals [][2] = 
+    { { 0, -1 },
+    { -1, 0 },
+    { 1, 1 } };
+
+    static double quad_normals [][2] = 
+    { { 0, -1 },
+    { 0, 1 },
+    { -1, 0 },
+    { 1, 0 } };
+
+    static double tet_normals [][3] = 
+    { { -1, 0, 0 },
+    { 0, -1, 0 },
+    { 0, 0, -1 },
+    { 1, 1, 1 } };
+
+    static double pyramid_normals [][3] =
+    {
+      { 0, -1, 0 },
+      { 1, 0, 1 },
+      { 0, 1, 1 },
+      { -1, 0, 0 },
+      { 0, 0, -1 }, 
+    };    
+  
+    static double prism_normals[][3] = 
+    {
+      { 0, 0, -1 },
+      { 0, 0, 1 },
+      { 0, -1, 0 },
+      { 1, 1, 0 },
+      { -1, 0, 0 },
+    };
+
+    static double hex_normals[][3] = 
+    { 
+      { 0, 0, -1 },
+      { 0, 0, 1 },
+      { 0, -1, 0 },
+      { 1, 0, 0 },
+      { 0, 1, 0 },
+      { -1, 0, 0 },
+    };
+
+    
+    switch (et)
+    {
+    case ET_TRIG: return FlatVector< Vec<D> > (3, trig_normals);
+    case ET_QUAD: return FlatVector< Vec<D> > (4, quad_normals);
+    case ET_TET:  return FlatVector< Vec<D> > (4, tet_normals);
+    case ET_PYRAMID: return FlatVector< Vec<D> > (5, pyramid_normals);
+    case ET_PRISM: return FlatVector< Vec<D> > (5, prism_normals);
+    case ET_HEX: return FlatVector< Vec<D> > (6, hex_normals);
+    default:
+      break;
+    }
+  
+    stringstream str;
+    str << "Ng_GetNormals, illegal element type " << et << "\n";
+    throw Exception (str.str());
+  }
+
+   
+  template FlatVector< Vec<2> > ElementTopology::GetNormals<2> (ELEMENT_TYPE et);
+  template FlatVector< Vec<3> > ElementTopology::GetNormals<3> (ELEMENT_TYPE et);
+
   
   int ElementTopology :: GetEdgeNr (ELEMENT_TYPE et, int v1, int v2)
   {
