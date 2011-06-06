@@ -790,12 +790,13 @@ namespace ngfem
 				    FlatMatrix<double> & elmat,
 				    LocalHeap & lh) const
     {
-      double alpha = 1; // 0.01;
+      double alpha = 1e-1; // 0.01;
 
       static Timer timer ("HDG laplace");
       static Timer timer1 ("HDG laplace volume");
       static Timer timer1a ("HDG laplace volume, lapack");
       static Timer timer2 ("HDG laplace boundary");
+      static Timer timer2a ("HDG laplace boundary - mult");
       static Timer timer3 ("HDG laplace inv/mult");
 
       RegionTimer reg (timer);
@@ -828,7 +829,8 @@ namespace ngfem
 
       FlatMatrix<> mat_gradgrad (nd_l2, lh);
       FlatMatrix<> mat_gradgradinv (nd_l2, lh);
-      
+      FlatMatrix<> mat_robin (nd_l2, lh);
+
       {
 	NgProfiler::RegionTimer reg (timer1);     
 	HeapReset hr(lh);
@@ -857,32 +859,31 @@ namespace ngfem
 
 	// mat_gradgrad = Trans (dbmats) * bmats;
         LapackMultAtB (dbmats, bmats, mat_gradgrad);
-	elmat.Cols(l2_dofs).Rows(l2_dofs) += mat_gradgrad;
+	elmat.Cols(l2_dofs).Rows(l2_dofs) = mat_gradgrad;
       }
 
 
       // The facet contribution
       {
-	NgProfiler::RegionTimer reg2 (timer2);     
 
 	int nfacet = ElementTopology::GetNFacets(eltype);
       
 	Facet2ElementTrafo transform(eltype); 
-	const NORMAL * normals = ElementTopology::GetNormals(eltype);
+	// FlatVector<Vec<3> > normals (nfacet, ElementTopology::GetNormals(eltype));
+	FlatVector<Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
 
 	FlatMatrix<> mat_mixed(nd_l2, nd, lh);
 	FlatMatrix<> mat_mixedT(nd, nd_l2, lh);
 	FlatVector<> jump(nd, lh);
 	mat_mixed = 0.0;
-
+	mat_robin = 0.0;
+	
+	{
+	NgProfiler::RegionTimer reg2 (timer2);     
 	for (int k = 0; k < nfacet; k++)
 	  {
 	    HeapReset hr(lh);
 	    ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
-
-	    Vec<D> normal_ref;
-	    for (int i=0; i<D; i++)
-	      normal_ref(i) = normals[k][i];
 
 	    const IntegrationRule & ir_facet = SelectIntegrationRule (etfacet, 2*max (fel_l2.Order(), fel_facet.Order()));
 
@@ -891,7 +892,6 @@ namespace ngfem
 	    FlatMatrix<> jumps(nd, ir_facet.GetNIP(), lh);
 	    FlatMatrix<> fac_dudns(nd_l2, ir_facet.GetNIP(), lh);
 	    FlatMatrix<> fac_jumps(nd, ir_facet.GetNIP(), lh);
-
 
 	    for (int l = 0; l < ir_facet.GetNIP(); l++)
 	      {
@@ -902,42 +902,49 @@ namespace ngfem
 		Mat<D> inv_jac = sip.GetJacobianInverse();
 		double det = sip.GetMeasure();
 
-		Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
+		Vec<D> normal = det * Trans (inv_jac) * normals(k);
 		double len = L2Norm (normal);
 		normal /= len;
 
 		fel_l2.CalcShape(ip, jump.Range (l2_dofs) );
-		fel_facet.CalcFacetShape(k, ir_facet[l], jump.Range(facet_dofs));
+		fel_facet.CalcShape(ip, jump.Range(facet_dofs));
 		jump.Range (facet_dofs) *= -1;
 
 		Vec<D> invjac_normal = inv_jac * normal;
 		mat_dudn = fel_l2.GetDShape (sip.IP(), lh) * invjac_normal;
 
-		// mat_mixed += lam * len * ir_facet[l].Weight() * mat_dudn * Trans (jump);
-		// elmat += alpha*lam * len/det * ir_facet[l].Weight() * jump * Trans(jump);
 		jumps.Col(l) = jump;
 		fac_jumps.Col(l) = alpha*lam * len/det * sqr(fel_l2.Order()) * ir_facet[l].Weight() * jump;
 		fac_dudns.Col(l) = lam * len * ir_facet[l].Weight() * mat_dudn;
-		NgProfiler::AddFlops (timer2, nd*nd*4);
 	      }
 
+	    NgProfiler::RegionTimer reg2a (timer2a);     
+	    NgProfiler::AddFlops (timer2a, nd*nd*ir_facet.GetNIP());
+	    NgProfiler::AddFlops (timer2a, nd_l2*nd*ir_facet.GetNIP());
+	    NgProfiler::AddFlops (timer2a, nd_l2*nd_l2*ir_facet.GetNIP());
+	    /*
 	    elmat += Symmetric (fac_jumps * Trans (jumps));
 	    mat_mixed += fac_dudns * Trans (jumps);
+	    mat_robin += Symmetric (fac_jumps.Rows(l2_dofs) * Trans (jumps.Rows(l2_dofs)));
+	    */
+	    LapackMultAddABt (fac_jumps, jumps, 1, elmat);
+	    LapackMultAddABt (fac_dudns, jumps, 1, mat_mixed);
+	    LapackMultAddABt (fac_jumps.Rows(l2_dofs), jumps.Rows(l2_dofs), 1, mat_robin);
 	  }
+	}
 	
 	elmat.Rows(l2_dofs) -= mat_mixed;
 	elmat.Cols(l2_dofs) -= Trans(mat_mixed);
 
+
+	double eps = alpha;
+	mat_gradgrad += eps * mat_robin;
+	// mat_gradgrad(0,0) += 1;
+
 	RegionTimer reg3 (timer3);
 
 	mat_mixedT = Trans (mat_mixed);
-
-	mat_gradgrad(0,0) += 1;
-	// CalcInverse (mat_gradgrad, mat_gradgradinv);
 	LapackInverse (mat_gradgrad);
-
-	// FlatMatrix<> hm(nd_l2, nd, lh);
-	// hm = mat_gradgradinv * Trans (mat_mixedT);
 
 	FlatMatrix<> hmT(nd, nd_l2, lh);
 	hmT = mat_mixedT * Trans (mat_gradgrad);

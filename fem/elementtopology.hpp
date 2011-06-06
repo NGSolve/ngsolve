@@ -366,6 +366,10 @@ namespace ngfem
 
     /// return normals on facets
     static NORMAL * GetNormals(ELEMENT_TYPE et);
+
+    template <int D>
+    static FlatVector<Vec<D> > GetNormals(ELEMENT_TYPE et);
+
   
     /// returns number of edge from vertex v1 to vertex v2
     static int GetEdgeNr (ELEMENT_TYPE et, int v1, int v2);
