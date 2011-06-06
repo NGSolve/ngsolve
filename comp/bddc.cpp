@@ -9,7 +9,9 @@ namespace ngcomp
 
   class BDDCMatrix : public BaseMatrix
   {
-    const ElementByElement_BilinearForm<double> & bfa;
+    // const ElementByElement_BilinearForm<double> & bfa;
+    const BilinearForm & bfa;
+    Array<Matrix<double>*> & elmats;
     Array<int> restrict;
     Array<int> multiple;
     BaseMatrix * inv;
@@ -145,8 +147,8 @@ namespace ngcomp
 
       for (int i = 0; i < ne; i++)
         {
-          FlatMatrix<> elmat = 
-            dynamic_cast<const ElementByElementMatrix<double>&> (bfa.GetMatrix()) . GetElementMatrix (i);
+          FlatMatrix<> elmat = *elmats[i]; 
+	  // dynamic_cast<const ElementByElementMatrix<double>&> (bfa.GetMatrix()) . GetElementMatrix (i);
 	  
 	  Array<int> interfacedofs; interfacedofs = el2ifdofs[i];
 	  Array<int> wirebasketdofs; wirebasketdofs = el2wbdofs[i];
@@ -432,8 +434,8 @@ namespace ngcomp
 
       for (int i = 0; i < ne; i++)
         {
-          FlatMatrix<> elmat = 
-            dynamic_cast<const ElementByElementMatrix<double>&> (bfa.GetMatrix()) . GetElementMatrix (i);
+          FlatMatrix<> elmat = *elmats[i];
+	  // dynamic_cast<const ElementByElementMatrix<double>&> (bfa.GetMatrix()) . GetElementMatrix (i);
 
 	  FlatArray<int> dofs2 = dcdofs[i];
 	  Array<int> idnums; idnums.SetSize(0); //global dofs
@@ -561,8 +563,8 @@ namespace ngcomp
           
     
     
-    BDDCMatrix (const ElementByElement_BilinearForm<double> & abfa, const string & ainversetype, bool ablock, bool aebe)
-      : bfa(abfa), inversetype(ainversetype), ma(abfa.GetFESpace().GetMeshAccess()),block(ablock), ebe(aebe)
+    BDDCMatrix (const BilinearForm & abfa, Array<Matrix<double>*> & aelmats, const string & ainversetype, bool ablock, bool aebe)
+      : bfa(abfa), elmats(aelmats), inversetype(ainversetype), ma(abfa.GetFESpace().GetMeshAccess()),block(ablock), ebe(aebe)
    {
       pwbmat = NULL;
       inv = NULL;
@@ -1328,12 +1330,12 @@ namespace ngcomp
       static int timertransx1a = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - lapack");
       static int timertransx1b = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - read");
       static int timertransx1c = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - write");
-      static int timertransx1d = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - indices");
+      // static int timertransx1d = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - indices");
 
       static int timertransy = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy");
       static int timertransyr = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy - read");
       static int timertransyw = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy - write");
-      static int timertransyi = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy - ind");
+      // static int timertransyi = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy - ind");
 
 
       static int timerrest = NgProfiler::CreateTimer ("Apply BDDC preconditioner, restrict");
@@ -1341,7 +1343,7 @@ namespace ngcomp
       static int timerext = NgProfiler::CreateTimer ("Apply BDDC preconditioner, extend");
       static int timerinner = NgProfiler::CreateTimer ("Apply BDDC preconditioner, inner");
       static int timersolve = NgProfiler::CreateTimer ("Apply BDDC preconditioner, solve");
-      static int timeretc = NgProfiler::CreateTimer ("Apply BDDC preconditioner, etc");
+      // static int timeretc = NgProfiler::CreateTimer ("Apply BDDC preconditioner, etc");
       NgProfiler::RegionTimer reg (timer);
 
 
@@ -1692,10 +1694,11 @@ namespace ngcomp
 
   template <class SCAL>
   BDDCPreconditioner<SCAL> ::
-  BDDCPreconditioner (const PDE * pde, const Flags & aflags, const string aname)
-    : Preconditioner (pde, aflags, aname)
+  BDDCPreconditioner (const PDE & pde, const Flags & aflags) // , const string aname)
+    : Preconditioner (&pde, aflags)
   {
-    bfa = dynamic_cast<const S_BilinearForm<SCAL>*>(pde->GetBilinearForm (aflags.GetStringFlag ("bilinearform", NULL)));
+    bfa = dynamic_cast<const S_BilinearForm<SCAL>*>(pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform", NULL)));
+    const_cast<S_BilinearForm<SCAL>*> (bfa) -> SetPreconditioner (this);
     inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
     refelement = flags.GetDefineFlag("refelement");
     block = flags.GetDefineFlag("block");
@@ -1705,38 +1708,55 @@ namespace ngcomp
 
   template <class SCAL>
   void BDDCPreconditioner<SCAL> ::
+  AddElementMatrix (const Array<int> & dnums,
+		    const FlatMatrix<> & elmat,
+		    bool inner_element, int elnr,
+		    LocalHeap & lh)
+  {
+#pragma omp critical (addbddcelmat)
+    {
+      if (elmats.Size() < ma.GetNE())
+	elmats.SetSize (ma.GetNE());
+    }
+    
+    int used = 0;
+    for (int i = 0; i < dnums.Size(); i++)
+      if (dnums[i] != -1) used++;
+     
+    elmats[elnr] = new Matrix<double> (used);
+
+    for (int i = 0, ii = 0; i < dnums.Size(); i++)
+      if (dnums[i] != -1) 
+	{
+	  for (int j = 0, jj = 0; j < dnums.Size(); j++)
+	    if (dnums[j] != -1) 
+	      {
+		(*elmats[elnr])(ii,jj) = elmat(i,j);
+		jj++;
+	      }
+	  ii++;
+	}
+  }
+  
+
+
+  template <class SCAL>
+  void BDDCPreconditioner<SCAL> ::
   Update ()
   {
     cout << "update bddc, inversetype = " << inversetype << endl;
+
     if (refelement)
       pre = new BDDCMatrixRefElement(*bfa, inversetype);
     else
-      pre = new BDDCMatrix(dynamic_cast<const ElementByElement_BilinearForm<double>&> (*bfa), inversetype, block,ebe);
+      pre = new BDDCMatrix(*bfa, elmats, inversetype, block,ebe);
 
     if (test) Test();
-    
   }  
 
   template class BDDCPreconditioner<double>;
     
 
 
-  namespace bddc_cpp
-  {
-   
-    class Init
-    { 
-    public: 
-      Init ();
-    };
-    
-    Init::Init()
-    {
-      GetPreconditionerClasses().AddPreconditioner ("bddc", BDDCPreconditioner<double>::Create);
-    }
-    
-    Init init;
-  }
-
-
+  static RegisterPreconditioner<BDDCPreconditioner<double> > initpre ("bddc");
 }

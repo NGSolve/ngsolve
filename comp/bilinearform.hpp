@@ -10,8 +10,8 @@
 namespace ngcomp
 {
 
-
   class LinearForm;
+  class Preconditioner;
 
   /** 
       A bilinear-form.
@@ -50,6 +50,9 @@ namespace ngcomp
 
     /// modify linear form due to static condensation
     LinearForm * linearform;
+
+    /// some preconditioners need element matrices 
+    Preconditioner * preconditioner; 
 
     /// matrices (sparse, application, diagonal, ...)
     Array<BaseMatrix*> mats;
@@ -146,6 +149,9 @@ namespace ngcomp
     void SetLinearForm (LinearForm * alf)
     { linearform = alf; }
     
+    void SetPreconditioner (Preconditioner * pre)
+    { preconditioner = pre; }
+
     /// generates matrix graph
     virtual MatrixGraph * GetGraph (int level, bool symmetric);
     ///
@@ -292,7 +298,7 @@ namespace ngcomp
 
     void SetEliminateInternal (bool eliminate) 
     { eliminate_internal = eliminate; }
-    void SetKeepInternal (bool keep) 
+    void SetKeepInternal (bool keep)
     { keep_internal = keep; }
     void SetStoreInner (bool storei) 
     { store_inner = storei; }
