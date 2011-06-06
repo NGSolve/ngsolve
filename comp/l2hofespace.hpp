@@ -106,6 +106,17 @@ namespace ngcomp
 #endif
   };
 
+
+
+
+
+
+
+
+
+
+
+
   class NGS_DLL_HEADER L2SurfaceHighOrderFESpace : public FESpace
   {
   protected:
