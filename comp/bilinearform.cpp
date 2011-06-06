@@ -21,23 +21,23 @@ namespace ngcomp
     : NGS_Object(afespace.GetMeshAccess(), aname), fespace(afespace)
   {
     fespace2 = NULL;
-    diagonal = 0;
-    multilevel = 1;
-    galerkin = 0;
-    symmetric = 1;
-    hermitean = 0;
-    nonassemble = 0;
-    SetEpsRegularization (0);
-    SetUnusedDiag (0);
-    low_order_bilinear_form = 0;
-    linearform = 0;
-    timing = 0;
-    print = 0;
-    printelmat = 0;
-    elmat_ev = 0;
-    eliminate_internal = 0;
-    keep_internal = 0;
-
+    diagonal = false;
+    multilevel = true;
+    // galerkin = false;
+    symmetric = true;
+    // hermitean = false;
+    // nonassemble = false;
+    // SetEpsRegularization (0);
+    // SetUnusedDiag (0);
+    low_order_bilinear_form = NULL;
+    linearform = NULL;
+    preconditioner = NULL;
+    // timing = false;
+    // print = false;
+    // printelmat = false;
+    // elmat_ev = false;
+    // eliminate_internal = false;
+    // keep_internal = false;
 
     SetGalerkin( flags.GetDefineFlag( "project" ) );
     SetNonAssemble (flags.GetDefineFlag ("nonassemble"));
@@ -51,11 +51,10 @@ namespace ngcomp
     SetPrint (flags.GetDefineFlag ("print"));
     SetPrintElmat (flags.GetDefineFlag ("printelmat"));
     SetElmatEigenValues (flags.GetDefineFlag ("elmatev")); 
-    if (flags.GetDefineFlag ("timing")) SetTiming (1);
-    if (flags.GetDefineFlag ("eliminate_internal")) SetEliminateInternal (1);
-    if (flags.GetDefineFlag ("keep_internal")) SetKeepInternal (1);
-    if (flags.GetDefineFlag ("store_inner")) SetStoreInner (1);
-
+    SetTiming (flags.GetDefineFlag ("timing"));
+    SetEliminateInternal (flags.GetDefineFlag ("eliminate_internal"));
+    SetKeepInternal (flags.GetDefineFlag ("keep_internal"));
+    SetStoreInner (flags.GetDefineFlag ("store_inner"));
     precompute = flags.GetDefineFlag ("precompute");
   }
 
@@ -66,22 +65,23 @@ namespace ngcomp
 		const Flags & flags)
     : NGS_Object(afespace.GetMeshAccess(), aname), fespace(afespace), fespace2(&afespace2)
   {
-    diagonal = 0;
-    multilevel = 1;
-    galerkin = 0;
-    symmetric = 1;
-    hermitean = 0;
-    nonassemble = 0;
+    diagonal = false;
+    multilevel = true;
+    galerkin = false;
+    symmetric = true;
+    hermitean = false;
+    nonassemble = false;
     SetEpsRegularization (0);
     SetUnusedDiag (0);
-    low_order_bilinear_form = 0;
+    low_order_bilinear_form = NULL;
+    preconditioner = NULL;
     linearform = 0;
-    timing = 0;
-    print = 0;
-    printelmat = 0;
-    elmat_ev = 0;
-    eliminate_internal = 0;
-    keep_internal = 0;
+    timing = false;
+    print = false;
+    printelmat = false;
+    elmat_ev = false;
+    eliminate_internal = false;
+    keep_internal = false;
 
 
     SetGalerkin( flags.GetDefineFlag( "project" ) );
@@ -96,7 +96,6 @@ namespace ngcomp
     SetPrintElmat (flags.GetDefineFlag ("printelmat"));
     SetElmatEigenValues (flags.GetDefineFlag ("elmatev"));
 
- 
     if (flags.GetDefineFlag ("timing")) SetTiming (1);
     if (flags.GetDefineFlag ("eliminate_internal")) SetEliminateInternal (1);
     if (flags.GetDefineFlag ("keep_internal")) SetKeepInternal (1);
@@ -605,14 +604,14 @@ namespace ngcomp
 
 	return;
       }
-
-	  try
+    
+    try
+      {
+	if (low_order_bilinear_form)
 	  {
-    if (low_order_bilinear_form)
-	{
-	  low_order_bilinear_form->Assemble(lh);
-	}
+	    low_order_bilinear_form->Assemble(lh);
 	  }
+      }
     catch (Exception & e)
       {
 	e.Append (string ("\nthrown by Do loworder ") +
@@ -620,7 +619,7 @@ namespace ngcomp
 	throw e;
       }
 
-
+    
     try
       {
 	AllocateMatrix ();
@@ -765,16 +764,14 @@ namespace ngcomp
 
     static Timer timer1 ("Matrix assembling - 1");
     static Timer timer2 ("Matrix assembling - 2");
-    static int timer3 = NgProfiler::CreateTimer ("Matrix assembling - 3");
+    static Timer timer3 ("Matrix assembling - 3");
     
-    static int timerb1 = NgProfiler::CreateTimer ("Matrix assembling bound - 1");
-    static int timerb2 = NgProfiler::CreateTimer ("Matrix assembling bound - 2");
-    static int timerb3 = NgProfiler::CreateTimer ("Matrix assembling bound - 3");
+    static Timer timerb1 ("Matrix assembling bound - 1");
+    static Timer timerb2 ("Matrix assembling bound - 2");
+    static Timer timerb3 ("Matrix assembling bound - 3");
 
     RegionTimer reg (mattimer);
     
-
-
     // check if integrators fit to space
     for (int i = 0; i < NumIntegrators(); i++)
       if (parts[i] -> BoundaryForm())
@@ -944,7 +941,7 @@ namespace ngcomp
 			  sum_elmat = 0;
                       
 			  timer1.Stop();
-			  NgProfiler::StartTimer (timer2);
+			  timer2.Start();
 
 			  for (int j = 0; j < NumIntegrators(); j++)
 			    {
@@ -959,8 +956,8 @@ namespace ngcomp
 
 			      try
 				{
-				  static int elementtimer = NgProfiler::CreateTimer ("Element matrix integration");
-				  NgProfiler::StartTimer (elementtimer);
+				  static Timer elementtimer ("Element matrix integration");
+				  elementtimer.Start();
  
 				  if (!diagonal)
 				    bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
@@ -973,7 +970,7 @@ namespace ngcomp
 					elmat(k,k) = diag(k);
 				    }
 
-				  NgProfiler::StopTimer (elementtimer);
+				  elementtimer.Stop();
 			  
 				  if (printelmat)
 				    {
@@ -1271,11 +1268,17 @@ namespace ngcomp
                       
 
 			  if (element_coloring)
-			    AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
+			    {
+			      AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
+			      if (preconditioner)
+				preconditioner -> AddElementMatrix (dnums, sum_elmat, true, i, lh);
+			    }
 			  else
 #pragma omp critical (addvolelement)
 			    {
 			      AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
+			      if (preconditioner)
+				preconditioner -> AddElementMatrix (dnums, sum_elmat, true, i, lh);
 			    }
 			  
 			  for (int j = 0; j < dnums.Size(); j++)
