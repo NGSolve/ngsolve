@@ -128,13 +128,6 @@ namespace ngcomp
     ;
   }
 
-  /*
-  FESpace * H1HighOrderFESpace :: 
-  Create (const MeshAccess & ma, const Flags & flags)
-  {
-    return new H1HighOrderFESpace (ma, flags, true); // true: parse flags
-  }
-  */
 
   void H1HighOrderFESpace :: Update(LocalHeap & lh)
   {
@@ -328,7 +321,6 @@ namespace ngcomp
     int nv = ma.GetNV();
     int ned = ma.GetNEdges();
     int nfa = (dim == 2) ? 0 : ma.GetNFaces();
-    //     nfa = ma.GetNFaces();
     int nel = ma.GetNE();
 
     ndof = nv;
@@ -588,26 +580,6 @@ namespace ngcomp
 #endif
 	      hofe3d -> SetVertexNumbers (ngel.vertices);
 
-	    /*
-#ifdef PARALLEL
-	    if (ntasks > 1)
-	      {
-		Array<int> globdofs(ngel.vertices.Size());
-		for (int j = 0; j < ngel.vertices.Size(); j++)
-		  globdofs[j] = parallelma->GetDistantPNum(0, ngel.vertices[j]);
-		for (int j = 0; j < ngel.vertices.Size(); j++)
-		  for (int k = 0; k < ngel.vertices.Size(); k++)
-		    if ( (ngel.vertices[j] < ngel.vertices[k]) != 
-			 (globdofs[j] < globdofs[k]) )
-		      {
-			cerr << "ordering of local/global vertices is inconsistent" << endl;
-			exit(1);
-		      }
-	      }
-		  
-#endif
-	    hofe3d -> SetVertexNumbers (ngel.vertices);
-	    */
 
             for (int j = 0; j < ngel.edges.Size(); j++)
               hofe3d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
@@ -891,7 +863,7 @@ namespace ngcomp
     cout << " blocktype " << smoothing_type << endl; 
     cout << " Use H1-Block Smoother:  "; 
 
-    TableCreator<int> creator;
+    FilteredTableCreator creator(GetFreeDofs());
     for ( ; !creator.Done(); creator++)
       {
 	switch (smoothing_type)
@@ -903,18 +875,15 @@ namespace ngcomp
 	      cout << " V + E + I " << endl;
 		
 	    for (int i = 0; i < nv; i++)
-	      if (!IsDirichletVertex(i))
-		creator.Add (i, i);
+	      creator.Add (i, i);
 		
 	    for (int i = 0; i < ned; i++)
-	      if(!IsDirichletEdge(i))
-		creator.Add (nv+i, GetEdgeDofs(i));
+	      creator.Add (nv+i, GetEdgeDofs(i));
 
 	    for (int i = 0; i < ni; i++)
 	      creator.Add (nv+ned+i, GetElementDofs(i));
 		
 	    break; 
-
 		
 	  case 2: // 2d VE + I
 
@@ -922,16 +891,14 @@ namespace ngcomp
 	      cout << " 2d VE + I " << endl; 
 
 	    for (int i = 0; i < nv; i++)
-	      if (!IsDirichletVertex(i))
-		creator.Add(i, i);
+	      creator.Add(i, i);
 
 	    for (int i = 0; i < ned; i++)
-	      if (!IsDirichletEdge(i))
-		{
-		  Ng_Node<1> edge = ma.GetNode<1> (i);
-		  for (int k = 0; k < 2; k++)
-		    creator.Add (edge.vertices[k], GetEdgeDofs(i));
-		}
+	      {
+		Ng_Node<1> edge = ma.GetNode<1> (i);
+		for (int k = 0; k < 2; k++)
+		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
+	      }
 		
 	    for (int i = 0; i < ni; i++)
 	      creator.Add (nv+ned+i, GetElementDofs(i));
@@ -945,22 +912,18 @@ namespace ngcomp
 	      cout << " V + E + F + I " << endl; 
 
 	    for (int i = 0; i < nv; i++)
-	      if (!IsDirichletVertex(i))
-		creator.Add(i, i);
+	      creator.Add(i, i);
 
 	    for (int i = 0; i < ned; i++)
-	      if(!IsDirichletEdge(i))
-		creator.Add (nv+i, GetEdgeDofs(i));
+	      creator.Add (nv+i, GetEdgeDofs(i));
 
 	    for (int i = 0; i < nfa; i++)
-	      if (!IsDirichletFace(i))
-		creator.Add(nv+i, GetFaceDofs(i));
+	      creator.Add(nv+i, GetFaceDofs(i));
 
 	    for (int i = 0; i < ni; i++)
 	      creator.Add (nv+nfa+i, GetElementDofs(i));
-
+	    
 	    break; 
-
 
 	  case 4: // VE + F + I
 		
@@ -968,21 +931,18 @@ namespace ngcomp
 	      cout << " VE + F + I " << endl;
 		
 	    for (int i = 0; i < nv; i++)
-	      if (!IsDirichletVertex(i))
-		creator.Add(i, i);
+	      creator.Add(i, i);
 		
 	    for (int i = 0; i < ned; i++)
-	      if (!IsDirichletEdge(i))
-		{
-		  Ng_Node<1> edge = ma.GetNode<1> (i);
-		  for (int k = 0; k < 2; k++)
-		    creator.Add (edge.vertices[k], GetEdgeDofs(i));
-		}
-		
+	      {
+		Ng_Node<1> edge = ma.GetNode<1> (i);
+		for (int k = 0; k < 2; k++)
+		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
+	      }
+	    
 	    for (int i = 0; i < nfa; i++)
-	      if (!IsDirichletFace(i))
-		creator.Add(nv+i, GetFaceDofs(i));
-		
+	      creator.Add(nv+i, GetFaceDofs(i));
+	    
 	    for (int i = 0; i < ni; i++)
 	      creator.Add (nv+nfa+i, GetElementDofs(i));
 		
@@ -994,20 +954,17 @@ namespace ngcomp
 	      cout << " VE + FI " << endl; 
 
 	    for (int i = 0; i < nv; i++)
-	      if (!IsDirichletVertex(i))
-		creator.Add(i, i);
+	      creator.Add(i, i);
 		
 	    for (int i = 0; i < ned; i++)
-	      if (!IsDirichletEdge(i))
-		{
-		  Ng_Node<1> edge = ma.GetNode<1> (i);
-		  for (int k = 0; k < 2; k++)
-		    creator.Add (edge.vertices[k], GetEdgeDofs(i));
-		}
-
+	      {
+		Ng_Node<1> edge = ma.GetNode<1> (i);
+		for (int k = 0; k < 2; k++)
+		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
+	      }
+	    
 	    for (int i = 0; i < nfa; i++)
-	      if (!IsDirichletFace(i))
-		creator.Add(nv+i, GetFaceDofs(i));
+	      creator.Add(nv+i, GetFaceDofs(i));
 
 	    for (int i = 0; i < ni; i++)
 	      {
@@ -1024,26 +981,23 @@ namespace ngcomp
 	      cout << " VEF + I " << endl; 
 
 	    for (int i = 0; i < nv; i++)
-	      if (!IsDirichletVertex(i))
-		creator.Add (i, i);
+	      creator.Add (i, i);
 		
 	    for (int i = 0; i < ned; i++)
-	      if (!IsDirichletEdge(i))
-		{
-		  Ng_Node<1> edge = ma.GetNode<1> (i);
-		  for (int k = 0; k < 2; k++)
-		    creator.Add (edge.vertices[k], GetEdgeDofs(i));
-		}
-
+	      {
+		Ng_Node<1> edge = ma.GetNode<1> (i);
+		for (int k = 0; k < 2; k++)
+		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
+	      }
+	    
 		
 	    for (int i = 0; i < nfa; i++)
-	      if (!IsDirichletFace(i))
-		{
-		  Ng_Node<2> face = ma.GetNode<2> (i);
-		  for (int k = 0; k < face.vertices.Size(); k++)
-		    creator.Add (face.vertices[k], GetFaceDofs(i));
-		}
-		
+	      {
+		Ng_Node<2> face = ma.GetNode<2> (i);
+		for (int k = 0; k < face.vertices.Size(); k++)
+		  creator.Add (face.vertices[k], GetFaceDofs(i));
+	      }
+	    
 	    for (int i = 0; i < ni; i++)
 	      creator.Add (nv+i, GetElementDofs(i));
 		
@@ -1055,25 +1009,22 @@ namespace ngcomp
 	      cout << " VEFI " << endl; 
 
 	    for (int i = 0; i < nv; i++)
-	      if (!IsDirichletVertex(i))
-		creator.Add (i, i);
+	      creator.Add (i, i);
 		
 	    for (int i = 0; i < ned; i++)
-	      if (!IsDirichletEdge(i))
-		{
-		  Ng_Node<1> edge = ma.GetNode<1> (i);
-		  for (int k = 0; k < 2; k++)
-		    creator.Add (edge.vertices[k], GetEdgeDofs(i));
-		}
+	      {
+		Ng_Node<1> edge = ma.GetNode<1> (i);
+		for (int k = 0; k < 2; k++)
+		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
+	      }
 
 	    for (int i = 0; i < nfa; i++)
-	      if (!IsDirichletFace(i))
-		{
-		  Ng_Node<2> face = ma.GetNode<2> (i);
-		  for (int k = 0; k < face.vertices.Size(); k++)
-		    creator.Add (face.vertices[k], GetFaceDofs(i));
-		}
-		
+	      {
+		Ng_Node<2> face = ma.GetNode<2> (i);
+		for (int k = 0; k < face.vertices.Size(); k++)
+		  creator.Add (face.vertices[k], GetFaceDofs(i));
+	      }
+	    
 	    for (int i = 0; i < ni; i++)
 	      {
 		const Ng_Element & ngel = ma.GetElement(i);
@@ -1088,16 +1039,13 @@ namespace ngcomp
 	      cout << " V + E + FI " << endl; 
 		
 	    for (int i = 0; i < nv; i++)
-	      if (!IsDirichletVertex(i))
-		creator.Add (i, i);
+	      creator.Add (i, i);
 		
 	    for (int i = 0; i < ned; i++)
-	      if(!IsDirichletEdge(i))
-		creator.Add (nv+i, GetEdgeDofs(i));
+	      creator.Add (nv+i, GetEdgeDofs(i));
 		
 	    for (int i = 0; i < nfa; i++)
-	      if (!IsDirichletFace(i))
-		creator.Add(nv+ned+i, GetFaceDofs(i));
+	      creator.Add(nv+ned+i, GetFaceDofs(i));
 		
 	    for (int i = 0; i < ni; i++)
 	      {
@@ -1114,27 +1062,24 @@ namespace ngcomp
 		cout << " V + EF + I " << endl; 
 		  
 	      for (int i = 0; i < nv; i++)
-		if (!IsDirichletVertex(i))
-		  creator.Add (i, i);
+		creator.Add (i, i);
 		  
 	      for (int i = 0; i < ned; i++)
-		if(!IsDirichletEdge(i))
-		  creator.Add (nv+i, GetEdgeDofs(i));
+		creator.Add (nv+i, GetEdgeDofs(i));
 		  
 	      Array<int> f2ed;
 	      for (int i = 0; i < nfa; i++)
-		if (!IsDirichletFace(i))
-		  {
-		    /*
+		{
+		  /*
 		    Ng_Node<2> face = ma.GetNode<2> (i);
 		    for (int k = 0; k < face.edges.Size(); k++)
-		      creator.Add (face.edges[k], GetFaceDofs(i));
-		    */
-
-		    ma.GetFaceEdges (i, f2ed);
-		    for (int k = 0; k < f2ed.Size(); k++)
-		      creator.Add (nv+f2ed[k], GetFaceDofs(i));
-		  }
+		    creator.Add (face.edges[k], GetFaceDofs(i));
+		  */
+		  
+		  ma.GetFaceEdges (i, f2ed);
+		  for (int k = 0; k < f2ed.Size(); k++)
+		    creator.Add (nv+f2ed[k], GetFaceDofs(i));
+		}
 	      
 	      for (int i = 0; i < ni; i++)
 		creator.Add (nv+ned+i, GetElementDofs(i));
@@ -1148,38 +1093,32 @@ namespace ngcomp
 	      cout << " V + E + F +I (Cluster)  " << endl; 
 
 	    for (int i = 0; i < nv; i++)
-	      if (!IsDirichletVertex(i))
-		creator.Add(ma.GetClusterRepVertex(i), i);
+	      creator.Add(ma.GetClusterRepVertex(i), i);
 
 	    for (int i = 0; i < ned; i++)
-	      if(!IsDirichletEdge(i))
-		creator.Add (ma.GetClusterRepEdge(i), GetEdgeDofs(i));
+	      creator.Add (ma.GetClusterRepEdge(i), GetEdgeDofs(i));
 
 	    for (int i = 0; i < nfa; i++)
-	      if (!IsDirichletFace(i))
-		creator.Add(ma.GetClusterRepFace(i), GetFaceDofs(i));
+	      creator.Add(ma.GetClusterRepFace(i), GetFaceDofs(i));
 
 	    for (int i = 0; i < ni; i++)
 	      creator.Add (ma.GetClusterRepElement(i), GetElementDofs(i));
 
 	    break; 
 
-
 	  case 11: 
 	    if (creator.GetMode() == 1)
 	      cout << " 2d VEI " << endl; 
 
 	    for (int i = 0; i < nv; i++)
-	      if (!IsDirichletVertex(i))
 		creator.Add (i, i);
 		
 	    for (int i = 0; i < ned; i++)
-	      if (!IsDirichletEdge(i))
-		{
-		  Ng_Node<1> edge = ma.GetNode<1> (i);
-		  for (int k = 0; k < 2; k++)
-		    creator.Add (edge.vertices[k], GetEdgeDofs(i));
-		}
+	      {
+		Ng_Node<1> edge = ma.GetNode<1> (i);
+		for (int k = 0; k < 2; k++)
+		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
+	      }
 
 	    for (int i = 0; i < ni; i++)
 	      {
@@ -1196,38 +1135,35 @@ namespace ngcomp
 	      cout << " VEFI Cluster " << endl; 
 
 	    for (int i = 0; i < nv; i++)
-	      if (!IsDirichletVertex(i))
-		creator.Add(ma.GetClusterRepVertex(i), i);
+	      creator.Add(ma.GetClusterRepVertex(i), i);
 
 	    for (int i = 0; i < ned; i++)
-	      if(!IsDirichletEdge(i))
-		{
-		  Ng_Node<1> edge = ma.GetNode<1> (i);
-		  int rep[2];
-		  for (int k = 0; k < 2; k++)
-		    rep[k] = ma.GetClusterRepVertex(edge.vertices[k]);
-		      
-		  creator.Add (rep[0], GetEdgeDofs(i));
-		  if (rep[0] != rep[1])
-		    creator.Add (rep[1], GetEdgeDofs(i));
-		}
+	      {
+		Ng_Node<1> edge = ma.GetNode<1> (i);
+		int rep[2];
+		for (int k = 0; k < 2; k++)
+		  rep[k] = ma.GetClusterRepVertex(edge.vertices[k]);
+		
+		creator.Add (rep[0], GetEdgeDofs(i));
+		if (rep[0] != rep[1])
+		  creator.Add (rep[1], GetEdgeDofs(i));
+	      }
 
 	    for (int i = 0; i < nfa; i++)
-	      if(!IsDirichletFace(i))
-		{
-		  Ng_Node<2> face = ma.GetNode<2> (i);
-		  int rep[4];
-		      
-		  for (int k = 0; k < face.vertices.Size(); k++)
-		    {
-		      rep[k] = ma.GetClusterRepVertex(face.vertices[k]);
-
-		      bool ok = true;
-		      for (int j = 0; j < k; j++)
-			if (rep[j] == rep[k]) ok = false;
-		      if (ok) creator.Add (rep[k], GetFaceDofs(i));
-		    }
-		}
+	      {
+		Ng_Node<2> face = ma.GetNode<2> (i);
+		int rep[4];
+		
+		for (int k = 0; k < face.vertices.Size(); k++)
+		  {
+		    rep[k] = ma.GetClusterRepVertex(face.vertices[k]);
+		    
+		    bool ok = true;
+		    for (int j = 0; j < k; j++)
+		      if (rep[j] == rep[k]) ok = false;
+		    if (ok) creator.Add (rep[k], GetFaceDofs(i));
+		  }
+	      }
 
 	    for (int i = 0; i < ni; i++)
 	      {
@@ -1252,27 +1188,24 @@ namespace ngcomp
 		cout << "VE + EF + I" << endl;
 		  
 	      for (int i = 0; i < nv; i++)
-		if (!IsDirichletVertex(i))
-		  creator.Add (i, i);
+		creator.Add (i, i);
 		  
 	      for (int i = 0; i < ned; i++)
-		if (!IsDirichletEdge(i))
-		  {
-		    creator.Add (nv+i, GetEdgeDofs(i));
-		    Ng_Node<1> edge = ma.GetNode<1> (i);
-		    for (int k = 0; k < 2; k++)
-		      creator.Add (edge.vertices[k], GetEdgeDofs(i));
-		  }
-		  
+		{
+		  creator.Add (nv+i, GetEdgeDofs(i));
+		  Ng_Node<1> edge = ma.GetNode<1> (i);
+		  for (int k = 0; k < 2; k++)
+		    creator.Add (edge.vertices[k], GetEdgeDofs(i));
+		}
+	      
 	      Array<int> f2ed;
 	      for (int i = 0; i < nfa; i++)
-		if (!IsDirichletFace(i))
-		  {
-		    ma.GetFaceEdges (i, f2ed);
-		    for (int k = 0; k < f2ed.Size(); k++)
-		      creator.Add (nv+f2ed[k], GetFaceDofs(i));
-		  }
-
+		{
+		  ma.GetFaceEdges (i, f2ed);
+		  for (int k = 0; k < f2ed.Size(); k++)
+		    creator.Add (nv+f2ed[k], GetFaceDofs(i));
+		}
+	      
 	      for (int i = 0; i < ni; i++)
 		creator.Add (nv+ned+i, GetElementDofs(i));
 	      break;
@@ -1287,19 +1220,18 @@ namespace ngcomp
 	    cout << "ds_order = " << ds_order << endl;
 		
 	    for (int i = 0; i < ned; i++)
-	      if (!IsDirichletEdge(i))
-		{
-		  int first = first_edge_dof[i] + ds_order - 1;
-		  int ndof = first_edge_dof[i+1]-first;
-		  for (int j = 0; j < ndof; j++)
-		    creator.Add (i, first+j);
-		}
+	      {
+		int first = first_edge_dof[i] + ds_order - 1;
+		int ndof = first_edge_dof[i+1]-first;
+		for (int j = 0; j < ndof; j++)
+		  creator.Add (i, first+j);
+	      }
 	    for (int i = 0; i < nfa; i++)
-	      if (!IsDirichletFace(i))
-		creator.Add(ned+i, GetFaceDofs(i));
+	      creator.Add(ned+i, GetFaceDofs(i));
 		
 	    break; 
 	  }
+
 	  case 51: 
 	  //for BDDC: we have only the condensated (after subassembling) dofs, 
 	  //and build patches around each vertex Vertices + Edges
@@ -1311,31 +1243,28 @@ namespace ngcomp
 // 	    cout << "ds_order = " << ds_order << endl;
 // 		
 	    for (int i = 0; i < nv; i++)
-	      if (!IsDirichletVertex(i))
-		creator.Add (i, i);
+	      creator.Add (i, i);
+
 	    for (int i = 0; i < ned; i++)
-	      if (!IsDirichletEdge(i))
-		{
-// 		  creator.Add (nv+i, GetEdgeDofs(i));
-		  Ng_Node<1> edge = ma.GetNode<1> (i);
-		  for (int k = 0; k < 2; k++){
-		    if (GetEdgeDofs(i).Next() > GetEdgeDofs(i).First())
-		      {
+	      {
+		// 		  creator.Add (nv+i, GetEdgeDofs(i));
+		Ng_Node<1> edge = ma.GetNode<1> (i);
+		for (int k = 0; k < 2; k++){
+		  if (GetEdgeDofs(i).Next() > GetEdgeDofs(i).First())
+		    {
 			if (ma.GetDimension() == 2)
 			  creator.Add (edge.vertices[k], GetEdgeDofs(i).First());
 			else
 			  creator.Add (edge.vertices[k], GetEdgeDofs(i));
-		      }
-		  }
+		    }
 		}
-		  
+	      }
+	    
 	    break; 	    
 	  }
       }
     return creator.GetTable();
   }
-
-
 
     
 
