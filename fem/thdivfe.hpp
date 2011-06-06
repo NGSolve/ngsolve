@@ -257,7 +257,7 @@ namespace ngfem
       : coefs(acoefs), sum(asum) { ; }
 
     void operator= (const Du<DIM> & uv) 
-    { 
+    {
       sum(0) += *coefs * uv.u.DValue(1);
       sum(1) -= *coefs * uv.u.DValue(0);
     }
@@ -280,8 +280,6 @@ namespace ngfem
       sum(0) += fac * (-uv.u.Value() * uv.v.DValue(1) + uv.u.DValue(1) * uv.v.Value());
       sum(1) += fac * ( uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value());
     }
-
-
 
 
     void operator= (const uDvDw_Cyclic<DIM> & uvw) 
@@ -313,7 +311,6 @@ namespace ngfem
         sum(i) += (*coefs) * uvw.w.Value() * hv.DValue(i);
 
     }
-
 
     void operator= (const uDvDw_minus_DuvDw<DIM> & uvw) 
     { 

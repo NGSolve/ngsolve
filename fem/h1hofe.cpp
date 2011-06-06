@@ -239,7 +239,6 @@ namespace ngfem
 
     for (int i = 0; i < 6; i++) sigma[i] = lam[i] + muz[i];
 
-
     // vertex shapes
     for (int i = 0; i < 6; i++)
       shape[i] = lam[i] * muz[i];
@@ -290,7 +289,7 @@ namespace ngfem
 	  DubinerBasis::
 	    EvalMult (p-3, lam[f[0]], lam[f[1]], bub, shape.Addr(ii));
 
-	  ii += (p-2)*(p-1)/2;
+	  ii += (p-2)*(p-1)/2; 
 	}
    
     // quad face dofs
