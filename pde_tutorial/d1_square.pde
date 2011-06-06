@@ -46,6 +46,7 @@ laplace lam
 # define preconditioner c -type=direct -bilinearform=a
 # define preconditioner c -type=local -bilinearform=a 
 define preconditioner c -type=multigrid -bilinearform=a -smoother=block
+# define preconditioner c -type=bddc -bilinearform=a
 
 
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=1000
