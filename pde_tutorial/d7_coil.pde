@@ -41,7 +41,8 @@ define bilinearform acurl -fespace=v -symmetric -nonassemble
 curlcurledge nu 
 
 
-define preconditioner c -type=multigrid -bilinearform=a  -smoother=block
+# define preconditioner c -type=multigrid -bilinearform=a  -smoother=block
+define preconditioner c -type=bddc -bilinearform=a
 
 
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c  -prec=1.e-9

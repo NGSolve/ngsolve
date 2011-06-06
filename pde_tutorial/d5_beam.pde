@@ -53,10 +53,6 @@ neumann coef_surface_force_z -comp=3
 # define system matrix. robin adds penalty terms to the x,y, and z-components
 define bilinearform a -fespace=v -symmetric  -eliminate_internal -linearform=f
 elasticity E nu
-# robin penalty  -comp=1
-# robin penalty  -comp=2
-# robin penalty  -comp=3
-
 
 # use either a direct factorization, or a multigrid preconditioner.
 # for problems smaller than 10000 nodes, the direct one is usually faster,
