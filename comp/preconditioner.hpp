@@ -71,6 +71,18 @@ namespace ngcomp
     }
 
 
+    virtual void AddElementMatrix (const Array<int> & dnums,
+				   const FlatMatrix<double> & elmat,
+				   bool inner_element, int elnr,
+				   LocalHeap & lh) { ; }
+
+    virtual void AddElementMatrix (const Array<int> & dnums,
+				   const FlatMatrix<Complex> & elmat,
+				   bool inner_element, int elnr,
+				   LocalHeap & lh) { ; }
+
+
+
     virtual const BaseMatrix & GetAMatrix() const
     { throw Exception ("Preconditioner, A-Matrix not available"); }
 
