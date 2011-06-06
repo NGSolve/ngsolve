@@ -297,7 +297,7 @@ namespace ngfem
       AutoDiff<DIM_CURL> hd = Cross (u*w, v) + Cross(u, v*w);
       Vec<DIM_CURL> val;
       for (int i = 0; i < DIM_CURL; i++) 
-        val(i) = 2 * hd.DValue(i);
+        val(i) = hd.DValue(i);
       return val;
     }
   };
