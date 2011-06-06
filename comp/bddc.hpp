@@ -18,17 +18,26 @@ namespace ngcomp
     bool refelement;
     bool block;
     bool ebe;
+
+    Array<Matrix<double>*> elmats;
   public:
-    BDDCPreconditioner (const PDE * pde, const Flags & aflags,
-			const std::string aname = "bddcprecond");
+    BDDCPreconditioner (const PDE & pde, const Flags & aflags);
+    // const std::string aname = "bddcprecond");
 
     virtual ~BDDCPreconditioner() 
     { ; }
 
+    /*
     static Preconditioner * Create (const PDE & pde, const Flags & flags)
     {
       return new BDDCPreconditioner<SCAL> (&pde, flags);
     }
+    */
+
+    virtual void AddElementMatrix (const Array<int> & dnums,
+				   const FlatMatrix<double> & elmat,
+				   bool inner_element, int elnr,
+				   LocalHeap & lh);
 
     virtual void Update ();
 
