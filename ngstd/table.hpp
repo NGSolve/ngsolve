@@ -190,10 +190,12 @@ template <class T>
   class NGS_DLL_HEADER FilteredTableCreator : public TableCreator<int>
   {
   protected:
-    BitArray* takedofs;  
+    const BitArray* takedofs;  
   public:
-    FilteredTableCreator(BitArray* atakedofs):TableCreator<int>(),takedofs(atakedofs){};
-    FilteredTableCreator(int acnt, BitArray* atakedofs):TableCreator<int>(acnt),takedofs(atakedofs){};
+    FilteredTableCreator(const BitArray* atakedofs) 
+      : TableCreator<int>(), takedofs(atakedofs) { };
+    FilteredTableCreator(int acnt, const BitArray* atakedofs)
+      : TableCreator<int>(acnt),takedofs(atakedofs) { };
     void Add (int blocknr, const int & data);
     void Add (int blocknr, IntRange range);
   };
