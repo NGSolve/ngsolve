@@ -34,6 +34,9 @@ namespace ngcomp
     void NEBEConstructor()  
     {
 
+
+
+      cout << "BDDC-marix NEBE const" << endl;
       const FESpace & fes = bfa.GetFESpace();
       const MeshAccess & ma = fes.GetMeshAccess();
       int ne = ma.GetNE();
@@ -73,7 +76,7 @@ namespace ngcomp
       int nwbdofs = 0;
 
       multiple.SetSize (fes.GetNDof());
-      multiple = 1;
+      multiple = 0;
 
       //Check how often each interfacedof/wirebasketdof appears 
       //TODO: (CL): Wann/Wo kommt die Gewichtung rein?
@@ -86,6 +89,7 @@ namespace ngcomp
 	    if (!ifdof.Test(lifdofs[j])&&fes.GetFreeDofs()->Test(lifdofs[j])){
 	      ifdof.Set(lifdofs[j]);
 	      nifdofs++;
+	      multiple[lifdofs[j]]++;
 	    }else{
 	      multiple[lifdofs[j]]++;
 	    }
@@ -104,6 +108,29 @@ namespace ngcomp
 	    }	  
 	  }
         }
+
+
+#ifdef PARALLEL
+
+      // accumulate multiple
+      ParallelVVector<double> pv_multiple (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
+
+      if (ntasks > 1 && id == 0)
+	{
+	  pv_multiple.AllReduce (&hoprocs);
+	}
+      else
+	{
+	  for (int i = 0; i < multiple.Size(); i++)
+	    pv_multiple(i) = multiple[i];
+	  pv_multiple.AllReduce (&hoprocs);
+	  for (int i = 0; i < multiple.Size(); i++)
+	    multiple[i] = pv_multiple(i);
+	}
+
+#endif
+
+
       *testout << " number of external dofs: " << nifdofs+nwbdofs << endl;
       *testout << " number of interface dofs: " << nifdofs << endl;
       *testout << " number of wirebasket dofs: " << nwbdofs << endl;
@@ -145,6 +172,8 @@ namespace ngcomp
       
       cout << "have matrix" << endl << endl;
 
+
+      if (ntasks == 1 || id > 0)
       for (int i = 0; i < ne; i++)
         {
           FlatMatrix<> elmat = *elmats[i]; 
@@ -165,9 +194,12 @@ namespace ngcomp
 	      localintdofs.Append(k);
 	    }
 	  }
-
+	  
 	  int sizew = localwbdofs.Size();
 	  int sizei = localintdofs.Size();
+
+	  *testout << "el = " << i << ", sizew = " << sizew << ", sizei = " << sizei << endl;
+
 	  Matrix<double> a(sizew, sizew);
 	  Matrix<double> b(sizew, sizei);
 	  Matrix<double> c(sizei, sizew);
@@ -192,12 +224,12 @@ namespace ngcomp
 #ifdef LAPACK
 	    LapackInverse (d);
 #else
-	    Matrix<double> invd(size);
+	    Matrix<double> invd(sizei);
 	    CalcInverse (d, invd);	  
 	    d = invd;
 #endif //LAPACK
 	    Matrix<double> he (sizei, sizew);
-#ifdef LAPACK	  
+#ifdef LAPACK
 	    he = 0.0;
 	    LapackMultAddAB(d,c,-1.0,he);
 #else	  
@@ -266,6 +298,7 @@ namespace ngcomp
       
       cout << "matrix filed" << endl;
 
+
       free_dofs = new BitArray (ndof);
       free_dofs->Clear();
       int cntfreedofs=0;
@@ -309,10 +342,18 @@ namespace ngcomp
       }
       else
       {
+#ifdef PARALLEL
+	inv = new MasterInverse<double> (wbmat, free_dofs, &bfa.GetFESpace().GetParallelDofs());
+	tmp = new ParallelVVector<>(ndof, &bfa.GetFESpace().GetParallelDofs());
+	subassembled_innersolve = new ParallelMatrix (*subassembled_innersolve, bfa.GetFESpace().GetParallelDofs());
+	subassembled_harmonicext = new ParallelMatrix (*subassembled_harmonicext, bfa.GetFESpace().GetParallelDofs());
+	subassembled_harmonicexttrans = new ParallelMatrix (*subassembled_harmonicexttrans, bfa.GetFESpace().GetParallelDofs());
+#else
 	cout << "call wirebasket inverse ( with " << cntfreedofs << " free dofs )" << endl;
 	inv = wbmat.InverseMatrix(free_dofs);
 	cout << "has inverse" << endl;
 	tmp = new VVector<>(ndof);
+#endif
       }
     };
 
@@ -591,57 +632,75 @@ namespace ngcomp
       if (tmp2) delete tmp2;
     }
     
+
+
     virtual void MultAddNEBE (double s, const BaseVector & x, BaseVector & y) const
     {
-      static int timer = NgProfiler::CreateTimer ("Apply BDDC preconditioner");
-      static int timerifs = NgProfiler::CreateTimer ("Apply BDDC preconditioner - apply ifs");
-      static int timerwb = NgProfiler::CreateTimer ("Apply BDDC preconditioner - wb solve");
-      static int timeretc = NgProfiler::CreateTimer ("Apply BDDC preconditioner - etc");
-      static int timerharmonicext = NgProfiler::CreateTimer ("Apply BDDC preconditioner - harmonic extension");
-      static int timerharmonicexttrans = NgProfiler::CreateTimer ("Apply BDDC preconditioner - harmonic extension trans");
-      NgProfiler::RegionTimer reg (timer);
+#ifdef PARALLEL
+      // dynamic_cast<const ParallelBaseVector&> (x) . AllReduce (&hoprocs);
+#endif
 
-      NgProfiler::StartTimer (timeretc);
-	FlatVector<> fx = x.FVDouble();
-	FlatVector<> fy = y.FVDouble();
-	fy = fx;
-      NgProfiler::StopTimer (timeretc);
-
-      NgProfiler::StartTimer (timerharmonicexttrans);
-	if (bfa.IsSymmetric())
-	  y += Transpose(*subassembled_harmonicext) * x; 
-	else
-	  y += *subassembled_harmonicexttrans * x;
-      NgProfiler::StopTimer (timerharmonicexttrans);
+      static Timer timer ("Apply BDDC preconditioner");
+      static Timer timerifs ("Apply BDDC preconditioner - apply ifs");
+      static Timer timerwb ("Apply BDDC preconditioner - wb solve");
+      static Timer timeretc ("Apply BDDC preconditioner - etc");
+      static Timer timerharmonicext ("Apply BDDC preconditioner - harmonic extension");
+      static Timer timerharmonicexttrans ("Apply BDDC preconditioner - harmonic extension trans");
       
-      NgProfiler::StartTimer (timerwb);
-	*tmp = 0;
-	if (block){
-	  if (true) //GS
+      NgProfiler::RegionTimer reg (timer);
+      
+
+      y = x;
+
+      timerharmonicexttrans.Start();
+
+      if (bfa.IsSymmetric())
+	y += Transpose(*subassembled_harmonicext) * x; 
+      else
+	y += *subassembled_harmonicexttrans * x;
+      
+      timerharmonicexttrans.Stop();
+      
+
+
+      timerwb.Start();
+      *tmp = 0;
+      if (block){
+	if (true) //GS
 	  {
 	    dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothResiduum (*tmp, y, *tmp2 ,1);
 	    if (inv_coarse)
-	      *tmp += (*inv_coarse) * *tmp2; 
+		  *tmp += (*inv_coarse) * *tmp2; 
 	    dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothBack (*tmp, y);
 	  }else{ //jacobi only (old)
-	    *tmp = (*inv) * y;
-	    *tmp += (*inv_coarse) * y; 
- 	  }
+	  *tmp = (*inv) * y;
+	  *tmp += (*inv_coarse) * y; 
 	}
-	else
+      }
+      else
 	{
 	  *tmp = (*inv) * y;
 	}
-      NgProfiler::StopTimer (timerwb);
+      timerwb.Stop();
 
-      NgProfiler::StartTimer (timerifs);
-	*tmp += *subassembled_innersolve * y;
-      NgProfiler::StopTimer (timerifs);
+	
+
+      timerifs.Start();
+      *tmp += *subassembled_innersolve * y;
+      timerifs.Stop();
+
       
-      NgProfiler::StartTimer (timerharmonicext);
-	y = *tmp;
-	y += *subassembled_harmonicext * *tmp;
-      NgProfiler::StopTimer (timerharmonicext);
+      timerharmonicext.Start();
+      
+      y = *tmp;
+      y += *subassembled_harmonicext * *tmp;
+      
+      timerharmonicext.Stop();
+
+
+#ifdef PARALLEL
+      dynamic_cast<const ParallelBaseVector&> (y) . AllReduce (&hoprocs);
+#endif
     }    
     
     

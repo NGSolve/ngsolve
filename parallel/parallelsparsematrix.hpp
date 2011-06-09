@@ -18,17 +18,24 @@ namespace ngla
     const ngparallel::ParallelDofs * paralleldofs;
 
   public:
-
-    /// constructor
-    ParallelBaseMatrix ();
-    /// copy-constructor
-    ParallelBaseMatrix ( const ParallelBaseMatrix & amat );
     ///
-    ParallelBaseMatrix ( const ngparallel::ParallelDofs * aparalleldofs );
+    ParallelBaseMatrix () : paralleldofs(NULL) { ; }
+
+    ///
+    ParallelBaseMatrix ( const ParallelBaseMatrix & amat )
+      : paralleldofs ( amat.GetParallelDofs() ) { ; }
+
+    ///
+    ParallelBaseMatrix ( const ngparallel::ParallelDofs * aparalleldofs )
+      : paralleldofs ( aparalleldofs ) { ; }
+
     /// destructor
     virtual ~ParallelBaseMatrix ();
 
-    virtual BaseMatrix * ConsistentMat () { cerr << "ERROR -- ParallelBaseMatrix::ConsistentMat() called" << endl; return 0; }
+
+    virtual BaseMatrix * ConsistentMat () 
+    { cerr << "ERROR -- ParallelBaseMatrix::ConsistentMat() called" << endl; return 0; }
+
     virtual const BaseMatrix * ConsistentMat () const  
     { cerr << "ERROR -- ParallelBaseMatrix::ConsistentMat() called" << endl; return 0; }
 
@@ -44,7 +51,9 @@ namespace ngla
     virtual void CalcConsistentMat (LocalHeap & lh) 
     { cerr << "ERROR -- ParallelBaseMatrix::CalcConsistentMat called" << endl; }
 
-    virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs );
+    virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs )
+    { paralleldofs = aparalleldofs; }
+
 
     virtual const ngparallel::ParallelDofs * GetParallelDofs ( ) const { return paralleldofs; }
 
@@ -749,8 +758,59 @@ namespace ngla
   };
 #endif // parallel
 
+#endif
+
+
+
+
+
+
+
+
+
+
+#ifdef PARALLEL
+
+  template <typename TM>
+  class MasterInverse : public ParallelBaseMatrix
+  {
+    BaseMatrix * inv;
+    const BitArray * subset;
+    DynamicTable<int> loc2glob;
+    Array<int> select;
+  public:
+    MasterInverse (const SparseMatrixTM<TM> & mat, const BitArray * asubset, const ParallelDofs * pardofs);
+    virtual ~MasterInverse ();
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+  };
+
+
+
+
+  class ParallelMatrix : public BaseMatrix
+  {
+    const BaseMatrix & mat;
+    const ParallelDofs & pardofs;
+  public:
+    ParallelMatrix (const BaseMatrix & amat, const ParallelDofs & apardofs)
+      : mat(amat), pardofs(apardofs) { ; }
+
+    virtual ~ParallelMatrix ();
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
+  };
+
+
+
+
+
 
 #endif
+
+
+
+
+
 
 #endif
 

@@ -13,7 +13,8 @@
 
 #include "../fem/h1lofe.hpp"
 
-
+// #include <parallelngs.hpp>
+#include <parallelinterface.hpp>
 
 
 
@@ -291,6 +292,51 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		// dirichlet_face[fanum] = true;
 	      }
 	  }
+
+#ifdef PARALLEL
+	DynamicTable<int> dist_dir_vertex(ntasks);
+	if (id != 0)
+	  {
+	    for (int i = 0; i < dirichlet_vertex.Size(); i++)
+	      if (dirichlet_vertex[i])
+		for (int dist = 1; dist < ntasks; dist++)
+		  if (dist != id)
+		    {
+		      int distnum = NgPar_GetDistantPNum (dist, i);
+		      if (distnum >= 0)
+			dist_dir_vertex.Add (dist, distnum);
+		    }
+	    // *testout << "dist_dir_vertex = " << dist_dir_vertex << endl;
+
+	    for (int dist = 1; dist < ntasks; dist++)
+	      if (id != dist)
+		{
+		  Array<int> dirvert;
+		  if (dist < id)
+		    {
+		      MyMPI_Send (dist_dir_vertex[dist], dist);
+		      MyMPI_Recv (dirvert, dist);
+		    }
+		  else
+		    {
+		      MyMPI_Recv (dirvert, dist);
+		      MyMPI_Send (dist_dir_vertex[dist], dist);
+		    }
+		  // *testout << "got dirvert from " << dist << ": " << dirvert << endl;
+		  for (int i = 0; i < dirvert.Size(); i++)
+		    dirichlet_vertex[dirvert[i]] = true;
+		}	   
+
+	    // check ordering
+	    for (int i = 1; i < ma.GetNV(); i++)
+	      {
+		int m0 =  NgPar_GetDistantPNum (0, i-1);
+		int m1 =  NgPar_GetDistantPNum (0, i);
+		if (m0 > m1) cerr << endl << endl << "Wrong ordering !!!!" << endl << endl;
+	      }
+	  }
+		
+#endif	
 
 	(*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
 	(*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;

@@ -556,7 +556,6 @@ namespace ngla
 	  }
 
 
-	cout << "bin hier, id = " << id << endl;
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	if ( usecoarsegrid )
@@ -634,7 +633,6 @@ namespace ngla
 	    constvecx -> AddRecvValues(sender);	    
 	  }
 
-	cout << "bin hier, id = " << id << endl;
 	MPI_Barrier(MPI_COMM_WORLD);
 
 
@@ -1568,7 +1566,7 @@ hugasd asdf
   void ParallelBlockJacobiPrecondSymmetric<TM,TV> :: 
   MultAdd (TSCAL s, const BaseVector & bx, BaseVector & by) const 
   {
-    cout << "parallelblockjacobiprecondsy, multadd" << endl;
+    // cout << "parallelblockjacobiprecondsy, multadd" << endl;
     const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
     ParallelBaseVector & ncx = const_cast<ParallelBaseVector&> (x);
     ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);
@@ -1772,7 +1770,7 @@ hugasd asdf
 	  y.SetStatus ( CUMULATED );
 	x.Distribute();
       }
-    cout << "parallelblockjacobiprecondsy, multadd done" << endl;
+    // cout << "parallelblockjacobiprecondsy, multadd done" << endl;
   }
 
 

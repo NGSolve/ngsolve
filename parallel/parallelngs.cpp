@@ -27,14 +27,9 @@ void NGS_ParallelRun ( const string & message )
   if ( message == "ngs_pdefile" )
     {
       string pdefilename;
-#ifdef SCALASCA
-#pragma pomp inst begin (recvpdefile)
-#endif
+
       ngparallel::MyMPI_Recv ( pdefilename, 0);
 
-#ifdef SCALASCA
-#pragma pomp inst end (recvpdefile)
-#endif
       if ( ma ) delete ma;
       if ( parallelma ) delete parallelma;
       ma = new MeshAccess;

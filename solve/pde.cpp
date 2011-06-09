@@ -513,8 +513,6 @@ namespace ngsolve
     MPI_Comm_size ( MPI_COMM_WORLD, &ntasks);
     MPI_Comm_rank ( MPI_COMM_WORLD, &id );
 
-    cout << "ntasks = " << ntasks << ", id = " << id << endl;
-
     hoprocs.SetSize(ntasks-1);
     for ( int i = 0; i<ntasks-1; i++ )
       hoprocs[i] = i+1;
