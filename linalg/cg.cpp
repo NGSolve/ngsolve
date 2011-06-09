@@ -175,7 +175,7 @@ namespace ngla
 
 #ifdef PARALLEL
 	if ( id == 0 )
-#endif
+#endif 
 	if (printrates) cout << "0 " << sqrt(L2Norm(wdn)) << endl;
 	if (L2Norm(wdn) == 0.0) wdn = 1;	
 

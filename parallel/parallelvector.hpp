@@ -176,6 +176,8 @@ namespace ngla
 
     virtual void AddRecvValues( int sender );
 
+
+    virtual double L2Norm () const;
   };
 
 

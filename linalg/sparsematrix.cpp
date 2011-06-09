@@ -860,9 +860,9 @@ namespace ngla
   BaseMatrix * SparseMatrix<TM,TV_ROW,TV_COL> ::
   InverseMatrix (const BitArray * subset) const
   {
-
     if ( this->GetInverseType() == SUPERLU_DIST )
       throw Exception ("SparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
+
 
     if ( BaseSparseMatrix :: GetInverseType() == SUPERLU )
       {
@@ -888,7 +888,6 @@ namespace ngla
 	throw Exception ("SparseMatrix::InverseMatrix: MumpsInverse not available");
 #endif
       }
-
     else
       return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, subset);
     //#endif
@@ -1800,6 +1799,7 @@ namespace ngla
     else if ( ainversetype == "superlu" ) SetInverseType ( SUPERLU );
     else if ( ainversetype == "superlu_dist" ) SetInverseType ( SUPERLU_DIST );
     else if ( ainversetype == "mumps" ) SetInverseType ( MUMPS );
+    else if ( ainversetype == "masterinverse" ) SetInverseType ( MASTERINVERSE );
     else SetInverseType ( SPARSECHOLESKY );
 
     return old_invtype;

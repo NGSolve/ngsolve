@@ -36,6 +36,8 @@ public:
   ~ParallelDofs();
 
   int GetNDof () const { return fespace.GetNDof(); }
+  const FESpace & GetFESpace() const { return fespace; }
+
 
   int GetNExDofs() const { return nexdof[id]; } 
   int GetNExDofs( int proc ) const { return nexdof[proc]; } 

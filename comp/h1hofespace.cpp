@@ -452,7 +452,7 @@ namespace ngcomp
     {
       for (int edge = 0; edge < ma.GetNEdges(); edge++){
 	IntRange range = GetEdgeDofs (edge);
-	ctofdof.Range(range) = INTERFACE_DOF; // WIREBASKET_DOF;
+	ctofdof.Range(range) = WIREBASKET_DOF;   // INTERFACE_DOF;
 	if (range.Next() > range.First())
 	  ctofdof[range.First()] = WIREBASKET_DOF;
       }
@@ -572,7 +572,7 @@ namespace ngcomp
           {
             Ng_Element ngel = ma.GetElement<3> (elnr);
 
-#ifdef PARALLEL
+#ifdef PARALLELxx
 	    if (ntasks > 1)
 	      for (int j = 0; j < ngel.vertices.Size(); j++)
 		hofe3d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, ngel.vertices[j]));
@@ -636,15 +636,14 @@ namespace ngcomp
       }
     else
       {
-#ifdef PARALLEL
+#ifdef PARALLELxx
 	if (ntasks > 1)
 	  for (int j = 0; j < ngel.vertices.Size(); j++)
 	    hofe2d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, ngel.vertices[j]));
 	else
 #endif
-
-	hofe2d -> SetVertexNumbers (ngel.vertices);
-
+	  hofe2d -> SetVertexNumbers (ngel.vertices);
+	
         for (int j = 0; j < ngel.edges.Size(); j++)
           hofe2d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
 

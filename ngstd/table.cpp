@@ -107,7 +107,7 @@ namespace ngstd
   {
     if (i < 0 || i >= data.Size())
       {
-	cerr << "BaseDynamicTable::Inc: Out of range" << endl;
+	cerr << "BaseDynamicTable::Inc: Out of range, i = " << i << ", size = " << data.Size() << endl;
 	return;
       }
     

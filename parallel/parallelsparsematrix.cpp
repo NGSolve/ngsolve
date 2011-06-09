@@ -16,55 +16,10 @@ namespace ngla
   using namespace ngparallel;
 
 
-
-
-
-
-
-
-  // #ifdef PARALLEL
-  //   ngparallel::ParallelDofs * BaseMatrix :: GetParallelDofs ( )
-  //   { return paralleldofs; }
-
-  //   const ngparallel::ParallelDofs * BaseMatrix :: GetParallelDofs ( ) const
-  //   { return paralleldofs; }
-  // #endif
-
-  ParallelBaseMatrix :: ParallelBaseMatrix()
-  {
-    ;
-  }
-
-  ParallelBaseMatrix :: ParallelBaseMatrix ( const ParallelBaseMatrix & amat )
-    : paralleldofs ( amat.GetParallelDofs() )
-  {
-    ;
-  }
-
-  ParallelBaseMatrix :: ParallelBaseMatrix ( const ngparallel::ParallelDofs * aparalleldofs )
-    : paralleldofs ( aparalleldofs )
-  {
-    ;
-  }
-  
   ParallelBaseMatrix :: ~ParallelBaseMatrix ()
   {
     ;
   }
-
-  void ParallelBaseMatrix :: SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs )
-  {
-    paralleldofs = aparalleldofs;
-  }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -394,7 +349,7 @@ namespace ngla
 	  if ( this->paralleldofs->IsExchangeDof ( row_indices[j] ) )
 	    graph2->CreatePosition ( i, row_indices[j] );
       }
-
+    
 
     consistentmat = new SparseMatrix<TM,TV_ROW,TV_COL> (*graph2 , 1);
     delete graph2;
@@ -910,6 +865,13 @@ namespace ngla
       }
       else
     */
+
+
+    if ( BaseSparseMatrix :: GetInverseType() == MASTERINVERSE )
+      return new MasterInverse<TM> (*this, subset, paralleldofs);
+
+
+
     return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, subset);
   }
 
@@ -979,6 +941,12 @@ namespace ngla
       }
       else
     */
+
+    if ( BaseSparseMatrix :: GetInverseType() == MASTERINVERSE )
+      return new MasterInverse<TM> (*this, subset, this->paralleldofs);
+
+
+
     return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, subset);
     // #endif
   }
@@ -1021,21 +989,20 @@ namespace ngla
   void ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (double s, const BaseVector & bx, BaseVector & by) const
   {
-    cout << "multadd, nonsym" << endl;
-    const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
-    ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);
+    dynamic_cast<const ParallelBaseVector&> (bx) . AllReduce(&hoprocs);
     
-    x.AllReduce(&hoprocs);
-    ParallelDofs & paralleldofs = *x.GetParallelDofs();
-    
+    SparseMatrix<TM,TV_ROW,TV_COL>::MultAdd (s, bx, by);
+
+    /*
     FlatVector<TVX> fx (x.Size(), x.Memory());
     FlatVector<TVY> fy (y.Size(), y.Memory());
-    
+    ParallelDofs & paralleldofs = *x.GetParallelDofs();
     for (int i = 0; i < this->Height(); i++)
       if ( !paralleldofs.IsGhostDof(i) )
 	fy(i) += s * SparseMatrix<TM,TV_ROW,TV_COL> ::RowTimesVector (i, fx);
-    
-    y.SetStatus ( DISTRIBUTED );
+    */
+
+    dynamic_cast<ParallelBaseVector&> (by) . SetStatus ( DISTRIBUTED );
   }
   
   template <class TM, class TV_ROW, class TV_COL>
@@ -1063,22 +1030,26 @@ namespace ngla
   void ParallelSparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (Complex s, const BaseVector & bx, BaseVector & by) const
   {
+    cout << "mult add complex " << endl;
+    
     const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
-    ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
-
-
-    x.AllReduce(&hoprocs);
-    ParallelDofs & paralleldofs = *x.GetParallelDofs();
+  ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
+  
+  x.AllReduce(&hoprocs);
+  
+  // SparseMatrix<TM,TV_ROW,TV_COL>::MultAdd (s, bx, by);
+  
+  ParallelDofs & paralleldofs = *x.GetParallelDofs();
+  
+  FlatVector<TVX> fx (x.Size(), x.Memory());
+  FlatVector<TVY> fy (y.Size(), y.Memory());
+  
+  for (int i = 0; i < this->Height(); i++)
+    if ( !paralleldofs.IsGhostDof(i) )
+      fy(i) += ConvertTo<TSCAL> (s) * SparseMatrix<TM,TV_ROW,TV_COL> ::RowTimesVector (i, fx);
     
-    FlatVector<TVX> fx (x.Size(), x.Memory());
-    FlatVector<TVY> fy (y.Size(), y.Memory());
-    
-    for (int i = 0; i < this->Height(); i++)
-      if ( !paralleldofs.IsGhostDof(i) )
-	fy(i) += ConvertTo<TSCAL> (s) * SparseMatrix<TM,TV_ROW,TV_COL> ::RowTimesVector (i, fx);
-    
-    y.SetStatus ( DISTRIBUTED );
-  }
+  y.SetStatus ( DISTRIBUTED );
+}
   
 
   template <class TM, class TV_ROW, class TV_COL>
@@ -1108,25 +1079,11 @@ namespace ngla
   void ParallelSparseMatrixSymmetric<TM,TV> :: 
   MultAdd (double s, const BaseVector & bx, BaseVector & by) const
   {
-    cout << "mult add sym" << endl;
-    const ParallelBaseVector & x = dynamic_cast<const ParallelBaseVector&> (bx);
-    ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
+    dynamic_cast<const ParallelBaseVector&> (bx) . AllReduce(&hoprocs);
 
-    x.AllReduce(&hoprocs);
-    ParallelDofs & paralleldofs = *(x.GetParallelDofs());
+    SparseMatrixSymmetric<TM,TV>::MultAdd (s, bx, by);
 
-    const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-    // dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
-    FlatVector<TV_COL> fy = y.FV<TV_COL>();
-	
-    for (int i = 0; i < this->Height(); i++)
-      if ( !paralleldofs.IsGhostDof(i) )
-	{
-	  fy(i) += s * RowTimesVector (i, fx);
-	  AddRowTransToVectorNoDiag (i, s * fx(i), fy);
-	}
-    y.SetStatus ( DISTRIBUTED );
-    cout << "mult add sym, done" << endl;
+    dynamic_cast<ParallelBaseVector&> (by) . SetStatus ( DISTRIBUTED );
   }
 
 
@@ -1140,12 +1097,12 @@ namespace ngla
     ParallelBaseVector & y = dynamic_cast<ParallelBaseVector&> (by);    
 
     x.AllReduce(&hoprocs);
+
+
     ParallelDofs & paralleldofs = *(x.GetParallelDofs());
 	
     const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-    // dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
     FlatVector<TV_COL> fy = y.FV<TV_COL> ();
-    // dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
 	
     for (int i = 0; i < this->Height(); i++)
       if ( !paralleldofs.IsGhostDof(i) )
@@ -1442,6 +1399,301 @@ namespace ngla
   }
 
   static RegisterPreconditioner<ParallelRichardsonPreconditioner> initpre ("richardson");
+
+
+
+
+
+
+template <typename TM>
+MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArray * subset, const ParallelDofs * pardofs)
+  : ParallelBaseMatrix (pardofs), loc2glob(ntasks)
+{
+  inv = NULL;
+
+
+  if (id != 0)
+    {
+      Array<int> rows, cols, globid(3*mat.Height());
+      Array<TM> vals;
+
+      const FESpace & fes = pardofs->GetFESpace();
+      const MeshAccess & ma = fes.GetMeshAccess();
+
+      globid = -1;
+      Array<int> dnums;
+      for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+	for (int i = 0; i < ma.GetNNodes (nt); i++)
+	  {
+	    fes.GetNodeDofNrs (nt, i, dnums);
+	    int distnum = parallelma->GetDistantNodeNum (0, nt, i);
+
+	    for (int j = 0; j < dnums.Size(); j++)
+	      if (!subset || subset->Test(dnums[j]))
+		{
+		  int dn = dnums[j];
+		  globid[3*dn+0] = int(nt);
+		  globid[3*dn+1] = distnum;
+		  globid[3*dn+2] = j;
+		}
+	  }
+      
+
+      for (int row = 0; row < mat.Height(); row++)
+	if (!subset || subset->Test(row))
+	  {
+	    FlatArray<const int> rcols = mat.GetRowIndices(row);
+	    FlatVector<TM> rvals = mat.GetRowValues(row);
+
+	    for (int j = 0; j < rcols.Size(); j++)
+	      if (!subset || subset->Test(rcols[j]))
+		{
+		  rows.Append (row);
+		  cols.Append (rcols[j]);
+		  vals.Append (rvals[j]);
+		}
+	    select.Append (row);
+	  }
+
+      MyMPI_Send (rows, 0);
+      MyMPI_Send (cols, 0);
+      MyMPI_Send (vals, 0);
+      MyMPI_Send (globid, 0);
+      cout << "have sent, id = " << id << endl;
+    }
+
+  else
+    {
+      cout << "create masterinverse" << endl;
+
+      Array<int> rows, cols;
+      Array<TM> vals;
+      Array<INT<3> > globdofs;
+
+      for (int src = 1; src < ntasks; src++)
+	{
+	  Array<int> hrows, hcols;
+	  Array<TM> hvals;
+	  Array<int> hglobid;
+
+	  MyMPI_Recv (hrows, src);
+	  MyMPI_Recv (hcols, src);
+	  MyMPI_Recv (hvals, src);
+	  MyMPI_Recv (hglobid, src);
+
+	  /*
+	  *testout << "got from proc " << src << ":" << endl
+		   << "rows = " << endl << hrows << endl
+		   << "cols = " << endl << hcols << endl
+		   << "globid = " << endl << hglobid << endl;
+	  */
+
+	  for (int i = 0; i < hrows.Size(); i++)
+	    if (hglobid[3*hrows[i]] < 0)
+	      cout << "globid missing (rows) !!!! " << endl;
+	  for (int i = 0; i < hrows.Size(); i++)
+	    if (hglobid[3*hcols[i]] < 0)
+	      cout << "globid missing (cols) !!!! " << endl;
+
+
+	  Array<int> full_loc2glob(hglobid.Size()/3);
+	  full_loc2glob = -1;
+	  for (int i = 0; i < hglobid.Size(); i += 3)
+	    {
+	      if (hglobid[i] == -1) continue;
+
+	      int found = -1;
+	      for (int j = 0; j < globdofs.Size(); j++)
+		if (globdofs[j][0] == hglobid[i] &&
+		    globdofs[j][1] == hglobid[i+1] &&
+		    globdofs[j][2] == hglobid[i+2])
+		  {
+		    found = j;
+		    break;
+		  }
+	      if (found == -1)
+		{
+		  INT<3> nentry;
+		  nentry[0] = hglobid[i];
+		  nentry[1] = hglobid[i+1];
+		  nentry[2] = hglobid[i+2];
+
+		  found = globdofs.Size();
+		  globdofs.Append (nentry);
+		}
+
+	      loc2glob.Add (src, found);
+	      full_loc2glob[i/3] = found;
+	    }
+	  // *testout << "full_loc2glob = " << endl << full_loc2glob << endl;
+	 
+	  for (int i = 0; i < hrows.Size(); i++)
+	    {
+	      rows.Append (full_loc2glob[hrows[i]]);
+	      cols.Append (full_loc2glob[hcols[i]]);
+	      vals.Append (hvals[i]);
+	    }
+
+	  cout << "master: got data from " << src << endl;
+	}
+      /*
+      *testout << "rows = " << endl << rows << endl;
+      *testout << "cols = " << endl << cols << endl;
+      *testout << "vals = " << endl << vals << endl;
+      */
+      cout << "now build graph" << endl;
+
+      // build matrix
+      DynamicTable<int> graph(globdofs.Size());
+      cout << "n = " << globdofs.Size() << endl;
+      for (int i = 0; i < rows.Size(); i++)
+	{
+	  int r = rows[i], c = cols[i];
+	  if (r < c) swap (r, c);
+	  if (r < 0 || c < 0)
+	    cout << "r,c = " << r << ", " << c << endl;
+	  graph.AddUnique (r, c);
+	}
+
+      // *testout << "graphi = " << endl << graph << endl;
+
+      Array<int> els_per_row(globdofs.Size());
+      for (int i = 0; i < globdofs.Size(); i++)
+	els_per_row[i] = graph[i].Size();
+
+      cout << "now build matrix" << endl;
+
+      SparseMatrixSymmetric<TM> matrix(els_per_row);
+
+      cout << "init entries" << endl;
+
+      for (int i = 0; i < rows.Size(); i++)
+	{
+	  int r = rows[i], c = cols[i];
+	  if (r < c) swap (r, c);
+	  matrix.CreatePosition(r, c);
+	}
+      matrix.AsVector() = 0.0;
+
+      cout << "fill entries" << endl;
+
+      for (int i = 0; i < rows.Size(); i++)
+	{
+	  int r = rows[i], c = cols[i];
+	  if (r < c) swap (r, c);
+	  matrix(r,c) += vals[i];
+	}
+      // *testout << "matrix = " << endl << matrix << endl;
+
+      cout << "have matrix, now invert" << endl;
+
+      // inv = new SparseCholesky<TM> (matrix);
+      inv = new PardisoInverse<TM> (matrix, 0, 0, true);
+
+      // *testout << "inv = " << endl << *inv << endl;
+      cout << "complete" << endl;
+    }
+
+  MPI_Barrier (MPI_COMM_WORLD);
+}
+
+template <typename TM>
+MasterInverse<TM> :: ~MasterInverse ()
+{
+  delete inv;
+}
+
+template <typename TM>
+void MasterInverse<TM> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+{
+  typedef typename mat_traits<TM>::TV_ROW TV;
+
+  bool is_x_cum = (dynamic_cast<const ParallelBaseVector&> (x) . Status() == CUMULATED);
+  dynamic_cast<const ParallelBaseVector&> (x) . Distribute();
+  dynamic_cast<const ParallelBaseVector&> (y) . AllReduce(&hoprocs);
+
+  if (id > 0)
+    {
+      
+      FlatVector<TV> fx = x.FV<TV> ();
+      FlatVector<TV> fy = y.FV<TV> ();
+
+      Array<TV> lx (select.Size());
+      for (int i = 0; i < select.Size(); i++)
+	lx[i] = fx(select[i]);
+
+      MyMPI_Send (lx, 0);
+      MyMPI_Recv (lx, 0);
+
+      for (int i = 0; i < select.Size(); i++)
+	fy(select[i]) += s * lx[i];
+    }
+
+  else
+    {
+      VVector<TV> hx(inv->Height());
+      VVector<TV> hy(inv->Height());
+      hx = 0.0;
+      for (int src = 1; src < ntasks; src++)
+	{
+	  FlatArray<int> selecti = loc2glob[src];
+
+	  Array<TV> lx(selecti.Size());
+	  MyMPI_Recv (lx, src);
+
+	  for (int i = 0; i < selecti.Size(); i++)
+	    hx(selecti[i]) += lx[i];
+	}
+
+      hy = (*inv) * hx;
+
+      for (int src = 1; src < ntasks; src++)
+	{
+	  FlatArray<int> selecti = loc2glob[src];
+
+	  Array<TV> lx(selecti.Size());
+
+	  for (int i = 0; i < selecti.Size(); i++)
+	    lx[i] = hy(selecti[i]);
+
+	  MyMPI_Send (lx, src);
+	}
+    }
+
+  if (is_x_cum)
+    dynamic_cast<const ParallelBaseVector&> (x) . AllReduce(&hoprocs);
+
+}
+
+
+
+ParallelMatrix :: ~ParallelMatrix ()
+{
+  ;
+}
+
+void ParallelMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+{
+  dynamic_cast<const ParallelBaseVector&> (x).AllReduce(&hoprocs);
+  dynamic_cast<const ParallelBaseVector&> (y).Distribute();
+  if (id > 0)
+    mat.MultAdd (s, x, y);
+}
+
+
+
+void ParallelMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+{
+  dynamic_cast<const ParallelBaseVector&> (x).AllReduce(&hoprocs);
+  dynamic_cast<const ParallelBaseVector&> (y).Distribute();
+  if (id > 0)
+    mat.MultTransAdd (s, x, y);
+}
+
+
+
+
+
 
 
 }

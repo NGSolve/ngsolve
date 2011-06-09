@@ -878,6 +878,28 @@ namespace ngla
   
   }
 
+  template <typename T>
+  double ParallelVVector<T> :: L2Norm () const
+  {
+    this->AllReduce (&hoprocs);
+    
+    double sum = 0;
+
+    FlatVector<double> fv = this -> FVDouble ();
+
+    if (id > 0)
+      for (int dof = 0; dof < paralleldofs->GetNDof(); dof++)
+	if (paralleldofs->IsMasterDof ( dof ) )
+	  sum += L2Norm2 (fv[dof]);
+    
+    double globalsum = 0;
+
+    MPI_Datatype MPI_SCAL = MyGetMPIType<double>();
+	
+    MPI_Allreduce (&sum, &globalsum, 1, MPI_SCAL, MPI_SUM, MPI_COMM_WORLD);
+
+    return sqrt (globalsum);
+  }
 
 
   template <typename T>
@@ -958,6 +980,10 @@ namespace ngla
 	// (*this).Range (0, (*this->recvvalues).Size()) += (*this->recvvalues)[sender];
       }
   }
+
+
+  
+
 
 
   template class ParallelVFlatVector<double>;
