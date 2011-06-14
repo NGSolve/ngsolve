@@ -637,7 +637,7 @@ namespace ngcomp
     virtual void MultAddNEBE (double s, const BaseVector & x, BaseVector & y) const
     {
 #ifdef PARALLEL
-      // dynamic_cast<const ParallelBaseVector&> (x) . AllReduce (&hoprocs);
+      dynamic_cast<const ParallelBaseVector&> (x) . AllReduce (&hoprocs);
 #endif
 
       static Timer timer ("Apply BDDC preconditioner");
@@ -662,7 +662,6 @@ namespace ngcomp
       timerharmonicexttrans.Stop();
       
 
-
       timerwb.Start();
       *tmp = 0;
       if (block){
@@ -683,7 +682,6 @@ namespace ngcomp
 	}
       timerwb.Stop();
 
-	
 
       timerifs.Start();
       *tmp += *subassembled_innersolve * y;

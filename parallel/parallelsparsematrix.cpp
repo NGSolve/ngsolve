@@ -1420,6 +1420,18 @@ MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArr
       const FESpace & fes = pardofs->GetFESpace();
       const MeshAccess & ma = fes.GetMeshAccess();
 
+      int ndof = fes.GetNDof();
+
+      for (int row = 0; row < ndof; row++)
+	if (!subset || subset->Test(row))
+	  select.Append (row);
+
+      Array<int> compress(ndof);
+      compress = -1;
+      for (int i = 0; i < select.Size(); i++)
+	compress[select[i]] = i;
+
+
       globid = -1;
       Array<int> dnums;
       for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
@@ -1452,7 +1464,6 @@ MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArr
 		  cols.Append (rcols[j]);
 		  vals.Append (rvals[j]);
 		}
-	    select.Append (row);
 	  }
 
       MyMPI_Send (rows, 0);
@@ -1468,7 +1479,8 @@ MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArr
 
       Array<int> rows, cols;
       Array<TM> vals;
-      Array<INT<3> > globdofs;
+      HashTable<INT<3>, int> ht_globdofs(10000);
+      int num_globdofs = 0;
 
       for (int src = 1; src < ntasks; src++)
 	{
@@ -1501,27 +1513,23 @@ MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArr
 	  for (int i = 0; i < hglobid.Size(); i += 3)
 	    {
 	      if (hglobid[i] == -1) continue;
+	      
+	      INT<3> nentry;
+	      nentry[0] = hglobid[i];
+	      nentry[1] = hglobid[i+1];
+	      nentry[2] = hglobid[i+2];
 
-	      int found = -1;
-	      for (int j = 0; j < globdofs.Size(); j++)
-		if (globdofs[j][0] == hglobid[i] &&
-		    globdofs[j][1] == hglobid[i+1] &&
-		    globdofs[j][2] == hglobid[i+2])
-		  {
-		    found = j;
-		    break;
-		  }
-	      if (found == -1)
+	      int found;
+
+	      if (ht_globdofs.Used (nentry))
+		found = ht_globdofs.Get(nentry);
+	      else
 		{
-		  INT<3> nentry;
-		  nentry[0] = hglobid[i];
-		  nentry[1] = hglobid[i+1];
-		  nentry[2] = hglobid[i+2];
-
-		  found = globdofs.Size();
-		  globdofs.Append (nentry);
+		  found = num_globdofs;
+		  num_globdofs++;
+		  ht_globdofs.Set(nentry, found);
 		}
-
+	      
 	      loc2glob.Add (src, found);
 	      full_loc2glob[i/3] = found;
 	    }
@@ -1544,8 +1552,8 @@ MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArr
       cout << "now build graph" << endl;
 
       // build matrix
-      DynamicTable<int> graph(globdofs.Size());
-      cout << "n = " << globdofs.Size() << endl;
+      DynamicTable<int> graph(num_globdofs);
+      cout << "n = " << num_globdofs << endl;
       for (int i = 0; i < rows.Size(); i++)
 	{
 	  int r = rows[i], c = cols[i];
@@ -1557,8 +1565,8 @@ MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArr
 
       // *testout << "graphi = " << endl << graph << endl;
 
-      Array<int> els_per_row(globdofs.Size());
-      for (int i = 0; i < globdofs.Size(); i++)
+      Array<int> els_per_row(num_globdofs);
+      for (int i = 0; i < num_globdofs; i++)
 	els_per_row[i] = graph[i].Size();
 
       cout << "now build matrix" << endl;
