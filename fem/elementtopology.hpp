@@ -364,7 +364,7 @@ namespace ngfem
       return 0;
     }
 
-    /// return normals on facets
+    /// return normals on facets (old style)
     static NORMAL * GetNormals(ELEMENT_TYPE et);
 
     template <int D>

@@ -20,11 +20,15 @@ protected:
   BitArray * isghostdof;
   /// number of dofs on distant processes
   Array<int> distndof;
+
+
+
+
   /// mpi-datatype to send exchange dofs
   Array<MPI_Datatype> mpi_t;
 
 public:
-
+  friend class FESpace;
   /// these are local exhangedofs, sorted if (me < you), and sorted such that distant is sorted for (me > you)
   /// computed in updatempitype.
   Table<int> * sorted_exchangedof;

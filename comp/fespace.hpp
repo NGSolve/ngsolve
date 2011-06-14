@@ -113,11 +113,11 @@ namespace ngcomp
 
     /// new node concept. primarily started for parallelization 
     /// how many low-order dofs per vertex, edge, face, cell ...
-    int lodofs_per_node[4];
+    // int lodofs_per_node[4];
     /// vertex, edge, face, cell dofs start (and end) here ...
-    int first_lodof[5];
+    // int first_lodof[5];
     /// the high order vertex, edge, face, cell dofs on each node start (and end) here ...
-    Array<int> first_hodofs[4];
+    // Array<int> first_hodofs[4];
 
 
 
@@ -187,7 +187,7 @@ namespace ngcomp
 
 
     /// get dof-nrs of the element
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (int elnr, Array<int> & dnums) const = 0;
 
     /// get dof-nrs of domain or boundary element elnr
     void GetDofNrs (int elnr, Array<int> & dnums, bool boundary) const
@@ -211,8 +211,8 @@ namespace ngcomp
     /// get dofs on nr'th node of type nt.
     virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const;
     /// get number of low-order dofs for node of type nt
-    virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const
-    { return lodofs_per_node[nt]; }
+    virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const;
+    // { return lodofs_per_node[nt]; }
 
     /// get dofs on vertex vnr
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;

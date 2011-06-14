@@ -52,7 +52,7 @@ namespace ngcomp
     ///
     virtual ~FacetFESpace ();
     ///
-    static FESpace * Create (const MeshAccess & ma, const Flags & flags);
+    // static FESpace * Create (const MeshAccess & ma, const Flags & flags);
     ///
     virtual string GetClassName () const
     {
@@ -137,7 +137,7 @@ namespace ngcomp
     }
 
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOT_JS_20110614
     // virtual void UpdateParallelDofs_hoproc();
     virtual void UpdateParallelDofs_loproc();
 #endif
@@ -171,7 +171,7 @@ namespace ngcomp
     ///
     virtual ~EdgeFESpace ();
     ///
-    static FESpace * Create (const MeshAccess & ma, const Flags & flags);
+    // static FESpace * Create (const MeshAccess & ma, const Flags & flags);
     ///
     virtual string GetClassName () const
     {

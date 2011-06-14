@@ -88,7 +88,7 @@ namespace ngcomp
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
-
+    virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const;
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
   
