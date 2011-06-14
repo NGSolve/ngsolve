@@ -156,11 +156,9 @@ namespace ngla
 	// MPI_Waitany --> wait for first receive, not necessarily the one with smallest id
 	for ( int cntexproc=0; cntexproc < nexprocs; cntexproc++ )
 	  {
-	    int sender, isender;
+	    int isender;
 	    MPI_Waitany ( nexprocs, &recvrequest[0], &isender, &status); 
-	    sender = exprocs[isender];
-
-	    constvec->AddRecvValues(sender);
+	    constvec->AddRecvValues(exprocs[isender]);
 	  } 
       }
 

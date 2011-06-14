@@ -1,17 +1,14 @@
 #ifdef PARALLEL
 
-// #include <mystdlib.h>
-// #include <parallelngs.hpp>
 
 #include <comp.hpp>
 
 namespace ngparallel
 {
-  // using namespace ngparallel;
   using namespace ngcomp;
 
 
-  ParallelDofs :: ParallelDofs( const FESpace & afespace) : fespace ( afespace )
+  ParallelDofs :: ParallelDofs(const FESpace & afespace) : fespace ( afespace )
   {
     isexchangedof.SetSize(0);;
     ismasterdof.SetSize(0);

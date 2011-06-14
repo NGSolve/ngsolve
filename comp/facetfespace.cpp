@@ -116,11 +116,13 @@ namespace ngcomp
     ;
   }
 
+  /*
   // ------------------------------------------------------------------------
   FESpace * FacetFESpace :: Create (const MeshAccess & ma, const Flags & flags)
   {
     return new FacetFESpace (ma, flags, true);
   }
+  */
 
   // ------------------------------------------------------------------------
   void FacetFESpace :: Update(LocalHeap & lh)
@@ -289,7 +291,7 @@ namespace ngcomp
 
 
 
-
+    /*
     for (int i = 0; i < 4; i++) 
       {
 	lodofs_per_node[i] = 0;
@@ -303,6 +305,7 @@ namespace ngcomp
     for (int i = 0; i < 4; i++)
       first_hodofs[i].SetSize(0);
     first_hodofs[ma.GetDimension()-1] = first_facet_dof;
+    */
 
     UpdateCouplingDofArray();
     // FinalizeUpdate (lh);
@@ -859,7 +862,9 @@ namespace ngcomp
 
 #endif
 
-#ifdef PARALLEL
+
+#ifdef PARALLEL_NOT_JS_20110614
+
 
   void FacetFESpace :: UpdateParallelDofs_loproc()
   {
@@ -995,11 +1000,13 @@ namespace ngcomp
     ;
   }
 
+  /*
   ///
   FESpace * EdgeFESpace :: Create (const MeshAccess & ma, const Flags & flags)
   {
     return new EdgeFESpace (ma, flags, true);
   }
+  */
   ///
   
   void EdgeFESpace :: Update(LocalHeap & lh)
@@ -1100,11 +1107,59 @@ protected:
   bool withedges;
 public:
   HybridDGFESpace (const MeshAccess & ama, 
-                   const Array<FESpace*> & aspaces,
+                   // const Array<FESpace*> & aspaces,
                    const Flags & flags)
-    : CompoundFESpace (ama, aspaces, flags)
+    : CompoundFESpace (ama, flags)
   { 
-    withedges = (aspaces.Size()==3);
+    Flags l2flags(flags), facetflags(flags);
+
+    int order = int (flags.GetNumFlag ("order", 1));
+    
+    l2flags.SetFlag ("orderinner", order);
+    if (flags.GetDefineFlag("l2_dofs_together")){
+      l2flags.SetFlag ("all_dofs_together");
+      cout << "l2_dofs_together active" << endl; 
+    }
+
+    facetflags.SetFlag("orderfacet", order);
+    if (flags.NumListFlagDefined ("dirichlet"))
+	facetflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
+
+    if (flags.NumFlagDefined ("relorder")) facetflags.SetFlag("variableorder");
+    
+    const FESpaceClasses::FESpaceInfo * info;
+    info = GetFESpaceClasses().GetFESpace("DGhotp");
+    if (!info) info = GetFESpaceClasses().GetFESpace("l2hotp");
+    if (!info) info = GetFESpaceClasses().GetFESpace("l2ho");
+    
+    // spaces[0] = info->creator(ma, l2flags);
+    AddSpace (info->creator(ma, l2flags));
+    
+    // spaces[0] = new L2HighOrderFESpace (ma, l2flags);    
+
+    // spaces[1] = new FacetFESpace (ma, facetflags);        
+    AddSpace (new FacetFESpace (ma, facetflags));        
+
+
+    if (flags.GetDefineFlag ("edges"))
+      {
+	if (ma.GetDimension() == 2)
+	  {
+	    Flags h1flags(flags);
+	    h1flags.SetFlag ("order", 1);
+	    // spaces.Append (new H1HighOrderFESpace (ma, h1flags));        
+	    AddSpace (new H1HighOrderFESpace (ma, h1flags));        
+	  }
+	else
+	  {
+	    Flags edgeflags(flags);
+	    // spaces.Append (new EdgeFESpace (ma, edgeflags));            
+	    AddSpace (new EdgeFESpace (ma, edgeflags));            
+	  }
+      }
+
+
+    withedges = (spaces.Size()==3);
 
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
@@ -1123,55 +1178,14 @@ public:
 
   virtual ~HybridDGFESpace () { ; }
 
+  /*
   static FESpace * Create (const MeshAccess & ma, const Flags & flags)
   {
-    Array<FESpace*> spaces(2);
-
-    Flags l2flags(flags), facetflags(flags);
-
-    int order = int (flags.GetNumFlag ("order", 1));
-    
-    l2flags.SetFlag ("orderinner", order);
-    if (flags.GetDefineFlag("l2_dofs_together")){
-      l2flags.SetFlag ("all_dofs_together");
-      cout << "l2_dofs_together active" << endl; 
-    }
-    facetflags.SetFlag("orderfacet", order);
-    if (flags.NumListFlagDefined ("dirichlet"))
-	facetflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
-
-    if (flags.NumFlagDefined ("relorder")) facetflags.SetFlag("variableorder");
-    
-    const FESpaceClasses::FESpaceInfo * info;
-    info = GetFESpaceClasses().GetFESpace("DGhotp");
-    if (!info) info = GetFESpaceClasses().GetFESpace("l2hotp");
-    if (!info) info = GetFESpaceClasses().GetFESpace("l2ho");
-    
-    spaces[0] = info->creator(ma, l2flags);
-    // spaces[0] = new L2HighOrderFESpace (ma, l2flags);    
-
-    spaces[1] = new FacetFESpace (ma, facetflags);        
-
-
-    if (flags.GetDefineFlag ("edges"))
-      {
-	if (ma.GetDimension() == 2)
-	  {
-	    Flags h1flags(flags);
-	    h1flags.SetFlag ("order", 1);
-	    spaces.Append (new H1HighOrderFESpace (ma, h1flags));        
-	  }
-	else
-	  {
-	    Flags edgeflags(flags);
-	    spaces.Append (new EdgeFESpace (ma, edgeflags));            
-	  }
-      }
-
 
     HybridDGFESpace * fes = new HybridDGFESpace (ma, spaces, flags);
     return fes;
   }
+  */
 
 
   virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const
@@ -1376,6 +1390,13 @@ public:
 
   
 // ------------------------------------------------------------------------
+
+  
+  static RegisterFESpace<FacetFESpace> init_facet ("facet");
+  static RegisterFESpace<EdgeFESpace> init_edge ("edge");
+  static RegisterFESpace<HybridDGFESpace> init_hde ("HDG");
+
+
 // register FESpaces
 namespace facefespace_cpp
 {
@@ -1387,11 +1408,11 @@ namespace facefespace_cpp
 
   Init::Init()
   {
-    GetFESpaceClasses().AddFESpace ("facet", FacetFESpace::Create);
-    GetFESpaceClasses().AddFESpace ("edge", EdgeFESpace::Create);
-    GetFESpaceClasses().AddFESpace ("HDG", HybridDGFESpace::Create);
+    // GetFESpaceClasses().AddFESpace ("facet", FacetFESpace::Create);
+    // GetFESpaceClasses().AddFESpace ("edge", EdgeFESpace::Create);
+    // GetFESpaceClasses().AddFESpace ("HDG", HybridDGFESpace::Create);
   }
-
+  
   Init init;
 }
 

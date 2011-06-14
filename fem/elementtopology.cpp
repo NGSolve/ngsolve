@@ -341,7 +341,6 @@ namespace ngfem
     throw Exception (str.str());
   }
 
-
   template <int D>
   FlatVector< Vec<D> > ElementTopology::GetNormals(ELEMENT_TYPE et)
   {

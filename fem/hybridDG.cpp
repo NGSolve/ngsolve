@@ -111,7 +111,8 @@ namespace ngfem
 	int nfacet = ElementTopology::GetNFacets(eltype);
       
 	Facet2ElementTrafo transform(eltype); 
-	const NORMAL * normals = ElementTopology::GetNormals(eltype);
+	// const NORMAL * normals = ElementTopology::GetNormals(eltype);
+	FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
 
 	FlatMatrixFixHeight<2> bmat(nd, lh);
 	FlatMatrixFixHeight<2> dbmat(nd, lh);
@@ -122,9 +123,11 @@ namespace ngfem
 	    HeapReset hr(lh);
 	    ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
 
-	    Vec<D> normal_ref;
+	    Vec<D> normal_ref = normals[k];
+	    /*
 	    for (int i=0; i<D; i++)
 	      normal_ref(i) = normals[k][i];
+	    */
 
 	    const IntegrationRule & ir_facet = SelectIntegrationRule (etfacet, 2*fel_l2.Order());
 
@@ -375,7 +378,8 @@ namespace ngfem
 	eltrans.GetSort (FlatArray<int> (D+1,&sort[0]));
       
 	Facet2ElementTrafo transform(eltype);
-	const NORMAL * normals = ElementTopology::GetNormals(eltype);
+	// const NORMAL * normals = ElementTopology::GetNormals(eltype);
+	FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
 
 	Mat<2> dmat;
 
@@ -386,9 +390,11 @@ namespace ngfem
 
 	    fel_facet.SelectFacet (k);
 
-	    Vec<D> normal_ref;
+	    Vec<D> normal_ref = normals(k);
+	    /*
 	    for (int i=0; i<D; i++)
 	      normal_ref(i) = normals[k][i];
+	    */
 
 	    /*
 	    ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
@@ -675,8 +681,8 @@ namespace ngfem
       eltrans.GetSort (FlatArray<int> (D+1,&sort[0]));
       
       Facet2ElementTrafo transform(eltype);
-      const NORMAL * normals = ElementTopology::GetNormals(eltype);
-
+      // const NORMAL * normals = ElementTopology::GetNormals(eltype);
+      FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
       Mat<2> dmat;
       
       for (int k = 0; k < nfacet; k++)
@@ -685,10 +691,11 @@ namespace ngfem
 
 	  fel_facet.SelectFacet (k);
 	  
-	  Vec<D> normal_ref;
+	  Vec<D> normal_ref = normals[k];
+	  /*
 	  for (int i=0; i<D; i++)
 	    normal_ref(i) = normals[k][i];
-
+	  */
 
 	  ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
 	  
@@ -939,7 +946,6 @@ namespace ngfem
 
 	double eps = alpha;
 	mat_gradgrad += eps * mat_robin;
-	// mat_gradgrad(0,0) += 1;
 
 	RegionTimer reg3 (timer3);
 
@@ -949,7 +955,7 @@ namespace ngfem
 	FlatMatrix<> hmT(nd, nd_l2, lh);
 	hmT = mat_mixedT * Trans (mat_gradgrad);
 
-	elmat += mat_mixedT * Trans (hmT);
+	elmat += (1+alpha) * mat_mixedT * Trans (hmT);
       }
     }
   };

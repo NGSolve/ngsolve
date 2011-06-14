@@ -208,7 +208,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     evaluator = 0;
     boundary_evaluator = 0;
 
-    first_lodof[4] = -1;   // indicates that nodes are not used
+    // first_lodof[4] = -1;   // indicates that nodes are not used
 
     element_coloring = NULL;
 
@@ -477,7 +477,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return *fe;
   }
 
-  
+  /*
   void FESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     TopologicElement topel;
@@ -507,6 +507,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             nr_on_node - lodofs_per_node[gn.GetType()];
       }
   }
+  */
 
   /// get coupling type of dof
   COUPLING_TYPE FESpace :: GetDofCouplingType (int dof) const 
@@ -550,6 +551,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const
   {
+    /*
     if (first_lodof[4] != -1)
       {
 	dnums.SetSize(0);
@@ -560,7 +562,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    dnums.Append (i);
 	return;
       }
-
+    */
 
     switch (nt)
       {
@@ -578,34 +580,38 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
-    if (first_lodof[4] != -1)
-      GetNodeDofNrs (NT_VERTEX, vnr, dnums);
+    // if (first_lodof[4] != -1)
+    // GetNodeDofNrs (NT_VERTEX, vnr, dnums);
     throw Exception ("FESpace::GetVertexDofNrs called");
   }
 
   void FESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
-    if (first_lodof[4] != -1)
-      GetNodeDofNrs (NT_EDGE, ednr, dnums);
+    // if (first_lodof[4] != -1)
+    // GetNodeDofNrs (NT_EDGE, ednr, dnums);
     throw Exception ("FESpace::GetEdgeDofNrs called");
   }
 
   void FESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
-    if (first_lodof[4] != -1)
-      GetNodeDofNrs (NT_FACE, fanr, dnums);
+    // if (first_lodof[4] != -1)
+    // GetNodeDofNrs (NT_FACE, fanr, dnums);
     throw Exception ("FESpace::GetFaceDofNrs called");
   }
 
   void FESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
-    if (first_lodof[4] != -1)
-      GetNodeDofNrs (NT_CELL, elnr, dnums);
+    // if (first_lodof[4] != -1)
+    // GetNodeDofNrs (NT_CELL, elnr, dnums);
     throw Exception (string("FESpace::GetInnerDofNrs called for class")+
 		     typeid(*this).name());
   }
 
-
+  int FESpace :: GetNLowOrderNodeDofs ( NODE_TYPE nt ) const
+  {
+    throw Exception (string("FESpace::GetNLowOrderNodeDofs called for class")+
+		     typeid(*this).name());
+  }
 
 
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const

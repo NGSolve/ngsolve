@@ -59,10 +59,8 @@ namespace ngla
 
     virtual bool IsParallelVector () const
     {
-      if ( this->Status() == NOT_PARALLEL ) return false;
-      return true;
+      return ( this->Status() != NOT_PARALLEL );
     }
-
     
     virtual BaseVector & SetScalar (double scal);
     virtual BaseVector & SetScalar (Complex scal);
