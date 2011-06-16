@@ -491,6 +491,8 @@ namespace netgen
 
     //  cout << "build edges done" << endl;
 
+
+
     // generate faces
     if (buildfaces) //  && mesh.GetDimension() == 3)
       {
@@ -501,273 +503,6 @@ namespace netgen
 
 
 
-
-
-	/*
-
-
-	faces.SetSize(ne);
-	surffaces.SetSize(nse);
-      
-	// face2vert.SetSize(0);  // keep old faces
-	nfa = face2vert.Size();
-	// INDEX_3_HASHTABLE<int> vert2face(ne+nse+1);
-	INDEX_3_CLOSED_HASHTABLE<int> vert2face(8*ne+2*nse+nfa+2);
-
-	for (int i = 1; i <= face2vert.Size(); i++)
-	{
-	INDEX_3 f;
-	f.I1() = face2vert.Get(i)[0];
-	f.I2() = face2vert.Get(i)[1];
-	f.I3() = face2vert.Get(i)[2];
-	vert2face.Set (f, i);
-	}
-     
-	for (int i = 1; i <= ne; i++)
-	{
-	const Element & el = mesh.VolumeElement (i);
-	  
-	int nelfaces = GetNFaces (el.GetType());
-	const ELEMENT_FACE * elfaces = GetFaces1 (el.GetType());
-	  
-	for (int j = 0; j < 6; j++)
-	faces.Elem(i)[j] = 0;
-	for (int j = 0; j < nelfaces; j++)
-	if (elfaces[j][3] == 0)
-	      
-	{ // triangle
-		
-	int facenum;
-	int facedir;
-		
-	INDEX_3 face(el.PNum(elfaces[j][0]),
-	el.PNum(elfaces[j][1]),
-	el.PNum(elfaces[j][2]));
-		
-	facedir = 0;
-	if (face.I1() > face.I2())
-	{
-	swap (face.I1(), face.I2());
-	facedir += 1;
-	}
-	if (face.I2() > face.I3())
-	{
-	swap (face.I2(), face.I3());
-	facedir += 2;
-	}
-	if (face.I1() > face.I2())
-	{
-	swap (face.I1(), face.I2());
-	facedir += 4;
-	}
-		
-	if (vert2face.Used (face))
-	facenum = vert2face.Get(face);
-	else
-	{
-	nfa++;
-	vert2face.Set (face, nfa);
-	facenum = nfa;
-		    
-	INDEX_4 hface(face.I1(),face.I2(),face.I3(),0);
-	face2vert.Append (hface);
-	// face2vert.SetSize(face2vert.Size()+1);
-	}
-		
-	faces.Elem(i)[j] = 8*(facenum-1)+facedir+1;
-	}
-	  
-	else
-	      
-	{
-	// quad
-	int facenum;
-	int facedir;
-	INDEX_4Q face4(el.PNum(elfaces[j][0]),
-	el.PNum(elfaces[j][1]),
-	el.PNum(elfaces[j][2]),
-	el.PNum(elfaces[j][3]));
-		
-	facedir = 0;
-	if (min2 (face4.I1(), face4.I2()) > 
-	min2 (face4.I4(), face4.I3())) 
-	{  // z - flip
-	facedir += 1; 
-	swap (face4.I1(), face4.I4());
-	swap (face4.I2(), face4.I3());
-	}
-	if (min2 (face4.I1(), face4.I4()) >
-	min2 (face4.I2(), face4.I3())) 
-	{  // x - flip
-	facedir += 2; 
-	swap (face4.I1(), face4.I2());
-	swap (face4.I3(), face4.I4());
-	}
-	if (face4.I2() > face4.I4())
-	{  // diagonal flip
-	facedir += 4; 
-	swap (face4.I2(), face4.I4());
-	}
-	//		face4.Sort();
-		
-	INDEX_3 face(face4.I1(), face4.I2(), face4.I3());
-		
-	if (vert2face.Used (face))
-	{
-	facenum = vert2face.Get(face);
-	}
-	else
-	{
-	nfa++;
-	vert2face.Set (face, nfa);
-	facenum = nfa;
-
-	// face2vert.SetSize(face2vert.Size()+1);
-
-	INDEX_4 hface(face4.I1(),face4.I2(),face4.I3(),face4.I4());
-	face2vert.Append (hface);
-	}
-		
-	faces.Elem(i)[j] = 8*(facenum-1)+facedir+1;
-	}
-	}
-
-	face2surfel.SetSize(nfa+nse);
-	for (int i = 1; i <= face2surfel.Size(); i++)
-	face2surfel.Elem(i) = 0;
-
-	for (int i = 1; i <= nse; i++)
-	{
-	const Element2d & el = mesh.SurfaceElement (i);
-	  
-	const ELEMENT_FACE * elfaces = GetFaces1 (el.GetType());
-	  
-	if (elfaces[0][3] == 0)
-	    
-	{ // triangle
-	      
-	int facenum;
-	int facedir;
-	      
-	INDEX_3 face(el.PNum(elfaces[0][0]),
-	el.PNum(elfaces[0][1]),
-	el.PNum(elfaces[0][2]));
-	      
-	facedir = 0;
-	if (face.I1() > face.I2())
-	{
-	swap (face.I1(), face.I2());
-	facedir += 1;
-	}
-	if (face.I2() > face.I3())
-	{
-	swap (face.I2(), face.I3());
-	facedir += 2;
-	}
-	if (face.I1() > face.I2())
-	{
-	swap (face.I1(), face.I2());
-	facedir += 4;
-	}
-	      
-	if (vert2face.Used (face))
-	facenum = vert2face.Get(face);
-	else
-	{
-	nfa++;
-	vert2face.Set (face, nfa);
-	facenum = nfa;
-		  
-	// face2vert.SetSize(face2vert.Size()+1);
-	INDEX_4 hface(face.I1(),face.I2(),face.I3(),0);
-	face2vert.Append (hface);
-	}
-	      
-	surffaces.Elem(i) = 8*(facenum-1)+facedir+1;
-	face2surfel.Elem(facenum) = i;
-	}
-	  
-	else
-	    
-	{
-	// quad
-	int facenum;
-	int facedir;
-	      
-	INDEX_4Q face4(el.PNum(elfaces[0][0]),
-	el.PNum(elfaces[0][1]),
-	el.PNum(elfaces[0][2]),
-	el.PNum(elfaces[0][3]));
-
-	facedir = 0;
-	if (min2 (face4.I1(), face4.I2()) > 
-	min2 (face4.I4(), face4.I3())) 
-	{  // z - orientation
-	facedir += 1; 
-	swap (face4.I1(), face4.I4());
-	swap (face4.I2(), face4.I3());
-	}
-	if (min2 (face4.I1(), face4.I4()) >
-	min2 (face4.I2(), face4.I3())) 
-	{  // x - orientation
-	facedir += 2; 
-	swap (face4.I1(), face4.I2());
-	swap (face4.I3(), face4.I4());
-	}
-	if (face4.I2() > face4.I4())
-	{ 
-	facedir += 4; 
-	swap (face4.I2(), face4.I4());
-	}
-	      
-	INDEX_3 face(face4.I1(), face4.I2(), face4.I3());
-	      
-	if (vert2face.Used (face))
-	facenum = vert2face.Get(face);
-	else
-	{
-	nfa++;
-	vert2face.Set (face, nfa);
-	facenum = nfa;
-		  
-	// face2vert.SetSize(face2vert.Size()+1);
-	INDEX_4 hface(face4.I1(),face4.I2(),face4.I3(),face4.I3());
-	face2vert.Append (hface);
-	}
-	
-	surffaces.Elem(i) = 8*(facenum-1)+facedir+1;
-	face2surfel.Elem(facenum) = i;
-	}
-	}
-	
-	
-	surf2volelement.SetSize (nse);
-	for (int i = 1; i <= nse; i++)
-	{
-	surf2volelement.Elem(i)[0] = 0;
-	surf2volelement.Elem(i)[1] = 0;
-	}
-	for (int i = 1; i <= ne; i++)
-	for (int j = 0; j < 6; j++)
-	{
-	int fnum = (faces.Get(i)[j]+7) / 8;
-	if (fnum > 0 && face2surfel.Elem(fnum))
-	{
-	int sel = face2surfel.Elem(fnum);
-	surf2volelement.Elem(sel)[1] = 
-	surf2volelement.Elem(sel)[0];
-	surf2volelement.Elem(sel)[0] = i;
-	}
-	}
-
-	face2vert.SetAllocSize (face2vert.Size());
-	*/
-
-
-
-
-
-      
 
 	faces.SetSize(ne);
 	surffaces.SetSize(nse);
@@ -795,6 +530,7 @@ namespace netgen
 	  }
 	
 
+	/*
 	for (int pass = 1; pass <= 2; pass++)
 	  {
 	    nfa = oldnfa;
@@ -811,6 +547,7 @@ namespace netgen
 		    vert2face.Set (face, fnr+1);
 		  }
 
+
 		// cout << "inherited faces: " << endl << vert2face << endl;
 
 
@@ -826,30 +563,18 @@ namespace netgen
 		      if (elfaces[j][3] == 0)
 	      
 			{ // triangle
-		      
-			  int facenum;
-			  int facedir;
-		      
+			  int facenum, facedir;
 			  INDEX_3 face(el.PNum(elfaces[j][0]),
 				       el.PNum(elfaces[j][1]),
 				       el.PNum(elfaces[j][2]));
 		      
 			  facedir = 0;
 			  if (face.I1() > face.I2())
-			    {
-			      swap (face.I1(), face.I2());
-			      facedir += 1;
-			    }
+			    { swap (face.I1(), face.I2()); facedir += 1; }
 			  if (face.I2() > face.I3())
-			    {
-			      swap (face.I2(), face.I3());
-			      facedir += 2;
-			    }
+			    { swap (face.I2(), face.I3()); facedir += 2; }
 			  if (face.I1() > face.I2())
-			    {
-			      swap (face.I1(), face.I2());
-			      facedir += 4;
-			    }
+			    { swap (face.I1(), face.I2()); facedir += 4; }
 		      
 			  if (face.I1() != v) continue;
 		      
@@ -864,7 +589,6 @@ namespace netgen
 			      INDEX_4 hface(face.I1(),face.I2(),face.I3(),0);
 			      if (pass == 2) face2vert.Append (hface);
 			    }
-			  // cout << "face = " << face << " elnr = " << elnr << endl;
 			  faces.Elem(elnr)[j] = 8*(facenum-1)+facedir+1;
 			}
 		
@@ -872,8 +596,7 @@ namespace netgen
 		    
 			{
 			  // quad
-			  int facenum;
-			  int facedir;
+			  int facenum, facedir;
 			  INDEX_4Q face4(el.PNum(elfaces[j][0]),
 					 el.PNum(elfaces[j][1]),
 					 el.PNum(elfaces[j][2]),
@@ -1029,12 +752,286 @@ namespace netgen
 			  }
 		    
 			surffaces.Elem(elnr) = 8*(facenum-1)+facedir+1;
-			// face2surfel.Elem(facenum) = elnr;
 		      }
 		  }
 	      }
+
 	    face2vert.SetAllocSize (nfa);
+	    }
+	*/
+
+
+
+
+
+
+
+
+	for (int pass = 1; pass <= 2; pass++)
+	  {
+	    nfa = oldnfa;
+	    for (int v = PointIndex::BASE; v < nv+PointIndex::BASE; v++)
+	      {
+		int first_fa = nfa;
+
+		INDEX_3_CLOSED_HASHTABLE<int> vert2face(2*max_face_on_vertex+10); 
+		
+		for (int j = 0; j < vert2oldface[v].Size(); j++)
+		  {
+		    int fnr = vert2oldface[v][j];
+		    INDEX_3 face (face2vert[fnr].I1(),
+				  face2vert[fnr].I2(),
+				  face2vert[fnr].I3());
+		    vert2face.Set (face, fnr+1);
+		  }
+
+
+		if (pass == 2)
+		  for (int j = nfa; j < face2vert.Size(); j++)
+		    {
+		      if (face2vert[j][0] == v)
+			{
+			  INDEX_3 face (face2vert[j].I1(),
+					face2vert[j].I2(),
+					face2vert[j].I3());
+			  vert2face.Set (face, j+1);
+			  nfa++;
+			}
+		      else
+			break;
+		    }
+		
+
+		// cout << "inherited faces: " << endl << vert2face << endl;
+
+
+		for (int j = 0; j < (*vert2element)[v].Size(); j++)
+		  {
+		    int elnr = (*vert2element)[v][j];
+		    const Element & el = mesh.VolumeElement (elnr);
+	  
+		    int nelfaces = GetNFaces (el.GetType());
+		    const ELEMENT_FACE * elfaces = GetFaces1 (el.GetType());
+	  
+		    for (int j = 0; j < nelfaces; j++)
+		      if (elfaces[j][3] == 0)
+	      
+			{ // triangle
+			  int facenum, facedir;
+			  INDEX_3 face(el.PNum(elfaces[j][0]),
+				       el.PNum(elfaces[j][1]),
+				       el.PNum(elfaces[j][2]));
+		      
+			  facedir = 0;
+			  if (face.I1() > face.I2())
+			    { swap (face.I1(), face.I2()); facedir += 1; }
+			  if (face.I2() > face.I3())
+			    { swap (face.I2(), face.I3()); facedir += 2; }
+			  if (face.I1() > face.I2())
+			    { swap (face.I1(), face.I2()); facedir += 4; }
+		      
+			  if (face.I1() != v) continue;
+		      
+			  if (vert2face.Used (face))
+			    facenum = vert2face.Get(face);
+			  else
+			    {
+			      nfa++;
+			      vert2face.Set (face, nfa);
+			      facenum = nfa;
+			  
+			      INDEX_4 hface(face.I1(),face.I2(),face.I3(),0);
+			      face2vert.Append (hface);
+			    }
+			  faces.Elem(elnr)[j] = 8*(facenum-1)+facedir+1;
+			}
+		
+		      else
+		    
+			{
+			  // quad
+			  int facenum, facedir;
+			  INDEX_4Q face4(el.PNum(elfaces[j][0]),
+					 el.PNum(elfaces[j][1]),
+					 el.PNum(elfaces[j][2]),
+					 el.PNum(elfaces[j][3]));
+		      
+			  facedir = 0;
+			  if (min2 (face4.I1(), face4.I2()) > 
+			      min2 (face4.I4(), face4.I3())) 
+			    {  // z - flip
+			      facedir += 1; 
+			      swap (face4.I1(), face4.I4());
+			      swap (face4.I2(), face4.I3());
+			    }
+			  if (min2 (face4.I1(), face4.I4()) >
+			      min2 (face4.I2(), face4.I3())) 
+			    {  // x - flip
+			      facedir += 2; 
+			      swap (face4.I1(), face4.I2());
+			      swap (face4.I3(), face4.I4());
+			    }
+			  if (face4.I2() > face4.I4())
+			    {  // diagonal flip
+			      facedir += 4; 
+			      swap (face4.I2(), face4.I4());
+			    }
+
+		
+			  INDEX_3 face(face4.I1(), face4.I2(), face4.I3());
+
+			  if (face.I1() != v) continue;
+		      
+			  if (vert2face.Used (face))
+			    {
+			      facenum = vert2face.Get(face);
+			    }
+			  else
+			    {
+			      nfa++;
+			      vert2face.Set (face, nfa);
+			      facenum = nfa;
+			  
+			      INDEX_4 hface(face4.I1(),face4.I2(),face4.I3(),face4.I4());
+			      face2vert.Append (hface);
+			    }
+		      
+			  faces.Elem(elnr)[j] = 8*(facenum-1)+facedir+1;
+			}
+		  }
+
+		for (int j = 0; j < (*vert2surfelement)[v].Size(); j++)
+		  {
+		    int elnr = (*vert2surfelement)[v][j];
+		    // cout << "surfelnr = " << elnr << endl;
+		    const Element2d & el = mesh.SurfaceElement (elnr);
+		
+		    const ELEMENT_FACE * elfaces = GetFaces1 (el.GetType());
+		
+		    if (elfaces[0][3] == 0)
+	    
+		      { // triangle
+	      
+			int facenum;
+			int facedir;
+		    
+			INDEX_3 face(el.PNum(elfaces[0][0]),
+				     el.PNum(elfaces[0][1]),
+				     el.PNum(elfaces[0][2]));
+		    
+			// cout << "face = " << face << endl;
+
+			facedir = 0;
+			if (face.I1() > face.I2())
+			  {
+			    swap (face.I1(), face.I2());
+			    facedir += 1;
+			  }
+			if (face.I2() > face.I3())
+			  {
+			    swap (face.I2(), face.I3());
+			    facedir += 2;
+			  }
+			if (face.I1() > face.I2())
+			  {
+			    swap (face.I1(), face.I2());
+			    facedir += 4;
+			  }
+		    
+			if (face.I1() != v) continue;
+		    
+			if (vert2face.Used (face))
+			  facenum = vert2face.Get(face);
+			else
+			  {
+			    nfa++;
+			    vert2face.Set (face, nfa);
+			    facenum = nfa;
+			
+			    INDEX_4 hface(face.I1(),face.I2(),face.I3(),0);
+			    face2vert.Append (hface);
+			  }
+
+			surffaces.Elem(elnr) = 8*(facenum-1)+facedir+1;
+		      }
+	  
+		    else
+	    
+		      {
+			// quad
+			int facenum;
+			int facedir;
+		    
+			INDEX_4Q face4(el.PNum(elfaces[0][0]),
+				       el.PNum(elfaces[0][1]),
+				       el.PNum(elfaces[0][2]),
+				       el.PNum(elfaces[0][3]));
+		    
+			facedir = 0;
+			if (min2 (face4.I1(), face4.I2()) > 
+			    min2 (face4.I4(), face4.I3())) 
+			  {  // z - orientation
+			    facedir += 1; 
+			    swap (face4.I1(), face4.I4());
+			    swap (face4.I2(), face4.I3());
+			  }
+			if (min2 (face4.I1(), face4.I4()) >
+			    min2 (face4.I2(), face4.I3())) 
+			  {  // x - orientation
+			    facedir += 2; 
+			    swap (face4.I1(), face4.I2());
+			    swap (face4.I3(), face4.I4());
+			  }
+			if (face4.I2() > face4.I4())
+			  { 
+			    facedir += 4; 
+			    swap (face4.I2(), face4.I4());
+			  }
+		    
+			INDEX_3 face(face4.I1(), face4.I2(), face4.I3());
+			if (face.I1() != v) continue;
+		    
+			if (vert2face.Used (face))
+			  facenum = vert2face.Get(face);
+			else
+			  {
+			    nfa++;
+			    vert2face.Set (face, nfa);
+			    facenum = nfa;
+			
+			    INDEX_4 hface(face4.I1(),face4.I2(),face4.I3(),face4.I3());
+			    face2vert.Append (hface);
+			  }
+		    
+			surffaces.Elem(elnr) = 8*(facenum-1)+facedir+1;
+		      }
+		  }
+
+		// sort faces
+		// *testout << "faces = " << face2vert << endl;
+		if (pass == 1)
+		  {
+		    *testout << "sort from " << first_fa << " to " << nfa << endl;
+		    for (int i = first_fa; i < nfa; i++)
+		      for (int j = first_fa+1; j < nfa; j++)
+			if (face2vert[j] < face2vert[j-1])
+			  Swap (face2vert[j-1], face2vert[j]);
+		  }
+		// *testout << "faces, sorted = " << face2vert << endl;
+	      }
+
+
+	    face2vert.SetAllocSize (nfa);
+
 	  }
+
+
+	*testout << "face2vert = " << endl << face2vert << endl;
+
+
+
+
+
 
 
 	

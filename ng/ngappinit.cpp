@@ -379,28 +379,6 @@ int Tcl_AppInit(Tcl_Interp * interp)
     // return TCL_ERROR;
   }
 
-  // if ITcl and ITk are installed on the system, then
-  // they must also be initialized
-  /*
-    if (Itcl_Init(interp) == TCL_ERROR) {
-    cerr << "Problem in Itcl_Init: " << endl;
-    cerr << interp->result << endl;
-    // return TCL_ERROR;
-    }
-
-    if (Itk_Init(interp) == TCL_ERROR) {
-    cerr << "Problem in Itk_Init: " << endl;
-    cerr << interp->result << endl;
-    // return TCL_ERROR;
-    }
-  */
-    /*
-  if (!nodisplay && Tix_Init(interp) == TCL_ERROR) {
-    cerr << "Problem in Tix_Init: " << endl;
-    cerr << interp->result << endl;
-    // return TCL_ERROR;
-  }
-    */
 
   if (Ng_Init(interp) == TCL_ERROR) {
     cerr << "Problem in Ng_Init: " << endl;
@@ -408,7 +386,7 @@ int Tcl_AppInit(Tcl_Interp * interp)
     // cerr << interp->result << endl;
     // return TCL_ERROR;
   }
-
+ 
   if (!nodisplay && Ng_Vis_Init(interp) == TCL_ERROR) {
     cerr << "Problem in Ng_Vis_Init: " << endl;
     cout << "result = " << Tcl_GetStringResult (interp) << endl;

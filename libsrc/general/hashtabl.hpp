@@ -72,7 +72,6 @@ public:
 
 
 
-
 ///
 class BASE_INDEX_2_HASHTABLE
 {

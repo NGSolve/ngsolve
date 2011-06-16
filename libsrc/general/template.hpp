@@ -370,6 +370,15 @@ public:
 };
 
 
+inline bool operator< (const INDEX_4 & a, const INDEX_4 & b)
+{
+  for (int j = 0; j < 4; j++)
+    {
+      if (a[j] < b[j]) return true;
+      if (a[j] > b[j]) return false;
+    }
+  return false;
+}
 
 
 

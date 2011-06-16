@@ -125,7 +125,7 @@ void ParallelRun()
 
       if ( message.compare(0, 3, "ngs") == 0 ) 
         {
-          PrintMessage ( 1, "Starting NgSolve routine ", message ) ;
+          // PrintMessage ( 1, "Starting NgSolve routine ", message ) ;
 
 	  if (NGS_ParallelRun == NULL)
 	    {
