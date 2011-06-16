@@ -12,29 +12,31 @@ class ParallelDofs
 protected:
   ///
   const FESpace & fespace;
+
   /// number of degrees of freedom shared with processors
   Array<int> nexdof;
+
   /// is dof i local or exchange-dof??
   BitArray isexchangedof;
+
   /// is dof i ghost dof or not??
   BitArray * isghostdof;
+
   /// number of dofs on distant processes
   Array<int> distndof;
-
-
 
 
   /// mpi-datatype to send exchange dofs
   Array<MPI_Datatype> mpi_t;
 
-public:
-  friend class FESpace;
-  /// these are local exhangedofs, sorted if (me < you), and sorted such that distant is sorted for (me > you)
-  /// computed in updatempitype.
+  friend class ngcomp::FESpace;
+  /// these are local exhangedofs, computed by FESpace
   Table<int> * sorted_exchangedof;
 
   /// is this the master process??
   BitArray ismasterdof;
+
+public:
 
   ParallelDofs( const FESpace & afespace );
   ~ParallelDofs();

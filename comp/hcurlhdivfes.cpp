@@ -176,16 +176,8 @@ namespace ngcomp
     
     int level = ma.GetNLevels();
     
-#ifdef PARALLEL
-    if ( level == nelevel.Size() )
-      {
-	UpdateParallelDofs();
-	return;
-      }
-#else
     if (level == nelevel.Size())
       return;
-#endif
     
     nelevel.Append (ned);
     
@@ -404,7 +396,7 @@ namespace ngcomp
     FinalizeUpdate (lh);
 
 #ifdef PARALLEL
-    UpdateParallelDofs();
+    // UpdateParallelDofs();
 #endif
     
     //   (*testout) << "edges: " << endl;
@@ -785,7 +777,7 @@ namespace ngcomp
     dnums.SetSize(0);
   }
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOT_JS
   void NedelecFESpace :: UpdateParallelDofs_loproc()
   {
     if ( discontinuous )
@@ -3399,7 +3391,7 @@ namespace ngcomp
   // }
 
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOT_JS
   /*
   // old style constructor
   ParallelNedelecFESpace :: ParallelNedelecFESpace (const MeshAccess & ama,

@@ -107,11 +107,7 @@ namespace ngcomp
       loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
 
     
-#ifndef PARALLEL
     low_order_space = new  NedelecFESpace (ma, loflags);
-#else
-    low_order_space = new  ParallelNedelecFESpace (ma, loflags);
-#endif
 
     if (low_order_space)
       prol = new ngmg::EdgeProlongation (*static_cast<NedelecFESpace*> (low_order_space));
@@ -360,7 +356,7 @@ namespace ngcomp
     if (timing) Timing();    
 
 #ifdef PARALLEL
-    UpdateParallelDofs();
+    // UpdateParallelDofs();
 #endif
   }
 		

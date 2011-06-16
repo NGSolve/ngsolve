@@ -130,21 +130,21 @@ namespace ngparallel
 
   const bool  ParallelDofs :: IsExchangeProc ( const int proc ) const
   {
-    if ( id == proc )
-      return false;
+    if (id == proc) return false;
+    
+    /*
     if ( id == 0 || proc == 0 )
       return true;
+    */
 
-    if ( (*sorted_exchangedof)[proc].Size() > 0 )
-      return true;
-    else 
-      return false;
+    return ((*sorted_exchangedof)[proc].Size() > 0);
   }
   
 
   // high-order update for the local procs
   void ParallelDofs :: Update()
   {
+    *testout << "update parallel dofs" << endl;
     const MeshAccess & ma = fespace.GetMeshAccess();
     int ndof = fespace.GetNDof();
 

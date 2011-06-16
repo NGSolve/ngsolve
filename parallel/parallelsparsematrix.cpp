@@ -1414,17 +1414,21 @@ MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArr
 
   if (id != 0)
     {
-      Array<int> rows, cols, globid(3*mat.Height());
-      Array<TM> vals;
-
       const FESpace & fes = pardofs->GetFESpace();
       const MeshAccess & ma = fes.GetMeshAccess();
 
       int ndof = fes.GetNDof();
 
+      Array<int> rows, cols, globid(3*ndof);
+      Array<TM> vals;
+
+      *testout << "masterinverse, subset = " << *subset << endl;
+
       for (int row = 0; row < ndof; row++)
 	if (!subset || subset->Test(row))
 	  select.Append (row);
+
+      *testout << "select = " << select << endl;
 
       Array<int> compress(ndof);
       compress = -1;
@@ -1441,7 +1445,7 @@ MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArr
 	    int distnum = parallelma->GetDistantNodeNum (0, nt, i);
 
 	    for (int j = 0; j < dnums.Size(); j++)
-	      if (!subset || subset->Test(dnums[j]))
+	      if (dnums[j] != -1 && (!subset || subset->Test(dnums[j])))
 		{
 		  int dn = dnums[j];
 		  globid[3*dn+0] = int(nt);
@@ -1470,7 +1474,6 @@ MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArr
       MyMPI_Send (cols, 0);
       MyMPI_Send (vals, 0);
       MyMPI_Send (globid, 0);
-      cout << "have sent, id = " << id << endl;
     }
 
   else
@@ -1493,12 +1496,13 @@ MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArr
 	  MyMPI_Recv (hvals, src);
 	  MyMPI_Recv (hglobid, src);
 
-	  /*
+
 	  *testout << "got from proc " << src << ":" << endl
 		   << "rows = " << endl << hrows << endl
 		   << "cols = " << endl << hcols << endl
+		   << "vals = " << endl << hvals << endl
 		   << "globid = " << endl << hglobid << endl;
-	  */
+
 
 	  for (int i = 0; i < hrows.Size(); i++)
 	    if (hglobid[3*hrows[i]] < 0)
@@ -1573,8 +1577,6 @@ MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArr
 
       SparseMatrixSymmetric<TM> matrix(els_per_row);
 
-      cout << "init entries" << endl;
-
       for (int i = 0; i < rows.Size(); i++)
 	{
 	  int r = rows[i], c = cols[i];
@@ -1582,8 +1584,6 @@ MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArr
 	  matrix.CreatePosition(r, c);
 	}
       matrix.AsVector() = 0.0;
-
-      cout << "fill entries" << endl;
 
       for (int i = 0; i < rows.Size(); i++)
 	{
@@ -1594,12 +1594,10 @@ MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArr
       // *testout << "matrix = " << endl << matrix << endl;
 
       cout << "have matrix, now invert" << endl;
-
+      // *testout << "wbmatrix = " << endl << matrix << endl;
+      
       // inv = new SparseCholesky<TM> (matrix);
       inv = new PardisoInverse<TM> (matrix, 0, 0, true);
-
-      // *testout << "inv = " << endl << *inv << endl;
-      cout << "complete" << endl;
     }
 
   MPI_Barrier (MPI_COMM_WORLD);
@@ -1653,7 +1651,11 @@ void MasterInverse<TM> :: MultAdd (double s, const BaseVector & x, BaseVector & 
 	    hx(selecti[i]) += lx[i];
 	}
 
+      // *testout << "before *inv, hx = " << endl << hx << endl;
+
       hy = (*inv) * hx;
+
+      // *testout << "before *inv, hy = " << endl << hy << endl;
 
       for (int src = 1; src < ntasks; src++)
 	{
@@ -1700,6 +1702,11 @@ void ParallelMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector 
 
 
 
+BaseVector * ParallelMatrix :: CreateVector () const
+{
+  cerr << "ParallelMatrix::CreateVector not implemented" << endl;
+  return NULL;
+}
 
 
 

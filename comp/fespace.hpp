@@ -211,7 +211,7 @@ namespace ngcomp
     /// get dofs on nr'th node of type nt.
     virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const;
     /// get number of low-order dofs for node of type nt
-    virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const;
+    // virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const;
     // { return lodofs_per_node[nt]; }
 
     /// get dofs on vertex vnr
@@ -370,7 +370,7 @@ namespace ngcomp
     ParallelDofs & GetParallelDofs () const { return *paralleldofs; }
 
     virtual void UpdateParallelDofs ();
-    virtual void UpdateParallelDofs ( LocalHeap & lh );
+    // virtual void UpdateParallelDofs ( LocalHeap & lh );
 
     virtual void UpdateParallelDofs_hoproc();
     virtual void UpdateParallelDofs_loproc();
@@ -433,10 +433,15 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
+    virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const
+    { return (nt == NT_VERTEX) ? 1 : 0; }
+
+
+
     //virtual Array<int> * CreateDirectSolverClusters (int type = 0) const;
     virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOT_JS
     virtual void UpdateParallelDofs_hoproc();
     // virtual void UpdateParallelDofs_loproc();
 #endif
@@ -509,7 +514,19 @@ namespace ngcomp
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
-#ifdef PARALLEL
+
+    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const 
+    { dnums.SetSize (0); }
+    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const
+    { dnums.SetSize (0); }
+    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const
+    { dnums.SetSize (0); }
+    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const
+    { GetDofNrs (elnr, dnums); }
+
+
+
+#ifdef PARALLEL_NOT_JS
     virtual void UpdateParallelDofs_hoproc();
     virtual void UpdateParallelDofs_loproc();
 #endif
@@ -656,7 +673,7 @@ namespace ngcomp
 
     inline int GetNSpaces () const { return spaces.Size(); } 
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOT_JS_20110614
     virtual void UpdateParallelDofs_hoproc();
     virtual void UpdateParallelDofs_loproc();
 #endif
@@ -666,7 +683,7 @@ namespace ngcomp
 
 
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOT_JS
   class ParallelElementFESpace : public ElementFESpace
   {
   public:

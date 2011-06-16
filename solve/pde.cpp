@@ -660,6 +660,7 @@ namespace ngsolve
 
 		    fes -> Update(lh);
 		    fes -> FinalizeUpdate(lh);
+
 		    lh.CleanUp();
 
 		    if (fes->GetDimension() == 1)
@@ -1023,7 +1024,6 @@ namespace ngsolve
     if (flags.GetDefineFlag ("symtensor")) 
       flags.SetFlag ("dim", ma.GetDimension()*(ma.GetDimension()+1) / 2);
 
-    int order = int(flags.GetNumFlag ("order", -1));
     string type = flags.GetStringFlag("type", "");
     
     if (type != "") // this should become standard
@@ -1033,13 +1033,13 @@ namespace ngsolve
 	    if (type == GetFESpaceClasses().GetFESpaces()[i]->name)
 	      {
 		space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
-
-		if ( id == 0 && ntasks > 1)
+		
+		if (id == 0 && ntasks > 1)
 		  {
 		    FESpace * hospace = space;
 		    // low order space if existent
-		    space = & hospace -> LowOrderFESpace();
-
+		    // space = & hospace -> LowOrderFESpace();
+		    space = NULL;
 		    // else space, but with  order 0
 		    if ( space == 0 )
 		      {
@@ -1062,8 +1062,21 @@ namespace ngsolve
 	if (!space) 
 	  cout << "warning: unknown fespace type " << type << endl;
       }
-    else // old method
+    else if (flags.GetDefineFlag ("compound"))
       {
+	const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
+        if (printmessage_importance>0)
+          cout << "   spaces=" << spacenames << endl;
+	Array<FESpace*> cspaces (spacenames.Size());
+	for (int i = 0; i < cspaces.Size(); i++)
+	  cspaces[i] = GetFESpace (spacenames[i]);
+	space = new CompoundFESpace (GetMeshAccess(), cspaces, flags);
+      }
+    else
+      {
+	throw Exception ("define fespace without -type=<typename>");
+	/*
+	// old method
 	for (int i = 0; i < GetFESpaceClasses().GetFESpaces().Size(); i++)
 	  {
 	    if (flags.GetDefineFlag (GetFESpaceClasses().GetFESpaces()[i]->name))
@@ -1091,26 +1104,7 @@ namespace ngsolve
 #endif
 	    
 	  }
-      }
-    
-    if (space) 
-      ;
-    else if (flags.GetDefineFlag ("compound"))
-      {
-	const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
-        if (printmessage_importance>0)
-          cout << "   spaces=" << spacenames << endl;
-	Array<FESpace*> cspaces (spacenames.Size());
-	for (int i = 0; i < cspaces.Size(); i++)
-	  cspaces[i] = GetFESpace (spacenames[i]);
-	space = new CompoundFESpace (GetMeshAccess(), cspaces, flags);
-      }
-    else
-      {
-	if (order <= 1)
-	  space = new NodalFESpace (GetMeshAccess(), flags);
-	else
-	  space = new H1HighOrderFESpace (GetMeshAccess(), flags);
+	*/
       }
     
     // if (flags.GetDefineFlag ("bem")) space->SetBEM (1);

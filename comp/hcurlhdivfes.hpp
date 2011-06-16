@@ -145,9 +145,8 @@ public:
   virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
   virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOT_JS
   virtual void UpdateParallelDofs_loproc();
-
   virtual void UpdateParallelDofs_hoproc();
 #endif
 
@@ -326,7 +325,7 @@ public:
 
 
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOTJS
 
 /// Lowest order Nedelec space, for parallel processing (edge elements)
 class ParallelNedelecFESpace : public NedelecFESpace
@@ -353,7 +352,6 @@ public:
   }
 
   virtual void UpdateParallelDofs_loproc();
-
   virtual void UpdateParallelDofs_hoproc();
 
 };

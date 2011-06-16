@@ -1989,8 +1989,10 @@ namespace ngcomp
 #ifdef PARALLEL
         if ( id > 0 )
           {
-            ParallelBaseMatrix & pbm = dynamic_cast<ParallelBaseMatrix &>(*mats.Last());
-            pbm . CalcConsistentMat(clh);
+	    cout << "cast to ParallelBaseMatrix" << endl;
+            ParallelBaseMatrix * pbm = dynamic_cast<ParallelBaseMatrix *>(mats.Last());
+	    if (pbm)
+	      pbm -> CalcConsistentMat(clh);
           }
 #endif
 
@@ -2964,8 +2966,9 @@ cout << "catch in AssembleBilinearform 2" << endl;
         MatrixGraph * consistentgraph = 
           // const_cast<FESpace&>(this->fespace).
 	  GetConsistentGraph(this->ma.GetNLevels()-1, false);
-        ParallelBaseMatrix& pbm = dynamic_cast<ParallelBaseMatrix&>(*this->mats.Last());
-        pbm . AllocateConsistentMat(*consistentgraph);
+        ParallelBaseMatrix * pbm = dynamic_cast<ParallelBaseMatrix*>(this->mats.Last());
+	if (pbm)
+	  pbm -> AllocateConsistentMat(*consistentgraph);
         delete consistentgraph;
       }  
     /*
@@ -3050,33 +3053,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
                     bool inner_element, int elnr,
                     LocalHeap & lh) 
   {
-    // #pragma omp critical (addelmat)
-    {
-      TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
-      //FlatArray<int> colpos(dnums2.Size(), lh);
-
-      mat.AddElementMatrix (dnums1, dnums2, elmat);
-
-#ifdef OLD
-      for (int i = 0; i < dnums1.Size(); i++)
-        for (int j = 0; j < dnums2.Size(); j++)
-          if (dnums1[i] != -1 && dnums2[j] != -1)
-            {
-              AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
-                                     elmat, i, j);
-              /*
-                TM & mij = mat(dnums1[i], dnums2[j]);
-		
-                int hi = Height(mij);
-                int wi = Width(mij);
-		
-                for (int k = 0; k < hi; k++)
-                for (int l = 0; l < wi; l++)
-                mij(k,l) += elmat(i*hi+k, j*wi+l);
-              */
-            }
-#endif
-    }
+    TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
+    mat.AddElementMatrix (dnums1, dnums2, elmat);
   }
 
 
@@ -3089,20 +3067,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
                     LocalHeap & lh) 
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&>(*this->mats.Last());
-    
-    // pragma omp critical (addelmat)
-    {
-      mat.AddElementMatrix (dnums1, dnums2, elmat);
-
-      /*
-	for (int i = 0; i < dnums1.Size(); i++)
-        for (int j = 0; j < dnums2.Size(); j++)
-	if (dnums1[i] != -1 && dnums2[j] != -1)
-	AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
-	elmat, i, j);
-      */
-      //mat(dnums1[i], dnums2[j]) += elmat(i, j);
-    }
+    mat.AddElementMatrix (dnums1, dnums2, elmat);
   }
 
 
@@ -3114,7 +3079,6 @@ cout << "catch in AssembleBilinearform 2" << endl;
                     LocalHeap & lh)
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
-
     // #pragma omp critical (addelmat)
     {
       for (int i = 0; i < dnums1.Size(); i++)
@@ -3268,6 +3232,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
     MatrixGraph * graph = GetGraph (this->ma.GetNLevels()-1, true);
 
 
+    /*
 #ifdef PARALLEL
     if ( ntasks > 1 )
       this->mats.Append ( new ParallelSparseMatrixSymmetric<TM,TV> 
@@ -3276,6 +3241,19 @@ cout << "catch in AssembleBilinearform 2" << endl;
 #endif
       this->mats.Append (new SparseMatrixSymmetric<TM,TV> 
                          (*graph, 1) );
+    */
+#define NEWVERSION
+#ifdef NEWVERSION
+    BaseMatrix * mat = new SparseMatrixSymmetric<TM,TV> (*graph, 1);
+#ifdef PARALLEL
+    if ( ntasks > 1 )
+      mat = new ParallelMatrix (*mat, this->GetFESpace().GetParallelDofs());
+#endif
+    this->mats.Append (mat);
+#endif
+    
+
+
 
     delete graph;
 
@@ -3299,8 +3277,9 @@ cout << "catch in AssembleBilinearform 2" << endl;
         MatrixGraph * consistentgraph = 
           // const_cast<FESpace&>(this->fespace).
 	  GetConsistentGraph(this->ma.GetNLevels()-1, true);
-        ParallelBaseMatrix& pbm = dynamic_cast<ParallelBaseMatrix&>(*this->mats.Last());
-        pbm . AllocateConsistentMat(*consistentgraph);
+        ParallelBaseMatrix * pbm = dynamic_cast<ParallelBaseMatrix*>(this->mats.Last());
+	if (pbm)
+	  pbm -> AllocateConsistentMat(*consistentgraph);
         delete consistentgraph;
       }     
     /*
@@ -3357,121 +3336,20 @@ cout << "catch in AssembleBilinearform 2" << endl;
                     bool inner_element, int elnr,
                     LocalHeap & lh) 
   {
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
+    BaseMatrix * hmat = this->mats.Last();
+#ifdef PARALLEL
+    ParallelMatrix * parmat = dynamic_cast<ParallelMatrix*> (hmat);
+    if (parmat) hmat = &parmat->GetMatrix();
+#endif   
 
-    // #pragma omp critical (addelmat)
-    {
-      mat.AddElementMatrix (dnums1, elmat);
+    TMATRIX & mat = dynamic_cast<TMATRIX&> (*hmat);
 
-#ifdef OLD
-      for (int i = 0; i < dnums1.Size(); i++)
-        for (int j = 0; j < dnums2.Size(); j++)
-          if (dnums1[i] != -1 && dnums2[j] != -1 &&
-              dnums1[i] >= dnums2[j])
-            {
-
-              AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
-                                     elmat,
-                                     i,j);
-              /*
-                TM & mij = mat(dnums1[i], dnums2[j]);
-                int hi = Height (mij);
-                int wi = Width (mij);
-	  
-                for (int k = 0; k < hi; k++)
-                for (int l = 0; l < wi; l++)
-                mij(k,l) += elmat(i*hi+k, j*wi+l);
-              */
-            }
-#endif
-    }
+    mat.AddElementMatrix (dnums1, elmat);
   }
 
 
 
 
-
-  template <> void T_BilinearFormSymmetric<double,double>::
-  AddElementMatrix (const Array<int> & dnums1,
-                    const Array<int> & dnums2,
-                    const FlatMatrix<double> & elmat,
-                    bool inner_element, int elnr,
-                    LocalHeap & lh) 
-  {
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
-
-    // #pragma omp critical (addelmat)
-    {
-      mat.AddElementMatrix (dnums1, elmat);
-
-      /*
-	static int addtimer = NgProfiler::CreateTimer ("Element matrix insertion");
-	NgProfiler::RegionTimer reg(addtimer);
-
-	for (int i = 0; i < dnums1.Size(); i++)
-        if (dnums1[i] != -1)
-	for (int j = 0; j < dnums2.Size(); j++)
-	if (dnums2[j] != -1 && dnums1[i] >= dnums2[j])
-	AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]), elmat, i,j);
-      */
-    }
-    // mat(dnums1[i], dnums2[j]) += elmat(i, j);
-  }
-
-  template <> void T_BilinearFormSymmetric<Complex,Complex>::
-  AddElementMatrix (const Array<int> & dnums1,
-                    const Array<int> & dnums2,
-                    const FlatMatrix<Complex> & elmat,
-                    bool inner_element, int elnr,
-                    LocalHeap & lh) 
-  {
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (*mats.Last());
-  
-    // #pragma omp critical (addelmat)
-    {
-      static int addtimer = NgProfiler::CreateTimer ("Element matrix insertion, Complex-Complex");
-      NgProfiler::RegionTimer reg(addtimer);
-
-      mat.AddElementMatrix (dnums1, elmat);
-
-      /*
-	for (int i = 0; i < dnums1.Size(); i++)
-        for (int j = 0; j < dnums2.Size(); j++)
-	if (dnums1[i] != -1 && dnums2[j] != -1 && 
-	dnums1[i] >= dnums2[j])
-	AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
-	elmat,
-	i,j);
-      */
-    }
-    //mat(dnums1[i], dnums2[j]) += elmat(i, j);
-  }
-
-  template <> void T_BilinearFormSymmetric<double,Complex>::
-  AddElementMatrix (const Array<int> & dnums1,
-                    const Array<int> & dnums2,
-                    const FlatMatrix<double> & elmat,
-                    bool inner_element, int elnr,
-                    LocalHeap & lh) 
-  {
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (*mats.Last());
-    // #pragma omp critical (addelmat)  
-    {
-      static int addtimer = NgProfiler::CreateTimer ("Element matrix insertion, double-Complex");
-      NgProfiler::RegionTimer reg(addtimer);
-
-      mat.AddElementMatrix (dnums1, elmat);
-    
-      /*
-	for (int i = 0; i < dnums1.Size(); i++)
-	for (int j = 0; j < dnums2.Size(); j++)
-	if (dnums1[i] != -1 && dnums2[j] != -1 && 
-	dnums1[i] >= dnums2[j])
-	AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]), elmat, i,j);
-	//mat(dnums1[i], dnums2[j]) += elmat(i, j);
-	*/
-    }
-  }
 
 
   template <class TM, class TV>

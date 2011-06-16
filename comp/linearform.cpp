@@ -63,7 +63,7 @@ namespace ngcomp
   // VVector<TV> & 
   BaseVector & T_LinearForm<TV> :: GetVector () const 
   { 
-#ifdef PARALLEL
+#ifdef PARALLELxx
     const FESpace & afespace = LinearForm :: GetFESpace();
     ParallelBaseVector * parvec = dynamic_cast<ParallelBaseVector*> (vec);
     if (parvec)
@@ -539,10 +539,13 @@ namespace ngcomp
 	    (*testout) << GetVector() << endl;
 	  }
 
+	/*
+	double norm = GetVector().L2Norm();
+	if (id == 0) cout << "|f| = " << norm << endl;
+	*/
+
 	ma.PopStatus ();
 	// (*testout) << "Linearform, vec = " << endl << GetVector() << endl;
-
-
       }
     catch (Exception & e)
       {
@@ -749,10 +752,16 @@ namespace ngcomp
     delete vec;
     const FESpace & afespace = this->fespace;
     if ( &afespace.GetParallelDofs() == 0 )
-      vec = new VVector<TV> (afespace.GetNDof());
+      {
+	vec = new VVector<TV> (afespace.GetNDof());
+	(*vec) = TSCAL(0);
+      }
     else
-      vec = new ParallelVVector<TV> ( afespace.GetNDof(),& afespace.GetParallelDofs());
-    (*vec) = TSCAL(0);
+      {
+	vec = new ParallelVVector<TV> ( afespace.GetNDof(),& afespace.GetParallelDofs());
+	(*vec) = TSCAL(0);
+	dynamic_cast<ParallelBaseVector*> (vec) -> SetStatus (DISTRIBUTED);
+      }
 //     allocated=true;
   }
 #endif

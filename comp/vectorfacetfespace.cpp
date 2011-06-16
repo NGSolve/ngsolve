@@ -304,14 +304,6 @@ namespace ngcomp
 
     UpdateCouplingDofArray();
     FinalizeUpdate (lh);
-
-#ifdef PARALLEL
-    *testout << "update parallel dofs in facet-fespace, ndof " << ndof << endl;
-    UpdateParallelDofs();
-    *testout << "juhu, my paralleldofs " << endl;
-    paralleldofs -> Print();
-#endif
-
   }
 
 
@@ -697,7 +689,7 @@ namespace ngcomp
       dnums.Append(j);
   }
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOTJS
   void VectorFacetFESpace :: UpdateParallelDofs_hoproc()
   { 
     // ******************************
