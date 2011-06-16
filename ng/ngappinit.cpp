@@ -175,6 +175,10 @@ int main(int argc, char ** argv)
   
       if(parameters.GetDefineFlag("batchmode"))
         nodisplay = true;
+      if(parameters.GetDefineFlag("solve"))
+        nodisplay = true;
+
+
     
       if(parameters.GetDefineFlag("shellmode"))
         {

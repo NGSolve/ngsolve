@@ -89,8 +89,8 @@ if { [catch { load libgeom2dvis[info sharedlibextension] Ng_Geom2d } result ] } 
     puts "error: $result"
 }
 
-source ${ngdir}/csgeom.tcl
-source ${ngdir}/stlgeom.tcl
+catch { source ${ngdir}/csgeom.tcl }
+catch { source ${ngdir}/stlgeom.tcl }
 
 set hasocc no
 catch { source ${ngdir}/occgeom.tcl }
