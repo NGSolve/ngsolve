@@ -52,8 +52,6 @@ namespace ngcomp
     ///
     virtual ~FacetFESpace ();
     ///
-    // static FESpace * Create (const MeshAccess & ma, const Flags & flags);
-    ///
     virtual string GetClassName () const
     {
       return "FacetFESpace";
@@ -75,13 +73,19 @@ namespace ngcomp
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     ///
-    virtual void GetFacetDofNrs (int felnr, Array<int> & dnums) const
+
+    IntRange GetFacetDofs (int nr) const
+    { 
+      return IntRange (first_facet_dof[nr], first_facet_dof[nr+1]); 
+    }
+  
+    virtual void GetFacetDofNrs (int nr, Array<int> & dnums) const
     {
       dnums.SetSize(0);
-      dnums.Append(felnr);
-      for (int j=first_facet_dof[felnr]; j<first_facet_dof[felnr+1]; j++)
-	dnums.Append(j);
+      dnums += nr;
+      dnums += GetFacetDofs(nr);
     }
+
     ///
     virtual int GetNFacetDofs (int felnr) const 
     { return (first_facet_dof[felnr+1]-first_facet_dof[felnr] + 1); }
@@ -101,34 +105,32 @@ namespace ngcomp
     { return order_facet[fnr]; };
   
 
-  
-    virtual int GetFirstFacetDof(int fanr) const {return (first_facet_dof[fanr]);}; 
+    virtual int GetFirstFacetDof(int fanr) const 
+    {
+      return first_facet_dof[fanr];
+    }
 
-
-    virtual void GetVertexDofNrs ( int elnum, Array<int> & dnums ) const
+    virtual void GetVertexDofNrs ( int nr, Array<int> & dnums ) const
     {
       dnums.SetSize(0);
     }
 
-    virtual void GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const
+    virtual void GetEdgeDofNrs ( int nr, Array<int> & dnums ) const
     {
       dnums.SetSize(0);
-      if ( ma.GetDimension() == 3 )
-	return;
+      if ( ma.GetDimension() == 3 ) return;
 
-      dnums.Append(elnum);
-      for (int j=first_facet_dof[elnum]; j<first_facet_dof[elnum+1]; j++)
-	dnums.Append(j);
+      dnums += nr;
+      dnums += GetFacetDofs(nr);
     }
 
-    virtual void GetFaceDofNrs (int felnr, Array<int> & dnums) const
+    virtual void GetFaceDofNrs (int nr, Array<int> & dnums) const
     {
       dnums.SetSize(0);
-      if ( ma.GetDimension() == 2 ) return;
+      if (ma.GetDimension() == 2) return;
 
-      dnums.Append(felnr);
-      for (int j=first_facet_dof[felnr]; j<first_facet_dof[felnr+1]; j++)
-	dnums.Append(j);
+      dnums += nr;
+      dnums += GetFacetDofs(nr);
     }
   
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const

@@ -33,8 +33,10 @@ namespace ngcomp
     
     void NEBEConstructor()  
     {
-
-
+      *testout << "NEBE Constructor" << endl;
+      cout << "NEBE Constructor" << endl;
+      MPI_Barrier( MPI_COMM_WORLD );
+      cout << "everyone here" << endl;
 
       cout << "BDDC-marix NEBE const" << endl;
       const FESpace & fes = bfa.GetFESpace();
@@ -78,6 +80,8 @@ namespace ngcomp
       multiple.SetSize (fes.GetNDof());
       multiple = 0;
 
+      *testout << "freedofs pointer = " << fes.GetFreeDofs() << endl;
+      
       //Check how often each interfacedof/wirebasketdof appears 
       //TODO: (CL): Wann/Wo kommt die Gewichtung rein?
       for (int i = 0; i < ne; i++)
@@ -111,7 +115,7 @@ namespace ngcomp
 
 
 #ifdef PARALLEL
-
+      *testout << "communicate multiple" << endl;
       // accumulate multiple
       ParallelVVector<double> pv_multiple (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
 
@@ -127,7 +131,6 @@ namespace ngcomp
 	  for (int i = 0; i < multiple.Size(); i++)
 	    multiple[i] = pv_multiple(i);
 	}
-
 #endif
 
 
@@ -300,18 +303,24 @@ namespace ngcomp
 
 
       free_dofs = new BitArray (ndof);
+
       free_dofs->Clear();
+
+
+
+      *free_dofs = wbdof;
+      if (fes.GetFreeDofs())
+	free_dofs -> And (*fes.GetFreeDofs());
       int cntfreedofs=0;
-      for (int i = 0; i < ndof; i++)
-	{
-	  if (wbdof.Test(i)){
-	    if ((fes.GetFreeDofs()==NULL) || fes.GetFreeDofs()->Test(i)){
-	      free_dofs->Set(i);
-	      cntfreedofs ++;
-	    }
-	  }
-	}
-	
+      for (int i = 0; i < free_dofs->Size(); i++)
+	if (free_dofs->Test(i)) cntfreedofs++;
+
+
+      *testout << "fes.GetFreeDofs() = " << fes.GetFreeDofs() << endl;
+      *testout << "BDDC - precond, orig freedofs = " << *fes.GetFreeDofs() << endl;
+      *testout << "local freedofs = " << *free_dofs << endl;
+      *testout << "wbdof = " << wbdof << endl;
+
 
       if (block){
 	//Smoothing Blocks
@@ -343,17 +352,24 @@ namespace ngcomp
       else
       {
 #ifdef PARALLEL
-	inv = new MasterInverse<double> (wbmat, free_dofs, &bfa.GetFESpace().GetParallelDofs());
-	tmp = new ParallelVVector<>(ndof, &bfa.GetFESpace().GetParallelDofs());
-	subassembled_innersolve = new ParallelMatrix (*subassembled_innersolve, bfa.GetFESpace().GetParallelDofs());
-	subassembled_harmonicext = new ParallelMatrix (*subassembled_harmonicext, bfa.GetFESpace().GetParallelDofs());
-	subassembled_harmonicexttrans = new ParallelMatrix (*subassembled_harmonicexttrans, bfa.GetFESpace().GetParallelDofs());
-#else
-	cout << "call wirebasket inverse ( with " << cntfreedofs << " free dofs )" << endl;
-	inv = wbmat.InverseMatrix(free_dofs);
-	cout << "has inverse" << endl;
-	tmp = new VVector<>(ndof);
+	if (ntasks > 1)
+	  {
+	    *testout << "bddc, local wbmatrix = " << endl << wbmat << endl;
+	    inv = new MasterInverse<double> (wbmat, free_dofs, &bfa.GetFESpace().GetParallelDofs());
+	    tmp = new ParallelVVector<>(ndof, &bfa.GetFESpace().GetParallelDofs());
+	    subassembled_innersolve = new ParallelMatrix (*subassembled_innersolve, bfa.GetFESpace().GetParallelDofs());
+	    subassembled_harmonicext = new ParallelMatrix (*subassembled_harmonicext, bfa.GetFESpace().GetParallelDofs());
+	    subassembled_harmonicexttrans = new ParallelMatrix (*subassembled_harmonicexttrans, bfa.GetFESpace().GetParallelDofs());
+	  }
+	else
 #endif
+	  {
+	    cout << "call wirebasket inverse ( with " << cntfreedofs << " free dofs )" << endl;
+	    *testout << "wbmat = " << endl << wbmat << endl;
+	    inv = wbmat.InverseMatrix(free_dofs);
+	    cout << "has inverse" << endl;
+	    tmp = new VVector<>(ndof);
+	  }
       }
     };
 
@@ -633,13 +649,14 @@ namespace ngcomp
     }
     
 
-
+    
     virtual void MultAddNEBE (double s, const BaseVector & x, BaseVector & y) const
     {
 #ifdef PARALLEL
-      dynamic_cast<const ParallelBaseVector&> (x) . AllReduce (&hoprocs);
+      const ParallelBaseVector * parx = dynamic_cast<const ParallelBaseVector*> (&x);
+      if (parx) parx -> AllReduce (&hoprocs);
 #endif
-
+    
       static Timer timer ("Apply BDDC preconditioner");
       static Timer timerifs ("Apply BDDC preconditioner - apply ifs");
       static Timer timerwb ("Apply BDDC preconditioner - wb solve");
@@ -660,7 +677,6 @@ namespace ngcomp
 	y += *subassembled_harmonicexttrans * x;
       
       timerharmonicexttrans.Stop();
-      
 
       timerwb.Start();
       *tmp = 0;
@@ -692,12 +708,13 @@ namespace ngcomp
       
       y = *tmp;
       y += *subassembled_harmonicext * *tmp;
-      
+    
       timerharmonicext.Stop();
 
 
 #ifdef PARALLEL
-      dynamic_cast<const ParallelBaseVector&> (y) . AllReduce (&hoprocs);
+      const ParallelBaseVector * pary = dynamic_cast<const ParallelBaseVector*> (&y);
+      if (pary) pary -> AllReduce (&hoprocs);
 #endif
     }    
     

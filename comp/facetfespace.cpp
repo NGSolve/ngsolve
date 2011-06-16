@@ -2,14 +2,13 @@
 #include <comp.hpp>
 #include <fem.hpp> 
 
-#include <parallelngs.hpp>
+// #include <parallelngs.hpp>
 
 #include "../fem/facethofe.hpp"
 
 namespace ngcomp
 {
-  using namespace ngfem ;
-  using namespace ngparallel;
+  using namespace ngfem;
 
   // ------------------------------------------------------------------------
   FacetFESpace ::  FacetFESpace (const MeshAccess & ama, const Flags & flags, bool checkflags)
@@ -31,9 +30,12 @@ namespace ngcomp
     loflags.SetFlag("order",0.0);
     if ( this->IsComplex() )
       loflags.SetFlag("complex");
+
+    /*
     if (order != 0)
       low_order_space = new FacetFESpace(ma, loflags);
     else
+    */
       low_order_space = 0;
         
     // #ifdef PARALLEL
@@ -44,7 +46,7 @@ namespace ngcomp
     //      in case of (var_order && order) or (relorder) 
     var_order = flags.GetDefineFlag("variableorder");  
     order =  int (flags.GetNumFlag ("order",0)); 
-    
+
     if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order")) 
       var_order = 1; 
     
@@ -311,8 +313,8 @@ namespace ngcomp
     // FinalizeUpdate (lh);
 
 #ifdef PARALLEL
-    *testout << "update parallel dofs in facet-fespace, ndof " << ndof << endl;
-    UpdateParallelDofs();
+    // *testout << "update parallel dofs in facet-fespace, ndof " << ndof << endl;
+    // UpdateParallelDofs();
 #endif
   }
 
@@ -391,7 +393,7 @@ namespace ngcomp
     for (int j = 0; j < fanums.Size(); j++)
       order_fa[j] = order_facet[fanums[j]][0]; //SZ not yet anisotropric
     
-#ifdef PARALLEL
+#ifdef PARALLELxx
     if ( ntasks > 1 )
       for ( int i = 0; i < vnums.Size(); i++ )
         vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
@@ -453,7 +455,7 @@ namespace ngcomp
     switch (ma.GetSElType(selnr))
       {
       case ET_SEGM:
-#ifdef PARALLEL
+#ifdef PARALLELxx
 	if ( ntasks > 1 )
 	  for ( int i = 0; i < vnums.Size(); i++ )
 	    vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
@@ -466,7 +468,7 @@ namespace ngcomp
         break;
       case ET_TRIG: 
       case ET_QUAD:
-#ifdef PARALLEL
+#ifdef PARALLELxx
 	if ( ntasks > 1 )
 	  for ( int i = 0; i < vnums.Size(); i++ )
 	    vnums[i] = parallelma->GetDistantPNum(0, vnums[i]);
@@ -1111,6 +1113,7 @@ public:
                    const Flags & flags)
     : CompoundFESpace (ama, flags)
   { 
+    cout << "id = " << id << " !!! HybridDGFESpace !!!" << endl;
     Flags l2flags(flags), facetflags(flags);
 
     int order = int (flags.GetNumFlag ("order", 1));

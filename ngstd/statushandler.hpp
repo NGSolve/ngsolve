@@ -10,6 +10,7 @@ namespace ngstd
   class DLL_HEADER BaseStatusHandler
   {
   public:
+    virtual ~BaseStatusHandler () { ; }
     virtual void PushStatus (const char * str) const = 0;
 
     virtual void PopStatus () const = 0;

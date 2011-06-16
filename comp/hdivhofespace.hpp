@@ -140,7 +140,7 @@ namespace ngcomp
       else return 0; 
     }
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOT_JS
     virtual void UpdateParallelDofs_hoproc();
     virtual void UpdateParallelDofs_loproc();
 #endif

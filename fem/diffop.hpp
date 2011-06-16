@@ -146,6 +146,7 @@ namespace ngfem
   class DifferentialOperator
   {
   public:
+    virtual ~DifferentialOperator ();
     virtual int Dim() const = 0;    
     virtual bool Boundary() const = 0;
 

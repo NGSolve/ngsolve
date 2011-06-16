@@ -332,7 +332,7 @@ namespace ngcomp
     FinalizeUpdate (lh);
 
 #ifdef PARALLEL
-    UpdateParallelDofs();
+    // UpdateParallelDofs();
 #endif
 
   }
@@ -1353,7 +1353,7 @@ namespace ngcomp
 
   }
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOT_JS
 
   void HDivHighOrderFESpace :: UpdateParallelDofs_hoproc()
   {

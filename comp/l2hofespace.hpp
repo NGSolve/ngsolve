@@ -99,11 +99,6 @@ namespace ngcomp
     virtual int GetNElemDofs(int elnr) const 
     { return(first_element_dof[elnr+1] - first_element_dof[elnr]+1); }
     */
- 
-#ifdef PARALLEL
-    virtual void UpdateParallelDofs_hoproc();
-    virtual void UpdateParallelDofs_loproc();
-#endif
   };
 
 

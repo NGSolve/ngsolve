@@ -250,7 +250,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (int i=0; i< specialelements.Size(); i++)
       delete specialelements[i]; 
     specialelements.SetSize(0);
-    if (dirichlet_boundaries.Size())
+
+
       {
 	int dim = ma.GetDimension();
 
@@ -263,37 +264,41 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	dirichlet_edge = false;
 	dirichlet_face = false;
 
-	for (int i = 0; i < ma.GetNSE(); i++)
-	  {
-	    int ind = ma.GetSElIndex (i);
-	    if (dirichlet_boundaries.Test(ind))
-	      {
-		Ng_Element ngel = ma.GetSElement(i);
-
-		for (int j = 0; j < ngel.vertices.Size(); j++)
-		  dirichlet_vertex[ngel.vertices[j]] = true;
-
-		for (int j = 0; j < ngel.edges.Size(); j++)
-		  dirichlet_edge[ngel.edges[j]] = true;
-
-		if (dim == 3)
-		  dirichlet_face[ngel.faces[0]] = true;
-		// ma.GetSElVertices (i, vnums);
-		// ma.GetSElEdges (i, ednums);
-                // if (dim == 3)
-		// fanum = ma.GetSElFace (i);
-
-		// for (int j = 0; j < vnums.Size(); j++)
-		// dirichlet_vertex[vnums[j]] = true;
-		// for (int j = 0; j < ednums.Size(); j++)
-		// dirichlet_edge[ednums[j]] = true;			
-
-                // if (dim == 3)
-		// dirichlet_face[fanum] = true;
-	      }
-	  }
+	if (dirichlet_boundaries.Size())
+	  for (int i = 0; i < ma.GetNSE(); i++)
+	    {
+	      int ind = ma.GetSElIndex (i);
+	      if (dirichlet_boundaries.Test(ind))
+		{
+		  Ng_Element ngel = ma.GetSElement(i);
+		  
+		  for (int j = 0; j < ngel.vertices.Size(); j++)
+		    dirichlet_vertex[ngel.vertices[j]] = true;
+		  
+		  for (int j = 0; j < ngel.edges.Size(); j++)
+		    dirichlet_edge[ngel.edges[j]] = true;
+		  
+		  if (dim == 3)
+		    dirichlet_face[ngel.faces[0]] = true;
+		  // ma.GetSElVertices (i, vnums);
+		  // ma.GetSElEdges (i, ednums);
+		  // if (dim == 3)
+		  // fanum = ma.GetSElFace (i);
+		  
+		  // for (int j = 0; j < vnums.Size(); j++)
+		  // dirichlet_vertex[vnums[j]] = true;
+		  // for (int j = 0; j < ednums.Size(); j++)
+		  // dirichlet_edge[ednums[j]] = true;			
+		  
+		  // if (dim == 3)
+		  // dirichlet_face[fanum] = true;
+		}
+	    }
 
 #ifdef PARALLEL
+
+	cout << "exchange dirichlet vertices" << endl;
+
 	DynamicTable<int> dist_dir_vertex(ntasks);
 	if (id != 0)
 	  {
@@ -306,11 +311,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		      if (distnum >= 0)
 			dist_dir_vertex.Add (dist, distnum);
 		    }
-	    // *testout << "dist_dir_vertex = " << dist_dir_vertex << endl;
+	    *testout << "dist_dir_vertex = " << dist_dir_vertex << endl;
 
 	    for (int dist = 1; dist < ntasks; dist++)
 	      if (id != dist)
 		{
+		  *testout << "send to " << dist << endl;
+		  cout << "me = " << id << " you = " << dist << endl;
+
 		  Array<int> dirvert;
 		  if (dist < id)
 		    {
@@ -335,16 +343,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		if (m0 > m1) cerr << endl << endl << "Wrong ordering !!!!" << endl << endl;
 	      }
 	  }
-		
+
+
+	cout << "exchange dirichlet vertices done" << endl;		
 #endif	
 
 	(*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
 	(*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;
 	(*testout) << "Dirichlet_face = " << endl << dirichlet_face << endl;
       }
-      else 
-	(*testout) << "No Dirichlet boundaries!" << endl;
-            
   }
 
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
@@ -355,21 +362,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     RegionTimer reg (timer);
 
-    if (dirichlet_boundaries.Size())
       {
 	dirichlet_dofs.SetSize (GetNDof());
 	dirichlet_dofs.Clear();
 	Array<int> dnums;
-	for (int i = 0; i < ma.GetNSE(); i++)
-	  {
-	    if (dirichlet_boundaries[ma.GetSElIndex(i)])
-	      {
-		GetSDofNrs (i, dnums);
-		for (int j = 0; j < dnums.Size(); j++)
-		  if (dnums[j] != -1)
-		    dirichlet_dofs.Set (dnums[j]);
-	      }
-	  }
+
+	if (dirichlet_boundaries.Size())
+	  for (int i = 0; i < ma.GetNSE(); i++)
+	    {
+	      if (dirichlet_boundaries[ma.GetSElIndex(i)])
+		{
+		  GetSDofNrs (i, dnums);
+		  for (int j = 0; j < dnums.Size(); j++)
+		    if (dnums[j] != -1)
+		      dirichlet_dofs.Set (dnums[j]);
+		}
+	    }
 
 
 	free_dofs.SetSize (GetNDof());
@@ -379,6 +387,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	*testout << "freedofs = " << endl << free_dofs << endl;
       }
     
+
+    
+    UpdateParallelDofs();
 
 
 
@@ -607,12 +618,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		     typeid(*this).name());
   }
 
+  /*
   int FESpace :: GetNLowOrderNodeDofs ( NODE_TYPE nt ) const
   {
     throw Exception (string("FESpace::GetNLowOrderNodeDofs called for class")+
 		     typeid(*this).name());
   }
-
+  */
 
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
@@ -916,31 +928,40 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if ( paralleldofs == 0 ) 
       paralleldofs = new ParallelDofs (*this);
+
+    paralleldofs -> Update();
     
     if ( id == 0 )
-      {
-	paralleldofs -> Update();
-	(*this).UpdateParallelDofs_loproc();
-      }
+      (*this).UpdateParallelDofs_loproc();
     else
-      {
-	paralleldofs -> Update();
-	(*this). UpdateParallelDofs_hoproc();
-      }
+      (*this).UpdateParallelDofs_hoproc();
 
+
+    *testout << "paralleldofs: " << endl;
     this->paralleldofs->UpdateMPIType();
-
     this->paralleldofs->Print();
   }
 
-
+  /*
   void FESpace :: UpdateParallelDofs ( LocalHeap & lh )
   {
     cout << "UPDATE PARALLELDOF (LH) NOT IMPLEMENTED!!!!" << endl;
   }
+  */
 
   void FESpace :: UpdateParallelDofs_loproc()
   {
+    {
+      Array<int> nexdof(ntasks); 
+      nexdof = 0;
+      paralleldofs->SetNExDof(nexdof);
+      paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
+      paralleldofs->ismasterdof.Clear();
+    }
+
+    return;   // JS 20110614
+    // if (!low_order_space) return;   // JS 20110614
+    
     *testout << "FESpace (ParallelNodal)::UpdateParallelDofs_loproc" << endl;
 
     const MeshAccess & ma = (*this). GetMeshAccess();
@@ -1098,18 +1119,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	*testout << "FESpace::UpdateParallelDofs_hoproc" << endl;
       
-	for (int node = 0; node < ma.GetNNodes (NT_VERTEX); node++)
-	  {
-	    *testout << "distnode[" << node << "] = " << endl;
-	    Array<int[2]> distantnodenums;
-	    parallelma -> GetDistantNodeNums (NT_VERTEX, node, distantnodenums);
-	    for (int j = 0; j < distantnodenums.Size(); j++)
-	      *testout << distantnodenums[j][0] << " " << distantnodenums[j][1] << endl;
-	  }
+	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+	  for (int node = 0; node < ma.GetNNodes (nt); node++)
+	    {
+	      *testout << "distnode[" << nt << "-" << node << "] = " << endl;
+	      Array<int[2]> distantnodenums;
+	      parallelma -> GetDistantNodeNums (nt, node, distantnodenums);
+	      for (int j = 0; j < distantnodenums.Size(); j++)
+		*testout << distantnodenums[j][0] << " " << distantnodenums[j][1] << endl;
+	    }
       }
     
 
-
+    
 
     // Find number of exchange dofs
     Array<int> nexdof(ntasks);
@@ -1134,16 +1156,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    nexdof[id] += dnums.Size();
 	    
 	    for (int dest = 1; dest < ntasks; dest++)
-	      if (parallelma -> GetDistantNodeNum (dest, nt, nr) >= 0 )
-		{
-		  *testout << " P" << dest;
-		  nexdof[dest] += dnums.Size(); 
-		}
+	      if (id != dest)
+		if (parallelma -> GetDistantNodeNum (dest, nt, nr) >= 0 )
+		  {
+		    *testout << " P" << dest;
+		    nexdof[dest] += dnums.Size(); 
+		  }
 	    *testout << endl;
 	  }
       }
-
-    nexdof[0] = LowOrderFESpace().GetNDof();
+    
+    nexdof[0] = 0;
+    // nexdof[0] = LowOrderFESpace().GetNDof();
 
     if (print)
       *testout << "nexdof = " << nexdof << endl;
@@ -1151,18 +1175,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     paralleldofs->SetNExDof(nexdof);
     paralleldofs->sorted_exchangedof = new Table<int> (nexdof);
 
-    Array<int> ** owndofs, ** distantdofs;
-    owndofs = new Array<int>* [ntasks];
-    distantdofs = new Array<int>* [ntasks];
-
-    for ( int i = 0; i < ntasks; i++ )
-      {
-	owndofs[i] = new Array<int>(1);
-	(*owndofs[i])[0] = GetNDof();
-	distantdofs[i] = new Array<int>(0);
-      }
-
-
+    nexdof = 0;
 
     Array<int> cnt_nexdof(ntasks);
     cnt_nexdof = 0;
@@ -1173,17 +1186,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // Parallel Node dofs
     // *******************
 
-
+    *testout << "update masterdof from fespace" << endl;
+    paralleldofs->ismasterdof.Set();
 
     for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
       {
 	// if ( eliminate_internal && nt == NT_CELL ) break;
-
-	for ( int dest = 0; dest < ntasks; dest++)
-	  {
-	    owndofs[dest]->SetSize(1);
-	    distantdofs[dest]->SetSize(0);
-	  }
 
 	for ( int node = 0; node < ma.GetNNodes(nt); node++ )
 	  if ( parallelma->IsExchangeNode(nt, node) )
@@ -1201,106 +1209,23 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		  int dest = distantnodenums[idest][0];
 		  int distnode = distantnodenums[idest][1];
 
-		  owndofs[dest]->Append ( distnode );
-		  owndofs[dest]->Append (int(paralleldofs->IsGhostDof(dnums[0])) );
-
 		  for ( int i=0; i<dnums.Size(); i++)
 		    {
 		      paralleldofs->SetExchangeDof ( dest, dnums[i] );
 		      paralleldofs->SetExchangeDof ( dnums[i] );
-		      owndofs[dest]->Append ( dnums[i] );
+
+		      (*(paralleldofs->sorted_exchangedof))[dest][nexdof[dest]] = dnums[i];
+		      nexdof[dest]++;
+		      if (dest < id) paralleldofs->ismasterdof.Clear (dnums[i]);
 		    }
 		}
 	    } 
-
-	
-	for (int dest = 1; dest < ntasks; dest++)
-	  if (dest != id)
-	    distantdofs[dest]->SetSize(owndofs[dest]->Size());
-
-	for (int dest = 1; dest < ntasks; dest ++ )
-	  if (dest != id)
-	    {
-	      MyMPI_ISend ( *owndofs[dest], dest, sendrequest[dest]);
-	      MyMPI_IRecv ( FlatArray<int> (*distantdofs[dest]), dest, recvrequest[dest]);
-	    }
-
-
-
-	for (int dest = 1; dest < ntasks; dest++) 
-	  {
-	    ii = 1;
-	    if (dest == id) continue;
-	    MPI_Wait (&recvrequest[dest], &status);
-
-	    // low order dofs first
-	    int n_lo = GetNLowOrderNodeDofs (nt);
-	    if (n_lo)
-	      while (ii < distantdofs[dest]->Size())
-		{
-		  int nodenum = (*distantdofs[dest])[ii++];
-		  int isdistghost = (*distantdofs[dest])[ii++];
-		  Array<int> dnums, lodnums;
-		  GetNodeDofNrs (nt, nodenum, dnums);
-		  for (int i = 0; i < n_lo; i++ )
-		    {
-		      (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
-		      if ( dest < id && !isdistghost )
-			paralleldofs->ismasterdof.Clear ( dnums[i] ) ;
-		      ii++;
-		      cnt_nexdof[dest]++;
-		    }
-		  ii += dnums.Size() - n_lo;
-		}
-	    // then the high order dofs
-	    ii = 1;
-	    while ( ii < distantdofs[dest]->Size() )
-	      {
-		int nodenum = (*distantdofs[dest])[ii++];
-		int isdistghost = (*distantdofs[dest])[ii++];
-		Array<int> dnums;
-		GetNodeDofNrs (nt, nodenum, dnums);
-
-		ii += n_lo;
-		for ( int i=n_lo; i<dnums.Size(); i++)
-		  {
-		    (*(paralleldofs->sorted_exchangedof))[dest][ cnt_nexdof[dest] ] = dnums[i];
-		    if ( dest < id && !isdistghost )
-		      paralleldofs->ismasterdof.Clear ( dnums[i] ) ;
-		    ii++; 
-		    cnt_nexdof[dest]++;
-		  }
-	      }
-	  }
-
-	for ( int dest = 1; dest < ntasks; dest ++ )
-	  if ( dest != id )
-	    MPI_Wait ( &sendrequest[dest], &status );
-
-	if (print)
-	  for (int dest = 1; dest < ntasks; dest++)
-	    {
-	      *testout << "owndofs[" << dest << "] = " << endl << *owndofs[dest] << endl;
-	      *testout << "distdofs[" << dest << "] = " << endl << *distantdofs[dest] << endl;
-	    }
       }
 
-
-
-    for ( int dest = id+1; dest < ntasks; dest++ )
+    for ( int dest = 1; dest < ntasks; dest++ )
       QuickSort ( (*(paralleldofs->sorted_exchangedof))[dest] );
 
-
-
-
-    for ( int i = 0; i < ntasks; i++ )
-      {
-	delete distantdofs[i];
-	delete owndofs[i];
-      }
-
-    delete [] owndofs;
-    delete [] distantdofs;
+    *testout << "sorted_exdof = " << endl << *(paralleldofs->sorted_exchangedof) << endl;
 
 
 
@@ -1310,6 +1235,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     *****************************/
 
+    return;   // JS 20110614
+
+#ifdef OLD
+
+    // if (!low_order_space) return;   // JS 20110614
 
     int ndof_lo = low_order_space->GetNDof();
 
@@ -1413,10 +1343,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     *testout << "sorted exdofs = " << endl
 	     << *paralleldofs->sorted_exchangedof << endl;
 
+#endif
 
 
-
-
+    /*
     Array<int> dirvert;
     MyMPI_Recv (dirvert);
     *testout << "dirvert = " << endl << dirvert << endl;
@@ -1441,6 +1371,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	      }
 	  }
       }
+    */
   }
 #endif
 
@@ -1593,7 +1524,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (timing) Timing();
 
 #ifdef PARALLEL
-    UpdateParallelDofs();
+    // UpdateParallelDofs();
 #endif
   }
 
@@ -1817,7 +1748,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
      for ( int i = 0; i < ntasks; i++ )
        {
 	 delete distantdofs[i];
-	 delete owndofs[i];
+	 delete owndofs[i]; 
        }
 
      delete [] owndofs;
@@ -1827,7 +1758,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 #endif
 
-#ifdef PARALLEL
+#ifdef PARALLEL__NOT_JS
   void NodalFESpace :: UpdateParallelDofs_hoproc ()
   {
     *testout << "Nodal::UpdateParallelDofs_hoproc" << endl;
@@ -2211,7 +2142,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // FinalizeUpdate (lh);
 
 #ifdef PARALLEL
-    UpdateParallelDofs();
+    // UpdateParallelDofs();
 #endif
   }
 
@@ -2267,7 +2198,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
   */
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOT_JS_20110614
 
 void ElementFESpace :: UpdateParallelDofs_hoproc()
   {
@@ -2406,7 +2337,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     // FinalizeUpdate (lh);
 
 #ifdef PARALLEL
-    UpdateParallelDofs();  
+    // UpdateParallelDofs();  
 #endif
   }
 
@@ -2787,7 +2718,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     nflevel.Append (nface);
 
 #ifdef PARALLEL
-    UpdateParallelDofs();
+    // UpdateParallelDofs();
 #endif
 
 #endif
@@ -2885,7 +2816,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
     Array<const Prolongation*> prols;
     prol = new CompoundProlongation (this, prols);
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOT_JS_20110614
     if ( ntasks == 1 ) return;
     Flags loflags;
     loflags.SetFlag("order",0.0);
@@ -2925,7 +2856,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 
     prol = new CompoundProlongation (this, prols);
 
-#ifdef PARALLEL
+#ifdef PARALLELxxx
     if ( ntasks == 1 ) return;
     Flags loflags;
     loflags.SetFlag("order",0.0);
@@ -2956,7 +2887,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   void CompoundFESpace :: Update(LocalHeap & lh)
   {
     FESpace :: Update (lh);
-    
+
     cummulative_nd.SetSize (spaces.Size()+1);
     cummulative_nd[0] = 0;
     for (int i = 0; i < spaces.Size(); i++)
@@ -2969,6 +2900,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
       ndlevel.Append (cummulative_nd.Last());
 
     prol -> Update();
+
 
     UpdateCouplingDofArray();
     // FinalizeUpdate (lh);
@@ -3002,15 +2934,16 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
 	dirichlet_dofs.Invert();
       }
 
+
     // (*testout) << "free_dofs = " << endl << free_dofs << endl;
 
     (*testout) << "Update compound fespace" << endl;
     (*testout) << "cummulative dofs start at " << cummulative_nd << endl;
     (*testout) << "dof coupling types " << ctofdof << endl;
-#ifdef PARALLEL
+#ifdef PARALLELxx
     if (low_order_space)
       low_order_space -> Update(lh);
-    UpdateParallelDofs();
+    // UpdateParallelDofs();
 #endif
   }
 
@@ -3200,7 +3133,7 @@ void ElementFESpace :: UpdateParallelDofs_hoproc()
   }
 
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOT_JS_20110614
   void CompoundFESpace :: UpdateParallelDofs_loproc()
   {
     // gather the paralleldofs of all the fespaces to cumulatedparalleldof
@@ -3266,7 +3199,7 @@ void CompoundFESpace::TransformMat<SliceMatrix<Complex> >
 
 
 
-#ifdef PARALLEL
+#ifdef PARALLEL_NOT_JS
 
   /*
   ParallelElementFESpace :: ParallelElementFESpace (const MeshAccess & ama,

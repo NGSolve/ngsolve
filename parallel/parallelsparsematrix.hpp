@@ -798,6 +798,13 @@ namespace ngla
     virtual ~ParallelMatrix ();
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
+
+    virtual BaseVector & AsVector() { return const_cast<BaseMatrix&> (mat).AsVector(); }
+    virtual const BaseVector & AsVector() const { return mat.AsVector(); }
+
+    BaseMatrix & GetMatrix() { return const_cast<BaseMatrix&> (mat); }
+    virtual BaseVector * CreateVector () const;
+
   };
 
 

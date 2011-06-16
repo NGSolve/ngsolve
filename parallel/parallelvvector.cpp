@@ -120,6 +120,8 @@ namespace ngla
       if ( paralleldofs->IsExchangeProc((*reduceprocs)[i]) )
 	exprocs.Append((*reduceprocs)[i]);
     
+    *testout << "exprocs = " << endl << exprocs << endl;
+
     int nexprocs = exprocs.Size();
     
     ParallelBaseVector * constvec = const_cast<ParallelBaseVector * > (this);
@@ -893,8 +895,12 @@ namespace ngla
     double globalsum = 0;
 
     MPI_Datatype MPI_SCAL = MyGetMPIType<double>();
+
+    *testout << "L2Norm, sum = " << sum << endl;
 	
     MPI_Allreduce (&sum, &globalsum, 1, MPI_SCAL, MPI_SUM, MPI_COMM_WORLD);
+
+    *testout << "L2Norm, globsum = " << globalsum << endl;
 
     return sqrt (globalsum);
   }

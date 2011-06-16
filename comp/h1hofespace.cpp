@@ -62,7 +62,8 @@ namespace ngcomp
     var_order = flags.GetDefineFlag("variableorder");  
     fixed_order = flags.GetDefineFlag("fixedorder");  
     order =  int (flags.GetNumFlag ("order",1)); 
-    
+    if (order < 1) order = 1;
+
     if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order")) 
       var_order = 1; 
     
@@ -306,9 +307,9 @@ namespace ngcomp
     
     UpdateCouplingDofArray ();
 
-#ifdef PARALLEL
-    UpdateParallelDofs();
-#endif
+    // #ifdef PARALLEL
+    // UpdateParallelDofs();
+    // #endif
 
 
     if (timing) Timing();
@@ -724,11 +725,13 @@ namespace ngcomp
     dnums += GetElementDofs (elnr);
   }
 
+  /*
   int H1HighOrderFESpace :: GetNLowOrderNodeDofs ( NODE_TYPE nt ) const
   {
     return (nt == NT_VERTEX) ? 1 : 0;
   }
-  
+  */
+
   void H1HighOrderFESpace :: 
   GetSDofNrs (int elnr, Array<int> & dnums) const
   {
