@@ -34,9 +34,6 @@ namespace ngcomp
     void NEBEConstructor()  
     {
       *testout << "NEBE Constructor" << endl;
-      cout << "NEBE Constructor" << endl;
-      MPI_Barrier( MPI_COMM_WORLD );
-      cout << "everyone here" << endl;
 
       cout << "BDDC-marix NEBE const" << endl;
       const FESpace & fes = bfa.GetFESpace();
