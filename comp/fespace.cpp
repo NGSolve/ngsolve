@@ -388,9 +388,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     
 
-    
+#ifdef PARALLEL    
     UpdateParallelDofs();
-
+#endif
 
 
     *testout << "coloring ... " << flush;
