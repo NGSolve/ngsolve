@@ -10,7 +10,8 @@ parallelsparsematrix.cpp parallelvvector.cpp superlu_dist.cpp
 libparallel_la_LIBADD = $(top_builddir)/comp/libngcomp.la
 
 include_HEADERS = paralleldofs.hpp parallelmeshaccess.hpp \
-parallelngs.hpp superlu_dist.hpp
+parallelngs.hpp superlu_dist.hpp parallelsparsematrix.hpp \
+parallelvector.hpp 
 
 
 libparallel_la_LDFLAGS = -avoid-version
