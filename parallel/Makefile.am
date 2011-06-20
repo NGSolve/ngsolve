@@ -10,7 +10,7 @@ parallelngs.cpp parallelvvector.cpp parallel_matrices.cpp
 libparallel_la_LIBADD = $(top_builddir)/comp/libngcomp.la
 
 include_HEADERS = paralleldofs.hpp parallelngs.hpp \
-parallelvector.hpp parallel_matrices.hpp
+parallelvector.hpp parallel_matrices.hpp mpiwrapper.hpp
 
 #  superlu_dist.hpp parallelsparsematrix.hpp parallelmeshaccess.hpp
 
