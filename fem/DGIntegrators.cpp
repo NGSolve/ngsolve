@@ -83,7 +83,7 @@ namespace ngfem
       fel2_l2 = dynamic_cast<const ScalarFiniteElement<D>*> (&volumefel2);
       eltype2 = volumefel2.ElementType();
       int nd2 = fel2_l2->GetNDof();
-      double maxorder = max(fel1_l2->Order(),fel2_l2->Order());
+      int maxorder = max(fel1_l2->Order(),fel2_l2->Order());
       
       elmat = 0.0;
 
@@ -172,13 +172,13 @@ namespace ngfem
 	    case DG_FORMULATIONS::NIPG:
 	      dmat(0,1) = 1; 
 // 	      dmat(1,1) = alpha * sqr (maxorder) * (len1/det1);
-	      dmat(1,1) = alpha * ((maxorder+1)*(maxorder+D)/D * len1) *(1.0/det1);
+	      dmat(1,1) = alpha * ((maxorder+1.0)*(maxorder+D)/D * len1) *(1.0/det1);
 	      break;
 	    case DG_FORMULATIONS::IP:
 	    default:
 	      dmat(0,1) = -1; 
 // 	      dmat(1,1) = alpha * sqr (maxorder) * (len1/det1);
-	      dmat(1,1) = alpha * ((maxorder+1)*(maxorder+D)/D * len1) *(1.0/det1);
+	      dmat(1,1) = alpha * ((maxorder+1.0)*(maxorder+D)/D * len1) *(1.0/det1);
 	      break;	      
 	  }
 	  dmat *= lam * len1 * ir_facet[l].Weight();
