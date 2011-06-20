@@ -35,7 +35,8 @@ namespace ngcomp
     {
       *testout << "NEBE Constructor" << endl;
 
-      cout << "BDDC-marix NEBE const" << endl;
+      if (id == 0) 
+	cout << "BDDC-marix NEBE const" << endl;
       const FESpace & fes = bfa.GetFESpace();
       const MeshAccess & ma = fes.GetMeshAccess();
       int ne = ma.GetNE();
@@ -112,19 +113,18 @@ namespace ngcomp
 
 
 #ifdef PARALLEL
-      *testout << "communicate multiple" << endl;
       // accumulate multiple
       ParallelVVector<double> pv_multiple (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
 
       if (ntasks > 1 && id == 0)
 	{
-	  pv_multiple.AllReduce (&hoprocs);
+	  pv_multiple.Cumulate();  
 	}
       else
 	{
 	  for (int i = 0; i < multiple.Size(); i++)
 	    pv_multiple(i) = multiple[i];
-	  pv_multiple.AllReduce (&hoprocs);
+	  pv_multiple.Cumulate();  
 	  for (int i = 0; i < multiple.Size(); i++)
 	    multiple[i] = pv_multiple(i);
 	}
@@ -137,13 +137,11 @@ namespace ngcomp
       *testout << " el2wbdofs = " << endl << el2wbdofs << endl;
       *testout << " el2ifdofs = " << endl << el2ifdofs << endl;
        
-      cout << "now build graphs" << endl;
       
       MatrixGraph graph_harmonicext(ndof, el2ifdofs, el2wbdofs, false);
       MatrixGraph graph_innersolve(ndof, el2ifdofs, el2ifdofs, bfa.IsSymmetric());
       MatrixGraph graph_wbschur(ndof, el2wbdofs, el2wbdofs, bfa.IsSymmetric());
       
-      cout << "now allocate matrices" << endl;
       
       if (!bfa.IsSymmetric()){
 	MatrixGraph graph_harmonicexttrans(ndof, el2wbdofs, el2ifdofs, false);
@@ -158,11 +156,13 @@ namespace ngcomp
 
       if (bfa.IsSymmetric()){
 	pwbmat = new SparseMatrixSymmetric<double>(graph_wbschur,1);
-	cout << "symmetric" << endl << endl;
+	if (id == 0)
+	  cout << "symmetric" << endl << endl;
       }
       else{
 	pwbmat = new SparseMatrix<double>(graph_wbschur,1);
-	cout << "nonsymmetric" << endl << endl;
+	if (id == 0)
+	  cout << "nonsymmetric" << endl << endl;
       }
       
       SparseMatrix<double>& wbmat=*pwbmat;
@@ -170,7 +170,7 @@ namespace ngcomp
 
       wbmat.SetInverseType (inversetype);
       
-      cout << "have matrix" << endl << endl;
+      // cout << "have matrix" << endl << endl;
 
 
       if (ntasks == 1 || id > 0)
@@ -197,8 +197,6 @@ namespace ngcomp
 	  
 	  int sizew = localwbdofs.Size();
 	  int sizei = localintdofs.Size();
-
-	  *testout << "el = " << i << ", sizew = " << sizew << ", sizei = " << sizei << endl;
 
 	  Matrix<double> a(sizew, sizew);
 	  Matrix<double> b(sizew, sizei);
@@ -300,10 +298,7 @@ namespace ngcomp
 
 
       free_dofs = new BitArray (ndof);
-
       free_dofs->Clear();
-
-
 
       *free_dofs = wbdof;
       if (fes.GetFreeDofs())
@@ -351,7 +346,7 @@ namespace ngcomp
 #ifdef PARALLEL
 	if (ntasks > 1)
 	  {
-	    *testout << "bddc, local wbmatrix = " << endl << wbmat << endl;
+	    // *testout << "bddc, local wbmatrix = " << endl << wbmat << endl;
 	    inv = new MasterInverse<double> (wbmat, free_dofs, &bfa.GetFESpace().GetParallelDofs());
 	    tmp = new ParallelVVector<>(ndof, &bfa.GetFESpace().GetParallelDofs());
 	    subassembled_innersolve = new ParallelMatrix (*subassembled_innersolve, bfa.GetFESpace().GetParallelDofs());
@@ -649,11 +644,6 @@ namespace ngcomp
     
     virtual void MultAddNEBE (double s, const BaseVector & x, BaseVector & y) const
     {
-#ifdef PARALLEL
-      const ParallelBaseVector * parx = dynamic_cast<const ParallelBaseVector*> (&x);
-      if (parx) parx -> AllReduce (&hoprocs);
-#endif
-    
       static Timer timer ("Apply BDDC preconditioner");
       static Timer timerifs ("Apply BDDC preconditioner - apply ifs");
       static Timer timerwb ("Apply BDDC preconditioner - wb solve");
@@ -663,7 +653,8 @@ namespace ngcomp
       
       NgProfiler::RegionTimer reg (timer);
       
-
+      x.Cumulate();
+    
       y = x;
 
       timerharmonicexttrans.Start();
@@ -708,11 +699,7 @@ namespace ngcomp
     
       timerharmonicext.Stop();
 
-
-#ifdef PARALLEL
-      const ParallelBaseVector * pary = dynamic_cast<const ParallelBaseVector*> (&y);
-      if (pary) pary -> AllReduce (&hoprocs);
-#endif
+      y.Cumulate();
     }    
     
     

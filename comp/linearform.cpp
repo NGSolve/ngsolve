@@ -248,8 +248,12 @@ namespace ngcomp
 		    }
 		}
 	    }
-	    cout << "\rassemble element " << ne << "/" << ne << endl;
-	    
+
+#ifdef PARALLEL
+	    MPI_Barrier( MPI_COMM_WORLD );
+#endif	      
+	    if (id == 0)
+	      cout << "\rassemble element " << ne << "/" << ne << endl;
 	  }
 
 	if (hasbound)

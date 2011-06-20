@@ -173,10 +173,8 @@ namespace ngla
 	
 	BruteInnerProduct(w,d,wdn);	 
 
-#ifdef PARALLEL
 	if ( id == 0 )
-#endif 
-	if (printrates) cout << "0 " << sqrt(L2Norm(wdn)) << endl;
+	  if (printrates) cout << "0 " << sqrt(L2Norm(wdn)) << endl;
 	if (L2Norm(wdn) == 0.0) wdn = 1;	
 
 	if(stop_absolute)
@@ -235,9 +233,7 @@ namespace ngla
 	    //s *= be;
 	    //s += w;
 
-#ifdef PARALLEL
 	    if ( id == 0 )
-#endif
 	      if (printrates ) cout << n << " " << sqrt(L2Norm (wdn)) << endl;
 	    if(sh)
 	      sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
@@ -373,9 +369,7 @@ namespace ngla
 	    wdn = S_InnerProduct<SCAL>(w,d_reduced);
 	    
 	    
-#ifdef PARALLEL
 	    if ( id == 0 )
-#endif
 	      if (printrates ) cout << n << " (block " << seed+1 << ") " << sqrt (Abs (wdn)) << endl;
 	    if(Abs(wdn) == 0.0) wdn = 1;
 
@@ -487,12 +481,7 @@ namespace ngla
 		s *= be;
 		s += w;
 
-		
-		
-
-#ifdef PARALLEL
 		if ( id == 0 )
-#endif
 		  if (printrates ) cout << n << " (block " << seed+1 << ") " << sqrt (Abs (wdn)) << endl;
 		if(sh)
 		  sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),

@@ -137,12 +137,6 @@ namespace ngcomp
     {
       dnums.SetSize(0);
     }
-
-
-#ifdef PARALLEL_NOT_JS_20110614
-    // virtual void UpdateParallelDofs_hoproc();
-    virtual void UpdateParallelDofs_loproc();
-#endif
   
   };
 

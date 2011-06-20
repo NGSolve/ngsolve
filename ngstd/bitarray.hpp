@@ -95,7 +95,7 @@ public:
   /// copy from ba2
   BitArray & operator= (const BitArray & ba2);
 
-#ifdef PARALLEL
+#ifdef PARALLELxx
   const unsigned char * Data () const
   { return data; }
 

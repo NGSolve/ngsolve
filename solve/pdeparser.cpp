@@ -11,7 +11,6 @@
 
 namespace ngsolve
 {
-  using namespace ngsolve;
   using namespace ngparallel;
 
   // parser for pde file
@@ -35,8 +34,7 @@ namespace ngsolve
       KW_BILINEARFORM, KW_LINEARFORM, KW_PRECONDITIONER, KW_BEMELEMENT,
       KW_INTEGRATOR = 200, KW_NUMPROC_ID,
       KW_NUMPROC = 300, 
-      KW_MATFILE,
-      KW_OVERLAP
+      KW_MATFILE
     };
 
   
@@ -63,7 +61,7 @@ namespace ngsolve
       { KW_PRECONDITIONER, "preconditioner" },
       { KW_NUMPROC,     "numproc" },
       { KW_MATFILE,     "matfile"},
-      { KW_OVERLAP,     "overlap"},
+      // { KW_OVERLAP,     "overlap"},
       { TOKEN_TYPE(0) }
     };
 
@@ -111,15 +109,6 @@ namespace ngsolve
 
   PDEScanner :: PDEScanner (istream * ascanin)
   {
-
-#ifdef PARALLEL
-      MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-      MPI_Comm_rank(MPI_COMM_WORLD, &id);
-      hoprocs.SetSize(ntasks-1);
-      for ( int i = 0; i<ntasks-1; i++ )
-	hoprocs[i] = i+1;
-#endif
-
     scanin = ascanin;
     token = END;
     num_value = 0;
@@ -514,7 +503,7 @@ namespace ngsolve
 
 
 #ifdef HAVE_DLFCN_H 
-			  shared += ".so";
+	      shared += ".so";
               cout << "load shared library '" << shared << "'" << endl;
 
               void * handle = dlopen (shared.c_str(), RTLD_LAZY | RTLD_GLOBAL);
@@ -525,42 +514,20 @@ namespace ngsolve
                   throw Exception (err.str());
                 }
 #else
-			  shared += ".dll";
+	      shared += ".dll";
               cout << "load shared library '" << shared << "'" << endl;
-
-			  HINSTANCE handle = LoadLibrary (shared.c_str());
-		      if (!handle)
-			  {
-                 stringstream err;
+	      
+	      HINSTANCE handle = LoadLibrary (shared.c_str());
+	      if (!handle)
+		{
+		  stringstream err;
                   err << "Cannot load shared library '" << shared << "' \nerrmsg: "; //   << dlerror();
                   throw Exception (err.str());
- 			  }
+		}
 #endif
 
               break;
             }
-
-	  case KW_OVERLAP:
-	    {
-	      cout << "juhuuuuuuuuuu ... " << scan->GetStringValue() << endl;
-	      scan->ReadNext();
-	      if (scan->GetToken() != '=')
-		scan->Error ("Expected '='");
-	      scan->ReadNext();
-#ifdef PARALLEL
-	      int overlap = int(scan -> GetNumValue());
-	      while (pde->GetMeshAccess().Overlap() < overlap && id == 0 && ntasks != 1)
-		{
-		  for ( int dest = 1; dest < ntasks; dest++)
-		    {
-		      MyMPI_Send ( "overlap++", dest );
-		    }
-		  Ng_UpdateOverlap();
-		}
-#endif
-	      scan->ReadNext();
-	      break;
-	    }
 	    
 	  case KW_MATFILE:
 	    {
@@ -1958,14 +1925,6 @@ namespace ngsolve
     // Reset geometries 
     Ng_LoadGeometry("");
     
-#ifdef PARALLEL
-    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-    MPI_Comm_rank(MPI_COMM_WORLD, &id);
-    hoprocs.SetSize(ntasks-1);
-    for ( int i = 0; i<ntasks-1; i++ )
-      hoprocs[i] = i+1;
-#endif
-    
     scan = new PDEScanner(&input);
     scan->ReadNext();
     CommandList(nomeshload,nogeometryload);
@@ -1997,9 +1956,9 @@ namespace ngsolve
     pde = this;
 
 #ifdef WIN32
-	for(int i=0; pde_directory[i]!=0 && i<pde_directory.size(); i++)
-		if(pde_directory[i] == '/')
-			pde_directory[i] = '\\';
+    for(int i=0; pde_directory[i]!=0 && i<pde_directory.size(); i++)
+      if(pde_directory[i] == '/')
+	pde_directory[i] = '\\';
 #endif
 	
 
@@ -2016,18 +1975,12 @@ namespace ngsolve
     LoadPDE(infile,nomeshload,nogeometryload);
 
 #ifdef PARALLEL
-    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-    MPI_Comm_rank(MPI_COMM_WORLD, &id);
-    hoprocs.SetSize(ntasks-1);
-    for ( int i = 0; i<ntasks-1; i++ )
-      hoprocs[i] = i+1;
-    
     if ( id == 0 )
-       for ( int dest = 1; dest < ntasks; dest ++)
-	  {
-	    MyMPI_Send ("ngs_pdefile", dest );
-	    MyMPI_Send(filename, dest);
-	  }
+      for ( int dest = 1; dest < ntasks; dest ++)
+	{
+	  MyMPI_Send ("ngs_pdefile", dest);
+	  MyMPI_Send (filename, dest);
+	}
 #endif
   }
 

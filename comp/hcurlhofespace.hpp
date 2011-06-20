@@ -134,8 +134,6 @@ namespace ngcomp
     int GetMaxOrder() const {return maxorder;}; 
     int GetMinOrder() const {return minorder;}; 
 
-    //   virtual void UpdateParallelDofs ();
-    //   virtual void UpdateParallelDofs ( LocalHeap & lh);
 
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
@@ -144,7 +142,6 @@ namespace ngcomp
 
     bool GetFineEdge( const int i ) const {return fine_edge[i]; };
     bool GetFineFace( const int i ) const {return fine_face[i]; };
-
 
     virtual bool VarOrder() const { return var_order; }
 
@@ -157,14 +154,6 @@ namespace ngcomp
       if ( nt == NT_EDGE ) return 1;
       else return 0; 
     }
-
-#ifdef PARALLEL
-#ifdef OLD_PARALLEL_UPDATE
-    virtual void UpdateParallelDofs_hoproc();
-#endif
-    virtual void UpdateParallelDofs_loproc();
-#endif
-
 
     IntRange GetEdgeDofs (int nr) const
     {
@@ -183,10 +172,6 @@ namespace ngcomp
       return IntRange (first_inner_dof[nr], 
                        first_inner_dof[nr+1]);
     }
-
-
-
-
   };
 
 }

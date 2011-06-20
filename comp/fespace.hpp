@@ -368,12 +368,7 @@ namespace ngcomp
 
 #ifdef PARALLEL
     ParallelDofs & GetParallelDofs () const { return *paralleldofs; }
-
     virtual void UpdateParallelDofs ();
-    // virtual void UpdateParallelDofs ( LocalHeap & lh );
-
-    virtual void UpdateParallelDofs_hoproc();
-    virtual void UpdateParallelDofs_loproc();
 #endif
 
 
@@ -433,8 +428,8 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
-    virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const
-    { return (nt == NT_VERTEX) ? 1 : 0; }
+    // virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const
+    // { return (nt == NT_VERTEX) ? 1 : 0; }
 
 
 

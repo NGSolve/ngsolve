@@ -7,12 +7,7 @@
 
 namespace ngla
 {
-  using namespace ngla;
   using namespace ngparallel;
-
-
-
-
 
 
   BaseVector & ParallelBaseVector :: SetScalar (double scal)
@@ -74,9 +69,11 @@ namespace ngla
     if ( (*this).Status() != parv->Status() )
       {
         if ( (*this).Status() == DISTRIBUTED )
-          AllReduce(&hoprocs);
+	  Cumulate();
+          // AllReduce(&hoprocs);
         else 
-          parv->AllReduce(&hoprocs);
+	  parv -> Cumulate();
+          // parv->AllReduce(&hoprocs);
       }
     FVDouble() += scal * parv->FVDouble();
     return *this;
@@ -88,11 +85,12 @@ namespace ngla
 
     if ( (*this).Status() != parv->Status() )
       {
-        if ( (*this).Status() == DISTRIBUTED )
-          AllReduce(&hoprocs);
+        if ( (*this).Status() == DISTRIBUTED ) 
+	  Cumulate();
         else 
-          parv->AllReduce(&hoprocs);
+	  parv->Cumulate();
       }
+
     FVComplex() += scal * parv->FVComplex();
     return *this;
   }
@@ -100,53 +98,33 @@ namespace ngla
 
 
 
-
-
-  /// values from reduceprocs are added up,
-  /// vectors in sendtoprocs are set to the cumulated values
-  /// default pointer 0 means send to proc 0
-  void ParallelBaseVector :: AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs ) const 
+  void ParallelBaseVector :: Cumulate () const
   {
     if ( status != DISTRIBUTED ) return;
+    (*testout) << "CUMULATE" << endl;
 
-    (*testout) << "ALLREDUCE" << endl;
     
     MPI_Status status;
-
-    Array<int> exprocs(0);
+    Array<int> exprocs;
     
     // find which processors to communicate with
-    for ( int i = 0; i < reduceprocs->Size(); i++)
-      if ( paralleldofs->IsExchangeProc((*reduceprocs)[i]) )
-	exprocs.Append((*reduceprocs)[i]);
+    for ( int i = 1; i < ntasks; i++)
+      // if ( paralleldofs->IsExchangeProc(i) )
+      if (paralleldofs -> GetSortedExchangeDofs (i).Size())
+	exprocs.Append(i);
     
-    *testout << "exprocs = " << endl << exprocs << endl;
-
     int nexprocs = exprocs.Size();
     
     ParallelBaseVector * constvec = const_cast<ParallelBaseVector * > (this);
     
     Array<MPI_Request> sendrequest(nexprocs), recvrequest(nexprocs);
- 
-    Array<int> sendto_exprocs(0);
-    if ( sendtoprocs )
-      {
-	for ( int i = 0; i < sendtoprocs->Size(); i++ )
-	  if ( paralleldofs->IsExchangeProc((*sendtoprocs)[i]) 
-	       || (*sendtoprocs)[i] == id )
-	    sendto_exprocs.Append((*sendtoprocs)[i] );
-      }
-    else
-      sendto_exprocs.Append(0);
 
     // if the vectors are distributed, reduce
-    if ( reduceprocs->Contains(id) && this->Status() == DISTRIBUTED )
+    if ( id >= 1)
       {
-	// send 
 	for ( int idest = 0; idest < nexprocs; idest ++ ) 
           constvec->ISend ( exprocs[idest], sendrequest[idest] );
 
-	// receive	
 	for ( int isender=0; isender < nexprocs; isender++)
           constvec -> IRecvVec ( exprocs[isender], recvrequest[isender] );
 
@@ -164,48 +142,8 @@ namespace ngla
 	  } 
       }
 
-    constvec->SetStatus(CUMULATED);
- 
-    // +++++++++++++++
-    // 
-    // now send vector to the sendto-procs
-
-    if ( reduceprocs->Contains(id) )
-      {
-	nexprocs = sendto_exprocs.Size();
-
-	for ( int idest = 0; idest < nexprocs; idest++ )
-	  {
-	    int dest = sendto_exprocs[idest];
-	    if ( ! paralleldofs->IsExchangeProc(dest) ) continue;
-	    constvec->Send ( dest );
-	  }
-      }
-    else if ( sendto_exprocs.Contains(id) )
-      {
-	for ( int isender = 0; isender < nexprocs; isender ++)
-	  {
-	    int sender = exprocs[isender];
-	    // int ii = 0; 
-	    if ( ! paralleldofs->IsExchangeProc ( sender ) ) continue; 
-	    constvec -> IRecvVec ( sender, recvrequest[isender] );
-	    MPI_Wait( &recvrequest[isender], &status);
-
-	    constvec -> AddRecvValues(sender);
-	  }
-      }
+    SetStatus(CUMULATED);
   }
-  
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -225,7 +163,8 @@ namespace ngla
       {
 	if (this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
 	  {
-	    this->AllReduce(&hoprocs);
+	    Cumulate();
+	    // this->AllReduce(&hoprocs);
 	  }
 	// two cumulated vectors -- distribute one
 	else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
@@ -241,7 +180,8 @@ namespace ngla
 	// two distributed vectors -- cumulate one
 	else if ( this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
 	  {
-	    this->AllReduce(&hoprocs);
+	    Cumulate();
+	    // this->AllReduce(&hoprocs);
 	  }
 	// two cumulated vectors -- distribute one
 	else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
@@ -274,7 +214,8 @@ namespace ngla
     // two distributed vectors -- cumulate one
     else if (this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
       {
-	this->AllReduce(&hoprocs);
+	Cumulate();
+	// this->AllReduce(&hoprocs);
       }
     // two cumulated vectors -- distribute one
     else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
@@ -405,228 +346,24 @@ namespace ngla
     this -> paralleldofs = aparalleldofs;
     if ( this -> paralleldofs == 0 ) return;
 
-
-    if ( ntasks == 1 ) return;
-
-    if ( this->recvvector_size.Size() ) return;
-
-    this->sendvector_size . SetSize(ntasks);
-    this->recvvector_size . SetSize(ntasks);
-    recvvector_size = 0;
-
-    Array<int> exprocs(0);
-    if ( procs == 0 )
-      {
-	for ( int dest = 0; dest < ntasks; dest++ )
-	  if ( this->paralleldofs->IsExchangeProc(dest) )
-	    exprocs.Append(dest);
-      }
-    else
-      {
-	for ( int idest = 0; idest < procs->Size(); idest++ )
-	  if ( this->paralleldofs->IsExchangeProc( (*procs)[idest] ) )
-	    exprocs.Append ( (*procs)[idest] );
-      }
-  
-    for ( int idest = 0; idest < exprocs.Size(); idest++)
-      {
-	int dest = exprocs[idest];
-
-	FlatArray<int>  sortedexchangedof = this->paralleldofs->GetSortedExchangeDofs(dest);
-	int len_vec = sortedexchangedof.Size();
-	int len_fvec = len_vec* this->entrysize;
-	this->sendvector_size[dest] = len_fvec;
-
-	MPI_Request intrequest;
-	MPI_Isend( &len_fvec, 1, MPI_INT, dest, 10, MPI_COMM_WORLD, &intrequest);
-      }
-
-    for ( int idest = 0; idest < exprocs.Size(); idest++)
-      {
-	int dest = exprocs[idest];
-	if ( ! this -> paralleldofs -> IsExchangeProc (dest) ) continue;
-      
-	MPI_Request intrequest;
-	MPI_Status status;
-	MPI_Irecv( &recvvector_size[dest], 1, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD, &intrequest);
-	MPI_Wait ( &intrequest, &status);
-      }
-
-    this->recvvalues = new Table<T>(recvvector_size); 
+    Array<int> exdofs(ntasks);
+    for (int i = 0; i < ntasks; i++)
+      exdofs[i] = this->paralleldofs->GetSortedExchangeDofs(i).Size();
+    this -> recvvalues = new Table<T> (exdofs);
   }
-
 
 
   template <typename T>
   void ParallelVVector<T> :: SetParallelDofs ( ParallelDofs * aparalleldofs, const Array<int> * procs )
   {
     this -> paralleldofs = aparalleldofs;
-
     if ( this -> paralleldofs == 0 ) return;
-    if ( this->recvvector_size.Size() ) return;
-  
-#ifdef SCALASCA
-#pragma pomp inst begin (vvector_setparalleldofs)
-#endif
-  
-    this -> sendvector_size . SetSize(ntasks);
-    this -> recvvector_size . SetSize(ntasks);
-    recvvector_size = 0;
-  
-    Array<MPI_Request> sendintrequest(ntasks);
-    Array<MPI_Request> recvintrequest(ntasks);
-
-    Array<int> exprocs(0);
-    if ( procs == 0 )
-      {
-	for ( int dest = 0; dest < ntasks; dest++ )
-	  if ( this->paralleldofs->IsExchangeProc(dest) )
-	    exprocs.Append(dest);
-      }
-    else
-      {
-	for ( int idest = 0; idest < procs->Size(); idest++ )
-	  if ( this->paralleldofs->IsExchangeProc( (*procs)[idest] ) )
-	    exprocs.Append ( (*procs)[idest] );
-      }
-
-    for ( int idest = 0; idest < exprocs.Size(); idest++)
-      {
-	int dest = exprocs[idest];
-
-	sendvector_size[dest] = 
-          this->entrysize * this->paralleldofs->GetSortedExchangeDofs(dest).Size();
-
-	MPI_Isend(&sendvector_size[dest], 1, MPI_INT, dest, 100, MPI_COMM_WORLD, &sendintrequest[dest]);
-      }
-  
-    for ( int idest = 0; idest < exprocs.Size(); idest++)
-      {
-	int dest = exprocs[idest];
-	MPI_Irecv( &recvvector_size[dest], 1, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD, &recvintrequest[dest]);
-      }
-
-    for (int idest = 0; idest < exprocs.Size(); idest++)
-      {
-	MPI_Status status;
-	int dest = exprocs[idest];
-	MPI_Wait ( &recvintrequest[dest], &status);
-	MPI_Wait ( &sendintrequest[dest], &status );
-      }
- 
-    this -> recvvalues = new Table<T> (recvvector_size);
-
-#ifdef SCALASCA
-#pragma pomp inst end (vvector_setparalleldofs)
-#endif
-  }
-
-
-  /*
-
-  /// values from reduceprocs are added up,
-  /// vectors in sendtoprocs are set to the cumulated values
-  /// default pointer 0 means send to proc 0
-  template <typename T>
-  void ParallelVVector<T> :: AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs ) const 
-  {
-  // in case of one process only, return
-  if ( status != DISTRIBUTED ) return;
-  (*testout) << "ALLREDUCE" << endl;
     
-  #ifdef SCALASCA
-  #pragma pomp inst begin (vvector_allreduce)
-  #endif
-
-  MPI_Status status;
-
-  Array<int> exprocs(0);
-    
-  // find which processors to communicate with
-  for ( int i = 0; i < reduceprocs->Size(); i++)
-  if ( paralleldofs->IsExchangeProc((*reduceprocs)[i]) )
-  exprocs.Append((*reduceprocs)[i]);
-    
-  int nexprocs = exprocs.Size();
-    
-  ParallelVVector<T> * constvec = const_cast<ParallelVVector<T> * > (this);
-    
-  Array<MPI_Request> sendrequest(nexprocs), recvrequest(nexprocs);
-
-  Array<int> sendto_exprocs(0);
-  if ( sendtoprocs )
-  {
-  for ( int i = 0; i < sendtoprocs->Size(); i++ )
-  if ( paralleldofs->IsExchangeProc((*sendtoprocs)[i]) 
-  || (*sendtoprocs)[i] == id )
-  sendto_exprocs.Append((*sendtoprocs)[i] );
+    Array<int> exdofs(ntasks);
+    for (int i = 0; i < ntasks; i++)
+      exdofs[i] = this->paralleldofs->GetSortedExchangeDofs(i).Size();
+    this -> recvvalues = new Table<T> (exdofs);
   }
-  else
-  sendto_exprocs.Append(0);
-
-  // if the vectors are distributed, reduce
-  if ( reduceprocs->Contains(id) && this->Status() == DISTRIBUTED )
-  {
-  // send 
-  for ( int idest = 0; idest < nexprocs; idest ++ ) 
-  constvec->ISend ( exprocs[idest], sendrequest[idest] );
-
-  // receive	
-  for ( int isender=0; isender < nexprocs; isender++)
-  constvec -> IRecvVec ( exprocs[isender], recvrequest[isender] );
-
-  // wait till everything is sent 
-  for ( int isender = 0;  isender < nexprocs; isender ++)
-  MPI_Wait ( &sendrequest[isender], &status);
-
-  // cumulate
-  // MPI_Waitany --> wait for first receive, not necessarily the one with smallest id
-  for ( int cntexproc=0; cntexproc < nexprocs; cntexproc++ )
-  {
-  int sender, isender;
-  MPI_Waitany ( nexprocs, &recvrequest[0], &isender, &status); 
-  sender = exprocs[isender];
-
-  constvec->AddRecvValues(sender);
-  } 
-  }
-
-  constvec->SetStatus(CUMULATED);
- 
-  // +++++++++++++++
-  // 
-  // now send vector to the sendto-procs
-
-  if ( reduceprocs->Contains(id) )
-  {
-  nexprocs = sendto_exprocs.Size();
-
-  for ( int idest = 0; idest < nexprocs; idest++ )
-  {
-  int dest = sendto_exprocs[idest];
-  if ( ! paralleldofs->IsExchangeProc(dest) ) continue;
-  constvec->Send ( dest );
-  }
-  }
-  else if ( sendto_exprocs.Contains(id) )
-  {
-  for ( int isender = 0; isender < nexprocs; isender ++)
-  {
-  int sender = exprocs[isender];
-  // int ii = 0; 
-  if ( ! paralleldofs->IsExchangeProc ( sender ) ) continue; 
-  constvec -> IRecvVec ( sender, recvrequest[isender] );
-  MPI_Wait( &recvrequest[isender], &status);
-
-  constvec -> AddRecvValues(sender);
-  }
-  }
-  #ifdef SCALASCA
-  #pragma pomp inst end (vvector_allreduce)
-  #endif
-  }
-  */  
-
 
 
 
@@ -650,130 +387,6 @@ namespace ngla
   }
 
 
-  /*
- /// values from reduceprocs are added up,
-  /// vectors in sendtoprocs are set to the cumulated values
-  /// default pointer 0 means send to proc 0
-  template <typename T>
-  void ParallelVFlatVector<T> :: AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs ) const 
-  {
-  // in case of one process only, return
-  if ( status != DISTRIBUTED ) return;
-
-  #ifdef SCALASCA
-  #pragma pomp inst begin (vvector_allreduce)
-  #endif
-
-  Array<int> exprocs(0);
-  int nexprocs;
-  MPI_Status status;
-
-  // find which processors to communicate with
-  for ( int i = 0; i < reduceprocs->Size(); i++)
-  if ( paralleldofs->IsExchangeProc((*reduceprocs)[i]) )
-  exprocs.Append((*reduceprocs)[i]);
-    
-  nexprocs = exprocs.Size();
-  int cntexproc = 0;
-    
-  ParallelVFlatVector<T> * constvec = const_cast<ParallelVFlatVector<T> * > (this);
-    
-  MPI_Request * sendrequest, *recvrequest;
-  sendrequest = new MPI_Request[nexprocs];
-  recvrequest = new MPI_Request[nexprocs];
-    
-  Array<int> sendto_exprocs(0);
-  if ( sendtoprocs )
-  {
-  for ( int i = 0; i < sendtoprocs->Size(); i++ )
-  if ( paralleldofs->IsExchangeProc((*sendtoprocs)[i]) )
-  sendto_exprocs.Append((*sendtoprocs)[i] );
-  }
-  else
-  sendto_exprocs.Append(0);
-
-  // if the vectors are distributed, reduce
-  if ( this->status == DISTRIBUTED && reduceprocs->Contains(id) )
-  {
-  (*testout) << "reduce! high order" << endl;
-  constvec->SetStatus(CUMULATED);
-	
-  // send 
-  for ( int idest = 0; idest < nexprocs; idest ++ ) 
-  {
-  int dest = exprocs[idest];
-
-  constvec->ISend ( dest, sendrequest[idest] );
-  }
-
-  // receive	
-  for ( int isender=0; isender < nexprocs; isender++)
-  {
-  int sender = exprocs[isender];
-  constvec -> IRecvVec ( sender, recvrequest[isender] );
-  }
-    
-
-  // cumulate
-    
-  // MPI_Waitany --> wait for first receive, not necessarily the one with smallest id
-
-  for ( cntexproc=0; cntexproc < nexprocs; cntexproc++ )
-  {
-  int sender, isender;
-  MPI_Waitany ( nexprocs, &recvrequest[0], &isender, &status); 
-  sender = exprocs[isender];
-  MPI_Wait ( sendrequest+isender, &status );
-
-  constvec->AddRecvValues(sender);
-  } 
-	
-  }
-
-
-  // +++++++++++++++
-  // 
-  // now send vector to the sendto-procs
-
-
-  if ( reduceprocs->Contains(id) )
-  {
-  nexprocs = sendto_exprocs.Size();
-  delete [] sendrequest; delete [] recvrequest;
-  sendrequest = new MPI_Request[nexprocs];
-  recvrequest = new MPI_Request[nexprocs];
-	    
-  for ( int idest = 0; idest < nexprocs; idest++ )
-  {
-  int dest = sendto_exprocs[idest];
-  if ( ! paralleldofs->IsExchangeProc(dest) ) continue;
-  constvec->Send ( dest );
-  }
-  }
-  else if ( sendto_exprocs. Contains(id) )
-  {
-  for ( int isender = 0; isender < nexprocs; isender ++)
-  {
-  int sender = exprocs[isender];
-  // int ii = 0; 
-  if ( ! paralleldofs->IsExchangeProc ( sender ) ) continue; 
-  constvec -> IRecvVec ( sender, recvrequest[isender] );
-  MPI_Status status;
-  MPI_Wait(recvrequest+isender, &status);
-	    
-  constvec -> AddRecvValues(sender);
-  }
-  }
-
-  #ifdef SCALASCA
-  #pragma pomp inst end (vvector_horeduce)
-  #endif
-  delete [] recvrequest; delete []sendrequest;
-  }
-  */
-
-
-
 
   template <typename T>
   void ParallelVFlatVector<T> :: Distribute() const
@@ -787,7 +400,6 @@ namespace ngla
     for ( int dof = 0; dof < paralleldofs->GetNDof(); dof ++ )
       if ( ! paralleldofs->IsMasterDof ( dof ) )
 	constvec[dof] = 0;
-   
   }
 
 
@@ -809,7 +421,9 @@ namespace ngla
   void ParallelVVector<T> :: IRecvVec ( int dest, MPI_Request & request )
   {
     MPI_Datatype MPI_T = MyGetMPIType<T> ();
-    MPI_Irecv( &( (*this->recvvalues)[dest][0]), recvvector_size[dest], MPI_T, dest, 
+    MPI_Irecv( &( (*this->recvvalues)[dest][0]), 
+	       (*this->recvvalues)[dest].Size(), 
+	       MPI_T, dest, 
 	       MPI_ANY_TAG, MPI_COMM_WORLD, &request);
   }
 
@@ -817,7 +431,9 @@ namespace ngla
   void ParallelVFlatVector<T> :: IRecvVec ( int dest, MPI_Request & request )
   {
     MPI_Datatype MPI_T = MyGetMPIType<T> ();
-    MPI_Irecv(&( (*this->recvvalues)[dest][0]), recvvector_size[dest], MPI_T, 
+    MPI_Irecv(&( (*this->recvvalues)[dest][0]), 
+	      (*this->recvvalues)[dest].Size(), 
+	      MPI_T, 
 	      dest, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
   }
 
@@ -827,7 +443,9 @@ namespace ngla
     MPI_Status status;
 
     MPI_Datatype MPI_T = MyGetMPIType<T> ();
-    MPI_Recv( &( (*this->recvvalues)[dest][0]), recvvector_size[dest], MPI_T, dest, 
+    MPI_Recv( &( (*this->recvvalues)[dest][0]), 
+	      (*this->recvvalues)[dest].Size(), 
+	      MPI_T, dest, 
 	      MPI_ANY_TAG, MPI_COMM_WORLD, &status);
   }
 
@@ -837,8 +455,9 @@ namespace ngla
     MPI_Status status;
 
     MPI_Datatype MPI_T = MyGetMPIType<T> ();
-    MPI_Recv(&( (*this->recvvalues)[dest][0]), recvvector_size[dest], MPI_T, 
-	     dest, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv(&( (*this->recvvalues)[dest][0]), 
+	     (*this->recvvalues)[dest].Size(), 
+	     MPI_T, dest, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
   }
 
 
@@ -848,13 +467,13 @@ namespace ngla
   template <typename T>
   void ParallelVFlatVector<T> :: PrintParallelDofs () const
   { 
-    paralleldofs->Print(); 
+    ; // paralleldofs->Print(); 
   }
 
   template <typename T>
   void ParallelVVector<T> :: PrintParallelDofs () const
   { 
-    paralleldofs->Print(); 
+    ; // paralleldofs->Print(); 
   }
 
 
@@ -881,7 +500,8 @@ namespace ngla
   template <typename T>
   double ParallelVVector<T> :: L2Norm () const
   {
-    this->AllReduce (&hoprocs);
+    this->Cumulate();
+    // this->AllReduce (&hoprocs);
     
     double sum = 0;
 
@@ -895,12 +515,7 @@ namespace ngla
     double globalsum = 0;
 
     MPI_Datatype MPI_SCAL = MyGetMPIType<double>();
-
-    *testout << "L2Norm, sum = " << sum << endl;
-	
     MPI_Allreduce (&sum, &globalsum, 1, MPI_SCAL, MPI_SUM, MPI_COMM_WORLD);
-
-    *testout << "L2Norm, globsum = " << globalsum << endl;
 
     return sqrt (globalsum);
   }

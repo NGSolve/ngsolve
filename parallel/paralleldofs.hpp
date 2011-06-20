@@ -1,15 +1,54 @@
 #ifndef FILE_PARALLELDOFS
 #define FILE_PARALLELDOFS
 
-
-using namespace ngcomp;
-
 #ifdef PARALLEL
- 
-class ParallelDofs
-{
 
-protected:
+namespace ngparallel
+{
+  class ParallelDofs
+  {
+  protected:
+    int ndof;
+    const FESpace * fes;
+    /// these are local exhangedofs, computed by FESpace
+    Table<int> * sorted_exchangedof;
+
+    /// mpi-datatype to send exchange dofs
+    Array<MPI_Datatype> mpi_t;
+
+    /// is this the master process??
+    BitArray ismasterdof;
+
+  public:
+    ParallelDofs (int andof, Table<int> * exdofs, const FESpace * afes);
+
+    const FlatArray<int>  GetSortedExchangeDofs (int proc) const
+    { return (*sorted_exchangedof)[proc]; }
+
+    bool IsMasterDof ( int localdof ) const
+    { return ismasterdof.Test(localdof); }
+
+    int GetNDof () const { return ndof; }
+
+    // should not be used
+    const FESpace & GetFESpace() const { return *fes; }
+
+    bool IsExchangeProc ( int proc ) const
+    { return (*sorted_exchangedof)[proc].Size() != 0; }
+
+    MPI_Datatype MyGetMPI_Type ( int dest )
+    { return mpi_t[dest]; }
+  };
+}
+
+
+
+
+
+/*
+  class ParallelDofs
+  {
+  protected:
   ///
   const FESpace & fespace;
 
@@ -29,6 +68,7 @@ protected:
   /// mpi-datatype to send exchange dofs
   Array<MPI_Datatype> mpi_t;
 
+
   friend class ngcomp::FESpace;
   /// these are local exhangedofs, computed by FESpace
   Table<int> * sorted_exchangedof;
@@ -36,7 +76,11 @@ protected:
   /// is this the master process??
   BitArray ismasterdof;
 
-public:
+  public:
+
+  // Array<MPI_Datatype> mpi_t_no;
+  // Array<MPI_Comm> comm_no;
+
 
   ParallelDofs( const FESpace & afespace );
   ~ParallelDofs();
@@ -49,9 +93,9 @@ public:
   int GetNExDofs( int proc ) const { return nexdof[proc]; } 
   void SetNExDof ( const Array<int> & anexdof ) 
   { 
-    nexdof.SetSize(ntasks);
-    for ( int i = 0; i < ntasks; i++ ) 
-      nexdof[i] = anexdof[i];
+  nexdof.SetSize(ntasks);
+  for ( int i = 0; i < ntasks; i++ ) 
+  nexdof[i] = anexdof[i];
   }
 
   void SetExchangeDof ( int dof )
@@ -75,7 +119,7 @@ public:
   inline void SetMasterDof ( const int localdof ) 
   { ismasterdof.Set ( localdof ); }
   
-//   void GetDistantDofs ( const int localdof,  Array <int> & distantdofs ) const;
+  //   void GetDistantDofs ( const int localdof,  Array <int> & distantdofs ) const;
 
   void GetExchangeProcs ( const int localdof, Array<int> & procs ) const;
 
@@ -123,8 +167,8 @@ public:
   { return mpi_t[dest]; }
 
   void UpdateMPIType () ;
-};
-
+  };
+*/
 
 #endif //PARALLEL
 

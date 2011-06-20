@@ -2,6 +2,59 @@
 
 #include <parallelngs.hpp>
 
+
+
+/*
+
+klappt leider noch nicht
+
+// important message
+class IM
+{
+  int value;
+public:
+  IM (int val) : value(val) { ; }
+  int Value () const { return value; }
+};
+
+
+class NGSOStream
+{
+  ostream & ost;
+  bool active;
+public:
+  NGSOStream (ostream & aost, bool aactive)
+    : ost(aost), active(aactive) { ; }
+  bool Active () const { return active; }
+  ostream & GetStream () { return ost; }
+};
+
+NGSOStream operator<< (ostream & ost, const IM & im)
+{
+  return NGSOStream (ost, im.Value() <= printmessage_importance);
+}
+
+template <typename T>
+NGSOStream operator<< (NGSOStream ngsost, const T & id)
+{
+  if (ngsost.Active())
+    ngsost.GetStream() << id;
+  return ngsost;
+}
+
+template <template <class T> class S>
+NGSOStream operator<< (NGSOStream ngsost, const S<T> & id)
+{
+  if (ngsost.Active())
+    ngsost.GetStream() << id;
+  return ngsost;
+}
+*/
+
+
+
+
+
 namespace ngsolve
 {
   using namespace ngsolve;
@@ -502,21 +555,12 @@ namespace ngsolve
 
 
 
-
-
   void PDE :: SolveBVP ()
   {
-    static int timer = NgProfiler::CreateTimer ("Solver - Total");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("Solver - Total");
+    RegionTimer reg (timer);
 
 #ifdef PARALLEL
-    MPI_Comm_size ( MPI_COMM_WORLD, &ntasks);
-    MPI_Comm_rank ( MPI_COMM_WORLD, &id );
-
-    hoprocs.SetSize(ntasks-1);
-    for ( int i = 0; i<ntasks-1; i++ )
-      hoprocs[i] = i+1;
-
     if ( id == 0 )
       for ( int dest = 1; dest < ntasks; dest++)
         MyMPI_Send("ngs_solvepde" , dest);
@@ -541,12 +585,6 @@ namespace ngsolve
     starttime = WallTime();
 
 #ifdef PARALLEL
-    double startwtime, endwtime;
-
-    MPI_Barrier( MPI_COMM_WORLD );
-
-    if ( id == 0 ) 
-      startwtime = MPI_Wtime();
     MPI_Barrier( MPI_COMM_WORLD );
 #endif
 
@@ -614,7 +652,7 @@ namespace ngsolve
 
         ma.UpdateBuffers();   // update global mesh infos
 
-        if (printmessage_importance>0)
+        if (id == 0 && printmessage_importance>0)
 	  {
 	    cout << "Solve at level " << ma.GetNLevels()-1
 		 << ", NE = " << ma.GetNE() 
@@ -651,7 +689,7 @@ namespace ngsolve
 		try
 		  {
 		    NgProfiler::RegionTimer timer(fes->GetTimer());
-                    if (printmessage_importance>0)
+                    if (id == 0 && printmessage_importance>0)
 		      {
 			cout << "Update "
 			     << fes -> GetClassName()
@@ -665,11 +703,11 @@ namespace ngsolve
 
 		    if (fes->GetDimension() == 1)
                       {
-                        if (printmessage_importance>0)
+                        if (id == 0 && printmessage_importance>0)
                           cout << ", ndof = " << fes -> GetNDof() << endl;
                       }
                     else
-                      if (printmessage_importance>0)
+                      if (id == 0 && printmessage_importance>0)
                         {
                           cout << ", ndof = " 
                                << fes -> GetDimension() << " x " 
@@ -706,7 +744,7 @@ namespace ngsolve
 	      {
 		try
 		  {
-                    if (printmessage_importance>0)
+                    if (id == 0 && printmessage_importance>0)
                       cout << "Update gridfunction " << gf->GetName() << endl;
 		    NgProfiler::RegionTimer timer(gf->GetTimer());
 		    gf->Update();
@@ -742,7 +780,7 @@ namespace ngsolve
 	      {
 		try
 		  {
-                    if (printmessage_importance>0)
+                    if (id == 0 && printmessage_importance>0)
 		      {
 			cout << "update bilinear-form " << bf->GetName() << endl;
 			(*testout) << "update bilinear-form " << bf->GetName() << endl;
@@ -785,7 +823,7 @@ namespace ngsolve
 		  {
 		    try
 		      {
-                        if (printmessage_importance>0)
+                        if (id == 0 && printmessage_importance>0)
                           cout << "Update linear-form " << lf->GetName() << endl;
 			NgProfiler::RegionTimer timer(lf->GetTimer());
 			
@@ -827,7 +865,7 @@ namespace ngsolve
 
 		    if ( pre->LaterUpdate() )
 		      {  
-			if (printmessage_importance>0)
+			if (id == 0 && printmessage_importance>0)
 			  {  
 			    cout << endl << "WARNING: Update of " << pre->ClassName() 
 				 << "  " << pre->GetName() << " postponed!" << endl;
@@ -835,7 +873,7 @@ namespace ngsolve
 		      }
 		    else
 		      {	    
-                        if (printmessage_importance>0)
+                        if (id == 0 && printmessage_importance>0)
 			  {
 			    cout << "Update " << pre->ClassName() 
 				 << "  " << pre->GetName() << endl;
@@ -876,7 +914,7 @@ namespace ngsolve
 	      {
 		try
 		  {
-                    if (printmessage_importance>0)
+                    if (id == 0 && printmessage_importance > 0)
 		      {
 			cout << "Call numproc " << np->GetClassName() 
 			     << "  " << np->GetName() << endl;
@@ -938,21 +976,17 @@ namespace ngsolve
 	  levelsolved++;
       }
     
-    // endtime = clock();
     endtime = WallTime();
-
 
 #ifdef PARALLEL
     MPI_Barrier( MPI_COMM_WORLD );
-    if ( id == 0 ) 
-      // endwtime = MPI_Wtime();
 #endif
 
-      if (printmessage_importance>0)
-	{
-	  cout << "Equation Solved" << endl;
-	  cout << "Total Time = " << endtime-starttime << " sec wall time" << endl << endl;
-	}
+    if (id == 0 && printmessage_importance>0)
+      {
+	cout << "Equation Solved" << endl;
+	cout << "Total Time = " << endtime-starttime << " sec wall time" << endl << endl;
+      }
   }
 
 
@@ -966,14 +1000,14 @@ namespace ngsolve
 
   void PDE :: AddConstant (const string & name, double val)
   {
-    if (printmessage_importance>0)
+    if (id == 0 && printmessage_importance > 0)
       cout << "add constant " << name << " = " << val << endl;
     constants.Set (name.c_str(), val);
   }
 
   void PDE :: AddStringConstant (const string & name, const string & val)
   {
-    if (printmessage_importance>0)
+    if (id == 0 && printmessage_importance > 0)
       cout << "add string constant " << name << " = " << val << endl;
     if(string_constants.Used(name))
       delete string_constants[name];
@@ -983,7 +1017,7 @@ namespace ngsolve
 
   void PDE :: AddVariable (const string & name, double val)
   {
-    if (printmessage_importance>0)
+    if (id == 0 && printmessage_importance > 0)
       cout << "add variable " << name << " = " << val << endl;
     variables.Set (name.c_str(), val);
   }
@@ -995,7 +1029,7 @@ namespace ngsolve
     todo.Append(eval);
     variables.Set (name, 0);
     eval->SetVariable(variables[name]);
-    if (printmessage_importance>0)
+    if (id == 0 && printmessage_importance > 0)
       cout << "add variable " << name << " = " << eval->Evaluate() << endl;
   }
 
@@ -1003,7 +1037,7 @@ namespace ngsolve
 
   void PDE :: AddCoefficientFunction (const string & name, CoefficientFunction* fun)
   {
-    if (printmessage_importance>0)
+    if (id == 0 && printmessage_importance > 0)
       cout << "add coefficient-function, name = " << name << endl;
     coefficients.Set (name.c_str(), fun);
   }
@@ -1013,7 +1047,7 @@ namespace ngsolve
 
   FESpace * PDE :: AddFESpace (const string & name, Flags & flags)
   {
-    if (printmessage_importance>0)
+    if (id == 0 && printmessage_importance > 0)
       cout << "add fespace " << name << endl;
 
     FESpace * space = 0;
@@ -1078,32 +1112,32 @@ namespace ngsolve
 	/*
 	// old method
 	for (int i = 0; i < GetFESpaceClasses().GetFESpaces().Size(); i++)
-	  {
-	    if (flags.GetDefineFlag (GetFESpaceClasses().GetFESpaces()[i]->name))
-#ifdef PARALLEL
-	      {
-		if ( id == 0 && ntasks > 1)
-		  {
-		    FESpace * hospace = GetFESpaceClasses().GetFESpaces()[i]-> creator ( ma, flags) ;
-		    // low order space if existent
-		    space = & (hospace -> LowOrderFESpace()) ;
-		    // else space, but with  order 0
-		    if ( space == 0 )
-		      {
-			flags.SetFlag("order",0.0);
-			flags.PrintFlags(*testout);
-			space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
-		      }
-		    //delete hospace;
-		  }
-		else
-		  space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
-	      }
-#else
-	    space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
-#endif
+	{
+	if (flags.GetDefineFlag (GetFESpaceClasses().GetFESpaces()[i]->name))
+	#ifdef PARALLEL
+	{
+	if ( id == 0 && ntasks > 1)
+	{
+	FESpace * hospace = GetFESpaceClasses().GetFESpaces()[i]-> creator ( ma, flags) ;
+	// low order space if existent
+	space = & (hospace -> LowOrderFESpace()) ;
+	// else space, but with  order 0
+	if ( space == 0 )
+	{
+	flags.SetFlag("order",0.0);
+	flags.PrintFlags(*testout);
+	space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
+	}
+	//delete hospace;
+	}
+	else
+	space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
+	}
+	#else
+	space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
+	#endif
 	    
-	  }
+	}
 	*/
       }
     
@@ -1158,7 +1192,7 @@ namespace ngsolve
 
   GridFunction * PDE :: AddGridFunction (const string & name, Flags & flags)
   {
-    if (printmessage_importance>0)
+    if (id == 0 && printmessage_importance>0)
       cout << "add grid-function " << name << endl;
 
     string spacename = flags.GetStringFlag ("fespace", "");
@@ -1221,7 +1255,7 @@ namespace ngsolve
 
   BilinearForm * PDE :: AddBilinearForm (const string & name, Flags & flags)
   {
-    if (printmessage_importance>0)
+    if (id == 0 && printmessage_importance>0)
       cout << "add bilinear-form " << name << endl;
     string spacename = flags.GetStringFlag ("fespace", "");
 
@@ -1256,7 +1290,7 @@ namespace ngsolve
  
   LinearForm * PDE :: AddLinearForm (const string & name, Flags & flags)
   {
-    if (printmessage_importance>0)
+    if (id == 0 && printmessage_importance>0)
       cout << "add linear-form " << name << endl;
 
     string spacename = flags.GetStringFlag ("fespace", "");
@@ -1279,7 +1313,7 @@ namespace ngsolve
 
   Preconditioner * PDE :: AddPreconditioner (const string & name, Flags & flags)
   {
-    if (printmessage_importance>0)
+    if (id == 0 && printmessage_importance>0)
       cout << "add preconditioner " << name << flush;
 
     //  flags.PrintFlags (cout);

@@ -114,14 +114,6 @@ namespace ngcomp
     virtual void GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const;
     virtual void GetFaceDofNrs (int felnr, Array<int> & dnums) const;
     virtual void GetInnerDofNrs (int felnr, Array<int> & dnums) const;
-  
-#ifdef PARALLEL_NOTJS
-    virtual void UpdateParallelDofs_hoproc();
-    virtual void UpdateParallelDofs_loproc();
-#endif
-
-
-
   };
 
 }
