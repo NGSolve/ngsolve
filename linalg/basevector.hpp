@@ -60,6 +60,9 @@ public:
 /**
    Base vector for linalg
  */
+
+enum PARALLEL_STATUS { DISTRIBUTED, CUMULATED, NOT_PARALLEL };
+
 class NGS_DLL_HEADER BaseVector
 {
 protected:
@@ -301,7 +304,12 @@ public:
   }
   
   
-  
+  virtual void Cumulate () const { ; }
+  virtual void Distribute() const { ; }
+  virtual PARALLEL_STATUS GetParallelStatus () const
+  { return NOT_PARALLEL; }
+  virtual void SetParallelStatus (PARALLEL_STATUS stat) const { ; }
+
 
   /*
   virtual PARALLEL_STATUS Status () const 
@@ -408,24 +416,6 @@ public:
   {
     return FlatVector<SCAL> (size * entrysize, Memory());
   }
-
-#ifdef PARALLEL
-  /*
-  virtual void SetParallelDofs ( ngparallel::ParallelDofs & aparalleldofs, const Array<int> * procs  ) = 0;
-
-  /// values from reduceprocs are added up,
-  /// vectors in sendtoprocs are set to the cumulated values
-  virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs = 0 ) const = 0;
-
-  virtual void Distribute() const = 0;
-
-  virtual void ISend ( const int dest, MPI_Request & request ) = 0;
-  virtual void Send ( const int dest ) = 0;
-
-//   template <class T>
-//   virtual void IRecvVec (  Array<T> & s, const int dest, MPI_Request & request ) = 0;
-*/
- #endif
 };
 
 
@@ -450,22 +440,6 @@ public:
   {
     return FlatVector<Complex> (size * entrysize/2, Memory());
   }
-
-#ifdef PARALLEL
-  /*
-  virtual void SetParallelDofs ( ngparallel::ParallelDofs & aparalleldofs, const Array<int> * procs  ) = 0;
-
-  /// values from reduceprocs are added up,
-  /// vectors in sendtoprocs are set to the cumulated values
-  virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs = 0) const = 0;
-
-  virtual void Distribute() const = 0;
-
-  virtual void ISend ( const int dest, MPI_Request & request ) = 0;
-  virtual void Send ( const int dest ) = 0;
-
-  */
-#endif
 };
 
 

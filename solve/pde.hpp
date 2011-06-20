@@ -111,10 +111,6 @@ namespace ngsolve
     //   ClientSocketAccess sa;
     // #endif
 
-#ifdef PARALLEL
-    const ngparallel::ParallelMeshAccess * parallelma;
-#endif
-
   public:
     ///
     PDE(MeshAccess & ama);
@@ -328,14 +324,6 @@ namespace ngsolve
 
     string GetMeshFileName() const { return meshfilename; }
     string GetGeoFileName () const { return geometryfilename; }
-
-#ifdef PARALLEL
-    inline void SetParallelMeshAccess ( const ngparallel::ParallelMeshAccess * pma )
-    { parallelma = pma; }
-  
-    const class  ngparallel::ParallelMeshAccess & GetParallelMeshAccess () const
-    { return * parallelma; }
-#endif
 
     void WritePDEFile ( string abspdefile, string geofile, 
 			string meshfile, string matfile, string oldpdefile );

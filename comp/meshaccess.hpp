@@ -502,6 +502,14 @@ namespace ngcomp
 
 
 #ifdef PARALLEL
+
+    // returns number of distant processes which share this node
+    int GetDistantNodeNums (NODE_TYPE nt, int locnum, Array<int[2]> & distnums) const;
+    int GetGlobalNodeNum (NODE_TYPE nt, int locnum) const;
+    
+
+
+    /*
     void SetElementPartition ( const int elnr, const int part ) const
     {
       Ng_SetElementPartition ( elnr, part );
@@ -511,19 +519,21 @@ namespace ngcomp
     {
       return Ng_GetElementPartition ( elnr );
     } 
+    */
 
     bool IsGhostEl (int elnr) const
     { return Ng_IsGhostEl (elnr+1); }
 
-    void SetGhostEl (int elnr, bool isghost ) const
-    { Ng_SetGhostEl (elnr+1,isghost); }
+    // void SetGhostEl (int elnr, bool isghost ) const
+    // { Ng_SetGhostEl (elnr+1,isghost); }
 
     bool IsGhostSEl (int selnr) const
     { return Ng_IsGhostSEl (selnr+1); }
 
-    void SetGhostSEl (int selnr, bool isghost ) const
-    { Ng_SetGhostSEl (selnr+1,isghost); }
+    // void SetGhostSEl (int selnr, bool isghost ) const
+    // { Ng_SetGhostSEl (selnr+1,isghost); }
 
+    /*
     bool IsGhostVert ( const int pnum ) const
     { return Ng_IsGhostVert ( pnum+1 ); }
 
@@ -544,6 +554,7 @@ namespace ngcomp
 
     int Overlap() const
     { return Ng_Overlap(); }
+    */
 #else
 
     bool IsGhostEl (int elnr) const

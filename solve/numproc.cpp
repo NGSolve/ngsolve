@@ -407,7 +407,7 @@ namespace ngsolve
 
   void NumProcDrawFlux :: Do(LocalHeap & lh)
   {
-    cout << "Num-proc draw flux" << endl;
+    // cout << "Num-proc draw flux" << endl;
   }
 
 

@@ -13,7 +13,7 @@ namespace ngla
 
 #ifdef PARALLEL
 
-  enum PARALLEL_STATUS { DISTRIBUTED, CUMULATED, NOT_PARALLEL };
+  // enum PARALLEL_STATUS { DISTRIBUTED, CUMULATED, NOT_PARALLEL };
 
   using ngparallel::ParallelDofs;
 
@@ -23,8 +23,6 @@ namespace ngla
     ParallelDofs * paralleldofs;
     
     mutable PARALLEL_STATUS status;
-    Array<int> sendvector_size;
-    Array<int> recvvector_size;
     
   public:
     ParallelBaseVector ()
@@ -39,9 +37,6 @@ namespace ngla
       return *this;
     }
 
-
-
-
     virtual PARALLEL_STATUS Status () const
     { 
       return status; 
@@ -51,6 +46,11 @@ namespace ngla
     {
       status = astatus;
     }
+
+    virtual PARALLEL_STATUS GetParallelStatus () const { return Status(); }
+    virtual void SetParallelStatus (PARALLEL_STATUS stat) const { SetStatus (stat); }
+    virtual void Cumulate () const; 
+
 
     virtual ParallelDofs * GetParallelDofs () const
     {
@@ -76,7 +76,7 @@ namespace ngla
     virtual void PrintStatus ( ostream & ost ) const
     { cerr << "ERROR -- PrintStatus called for BaseVector, is not parallel" << endl; }
     
-    virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs=0 ) const;
+    // virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs=0 ) const;
     
     virtual void Distribute() const
     { cerr << "ERROR -- Distribute called for BaseVector, is not parallel" << endl; }
@@ -118,9 +118,6 @@ namespace ngla
   {
     using ParallelBaseVector :: status;
     using ParallelBaseVector :: paralleldofs;
-    using ParallelBaseVector :: sendvector_size;
-    using ParallelBaseVector :: recvvector_size;
-
     Table<T> * recvvalues;
 
   public:
@@ -157,16 +154,8 @@ namespace ngla
 	ost << "CUMULATED" << endl ;
     }
 
-    // virtual void ISend ( int dest, MPI_Request & request ) const;
-    // virtual void Send ( int dest ) const;
-
     virtual void  IRecvVec ( int dest, MPI_Request & request );
     virtual void  RecvVec ( int dest );
-
-    /*
-    const T & RecvValue( int dest, int i ) const { return (*recvvalues)[dest][i] ; }
-    T & RecvValue( int dest, int i ) { return (*recvvalues)[dest][i] ; }
-    */
 
     virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const;
 
@@ -186,19 +175,8 @@ namespace ngla
   {
     using ParallelBaseVector :: status;
     using ParallelBaseVector :: paralleldofs;
-    using ParallelBaseVector :: sendvector_size;
-    using ParallelBaseVector :: recvvector_size;
 
-    /*
-    ngparallel::ParallelDofs * paralleldofs;
-    PARALLEL_STATUS status;
-    Array<int> sendvector_size;
-    Array<int> recvvector_size;
-    */
-
-    //   Array<T> * recvvalues;
     Table<T> * recvvalues;
-
 
   public:
     typedef typename mat_traits<T>::TSCAL TSCAL;
@@ -210,20 +188,12 @@ namespace ngla
     explicit ParallelVFlatVector ();
     virtual ~ParallelVFlatVector() throw();
 
-    // virtual PARALLEL_STATUS Status () const { return status; }
-    // virtual void SetStatus ( PARALLEL_STATUS astatus );
-
     virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs, const Array<int> * procs=0 );
 
     virtual class ngparallel::ParallelDofs * GetParallelDofs () const
     { return paralleldofs; }
 
     virtual void PrintParallelDofs() const;
-
-    /// values from reduceprocs are added up,
-    /// vectors in sendtoprocs are set to the cumulated values
-    /// default pointer 0 means send to proc 0
-    // virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs = 0 ) const;
 
     virtual void Distribute() const;
 
@@ -237,19 +207,9 @@ namespace ngla
 	ost << "CUMULATED" << endl ;
     }
 
-    // virtual void ISend ( int dest, MPI_Request & request ) const;
-    // virtual void Send ( int dest ) const;
-
     virtual void IRecvVec ( int dest, MPI_Request & request );
     virtual void RecvVec ( int dest );
 
-    /*
-    const T & RecvValue( int dest, int i ) const
-    { return (*recvvalues)[dest][i] ; }
-
-    T & RecvValue( int dest, int i ) 
-    { return (*recvvalues)[dest][i] ; }
-    */
 
     virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const;
 

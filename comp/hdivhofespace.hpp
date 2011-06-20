@@ -139,11 +139,6 @@ namespace ngcomp
       if ( isfacet ) return 1;
       else return 0; 
     }
-
-#ifdef PARALLEL_NOT_JS
-    virtual void UpdateParallelDofs_hoproc();
-    virtual void UpdateParallelDofs_loproc();
-#endif
   };
 
 }

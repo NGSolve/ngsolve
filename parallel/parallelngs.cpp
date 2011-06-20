@@ -1,29 +1,21 @@
-#ifdef PARALLEL
-
 #include <solve.hpp>
 #include <comp.hpp>
 #include <parallelngs.hpp>
-#include <ngstd.hpp>
 
 using namespace ngsolve;
 using namespace ngparallel;
 
 
+#ifdef PARALLEL
+
 extern AutoPtr<PDE>  pde;
 extern MeshAccess * ma;
-extern ParallelMeshAccess * ngparallel::parallelma;
 
 
 extern "C" void NGS_ParallelRun ( const string & message );
 
 void NGS_ParallelRun ( const string & message )
 {
-  MPI_Status status;
-  
-  MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-  MPI_Comm_rank(MPI_COMM_WORLD, &id);
-
-  
   if ( message == "ngs_pdefile" )
     {
       string pdefilename;
@@ -31,11 +23,9 @@ void NGS_ParallelRun ( const string & message )
       ngparallel::MyMPI_Recv ( pdefilename, 0);
 
       if ( ma ) delete ma;
-      if ( parallelma ) delete parallelma;
       ma = new MeshAccess;
+
       pde.Reset(new PDE ( *ma ));
-      parallelma = new ParallelMeshAccess ( *ma );
-      pde -> SetParallelMeshAccess ( parallelma );
       pde -> LoadPDE (pdefilename, 1, 0);
     } 
 
@@ -60,7 +50,6 @@ void NGS_ParallelRun ( const string & message )
 	  cerr << "\n\ncaught Exception in SolveBVP:\n"
 	       << msg << "\n\n";
 	  pde->SetGood (false);
-	  // got_exception = true;
 	}
 #endif
       catch (ngstd::Exception & e)
@@ -68,21 +57,16 @@ void NGS_ParallelRun ( const string & message )
 	  cerr << "\n\ncaught Exception in SolveBVP:\n"
 	       << e.What() << "\n\n";
 	  pde->SetGood (false);
-	  // got_exception = true;
 	}
     }
-
-
-  (*testout) << message << " done! " << endl;
 
   return;
 }
 
 
-
 void Parallel_Exit ()
 {
-  delete parallelma;
+  ;
 }
 
 

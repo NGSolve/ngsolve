@@ -13,9 +13,6 @@
 
 namespace ngmg
 {
-  using namespace ngmg;
-  using namespace ngparallel;
-
   MultigridPreconditioner ::
   MultigridPreconditioner (const MeshAccess & ama,
 			   const FESpace & afespace,

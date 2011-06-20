@@ -18,12 +18,6 @@
 #endif
 
 
-
-#ifdef PARALLEL
-#include <parallelngs.hpp>
-using namespace ngparallel;
-#endif
-
 using namespace std;
 using namespace ngsolve;
 
@@ -110,28 +104,6 @@ SymbolTable<double> & GetConstantTable ()
 
 
 
-
-
-#ifdef PARALLEL
-namespace ngparallel
-{
-  using namespace ngparallel;
-  ParallelMeshAccess * parallelma = 0;
-  int id, ntasks;
-  Array<int> hoprocs;
-}
-#else
-namespace ngparallel
-{
-  using namespace ngparallel;
-  Array<int> hoprocs(0);
-}
-#endif
-
-
-
-
-
 #ifdef SOCKETS
 AutoPtr<ngsolve::ServerJobManager> serverjobmanager;
 namespace netgen {
@@ -152,12 +124,6 @@ int NGS_LoadPDE (ClientData clientData,
       Tcl_SetResult (interp, (char*)"Thread already running", TCL_STATIC);
       return TCL_ERROR;
     }
-
-
-#ifdef PARALLEL
-  MPI_Comm_size ( MPI_COMM_WORLD,  & (ngparallel::ntasks) );
-  MPI_Comm_rank ( MPI_COMM_WORLD,  & (ngparallel::id ) );
-#endif
 
   if (argc >= 2)
     {
@@ -782,6 +748,7 @@ int NGSolve_Init (Tcl_Interp * interp)
 }
 
 
+/*
 void NGSolve_Exit ()
 {
   cout << "NGSolve says good bye" << endl;
@@ -789,10 +756,9 @@ void NGSolve_Exit ()
   // delete ma;
   // ma = 0;
 
-#ifdef PARALLEL
-  Parallel_Exit();
-#endif
+  // Parallel_Exit();
 }
+*/
 
 
 #ifdef WIN32
@@ -828,35 +794,3 @@ void __cdecl my_operator_delete_array_replacement(void * _ptr)
 
 
 
-
-void NGS_Test()
-{
-  // testout = new ofstream ("test.out");
-  try
-    {
-      ma.Reset(new ngcomp::MeshAccess());
-      // if (!ma) ma = new ngcomp::MeshAccess();
-      //delete pde;
-      //pde = new ngsolve::PDE(*ma);
-      pde.Reset(new ngsolve::PDE(*ma));
-      pde->LoadPDE ("ngsolve/pde_tutorial/d7_coil.pde");
-      pde->PrintReport (*testout);
-      pde->SolveBVP();
-      //      pde->SolveBVP();
-
-      //delete pde;
-      pde.Reset();
-      ma.Reset();
-      // delete ma;
-      // delete testout;
-    }
-  catch (exception & e)
-    {
-      cout << "caught exception: " << e.what() << endl;
-    }
-  catch (Exception & e)
-    {
-      cout << "caught Exception: " << e.What() << endl;
-    }
-
-}

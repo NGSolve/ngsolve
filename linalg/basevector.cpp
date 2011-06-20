@@ -9,7 +9,6 @@
 */
 
 
-// #include <parallelngs.hpp>
 #include <la.hpp>
 
 
@@ -53,93 +52,39 @@ namespace ngla
   BaseVector & BaseVector :: SetScalar (double scal)
   {
     FVDouble() = scal;
-    /*
-    if ( IsParallelVector() )
-      this->SetStatus(CUMULATED);
-    else
-      this->SetStatus(NOT_PARALLEL);
-    */
     return *this;
   }
 
   BaseVector & BaseVector :: SetScalar (Complex scal)
   {
     FVComplex() = scal;
-    /*
-    if ( IsParallelVector() )
-      this->SetStatus(CUMULATED);
-    else
-      this->SetStatus(NOT_PARALLEL);
-    */
     return *this;
   }
 
   BaseVector & BaseVector :: Set (double scal, const BaseVector & v)
   {
     FVDouble() = scal * v.FVDouble();
-    /*
-    if ( v.IsParallelVector() )
-      this->SetParallelDofs (v.GetParallelDofs());
-    else 
-      this->SetParallelDofs(0);
-    this->SetStatus(v.Status());
-    */
     return *this;
   }
 
   BaseVector & BaseVector :: Set (Complex scal, const BaseVector & v)
   {
     FVComplex() = scal * v.FVComplex();
-    /*
-    if ( v.IsParallelVector() )
-      this->SetParallelDofs(v.GetParallelDofs());
-    else
-      this->SetParallelDofs(0);
-    this->SetStatus(v.Status());
-    */
     return *this;
   }
     
   BaseVector & BaseVector :: Add (double scal, const BaseVector & v)
   {
-    /*
-    if ( (*this).Status() != v.Status() )
-      {
-        if ( (*this).Status() == DISTRIBUTED )
-          AllReduce(&hoprocs);
-        else 
-          v.AllReduce(&hoprocs);
-      }
-    */
     FVDouble() += scal * v.FVDouble();
     return *this;
   }
 
   BaseVector & BaseVector :: Add (Complex scal, const BaseVector & v)
   {
-    /*
-    if ( (*this).Status() != v.Status() )
-      {
-        if ( (*this).Status() == DISTRIBUTED )
-          AllReduce(&hoprocs);
-        else 
-          v.AllReduce(&hoprocs);
-      }
-    */
     FVComplex() += scal * v.FVComplex();
     return *this;
   }
 
-
-
-
-
-  /*
-  BaseVector * BaseVector :: Range (int begin, int end)
-  {
-    throw Exception ("BaseVector::Range called");
-  }
-  */
 
   BaseVector * BaseVector ::Range (int begin, int end) const
   {
@@ -513,64 +458,6 @@ namespace ngla
   template void BaseVector::AddIndirect(const Array<int> & ind, 
 					   const FlatVector< Vec<15,Complex> > & v);
   */
-
-
-
-#ifdef PARALLEL
-  /*
-  void BaseVector :: SetParallelDofs ( ngparallel::ParallelDofs & aparalleldofs, const Array<int> * procs )
-  {
-    paralleldofs = &aparalleldofs;
-  }
-
-  void BaseVector :: PrintParallelDofs() const
-  {
-    paralleldofs->Print();
-  }
-
-  BaseVector :: BaseVector ( ngparallel::ParallelDofs * aparalleldofs ) throw () 
-    : paralleldofs ( aparalleldofs )
-  { 
-    if (paralleldofs) status = CUMULATED;
-  }
-
-
-  BaseVector :: BaseVector ( ngparallel::ParallelDofs * aparalleldofs , PARALLEL_STATUS astatus ) throw () 
-    : paralleldofs ( aparalleldofs )
-  { 
-    status = astatus;
-  }
-
-  bool BaseVector :: IsParallelVector () const
-  {
-    if ( status == NOT_PARALLEL ) 
-      return false;
-    else if ( paralleldofs == 0 )
-      {
-	cout << "keine paralleldofs, aber parallel" << endl;
-	return false;
-      }
-    else
-      return true;
-  }
-
-
-
-  void BaseVector :: SetStatus ( const PARALLEL_STATUS astatus ) const
-  {
-    BaseVector * constvec = const_cast < BaseVector * > (this);
-    constvec->status = astatus;
-  }
-*/
-
-#endif
-
-
-
-
-
-
-
 
 
 

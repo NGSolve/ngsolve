@@ -144,12 +144,6 @@ public:
   virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
   virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
   virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
-
-#ifdef PARALLEL_NOT_JS
-  virtual void UpdateParallelDofs_loproc();
-  virtual void UpdateParallelDofs_hoproc();
-#endif
-
 };
 
 
@@ -313,52 +307,9 @@ public:
   virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
   virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
-
-#ifdef PARALLEL
-//   virtual void UpdateParallelDofs ();
-//   virtual void UpdateParallelDofs (LocalHeap & lh);
-#endif
 //  void AddGradient (double fac, const BaseVector & pot, BaseVector & grad) const;
 //  void ApplyGradientT (const BaseVector & gradt, BaseVector & pott) const;
 };
-
-
-
-
-#ifdef PARALLEL_NOTJS
-
-/// Lowest order Nedelec space, for parallel processing (edge elements)
-class ParallelNedelecFESpace : public NedelecFESpace
-{
-public:
-  ///
-  //  ParallelNedelecFESpace (const MeshAccess & ama,
-  //		  int aorder, int adim, bool acomplex, bool adiscontinuous = 0);
-  ///
-  ParallelNedelecFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
-  ///
-  virtual ~ParallelNedelecFESpace ()
-  {
-    ;
-  }
-
-  ///
-  virtual const char * GetType() 
-    { return "ParallelNedelec"; }
-
-  virtual string GetClassName () const
-  {
-    return "ParallelNedelecFESpace";
-  }
-
-  virtual void UpdateParallelDofs_loproc();
-  virtual void UpdateParallelDofs_hoproc();
-
-};
-
-#endif
-
-
 
 }
 

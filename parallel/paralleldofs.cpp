@@ -7,6 +7,65 @@ namespace ngparallel
 {
   using namespace ngcomp;
 
+  ParallelDofs :: ParallelDofs (int andof, Table<int> * exdofs, const FESpace * afes)
+    : ndof(andof), fes(afes), sorted_exchangedof(exdofs), ismasterdof(ndof)
+  {
+    ismasterdof.Set();
+    for (int i = 0; i < id; i++)
+      {
+	FlatArray<int> ex = (*sorted_exchangedof)[i];
+	for (int j = 0; j < ex.Size(); j++)
+	  ismasterdof.Clear (ex[j]);
+      }
+
+    mpi_t.SetSize (ntasks); 
+
+    MPI_Datatype mpi_type = 
+      ( fes -> IsComplex() ) ? 
+      MyGetMPIType<Complex>() : MyGetMPIType<double>(); 
+    
+    if ( fes -> GetDimension() != 1)
+      {
+	MPI_Datatype htype;
+	MPI_Type_contiguous (fes -> GetDimension(), mpi_type, &htype);
+	mpi_type = htype;
+      }
+
+    for (int dest = 0; dest < ntasks; dest++ )
+      {
+	if ( !IsExchangeProc(dest) ) continue;
+	
+        FlatArray<int> sortedexchangedof = GetSortedExchangeDofs(dest);
+	int len_vec = sortedexchangedof.Size();
+	if ( len_vec == 0 ) continue;
+
+	Array<int> blocklen(len_vec);
+	blocklen = 1;
+
+	MPI_Type_indexed ( len_vec, &blocklen[0], &sortedexchangedof[0], 
+			   mpi_type, &mpi_t[dest]);
+	MPI_Type_commit ( &mpi_t[dest] );
+      }
+  }
+  
+  /*
+  void ParallelDofs :: UpdateMPIType () 
+  {
+    ;
+  }
+
+  void ParallelDofs :: Update()
+  {
+    ;
+  }
+  void ParallelDofs :: Print() const
+  {
+    ;
+  }
+  */
+
+
+#ifdef VERSION1
 
   ParallelDofs :: ParallelDofs(const FESpace & afespace) : fespace ( afespace )
   {
@@ -185,6 +244,7 @@ namespace ngparallel
   }
 
 
+
   void ParallelDofs :: UpdateMPIType ()
   {
     mpi_t.SetSize (ntasks); 
@@ -215,6 +275,104 @@ namespace ngparallel
 			   mpi_type, &mpi_t[dest]);
 	MPI_Type_commit ( &mpi_t[dest] );
       }
+
+
+    /*
+    // non-overlapping types
+    
+    mpi_t_no.SetSize (0);
+    comm_no.SetSize (0);
+
+    int ndof = fespace.GetNDof();
+    Array<int> cnt(ndof);
+    cnt = 0;
+    for (int i = 1; i < sorted_exchangedof->Size(); i++)
+      if (i != id)
+	{
+	  FlatArray<int> exdofs = (*sorted_exchangedof)[i];
+	  for (int j = 0; j < exdofs.Size(); j++)
+	    cnt[exdofs[j]]++;
+	}
+    Table<int> dof2proc (cnt);
+    cnt = 0;
+    for (int i = 1; i < sorted_exchangedof->Size(); i++)
+      if (i != id)
+	{
+	  FlatArray<int> exdofs = (*sorted_exchangedof)[i];
+	  for (int j = 0; j < exdofs.Size(); j++)
+	    dof2proc[exdofs[j]][cnt[exdofs[j]]++] = i;
+	}
+    
+    *testout << "dof2proc = " << endl << dof2proc << endl;
+
+    Array<Array<int>*> groups;
+    Array<int> groupnr(ndof);
+    groupnr = -1;
+    for (int i = 0; i < ndof; i++)
+      {
+	FlatArray<int> procs = dof2proc[i];
+	if (!procs.Size()) continue;
+
+	int found = -1;
+	for (int j = 0; j < groups.Size(); j++)
+	  {
+	    if ( procs == *groups[j] )
+	      {
+		found = j;
+		break;
+	      }
+	  }
+	if (found == -1)
+	  {
+	    found = groups.Size();
+	    groups.Append (new Array<int>);
+	    for (int k = 0; k < procs.Size(); k++)
+	      groups.Last() -> Append (procs[k]);
+	  }
+	groupnr[i] = found;
+      }
+
+    for (int i = 0; i < groups.Size(); i++)
+      {
+	groups[i] -> Append (id);
+	BubbleSort (*groups[i]);
+      }
+
+    *testout << "groups:" << endl;
+    for (int i = 0; i < groups.Size(); i++)
+      *testout << "group(" << i << ") has procs:" << endl << *groups[i] << endl;
+    *testout << "groupnr = " << endl << groupnr << endl;
+
+    mpi_t_no.SetSize (groups.Size());
+    comm_no.SetSize  (groups.Size());
+    
+    for (int i = 0; i < groups.Size(); i++)
+      {
+	MPI_Group newgroup, group_world;
+	MPI_Comm_group (MPI_COMM_WORLD, &group_world);
+	MPI_Group_incl (group_world, groups[i]->Size(), &(*groups[i])[0], &newgroup);
+	MPI_Comm_create (MPI_COMM_WORLD, newgroup, &comm_no[i]);
+      }
+
+
+    for (int i = 0; i < groups.Size(); i++)
+      {
+	Array<int> group_members;
+	for (int j = 0; j < groupnr.Size(); j++)
+	  if (groupnr[j] == i)
+	    group_members.Append (j);
+	
+	int len_vec = group_members.Size();
+	if ( len_vec == 0 ) continue;
+
+	Array<int> blocklen(len_vec);
+	blocklen = 1;
+
+	MPI_Type_indexed ( len_vec, &blocklen[0], &group_members[0], 
+			   mpi_type, &mpi_t_no[i]);
+	MPI_Type_commit ( &mpi_t_no[i] );
+      }
+    */
   }
 
 
@@ -390,7 +548,7 @@ namespace ngparallel
   }
 
 
-
+#endif
 
 }
 

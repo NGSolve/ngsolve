@@ -198,31 +198,31 @@ namespace ngsolve
 	switch (solver)
 	  {
           case CG:
-	    cout << "cg solve for real system" << endl;
+	    if (id == 0) cout << "cg solve for real system" << endl;
 	    invmat = new CGSolver<double>(mat, *premat);
 	    break;
           case BICGSTAB:
-	    cout << "bicgstab solve for real system" << endl;
+	    if (id == 0) cout << "bicgstab solve for real system" << endl;
 	    invmat = new BiCGStabSolver<double>(mat, *premat);
 	    break;
           case QMR:
-            cout << "qmr solve for real system" << endl;
+            if (id == 0) cout << "qmr solve for real system" << endl;
             invmat = new QMRSolver<double>(mat, *premat);
             break;
 	  case GMRES:
-            cout << "gmres solve for real system" << endl;
+            if (id == 0) cout << "gmres solve for real system" << endl;
             invmat = new GMRESSolver<double>(mat, *premat);
 	    break;
 	  case SIMPLE:
             {
-              cout << "simple solve for real system" << endl;
+              if (id == 0) cout << "simple solve for real system" << endl;
               SimpleIterationSolver<double> * hinv = new SimpleIterationSolver<double>(mat, *premat);
               hinv -> SetTau (tau);
               invmat = hinv;
               break;
             }
           case DIRECT:
-            cout << "direct solve for real system" << endl;
+            if (id == 0) cout << "direct solve for real system" << endl;
             invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs()); 
             break;
 	  }
@@ -232,31 +232,31 @@ namespace ngsolve
  	switch (solver)
 	  {
 	  case CG:
-            cout << "cg solve for complex system" << endl;
+            if (id == 0) cout << "cg solve for complex system" << endl;
             invmat = new CGSolver<Complex>(mat, *premat);
 	    break;
           case BICGSTAB:
-	    cout << "bicgstab solve for complex system" << endl;
+	    if (id == 0) cout << "bicgstab solve for complex system" << endl;
 	    invmat = new BiCGStabSolver<Complex>(mat, *premat);
 	    break;
 	  case QMR:
-            cout << "qmr solve for complex system" << endl;
+            if (id == 0) cout << "qmr solve for complex system" << endl;
             invmat = new QMRSolver<Complex>(mat, *premat);
 	    break;
 	  case GMRES:
-            cout << "gmres solve for complex system" << endl;
+            if (id == 0) cout << "gmres solve for complex system" << endl;
             invmat = new GMRESSolver<Complex>(mat, *premat);
 	    break;
 	  case SIMPLE:
             {
-              cout << "simple solve for complex system" << endl;
+              if (id == 0) cout << "simple solve for complex system" << endl;
               SimpleIterationSolver<Complex> * hinv = new SimpleIterationSolver<Complex>(mat, *premat);
               hinv -> SetTau (Complex (tau, taui));
               invmat = hinv;
               break;
             }
           case DIRECT:
-            cout << "direct solve for complex system" << endl;
+            if (id == 0) cout << "direct solve for complex system" << endl;
             invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs()); 
             break;
           }
@@ -266,31 +266,31 @@ namespace ngsolve
  	switch (solver)
 	  {
 	  case CG:
-            cout << "cg solve for complex system" << endl;
+            if (id == 0) cout << "cg solve for complex system" << endl;
             invmat = new CGSolver<ComplexConjugate>(mat, *premat);
 	    break;
           case BICGSTAB:
-	    cout << "bicgstab solve for complex system" << endl;
+	    if (id == 0) cout << "bicgstab solve for complex system" << endl;
 	    invmat = new BiCGStabSolver<ComplexConjugate>(mat, *premat);
 	    break;
 	  case QMR:
-            cout << "qmr solve for complex system" << endl;
+            if (id == 0) cout << "qmr solve for complex system" << endl;
             invmat = new QMRSolver<ComplexConjugate>(mat, *premat);
 	    break;
 	  case GMRES:
-            cout << "gmres solve for complex system" << endl;
+            if (id == 0) cout << "gmres solve for complex system" << endl;
             invmat = new GMRESSolver<ComplexConjugate>(mat, *premat);
 	    break;
 	  case SIMPLE:
             {
-              cout << "simple solve for complex system" << endl;
+              if (id == 0) cout << "simple solve for complex system" << endl;
               SimpleIterationSolver<ComplexConjugate> * hinv = new SimpleIterationSolver<ComplexConjugate>(mat, *premat);
               hinv -> SetTau (Complex (tau, taui));
               invmat = hinv;
               break;
             }
           case DIRECT:
-            cout << "direct solve for complex system" << endl;
+            if (id == 0) cout << "direct solve for complex system" << endl;
             invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs()); 
             break;
           }
@@ -300,31 +300,31 @@ namespace ngsolve
  	switch (solver)
 	  {
 	  case CG:
-            cout << "cg solve for complex system" << endl;
+            if (id == 0) cout << "cg solve for complex system" << endl;
             invmat = new CGSolver<ComplexConjugate2>(mat, *premat);
 	    break;
           case BICGSTAB:
-	    cout << "bicgstab solve for complex system" << endl;
+	    if (id == 0) cout << "bicgstab solve for complex system" << endl;
 	    invmat = new BiCGStabSolver<ComplexConjugate2>(mat, *premat);
 	    break;
 	  case QMR:
-            cout << "qmr solve for complex system" << endl;
+            if (id == 0) cout << "qmr solve for complex system" << endl;
             invmat = new QMRSolver<ComplexConjugate2>(mat, *premat);
 	    break;
 	  case GMRES:
-            cout << "gmres solve for complex system" << endl;
+            if (id == 0) cout << "gmres solve for complex system" << endl;
             invmat = new GMRESSolver<ComplexConjugate2>(mat, *premat);
 	    break;
 	  case SIMPLE:
             {
-              cout << "simple solve for complex system" << endl;
+              if (id == 0) cout << "simple solve for complex system" << endl;
               SimpleIterationSolver<ComplexConjugate2> * hinv = new SimpleIterationSolver<ComplexConjugate2>(mat, *premat);
               hinv -> SetTau (Complex (tau, taui));
               invmat = hinv;
               break;
             }
           case DIRECT:
-            cout << "direct solve for complex system" << endl;
+            if (id == 0) cout << "direct solve for complex system" << endl;
             invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs()); 
             break;
           }
@@ -365,9 +365,7 @@ namespace ngsolve
       (*testout) << "Solution = " << endl << vecu << endl;
 
     endtime = WallTime(); // clock();
-#ifdef PARALLEL
     if (id == 0)
-#endif
       {
 	cout << "Solution time = " << endtime - starttime << " sec wall time" << endl;
 	if (solver != DIRECT)

@@ -5,8 +5,8 @@
 /**************************************************************************/
 #ifdef PARALLEL
 
+#include <comp.hpp>
 #include <parallelngs.hpp>
-#include <la.hpp>
 
 
 namespace ngla

@@ -97,11 +97,8 @@ namespace ngcomp
     if (flags.NumListFlagDefined ("dirichlet")) 
       loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
     if (dgjumps){ *testout << "(L2HOFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
-    // #ifndef PARALLEL
+
     low_order_space = new NodalFESpace (ma, loflags);
-    // #else
-    // low_order_space = new ParallelNodalFESpace (ma, loflags);
-    // #endif
     low_order_space -> SetLowOrderSpace (true);
 
     // minext = flags.GetDefineFlag ("minext");
@@ -306,10 +303,6 @@ namespace ngcomp
     UpdateDofTables ();
     
     UpdateCouplingDofArray ();
-
-    // #ifdef PARALLEL
-    // UpdateParallelDofs();
-    // #endif
 
 
     if (timing) Timing();
@@ -576,14 +569,7 @@ namespace ngcomp
           {
             Ng_Element ngel = ma.GetElement<3> (elnr);
 
-#ifdef PARALLELxx
-	    if (ntasks > 1)
-	      for (int j = 0; j < ngel.vertices.Size(); j++)
-		hofe3d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, ngel.vertices[j]));
-	    else
-#endif
-	      hofe3d -> SetVertexNumbers (ngel.vertices);
-
+	    hofe3d -> SetVertexNumbers (ngel.vertices);
 
             for (int j = 0; j < ngel.edges.Size(); j++)
               hofe3d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
@@ -640,13 +626,7 @@ namespace ngcomp
       }
     else
       {
-#ifdef PARALLELxx
-	if (ntasks > 1)
-	  for (int j = 0; j < ngel.vertices.Size(); j++)
-	    hofe2d -> SetVertexNumber (j, parallelma->GetDistantPNum(0, ngel.vertices[j]));
-	else
-#endif
-	  hofe2d -> SetVertexNumbers (ngel.vertices);
+	hofe2d -> SetVertexNumbers (ngel.vertices);
 	
         for (int j = 0; j < ngel.edges.Size(); j++)
           hofe2d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);

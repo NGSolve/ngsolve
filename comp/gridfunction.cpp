@@ -7,7 +7,6 @@
  
 namespace ngcomp
 {
-  using namespace ngcomp;
   using namespace ngmg;
 
 #ifdef PARALLEL
