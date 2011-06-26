@@ -18,8 +18,8 @@ namespace netgen
     PrintMessage ( 4, "RESET");
     
     int nvold = nv;
-    int nedold = ned;
-    int nfaold = nfa;
+    // int nedold = ned;
+    // int nfaold = nfa;
     
     ne = mesh.GetNE();
     nv = mesh.GetNV();
@@ -780,7 +780,7 @@ namespace netgen
 	
 	// compare received vertices with own ones
 	int ii = 0;
-	int cntel = 0;
+	// int cntel = 0;
 	int volel = 1;
 
 	if ( id != 0 )
@@ -1277,7 +1277,7 @@ namespace netgen
 		MyMPI_Bcast (*recvarray, sender-1, MPI_HIGHORDER_COMM);
 		// compare received vertices with own ones
 		int ii = 0;
-		int cntel = 0;
+		// int cntel = 0;
 		int volel = 1;
 
 		while ( ii< recvarray -> Size() )
@@ -1437,7 +1437,7 @@ namespace netgen
 	(*sendarray)[2] = ned;
 	(*sendarray)[3] = np;
 
-	int ii = 4;
+	// int ii = 4;
 	for ( int el = 1; el <= ne; el++ )
 	  (*sendarray).Append ( GetLoc2Glob_VolEl (el ) );
 

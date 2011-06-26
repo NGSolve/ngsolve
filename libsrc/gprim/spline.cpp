@@ -33,7 +33,56 @@ namespace netgen
   }
 
 
+  template <> 
+  void CircleSeg<3> :: LineIntersections (const double a, const double b, const double c,
+					  Array < Point<3> > & points, const double eps) const
+  {
+    cerr << "CircleSeg<3>::LineIntersections not implemented" << endl;
+  }
   
+  template <> 
+  void CircleSeg<2> :: LineIntersections (const double a, const double b, const double c,
+					  Array < Point<2> > & points, const double eps) const
+  {
+    points.SetSize(0);
+
+    double px=0,py=0;
+
+    if(fabs(b) > 1e-20)
+      py = -c/b;
+    else
+      px = -c/a;
+
+    const double c1 = a*a + b*b;
+    const double c2 = 2. * ( a*(py-pm(1)) - b*(px-pm(0)));
+    const double c3 = pow(px-pm(0),2) + pow(py-pm(1),2) - pow(Radius(),2);
+    
+    const double discr = c2*c2 - 4*c1*c3;
+
+    if(discr < 0)
+      return;
+
+    Array<double> t;
+
+    if(fabs(discr) < 1e-20)
+      t.Append(-0.5*c2/c1);
+    else
+      {
+	t.Append((-c2+sqrt(discr))/(2.*c1));
+	t.Append((-c2-sqrt(discr))/(2.*c1));
+      }
+
+    for(int i=0; i<t.Size(); i++)
+      {
+	Point<2> p (px-t[i]*b,py+t[i]*a);
+
+	double angle = atan2(p(1),p(0))+M_PI;
+
+	if(angle > StartAngle()-eps && angle < EndAngle()+eps)
+	  points.Append(p);
+      }
+  }
+
 
 
 
