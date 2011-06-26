@@ -2,9 +2,15 @@
 
 
 #include <comp.hpp>
+#include <parallelngs.hpp> 
+
 
 namespace ngparallel
 {
+  MPI_Group MPI_HIGHORDER_WORLD;
+  MPI_Comm MPI_HIGHORDER_COMM;
+
+
   using namespace ngcomp;
 
   ParallelDofs :: ParallelDofs (int andof, Table<int> * exdofs, const FESpace * afes)
@@ -47,6 +53,22 @@ namespace ngparallel
 	MPI_Type_commit ( &mpi_t[dest] );
       }
   }
+
+
+  int ParallelDofs :: GetNDofGlobal () const
+  {
+    if (ntasks == 1) return ndof;
+    
+    int nlocal = 0, nglobal;
+
+    if (id > 0)
+      for (int i = 0; i < ndof; i++)
+	if (ismasterdof.Test(i)) nlocal++;
+
+    MPI_Allreduce (&nlocal, &nglobal, 1,  MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    return nglobal;
+  }
+
   
   /*
   void ParallelDofs :: UpdateMPIType () 

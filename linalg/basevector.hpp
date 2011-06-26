@@ -309,60 +309,6 @@ public:
   virtual PARALLEL_STATUS GetParallelStatus () const
   { return NOT_PARALLEL; }
   virtual void SetParallelStatus (PARALLEL_STATUS stat) const { ; }
-
-
-  /*
-  virtual PARALLEL_STATUS Status () const 
-  { return NOT_PARALLEL; }
-
-  virtual void SetStatus ( PARALLEL_STATUS astatus )
-  { 
-    if ( astatus == CUMULATED || astatus == DISTRIBUTED )
-      cerr << "ERROR -- BaseVector::SetStatus(status) called for parallel status" << endl;
-  }
-
-  virtual class ngparallel::ParallelDofs * GetParallelDofs () const
-  { 
-    cerr << "WARNING -- GetParallelDofs called for BaseVector, is not parallel" << endl; 
-    return 0;
-  }
-
-
-  virtual void PrintParallelDofs() const
-  { cerr << "ERROR -- PrintParallelDofs called for BaseVector, is not parallel" << endl; }
- 
-  virtual bool IsParallelVector () const
-  { 
-    if ( this->Status() == NOT_PARALLEL ) return false;
-    return true;
-  }
-  */
-
-  /*
-  virtual void PrintStatus ( ostream & ost ) const
-  { cerr << "ERROR -- PrintStatus called for BaseVector, is not parallel" << endl; }
-
-  virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs=0 ) const
-  { cerr << "ERROR -- AllReduce called for BaseVector, is not parallel" << endl; }
-
-  virtual void Distribute() const
-  { cerr << "ERROR -- Distribute called for BaseVector, is not parallel" << endl; }
-
-  virtual void ISend ( const int dest, int & request )
-  { cerr << "ERROR -- ISend called for BaseVector, is not parallel" << endl; }
-  virtual void Send ( const int dest )
-  { cerr << "ERROR -- Send called for BaseVector, is not parallel" << endl; }
-
-  virtual void IRecvVec ( const int dest, int & request )
-  { cerr << "ERROR -- IRecvVec called for BaseVector, is not parallel" << endl; }
-
-  virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs, const Array<int> * procs =0 )
-  { 
-    if ( aparalleldofs == 0 ) return;
-    cerr << "ERROR -- SetParallelDofs called for BaseVector, is not parallel" << endl; 
-  }
-  */
-
 };
 
 

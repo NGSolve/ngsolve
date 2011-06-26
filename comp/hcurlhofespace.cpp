@@ -157,15 +157,7 @@ namespace ngcomp
   
   void HCurlHighOrderFESpace :: Update(LocalHeap & lh)
   {
-    MPI_Barrier( MPI_COMM_WORLD );
-    cout << "HCurlHOFESpace::Update(), id = " << id << endl;
-    MPI_Barrier( MPI_COMM_WORLD );
-
     FESpace :: Update (lh);
-
-    MPI_Barrier( MPI_COMM_WORLD );
-    cout << "HCurlHOFESpace::Update() 2, id = " << id << endl;
-    MPI_Barrier( MPI_COMM_WORLD );
 
     const int dim = ma.GetDimension(); 
 
@@ -358,12 +350,6 @@ namespace ngcomp
 
     UpdateDofTables(); 
     UpdateCouplingDofArray();
-    // FinalizeUpdate (lh);
-
-    MPI_Barrier( MPI_COMM_WORLD );
-    cout << "HCurlHOFESpace::Update() 4, id = " << id << endl;
-    MPI_Barrier( MPI_COMM_WORLD );
-
 
     if (timing) Timing();    
   }

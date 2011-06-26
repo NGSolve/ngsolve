@@ -12,9 +12,7 @@
 #include <multigrid.hpp>
 
 #include "../fem/h1lofe.hpp"
-
-// #include <parallelngs.hpp>
-#include <parallelinterface.hpp>
+#include <parallelngs.hpp>
 
 
 
@@ -77,8 +75,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    int bnd = int(db[i]-1);
 	    if (bnd >= 0 && bnd < dirichlet_boundaries.Size())
 	      dirichlet_boundaries.Set (int(db[i])-1);
+	    /*
 	    else
 	      cerr << "Illegal Dirichlet boundary index " << bnd+1 << endl;
+	    */
 	  }
         *testout << "dirichlet_boundaries" << dirichlet_boundaries << endl;
       }
@@ -212,9 +212,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     element_coloring = NULL;
 
-#ifdef PARALLEL
     paralleldofs = NULL;
-#endif
+
     ctofdof.SetSize(0);
   }
 
@@ -235,10 +234,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete segm;
 
     delete element_coloring;
-
- #ifdef PARALLEL
     delete paralleldofs;
- #endif
   }
   
 
@@ -295,15 +291,23 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		}
 	    }
 
-#ifdef PARALLEL
 
+	
 	// cout << "exchange dirichlet vertices" << endl;
-
+	
 	DynamicTable<int> dist_dir_vertex(ntasks);
+	Array<int[2]> distnums;
 	if (id != 0)
 	  {
 	    for (int i = 0; i < dirichlet_vertex.Size(); i++)
 	      if (dirichlet_vertex[i])
+		{
+		  ma.GetDistantNodeNums (NT_VERTEX, i, distnums);
+		  for (int j = 0; j < distnums.Size(); j++)
+		    if (distnums[j][0] > 0)  // not master
+		      dist_dir_vertex.Add (distnums[j][0], distnums[j][1]);
+		}
+		/*
 		for (int dist = 1; dist < ntasks; dist++)
 		  if (dist != id)
 		    {
@@ -311,6 +315,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		      if (distnum >= 0)
 			dist_dir_vertex.Add (dist, distnum);
 		    }
+		*/
 	    *testout << "dist_dir_vertex = " << dist_dir_vertex << endl;
 
 	    for (int dist = 1; dist < ntasks; dist++)
@@ -332,6 +337,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		    dirichlet_vertex[dirvert[i]] = true;
 		}	   
 
+	    /*
 	    // check ordering
 	    for (int i = 1; i < ma.GetNV(); i++)
 	      {
@@ -339,11 +345,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		int m1 =  NgPar_GetDistantPNum (0, i);
 		if (m0 > m1) cerr << endl << endl << "Wrong ordering !!!!" << endl << endl;
 	      }
+	    */
 	  }
 
-
 	// cout << "exchange dirichlet vertices done" << endl;		
-#endif	
 
 	(*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
 	(*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;
@@ -385,9 +390,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     
 
-#ifdef PARALLEL    
     UpdateParallelDofs();
-#endif
 
 
     *testout << "coloring ... " << flush;
@@ -752,31 +755,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   Table<int> * FESpace :: CreateSmoothingBlocks (const Flags & flags) const
   {
-    /*
-    int nd = GetNDof();
-    
-    Array<int> cnt(nd);
-    for (int i = 0; i < nd; i++)
-      cnt[i] = IsDirichletDof(i) ? 0 : 1;
-
-    Table<int> * it = new Table<int>(cnt);
-
-    for (int i = 0; i < nd; i++)
-      if (!IsDirichletDof(i))
-	(*it)[i][0] = i;
-
-    return it;
-    */
-
-    
     int nd = GetNDof();
     TableCreator<int> creator;
 
-    /*
-    for (int mode = 1; mode <= 3; mode++)
-      {
-	creator.SetMode (mode);
-    */
     for ( ; !creator.Done(); creator++)
       {
 	for (int i = 0; i < nd; i++)
@@ -787,26 +768,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
     
-  /*
-  Table<int> * FESpace :: CreateSmoothingBlocks (const Flags & flags) const
-  {
-    SmoothingBlocksCreator sbc;
-    sbc.SetMode (1);
-    CreateSmoothingBlocks2 (sbc, flags);
-    sbc.SetMode (2);
-    CreateSmoothingBlocks2 (sbc, flags);
-    sbc.SetMode (3);
-    CreateSmoothingBlocks2 (sbc, flags);
-
-    return sbc.GetTable();
-  }
-
-  void FESpace :: CreateSmoothingBlocks2 (SmoothingBlocksCreator & sbc, const Flags & flags) const
-  {
-  }
-  */
-
-
   void FESpace :: SetDefinedOn (const BitArray & defon)
   {
     definedon.SetSize(defon.Size());
@@ -918,12 +879,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 					const FlatVector< Vec<15,Complex> >& vec, TRANSFORM_TYPE type) const;
 
 
-#ifdef PARALLEL
   void FESpace :: UpdateParallelDofs ( )
   {
     if  ( ntasks == 1 ) 
       return;
-
 
 
     if ( id == 0 )
@@ -932,7 +891,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	nexdof = 0;
 	
 	Table<int> * exdofs = new Table<int> (nexdof);
-	paralleldofs = new ParallelDofs (GetNDof(), exdofs, this);
+	// paralleldofs = new ParallelDofs (GetNDof(), exdofs, this);
+	paralleldofs = new ParallelDofs (0, exdofs, this);
       }
 
     else
@@ -960,76 +920,50 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	Array<int> nexdof(ntasks);
 	nexdof = 0;
 
-	// Array<MPI_Request> sendrequest(ntasks);
-	// Array<MPI_Request> recvrequest(ntasks);
-	// MPI_Status status;
-
 	Array<int> dnums;
 
 
 	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
 	  for ( int nr = 0; nr < ma.GetNNodes (nt); nr++ )
 	    {
-	      // if ( !parallelma->IsExchangeNode (nt, nr) ) continue;
-	      
 	      GetNodeDofNrs (nt, nr, dnums);
-	      /*
-	      for (int dest = 1; dest < ntasks; dest++)
-		if (id != dest)
-		  if (parallelma -> GetDistantNodeNum (dest, nt, nr) >= 0 )
-		    nexdof[dest] += dnums.Size(); 
-	      */
 
 	      Array<int[2]> distantnodenums;
-	      // parallelma -> 
-		ma.GetDistantNodeNums ( nt, nr, distantnodenums);
-	      for ( int idest = 1; idest < distantnodenums.Size(); idest++ )
+	      ma.GetDistantNodeNums (nt, nr, distantnodenums);
+
+	      for (int j = 0; j < distantnodenums.Size(); j++)
 		{
-		  int dest = distantnodenums[idest][0];
-		  nexdof[dest] += dnums.Size(); 
+		  int dest = distantnodenums[j][0];
+		  if (dest > 0) nexdof[dest] += dnums.Size(); 
 		}
 	    }
     
 	nexdof[0] = 0;
 
-	if (print)
-	  *testout << "nexdof = " << nexdof << endl;
-
 	Table<int> * exdofs = new Table<int> (nexdof);
-
 	nexdof = 0;
-
-	Array<int> cnt_nexdof(ntasks);
-	cnt_nexdof = 0;
-	// int exdof = 0;
-	// int ii = 1;
 
 	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
 	  {
 	    for ( int node = 0; node < ma.GetNNodes(nt); node++ )
-	      // if ( parallelma->IsExchangeNode(nt, node) )
-		{
-		  GetNodeDofNrs (nt, node, dnums); 
-		  if ( dnums.Size() == 0 ) continue;
+	      {
+		GetNodeDofNrs (nt, node, dnums); 
+		if ( dnums.Size() == 0 ) continue;
 
-		  Array<int[2]> distantnodenums;
-		  // parallelma -> 
-		    ma.GetDistantNodeNums ( nt, node, distantnodenums);
-		  for ( int idest = 1; idest < distantnodenums.Size(); idest++ )
-		    {
-		      int dest = distantnodenums[idest][0];
-		      // int distnode = distantnodenums[idest][1];
-
-		      for ( int i=0; i<dnums.Size(); i++)
-			{
-			  (*exdofs)[dest][nexdof[dest]] = dnums[i];
-			  nexdof[dest]++;
-			}
-		    }
-		} 
+		Array<int[2]> distantnodenums;
+		ma.GetDistantNodeNums ( nt, node, distantnodenums);
+		
+		for (int j = 0; j < distantnodenums.Size(); j++)
+		  {
+		    int dest = distantnodenums[j][0];
+		    if (dest > 0)
+		      for (int i = 0; i < dnums.Size(); i++)
+			(*exdofs)[dest][nexdof[dest]++] = dnums[i];
+		  }
+	      } 
 	  }
 
-	for ( int dest = 1; dest < ntasks; dest++ )
+	for (int dest = 1; dest < ntasks; dest++ )
 	  QuickSort ( (*exdofs)[dest] );
 
 	paralleldofs = new ParallelDofs (GetNDof(), exdofs, this);
@@ -1038,7 +972,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
-#endif
 
 
 
@@ -1120,14 +1053,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     ;
   }
-
-  /*
-  FESpace * NodalFESpace :: 
-  Create (const MeshAccess & ma, const Flags & flags)
-  {
-    return new NodalFESpace (ma, flags, true);
-  }
-  */
 
   int NodalFESpace :: GetNDof () const
   {
@@ -1625,7 +1550,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void SurfaceElementFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize (0);
-    // throw Exception ("SurfaceElementFESpace::GetDofNrs not available");
   }
 
   int SurfaceElementFESpace :: GetNDofLevel (int level) const
@@ -1697,377 +1621,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  
-
-
-
-
-
-
-
-#ifdef ABC
-
-  NonConformingFESpace :: 
-      NonConformingFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags)
-  : FESpace (ama, flags),
-  node2face2d (NULL), node2face3d(NULL)
-  {
-    name="NonConformingFESpace";
-    if(parseflags) CheckFlags(flags);
-    
-    node2face2d = new HashTable<INT<2>,int>(10000);
-    prol = new NonConformingProlongation (GetMeshAccess(), *this);
-
-    // Update();
-  }
-
-
-  NonConformingFESpace :: ~NonConformingFESpace ()
-  {
-    ;
-  }
-
-  void NonConformingFESpace :: Update(LocalHeap & lh)
-  {
-    cout << "update non-conforming space currently not implemented" << endl;
-#ifdef NONE
-
-    const MeshAccess & ma = GetMeshAccess();
-    int i, j, k;
-
-    int level = ma.GetNLevels();
-    int ne = ma.GetNE();
-    int nse = ma.GetNSE();
-    int np = ma.GetNP();
-
-    if (level == nflevel.Size())
-      return;
-
-    Array<int> pnums;
-
-    elementfaces.SetSize (ne);
-    surfelementfaces.SetSize (nse);
-
-    static int loctrigfaces[3][2] =
-      { { 2, 3 },
-	{ 1, 3 },
-	{ 1, 2 } 
-      };
-
-
-
-    int nface = 0;
-    if (nflevel.Size())
-      nface = nflevel.Last();
-
-
-    // insert faces from split edges:
-    for (i = 1; i <= np; i++)
-      {
-	int parents[2];
-	ma.GetParentNodes (i, parents);
-	if (parents[0] && parents[1])
-	  {
-	    INT<2> face(parents[0], parents[1]);
-	    face.Sort ();
-
-	    if (!node2face2d->Used (face))
-	      {
-		nface++;
-		node2face2d->Set (face, nface);
-		faces.Append (face);
-		finelevelofedge.Append (level);
-	      }
-	  }
-      }  
-
-    for (i = 1; i <= ne; i++)
-      {
-	ma.GetElPNums (i, pnums);
-	int nelfaces = 0;
-	int (*elfaces)[2];
-      
-	switch (ma.GetElType (i))
-	  {
-	  case ET_TRIG:
-	    {
-	      nelfaces = 3;
-	      elfaces = loctrigfaces;
-	      break;
-	    }
-	  }
-
-	for (j = 0; j < nelfaces; j++)
-	  {
-	    int facenum;
-	  
-	    INT<2> face(pnums.Get(elfaces[j][0]),
-			pnums.Get(elfaces[j][1]));
-	  
-	    face.Sort();
-
-	    if (node2face2d->Used (face))
-	      facenum = node2face2d->Get(face);
-	    else
-	      {
-		nface++;
-		node2face2d->Set (face, nface);
-		faces.Append (face);
-		finelevelofedge.Append (level);
-		facenum = nface;
-	      }
-	  
-	    elementfaces.Elem(i)[j] = facenum;
-	    finelevelofedge.Elem(facenum) = level;
-	  }
-      }
-
-    cout << "update surfelements" << endl;
-
-    BitArray surfdof(nface);
-    surfdof.Clear();
-
-    for (i = 1; i <= nse; i++)
-      {
-	ma.GetSElPNums (i, pnums);
-
-	INT<2> face (pnums.Get(1), pnums.Get(2));
-	face.Sort();
-
-	surfelementfaces.Elem(i) = 
-	  node2face2d->Get (face);
-
-	surfdof.Set (surfelementfaces.Elem(i));
-      }
-
-    cout << "Build Hierarchy" << endl;
-
-    parentfaces.SetSize (nface);
-    for (i = 1; i <= nface; i++)
-      for (j = 0; j < 5; j++)
-	parentfaces.Elem(i)[j] = 0;
-  
-    for (i = 1; i <= nface; i++)
-      {
-	INT<2> i2 (faces.Get(i).I1(), faces.Get(i).I2());
-	int pa1[2], pa2[2];
-	ma.GetParentNodes (i2[0], pa1);
-	ma.GetParentNodes (i2[1], pa2);
-
-	int issplitface = 0;
-	if (pa1[0] == i2.I2() || pa1[1] == i2.I2())
-	  issplitface = 1;
-	if (pa2[0] == i2.I1() || pa2[1] == i2.I1())
-	  issplitface = 2;
-
-	if (issplitface)
-	  {
-	    // edge is obtained by splitting one edge into two parts:
-	    INT_2 paface;
-	    if (issplitface == 1)
-	      paface = INT_2 (pa1[0], pa1[1]);
-	    else
-	      paface = INT_2 (pa2[0], pa2[1]);
-	    paface.Sort();
-	  
-	    int pafacenr = node2face2d->Get (paface);
-	    //	  (*testout) << "set split pa of " << i << ": " << pafacenr << endl;
-	    /*
-	      parentfaces.Elem(i).I1() = pafacenr;
-	      parentfaces.Elem(i).I2() = pafacenr;
-	    */
-	  }
-	else
-	  {
-	    // edge is splitting edge in middle of triangle:
-	    for (j = 1; j <= 2; j++)
-	      {
-		INT_2 paface1, paface2;
-		if (j == 1)
-		  {
-		    paface1 = INT_2 (pa1[0], i2.I2());
-		    paface2 = INT_2 (pa1[1], i2.I2());
-		  }
-		else
-		  {
-		    paface1 = INT_2 (pa2[0], i2.I1());
-		    paface2 = INT_2 (pa2[1], i2.I1());
-		  }
-		paface1.Sort();
-		paface2.Sort();
-	      
-		int pafacenr1 = 0, pafacenr2 = 0;
-	      
-		if (node2face2d->Used (paface1) && node2face2d->Used (paface2))
-		  {
-		    pafacenr1 = node2face2d->Get (paface1);
-		    pafacenr2 = node2face2d->Get (paface2);
-		  
-		    parentfaces.Elem(i)[0] = pafacenr1;	      
-		    parentfaces.Elem(i)[1] = pafacenr2;	      
-		    parentfaces.Elem(i)[2] = 0;	      
-		    parentfaces.Elem(i)[3] = 0;	      
-		    parentfaces.Elem(i)[4] = 0;	      
-
-
-		    INT_2 splited, son1, son2;
-		    if (j == 1)
-		      {
-			splited = INT_2 (pa1[0], pa1[1]);
-			son1.I1() = son2.I1() = i2.I1();
-		      }
-		    else
-		      {
-			splited = INT_2 (pa2[0], pa2[1]);
-			son1.I1() = son2.I1() = i2.I2();
-		      }
-		    son1.I2() = splited.I1();
-		    son2.I2() = splited.I2();
-
-		    splited.Sort();
-		    son1.Sort();
-		    son2.Sort();
-		    /*
-		      (*testout) << "split = " << splited 
-		      << ", sons = " << son1 << son2 << endl;
-		    */
-		    int son1nr = node2face2d->Get (son1);
-		    int son2nr = node2face2d->Get (son2);
-		    int splitednr = node2face2d->Get (splited);
-		    /*
-		      (*testout) << "splitnr = " << splitednr
-		      << ", sonsnr = " << son1nr << " " << son2nr << endl;
-		    */
-		  
-		    parentfaces.Elem(son1nr)[0] = splitednr;
-
-		    parentfaces.Elem(son1nr)[3] = 
-		      parentfaces.Elem(son1nr)[1];
-		    parentfaces.Elem(son1nr)[4] = 
-		      parentfaces.Elem(son1nr)[2];
-		    parentfaces.Elem(son1nr)[1] = pafacenr1;
-		    parentfaces.Elem(son1nr)[2] = pafacenr2;
-
-		    parentfaces.Elem(son2nr)[0] = splitednr;
-		    parentfaces.Elem(son2nr)[3] = 
-		      parentfaces.Elem(son2nr)[1];
-		    parentfaces.Elem(son2nr)[4] = 
-		      parentfaces.Elem(son2nr)[2];
-		    parentfaces.Elem(son2nr)[1] = pafacenr2;
-		    parentfaces.Elem(son2nr)[2] = pafacenr1;
-
-		    /*
-		      if (surfdof.Test(son1nr))
-		      for (j = 1; j < 5; j++)
-		      {
-		      parentfaces.Elem(son1nr)[j] = splitednr;
-		      parentfaces.Elem(son2nr)[j] = splitednr;
-		      }
-		    */
-		  }
-	      }
-	  }
-      }
-
-
-    cout << "done" << endl;
-
-    (*testout) << "non-conf elements: " << endl;
-    for (i = 1; i <= ne; i++)
-      (*testout) << elementfaces.Get(i)[0] << " - "
-		 << elementfaces.Get(i)[1] << " - "
-		 << elementfaces.Get(i)[2] << endl;
-  
-    (*testout) << "parents:" << endl;
-    for (i = 1; i <= nface; i++)
-      {
-	for (j = 0; j < 5; j++)
-	  (*testout) << parentfaces.Elem(i)[j] << " - " ;
-	(*testout) << endl;
-      }
-
-    nflevel.Append (nface);
-#endif
-  }
-
-
-
-
-
-  int NonConformingFESpace :: GetNDof () const
-  {
-    return nflevel.Last();
-  }
-
-  int NonConformingFESpace :: GetNDofLevel (int level) const
-  {
-    return nflevel[level];
-  }
-
-  const FiniteElement & NonConformingFESpace :: GetFE (int elnr, LocalHeap & lh) const
-  {
-    const MeshAccess & ma = GetMeshAccess();
-
-    switch (ma.GetElType(elnr))
-      {
-      case ET_TRIG:
-	return trig1;
-      case ET_TET:
-	return tet1;
-      default:
-        cerr << "NonConformingFESpace, GetFE: unknown type" << endl;
-      }
-    return tet1;
-  }
-  
-  void NonConformingFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
-  {
-    const MeshAccess & ma = GetMeshAccess();
-
-    switch (ma.GetElType(elnr))
-      {
-      case ET_TRIG:
-	{
-	  dnums.SetSize(3);
-	  break;
-	}
-      case ET_TET:
-	{
-	  dnums.SetSize(4);
-	  break;
-	}
-      default:
-        cerr << "NonConformingFESpace, GetFE: unknown type" << endl;
-      }
-    for (int j = 0; j < dnums.Size(); j++)
-      dnums[j] = abs (elementfaces[elnr][j]);
-  }
-
-  const FiniteElement & NonConformingFESpace :: GetSFE (int selnr, LocalHeap & lh) const
-  {
-    const MeshAccess & ma = GetMeshAccess();
-
-    switch (ma.GetSElType(selnr))
-      {
-      case ET_TRIG:
-	return trig1;
-      case ET_SEGM:
-	return segm1;
-      default:
-        throw Exception ("NonconformingFESpace::GetSFE unsupported element");
-      }  
-    return trig1;
-  }
-
-  void NonConformingFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(1);
-    dnums[0] = surfelementfaces[selnr];
-  }
-
-#endif
-
-
 
 
   CompoundFESpace :: CompoundFESpace (const MeshAccess & ama,
@@ -2081,23 +1634,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     Array<const Prolongation*> prols;
     prol = new CompoundProlongation (this, prols);
-
-#ifdef PARALLEL_NOT_JS_20110614
-    if ( ntasks == 1 ) return;
-    Flags loflags;
-    loflags.SetFlag("order",0.0);
-    paralleldofs = 0;
-    if (dgjumps){ *testout << "(CompFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
-    /*
-    Array<const FESpace*> lospaces (0);
-    for ( int i = 0; i < spaces.Size(); i++)
-      if ( &spaces[i]->LowOrderFESpace() )
-	lospaces . Append ( &spaces[i]->LowOrderFESpace() );
-      else
-	{ low_order_space = 0; return; }
-    */
-    low_order_space = new CompoundFESpace(ma, flags, parseflags);
-#endif
   }
 
 
@@ -2121,21 +1657,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       prols[i] = spaces[i]->GetProlongation();
 
     prol = new CompoundProlongation (this, prols);
-
-#ifdef PARALLELxxx
-    if ( ntasks == 1 ) return;
-    Flags loflags;
-    loflags.SetFlag("order",0.0);
-    paralleldofs = 0;
-    if (dgjumps){ *testout << "(CompFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
-    Array<FESpace*> lospaces (0);
-    for ( int i = 0; i < spaces.Size(); i++)
-      if ( &spaces[i]->LowOrderFESpace() )
-	lospaces . Append ( &spaces[i]->LowOrderFESpace() );
-      else
-	{ low_order_space = 0; return; }
-    low_order_space = new CompoundFESpace(ma, lospaces, flags, parseflags);
-#endif
   }
 
 
@@ -2206,11 +1727,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     (*testout) << "Update compound fespace" << endl;
     (*testout) << "cummulative dofs start at " << cummulative_nd << endl;
     (*testout) << "dof coupling types " << ctofdof << endl;
-#ifdef PARALLELxx
-    if (low_order_space)
-      low_order_space -> Update(lh);
-    // UpdateParallelDofs();
-#endif
   }
 
   void CompoundFESpace :: FinalizeUpdate(LocalHeap & lh)
@@ -2398,20 +1914,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
-
-#ifdef PARALLEL_NOT_JS_20110614
-  void CompoundFESpace :: UpdateParallelDofs_loproc()
-  {
-    // gather the paralleldofs of all the fespaces to cumulatedparalleldof
-    paralleldofs -> UpdateCompound ();   
-  }
-
-  void CompoundFESpace :: UpdateParallelDofs_hoproc()
-  {
-    paralleldofs -> UpdateCompound ();   
-  }
-
-#endif
 
 
 template

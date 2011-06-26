@@ -1,7 +1,9 @@
 #include <comp.hpp>
-
+#include <parallelngs.hpp>
 
 #include <parallelngs.hpp>
+
+
 
 namespace ngcomp
 {
@@ -60,21 +62,8 @@ namespace ngcomp
   bool LinearForm :: IsAssembled (void) { return assembled; }
 
   template <class TV>
-  // VVector<TV> & 
   BaseVector & T_LinearForm<TV> :: GetVector () const 
   { 
-#ifdef PARALLELxx
-    const FESpace & afespace = LinearForm :: GetFESpace();
-    ParallelBaseVector * parvec = dynamic_cast<ParallelBaseVector*> (vec);
-    if (parvec)
-      {
-	parvec -> SetParallelDofs ( &afespace.GetParallelDofs() );
-	if ( &(afespace.GetParallelDofs()) )
-	  parvec -> SetStatus (DISTRIBUTED);
-	else
-	  parvec -> SetStatus ( NOT_PARALLEL );
-      }
-#endif
     return *vec; 
   }
 
@@ -208,7 +197,6 @@ namespace ngcomp
 		  }
 		  
 		  HeapReset hr(lh);
-		  if ( ma.IsGhostEl( i ) ) continue;
 
 		  const FiniteElement & fel = fespace.GetFE (i, lh);
 		  ma.GetElementTransformation (i, eltrans);
@@ -249,9 +237,8 @@ namespace ngcomp
 		}
 	    }
 
-#ifdef PARALLEL
-	    MPI_Barrier( MPI_COMM_WORLD );
-#endif	      
+	    MyMPI_Barrier();
+
 	    if (id == 0)
 	      cout << "\rassemble element " << ne << "/" << ne << endl;
 	  }
@@ -276,7 +263,6 @@ namespace ngcomp
 
 		    ma.SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
 		  }
-		  if ( ma.IsGhostSEl ( i ) ) continue;
 
 		  HeapReset hr(lh);
 	      
@@ -343,7 +329,6 @@ namespace ngcomp
 		      cout << "\rassemble facet surface element " << i << "/" << nse << flush;
 		    ma.SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
 		  }
-		  if ( ma.IsGhostSEl ( i ) ) continue;
 
 		  HeapReset hr(lh);
 		  
@@ -740,35 +725,24 @@ namespace ngcomp
     delete vec;
   }
 
-#ifndef PARALLEL
+
   template <typename TV>
   void T_LinearForm<TV> :: AllocateVector ()
   {
     delete vec;
-    vec = new ngla::VVector<TV> (this->fespace.GetNDof());
-    (*vec) = TSCAL(0);
-//     allocated=true;
-  }
-#else
-  template <typename TV>
-  void T_LinearForm<TV> :: AllocateVector ()
-  {
-    delete vec;
-    const FESpace & afespace = this->fespace;
-    if ( &afespace.GetParallelDofs() == 0 )
-      {
-	vec = new VVector<TV> (afespace.GetNDof());
-	(*vec) = TSCAL(0);
-      }
+    const FESpace & fes = this->fespace;
+#ifdef PARALLEL
+    if ( &fes.GetParallelDofs() )
+      vec = new ParallelVVector<TV> (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
     else
-      {
-	vec = new ParallelVVector<TV> ( afespace.GetNDof(),& afespace.GetParallelDofs());
-	(*vec) = TSCAL(0);
-	dynamic_cast<ParallelBaseVector*> (vec) -> SetStatus (DISTRIBUTED);
-      }
-//     allocated=true;
-  }
 #endif
+      vec = new VVector<TV> (fes.GetNDof());
+    (*vec) = TSCAL(0);
+    vec->SetParallelStatus (DISTRIBUTED);
+  }
+
+
+
 
 
   template <typename TV>

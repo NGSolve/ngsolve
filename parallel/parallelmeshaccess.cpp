@@ -1,3 +1,5 @@
+noch wichtig ???
+
 #ifdef PARALLEL
  
 #include <comp.hpp>

@@ -1974,14 +1974,12 @@ namespace ngsolve
       
     LoadPDE(infile,nomeshload,nogeometryload);
 
-#ifdef PARALLEL
     if ( id == 0 )
       for ( int dest = 1; dest < ntasks; dest ++)
 	{
 	  MyMPI_Send ("ngs_pdefile", dest);
 	  MyMPI_Send (filename, dest);
 	}
-#endif
   }
 
 

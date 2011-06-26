@@ -12,7 +12,14 @@
   
 namespace ngfem
 {
-  using namespace ngfem;
+
+  DifferentialOperator :: ~DifferentialOperator ()
+  {
+    ;
+  }
+
+
+
 
   Integrator :: Integrator() throw ()
   {

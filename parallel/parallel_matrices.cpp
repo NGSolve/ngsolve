@@ -14,16 +14,11 @@ namespace ngla
 {
   using namespace ngparallel;
 
-  ParallelBaseMatrix :: ~ParallelBaseMatrix ()
-  {
-    ;
-  }
-
-  
 
   template <typename TM>
-  MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, const BitArray * subset, const ParallelDofs * pardofs)
-    : ParallelBaseMatrix (pardofs), loc2glob(ntasks)
+  MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, 
+				      const BitArray * subset, const ParallelDofs * pardofs)
+    : loc2glob(ntasks)
   {
     inv = NULL;
 
@@ -234,13 +229,9 @@ namespace ngla
     bool is_x_cum = (dynamic_cast<const ParallelBaseVector&> (x) . Status() == CUMULATED);
     x.Distribute();
     y.Cumulate();
-    /*
-    dynamic_cast<const ParallelBaseVector&> (x) . Distribute();
-    dynamic_cast<const ParallelBaseVector&> (y) . AllReduce(&hoprocs);
-    */
+
     if (id > 0)
       {
-      
 	FlatVector<TV> fx = x.FV<TV> ();
 	FlatVector<TV> fy = y.FV<TV> ();
 
@@ -306,8 +297,6 @@ namespace ngla
   {
     x.Cumulate();
     y.Distribute();
-    // dynamic_cast<const ParallelBaseVector&> (x).AllReduce(&hoprocs);
-    // dynamic_cast<const ParallelBaseVector&> (y).Distribute();
     if (id > 0)
       mat.MultAdd (s, x, y);
   }
@@ -318,8 +307,6 @@ namespace ngla
   {
     x.Cumulate();
     y.Distribute();
-    // dynamic_cast<const ParallelBaseVector&> (x).AllReduce(&hoprocs);
-    // dynamic_cast<const ParallelBaseVector&> (y).Distribute();
     if (id > 0)
       mat.MultTransAdd (s, x, y);
   }

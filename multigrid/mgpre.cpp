@@ -401,18 +401,18 @@ namespace ngmg
         res = f - (*mat) * u;    // zur Sicheheit
 	Array<int> loprocs(1);
 	loprocs[0] = 0;
- 	res.AllReduce(&hoprocs, &loprocs );
+ 	res.Cumulate();   // AllReduce(&hoprocs, &loprocs );
 	res.Distribute();
  	u.Distribute();
- 	u.AllReduce(&hoprocs);
+ 	u.Cumulate();   // AllReduce(&hoprocs);
 	if ( id == 0 )
 	  {
 	    cw = (*cpre) * res;
-	    cw.SetStatus(CUMULATED);
+	    cw.SetParallelStatus(CUMULATED);
 	    u += cw;//(*cpre) * res;
 	  }
-	u.SetStatus(DISTRIBUTED);	
-	u.AllReduce(&loprocs, &hoprocs );
+	u.SetParallelStatus(DISTRIBUTED);	
+	u.Cumulate();   // AllReduce(&loprocs, &hoprocs );
 
 	if ( id > 0 )
           smoother->PostSmooth (level, u, f, smoothingsteps);

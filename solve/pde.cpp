@@ -11,10 +11,10 @@ klappt leider noch nicht
 // important message
 class IM
 {
-  int value;
+int value;
 public:
-  IM (int val) : value(val) { ; }
-  int Value () const { return value; }
+IM (int val) : value(val) { ; }
+int Value () const { return value; }
 };
 
 
@@ -22,11 +22,11 @@ class NGSOStream
 {
   ostream & ost;
   bool active;
-public:
+ public:
   NGSOStream (ostream & aost, bool aactive)
     : ost(aost), active(aactive) { ; }
-  bool Active () const { return active; }
-  ostream & GetStream () { return ost; }
+    bool Active () const { return active; }
+    ostream & GetStream () { return ost; }
 };
 
 NGSOStream operator<< (ostream & ost, const IM & im)
@@ -484,7 +484,7 @@ namespace ngsolve
   { 
     if (spaces.Used(name))
       return spaces[name]; 
-
+    
     if (opt) return 0;
     stringstream str;
     str << "FESpace '" << name << "' not defined\n";
@@ -560,11 +560,11 @@ namespace ngsolve
     static Timer timer("Solver - Total");
     RegionTimer reg (timer);
 
-#ifdef PARALLEL
-    if ( id == 0 )
-      for ( int dest = 1; dest < ntasks; dest++)
+    if (id == 0)
+      for (int dest = 1; dest < ntasks; dest++)
         MyMPI_Send("ngs_solvepde" , dest);
-#endif
+    
+
 
     size_t heapsize = 1000000;
     if (constants.Used ("heapsize"))
@@ -577,412 +577,402 @@ namespace ngsolve
 
     LocalHeap lh(heapsize, "PDE - main heap");
 
-    /*
-    clock_t starttime, endtime;
-    starttime = clock();
-    */
-    double starttime, endtime;
-    starttime = WallTime();
+    double starttime = WallTime();
 
-#ifdef PARALLEL
-    MPI_Barrier( MPI_COMM_WORLD );
-#endif
+    MyMPI_Barrier();
 
-    bool solvebvpstd = true;
-
-
-    if(solvebvpstd)
+    // bool solvebvpstd = true;
+    // if(solvebvpstd)
+    // {
+    static Timer meshtimer("Mesh adaption");
+    meshtimer.Start();
+    
+    if (levelsolved >= 0)
       {
-	static int meshtimer = NgProfiler::CreateTimer ("Mesh adaption");
-	NgProfiler::StartTimer (meshtimer);
-    
-	if (levelsolved >= 0)
-	  {
-	    if (constants.Used ("refinehp"))
-	      Ng_Refine(NG_REFINE_HP);
-	    else if (constants.Used ("refinep"))
-	      Ng_Refine(NG_REFINE_P);
-	    else
-	      Ng_Refine(NG_REFINE_H);
-	  }
+	if (constants.Used ("refinehp"))
+	  Ng_Refine(NG_REFINE_HP);
+	else if (constants.Used ("refinep"))
+	  Ng_Refine(NG_REFINE_P);
+	else
+	  Ng_Refine(NG_REFINE_H);
+      }
 
-	if (constants.Used ("secondorder"))
-	  throw Exception ("secondorder is obsolete \n Please use  'define constant geometryorder = 2' instead");
+    if (constants.Used ("secondorder"))
+      throw Exception ("secondorder is obsolete \n Please use  'define constant geometryorder = 2' instead");
 	
-	if (constants.Used ("hpref") && levelsolved == -1)
+    if (constants.Used ("hpref") && levelsolved == -1)
+      {
+	if( constants.Used("hpref_setnoorders") )
 	  {
-	    if( constants.Used("hpref_setnoorders") )
-	      {
-		if( constants.Used("hpref_geom_factor")) 
-		  Ng_HPRefinement (int (constants["hpref"]),constants["hpref_geom_factor"],false);
-		else
-		  Ng_HPRefinement (int (constants["hpref"]),0.125 ,false);
-	      }
+	    if( constants.Used("hpref_geom_factor")) 
+	      Ng_HPRefinement (int (constants["hpref"]),constants["hpref_geom_factor"],false);
 	    else
-	      {
-		if( constants.Used("hpref_geom_factor")) 
-		  Ng_HPRefinement (int (constants["hpref"]),constants["hpref_geom_factor"]);
-		else
-		  Ng_HPRefinement (int (constants["hpref"]));
-	      }
+	      Ng_HPRefinement (int (constants["hpref"]),0.125 ,false);
 	  }
-
-
-	int geometryorder = 1;
-	if (constants.Used ("geometryorder"))
-	  geometryorder = int (constants["geometryorder"]);
-
-        bool rational = false;
-        if (constants.Used ("rationalgeometry"))
-          rational = bool (constants["rationalgeometry"]);
-
-
-	if (constants.Used("common_integration_order"))
+	else
 	  {
-            if (printmessage_importance>0)
-              cout << " !!! comminintegrationorder = " << int (constants["common_integration_order"]) << endl;
-	    Integrator::SetCommonIntegrationOrder (int (constants["common_integration_order"]));
+	    if( constants.Used("hpref_geom_factor")) 
+	      Ng_HPRefinement (int (constants["hpref"]),constants["hpref_geom_factor"]);
+	    else
+	      Ng_HPRefinement (int (constants["hpref"]));
 	  }
-
-	if (geometryorder)
-          Ng_HighOrder (geometryorder, rational);
+      }
 
 
-	NgProfiler::StopTimer (meshtimer);
+    int geometryorder = 1;
+    if (constants.Used ("geometryorder"))
+      geometryorder = int (constants["geometryorder"]);
 
-        ma.UpdateBuffers();   // update global mesh infos
+    bool rational = false;
+    if (constants.Used ("rationalgeometry"))
+      rational = bool (constants["rationalgeometry"]);
 
-        if (id == 0 && printmessage_importance>0)
-	  {
-	    cout << "Solve at level " << ma.GetNLevels()-1
-		 << ", NE = " << ma.GetNE() 
-		 << ", NP = " << ma.GetNP() << endl;
-	  }
+
+    if (constants.Used("common_integration_order"))
+      {
+	if (printmessage_importance>0)
+	  cout << " !!! comminintegrationorder = " << int (constants["common_integration_order"]) << endl;
+	Integrator::SetCommonIntegrationOrder (int (constants["common_integration_order"]));
+      }
+
+    if (geometryorder)
+      Ng_HighOrder (geometryorder, rational);
+
+
+    meshtimer.Stop();
+
+    ma.UpdateBuffers();   // update global mesh infos
+
+    if (id == 0 && printmessage_importance>0)
+      {
+	cout << "Solve at level " << ma.GetNLevels()-1
+	     << ", NE = " << ma.GetNE() 
+	     << ", NP = " << ma.GetNP() << endl;
+      }
     
-	// line-integrator curve points can only be built if
-	// element-curving has been done
-	for(int i=0; i<CurvePointIntegrators.Size(); i++)
-	  BuildLineIntegratorCurvePoints(*CurvePointIntegratorFilenames[i],
-					 ma,
-					 *CurvePointIntegrators[i]);
+    // line-integrator curve points can only be built if
+    // element-curving has been done
+    for(int i=0; i<CurvePointIntegrators.Size(); i++)
+      BuildLineIntegratorCurvePoints(*CurvePointIntegratorFilenames[i],
+				     ma,
+				     *CurvePointIntegrators[i]);
 		    
 
 
-	for(int i=0; i<todo.Size(); i++)
+    for(int i=0; i<todo.Size(); i++)
+      {
+	EvalVariable * ev = dynamic_cast<EvalVariable *>(todo[i]);
+	FESpace * fes = dynamic_cast<FESpace *>(todo[i]);
+	GridFunction * gf = dynamic_cast<GridFunction *>(todo[i]);
+	BilinearForm * bf = dynamic_cast<BilinearForm *>(todo[i]);
+	LinearForm * lf = dynamic_cast<LinearForm *>(todo[i]);
+	Preconditioner * pre = dynamic_cast<Preconditioner *>(todo[i]);
+	NumProc * np = dynamic_cast<NumProc *>(todo[i]);
+
+	if (ev)
 	  {
-	    EvalVariable * ev = dynamic_cast<EvalVariable *>(todo[i]);
-	    FESpace * fes = dynamic_cast<FESpace *>(todo[i]);
-	    GridFunction * gf = dynamic_cast<GridFunction *>(todo[i]);
-	    BilinearForm * bf = dynamic_cast<BilinearForm *>(todo[i]);
-	    LinearForm * lf = dynamic_cast<LinearForm *>(todo[i]);
-	    Preconditioner * pre = dynamic_cast<Preconditioner *>(todo[i]);
-	    NumProc * np = dynamic_cast<NumProc *>(todo[i]);
-
-	    if (ev)
-	      {
-                if (printmessage_importance>0)
-                  cout << "evaluate variable " << ev->GetName() << " = " << ev->Evaluate() << endl;
-	      }
-
-	    else if (fes)
-	      {
-		try
-		  {
-		    NgProfiler::RegionTimer timer(fes->GetTimer());
-                    if (id == 0 && printmessage_importance>0)
-		      {
-			cout << "Update "
-			     << fes -> GetClassName()
-			     << " " << fes -> GetName () << flush;
-		      }
-
-		    fes -> Update(lh);
-		    fes -> FinalizeUpdate(lh);
-
-		    lh.CleanUp();
-
-		    if (fes->GetDimension() == 1)
-                      {
-                        if (id == 0 && printmessage_importance>0)
-                          cout << ", ndof = " << fes -> GetNDof() << endl;
-                      }
-                    else
-                      if (id == 0 && printmessage_importance>0)
-                        {
-                          cout << ", ndof = " 
-                               << fes -> GetDimension() << " x " 
-                               << fes -> GetNDof() << endl;
-                        }
-		  }
-		catch (exception & e)
-		  {
-		    throw Exception (e.what() + 
-				     string ("\nthrown by update space ") +
-				     string(fes->GetName()));
-		  }
-#ifdef _MSC_VER
-# ifndef MSVC_EXPRESS
-		catch (CException * e)
-		  {
-		    TCHAR msg[255];
-		    e->GetErrorMessage(msg, 255);
-		    throw Exception (msg + 
-				     string ("\nthrown by update space ") +
-				     string(fes->GetName()));
-		  }
-# endif // MSVC_EXPRESS
-#endif
-		catch (Exception & e)
-		  {
-		    e.Append (string ("\nthrown by update space ") +
-			      string (fes->GetName()));
-		    throw;
-		  }
-	      }
-
-	    else if (gf)
-	      {
-		try
-		  {
-                    if (id == 0 && printmessage_importance>0)
-                      cout << "Update gridfunction " << gf->GetName() << endl;
-		    NgProfiler::RegionTimer timer(gf->GetTimer());
-		    gf->Update();
-
-		  }
-		catch (exception & e)
-		  {
-		    throw Exception (e.what() + 
-				     string ("\nthrown by update grid-function ") +
-				     string (gf->GetName()));
-		  }
-#ifdef _MSC_VER
-# ifndef MSVC_EXPRESS
-		catch (CException * e)
-		  {
-		    TCHAR msg[255];
-		    e->GetErrorMessage(msg, 255);
-		    throw Exception (msg + 
-				     string ("\nthrown by update grid-function ") +
-				     string(gf->GetName()));
-		  }
-# endif // MSVC_EXPRESS
-#endif
-		catch (Exception & e)
-		  {
-		    e.Append (string ("\nthrown by update grid-function ") +
-			      string (gf->GetName()));
-		    throw;
-		  }
-	      }
-
-	    else if (bf)
-	      {
-		try
-		  {
-                    if (id == 0 && printmessage_importance>0)
-		      {
-			cout << "update bilinear-form " << bf->GetName() << endl;
-			(*testout) << "update bilinear-form " << bf->GetName() << endl;
-		      }
-		    NgProfiler::RegionTimer timer(bf->GetTimer());
-		    bf->Assemble(lh);
-		    lh.CleanUp();
-		  }
-      
-
-		catch (exception & e)
-		  {
-		    throw Exception (e.what() + 
-				     string ("\nthrown by update bilinear-form ") +
-				     string (bf->GetName()));
-		  }
-#ifdef _MSC_VER
-# ifndef MSVC_EXPRESS
-		catch (CException * e)
-		  {
-		    TCHAR msg[255];
-		    e->GetErrorMessage(msg, 255);
-		    throw Exception (msg + 
-				     string ("\nthrown by update bilinear-form ") +
-				     string(bf->GetName()));
-		  }
-# endif // MSVC_EXPRESS
-#endif
-		catch (Exception & e)
-		  {
-		    e.Append (string ("\nthrown by update bilinear-form ") +
-			      string (bf->GetName()));
-		    throw;
-		  }
-	      }
-
-	    else if (lf)
-	      {
-		if( lf->InitialAssembling() )
-		  {
-		    try
-		      {
-                        if (id == 0 && printmessage_importance>0)
-                          cout << "Update linear-form " << lf->GetName() << endl;
-			NgProfiler::RegionTimer timer(lf->GetTimer());
-			
-			lf->Assemble(lh);
-			lh.CleanUp();
-			
-		      }
-		    catch (exception & e)
-		      {
-			throw Exception (e.what() + 
-					 string ("\nthrown by update linear-form ") +
-					 string (lf->GetName()));
-		      }
-#ifdef _MSC_VER
-# ifndef MSVC_EXPRESS
-		    catch (CException * e)
-		      {
-			TCHAR msg[255];
-			e->GetErrorMessage(msg, 255);
-			throw Exception (msg + 
-					 string ("\nthrown by update linear-form ") +
-					 string(lf->GetName()));
-		      }
-# endif // MSVC_EXPRESS
-#endif
-		    catch (Exception & e)
-		      {
-			e.Append (string ("\nthrown by update linear-form ") +
-				  string (lf->GetName()));
-			throw;
-		      }
-		  }
-	      }
-
-	    else if (pre)
-	      {
-		try
-		  {
-
-		    if ( pre->LaterUpdate() )
-		      {  
-			if (id == 0 && printmessage_importance>0)
-			  {  
-			    cout << endl << "WARNING: Update of " << pre->ClassName() 
-				 << "  " << pre->GetName() << " postponed!" << endl;
-			  }
-		      }
-		    else
-		      {	    
-                        if (id == 0 && printmessage_importance>0)
-			  {
-			    cout << "Update " << pre->ClassName() 
-				 << "  " << pre->GetName() << endl;
-			  }
-                        NgProfiler::RegionTimer timer(pre->GetTimer());
-			pre->Update();
-			//	  preconditioners[i]->Test();
-		      }
-		  }
-
-		catch (exception & e)
-		  {
-		    throw Exception (e.what() + 
-				     string ("\nthrown by update preconditioner ") +
-				     string (pre->GetName()));
-		  }
-#ifdef _MSC_VER
-# ifndef MSVC_EXPRESS
-		catch (CException * e)
-		  {
-		    TCHAR msg[255];
-		    e->GetErrorMessage(msg, 255);
-		    throw Exception (msg + 
-				     string ("\nthrown by update preconditioner ") +
-				     string(pre->GetName()));
-		  }
-# endif // MSVC_EXPRESS
-#endif
-		catch (Exception & e)
-		  {
-		    e.Append (string ("\nthrown by update preconditioner ") +
-			      string (pre->GetName()));
-		    throw;
-		  }
-	      }
-
-	    else if (np)
-	      {
-		try
-		  {
-                    if (id == 0 && printmessage_importance > 0)
-		      {
-			cout << "Call numproc " << np->GetClassName() 
-			     << "  " << np->GetName() << endl;
-		      }
-		    NgProfiler::RegionTimer timer(np->GetTimer());
-		    np->Do(lh);
-		    lh.CleanUp();
-		  }
-		catch (exception & e)
-		  {
-		    throw Exception (e.what() + 
-				     string ("\nthrown by update numproc ") +
-				     string (np->GetName()));
-		  }
-#ifdef _MSC_VER
-# ifndef MSVC_EXPRESS
-		catch (CException * e)
-		  {
-		    TCHAR msg[255];
-		    e->GetErrorMessage(msg, 255);
-		    throw Exception (msg + 
-				     string ("\nthrown by update numproc ") +
-				     string(np->GetName()));
-		  }
-# endif // MSVC_EXPRESS
-#endif
-		catch (Exception & e)
-		  {
-		    e.Append (string ("\nthrown by update numproc ") +
-			      string (np->GetName()));
-		    throw;
-		  }
-	      }
-	    else
-	      cerr << "???????????????" << endl;
-
-
+	    if (printmessage_importance>0)
+	      cout << "evaluate variable " << ev->GetName() << " = " << ev->Evaluate() << endl;
 	  }
 
+	else if (fes)
+	  {
+	    try
+	      {
+		NgProfiler::RegionTimer timer(fes->GetTimer());
+		if (id == 0 && printmessage_importance>0)
+		  {
+		    cout << "Update "
+			 << fes -> GetClassName()
+			 << " " << fes -> GetName () << flush;
+		  }
+
+		fes -> Update(lh);
+		fes -> FinalizeUpdate(lh);
+
+		lh.CleanUp();
+
+		int ndof = (ntasks == 1) ? 
+		  fes->GetNDof() : fes->GetParallelDofs().GetNDofGlobal();
+
+
+		if (id == 0 && printmessage_importance>0)
+		  {
+		    if (fes->GetDimension() == 1)
+		      cout << ", ndof = " << ndof << endl;
+		    else
+		      cout << ", ndof = " 
+			   << fes -> GetDimension() << " x " 
+			   << ndof << endl;
+		  }
+	      }
+	    catch (exception & e)
+	      {
+		throw Exception (e.what() + 
+				 string ("\nthrown by update space ") +
+				 string(fes->GetName()));
+	      }
+#ifdef _MSC_VER
+# ifndef MSVC_EXPRESS
+	    catch (CException * e)
+	      {
+		TCHAR msg[255];
+		e->GetErrorMessage(msg, 255);
+		throw Exception (msg + 
+				 string ("\nthrown by update space ") +
+				 string(fes->GetName()));
+	      }
+# endif // MSVC_EXPRESS
+#endif
+	    catch (Exception & e)
+	      {
+		e.Append (string ("\nthrown by update space ") +
+			  string (fes->GetName()));
+		throw;
+	      }
+	  }
+
+	else if (gf)
+	  {
+	    try
+	      {
+		if (id == 0 && printmessage_importance>0)
+		  cout << "Update gridfunction " << gf->GetName() << endl;
+		NgProfiler::RegionTimer timer(gf->GetTimer());
+		gf->Update();
+
+	      }
+	    catch (exception & e)
+	      {
+		throw Exception (e.what() + 
+				 string ("\nthrown by update grid-function ") +
+				 string (gf->GetName()));
+	      }
+#ifdef _MSC_VER
+# ifndef MSVC_EXPRESS
+	    catch (CException * e)
+	      {
+		TCHAR msg[255];
+		e->GetErrorMessage(msg, 255);
+		throw Exception (msg + 
+				 string ("\nthrown by update grid-function ") +
+				 string(gf->GetName()));
+	      }
+# endif // MSVC_EXPRESS
+#endif
+	    catch (Exception & e)
+	      {
+		e.Append (string ("\nthrown by update grid-function ") +
+			  string (gf->GetName()));
+		throw;
+	      }
+	  }
+
+	else if (bf)
+	  {
+	    try
+	      {
+		if (id == 0 && printmessage_importance>0)
+		  {
+		    cout << "update bilinear-form " << bf->GetName() << endl;
+		    (*testout) << "update bilinear-form " << bf->GetName() << endl;
+		  }
+		NgProfiler::RegionTimer timer(bf->GetTimer());
+		bf->Assemble(lh);
+		lh.CleanUp();
+	      }
+      
+
+	    catch (exception & e)
+	      {
+		throw Exception (e.what() + 
+				 string ("\nthrown by update bilinear-form ") +
+				 string (bf->GetName()));
+	      }
+#ifdef _MSC_VER
+# ifndef MSVC_EXPRESS
+	    catch (CException * e)
+	      {
+		TCHAR msg[255];
+		e->GetErrorMessage(msg, 255);
+		throw Exception (msg + 
+				 string ("\nthrown by update bilinear-form ") +
+				 string(bf->GetName()));
+	      }
+# endif // MSVC_EXPRESS
+#endif
+	    catch (Exception & e)
+	      {
+		e.Append (string ("\nthrown by update bilinear-form ") +
+			  string (bf->GetName()));
+		throw;
+	      }
+	  }
+
+	else if (lf)
+	  {
+	    if( lf->InitialAssembling() )
+	      {
+		try
+		  {
+		    if (id == 0 && printmessage_importance>0)
+		      cout << "Update linear-form " << lf->GetName() << endl;
+		    NgProfiler::RegionTimer timer(lf->GetTimer());
+			
+		    lf->Assemble(lh);
+		    lh.CleanUp();
+			
+		  }
+		catch (exception & e)
+		  {
+		    throw Exception (e.what() + 
+				     string ("\nthrown by update linear-form ") +
+				     string (lf->GetName()));
+		  }
+#ifdef _MSC_VER
+# ifndef MSVC_EXPRESS
+		catch (CException * e)
+		  {
+		    TCHAR msg[255];
+		    e->GetErrorMessage(msg, 255);
+		    throw Exception (msg + 
+				     string ("\nthrown by update linear-form ") +
+				     string(lf->GetName()));
+		  }
+# endif // MSVC_EXPRESS
+#endif
+		catch (Exception & e)
+		  {
+		    e.Append (string ("\nthrown by update linear-form ") +
+			      string (lf->GetName()));
+		    throw;
+		  }
+	      }
+	  }
+
+	else if (pre)
+	  {
+	    try
+	      {
+
+		if ( pre->LaterUpdate() )
+		  {  
+		    if (id == 0 && printmessage_importance>0)
+		      {  
+			cout << endl << "WARNING: Update of " << pre->ClassName() 
+			     << "  " << pre->GetName() << " postponed!" << endl;
+		      }
+		  }
+		else
+		  {	    
+		    if (id == 0 && printmessage_importance>0)
+		      {
+			cout << "Update " << pre->ClassName() 
+			     << "  " << pre->GetName() << endl;
+		      }
+		    NgProfiler::RegionTimer timer(pre->GetTimer());
+		    pre->Update();
+		    //	  preconditioners[i]->Test();
+		  }
+	      }
+
+	    catch (exception & e)
+	      {
+		throw Exception (e.what() + 
+				 string ("\nthrown by update preconditioner ") +
+				 string (pre->GetName()));
+	      }
+#ifdef _MSC_VER
+# ifndef MSVC_EXPRESS
+	    catch (CException * e)
+	      {
+		TCHAR msg[255];
+		e->GetErrorMessage(msg, 255);
+		throw Exception (msg + 
+				 string ("\nthrown by update preconditioner ") +
+				 string(pre->GetName()));
+	      }
+# endif // MSVC_EXPRESS
+#endif
+	    catch (Exception & e)
+	      {
+		e.Append (string ("\nthrown by update preconditioner ") +
+			  string (pre->GetName()));
+		throw;
+	      }
+	  }
+
+	else if (np)
+	  {
+	    try
+	      {
+		if (id == 0 && printmessage_importance > 0)
+		  {
+		    cout << "Call numproc " << np->GetClassName() 
+			 << "  " << np->GetName() << endl;
+		  }
+		NgProfiler::RegionTimer timer(np->GetTimer());
+		np->Do(lh);
+		lh.CleanUp();
+	      }
+	    catch (exception & e)
+	      {
+		throw Exception (e.what() + 
+				 string ("\nthrown by update numproc ") +
+				 string (np->GetName()));
+	      }
+#ifdef _MSC_VER
+# ifndef MSVC_EXPRESS
+	    catch (CException * e)
+	      {
+		TCHAR msg[255];
+		e->GetErrorMessage(msg, 255);
+		throw Exception (msg + 
+				 string ("\nthrown by update numproc ") +
+				 string(np->GetName()));
+	      }
+# endif // MSVC_EXPRESS
+#endif
+	    catch (Exception & e)
+	      {
+		e.Append (string ("\nthrown by update numproc ") +
+			  string (np->GetName()));
+		throw;
+	      }
+	  }
+	else
+	  cerr << "???????????????" << endl;
+
+
+      }
 
 
 
-	  for (int i = 0; i < preconditioners.Size(); i++)
-	    if(!preconditioners[i]->SkipCleanUp())
-              preconditioners[i]->CleanUpLevel();
-          for (int i = 0; i < bilinearforms.Size(); i++)
-	    if(!bilinearforms[i]->SkipCleanUp())
-	      bilinearforms[i]->CleanUpLevel();
-	  for (int i = 0; i < linearforms.Size(); i++)
-	    if(!linearforms[i]->SkipCleanUp())
-	      linearforms[i]->CleanUpLevel();
+
+    for (int i = 0; i < preconditioners.Size(); i++)
+      if(!preconditioners[i]->SkipCleanUp())
+	preconditioners[i]->CleanUpLevel();
+    for (int i = 0; i < bilinearforms.Size(); i++)
+      if(!bilinearforms[i]->SkipCleanUp())
+	bilinearforms[i]->CleanUpLevel();
+    for (int i = 0; i < linearforms.Size(); i++)
+      if(!linearforms[i]->SkipCleanUp())
+	linearforms[i]->CleanUpLevel();
 	  
 
-	  // set solution data
-	  for (int i = 0; i < gridfunctions.Size(); i++)
-	    gridfunctions[i]->Visualize(gridfunctions.GetName(i));
+    // set solution data
+    for (int i = 0; i < gridfunctions.Size(); i++)
+      gridfunctions[i]->Visualize(gridfunctions.GetName(i));
 
-	  Ng_Redraw();
-	  levelsolved++;
-      }
+    Ng_Redraw();
+    levelsolved++;
+    // }
     
-    endtime = WallTime();
-
-#ifdef PARALLEL
-    MPI_Barrier( MPI_COMM_WORLD );
-#endif
-
-    if (id == 0 && printmessage_importance>0)
+    double endtime = WallTime();
+    
+    MyMPI_Barrier();
+    
+    if (id == 0 && printmessage_importance > 0)
       {
 	cout << "Equation Solved" << endl;
 	cout << "Total Time = " << endtime-starttime << " sec wall time" << endl << endl;
@@ -1088,61 +1078,37 @@ namespace ngsolve
 	if (type == "compound")
 	  {
 	    const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
+	    if (printmessage_importance>0)
+	      cout << "   spaces = " << spacenames << endl;
+
 	    Array<FESpace*> cspaces (spacenames.Size());
 	    for (int i = 0; i < cspaces.Size(); i++)
 	      cspaces[i] = GetFESpace (spacenames[i]);
+
 	    space = new CompoundFESpace (GetMeshAccess(), cspaces, flags);
 	  }
 	if (!space) 
-	  cout << "warning: unknown fespace type " << type << endl;
-      }
-    else if (flags.GetDefineFlag ("compound"))
-      {
-	const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
-        if (printmessage_importance>0)
-          cout << "   spaces=" << spacenames << endl;
-	Array<FESpace*> cspaces (spacenames.Size());
-	for (int i = 0; i < cspaces.Size(); i++)
-	  cspaces[i] = GetFESpace (spacenames[i]);
-	space = new CompoundFESpace (GetMeshAccess(), cspaces, flags);
+	  {
+	    stringstream out;
+	    out << "unknown space type " << type << endl;
+	    out << "available types are" << endl;
+	    GetFESpaceClasses().Print (out);
+	    out << "compound" << endl;
+	    
+	    throw Exception (out.str());
+	  }
       }
     else
       {
-	throw Exception ("define fespace without -type=<typename>");
-	/*
-	// old method
-	for (int i = 0; i < GetFESpaceClasses().GetFESpaces().Size(); i++)
-	{
-	if (flags.GetDefineFlag (GetFESpaceClasses().GetFESpaces()[i]->name))
-	#ifdef PARALLEL
-	{
-	if ( id == 0 && ntasks > 1)
-	{
-	FESpace * hospace = GetFESpaceClasses().GetFESpaces()[i]-> creator ( ma, flags) ;
-	// low order space if existent
-	space = & (hospace -> LowOrderFESpace()) ;
-	// else space, but with  order 0
-	if ( space == 0 )
-	{
-	flags.SetFlag("order",0.0);
-	flags.PrintFlags(*testout);
-	space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
-	}
-	//delete hospace;
-	}
-	else
-	space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
-	}
-	#else
-	space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
-	#endif
-	    
-	}
-	*/
+	stringstream out;
+	out << "depreciated: please define fespace with -type=<typename>" << endl;
+	out << "available types are" << endl;
+	GetFESpaceClasses().Print (out);
+	out << "compound" << endl;
+
+	throw Exception (out.str());
       }
     
-    // if (flags.GetDefineFlag ("bem")) space->SetBEM (1);
-
     if (flags.NumListFlagDefined ("dirichletboundaries"))
       {
 	BitArray dirbnds(ma.GetNBoundaries());
@@ -1357,14 +1323,14 @@ namespace ngsolve
 	else if (strcmp (type, "nonsymmetric") == 0)
 	  pre = new NonsymmetricPreconditioner (this, flags, name);
         /*
-	else if (strcmp (type, "wirebasket" ) == 0 )
+	  else if (strcmp (type, "wirebasket" ) == 0 )
 	  {
-	    const BilinearForm * bfa = 
-	      GetBilinearForm(flags.GetStringFlag("bilinearform", "") );
-	    if ( bfa -> GetFESpace() . IsComplex() )
-	      pre = new WireBasketPreconditioner<Complex>(this, flags, name);
-	    else
-	      pre = new WireBasketPreconditioner<double>(this, flags, name);
+	  const BilinearForm * bfa = 
+	  GetBilinearForm(flags.GetStringFlag("bilinearform", "") );
+	  if ( bfa -> GetFESpace() . IsComplex() )
+	  pre = new WireBasketPreconditioner<Complex>(this, flags, name);
+	  else
+	  pre = new WireBasketPreconditioner<double>(this, flags, name);
 	  }
         */
 	else
@@ -1381,7 +1347,7 @@ namespace ngsolve
       {
 	if (strcmp (type, "multigrid") == 0)
 	  {
-	      pre = new MGPreconditioner (this, flags, name);
+	    pre = new MGPreconditioner (this, flags, name);
 	  }
 	else if (strcmp (type, "local") == 0)
 	  {
@@ -1515,7 +1481,7 @@ namespace ngsolve
   }
 
   void PDE :: WritePDEFile ( string abspdefile, string geofile, 
-		      string meshfile, string matfile, string oldpdefile )
+			     string meshfile, string matfile, string oldpdefile )
   {
     ofstream pdeout ( abspdefile.c_str() );
     ifstream pdein ( oldpdefile.c_str() );
@@ -1624,41 +1590,41 @@ namespace ngsolve
     system ( rmdir.c_str() );
 
     if (printmessage_importance>0)
-    {
-      cout << "saved geometry, mesh, pde and solution to file " << endl << pde_directory << "/" 
-	 << dirname << ".tar.gz" << endl;
-    }
+      {
+	cout << "saved geometry, mesh, pde and solution to file " << endl << pde_directory << "/" 
+	     << dirname << ".tar.gz" << endl;
+      }
 
   }
-///
-void PDE :: LoadZipSolution (const string & filename, const bool ascii)
-{ 
-  string::size_type pos1 = filename.rfind('\\');
-  string::size_type pos2 = filename.rfind('/');
+  ///
+  void PDE :: LoadZipSolution (const string & filename, const bool ascii)
+  { 
+    string::size_type pos1 = filename.rfind('\\');
+    string::size_type pos2 = filename.rfind('/');
   
-  if (pos1 == filename.npos) pos1 = 0;
-  if (pos2 == filename.npos) pos2 = 0;
+    if (pos1 == filename.npos) pos1 = 0;
+    if (pos2 == filename.npos) pos2 = 0;
 
-  string pde_directory = filename.substr (0, max2(pos1, pos2));
-  string dirname = filename.substr (max2(pos1, pos2) +1, filename.length() - max2(pos1,pos2) - 8);
-  string absdirname = pde_directory +"/" + dirname;
+    string pde_directory = filename.substr (0, max2(pos1, pos2));
+    string dirname = filename.substr (max2(pos1, pos2) +1, filename.length() - max2(pos1,pos2) - 8);
+    string absdirname = pde_directory +"/" + dirname;
   
-  string pdefile = dirname + "/" + dirname + ".pde";
-  string solfile = dirname + "/" + dirname + ".sol";
-  string abspdefile = pde_directory + "/" + pdefile;
-  string abssolfile = pde_directory + "/" + solfile;
+    string pdefile = dirname + "/" + dirname + ".pde";
+    string solfile = dirname + "/" + dirname + ".sol";
+    string abspdefile = pde_directory + "/" + pdefile;
+    string abssolfile = pde_directory + "/" + solfile;
   
-  string unzipfiles =  "cd " + pde_directory + "\ngzip -d " + dirname + ".tar.gz";
-  string untarfiles =  "cd " + pde_directory + "\ntar -xf " + dirname + ".tar";
-  string rmtar = "rm " + absdirname + ".tar";
+    string unzipfiles =  "cd " + pde_directory + "\ngzip -d " + dirname + ".tar.gz";
+    string untarfiles =  "cd " + pde_directory + "\ntar -xf " + dirname + ".tar";
+    string rmtar = "rm " + absdirname + ".tar";
 
-  system (unzipfiles.c_str() );
-  system (untarfiles.c_str() );
-  system (rmtar.c_str());
+    system (unzipfiles.c_str() );
+    system (untarfiles.c_str() );
+    system (rmtar.c_str());
 
-  (*this).LoadPDE(abspdefile, 0, 0);
-  (*this).LoadSolution(abssolfile, ascii );
-}
+    (*this).LoadPDE(abspdefile, 0, 0);
+    (*this).LoadSolution(abssolfile, ascii );
+  }
 #endif
   ///
 

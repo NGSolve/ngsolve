@@ -4,6 +4,10 @@
 #include <bddc.hpp>
 
 
+#include <parallelngs.hpp>
+
+
+
 namespace ngcomp
 {
 
@@ -294,7 +298,8 @@ namespace ngcomp
 
         }
       
-      cout << "matrix filed" << endl;
+
+      // cout << "matrix filed" << endl;
 
 
       free_dofs = new BitArray (ndof);
@@ -1802,7 +1807,8 @@ namespace ngcomp
   void BDDCPreconditioner<SCAL> ::
   Update ()
   {
-    cout << "update bddc, inversetype = " << inversetype << endl;
+    if (id == 0)
+      cout << "update bddc, inversetype = " << inversetype << endl;
 
     if (refelement)
       pre = new BDDCMatrixRefElement(*bfa, inversetype);

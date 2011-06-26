@@ -1,6 +1,9 @@
 #ifndef FILE_HO_BIFORM
 #define FILE_HO_BIFORM
 
+wer braucht das ???
+
+
 /*********************************************************************/
 /* File:   ho_biform.hpp                                             */
 /* Author: Joachim Schoeberl                                         */

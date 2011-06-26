@@ -286,26 +286,7 @@ namespace ngcomp
 	*testout << " first_facet_dof (facet)  " << first_facet_dof << endl; 
       } 
 
-
-
-    /*
-    for (int i = 0; i < 4; i++) 
-      {
-	lodofs_per_node[i] = 0;
-	first_lodof[i] = 0;
-      }
-
-    lodofs_per_node[ma.GetDimension()-1] = 1;
-    for (int i = ma.GetDimension(); i < 5; i++) 
-      first_lodof[i] = nfa;
-
-    for (int i = 0; i < 4; i++)
-      first_hodofs[i].SetSize(0);
-    first_hodofs[ma.GetDimension()-1] = first_facet_dof;
-    */
-
     UpdateCouplingDofArray();
-    // FinalizeUpdate (lh);
   }
 
 
@@ -346,8 +327,7 @@ namespace ngcomp
 
     switch (ma.GetElType(elnr))
       {
-      case ET_SEGM:
-        break;
+      case ET_SEGM:    break;
       case ET_TRIG:    fe2d = new (lh) FacetFE<ET_TRIG> (); break;
       case ET_QUAD:    fe2d = new (lh) FacetFE<ET_QUAD> (); break;
       case ET_TET:     fe3d = new (lh) FacetFE<ET_TET> (); break;
@@ -370,13 +350,6 @@ namespace ngcomp
     ArrayMem<int, 6> fanums, order_fa;
     
     ma.GetElVertices(elnr, vnums);
-
-    /*
-      if (ma.GetDimension() == 2)
-      ma.GetElEdges(elnr, fanums);
-      else
-      ma.GetElFaces(elnr, fanums);
-    */
     ma.GetElFacets (elnr, fanums);
 
     order_fa.SetSize(fanums.Size());
