@@ -28,16 +28,10 @@ namespace ngmg
 
 
 
-#ifdef PARALLEL
 namespace ngparallel
 {
   class ParallelDofs;
-  class ParallelMeshAccess;
 }
-using ngparallel::ParallelDofs;
-using ngparallel::ParallelMeshAccess;
-#endif
-
 
 /// namespace for ngs-components
 namespace ngcomp
@@ -49,6 +43,7 @@ namespace ngcomp
 
   using namespace ngla;
   using namespace ngfem;
+  using namespace ngparallel;
 }
 
 #include "meshaccess.hpp"
@@ -69,16 +64,5 @@ namespace ngcomp
 
 #include "preconditioner.hpp"
 #include "bddc.hpp"
-
-
-#ifdef PARALLEL
-#include <parallelngs.hpp>
-namespace ngcomp
-{
-  using namespace ngparallel;
-}
-#endif
-
-
 
 #endif

@@ -64,6 +64,11 @@ namespace ngla
       return new S_BaseVectorPtr<TSCAL> (end-begin, es, pdata+begin*es);
     }
 
+    FlatVector<TSCAL> operator() (int i) const
+    {
+      return FlatVector<TSCAL> (es, pdata+i*es);
+    }
+
     virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const
     {
       switch (es)
@@ -95,7 +100,7 @@ namespace ngla
      A specific vector based on Vector.
   */
   template <typename T = double>
-  class VFlatVector :  public S_BaseVectorPtr<typename mat_traits<T>::TSCAL>
+  class VFlatVector :  virtual public S_BaseVectorPtr<typename mat_traits<T>::TSCAL>
   {
   public:
     typedef typename mat_traits<T>::TSCAL TSCAL;
@@ -145,7 +150,7 @@ namespace ngla
      A specific vector based on Vector.
   */
   template <typename T = double> 
-  class  VVector : public S_BaseVectorPtr<typename mat_traits<T>::TSCAL>
+  class  VVector : virtual public S_BaseVectorPtr<typename mat_traits<T>::TSCAL>
   {
   public:
     typedef typename mat_traits<T>::TSCAL TSCAL;

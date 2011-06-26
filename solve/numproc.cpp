@@ -2911,9 +2911,7 @@ namespace ngsolve
 
 
   namespace numproc_cpp
- {
-
-
+  {
     class Init
     { 
     public: 
@@ -2943,28 +2941,8 @@ namespace ngsolve
       GetNumProcs().AddNumProc ("generateone", NumProcGenerateOne::Create, NumProcGenerateOne::PrintDoc);
       GetNumProcs().AddNumProc ("cleargridfunctions", NumProcClearGridFunctions::Create, NumProcClearGridFunctions::PrintDoc);
       
-      //GetNumProcs().AddNumProc ("directsolverregion", NumProcDirectSolverRegion::Create, NumProcDirectSolverRegion::PrintDoc);
-      
-
-      //      GetNumProcs().AddNumProc ("setvisual", NumProcSetVisual::Create);
-
-
-
-      /*
-      cout << "test lapack" << endl;
-      Matrix<double> a(1000), b(1000), c(1000);
-      a = 1.0;
-      b = 1.0;
-      for (int i = 0; i < 1000; i++)
-	a(i,i) = b(i,i) = 10;
-      c = 0.0;
-
-      for (int i = 0; i < 100; i++)
-	{
-	  cout << "i = " << i << endl;
-	  LapackMultAddABt (a, b, 1.0, c);
-	}
-      */
+      // GetNumProcs().AddNumProc ("directsolverregion", NumProcDirectSolverRegion::Create, NumProcDirectSolverRegion::PrintDoc);
+      // GetNumProcs().AddNumProc ("setvisual", NumProcSetVisual::Create);
     }
 
     

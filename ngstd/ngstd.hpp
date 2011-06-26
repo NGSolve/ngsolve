@@ -65,22 +65,6 @@ namespace ngstd
 
 
 
-#ifndef PARALLEL
-
-enum { id = 0 };
-enum { ntasks = 1 };
-
-#else
-
-namespace netgen {
-  extern int id, ntasks;
-}
-using netgen::id;
-using netgen::ntasks;
-
-#endif
-
-
   
 #include "templates.hpp"
 #include "exception.hpp"

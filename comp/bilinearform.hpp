@@ -346,15 +346,6 @@ namespace ngcomp
 
     ///
     virtual void AllocateMatrix () = 0;
-
-
-#ifdef PARALLELxx
-  protected:
-    MatrixGraph * GetConsistentGraph (int level, bool symmetric);
-    
-    virtual void AllocateConsistentMatrix () = 0;
-
-#endif
   };
 
 
@@ -521,10 +512,6 @@ namespace ngcomp
 				    const SpecialElement * sel = NULL) const;
 
     virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const;
-
-#ifdef PARALLELxx
-    virtual void AllocateConsistentMatrix ();
-#endif
   };
 
 
@@ -572,11 +559,6 @@ namespace ngcomp
 				    const SpecialElement * sel = NULL) const;
 
     virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const;
-#ifdef PARALLELxx
-    //   ///
-    virtual void AllocateConsistentMatrix ();
-
-#endif
   };
 
 
@@ -625,11 +607,6 @@ namespace ngcomp
 				    LocalHeap & lh,
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
-#ifdef PARALLELxx
-    //   ///
-    virtual void AllocateConsistentMatrix ();
-
-#endif
   };
 
 
@@ -711,18 +688,6 @@ namespace ngcomp
 				  const FlatMatrix<SCAL> & elmat,
 				  bool inner_element, int elnr,
 				  LocalHeap & lh);    
-
-
-  #ifdef PARALLELxx
-    virtual void AllocateConsistentMatrix ()
-    { 
-      ; 
-    }
-
-    virtual void BuildConsistentMatrix (LocalHeap & lh) 
-    { ; }
-  #endif
-
   };
   
   

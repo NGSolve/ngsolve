@@ -173,8 +173,7 @@ namespace ngla
 	
 	BruteInnerProduct(w,d,wdn);	 
 
-	if ( id == 0 )
-	  if (printrates) cout << "0 " << sqrt(L2Norm(wdn)) << endl;
+	if (printrates) cout << "0 " << sqrt(L2Norm(wdn)) << endl;
 	if (L2Norm(wdn) == 0.0) wdn = 1;	
 
 	if(stop_absolute)
@@ -233,8 +232,7 @@ namespace ngla
 	    //s *= be;
 	    //s += w;
 
-	    if ( id == 0 )
-	      if (printrates ) cout << n << " " << sqrt(L2Norm (wdn)) << endl;
+	    if (printrates ) cout << n << " " << sqrt(L2Norm (wdn)) << endl;
 	    if(sh)
 	      sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
 						(lwstart-log(L2Norm(wdn)))/(lwstart-lerr)));
@@ -369,8 +367,7 @@ namespace ngla
 	    wdn = S_InnerProduct<SCAL>(w,d_reduced);
 	    
 	    
-	    if ( id == 0 )
-	      if (printrates ) cout << n << " (block " << seed+1 << ") " << sqrt (Abs (wdn)) << endl;
+	    if (printrates ) cout << n << " (block " << seed+1 << ") " << sqrt (Abs (wdn)) << endl;
 	    if(Abs(wdn) == 0.0) wdn = 1;
 
 	    lwstart = log(Abs(wdn));
@@ -481,8 +478,7 @@ namespace ngla
 		s *= be;
 		s += w;
 
-		if ( id == 0 )
-		  if (printrates ) cout << n << " (block " << seed+1 << ") " << sqrt (Abs (wdn)) << endl;
+		if (printrates ) cout << n << " (block " << seed+1 << ") " << sqrt (Abs (wdn)) << endl;
 		if(sh)
 		  sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
 						    (lwstart-log(Abs(wdn)))/(lwstart-lerr)));
@@ -589,8 +585,7 @@ namespace ngla
 	s = w;
 	wdn = S_InnerProduct<IPTYPE> (w,d);
 
-	if ( id == 0 )
-	  if (printrates) cout << "0 " << sqrt(Abs(wdn)) << endl;
+	if (printrates) cout << "0 " << sqrt(Abs(wdn)) << endl;
 	if (wdn == 0.0) wdn = 1;	
 
 	if(stop_absolute)
@@ -627,8 +622,7 @@ namespace ngla
 	    s *= be;
 	    s += w;
 
-	    if ( id == 0 )
-	      if (printrates ) cout << n << " " << sqrt (Abs (wdn)) << endl;
+	    if (printrates ) cout << n << " " << sqrt (Abs (wdn)) << endl;
 	    if ( sh )
 	      sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
 						(lwstart-log(Abs(wdn)))/(lwstart-lerr)));
@@ -715,8 +709,7 @@ namespace ngla
 	r = s - omega * t;
 
 	err_i = L2Norm(r);
-	if ( id == 0 )
-	  if (printrates) cout << "0 " << err_i << endl;
+	if (printrates) cout << "0 " << err_i << endl;
 
 
 	if(stop_absolute)
@@ -765,8 +758,7 @@ namespace ngla
 
 	    err_i = L2Norm(r);
 
-	    if ( id == 0 )
-	      if (printrates ) cout << n << " " << err_i << endl;
+	    if (printrates ) cout << n << " " << err_i << endl;
 	    if(sh)
 	      sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
 						(lwstart-log(err_i))/(lwstart-lerr)));

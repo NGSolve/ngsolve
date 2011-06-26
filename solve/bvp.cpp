@@ -172,7 +172,7 @@ namespace ngsolve
 
     if (!lff->IsAssembled()) lff->Assemble(lh);
 
-    cout << "solve bvp" << endl;
+    if (id == 0) cout << "solve bvp" << endl;
 
     const BaseMatrix & mat = bfa->GetMatrix();
     const BaseVector & vecf = lff->GetVector();
@@ -335,7 +335,7 @@ namespace ngsolve
         ma.PushStatus ("Iterative solver");
         invmat->SetMaxSteps (maxsteps);
         invmat->SetPrecision (prec);
-        invmat->SetPrintRates ();
+        invmat->SetPrintRates (id == 0);
         invmat->SetInitialize (0);
         invmat->SetStatusHandler(ma);
 	invmat->UseSeed(useseedvariant);
@@ -676,7 +676,7 @@ namespace ngsolve
 
     invmat->SetMaxSteps (maxsteps);
     invmat->SetPrecision (prec);
-    invmat->SetPrintRates ();
+    invmat->SetPrintRates (id == 0);
     invmat->SetInitialize (0);
 
     clock_t starttime, endtime;

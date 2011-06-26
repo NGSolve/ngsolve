@@ -500,69 +500,9 @@ namespace ngcomp
     void InitPointCurve(double red = 1, double green = 0, double blue = 0) const;
     void AddPointCurvePoint(const Vec<3> & point) const;
 
-
-#ifdef PARALLEL
-
     // returns number of distant processes which share this node
     int GetDistantNodeNums (NODE_TYPE nt, int locnum, Array<int[2]> & distnums) const;
     int GetGlobalNodeNum (NODE_TYPE nt, int locnum) const;
-    
-
-
-    /*
-    void SetElementPartition ( const int elnr, const int part ) const
-    {
-      Ng_SetElementPartition ( elnr, part );
-    } 
-
-    int GetElementPartition ( const int elnr ) const
-    {
-      return Ng_GetElementPartition ( elnr );
-    } 
-    */
-
-    bool IsGhostEl (int elnr) const
-    { return Ng_IsGhostEl (elnr+1); }
-
-    // void SetGhostEl (int elnr, bool isghost ) const
-    // { Ng_SetGhostEl (elnr+1,isghost); }
-
-    bool IsGhostSEl (int selnr) const
-    { return Ng_IsGhostSEl (selnr+1); }
-
-    // void SetGhostSEl (int selnr, bool isghost ) const
-    // { Ng_SetGhostSEl (selnr+1,isghost); }
-
-    /*
-    bool IsGhostVert ( const int pnum ) const
-    { return Ng_IsGhostVert ( pnum+1 ); }
-
-    bool IsGhostEdge ( const int ednum ) const
-    { return Ng_IsGhostEdge ( ednum+1 ); }
-
-    bool IsGhostFace ( const int fanum ) const
-    { return Ng_IsGhostFace ( fanum+1); }
-
-    bool IsExchangeEl ( int elnr ) const
-    { return Ng_IsExchangeEl (elnr+1); }
-
-    bool IsExchangeSEl ( int selnr ) const
-    { return Ng_IsExchangeSEl ( selnr+1 ); }
-
-    void UpdateOverlap () 
-    { Ng_UpdateOverlap (); }
-
-    int Overlap() const
-    { return Ng_Overlap(); }
-    */
-#else
-
-    bool IsGhostEl (int elnr) const
-    { return false; }
-    bool IsGhostSEl (int selnr) const
-    { return false; }
-
-#endif
   };
 
 

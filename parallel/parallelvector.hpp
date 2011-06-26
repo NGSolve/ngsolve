@@ -7,26 +7,24 @@
 /* Date:   2007,2011                                                      */
 /* ************************************************************************/
 
-namespace ngla
-{
 
 
 #ifdef PARALLEL
 
-  // enum PARALLEL_STATUS { DISTRIBUTED, CUMULATED, NOT_PARALLEL };
-
+namespace ngla
+{
   using ngparallel::ParallelDofs;
+
 
   class NGS_DLL_HEADER ParallelBaseVector : virtual public BaseVector
   {
   protected:
     ParallelDofs * paralleldofs;
-    
     mutable PARALLEL_STATUS status;
     
   public:
     ParallelBaseVector ()
-      : paralleldofs(NULL) 
+      : paralleldofs (NULL) 
     { ; }
 
 
@@ -71,11 +69,8 @@ namespace ngla
     virtual BaseVector & Add (double scal, const BaseVector & v);
     virtual BaseVector & Add (Complex scal, const BaseVector & v);
 
+    void PrintStatus ( ostream & ost ) const;
 
-
-    virtual void PrintStatus ( ostream & ost ) const
-    { cerr << "ERROR -- PrintStatus called for BaseVector, is not parallel" << endl; }
-    
     // virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs=0 ) const;
     
     virtual void Distribute() const
@@ -111,115 +106,90 @@ namespace ngla
   };
 
 
-
-  template <typename T = double>
-  class ParallelVVector : public VVector<T>, 
-			  public S_ParallelBaseVector<typename mat_traits<T>::TSCAL>
+  template <class SCAL>
+  class NGS_DLL_HEADER S_ParallelBaseVectorPtr
+    : virtual public S_BaseVectorPtr<SCAL>, 
+      virtual public S_ParallelBaseVector<SCAL>
   {
+  protected:
+    typedef SCAL TSCAL;
     using ParallelBaseVector :: status;
     using ParallelBaseVector :: paralleldofs;
-    Table<T> * recvvalues;
+
+    Table<SCAL> * recvvalues;
 
   public:
-    typedef typename mat_traits<T>::TSCAL TSCAL;
+    S_ParallelBaseVectorPtr (int as, int aes, void * adata) throw();
+    S_ParallelBaseVectorPtr (int as, int aes, ParallelDofs * apd, PARALLEL_STATUS stat) throw();
 
-    explicit ParallelVVector (int as);
-    explicit ParallelVVector (int as, ngparallel::ParallelDofs * aparalleldofs ) ;
-    explicit ParallelVVector (int as, ngparallel::ParallelDofs * aparalleldofs,
-			      PARALLEL_STATUS astatus );
-
-    virtual ~ParallelVVector() throw();
- 
-
+    virtual ~S_ParallelBaseVectorPtr ();
     virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs, const Array<int> * procs=0 );
 
-
-    virtual void PrintParallelDofs() const;
-
-
-    /// values from reduceprocs are added up,
-    /// vectors in sendtoprocs are set to the cumulated values
-    /// default pointer 0 means send to proc 0
-    // virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs = 0 ) const;
-
     virtual void Distribute() const;
-
-    virtual void PrintStatus ( ostream & ost ) const
-    {
-      if ( this->status == NOT_PARALLEL )
-	ost << "NOT PARALLEL" << endl;
-      else if ( this->status == DISTRIBUTED )
-	ost << "DISTRIBUTED" << endl ;
-      else if (this->status == CUMULATED )
-	ost << "CUMULATED" << endl ;
-    }
+    virtual ostream & Print (ostream & ost) const;
 
     virtual void  IRecvVec ( int dest, MPI_Request & request );
     virtual void  RecvVec ( int dest );
-
-    virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const;
-
-    virtual ostream & Print (ostream & ost) const;
-
     virtual void AddRecvValues( int sender );
-
+    virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const;
 
     virtual double L2Norm () const;
   };
 
 
 
-  template <typename T = double>
-  class ParallelVFlatVector : public VFlatVector<T>,
-			      public S_ParallelBaseVector<typename mat_traits<T>::TSCAL>
-  {
-    using ParallelBaseVector :: status;
-    using ParallelBaseVector :: paralleldofs;
 
-    Table<T> * recvvalues;
+  template <typename T = double>
+  class ParallelVVector : public VVector<T>, 
+			  public S_ParallelBaseVectorPtr<typename mat_traits<T>::TSCAL>
+  {
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    enum { ES = sizeof(T) / sizeof(TSCAL) };
 
   public:
-    typedef typename mat_traits<T>::TSCAL TSCAL;
+    explicit ParallelVVector (int as, ParallelDofs * aparalleldofs,
+			      PARALLEL_STATUS astatus = CUMULATED)
+      : S_BaseVectorPtr<TSCAL> (as, ES), VVector<T> (as), 
+	S_ParallelBaseVectorPtr<TSCAL> (as, ES, aparalleldofs, astatus)
+    { ; }
 
-    explicit ParallelVFlatVector (int as, T * adata) ;
-    explicit ParallelVFlatVector (int as, T * adata, ngparallel::ParallelDofs * aparalleldofs ) ;
-    explicit ParallelVFlatVector (int as, T * adata, ngparallel::ParallelDofs * aparalleldofs, 
-				  PARALLEL_STATUS astatus);
-    explicit ParallelVFlatVector ();
-    virtual ~ParallelVFlatVector() throw();
-
-    virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs, const Array<int> * procs=0 );
-
-    virtual class ngparallel::ParallelDofs * GetParallelDofs () const
-    { return paralleldofs; }
-
-    virtual void PrintParallelDofs() const;
-
-    virtual void Distribute() const;
-
-    virtual void PrintStatus ( ostream & ost ) const
-    {
-      if ( this->status == NOT_PARALLEL )
-	ost << "NOT PARALLEL" << endl;
-      else if ( this->status == DISTRIBUTED )
-	ost << "DISTRIBUTED" << endl ;
-      else if (this->status == CUMULATED )
-	ost << "CUMULATED" << endl ;
-    }
-
-    virtual void IRecvVec ( int dest, MPI_Request & request );
-    virtual void RecvVec ( int dest );
+    explicit ParallelVVector (ParallelDofs * aparalleldofs,
+			      PARALLEL_STATUS astatus = CUMULATED)
+      : S_BaseVectorPtr<TSCAL> (aparalleldofs->GetNDof(), ES), 
+	VVector<T> (aparalleldofs->GetNDof()), 
+	S_ParallelBaseVectorPtr<TSCAL> (aparalleldofs->GetNDof(), ES, aparalleldofs, astatus)
+    { ; }
 
 
-    virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const;
-
-    virtual ostream & Print (ostream & ost) const;
-
-    virtual void AddRecvValues( int sender );
+    virtual ~ParallelVVector() throw()
+    { ; }
   };
-#endif
 
+
+  template <typename T = double>
+  class ParallelVFlatVector : public VFlatVector<T>,
+			      public S_ParallelBaseVectorPtr<typename mat_traits<T>::TSCAL>
+  {
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    enum { ES = sizeof(T) / sizeof(TSCAL) };
+
+  public:
+    explicit ParallelVFlatVector (int as, T * adata, ParallelDofs * aparalleldofs, 
+				  PARALLEL_STATUS astatus)
+    : S_BaseVectorPtr<TSCAL> (as, ES, adata),
+      VFlatVector<T> (as, adata),
+      S_ParallelBaseVectorPtr<TSCAL> (as, ES, aparalleldofs, astatus)
+    { ; }
+
+    explicit ParallelVFlatVector ()
+    : S_BaseVectorPtr<TSCAL> (0, ES, NULL),
+      S_ParallelBaseVectorPtr<TSCAL> (0, ES, NULL)
+    { ; }
+      
+    virtual ~ParallelVFlatVector() throw()
+    { ; }
+  };
 }
 
-
+#endif
 #endif

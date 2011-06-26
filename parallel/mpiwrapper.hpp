@@ -13,6 +13,9 @@ namespace ngparallel
   using namespace ngcomp;
 
 
+#ifdef PARALLEL
+
+
   template <class T>
   class MPI_Traits
   {
@@ -96,9 +99,10 @@ namespace ngparallel
     return MPI_Traits<T>::MPIType();
   }
 
-
-
-
+  inline void MyMPI_Barrier (MPI_Comm comm = MPI_COMM_WORLD)
+  {
+    MPI_Barrier (comm);
+  }
 
   inline void MyMPI_Send (int i, int dest)
   {
@@ -152,7 +156,7 @@ namespace ngparallel
   }
 
   template <class T>
-  inline void MyMPI_Recv ( Array <T> & s, int src)
+  inline void MyMPI_Recv (Array <T> & s, int src)
   {
     MPI_Status status;
     int len;
@@ -164,7 +168,7 @@ namespace ngparallel
     MPI_Recv( &s[0], len, MPI_T, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
   }
 
-
+  /*
   template <class T>
   inline int MyMPI_Recv ( Array <T> & s)
   {
@@ -182,15 +186,26 @@ namespace ngparallel
 
     return src;
   }
+  */
+
 
   template <class T>
-  void MyMPI_ISend ( const FlatArray<T> & s, int dest, MPI_Request & request ) 
+  void MyMPI_ISend (const FlatArray<T> & s, int dest, MPI_Request & request ) 
   { 
     MPI_Datatype MPI_T  = MyGetMPIType<T> ();
     MPI_Isend (&s[0], s.Size(), MPI_T, dest, 22, MPI_COMM_WORLD, &request);
   }
 
+  template <class T>
+  void MyMPI_IRecv (const FlatArray<T> & s, int src, MPI_Request & request ) 
+  { 
+    MPI_Datatype MPI_T = MyGetMPIType<T> ();
+    MPI_Irecv (&s[0], s.Size(), MPI_T, src, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
+  }
 
+
+
+  /*
   template <class T>
   void MyMPI_IRecv ( Array<T> & s, int src, MPI_Request & request ) 
   { 
@@ -204,14 +219,25 @@ namespace ngparallel
     s.SetSize (len);
     MPI_Irecv (&s[0], len, MPI_T, src, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
   }
+  */
 
 
-  template <class T>
-  void MyMPI_IRecv (const FlatArray<T> & s, int src, MPI_Request & request ) 
-  { 
-    MPI_Datatype MPI_T = MyGetMPIType<T> ();
-    MPI_Irecv (&s[0], s.Size(), MPI_T, src, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
-  }
+
+#else
+
+  inline void MyMPI_Barrier (int comm = 0 ) { ; }
+
+  template <typename T>
+  inline void MyMPI_Send (const T & data, int dest)
+  { ; }
+  
+  template <typename T>
+  inline void MyMPI_Recv (const T & data, int dest)
+  { ; }
+#endif
+
+  
+
 
 }
 

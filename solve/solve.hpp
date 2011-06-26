@@ -19,16 +19,6 @@
 struct Tcl_Interp;
 
 /*
-#include <tcl.h>
-#if TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>=4
-#define TCL_CONST_IS_CONST
-#define tcl_const const
-#else
-#define tcl_const
-#endif
-*/
-
-/*
 #ifdef WIN32
    #define LOCAL_EXPORTS __declspec(dllexport)
 #else
@@ -56,6 +46,7 @@ namespace ngsolve
 // #include "../markus/clientsocketaccess.hpp"
 // #endif
 }
+
 #include "numproc.hpp"
 #include "pde.hpp"
 
@@ -99,8 +90,8 @@ namespace ngsolve
 #else
   const char dirslash = '/';
 #endif
-
 }
+
 
 
 #endif

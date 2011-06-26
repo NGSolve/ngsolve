@@ -1,5 +1,4 @@
 #include <solve.hpp>
-#include <comp.hpp>
 #include <parallelngs.hpp>
 
 using namespace ngsolve;
@@ -20,8 +19,8 @@ void NGS_ParallelRun ( const string & message )
     {
       string pdefilename;
 
-      ngparallel::MyMPI_Recv ( pdefilename, 0);
-
+      MyMPI_Recv ( pdefilename, 0);
+      
       if ( ma ) delete ma;
       ma = new MeshAccess;
 
@@ -33,7 +32,6 @@ void NGS_ParallelRun ( const string & message )
     {
       try
 	{
-	  cout << "parallel solve bvp" << endl;
 	  pde -> SolveBVP();
 	}
       catch (exception & e)

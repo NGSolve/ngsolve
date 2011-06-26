@@ -1,17 +1,12 @@
 #include <comp.hpp>
 #include <multigrid.hpp>
 
-#ifdef PARALLEL
 #include <parallelngs.hpp>
-#endif
- 
+
 namespace ngcomp
 {
   using namespace ngmg;
 
-#ifdef PARALLEL
-  using namespace ngparallel;
-#endif
 
   GridFunction :: GridFunction (const FESpace & afespace, const string & name,
 				const Flags & flags)
@@ -219,25 +214,23 @@ namespace ngcomp
 
 	for (int i = 0; i < this->multidim; i++)
 	  {
-	    
 	    if (vec[i] && ndof == vec[i]->Size())
 	      break;
 	    
-	    // T_BaseVector<TV> * ovec = dynamic_cast<T_BaseVector<TV>*> (vec[i]);
 	    BaseVector * ovec = vec[i];
 	
 #ifdef PARALLEL
-	    *testout << &this->GetFESpace().GetParallelDofs() << endl;
 	    if ( & this->GetFESpace().GetParallelDofs() )
-	      vec[i] = new ParallelVVector<TV> (ndof, &this->GetFESpace().GetParallelDofs() );
+	      vec[i] = new ParallelVVector<TV> (ndof, &this->GetFESpace().GetParallelDofs(), CUMULATED);
 	    else
 #endif
  	      vec[i] = new VVector<TV> (ndof);
 	    
 
+	    (*vec[i]) = TSCAL(0);
+
 	    if (this->nested && ovec && this->GetFESpace().GetProlongation())
 	      {
-		(*vec[i]) = TSCAL(0);
 		*vec[i]->Range (0, ovec->Size()) += (*ovec);
 
 		const_cast<ngmg::Prolongation&> (*this->GetFESpace().GetProlongation()).Update();
@@ -245,11 +238,6 @@ namespace ngcomp
 		cout << "prolongate gridfunction" << endl;
 		this->GetFESpace().GetProlongation()->ProlongateInline
 		  (this->GetMeshAccess().GetNLevels()-1, *vec[i]);
-	      }
-	    else
-	      {
-		(*vec[i]) = TSCAL(0);
-		// cout << "do not prolongate gridfunction" << endl;
 	      }
 
 	    //	    if (i == 0)
@@ -261,30 +249,13 @@ namespace ngcomp
 	
 	this -> level_updated = this -> ma.GetNLevels();
 
-
-#ifdef PARALLEL
-        const FESpace & afespace = GridFunction :: GetFESpace();
-        for ( int i = 0; i < vec.Size(); i++ )
-          {
-	    ParallelBaseVector * parvec = dynamic_cast<ParallelBaseVector*> (vec[i]);
-            if (parvec)
-	      {
-		parvec -> SetParallelDofs ( &afespace.GetParallelDofs() );
-		if ( &(afespace.GetParallelDofs() ) )
-		  parvec -> SetStatus ( CUMULATED );
-		else
-		  parvec -> SetStatus ( NOT_PARALLEL );
-	      }
-	  }
-#endif
 	const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&GridFunction :: GetFESpace());
-	if (cfe){
-	  int nsp = cfe->GetNSpaces();
-// 	  comp.SetSize(nsp);
-	  for (int i = 0; i < nsp; i++){
-	    comp[i]->Update();
+	if (cfe)
+	  {
+	    int nsp = cfe->GetNSpaces();
+	    for (int i = 0; i < nsp; i++)
+	      comp[i]->Update();
 	  }
-	}
       }
     catch (exception & e)
       {

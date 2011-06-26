@@ -70,10 +70,8 @@ namespace ngla
       {
         if ( (*this).Status() == DISTRIBUTED )
 	  Cumulate();
-          // AllReduce(&hoprocs);
         else 
 	  parv -> Cumulate();
-          // parv->AllReduce(&hoprocs);
       }
     FVDouble() += scal * parv->FVDouble();
     return *this;
@@ -96,7 +94,16 @@ namespace ngla
   }
 
 
-
+  void ParallelBaseVector :: PrintStatus ( ostream & ost ) const
+  {
+    if ( this->status == NOT_PARALLEL )
+      ost << "NOT PARALLEL" << endl;
+    else if ( this->status == DISTRIBUTED )
+      ost << "DISTRIBUTED" << endl ;
+    else if (this->status == CUMULATED )
+	ost << "CUMULATED" << endl ;
+  }
+  
 
   void ParallelBaseVector :: Cumulate () const
   {
@@ -109,7 +116,6 @@ namespace ngla
     
     // find which processors to communicate with
     for ( int i = 1; i < ntasks; i++)
-      // if ( paralleldofs->IsExchangeProc(i) )
       if (paralleldofs -> GetSortedExchangeDofs (i).Size())
 	exprocs.Append(i);
     
@@ -147,6 +153,17 @@ namespace ngla
 
 
 
+  void ParallelBaseVector :: ISend ( int dest, MPI_Request & request ) const
+  {
+    MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
+    MPI_Isend( Memory(), 1, mpi_t, dest, 2000, MPI_COMM_WORLD, &request);
+  }
+
+  void ParallelBaseVector :: Send ( int dest ) const
+  {
+    MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
+    MPI_Send( Memory(), 1, mpi_t, dest, 2001, MPI_COMM_WORLD);
+  }
 
 
 
@@ -162,14 +179,19 @@ namespace ngla
     if ( id == 0 && ntasks > 1 )
       {
 	if (this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
-	  {
-	    Cumulate();
-	    // this->AllReduce(&hoprocs);
-	  }
+	  Cumulate();
+
 	// two cumulated vectors -- distribute one
 	else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
 	  this->Distribute();
-	MyMPI_Recv ( globalsum, 1 );
+	// MyMPI_Recv ( globalsum, 1 );
+
+
+	SCAL localsum = SCAL (0.0);
+	MPI_Datatype MPI_SCAL = MyGetMPIType<SCAL>();
+	MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, MPI_COMM_WORLD);
+
+
       }
     else
       {
@@ -179,10 +201,8 @@ namespace ngla
 				      dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
 	// two distributed vectors -- cumulate one
 	else if ( this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
-	  {
-	    Cumulate();
-	    // this->AllReduce(&hoprocs);
-	  }
+	  Cumulate();
+
 	// two cumulated vectors -- distribute one
 	else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
 	  this->Distribute();
@@ -191,9 +211,10 @@ namespace ngla
 					     dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
 	MPI_Datatype MPI_SCAL = MyGetMPIType<SCAL>();
       
-	MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, MPI_HIGHORDER_COMM); //MPI_COMM_WORLD);
-	if ( id == 1 )
-	  MyMPI_Send( globalsum, 0 );
+	MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, MPI_COMM_WORLD);
+
+	// MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, MPI_HIGHORDER_COMM); //MPI_COMM_WORLD);
+	// if ( id == 1 ) MyMPI_Send( globalsum, 0 );
       }
   
     return globalsum;
@@ -213,10 +234,8 @@ namespace ngla
 				  dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVScal());
     // two distributed vectors -- cumulate one
     else if (this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
-      {
-	Cumulate();
-	// this->AllReduce(&hoprocs);
-      }
+      Cumulate();
+
     // two cumulated vectors -- distribute one
     else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
       Distribute();
@@ -256,252 +275,127 @@ namespace ngla
 
 
 
-  template <typename T>
-  ParallelVFlatVector<T> :: ParallelVFlatVector () 
+
+  template <class SCAL>
+  S_ParallelBaseVectorPtr<SCAL> :: S_ParallelBaseVectorPtr (int as, int aes, void * adata) throw()
+    : S_BaseVectorPtr<SCAL> (as, aes, adata)
   { 
-    ;
+    cout << "gibt's denn das ?" << endl;
+    recvvalues = NULL;
+    this -> paralleldofs = 0;
+    status = NOT_PARALLEL;
   }
-
-
-  template <typename T>
-  ParallelVFlatVector<T> :: ParallelVFlatVector (int as, T * adata)
-    : VFlatVector<T>(as, adata)
+  
+  template <class SCAL>
+  S_ParallelBaseVectorPtr<SCAL> :: S_ParallelBaseVectorPtr (int as, int aes, 
+							    ParallelDofs * apd, PARALLEL_STATUS stat) throw()
+    : S_BaseVectorPtr<SCAL> (as, aes)
   { 
-    ;
-  }
-
-
-  template <typename T>
-  ParallelVFlatVector<T> :: ParallelVFlatVector (int as, T * adata, ParallelDofs * aparalleldofs)
-    : VFlatVector<T> (as, adata)
-  { 
-    this -> SetParallelDofs ( aparalleldofs );
-  }
-
-  template <typename T>
-  ParallelVFlatVector<T> :: 
-  ParallelVFlatVector (int as, T * adata,
-		       ParallelDofs * aparalleldofs,
-		       PARALLEL_STATUS astatus)
-    : VFlatVector<T> (as, adata)
-  {
-    status = astatus;
-    this -> SetParallelDofs ( aparalleldofs );
-  }
-
-
-  template <typename T>
-  ParallelVVector<T> :: ParallelVVector (int as)
-    : VVector<T> (as)
-  { 
-    this -> paralleldofs  = 0;
-  }
-
-  template <typename T>
-  ParallelVVector<T> :: ParallelVVector (int as, ParallelDofs * aparalleldofs )
-   
-    : VVector<T> (as)
-					// paralleldofs(aparalleldofs)
-  {
-    if ( aparalleldofs != 0 )
+    recvvalues = NULL;
+    if ( apd != 0 )
       {
-	this -> SetParallelDofs ( aparalleldofs );
-	this->status = CUMULATED;
+	this -> SetParallelDofs ( apd );
+	status = stat;
       }
     else
       {
 	paralleldofs = 0;
 	status = NOT_PARALLEL;
       }
-
   }
 
-  template <typename T>
-  ParallelVVector<T> :: ParallelVVector (int as, ngparallel::ParallelDofs * aparalleldofs,
-					 PARALLEL_STATUS astatus ) 
-    : VVector<T> (as)
+  template <class SCAL>
+  S_ParallelBaseVectorPtr<SCAL> :: ~S_ParallelBaseVectorPtr ()
   {
-    status = astatus;
-    this -> SetParallelDofs ( aparalleldofs );
-  }
-
-  template <typename T>
-  ParallelVVector<T> :: ~ParallelVVector() throw()
-  { 
-    if ( ntasks == 1 || this -> paralleldofs == 0 ) return;
-    delete this->recvvalues;
-  }
-
-  template <typename T>
-  ParallelVFlatVector<T> :: ~ParallelVFlatVector() throw()
-  { 
-    if ( ntasks == 1 || this->paralleldofs == 0 ) return;
-    delete this->recvvalues;
+    delete recvvalues;
   }
 
 
-  template <typename T>
-  void ParallelVFlatVector<T> :: SetParallelDofs ( ParallelDofs * aparalleldofs, const Array<int> * procs  )
-  {
-    this -> paralleldofs = aparalleldofs;
-    if ( this -> paralleldofs == 0 ) return;
-
-    Array<int> exdofs(ntasks);
-    for (int i = 0; i < ntasks; i++)
-      exdofs[i] = this->paralleldofs->GetSortedExchangeDofs(i).Size();
-    this -> recvvalues = new Table<T> (exdofs);
-  }
-
-
-  template <typename T>
-  void ParallelVVector<T> :: SetParallelDofs ( ParallelDofs * aparalleldofs, const Array<int> * procs )
+  template <typename SCAL>
+  void S_ParallelBaseVectorPtr<SCAL> :: 
+  SetParallelDofs ( ParallelDofs * aparalleldofs, const Array<int> * procs )
   {
     this -> paralleldofs = aparalleldofs;
     if ( this -> paralleldofs == 0 ) return;
     
     Array<int> exdofs(ntasks);
     for (int i = 0; i < ntasks; i++)
-      exdofs[i] = this->paralleldofs->GetSortedExchangeDofs(i).Size();
-    this -> recvvalues = new Table<T> (exdofs);
+      exdofs[i] = this->es * this->paralleldofs->GetSortedExchangeDofs(i).Size();
+    this -> recvvalues = new Table<TSCAL> (exdofs);
   }
 
 
-
-
-
-  template <typename T>
-  void ParallelVVector<T> :: Distribute() const
+  template <typename SCAL>
+  void S_ParallelBaseVectorPtr<SCAL>  :: Distribute() const
   {
     if (status != CUMULATED) return;
-
-    // *testout << "distribute! " << endl;
-    // *testout << "vector before distributing " << *this << endl;
-
-    this -> SetStatus(DISTRIBUTED);
+    this->SetStatus(DISTRIBUTED);
 
     for ( int dof = 0; dof < paralleldofs->GetNDof(); dof ++ )
       if ( ! paralleldofs->IsMasterDof ( dof ) )
 	(*this)(dof) = 0;
-
-    //   *testout << "distributed vector " << *constvec << endl;
   }
 
 
 
-  template <typename T>
-  void ParallelVFlatVector<T> :: Distribute() const
+  template < class SCAL >
+  ostream & S_ParallelBaseVectorPtr<SCAL> :: Print (ostream & ost) const
   {
-    if ( status != CUMULATED ) return;
-    ParallelVFlatVector * constflatvec = const_cast<ParallelVFlatVector<T> * > (this);
-    // T * constvec = const_cast<T * > (this->pdata);
-    T * constvec = this->FV().Addr(0);
-    constflatvec->SetStatus(DISTRIBUTED);
-    
-    for ( int dof = 0; dof < paralleldofs->GetNDof(); dof ++ )
-      if ( ! paralleldofs->IsMasterDof ( dof ) )
-	constvec[dof] = 0;
+    this->PrintStatus (ost);
+    S_BaseVectorPtr<SCAL>::Print (ost);
+    return ost;
   }
 
 
-
-
-  void ParallelBaseVector :: ISend ( int dest, MPI_Request & request ) const
+  template <typename SCAL>
+  void S_ParallelBaseVectorPtr<SCAL> :: IRecvVec ( int dest, MPI_Request & request )
   {
-    MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
-    MPI_Isend( Memory(), 1, mpi_t, dest, 2000, MPI_COMM_WORLD, &request);
-  }
-
-  void ParallelBaseVector :: Send ( int dest ) const
-  {
-    MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
-    MPI_Send( Memory(), 1, mpi_t, dest, 2001, MPI_COMM_WORLD);
-  }
-
-  template <typename T>
-  void ParallelVVector<T> :: IRecvVec ( int dest, MPI_Request & request )
-  {
-    MPI_Datatype MPI_T = MyGetMPIType<T> ();
-    MPI_Irecv( &( (*this->recvvalues)[dest][0]), 
-	       (*this->recvvalues)[dest].Size(), 
-	       MPI_T, dest, 
+    MPI_Datatype MPI_TS = MyGetMPIType<TSCAL> ();
+    MPI_Irecv( &( (*recvvalues)[dest][0]), 
+	       (*recvvalues)[dest].Size(), 
+	       MPI_TS, dest, 
 	       MPI_ANY_TAG, MPI_COMM_WORLD, &request);
   }
 
-  template <typename T>
-  void ParallelVFlatVector<T> :: IRecvVec ( int dest, MPI_Request & request )
-  {
-    MPI_Datatype MPI_T = MyGetMPIType<T> ();
-    MPI_Irecv(&( (*this->recvvalues)[dest][0]), 
-	      (*this->recvvalues)[dest].Size(), 
-	      MPI_T, 
-	      dest, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
-  }
-
-  template <typename T>
-  void ParallelVVector<T> :: RecvVec ( int dest)
+  template <typename SCAL>
+  void S_ParallelBaseVectorPtr<SCAL> :: RecvVec ( int dest)
   {
     MPI_Status status;
 
-    MPI_Datatype MPI_T = MyGetMPIType<T> ();
-    MPI_Recv( &( (*this->recvvalues)[dest][0]), 
-	      (*this->recvvalues)[dest].Size(), 
-	      MPI_T, dest, 
+    MPI_Datatype MPI_TS = MyGetMPIType<TSCAL> ();
+    MPI_Recv( &( (*recvvalues)[dest][0]), 
+	      (*recvvalues)[dest].Size(), 
+	      MPI_TS, dest, 
 	      MPI_ANY_TAG, MPI_COMM_WORLD, &status);
   }
 
-  template <typename T>
-  void ParallelVFlatVector<T> :: RecvVec ( int dest) 
+
+
+  template <typename SCAL>
+  void S_ParallelBaseVectorPtr<SCAL> :: AddRecvValues( int sender )
   {
-    MPI_Status status;
-
-    MPI_Datatype MPI_T = MyGetMPIType<T> ();
-    MPI_Recv(&( (*this->recvvalues)[dest][0]), 
-	     (*this->recvvalues)[dest].Size(), 
-	     MPI_T, dest, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    FlatArray<int> exdofs = paralleldofs->GetSortedExchangeDofs(sender);
+    FlatMatrix<SCAL> rec (exdofs.Size(), this->es, &(*this->recvvalues)[sender][0]);
+    for (int i = 0; i < exdofs.Size(); i++)
+      (*this) (exdofs[i]) += rec.Row(i);
   }
 
 
 
-
-
-  template <typename T>
-  void ParallelVFlatVector<T> :: PrintParallelDofs () const
-  { 
-    ; // paralleldofs->Print(); 
-  }
-
-  template <typename T>
-  void ParallelVVector<T> :: PrintParallelDofs () const
-  { 
-    ; // paralleldofs->Print(); 
-  }
-
-
-
-
-  template <typename T>
-  BaseVector * ParallelVVector<T> :: CreateVector ( const Array<int> * procs ) const
+  template <typename SCAL>
+  BaseVector * S_ParallelBaseVectorPtr<SCAL> :: CreateVector ( const Array<int> * procs ) const
   {
-    ParallelVVector<T> * parvec;
-  
-    parvec = new ParallelVVector<T> (this->size);
-    parvec->SetStatus( this->Status() );
-  
-    // *testout << "procs... " << procs << endl;
-    if( this->Status() != NOT_PARALLEL )
-      {
-	ParallelDofs * aparalleldofs = this-> GetParallelDofs();
-	parvec->SetParallelDofs ( aparalleldofs, procs );
-      }
+    S_ParallelBaseVectorPtr<TSCAL> * parvec = 
+      new S_ParallelBaseVectorPtr<TSCAL> (this->size, this->es, paralleldofs, status);
     return parvec;
-  
   }
 
-  template <typename T>
-  double ParallelVVector<T> :: L2Norm () const
+
+
+  template <typename SCAL>
+  double S_ParallelBaseVectorPtr<SCAL> :: L2Norm () const
   {
     this->Cumulate();
-    // this->AllReduce (&hoprocs);
     
     double sum = 0;
 
@@ -516,171 +410,16 @@ namespace ngla
 
     MPI_Datatype MPI_SCAL = MyGetMPIType<double>();
     MPI_Allreduce (&sum, &globalsum, 1, MPI_SCAL, MPI_SUM, MPI_COMM_WORLD);
-
+    
     return sqrt (globalsum);
   }
 
 
-  template <typename T>
-  BaseVector * ParallelVFlatVector<T> :: CreateVector ( const Array<int> * procs ) const
-  {
-    ParallelVVector<T> * parvec;
-
-    parvec = new ParallelVVector<T> (this->size);
-    parvec->SetStatus( this->Status() );
-    
-    if( this->Status() != NOT_PARALLEL )
-      {
-	ParallelDofs * aparalleldofs = this-> GetParallelDofs();
-	parvec->SetParallelDofs ( aparalleldofs, procs );
-      }
-    return parvec;
-  }
-
-
-  template < class T >
-  ostream & ParallelVVector<T> :: Print (ostream & ost) const
-  {
-    const PARALLEL_STATUS status = this->Status();
-    if ( status == NOT_PARALLEL )
-      ost << "NOT PARALLEL" << endl;
-    else if ( status == DISTRIBUTED )
-      ost << "DISTRIBUTED" <<endl;
-    else if ( status == CUMULATED )
-      ost << "CUMULATED" << endl;
-    return (ost << this->FV() << endl);
-  }
-  
-  template < class T >
-  ostream & ParallelVFlatVector<T> :: Print (ostream & ost) const
-  {
-    const PARALLEL_STATUS status = this->Status();
-    if ( status == NOT_PARALLEL )
-      ost << "NOT PARALLEL" << endl;
-    else if ( status == DISTRIBUTED )
-      ost << "DISTRIBUTED" <<endl;
-    else if ( status == CUMULATED )
-      ost << "CUMULATED" << endl;
-    return (ost << this->FV() << endl);
-  }
-
-  template <class T>
-  void ParallelVVector<T> :: AddRecvValues( int sender )
-  {
-    FlatArray<int> exdofs = paralleldofs->GetSortedExchangeDofs(sender);
-    // if (sender != 0)
-    if (1)
-      {
-	for (int i = 0; i < exdofs.Size(); i++)
-	  (*this) (exdofs[i]) +=  (*this->recvvalues)[sender][i];
-      }
-    else
-      {
-	for (int i = 0; i < exdofs.Size(); i++)
-	  (*this)(i) += (*this->recvvalues)[0][i];
-      }
-  }
-
-
-  template <class T>
-  void ParallelVFlatVector<T> :: AddRecvValues( int sender )
-  {
-    FlatArray<int> exdofs = paralleldofs->GetSortedExchangeDofs(sender);
-    // if (sender != 0)
-    if (1)
-      {
-	for (int i = 0; i < exdofs.Size(); i++)
-	  this->FV()(exdofs[i]) += (*this->recvvalues)[sender][i];
-      }
-    else
-      {
-	for (int i = 0; i < exdofs.Size(); i++)
-	  this->FV()(i) += (*this->recvvalues)[0][i];
-	// (*this).Range (0, (*this->recvvalues).Size()) += (*this->recvvalues)[sender];
-      }
-  }
-
-
-  
-
-
-
-  template class ParallelVFlatVector<double>;
-  template class ParallelVFlatVector<Complex>;
-  template class ParallelVFlatVector<Vec<1,double> >;
-  template class ParallelVFlatVector<Vec<1,Complex> >;
-  template class ParallelVFlatVector<Vec<2,double> >;
-  template class ParallelVFlatVector<Vec<2,Complex> >;
-  template class ParallelVFlatVector<Vec<3,double> >;
-  template class ParallelVFlatVector<Vec<3,Complex> >;
-  template class ParallelVFlatVector<Vec<4,double> >;
-  template class ParallelVFlatVector<Vec<4,Complex> >;
-
-  template class ParallelVFlatVector<Vec<5,double> >;
-  template class ParallelVFlatVector<Vec<5,Complex> >;
-  template class ParallelVFlatVector<Vec<6,double> >;
-  template class ParallelVFlatVector<Vec<6,Complex> >;
-  template class ParallelVFlatVector<Vec<7,double> >;
-  template class ParallelVFlatVector<Vec<7,Complex> >;
-  template class ParallelVFlatVector<Vec<8,double> >;
-  template class ParallelVFlatVector<Vec<8,Complex> >;
-  /*
-    template class ParallelVFlatVector<Vec<9,double> >;
-    template class ParallelVFlatVector<Vec<9,Complex> >;
-
-    template class ParallelVFlatVector<Vec<12,double> >;
-    template class ParallelVFlatVector<Vec<12,Complex> >;
-    template class ParallelVFlatVector<Vec<18,double> >;
-    template class ParallelVFlatVector<Vec<18,Complex> >;
-    template class ParallelVFlatVector<Vec<24,double> >;
-    template class ParallelVFlatVector<Vec<24,Complex> >;
-  */
-
-  template class ParallelVVector<double>;
-  template class ParallelVVector<Complex>;
-  template class ParallelVVector<Vec<1,double> >;
-  template class ParallelVVector<Vec<1,Complex> >;
-  template class ParallelVVector<Vec<2,double> >;
-  template class ParallelVVector<Vec<2,Complex> >;
-  template class ParallelVVector<Vec<3,double> >;
-  template class ParallelVVector<Vec<3,Complex> >;
-  template class ParallelVVector<Vec<4,double> >;
-  template class ParallelVVector<Vec<4,Complex> >;
-
-  template class ParallelVVector<Vec<5,double> >;
-  template class ParallelVVector<Vec<5,Complex> >;
-  template class ParallelVVector<Vec<6,double> >;
-  template class ParallelVVector<Vec<6,Complex> >;
-  template class ParallelVVector<Vec<7,double> >;
-  template class ParallelVVector<Vec<7,Complex> >;
-  template class ParallelVVector<Vec<8,double> >;
-  template class ParallelVVector<Vec<8,Complex> >;
-
-  /*
-    template class ParallelVVector<Vec<9,double> >;
-    template class ParallelVVector<Vec<9,Complex> >;
-    template class ParallelVVector<Vec<10,double> >;
-    template class ParallelVVector<Vec<10,Complex> >;
-    // template class ParallelVVector<Vec<11,double> >;
-    // template class ParallelVVector<Vec<11,Complex> >;
-    // template class ParallelVVector<Vec<15,double> >;
-    // template class ParallelVVector<Vec<15,Complex> >;
-    // template class ParallelVVector<Vec<13,double> >;
-    // template class ParallelVVector<Vec<13,Complex> >;
-    // template class ParallelVVector<Vec<14,double> >;
-    // template class ParallelVVector<Vec<14,Complex> >;
-
-    template class ParallelVVector<Vec<12,double> >;
-    template class ParallelVVector<Vec<12,Complex> >;
-    template class ParallelVVector<Vec<18,double> >;
-    template class ParallelVVector<Vec<18,Complex> >;
-    template class ParallelVVector<Vec<24,double> >;
-    template class ParallelVVector<Vec<24,Complex> >;
-  */
-  
-  //  template class ParallelVFlatVector<FlatVector<double> >;
-  // template class ParallelVVector<FlatVector<double> >;
-
+  template class S_ParallelBaseVectorPtr<double>;
+  template class S_ParallelBaseVectorPtr<Complex>;
 }
+
+
+
 #endif
 

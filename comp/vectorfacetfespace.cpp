@@ -296,9 +296,9 @@ namespace ngcomp
 	*testout << " first_facet_dof (facet)  " << first_facet_dof << endl; 
 	*testout << " first_inner_dof (facet)  " << first_inner_dof << endl; 
       } 
-
+    
     UpdateCouplingDofArray();
-    FinalizeUpdate (lh);
+    // FinalizeUpdate (lh);
   }
 
 

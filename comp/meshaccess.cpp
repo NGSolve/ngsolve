@@ -1203,11 +1203,28 @@ int MeshAccess ::GetGlobalNodeNum (NODE_TYPE nt, int locnum) const
   }
 
 
-  int MeshAccess :: GetDistantNodeNums ( NODE_TYPE nt, int locnum, 
-                                                 ngstd::Array<int[2]> & distnums ) const
+  int MeshAccess :: GetDistantNodeNums (NODE_TYPE nt, int locnum, 
+					ngstd::Array<int[2]> & distnums ) const
   {
     distnums.SetSize( NgPar_GetNDistantNodeNums(nt, locnum) );
     return NgPar_GetDistantNodeNums ( nt, locnum, &distnums[0][0] );
+  }
+}
+
+#else
+
+namespace ngcomp
+{
+  int MeshAccess ::GetGlobalNodeNum (NODE_TYPE nt, int locnum) const
+  {
+    return -1;
+  }
+
+  int MeshAccess :: GetDistantNodeNums (NODE_TYPE nt, int locnum, 
+					ngstd::Array<int[2]> & distnums ) const
+  {
+    distnums.SetSize (0);
+    return 0;
   }
 }
 

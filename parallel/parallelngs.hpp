@@ -2,6 +2,22 @@
 #define FILE_PARALLELNGS
 
 
+#ifndef PARALLEL
+
+enum { id = 0 };
+enum { ntasks = 1 };
+
+#else
+
+namespace netgen {
+  extern int id, ntasks;
+}
+using netgen::id;
+using netgen::ntasks;
+
+#endif
+
+
 
 #ifdef VTRACE
 #include "vt_user.h"
@@ -11,10 +27,10 @@
 #define VT_TRACER(n)
 #endif
 
+#include <comp.hpp>
+
 
 #ifdef PARALLEL
-
-#include <comp.hpp>
 
 /*
 #undef SEEK_SET
@@ -24,11 +40,9 @@
 
 #include <mpi.h>
 
-namespace netgen {
-  extern MPI_Group MPI_HIGHORDER_WORLD;
-  extern MPI_Comm MPI_HIGHORDER_COMM;
-}
-using netgen::MPI_HIGHORDER_COMM;
+#endif
+
+
 
 #include "mpiwrapper.hpp"
 #include "paralleldofs.hpp"
@@ -38,7 +52,6 @@ using netgen::MPI_HIGHORDER_COMM;
 
 extern void Parallel_Exit ();
 
-#endif
 
 #endif
 

@@ -1,6 +1,9 @@
 #include <comp.hpp>
 #include <multigrid.hpp>
 
+#include <parallelngs.hpp>
+
+
 
 namespace ngcomp
 {
@@ -189,7 +192,6 @@ namespace ngcomp
       {
 	for (int i = 0; i < ne; i++)
 	  {
-	    if ( ma.IsGhostEl(i)) continue;
 	    if (!fespace.DefinedOn (ma.GetElIndex(i))) continue;
 
 	    if (eliminate_internal)
@@ -219,7 +221,6 @@ namespace ngcomp
 
 	      for (int k=0;k<nbelems.Size();k++){
 		int elnr=nbelems[k];
-		if ( ma.IsGhostEl(elnr)) continue;
 		if (!fespace.DefinedOn (ma.GetElIndex(elnr))) continue;
 		fespace.GetDofNrs (elnr, dnums);
 		for (int j = 0; j < dnums.Size(); j++)
@@ -230,7 +231,6 @@ namespace ngcomp
 
 	for (int i = 0; i < nse; i++)
 	  {
-	    if ( ma.IsGhostSEl(i)) continue;
 	    if (!fespace.DefinedOnBoundary (ma.GetSElIndex(i))) continue;
 	    
 	    fespace.GetSDofNrs (i, dnums);
@@ -677,7 +677,6 @@ namespace ngcomp
 			    }
 
 
-			  if (ma.IsGhostEl(i)) continue;
 			  if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
 
 
@@ -1050,9 +1049,9 @@ namespace ngcomp
 		    }//end of parallel
 		  }//end loop over colors
 
-#ifdef PARALLEL
-		MPI_Barrier( MPI_COMM_WORLD );
-#endif	      
+
+		MyMPI_Barrier();
+
 		if (id == 0)
 		  cout << "\rassemble element " << ne << "/" << ne << endl;
 
@@ -1075,8 +1074,6 @@ namespace ngcomp
                 for (int i = 0; i < ne; i++)
                   {
 		    gcnt++;
-                    if ( ma.IsGhostEl(i) )
-                      continue;
 
                     if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
                       {
@@ -1168,8 +1165,6 @@ namespace ngcomp
 #pragma omp for 
                   for (int i = 0; i < nse; i++)
                     {
-                      if ( ma.IsGhostSEl ( i ) ) continue;
-		      
 #pragma omp critical(printmatasstatus)
 		      {
 			cnt++;
@@ -1302,7 +1297,6 @@ namespace ngcomp
 #pragma omp for 
 		  for (int i = 0; i < nse; i++)
 		    {
-		      if ( ma.IsGhostSEl ( i ) ) continue;
 #pragma omp critical(printmatasstatus2)
 		      {
 			cnt++;
@@ -1840,8 +1834,6 @@ cout << "catch in AssembleBilinearform 2" << endl;
               for (int i = 0; i < ne; i++)
                 {
 		  
-                  // PARALLEL
-                  if ( ma.IsGhostEl( i ) ) {continue;}
 		
 #pragma omp critical(printinternalstatus)
 		    {
@@ -1961,9 +1953,9 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		  }//end of sum over elements
 	      }//end of parallel
 	      
-#ifdef PARALLEL
-	      MPI_Barrier( MPI_COMM_WORLD );
-#endif	      
+
+	      MyMPI_Barrier();
+
 	      if (id == 0)
 		cout << "\rcompute internal element " << ne << "/" << ne << endl;
 	    }//end of keep_internal-if
@@ -2340,8 +2332,6 @@ cout << "catch in AssembleBilinearform 2" << endl;
                       {
                         lh.CleanUp();
                         
-                        if ( ma.IsGhostEl( i ) ) {continue;}
-                        
                         if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
                         
                         const FiniteElement & fel = fespace.GetFE (i, lh);
@@ -2362,8 +2352,6 @@ cout << "catch in AssembleBilinearform 2" << endl;
                   for (int i = 0; i < nse; i++)
                     {
                       lh.CleanUp();
-
-                      if ( ma.IsGhostSEl( i ) ) {continue;}
 
                       const FiniteElement & fel = fespace.GetSFE (i, lh);
 		      
@@ -2700,17 +2688,6 @@ cout << "catch in AssembleBilinearform 2" << endl;
 #endif
     this->mats.Append (mat);
 
-    /*
-#ifdef PARALLEL
-    if ( ntasks > 1 )
-      {
-        this->mats.Append ( new ParallelSparseMatrix<TM,TV,TV> (*graph,1,
-                                                                &this->GetFESpace().GetParallelDofs()) );
-      }
-    else
-#endif
-      this->mats.Append (new SparseMatrix<TM,TV,TV> (*graph, 1));
-    */
     delete graph;
 
     if (!this->multilevel || this->low_order_bilinear_form)
@@ -2736,25 +2713,20 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
 
 
-#ifndef PARALLEL
-  template <class TM, class TV>
-  BaseVector * T_BilinearForm<TM, TV>::
-  CreateVector() const
-  {
-    return new VVector<TV_COL> (this->fespace.GetNDof());
-  }
-#else 
   template <class TM, class TV>
   BaseVector * T_BilinearForm<TM, TV>::
   CreateVector() const
   {
     const FESpace & afespace = this->fespace;
-    if ( &afespace.GetParallelDofs() == 0 )
-      return new VVector<TV> (afespace.GetNDof());
+#ifdef PARALLEL
+    if ( &afespace.GetParallelDofs() )
+      return new ParallelVVector<TV> (afespace.GetNDof(), &afespace.GetParallelDofs());
     else
-      return new ParallelVVector<TV> ( afespace.GetNDof(),& afespace.GetParallelDofs());
-  }
 #endif
+      return new VVector<TV> (afespace.GetNDof());
+  }
+
+
 
 
 
@@ -3008,25 +2980,21 @@ cout << "catch in AssembleBilinearform 2" << endl;
   }
 
 
-#ifndef PARALLEL
-  template <class TM, class TV>
-  BaseVector * T_BilinearFormSymmetric<TM,TV> :: 
-  CreateVector() const
-  {
-    return new VVector<TV> (this->fespace.GetNDof());
-  }
-#else
   template <class TM, class TV>
   BaseVector * T_BilinearFormSymmetric<TM, TV>::
   CreateVector() const
   {
     const FESpace & afespace = this->fespace;
-    if ( &afespace.GetParallelDofs() == 0 )
-      return new VVector<TV> (afespace.GetNDof());
+#ifdef PARALLEL
+    if ( &afespace.GetParallelDofs() )
+      return new ParallelVVector<TV> (afespace.GetNDof(), &afespace.GetParallelDofs());
     else
-      return new ParallelVVector<TV> ( afespace.GetNDof(),& afespace.GetParallelDofs());
-  }
 #endif
+      return new VVector<TV> (afespace.GetNDof());
+  }
+
+
+
 
   ///
   template <class TM, class TV>
@@ -3210,27 +3178,18 @@ cout << "catch in AssembleBilinearform 2" << endl;
   }
 
 
-
-#ifndef PARALLEL
-  template <class TM>
-  BaseVector * T_BilinearFormDiagonal<TM> :: 
-  CreateVector() const
-  {
-    return new VVector<TV_COL> (this->fespace.GetNDof());
-  }
-#else
   template <class TM>
   BaseVector * T_BilinearFormDiagonal<TM> :: 
   CreateVector() const
   {
     const FESpace & afespace = this->fespace;
-    if ( &afespace.GetParallelDofs() == 0 )
-      return new VVector<TV_COL> (afespace.GetNDof());
+#ifdef PARALLEL
+    if ( &afespace.GetParallelDofs() )
+      return new ParallelVVector<TV_COL> (afespace.GetNDof(), &afespace.GetParallelDofs());
     else
-      return new ParallelVVector<TV_COL> ( afespace.GetNDof(),& afespace.GetParallelDofs());
-  }
 #endif
-
+      return new VVector<TV_COL> (afespace.GetNDof());
+  }
 
   ///
   template <class TM>
@@ -3706,76 +3665,30 @@ cout << "catch in AssembleBilinearform 2" << endl;
   void BilinearFormApplication :: 
   Mult (const BaseVector & v, BaseVector & prod) const
   {
-#ifdef PARALLEL
-    if ( ntasks > 1 )
-      {
-	const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector*> (&v);
-	if (parv)
-	  parv -> Cumulate (); // AllReduce(&hoprocs);
-      }
-#endif
+    v.Cumulate();
 
     prod = 0;
     bf -> AddMatrix (1, v, prod);
 
-#ifdef PARALLEL
-    if ( ntasks > 1 )
-      {
-	ParallelBaseVector * parprod = dynamic_cast<ParallelBaseVector*> (&prod);
-	if (parprod)
-	  parprod->SetStatus(DISTRIBUTED);
-      }
-#endif
+    prod.SetParallelStatus (DISTRIBUTED);
   }
 
   void BilinearFormApplication :: 
   MultAdd (double val, const BaseVector & v, BaseVector & prod) const
   {
-#ifdef PARALLEL
-    if ( ntasks > 1 )
-      {
-	const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector*> (&v);
-	if (parv)
-	  parv -> Cumulate (); // AllReduce(&hoprocs);
-      }
-#endif
+    v.Cumulate();
+    prod.Distribute();
 
     bf -> AddMatrix (val, v, prod);
-
-
-#ifdef PARALLEL
-    if ( ntasks > 1 )
-      {
-	ParallelBaseVector * parprod = dynamic_cast<ParallelBaseVector*> (&prod);
-	if (parprod)
-	  parprod->SetStatus(DISTRIBUTED);
-      }
-#endif
   }
 
   void BilinearFormApplication :: 
   MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const
   {
-#ifdef PARALLEL
-    if ( ntasks > 1 )
-      {
-	const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector*> (&v);
-	if (parv)
-	  parv -> Cumulate(); // AllReduce(&hoprocs);
-      }
-#endif
+    v.Cumulate();
+    prod.Distribute();
 
     bf -> AddMatrix (val, v, prod);
-
-
-#ifdef PARALLEL
-    if ( ntasks > 1 )
-      {
-	ParallelBaseVector * parprod = dynamic_cast<ParallelBaseVector*> (&prod);
-	if (parprod)
-	  parprod->SetStatus(DISTRIBUTED);
-      }
-#endif
   }
 
   /*

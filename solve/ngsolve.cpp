@@ -9,6 +9,7 @@
 */
 
 #include <solve.hpp>
+#include <parallelngs.hpp>
 
 #include <tcl.h>
 #if TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>=4
@@ -484,7 +485,8 @@ int NGS_GetData (ClientData clientData,
 	{
 	  ngcomp::GridFunction * gf = pde->GetGridFunction(argv[2]);
 	  if (gf)
-	    sprintf (buf, gf->GetFESpace().GetName().c_str());   // gf->GetSpace()
+	    sprintf (buf, "%s", 
+		     gf->GetFESpace().GetName().c_str()); 
 	  else
 	    sprintf (buf, "v");
 	}
@@ -648,7 +650,6 @@ int NGSolve_Init (Tcl_Interp * interp)
   cout << "Running OpenMP - parallel using " << omp_get_max_threads() << " threads" << endl;
   cout << "(number of threads can be changed by setting OMP_NUM_THREADS)" << endl;
 #endif
-
 
   
 #ifdef SOCKETS

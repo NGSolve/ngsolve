@@ -111,16 +111,6 @@ namespace ngcomp
     ///
     bool is_low_order_space;
 
-    /// new node concept. primarily started for parallelization 
-    /// how many low-order dofs per vertex, edge, face, cell ...
-    // int lodofs_per_node[4];
-    /// vertex, edge, face, cell dofs start (and end) here ...
-    // int first_lodof[5];
-    /// the high order vertex, edge, face, cell dofs on each node start (and end) here ...
-    // Array<int> first_hodofs[4];
-
-
-
     /// if directsolverclustered[i] is true, then the unknowns of domain i are clustered
     Array<bool> directsolverclustered;
 
@@ -136,9 +126,7 @@ namespace ngcomp
     Table<int> * element_coloring;
     Array<COUPLING_TYPE> ctofdof;
 
-#ifdef PARALLEL
     ParallelDofs * paralleldofs;
-#endif
   
   public:
     /**
@@ -366,11 +354,9 @@ namespace ngcomp
 
     const Array<SpecialElement*> & GetSpecialElements() const {return specialelements;}
 
-#ifdef PARALLEL
+
     ParallelDofs & GetParallelDofs () const { return *paralleldofs; }
     virtual void UpdateParallelDofs ();
-#endif
-
 
     virtual int GetRelOrder() const
     { 
@@ -428,18 +414,7 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
-    // virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const
-    // { return (nt == NT_VERTEX) ? 1 : 0; }
-
-
-
-    //virtual Array<int> * CreateDirectSolverClusters (int type = 0) const;
     virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
-
-#ifdef PARALLEL_NOT_JS
-    virtual void UpdateParallelDofs_hoproc();
-    // virtual void UpdateParallelDofs_loproc();
-#endif
   };
 
 
@@ -518,13 +493,6 @@ namespace ngcomp
     { dnums.SetSize (0); }
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const
     { GetDofNrs (elnr, dnums); }
-
-
-
-#ifdef PARALLEL_NOT_JS
-    virtual void UpdateParallelDofs_hoproc();
-    virtual void UpdateParallelDofs_loproc();
-#endif
   };
 
 
@@ -667,71 +635,10 @@ namespace ngcomp
 			       const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
 
     inline int GetNSpaces () const { return spaces.Size(); } 
-
-#ifdef PARALLEL_NOT_JS_20110614
-    virtual void UpdateParallelDofs_hoproc();
-    virtual void UpdateParallelDofs_loproc();
-#endif
   };
 
 
 
-
-
-#ifdef PARALLEL_NOT_JS
-  class ParallelElementFESpace : public ElementFESpace
-  {
-  public:
-
-    ///
-    ParallelElementFESpace (const MeshAccess & ama,
-			    int aorder, int adim, bool acomplex);
-    ///
-    ParallelElementFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags=false);
-
-    ///
-    ~ParallelElementFESpace ()
-    {
-      ;
-    }
-
-    virtual string GetClassName () const
-    {
-      return "ParallelElementFESpace";
-    }
-
-
-    virtual void UpdateParallelDofs_hoproc();
-    virtual void UpdateParallelDofs_loproc();
-  };
-
-
-  class ParallelNodalFESpace : public NodalFESpace
-  {
-
-  public:
-
-    ///
-    ParallelNodalFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
-    ///
-    virtual ~ParallelNodalFESpace ()
-    {
-      ;
-    }
-
-    ///
-    virtual string GetClassName () const
-    {
-      return "ParallelNodalFESpace";
-    }
-
-
-    virtual void UpdateParallelDofs_hoproc();
-    // virtual void UpdateParallelDofs_loproc();
-
-  };
-
-#endif
 
 
   /// Registered FESpace classes
