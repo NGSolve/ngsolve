@@ -92,10 +92,8 @@ void Ng_Exit ()
 void ParallelRun()
 {   
   string message;
-      
   MPI_Status status;
       
-  //       int id, rc, ntasks;
 
   MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
@@ -103,8 +101,6 @@ void ParallelRun()
 
 
   bool test = true;
-
-
 
   testout = new ofstream (string("testout_proc") + id  );      
 
@@ -114,9 +110,7 @@ void ParallelRun()
 #pragma pomp inst begin (message)
 #endif
 
-      (*testout) << "wait for mess " << endl;
       MyMPI_Recv ( message, 0 );
-      (*testout) << "message " << message << endl;
 
 #ifdef SCALASCA
 #pragma pomp inst end (message)

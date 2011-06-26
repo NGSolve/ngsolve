@@ -15,17 +15,13 @@
 namespace netgen
 {
 
+  extern int id, ntasks;
+  
+
 #ifndef PARALLEL
 
-
-
-// namespace netgen
-// {
-  //using namespace netgen;
-  enum { id = 0 };
-  enum { ntasks = 0 };
-// }
-
+  // enum { id = 0 };
+  // enum { ntasks = 0 };
 
 #else   // if PARALLEL
 
@@ -37,12 +33,11 @@ namespace netgen
 
 
 //#include "parallelfunc.hpp"
-extern MPI_Group MPI_HIGHORDER_WORLD;
-extern MPI_Comm MPI_HIGHORDER_COMM;
+  extern MPI_Group MPI_HIGHORDER_WORLD;
+  extern MPI_Comm MPI_HIGHORDER_COMM;
 
 // namespace netgen
 // {
-  extern int id, ntasks;
 
   template <class T>
   MPI_Datatype MyGetMPIType ( ) { cerr << "ERROR in GetMPIType() -- no type found" << endl;return 0;}
@@ -201,7 +196,8 @@ extern MPI_Comm MPI_HIGHORDER_COMM;
   inline void MyMPI_Bcast (Array<T, 0> & s, int root, MPI_Comm comm = MPI_COMM_WORLD)
   {
     int id;
-    MPI_Comm_rank(MPI_HIGHORDER_COMM, &id);
+    // MPI_Comm_rank(MPI_HIGHORDER_COMM, &id);
+    MPI_Comm_rank(comm, &id);
 
     int size = s.Size();
     MPI_Bcast (&size, 1, MPI_INT, root, comm);

@@ -17,12 +17,16 @@
 #endif
 */
 
+namespace netgen
+{
+  int id = 0, ntasks = 1;
+}
+
 #ifdef PARALLEL
 #include <mpi.h>
 
 namespace netgen
 {
-  int id, ntasks;
   MPI_Group MPI_HIGHORDER_WORLD;
   MPI_Comm MPI_HIGHORDER_COMM;
 }
@@ -74,9 +78,6 @@ int main(int argc, char ** argv)
 {
   
 #ifdef PARALLEL
-  // parallel profiling
-#pragma pomp inst init
-
   MPI_Init(&argc, &argv);          
 
   MPI_Comm_size(MPI_COMM_WORLD, &netgen::ntasks);
@@ -92,9 +93,8 @@ int main(int argc, char ** argv)
   MPI_Comm_group ( MPI_COMM_WORLD, &MPI_GROUP_WORLD);
   MPI_Group_incl ( MPI_GROUP_WORLD, n_ho, process_ranks, & netgen::MPI_HIGHORDER_WORLD);
   MPI_Comm_create ( MPI_COMM_WORLD, netgen::MPI_HIGHORDER_WORLD, & netgen::MPI_HIGHORDER_COMM);
-
-#pragma pomp inst begin(main)
 #endif
+
 
   if ( netgen::id == 0 )
     {
@@ -313,7 +313,6 @@ int main(int argc, char ** argv)
       Tcl_DeleteInterp (myinterp); 
 
 #ifdef PARALLEL
-#pragma pomp inst altend(main)
 
       // MPI beenden
       MPI_Barrier(MPI_COMM_WORLD);
@@ -327,8 +326,6 @@ int main(int argc, char ** argv)
     {
       // main for parallel processors    
       ParallelRun();
-
-#pragma pomp inst end(main)
 
       // MPI beenden
       MPI_Barrier(MPI_COMM_WORLD);
