@@ -18,9 +18,6 @@ namespace ngfem
     ;
   }
 
-
-
-
   Integrator :: Integrator() throw ()
   {
     SetHigherIntegrationOrder(20);

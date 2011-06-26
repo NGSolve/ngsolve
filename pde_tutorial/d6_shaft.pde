@@ -25,10 +25,10 @@ define coefficient surfaceloadz
 0, 0, 0, 1, 0, 0, 0, 0, 0,
 
 
-define fespace v -dim=3 -order=3 
-define fespace vp -dim=6 -order=2
-define fespace vmises -dim=1 -order=1
-define fespace verr -l2 -order=0
+define fespace v -type=h1ho -dim=3 -order=3 
+define fespace vp -type=h1ho -dim=6 -order=2
+define fespace vmises  -type=h1ho -dim=1 -order=1
+define fespace verr -type=l2 -order=0
 
 define gridfunction u -fespace=v -nested #-addcoef
 define gridfunction p -fespace=vp

@@ -18,7 +18,7 @@ define coefficient coef_dirichlet
 1e5, (-1e5), 0, 0,
 
 
-define fespace v -order=3 -complex -dirichlet=[1,2]
+define fespace v -type=h1ho -order=3 -complex -dirichlet=[1,2]
 define gridfunction u -fespace=v -nested
 
 define bilinearform a -fespace=v -symmetric

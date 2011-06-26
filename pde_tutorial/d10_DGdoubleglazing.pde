@@ -28,7 +28,7 @@ define coefficient b2
 (-2*x*(1-y*y)),(-2*x*(1-y*y)),
 
 
-define fespace vdisc -l2ho -order=4 -dgjumps 
+define fespace vdisc -type=l2ho -order=4 -dgjumps 
 define gridfunction udisc -fespace=vdisc
 
 define bilinearform adisc -fespace=vdisc

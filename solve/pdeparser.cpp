@@ -11,7 +11,6 @@
 
 namespace ngsolve
 {
-  using namespace ngparallel;
 
   // parser for pde file
 
