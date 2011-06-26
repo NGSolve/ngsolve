@@ -10,8 +10,8 @@ define coefficient lam
 define coefficient coef_source
 0, 0, 1,
 
-define fespace v -order=3 #-dirichlet=[1]
-define fespace verr -l2 -order=0
+define fespace v -type=h1ho -order=3 #-dirichlet=[1]
+define fespace verr -type=l2 -order=0
 
 define gridfunction u -fespace=v -nested
 define gridfunction err -fespace=verr

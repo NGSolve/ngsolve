@@ -59,7 +59,6 @@ namespace ngsolve
 {
   using namespace ngsolve;
 
-  using namespace ngparallel;
 
   EvalVariable :: EvalVariable(const MeshAccess & ama, const string & aname)
     : NGS_Object(ama,aname)

@@ -14,7 +14,6 @@
 namespace ngsolve
 {
   using namespace ngsolve;
-  using namespace ngparallel;
 
 
 

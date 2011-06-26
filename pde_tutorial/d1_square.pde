@@ -29,7 +29,7 @@ define coefficient coef_neumann
 # define a finite element space
 # Dirichlet boundary is Gamma_1 
 # play around with -order=...
-define fespace v -order=3 -dirichlet=[1]
+define fespace v -order=3 -type=h1ho -dirichlet=[1]
 
 # the solution field
 define gridfunction u -fespace=v -nested

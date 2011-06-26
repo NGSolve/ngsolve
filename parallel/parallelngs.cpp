@@ -2,7 +2,6 @@
 #include <parallelngs.hpp>
 
 using namespace ngsolve;
-using namespace ngparallel;
 
 
 #ifdef PARALLEL
