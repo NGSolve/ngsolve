@@ -951,7 +951,7 @@ namespace netgen
       {
 	FlatArray<PointIndex> verts = verts_of_proc[dest];
 
-	MyMPI_ISend ( "vertex", dest );
+	MyMPI_Send ("vertex", dest);
 
 	MyMPI_ISend (verts, dest);
 
@@ -1043,7 +1043,7 @@ namespace netgen
 
     for ( int dest = 1; dest < ntasks; dest ++ )
       {
-	MyMPI_ISend ( "volumeelements", dest);
+	MyMPI_Send ( "volumeelements", dest);
 	MyMPI_ISend ( elementarrays[dest], dest, sendrequest[dest] );
       }
 
