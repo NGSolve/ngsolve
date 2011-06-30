@@ -6,9 +6,8 @@
 
 namespace ngcomp
 {
-  using namespace ngfem;
 
-  // ------------------------------------------------------------------------
+
   FacetFESpace ::  FacetFESpace (const MeshAccess & ama, const Flags & flags, bool checkflags)
     : FESpace(ama, flags)
   {
@@ -29,13 +28,7 @@ namespace ngcomp
     if ( this->IsComplex() )
       loflags.SetFlag("complex");
 
-    /*
-    if (order != 0)
-      low_order_space = new FacetFESpace(ma, loflags);
-    else
-    */
-      low_order_space = 0;
-        
+    low_order_space = 0;
 
     // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
@@ -101,27 +94,19 @@ namespace ngcomp
     if (dimension > 1)
       {
         evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
-        boundary_evaluator = 
-          new BlockBilinearFormIntegrator (*boundary_evaluator, dimension);
+        boundary_evaluator =
+	  new BlockBilinearFormIntegrator (*boundary_evaluator, dimension);
       }
-    // Update();
   }
+
   
-  // ------------------------------------------------------------------------
+
   FacetFESpace :: ~FacetFESpace ()
-  {
-    ;
-  }
+  { ; }
 
-  /*
-  // ------------------------------------------------------------------------
-  FESpace * FacetFESpace :: Create (const MeshAccess & ma, const Flags & flags)
-  {
-    return new FacetFESpace (ma, flags, true);
-  }
-  */
 
-  // ------------------------------------------------------------------------
+
+
   void FacetFESpace :: Update(LocalHeap & lh)
   {
     FESpace :: Update (lh);
@@ -879,6 +864,7 @@ public:
 	const BitArray & freedofs = *GetFreeDofs();
 	for (int i = 0; i < freedofs.Size(); i++)
 	  if (!freedofs.Test(i)) clusters[i] = 0;
+	*testout << "Hybrid-FESpace, dsc = " << endl << clusters << endl;
 	return &clusters;
       }
   }

@@ -1190,6 +1190,7 @@ void MeshAccess :: AddPointCurvePoint(const Vec<3> & point) const
 
 namespace ngcomp
 {
+  /*
 int MeshAccess ::GetGlobalNodeNum (NODE_TYPE nt, int locnum) const
   {
     switch (nt)
@@ -1209,18 +1210,41 @@ int MeshAccess ::GetGlobalNodeNum (NODE_TYPE nt, int locnum) const
     distnums.SetSize( NgPar_GetNDistantNodeNums(nt, locnum) );
     return NgPar_GetDistantNodeNums ( nt, locnum, &distnums[0][0] );
   }
+  */
+
+int MeshAccess ::GetGlobalNodeNum (Node node) const
+  {
+    switch (node.GetType())
+      {
+      case NT_VERTEX: return NgPar_GetDistantPNum ( 0, node.GetNr() ); 
+      case NT_EDGE: return NgPar_GetDistantEdgeNum ( 0, node.GetNr() ); 
+      case NT_FACE: return NgPar_GetDistantFaceNum ( 0, node.GetNr() ); 
+      case NT_CELL: return NgPar_GetDistantElNum ( 0, node.GetNr() ); 
+      }
+    return -1;
+  }
+
+
+  int MeshAccess :: GetDistantNodeNums (Node node,
+					ngstd::Array<int[2]> & distnums ) const
+  {
+    distnums.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );
+    return NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &distnums[0][0] );
+  }
+
+
 }
 
 #else
 
 namespace ngcomp
 {
-  int MeshAccess ::GetGlobalNodeNum (NODE_TYPE nt, int locnum) const
+  int MeshAccess ::GetGlobalNodeNum (Node node) const
   {
     return -1;
   }
 
-  int MeshAccess :: GetDistantNodeNums (NODE_TYPE nt, int locnum, 
+  int MeshAccess :: GetDistantNodeNums (Node node, 
 					ngstd::Array<int[2]> & distnums ) const
   {
     distnums.SetSize (0);

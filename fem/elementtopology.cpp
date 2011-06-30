@@ -470,7 +470,7 @@ namespace ngfem
       case 3: ost << "C"; break;
       default: ost << "undef"; break;
       }
-    ost << node.GetNodeNr();
+    ost << node.GetNr();
     return ost;
   }
 

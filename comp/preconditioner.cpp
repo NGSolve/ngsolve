@@ -445,9 +445,14 @@ namespace ngcomp
 	const BaseSparseMatrix & amatrix = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix());
 
 	amatrix.SetInverseType ( inversetype );
+	*testout << "DirectPrecond, on_proc = " << this->on_proc << endl;
 	if ( this->on_proc == -1  || this->on_proc == id )
 	  {
 	    const BitArray * freedofs = bfa->GetFESpace().GetFreeDofs();
+	    
+	    *testout << "freedofs = " << freedofs << endl;
+	    if (freedofs)
+	      *testout << *freedofs << endl;
 
 	    if (freedofs)
 	      inverse = amatrix.InverseMatrix(freedofs);  // change to const BitArray *
