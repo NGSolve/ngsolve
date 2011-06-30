@@ -705,12 +705,6 @@ namespace ngcomp
     dnums += GetElementDofs (elnr);
   }
 
-  /*
-  int H1HighOrderFESpace :: GetNLowOrderNodeDofs ( NODE_TYPE nt ) const
-  {
-    return (nt == NT_VERTEX) ? 1 : 0;
-  }
-  */
 
   void H1HighOrderFESpace :: 
   GetSDofNrs (int elnr, Array<int> & dnums) const

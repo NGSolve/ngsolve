@@ -14,12 +14,12 @@ namespace ngparallel
   using namespace ngcomp;
 
   ParallelDofs :: ParallelDofs (int andof, Table<int> * exdofs, const FESpace * afes)
-    : ndof(andof), fes(afes), sorted_exchangedof(exdofs), ismasterdof(ndof)
+    : ndof(andof), fes(afes), exchangedofs(exdofs), ismasterdof(ndof)
   {
     ismasterdof.Set();
     for (int i = 0; i < id; i++)
       {
-	FlatArray<int> ex = (*sorted_exchangedof)[i];
+	FlatArray<int> ex = (*exchangedofs)[i];
 	for (int j = 0; j < ex.Size(); j++)
 	  ismasterdof.Clear (ex[j]);
       }
@@ -41,7 +41,7 @@ namespace ngparallel
       {
 	if ( !IsExchangeProc(dest) ) continue;
 	
-        FlatArray<int> sortedexchangedof = GetSortedExchangeDofs(dest);
+        FlatArray<int> sortedexchangedof = GetExchangeDofs(dest);
 	int len_vec = sortedexchangedof.Size();
 	if ( len_vec == 0 ) continue;
 
@@ -53,6 +53,85 @@ namespace ngparallel
 	MPI_Type_commit ( &mpi_t[dest] );
       }
   }
+
+
+  ParallelDofs :: ParallelDofs (const MeshAccess & ma, 
+				const Array<Node> & dofnodes, const FESpace * afes)
+    : fes(afes)
+  {
+    ndof = dofnodes.Size();
+    Array<int[2]> distnums;
+
+    Array<int> nexdofs(ntasks);
+    nexdofs = 0;
+    for (int i = 0; i < ndof; i++)
+      {
+	if (dofnodes[i].GetNr() == -1) continue;
+	ma.GetDistantNodeNums (dofnodes[i], distnums);
+	for (int j = 0; j < distnums.Size(); j++)
+	  {
+	    int dest = distnums[j][0];
+	    if (dest == 0) continue;
+	    nexdofs[dest]++;
+	  }
+      }
+
+    exchangedofs = new Table<int> (nexdofs);
+    nexdofs = 0;
+
+    for (int i = 0; i < ndof; i++)
+      {
+	if (dofnodes[i].GetNr() == -1) continue;
+	ma.GetDistantNodeNums (dofnodes[i], distnums);
+	for (int j = 0; j < distnums.Size(); j++)
+	  {
+	    int dest = distnums[j][0];
+	    if (dest == 0) continue;
+	    (*exchangedofs)[dest][nexdofs[dest]++] = i;
+	  }
+      }
+
+
+    ismasterdof.SetSize (ndof);
+    ismasterdof.Set();
+    for (int i = 0; i < id; i++)
+      {
+	FlatArray<int> ex = (*exchangedofs)[i];
+	for (int j = 0; j < ex.Size(); j++)
+	  ismasterdof.Clear (ex[j]);
+      }
+
+    mpi_t.SetSize (ntasks); 
+
+    MPI_Datatype mpi_type = 
+      ( fes -> IsComplex() ) ? 
+      MyGetMPIType<Complex>() : MyGetMPIType<double>(); 
+    
+    if ( fes -> GetDimension() != 1)
+      {
+	MPI_Datatype htype;
+	MPI_Type_contiguous (fes -> GetDimension(), mpi_type, &htype);
+	mpi_type = htype;
+      }
+
+    for (int dest = 0; dest < ntasks; dest++ )
+      {
+	if ( !IsExchangeProc(dest) ) continue;
+	
+        FlatArray<int> sortedexchangedof = GetExchangeDofs(dest);
+	int len_vec = sortedexchangedof.Size();
+	if ( len_vec == 0 ) continue;
+
+	Array<int> blocklen(len_vec);
+	blocklen = 1;
+
+	MPI_Type_indexed ( len_vec, &blocklen[0], &sortedexchangedof[0], 
+			   mpi_type, &mpi_t[dest]);
+	MPI_Type_commit ( &mpi_t[dest] );
+      }
+  }
+
+
 
 
   int ParallelDofs :: GetNDofGlobal () const

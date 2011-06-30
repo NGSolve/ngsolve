@@ -12,7 +12,7 @@ namespace ngparallel
     int ndof;
     const FESpace * fes;
     /// these are local exhangedofs, computed by FESpace
-    Table<int> * sorted_exchangedof;
+    Table<int> * exchangedofs;
 
     /// mpi-datatype to send exchange dofs
     Array<MPI_Datatype> mpi_t;
@@ -23,8 +23,10 @@ namespace ngparallel
   public:
     ParallelDofs (int andof, Table<int> * exdofs, const FESpace * afes);
     
-    const FlatArray<int>  GetSortedExchangeDofs (int proc) const
-    { return (*sorted_exchangedof)[proc]; }
+    ParallelDofs (const MeshAccess & ma, const Array<Node> & dofnodes, const FESpace * afes = NULL);
+
+    const FlatArray<int>  GetExchangeDofs (int proc) const
+    { return (*exchangedofs)[proc]; }
 
     bool IsMasterDof ( int localdof ) const
     { return ismasterdof.Test(localdof); }
@@ -37,7 +39,7 @@ namespace ngparallel
     const FESpace & GetFESpace() const { return *fes; }
 
     bool IsExchangeProc ( int proc ) const
-    { return (*sorted_exchangedof)[proc].Size() != 0; }
+    { return (*exchangedofs)[proc].Size() != 0; }
 
     MPI_Datatype MyGetMPI_Type ( int dest )
     { return mpi_t[dest]; }

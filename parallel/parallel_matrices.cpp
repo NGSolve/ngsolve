@@ -54,7 +54,7 @@ namespace ngla
 	    {
 	      fes.GetNodeDofNrs (nt, i, dnums);
 	      // int distnum = parallelma->GetGlobalNodeNum (nt, i);
-	      int distnum = ma.GetGlobalNodeNum (nt, i);
+	      int distnum = ma.GetGlobalNodeNum (Node (nt, i));
 
 	      for (int j = 0; j < dnums.Size(); j++)
 		if (dnums[j] != -1 && (!subset || subset->Test(dnums[j])))

@@ -408,7 +408,7 @@ namespace ngfem
     NODE_TYPE GetType () const { return nt; }
 
     /// returns number of the node
-    int GetNodeNr() const { return nodenr; }
+    int GetNr() const { return nodenr; }
   };
 
   inline int CalcNodeId (ELEMENT_TYPE et, const Node & node)
@@ -418,13 +418,13 @@ namespace ngfem
       case ET_TRIG: 
 	{
 	  static const int nodebase[] = { 0, 3, 6 };
-	  return nodebase[node.GetType()] + node.GetNodeNr();
+	  return nodebase[node.GetType()] + node.GetNr();
 	}
 
       case ET_TET: 
 	{
 	  static const int nodebase[] = { 0, 4, 10, 14 };
-	  return nodebase[node.GetType()] + node.GetNodeNr();
+	  return nodebase[node.GetType()] + node.GetNr();
 	}
       default:
 	throw Exception (string ("CalcNodeId not implemented for element ") +
@@ -501,7 +501,7 @@ namespace ngfem
     const Node & GetNode (int i) const { return nodes[i]; }
 
     Node GlobalNode (const Node & locnode)
-    { return Node (locnode.GetType(), nodes[CalcNodeId (et, locnode)].GetNodeNr() ); }
+    { return Node (locnode.GetType(), nodes[CalcNodeId (et, locnode)].GetNr() ); }
   };
 
   ostream & operator<< (ostream & ost, const TopologicElement & etop);

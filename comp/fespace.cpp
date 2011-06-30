@@ -302,7 +302,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    for (int i = 0; i < dirichlet_vertex.Size(); i++)
 	      if (dirichlet_vertex[i])
 		{
-		  ma.GetDistantNodeNums (NT_VERTEX, i, distnums);
+		  ma.GetDistantNodeNums (Node (NT_VERTEX, i), distnums);
 		  for (int j = 0; j < distnums.Size(); j++)
 		    if (distnums[j][0] > 0)  // not master
 		      dist_dir_vertex.Add (distnums[j][0], distnums[j][1]);
@@ -547,35 +547,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
     }
   }
 
-  void FESpace :: GetDofNrs (int elnr, Array<int> & dnums,COUPLING_TYPE ctype) const
+  void FESpace :: GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const
   {
-      Array<int> alldnums; 
-      Array<COUPLING_TYPE> couptype;
-      GetDofNrs(elnr, alldnums);
-      GetDofCouplingTypes(elnr, couptype);
-      dnums.SetSize(0);
-      for (int i=0;i<alldnums.Size();i++){
-	if ( (couptype[i] & ctype) != 0){
-	  dnums.Append(alldnums[i]);
-	}
+    Array<int> alldnums; 
+    Array<COUPLING_TYPE> couptype;
+    GetDofNrs(elnr, alldnums);
+    GetDofCouplingTypes(elnr, couptype);
+    dnums.SetSize(0);
+    for (int i=0;i<alldnums.Size();i++){
+      if ( (couptype[i] & ctype) != 0){
+	dnums.Append(alldnums[i]);
       }
+    }
   }
 
   void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const
   {
-    /*
-    if (first_lodof[4] != -1)
-      {
-	dnums.SetSize(0);
-	for (int i = 0; i < lodofs_per_node[nt]; i++)
-	  dnums.Append (first_lodof[nt]+nr*lodofs_per_node[nt] + i);
-	if (first_hodofs[nt].Size())
-	  for (int i = first_hodofs[nt][nr]; i < first_hodofs[nt][nr+1]; i++)
-	    dnums.Append (i);
-	return;
-      }
-    */
-
     switch (nt)
       {
       case NT_VERTEX: GetVertexDofNrs(nr, dnums); break;
@@ -592,40 +579,28 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
-    // if (first_lodof[4] != -1)
-    // GetNodeDofNrs (NT_VERTEX, vnr, dnums);
     throw Exception ("FESpace::GetVertexDofNrs called");
   }
 
   void FESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
-    // if (first_lodof[4] != -1)
-    // GetNodeDofNrs (NT_EDGE, ednr, dnums);
     throw Exception ("FESpace::GetEdgeDofNrs called");
   }
 
   void FESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
-    // if (first_lodof[4] != -1)
-    // GetNodeDofNrs (NT_FACE, fanr, dnums);
     throw Exception ("FESpace::GetFaceDofNrs called");
   }
 
   void FESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
-    // if (first_lodof[4] != -1)
-    // GetNodeDofNrs (NT_CELL, elnr, dnums);
     throw Exception (string("FESpace::GetInnerDofNrs called for class")+
 		     typeid(*this).name());
   }
 
-  /*
-  int FESpace :: GetNLowOrderNodeDofs ( NODE_TYPE nt ) const
-  {
-    throw Exception (string("FESpace::GetNLowOrderNodeDofs called for class")+
-		     typeid(*this).name());
-  }
-  */
+
+
+
 
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
@@ -884,92 +859,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if  ( ntasks == 1 ) 
       return;
 
+    *testout << "updagteparalleldofs" << endl;
 
-    if ( id == 0 )
-      {
-	Array<int> nexdof(ntasks); 
-	nexdof = 0;
-	
-	Table<int> * exdofs = new Table<int> (nexdof);
-	// paralleldofs = new ParallelDofs (GetNDof(), exdofs, this);
-	paralleldofs = new ParallelDofs (0, exdofs, this);
-      }
-
-    else
-      {
-	bool print = true;
-
-	if (print)
+    Array<Node> dofnodes (GetNDof());
+    dofnodes = Node (NT_VERTEX, -1);
+    Array<int> dnums;
+    
+    if (id != 0)
+      for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+	for ( int nr = 0; nr < ma.GetNNodes (nt); nr++ )
 	  {
-	    *testout << "FESpace::UpdateParallelDofs_hoproc" << endl;
-      
-	    for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
-	      for (int node = 0; node < ma.GetNNodes (nt); node++)
-		{
-		  *testout << "distnode[" << nt << "-" << node << "] = " << endl;
-		  Array<int[2]> distantnodenums;
-		  // parallelma -> 
-		  ma.GetDistantNodeNums (nt, node, distantnodenums);
-		  for (int j = 0; j < distantnodenums.Size(); j++)
-		    *testout << distantnodenums[j][0] << " " << distantnodenums[j][1] << endl;
-		}
+	    GetNodeDofNrs (nt, nr, dnums);
+	    for (int j = 0; j < dnums.Size(); j++)
+	      dofnodes[dnums[j]] = Node (nt, nr);
 	  }
     
-
-	// Find number of exchange dofs
-	Array<int> nexdof(ntasks);
-	nexdof = 0;
-
-	Array<int> dnums;
-
-
-	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
-	  for ( int nr = 0; nr < ma.GetNNodes (nt); nr++ )
-	    {
-	      GetNodeDofNrs (nt, nr, dnums);
-
-	      Array<int[2]> distantnodenums;
-	      ma.GetDistantNodeNums (nt, nr, distantnodenums);
-
-	      for (int j = 0; j < distantnodenums.Size(); j++)
-		{
-		  int dest = distantnodenums[j][0];
-		  if (dest > 0) nexdof[dest] += dnums.Size(); 
-		}
-	    }
-    
-	nexdof[0] = 0;
-
-	Table<int> * exdofs = new Table<int> (nexdof);
-	nexdof = 0;
-
-	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
-	  {
-	    for ( int node = 0; node < ma.GetNNodes(nt); node++ )
-	      {
-		GetNodeDofNrs (nt, node, dnums); 
-		if ( dnums.Size() == 0 ) continue;
-
-		Array<int[2]> distantnodenums;
-		ma.GetDistantNodeNums ( nt, node, distantnodenums);
-		
-		for (int j = 0; j < distantnodenums.Size(); j++)
-		  {
-		    int dest = distantnodenums[j][0];
-		    if (dest > 0)
-		      for (int i = 0; i < dnums.Size(); i++)
-			(*exdofs)[dest][nexdof[dest]++] = dnums[i];
-		  }
-	      } 
-	  }
-
-	for (int dest = 1; dest < ntasks; dest++ )
-	  QuickSort ( (*exdofs)[dest] );
-
-	paralleldofs = new ParallelDofs (GetNDof(), exdofs, this);
-
-	*testout << "sorted_exdof = " << endl << *exdofs << endl;
-      }
+    paralleldofs = new ParallelDofs (ma, dofnodes, this);
   }
 
 
@@ -1692,6 +1597,23 @@ lot of new non-zero entries in the matrix!\n" << endl;
     UpdateCouplingDofArray();
     // FinalizeUpdate (lh);
 
+
+    // (*testout) << "free_dofs = " << endl << free_dofs << endl;
+
+    (*testout) << "Update compound fespace" << endl;
+    (*testout) << "cummulative dofs start at " << cummulative_nd << endl;
+    (*testout) << "dof coupling types " << ctofdof << endl;
+    (*testout) << "freedofs " << endl << free_dofs << endl;
+  }
+
+  void CompoundFESpace :: FinalizeUpdate(LocalHeap & lh)
+  {
+    for (int i = 0; i < spaces.Size(); i++)
+      spaces[i] -> FinalizeUpdate(lh);
+
+    FESpace::FinalizeUpdate (lh);
+
+
     // dirichlet-dofs from sub-spaces
     // ist das umsonst ? (JS)
     bool has_dirichlet_dofs = false;
@@ -1699,8 +1621,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
       if (spaces[i]->GetFreeDofs()) 
 	has_dirichlet_dofs = true;
 
+    *testout << "spaces.size = " << endl << spaces.Size() << endl;
+
     if (has_dirichlet_dofs)
       {
+	*testout << "has Dirichlet dofs" << endl;
 	free_dofs.SetSize(GetNDof());
 	free_dofs.Set();
 
@@ -1720,20 +1645,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	dirichlet_dofs = free_dofs;
 	dirichlet_dofs.Invert();
       }
-
-
-    // (*testout) << "free_dofs = " << endl << free_dofs << endl;
-
-    (*testout) << "Update compound fespace" << endl;
-    (*testout) << "cummulative dofs start at " << cummulative_nd << endl;
-    (*testout) << "dof coupling types " << ctofdof << endl;
-  }
-
-  void CompoundFESpace :: FinalizeUpdate(LocalHeap & lh)
-  {
-    for (int i = 0; i < spaces.Size(); i++)
-      spaces[i] -> FinalizeUpdate(lh);
-    FESpace::FinalizeUpdate (lh);
   }
 
 

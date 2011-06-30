@@ -132,6 +132,108 @@ namespace ngfem
   typename L2HighOrderFE<ET,SHAPES>::TPRECOMP_TRACE L2HighOrderFE<ET,SHAPES>::precomp_trace(320);
 
 
+
+
+
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  void L2HighOrderFE<ET,SHAPES> :: 
+  PrecomputeTrace ()
+    {
+      for (int f = 0; f < ElementTopology::GetNFacets(ET); f++)
+	{
+	  int classnr =  ET_trait<ET>::GetFacetClassNr (f, vnums);
+
+	  if (precomp_trace.Used (INT<2> (order, classnr)))
+	    continue;
+
+	  ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (ET, f);
+	  int nf;
+	  switch (etfacet)
+	    {
+	    case ET_SEGM: nf = order+1; break;
+	    case ET_TRIG: nf = (order+1)*(order+2)/2; break;
+	    case ET_QUAD: nf = sqr(order+1); break;
+	    default: nf = 0;
+	    }
+	  
+
+	  Matrix<> * trace = new Matrix<>(nf, ndof);
+	  L2HighOrderFiniteElement<DIM>::CalcTraceMatrix (f, *trace);
+	  precomp_trace.Set (INT<2> (order, classnr), trace);
+	}
+    }
+    
+
+
+
+
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  void L2HighOrderFE<ET,SHAPES> :: 
+  PrecomputeShapes (const IntegrationRule & ir) 
+  {
+    int classnr =  ET_trait<ET>::GetClassNr (vnums);
+
+    if (precomp.Get (classnr, order, ir.GetNIP())) return;
+    
+    PrecomputedScalShapes<DIM> * pre = new  PrecomputedScalShapes<DIM> (ir.GetNIP(), ndof);
+    
+    MatrixFixWidth<DIM> dshapes(ndof);
+    for (int i = 0; i < ir.GetNIP(); i++)
+      {
+	CalcShape (ir[i], pre->shapes.Row(i));
+	CalcDShape (ir[i], dshapes);
+	pre->dshapes.Rows (DIM*i, DIM*(i+1)) = Trans (dshapes);
+      }
+    
+    precomp.Add (classnr, order, ir.GetNIP(), pre);
+  }
+  
+
+
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  void L2HighOrderFE<ET,SHAPES> :: 
+  Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
+  {
+    int classnr =  ET_trait<ET>::GetClassNr (vnums);
+    
+    PrecomputedScalShapes<DIM> * pre = precomp.Get (classnr, order, ir.GetNIP());
+    if (pre)
+      vals = pre->shapes * coefs;
+    else
+      T_ScalarFiniteElement2< SHAPES<ET>, ET > :: Evaluate (ir, coefs, vals);
+  }
+
+
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  void L2HighOrderFE<ET,SHAPES> :: 
+  GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
+    {
+      int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
+      if (precomp_trace.Used (INT<2> (order, classnr)))
+	{
+	  fcoefs = (*precomp_trace.Get (INT<2> (order, classnr))) * coefs;
+	}
+      else
+	L2HighOrderFiniteElement<DIM>::GetTrace (facet, coefs, fcoefs);
+    }
+
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  void L2HighOrderFE<ET,SHAPES> :: 
+  GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
+  {
+      int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
+      if (precomp_trace.Used (INT<2> (order, classnr)))
+	{
+	  coefs = Trans(*precomp_trace.Get (INT<2> (order, classnr))) * fcoefs;
+	}
+      else
+	L2HighOrderFiniteElement<DIM>::GetTraceTrans (facet, fcoefs, coefs);
+    }
+
+
+
+
+
   /* *********************** Segment  **********************/
 
   /*

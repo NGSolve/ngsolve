@@ -250,6 +250,8 @@ namespace ngsolve
       SetValues (pde.GetMeshAccess(), *coef, 
 		 *hgfu, boundary, 0, lh);
 
+      *testout << "setvalues: gfu = " << endl << gfu->GetVector() << endl;
+      
       if (component != -1)
 	delete hgfu;
     }

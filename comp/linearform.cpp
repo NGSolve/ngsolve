@@ -7,9 +7,6 @@
 
 namespace ngcomp
 {
-  using namespace ngcomp;
-  using namespace ngparallel;
-
   LinearForm ::
   LinearForm (const FESpace & afespace, 
 	      const string & aname,

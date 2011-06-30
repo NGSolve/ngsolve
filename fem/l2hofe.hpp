@@ -168,7 +168,8 @@ namespace ngfem
       : T_L2HighOrderFiniteElement<ET> (aorder) { ; }
 
 
-    virtual void PrecomputeTrace () 
+    virtual void PrecomputeTrace ();
+    /*
     {
       for (int f = 0; f < ElementTopology::GetNFacets(ET); f++)
 	{
@@ -193,34 +194,11 @@ namespace ngfem
 	  precomp_trace.Set (INT<2> (order, classnr), trace);
 	}
     }
-    
-    virtual void PrecomputeShapes (const IntegrationRule & ir) 
-    {
-      int classnr =  ET_trait<ET>::GetClassNr (vnums);
+    */
 
-      PrecomputedScalShapes<DIM> * pre = new  PrecomputedScalShapes<DIM> (ir.GetNIP(), ndof);
+    virtual void PrecomputeShapes (const IntegrationRule & ir);
 
-      MatrixFixWidth<DIM> dshapes(ndof);
-      for (int i = 0; i < ir.GetNIP(); i++)
-	{
-	  CalcShape (ir[i], pre->shapes.Row(i));
-	  CalcDShape (ir[i], dshapes);
-	  pre->dshapes.Rows (DIM*i, DIM*(i+1)) = Trans (dshapes);
-	}
-
-      precomp.Add (classnr, order, ir.GetNIP(), pre);
-    }
-
-    void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
-    {
-      int classnr =  ET_trait<ET>::GetClassNr (vnums);
-
-      PrecomputedScalShapes<DIM> * pre = precomp.Get (classnr, order, ir.GetNIP());
-      if (pre)
-	vals = pre->shapes * coefs;
-      else
-	T_ScalarFiniteElement2< SHAPES<ET>, ET > :: Evaluate (ir, coefs, vals);
-    }
+    virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
 
     virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const
     {
@@ -233,7 +211,8 @@ namespace ngfem
 	T_ScalarFiniteElement2< SHAPES<ET>, ET > :: EvaluateGradTrans (ir, values, coefs);
     }
 
-    virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
+    virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const;
+    /*
     {
       int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
       if (precomp_trace.Used (INT<2> (order, classnr)))
@@ -243,8 +222,9 @@ namespace ngfem
       else
 	L2HighOrderFiniteElement<DIM>::GetTrace (facet, coefs, fcoefs);
     }
-
-    virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
+    */
+    virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const;
+    /*
     {
       int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
       if (precomp_trace.Used (INT<2> (order, classnr)))
@@ -254,6 +234,7 @@ namespace ngfem
       else
 	L2HighOrderFiniteElement<DIM>::GetTraceTrans (facet, fcoefs, coefs);
     }
+    */
   };
 
 

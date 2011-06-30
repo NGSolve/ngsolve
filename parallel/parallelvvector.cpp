@@ -116,7 +116,7 @@ namespace ngla
     
     // find which processors to communicate with
     for ( int i = 1; i < ntasks; i++)
-      if (paralleldofs -> GetSortedExchangeDofs (i).Size())
+      if (paralleldofs -> GetExchangeDofs (i).Size())
 	exprocs.Append(i);
     
     int nexprocs = exprocs.Size();
@@ -320,7 +320,7 @@ namespace ngla
     
     Array<int> exdofs(ntasks);
     for (int i = 0; i < ntasks; i++)
-      exdofs[i] = this->es * this->paralleldofs->GetSortedExchangeDofs(i).Size();
+      exdofs[i] = this->es * this->paralleldofs->GetExchangeDofs(i).Size();
     this -> recvvalues = new Table<TSCAL> (exdofs);
   }
 
@@ -374,7 +374,7 @@ namespace ngla
   template <typename SCAL>
   void S_ParallelBaseVectorPtr<SCAL> :: AddRecvValues( int sender )
   {
-    FlatArray<int> exdofs = paralleldofs->GetSortedExchangeDofs(sender);
+    FlatArray<int> exdofs = paralleldofs->GetExchangeDofs(sender);
     FlatMatrix<SCAL> rec (exdofs.Size(), this->es, &(*this->recvvalues)[sender][0]);
     for (int i = 0; i < exdofs.Size(); i++)
       (*this) (exdofs[i]) += rec.Row(i);
