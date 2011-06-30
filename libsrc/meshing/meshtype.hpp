@@ -275,6 +275,8 @@ namespace netgen
 #ifdef PARALLEL
     bool IsGhost () const { return isghost; }
     void SetGhost ( bool aisghost ) { isghost = aisghost; }
+
+    static MPI_Datatype MyGetMPIType ( );
 #endif
 
   };

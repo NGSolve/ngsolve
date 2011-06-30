@@ -19,6 +19,12 @@ using namespace metis;
 namespace netgen
 {
 
+  template <>
+  inline MPI_Datatype MyGetMPIType<netgen::PointIndex> ( ) 
+  { return MPI_INT; }
+
+
+
 
   // slaves receive the mesh from the master
   void Mesh :: ReceiveParallelMesh ( )
@@ -52,11 +58,12 @@ namespace netgen
     int nelglob, nelloc, nvglob, nedglob, nfaglob;
 
     // receive global values
-    MPI_Bcast (&nelglob, 1, MPI_INT, 0, MPI_COMM_WORLD); 
-    MPI_Bcast (&nvglob, 1, MPI_INT, 0, MPI_COMM_WORLD); 
-    MPI_Bcast (&nedglob, 1, MPI_INT, 0, MPI_COMM_WORLD); 
-    MPI_Bcast (&nfaglob, 1, MPI_INT, 0, MPI_COMM_WORLD); 
-    MPI_Bcast (&dimension, 1, MPI_INT, 0, MPI_COMM_WORLD); 
+    MyMPI_Bcast (nelglob);
+    MyMPI_Bcast (nvglob);
+    MyMPI_Bcast (nedglob);
+    MyMPI_Bcast (nfaglob);
+    MyMPI_Bcast (dimension);
+
     MyMPI_Recv (nelloc, 0);
 
     paralleltop -> SetNVGlob (nvglob);
@@ -76,27 +83,36 @@ namespace netgen
  	  {
 	    NgProfiler::RegionTimer reg(timer_pts);
 
-            Array<double> pointarray;
-            MyMPI_Recv (pointarray, 0);
+	    Array<int> verts;
+	    MyMPI_Recv (verts, 0);
 
-	    int numvert = pointarray.Size() / 5;
+            // Array<double> pointarray;
+            // MyMPI_Recv (pointarray, 0);
+
+	    int numvert = verts.Size(); // pointarray.Size() / 5;
 	    paralleltop -> SetNV (numvert);
 
             glob2loc_vert_ht.SetSize (3*numvert+1);
 
+	    
 	    for (int vert = 0; vert < numvert; vert++)
 	      {
-		int globvert = int (pointarray[ vert*5 ]);
+		// int globvert = int (pointarray[ vert*5 ]);
+		int globvert = verts[vert];
 		paralleltop->SetLoc2Glob_Vert ( vert+1, globvert  );
                 glob2loc_vert_ht.Set (globvert, vert+1);
-
-		netgen::Point<3> p;
-		p(0) = pointarray[vert*5+1];
-		p(1) = pointarray[vert*5+2];
-		p(2) = pointarray[vert*5+3];
-		AddPoint (p);
-		(*this)[PointIndex(vert+1)] .Singularity ( pointarray[vert*5+4] );
 	      }
+	    
+	    for (int i = 0; i < numvert; i++)
+	      AddPoint (netgen::Point<3> (0,0,0));
+
+	    MPI_Datatype mptype = MeshPoint::MyGetMPIType();
+	    MPI_Status status;
+	    MPI_Recv( &points[1], numvert, mptype, 0, 33, MPI_COMM_WORLD, &status);
+
+
+
+
 
 	    Array<int> dist_pnums;
 	    MyMPI_Recv (dist_pnums, 0);
@@ -104,6 +120,8 @@ namespace netgen
 	    for (int hi = 0; hi < dist_pnums.Size(); hi += 3)
 	      paralleltop ->
 		SetDistantPNum (dist_pnums[hi+1], dist_pnums[hi], dist_pnums[hi+2]);
+
+	    *testout << "got " << numvert << " vertices" << endl;
  	  }
 
 	if (strcmp (st.c_str(), "volumeelements" ) == 0 )
@@ -326,11 +344,24 @@ namespace netgen
 
     // partition mesh
 #ifdef METIS
+
     ParallelMetis ();
 #else
     for (ElementIndex ei = 0; ei < GetNE(); ei++)
       (*this)[ei].SetPartition(ntasks * ei/GetNE() + 1);
 #endif
+
+
+    for (ElementIndex ei = 0; ei < GetNE(); ei++)
+      *testout << "el(" << ei << ") is in part " << (*this)[ei].GetPartition() << endl;
+    for (SurfaceElementIndex ei = 0; ei < GetNSE(); ei++)
+      *testout << "sel(" << int(ei) << ") is in part " << (*this)[ei].GetPartition() << endl;
+
+
+
+
+
+
 
 #ifdef SCALASCA
 #pragma pomp inst end(metis)
@@ -782,27 +813,14 @@ namespace netgen
 
 
 
-  void Mesh :: SendMesh () const   //  Mesh * mastermesh, Array<int> & neloc ) const
+  void Mesh :: SendMesh () const   
   {
     const Mesh * mastermesh = this;    // the original plan was different 
 
     PrintMessage ( 1, "Sending Mesh to local processors" );
     
-    int timer = NgProfiler::CreateTimer ("SendMesh");
-    int timer2 = NgProfiler::CreateTimer ("SM::Prepare Points");
-    int timer3 = NgProfiler::CreateTimer ("SM::Send Points");
-    int timer4 = NgProfiler::CreateTimer ("SM::Send Elements");
-    // int timer5 = NgProfiler::CreateTimer ("SM::Prepare Poins");
 
-    NgProfiler::RegionTimer reg(timer);
-
-#ifdef SCALASCA
-#pragma pomp inst begin(sendmesh)
-#endif
-
-    NgProfiler::StartTimer (timer2);
-
-    clock_t starttime, endtime, soltime;
+    clock_t starttime, endtime;
     starttime = clock();
 
 
@@ -817,31 +835,35 @@ namespace netgen
     for (int dest = 1; dest < ntasks; dest++)
       MyMPI_Send ("mesh", dest);
 
-    // MPI_Barrier (MPI_COMM_WORLD);
-
     
-    Array<int> num_els_on_proc(ntasks);
-    num_els_on_proc = 0;
-    for (ElementIndex ei = 0; ei < mastermesh->GetNE(); ei++)
-      num_els_on_proc[(*this)[ei].GetPartition()]++;
-
     int nel = GetNE();
     int nv = GetNV();
-    int nedges = (GetTopology().GetNEdges());
+    int nedges = GetTopology().GetNEdges();
     int nfaces = GetTopology().GetNFaces();
     int dim = dimension;
-    MPI_Bcast(&nel, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    MPI_Bcast(&nv, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    MPI_Bcast(&nedges, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    MPI_Bcast(&nfaces, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
-    MPI_Bcast(&dim, 1, MPI_INT, 0, MPI_COMM_WORLD ); 
+
+    MyMPI_Bcast (nel);
+    MyMPI_Bcast (nv);
+    MyMPI_Bcast (nedges);
+    MyMPI_Bcast (nfaces);
+    MyMPI_Bcast (dim);
+
+
+
+    Array<int> num_els_on_proc(ntasks);
+    num_els_on_proc = 0;
+    for (ElementIndex ei = 0; ei < GetNE(); ei++)
+      num_els_on_proc[(*this)[ei].GetPartition()]++;
+
     for (int dest = 1; dest < ntasks; dest++)
       MyMPI_Send (num_els_on_proc[dest], dest);
 
 
+
+
     // get number of vertices for each processor
-    Array<int> elarraysize(ntasks);
-    Array<int> nelloc ( ntasks );
+    Array<int> elarraysize (ntasks);
+    Array<int> nelloc (ntasks);
     
     nelloc = 0;
     elarraysize = 1;
@@ -849,19 +871,18 @@ namespace netgen
     PrintMessage ( 3, "Sending vertices");
 
     TABLE<ElementIndex> els_of_proc (num_els_on_proc);
-    for (ElementIndex ei = 0; ei < mastermesh->GetNE(); ei++)
+    for (ElementIndex ei = 0; ei < GetNE(); ei++)
       els_of_proc.Add ( (*this)[ei].GetPartition(), ei);
 
 
-    Array<int, PointIndex::BASE> vert_flag ( GetNV() );
-
+    Array<int, PointIndex::BASE> vert_flag (GetNV());
+    Array<int, PointIndex::BASE> num_procs_on_vert (GetNV());
     Array<int> num_verts_on_proc (ntasks);
-    Array<int, PointIndex::BASE> num_procs_on_vert ( GetNV() );
 
     num_verts_on_proc = 0;
     num_procs_on_vert = 0;
-
     vert_flag = -1;
+
     for (int dest = 1; dest < ntasks; dest++)
       {
 	FlatArray<ElementIndex> els = els_of_proc[dest];
@@ -926,37 +947,33 @@ namespace netgen
       }
 
 
-    Array<int> nvi5(ntasks);
-    for (int i = 0; i < ntasks; i++) 
-      nvi5[i] = 5 * num_verts_on_proc[i];
-
-    TABLE<double> pointarrays(nvi5);
-
-    NgProfiler::StopTimer (timer2);
-    NgProfiler::StartTimer (timer3);
-
-
     for (int dest = 1; dest < ntasks; dest++)
       {
 	FlatArray<PointIndex> verts = verts_of_proc[dest];
 
-	for ( int j = 0, ii = 0; j < verts.Size(); j++)
-	  {
-	    const MeshPoint & hp = mastermesh -> Point (verts[j]);
-	    pointarrays.Add (dest, double(verts[j]));
-	    pointarrays.Add (dest, hp(0));
-	    pointarrays.Add (dest, hp(1));
-	    pointarrays.Add (dest, hp(2));
-	    pointarrays.Add (dest, hp.Singularity());
-	  }
+	MyMPI_ISend ( "vertex", dest );
 
-	MyMPI_Send ( "vertex", dest );
-        MyMPI_ISend ( pointarrays[dest], dest, sendrequest[dest] );
-	MPI_Request_free (&sendrequest[dest]);
+	MyMPI_ISend (verts, dest);
+
+	MPI_Datatype mptype = MeshPoint::MyGetMPIType();
+
+	int numv = verts.Size();
+
+	MPI_Datatype newtype;
+	Array<int> blocklen (numv);
+	blocklen = 1;
+	
+	MPI_Type_indexed (numv, &blocklen[0], 
+			  reinterpret_cast<int*> (&verts[0]), 
+			  mptype, &newtype);
+	MPI_Type_commit (&newtype);
+
+	MPI_Request request;
+	MPI_Isend( &points[0], 1, newtype, dest, 33, MPI_COMM_WORLD, &request);
+	MPI_Request_free (&request);
       }
 
-    NgProfiler::StopTimer (timer3);
-    NgProfiler::StartTimer (timer4);
+
 
     Array<int> num_distpnums(ntasks);
     num_distpnums = 0;
@@ -995,6 +1012,7 @@ namespace netgen
 
 
 
+
     PrintMessage ( 3, "Sending elements" );
     TABLE<int> elementarrays(elarraysize);
 
@@ -1025,14 +1043,13 @@ namespace netgen
 
     for ( int dest = 1; dest < ntasks; dest ++ )
       {
-	MyMPI_Send ( "volumeelements", dest);
+	MyMPI_ISend ( "volumeelements", dest);
 	MyMPI_ISend ( elementarrays[dest], dest, sendrequest[dest] );
       }
 
     // for (int dest = 1; dest < ntasks; dest++)
     //      MPI_Request_free (&sendrequest[dest]);
 
-    NgProfiler::StopTimer (timer4);
 
 
     endtime = clock();
@@ -1234,7 +1251,6 @@ namespace netgen
 	Array<int> volels;
 	mastermesh -> GetTopology().GetSegmentVolumeElements ( ls, volels );
 	const Segment & seg = mastermesh -> LineSegment (ls);
-	int dest;
 
         for (int j = 0; j < volels.Size(); j++)
           {
@@ -1298,10 +1314,6 @@ namespace netgen
         MPI_Status status;
         MPI_Wait (&sendrequest[dest], &status);
       }
-
-#ifdef SCALASCA
-#pragma pomp inst end(sendmesh)
-#endif
   }
 
 

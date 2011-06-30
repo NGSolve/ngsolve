@@ -3020,6 +3020,8 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
       MyMPI_Send ( "end", dest );
 #endif
 
+    mesh.Reset (NULL);
+    
     if (testout != &cout)
       delete testout;
 

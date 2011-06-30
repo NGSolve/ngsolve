@@ -55,7 +55,6 @@ namespace netgen
     delete topology;
     delete ident;
     delete elementsearchtree;
-
     delete coarsemesh;
     delete hpelements;
 

@@ -51,6 +51,8 @@ namespace netgen
   { return MPI_DOUBLE; }
 
 
+
+
   // damit gehen auch echte Konstante ohne Adresse
   inline void MyMPI_Send (int i, int dest)
   {
