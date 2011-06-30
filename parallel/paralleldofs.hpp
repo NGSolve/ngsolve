@@ -56,7 +56,12 @@ namespace ngparallel
     ParallelDofs (int andof, Table<int> * exdofs, const FESpace * afes)
       : ndof(andof), fes(afes) 
     { ; }
+
+    ParallelDofs (const MeshAccess & ma, const Array<Node> & dofnodes, const FESpace * afes = NULL)
+    { ndof = dofnodes.Size(); }
+
     int GetNDofGlobal () const { return ndof; }
+
   };
 
 #endif //PARALLEL
