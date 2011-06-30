@@ -1,0 +1,33 @@
+Parallel Netgen / NGSolve 
+
+
+Netgen/NGSolve supports distributed memory MPI - parallelization.
+
+
+To compile parallel Netgen/NGSolve you need the following packages installed:
+
+- mpi  (tested with openmpi, mpich2)
+- metis (mesh partitioning library)
+
+
+Configure Netgen and NGSolve with:
+./configure  --enable-parallel   CXX=mpic++ 
+
+
+run Netgen  in parallel (with 8 proceses) with
+
+mpiexec -np 8 netgen
+
+
+
+NGS parallelization supports:
+
+- mesh distribution:
+testing: load mesh will distributed it 
+
+- parallel NGSolve - pde data structure including fespaces, biforms, distributed sparse matrices
+
+- BDDC preconditioning
+
+
+
