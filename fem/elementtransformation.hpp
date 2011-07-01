@@ -162,24 +162,6 @@ namespace ngfem
     {
       dxdxi = pointmat * static_cast<const ScalarFiniteElement<S>*> (fel)->GetDShape(ip, lh);
       point = pointmat * static_cast<const ScalarFiniteElement<S>*> (fel)->GetShape(ip, lh);
-    
-      /*
-      // switch (fel->SpatialDim())
-      {
-      case 1:
-      dxdxi = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetDShape(ip, lh);
-      point = pointmat * static_cast<const ScalarFiniteElement<1>*> (fel)->GetShape(ip, lh);
-      break;
-      case 2:
-      dxdxi = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetDShape(ip, lh);
-      point = pointmat * static_cast<const ScalarFiniteElement<2>*> (fel)->GetShape(ip, lh);
-      break;
-      case 3:
-      dxdxi = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetDShape(ip, lh);
-      point = pointmat * static_cast<const ScalarFiniteElement<3>*> (fel)->GetShape(ip, lh);
-      break;
-      }
-      */
     }
 
 
@@ -302,41 +284,14 @@ namespace ngfem
     /// geometry of element
     ELEMENT_TYPE eltype;
 
-    /*
-    const Array<Vec<3> > * pts;
-    const Array<Mat<3,3> > * dxdxis;
-    const Array<int> * first_of_element;
-    */
 
     bool higher_integration_order;
 
     bool iscurved;
 
-    /*
-    double buffer[100];
-    bool buffervalid;
-    */
-
   public:
     ///
-    ElementTransformation () { /* pts = 0; */ higher_integration_order = false; /* buffervalid = false; */ }
-    /*
-      ElementTransformation (Array<Vec<3> > * apts,
-      Array<Mat<3,3> > * adxdxis,
-      Array<int> * afirst_of_element)
-      : pts(apts), dxdxis(adxdxis), first_of_element(afirst_of_element) { ; }
-    */
-
-    /*
-    void SetGeometryData (const Array<Vec<3> > * apts,
-			  const Array<Mat<3,3> > * adxdxis,
-			  const Array<int> * afirst_of_element)
-    {
-      pts = apts;
-      dxdxis = adxdxis;
-      first_of_element = afirst_of_element;
-    }
-    */
+    ElementTransformation () { higher_integration_order = false; }
 
     ///
     void SetElement (bool aboundary, int aelnr, int aelindex)
@@ -346,14 +301,9 @@ namespace ngfem
       elindex = aelindex;
       dim = Ng_GetDimension();
       if (boundary)
-	{
-	  iscurved = Ng_IsSurfaceElementCurved (elnr+1);
-	}
+	iscurved = Ng_IsSurfaceElementCurved (elnr+1);
       else
-	{
-	  iscurved = Ng_IsElementCurved (elnr+1);
-	}
-      // buffervalid = 0;
+	iscurved = Ng_IsElementCurved (elnr+1);
     }
 
     void SetElementType (ELEMENT_TYPE aet) { eltype = aet; }
@@ -372,15 +322,7 @@ namespace ngfem
       if (boundary)
 	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0,0));
       else
-	{
-	  Ng_GetElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0,0));
-	  /*
-	  Ng_GetBufferedElementTransformation (elnr+1, &ip(0),
-					       0, &dxdxi(0,0), 
-					       const_cast<double*> (&buffer[0]), buffervalid);
-	  const_cast<bool&> (buffervalid) = true;
-	  */
-	}
+	Ng_GetElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0,0));
     }
 
     template <typename T>
@@ -391,17 +333,8 @@ namespace ngfem
       if (boundary)
 	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0),
 					    0, &dxdxi(0,0));
-					  
       else
-	{
-	  Ng_GetElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0,0));
-	  /*
-	  Ng_GetBufferedElementTransformation (elnr+1, &ip(0),
-					       0, &dxdxi(0,0), 
-					       const_cast<double*> (&buffer[0]), buffervalid);
-	  const_cast<bool&> (buffervalid) = true;
-	  */
-	}
+	Ng_GetElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0,0));
     }
 
 
@@ -416,15 +349,7 @@ namespace ngfem
       if (boundary)
 	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), &point(0), 0);
       else
-	{
-	  Ng_GetElementTransformation (elnr+1, &ip(0), &point(0), 0);
-
-	  /*
-	  Ng_GetBufferedElementTransformation (elnr+1, &ip(0), &point(0), 0, 
-					       const_cast<double*> (&buffer[0]), buffervalid);
-	  const_cast<bool&> (buffervalid) = true;
-	  */
-	}
+	Ng_GetElementTransformation (elnr+1, &ip(0), &point(0), 0);
     }
 
 
@@ -439,24 +364,7 @@ namespace ngfem
       if (boundary)
 	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0));
       else
-	{
-	  /*
-	  if (ip.precomputed_geometry && pts)
-	    {
-	      point = (*pts)[ (*first_of_element)[elnr] + ip.Nr()];
-	      dxdxi = (*dxdxis)[ (*first_of_element)[elnr] + ip.Nr()];
-	    }
-	  else
-	  */
-	    {
-	      Ng_GetElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0));
-	      /*
-	      Ng_GetBufferedElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0),
-						   const_cast<double*> (&buffer[0]), buffervalid);
-	      const_cast<bool&> (buffervalid) = true;
-	      */
-	    }
-	}
+	Ng_GetElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0));
     }
 
 

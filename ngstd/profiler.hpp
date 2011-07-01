@@ -46,7 +46,6 @@ inline double WallTime ()
 
 #endif
 
-
 #ifdef VTRACE
 #include "vt_user.h"
 #else

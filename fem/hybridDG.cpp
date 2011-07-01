@@ -797,7 +797,7 @@ namespace ngfem
 				    FlatMatrix<double> & elmat,
 				    LocalHeap & lh) const
     {
-      double alpha = 1e-1; // 0.01;
+      double alpha = 1e-3; // 0.01;
 
       static Timer timer ("HDG laplace");
       static Timer timer1 ("HDG laplace volume");
@@ -944,7 +944,7 @@ namespace ngfem
 	elmat.Cols(l2_dofs) -= Trans(mat_mixed);
 
 
-	double eps = alpha;
+	double eps = 1e-6; // alpha;
 	mat_gradgrad += eps * mat_robin;
 
 	RegionTimer reg3 (timer3);
