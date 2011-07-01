@@ -91,7 +91,7 @@ AC_SUBST([NETGEN_INCLUDES], ["-DNETGEN_ELTRANS -I$netgendir/include"])
 
 AC_ARG_ENABLE([parallel],
         [AC_HELP_STRING([--enable-parallel],[enable mpi parallelization])],
-        [AC_SUBST([MPI_INCLUDES], "-DPARALLEL")
+        [AC_SUBST([MPI_INCLUDES], "-DPARALLEL -I/usr/local/include/vampirtrace -DnoVTRACE")
         ]
         )       
 
