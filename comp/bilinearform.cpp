@@ -1052,8 +1052,7 @@ namespace ngcomp
 
 		MyMPI_Barrier();
 
-		if (id == 0)
-		  cout << "\rassemble element " << ne << "/" << ne << endl;
+		cout << IM(2) << "\rassemble element " << ne << "/" << ne << endl;
 
 		if (linearform && keep_internal)
 		  {
@@ -1956,8 +1955,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
 	      MyMPI_Barrier();
 
-	      if (id == 0)
-		cout << "\rcompute internal element " << ne << "/" << ne << endl;
+	      cout << IM(2) << "\rcompute internal element " << ne << "/" << ne << endl;
 	    }//end of keep_internal-if
           }
 	  

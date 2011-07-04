@@ -28,7 +28,8 @@ protected:
   // double time;
 
   /// profiling
-  int timer;
+  // int timer;
+  Timer timer;
 
   /// keep the object
   bool skipCleanUp; 
@@ -38,9 +39,9 @@ public:
   /// 
   NGS_Object (const MeshAccess & ama, const string & aname = "noname", 
               bool checkflags = false)
-    : name(aname), ma(ama), /* time(0), */ skipCleanUp(0)
+    : name(aname), ma(ama), /* time(0), */ timer(aname), skipCleanUp(0)
   { 
-    timer = NgProfiler::CreateTimer (aname);
+    // timer = NgProfiler::CreateTimer (aname);
   }
   
   ///
@@ -89,7 +90,8 @@ public:
   // double GetTime () const { return time; }
   // void SetTime (double t) { time = t; }
 
-  int GetTimer () const { return timer; }
+  Timer & GetTimer () { return timer; }
+  const Timer & GetTimer () const { return timer; }
 
   bool SkipCleanUp () { return skipCleanUp; }
 

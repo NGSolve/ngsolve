@@ -646,9 +646,22 @@ int NGSolve_Init (Tcl_Interp * interp)
   cout << "Including sparse direct solver Pardiso" << endl;
 #endif
 
+#ifdef USE_SUPERLU
+  cout << "Including sparse direct solver SuperLU by Lawrence Berkeley National Laboratory" << endl;
+#endif
+  
 #ifdef _OPENMP
+#ifdef PARALLEL
+  if (ntasks > 1)
+    omp_set_num_threads (1);
+#endif
   cout << "Running OpenMP - parallel using " << omp_get_max_threads() << " threads" << endl;
   cout << "(number of threads can be changed by setting OMP_NUM_THREADS)" << endl;
+#endif
+  
+#ifdef MPI_VERSION
+  cout << "MPI-version = " << MPI_VERSION << endl;
+  cout << "MPI-subversion = " << MPI_SUBVERSION << endl;
 #endif
 
   

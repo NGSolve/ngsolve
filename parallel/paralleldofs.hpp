@@ -1,6 +1,11 @@
 #ifndef FILE_PARALLELDOFS
 #define FILE_PARALLELDOFS
 
+namespace ngcomp
+{
+  class FESpace;
+  class MeshAccess;
+}
 
 namespace ngparallel
 {
