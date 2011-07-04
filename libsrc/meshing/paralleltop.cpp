@@ -9,6 +9,10 @@ namespace netgen
 {
 
 
+  MPI_Group MPI_HIGHORDER_WORLD;
+  MPI_Comm MPI_HIGHORDER_COMM;
+
+
 
   void ParallelMeshTopology :: Reset ()
   {
@@ -564,6 +568,20 @@ namespace netgen
     // MPI_Barrier (MPI_COMM_WORLD);
     //   PrintMessage ( 1, "all friends are here " );      // JS
     //  MPI_Barrier (MPI_COMM_WORLD);
+
+
+
+    MPI_Group MPI_GROUP_WORLD;
+    
+    int n_ho = netgen::ntasks - 1;
+    int * process_ranks = new int[netgen::ntasks-1];
+    for ( int i = 0; i < netgen::ntasks-1; i++ )
+      process_ranks[i] = i+1;
+    
+    MPI_Comm_group ( MPI_COMM_WORLD, &MPI_GROUP_WORLD);
+    MPI_Group_incl ( MPI_GROUP_WORLD, n_ho, process_ranks, & MPI_HIGHORDER_WORLD);
+    MPI_Comm_create ( MPI_COMM_WORLD, MPI_HIGHORDER_WORLD, & MPI_HIGHORDER_COMM);
+    
 
 
 
@@ -1257,7 +1275,7 @@ namespace netgen
 	(*glob2loc_el) = -1;
 	for ( int locel = 1; locel <= mesh.GetNE(); locel++)
 	  (*glob2loc_el)[GetLoc2Glob_VolEl(locel)] = locel;
-      
+	
 	for ( int sender = 1; sender < ntasks; sender ++ )
 	  {
 	    if ( id == sender )

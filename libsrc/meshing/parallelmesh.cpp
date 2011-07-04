@@ -25,6 +25,68 @@ namespace netgen
 
 
 
+  void Mesh :: SendRecvMesh ()
+  {
+    PrintMessage (1, "Send/Receive mesh");
+
+
+    {
+      // distribute global information
+      int nelglob, nvglob;
+      if (id == 0)
+	{
+	  paralleltop -> SetNV (GetNV());
+	  paralleltop -> SetNE (GetNE());
+	  paralleltop -> SetNSegm (GetNSeg());
+	  paralleltop -> SetNSE (GetNSE());
+	  
+	  nelglob = GetNE();
+	  nvglob = GetNV();
+	}
+      
+      MyMPI_Bcast (nelglob);
+      MyMPI_Bcast (nvglob);
+      
+      if (id > 0)
+	{
+	  paralleltop -> SetNEGlob (nelglob);
+	  paralleltop -> SetNVGlob (nvglob);
+	}
+    }
+
+
+    {
+      // distribute number of local elements
+      if (id == 0)
+	{
+	  Array<int> num_els_on_proc(ntasks);
+	  num_els_on_proc = 0;
+	  for (ElementIndex ei = 0; ei < GetNE(); ei++)
+	    num_els_on_proc[(*this)[ei].GetPartition()]++;
+	  
+	  MPI_Scatter (&num_els_on_proc[0], 1, MPI_INT,
+		       MPI_IN_PLACE, -1, MPI_INT, 0, MPI_COMM_WORLD);
+	}
+      else
+	{
+	  int nelloc;
+	  MPI_Scatter (NULL, 0, MPI_INT,
+		       &nelloc, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	  
+	  paralleltop -> SetNE (nelloc);
+	}
+    }
+
+
+
+
+
+    if (id == 0)
+      SendMesh ();
+    else
+      ReceiveParallelMesh();
+  }
+
 
   // slaves receive the mesh from the master
   void Mesh :: ReceiveParallelMesh ( )
@@ -42,36 +104,11 @@ namespace netgen
 #pragma pomp inst begin(loadmesh)
 #endif
 
-    // PrintMessage (1,  "LOAD PARALLEL MESH");
-    // MPI_Barrier (MPI_COMM_WORLD);
-
     string st;
-    // double doublebuf[100];
-    // int i, n;
-    // int tag_dim = 10, tag_token = 100, tag_n=11, tag_pnum=12, tag_point=13;
-    // int tag_index = 101, tag_facedescr = 102;
-    // MPI_Status status;
-    
+
     bool endmesh = false;
 
-    // int dim;
-    int nelglob, nelloc, nvglob, nedglob, nfaglob;
-
-    // receive global values
-    MyMPI_Bcast (nelglob);
-    MyMPI_Bcast (nvglob);
-    MyMPI_Bcast (nedglob);
-    MyMPI_Bcast (nfaglob);
-    MyMPI_Bcast (dimension);
-
-    MyMPI_Recv (nelloc, 0);
-
-    paralleltop -> SetNVGlob (nvglob);
-    paralleltop -> SetNEGlob (nelglob);
-
     INDEX_CLOSED_HASHTABLE<int> glob2loc_vert_ht (1);
-
-    PrintMessage (1, "Receive mesh");
 
     // int ve = 0;
     while (!endmesh)
@@ -86,18 +123,13 @@ namespace netgen
 	    Array<int> verts;
 	    MyMPI_Recv (verts, 0);
 
-            // Array<double> pointarray;
-            // MyMPI_Recv (pointarray, 0);
-
-	    int numvert = verts.Size(); // pointarray.Size() / 5;
+	    int numvert = verts.Size();
 	    paralleltop -> SetNV (numvert);
 
             glob2loc_vert_ht.SetSize (3*numvert+1);
-
 	    
 	    for (int vert = 0; vert < numvert; vert++)
 	      {
-		// int globvert = int (pointarray[ vert*5 ]);
 		int globvert = verts[vert];
 		paralleltop->SetLoc2Glob_Vert ( vert+1, globvert  );
                 glob2loc_vert_ht.Set (globvert, vert+1);
@@ -109,10 +141,6 @@ namespace netgen
 	    MPI_Datatype mptype = MeshPoint::MyGetMPIType();
 	    MPI_Status status;
 	    MPI_Recv( &points[1], numvert, mptype, 0, 33, MPI_COMM_WORLD, &status);
-
-
-
-
 
 	    Array<int> dist_pnums;
 	    MyMPI_Recv (dist_pnums, 0);
@@ -135,13 +163,7 @@ namespace netgen
             Array<int> elarray;
             MyMPI_Recv (elarray, 0);
 
-	    int ind = 0;
-	    int elnum = 1;
-	    int nelloc = elarray[ind++];
-
-	    paralleltop -> SetNE (nelloc);
-
-	    while (ind < elarray.Size())
+	    for (int ind = 0, elnum = 1; ind < elarray.Size(); elnum++)
 	      {
 		paralleltop->SetLoc2Glob_VolEl ( elnum,  elarray[ind++]);
 
@@ -152,9 +174,9 @@ namespace netgen
                   el[j] = glob2loc_vert_ht.Get (elarray[ind++]); 
 		
 		AddVolumeElement (el);
-		elnum++;
 	      }
 	  }
+
 
 	if (strcmp (st.c_str(), "facedescriptor") == 0)
 	  {
@@ -271,31 +293,12 @@ namespace netgen
 	    (*testout) << "Receiving Time fde = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
 	  }
       
-	/*
-	for ( int eli = 1; eli < GetNE(); eli++ )
-	  {
-	    Element & el = VolumeElement(eli);
-	  }
-	*/
-
 
 	if (strcmp (st.c_str(), "endmesh") == 0)
 	  {
 	    endmesh = true;
 	  }
       }
-
-
-    // ohne diesem Zusammenwarten gibts Abstürze, und ich weiß nicht warum ???
-    // MPI_Barrier (MPI_COMM_WORLD);
-    //     PrintMessage (1, "Have recevied the mesh");
-    // MPI_Barrier (MPI_COMM_WORLD);
-
-
-
- //    paralleltop -> SetNV ( this -> GetNV() );
-//     for ( int i = 0; i < GetNV(); i++ )
-//       paralleltop -> SetLoc2Glob_Vert ( i+1, (*loc2globvert)[i] );
 
 
     int timerloc = NgProfiler::CreateTimer ("Update local mesh");
@@ -310,11 +313,8 @@ namespace netgen
 
     NgProfiler::StopTimer (timerloc2);
 
-    //  BuildConnectedNodes ();
      
     topology -> Update();
-
-//       UpdateOverlap();
     clusters -> Update();
     
     SetNextMajorTimeStamp();
@@ -358,17 +358,15 @@ namespace netgen
       *testout << "sel(" << int(ei) << ") is in part " << (*this)[ei].GetPartition() << endl;
 
 
-
-
-
-
-
 #ifdef SCALASCA
 #pragma pomp inst end(metis)
 #endif
 
     // send partition
-    SendMesh (); 
+
+    for (int dest = 1; dest < ntasks; dest++)
+      MyMPI_Send ("mesh", dest);
+    SendRecvMesh (); 
 
 
     paralleltop -> UpdateCoarseGrid();
@@ -817,56 +815,23 @@ namespace netgen
   {
     const Mesh * mastermesh = this;    // the original plan was different 
 
-    PrintMessage ( 1, "Sending Mesh to local processors" );
-    
 
     clock_t starttime, endtime;
     starttime = clock();
 
-
-    paralleltop -> SetNV ( GetNV() );
-    paralleltop -> SetNE ( GetNE() );
-    paralleltop -> SetNSegm ( GetNSeg() );
-    paralleltop -> SetNSE ( GetNSE() );
-
-
     MPI_Request sendrequest[ntasks];
-
-    for (int dest = 1; dest < ntasks; dest++)
-      MyMPI_Send ("mesh", dest);
-
-    
-    int nel = GetNE();
-    int nv = GetNV();
-    int nedges = GetTopology().GetNEdges();
-    int nfaces = GetTopology().GetNFaces();
-    int dim = dimension;
-
-    MyMPI_Bcast (nel);
-    MyMPI_Bcast (nv);
-    MyMPI_Bcast (nedges);
-    MyMPI_Bcast (nfaces);
-    MyMPI_Bcast (dim);
-
-
 
     Array<int> num_els_on_proc(ntasks);
     num_els_on_proc = 0;
     for (ElementIndex ei = 0; ei < GetNE(); ei++)
       num_els_on_proc[(*this)[ei].GetPartition()]++;
 
-    for (int dest = 1; dest < ntasks; dest++)
-      MyMPI_Send (num_els_on_proc[dest], dest);
-
-
-
 
     // get number of vertices for each processor
-    Array<int> elarraysize (ntasks);
     Array<int> nelloc (ntasks);
     
     nelloc = 0;
-    elarraysize = 1;
+    // elarraysize = 1;
 
     PrintMessage ( 3, "Sending vertices");
 
@@ -904,7 +869,7 @@ namespace netgen
 		  }
 	      }
 
-	    elarraysize[dest] += 3 + el.GetNP();
+	    // elarraysize[dest] += 3 + el.GetNP();
 	    nelloc[dest] ++;
 	    paralleltop -> SetDistantEl ( dest, els[hi]+1, nelloc[dest] );
 	  }
@@ -918,14 +883,13 @@ namespace netgen
     for (int dest = 1; dest < ntasks; dest++)
       {
 	FlatArray<ElementIndex> els = els_of_proc[dest];
-
 	for (int hi = 0; hi < els.Size(); hi++)
 	  {
-	    const Element & el = (*mastermesh) [ els[hi] ];
+	    const Element & el = (*this) [ els[hi] ];
 	    
 	    for (int i = 0; i < el.GetNP(); i++)
 	      {
-		PointIndex epi = el.PNum(i+1);
+		PointIndex epi = el[i];
 		if (vert_flag[epi] < dest)
 		  {
 		    vert_flag[epi] = dest;
@@ -946,13 +910,11 @@ namespace netgen
 	  }
       }
 
-
     for (int dest = 1; dest < ntasks; dest++)
       {
 	FlatArray<PointIndex> verts = verts_of_proc[dest];
 
 	MyMPI_Send ("vertex", dest);
-
 	MyMPI_ISend (verts, dest);
 
 	MPI_Datatype mptype = MeshPoint::MyGetMPIType();
@@ -1014,47 +976,44 @@ namespace netgen
 
 
     PrintMessage ( 3, "Sending elements" );
-    TABLE<int> elementarrays(elarraysize);
-
     starttime = clock();
 
-    //    for ( int dest = 1; dest < ntasks; dest ++ )
-    //      MyMPI_Send ( "volumeelements", dest);
+    Array<int> elarraysize (ntasks);
+    elarraysize = 0;
+    for ( int ei = 1; ei <= mastermesh->GetNE(); ei++)
+      {
+	const Element & el = mastermesh -> VolumeElement (ei);
+	int dest = el.GetPartition();
+	elarraysize[dest] += 3 + el.GetNP();
+      }
 
-    for ( int dest = 1; dest < ntasks; dest++ )
-      elementarrays.Add (dest, nelloc[dest]);
+    TABLE<int> elementarrays(elarraysize);
 
     for ( int ei = 1; ei <= mastermesh->GetNE(); ei++)
       {
 	const Element & el = mastermesh -> VolumeElement (ei);
 	int dest = el.GetPartition();
 
-	if ( dest > 0 )
-	  {
-            // send volume element
-
-  	    elementarrays.Add (dest, ei); // 
- 	    elementarrays.Add (dest, el.GetIndex());
- 	    elementarrays.Add (dest, el.GetNP());
- 	    for ( int ii=0; ii<el.GetNP(); ii++)
- 	      elementarrays.Add (dest, el[ii]);
-	  }
+	elementarrays.Add (dest, ei);
+	elementarrays.Add (dest, el.GetIndex());
+	elementarrays.Add (dest, el.GetNP());
+	for (int i = 0; i < el.GetNP(); i++)
+	  elementarrays.Add (dest, el[i]);
       }
 
-    for ( int dest = 1; dest < ntasks; dest ++ )
+    for (int dest = 1; dest < ntasks; dest ++ )
       {
 	MyMPI_Send ( "volumeelements", dest);
 	MyMPI_ISend ( elementarrays[dest], dest, sendrequest[dest] );
       }
 
-    // for (int dest = 1; dest < ntasks; dest++)
-    //      MPI_Request_free (&sendrequest[dest]);
-
-
 
     endtime = clock();
     (*testout) << "Sending Time els = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
     starttime = clock();
+
+
+
 
     PrintMessage ( 3, "Sending Face Descriptors" );
   
@@ -1079,13 +1038,8 @@ namespace netgen
     (*testout) << "Sending Time fdi = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
     starttime = clock();
 
-    // hasglobalsurf( edgenr * ntasks + dest ) .... global edge edgenr is in mesh at dest
-//     BitArray hasglobaledge;
-    
-//     hasglobaledge.SetSize(ntasks * nedglob);
-//     hasglobaledge.Clear();
-//     cout << "mmf " << mastermesh->GetTopology().GetNFaces() << endl;
-    // determine sizes of local surface element arrays
+
+
 
     PrintMessage ( 3, "Sending Surface elements" );
   
@@ -1325,6 +1279,9 @@ namespace netgen
   
   void Mesh :: UpdateOverlap()
   {
+    cout << "UpdateOverlap depreciated" << endl;
+
+#ifdef OLDOLD
     (*testout) << "UPDATE OVERLAP" << endl;
     Array<int> * globelnums;
 
@@ -1921,6 +1878,9 @@ namespace netgen
     ;
 #ifdef SCALASCA
 #pragma pomp inst end(updateoverlap)
+#endif
+
+
 #endif
 
   }

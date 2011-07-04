@@ -725,8 +725,6 @@ namespace netgen
     /// distributes the master-mesh to local meshes
     void Distribute ();
 
-    /// loads a mesh sent from master processor
-    void ReceiveParallelMesh ();
 
     /// find connection to parallel meshes
     //   void FindExchangePoints () ;
@@ -740,8 +738,15 @@ namespace netgen
     void PartDualHybridMesh (); //  Array<int> & neloc );
     void PartDualHybridMesh2D ();  // ( Array<int> & neloc );
 
+
+    /// send mesh from master to local procs
+    void SendRecvMesh ();
+
     /// send mesh to parallel machine, keep global mesh at master 
     void SendMesh ( ) const;   // Mesh * mastermesh, Array<int> & neloc) const;
+    /// loads a mesh sent from master processor
+    void ReceiveParallelMesh ();
+
 
     void UpdateOverlap ();
  
