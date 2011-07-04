@@ -208,8 +208,8 @@ namespace ngla
 	cout << "have matrix, now invert" << endl;
 	// *testout << "wbmatrix = " << endl << matrix << endl;
       
-	// inv = new SparseCholesky<TM> (matrix);
-	inv = new PardisoInverse<TM> (matrix, 0, 0, true);
+	inv = new SparseCholesky<TM> (matrix);
+	// inv = new PardisoInverse<TM> (matrix, 0, 0, true);
       }
 
     MPI_Barrier (MPI_COMM_WORLD);
@@ -239,8 +239,15 @@ namespace ngla
 	for (int i = 0; i < select.Size(); i++)
 	  lx[i] = fx(select[i]);
 
-	MyMPI_Send (lx, 0);
-	MyMPI_Recv (lx, 0);
+	MPI_Request request;
+	MyMPI_ISend (lx, 0, request);
+	// MPI_Wait (&request, MPI_STATUS_IGNORE);
+	MPI_Request_free (&request);
+	
+	MyMPI_IRecv (lx, 0, request);
+	// MPI_Wait (&request, MPI_STATUS_IGNORE);
+	int flag = false;
+	while (!flag) { MPI_Test (&request, &flag, MPI_STATUS_IGNORE); }
 
 	for (int i = 0; i < select.Size(); i++)
 	  fy(select[i]) += s * lx[i];
@@ -251,6 +258,14 @@ namespace ngla
 	VVector<TV> hx(inv->Height());
 	VVector<TV> hy(inv->Height());
 	hx = 0.0;
+
+	Array<int> sizes(ntasks);
+	for (int i = 0; i < ntasks; i++)
+	  sizes[i] = loc2glob[i].Size();
+
+	Table<TV> exdata(sizes);
+
+
 	for (int src = 1; src < ntasks; src++)
 	  {
 	    FlatArray<int> selecti = loc2glob[src];
@@ -268,6 +283,20 @@ namespace ngla
 
 	// *testout << "before *inv, hy = " << endl << hy << endl;
 
+
+	Array<MPI_Request> requ(ntasks);
+	Array<MPI_Status> stats(ntasks);
+	for (int src = 1; src < ntasks; src++)
+	  {
+	    FlatArray<int> selecti = loc2glob[src];
+	    for (int j = 0; j < selecti.Size(); j++)
+	      exdata[src][j] = hy(selecti[j]);
+	    MyMPI_ISend (exdata[src], src, requ[src]);
+	  }
+	MPI_Waitall (ntasks-1, &requ[1], &stats[1]);
+	
+
+	/*
 	for (int src = 1; src < ntasks; src++)
 	  {
 	    FlatArray<int> selecti = loc2glob[src];
@@ -279,6 +308,7 @@ namespace ngla
 
 	    MyMPI_Send (lx, src);
 	  }
+	*/
       }
 
     if (is_x_cum)

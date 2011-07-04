@@ -16,9 +16,6 @@
 
 namespace ngfem
 {
-  
-  using namespace ngfem;
-
 
   /*
   NeedsUpdateException :: NeedsUpdateException ()

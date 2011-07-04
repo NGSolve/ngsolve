@@ -7,8 +7,7 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
-namespace ngfem
-{
+
 
   /*
     Transformation from reference element to actual element
@@ -16,6 +15,9 @@ namespace ngfem
 
 
 #ifndef NETGEN_ELTRANS
+
+namespace ngfem
+{
 
   /*
     Transformation from reference element to physical element.
@@ -257,13 +259,35 @@ namespace ngfem
 
   };
 
-
+}
 
 
 #else
 
+extern "C"
+{
+  DLL_HEADER void Ng_GetElementTransformation (int ei, const double * xi, 
+                                               double * x, double * dxdxi);
+
+  DLL_HEADER void Ng_GetSurfaceElementTransformation (int sei, const double * xi, 
+                                                      double * x, double * dxdxi);
+  
+}
 
 
+namespace netgen
+{
+  template <int DIM_EL, int DIM_SPACE> 
+  DLL_HEADER void Ng_MultiElementTransformation (int elnr, int npts,
+                                                 const double * xi, size_t sxi,
+                                                 double * x, size_t sx,
+                                                 double * dxdxi, size_t sdxdxi);
+}
+
+
+
+namespace ngfem
+{
 
   /**
      Transformation from reference element to physical element.
@@ -294,7 +318,8 @@ namespace ngfem
     ElementTransformation () { higher_integration_order = false; }
 
     ///
-    void SetElement (bool aboundary, int aelnr, int aelindex)
+    void SetElement (bool aboundary, int aelnr, int aelindex);
+    /*
     {
       boundary = aboundary;
       elnr = aelnr;
@@ -305,6 +330,7 @@ namespace ngfem
       else
 	iscurved = Ng_IsElementCurved (elnr+1);
     }
+    */
 
     void SetElementType (ELEMENT_TYPE aet) { eltype = aet; }
     ///
@@ -455,7 +481,8 @@ namespace ngfem
     }
 
 
-    void GetSort (FlatArray<int> sort) const
+    void GetSort (FlatArray<int> sort) const;
+    /*
     {
       int vnums[12];
       if (boundary)
@@ -500,7 +527,7 @@ namespace ngfem
 	  throw Exception ("undefined eltype in ElementTransformation::GetSort()\n");
 	}
     }
-
+    */
 
 
     BaseSpecificIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
@@ -542,13 +569,13 @@ namespace ngfem
 
   };
 
-
+}
 
 #endif
 
 
 
-}
+
 
 
 #endif
