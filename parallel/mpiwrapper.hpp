@@ -112,8 +112,11 @@ namespace ngparallel
 
   inline void MyMPI_Recv (int & i, int src)
   {
+    /*
     MPI_Status status;
     MPI_Recv (&i, 1, MPI_INT, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    */
+    MPI_Recv (&i, 1, MPI_INT, src, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   }
 
   inline void MyMPI_Send (double i, int dest)
@@ -123,8 +126,9 @@ namespace ngparallel
 
   inline void MyMPI_Recv (double & i, int src)
   {
-    MPI_Status status;
-    MPI_Recv( &i, 1, MPI_DOUBLE, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    // MPI_Status status;
+    // MPI_Recv( &i, 1, MPI_DOUBLE, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv( &i, 1, MPI_DOUBLE, src, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   }
 
   inline void MyMPI_Send (const string & s, int dest)
@@ -139,7 +143,8 @@ namespace ngparallel
     MPI_Probe (src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     MPI_Get_count (&status, MPI_CHAR, &len);
     s.resize (len); 
-    MPI_Recv(&s[0], len, MPI_CHAR, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    // MPI_Recv(&s[0], len, MPI_CHAR, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv(&s[0], len, MPI_CHAR, src, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   }
 
  
@@ -165,7 +170,8 @@ namespace ngparallel
     MPI_Get_count (&status, MPI_T, &len);
 
     s.SetSize (len);
-    MPI_Recv( &s[0], len, MPI_T, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    // MPI_Recv( &s[0], len, MPI_T, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv( &s[0], len, MPI_T, src, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   }
 
   /*

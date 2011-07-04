@@ -3,58 +3,6 @@
 #include <parallelngs.hpp>
 
 
-
-/*
-
-klappt leider noch nicht
-
-// important message
-class IM
-{
-int value;
-public:
-IM (int val) : value(val) { ; }
-int Value () const { return value; }
-};
-
-
-class NGSOStream
-{
-  ostream & ost;
-  bool active;
- public:
-  NGSOStream (ostream & aost, bool aactive)
-    : ost(aost), active(aactive) { ; }
-    bool Active () const { return active; }
-    ostream & GetStream () { return ost; }
-};
-
-NGSOStream operator<< (ostream & ost, const IM & im)
-{
-  return NGSOStream (ost, im.Value() <= printmessage_importance);
-}
-
-template <typename T>
-NGSOStream operator<< (NGSOStream ngsost, const T & id)
-{
-  if (ngsost.Active())
-    ngsost.GetStream() << id;
-  return ngsost;
-}
-
-template <template <class T> class S>
-NGSOStream operator<< (NGSOStream ngsost, const S<T> & id)
-{
-  if (ngsost.Active())
-    ngsost.GetStream() << id;
-  return ngsost;
-}
-*/
-
-
-
-
-
 namespace ngsolve
 {
   using namespace ngsolve;
@@ -642,13 +590,21 @@ namespace ngsolve
 
     ma.UpdateBuffers();   // update global mesh infos
 
-    if (id == 0 && printmessage_importance>0)
+    /*
+      if (id == 0 && printmessage_importance>0)
       {
-	cout << "Solve at level " << ma.GetNLevels()-1
-	     << ", NE = " << ma.GetNE() 
-	     << ", NP = " << ma.GetNP() << endl;
+      cout << "Solve at level " << ma.GetNLevels()-1
+      << ", NE = " << ma.GetNE() 
+      << ", NP = " << ma.GetNP() << endl;
       }
-    
+    */
+
+    cout << IM(1)
+	 << "Solve at level " << ma.GetNLevels()-1
+	 << ", NE = " << ma.GetNE() 
+	 << ", NP = " << ma.GetNP() << endl;
+
+
     // line-integrator curve points can only be built if
     // element-curving has been done
     for(int i=0; i<CurvePointIntegrators.Size(); i++)
@@ -670,8 +626,7 @@ namespace ngsolve
 
 	if (ev)
 	  {
-	    if (printmessage_importance>0)
-	      cout << "evaluate variable " << ev->GetName() << " = " << ev->Evaluate() << endl;
+	    cout << IM(1) << "evaluate variable " << ev->GetName() << " = " << ev->Evaluate() << endl;
 	  }
 
 	else if (fes)
@@ -679,12 +634,10 @@ namespace ngsolve
 	    try
 	      {
 		NgProfiler::RegionTimer timer(fes->GetTimer());
-		if (id == 0 && printmessage_importance>0)
-		  {
-		    cout << "Update "
-			 << fes -> GetClassName()
-			 << " " << fes -> GetName () << flush;
-		  }
+
+		cout << IM(1)
+		     << "Update " << fes -> GetClassName()
+		     << " " << fes -> GetName () << flush;
 
 		fes -> Update(lh);
 		fes -> FinalizeUpdate(lh);
@@ -695,15 +648,12 @@ namespace ngsolve
 		  fes->GetNDof() : fes->GetParallelDofs().GetNDofGlobal();
 
 
-		if (id == 0 && printmessage_importance>0)
-		  {
-		    if (fes->GetDimension() == 1)
-		      cout << ", ndof = " << ndof << endl;
-		    else
-		      cout << ", ndof = " 
-			   << fes -> GetDimension() << " x " 
-			   << ndof << endl;
-		  }
+		if (fes->GetDimension() == 1)
+		  cout << IM(1) << ", ndof = " << ndof << endl;
+		else
+		  cout << IM(1) << ", ndof = " 
+		       << fes -> GetDimension() << " x " 
+		       << ndof << endl;
 	      }
 	    catch (exception & e)
 	      {
@@ -735,8 +685,7 @@ namespace ngsolve
 	  {
 	    try
 	      {
-		if (id == 0 && printmessage_importance>0)
-		  cout << "Update gridfunction " << gf->GetName() << endl;
+		cout << IM(1) << "Update gridfunction " << gf->GetName() << endl;
 		NgProfiler::RegionTimer timer(gf->GetTimer());
 		gf->Update();
 
@@ -771,11 +720,10 @@ namespace ngsolve
 	  {
 	    try
 	      {
-		if (id == 0 && printmessage_importance>0)
-		  {
-		    cout << "update bilinear-form " << bf->GetName() << endl;
-		    (*testout) << "update bilinear-form " << bf->GetName() << endl;
-		  }
+		cout << IM(1) 
+		     << "update bilinear-form " << bf->GetName() << endl;
+		(*testout) << "update bilinear-form " << bf->GetName() << endl;
+
 		NgProfiler::RegionTimer timer(bf->GetTimer());
 		bf->Assemble(lh);
 		lh.CleanUp();
@@ -814,8 +762,7 @@ namespace ngsolve
 	      {
 		try
 		  {
-		    if (id == 0 && printmessage_importance>0)
-		      cout << "Update linear-form " << lf->GetName() << endl;
+		    cout << IM(1) << "Update linear-form " << lf->GetName() << endl;
 		    NgProfiler::RegionTimer timer(lf->GetTimer());
 			
 		    lf->Assemble(lh);
@@ -856,19 +803,15 @@ namespace ngsolve
 
 		if ( pre->LaterUpdate() )
 		  {  
-		    if (id == 0 && printmessage_importance>0)
-		      {  
-			cout << endl << "WARNING: Update of " << pre->ClassName() 
-			     << "  " << pre->GetName() << " postponed!" << endl;
-		      }
+		    cout << IM(1) 
+			 << endl << "WARNING: Update of " << pre->ClassName() 
+			 << "  " << pre->GetName() << " postponed!" << endl;
 		  }
 		else
 		  {	    
-		    if (id == 0 && printmessage_importance>0)
-		      {
-			cout << "Update " << pre->ClassName() 
-			     << "  " << pre->GetName() << endl;
-		      }
+		    cout << IM(1) << "Update " << pre->ClassName() 
+			 << "  " << pre->GetName() << endl;
+
 		    NgProfiler::RegionTimer timer(pre->GetTimer());
 		    pre->Update();
 		    //	  preconditioners[i]->Test();
@@ -905,12 +848,11 @@ namespace ngsolve
 	  {
 	    try
 	      {
-		if (id == 0 && printmessage_importance > 0)
-		  {
-		    cout << "Call numproc " << np->GetClassName() 
-			 << "  " << np->GetName() << endl;
-		  }
-		NgProfiler::RegionTimer timer(np->GetTimer());
+		cout << IM(1) 
+		     << "Call numproc " << np->GetClassName() 
+		     << "  " << np->GetName() << endl;
+		
+		RegionTimer timer(np->GetTimer());
 		np->Do(lh);
 		lh.CleanUp();
 	      }
