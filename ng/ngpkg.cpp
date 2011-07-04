@@ -2657,7 +2657,7 @@ namespace netgen
 
 
 using namespace netgen;
-  void Ng_InitSolutionData (Ng_SolutionData * soldata)
+void Ng_InitSolutionData (Ng_SolutionData * soldata)
 {
 
   soldata -> name = NULL;
@@ -2950,24 +2950,6 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
   }
 
 
-
-  int Ng_IsParallel (ClientData clientData,
-                     Tcl_Interp * interp,
-                     int argc, tcl_const char *argv[])
-  {
-#ifdef PARALLEL
-    int id, rc, ntasks;
-    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-    MPI_Comm_rank(MPI_COMM_WORLD, &id);
-    if ( ntasks > 1 )
-      Tcl_SetVar (interp, "::parallel_netgen", "1", 0);
-    else
-      Tcl_SetVar (interp, "::parallel_netgen", "0", 0);
-#else
-    Tcl_SetVar (interp, "::parallel_netgen", "0", 0);
-#endif
-    return TCL_OK;
-  }
 
   int Ng_Exit (ClientData clientData,
 	       Tcl_Interp * interp,
@@ -3346,11 +3328,6 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
 		       Ng_BuildFieldLines,
 		       (ClientData)NULL,
 		       (Tcl_CmdDeleteProc*) NULL);
-
-    Tcl_CreateCommand (interp, "Ng_IsParallel", Ng_IsParallel,
-		       (ClientData)NULL,
-		       (Tcl_CmdDeleteProc*) NULL);
-
 
     /*
      * Specify the C callback functions for widget creation, display,

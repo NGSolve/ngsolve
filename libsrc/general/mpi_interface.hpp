@@ -33,8 +33,10 @@ namespace netgen
 
 
 //#include "parallelfunc.hpp"
+  /*
   extern MPI_Group MPI_HIGHORDER_WORLD;
   extern MPI_Comm MPI_HIGHORDER_COMM;
+  */
 
 // namespace netgen
 // {
@@ -156,7 +158,7 @@ namespace netgen
     MPI_Irecv( &s.First(), s.Size(), MyGetMPIType<T>(), dest, tag, MPI_COMM_WORLD, & request);
   }
 
-
+  /*
   template <class T, int BASE>
   inline MPI_Request MyMPI_ISend (FlatArray<T, BASE> s, int dest)
   {
@@ -174,6 +176,24 @@ namespace netgen
     MPI_Irecv( &s.First(), s.Size(), MyGetMPIType<T>(), dest, 1, MPI_COMM_WORLD, &request);
     return request;
     // MPI_Request_free (&request);
+  }
+  */
+
+  template <class T, int BASE>
+  inline void MyMPI_ISend (FlatArray<T, BASE> s, int dest)
+  {
+    MPI_Request request;
+    MPI_Isend( &s.First(), s.Size(), MyGetMPIType<T>(), dest, 1, MPI_COMM_WORLD, &request);
+    MPI_Request_free (&request);
+  }
+
+
+  template <class T, int BASE>
+  inline void MyMPI_IRecv (FlatArray<T, BASE> s, int dest)
+  {
+    MPI_Request request;
+    MPI_Irecv( &s.First(), s.Size(), MyGetMPIType<T>(), dest, 1, MPI_COMM_WORLD, &request);
+    MPI_Request_free (&request);
   }
 
 

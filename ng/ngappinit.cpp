@@ -7,15 +7,7 @@
 #include "incvis.hpp"
 #include <meshing.hpp>
 
-#ifdef LINUX
-// #include <fenv.h>
-#endif
 
-/*
-#ifndef WIN32
-#include <dlfcn.h>
-#endif
-*/
 
 namespace netgen
 {
@@ -24,16 +16,9 @@ namespace netgen
 
 #ifdef PARALLEL
 #include <mpi.h>
-
-namespace netgen
-{
-  MPI_Group MPI_HIGHORDER_WORLD;
-  MPI_Comm MPI_HIGHORDER_COMM;
-}
+extern void ParallelRun();
 #endif
 
-
-#include "parallelfunc.hpp"
 
 
 namespace netgen
@@ -79,20 +64,8 @@ int main(int argc, char ** argv)
   
 #ifdef PARALLEL
   MPI_Init(&argc, &argv);          
-
   MPI_Comm_size(MPI_COMM_WORLD, &netgen::ntasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &netgen::id);
-  
-  MPI_Group MPI_GROUP_WORLD;
-
-  int n_ho = netgen::ntasks - 1;
-  int * process_ranks = new int[netgen::ntasks-1];
-  for ( int i = 0; i < netgen::ntasks-1; i++ )
-    process_ranks[i] = i+1;
-
-  MPI_Comm_group ( MPI_COMM_WORLD, &MPI_GROUP_WORLD);
-  MPI_Group_incl ( MPI_GROUP_WORLD, n_ho, process_ranks, & netgen::MPI_HIGHORDER_WORLD);
-  MPI_Comm_create ( MPI_COMM_WORLD, netgen::MPI_HIGHORDER_WORLD, & netgen::MPI_HIGHORDER_COMM);
 #endif
 
 
@@ -123,10 +96,6 @@ int main(int argc, char ** argv)
       cout << "You are running the debug version !" << endl;
 #endif
 
-#ifdef USE_SUPERLU
-      cout << "Including sparse direct solver SuperLU by Lawrence Berkeley National Laboratory" << endl;
-#endif
-
 
 #ifdef PARALLEL
       cout << "Running MPI - parallel using " 
@@ -134,10 +103,7 @@ int main(int argc, char ** argv)
            << ((netgen::ntasks > 1) ? "s " : " ") << endl;
 #endif
     }
-  else
-    {
-      ;// nodisplay = true;
-    }
+
 
 
   // command line arguments:
@@ -205,10 +171,6 @@ int main(int argc, char ** argv)
       if (shellmode)
         internaltcl = false;
   
-#ifdef PARALLEL
-      internaltcl = false;
-#endif
-
       if (verbose)
         {
           cout << "Tcl header version = " << TCL_PATCH_LEVEL << endl;
@@ -288,20 +250,8 @@ int main(int argc, char ** argv)
 	}
 
       Tcl_Eval (myinterp, (char*)fstr.str().c_str());
-      // Tcl_SetVar (myinterp, "exportfiletype", "Neutral Format", 0);
       Tcl_SetVar (myinterp, "exportfiletype", exportft, 0);
 
-
-      // For adding an application, parse the file here,
-      // and call the init-procedure below
-      // #define DEMOAPP
-#ifdef DEMOAPP  
-      Tcl_EvalFile (myinterp, "demoapp/demoapp.tcl");
-#endif
-
-#ifdef ADDON
-      Tcl_EvalFile (myinterp, "addon/addon.tcl");
-#endif
 
 #ifdef SOCKETS
       Ng_ServerSocketManagerRun();
@@ -313,24 +263,18 @@ int main(int argc, char ** argv)
       Tcl_DeleteInterp (myinterp); 
 
 #ifdef PARALLEL
-
-      // MPI beenden
-      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
 #endif
-      
       Tcl_Exit(0);
     }
+
 #ifdef PARALLEL
   else
     {
-      // main for parallel processors    
       ParallelRun();
-
-      // MPI beenden
-      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
     }  
+
 #endif
   
   return 0;		
@@ -392,32 +336,9 @@ int Tcl_AppInit(Tcl_Interp * interp)
   }
 
 
-  /*
-  if (NGSolve_Init(interp) == TCL_ERROR) 
-    return TCL_ERROR;
-  */
 
-#ifdef DEMOAPP
-  extern int DemoApp_Init (Tcl_Interp * interp);
-  if (DemoApp_Init(interp) == TCL_ERROR) 
-    {
-      return TCL_ERROR;
-    }
-#endif 
-#ifdef ADDON
-  extern int AddOn_Init (Tcl_Interp * interp);
-  if (AddOn_Init(interp) == TCL_ERROR) 
-    {
-      return TCL_ERROR;
-    }
-#endif
-#ifdef METIS_OLD
-  extern int NgMetis_Init (Tcl_Interp * interp);
-  if (NgMetis_Init(interp) == TCL_ERROR) 
-    {
-      return TCL_ERROR;
-    }
-#endif    
+
+
 
 #ifdef TRAFO
   //   extern int Trafo_Init (Tcl_Interp * interp);

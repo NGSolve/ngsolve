@@ -2,7 +2,6 @@
 #define FILE_PARALLELFUNC
 
 
-
 void ParallelRun();
 
 void LoadPDEParallel ( const char*  filename );
