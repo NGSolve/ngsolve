@@ -102,7 +102,8 @@ void ParallelRun()
 
   bool test = true;
 
-  testout = new ofstream (string("testout_proc") + id  );      
+  testout = new ostream(0); 
+  // new ofstream (string("testout_proc") + id  );      
 
   while ( test )
     {
