@@ -237,11 +237,16 @@ int NGS_SolvePDE (ClientData clientData,
       cout << "Solve PDE" << endl;
       Ng_SetRunning (1);
 
-      bool parthread = atoi (Tcl_GetVar (interp, "::options.parthread", 0));
-      if (parthread)
-	RunParallel (SolveBVP, NULL);
-      else
-	SolveBVP (NULL);
+      for (int dest = 1; dest < ntasks; dest++)
+        MyMPI_Send("ngs_solvepde" , dest, MPI_TAG_CMD);
+
+      // bool parthread = atoi (Tcl_GetVar (interp, "::options.parthread", 0));
+      // if (parthread)
+      RunParallel (SolveBVP, NULL);
+	// else
+	// SolveBVP (NULL);
+
+
     }
   return TCL_OK;
 }

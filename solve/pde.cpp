@@ -504,12 +504,6 @@ namespace ngsolve
     static Timer timer("Solver - Total");
     RegionTimer reg (timer);
 
-    if (id == 0)
-      for (int dest = 1; dest < ntasks; dest++)
-        MyMPI_Send("ngs_solvepde" , dest);
-    
-
-
     size_t heapsize = 1000000;
     if (constants.Used ("heapsize"))
       heapsize = size_t(constants["heapsize"]);
