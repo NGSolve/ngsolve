@@ -425,12 +425,14 @@ if { [catch { NGS_GetData } ] == 0 } {
 	    if { $solve == "defined" } {
 		set options.parthread 0
 		NGS_SolvePDE
-		exit;
+		Ng_Exit;
+		destroy .
 	    } {
 		if { $solve != "undefined" } {
 		    set options.parthread 0
 		    for { set l 1 } { $l <= $solve } { incr l } { NGS_SolvePDE $l }
-		    exit;
+		    Ng_Exit;
+		    destroy .
 		}
 	    }
 	}
