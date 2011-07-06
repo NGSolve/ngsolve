@@ -470,14 +470,12 @@ namespace ngsolve
 		{
 		  if (ifstream (meshfile.c_str()))
 		    {
-                      if (printmessage_importance>0)
-                        cout << "Load mesh from file " << meshfile << endl;
+		      cout << IM(1) << "Load mesh from file " << meshfile << endl;
 		      Ng_LoadMesh (const_cast<char*> (meshfile.c_str()));
 		    }
 		  else
 		    {
-                      if (printmessage_importance>0)
-                        cout << "Load mesh from file " << scan->GetStringValue() << endl;
+		      cout << IM(1) << "Load mesh from file " << scan->GetStringValue() << endl;
 		      Ng_LoadMesh (const_cast<char*> (scan->GetStringValueC()));
 		    }
 		}
@@ -538,14 +536,12 @@ namespace ngsolve
 	      string matfile  = scan->GetStringValue();
 	      if (ifstream (matfile.c_str()).good())
 		{
-                  if (printmessage_importance>0)
-                    cout << "Materialdata from file " << matfile << endl;
+		  cout << IM(1) << "Materialdata from file " << matfile << endl;
 		  pde->SetMatfile(matfile); 
 		}
 	      else
 		{
-                  if (printmessage_importance>0)
-                    cout << "Materialdata from file " << matfile << endl;
+		  cout << IM(1) << "Materialdata from file " << matfile << endl;
 		  throw Exception("**** Materialdata-File not found!! \n ");  
 		}
 	      
@@ -601,8 +597,7 @@ namespace ngsolve
 	    }
 	  }
       }
-      if (printmessage_importance>0)
-        cout << "End of file reached" << endl << endl << endl;
+    cout << IM(1) << "End of file reached" << endl << endl << endl;
   }
 
 
@@ -1056,8 +1051,7 @@ namespace ngsolve
 		    }
 		  else if (scan->GetToken() == LSB) // polynomial [MW]
 		    {
-                      if (printmessage_importance>0)
-                        cout << "polynomial: ";
+		      cout << IM(1) << "polynomial: ";
 		      scan->ReadNext();
 		      double val;
 		      Array< Array<double>* > *polyco = new Array< Array<double>* >;
@@ -1082,14 +1076,10 @@ namespace ngsolve
 			      polyc->Append(val);
 			      scan->ReadNext();
 			    }
-                          if (printmessage_importance>0)
-                            cout << (*polyc)[0];
+			  cout << IM(1) << (*polyc)[0];
                           
 			  for(int i = 1; i<polyc->Size(); i++)
-			    {
-                              if (printmessage_importance>0)
-                                cout << " + " << (*polyc)[i] << "*t^"<<i;
-			    }
+			    cout << IM(1) << " + " << (*polyc)[i] << "*t^"<<i;
 			  
 
 			  polyco->Append(polyc);
@@ -1106,8 +1096,7 @@ namespace ngsolve
 				  val = - scan->GetNumValue();
 				}
 			      polyb->Append(val);
-                              if (printmessage_importance>0)
-                                cout << " until " << val <<", then ";
+			      cout << IM(1) << " until " << val <<", then ";
 			      scan->ReadNext(); // RP
 			      scan->ReadNext();
 			    }
@@ -1115,8 +1104,7 @@ namespace ngsolve
 		      polybounds.Append(polyb);
 		      polycoeffs.Append(polyco);
 
-                      if (printmessage_importance>0)
-                        cout << endl;
+		      cout << IM(1) << endl;
 
 		      scan->ReadNext();
 		    }
@@ -1933,8 +1921,7 @@ namespace ngsolve
 
   void PDE :: LoadPDE (const string & filename, const bool nomeshload, const bool nogeometryload)
   {
-    if (printmessage_importance>0)
-      cout << "Load PDE from file " << filename << endl;
+    cout << IM(1) << "Load PDE from file " << filename << endl;
  
 
     string::size_type pos1 = filename.rfind('\\');
@@ -1949,8 +1936,7 @@ namespace ngsolve
     if(pde_directory == "")
       pde_directory = ".";
 
-    if (printmessage_importance>0)
-      cout << "dir = " << pde_directory << endl;
+    cout << IM(1) << "dir = " << pde_directory << endl;
 
     pde = this;
 

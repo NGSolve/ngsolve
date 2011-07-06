@@ -65,7 +65,7 @@ int NGS_Object :: CheckFlags(const Flags& flags)
     flags.GetStringFlag(i, s);
     if (!flaglist.StringFlagDefined(s))
     {
-      cerr << "WARNING in NGS_Object :: CheckFlags(): stringflag '" << s << "' not defined for object " << name  << endl;
+      cerr << IM(1) << "WARNING in NGS_Object :: CheckFlags(): stringflag '" << s << "' not defined for object " << name  << endl;
       ret++;
     }
   }
@@ -75,7 +75,7 @@ int NGS_Object :: CheckFlags(const Flags& flags)
     flags.GetNumFlag(i, s);
     if (!flaglist.NumFlagDefined(s))
     {
-      cerr << "WARNING in NGS_Object :: CheckFlags(): numflag '" << s << "' not defined for object " << name  << endl;
+      cerr << IM(1) << "WARNING in NGS_Object :: CheckFlags(): numflag '" << s << "' not defined for object " << name  << endl;
       ret++;
     }
   }
@@ -85,7 +85,7 @@ int NGS_Object :: CheckFlags(const Flags& flags)
     flags.GetDefineFlag(i, s);
     if (!flaglist.GetDefineFlag(s))
     {
-      cerr << "WARNING in NGS_Object :: CheckFlags(): defineflag '" << s << "' not defined for object " << name  << endl;
+      cerr << IM(1) << "WARNING in NGS_Object :: CheckFlags(): defineflag '" << s << "' not defined for object " << name  << endl;
       ret++;
     }
   }
@@ -95,7 +95,7 @@ int NGS_Object :: CheckFlags(const Flags& flags)
     flags.GetStringListFlag(i, s);
     if (!flaglist.StringListFlagDefined(s))
     {
-      cerr << "WARNING in NGS_Object :: CheckFlags(): stringlistflag '" << s << "' not defined for object " << name  << endl;
+      cerr << IM(1) << "WARNING in NGS_Object :: CheckFlags(): stringlistflag '" << s << "' not defined for object " << name  << endl;
       ret++;
     }
   }
@@ -105,7 +105,7 @@ int NGS_Object :: CheckFlags(const Flags& flags)
     flags.GetNumListFlag(i, s);
     if (!flaglist.NumListFlagDefined(s))
     {
-      cerr << "WARNING in NGS_Object :: CheckFlags(): numlistflag '" << s << "' not defined for object " << name  << endl;
+      cerr << IM(1) << "WARNING in NGS_Object :: CheckFlags(): numlistflag '" << s << "' not defined for object " << name  << endl;
       ret++;
     }
   }
