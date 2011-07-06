@@ -112,8 +112,7 @@ namespace ngsolve
 
     for (int i = 0; i < gridfunctions.Size(); i++)
       {
-        if (printmessage_importance>0)
-          cout << "Writing gridfunction " << gridfunctions.GetName(i) << endl;
+	cout << IM(1) << "Writing gridfunction " << gridfunctions.GetName(i) << endl;
 
 	if(gridfunctions[i]->IsUpdated())
 	  {
@@ -161,8 +160,7 @@ namespace ngsolve
     for (int i = 0; i < gridfunctions.Size(); i++)
       {
 	gridfunctions[i]->Update();
-        if (printmessage_importance>0)
-          cout << "Loading gridfunction " << gridfunctions.GetName(i) << endl;
+	cout << IM(1) << "Loading gridfunction " << gridfunctions.GetName(i) << endl;
 	if(ascii)
 	  gridfunctions[i]->GetVector().LoadText (infile);
 	else
@@ -272,8 +270,7 @@ namespace ngsolve
 	sumbytes += memuse[i]->NBytes();
 	sumblocks += memuse[i]->NBlocks();
       }
-    if (printmessage_importance>0)
-      cout << "total bytes " << sumbytes << " in " << sumblocks << " blocks." << endl;
+    cout << IM(1) << "total bytes " << sumbytes << " in " << sumblocks << " blocks." << endl;
   }
 
 
@@ -577,8 +574,7 @@ namespace ngsolve
 
     if (constants.Used("common_integration_order"))
       {
-	if (printmessage_importance>0)
-	  cout << " !!! comminintegrationorder = " << int (constants["common_integration_order"]) << endl;
+	cout << IM(1) << " !!! comminintegrationorder = " << int (constants["common_integration_order"]) << endl;
 	Integrator::SetCommonIntegrationOrder (int (constants["common_integration_order"]));
       }
 
@@ -590,17 +586,7 @@ namespace ngsolve
 
     ma.UpdateBuffers();   // update global mesh infos
 
-    /*
-      if (id == 0 && printmessage_importance>0)
-      {
-      cout << "Solve at level " << ma.GetNLevels()-1
-      << ", NE = " << ma.GetNE() 
-      << ", NP = " << ma.GetNP() << endl;
-      }
-    */
-
-    cout << IM(1)
-	 << "Solve at level " << ma.GetNLevels()-1
+    cout << IM(1) << "Solve at level " << ma.GetNLevels()-1
 	 << ", NE = " << ma.GetNE() 
 	 << ", NP = " << ma.GetNP() << endl;
 
@@ -913,11 +899,8 @@ namespace ngsolve
     
     MyMPI_Barrier();
     
-    if (id == 0 && printmessage_importance > 0)
-      {
-	cout << "Equation Solved" << endl;
-	cout << "Total Time = " << endtime-starttime << " sec wall time" << endl << endl;
-      }
+    cout << IM(1) << "Equation Solved" << endl;
+    cout << IM(1) << "Total Time = " << endtime-starttime << " sec wall time" << endl << endl;
   }
 
 
@@ -931,15 +914,13 @@ namespace ngsolve
 
   void PDE :: AddConstant (const string & name, double val)
   {
-    if (id == 0 && printmessage_importance > 0)
-      cout << "add constant " << name << " = " << val << endl;
+    cout << IM(1) << "add constant " << name << " = " << val << endl;
     constants.Set (name.c_str(), val);
   }
 
   void PDE :: AddStringConstant (const string & name, const string & val)
   {
-    if (id == 0 && printmessage_importance > 0)
-      cout << "add string constant " << name << " = " << val << endl;
+    cout << IM(1) << "add string constant " << name << " = " << val << endl;
     if(string_constants.Used(name))
       delete string_constants[name];
 
@@ -948,8 +929,7 @@ namespace ngsolve
 
   void PDE :: AddVariable (const string & name, double val)
   {
-    if (id == 0 && printmessage_importance > 0)
-      cout << "add variable " << name << " = " << val << endl;
+    cout << IM(1) << "add variable " << name << " = " << val << endl;
     variables.Set (name.c_str(), val);
   }
 
@@ -960,16 +940,14 @@ namespace ngsolve
     todo.Append(eval);
     variables.Set (name, 0);
     eval->SetVariable(variables[name]);
-    if (id == 0 && printmessage_importance > 0)
-      cout << "add variable " << name << " = " << eval->Evaluate() << endl;
+    cout << IM(1) << "add variable " << name << " = " << eval->Evaluate() << endl;
   }
 
   
 
   void PDE :: AddCoefficientFunction (const string & name, CoefficientFunction* fun)
   {
-    if (id == 0 && printmessage_importance > 0)
-      cout << "add coefficient-function, name = " << name << endl;
+    cout << IM(1) << "add coefficient-function, name = " << name << endl;
     coefficients.Set (name.c_str(), fun);
   }
 
@@ -978,8 +956,7 @@ namespace ngsolve
 
   FESpace * PDE :: AddFESpace (const string & name, Flags & flags)
   {
-    if (id == 0 && printmessage_importance > 0)
-      cout << "add fespace " << name << endl;
+    cout << IM(1) << "add fespace " << name << endl;
 
     FESpace * space = 0;
     if (flags.GetDefineFlag ("vec")) 
@@ -1019,8 +996,7 @@ namespace ngsolve
 	if (type == "compound")
 	  {
 	    const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
-	    if (printmessage_importance>0)
-	      cout << "   spaces = " << spacenames << endl;
+	    cout << IM(1) << "   spaces = " << spacenames << endl;
 
 	    Array<FESpace*> cspaces (spacenames.Size());
 	    for (int i = 0; i < cspaces.Size(); i++)
@@ -1099,8 +1075,7 @@ namespace ngsolve
 
   GridFunction * PDE :: AddGridFunction (const string & name, Flags & flags)
   {
-    if (id == 0 && printmessage_importance>0)
-      cout << "add grid-function " << name << endl;
+    cout << IM(1) << "add grid-function " << name << endl;
 
     string spacename = flags.GetStringFlag ("fespace", "");
 
@@ -1162,8 +1137,7 @@ namespace ngsolve
 
   BilinearForm * PDE :: AddBilinearForm (const string & name, Flags & flags)
   {
-    if (id == 0 && printmessage_importance>0)
-      cout << "add bilinear-form " << name << endl;
+    cout << IM(1) << "add bilinear-form " << name << endl;
     string spacename = flags.GetStringFlag ("fespace", "");
 
     if (!spaces.Used (spacename))
@@ -1197,8 +1171,7 @@ namespace ngsolve
  
   LinearForm * PDE :: AddLinearForm (const string & name, Flags & flags)
   {
-    if (id == 0 && printmessage_importance>0)
-      cout << "add linear-form " << name << endl;
+    cout << IM(1) << "add linear-form " << name << endl;
 
     string spacename = flags.GetStringFlag ("fespace", "");
 
@@ -1220,8 +1193,7 @@ namespace ngsolve
 
   Preconditioner * PDE :: AddPreconditioner (const string & name, Flags & flags)
   {
-    if (id == 0 && printmessage_importance>0)
-      cout << "add preconditioner " << name << flush;
+    cout << IM(1) << "add preconditioner " << name << flush;
 
     //  flags.PrintFlags (cout);
     Preconditioner * pre = NULL;
@@ -1338,8 +1310,7 @@ namespace ngsolve
       throw Exception ("Unknown preconditioner type " + string(type));
     
     preconditioners.Set (name, pre);
-    if (printmessage_importance>0)
-      cout << ", type = " << pre->ClassName() << endl;
+    cout << IM(1) << ", type = " << pre->ClassName() << endl;
     
     if (!flags.GetDefineFlag ("ondemand"))
       todo.Append(pre);
@@ -1351,8 +1322,7 @@ namespace ngsolve
 
   void PDE :: AddNumProc (const string & name, NumProc * np)
   {
-    if (printmessage_importance>0)
-      cout << "add numproc " << name << ", type = " << np->GetClassName() << endl;
+    cout << IM(1) << "add numproc " << name << ", type = " << np->GetClassName() << endl;
     np->SetName (name);
     numprocs.Set (name, np);
 
@@ -1369,13 +1339,11 @@ namespace ngsolve
     if (form && part)
       {
 	form->AddIntegrator (part,deletable);
-        if (printmessage_importance>0)
-          cout << "integrator " << part->Name() << endl;
+	cout << IM(1) << "integrator " << part->Name() << endl;
       }
     else
       {
-        if (printmessage_importance>0)
-          cerr << "Bilinearform = " << form << ", part = " << part << endl;
+	cerr << IM(1) << "Bilinearform = " << form << ", part = " << part << endl;
       }
   }
   
@@ -1387,13 +1355,11 @@ namespace ngsolve
     if (form && part)
       {
 	form->AddIndependentIntegrator (part,master,slave,deletable);
-        if (printmessage_importance>0)
-          cout << "integrator " << part->Name() << endl;
+	cout << IM(1) << "integrator " << part->Name() << endl;
       }
     else
       {
-        if (printmessage_importance>0)
-          cerr << "Bilinearform = " << form << ", part = " << part << endl;
+	cerr << IM(1) << "Bilinearform = " << form << ", part = " << part << endl;
       }
   }
 
@@ -1404,13 +1370,11 @@ namespace ngsolve
     if (form && part)
       {
 	form->AddIntegrator (part);
-        if (printmessage_importance>0)
-          cout << "integrator " << part->Name() << endl;
+	cout << IM(1) << "integrator " << part->Name() << endl;
       }
     else
       {
-        if (printmessage_importance>0)
-          cerr << "Linearform = " << form << ", part = " << part << endl;
+	cerr << IM(1) << "Linearform = " << form << ", part = " << part << endl;
       }
   }
   
@@ -1530,12 +1494,9 @@ namespace ngsolve
     system (gzipfiles.c_str() );
     system ( rmdir.c_str() );
 
-    if (printmessage_importance>0)
-      {
-	cout << "saved geometry, mesh, pde and solution to file " << endl << pde_directory << "/" 
-	     << dirname << ".tar.gz" << endl;
-      }
-
+    cout << IM(1) << "saved geometry, mesh, pde and solution to file " << endl 
+	 << pde_directory << "/" 
+	 << dirname << ".tar.gz" << endl;
   }
   ///
   void PDE :: LoadZipSolution (const string & filename, const bool ascii)
