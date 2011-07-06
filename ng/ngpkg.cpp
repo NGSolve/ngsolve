@@ -4,7 +4,6 @@ The interface between the GUI and the netgen library
 
 */
 
-
 #include <mystdlib.h>
 #include <myadt.hpp>
 #include <linalg.hpp>
