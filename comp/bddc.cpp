@@ -693,7 +693,7 @@ namespace ngcomp
 
 
       timerifs.Start();
-      *tmp += *subassembled_innersolve * y;
+      *tmp += *subassembled_innersolve * x;
       timerifs.Stop();
 
       

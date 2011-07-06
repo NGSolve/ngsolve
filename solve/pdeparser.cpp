@@ -1962,7 +1962,7 @@ namespace ngsolve
     if ( id == 0 )
       for ( int dest = 1; dest < ntasks; dest ++)
 	{
-	  MyMPI_Send ("ngs_pdefile", dest);
+	  MyMPI_Send ("ngs_pdefile", dest, MPI_TAG_CMD);
 	  MyMPI_Send (filename, dest);
 	}
   }

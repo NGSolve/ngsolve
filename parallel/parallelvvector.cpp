@@ -156,13 +156,13 @@ namespace ngla
   void ParallelBaseVector :: ISend ( int dest, MPI_Request & request ) const
   {
     MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
-    MPI_Isend( Memory(), 1, mpi_t, dest, 2000, MPI_COMM_WORLD, &request);
+    MPI_Isend( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, MPI_COMM_WORLD, &request);
   }
 
   void ParallelBaseVector :: Send ( int dest ) const
   {
     MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
-    MPI_Send( Memory(), 1, mpi_t, dest, 2001, MPI_COMM_WORLD);
+    MPI_Send( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, MPI_COMM_WORLD);
   }
 
 
@@ -354,7 +354,7 @@ namespace ngla
     MPI_Irecv( &( (*recvvalues)[dest][0]), 
 	       (*recvvalues)[dest].Size(), 
 	       MPI_TS, dest, 
-	       MPI_ANY_TAG, MPI_COMM_WORLD, &request);
+	       MPI_TAG_SOLVE, MPI_COMM_WORLD, &request);
   }
 
   template <typename SCAL>
@@ -366,7 +366,7 @@ namespace ngla
     MPI_Recv( &( (*recvvalues)[dest][0]), 
 	      (*recvvalues)[dest].Size(), 
 	      MPI_TS, dest, 
-	      MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+	      MPI_TAG_SOLVE, MPI_COMM_WORLD, &status);
   }
 
 

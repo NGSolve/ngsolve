@@ -14,6 +14,8 @@ extern "C" void NGS_ParallelRun ( const string & message );
 
 void NGS_ParallelRun ( const string & message )
 {
+  cout << "id, got msg " << message << endl;
+
   if ( message == "ngs_pdefile" )
     {
       string pdefilename;

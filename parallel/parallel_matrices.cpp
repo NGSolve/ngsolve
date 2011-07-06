@@ -240,14 +240,12 @@ namespace ngla
 	  lx[i] = fx(select[i]);
 
 	MPI_Request request;
-	MyMPI_ISend (lx, 0, request);
+	MyMPI_ISend (lx, 0, MPI_TAG_SOLVE, request);
 	// MPI_Wait (&request, MPI_STATUS_IGNORE);
 	MPI_Request_free (&request);
 	
-	MyMPI_IRecv (lx, 0, request);
-	// MPI_Wait (&request, MPI_STATUS_IGNORE);
-	int flag = false;
-	while (!flag) { MPI_Test (&request, &flag, MPI_STATUS_IGNORE); }
+	MyMPI_IRecv (lx, 0, MPI_TAG_SOLVE, request);
+	MPI_Wait (&request, MPI_STATUS_IGNORE);
 
 	for (int i = 0; i < select.Size(); i++)
 	  fy(select[i]) += s * lx[i];
@@ -291,7 +289,7 @@ namespace ngla
 	    FlatArray<int> selecti = loc2glob[src];
 	    for (int j = 0; j < selecti.Size(); j++)
 	      exdata[src][j] = hy(selecti[j]);
-	    MyMPI_ISend (exdata[src], src, requ[src]);
+	    MyMPI_ISend (exdata[src], src, MPI_TAG_SOLVE, requ[src]);
 	  }
 	MPI_Waitall (ntasks-1, &requ[1], &stats[1]);
 	
