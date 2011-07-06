@@ -12,6 +12,17 @@ extern MeshAccess * ma;
 
 extern "C" void NGS_ParallelRun ( const string & message );
 
+
+void * SolveBVP2(void *)
+{
+  if (pde && pde->IsGood())
+    pde->SolveBVP();
+
+  Ng_SetRunning (0); 
+  return NULL;
+}
+
+
 void NGS_ParallelRun ( const string & message )
 {
   cout << "id, got msg " << message << endl;
@@ -31,6 +42,8 @@ void NGS_ParallelRun ( const string & message )
 
   else if ( message == "ngs_solvepde" )
     {
+      RunParallel (SolveBVP2, NULL);
+      /*
       try
 	{
 	  pde -> SolveBVP();
@@ -57,6 +70,7 @@ void NGS_ParallelRun ( const string & message )
 	       << e.What() << "\n\n";
 	  pde->SetGood (false);
 	}
+      */
     }
 
   return;
