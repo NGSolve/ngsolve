@@ -113,7 +113,7 @@ namespace netgen
     // int ve = 0;
     while (!endmesh)
       {
-	MyMPI_Recv (st, 0);
+	MyMPI_Recv (st, 0, MPI_TAG_MESH);
 
 	// receive vertices
         if (st == "vertex")
@@ -121,7 +121,7 @@ namespace netgen
 	    NgProfiler::RegionTimer reg(timer_pts);
 
 	    Array<int> verts;
-	    MyMPI_Recv (verts, 0);
+	    MyMPI_Recv (verts, 0, MPI_TAG_MESH);
 
 	    int numvert = verts.Size();
 	    paralleltop -> SetNV (numvert);
@@ -140,10 +140,10 @@ namespace netgen
 
 	    MPI_Datatype mptype = MeshPoint::MyGetMPIType();
 	    MPI_Status status;
-	    MPI_Recv( &points[1], numvert, mptype, 0, 33, MPI_COMM_WORLD, &status);
+	    MPI_Recv( &points[1], numvert, mptype, 0, MPI_TAG_MESH, MPI_COMM_WORLD, &status);
 
 	    Array<int> dist_pnums;
-	    MyMPI_Recv (dist_pnums, 0);
+	    MyMPI_Recv (dist_pnums, 0, MPI_TAG_MESH);
 
 	    for (int hi = 0; hi < dist_pnums.Size(); hi += 3)
 	      paralleltop ->
@@ -161,7 +161,7 @@ namespace netgen
 	    Element el;
 
             Array<int> elarray;
-            MyMPI_Recv (elarray, 0);
+            MyMPI_Recv (elarray, 0, MPI_TAG_MESH);
 
 	    for (int ind = 0, elnum = 1; ind < elarray.Size(); elnum++)
 	      {
@@ -181,7 +181,7 @@ namespace netgen
 	if (strcmp (st.c_str(), "facedescriptor") == 0)
 	  {
 	    Array<double> doublebuf;
-	    MyMPI_Recv( doublebuf, 0 );
+	    MyMPI_Recv( doublebuf, 0, MPI_TAG_MESH );
 	    int faceind = AddFaceDescriptor (FaceDescriptor(int(doublebuf[0]), int(doublebuf[1]), int(doublebuf[2]), 0));
 	    GetFaceDescriptor(faceind).SetBCProperty (int(doublebuf[3]));
 	    GetFaceDescriptor(faceind).domin_singular = doublebuf[4];
@@ -205,7 +205,7 @@ namespace netgen
 	    // tri.pnum
 	    // tri.geominfopi.trignum
 	    int nlocsel;
-	    MyMPI_Recv ( selbuf, bufsize, 0);
+	    MyMPI_Recv ( selbuf, bufsize, 0, MPI_TAG_MESH);
 	    int ii= 0;
 	    int sel = 0;
 
@@ -249,7 +249,7 @@ namespace netgen
 
 	    double * segmbuf = 0;
 	    int bufsize;
-	    MyMPI_Recv ( segmbuf, bufsize, 0);
+	    MyMPI_Recv ( segmbuf, bufsize, 0, MPI_TAG_MESH);
 	    Segment seg;
 	    int globsegi;
 	    int ii = 0;
@@ -365,7 +365,7 @@ namespace netgen
     // send partition
 
     for (int dest = 1; dest < ntasks; dest++)
-      MyMPI_Send ("mesh", dest);
+      MyMPI_Send ("mesh", dest, MPI_TAG_CMD);
     SendRecvMesh (); 
 
 
@@ -914,8 +914,8 @@ namespace netgen
       {
 	FlatArray<PointIndex> verts = verts_of_proc[dest];
 
-	MyMPI_Send ("vertex", dest);
-	MyMPI_ISend (verts, dest);
+	MyMPI_Send ("vertex", dest, MPI_TAG_MESH);
+	MyMPI_ISend (verts, dest, MPI_TAG_MESH);
 
 	MPI_Datatype mptype = MeshPoint::MyGetMPIType();
 
@@ -931,7 +931,7 @@ namespace netgen
 	MPI_Type_commit (&newtype);
 
 	MPI_Request request;
-	MPI_Isend( &points[0], 1, newtype, dest, 33, MPI_COMM_WORLD, &request);
+	MPI_Isend( &points[0], 1, newtype, dest, MPI_TAG_MESH, MPI_COMM_WORLD, &request);
 	MPI_Request_free (&request);
       }
 
@@ -964,7 +964,7 @@ namespace netgen
     
     for ( int dest = 1; dest < ntasks; dest ++ )
       {
-	MyMPI_ISend ( distpnums[dest], dest, sendrequest[dest] );
+	MyMPI_ISend ( distpnums[dest], dest, MPI_TAG_MESH, sendrequest[dest] );
 	MPI_Request_free (&sendrequest[dest]);
       }
 
@@ -1003,8 +1003,8 @@ namespace netgen
 
     for (int dest = 1; dest < ntasks; dest ++ )
       {
-	MyMPI_Send ( "volumeelements", dest);
-	MyMPI_ISend ( elementarrays[dest], dest, sendrequest[dest] );
+	MyMPI_Send ( "volumeelements", dest, MPI_TAG_MESH);
+	MyMPI_ISend ( elementarrays[dest], dest, MPI_TAG_MESH, sendrequest[dest] );
       }
 
 
@@ -1022,7 +1022,7 @@ namespace netgen
     for ( int dest = 1; dest < ntasks; dest++)
       for ( int fdi = 1; fdi <= mastermesh->GetNFD(); fdi++)
         {
-	  MyMPI_Send("facedescriptor", dest);
+	  MyMPI_Send("facedescriptor", dest, MPI_TAG_MESH);
 
           double6[0] = GetFaceDescriptor(fdi).SurfNr();
           double6[1] = GetFaceDescriptor(fdi).DomainIn();	
@@ -1031,7 +1031,7 @@ namespace netgen
 	  double6[4] = GetFaceDescriptor(fdi).domin_singular;
 	  double6[5] = GetFaceDescriptor(fdi).domout_singular;
 
-	  MyMPI_Send ( double6, dest);
+	  MyMPI_Send ( double6, dest, MPI_TAG_MESH);
         }
 
     endtime = clock();
@@ -1088,7 +1088,7 @@ namespace netgen
 
     for ( int dest = 1; dest < ntasks; dest++ )
       {
-	MyMPI_Send ( "surfaceelementsgi", dest);  
+	MyMPI_Send ( "surfaceelementsgi", dest, MPI_TAG_MESH);  
 	selbuf[dest][0] = nlocsel[dest];                  
       }    
 
@@ -1140,7 +1140,7 @@ namespace netgen
 
 
     for ( int dest = 1; dest < ntasks; dest++)
-      MyMPI_Send( selbuf[dest], bufsize[dest], dest);
+      MyMPI_Send( selbuf[dest], bufsize[dest], dest, MPI_TAG_MESH);
 
     for ( int dest = 0; dest < ntasks; dest++ )
       {
@@ -1157,7 +1157,7 @@ namespace netgen
 
     PrintMessage ( 3, "Sending Edge Segments");
     for ( int dest = 1; dest < ntasks; dest++ )
-      MyMPI_Send ( "edgesegmentsgi", dest);    
+      MyMPI_Send ( "edgesegmentsgi", dest, MPI_TAG_MESH);    
 
 
     Array <int> nlocseg(ntasks), segi(ntasks);
@@ -1242,7 +1242,7 @@ namespace netgen
 
     for ( int dest = 1; dest < ntasks; dest++)
       {
-	MyMPI_Send( segmbuf[dest], bufsize[dest], dest);
+	MyMPI_Send( segmbuf[dest], bufsize[dest], dest, MPI_TAG_MESH);
       }
     
     for ( int dest = 0; dest < ntasks; dest++ )
@@ -1260,7 +1260,7 @@ namespace netgen
 
 
     for ( int dest = 1; dest < ntasks; dest++ )
-      MyMPI_Send("endmesh", dest);
+      MyMPI_Send("endmesh", dest, MPI_TAG_MESH);
 
 
     for ( int dest = 1; dest < ntasks; dest ++ )

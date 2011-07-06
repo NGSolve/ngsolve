@@ -768,23 +768,22 @@ namespace netgen
 
 	    Array<MPI_Request> request(ntasks);
 	    MPI_Status status;
-	    for ( int dest = 1; dest < ntasks; dest++ )
+	    for (int dest = 1; dest < ntasks; dest++)
 	      {
-		MyMPI_Send ("redraw", dest);
-		MyMPI_Send ("init", dest);
+		cout << "Initparallelgl, send to " << dest << endl;
+		MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
+		MyMPI_Send ("init", dest, MPI_TAG_VIS);
 		
-		MyMPI_Send (displname, dest);
-		MyMPI_Send (int (drawable), dest);
-		MyMPI_Send (int (xid), dest);
+		MyMPI_Send (displname, dest, MPI_TAG_VIS);
+		MyMPI_Send (int (drawable), dest, MPI_TAG_VIS);
+		MyMPI_Send (int (xid), dest, MPI_TAG_VIS);
 
 		int hi;
-		MPI_Irecv( &hi, 1, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD, &request[dest]);
+		MPI_Irecv( &hi, 1, MPI_INT, dest, MPI_TAG_VIS, MPI_COMM_WORLD, &request[dest]);
 		// MyMPI_IRecv (hi, dest, request[dest]);
 	      } 
 	    for ( int dest = 1; dest < ntasks; dest++ )
-	      {
-		MPI_Wait(&request[dest], &status);
-	      }
+	      MPI_Wait(&request[dest], &status);
 	  }
       }
   }
@@ -798,8 +797,8 @@ namespace netgen
       {
 	for (int dest = 1; dest < ntasks; dest++)
 	  {
-	    MyMPI_Send ("redraw", dest);
-	    MyMPI_Send ("broadcast", dest);
+	    MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
+	    MyMPI_Send ("broadcast", dest, MPI_TAG_VIS);
 	  }
       }
 

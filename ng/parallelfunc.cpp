@@ -111,7 +111,7 @@ void ParallelRun()
 #pragma pomp inst begin (message)
 #endif
 
-      MyMPI_Recv ( message, 0 );
+      MyMPI_Recv ( message, 0, MPI_TAG_CMD );
 
 #ifdef SCALASCA
 #pragma pomp inst end (message)
@@ -224,7 +224,7 @@ void ParallelRun()
             // did not manage to get glXImportContextEXT working on Laptop (JS)
 
 	    string redraw_cmd;
-	    MyMPI_Recv (redraw_cmd, 0);
+	    MyMPI_Recv (redraw_cmd, 0, MPI_TAG_VIS);
 
 	    // PrintMessage (1, "Redraw - ", redraw_cmd);
                   
@@ -238,9 +238,9 @@ void ParallelRun()
 	    // if (!display)
 	    if (redraw_cmd == "init")
 	      {
-		MyMPI_Recv (displname, 0);
-		MyMPI_Recv (curDrawable, 0);
-		MyMPI_Recv (contextid, 0);
+		MyMPI_Recv (displname, 0, MPI_TAG_VIS);
+		MyMPI_Recv (curDrawable, 0, MPI_TAG_VIS);
+		MyMPI_Recv (contextid, 0, MPI_TAG_VIS);
 		
 		
 		display = XOpenDisplay (displname.c_str());
@@ -352,7 +352,7 @@ void ParallelRun()
 
 		// PrintMessage (1, "redraw - init complete");
 		int hi = id;
-		MyMPI_Send (hi, 0);
+		MyMPI_Send (hi, 0, MPI_TAG_VIS);
 	      }
 	    
 	    if (redraw_cmd == "broadcast")

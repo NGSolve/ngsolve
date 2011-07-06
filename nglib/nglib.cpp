@@ -31,14 +31,17 @@ namespace netgen {
                                  MeshingParameters & mp);
 }
 
+namespace netgen
+{
+   int id, ntasks;
+}
+
 
 #ifdef PARALLEL
 #include <mpi.h>
 
 namespace netgen
 {
-   int id, ntasks;
-
    MPI_Group MPI_HIGHORDER_WORLD;
    MPI_Comm MPI_HIGHORDER_COMM;
 }

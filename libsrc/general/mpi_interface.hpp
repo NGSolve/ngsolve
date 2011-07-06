@@ -18,28 +18,11 @@ namespace netgen
   extern int id, ntasks;
   
 
-#ifndef PARALLEL
-
-  // enum { id = 0 };
-  // enum { ntasks = 0 };
-
-#else   // if PARALLEL
-
-
-// #include <mystdlib.h>
-// #include <myadt.hpp>
-//  #include <meshing.hpp>
-// #include "incvis.hpp"
-
-
-//#include "parallelfunc.hpp"
-  /*
-  extern MPI_Group MPI_HIGHORDER_WORLD;
-  extern MPI_Comm MPI_HIGHORDER_COMM;
-  */
-
-// namespace netgen
-// {
+#ifdef PARALLEL
+  
+  enum { MPI_TAG_CMD = 110 };
+  enum { MPI_TAG_MESH = 210 };
+  enum { MPI_TAG_VIS = 310 };
 
   template <class T>
   MPI_Datatype MyGetMPIType ( ) { cerr << "ERROR in GetMPIType() -- no type found" << endl;return 0;}
@@ -53,79 +36,79 @@ namespace netgen
   { return MPI_DOUBLE; }
 
 
-
+  
 
   // damit gehen auch echte Konstante ohne Adresse
-  inline void MyMPI_Send (int i, int dest)
+  inline void MyMPI_Send (int i, int dest, int tag)
   {
     int hi = i;
-    MPI_Send( &hi, 1, MPI_INT, dest, 1, MPI_COMM_WORLD);
+    MPI_Send( &hi, 1, MPI_INT, dest, tag, MPI_COMM_WORLD);
   }
 
-  inline void MyMPI_Recv (int & i, int src)
+  inline void MyMPI_Recv (int & i, int src, int tag)
   {
     MPI_Status status;
-    MPI_Recv( &i, 1, MPI_INT, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv( &i, 1, MPI_INT, src, tag, MPI_COMM_WORLD, &status);
   }
 
 
 
-  inline void MyMPI_Send (const string & s, int dest)
+  inline void MyMPI_Send (const string & s, int dest, int tag)
   {
-    MPI_Send( const_cast<char*> (s.c_str()), s.length(), MPI_CHAR, dest, 1, MPI_COMM_WORLD);
+    MPI_Send( const_cast<char*> (s.c_str()), s.length(), MPI_CHAR, dest, tag, MPI_COMM_WORLD);
   }
 
-  inline void MyMPI_Recv (string & s, int src)
+  inline void MyMPI_Recv (string & s, int src, int tag)
   {
     MPI_Status status;
     int len;
-    MPI_Probe (src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Probe (src, tag, MPI_COMM_WORLD, &status);
     MPI_Get_count (&status, MPI_CHAR, &len);
     s.assign (len, ' ');
-    MPI_Recv( &s[0], len, MPI_CHAR, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv( &s[0], len, MPI_CHAR, src, tag, MPI_COMM_WORLD, &status);
   }
 
  
 
 
   template <class T, int BASE>
-  inline void MyMPI_Send (FlatArray<T, BASE> s, int dest)
+  inline void MyMPI_Send (FlatArray<T, BASE> s, int dest, int tag)
   {
-    MPI_Send( &s.First(), s.Size(), MyGetMPIType<T>(), dest, 1, MPI_COMM_WORLD);
+    MPI_Send( &s.First(), s.Size(), MyGetMPIType<T>(), dest, tag, MPI_COMM_WORLD);
   }
 
   template <class T, int BASE>
-  inline void MyMPI_Recv ( FlatArray<T, BASE> s, int src)
+  inline void MyMPI_Recv ( FlatArray<T, BASE> s, int src, int tag)
   {
     MPI_Status status;
-    MPI_Recv( &s.First(), s.Size(), MyGetMPIType<T>(), src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv( &s.First(), s.Size(), MyGetMPIType<T>(), src, tag, MPI_COMM_WORLD, &status);
   }
 
   template <class T, int BASE>
-  inline void MyMPI_Recv ( Array <T, BASE> & s, int src)
+  inline void MyMPI_Recv ( Array <T, BASE> & s, int src, int tag)
   {
     MPI_Status status;
     int len;
-    MPI_Probe (src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Probe (src, tag, MPI_COMM_WORLD, &status);
     MPI_Get_count (&status, MyGetMPIType<T>(), &len);
 
     s.SetSize (len);
-    MPI_Recv( &s.First(), len, MyGetMPIType<T>(), src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv( &s.First(), len, MyGetMPIType<T>(), src, tag, MPI_COMM_WORLD, &status);
   }
 
   template <class T, int BASE>
-  inline int MyMPI_Recv ( Array <T, BASE> & s)
+  inline int MyMPI_Recv ( Array <T, BASE> & s, int tag)
   {
     MPI_Status status;
     int len;
-    MPI_Probe (MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Probe (MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
 
     int src = status.MPI_SOURCE;
 
     MPI_Get_count (&status, MyGetMPIType<T>(), &len);
 
     s.SetSize (len);
-    MPI_Recv( &s.First(), len, MyGetMPIType<T>(), src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv( &s.First(), len, MyGetMPIType<T>(), src, tag, MPI_COMM_WORLD, &status);
 
     return src;
   }
@@ -133,18 +116,19 @@ namespace netgen
 
 
   template <class T, int BASE>
-  inline void MyMPI_ISend (FlatArray<T, BASE> s, int dest, MPI_Request & request)
+  inline void MyMPI_ISend (FlatArray<T, BASE> s, int dest, int tag, MPI_Request & request)
   {
-    MPI_Isend( &s.First(), s.Size(), MyGetMPIType<T>(), dest, 1, MPI_COMM_WORLD, & request);
+    MPI_Isend( &s.First(), s.Size(), MyGetMPIType<T>(), dest, tag, MPI_COMM_WORLD, & request);
   }
 
 
   template <class T, int BASE>
-  inline void MyMPI_IRecv (FlatArray<T, BASE> s, int dest, MPI_Request & request)
+  inline void MyMPI_IRecv (FlatArray<T, BASE> s, int dest, int tag, MPI_Request & request)
   {
-    MPI_Irecv( &s.First(), s.Size(), MyGetMPIType<T>(), dest, 1, MPI_COMM_WORLD, & request);
+    MPI_Irecv( &s.First(), s.Size(), MyGetMPIType<T>(), dest, tag, MPI_COMM_WORLD, & request);
   }
 
+  /*
   template <class T, int BASE>
   inline void MyMPI_ISendTag (FlatArray<T, BASE> s, int dest, int tag,  MPI_Request & request)
   {
@@ -157,6 +141,8 @@ namespace netgen
   {
     MPI_Irecv( &s.First(), s.Size(), MyGetMPIType<T>(), dest, tag, MPI_COMM_WORLD, & request);
   }
+  */
+
 
   /*
   template <class T, int BASE>
@@ -180,19 +166,19 @@ namespace netgen
   */
 
   template <class T, int BASE>
-  inline void MyMPI_ISend (FlatArray<T, BASE> s, int dest)
+  inline void MyMPI_ISend (FlatArray<T, BASE> s, int dest, int tag)
   {
     MPI_Request request;
-    MPI_Isend( &s.First(), s.Size(), MyGetMPIType<T>(), dest, 1, MPI_COMM_WORLD, &request);
+    MPI_Isend( &s.First(), s.Size(), MyGetMPIType<T>(), dest, tag, MPI_COMM_WORLD, &request);
     MPI_Request_free (&request);
   }
 
 
   template <class T, int BASE>
-  inline void MyMPI_IRecv (FlatArray<T, BASE> s, int dest)
+  inline void MyMPI_IRecv (FlatArray<T, BASE> s, int dest, int tag)
   {
     MPI_Request request;
-    MPI_Irecv( &s.First(), s.Size(), MyGetMPIType<T>(), dest, 1, MPI_COMM_WORLD, &request);
+    MPI_Irecv( &s.First(), s.Size(), MyGetMPIType<T>(), dest, tag, MPI_COMM_WORLD, &request);
     MPI_Request_free (&request);
   }
 
@@ -248,48 +234,41 @@ namespace netgen
 
 
 
-  inline void MyMPI_Send (  int *& s, int & len,  int dest)
+  inline void MyMPI_Send (  int *& s, int & len,  int dest, int tag)
   {
-     MPI_Send( &len, 1, MPI_INT, dest, 1, MPI_COMM_WORLD);
-     MPI_Send( s, len, MPI_INT, dest, 1, MPI_COMM_WORLD);
+     MPI_Send( &len, 1, MPI_INT, dest, tag, MPI_COMM_WORLD);
+     MPI_Send( s, len, MPI_INT, dest, tag, MPI_COMM_WORLD);
   }
 
 
-  inline void MyMPI_Recv ( int *& s, int & len, int src)
+  inline void MyMPI_Recv ( int *& s, int & len, int src, int tag)
   {
     MPI_Status status;
-    MPI_Recv( &len, 1, MPI_INT, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv( &len, 1, MPI_INT, src, tag, MPI_COMM_WORLD, &status);
     if ( s ) 
       delete [] s;
     s = new int [len];
-    MPI_Recv( s, len, MPI_INT, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv( s, len, MPI_INT, src, tag, MPI_COMM_WORLD, &status);
   }
 
 
 
-  inline void MyMPI_Send ( double * s, int len,  int dest)
+  inline void MyMPI_Send ( double * s, int len,  int dest, int tag)
   {
-     MPI_Send( &len, 1, MPI_INT, dest, 1, MPI_COMM_WORLD);
-     MPI_Send( s, len, MPI_DOUBLE, dest, 1, MPI_COMM_WORLD);
+     MPI_Send( &len, 1, MPI_INT, dest, tag, MPI_COMM_WORLD);
+     MPI_Send( s, len, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD);
   }
 
 
-  inline void MyMPI_Recv ( double *& s, int & len, int src)
+  inline void MyMPI_Recv ( double *& s, int & len, int src, int tag)
   {
     MPI_Status status;
-    MPI_Recv( &len, 1, MPI_INT, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv( &len, 1, MPI_INT, src, tag, MPI_COMM_WORLD, &status);
     if ( s )
       delete [] s;
     s = new double [len];
-    MPI_Recv( s, len, MPI_DOUBLE, src, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv( s, len, MPI_DOUBLE, src, tag, MPI_COMM_WORLD, &status);
   }
-
-
-// #include "parallelmesh.hpp"
-// #include "paralleltop.hpp"
-// #include "parallelinterface.hpp"
-
-// }
 
 #endif // PARALLEL
 

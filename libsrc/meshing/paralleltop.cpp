@@ -777,7 +777,7 @@ namespace netgen
 	MyMPI_Bcast ( sendarray );
       }
     else
-      MyMPI_ISend ( sendarray, 0, sendrequest );
+      MyMPI_ISend ( sendarray, 0, MPI_TAG_MESH, sendrequest );
 
 
     int nloops = (id == 0) ? ntasks-1 : 1;
@@ -787,7 +787,7 @@ namespace netgen
 
 	if (id == 0)
 	  {
-	    sender = MyMPI_Recv ( recvarray );
+	    sender = MyMPI_Recv ( recvarray, MPI_TAG_MESH );
 	    PrintMessage (4, "have received from ", sender);
 	  }
 	else
@@ -1481,7 +1481,7 @@ namespace netgen
 	(*sendarray)[1] = sendnfa;
 	(*sendarray)[2] = sendned;
 
-	MyMPI_Send (*sendarray, 0);
+	MyMPI_Send (*sendarray, 0, MPI_TAG_MESH);
 
 	delete sendarray;
       }
@@ -1492,7 +1492,7 @@ namespace netgen
 
 	for ( int sender = 1; sender < ntasks; sender++ )
 	  {
-	    MyMPI_Recv ( *recvarray, sender);
+	    MyMPI_Recv ( *recvarray, sender, MPI_TAG_MESH);
 
 	    int distnel = (*recvarray)[0];
 	    int distnfa = (*recvarray)[1];
@@ -1630,14 +1630,14 @@ namespace netgen
 	  for ( int dest = 1; dest < ntasks; dest ++ )
 	    if ( dest != id)
 	      {
-		MyMPI_Send ( *(elementonproc[dest]), dest);
+		MyMPI_Send ( *(elementonproc[dest]), dest, MPI_TAG_MESH);
 		elementonproc[dest] -> SetSize(0);
 	      }
 	
       
 	if ( id != sender )
 	  {
-	    MyMPI_Recv (*( recvelonproc[sender]), sender);
+	    MyMPI_Recv (*( recvelonproc[sender]), sender, MPI_TAG_MESH);
 	  }
       }
 
@@ -1694,14 +1694,14 @@ namespace netgen
 	  for ( int dest = 1; dest < ntasks; dest ++ )
 	    if ( dest != id)
 	      {
-		MyMPI_Send ( *(elementonproc[dest]), dest);
+		MyMPI_Send ( *(elementonproc[dest]), dest, MPI_TAG_MESH);
 		delete elementonproc[dest];
 	      }
 	
       
 	if ( id != sender )
 	  {
-	    MyMPI_Recv (*( recvelonproc[sender]), sender);
+	    MyMPI_Recv (*( recvelonproc[sender]), sender, MPI_TAG_MESH);
 	  }
       }
 

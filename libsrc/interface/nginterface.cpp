@@ -27,7 +27,7 @@
   static pthread_t meshingthread;
   void RunParallel ( void * (*fun)(void *), void * in)
   {
-    if (netgen::mparam.parthread)
+    if (netgen::mparam.parthread && (ntasks == 1) )
      {
 	     pthread_attr_t attr;
 	     pthread_attr_init (&attr);
@@ -37,7 +37,7 @@
 	     pthread_create (&meshingthread, &attr, fun, in);
      }
      else
-     fun (in);
+       fun (in);
   }
 
 #else // Using MS VC++ Standard / Enterprise / Professional edition
@@ -66,11 +66,11 @@
 #else  // For #ifdef _MSC_VER
 
 // #include <pthread.h>
-
+ 
   static pthread_t meshingthread;
   void RunParallel ( void * (*fun)(void *), void * in)
   {
-    if (netgen::mparam.parthread)
+    if (netgen::mparam.parthread && (netgen::ntasks == 1))
       {
 	pthread_attr_t attr;
 	pthread_attr_init (&attr);

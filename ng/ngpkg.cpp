@@ -2999,7 +2999,7 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
 
 #ifdef PARALLEL
     for ( int dest = 1; dest < ntasks; dest++)
-      MyMPI_Send ( "end", dest );
+      MyMPI_Send ( "end", dest, MPI_TAG_CMD );
 #endif
 
     mesh.Reset (NULL);

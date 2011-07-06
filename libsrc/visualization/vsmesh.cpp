@@ -903,12 +903,12 @@ namespace netgen
 
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  {
-            MyMPI_Send ("redraw", dest);
-            MyMPI_Send ("filledlist", dest);
+            MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
+            MyMPI_Send ("filledlist", dest, MPI_TAG_VIS);
 	  }
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  {
-            MyMPI_Recv (par_filledlists[dest], dest);
+            MyMPI_Recv (par_filledlists[dest], dest, MPI_TAG_VIS);
             cout << "proc " << dest << " has drawn to list " << par_filledlists[dest] << endl;
 	  }
 
@@ -1323,7 +1323,7 @@ namespace netgen
 #ifdef PARALLELGL
     glFinish();
     if (id > 0)
-      MyMPI_Send (filledlist, 0);
+      MyMPI_Send (filledlist, 0, MPI_TAG_VIS);
 #endif
 
     // endtime = clock();
@@ -1346,11 +1346,11 @@ namespace netgen
 
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  {
-            MyMPI_Send ("redraw", dest);
-            MyMPI_Send ("linelist", dest);
+            MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
+            MyMPI_Send ("linelist", dest, MPI_TAG_VIS);
 	  }
 	for ( int dest = 1; dest < ntasks; dest++ )
-	  MyMPI_Recv (par_linelists[dest], dest);
+	  MyMPI_Recv (par_linelists[dest], dest, MPI_TAG_VIS);
 
 	if (linelist)
 	  glDeleteLists (linelist, 1);
@@ -1604,7 +1604,7 @@ namespace netgen
 #ifdef PARALLELGL
     glFinish();
     if (id > 0)
-      MyMPI_Send (linelist, 0);
+      MyMPI_Send (linelist, 0, MPI_TAG_VIS);
 #endif
   }
 

@@ -996,11 +996,11 @@ namespace netgen
 
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  {
-	    MyMPI_Send ("redraw", dest);
-	    MyMPI_Send ("solsurfellist", dest);
+	    MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
+	    MyMPI_Send ("solsurfellist", dest, MPI_TAG_VIS);
 	  }
 	for ( int dest = 1; dest < ntasks; dest++ )
-	  MyMPI_Recv (par_surfellists[dest], dest);
+	  MyMPI_Recv (par_surfellists[dest], dest, MPI_TAG_VIS);
 
 	if (surfellist)
 	  glDeleteLists (surfellist, 1);
@@ -1317,7 +1317,7 @@ namespace netgen
 #ifdef PARALLELGL
     glFinish();
     if (id > 0)
-      MyMPI_Send (surfellist, 0);
+      MyMPI_Send (surfellist, 0, MPI_TAG_VIS);
 #endif
   }
 
@@ -3708,11 +3708,11 @@ namespace netgen
 
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  {
-	    MyMPI_Send ("redraw", dest);
-	    MyMPI_Send ("clipplanetrigs", dest);
+	    MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
+	    MyMPI_Send ("clipplanetrigs", dest, MPI_TAG_VIS);
 	  }
 	for ( int dest = 1; dest < ntasks; dest++ )
-	  MyMPI_Recv (parlists[dest], dest);
+	  MyMPI_Recv (parlists[dest], dest, MPI_TAG_VIS);
 
 	if (clipplanelist_scal)
 	  glDeleteLists (clipplanelist_scal, 1);
@@ -3856,7 +3856,7 @@ namespace netgen
 #ifdef PARALLELGL
     glFinish();
     if (id > 0)
-      MyMPI_Send (clipplanelist_scal, 0);
+      MyMPI_Send (clipplanelist_scal, 0, MPI_TAG_VIS);
 #endif
   }
 
