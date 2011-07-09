@@ -317,7 +317,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		    }
 		*/
 	    *testout << "dist_dir_vertex = " << dist_dir_vertex << endl;
-
+	    /*
 	    for (int dist = 1; dist < ntasks; dist++)
 	      if (id != dist)
 		{
@@ -336,6 +336,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		  for (int i = 0; i < dirvert.Size(); i++)
 		    dirichlet_vertex[dirvert[i]] = true;
 		}	   
+	    */
 
 	    /*
 	    // check ordering
@@ -348,6 +349,41 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    */
 	  }
 
+	Array<int> nsend(ntasks), nrecv(ntasks);
+	for (int i = 0; i < ntasks; i++)
+	  nsend[i] = dist_dir_vertex[i].Size();
+	
+	MPI_Alltoall (&nsend[0], 1, MPI_INT, &nrecv[0], 1, MPI_INT, MPI_COMM_WORLD);
+
+	Table<int> recv_dir_vert(nrecv);
+	Array<MPI_Request> requests;
+
+	for (int i = 0; i < ntasks; i++)
+	  {
+	    if (nsend[i])
+	      {
+		MPI_Request requ;
+		MyMPI_ISend (dist_dir_vertex[i], i, MPI_TAG_SOLVE, requ);
+		requests.Append (requ);
+	      }
+	    if (nrecv[i])
+	      {
+		MPI_Request requ;
+		MyMPI_IRecv (recv_dir_vert[i], i, MPI_TAG_SOLVE, requ);
+		requests.Append (requ);
+	      }
+	  }
+	MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
+
+	for (int i = 0; i < ntasks; i++)
+	  {
+	    FlatArray<int> dirvert = recv_dir_vert[i];
+	    for (int j = 0; j < dirvert.Size(); j++)
+	      dirichlet_vertex[dirvert[j]] = true;
+	  }
+
+	//	cout << "send table [" << id << "] = " << dist_dir_vertex << endl;
+	// cout << "recv table [" << id << "] = " << recv_dir_vert << endl;
 	// cout << "exchange dirichlet vertices done" << endl;		
 
 	(*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
