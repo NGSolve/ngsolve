@@ -20,9 +20,6 @@ using namespace ngmg;
 
 namespace ngcomp
 {
-  using namespace ngcomp;
-
-
   FESpace :: FESpace (const MeshAccess & ama, const Flags & flags, bool checkflags)
     : NGS_Object (ama, "FESpace")
   {
@@ -32,8 +29,6 @@ namespace ngcomp
     DefineNumFlag("dim");
     DefineDefineFlag("vec");
     DefineDefineFlag("complex");
-/*    DefineDefineFlag("eliminate_internal");
-    DefineDefineFlag("noeliminate_internal");*/
     DefineDefineFlag("timing");
     DefineNumListFlag("directsolverdomains");
     DefineNumListFlag("dirichlet");
@@ -208,10 +203,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     evaluator = 0;
     boundary_evaluator = 0;
 
-    // first_lodof[4] = -1;   // indicates that nodes are not used
-
     element_coloring = NULL;
-
     paralleldofs = NULL;
 
     ctofdof.SetSize(0);
@@ -290,7 +282,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		  // dirichlet_face[fanum] = true;
 		}
 	    }
-
 
 	
 	// cout << "exchange dirichlet vertices" << endl;
