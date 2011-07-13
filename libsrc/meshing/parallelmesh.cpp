@@ -25,6 +25,8 @@ namespace netgen
 
 
 
+
+
   void Mesh :: SendRecvMesh ()
   {
     PrintMessage (1, "Send/Receive mesh");
@@ -55,6 +57,7 @@ namespace netgen
     }
 
 
+
     {
       // distribute number of local elements
       if (id == 0)
@@ -81,10 +84,17 @@ namespace netgen
 
 
 
+
+
+
+
     if (id == 0)
       SendMesh ();
     else
       ReceiveParallelMesh();
+
+
+    MPI_Barrier (MPI_COMM_WORLD);
   }
 
 
@@ -94,212 +104,166 @@ namespace netgen
     int timer = NgProfiler::CreateTimer ("ReceiveParallelMesh");
     NgProfiler::RegionTimer reg(timer);
 
-    int timer_pts = NgProfiler::CreateTimer ("Receive Points");
-    int timer_els = NgProfiler::CreateTimer ("Receive Elements");
-    int timer_sels = NgProfiler::CreateTimer ("Receive Surface Elements");
-    int timer_edges = NgProfiler::CreateTimer ("Receive Edges");
-
-
 #ifdef SCALASCA
 #pragma pomp inst begin(loadmesh)
 #endif
 
     string st;
 
-    bool endmesh = false;
 
     INDEX_CLOSED_HASHTABLE<int> glob2loc_vert_ht (1);
 
-    // int ve = 0;
-    while (!endmesh)
-      {
-	MyMPI_Recv (st, 0, MPI_TAG_MESH);
 
-	// receive vertices
-        if (st == "vertex")
- 	  {
-	    NgProfiler::RegionTimer reg(timer_pts);
-
-	    Array<int> verts;
-	    MyMPI_Recv (verts, 0, MPI_TAG_MESH);
-
-	    int numvert = verts.Size();
-	    paralleltop -> SetNV (numvert);
-
-            glob2loc_vert_ht.SetSize (3*numvert+1);
-	    
-	    for (int vert = 0; vert < numvert; vert++)
-	      {
-		int globvert = verts[vert];
-		paralleltop->SetLoc2Glob_Vert ( vert+1, globvert  );
-                glob2loc_vert_ht.Set (globvert, vert+1);
-	      }
-	    
-	    for (int i = 0; i < numvert; i++)
-	      AddPoint (netgen::Point<3> (0,0,0));
-
-	    MPI_Datatype mptype = MeshPoint::MyGetMPIType();
-	    MPI_Status status;
-	    MPI_Recv( &points[1], numvert, mptype, 0, MPI_TAG_MESH, MPI_COMM_WORLD, &status);
-
-	    Array<int> dist_pnums;
-	    MyMPI_Recv (dist_pnums, 0, MPI_TAG_MESH);
-
-	    for (int hi = 0; hi < dist_pnums.Size(); hi += 3)
-	      paralleltop ->
-		SetDistantPNum (dist_pnums[hi+1], dist_pnums[hi], dist_pnums[hi+2]);
-
-	    *testout << "got " << numvert << " vertices" << endl;
- 	  }
-
-	if (strcmp (st.c_str(), "volumeelements" ) == 0 )
-	  {
-	    NgProfiler::RegionTimer reg(timer_els);
-	    
-	    *testout << "receiving elements" << endl;
-
-	    Element el;
-
-            Array<int> elarray;
-            MyMPI_Recv (elarray, 0, MPI_TAG_MESH);
-
-	    for (int ind = 0, elnum = 1; ind < elarray.Size(); elnum++)
-	      {
-		paralleltop->SetLoc2Glob_VolEl ( elnum,  elarray[ind++]);
-
-		el.SetIndex(elarray[ind++]);
-		el.SetNP(elarray[ind++]);
-
-		for ( int j = 0; j < el.GetNP(); j++)
-                  el[j] = glob2loc_vert_ht.Get (elarray[ind++]); 
-		
-		AddVolumeElement (el);
-	      }
-	  }
-
-
-	if (strcmp (st.c_str(), "facedescriptor") == 0)
-	  {
-	    Array<double> doublebuf;
-	    MyMPI_Recv( doublebuf, 0, MPI_TAG_MESH );
-	    int faceind = AddFaceDescriptor (FaceDescriptor(int(doublebuf[0]), int(doublebuf[1]), int(doublebuf[2]), 0));
-	    GetFaceDescriptor(faceind).SetBCProperty (int(doublebuf[3]));
-	    GetFaceDescriptor(faceind).domin_singular = doublebuf[4];
-	    GetFaceDescriptor(faceind).domout_singular = doublebuf[5];
-	  }
-       
-
-
-	if (strcmp (st.c_str(), "surfaceelementsgi") == 0)
-	  {
-	    NgProfiler::RegionTimer reg(timer_sels);
-	    int j;
-	    int nep, faceind = 0;
-	    int globsel;
-	    int * selbuf;
-	    selbuf = 0;
-	    int bufsize;
-	    // receive:
-	    // faceindex
-	    // nep
-	    // tri.pnum
-	    // tri.geominfopi.trignum
-	    int nlocsel;
-	    MyMPI_Recv ( selbuf, bufsize, 0, MPI_TAG_MESH);
-	    int ii= 0;
-	    int sel = 0;
-
-	    nlocsel = selbuf[ii++];
-	    paralleltop -> SetNSE ( nlocsel );
-
-	    while ( ii < bufsize-1 )
-	      {
-		globsel = selbuf[ii++];
-		faceind = selbuf[ii++];
-		bool isghost = selbuf[ii++];
-		nep = selbuf[ii++];
-		Element2d tri(nep);
-		tri.SetIndex(faceind);
-		for( j=1; j<=nep; j++)
-		  {
-                    tri.PNum(j) = glob2loc_vert_ht.Get (selbuf[ii++]);
-
-		    // tri.GeomInfoPi(j).trignum = paralleltop->Glob2Loc_SurfEl(selbuf[ii++]);
-		    tri.GeomInfoPi(j).trignum = selbuf[ii++];
-		    // Frage JS->AS: Brauchst du die trignum irgendwo ?
-		    // sie sonst nur bei STL - Geometrien benötigt
-		    // die Umrechnung war ein bottleneck !
-		  }
-		
-		tri.SetGhost(isghost);
-
-                paralleltop->SetLoc2Glob_SurfEl ( sel+1, globsel );
-                AddSurfaceElement (tri);
-		sel ++;
-	      }
-
-	    delete [] selbuf ;
-	  }
-
-	if (strcmp (st.c_str(), "edgesegmentsgi") == 0)
-	  {
-	    NgProfiler::RegionTimer reg(timer_edges);
-	    int endtime, starttime; 
-	    starttime = clock();
-
-	    double * segmbuf = 0;
-	    int bufsize;
-	    MyMPI_Recv ( segmbuf, bufsize, 0, MPI_TAG_MESH);
-	    Segment seg;
-	    int globsegi;
-	    int ii = 0;
-	    int segi = 1;
-	    int nsegloc = int ( bufsize / 14 ) ;
-	    paralleltop -> SetNSegm ( nsegloc );
-	    while ( ii < bufsize )
-	      {
-		globsegi = int (segmbuf[ii++]);
-		seg.si = int (segmbuf[ii++]);
-
-                seg.pnums[0] = glob2loc_vert_ht.Get (int(segmbuf[ii++]));
-                seg.pnums[1] = glob2loc_vert_ht.Get (int(segmbuf[ii++]));
-		seg.geominfo[0].trignum = int( segmbuf[ii++] );
-		seg.geominfo[1].trignum = int ( segmbuf[ii++]);
-		seg.surfnr1 = int ( segmbuf[ii++]);
-		seg.surfnr2 = int ( segmbuf[ii++]);
-		seg.edgenr = int ( segmbuf[ii++]);
-		seg.epgeominfo[0].dist = segmbuf[ii++];
-		seg.epgeominfo[1].edgenr = int (segmbuf[ii++]);
-		seg.epgeominfo[1].dist = segmbuf[ii++];
-
-		seg.singedge_left = segmbuf[ii++];
-		seg.singedge_right = segmbuf[ii++];
-
-		seg.epgeominfo[0].edgenr = seg.epgeominfo[1].edgenr;
-		
-		seg.domin = seg.surfnr1;
-		seg.domout = seg.surfnr2;
-		if ( seg.pnums[0] >0 && seg.pnums[1] > 0 )
-		  {
-		    paralleltop-> SetLoc2Glob_Segm ( segi,  globsegi );
-		    
-		    AddSegment (seg);
-		    segi++;
-		  }
-
-	      }
-	    delete [] segmbuf;
-	    endtime = clock();
-	    (*testout) << "Receiving Time fde = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
-	  }
+    {
+    // receive vertices
       
+      Array<int> verts;
+      MyMPI_Recv (verts, 0);
+      
+      int numvert = verts.Size();
+      paralleltop -> SetNV (numvert);
+      
+      glob2loc_vert_ht.SetSize (3*numvert+1);
+      
+      for (int vert = 0; vert < numvert; vert++)
+	{
+	  int globvert = verts[vert];
+	  paralleltop->SetLoc2Glob_Vert ( vert+1, globvert  );
+	  glob2loc_vert_ht.Set (globvert, vert+1);
+	}
+      
+      for (int i = 0; i < numvert; i++)
+	AddPoint (netgen::Point<3> (0,0,0));
+      
+      MPI_Datatype mptype = MeshPoint::MyGetMPIType();
+      MPI_Status status;
+      MPI_Recv( &points[1], numvert, mptype, 0, 33, MPI_COMM_WORLD, &status);
+      
+      Array<int> dist_pnums;
+      MyMPI_Recv (dist_pnums, 0);
+      
+      for (int hi = 0; hi < dist_pnums.Size(); hi += 3)
+	paralleltop ->
+	  SetDistantPNum (dist_pnums[hi+1], dist_pnums[hi], dist_pnums[hi+2]);
+      
+      *testout << "got " << numvert << " vertices" << endl;
+    }
+    
 
-	if (strcmp (st.c_str(), "endmesh") == 0)
-	  {
-	    endmesh = true;
-	  }
-      }
 
+    {
+      Element el;
+      
+      Array<int> elarray;
+      MyMPI_Recv (elarray, 0);
+      
+      for (int ind = 0, elnum = 1; ind < elarray.Size(); elnum++)
+	{
+	  paralleltop->SetLoc2Glob_VolEl ( elnum,  elarray[ind++]);
+	  
+	  el.SetIndex(elarray[ind++]);
+	  el.SetNP(elarray[ind++]);
+	  
+	  for ( int j = 0; j < el.GetNP(); j++)
+	    el[j] = glob2loc_vert_ht.Get (elarray[ind++]); 
+	  
+	  AddVolumeElement (el);
+	}
+    }
+
+
+    {
+      Array<double> fddata;
+      MyMPI_Recv (fddata, 0);
+      for (int i = 0; i < fddata.Size(); i += 6)
+	{
+	  int faceind = AddFaceDescriptor (FaceDescriptor(int(fddata[i]), int(fddata[i+1]), int(fddata[i+2]), 0));
+	  GetFaceDescriptor(faceind).SetBCProperty (int(fddata[i+3]));
+	  GetFaceDescriptor(faceind).domin_singular = fddata[i+4];
+	  GetFaceDescriptor(faceind).domout_singular = fddata[i+5];
+	}
+    }
+
+    {
+      // surface elements
+      Array<int> selbuf;
+
+      MyMPI_Recv ( selbuf, 0);
+      
+      int ii = 0;
+      int sel = 0;
+
+      int nlocsel = selbuf[ii++];
+      paralleltop -> SetNSE ( nlocsel );
+      
+      while (ii < selbuf.Size()-1)
+	{
+	  int globsel = selbuf[ii++];
+	  int faceind = selbuf[ii++];
+	  bool isghost = selbuf[ii++];
+	  int nep = selbuf[ii++];
+	  Element2d tri(nep);
+	  tri.SetIndex(faceind);
+	  for(int j = 1; j <= nep; j++)
+	    {
+	      tri.PNum(j) = glob2loc_vert_ht.Get (selbuf[ii++]);
+	      tri.GeomInfoPi(j).trignum = selbuf[ii++];
+	    }
+	  
+	  tri.SetGhost(isghost);
+	  
+	  paralleltop->SetLoc2Glob_SurfEl ( sel+1, globsel );
+	  AddSurfaceElement (tri);
+	  sel ++;
+	}
+    }
+    
+
+
+    {
+      Array<double> segmbuf;
+      MyMPI_Recv ( segmbuf, 0);
+
+      Segment seg;
+      int globsegi;
+      int ii = 0;
+      int segi = 1;
+      int nsegloc = int ( segmbuf.Size() / 14 ) ;
+      paralleltop -> SetNSegm ( nsegloc );
+      while ( ii < segmbuf.Size() )
+	{
+	  globsegi = int (segmbuf[ii++]);
+	  seg.si = int (segmbuf[ii++]);
+	  
+	  seg.pnums[0] = glob2loc_vert_ht.Get (int(segmbuf[ii++]));
+	  seg.pnums[1] = glob2loc_vert_ht.Get (int(segmbuf[ii++]));
+	  seg.geominfo[0].trignum = int( segmbuf[ii++] );
+	  seg.geominfo[1].trignum = int ( segmbuf[ii++]);
+	  seg.surfnr1 = int ( segmbuf[ii++]);
+	  seg.surfnr2 = int ( segmbuf[ii++]);
+	  seg.edgenr = int ( segmbuf[ii++]);
+	  seg.epgeominfo[0].dist = segmbuf[ii++];
+	  seg.epgeominfo[1].edgenr = int (segmbuf[ii++]);
+	  seg.epgeominfo[1].dist = segmbuf[ii++];
+	  
+	  seg.singedge_left = segmbuf[ii++];
+	  seg.singedge_right = segmbuf[ii++];
+	  
+	  seg.epgeominfo[0].edgenr = seg.epgeominfo[1].edgenr;
+	  
+	  seg.domin = seg.surfnr1;
+	  seg.domout = seg.surfnr2;
+	  if ( seg.pnums[0] >0 && seg.pnums[1] > 0 )
+	    {
+	      paralleltop-> SetLoc2Glob_Segm ( segi,  globsegi );
+	      
+	      AddSegment (seg);
+	      segi++;
+	    }
+	  
+	}
+    }
+    
 
     int timerloc = NgProfiler::CreateTimer ("Update local mesh");
     int timerloc2 = NgProfiler::CreateTimer ("CalcSurfacesOfNode");
@@ -365,7 +329,7 @@ namespace netgen
     // send partition
 
     for (int dest = 1; dest < ntasks; dest++)
-      MyMPI_Send ("mesh", dest, MPI_TAG_CMD);
+      MyMPI_Send ("mesh", dest, MPI_TAG_MESH);
     SendRecvMesh (); 
 
 
@@ -813,12 +777,6 @@ namespace netgen
 
   void Mesh :: SendMesh () const   
   {
-    const Mesh * mastermesh = this;    // the original plan was different 
-
-
-    clock_t starttime, endtime;
-    starttime = clock();
-
     MPI_Request sendrequest[ntasks];
 
     Array<int> num_els_on_proc(ntasks);
@@ -899,7 +857,7 @@ namespace netgen
 	  }
       }
 
-    for (int vert = 1; vert <= mastermesh->GetNP(); vert++ )
+    for (int vert = 1; vert <= GetNP(); vert++ )
       {
 	FlatArray<int> procs = procs_of_vert[vert];
 	for (int j = 0; j < procs.Size(); j++)
@@ -913,8 +871,6 @@ namespace netgen
     for (int dest = 1; dest < ntasks; dest++)
       {
 	FlatArray<PointIndex> verts = verts_of_proc[dest];
-
-	MyMPI_Send ("vertex", dest, MPI_TAG_MESH);
 	MyMPI_ISend (verts, dest, MPI_TAG_MESH);
 
 	MPI_Datatype mptype = MeshPoint::MyGetMPIType();
@@ -931,7 +887,7 @@ namespace netgen
 	MPI_Type_commit (&newtype);
 
 	MPI_Request request;
-	MPI_Isend( &points[0], 1, newtype, dest, MPI_TAG_MESH, MPI_COMM_WORLD, &request);
+	MPI_Isend( &points[0], 1, newtype, dest, 33, MPI_COMM_WORLD, &request);
 	MPI_Request_free (&request);
       }
 
@@ -940,7 +896,7 @@ namespace netgen
     Array<int> num_distpnums(ntasks);
     num_distpnums = 0;
 
-    for (int vert = 1; vert <= mastermesh -> GetNP(); vert++)
+    for (int vert = 1; vert <= GetNP(); vert++)
       {
 	FlatArray<int> procs = procs_of_vert[vert];
 	for (int j = 0; j < procs.Size(); j++)
@@ -949,7 +905,7 @@ namespace netgen
 
     TABLE<int> distpnums (num_distpnums);
 
-    for (int vert = 1; vert <= mastermesh -> GetNP(); vert++)
+    for (int vert = 1; vert <= GetNP(); vert++)
       {
 	FlatArray<int> procs = procs_of_vert[vert];
 	for (int j = 0; j < procs.Size(); j++)
@@ -963,35 +919,25 @@ namespace netgen
       }
     
     for ( int dest = 1; dest < ntasks; dest ++ )
-      {
-	MyMPI_ISend ( distpnums[dest], dest, MPI_TAG_MESH, sendrequest[dest] );
-	MPI_Request_free (&sendrequest[dest]);
-      }
-
-
-    endtime = clock();
-    (*testout) << "Sending Time verts = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
-
-
+      MyMPI_ISend (distpnums[dest], dest, MPI_TAG_MESH);
 
 
     PrintMessage ( 3, "Sending elements" );
-    starttime = clock();
 
     Array<int> elarraysize (ntasks);
     elarraysize = 0;
-    for ( int ei = 1; ei <= mastermesh->GetNE(); ei++)
+    for ( int ei = 1; ei <= GetNE(); ei++)
       {
-	const Element & el = mastermesh -> VolumeElement (ei);
+	const Element & el = VolumeElement (ei);
 	int dest = el.GetPartition();
 	elarraysize[dest] += 3 + el.GetNP();
       }
 
     TABLE<int> elementarrays(elarraysize);
 
-    for ( int ei = 1; ei <= mastermesh->GetNE(); ei++)
+    for (int ei = 1; ei <= GetNE(); ei++)
       {
-	const Element & el = mastermesh -> VolumeElement (ei);
+	const Element & el = VolumeElement (ei);
 	int dest = el.GetPartition();
 
 	elementarrays.Add (dest, ei);
@@ -1002,163 +948,102 @@ namespace netgen
       }
 
     for (int dest = 1; dest < ntasks; dest ++ )
-      {
-	MyMPI_Send ( "volumeelements", dest, MPI_TAG_MESH);
-	MyMPI_ISend ( elementarrays[dest], dest, MPI_TAG_MESH, sendrequest[dest] );
-      }
-
-
-    endtime = clock();
-    (*testout) << "Sending Time els = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
-    starttime = clock();
-
-
+      MyMPI_ISend (elementarrays[dest], dest, MPI_TAG_MESH);
 
 
     PrintMessage ( 3, "Sending Face Descriptors" );
   
 
-    Array<double> double6(6);
-    for ( int dest = 1; dest < ntasks; dest++)
-      for ( int fdi = 1; fdi <= mastermesh->GetNFD(); fdi++)
-        {
-	  MyMPI_Send("facedescriptor", dest, MPI_TAG_MESH);
-
-          double6[0] = GetFaceDescriptor(fdi).SurfNr();
-          double6[1] = GetFaceDescriptor(fdi).DomainIn();	
-          double6[2] = GetFaceDescriptor(fdi).DomainOut();
-          double6[3] = GetFaceDescriptor(fdi).BCProperty();
-	  double6[4] = GetFaceDescriptor(fdi).domin_singular;
-	  double6[5] = GetFaceDescriptor(fdi).domout_singular;
-
-	  MyMPI_Send ( double6, dest, MPI_TAG_MESH);
-        }
-
-    endtime = clock();
-    (*testout) << "Sending Time fdi = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
-    starttime = clock();
-
-
+    Array<double> fddata (6 * GetNFD());
+    for (int fdi = 1; fdi <= GetNFD(); fdi++)
+      {
+	fddata[6*fdi-6] = GetFaceDescriptor(fdi).SurfNr();
+	fddata[6*fdi-5] = GetFaceDescriptor(fdi).DomainIn();	
+	fddata[6*fdi-4] = GetFaceDescriptor(fdi).DomainOut();
+	fddata[6*fdi-3] = GetFaceDescriptor(fdi).BCProperty();
+	fddata[6*fdi-2] = GetFaceDescriptor(fdi).domin_singular;
+	fddata[6*fdi-1] = GetFaceDescriptor(fdi).domout_singular;
+	
+      }
+    for (int dest = 1; dest < ntasks; dest++)
+      MyMPI_ISend (fddata, dest, MPI_TAG_MESH);
 
 
     PrintMessage ( 3, "Sending Surface elements" );
   
-    Array <int> nlocsel(ntasks), bufsize ( ntasks), seli(ntasks);
+    Array <int> nlocsel(ntasks), bufsize(ntasks); // , seli(ntasks);
     for ( int i = 0; i < ntasks; i++)
       {
 	nlocsel[i] = 0;
 	bufsize[i] = 1;
-	seli[i] = 1;
       }
 
-    for ( int sei = 1; sei <= mastermesh -> GetNSE(); sei ++ )
+    for (int sei = 1; sei <= GetNSE(); sei++ )
       {
 	int ei1, ei2;
-	mastermesh -> GetTopology().GetSurface2VolumeElement (sei, ei1, ei2);
-	const Element2d & sel = mastermesh -> SurfaceElement (sei);
-	int dest;
-	// first element
+	GetTopology().GetSurface2VolumeElement (sei, ei1, ei2);
+	const Element2d & sel = SurfaceElement (sei);
 
         for (int j = 0; j < 2; j++)
           {
             int ei = (j == 0) ? ei1 : ei2;
-            
-            if ( ei > 0 && ei <= mastermesh->GetNE() )
+            if ( ei > 0 && ei <= GetNE() )
               {
-                const Element & el = mastermesh -> VolumeElement (ei);
-                dest = el.GetPartition();
+                const Element & el = VolumeElement (ei);
+                int dest = el.GetPartition();
 		nlocsel[dest] ++;
 		bufsize[dest] += 4 + 2*sel.GetNP();
               }
 	  }
       }
     
-    int ** selbuf = 0;
-    selbuf = new int*[ntasks];
-    for ( int i = 0; i < ntasks; i++)
-      if ( bufsize[i] > 0 )
-	{*(selbuf+i) = new int[bufsize[i]];}
-      else 
-	selbuf[i] = 0;
-    
-
+    TABLE<int> selbuf(bufsize);
 
     Array<int> nselloc (ntasks);
     nselloc = 0;
 
-    for ( int dest = 1; dest < ntasks; dest++ )
-      {
-	MyMPI_Send ( "surfaceelementsgi", dest, MPI_TAG_MESH);  
-	selbuf[dest][0] = nlocsel[dest];                  
-      }    
+    for (int dest = 1; dest < ntasks; dest++ )
+      selbuf.Add (dest, nlocsel[dest]);
 
-    for ( int sei = 1; sei <= mastermesh -> GetNSE(); sei ++ )
+    for (int sei = 1; sei <= GetNSE(); sei ++ )
       {
 	int ei1, ei2;
-	mastermesh -> GetTopology().GetSurface2VolumeElement (sei, ei1, ei2);
-	const Element2d & sel = mastermesh -> SurfaceElement (sei);
-	int dest;
-
-	
+	GetTopology().GetSurface2VolumeElement (sei, ei1, ei2);
+	const Element2d & sel = SurfaceElement (sei);
 
 	int isghost = 0;
-
         for (int j = 0; j < 2; j++)
           {
             int ei = (j == 0) ? ei1 : ei2;
-            
-            if ( ei > 0 && ei <= mastermesh->GetNE() )
+            if ( ei > 0 && ei <= GetNE() )
               {
-                const Element & el = mastermesh -> VolumeElement (ei);
-                dest = el.GetPartition();
+                const Element & el = VolumeElement (ei);
+                int dest = el.GetPartition();
                 if (dest > 0)
                   {
-                    // send:
-                    // sei
-                    // faceind
-                    // nep
-                    // tri.pnums, tri.geominfopi.trignums
-
-		    selbuf[dest][seli[dest]++] = sei;
-		    selbuf[dest][seli[dest]++] = sel.GetIndex();
-		    selbuf[dest][seli[dest]++] = isghost;
-		    selbuf[dest][seli[dest]++] = sel.GetNP();
+		    selbuf.Add (dest, sei);
+		    selbuf.Add (dest, sel.GetIndex());
+		    selbuf.Add (dest, isghost);
+		    selbuf.Add (dest, sel.GetNP());
 
                     for ( int ii = 1; ii <= sel.GetNP(); ii++)
                       {
-                        selbuf[dest][seli[dest]++] = sel.PNum(ii);
-                        selbuf[dest][seli[dest]++] = sel.GeomInfoPi(ii).trignum;
+                        selbuf.Add (dest, sel.PNum(ii));
+                        selbuf.Add (dest, sel.GeomInfoPi(ii).trignum);
                       }
 		    nselloc[dest] ++;
 		    paralleltop -> SetDistantSurfEl ( dest, sei, nselloc[dest] );
 		    isghost = 1;
                   }
-		
               }
 	  }
       }
 
-
-    for ( int dest = 1; dest < ntasks; dest++)
-      MyMPI_Send( selbuf[dest], bufsize[dest], dest, MPI_TAG_MESH);
-
-    for ( int dest = 0; dest < ntasks; dest++ )
-      {
-	if (selbuf[dest])
-	  delete [] *(selbuf+dest);
-      }
-    delete [] selbuf;
-    
-    
-    endtime = clock();
-    (*testout) << "Sending Time surfels = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
-    starttime = clock();
+    for (int dest = 1; dest < ntasks; dest++)
+      MyMPI_ISend(selbuf[dest], dest, MPI_TAG_MESH);
 
 
     PrintMessage ( 3, "Sending Edge Segments");
-    for ( int dest = 1; dest < ntasks; dest++ )
-      MyMPI_Send ( "edgesegmentsgi", dest, MPI_TAG_MESH);    
-
 
     Array <int> nlocseg(ntasks), segi(ntasks);
     for ( int i = 0; i < ntasks; i++)
@@ -1168,106 +1053,67 @@ namespace netgen
 	segi[i] = 0;
       }
 
-    for ( int segi = 1; segi <= mastermesh -> GetNSeg(); segi ++ )
+    for (int segi = 1; segi <= GetNSeg(); segi ++ )
       {
 	Array<int> volels;
-	const MeshTopology & topol = mastermesh -> GetTopology();
+	const MeshTopology & topol = GetTopology();
 	topol . GetSegmentVolumeElements ( segi, volels );
-	// const Segment & segm = mastermesh -> LineSegment (segi);
-	// int dest;
         for (int j = 0; j < volels.Size(); j++)
           {
             int ei = volels[j];
-            int dest;
-            if ( ei > 0 && ei <= mastermesh->GetNE() )
+            if ( ei > 0 && ei <= GetNE() )
               {
-                const Element & el = mastermesh -> VolumeElement (ei);
-                dest = el.GetPartition();
+                const Element & el = VolumeElement (ei);
+                int dest = el.GetPartition();
 		nlocseg[dest] ++;
 		bufsize[dest] += 14;
               }
 	  }
-
       }
 
+    TABLE<double> segmbuf(bufsize);
 
-    double ** segmbuf;
-    segmbuf = new double*[ntasks];
-    for ( int i = 0; i < ntasks; i++)
-      if ( bufsize[i] > 0 )
-	segmbuf[i] = new double[bufsize[i]];
-      else
-	segmbuf[i] = 0;
-    
-    //     cout << "mastermesh " << mastermesh -> GetNSeg() << "    lineseg " << mastermesh -> LineSegment (1) << endl;
-    for ( int ls=1; ls <= mastermesh -> GetNSeg(); ls++)
+    for ( int ls=1; ls <= GetNSeg(); ls++)
       {
 	Array<int> volels;
-	mastermesh -> GetTopology().GetSegmentVolumeElements ( ls, volels );
-	const Segment & seg = mastermesh -> LineSegment (ls);
+	GetTopology().GetSegmentVolumeElements ( ls, volels );
+	const Segment & seg = LineSegment (ls);
 
         for (int j = 0; j < volels.Size(); j++)
           {
             int ei = volels[j];
-            int dest;
-            if ( ei > 0 && ei <= mastermesh->GetNE() )
+            if ( ei > 0 && ei <= GetNE() )
               {
-                const Element & el = mastermesh -> VolumeElement (ei);
-                dest = el.GetPartition();
-
+                const Element & el = VolumeElement (ei);
+                int dest = el.GetPartition();
 
 		if ( dest > 0 )
 		  {
-		    segmbuf[dest][segi[dest]++] = ls;
-		    segmbuf[dest][segi[dest]++] = seg.si;
-		    segmbuf[dest][segi[dest]++] = seg.pnums[0];
-		    segmbuf[dest][segi[dest]++] = seg.pnums[1];
-		    segmbuf[dest][segi[dest]++] = seg.geominfo[0].trignum;
-		    segmbuf[dest][segi[dest]++] = seg.geominfo[1].trignum;
-		    segmbuf[dest][segi[dest]++] = seg.surfnr1;
-		    segmbuf[dest][segi[dest]++] = seg.surfnr2;
-		    segmbuf[dest][segi[dest]++] = seg.edgenr;
-		    segmbuf[dest][segi[dest]++] = seg.epgeominfo[0].dist;
-		    segmbuf[dest][segi[dest]++] = seg.epgeominfo[1].edgenr;
-		    segmbuf[dest][segi[dest]++] = seg.epgeominfo[1].dist;
-		    segmbuf[dest][segi[dest]++] = seg.singedge_right;
-		    segmbuf[dest][segi[dest]++] = seg.singedge_left;
+		    segmbuf.Add (dest, ls);
+		    segmbuf.Add (dest, seg.si);
+		    segmbuf.Add (dest, seg.pnums[0]);
+		    segmbuf.Add (dest, seg.pnums[1]);
+		    segmbuf.Add (dest, seg.geominfo[0].trignum);
+		    segmbuf.Add (dest, seg.geominfo[1].trignum);
+		    segmbuf.Add (dest, seg.surfnr1);
+		    segmbuf.Add (dest, seg.surfnr2);
+		    segmbuf.Add (dest, seg.edgenr);
+		    segmbuf.Add (dest, seg.epgeominfo[0].dist);
+		    segmbuf.Add (dest, seg.epgeominfo[1].edgenr);
+		    segmbuf.Add (dest, seg.epgeominfo[1].dist);
+		    segmbuf.Add (dest, seg.singedge_right);
+		    segmbuf.Add (dest, seg.singedge_left);
+		    segi[dest] += 14;
 		  }
 		paralleltop -> SetDistantSegm ( dest, ls, int ( segi[dest] / 14 ) );
 	      }
 	  }
       }
 
-    PrintMessage ( 3, "sending segments" );
-
     for ( int dest = 1; dest < ntasks; dest++)
-      {
-	MyMPI_Send( segmbuf[dest], bufsize[dest], dest, MPI_TAG_MESH);
-      }
-    
-    for ( int dest = 0; dest < ntasks; dest++ )
-       {
-	 if ( segmbuf[dest] )
-	   delete [] segmbuf[dest];
-       }
-     delete [] segmbuf;
-    
-    PrintMessage ( 3, "segments sent");
+      MyMPI_ISend(segmbuf[dest], dest, MPI_TAG_MESH, sendrequest[dest]);
 
-    endtime = clock();
-    (*testout) << "Sending Time segments = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
-    starttime = clock();
-
-
-    for ( int dest = 1; dest < ntasks; dest++ )
-      MyMPI_Send("endmesh", dest, MPI_TAG_MESH);
-
-
-    for ( int dest = 1; dest < ntasks; dest ++ )
-      {
-        MPI_Status status;
-        MPI_Wait (&sendrequest[dest], &status);
-      }
+    MPI_Waitall (ntasks-1, &sendrequest[1], MPI_STATUS_IGNORE);
   }
 
 
@@ -1853,7 +1699,7 @@ namespace netgen
 	  {
 	    (*globelnums)[i] = paralleltop -> GetLoc2Glob_VolEl ( i+1 );
 	  }
-	MyMPI_Send ( *globelnums, 0 );
+	MyMPI_Send ( *globelnums, 0, MPI_TAG_MESH );
       }
     
     delete globelnums;

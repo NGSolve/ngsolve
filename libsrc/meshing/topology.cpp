@@ -1194,11 +1194,12 @@ namespace netgen
 	      cout << cnt_err << " elements are not matching !!!" << endl;
 	    else if (cnt_err && ntasks > 1)
 	      {
-		cout << "p" << id << ":  " << cnt_err << " elements are not local" << endl;
+		// cout << "p" << id << ":  " << cnt_err << " elements are not local" << endl;
 		isparallel = 1;
 	      }
 	    else if ( ntasks > 1 )
-	      cout << "p" << id << ":  " << "Partition " << id << " is totally local" << endl;
+	      ; 
+	    // cout << "p" << id << ":  " << "Partition " << id << " is totally local" << endl;
 #endif
 
 	  }

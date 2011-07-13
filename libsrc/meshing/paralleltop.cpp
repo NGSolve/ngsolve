@@ -565,11 +565,6 @@ namespace netgen
   {
     PrintMessage ( 1, "UPDATE GLOBAL COARSEGRID STARTS" );      // JS
 
-    // MPI_Barrier (MPI_COMM_WORLD);
-    //   PrintMessage ( 1, "all friends are here " );      // JS
-    //  MPI_Barrier (MPI_COMM_WORLD);
-
-
 
     MPI_Group MPI_GROUP_WORLD;
     

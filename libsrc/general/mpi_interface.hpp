@@ -237,7 +237,7 @@ namespace netgen
   inline void MyMPI_Send (  int *& s, int len,  int dest, int tag)
   {
     int hlen = len;
-    MPI_Send( &hen, 1, MPI_INT, dest, tag, MPI_COMM_WORLD);
+    MPI_Send( &hlen, 1, MPI_INT, dest, tag, MPI_COMM_WORLD);
     MPI_Send( s, len, MPI_INT, dest, tag, MPI_COMM_WORLD);
   }
 
