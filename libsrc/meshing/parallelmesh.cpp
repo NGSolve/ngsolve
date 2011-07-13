@@ -329,7 +329,7 @@ namespace netgen
     // send partition
 
     for (int dest = 1; dest < ntasks; dest++)
-      MyMPI_Send ("mesh", dest, MPI_TAG_MESH);
+      MyMPI_Send ("mesh", dest, MPI_TAG_CMD);
     SendRecvMesh (); 
 
 
