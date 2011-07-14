@@ -1907,6 +1907,9 @@ namespace ngsolve
 
   void PDE :: LoadPDE (istream & input, const bool nomeshload, const bool nogeometryload)
   {
+    static Timer timer("LoadPDE");
+    RegionTimer reg (timer);
+
     pde = this;
     
     // Reset geometries 
@@ -1921,6 +1924,9 @@ namespace ngsolve
 
   void PDE :: LoadPDE (const string & filename, const bool nomeshload, const bool nogeometryload)
   {
+    static Timer timer("LoadPDE");
+    RegionTimer reg (timer);
+
     cout << IM(1) << "Load PDE from file " << filename << endl;
  
 
@@ -1960,12 +1966,16 @@ namespace ngsolve
     LoadPDE(infile,nomeshload,nogeometryload);
 
     if ( id == 0 )
-      for ( int dest = 1; dest < ntasks; dest ++)
-	{
-	  MyMPI_Send ("ngs_pdefile", dest, MPI_TAG_CMD);
+      {
+	MyMPI_SendCmd ("ngs_pdefile");
+#ifdef PARALLEL
+	MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
+#endif
+	for ( int dest = 1; dest < ntasks; dest ++)
 	  MyMPI_Send (filename, dest);
-	}
+      }
   }
+
 
 
 } // namespace

@@ -1796,7 +1796,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
         if (hasinner)
           {
 	    if (keep_internal){
-	      cout << "compute internal element ... ";
+	      cout << IM(1) << "compute internal element ... ";
 	      
 /*	      //Set u_inner to zero
 	      for (int i = 0; i < ne; i++){
@@ -1816,7 +1816,6 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
 
 	      u += GetHarmonicExtension() * u;
-	      cout << "done" << endl;
 	    }
 	    else
 	    {  

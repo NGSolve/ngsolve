@@ -12,9 +12,16 @@ extern MeshAccess * ma;
 
 extern "C" void NGS_ParallelRun ( const string & message );
 
+namespace ngparallel
+{
+  MPI_Comm ngs_comm;
+}
+
 
 void * SolveBVP2(void *)
 {
+  // while (1) cout << "solvebvp, id = " << id << endl;
+
   if (pde && pde->IsGood())
     pde->SolveBVP();
 
@@ -25,15 +32,14 @@ void * SolveBVP2(void *)
 
 void NGS_ParallelRun ( const string & message )
 {
-  cout << "id, got msg " << message << endl;
-
   if ( message == "ngs_pdefile" )
     {
-      string pdefilename;
+      MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
 
-      MyMPI_Recv ( pdefilename, 0);
+      string pdefilename;
+      MyMPI_Recv (pdefilename, 0);
       
-      if ( ma ) delete ma;
+      delete ma;
       ma = new MeshAccess;
 
       pde.Reset(new PDE ( *ma ));
@@ -43,6 +49,8 @@ void NGS_ParallelRun ( const string & message )
   else if ( message == "ngs_solvepde" )
     {
       RunParallel (SolveBVP2, NULL);
+
+      cout << "it runs in parallel, id = " << id << endl;
       /*
       try
 	{

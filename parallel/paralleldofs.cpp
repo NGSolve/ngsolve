@@ -7,10 +7,6 @@
 
 namespace ngparallel
 {
-  MPI_Group MPI_HIGHORDER_WORLD;
-  MPI_Comm MPI_HIGHORDER_COMM;
-
-
   using namespace ngcomp;
 
   ParallelDofs :: ParallelDofs (int andof, Table<int> * exdofs, const FESpace * afes)
@@ -144,7 +140,7 @@ namespace ngparallel
       for (int i = 0; i < ndof; i++)
 	if (ismasterdof.Test(i)) nlocal++;
 
-    MPI_Allreduce (&nlocal, &nglobal, 1,  MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce (&nlocal, &nglobal, 1,  MPI_INT, MPI_SUM, ngs_comm);
     return nglobal;
   }
 

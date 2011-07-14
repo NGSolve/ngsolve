@@ -556,7 +556,7 @@ namespace ngsolve
 	  }
       }
 
-
+    
     int geometryorder = 1;
     if (constants.Used ("geometryorder"))
       geometryorder = int (constants["geometryorder"]);
@@ -572,7 +572,7 @@ namespace ngsolve
 	Integrator::SetCommonIntegrationOrder (int (constants["common_integration_order"]));
       }
 
-    if (geometryorder)
+    if (geometryorder > 1)
       Ng_HighOrder (geometryorder, rational);
 
 

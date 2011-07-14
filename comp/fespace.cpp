@@ -285,7 +285,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	
 	// cout << "exchange dirichlet vertices" << endl;
-	
+#ifdef PARALLEL	
 	DynamicTable<int> dist_dir_vertex(ntasks);
 	Array<int[2]> distnums;
 	if (id != 0)
@@ -344,7 +344,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	for (int i = 0; i < ntasks; i++)
 	  nsend[i] = dist_dir_vertex[i].Size();
 	
-	MPI_Alltoall (&nsend[0], 1, MPI_INT, &nrecv[0], 1, MPI_INT, MPI_COMM_WORLD);
+	MPI_Alltoall (&nsend[0], 1, MPI_INT, &nrecv[0], 1, MPI_INT, ngs_comm);
 
 	Table<int> recv_dir_vert(nrecv);
 	Array<MPI_Request> requests;
@@ -376,7 +376,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	//	cout << "send table [" << id << "] = " << dist_dir_vertex << endl;
 	// cout << "recv table [" << id << "] = " << recv_dir_vert << endl;
 	// cout << "exchange dirichlet vertices done" << endl;		
-
+#endif
 	(*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
 	(*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;
 	(*testout) << "Dirichlet_face = " << endl << dirichlet_face << endl;
@@ -886,7 +886,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if  ( ntasks == 1 ) 
       return;
 
+    /*
     *testout << "updagteparalleldofs" << endl;
+    for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+      *testout << "nnodes(" << nt << ") = " << ma.GetNNodes(nt) << endl;
+
+    Array<int[2]> dist;
+    for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+      for ( int nr = 0; nr < ma.GetNNodes (nt); nr++ )
+	{
+	  Node node (nt,nr);
+	  *testout << "node " << node << ": " << ma.GetGlobalNodeNum(node);
+	  ma.GetDistantNodeNums (node, dist);
+	  
+	  for (int j = 0; j < dist.Size(); j++)
+	    *testout << "   " << dist[j][0] << "(" << dist[j][1] << ")  ";
+	  *testout << endl;
+	}
+    */
 
     Array<Node> dofnodes (GetNDof());
     dofnodes = Node (NT_VERTEX, -1);

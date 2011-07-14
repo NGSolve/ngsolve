@@ -130,7 +130,7 @@ namespace ngcomp
 	    pv_multiple(i) = multiple[i];
 	  pv_multiple.Cumulate();  
 	  for (int i = 0; i < multiple.Size(); i++)
-	    multiple[i] = pv_multiple(i);
+	    multiple[i] = int(pv_multiple(i));
 	}
 #endif
 
