@@ -18,7 +18,7 @@ class BASE_INDEX_HASHTABLE
 {
 protected:
   /// keys are stored in this table
-  TABLE<INDEX> hash;
+  TABLE<INDEX,1> hash;
   
 public:
   ///
@@ -41,9 +41,9 @@ template <class T>
 class INDEX_HASHTABLE : private BASE_INDEX_HASHTABLE
 {
   ///
-  TABLE<T> cont;
+  TABLE<T,1> cont;
   
-public:
+public: 
   ///
   inline INDEX_HASHTABLE (int size);
   ///
@@ -483,7 +483,7 @@ public:
   ///
   int HashValue (const INDEX & ind) const
   {
-    return ind % hash.Size() + 1;
+    return (3*ind) % hash.Size() + 1;
   }
 
 
@@ -498,6 +498,22 @@ public:
 	if (i > hash.Size()) i = 1;
       }
   }
+
+  int CalcPositionCosts (const INDEX & ind) const
+  {
+    int i = HashValue(ind);
+    int costs = 1;
+    while (1)
+      {
+	if (hash.Get(i) == ind) return costs;
+	if (hash.Get(i) == invalid) return costs;
+	i++;
+	if (i > hash.Size()) i = 1;
+	costs++;
+      }
+  }
+
+
 
   // returns 1, if new postion is created
   int PositionCreate (const INDEX & ind, int & apos)

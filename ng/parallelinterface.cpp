@@ -138,11 +138,12 @@ namespace netgen
     mesh -> GetParallelTopology().Print (); 
   }
  
+
+/*
   bool NgPar_IsElementInPartition ( const int elnum, const int dest )
   {
     return mesh -> GetParallelTopology().IsElementInPartition ( elnum+1, dest ); 
   }
-
 
 
   bool NgPar_IsGhostFace ( const int facenum )
@@ -154,7 +155,7 @@ namespace netgen
   { 
     return mesh -> GetParallelTopology().IsGhostEdge ( edgenum+1); 
   }
-
+*/
 
 
 #endif

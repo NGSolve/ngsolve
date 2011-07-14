@@ -102,8 +102,8 @@ void ParallelRun()
 
   bool test = true;
 
-  testout = new ostream(0); 
-  // new ofstream (string("testout_proc") + id  );      
+  // testout = new ostream(0); 
+  testout = new ofstream (string("testout_proc") + id  );      
 
   while ( test )
     {
@@ -111,7 +111,8 @@ void ParallelRun()
 #pragma pomp inst begin (message)
 #endif
 
-      MyMPI_Recv ( message, 0, MPI_TAG_CMD );
+      // MyMPI_Recv ( message, 0, MPI_TAG_CMD );
+      message = MyMPI_RecvCmd();
 
 #ifdef SCALASCA
 #pragma pomp inst end (message)
@@ -224,8 +225,9 @@ void ParallelRun()
             // did not manage to get glXImportContextEXT working on Laptop (JS)
 
 	    string redraw_cmd;
-	    MyMPI_Recv (redraw_cmd, 0, MPI_TAG_VIS);
-
+	    // MyMPI_Recv (redraw_cmd, 0, MPI_TAG_VIS);
+	    redraw_cmd = MyMPI_RecvCmd();
+	    
 	    // PrintMessage (1, "Redraw - ", redraw_cmd);
                   
 	    static string displname;
@@ -351,8 +353,6 @@ void ParallelRun()
 #endif
 
 		// PrintMessage (1, "redraw - init complete");
-		int hi = id;
-		MyMPI_Send (hi, 0, MPI_TAG_VIS);
 	      }
 	    
 	    if (redraw_cmd == "broadcast")

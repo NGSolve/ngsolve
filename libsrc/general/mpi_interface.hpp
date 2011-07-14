@@ -36,9 +36,7 @@ namespace netgen
   { return MPI_DOUBLE; }
 
 
-  
 
-  // damit gehen auch echte Konstante ohne Adresse
   inline void MyMPI_Send (int i, int dest, int tag)
   {
     int hi = i;
@@ -114,7 +112,7 @@ namespace netgen
   }
 
 
-
+  /*
   template <class T, int BASE>
   inline void MyMPI_ISend (FlatArray<T, BASE> s, int dest, int tag, MPI_Request & request)
   {
@@ -127,44 +125,26 @@ namespace netgen
   {
     MPI_Irecv( &s.First(), s.Size(), MyGetMPIType<T>(), dest, tag, MPI_COMM_WORLD, & request);
   }
-
-  /*
-  template <class T, int BASE>
-  inline void MyMPI_ISendTag (FlatArray<T, BASE> s, int dest, int tag,  MPI_Request & request)
-  {
-    MPI_Isend( &s.First(), s.Size(), MyGetMPIType<T>(), dest, tag, MPI_COMM_WORLD, & request);
-  }
-
-
-  template <class T, int BASE>
-  inline void MyMPI_IRecvTag (FlatArray<T, BASE> s, int dest, int tag, MPI_Request & request)
-  {
-    MPI_Irecv( &s.First(), s.Size(), MyGetMPIType<T>(), dest, tag, MPI_COMM_WORLD, & request);
-  }
   */
 
+  template <class T, int BASE>
+  inline MPI_Request MyMPI_ISend (FlatArray<T, BASE> s, int dest, int tag, MPI_Comm comm = MPI_COMM_WORLD)
+  {
+    MPI_Request request;
+    MPI_Isend( &s.First(), s.Size(), MyGetMPIType<T>(), dest, tag, comm, &request);
+    return request;
+  }
+
+
+  template <class T, int BASE>
+  inline MPI_Request MyMPI_IRecv (FlatArray<T, BASE> s, int dest, int tag, MPI_Comm comm = MPI_COMM_WORLD)
+  {
+    MPI_Request request;
+    MPI_Irecv( &s.First(), s.Size(), MyGetMPIType<T>(), dest, tag, comm, &request);
+    return request;
+  }
 
   /*
-  template <class T, int BASE>
-  inline MPI_Request MyMPI_ISend (FlatArray<T, BASE> s, int dest)
-  {
-    MPI_Request request;
-    MPI_Isend( &s.First(), s.Size(), MyGetMPIType<T>(), dest, 1, MPI_COMM_WORLD, &request);
-    return request;
-    // MPI_Request_free (&request);
-  }
-
-
-  template <class T, int BASE>
-  inline MPI_Request MyMPI_IRecv (FlatArray<T, BASE> s, int dest)
-  {
-    MPI_Request request;
-    MPI_Irecv( &s.First(), s.Size(), MyGetMPIType<T>(), dest, 1, MPI_COMM_WORLD, &request);
-    return request;
-    // MPI_Request_free (&request);
-  }
-  */
-
   template <class T, int BASE>
   inline void MyMPI_ISend (FlatArray<T, BASE> s, int dest, int tag)
   {
@@ -181,9 +161,21 @@ namespace netgen
     MPI_Irecv( &s.First(), s.Size(), MyGetMPIType<T>(), dest, tag, MPI_COMM_WORLD, &request);
     MPI_Request_free (&request);
   }
+  */
 
+  inline void MyMPI_SendCmd (const char * cmd)
+  {
+    char buf[100];
+    strcpy (buf, cmd);
+    MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
+  }
 
-
+  inline string MyMPI_RecvCmd ()
+  {
+    char buf[100];
+    MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
+    return string(buf);
+  }
 
   template <class T>
   inline void MyMPI_Bcast (T & s, MPI_Comm comm = MPI_COMM_WORLD)
@@ -204,7 +196,6 @@ namespace netgen
   inline void MyMPI_Bcast (Array<T, 0> & s, int root, MPI_Comm comm = MPI_COMM_WORLD)
   {
     int id;
-    // MPI_Comm_rank(MPI_HIGHORDER_COMM, &id);
     MPI_Comm_rank(comm, &id);
 
     int size = s.Size();
@@ -234,6 +225,7 @@ namespace netgen
 
 
 
+  /*
   inline void MyMPI_Send (  int *& s, int len,  int dest, int tag)
   {
     int hlen = len;
@@ -270,6 +262,7 @@ namespace netgen
     s = new double [len];
     MPI_Recv( s, len, MPI_DOUBLE, src, tag, MPI_COMM_WORLD, &status);
   }
+  */
 
 #endif // PARALLEL
 

@@ -893,7 +893,7 @@ namespace netgen
     NgProfiler::RegionTimer reg (timer);
 
 #ifdef PARALLELGL
-    cout << "buildfillelist, id = " << id << ", nse = " << mesh -> GetNSE() << endl;
+    // cout << "buildfillelist, id = " << id << ", nse = " << mesh -> GetNSE() << endl;
 
     if (id == 0 && ntasks > 1)
       {
@@ -901,11 +901,16 @@ namespace netgen
 
 	par_filledlists.SetSize (ntasks);
 
+	/*
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  {
             MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
-            MyMPI_Send ("filledlist", dest, MPI_TAG_VIS);
+            // MyMPI_Send ("filledlist", dest, MPI_TAG_VIS);
 	  }
+	*/
+
+	MyMPI_SendCmd ("redraw");
+	MyMPI_SendCmd ("filledlist");
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  {
             MyMPI_Recv (par_filledlists[dest], dest, MPI_TAG_VIS);
@@ -1344,11 +1349,16 @@ namespace netgen
 
 	par_linelists.SetSize (ntasks);
 
+	/*
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  {
-            MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
-            MyMPI_Send ("linelist", dest, MPI_TAG_VIS);
+	  MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
+	  MyMPI_Send ("linelist", dest, MPI_TAG_VIS);
 	  }
+	*/
+	MyMPI_SendCmd ("redraw");
+	MyMPI_SendCmd ("linelist");
+
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  MyMPI_Recv (par_linelists[dest], dest, MPI_TAG_VIS);
 

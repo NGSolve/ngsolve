@@ -27,8 +27,8 @@ namespace netgen
 
     if (!hasedges || !hasfaces) return;
 
-
-    PrintMessage (3, "Update Clusters");
+    if (id == 0)
+      PrintMessage (3, "Update Clusters");
 
     nv = mesh.GetNV();
     ned = top.GetNEdges();

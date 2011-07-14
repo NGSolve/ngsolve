@@ -103,7 +103,7 @@ namespace netgen
 	return;
       }
 #endif
-    
+
     linestruct & line = data[i];
     if (line.size == line.maxsize)
       {
@@ -118,6 +118,27 @@ namespace netgen
   
     line.size++;
   }
+
+
+
+
+  void BASE_TABLE :: SetEntrySize2 (int i, int newsize, int elsize)
+  {
+    linestruct & line = data[i];
+    if (newsize > line.maxsize)
+      {
+	void * p = new char [newsize * elsize];
+      
+	memcpy (p, line.col, min2 (newsize, line.size) * elsize);
+	delete [] (char*)line.col;
+
+	line.col = p;
+      }
+
+    line.size = newsize;
+  }
+
+
 
 
 

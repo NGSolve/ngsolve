@@ -994,11 +994,16 @@ namespace netgen
 
 	par_surfellists.SetSize (ntasks);
 
+	/*
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  {
-	    MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
-	    MyMPI_Send ("solsurfellist", dest, MPI_TAG_VIS);
+	  MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
+	   MyMPI_Send ("solsurfellist", dest, MPI_TAG_VIS);
 	  }
+	*/
+	MyMPI_SendCmd ("redraw");
+	MyMPI_SendCmd ("solsurfellist");
+
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  MyMPI_Recv (par_surfellists[dest], dest, MPI_TAG_VIS);
 
@@ -3706,11 +3711,16 @@ namespace netgen
 
 	Array<int> parlists (ntasks);
 
+	/*
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  {
 	    MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
 	    MyMPI_Send ("clipplanetrigs", dest, MPI_TAG_VIS);
 	  }
+	*/
+	MyMPI_SendCmd ("redraw");
+	MyMPI_SendCmd ("clipplanetrigs");
+
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  MyMPI_Recv (parlists[dest], dest, MPI_TAG_VIS);
 
@@ -4086,6 +4096,47 @@ namespace netgen
 
   void VisualSceneSolution :: Broadcast ()
   {
+    MPI_Datatype type;
+    int blocklen[] = 
+      { 
+	1, 1, 1, 1,
+	1, 1, 1, 1, 
+	1, 1, 1, 1, 
+	4
+      };
+    MPI_Aint displ[] = { (char*)&usetexture - (char*)this,
+			 (char*)&clipsolution - (char*)this,
+			 (char*)&scalfunction - (char*)this,
+			 (char*)&scalcomp - (char*)this,
+
+			 (char*)&vecfunction - (char*)this,
+			 (char*)&gridsize - (char*)this,
+			 (char*)&autoscale - (char*)this,
+			 (char*)&logscale - (char*)this,
+
+			 (char*)&minval - (char*)this,
+			 (char*)&maxval - (char*)this,
+			 (char*)&numisolines - (char*)this,
+			 (char*)&subdivisions - (char*)this,
+
+			 (char*)&clipplane[0] - (char*)this };
+
+
+    MPI_Datatype types[] = { 
+      MPI_INT, MPI_INT, MPI_INT, MPI_INT,
+      MPI_INT, MPI_INT, MPI_INT, MPI_INT,
+      MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT,
+      MPI_DOUBLE
+    };
+
+    MPI_Type_create_struct (13, blocklen, displ, types, &type);
+    MPI_Type_commit ( &type );
+
+    MPI_Bcast (this, 1, type, 0, MPI_COMM_WORLD);
+
+    MPI_Type_free (&type);
+
+    /*
     MyMPI_Bcast (usetexture);
     MyMPI_Bcast (clipsolution);
     MyMPI_Bcast (scalfunction);
@@ -4104,6 +4155,7 @@ namespace netgen
     MyMPI_Bcast (clipplane[1]);
     MyMPI_Bcast (clipplane[2]);
     MyMPI_Bcast (clipplane[3]);
+    */
   }
   
 #endif

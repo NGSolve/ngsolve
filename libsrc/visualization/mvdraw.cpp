@@ -765,25 +765,15 @@ namespace netgen
 	    cout << "extensionstring = " << glXQueryExtensionsString( dpy, 0 ) << endl;
 	    */
 
-
-	    Array<MPI_Request> request(ntasks);
-	    MPI_Status status;
+	    MyMPI_SendCmd ("redraw");
+	    MyMPI_SendCmd ("init");
+		
 	    for (int dest = 1; dest < ntasks; dest++)
 	      {
-		cout << "Initparallelgl, send to " << dest << endl;
-		MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
-		MyMPI_Send ("init", dest, MPI_TAG_VIS);
-		
 		MyMPI_Send (displname, dest, MPI_TAG_VIS);
 		MyMPI_Send (int (drawable), dest, MPI_TAG_VIS);
 		MyMPI_Send (int (xid), dest, MPI_TAG_VIS);
-
-		int hi;
-		MPI_Irecv( &hi, 1, MPI_INT, dest, MPI_TAG_VIS, MPI_COMM_WORLD, &request[dest]);
-		// MyMPI_IRecv (hi, dest, request[dest]);
 	      } 
-	    for ( int dest = 1; dest < ntasks; dest++ )
-	      MPI_Wait(&request[dest], &status);
 	  }
       }
   }
@@ -795,11 +785,16 @@ namespace netgen
 
     if (id == 0)
       {
+	/*
 	for (int dest = 1; dest < ntasks; dest++)
 	  {
 	    MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
 	    MyMPI_Send ("broadcast", dest, MPI_TAG_VIS);
 	  }
+	*/
+
+	MyMPI_SendCmd ("redraw");
+	MyMPI_SendCmd ("broadcast");
       }
 
     MyMPI_Bcast (selface);

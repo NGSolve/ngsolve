@@ -55,23 +55,24 @@ if { $shellmode == "defined" } {
 
 
 if { $batchmode != "defined" } {
-	catch {
-     		wm withdraw .
+    catch {
+	wm withdraw .
      
-     		wm title . $progname
-     		wm geometry . =800x600
-     		wm minsize . 400 300
-	}
+	wm title . $progname
+	wm geometry . =800x600
+	wm minsize . 400 300
+    }
 }
 
 
 source ${ngdir}/variables.tcl
 source ${ngdir}/parameters.tcl
 
+
 if { $batchmode != "defined" } {
-	catch {
-            source ${ngdir}/menustat.tcl
-        }
+    catch {
+	source ${ngdir}/menustat.tcl
+    }
 }
 
 catch { 
@@ -81,7 +82,6 @@ catch {
 catch {
     source ${ngdir}/drawing.tcl
 }
-
 
 
 if { [catch { load libgeom2dvis[info sharedlibextension] Ng_Geom2d } result ] } {

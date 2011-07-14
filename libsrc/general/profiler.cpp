@@ -32,7 +32,9 @@ namespace netgen
 
   NgProfiler :: ~NgProfiler()
   {
+#ifndef PARALLEL
     StopTimer (total_timer);
+#endif
 
     //ofstream prof;
     //prof.open("ng.prof");
@@ -50,7 +52,7 @@ namespace netgen
 	sprintf (filename, "netgen.prof");
 #endif
 	
-	printf ("write profile to file %s\n", filename); 
+	if (id == 0) printf ("write profile to file netgen.prof\n"); 
 	FILE *prof = fopen(filename,"w");
 	Print (prof);
 	fclose(prof);

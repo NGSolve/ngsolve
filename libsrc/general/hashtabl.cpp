@@ -61,8 +61,7 @@ namespace netgen
 
   int BASE_INDEX_HASHTABLE :: Position (int bnr, const INDEX & ind) const
   {
-    int i;
-    for (i = 1; i <= hash.EntrySize (bnr); i++)
+    for (int i = 1; i <= hash.EntrySize (bnr); i++)
       if (hash.Get(bnr, i) == ind)
 	return i;
     return 0;

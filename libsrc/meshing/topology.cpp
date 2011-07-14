@@ -89,7 +89,8 @@ namespace netgen
     int nfa = 0;
     int ned = edge2vert.Size();
 
-    PrintMessage (3, "Update mesh topology");
+    if (id == 0)
+      PrintMessage (3, "Update mesh topology");
 
     (*testout) << " UPDATE MESH TOPOLOGY " << endl; 
     (*testout) << "ne   = " << ne << endl;
@@ -167,7 +168,8 @@ namespace netgen
 	static int timer1 = NgProfiler::CreateTimer ("topology::buildedges");
 	NgProfiler::RegionTimer reg1 (timer1);
 
-	PrintMessage (5, "Update edges ");
+	if (id == 0)
+	  PrintMessage (5, "Update edges ");
       
 	edges.SetSize(ne);
 	surfedges.SetSize(nse); 
@@ -499,7 +501,8 @@ namespace netgen
 	static int timer2 = NgProfiler::CreateTimer ("topology::buildfaces");
 	NgProfiler::RegionTimer reg2 (timer2);
 
-	PrintMessage (5, "Update faces ");
+	if (id == 0)
+	  PrintMessage (5, "Update faces ");
 
 
 
@@ -1011,7 +1014,7 @@ namespace netgen
 		// *testout << "faces = " << face2vert << endl;
 		if (pass == 1)
 		  {
-		    *testout << "sort from " << first_fa << " to " << nfa << endl;
+		    // *testout << "sort from " << first_fa << " to " << nfa << endl;
 		    for (int i = first_fa; i < nfa; i++)
 		      for (int j = first_fa+1; j < nfa; j++)
 			if (face2vert[j] < face2vert[j-1])
@@ -1026,7 +1029,7 @@ namespace netgen
 	  }
 
 
-	*testout << "face2vert = " << endl << face2vert << endl;
+	// *testout << "face2vert = " << endl << face2vert << endl;
 
 
 
@@ -1125,6 +1128,8 @@ namespace netgen
 			// 		  if ( !paralleltop.IsExchangeFace (i+1) )
 			// 		    paralleltop.SetRefinementFace (i+1);
 
+
+			/*
 			paralleltop.SetExchangeFace (i+1);
 		  
 			for (int j = 0; j < 4; j++)		    
@@ -1141,7 +1146,8 @@ namespace netgen
 			    int v1, v2;
 			    GetEdgeVertices(faceedges[j], v1, v2 );
 			  }
-		  
+			*/
+
 			/*
 			  (*testout) << "pos = ";
 			  for (int j = 0; j < 4; j++)

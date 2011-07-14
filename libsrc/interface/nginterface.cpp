@@ -27,7 +27,7 @@
   static pthread_t meshingthread;
   void RunParallel ( void * (*fun)(void *), void * in)
   {
-    if (netgen::mparam.parthread && (ntasks == 1) )
+    if (netgen::mparam.parthread) //  && (ntasks == 1) )
      {
 	     pthread_attr_t attr;
 	     pthread_attr_init (&attr);
@@ -70,7 +70,12 @@
   static pthread_t meshingthread;
   void RunParallel ( void * (*fun)(void *), void * in)
   {
-    if (netgen::mparam.parthread && (netgen::ntasks == 1))
+    bool parthread = netgen::mparam.parthread;
+
+    if (netgen::id > 0) parthread = true;
+    // if (netgen::ntasks > 1) parthread = false;
+
+    if (parthread)
       {
 	pthread_attr_t attr;
 	pthread_attr_init (&attr);
@@ -926,45 +931,60 @@ void Ng_GetSurfaceElementNeighbouringDomains(const int selnr, int & in, int & ou
 // Is Element ei an element of this processor ??
 bool Ng_IsGhostEl (int ei)
 {
+  return false;
+  /*
   if ( mesh->GetDimension() == 3 )
     return mesh->VolumeElement(ei).IsGhost();
   else
     return false;
+  */
 }
 
 void Ng_SetGhostEl(const int ei, const bool aisghost )
 {
+  ;
+  /*
   if ( mesh -> GetDimension () == 3 )
     mesh -> VolumeElement(ei).SetGhost (aisghost);
+  */
 }
 
 bool Ng_IsGhostSEl (int ei)
 {
+  return false;
+  /*
   if ( mesh -> GetDimension () == 3 )
     return mesh->SurfaceElement(ei).IsGhost();
   else
     return false;
+  */
 }
 
 void Ng_SetGhostSEl(const int ei, const bool aisghost )
 {
+  ;
+  /*
   if ( mesh -> GetDimension () == 3 )
     mesh -> SurfaceElement(ei).SetGhost (aisghost);
+  */
 }
 
 
 bool Ng_IsGhostVert ( int pnum )
 {
-  return mesh -> Point ( pnum ).IsGhost() ;  
+  return false;
+  // return mesh -> Point ( pnum ).IsGhost() ;  
 }
 bool Ng_IsGhostEdge ( int ednum )
 {
-  return mesh -> GetParallelTopology() . IsGhostEdge ( ednum ); 
+  return false;
+  // return mesh -> GetParallelTopology() . IsGhostEdge ( ednum ); 
 }
 
 bool Ng_IsGhostFace ( int fanum )
 {
-  return mesh -> GetParallelTopology() . IsGhostFace ( fanum ); 
+  return false;
+  // return mesh -> GetParallelTopology() . IsGhostFace ( fanum ); 
 }
 
 // void Ng_SetGhostVert ( const int pnum, const bool aisghost );
@@ -979,10 +999,15 @@ bool Ng_IsExchangeSEl ( int selnum )
 { return mesh -> GetParallelTopology() . IsExchangeSEl ( selnum ); }
 
 void Ng_UpdateOverlap()
-{ mesh->UpdateOverlap(); }
+{ 
+  ; // mesh->UpdateOverlap(); 
+}
 
 int Ng_Overlap ()
-{ return mesh->GetParallelTopology() . Overlap(); }
+{ 
+  return 0;
+  // return mesh->GetParallelTopology() . Overlap(); 
+}
 
 #endif
 
