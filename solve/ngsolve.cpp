@@ -23,11 +23,7 @@ using namespace std;
 using namespace ngsolve;
 
 
-// for tcltk ...
-// #include <tcl.h>  
 #include <nginterface.h>
-
-
 #include <ngexception.hpp>
 
 #ifdef SOCKETS
@@ -180,6 +176,8 @@ void * SolveBVP(void *)
 {
   try
     {
+      // while (1) cout << "solve bvp, id = 0" << endl;
+
       if (pde && pde->IsGood())
 	pde->SolveBVP();
     }
@@ -219,35 +217,27 @@ void * SolveBVP(void *)
   return NULL;
 }
 
+
+
 int NGS_SolvePDE (ClientData clientData,
 		  Tcl_Interp * interp,
 		  int argc, tcl_const char *argv[])
 {
-  // if(argc > 2 && atoi(argv[1]) == 1)
-  // got_exception = false;
-
   if (Ng_IsRunning())
     {
       Tcl_SetResult (interp, (char*)"Thread already running", TCL_STATIC);
       return TCL_ERROR;
     }
 
-  // if(!got_exception)
-    {
-      cout << "Solve PDE" << endl;
-      Ng_SetRunning (1);
-
-      for (int dest = 1; dest < ntasks; dest++)
-        MyMPI_Send("ngs_solvepde" , dest, MPI_TAG_CMD);
-
-      // bool parthread = atoi (Tcl_GetVar (interp, "::options.parthread", 0));
-      // if (parthread)
-      RunParallel (SolveBVP, NULL);
-	// else
-	// SolveBVP (NULL);
+  cout << "Solve PDE" << endl;
+  Ng_SetRunning (1);
 
 
-    }
+  MyMPI_SendCmd ("ngs_solvepde");
+  
+  RunParallel (SolveBVP, NULL);
+  cout << "it runs in parallel, id = " << id << endl;
+
   return TCL_OK;
 }
 

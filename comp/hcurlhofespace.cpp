@@ -1262,7 +1262,7 @@ namespace ngcomp
 	}
      case 21: // wave equation
 	{
-	  int ds_order = precflags.GetNumFlag ("ds_order", 0);
+	  int ds_order = int(precflags.GetNumFlag ("ds_order", 0));
 	  if (ds_order < 0) ds_order = 0;	  
 
 	  for(i=0;i<ned;i++)
@@ -1656,7 +1656,7 @@ namespace ngcomp
       case 21: // wave equation
 	{
 	  cnt = 0;
-	  int ds_order = precflags.GetNumFlag ("ds_order", 0);
+	  int ds_order = int(precflags.GetNumFlag ("ds_order", 0));
 	  if (ds_order < 0) ds_order = 0;	  
 	  
 	  for (i =0; i<ned ; i++)

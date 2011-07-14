@@ -212,7 +212,7 @@ namespace ngla
 	// inv = new PardisoInverse<TM> (matrix, 0, 0, true);
       }
 
-    MPI_Barrier (MPI_COMM_WORLD);
+    MPI_Barrier (ngs_comm);
   }
 
   template <typename TM>

@@ -156,13 +156,13 @@ namespace ngla
   void ParallelBaseVector :: ISend ( int dest, MPI_Request & request ) const
   {
     MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
-    MPI_Isend( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, MPI_COMM_WORLD, &request);
+    MPI_Isend( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, ngs_comm, &request);
   }
 
   void ParallelBaseVector :: Send ( int dest ) const
   {
     MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
-    MPI_Send( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, MPI_COMM_WORLD);
+    MPI_Send( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, ngs_comm);
   }
 
 
@@ -189,7 +189,7 @@ namespace ngla
 
 	SCAL localsum = SCAL (0.0);
 	MPI_Datatype MPI_SCAL = MyGetMPIType<SCAL>();
-	MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, ngs_comm);
 
 
       }
@@ -211,9 +211,9 @@ namespace ngla
 					     dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
 	MPI_Datatype MPI_SCAL = MyGetMPIType<SCAL>();
       
-	MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, ngs_comm);
 
-	// MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, MPI_HIGHORDER_COMM); //MPI_COMM_WORLD);
+	// MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, MPI_HIGHORDER_COMM); //ngs_comm);
 	// if ( id == 1 ) MyMPI_Send( globalsum, 0 );
       }
   
@@ -247,7 +247,7 @@ namespace ngla
     else 
       localsum = ngbla::InnerProduct (FVComplex(), 
 				      dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex());
-    MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, ngs_comm);
     //MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, MPI_HIGHORDER_WORLD);
  
     return globalsum;
@@ -354,7 +354,7 @@ namespace ngla
     MPI_Irecv( &( (*recvvalues)[dest][0]), 
 	       (*recvvalues)[dest].Size(), 
 	       MPI_TS, dest, 
-	       MPI_TAG_SOLVE, MPI_COMM_WORLD, &request);
+	       MPI_TAG_SOLVE, ngs_comm, &request);
   }
 
   template <typename SCAL>
@@ -366,7 +366,7 @@ namespace ngla
     MPI_Recv( &( (*recvvalues)[dest][0]), 
 	      (*recvvalues)[dest].Size(), 
 	      MPI_TS, dest, 
-	      MPI_TAG_SOLVE, MPI_COMM_WORLD, &status);
+	      MPI_TAG_SOLVE, ngs_comm, &status);
   }
 
 
@@ -409,7 +409,7 @@ namespace ngla
     double globalsum = 0;
 
     MPI_Datatype MPI_SCAL = MyGetMPIType<double>();
-    MPI_Allreduce (&sum, &globalsum, 1, MPI_SCAL, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce (&sum, &globalsum, 1, MPI_SCAL, MPI_SUM, ngs_comm);
     
     return sqrt (globalsum);
   }

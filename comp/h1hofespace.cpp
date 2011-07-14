@@ -1198,7 +1198,7 @@ namespace ngcomp
 	    if (creator.GetMode() == 1)
 	      cout << "Helmholtz" << endl;
 		
-	    int ds_order = precflags.GetNumFlag ("ds_order", 1);
+	    int ds_order = int(precflags.GetNumFlag ("ds_order", 1));
 	    cout << "ds_order = " << ds_order << endl;
 		
 	    for (int i = 0; i < ned; i++)

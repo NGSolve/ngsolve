@@ -6,6 +6,43 @@ if { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
 # check some NGS command
 if { [catch { NGS_GetData } ] == 0 } { 
     
+
+
+
+
+
+    set pdefilename [Ng_GetCommandLineParameter pdefile]
+    if { $pdefilename != "undefined" } {
+	NGS_LoadPDE  $pdefilename;  
+
+	set solve [Ng_GetCommandLineParameter solve]
+	if { $zugstange == 1 } {
+	    set options.parthread 0
+	    NGS_SolvePDE;
+	} {
+	    if { $solve == "defined" } {
+		set options.parthread 0
+		NGS_SolvePDE
+		NGS_PrintTiming
+		Ng_Exit;
+		destroy .
+	    } {
+		if { $solve != "undefined" } {
+		    set options.parthread 0
+		    for { set l 1 } { $l <= $solve } { incr l } { NGS_SolvePDE $l }
+		    NGS_PrintTiming
+		    Ng_Exit;
+		    destroy .
+		}
+	    }
+	}
+    }
+
+    
+
+
+
+
     set progname "NGSolve"
     wm title . $progname
     
@@ -413,30 +450,6 @@ if { [catch { NGS_GetData } ] == 0 } {
 
 
 
-    set pdefilename [Ng_GetCommandLineParameter pdefile]
-    if { $pdefilename != "undefined" } {
-	NGS_LoadPDE  $pdefilename;  
-
-	set solve [Ng_GetCommandLineParameter solve]
-	if { $zugstange == 1 } {
-	    set options.parthread 0
-	    NGS_SolvePDE;
-	} {
-	    if { $solve == "defined" } {
-		set options.parthread 0
-		NGS_SolvePDE
-		Ng_Exit;
-		destroy .
-	    } {
-		if { $solve != "undefined" } {
-		    set options.parthread 0
-		    for { set l 1 } { $l <= $solve } { incr l } { NGS_SolvePDE $l }
-		    Ng_Exit;
-		    destroy .
-		}
-	    }
-	}
-    }
 
 
 
