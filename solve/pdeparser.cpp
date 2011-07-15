@@ -1928,7 +1928,6 @@ namespace ngsolve
     RegionTimer reg (timer);
 
     cout << IM(1) << "Load PDE from file " << filename << endl;
- 
 
     string::size_type pos1 = filename.rfind('\\');
     string::size_type pos2 = filename.rfind('/');

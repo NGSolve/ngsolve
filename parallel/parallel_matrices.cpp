@@ -238,13 +238,11 @@ namespace ngla
 	Array<TV> lx (select.Size());
 	for (int i = 0; i < select.Size(); i++)
 	  lx[i] = fx(select[i]);
-
-	MPI_Request request;
-	MyMPI_ISend (lx, 0, MPI_TAG_SOLVE, request);
-	// MPI_Wait (&request, MPI_STATUS_IGNORE);
+	
+	MPI_Request request = MyMPI_ISend (lx, 0, MPI_TAG_SOLVE);
 	MPI_Request_free (&request);
 	
-	MyMPI_IRecv (lx, 0, MPI_TAG_SOLVE, request);
+	request = MyMPI_IRecv (lx, 0, MPI_TAG_SOLVE);
 	MPI_Wait (&request, MPI_STATUS_IGNORE);
 
 	for (int i = 0; i < select.Size(); i++)
@@ -282,31 +280,15 @@ namespace ngla
 	// *testout << "before *inv, hy = " << endl << hy << endl;
 
 
-	Array<MPI_Request> requ(ntasks);
-	Array<MPI_Status> stats(ntasks);
+	Array<MPI_Request> requ;
 	for (int src = 1; src < ntasks; src++)
 	  {
 	    FlatArray<int> selecti = loc2glob[src];
 	    for (int j = 0; j < selecti.Size(); j++)
 	      exdata[src][j] = hy(selecti[j]);
-	    MyMPI_ISend (exdata[src], src, MPI_TAG_SOLVE, requ[src]);
+	    requ.Append (MyMPI_ISend (exdata[src], src, MPI_TAG_SOLVE));
 	  }
-	MPI_Waitall (ntasks-1, &requ[1], &stats[1]);
-	
-
-	/*
-	for (int src = 1; src < ntasks; src++)
-	  {
-	    FlatArray<int> selecti = loc2glob[src];
-
-	    Array<TV> lx(selecti.Size());
-
-	    for (int i = 0; i < selecti.Size(); i++)
-	      lx[i] = hy(selecti[i]);
-
-	    MyMPI_Send (lx, src);
-	  }
-	*/
+	MPI_Waitall (requ.Size(), &requ[0], MPI_STATUS_IGNORE);
       }
 
     if (is_x_cum)

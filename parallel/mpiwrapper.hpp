@@ -171,17 +171,21 @@ namespace ngparallel
   }
 
   template <class T>
-  void MyMPI_ISend (const FlatArray<T> & s, int dest, int tag, MPI_Request & request ) 
+  MPI_Request MyMPI_ISend (const FlatArray<T> & s, int dest, int tag)
   { 
+    MPI_Request request;
     MPI_Datatype MPI_T  = MyGetMPIType<T> ();
     MPI_Isend (&s[0], s.Size(), MPI_T, dest, tag, ngs_comm, &request);
+    return request;
   }
 
   template <class T>
-  void MyMPI_IRecv (const FlatArray<T> & s, int src, int tag, MPI_Request & request ) 
+  MPI_Request  MyMPI_IRecv (const FlatArray<T> & s, int src, int tag)
   { 
+    MPI_Request request;
     MPI_Datatype MPI_T = MyGetMPIType<T> ();
     MPI_Irecv (&s[0], s.Size(), MPI_T, src, tag, ngs_comm, &request);
+    return request;
   }
 
 
