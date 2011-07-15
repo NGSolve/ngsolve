@@ -25,6 +25,8 @@ namespace ngla
 
     if (id != 0)
       {
+	cout << "I am here, id = " << id << endl;
+
 	const FESpace & fes = pardofs->GetFESpace();
 	const MeshAccess & ma = fes.GetMeshAccess();
 
