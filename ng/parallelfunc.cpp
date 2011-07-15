@@ -383,6 +383,11 @@ void ParallelRun()
 		vssolution.DrawClipPlaneTrigs();
 	      }
 	    
+	    if (redraw_cmd == "getminmax")
+	      {
+		double hmin, hmax;
+		vssolution.GetMinMax (-1, -1, hmin, hmax);
+	      }
 	  }
 #endif
 

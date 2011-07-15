@@ -62,12 +62,6 @@ namespace netgen
 
     void GetVertNeighbours ( int vnum, Array<int> & dests ) const;
 
-    /*
-    int Glob2Loc_SurfEl ( int globnum );
-    int Glob2Loc_VolEl ( int globnum );
-    int Glob2Loc_Segm ( int globnum );
-    int Glob2Loc_Vert ( int globnum );
-    */
 
     int GetNDistantPNums ( int locpnum ) const       
     { return loc2distvert[locpnum].Size() / 2 + 1; } 
@@ -92,12 +86,7 @@ namespace netgen
     int GetDistantElNums ( int locelnum, int * distfacenums ) const;
 
     void Print() const;
-    /*
-    void SetExchangeFace ( int fnr )      {}; // { isexchangeface->Set( (fnr-1)*(ntasks+1) ); }
-    void SetExchangeVert ( int vnum )     {}; // { isexchangevert->Set( (vnum-1)*(ntasks+1) ); }
-    void SetExchangeElement ( int elnum ) {}; // { isexchangeel->Set((elnum-1)*(ntasks+1) ); }
-    void SetExchangeEdge ( int ednum )    {}; // { isexchangeedge->Set ((ednum-1)*(ntasks+1)); }
-    */
+
 
     bool IsExchangeVert ( PointIndex vnum ) const  { return loc2distvert[vnum].Size() > 1; }
     bool IsExchangeEdge ( int ednum ) const  { return loc2distedge[ednum-1].Size() > 1; }
@@ -106,29 +95,6 @@ namespace netgen
 
 
     bool IsExchangeSEl ( int selnum ) const { return loc2distsurfel[selnum-1].Size() > 1; }
-
-
-    /*
-    void  SetExchangeFace (int dest, int fnr )
-    {
-      // isexchangeface->Set((fnr-1)*(ntasks+1) + (dest+1));
-    }
-
-    void  SetExchangeVert (int dest, int vnum )
-    {
-      // isexchangevert->Set((vnum-1)*(ntasks+1) + (dest+1) );
-    }
-
-    void  SetExchangeElement (int dest, int vnum )
-    {
-      ; // isexchangeel->Set( (vnum-1)*(ntasks+1) + (dest+1) );
-    }
-
-    void  SetExchangeEdge (int dest, int ednum )
-    {
-      // isexchangeedge->Set ( (ednum-1)*(ntasks+1) + (dest+1) );
-    }
-    */
 
 
     bool IsExchangeVert (int dest, int vnum ) const
@@ -176,8 +142,6 @@ namespace netgen
     void SetDistantSegm ( int dest, int locnum, int distnum );
 
     bool IsGhostEl ( int elnum ) const   { return mesh.VolumeElement(elnum).IsGhost(); }
-
-
   };
  
 

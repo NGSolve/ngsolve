@@ -65,7 +65,7 @@ int main(int argc, char ** argv)
 #ifdef PARALLEL
   // MPI_Init(&argc, &argv);          
 
-  int required = MPI_THREAD_MULTIPLE;
+  int required = 0; // MPI_THREAD_MULTIPLE;
   int provided;
   MPI_Init_thread(&argc, &argv, required, &provided);          
 

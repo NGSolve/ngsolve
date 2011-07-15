@@ -1,40 +1,16 @@
 #ifdef PARALLEL
-#include <mystdlib.h>
 
+#include <mystdlib.h>
 #include <meshing.hpp>
 
 #include "../libsrc/include/parallelinterface.hpp"
 
 
-
 namespace netgen
 {
-
-
   extern AutoPtr<Mesh> mesh;
 }
   
-
-//   int NgPar_Glob2Loc_SurfEl ( int globnum ) 
-//   { 
-//     return mesh->GetParallelTopology().Glob2Loc_SurfEl(globnum+1) - 1; 
-//   }
-  
-//   int NgPar_Glob2Loc_VolEl ( int globnum ) 
-//   { 
-//     return mesh->GetParallelTopology().Glob2Loc_VolEl(globnum+1) - 1; 
-//   }
-  
-//   int NgPar_Glob2Loc_Segm (   int globnum )   
-//   { 
-//     return mesh->GetParallelTopology().Glob2Loc_Segm(globnum+1) - 1; 
-//   }
-  
-//   int NgPar_Glob2Loc_Vert ( int globnum )  
-//   { 
-//     return mesh->GetParallelTopology().Glob2Loc_Vert(globnum+1) -1;
-//   }
-
   using namespace netgen;
   
   int NgPar_GetLoc2Glob_VolEl ( int locnum )
@@ -138,24 +114,5 @@ namespace netgen
     mesh -> GetParallelTopology().Print (); 
   }
  
-
-/*
-  bool NgPar_IsElementInPartition ( const int elnum, const int dest )
-  {
-    return mesh -> GetParallelTopology().IsElementInPartition ( elnum+1, dest ); 
-  }
-
-
-  bool NgPar_IsGhostFace ( const int facenum )
-  { 
-    return mesh -> GetParallelTopology().IsGhostFace ( facenum+1); 
-  }
-
-  bool NgPar_IsGhostEdge ( const int edgenum )
-  { 
-    return mesh -> GetParallelTopology().IsGhostEdge ( edgenum+1); 
-  }
-*/
-
 
 #endif

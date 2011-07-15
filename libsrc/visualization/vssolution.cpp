@@ -2132,6 +2132,16 @@ namespace netgen
   void VisualSceneSolution :: 
   GetMinMax (int funcnr, int comp, double & minv, double & maxv) const
   {
+#ifdef PARALLEL
+    if (id == 0)
+      {
+	MyMPI_SendCmd ("redraw");
+	MyMPI_SendCmd ("getminmax");
+      }
+    MyMPI_Bcast (funcnr);
+    MyMPI_Bcast (comp);
+#endif
+
     const SolData * sol;
     double val;
     bool considerElem;
@@ -2180,6 +2190,19 @@ namespace netgen
           }
       }
     if (minv == maxv) maxv = minv+1e-6;
+
+#ifdef PARALLEL
+    if (id == 0)
+      {
+	minv = 1e99;
+	maxv = -1e99;
+      }
+    double hmin, hmax;
+    MPI_Reduce (&minv, &hmin, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+    MPI_Reduce (&maxv, &hmax, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    minv = hmin;
+    maxv = hmax;
+#endif
   }
 
 

@@ -205,9 +205,9 @@ public:
     subdivision_timestamp = solutiontimestamp = NextTimeStamp();
   }
 
-private:
   void GetMinMax (int funcnr, int comp, double & minv, double & maxv) const;
 
+private:
   void GetClippingPlaneTrigs (Array<ClipPlaneTrig> & trigs, Array<ClipPlanePoint> & pts);
   void GetClippingPlaneGrid (Array<ClipPlanePoint> & pts);
   void DrawCone (const Point<3> & p1, const Point<3> & p2, double r);

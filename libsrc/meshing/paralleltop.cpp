@@ -95,50 +95,8 @@ namespace netgen
     nparel = 0;
 
     coarseupdate = 0;
-
-    /*
-    isghostedge.SetSize(0);
-    isghostface.SetSize(0);
-    */
-    // overlap = 0;
   }
 
-  /*
-  int ParallelMeshTopology :: Glob2Loc_Vert (int globnum)
-  {
-    for (int i = 1; i <= nv; i++)
-      if ( globnum == loc2distvert[i][0] )
-	return i;
-    return -1;
-  }
-
-  int ParallelMeshTopology :: Glob2Loc_VolEl (int globnum )
-  {
-    int locnum = -1;
-    for (int i = 0; i < ne; i++)
-      if ( globnum == loc2distel[i][0] )
-	locnum = i+1;
-    return locnum;
-  }
-
-  int ParallelMeshTopology :: Glob2Loc_SurfEl (int globnum )
-  {
-    int locnum = -1;
-    for (int i = 0; i < nsurfel; i++)
-      if ( globnum == loc2distsurfel[i][0] )
-	locnum = i+1;
-    return locnum;
-  }
-
-  int ParallelMeshTopology :: Glob2Loc_Segm (int globnum )
-  {
-    int locnum = -1;
-    for (int i = 0; i < nseg; i++)
-      if ( globnum == loc2distsegm[i][0] )
-	locnum = i+1;
-    return locnum;
-  }
-  */
  
 
   void ParallelMeshTopology ::  Print() const
@@ -737,7 +695,6 @@ namespace netgen
 
     if ( id == 0 ) 
       {
-	MPI_Barrier (MPI_COMM_WORLD);
 	return;
       }
 
@@ -762,97 +719,8 @@ namespace netgen
     Array<int> cnt_send(ntasks-1);
 
 
-    /*
-    // exchange vertices
-    NgProfiler::StartTimer (timerv);
 
-    *testout << "exchange vertices" << endl;
-    glob2loc.SetSize (nvglob);
-    glob2loc = -1;
-    
-    for (int locv = 1; locv <= nv; locv++)
-      if (IsExchangeVert (locv) )
-	glob2loc[GetDistantPNum(0, locv)] = locv;
-
-    
-    cnt_send = 0;
-    for (int vertex = 1; vertex <= nv; vertex++)
-      for (int dest = 1; dest < ntasks; dest++)
-	if (IsExchangeVert (dest, vertex))
-	  cnt_send[dest-1]+=2;
-
-    // *testout << "cnt_send = " << cnt_send << endl;
-
-    TABLE<int> send_verts(cnt_send);
-    for (int vertex = 1; vertex <= nv; vertex++)
-      for (int dest = 1; dest < ntasks; dest++)
-	if (IsExchangeVert (dest, vertex))
-	  {
-	    send_verts.Add (dest-1, GetLoc2Glob_Vert (vertex));
-	    send_verts.Add (dest-1, vertex);
-	  }
-
-    TABLE<int> recv_verts (ntasks-1);
-    MyMPI_ExchangeTable (send_verts, recv_verts, MPI_TAG_MESH+8, MPI_HIGHORDER_COMM);
-
-    for (int sender = 1; sender < ntasks; sender ++)
-      if (id != sender)
-	{
-	  FlatArray<int> recvarray = recv_verts[sender-1];
-	  for (int ii = 0; ii < recvarray.Size(); )
-	    {
-	      int globv = recvarray[ii++];
-	      int distv = recvarray[ii++];
-	      int locv = glob2loc[globv];
-	      
-	      if (locv != -1)
-		{
-		  if (GetDistantPNum(sender, locv) != distv)
-		    cerr << "distant pnum inconsistent: sender = " << sender << ", locv = "<< locv << ", distv = " << distv << ", getdist = " << GetDistantPNum(sender, locv) << endl;
-		  // SetDistantPNum (sender, locv, distv);
-		}
-	    }
-	}
-    */
-
-    /*
-    for (int vertex = 1; vertex <= nv; vertex++)
-      if (IsExchangeVert (vertex) ) 
-	{
-	  sendarray.Append (GetLoc2Glob_Vert (vertex));
-	  sendarray.Append (vertex);
-	}
-
-    Array<int,1> glob2loc;
-    glob2loc.SetSize (nvglob);
-    glob2loc = -1;
-    
-    for (int locv = 1; locv <= nv; locv++)
-      if (IsExchangeVert (locv) )
-	glob2loc[GetDistantPNum(0, locv)] = locv;
-
-    for (int sender = 1; sender < ntasks; sender ++)
-      {
-	if (id == sender)
-	  MyMPI_Bcast (sendarray, sender-1, MPI_HIGHORDER_COMM);
-	else
-	  {
-	    MyMPI_Bcast (recvarray, sender-1, MPI_HIGHORDER_COMM);
-	    for (int ii = 0; ii < recvarray.Size(); )
-	      {
-		int globv = recvarray[ii++];
-		int distv = recvarray[ii++];
-		int locv = glob2loc[globv];
-
-		if (locv != -1)
-		  SetDistantPNum (sender, locv, distv);
-	      }
-	  }
-      }
-
-    NgProfiler::StopTimer (timerv);
-    */
-
+  
 
     NgProfiler::StartTimer (timere);
 
@@ -894,11 +762,14 @@ namespace netgen
 	      }
 	  }
       }
-    TABLE<int> recv_edges(ntasks-1);
-    MyMPI_ExchangeTable (send_edges, recv_edges, MPI_TAG_MESH+8, MPI_HIGHORDER_COMM);
 
-    *testout << "send exchange edges: " << send_edges << endl;
-    *testout << "recv exchange edges: " << recv_edges << endl;
+
+    // *testout << "send exchange edges: " << send_edges << endl;
+
+    TABLE<int> recv_edges(ntasks-1);
+    MyMPI_ExchangeTable (send_edges, recv_edges, MPI_TAG_MESH+9, MPI_HIGHORDER_COMM);
+
+    // *testout << "recv exchange edges: " << recv_edges << endl;
 
     for (int sender = 1; sender < ntasks; sender ++)
       if (id != sender)
@@ -909,59 +780,19 @@ namespace netgen
 	    { 
 	      int globe = recvarray[ii++];
 	      int diste = recvarray[ii++];
-	      int loce = glob2loc[globe];
 
-	      // *testout << "set distant face, sender = " << sender << ", locf = " << locf << "; distf = " << distf << endl;
-	      if (loce != -1)
-		SetDistantEdgeNum (sender, loce, diste);
+	      if (globe <= maxedge)
+		{
+		  int loce = glob2loc[globe];
+		  if (loce != -1)
+		    SetDistantEdgeNum (sender, loce, diste);
+		}
 	    }
 	} 
 
 
-    /*
-    sendarray.SetSize (0);
-    recvarray.SetSize (0);
-    
-    // exchange edges
-    int maxedge = 0;
-    for (int edge = 1; edge <= ned; edge++)
-      // if (IsExchangeEdge (edge) ) 
-	{
-	  sendarray.Append (GetDistantEdgeNum (0, edge));
-	  sendarray.Append (edge);
-	  maxedge = max (maxedge, GetDistantEdgeNum (0, edge));
-	}
-
-    glob2loc.SetSize (maxedge+1);
-    glob2loc = -1;
-    
-    for (int loc = 1; loc <= ned; loc++)
-      // if (IsExchangeEdge (loc) )
-	glob2loc[GetDistantEdgeNum(0, loc)] = loc;
-
-    for (int sender = 1; sender < ntasks; sender ++)
-      {
-	if (id == sender)
-	  MyMPI_Bcast (sendarray, sender-1, MPI_HIGHORDER_COMM);
-	else
-	  {
-	    MyMPI_Bcast (recvarray, sender-1, MPI_HIGHORDER_COMM);
-	    for (int ii = 0; ii < recvarray.Size(); )
-	      { 
-		int globe = recvarray[ii++];
-		int diste = recvarray[ii++];
-
-		if (globe > maxedge) continue;
-		int loce = glob2loc[globe];
-
-		if (loce != -1)
-		  SetDistantEdgeNum (sender, loce, diste);
-	      }
-	  }
-      }
-    */
+ 
     NgProfiler::StopTimer (timere);
-
     NgProfiler::StartTimer (timerf);
 
     glob2loc.SetSize (nfaglob);
@@ -1023,195 +854,13 @@ namespace netgen
 	} 
 
 
-    /*
-    sendarray.SetSize (0);
-    recvarray.SetSize (0);
-
-    // exchange faces
-    for (int face = 1; face <= nfa; face++)
-      if (IsExchangeFace (face) ) 
-	{
-	  sendarray.Append (GetDistantFaceNum (0, face));
-	  sendarray.Append (face);
-	}
-
-    glob2loc.SetSize (nfaglob);
-    glob2loc = -1;
-    
-    for (int loc = 1; loc <= nfa; loc++)
-      if (IsExchangeFace (loc) )
-	glob2loc[GetDistantFaceNum(0, loc)] = loc;
-
-    for (int sender = 1; sender < ntasks; sender ++)
-      {
-	if (id == sender)
-	  MyMPI_Bcast (sendarray, sender-1, MPI_HIGHORDER_COMM);
-	else
-	  {
-	    MyMPI_Bcast (recvarray, sender-1, MPI_HIGHORDER_COMM);
-	    for (int ii = 0; ii < recvarray.Size(); )
-	      { 
-		int globf = recvarray[ii++];
-		int distf = recvarray[ii++];
-		int locf = glob2loc[globf];
-		
-		if (locf != -1)
-		  SetDistantFaceNum (sender, locf, distf);
-	      }
-	  } 
-      }
-    */
-
     NgProfiler::StopTimer (timerf);
 
 
 
-#ifdef OLD
-    // BitArray recvface(nfa);
-    // recvface.Clear();
-    for (int fa = 1; fa <= nfa; fa++ )
-      {
-	if ( !IsExchangeFace ( fa ) ) continue;
-	
-	Array<int> edges, pnums;
-	int globfa = GetDistantFaceNum (0, fa);
-
-	topology.GetFaceEdges (fa, edges);
-	topology.GetFaceVertices (fa, pnums);
-	
-	// send : 
-	// localfacenum globalfacenum np ned globalpnums localpnums
-	// localedgenums mit globalv1, globalv2
-	
-	sendarray.Append ( fa );
-	sendarray.Append ( globfa );
-	sendarray.Append ( pnums.Size() );
-	sendarray.Append ( edges.Size() );
-
-	for (int i = 0; i < pnums.Size(); i++ )
-	  sendarray.Append( GetLoc2Glob_Vert(pnums[i]) );
-
-	for ( int i = 0; i < pnums.Size(); i++ )
-	  sendarray.Append(pnums[i]);
-
-	for ( int i = 0; i < edges.Size(); i++ )
-	  {
-	    sendarray.Append(edges[i]);
-	    int v1, v2;
-	    topology.GetEdgeVertices ( edges[i], v1, v2 );
-	    int dv1 = GetLoc2Glob_Vert ( v1 );
-	    int dv2 = GetLoc2Glob_Vert ( v2 );
-	    sendarray.Append ( dv1 );
-	    sendarray.Append ( dv2 );
-	  }
-      }
-
-    BitArray edgeisinit(ned), vertisinit(np);
-    edgeisinit.Clear();
-    vertisinit.Clear();
-    
-    // Array for temporary use, to find local from global element fast
-    // only for not too big meshes 
-    // seems ok, as low-order space is treated on one proc
-    Array<int,1> glob2locfa (nfaglob);
-    glob2locfa = -1;
-
-    for (int locfa = 1; locfa <= nfa; locfa++)
-      if (IsExchangeFace (locfa) )
-	glob2locfa[GetDistantFaceNum(0, locfa)] = locfa;
-
-
-    for (int sender = 1; sender < ntasks; sender ++)
-      {
-	if (id == sender)
-	  MyMPI_Bcast (sendarray, sender-1, MPI_HIGHORDER_COMM);
-	else
-	  {
-	    MyMPI_Bcast ( recvarray, sender-1, MPI_HIGHORDER_COMM);
-	    // compare received vertices with own ones
-	    int ii = 0;
-	    int cntel = 0;
-	    int locfa = 1;
-
-	    while (ii < recvarray.Size())
-	      {
-		// receive list : 
-		// distant_facenum global_facenum np ned globalpnums distant_pnums
-		// distant edgenums mit globalv1, globalv2
-		
-		int distfa = recvarray[ii++];
-		int globfa = recvarray[ii++];
-		int distnp = recvarray[ii++];
-		int distned =recvarray[ii++];
-		
-		int locfa = (glob2locfa) [globfa];
-		
-		if ( locfa == -1 ) 
-		  {
-		    ii += 2*distnp + 3*distned;
-		    locfa = 1;
-		    continue;
-		  }
-		
-		Array<int> edges;
-		int fa = locfa;
-		
-		Array<int> pnums, globalpnums;
-		topology.GetFaceEdges ( fa, edges );
-		topology.GetFaceVertices ( fa, pnums );
-		
-		globalpnums.SetSize ( distnp );
-		for ( int i = 0; i < distnp; i++)
-		  globalpnums[i] = GetLoc2Glob_Vert ( pnums[i] );
-		
-		SetDistantFaceNum ( sender, fa, distfa );
-		
-		// find exchange points
-		for ( int i = 0;  i < distnp; i++)
-		  {
-		    int distglobalpnum = recvarray[ii+i];
-		    for ( int j = 0; j < distnp; j++ )
-		      if ( globalpnums[j] == distglobalpnum )
-			{
-			  // set sender -- distpnum  ---- locpnum
-			  int distpnum = recvarray[ii + i +distnp];
-			  // SetDistantPNum ( sender, pnums[j], distpnum );
-			}
-		  }
-			
-		Array<int> distedgenums(distned);
-		// find exchange edges
-		for ( int i = 0; i  < edges.Size(); i++)
-		  {
-		    int v1, v2;
-		    topology . GetEdgeVertices ( edges[i], v1, v2 );
-		    int dv1 = GetLoc2Glob_Vert ( v1 );
-		    int dv2 = GetLoc2Glob_Vert ( v2 );
-		    if ( dv1 > dv2 ) swap ( dv1, dv2 );
-		    for ( int ed = 0; ed < distned; ed++)
-		      {
-			distedgenums[ed] = recvarray[ii + 2*distnp + 3*ed];
-			int ddv1 = recvarray[ii + 2*distnp + 3*ed + 1];
-			int ddv2 = recvarray[ii + 2*distnp + 3*ed + 2];
-			if ( ddv1 > ddv2 ) swap ( ddv1, ddv2 );
-			if ( dv1 == ddv1 && dv2 == ddv2 )
-			  {
-			    // set sender -- distednum -- locednum
-			    SetDistantEdgeNum ( sender, edges[i], distedgenums[ed] );
-			  }
-		      }
-		  }
-		ii += 2*distnp + 3*distned;
-	      }
-	  }
-      }
-#endif
-  
-
     // set which elements are where for the master processor
 
     coarseupdate = 1;
-    MPI_Barrier (MPI_COMM_WORLD);
   }
 
 
@@ -1220,40 +869,7 @@ namespace netgen
 
   void ParallelMeshTopology :: UpdateTopology () 
   {
-#ifdef OLD
-    const MeshTopology & topology = mesh.GetTopology();
-    int nfa = topology.GetNFaces();
-    int ned = topology.GetNEdges();
-
-    /*
-    isghostedge.SetSize(ned);
-    isghostface.SetSize(nfa);
-    isghostedge.Clear();
-    isghostface.Clear();
-
-    for ( int ed = 1; ed <= ned; ed++)
-      {
-	int v1, v2;
-	topology.GetEdgeVertices ( ed, v1, v2 );
-	if ( IsGhostVert(v1) || IsGhostVert(v2) )
-	  SetGhostEdge ( ed );
-      }
-    */
-
-    /*
-    Array<int> pnums;
-    for ( int fa = 1; fa <= nfa; fa++)
-      {
-	topology.GetFaceVertices ( fa, pnums );
-	for ( int i = 0; i < pnums.Size(); i++)
-	  if ( IsGhostVert( pnums[i] ) )
-	    {
-	      SetGhostFace ( fa );
-	      break;
-	    }
-      }
-    */
-#endif
+    ;
   }
 
 
