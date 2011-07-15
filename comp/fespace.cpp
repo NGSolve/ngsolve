@@ -298,46 +298,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		    if (distnums[j][0] > 0)  // not master
 		      dist_dir_vertex.Add (distnums[j][0], distnums[j][1]);
 		}
-		/*
-		for (int dist = 1; dist < ntasks; dist++)
-		  if (dist != id)
-		    {
-		      int distnum = NgPar_GetDistantPNum (dist, i);
-		      if (distnum >= 0)
-			dist_dir_vertex.Add (dist, distnum);
-		    }
-		*/
-	    *testout << "dist_dir_vertex = " << dist_dir_vertex << endl;
-	    /*
-	    for (int dist = 1; dist < ntasks; dist++)
-	      if (id != dist)
-		{
-		  Array<int> dirvert;
-		  if (dist < id)
-		    {
-		      MyMPI_Send (dist_dir_vertex[dist], dist);
-		      MyMPI_Recv (dirvert, dist);
-		    }
-		  else
-		    {
-		      MyMPI_Recv (dirvert, dist);
-		      MyMPI_Send (dist_dir_vertex[dist], dist);
-		    }
-		  // *testout << "got dirvert from " << dist << ": " << dirvert << endl;
-		  for (int i = 0; i < dirvert.Size(); i++)
-		    dirichlet_vertex[dirvert[i]] = true;
-		}	   
-	    */
-
-	    /*
-	    // check ordering
-	    for (int i = 1; i < ma.GetNV(); i++)
-	      {
-		int m0 =  NgPar_GetDistantPNum (0, i-1);
-		int m1 =  NgPar_GetDistantPNum (0, i);
-		if (m0 > m1) cerr << endl << endl << "Wrong ordering !!!!" << endl << endl;
-	      }
-	    */
+	    // *testout << "dist_dir_vertex = " << dist_dir_vertex << endl;
 	  }
 
 	Array<int> nsend(ntasks), nrecv(ntasks);
@@ -352,17 +313,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	for (int i = 0; i < ntasks; i++)
 	  {
 	    if (nsend[i])
-	      {
-		MPI_Request requ;
-		MyMPI_ISend (dist_dir_vertex[i], i, MPI_TAG_SOLVE, requ);
-		requests.Append (requ);
-	      }
+	      requests.Append (MyMPI_ISend (dist_dir_vertex[i], i, MPI_TAG_SOLVE));
 	    if (nrecv[i])
-	      {
-		MPI_Request requ;
-		MyMPI_IRecv (recv_dir_vert[i], i, MPI_TAG_SOLVE, requ);
-		requests.Append (requ);
-	      }
+	      requests.Append (MyMPI_IRecv (recv_dir_vert[i], i, MPI_TAG_SOLVE));
 	  }
 	MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
 
@@ -372,10 +325,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    for (int j = 0; j < dirvert.Size(); j++)
 	      dirichlet_vertex[dirvert[j]] = true;
 	  }
-
-	//	cout << "send table [" << id << "] = " << dist_dir_vertex << endl;
-	// cout << "recv table [" << id << "] = " << recv_dir_vert << endl;
-	// cout << "exchange dirichlet vertices done" << endl;		
 #endif
 	(*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
 	(*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;

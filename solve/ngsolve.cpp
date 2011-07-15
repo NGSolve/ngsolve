@@ -176,8 +176,6 @@ void * SolveBVP(void *)
 {
   try
     {
-      // while (1) cout << "solve bvp, id = 0" << endl;
-
       if (pde && pde->IsGood())
 	pde->SolveBVP();
     }
@@ -232,11 +230,9 @@ int NGS_SolvePDE (ClientData clientData,
   cout << "Solve PDE" << endl;
   Ng_SetRunning (1);
 
-
   MyMPI_SendCmd ("ngs_solvepde");
-  
+
   RunParallel (SolveBVP, NULL);
-  cout << "it runs in parallel, id = " << id << endl;
 
   return TCL_OK;
 }
@@ -650,13 +646,12 @@ int NGSolve_Init (Tcl_Interp * interp)
   if (ntasks > 1)
     omp_set_num_threads (1);
 #endif
-  cout << "Running OpenMP - parallel using " << omp_get_max_threads() << " threads" << endl;
+  cout << "Running OpenMP - parallel using " << omp_get_max_threads() << " thread(s)" << endl;
   cout << "(number of threads can be changed by setting OMP_NUM_THREADS)" << endl;
 #endif
   
 #ifdef MPI_VERSION
-  cout << "MPI-version = " << MPI_VERSION << endl;
-  cout << "MPI-subversion = " << MPI_SUBVERSION << endl;
+  cout << "MPI-version = " << MPI_VERSION << '.' << MPI_SUBVERSION << endl;
 #endif
 
   
