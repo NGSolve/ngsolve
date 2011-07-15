@@ -1,11 +1,11 @@
 if {[catch {package require Tix } result ]} {
-     puts "cannot find package Tix"
+     puts "cannot load package Tix"
      puts "error : $result"
 }
 
 # if {[catch {package require Togl 2.0 } result ]} {
-#    puts "cannot find package Togl 2.0"
-#     puts "error : $result"
+#    puts "cannot load package Togl 2.0"
+#    puts "error : $result"
 # }
 
 
@@ -43,7 +43,8 @@ if { [string length $nguserdir] == 0 } {
 set batchmode [Ng_GetCommandLineParameter batchmode]
 
 set solvemode 0
-if { [Ng_GetCommandLineParameter solve] != "undefined" || [Ng_GetCommandLineParameter recent] == "defined" } {
+if { [Ng_GetCommandLineParameter solve] != "undefined" || \
+	 [Ng_GetCommandLineParameter recent] == "defined" } {
     set solvemode defined
 }
 
@@ -98,21 +99,10 @@ catch { source ${ngdir}/occgeom.tcl }
 source ${ngdir}/acisgeom.tcl
 
 
-
-catch { 
-    source ${ngdir}/nghelp.tcl
-}
-catch { 
-    source ${ngdir}/ngvisual.tcl
-}
-
-catch {
-    source ${ngdir}/sockets.tcl
-}
-
-catch {
-    source ${ngdir}/acis.tcl
-}
+catch { source ${ngdir}/nghelp.tcl }
+catch { source ${ngdir}/ngvisual.tcl }
+catch { source ${ngdir}/sockets.tcl }
+catch { source ${ngdir}/acis.tcl }
 
 
 
@@ -286,21 +276,9 @@ if { [Ng_GetCommandLineParameter help]=="defined" } {
     }
 }
 
+
 if { [file exists startup.tcl] } {
     source startup.tcl }
-
-
-
-
-##################################################
-# catch { source ${ngdir}/trafo/trafo.tcl }
-
-# catch { source ${ngdir}/trafoapp/smallmodels.tcl }
-
-# catch { 
-#  source ${ngdir}/ngshell.tcl
-#  source ${ngdir}/ngtesting.tcl
-# }
 
 
 

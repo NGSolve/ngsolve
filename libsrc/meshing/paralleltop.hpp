@@ -62,10 +62,12 @@ namespace netgen
 
     void GetVertNeighbours ( int vnum, Array<int> & dests ) const;
 
+    /*
     int Glob2Loc_SurfEl ( int globnum );
     int Glob2Loc_VolEl ( int globnum );
     int Glob2Loc_Segm ( int globnum );
     int Glob2Loc_Vert ( int globnum );
+    */
 
     int GetNDistantPNums ( int locpnum ) const       
     { return loc2distvert[locpnum].Size() / 2 + 1; } 

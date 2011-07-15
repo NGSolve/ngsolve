@@ -72,7 +72,7 @@
   {
     bool parthread = netgen::mparam.parthread;
 
-    if (netgen::id > 0) parthread = true;
+    if (netgen::id > 0) parthread = false;
     // if (netgen::ntasks > 1) parthread = false;
 
     if (parthread)

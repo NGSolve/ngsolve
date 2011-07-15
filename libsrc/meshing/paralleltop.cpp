@@ -103,7 +103,7 @@ namespace netgen
     // overlap = 0;
   }
 
-
+  /*
   int ParallelMeshTopology :: Glob2Loc_Vert (int globnum)
   {
     for (int i = 1; i <= nv; i++)
@@ -138,7 +138,7 @@ namespace netgen
 	locnum = i+1;
     return locnum;
   }
-
+  */
  
 
   void ParallelMeshTopology ::  Print() const
@@ -856,9 +856,71 @@ namespace netgen
 
     NgProfiler::StartTimer (timere);
 
+    // exchange edges
+    int maxedge = 0;
+    for (int edge = 1; edge <= ned; edge++)
+      maxedge = max (maxedge, GetDistantEdgeNum (0, edge));
+
+    glob2loc.SetSize (maxedge);
+    glob2loc = -1;
+    
+    for (int edge = 1; edge <= ned; edge++)
+      glob2loc[GetDistantEdgeNum(0, edge)] = edge;
+
+    cnt_send = 0;
+    int v1, v2;
+    for (int edge = 1; edge <= ned; edge++)
+      {
+	topology.GetEdgeVertices (edge, v1, v2);
+	for (int dest = 1; dest < ntasks; dest++)
+	  if (IsExchangeVert (dest, v1) && 
+	      IsExchangeVert (dest, v2))
+	    {
+	      cnt_send[dest-1]+=2;
+	    }
+      }
+    
+    TABLE<int> send_edges(cnt_send);
+    for (int edge = 1; edge <= ned; edge++)
+      {
+	topology.GetEdgeVertices (edge, v1, v2);
+	for (int dest = 1; dest < ntasks; dest++)
+	  {
+	    if (IsExchangeVert (dest, v1) && 
+		IsExchangeVert (dest, v2))
+	      {
+		send_edges.Add (dest-1, GetDistantEdgeNum(0, edge));
+		send_edges.Add (dest-1, edge);
+	      }
+	  }
+      }
+    TABLE<int> recv_edges(ntasks-1);
+    MyMPI_ExchangeTable (send_edges, recv_edges, MPI_TAG_MESH+8, MPI_HIGHORDER_COMM);
+
+    *testout << "send exchange edges: " << send_edges << endl;
+    *testout << "recv exchange edges: " << recv_edges << endl;
+
+    for (int sender = 1; sender < ntasks; sender ++)
+      if (id != sender)
+	{
+	  FlatArray<int> recvarray = recv_edges[sender-1];
+
+	  for (int ii = 0; ii < recvarray.Size(); )
+	    { 
+	      int globe = recvarray[ii++];
+	      int diste = recvarray[ii++];
+	      int loce = glob2loc[globe];
+
+	      // *testout << "set distant face, sender = " << sender << ", locf = " << locf << "; distf = " << distf << endl;
+	      if (loce != -1)
+		SetDistantEdgeNum (sender, loce, diste);
+	    }
+	} 
+
+
+    /*
     sendarray.SetSize (0);
     recvarray.SetSize (0);
-    
     
     // exchange edges
     int maxedge = 0;
@@ -897,8 +959,9 @@ namespace netgen
 	      }
 	  }
       }
-
+    */
     NgProfiler::StopTimer (timere);
+
     NgProfiler::StartTimer (timerf);
 
     glob2loc.SetSize (nfaglob);
@@ -1157,6 +1220,7 @@ namespace netgen
 
   void ParallelMeshTopology :: UpdateTopology () 
   {
+#ifdef OLD
     const MeshTopology & topology = mesh.GetTopology();
     int nfa = topology.GetNFaces();
     int ned = topology.GetNEdges();
@@ -1189,6 +1253,7 @@ namespace netgen
 	    }
       }
     */
+#endif
   }
 
 

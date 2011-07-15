@@ -1080,7 +1080,6 @@ namespace netgen
 
 #ifdef PARALLEL
 	(*testout) << " RESET Paralleltop" << endl;
-
 	paralleltop.Reset ();
 #endif
 
@@ -1207,26 +1206,15 @@ namespace netgen
 	      ; 
 	    // cout << "p" << id << ":  " << "Partition " << id << " is totally local" << endl;
 #endif
-
 	  }
 
 #ifdef PARALLEL
-     
 	if ( isparallel )
 	  {
 	    paralleltop.Update();
 	    if ( paralleltop.DoCoarseUpdate() )
-	      {
-		paralleltop.UpdateCoarseGrid();
-	      }
-	    else
-	      {
-		//  paralleltop.UpdateRefinement();
-	      }
-	    // paralleltop.Print();
+	      paralleltop.UpdateCoarseGrid();
 	  }
-
- 
 #endif
 
 

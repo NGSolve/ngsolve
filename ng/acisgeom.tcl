@@ -1,4 +1,3 @@
-
 if { [Ng_ACISCommand isACISavailable] == "yes" } {
     .ngmenu.geometry add command -label "ACIS Topology Explorer..." \
         -command { acisdialog; }
