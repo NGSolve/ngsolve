@@ -111,7 +111,6 @@ namespace ngla
     (*testout) << "CUMULATE" << endl;
 
     
-    MPI_Status status;
     Array<int> exprocs;
     
     // find which processors to communicate with
@@ -125,6 +124,7 @@ namespace ngla
     
     Array<MPI_Request> sendrequest(nexprocs), recvrequest(nexprocs);
 
+    *testout << "exprocs = " << exprocs << endl;
     // if the vectors are distributed, reduce
     if ( id >= 1)
       {
@@ -136,16 +136,21 @@ namespace ngla
 
         // wait till everything is sent 
 	for ( int isender = 0;  isender < nexprocs; isender ++)
-	  MPI_Wait ( &sendrequest[isender], &status);
+	  MPI_Wait ( &sendrequest[isender], MPI_STATUS_IGNORE);
 
+	*testout << "everything sent, id = " << id << endl;
+ 
 	// cumulate
 	// MPI_Waitany --> wait for first receive, not necessarily the one with smallest id
 	for ( int cntexproc=0; cntexproc < nexprocs; cntexproc++ )
 	  {
 	    int isender;
-	    MPI_Waitany ( nexprocs, &recvrequest[0], &isender, &status); 
+	    MPI_Waitany ( nexprocs, &recvrequest[0], &isender, MPI_STATUS_IGNORE); 
 	    constvec->AddRecvValues(exprocs[isender]);
+	    *testout << "got from proc " << isender << endl;
 	  } 
+
+	*testout << "got all, id = " << id << endl;
       }
 
     SetStatus(CUMULATED);

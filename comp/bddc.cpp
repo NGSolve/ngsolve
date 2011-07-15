@@ -39,8 +39,13 @@ namespace ngcomp
     {
       *testout << "NEBE Constructor" << endl;
 
-      if (id == 0) 
-	cout << "BDDC-marix NEBE const" << endl;
+      
+      MyMPI_Barrier ();
+
+      cout << IM(1) << "BDDC-marix NEBE const" << endl;
+
+      MyMPI_Barrier ();
+
       const FESpace & fes = bfa.GetFESpace();
       const MeshAccess & ma = fes.GetMeshAccess();
       int ne = ma.GetNE();
