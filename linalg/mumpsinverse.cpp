@@ -7,14 +7,17 @@
 #ifdef USE_MUMPS
 
 #include <la.hpp>
+#include <mpi.h>
 
 
+namespace netgen {
+  extern int id, ntasks;
+}
 
 namespace ngla
 {
-  using namespace ngla;
   using namespace ngstd;
-
+  using namespace netgen;
 
   
 #define JOB_INIT -1
@@ -42,21 +45,28 @@ namespace ngla
     inner = ainner;
     cluster = acluster;
 
+    
 
     cout << "Mumps called ..." << flush;
 
-    if ( ( inner && inner->Size() < a.Height() ) ||
-	 ( cluster && cluster->Size() < a.Height() ) )
+    MPI_Barrier (MPI_COMM_WORLD);
+
+    if (id == 0)
       {
-	cout << "Mumps: Size of inner/cluster does not match matrix size!" << endl;
-	throw Exception("Invalid parameters inner/cluster. Thrown by MumpsInverse.");
+	if ( ( inner && inner->Size() < a.Height() ) ||
+	     ( cluster && cluster->Size() < a.Height() ) )
+	  {
+	    cout << "Mumps: Size of inner/cluster does not match matrix size!" << endl;
+	    throw Exception("Invalid parameters inner/cluster. Thrown by MumpsInverse.");
+	  }
+	
+	if ( int( mat_traits<TM>::WIDTH) != int(mat_traits<TM>::HEIGHT) )
+	  {
+	    cout << "Mumps: Each entry in the square matrix has to be a square matrix!" << endl;
+	    throw Exception("No Square Matrix. Thrown by MumpsInverse.");
+	  }
       }
 
-    if ( int( mat_traits<TM>::WIDTH) != int(mat_traits<TM>::HEIGHT) )
-      {
-	cout << "Mumps: Each entry in the square matrix has to be a square matrix!" << endl;
-	throw Exception("No Square Matrix. Thrown by MumpsInverse.");
-      }
 
     clock_t starttime, time1 = 0, time2 = 0; 
     starttime = clock();
@@ -64,12 +74,19 @@ namespace ngla
     entrysize = mat_traits<TM>::HEIGHT; 
     iscomplex = mat_traits<TM>::IS_COMPLEX;
 
-    height = a.Height() * entrysize;
-    int * colstart = new int[height+1];
-    int * counter = new int[height];
 
+    int * colstart = 0;
+    int * counter = 0;
     int * col_indices = 0, * row_indices = 0;
     TSCAL * matrix = 0;
+
+    if (id == 0)
+      {
+
+    height = a.Height() * entrysize;
+
+    int * colstart = new int[height+1];
+    int * counter = new int[height];
 
  
     for ( int i = 0; i < height; i++ ) counter[i] = colstart[i+1] = 0;
@@ -311,70 +328,84 @@ namespace ngla
 	      }
 	  }
       }
+      }
 
 
-    id.job=JOB_INIT; 
-    id.par=1; 
-    id.sym=symmetric;
-    id.comm_fortran=USE_COMM_WORLD;
-    // dmumps_c(&id);
-    mumps_trait<TSCAL>::MumpsFunction (&id);
+    MPI_Barrier (MPI_COMM_WORLD);
+    cout << "have copied matrix" << endl;
+    MPI_Barrier (MPI_COMM_WORLD);
 
-    // cout << "MUMPS version number is " << id.version_number << endl;
+    mumps_id.job=JOB_INIT; 
+    mumps_id.par=1; 
+    mumps_id.sym=symmetric;
+    mumps_id.comm_fortran=USE_COMM_WORLD;
+    mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
+
+    MPI_Barrier (MPI_COMM_WORLD);
+    cout << "has done job init" << endl;
+    MPI_Barrier (MPI_COMM_WORLD);
+
+
+
+    // cout << "MUMPS version number is " << mumps_id.version_number << endl;
 
 
     /* Define the problem on the host */
-    id.n   = height; 
-    id.nz  = nze;
-    id.irn = row_indices;
-    id.jcn = col_indices;
-    // id.rhs = rhs;
+    mumps_id.n   = height; 
+    mumps_id.nz  = nze;
+    mumps_id.irn = row_indices;
+    mumps_id.jcn = col_indices;
+    // mumps_id.rhs = rhs;
 
     if (symmetric)
-      id.sym = 1;   // spd
+      mumps_id.sym = 1;   // spd
     else
-      id.sym = 0;   // non-symmetric
+      mumps_id.sym = 0;   // non-symmetric
     
 
-    id.icntl[0]=-1; 
-    id.icntl[1]=-1; 
-    id.icntl[2]=-1; 
-    id.icntl[3]=0;
+    mumps_id.icntl[0]=-1; 
+    mumps_id.icntl[1]=-1; 
+    mumps_id.icntl[2]=-1; 
+    mumps_id.icntl[3]=0;
 
-    id.job = JOB_ANALYSIS;
-    // dmumps_c(&id);
+    mumps_id.job = JOB_ANALYSIS;
 
-    // cout << "call analysis" << endl;
+    mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
-    mumps_trait<TSCAL>::MumpsFunction (&id);
+    MPI_Barrier (MPI_COMM_WORLD);
+    cout << "analysis is back" << endl;
+    MPI_Barrier (MPI_COMM_WORLD);
+
+
+
 
     cout << " factor ... " << flush;
-    // cout << "num floating-point ops = " << id.rinfog[0] << endl;
-    if (id.infog[0])
+    // cout << "num floating-point ops = " << mumps_id.rinfog[0] << endl;
+    if (mumps_id.infog[0])
       {
 	cout << "analysis done" << endl;
-	cout << "error-code = " << id.infog[0] << flush;
+	cout << "error-code = " << mumps_id.infog[0] << flush;
       }
 
 
     // cout << "analysis done, now factor" << endl;
 
-    // id.a   = (double*)(void*)matrix; 
-    id.a   = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)matrix; 
-    // id.a   = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)(void*)matrix; 
+    // mumps_id.a   = (double*)(void*)matrix; 
+    mumps_id.a   = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)matrix; 
+    // mumps_id.a   = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)(void*)matrix; 
 
 
-    id.job = JOB_FACTOR;
+    mumps_id.job = JOB_FACTOR;
     // dmumps_c(&id);
-    mumps_trait<TSCAL>::MumpsFunction (&id);
+    mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
 
-    if (id.infog[0] != 0)
+    if (mumps_id.infog[0] != 0)
       {
 	cout << " factorization done" << endl;
-	cout << "error-code = " << id.infog[0] << endl;
-	cout << "info(1) = " << id.info[0] << endl;
-	cout << "info(2) = " << id.info[1] << endl;
+	cout << "error-code = " << mumps_id.infog[0] << endl;
+	cout << "info(1) = " << mumps_id.info[0] << endl;
+	cout << "info(2) = " << mumps_id.info[1] << endl;
       }
     time2 = clock();
 
@@ -459,17 +490,15 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("Mumps mult inverse");
     NgProfiler::RegionTimer reg (timer);
 
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (const_cast<BaseVector &> (x)).FV();
-    FlatVector<TVX> fy = 
-      dynamic_cast<T_BaseVector<TVX> &> (y).FV();
-    
+    FlatVector<TVX> fx = x.FV<TVX>();
+    FlatVector<TVX> fy = y.FV<TVX>();
+
     fy = fx;
 
-    MUMPS_STRUC_C & ncid = const_cast<MUMPS_STRUC_C&> (id);
+    MUMPS_STRUC_C & ncid = const_cast<MUMPS_STRUC_C&> (mumps_id);
 
-    // ncid.rhs = &y.FVDouble()(0);
-    ncid.rhs = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)&fy(0);
+    // ncmumps_id.rhs = &y.FVDouble()(0);
+    ncid.rhs = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)& (y.FV<TSCAL>()(0));
 
     ncid.job = JOB_SOLVE;
     mumps_trait<TSCAL>::MumpsFunction (&ncid);
@@ -479,13 +508,13 @@ namespace ngla
       {
 	for (int i = 0; i < height/entrysize; i++)
 	  if (!inner->Test(i)) 
-	    for (int j = 0; j < entrysize; j++ ) fy(i*entrysize+j) = 0;
+	    for (int j = 0; j < entrysize; j++ ) fy(i*entrysize+j) = 0.0;
       }
     else if (cluster)
       {
 	for (int i = 0; i < height/entrysize; i++)
 	  if (!(*cluster)[i]) 
-	    for (int j = 0; j < entrysize; j++ ) fy(i*entrysize+j) = 0;
+	    for (int j = 0; j < entrysize; j++ ) fy(i*entrysize+j) = 0.0;
       }
   }
   
@@ -524,12 +553,12 @@ namespace ngla
   {
     cout << "delete mumps-inverse" << endl;
 
-    id.job=JOB_END; 
-    id.par=1; 
-    id.sym=symmetric;
-    id.comm_fortran=USE_COMM_WORLD;
+    mumps_id.job=JOB_END; 
+    mumps_id.par=1; 
+    mumps_id.sym=symmetric;
+    mumps_id.comm_fortran=USE_COMM_WORLD;
     // dmumps_c(&id);
-    mumps_trait<TSCAL>::MumpsFunction (&id);
+    mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
 
     /*
@@ -568,6 +597,7 @@ namespace ngla
   template class MumpsInverse<Mat<3,3,double> >;
   template class MumpsInverse<Mat<3,3,Complex> >;
 #endif
+  /*
 #if MAX_SYS_DIM >= 4
   template class MumpsInverse<Mat<4,4,double> >;
   template class MumpsInverse<Mat<4,4,Complex> >;
@@ -588,9 +618,9 @@ namespace ngla
   template class MumpsInverse<Mat<8,8,double> >;
   template class MumpsInverse<Mat<8,8,Complex> >;
 #endif
+  */
 
-
-
+  /*
   template class MumpsInverse<double, Vec<2,double>, Vec<2,double> >;
   template class MumpsInverse<double, Vec<3,double>, Vec<3,double> >;
   template class MumpsInverse<double, Vec<4,double>, Vec<4,double> >;
@@ -635,6 +665,7 @@ namespace ngla
   template class MumpsInverse<Complex, Vec<13,Complex>, Vec<13,Complex> >;
   template class MumpsInverse<Complex, Vec<14,Complex>, Vec<14,Complex> >;
   template class MumpsInverse<Complex, Vec<15,Complex>, Vec<15,Complex> >;
+*/
 }
 
 

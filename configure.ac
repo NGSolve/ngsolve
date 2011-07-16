@@ -71,7 +71,7 @@ AC_ARG_ENABLE([MKLpardiso],
 AC_ARG_ENABLE([mumps],
         [AC_HELP_STRING([--enable-mumps],[enable sparse direct solver MUMPS])],
         [AC_SUBST([MUMPS_INCLUDES], ["-DUSE_MUMPS"])]
-        [AC_SUBST([MUMPS_LIBS], ["-L/opt/netgen/lib -ldmumps -lzmumps -lmumps_common -lpord -lmpiseq -lgfortran"])]
+        [AC_SUBST([MUMPS_LIBS], ["-L/opt/mumps/lib -ldmumps -lzmumps -lmumps_common -lpord -lgfortran -lmpi_f77 -lscalapack"])]
         )
 
 

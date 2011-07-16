@@ -1801,7 +1801,6 @@ namespace ngla
     else if ( ainversetype == "mumps" ) SetInverseType ( MUMPS );
     else if ( ainversetype == "masterinverse" ) SetInverseType ( MASTERINVERSE );
     else SetInverseType ( SPARSECHOLESKY );
-
     return old_invtype;
   }
 
