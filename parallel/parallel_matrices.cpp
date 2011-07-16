@@ -88,6 +88,9 @@ namespace ngla
 	MyMPI_Send (cols, 0);
 	MyMPI_Send (vals, 0);
 	MyMPI_Send (globid, 0);
+
+	SparseMatrixSymmetric<TM> dummy_matrix (1,1);
+	inv = new MumpsInverse<TM> (dummy_matrix);
       }
 
     else
@@ -210,7 +213,8 @@ namespace ngla
 	cout << "have matrix, now invert" << endl;
 	// *testout << "wbmatrix = " << endl << matrix << endl;
       
-	inv = new SparseCholesky<TM> (matrix);
+	inv = new MumpsInverse<TM> (matrix);
+	// inv = new SparseCholesky<TM> (matrix);
 	// inv = new PardisoInverse<TM> (matrix, 0, 0, true);
       }
 
@@ -332,7 +336,21 @@ namespace ngla
   }
 
 
+  ostream & ParallelMatrix :: Print (ostream & ost) const
+  {
+    if (id > 0)
+      ost << mat;
+    return ost;
+  }
 
+  int ParallelMatrix :: VHeight() const
+  {
+    return (id == 0) ? 0 : mat.VHeight();
+  }
+  int ParallelMatrix :: VWidth() const
+  {
+    return (id == 0) ? 0 : mat.VWidth();
+  }
 
 
 

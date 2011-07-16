@@ -42,7 +42,9 @@ namespace ngla
 
 
 
-  template<class TM, class TV_ROW, class TV_COL>
+  template<class TM, 
+	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
+	   class TV_COL = typename mat_traits<TM>::TV_COL>
   class MumpsInverse : public BaseMatrix
   {
     typedef typename mat_traits<TM>::TV_COL TV;
@@ -52,7 +54,7 @@ namespace ngla
 
 #ifdef USE_MUMPS
     typedef typename mumps_trait<TSCAL>::MUMPS_STRUC_C MUMPS_STRUC_C;
-    MUMPS_STRUC_C id;
+    MUMPS_STRUC_C mumps_id;
 #endif
     int height, nze, entrysize;
 
