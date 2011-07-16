@@ -17,9 +17,10 @@ namespace netgen
     int nseg, nsurfel;
 
     // number of global elements, vertices, ???,  faces
-    int neglob, nvglob;
+    int neglob, nseglob, nvglob;
     int nparel;
     int nfaglob;
+    int nedglob;
 
     /**
        mapping from local to distant vertex number
@@ -45,6 +46,7 @@ namespace netgen
 
     void SetNVGlob ( int anvglob )   { nvglob = anvglob; }
     void SetNEGlob ( int aneglob )   { neglob = aneglob; }
+    void SetNSEGlob ( int anseglob )   { nseglob = anseglob; }
 
     int GetNVGlob ()  { return nvglob; }
     int GetNEGlob ()  { return neglob; }
@@ -59,6 +61,7 @@ namespace netgen
 
     int GetLoc2Glob_Vert  ( int locnum ) const { return loc2distvert[locnum][0]; }
     int GetLoc2Glob_VolEl ( int locnum ) const { return loc2distel[locnum-1][0]; }
+    int GetLoc2Glob_SurfEl ( int locnum ) const { return loc2distsurfel[locnum-1][0]; }
 
     void GetVertNeighbours ( int vnum, Array<int> & dests ) const;
 

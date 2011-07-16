@@ -124,7 +124,8 @@ public:
 
   
   int GetVerticesEdge ( int v1, int v2) const;
-  void GetSegmentVolumeElements ( int segnr, Array<int> & surfels ) const;
+  void GetSegmentVolumeElements ( int segnr, Array<int> & els ) const;
+  void GetSegmentSurfaceElements ( int segnr, Array<int> & els ) const;
 };
 
 

@@ -1114,50 +1114,10 @@ namespace netgen
 		    if ( ntasks > 1 )
 		      {
 			if ( !paralleltop.DoCoarseUpdate() ) continue;
-			// "illegal" faces are exchange faces
-			/*
-			  (*testout) << "exchange face : " << i << endl;
-			  (*testout) << "points = " << face2vert[i] << endl;
-			*/
-			// 		  (*testout) << "global points = ";
-			// 		  for ( int j = 0; j < 3; j++ )
-			// // 		    (*testout) << face2vert[i].I(j+1) << " -> " 
-			// // 			       << paralleltop.GetLoc2Glob_Vert( face2vert[i].I(j+1) ) << ",  ";
-			// 		  (*testout) << endl;
-			// 		  if ( !paralleltop.IsExchangeFace (i+1) )
-			// 		    paralleltop.SetRefinementFace (i+1);
-
-
-			/*
-			paralleltop.SetExchangeFace (i+1);
-		  
-			for (int j = 0; j < 4; j++)		    
-			  {
-			    if ( face2vert[i].I(j+1) > 0 )
-			      paralleltop.SetExchangeVert(face2vert[i].I(j+1));
-			  }
-		  
-			Array<int> faceedges;
-			GetFaceEdges (i+1, faceedges);
-			for ( int j = 0; j < faceedges.Size(); j++)
-			  {
-			    paralleltop.SetExchangeEdge ( faceedges[j] );
-			    int v1, v2;
-			    GetEdgeVertices(faceedges[j], v1, v2 );
-			  }
-			*/
-
-			/*
-			  (*testout) << "pos = ";
-			  for (int j = 0; j < 4; j++)
-			  if (face2vert[i].I(j+1) >= 1)
-			  (*testout) << mesh[(PointIndex)face2vert[i].I(j+1)] << " ";
-			  (*testout) << endl;
-			*/
 		      }
 		    else
-		      {
 #endif
+		      {
 			(*testout) << "illegal face : " << i << endl;
 			(*testout) << "points = " << face2vert[i] << endl;
 			(*testout) << "pos = ";
@@ -1185,42 +1145,36 @@ namespace netgen
 
 				}
 			  }
-#ifdef PARALLEL
 		      }
-#endif
 		  }
 	      }
 
-#ifndef PARALLEL
-	    if (cnt_err)
-	      cout << cnt_err << " elements are not matching !!!" << endl;
-#else
 	    if (cnt_err && ntasks == 1)
 	      cout << cnt_err << " elements are not matching !!!" << endl;
-	    else if (cnt_err && ntasks > 1)
-	      {
-		// cout << "p" << id << ":  " << cnt_err << " elements are not local" << endl;
-		isparallel = 1;
-	      }
-	    else if ( ntasks > 1 )
-	      ; 
-	    // cout << "p" << id << ":  " << "Partition " << id << " is totally local" << endl;
-#endif
+
+	    if (cnt_err && ntasks > 1)
+	      isparallel = 1;
 	  }
+      }
+    
 
 #ifdef PARALLEL
-	if ( isparallel )
-	  {
-	    paralleltop.Update();
-	    if ( paralleltop.DoCoarseUpdate() )
-	      paralleltop.UpdateCoarseGrid();
-	  }
-#endif
-
-
-
-
+    cout << "is par = " << int(isparallel) << ", id = " << id << endl;
+    if (mesh.GetDimension() == 3)
+      if (isparallel != (id != 0))
+	{
+	  cerr << " ****************************** " << endl;
+	  cerr << " **** wrong isparallel   ****** " << endl;
+	  cerr << " ****************************** " << endl;
+	}
+    
+    if (id != 0)    // if (isparallel)
+      {
+	paralleltop.Update();
+	if ( paralleltop.DoCoarseUpdate() )
+	  paralleltop.UpdateCoarseGrid();
       }
+#endif
  
  
   
@@ -1737,7 +1691,8 @@ namespace netgen
 
 
 
-  void MeshTopology :: GetSegmentVolumeElements ( int segnr, Array<int> & volels ) const
+  void MeshTopology :: 
+  GetSegmentVolumeElements ( int segnr, Array<int> & volels ) const
   {
     int v1, v2;
     GetEdgeVertices ( GetSegmentEdge (segnr), v1, v2 );
@@ -1749,6 +1704,24 @@ namespace netgen
     for ( int eli1=1; eli1 <= volels1.Size(); eli1++)
       if ( volels2.Contains( volels1.Elem(eli1) ) )
 	volels.Append ( volels1.Elem(eli1) );
-
   }
+
+  void MeshTopology :: 
+  GetSegmentSurfaceElements (int segnr, Array<int> & els) const
+  {
+    int v1, v2;
+    GetEdgeVertices ( GetSegmentEdge (segnr), v1, v2 );
+    Array<int> els1, els2;
+    GetVertexSurfaceElements ( v1, els1 );
+    GetVertexSurfaceElements ( v2, els2 );
+    els.SetSize(0);
+
+    for ( int eli1=1; eli1 <= els1.Size(); eli1++)
+      if ( els2.Contains( els1.Elem(eli1) ) )
+	els.Append ( els1.Elem(eli1) );
+  }
+
+
+
+
 }

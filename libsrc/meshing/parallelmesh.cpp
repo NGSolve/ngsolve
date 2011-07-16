@@ -31,10 +31,9 @@ namespace netgen
     if (id == 0)
       PrintMessage (1, "Send/Receive mesh");
 
-
     {
       // distribute global information
-      int nelglob, nvglob;
+      int nelglob, nseglob, nvglob;
       if (id == 0)
 	{
 	  paralleltop -> SetNV (GetNV());
@@ -43,15 +42,19 @@ namespace netgen
 	  paralleltop -> SetNSE (GetNSE());
 	  
 	  nelglob = GetNE();
+	  nseglob = GetNSE();
 	  nvglob = GetNV();
 	}
       
+      MyMPI_Bcast (dimension);
       MyMPI_Bcast (nelglob);
+      MyMPI_Bcast (nseglob);
       MyMPI_Bcast (nvglob);
       
       if (id > 0)
 	{
 	  paralleltop -> SetNEGlob (nelglob);
+	  paralleltop -> SetNSEGlob (nseglob);
 	  paralleltop -> SetNVGlob (nvglob);
 	}
     }
@@ -98,23 +101,29 @@ namespace netgen
   {
     Array<MPI_Request> sendrequests;
 
+    PrintMessage ( 3, "Sending vertices");
+
+
     Array<int> num_els_on_proc(ntasks);
     num_els_on_proc = 0;
     for (ElementIndex ei = 0; ei < GetNE(); ei++)
       num_els_on_proc[(*this)[ei].GetPartition()]++;
 
-
-    // get number of vertices for each processor
-    Array<int> nelloc (ntasks);
-    
-    nelloc = 0;
-    // elarraysize = 1;
-
-    PrintMessage ( 3, "Sending vertices");
-
     TABLE<ElementIndex> els_of_proc (num_els_on_proc);
     for (ElementIndex ei = 0; ei < GetNE(); ei++)
       els_of_proc.Add ( (*this)[ei].GetPartition(), ei);
+
+
+    Array<int> num_sels_on_proc(ntasks);
+    num_sels_on_proc = 0;
+    for (SurfaceElementIndex ei = 0; ei < GetNSE(); ei++)
+      num_sels_on_proc[(*this)[ei].GetPartition()]++;
+
+    TABLE<SurfaceElementIndex> sels_of_proc (num_sels_on_proc);
+    for (SurfaceElementIndex ei = 0; ei < GetNSE(); ei++)
+      sels_of_proc.Add ( (*this)[ei].GetPartition(), ei);
+
+
 
 
     Array<int, PointIndex::BASE> vert_flag (GetNV());
@@ -124,6 +133,12 @@ namespace netgen
     num_verts_on_proc = 0;
     num_procs_on_vert = 0;
     vert_flag = -1;
+
+    Array<int> nelloc (ntasks);
+    nelloc = 0;
+    Array<int> nselloc (ntasks);
+    nselloc = 0;
+
 
     for (int dest = 1; dest < ntasks; dest++)
       {
@@ -145,10 +160,31 @@ namespace netgen
 		    paralleltop -> SetDistantPNum ( dest, epi, num_verts_on_proc[dest]);
 		  }
 	      }
-
-	    // elarraysize[dest] += 3 + el.GetNP();
 	    nelloc[dest] ++;
 	    paralleltop -> SetDistantEl ( dest, els[hi]+1, nelloc[dest] );
+	  }
+
+
+	FlatArray<SurfaceElementIndex> sels = sels_of_proc[dest];
+
+	for (int hi = 0; hi < sels.Size(); hi++)
+	  {
+	    const Element2d & el = (*this) [ sels[hi] ];
+	    for (int i = 0; i < el.GetNP(); i++)
+	      {
+		PointIndex epi = el[i]; 
+		if (vert_flag[epi] < dest)
+		  {
+		    vert_flag[epi] = dest;
+
+		    num_verts_on_proc[dest]++;
+		    num_procs_on_vert[epi]++;
+
+		    paralleltop -> SetDistantPNum ( dest, epi, num_verts_on_proc[dest]);
+		  }
+	      }
+	    nselloc[dest] ++;
+	    paralleltop -> SetDistantSurfEl ( dest, sels[hi]+1, nselloc[dest] );
 	  }
       }
 
@@ -163,7 +199,6 @@ namespace netgen
 	for (int hi = 0; hi < els.Size(); hi++)
 	  {
 	    const Element & el = (*this) [ els[hi] ];
-	    
 	    for (int i = 0; i < el.GetNP(); i++)
 	      {
 		PointIndex epi = el[i];
@@ -174,6 +209,22 @@ namespace netgen
 		  }
 	      }
 	  }
+
+	FlatArray<SurfaceElementIndex> sels = sels_of_proc[dest];
+	for (int hi = 0; hi < sels.Size(); hi++)
+	  {
+	    const Element2d & el = (*this) [ sels[hi] ];
+	    for (int i = 0; i < el.GetNP(); i++)
+	      {
+		PointIndex epi = el[i];
+		if (vert_flag[epi] < dest)
+		  {
+		    vert_flag[epi] = dest;
+		    procs_of_vert.Add (epi, dest);
+		  }
+	      }
+	  }
+
       }
 
     for (int vert = 1; vert <= GetNP(); vert++ )
@@ -241,6 +292,8 @@ namespace netgen
     for ( int dest = 1; dest < ntasks; dest ++ )
       sendrequests.Append (MyMPI_ISend (distpnums[dest], dest, MPI_TAG_MESH+1));
 
+
+
     PrintMessage ( 3, "Sending elements" );
 
     Array<int> elarraysize (ntasks);
@@ -270,7 +323,6 @@ namespace netgen
       sendrequests.Append (MyMPI_ISend (elementarrays[dest], dest, MPI_TAG_MESH+2));
 
     PrintMessage ( 3, "Sending Face Descriptors" );
-  
 
     Array<double> fddata (6 * GetNFD());
     for (int fdi = 1; fdi <= GetNFD(); fdi++)
@@ -288,71 +340,37 @@ namespace netgen
 
     PrintMessage ( 3, "Sending Surface elements" );
   
-    Array <int> nlocsel(ntasks), bufsize(ntasks); // , seli(ntasks);
-    for ( int i = 0; i < ntasks; i++)
-      {
-	nlocsel[i] = 0;
-	bufsize[i] = 1;
-      }
+    Array <int> nlocsel(ntasks), bufsize(ntasks); 
+    nlocsel = 0;
+    bufsize = 1;
 
     for (int sei = 1; sei <= GetNSE(); sei++ )
       {
-	int ei1, ei2;
-	GetTopology().GetSurface2VolumeElement (sei, ei1, ei2);
 	const Element2d & sel = SurfaceElement (sei);
-
-        for (int j = 0; j < 2; j++)
-          {
-            int ei = (j == 0) ? ei1 : ei2;
-            if ( ei > 0 && ei <= GetNE() )
-              {
-                const Element & el = VolumeElement (ei);
-                int dest = el.GetPartition();
-		nlocsel[dest] ++;
-		bufsize[dest] += 4 + 2*sel.GetNP();
-              }
-	  }
+	int dest = sel.GetPartition();
+	nlocsel[dest] ++;
+	bufsize[dest] += 4 + 2*sel.GetNP();
       }
     
     TABLE<int> selbuf(bufsize);
-
-    Array<int> nselloc (ntasks);
-    nselloc = 0;
 
     for (int dest = 1; dest < ntasks; dest++ )
       selbuf.Add (dest, nlocsel[dest]);
 
     for (int sei = 1; sei <= GetNSE(); sei ++ )
       {
-	int ei1, ei2;
-	GetTopology().GetSurface2VolumeElement (sei, ei1, ei2);
 	const Element2d & sel = SurfaceElement (sei);
+	int dest = sel.GetPartition();
 
-	int isghost = 0;
-        for (int j = 0; j < 2; j++)
-          {
-            int ei = (j == 0) ? ei1 : ei2;
-            if ( ei > 0 && ei <= GetNE() )
-              {
-                const Element & el = VolumeElement (ei);
-                int dest = el.GetPartition();
-                if (dest > 0)
-                  {
-		    selbuf.Add (dest, sei);
-		    selbuf.Add (dest, sel.GetIndex());
-		    selbuf.Add (dest, isghost);
-		    selbuf.Add (dest, sel.GetNP());
-
-                    for ( int ii = 1; ii <= sel.GetNP(); ii++)
-                      {
-                        selbuf.Add (dest, sel.PNum(ii));
-                        selbuf.Add (dest, sel.GeomInfoPi(ii).trignum);
-                      }
-		    nselloc[dest] ++;
-		    paralleltop -> SetDistantSurfEl ( dest, sei, nselloc[dest] );
-		    isghost = 1;
-                  }
-              }
+	selbuf.Add (dest, sei);
+	selbuf.Add (dest, sel.GetIndex());
+	selbuf.Add (dest, 0);
+	selbuf.Add (dest, sel.GetNP());
+	
+	for ( int ii = 1; ii <= sel.GetNP(); ii++)
+	  {
+	    selbuf.Add (dest, sel.PNum(ii));
+	    selbuf.Add (dest, sel.GeomInfoPi(ii).trignum);
 	  }
       }
 
@@ -373,13 +391,13 @@ namespace netgen
       {
 	Array<int> volels;
 	const MeshTopology & topol = GetTopology();
-	topol . GetSegmentVolumeElements ( segi, volels );
+	topol . GetSegmentSurfaceElements ( segi, volels );
         for (int j = 0; j < volels.Size(); j++)
           {
             int ei = volels[j];
-            if ( ei > 0 && ei <= GetNE() )
+            if ( ei > 0 && ei <= GetNSE() )
               {
-                const Element & el = VolumeElement (ei);
+                const Element2d & el = SurfaceElement (ei);
                 int dest = el.GetPartition();
 		nlocseg[dest] ++;
 		bufsize[dest] += 14;
@@ -392,15 +410,15 @@ namespace netgen
     for ( int ls=1; ls <= GetNSeg(); ls++)
       {
 	Array<int> volels;
-	GetTopology().GetSegmentVolumeElements ( ls, volels );
+	GetTopology().GetSegmentSurfaceElements ( ls, volels );
 	const Segment & seg = LineSegment (ls);
 
         for (int j = 0; j < volels.Size(); j++)
           {
             int ei = volels[j];
-            if ( ei > 0 && ei <= GetNE() )
+            if ( ei > 0 && ei <= GetNSE() )
               {
-                const Element & el = VolumeElement (ei);
+                const Element2d & el = SurfaceElement (ei);
                 int dest = el.GetPartition();
 
 		if ( dest > 0 )
@@ -430,6 +448,8 @@ namespace netgen
       sendrequests.Append (MyMPI_ISend(segmbuf[dest], dest, MPI_TAG_MESH+5));
 
     MPI_Waitall (sendrequests.Size(), &sendrequests[0], MPI_STATUS_IGNORE);
+
+    MPI_Barrier(MPI_COMM_WORLD);
   }
 
 
@@ -451,8 +471,6 @@ namespace netgen
 
     // string st;
 
-
-    
     // receive vertices
     NgProfiler::StartTimer (timer_pts);
     
@@ -463,7 +481,7 @@ namespace netgen
     paralleltop -> SetNV (numvert);
     
     // INDEX_CLOSED_HASHTABLE<int> glob2loc_vert_ht (3*numvert+1);
-    INDEX_HASHTABLE<int> glob2loc_vert_ht (100);
+    INDEX_HASHTABLE<int> glob2loc_vert_ht (3*numvert+1);
 
     for (int vert = 0; vert < numvert; vert++)
       {
@@ -488,7 +506,6 @@ namespace netgen
     
     NgProfiler::StopTimer (timer_pts);
     *testout << "got " << numvert << " vertices" << endl;
-    
 
     {
       Element el;
@@ -498,7 +515,6 @@ namespace netgen
       
       NgProfiler::RegionTimer reg(timer_els);
 
-      // double sumcosts = 0, sum = 0;
       for (int ind = 0, elnum = 1; ind < elarray.Size(); elnum++)
 	{
 	  paralleltop->SetLoc2Glob_VolEl ( elnum,  elarray[ind++]);
@@ -506,26 +522,12 @@ namespace netgen
 	  el.SetIndex(elarray[ind++]);
 	  el.SetNP(elarray[ind++]);
 	  
-	  /*
-	  for ( int j = 0; j < el.GetNP(); j++)
-	    {
-	      int costs = 1; // glob2loc_vert_ht.CalcPositionCosts (elarray[ind+j]); 
-	      // *testout << "costs to hash " << elarray[ind+j] << ", hashvalue = " 
-	      // << glob2loc_vert_ht.HashValue(elarray[ind+j]) << ": " << costs << endl;
-	      sumcosts += costs;
-	      sum++;
-	    }
-	  */
-
 	  for ( int j = 0; j < el.GetNP(); j++)
 	    el[j] = glob2loc_vert_ht.Get (elarray[ind++]); 
 	  
 	  AddVolumeElement (el);
 	}
-      // *testout << "average hashing costs: " << sumcosts / sum << endl;
-      // cout << "average hashing costs: " << sumcosts / sum << endl;
     }
-
 
     {
       Array<double> fddata;
@@ -541,7 +543,6 @@ namespace netgen
 
     {
       NgProfiler::RegionTimer reg(timer_sels);
-      // surface elements
       Array<int> selbuf;
 
       MyMPI_Recv ( selbuf, 0, MPI_TAG_MESH+4);
@@ -620,12 +621,14 @@ namespace netgen
 	}
     }
     
+    MPI_Barrier(MPI_COMM_WORLD);
 
     int timerloc = NgProfiler::CreateTimer ("Update local mesh");
     int timerloc2 = NgProfiler::CreateTimer ("CalcSurfacesOfNode");
 
     NgProfiler::RegionTimer regloc(timerloc);
     PrintMessage (2, "Got ", GetNE(), " elements");
+    PrintMessage (2, "Got ", GetNSE(), " surface elements");
 
     NgProfiler::StartTimer (timerloc2);
 
@@ -638,6 +641,7 @@ namespace netgen
     
     SetNextMajorTimeStamp();
     // paralleltop->Print();
+    cout << "receive mesh complete, id = " << id << endl;
   }
   
 
@@ -648,14 +652,10 @@ namespace netgen
   // call it only for the master !
   void Mesh :: Distribute ()
   {
-    if ( id != 0 || ntasks == 1 ) return;
-    // metis partition of mesh, only if more than one proc
-    
+    if (id != 0 || ntasks == 1 ) return;
 
 
-    // partition mesh
 #ifdef METIS
-
     ParallelMetis ();
 #else
     for (ElementIndex ei = 0; ei < GetNE(); ei++)
@@ -668,17 +668,11 @@ namespace netgen
     for (SurfaceElementIndex ei = 0; ei < GetNSE(); ei++)
       *testout << "sel(" << int(ei) << ") is in part " << (*this)[ei].GetPartition() << endl;
 
-
     // send partition
-
-    //    for (int dest = 1; dest < ntasks; dest++)
-    //      MyMPI_Send ("mesh", dest, MPI_TAG_CMD);
     MyMPI_SendCmd ("mesh");
     SendRecvMesh (); 
 
-
     paralleltop -> UpdateCoarseGrid();
-
     // paralleltop -> Print();
   }
   
@@ -704,50 +698,42 @@ namespace netgen
     int ne = GetNE();
     int nn = GetNP();
 
-    if (ntasks <= 2)
+    if (ntasks <= 2 || ne <= 1)
       {
         if (ntasks == 1) return;
         
         for (int i=1; i<=ne; i++)
           VolumeElement(i).SetPartition(1);
 
+        for (int i=1; i<=GetNSE(); i++)
+          SurfaceElement(i).SetPartition(1);
+
         return;
       }
 
 
     bool uniform_els = true;
-    ELEMENT_TYPE elementtype = TET; // VolumeElement(1).GetType();
-    // metis works only for uniform tet/hex meshes
-    for ( int el = 2; el <= GetNE(); el++ )
+
+    ELEMENT_TYPE elementtype = TET; 
+    for ( int el = 1; el <= GetNE(); el++ )
       if ( VolumeElement(el).GetType() != elementtype )
 	{
-// 	  int nelperproc = ne / (ntasks-1);
-// 	  for (int i=1; i<=ne; i++)
-// 	    { 
-// 	      int partition = i / nelperproc + 1;
-// 	      if ( partition >= ntasks ) partition = ntasks-1;
-// 	      VolumeElement(i).SetPartition(partition);
-// 	    }
-	  
 	  uniform_els = false;
 	  break;
 	}
 
-    // uniform_els = false;
+
     if (!uniform_els)
       {
-	PartHybridMesh ( );   // neloc );
+	PartHybridMesh ( );  
 	return;
       }
 
 
-
     // uniform (TET) mesh,  JS
     int npe = VolumeElement(1).GetNP();
-    
-    idxtype *elmnts;
-    elmnts = new idxtype[ne*npe];
-    
+    Array<idxtype> elmnts(ne*npe);
+
     int etype;
     if (elementtype == TET)
       etype = 2;
@@ -763,10 +749,7 @@ namespace netgen
     int nparts = ntasks-1;
     
     int edgecut;
-    idxtype *epart, *npart;
-    epart = new idxtype[ne];
-    npart = new idxtype[nn];
-    
+    Array<idxtype> epart(ne), npart(nn);
 
 //     if ( ntasks == 1 ) 
 //       {
@@ -787,35 +770,49 @@ namespace netgen
 //       }
     
 
+
     cout << "call metis ... " << flush;
 
     int timermetis = NgProfiler::CreateTimer ("Metis itself");
     NgProfiler::StartTimer (timermetis);
 
-    METIS_PartMeshDual (&ne, &nn, elmnts, &etype, &numflag, &nparts,
-			&edgecut, epart, npart);
+    METIS_PartMeshDual (&ne, &nn, &elmnts[0], &etype, &numflag, &nparts,
+			&edgecut, &epart[0], &npart[0]);
 
     NgProfiler::StopTimer (timermetis);
 
     cout << "complete" << endl;
-    cout << "edge-cut: " << edgecut << ", balance: " << ComputeElementBalance(ne, nparts, epart) << endl;
-    
+    cout << "edge-cut: " << edgecut << ", balance: " 
+	 << ComputeElementBalance(ne, nparts, &epart[0]) << endl;
 
     // partition numbering by metis : 0 ...  ntasks - 1
     // we want:                       1 ...  ntasks
-
     for (int i=1; i<=ne; i++)
       VolumeElement(i).SetPartition(epart[i-1] + 1);
 
 
-    delete [] elmnts; 
-    delete [] epart; 
-    delete [] npart;
+    for (int sei = 1; sei <= GetNSE(); sei++ )
+      {
+	int ei1, ei2;
+	GetTopology().GetSurface2VolumeElement (sei, ei1, ei2);
+	Element2d & sel = SurfaceElement (sei);
+
+        for (int j = 0; j < 2; j++)
+          {
+            int ei = (j == 0) ? ei1 : ei2;
+            if ( ei > 0 && ei <= GetNE() )
+              {
+		sel.SetPartition (VolumeElement(ei).GetPartition());
+		break;
+	      }
+	  }	
+      }
+    
   }
 #endif
 
 
-  void Mesh :: PartHybridMesh () //  Array<int> & neloc ) 
+  void Mesh :: PartHybridMesh () 
   {
 #ifdef METIS
     int ne = GetNE();

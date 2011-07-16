@@ -2192,7 +2192,7 @@ namespace netgen
     if (minv == maxv) maxv = minv+1e-6;
 
 #ifdef PARALLEL
-    if (id == 0)
+    if ((ntasks > 1) && (id == 0))
       {
 	minv = 1e99;
 	maxv = -1e99;

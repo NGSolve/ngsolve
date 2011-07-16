@@ -429,16 +429,12 @@ namespace netgen
     if (id == 0)
       PrintMessage ( 3, "UPDATE GLOBAL COARSEGRID STARTS" );      // JS
 
+
     MPI_Group MPI_GROUP_WORLD;
-    
-    int n_ho = netgen::ntasks - 1;
-    int * process_ranks = new int[netgen::ntasks-1];
-    for ( int i = 0; i < netgen::ntasks-1; i++ )
-      process_ranks[i] = i+1;
-    
-    MPI_Comm_group ( MPI_COMM_WORLD, &MPI_GROUP_WORLD);
-    MPI_Group_incl ( MPI_GROUP_WORLD, n_ho, process_ranks, & MPI_HIGHORDER_WORLD);
-    MPI_Comm_create ( MPI_COMM_WORLD, MPI_HIGHORDER_WORLD, & MPI_HIGHORDER_COMM);
+    int process_ranks[] = { 0 };
+    MPI_Comm_group (MPI_COMM_WORLD, &MPI_GROUP_WORLD);
+    MPI_Group_excl (MPI_GROUP_WORLD, 1, process_ranks, &MPI_HIGHORDER_WORLD);
+    MPI_Comm_create (MPI_COMM_WORLD, MPI_HIGHORDER_WORLD, &MPI_HIGHORDER_COMM);
 
 
     int timer = NgProfiler::CreateTimer ("UpdateCoarseGridGlobal");
@@ -446,6 +442,8 @@ namespace netgen
 
 
     *testout << "ParallelMeshTopology :: UpdateCoarseGridGlobal" << endl;
+    cout << "update global, id = " << id << endl;
+
     const MeshTopology & topology = mesh.GetTopology();
   
     Array<int> sendarray, recvarray;
@@ -479,152 +477,82 @@ namespace netgen
 	for ( int i = 0; i < topology .GetNFaces(); i++)
 	  loc2distface[i][0] = i+1;
       }
-  
-
-    if ( id == 0 )
-      sendarray.Append (nfa);
-
-    BitArray recvface(nfa);
-    recvface.Clear();
-   
-    /*
-      Array<int> edges, pnums, faces;
-      for ( int el = 1; el <= ne; el++ )
-      {
-      topology.GetElementFaces (el, faces);
-      int globeli = GetLoc2Glob_VolEl(el);
-
-      for ( int fai = 0; fai < faces.Size(); fai++)
-      {
-      int fa = faces[fai];
-
-      topology.GetElementEdges ( el, edges );
-      topology.GetFaceVertices ( fa, pnums );
-            
-      // send : 
-      // localfacenum
-      // np
-      // ned
-      // globalpnums
-      // localpnums
-            
-      // localedgenums mit globalv1, globalv2
-                
-      sendarray. Append ( fa );
-      sendarray. Append ( globeli );
-      sendarray. Append ( pnums.Size() );
-      sendarray. Append ( edges.Size() );
-
-      if (id == 0)
-      for ( int i = 0; i < pnums.Size(); i++ )
-      sendarray. Append( pnums[i] );
-      else
-      for ( int i = 0; i < pnums.Size(); i++ )
-      sendarray. Append( GetLoc2Glob_Vert(pnums[i]) );
-
-      for ( int i = 0; i < pnums.Size(); i++ )
-      sendarray. Append(pnums[i] );
-                
-      for ( int i = 0; i < edges.Size(); i++ )
-      {
-      sendarray. Append(edges[i] );
-      int v1, v2;
-      topology . GetEdgeVertices ( edges[i], v1, v2 );
-      int dv1 = GetLoc2Glob_Vert ( v1 );
-      int dv2 = GetLoc2Glob_Vert ( v2 );
-                
-      if (id > 0) if ( dv1 > dv2 ) swap ( dv1, dv2 );
-      sendarray . Append ( dv1 );
-      sendarray . Append ( dv2 );
-      }
-      }
-      }
-    */
-
-    // new version
-    Array<int> edges, pnums, faces, elpnums;
-    sendarray.Append (ne);
-    for ( int el = 1; el <= ne; el++ )
-      {
-	topology.GetElementFaces (el, faces);
-	topology.GetElementEdges ( el, edges );
-	const Element & volel = mesh.VolumeElement (el);
-
-	int globeli = GetLoc2Glob_VolEl(el);
-
-	sendarray. Append ( globeli );
-	sendarray. Append ( faces.Size() );
-	sendarray. Append ( edges.Size() );
-	sendarray. Append ( volel.GetNP() );
-
-	for ( int i = 0; i < faces.Size(); i++ )
-	  sendarray. Append(faces[i] );
-	for ( int i = 0; i < edges.Size(); i++ )
-	  sendarray. Append(edges[i] );
-
-	for ( int i = 0; i < volel.GetNP(); i++ )
-	  if (id == 0)
-	    sendarray. Append(volel[i] );
-	  else
-	    sendarray. Append(GetLoc2Glob_Vert (volel[i]));
-      }
-    // end new version
 
 
-
-    BitArray edgeisinit(ned), vertisinit(np);
-    edgeisinit.Clear();
-    vertisinit.Clear();
     
-    // Array for temporary use, to find local from global element fast
-    Array<int,1> glob2loc_el;
-    if ( id != 0 ) 
+    if ( id == 0 )
       {
+	sendarray.Append (nfa);
+	sendarray.Append (ned);
+
+	Array<int> edges, pnums, faces, elpnums;
+	sendarray.Append (ne);
+	for ( int el = 1; el <= ne; el++ )
+	  {
+	    topology.GetElementFaces (el, faces);
+	    topology.GetElementEdges ( el, edges );
+	    const Element & volel = mesh.VolumeElement (el);
+
+	    int globeli = GetLoc2Glob_VolEl(el);
+	    // cout << "el = " << el << ", globeli = " << globeli << endl;
+
+	    sendarray. Append ( globeli );
+	    sendarray. Append ( faces.Size() );
+	    sendarray. Append ( edges.Size() );
+	    sendarray. Append ( volel.GetNP() );
+
+	    for ( int i = 0; i < faces.Size(); i++ )
+	      sendarray. Append(faces[i] );
+	    for ( int i = 0; i < edges.Size(); i++ )
+	      sendarray. Append(edges[i] );
+
+	    for ( int i = 0; i < volel.GetNP(); i++ )
+	      if (id == 0)
+		sendarray. Append(volel[i] );
+	      else
+		sendarray. Append(GetLoc2Glob_Vert (volel[i]));
+	  }
+
+
+	sendarray.Append (nsurfel);
+	for (int el = 1; el <= nsurfel; el++)
+	  {
+	    topology.GetSurfaceElementEdges ( el, edges );
+	    const Element2d & surfel = mesh.SurfaceElement (el);
+
+	    sendarray. Append ( el );
+	    sendarray. Append ( edges.Size() );
+	    sendarray. Append ( surfel.GetNP() );
+
+	    for ( int i = 0; i < edges.Size(); i++ )
+	      sendarray. Append(edges[i] );
+
+	    for ( int i = 0; i < surfel.GetNP(); i++ )
+	      sendarray. Append(surfel[i] );
+	  }
+
+      }
+
+
+    if (id == 0)
+      MyMPI_Bcast ( sendarray );
+    else
+      MyMPI_Bcast ( recvarray );
+
+    cout << "have done bcast, id = " << id << endl;
+
+    if (id != 0)
+      {
+	Array<int,1> glob2loc_el;
+
 	glob2loc_el.SetSize (neglob);  
 	glob2loc_el = -1;
 	for ( int locel = 1; locel <= mesh.GetNE(); locel++)
 	  glob2loc_el[GetLoc2Glob_VolEl(locel)] = locel;
-      }
 
-
-    // MPI_Barrier (MPI_COMM_WORLD);
-
-    MPI_Request sendrequest;
-
-    if (id == 0)
-      {
- 	// PrintMessage (4, "UpdateCoarseGridGlobal : bcast, size = ", int (sendarray.Size()*sizeof(int)) );
-	MyMPI_Bcast ( sendarray );
-      }
-    else
-      sendrequest = MyMPI_ISend ( sendarray, 0, MPI_TAG_MESH  );
-
-
-    int nloops = (id == 0) ? ntasks-1 : 1;
-    for (int hi = 0; hi < nloops; hi++)
-      {
-	int sender;
-
-	if (id == 0)
-	  {
-	    sender = MyMPI_Recv ( recvarray, MPI_TAG_MESH );
-	    // PrintMessage (4, "have received from ", sender);
-	  }
-	else
-	  {
-	    MyMPI_Bcast ( recvarray );
-	    sender = 0;
-	  }
-	
-	// compare received vertices with own ones
 	int ii = 0;
-	// int cntel = 0;
-	int volel = 1;
-
-	if ( id != 0 )
-	  nfaglob = recvarray[ii++];
-	
-	if (id == 0) continue;
+	nfaglob = recvarray[ii++];
+	nedglob = recvarray[ii++];
 
 	Array<int> faces, edges;
 	Array<int> pnums, globalpnums;
@@ -632,16 +560,12 @@ namespace netgen
 	int recv_ne = recvarray[ii++];
 	for (int hi = 0; hi < recv_ne; hi++)
 	  {
-	    int globvolel   = recvarray[ii++];
+	    int globvolel = recvarray[ii++];
 	    int distnfa = recvarray[ii++];
 	    int distned = recvarray[ii++];
 	    int distnp  = recvarray[ii++];
 
-	    if ( id > 0 )      
-	      volel = glob2loc_el[globvolel];
-	    else
-	      volel = globvolel;
-	    
+	    int volel = glob2loc_el[globvolel];
 	    if (volel != -1)
 	      {
 		topology.GetElementFaces( volel, faces);
@@ -649,24 +573,67 @@ namespace netgen
 		const Element & volelement = mesh.VolumeElement (volel);
 
 		for ( int i = 0; i  < faces.Size(); i++)
-		  SetDistantFaceNum ( sender, faces[i], recvarray[ii++]);
+		  SetDistantFaceNum ( 0, faces[i], recvarray[ii++]);
 		
 		for ( int i = 0; i  < edges.Size(); i++)
-		  SetDistantEdgeNum ( sender, edges[i], recvarray[ii++]);
+		  SetDistantEdgeNum ( 0, edges[i], recvarray[ii++]);
 
-		for ( int i = 0; i  < distnp; i++)
-		  SetDistantPNum ( sender, volelement[i], recvarray[ii++]);
+		for ( int i = 0; i  < volelement.GetNP(); i++)
+		  SetDistantPNum ( 0, volelement[i], recvarray[ii++]);
 	      }
 	    else
 	      ii += distnfa + distned + distnp;
 	  }
+
+	
+	Array<int,1> glob2loc_sel;
+
+	int recv_nse = recvarray[ii++];
+	nseglob = recv_nse;
+
+	glob2loc_sel.SetSize (nseglob);  
+	glob2loc_sel = -1;
+	for ( int locel = 1; locel <= mesh.GetNSE(); locel++)
+	  glob2loc_sel[GetLoc2Glob_SurfEl(locel)] = locel;
+
+
+	for (int hi = 0; hi < recv_nse; hi++)
+	  {
+	    int globvolel = recvarray[ii++];
+	    int distned = recvarray[ii++];
+	    int distnp  = recvarray[ii++];
+
+	    int surfel = glob2loc_sel[globvolel];
+	    if (surfel != -1)
+	      {
+		topology.GetSurfaceElementEdges ( surfel, edges);
+		const Element2d & element = mesh.SurfaceElement (surfel);
+		
+		for ( int i = 0; i  < edges.Size(); i++)
+		  SetDistantEdgeNum ( 0, edges[i], recvarray[ii++]);
+
+		for ( int i = 0; i  < element.GetNP(); i++)
+		  SetDistantPNum ( 0, element[i], recvarray[ii++]);
+	      }
+	    else
+	      ii += distned + distnp;
+	  }
+
+
       }
-
-
-    coarseupdate = 1;
     
     if (id != 0)
-      MPI_Wait (&sendrequest, MPI_STATUS_IGNORE);
+      {
+	*testout << "l2d - vert = " << loc2distvert << endl;
+	*testout << "l2d - edge = " << loc2distedge << endl;
+	*testout << "l2d - el = " << loc2distel << endl;
+	*testout << "l2d - sel = " << loc2distsurfel << endl;
+      }
+
+    MPI_Barrier (MPI_COMM_WORLD);
+    cout << "update global complete, id = " << id << endl;
+    MPI_Barrier (MPI_COMM_WORLD);
+    coarseupdate = 1;
   }
 
 
@@ -676,6 +643,7 @@ namespace netgen
 
   void ParallelMeshTopology :: UpdateCoarseGrid ()
   {
+    cout << "updatecoarsegrid, id = " << id << endl;
     static int timer = NgProfiler::CreateTimer ("UpdateCoarseGrid");
     NgProfiler::RegionTimer reg(timer);
 
@@ -683,6 +651,7 @@ namespace netgen
     (*testout) << "UPDATE COARSE GRID PARALLEL TOPOLOGY " << endl;
     if (id == 0)
       PrintMessage (1, "UPDATE COARSE GRID PARALLEL TOPOLOGY ");
+
 
     // find exchange edges - first send exchangeedges locnum, v1, v2
     // receive distant distnum, v1, v2
@@ -719,8 +688,10 @@ namespace netgen
     Array<int> cnt_send(ntasks-1);
 
 
-
-  
+    MPI_Barrier (MPI_HIGHORDER_COMM);
+    cout << "before ex edges" << endl;
+    *testout << "before ex edges" << endl;
+    MPI_Barrier (MPI_HIGHORDER_COMM);
 
     NgProfiler::StartTimer (timere);
 
@@ -793,6 +764,15 @@ namespace netgen
 
  
     NgProfiler::StopTimer (timere);
+
+    MPI_Barrier (MPI_HIGHORDER_COMM);
+    cout << "before ex faces" << endl;
+    *testout << "before ex faces" << endl;
+    MPI_Barrier (MPI_HIGHORDER_COMM);
+
+    if (mesh.GetDimension() == 3)
+      {
+
     NgProfiler::StartTimer (timerf);
 
     glob2loc.SetSize (nfaglob);
@@ -855,7 +835,12 @@ namespace netgen
 
 
     NgProfiler::StopTimer (timerf);
+      }
 
+    MPI_Barrier (MPI_HIGHORDER_COMM);
+    cout << "after ex faces" << endl;
+    *testout << "after ex faces" << endl;
+    MPI_Barrier (MPI_HIGHORDER_COMM);
 
 
     // set which elements are where for the master processor
