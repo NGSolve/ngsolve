@@ -45,11 +45,7 @@ namespace ngla
     inner = ainner;
     cluster = acluster;
 
-    
 
-    cout << "Mumps called ..." << flush;
-
-    MPI_Barrier (MPI_COMM_WORLD);
 
     if (id == 0)
       {
@@ -68,6 +64,7 @@ namespace ngla
       }
 
 
+
     clock_t starttime, time1 = 0, time2 = 0; 
     starttime = clock();
 
@@ -82,258 +79,160 @@ namespace ngla
 
     if (id == 0)
       {
+	height = a.Height() * entrysize;
+	
+	int * colstart = new int[height+1];
+	int * counter = new int[height];
+	
+	for ( int i = 0; i < height; i++ ) 
+	  counter[i] = 0;
 
-    height = a.Height() * entrysize;
-
-    int * colstart = new int[height+1];
-    int * counter = new int[height];
-
- 
-    for ( int i = 0; i < height; i++ ) counter[i] = colstart[i+1] = 0;
-    
-    if ( symmetric )
-      {
-	col_indices = new int[a.NZE() * entrysize * entrysize ];
-	row_indices = new int[a.NZE() * entrysize * entrysize ];
-	matrix = new TSCAL[a.NZE() * entrysize * entrysize ];      
-        
-        int ii = 0;
-	for (int i = 0; i < a.Height(); i++ )
+	for ( int i = 0; i < height; i++ ) 
+	  colstart[i+1] = 0;
+	
+	if ( symmetric )
 	  {
-            FlatArray<const int> rowind = a.GetRowIndices(i);
-	    for (int j = 0; j < rowind.Size(); j++ )
+	    cout << "copy matrix symmetric" << endl;
+	    
+	    col_indices = new int[a.NZE() * entrysize * entrysize ];
+	    row_indices = new int[a.NZE() * entrysize * entrysize ];
+	    matrix = new TSCAL[a.NZE() * entrysize * entrysize ];      
+	    
+	    int ii = 0;
+	    for (int i = 0; i < a.Height(); i++ )
 	      {
-		int col = rowind[j];
+		FlatArray<const int> rowind = a.GetRowIndices(i);
 
-		if (  (!inner && !cluster) ||
-		      (inner && (inner->Test(i) && inner->Test(col) ) ) ||
-		      (!inner && cluster &&
-                       ((*cluster)[i] == (*cluster)[col] 
-                        && (*cluster)[i] ))  )
+		for (int j = 0; j < rowind.Size(); j++ )
 		  {
-		    TM entry = a(i,col);
-                    for (int l = 0; l < entrysize; l++ )
-                      for (int k = 0; k < entrysize; k++)
-			{
-                          int rowi = i*entrysize+l+1;
-                          int coli = col*entrysize+k+1;
-                          TSCAL val = Access(entry,l,k);
-                          if (rowi >= coli)
-                            {
-                              col_indices[ii] = coli;
-                              row_indices[ii] = rowi;
-                              matrix[ii] = val;
-                              ii++;
-                            }
-			}
-		  }
-		else if (i == col)
-		  {
-		    // in the case of 'inner' or 'cluster': 1 on the diagonal for
-		    // unused dofs.
-		    for (int l=0; l<entrysize; l++ )
+		    int col = rowind[j];
+		    
+		    if (  (!inner && !cluster) ||
+			  (inner && (inner->Test(i) && inner->Test(col) ) ) ||
+			  (!inner && cluster &&
+			   ((*cluster)[i] == (*cluster)[col] 
+			    && (*cluster)[i] ))  )
 		      {
-			col_indices[ii] = col*entrysize+l+1;
-			row_indices[ii] = col*entrysize+l+1;
-                        matrix[ii] = 1;
-                        ii++;
+			TM entry = a(i,col);
+			for (int l = 0; l < entrysize; l++ )
+			  for (int k = 0; k < entrysize; k++)
+			    {
+			      int rowi = i*entrysize+l+1;
+			      int coli = col*entrysize+k+1;
+			      TSCAL val = Access(entry,l,k);
+
+			      if (rowi >= coli)
+				{
+				  col_indices[ii] = coli;
+				  row_indices[ii] = rowi;
+				  matrix[ii] = val;
+				  ii++;
+				}
+			    }
+		      }
+		    else if (i == col)
+		      {
+			// in the case of 'inner' or 'cluster': 1 on the diagonal for
+			// unused dofs.
+			for (int l=0; l<entrysize; l++ )
+			  {
+			    col_indices[ii] = col*entrysize+l+1;
+			    row_indices[ii] = col*entrysize+l+1;
+			    matrix[ii] = 1;
+			    ii++;
+			  }
 		      }
 		  }
 	      }
+	    nze = ii;
 	  }
-        nze = ii;
-
-
-        /* later 
-	// --- transform lower left to full matrix (in compressed column storage format) ---
-	// 1.) build array 'colstart':
-	// (a) get nr. of entries for each col
-	for ( i=1; i<=a.Height(); i++ )
-        {
-        for ( j=0; j<a.GetRowIndices(i-1).Size(); j++ )
-        {
-        int col = a.GetRowIndices(i-1)[j];
-
-        if (  (!inner && !cluster) ||
-        (inner && (inner->Test(i-1) && inner->Test(col) ) ) ||
-        (!inner && cluster && 
-        ((*cluster)[i-1] == (*cluster)[col] 
-        && (*cluster)[i-1] ))  )
-        {
-        for ( k=0; k<entrysize; k++ )
-        {
-        colstart[col*entrysize+k+1] += entrysize;
-        if (i-1 != col) colstart[(i-1)*entrysize+k+1] += entrysize;
-        }
-        }
-        else if ( i-1 == col )
-        {
-        for ( k=0; k<entrysize; k++ )
-        colstart[col*entrysize+k+1] ++;
-        }
-        }
-        }
-	// (b) accumulate
-	colstart[0] = 0;
-	for ( i=1; i<=height; i++ ) colstart[i] += colstart[i-1];
-	nze = colstart[height];
-	
-
-
-	// 2.) build whole matrix:
- 	col_indices = new int[nze];
- 	row_indices = new int[nze];
- 	matrix = new TSCAL[nze];      
-
-	for ( i=0; i<a.Height(); i++ )
-        {
-        for ( j=0; j<a.GetRowIndices(i).Size(); j++ )
-        {
-        int col = a.GetRowIndices(i)[j];
-
-        if (  (!inner && !cluster) ||
-        (inner && (inner->Test(i) && inner->Test(col) ) ) ||
-        (!inner && cluster && 
-        ((*cluster)[i] == (*cluster)[col] 
-        && (*cluster)[i] ))  )
-        {
-        entry = a(i,col);
-        for ( k=0; k<entrysize; k++)
-        for ( l=0; l<entrysize; l++ )
-        {
-        col_indices[ colstart[col*entrysize+k]+
-        counter[col*entrysize+k] ] = i*entrysize+l;
-        matrix[ colstart[col*entrysize+k]+
-        counter[col*entrysize+k] ] = Elem(entry,l,k);
-        counter[col*entrysize+k]++;
-
-        if ( i != col )
-        {
-        col_indices[ colstart[i*entrysize+l]+
-        counter[i*entrysize+l] ] = col*entrysize+k;
-        matrix[ colstart[i*entrysize+l]+
-        counter[i*entrysize+l] ] = Elem(entry,k,l);
-        counter[i*entrysize+l]++;
-        }
-        }
-        }
-        else if (i == col)
-        {
-        // in the case of 'inner' or 'cluster': 1 on the diagonal for
-        // unused dofs.
-        for ( l=0; l<entrysize; l++ )
-        {
-        col_indices[ colstart[col*entrysize+l]+
-        counter[col*entrysize+l] ] = col*entrysize+l;
-        matrix[ colstart[col*entrysize+l]+
-        counter[col*entrysize+l] ] = 1;
-        counter[col*entrysize+l]++;
-        }
-        }
-        }
-        }
-	
-
-	
-        // 	(*testout) << endl << "col, colstart / indices, matrix-entries" << endl;
-        // 	for ( i=0; i<height; i++ )
-        // 	  {
-        // 	    (*testout) << endl << i+1 << ", " << colstart[i] << ":   ";
-        // 	    for ( j=colstart[i]; j<colstart[i+1]; j++ )
-        // 	      (*testout) << indices[j] << ", " << matrix[j] << "      ";
-        // 	  }
-        */
-	
-      }
-    else
-      {
-	// --- transform matrix to compressed column storage format ---
-
-	// 1.) build array 'colstart':
-	// (a) get nr. of entries for each col
-	for (int i = 0; i < a.Height(); i++ )
+	else
 	  {
-	    for (int j = 0; j < a.GetRowIndices(i).Size(); j++ )
+	    cout << "copy matrix non-symmetric" << endl;
+	    // --- transform matrix to compressed column storage format ---
+
+	    // 1.) build array 'colstart':
+	    // (a) get nr. of entries for each col
+	    for (int i = 0; i < a.Height(); i++ )
 	      {
-		int col = a.GetRowIndices(i)[j];
+		for (int j = 0; j < a.GetRowIndices(i).Size(); j++ )
+		  {
+		    int col = a.GetRowIndices(i)[j];
                 
-		if (  (!inner && !cluster) ||
-		      (inner && (inner->Test(i) && inner->Test(col) ) ) ||
-		      (!inner && cluster && 
-                       ((*cluster)[i] == (*cluster)[col] 
-                        && (*cluster)[i] ))  )
-		  {
-		    for (int k=0; k<entrysize; k++ )
-                      colstart[col*entrysize+k+1] += entrysize;
-		  }
-		else if ( i == col )
-		  {
-		    for (int k=0; k<entrysize; k++ )
-		      colstart[col*entrysize+k+1] ++;
+		    if (  (!inner && !cluster) ||
+			  (inner && (inner->Test(i) && inner->Test(col) ) ) ||
+			  (!inner && cluster && 
+			   ((*cluster)[i] == (*cluster)[col] 
+			    && (*cluster)[i] ))  )
+		      {
+			for (int k=0; k<entrysize; k++ )
+			  colstart[col*entrysize+k+1] += entrysize;
+		      }
+		    else if ( i == col )
+		      {
+			for (int k=0; k<entrysize; k++ )
+			  colstart[col*entrysize+k+1] ++;
+		      }
 		  }
 	      }
-	  }
 
-	// (b) accumulate
-	colstart[0] = 0;
-	for (int i = 1; i <= height; i++ ) colstart[i] += colstart[i-1];
-	nze = colstart[height];
+	    // (b) accumulate
+	    colstart[0] = 0;
+	    for (int i = 1; i <= height; i++ ) colstart[i] += colstart[i-1];
+	    nze = colstart[height];
 
 
-	// 2.) build whole matrix:
-	col_indices = new int[a.NZE() * entrysize * entrysize ];
-	row_indices = new int[a.NZE() * entrysize * entrysize ];
-	matrix = new TSCAL[a.NZE() * entrysize * entrysize ];      
+	    // 2.) build whole matrix:
+	    col_indices = new int[a.NZE() * entrysize * entrysize ];
+	    row_indices = new int[a.NZE() * entrysize * entrysize ];
+	    matrix = new TSCAL[a.NZE() * entrysize * entrysize ];      
 
-	for (int i = 0; i < a.Height(); i++ )
-	  {
-	    for (int j = 0; j<a.GetRowIndices(i).Size(); j++ )
+	    for (int i = 0; i < a.Height(); i++ )
 	      {
-		int col = a.GetRowIndices(i)[j];
+		for (int j = 0; j<a.GetRowIndices(i).Size(); j++ )
+		  {
+		    int col = a.GetRowIndices(i)[j];
 
-		if (  (!inner && !cluster) ||
-		      (inner && (inner->Test(i) && inner->Test(col) ) ) ||
-		      (!inner && cluster &&
-                       ((*cluster)[i] == (*cluster)[col] 
-                        && (*cluster)[i] ))  )
-		  {
-		    TM entry = a(i,col);
-		    for (int k = 0; k < entrysize; k++)
-		      for (int l = 0; l < entrysize; l++ )
-			{
-			  row_indices[ colstart[col*entrysize+k]+
-                                       counter[col*entrysize+k] ] = i*entrysize+l + 1;
-			  col_indices[ colstart[col*entrysize+k]+
-                                       counter[col*entrysize+k] ] = col*entrysize+k + 1;
-			  matrix[ colstart[col*entrysize+k]+
-				  counter[col*entrysize+k] ] = Access(entry,l,k);
-			  counter[col*entrysize+k]++;
-			}
-		  }
-		else if (i == col)
-		  {
-		    // in the case of 'inner' or 'cluster': 1 on the diagonal for
-		    // unused dofs.
-		    for (int l=0; l<entrysize; l++ )
+		    if (  (!inner && !cluster) ||
+			  (inner && (inner->Test(i) && inner->Test(col) ) ) ||
+			  (!inner && cluster &&
+			   ((*cluster)[i] == (*cluster)[col] 
+			    && (*cluster)[i] ))  )
 		      {
-			col_indices[ colstart[col*entrysize+l]+
-                                     counter[col*entrysize+l] ] = col*entrysize+l + 1;
-			row_indices[ colstart[col*entrysize+l]+
-                                     counter[col*entrysize+l] ] = col*entrysize+l + 1;
-			matrix[ colstart[col*entrysize+l]+
-				counter[col*entrysize+l] ] = 1;
-			counter[col*entrysize+l]++;
+			TM entry = a(i,col);
+			for (int k = 0; k < entrysize; k++)
+			  for (int l = 0; l < entrysize; l++ )
+			    {
+			      row_indices[ colstart[col*entrysize+k]+
+					   counter[col*entrysize+k] ] = i*entrysize+l + 1;
+			      col_indices[ colstart[col*entrysize+k]+
+					   counter[col*entrysize+k] ] = col*entrysize+k + 1;
+			      matrix[ colstart[col*entrysize+k]+
+				      counter[col*entrysize+k] ] = Access(entry,l,k);
+			      counter[col*entrysize+k]++;
+			    }
+		      }
+		    else if (i == col)
+		      {
+			// in the case of 'inner' or 'cluster': 1 on the diagonal for
+			// unused dofs.
+			for (int l=0; l<entrysize; l++ )
+			  {
+			    col_indices[ colstart[col*entrysize+l]+
+					 counter[col*entrysize+l] ] = col*entrysize+l + 1;
+			    row_indices[ colstart[col*entrysize+l]+
+					 counter[col*entrysize+l] ] = col*entrysize+l + 1;
+			    matrix[ colstart[col*entrysize+l]+
+				    counter[col*entrysize+l] ] = 1;
+			    counter[col*entrysize+l]++;
+			  }
 		      }
 		  }
 	      }
 	  }
       }
-      }
 
 
-    MPI_Barrier (MPI_COMM_WORLD);
-    cout << "have copied matrix" << endl;
-    MPI_Barrier (MPI_COMM_WORLD);
 
     mumps_id.job=JOB_INIT; 
     mumps_id.par=1; 
@@ -341,13 +240,8 @@ namespace ngla
     mumps_id.comm_fortran=USE_COMM_WORLD;
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
-    MPI_Barrier (MPI_COMM_WORLD);
-    cout << "has done job init" << endl;
-    MPI_Barrier (MPI_COMM_WORLD);
-
-
-
-    // cout << "MUMPS version number is " << mumps_id.version_number << endl;
+    if (id == 0)
+      cout << "MUMPS version number is " << mumps_id.version_number << endl;
 
 
     /* Define the problem on the host */
@@ -355,31 +249,20 @@ namespace ngla
     mumps_id.nz  = nze;
     mumps_id.irn = row_indices;
     mumps_id.jcn = col_indices;
-    // mumps_id.rhs = rhs;
 
-    if (symmetric)
-      mumps_id.sym = 1;   // spd
-    else
-      mumps_id.sym = 0;   // non-symmetric
-    
 
     mumps_id.icntl[0]=-1; 
     mumps_id.icntl[1]=-1; 
     mumps_id.icntl[2]=-1; 
     mumps_id.icntl[3]=0;
+    mumps_id.icntl[13]=50; // increased due to error -9
 
     mumps_id.job = JOB_ANALYSIS;
 
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
-    MPI_Barrier (MPI_COMM_WORLD);
-    cout << "analysis is back" << endl;
-    MPI_Barrier (MPI_COMM_WORLD);
 
 
-
-
-    cout << " factor ... " << flush;
     // cout << "num floating-point ops = " << mumps_id.rinfog[0] << endl;
     if (mumps_id.infog[0])
       {
@@ -388,17 +271,13 @@ namespace ngla
       }
 
 
-    // cout << "analysis done, now factor" << endl;
 
-    // mumps_id.a   = (double*)(void*)matrix; 
     mumps_id.a   = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)matrix; 
-    // mumps_id.a   = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)(void*)matrix; 
-
 
     mumps_id.job = JOB_FACTOR;
-    // dmumps_c(&id);
-    mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
+    cout << "factor ... " << flush;
+    mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
     if (mumps_id.infog[0] != 0)
       {
@@ -411,10 +290,10 @@ namespace ngla
 
 
     /*
-    if ( error != 0 )
+      if ( error != 0 )
       {
-        cout << "Setup and Factorization: Mumps returned error " << error << "!" << endl;
-        throw Exception("MumpsInverse: Setup and Factorization failed.");
+      cout << "Setup and Factorization: Mumps returned error " << error << "!" << endl;
+      throw Exception("MumpsInverse: Setup and Factorization failed.");
       }
     */
 
@@ -490,31 +369,41 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("Mumps mult inverse");
     NgProfiler::RegionTimer reg (timer);
 
-    FlatVector<TVX> fx = x.FV<TVX>();
-    FlatVector<TVX> fy = y.FV<TVX>();
-
-    fy = fx;
-
-    MUMPS_STRUC_C & ncid = const_cast<MUMPS_STRUC_C&> (mumps_id);
-
-    // ncmumps_id.rhs = &y.FVDouble()(0);
-    ncid.rhs = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)& (y.FV<TSCAL>()(0));
-
-    ncid.job = JOB_SOLVE;
-    mumps_trait<TSCAL>::MumpsFunction (&ncid);
-
-
-    if (inner)
+    if (id == 0)
       {
-	for (int i = 0; i < height/entrysize; i++)
-	  if (!inner->Test(i)) 
-	    for (int j = 0; j < entrysize; j++ ) fy(i*entrysize+j) = 0.0;
+	FlatVector<TVX> fx = x.FV<TVX>();
+	FlatVector<TVX> fy = y.FV<TVX>();
+	
+	fy = fx;
+	
+	MUMPS_STRUC_C & ncid = const_cast<MUMPS_STRUC_C&> (mumps_id);
+	
+	// ncmumps_id.rhs = &y.FVDouble()(0);
+	ncid.rhs = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)& (y.FV<TSCAL>()(0));
+	
+	ncid.job = JOB_SOLVE;
+	mumps_trait<TSCAL>::MumpsFunction (&ncid);
+	
+	if (inner)
+	  {
+	    for (int i = 0; i < height/entrysize; i++)
+	      if (!inner->Test(i)) 
+		for (int j = 0; j < entrysize; j++ ) fy(i*entrysize+j) = 0.0;
+	  }
+	else if (cluster)
+	  {
+	    for (int i = 0; i < height/entrysize; i++)
+	      if (!(*cluster)[i]) 
+		for (int j = 0; j < entrysize; j++ ) fy(i*entrysize+j) = 0.0;
+	  }
       }
-    else if (cluster)
+    else
       {
-	for (int i = 0; i < height/entrysize; i++)
-	  if (!(*cluster)[i]) 
-	    for (int j = 0; j < entrysize; j++ ) fy(i*entrysize+j) = 0.0;
+	MUMPS_STRUC_C & ncid = const_cast<MUMPS_STRUC_C&> (mumps_id);
+	ncid.rhs = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)& (y.FV<TSCAL>()(0));
+	
+	ncid.job = JOB_SOLVE;
+	mumps_trait<TSCAL>::MumpsFunction (&ncid);
       }
   }
   
@@ -598,74 +487,74 @@ namespace ngla
   template class MumpsInverse<Mat<3,3,Complex> >;
 #endif
   /*
-#if MAX_SYS_DIM >= 4
-  template class MumpsInverse<Mat<4,4,double> >;
-  template class MumpsInverse<Mat<4,4,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 5
-  template class MumpsInverse<Mat<5,5,double> >;
-  template class MumpsInverse<Mat<5,5,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 6
-  template class MumpsInverse<Mat<6,6,double> >;
-  template class MumpsInverse<Mat<6,6,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 7
-  template class MumpsInverse<Mat<7,7,double> >;
-  template class MumpsInverse<Mat<7,7,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 8
-  template class MumpsInverse<Mat<8,8,double> >;
-  template class MumpsInverse<Mat<8,8,Complex> >;
-#endif
+    #if MAX_SYS_DIM >= 4
+    template class MumpsInverse<Mat<4,4,double> >;
+    template class MumpsInverse<Mat<4,4,Complex> >;
+    #endif
+    #if MAX_SYS_DIM >= 5
+    template class MumpsInverse<Mat<5,5,double> >;
+    template class MumpsInverse<Mat<5,5,Complex> >;
+    #endif
+    #if MAX_SYS_DIM >= 6
+    template class MumpsInverse<Mat<6,6,double> >;
+    template class MumpsInverse<Mat<6,6,Complex> >;
+    #endif
+    #if MAX_SYS_DIM >= 7
+    template class MumpsInverse<Mat<7,7,double> >;
+    template class MumpsInverse<Mat<7,7,Complex> >;
+    #endif
+    #if MAX_SYS_DIM >= 8
+    template class MumpsInverse<Mat<8,8,double> >;
+    template class MumpsInverse<Mat<8,8,Complex> >;
+    #endif
   */
 
   /*
-  template class MumpsInverse<double, Vec<2,double>, Vec<2,double> >;
-  template class MumpsInverse<double, Vec<3,double>, Vec<3,double> >;
-  template class MumpsInverse<double, Vec<4,double>, Vec<4,double> >;
-  template class MumpsInverse<double, Vec<5,double>, Vec<5,double> >;
-  template class MumpsInverse<double, Vec<6,double>, Vec<6,double> >;
-  template class MumpsInverse<double, Vec<7,double>, Vec<7,double> >;
-  template class MumpsInverse<double, Vec<8,double>, Vec<8,double> >;
-  template class MumpsInverse<double, Vec<9,double>, Vec<9,double> >;
-  template class MumpsInverse<double, Vec<10,double>, Vec<10,double> >;
-  template class MumpsInverse<double, Vec<11,double>, Vec<11,double> >;
-  template class MumpsInverse<double, Vec<12,double>, Vec<12,double> >;
-  template class MumpsInverse<double, Vec<13,double>, Vec<13,double> >;
-  template class MumpsInverse<double, Vec<14,double>, Vec<14,double> >;
-  template class MumpsInverse<double, Vec<15,double>, Vec<15,double> >;
+    template class MumpsInverse<double, Vec<2,double>, Vec<2,double> >;
+    template class MumpsInverse<double, Vec<3,double>, Vec<3,double> >;
+    template class MumpsInverse<double, Vec<4,double>, Vec<4,double> >;
+    template class MumpsInverse<double, Vec<5,double>, Vec<5,double> >;
+    template class MumpsInverse<double, Vec<6,double>, Vec<6,double> >;
+    template class MumpsInverse<double, Vec<7,double>, Vec<7,double> >;
+    template class MumpsInverse<double, Vec<8,double>, Vec<8,double> >;
+    template class MumpsInverse<double, Vec<9,double>, Vec<9,double> >;
+    template class MumpsInverse<double, Vec<10,double>, Vec<10,double> >;
+    template class MumpsInverse<double, Vec<11,double>, Vec<11,double> >;
+    template class MumpsInverse<double, Vec<12,double>, Vec<12,double> >;
+    template class MumpsInverse<double, Vec<13,double>, Vec<13,double> >;
+    template class MumpsInverse<double, Vec<14,double>, Vec<14,double> >;
+    template class MumpsInverse<double, Vec<15,double>, Vec<15,double> >;
   
-  template class MumpsInverse<double, Vec<2,Complex>, Vec<2,Complex> >;
-  template class MumpsInverse<double, Vec<3,Complex>, Vec<3,Complex> >;
-  template class MumpsInverse<double, Vec<4,Complex>, Vec<4,Complex> >;
-  template class MumpsInverse<double, Vec<5,Complex>, Vec<5,Complex> >;
-  template class MumpsInverse<double, Vec<6,Complex>, Vec<6,Complex> >;
-  template class MumpsInverse<double, Vec<7,Complex>, Vec<7,Complex> >;
-  template class MumpsInverse<double, Vec<8,Complex>, Vec<8,Complex> >;
-  template class MumpsInverse<double, Vec<9,Complex>, Vec<9,Complex> >;
-  template class MumpsInverse<double, Vec<10,Complex>, Vec<10,Complex> >;
-  template class MumpsInverse<double, Vec<11,Complex>, Vec<11,Complex> >;
-  template class MumpsInverse<double, Vec<12,Complex>, Vec<12,Complex> >;
-  template class MumpsInverse<double, Vec<13,Complex>, Vec<13,Complex> >;
-  template class MumpsInverse<double, Vec<14,Complex>, Vec<14,Complex> >;
-  template class MumpsInverse<double, Vec<15,Complex>, Vec<15,Complex> >;
+    template class MumpsInverse<double, Vec<2,Complex>, Vec<2,Complex> >;
+    template class MumpsInverse<double, Vec<3,Complex>, Vec<3,Complex> >;
+    template class MumpsInverse<double, Vec<4,Complex>, Vec<4,Complex> >;
+    template class MumpsInverse<double, Vec<5,Complex>, Vec<5,Complex> >;
+    template class MumpsInverse<double, Vec<6,Complex>, Vec<6,Complex> >;
+    template class MumpsInverse<double, Vec<7,Complex>, Vec<7,Complex> >;
+    template class MumpsInverse<double, Vec<8,Complex>, Vec<8,Complex> >;
+    template class MumpsInverse<double, Vec<9,Complex>, Vec<9,Complex> >;
+    template class MumpsInverse<double, Vec<10,Complex>, Vec<10,Complex> >;
+    template class MumpsInverse<double, Vec<11,Complex>, Vec<11,Complex> >;
+    template class MumpsInverse<double, Vec<12,Complex>, Vec<12,Complex> >;
+    template class MumpsInverse<double, Vec<13,Complex>, Vec<13,Complex> >;
+    template class MumpsInverse<double, Vec<14,Complex>, Vec<14,Complex> >;
+    template class MumpsInverse<double, Vec<15,Complex>, Vec<15,Complex> >;
 
-  template class MumpsInverse<Complex, Vec<2,Complex>, Vec<2,Complex> >;
-  template class MumpsInverse<Complex, Vec<3,Complex>, Vec<3,Complex> >;
-  template class MumpsInverse<Complex, Vec<4,Complex>, Vec<4,Complex> >;
-  template class MumpsInverse<Complex, Vec<5,Complex>, Vec<5,Complex> >;
-  template class MumpsInverse<Complex, Vec<6,Complex>, Vec<6,Complex> >;
-  template class MumpsInverse<Complex, Vec<7,Complex>, Vec<7,Complex> >;
-  template class MumpsInverse<Complex, Vec<8,Complex>, Vec<8,Complex> >;
-  template class MumpsInverse<Complex, Vec<9,Complex>, Vec<9,Complex> >;
-  template class MumpsInverse<Complex, Vec<10,Complex>, Vec<10,Complex> >;
-  template class MumpsInverse<Complex, Vec<11,Complex>, Vec<11,Complex> >;
-  template class MumpsInverse<Complex, Vec<12,Complex>, Vec<12,Complex> >;
-  template class MumpsInverse<Complex, Vec<13,Complex>, Vec<13,Complex> >;
-  template class MumpsInverse<Complex, Vec<14,Complex>, Vec<14,Complex> >;
-  template class MumpsInverse<Complex, Vec<15,Complex>, Vec<15,Complex> >;
-*/
+    template class MumpsInverse<Complex, Vec<2,Complex>, Vec<2,Complex> >;
+    template class MumpsInverse<Complex, Vec<3,Complex>, Vec<3,Complex> >;
+    template class MumpsInverse<Complex, Vec<4,Complex>, Vec<4,Complex> >;
+    template class MumpsInverse<Complex, Vec<5,Complex>, Vec<5,Complex> >;
+    template class MumpsInverse<Complex, Vec<6,Complex>, Vec<6,Complex> >;
+    template class MumpsInverse<Complex, Vec<7,Complex>, Vec<7,Complex> >;
+    template class MumpsInverse<Complex, Vec<8,Complex>, Vec<8,Complex> >;
+    template class MumpsInverse<Complex, Vec<9,Complex>, Vec<9,Complex> >;
+    template class MumpsInverse<Complex, Vec<10,Complex>, Vec<10,Complex> >;
+    template class MumpsInverse<Complex, Vec<11,Complex>, Vec<11,Complex> >;
+    template class MumpsInverse<Complex, Vec<12,Complex>, Vec<12,Complex> >;
+    template class MumpsInverse<Complex, Vec<13,Complex>, Vec<13,Complex> >;
+    template class MumpsInverse<Complex, Vec<14,Complex>, Vec<14,Complex> >;
+    template class MumpsInverse<Complex, Vec<15,Complex>, Vec<15,Complex> >;
+  */
 }
 
 

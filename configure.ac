@@ -66,15 +66,11 @@ AC_ARG_ENABLE([MKLpardiso],
         [AC_SUBST([PARDISO_INCLUDES], ["-DUSE_PARDISO -DUSE_MKL"])]
         )
 
-
-
 AC_ARG_ENABLE([mumps],
         [AC_HELP_STRING([--enable-mumps],[enable sparse direct solver MUMPS])],
         [AC_SUBST([MUMPS_INCLUDES], ["-DUSE_MUMPS"])]
-        [AC_SUBST([MUMPS_LIBS], ["-L/opt/mumps/lib -ldmumps -lzmumps -lmumps_common -lpord -lgfortran -lmpi_f77 -lscalapack"])]
+        [AC_SUBST([MUMPS_LIBS], ["-L/opt/mumps/lib -ldmumps -lzmumps -lmumps_common -lpord -lscalapack -lgfortran"])]
         )
-
-
 
 # AC_ARG_WITH([pardiso],
 #       [  --with-pardiso=libpardiso.so  enable sparse direct solver pardiso],          
