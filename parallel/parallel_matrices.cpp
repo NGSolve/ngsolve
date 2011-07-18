@@ -25,8 +25,6 @@ namespace ngla
 
     if (id != 0)
       {
-	cout << "I am here, id = " << id << endl;
-
 	const FESpace & fes = pardofs->GetFESpace();
 	const MeshAccess & ma = fes.GetMeshAccess();
 
@@ -35,13 +33,11 @@ namespace ngla
 	Array<int> rows, cols, globid(3*ndof);
 	Array<TM> vals;
 
-	*testout << "masterinverse, subset = " << *subset << endl;
 
 	for (int row = 0; row < ndof; row++)
 	  if (!subset || subset->Test(row))
 	    select.Append (row);
 
-	*testout << "select = " << select << endl;
 
 	Array<int> compress(ndof);
 	compress = -1;
@@ -89,8 +85,12 @@ namespace ngla
 	MyMPI_Send (vals, 0);
 	MyMPI_Send (globid, 0);
 
+#ifdef USE_MUMPS
 	SparseMatrixSymmetric<TM> dummy_matrix (1,1);
-	inv = new MumpsInverse<TM> (dummy_matrix);
+	inv = new MumpsInverse<TM> (dummy_matrix, 0, 0, true);
+#else
+	inv = NULL;
+#endif
       }
 
     else
@@ -212,10 +212,13 @@ namespace ngla
 
 	cout << "have matrix, now invert" << endl;
 	// *testout << "wbmatrix = " << endl << matrix << endl;
-      
-	inv = new MumpsInverse<TM> (matrix);
-	// inv = new SparseCholesky<TM> (matrix);
+
+#ifdef USE_MUMPS
+	inv = new MumpsInverse<TM> (matrix, 0, 0, true);
+#else
+	inv = new SparseCholesky<TM> (matrix);
 	// inv = new PardisoInverse<TM> (matrix, 0, 0, true);
+#endif
       }
 
     MPI_Barrier (ngs_comm);
@@ -247,6 +250,10 @@ namespace ngla
 	
 	MPI_Request request = MyMPI_ISend (lx, 0, MPI_TAG_SOLVE);
 	MPI_Request_free (&request);
+
+	// only for MUMPS:
+	if (inv)
+	  y = (*inv) * x;
 	
 	request = MyMPI_IRecv (lx, 0, MPI_TAG_SOLVE);
 	MPI_Wait (&request, MPI_STATUS_IGNORE);
