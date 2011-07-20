@@ -449,7 +449,8 @@ namespace ngcomp
     {
       for (int edge = 0; edge < ma.GetNEdges(); edge++){
 	IntRange range = GetEdgeDofs (edge);
-	ctofdof.Range(range) = WIREBASKET_DOF;   // INTERFACE_DOF;
+	// ctofdof.Range(range) = WIREBASKET_DOF;   // INTERFACE_DOF;
+	ctofdof.Range(range) = INTERFACE_DOF;
 	if (range.Next() > range.First())
 	  ctofdof[range.First()] = WIREBASKET_DOF;
       }
