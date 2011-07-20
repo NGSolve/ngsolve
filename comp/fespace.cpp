@@ -355,8 +355,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		    if (dnums[j] != -1)
 		      dirichlet_dofs.Set (dnums[j]);
 		}
+	    }	 
+	
+	
+	for (int i = 0; i < dirichlet_vertex.Size(); i++)
+	  if (dirichlet_vertex[i])
+	    {
+	      GetVertexDofNrs (i, dnums);
+	      for (int j = 0; j < dnums.Size(); j++)
+		if (dnums[j] != -1)
+		  dirichlet_dofs.Set (dnums[j]);
 	    }
-
+	
 
 	free_dofs.SetSize (GetNDof());
 	free_dofs = dirichlet_dofs;
