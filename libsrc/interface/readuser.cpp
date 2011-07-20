@@ -85,22 +85,13 @@ namespace netgen
   
 
   
-    // Universal mesh (AVL)
     if ( (strlen (filename) > 4) &&
          strcmp (&filename[strlen (filename)-4], ".unv") == 0 )
       {  
-        // int i, j, k;
-      
-        // double h;
         char reco[100];
-        // int np, nbe;
         int invert;
       
-      
         ifstream in(filename);
-
-        invert = 0;    // globflags.GetDefineFlag ("invertsurfacemesh");
-        double scale = 1;  // globflags.GetNumFlag ("scale", 1);
 
         mesh.ClearFaceDescriptors();
         mesh.AddFaceDescriptor (FaceDescriptor(0,1,0,0));
@@ -109,58 +100,78 @@ namespace netgen
         while (in.good())
           {
             in >> reco;
-            if (strcmp (reco, "NODES") == 0)
+	    cout << "reco = " << reco << endl;
+
+            if (strcmp (reco, "2411") == 0)
               {
                 cout << "nodes found" << endl;
-                for (int j = 1; j <= 4; j++)
-                  in >> reco;  // read dummy
 
                 while (1)
                   {
                     int pi, hi;
-                    // double x, y, z;
-                    Point3d p;
+                    Point<3> p;
 
                     in >> pi;
                     if (pi == -1)
                       break;
-
+		    
                     in >> hi >> hi >> hi;
-                    in >> p.X() >> p.Y() >> p.Z();
+                    in >> p(0) >> p(1) >> p(2);
 
-                    p.X() *= scale;
-                    p.Y() *= scale;
-                    p.Z() *= scale;
-
+		    cout << "p(" << pi << ") = "
+			 << p << endl;
 
                     mesh.AddPoint (p);
                   }
+		cout << "read " << mesh.GetNP() << " points" << endl;
               }
 
-            if (strcmp (reco, "ELEMENTS") == 0)
+            if (strcmp (reco, "2412") == 0)
               {
                 cout << "elements found" << endl;
-                for (int j = 1; j <= 4; j++)
-                  in >> reco;  // read dummy
 
                 while (1)
                   {
-                    int hi;
-                    in >> hi;
-                    if (hi == -1) break;
-                    for (int j = 1; j <= 7; j++)
-                      in >> hi;
-	      
-                    Element2d el;
-                    el.SetIndex(1);
-                    in >> el.PNum(1) >> el.PNum(2) >> el.PNum(3);
-	      
-                    if (invert)
-                      swap (el.PNum(2), el.PNum(3));
-                    mesh.AddSurfaceElement (el);	  
-	      
-                    for (int j = 1; j <= 5; j++)
-                      in >> hi;
+		    int label, fe_id, phys_prop, mat_prop, color, nnodes;
+		    int nodes[100];
+		    int hi;
+
+		    in >> label;
+		    if (label == -1) break;
+		    in >> fe_id >> phys_prop >> mat_prop >> color >> nnodes;
+		    
+		    cout << "fe_id = " << fe_id << " col = " << color << ", nnodes = " << nnodes << endl;
+
+		    if (fe_id >= 11 && fe_id <= 32)
+		      in >> hi >> hi >> hi;
+		      
+
+		    for (int j = 0; j < nnodes; j++)
+		      in >> nodes[j];
+		    
+		    switch (fe_id)
+		      {
+		      case 41:
+			{
+			  Element2d el (TRIG);
+			  el.SetIndex (1);
+			  for (int j = 0; j < nnodes; j++)
+			    el[j] = nodes[j];
+			  mesh.AddSurfaceElement (el);
+			  
+			  break;
+			}
+		      case 111:
+			{
+			  Element el (TET);
+			  el.SetIndex (1);
+			  for (int j = 0; j < nnodes; j++)
+			    el[j] = nodes[j];
+			  mesh.AddVolumeElement (el);
+			  
+			  break;
+			}
+		      }
                   }
               }
           }
