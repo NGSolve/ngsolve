@@ -40,6 +40,7 @@ namespace netgen
 {
   DLL_HEADER extern ::std::ostream * testout;
   DLL_HEADER extern int printmessage_importance;
+  DLL_HEADER extern int id;
 }
 
 using netgen::printmessage_importance;
@@ -66,10 +67,11 @@ namespace ngstd
 
 
   
+#include "ngsstream.hpp"  
 #include "templates.hpp"
 #include "exception.hpp"
 #include "localheap.hpp"
-  
+
 #include "array.hpp"
 #include "table.hpp"
 #include "symboltable.hpp"

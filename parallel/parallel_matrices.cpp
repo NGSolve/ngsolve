@@ -216,8 +216,8 @@ namespace ngla
 #ifdef USE_MUMPS
 	inv = new MumpsInverse<TM> (matrix, 0, 0, true);
 #else
-	inv = new SparseCholesky<TM> (matrix);
-	// inv = new PardisoInverse<TM> (matrix, 0, 0, true);
+	// inv = new SparseCholesky<TM> (matrix);
+	inv = new PardisoInverse<TM> (matrix, 0, 0, true);
 #endif
       }
 

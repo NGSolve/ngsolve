@@ -29,9 +29,16 @@ void * SolveBVP2(void *)
 
 void NGS_ParallelRun ( const string & message )
 {
+
+#ifdef _OPENMP
+  omp_set_num_threads (1);
+#endif
+
+
   if ( message == "ngs_pdefile" )
     {
-      MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
+      // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
+      ngs_comm = MPI_COMM_WORLD;
 
       string pdefilename;
       MyMPI_Recv (pdefilename, 0);

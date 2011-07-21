@@ -366,7 +366,8 @@ namespace ngcomp
 	else
 #endif
 	  {
-	    cout << "call wirebasket inverse ( with " << cntfreedofs << " free dofs )" << endl;
+	    cout << "call wirebasket inverse ( with " << cntfreedofs << " free dofs out of " << wbmat.Height() << " )" 
+		 << endl;
 	    *testout << "wbmat = " << endl << wbmat << endl;
 	    inv = wbmat.InverseMatrix(free_dofs);
 	    cout << "has inverse" << endl;
