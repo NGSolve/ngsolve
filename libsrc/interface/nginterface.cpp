@@ -72,8 +72,13 @@
   {
     bool parthread = netgen::mparam.parthread;
 
-    // if (netgen::id > 0) parthread = true;
-    if (netgen::ntasks > 1) parthread = false;
+#ifdef PARALLEL
+    int provided;
+    MPI_Query_thread(&provided);
+    if (provided < 3)
+      if (netgen::ntasks > 1) parthread = false;
+    cout << "runparallel = " << parthread << endl;
+#endif
 
     if (parthread)
       {

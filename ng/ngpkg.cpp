@@ -1148,6 +1148,11 @@ namespace netgen
 	mesh->SetMinimalH (mparam.minh);
       }
 
+#ifdef PARALLEL
+    MyMPI_SendCmd ("bcastparthread");
+    MyMPI_Bcast (mparam.parthread);
+#endif
+
     return TCL_OK;
   }
 
