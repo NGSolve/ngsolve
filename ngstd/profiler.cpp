@@ -36,7 +36,7 @@ namespace ngstd
 
   NgProfiler :: ~NgProfiler()
   {
-    StopTimer (total_timer);
+    // StopTimer (total_timer);
 
     //ofstream prof;
     //prof.open("ng.prof");
