@@ -268,18 +268,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		  
 		  if (dim == 3)
 		    dirichlet_face[ngel.faces[0]] = true;
-		  // ma.GetSElVertices (i, vnums);
-		  // ma.GetSElEdges (i, ednums);
-		  // if (dim == 3)
-		  // fanum = ma.GetSElFace (i);
-		  
-		  // for (int j = 0; j < vnums.Size(); j++)
-		  // dirichlet_vertex[vnums[j]] = true;
-		  // for (int j = 0; j < ednums.Size(); j++)
-		  // dirichlet_edge[ednums[j]] = true;			
-		  
-		  // if (dim == 3)
-		  // dirichlet_face[fanum] = true;
 		}
 	    }
 
@@ -298,7 +286,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		    if (distnums[j][0] > 0)  // not master
 		      dist_dir_vertex.Add (distnums[j][0], distnums[j][1]);
 		}
-	    // *testout << "dist_dir_vertex = " << dist_dir_vertex << endl;
 	  }
 
 	Array<int> nsend(ntasks), nrecv(ntasks);
@@ -325,6 +312,46 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    for (int j = 0; j < dirvert.Size(); j++)
 	      dirichlet_vertex[dirvert[j]] = true;
 	  }
+
+
+	DynamicTable<int> dist_dir_edge(ntasks);
+	if (id != 0)
+	  {
+	    for (int i = 0; i < dirichlet_edge.Size(); i++)
+	      if (dirichlet_edge[i])
+		{
+		  ma.GetDistantNodeNums (Node (NT_EDGE, i), distnums);
+		  for (int j = 0; j < distnums.Size(); j++)
+		    if (distnums[j][0] > 0)  // not master
+		      dist_dir_edge.Add (distnums[j][0], distnums[j][1]);
+		}
+	  }
+
+	for (int i = 0; i < ntasks; i++)
+	  nsend[i] = dist_dir_edge[i].Size();
+	
+	MPI_Alltoall (&nsend[0], 1, MPI_INT, &nrecv[0], 1, MPI_INT, ngs_comm);
+
+	Table<int> recv_dir_edge(nrecv);
+	requests.SetSize (0);
+
+	for (int i = 0; i < ntasks; i++)
+	  {
+	    if (nsend[i])
+	      requests.Append (MyMPI_ISend (dist_dir_edge[i], i, MPI_TAG_SOLVE));
+	    if (nrecv[i])
+	      requests.Append (MyMPI_IRecv (recv_dir_edge[i], i, MPI_TAG_SOLVE));
+	  }
+	MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
+
+	for (int i = 0; i < ntasks; i++)
+	  {
+	    FlatArray<int> diredge = recv_dir_edge[i];
+	    for (int j = 0; j < diredge.Size(); j++)
+	      dirichlet_edge[diredge[j]] = true;
+	  }
+
+
 #endif
 	(*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
 	(*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;

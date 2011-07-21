@@ -93,7 +93,7 @@ AC_ARG_ENABLE([parallel],
 
 #        [AC_SUBST([MPI_INCLUDES], "-I/usr/lib64/mpi/gcc/openmpi/include -DPARALLEL")
 #        [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -I/usr/include/mpich2 -I/usr/include/metis -DPARALLEL")
-#        AC_SUBST([MPI_LIBS], "-lmetis -L/opt/mpich/ch-p4/lib -lmpich -lvt")
+#        AC_SUBST([MPI_LIBS], "-lmetis")
 
  
 

@@ -7,7 +7,7 @@
 #ifdef USE_MUMPS
 
 #include <la.hpp>
-#include <mpi.h>
+#include <parallelngs.hpp>
 
 
 namespace netgen {
@@ -235,9 +235,10 @@ namespace ngla
 
 
     mumps_id.job=JOB_INIT; 
-    mumps_id.par=1; 
+    mumps_id.par=0;
     mumps_id.sym=symmetric;
     mumps_id.comm_fortran=USE_COMM_WORLD;
+    // mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
     if (id == 0)
@@ -255,13 +256,19 @@ namespace ngla
     mumps_id.icntl[1]=-1; 
     mumps_id.icntl[2]=-1; 
     mumps_id.icntl[3]=0;
-    mumps_id.icntl[13]=50; // increased due to error -9
+    // mumps_id.icntl[12]=1;  // root schur complement sequential
+    mumps_id.icntl[13]=30; // increased due to error -9
+    // cout << "icntl(7) = " << mumps_id.icntl[6] << endl;
+    // cout << "icntl(22) = " << mumps_id.icntl[21] << endl;
+
+    mumps_id.comm_fortran=USE_COMM_WORLD;
 
     mumps_id.job = JOB_ANALYSIS;
 
+    if (id == 0)
+      cout << "analysis ... " << flush;
+
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
-
-
 
     // cout << "num floating-point ops = " << mumps_id.rinfog[0] << endl;
     if (mumps_id.infog[0])
@@ -275,8 +282,13 @@ namespace ngla
     mumps_id.a   = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)matrix; 
 
     mumps_id.job = JOB_FACTOR;
+    
+    if (id == 0)
+      cout << "factor ... " << flush;
 
-    cout << "factor ... " << flush;
+    MPI_Barrier (ngparallel::ngs_comm);
+
+
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
     if (mumps_id.infog[0] != 0)
@@ -305,7 +317,8 @@ namespace ngla
       double(time2 - time1)/CLOCKS_PER_SEC << " sec." << endl << endl;
 
     
-    cout << " done " << endl;
+    if (id == 0)
+      cout << " done " << endl;
     delete [] colstart;
     delete [] counter;
     // delete [] rhs;    
@@ -378,7 +391,6 @@ namespace ngla
 	
 	MUMPS_STRUC_C & ncid = const_cast<MUMPS_STRUC_C&> (mumps_id);
 	
-	// ncmumps_id.rhs = &y.FVDouble()(0);
 	ncid.rhs = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)& (y.FV<TSCAL>()(0));
 	
 	ncid.job = JOB_SOLVE;
@@ -411,58 +423,17 @@ namespace ngla
 
 
 
-
-  /*
-    template <class TM, class TV_ROW, class TV_COL>
-    void MumpsInverse<TM,TV_ROW,TV_COL> :: Set (int i, int j, const TM & val)
-    {
-    cout << "MumpsInverse::Set not implemented!" << endl;
-    }
-
-
-
-    template <class TM, class TV_ROW, class TV_COL>
-    const TM & MumpsInverse<TM,TV_ROW,TV_COL> :: Get (int i, int j) const
-    {
-    cout << "MumpsInverse::Get not implemented!" << endl;
-    }
-
-
-    template <class TM, class TV_ROW, class TV_COL>
-    ostream & MumpsInverse<TM,TV_ROW,TV_COL> :: Print (ostream & ost) const
-    {
-    cout << "MumpsInverse::Print not implemented!" << endl;
-    return ost; 
-    }
-  */
-
-
   template <class TM, class TV_ROW, class TV_COL>
   MumpsInverse<TM,TV_ROW,TV_COL> :: ~MumpsInverse()
   {
     cout << "delete mumps-inverse" << endl;
 
     mumps_id.job=JOB_END; 
-    mumps_id.par=1; 
+    mumps_id.par=0;
     mumps_id.sym=symmetric;
     mumps_id.comm_fortran=USE_COMM_WORLD;
-    // dmumps_c(&id);
+    // mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
-
-
-    /*
-    //     Destroy_CompCol_Matrix(&A);
-    //     Destroy_SuperMatrix_Store(&B);
-    Destroy_SuperNode_Matrix(&L);
-    Destroy_CompCol_Matrix(&U);
-    StatFree(&stat);
-
-    delete [] perm_c;
-    delete [] perm_r;
-    delete [] colstart;
-    delete [] indices;
-    delete [] matrix;
-    */
   }
 
 

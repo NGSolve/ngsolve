@@ -1968,7 +1968,8 @@ namespace ngsolve
       {
 	MyMPI_SendCmd ("ngs_pdefile");
 #ifdef PARALLEL
-	MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
+	// MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
+	ngs_comm = MPI_COMM_WORLD;
 #endif
 	for ( int dest = 1; dest < ntasks; dest ++)
 	  MyMPI_Send (filename, dest);
