@@ -442,7 +442,6 @@ namespace netgen
 
 
     *testout << "ParallelMeshTopology :: UpdateCoarseGridGlobal" << endl;
-    cout << "update global, id = " << id << endl;
 
     const MeshTopology & topology = mesh.GetTopology();
   
@@ -539,7 +538,6 @@ namespace netgen
     else
       MyMPI_Bcast ( recvarray );
 
-    cout << "have done bcast, id = " << id << endl;
 
     if (id != 0)
       {
@@ -630,9 +628,6 @@ namespace netgen
 	*testout << "l2d - sel = " << loc2distsurfel << endl;
       }
 
-    MPI_Barrier (MPI_COMM_WORLD);
-    cout << "update global complete, id = " << id << endl;
-    MPI_Barrier (MPI_COMM_WORLD);
     coarseupdate = 1;
   }
 
@@ -643,7 +638,6 @@ namespace netgen
 
   void ParallelMeshTopology :: UpdateCoarseGrid ()
   {
-    cout << "updatecoarsegrid, id = " << id << endl;
     static int timer = NgProfiler::CreateTimer ("UpdateCoarseGrid");
     NgProfiler::RegionTimer reg(timer);
 
@@ -686,12 +680,6 @@ namespace netgen
 
     Array<int,1> glob2loc;
     Array<int> cnt_send(ntasks-1);
-
-
-    MPI_Barrier (MPI_HIGHORDER_COMM);
-    cout << "before ex edges" << endl;
-    *testout << "before ex edges" << endl;
-    MPI_Barrier (MPI_HIGHORDER_COMM);
 
     NgProfiler::StartTimer (timere);
 
@@ -765,9 +753,7 @@ namespace netgen
  
     NgProfiler::StopTimer (timere);
 
-    MPI_Barrier (MPI_HIGHORDER_COMM);
-    cout << "before ex faces" << endl;
-    *testout << "before ex faces" << endl;
+
     MPI_Barrier (MPI_HIGHORDER_COMM);
 
     if (mesh.GetDimension() == 3)
@@ -836,11 +822,6 @@ namespace netgen
 
     NgProfiler::StopTimer (timerf);
       }
-
-    MPI_Barrier (MPI_HIGHORDER_COMM);
-    cout << "after ex faces" << endl;
-    *testout << "after ex faces" << endl;
-    MPI_Barrier (MPI_HIGHORDER_COMM);
 
 
     // set which elements are where for the master processor

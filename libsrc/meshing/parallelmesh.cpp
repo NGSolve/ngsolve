@@ -641,7 +641,6 @@ namespace netgen
     
     SetNextMajorTimeStamp();
     // paralleltop->Print();
-    cout << "receive mesh complete, id = " << id << endl;
   }
   
 

@@ -1159,7 +1159,6 @@ namespace netgen
     
 
 #ifdef PARALLEL
-    cout << "is par = " << int(isparallel) << ", id = " << id << endl;
     if (mesh.GetDimension() == 3)
       if (isparallel != (id != 0))
 	{
