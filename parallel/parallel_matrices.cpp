@@ -4,6 +4,8 @@
 /* Date:   June 2011                                                 */
 /*********************************************************************/
 
+#undef USE_MUMPS
+
 #ifdef PARALLEL
  
 #include <la.hpp>
