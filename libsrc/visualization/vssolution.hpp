@@ -100,7 +100,7 @@ public:
     FUNC_MISES = 3, 
     FUNC_MAIN = 4
   };
-  EvalFunc evalfunc;
+  int evalfunc;
 
   enum SolType
     { 

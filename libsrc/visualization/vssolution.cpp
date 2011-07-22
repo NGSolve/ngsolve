@@ -994,13 +994,6 @@ namespace netgen
 
 	par_surfellists.SetSize (ntasks);
 
-	/*
-	for ( int dest = 1; dest < ntasks; dest++ )
-	  {
-	  MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
-	   MyMPI_Send ("solsurfellist", dest, MPI_TAG_VIS);
-	  }
-	*/
 	MyMPI_SendCmd ("redraw");
 	MyMPI_SendCmd ("solsurfellist");
 
@@ -1196,7 +1189,6 @@ namespace netgen
     n = 1 << subdivisions;
     double invn = 1.0 / n;
     npt = (n+1)*(n+2)/2;
-
 
     for(SurfaceElementIndex sei = 0; sei < nse; sei++)
       {
@@ -4125,7 +4117,7 @@ namespace netgen
 	1, 1, 1, 1,
 	1, 1, 1, 1, 
 	1, 1, 1, 1, 
-	4
+	1, 4
       };
     MPI_Aint displ[] = { (char*)&usetexture - (char*)this,
 			 (char*)&clipsolution - (char*)this,
@@ -4142,6 +4134,8 @@ namespace netgen
 			 (char*)&numisolines - (char*)this,
 			 (char*)&subdivisions - (char*)this,
 
+			 (char*)&evalfunc - (char*)this,
+
 			 (char*)&clipplane[0] - (char*)this };
 
 
@@ -4149,10 +4143,10 @@ namespace netgen
       MPI_INT, MPI_INT, MPI_INT, MPI_INT,
       MPI_INT, MPI_INT, MPI_INT, MPI_INT,
       MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT,
-      MPI_DOUBLE
+      MPI_INT, MPI_DOUBLE
     };
 
-    MPI_Type_create_struct (13, blocklen, displ, types, &type);
+    MPI_Type_create_struct (14, blocklen, displ, types, &type);
     MPI_Type_commit ( &type );
 
     MPI_Bcast (this, 1, type, 0, MPI_COMM_WORLD);
