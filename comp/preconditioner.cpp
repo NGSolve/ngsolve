@@ -440,6 +440,11 @@ namespace ngcomp
       delete inverse;
     try
       {
+	bfa->GetMatrix().SetInverseType (inversetype);
+	const BitArray * freedofs = bfa->GetFESpace().GetFreeDofs();
+	inverse = bfa->GetMatrix().InverseMatrix(freedofs);
+
+	/*
 	const BaseSparseMatrix & amatrix = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix());
 	amatrix.SetInverseType ( inversetype );
 	*testout << "DirectPrecond, on_proc = " << this->on_proc << endl;
@@ -455,6 +460,7 @@ namespace ngcomp
 	    if (print)
 	      (*testout) << "inverse = " << endl << (*inverse) << endl;
 	  }
+	*/
       }
     catch (exception & e)
       {
