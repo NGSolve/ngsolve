@@ -74,9 +74,9 @@ namespace netgen
 
 #ifdef PARALLEL
     ParallelMeshTopology & paralleltop = mesh.GetParallelTopology();
+#endif
 
     bool isparallel = 0;
-#endif
 
   
     if (timestamp > mesh.GetTimeStamp()) return;
