@@ -51,8 +51,17 @@ namespace ngla
 
 
 
-  // sets the solver which is used for InverseMatrix
-  enum INVERSETYPE { PARDISO, PARDISOSPD, SPARSECHOLESKY, SUPERLU, SUPERLU_DIST, MUMPS, MASTERINVERSE };
+
+  
+#ifdef USE_PARDISO
+  const INVERSETYPE default_inversetype = PARDISO;
+#else
+#ifdef USE_MUMPS
+  const INVERSETYPE default_inversetype = MUMPS;
+#else
+  const INVERSETYPE default_inversetype = SPARSECHOLESKY;
+#endif
+#endif
 
 
 
@@ -84,9 +93,6 @@ namespace ngla
 
     /// owner of arrays ?
     bool owner;
-
-    /// sparse direct solver
-    mutable INVERSETYPE inversetype;
 
   public:
     /// arbitrary number of els/row
@@ -138,25 +144,8 @@ namespace ngla
 
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
-    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const
-    {
-
-      INVERSETYPE old_invtype = inversetype;
-      inversetype = ainversetype; 
-      return old_invtype;
-    }
-
-    virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
-
-    virtual INVERSETYPE  GetInverseType () const
-    { return inversetype; }
-
     virtual int GetNRowEntries ( const int & row )
     { return (firsti[row+1] - firsti[row]); }
-
-#ifdef ASTRID
-    MatrixGraph * CreatePartialGraph ( BitArray & rows, BitArray & cols );
-#endif
   };
 
 
@@ -170,26 +159,30 @@ namespace ngla
   class NGS_DLL_HEADER BaseSparseMatrix : virtual public BaseMatrix, 
 					  public MatrixGraph
   {
+  protected:
+    /// sparse direct solver
+    mutable INVERSETYPE inversetype;
 
   public:
     
     BaseSparseMatrix (int as, int max_elsperrow)
-      : MatrixGraph (as, max_elsperrow)
+      : MatrixGraph (as, max_elsperrow), inversetype(default_inversetype)
     { ; }
     
     
     BaseSparseMatrix (const Array<int> & elsperrow)
-      : MatrixGraph (elsperrow)
+      : MatrixGraph (elsperrow), inversetype(default_inversetype)
     { ; }
 
     BaseSparseMatrix (const MatrixGraph & agraph, bool stealgraph)
-      : MatrixGraph (agraph, stealgraph)
+      : MatrixGraph (agraph, stealgraph), inversetype(default_inversetype)
     { ; }   
 
 
     BaseSparseMatrix (const BaseSparseMatrix & amat)
-      : BaseMatrix(amat), MatrixGraph (amat, 0)
+      : BaseMatrix(amat), MatrixGraph (amat, 0), inversetype(default_inversetype)
     { ; }   
+
 
     virtual ~BaseSparseMatrix ();
 
@@ -241,6 +234,21 @@ namespace ngla
     }
 
     //virtual void AllReduceHO () const = 0;
+
+
+    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const
+    {
+
+      INVERSETYPE old_invtype = inversetype;
+      inversetype = ainversetype; 
+      return old_invtype;
+    }
+
+    virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
+
+    virtual INVERSETYPE  GetInverseType () const
+    { return inversetype; }
+
 
 
   };

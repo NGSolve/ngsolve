@@ -12,6 +12,10 @@ namespace ngla
 {
 
 
+  // sets the solver which is used for InverseMatrix
+  enum INVERSETYPE { PARDISO, PARDISOSPD, SPARSECHOLESKY, SUPERLU, SUPERLU_DIST, MUMPS, MASTERINVERSE };
+
+
   /**
      The base for all matrices in the linalg.
   */
@@ -103,6 +107,18 @@ namespace ngla
     virtual void MultAdd2 (double s, const BaseVector & x, BaseVector & y,
 			   const BitArray * ainner = NULL,
 			   const Array<int> * acluster = NULL) const;
+
+
+
+
+
+    virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;
+    virtual BaseMatrix * InverseMatrix (const Array<int> * clusters) const;
+    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const;
+    virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
+    virtual INVERSETYPE  GetInverseType () const;
+    
+    
   };
 
 
