@@ -37,17 +37,27 @@ void NGS_ParallelRun ( const string & message )
 
   if ( message == "ngs_pdefile" )
     {
-      // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
-      ngs_comm = MPI_COMM_WORLD;
+      MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
+      // ngs_comm = MPI_COMM_WORLD;
 
-      string pdefilename;
-      MyMPI_Recv (pdefilename, 0);
-      
+
       delete ma;
       ma = new MeshAccess;
-
       pde.Reset(new PDE ( *ma ));
+
+
+      /*
+      string pdefilename;
+      MyMPI_Recv (pdefilename, 0);
       pde -> LoadPDE (pdefilename, 1, 0);
+      */
+
+      // transfer file contents, not filename
+      string pdefiledata;
+      MyMPI_Recv (pdefiledata, 0);
+
+      istringstream pdefile (pdefiledata);
+      pde -> LoadPDE (pdefile, 1, 0);
     } 
 
   else if ( message == "ngs_solvepde" )
