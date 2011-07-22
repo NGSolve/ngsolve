@@ -179,6 +179,37 @@ namespace ngla
 
 
 
+  BaseMatrix * BaseMatrix :: InverseMatrix (const BitArray * subset) const 
+  {
+    cerr << "BaseMatrix::InverseMatrix not available" << endl;
+    return NULL;
+  }
+  
+  BaseMatrix * BaseMatrix :: InverseMatrix (const Array<int> * clusters) const
+  {
+    cerr << "BaseMatrix::InverseMatrix not available" << endl;
+    return NULL;
+  }
+  
+  INVERSETYPE BaseMatrix :: SetInverseType ( INVERSETYPE ainversetype ) const
+  {
+    cerr << "BaseMatrix::SetInverseType not available" << endl;
+    return SPARSECHOLESKY;
+  }
+  
+  INVERSETYPE BaseMatrix :: SetInverseType ( string ainversetype ) const
+  {
+    cerr << "BaseMatrix::SetInverseType not available" << endl;
+    return SPARSECHOLESKY;
+  }
+  
+  INVERSETYPE BaseMatrix :: GetInverseType () const
+  {
+    cerr << "BaseMatrix::GetInverseType not available" << endl;
+    return SPARSECHOLESKY;
+  }
+
+
 
 
 

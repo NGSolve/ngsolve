@@ -35,15 +35,6 @@ namespace ngla
     for (int i = 0; i < nze; i++)
       colnr[i] = -1;
     colnr[nze] = 0;
-#ifdef USE_PARDISO
-    inversetype = PARDISO;
-#else
-#ifdef USE_SUPERLU
-    inversetype = SUPERLU;
-#else
-    inversetype = SPARSECHOLESKY;
-#endif
-#endif
   }
                                                                                                                                                                                                                   
   MatrixGraph :: MatrixGraph (int as, int max_elsperrow)                                                                                                                                                      
@@ -70,16 +61,6 @@ namespace ngla
       {
        firsti[i] = i*max_elsperrow;
       }
-
-#ifdef USE_PARDISO
-    inversetype = PARDISO;
-#else
-#ifdef USE_SUPERLU
-    inversetype = SUPERLU;
-#else
-    inversetype = SPARSECHOLESKY;
-#endif
-#endif
   }
   
 
@@ -105,12 +86,12 @@ namespace ngla
 	for (int i = 0; i < nze; i++)
 	  colnr[i] = graph.colnr[i];
       }
-    inversetype = agraph.GetInverseType();
+    // inversetype = agraph.GetInverseType();
   }
 
 
 
-  MatrixGraph ::   MatrixGraph (int asize, const Table<int> & rowelements, 
+  MatrixGraph :: MatrixGraph (int asize, const Table<int> & rowelements, 
 				const Table<int> & colelements, 
 				bool symmetric)
   {
@@ -292,16 +273,6 @@ namespace ngla
       QuickSort (GetRowIndices(i));
 
     colnr[nze] = 0;
- 
-#ifdef USE_PARDISO
-    inversetype = PARDISO;
-#else
-#ifdef USE_SUPERLU
-    inversetype = SUPERLU;
-#else
-    inversetype = SPARSECHOLESKY;
-#endif
-#endif
   }
 
 
@@ -388,17 +359,6 @@ namespace ngla
       QuickSort (GetRowIndices(i));
     
     colnr[nze] = 0;
- 
-    // #ifdef ASTRID
-#ifdef USE_PARDISO
-    inversetype = PARDISO;
-#else
-#ifdef USE_SUPERLU
-    inversetype = SUPERLU;
-#else
-    inversetype = SPARSECHOLESKY;
-#endif
-#endif
   }
   
   MatrixGraph :: ~MatrixGraph ()
@@ -616,15 +576,6 @@ namespace ngla
   {
     mu.Append (new MemoryUsageStruct ("MatrixGraph", (nze+size)*sizeof(int), 1));
   }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1788,7 +1739,7 @@ namespace ngla
 
 
 
-  INVERSETYPE MatrixGraph::
+  INVERSETYPE BaseSparseMatrix ::
   SetInverseType ( string ainversetype ) const
   {
     INVERSETYPE old_invtype = inversetype;
