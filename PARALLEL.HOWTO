@@ -26,8 +26,13 @@ NGS parallelization supports:
 testing: load mesh will distributed it 
 
 - parallel NGSolve - pde data structure including fespaces, biforms, distributed sparse matrices
-
 - BDDC preconditioning
+- parallel direct solver mumps
 
 
 
+MPI and OpenMP
+- parallel compute thread is supported, but it requires multi-threading capable MPI
+  openmpi (tested with 1.4.3) needs configuration with --enable-mpi-threads 
+
+- openmp threads are disabled
