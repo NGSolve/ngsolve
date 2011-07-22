@@ -49,6 +49,13 @@ namespace ngla
 
     virtual int VHeight() const;
     virtual int VWidth() const;
+
+
+    virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;
+    virtual BaseMatrix * InverseMatrix (const Array<int> * clusters) const;
+    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const;
+    virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
+    virtual INVERSETYPE  GetInverseType () const;
   };
 
   
