@@ -30,6 +30,9 @@ namespace ngparallel
     
     ParallelDofs (const MeshAccess & ma, const Array<Node> & dofnodes, const FESpace * afes = NULL);
 
+    ParallelDofs (const MeshAccess & ma, const Array<Node> & dofnodes, int dim, bool iscomplex = false);
+
+
     const FlatArray<int>  GetExchangeDofs (int proc) const
     { return (*exchangedofs)[proc]; }
 
@@ -40,7 +43,7 @@ namespace ngparallel
 
     int GetNDofGlobal () const;
 
-    // should not be used
+    // used by masterinverse
     const FESpace & GetFESpace() const { return *fes; }
 
     bool IsExchangeProc ( int proc ) const

@@ -362,6 +362,42 @@ namespace ngla
   }
 
 
+  BaseMatrix * ParallelMatrix::InverseMatrix (const BitArray * subset) const
+  {
+    return new MasterInverse<double> (dynamic_cast<const SparseMatrixTM<double>&> (mat), subset, &pardofs);
+  }
+
+  BaseMatrix * ParallelMatrix::InverseMatrix (const Array<int> * clusters) const
+  {
+    cerr << "ParallelMatrix::Inverse(ARRAY) not avail" << endl;
+    return NULL;
+  }
+
+  INVERSETYPE ParallelMatrix::SetInverseType ( INVERSETYPE ainversetype ) const
+  {
+    if (id != 0) return mat.SetInverseType (ainversetype);
+    return SPARSECHOLESKY;
+  }
+
+  INVERSETYPE ParallelMatrix::SetInverseType ( string ainversetype ) const
+  {
+    if (id != 0) return mat.SetInverseType (ainversetype);
+    return SPARSECHOLESKY;
+  }
+  
+  INVERSETYPE ParallelMatrix::GetInverseType () const
+  {
+    if (id != 0) return mat.GetInverseType ();
+    return SPARSECHOLESKY;
+  }
+
+
+
+
+
+
+
+
 
   template class MasterInverse<double>;
   template class MasterInverse<Complex>;
