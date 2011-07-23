@@ -190,20 +190,16 @@ namespace ngparallel
     mpi_t.SetSize (ntasks); 
 
     MPI_Datatype mpi_type;
-    if (fes)
+
+    mpi_type = iscomplex ?
+      MyGetMPIType<Complex>() : MyGetMPIType<double>(); 
+    
+    if ( dim != 1)
       {
-	mpi_type = iscomplex ?
-	  MyGetMPIType<Complex>() : MyGetMPIType<double>(); 
-	
-	if ( dim != 1)
-	  {
-	    MPI_Datatype htype;
-	    MPI_Type_contiguous (dim, mpi_type, &htype);
-	    mpi_type = htype;
-	  }
+	MPI_Datatype htype;
+	MPI_Type_contiguous (dim, mpi_type, &htype);
+	mpi_type = htype;
       }
-    else
-      mpi_type = MPI_DOUBLE;
 
     for (int dest = 0; dest < ntasks; dest++ )
       {
