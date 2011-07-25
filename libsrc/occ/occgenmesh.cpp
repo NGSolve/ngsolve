@@ -791,7 +791,7 @@ namespace netgen
          MESHING2_RESULT res;
 
          try {
-            res = meshing.GenerateMesh (mesh, maxh, k);
+	   res = meshing.GenerateMesh (mesh, mparam, maxh, k);
          }
 
          catch (SingularMatrixException)
@@ -936,7 +936,7 @@ namespace netgen
                meshopt.SetWriteStatus (0);
 
                //	    (*testout) << "ImproveMesh (mesh)" << endl;
-               meshopt.ImproveMesh (mesh);
+               meshopt.ImproveMesh (mesh, mparam);
             }
 
             {
@@ -961,7 +961,7 @@ namespace netgen
                meshopt.SetWriteStatus (0);
 
                //	    (*testout) << "ImproveMesh (mesh)" << endl;
-               meshopt.ImproveMesh (mesh);
+               meshopt.ImproveMesh (mesh, mparam);
             }
          }
 
