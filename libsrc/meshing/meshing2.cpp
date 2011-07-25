@@ -101,8 +101,8 @@ namespace netgen
   }
 
   // should be class variables !!(?)
-  static Vec3d ex, ey;
-  static Point3d globp1;
+  // static Vec3d ex, ey;
+  // static Point3d globp1;
 
   void Meshing2 :: DefineTransformation (const Point3d & p1, const Point3d & p2,
 					 const PointGeomInfo * geominfo1,

@@ -179,6 +179,7 @@ class AdFront2
   int nfl;                  /// number of front lines;
   INDEX_2_HASHTABLE<int> * allflines; /// all front lines ever have been
 
+  Array<int> invpindex;
 
   int minval;
   int starti;

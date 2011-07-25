@@ -511,11 +511,11 @@ int AdFront3 :: GetLocals (int fstind,
   INDEX pi;
   Point3d midp, p0;
 
-  static Array<int, PointIndex::BASE> invpindex;
+  //  static Array<int, PointIndex::BASE> invpindex;
   
-  static Array<MiniElement2d> locfaces2;           //all local faces in radius xh
-  static Array<int> locfaces3;           // all faces in outer radius relh
-  static Array<INDEX> findex2;
+  Array<MiniElement2d> locfaces2;           //all local faces in radius xh
+  Array<int> locfaces3;           // all faces in outer radius relh
+  Array<INDEX> findex2;
 
   locfaces2.SetSize(0);
   locfaces3.SetSize(0);
@@ -661,9 +661,9 @@ void AdFront3 :: GetGroup (int fi,
 			   Array<MeshPoint> & grouppoints,
 			   Array<MiniElement2d> & groupelements,
 			   Array<PointIndex> & pindex,
-			   Array<INDEX> & findex) const
+			   Array<INDEX> & findex) 
 {
-  static Array<char> pingroup;
+  // static Array<char> pingroup;
   int i, j, changed;
 
   pingroup.SetSize(points.Size());
@@ -699,7 +699,7 @@ void AdFront3 :: GetGroup (int fi,
   while (changed);
 
 
-  static Array<int> invpindex;
+  //  static Array<int> invpindex;
   invpindex.SetSize (points.Size());
   
 

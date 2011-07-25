@@ -41,6 +41,9 @@ class Meshing2
   ///
   double maxarea;
 
+  Vec3d ex, ey;
+  Point3d globp1;
+
 public:
   ///
   DLL_HEADER Meshing2 (const MeshingParameters & mp, const Box<3> & aboundingbox);

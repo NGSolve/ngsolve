@@ -208,7 +208,9 @@ int rebuildcounter;
 int lasti;
   /// minimal selection-value of baseelements
 int minval;
-
+  Array<int, PointIndex::BASE> invpindex;
+  Array<char> pingroup;
+  
   ///
 class Box3dTree * facetree;
 public:
@@ -272,8 +274,7 @@ public:
                  Array<MeshPoint> & grouppoints,
                  Array<MiniElement2d> & groupelements,
                  Array<PointIndex> & pindex,
-                 Array<INDEX> & findex
-                 ) const;
+                 Array<INDEX> & findex);
 
   ///
   void DeleteFace (INDEX fi);

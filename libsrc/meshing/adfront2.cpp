@@ -323,7 +323,7 @@ namespace netgen
 	  }
       }
 
-    static Array<int> invpindex;
+    // static Array<int> invpindex;
     invpindex.SetSize (points.Size()); 
     // invpindex = -1;
     for (int i = 0; i < nearpoints.Size(); i++)
