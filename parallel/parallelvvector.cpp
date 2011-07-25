@@ -108,7 +108,7 @@ namespace ngla
   void ParallelBaseVector :: Cumulate () const
   {
     if ( status != DISTRIBUTED ) return;
-    (*testout) << "CUMULATE" << endl;
+    // (*testout) << "CUMULATE" << endl;
 
     
     Array<int> exprocs;
@@ -124,7 +124,7 @@ namespace ngla
     
     Array<MPI_Request> sendrequest(nexprocs), recvrequest(nexprocs);
 
-    *testout << "exprocs = " << exprocs << endl;
+    // *testout << "exprocs = " << exprocs << endl;
     // if the vectors are distributed, reduce
     if ( id >= 1)
       {
@@ -138,7 +138,7 @@ namespace ngla
 	for ( int isender = 0;  isender < nexprocs; isender ++)
 	  MPI_Wait ( &sendrequest[isender], MPI_STATUS_IGNORE);
 
-	*testout << "everything sent, id = " << id << endl;
+	// *testout << "everything sent, id = " << id << endl;
  
 	// cumulate
 	// MPI_Waitany --> wait for first receive, not necessarily the one with smallest id
@@ -147,10 +147,10 @@ namespace ngla
 	    int isender;
 	    MPI_Waitany ( nexprocs, &recvrequest[0], &isender, MPI_STATUS_IGNORE); 
 	    constvec->AddRecvValues(exprocs[isender]);
-	    *testout << "got from proc " << isender << endl;
+	    // *testout << "got from proc " << isender << endl;
 	  } 
 
-	*testout << "got all, id = " << id << endl;
+	// *testout << "got all, id = " << id << endl;
       }
 
     SetStatus(CUMULATED);
