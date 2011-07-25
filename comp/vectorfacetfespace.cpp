@@ -32,11 +32,13 @@ namespace ngcomp
     loflags.SetFlag("order", 0.0);
     if ( this->IsComplex() )
       loflags.SetFlag("complex");
-    if (order != 0)
+
+    loflags.SetFlag ("low_order");
+    if (!flags.GetDefineFlag ("low_order"))
       low_order_space = new VectorFacetFESpace(ma, loflags);
-    else
-      low_order_space = 0;
-        
+    // else
+    // low_order_space = 0;
+    
 
     order =  int (flags.GetNumFlag ("order",0)); 
     
