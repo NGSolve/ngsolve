@@ -114,6 +114,8 @@ namespace netgen
 {
 #include "occmeshsurf.hpp"
 
+  extern DLL_HEADER MeshingParameters mparam;
+
 #define PROJECTION_TOLERANCE 1e-10
 
 #define ENTITYISVISIBLE 1
@@ -301,7 +303,7 @@ namespace netgen
       {
          if((facenr> 0) && (facenr <= fmap.Extent()))
          {
-            face_maxh[facenr-1] = min(mparam.maxh,faceh);
+	   face_maxh[facenr-1] = min(mparam.maxh,faceh);
             
             // Philippose - 14/01/2010
             // If the face maxh is greater than or equal to the 

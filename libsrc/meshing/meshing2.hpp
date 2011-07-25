@@ -141,7 +141,8 @@ protected:
 		  Array<INDEX_2> & llines,
 		  int maxlegelline,
 		  Array<Element2d> & elements, Array<INDEX> & dellines,
-		  int tolerance);
+		  int tolerance,
+		  const MeshingParameters & mp);
   
 
 };

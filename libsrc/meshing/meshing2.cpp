@@ -751,7 +751,7 @@ namespace netgen
 	  {
 	    rulenr = ApplyRules (plainpoints, legalpoints, maxlegalpoint,
 				 loclines, maxlegalline, locelements,
-				 dellines, qualclass);
+				 dellines, qualclass, mp);
 	    //	    (*testout) << "Rule Nr = " << rulenr << endl;
 	    if (!rulenr)
 	      {

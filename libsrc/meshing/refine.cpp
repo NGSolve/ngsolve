@@ -719,7 +719,8 @@ namespace netgen
 		mesh.CalcSurfacesOfNode();
 		free.Invert();
 		mesh.FixPoints (free);
-		mesh.ImproveMesh (OPT_REST);
+		MeshingParameters dummymp;
+		mesh.ImproveMesh (dummymp, OPT_REST);
 
 
 		wrongels = 0;

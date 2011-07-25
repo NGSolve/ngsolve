@@ -87,11 +87,11 @@ namespace netgen
     return *functions[i];
   }
 
-
   PointFunction1 :: PointFunction1 (Mesh::T_POINTS & apoints, 
 				    const Array<INDEX_3> & afaces,
+				    const MeshingParameters & amp,
 				    double ah)
-    : points(apoints), faces(afaces)
+    : points(apoints), faces(afaces), mp(amp)
   {
     h = ah;
   }
@@ -109,7 +109,7 @@ namespace netgen
 	double bad = CalcTetBadness (points[el.I1()], 
 				     points[el.I3()], 
 				     points[el.I2()], 
-				     pp, 0);
+				     pp, 0, mp);
 	badness += bad;
       }
  
@@ -168,8 +168,6 @@ namespace netgen
     double f = Func(x);
     return 1e-8 * f * f;
   }
-
-
 
 
   /* Cheap Functional depending of inner point inside triangular surface */
@@ -304,12 +302,14 @@ namespace netgen
     Mesh::T_POINTS & points;
     const Mesh::T_VOLELEMENTS & elements;
     TABLE<int,PointIndex::BASE> elementsonpoint;
+    const MeshingParameters & mp;
     PointIndex actpind;
     double h;
   
   public:
     PointFunction (Mesh::T_POINTS & apoints, 
-		   const Mesh::T_VOLELEMENTS & aelements);
+		   const Mesh::T_VOLELEMENTS & aelements,
+		   const MeshingParameters & amp);
   
     virtual void SetPointIndex (PointIndex aactpind);
     void SetLocalH (double ah) { h = ah; }
@@ -323,8 +323,9 @@ namespace netgen
 
 
   PointFunction :: PointFunction (Mesh::T_POINTS & apoints, 
-				  const Mesh::T_VOLELEMENTS & aelements)
-    : points(apoints), elements(aelements), elementsonpoint(apoints.Size())
+				  const Mesh::T_VOLELEMENTS & aelements,
+				  const MeshingParameters & amp)
+    : points(apoints), elements(aelements), elementsonpoint(apoints.Size()), mp(amp)
   {
     for (int i = 0; i < elements.Size(); i++)
       if (elements[i].NP() == 4)
@@ -351,7 +352,7 @@ namespace netgen
       {
         const Element & el = elements[elementsonpoint[actpind][j]];
 	badness += CalcTetBadness (points[el[0]], points[el[1]], 
-				   points[el[2]], points[el[3]], -1);
+				   points[el[2]], points[el[3]], -1, mp);
       }
   
     points[actpind] = Point<3> (hp); 
@@ -375,7 +376,7 @@ namespace netgen
 	    {
 	      f += CalcTetBadnessGrad (points[el[0]], points[el[1]], 
                                        points[el[2]], points[el[3]], 
-                                       -1, k+1, vgradi);
+                                       -1, k+1, vgradi, mp);
 
               vgrad += vgradi;
 	    }
@@ -407,7 +408,7 @@ namespace netgen
 	      f += CalcTetBadnessGrad (points[el.PNum(1)], 
 				       points[el.PNum(2)], 
 				       points[el.PNum(3)], 
-				       points[el.PNum(4)], -1, k, vgradi);
+				       points[el.PNum(4)], -1, k, vgradi, mp);
 
 	      vgrad += vgradi;
 	    }
@@ -476,7 +477,8 @@ namespace netgen
     DenseMatrix m;
   public:
     CheapPointFunction (Mesh::T_POINTS & apoints, 
-			const Mesh::T_VOLELEMENTS & aelements);
+			const Mesh::T_VOLELEMENTS & aelements,
+			const MeshingParameters & amp);
     virtual void SetPointIndex (PointIndex aactpind);
     virtual double PointFunctionValue (const Point<3> & pp) const;
     virtual double PointFunctionValueGrad (const Point<3> & pp, Vec<3> & grad) const;
@@ -484,8 +486,9 @@ namespace netgen
 
 
   CheapPointFunction :: CheapPointFunction (Mesh::T_POINTS & apoints, 
-					    const Mesh::T_VOLELEMENTS & aelements)
-    : PointFunction (apoints, aelements)
+					    const Mesh::T_VOLELEMENTS & aelements,
+					    const MeshingParameters & amp)
+    : PointFunction (apoints, aelements, amp)
   {
     ;
   }
@@ -930,7 +933,7 @@ double CalcTotalBad (const Mesh::T_POINTS & points,
 
   for (int i = 1; i <= elements.Size(); i++)
     {
-      elbad = pow (max2(CalcBad (points, elements.Get(i), 0),1e-10),
+      elbad = pow (max2(CalcBad (points, elements.Get(i), 0, mp),1e-10),
 		   1/teterrpow);
 
       int qualclass = int (20 / elbad + 1);
@@ -1348,7 +1351,7 @@ void Mesh :: ImproveMesh (const CSGeometry & geometry, OPTIMIZEGOAL goal)
 
 
   
-void Mesh :: ImproveMesh (OPTIMIZEGOAL goal)
+void Mesh :: ImproveMesh (const MeshingParameters & mp, OPTIMIZEGOAL goal)
 {
   int typ = 1;
   
@@ -1373,7 +1376,7 @@ void Mesh :: ImproveMesh (OPTIMIZEGOAL goal)
 	  if (el.GetType() != TET)
 	    continue;
 	  
-	  double hbad = CalcBad (points, el, 0);
+	  double hbad = CalcBad (points, el, 0, mp);
 	  for (int j = 0; j < 4; j++)
 	    perrs[el[j]] += hbad;
 	  
@@ -1388,7 +1391,7 @@ void Mesh :: ImproveMesh (OPTIMIZEGOAL goal)
 
   if (goal == OPT_QUALITY)
     {
-      bad1 = CalcTotalBad (points, volelements);
+      bad1 = CalcTotalBad (points, volelements, mp);
       (*testout) << "Total badness = " << bad1 << endl;
       PrintMessage (5, "Total badness = ", bad1);
     }
@@ -1403,9 +1406,9 @@ void Mesh :: ImproveMesh (OPTIMIZEGOAL goal)
   PointFunction * pf;
 
   if (typ == 1)
-    pf = new PointFunction(points, volelements);
+    pf = new PointFunction(points, volelements, mp);
   else
-    pf = new CheapPointFunction(points, volelements);
+    pf = new CheapPointFunction(points, volelements, mp);
 
   //  pf->SetLocalH (h);
   
@@ -1508,7 +1511,7 @@ void Mesh :: ImproveMesh (OPTIMIZEGOAL goal)
 
   if (goal == OPT_QUALITY)
     {
-      bad1 = CalcTotalBad (points, volelements);
+      bad1 = CalcTotalBad (points, volelements, mp);
       (*testout) << "Total badness = " << bad1 << endl;
       PrintMessage (5, "Total badness = ", bad1);
     }
@@ -1518,7 +1521,8 @@ void Mesh :: ImproveMesh (OPTIMIZEGOAL goal)
 
 
 // Improve Condition number of Jacobian, any elements  
-void Mesh :: ImproveMeshJacobian (OPTIMIZEGOAL goal, const BitArray * usepoint)
+void Mesh :: ImproveMeshJacobian (const MeshingParameters & mp,
+				  OPTIMIZEGOAL goal, const BitArray * usepoint)
 {
   int i, j;
   
@@ -1638,7 +1642,8 @@ void Mesh :: ImproveMeshJacobian (OPTIMIZEGOAL goal, const BitArray * usepoint)
 
 
 // Improve Condition number of Jacobian, any elements  
-void Mesh :: ImproveMeshJacobianOnSurface (const BitArray & usepoint, 
+void Mesh :: ImproveMeshJacobianOnSurface (const MeshingParameters & mp,
+					   const BitArray & usepoint, 
 					   const Array< Vec<3>* > & nv,
 					   OPTIMIZEGOAL goal,
 					   const Array< Array<int,PointIndex::BASE>* > * idmaps)

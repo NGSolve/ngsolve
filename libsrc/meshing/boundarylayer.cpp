@@ -562,7 +562,7 @@ namespace netgen
 
                   for(j = 1; j <= vertelems.Size(); j++)
                   {
-                     double sfact = 0.9;
+		    // double sfact = 0.9;
                      Element volel = mesh.VolumeElement(vertelems.Elem(j));
                      if(((volel.GetType() == TET) || (volel.GetType() == TET10)) && (!volel.IsDeleted()))
                      {

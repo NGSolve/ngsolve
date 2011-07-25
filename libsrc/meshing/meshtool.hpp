@@ -49,13 +49,13 @@ extern int CheckCode ();
 extern double CalcTetBadness (const Point3d & p1, const Point3d & p2,
 			      const Point3d & p3, const Point3d & p4, 
 			      double h,
-			      const MeshingParameters & mp = mparam);
+			      const MeshingParameters & mp);
 ///
 extern double CalcTetBadnessGrad (const Point3d & p1, const Point3d & p2,
 				  const Point3d & p3, const Point3d & p4, 
 				  double h, int pi,
 				  Vec<3> & grad,
-				  const MeshingParameters & mp = mparam);
+				  const MeshingParameters & mp);
 
 
 /** Calculates volume of an element.

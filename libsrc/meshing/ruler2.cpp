@@ -51,7 +51,8 @@ namespace netgen
 			     Array<INDEX_2> & llines1,
 			     int maxlegalline,
 			     Array<Element2d> & elements,
-			     Array<INDEX> & dellines, int tolerance)
+			     Array<INDEX> & dellines, int tolerance,
+			     const MeshingParameters & mp)
   {
     static int timer = NgProfiler::CreateTimer ("meshing2::ApplyRules");
     NgProfiler::RegionTimer reg (timer);
@@ -627,7 +628,7 @@ namespace netgen
 			for (int i = 1; i <= elements.Size(); i++)
 			  {
 			    double hf;
-			    if (!mparam.quad)
+			    if (!mp.quad)
 			      hf = CalcElementBadness (lpoints, elements.Get(i));
 			    else
 			      hf = elements.Get(i).CalcJacobianBadness (lpoints) * 5;

@@ -890,7 +890,7 @@ namespace netgen
 
 	  tempmesh.FreeOpenElementsEnvironment (1);
 
-	  MeshOptimize3d meshopt;
+	  MeshOptimize3d meshopt(mp);
 	  // tempmesh.CalcSurfacesOfNode();
 	  meshopt.SwapImprove(tempmesh, OPT_CONFORM);
 	}

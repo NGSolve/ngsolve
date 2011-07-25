@@ -15,8 +15,6 @@
 
 #include "nginterface.h"
 
-
-
 #ifdef _MSC_VER
 // Philippose - 30/01/2009
 // MSVC Express Edition Support
@@ -104,6 +102,7 @@ namespace netgen
 {
 #include "writeuser.hpp"
 
+  MeshingParameters mparam;
 
   // global variable mesh (should not be used in libraries)
   AutoPtr<Mesh> mesh;

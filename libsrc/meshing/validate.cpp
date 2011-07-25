@@ -376,7 +376,8 @@ namespace netgen
 	    // smooth faces
 	    mesh.CalcSurfacesOfNode();
 	    
-	    mesh.ImproveMeshJacobianOnSurface(isworkingboundary,nv,OPT_QUALITY,&idmaps);
+	    MeshingParameters dummymp;
+	    mesh.ImproveMeshJacobianOnSurface(dummymp,isworkingboundary,nv,OPT_QUALITY, &idmaps);
 	    
 	    for (int i = 1; i <= np; i++)
 	      *can.Elem(i) = mesh.Point(i);
@@ -447,7 +448,8 @@ namespace netgen
 	    
 	    mesh.CalcSurfacesOfNode();
 	    
-	    mesh.ImproveMeshJacobian (OPT_QUALITY,&working_points);
+	    MeshingParameters dummymp;
+	    mesh.ImproveMeshJacobian (dummymp, OPT_QUALITY,&working_points);
 	    //mesh.ImproveMeshJacobian (OPT_WORSTCASE,&working_points);
 	  
 
@@ -460,7 +462,8 @@ namespace netgen
 	   cnttrials < maxtrials &&
 	   multithread.terminate != 1)
 	  {
-	    MeshOptimize3d optmesh;
+	    MeshingParameters dummymp;
+	    MeshOptimize3d optmesh(dummymp);
 	    for(int i=0; i<numtopimprove; i++)
 	      {
 		optmesh.SwapImproveSurface(mesh,OPT_QUALITY,&working_elements,&idmaps);
@@ -507,7 +510,8 @@ namespace netgen
 
       }
 
-    MeshOptimize3d optmesh;
+    MeshingParameters dummymp;
+    MeshOptimize3d optmesh(dummymp);
     for(int i=0; i<numtopimprove && multithread.terminate != 1; i++)
       {
 	optmesh.SwapImproveSurface(mesh,OPT_QUALITY,NULL,&idmaps);

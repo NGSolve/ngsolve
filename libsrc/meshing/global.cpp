@@ -23,7 +23,6 @@ namespace netgen
   int silentflag = 0;
   int testmode = 0;
 
-  MeshingParameters mparam;
   volatile multithreadt multithread;
 
   string ngdir = ".";

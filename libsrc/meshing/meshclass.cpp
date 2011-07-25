@@ -5461,15 +5461,21 @@ namespace netgen
 
   bool Mesh :: PureTrigMesh (int faceindex) const
   {
+    // if (!faceindex) return !mparam.quad;
+    
     if (!faceindex)
-      return !mparam.quad;
+      {
+	for (int i = 1; i <= GetNSE(); i++)
+	  if (SurfaceElement(i).GetNP() != 3)
+	    return false;
+	return true;
+      }
 
-    int i;
-    for (i = 1; i <= GetNSE(); i++)
+    for (int i = 1; i <= GetNSE(); i++)
       if (SurfaceElement(i).GetIndex() == faceindex &&
           SurfaceElement(i).GetNP() != 3)
-        return 0;
-    return 1;
+        return false;
+    return true;
   }
 
   bool Mesh :: PureTetMesh () const

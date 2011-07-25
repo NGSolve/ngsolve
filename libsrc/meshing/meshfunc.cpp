@@ -258,7 +258,7 @@ namespace netgen
                  //	      mesh3d.Save ("tmp.vol");
 
 
-                 MeshOptimize3d optmesh;
+                 MeshOptimize3d optmesh(mp);
 
                  const char * optstr = "mcmstmcmstmcmstmcm";
                  size_t j;
@@ -274,7 +274,7 @@ namespace netgen
                     case 'd': optmesh.SplitImprove(mesh3d, OPT_REST); break;
                     case 's': optmesh.SwapImprove(mesh3d, OPT_REST); break;
                     case 't': optmesh.SwapImprove2(mesh3d, OPT_REST); break;
-                    case 'm': mesh3d.ImproveMesh(OPT_REST); break;
+                    case 'm': mesh3d.ImproveMesh(mp, OPT_REST); break;
                     }	  
 
                  }
@@ -648,7 +648,7 @@ namespace netgen
 	if (multithread.terminate)
 	  break;
 
-	MeshOptimize3d optmesh;
+	MeshOptimize3d optmesh(mp);
 
 	// teterrpow = mp.opterrpow;
 	for (size_t j = 1; j <= strlen(mp.optimize3d); j++)
@@ -667,10 +667,10 @@ namespace netgen
 	      case 'm': mesh3d.ImproveMesh(*geometry); break;
 	      case 'M': mesh3d.ImproveMesh(*geometry); break;
 #else
-	      case 'm': mesh3d.ImproveMesh(); break;
-	      case 'M': mesh3d.ImproveMesh(); break;
+	      case 'm': mesh3d.ImproveMesh(mp); break;
+	      case 'M': mesh3d.ImproveMesh(mp); break;
 #endif
-	      case 'j': mesh3d.ImproveMeshJacobian(); break;
+	      case 'j': mesh3d.ImproveMeshJacobian(mp); break;
 	      }
 	  }
 	mesh3d.mglevels = 1;
@@ -698,7 +698,8 @@ namespace netgen
 
     nillegal = mesh3d.MarkIllegalElements();
 
-    MeshOptimize3d optmesh;
+    MeshingParameters dummymp;
+    MeshOptimize3d optmesh(dummymp);
     while (nillegal && (it--) > 0)
       {
 	if (multithread.terminate)

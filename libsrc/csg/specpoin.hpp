@@ -11,6 +11,8 @@
 namespace netgen
 {
 
+  extern DLL_HEADER MeshingParameters mparam;
+
   /*
 
   Special Point Calculation

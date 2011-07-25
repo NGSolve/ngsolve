@@ -160,7 +160,7 @@ namespace netgen
   {
     cout << "2D Delaunay meshing (in progress)" << endl;
 
-    int oldnp = mesh.GetNP();
+    // int oldnp = mesh.GetNP();
 
     cout << "np, old = " << mesh.GetNP() << endl;
 

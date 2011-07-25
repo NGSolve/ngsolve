@@ -28,6 +28,9 @@ namespace netgen
 {
   extern int IsInArray(int n, const Array<int>& ia);
   extern int AddIfNotExists(Array<int>& list, int x);
+  
+  extern DLL_HEADER MeshingParameters mparam;
+  
 
 
 #include "stltopology.hpp"

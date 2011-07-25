@@ -487,12 +487,13 @@ namespace netgen
 
 
     ///
-    void ImproveMesh (OPTIMIZEGOAL goal = OPT_QUALITY);
+    void ImproveMesh (const MeshingParameters & mp, OPTIMIZEGOAL goal = OPT_QUALITY);
 
     ///
-    void ImproveMeshJacobian (OPTIMIZEGOAL goal = OPT_QUALITY, const BitArray * usepoint = NULL);
+    void ImproveMeshJacobian (const MeshingParameters & mp, OPTIMIZEGOAL goal = OPT_QUALITY, const BitArray * usepoint = NULL);
     ///
-    void ImproveMeshJacobianOnSurface (const BitArray & usepoint, 
+    void ImproveMeshJacobianOnSurface (const MeshingParameters & mp,
+				       const BitArray & usepoint, 
 				       const Array< Vec<3>* > & nv,
 				       OPTIMIZEGOAL goal = OPT_QUALITY,
 				       const Array< Array<int,PointIndex::BASE>* > * idmaps = NULL);

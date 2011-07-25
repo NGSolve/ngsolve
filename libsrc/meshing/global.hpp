@@ -25,7 +25,7 @@ namespace netgen
   /// calling parameters
   // extern Flags parameters;
 
-  extern DLL_HEADER MeshingParameters mparam;
+  // extern DLL_HEADER MeshingParameters mparam;
 
   extern Array<int> tets_in_qualclass;
 

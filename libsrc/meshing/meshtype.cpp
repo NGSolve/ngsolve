@@ -1535,6 +1535,7 @@ namespace netgen
         {
           cout << "GetNodesLocal not impelemented for element " << GetType() << endl;
           np = 0;
+	  pp = NULL;
         }
       }
   

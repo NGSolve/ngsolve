@@ -160,8 +160,9 @@ void MeshOptimize3d :: CombineImprove (Mesh & mesh,
 	  for (int k = 0; k < hasonepi.Size(); k++)
 	    {
 	      const Element & elem = mesh[hasonepi[k]];
-	      double err = CalcTetBadness (mesh[elem[0]], mesh[elem[1]],  
-					   mesh[elem[2]], mesh[elem[3]], 0, mparam);
+	      double err = CalcBad (mesh.Points(), elem, 0);
+	      // CalcTetBadness (mesh[elem[0]], mesh[elem[1]],  
+	      // mesh[elem[2]], mesh[elem[3]], 0, mparam);
 	      bad2 += err;
 	      oneperr[k] = err;
 	    }
@@ -475,7 +476,7 @@ void MeshOptimize3d :: SplitImprove (Mesh & mesh,
 		  }
 	    }
 
-	  PointFunction1 pf (mesh.Points(), locfaces, -1);
+	  PointFunction1 pf (mesh.Points(), locfaces, mp, -1);
 	  OptiParameters par;
 	  par.maxit_linsearch = 50;
 	  par.maxit_bfgs = 20;

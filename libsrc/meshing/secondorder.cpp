@@ -457,7 +457,8 @@ namespace netgen
 	    while (wrongels && cnttrials > 0);
 
 	    mesh.CalcSurfacesOfNode();
-	    mesh.ImproveMeshJacobian (OPT_WORSTCASE);	      
+	    MeshingParameters dummymp;
+	    mesh.ImproveMeshJacobian (dummymp, OPT_WORSTCASE);	      
 	  
 	    facok = factry;
 	    for (int i = 1; i <= np; i++)
