@@ -366,7 +366,7 @@ namespace nglib
       //MeshingParameters mparam;
       mp->Transfer_Parameters();
 
-      m->CalcLocalH();
+      m->CalcLocalH(mparam.grading);
 
       MeshVolume (mparam, *m);
       RemoveIllegalElements (*m);

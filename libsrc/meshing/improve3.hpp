@@ -22,11 +22,11 @@ public:
 
 inline double 
 CalcBad (const Mesh::T_POINTS & points, const Element & elem,
-         double h)
+         double h, const MeshingParameters & mp = mparam)
 {
   if (elem.GetType() == TET)
     return CalcTetBadness (points[elem[0]], points[elem[1]],  
-			   points[elem[2]], points[elem[3]], h);  
+			   points[elem[2]], points[elem[3]], h, mp);  
   return 0;
 }
 
@@ -34,7 +34,8 @@ CalcBad (const Mesh::T_POINTS & points, const Element & elem,
 
 
 extern double CalcTotalBad (const Mesh::T_POINTS & points, 
-			    const Mesh::T_VOLELEMENTS & elements);
+			    const Mesh::T_VOLELEMENTS & elements,
+			    const MeshingParameters & mp = mparam);
 
 extern int WrongOrientation (const Mesh::T_POINTS & points, const Element & el);
 

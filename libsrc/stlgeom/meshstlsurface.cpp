@@ -320,7 +320,7 @@ int STLSurfaceMeshing (STLGeometry & geom,
 		  mesh.CalcSurfacesOfNode();
 		  optmesh.EdgeSwapping (mesh, 0);
 		  mesh.CalcSurfacesOfNode();
-		  optmesh.ImproveMesh (mesh);
+		  optmesh.ImproveMesh (mesh, mparam);
 		}
 
 	      mesh.Compress();
@@ -606,7 +606,7 @@ void STLSurfaceMeshing1 (STLGeometry & geom,
 	  return;
 	
 	PrintMessage(5,"Meshing surface ", fnr, "/", mesh.GetNFD());
-	MeshingSTLSurface meshing (geom);
+	MeshingSTLSurface meshing (geom, mparam);
 	
 	meshing.SetStartTime (starttime);
 	
@@ -666,7 +666,7 @@ void STLSurfaceMeshing1 (STLGeometry & geom,
       /*
       (*testout) << "start meshing with h = " << h << endl;
       */
-      meshing.GenerateMesh (mesh, h, fnr);  // face index
+      meshing.GenerateMesh (mesh, mparam, h, fnr);  // face index
 
       extern void Render();
       Render();
@@ -727,7 +727,7 @@ void STLSurfaceOptimization (STLGeometry & geom,
 	    }
 	  case 'm': 
 	    {
-	      optmesh.ImproveMesh(mesh);
+	      optmesh.ImproveMesh(mesh, mparam);
 	      break;
 	    }
 	  case 'c': 
@@ -749,8 +749,9 @@ void STLSurfaceOptimization (STLGeometry & geom,
 
 
 
-MeshingSTLSurface :: MeshingSTLSurface (STLGeometry & ageom)
-  : Meshing2(ageom.GetBoundingBox()), geom(ageom)
+MeshingSTLSurface :: MeshingSTLSurface (STLGeometry & ageom,
+					const MeshingParameters & mp)
+  : Meshing2(mp, ageom.GetBoundingBox()), geom(ageom)
 {
   ;
 }

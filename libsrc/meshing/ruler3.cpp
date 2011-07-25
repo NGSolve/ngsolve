@@ -77,26 +77,25 @@ int Meshing3 :: ApplyRules
   int loktestmode;
 
 
-  static Array<int> pused;        // point is already mapped
-  static Array<char> fused;       // face is already mapped
-  static Array<int> pmap;         // map of reference point to local point
-  static Array<char> pfixed;      // point mapped by face-map
-  static Array<int> fmapi;        // face in reference is mapped to face nr ...
-  static Array<int> fmapr;        // face in reference is rotated to map 
-  static Array<Point3d> transfreezone;  // transformed free-zone
-  static int cnt = 0;
-  static INDEX_2_CLOSED_HASHTABLE<int> ledges(100); // edges in local environment
+  Array<int> pused;        // point is already mapped
+  Array<char> fused;       // face is already mapped
+  Array<int> pmap;         // map of reference point to local point
+  Array<char> pfixed;      // point mapped by face-map
+  Array<int> fmapi;        // face in reference is mapped to face nr ...
+  Array<int> fmapr;        // face in reference is rotated to map 
+  Array<Point3d> transfreezone;  // transformed free-zone
+  INDEX_2_CLOSED_HASHTABLE<int> ledges(100); // edges in local environment
   
-  static Array<Point3d> tempnewpoints;
-  static Array<MiniElement2d> tempnewfaces;
-  static Array<int> tempdelfaces;
-  static Array<Element> tempelements;
-  static Array<Box3d> triboxes;         // bounding boxes of local faces
+  Array<Point3d> tempnewpoints;
+  Array<MiniElement2d> tempnewfaces;
+  Array<int> tempdelfaces;
+  Array<Element> tempelements;
+  Array<Box3d> triboxes;         // bounding boxes of local faces
 
+  Array<int, PointIndex::BASE> pnearness;
+  Array<int> fnearness;
 
-  static Array<int, PointIndex::BASE> pnearness;
-  static Array<int> fnearness;
-
+  static int cnt = 0;
   cnt++;
   
   delfaces.SetSize (0);

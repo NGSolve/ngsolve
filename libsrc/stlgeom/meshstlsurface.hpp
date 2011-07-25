@@ -23,7 +23,7 @@ class MeshingSTLSurface : public Meshing2
   int transformationtrig;
 public:
   ///
-  MeshingSTLSurface (STLGeometry & ageom);
+  MeshingSTLSurface (STLGeometry & ageom, const MeshingParameters & mp);
 
 protected:
   ///

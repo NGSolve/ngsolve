@@ -493,7 +493,7 @@ void netrule :: LoadRule (istream & ist)
 extern const char * triarules[];
 extern const char * quadrules[];
 
-void Meshing2 :: LoadRules (const char * filename)
+void Meshing2 :: LoadRules (const char * filename, bool quad)
 {
   char buf[256];
   istream * ist;
@@ -520,7 +520,8 @@ void Meshing2 :: LoadRules (const char * filename)
       /* connect tetrules to one string */
       const char ** hcp;
 
-      if (!mparam.quad)
+      // if (!mparam.quad)
+      if (!quad)
 	{
 	  hcp = triarules;
 	  PrintMessage (3, "load internal triangle rules");
@@ -544,7 +545,8 @@ void Meshing2 :: LoadRules (const char * filename)
       tr1.reserve(len+1);
 
 
-      if (!mparam.quad)
+      // if (!mparam.quad)
+      if (!quad)
 	hcp = triarules;
       else
 	hcp = quadrules;

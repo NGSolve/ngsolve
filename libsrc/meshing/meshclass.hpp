@@ -311,7 +311,7 @@ namespace netgen
 
 
     ///
-    DLL_HEADER double ElementError (int eli) const;
+    DLL_HEADER double ElementError (int eli, const MeshingParameters & mp) const;
 
     /// 
     DLL_HEADER void AddLockedPoint (PointIndex pi);
@@ -382,7 +382,7 @@ namespace netgen
     */
     DLL_HEADER double AverageH (int surfnr = 0) const;
     /// Calculates localh 
-    DLL_HEADER void CalcLocalH ();
+    DLL_HEADER void CalcLocalH (double grading);
     ///
     DLL_HEADER void SetLocalH (const Point3d & pmin, const Point3d & pmax, double grading);
     ///
@@ -391,9 +391,9 @@ namespace netgen
     DLL_HEADER void RestrictLocalHLine (const Point3d & p1, const Point3d & p2, 
 			     double hloc);
     /// number of elements per radius
-    DLL_HEADER void CalcLocalHFromSurfaceCurvature(double elperr);
+    DLL_HEADER void CalcLocalHFromSurfaceCurvature(double grading, double elperr);
     ///
-    DLL_HEADER void CalcLocalHFromPointDistances(void);
+    DLL_HEADER void CalcLocalHFromPointDistances(double grading);
     ///
     DLL_HEADER void RestrictLocalH (resthtype rht, int nr, double loch);
     ///

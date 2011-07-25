@@ -156,7 +156,7 @@ void CutOffAndCombine (Mesh & mesh, const Mesh & othermesh)
     mesh.AddLockedPoint (pmat.Elem(i));
 
   mesh.CalcSurfacesOfNode();
-  mesh.CalcLocalH();
+  mesh.CalcLocalH(mparam.grading);
 }
 
 

@@ -350,7 +350,7 @@ namespace netgen
     mesh->SetLocalH (pmin, pmax, mparam.grading);
     mesh->SetGlobalH (h);
   
-    mesh->CalcLocalH();
+    mesh->CalcLocalH(mparam.grading);
 
     int bnp = mesh->GetNP(); // boundary points
 
@@ -452,7 +452,7 @@ namespace netgen
 
         mparam.quad = hquad || geometry.GetDomainQuadMeshing (domnr);
 
-	Meshing2 meshing (Box<3> (pmin, pmax));
+	Meshing2 meshing (mparam, Box<3> (pmin, pmax));
 
 	Array<int, PointIndex::BASE> compress(bnp);
 	compress = -1;
@@ -491,7 +491,7 @@ namespace netgen
 	  meshing.Delaunay (*mesh, domnr, mparam);
 	else
 	*/
-	  meshing.GenerateMesh (*mesh, h, domnr);
+	meshing.GenerateMesh (*mesh, mparam, h, domnr);
 
 	for (SurfaceElementIndex sei = oldnf; sei < mesh->GetNSE(); sei++)
 	  (*mesh)[sei].SetIndex (domnr);

@@ -1731,12 +1731,6 @@ namespace netgen
   void Mesh :: FindOpenElements (int dom)
   {
     static int timer = NgProfiler::CreateTimer ("Mesh::FindOpenElements");
-    static int timera = NgProfiler::CreateTimer ("Mesh::FindOpenElements A");
-    static int timerb = NgProfiler::CreateTimer ("Mesh::FindOpenElements B");
-    static int timerc = NgProfiler::CreateTimer ("Mesh::FindOpenElements C");
-    static int timerd = NgProfiler::CreateTimer ("Mesh::FindOpenElements D");
-    static int timere = NgProfiler::CreateTimer ("Mesh::FindOpenElements E");
-
     NgProfiler::RegionTimer reg (timer);
 
     int np = GetNP();
@@ -1747,7 +1741,6 @@ namespace netgen
 
     numonpoint = 0;
 
-    NgProfiler::StartTimer (timera);
     for (ElementIndex ei = 0; ei < ne; ei++)
       {
         const Element & el = (*this)[ei];
@@ -1784,13 +1777,6 @@ namespace netgen
                 elsonpoint.Add (el[j], ei);
           }
       }
-    NgProfiler::StopTimer (timera);
-
-
-
-
-    NgProfiler::StartTimer (timerb);	
-
 
 
     Array<char, 1> hasface(GetNFD());
@@ -1865,14 +1851,10 @@ namespace netgen
       }
 
 
-    NgProfiler::StopTimer (timerb);
-
     int ii;
     PointIndex pi;
     SurfaceElementIndex sei;
     Element2d hel;
-
-    NgProfiler::RegionTimer regc (timerc);
 
 
     INDEX_3_CLOSED_HASHTABLE<INDEX_2> faceht(100);   
@@ -2016,8 +1998,6 @@ namespace netgen
     BuildBoundaryEdges();
 
 
-    NgProfiler::RegionTimer regd (timerd);
-
     for (int i = 1; i <= openelements.Size(); i++)
       {
         const Element2d & sel = openelements.Get(i);
@@ -2041,7 +2021,6 @@ namespace netgen
       }
 
 
-    NgProfiler::RegionTimer rege (timere);
 
     /*
       for (i = 1; i <= GetNSeg(); i++)
@@ -2542,13 +2521,14 @@ namespace netgen
 
 
 
-  void Mesh :: CalcLocalH () 
+  void Mesh :: CalcLocalH (double grading) 
   {
     if (!lochfunc)
       {
         Point3d pmin, pmax;
         GetBox (pmin, pmax);
-        SetLocalH (pmin, pmax, mparam.grading);
+        // SetLocalH (pmin, pmax, mparam.grading);
+	SetLocalH (pmin, pmax, grading);
       }
 
     PrintMessage (3,
@@ -2675,7 +2655,7 @@ namespace netgen
   }
 
 
-  void Mesh :: CalcLocalHFromPointDistances(void)
+  void Mesh :: CalcLocalHFromPointDistances(double grading)
   {
     PrintMessage (3, "Calculating local h from point distances");
 
@@ -2684,7 +2664,8 @@ namespace netgen
         Point3d pmin, pmax;
         GetBox (pmin, pmax);
 
-        SetLocalH (pmin, pmax, mparam.grading);
+        // SetLocalH (pmin, pmax, mparam.grading);
+	SetLocalH (pmin, pmax, grading);
       }
 
     PointIndex i,j;
@@ -2709,7 +2690,7 @@ namespace netgen
   }
 
 
-  void Mesh :: CalcLocalHFromSurfaceCurvature (double elperr) 
+  void Mesh :: CalcLocalHFromSurfaceCurvature (double grading, double elperr) 
   {
     PrintMessage (3, "Calculating local h from surface curvature");
 
@@ -2718,7 +2699,8 @@ namespace netgen
         Point3d pmin, pmax;
         GetBox (pmin, pmax);
 
-        SetLocalH (pmin, pmax, mparam.grading);
+        // SetLocalH (pmin, pmax, mparam.grading);
+	SetLocalH (pmin, pmax, grading);
       }
 
 
@@ -3047,11 +3029,11 @@ namespace netgen
 
 
 
-  double Mesh :: ElementError (int eli) const
+  double Mesh :: ElementError (int eli, const MeshingParameters & mp) const
   {
     const Element & el = volelements.Get(eli);
     return CalcTetBadness (points.Get(el[0]), points.Get(el[1]),
-                           points.Get(el[2]), points.Get(el[3]), -1);
+                           points.Get(el[2]), points.Get(el[3]), -1, mp);
   }
 
   void Mesh :: AddLockedPoint (PointIndex pi)
@@ -4145,11 +4127,11 @@ namespace netgen
                                          const int element,
                                          bool consider3D) const
   {
-    static Vec3d col1, col2, col3;
-    static Vec3d rhs, sol;
+    Vec3d col1, col2, col3;
+    Vec3d rhs, sol;
     const double eps = 1e-6;
 
-    static Array<Element2d> loctrigs;
+    Array<Element2d> loctrigs;
 
 
     //SZ 
@@ -4425,12 +4407,11 @@ namespace netgen
                                             double lami[3],
                                             const int element) const
   {
-
-    static Vec3d col1, col2, col3;
-    static Vec3d rhs, sol;
+    Vec3d col1, col2, col3;
+    Vec3d rhs, sol;
     const double eps = 1.e-4;
 
-    static Array<Element> loctets;
+    Array<Element> loctets;
 
     VolumeElement(element).GetTets (loctets);
 
@@ -5003,8 +4984,8 @@ namespace netgen
 
   void Mesh :: GetSurfaceElementsOfFace (int facenr, Array<SurfaceElementIndex> & sei) const
   {
-     static int timer = NgProfiler::CreateTimer ("GetSurfaceElementsOfFace");
-     NgProfiler::RegionTimer reg (timer);
+    static int timer = NgProfiler::CreateTimer ("GetSurfaceElementsOfFace");
+    NgProfiler::RegionTimer reg (timer);
 
 
      /*

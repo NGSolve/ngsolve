@@ -8,84 +8,6 @@ namespace netgen
 
   static const MeshOptimize2d * meshthis;
 
-
-#ifdef OLD
-
-  void CalcTriangleBadness (double x2, double x3, double y3, double metricweight,
-				   double h, double & badness, double & g1x, double & g1y)
-  {
-    // badness = sqrt(3.0) /36 * circumference^2 / area - 1 
-    // p1 = (0, 0), p2 = (x2, 0), p3 = (x3, y3);
-
-    Vec2d v23;
-    double l12, l13, l23, cir, area;
-    static const double c = sqrt(3.0) / 36;
-    double c1, c2, c3, c4;
-
-    v23.X() = x3 - x2;
-    v23.Y() = y3;
-
-    l12 = x2;
-    l13 = sqrt (x3*x3 + y3*y3);
-    l23 = v23.Length();
-
-    cir = l12 + l13 + l23;
-    area = 0.5 * x2 * y3;
-
-    if (area <= 1e-24 * cir * cir)
-      {
-	g1x = 0;
-	g1y = 0;
-	badness = 1e10;
-	return;
-      }
-
-    badness = c * cir * cir / area - 1;
-
-    c1 = 2 * c * cir / area;
-    c2 = 0.5 * c * cir * cir / (area * area);
-
-    g1x = c1 * ( - 1 - x3 / l13) - c2 * (-v23.Y());
-    g1y = c1 * (     - y3 / l13) - c2 * ( v23.X());
-  
-    //  metricweight = 0.1;
-    if (metricweight > 0)
-      {
-	// area = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
-	// add:  metricweight * (area / h^2 + h^2 / area - 2)
-      
-	const double area = x2 * y3;
-	const double dareax1 = -y3; 
-	const double dareay1 = x3 - x2; 
-
-	const double areahh = area / (h * h);
-	const double fac = metricweight * (areahh - 1 / areahh) / area;
-
-	badness += metricweight * (areahh + 1 / areahh - 2);
-	g1x += fac * dareax1;
-	g1y += fac * dareay1; 
-      
-	/*
-	// add: metricweight * (l1^2/h^2 + l2^2/h^2 + l3^2/h2 + h^2/l1^2 + h^2/l2^2 + h^2/l3^2 - 6)
-	double h2 = h*h;
-	double l1 = x2*x2;
-	double l2 = x3*x3+y3*y3;
-	double l3 = (x2-x3)*(x2-x3)+y3*y3;
-	double dl1dx = 2*(-x2);
-	double dl1dy = 0;
-	double dl2dx = -2*x3;
-	double dl2dy = -2*y3;
-
-	badness += (l1/h2 + l2/h2 + l3/h2 +h2/l1 + h2/l2 + h2/l3-6) * metricweight;
-
-	g1x += metricweight * (dl1dx/h2-h2/(l1*l1)*dl1dx + dl2dx/h2-h2/(l2*l2)*dl2dx);
-	g1y += metricweight * (dl1dy/h2-h2/(l1*l1)*dl1dy + dl2dy/h2-h2/(l2*l2)*dl2dy);
-	*/
-      }
-  }
-
-#endif
-
   static const double c_trig = 0.14433756;      // sqrt(3.0) / 12
   static const double c_trig4 = 0.57735026;     // sqrt(3.0) / 3
 
@@ -158,38 +80,6 @@ namespace netgen
       }
   }
 
-
-
-
-
-
-
-
-
-#ifdef OLD
-  double CalcTriangleBadness (const Point3d & p1, 
-			      const Point3d & p2, 
-			      const Point3d & p3,
-			      double metricweight,
-			      double h)
-  {
-    double badness;
-    double g1x, g1y;
-  
-    Vec3d e1 (p1, p2);
-    Vec3d e2 (p1, p3);
-  
-    double e1l = e1.Length() + 1e-24;
-    e1 /= e1l;
-    double e1e2 = (e1 * e2);
-    e2.Add (-e1e2, e1);
-    double e2l = e2.Length();
-  
-    CalcTriangleBadness ( e1l, e1e2, e2l,
-			  metricweight, h, badness, g1x, g1y);
-    return badness;
-  }
-#endif
 
 
 
@@ -274,6 +164,7 @@ namespace netgen
   class Opti2SurfaceMinFunction : public MinFunction
   {
     const Mesh & mesh;
+
   public:
     Opti2SurfaceMinFunction (const Mesh & amesh)
       : mesh(amesh)
@@ -416,6 +307,7 @@ namespace netgen
   class Opti2EdgeMinFunction : public MinFunction
   {
     const Mesh & mesh;
+
   public:
     Opti2EdgeMinFunction (const Mesh & amesh)
       : mesh(amesh) { } ;
@@ -650,7 +542,7 @@ namespace netgen
     ;
   }
 
-  void MeshOptimize2d :: ImproveMesh (Mesh & mesh)
+  void MeshOptimize2d :: ImproveMesh (Mesh & mesh, const MeshingParameters & mp)
   {
     if (!faceindex)
       {
@@ -658,7 +550,7 @@ namespace netgen
 
 	for (faceindex = 1; faceindex <= mesh.GetNFD(); faceindex++)
 	  {
-	    ImproveMesh (mesh);
+	    ImproveMesh (mesh, mp);
 	    if (multithread.terminate)
 	      throw NgException ("Meshing stopped");
 	  }
@@ -702,7 +594,7 @@ namespace netgen
 
     Array<MeshPoint, PointIndex::BASE> savepoints(mesh.GetNP());
 
-    uselocalh = mparam.uselocalh;
+    uselocalh = mp.uselocalh;
 
 
     Array<int, PointIndex::BASE> nelementsonpoint(mesh.GetNP());
@@ -724,7 +616,7 @@ namespace netgen
       }
 
 
-    loch = mparam.maxh;
+    loch = mp.maxh;
     locmetricweight = metricweight;
     meshthis = this;
 

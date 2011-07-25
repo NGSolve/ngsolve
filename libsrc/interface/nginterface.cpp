@@ -2152,7 +2152,7 @@ int Ng_Bisect_WithInfo ( const char * refinementfile, double ** qualityloss, int
     }
 
   if(!mesh->LocalHFunctionGenerated())
-    mesh->CalcLocalH();
+    mesh->CalcLocalH(mparam.grading);
   
   mesh->LocalHFunction().SetGrading (mparam.grading);
 

@@ -192,7 +192,8 @@ namespace netgen
   // static double teterrpow = 2;
 
   double CalcTetBadness (const Point3d & p1, const Point3d & p2,
-			 const Point3d & p3, const Point3d & p4, double h)
+			 const Point3d & p3, const Point3d & p4, double h,
+			 const MeshingParameters & mp)
   {
     double vol, l, ll, lll, ll1, ll2, ll3, ll4, ll5, ll6;
     double err;
@@ -224,7 +225,7 @@ namespace netgen
 	h * h * ( 1 / ll1 + 1 / ll2 + 1 / ll3 + 
 		  1 / ll4 + 1 / ll5 + 1 / ll6 ) - 12;
     
-    double teterrpow = mparam.opterrpow;
+    double teterrpow = mp.opterrpow;
     if(teterrpow < 1) teterrpow = 1;
     
     if (teterrpow == 1) return err;
@@ -235,7 +236,8 @@ namespace netgen
 
   double CalcTetBadnessGrad (const Point3d & p1, const Point3d & p2,
 			     const Point3d & p3, const Point3d & p4, double h,
-			     int pi, Vec<3> & grad)
+			     int pi, Vec<3> & grad,
+			     const MeshingParameters & mp)
   {
     double vol, l, ll, lll;
     double err;
@@ -350,7 +352,7 @@ namespace netgen
 
     double errpow;
 
-    double teterrpow = mparam.opterrpow;
+    double teterrpow = mp.opterrpow;
     if(teterrpow < 1) teterrpow = 1;
 
     if (teterrpow == 1)

@@ -7,24 +7,23 @@ namespace netgen
 
 
   // global variable for visualization
+//   static Array<Point3d> locpoints;
+//   static Array<int> legalpoints;
+//   static Array<Point2d> plainpoints;
+//   static Array<int> plainzones;
+//   static Array<INDEX_2> loclines;
+//   // static int geomtrig;
+//   //static const char * rname;
+//   static int cntelem, trials, nfaces;
+//   static int oldnl;
+//   static int qualclass;
 
-  static Array<Point3d> locpoints;
-  static Array<int> legalpoints;
-  static Array<Point2d> plainpoints;
-  static Array<int> plainzones;
-  static Array<INDEX_2> loclines;
-  // static int geomtrig;
-  //static const char * rname;
-  static int cntelem, trials, nfaces;
-  static int oldnl;
-  static int qualclass;
- 
 
-  Meshing2 :: Meshing2 (const Box<3> & aboundingbox)
+  Meshing2 :: Meshing2 (const MeshingParameters & mp, const Box<3> & aboundingbox)
   {
     boundingbox = aboundingbox;
-
-    LoadRules (NULL);
+    
+    LoadRules (NULL, mp.quad);
     // LoadRules ("rules/quad.rls");
     // LoadRules ("rules/triangle.rls");
 
@@ -73,8 +72,8 @@ namespace netgen
     canuse = 0;
     ruleused = 0;
 
-    cntelem = 0;
-    trials = 0;
+    // cntelem = 0;
+    // trials = 0;
   }
 
   void Meshing2 :: EndMesh ()
@@ -194,7 +193,7 @@ namespace netgen
 
 
 
-  MESHING2_RESULT Meshing2 :: GenerateMesh (Mesh & mesh, double gh, int facenr)
+  MESHING2_RESULT Meshing2 :: GenerateMesh (Mesh & mesh, const MeshingParameters & mp, double gh, int facenr)
   {
     static int timer = NgProfiler::CreateTimer ("surface meshing");
 
@@ -225,6 +224,17 @@ namespace netgen
     bool debugflag;
 
     double h, his, hshould;
+
+
+    Array<Point3d> locpoints;
+    Array<int> legalpoints;
+    Array<Point2d> plainpoints;
+    Array<int> plainzones;
+    Array<INDEX_2> loclines;
+    int cntelem = 0, trials = 0, nfaces = 0;
+    int oldnl = 0;
+    int qualclass;
+
 
 
     // test for 3d overlaps
@@ -419,7 +429,7 @@ namespace netgen
 
 	//(*testout) << "locpoints " << locpoints << endl;
 
-	if (qualclass > mparam.giveuptol2d)
+	if (qualclass > mp.giveuptol2d)
 	  {
 	    PrintMessage (3, "give up with qualclass ", qualclass);
 	    PrintMessage (3, "number of frontlines = ", adfront->GetNFL());
@@ -704,7 +714,7 @@ namespace netgen
 
 
 
-	    if (mparam.checkchartboundary)
+	    if (mp.checkchartboundary)
 	      {
 		for (int i = 1; i <= chartboundpoints.Size(); i++)
 		  {
@@ -961,7 +971,7 @@ namespace netgen
 	  }
 
 
-	if (found && mparam.checkoverlap)
+	if (found && mp.checkoverlap)
 	  {
 	    // cout << "checkoverlap" << endl;
 	    // test for overlaps

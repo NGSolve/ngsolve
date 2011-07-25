@@ -43,16 +43,16 @@ class Meshing2
 
 public:
   ///
-  DLL_HEADER Meshing2 (const Box<3> & aboundingbox);
+  DLL_HEADER Meshing2 (const MeshingParameters & mp, const Box<3> & aboundingbox);
 
   ///
   DLL_HEADER virtual ~Meshing2 ();
 
   /// Load rules, either from file, or compiled rules
-  void LoadRules (const char * filename);
+  void LoadRules (const char * filename, bool quad);
 
   /// 
-  DLL_HEADER MESHING2_RESULT GenerateMesh (Mesh & mesh, double gh, int facenr);
+  DLL_HEADER MESHING2_RESULT GenerateMesh (Mesh & mesh, const MeshingParameters & mp, double gh, int facenr);
 
   DLL_HEADER void Delaunay (Mesh & mesh, int domainnr, const MeshingParameters & mp);
   DLL_HEADER void BlockFillLocalH (Mesh & mesh, const MeshingParameters & mp);

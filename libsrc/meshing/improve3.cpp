@@ -161,7 +161,7 @@ void MeshOptimize3d :: CombineImprove (Mesh & mesh,
 	    {
 	      const Element & elem = mesh[hasonepi[k]];
 	      double err = CalcTetBadness (mesh[elem[0]], mesh[elem[1]],  
-					   mesh[elem[2]], mesh[elem[3]], 0);
+					   mesh[elem[2]], mesh[elem[3]], 0, mparam);
 	      bad2 += err;
 	      oneperr[k] = err;
 	    }

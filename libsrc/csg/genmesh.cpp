@@ -413,7 +413,7 @@ namespace netgen
 	  geom.GetSurface((mesh.GetFaceDescriptor(k).SurfNr()));
 
 
-	Meshing2Surfaces meshing(*surf, geom.BoundingBox());
+	Meshing2Surfaces meshing(*surf, mparam, geom.BoundingBox());
 	meshing.SetStartTime (starttime);
 
         double eps = 1e-8 * geom.MaxSize();
@@ -482,7 +482,7 @@ namespace netgen
 	mparam.checkoverlap = 0;
 
 	MESHING2_RESULT res =
-	  meshing.GenerateMesh (mesh, maxh, k);
+	  meshing.GenerateMesh (mesh, mparam, maxh, k);
 
 	if (res != MESHING2_OK)
 	  {
@@ -531,7 +531,7 @@ namespace netgen
 		  meshopt.SetMetricWeight (mparam.elsizeweight);
 		  meshopt.SetWriteStatus (0);
 
-		  meshopt.ImproveMesh (mesh);
+		  meshopt.ImproveMesh (mesh, mparam);
 		}
 		
 		{
@@ -553,7 +553,7 @@ namespace netgen
 		  meshopt.SetMetricWeight (mparam.elsizeweight);
 		  meshopt.SetWriteStatus (0);
 
-		  meshopt.ImproveMesh (mesh);
+		  meshopt.ImproveMesh (mesh, mparam);
 		}
 	      }
 	  }
@@ -723,7 +723,7 @@ namespace netgen
   
 	if (mparam.uselocalh)
 	  {
-	    mesh->CalcLocalH();
+	    mesh->CalcLocalH(mparam.grading);
 	    mesh->DeleteMesh();
 	    
 	    FindPoints (geom, *mesh);
@@ -757,7 +757,7 @@ namespace netgen
       
 	if (mparam.uselocalh && 0)
 	  {
-	    mesh->CalcLocalH();      
+	    mesh->CalcLocalH(mparam.grading);      
 	    mesh->DeleteMesh();
 
 	    FindPoints (geom, *mesh);

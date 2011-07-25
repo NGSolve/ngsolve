@@ -112,8 +112,8 @@ namespace netgen
 
       gp_Pnt2d parmid;
 
-      parmid.SetX(0.3*(par0.X()+par1.X()+par2.X()));
-      parmid.SetY(0.3*(par0.Y()+par1.Y()+par2.Y()));
+      parmid.SetX( (par0.X()+par1.X()+par2.X()) / 3 );
+      parmid.SetY( (par0.Y()+par1.Y()+par2.Y()) / 3 );
 
       if (depth%3 == 0)
       {

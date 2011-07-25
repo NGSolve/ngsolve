@@ -15,8 +15,8 @@ public:
   ///
   MeshOptimize2d ();
   ///
-  void ImproveMesh (Mesh & mesh2d);
-  void ImproveMeshJacobian (Mesh & mesh2d);
+  void ImproveMesh (Mesh & mesh2d, const MeshingParameters & mp);
+  void ImproveMeshJacobian (Mesh & mesh2d, const MeshingParameters & mp);
   void ImproveVolumeMesh (Mesh & mesh);
   void ProjectBoundaryPoints(Array<int> & surfaceindex, 
 			     const Array<Point<3>* > & from, Array<Point<3>* > & dest);

@@ -379,7 +379,7 @@ namespace netgen
 		  mesh->GetNE(), " Elements.");
 
     mesh->SetGlobalH (mparam.maxh);
-    mesh->CalcLocalH();
+    mesh->CalcLocalH(mparam.grading);
 
     return TCL_OK;
   }
@@ -1024,7 +1024,7 @@ namespace netgen
       }
 
     mesh->SetGlobalH (mparam.maxh);
-    mesh->CalcLocalH();
+    mesh->CalcLocalH(mparam.grading);
 
     return TCL_OK;
   }
@@ -1083,7 +1083,7 @@ namespace netgen
     Mesh othermesh;
     othermesh.Load (argv[1]);
     othermesh.SetGlobalH (mparam.maxh);
-    othermesh.CalcLocalH();
+    othermesh.CalcLocalH(mparam.grading);
 
     CutOffAndCombine (*mesh, othermesh);
     return TCL_OK;
@@ -1644,7 +1644,7 @@ namespace netgen
     */
 
     if(!mesh->LocalHFunctionGenerated())
-      mesh->CalcLocalH();
+      mesh->CalcLocalH(mparam.grading);
 
     mesh->LocalHFunction().SetGrading (mparam.grading);
     ref . Bisect (*mesh, biopt);

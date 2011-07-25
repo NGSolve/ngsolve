@@ -1,8 +1,6 @@
 #include <mystdlib.h>
 #include "meshing.hpp"
 
-// #define MARK
-// #include <prof.h>
 
 
 namespace netgen
@@ -203,7 +201,7 @@ int vnetrule :: IsTriangleInFreeZone (const Point3d & p1,
   int infreeset, cannot = 0;
 
 
-  static Array<int> pfi(3), pfi2(3);
+  ArrayMem<int,3> pfi(3), pfi2(3);
 
   // convert from local index to freeset index
   int i, j;
@@ -253,7 +251,7 @@ int vnetrule :: IsTriangleInFreeSet (const Point3d & p1, const Point3d & p2,
   double hpx, hpy, hpz, v1x, v1y, v1z, v2x, v2y, v2z;
   int act1, act2, act3, it;
   int cntout;
-  static Array<int> activefaces;
+  Array<int> activefaces;
   int isin;
   
 
@@ -870,7 +868,7 @@ int vnetrule :: IsQuadInFreeZone (const Point3d & p1,
   int infreeset, cannot = 0;
 
 
-  static Array<int> pfi(4), pfi2(4);
+  ArrayMem<int,4> pfi(4), pfi2(4);
 
   // convert from local index to freeset index
   int i, j;
@@ -933,7 +931,7 @@ int vnetrule :: IsQuadInFreeSet (const Point3d & p1, const Point3d & p2,
       return 1;
     }
 
-  static Array<int> pi3(3);
+  ArrayMem<int,3> pi3(3);
   int res;
 
   pi3.Elem(1) = pi.Get(1);

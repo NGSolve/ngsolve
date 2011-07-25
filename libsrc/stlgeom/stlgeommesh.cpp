@@ -1451,7 +1451,8 @@ int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh, MeshingParameters & 
 				 stlgeometry->GetBoundingBox().PMax() + Vec3d(10, 10, 10),
 				 mparam.grading);
 	      mesh -> LoadLocalMeshSize (mparam.meshsizefilename);	      
-	      mesh -> CalcLocalHFromSurfaceCurvature (stlparam.resthsurfmeshcurvfac);
+	      mesh -> CalcLocalHFromSurfaceCurvature (mparam.grading, 
+						      stlparam.resthsurfmeshcurvfac);
 	      mparam.optimize2d = "cmsmSm";
 	      STLSurfaceOptimization (*stlgeometry, *mesh, mparam);
 #ifdef STAT_STREAM
@@ -1502,7 +1503,7 @@ int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh, MeshingParameters & 
 				 stlgeometry->GetBoundingBox().PMax() + Vec3d(10, 10, 10),
 				 mparam.grading);	  
 	      mesh -> LoadLocalMeshSize (mparam.meshsizefilename);
-	      mesh -> CalcLocalH ();
+	      mesh -> CalcLocalH (mparam.grading);
 	    }
 	  
 	  

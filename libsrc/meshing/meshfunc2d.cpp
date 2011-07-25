@@ -41,7 +41,7 @@ namespace netgen
 	      {
 		MeshOptimize2d meshopt;
 		meshopt.SetMetricWeight (1);
-		meshopt.ImproveMesh(mesh);
+		meshopt.ImproveMesh(mesh, mp);
 		break;
 	      }
 	    

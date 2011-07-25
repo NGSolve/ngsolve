@@ -160,39 +160,12 @@ namespace netgen
     return *this;
   }
 
-
-
-
-  /*
-    double & DenseMatrix :: operator() (int i, int j)
-    {
-    if (i >= 1 && j >= 1 && i <= height && j <= width)
-    return Elem(i,j);
-    else (*myerr) << "DenseMatrix: index (" << i << "," << j << ") out of range (1.."
-    << height << ",1.." << width << ")\n";
-    static double dummy = 0;
-    return dummy;
-    }
-
-    double DenseMatrix :: operator() (int i, int j) const
-    {
-    if (i >= 1 && j >= 1 && i <= height && j <= width)
-    return Get(i,j);
-    else (*myerr) << "DenseMatrix: index (" << i << "," << j << ") out of range (1.."
-    << height << ",1.." << width << ")\n";
-
-    static double dummy = 0;
-    return dummy;
-    }
-  */
-
   DenseMatrix & DenseMatrix :: operator= (double v)
   {
-    int i;
     double * p = data;
 
     if (data)
-      for (i = width*height; i > 0; i--, p++)
+      for (int i = width*height; i > 0; i--, p++)
         *p = v;
 
     return *this;
@@ -202,11 +175,10 @@ namespace netgen
 
   DenseMatrix & DenseMatrix :: operator*= (double v)
   {
-    int i;
     double * p = data;
 
     if (data)
-      for (i = width*height; i > 0; i--, p++)
+      for (int i = width*height; i > 0; i--, p++)
         *p *= v;
 
     return *this;

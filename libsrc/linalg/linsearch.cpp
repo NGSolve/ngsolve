@@ -47,10 +47,8 @@ double MinFunction :: FuncGrad (const Vector & x, Vector & g) const
   /*
   int n = x.Size();
 
-  static Vector xr;
-  static Vector xl;
-  xr.SetSize(n);
-  xl.SetSize(n);
+  Vector xr(n);
+  Vector xl(n);
 
   double eps = 1e-6;
   double fl, fr;

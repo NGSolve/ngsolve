@@ -4454,7 +4454,7 @@ namespace netgen
                     int argc, tcl_const char *argv[])
   {
     int i;
-    static char buf[1000];
+    char buf[1000];
     buf[0] = 0;
 
     if (argc >= 2)

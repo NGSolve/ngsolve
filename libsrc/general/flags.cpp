@@ -125,8 +125,8 @@ namespace netgen
       return *strlistflags.Get(name);
     else
       {
-	static Array<char*> hstra(0);
-	return hstra;
+	static Array<char*> dummy_array(0);
+	return dummy_array;
       }
   }
 
@@ -137,8 +137,8 @@ namespace netgen
       return *numlistflags.Get(name);
     else
       {
-	static Array<double> hnuma(0);
-	return hnuma;
+	static Array<double> dummy_array(0);
+	return dummy_array;
       }
   }
 

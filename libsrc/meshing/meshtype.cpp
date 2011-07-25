@@ -452,7 +452,7 @@ namespace netgen
                      DenseMatrix & trans) const
   {
     int np = GetNP();
-    static DenseMatrix pmat(2, np), dshape(2, np);
+    DenseMatrix pmat(2, np), dshape(2, np);
     pmat.SetSize (2, np);
     dshape.SetSize (2, np);
 
@@ -665,8 +665,8 @@ namespace netgen
   {
     int i, j;
     int nip = GetNIP();
-    static DenseMatrix trans(2,2);
-    static DenseMatrix pmat;
+    DenseMatrix trans(2,2);
+    DenseMatrix pmat;
   
     pmat.SetSize (2, GetNP());
     GetPointMatrix (points, pmat);
@@ -783,8 +783,8 @@ namespace netgen
       }
 
     int nip = GetNIP();
-    static DenseMatrix trans(2,2), dtrans(2,2);
-    static DenseMatrix pmat, vmat;
+    DenseMatrix trans(2,2), dtrans(2,2);
+    DenseMatrix pmat, vmat;
   
     pmat.SetSize (2, GetNP());
     vmat.SetSize (2, GetNP());
@@ -846,8 +846,8 @@ namespace netgen
   {
     int i, j;
     int nip = GetNIP();
-    static DenseMatrix trans(2,2);
-    static DenseMatrix pmat;
+    DenseMatrix trans(2,2);
+    DenseMatrix pmat;
   
     pmat.SetSize (2, GetNP());
 
@@ -1727,7 +1727,7 @@ namespace netgen
                      DenseMatrix & trans) const
   {
     int np = GetNP();
-    static DenseMatrix pmat(3, np), dshape(3, np);
+    DenseMatrix pmat(3, np), dshape(3, np);
     pmat.SetSize (3, np);
     dshape.SetSize (3, np);
 
@@ -2037,8 +2037,8 @@ namespace netgen
   double Element :: CalcJacobianBadness (const T_POINTS & points) const
   {
     int nip = GetNIP();
-    static DenseMatrix trans(3,3);
-    static DenseMatrix pmat;
+    DenseMatrix trans(3,3);
+    DenseMatrix pmat;
   
     pmat.SetSize (3, GetNP());
     GetPointMatrix (points, pmat);
@@ -2073,8 +2073,8 @@ namespace netgen
   {
     int i, j, k;
     int nip = GetNIP();
-    static DenseMatrix trans(3,3), dtrans(3,3), hmat(3,3);
-    static DenseMatrix pmat, vmat;
+    DenseMatrix trans(3,3), dtrans(3,3), hmat(3,3);
+    DenseMatrix pmat, vmat;
   
     pmat.SetSize (3, GetNP());
     vmat.SetSize (3, GetNP());
@@ -2148,8 +2148,8 @@ namespace netgen
                                int pi, Vec<3> & grad) const
   {
     int nip = GetNIP();
-    static DenseMatrix trans(3,3), dtrans(3,3), hmat(3,3);
-    static DenseMatrix pmat, vmat;
+    DenseMatrix trans(3,3), dtrans(3,3), hmat(3,3);
+    DenseMatrix pmat, vmat;
   
     pmat.SetSize (3, GetNP());
     vmat.SetSize (3, GetNP());

@@ -15,8 +15,9 @@ Meshing2Surfaces :: Meshing2Surfaces (const Surface & asurface)
 }
   */
 Meshing2Surfaces :: Meshing2Surfaces (const Surface & asurf,
+				      const MeshingParameters & mp,
 				      const Box<3> & abb)
-  : Meshing2(abb), surface(asurf)
+  : Meshing2(mp, abb), surface(asurf)
 {
   ;
 }

@@ -571,7 +571,8 @@ namespace netgen
 	stlgeometry -> RestrictLocalH(*mesh, mparam.maxh);
 
 	if (stlparam.resthsurfmeshcurvenable)
-	  mesh -> CalcLocalHFromSurfaceCurvature (stlparam.resthsurfmeshcurvfac);
+	  mesh -> CalcLocalHFromSurfaceCurvature (mparam.grading, 
+						  stlparam.resthsurfmeshcurvfac);
       }
 
     return TCL_OK;

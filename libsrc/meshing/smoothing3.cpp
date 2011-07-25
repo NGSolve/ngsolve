@@ -23,7 +23,6 @@ namespace netgen
   void MinFunctionSum :: Grad (const Vector & x, Vector & g) const
   {
     g = 0.;
-    // static Vector gi(3);
     VectorMem<3> gi;
     for(int i=0; i<functions.Size(); i++)
       {
@@ -38,7 +37,7 @@ namespace netgen
   {
     double retval = 0;
     g = 0.;
-    static Vector gi(3);
+    VectorMem<3> gi;
     for(int i=0; i<functions.Size(); i++)
       {
 	retval += functions[i]->FuncGrad(x,gi);
@@ -121,10 +120,6 @@ namespace netgen
   double PointFunction1 :: 
   FuncDeriv (const Vector & x, const Vector & dir, double & deriv) const
   {
-    /*
-    static Vector hx(3);
-    static double eps = 1e-6;
-    */
     VectorMem<3> hx;
     const double eps = 1e-6;
 
@@ -150,8 +145,8 @@ namespace netgen
 
   double PointFunction1 :: FuncGrad (const Vector & x, Vector & g) const
   {
-    static Vector hx(3);
-    static double eps = 1e-6;
+    VectorMem<3> hx;
+    double eps = 1e-6;
 
     hx = x;
     for (int i = 0; i < 3; i++)
@@ -247,9 +242,8 @@ namespace netgen
 
     int i;
     double badness = 0;
-    static Vector hv(4);
-    static Vector res;
-    res.SetSize (m.Height());
+    VectorMem<4> hv;
+    Vector res(m.Height());
 
     for (i = 0;i < 3; i++)
       hv(i) = vp(i);
@@ -270,8 +264,8 @@ namespace netgen
 
   double CheapPointFunction1 :: FuncGrad (const Vector & x, Vector & g) const
   {
-    static Vector hx(3);
-    static double eps = 1e-6;
+    VectorMem<3> hx;
+    double eps = 1e-6;
 
     hx = x;
     for (int i = 0; i < 3; i++)
@@ -546,8 +540,8 @@ namespace netgen
 
   double CheapPointFunction :: PointFunctionValue (const Point<3> & pp) const
   {
-    static Vector p4(4);
-    static Vector di;
+    VectorMem<4> p4;
+    Vector di;
     int n = m.Height();
 
     p4(0) = pp(0);
@@ -574,8 +568,8 @@ namespace netgen
 
   double CheapPointFunction :: PointFunctionValueGrad (const Point<3> & pp, Vec<3> & grad) const
   {
-    static Vector p4(4);
-    static Vector di;
+    VectorMem<4> p4;
+    Vector di;
 
     int n = m.Height();
 
@@ -686,7 +680,7 @@ namespace netgen
   {
     int n = x.Size();
 
-    static Vector hx;
+    Vector hx;
     hx.SetSize(n);
 
     double eps = 1e-8;
@@ -800,7 +794,7 @@ namespace netgen
   {
     Vec3d n, vgrad;
     Point3d pp1;
-    static Vector freegrad(3);
+    VectorMem<3> freegrad;
 
     CalcNewPoint (x, pp1);
 
@@ -893,7 +887,7 @@ double Opti3EdgeMinFunction :: FuncGrad (const Vector & x, Vector & grad) const
   Vec3d n1, n2, v1, vgrad;
   Point3d pp1;
   double badness;
-  static Vector freegrad(3);
+  VectorMem<3> freegrad;
 
   CalcNewPoint (x, pp1);
 
@@ -923,7 +917,8 @@ double Opti3EdgeMinFunction :: FuncGrad (const Vector & x, Vector & grad) const
 
 
 double CalcTotalBad (const Mesh::T_POINTS & points, 
-		     const Mesh::T_VOLELEMENTS & elements)
+		     const Mesh::T_VOLELEMENTS & elements,
+		     const MeshingParameters & mp)
 {
   double sum = 0;
   double elbad;
@@ -931,7 +926,7 @@ double CalcTotalBad (const Mesh::T_POINTS & points,
   tets_in_qualclass.SetSize(20);
   tets_in_qualclass = 0;
 
-  double teterrpow = mparam.opterrpow;
+  double teterrpow = mp.opterrpow;
 
   for (int i = 1; i <= elements.Size(); i++)
     {
