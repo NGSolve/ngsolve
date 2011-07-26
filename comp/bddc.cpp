@@ -87,8 +87,6 @@ namespace ngcomp
       multiple.SetSize (fes.GetNDof());
       multiple = 0;
 
-      *testout << "freedofs pointer = " << fes.GetFreeDofs() << endl;
-      
       //Check how often each interfacedof/wirebasketdof appears 
       //TODO: (CL): Wann/Wo kommt die Gewichtung rein?
       for (int i = 0; i < ne; i++)
@@ -139,13 +137,6 @@ namespace ngcomp
 	}
 #endif
 
-
-      *testout << " number of external dofs: " << nifdofs+nwbdofs << endl;
-      *testout << " number of interface dofs: " << nifdofs << endl;
-      *testout << " number of wirebasket dofs: " << nwbdofs << endl;
-      *testout << " el2wbdofs = " << endl << el2wbdofs << endl;
-      *testout << " el2ifdofs = " << endl << el2ifdofs << endl;
-       
       
       MatrixGraph graph_harmonicext(ndof, el2ifdofs, el2wbdofs, false);
       MatrixGraph graph_innersolve(ndof, el2ifdofs, el2ifdofs, bfa.IsSymmetric());
@@ -159,7 +150,7 @@ namespace ngcomp
       }
       else
 	subassembled_innersolve = new SparseMatrixSymmetric<double>(graph_innersolve, 1);
-      
+      subassembled_innersolve->AsVector() = 0.0;
       subassembled_harmonicext = new SparseMatrix<double>(graph_harmonicext, 1);
 
 
@@ -290,6 +281,7 @@ namespace ngcomp
 		}
 		else
 		  d(k,l) /= multiple[ el2ifdofs[i][k] ] * multiple[ el2ifdofs[i][l] ];	    
+
 	    if (bfa.IsSymmetric())
 	      dynamic_cast<SparseMatrixSymmetric<double>*>(subassembled_innersolve)->AddElementMatrix(interfacedofs,d);
 	    else
@@ -318,12 +310,6 @@ namespace ngcomp
 	if (free_dofs->Test(i)) cntfreedofs++;
 
 
-      *testout << "fes.GetFreeDofs() = " << fes.GetFreeDofs() << endl;
-      *testout << "BDDC - precond, orig freedofs = " << *fes.GetFreeDofs() << endl;
-      *testout << "local freedofs = " << *free_dofs << endl;
-      *testout << "wbdof = " << wbdof << endl;
-
-
       if (block){
 	//Smoothing Blocks
 	Flags flags;
@@ -332,7 +318,6 @@ namespace ngcomp
 	cout << "call Create Smoothing Blocks of " << bfa.GetFESpace().GetName() << endl;
 	Table<int> & blocks = *(bfa.GetFESpace().CreateSmoothingBlocks(flags));
 	cout << "has blocks" << endl << endl;
- 	*testout << " blocks = \n " << blocks << endl;
 
 	cout << "call block-jacobi inverse" << endl;
 	inv = wbmat.CreateBlockJacobiPrecond(blocks, 0, 0, 0);      
@@ -342,7 +327,6 @@ namespace ngcomp
 	cout << "call directsolverclusters inverse" << endl;
 	Array<int> & clusters = *(bfa.GetFESpace().CreateDirectSolverClusters(flags));
 	cout << "has clusters" << endl << endl;
- 	*testout << " clusters = \n " << clusters << endl;
 
 	cout << "call coarse wirebasket grid inverse" << endl;
 	inv_coarse = wbmat.InverseMatrix(&clusters);
@@ -367,7 +351,7 @@ namespace ngcomp
 	  {
 	    cout << "call wirebasket inverse ( with " << cntfreedofs << " free dofs out of " << wbmat.Height() << " )" 
 		 << endl;
-	    *testout << "wbmat = " << endl << wbmat << endl;
+
 	    inv = wbmat.InverseMatrix(free_dofs);
 	    cout << "has inverse" << endl;
 	    tmp = new VVector<>(ndof);
@@ -440,8 +424,6 @@ namespace ngcomp
 	}
       }
 
-       *testout << "dcdofs = " << endl << dcdofs << endl;
-       *testout << "el2wbdofs = " << endl << el2wbdofs << endl;
 
 //        *testout << "test " << endl;
       restrict.SetSize(ndcdof);
@@ -512,6 +494,7 @@ namespace ngcomp
 	    }
 	  }
 
+
 	  int sizew = localwbdofs.Size();
 	  int sizei = localintdofs.Size();
 	  Matrix<double> a(sizew, sizew);
@@ -561,6 +544,7 @@ namespace ngcomp
 #endif	    
 	      static_cast<ElementByElementMatrix<double>*>(subassembled_harmonicexttrans)->AddElementMatrix(i,wdnums,idnums,het);
 	    }
+
 	    static_cast<ElementByElementMatrix<double>*>(subassembled_innersolve)->AddElementMatrix(i,idnums,idnums,d);
 #ifdef LAPACK	  
 	    LapackMultAddAB (b, he, 1.0, a);
@@ -587,7 +571,7 @@ namespace ngcomp
 	    if ((fes.GetFreeDofs()==NULL) || fes.GetFreeDofs()->Test(restrict[i]))
 	      free_dofs->Set(i);
 	}
-      *testout << "wb_free_dofs = " << *free_dofs << endl;
+
       if (block){
 	Flags flags;
 	flags.SetFlag("eliminate_internal");
@@ -602,11 +586,9 @@ namespace ngcomp
 	cout << "has inverse" << endl;
 	cout << "call directsolverclusters inverse" << endl;
 	Array<int> & clusters = *(bfa.GetFESpace().CreateDirectSolverClusters(flags));
- 	*testout << " clusters = \n " << clusters << endl;
 	Array<int> & condclusters = *new Array<int>(nglobalwbdof);
 	for (int i=0; i< clusters.Size(); i++)
 	  condclusters[wbdofs[i]] = clusters[i];
- 	*testout << " condclusters = \n " << condclusters << endl;
 	
 	inv_coarse = wbmat.InverseMatrix(&condclusters);
 	tmp = new VVector<>(nglobalwbdof);
@@ -662,7 +644,7 @@ namespace ngcomp
       static Timer timerharmonicexttrans ("Apply BDDC preconditioner - harmonic extension trans");
       
       NgProfiler::RegionTimer reg (timer);
-      
+
       x.Cumulate();
     
       y = x;
@@ -696,17 +678,15 @@ namespace ngcomp
 	}
       timerwb.Stop();
 
-
       timerifs.Start();
       *tmp += *subassembled_innersolve * x;
       timerifs.Stop();
 
-      
       timerharmonicext.Start();
       
       y = *tmp;
       y += *subassembled_harmonicext * *tmp;
-    
+
       timerharmonicext.Stop();
 
       y.Cumulate();

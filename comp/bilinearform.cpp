@@ -834,8 +834,6 @@ namespace ngcomp
 				    for (int jj = 0; jj < dim; jj++)
 				      idofs.Append (dim*idofs1[j]+jj);
 
-				  *testout << "idofs = " << idofs << endl;
-
 				  int sizei = idofs.Size();
 				  int sizeo = size - sizei;
 
