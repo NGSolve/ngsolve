@@ -235,7 +235,7 @@ namespace ngla
 
 
     mumps_id.job=JOB_INIT; 
-    mumps_id.par=0;
+    mumps_id.par= (ntasks == 1) ? 1 : 0;
     mumps_id.sym=symmetric;
     mumps_id.comm_fortran=USE_COMM_WORLD;
     // mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
@@ -426,10 +426,8 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   MumpsInverse<TM,TV_ROW,TV_COL> :: ~MumpsInverse()
   {
-    cout << "delete mumps-inverse" << endl;
-
     mumps_id.job=JOB_END; 
-    mumps_id.par=0;
+    mumps_id.par= (ntasks == 1) ? 1 : 0;
     mumps_id.sym=symmetric;
     mumps_id.comm_fortran=USE_COMM_WORLD;
     // mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);

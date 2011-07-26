@@ -420,6 +420,8 @@ namespace ngcomp
   }
 
 
+
+
   DirectPreconditioner :: DirectPreconditioner (PDE * pde, Flags & aflags, const string aname)
     : Preconditioner(pde,aflags,aname)
   {
@@ -430,52 +432,28 @@ namespace ngcomp
 
   DirectPreconditioner :: ~DirectPreconditioner()
   {
-    if ( inverse )
-      delete inverse;
+    delete inverse;
   }
 
   void DirectPreconditioner :: Update ()
   {
-    if ( inverse )
-      delete inverse;
+    delete inverse;
+
     try
       {
 	bfa->GetMatrix().SetInverseType (inversetype);
 	const BitArray * freedofs = bfa->GetFESpace().GetFreeDofs();
 	inverse = bfa->GetMatrix().InverseMatrix(freedofs);
-
-	/*
-	const BaseSparseMatrix & amatrix = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix());
-	amatrix.SetInverseType ( inversetype );
-	*testout << "DirectPrecond, on_proc = " << this->on_proc << endl;
-	if ( this->on_proc == -1  || this->on_proc == id )
-	  {
-	    const BitArray * freedofs = bfa->GetFESpace().GetFreeDofs();
-	    
-	    if (freedofs)
-	      inverse = amatrix.InverseMatrix(freedofs); 
-	    else
-	      inverse = amatrix.InverseMatrix();
-
-	    if (print)
-	      (*testout) << "inverse = " << endl << (*inverse) << endl;
-	  }
-	*/
       }
     catch (exception & e)
       {
 	throw Exception ("DirectPreconditioner: needs a sparse matrix (or has memory problems)");
       }
-    // (*testout) << "mat = " << bfa->GetMatrix() << endl;
-    // (*testout) << "inv = " << (*inverse) << endl;
-
-    //    if (test) Test();
   }
 
   void DirectPreconditioner :: CleanUpLevel ()
   {
-    if ( inverse )
-      delete inverse;
+    delete inverse;
     inverse = 0;
   }
 
@@ -483,6 +461,8 @@ namespace ngcomp
   {
     return *inverse;
   }
+
+
 
 
 

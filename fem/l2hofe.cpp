@@ -266,6 +266,7 @@ namespace ngfem
 
   /* *********************** Quadrilateral  **********************/
 
+  /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_QUAD> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
@@ -289,6 +290,8 @@ namespace ngfem
       for (int j = 0; j <= order_inner[1]; j++)
 	shape[ii++] = polx[i] * poly[j];
   }
+  */
+
 
   /* *********************** Tetrahedron  **********************/
 
