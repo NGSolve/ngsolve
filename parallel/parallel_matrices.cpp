@@ -4,7 +4,7 @@
 /* Date:   June 2011                                                 */
 /*********************************************************************/
 
-#undef USE_MUMPS
+// #undef USE_MUMPS
 
 #ifdef PARALLEL
  
@@ -24,17 +24,14 @@ namespace ngla
   {
     inv = NULL;
 
-
     if (id != 0)
       {
-	const FESpace & fes = pardofs->GetFESpace();
-	const MeshAccess & ma = fes.GetMeshAccess();
+	const MeshAccess & ma = pardofs -> GetMeshAccess();
 
-	int ndof = fes.GetNDof();
+	int ndof = pardofs->GetNDof(); // fes.GetNDof();
 
 	Array<int> rows, cols, globid(3*ndof);
 	Array<TM> vals;
-
 
 	for (int row = 0; row < ndof; row++)
 	  if (!subset || subset->Test(row))
@@ -48,6 +45,8 @@ namespace ngla
 
 
 	globid = -1;
+
+	/*
 	Array<int> dnums;
 	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
 	  for (int i = 0; i < ma.GetNNodes (nt); i++)
@@ -65,7 +64,26 @@ namespace ngla
 		    globid[3*dn+2] = j;
 		  }
 	    }
-      
+	*/
+
+	const Array<Node> & dofnodes = pardofs -> GetDofNodes();
+
+	Array<int> nnodes(4);
+	for (int j = 0; j < 4; j++) nnodes[j] = ma.GetNNodes(NODE_TYPE(j));
+	Table<int> tdofnr(nnodes);
+	for (int j = 0; j < 4; j++) tdofnr[j] = 0;
+	Array<int> dofnr(ndof);
+
+	for (int i = 0; i < ndof; i++)
+	  dofnr[i] = tdofnr[dofnodes[i].GetType()][dofnodes[i].GetNr()]++;
+
+	for (int i = 0; i < ndof; i++)
+	  if (!subset || subset->Test(i))
+	    {
+	      globid[3*i+0] = dofnodes[i].GetType();
+	      globid[3*i+1] = ma.GetGlobalNodeNum (dofnodes[i]);
+	      globid[3*i+2] = dofnr[i];
+	    }
 
 	for (int row = 0; row < mat.Height(); row++)
 	  if (!subset || subset->Test(row))
@@ -88,11 +106,14 @@ namespace ngla
 	MyMPI_Send (globid, 0);
 
 #ifdef USE_MUMPS
-	SparseMatrixSymmetric<TM> dummy_matrix (1,1);
-	inv = new MumpsInverse<TM> (dummy_matrix, 0, 0, true);
-#else
-	inv = NULL;
+	if (mat.GetInverseType() == MUMPS)
+	  {
+	    SparseMatrixSymmetric<TM> dummy_matrix (1,1);
+	    inv = new MumpsInverse<TM> (dummy_matrix, 0, 0, true);
+	  }
+	else
 #endif
+	  inv = NULL;
       }
 
     else
@@ -115,13 +136,13 @@ namespace ngla
 	    MyMPI_Recv (hvals, src);
 	    MyMPI_Recv (hglobid, src);
 
-
+	    /*
 	    *testout << "got from proc " << src << ":" << endl
 		     << "rows = " << endl << hrows << endl
 		     << "cols = " << endl << hcols << endl
 		     << "vals = " << endl << hvals << endl
 		     << "globid = " << endl << hglobid << endl;
-
+	    */
 
 	    for (int i = 0; i < hrows.Size(); i++)
 	      if (hglobid[3*hrows[i]] < 0)
@@ -210,17 +231,11 @@ namespace ngla
 	    if (r < c) swap (r, c);
 	    matrix(r,c) += vals[i];
 	  }
-	// *testout << "matrix = " << endl << matrix << endl;
 
 	cout << "have matrix, now invert" << endl;
-	// *testout << "wbmatrix = " << endl << matrix << endl;
 
-#ifdef USE_MUMPS
-	inv = new MumpsInverse<TM> (matrix, 0, 0, true);
-#else
-	// inv = new SparseCholesky<TM> (matrix);
-	inv = new PardisoInverse<TM> (matrix, 0, 0, true);
-#endif
+	matrix.SetInverseType (mat.GetInverseType());
+	inv = matrix.InverseMatrix ();
       }
 
     MPI_Barrier (ngs_comm);
@@ -375,20 +390,23 @@ namespace ngla
 
   INVERSETYPE ParallelMatrix::SetInverseType ( INVERSETYPE ainversetype ) const
   {
-    if (id != 0) return mat.SetInverseType (ainversetype);
-    return SPARSECHOLESKY;
+    // if (id != 0) 
+    return mat.SetInverseType (ainversetype);
+    // return SPARSECHOLESKY;
   }
 
   INVERSETYPE ParallelMatrix::SetInverseType ( string ainversetype ) const
   {
-    if (id != 0) return mat.SetInverseType (ainversetype);
-    return SPARSECHOLESKY;
+    // if (id != 0) 
+    return mat.SetInverseType (ainversetype);
+    // return SPARSECHOLESKY;
   }
   
   INVERSETYPE ParallelMatrix::GetInverseType () const
   {
-    if (id != 0) return mat.GetInverseType ();
-    return SPARSECHOLESKY;
+    // if (id != 0) 
+    return mat.GetInverseType ();
+    // return SPARSECHOLESKY;
   }
 
 

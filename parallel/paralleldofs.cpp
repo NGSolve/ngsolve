@@ -7,6 +7,7 @@ namespace ngparallel
 {
   using namespace ngcomp;
 
+  /*
   ParallelDofs :: ParallelDofs (int andof, Table<int> * exdofs, const FESpace * afes)
     : ndof(andof), fes(afes), exchangedofs(exdofs), ismasterdof(ndof)
   {
@@ -47,11 +48,12 @@ namespace ngparallel
 	MPI_Type_commit ( &mpi_t[dest] );
       }
   }
+  */
 
-
+  /*
   ParallelDofs :: ParallelDofs (const MeshAccess & ma, 
-				const Array<Node> & dofnodes, const FESpace * afes)
-    : fes(afes)
+				const Array<Node> & adofnodes, const FESpace * afes)
+    : dofnodes(adofnodes), fes(afes)
   {
     ndof = dofnodes.Size();
     Array<int[2]> distnums;
@@ -131,6 +133,7 @@ namespace ngparallel
 	MPI_Type_commit ( &mpi_t[dest] );
       }
   }
+  */
 
 
 
@@ -138,11 +141,11 @@ namespace ngparallel
 
 
 
-
-  ParallelDofs :: ParallelDofs (const MeshAccess & ma, 
-				const Array<Node> & dofnodes, int dim, bool iscomplex)
+  ParallelDofs :: ParallelDofs (const MeshAccess & ama, 
+				const Array<Node> & adofnodes, int dim, bool iscomplex)
+    : ma(ama), dofnodes(adofnodes) 
   {
-    fes = NULL;
+    // fes = NULL;
     ndof = dofnodes.Size();
     Array<int[2]> distnums;
 

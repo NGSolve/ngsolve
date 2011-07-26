@@ -356,7 +356,6 @@ namespace ngcomp
 #ifdef PARALLEL
 	if (ntasks > 1)
 	  {
-	    // *testout << "bddc, local wbmatrix = " << endl << wbmat << endl;
 	    inv = new MasterInverse<double> (wbmat, free_dofs, &bfa.GetFESpace().GetParallelDofs());
 	    tmp = new ParallelVVector<>(ndof, &bfa.GetFESpace().GetParallelDofs());
 	    subassembled_innersolve = new ParallelMatrix (*subassembled_innersolve, bfa.GetFESpace().GetParallelDofs());

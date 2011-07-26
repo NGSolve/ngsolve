@@ -20,6 +20,7 @@ namespace ngla
     const BitArray * subset;
     DynamicTable<int> loc2glob;
     Array<int> select;
+    string invtype;
   public:
     MasterInverse (const SparseMatrixTM<TM> & mat, const BitArray * asubset, const ParallelDofs * pardofs);
     virtual ~MasterInverse ();
@@ -49,7 +50,6 @@ namespace ngla
 
     virtual int VHeight() const;
     virtual int VWidth() const;
-
 
     virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;
     virtual BaseMatrix * InverseMatrix (const Array<int> * clusters) const;

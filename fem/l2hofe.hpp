@@ -294,7 +294,27 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[], TFA & shape) const;
+    void T_CalcShape (Tx hx[], TFA & shape) const
+    {
+      Tx x = hx[0], y = hx[1];
+      
+      Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+      
+      INT<4> f = GetFaceSort (0, vnums);  
+      
+      Tx xi = sigma[f[0]]-sigma[f[1]]; 
+      Tx eta = sigma[f[0]]-sigma[f[3]]; 
+      
+      int n = max(order_inner[0],order_inner[1]);
+      ArrayMem<Tx, 20> polx(n+1), poly(n+1);
+      
+      LegendrePolynomial (n, xi, polx);
+      LegendrePolynomial (n, eta, poly);
+      
+      for (int i = 0, ii = 0; i <= order_inner[0]; i++)
+	for (int j = 0; j <= order_inner[1]; j++)
+	  shape[ii++] = polx[i] * poly[j];
+    }
   };
 
 
