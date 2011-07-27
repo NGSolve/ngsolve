@@ -404,17 +404,26 @@ namespace ngla
     
     double sum = 0;
 
-    FlatVector<double> fv = this -> FVDouble ();
-
     if (id > 0)
-      for (int dof = 0; dof < paralleldofs->GetNDof(); dof++)
-	if (paralleldofs->IsMasterDof ( dof ) )
-	  sum += L2Norm2 (fv[dof]);
+      {
+	if (this->entrysize == 1)
+	  {
+	    FlatVector<double> fv = this -> FVDouble ();
+	    for (int dof = 0; dof < paralleldofs->GetNDof(); dof++)
+	      if (paralleldofs->IsMasterDof ( dof ) )
+		sum += sqr (fv[dof]);
+	  }
+	else
+	  {
+	    FlatMatrix<double> fv (paralleldofs->GetNDof(), this->entrysize, (double*)this->Memory());
+	    for (int dof = 0; dof < paralleldofs->GetNDof(); dof++)
+	      if (paralleldofs->IsMasterDof ( dof ) )
+		sum += L2Norm2 (fv.Row(dof));
+	  }
+      }
     
     double globalsum = 0;
-
-    MPI_Datatype MPI_SCAL = MyGetMPIType<double>();
-    MPI_Allreduce (&sum, &globalsum, 1, MPI_SCAL, MPI_SUM, ngs_comm);
+    MPI_Allreduce (&sum, &globalsum, 1, MPI_DOUBLE, MPI_SUM, ngs_comm);
     
     return sqrt (globalsum);
   }
