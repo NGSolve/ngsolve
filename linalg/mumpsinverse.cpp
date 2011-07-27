@@ -41,6 +41,8 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("Mumps Inverse");
     NgProfiler::RegionTimer reg (timer);
 
+    VT_OFF();
+
     symmetric = asymmetric;
     inner = ainner;
     cluster = acluster;
@@ -327,7 +329,7 @@ namespace ngla
     delete [] col_indices;
     delete [] row_indices;
     delete [] matrix;
-
+    VT_ON();
   }
   
   
@@ -382,6 +384,8 @@ namespace ngla
     static int timer = NgProfiler::CreateTimer ("Mumps mult inverse");
     NgProfiler::RegionTimer reg (timer);
 
+    VT_OFF();
+
     if (id == 0)
       {
 	FlatVector<TVX> fx = x.FV<TVX>();
@@ -417,6 +421,8 @@ namespace ngla
 	ncid.job = JOB_SOLVE;
 	mumps_trait<TSCAL>::MumpsFunction (&ncid);
       }
+
+    VT_ON();
   }
   
   
