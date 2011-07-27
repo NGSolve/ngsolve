@@ -146,13 +146,14 @@ namespace ngcomp
       if (!bfa.IsSymmetric()){
 	MatrixGraph graph_harmonicexttrans(ndof, el2wbdofs, el2ifdofs, false);
 	subassembled_harmonicexttrans = new SparseMatrix<double>(graph_harmonicexttrans, 1);
+	subassembled_harmonicexttrans -> AsVector() = 0.0;
 	subassembled_innersolve = new SparseMatrix<double>(graph_innersolve, 1);
       }
       else
 	subassembled_innersolve = new SparseMatrixSymmetric<double>(graph_innersolve, 1);
       subassembled_innersolve->AsVector() = 0.0;
       subassembled_harmonicext = new SparseMatrix<double>(graph_harmonicext, 1);
-
+      subassembled_harmonicext->AsVector() = 0.0;
 
       if (bfa.IsSymmetric()){
 	pwbmat = new SparseMatrixSymmetric<double>(graph_wbschur,1);
@@ -166,7 +167,7 @@ namespace ngcomp
       }
       
       SparseMatrix<double>& wbmat=*pwbmat;
-
+      wbmat.AsVector() = 0.0;
 
       wbmat.SetInverseType (inversetype);
       
@@ -644,6 +645,7 @@ namespace ngcomp
       static Timer timerharmonicexttrans ("Apply BDDC preconditioner - harmonic extension trans");
       
       NgProfiler::RegionTimer reg (timer);
+
 
       x.Cumulate();
     
