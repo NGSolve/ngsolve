@@ -57,6 +57,11 @@ namespace ngbla
       : s(v.Size()), data(const_cast<T*>(&v(0)))
     { ; }
 
+    template <int S>
+    FlatVector (const FlatVec<S,TSCAL> & v)
+      : s(v.Size()), data(const_cast<T*>(&v(0)))
+    { ; }
+
     /// allocate FlatVector on local heap
     FlatVector (int as, LocalHeap & lh) 
       : s(as), data((T*)lh.Alloc(s*sizeof(T))) { ; }
