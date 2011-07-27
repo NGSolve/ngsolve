@@ -293,7 +293,6 @@ namespace ngcomp
     for(int i=0; i<order_inner_curl.Size(); i++) 
       order_inner_curl[i] = order_inner[i]; 
 
-    
     if(print) 
       {
 	*testout << " discont " << discont << endl;
@@ -304,11 +303,8 @@ namespace ngcomp
 	*testout << " order_inner_curl (hdivho) " << order_inner_curl << endl; 
       }
     
- 
-    
     UpdateDofTables(); 
     UpdateCouplingDofArray();
-    // FinalizeUpdate (lh);
   }
 
   void HDivHighOrderFESpace :: UpdateDofTables()

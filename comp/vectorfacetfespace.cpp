@@ -300,7 +300,6 @@ namespace ngcomp
       } 
     
     UpdateCouplingDofArray();
-    // FinalizeUpdate (lh);
   }
 
 
