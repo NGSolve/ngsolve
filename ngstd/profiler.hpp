@@ -52,6 +52,8 @@ inline double WallTime ()
 #define VT_USER_START(n)
 #define VT_USER_END(n)
 #define VT_TRACER(n)
+#define VT_ON()
+#define VT_OFF()
 #endif
 
 namespace ngstd
