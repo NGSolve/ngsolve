@@ -61,6 +61,14 @@ AC_ARG_WITH([pardiso],
 #        [AC_SUBST([PARDISO_LIBS], ["-lpardiso_GNU42_EM64T_INT64_P -lgfortran"])]
         )
 
+
+AC_ARG_WITH([superlu],
+        [AC_HELP_STRING([--with-superlu=-I/usr/include/superlu],[enable sparse LU factorization library])],
+        [AC_SUBST([SUPERLU_INCLUDES], ["-DUSE_SUPERLU $withval"])]
+        [AC_SUBST([SUPERLU_LIBS], ["-lsuperlu $withval"])]
+        )
+
+
 AC_ARG_ENABLE([MKLpardiso],
         [  --enable-MKLpardiso        enable sparse direct solver pardiso from MKL],          
         [AC_SUBST([PARDISO_INCLUDES], ["-DUSE_PARDISO -DUSE_MKL"])]

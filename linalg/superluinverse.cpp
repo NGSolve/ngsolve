@@ -77,8 +77,8 @@ namespace superlufunc
     cluster = acluster;
     cout << "SuperLU called ...";
 
-    if ( inner && inner->Size() < a.Height() ||
-	 cluster && cluster->Size() < a.Height() )
+    if ( (inner && (inner->Size() < a.Height())) ||
+         (cluster && (cluster->Size() < a.Height())) )
       {
 	cout << "SuperLU: Size of inner/cluster does not match matrix size!" << endl;
 	throw Exception("Invalid parameters inner/cluster. Thrown by PardisoInverse.");
@@ -414,10 +414,10 @@ namespace superlufunc
   Mult (const BaseVector & x, BaseVector & y) const
   {
 
-    FlatVector<TVX> fx = 
-      dynamic_cast<T_BaseVector<TVX> &> (const_cast<BaseVector &> (x)).FV();
-    FlatVector<TVX> fy = 
-      dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (const_cast<BaseVector &> (x)).FV();
+    FlatVector<TVX> fy = y.FV<TVX> ();
+    // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
     
     int error;
     fy = fx;
@@ -451,13 +451,13 @@ namespace superlufunc
       {
 	for (int i=0; i<height/entrysize; i++)
 	  if (!inner->Test(i)) 
-	    for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0;
+	    for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0.0;
       }
     else if (cluster)
       {
 	for (int i=0; i<height/entrysize; i++)
 	  if (!(*cluster)[i]) 
-	    for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0;
+	    for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0.0;
       }
   }
   
@@ -466,7 +466,7 @@ namespace superlufunc
 
 
 
-
+/*
   template <class TM, class TV_ROW, class TV_COL>
   void SuperLUInverse<TM,TV_ROW,TV_COL> :: Set (int i, int j, const TM & val)
   {
@@ -480,7 +480,7 @@ namespace superlufunc
   {
     cout << "SuperLUInverse::Get not implemented!" << endl;
   }
-
+*/
 
   template <class TM, class TV_ROW, class TV_COL>
   ostream & SuperLUInverse<TM,TV_ROW,TV_COL> :: Print (ostream & ost) const

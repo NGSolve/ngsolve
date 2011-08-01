@@ -51,7 +51,9 @@ namespace ngla
   ////////////////////////////////////////////////////////////////////////////////
 
 
-  template<class TM, class TV_ROW, class TV_COL>
+template<class TM, 
+   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
+   class TV_COL = typename mat_traits<TM>::TV_COL>
   class SuperLUInverse : public BaseMatrix
   {
 #ifdef USE_SUPERLU
@@ -116,11 +118,11 @@ namespace ngla
       mu.Append (new MemoryUsageStruct ("SuperLUInverse", nze*sizeof(TM), 1));
     }
 
-    ///
+/*    ///
     void Set (int i, int j, const TM & val);
     ///
     const TM & Get (int i, int j) const;
-
+*/
     virtual BaseVector * CreateVector () const
     {
       return new VVector<TV> (height);
