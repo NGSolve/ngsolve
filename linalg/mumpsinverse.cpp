@@ -238,7 +238,7 @@ namespace ngla
 
     mumps_id.job=JOB_INIT; 
     mumps_id.par= (ntasks == 1) ? 1 : 0;
-    mumps_id.sym=symmetric;
+    mumps_id.sym= symmetric ? 1 : 0;
     mumps_id.comm_fortran=USE_COMM_WORLD;
     // mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
@@ -434,7 +434,7 @@ namespace ngla
   {
     mumps_id.job=JOB_END; 
     mumps_id.par= (ntasks == 1) ? 1 : 0;
-    mumps_id.sym=symmetric;
+    mumps_id.sym = symmetric ? 1 : 0;
     mumps_id.comm_fortran=USE_COMM_WORLD;
     // mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
