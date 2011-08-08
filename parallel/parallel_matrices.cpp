@@ -9,6 +9,7 @@
 #ifdef PARALLEL
  
 #include <la.hpp>
+#include <comp.hpp>
 #include <parallelngs.hpp>
 
 

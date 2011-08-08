@@ -27,7 +27,12 @@ using netgen::ntasks;
 #define VT_TRACER(n)
 #endif
 
-#include <comp.hpp>
+#include <ngstd.hpp>
+#include <la.hpp>
+
+using namespace ngstd;
+using namespace ngla;
+// #include <comp.hpp>
 
 
 #ifdef PARALLEL
