@@ -1,6 +1,14 @@
 #ifndef FILE_PARALLELDOFS
 #define FILE_PARALLELDOFS
 
+namespace ngfem
+{
+  class Node;
+}
+
+
+using namespace ngfem;
+
 namespace ngcomp
 {
   class FESpace;

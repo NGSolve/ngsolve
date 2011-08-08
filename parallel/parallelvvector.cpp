@@ -320,12 +320,15 @@ namespace ngla
   void S_ParallelBaseVectorPtr<SCAL> :: 
   SetParallelDofs ( ParallelDofs * aparalleldofs, const Array<int> * procs )
   {
+    if (this->paralleldofs == aparalleldofs) return;
+
     this -> paralleldofs = aparalleldofs;
     if ( this -> paralleldofs == 0 ) return;
     
     Array<int> exdofs(ntasks);
     for (int i = 0; i < ntasks; i++)
       exdofs[i] = this->es * this->paralleldofs->GetExchangeDofs(i).Size();
+    delete this->recvvalues;
     this -> recvvalues = new Table<TSCAL> (exdofs);
   }
 
