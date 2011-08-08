@@ -209,9 +209,11 @@ namespace ngfem
   GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
     {
       int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
-      if (precomp_trace.Used (INT<2> (order, classnr)))
+      int bnr, pos;
+      if (precomp_trace.Used (INT<2> (order, classnr), bnr, pos))
 	{
-	  fcoefs = (*precomp_trace.Get (INT<2> (order, classnr))) * coefs;
+	  FlatMatrix<> trace = *precomp_trace.Get (bnr, pos);
+	  fcoefs = trace * coefs;
 	}
       else
 	L2HighOrderFiniteElement<DIM>::GetTrace (facet, coefs, fcoefs);

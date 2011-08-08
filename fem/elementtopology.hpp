@@ -630,14 +630,26 @@ namespace ngfem
       int sort[3] = { 0, 1, 2 };
       if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); classnr += 1; }
       if (vnums[sort[1]] > vnums[sort[2]]) { Swap (sort[1], sort[2]); classnr += 2; }
-      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[1], sort[2]); classnr += 2; }
+      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); classnr += 2; } // tricky !
       return classnr;
     }
 
     template <typename TVN>
     static int GetFacetClassNr (int facet, const TVN & vnums)
     {
-      return GetClassNr (vnums) * 3 + facet;
+      int sort[3] = { 0, 1, 2 };
+      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); }
+      if (vnums[sort[1]] > vnums[sort[2]]) { Swap (sort[1], sort[2]); }
+      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); }
+      
+      static int f2vop[] = { 1, 0, 2 };
+      int vop = f2vop[facet];
+      for (int i = 0; i < 3; i++)
+	if (vop == sort[i])
+	  return i;
+      return -1;  // not possible
+
+      // return GetClassNr (vnums) * 3 + facet;
     } 
   };
 
@@ -810,7 +822,19 @@ namespace ngfem
     template <typename TVN>
     static int GetFacetClassNr (int facet, const TVN & vnums)
     {
-      return GetClassNr (vnums) * 4 + facet;
+      int sort[4] = { 0, 1, 2, 3 };
+      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); }
+      if (vnums[sort[2]] > vnums[sort[3]]) { Swap (sort[2], sort[3]); }
+      if (vnums[sort[0]] > vnums[sort[2]]) { Swap (sort[0], sort[2]); }
+      if (vnums[sort[1]] > vnums[sort[3]]) { Swap (sort[1], sort[3]); }
+      if (vnums[sort[1]] > vnums[sort[2]]) { Swap (sort[1], sort[2]); }
+
+      for (int i = 0; i < 4; i++)
+	if (facet == sort[i])
+	  return i;
+      return -1;  // not possible
+      
+      // return GetClassNr (vnums) * 4 + facet;
     }
 
 
