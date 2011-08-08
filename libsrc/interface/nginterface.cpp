@@ -75,7 +75,7 @@
     MPI_Query_thread(&provided);
     if (provided < 3)
       if (netgen::ntasks > 1) parthread = false;
-    cout << "runparallel = " << parthread << endl;
+    // cout << "runparallel = " << parthread << endl;
 #endif
 
     if (parthread)

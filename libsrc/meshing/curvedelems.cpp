@@ -447,7 +447,6 @@ namespace netgen
 #ifdef PARALLEL
     if (id > 0)
       {
-	cout << "id = " << id << ", get edge coeffs" << endl;
 	Array<int> master_edgeorder;
 	Array<int> master_edgecoeffsindex;
 	Array<Vec<3> > master_edgecoeffs;
