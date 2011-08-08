@@ -214,12 +214,27 @@ namespace ngstd
       return cont.Get (bnr, pos);
     }
 
+    /// get value of identifier ahash, exception if unused
+    const T & Get (int bnr, int pos) const
+    {
+      return cont.Get (bnr, pos);
+    }
+
     /// is identifier used ?
     bool Used (const T_HASH & ahash) const
     {
       return (CheckPosition (HashValue (ahash, hash.Size()), ahash) != -1) 
 	? 1 : 0;
     }
+
+    /// is identifier used ?
+    bool Used (const T_HASH & ahash, int & bnr, int & pos) const
+    {
+      bnr = HashValue (ahash, hash.Size());
+      pos = CheckPosition (bnr, ahash);
+      return (pos != -1);
+    }
+
 
     /// number of hash entries
     int Size () const

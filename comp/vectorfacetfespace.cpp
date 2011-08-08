@@ -41,7 +41,7 @@ namespace ngcomp
     
 
     order =  int (flags.GetNumFlag ("order",0)); 
-    
+
     if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order")) 
       var_order = 1; 
     else 
