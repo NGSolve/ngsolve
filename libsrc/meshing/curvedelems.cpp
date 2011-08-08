@@ -442,6 +442,84 @@ namespace netgen
         ishighorder = (order > 1);
 	return;
       }
+
+
+#ifdef PARALLEL
+    if (id > 0)
+      {
+	cout << "id = " << id << ", get edge coeffs" << endl;
+	Array<int> master_edgeorder;
+	Array<int> master_edgecoeffsindex;
+	Array<Vec<3> > master_edgecoeffs;
+	MyMPI_Bcast (master_edgeorder, 0);
+	MyMPI_Bcast (master_edgecoeffsindex, 0);
+	MyMPI_Bcast (master_edgecoeffs, 0);
+
+	Array<int> master_faceorder;
+	Array<int> master_facecoeffsindex;
+	Array<Vec<3> > master_facecoeffs;
+
+	MyMPI_Bcast (master_faceorder, 0);
+	MyMPI_Bcast (master_facecoeffsindex, 0);
+	MyMPI_Bcast (master_facecoeffs, 0);
+
+
+
+	const MeshTopology & top = mesh.GetTopology();
+	const ParallelMeshTopology & partop = mesh.GetParallelTopology ();
+	
+	edgeorder.SetSize (top.GetNEdges());
+	edgecoeffsindex.SetSize (top.GetNEdges()+1);
+	edgecoeffsindex[0] = 0;
+	for (int i = 0; i < top.GetNEdges(); i++)
+	  {
+	    int glob = partop.GetDistantEdgeNum (0, i+1);
+	    edgeorder[i] = master_edgeorder[glob-1];
+	    int ncoefs = master_edgecoeffsindex[glob]-master_edgecoeffsindex[glob-1];
+	    edgecoeffsindex[i+1] = edgecoeffsindex[i] + ncoefs;
+	  }
+	edgecoeffs.SetSize (edgecoeffsindex[top.GetNEdges()]);
+	
+	for (int i = 0; i < top.GetNEdges(); i++)
+	  {
+	    int glob = partop.GetDistantEdgeNum (0, i+1);
+	    int ncoefs = master_edgecoeffsindex[glob]-master_edgecoeffsindex[glob-1];
+	    for (int j = 0; j < ncoefs; j++)
+	      edgecoeffs[edgecoeffsindex[i]+j] = master_edgecoeffs[master_edgecoeffsindex[glob-1]+j];
+	  }
+
+	faceorder.SetSize (top.GetNFaces());
+	facecoeffsindex.SetSize (top.GetNFaces()+1);
+	facecoeffsindex[0] = 0;
+	for (int i = 0; i < top.GetNFaces(); i++)
+	  {
+	    int glob = partop.GetDistantFaceNum (0, i+1);
+	    faceorder[i] = master_faceorder[glob-1];
+	    int ncoefs = master_facecoeffsindex[glob]-master_facecoeffsindex[glob-1];
+	    facecoeffsindex[i+1] = facecoeffsindex[i] + ncoefs;
+	  }
+	facecoeffs.SetSize (facecoeffsindex[top.GetNFaces()]);
+	
+	for (int i = 0; i < top.GetNFaces(); i++)
+	  {
+	    int glob = partop.GetDistantFaceNum (0, i+1);
+	    int ncoefs = master_facecoeffsindex[glob]-master_facecoeffsindex[glob-1];
+	    for (int j = 0; j < ncoefs; j++)
+	      facecoeffs[facecoeffsindex[i]+j] = master_facecoeffs[master_facecoeffsindex[glob-1]+j];
+	  }
+
+	/*
+	faceorder.SetSize (top.GetNFaces());
+	faceorder = 1;
+	facecoeffsindex.SetSize (top.GetNFaces()+1);
+	facecoeffsindex = 0;
+	*/
+
+	ishighorder = 1;
+	return;
+      }
+#endif
+
     
     PrintMessage (1, "Curve elements, order = ", aorder);
     if (rational) PrintMessage (1, "curved elements with rational splines");
@@ -954,6 +1032,22 @@ namespace netgen
     ishighorder = (order > 1);
     // (*testout) << "edgecoeffs = " << endl << edgecoeffs << endl;
     // (*testout) << "facecoeffs = " << endl << facecoeffs << endl;
+
+
+#ifdef PARALLEL
+    if (ntasks > 1)
+      {
+	MyMPI_Bcast (edgeorder, 0);
+	MyMPI_Bcast (edgecoeffsindex, 0);
+	MyMPI_Bcast (edgecoeffs, 0);
+	
+	MyMPI_Bcast (faceorder, 0);
+	MyMPI_Bcast (facecoeffsindex, 0);
+	MyMPI_Bcast (facecoeffs, 0);
+      }
+#endif
+
+
   }
 
 
