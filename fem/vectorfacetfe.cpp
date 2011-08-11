@@ -221,24 +221,6 @@ namespace ngfem {
       facet_order[i] = INT<2> (-1, -1);
     for ( int i = 0; i < 7; i++ )
       first_facet_dof[i] = 0;
-    /*
-    switch (eltype)
-      {
-      case ET_TRIG:
-	nv=3; nf=3; break; 
-      case ET_QUAD:
-	nv=4; nf=4; break;
-      case ET_TET:
-	nv=4; nf=4; break;
-      case ET_PRISM:
-	nv=6; nf=5; break;
-      case ET_HEX:
-	nv=8; nf=6; break;
-      default:
-	cerr << "*** error in FacetVolumeFiniteElement::FacetVolumeFiniteElement(int, ELEMENT_TYPE):unknown element type" << endl;
-	exit(0);
-      }
-    */
   }
 
 
@@ -364,33 +346,6 @@ namespace ngfem {
 
 
 
-
-  /*
-  void VectorFacetVolumeTrig :: 
-  CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<2> shape) const
-  {
-    double x=ip(0), y=ip(1);
-    int fanr; 
-
-    shape = 0.0;
-    if (fabs(y) < 1e-4) 
-      {
-	fanr = 0;
-      }
-    else if (fabs(x) < 1e-4)
-      {
-	fanr = 1;
-      }
-    else 
-      {
-	fanr = 2;
-      }
-
-    CalcShape ( ip, fanr, shape);
-  }
-  */
-
-
   void VectorFacetVolumeTrig ::
   CalcShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> shape ) const
   {
@@ -428,7 +383,6 @@ namespace ngfem {
   CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> xshape ) const
   {
     xshape = 0.0;
-    // int first = first_facet_dof[fanr];
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
@@ -471,38 +425,6 @@ namespace ngfem {
   
 
   //--------------------------------------------------
-  /*
-  void VectorFacetVolumeQuad :: 
-  CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<2> shape) const
-  {
-    // topology: points = 0:(0,0), 1:(1,0), 2:(1,1), 3:(0,1)
-    //           edges = 0:(0,1), 1:(2,3), 2:(3,0), 4:(1,2)
-    IntegrationPoint ip1d;  
-    double x=ip(0), y=ip(1);
-    int fnr=-1;
-    
-    Matrix<double> shape1d (order+1, 1);
-
-    shape = 0.0;
-    if (fabs(y)<1e-12)
-      {
-	fnr=0;
-      }
-    else if (fabs(y)>1-(1e-12))
-      {
-	fnr=1;
-      }
-    else if (fabs(x)<1e-12)
-      {
-	fnr=2;
-      }
-    else if (fabs(x)>1-(1e-12))
-      {
-	fnr=3;
-      }
-    CalcShape(ip, fnr, shape);
-  }
-  */
 
   void VectorFacetVolumeQuad ::
   CalcShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> shape ) const
@@ -512,9 +434,6 @@ namespace ngfem {
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
     const EDGE * faces = ElementTopology :: GetEdges ( eltype );
-    // const POINT3D * points = ElementTopology :: GetVertices (eltype);
-    // const ELEMENT_TYPE facettype = ElementTopology :: GetFacetType (eltype, fanr);
-    // int nvert = ElementTopology :: GetNVertices (facettype);
 
     int  fav[2] = {faces[fanr][0], faces[fanr][1] };
     int j1 = 0; 
@@ -529,7 +448,6 @@ namespace ngfem {
 
     AutoDiff<2> xi = sigma[fav[j1]] - sigma[fav[j2]];
 
-    // LegendrePolynomial (p, 2*xi.Value()-1, polx);
     LegendrePolynomial (p, xi.Value(), polx);
     for (int i = 0; i <= facet_order[fanr][0]; i++)
       {
@@ -550,9 +468,6 @@ namespace ngfem {
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
     const EDGE * faces = ElementTopology :: GetEdges ( eltype );
-    // const POINT3D * points = ElementTopology :: GetVertices (eltype);
-    // const ELEMENT_TYPE facettype = ElementTopology :: GetFacetType (eltype, fanr);
-    // int nvert = ElementTopology :: GetNVertices (facettype);
 
     int  fav[2] = {faces[fanr][0], faces[fanr][1] };
     int j1 = 0; 
@@ -563,11 +478,9 @@ namespace ngfem {
 
     int p = facet_order[fanr][0];
     ArrayMem< double, 10> polx(p+2);
-    // int ii = first_facet_dof[fanr];
 
     AutoDiff<2> xi = sigma[fav[j1]] - sigma[fav[j2]];
 
-    // LegendrePolynomial (p, 2*xi.Value()-1, polx);
     LegendrePolynomial (p+1, xi.Value(), polx);
     double val = polx[p+1];
     xshape(0,0) = val * xi.DValue(0);
@@ -589,68 +502,20 @@ namespace ngfem {
   
 
 
-  /*
-  void VectorFacetVolumeTet::
-  CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const
-  {
-    // topology: points = 0:(1,0,0), 1:(0,1,0), 2:(0,0,1), 3:(0,0,0)
-    //           faces = 0:(3,1,2,-1), 1:(3,2,0,-1), 2:(3,0,1,-1), 4:(0,2,1,-1)
-    
-    double x=ip(0), y=ip(1), z=ip(2);
-    int fanr;
-
-    if (fabs(x)<1e-8)
-      {
-	// (0,0,0)->(1,0); (0,1,0)->(0,1), (0,0,1)->(0,0)
-	fanr=0;
-      }
-    else if (fabs(y)<1e-8)
-      {
-	// (0,0,0)->(1,0); (0,0,1)->(0,1); (1,0,0)->(0,0)
-	fanr=1;
-      }
-    else if (fabs(z)<1e-8) 
-      {
-	// (0,0,0)->(1,0); (1,0,0)->(0,1); (0,1,0)->(0,0)
-	fanr=2;
-      }
-    else if (fabs(1-x-y-z)<1e-8)
-      {
-	// (1,0,0)->(1,0); (0,0,1)->(0,1); (0,1,0)->(0,0)
-	fanr=3;
-      }
-    else
-      {
-	throw Exception ("VectorFacetVolumeTet: illegal evaluation");
-      }
-
-    CalcShape ( ip, fanr, shape );
-  }   
-  */
-
   void VectorFacetVolumeTet ::
   CalcShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> shape ) const
   {
     shape = 0.0;
 
-
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
     AutoDiff<3> lami[4] = { x, y, z, 1-x-y-z };
 
-    const FACE * faces = ElementTopology :: GetFaces ( eltype );
+    INT<4> fav = ET_trait<ET_TET>::GetFaceSort (fanr, vnums);
 
-
-    int fav[3] = {faces[fanr][0], faces[fanr][1], faces[fanr][2]};
-    
-    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-    if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  	
-    
     AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
     AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
     double xi = lami[fav[0]].Value();
     double eta = lami[fav[1]].Value();
-
 
     int p = facet_order[fanr][0];
     ArrayMem< double, 10> polx(p+1), poly(p+1);
@@ -681,52 +546,38 @@ namespace ngfem {
   {
     xshape = 0.0;
 
-
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
     AutoDiff<3> lami[4] = { x, y, z, 1-x-y-z };
 
-    const FACE * faces = ElementTopology :: GetFaces ( eltype );
+    INT<4> fav = ET_trait<ET_TET>::GetFaceSort (fanr, vnums);
 
-
-    int fav[3] = {faces[fanr][0], faces[fanr][1], faces[fanr][2]};
-    
-    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-    if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-    if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  	
-    
     AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
     AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
     double xi = lami[fav[0]].Value();
     double eta = lami[fav[1]].Value();
 
-
     int p = facet_order[fanr][0];
     ArrayMem< double, 10> polx(p+2), poly(p+2);
     Matrix<> polsy(p+2, p+2);
-//     int ii = first_facet_dof[fanr];
     int ii = 0;
 
     ScaledLegendrePolynomial (p+1, 2*xi+eta-1, 1-eta, polx);
     DubinerJacobiPolynomials<1,0> (p+1, 2*eta-1, polsy);
 
     for (int i = 0; i <= p+1; i++)
-    {
-      int j = p+1-i;
-      double val = polx[i] * polsy(i, j);
-      xshape(ii,0) = val * adxi.DValue(0);
-      xshape(ii,1) = val * adxi.DValue(1);
-      xshape(ii,2) = val * adxi.DValue(2);
-      ii++;
-      xshape(ii,0) = val * adeta.DValue(0);
-      xshape(ii,1) = val * adeta.DValue(1);
-      xshape(ii,2) = val * adeta.DValue(2);
-      ii++;
-    }
-
+      {
+	int j = p+1-i;
+	double val = polx[i] * polsy(i, j);
+	xshape(ii,0) = val * adxi.DValue(0);
+	xshape(ii,1) = val * adxi.DValue(1);
+	xshape(ii,2) = val * adxi.DValue(2);
+	ii++;
+	xshape(ii,0) = val * adeta.DValue(0);
+	xshape(ii,1) = val * adeta.DValue(1);
+	xshape(ii,2) = val * adeta.DValue(2);
+	ii++;
+      }
   }
-
-
-
 
 
   void VectorFacetVolumeTet :: ComputeNDof() 
@@ -744,40 +595,7 @@ namespace ngfem {
 
 
   // -------------------------------------------------------------------------------
-  /*
-  void VectorFacetVolumePrism::
-  CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const
-  {  
-    int fanr = -1;
-    double x=ip(0), y=ip(1), z=ip(2);
-    
-    shape = 0.0;
 
-    if (fabs(y)<1e-12) // front
-      {
-	fanr = 2;
-      }
-    else if (fabs(x)<1e-12) // left
-      {
-	fanr = 4;
-      }
-    else if (fabs(1-x-y)<1e-12) // right
-      {
-	fanr = 3;
-      }
-    else if (fabs(z)<1e-12) // botom
-      {
-	fanr = 0;
-      }
-    else if (fabs(z)>1-1e-12) // top
-      {
-	fanr = 1;
-      }
-
-    CalcShape ( ip, fanr, shape );
-    ;
-  } 
-  */
 
   void VectorFacetVolumePrism ::
   CalcShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> shape ) const
@@ -787,7 +605,9 @@ namespace ngfem {
     AutoDiff<3> lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
     AutoDiff<3> muz[6]  = { 1-z, 1-z, 1-z, z, z, z }; 
 
-    const FACE * faces = ElementTopology::GetFaces (ET_PRISM); 
+    AutoDiff<3> sigma[6];
+    for (int i = 0; i < 6; i++) sigma[i] = lami[i] + muz[i];
+
     shape = 0.0;
 
     // trig face shapes
@@ -795,12 +615,8 @@ namespace ngfem {
       {
 	int p = facet_order[fanr][0];
 
-	int fav[3] = {faces[fanr][0], faces[fanr][1], faces[fanr][2]};
+	INT<4> fav = ET_trait<ET_PRISM>::GetFaceSort (fanr, vnums);
 
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  	
-	
 	AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
 	AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
 	double xi = lami[fav[0]].Value();
@@ -832,15 +648,10 @@ namespace ngfem {
       {
 	int p = facet_order[fanr][0];
 	 
-	int fmax = 0;
-	for (int j = 1; j < 4; j++)
-	  if (vnums[faces[fanr][j]] > vnums[faces[fanr][fmax]]) fmax = j;
+	INT<4> f = ET_trait<ET_PRISM>::GetFaceSort (fanr, vnums);	  	
+	AutoDiff<3> xi  = sigma[f[0]] - sigma[f[1]]; 
+	AutoDiff<3> zeta = sigma[f[0]] - sigma[f[3]];
 
-	int fz = 3-fmax; 
-	int ftrig = fmax^1; 
-	AutoDiff<3> xi = lami[faces[fanr][fmax]]-lami[faces[fanr][ftrig]]; 
-	AutoDiff<3> zeta = muz[faces[fanr][fmax]]-muz[faces[fanr][fz]]; 
-	
 	ArrayMem< double, 10> polx(p+1), poly(p+1);
 	LegendrePolynomial (p, xi.Value(), polx);
 	LegendrePolynomial (p, zeta.Value(), poly);
@@ -861,39 +672,35 @@ namespace ngfem {
 	    }	
       }
   }
-  /*
+
   int VectorFacetVolumePrism ::
   GetNExtraShapes ( int fanr) const
   {
     if (fanr < 2) //trig shape
-      return 2*(facet_order[facet][0]+2);
+      return 2*(facet_order[fanr][0]+2);
     else //quad shape
-      return 2*(2*facet_order[facet][0]+3);
+      return 2*(2*facet_order[fanr][0]+3);
   }
-  */
-  /*
+
   void VectorFacetVolumePrism ::
-  CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> shape ) const
+  CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> xshape ) const
   {
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
 
     AutoDiff<3> lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
     AutoDiff<3> muz[6]  = { 1-z, 1-z, 1-z, z, z, z }; 
 
-    const FACE * faces = ElementTopology::GetFaces (ET_PRISM); 
+    AutoDiff<3> sigma[6];
+    for (int i = 0; i < 6; i++) sigma[i] = lami[i] + muz[i];
+
     xshape = 0.0;
 
     // trig face shapes
     if (fanr < 2)
       {
 	int p = facet_order[fanr][0];
+	INT<4> fav = ET_trait<ET_PRISM>::GetFaceSort (fanr, vnums);
 
-	int fav[3] = {faces[fanr][0], faces[fanr][1], faces[fanr][2]};
-
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  	
-	
 	AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
 	AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
 	double xi = lami[fav[0]].Value();
@@ -925,15 +732,9 @@ namespace ngfem {
       {
 	int p = facet_order[fanr][0];
 	 
-	int fmax = 0;
-	for (int j = 1; j < 4; j++)
-	  if (vnums[faces[fanr][j]] > vnums[faces[fanr][fmax]]) fmax = j;
-
-	int fz = 3-fmax; 
-	int ftrig = fmax^1; 
-	AutoDiff<3> xi = lami[faces[fanr][fmax]]-lami[faces[fanr][ftrig]]; 
-	AutoDiff<3> eta = 1-lami[faces[fanr][fmax]]-lami[faces[fanr][ftrig]]; 
-	AutoDiff<3> zeta = muz[faces[fanr][fmax]]-muz[faces[fanr][fz]]; 
+	INT<4> f = ET_trait<ET_PRISM>::GetFaceSort (fanr, vnums);	  	
+	AutoDiff<3> xi  = sigma[f[0]] - sigma[f[1]]; 
+	AutoDiff<3> zeta = sigma[f[0]] - sigma[f[3]];
 	
 	ArrayMem< double, 10> polx(p+2), poly(p+2);
 	LegendrePolynomial (p+1, xi.Value(), polx);
@@ -943,22 +744,20 @@ namespace ngfem {
 	for (int i = 0; i <= p+1; i++)
 	{
 	  for (int j = (i==p+1)?0:p+1; j <= p+1; j++)
-	  {
-	    double val = polx[i] * poly[j];
-	    shape(ii,0) = val * xi.DValue(0);
-	    shape(ii,1) = val * xi.DValue(1);
-	    shape(ii,2) = val * xi.DValue(2);
-	    ii++;
-	    shape(ii,0) = val * zeta.DValue(0);
-	    shape(ii,1) = val * zeta.DValue(1);
-	    shape(ii,2) = val * zeta.DValue(2);
-	    ii++;
-	  }
+	    {
+	      double val = polx[i] * poly[j];
+	      xshape(ii,0) = val * xi.DValue(0);
+	      xshape(ii,1) = val * xi.DValue(1);
+	      xshape(ii,2) = val * xi.DValue(2);
+	      ii++;
+	      xshape(ii,0) = val * zeta.DValue(0);
+	      xshape(ii,1) = val * zeta.DValue(1);
+	      xshape(ii,2) = val * zeta.DValue(2);
+	      ii++;
+	    }
 	}	
       }
   }
-  */
-  
   
   void VectorFacetVolumePrism::ComputeNDof() 
   {
@@ -984,51 +783,6 @@ namespace ngfem {
 
 
   // --------------------------------------------
-  /*
-  void VectorFacetVolumeHex::
-  CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const
-  {
-    //   topology: points = 0:()
-    int fanr = -1;
-    double x=ip(0), y=ip(1), z=ip(2);
-    
-    shape = 0.0;
-
-    if (fabs(z)<1e-6)
-      {
-	// (0,0) -> (0,0,0), (1,0) -> (0,1,0), (1,1) -> (1,1,0), (0,1) -> (1,0,0)
-	fanr=0;
-      }
-    else if (fabs(z)>1-1e-6)
-      {
-	// (0,0) -> (0,0,1), (1,0) -> (1,0,0), (1,1) -> (1,1,1), (0,1) -> (0,1,1)
-	fanr=1;
-      }
-    else if (fabs(y)<1e-6) 
-      {
-	// (0,0) -> (0,0,0), (1,0) -> (1,0,0), (1,1) -> (1,0,1), (0,1) -> (0,0,1)
-	fanr=2;
-      }
-    else if (fabs(x)> 1-1e-6)
-      {
-	// (0,0) -> (1,0,0), (1,0) -> (1,1,0), (1,1) -> (1,1,1), (0,1) -> (1,0,1)
-	fanr=3;
-      }
-    else if (fabs(y)> 1-1e-6)
-      {
-	// (0,0) -> (1,1,0), (1,0) -> (0,1,0), (1,1) -> (0,1,1), (0,1) -> (1,1,1)
-	fanr=4;
-      }
-    else if (fabs(x)<1e-6)
-      {
-	// (0,0) -> (0,1,0), (1,0) -> (0,0,0), (1,1) -> (0,0,1), (0,1) -> (0,1,1)
-	fanr=5;
-      }
-
-    CalcShape ( ip, fanr, shape );
-    ;
-  }
-  */
 
   void VectorFacetVolumeHex ::
   CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape ) const
@@ -1050,16 +804,9 @@ namespace ngfem {
   }
 
 
-  /*
+
   // -------------------------------------------------------------------------------
-  void VectorFacetVolumePyramid::
-  CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const
-  {
-    ;
-    cout << "error in VectorFacetVolumePyramid::CalcShape: not implemented!" << endl;
-    exit(0);
-  }
-  */
+
 
   void VectorFacetVolumePyramid ::
   CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape ) const
@@ -1132,50 +879,4 @@ namespace ngfem {
   static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<2, VectorFacetFacetFiniteElement<1> >  > initnvf2 ("neumannvectorfacet", 2, 1);
 }
 
-
-#ifdef OLDINIT
-namespace ngfem
-{
-
-  namespace vectorfacetint {
-
-    class Init
-    { 
-    public: 
-      Init ();
-
-    };
-    
-    Init::Init()
-    {
-             
-      /*
-      GetIntegrators().AddBFIntegrator ("massvectorfacet", 3, 1,
-					MassEdgeIntegrator<3, VectorFacetVolumeFiniteElement<3> >::Create);
-      GetIntegrators().AddBFIntegrator ("massvectorfacet", 2, 1,
-					MassEdgeIntegrator<2, VectorFacetVolumeFiniteElement<2> >::Create);
-      */
-
-      GetIntegrators().AddBFIntegrator ("robinvectorfacet", 3, 1,
-					RobinEdgeIntegrator<3, VectorFacetFacetFiniteElement<2> >::Create);
-      GetIntegrators().AddBFIntegrator ("robinvectorfacet", 2, 1,
-					RobinEdgeIntegrator<2, VectorFacetFacetFiniteElement<1> >::Create);      
-
-      /*
-      GetIntegrators().AddLFIntegrator ("sourcevectorfacet", 3, 3,
-					SourceEdgeIntegrator<3, VectorFacetVolumeFiniteElement<3> >::Create);
-      GetIntegrators().AddLFIntegrator ("sourcevectorfacet", 2, 2,
-					SourceEdgeIntegrator<2, VectorFacetVolumeFiniteElement<2> >::Create);
-       */
-
-      GetIntegrators().AddLFIntegrator ("neumannvectorfacet", 3, 3,
-					NeumannEdgeIntegrator<3, VectorFacetFacetFiniteElement<2> >::Create);
-      GetIntegrators().AddLFIntegrator ("neumannvectorfacet", 2, 2,
-					NeumannEdgeIntegrator<2, VectorFacetFacetFiniteElement<1> >::Create);
-    }
-
-    Init init;
-  }
-}
-#endif
 
