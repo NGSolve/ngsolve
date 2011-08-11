@@ -16,7 +16,12 @@ namespace netgen
 
 #ifdef PARALLEL
 #include <mpi.h>
+
 extern void ParallelRun();
+namespace netgen
+{
+  MPI_Comm mesh_comm;
+}
 #endif
 
 
@@ -74,6 +79,8 @@ int main(int argc, char ** argv)
   
   if (netgen::id == 0 && provided == MPI_THREAD_MULTIPLE)
     cout << "multithreaded mpi is supported" << endl;
+
+  MPI_Comm_dup ( MPI_COMM_WORLD, &netgen::mesh_comm);
 #endif
 
 

@@ -13,12 +13,8 @@ namespace netgen
   // extern double teterrpow; 
   MESHING3_RESULT MeshVolume (MeshingParameters & mp, Mesh& mesh3d)
   {
-     int i, oldne;
-     PointIndex pi;
-
+     int oldne;
      int meshed;
-     int cntsteps; 
-
 
      Array<INDEX_2> connectednodes;
 
@@ -101,66 +97,67 @@ namespace netgen
 	
         for (int qstep = 1; qstep <= 3; qstep++)
 	  {
+	    // cout << "openquads = " << mesh3d.HasOpenQuads() << endl;
 	    if (mesh3d.HasOpenQuads())
 	      {
 		string rulefile = ngdir;
 		
-              const char ** rulep = NULL;
-              switch (qstep)
-              {
-              case 1:
-                 rulefile += "/rules/prisms2.rls";
-                 rulep = prismrules2;
-                 break;
-              case 2: // connect pyramid to triangle
-                 rulefile += "/rules/pyramids2.rls";
-                 rulep = pyramidrules2;
-                 break;
-              case 3: // connect to vis-a-vis point
-                 rulefile += "/rules/pyramids.rls";
-                 rulep = pyramidrules;
-                 break;
-              }
-
-              //		Meshing3 meshing(rulefile);
-              Meshing3 meshing(rulep); 
-
-              MeshingParameters mpquad = mp;
-
-              mpquad.giveuptol = 15;
-              mpquad.baseelnp = 4;
-              mpquad.starshapeclass = 1000;
-              mpquad.check_impossible = qstep == 1;   // for prisms only (air domain in trafo)
-
-
-              for (pi = PointIndex::BASE; 
-                 pi < mesh3d.GetNP()+PointIndex::BASE; pi++)
-                 meshing.AddPoint (mesh3d[pi], pi);
-
-              mesh3d.GetIdentifications().GetPairs (0, connectednodes);
-              for (i = 1; i <= connectednodes.Size(); i++)
-                 meshing.AddConnectedPair (connectednodes.Get(i));
-
-              for (i = 1; i <= mesh3d.GetNOpenElements(); i++)
-              {
-                 Element2d hel = mesh3d.OpenElement(i);
-                 meshing.AddBoundaryElement (hel);
-              }
-
-              oldne = mesh3d.GetNE();
-
-              meshing.GenerateMesh (mesh3d, mpquad);
-
-              for (i = oldne + 1; i <= mesh3d.GetNE(); i++)
-                 mesh3d.VolumeElement(i).SetIndex (k);
-
-              (*testout) 
-                 << "mesh has " << mesh3d.GetNE() << " prism/pyramid elements" << endl;
-
-              mesh3d.FindOpenElements(k);
-           }
-        }
-
+		const char ** rulep = NULL;
+		switch (qstep)
+		  {
+		  case 1:
+		    rulefile += "/rules/prisms2.rls";
+		    rulep = prismrules2;
+		    break;
+		  case 2: // connect pyramid to triangle
+		    rulefile += "/rules/pyramids2.rls";
+		    rulep = pyramidrules2;
+		    break;
+		  case 3: // connect to vis-a-vis point
+		    rulefile += "/rules/pyramids.rls";
+		    rulep = pyramidrules;
+		    break;
+		  }
+		
+		//		Meshing3 meshing(rulefile);
+		Meshing3 meshing(rulep); 
+		
+		MeshingParameters mpquad = mp;
+		
+		mpquad.giveuptol = 15;
+		mpquad.baseelnp = 4;
+		mpquad.starshapeclass = 1000;
+		mpquad.check_impossible = qstep == 1;   // for prisms only (air domain in trafo)
+		
+		
+		for (PointIndex pi = PointIndex::BASE; 
+		     pi < mesh3d.GetNP()+PointIndex::BASE; pi++)
+		  meshing.AddPoint (mesh3d[pi], pi);
+		
+		mesh3d.GetIdentifications().GetPairs (0, connectednodes);
+		for (int i = 1; i <= connectednodes.Size(); i++)
+		  meshing.AddConnectedPair (connectednodes.Get(i));
+		
+		for (int i = 1; i <= mesh3d.GetNOpenElements(); i++)
+		  {
+		    Element2d hel = mesh3d.OpenElement(i);
+		    meshing.AddBoundaryElement (hel);
+		  }
+		
+		oldne = mesh3d.GetNE();
+		
+		meshing.GenerateMesh (mesh3d, mpquad);
+		
+		for (int i = oldne + 1; i <= mesh3d.GetNE(); i++)
+		  mesh3d.VolumeElement(i).SetIndex (k);
+		
+		(*testout) 
+		  << "mesh has " << mesh3d.GetNE() << " prism/pyramid elements" << endl;
+		
+		mesh3d.FindOpenElements(k);
+	      }
+	  }
+	
 
         if (mesh3d.HasOpenQuads())
         {
@@ -177,19 +174,19 @@ namespace netgen
            mesh3d.FindOpenElements(k);
 
 
-           for (pi = PointIndex::BASE; 
+           for (PointIndex pi = PointIndex::BASE; 
               pi < mesh3d.GetNP()+PointIndex::BASE; pi++)
               meshing.AddPoint (mesh3d[pi], pi);
 
 
-           for (i = 1; i <= mesh3d.GetNOpenElements(); i++)
+           for (int i = 1; i <= mesh3d.GetNOpenElements(); i++)
               meshing.AddBoundaryElement (mesh3d.OpenElement(i));
 
            oldne = mesh3d.GetNE();
 
            meshing.Delaunay (mesh3d, k, mp);
 
-           for (i = oldne + 1; i <= mesh3d.GetNE(); i++)
+           for (int i = oldne + 1; i <= mesh3d.GetNE(); i++)
               mesh3d.VolumeElement(i).SetIndex (k);
 
            PrintMessage (3, mesh3d.GetNP(), " points, ",
@@ -197,7 +194,7 @@ namespace netgen
         }
 
 
-        cntsteps = 0;
+        int cntsteps = 0;
         if (mesh3d.GetNOpenElements())
            do
            {
@@ -220,14 +217,14 @@ namespace netgen
               Array<int, PointIndex::BASE> glob2loc(mesh3d.GetNP());
               glob2loc = -1;
 
-              for (pi = PointIndex::BASE; 
+              for (PointIndex pi = PointIndex::BASE; 
                  pi < mesh3d.GetNP()+PointIndex::BASE; pi++)
 
                  if (domain_bbox.IsIn (mesh3d[pi]))
                     glob2loc[pi] = 
                     meshing.AddPoint (mesh3d[pi], pi);
 
-              for (i = 1; i <= mesh3d.GetNOpenElements(); i++)
+              for (int i = 1; i <= mesh3d.GetNOpenElements(); i++)
               {
                  Element2d hel = mesh3d.OpenElement(i);
                  for (int j = 0; j < hel.GetNP(); j++)
@@ -255,14 +252,10 @@ namespace netgen
                  meshed = 0;
                  PrintMessage (5, mesh3d.GetNOpenElements(), " open faces found");
 
-                 //	      mesh3d.Save ("tmp.vol");
-
-
                  MeshOptimize3d optmesh(mp);
 
                  const char * optstr = "mcmstmcmstmcmstmcm";
-                 size_t j;
-                 for (j = 1; j <= strlen(optstr); j++)
+                 for (size_t j = 1; j <= strlen(optstr); j++)
                  {
                     mesh3d.CalcSurfacesOfNode();
                     mesh3d.FreeOpenElementsEnvironment(2);

@@ -42,8 +42,9 @@ namespace netgen
 
 namespace netgen
 {
-   MPI_Group MPI_HIGHORDER_WORLD;
-   MPI_Comm MPI_HIGHORDER_COMM;
+  // MPI_Group MPI_HIGHORDER_WORLD;
+  // MPI_Comm MPI_HIGHORDER_COMM;
+  MPI_Comm mesh_comm;
 }
 #endif
 

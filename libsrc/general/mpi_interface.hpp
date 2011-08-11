@@ -24,6 +24,8 @@ namespace netgen
   enum { MPI_TAG_MESH = 210 };
   enum { MPI_TAG_VIS = 310 };
 
+  extern MPI_Comm mesh_comm;
+
   template <class T>
   MPI_Datatype MyGetMPIType ( ) { cerr << "ERROR in GetMPIType() -- no type found" << endl;return 0;}
 

@@ -454,15 +454,15 @@ namespace netgen
 	Array<int> master_facecoeffsindex;
 	Array<Vec<3> > master_facecoeffs;
 	    
-	MyMPI_Bcast (master_edgeorder, 0);
-	MyMPI_Bcast (master_edgecoeffsindex, 0);
-	MyMPI_Bcast (master_edgecoeffs, 0);
+	MyMPI_Bcast (master_edgeorder, 0, mesh_comm);
+	MyMPI_Bcast (master_edgecoeffsindex, 0, mesh_comm);
+	MyMPI_Bcast (master_edgecoeffs, 0, mesh_comm);
 
 	if (mesh.GetDimension() == 3)
 	  {
-	    MyMPI_Bcast (master_faceorder, 0);
-	    MyMPI_Bcast (master_facecoeffsindex, 0);
-	    MyMPI_Bcast (master_facecoeffs, 0);
+	    MyMPI_Bcast (master_faceorder, 0, mesh_comm);
+	    MyMPI_Bcast (master_facecoeffsindex, 0, mesh_comm);
+	    MyMPI_Bcast (master_facecoeffs, 0, mesh_comm);
 	  }
 
 
@@ -1041,15 +1041,15 @@ namespace netgen
 #ifdef PARALLEL
     if (ntasks > 1)
       {
-	MyMPI_Bcast (edgeorder, 0);
-	MyMPI_Bcast (edgecoeffsindex, 0);
-	MyMPI_Bcast (edgecoeffs, 0);
+	MyMPI_Bcast (edgeorder, 0, mesh_comm);
+	MyMPI_Bcast (edgecoeffsindex, 0, mesh_comm);
+	MyMPI_Bcast (edgecoeffs, 0, mesh_comm);
 	
 	if (mesh.GetDimension() == 3)
 	  {
-	    MyMPI_Bcast (faceorder, 0);
-	    MyMPI_Bcast (facecoeffsindex, 0);
-	    MyMPI_Bcast (facecoeffs, 0);
+	    MyMPI_Bcast (faceorder, 0, mesh_comm);
+	    MyMPI_Bcast (facecoeffsindex, 0, mesh_comm);
+	    MyMPI_Bcast (facecoeffs, 0, mesh_comm);
 	  }
       }
 #endif
