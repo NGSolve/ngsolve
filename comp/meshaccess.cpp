@@ -736,6 +736,14 @@ void MeshAccess :: GetFacetPNums (int fnr, Array<int> & pnums) const
     GetFacePNums(fnr, pnums);
 }
 
+ELEMENT_TYPE MeshAccess :: GetFacetType (int fnr) const
+{
+  if (GetDimension() == 2)
+    return ET_SEGM;
+  ArrayMem<int, 4> pnums;
+  GetFacePNums(fnr, pnums);
+  return (pnums.Size() == 3) ? ET_TRIG : ET_QUAD;
+}
 
 
 
