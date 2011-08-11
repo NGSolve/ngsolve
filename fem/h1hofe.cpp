@@ -235,8 +235,8 @@ namespace ngfem
     Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
     Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
-    Tx sigma[6];
 
+    Tx sigma[6];
     for (int i = 0; i < 6; i++) sigma[i] = lam[i] + muz[i];
 
     // vertex shapes

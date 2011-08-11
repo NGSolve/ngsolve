@@ -130,8 +130,6 @@ namespace ngfem
     int vnums[8];
     INT<2> facet_order[6]; 
     int first_facet_dof[7];
-    // int nv; // num of vertices
-    // int nf; // num of facets
     bool highest_order_dc;
     using HCurlFiniteElement<D>::eltype;
     using HCurlFiniteElement<D>::order;
@@ -193,7 +191,6 @@ namespace ngfem
     VectorFacetVolumeTrig() : VectorFacetVolumeFiniteElement<2>(ET_TRIG) { ; }
     virtual void ComputeNDof();
    
-    // virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<2> shape) const; 
     virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<2> shape) const;
     virtual int GetNExtraShapes( int facet) const {return 1;};
     virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<2> xshape) const;
@@ -207,7 +204,6 @@ namespace ngfem
     VectorFacetVolumeQuad() : VectorFacetVolumeFiniteElement<2> (ET_QUAD) { ; }
     virtual void ComputeNDof();
    
-    // virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<2> shape) const; 
     virtual void CalcShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<2> shape) const;
     virtual int GetNExtraShapes( int facet) const {return 1;};
     virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<2> xshape) const;
@@ -221,7 +217,6 @@ namespace ngfem
     VectorFacetVolumeTet() : VectorFacetVolumeFiniteElement<3> (ET_TET) { ; }
     virtual void ComputeNDof();
    
-    // virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const; 
     virtual void CalcShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape) const;
     virtual int GetNExtraShapes( int facet) const {return 2*(facet_order[facet][0]+2);};
     virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
@@ -235,7 +230,6 @@ namespace ngfem
     VectorFacetVolumeHex() : VectorFacetVolumeFiniteElement<3>(ET_HEX) { ; };
     virtual void ComputeNDof();
    
-    // virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const; 
     virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape ) const;
 //     virtual int GetNExtraShapes( int facet) const {return 2*(2*facet_order[facet][0]+3);};
 //     virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
@@ -249,10 +243,9 @@ namespace ngfem
     VectorFacetVolumePrism() : VectorFacetVolumeFiniteElement<3> (ET_PRISM) { ; };
     virtual void ComputeNDof();
    
-    // virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const; 
     virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape) const;
-//     virtual int GetNExtraShapes( int facet) const;
-//     virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
+    virtual int GetNExtraShapes( int facet) const;
+    virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
   };
 
 
@@ -262,7 +255,6 @@ namespace ngfem
     VectorFacetVolumePyramid() : VectorFacetVolumeFiniteElement<3> (ET_PYRAMID) { ; };
     virtual void ComputeNDof();
    
-    // virtual void CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<3> shape) const; 
     virtual void CalcShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape ) const;
 //     virtual int GetNExtraShapes( int facet) const;
 //     virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
