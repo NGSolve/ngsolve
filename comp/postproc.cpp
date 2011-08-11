@@ -498,7 +498,7 @@ namespace ngcomp
 	    cnt++;
 	    if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
 	      {
-		cout << "\rsetvalues element " << cnt << "/" << ne << flush;
+		// cout << "\rsetvalues element " << cnt << "/" << ne << flush;
 		ma.SetThreadPercentage ( 100.0*cnt / ne );
 		prevtime = clock();
 	      }
@@ -528,6 +528,7 @@ namespace ngcomp
 	  BaseMappedIntegrationRule & mir = eltrans(ir, lh);
 	  coef.Evaluate (mir, mfluxi);
 	  
+
 	  for (int j = 0; j < ir.GetNIP(); j++)
 	    mfluxi.Row(j) *= ir[j].Weight() * mir[j].GetMeasure();
 
@@ -535,7 +536,6 @@ namespace ngcomp
 	    diffop -> ApplyTrans (fel, mir, mfluxi, elflux, lh);
 	  else
 	    bli.ApplyBTrans (fel, mir, mfluxi, elflux, lh);
-
 
 	  if (dim > 1)
 	    {
@@ -562,7 +562,6 @@ namespace ngcomp
 	      invelmat.Mult (elflux, elfluxi);
 	    }
 	  
-
 	  fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
 	  
 #pragma omp critical(fluxprojetadd)
@@ -578,7 +577,7 @@ namespace ngcomp
     }
 
 
-    cout << "\rsetvalues element " << ne << "/" << ne << endl;
+    // cout << "\rsetvalues element " << ne << "/" << ne << endl;
 
 
     FlatVector<SCAL> fluxi(dim, clh);
