@@ -4079,40 +4079,62 @@ namespace netgen
 
     PrintMessage (4, "Rebuild element searchtree");
 
-    if (elementsearchtree)
-      delete elementsearchtree;
+    delete elementsearchtree;
     elementsearchtree = NULL;
 
     Box3d box;
-    int i, j;
-    int ne = GetNE();
+    int ne = (dimension == 2) ? GetNSE() : GetNE();
     if (!ne) 
       {
         lock.UnLock();
         return;
       }
 
-    box.SetPoint (Point (VolumeElement(1).PNum(1)));
-    for (i = 1; i <= ne; i++)
+    if (dimension == 2)
       {
-        const Element & el = VolumeElement(i);
-        for (j = 1; j <= el.GetNP(); j++)
-          box.AddPoint (Point (el.PNum(j)));
+	box.SetPoint (Point (SurfaceElement(1).PNum(1)));
+	for (int i = 1; i <= ne; i++)
+	  {
+	    const Element2d & el = SurfaceElement(i);
+	    for (int j = 1; j <= el.GetNP(); j++)
+	      box.AddPoint (Point (el.PNum(j)));
+	  }
+	
+	box.Increase (1.01 * box.CalcDiam());
+	elementsearchtree = new Box3dTree (box.PMin(), box.PMax());
+	
+	for (int i = 1; i <= ne; i++)
+	  {
+	    const Element2d & el = SurfaceElement(i);
+	    box.SetPoint (Point (el.PNum(1)));
+	    for (int j = 1; j <= el.GetNP(); j++)
+	      box.AddPoint (Point (el.PNum(j)));
+
+	    elementsearchtree -> Insert (box.PMin(), box.PMax(), i);
+	  }
       }
-
-    box.Increase (1.01 * box.CalcDiam());
-    elementsearchtree = new Box3dTree (box.PMin(), box.PMax());
-
-
-
-    for (i = 1; i <= ne; i++)
+    else
       {
-        const Element & el = VolumeElement(i);
-        box.SetPoint (Point (el.PNum(1)));
-        for (j = 1; j <= el.GetNP(); j++)
-          box.AddPoint (Point (el.PNum(j)));
+	box.SetPoint (Point (VolumeElement(1).PNum(1)));
+	for (int i = 1; i <= ne; i++)
+	  {
+	    const Element & el = VolumeElement(i);
+	    for (int j = 1; j <= el.GetNP(); j++)
+	      box.AddPoint (Point (el.PNum(j)));
+	  }
+	
+	box.Increase (1.01 * box.CalcDiam());
+	elementsearchtree = new Box3dTree (box.PMin(), box.PMax());
+	
+	for (int i = 1; i <= ne; i++)
+	  {
+	    const Element & el = VolumeElement(i);
+	    box.SetPoint (Point (el.PNum(1)));
+	    for (int j = 1; j <= el.GetNP(); j++)
+	      box.AddPoint (Point (el.PNum(j)));
 
-        elementsearchtree -> Insert (box.PMin(), box.PMax(), i);
+	    elementsearchtree -> Insert (box.PMin(), box.PMax(), i);
+	  }
       }
 
     elementsearchtreets = GetTimeStamp();
@@ -4501,8 +4523,10 @@ namespace netgen
           return ps_startelement;
 
         Array<int> locels;
-        if (0)
+        if (elementsearchtree || build_searchtree)
           {
+            // update if necessary:
+            const_cast<Mesh&>(*this).BuildElementSearchTree (); 
             elementsearchtree->GetIntersecting (p, p, locels);
             ne = locels.Size();
           }
@@ -4513,7 +4537,7 @@ namespace netgen
           {
             int ii;
 
-            if (0)
+            if (elementsearchtree)
               ii = locels.Get(i);
             else
               ii = i;
