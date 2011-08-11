@@ -314,6 +314,9 @@ namespace ngcomp
     ///
     void GetFacetPNums (int fnr, Array<int> & pnums) const;
     ///
+    ELEMENT_TYPE GetFacetType (int fnr) const;
+
+    ///
     void GetFacetElements (int fnr, Array<int> & elnums) const
     { (GetDimension() == 2) ? GetEdgeElements(fnr, elnums) : GetFaceElements(fnr, elnums); }    
 
