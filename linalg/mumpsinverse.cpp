@@ -239,8 +239,8 @@ namespace ngla
     mumps_id.job=JOB_INIT; 
     mumps_id.par= (ntasks == 1) ? 1 : 0;
     mumps_id.sym= symmetric ? 1 : 0;
-    mumps_id.comm_fortran=USE_COMM_WORLD;
-    // mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
+    // mumps_id.comm_fortran=USE_COMM_WORLD;
+    mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
     if (id == 0)
@@ -263,8 +263,8 @@ namespace ngla
     // cout << "icntl(7) = " << mumps_id.icntl[6] << endl;
     // cout << "icntl(22) = " << mumps_id.icntl[21] << endl;
 
-    mumps_id.comm_fortran=USE_COMM_WORLD;
-
+    // mumps_id.comm_fortran=USE_COMM_WORLD;
+    mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
     mumps_id.job = JOB_ANALYSIS;
 
     if (id == 0)
@@ -435,8 +435,8 @@ namespace ngla
     mumps_id.job=JOB_END; 
     mumps_id.par= (ntasks == 1) ? 1 : 0;
     mumps_id.sym = symmetric ? 1 : 0;
-    mumps_id.comm_fortran=USE_COMM_WORLD;
-    // mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
+    // mumps_id.comm_fortran=USE_COMM_WORLD;
+    mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
   }
 
