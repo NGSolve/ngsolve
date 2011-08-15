@@ -163,7 +163,7 @@ namespace ngfem {
 
   void VectorFacetFacetQuad :: ComputeNDof()
   {
-    order = max2( order_inner[0], order_inner[2] );
+    order = max2( order_inner[0], order_inner[1] );
     ndof = 2 * (order_inner[0]+1) * (order_inner[1]+1);
   }
 
