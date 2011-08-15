@@ -513,7 +513,6 @@ namespace ngcomp
 	  
 	  ElementTransformation eltrans = ma.GetTrafo (i, bound); 
 	  fes.GetDofNrs (i, dnums, bound);
-	  
 
 	  FlatVector<SCAL> elflux(dnums.Size() * dim, lh);
 	  FlatVector<SCAL> elfluxi(dnums.Size() * dim, lh);
@@ -523,7 +522,6 @@ namespace ngcomp
 	    GetIntegrationRules().SelectIntegrationRule(fel.ElementType(), 2*fel.Order());
 
 	  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
-
 
 	  BaseMappedIntegrationRule & mir = eltrans(ir, lh);
 	  coef.Evaluate (mir, mfluxi);
@@ -563,7 +561,7 @@ namespace ngcomp
 	    }
 	  
 	  fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
-	  
+
 #pragma omp critical(fluxprojetadd)
 	  {
 	    u.GetElementVector (dnums, elflux);
