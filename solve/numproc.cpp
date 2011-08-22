@@ -2908,6 +2908,7 @@ namespace ngsolve
 
   // standard numprocs:
 
+  static RegisterNumProc<NumProcSetValues> npinitbvp("setvalues");
 
 
 
@@ -2922,7 +2923,7 @@ namespace ngsolve
     Init::Init()
     {
       GetNumProcs().AddNumProc ("calcflux", NumProcCalcFlux::Create, NumProcCalcFlux::PrintDoc);
-      GetNumProcs().AddNumProc ("setvalues", NumProcSetValues::Create, NumProcSetValues::PrintDoc);
+      // GetNumProcs().AddNumProc ("setvalues", NumProcSetValues::Create, NumProcSetValues::PrintDoc);
       GetNumProcs().AddNumProc ("drawflux", NumProcDrawFlux::Create, NumProcDrawFlux::PrintDoc);
       GetNumProcs().AddNumProc ("evaluate", NumProcEvaluate::Create, NumProcEvaluate::PrintDoc);
       GetNumProcs().AddNumProc ("analyze", NumProcAnalyze::Create, NumProcAnalyze::PrintDoc);
