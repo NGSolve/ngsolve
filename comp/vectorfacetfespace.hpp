@@ -42,34 +42,13 @@ namespace ngcomp
 
   public:
     ///
-    /*
-      VectorFacetFESpace () :
-      FESpace (),
-      level(0),
-      nfacets(0),
-      ncfacets(0),
-      nel(0),
-      ndof(0),
-      ndof_lo(0),
-      var_order(0),
-      print(0)
-      {
-      first_facet_dof.SetSize(0);
-      order_facet.SetSize(0);
-      fine_facet.SetSize(0);
-      ndlevel.SetSize(0);
-      }
-    */
-
     VectorFacetFESpace ( const MeshAccess & ama, const Flags & flags, 
 			 bool parseflags = false );
 
     virtual ~VectorFacetFESpace ()
-    {
-      ;
-    }
+    { ; }
 
-    static FESpace * Create ( const MeshAccess & ma, const Flags & flags );
+    // static FESpace * Create ( const MeshAccess & ma, const Flags & flags );
 
     virtual string GetClassName () const 
     {
