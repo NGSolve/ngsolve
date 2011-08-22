@@ -291,7 +291,7 @@ namespace ngfem
     for (int i = 0, ii = 0; i <= order_inner[0]; i++)
       for (int j = 0; j <= order_inner[1]; j++)
 	shape[ii++] = polx[i] * poly[j];
-  }
+b  }
   */
 
 
@@ -342,26 +342,43 @@ namespace ngfem
   template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_PRISM> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
-    Tx x = hx[0];
-    Tx y = hx[1];
-    Tx z = hx[2];
+    Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
+
+    int sort[3];
+    for (int i = 0; i < 3; i++) sort[i] = i;
     
-    // no orientation necessary
+    if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+    if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
+    if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+
+    Tx lamis[3];
+    for (int i = 0; i < 3; i++)
+      lamis[i] = lami[sort[i]];
+
+    Tx x = lamis[0];
+    Tx y = lamis[1];
+    Tx z = hx[2];
+
     int p=order_inner[0];
     int q=order_inner[1];
-    
-    ArrayMem<Tx, 20> polx(p+1), poly(p+1), polz(q+1);
 
-    LegendrePolynomial (p, 2*x-1, polx);
-    ScaledLegendrePolynomial (p, 2*y+x-1, 1-x, poly);
+    ArrayMem<Tx, 20> memx(sqr(p+1));
+    FlatMatrix<Tx> polsx(p+1, &memx[0]);
+
+    VectorMem<10, Tx> polsy(p+1);
+    VectorMem<10, Tx> polsz(q+1);
     
-    LegendrePolynomial (q, 2*z-1, polz);
-  
-    int ii = 0;
     for (int i = 0; i <= p; i++)
-      for (int j = 0; j <= p-i; j++)
-        for (int k = 0; k <= q; k++)
-          shape[ii++] = polx[i] * poly[j] * polz[k];
+      JacobiPolynomial (p, 2*x-1, 2*i+1, 0, polsx.Row(i));
+
+    ScaledLegendrePolynomial (order, lamis[1]-lamis[2], lamis[1]+lamis[2], polsy);
+    LegendrePolynomial (order, 2*z-1, polsz);
+
+    int ii = 0;
+    for (int k = 0; k <= q; k++)
+      for (int i = 0; i <= p; i++)
+	for (int j = 0; j <= p-i; j++)
+          shape[ii++] = polsx(j,i) * polsy(j) * polsz(k);
   }
 
 
