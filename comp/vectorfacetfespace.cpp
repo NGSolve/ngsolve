@@ -109,12 +109,12 @@ namespace ngcomp
     // Update();
   }
   
-
+  /*
   FESpace * VectorFacetFESpace :: Create ( const MeshAccess & ma, const Flags & flags )
   {
     return new VectorFacetFESpace ( ma, flags, true);
   }
-
+  */
   void VectorFacetFESpace :: Update(LocalHeap& lh)
   {
     FESpace::Update(lh);
@@ -686,6 +686,9 @@ namespace ngcomp
   }
 
 
+  static RegisterFESpace<VectorFacetFESpace> init_vfacet ("vectorfacet");
+
+  /*
   // register FESpaces
   namespace vectorfacetfespace_cpp
   {
@@ -701,9 +704,8 @@ namespace ngcomp
     }
     
     Init init;
-
   }
-
+  */
 }
 
 
