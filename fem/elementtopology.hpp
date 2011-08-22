@@ -705,13 +705,13 @@ namespace ngfem
       
       int fmax = 0;
       for (int j=1; j<4; j++) 
-        if (vnums[j] > vnums[fmax]) fmax = j;  
+        if (vnums[j] < vnums[fmax]) fmax = j;  
       
       int f1 = (fmax+3)%4;
       int f2 = (fmax+1)%4; 
       int fop = (fmax+2)%4; 
       
-      if(vnums[f2]>vnums[f1]) swap(f1,f2);  // fmax > f1 > f2 
+      if(vnums[f2]<vnums[f1]) swap(f1,f2);  // fmax > f1 > f2 
 
       f[0] = fmax;
       f[1] = f1;
@@ -907,13 +907,13 @@ namespace ngfem
 	{
 	  int fmax = 0;
 	  for (int j=1; j<4; j++) 
-	    if (vnums[f[j]] > vnums[f[fmax]]) fmax = j;  
+	    if (vnums[f[j]] < vnums[f[fmax]]) fmax = j;  
 	  
 	  int f1 = (fmax+3)%4;
 	  int f2 = (fmax+1)%4; 
 	  int fop = (fmax+2)%4; 
 	  
-	  if(vnums[f[f2]]>vnums[f[f1]]) swap(f1,f2);  // fmax > f1 > f2 
+	  if(vnums[f[f2]]<vnums[f[f1]]) swap(f1,f2);  // fmax > f1 > f2 
 	  
 	  return INT<4> (f[fmax], f[f1], f[fop], f[f2]);
 	}
@@ -922,7 +922,12 @@ namespace ngfem
     template <typename TVN>
     static int GetClassNr (const TVN & vnums)
     {
-      return 0;
+      int classnr = 0;
+      int sort[3] = { 0, 1, 2 };
+      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); classnr += 1; }
+      if (vnums[sort[1]] > vnums[sort[2]]) { Swap (sort[1], sort[2]); classnr += 2; }
+      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); classnr += 2; } // tricky !
+      return classnr;
     }
 
     template <typename TVN>
@@ -999,13 +1004,13 @@ namespace ngfem
 	{
 	  int fmax = 0;
 	  for (int j=1; j<4; j++) 
-	    if (vnums[f[j]] > vnums[f[fmax]]) fmax = j;  
+	    if (vnums[f[j]] < vnums[f[fmax]]) fmax = j;  
 	  
 	  int f1 = (fmax+3)%4;
 	  int f2 = (fmax+1)%4; 
 	  int fop = (fmax+2)%4; 
 	  
-	  if(vnums[f[f2]]>vnums[f[f1]]) swap(f1,f2);  // fmax > f1 > f2 
+	  if(vnums[f[f2]]<vnums[f[f1]]) swap(f1,f2);  // fmax > f1 > f2 
 	  
 	  return INT<4> (f[fmax], f[f1], f[fop], f[f2]);
 	}
@@ -1091,13 +1096,13 @@ namespace ngfem
 
       int fmax = 0;
       for (int j=1; j<4; j++) 
-	if (vnums[f[j]] > vnums[f[fmax]]) fmax = j;  
+	if (vnums[f[j]] < vnums[f[fmax]]) fmax = j;  
       
       int f1 = (fmax+3)%4;
       int f2 = (fmax+1)%4; 
       int fop = (fmax+2)%4; 
       
-      if(vnums[f[f2]]>vnums[f[f1]]) swap(f1,f2);  // fmax > f1 > f2 
+      if(vnums[f[f2]]<vnums[f[f1]]) swap(f1,f2);  // fmax > f1 > f2 
       
       return INT<4> (f[fmax], f[f1], f[fop], f[f2]);
     }
