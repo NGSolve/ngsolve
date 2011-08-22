@@ -83,8 +83,6 @@ namespace netgen
 	}
     }
 
-
-
     if (id == 0)
       SendMesh ();
     else
@@ -263,7 +261,6 @@ namespace netgen
       }
 
 
-
     Array<int> num_distpnums(ntasks);
     num_distpnums = 0;
 
@@ -321,6 +318,7 @@ namespace netgen
 
     for (int dest = 1; dest < ntasks; dest ++ )
       sendrequests.Append (MyMPI_ISend (elementarrays[dest], dest, MPI_TAG_MESH+2));
+
 
     PrintMessage ( 3, "Sending Face Descriptors" );
 
@@ -653,14 +651,12 @@ namespace netgen
   {
     if (id != 0 || ntasks == 1 ) return;
 
-
 #ifdef METIS
     ParallelMetis ();
 #else
     for (ElementIndex ei = 0; ei < GetNE(); ei++)
       (*this)[ei].SetPartition(ntasks * ei/GetNE() + 1);
 #endif
-
 
     for (ElementIndex ei = 0; ei < GetNE(); ei++)
       *testout << "el(" << ei << ") is in part " << (*this)[ei].GetPartition() << endl;
@@ -724,10 +720,10 @@ namespace netgen
 
     if (!uniform_els)
       {
-	PartHybridMesh ( );  
-	return;
+	PartHybridMesh ();  
       }
-
+    else
+      {
 
     // uniform (TET) mesh,  JS
     int npe = VolumeElement(1).GetNP();
@@ -788,6 +784,8 @@ namespace netgen
     // we want:                       1 ...  ntasks
     for (int i=1; i<=ne; i++)
       VolumeElement(i).SetPartition(epart[i-1] + 1);
+      }
+
 
 
     for (int sei = 1; sei <= GetNSE(); sei++ )
