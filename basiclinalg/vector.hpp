@@ -228,13 +228,18 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
     /// default constructor does nothing
-    FlatVector () { ; }
+    FlatVector () { ; }  
+    /// copy pointer
+    FlatVector (const FlatVector & v2) : s(v2.s), data(v2.data) { ; }
     /// set size and mem
     FlatVector (unsigned int as, T * adata) : s(as), data(adata) { ; }
-
+    
+    // set size and mem
+    // FlatVector (unsigned int as, TELEM * adata) : s(as), data(&(*adata)(0)) { ; }
+    
     /// set size and mem
     FlatVector (unsigned int as, void * adata) : s(as), data(static_cast<T*> (adata)) { ; }
-
+    
     /*
     /// put FlatVector over fixed size vector
     template <int S>
