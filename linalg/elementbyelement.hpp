@@ -94,6 +94,15 @@ namespace ngla
     virtual BaseMatrix * 
     InverseMatrix (BitArray * subset = 0) const;
 
+    int GetNZE () const
+    {
+      int nze = 0;
+      for (int i = 0; i < elmats.Size(); i++)
+	if (!clone.Test(i))
+	  nze += elmats[i].Height()*elmats[i].Width();
+      return nze;
+    }
+
   };  
 
 }
