@@ -646,13 +646,13 @@ namespace ngcomp
   }
 
   
-  void VectorFacetFESpace :: GetVertexNumbers(int elnr, Array<int>& vnums) 
+  void VectorFacetFESpace :: GetVertexNumbers(int elnr, Array<int>& vnums) const
   { 
     ma.GetElVertices(elnr, vnums); 
   };
 
   ///
-  INT<2> VectorFacetFESpace :: GetFacetOrder(int fnr) 
+  INT<2> VectorFacetFESpace :: GetFacetOrder(int fnr) const
   { return order_facet[fnr]; };
   
   int VectorFacetFESpace :: GetFirstFacetDof(int fanr) const {return (first_facet_dof[fanr]);}; 
