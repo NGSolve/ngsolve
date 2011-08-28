@@ -81,9 +81,9 @@ namespace ngcomp
   
     // some utility functions for convenience
     ///
-    virtual void GetVertexNumbers(int elnr, Array<int>& vnums) ;
+    virtual void GetVertexNumbers(int elnr, Array<int>& vnums) const;
     ///
-    virtual INT<2> GetFacetOrder(int fnr) ;
+    virtual INT<2> GetFacetOrder(int fnr) const;
 
     virtual int GetFirstFacetDof(int fanr) const;
 
