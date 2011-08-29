@@ -681,7 +681,7 @@ namespace ngcomp
 
 
 			  const FiniteElement & fel = fespace.GetFE (i, lh);
-			  ElementTransformation eltrans = ma.GetTrafo (i, 0);
+			  ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
 			  fespace.GetDofNrs (i, dnums);
 
 			  if (fel.GetNDof() != dnums.Size())

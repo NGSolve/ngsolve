@@ -8,11 +8,8 @@
 /*********************************************************************/
 
 
-
-#ifdef NETGEN_ELTRANS
 #include <nginterface.h>
 #include <nginterface_v2.hpp>
-#endif
 
 
 namespace ngcomp
@@ -393,7 +390,7 @@ namespace ngcomp
     int GetClusterRepElement (int pi) const
     { return Ng_GetClusterRepElement (pi+1)-1; }
 
-
+    /*
     template <int A, int B, int C, int D>
     void GetSurfaceElementTransformation (int sei, const Vec<A> & xi,
 					  Vec<B> & x, Mat<C,D> & dxdxi)
@@ -408,13 +405,13 @@ namespace ngcomp
       for (i=0; i<D; i++)
 	for (j=0; j<C; j++) dxdxi(i,j) = dxgdxl[i*C+j];
     }
-
+    */
 
     ///
     void GetElementTransformation (int elnr, ElementTransformation & eltrans) const;
 
     ///
-    ElementTransformation GetTrafo (int elnr, bool boundary) const;
+    ElementTransformation & GetTrafo (int elnr, bool boundary, LocalHeap & lh) const;
 
     ///
     void GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans) const;
@@ -554,7 +551,6 @@ namespace ngcomp
     
     return ET_TRIG;  // return something for the  compiler
   }
-
 
 
 

@@ -58,8 +58,6 @@ namespace ngcomp
 #pragma omp parallel 
     {
       LocalHeap lh = clh.Split();
-      
-      // ElementTransformation eltrans;
       Array<int> dnums, dnumsflux;
 
 #pragma omp for 
@@ -89,7 +87,7 @@ namespace ngcomp
 	  const FiniteElement & felflux = 
 	    bound ? fesflux.GetSFE(i, lh) : fesflux.GetFE (i, lh);
 	  
-	  ElementTransformation eltrans = ma.GetTrafo (i, bound);
+	  ElementTransformation & eltrans = ma.GetTrafo (i, bound, lh);
 	  
 	  if (bound)
 	    {
@@ -511,7 +509,7 @@ namespace ngcomp
 	  const FiniteElement & fel = bound ? fes.GetSFE(i, lh) : fes.GetFE (i, lh);
 	  Array<int> dnums(fel.GetNDof(), lh);
 	  
-	  ElementTransformation eltrans = ma.GetTrafo (i, bound); 
+	  ElementTransformation & eltrans = ma.GetTrafo (i, bound, lh); 
 	  fes.GetDofNrs (i, dnums, bound);
 
 	  FlatVector<SCAL> elflux(dnums.Size() * dim, lh);
