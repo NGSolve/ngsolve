@@ -37,7 +37,7 @@ int main ()
   Ng_LoadGeometry ("cube.geo");
   Ng_LoadMesh ("cube.vol");
   
-  LocalHeap lh(1000000);
+  LocalHeap lh(1000000, "main heap");
   MeshAccess ma;
 
   Flags fesflags;
@@ -72,8 +72,8 @@ int main ()
 
 
   BaseMatrix & mata = bfa.GetMatrix();
-  T_BaseVector<double> & vecf = lff.GetVector();
-  T_BaseVector<double> & vecu = gfu.GetVector();
+  BaseVector & vecf = lff.GetVector();
+  BaseVector & vecu = gfu.GetVector();
   
   BaseMatrix * jacobi = dynamic_cast<const BaseSparseMatrix&> (mata).CreateJacobiPrecond();
 
