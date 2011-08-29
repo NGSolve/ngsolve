@@ -14,61 +14,9 @@ namespace ngfem
 {
   using namespace ngfem;
   
-  /*
-    IntegrationPoint :: 
-    IntegrationPoint (const double api[3], double aw)
-    {
-    glob_nr = -1;
-    nr = -1;
-    pi[0] = api[0];
-    pi[1] = api[1];
-    pi[2] = api[2];
-    weight = aw;
-    precomputed_geometry = 0;
-    }
-  
-    IntegrationPoint :: 
-    IntegrationPoint (double p1, double p2, double p3, double aw)
-    {
-    glob_nr = -1;
-    nr = -1;
-    pi[0] = p1;
-    pi[1] = p2;
-    pi[2] = p3;
-    weight = aw;
-    precomputed_geometry = 0;
-    }
-  
-    IntegrationPoint :: 
-    IntegrationPoint (const FlatVector<double> & ap, double aw)
-    {
-    glob_nr = -1;
-    nr = -1;
-    pi[0] = (ap.Size() >= 1) ? ap(0) : 0;
-    pi[1] = (ap.Size() >= 2) ? ap(1) : 0;
-    pi[2] = (ap.Size() >= 3) ? ap(2) : 0;
-    weight = aw;
-    precomputed_geometry = 0;
-    }
-
-    IntegrationPoint & IntegrationPoint :: operator=(const IntegrationPoint & aip)
-    {
-    glob_nr = aip.IPNr();
-    nr = aip.Nr();
-    pi[0] = aip(0);
-    pi[1] = aip(1);
-    pi[2] = aip(2);
-    weight = aip.Weight();
-    precomputed_geometry = aip.precomputed_geometry;
-    return *this;
-    }
-  */
-  
   ostream & operator<< (ostream & ost, const IntegrationPoint & ip)
   {
-    ost 
-      // << "IP globnr " << ip.glob_nr
-      << " locnr = " << ip.nr << ": (" 
+    ost << " locnr = " << ip.nr << ": (" 
 	<< ip.pi[0] << ", " << ip.pi[1] << ", " << ip.pi[2] 
 	<< "), weight = " << ip.weight << endl;
     return ost;
@@ -113,26 +61,6 @@ namespace ngfem
                                Vec<3,SCAL> (dxdxi.Col(1)));
             det = L2Norm (normalvec);
             normalvec /= det;
-            
-            /*
-	      cout << "normalvec 1 = " << normalvec << endl;
-	      cout << "det 1 = " << det << endl;
-
-	      det = sqrt ( sqr (dxdxi(1,0) * dxdxi(2,1) -
-	      dxdxi(2,0) * dxdxi(1,1)) +
-	      sqr (dxdxi(0,0) * dxdxi(2,1) -
-	      dxdxi(2,0) * dxdxi(0,1)) +
-	      sqr (dxdxi(1,0) * dxdxi(0,1) -
-	      dxdxi(0,0) * dxdxi(1,1)) );
-
-	      normalvec(0) = dxdxi(1,0) * dxdxi(2,1) - dxdxi(2,0) * dxdxi(1,1);
-	      normalvec(1) = dxdxi(2,0) * dxdxi(0,1) - dxdxi(0,0) * dxdxi(2,1);
-	      normalvec(2) = dxdxi(0,0) * dxdxi(1,1) - dxdxi(1,0) * dxdxi(0,1);
-	      normalvec /= L2Norm (normalvec);
-
-	      cout << "normalvec 2 = " << normalvec << endl;
-	      cout << "det 2 = " << det << endl;
-            */
 	  }
 	else
 	  {
@@ -151,51 +79,6 @@ namespace ngfem
     this->measure = fabs (det);
   }
 
-
-  /*
-    template <int S, int R, typename SCAL>
-    SpecificIntegrationPoint<S,R,SCAL> :: 
-    SpecificIntegrationPoint (const IntegrationPoint & aip,
-    const ElementTransformation & aeltrans,			    
-    const Vec<R, SCAL> & ax,
-    const Mat<R, S, SCAL> & adxdxi, 
-    LocalHeap & lh)
-    : DimSpecificIntegrationPoint<R,SCAL> (aip, aeltrans)
-    {
-    this->point = ax;
-    dxdxi = adxdxi;
-      
-    if (S == R)
-    {
-    det = Det (dxdxi);
-    dxidx = Inv (dxdxi);
-    }
-    else
-    {
-    if (R == 3)
-    {
-    normalvec = Cross (Vec<3> (dxdxi.Col(0)),
-    Vec<3> (dxdxi.Col(1)));
-    det = L2Norm (normalvec);
-    normalvec /= det;
-    }
-    else
-    {
-    det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
-
-    normalvec(0) = -dxdxi(1,0) / det;
-    normalvec(1) = dxdxi(0,0) / det;
-    }
-	
-    Mat<S,S> ata, iata;
-	
-    ata = Trans (dxdxi) * dxdxi;
-    iata = Inv (ata);
-    dxidx = iata * Trans (dxdxi);
-    }
-    }
-  */
-  
 
   template <int S, int R, typename SCAL>
   void SpecificIntegrationPoint<S,R,SCAL> :: 
@@ -255,28 +138,6 @@ namespace ngfem
     this -> CalcHesse(ddx1, ddx2); 
   }
 
-  
-  //   template <int DIMS, int DIMR, typename SCAL>
-  //   void SpecificIntegrationPoint<DIMS,DIMR,SCAL> :: SetTV ( const Vec<DIMR,SCAL> & vec )
-  //   {
-  //     for(int i=0; i<DIMR; i++)
-  //       dxdxi(i,0) = vec(i);
-  //   }
-
-
-
-
- 
-
-
-
-  /*
-    template <int DIMS, int DIMR, typename SCAL>
-    void SpecificIntegrationPoint<DIMS,DIMR,SCAL> :: SetNV ( const Vec<DIMR,SCAL> & vec)
-    {
-    normalvec = vec;
-    }
-  */
 
   template class SpecificIntegrationPoint<1,1>;
   template class SpecificIntegrationPoint<2,2>;
@@ -298,16 +159,12 @@ namespace ngfem
   {
     baseip = (char*)(void*)(BaseSpecificIntegrationPoint*)(&sips[0]);
     incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
-      
-    FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
-    FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
-    
-    eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
-    
-    for (int i = 0; i < ir.GetNIP(); i++)
-      new (&sips[i]) SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, pts[i], dxdxi[i]); 
-  }
 
+    for (int i = 0; i < ir.GetNIP(); i++)
+      new (&sips[i]) SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, -1);
+
+    eltrans.CalcMultiPointJacobian (ir, *this);
+  }
 
   template class MappedIntegrationRule<1,1>;
   template class MappedIntegrationRule<2,2>;
@@ -316,22 +173,6 @@ namespace ngfem
   template class MappedIntegrationRule<2,3>;
 
 
-
-
-
-  /*
-  IntegrationRule :: IntegrationRule (int nips)
-    : Array<IntegrationPoint> (nips) 
-  {
-    ; // SetAllocSize (nips);
-  }
-  
-  void IntegrationRule :: 
-  AddIntegrationPoint (const IntegrationPoint & ip)
-  {
-    Append (ip);
-  }
-  */
 
   
   // computes Gaussean integration formula on (0,1) with n points
@@ -1097,7 +938,8 @@ namespace ngfem
       {
         x.SetSize(nip);
         dxdxi.SetSize(nip);
-        eltrans.CalcMultiPointJacobian ( *this, x, dxdxi, lh);
+        // eltrans.CalcMultiPointJacobian ( *this, x, dxdxi, lh);
+	throw Exception ("intruleTP comput_mapping currently not available");
       }
   }
 
@@ -1384,7 +1226,8 @@ namespace ngfem
       {
         x.SetSize(nip);
         dxdxi.SetSize(nip);
-        eltrans.CalcMultiPointJacobian (*this, x, dxdxi, lh);
+        // eltrans.CalcMultiPointJacobian (*this, x, dxdxi, lh);
+	throw Exception ("intruleTP comput_mapping currently not available");
       }
   }
 
@@ -3142,27 +2985,4 @@ namespace ngfem
   {
     return GetIntegrationRules ().SelectIntegrationRuleJacobi10 (order);
   }
-
- 
- 
-  /*
-    using namespace std;
-    class Initabc
-    {
-    public:
-    Initabc ()
-    {
-    cout << "intrule" << endl;
-    cout << "gammln(1) = " << gammln(1) << ", (2) = " << gammln(2) << endl;
-    ofstream out ("gamma.out");
-    out.precision(15);
-    for (double x = 0; x < 10; x += 0.1)
-    {
-    out << x << " " << gammln(x) << " " << exp(gammln(x)) << endl;
-    }
-    }
-    };
-
-    Initabc xy;
-  */
 }

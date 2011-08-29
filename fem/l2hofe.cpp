@@ -356,7 +356,7 @@ b  }
       lamis[i] = lami[sort[i]];
 
     Tx x = lamis[0];
-    Tx y = lamis[1];
+    // Tx y = lamis[1];
     Tx z = hx[2];
 
     int p=order_inner[0];

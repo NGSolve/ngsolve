@@ -13,14 +13,6 @@
 
 #include <bla.hpp>
 
-/*
-#ifdef NETGEN_ELTRANS
-#include <nginterface.h>
-#include <nginterface_v2.hpp>
-
-// using namespace netgen;
-#endif
-*/
 
 
 /**

@@ -612,12 +612,13 @@ public:
 
     const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 
-
+    MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
+    /*
     FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
     FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
     
     eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
-
+    */
 
     for (int i = 0; i < ir.GetNIP(); i++)
       {
@@ -626,8 +627,8 @@ public:
 	// const IntegrationPoint & ip = ir[i];
 	
 	// MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
-	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-	  sip(ir[i], eltrans, pts[i], dxdxi[i]);
+	// MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, pts[i], dxdxi[i]);
+	const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
 
 	DIFFOP::Apply (fel, sip, elx, hv1, lh);
 	dmatop.Apply (fel, sip, hv1, hv2, lh);
@@ -1353,16 +1354,18 @@ public:
 	
 	int order = IntegrationOrder (fel);
 	const IntegrationRule & ir = SelectIntegrationRule (fel.ElementType(), order);
-	
+	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
+
+	/*
         FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
         FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
-
         eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
-
+	*/
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
             HeapReset hr(lh);
-            MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, pts[i], dxdxi[i]);
+            // MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, pts[i], dxdxi[i]);
+	    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
 
 	    dvecop.GenerateVector (fel, sip, dvec, lh);
 	    DIFFOP::ApplyTrans (fel, sip, dvec, hv, lh);
