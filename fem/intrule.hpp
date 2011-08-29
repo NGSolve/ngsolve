@@ -168,7 +168,8 @@ namespace ngfem
       : BaseMappedIntegrationPoint (aip, aeltrans)
     { ; }
     ///
-    const Vec<R,SCAL> GetPoint () const { return point; }
+    const Vec<R,SCAL> & GetPoint () const { return point; }
+    Vec<R,SCAL> & Point () { return point; }
     ///
     SCAL operator() (int i) const 
     { return point(i); }
@@ -197,6 +198,13 @@ namespace ngfem
     NGS_DLL_HEADER MappedIntegrationPoint (const IntegrationPoint & aip,
 			      const ElementTransformation & aeltrans,
 			      LocalHeap & lh);
+
+    MappedIntegrationPoint (const IntegrationPoint & aip,
+			    const ElementTransformation & aeltrans,
+			    int /* dummy */)
+      : DimMappedIntegrationPoint<DIMR,SCAL> (aip, aeltrans)
+    { ; }
+
     ///
     MappedIntegrationPoint (const IntegrationPoint & aip,
 			      const ElementTransformation & aeltrans,
@@ -208,7 +216,11 @@ namespace ngfem
     {
       this->point = ax;
       dxdxi = adxdxi;
-      
+      Compute();
+    }
+
+    void Compute ()
+    {
       if (DIMS == DIMR)
 	{
 	  det = Det (dxdxi);
@@ -245,6 +257,7 @@ namespace ngfem
   
     ///
     const Mat<DIMR,DIMS,SCAL> & GetJacobian() const { return dxdxi; }
+    Mat<DIMR,DIMS,SCAL> & Jacobian() { return dxdxi; }
     ///
     SCAL GetJacobiDet() const { return det; }
     ///
