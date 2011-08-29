@@ -10,16 +10,160 @@
 
 
 #include <comp.hpp>
-#include <parallelngs.hpp>
-
-
-// #include <nginterface_v2.hpp>
-
+// #include <parallelngs.hpp>
 #include <../fem/h1lofe.hpp>
 
-namespace ngcomp
 
+namespace ngcomp
 {
+
+  template <int DIMS, int DIMR>
+  class NGS_DLL_HEADER Ng_ElementTransformation : public ElementTransformation
+  {
+
+  public:
+
+    virtual void SetElement (bool aboundary, int aelnr, int aelindex)
+    {
+      // boundary = aboundary;
+      elnr = aelnr;
+      elindex = aelindex;
+      // dim = Ng_GetDimension();
+      if (DIMS < DIMR)
+	iscurved = Ng_IsSurfaceElementCurved (elnr+1);
+      else
+	iscurved = Ng_IsElementCurved (elnr+1);
+    }
+
+    virtual int SpaceDim () const
+    {
+      return DIMR;
+    }
+    
+    ///
+    virtual bool Boundary() const
+    {
+      return DIMS < DIMR;
+    }
+
+
+    virtual void GetSort (FlatArray<int> sort) const
+    {
+      int vnums[12];
+      if (DIMS < DIMR)
+	Ng_GetSurfaceElement (elnr+1, vnums);
+      else
+	{
+	  Ng_Element nel = netgen::Ng_GetElement<DIMS> (elnr);
+	  for (int j = 0; j  < nel.vertices.Size(); j++)
+	    vnums[j] = nel.vertices[j];
+	  // Ng_GetElement (elnr+1, &vnums[0], &np);
+	}
+    
+    switch (eltype)
+      {
+      case ET_TRIG:
+	for (int i = 0; i < 3; i++) sort[i] = i;
+	if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+	if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
+	if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+	// vnums[sort[0]] < vnums[sort[1]] < vnums[sort[2]]
+	break; 
+
+      case ET_TET:
+	for (int i = 0; i < 4; i++) sort[i] = i;
+	if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+	if (vnums[sort[2]] > vnums[sort[3]]) Swap (sort[2], sort[3]);
+	if (vnums[sort[0]] > vnums[sort[2]]) Swap (sort[0], sort[2]);
+	if (vnums[sort[1]] > vnums[sort[3]]) Swap (sort[1], sort[3]);
+	if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
+
+	// vnums[sort[0]] < vnums[sort[1]] < vnums[sort[2]] < vnums[sort[3]]
+	break; 
+
+      case ET_PRISM:
+	for (int i = 0; i < 6; i++) sort[i] = i;
+
+	if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+	if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
+	if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+        
+	if (vnums[sort[3]] > vnums[sort[4]]) Swap (sort[3], sort[4]);
+	if (vnums[sort[4]] > vnums[sort[5]]) Swap (sort[4], sort[5]);
+	if (vnums[sort[3]] > vnums[sort[4]]) Swap (sort[3], sort[4]);
+	break;
+
+      default:
+	throw Exception ("undefined eltype in ElementTransformation::GetSort()\n");
+      }
+      
+    }
+
+
+
+
+    virtual void CalcJacobian (const IntegrationPoint & ip,
+			       FlatMatrix<> dxdxi) const
+    {
+      if (DIMS < DIMR)
+	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0,0));
+      else
+	Ng_GetElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0,0));
+    }
+    
+    virtual void CalcPoint (const IntegrationPoint & ip,
+			    FlatVector<> point) const
+    {
+      if (DIMS < DIMR)
+	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), &point(0), 0);
+      else
+	Ng_GetElementTransformation (elnr+1, &ip(0), &point(0), 0);
+    }
+
+    virtual void CalcPointJacobian (const IntegrationPoint & ip,
+				    FlatVector<> point, FlatMatrix<> dxdxi) const
+    {
+      if (DIMS < DIMR)
+	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0));
+      else
+	Ng_GetElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0));
+    }
+
+    virtual BaseSpecificIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
+    {
+      return *new SpecificIntegrationPoint<DIMS,DIMR> (ip, *this, lh);
+    }
+
+    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const
+    {
+      return *new MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
+    }    
+
+    virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
+					 BaseMappedIntegrationRule & bmir) const
+    {
+      MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
+      netgen::Ng_MultiElementTransformation <DIMS,DIMR> (elnr, ir.Size(),
+							 &ir[0](0), &ir[1](0)-&ir[0](0),
+							 &mir[0].Point()(0), 
+							 &mir[1].Point()(0)-&mir[0].Point()(0), 
+							 &mir[0].Jacobian()(0,0), 
+							 &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0));
+
+      for (int i = 0; i < ir.Size(); i++)
+	mir[i].Compute();
+    }
+  };
+  
+
+
+
+
+
+
+
+
+
 
 
 
@@ -804,6 +948,13 @@ void MeshAccess :: GetVertexElements (int vnr, Array<int> & elnrs) const
 void MeshAccess ::
 GetElementTransformation (int elnr, ElementTransformation & eltrans) const
 {
+  delete eltrans.specific;
+  if (GetDimension() == 2)
+    eltrans.specific = new Ng_ElementTransformation<2,2> ();
+  else
+    eltrans.specific = new Ng_ElementTransformation<3,3> ();
+
+
   int elind = Ng_GetElementIndex (elnr+1)-1;
   eltrans.SetElement (0, elnr, elind);
   eltrans.SetElementType (GetElType(elnr));
@@ -812,41 +963,67 @@ GetElementTransformation (int elnr, ElementTransformation & eltrans) const
     eltrans.SetHigherIntegrationOrder();
   else
     eltrans.UnSetHigherIntegrationOrder();
+
+  eltrans.specific->SetElement (0, elnr, elind);
+  eltrans.specific->SetElementType (GetElType(elnr));
 }
+
+
 
 void MeshAccess ::
 GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans) const
 {
+  delete eltrans.specific;
+  if (GetDimension() == 2)
+    eltrans.specific = new Ng_ElementTransformation<1,2> ();
+  else
+    eltrans.specific = new Ng_ElementTransformation<2,3> ();
+
+
   int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
   eltrans.SetElement (1, elnr, elind);
   eltrans.SetElementType (GetSElType(elnr));
+
+
+  eltrans.specific->SetElement (1, elnr, elind);
+  eltrans.specific->SetElementType (GetSElType(elnr));
 }    
 
 
-ElementTransformation MeshAccess :: GetTrafo (int elnr, bool boundary) const
+ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, LocalHeap & lh) const
 
 {
-  ElementTransformation eltrans;
+  ElementTransformation * eltrans;  // = new (lh) ElementTransformation();
 
   if (!boundary)
     {
+      if (GetDimension() == 2)
+	eltrans = new (lh) Ng_ElementTransformation<2,2> ();
+      else
+	eltrans = new (lh) Ng_ElementTransformation<3,3> ();
+	
       int elind = Ng_GetElementIndex (elnr+1)-1;
-      eltrans.SetElement (0, elnr, elind);
-      eltrans.SetElementType (GetElType(elnr));
+      eltrans->SetElement (0, elnr, elind);
+      eltrans->SetElementType (GetElType(elnr));
       
       if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
-	eltrans.SetHigherIntegrationOrder();
+	eltrans->SetHigherIntegrationOrder();
       else
-	eltrans.UnSetHigherIntegrationOrder();
+	eltrans->UnSetHigherIntegrationOrder();
     }
   else
     {
+      if (GetDimension() == 2) 
+	eltrans = new (lh) Ng_ElementTransformation<1,2> ();
+      else
+	eltrans = new (lh) Ng_ElementTransformation<2,3> ();
+      
       int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
-      eltrans.SetElement (1, elnr, elind);
-      eltrans.SetElementType (GetSElType(elnr));
+      eltrans->SetElement (1, elnr, elind);
+      eltrans->SetElementType (GetSElType(elnr));
     }
 
-  return eltrans;
+  return *eltrans;
 }
 
 
@@ -1193,9 +1370,6 @@ void MeshAccess :: AddPointCurvePoint(const Vec<3> & point) const
 
 #ifdef PARALLEL
  
-#include <parallelngs.hpp>
-#include <parallelinterface.hpp>
-
 namespace ngcomp
 {
   /*
