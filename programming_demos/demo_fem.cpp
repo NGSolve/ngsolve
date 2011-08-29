@@ -16,19 +16,20 @@
 
 // ng-soft header files
 #include <fem.hpp>
-#include <../fem/h1hofe.hpp>
-#include <../fem/h1lofe.hpp>
-
-
-using namespace std;
-using namespace ngstd;
-using namespace ngbla;
 using namespace ngfem;
 
 
 namespace netgen {
   ostream * testout = &cout;
 }
+
+SymbolTable<double> tab;
+SymbolTable<double> & GetConstantTable ()
+{
+  return tab;
+}
+
+
 
 
 int main ()
@@ -97,7 +98,7 @@ int main ()
 
 
   // element geometry:
-  ElementTransformation eltrans;
+  FE_ElementTransformation<2,2> eltrans;
 
   eltrans.SetElement (&trig, 0, 0);
 
