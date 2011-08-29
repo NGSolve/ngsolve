@@ -24,7 +24,7 @@ namespace netgen
     virtual const Refinement & GetRefinement () const;
 
     virtual void Save (string filename) const;
-    virtual void SaveToMeshFile (ostream & ost) const { ; }
+    virtual void SaveToMeshFile (ostream & /* ost */) const { ; }
   };
 
 
@@ -36,10 +36,10 @@ namespace netgen
   public:
     virtual ~GeometryRegister();
     virtual NetgenGeometry * Load (string filename) const = 0;
-    virtual NetgenGeometry * LoadFromMeshFile (istream & ist) const { return NULL; }
-    virtual class VisualScene * GetVisualScene (const NetgenGeometry * geom) const 
+    virtual NetgenGeometry * LoadFromMeshFile (istream & /* ist */) const { return NULL; }
+    virtual class VisualScene * GetVisualScene (const NetgenGeometry * /* geom */) const
     { return NULL; }
-    virtual void SetParameters (Tcl_Interp * interp) { ; }
+    virtual void SetParameters (Tcl_Interp * /* interp */) { ; }
   };
 
   extern DLL_HEADER Array<GeometryRegister*> geometryregister; 

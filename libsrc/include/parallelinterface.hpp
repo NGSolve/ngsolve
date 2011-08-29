@@ -1,3 +1,6 @@
+gibt's nicht mehr
+
+
 #ifndef FILE_PARALLELINTERFACE
 #define FILE_PARALLELINTERFACE
 

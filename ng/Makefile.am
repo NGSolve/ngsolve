@@ -3,7 +3,7 @@ include_HEADERS =
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL  -D$(TOGL_WINDOWINGSYSTEM)  $(TCL_INCLUDES) $(MPI_INCLUDES) $(FFMPEG_INCLUDES) $(JPEGLIB_INCLUDES)
 
 bin_PROGRAMS = netgen
-netgen_SOURCES = demoview.cpp ngappinit.cpp onetcl.cpp parallelfunc.cpp parallelinterface.cpp ngpkg.cpp demoview.hpp parallelfunc.hpp togl_1_7.h
+netgen_SOURCES = demoview.cpp ngappinit.cpp onetcl.cpp parallelfunc.cpp ngpkg.cpp demoview.hpp parallelfunc.hpp togl_1_7.h
 #  nginterface.cpp nginterface_v2.cpp
 
 netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \

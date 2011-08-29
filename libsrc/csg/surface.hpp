@@ -209,10 +209,10 @@ namespace netgen
 
   class DummySurface : public Surface
   {
-    virtual double CalcFunctionValue (const Point<3> & point) const 
+    virtual double CalcFunctionValue (const Point<3> & /* point */) const
     { return 0; }
 
-    virtual void CalcGradient (const Point<3> & point, Vec<3> & grad) const 
+    virtual void CalcGradient (const Point<3> & /* point */, Vec<3> & grad) const
     { grad = Vec<3> (0,0,0); }
   
     virtual Point<3> GetSurfacePoint () const
@@ -221,7 +221,7 @@ namespace netgen
     virtual double HesseNorm () const
     { return 0; }
 
-    virtual void Project (Point<3> & p) const
+    virtual void Project (Point<3> & /* p */) const
     { ; }
 
     virtual void Print (ostream & ost) const
