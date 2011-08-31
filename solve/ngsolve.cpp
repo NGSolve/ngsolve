@@ -93,12 +93,13 @@ int NGS_Help (ClientData clientData,
 AutoPtr<ngcomp::MeshAccess> ma;
 AutoPtr<ngsolve::PDE> pde;
 
+/*
 // some files in the fem-library access it
 SymbolTable<double> & GetConstantTable ()
 {
   return pde -> GetConstantTable();
 }
-
+*/
 
 
 #ifdef SOCKETS
@@ -705,12 +706,6 @@ int NGSolve_Init (Tcl_Interp * interp)
 		     (ClientData)NULL,
 		     (Tcl_CmdDeleteProc*) NULL);
 
-  /*
-  Tcl_CreateCommand (interp, "NGS_PlayAnim", NGS_PlayAnim,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-  */
-
   Tcl_CreateCommand (interp, "NGS_Set", NGS_Set,
 		     (ClientData)NULL,
 		     (Tcl_CmdDeleteProc*) NULL);
@@ -763,6 +758,102 @@ void NGSolve_Exit ()
   // Parallel_Exit();
 }
 */
+
+
+
+
+
+
+#ifdef PARALLEL
+
+				     
+				    
+using namespace ngsolve;
+
+// extern AutoPtr<PDE>  pde;
+// extern MeshAccess * ma;
+
+extern "C" void NGS_ParallelRun ( const string & message );
+
+
+
+void * SolveBVP2(void *)
+{
+  if (pde && pde->IsGood())
+    pde->SolveBVP();
+
+  Ng_SetRunning (0); 
+  return NULL;
+}
+
+
+void NGS_ParallelRun ( const string & message )
+{
+
+#ifdef _OPENMP
+  omp_set_num_threads (1);
+#endif
+
+
+  if ( message == "ngs_pdefile" )
+    {
+      MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
+      // ngs_comm = MPI_COMM_WORLD;
+
+
+      // delete ma;
+      // ma = new MeshAccess;
+      ma.Reset(new ngcomp::MeshAccess());
+      pde.Reset(new PDE ( *ma ));
+
+
+      /*
+      string pdefilename;
+      MyMPI_Recv (pdefilename, 0);
+      pde -> LoadPDE (pdefilename, 1, 0);
+      */
+
+      // transfer file contents, not filename
+      string pdefiledata;
+      MyMPI_Recv (pdefiledata, 0);
+
+      istringstream pdefile (pdefiledata);
+      pde -> LoadPDE (pdefile, 1, 0);
+    } 
+
+  else if ( message == "ngs_solvepde" )
+    {
+      RunParallel (SolveBVP2, NULL);
+    }
+
+  return;
+}
+
+
+void Parallel_Exit ()
+{
+  ;
+}
+
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #ifdef WIN32

@@ -25,11 +25,11 @@ namespace ngfem
 
 
   template <int S, int R, typename SCAL>
-  SpecificIntegrationPoint<S,R,SCAL> :: 
-  SpecificIntegrationPoint (const IntegrationPoint & aip,
+  MappedIntegrationPoint<S,R,SCAL> :: 
+  MappedIntegrationPoint (const IntegrationPoint & aip,
 			    const ElementTransformation & aeltrans,
 			    LocalHeap & lh)
-    : DimSpecificIntegrationPoint<R,SCAL> (aip, aeltrans)
+    : DimMappedIntegrationPoint<R,SCAL> (aip, aeltrans)
   {
     this->eltrans->CalcPointJacobian(this->IP(), this->point, dxdxi, lh);
 
@@ -81,7 +81,7 @@ namespace ngfem
 
 
   template <int S, int R, typename SCAL>
-  void SpecificIntegrationPoint<S,R,SCAL> :: 
+  void MappedIntegrationPoint<S,R,SCAL> :: 
   CalcHesse (Mat<2> & ddx1, Mat<2> & ddx2) const
   {
     double eps = 1e-6;
@@ -107,7 +107,7 @@ namespace ngfem
 
 
   template <int S, int R, typename SCAL>
-  void SpecificIntegrationPoint<S,R,SCAL> :: 
+  void MappedIntegrationPoint<S,R,SCAL> :: 
   CalcHesse (Mat<3> & ddx1, Mat<3> & ddx2, Mat<3> & ddx3) const
   {
     double eps = 1e-6;
@@ -132,19 +132,19 @@ namespace ngfem
   }
 
   template <int S, int R, typename SCAL>
-  void SpecificIntegrationPoint<S,R,SCAL> :: 
+  void MappedIntegrationPoint<S,R,SCAL> :: 
   CalcHesse (Mat<2> & ddx1, Mat<2> & ddx2, Mat<2> & ddx3) const
   {
     this -> CalcHesse(ddx1, ddx2); 
   }
 
 
-  template class SpecificIntegrationPoint<1,1>;
-  template class SpecificIntegrationPoint<2,2>;
-  template class SpecificIntegrationPoint<3,3>;
-  template class SpecificIntegrationPoint<1,2>;
-  template class SpecificIntegrationPoint<2,3>;
-  template class SpecificIntegrationPoint<1,3>;
+  template class MappedIntegrationPoint<1,1>;
+  template class MappedIntegrationPoint<2,2>;
+  template class MappedIntegrationPoint<3,3>;
+  template class MappedIntegrationPoint<1,2>;
+  template class MappedIntegrationPoint<2,3>;
+  template class MappedIntegrationPoint<1,3>;
   
 
 
@@ -157,11 +157,11 @@ namespace ngfem
 			 LocalHeap & lh)
     : BaseMappedIntegrationRule (ir, aeltrans), sips(ir.GetNIP(), lh)
   {
-    baseip = (char*)(void*)(BaseSpecificIntegrationPoint*)(&sips[0]);
+    baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&sips[0]);
     incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
 
     for (int i = 0; i < ir.GetNIP(); i++)
-      new (&sips[i]) SpecificIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, -1);
+      new (&sips[i]) MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, -1);
 
     eltrans.CalcMultiPointJacobian (ir, *this);
   }

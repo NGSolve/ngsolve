@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = include ngstd basiclinalg linalg fem comp multigrid parallel solve programming_demos pde_tutorial windows 
+SUBDIRS = include ngstd basiclinalg linalg parallel fem multigrid comp solve programming_demos pde_tutorial windows 
 
 
 

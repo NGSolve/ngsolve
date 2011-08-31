@@ -1,13 +1,6 @@
 #include <comp.hpp>
 #include <solve.hpp>
 
-#include <bddc.hpp>
-
-
-#include <parallelngs.hpp>
-
-
-
 namespace ngcomp
 {
 

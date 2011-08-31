@@ -29,12 +29,14 @@
 #include "pml.hpp"
 
 
-extern ngstd::SymbolTable<double> & GetConstantTable ();
+// extern ngstd::SymbolTable<double> & GetConstantTable ();
 
 
 
 namespace ngfem
 {
+  SymbolTable<double> * constant_table_for_FEM = NULL;
+  SymbolTable<double> & GetConstantTable () { return *constant_table_for_FEM; }
 
   Complex alpha(0,1);
   double pml_r = 1;
@@ -427,6 +429,11 @@ namespace ngfem
 
   void SetPMLParameters()
   {
+    if (!constant_table_for_FEM)
+      {
+	throw Exception ("please set global variable constant_table_for_FEM");
+      }
+
     if (GetConstantTable().Used ("pml_r"))
       pml_r = GetConstantTable()["pml_r"];
 
@@ -607,20 +614,6 @@ namespace ngfem
     ///
     virtual string Name () const { return "PML_Massedge"; }
   };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
