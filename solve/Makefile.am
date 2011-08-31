@@ -17,7 +17,7 @@ $(top_builddir)/multigrid/libngmg.la		\
 $(LAPACK_LIBS) $(TCL_LIB_SPEC)
 
 
-include_HEADERS = solve.hpp 
+include_HEADERS = solve.hpp pde.hpp numproc.hpp
 
 libngsolve_la_LDFLAGS = -rdynamic
 # libngsolve_la_LDFLAGS = -avoid-version -rdynamic

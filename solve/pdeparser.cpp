@@ -1016,11 +1016,8 @@ namespace ngsolve
 		      (name, new DomainVariableCoefficientFunction<3>(coeffs));
 		}
 	      
-	      cout << " coeffs.size = " << coeffs.Size() << ", dcoeffs.size = " << dcoeffs.Size() << ", onlyconst = " << only_constant << endl;
-	      cout << "num regions = " << pde->GetCoefficientFunction (name) -> NumRegions() << endl;
 	      for (int hi = 0; hi < coeffs.Size(); hi++)
 		delete coeffs[hi];
-	      
 	    }
 
 	  else
