@@ -362,7 +362,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
     static Timer timer ("FESpace::FinalizeUpdate");
-
+    
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
 
     RegionTimer reg (timer);
@@ -402,9 +402,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	*testout << "freedofs = " << endl << free_dofs << endl;
       }
     
-
     UpdateParallelDofs();
-
 
     *testout << "coloring ... " << flush;
 
@@ -431,7 +429,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	    unsigned check = 0;
 	    for (int j = 0; j < dnums.Size(); j++)
-	      check |= mask[dnums[j]];
+	      if (dnums[j] != -1)
+		check |= mask[dnums[j]];
 
 	    if (check != UINT_MAX) // 0xFFFFFFFF)
 	      {
@@ -448,7 +447,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		if (color > maxcolor) maxcolor = color;
 		
 		for  (int j = 0; j < dnums.Size(); j++)
-		  mask[dnums[j]] |= checkbit;
+		  if (dnums[j] != -1)
+		    mask[dnums[j]] |= checkbit;
 	      }
 	  }
 	
