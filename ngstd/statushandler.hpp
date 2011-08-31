@@ -7,7 +7,7 @@ namespace ngstd
   /** Access to statusbar. (and more)
    */
 
-  class DLL_HEADER BaseStatusHandler
+  class NGS_DLL_HEADER BaseStatusHandler
   {
   public:
     virtual ~BaseStatusHandler () { ; }
