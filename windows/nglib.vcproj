@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="nglib"
 	ProjectGUID="{2E260C8C-595C-442A-A962-51AC06EF8143}"
 	RootNamespace="nglib"
@@ -294,7 +294,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\ext_libs\pthread-w64\include&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\nglib&quot;;&quot;$(SolutionDir)..\&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;_WIN32_WINNT=0x0502"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NOTCL"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				EnableEnhancedInstructionSet="1"
@@ -648,6 +648,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\geom2d\geometry2d.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\gprim\geomfuncs.cpp"
 				>
 			</File>
@@ -757,6 +761,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\general\ngexception.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\interface\nginterface.cpp"
 				>
 			</File>
 			<File
@@ -900,7 +908,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\geom2d\spline.cpp"
+				RelativePath="..\libsrc\gprim\spline.cpp"
 				>
 			</File>
 			<File
@@ -908,7 +916,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\geom2d\splinegeometry.cpp"
+				RelativePath="..\libsrc\gprim\splinegeometry.cpp"
 				>
 			</File>
 			<File

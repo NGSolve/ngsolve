@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "netgen", "netgen-4.9.14.vcproj", "{87468946-A594-4101-81A4-A131F35261EF}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "geom2d", "geom2d.vcproj", "{D9FE218C-E915-4F94-A667-763EA182ABD5}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug(OCC)|Win32 = Debug(OCC)|Win32
@@ -33,20 +31,6 @@ Global
 		{87468946-A594-4101-81A4-A131F35261EF}.Release|Win32.Build.0 = Release|Win32
 		{87468946-A594-4101-81A4-A131F35261EF}.Release|x64.ActiveCfg = Release|x64
 		{87468946-A594-4101-81A4-A131F35261EF}.Release|x64.Build.0 = Release|x64
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Debug(OCC)|Win32.ActiveCfg = Debug|x64
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Debug(OCC)|x64.ActiveCfg = Debug|x64
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Debug(OCC)|x64.Build.0 = Debug|x64
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Debug|Win32.ActiveCfg = Debug|Win32
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Debug|Win32.Build.0 = Debug|Win32
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Debug|x64.ActiveCfg = Debug|x64
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Debug|x64.Build.0 = Debug|x64
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Release(OCC)|Win32.ActiveCfg = Release|x64
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Release(OCC)|x64.ActiveCfg = Release|x64
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Release(OCC)|x64.Build.0 = Release|x64
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Release|Win32.ActiveCfg = Release|Win32
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Release|Win32.Build.0 = Release|Win32
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Release|x64.ActiveCfg = Release|x64
-		{D9FE218C-E915-4F94-A667-763EA182ABD5}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

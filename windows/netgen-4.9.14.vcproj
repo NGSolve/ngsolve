@@ -944,11 +944,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\gprim.hpp"
+				RelativePath="..\libsrc\gprim\gprim.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\gprim\gprim.hpp"
+				RelativePath="..\libsrc\include\gprim.hpp"
 				>
 			</File>
 			<File
@@ -1004,11 +1004,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\linalg.hpp"
+				RelativePath="..\libsrc\include\linalg.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\linalg.hpp"
+				RelativePath="..\libsrc\linalg\linalg.hpp"
 				>
 			</File>
 			<File
@@ -1032,11 +1032,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\meshing\meshing.hpp"
+				RelativePath="..\libsrc\include\meshing.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\meshing.hpp"
+				RelativePath="..\libsrc\meshing\meshing.hpp"
 				>
 			</File>
 			<File
@@ -1076,11 +1076,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\myadt.hpp"
+				RelativePath="..\libsrc\general\myadt.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\general\myadt.hpp"
+				RelativePath="..\libsrc\include\myadt.hpp"
 				>
 			</File>
 			<File
@@ -1116,11 +1116,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\occ\occgeom.hpp"
+				RelativePath="..\libsrc\include\occgeom.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\occgeom.hpp"
+				RelativePath="..\libsrc\occ\occgeom.hpp"
 				>
 			</File>
 			<File
@@ -1128,11 +1128,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\opti.hpp"
+				RelativePath="..\libsrc\linalg\opti.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\opti.hpp"
+				RelativePath="..\libsrc\include\opti.hpp"
 				>
 			</File>
 			<File
@@ -1220,11 +1220,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\geom2d\spline.hpp"
+				RelativePath="..\libsrc\gprim\spline.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\gprim\spline.hpp"
+				RelativePath="..\libsrc\geom2d\spline.hpp"
 				>
 			</File>
 			<File
@@ -1236,11 +1236,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\geom2d\splinegeometry.hpp"
+				RelativePath="..\libsrc\gprim\splinegeometry.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\gprim\splinegeometry.hpp"
+				RelativePath="..\libsrc\geom2d\splinegeometry.hpp"
 				>
 			</File>
 			<File
@@ -1252,11 +1252,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\stlgeom.hpp"
+				RelativePath="..\libsrc\stlgeom\stlgeom.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\stlgeom\stlgeom.hpp"
+				RelativePath="..\libsrc\include\stlgeom.hpp"
 				>
 			</File>
 			<File
@@ -1320,11 +1320,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\visualization\visual.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\include\visual.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\visualization\visual.hpp"
+				RelativePath="..\libsrc\geom2d\vsgeom2d.hpp"
 				>
 			</File>
 			<File
@@ -1490,11 +1494,27 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\geom2d\genmesh2d.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\gprim\geom2d.cpp"
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\geom2d\geom2dmesh.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\geom2d\geom2dpkg.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\gprim\geom3d.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\geom2d\geometry2d.cpp"
 				>
 			</File>
 			<File
@@ -1626,11 +1646,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\ng\nginterface.cpp"
+				RelativePath="..\libsrc\interface\nginterface.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\ng\nginterface_v2.cpp"
+				RelativePath="..\libsrc\interface\nginterface_v2.cpp"
 				>
 			</File>
 			<File
@@ -1871,6 +1891,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\visualization\vsfieldlines.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\geom2d\vsgeom2d.cpp"
 				>
 			</File>
 			<File
