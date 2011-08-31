@@ -23,13 +23,6 @@ namespace netgen {
   ostream * testout = &cout;
 }
 
-SymbolTable<double> tab;
-SymbolTable<double> & GetConstantTable ()
-{
-  return tab;
-}
-
-
 
 
 int main ()

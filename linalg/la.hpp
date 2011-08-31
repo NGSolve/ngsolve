@@ -43,6 +43,7 @@ namespace ngla
 #include "cg.hpp"
 #include "chebyshev.hpp"
 #include "eigen.hpp"
+#include "arnoldi.hpp"
 
 
 

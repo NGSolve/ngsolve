@@ -10,14 +10,14 @@
 
 #include <comp.hpp>
 
-#include <solve.hpp>
-#include <fem.hpp>
+// #include <solve.hpp>
+// #include <fem.hpp>
 // extern PDE * pde;
-extern ngstd::AutoPtr<ngsolve::PDE> pde;
+// extern ngstd::AutoPtr<ngsolve::PDE> pde;
 
 
 namespace ngcomp
-{
+{ 
   using namespace ngcomp;
 
 

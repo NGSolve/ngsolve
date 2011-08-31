@@ -20,9 +20,12 @@ demo_fem_LDADD = $(top_builddir)/fem/libngfem.la \
 
 
 demo_comp_SOURCES = demo_comp.cpp
-demo_comp_LDADD = $(top_builddir)/comp/libngcomp.la \
-	$(top_builddir)/solve/libngsolve.la $(LAPACK_LIBS) \
-	-L/opt/netgen/lib -lnglib  $(TCL_LIB_SPEC)
+demo_comp_LDADD =  $(top_builddir)/solve/libngsolve.la \
+	 -L/opt/netgen/lib -lnglib 
+#  $(TCL_LIB_SPEC)
 #
+# $(top_builddir)/comp/libngcomp.la \
+#	$(top_builddir)/comp/libngcomp.la $(LAPACK_LIBS) 
+
 demo_comp_CPPFLAGS = -DNETGEN_ELTRANS -I/opt/netgen/include -I/home/joachim/netgen-mesher/netgen/libsrc/include -I/home/joachim/netgen-mesher/netgen/libsrc/interface  -I$(top_srcdir)/include
 

@@ -7,6 +7,10 @@ namespace ngparallel
 {
   using namespace ngcomp;
 
+  MPI_Comm ngs_comm;
+
+
+
   /*
   ParallelDofs :: ParallelDofs (int andof, Table<int> * exdofs, const FESpace * afes)
     : ndof(andof), fes(afes), exchangedofs(exdofs), ismasterdof(ndof)

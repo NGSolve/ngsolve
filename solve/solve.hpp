@@ -83,15 +83,4 @@ inline void __cdecl operator delete[](void * _ptr) {
 
 
 
-namespace ngsolve
-{
-#ifdef WIN32
-  const char dirslash = '\\';
-#else
-  const char dirslash = '/';
-#endif
-}
-
-
-
 #endif

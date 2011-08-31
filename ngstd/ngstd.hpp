@@ -89,4 +89,14 @@ namespace ngstd
 #include "profiler.hpp"
 #include "statushandler.hpp"
 
+namespace ngstd
+{
+#ifdef WIN32
+  const char dirslash = '\\';
+#else
+  const char dirslash = '/';
+#endif
+}
+
+
 #endif
