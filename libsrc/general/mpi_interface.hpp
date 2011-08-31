@@ -15,7 +15,7 @@
 namespace netgen
 {
 
-  extern int id, ntasks;
+  extern DLL_HEADER int id, ntasks;
   
 
 #ifdef PARALLEL
