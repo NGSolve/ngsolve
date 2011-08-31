@@ -25,7 +25,7 @@
 
 
 #ifdef WIN32
-   #ifdef NGINTERFACE_EXPORTS
+   #if NGINTERFACE_EXPORTS || NGLIB_EXPORTS || nglib_EXPORTS
       #define DLL_HEADER   __declspec(dllexport)
    #else
       #define DLL_HEADER   __declspec(dllimport)
