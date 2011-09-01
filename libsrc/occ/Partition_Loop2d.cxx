@@ -37,6 +37,7 @@
 #include <TopTools_DataMapIteratorOfDataMapOfShapeListOfShape.hxx>
 #include <TopTools_DataMapIteratorOfDataMapOfShapeShape.hxx>
 #include <TopTools_DataMapOfShapeInteger.hxx>
+// #include <TopTools_DataMapOfShapeReal.hxx>    V6.5
 #include <TopTools_DataMapOfShapeShape.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_ListIteratorOfListOfShape.hxx>
@@ -520,6 +521,7 @@ static void prepareDegen (const TopoDS_Edge&                        DegEdge,
 
   // avoid intersecting twice the same edge
   BRepOffset_DataMapOfShapeReal EUMap ( EdgesList.Extent() );
+  // TopTools_DataMapOfShapeReal EUMap ( EdgesList.Extent() );   // V6.5
 
   Standard_Real U, f, l;
   BRep_Tool::Range (DegEdge, f, l);

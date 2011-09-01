@@ -10,6 +10,8 @@
 namespace netgen
 {
 
+
+
   SplineGeometry2d :: ~SplineGeometry2d()
   {
     for ( int i = 0; i < bcnames.Size(); i++ )
@@ -659,6 +661,26 @@ namespace netgen
 			infile >> pts[j](k);
 		  
 		    spline = new DiscretePointsSeg<D> (pts);
+		  }
+		else if (strcmp (buf, "bsplinepoints") == 0)
+		  {
+		    int npts,order;
+		    infile >> npts;    
+		    infile >> order;
+		    Array< Point<D> > pts(npts);
+		    for (int j = 0; j < npts; j++)
+		      for(int k=0; k<D; k++)
+			infile >> pts[j](k);	    		    
+		    if(order<2)		      
+			cerr<<"Minimum order of 2 is required!!"<<endl;
+		    else if(order==2)
+		      spline = new BSplineSeg<D,2> (pts);
+		      else if(order==3)
+			spline = new BSplineSeg<D,3> (pts);
+		      else if(order==4)
+			spline = new BSplineSeg<D,4> (pts);
+		      else if(order>4)		      
+			cerr<<"Maximum allowed order is 4!!"<<endl;
 		  }
 	      
 		//      infile >> spline->reffak;

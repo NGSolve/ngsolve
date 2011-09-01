@@ -34,7 +34,7 @@ namespace netgen
 
     ///
     GeomPoint (const Point<D> & ap, double aref = 1, bool ahpref=false)
-      : Point<D>(ap), refatpoint(aref), hpref(ahpref) { ; }
+      : Point<D>(ap), refatpoint(aref), hmax(1e99), hpref(ahpref) { ; }
   };
 
 
@@ -248,6 +248,8 @@ namespace netgen
 
     virtual double MaxCurvature(void) const {return 1;}
   };
+
+
 
 
 
@@ -526,6 +528,117 @@ namespace netgen
     
     return pts[segnr] + rest*Vec<D>(pts[segnr+1]-pts[segnr]);
   }
+
+
+
+
+
+
+
+  
+
+  // *************************************
+  // Template for B-Splines of order ORDER
+  // *************************************
+  
+  template<int D, int ORDER>
+  class BSplineSeg : public SplineSeg<D>
+  {
+    Array<Point<D> > pts;
+    GeomPoint<D> p1n, p2n;    
+    Array<int> ti; 
+
+  public:
+    ///
+    BSplineSeg (const Array<Point<D> > & apts);
+    ///
+    virtual ~BSplineSeg();
+    ///
+    virtual Point<D> GetPoint (double t) const;
+    ///
+    virtual const GeomPoint<D> & StartPI () const { return p1n; };
+    ///
+    virtual const GeomPoint<D> & EndPI () const { return p2n; }
+    ///
+    virtual void GetCoeff (Vector & coeffs) const {;}
+
+    virtual double MaxCurvature(void) const {return 1;}
+  };
+
+  // Constructor
+  template<int D,int ORDER>
+  BSplineSeg<D,ORDER> :: BSplineSeg (const Array<Point<D> > & apts)
+    : pts (apts)
+  { 
+    /*
+    for(int i=0; i<D; i++)
+      {
+	p1n(i) = apts[0](i);
+	p2n(i) = apts.Last()(i);
+      }
+    */
+    p1n = apts[0];
+    p2n = apts.Last();
+
+    /*
+    p1n.refatpoint = 1;
+    p2n.refatpoint = 1;
+    p1n.hmax = 1e99;
+    p2n.hmax = 1e99;
+    */
+
+    int m=pts.Size()+ORDER;
+    ti.SetSize(m);
+    // b.SetSize(m-1);
+    ti=0;    
+    //    b=0.0;
+    for(int i=ORDER;i<m-ORDER+1;i++)
+      ti[i]=i-ORDER+1;   
+    for(int i=m-ORDER+1;i<m;i++)
+      ti[i]=m-2*ORDER+1;
+  }
+  // Destructor
+  template<int D,int ORDER>
+  BSplineSeg<D, ORDER> :: ~BSplineSeg ()
+  { ; }
+
+
+  // GetPoint Method...(evaluation of BSpline Curve)
+  template<int D,int ORDER>
+  Point<D> BSplineSeg<D,ORDER> :: GetPoint (double t_in) const
+  {    
+    int m=pts.Size()+ORDER;           
+
+    double t = t_in * (m-2*ORDER+1);    
+
+    double b[ORDER];
+    
+    int interval_nr = int(t)+ORDER-1;    
+    if (interval_nr < ORDER-1) interval_nr = ORDER-1;
+    if (interval_nr > m-ORDER-1) interval_nr = m-ORDER-1;
+
+    b[ORDER-1] = 1.0;
+    
+    for(int degree=1;degree<ORDER;degree++)
+      for (int k = 0; k <= degree; k++)
+	{
+	  int j = interval_nr-degree+k;
+	  double bnew = 0;
+
+	  if (k != 0) 
+	    bnew += (t-ti[j]) / ( ti[j+degree]-ti[j] ) * b[k-degree+ORDER-1];
+	  if (k != degree)
+	    bnew += (ti[j+degree+1]-t) / ( ti[j+degree+1]-ti[j+1] ) * b[k-degree+ORDER];
+	  b[k-degree+ORDER-1] = bnew;
+	}
+
+    Point<D> p = 0.0;
+    for(int i=0; i < ORDER; i++) 
+      p += b[i] * Vec<D> (pts[i+interval_nr-ORDER+1]);
+    return p;
+  }
+
+
 
 }
 
