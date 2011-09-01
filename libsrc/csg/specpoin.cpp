@@ -16,7 +16,6 @@
 */
 
 
-// #undef DEVELOP
 // #define DEVELOP
 
 
@@ -279,7 +278,7 @@ namespace netgen
 					  dynamic_cast<const Plane*> (geometry->GetSurface(locsurf[k2])),
 					  dynamic_cast<const Plane*> (geometry->GetSurface(locsurf[k3])),
 					  pts);
-		     
+
 		      for (int j = 0; j < pts.Size(); j++)
 			if (Dist (pts[j], box.Center()) < box.Diam()/2)
 			  {
@@ -645,7 +644,7 @@ namespace netgen
 	  {
 	    box.GetSubBox (i, sbox);
 	    sbox.Increase (1e-4 * sbox.Diam());
-
+	    sbox.CalcDiamCenter();
 	    Solid * redsol = sol -> GetReducedSolid (sbox);
 
 	    if (redsol)
