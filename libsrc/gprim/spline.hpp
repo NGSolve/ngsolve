@@ -539,6 +539,7 @@ namespace netgen
 
   // *************************************
   // Template for B-Splines of order ORDER
+  // thx to Gerhard Kitzler
   // *************************************
   
   template<int D, int ORDER>
