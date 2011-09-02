@@ -2275,8 +2275,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
                                            const BaseVector & x,
                                            BaseVector & y) const
   {
-    static int timer = NgProfiler::CreateTimer ("Apply Matrix");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer ("Apply Matrix");
+    RegionTimer reg (timer);
 
     static int lh_size = 20000000;
 
@@ -2893,7 +2893,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
             BilinearForm::GetFESpace().TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
 	
             elvecy *= val;
-	    // #pragma omp critical(addapply)
+#pragma omp critical(addapply)
             {
               y.AddIndirect (dnums, elvecy);
             }
@@ -3100,7 +3100,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
             BilinearForm::GetFESpace().TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
 	
             elvecy *= val;
-	    // #pragma omp critical(addapply)
+#pragma omp critical(addapply)
             {
               y.AddIndirect (dnums, elvecy);
             }
@@ -3308,7 +3308,10 @@ cout << "catch in AssembleBilinearform 2" << endl;
             BilinearForm::GetFESpace().TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
 	
             elvecy *= val;
-            y.AddIndirect (dnums, elvecy);
+#pragma omp critical(addapply)
+	    {
+	      y.AddIndirect (dnums, elvecy);
+	    }
           }
       }
     else if (type == 2)
