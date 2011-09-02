@@ -131,12 +131,12 @@ namespace ngcomp
 
     virtual BaseSpecificIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
     {
-      return *new SpecificIntegrationPoint<DIMS,DIMR> (ip, *this, lh);
+      return *new (lh) SpecificIntegrationPoint<DIMS,DIMR> (ip, *this, lh);
     }
 
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const
     {
-      return *new MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
+      return *new (lh) MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
     }    
 
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
