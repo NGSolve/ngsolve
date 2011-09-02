@@ -14,6 +14,8 @@
 
 
 #include "nginterface.h"
+#include "../visualization/soldata.hpp"
+
 
 #ifdef _MSC_VER
 // Philippose - 30/01/2009
