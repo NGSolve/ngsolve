@@ -27,12 +27,10 @@ namespace ngla
     int height;  // matrix size in scalars
     int nze, entrysize;
     bool print;
-#ifdef USE_PARDISO400    
+
     //CL: is this also working on 32-bit architectures?
     long int pt[128];
-#else
-    int pt[128];
-#endif
+
     int hparams[64];
     int * rowstart, * indices;
     typename mat_traits<TM>::TSCAL * matrix;
@@ -48,8 +46,8 @@ namespace ngla
     BitArray used;
   
   public:
-    typedef typename mat_traits<TM>::TV_COL TV;
-    typedef typename mat_traits<TM>::TV_ROW TVX;
+    typedef TV_COL TV;
+    typedef TV_ROW TVX;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
     ///
