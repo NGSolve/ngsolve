@@ -115,13 +115,13 @@ namespace netgen
 
 
   public:
-    virtual ~SplineGeometry2d();
+    DLL_HEADER virtual ~SplineGeometry2d();
 
-    void Load (const char * filename);
+    DLL_HEADER void Load (const char * filename);
 
-    void LoadData( ifstream & infile );
-    void LoadDataNew ( ifstream & infile );
-    void LoadDataV2 ( ifstream & infile );
+    DLL_HEADER void LoadData( ifstream & infile );
+    DLL_HEADER void LoadDataNew ( ifstream & infile );
+    DLL_HEADER void LoadDataV2 ( ifstream & infile );
 
     void TestComment ( ifstream & infile ) ;
 
@@ -138,7 +138,7 @@ namespace netgen
     }
 
     
-    virtual int GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
+    DLL_HEADER virtual int GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
 			      int perfstepsstart, int perfstepsend);
     
     void PartitionBoundary (double h, Mesh & mesh2d);
@@ -171,7 +171,7 @@ namespace netgen
     string * BCNamePtr ( const int bcnr );
 
     
-    virtual Refinement & GetRefinement () const; 
+    DLL_HEADER virtual Refinement & GetRefinement () const; 
   };
 }
 
