@@ -726,7 +726,7 @@ namespace ngmg
     while (jac.Size() < level)
       jac.Append(NULL);
 
-#ifndef PARALLEL
+#ifndef PARALLELxxx
     if (!constraint)
       {
 	delete jac[level-1];
