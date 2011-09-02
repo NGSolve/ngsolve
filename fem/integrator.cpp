@@ -248,7 +248,13 @@ namespace ngfem
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
-    //cout << "call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
+    static int cnt = 0;
+    if (cnt < 10)
+      {
+	cout << "call baseclass ApplyElementMatrix<Complex>, type = " << typeid(*this).name() << endl;
+	cnt++;
+      }
+
     FlatMatrix<Complex> mat(elx.Size(), lh);
     CalcElementMatrix (fel, eltrans, mat, lh);
     ely = mat * elx;

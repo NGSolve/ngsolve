@@ -285,7 +285,7 @@ public:
   void T_CalcElementMatrix (const FiniteElement & bfel,
 			    const ElementTransformation & eltrans, 
 			    FlatMatrix<TSCAL> & elmat,
-			    LocalHeap & locheap) const
+			    LocalHeap & lh) const
   {
 
     try
@@ -295,22 +295,22 @@ public:
         
 	elmat = 0;
 
-	FlatMatrixFixHeight<DIM_DMAT, TSCAL> bmat (ndof * DIM, locheap);
-	FlatMatrixFixHeight<DIM_DMAT, TSCAL> dbmat (ndof * DIM, locheap);
+	FlatMatrixFixHeight<DIM_DMAT, TSCAL> bmat (ndof * DIM, lh);
+	FlatMatrixFixHeight<DIM_DMAT, TSCAL> dbmat (ndof * DIM, lh);
 	Mat<DIM_DMAT,DIM_DMAT,TSCAL> dmat;
 
 	const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 
 	for (int i = 0 ; i < ir.GetNIP(); i++)
 	  {
-	    HeapReset hr(locheap);
+	    HeapReset hr(lh);
 
 	    MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-	      sip(ir[i], eltrans, locheap);
+	      sip(ir[i], eltrans, lh);
 
-	    dmatop.GenerateMatrix (fel, sip, dmat, locheap);
+	    dmatop.GenerateMatrix (fel, sip, dmat, lh);
 
-	    DIFFOP::GenerateMatrix (fel, sip, bmat, locheap);
+	    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
 	    double fac = sip.GetMeasure() * sip.IP().Weight();
 	    
 	    dbmat = fac * (dmat * bmat);
@@ -463,8 +463,8 @@ public:
 			    FlatMatrix<TSCAL> & elmat,
 			    LocalHeap & lh) const
   {
-    static int timer = NgProfiler::CreateTimer (string ("Elementmatrix, ") + Name());
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer (string ("Elementmatrix, ") + Name());
+    RegionTimer reg (timer);
 
     try
       {
@@ -533,29 +533,29 @@ public:
   CalcElementMatrixDiag (const FiniteElement & bfel,
 			     const ElementTransformation & eltrans, 
 			     FlatVector<double> & diag,
-			     LocalHeap & locheap) const
+			     LocalHeap & lh) const
   {
     try
       {
 	const FEL & fel = dynamic_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 
-	diag.AssignMemory (ndof*DIM, locheap);
+	diag.AssignMemory (ndof*DIM, lh);
 	diag = 0.0;
 
-	FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, locheap);
+	FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, lh);
 	Mat<DIM_DMAT,DIM_DMAT> dmat;
 
 	const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 
-	void * heapp = locheap.GetPointer();
+	void * heapp = lh.GetPointer();
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
 	    MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-	      sip(ir[i], eltrans, locheap);
+	      sip(ir[i], eltrans, lh);
 
-	    DIFFOP::GenerateMatrix (fel, sip, bmat, locheap);
-	    dmatop.GenerateMatrix (fel, sip, dmat, locheap);
+	    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
+	    dmatop.GenerateMatrix (fel, sip, dmat, lh);
 
 	    double fac =  
 	      fabs (sip.GetJacobiDet()) * sip.IP().Weight();
@@ -566,7 +566,7 @@ public:
 		diag(j) += fac * InnerProduct (bmat.Col(j), hv);
 	      }
 
-	    locheap.CleanUp (heapp);
+	    lh.CleanUp (heapp);
 	  } 
       }
 
@@ -597,8 +597,9 @@ public:
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
-    static int maintimer = NgProfiler::CreateTimer ("BDBIntegrator::ApplyElementMatrix");
-    NgProfiler::RegionTimer reg(maintimer);
+    static Timer timer (string ("BDBIntegrator::ApplyElementMatrix, ") + Name());
+    RegionTimer reg (timer);
+
 
     const FEL & fel = static_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
@@ -613,21 +614,10 @@ public:
     const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 
     MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
-    /*
-    FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
-    FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
-    
-    eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
-    */
 
     for (int i = 0; i < ir.GetNIP(); i++)
       {
 	HeapReset hr (lh);
-
-	// const IntegrationPoint & ip = ir[i];
-	
-	// MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
-	// MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, pts[i], dxdxi[i]);
 	const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
 
 	DIFFOP::Apply (fel, sip, elx, hv1, lh);
@@ -650,8 +640,11 @@ public:
 		      const FlatVector<Complex> & elx, 
 		      FlatVector<Complex> & ely,
 		      void * precomputed,
-		      LocalHeap & locheap) const
+		      LocalHeap & lh) const
   {
+    static Timer timer (string ("BDBIntegrator::ApplyElementMatrix<Complex>, ") + Name());
+    RegionTimer reg (timer);
+
     const FEL & fel = static_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
     
@@ -660,17 +653,19 @@ public:
     Vec<DIM_DMAT,Complex> hv1;
     Vec<DIM_DMAT,Complex> hv2;
     
-    FlatVector<Complex> hely (ndof*DIM, locheap);
+    FlatVector<Complex> hely (ndof*DIM, lh);
     const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
-
+    MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
 
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, locheap);
+	HeapReset hr (lh);
+	const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
+	// 	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
 
-	DIFFOP::Apply (fel, sip, elx, hv1, locheap);
-	dmatop.Apply (fel, sip, hv1, hv2, locheap);
-	DIFFOP::ApplyTrans (fel, sip, hv2, hely, locheap);
+	DIFFOP::Apply (fel, sip, elx, hv1, lh);
+	dmatop.Apply (fel, sip, hv1, hv2, lh);
+	DIFFOP::ApplyTrans (fel, sip, hv2, hely, lh);
 
 	double fac = fabs (sip.GetJacobiDet()) * sip.IP().Weight();
 	ely += fac * hely;
@@ -990,11 +985,11 @@ public:
 				   const ElementTransformation & eltrans, 
 				   FlatVector<double> & elveclin,
 				   FlatMatrix<double> & elmat,
-				   LocalHeap & locheap) const 
+				   LocalHeap & lh) const 
   {
-    static int maintimer = NgProfiler::CreateTimer ("NonlinearBDB, Assemblelinearized");
-    static int bdbtimer = NgProfiler::CreateTimer ("NonlinearBDB, bdb product");
-    NgProfiler::RegionTimer reg(maintimer);
+    static Timer maintimer ("NonlinearBDB, Assemblelinearized");
+    static Timer bdbtimer ("NonlinearBDB, bdb product");
+    RegionTimer reg(maintimer);
 
     try
       {
@@ -1003,25 +998,25 @@ public:
 
 	elmat = 0;
 	
-	FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, locheap);
-	FlatMatrixFixHeight<DIM_DMAT, double> dbmat (ndof * DIM, locheap);
+	FlatMatrixFixHeight<DIM_DMAT, double> bmat (ndof * DIM, lh);
+	FlatMatrixFixHeight<DIM_DMAT, double> dbmat (ndof * DIM, lh);
 	Vec<DIM_DMAT,double> hvlin;
 
 	Mat<DIM_DMAT,DIM_DMAT> dmat;
 
 	const IntegrationRule & ir = GetIntegrationRule (fel);
 
-	void * heapp = locheap.GetPointer();
+	void * heapp = lh.GetPointer();
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
 	    MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-	      sip(ir[i], eltrans, locheap);
+	      sip(ir[i], eltrans, lh);
 
-	    DIFFOP::Apply (fel, sip, elveclin, hvlin, locheap);
+	    DIFFOP::Apply (fel, sip, elveclin, hvlin, lh);
 
-	    DIFFOP::GenerateMatrix (fel, sip, bmat, locheap);
+	    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
 
-	    this->dmatop . GenerateLinearizedMatrix (fel, sip, hvlin, dmat, locheap);
+	    this->dmatop . GenerateLinearizedMatrix (fel, sip, hvlin, dmat, lh);
 
 	    double fac =  
 	      fabs (sip.GetJacobiDet()) * sip.IP().Weight();
@@ -1032,7 +1027,7 @@ public:
 	      elmat += Trans (bmat) * dbmat; 
 	    }
 
-	    locheap.CleanUp (heapp);
+	    lh.CleanUp (heapp);
 	  } 
       }
 
@@ -1060,7 +1055,7 @@ public:
 				   const ElementTransformation & eltrans, 
 				   FlatVector<Complex> & elveclin,
 				   FlatMatrix<Complex> & elmat,
-				   LocalHeap & locheap) const 
+				   LocalHeap & lh) const 
   {
     try
       {
@@ -1069,24 +1064,24 @@ public:
 
 	elmat = 0;
 	
-	FlatMatrixFixHeight<DIM_DMAT, Complex> bmat (ndof * DIM, locheap);
-	FlatMatrixFixHeight<DIM_DMAT, Complex> dbmat (ndof * DIM, locheap);
+	FlatMatrixFixHeight<DIM_DMAT, Complex> bmat (ndof * DIM, lh);
+	FlatMatrixFixHeight<DIM_DMAT, Complex> dbmat (ndof * DIM, lh);
 	Vec<DIM_DMAT,Complex> hvlin;
 
 	Mat<DIM_DMAT,DIM_DMAT, Complex> dmat;
 
 	const IntegrationRule & ir = GetIntegrationRule (fel);
 
-	void * heapp = locheap.GetPointer();
+	void * heapp = lh.GetPointer();
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
 	    MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-	      sip(ir[i], eltrans, locheap);
+	      sip(ir[i], eltrans, lh);
 
-	    DIFFOP::Apply (fel, sip, elveclin, hvlin, locheap);
+	    DIFFOP::Apply (fel, sip, elveclin, hvlin, lh);
 
-	    DIFFOP::GenerateMatrix (fel, sip, bmat, locheap);
-	    this->dmatop . GenerateLinearizedMatrix (fel, sip, hvlin, dmat, locheap);
+	    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
+	    this->dmatop . GenerateLinearizedMatrix (fel, sip, hvlin, dmat, lh);
 
 	    double fac =  
 	      fabs (sip.GetJacobiDet()) * sip.IP().Weight();
@@ -1094,7 +1089,7 @@ public:
 	    dbmat = dmat * bmat;
 	    elmat += fac * (Trans (bmat) * dbmat); 
 	    
-	    locheap.CleanUp (heapp);
+	    lh.CleanUp (heapp);
 	  } 
       }
 
@@ -1128,7 +1123,7 @@ public:
 				const FlatVector<double> & ellin, 
 				const FlatVector<double> & elx, 
 				FlatVector<double> & ely,
-				LocalHeap & locheap) const
+				LocalHeap & lh) const
   {
     const FEL & fel = dynamic_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
@@ -1139,7 +1134,7 @@ public:
     Vec<DIM_DMAT,double> hvx;
     Vec<DIM_DMAT,double> hvy;
     
-    FlatVector<double> hely (ndof*DIM, locheap);
+    FlatVector<double> hely (ndof*DIM, lh);
 
     /*    
     int order = IntegrationOrder (fel);
@@ -1153,12 +1148,12 @@ public:
       {
 	const IntegrationPoint & ip = ir[i];
 	
-	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, locheap);
+	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
 
-	DIFFOP::Apply (fel, sip, ellin, hvlin, locheap);
-	DIFFOP::Apply (fel, sip, elx, hvx, locheap);
-	this->dmatop.ApplyLinearized (fel, sip, hvlin, hvx, hvy, locheap);
-	DIFFOP::ApplyTrans (fel, sip, hvy, hely, locheap);
+	DIFFOP::Apply (fel, sip, ellin, hvlin, lh);
+	DIFFOP::Apply (fel, sip, elx, hvx, lh);
+	this->dmatop.ApplyLinearized (fel, sip, hvlin, hvx, hvy, lh);
+	DIFFOP::ApplyTrans (fel, sip, hvy, hely, lh);
 
 	double fac = fabs (sip.GetJacobiDet()) * ip.Weight();
 	ely += fac * hely;
@@ -1174,7 +1169,7 @@ public:
 				const FlatVector<Complex> & ellin, 
 				const FlatVector<Complex> & elx, 
 				FlatVector<Complex> & ely,
-				LocalHeap & locheap) const
+				LocalHeap & lh) const
   {
     const FEL & fel = dynamic_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
@@ -1185,7 +1180,7 @@ public:
     Vec<DIM_DMAT,Complex> hvx;
     Vec<DIM_DMAT,Complex> hvy;
     
-    FlatVector<Complex> hely (ndof*DIM, locheap);
+    FlatVector<Complex> hely (ndof*DIM, lh);
     
     /*
     int order = IntegrationOrder (fel);
@@ -1198,12 +1193,12 @@ public:
 
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, locheap);
+	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
 
-	DIFFOP::Apply (fel, sip, ellin, hvlin, locheap);
-	DIFFOP::Apply (fel, sip, elx, hvx, locheap);
-	this->dmatop.ApplyLinearized (fel, sip, hvlin, hvx, hvy, locheap);
-	DIFFOP::ApplyTrans (fel, sip, hvy, hely, locheap);
+	DIFFOP::Apply (fel, sip, ellin, hvlin, lh);
+	DIFFOP::Apply (fel, sip, elx, hvx, lh);
+	this->dmatop.ApplyLinearized (fel, sip, hvlin, hvx, hvy, lh);
+	DIFFOP::ApplyTrans (fel, sip, hvy, hely, lh);
 	
 	double fac = fabs (sip.GetJacobiDet()) * sip.IP().Weight();
 	ely += fac * hely;
@@ -1215,7 +1210,7 @@ public:
   virtual double Energy (const FiniteElement & bfel, 
 			 const ElementTransformation & eltrans, 
 			 const FlatVector<double> & elx, 
-			 LocalHeap & locheap) const
+			 LocalHeap & lh) const
   {
     const FEL & fel = dynamic_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
@@ -1229,11 +1224,11 @@ public:
       {
 	const IntegrationPoint & ip = ir[i];
 	
-	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, locheap);
-	DIFFOP::Apply (fel, sip, elx, hvx, locheap);
+	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
+	DIFFOP::Apply (fel, sip, elx, hvx, lh);
 
 	double fac = fabs (sip.GetJacobiDet()) * ip.Weight();
-	energy += fac * this->dmatop.Energy (fel, sip, hvx, locheap);
+	energy += fac * this->dmatop.Energy (fel, sip, hvx, lh);
       }     
 
     return energy;
@@ -1401,10 +1396,10 @@ public:
 				    const BaseMappedIntegrationPoint & s_sip,
 				    const BaseMappedIntegrationPoint & g_sip,
 				    FlatVector<double> & elvec,
-				    LocalHeap & locheap,
+				    LocalHeap & lh,
 				    const bool curveint = false) const
   {
-    T_CalcElementVectorIndependent (gfel, s_sip, g_sip, elvec, locheap, curveint);
+    T_CalcElementVectorIndependent (gfel, s_sip, g_sip, elvec, lh, curveint);
   }
 
   virtual void
@@ -1412,10 +1407,10 @@ public:
 				    const BaseMappedIntegrationPoint & s_sip,
 				    const BaseMappedIntegrationPoint & g_sip,
 				    FlatVector<Complex> & elvec,
-				    LocalHeap & locheap,
+				    LocalHeap & lh,
 				    const bool curveint = false) const
   {
-    T_CalcElementVectorIndependent (gfel, s_sip, g_sip, elvec, locheap, curveint);
+    T_CalcElementVectorIndependent (gfel, s_sip, g_sip, elvec, lh, curveint);
   }
 
 
@@ -1424,13 +1419,13 @@ public:
 					   const BaseMappedIntegrationPoint & s_sip,
 					   const BaseMappedIntegrationPoint & g_sip,
 					   FlatVector<TSCAL> & elvec,
-					   LocalHeap & locheap,
+					   LocalHeap & lh,
 					   const bool curveint = false) const
   {
     const FEL & fel = dynamic_cast<const FEL&> (gfel);
     int ndof = fel.GetNDof();
     
-    elvec.AssignMemory (ndof * DIM, locheap);
+    elvec.AssignMemory (ndof * DIM, lh);
     //elvec = 0;
 
     Vec<DIM_DMAT, TSCAL> dvec;
@@ -1443,7 +1438,7 @@ public:
 	const MappedIntegrationPoint< 1, DIM_SPACE > & d_s_sip
 	  (static_cast<const MappedIntegrationPoint< 1, DIM_SPACE > &>(s_sip));
 
-	dvecop.GenerateVector (fel, d_s_sip, dvec, locheap);
+	dvecop.GenerateVector (fel, d_s_sip, dvec, lh);
       }
     else
       {
@@ -1452,11 +1447,11 @@ public:
 	const MappedIntegrationPoint< HDIM, DIM_SPACE > & d_s_sip
 	  (static_cast<const MappedIntegrationPoint< HDIM, DIM_SPACE > &>(s_sip));
 	
-	dvecop.GenerateVector (fel, d_s_sip, dvec, locheap);
+	dvecop.GenerateVector (fel, d_s_sip, dvec, lh);
       }
 
 
-    DIFFOP::ApplyTrans (fel, d_g_sip, dvec, elvec, locheap);
+    DIFFOP::ApplyTrans (fel, d_g_sip, dvec, elvec, lh);
   
     //(*testout) << "dvec " << dvec << " elvec " << elvec << endl;
 
