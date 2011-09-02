@@ -205,7 +205,7 @@ void GetStatus(MyStr & s, double & percentage)
     s = "idle";     
 }
 
-
+/*
 #ifdef SMALLLIB
 #define SMALLLIBORNOTCL
 #endif
@@ -221,5 +221,7 @@ void MyError(const char * ch)
   cerr << ch << endl;
 }
 #endif
+*/
+
 
 }

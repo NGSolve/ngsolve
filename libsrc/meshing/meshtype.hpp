@@ -989,7 +989,7 @@ namespace netgen
 
 
 
-  class MeshingParameters
+  class DLL_HEADER MeshingParameters
   {
   public:
     /**

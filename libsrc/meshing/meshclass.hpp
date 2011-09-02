@@ -189,7 +189,7 @@ namespace netgen
     Mesh & operator= (const Mesh & mesh2);
   
     ///
-    void DeleteMesh();
+    DLL_HEADER void DeleteMesh();
   
     ///
     void ClearSurfaceElements();
@@ -537,7 +537,7 @@ namespace netgen
 
 
     /// build box-search tree
-    void BuildElementSearchTree ();
+    DLL_HEADER void BuildElementSearchTree ();
 
     void SetPointSearchStartElement(const int el) const {ps_startelement = el;}
 
