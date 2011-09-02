@@ -1248,11 +1248,7 @@ namespace ngla
 
 
 
-
-
   
-  // template <class TM, class TV_ROW, class TV_COL>
-  // void SparseCholesky<TM, TV_ROW, TV_COL> :: 
   void SparseFactorization  :: 
   Smooth (BaseVector & u, const BaseVector & /* f */, BaseVector & y) const
   {
@@ -1261,7 +1257,7 @@ namespace ngla
 
     hvec1 = 1.0 * y;
     matrix.MultAdd1 (-1, u, hvec1, inner, cluster);
-    
+
     hvec2 = (*this) * hvec1;
     u += hvec2;
     
