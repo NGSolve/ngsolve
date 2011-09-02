@@ -29,7 +29,7 @@ inline double WallTime ()
 {
   struct _timeb timebuffer;
   _ftime( &timebuffer );
-  return timebuffer.time+1000*timebuffer.millitm;
+  return timebuffer.time+1e-3*timebuffer.millitm;
 }
 
 
