@@ -60,8 +60,8 @@ namespace ngla
 		  int asymmetric)
     : SparseFactorization (a)
   { 
-    static int timer = NgProfiler::CreateTimer ("Pardiso Inverse");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("Pardiso Inverse");
+    RegionTimer reg (timer);
 
 
     if (getenv ("PARDISOMSG"))
@@ -592,58 +592,17 @@ namespace ngla
   void PardisoInverse<TM,TV_ROW,TV_COL> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
-    static int timer = NgProfiler::CreateTimer ("Pardiso Solve");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("Pardiso Solve");
+    RegionTimer reg (timer);
 
     FlatVector<TVX> fx = x.FV<TVX> ();
-    // dynamic_cast<T_BaseVector<TVX> &> (const_cast<BaseVector &> (x)).FV();
     FlatVector<TVX> fy = y.FV<TVX> ();
-    // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
-    
 
-    int maxfct = 1, mnum = 1, phase = 33, nrhs = 1, msglevel = 0, error;
-    // int params[64];
+    int maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error;
+    int nrhs = 1;
+
     int * params = const_cast <int*> (&hparams[0]);
 
-    /*
-      params[0] = 1; // no pardiso defaults
-      params[2] = 1; // 1 processor
-
-      params[1] = 2;
-      params[3] = params[4] = params[5] = params[7] = params[8] = 
-      params[11] = params[12] = params[18] = 0;
-      params[6] = 16;
-      params[9] = 20;
-      params[10] = 1;
-    */
-
-    /*
-    params[0] = 1; // no pardiso defaults
-    params[1] = 2;
-    params[2] = 1; // 1 processor
-
-    params[3] = params[4] = params[5] = params[7] = params[8] = 
-      params[11] = params[12] = params[18] = 0;
-    params[6] = 16;
-    params[9] = 20;
-    params[10] = 1;
-    */
-
-    // JS
-    // params[6] = 0;
-    // params[17] = -1;
-    // params[20] = 0;
-
-
-    /*
-    params[0] = 0; // 
-    params[2] = 8; 
-    */
-
-    
-
-
-#ifdef USE_PARDISO400
     F77_FUNC(pardiso) ( const_cast<long int *>(pt), &maxfct, &mnum, const_cast<int *>(&matrixtype),
 			&phase, const_cast<int *>(&height), 
 			reinterpret_cast<double *>(matrix),
@@ -651,38 +610,59 @@ namespace ngla
 			NULL, &nrhs, params, &msglevel,
 			static_cast<double *>(fx.Data()), 
 			static_cast<double *>(fy.Data()), &error );
-#else
-    F77_FUNC(pardiso) ( const_cast<int *>(pt), &maxfct, &mnum, const_cast<int *>(&matrixtype),
+
+    if ( error != 0 )
+      cout << "Apply Inverse: PARDISO returned error " << error << "!" << endl;
+
+    for (int i = 0; i < height/entrysize; i++)
+      if (!used.Test(i))
+	for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0.0;
+  }
+  
+  
+
+
+
+
+  template<>
+  void PardisoInverse<double,Complex,Complex> :: 
+  Mult (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer timer ("Pardiso Solve");
+    RegionTimer reg (timer);
+
+    FlatVector<TVX> fx = x.FV<TVX> ();
+    FlatVector<TVX> fy = y.FV<TVX> ();
+
+
+    FlatMatrixFixWidth<2> hx(x.Size(), (double*)x.Memory());
+    Matrix<> tx(2, x.Size());
+    tx = Trans (hx);
+
+    FlatMatrixFixWidth<2> hy(y.Size(), (double*)y.Memory());
+    Matrix<> ty(2, y.Size());
+
+      
+    int maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error;
+    int nrhs = 2;
+
+    int * params = const_cast <int*> (&hparams[0]);
+
+    F77_FUNC(pardiso) ( const_cast<long int *>(pt), &maxfct, &mnum, const_cast<int *>(&matrixtype),
 			&phase, const_cast<int *>(&height), 
 			reinterpret_cast<double *>(matrix),
 			rowstart, indices,
-			NULL, &nrhs, params, &msglevel,
-			static_cast<double *>(fx.Data()), 
-			static_cast<double *>(fy.Data()), &error );
-#endif
+			NULL, &nrhs, params, &msglevel, &tx(0,0), &ty(0,0),
+			&error );
+
     if ( error != 0 )
       cout << "Apply Inverse: PARDISO returned error " << error << "!" << endl;
+
+    hy = Trans (ty);
 
     for (int i=0; i<height/entrysize; i++)
       if (!used.Test(i))
 	for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0.0;
-    
-
-    /*
-    if (inner)
-      {
-	for (int i=0; i<height/entrysize; i++)
-	  if (!inner->Test(i)) 
-	    for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0;
-      }
-    else if (cluster)
-      {
-	for (int i=0; i<height/entrysize; i++)
-	  if (!(*cluster)[i]) 
-	    for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0;
-      }
-    */
-
   }
   
   
@@ -690,24 +670,6 @@ namespace ngla
 
 
 
-
-
-  /*
-  template<class TM, class TV_ROW, class TV_COL>
-  void PardisoInverse<TM,TV_ROW,TV_COL> :: Set (int i, int j, const TM & val)
-  {
-    cout << "PardisoInverse::Set not implemented!" << endl;
-  }
-
-
-  template<class TM, class TV_ROW, class TV_COL>
-  const TM & PardisoInverse<TM,TV_ROW,TV_COL> :: Get (int i, int j) const
-  {
-    cout << "PardisoInverse::Get not implemented!" << endl;
-    static TM dummy(0.0);
-    return dummy;
-  }
-  */
 
 
   template<class TM, class TV_ROW, class TV_COL>
