@@ -18,18 +18,20 @@ namespace ngla
   template <typename SCAL>
   void Arnoldi<SCAL>::Calc (int numval, Array<Complex> & lam, int numev, Array<BaseVector*> & hevecs) const
   { 
-    BaseVector & hv = *a.CreateVector();
+    BaseVector & hv  = *a.CreateVector();
     BaseVector & hva = *a.CreateVector();
     BaseVector & hvm = *a.CreateVector();
-    // BaseVector & hwa = *a.CreateVector();
-    // BaseVector & hwm = *a.CreateVector();
-    // BaseVector & w = *a.CreateVector();
-    
+   
     int n = hv.Size()*hv.EntrySize();    // matrix size
+
+    SCAL x = 0.;
+    Complex y = 0.;
+    if ( typeid(x).name() ==  typeid(y).name()) n=n/2;
+    
     int m = min2 (numval, n);
 
-    Matrix<SCAL> matV (m,n), matVt(n,m);
-    Matrix<SCAL> matH(m), matI(m);
+    Matrix<SCAL> matV (m,n);
+    Matrix<SCAL> matH(m);
 
 
 
@@ -50,9 +52,7 @@ namespace ngla
     hv.SetRandom();
     matV = SCAL(0.0);
     matH = SCAL(0.0);
-    matI = SCAL(0.0);
-    for (int i = 0; i < m; i++)
-      matI(i,i) = 1.0;
+    
 
     SCAL len = sqrt (S_InnerProduct<SCAL> (hv, hv));
     hv /= len;
@@ -85,24 +85,22 @@ namespace ngla
 	
 	hv /= len;
       }
+      
+    delete inva;
 	    
     cout << "has Hessenberg" << endl;
 	    
     Vector<Complex> lami(m);
-    Matrix<Complex> evecs(m);
-    Matrix<Complex> levecs(n,m);
+    Matrix<Complex> evecs(m);    
     Matrix<Complex> matHt(m);
 
     matHt = Trans (matH);
 	    
     evecs = Complex (0.0);
     lami = Complex (0.0);
-	    
+	
     LapackHessenbergEP (matH.Height(), &matHt(0,0), &lami(0), &evecs(0,0));
-	    
-    // levecs = Trans(matV) * Trans(evecs);
-    matVt = Trans (matV);
-    levecs = Trans(evecs * Trans (matVt));
+    
 	    
     for (int i = 0; i < m; i++)
       lami(i) =  1.0 / lami(i) + shift;
@@ -110,25 +108,18 @@ namespace ngla
     lam.SetSize (m);
     for (int i = 0; i < m; i++)
       lam[i] = lami(i);
+    
+    if (numev>0)
+	{
+	  int nout = min2 (numev, m); 
+	  hevecs.SetSize(nout);
+	  for (int i = 0; i< nout; i++)
+	  {
+	    hevecs[i] = new VVector<Complex>(n);
+	    hevecs[i]->FVComplex() = Trans(matV)*evecs.Row(i);
+	  }
+	}
 
-
-
-    ofstream out ("eigenvalues.dat");
-    out.precision (12);
-    for (int i = 0; i < m; i++) 
-      out << i << "  " << lami[i].real() << "  " << lami[i].imag() << endl;
-    cout << "wrote eigenvalues to file 'eigenvalues.dat'" << endl;
-
-    cout << "eigensystem done" << endl;
-
-    /*
-    for (int i = 0; i < min2 (gfu->GetMultiDim(), m); i++)
-      {
-	FlatVector<Complex> vu = gfu->GetVector(i).FVComplex();
-	for (int j = 0; j < n; j++)
-	  vu(j) = levecs(j, i);
-      }
-    */
   } 
 	
 
