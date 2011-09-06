@@ -92,8 +92,18 @@ namespace netgen
       return res;
     }
 
+
+    virtual int GetNumMultiDimComponents ()
+    {
+      return 1;
+    }
+
     void SetMultiDimComponent (int mc)
-    { multidimcomponent = mc; }
+    { 
+      if (mc >= GetNumMultiDimComponents()) mc = GetNumMultiDimComponents()-1;
+      if (mc < 0) mc = 0;
+      multidimcomponent = mc; 
+    }
   };
 }
 

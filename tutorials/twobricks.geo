@@ -10,6 +10,6 @@ solid cutplane = plane (0.5, 0, 0; -1, 0, 0);
 solid right = cube and cutplane;
 solid left = cube and not cutplane;
 
-tlo right -col=[1,0,0];
+tlo right -col=[1,0,0] -material=copper;
 tlo left -col=[0,0,1];
 
