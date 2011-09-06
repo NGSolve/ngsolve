@@ -282,6 +282,12 @@ namespace ngcomp
                                     double * values, int svalues);
 
 
+    virtual int GetNumMultiDimComponents ()
+    {
+      return gf->GetMultiDim();
+    }
+
+
     void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages, int component = -1);
     void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages_times_volumes, Array<double> & volumes, int component = -1);
     
