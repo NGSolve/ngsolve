@@ -962,32 +962,31 @@ namespace ngsolve
 
     string type = flags.GetStringFlag("type", "");
     
-    if (type != "") // this should become standard
+    // if (type != "") // this should become standard
       {
 	for (int i = 0; i < GetFESpaceClasses().GetFESpaces().Size(); i++)
-	  {
-	    if (type == GetFESpaceClasses().GetFESpaces()[i]->name)
-	      {
-		space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
+	  if (type == GetFESpaceClasses().GetFESpaces()[i]->name ||
+	      flags.GetDefineFlag (GetFESpaceClasses().GetFESpaces()[i]->name) )
+	    {
+	      space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
 		
-		if (id == 0 && ntasks > 1)
-		  {
-		    FESpace * hospace = space;
-		    // low order space if existent
-		    // space = & hospace -> LowOrderFESpace();
-		    space = NULL;
-		    // else space, but with  order 0
-		    if ( space == 0 )
-		      {
-			flags.SetFlag("order",0.0);
-			if ( hospace->IsComplex() ) flags.SetFlag("complex");
-			space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
-		      }
-		  }
-	      }
-	  }
+	      if (id == 0 && ntasks > 1)
+		{
+		  FESpace * hospace = space;
+		  // low order space if existent
+		  // space = & hospace -> LowOrderFESpace();
+		  space = NULL;
+		  // else space, but with  order 0
+		  if ( space == 0 )
+		    {
+		      flags.SetFlag("order",0.0);
+		      if ( hospace->IsComplex() ) flags.SetFlag("complex");
+		      space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
+		    }
+		}
+	    }
 	
-	if (type == "compound")
+	if (type == "compound" || flags.GetDefineFlag ("compound"))
 	  {
 	    const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
 	    cout << IM(1) << "   spaces = " << spacenames << endl;
@@ -1004,21 +1003,23 @@ namespace ngsolve
 	    out << "unknown space type " << type << endl;
 	    out << "available types are" << endl;
 	    GetFESpaceClasses().Print (out);
-	    out << "compound" << endl;
+	    out << "compound\n" << endl;
 	    
 	    throw Exception (out.str());
 	  }
       }
+      /*
     else
       {
 	stringstream out;
 	out << "depreciated: please define fespace with -type=<typename>" << endl;
 	out << "available types are" << endl;
 	GetFESpaceClasses().Print (out);
-	out << "compound" << endl;
+	out << "compound\n" << endl;
 
 	throw Exception (out.str());
       }
+      */
     
     if (flags.NumListFlagDefined ("dirichletboundaries"))
       {
