@@ -13,6 +13,16 @@ namespace ngfem
 {
 
 
+  template <ELEMENT_TYPE ET>
+  class HCurlDummyFE : public T_HCurlFiniteElement<HCurlDummyFE<ET>,ET,0,0>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx x[1], TFA & shape) 
+    { ; }
+  };
+
+
   /* **************************** Segm Elements *************** */
 
 
