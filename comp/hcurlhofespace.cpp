@@ -4,6 +4,7 @@
 */
 #include <comp.hpp>
 #include <../fem/hcurlhofe.hpp> 
+#include <../fem/hcurllofe.hpp> 
 #include <multigrid.hpp>
 
 
@@ -574,6 +575,21 @@ namespace ngcomp
   
   const FiniteElement & HCurlHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
+    if (!DefinedOn (ma.GetElIndex (elnr)))
+      {
+        switch (ma.GetElType(elnr))
+          {
+	    // case ET_SEGM:    return * new (lh) HCurlDummyFE<ET_SEGM> (); break;
+          case ET_TRIG:    return * new (lh) HCurlDummyFE<ET_TRIG> (); break;
+          case ET_QUAD:    return * new (lh) HCurlDummyFE<ET_QUAD> (); break;
+          case ET_TET:     return * new (lh) HCurlDummyFE<ET_TET> (); break;
+          case ET_PYRAMID: return * new (lh) HCurlDummyFE<ET_PYRAMID> (); break;
+          case ET_PRISM:   return * new (lh) HCurlDummyFE<ET_PRISM> (); break;
+          case ET_HEX:     return * new (lh) HCurlDummyFE<ET_HEX> (); break;
+	  }
+      }
+
+
     FiniteElement * fe = 0;
     
     switch (ma.GetElType(elnr))
@@ -667,6 +683,17 @@ namespace ngcomp
  
   const FiniteElement & HCurlHighOrderFESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
+    if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
+      {
+        switch (ma.GetSElType(selnr))
+          {
+          case ET_TRIG:    return * new (lh) HCurlDummyFE<ET_TRIG> ();
+          case ET_QUAD:    return * new (lh) HCurlDummyFE<ET_QUAD> ();
+	  default: throw Exception ("not all case treated in HCurlHighOrderFESpace::GetSFE");
+	  }
+      }
+
+
     FiniteElement * fe = 0;
     
     if ( discontinuous )
@@ -765,6 +792,12 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
+    if (!DefinedOn (ma.GetElIndex (elnr)))
+      {
+	dnums.SetSize(0);
+	return;
+      }
+
     // ordering of shape functions
     // (1*e1),.. (1*e_ne)  
     // (p_t)*tang_e1, ... p_t*tang_ne
@@ -798,6 +831,11 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
+    if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
+      {
+	dnums.SetSize(0);
+	return;
+      }
     Array<int> vnums, ednums;
     int fnum; 
     int i, j;

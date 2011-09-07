@@ -485,6 +485,20 @@ namespace ngcomp
 
   const FiniteElement & H1HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
+    if (!DefinedOn (ma.GetElIndex (elnr)))
+      {
+        switch (ma.GetElType(elnr))
+          {
+          case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); break;
+          case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); break;
+          case ET_QUAD:    return * new (lh) ScalarDummyFE<ET_QUAD> (); break;
+          case ET_TET:     return * new (lh) ScalarDummyFE<ET_TET> (); break;
+          case ET_PYRAMID: return * new (lh) ScalarDummyFE<ET_PYRAMID> (); break;
+          case ET_PRISM:   return * new (lh) ScalarDummyFE<ET_PRISM> (); break;
+          case ET_HEX:     return * new (lh) ScalarDummyFE<ET_HEX> (); break;
+	  }
+      }
+
     if (fixed_order && ma.GetElType(elnr) == ET_TRIG && order <= 6)
       {
         H1HighOrderFiniteElementFO<2> * hofe2d = 0;
@@ -657,6 +671,12 @@ namespace ngcomp
 
   void H1HighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
+    if (!DefinedOn (ma.GetElIndex (elnr)))
+      {
+	dnums.SetSize(0);
+	return;
+      }
+
     Ng_Element ngel = ma.GetElement(elnr);
 
     dnums.SetSize(ngel.vertices.Size()); 
@@ -671,6 +691,7 @@ namespace ngcomp
         dnums += GetFaceDofs (ngel.faces[i]);
 
     dnums += GetElementDofs (elnr);
+
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
   }
