@@ -14,6 +14,15 @@
 namespace ngfem
 {
 
+  template <ELEMENT_TYPE ET>
+  class ScalarDummyFE : public T_ScalarFiniteElement<ScalarDummyFE<ET>,ET,0,0>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx x[1], TFA & shape) 
+    { ; }
+  };
+
   ///
   class FE_Segm0 : public T_ScalarFiniteElement<FE_Segm0,ET_SEGM,1,0>
   {

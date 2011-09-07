@@ -981,7 +981,7 @@ public:
 
 
   virtual void
-  AssembleLinearizedElementMatrix (const FiniteElement & bfel, 
+  CalcLinearizedElementMatrix (const FiniteElement & bfel, 
 				   const ElementTransformation & eltrans, 
 				   FlatVector<double> & elveclin,
 				   FlatMatrix<double> & elmat,
@@ -1033,7 +1033,7 @@ public:
 
     catch (Exception & e)
       {
-	e.Append ("in AssembleLinearizedElementMatrix, type = ");
+	e.Append ("in CalcLinearizedElementMatrix, type = ");
 	e.Append (typeid(*this).name());
 	e.Append ("\n");
 	throw;
@@ -1041,7 +1041,7 @@ public:
     catch (exception & e)
       {
 	Exception e2(e.what());
-	e2.Append ("\nin AssembleLinearizedElementMatrix, type = ");
+	e2.Append ("\nin CalcLinearizedElementMatrix, type = ");
 	e2.Append (typeid(*this).name());
 	e2.Append ("\n");
 	throw e2;
@@ -1051,7 +1051,7 @@ public:
 
 
   virtual void
-  AssembleLinearizedElementMatrix (const FiniteElement & bfel, 
+  CalcLinearizedElementMatrix (const FiniteElement & bfel, 
 				   const ElementTransformation & eltrans, 
 				   FlatVector<Complex> & elveclin,
 				   FlatMatrix<Complex> & elmat,
@@ -1095,7 +1095,7 @@ public:
 
     catch (Exception & e)
       {
-	e.Append ("in AssembleLinearizedElementMatrix, type = ");
+	e.Append ("in CalcLinearizedElementMatrix, type = ");
 	e.Append (typeid(*this).name());
 	e.Append ("\n");
 	throw;
@@ -1103,7 +1103,7 @@ public:
     catch (exception & e)
       {
 	Exception e2(e.what());
-	e2.Append ("\nin AssembleLinearizedElementMatrix, type = ");
+	e2.Append ("\nin CalcLinearizedElementMatrix, type = ");
 	e2.Append (typeid(*this).name());
 	e2.Append ("\n");
 	throw e2;
