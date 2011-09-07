@@ -1140,8 +1140,12 @@ namespace ngsolve
 		}
 	      else if (allconst)
 		{
-		  pde->AddCoefficientFunction
-		    (name, new DomainConstantCoefficientFunction(dcoeffs));
+		  if (dcoeffs.Size() == 1)
+		    pde->AddCoefficientFunction
+		      (name, new ConstantCoefficientFunction(dcoeffs[0]));
+		  else
+		    pde->AddCoefficientFunction
+		      (name, new DomainConstantCoefficientFunction(dcoeffs));
 		  for (int hi = 0; hi < coeffs.Size(); hi++)
 		    delete coeffs[hi];
 		}
