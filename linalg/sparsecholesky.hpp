@@ -17,12 +17,19 @@ namespace ngla
   class SparseFactorization : public BaseMatrix
   { 
   protected:
+    const BaseSparseMatrix & matrix;
     const BitArray * inner;
     const Array<int> * cluster;
-    const BaseSparseMatrix & matrix;
+    bool smooth_is_projection;
+
   public:
-    SparseFactorization (const BaseSparseMatrix & amatrix) : matrix(amatrix) { ; }
+    SparseFactorization (const BaseSparseMatrix & amatrix,
+			 const BitArray * ainner,
+			 const Array<int> * acluster);
+ 
     virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const;
+
+    bool SmoothIsProjection () const { return smooth_is_projection; }
   };
 
 

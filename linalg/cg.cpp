@@ -513,6 +513,9 @@ namespace ngla
   template <class IPTYPE>
   void CGSolver<IPTYPE> :: Mult (const BaseVector & f, BaseVector & u) const
   {
+    static Timer timer ("CG solver");
+    RegionTimer reg (timer);
+
     int dim = 1;
 
     if(dynamic_cast<VVector< Vec<2, SCAL> >* >(&u))

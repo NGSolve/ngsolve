@@ -17,7 +17,7 @@ namespace ngla
 		  const BitArray * ainner,
 		  const Array<int> * acluster,
 		  bool allow_refactor)
-    : SparseFactorization (a), mat(a)
+    : SparseFactorization (a, ainner, acluster), mat(a)
   { 
     // (*testout) << "matrix = " << a << endl;
     // (*testout) << "diag a = ";
@@ -26,8 +26,8 @@ namespace ngla
     int n = a.Height();
     height = n;
 
-    inner = ainner;
-    cluster = acluster;
+    // inner = ainner;
+    // cluster = acluster;
     
     int printstat = 0;
     
@@ -1028,15 +1028,17 @@ namespace ngla
   void SparseCholesky<TM, TV_ROW, TV_COL> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
-    static int timer = NgProfiler::CreateTimer ("SparseCholesky::Mult");
-    NgProfiler::RegionTimer reg (timer);
+    y = 0.0;
+    MultAdd (TSCAL_VEC(1.0), x, y);
+    return;
+
+    static Timer timer ("SparseCholesky::Mult");
+    RegionTimer reg (timer);
 
     int n = Height();
     
     const FlatVector<TVX> fx = x.FV<TVX> ();
-    // dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
     FlatVector<TVX> fy = y.FV<TVX> ();
-    // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
     
     Vector<TVX> hy(n);
     for (int i = 0; i < n; i++)
@@ -1085,6 +1087,7 @@ namespace ngla
 	hy(i) -= sum;
       }
 
+    fy = TVX(0.0);
     for (int i = 0; i < n; i++)
       fy(i) = hy(order[i]);
 
@@ -1110,16 +1113,26 @@ namespace ngla
   void SparseCholesky<TM, TV_ROW, TV_COL> :: 
   MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
   {
-    static int timer = NgProfiler::CreateTimer ("SparseCholesky::MultAdd");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("SparseCholesky::MultAdd");
+    RegionTimer reg (timer);
 
     int n = Height();
     
-
     const FlatVector<TVX> fx = x.FV<TVX> ();
-    // dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
     FlatVector<TVX> fy = y.FV<TVX> ();
-    // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
+
+    /*
+    *testout << "multadd sparsrcholesky" << endl;
+    *testout << "x = " << x << endl;
+    if (cluster)
+      {
+	*testout << "x in cluster: " << endl;
+	for (int i = 0; i < cluster->Size(); i++)
+	  if ( (*cluster)[i] )
+	    *testout << i << fx(i) << endl;
+      }
+    */
+
     
     Vector<TVX> hy(n);
     for (int i = 0; i < n; i++)
@@ -1222,7 +1235,6 @@ namespace ngla
 
 
 
-    /*
     if (inner)
       {
 	for (int i = 0; i < n; i++)
@@ -1236,7 +1248,6 @@ namespace ngla
 	    fy(i) += s * hy(order[i]);
       }
     else
-    */
       {
 	for (int i = 0; i < n; i++)
 	  fy(i) += s * hy(order[i]);
@@ -1247,7 +1258,32 @@ namespace ngla
 
 
 
-
+  SparseFactorization ::     
+  SparseFactorization (const BaseSparseMatrix & amatrix,
+		       const BitArray * ainner,
+		       const Array<int> * acluster)
+    : matrix(amatrix), inner(ainner), cluster(acluster)
+  { 
+    smooth_is_projection = true;
+    if (cluster)
+      {
+	int first_cluster = 0;
+	for (int i = 0; i < cluster->Size(); i++)
+	  if ( (*cluster)[i] != 0)
+	    {
+	      first_cluster = (*cluster)[i];
+	      break;
+	    }
+	
+	for (int i = 0; i < cluster->Size(); i++)
+	  if ( (*cluster)[i] != 0 && (*cluster)[i] != first_cluster)
+	    {
+	      smooth_is_projection = false;
+	      break;
+	    }
+      }
+  }
+  
   
   void SparseFactorization  :: 
   Smooth (BaseVector & u, const BaseVector & /* f */, BaseVector & y) const
