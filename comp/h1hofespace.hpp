@@ -53,15 +53,13 @@ namespace ngcomp
     bool level_adapted_order; 
 
 
-    Array<INT<2> > defined_on_one_side_of_bounding_curve;
+    // Array<INT<2> > defined_on_one_side_of_bounding_curve;
 
   public:
 
     H1HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool checkflags=false);
     ///
     virtual ~H1HighOrderFESpace ();
-
-    // static FESpace * Create (const MeshAccess & ma, const Flags & flags);
 
     virtual string GetClassName () const
     {
@@ -121,9 +119,10 @@ namespace ngcomp
     virtual int GetRelOrder() const { return rel_order; }
     virtual bool VarOrder() const { return var_order; }
 
+    /*
     void RestrictToOneSideOfBoundingCurve(int index1, int index2);
     void DeleteOneSideRestrictions(void);
-
+    */
     
   protected:
     IntRange GetEdgeDofs (int nr) const
