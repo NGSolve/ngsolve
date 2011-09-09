@@ -297,6 +297,7 @@ b  }
 
   /* *********************** Tetrahedron  **********************/
 
+  /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx x[], TFA & shape) const
   {
@@ -334,11 +335,12 @@ b  }
 	for (int k = 0; k <= order-i-j; k++, ii++)
 	  shape[ii] = polsz(k) * polsy(k, j) * polsx(j+k, i);
   }
-
+  */
 
   /* *********************** Prism  **********************/
 
 
+  /*
   template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_PRISM> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
@@ -380,7 +382,7 @@ b  }
 	for (int j = 0; j <= p-i; j++)
           shape[ii++] = polsx(j,i) * polsy(j) * polsz(k);
   }
-
+  */
 
   /* *********************** Pyramid  **********************/
 
@@ -470,6 +472,13 @@ b  }
   template class T_L2HighOrderFiniteElement<ET_PRISM>;
   template class T_L2HighOrderFiniteElement<ET_PYRAMID>;
   template class T_L2HighOrderFiniteElement<ET_HEX>;
+
+  template class L2HighOrderFE_Shape<ET_TET>;
+  template class L2HighOrderFE_Shape<ET_PRISM>;
+  template class L2HighOrderFE_Shape<ET_PYRAMID>;
+  template class L2HighOrderFE_Shape<ET_HEX>;
+
+
 
 
   template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_SEGM>, ET_SEGM>;
