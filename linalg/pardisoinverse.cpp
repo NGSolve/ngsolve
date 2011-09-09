@@ -58,7 +58,7 @@ namespace ngla
 		  const BitArray * ainner,
 		  const Array<int> * acluster,
 		  int asymmetric)
-    : SparseFactorization (a)
+    : SparseFactorization (a, ainner, acluster)
   { 
     static Timer timer("Pardiso Inverse");
     RegionTimer reg (timer);
@@ -68,12 +68,11 @@ namespace ngla
       pardiso_msg = 1;
 
 
-
     print = bool (pardiso_msg); // false;
 
     symmetric = asymmetric;
-    inner = ainner;
-    cluster = acluster;
+    // inner = ainner;
+    // cluster = acluster;
 
     (*testout) << "Pardiso, symmetric = " << symmetric << endl;
 

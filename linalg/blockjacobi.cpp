@@ -745,8 +745,8 @@ namespace ngla
   void BlockJacobiPrecondSymmetric<TM,TV> :: 
   MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
   {
-    static int timer = NgProfiler::CreateTimer ("BlockJacobiSymmetric::MultAdd");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("BlockJacobiSymmetric::MultAdd");
+    RegionTimer reg (timer);
 
     const FlatVector<TVX> fx = x.FV<TVX> ();
       // dynamic_cast<const T_BaseVector<TVX> &> (x).FV();

@@ -1092,9 +1092,7 @@ namespace ngla
     NgProfiler::RegionTimer reg (timer);
 
     const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-      // dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
     FlatVector<TV_COL> fy = y.FV<TV_COL> ();
-      // dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
     
     if (inner)
       {
@@ -1124,9 +1122,7 @@ namespace ngla
     NgProfiler::RegionTimer reg (timer);
     
     const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-    // dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
     FlatVector<TV_COL> fy = y.FV<TV_COL> ();
-    // dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
 
     if (inner)
       {
