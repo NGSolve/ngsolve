@@ -495,7 +495,6 @@ public:
 	    bdbmat.Cols(i*DIM_DMAT, (i+1)*DIM_DMAT) = Trans (dmat * bmat);
 	  }
 
-	
 	if (ndof < 20)
 	  {
 	    if (DMATOP::SYMMETRIC)

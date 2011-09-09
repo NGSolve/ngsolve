@@ -253,14 +253,17 @@ namespace ngfem
     FlatMatrix<> nvmat;
   public:
     ///
-    FE_ElementTransformation ()
+    FE_ElementTransformation ();
+    /*
       : pointmat(0,0,0), pointmat_ownmem(false), nvmat(0,0,0)
     { ; }
-
-    ~FE_ElementTransformation ()
+    */
+    ~FE_ElementTransformation ();
+    /*
     {
       if (pointmat_ownmem) delete [] &pointmat(0,0); 
     }
+    */
 
     ///
     virtual void SetElement (const FiniteElement * afel, int aelnr, int aelindex)
@@ -268,6 +271,7 @@ namespace ngfem
       fel = static_cast<const ScalarFiniteElement<DIMS>*> (afel); 
       elnr = aelnr; 
       elindex = aelindex;
+      SetElementType (fel->ElementType());
     }
 
     ///
@@ -278,44 +282,59 @@ namespace ngfem
   
     ///
     virtual void CalcJacobian (const IntegrationPoint & ip,
-			       FlatMatrix<> dxdxi) const
+			       FlatMatrix<> dxdxi) const;
+    /*
     {
       for (int i = 0; i < DIMR; i++)
 	dxdxi.Row(i) = fel->EvaluateGrad (ip, pointmat.Row(i));
     }
-
+    */
 
     ///
     virtual void CalcPoint (const IntegrationPoint & ip, 
-			    FlatVector<> point) const
+			    FlatVector<> point) const;
+    /*
     {
       for (int i = 0; i < DIMR; i++)
 	point(i) = fel->Evaluate (ip, pointmat.Row(i));
     }
-
+    */
     ///
     virtual void CalcPointJacobian (const IntegrationPoint & ip,
 				    FlatVector<> point, 
-				    FlatMatrix<> dxdxi) const
+				    FlatMatrix<> dxdxi) const;
+    /*
     {
       CalcPoint (ip, point);
       CalcJacobian (ip, dxdxi);
     }
+    */
 
 
+#ifdef NONE
     template <typename T0, typename T1, typename T2>
     void CalcMultiPointJacobian (FlatArray<T0> ipts,
 				 FlatArray<T1> point, 
 				 FlatArray<T2> dxdxi,
 				 LocalHeap & lh) const
     {
+      /*
       for (int i = 0; i < ipts.Size(); i++)
 	CalcPointJacobian (IntegrationPoint (ipts[i]), point[i], dxdxi[i], lh);
+      */
+      for (int k = 0; k < ipts.Size(); k++)
+	{
+	  for (int i = 0; i < DIMR; i++)
+	    point[k](i) = fel->Evaluate (ipts[k], pointmat.Row(i));
+	  for (int i = 0; i < DIMR; i++)
+	    dxdxi[k].Row(i) = fel->EvaluateGrad (ipts[k], pointmat.Row(i));
+	}
     }
-
+#endif
 
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
-					 BaseMappedIntegrationRule & bmir) const
+					 BaseMappedIntegrationRule & bmir) const;
+    /*
     {
       MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
       for (int i = 0; i < ir.Size(); i++)
@@ -324,6 +343,7 @@ namespace ngfem
 	  mir[i].Compute();
 	}
     }
+    */
 
     ///
     const FlatMatrix<> & PointMatrix () const { return pointmat; }
