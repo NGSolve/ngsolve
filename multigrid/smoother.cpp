@@ -883,7 +883,8 @@ namespace ngmg
 	    biform.GetMatrix (level).MultAdd2 (-1, u, d);
 	    for (int i = 0; i < steps; i++)
 	      {
-		scinv -> Smooth (u, f, d);
+		if ( (!scinv->SmoothIsProjection()) || (i > 0) || (level > 0) )
+		  scinv -> Smooth (u, f, d);
 		jac[level] -> GSSmoothBackPartial (u, f, d); 
 	      }
 	  }

@@ -201,6 +201,9 @@ namespace ngmg
   void MultigridPreconditioner ::
   Mult (const BaseVector & x, BaseVector & y) const
   {
+    static Timer timer ("Multigrid preconditioner");
+    RegionTimer reg (timer);
+
     try
       {
 	y = 0;
