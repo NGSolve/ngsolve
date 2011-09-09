@@ -804,7 +804,12 @@ namespace ngfem
 
 
 
-
+  template <>
+  IntegrationRuleTP<1> :: IntegrationRuleTP (const ElementTransformation & eltrans,
+                                             int order, bool compute_mapping, LocalHeap & lh)
+  {
+    cout << "intruletp<1>: nothing here" << endl;
+  }
 
 
   template <>
@@ -961,7 +966,7 @@ namespace ngfem
           iry = &SelectIntegrationRuleJacobi10 (order);
           irz = &SelectIntegrationRule (ET_SEGM, order);
           
-          int sort[4] = { 1, 2, 3, 4}, isort[4];   // compiler warnings
+          int sort[4] = { 0, 1, 2, 3}, isort[4];   // compiler warnings
           eltrans.GetSort (FlatArray<int> (4, sort) );
           for (int i = 0; i < 4; i++) isort[sort[i]] = i;
           
@@ -1553,7 +1558,7 @@ namespace ngfem
 
 
 
-  //  template class IntegrationRuleTP<1>;
+  template class IntegrationRuleTP<1>;
   template class IntegrationRuleTP<2>;
   template class IntegrationRuleTP<3>;
 

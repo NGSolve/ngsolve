@@ -72,15 +72,15 @@ namespace ngfem
   template class MassEdgeIntegrator<2>;
   template class MassEdgeIntegrator<3>;
 
+  template class CurlCurlEdgeIntegrator<2>;
+  template class CurlCurlEdgeIntegrator<3>;
 
-  /*
   template class SourceEdgeIntegrator<2>;
   template class SourceEdgeIntegrator<3>;
-  */
 
 
   namespace maxwellint {
-
+    
     static RegisterBilinearFormIntegrator<CurlCurlEdgeIntegrator<2> > initcce2 ("curlcurledge", 2, 1);
     static RegisterBilinearFormIntegrator<CurlCurlEdgeIntegrator<3> > initcce3 ("curlcurledge", 3, 1);
 
