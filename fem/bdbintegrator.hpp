@@ -25,7 +25,7 @@ template <class DMO>
 class DMatOp
 {
 public:
-  typedef double TSCAL;
+  // typedef double TSCAL;
   /// is coefficient tensor symmetric ?
   enum { SYMMETRIC = 1 };
 
@@ -987,7 +987,7 @@ public:
 				   FlatMatrix<double> & elmat,
 				   LocalHeap & lh) const 
   {
-    static Timer maintimer ("NonlinearBDB, Assemblelinearized");
+    static Timer maintimer (string ("NonlinearBDB, CalcLinearized, ") + this->Name());
     static Timer bdbtimer ("NonlinearBDB, bdb product");
     RegionTimer reg(maintimer);
 
@@ -1049,14 +1049,18 @@ public:
   }
 
 
-
+  
   virtual void
   CalcLinearizedElementMatrix (const FiniteElement & bfel, 
-				   const ElementTransformation & eltrans, 
-				   FlatVector<Complex> & elveclin,
-				   FlatMatrix<Complex> & elmat,
-				   LocalHeap & lh) const 
+			       const ElementTransformation & eltrans, 
+			       FlatVector<Complex> & elveclin,
+			       FlatMatrix<Complex> & elmat,
+			       LocalHeap & lh) const 
   {
+    static Timer maintimer (string ("NonlinearBDB, CalcLinearized<Complex>, ") + this->Name());
+    static Timer bdbtimer ("NonlinearBDB, bdb product");
+    RegionTimer reg(maintimer);
+
     try
       {
 	const FEL & fel = dynamic_cast<const FEL&> (bfel);
@@ -1071,26 +1075,49 @@ public:
 	Mat<DIM_DMAT,DIM_DMAT, Complex> dmat;
 
 	const IntegrationRule & ir = GetIntegrationRule (fel);
+	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
 
-	void * heapp = lh.GetPointer();
+
+	FlatMatrix<Complex> bbmat (ndof * DIM, DIM_DMAT*ir.GetNIP(), lh);
+	FlatMatrix<Complex> bdbmat (ndof * DIM, DIM_DMAT*ir.GetNIP(), lh);
+
+
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
-	    MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-	      sip(ir[i], eltrans, lh);
+	    HeapReset hr(lh);
 
-	    DIFFOP::Apply (fel, sip, elveclin, hvlin, lh);
+	    MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip = mir[i];
 
-	    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
-	    this->dmatop . GenerateLinearizedMatrix (fel, sip, hvlin, dmat, lh);
+	    DIFFOP::Apply (fel, mip, elveclin, hvlin, lh);
 
-	    double fac =  
-	      fabs (sip.GetJacobiDet()) * sip.IP().Weight();
+	    DIFFOP::GenerateMatrix (fel, mip, bmat, lh);
+	    this->dmatop . GenerateLinearizedMatrix (fel, mip, hvlin, dmat, lh);
 
+	    double fac = mip.GetWeight();
+	    /*
 	    dbmat = dmat * bmat;
 	    elmat += fac * (Trans (bmat) * dbmat); 
-	    
-	    lh.CleanUp (heapp);
+	    */
+
+	    dmat *= fac;
+	    bbmat.Cols(i*DIM_DMAT, (i+1)*DIM_DMAT) = Trans (bmat);
+	    bdbmat.Cols(i*DIM_DMAT, (i+1)*DIM_DMAT) = Trans (dmat * bmat);
 	  } 
+
+
+	RegionTimer reg(bdbtimer);
+
+	if (ndof < 20)
+	  {
+	    if (DMATOP::SYMMETRIC)
+	      elmat = Symmetric ( bdbmat * Trans (bbmat));
+	    else
+	      elmat = bbmat * Trans (bdbmat); 
+	  }
+	else
+	  LapackMultABt (bbmat, bdbmat, elmat);
+
+
       }
 
     catch (Exception & e)
