@@ -1908,9 +1908,6 @@ namespace ngsolve
 
   void PDE :: LoadPDE (istream & input, const bool nomeshload, const bool nogeometryload)
   {
-    static Timer timer("LoadPDE");
-    RegionTimer reg (timer);
-
     pde = this;
     
     // Reset geometries 
