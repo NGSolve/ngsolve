@@ -1988,11 +1988,14 @@ cout << "catch in AssembleBilinearform 2" << endl;
                                                       LocalHeap & lh, 
                                                       bool reallocate)
   {
+    static Timer timer ("Assemble Linearization");
+    static Timer timervol ("Assemble Linearization - volume");
+    static Timer timerbound ("Assemble Linearization - boundary");
+
+    RegionTimer reg (timer);
+
     try
       {
-        Array<int> dnums;
-        ElementTransformation eltrans;
-      
         int ndof = fespace.GetNDof();
         BitArray useddof(ndof);
         useddof.Clear();
@@ -2004,6 +2007,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
       
         cout << "Assemble linearization" << endl;
       
+	Array<int> dnums;
+	ElementTransformation eltrans;
       
         bool hasbound = 0;
         bool hasinner = 0;
@@ -2011,170 +2016,238 @@ cout << "catch in AssembleBilinearform 2" << endl;
         for (int j = 0; j < NumIntegrators(); j++)
           {
             if (parts[j] -> BoundaryForm())
-              hasbound = 1;
+              hasbound = true;
             else
-              hasinner = 1;
+              hasinner = true;
           }
       
+	clock_t prevtime = clock();
+	
         if (hasinner)
           {
-            for (int i = 0; i < ne; i++)
-              {
+	    RegionTimer reg(timervol);
+	    int cnt = 0;
+	    
+	    const Table<int> * element_coloring = &fespace.ElementColoring();
+	    int ncolors = (element_coloring) ? element_coloring->Size() : 1;
+
+
+	    for (int icol = 0; icol < ncolors; icol++)
+	      {
+#pragma omp parallel 
+		{
+		  LocalHeap & clh = lh;
+		  LocalHeap lh = clh.Split();
+		  
+		  Array<int> dnums, idofs, idofs1, odofs;
+
+		  ElementTransformation eltrans;
+		  
+		  int nec = (element_coloring) ? (*element_coloring)[icol].Size() : ne;
+		  
+#pragma omp for 
+		  for (int ii = 0; ii < nec; ii++)
+		    {
+		      int i = (element_coloring) ? (*element_coloring)[icol][ii] : ii;
+		      
+		      
+#pragma omp atomic
+		      cnt++;
+
+		      if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
+			{
+#pragma omp critical(printmatasstatus)
+			  {
+			    cout << "\rassemble element " << cnt << "/" << ne << flush;
+			    ma.SetThreadPercentage ( 100.0*cnt / ne );
+			    prevtime = clock();
+			  }
+			}
+		      
+		      /*
                 if (i % 10 == 0)
                   cout << "\rassemble element " << i << "/" << ne << flush;
-                lh.CleanUp();
+		      */
+		      HeapReset hr(lh);
 	      
-                if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
-	      
-                const FiniteElement & fel = fespace.GetFE (i, lh);
-                ma.GetElementTransformation (i, eltrans, lh);
-                fespace.GetDofNrs (i, dnums);
-	      
-                for (int j = 0; j < dnums.Size(); j++)
-                  if (dnums[j] != -1)
-                    useddof.Set (dnums[j]);
-	      
-                FlatMatrix<SCAL> sum_elmat(dnums.Size()*fespace.GetDimension(), lh);
-                FlatMatrix<SCAL> elmat(dnums.Size()*fespace.GetDimension(), lh);
-                sum_elmat = 0;
+		      if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
+		      
+		      const FiniteElement & fel = fespace.GetFE (i, lh);
+		      ma.GetElementTransformation (i, eltrans, lh);
+		      fespace.GetDofNrs (i, dnums);
+		      
+		      for (int j = 0; j < dnums.Size(); j++)
+			if (dnums[j] != -1)
+			  useddof.Set (dnums[j]);
+		      
+		      FlatMatrix<SCAL> sum_elmat(dnums.Size()*fespace.GetDimension(), lh);
+		      FlatMatrix<SCAL> elmat(dnums.Size()*fespace.GetDimension(), lh);
+		      sum_elmat = 0;
+		      
+		      FlatVector<SCAL> elveclin (dnums.Size()*fespace.GetDimension(), lh);
+		      lin.GetIndirect (dnums, elveclin);
+		      fespace.TransformVec (i, false, elveclin, TRANSFORM_SOL);
+		      
+		      for (int j = 0; j < NumIntegrators(); j++)
+			{
+			  const BilinearFormIntegrator & bfi = *parts[j];
+			  
+			  if (bfi.BoundaryForm()) continue;
+			  if (!bfi.DefinedOn (ma.GetElIndex (i))) continue;
+			  
+			  try
+			    {
+			      bfi.CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
+			      
+			      if (printelmat) 
+				{
+				  testout->precision(8);
+				  (*testout) << "elnum= " << i << endl;
+				  (*testout) << "eltype " << fel.ElementType() << endl;
+				  (*testout) << "integrator " << bfi.Name() << endl;
+				  (*testout) << "dnums = " << endl << dnums << endl;
+				  (*testout) << "elveclin = " << endl << elveclin << endl;
+				  (*testout) << "elmat = " << endl << elmat << endl;
+				}
+			      
 
-                FlatVector<SCAL> elveclin (dnums.Size()*fespace.GetDimension(), lh);
-                lin.GetIndirect (dnums, elveclin);
-                fespace.TransformVec (i, false, elveclin, TRANSFORM_SOL);
-
-                for (int j = 0; j < NumIntegrators(); j++)
-                  {
-                    const BilinearFormIntegrator & bfi = *parts[j];
-		  
-                    if (bfi.BoundaryForm()) continue;
-                    if (!bfi.DefinedOn (ma.GetElIndex (i))) continue;
-		  
-                    try
-                      {
-                        bfi.CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
-
-                        if (printelmat) 
-                          {
-                            testout->precision(8);
-                            (*testout) << "elnum= " << i << endl;
-                            (*testout) << "eltype " << fel.ElementType() << endl;
-                            (*testout) << "integrator " << bfi.Name() << endl;
-                            (*testout) << "dnums = " << endl << dnums << endl;
-                            (*testout) << "elveclin = " << endl << elveclin << endl;
-                            (*testout) << "elmat = " << endl << elmat << endl;
-                          }
 
 
-
-
-                        //////////////////////////////////////////////////
-                        /*		      
-                        //		      cout << " material: " << ma.GetElMaterial(i) << endl;
+			      //////////////////////////////////////////////////
+			      /*		      
+			      //		      cout << " material: " << ma.GetElMaterial(i) << endl;
 		      			
-                        cout << " assemble linearization, elmat: " << endl;
-                        cout << elmat << endl;
+			      cout << " assemble linearization, elmat: " << endl;
+			      cout << elmat << endl;
 
-                        FlatMatrix<SCAL> new_elmat(dnums.Size()*fespace.GetDimension(), lh);
-                        FlatVector<SCAL> e(dnums.Size()*fespace.GetDimension(), lh);
-                        FlatVector<SCAL> temp(dnums.Size()*fespace.GetDimension(), lh);
-                        FlatVector<SCAL> y1(dnums.Size()*fespace.GetDimension(), lh);
-                        FlatVector<SCAL> y2(dnums.Size()*fespace.GetDimension(), lh);
+			      FlatMatrix<SCAL> new_elmat(dnums.Size()*fespace.GetDimension(), lh);
+			      FlatVector<SCAL> e(dnums.Size()*fespace.GetDimension(), lh);
+			      FlatVector<SCAL> temp(dnums.Size()*fespace.GetDimension(), lh);
+			      FlatVector<SCAL> y1(dnums.Size()*fespace.GetDimension(), lh);
+			      FlatVector<SCAL> y2(dnums.Size()*fespace.GetDimension(), lh);
 
-                        double eps = 1e-5;
-                        for ( int ii=0; ii<e.Size(); ii++ )
-                        {
-                        e = 0;
-                        e(ii) = 1;
-                        temp = elveclin + eps*e;
-                        bfi.ApplyElementMatrix(fel,eltrans,temp,y1,0, lh);
-                        bfi.ApplyElementMatrix(fel,eltrans,elveclin,y2, 0, lh);
-                        temp = y1-y2;
-                        for ( int jj=0; jj<new_elmat.Width(); jj++ ) new_elmat(jj,ii) = temp(jj)/eps;
-                        }
+			      double eps = 1e-5;
+			      for ( int ii=0; ii<e.Size(); ii++ )
+			      {
+			      e = 0;
+			      e(ii) = 1;
+			      temp = elveclin + eps*e;
+			      bfi.ApplyElementMatrix(fel,eltrans,temp,y1,0, lh);
+			      bfi.ApplyElementMatrix(fel,eltrans,elveclin,y2, 0, lh);
+			      temp = y1-y2;
+			      for ( int jj=0; jj<new_elmat.Width(); jj++ ) new_elmat(jj,ii) = temp(jj)/eps;
+			      }
 
-                        cout << " elmat by num. diff:" << endl << new_elmat << endl;
-                        */
-                        //////////////////////////////////////////////////
+			      cout << " elmat by num. diff:" << endl << new_elmat << endl;
+			      */
+			      //////////////////////////////////////////////////
 
-                      }
-                    catch (Exception & e)
-                      {
-                        e.Append (string("in Assemble Element Mat, bfi = ") + 
-                                  bfi.Name() + string("\n"));
-                        throw;
-                      }
-                    catch (exception & e)
-                      {
-                        throw (Exception (string(e.what()) +
-                                          string("in Assemble Element Mat, bfi = ") + 
-                                          bfi.Name() + string("\n")));
-                      }
+			    }
+			  catch (Exception & e)
+			    {
+			      e.Append (string("in Assemble Element Mat, bfi = ") + 
+					bfi.Name() + string("\n"));
+			      throw;
+			    }
+			  catch (exception & e)
+			    {
+			      throw (Exception (string(e.what()) +
+						string("in Assemble Element Mat, bfi = ") + 
+						bfi.Name() + string("\n")));
+			    }
 		  
-                    sum_elmat += elmat;
-                  }
+			  sum_elmat += elmat;
+			}
 	      
-                fespace.TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
-                AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
-              }
-            cout << "\rassemble element " << ne << "/" << ne << endl;
-          }
+		      fespace.TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
+		      AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
+		    }
+		}
+	      }
+	    cout << "\rassemble element " << ne << "/" << ne << endl;
+	  }
       
         // (*testout) << "Assemble Mat, vol, mat = " << endl << GetMatrix() << endl;
       
         int nse = ma.GetNSE();
         if (hasbound)
           {
-            for (int i = 0; i < nse; i++)
-              {
-                if (i % 100 == 0)
-                  cout << "\rassemble surface element " << i << "/" << nse << flush;
-                lh.CleanUp();
+	    RegionTimer reg(timerbound);
+
+	    int cnt = 0;
+#pragma omp parallel 
+	    {
+	      LocalHeap & clh = lh;
+	      LocalHeap lh = clh.Split();
 	      
-                if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+	      ElementTransformation eltrans;
+	      Array<int> dnums;
+#pragma omp for 
+	      for (int i = 0; i < nse; i++)
+		{
+		  HeapReset hr(lh);
+
+#pragma omp critical(printmatasstatus)
+		  {
+		    cnt++;
+		    if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
+		      {
+			{
+			  cout << "\rassemble surface element " << cnt << "/" << nse << flush;
+			  // ma.SetThreadPercentage ( 100.0*cnt / (nse) );
+			  prevtime = clock();
+			}
+		      }
+		  }
+
 	      
-                const FiniteElement & fel = fespace.GetSFE (i, lh);
+		    if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+		    
+		    const FiniteElement & fel = fespace.GetSFE (i, lh);
 	      
-                ma.GetSurfaceElementTransformation (i, eltrans, lh);
-                fespace.GetSDofNrs (i, dnums);
+		    ma.GetSurfaceElementTransformation (i, eltrans, lh);
+		    fespace.GetSDofNrs (i, dnums);
 	      
-                for (int j = 0; j < dnums.Size(); j++)
-                  if (dnums[j] != -1)
-                    useddof.Set (dnums[j]);
-
-                FlatVector<SCAL> elveclin (dnums.Size()*fespace.GetDimension(), lh);
-                FlatMatrix<SCAL> elmat (dnums.Size()*fespace.GetDimension(), lh);
-
-                lin.GetIndirect (dnums, elveclin);
-                fespace.TransformVec (i, true, elveclin, TRANSFORM_SOL);
+		    for (int j = 0; j < dnums.Size(); j++)
+		      if (dnums[j] != -1)
+			useddof.Set (dnums[j]);
+		    
+		    FlatVector<SCAL> elveclin (dnums.Size()*fespace.GetDimension(), lh);
+		    FlatMatrix<SCAL> elmat (dnums.Size()*fespace.GetDimension(), lh);
+		    
+		    lin.GetIndirect (dnums, elveclin);
+		    fespace.TransformVec (i, true, elveclin, TRANSFORM_SOL);
 	      
-                for (int j = 0; j < NumIntegrators(); j++)
-                  {
-                    const BilinearFormIntegrator & bfi = *parts[j];
-		  
-                    if (!bfi.BoundaryForm()) continue;
-
-		  
-                    bfi.CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
-		  	  
-                    fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-                    AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
-
-
-                    if (printelmat) 
-                      {
-                        testout->precision(8);
-                        (*testout) << "surface-elnum= " << i << endl;
-                        (*testout) << "eltype " << fel.ElementType() << endl;
-                        (*testout) << "integrator " << bfi.Name() << endl;
-                        (*testout) << "dnums = " << endl << dnums << endl;
-                        (*testout) << "elveclin = " << endl << elveclin << endl;
-                        (*testout) << "elmat = " << endl << elmat << endl;
-                      }
+		    for (int j = 0; j < NumIntegrators(); j++)
+		      {
+			const BilinearFormIntegrator & bfi = *parts[j];
+			
+			if (!bfi.BoundaryForm()) continue;
+			
+			
+			bfi.CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
+			
+			fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
 
-
-                  }
-              }
+#pragma omp critical (addelmatboundary)
+			  {
+			    AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+			    
+			    if (printelmat) 
+			      {
+				testout->precision(8);
+				(*testout) << "surface-elnum= " << i << endl;
+				(*testout) << "eltype " << fel.ElementType() << endl;
+				(*testout) << "integrator " << bfi.Name() << endl;
+				(*testout) << "dnums = " << endl << dnums << endl;
+				(*testout) << "elveclin = " << endl << elveclin << endl;
+				(*testout) << "elmat = " << endl << elmat << endl;
+			      }
+			  }
+		      }
+		}
+	    }
             cout << "\rassemble surface element " << nse << "/" << nse << endl;	  
           }
       
@@ -2276,6 +2349,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
                                            BaseVector & y) const
   {
     static Timer timer ("Apply Matrix");
+    static Timer timervol ("Apply Matrix - volume");
+    static Timer timerbound ("Apply Matrix - boundary");
     RegionTimer reg (timer);
 
     static int lh_size = 20000000;
@@ -2316,6 +2391,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
                 int cnt = 0;
 
                 if (hasinner)
+		  {
+		    RegionTimer reg (timervol);
 #pragma omp parallel
                   {
                     LocalHeap lh(lh_size, "biform-AddMatrix (a)");
@@ -2336,38 +2413,53 @@ cout << "catch in AssembleBilinearform 2" << endl;
                         ApplyElementMatrix(x,y,val,dnums,eltrans,i,0,cnt,lh,&fel);
                       }
                   }
+		  }
 
-                LocalHeap lh (lh_size, "biform-AddMatrix (b)");
-                Array<int> dnums;
-                ElementTransformation eltrans;
-      
 			
                 int nse = ma.GetNSE();
                 if (hasbound)
-                  for (int i = 0; i < nse; i++)
-                    {
-                      lh.CleanUp();
-
-                      const FiniteElement & fel = fespace.GetSFE (i, lh);
-		      
-                      ma.GetSurfaceElementTransformation (i, eltrans, lh);
-                      fespace.GetSDofNrs (i, dnums);
-		      
-                      ApplyElementMatrix(x,y,val,dnums,eltrans,i,1,cnt,lh,&fel);
-                    }
+		  {
+		    RegionTimer reg (timerbound);
+#pragma omp parallel
+                  {
+                    LocalHeap lh(lh_size, "biform-AddMatrix (b)");
+                    Array<int> dnums;
+                    ElementTransformation eltrans;
+                    
+#pragma omp for
+		    for (int i = 0; i < nse; i++)
+		      {
+			lh.CleanUp();
 			
+			const FiniteElement & fel = fespace.GetSFE (i, lh);
+			
+			ma.GetSurfaceElementTransformation (i, eltrans, lh);
+			fespace.GetSDofNrs (i, dnums);
+			
+			ApplyElementMatrix(x,y,val,dnums,eltrans,i,1,cnt,lh,&fel);
+		      }
+		  }
+		  }
+
+
+
 		if (hasskeletonbound||hasskeletoninner)
 		  throw Exception ("No BilinearFormApplication-Implementation for Facet-Integrators yet");
 		  
-                lh.CleanUp();
-                for (int i = 0; i < fespace.specialelements.Size(); i++)
-                  {
-                    const SpecialElement & el = *fespace.specialelements[i];
-                    el.GetDofNrs (dnums);
-		    
-                    ApplyElementMatrix(x,y,val,dnums,eltrans,i,2,cnt,lh,NULL,&el);
-                    lh.CleanUp();
-                  }
+		if (fespace.specialelements.Size())
+		  {
+		    LocalHeap lh(lh_size, "biform-AddMatrix (c)");
+		    Array<int> dnums;
+                    ElementTransformation eltrans;
+		    for (int i = 0; i < fespace.specialelements.Size(); i++)
+		      {
+			const SpecialElement & el = *fespace.specialelements[i];
+			el.GetDofNrs (dnums);
+			
+			ApplyElementMatrix(x,y,val,dnums,eltrans,i,2,cnt,lh,NULL,&el);
+			lh.CleanUp();
+		      }
+		  }
                 done = true;
               }
             catch (LocalHeapOverflow lhex)

@@ -744,13 +744,13 @@ namespace ngcomp
     if (ma.GetDimension() == 3)
       dnums += GetFaceDofs (ngel.faces[0]);
     
-
-
-    // what's that (JS) ?
-    // I still don't understand it .... but it's now threadsafe
     if (!DefinedOnBoundary (ma.GetSElIndex (elnr)))
       dnums = -1;
 
+
+    /*
+    // what's that (JS) ?
+    // I still don't understand it .... but it's now threadsafe
 
     if(defined_on_one_side_of_bounding_curve.Size() > 0)
       {
@@ -825,8 +825,10 @@ namespace ngcomp
         //if(!isfirst)
         //  (*testout) << "elnr " << elnr << ", keep_dnum " << keep_dnum << endl;
       }
+*/
   }
-  
+
+  /*
   void H1HighOrderFESpace :: RestrictToOneSideOfBoundingCurve(int index1, int index2)
   {
     defined_on_one_side_of_bounding_curve.Append(INT<2>(index1,index2));
@@ -835,7 +837,7 @@ namespace ngcomp
   {
     defined_on_one_side_of_bounding_curve.DeleteAll();
   }
-
+  */
 
 
   
