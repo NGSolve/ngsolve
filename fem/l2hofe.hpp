@@ -201,27 +201,27 @@ namespace ngfem
 
     virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const;
     /*
-    {
+      {
       int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
       if (precomp_trace.Used (INT<2> (order, classnr)))
-	{
-	  fcoefs = (*precomp_trace.Get (INT<2> (order, classnr))) * coefs;
-	}
+      {
+      fcoefs = (*precomp_trace.Get (INT<2> (order, classnr))) * coefs;
+      }
       else
-	L2HighOrderFiniteElement<DIM>::GetTrace (facet, coefs, fcoefs);
-    }
+      L2HighOrderFiniteElement<DIM>::GetTrace (facet, coefs, fcoefs);
+      }
     */
     virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const;
     /*
-    {
+      {
       int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
       if (precomp_trace.Used (INT<2> (order, classnr)))
-	{
-	  coefs = Trans(*precomp_trace.Get (INT<2> (order, classnr))) * fcoefs;
-	}
+      {
+      coefs = Trans(*precomp_trace.Get (INT<2> (order, classnr))) * fcoefs;
+      }
       else
-	L2HighOrderFiniteElement<DIM>::GetTraceTrans (facet, fcoefs, coefs);
-    }
+      L2HighOrderFiniteElement<DIM>::GetTraceTrans (facet, fcoefs, coefs);
+      }
     */
   };
 
@@ -314,7 +314,43 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[], TFA & shape) const;
+    void T_CalcShape (Tx x[], TFA & shape) const
+    {
+      Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
+      
+      int sort[4];
+      for (int i = 0; i < 4; i++) sort[i] = i;
+    
+      if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+      if (vnums[sort[2]] > vnums[sort[3]]) Swap (sort[2], sort[3]);
+      if (vnums[sort[0]] > vnums[sort[2]]) Swap (sort[0], sort[2]);
+      if (vnums[sort[1]] > vnums[sort[3]]) Swap (sort[1], sort[3]);
+      if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
+
+      Tx lamis[4];
+      for (int i = 0; i < 4; i++)
+	lamis[i] = lami[sort[i]];
+
+      ArrayMem<Tx, 20> memx(sqr(order+1));
+      ArrayMem<Tx, 20> memy(sqr(order+1));
+
+      FlatMatrix<Tx> polsx(order+1, &memx[0]);
+      FlatMatrix<Tx> polsy(order+1, &memy[0]);
+      VectorMem<10, Tx> polsz(order+1);
+    
+      for (int i = 0; i <= order; i++)
+	JacobiPolynomial (order, 2*lamis[0]-1, 2*i+2, 0, polsx.Row(i));
+      for (int i = 0; i <= order; i++)
+	ScaledJacobiPolynomial (order, lamis[1]-lamis[2]-lamis[3], 1-lamis[0], 2*i+1, 0, polsy.Row(i));
+
+      ScaledLegendrePolynomial (order, lamis[2]-lamis[3], lamis[2]+lamis[3], polsz);
+
+      for (int i = 0, ii = 0; i <= order; i++)
+	for (int j = 0; j <= order-i; j++)
+	  for (int k = 0; k <= order-i-j; k++, ii++)
+	    shape[ii] = polsz(k) * polsy(k, j) * polsx(j+k, i);
+    }
+
   };
 
 
@@ -326,7 +362,47 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[], TFA & shape) const;
+    void T_CalcShape (Tx hx[], TFA & shape) const
+    {
+      Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
+
+      int sort[3];
+      for (int i = 0; i < 3; i++) sort[i] = i;
+    
+      if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+      if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
+      if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+
+      Tx lamis[3];
+      for (int i = 0; i < 3; i++)
+	lamis[i] = lami[sort[i]];
+
+      Tx x = lamis[0];
+      // Tx y = lamis[1];
+      Tx z = hx[2];
+
+      int p=order_inner[0];
+      int q=order_inner[1];
+
+      ArrayMem<Tx, 20> memx(sqr(p+1));
+      FlatMatrix<Tx> polsx(p+1, &memx[0]);
+
+      VectorMem<10, Tx> polsy(p+1);
+      VectorMem<10, Tx> polsz(q+1);
+    
+      for (int i = 0; i <= p; i++)
+	JacobiPolynomial (p, 2*x-1, 2*i+1, 0, polsx.Row(i));
+
+      ScaledLegendrePolynomial (order, lamis[1]-lamis[2], lamis[1]+lamis[2], polsy);
+      LegendrePolynomial (order, 2*z-1, polsz);
+
+      int ii = 0;
+      for (int k = 0; k <= q; k++)
+	for (int i = 0; i <= p; i++)
+	  for (int j = 0; j <= p-i; j++)
+	    shape[ii++] = polsx(j,i) * polsy(j) * polsz(k);
+    }
+
   };
 
 
