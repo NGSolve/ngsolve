@@ -37,11 +37,11 @@ int main ()
   Ng_LoadGeometry ("cube.geo");
   Ng_LoadMesh ("cube.vol");
   
-  LocalHeap lh(1000000, "main heap");
+  LocalHeap lh(10000000, "main heap");
   MeshAccess ma;
 
   Flags fesflags;
-  fesflags.SetFlag ("order", 6);
+  fesflags.SetFlag ("order", 2);
   H1HighOrderFESpace fes(ma, fesflags);
   
   Flags uflags;
