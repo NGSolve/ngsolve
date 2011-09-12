@@ -125,6 +125,7 @@ namespace ngsolve
     }       
     
     const char* ipflag = flags.GetStringFlag("innerproduct","symmetric");
+    ip_type = SYMMETRIC;
     if (strcmp(ipflag,"symmetric")==0) ip_type = SYMMETRIC;
     if (strcmp(ipflag,"hermitean")==0) ip_type = HERMITEAN;
     if (strcmp(ipflag,"conj_hermitean")==0) ip_type = CONJ_HERMITEAN;
