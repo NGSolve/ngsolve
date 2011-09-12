@@ -485,7 +485,11 @@ namespace ngbla
     // std::cout << "factors = " << std::endl << a << std::endl;
 
     if (info != 0)
-      std::cout << "ZGETRF::info = " << info << std::endl;
+      {
+	std::cout << "ZGETRF::info = " << info << std::endl;
+	// *testout << "ZGETRF::info = " << info << std::endl;
+	// *testout << "a = " << endl << a << endl;
+      }
     zgetri_ (&n,  &a(0,0), &lda, ipiv, work, &lwork, &info);
     if (info != 0)
       std::cout << "ZGETRI::info = " << info << std::endl;
