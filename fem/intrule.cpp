@@ -27,11 +27,11 @@ namespace ngfem
   template <int S, int R, typename SCAL>
   MappedIntegrationPoint<S,R,SCAL> :: 
   MappedIntegrationPoint (const IntegrationPoint & aip,
-			    const ElementTransformation & aeltrans,
-			    LocalHeap & lh)
+			  const ElementTransformation & aeltrans,
+			  LocalHeap & /* lh */)
     : DimMappedIntegrationPoint<R,SCAL> (aip, aeltrans)
   {
-    this->eltrans->CalcPointJacobian(this->IP(), this->point, dxdxi, lh);
+    this->eltrans->CalcPointJacobian(this->IP(), this->point, dxdxi);
 
     if (S == R)
       {
