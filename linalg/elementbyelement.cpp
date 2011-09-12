@@ -251,8 +251,8 @@ namespace ngla
 
   template <class SCAL>
   void ElementByElementMatrix<SCAL> :: AddElementMatrix (int elnr,
-                                                         const Array<int> & rowdnums_in,
-                                                         const Array<int> & coldnums_in,
+                                                         const FlatArray<int> & rowdnums_in,
+                                                         const FlatArray<int> & coldnums_in,
                                                          const FlatMatrix<SCAL> & elmat)
   {
     ArrayMem<int,50> usedrows;
@@ -290,8 +290,8 @@ namespace ngla
 
   template <class SCAL>
   void ElementByElementMatrix<SCAL> :: AddCloneElementMatrix (int elnr,
-                                                         const Array<int> & rowdnums_in,
-                                                         const Array<int> & coldnums_in,
+                                                         const FlatArray<int> & rowdnums_in,
+                                                         const FlatArray<int> & coldnums_in,
                                                          int refelnr)
   {
     ArrayMem<int,50> usedrows;

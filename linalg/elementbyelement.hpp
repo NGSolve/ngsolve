@@ -45,13 +45,13 @@ namespace ngla
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
 
     void AddElementMatrix (int elnr,
-                           const Array<int> & dnums1,
-			   const Array<int> & dnums2,
+                           const FlatArray<int> & dnums1,
+			   const FlatArray<int> & dnums2,
 			   const FlatMatrix<SCAL> & elmat);
 			   
     void AddCloneElementMatrix(int elnr,
-                           const Array<int> & dnums1,
-			   const Array<int> & dnums2,
+                           const FlatArray<int> & dnums1,
+			   const FlatArray<int> & dnums2,
 			   int refelnr);
 
     virtual BaseVector & AsVector() 

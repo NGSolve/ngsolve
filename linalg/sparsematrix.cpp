@@ -691,7 +691,7 @@ namespace ngla
 
   template <class TM>
   void SparseMatrixTM<TM> ::
-  AddElementMatrix(const Array<int> & dnums1, const Array<int> & dnums2, const FlatMatrix<TSCAL> & elmat1)
+  AddElementMatrix(const FlatArray<int> & dnums1, const FlatArray<int> & dnums2, const FlatMatrix<TSCAL> & elmat1)
   {
     // cout << "AddelementMatrix not impelmented" << endl;
 
@@ -964,7 +964,7 @@ namespace ngla
 
   template <class TM>
   void SparseMatrixSymmetricTM<TM> ::
-  AddElementMatrix(const Array<int> & dnums, const FlatMatrix<TSCAL> & elmat1)
+  AddElementMatrix(const FlatArray<int> & dnums, const FlatMatrix<TSCAL> & elmat1)
   {
     static Timer timer ("SparseMatrixSymmetric::AddElementMatrix");
     RegionTimer reg (timer);
