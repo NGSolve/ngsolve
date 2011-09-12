@@ -91,7 +91,7 @@ AC_ARG_ENABLE([mumps],
 #	[AC_SUBST([LAPACK_LIB], ["-L/opt/intel/mkl/10.0.2.018/lib/em64t -lmkl_sequential"])]
 
 
-AC_SUBST([NETGEN_INCLUDES], ["-DNETGEN_ELTRANS -I$netgendir/include"])
+AC_SUBST([NETGEN_INCLUDES], ["-I$netgendir/include"])
 
 AC_ARG_ENABLE([parallel],
         [AC_HELP_STRING([--enable-parallel],[enable mpi parallelization])],
