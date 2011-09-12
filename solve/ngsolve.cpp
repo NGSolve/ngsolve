@@ -815,9 +815,17 @@ void NGS_ParallelRun ( const string & message )
 
       // transfer file contents, not filename
       string pdefiledata;
+      string filename, pde_directory;
+
+      MyMPI_Recv (filename, 0);
+      MyMPI_Recv (pde_directory, 0);
       MyMPI_Recv (pdefiledata, 0);
 
       istringstream pdefile (pdefiledata);
+
+      pde->SetDirectory(pde_directory);
+      pde->SetFilename(filename);
+
       pde -> LoadPDE (pdefile, 1, 0);
     } 
 

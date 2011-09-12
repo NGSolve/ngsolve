@@ -1981,7 +1981,11 @@ namespace ngsolve
 	  }
 
 	for ( int dest = 1; dest < ntasks; dest ++)
-	  MyMPI_Send (data, dest);
+	  {
+	    MyMPI_Send (filename, dest);
+	    MyMPI_Send (pde_directory, dest);
+	    MyMPI_Send (data, dest);
+	  }
 	/*
 	for ( int dest = 1; dest < ntasks; dest ++)
 	  MyMPI_Send (filename, dest);
