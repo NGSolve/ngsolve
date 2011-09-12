@@ -23,52 +23,6 @@ namespace ngcomp
 
 
   // Nedelec FE Space
-
-#ifdef OLD
-  // old style constructor
-  NedelecFESpace :: NedelecFESpace (const MeshAccess & ama,
-				    int aorder, int adim, bool acomplex, bool adiscontinuous)
-    
-    : FESpace (ama, aorder, adim, acomplex),
-      discontinuous(adiscontinuous)
-  {
-    name="NedelecFESpace(hcurl)";
-    
-    tet     = new FE_NedelecTet1;
-    prism   = new FE_NedelecPrism1;
-    pyramid = new FE_NedelecPyramid1;
-    trig    = new FE_NedelecTrig1;
-    quad    = new FE_NedelecQuad1;
-    segm    = new FE_NedelecSegm1;
-    hex     = new FE_NedelecHex1; 
-
-    // prol = CreateVecObject<EdgeProlongation, Prolongation> (dimension, iscomplex, *this); 
-    //    CreateVecObject1(prol, EdgeProlongation, dimension, iscomplex, *this);
-    prol = new EdgeProlongation (*this);
-    order = 1;
-
-
-    // Evaluator for shape tester 
-    static ConstantCoefficientFunction one(1);
-    if (ma.GetDimension() == 2)
-      {
-	Array<CoefficientFunction*> coeffs(1);
-	coeffs[0] = &one;
-	evaluator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
-      }
-    else if(ma.GetDimension() == 3) 
-      {
-	Array<CoefficientFunction*> coeffs(1); 
-	coeffs[0] = &one;
-	evaluator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
-	boundary_evaluator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
-	
-      }
-  }
-#endif
-
-  
-  // new style constructor
   NedelecFESpace :: NedelecFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags)
     : FESpace (ama, flags)
   {
@@ -364,6 +318,8 @@ namespace ngcomp
     
     prol->Update();
 
+    UpdateCouplingDofArray();
+
     // FinalizeUpdate (lh);
 
     //   (*testout) << "edges: " << endl;
@@ -377,6 +333,17 @@ namespace ngcomp
     //     {
     //       (*testout) << i << ": " << parentedges.Get(i)[0] << ", " << parentedges.Get(i)[1] << endl;
     //     }
+  }
+
+  void  NedelecFESpace :: UpdateCouplingDofArray ()
+  {
+    int level = ma.GetNLevels()-1;
+
+    ctofdof.SetSize(GetNDof());
+
+    for (int edge = 0; edge < ma.GetNEdges(); edge++) 
+      ctofdof[edge] = 
+	(FineLevelOfEdge(edge) == level) ? WIREBASKET_DOF : UNUSED_DOF; 
   }
 
 
@@ -1072,8 +1039,11 @@ namespace ngcomp
     //  (*testout) << "gradientedges = " << endl << gradientedge << endl;
 
 
-    FinalizeUpdate (lh);
+    // FinalizeUpdate (lh);
   }
+
+
+
 
 
   int NedelecFESpace2 :: GetNDof () const

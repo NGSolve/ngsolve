@@ -32,7 +32,8 @@ namespace ngcomp
      or
      - a wirebasket degree of freedom
   */
-  enum COUPLING_TYPE {  LOCAL_DOF = 1,
+  enum COUPLING_TYPE {  UNUSED_DOF = 0,
+			LOCAL_DOF = 1,
 			INTERFACE_DOF = 2,
 			NONWIREBASKET_DOF = 3,
 			WIREBASKET_DOF = 4,

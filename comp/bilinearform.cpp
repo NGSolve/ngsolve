@@ -1025,19 +1025,16 @@ namespace ngcomp
                       
 
 			  if (element_coloring)
-			    {
-			      AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
-			      if (preconditioner)
-				preconditioner -> AddElementMatrix (dnums, sum_elmat, true, i, lh);
-			    }
+			    AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
 			  else
 #pragma omp critical (addvolelement)
 			    {
 			      AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
-			      if (preconditioner)
-				preconditioner -> AddElementMatrix (dnums, sum_elmat, true, i, lh);
 			    }
 			  
+			  if (preconditioner)
+			    preconditioner -> AddElementMatrix (dnums, sum_elmat, true, i, lh);
+
 			  for (int j = 0; j < dnums.Size(); j++)
 			    if (dnums[j] != -1)
 			      useddof.Set (dnums[j]);
@@ -1156,9 +1153,7 @@ namespace ngcomp
 #pragma omp parallel 
                 {
                   LocalHeap lh = clh.Split();
-
-                  ElementTransformation eltrans;
-                  Array<int> dnums, idofs, idofs1, odofs;
+                  Array<int> dnums; 
 #pragma omp for 
                   for (int i = 0; i < nse; i++)
                     {
@@ -1168,35 +1163,21 @@ namespace ngcomp
 			gcnt++;
 			if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
 			  {
-			    {
-			      cout << "\rassemble surface element " << cnt << "/" << nse << flush;
-			      ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
-			      prevtime = clock();
-			    }
+			    cout << "\rassemble surface element " << cnt << "/" << nse << flush;
+			    ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
+			    prevtime = clock();
 			  }
 		      }
-		      /*
-#pragma omp critical(printmatasstatus2)
-                      {
-                        cnt++;
-			gcnt++;
-                        if (cnt % 100 == 0)
-                          cout << "\rassemble surface element " << cnt << "/" << nse << flush;
-                        ma.SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
-                      }
-		      */
-
-
 
                       lh.CleanUp();
 		  
-                      if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
-
+		      if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+		      
 		      NgProfiler::StartTimer (timerb1);
 		      
                       const FiniteElement & fel = fespace.GetSFE (i, lh);
 		      
-                      ma.GetSurfaceElementTransformation (i, eltrans, lh);
+		      ElementTransformation & eltrans = ma.GetTrafo (i, 1, lh);
                       fespace.GetSDofNrs (i, dnums);
 
                       if(fel.GetNDof() != dnums.Size())
@@ -1212,6 +1193,17 @@ namespace ngcomp
 
 		      NgProfiler::StopTimer (timerb1);
 
+		      
+		      int elmat_size = dnums.Size()*fespace.GetDimension();
+		      FlatMatrix<SCAL> elmat(elmat_size, lh);
+		      FlatMatrix<SCAL> sumelmat(elmat_size, lh);
+		      sumelmat = SCAL (0.0);
+
+		      for (int k = 0; k < dnums.Size(); k++)
+			if (dnums[k] != -1)
+			  useddof.Set (dnums[k]);
+
+
                       for (int j = 0; j < NumIntegrators(); j++)
                         {
                           const BilinearFormIntegrator & bfi = *parts[j];
@@ -1220,20 +1212,13 @@ namespace ngcomp
                           if (bfi.SkeletonForm()) continue;
                           if (!bfi.DefinedOn (ma.GetSElIndex (i))) continue;		    
 
-                          for (int k = 0; k < dnums.Size(); k++)
-                            if (dnums[k] != -1)
-                              useddof.Set (dnums[k]);
-
 			  NgProfiler::StartTimer (timerb2);
 
-                          int elmat_size = dnums.Size()*fespace.GetDimension();
-                          FlatMatrix<SCAL> elmat(elmat_size, lh);
 
 			  bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
                           fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
 			  NgProfiler::StopTimer (timerb2);
-
 
 			  if (printelmat)
 			    {
@@ -1269,14 +1254,21 @@ namespace ngcomp
 			  // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
 			  
 			  
-			  NgProfiler::StartTimer (timerb3);
-
-#pragma omp critical (addelmatboundary)
-			  {
-			    AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
-			  }
-			  NgProfiler::StopTimer (timerb3);
+			  sumelmat += elmat;
 			}
+		      
+		      
+		      NgProfiler::StartTimer (timerb3);
+		      
+#pragma omp critical (addelmatboundary)
+		      {
+			AddElementMatrix (dnums, dnums, sumelmat, 0, i, lh);
+		      }
+		      
+		      if (preconditioner)
+			preconditioner -> AddElementMatrix (dnums, sumelmat, false, i, lh);
+		      
+		      NgProfiler::StopTimer (timerb3);
                     }
 		}//endof parallel 
 		cout << "\rassemble surface element " << cnt << "/" << nse << endl;
@@ -1625,6 +1617,23 @@ namespace ngcomp
             cout << "used " << cntused
                  << ", unused = " << useddof.Size()-cntused
                  << ", total = " << useddof.Size() << endl;
+
+
+	    int MASK = eliminate_internal ? EXTERNAL_DOF : ANY_DOF;
+	    bool first_time = true;
+            for (int i = 0; i < useddof.Size(); i++)
+	      if (useddof.Test(i) != 
+		  ((fespace.GetDofCouplingType(i) & MASK) != 0) )
+		{
+		  *testout << "used dof inconsistency: " 
+			   << " dof " << i << "-847091 = " << (i-847091) << " used = " << int(useddof.Test(i))
+			   << " ct = " << fespace.GetDofCouplingType(i) << endl;
+		  
+		  if (first_time)
+		    cerr << "used dof inconsistency" << endl;
+		  first_time = false;
+		}
+	    
 
             ma.PopStatus ();
           }
@@ -2161,6 +2170,9 @@ cout << "catch in AssembleBilinearform 2" << endl;
 	      
 		      fespace.TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 		      AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
+
+		      if (preconditioner)
+			preconditioner -> AddElementMatrix (dnums, sum_elmat, true, i, lh);
 		    }
 		}
 	      }
@@ -2214,7 +2226,9 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		    
 		    FlatVector<SCAL> elveclin (dnums.Size()*fespace.GetDimension(), lh);
 		    FlatMatrix<SCAL> elmat (dnums.Size()*fespace.GetDimension(), lh);
-		    
+		    FlatMatrix<SCAL> sum_elmat (dnums.Size()*fespace.GetDimension(), lh);
+		    sum_elmat = SCAL(0.0);
+
 		    lin.GetIndirect (dnums, elveclin);
 		    fespace.TransformVec (i, true, elveclin, TRANSFORM_SOL);
 	      
@@ -2229,23 +2243,29 @@ cout << "catch in AssembleBilinearform 2" << endl;
 			
 			fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
+			sum_elmat += elmat;
 
-#pragma omp critical (addelmatboundary)
+			
+			if (printelmat) 
+#pragma omp critical (addelmatboundary1)
 			  {
-			    AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
-			    
-			    if (printelmat) 
-			      {
-				testout->precision(8);
-				(*testout) << "surface-elnum= " << i << endl;
-				(*testout) << "eltype " << fel.ElementType() << endl;
-				(*testout) << "integrator " << bfi.Name() << endl;
-				(*testout) << "dnums = " << endl << dnums << endl;
-				(*testout) << "elveclin = " << endl << elveclin << endl;
-				(*testout) << "elmat = " << endl << elmat << endl;
-			      }
+			    testout->precision(8);
+			    (*testout) << "surface-elnum= " << i << endl;
+			    (*testout) << "eltype " << fel.ElementType() << endl;
+			    (*testout) << "integrator " << bfi.Name() << endl;
+			    (*testout) << "dnums = " << endl << dnums << endl;
+			    (*testout) << "elveclin = " << endl << elveclin << endl;
+			    (*testout) << "elmat = " << endl << elmat << endl;
 			  }
 		      }
+		    
+#pragma omp critical (addelmatboundary)
+		    {
+		      AddElementMatrix (dnums, dnums, sum_elmat, 0, i, lh);
+		      
+		      if (preconditioner)
+			preconditioner -> AddElementMatrix (dnums, sum_elmat, false, i, lh);
+		    }
 		}
 	    }
             cout << "\rassemble surface element " << nse << "/" << nse << endl;	  

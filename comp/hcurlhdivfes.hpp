@@ -51,6 +51,8 @@ public:
 
   ///
   virtual void Update(LocalHeap & lh);
+  /// 
+  virtual void UpdateCouplingDofArray();
 
   ///
   virtual int GetNDof () const;

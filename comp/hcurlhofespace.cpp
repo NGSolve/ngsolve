@@ -11,7 +11,7 @@
 namespace ngcomp 
 {
   using namespace ngcomp; 
-
+  
 
   HCurlHighOrderFESpace ::  
   HCurlHighOrderFESpace (const MeshAccess & ama, const Flags & aflags, bool parseflags)
@@ -168,9 +168,12 @@ namespace ngcomp
     if (low_order_space)
       low_order_space -> Update(lh);
 
-    nv = ma.GetNV();
-    nel = ma.GetNE();
+    // int nv = ma.GetNV();
+    int ne = ma.GetNE();
     int nse = ma.GetNSE();
+    int ned = ma.GetNEdges();
+    int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
+
     maxorder = -1; 
     minorder = 99; 
 
@@ -178,30 +181,19 @@ namespace ngcomp
       delete specialelements[i];
     specialelements.DeleteAll();
 
-    switch(ma.GetDimension())
-      {
-      case 2: 
-	ned = ma.GetNEdges();
-	nfa = 0;  
-	break; 
-      case 3: 
-	ned = ma.GetNEdges();
-	nfa = ma.GetNFaces();
-	break; 
-      }
-
     order_edge.SetSize (ned);   
     order_face.SetSize (nfa); 
-    order_inner.SetSize (nel);
+    order_inner.SetSize (ne);
     usegrad_edge.SetSize (ned);                                
     usegrad_face.SetSize (nfa); 
-    usegrad_cell.SetSize (nel);
+    usegrad_cell.SetSize (ne);
     fine_edge.SetSize(ned); 
     fine_face.SetSize(nfa); 
 
     int p = var_order ? 0 : order; 
     order_edge = p; 
-    order_inner = INT<3> (p,p,p); 
+    // order_inner = INT<3> (p,p,p); 
+    order_inner = INT<3> (0,0,0); 
 
  
    
@@ -219,7 +211,7 @@ namespace ngcomp
     Array<int> eledges, elfaces, vnums;
 
 
-    for(int i=0; i< nel; i++) 
+    for(int i=0; i< ne; i++) 
       if(gradientdomains[ma.GetElIndex(i)]) 
 	{
 	  ma.GetElEdges(i,eledges);
@@ -250,11 +242,12 @@ namespace ngcomp
 
       
 	
-    for (int i = 0; i < nel; i++)
+    for (int i = 0; i < ne; i++)
       {
 	int index = ma.GetElIndex(i);
 	if (!DefinedOn (index)) continue;
-	
+
+	order_inner[i] = INT<3> (p,p,p); 	
 	INT<3> el_orders = ma.GetElOrders(i);
 	
 	ELEMENT_TYPE eltype=ma.GetElType(i); 
@@ -330,6 +323,24 @@ namespace ngcomp
 	      }  
 	  }
       }
+
+    for (int i = 0; i < nse; i++)
+      {	
+	if (!DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+	
+	ma.GetSElEdges (i, eledges);		
+	for (int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1; 
+
+	if(dim==3) 
+	  {
+	    int elface = ma.GetSElFace(i);
+	    fine_face[elface] = 1; 
+	  }
+      }
+
+
+
+
       	
     if(!var_order) { maxorder = order; minorder = order;} 
     
@@ -348,7 +359,6 @@ namespace ngcomp
       if(!fine_face[i]) order_face[i] = INT<2> (0,0);  
 
 
-
     UpdateDofTables(); 
     UpdateCouplingDofArray();
 
@@ -357,11 +367,14 @@ namespace ngcomp
 		
   void HCurlHighOrderFESpace :: UpdateDofTables()
   {
-    nv = ma.GetNV();
-    ned = ma.GetNEdges();
-    
-    nfa = (ma.GetDimension()==3) ? ma.GetNFaces() : 0;
-    nel = ma.GetNE();
+    int nv = ma.GetNV();
+    int ne = ma.GetNE();
+    // int nse = ma.GetNSE();
+
+    int ned = ma.GetNEdges();
+    int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
+
+
     Array<int> pnums; 
     int i; 
     
@@ -412,10 +425,10 @@ namespace ngcomp
     first_face_dof[nfa] = ndof;   
     // cout << " after faces ndof is " << ndof << endl; 
     
-    cell_ngrad.SetSize(nel); 
+    cell_ngrad.SetSize(ne); 
     cell_ngrad = 0; 
-    first_inner_dof.SetSize(nel+1);
-    for (i=0; i< nel; i++)
+    first_inner_dof.SetSize(ne+1);
+    for (i=0; i< ne; i++)
       {
 	first_inner_dof[i] = ndof;
 	INT<3> p = order_inner[i];
@@ -469,7 +482,7 @@ namespace ngcomp
             break; 
 	  }
       }
-    first_inner_dof[nel] = ndof;    
+    first_inner_dof[ne] = ndof;    
     // cout << " after elements ndof is " << ndof << endl; 
 
     if ( discontinuous )
@@ -477,7 +490,7 @@ namespace ngcomp
 	Array<int> edges, faces;
 
 	ndof = 0;
-	for ( int el = 0; el < nel; el++ )
+	for ( int el = 0; el < ne; el++ )
 	  {
 	    int ndof_inner = first_inner_dof[el+1] - first_inner_dof[el];
 	    first_inner_dof[el] = ndof;
@@ -499,12 +512,16 @@ namespace ngcomp
 		}
 	    ndof += ndof_inner;
 	  }
-	first_inner_dof[nel] = ndof;
+	first_inner_dof[ne] = ndof;
 
 	first_edge_dof = 0;
 	first_face_dof = 0;
 
       }
+
+    *testout << "Hcurlho edge dofs: " << first_edge_dof[0] << "-" << first_edge_dof[ned] << endl;
+    *testout << "Hcurlho face dofs: " << first_face_dof[0] << "-" << first_face_dof[nfa] << endl;
+    *testout << "Hcurlho inner dofs: " << first_inner_dof[0] << "-" << first_inner_dof[ne] << endl;
 
 
     if(print)
@@ -535,41 +552,109 @@ namespace ngcomp
 
   void  HCurlHighOrderFESpace :: UpdateCouplingDofArray ()
   {
-    
+    LocalHeap lh(1000000, "HCurlHighOrderFESpace::UpdateCouplingDofArray");
     ctofdof.SetSize(ndof);
     ctofdof = WIREBASKET_DOF;
     
     if(discontinuous) 
-    {
-      ctofdof = LOCAL_DOF;
-      return;
-    } 
-    int first, next;
-    for (int edge = 0; edge < ma.GetNEdges(); edge++) {
-      ctofdof[edge] = WIREBASKET_DOF; //Nedelec0
-      IntRange range = GetEdgeDofs (edge);
-      first = range.First();
-      next = range.Next();
-      for (int j=first; j<next;j++)
-	ctofdof[j] = WIREBASKET_DOF;
-    }
+      {
+	ctofdof = LOCAL_DOF;
+	return;
+      } 
+
+    for (int edge = 0; edge < ma.GetNEdges(); edge++) 
+      {
+	ctofdof[edge] = 
+	  fine_edge[edge] ? WIREBASKET_DOF : UNUSED_DOF; //Nedelec0
+
+	IntRange range = GetEdgeDofs (edge);
+	ctofdof.Range (range) = INTERFACE_DOF;
+      }
       
     // faces 
     if (ma.GetDimension() == 3)
-      for (int face = 0; face < ma.GetNFaces(); face++){
-	IntRange range = GetFaceDofs (face);
-	first = range.First();
-	next = range.Next();
-	for (int j=first;j<next;j++)
-	  ctofdof[j] = INTERFACE_DOF; //NOGRAD / GRAD
-      }      
-    
-    for (int el = 0; el < ma.GetNE(); el++){
-      IntRange range = GetElementDofs (el);
-      for (int j=range.First();j<range.Next();j++)
-	ctofdof[j] = LOCAL_DOF;
-    }
-//     *testout << "ctofdof = \n" << ctofdof << endl;
+      for (int face = 0; face < ma.GetNFaces(); face++)
+	{
+	  IntRange range = GetFaceDofs (face);
+	  ctofdof.Range (range) = INTERFACE_DOF;
+
+	  if (ma.GetFacetType (face) == ET_QUAD)
+	    {
+	      INT<2> p = order_face[face];
+	      int hnext = range.Next();
+	      int hfirst = hnext-p[0]-p[1];
+	      ctofdof.Range (hfirst, hnext) = WIREBASKET_DOF;
+	    }
+	}
+
+
+    Array<int> dnums, edge_nums, face_nums;
+    for (int el = 0; el < ma.GetNE(); el++)
+      {
+	if (!DefinedOn (ma.GetElIndex (el))) continue;
+	HeapReset hr(lh);
+	IntRange range = GetElementDofs (el);
+	ctofdof.Range (range) = LOCAL_DOF;
+
+	bool upgrade = false;
+	ELEMENT_TYPE eltype = ma.GetElType (el);
+	if (eltype == ET_PYRAMID) upgrade = true;
+
+	if (eltype == ET_PRISM) 
+	  {
+	    ElementTransformation & eltrans = ma.GetTrafo (el, false, lh);
+	    IntegrationPoint ip(0.3333, 0.3333, 0.5);
+	    MappedIntegrationPoint<3,3> mip(ip, eltrans, lh);
+
+	    Mat<3> jac = mip.GetJacobian();
+	    double jaclong = L2Norm (jac.Col(2));
+	    double jacplane = L2Norm (jac.Col(0)) + L2Norm (jac.Col(1));
+	      
+	    ma.GetElEdges (el, edge_nums);
+	    ma.GetElFaces (el, face_nums);
+
+	    // vertical edges
+
+	    if (jaclong > 5 * jacplane)
+	      for (int j = 6; j < 9; j++)
+		{
+		  int enr = edge_nums[j];
+		  ctofdof.Range (GetEdgeDofs(enr)) = WIREBASKET_DOF;
+		}
+	    if (jaclong < 0.2 * jacplane)
+	      {
+		for (int j = 0; j < 3; j++)
+		  {
+		    int enr = edge_nums[j];
+		    ctofdof.Range (GetEdgeDofs(enr)) = WIREBASKET_DOF;
+		  }
+		for (int j = 0; j < 2; j++)
+		  {
+		    int fnr = face_nums[j];
+		    ctofdof.Range (GetFaceDofs(fnr)) = WIREBASKET_DOF;
+		  }
+	      }
+	  }
+
+	if (eltype == ET_TET)
+	  {
+	    ElementTransformation & eltrans = ma.GetTrafo (el, false, lh);
+	    IntegrationPoint ip(0.25, 0.25, 0.25);
+	    MappedIntegrationPoint<3,3> mip(ip, eltrans, lh);
+
+	    double cond = L2Norm (mip.GetJacobian()) * L2Norm (mip.GetJacobianInverse());
+	    if (cond > 10) upgrade = true;
+	  }
+
+
+	if (upgrade)
+	  {
+	    GetDofNrs (el, dnums);
+	    for (int j = 0; j < dnums.Size(); j++)
+	      if (dnums[j] != -1 && ctofdof[dnums[j]] == INTERFACE_DOF)
+		ctofdof[dnums[j]] = WIREBASKET_DOF;
+	  }
+      }
   }
 
   
@@ -579,13 +664,13 @@ namespace ngcomp
       {
         switch (ma.GetElType(elnr))
           {
-	    // case ET_SEGM:    return * new (lh) HCurlDummyFE<ET_SEGM> (); break;
-          case ET_TRIG:    return * new (lh) HCurlDummyFE<ET_TRIG> (); break;
-          case ET_QUAD:    return * new (lh) HCurlDummyFE<ET_QUAD> (); break;
-          case ET_TET:     return * new (lh) HCurlDummyFE<ET_TET> (); break;
-          case ET_PYRAMID: return * new (lh) HCurlDummyFE<ET_PYRAMID> (); break;
-          case ET_PRISM:   return * new (lh) HCurlDummyFE<ET_PRISM> (); break;
-          case ET_HEX:     return * new (lh) HCurlDummyFE<ET_HEX> (); break;
+          case ET_TRIG:    return * new (lh) HCurlDummyFE<ET_TRIG> (); 
+          case ET_QUAD:    return * new (lh) HCurlDummyFE<ET_QUAD> (); 
+          case ET_TET:     return * new (lh) HCurlDummyFE<ET_TET> (); 
+          case ET_PYRAMID: return * new (lh) HCurlDummyFE<ET_PYRAMID> (); 
+          case ET_PRISM:   return * new (lh) HCurlDummyFE<ET_PRISM> (); 
+          case ET_HEX:     return * new (lh) HCurlDummyFE<ET_HEX> (); 
+          case ET_SEGM:    break;
 	  }
       }
 
@@ -801,7 +886,7 @@ namespace ngcomp
     // ordering of shape functions
     // (1*e1),.. (1*e_ne)  
     // (p_t)*tang_e1, ... p_t*tang_ne
-    // p_n * el1, p_i * el1, ... , p_n * nel_n , p_i *el_nel 
+    // p_n * el1, p_i * el1, ... , p_n * ne_n , p_i *el_ne 
 
     Ng_Element ngel = ma.GetElement (elnr);
     dnums.SetSize(0);
@@ -853,14 +938,15 @@ namespace ngcomp
       for (i = 0; i < ednums.Size(); i++) 
 	dnums.Append (ednums[i]);
 
+    /*
     if(augmented==1) 
       {
-	
 	ma.GetSElVertices (selnr, vnums);
 
 	for(i=0;i< vnums.Size();i++) 
 	  dnums.Append(ned+vnums[i]); 
       } 
+    */
     
     for (i = 0; i < ednums.Size(); i++)
       {
@@ -881,9 +967,6 @@ namespace ngcomp
     
     if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
       dnums = -1;
-
-    // *testout << " GetSDNums selnr " << selnr << " \t " << dnums << endl; 
-  
   }
 
 
@@ -942,10 +1025,18 @@ namespace ngcomp
   Table<int> * HCurlHighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const
   {
+    int nv = ma.GetNV();
+    int ne = ma.GetNE();
+    // int nse = ma.GetNSE();
+
+    int ned = ma.GetNEdges();
+    int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
+
+
     bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
     int i, j, k, first,ii;
     int ncnt; 
-    int ni = nel;
+    int ni = ne;
     if (eliminate_internal) ni = 0; 
     
     int SmoothingType = int(precflags.GetNumFlag("blocktype",2)); 
@@ -1751,6 +1842,14 @@ namespace ngcomp
 
   Array<int> *   HCurlHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
+    // int nv = ma.GetNV();
+    int ne = ma.GetNE();
+    // int nse = ma.GetNSE();
+
+    int ned = ma.GetNEdges();
+    int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
+
+
     cout << "called createdirectsolverclusters" << endl;
     // 
     if (precflags.NumFlagDefined ("ds_order"))
@@ -1810,8 +1909,8 @@ namespace ngcomp
 	   
     // int nv = ma.GetNV();
     // int nd = GetNDof();
-    int ne = ma.GetNE();
-    int ned = ma.GetNEdges();
+    // int ne = ma.GetNE();
+    // int ned = ma.GetNEdges();
 
     Array<int> ednums, fnums, pnums;
 
@@ -2433,7 +2532,7 @@ namespace ngcomp
      
     int ned = ma.GetNEdges(); 
     // int nv  = ma.GetNV(); 
-    int nel = ma.GetNE(); 
+    int ne = ma.GetNE(); 
     int nfa = 0;
     if(ma.GetDimension()==3) nfa= ma.GetNFaces();  
 
@@ -2473,7 +2572,7 @@ namespace ngcomp
 	  }
       }
     
-    for(int i=0; i<nel; i++)
+    for(int i=0; i<ne; i++)
       {
 	int l= first_inner_dof[i]; 
 	for (int k = fesh1.GetFirstElementDof(i); k<fesh1.GetFirstElementDof(i+1); 
@@ -2532,7 +2631,7 @@ namespace ngcomp
 	  }
       }
 
-    for(int i=0; i<nel; i++)
+    for(int i=0; i<ne; i++)
       {
 	int l= first_inner_dof[i]; 
 	for (int k = fesh1.GetFirstElementDof(i); k<fesh1.GetFirstElementDof(i+1); 
