@@ -9,7 +9,7 @@
 
 namespace ngcomp
 {
-  template <class SCAL>
+  template <class SCAL, class TV = SCAL>
   class NGS_DLL_HEADER BDDCPreconditioner : public Preconditioner
   {
     const S_BilinearForm<SCAL> * bfa;
@@ -19,23 +19,15 @@ namespace ngcomp
     bool block;
     bool ebe;
 
-    Array<Matrix<double>*> elmats;
+    Array<Matrix<SCAL>*> elmats;
+    Array<Array<int>*> eldnums;
   public:
     BDDCPreconditioner (const PDE & pde, const Flags & aflags);
-    // const std::string aname = "bddcprecond");
 
-    virtual ~BDDCPreconditioner() 
-    { ; }
-
-    /*
-    static Preconditioner * Create (const PDE & pde, const Flags & flags)
-    {
-      return new BDDCPreconditioner<SCAL> (&pde, flags);
-    }
-    */
+    virtual ~BDDCPreconditioner();
 
     virtual void AddElementMatrix (const Array<int> & dnums,
-				   const FlatMatrix<double> & elmat,
+				   const FlatMatrix<SCAL> & elmat,
 				   bool inner_element, int elnr,
 				   LocalHeap & lh);
 
