@@ -4,13 +4,14 @@
 namespace ngcomp
 {
 
+  template <class SCAL, class TV>
   class BDDCMatrix : public BaseMatrix
   {
-    // const ElementByElement_BilinearForm<double> & bfa;
     const BilinearForm & bfa;
-    Array<Matrix<double>*> & elmats;
+    Array<Matrix<SCAL>*> & elmats;
+    Array<Array<int>*> & eldnums;
     Array<int> restrict;
-    Array<int> multiple;
+    Vector<double> weight;
     BaseMatrix * inv;
     BaseMatrix * inv_coarse;
     string inversetype;
@@ -23,7 +24,8 @@ namespace ngcomp
     int nglobalwbdof;
     bool block;
     bool ebe;
-    SparseMatrix<double> * pwbmat;    
+    // SparseMatrix<SCAL,TV> * pwbmat;    
+    BaseMatrix * pwbmat;    
     BaseVector * tmp;
     BaseVector * tmp2;
   public:
@@ -40,93 +42,90 @@ namespace ngcomp
       MyMPI_Barrier ();
 
       const FESpace & fes = bfa.GetFESpace();
-      const MeshAccess & ma = fes.GetMeshAccess();
-      int ne = ma.GetNE();
+      int ne = elmats.Size();
       int ndof = fes.GetNDof();      
       
-      if (!bfa.UsesEliminateInternal()) throw Exception("please use eliminate_internal for the bilinearform");
       
-      Array<int> wbdcnt(ne); //count number of wirebasket dofs on each element
-      Array<int> ifcnt(ne); //count number of interface dofs on each element
+      Array<int> wbdcnt(ne);  //count number of wirebasket dofs on each element
+      Array<int> ifcnt(ne);   //count number of interface dofs on each element
+      wbdcnt = 0;
+      ifcnt = 0;
 
-      Array<int> wbdofs(fes.GetNDof()); //assignment: dof -> global number of the wirebasket dof (-1 for non-wirebasket-dofs)
-      Array<int> ifdofs(fes.GetNDof()); //assignment: dof -> global number of the interface dof (-1 for non-wirebasket-dofs)
-      wbdofs = -1;
-      ifdofs = -1;
-      Array<int> lwbdofs, lifdofs, dnums; //local (on one element) wirebasket/interface/all dofs
-      
       for (int i = 0; i < ne; i++)
         {
-          fes.GetDofNrs (i, lifdofs, INTERFACE_DOF);
-	  int lifcnt = 0;
-	  for (int j = 0; j < lifdofs.Size(); j++)
-	    if(fes.GetFreeDofs()->Test(lifdofs[j])){ lifcnt++;}
-          ifcnt[i] = lifcnt;
-	  fes.GetDofNrs(i,lwbdofs,WIREBASKET_DOF);
-	  wbdcnt[i] = lwbdofs.Size();	
+	  if (!eldnums[i]) continue;
+	  Array<int> & dnums = *eldnums[i];
+	  for (int j = 0; j < dnums.Size(); j++)
+	    {
+	      COUPLING_TYPE ct = fes.GetDofCouplingType(dnums[j]);
+	      // if (ct == INTERFACE_DOF && fes.GetFreeDofs()->Test(dnums[j]))
+	      if (ct != WIREBASKET_DOF)
+		ifcnt[i]++;
+	      if (ct == WIREBASKET_DOF)
+		wbdcnt[i]++;
+	    }
         }
 
       Table<int> el2wbdofs(wbdcnt);   // wirebasket dofs on each element
       Table<int> el2ifdofs(ifcnt);   // interface dofs on each element
-      
+      Table<double> el2ifweight(ifcnt);
+
       BitArray ifdof(ndof);
-      ifdof.Clear();
       BitArray wbdof(ndof);
+      ifdof.Clear();
       wbdof.Clear();
-      
-      int nifdofs = 0;
-      int nwbdofs = 0;
 
-      multiple.SetSize (fes.GetNDof());
-      multiple = 0;
+      weight.SetSize (fes.GetNDof());
+      weight = 0;
 
-      //Check how often each interfacedof/wirebasketdof appears 
-      //TODO: (CL): Wann/Wo kommt die Gewichtung rein?
       for (int i = 0; i < ne; i++)
         {
-	  fes.GetDofNrs (i, lifdofs, INTERFACE_DOF);
-	  int lifcnt = 0;
-	  for (int j = 0; j< lifdofs.Size();j++)
-	  {
-	    if (!ifdof.Test(lifdofs[j])&&fes.GetFreeDofs()->Test(lifdofs[j])){
-	      ifdof.Set(lifdofs[j]);
-	      nifdofs++;
-	      multiple[lifdofs[j]]++;
-	    }else{
-	      multiple[lifdofs[j]]++;
-	    }
-	    if (fes.GetFreeDofs()->Test(lifdofs[j]))
-	      el2ifdofs[i][lifcnt++] = lifdofs[j];
-	  }
+	  if (!eldnums[i]) continue;
+	  Array<int> & dnums = *eldnums[i];
 
-	  fes.GetDofNrs(i,lwbdofs,WIREBASKET_DOF);
-	  for (int j = 0; j< lwbdofs.Size();j++)
-	  {
-	    el2wbdofs[i][j] = lwbdofs[j];
-	    if (!wbdof.Test(lwbdofs[j]))
+	  int lifcnt = 0;
+	  int lwbcnt = 0;
+	  for (int j = 0; j < dnums.Size(); j++)
 	    {
-	      wbdof.Set(lwbdofs[j]);
-	      nwbdofs++;
-	    }	  
-	  }
+	      if (dnums[j] == -1) continue;
+	      COUPLING_TYPE ct = fes.GetDofCouplingType(dnums[j]);
+	      
+	      // if (ct == INTERFACE_DOF)
+	      if (ct != WIREBASKET_DOF)
+		{
+		  weight[dnums[j]] += abs( (*elmats[i])(j,j) );
+		  if (fes.GetFreeDofs()->Test(dnums[j]))
+		    {
+		      ifdof.Set(dnums[j]);
+		      el2ifdofs[i][lifcnt] = dnums[j];
+		      el2ifweight[i][lifcnt] = fabs ((*elmats[i])(j,j));
+		      lifcnt++;
+		    }
+		}
+
+	      if (ct == WIREBASKET_DOF)
+		{
+		  wbdof.Set(dnums[j]);
+		  el2wbdofs[i][lwbcnt++] = dnums[j];
+		}
+	    }
         }
 
-
 #ifdef PARALLEL
-      // accumulate multiple
-      ParallelVVector<double> pv_multiple (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
+      // accumulate weight
+      ParallelVVector<double> pv_weight (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
 
       if (ntasks > 1 && id == 0)
 	{
-	  pv_multiple.Cumulate();  
+	  pv_weight.Cumulate();  
 	}
       else
 	{
-	  for (int i = 0; i < multiple.Size(); i++)
-	    pv_multiple(i) = multiple[i];
-	  pv_multiple.Cumulate();  
-	  for (int i = 0; i < multiple.Size(); i++)
-	    multiple[i] = int(pv_multiple(i));
+	  for (int i = 0; i < weight.Size(); i++)
+	    pv_weight(i) = weight[i];
+	  pv_weight.Cumulate();  
+	  for (int i = 0; i < weight.Size(); i++)
+	    weight[i] = pv_weight(i);
 	}
 #endif
 
@@ -134,35 +133,35 @@ namespace ngcomp
       MatrixGraph graph_harmonicext(ndof, el2ifdofs, el2wbdofs, false);
       MatrixGraph graph_innersolve(ndof, el2ifdofs, el2ifdofs, bfa.IsSymmetric());
       MatrixGraph graph_wbschur(ndof, el2wbdofs, el2wbdofs, bfa.IsSymmetric());
-      
-      
+
+
       if (!bfa.IsSymmetric()){
 	MatrixGraph graph_harmonicexttrans(ndof, el2wbdofs, el2ifdofs, false);
-	subassembled_harmonicexttrans = new SparseMatrix<double>(graph_harmonicexttrans, 1);
+	subassembled_harmonicexttrans = new SparseMatrix<SCAL,TV,TV>(graph_harmonicexttrans, 1);
 	subassembled_harmonicexttrans -> AsVector() = 0.0;
-	subassembled_innersolve = new SparseMatrix<double>(graph_innersolve, 1);
+	subassembled_innersolve = new SparseMatrix<SCAL,TV,TV>(graph_innersolve, 1);
       }
       else
-	subassembled_innersolve = new SparseMatrixSymmetric<double>(graph_innersolve, 1);
-      subassembled_innersolve->AsVector() = 0.0;
-      subassembled_harmonicext = new SparseMatrix<double>(graph_harmonicext, 1);
+	subassembled_innersolve = new SparseMatrixSymmetric<SCAL,TV>(graph_innersolve, 1);
+ 
+     subassembled_innersolve->AsVector() = 0.0;
+      subassembled_harmonicext = new SparseMatrix<SCAL,TV,TV>(graph_harmonicext, 1);
       subassembled_harmonicext->AsVector() = 0.0;
 
       if (bfa.IsSymmetric()){
-	pwbmat = new SparseMatrixSymmetric<double>(graph_wbschur,1);
+	pwbmat = new SparseMatrixSymmetric<SCAL,TV>(graph_wbschur,1);
 	if (id == 0)
 	  cout << "symmetric" << endl << endl;
       }
       else{
-	pwbmat = new SparseMatrix<double>(graph_wbschur,1);
+	pwbmat = new SparseMatrix<SCAL,TV,TV>(graph_wbschur,1);
 	if (id == 0)
 	  cout << "nonsymmetric" << endl << endl;
       }
       
-      SparseMatrix<double>& wbmat=*pwbmat;
-      wbmat.AsVector() = 0.0;
-
-      wbmat.SetInverseType (inversetype);
+      // SparseMatrix<double>& wbmat=*pwbmat;
+      pwbmat -> AsVector() = 0.0;
+      pwbmat -> SetInverseType (inversetype);
       
       // cout << "have matrix" << endl << endl;
 
@@ -170,16 +169,29 @@ namespace ngcomp
       if (ntasks == 1 || id > 0)
       for (int i = 0; i < ne; i++)
         {
-          FlatMatrix<> elmat = *elmats[i]; 
-	  // dynamic_cast<const ElementByElementMatrix<double>&> (bfa.GetMatrix()) . GetElementMatrix (i);
-	  
-	  Array<int> interfacedofs; interfacedofs = el2ifdofs[i];
-	  Array<int> wirebasketdofs; wirebasketdofs = el2wbdofs[i];
-	  Array<int> localwbdofs; localwbdofs.SetSize(0); //local dofs
-	  Array<int> localintdofs; localintdofs.SetSize(0); //local dofs 
+	  if (!eldnums[i]) continue;
+          FlatMatrix<SCAL> elmat = *elmats[i]; 
+	  Array<int> & dnums = *eldnums[i];
+
+	  FlatArray<int> interfacedofs = el2ifdofs[i];
+	  FlatArray<int> wirebasketdofs = el2wbdofs[i];
+	  Array<int> localwbdofs;    // localwbdofs.SetSize(0); //local dofs
+	  Array<int> localintdofs;   // localintdofs.SetSize(0); //local dofs 
 	  Array<int> ldnums;
+
+
+	  for (int k = 0; k < dnums.Size(); k++)
+	    {
+	      COUPLING_TYPE ct = fes.GetDofCouplingType(dnums[k]);	      
+	      if (ct == WIREBASKET_DOF)
+		localwbdofs.Append (k);
+	      else
+	      // if (ct == INTERFACE_DOF && fes.GetFreeDofs()->Test(dnums[k]))
+		localintdofs.Append (k);
+	    }
+
+	  /*
 	  fes.GetDofNrs (i, ldnums, EXTERNAL_DOF);
-	  
           for (int k = 0; k < ldnums.Size(); k++){
 	    if (wbdof.Test(ldnums[k])){
 	      localwbdofs.Append(k);
@@ -188,14 +200,16 @@ namespace ngcomp
 	      localintdofs.Append(k);
 	    }
 	  }
+	  */
+
 	  
 	  int sizew = localwbdofs.Size();
 	  int sizei = localintdofs.Size();
 
-	  Matrix<double> a(sizew, sizew);
-	  Matrix<double> b(sizew, sizei);
-	  Matrix<double> c(sizei, sizew);
-	  Matrix<double> d(sizei, sizei);
+	  Matrix<SCAL> a(sizew, sizew);
+	  Matrix<SCAL> b(sizew, sizei);
+	  Matrix<SCAL> c(sizei, sizew);
+	  Matrix<SCAL> d(sizei, sizei);
 	  for (int k = 0; k < sizew; k++)
 	    for (int l = 0; l < sizew; l++)
 	      a(k,l) = elmat(localwbdofs[k], localwbdofs[l]);
@@ -213,26 +227,12 @@ namespace ngcomp
 	      for (int l = 0; l < sizei; l++)
 		d(k,l) = elmat(localintdofs[k], localintdofs[l]);
 	      
-#ifdef LAPACK
 	    LapackInverse (d);
-#else
-	    Matrix<double> invd(sizei);
-	    CalcInverse (d, invd);	  
-	    d = invd;
-#endif //LAPACK
-	    Matrix<double> he (sizei, sizew);
-#ifdef LAPACK
-	    he = 0.0;
-	    LapackMultAddAB(d,c,-1.0,he);
-#else	  
-	    he = -1.0 * d * c;
-#endif	 
+	    Matrix<SCAL> he (sizei, sizew);
 
-#ifdef LAPACK	  
+	    he = SCAL(0.0);
+	    LapackMultAddAB(d,c,-1.0,he);
 	    LapackMultAddAB (b, he, 1.0, a);
-#else
-	    a += b*he;
-#endif //LAPACK
 
 	    //R * E
 	    for (int k = 0; k < sizei; k++)
@@ -242,18 +242,16 @@ namespace ngcomp
 		  he(k,l) = 0.0;
 		}
 		else
-		  he(k,l) /= multiple[ el2ifdofs[i][k] ];
+		  he(k,l) *= el2ifweight[i][k] / weight[el2ifdofs[i][k]];
 		
-	    dynamic_cast<SparseMatrix<double>*>(subassembled_harmonicext)->AddElementMatrix(interfacedofs,wirebasketdofs,he);
+	    dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(subassembled_harmonicext)->AddElementMatrix(interfacedofs,wirebasketdofs,he);
 	    
 	    if (!bfa.IsSymmetric()){
-	      Matrix<double> het (sizew, sizei);
-#ifdef LAPACK	    
-	      het = 0.0;
+	      Matrix<SCAL> het (sizew, sizei);
+
+	      het = SCAL(0.0);
 	      LapackMultAddAB(b,d,-1.0,het);
-#else	    
-	      het = -1.0 * b * d;
-#endif	    
+
 	      //E * R^T
 	      for (int k = 0; k < sizew; k++)
 		for (int l = 0; l < sizei; l++)
@@ -262,9 +260,9 @@ namespace ngcomp
 		    het(k,l) = 0.0;
 		  }
 		  else
-		    het(k,l) /= multiple[ el2ifdofs[i][l] ];
+		    het(k,l) *= el2ifweight[i][l] / weight[ el2ifdofs[i][l] ];
 	      
-	      dynamic_cast<SparseMatrix<double>*>(subassembled_harmonicexttrans)->AddElementMatrix(wirebasketdofs,interfacedofs,het);
+	      dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(subassembled_harmonicexttrans)->AddElementMatrix(wirebasketdofs,interfacedofs,het);
 	    }
 	    //R * A_ii^(-1) * R^T
 	    for (int k = 0; k < sizei; k++)
@@ -274,22 +272,22 @@ namespace ngcomp
 		  d(k,l) = 0.0;
 		}
 		else
-		  d(k,l) /= multiple[ el2ifdofs[i][k] ] * multiple[ el2ifdofs[i][l] ];	    
+		  d(k,l) *= el2ifweight[i][k] * el2ifweight[i][l] / 
+		    (weight[el2ifdofs[i][k]] * weight[el2ifdofs[i][l]]);	    
 
 	    if (bfa.IsSymmetric())
-	      dynamic_cast<SparseMatrixSymmetric<double>*>(subassembled_innersolve)->AddElementMatrix(interfacedofs,d);
+	      dynamic_cast<SparseMatrixSymmetric<SCAL,TV>*>(subassembled_innersolve)->AddElementMatrix(interfacedofs,d);
 	    else
-	      dynamic_cast<SparseMatrix<double>*>(subassembled_innersolve)->AddElementMatrix(interfacedofs,interfacedofs,d);
+	      dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(subassembled_innersolve)->AddElementMatrix(interfacedofs,interfacedofs,d);
 	  }
 	  
 	  if (bfa.IsSymmetric())
-	    dynamic_cast<SparseMatrixSymmetric<double>&>(wbmat).AddElementMatrix(wirebasketdofs,a);
+	    dynamic_cast<SparseMatrixSymmetric<SCAL,TV>*>(pwbmat)->AddElementMatrix(wirebasketdofs,a);
 	  else
-	    dynamic_cast<SparseMatrix<double>&>(wbmat).AddElementMatrix(wirebasketdofs,wirebasketdofs,a);
+	    dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(pwbmat)->AddElementMatrix(wirebasketdofs,wirebasketdofs,a);
 
         }
       
-
       // cout << "matrix filed" << endl;
 
 
@@ -314,7 +312,7 @@ namespace ngcomp
 	cout << "has blocks" << endl << endl;
 
 	cout << "call block-jacobi inverse" << endl;
-	inv = wbmat.CreateBlockJacobiPrecond(blocks, 0, 0, 0);      
+	inv = dynamic_cast<BaseSparseMatrix*> (pwbmat)->CreateBlockJacobiPrecond(blocks, 0, 0, 0);      
 	cout << "has inverse" << endl << endl;
 
 	//Coarse Grid of Wirebasket
@@ -323,7 +321,7 @@ namespace ngcomp
 	cout << "has clusters" << endl << endl;
 
 	cout << "call coarse wirebasket grid inverse" << endl;
-	inv_coarse = wbmat.InverseMatrix(&clusters);
+	inv_coarse = pwbmat->InverseMatrix(&clusters);
 	cout << "has inverse" << endl << endl;
 	
 	tmp = new VVector<>(ndof);
@@ -343,19 +341,21 @@ namespace ngcomp
 	else
 #endif
 	  {
-	    cout << "call wirebasket inverse ( with " << cntfreedofs << " free dofs out of " << wbmat.Height() << " )" 
-		 << endl;
+	    cout << "call wirebasket inverse ( with " << cntfreedofs 
+		 << " free dofs out of " << pwbmat->Height() << " )" << endl;
 
-	    inv = wbmat.InverseMatrix(free_dofs);
+	    inv = pwbmat->InverseMatrix(free_dofs);
 	    cout << "has inverse" << endl;
-	    tmp = new VVector<>(ndof);
+	    tmp = new VVector<TV>(ndof);
 	  }
       }
-    };
+    }
 
     
    void EBEConstructor()
    {
+     cout << "EBE Constructor not supported anymore" << endl;
+#ifdef NOT_SUPPORTED_ANYMORE
       const FESpace & fes = bfa.GetFESpace();
       const MeshAccess & ma = fes.GetMeshAccess();
       int ne = ma.GetNE();
@@ -436,13 +436,13 @@ namespace ngcomp
 
 //       *testout << "restrict = " << endl << restrict << endl;
 
-      multiple.SetSize (fes.GetNDof());
-      multiple = 0;
+      weight.SetSize (fes.GetNDof());
+      weight = 0;
       for (int i = 0; i < restrict.Size(); i++)
         if (restrict[i] != -1)
-          multiple[restrict[i]]++;
+          weight[restrict[i]]++;
 
-//       *testout << "multiple = " << endl << multiple << endl;
+//       *testout << "weight = " << endl << weight << endl;
 	cout << "now build graph" << endl;
 	MatrixGraph graph(nglobalwbdof, el2wbdofs, el2wbdofs, bfa.IsSymmetric());
 	cout << "now allocate matrix" << endl;
@@ -455,9 +455,9 @@ namespace ngcomp
 	  cout << "nonsymmetric" << endl;
 	}
 
-      SparseMatrix<double>& wbmat=*pwbmat;
+	// SparseMatrix<double>& wbmat=*pwbmat;
 
-      wbmat.SetInverseType (inversetype);
+	pwbmat->SetInverseType (inversetype);
       
       cout << "have matrix" << endl;
       
@@ -593,13 +593,16 @@ namespace ngcomp
       }
       cout << "has inverse" << endl;
 //       *testout << "inverse2 = " << (*inv) << endl;
+#endif
     }
       
           
     
     
-    BDDCMatrix (const BilinearForm & abfa, Array<Matrix<double>*> & aelmats, const string & ainversetype, bool ablock, bool aebe)
-      : bfa(abfa), elmats(aelmats), inversetype(ainversetype), ma(abfa.GetFESpace().GetMeshAccess()),block(ablock), ebe(aebe)
+    BDDCMatrix (const BilinearForm & abfa, 
+		Array<Matrix<SCAL>*> & aelmats, Array<Array<int>*> & aeldnums,
+		const string & ainversetype, bool ablock, bool aebe)
+      : bfa(abfa), elmats(aelmats), eldnums(aeldnums), inversetype(ainversetype), ma(abfa.GetFESpace().GetMeshAccess()),block(ablock), ebe(aebe)
    {
       pwbmat = NULL;
       inv = NULL;
@@ -626,6 +629,11 @@ namespace ngcomp
       if (tmp2) delete tmp2;
     }
     
+    virtual BaseVector * CreateVector () const
+    {
+      cout << "create vector from bddc" << endl;
+      return bfa.GetMatrix().CreateVector();
+    }
 
     
     virtual void MultAddNEBE (double s, const BaseVector & x, BaseVector & y) const
@@ -691,6 +699,9 @@ namespace ngcomp
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {
       if (!ebe) {MultAddNEBE(s,x,y);return;}
+
+      cout << "Multadd for non-ebe not supported anymore" << endl;
+#ifdef NOT_SUPPORTED_ANYMORE
       static int timer = NgProfiler::CreateTimer ("Apply BDDC preconditioner");
       static int timerifs = NgProfiler::CreateTimer ("Apply BDDC preconditioner - apply ifs");
       static int timerwb = NgProfiler::CreateTimer ("Apply BDDC preconditioner - wb solve");
@@ -709,7 +720,7 @@ namespace ngcomp
       for (int i = 0; i < restrict.Size(); i++)
 //         if (restrict[i] != -1 && fes.GetFreeDofs()->Test(restrict[i]))
 	if (restrict[i] != -1 && ( (!fes.GetFreeDofs()) || (fes.GetFreeDofs()->Test(restrict[i])) ))	  
-          lx2(i) = fx(restrict[i]) / multiple[restrict[i]];
+          lx2(i) = fx(restrict[i]) / weight[restrict[i]];
 	else
 	   lx2(i) = 0.0;
 
@@ -764,12 +775,12 @@ namespace ngcomp
       fy = 0.0;
       for (int i = 0; i < restrict.Size(); i++){
         if (restrict[i] != -1)
-          fy(restrict[i]) += s * ly2(i) / multiple[restrict[i]];
+          fy(restrict[i]) += s * ly2(i) / weight[restrict[i]];
       }
 
       NgProfiler::StopTimer (timeretc);
+#endif
     }
-
   };
 
 
@@ -1735,9 +1746,9 @@ namespace ngcomp
 
 
 
-  template <class SCAL>
-  BDDCPreconditioner<SCAL> ::
-  BDDCPreconditioner (const PDE & pde, const Flags & aflags) // , const string aname)
+  template <class SCAL, class TV>
+  BDDCPreconditioner<SCAL, TV> ::
+  BDDCPreconditioner (const PDE & pde, const Flags & aflags)
     : Preconditioner (&pde, aflags)
   {
     bfa = dynamic_cast<const S_BilinearForm<SCAL>*>(pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform", NULL)));
@@ -1746,61 +1757,113 @@ namespace ngcomp
     refelement = flags.GetDefineFlag("refelement");
     block = flags.GetDefineFlag("block");
     ebe = flags.GetDefineFlag("ebe");
+    pre = NULL;
   }
 
+  template <class SCAL, class TV>
+  BDDCPreconditioner<SCAL, TV> ::
+  ~BDDCPreconditioner()
+  {
+    delete pre;
+  }
 
-  template <class SCAL>
-  void BDDCPreconditioner<SCAL> ::
+  template <class SCAL, class TV>
+  void BDDCPreconditioner<SCAL, TV> ::
   AddElementMatrix (const Array<int> & dnums,
-		    const FlatMatrix<> & elmat,
+		    const FlatMatrix<SCAL> & elmat,
 		    bool inner_element, int elnr,
 		    LocalHeap & lh)
   {
-#pragma omp critical (addbddcelmat)
+    const FESpace & fes = bfa->GetFESpace();
+    int hnr = elnr;
+    if (!inner_element)   // is boundary element
+      hnr += ma.GetNE();   
+
+#pragma omp critical(bddcaddelmat)
     {
-      if (elmats.Size() < ma.GetNE())
-	elmats.SetSize (ma.GetNE());
-    }
-    
+      if (hnr >= elmats.Size())
+	{
+	  int oldsize = elmats.Size();
+	  elmats.SetSize (hnr+1);
+	  eldnums.SetSize (hnr+1);
+	  for (int j = oldsize; j < hnr+1; j++)
+	    elmats[j] = NULL;
+	  for (int j = oldsize; j < hnr+1; j++)
+	    eldnums[j] = NULL;
+	}
+
     int used = 0;
     for (int i = 0; i < dnums.Size(); i++)
-      if (dnums[i] != -1) used++;
-     
-    elmats[elnr] = new Matrix<double> (used);
+      if (dnums[i] != -1 && fes.GetFreeDofs()->Test(dnums[i])) used++;
+
+    delete eldnums[hnr];
+    eldnums[hnr] = new Array<int> (used);
 
     for (int i = 0, ii = 0; i < dnums.Size(); i++)
-      if (dnums[i] != -1) 
+      if (dnums[i] != -1 && fes.GetFreeDofs()->Test(dnums[i])) 
+	{
+	  (*eldnums[hnr])[ii] = dnums[i];
+	  ii++;
+	}
+
+    delete elmats[hnr];
+    elmats[hnr] = new Matrix<SCAL> (used);
+
+    for (int i = 0, ii = 0; i < dnums.Size(); i++)
+      if (dnums[i] != -1 && fes.GetFreeDofs()->Test(dnums[i]))
 	{
 	  for (int j = 0, jj = 0; j < dnums.Size(); j++)
-	    if (dnums[j] != -1) 
+	    if (dnums[j] != -1 && fes.GetFreeDofs()->Test(dnums[j]))
 	      {
-		(*elmats[elnr])(ii,jj) = elmat(i,j);
+		(*elmats[hnr])(ii,jj) = elmat(i,j);
 		jj++;
 	      }
 	  ii++;
 	}
+    }
   }
   
 
 
-  template <class SCAL>
-  void BDDCPreconditioner<SCAL> ::
+  template <class SCAL, class TV>
+  void BDDCPreconditioner<SCAL, TV> ::
   Update ()
   {
     if (id == 0)
       cout << "update bddc, inversetype = " << inversetype << endl;
 
     if (refelement)
-      pre = new BDDCMatrixRefElement(*bfa, inversetype);
+      {
+	cerr << "ref element bddc currently not supported" << endl;
+	// pre = new BDDCMatrixRefElement(*bfa, inversetype);
+      }
     else
-      pre = new BDDCMatrix(*bfa, elmats, inversetype, block,ebe);
+      {
+	if (elmats.Size())
+	  {
+	    delete pre;
+	    pre = new BDDCMatrix<SCAL,TV>(*bfa, elmats, eldnums, inversetype, block,ebe);
+	  }
+	else
+	  cerr << "don't update precond, since I don't have matrices" << endl;
+      }
+    for (int i = 0; i < elmats.Size(); i++)
+      {
+	delete elmats[i];
+	delete eldnums[i];
+      }
+    elmats.SetSize(0);
+    eldnums.SetSize(0);
 
     if (test) Test();
   }  
 
   template class BDDCPreconditioner<double>;
+  template class BDDCPreconditioner<double, Complex>;
     
 
 
   static RegisterPreconditioner<BDDCPreconditioner<double> > initpre ("bddc");
+  static RegisterPreconditioner<BDDCPreconditioner<Complex> > initpre2 ("bddcc");
+  static RegisterPreconditioner<BDDCPreconditioner<double,Complex> > initpre3 ("bddcrc");
 }
