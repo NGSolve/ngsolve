@@ -140,20 +140,22 @@ namespace ngcomp
     if (low_order_space) low_order_space -> Update(lh);
     
     int dim = ma.GetDimension();
-    // int nv = ma.GetNV();
+    int nv = ma.GetNV();
     int ned = ma.GetNEdges();
     int nfa = (dim == 2) ? 0 : ma.GetNFaces();
-    // nfa = ma.GetNFaces();
-    int nel = ma.GetNE();
+    int ne = ma.GetNE();
+    int nse = ma.GetNSE();
     
     order_edge.SetSize (ned);
     order_face.SetSize (nfa);
-    order_inner.SetSize (nel);
+    order_inner.SetSize (ne);
     fine_edge.SetSize(ned); 
     fine_face.SetSize(nfa); 
+    fine_vertex.SetSize(nv); 
 
     fine_edge = 0;
     fine_face = 0; 
+    fine_vertex = 0; 
     int p = var_order ?  1 : order; 
     
     order_edge = p; 
@@ -162,8 +164,10 @@ namespace ngcomp
 	
     Array<int> eledges, elfaces, vnums;
     
-    for (int i = 0; i < nel; i++)
+    for (int i = 0; i < ne; i++)
       {	
+	if (!DefinedOn (ma.GetElIndex (i))) continue;
+
 	ELEMENT_TYPE eltype=ma.GetElType(i); 
 	const FACE * faces = ElementTopology::GetFaces (eltype);
 	const EDGE * edges = ElementTopology::GetEdges (eltype);
@@ -176,21 +180,20 @@ namespace ngcomp
 	    ma.GetElFaces(i, elfaces);
 	    for (int j=0;j<elfaces.Size();j++) fine_face[elfaces[j]] = 1; 
 	  }
+	for (int j=0;j<vnums.Size();j++) fine_vertex[vnums[j]] = 1; 
 	for (int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1; 
+
 	
 	if(!var_order) continue;  
 	
 	INT<3> el_orders = ma.GetElOrders(i); 
 	for(int l=0;l<3;l++) el_orders[l] += rel_order; 
 
-	for(int l=0;l<3;l++) 
-	  maxorder = int(max2(el_orders[l],maxorder)); 
-	for(int l=0;l<3;l++) 
-	  minorder = int(min2(el_orders[l],minorder)); 
+	for(int l=0;l<3;l++) maxorder = max2(el_orders[l],maxorder); 
+	for(int l=0;l<3;l++) minorder = min2(el_orders[l],minorder); 
 	
 
-	for(int j=0;j<dim;j++)
-	  order_inner[i][j] = int(max2(order_inner[i][j],el_orders[j]));
+	for(int j=0;j<dim;j++) order_inner[i][j] = max2(order_inner[i][j],el_orders[j]);
 	for(int j=0;j<eledges.Size();j++)
 	  {
 	    for(int k=0;k<dim;k++)
@@ -221,7 +224,6 @@ namespace ngcomp
 		    INT<2> f((fmax+3)%4,(fmax+1)%4); 
 		    if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
 		    
-		    
 		    for(int l=0;l<2;l++)
 		      for(int k=0;k<3;k++)
 			if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
@@ -234,6 +236,25 @@ namespace ngcomp
 	      }
 	  }
       }
+
+    for (int i = 0; i < nse; i++)
+      {	
+	if (!DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+	
+	ma.GetSElVertices (i, vnums);
+	ma.GetSElEdges (i, eledges);		
+	
+	for (int j=0;j<vnums.Size();j++) fine_vertex[vnums[j]] = 1; 
+	for (int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1; 
+
+	if(dim==3) 
+	  {
+	    int elface = ma.GetSElFace(i);
+	    fine_face[elface] = 1; 
+	  }
+      }
+
+
 	  
     /*
       if(uniform_order_inner > -1) 
@@ -268,13 +289,8 @@ namespace ngcomp
 
 
     for(int i=0;i<ned;i++) if(!fine_edge[i]) {order_edge[i] = 1;}
-    if(dim == 3) for(int i=0;i<nfa;i++) if(!fine_face[i]) order_face[i] = INT<2> (1,1); 
-    if(dim==2) 
-      { 
-	nfa = 0; 
-	fine_face.SetSize(0); 
-	order_face.SetSize(0);
-      } 
+    if(dim == 3) 
+      for(int i=0;i<nfa;i++) if(!fine_face[i]) order_face[i] = INT<2> (1,1); 
 
     if(print) 
       {
@@ -301,9 +317,7 @@ namespace ngcomp
 
 
     UpdateDofTables ();
-    
     UpdateCouplingDofArray ();
-
 
     if (timing) Timing();
   }
@@ -315,7 +329,7 @@ namespace ngcomp
     int nv = ma.GetNV();
     int ned = ma.GetNEdges();
     int nfa = (dim == 2) ? 0 : ma.GetNFaces();
-    int nel = ma.GetNE();
+    int ne = ma.GetNE();
 
     ndof = nv;
 
@@ -329,28 +343,28 @@ namespace ngcomp
     first_edge_dof[ned] = ndof;
          
     first_face_dof.SetSize (nfa+1);
-    Array<int> fapnums;
     for (int i = 0; i < nfa; i++)
       {
 	first_face_dof[i] = ndof;
-	ma.GetFacePNums (i, fapnums);
 	INT<2> p = order_face[i];
-	switch(fapnums.Size())
+	switch(ma.GetFacetType(i))
 	  {
-	  case 3: 
+	  case ET_TRIG:
 	    if(p[0]>2)
 	      ndof += (p[0]-1)*(p[0]-2)/2;
 	    break;
-	  case 4:
+	  case ET_QUAD:
 	    if(p[0] > 1 && p[1]>1)
 	      ndof += (p[0]-1)*(p[1]-1);
 	    break; 
+	  default:
+	    ;
 	  }
       }
     first_face_dof[nfa] = ndof;
  
-    first_element_dof.SetSize(nel+1);
-    for (int i = 0; i < nel; i++)
+    first_element_dof.SetSize(ne+1);
+    for (int i = 0; i < ne; i++)
       {
 	first_element_dof[i] = ndof;
 	INT<3> p = order_inner[i];	
@@ -385,7 +399,7 @@ namespace ngcomp
             break;
 	  }
       } 
-    first_element_dof[nel] = ndof;
+    first_element_dof[ne] = ndof;
    
 
     if (print)
@@ -394,23 +408,6 @@ namespace ngcomp
         (*testout) << "h1 first face = " << first_face_dof << endl;
         (*testout) << "h1 first inner = " << first_element_dof << endl;
       }
-
-    /*
-    lodofs_per_node[0] = 1;
-    for (int i = 1; i < 4; i++) lodofs_per_node[i] = 0;
-    first_lodof[0] = 0;
-    for (int i = 1; i < 5; i++) first_lodof[i] = ma.GetNV();
-    first_hodofs[0].SetSize(0);
-    first_hodofs[1] = first_edge_dof;
-
-    if (dim == 3)
-      {
-        first_hodofs[2] = first_face_dof;
-        first_hodofs[3] = first_element_dof;
-      }
-    else
-      first_hodofs[2] = first_element_dof;
-    */
 
 
     while (ma.GetNLevels() > ndlevel.Size())
@@ -424,50 +421,45 @@ namespace ngcomp
   void H1HighOrderFESpace :: UpdateCouplingDofArray()
   {
     ctofdof.SetSize(ndof);
-    ctofdof = WIREBASKET_DOF;
-    
-    for (int i = 0; i < ma.GetNV(); i++){
-      ctofdof[i] = WIREBASKET_DOF;
-    }
 
-    if (ma.GetDimension() != 3){
-      for (int edge = 0; edge < ma.GetNEdges(); edge++){
-	IntRange range = GetEdgeDofs (edge);
-	int first = range.First();
-	int next = range.Next();
-	if (first<next){
-	  if (wb_loedge)
-	    ctofdof[first] = WIREBASKET_DOF;
-	  else
-	    ctofdof[first] = INTERFACE_DOF;
-	}
-	for (int j=first+1;j<next;j++)
-	  ctofdof[j] = INTERFACE_DOF;
+    for (int i = 0; i < ma.GetNV(); i++)
+      if (fine_vertex[i])
+	ctofdof[i] = WIREBASKET_DOF;
+      else
+	ctofdof[i] = UNUSED_DOF;
+
+    if (ma.GetDimension() != 3)
+      {
+	for (int edge = 0; edge < ma.GetNEdges(); edge++)
+	  {
+	    IntRange range = GetEdgeDofs (edge);
+	    ctofdof.Range(range) = INTERFACE_DOF;
+	    if (wb_loedge && (range.Next() > range.First()))
+	      ctofdof[range.First()] = WIREBASKET_DOF;
+	  }
       }
-    }
     else
-    {
-      for (int edge = 0; edge < ma.GetNEdges(); edge++){
-	IntRange range = GetEdgeDofs (edge);
-	// ctofdof.Range(range) = WIREBASKET_DOF;   // INTERFACE_DOF;
-	ctofdof.Range(range) = INTERFACE_DOF;
-	if (range.Next() > range.First())
-	  ctofdof[range.First()] = WIREBASKET_DOF;
-      }
-    }
-    if (ma.GetDimension() == 3)
-      for (int face = 0; face < ma.GetNFaces(); face++){
-	IntRange range = GetFaceDofs (face);
-	for (int j=range.First();j<range.Next();j++)
-	  ctofdof[j] = INTERFACE_DOF;
+      {
+	for (int edge = 0; edge < ma.GetNEdges(); edge++)
+	  {
+	    IntRange range = GetEdgeDofs (edge);
+	    ctofdof.Range(range) = INTERFACE_DOF;
+	    if (range.Next() > range.First())
+	      ctofdof[range.First()] = WIREBASKET_DOF;
+	  }
+	
+	for (int face = 0; face < ma.GetNFaces(); face++)
+	  {
+	    IntRange range = GetFaceDofs (face);
+	    ctofdof.Range(range) = INTERFACE_DOF;
+	  }
       }
 
-    for (int el = 0; el < ma.GetNE(); el ++){
-      IntRange range = GetElementDofs (el);
-      for (int j=range.First();j<range.Next();j++)
-	ctofdof[j] = LOCAL_DOF;
-    }
-    
+    for (int el = 0; el < ma.GetNE(); el ++)
+      {
+	IntRange range = GetElementDofs (el);
+	ctofdof.Range(range) = LOCAL_DOF;
+      }
   }
 
 
@@ -611,6 +603,19 @@ namespace ngcomp
 
   const FiniteElement & H1HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   {
+    if (!DefinedOnBoundary (ma.GetSElIndex (elnr)))
+      {
+        switch (ma.GetSElType(elnr))
+          {
+          case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); 
+          case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); 
+          case ET_QUAD:    return * new (lh) ScalarDummyFE<ET_QUAD> (); 
+	  default: ;
+	  }
+      }
+
+
+
     H1HighOrderFiniteElement<1> * hofe1d = NULL;
     H1HighOrderFiniteElement<2> * hofe2d = NULL;
 
@@ -731,6 +736,12 @@ namespace ngcomp
   void H1HighOrderFESpace :: 
   GetSDofNrs (int elnr, Array<int> & dnums) const
   {
+    if (!DefinedOnBoundary (ma.GetSElIndex (elnr)))
+      {
+	dnums.SetSize(0);
+	return;
+      }
+
     Ng_Element ngel = ma.GetSElement(elnr);
 
     dnums.SetSize(ngel.vertices.Size()); 

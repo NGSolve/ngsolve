@@ -21,15 +21,16 @@ namespace ngcomp
   
     // Level
     int level;
+    /*
     // Number of Edges
     int ned;
     // Number of Faces
     int nfa;
     // Number of Elements
-    int nel;
+    int ne;
     // Number of Vertex
     int nv;
-
+    */
     Array<int> first_edge_dof;
     Array<int> first_inner_dof;
     Array<int> first_face_dof; 
@@ -129,8 +130,8 @@ namespace ngcomp
     int GetSmoothingType() const {return smoother;} 
 
     bool GetNoGrads() const {return nograds;};
-    void UpdateDofTables(); 
-    void UpdateCouplingDofArray();
+    virtual void UpdateDofTables(); 
+    virtual void UpdateCouplingDofArray();
     int GetMaxOrder() const {return maxorder;}; 
     int GetMinOrder() const {return minorder;}; 
 

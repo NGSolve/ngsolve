@@ -35,6 +35,7 @@ namespace ngcomp
     Array<int> order_edge;
     Array<INT<2> > order_face;
     Array<INT<3> > order_inner;
+    Array<bool> fine_vertex; 
     Array<bool> fine_edge; 
     Array<bool> fine_face; 
 
@@ -103,7 +104,7 @@ namespace ngcomp
 
     void UpdateDofTables ();
     ///
-    void UpdateCouplingDofArray();    
+    virtual void UpdateCouplingDofArray();    
     
     void SetEdgeOrder (int enr, int eo) { order_edge[enr] = eo; }
     void SetFaceOrder (int fnr, int fo) { order_face[fnr] = INT<2> (fo, fo); }

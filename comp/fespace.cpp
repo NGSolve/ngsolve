@@ -1626,12 +1626,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     UpdateCouplingDofArray();
 
-    /*
     (*testout) << "Update compound fespace" << endl;
     (*testout) << "cummulative dofs start at " << cummulative_nd << endl;
-    (*testout) << "dof coupling types " << ctofdof << endl;
-    (*testout) << "freedofs " << endl << free_dofs << endl;
-    */
+    // (*testout) << "dof coupling types " << ctofdof << endl;
+    // (*testout) << "freedofs " << endl << free_dofs << endl;
   }
 
   void CompoundFESpace :: FinalizeUpdate(LocalHeap & lh)
