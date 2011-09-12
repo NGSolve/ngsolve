@@ -2252,6 +2252,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 			    testout->precision(8);
 			    (*testout) << "surface-elnum= " << i << endl;
 			    (*testout) << "eltype " << fel.ElementType() << endl;
+			    (*testout) << "boundary = " << ma.GetSElBCName (i) << endl;
 			    (*testout) << "integrator " << bfi.Name() << endl;
 			    (*testout) << "dnums = " << endl << dnums << endl;
 			    (*testout) << "elveclin = " << endl << elveclin << endl;

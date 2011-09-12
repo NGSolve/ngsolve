@@ -58,11 +58,10 @@ namespace ngcomp
 	  for (int j = 0; j < dnums.Size(); j++)
 	    {
 	      COUPLING_TYPE ct = fes.GetDofCouplingType(dnums[j]);
-	      // if (ct == INTERFACE_DOF && fes.GetFreeDofs()->Test(dnums[j]))
-	      if (ct != WIREBASKET_DOF)
-		ifcnt[i]++;
 	      if (ct == WIREBASKET_DOF)
 		wbdcnt[i]++;
+	      else
+		ifcnt[i]++;
 	    }
         }
 
@@ -90,26 +89,22 @@ namespace ngcomp
 	      if (dnums[j] == -1) continue;
 	      COUPLING_TYPE ct = fes.GetDofCouplingType(dnums[j]);
 	      
-	      // if (ct == INTERFACE_DOF)
-	      if (ct != WIREBASKET_DOF)
-		{
-		  weight[dnums[j]] += abs( (*elmats[i])(j,j) );
-		  if (fes.GetFreeDofs()->Test(dnums[j]))
-		    {
-		      ifdof.Set(dnums[j]);
-		      el2ifdofs[i][lifcnt] = dnums[j];
-		      el2ifweight[i][lifcnt] = fabs ((*elmats[i])(j,j));
-		      lifcnt++;
-		    }
-		}
-
 	      if (ct == WIREBASKET_DOF)
 		{
 		  wbdof.Set(dnums[j]);
 		  el2wbdofs[i][lwbcnt++] = dnums[j];
 		}
+	      else
+		{
+		  ifdof.Set(dnums[j]);
+		  weight[dnums[j]] += abs( (*elmats[i])(j,j) );
+		  el2ifdofs[i][lifcnt] = dnums[j];
+		  el2ifweight[i][lifcnt] = fabs ((*elmats[i])(j,j));
+		  lifcnt++;
+		}
 	    }
         }
+
 
 #ifdef PARALLEL
       // accumulate weight
@@ -144,7 +139,7 @@ namespace ngcomp
       else
 	subassembled_innersolve = new SparseMatrixSymmetric<SCAL,TV>(graph_innersolve, 1);
  
-     subassembled_innersolve->AsVector() = 0.0;
+      subassembled_innersolve->AsVector() = 0.0;
       subassembled_harmonicext = new SparseMatrix<SCAL,TV,TV>(graph_harmonicext, 1);
       subassembled_harmonicext->AsVector() = 0.0;
 
@@ -186,23 +181,9 @@ namespace ngcomp
 	      if (ct == WIREBASKET_DOF)
 		localwbdofs.Append (k);
 	      else
-	      // if (ct == INTERFACE_DOF && fes.GetFreeDofs()->Test(dnums[k]))
 		localintdofs.Append (k);
 	    }
 
-	  /*
-	  fes.GetDofNrs (i, ldnums, EXTERNAL_DOF);
-          for (int k = 0; k < ldnums.Size(); k++){
-	    if (wbdof.Test(ldnums[k])){
-	      localwbdofs.Append(k);
-	    }
-	    else if (ifdof.Test(ldnums[k])){
-	      localintdofs.Append(k);
-	    }
-	  }
-	  */
-
-	  
 	  int sizew = localwbdofs.Size();
 	  int sizei = localintdofs.Size();
 
@@ -332,8 +313,8 @@ namespace ngcomp
 #ifdef PARALLEL
 	if (ntasks > 1)
 	  {
-	    inv = new MasterInverse<double> (wbmat, free_dofs, &bfa.GetFESpace().GetParallelDofs());
-	    tmp = new ParallelVVector<>(ndof, &bfa.GetFESpace().GetParallelDofs());
+	    inv = new MasterInverse<SCAL> (dynamic_cast<SparseMatrixTM<SCAL>&> (*pwbmat), free_dofs, &bfa.GetFESpace().GetParallelDofs());
+	    tmp = new ParallelVVector<TV>(ndof, &bfa.GetFESpace().GetParallelDofs());
 	    subassembled_innersolve = new ParallelMatrix (*subassembled_innersolve, bfa.GetFESpace().GetParallelDofs());
 	    subassembled_harmonicext = new ParallelMatrix (*subassembled_harmonicext, bfa.GetFESpace().GetParallelDofs());
 	    subassembled_harmonicexttrans = new ParallelMatrix (*subassembled_harmonicexttrans, bfa.GetFESpace().GetParallelDofs());
@@ -631,7 +612,6 @@ namespace ngcomp
     
     virtual BaseVector * CreateVector () const
     {
-      cout << "create vector from bddc" << endl;
       return bfa.GetMatrix().CreateVector();
     }
 
@@ -1820,6 +1800,19 @@ namespace ngcomp
 	      }
 	  ii++;
 	}
+    if (L2Norm (*elmats[hnr]) == 0)
+      {
+	static int cnt_warn = 0;
+	cnt_warn++;
+	if (cnt_warn < 5)
+	  cout << "msg: BDDC::got 0 matrix, delete it" << endl;
+	if (cnt_warn == 5) cout << "(suppress more msgs)" << endl;
+
+	delete elmats[hnr];
+	delete eldnums[hnr];
+	elmats[hnr] = NULL;
+	eldnums[hnr] = NULL;
+      }
     }
   }
   

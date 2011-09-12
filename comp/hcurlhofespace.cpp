@@ -577,7 +577,7 @@ namespace ngcomp
 	{
 	  IntRange range = GetFaceDofs (face);
 	  ctofdof.Range (range) = INTERFACE_DOF;
-
+	  /*
 	  if (ma.GetFacetType (face) == ET_QUAD)
 	    {
 	      INT<2> p = order_face[face];
@@ -585,6 +585,7 @@ namespace ngcomp
 	      int hfirst = hnext-p[0]-p[1];
 	      ctofdof.Range (hfirst, hnext) = WIREBASKET_DOF;
 	    }
+	  */
 	}
 
 
@@ -615,15 +616,30 @@ namespace ngcomp
 
 	    // vertical edges
 
-	    if (jaclong > 5 * jacplane)
-	      for (int j = 6; j < 9; j++)
-		{
-		  int enr = edge_nums[j];
-		  ctofdof.Range (GetEdgeDofs(enr)) = WIREBASKET_DOF;
-		}
-	    if (jaclong < 0.2 * jacplane)
+	    if (jaclong > 3 * jacplane)
 	      {
-		for (int j = 0; j < 3; j++)
+		for (int j = 6; j < 9; j++)
+		  {
+		    int enr = edge_nums[j];
+		    ctofdof.Range (GetEdgeDofs(enr)) = WIREBASKET_DOF;
+		  }
+		for (int j = 2; j < 5; j++)
+		  {
+		    int fnr = face_nums[j];
+		    ctofdof.Range (GetFaceDofs(fnr)) = WIREBASKET_DOF;
+		    /*
+		    range = GetFaceDofs (fnr);
+		    INT<2> p = order_face[fnr];
+
+		    int hnext = range.Next();
+		    int hfirst = hnext-p[0]-p[1];
+		    ctofdof.Range (hfirst, hnext) = WIREBASKET_DOF;
+		    */
+		  }
+	      }
+	    if (jaclong < 0.33 * jacplane)
+	      {
+		for (int j = 0; j < 6; j++)
 		  {
 		    int enr = edge_nums[j];
 		    ctofdof.Range (GetEdgeDofs(enr)) = WIREBASKET_DOF;
@@ -632,6 +648,18 @@ namespace ngcomp
 		  {
 		    int fnr = face_nums[j];
 		    ctofdof.Range (GetFaceDofs(fnr)) = WIREBASKET_DOF;
+		  }
+
+		for (int j = 2; j < 5; j++)
+		  {
+		    int fnr = face_nums[j];
+		    // ctofdof.Range (GetFaceDofs(fnr)) = WIREBASKET_DOF;
+		    range = GetFaceDofs (fnr);
+		    INT<2> p = order_face[fnr];
+
+		    int hnext = range.Next();
+		    int hfirst = hnext-p[0]-p[1];
+		    ctofdof.Range (hfirst, hnext) = WIREBASKET_DOF;
 		  }
 	      }
 	  }
