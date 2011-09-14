@@ -176,6 +176,20 @@ int main ()
   cout << "lami = " << lami << endl 
        << "evecs = " << evecs << endl;
 
+
+  
+  Array<int> rows(2);
+  rows[0] = 1;
+  rows[1] = 3;
+  cout << "rows " << rows << " of sm are " << endl << sm.Rows(rows).Cols(rows) << endl;
+
+  Matrix<> bmat(5,5), cmat(5,5);
+  bmat = 0.0;
+  cmat = 1.1;
+  bmat.Rows(rows) = cmat.Rows(2,3);
+  bmat.Cols(rows) = cmat.Cols(2,3);
+  cout << "bmat = " << endl << bmat << endl;
+
   return 0;
 }
 
