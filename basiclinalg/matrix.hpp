@@ -159,26 +159,6 @@ namespace ngbla
       return data[i*w+j]; 
     }
 
-    /*
-   /// access operator, linear access
-   const TELEM & operator() (int i) const
-   {
-   #ifdef CHECK_RANGE
-   CheckMatRange(h,w,i);
-   #endif
-   return data[i]; 
-   }
-
-   /// access operator
-   const TELEM & operator() (int i, int j) const
-   {
-   #ifdef CHECK_RANGE
-   CheckMatRange(h,w,i,j);
-   #endif
-   return data[i*w+j]; 
-   }
-    */
-
     /// the height
     int Height () const throw() { return h; }
 
@@ -212,6 +192,11 @@ namespace ngbla
     }
     */
 
+    // using CMCPMatExpr<FlatMatrix<T> >::Rows;
+    // using CMCPMatExpr<FlatMatrix<T> >::Cols;
+    using Expr<FlatMatrix<T> >::Rows;
+    using Expr<FlatMatrix<T> >::Cols;
+
     const FlatMatrix Rows (int first, int next) const
     {
       return FlatMatrix (next-first, w, data+first*w);
@@ -221,8 +206,7 @@ namespace ngbla
     {
       return SliceMatrix<T> (h, next-first, w, data+first);
     }
-
-
+    
     const FlatMatrix Rows (IntRange range) const
     {
       return FlatMatrix (range.Next()-range.First(), w, data+range.First()*w);
