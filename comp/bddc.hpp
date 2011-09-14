@@ -43,6 +43,8 @@ namespace ngcomp
       return *pre;
     }
 
+    virtual void CleanUpLevel ();
+
     virtual const char * ClassName() const
     { return "BDDC Preconditioner"; }
   };
