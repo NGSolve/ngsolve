@@ -799,26 +799,19 @@ namespace ngcomp
 
 			  if (eliminate_internal)
 			    {
-			      static int statcondtimer = NgProfiler::CreateTimer ("static condensation");
-			      NgProfiler::StartTimer (statcondtimer);
+			      static Timer statcondtimer("static condensation");
+			      statcondtimer.Start();
 
-
-			      // fel.GetInternalDofs(idofs1);
 			      fespace.GetDofNrs (i, idofs1, LOCAL_DOF);
 			      for (int j = 0; j < idofs1.Size(); j++)
-				for (int k = 0; k < dnums.Size(); k++)
-				  if (dnums[k] == idofs1[j])
-				    {
-				      idofs1[j] = k; 
-				      break;
-				    }
+				idofs1[j] = dnums.Pos(idofs1[j]);
+
 
 			      if (printelmat) 
 				{
 				  *testout << "eliminate internal" << endl;
 				  *testout << "idofs1 = " << idofs1 << endl;
 				}
-			      
 			      
 
 
@@ -839,16 +832,12 @@ namespace ngcomp
 
 				  odofs.SetSize (0);
 				  for (int j = 0; j < size; j++)
-				    {
-				      bool idof = 0;
-				      for (int k = 0; k < idofs.Size(); k++)
-					if (idofs[k] == j) idof = 1;
-				      if (!idof) odofs.Append (j);
-				    }
+				    if (!idofs.Contains(j))
+				      odofs.Append(j);
 
 				  if (printelmat)
 				    {
-				      // (*testout) << "idofs = " << endl << idofs << endl;
+				      (*testout) << "idofs = " << endl << idofs << endl;
 				      (*testout) << "odofs = " << endl << odofs << endl;
 				    }
 
@@ -856,28 +845,14 @@ namespace ngcomp
 				  FlatMatrix<SCAL> b(sizeo, sizei, lh);
 				  FlatMatrix<SCAL> c(sizeo, sizei, lh);
 				  FlatMatrix<SCAL> d(sizei, sizei, lh);
-			    
-				  for (int k = 0; k < sizeo; k++)
-				    for (int l = 0; l < sizeo; l++)
-				      a(k,l) = sum_elmat(odofs[k], odofs[l]);
-			    
-				  for (int k = 0; k < odofs.Size(); k++)
-				    for (int l = 0; l < idofs.Size(); l++)
-				      {
-					b(k,l) = sum_elmat(odofs[k], idofs[l]);
-					c(k,l) = sum_elmat(idofs[l], odofs[k]);
-				      }
+				  
+				  a = sum_elmat.Rows(odofs).Cols(odofs);
+				  b = sum_elmat.Rows(odofs).Cols(idofs);
+				  c = Trans(sum_elmat.Rows(idofs).Cols(odofs));
+				  d = sum_elmat.Rows(idofs).Cols(idofs);
 
-				  for (int k = 0; k < idofs.Size(); k++)
-				    for (int l = 0; l < idofs.Size(); l++)
-				      d(k,l) = sum_elmat(idofs[k], idofs[l]);
 			    
 #ifdef LAPACK
-				  /*
-				    LapackInverse (d);
-				    LapackMultABt (c, d, idc);
-				    LapackMultAddABt (b, idc, -1, a);
-				  */
 
 				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizei*sizei/3);  // LU fact
 				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizei*sizeo);  
@@ -886,66 +861,74 @@ namespace ngcomp
 				  
 				  // A := A - B D^{-1} C^T
 				  // new Versions, July 07
-				  if (!keep_internal){
-				    LapackAInvBt (d, b);
-				    LapackMultAddABt (b, c, -1, a);
-				  }
-				  else
-				  {
-				    Array<int> idnums;
-				    Array<int> ednums;
-				    fespace.GetDofNrs(i,idnums,LOCAL_DOF);
-				    fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
-				    if (store_inner)
-				      static_cast<ElementByElementMatrix<SCAL>*>(innermatrix)->AddElementMatrix(i,idnums,idnums,d);
-				    LapackInverse (d);
-				    FlatMatrix<SCAL> he (sizei, sizeo, lh);
-				    he=0.0;
-				    LapackMultAddABt (d, c, -1, he);
-				    // 				    he = -1.0 * d * Trans(c);
-				    static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)->AddElementMatrix(i,idnums,ednums,he);
-				    
-				    if (!symmetric){
-				      FlatMatrix<SCAL> het (sizeo, sizei, lh);
-				      het = 0.0;
-				      LapackMultAddAB (b, d, -1, het);
-// 				      het = -1.0 * b * d;
-				      static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)->AddElementMatrix(i,ednums,idnums,het);
+				  if (!keep_internal)
+				    {
+				      LapackAInvBt (d, b);
+				      LapackMultAddABt (b, c, -1, a);
 				    }
-				    static_cast<ElementByElementMatrix<SCAL>*>(innersolve)->AddElementMatrix(i,idnums,idnums,d);
-				    
-				    LapackMultAddAB (b, he, 1.0, a);
-				  }				  
-			    
+				  else
+				    {
+				      Array<int> idnums;
+				      Array<int> ednums;
+				      fespace.GetDofNrs(i,idnums,LOCAL_DOF);
+				      fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
+				      if (store_inner)
+					static_cast<ElementByElementMatrix<SCAL>*>(innermatrix)
+					  ->AddElementMatrix(i,idnums,idnums,d);
+
+				      LapackInverse (d);
+				      FlatMatrix<SCAL> he (sizei, sizeo, lh);
+				      he=0.0;
+				      LapackMultAddABt (d, c, -1, he);
+				      // he = -1.0 * d * Trans(c);
+				      static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)
+					->AddElementMatrix(i,idnums,ednums,he);
+				      
+				      if (!symmetric)
+					{
+					  FlatMatrix<SCAL> het (sizeo, sizei, lh);
+					  het = 0.0;
+					  LapackMultAddAB (b, d, -1, het);
+					  //  het = -1.0 * b * d;
+					  static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)
+					    ->AddElementMatrix(i,ednums,idnums,het);
+					}
+				      static_cast<ElementByElementMatrix<SCAL>*>(innersolve)
+					->AddElementMatrix(i,idnums,idnums,d);
+				      
+				      LapackMultAddAB (b, he, 1.0, a);
+				    }				  
+				  
 #else
 				  FlatMatrix<SCAL> invd(sizei, sizei, lh);
 				  FlatMatrix<SCAL> idc(sizeo, sizei, lh);
 				  CalcInverse (d, invd);
 				  if (keep_internal) 
-				  { 
-				    Array<int> idnums;
-				    Array<int> ednums;
-				    fespace.GetDofNrs(i,idnums,LOCAL_DOF);
-				    fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
-				    if (store_inner)
-				      static_cast<ElementByElementMatrix<SCAL>*>(innermatrix)->AddElementMatrix(i,idnums,idnums,d);
-				    d = invd;
-				    FlatMatrix<SCAL> he (sizei, sizeo, lh);
-				    he = -1.0 * invd * Trans(c);
-				    static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)->AddElementMatrix(i,idnums,ednums,he);
-				    if (!symmetric){
-				      FlatMatrix<SCAL> het (sizeo, sizei, lh);
-				      het = -1.0 * b * invd;
-				      static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)->AddElementMatrix(i,ednums,idnums,het);
+				    { 
+				      Array<int> idnums;
+				      Array<int> ednums;
+				      fespace.GetDofNrs(i,idnums,LOCAL_DOF);
+				      fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
+				      if (store_inner)
+					static_cast<ElementByElementMatrix<SCAL>*>(innermatrix)->AddElementMatrix(i,idnums,idnums,d);
+				      d = invd;
+				      FlatMatrix<SCAL> he (sizei, sizeo, lh);
+				      he = -1.0 * invd * Trans(c);
+				      static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)->AddElementMatrix(i,idnums,ednums,he);
+				      if (!symmetric){
+					FlatMatrix<SCAL> het (sizeo, sizei, lh);
+					het = -1.0 * b * invd;
+					static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)->AddElementMatrix(i,ednums,idnums,het);
+				      }
+				      static_cast<ElementByElementMatrix<SCAL>*>(innersolve)->AddElementMatrix(i,idnums,idnums,d);
 				    }
-				    static_cast<ElementByElementMatrix<SCAL>*>(innersolve)->AddElementMatrix(i,idnums,idnums,d);
-				  }
 				  
 				  idc = c * Trans (invd);
 				  a -= b * Trans (idc);
 				  
 #endif
-			    
+	
+		    
 				  if (printelmat) 
 				    {
 				      testout->precision(8);
@@ -976,12 +959,7 @@ namespace ngcomp
 				
 				    }
 				  
-				  
-				  for (int k = 0; k < odofs.Size(); k++)
-				    for (int l = 0; l < odofs.Size(); l++)
-				      sum_elmat(odofs[k], odofs[l]) = a(k,l);
-
-				  
+				  sum_elmat.Rows(odofs).Cols(odofs) = a;
 				  
 				  if (linearform && (!keep_internal ))
 				    {
@@ -1012,7 +990,7 @@ namespace ngcomp
 				    dnums[idofs1[k]] = -1;
 				}
 				
-			      NgProfiler::StopTimer (statcondtimer);
+			      statcondtimer.Stop();
 			    }
 
 			  if (printelmat)
@@ -1227,6 +1205,13 @@ namespace ngcomp
 			      (*testout) << "surface-elnum= " << i << endl;
 			      (*testout) << "integrator " << bfi.Name() << endl;
 			      (*testout) << "dnums = " << endl << dnums << endl;
+			      (*testout) << "ct = ";
+			      for (int j = 0; j < dnums.Size(); j++)
+				if (dnums[j] == -1)
+				  *testout << "0 ";
+				else
+				  *testout << fespace.GetDofCouplingType (dnums[j]) << " ";
+			      *testout << endl;
 			      (*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
 			      (*testout) << "elmat = " << endl << elmat << endl;
 			    }
@@ -2169,6 +2154,117 @@ cout << "catch in AssembleBilinearform 2" << endl;
 			}
 	      
 		      fespace.TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
+
+
+
+
+		      if (eliminate_internal)
+			{
+			  static Timer statcondtimer("static condensation");
+			  statcondtimer.Start();
+			  
+			  fespace.GetDofNrs (i, idofs1, LOCAL_DOF);
+			  for (int j = 0; j < idofs1.Size(); j++)
+			    idofs1[j] = dnums.Pos(idofs1[j]);
+			  
+			  
+			  if (printelmat) 
+			    {
+			      *testout << "eliminate internal" << endl;
+			      *testout << "idofs1 = " << idofs1 << endl;
+			    }
+			  
+
+
+			  if (idofs1.Size())
+			    {
+			      HeapReset hr (lh);
+			      
+			      int size = sum_elmat.Height();
+			      int dim = size / dnums.Size();
+			      
+			      idofs.SetSize (0);
+			      for (int j = 0; j < idofs1.Size(); j++)
+				for (int jj = 0; jj < dim; jj++)
+				  idofs.Append (dim*idofs1[j]+jj);
+			      
+			      int sizei = idofs.Size();
+			      int sizeo = size - sizei;
+			      
+			      odofs.SetSize (0);
+			      for (int j = 0; j < size; j++)
+				if (!idofs.Contains(j))
+				  odofs.Append(j);
+			      
+			      if (printelmat)
+				{
+				  (*testout) << "idofs = " << endl << idofs << endl;
+				  (*testout) << "odofs = " << endl << odofs << endl;
+				}
+			      
+			      FlatMatrix<SCAL> a(sizeo, sizeo, lh);
+			      FlatMatrix<SCAL> b(sizeo, sizei, lh);
+			      FlatMatrix<SCAL> c(sizeo, sizei, lh);
+			      FlatMatrix<SCAL> d(sizei, sizei, lh);
+			      
+			      a = sum_elmat.Rows(odofs).Cols(odofs);
+			      b = sum_elmat.Rows(odofs).Cols(idofs);
+			      c = Trans(sum_elmat.Rows(idofs).Cols(odofs));
+			      d = sum_elmat.Rows(idofs).Cols(idofs);
+			      
+			      
+			      
+			      
+			      // A := A - B D^{-1} C^T
+			      // new Versions, July 07
+			      if (!keep_internal)
+				{
+				  LapackAInvBt (d, b);
+				  LapackMultAddABt (b, c, -1, a);
+				}
+			      else
+				{
+				  Array<int> idnums;
+				  Array<int> ednums;
+				  fespace.GetDofNrs(i,idnums,LOCAL_DOF);
+				  fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
+				  if (store_inner)
+				    static_cast<ElementByElementMatrix<SCAL>*>(innermatrix)
+				      ->AddElementMatrix(i,idnums,idnums,d);
+				  
+				  LapackInverse (d);
+				  FlatMatrix<SCAL> he (sizei, sizeo, lh);
+				  he=0.0;
+				  LapackMultAddABt (d, c, -1, he);
+				  // he = -1.0 * d * Trans(c);
+				  static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)
+				    ->AddElementMatrix(i,idnums,ednums,he);
+				  
+				  if (!symmetric)
+				    {
+				      FlatMatrix<SCAL> het (sizeo, sizei, lh);
+				      het = 0.0;
+				      LapackMultAddAB (b, d, -1, het);
+				      //  het = -1.0 * b * d;
+				      static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)
+					->AddElementMatrix(i,ednums,idnums,het);
+				    }
+				  static_cast<ElementByElementMatrix<SCAL>*>(innersolve)
+				    ->AddElementMatrix(i,idnums,idnums,d);
+				  
+				  LapackMultAddAB (b, he, 1.0, a);
+				}				  
+			      
+			      sum_elmat.Rows(odofs).Cols(odofs) = a;
+
+			      for (int k = 0; k < idofs1.Size(); k++)
+				dnums[idofs1[k]] = -1;
+			    }
+			}
+
+
+
+
 		      AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
 
 		      if (preconditioner)
@@ -2342,7 +2438,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
              << ", total = " << useddof.Size() << endl;
   
       }
-    catch (Exception & e)
+	    catch (Exception & e)
       {
         stringstream ost;
         ost << "in Assemble BilinearForm" << endl;
