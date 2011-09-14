@@ -35,9 +35,9 @@ namespace ngcomp
     Array<int> order_edge;
     Array<INT<2> > order_face;
     Array<INT<3> > order_inner;
-    Array<bool> fine_vertex; 
-    Array<bool> fine_edge; 
-    Array<bool> fine_face; 
+    Array<bool> used_vertex; 
+    Array<bool> used_edge; 
+    Array<bool> used_face; 
 
     int ndof;
     int uniform_order_inner;

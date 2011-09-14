@@ -165,6 +165,7 @@ namespace ngcomp
       for (int i = 0; i < ne; i++)
         {
 	  if (!eldnums[i]) continue;
+
           FlatMatrix<SCAL> elmat = *elmats[i]; 
 	  Array<int> & dnums = *eldnums[i];
 
@@ -194,7 +195,7 @@ namespace ngcomp
 	  for (int k = 0; k < sizew; k++)
 	    for (int l = 0; l < sizew; l++)
 	      a(k,l) = elmat(localwbdofs[k], localwbdofs[l]);
-	    
+
 	  if (el2ifdofs[i].Size())
 	  {      
 	    for (int k = 0; k < sizew; k++)
@@ -261,6 +262,7 @@ namespace ngcomp
 	    else
 	      dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(subassembled_innersolve)->AddElementMatrix(interfacedofs,interfacedofs,d);
 	  }
+
 	  
 	  if (bfa.IsSymmetric())
 	    dynamic_cast<SparseMatrixSymmetric<SCAL,TV>*>(pwbmat)->AddElementMatrix(wirebasketdofs,a);
@@ -268,6 +270,16 @@ namespace ngcomp
 	    dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(pwbmat)->AddElementMatrix(wirebasketdofs,wirebasketdofs,a);
 
         }
+
+
+      for (int i = 0; i < elmats.Size(); i++)
+	{
+	  delete elmats[i];
+	  delete eldnums[i];
+	}
+      elmats.SetSize(0);
+      eldnums.SetSize(0);
+      
       
       // cout << "matrix filed" << endl;
 
@@ -610,6 +622,8 @@ namespace ngcomp
       if (tmp2) delete tmp2;
     }
     
+
+
     virtual BaseVector * CreateVector () const
     {
       return bfa.GetMatrix().CreateVector();
@@ -1747,6 +1761,15 @@ namespace ngcomp
     delete pre;
   }
 
+
+  template <class SCAL, class TV>
+  void BDDCPreconditioner<SCAL, TV> :: CleanUpLevel ()
+  {
+    delete pre;
+    pre = NULL;
+  }
+
+
   template <class SCAL, class TV>
   void BDDCPreconditioner<SCAL, TV> ::
   AddElementMatrix (const Array<int> & dnums,
@@ -1800,6 +1823,13 @@ namespace ngcomp
 	      }
 	  ii++;
 	}
+
+    /*
+    *testout << "entry " << hnr << endl;
+    *testout << "dnums = " << *eldnums[hnr] << endl;
+    *testout << "elmat = " << *elmats[hnr] << endl;
+    */
+
     if (L2Norm (*elmats[hnr]) == 0)
       {
 	static int cnt_warn = 0;

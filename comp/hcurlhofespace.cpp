@@ -599,7 +599,6 @@ namespace ngcomp
 
 	bool upgrade = false;
 	ELEMENT_TYPE eltype = ma.GetElType (el);
-	if (eltype == ET_PYRAMID) upgrade = true;
 
 	if (eltype == ET_PRISM) 
 	  {
@@ -615,7 +614,6 @@ namespace ngcomp
 	    ma.GetElFaces (el, face_nums);
 
 	    // vertical edges
-
 	    if (jaclong > 3 * jacplane)
 	      {
 		for (int j = 6; j < 9; j++)
@@ -637,6 +635,9 @@ namespace ngcomp
 		    */
 		  }
 	      }
+
+
+
 	    if (jaclong < 0.33 * jacplane)
 	      {
 		for (int j = 0; j < 6; j++)
@@ -673,6 +674,8 @@ namespace ngcomp
 	    double cond = L2Norm (mip.GetJacobian()) * L2Norm (mip.GetJacobianInverse());
 	    if (cond > 10) upgrade = true;
 	  }
+	
+	if (eltype == ET_PYRAMID) upgrade = true;
 
 
 	if (upgrade)

@@ -149,13 +149,13 @@ namespace ngcomp
     order_edge.SetSize (ned);
     order_face.SetSize (nfa);
     order_inner.SetSize (ne);
-    fine_edge.SetSize(ned); 
-    fine_face.SetSize(nfa); 
-    fine_vertex.SetSize(nv); 
+    used_edge.SetSize(ned); 
+    used_face.SetSize(nfa); 
+    used_vertex.SetSize(nv); 
 
-    fine_edge = 0;
-    fine_face = 0; 
-    fine_vertex = 0; 
+    used_edge = 0;
+    used_face = 0; 
+    used_vertex = 0; 
     int p = var_order ?  1 : order; 
     
     order_edge = p; 
@@ -168,23 +168,44 @@ namespace ngcomp
       {	
 	if (!DefinedOn (ma.GetElIndex (i))) continue;
 
-	ELEMENT_TYPE eltype=ma.GetElType(i); 
-	const FACE * faces = ElementTopology::GetFaces (eltype);
-	const EDGE * edges = ElementTopology::GetEdges (eltype);
-	const POINT3D * points = ElementTopology :: GetVertices (eltype);
 	ma.GetElVertices (i, vnums);
 	ma.GetElEdges (i, eledges);		
 	
 	if(dim==3) 
 	  {
 	    ma.GetElFaces(i, elfaces);
-	    for (int j=0;j<elfaces.Size();j++) fine_face[elfaces[j]] = 1; 
+	    for (int j=0;j<elfaces.Size();j++) used_face[elfaces[j]] = 1; 
 	  }
-	for (int j=0;j<vnums.Size();j++) fine_vertex[vnums[j]] = 1; 
-	for (int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1; 
+	for (int j=0;j<vnums.Size();j++) used_vertex[vnums[j]] = 1; 
+	for (int j=0;j<eledges.Size();j++) used_edge[eledges[j]] = 1; 
+      }
+
+    for (int i = 0; i < nse; i++)
+      {	
+	if (!DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+	
+	ma.GetSElVertices (i, vnums);
+	ma.GetSElEdges (i, eledges);		
+	
+	for (int j=0;j<vnums.Size();j++) used_vertex[vnums[j]] = 1; 
+	for (int j=0;j<eledges.Size();j++) used_edge[eledges[j]] = 1; 
+	if(dim==3) used_face[ma.GetSElFace(i)] = 1; 
+      }
+
 
 	
-	if(!var_order) continue;  
+    if(var_order) 
+      for (int i = 0; i < ne; i++)
+      {	
+	if (!DefinedOn (ma.GetElIndex (i))) continue;
+
+	ELEMENT_TYPE eltype=ma.GetElType(i); 
+	const FACE * faces = ElementTopology::GetFaces (eltype);
+	const EDGE * edges = ElementTopology::GetEdges (eltype);
+	const POINT3D * points = ElementTopology :: GetVertices (eltype);
+	ma.GetElVertices (i, vnums);
+	ma.GetElEdges (i, eledges);		
+
 	
 	INT<3> el_orders = ma.GetElOrders(i); 
 	for(int l=0;l<3;l++) el_orders[l] += rel_order; 
@@ -237,22 +258,6 @@ namespace ngcomp
 	  }
       }
 
-    for (int i = 0; i < nse; i++)
-      {	
-	if (!DefinedOnBoundary (ma.GetSElIndex (i))) continue;
-	
-	ma.GetSElVertices (i, vnums);
-	ma.GetSElEdges (i, eledges);		
-	
-	for (int j=0;j<vnums.Size();j++) fine_vertex[vnums[j]] = 1; 
-	for (int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1; 
-
-	if(dim==3) 
-	  {
-	    int elface = ma.GetSElFace(i);
-	    fine_face[elface] = 1; 
-	  }
-      }
 
 
 	  
@@ -288,15 +293,15 @@ namespace ngcomp
       order_edge = uniform_order_edge; 
 
 
-    for(int i=0;i<ned;i++) if(!fine_edge[i]) {order_edge[i] = 1;}
+    for(int i=0;i<ned;i++) if(!used_edge[i]) order_edge[i] = 1; 
     if(dim == 3) 
-      for(int i=0;i<nfa;i++) if(!fine_face[i]) order_face[i] = INT<2> (1,1); 
+      for(int i=0;i<nfa;i++) if(!used_face[i]) order_face[i] = INT<2> (1,1); 
 
     if(print) 
       {
 	*testout << " H1HoFESpace order " << order << " , var_order " << var_order << " , relorder " << rel_order << endl;  
-	(*testout) << "fine_edge (h1): " << fine_edge << endl;
-	(*testout) << "fine_face (h1): " << fine_face << endl;
+	(*testout) << "used_edge (h1): " << used_edge << endl;
+	(*testout) << "used_face (h1): " << used_face << endl;
 	
 	
 	(*testout) << "order_edge (h1): " << order_edge << endl;
@@ -314,7 +319,6 @@ namespace ngcomp
 
     cout << " H1FESPACE : " << minorder << " <= order <= " << maxorder << endl;  
 #endif 
-
 
     UpdateDofTables ();
     UpdateCouplingDofArray ();
@@ -423,7 +427,7 @@ namespace ngcomp
     ctofdof.SetSize(ndof);
 
     for (int i = 0; i < ma.GetNV(); i++)
-      if (fine_vertex[i])
+      if (used_vertex[i])
 	ctofdof[i] = WIREBASKET_DOF;
       else
 	ctofdof[i] = UNUSED_DOF;
