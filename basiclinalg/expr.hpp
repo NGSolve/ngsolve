@@ -464,10 +464,8 @@ namespace ngbla
   }
 
 
-
-
-
-
+  template <class TA> class RowsArrayExpr;
+  template <class TA> class ColsArrayExpr;
 
 
 
@@ -518,7 +516,21 @@ namespace ngbla
     int Height() const { return Spec().T::Height(); }
     int Width() const { return Spec().T::Width(); }
 
-	void Dump (ostream & ost) const { Spec().T::Dump(ost); }
+    void Dump (ostream & ost) const { Spec().T::Dump(ost); }
+
+
+    RowsArrayExpr<TConv>
+    Rows (FlatArray<int> rows)
+    { 
+      return RowsArrayExpr<TConv> (static_cast<const T&> (*this), rows); 
+    }
+
+    ColsArrayExpr<TConv>
+    Cols (FlatArray<int> cols)
+    { 
+      return ColsArrayExpr<TConv> (static_cast<const T&> (*this), cols); 
+    }
+
   };
 
 
@@ -596,8 +608,8 @@ namespace ngbla
     typedef RefMatExpr<T> TConv;
 
 
-//	typedef typename mat_traits<T>::TELEM TELEM;
-//    typedef typename mat_traits<TELEM>::TSCAL TSCAL;
+    // typedef typename mat_traits<T>::TELEM TELEM;
+    // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
 
 //	typedef typename T::TSCAL TSCAL;
 
@@ -625,7 +637,7 @@ namespace ngbla
         }
 #endif
 
-      if (TB::IS_LINEAR)
+      if (TB::IS_LINEAR && T::IS_LINEAR)
         {
           int hw = Expr<T>::Height() * Expr<T>::Width();
           for (int i = 0; i < hw; i++)
@@ -1010,6 +1022,7 @@ namespace ngbla
     {
       return (*this) *= (1.0/s);
     }
+
   };
 
 
@@ -1286,6 +1299,70 @@ namespace ngbla
   inline Complex Trans (Complex a) { return a; }
   template<int D, typename TAD>
   inline AutoDiff<D,TAD> Trans (const AutoDiff<D,TAD> & a) { return a; }
+
+  /* ************************* RowsArray ************************ */
+
+  /**
+     RowsArray
+  */
+  template <class TA> class RowsArrayExpr : public MatExpr<RowsArrayExpr<TA> >
+  {
+    const TA a;
+    FlatArray<int> rows;
+  public:
+    typedef typename TA::TELEM TELEM;
+    typedef typename TA::TSCAL TSCAL;
+
+    RowsArrayExpr (const TA & aa, FlatArray<int> arows) : a(aa), rows(arows) { ; }
+
+    int Height() const { return rows.Size(); }
+    int Width() const { return a.Width(); }
+
+    TELEM & operator() (int i, int j) const { return a(rows[i], j); }
+    TELEM & operator() (int i) const { return a(rows[i]); }
+
+    enum { IS_LINEAR = 0 };
+
+    template<typename TB>
+    const RowsArrayExpr & operator= (const Expr<TB> & m) 
+    {
+      MatExpr<RowsArrayExpr<TA> >::operator= (m);
+      return *this;
+    }
+  };
+  
+
+  /**
+     ColsArray
+  */
+  template <class TA> class ColsArrayExpr : public MatExpr<ColsArrayExpr<TA> >
+  {
+    const TA a;
+    FlatArray<int> cols;
+  public:
+    typedef typename TA::TELEM TELEM;
+    typedef typename TA::TSCAL TSCAL;
+
+    ColsArrayExpr (const TA & aa, FlatArray<int> acols) : a(aa), cols(acols) { ; }
+
+    int Height() const { return a.Height(); }
+    int Width() const { return cols.Size(); }
+
+    TELEM & operator() (int i, int j) const { return a(i, cols[j]); }
+    TELEM & operator() (int i) const { return a(i, cols[0]); }
+
+    enum { IS_LINEAR = 0 };
+
+    template<typename TB>
+    const ColsArrayExpr & operator= (const Expr<TB> & m) 
+    {
+      MatExpr<ColsArrayExpr<TA> >::operator= (m);
+      return *this;
+    }
+
+  };
+  
+
 
 
   /* ************************* Conjugate *********************** */ 
