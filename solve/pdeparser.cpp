@@ -1323,6 +1323,13 @@ namespace ngsolve
 			    (*integrator, Complex(0,1));
 			}
 
+		      if (partflags.GetDefineFlag ("real"))
+			{
+			  integrator = new ComplexBilinearFormIntegrator
+			    (*integrator, Complex(1,0));
+			}
+
+
 		      if (partflags.NumFlagDefined ("definedon") || partflags.NumListFlagDefined("definedon"))
 			{
 			  int size = max2 (pde->GetMeshAccess().GetNDomains(), 
@@ -1509,11 +1516,15 @@ namespace ngsolve
 		    
 		      if (partflags.GetDefineFlag ("imag"))
 			{
-			  
 			  integrator = new ComplexLinearFormIntegrator
 			    (*integrator, Complex(0,1));
 			} 
 
+		      if (partflags.GetDefineFlag ("real"))
+			{
+			  integrator = new ComplexLinearFormIntegrator
+			    (*integrator, Complex(1,0));
+			} 
 
 		      if (partflags.NumFlagDefined ("definedon") || partflags.NumListFlagDefined("definedon"))
 			{
