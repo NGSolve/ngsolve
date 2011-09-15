@@ -62,20 +62,19 @@ namespace ngla
   ElementByElementMatrix<SCAL> :: ~ElementByElementMatrix ()
   {
     for (int i = 0; i < ne; i++)
-    {
-      if (!clone.Test(i)){
-	delete [] &(elmats[i](0,0));
-	delete [] &(rowdnums[i])[0];
-	delete [] &(coldnums[i])[0];
-      }
-    }
+      if (!clone.Test(i))
+	{
+	  delete [] &(elmats[i](0,0));
+	  delete [] &(rowdnums[i])[0];
+	  delete [] &(coldnums[i])[0];
+	}
   }
   
   template <class SCAL>
   void ElementByElementMatrix<SCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static int timer = NgProfiler::CreateTimer ("EBE-matrix::MultAdd");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("EBE-matrix::MultAdd");
+    RegionTimer reg (timer);
 
     int maxs = 0;
     for (int i = 0; i < rowdnums.Size(); i++)
@@ -95,19 +94,18 @@ namespace ngla
       #pragma omp for
 	    for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
 	      {
-		FlatArray<int> rdi (rowdnums[i]);
-		FlatArray<int> cdi (coldnums[i]);
+		FlatArray<int> rdi = rowdnums[i];
+		FlatArray<int> cdi = coldnums[i];
 		
 		if (!rdi.Size() || !cdi.Size()) continue;
 
 		FlatVector<SCAL> hv1(cdi.Size(), &mem1[0]);
 		FlatVector<SCAL> hv2(rdi.Size(), &mem2[0]);
-		  
+		
 		for (int j = 0; j < cdi.Size(); j++)
 		  hv1(j) = vx (cdi[j]);
 		
 		hv2 = elmats[i] * hv1;
-		// LapackMultAx (elmats[i], hv1, hv2);
 
 		for (int j = 0; j < rdi.Size(); j++)
 		  vy (rdi[j]) += s*hv2[j];
@@ -126,21 +124,16 @@ namespace ngla
 
       for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
 	{
-	  FlatArray<int> rdi (rowdnums[i]);
-	  FlatArray<int> cdi (coldnums[i]);
+	  FlatArray<int> rdi = rowdnums[i];
+	  FlatArray<int> cdi = coldnums[i];
 	  
 	  if (!rdi.Size() || !cdi.Size()) continue;
 
-	  FlatVector<SCAL> hv1(cdi.Size(), &mem1[0]);
-	  FlatVector<SCAL> hv2(rdi.Size(), &mem2[0]);
-	    
-	  for (int j = 0; j < cdi.Size(); j++)
-	    hv1(j) = vx (cdi[j]);
+	  FlatVector<SCAL> hv(cdi.Size(), &mem1[0]);
+
+	  hv = vx(cdi);
+	  vy(rdi) += elmats[i] * hv;
 	  
-	  hv2 = elmats[i] * hv1;
-	  // LapackMultAx (elmats[i], hv1, hv2);
-	  for (int j = 0; j < rdi.Size(); j++)
-	    vy (rdi[j]) += s*hv2[j];
 	  NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
 	}
     }

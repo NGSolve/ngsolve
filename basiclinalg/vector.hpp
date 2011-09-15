@@ -132,6 +132,12 @@ namespace ngbla
       return data[i]; 
     }
 
+    RowsArrayExpr<FlatVector> operator() (FlatArray<int> rows)
+    { 
+      return RowsArrayExpr<FlatVector> (*this, rows);
+    }
+    
+    
     /// element access. index j is ignored
     TELEM & operator() (int i, int j) const
     {
