@@ -794,7 +794,7 @@ public:
 	    LocalHeap & lh) const
   {
     const FEL & fel = static_cast<const FEL&> (bfel);
-    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
+    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
       static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
 
     if (applyd)
