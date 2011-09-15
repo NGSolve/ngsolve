@@ -473,11 +473,12 @@ b  }
   template class T_L2HighOrderFiniteElement<ET_PYRAMID>;
   template class T_L2HighOrderFiniteElement<ET_HEX>;
 
+  /*
   template class L2HighOrderFE_Shape<ET_TET>;
   template class L2HighOrderFE_Shape<ET_PRISM>;
   template class L2HighOrderFE_Shape<ET_PYRAMID>;
   template class L2HighOrderFE_Shape<ET_HEX>;
-
+  */
 
 
 
