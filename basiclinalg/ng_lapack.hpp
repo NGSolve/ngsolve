@@ -421,11 +421,14 @@ namespace ngbla
   }
 
   /*
-    trans = 'N': solve A x = b^T
-    trans = 'T': solve A^T x = b^T
-    trans = 'C': solve A^H x = b^T
-  */
+    Compoutes B <--- B A^{-1}    (trans = 'N')
+    Compoutes B <--- B A^{-T}    (trans = 'T')
+    Compoutes B <--- B A^{-H}    (trans = 'H')
 
+    // trans = 'N': solve A x = b^T
+    // trans = 'T': solve A^T x = b^T
+    // trans = 'C': solve A^H x = b^T
+  */
   inline void LapackAInvBt (ngbla::FlatMatrix<double> a, ngbla::FlatMatrix<double> b, char trans = 'N')
   {
     int m = a.Height();
@@ -909,6 +912,11 @@ namespace ngbla
 
 
 
+  inline void LapackMultAddAB (ngbla::FlatMatrix<double> a, 
+                                ngbla::FlatMatrix<double> b,
+                                double fac,
+                                ngbla::FlatMatrix<double> c)
+  { c += fac * a * b; }
 
   inline void LapackMultAddABt (ngbla::FlatMatrix<double> a, 
                                 ngbla::FlatMatrix<double> b,
@@ -923,6 +931,13 @@ namespace ngbla
   { c += fac * Trans(a) * b; }
 
 
+
+  inline void LapackMultAddAB (ngbla::FlatMatrix<ngbla::Complex> a, 
+                                ngbla::FlatMatrix<ngbla::Complex> b,
+                                double fac,
+                                ngbla::FlatMatrix<ngbla::Complex> c)
+
+  { c += fac * a * b; }
 
   inline void LapackMultAddABt (ngbla::FlatMatrix<ngbla::Complex> a, 
                                 ngbla::FlatMatrix<ngbla::Complex> b,
@@ -943,7 +958,32 @@ namespace ngbla
 
   inline void LapackInverse (ngbla::FlatMatrix<ngbla::Complex> a)
   { 
-    std::cerr << "sorry, Inverse not available without LAPACK" << std::endl;
+    // std::cerr << "sorry, Inverse not available without LAPACK" << std::endl;
+    ngbla::Matrix<Complex> hm(a.Height());
+    CalcInverse (a, hm);
+    a = hm;
+  }
+
+  inline void LapackAInvBt (ngbla::FlatMatrix<double> a, ngbla::FlatMatrix<double> b, char trans = 'N')
+  {
+    LapackInverse (a);
+    ngbla::Matrix<> hb (b.Height(), b.Width());
+    if (trans == 'T')
+      hb = b * Trans(a);
+    else
+      hb = b * a;
+    b = hb;
+  }
+
+  inline void LapackAInvBt (ngbla::FlatMatrix<Complex> a, ngbla::FlatMatrix<Complex> b, char trans = 'N')
+  {
+    LapackInverse (a);
+    ngbla::Matrix<Complex> hb (b.Height(), b.Width());
+    if (trans == 'T')
+      hb = b * Trans(a);
+    else
+      hb = b * a;
+    b = hb;
   }
 
 
@@ -999,6 +1039,14 @@ namespace ngbla
 
   void LaEigNSSolveX(int n, std::complex<double> * A, std::complex<double> * B, std::complex<double> * lami, int evecs_bool, std::complex<double> * evecs, std::complex<double> * dummy, char balance_type); 
   void LaEigNSSolveX(int n, double * A, double * B, std::complex<double> * lami, int evecs_bool, double * evecs, double * dummy, char balance_type);
+
+#else
+  
+  inline void LapackHessenbergEP (int n, std::complex<double> * H, std::complex<double> * lami, std::complex<double> * evecs)
+  {
+    cerr << "Sorry, HessebergEP not available without Lapack" << endl;
+  }
+  
 
 #endif
 
