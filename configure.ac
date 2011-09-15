@@ -141,7 +141,7 @@ AC_CHECK_FUNCS([floor])
 AC_CHECK_FUNCS([matherr])
 AC_CHECK_HEADERS([limits.h])
 
-# AC_CHECK_LIB(pthread, pthread_create)
+AC_CHECK_LIB(pthread, pthread_create)
 
 
 
