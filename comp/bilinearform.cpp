@@ -863,7 +863,7 @@ namespace ngcomp
 				  // new Versions, July 07
 				  if (!keep_internal)
 				    {
-				      LapackAInvBt (d, b);
+				      LapackAInvBt (d, b);    // b <--- b d^-1
 				      LapackMultAddABt (b, c, -1, a);
 				    }
 				  else
@@ -1919,6 +1919,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 			// CholeskyFactors<SCAL> inv_ai(ai);
 			// inv_ai.Mult (resi, wi);
 		    
+			/*
 #ifdef LAPACK
 			FlatMatrix<SCAL> mresi(1,resi.Size(), &resi(0));
 			LapackAInvBt (ai, mresi, 'T');
@@ -1928,7 +1929,9 @@ cout << "catch in AssembleBilinearform 2" << endl;
 			CalcInverse (ai, inv_ai);
 			wi = inv_ai * resi;
 #endif
-
+			*/
+			LapackInverse (ai);
+			wi = ai * resi;
 		      
 			//		    *testout << "inv_ai = " << endl << inv_ai << endl;
 		      
