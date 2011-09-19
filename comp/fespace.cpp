@@ -686,29 +686,85 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: Timing () const
   {
-    clock_t starttime;
+    double starttime;
     double time;
+    int steps;
+    LocalHeap lh (100000, "FESpace - Timing");
+
+
+    cout << endl << "timing ..." << endl;
     
-    starttime = clock();
+    starttime = WallTime();
     
-    int steps = 0;
+    steps = 0;
     Array<int> dnums;
     do
       {
-        for (int i = 0; i < ma.GetNE(); i++)
-          GetDofNrs (i, dnums);
-        steps++;
-        time = double(clock() - starttime) / CLOCKS_PER_SEC;
+#pragma omp parallel
+        {
+	  LocalHeap &clh = lh, lh = clh.Split();
+#pragma omp for
+	  for (int i = 0; i < ma.GetNE(); i++)
+	    {
+	      ArrayMem<int,100> dnums;
+	      GetDofNrs (i, dnums);
+	    }
+	}
+	steps++;
+	time = WallTime()-starttime;
       }
-    while (time < 2.0);
+    while (time < 5.0);
     
-    cout << ma.GetNE()*steps / time << " GetDofNrs per second" << endl;
+    cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs(parallel)" << endl;
 
 
 
-    starttime = clock();
+    starttime = WallTime();
     steps = 0;
-    LocalHeap lh (100000, "FESpace - Timing");
+    do
+      {
+#pragma omp parallel
+        {
+	  LocalHeap &clh = lh, lh = clh.Split();
+
+#pragma omp for
+	  for (int i = 0; i < ma.GetNE(); i++)
+	    {
+	      HeapReset hr(lh);
+	      GetFE (i, lh);
+	    }
+	}
+        steps++;
+        time = WallTime()-starttime;
+      }
+    while (time < 5.0);
+    
+    cout << 1e9 * time / (ma.GetNE()*steps) << " ns per GetFE (parallel)" << endl;
+
+
+
+    starttime = WallTime();
+    
+    steps = 0;
+    //    Array<int> dnums;
+    do
+      {
+	ArrayMem<int,10> dnums;
+        for (int i = 0; i < ma.GetNE(); i++)
+	  {
+	    GetDofNrs (i, dnums);
+	  }
+        steps++;
+        time = WallTime()-starttime;
+      }
+    while (time < 5.0);
+    
+    cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs" << endl;
+
+
+
+    starttime = WallTime();
+    steps = 0;
     do
       {
         for (int i = 0; i < ma.GetNE(); i++)
@@ -717,11 +773,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
             GetFE (i, lh);
           }
         steps++;
-        time = double(clock() - starttime) / CLOCKS_PER_SEC;
+        time = WallTime()-starttime;
       }
-    while (time < 2.0);
+    while (time < 5.0);
     
-    cout << ma.GetNE()*steps / time << " GetFE per second" << endl;
+    cout << 1e9 * time / (ma.GetNE()*steps) << " ns per GetFE" << endl;
+
+
+
+
   }
 
 

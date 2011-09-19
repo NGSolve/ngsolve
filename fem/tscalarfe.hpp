@@ -47,12 +47,21 @@ namespace ngfem
     { return DShapeAssign (dshape+i*DIM); } 
   };
   */
+
+
+
+  /**
+     Extracts and assigns gradient from autodiff.
+   */
   template <int DIM>
   class DShapeElement
   {
     FlatVec<DIM> data;
   public:
+    /// A reference to the destination
     DShapeElement (FlatVec<DIM> adata) : data(adata) { ; }
+
+    /// Assign gradient values
     void operator= (AutoDiff<DIM> ad) 
     { 
       for (int i = 0; i < DIM; i++) 
@@ -61,18 +70,22 @@ namespace ngfem
   };
 
 
-
+  /**
+     Assign gradients from generic shape functions
+   */
   template <int DIM>
   class DShapeAssign
   {
     FlatMatrixFixWidth<DIM> dshape;
   public:
+    /// Initialize with gradient matrix
     DShapeAssign (FlatMatrixFixWidth<DIM> mat) : dshape(mat) { ; }
-    // DShapeAssign (double * adshape) { dshape = adshape; }
 
+    /// i-th component of gradient matrix
     DShapeElement<DIM> operator[] (int i) const
     { return DShapeElement<DIM> (dshape.Row(i)); }
 
+    /// sub-array
     const DShapeAssign Addr (int i) const
     { return DShapeAssign (dshape.Rows(i, dshape.Height())); }
   };
@@ -81,59 +94,71 @@ namespace ngfem
 
   
 
-
+  /**
+     Evaluate shape 
+   */
   class EvaluateShapeElement
   {
     double coef;
     double * sum;
   public:
+    /// initialize with coefficient and sum-reference
     EvaluateShapeElement (double acoef, double * asum)
       : coef(acoef), sum(asum) { ; }
 
+    /// add up
     void operator= (double val) 
     {
       *sum += coef * val;
     }
   };
 
+
+  /**
+     Computes function value from generic shape functions
+   */
   class EvaluateShape
   {
     const double * coefs;
     double * sum;
   public:
+    /// initialize with coefficient vector and value for the sum
     EvaluateShape (FlatVector<> acoefs, double * asum)
       : coefs(&acoefs(0)), sum(asum) { ; }
     
+    /// initialize with coefficient vector and value for the sum
     EvaluateShape (const double * acoefs, double * asum)
       : coefs(acoefs), sum(asum) { ; }
 
+    /// does the computation for i-th element
     EvaluateShapeElement operator[] (int i) const
     { return EvaluateShapeElement (coefs[i], sum); }
 
+    /// get sub-vector
     const EvaluateShape Addr (int i) const
     { return EvaluateShape (coefs+i, sum); } 
   };
 
 
 
-
-
   
-  
-  // template <int DIM>
+  /// todo
   class EvaluateShapeTransElement
   {
     double & data;
     const double & fac;
   public:
-    EvaluateShapeTransElement (double & adata, const double & afac) : data(adata), fac(afac) { ; }
+    /// todo
+    EvaluateShapeTransElement (double & adata, const double & afac) 
+      : data(adata), fac(afac) { ; }
+
+    /// todo
     void operator= (double ad) 
     { 
       data += ad * fac;
     }
   };
 
-  // template <int DIM>
   class EvaluateShapeTrans
   {
     double * coefs;
@@ -213,6 +238,7 @@ namespace ngfem
     }
   };
 
+  /// todo
   template <int DIM>
   class EvaluateDShapeTrans
   {
@@ -244,7 +270,6 @@ namespace ngfem
      Base-element for template polymorphism.
      Barton and Nackman Trick for elements with static CalcShape method
   */
-
   template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
   class T_ScalarFiniteElement : public ScalarFiniteElement<ET_trait<ET>::DIM>
   {

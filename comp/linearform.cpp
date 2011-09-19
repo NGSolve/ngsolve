@@ -175,9 +175,6 @@ namespace ngcomp
 	    {
 	      LocalHeap lh = clh.Split();
 	      
-	      Array<int> dnums;
-	      ElementTransformation eltrans;
-	      
 #pragma omp for	      
 	      for (int i = 0; i < ne; i++)
 		{
@@ -196,8 +193,9 @@ namespace ngcomp
 		  HeapReset hr(lh);
 
 		  const FiniteElement & fel = fespace.GetFE (i, lh);
-		  ma.GetElementTransformation (i, eltrans);
+		  ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
 		      
+		  ArrayMem<int, 20> dnums;
 		  fespace.GetDofNrs (i, dnums);
 		
 		  for (int j = 0; j < parts.Size(); j++)
@@ -246,8 +244,6 @@ namespace ngcomp
 #pragma omp parallel
 	    {
 	      LocalHeap lh = clh.Split();
-	      Array<int> dnums;
-	      ElementTransformation eltrans;
 	      
 #pragma omp for	      
 	      for (int i = 0; i < nse; i++)
@@ -265,7 +261,8 @@ namespace ngcomp
 	      
 		  const FiniteElement & fel = fespace.GetSFE (i, lh);
 	      
-		  ma.GetSurfaceElementTransformation (i, eltrans);
+		  ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
+		  ArrayMem<int, 20> dnums;
 		  fespace.GetSDofNrs (i, dnums);
 	      
 		  for (int j = 0; j < parts.Size(); j++)
@@ -302,6 +299,9 @@ namespace ngcomp
 	      }//end of parallel
 	    cout << "\rassemble surface element " << nse << "/" << nse << endl;	  
 	    }//end of hasbound
+
+
+
 	   
 	if(hasskeletoninner)
 	{
@@ -515,24 +515,15 @@ namespace ngcomp
 	  }
 	
 	
-
-
-
-
 	if (print)
 	  {
 	    (*testout) << "Linearform " << GetName() << ": " << endl;
 	    (*testout) << GetVector() << endl;
 	  }
 
-	/*
-	double norm = GetVector().L2Norm();
-	if (id == 0) cout << "|f| = " << norm << endl;
-	*/
-
 	ma.PopStatus ();
-	// (*testout) << "Linearform, vec = " << endl << GetVector() << endl;
       }
+
     catch (Exception & e)
       {
 	stringstream ost;

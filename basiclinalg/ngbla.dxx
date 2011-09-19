@@ -1,15 +1,15 @@
-/** @name Basic Linear Algebra
-\begin{verbatim}                           (directory ngsolve/basiclinalg)\end{verbatim}
+/**  Basic Linear Algebra
 
-The basic linear algebra is implemented by expression templates.
+The basic linear algebra is implemented by means of expression templates.
 This allows to write matrix and vector operations in a convenient way such as
-\[
-x = y + A * z 
-\]
 
-There is no compromise to efficiency. In particular, ther is now
+\f[
+x = y + A * z 
+\f]
+
+There is no compromise to efficiency. In particular, there is no
 frequent allocation and dealloction of dynamic objects. The generated
-code is comparable to a manually optimized one.
+code is comparable to a manually optimized code.
 
 The main idea is the following: The operator* (matrix, vector) returns a symbolic
 object matrix-vector product without evaluating it. The computations are done in the assignement,
@@ -19,12 +19,11 @@ A good introduction to expression templates is
 "Techniques for Scientific C++" by Todd Veldhuizen.
 
 
-
 The following vector types are available:
-\Ref{Vec}, \Ref{FlatVector}, \Ref{Vector}, \Ref{VectorMem}, \Ref{SliceVector}
+\Ref Vec , FlatVector, Vector, VectorMem, SliceVector
 
 The following matrix types are available:
-\Ref{Mat}, \Ref{Matrix}, \Ref{MatrixFixWidth}, \Ref{MatrixFixHeight}, \Ref{SymBandMatrix}, \Ref{BandCholeskyFactors}.
+Mat, Matrix, MatrixFixWidth, MatrixFixHeight, SymBandMatrix, BandCholeskyFactors.
 
 Again, there are corresponding matrix types without memory management:
 \Ref{FlatMatrix}, \Ref{FlatMatrixFixWidth}, \Ref{FlatMatrixFixHeight}, \Ref{FlatSymBandMatrix}, \Ref{FlatBandCholeskyFactors}, 
@@ -39,3 +38,8 @@ Additionally, the following functions are avialable:
 Implemented algorithms are Inversion \Ref{CalcInverse}, 
 Eigenvalue computation \Ref{EigenSystem}
 */
+
+namespace ngbla
+{
+
+};

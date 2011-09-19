@@ -641,8 +641,6 @@ namespace ngcomp
 		    {
 		      LocalHeap lh = clh.Split();
 		      
-		      Array<int> dnums, idofs, idofs1, odofs;
-		      
 		      int nec = (element_coloring) ? (*element_coloring)[icol].Size() : ne;
 		      
 #pragma omp for 
@@ -682,6 +680,7 @@ namespace ngcomp
 
 			  const FiniteElement & fel = fespace.GetFE (i, lh);
 			  ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
+			  ArrayMem<int, 50> dnums, idofs, idofs1, odofs;
 			  fespace.GetDofNrs (i, dnums);
 
 			  if (fel.GetNDof() != dnums.Size())

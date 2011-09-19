@@ -13,7 +13,7 @@ namespace ngfem
 {
 
 /**
-   High order H(curl) finite element
+   High order H(curl) finite element of dimension D
  */
 template <int D>
 class HCurlHighOrderFiniteElement : public HCurlFiniteElement<D> 
@@ -57,9 +57,18 @@ public:
 };
 
 
-
+  /** 
+      HCurlHighOrderFE of shape ET.
+      The template specialization provides the shape functions.
+   */
 template <ELEMENT_TYPE ET> class HCurlHighOrderFE;
 
+
+
+  /**
+     HCurlHighOrderFE of shape ET.
+     provides access functions, shape funcitons are provided by CalcShape template
+  */
 template <ELEMENT_TYPE ET>
 class T_HCurlHighOrderFiniteElement 
   : public HCurlHighOrderFiniteElement<ET_trait<ET>::DIM>, public ET_trait<ET> 
@@ -136,7 +145,7 @@ public:
 };
 
  
-/// 
+/// A segment high order H(curl) element
 template <>
 class HCurlHighOrderFE<ET_SEGM>:  public HCurlHighOrderFiniteElement<1>
 {
@@ -152,7 +161,7 @@ public:
 			  FlatMatrixFixWidth<1> shape) const;
 };
 
-///
+/// A triangular high order H(curl) element
 template <>
 class HCurlHighOrderFE<ET_TRIG> : public T_HCurlHighOrderFiniteElement<ET_TRIG>
 {
@@ -167,7 +176,7 @@ public:
   void T_CalcShape (Tx hx[2], TFA & shape) const; 
 };
 
-///
+/// A quadrilateral high order H(curl) element
 template <>
 class HCurlHighOrderFE<ET_QUAD> : public T_HCurlHighOrderFiniteElement<ET_QUAD>
 {
@@ -181,7 +190,7 @@ public:
   void T_CalcShape (Tx hx[2], TFA & shape) const; 
 };
 
-///
+/// A tetrahedral high order H(curl) element
 template <>
 class HCurlHighOrderFE<ET_TET> : public T_HCurlHighOrderFiniteElement<ET_TET>
 {
@@ -196,7 +205,7 @@ public:
   void T_CalcShape (Tx hx[3], TFA & shape) const; 
 };
 
-///
+/// A hexahedral high order H(curl) element
 template <>
 class HCurlHighOrderFE<ET_HEX> : public T_HCurlHighOrderFiniteElement<ET_HEX>
 {
@@ -208,7 +217,7 @@ public:
   void T_CalcShape (Tx hx[3], TFA & shape) const; 
 };
 
-///
+/// A prismatic high order H(curl) element
 template <>
 class HCurlHighOrderFE<ET_PRISM> : public T_HCurlHighOrderFiniteElement<ET_PRISM>
 {
@@ -223,7 +232,7 @@ public:
   void T_CalcShape (Tx hx[3], TFA & shape) const; 
 };
 
-///
+/// A pyramidal high order H(curl) element
 template <>
 class HCurlHighOrderFE<ET_PYRAMID> : public T_HCurlHighOrderFiniteElement<ET_PYRAMID>
 {

@@ -802,14 +802,16 @@ namespace ngsolve
 	      bool only_constant = true;
 	      for (int i = 0; i < ne; i++)
 		{
-		  EvalFunction * fun = NULL;
-		  string mat = pde->GetMeshAccess().GetElMaterial(i);
 		  int index = pde->GetMeshAccess().GetElIndex(i);
+		  if (coeffs[index]) continue;
+
+		  string mat = pde->GetMeshAccess().GetElMaterial(i);
 		  // cout << "mat = " << mat << ", ind = " << index << endl;
 
-
+		  EvalFunction * fun = NULL;
 		  bool used = false;
-		  for(int j=0; !used && j<funs.Size(); j++)
+
+		  for(int j = 0; j < funs.Size(); j++)
 		    {
 		      // *testout << "check pattern, mat = '" << mat << "', name = '" << funs.GetName(j) << "'" << endl;
 		      used = StringFitsPattern(mat,funs.GetName(j));
@@ -818,6 +820,7 @@ namespace ngsolve
 			  //(*testout) << "\"" << mat << "\" fits \"" << funs.GetName(j) << "\"" << endl;
 			  fun = funs[j];
 			  // *testout << "pattern match, mat = " << mat << " fun.name = " << funs.GetName(j) << endl;
+			  break;
 			}
 		    }
 		  if(!used)
@@ -969,9 +972,11 @@ namespace ngsolve
 	      bool only_constant = true;
 	      for (int i = 0; i < nse; i++)
 		{
+		  int index = pde->GetMeshAccess().GetSElIndex(i);
+		  if (coeffs[index]) continue;
+
 		  EvalFunction * fun = NULL;
 		  string bcname = pde->GetMeshAccess().GetSElBCName(i);
-		  int index = pde->GetMeshAccess().GetSElIndex(i);
 		  // cout << "bcname = " << bcname << ", ind = " << index << endl;
 
 		  bool used = false;
@@ -986,7 +991,7 @@ namespace ngsolve
 		      if (funs.Used ("default"))
 			fun = funs["default"];
 		      else
-			throw Exception (string ("No value defined for boundary condition ")+bcname);
+			throw Exception (string ("No value defined for boundary condition ")+bcname); 
 		    }
 			 
 		  if(coeffs[index] == NULL) coeffs[index] = new EvalFunction(*fun);

@@ -182,14 +182,11 @@ namespace ngcomp
     }    
   }
 
-  /*
   template <class TV>
   T_GridFunction<TV> :: ~T_GridFunction()
   {
-    for (int i = 0; i < vec.Size(); i++)
-      delete vec[i];
+    ;
   }
-  */
 
   /*
   template <class TV>
@@ -235,7 +232,6 @@ namespace ngcomp
 
 		const_cast<ngmg::Prolongation&> (*this->GetFESpace().GetProlongation()).Update();
 		
-		cout << "prolongate gridfunction" << endl;
 		this->GetFESpace().GetProlongation()->ProlongateInline
 		  (this->GetMeshAccess().GetNLevels()-1, *vec[i]);
 	      }
@@ -251,11 +247,8 @@ namespace ngcomp
 
 	const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&GridFunction :: GetFESpace());
 	if (cfe)
-	  {
-	    int nsp = cfe->GetNSpaces();
-	    for (int i = 0; i < nsp; i++)
-	      comp[i]->Update();
-	  }
+	  for (int i = 0; i < cfe->GetNSpaces(); i++)
+	    comp[i]->Update();
       }
     catch (exception & e)
       {
@@ -302,12 +295,11 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (GridFunction & agf, DifferentialOperator * adiffop, int acomp)
-    : gf(agf), // gf(dynamic_cast<S_GridFunction<double>&> (agf)),
-      diffop (adiffop),
-      comp (acomp) 
+    : gf(agf), diffop (adiffop), comp (acomp) 
   {
     ;
   }
+
 
   GridFunctionCoefficientFunction :: 
   ~GridFunctionCoefficientFunction ()
@@ -315,15 +307,10 @@ namespace ngcomp
     ;
   }
 
-  int GridFunctionCoefficientFunction::Dimension() const{ 
-    int res = -1;
-    if (diffop==NULL){
-      res = gf.GetFESpace().GetEvaluator()->DimFlux();
-    }
-    else{
-      res = diffop->Dim();
-    }
-    return res;
+  int GridFunctionCoefficientFunction::Dimension() const
+  { 
+    if (diffop) return diffop->Dim();
+    return gf.GetFESpace().GetEvaluator()->DimFlux();
   }
 
   
@@ -332,7 +319,7 @@ namespace ngcomp
   {
     LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction - evaluate");
     
-    const int elnr = ip.GetTransformation().GetElementNr();
+    int elnr = ip.GetTransformation().GetElementNr();
     bool boundary = ip.GetTransformation().Boundary();
 
     const FESpace & fes = gf.GetFESpace();
@@ -340,7 +327,7 @@ namespace ngcomp
     if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex())) return 0;
     
     const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
-    const int dim     = fes.GetDimension();
+    int dim     = fes.GetDimension();
     
 
     ArrayMem<int, 50> dnums;

@@ -15,33 +15,11 @@
 
 
 
-/*
-  extern "C"
-  {
-  DLL_HEADER void Ng_GetElementTransformation (int ei, const double * xi, 
-  double * x, double * dxdxi);
-
-  DLL_HEADER void Ng_GetSurfaceElementTransformation (int sei, const double * xi, 
-  double * x, double * dxdxi);
-  }
-
-  namespace netgen
-  {
-  template <int DIM_EL, int DIM_SPACE> 
-  DLL_HEADER void Ng_MultiElementTransformation (int elnr, int npts,
-  const double * xi, size_t sxi,
-  double * x, size_t sx,
-  double * dxdxi, size_t sdxdxi);
-  }
-*/
-
-
 namespace ngfem
 {
 
   /**
      Transformation from reference element to physical element.
-     Uses Netgen-meshaccess to perform transformation
   */
   class NGS_DLL_HEADER ElementTransformation
   {
@@ -58,15 +36,18 @@ namespace ngfem
     ELEMENT_TYPE eltype;
 
     bool higher_integration_order;
+
+    /// is the element curved ?
     bool iscurved;
 
   public:
+    /// polymorphism: if specific is set, use it.
     ElementTransformation * specific;
     ///
     ElementTransformation () { higher_integration_order = false; specific = NULL; }
     ///
     virtual ~ElementTransformation() { delete specific; }
-    ///
+    /// set data: is it a boundary, element number, and element index
     virtual void SetElement (bool aboundary, int aelnr, int aelindex)
     {
       // boundary = Boundary();  // aboundary;
@@ -75,22 +56,22 @@ namespace ngfem
       if (specific) specific -> SetElement (aboundary, aelnr, aelindex);
       // iscurved = false;
     }
-    ///
+    /// set geometric type of element
     void SetElementType (ELEMENT_TYPE aet) { eltype = aet; }
-    ///
+    /// return element number
     int GetElementNr () const { return elnr; }
-    ///
+    /// return element index
     int GetElementIndex () const { return elindex; }
-    ///
+    /// return element geometry type 
     ELEMENT_TYPE GetElementType () const { return eltype; }
-    ///
+    /// calculates the Jacobi matrix
     virtual void CalcJacobian (const IntegrationPoint & ip,
 			       FlatMatrix<> dxdxi) const
     {
       specific -> CalcJacobian (ip, dxdxi);
     }
 
-    ///
+    /// Calculates the Jacobi matrix
     void CalcJacobian (const IntegrationPoint & ip,
 		       FlatMatrix<> dxdxi,
 		       LocalHeap & lh) const
@@ -98,13 +79,14 @@ namespace ngfem
       CalcJacobian (ip, dxdxi);
     }
 
-    ///
+    /// calculate the mapped point
     virtual void CalcPoint (const IntegrationPoint & ip,
 			    FlatVector<> point) const
     {
       specific -> CalcPoint (ip, point);
     }
 
+    /// calculate the mapped point
     void CalcPoint (const IntegrationPoint & ip,
 		    FlatVector<> point,
 		    LocalHeap & lh) const
@@ -112,13 +94,14 @@ namespace ngfem
       CalcPoint (ip, point);
     }
 
-    ///
+    /// calculate point and Jacobi matrix
     virtual void CalcPointJacobian (const IntegrationPoint & ip,
 				    FlatVector<> point, FlatMatrix<> dxdxi) const
     {
       specific -> CalcPointJacobian (ip, point, dxdxi);
     }
 
+    /// calculate point and Jacobi matrix
     void CalcPointJacobian (const IntegrationPoint & ip,
 			    FlatVector<> point, FlatMatrix<> dxdxi,
 			    LocalHeap & lh) const
@@ -127,22 +110,7 @@ namespace ngfem
     }
 
 
-    /*
-      template <int DIMS, int DIMR>
-      void CalcMultiPointJacobian (const IntegrationRule & ipts,
-      FlatArray<Vec<DIMR> > point, 
-      FlatArray<Mat<DIMR,DIMS> > dxdxi,
-      LocalHeap & lh) const
-      {
-      netgen::Ng_MultiElementTransformation <DIMS,DIMR> (elnr, ipts.Size(),
-      &ipts[0](0), &ipts[1](0)-&ipts[0](0),
-      &point[0](0), &point[1](0)-&point[0](0),
-      &dxdxi[0](0,0), &dxdxi[1](0,0)-&dxdxi[0](0,0));
-      }
-    */
-
-
-
+    /// Calculate points and Jacobimatrices in all points of integrationrule
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & mir) const
     {
@@ -150,7 +118,7 @@ namespace ngfem
     }
     
 
-    ///
+    /// Calcs the normal vector in ip
     void CalcNormalVector (const IntegrationPoint & ip,
 			   FlatVector<> nv,
 			   LocalHeap & lh) const
@@ -180,13 +148,13 @@ namespace ngfem
     }
   
   
-    ///
+    /// returns space dimension of physical elements
     virtual int SpaceDim () const
     {
       return specific->SpaceDim();
     }
     
-    ///
+    /// is it a mapping for boundary elements ?
     virtual bool Boundary() const
     {
       return specific->Boundary();
@@ -199,11 +167,11 @@ namespace ngfem
     {
       return higher_integration_order;
     }
-  
+
+    /// has the element non-constant Jacobian ?
     virtual bool IsCurvedElement() const
     {
       return specific -> IsCurvedElement();
-      // return iscurved;
     }
 
     virtual void GetSort (FlatArray<int> sort) const
@@ -211,12 +179,14 @@ namespace ngfem
       if (specific) specific -> GetSort (sort);
     }
 
-    virtual BaseSpecificIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
+    /// return a mapped integration point on localheap
+    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
     {
       return (*specific) (ip, lh);
     }
 
 
+    /// return a mapped integration rule on localheap
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const
     {
       return (*specific) (ir, lh);
@@ -254,16 +224,9 @@ namespace ngfem
   public:
     ///
     FE_ElementTransformation ();
-    /*
-      : pointmat(0,0,0), pointmat_ownmem(false), nvmat(0,0,0)
-    { ; }
-    */
+
+    ///
     ~FE_ElementTransformation ();
-    /*
-    {
-      if (pointmat_ownmem) delete [] &pointmat(0,0); 
-    }
-    */
 
     ///
     virtual void SetElement (const FiniteElement * afel, int aelnr, int aelindex)
@@ -283,67 +246,21 @@ namespace ngfem
     ///
     virtual void CalcJacobian (const IntegrationPoint & ip,
 			       FlatMatrix<> dxdxi) const;
-    /*
-    {
-      for (int i = 0; i < DIMR; i++)
-	dxdxi.Row(i) = fel->EvaluateGrad (ip, pointmat.Row(i));
-    }
-    */
 
     ///
     virtual void CalcPoint (const IntegrationPoint & ip, 
 			    FlatVector<> point) const;
-    /*
-    {
-      for (int i = 0; i < DIMR; i++)
-	point(i) = fel->Evaluate (ip, pointmat.Row(i));
-    }
-    */
+
     ///
     virtual void CalcPointJacobian (const IntegrationPoint & ip,
 				    FlatVector<> point, 
 				    FlatMatrix<> dxdxi) const;
-    /*
-    {
-      CalcPoint (ip, point);
-      CalcJacobian (ip, dxdxi);
-    }
-    */
 
 
-#ifdef NONE
-    template <typename T0, typename T1, typename T2>
-    void CalcMultiPointJacobian (FlatArray<T0> ipts,
-				 FlatArray<T1> point, 
-				 FlatArray<T2> dxdxi,
-				 LocalHeap & lh) const
-    {
-      /*
-      for (int i = 0; i < ipts.Size(); i++)
-	CalcPointJacobian (IntegrationPoint (ipts[i]), point[i], dxdxi[i], lh);
-      */
-      for (int k = 0; k < ipts.Size(); k++)
-	{
-	  for (int i = 0; i < DIMR; i++)
-	    point[k](i) = fel->Evaluate (ipts[k], pointmat.Row(i));
-	  for (int i = 0; i < DIMR; i++)
-	    dxdxi[k].Row(i) = fel->EvaluateGrad (ipts[k], pointmat.Row(i));
-	}
-    }
-#endif
+
 
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & bmir) const;
-    /*
-    {
-      MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
-      for (int i = 0; i < ir.Size(); i++)
-	{
-	  CalcPointJacobian (ir[i], mir[i].Point(), mir[i].Jacobian());
-	  mir[i].Compute();
-	}
-    }
-    */
 
     ///
     const FlatMatrix<> & PointMatrix () const { return pointmat; }

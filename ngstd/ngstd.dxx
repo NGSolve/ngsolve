@@ -1,8 +1,20 @@
-/** @name Standard Data Types and Algorithms
-\begin{verbatim}                           (directory ngsolve/ngstd)\end{verbatim}
+/** Standard Data Types and Algorithms
 
-Generic container classes: \Ref{FlatArray}, \Ref{ARRAY}, \Ref{ArrayMem}, \Ref{Table}, \Ref{DynamicTable}, \Ref{HashTable}, \Ref{SymbolTable}, 
+The ngstd library contains generic container classes
 
-Specific data types \Ref{Exception}, \Ref{BitArray}, \Ref{Flags}, \Ref{LocalHeap}, \Ref{BlockAllocator}, \Ref{NgProfiler}, \Ref{AutoPtr}, \Ref{EvalFunction}, \Ref{AutoDiff}, \Ref{AutoDiffDiff}
+ - linear containers: FlatArray, Array, ArrayMem
+ - table containers: Table, DynamicTable, HashTable, SymbolTable, 
+
+
+It contains utility classes:
+
+ - For memory management: LocalHeap HeapReset BlockAllocator AutoPtr
+ - For Profiling: NgProfiler
+ - Exception handling: Exception
+ - and some more:  BitArray, Flags
+ - a function parser EvalFunction
+ - automatic differentiation:  AutoDiff, AutoDiffDiff
 
 */
+
+namespace ngstd { ; }
