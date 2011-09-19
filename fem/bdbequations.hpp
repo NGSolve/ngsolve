@@ -30,32 +30,32 @@ public:
 
 
   ///
-  template <typename FEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    mat = Trans (sip.GetJacobianInverse ()) * 
-      Trans (fel.GetDShape(sip.IP(),lh));
+    mat = Trans (mip.GetJacobianInverse ()) * 
+      Trans (fel.GetDShape(mip.IP(),lh));
   }
 
   template <typename FEL>
   static void GenerateMatrix (const FEL & fel, 
-                              const SpecificIntegrationPoint<D,D> & sip,
+                              const MappedIntegrationPoint<D,D> & mip,
 			      FlatMatrixFixHeight<D> & mat, LocalHeap & lh)
   {
-    fel.CalcMappedDShape (sip, mat.Trans());
+    fel.CalcMappedDShape (mip, mat.Trans());
   }
 
   ///
-  template <typename FEL, typename SIP, class TVX, class TVY>
-  static void Apply (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class TVX, class TVY>
+  static void Apply (const FEL & fel, const MIP & mip,
 		     const TVX & x, TVY & y,
 		     LocalHeap & lh) 
   {
     typedef typename TVX::TSCAL TSCAL;
 
-    Vec<D,TSCAL> hv = Trans (fel.GetDShape(sip.IP(), lh)) * x;
-    y = Trans (sip.GetJacobianInverse()) * hv;
+    Vec<D,TSCAL> hv = Trans (fel.GetDShape(mip.IP(), lh)) * x;
+    y = Trans (mip.GetJacobianInverse()) * hv;
   }
 
   template <typename FEL, class MIR>
@@ -74,31 +74,31 @@ public:
 
 
   ///
-  template <typename FEL, typename SIP, class TVX, class TVY>
-  static void ApplyTrans (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class TVX, class TVY>
+  static void ApplyTrans (const FEL & fel, const MIP & mip,
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh) 
   {
     typedef typename TVX::TSCAL TSCAL;
 
-    Vec<D,TSCAL> hv = sip.GetJacobianInverse() * x;
-    y = fel.GetDShape(sip.IP(),lh) * hv;
+    Vec<D,TSCAL> hv = mip.GetJacobianInverse() * x;
+    y = fel.GetDShape(mip.IP(),lh) * hv;
   }
 
 
   ///
-  template <typename SIP, class TVX>
-  static void Transform (const SIP & sip, TVX & x)
+  template <typename MIP, class TVX>
+  static void Transform (const MIP & mip, TVX & x)
   {
-    Vec<D> hx = Trans (sip.GetJacobianInverse()) * x;
+    Vec<D> hx = Trans (mip.GetJacobianInverse()) * x;
     x = hx; 
   }
 
   ///
-  template <typename SIP, class TVX>
-  static void TransformT (const SIP & sip, TVX & x)
+  template <typename MIP, class TVX>
+  static void TransformT (const MIP & mip, TVX & x)
   {
-    Vec<D> hx = sip.GetJacobianInverse() * x;
+    Vec<D> hx = mip.GetJacobianInverse() * x;
     x = hx; 
   }
   
@@ -142,12 +142,12 @@ public:
   enum { DIFFORDER = 1 };
 
   ///
-  template <typename FEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    mat = Trans (sip.GetJacobianInverse ()) * 
-      Trans (fel.GetDShape(sip.IP(),lh));
+    mat = Trans (mip.GetJacobianInverse ()) * 
+      Trans (fel.GetDShape(mip.IP(),lh));
   }
 };
 
@@ -168,20 +168,20 @@ public:
   enum { DIFFORDER = 1 };
 
   ///
-  template <typename FEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
     typedef typename MAT::TSCAL TSCAL;
 
-    mat =  Trans (sip.GetJacobianInverse ()) * 
-      Trans (fel.GetDShape(sip.IP(),lh));
+    mat =  Trans (mip.GetJacobianInverse ()) * 
+      Trans (fel.GetDShape(mip.IP(),lh));
 
     int i;
-    double cx = sip.GetPoint()(0);
+    double cx = mip.GetPoint()(0);
     if (cx == 0) cx = 1e-10;
     for (int i = 0; i < mat.Width(); i++)
-      mat(0,i) += fel.GetShape(sip.IP(), lh)(i) / cx;
+      mat(0,i) += fel.GetShape(mip.IP(), lh)(i) / cx;
 
     // do the rot
     for (int i = 0; i < mat.Width(); i++)
@@ -206,34 +206,34 @@ public:
   enum { DIM_DMAT = 1 };
   enum { DIFFORDER = 0 };
 
-  template <typename FEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    mat.Row(0) = fel.GetShape(sip.IP(), lh);
+    mat.Row(0) = fel.GetShape(mip.IP(), lh);
   }
 
   static void GenerateMatrix (const ScalarFiniteElement<D> & fel, 
-			      const SpecificIntegrationPoint<D,D> & sip,
+			      const MappedIntegrationPoint<D,D> & mip,
 			      FlatMatrixFixHeight<1> & mat, LocalHeap & lh)
   {
-    fel.CalcShape (sip.IP(), FlatVector<> (fel.GetNDof(), &mat(0,0)));
+    fel.CalcShape (mip.IP(), FlatVector<> (fel.GetNDof(), &mat(0,0)));
   }
 
 
-  template <typename FEL, typename SIP, class TVX, class TVY>
-  static void Apply (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class TVX, class TVY>
+  static void Apply (const FEL & fel, const MIP & mip,
 		     const TVX & x, TVY & y,
 		     LocalHeap & lh) 
   {
-    y = Trans (fel.GetShape (sip.IP(), lh)) * x;
+    y = Trans (fel.GetShape (mip.IP(), lh)) * x;
   }
 
-  static void Apply (const ScalarFiniteElement<D> & fel, const SpecificIntegrationPoint<D,D> & sip,
+  static void Apply (const ScalarFiniteElement<D> & fel, const MappedIntegrationPoint<D,D> & mip,
 		     const FlatVector<double> & x, FlatVector<double> & y,
 		     LocalHeap & lh) 
   {
-    y(0) = fel.Evaluate(sip.IP(), x);
+    y(0) = fel.Evaluate(mip.IP(), x);
   }
 
   template <typename FEL, class MIR>
@@ -246,25 +246,25 @@ public:
 
 
 
-  template <typename FEL, typename SIP, class TVX, class TVY>
-  static void ApplyTrans (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class TVX, class TVY>
+  static void ApplyTrans (const FEL & fel, const MIP & mip,
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh) 
   {
-    y = fel.GetShape (sip.IP(), lh) * x;
+    y = fel.GetShape (mip.IP(), lh) * x;
   }
 
 
 
-  template <typename SIP, class TVX>
-  static void Transform (const SIP & sip, TVX & x)
+  template <typename MIP, class TVX>
+  static void Transform (const MIP & mip, TVX & x)
   {
     // do nothing
     ; 
   }
 
-  template <typename SIP, class TVX>
-  static void TransformT (const SIP & sip, TVX & x)
+  template <typename MIP, class TVX>
+  static void TransformT (const MIP & mip, TVX & x)
   {
     // do nothing
     ; 
@@ -307,11 +307,11 @@ public:
   enum { DIM_DMAT = SYSDIM };
   enum { DIFFORDER = 0 };
 
-  template <typename FEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    const FlatVector<> shape = fel.GetShape (sip.IP(), lh);
+    const FlatVector<> shape = fel.GetShape (mip.IP(), lh);
   
 
     typedef typename MAT::TSCAL TSCAL;
@@ -337,48 +337,48 @@ public:
   enum { DIM_DMAT = 1 };
   enum { DIFFORDER = 0 };
 
-  template <typename FEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    mat.Row(0) = fel.GetShape(sip.IP(), lh);
+    mat.Row(0) = fel.GetShape(mip.IP(), lh);
   }
 
-  template <typename FEL, typename SIP, class TVX, class TVY>
-  static void Apply (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class TVX, class TVY>
+  static void Apply (const FEL & fel, const MIP & mip,
 		     const TVX & x, TVY & y,
 		     LocalHeap & lh) 
   {
-    y = Trans (fel.GetShape (sip.IP(), lh)) * x;
+    y = Trans (fel.GetShape (mip.IP(), lh)) * x;
   }
 
-  static void Apply (const ScalarFiniteElement<D-1> & fel, const SpecificIntegrationPoint<D-1,D> & sip,
+  static void Apply (const ScalarFiniteElement<D-1> & fel, const MappedIntegrationPoint<D-1,D> & mip,
 		     const FlatVector<double> & x, FlatVector<double> & y,
 		     LocalHeap & lh) 
   {
-    y(0) = fel.Evaluate(sip.IP(), x);
+    y(0) = fel.Evaluate(mip.IP(), x);
   }
 
 
-  template <typename FEL, typename SIP, class TVX, class TVY>
-  static void ApplyTrans (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class TVX, class TVY>
+  static void ApplyTrans (const FEL & fel, const MIP & mip,
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh) 
   {
-    y = fel.GetShape (sip.IP(), lh) * x;
+    y = fel.GetShape (mip.IP(), lh) * x;
   }
 
 
 
-  template <typename SIP, class TVX>
-  static void Transform (const SIP & sip, TVX & x)
+  template <typename MIP, class TVX>
+  static void Transform (const MIP & mip, TVX & x)
   {
     // do nothing
     ; 
   }
 
-  template <typename SIP, class TVX>
-  static void TransformT (const SIP & sip, TVX & x)
+  template <typename MIP, class TVX>
+  static void TransformT (const MIP & mip, TVX & x)
   {
     // do nothing
     ; 
@@ -424,12 +424,12 @@ public:
   enum { DIM_DMAT = SYSDIM };
   enum { DIFFORDER = 0 };
 
-  template <typename FEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
     mat = 0.; 
-    const FlatVector<> shape = fel.GetShape (sip.IP(), lh);
+    const FlatVector<> shape = fel.GetShape (mip.IP(), lh);
     for (int j = 0; j < shape.Height(); j++)
       for (int i = 0; i < SYSDIM; i++)
 	mat(i, j*SYSDIM+i) = shape(j);
@@ -471,32 +471,32 @@ public:
 
   DiagDMat (Array<CoefficientFunction*> & acoefs) : coef(acoefs[0]) { ; }
 
-  template <typename FEL, typename SIP, typename MAT>
-  void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  void GenerateMatrix (const FEL & fel, const MIP & mip,
 		       MAT & mat, LocalHeap & lh) const
   {
     typedef typename MAT::TSCAL TRESULT;
     mat = TRESULT(0);
-    TSCAL val = coef -> T_Evaluate<TSCAL> (sip);
+    TSCAL val = coef -> T_Evaluate<TSCAL> (mip);
     for (int i = 0; i < DIM; i++)
       mat(i, i) = ConvertTo<TRESULT> (val);
   }  
 
   template <typename FEL, class VECX, class VECY>
-  void Apply (const FEL & fel, const BaseSpecificIntegrationPoint & sip,
+  void Apply (const FEL & fel, const BaseMappedIntegrationPoint & mip,
 	      const VECX & x, VECY & y, LocalHeap & lh) const
   {
     typedef typename VECY::TSCAL TRESULT;
-    TSCAL val = coef -> T_Evaluate<TSCAL> (sip);
+    TSCAL val = coef -> T_Evaluate<TSCAL> (mip);
     for (int i = 0; i < DIM; i++)
       y(i) = ConvertTo<TRESULT> (val * x(i));
   }
 
   template <typename FEL, class VECX>
-  void Apply1 (const FEL & fel, const BaseSpecificIntegrationPoint & sip,
+  void Apply1 (const FEL & fel, const BaseMappedIntegrationPoint & mip,
 	      const VECX & x, LocalHeap & lh) const
   {
-    TSCAL val = coef -> T_Evaluate<TSCAL> (sip);
+    TSCAL val = coef -> T_Evaluate<TSCAL> (mip);
     x *= ConvertTo<typename VECX::TSCAL> (val);
   }
 
@@ -524,33 +524,33 @@ public:
 
   DiagDMat (Array<CoefficientFunction*> & acoefs) : coef(acoefs[0]) { ; }
 
-  template <typename FEL, typename SIP, typename MAT>
-  void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  void GenerateMatrix (const FEL & fel, const MIP & mip,
 		       MAT & mat, LocalHeap & lh) const
   {
     typedef typename MAT::TSCAL TRESULT;
     mat = TRESULT(0);
-    TRESULT val = coef -> T_Evaluate<TRESULT> (sip);
+    TRESULT val = coef -> T_Evaluate<TRESULT> (mip);
     for (int i = 0; i < DIM; i++)
       mat(i, i) = val;
   }  
 
   template <typename FEL, class VECX, class VECY>
-  void Apply (const FEL & fel, const BaseSpecificIntegrationPoint & sip,
+  void Apply (const FEL & fel, const BaseMappedIntegrationPoint & mip,
 	      const VECX & x, VECY & y, LocalHeap & lh) const
   {
     typedef typename VECY::TSCAL TRESULT;
-    TRESULT val = coef -> T_Evaluate<TRESULT> (sip);
+    TRESULT val = coef -> T_Evaluate<TRESULT> (mip);
     for (int i = 0; i < DIM; i++)
       y(i) = val * x(i);
   }
 
   template <typename FEL, class VECX>
-  void Apply1 (const FEL & fel, const BaseSpecificIntegrationPoint & sip,
+  void Apply1 (const FEL & fel, const BaseMappedIntegrationPoint & mip,
 	       const VECX & x, LocalHeap & lh) const
   {
     typedef typename VECX::TSCAL TSCAL;
-    x *= coef -> T_Evaluate<TSCAL> (sip);
+    x *= coef -> T_Evaluate<TSCAL> (mip);
   }
 
   template <typename FEL, typename MIR, typename TVX>
@@ -585,25 +585,25 @@ public:
   enum { DIM_DMAT = 1 };
   OrthoDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
 
-  template <typename FEL, typename SIP, typename MAT>
-  void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  void GenerateMatrix (const FEL & fel, const MIP & mip,
 		       MAT & mat, LocalHeap & lh) const
   {
-    mat(0,0) = Evaluate (*coef, sip);
+    mat(0,0) = Evaluate (*coef, mip);
   }  
 
-  template <typename FEL, typename SIP, class VECX, class VECY>
-  void Apply (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class VECX, class VECY>
+  void Apply (const FEL & fel, const MIP & mip,
 	      const VECX & x, VECY & y, LocalHeap & lh) const
   {
-    y(0) = Evaluate (*coef, sip) * x(0);
+    y(0) = Evaluate (*coef, mip) * x(0);
   }
 
-  template <typename FEL, typename SIP, class VECX, class VECY>
-  void ApplyTrans (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class VECX, class VECY>
+  void ApplyTrans (const FEL & fel, const MIP & mip,
 		   const VECX & x, VECY & y, LocalHeap & lh) const
   {
-    y(0) = Evaluate (*coef, sip) * x(0);
+    y(0) = Evaluate (*coef, mip) * x(0);
   }
 
 };
@@ -623,41 +623,41 @@ public:
 	CoefficientFunction * acoef3)
     : coef1(acoef1), coef2(acoef2) { ; }
   
-  template <typename FEL, typename SIP, typename MAT>
-  void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  void GenerateMatrix (const FEL & fel, const MIP & mip,
 		       MAT & mat, LocalHeap & lh) const
   {
     mat = 0;
-    mat(0,0) = Evaluate (*coef1, sip);
-    mat(1,1) = Evaluate (*coef2, sip);
+    mat(0,0) = Evaluate (*coef1, mip);
+    mat(1,1) = Evaluate (*coef2, mip);
   }  
 
-  template <typename FEL, typename SIP>
-  void GetEigensystem (const FEL & fel, const SIP & sip, 
+  template <typename FEL, typename MIP>
+  void GetEigensystem (const FEL & fel, const MIP & mip, 
 		  Array<double> & eigenvalues,
 		  Array<double> & eigenvectors,
 		  LocalHeap & lh) const
   {
-    eigenvalues[0] = Evaluate (*coef1, sip);
-    eigenvalues[1] = Evaluate (*coef2, sip);
+    eigenvalues[0] = Evaluate (*coef1, mip);
+    eigenvalues[1] = Evaluate (*coef2, mip);
     eigenvectors[0] = eigenvectors[3] = 1.;
     eigenvectors[1] = eigenvectors[2] = 0.;
   }
 
-  template <typename FEL, typename SIP, class VECX, class VECY>
-  void Apply (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class VECX, class VECY>
+  void Apply (const FEL & fel, const MIP & mip,
 	      const VECX & x, VECY & y, LocalHeap & lh) const
   {
-    y(0) = Evaluate (*coef1, sip) * x(0);
-    y(1) = Evaluate (*coef2, sip) * x(1);
+    y(0) = Evaluate (*coef1, mip) * x(0);
+    y(1) = Evaluate (*coef2, mip) * x(1);
   }
 
-  template <typename FEL, typename SIP, class VECX, class VECY>
-  void ApplyTrans (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class VECX, class VECY>
+  void ApplyTrans (const FEL & fel, const MIP & mip,
 		   const VECX & x, VECY & y, LocalHeap & lh) const
   {
-    y(0) = Evaluate (*coef1, sip) * x(0);
-    y(1) = Evaluate (*coef2, sip) * x(1);
+    y(0) = Evaluate (*coef1, mip) * x(0);
+    y(1) = Evaluate (*coef2, mip) * x(1);
   }
 };
 
@@ -676,49 +676,49 @@ public:
 	     CoefficientFunction * acoef3)
     : coef1(acoef1), coef2(acoef2), coef3(acoef3) { ; }
   
-  template <typename FEL, typename SIP, typename MAT>
-  void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  void GenerateMatrix (const FEL & fel, const MIP & mip,
 		       MAT & mat, LocalHeap & lh) const
   {
     mat = 0;
-    mat(0,0) = Evaluate (*coef1, sip);
-    mat(1,1) = Evaluate (*coef2, sip);
-    mat(2,2) = Evaluate (*coef3, sip);
+    mat(0,0) = Evaluate (*coef1, mip);
+    mat(1,1) = Evaluate (*coef2, mip);
+    mat(2,2) = Evaluate (*coef3, mip);
   }  
 
   
-  template <typename FEL, typename SIP>
-  void GetEigensystem (const FEL & fel, const SIP & sip, 
+  template <typename FEL, typename MIP>
+  void GetEigensystem (const FEL & fel, const MIP & mip, 
 		  Array<double> & eigenvalues,
 		  Array<double> & eigenvectors,
 		  LocalHeap & lh) const
   {
     
-    eigenvalues[0] = Evaluate(*coef1,sip);
-    eigenvalues[1] = Evaluate(*coef2,sip);
-    eigenvalues[2] = Evaluate(*coef3,sip);
+    eigenvalues[0] = Evaluate(*coef1,mip);
+    eigenvalues[1] = Evaluate(*coef2,mip);
+    eigenvalues[2] = Evaluate(*coef3,mip);
 
     eigenvectors = 0.;
     eigenvectors[0] = eigenvectors[4] = eigenvectors[8] = 1.;
   }
 
 
-  template <typename FEL, typename SIP, class VECX, class VECY>
-  void Apply (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class VECX, class VECY>
+  void Apply (const FEL & fel, const MIP & mip,
 	      const VECX & x, VECY & y, LocalHeap & lh) const
   {
-    y(0) = Evaluate (*coef1, sip) * x(0);
-    y(1) = Evaluate (*coef2, sip) * x(1);
-    y(2) = Evaluate (*coef3, sip) * x(2);
+    y(0) = Evaluate (*coef1, mip) * x(0);
+    y(1) = Evaluate (*coef2, mip) * x(1);
+    y(2) = Evaluate (*coef3, mip) * x(2);
   }
 
-  template <typename FEL, typename SIP, class VECX, class VECY>
-  void ApplyTrans (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class VECX, class VECY>
+  void ApplyTrans (const FEL & fel, const MIP & mip,
 		   const VECX & x, VECY & y, LocalHeap & lh) const
   {
-    y(0) = Evaluate (*coef1, sip) * x(0);
-    y(1) = Evaluate (*coef2, sip) * x(1);
-    y(2) = Evaluate (*coef3, sip) * x(2);
+    y(0) = Evaluate (*coef1, mip) * x(0);
+    y(1) = Evaluate (*coef2, mip) * x(1);
+    y(2) = Evaluate (*coef3, mip) * x(2);
   }
 
   void SetCoefficientFunctions( CoefficientFunction * acoef1,
@@ -754,11 +754,11 @@ public:
 
   SymDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
 
-  template <typename FEL, typename SIP, typename MAT>
-  void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  void GenerateMatrix (const FEL & fel, const MIP & mip,
 		       MAT & mat, LocalHeap & lh) const
   {
-    mat(0,0) = Evaluate (*coef, sip);
+    mat(0,0) = Evaluate (*coef, mip);
   }  
 };
 
@@ -776,14 +776,14 @@ public:
 	   CoefficientFunction * acoef11)
     : coef00(acoef00), coef01(acoef01), coef11(acoef11) { ; }
   
-  template <typename FEL, typename SIP, typename MAT>
-  void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  void GenerateMatrix (const FEL & fel, const MIP & mip,
 		       MAT & mat, LocalHeap & lh) const
   {
     mat = 0;
-    mat(0,0) = Evaluate (*coef00, sip);
-    mat(0,1) = mat(1,0) = Evaluate (*coef01, sip);
-    mat(1,1) = Evaluate (*coef11, sip);
+    mat(0,0) = Evaluate (*coef00, mip);
+    mat(0,1) = mat(1,0) = Evaluate (*coef01, mip);
+    mat(1,1) = Evaluate (*coef11, mip);
   }  
 };
 
@@ -807,17 +807,17 @@ public:
     : coef00(acoef00), coef10(acoef10), coef11(acoef11),
       coef20(acoef20), coef21(acoef21), coef22(acoef22) { ; }
   
-  template <typename FEL, typename SIP, typename MAT>
-  void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  void GenerateMatrix (const FEL & fel, const MIP & mip,
 		       MAT & mat, LocalHeap & lh) const
   {
     mat = 0;
-    mat(0,0) = Evaluate (*coef00, sip);
-    mat(1,0) = mat(0,1) = Evaluate (*coef10, sip);
-    mat(1,1) = Evaluate (*coef11, sip);
-    mat(2,0) = mat(0,2) = Evaluate (*coef20, sip);
-    mat(2,1) = mat(1,2) = Evaluate (*coef21, sip);
-    mat(2,2) = Evaluate (*coef22, sip);
+    mat(0,0) = Evaluate (*coef00, mip);
+    mat(1,0) = mat(0,1) = Evaluate (*coef10, mip);
+    mat(1,1) = Evaluate (*coef11, mip);
+    mat(2,0) = mat(0,2) = Evaluate (*coef20, mip);
+    mat(2,1) = mat(1,2) = Evaluate (*coef21, mip);
+    mat(2,2) = Evaluate (*coef22, mip);
   }  
 };
 
@@ -838,13 +838,13 @@ public:
   enum { DIM_DMAT = DIM };
   NormalDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
 
-  template <typename FEL, typename SIP, typename MAT>
-  void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  void GenerateMatrix (const FEL & fel, const MIP & mip,
 		       MAT & mat, LocalHeap & lh) const
   {
     mat = 0;
-    double val = Evaluate (*coef, sip);
-    Vec<DIM> nv = sip.GetNV();
+    double val = Evaluate (*coef, mip);
+    Vec<DIM> nv = mip.GetNV();
     for (int i = 0; i < DIM; i++)
       for (int j = 0; j < DIM; j++)
 	mat(i, j) = val * nv(i) * nv(j);
@@ -867,12 +867,12 @@ class DVecBase
  protected:
   CoefficientFunction * coefs[N];
  public:
-  template <typename FEL, typename SIP, typename VEC>
-  void GenerateVector (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename VEC>
+  void GenerateVector (const FEL & fel, const MIP & mip,
 		       VEC & vec, LocalHeap & lh) const
   {
     for (int i = 0; i < N; i++)
-      vec(i) = coefs[i] -> Evaluate (sip);
+      vec(i) = coefs[i] -> Evaluate (mip);
   }  
 };
 
@@ -882,14 +882,14 @@ class DVecBase<N, Complex>
  protected:
   CoefficientFunction * coefs[N];
  public:
-  template <typename FEL, typename SIP, typename VEC>
-  void GenerateVector (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename VEC>
+  void GenerateVector (const FEL & fel, const MIP & mip,
 		       VEC & vec, LocalHeap & lh) const
   {
     typedef typename VEC::TSCAL TRESULT;
     
     for (int i = 0; i < N; i++)
-      vec(i) = ConvertTo<TRESULT> (coefs[i] -> EvaluateComplex (sip));
+      vec(i) = ConvertTo<TRESULT> (coefs[i] -> EvaluateComplex (mip));
   }  
 };
 */
@@ -908,11 +908,11 @@ class DVecBase<N, Complex>
 //     coefs = acoef;
 //   }
 //   
-//   template <typename FEL, typename SIP, typename VEC>
-//   void GenerateVector (const FEL & fel, const SIP & sip,
+//   template <typename FEL, typename MIP, typename VEC>
+//   void GenerateVector (const FEL & fel, const MIP & mip,
 // 		       VEC & vec, LocalHeap & lh) const
 //   {
-//       coefs -> Evaluate (sip,vec);
+//       coefs -> Evaluate (mip,vec);
 //   }  
 // };
 
@@ -960,8 +960,28 @@ public:
   }
 
 
-  template <typename FEL, typename SIP, typename VEC>
-  void GenerateVector (const FEL & fel, const SIP & sip,
+  DVec (CoefficientFunction * acoef1,
+	CoefficientFunction * acoef2,
+	CoefficientFunction * acoef3,
+	CoefficientFunction * acoef4,
+	CoefficientFunction * acoef5,
+	CoefficientFunction * acoef6)
+  { 
+    vectorial = false;
+
+    coefs[0] = acoef1;
+    coefs[1] = acoef2;
+    coefs[2] = acoef3;
+    coefs[3] = acoef4;
+    coefs[4] = acoef5;
+    coefs[5] = acoef6;
+  }
+    
+
+
+
+  template <typename FEL, typename MIP, typename VEC>
+  void GenerateVector (const FEL & fel, const MIP & mip,
 		       VEC & vec, LocalHeap & lh) const
   {
     typedef typename VEC::TSCAL TSCAL;
@@ -969,183 +989,16 @@ public:
     if (vectorial)
       {
 	Vec<N,TSCAL> hv;
-	coefs[0] -> Evaluate (sip, hv);
+	coefs[0] -> Evaluate (mip, hv);
 	vec = hv;
       }
     else
       for (int i = 0; i < N; i++)
 	{
 	  CoefficientFunction * hp = coefs[i];
-	  vec(i) = hp -> T_Evaluate<TSCAL> (sip);
-	  // vec(i) = coefs[i] -> T_Evaluate<TSCAL> (sip);   // why not ????
+	  vec(i) = hp -> T_Evaluate<TSCAL> (mip);
+	  // vec(i) = coefs[i] -> T_Evaluate<TSCAL> (mip);   // why not ????
 	}
-  }  
-};
-
-
-
-  /*
-template <typename T> 
-class DVec<1, T> : public DVecBase<1,T>
-{
-public:
-  using DVecBase<1,T>::coefs;
-  typedef T TSCAL;
-
-  DVec (CoefficientFunction * acoef)
-  { 
-    coefs[0] = acoef;
-  }
-};
-
-template <typename T> 
-class DVec<2, T> : public DVecBase<2,T>
-{
-public:
-  typedef T TSCAL;
-  using DVecBase<2,T>::coefs;
-  DVec (CoefficientFunction * acoef1,
-	CoefficientFunction * acoef2)
-  { 
-    coefs[0] = acoef1;
-    coefs[1] = acoef2;
-  }
-};
-
-template <typename T> 
-class DVec<3, T> : public DVecBase<3,T>
-{
-public:
-  typedef T TSCAL;
-  using DVecBase<3,T>::coefs;
-
-  DVec (CoefficientFunction * acoef1,
-	CoefficientFunction * acoef2,
-	CoefficientFunction * acoef3)
-  { 
-    coefs[0] = acoef1;
-    coefs[1] = acoef2;
-    coefs[2] = acoef3;
-  }
-};
-  */
-
-
-
-
-///
-		   /*
-template <int N, typename TSCAL = double> 
-class DVec { };
-
-template <typename TSCAL> class DVec<1, TSCAL>
-{
-  CoefficientFunction * coef;
-public:
-  typedef double TSCAL;
-
-  DVec (CoefficientFunction * acoef) : coef(acoef) { ; }
-
-  template <typename FEL, typename SIP, typename VEC>
-  void GenerateVector (const FEL & fel, const SIP & sip,
-		       VEC & vec, LocalHeap & lh) const
-  {
-    vec(0) = coef -> Evaluate (sip);
-  }  
-};
-
-template <> class DVec<1, Complex>
-{
-  CoefficientFunction * coef;
-public:
-  typedef Complex TSCAL;
-
-  DVec (CoefficientFunction * acoef) : coef(acoef) { ; }
-
-  template <typename FEL, typename SIP, typename VEC>
-  void GenerateVector (const FEL & fel, const SIP & sip,
-		       VEC & vec, LocalHeap & lh) const
-  {
-    vec(0) = coef -> EvaluateComplex (sip);
-  }  
-};
-
-
-template <> class DVec<2, double>
-{
-  CoefficientFunction * coef1;
-  CoefficientFunction * coef2;
-public:
-  typedef double TSCAL;
-
-  DVec (CoefficientFunction * acoef1,
-	CoefficientFunction * acoef2)
-    : coef1(acoef1), coef2(acoef2) { ; }
-
-  template <typename FEL, typename SIP, typename VEC>
-  void GenerateVector (const FEL & fel, const SIP & sip,
-		       VEC & vec, LocalHeap & lh) const
-  {
-    vec(0) = Evaluate (*coef1, sip);
-    vec(1) = Evaluate (*coef2, sip);
-  }  
-};
-
-template <> class DVec<3, double>
-{
-  CoefficientFunction * coef1;
-  CoefficientFunction * coef2;
-  CoefficientFunction * coef3;
-public:
-  typedef double TSCAL;
-
-  DVec (CoefficientFunction * acoef1,
-	CoefficientFunction * acoef2,
-	CoefficientFunction * acoef3)
-    : coef1(acoef1), coef2(acoef2), coef3(acoef3) { ; }
-  
-  template <typename FEL, typename SIP, typename VEC>
-  void GenerateVector (const FEL & fel, const SIP & sip,
-		       VEC & vec, LocalHeap & lh) const
-  {
-    vec(0) = Evaluate (*coef1, sip);
-    vec(1) = Evaluate (*coef2, sip);
-    vec(2) = Evaluate (*coef3, sip);
-  }  
-};
-*/
-
-
-
-
-template <> class DVec<6>
-{
-  CoefficientFunction * coef1;
-  CoefficientFunction * coef2;
-  CoefficientFunction * coef3;
-  CoefficientFunction * coef4;
-  CoefficientFunction * coef5;
-  CoefficientFunction * coef6;
-public:
-  DVec (CoefficientFunction * acoef1,
-	CoefficientFunction * acoef2,
-	CoefficientFunction * acoef3,
-	CoefficientFunction * acoef4,
-	CoefficientFunction * acoef5,
-	CoefficientFunction * acoef6)
-    : coef1(acoef1), coef2(acoef2), coef3(acoef3),
-      coef4(acoef4), coef5(acoef5), coef6(acoef6) { ; }
-  
-  template <typename FEL, typename SIP, typename VEC>
-  void GenerateVector (const FEL & fel, const SIP & sip,
-		       VEC & vec, LocalHeap & lh) const
-  {
-    vec(0) = Evaluate (*coef1, sip);
-    vec(1) = Evaluate (*coef2, sip);
-    vec(2) = Evaluate (*coef3, sip);
-    vec(3) = Evaluate (*coef4, sip);
-    vec(4) = Evaluate (*coef5, sip);
-    vec(5) = Evaluate (*coef6, sip);
   }  
 };
 
@@ -1162,12 +1015,12 @@ public:
   DVecN (CoefficientFunction * acoef)
     : coef(acoef) { ; }
   
-  template <typename FEL, typename SIP, typename VEC>
-  void GenerateVector (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename VEC>
+  void GenerateVector (const FEL & fel, const MIP & mip,
 		       VEC & vec, LocalHeap & lh) const
   {
     Vec<N> hv;
-    coef -> Evaluate (sip, hv);
+    coef -> Evaluate (mip, hv);
     for (int i = 0; i < N; i++)
       vec(i) = hv(i);
   }  
@@ -1186,8 +1039,8 @@ public:
 
   
 
-  template <typename FEL, typename SIP, typename VEC>
-  void GenerateVector (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename VEC>
+  void GenerateVector (const FEL & fel, const MIP & mip,
 		       VEC & vec, LocalHeap & lh) const
   {
     vec = 0;
@@ -1197,12 +1050,12 @@ public:
     TSCAL length = 0.;
     for(int i=0; i<N; i++)
       {
-	//vec(i) = sip.GetJacobian()(i,0);
-	vec(i) = sip.GetTV()(i);
+	//vec(i) = mip.GetJacobian()(i,0);
+	vec(i) = mip.GetTV()(i);
 	length += vec(i)*vec(i);
       }
-    //(*testout) << "point " << sip.GetPoint() << " tv " << vec;
-    vec *= Evaluate (*coef, sip)/sqrt(length);
+    //(*testout) << "point " << mip.GetPoint() << " tv " << vec;
+    vec *= Evaluate (*coef, mip)/sqrt(length);
     //(*testout) << " retval " << vec << endl;
   }
 
@@ -1228,24 +1081,24 @@ public:
 
   RotSymLaplaceDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
 
-  template <typename FEL, typename SIP, typename MAT>
-  void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  void GenerateMatrix (const FEL & fel, const MIP & mip,
 		       MAT & mat, LocalHeap & lh) const
   {
     mat = 0;
-    const double r = sip.GetPoint()(0);
-    double val = r*Evaluate (*coef, sip);
+    const double r = mip.GetPoint()(0);
+    double val = r*Evaluate (*coef, mip);
     for (int i = 0; i < DIM; i++)
       mat(i, i) = val;
   }  
   
 
-  template <typename FEL, typename SIP, class VECX, class VECY>
-  void Apply (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class VECX, class VECY>
+  void Apply (const FEL & fel, const MIP & mip,
 	      const VECX & x, VECY & y, LocalHeap & lh) const
   {
-    const double r = sip.GetPoint()(0);
-    double val = r*Evaluate (*coef, sip);
+    const double r = mip.GetPoint()(0);
+    double val = r*Evaluate (*coef, mip);
     y = val * x;
   }
 };
@@ -1266,22 +1119,22 @@ public:
   enum { DIM_DMAT = 1 };
   enum { DIFFORDER = 0 };
 
-  template <typename FEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    FlatVector<> shape = fel.GetShape (sip.IP(), lh);
-    Vec<D> nv = sip.GetNV();
-    //Vec<D> p = sip.GetPoint();
+    FlatVector<> shape = fel.GetShape (mip.IP(), lh);
+    Vec<D> nv = mip.GetNV();
+    //Vec<D> p = mip.GetPoint();
     for (int j = 0; j < shape.Size(); j++)
       for (int i = 0; i < D; i++)
 	mat(0, j*D+i) =  shape(j) * nv(i);
 
-    //(*testout) << "sip = " << p << ", nv = " << nv << endl;
+    //(*testout) << "mip = " << p << ", nv = " << nv << endl;
     //p(0) = 0.0;
     //p /= L2Norm(p);
     //nv /= L2Norm(nv);
-    //(*testout) << "normalized, sip = " << p << ", nv = " << nv << endl;
+    //(*testout) << "normalized, mip = " << p << ", nv = " << nv << endl;
     //(*testout) << "mat = " << mat << endl;
   }
 };
@@ -1476,15 +1329,15 @@ public:
   enum { DIM_DMAT = 1 };
   enum { DIFFORDER = 1 };
 
-  template <typename FEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
     int nd = fel.GetNDof();
 
     FlatMatrix<> grad (D, nd, lh);
-    grad = Trans (sip.GetJacobianInverse ()) * 
-      Trans (fel.GetDShape(sip.IP(), lh));
+    grad = Trans (mip.GetJacobianInverse ()) * 
+      Trans (fel.GetDShape(mip.IP(), lh));
     
     mat = 0;
     for (int i = 0; i < nd; i++)
@@ -1536,15 +1389,15 @@ public:
   enum { DIM_DMAT = 1 };
   enum { DIFFORDER = 1 };
 
-  template <typename FEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
     int nd = fel.GetNDof();
 
     FlatMatrix<> grad (2, nd, lh);
-    grad = Trans (sip.GetJacobianInverse ()) * 
-      Trans (fel.GetDShape(sip.IP(), lh));
+    grad = Trans (mip.GetJacobianInverse ()) * 
+      Trans (fel.GetDShape(mip.IP(), lh));
     
     mat = 0;
     for (int i = 0; i < nd; i++)
@@ -1590,15 +1443,15 @@ public:
   enum { DIM_DMAT = 3 };
   enum { DIFFORDER = 1 };
 
-  template <typename FEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const FEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
     int nd = fel.GetNDof();
 
     FlatMatrix<> grad (3, nd, lh);
-    grad = Trans (sip.GetJacobianInverse ()) * 
-      Trans (fel.GetDShape(sip.IP(), lh));
+    grad = Trans (mip.GetJacobianInverse ()) * 
+      Trans (fel.GetDShape(mip.IP(), lh));
     
     mat = 0;
     for (int i = 0; i < nd; i++)

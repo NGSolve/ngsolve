@@ -159,20 +159,11 @@ namespace ngcomp
     enum { VDIM = mat_traits<TV>::HEIGHT };
 
     T_GridFunction (const FESpace & afespace, const string & aname, const Flags & flags);
-    // virtual ~T_GridFunction ();
+    virtual ~T_GridFunction ();
 
     virtual void Update ();
 
     // virtual bool IsUpdated () const;
-
-    /*
-      // msvc 2008 crashes with that
-    virtual T_BaseVector<TV> & GetVector (int comp = 0)
-    { return dynamic_cast<T_BaseVector<TV>&>(*(vec[comp])); }
-    // virtual const T_BaseVector<TV> & GetVector (int comp = 0) const  { return *vec[comp]; }
-    virtual const T_BaseVector<TV> & GetVector (int comp = 0) const
-    { return dynamic_cast<T_BaseVector<TV>&>(*(vec[comp])); }
-    */
 
     friend class GridFunctionCoefficientFunction;
   };

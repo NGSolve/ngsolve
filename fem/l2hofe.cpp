@@ -204,6 +204,41 @@ namespace ngfem
   }
 
 
+
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  void L2HighOrderFE<ET,SHAPES> :: 
+  EvaluateGrad (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM> values) const
+    {
+      int classnr =  ET_trait<ET>::GetClassNr (vnums);
+
+      PrecomputedScalShapes<DIM> * pre = precomp.Get (classnr, order, ir.GetNIP());
+      if (pre)
+	{
+	  FlatVector<> vval(DIM*values.Height(), &values(0,0));
+	  vval = pre->dshapes * coefs;
+	}
+      else
+	T_ScalarFiniteElement2< SHAPES<ET>, ET > :: EvaluateGrad (ir, coefs, values);
+    }
+
+
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  void L2HighOrderFE<ET,SHAPES> :: 
+  EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const
+    {
+      int classnr =  ET_trait<ET>::GetClassNr (vnums);
+
+      PrecomputedScalShapes<DIM> * pre = precomp.Get (classnr, order, ir.GetNIP());
+      if (pre)
+	coefs = Trans (pre->dshapes) * FlatVector<> (DIM*ndof, &values(0,0));  // values.Height !!!
+      else
+	T_ScalarFiniteElement2< SHAPES<ET>, ET > :: EvaluateGradTrans (ir, values, coefs);
+    }
+
+
+
+
+
   template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
   void L2HighOrderFE<ET,SHAPES> :: 
   GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
@@ -231,6 +266,21 @@ namespace ngfem
       else
 	L2HighOrderFiniteElement<DIM>::GetTraceTrans (facet, fcoefs, coefs);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

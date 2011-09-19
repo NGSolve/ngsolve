@@ -21,36 +21,49 @@ namespace ngfem
   class H1HighOrderFiniteElement : virtual public ScalarFiniteElement<DIM>
   {
   public:
+    /// global vertex numbers for shape orientation
     int vnums[8];
+    /// order of internal shapes (3d only)
     INT<3> order_cell;
+    /// order of face shapes / internal in 2d
     INT<2> order_face[6];
+    /// order of edge shapes
     int order_edge[12];
 
     using ScalarFiniteElement<DIM>::eltype;
 
   public:
+    /// assignes vertex numbers
     template <typename TA> 
     void SetVertexNumbers (const TA & avnums)
     { for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; }
 
+    /// assign vertex number
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
 
+    /// set isotropic cell order
     void SetOrderCell (int oi)   { order_cell = oi; }
+
+    /// set anisotropic cell order
     void SetOrderCell (INT<3> oi)  { order_cell = oi; }
 
+    /// set isotropic face orders
     void SetOrderFace (FlatArray<int> & of)
     { for (int i = 0; i < of.Size(); i++) order_face[i] = of[i]; }
 
+    /// set anisotropic face orders
     void SetOrderFace (FlatArray<INT<2> > & of)
     { for (int i = 0; i < of.Size(); i++) order_face[i] = of[i]; }
 
+    /// set anisotropic face order for face nr
     void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
 
+    /// set edge orders
     void SetOrderEdge (FlatArray<int> & oe)
     { for (int i = 0; i < oe.Size(); i++) order_edge[i] = oe[i]; }
 
+    /// set edge order for edge nr
     void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
-
 
     /// high order elements need extra configuration. update ndof and order
     virtual void ComputeNDof () = 0;
@@ -105,28 +118,34 @@ namespace ngfem
       order = aorder;
     }
 
-    virtual void GetDofs (Array<Dof> & dofs) const;
+    // virtual void GetDofs (Array<Dof> & dofs) const;
     virtual void ComputeNDof();
-    virtual void GetInternalDofs (Array<int> & idofs) const;
+    // virtual void GetInternalDofs (Array<int> & idofs) const;
   };
 
 
 
 
 
-
+  /// shape function engine for high order h1-elements
   template <ELEMENT_TYPE ET> class H1HighOrderFE_Shape;
 
 
-
+  /**
+     High order finite elements for H1.
+     These are the actual finite element classes to be used.
+     Operations are inherited from T_ScalarFiniteElement2, and shape functions are provided by the shape template
+   */
   template <ELEMENT_TYPE ET> 
   class  NGS_DLL_HEADER H1HighOrderFE :  public T_H1HighOrderFiniteElement<ET>,
 					 public T_ScalarFiniteElement2< H1HighOrderFE_Shape<ET>, ET >
 
   {   
   public:
+    /// minimal constructor, orders will be set later
     H1HighOrderFE () { ; }
 
+    /// builds a functional element of order aorder.
     H1HighOrderFE (int aorder)
       : T_H1HighOrderFiniteElement<ET> (aorder) { ; }
   };
@@ -142,6 +161,7 @@ namespace ngfem
   class H1HighOrderFE_Shape<ET_SEGM> : public H1HighOrderFE<ET_SEGM>
   {
   public:
+    /// generic shape function
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[], TFA & shape) const;
   };
@@ -154,6 +174,7 @@ namespace ngfem
   class H1HighOrderFE_Shape<ET_TRIG> : public H1HighOrderFE<ET_TRIG>
   {
   public:
+    /// generic shape function
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx x[], TFA & shape) const;
   };
@@ -166,6 +187,7 @@ namespace ngfem
   class NGS_DLL_HEADER H1HighOrderFE_Shape<ET_QUAD> : public H1HighOrderFE<ET_QUAD>
   {
   public:
+    /// generic shape function
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[], TFA & shape) const;
   };
@@ -178,6 +200,7 @@ namespace ngfem
   class NGS_DLL_HEADER H1HighOrderFE_Shape<ET_TET> : public H1HighOrderFE<ET_TET>
   {
   public:
+    /// generic shape function
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[], TFA & shape) const; 
   };
@@ -190,6 +213,7 @@ namespace ngfem
   class H1HighOrderFE_Shape<ET_PRISM> : public H1HighOrderFE<ET_PRISM>
   {
   public:
+    /// generic shape function
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[], TFA & shape) const; 
   };
@@ -203,18 +227,20 @@ namespace ngfem
   class H1HighOrderFE_Shape<ET_HEX> : public H1HighOrderFE<ET_HEX>
   {
   public:
+    /// generic shape function
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[], TFA & shape) const; 
   };
 
 
   /**
-     High order pyramid finite element
+     High order pyramid shape functions
   */
-  template <>
+  template <> 
   class H1HighOrderFE_Shape<ET_PYRAMID> : public H1HighOrderFE<ET_PYRAMID>
   {
   public:
+    /// generic shape function
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[], TFA & shape) const; 
   };

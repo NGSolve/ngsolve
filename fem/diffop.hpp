@@ -15,7 +15,8 @@ namespace ngfem
   /**
      Differential Operator.
      Base-class for template-polymorphismus.
-     Provides application and transpose-application
+     Provides application and transpose-application.
+     Operations can be applied for one integration point, or for the whole integration rule at once.
   */
   template<class DOP>
   class NGS_DLL_HEADER DiffOp
@@ -28,19 +29,22 @@ namespace ngfem
        Computes the B-matrix. 
        The height is DIM_DMAT, the width is fel.GetNDof(). 
        FEL is the FiniteElement type specified in the BDB-Integrator 
-       sip is the mapped integration point containing the Jacobi-Matrix 
+       mip is the mapped integration point containing the Jacobi-Matrix 
        MAT is the resulting matrix (usually a FixedHeightMatrix)
     */
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
       ;
     }
 
-    /// Computes B-matrix times element vector
-    template <typename FEL, typename SIP, class TVX, class TVY>
-    static void Apply (const FEL & fel, const SIP & sip,
+    /**
+       Applies the B-matrix.
+       Computes matrix-vector product with the B-matrix
+    */
+    template <typename FEL, typename MIP, class TVX, class TVY>
+    static void Apply (const FEL & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh)
     {
@@ -49,7 +53,7 @@ namespace ngfem
       HeapReset hr(lh);
 
       FlatMatrixFixHeight<DOP::DIM_DMAT, TSCAL> mat(DOP::DIM*fel.GetNDof(), lh);
-      DOP::GenerateMatrix (fel, sip, mat, lh);
+      DOP::GenerateMatrix (fel, mip, mat, lh);
       y = mat * x;
     }
 
@@ -65,8 +69,8 @@ namespace ngfem
 
 
     /// Computes Transpose (B-matrix) times point value
-    template <typename FEL, typename SIP, class TVX, class TVY>
-    static void ApplyTrans (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const FEL & fel, const MIP & mip,
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
@@ -75,7 +79,7 @@ namespace ngfem
       HeapReset hr(lh);
 
       FlatMatrixFixHeight<DOP::DIM_DMAT, TSCAL> mat(DOP::DIM*fel.GetNDof(), lh);
-      DOP::GenerateMatrix (fel, sip, mat, lh);
+      DOP::GenerateMatrix (fel, mip, mat, lh);
       y = Trans (mat) * x;
     }
 
@@ -103,19 +107,21 @@ namespace ngfem
 
 
 
-    /// 
-    template <typename SIP, class TVX>
-    static void Transform (const SIP & sip, TVX & x)
+    /// old style ???
+    template <typename MIP, class TVX>
+    static void Transform (const MIP & mip, TVX & x)
     {
       ;
     }
 
-    template <typename SIP, class TVX>
-    static void TransformT (const SIP & sip, TVX & x)
+    /// old style ???
+    template <typename MIP, class TVX>
+    static void TransformT (const MIP & mip, TVX & x)
     {
       ;
     }
 
+    /// old style
     template <typename FEL, class TVD, class TVY, int D>
     static void ApplyGrid (const FEL & fel, 
 			   const IntegrationRuleTP<D> & ir,
@@ -126,6 +132,7 @@ namespace ngfem
       ;
     }
 
+    /// old style
     template <typename FEL, class TVD, class TVY, int D>
     static void ApplyTransGrid (const FEL & fel, 
 				const IntegrationRuleTP<D> & ir,
@@ -143,40 +150,48 @@ namespace ngfem
 
 
 
+  /**
+     Differential Operator.
+     Base-class for run-time polymorphismus.
+     Provides application and transpose-application
+  */
   class DifferentialOperator
   {
   public:
+    /// destructor
     virtual ~DifferentialOperator ();
-    virtual int Dim() const = 0;    
+    /// dimension of range
+    virtual int Dim() const = 0;   
+    /// does it live on the boundary ?
     virtual bool Boundary() const = 0;
-
+    /// calculates the matrix
     virtual void
     CalcMatrix (const FiniteElement & fel,
-		const BaseSpecificIntegrationPoint & sip,
+		const BaseMappedIntegrationPoint & mip,
 		FlatMatrix<double> mat, 
 		LocalHeap & lh) const = 0;
 
     virtual void
     Apply (const FiniteElement & fel,
-	   const BaseSpecificIntegrationPoint & sip,
+	   const BaseMappedIntegrationPoint & mip,
 	   FlatVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const
     {
       FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
-      CalcMatrix (fel, sip, mat, lh);
+      CalcMatrix (fel, mip, mat, lh);
       flux = mat * x;
     }
 
     virtual void
     Apply (const FiniteElement & fel,
-	   const BaseSpecificIntegrationPoint & sip,
+	   const BaseMappedIntegrationPoint & mip,
 	   FlatVector<Complex> x, 
 	   FlatVector<Complex> flux,
 	   LocalHeap & lh) const
     {
       FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
-      CalcMatrix (fel, sip, mat, lh);
+      CalcMatrix (fel, mip, mat, lh);
       flux = mat * x;
     }
 
@@ -207,26 +222,26 @@ namespace ngfem
 
     virtual void
     ApplyTrans (const FiniteElement & fel,
-		const BaseSpecificIntegrationPoint & sip,
+		const BaseMappedIntegrationPoint & mip,
 		FlatVector<double> flux,
 		FlatVector<double> x, 
 		LocalHeap & lh) const 
     {
       FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
-      CalcMatrix (fel, sip, mat, lh);
+      CalcMatrix (fel, mip, mat, lh);
       flux = mat * x;
     }
 
 
     virtual void
     ApplyTrans (const FiniteElement & fel,
-		const BaseSpecificIntegrationPoint & sip,
+		const BaseMappedIntegrationPoint & mip,
 		FlatVector<Complex> flux,
 		FlatVector<Complex> x, 
 		LocalHeap & lh) const 
     {
       FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
-      CalcMatrix (fel, sip, mat, lh);
+      CalcMatrix (fel, mip, mat, lh);
       flux = mat * x;
     }
 
@@ -268,7 +283,9 @@ namespace ngfem
 
 
 
-
+  /**
+     Connect compile-time polymorph DiffOp to run-time polymorph DifferentialOperator.
+   */
   template <typename DIFFOP, typename FEL>
   class T_DifferentialOperator : public DifferentialOperator
   {
@@ -284,29 +301,29 @@ namespace ngfem
 
     virtual void
     CalcMatrix (const FiniteElement & bfel,
-		const BaseSpecificIntegrationPoint & bsip,
+		const BaseMappedIntegrationPoint & bmip,
 		FlatMatrix<double> mat, 
 		LocalHeap & lh) const
     {
-      const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
-	static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+      const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
+	static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
 
       const FEL & fel = static_cast<const FEL&> (bfel);
 
-      DIFFOP::GenerateMatrix (fel, sip, mat, lh);
+      DIFFOP::GenerateMatrix (fel, mip, mat, lh);
     }
 
     virtual void
     Apply (const FiniteElement & bfel,
-	   const BaseSpecificIntegrationPoint & bsip,
+	   const BaseMappedIntegrationPoint & bmip,
 	   FlatVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const
     {
-      const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
-	static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+      const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
+	static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
       const FEL & fel = static_cast<const FEL&> (bfel);
-      DIFFOP::Apply (fel, sip, x, flux, lh);
+      DIFFOP::Apply (fel, mip, x, flux, lh);
     }
 
 
@@ -328,15 +345,15 @@ namespace ngfem
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
-		const BaseSpecificIntegrationPoint & bsip,
+		const BaseMappedIntegrationPoint & bmip,
 		FlatVector<double> flux,
 		FlatVector<double> x, 
 		LocalHeap & lh) const 
     {
-      const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
-	static_cast<const SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+      const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
+	static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
       const FEL & fel = static_cast<const FEL&> (bfel);
-      DIFFOP::ApplyTrans (fel, sip, flux, x, lh);
+      DIFFOP::ApplyTrans (fel, mip, flux, x, lh);
     }    
   };
 

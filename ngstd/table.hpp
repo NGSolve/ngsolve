@@ -45,7 +45,6 @@ class Table : public BaseTable
 protected:
   /// array of data 
   T * data;
-  // MoveableMem<T> data;
 
 public:
   /// Construct table of uniform entrysize
@@ -53,8 +52,6 @@ public:
     : BaseTable (asize, entrysize) 
   { 
     data = new T[index[size]]; 
-    // data.Alloc (index[size]);
-    // data.SetName ("NGS Table");
   }
 
   /// Construct table of variable entrysize
@@ -62,15 +59,12 @@ public:
     : BaseTable (entrysize)
   {
     data = new T[index[size]]; 
-    // data.Alloc (index[size]);
-    // data.SetName ("NGS Table");
   }
 
   /// Delete data
   ~Table ()
   {
     delete [] data; 
-    // data.Free();
   }
 
   /// Size of table
@@ -249,8 +243,8 @@ public:
 /** 
     A dynamic table class.
    
-    A DynamicTable contains entries of variable size. Entry size can
-    be dynamically increased.
+    A DynamicTable contains entries of variable size. Entry sizes can
+    be increased dynamically.
 */
 template <class T>
 class DynamicTable : public BaseDynamicTable
@@ -274,6 +268,7 @@ public:
     static_cast<T*> (data[i].col) [data[i].size-1] = acont;
   }
 
+  /// Inserts element acont into row i, iff not yet exists.
   void AddUnique (int i, const T & cont)
   {
     int es = EntrySize (i);

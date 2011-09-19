@@ -481,9 +481,12 @@ namespace ngcomp
 
   const FiniteElement & H1HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
+    Ng_Element ngel = ma.GetElement(elnr);
+    ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
+
     if (!DefinedOn (ma.GetElIndex (elnr)))
       {
-        switch (ma.GetElType(elnr))
+        switch (eltype)
           {
           case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); break;
           case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); break;
@@ -495,7 +498,7 @@ namespace ngcomp
 	  }
       }
 
-    if (fixed_order && ma.GetElType(elnr) == ET_TRIG && order <= 6)
+    if (fixed_order && eltype == ET_TRIG && order <= 6)
       {
         H1HighOrderFiniteElementFO<2> * hofe2d = 0;
         switch (order)
@@ -508,14 +511,13 @@ namespace ngcomp
           case 6: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,6> (); break;
           }
     
-        Ng_Element ngel = ma.GetElement<2> (elnr);
         for (int j = 0; j < 3; j++)
           hofe2d->SetVertexNumber (j, ngel.vertices[j]);
         return *hofe2d;
       }
 
 
-    if (fixed_order && ma.GetElType(elnr) == ET_TET && order <= 6)
+    if (fixed_order && eltype == ET_TET && order <= 6)
       {
         H1HighOrderFiniteElementFO<3> * hofe3d = 0;
         switch (order)
@@ -528,7 +530,6 @@ namespace ngcomp
           case 6: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,6> (); break;
           }
     
-        Ng_Element ngel = ma.GetElement<3> (elnr);
         for (int j = 0; j < 4; j++)
           hofe3d->SetVertexNumber (j, ngel.vertices[j]);
         return *hofe3d;
@@ -541,7 +542,7 @@ namespace ngcomp
 	H1HighOrderFiniteElement<2> * hofe2d = 0;
 	H1HighOrderFiniteElement<3> * hofe3d = 0;
 
-        switch (ma.GetElType(elnr))
+        switch (eltype)
           {
           case ET_TET:     hofe3d = new (lh) H1HighOrderFE<ET_TET> (); break;
           case ET_PYRAMID: hofe3d = new (lh) H1HighOrderFE<ET_PYRAMID> (); break;
@@ -560,8 +561,6 @@ namespace ngcomp
 
         if (ma.GetDimension() == 2)
           {
-            Ng_Element ngel = ma.GetElement<2> (elnr);
-
 	    hofe2d -> SetVertexNumbers (ngel.vertices);
             
             for (int j = 0; j < ngel.edges.Size(); j++)
@@ -578,8 +577,6 @@ namespace ngcomp
         else
 
           {
-            Ng_Element ngel = ma.GetElement<3> (elnr);
-
 	    hofe3d -> SetVertexNumbers (ngel.vertices);
 
             for (int j = 0; j < ngel.edges.Size(); j++)
@@ -685,7 +682,7 @@ namespace ngcomp
 	dnums.SetSize(0);
 	return;
       }
-
+    
     Ng_Element ngel = ma.GetElement(elnr);
 
     dnums.SetSize(ngel.vertices.Size()); 
@@ -700,9 +697,10 @@ namespace ngcomp
         dnums += GetFaceDofs (ngel.faces[i]);
 
     dnums += GetElementDofs (elnr);
-
+    /*
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
+    */
   }
 
 

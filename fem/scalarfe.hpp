@@ -19,17 +19,19 @@ namespace ngfem
   class NGS_DLL_HEADER ScalarFiniteElement : public FiniteElement
   {
   public:
-    virtual string ClassName(void) const {return "ScalarFiniteElement";}
-    ///
+    /// empty constructor
     ScalarFiniteElement () { ; } // dimspace = D; }
-    ///
+    /// provides type, number of dofs, maximal order of shapes
     ScalarFiniteElement (ELEMENT_TYPE aeltype, 
 			 int andof = 0, int aorder = 0)
       : FiniteElement (D, aeltype, andof, aorder) 
     { ; }
 
-    ///
+    /// destructor
     virtual ~ScalarFiniteElement () { ; }
+
+    /// the name
+    virtual string ClassName(void) const {return "ScalarFiniteElement";}
 
     /**
        returns shape functions in point ip.
@@ -88,34 +90,66 @@ namespace ngfem
 
 
 
-    /// evaluate \sum x_i shape_i
+    /**
+       Evaluates function in integration point ip.
+       Vector x provides coefficient vector.
+     */
     virtual double Evaluate (const IntegrationPoint & ip, FlatVector<> x) const;
+
+    /**
+       Evaluates gradient in integration point ip.
+       Vector x provides coefficient vector.
+     */
     virtual Vec<D> EvaluateGrad (const IntegrationPoint & ip, FlatVector<> x) const;
 
     
+    /**
+       Evaluate function in points of integrationrule ir.
+       Vector x provides coefficient vector.
+     */
     virtual void Evaluate (const IntegrationRule & ir, FlatVector<> coefs, FlatVector<> values) const;
+
+    /**
+       Evaluate gradient in points of integrationrule ir.
+       Vector x provides coefficient vector.
+     */
     virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<D> values) const;
 
+
+    /**
+       Evaluate function in points of integrationrule ir, transpose operation.
+       Vector x provides coefficient vector.
+     */
     virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const;
+
+
+    /**
+       Evaluate gradient in points of integrationrule ir, transpose operation.
+       Vector x provides coefficient vector.
+     */
     virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D> values, FlatVector<> coefs) const;
 
 
 
+    /// old style
     virtual void EvaluateShapeGrid (const IntegrationRuleTP<D> & ir,
 				    const FlatVector<double> coefs,
 				    FlatVector<double> gridvalues,
 				    LocalHeap & lh) const;
-				  
+			
+    /// old style	  
     virtual void EvaluateShapeGridTrans (const IntegrationRuleTP<D> & ir,
 					 const FlatVector<double> gridvalues,
 					 FlatVector<double> coefs,
 					 LocalHeap & lh) const;
-				  
+			
+    /// old style	  
     virtual void EvaluateDShapeGrid (const IntegrationRuleTP<D> & ir,
 				     const FlatVector<double> coefs,
 				     FlatMatrixFixWidth<D> gridvalues,
 				     LocalHeap & lh) const;
-				  
+			
+    /// old style	  
     virtual void EvaluateDShapeGridTrans (const IntegrationRuleTP<D> & ir,
 					  const FlatMatrixFixWidth<D> gridvalues,
 					  FlatVector<double> coefs,

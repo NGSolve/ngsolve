@@ -12,6 +12,7 @@
 
 namespace ngfem
 {
+  /*
   template <ELEMENT_TYPE ET>
   void T_H1HighOrderFiniteElement<ET> :: 
   GetDofs (Array<Dof> & dofs) const
@@ -39,7 +40,7 @@ namespace ngfem
 	  dofs.Append (Dof (Node(NT_CELL, 0), j));
       }
   }
-
+  */
 
   template <ELEMENT_TYPE ET>
   void T_H1HighOrderFiniteElement<ET> :: 
@@ -62,7 +63,7 @@ namespace ngfem
     if (DIM == 3) order = max (order, Max (order_cell));
   }
 
-
+  /*
   template <ELEMENT_TYPE ET>
   void T_H1HighOrderFiniteElement<ET> :: 
   GetInternalDofs (Array<int> & idofs) const
@@ -74,8 +75,7 @@ namespace ngfem
 
     idofs = IntRange (ndof-ni, ndof);
   }
-
-
+  */
 
 
   /* *********************** Segment  **********************/

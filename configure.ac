@@ -3,14 +3,21 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
 
-# AC_PROG_CC
+AC_PROG_CC
 AC_PROG_CXX
 
 AC_PREFIX_DEFAULT(["/opt/netgen"])
 AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
 
+
+# AC_OPENMP
+# AC_SUBST([CXXFLAGS], [$(CXXFLAGS)] $(OPENMP_CFLAGS))
+# AC_MSG_NOTICE([hi, openmp_cflags = $(OPENMP_CFLAGS)])
+
+
 # ACX_LAPACK
+
 
 
 # Tcl/Tk configuration:

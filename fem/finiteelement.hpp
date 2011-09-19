@@ -27,20 +27,29 @@ namespace ngfem
   public:
     /// the node
     Node node;
+    /// which number on that node
     int nr_on_node;
 
   public:
+    /// empty constructor
     Dof () { ; }
+
+    /// initialize 
     Dof (Node anode, int anr_on_node)
       : node(anode), nr_on_node(anr_on_node) { ; }
   
+    /// copy constructor
     Dof (const Dof & d2)
     { node = d2.node; nr_on_node = d2.nr_on_node; }
 
+    /// the node of the dof
     const Node & GetNode() const { return node; }
+
+    /// dof number on node
     int GetNrOnNode () const { return nr_on_node; }
   };
 
+  /// output dof
   inline ostream & operator<< (ostream & ost, const Dof & dof)
   {
     ost << dof.GetNode() << "," << dof.GetNrOnNode();
@@ -88,11 +97,12 @@ namespace ngfem
     ELEMENT_TYPE ElementType() const { return eltype; }
 
     /// get dof description
-    virtual void GetDofs (Array<Dof> & dofs) const;
+    /// virtual void GetDofs (Array<Dof> & dofs) const;
 
     /// the name of the element family
     virtual string ClassName() const {return "FiniteElement";}
 
+    /// precomputes shape for integrationrule
     virtual void PrecomputeShapes (const IntegrationRule & ir) { ; }
   };
 
@@ -110,7 +120,7 @@ namespace ngfem
     /// pointers to the components
     ArrayMem<const FiniteElement*,10> fea;
   public:
-    /// 
+    /// initialize with pointers to components, copy pointers
     CompoundFiniteElement (Array<const FiniteElement*> & afea);
 
     /// number of components
@@ -119,6 +129,7 @@ namespace ngfem
     /// select i-th component
     const FiniteElement & operator[] (int i) const { return *fea[i]; }
 
+    /// dof range of comp-th component
     IntRange GetRange (int comp) const
     {
       int base = 0;
@@ -126,7 +137,6 @@ namespace ngfem
 	base += fea[i]->GetNDof();
       return IntRange (base, base+fea[comp]->GetNDof());
     }
-    // virtual void GetInternalDofs (Array<int> & idofs) const;
   };
 
 

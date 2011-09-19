@@ -173,61 +173,14 @@ namespace ngfem
 
     virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
 
-    virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM> values) const
-    {
-      int classnr =  ET_trait<ET>::GetClassNr (vnums);
+    virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM> values) const;
 
-      PrecomputedScalShapes<DIM> * pre = precomp.Get (classnr, order, ir.GetNIP());
-      if (pre)
-	{
-	  FlatVector<> vval(DIM*values.Height(), &values(0,0));
-	  vval = pre->dshapes * coefs;
-	}
-      else
-	T_ScalarFiniteElement2< SHAPES<ET>, ET > :: EvaluateGrad (ir, coefs, values);
-    }
-
-
-    virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const
-    {
-      int classnr =  ET_trait<ET>::GetClassNr (vnums);
-
-      PrecomputedScalShapes<DIM> * pre = precomp.Get (classnr, order, ir.GetNIP());
-      if (pre)
-	coefs = Trans (pre->dshapes) * FlatVector<> (DIM*ndof, &values(0,0));  // values.Height !!!
-      else
-	T_ScalarFiniteElement2< SHAPES<ET>, ET > :: EvaluateGradTrans (ir, values, coefs);
-    }
+    virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const;
 
     virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const;
-    /*
-      {
-      int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
-      if (precomp_trace.Used (INT<2> (order, classnr)))
-      {
-      fcoefs = (*precomp_trace.Get (INT<2> (order, classnr))) * coefs;
-      }
-      else
-      L2HighOrderFiniteElement<DIM>::GetTrace (facet, coefs, fcoefs);
-      }
-    */
+
     virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const;
-    /*
-      {
-      int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
-      if (precomp_trace.Used (INT<2> (order, classnr)))
-      {
-      coefs = Trans(*precomp_trace.Get (INT<2> (order, classnr))) * fcoefs;
-      }
-      else
-      L2HighOrderFiniteElement<DIM>::GetTraceTrans (facet, fcoefs, coefs);
-      }
-    */
   };
-
-
-
-
 
 
 

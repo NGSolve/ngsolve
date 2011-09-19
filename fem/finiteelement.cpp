@@ -30,11 +30,12 @@ namespace ngfem
   }
   */
   
+  /*
   void FiniteElement :: GetDofs (Array<Dof> & dofs) const
   {
     throw Exception(string ("GetDofs not implemented for element ") + typeid(*this).name());
   }
-
+  */
 
   CompoundFiniteElement ::  CompoundFiniteElement (Array<const FiniteElement*> & afea)
     : FiniteElement (), fea(afea)

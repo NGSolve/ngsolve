@@ -524,7 +524,7 @@ namespace ngfem
 
 
 
-
+  /// prism, order P2 in plane and P1 in z direction
   class FE_Prism2aniso : public T_ScalarFiniteElement<FE_Prism2aniso,ET_PRISM,12,2>
   {
   public:
@@ -590,7 +590,7 @@ namespace ngfem
 
   /* ***************************** Hex *********************************** */
 
-  ///
+  /// P0 hex element
   class FE_Hex0 : public T_ScalarFiniteElement<FE_Hex0,ET_HEX,1,0>
   {
   public:
@@ -601,7 +601,7 @@ namespace ngfem
     }
   };
 
-  ///
+  /// trilinear hex element
   class FE_Hex1 : public T_ScalarFiniteElement<FE_Hex1,ET_HEX,8,1>
   {
   public:
