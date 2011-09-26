@@ -892,7 +892,8 @@ namespace ngfem
 	    HeapReset hr(lh);
 	    ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
 
-	    const IntegrationRule & ir_facet = SelectIntegrationRule (etfacet, 2*max (fel_l2.Order(), fel_facet.Order()));
+	    const IntegrationRule & ir_facet = 
+	      SelectIntegrationRule (etfacet, 2*max (fel_l2.Order(), fel_facet.Order()));
 
 	    fel_facet.SelectFacet (k);
 
@@ -914,7 +915,7 @@ namespace ngfem
 		normal /= len;
 
 		fel_l2.CalcShape(ip, jump.Range (l2_dofs) );
-		fel_facet.CalcShape(ip, jump.Range(facet_dofs));
+		fel_facet.CalcShape(ip, jump.Range (facet_dofs));
 		jump.Range (facet_dofs) *= -1;
 
 		Vec<D> invjac_normal = inv_jac * normal;
@@ -953,9 +954,12 @@ namespace ngfem
 	LapackInverse (mat_gradgrad);
 
 	FlatMatrix<> hmT(nd, nd_l2, lh);
+	/*
 	hmT = mat_mixedT * Trans (mat_gradgrad);
-
 	elmat += (1+alpha) * mat_mixedT * Trans (hmT);
+	*/
+	LapackMultABt (mat_mixedT, mat_gradgrad, hmT);
+	LapackMultAddABt (mat_mixedT, hmT, 1+alpha, elmat);
       }
     }
   };

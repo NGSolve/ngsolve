@@ -8,7 +8,10 @@ lib_LTLIBRARIES = libngfem.la
 #  libngfemng.la
 
 libngfem_la_CPPFLAGS = -I$(top_srcdir)/include  $(LAPACK_INCLUDES)
-libngfem_la_LDFLAGS = -avoid-version -rdynamic -lgomp 
+# libngfem_la_LDFLAGS = -avoid-version -rdynamic -lgomp 
+libngfem_la_LDFLAGS = -avoid-version
+libngfem_la_LIBADD = $(top_builddir)/ngstd/libngstd.la $(top_builddir)/basiclinalg/libngbla.la $(LAPACK_LIBS)
+
 # $(NETGEN_INCLUDES)
 
 libngfem_la_SOURCES =  vectorfacetfe.cpp bdbequations.cpp recursive_pol_trig.cpp	      \

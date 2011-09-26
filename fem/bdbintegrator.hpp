@@ -341,7 +341,7 @@ public:
 
 
 
-#define BLOCK_VERSIONxxx
+#define BLOCK_VERSION
 #ifdef BLOCK_VERSION
 
   template <typename TSCAL>
@@ -366,7 +366,7 @@ public:
         HeapReset hr1(lh);
 	
         FlatMatrixFixHeight<DIM_DMAT, TSCAL> bmat (ndof * DIM, lh);
-        FlatMatrixFixHeight<DIM_DMAT, TSCAL> dbmat (ndof * DIM, lh);
+	FlatMatrixFixHeight<DIM_DMAT, TSCAL> dbmat (ndof * DIM, lh);
 	
         FlatMatrixFixHeight<DIM_DMAT*BLOCK, TSCAL> bbmat (ndof * DIM, lh);
         FlatMatrixFixHeight<DIM_DMAT*BLOCK, TSCAL> bdbmat (ndof * DIM, lh);
@@ -386,17 +386,12 @@ public:
 
                 DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
                 dmatop.GenerateMatrix (fel, sip, dmat, lh);
-                double fac =  
-                  fabs (sip.GetJacobiDet()) * sip.IP().Weight();
-                
-                dbmat = fac * (dmat * bmat);
-		
-                for (int l = 0; l < ndof*DIM; l++)
-                  for (int k = 0; k < DIM_DMAT; k++)
-                    {
-                      bbmat(i2*DIM_DMAT+k, l) = bmat(k,l);
-                      bdbmat(i2*DIM_DMAT+k, l) = dbmat(k,l);
-                    }
+
+                dmat *= sip.GetWeight();
+                // dbmat = dmat * bmat;
+
+		bbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = bmat;
+		bdbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = dmat * bmat; // dbmat;
               }
             
             if (DMATOP::SYMMETRIC)
@@ -464,6 +459,7 @@ public:
 			    LocalHeap & lh) const
   {
     static Timer timer (string ("Elementmatrix, ") + Name());
+    static Timer timer2 (string ("Elementmatrix, ") + Name() + ", Lapack");
     RegionTimer reg (timer);
 
     try
@@ -494,6 +490,8 @@ public:
 	    bbmat.Cols(i*DIM_DMAT, (i+1)*DIM_DMAT) = Trans (bmat);
 	    bdbmat.Cols(i*DIM_DMAT, (i+1)*DIM_DMAT) = Trans (dmat * bmat);
 	  }
+
+	RegionTimer reg2 (timer2);
 
 	if (ndof < 20)
 	  {
@@ -587,6 +585,7 @@ public:
   }
 
 
+  /*
   ///
   virtual void 
   ApplyElementMatrix (const FiniteElement & bfel, 
@@ -629,9 +628,6 @@ public:
   }
 
 
-
-
-
   ///
   virtual void 
   ApplyElementMatrix (const FiniteElement & bfel, 
@@ -660,7 +656,6 @@ public:
       {
 	HeapReset hr (lh);
 	const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
-	// 	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
 
 	DIFFOP::Apply (fel, sip, elx, hv1, lh);
 	dmatop.Apply (fel, sip, hv1, hv2, lh);
@@ -670,6 +665,75 @@ public:
 	ely += fac * hely;
       }     
   }
+  */
+
+
+
+
+
+  virtual void 
+  ApplyElementMatrix (const FiniteElement & bfel, 
+		      const ElementTransformation & eltrans, 
+		      const FlatVector<double> & elx, 
+		      FlatVector<double> & ely,
+		      void * precomputed,
+		      LocalHeap & lh) const
+  {
+    T_ApplyElementMatrix<double> (bfel, eltrans, elx, ely, precomputed, lh);
+  }
+
+  virtual void 
+  ApplyElementMatrix (const FiniteElement & bfel, 
+		      const ElementTransformation & eltrans, 
+		      const FlatVector<Complex> & elx, 
+		      FlatVector<Complex> & ely,
+		      void * precomputed,
+		      LocalHeap & lh) const
+  {
+    T_ApplyElementMatrix<Complex> (bfel, eltrans, elx, ely, precomputed, lh);
+  }
+
+
+  template <typename TSCAL>
+  void T_ApplyElementMatrix (const FiniteElement & bfel, 
+			     const ElementTransformation & eltrans, 
+			     const FlatVector<TSCAL> & elx, 
+			     FlatVector<TSCAL> & ely,
+			     void * precomputed,
+			     LocalHeap & lh) const
+  {
+    static Timer timer (string ("BDBIntegrator::ApplyElementMatrix<") 
+			+ typeid(TSCAL).name() + ">" + Name());
+    RegionTimer reg (timer);
+
+    const FEL & fel = static_cast<const FEL&> (bfel);
+    int ndof = fel.GetNDof ();
+    
+    ely = 0;
+    
+    Vec<DIM_DMAT,TSCAL> hv1;
+    Vec<DIM_DMAT,TSCAL> hv2;
+    
+    FlatVector<TSCAL> hely (ndof*DIM, lh);
+    const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
+    MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
+
+    for (int i = 0; i < ir.GetNIP(); i++)
+      {
+	HeapReset hr (lh);
+	const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
+
+	DIFFOP::Apply (fel, sip, elx, hv1, lh);
+	dmatop.Apply (fel, sip, hv1, hv2, lh);
+	DIFFOP::ApplyTrans (fel, sip, hv2, hely, lh);
+
+	double fac = fabs (sip.GetJacobiDet()) * sip.IP().Weight();
+	ely += fac * hely;
+      }     
+  }
+
+
+
 
 
 
