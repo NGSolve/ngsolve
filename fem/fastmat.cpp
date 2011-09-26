@@ -1,11 +1,16 @@
-#define NO_PARALLEL_THREADS
+// #define NO_PARALLEL_THREADS
+
+// #undef __SSE3__
+
 
 // #include "bla.hpp"
-#ifdef SSE
+#ifdef __SSE3__
 #include <emmintrin.h>
+#include <pmmintrin.h>
 #endif
 
 #include <fem.hpp>
+
 
 #ifdef WIN32
 #define __restrict__ __restrict
@@ -30,6 +35,7 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
 		double * __restrict__ pb, 
 		double * __restrict__ pc)
   {
+    /*
     for (int i = 0; i < n; i++)
       for (int j = 0; j <= i; j++)
 	{
@@ -46,6 +52,260 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
 	  pc[j+n*i] = sum;
           // pc[i+n*j] = sum;
 	}
+    */
+
+
+
+    /*
+    for (int i = 0; i < n-1; i+=2)
+      for (int j = 0; j <= i; j+=2)
+	{
+	  double sum11 = pc[n*i+j];
+	  double sum12 = pc[n*i+j+1];
+	  double sum21 = pc[n*(i+1)+j];
+	  double sum22 = pc[n*(i+1)+j+1];
+
+	  double * lpa1 = pa + i * M;
+	  double * lpa2 = pa + (i+1) * M;
+	  double * lpb1 = pb + j * M;
+	  double * lpb2 = pb + (j+1) * M;
+	  
+	  for (int k = 0; k < M; k++)
+	    {
+	      sum11 += lpa1[k] * lpb1[k];
+	      sum12 += lpa1[k] * lpb2[k];
+	      sum21 += lpa2[k] * lpb1[k];
+	      sum22 += lpa2[k] * lpb2[k];
+	    }
+	  pc[j  +n*i    ] = sum11;
+	  pc[j+1+n*i    ] = sum12;
+	  pc[j  +n*(i+1)] = sum21;
+	  pc[j+1+n*(i+1)] = sum22;
+	}
+
+    if (n % 2 == 1)
+      {
+	int i = n-1;
+
+	for (int j = 0; j <= i; j++)
+	  {
+	    double sum = pc[n*i+j];
+	    
+	    double * lpa = pa + i * M;
+	    double * lpb = pb + j * M;
+	    
+	    for (int k = 0; k < M; k++)
+	      sum += lpa[k] * lpb[k];
+	    
+	    pc[j+n*i] = sum;
+	  }
+      }
+    */
+
+
+
+#ifndef __SSE3__
+    for (int i = 0; i < n-1; i+=2)
+      for (int j = 0; j <= i; j+=2)
+	{
+	  double sum11 = pc[n*i+j];
+	  double sum12 = pc[n*i+j+1];
+	  double sum21 = pc[n*(i+1)+j];
+	  double sum22 = pc[n*(i+1)+j+1];
+
+	  double * lpa1 = pa + i * M;
+	  double * lpa2 = pa + (i+1) * M;
+	  double * lpb1 = pb + j * M;
+	  double * lpb2 = pb + (j+1) * M;
+	  
+	  for (int k = 0; k < M-1; k+=2)
+	    {
+	      sum11 += lpa1[k] * lpb1[k] + lpa1[k+1] * lpb1[k+1];
+	      sum12 += lpa1[k] * lpb2[k] + lpa1[k+1] * lpb2[k+1];
+	      sum21 += lpa2[k] * lpb1[k] + lpa2[k+1] * lpb1[k+1];
+	      sum22 += lpa2[k] * lpb2[k] + lpa2[k+1] * lpb2[k+1];
+	    }
+
+	  if (M % 2)
+	    {
+	      sum11 += lpa1[M-1] * lpb1[M-1];
+	      sum12 += lpa1[M-1] * lpb2[M-1];
+	      sum21 += lpa2[M-1] * lpb1[M-1];
+	      sum22 += lpa2[M-1] * lpb2[M-1];
+	    }
+	  pc[j  +n*i    ] = sum11;
+	  pc[j+1+n*i    ] = sum12;
+	  pc[j  +n*(i+1)] = sum21;
+	  pc[j+1+n*(i+1)] = sum22;
+	}
+
+    if (n % 2 == 1)
+      {
+	int i = n-1;
+
+	for (int j = 0; j <= i; j++)
+	  {
+	    double sum = pc[n*i+j];
+	    
+	    double * lpa = pa + i * M;
+	    double * lpb = pb + j * M;
+	    
+	    for (int k = 0; k < M; k++)
+	      sum += lpa[k] * lpb[k];
+	    
+	    pc[j+n*i] = sum;
+	  }
+      }
+
+#endif
+
+
+
+    /*
+    for (int i = 0; i < n-1; i+=2)
+      for (int j = 0; j <= i; j+=2)
+	{
+	  // Twins sum11(0,0);
+	  __m128d sum11 = _mm_set_pd (0.0, 0.0);
+	  Twins sum12(0,0);
+	  Twins sum21(0,0);
+	  Twins sum22(0,0);
+
+	  double * lpa1 = pa + i * M;
+	  double * lpa2 = pa + (i+1) * M;
+	  double * lpb1 = pb + j * M;
+	  double * lpb2 = pb + (j+1) * M;
+	  
+	  for (int k = 0; k < M-1; k+=2)
+	    {
+	      Twins a1(lpa1[k], lpa1[k+1]);
+	      Twins a2(lpa2[k], lpa2[k+1]);
+	      Twins b1(lpb1[k], lpb1[k+1]);
+	      Twins b2(lpb2[k], lpb2[k+1]);
+
+	      // sum11 = _mm_add_pd (sum11, _mm_mul_pd(a1, b1));
+	      sum11 += _mm_mul_pd(a1, b1);
+	      sum12 += a1*b2;
+	      sum21 += a2*b1;
+	      sum22 += a2*b2;
+	    }
+
+	  Twins sum11t = sum11;
+	  pc[j  +n*i    ] += sum11t[0]+sum11t[1];
+	  pc[j+1+n*i    ] += sum12[0]+sum12[1];
+	  pc[j  +n*(i+1)] += sum21[0]+sum21[1];
+	  pc[j+1+n*(i+1)] += sum22[0]+sum22[1];
+
+	  if (M % 2)
+	    {
+	      pc[j  +n*i    ] += lpa1[M-1] * lpb1[M-1];
+	      pc[j+1+n*i    ] += lpa1[M-1] * lpb2[M-1];
+	      pc[j  +n*(i+1)] += lpa2[M-1] * lpb1[M-1];
+	      pc[j+1+n*(i+1)] += lpa2[M-1] * lpb2[M-1];
+	    }
+	}
+
+
+    if (n % 2 == 1)
+      {
+	int i = n-1;
+
+	for (int j = 0; j <= i; j++)
+	  {
+	    double sum = pc[n*i+j];
+	    
+	    double * lpa = pa + i * M;
+	    double * lpb = pb + j * M;
+	    
+	    for (int k = 0; k < M; k++)
+	      sum += lpa[k] * lpb[k];
+	    
+	    pc[j+n*i] = sum;
+	  }
+      }
+    */
+
+
+
+#ifdef __SSE3__
+    for (int i = 0; i < n-1; i+=2)
+      for (int j = 0; j <= i; j+=2)
+	{
+	  __m128d sum11 = _mm_set1_pd (0.0);
+	  __m128d sum12 = _mm_set1_pd (0.0);
+	  __m128d sum21 = _mm_set1_pd (0.0);
+	  __m128d sum22 = _mm_set1_pd (0.0);
+
+	  double * lpa1 = pa + i * M;
+	  double * lpa2 = pa + (i+1) * M;
+	  double * lpb1 = pb + j * M;
+	  double * lpb2 = pb + (j+1) * M;
+	  
+	  for (int k = 0; k < M-1; k+=2)
+	    {
+	      __m128d a1, a2, b1, b2;
+
+	      a1 = _mm_load_pd(lpa1+k);
+	      b1 = _mm_load_pd(lpb1+k);
+
+	      if (M % 2) // only 8-byte alignment of matrix rows
+		{
+		  a2 = _mm_loadu_pd(lpa2+k);
+		  b2 = _mm_loadu_pd(lpb2+k);
+		}
+	      else // 16-byte alignment guaranteed
+		{
+		  a2 = _mm_load_pd(lpa2+k);
+		  b2 = _mm_load_pd(lpb2+k);
+		}
+	      sum11 += a1*b1; 
+	      sum12 += a1*b2;
+	      sum21 += a2*b1;
+	      sum22 += a2*b2;
+	    }
+
+	  __m128d hsum1 = _mm_hadd_pd (sum11, sum12);
+	  __m128d hsum2 = _mm_hadd_pd (sum21, sum22);
+
+	  if (M % 2)
+	    {
+	      __m128d b = _mm_set_pd(lpb2[M-1], lpb1[M-1]);
+	      __m128d a1 = _mm_set1_pd(lpa1[M-1]);
+	      __m128d a2 = _mm_set1_pd(lpa2[M-1]);
+	      hsum1 += a1 * b;
+	      hsum2 += a2 * b;
+	    }
+
+	  hsum1 += _mm_loadu_pd(&pc[j+n*i]);
+	  _mm_storeu_pd (&pc[j+n*i], hsum1);
+
+	  hsum2 += _mm_loadu_pd(&pc[j+n*(i+1)]);
+	  _mm_storeu_pd (&pc[j+n*(i+1)], hsum2);
+	}
+
+
+    if (n % 2 == 1)
+      {
+	int i = n-1;
+
+	for (int j = 0; j <= i; j++)
+	  {
+	    double sum = pc[n*i+j];
+	    
+	    double * lpa = pa + i * M;
+	    double * lpb = pb + j * M;
+	    
+	    for (int k = 0; k < M; k++)
+	      sum += lpa[k] * lpb[k];
+	    
+	    pc[j+n*i] = sum;
+	  }
+      }
+
+
+#endif
+
+
 
 
     // #define xxx
