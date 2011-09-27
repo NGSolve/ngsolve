@@ -11,7 +11,8 @@ preconditioner.cpp vectorfacetfespace.cpp bddc.cpp
 libngcomp_la_LIBADD = $(top_builddir)/fem/libngfem.la \
 $(top_builddir)/linalg/libngla.la \
 $(top_builddir)/parallel/libparallel.la \
-$(top_builddir)/multigrid/libngmg.la		
+$(top_builddir)/multigrid/libngmg.la	\
+$(top_builddir)/ngstd/libngstd.la		
 
 include_HEADERS = comp_utils.hpp bilinearform.hpp comp.hpp	       \
 facetfespace.hpp fespace.hpp gridfunction.hpp h1hofespace.hpp	       \
