@@ -2709,11 +2709,11 @@ namespace ngcomp
   
     cout << "Lock hanging dofs" << endl;
 
-    int eled, elfa;
+    // int eled, elfa;
     int i, j, k;
     int ne = ma.GetNE();
-    eled = 8;
-    elfa = 5;
+    // eled = 8;
+    // elfa = 5;
 
 
     Matrix<double> elmat(1);
