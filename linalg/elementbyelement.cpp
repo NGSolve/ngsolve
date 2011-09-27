@@ -77,66 +77,58 @@ namespace ngla
     RegionTimer reg (timer);
 
     int maxs = 0;
-    for (int i = 0; i < rowdnums.Size(); i++)
-      maxs = max2 (maxs, rowdnums[i].Size());
     for (int i = 0; i < coldnums.Size(); i++)
       maxs = max2 (maxs, coldnums[i].Size());
 
     if (disjointrows)
-    {
-      #pragma omp parallel
-	  {    
-	    ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
+      {
+#pragma omp parallel
+	{    
+	  ArrayMem<SCAL, 100> mem1(maxs); 
+
+	  FlatVector<SCAL> vx = x.FV<SCAL> (); 
+	  FlatVector<SCAL> vy = y.FV<SCAL> (); 
+
+#pragma omp for
+	  for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
+	    {
+	      FlatArray<int> rdi = rowdnums[i];
+	      FlatArray<int> cdi = coldnums[i];
 	      
-	    FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
-	    FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
+	      if (!rdi.Size() || !cdi.Size()) continue;
+	      
+	      FlatVector<SCAL> hv1(cdi.Size(), &mem1[0]);
 
-      #pragma omp for
-	    for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
-	      {
-		FlatArray<int> rdi = rowdnums[i];
-		FlatArray<int> cdi = coldnums[i];
-		
-		if (!rdi.Size() || !cdi.Size()) continue;
+	      hv1 = vx(cdi);
+	      vy(rdi) += s * elmats[i] * hv1;
 
-		FlatVector<SCAL> hv1(cdi.Size(), &mem1[0]);
-		FlatVector<SCAL> hv2(rdi.Size(), &mem2[0]);
-		
-		for (int j = 0; j < cdi.Size(); j++)
-		  hv1(j) = vx (cdi[j]);
-		
-		hv2 = elmats[i] * hv1;
-
-		for (int j = 0; j < rdi.Size(); j++)
-		  vy (rdi[j]) += s*hv2[j];
-		
-		NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
-	      }
-	  }//end of parallel    
-	  
-    }
-    else
-    {    
-      ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
+	      NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
+	    }
+	}//end of parallel    
 	
-      FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
-      FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
-
-      for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
-	{
-	  FlatArray<int> rdi = rowdnums[i];
-	  FlatArray<int> cdi = coldnums[i];
-	  
-	  if (!rdi.Size() || !cdi.Size()) continue;
-
-	  FlatVector<SCAL> hv(cdi.Size(), &mem1[0]);
-
-	  hv = vx(cdi);
-	  vy(rdi) += elmats[i] * hv;
-	  
-	  NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
-	}
-    }
+      }
+    else
+      {    
+	ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
+	
+	FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
+	FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
+	
+	for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
+	  {
+	    FlatArray<int> rdi = rowdnums[i];
+	    FlatArray<int> cdi = coldnums[i];
+	    
+	    if (!rdi.Size() || !cdi.Size()) continue;
+	    
+	    FlatVector<SCAL> hv(cdi.Size(), &mem1[0]);
+	    
+	    hv = vx(cdi);
+	    vy(rdi) += s * elmats[i] * hv;
+	    
+	    NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
+	  }
+      }
   }
 
   
@@ -149,64 +141,54 @@ namespace ngla
     int maxs = 0;
     for (int i = 0; i < rowdnums.Size(); i++)
       maxs = max2 (maxs, rowdnums[i].Size());
-    for (int i = 0; i < coldnums.Size(); i++)
-      maxs = max2 (maxs, coldnums[i].Size());
     
     if (disjointcols)
-    {
-    #pragma omp parallel
+      {
+#pragma omp parallel
 	{
-	  ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
-	    
+	  ArrayMem<SCAL, 100> mem1(maxs);
+	  
 	  FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
 	  FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
 
     #pragma omp  for    
 	  for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
 	    {
-	      if ((rowdnums[i].Size() == 0) || (coldnums[i].Size() == 0)) continue; 
 	      FlatArray<int> rdi (rowdnums[i]);
 	      FlatArray<int> cdi (coldnums[i]);
+	      if (!rdi.Size() || !cdi.Size()) continue;
 	      
 	      FlatVector<SCAL> hv1(rdi.Size(), &mem1[0]);
-	      FlatVector<SCAL> hv2(cdi.Size(), &mem2[0]);
-		
-	      for (int j = 0; j < rdi.Size(); j++)
-		hv1(j) = vx (rdi[j]);
-	      
-	      hv2 = Trans(elmats[i]) * hv1;
-	      
-	      for (int j = 0; j < coldnums[i].Size(); j++)
-		vy (cdi[j]) += s * hv2[j];
+
+	      hv1 = vx(rdi);
+	      vy(cdi) += s * Trans(elmats[i]) * hv1;
+
 	      NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
 	    }
 	}//end of parallel
-    }
+      }
     else
-    {
-      ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
+      {
+	ArrayMem<SCAL, 100> mem1(maxs);
 	
-      FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
-      FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
-
-      for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
-	{
-	  if ((rowdnums[i].Size() == 0) || (coldnums[i].Size() == 0)) continue; 
-	  FlatArray<int> rdi (rowdnums[i]);
-	  FlatArray<int> cdi (coldnums[i]);
-	  
-	  FlatVector<SCAL> hv1(rdi.Size(), &mem1[0]);
-	  FlatVector<SCAL> hv2(cdi.Size(), &mem2[0]);
+	FlatVector<SCAL> vx = x.FV<SCAL> (); // dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
+	FlatVector<SCAL> vy = y.FV<SCAL> (); // dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
+	
+	for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
+	  {
+	    FlatArray<int> rdi (rowdnums[i]);
+	    FlatArray<int> cdi (coldnums[i]);
 	    
-	  for (int j = 0; j < rdi.Size(); j++)
-	    hv1(j) = vx (rdi[j]);
-	  
-	  hv2 = Trans(elmats[i]) * hv1;
-	  for (int j = 0; j < coldnums[i].Size(); j++)
-	    vy (cdi[j]) += s * hv2[j];
-	  NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
-	}
-    }
+	    if (!rdi.Size() || !cdi.Size()) continue;
+	    
+	    FlatVector<SCAL> hv1(rdi.Size(), &mem1[0]);
+	    
+	    hv1 = vx(rdi);
+	    vy(cdi) += s * Trans(elmats[i]) * hv1;
+
+	    NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
+	  }
+      }
   }
 
 
