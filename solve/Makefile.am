@@ -9,6 +9,7 @@ nptests.cpp numprocee.cpp pde.cpp pdeparser.cpp
 
 
 libngsolve_la_LIBADD = $(top_builddir)/comp/libngcomp.la	    \
+$(top_builddir)/ngstd/libngstd.la 		\
 $(top_builddir)/fem/libngfem.la 		\
 $(top_builddir)/parallel/libparallel.la		\
 $(top_builddir)/linalg/libngla.la		\
