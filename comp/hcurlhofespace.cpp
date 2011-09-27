@@ -1064,7 +1064,7 @@ namespace ngcomp
 
 
     bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
-    int i, j, k, first,ii;
+    int i, j, k, first; 
     int ncnt; 
     int ni = ne;
     if (eliminate_internal) ni = 0; 
@@ -1170,7 +1170,7 @@ namespace ngcomp
         
     Array<int> cnt(ncnt); 
     cnt = 0;
-    ii=0; 
+    // ii=0; 
 
     switch (SmoothingType)
       {
@@ -1464,7 +1464,7 @@ namespace ngcomp
    
         
     Table<int> & table = *new Table<int> (cnt); 
-    ii = 0; 
+    // ii = 0; 
     cnt = 0;
     switch(SmoothingType) 
       {
@@ -2342,7 +2342,7 @@ namespace ngcomp
 		ma.GetFacePNums(i,pnums); 
 		if(pnums.Size() == 4) // quad face 
 		  { 
-		    INT<2> p = order_face[i];         
+		    //INT<2> p = order_face[i];         
 		    int first =first_face_dof[i];  
 		    int next = first_face_dof[i+1]; 
 		    // Ned_0*pol_z 

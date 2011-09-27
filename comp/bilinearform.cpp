@@ -1075,14 +1075,7 @@ namespace ngcomp
                         FlatVector<double> diag;
                         try
                           {
-                            clock_t starttime;
-                            double time;
-                            starttime = clock();
-			  
                             bfi.CalcElementMatrixDiag (fel, eltrans, diag, clh);
-			  
-                            time = double(clock() - starttime) / CLOCKS_PER_SEC;
-                            // cout << "time = " << time << endl;
 			  
                             if (printelmat) //  || fel.ElementType() == ET_TET)
                               {

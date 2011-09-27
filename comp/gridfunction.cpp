@@ -1194,11 +1194,11 @@ namespace ngcomp
     int pos;
     double vol;
 
+    /*
     int ndomains;
-
-
     if(bfi3d.Size()) ndomains = ma.GetNDomains();
     else if(bfi2d.Size()) ndomains = ma.GetNBoundaries();
+    */
 
     Array<double> posx;
     Array<double> posy;

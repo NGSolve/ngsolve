@@ -102,7 +102,7 @@ namespace ngcomp
         BaseVector & v1 = *amat.CreateVector();
         BaseVector & v2 = *amat.CreateVector();
         FlatVector<Complex> fv1 = v1.FVComplex();
-        FlatVector<Complex> fv2 = v2.FVComplex();
+        // FlatVector<Complex> fv2 = v2.FVComplex();
         
 	int i_elim = 0, j_elim = 0;
         for (int i = 0; i < n; i++)
