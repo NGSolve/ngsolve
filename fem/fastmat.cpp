@@ -228,6 +228,7 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
 
 
 #ifdef __SSE3__
+    /*
     for (int i = 0; i < n-1; i+=2)
       for (int j = 0; j <= i; j+=2)
 	{
@@ -301,6 +302,113 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
 	    pc[j+n*i] = sum;
 	  }
       }
+    */
+
+
+
+
+
+
+    int i = 0;
+    for ( ; i < n-3; i+=4)
+      for (int j = 0; j <= i+2; j+=2)
+	{
+	  __m128d sum11 = _mm_set1_pd (0.0);
+	  __m128d sum12 = _mm_set1_pd (0.0);
+	  __m128d sum21 = _mm_set1_pd (0.0);
+	  __m128d sum22 = _mm_set1_pd (0.0);
+	  __m128d sum31 = _mm_set1_pd (0.0);
+	  __m128d sum32 = _mm_set1_pd (0.0);
+	  __m128d sum41 = _mm_set1_pd (0.0);
+	  __m128d sum42 = _mm_set1_pd (0.0);
+
+	  double * lpa1 = pa + i * M;
+	  double * lpa2 = pa + (i+1) * M;
+	  double * lpa3 = pa + (i+2) * M;
+	  double * lpa4 = pa + (i+3) * M;
+	  double * lpb1 = pb + j * M;
+	  double * lpb2 = pb + (j+1) * M;
+	  
+	  for (int k = 0; k < M-1; k+=2)
+	    {
+	      __m128d a1, a2, a3, a4, b1, b2;
+
+	      a1 = _mm_load_pd(lpa1+k);
+	      a3 = _mm_load_pd(lpa3+k);
+	      b1 = _mm_load_pd(lpb1+k);
+
+	      if (M % 2) // only 8-byte alignment of matrix rows
+		{
+		  a2 = _mm_loadu_pd(lpa2+k);
+		  a4 = _mm_loadu_pd(lpa4+k);
+		  b2 = _mm_loadu_pd(lpb2+k);
+		}
+	      else // 16-byte alignment guaranteed
+		{
+		  a2 = _mm_load_pd(lpa2+k);
+		  a4 = _mm_load_pd(lpa4+k);
+		  b2 = _mm_load_pd(lpb2+k);
+		}
+	      sum11 += a1*b1; 
+	      sum12 += a1*b2;
+	      sum21 += a2*b1;
+	      sum22 += a2*b2;
+	      sum31 += a3*b1;
+	      sum32 += a3*b2;
+	      sum41 += a4*b1;
+	      sum42 += a4*b2;
+	    }
+
+	  __m128d hsum1 = _mm_hadd_pd (sum11, sum12);
+	  __m128d hsum2 = _mm_hadd_pd (sum21, sum22);
+	  __m128d hsum3 = _mm_hadd_pd (sum31, sum32);
+	  __m128d hsum4 = _mm_hadd_pd (sum41, sum42);
+
+	  if (M % 2)
+	    {
+	      __m128d b = _mm_set_pd(lpb2[M-1], lpb1[M-1]);
+	      __m128d a1 = _mm_set1_pd(lpa1[M-1]);
+	      __m128d a2 = _mm_set1_pd(lpa2[M-1]);
+	      __m128d a3 = _mm_set1_pd(lpa3[M-1]);
+	      __m128d a4 = _mm_set1_pd(lpa4[M-1]);
+	      hsum1 += a1 * b;
+	      hsum2 += a2 * b;
+	      hsum3 += a3 * b;
+	      hsum4 += a4 * b;
+	    }
+
+	  hsum1 += _mm_loadu_pd(&pc[j+n*i]);
+	  _mm_storeu_pd (&pc[j+n*i], hsum1);
+
+	  hsum2 += _mm_loadu_pd(&pc[j+n*(i+1)]);
+	  _mm_storeu_pd (&pc[j+n*(i+1)], hsum2);
+
+	  hsum3 += _mm_loadu_pd(&pc[j+n*(i+2)]);
+	  _mm_storeu_pd (&pc[j+n*(i+2)], hsum3);
+
+	  hsum4 += _mm_loadu_pd(&pc[j+n*(i+3)]);
+	  _mm_storeu_pd (&pc[j+n*(i+3)], hsum4);
+	}
+
+
+    for ( ; i < n; i++)
+      {
+	for (int j = 0; j <= i; j++)
+	  {
+	    double sum = pc[n*i+j];
+	    
+	    double * lpa = pa + i * M;
+	    double * lpb = pb + j * M;
+	    
+	    for (int k = 0; k < M; k++)
+	      sum += lpa[k] * lpb[k];
+	    
+	    pc[j+n*i] = sum;
+	  }
+      }
+
+
+
 
 
 #endif
