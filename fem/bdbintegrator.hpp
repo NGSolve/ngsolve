@@ -339,9 +339,11 @@ public:
 
 
 
-
-
+#ifdef __SSE3__
 #define BLOCK_VERSION
+#endif
+
+
 #ifdef BLOCK_VERSION
 
   template <typename TSCAL>
@@ -367,6 +369,9 @@ public:
 	
         FlatMatrixFixHeight<DIM_DMAT, TSCAL> bmat (ndof * DIM, lh);
 	FlatMatrixFixHeight<DIM_DMAT, TSCAL> dbmat (ndof * DIM, lh);
+
+        FlatMatrixFixHeight<2*DIM_DMAT, TSCAL> bmat2 (ndof * DIM, lh);
+	FlatMatrixFixHeight<2*DIM_DMAT, TSCAL> dbmat2 (ndof * DIM, lh);
 	
         FlatMatrixFixHeight<DIM_DMAT*BLOCK, TSCAL> bbmat (ndof * DIM, lh);
         FlatMatrixFixHeight<DIM_DMAT*BLOCK, TSCAL> bdbmat (ndof * DIM, lh);
@@ -381,39 +386,54 @@ public:
             for (int i2 = 0; i2 < BLOCK; i++, i2++)
               {
                 HeapReset hr(lh);
-                const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
 
-
-                DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
-                dmatop.GenerateMatrix (fel, sip, dmat, lh);
-
-                dmat *= sip.GetWeight();
-                // dbmat = dmat * bmat;
+                DIFFOP::GenerateMatrix (fel, mir[i], bmat, lh);
+                dmatop.GenerateMatrix (fel, mir[i], dmat, lh);
+                dmat *= mir[i].GetWeight();
 
 		bbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = bmat;
-		bdbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = dmat * bmat; // dbmat;
+		bdbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = dmat * bmat; 
               }
             
             if (DMATOP::SYMMETRIC)
-              // elmat += Symmetric (Trans (bdbmat) * bbmat);
               FastMat<DIM_DMAT*BLOCK> (elmat.Height(), &bdbmat(0,0), &bbmat(0,0), &elmat(0,0));
             else
               elmat += Trans (bbmat) * bdbmat; 
+          } 
+
+        for ( ; i < ir.GetNIP()-1; i+=2)
+          {
+            HeapReset hr(lh);
+
+            DIFFOP::GenerateMatrix (fel, mir[i], bmat, lh);
+            dmatop.GenerateMatrix (fel, mir[i], dmat, lh);
+            dmat *= mir[i].GetWeight();
+
+	    bmat2.Rows(0,DIM_DMAT) = bmat;
+	    dbmat2.Rows(0,DIM_DMAT) = dmat * bmat;
+
+            DIFFOP::GenerateMatrix (fel, mir[i+1], bmat, lh);
+            dmatop.GenerateMatrix (fel, mir[i+1], dmat, lh);
+            dmat *= mir[i+1].GetWeight();
+
+	    bmat2.Rows(DIM_DMAT,2*DIM_DMAT) = bmat;
+	    dbmat2.Rows(DIM_DMAT,2*DIM_DMAT) = dmat * bmat;
+            
+            if (DMATOP::SYMMETRIC)
+              FastMat<2*DIM_DMAT> (elmat.Height(), &dbmat2(0,0), &bmat2(0,0), &elmat(0,0));
+            else
+              elmat += Trans (bmat) * dbmat;
           } 
         
         for ( ; i < ir.GetNIP(); i++)
           {
             HeapReset hr(lh);
-            
-	    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
 
-            DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
-            dmatop.GenerateMatrix (fel, sip, dmat, lh);
-            double fac =  
-              fabs (sip.GetJacobiDet()) * sip.IP().Weight();
-            
-            dbmat = fac * (dmat * bmat);
-            
+            DIFFOP::GenerateMatrix (fel, mir[i], bmat, lh);
+            dmatop.GenerateMatrix (fel, mir[i], dmat, lh);
+            dmat *= mir[i].GetWeight();
+
+            dbmat = dmat * bmat;
             
             if (DMATOP::SYMMETRIC)
               // elmat += Symmetric (Trans (dbmat) * bmat);
