@@ -744,9 +744,11 @@ namespace ngla
   {
     static Timer timer("SparseMatrix::MultAdd");
     RegionTimer reg (timer);
+    NgProfiler::AddFlops (timer, this->nze);
 
-    FlatVector<TVX> fx = x.FV<TVX> ();  // (x.Size(), x.Memory());
-    FlatVector<TVY> fy = y.FV<TVY> ();  // (y.Size(), y.Memory());
+
+    FlatVector<TVX> fx = x.FV<TVX> (); 
+    FlatVector<TVY> fy = y.FV<TVY> (); 
     
     int h = this->Height();
     for (int i = 0; i < h; i++)
