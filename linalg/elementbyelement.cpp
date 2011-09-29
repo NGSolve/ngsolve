@@ -241,10 +241,12 @@ namespace ngla
     int sc = usedcols.Size();
 
     FlatMatrix<SCAL> mat (sr,sc, new SCAL[sr*sc]);
+    mat = elmat.Rows(usedrows).Cols(usedcols);
+    /*
     for (int i = 0; i < sr; i++)
       for (int j = 0; j < sc; j++)
         mat(i,j) = elmat(usedrows[i], usedcols[j]);
-
+    */
     FlatArray<int> dnr(sr, new int[sr]);
     for (int i = 0; i < sr; i++)
       dnr[i] = rowdnums_in[usedrows[i]];
