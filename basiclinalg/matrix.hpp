@@ -46,7 +46,9 @@ namespace ngbla
     typedef T TELEM;
     /// scalar type of elements (double or Complex)
     typedef typename mat_traits<T>::TSCAL TSCAL;
-
+    /// 
+    // typedef CMCPMatExpr<FlatMatrix<T> > TConv;
+    // typedef FlatMatrix<T> TConv;
 
     /// nothing done in default constructor
     FlatMatrix () throw () { ; }
@@ -180,22 +182,10 @@ namespace ngbla
       return SliceVector<T> (h, w+1, &data[0]);
     }
 
-    /*
-    const FlatMatrix VRange (int first, int next) const
-    {
-      return FlatMatrix (next-first, w, data+first*w);
-    }
-
-    const SliceMatrix<T> HRange (int first, int next) const
-    {
-      return SliceMatrix<T> (h, next-first, w, data+first);
-    }
-    */
-
-    // using CMCPMatExpr<FlatMatrix<T> >::Rows;
-    // using CMCPMatExpr<FlatMatrix<T> >::Cols;
-    using Expr<FlatMatrix<T> >::Rows;
-    using Expr<FlatMatrix<T> >::Cols;
+    using CMCPMatExpr<FlatMatrix<T> >::Rows;
+    using CMCPMatExpr<FlatMatrix<T> >::Cols;
+    // using Expr<FlatMatrix<T> >::Rows;
+    // using Expr<FlatMatrix<T> >::Cols;
 
     const FlatMatrix Rows (int first, int next) const
     {
@@ -531,26 +521,6 @@ namespace ngbla
       return *this;
     }
 
-    /*
-   /// access operator, linear access
-   TELEM & operator() (int i)
-   { 
-   #ifdef CHECK_RANGE
-   CheckMatRange(h,W,i);
-   #endif
-   return data[i]; 
-   }
-
-   /// access operator
-   TELEM & operator() (int i, int j) 
-   {
-   #ifdef CHECK_RANGE
-   CheckMatRange(h,W,i,j);
-   #endif
-   return data[i*W+j]; 
-   }
-    */
-
     /// access operator, linear access
     TELEM & operator() (int i) const
     {
@@ -575,14 +545,6 @@ namespace ngbla
     /// the width
     int Width () const throw() { return W; }
 
-    /*
-   ///
-   FlatVec<W,T> Row (int i) 
-   {
-   return FlatVec<W,T> (&(*this)(i,0));
-   }
-    */
-
     ///
     const FlatVec<W,T> Row (int i) const
     {
@@ -593,18 +555,6 @@ namespace ngbla
     {
       return FixSliceVector<W,T> (h, &data[i]);
     }
-
-    /*
-    const FlatMatrixFixWidth VRange (int first, int next) const
-    {
-      return FlatMatrixFixWidth (next-first, data+first*W);
-    }
-
-    const SliceMatrix<T> HRange (int first, int next) const
-    {
-      return SliceMatrix<T> (h, next-first, W, data+first);
-    }
-    */
 
     const FlatMatrixFixWidth Rows (int first, int next) const
     {
@@ -997,19 +947,6 @@ namespace ngbla
     /// the width
     int Width () const throw() { return w; }
 
-
-    /*
-    const SliceMatrix VRange (int first, int next) const
-    {
-      return SliceMatrix (next-first, w, dist, data+first*dist);
-    }
-
-    const SliceMatrix<T> HRange (int first, int next) const
-    {
-      return SliceMatrix<T> (h, next-first, dist, data+first);
-    }
-    */
-
     const SliceMatrix Rows (int first, int next) const
     {
       return SliceMatrix (next-first, w, dist, data+first*dist);
@@ -1100,18 +1037,6 @@ namespace ngbla
     /// the width
     int Width () const throw() { return w; }
 
-    /*
-    const DoubleSliceMatrix VRange (int first, int next) const
-    {
-      return DoubleSliceMatrix (next-first, w, distr, distc, data+first*distr);
-    }
-
-    const DoubleSliceMatrix<T> HRange (int first, int next) const
-    {
-      return DoubleSliceMatrix<T> (h, next-first, distr, distc, data+first*distc);
-    }
-    */
-
     const DoubleSliceMatrix Rows (int first, int next) const
     {
       return DoubleSliceMatrix (next-first, w, distr, distc, data+first*distr);
@@ -1131,8 +1056,6 @@ namespace ngbla
     {
       return Cols(range.First(), range.Next());
     }
-
-
   };
 
 
