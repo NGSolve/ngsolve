@@ -335,7 +335,9 @@ namespace ngfem
 	  }
 	
 	shapetau = shape * tau;
-	moments += ChangeSize(ip.Weight() * testshape * Trans (shapetau),moments.Height(),moments.Width());
+	// moments += ChangeSize(ip.Weight() * testshape * Trans (shapetau),moments.Height(),moments.Width());
+        moments.Rows(0, testshape.Height()) += ip.Weight() * (testshape * Trans (shapetau));
+
       }
   }
 
@@ -377,7 +379,8 @@ namespace ngfem
 	    CalcShape4 (ip, shape);
 	    break;
 	  }
-	moments += ChangeSize(ip.Weight() * testshape * Trans (shape),moments.Height(),moments.Width());
+	// moments += ChangeSize(ip.Weight() * testshape * Trans (shape),moments.Height(),moments.Width());
+        moments.Rows(0, testshape.Height()) += ip.Weight() * (testshape * Trans (shape));
       }
   }
   
@@ -4054,7 +4057,8 @@ namespace ngfem
     finv(2,1) = yr/(1-z);
     finv(2,2) = 1;
 
-    shape = ChangeSize(hshape * Trans (finv),shape.Height(),3);
+    // shape = ChangeSize(hshape * Trans (finv),shape.Height(),3);
+    shape.Rows(0, hshape.Height()) = hshape * Trans (finv);
   }
 
 
@@ -4133,7 +4137,8 @@ namespace ngfem
     finv(2,1) = yr/(1-z);
     finv(2,2) = 1;
 
-    shape = ChangeSize(hshape * Trans (finv),shape.Height(),3);
+    // shape = ChangeSize(hshape * Trans (finv),shape.Height(),3);
+    shape.Rows(0, hshape.Height()) = hshape * Trans (finv);
   }
 
 
