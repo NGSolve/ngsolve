@@ -37,7 +37,7 @@ namespace ngstd
   {
     return NGSOStream (ost, 
 		       (im.Value() <= printmessage_importance)  &&
-		       (netgen::id == 0) );
+		       (id == 0) );
   }
 
 
