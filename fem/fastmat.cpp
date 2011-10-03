@@ -313,14 +313,8 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
     for ( ; i < n-3; i+=4)
       for (int j = 0; j <= i+2; j+=2)
 	{
-	  __m128d sum11 = _mm_set1_pd (0.0);
-	  __m128d sum12 = _mm_set1_pd (0.0);
-	  __m128d sum21 = _mm_set1_pd (0.0);
-	  __m128d sum22 = _mm_set1_pd (0.0);
-	  __m128d sum31 = _mm_set1_pd (0.0);
-	  __m128d sum32 = _mm_set1_pd (0.0);
-	  __m128d sum41 = _mm_set1_pd (0.0);
-	  __m128d sum42 = _mm_set1_pd (0.0);
+	  __m128d sum11, sum12, sum21, sum22;
+	  __m128d sum31, sum32, sum41, sum42;
 
 	  double * lpa1 = pa + i * M;
 	  double * lpa2 = pa + (i+1) * M;
@@ -349,14 +343,21 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
 		  a4 = _mm_load_pd(lpa4+k);
 		  b2 = _mm_load_pd(lpb2+k);
 		}
-	      sum11 += a1*b1; 
-	      sum12 += a1*b2;
-	      sum21 += a2*b1;
-	      sum22 += a2*b2;
-	      sum31 += a3*b1;
-	      sum32 += a3*b2;
-	      sum41 += a4*b1;
-	      sum42 += a4*b2;
+
+	      if (k == 0)
+		{
+		  sum11 = a1*b1; sum12 = a1*b2;
+		  sum21 = a2*b1; sum22 = a2*b2;
+		  sum31 = a3*b1; sum32 = a3*b2;
+		  sum41 = a4*b1; sum42 = a4*b2;
+		}
+	      else
+		{
+		  sum11 += a1*b1; sum12 += a1*b2;
+		  sum21 += a2*b1; sum22 += a2*b2;
+		  sum31 += a3*b1; sum32 += a3*b2;
+		  sum41 += a4*b1; sum42 += a4*b2;
+		}
 	    }
 
 	  __m128d hsum1 = _mm_hadd_pd (sum11, sum12);
@@ -371,22 +372,31 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
 	      __m128d a2 = _mm_set1_pd(lpa2[M-1]);
 	      __m128d a3 = _mm_set1_pd(lpa3[M-1]);
 	      __m128d a4 = _mm_set1_pd(lpa4[M-1]);
-	      hsum1 += a1 * b;
-	      hsum2 += a2 * b;
-	      hsum3 += a3 * b;
-	      hsum4 += a4 * b;
+
+	      if (M == 0)
+		{
+		  hsum1 = a1 * b;
+		  hsum2 = a2 * b;
+		  hsum3 = a3 * b;
+		  hsum4 = a4 * b;
+		}
+	      else
+		{
+		  hsum1 += a1 * b;
+		  hsum2 += a2 * b;
+		  hsum3 += a3 * b;
+		  hsum4 += a4 * b;
+		}
 	    }
 
 	  hsum1 += _mm_loadu_pd(&pc[j+n*i]);
-	  _mm_storeu_pd (&pc[j+n*i], hsum1);
-
 	  hsum2 += _mm_loadu_pd(&pc[j+n*(i+1)]);
-	  _mm_storeu_pd (&pc[j+n*(i+1)], hsum2);
-
 	  hsum3 += _mm_loadu_pd(&pc[j+n*(i+2)]);
-	  _mm_storeu_pd (&pc[j+n*(i+2)], hsum3);
-
 	  hsum4 += _mm_loadu_pd(&pc[j+n*(i+3)]);
+
+	  _mm_storeu_pd (&pc[j+n*i], hsum1);
+	  _mm_storeu_pd (&pc[j+n*(i+1)], hsum2);
+	  _mm_storeu_pd (&pc[j+n*(i+2)], hsum3);
 	  _mm_storeu_pd (&pc[j+n*(i+3)], hsum4);
 	}
 

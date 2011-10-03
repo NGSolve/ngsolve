@@ -190,6 +190,13 @@ int main ()
   bmat.Cols(rows) = cmat.Cols(2,3);
   cout << "bmat = " << endl << bmat << endl;
 
+  {
+    Matrix<> a(1000), b(1000), c(1000);
+    a = 1;
+    b = 2;
+    LapackMultAB (a, b, c);
+  }
+
   return 0;
 }
 
