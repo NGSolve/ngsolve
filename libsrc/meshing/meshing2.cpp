@@ -344,6 +344,8 @@ namespace netgen
       {
 	NgProfiler::RegionTimer reg1 (timer1);
 
+	char ch;
+	cin >> ch;
 
 	if (multithread.terminate)
 	  throw NgException ("Meshing stopped");
@@ -474,6 +476,7 @@ namespace netgen
 	if (debugparam.haltlargequalclass && qualclass > 50)
 	  debugflag = 1;
 
+	debugflag = 1;
 
 	// problem recognition !
 	if (found && 
@@ -749,9 +752,22 @@ namespace netgen
 
 	if (found)
 	  {
+	    if (debugflag)
+	      (*testout) << "before applyrules" << endl
+			 << "plainpoints = " << endl << plainpoints
+			 << "legalpoints = " << endl << legalpoints 
+			 << "maxlegalpoint = " << maxlegalpoint
+			 << "loclines = " << endl << loclines << endl
+			 << "maxlegalline = " << maxlegalline << endl;
+	    // << "mp = " << mp << endl;
+	    
 	    rulenr = ApplyRules (plainpoints, legalpoints, maxlegalpoint,
 				 loclines, maxlegalline, locelements,
 				 dellines, qualclass, mp);
+
+	    if (debugflag)
+	      *testout << "rulenr = " << rulenr << endl;
+
 	    //	    (*testout) << "Rule Nr = " << rulenr << endl;
 	    if (!rulenr)
 	      {
