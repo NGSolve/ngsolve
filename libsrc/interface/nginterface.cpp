@@ -133,9 +133,6 @@ namespace netgen
 }
 
 
-
-
-
 using namespace netgen;
 
 

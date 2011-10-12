@@ -232,7 +232,7 @@ namespace netgen
 	  }
 	else
 	  {
-	    (*testout) << "very very bad badness" << endl;
+	    // (*testout) << "very very bad badness" << endl;
 	    badness += 1e8;
 	  }
       }
@@ -288,7 +288,7 @@ namespace netgen
 	  }
 	else
 	  {
-	    (*testout) << "very very bad badness" << endl;
+	    // (*testout) << "very very bad badness" << endl;
 	    badness += 1e8;
 	  }
       }

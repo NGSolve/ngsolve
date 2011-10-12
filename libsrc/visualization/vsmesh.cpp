@@ -746,7 +746,7 @@ namespace netgen
             if (!drawel)
 	      continue;
 
-            cout << int (el.GetType()) << " " << flush;
+            // cout << int (el.GetType()) << " " << flush;
             switch (el.GetType())
 	      {
 	      case TRIG:
