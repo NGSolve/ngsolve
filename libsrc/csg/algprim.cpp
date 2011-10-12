@@ -193,6 +193,10 @@ namespace netgen
     pplane(0) = p1p * ex;
     pplane(1) = p1p * ey;
     zone = 0;
+
+    *testout << "Plane::toplane" << endl;
+    *testout << "p3d = " << p3d << endl;
+    *testout << "pplane = " << pplane << endl;
   }
 
   void Plane :: FromPlane (const Point<2> & pplane, Point<3> & p3d, double h) const
