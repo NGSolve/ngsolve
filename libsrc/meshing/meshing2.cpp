@@ -505,7 +505,11 @@ namespace netgen
 
 	    // (*testout) << endl;
 
-	    //	    (*testout) << "3d->2d transformation" << endl;
+	    if (debugflag)
+	      {
+		*testout << "3d->2d transformation" << endl;
+		*testout << "3d points: " << endl << locpoints << endl;
+	      }
 
 	    for (int i = 1; i <= locpoints.Size(); i++)
 	      {
@@ -518,6 +522,10 @@ namespace netgen
 		//(*testout) << "transform " << locpoints.Get(i) << " to " << plainpoints.Get(i).X() << " " << plainpoints.Get(i).Y() << endl;
 	      }
 	    //	    (*testout) << endl << endl << endl;
+
+
+	    if (debugflag)
+	      *testout << "2d points: " << endl << plainpoints << endl;
 
 
 	    p12d = plainpoints.Get(1);
