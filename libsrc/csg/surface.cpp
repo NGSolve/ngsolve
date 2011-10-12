@@ -88,6 +88,13 @@ void Surface :: DefineTangentialPlane (const Point<3> & ap1,
   ex -= (ex * ez) * ez;
   ex.Normalize();
   ey = Cross (ez, ex);  
+
+  *testout << "surface, deftangentialplane" << endl;
+  *testout << "p1 = " << p1 << endl;
+  *testout << "p2 = " << p2 << endl;
+  *testout << "ez = " << ez << endl;
+  *testout << "ex = " << ex << endl;
+  *testout << "ey = " << ey << endl;
 }
 
 void Surface :: ToPlane (const Point<3> & p3d, Point<2> & pplane, 
