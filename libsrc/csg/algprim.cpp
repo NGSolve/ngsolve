@@ -195,6 +195,8 @@ namespace netgen
     zone = 0;
 
     *testout << "Plane::toplane" << endl;
+    *testout << "ex = " << ex << endl;
+    *testout << "ey = " << ey << endl;
     *testout << "p3d = " << p3d << endl;
     *testout << "pplane = " << pplane << endl;
   }
