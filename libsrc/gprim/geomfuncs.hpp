@@ -74,7 +74,15 @@ namespace netgen
 
 
 
-  inline Vec<3> Cross (const Vec<3> & v1, const Vec<3> & v2)
+
+  /*
+    new wrong code problem with MSVC2010:
+    using Cross ( & , & ) computes wrong cross-product, problem arises in 
+    Surface::DefineTangentialPlane, e.g. with example boxcyl.geo
+   */
+  // inline Vec<3> Cross (const Vec<3> & v1, const Vec<3> & v2)
+
+  inline Vec<3> Cross (Vec<3> v1, Vec<3> v2)
   {
     return Vec<3> 
       ( v1(1) * v2(2) - v1(2) * v2(1),
