@@ -197,6 +197,8 @@ namespace netgen
     *testout << "Plane::toplane" << endl;
     *testout << "ex = " << ex << endl;
     *testout << "ey = " << ey << endl;
+    *testout << "p1 = " << p1 << endl;
+    *testout << "h = " << h << endl;
     *testout << "p3d = " << p3d << endl;
     *testout << "pplane = " << pplane << endl;
   }
