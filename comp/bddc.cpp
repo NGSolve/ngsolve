@@ -1396,7 +1396,7 @@ namespace ngcomp
 
 
       FlatVector<> fx = x.FVDouble();
-      FlatVector<> fy = y.FVDouble();
+      // FlatVector<> fy = y.FVDouble();
 
       VVector<> transx(ndof);
       VVector<> transy(ndof);
@@ -1862,13 +1862,15 @@ namespace ngcomp
       }
     else
       {
-	if (elmats.Size())
+	if (elmats.Size() || (id == 0 && ntasks > 1))
 	  {
 	    delete pre;
 	    pre = new BDDCMatrix<SCAL,TV>(*bfa, elmats, eldnums, inversetype, block,ebe);
 	  }
 	else
-	  cerr << "don't update precond, since I don't have matrices" << endl;
+	  {
+	    cerr << "don't update precond, since I don't have matrices" << endl;
+	  }
       }
     for (int i = 0; i < elmats.Size(); i++)
       {
