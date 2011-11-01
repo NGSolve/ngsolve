@@ -501,7 +501,7 @@ namespace ngsolve
 
 #ifdef HAVE_DLFCN_H 
 	      shared += ".so";
-              cout << "load shared library '" << shared << "'" << endl;
+              cout << IM(1) << "load shared library '" << shared << "'" << endl;
 
               void * handle = dlopen (shared.c_str(), RTLD_LAZY | RTLD_GLOBAL);
               if (!handle)
@@ -512,7 +512,7 @@ namespace ngsolve
                 }
 #else
 	      shared += ".dll";
-              cout << "load shared library '" << shared << "'" << endl;
+              cout << IM(1) << "load shared library '" << shared << "'" << endl;
 	      
 	      HINSTANCE handle = LoadLibrary (shared.c_str());
 	      if (!handle)
