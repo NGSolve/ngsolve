@@ -187,8 +187,9 @@ namespace ngla
 		vals.Append (hvals[i]);
 	      }
 
-	    cout << "master: got data from " << src << endl;
+	    cout << "\rmaster: got data from " << src << flush;
 	  }
+	cout << endl;
 	/*
 	 *testout << "rows = " << endl << rows << endl;
 	 *testout << "cols = " << endl << cols << endl;

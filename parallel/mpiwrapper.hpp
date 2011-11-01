@@ -193,7 +193,10 @@ namespace ngparallel
   {
     char buf[100];
     strcpy (buf, cmd);
-    MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
+    // MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+    for (int dest = 1; dest < ntasks; dest++)
+      MPI_Send( &buf, 100, MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
   }
 
 
