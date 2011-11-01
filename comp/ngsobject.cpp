@@ -1,5 +1,6 @@
 #include <comp.hpp>
 
+
 namespace ngcomp {
 
   void NGS_Object :: DefineStringFlag(const char* s) //, const char* val) 
