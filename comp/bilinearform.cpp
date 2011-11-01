@@ -4,7 +4,6 @@
 #include <parallelngs.hpp>
 
 
-
 namespace ngcomp
 {
   using namespace ngcomp;
@@ -615,6 +614,8 @@ namespace ngcomp
 	    clock_t prevtime = clock();
 
 
+
+
 	    if (hasinner && !diagonal)
 	      {
 		actcase++;
@@ -635,12 +636,14 @@ namespace ngcomp
 		      innermatrix = new ElementByElementMatrix<SCAL>(ndof, ne);
 		  }
 		
+
+		if (ntasks == 1 || id != 0)
+
 		for (int icol = 0; icol < ncolors; icol++)
 		  {
 #pragma omp parallel 
 		    {
 		      LocalHeap lh = clh.Split();
-		      
 		      int nec = (element_coloring) ? (*element_coloring)[icol].Size() : ne;
 		      
 #pragma omp for 
@@ -668,9 +671,17 @@ namespace ngcomp
 			    {
 #pragma omp critical(printmatasstatus)
 			      {
-				cout << "\rassemble element " << cnt << "/" << ne << flush;
-				ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
-				prevtime = clock();
+				if (ntasks == 1)
+				  {
+				    cout << "\rassemble element " << cnt << "/" << ne << flush;
+				    ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
+				    prevtime = clock();
+				  }
+
+#ifdef PARALLEL
+				if (id != 0)
+				  MPI_Bsend (&gcnt, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+#endif
 			      }
 			    }
 
@@ -1019,13 +1030,57 @@ namespace ngcomp
 			  NgProfiler::StopTimer (timer3);
 			}
 		    }//end of parallel
-		  }//end loop over colors
+		  } //end loop over colors
+		
+
+#ifdef PARALLEL
+		if (id != 0)
+		  {
+		    MPI_Bsend (&gcnt, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+		    int final = -1;
+		    MPI_Bsend (&final, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+		  }
 
 
+		if (id == 0)
+		  {
+		    Array<int> working(ntasks), computed(ntasks);
+		    working = 1;
+		    computed = 0;
+		    while (1)
+		      {
+			int flag, data, num_working = 0, got_flag = false;
+			for (int source = 1; source < ntasks; source++)
+			  {
+			    if (!working[source]) continue;
+			    num_working++;
+			    MPI_Iprobe (source, MPI_TAG_SOLVE, ngs_comm, &flag, MPI_STATUS_IGNORE);
+			    if (flag)
+			      {
+				got_flag = true;
+				MPI_Recv (&data, 1, MPI_INT, source, MPI_TAG_SOLVE, ngs_comm, MPI_STATUS_IGNORE);
+				if (data == -1) 
+				  working[source] = 0;
+				else
+				  computed[source] = data;
+			      }
+			  }
+			int sum = 0;
+			for (int j = 1; j < ntasks; j++) 
+			  sum += computed[j];
+			cout << IM(2) << "\rassemble element " << sum << "/" << ne 
+			     << " (" << num_working << " procs working) " << flush;
+			if (!num_working) break;
+			if (!got_flag) usleep (100000);
+		      }
+		  }
+#endif
+
+		if (id == 0)
+		  cout << IM(2) << "\rassemble element " << ne << "/" << ne 
+		       << "                               " << endl;
+		
 		MyMPI_Barrier();
-
-		cout << IM(2) << "\rassemble element " << ne << "/" << ne << endl;
-
 		if (linearform && keep_internal)
 		  {
 		    cout << "\rmodifying condensated rhs";
@@ -1591,10 +1646,11 @@ namespace ngcomp
               if (useddof.Test(i))
                 cntused++;
 	    
-            cout << "used " << cntused
-                 << ", unused = " << useddof.Size()-cntused
-                 << ", total = " << useddof.Size() << endl;
-
+	    if (ntasks == 1)
+	      cout << "used " << cntused
+		   << ", unused = " << useddof.Size()-cntused
+		   << ", total = " << useddof.Size() << endl;
+	    
 
 	    int MASK = eliminate_internal ? EXTERNAL_DOF : ANY_DOF;
 	    bool first_time = true;
