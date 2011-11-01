@@ -38,8 +38,10 @@ namespace ngla
                 const Array<int> * acluster,
                 bool asymmetric)
   { 
-    static int timer = NgProfiler::CreateTimer ("Mumps Inverse");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer ("Mumps Inverse");
+    static Timer timer_analysis ("Mumps Inverse - analysis");
+    static Timer timer_factor ("Mumps Inverse - factor");
+    RegionTimer reg (timer);
 
     VT_OFF();
 
@@ -235,6 +237,9 @@ namespace ngla
       }
 
 
+    for (int i = 0; i < 40; i++)
+      mumps_id.icntl[i] = 0;
+
 
     mumps_id.job=JOB_INIT; 
     mumps_id.par= (ntasks == 1) ? 1 : 0;
@@ -253,24 +258,36 @@ namespace ngla
     mumps_id.irn = row_indices;
     mumps_id.jcn = col_indices;
 
+    /*
+    if (id == 0)
+      {
+	cout << "Mumps predefined values: ";
+	for (int j = 0; j < 40; j++)
+	  cout << "ICNTL(" << j+1 << ") = " << mumps_id.icntl[j] << endl;
+      }
+    */
 
     mumps_id.icntl[0]=-1; 
     mumps_id.icntl[1]=-1; 
     mumps_id.icntl[2]=-1; 
     mumps_id.icntl[3]=0;
-    // mumps_id.icntl[12]=1;  // root schur complement sequential
-    mumps_id.icntl[13]=30; // increased due to error -9
-    // cout << "icntl(7) = " << mumps_id.icntl[6] << endl;
-    // cout << "icntl(22) = " << mumps_id.icntl[21] << endl;
+    mumps_id.icntl[7]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
+    mumps_id.icntl[12]=1;  // not using scalapck for root schur complement
+    mumps_id.icntl[13]=50; // memory increase (in %) due to error -9
+    mumps_id.icntl[27]=2;  // 0..default,  2..parallel analysis
+    mumps_id.icntl[28]=2;  // 0..auto, 2..parmetis
 
     // mumps_id.comm_fortran=USE_COMM_WORLD;
     mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
     mumps_id.job = JOB_ANALYSIS;
 
+
     if (id == 0)
       cout << "analysis ... " << flush;
 
+    timer_analysis.Start();
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
+    timer_analysis.Stop();
 
     // cout << "num floating-point ops = " << mumps_id.rinfog[0] << endl;
     if (mumps_id.infog[0])
@@ -290,8 +307,9 @@ namespace ngla
 
     MPI_Barrier (ngparallel::ngs_comm);
 
-
+    timer_factor.Start();
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
+    timer_factor.Stop();
 
     if (mumps_id.infog[0] != 0)
       {
