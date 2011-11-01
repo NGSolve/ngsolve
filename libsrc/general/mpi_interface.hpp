@@ -182,13 +182,27 @@ namespace netgen
   {
     char buf[100];
     strcpy (buf, cmd);
-    MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
+    // MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+    for (int dest = 1; dest < ntasks; dest++)
+      MPI_Send( &buf, 100, MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
   }
 
   inline string MyMPI_RecvCmd ()
   {
     char buf[100];
-    MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
+    // MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+    MPI_Status status;
+    int flag;
+    do
+      {
+	MPI_Iprobe (0, MPI_TAG_CMD, MPI_COMM_WORLD, &flag, &status);
+	if (!flag) usleep (50000);
+      }
+    while (!flag);
+    MPI_Recv( &buf, 100, MPI_CHAR, 0, MPI_TAG_CMD, MPI_COMM_WORLD, &status);
+    
     return string(buf);
   }
 

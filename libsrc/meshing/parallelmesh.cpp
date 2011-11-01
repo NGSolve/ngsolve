@@ -3,13 +3,23 @@
 #include <meshing.hpp>
 #include "paralleltop.hpp"
 
+#define METIS4
+
 
 #ifdef METIS
 namespace metis {
   extern "C" {
+
+#ifdef METIS4
 #include <metis.h>
+    typedef idxtype idx_t;   
+#else
+#include <metis.h>
+    typedef idx_t idxtype;   
+#endif
   } 
 }
+
 using namespace metis;
 #endif
 
@@ -625,8 +635,8 @@ namespace netgen
     int timerloc2 = NgProfiler::CreateTimer ("CalcSurfacesOfNode");
 
     NgProfiler::RegionTimer regloc(timerloc);
-    PrintMessage (2, "Got ", GetNE(), " elements");
-    PrintMessage (2, "Got ", GetNSE(), " surface elements");
+    PrintMessage (2, "Got ", GetNE(), " elements and ", GetNSE(), " surface elements");
+    // PrintMessage (2, "Got ", GetNSE(), " surface elements");
 
     NgProfiler::StartTimer (timerloc2);
 
@@ -690,8 +700,8 @@ namespace netgen
       }
 
 
-    int ne = GetNE();
-    int nn = GetNP();
+    idx_t ne = GetNE();
+    idx_t nn = GetNP();
 
     if (ntasks <= 2 || ne <= 1)
       {
@@ -724,17 +734,17 @@ namespace netgen
       }
     else
       {
-
-    // uniform (TET) mesh,  JS
-    int npe = VolumeElement(1).GetNP();
-    Array<idxtype> elmnts(ne*npe);
-
-    int etype;
-    if (elementtype == TET)
-      etype = 2;
-    else if (elementtype == HEX)
-      etype = 3;
-    
+	
+	// uniform (TET) mesh,  JS
+	int npe = VolumeElement(1).GetNP();
+	Array<idxtype> elmnts(ne*npe);
+	
+	int etype;
+	if (elementtype == TET)
+	  etype = 2;
+	else if (elementtype == HEX)
+	  etype = 3;
+	
     
     for (int i=1; i<=ne; i++)
       for (int j=1; j<=npe; j++)
@@ -742,7 +752,7 @@ namespace netgen
     
     int numflag = 0;
     int nparts = ntasks-1;
-    
+    int ncommon = 3;
     int edgecut;
     Array<idxtype> epart(ne), npart(nn);
 
@@ -766,19 +776,34 @@ namespace netgen
     
 
 
-    cout << "call metis ... " << flush;
 
     int timermetis = NgProfiler::CreateTimer ("Metis itself");
     NgProfiler::StartTimer (timermetis);
 
+#ifdef METIS4
+    cout << "call metis ... " << flush;
     METIS_PartMeshDual (&ne, &nn, &elmnts[0], &etype, &numflag, &nparts,
 			&edgecut, &epart[0], &npart[0]);
+#else
+    cout << "call metis-5 ... " << endl;
+    idx_t options[METIS_NOPTIONS];
+    
+    Array<idx_t> eptr(ne+1);
+    for (int j = 0; j < ne+1; j++)
+      eptr[j] = 4*j;
+
+    METIS_PartMeshDual (&ne, &nn, &eptr[0], &elmnts[0], NULL, NULL, &ncommon, &nparts,
+			NULL, NULL,
+			&edgecut, &epart[0], &npart[0]);
+#endif
 
     NgProfiler::StopTimer (timermetis);
 
     cout << "complete" << endl;
+#ifdef METIS4
     cout << "edge-cut: " << edgecut << ", balance: " 
-	 << ComputeElementBalance(ne, nparts, &epart[0]) << endl;
+     	 << ComputeElementBalance(ne, nparts, &epart[0]) << endl;
+#endif
 
     // partition numbering by metis : 0 ...  ntasks - 1
     // we want:                       1 ...  ntasks
@@ -867,8 +892,12 @@ namespace netgen
 	BubbleSort(array);
       }
 
+#ifdef METIS4
     METIS_PartGraphKway ( &nn, xadj, adjacency, v_weights, e_weights, &weightflag, 
 			  &numflag, &nparts, options, &edgecut, part );
+#else
+    cout << "currently not supported (metis5), A" << endl;
+#endif
 
     Array<int> nodesinpart(ntasks);
 
@@ -986,8 +1015,13 @@ namespace netgen
     int timermetis = NgProfiler::CreateTimer ("Metis itself");
     NgProfiler::StartTimer (timermetis);
 
+#ifdef METIS4
     METIS_PartGraphKway ( &ne, xadj, adjacency, v_weights, e_weights, &weightflag, 
 			  &numflag, &nparts, options, &edgecut, part );
+#else
+    cout << "currently not supported (metis5), B" << endl;
+#endif
+
 
     NgProfiler::StopTimer (timermetis);
 
@@ -1092,9 +1126,19 @@ namespace netgen
 
     for ( int el = 0; el < ne; el++ )
       BubbleSort (adjacency.Range (xadj[el], xadj[el+1]));
-	
+
+#ifdef METIS4	
     METIS_PartGraphKway ( &ne, &xadj[0], &adjacency[0], v_weights, e_weights, &weightflag, 
 			  &numflag, &nparts, options, &edgecut, &part[0] );
+#else
+    idx_t ncon = 1;
+    METIS_PartGraphKway ( &ne, &ncon, &xadj[0], &adjacency[0], 
+			  v_weights, NULL, e_weights, 
+			  &nparts, 
+			  NULL, NULL, NULL,
+			  &edgecut, &part[0] );
+#endif
+
 
     for (SurfaceElementIndex sei = 0; sei < ne; sei++)
       (*this) [sei].SetPartition (part[sei]+1);
