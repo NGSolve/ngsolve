@@ -903,7 +903,7 @@ namespace ngcomp
 
   Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
-    int first, ii;
+    int first;
     int ncnt = 0;
     // int ni = ma.GetNE(); //nel;
   
@@ -961,7 +961,7 @@ namespace ngcomp
 
     Array<int> cnt(ncnt); 
     cnt = 0;
-    ii=0; 
+    // ii=0; 
 
     int offset = 0;
 
@@ -1055,7 +1055,7 @@ namespace ngcomp
 
     Table<int> & table = *new Table<int> (cnt); 
   
-    ii = 0; 
+    // ii = 0; 
     cnt = 0;
   
     offset =0;
