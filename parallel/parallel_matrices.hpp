@@ -44,6 +44,7 @@ namespace ngla
     virtual const BaseVector & AsVector() const { return mat.AsVector(); }
 
     BaseMatrix & GetMatrix() { return const_cast<BaseMatrix&> (mat); }
+    virtual BaseMatrix * CreateMatrix () const;
     virtual BaseVector * CreateVector () const;
 
     virtual ostream & Print (ostream & ost) const;
