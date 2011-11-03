@@ -7,7 +7,10 @@
 #ifdef USE_MUMPS
 
 #include <la.hpp>
+#include <comp.hpp>
 #include <parallelngs.hpp>
+using namespace ngparallel;
+using namespace ngcomp;
 
 
 namespace netgen {
@@ -67,10 +70,6 @@ namespace ngla
 	  }
       }
 
-
-
-    clock_t starttime, time1 = 0, time2 = 0; 
-    starttime = clock();
 
     entrysize = mat_traits<TM>::HEIGHT; 
     iscomplex = mat_traits<TM>::IS_COMPLEX;
@@ -241,15 +240,14 @@ namespace ngla
       mumps_id.icntl[i] = 0;
 
 
-    mumps_id.job=JOB_INIT; 
+    mumps_id.job =JOB_INIT; 
     mumps_id.par= (ntasks == 1) ? 1 : 0;
     mumps_id.sym= symmetric ? 1 : 0;
     // mumps_id.comm_fortran=USE_COMM_WORLD;
     mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
-    if (id == 0)
-      cout << "MUMPS version number is " << mumps_id.version_number << endl;
+    cout << IM(1) << "MUMPS version number is " << mumps_id.version_number << endl;
 
 
     /* Define the problem on the host */
@@ -259,11 +257,11 @@ namespace ngla
     mumps_id.jcn = col_indices;
 
     /*
-    if (id == 0)
+      if (id == 0)
       {
-	cout << "Mumps predefined values: ";
-	for (int j = 0; j < 40; j++)
-	  cout << "ICNTL(" << j+1 << ") = " << mumps_id.icntl[j] << endl;
+      cout << "Mumps predefined values: ";
+      for (int j = 0; j < 40; j++)
+      cout << "ICNTL(" << j+1 << ") = " << mumps_id.icntl[j] << endl;
       }
     */
 
@@ -318,7 +316,6 @@ namespace ngla
 	cout << "info(1) = " << mumps_id.info[0] << endl;
 	cout << "info(2) = " << mumps_id.info[1] << endl;
       }
-    time2 = clock();
 
 
     /*
@@ -330,11 +327,6 @@ namespace ngla
     */
 
 
-    (*testout) << endl << "Direct Solver: Mumps by Lawrence Berkeley National Laboratory." << endl;
-    (*testout) << "Matrix prepared for Mumps in " <<
-      double(time1 - starttime)/CLOCKS_PER_SEC << " sec." << endl;
-    (*testout) << "Factorization by Mumps done in " << 
-      double(time2 - time1)/CLOCKS_PER_SEC << " sec." << endl << endl;
 
     
     if (id == 0)
@@ -351,49 +343,6 @@ namespace ngla
   }
   
   
-  /*
-    template <class TM, class TV_ROW, class TV_COL>
-    MumpsInverse<TM,TV_ROW,TV_COL> :: 
-    MumpsInverse (const Array<int> & aorder, 
-    const Array<CliqueEl*> & cliques,
-    const Array<MDOVertex> & vertices,
-    int symmetric)
-    {
-    Allocate (aorder, cliques, vertices);
-    }
-  */
-
-  
-  /*
-    template <class TM, class TV_ROW, class TV_COL>
-    void MumpsInverse<TM, TV_ROW,TV_COL> :: 
-    Allocate (const Array<int> & aorder, 
-    const Array<CliqueEl*> & cliques,
-    const Array<MDOVertex> & vertices)
-    {
-    cout << "MumpsInverse::Allocate not implemented!" << endl;
-    }
-  
-
-
-    template <class TM, class TV_ROW, class TV_COL>
-    void MumpsInverse<TM,TV_ROW,TV_COL> :: 
-    FactorNew (const SparseMatrix<TM> & a)
-    {
-    throw Exception ("MumpsInverse::FactorNew not implemented");
-    }
-
-
-
-    template <class TM, class TV_ROW, class TV_COL>
-    void MumpsInverse<TM,TV_ROW, TV_COL> :: Factor (const int * blocknr)
-    {
-    cout << "MumpsInverse::Factor not implemented!" << endl;
-    }
-  */  
-
-
-
 
   template <class TM, class TV_ROW, class TV_COL>
   void MumpsInverse<TM,TV_ROW,TV_COL> :: 
@@ -443,22 +392,505 @@ namespace ngla
     VT_ON();
   }
   
-  
-
-
 
   template <class TM, class TV_ROW, class TV_COL>
   MumpsInverse<TM,TV_ROW,TV_COL> :: ~MumpsInverse()
   {
     mumps_id.job=JOB_END; 
+    mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  template <class TM, class TV_ROW, class TV_COL>
+  ParallelMumpsInverse<TM,TV_ROW,TV_COL> :: 
+  ParallelMumpsInverse (const SparseMatrixTM<TM> & a, 
+			const BitArray * ainner,
+			const Array<int> * acluster,
+			const ngparallel::ParallelDofs * pardofs,
+			bool asymmetric)
+  { 
+    static Timer timer ("Mumps Inverse");
+    static Timer timer_analysis ("Mumps Inverse - analysis");
+    static Timer timer_factor ("Mumps Inverse - factor");
+    RegionTimer reg (timer);
+
+    VT_OFF();
+
+    // symmetric = asymmetric;
+    symmetric = true;
+    inner = ainner;
+    cluster = acluster;
+
+    cout << IM(1) << "Mumps Parallel inverse" << endl;
+
+    if (id == 0)
+      {
+	if ( ( inner && inner->Size() < a.Height() ) ||
+	     ( cluster && cluster->Size() < a.Height() ) )
+	  {
+	    cout << "Mumps: Size of inner/cluster does not match matrix size!" << endl;
+	    throw Exception("Invalid parameters inner/cluster. Thrown by ParallelMumpsInverse.");
+	  }
+	
+	if ( int( mat_traits<TM>::WIDTH) != int(mat_traits<TM>::HEIGHT) )
+	  {
+	    cout << "Mumps: Each entry in the square matrix has to be a square matrix!" << endl;
+	    throw Exception("No Square Matrix. Thrown by ParallelMumpsInverse.");
+	  }
+      }
+
+
+
+    // find global dofs
+
+    num_globdofs = 0;   // valid on id=0
+    
+    if (id != 0)
+      {
+	const MeshAccess & ma = pardofs -> GetMeshAccess();
+	int ndof = pardofs->GetNDof();
+
+	Array<int> globid(3*ndof);
+
+	for (int row = 0; row < ndof; row++)
+	  if (!inner || inner->Test(row))
+	    select.Append (row);
+	
+	globid = -1;
+
+	const Array<Node> & dofnodes = pardofs -> GetDofNodes();
+
+	Array<int> nnodes(4);
+	for (int j = 0; j < 4; j++) nnodes[j] = ma.GetNNodes(NODE_TYPE(j));
+	Table<int> tdofnr(nnodes);
+	for (int j = 0; j < 4; j++) tdofnr[j] = 0;
+	Array<int> dofnr(ndof);
+
+	for (int i = 0; i < ndof; i++)
+	  dofnr[i] = tdofnr[dofnodes[i].GetType()][dofnodes[i].GetNr()]++;
+
+	for (int i = 0; i < ndof; i++)
+	  if (!inner || inner->Test(i))
+	    {
+	      globid[3*i+0] = dofnodes[i].GetType();
+	      globid[3*i+1] = ma.GetGlobalNodeNum (dofnodes[i]);
+	      globid[3*i+2] = dofnr[i];
+	    }
+
+	MyMPI_Send (globid, 0);
+	MyMPI_Recv (loc2glob, 0);
+      }
+
+    else
+      {
+	HashTable<INT<3>, int> ht_globdofs(10000);
+
+	for (int src = 1; src < ntasks; src++)
+	  {
+	    Array<int> hglobid;
+	    MyMPI_Recv (hglobid, src);
+
+	    Array<int> full_loc2glob(hglobid.Size()/3);
+	    full_loc2glob = -1;
+	    for (int i = 0; i < hglobid.Size(); i += 3)
+	      {
+		if (hglobid[i] == -1) continue;
+	      
+		INT<3> nentry;
+		nentry[0] = hglobid[i];
+		nentry[1] = hglobid[i+1];
+		nentry[2] = hglobid[i+2];
+
+		int found;
+
+		if (ht_globdofs.Used (nentry))
+		  found = ht_globdofs.Get(nentry);
+		else
+		  {
+		    found = num_globdofs;
+		    num_globdofs++;
+		    ht_globdofs.Set(nentry, found);
+		  }
+	      
+		full_loc2glob[i/3] = found;
+	      }
+
+	    MyMPI_Send (full_loc2glob, src);
+	  }
+      }
+
+
+
+    entrysize = mat_traits<TM>::HEIGHT; 
+    iscomplex = mat_traits<TM>::IS_COMPLEX;
+
     /*
-    mumps_id.par= (ntasks == 1) ? 1 : 0;
+      int * colstart = 0;
+      int * counter = 0;
+    */
+    int * col_indices = 0, * row_indices = 0;
+    TSCAL * matrix = 0;
+    if (id != 0)
+      {
+	height = a.Height() * entrysize;
+	
+	int * colstart = new int[height+1];
+	int * counter = new int[height];
+	
+	for ( int i = 0; i < height; i++ ) 
+	  counter[i] = 0;
+
+	for ( int i = 0; i < height; i++ ) 
+	  colstart[i+1] = 0;
+	
+	if ( symmetric )
+	  {
+	    col_indices = new int[a.NZE() * entrysize * entrysize ];
+	    row_indices = new int[a.NZE() * entrysize * entrysize ];
+	    matrix = new TSCAL[a.NZE() * entrysize * entrysize ];      
+	    
+	    int ii = 0;
+	    for (int i = 0; i < a.Height(); i++ )
+	      {
+		FlatArray<const int> rowind = a.GetRowIndices(i);
+
+		for (int j = 0; j < rowind.Size(); j++ )
+		  {
+		    int col = rowind[j];
+		    
+		    if (  (!inner && !cluster) ||
+			  (inner && (inner->Test(i) && inner->Test(col) ) ) ||
+			  (!inner && cluster &&
+			   ((*cluster)[i] == (*cluster)[col] 
+			    && (*cluster)[i] ))  )
+		      {
+			TM entry = a(i,col);
+			for (int l = 0; l < entrysize; l++ )
+			  for (int k = 0; k < entrysize; k++)
+			    {
+			      int rowi = i*entrysize+l;
+			      int coli = col*entrysize+k;
+			      TSCAL val = Access(entry,l,k);
+
+			      if (rowi >= coli)
+				{
+				  col_indices[ii] = loc2glob[coli]+1;
+				  row_indices[ii] = loc2glob[rowi]+1;
+				  matrix[ii] = val;
+				  ii++;
+				}
+			    }
+		      }
+		    /*
+		    
+		    else if (i == col)
+		    {
+		    // in the case of 'inner' or 'cluster': 1 on the diagonal for
+		    // unused dofs.
+		    for (int l=0; l<entrysize; l++ )
+		    {
+		    col_indices[ii] = loc2glob[col*entrysize+l]+1;
+		    row_indices[ii] = loc2glob[col*entrysize+l;
+		    matrix[ii] = 1;
+		    ii++;
+		    }
+		    }
+		    */
+		  }
+	      }
+	    nze = ii;
+	  }
+	else
+	  {
+	    cout << "copy matrix non-symmetric" << endl;
+	    // --- transform matrix to compressed column storage format ---
+
+	    // 1.) build array 'colstart':
+	    // (a) get nr. of entries for each col
+	    for (int i = 0; i < a.Height(); i++ )
+	      {
+		for (int j = 0; j < a.GetRowIndices(i).Size(); j++ )
+		  {
+		    int col = a.GetRowIndices(i)[j];
+                
+		    if (  (!inner && !cluster) ||
+			  (inner && (inner->Test(i) && inner->Test(col) ) ) ||
+			  (!inner && cluster && 
+			   ((*cluster)[i] == (*cluster)[col] 
+			    && (*cluster)[i] ))  )
+		      {
+			for (int k=0; k<entrysize; k++ )
+			  colstart[col*entrysize+k+1] += entrysize;
+		      }
+		    else if ( i == col )
+		      {
+			for (int k=0; k<entrysize; k++ )
+			  colstart[col*entrysize+k+1] ++;
+		      }
+		  }
+	      }
+
+	    // (b) accumulate
+	    colstart[0] = 0;
+	    for (int i = 1; i <= height; i++ ) colstart[i] += colstart[i-1];
+	    nze = colstart[height];
+
+
+	    // 2.) build whole matrix:
+	    col_indices = new int[a.NZE() * entrysize * entrysize ];
+	    row_indices = new int[a.NZE() * entrysize * entrysize ];
+	    matrix = new TSCAL[a.NZE() * entrysize * entrysize ];      
+
+	    for (int i = 0; i < a.Height(); i++ )
+	      {
+		for (int j = 0; j<a.GetRowIndices(i).Size(); j++ )
+		  {
+		    int col = a.GetRowIndices(i)[j];
+
+		    if (  (!inner && !cluster) ||
+			  (inner && (inner->Test(i) && inner->Test(col) ) ) ||
+			  (!inner && cluster &&
+			   ((*cluster)[i] == (*cluster)[col] 
+			    && (*cluster)[i] ))  )
+		      {
+			TM entry = a(i,col);
+			for (int k = 0; k < entrysize; k++)
+			  for (int l = 0; l < entrysize; l++ )
+			    {
+			      row_indices[ colstart[col*entrysize+k]+
+					   counter[col*entrysize+k] ] = i*entrysize+l + 1;
+			      col_indices[ colstart[col*entrysize+k]+
+					   counter[col*entrysize+k] ] = col*entrysize+k + 1;
+			      matrix[ colstart[col*entrysize+k]+
+				      counter[col*entrysize+k] ] = Access(entry,l,k);
+			      counter[col*entrysize+k]++;
+			    }
+		      }
+		    else if (i == col)
+		      {
+			// in the case of 'inner' or 'cluster': 1 on the diagonal for
+			// unused dofs.
+			for (int l=0; l<entrysize; l++ )
+			  {
+			    col_indices[ colstart[col*entrysize+l]+
+					 counter[col*entrysize+l] ] = col*entrysize+l + 1;
+			    row_indices[ colstart[col*entrysize+l]+
+					 counter[col*entrysize+l] ] = col*entrysize+l + 1;
+			    matrix[ colstart[col*entrysize+l]+
+				    counter[col*entrysize+l] ] = 1;
+			    counter[col*entrysize+l]++;
+			  }
+		      }
+		  }
+	      }
+	  }
+      }
+    else
+      nze = 0;
+
+
+    for (int i = 0; i < 40; i++)
+      mumps_id.icntl[i] = 0;
+
+
+    mumps_id.job = JOB_INIT; 
+    mumps_id.par = (ntasks == 1) ? 1 : 0;
     mumps_id.sym = symmetric ? 1 : 0;
     // mumps_id.comm_fortran=USE_COMM_WORLD;
     mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
+    mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
+
+    cout << IM(0) << "MUMPS version number is " << mumps_id.version_number << endl;
+    
+    /* distributed matrix definition */
+    mumps_id.n   = num_globdofs;  // only on host
+    mumps_id.nz_loc  = nze;
+    mumps_id.irn_loc = row_indices;
+    mumps_id.jcn_loc = col_indices;
+
+    mumps_id.icntl[0]=-1; 
+    mumps_id.icntl[1]=-1; 
+    mumps_id.icntl[2]=-1; 
+    mumps_id.icntl[3]=1;
+    mumps_id.icntl[7]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
+    mumps_id.icntl[12]=1;  // not using scalapck for root schur complement
+    mumps_id.icntl[13]=50; // memory increase (in %) due to error -9
+    mumps_id.icntl[17]=3;  // parallel input
+    mumps_id.icntl[27]=2;  // 0..default,  2..parallel analysis
+    mumps_id.icntl[28]=2;  // 0..auto, 2..parmetis
+
+    // mumps_id.comm_fortran=USE_COMM_WORLD;
+    mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
+    mumps_id.job = JOB_ANALYSIS;
+
+    cout << IM(1) << "analysis ... " << flush;
+
+    timer_analysis.Start();
+    mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
+    timer_analysis.Stop();
+
+    // cout << "num floating-point ops = " << mumps_id.rinfog[0] << endl;
+    if (mumps_id.infog[0])
+      {
+	cout << "analysis done" << endl;
+	cout << "error-code = " << mumps_id.infog[0] << flush;
+      }
+
+    /*
+    cout << "use ordering = " << mumps_id.infog[6] << endl;
+    cout << "parallel ordering = " << mumps_id.infog[31] << endl;
     */
+
+
+    mumps_id.a_loc   = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)matrix; 
+    mumps_id.job = JOB_FACTOR;
+    
+    if (id == 0)
+      cout << "factor ... " << flush;
+
+    timer_factor.Start();
+    mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
+    timer_factor.Stop();
+
+    if (mumps_id.infog[0] != 0)
+      {
+	cout << " factorization done" << endl;
+	cout << "error-code = " << mumps_id.infog[0] << endl;
+	cout << "info(1) = " << mumps_id.info[0] << endl;
+	cout << "info(2) = " << mumps_id.info[1] << endl;
+      }
+
+    cout << IM(1) << " done " << endl;
+
+    delete [] col_indices;
+    delete [] row_indices;
+    delete [] matrix;
+    VT_ON();
+  }
+  
+  
+
+  template <class TM, class TV_ROW, class TV_COL>
+  void ParallelMumpsInverse<TM,TV_ROW,TV_COL> :: 
+  Mult (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer timer("Mumps mult inverse");
+    RegionTimer reg (timer);
+
+    VT_OFF();
+
+    if (id != 0)
+      {
+	FlatVector<TSCAL> fx = x.FV<TSCAL>();
+	FlatVector<TSCAL> fy = y.FV<TSCAL>();
+
+	Array<TSCAL> hx(select.Size());
+	for (int i = 0; i < select.Size(); i++)
+	  hx[i] = fx(select[i]);
+	Array<int> select_loc2glob(select.Size());
+	for (int i = 0; i < select.Size(); i++)
+	  select_loc2glob[i] = loc2glob[select[i]];
+	
+	MyMPI_Send (select_loc2glob, 0);
+	MyMPI_Send (hx, 0);
+
+	MUMPS_STRUC_C & ncid = const_cast<MUMPS_STRUC_C&> (mumps_id);
+	ncid.job = JOB_SOLVE;
+	mumps_trait<TSCAL>::MumpsFunction (&ncid);
+
+	MyMPI_Send (select_loc2glob, 0);
+	MyMPI_Recv (hx, 0);
+
+	y = 0;
+	for (int i = 0; i < select.Size(); i++)
+	  fy(select[i]) = hx[i];
+      }
+    else
+      {
+	Vector<TSCAL> rhs(num_globdofs);
+	rhs = 0.0;
+	
+	for (int src = 1; src < ntasks; src++)
+	  {
+	    Array<int> loc2glob;
+	    Array<TSCAL> hx;
+	    MyMPI_Recv (loc2glob, src);
+	    MyMPI_Recv (hx, src);
+	    for (int j = 0; j < loc2glob.Size(); j++)
+	      rhs(loc2glob[j]) += hx[j];
+	  } 
+	
+	MUMPS_STRUC_C & ncid = const_cast<MUMPS_STRUC_C&> (mumps_id);
+
+	ncid.rhs = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*) &rhs(0);
+	ncid.job = JOB_SOLVE;
+
+	mumps_trait<TSCAL>::MumpsFunction (&ncid);
+
+	for (int src = 1; src < ntasks; src++)
+	  {
+	    Array<int> loc2glob;
+	    MyMPI_Recv (loc2glob, src);
+	    Array<TSCAL> hx(loc2glob.Size());
+
+	    for (int j = 0; j < loc2glob.Size(); j++)
+	      hx[j] = rhs(loc2glob[j]);
+	    MyMPI_Send (hx, src);
+	  }
+      }
+
+    VT_ON();
+  }
+  
+
+  template <class TM, class TV_ROW, class TV_COL>
+  ParallelMumpsInverse<TM,TV_ROW,TV_COL> :: ~ParallelMumpsInverse()
+  {
+    mumps_id.job=JOB_END; 
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -481,6 +913,43 @@ namespace ngla
   template class MumpsInverse<Mat<3,3,double> >;
   template class MumpsInverse<Mat<3,3,Complex> >;
 #endif
+
+
+
+
+
+
+
+  template class ParallelMumpsInverse<double>;
+  template class ParallelMumpsInverse<Complex>;
+  template class ParallelMumpsInverse<double,Complex,Complex>;
+#if MAX_SYS_DIM >= 1
+  template class ParallelMumpsInverse<Mat<1,1,double> >;
+  template class ParallelMumpsInverse<Mat<1,1,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 2
+  template class ParallelMumpsInverse<Mat<2,2,double> >;
+  template class ParallelMumpsInverse<Mat<2,2,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 3
+  template class ParallelMumpsInverse<Mat<3,3,double> >;
+  template class ParallelMumpsInverse<Mat<3,3,Complex> >;
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   /*
     #if MAX_SYS_DIM >= 4
     template class MumpsInverse<Mat<4,4,double> >;
