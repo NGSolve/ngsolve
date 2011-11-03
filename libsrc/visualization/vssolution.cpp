@@ -697,8 +697,7 @@ namespace netgen
 
       
         if (vispar.clipenable && clipsolution == 1 && sol)
-	  DrawClipPlaneTrigs (); // sol, scalcomp);
-
+	  DrawClipPlaneTrigs (); 
 
         if (clipplanelist_vec)
           glDeleteLists (clipplanelist_vec, 1);
@@ -971,8 +970,6 @@ namespace netgen
             glEndList ();
           }
         glEnd();
-      
-
       }
   
     clipplanetimestamp = max2 (vispar.clipplanetimestamp, solutiontimestamp);
@@ -1030,6 +1027,10 @@ namespace netgen
     
     if (mesh->GetTimeStamp () > solutiontimestamp)
       sol = NULL;
+
+    if (sol && sol->solclass) sol->solclass->SetMultiDimComponent (multidimcomponent);
+
+
 
     glLineWidth (1.0f);
 
@@ -3715,8 +3716,7 @@ namespace netgen
 
 
 
-  void VisualSceneSolution :: 
-  DrawClipPlaneTrigs () // const SolData * sol, int comp)
+  void VisualSceneSolution :: DrawClipPlaneTrigs () 
   {
 #ifdef PARALLELGL
 
@@ -3726,13 +3726,6 @@ namespace netgen
 
 	Array<int> parlists (ntasks);
 
-	/*
-	for ( int dest = 1; dest < ntasks; dest++ )
-	  {
-	    MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
-	    MyMPI_Send ("clipplanetrigs", dest, MPI_TAG_VIS);
-	  }
-	*/
 	MyMPI_SendCmd ("redraw");
 	MyMPI_SendCmd ("clipplanetrigs");
 
@@ -4117,7 +4110,7 @@ namespace netgen
 	1, 1, 1, 1,
 	1, 1, 1, 1, 
 	1, 1, 1, 1, 
-	1, 4
+	1, 4, 1
       };
     MPI_Aint displ[] = { (char*)&usetexture - (char*)this,
 			 (char*)&clipsolution - (char*)this,
@@ -4135,22 +4128,22 @@ namespace netgen
 			 (char*)&subdivisions - (char*)this,
 
 			 (char*)&evalfunc - (char*)this,
-
-			 (char*)&clipplane[0] - (char*)this };
+			 (char*)&clipplane[0] - (char*)this,
+			 (char*)&multidimcomponent - (char*)this 
+    };
 
 
     MPI_Datatype types[] = { 
       MPI_INT, MPI_INT, MPI_INT, MPI_INT,
       MPI_INT, MPI_INT, MPI_INT, MPI_INT,
       MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT,
-      MPI_INT, MPI_DOUBLE
+      MPI_INT, MPI_DOUBLE, MPI_INT
     };
 
-    MPI_Type_create_struct (14, blocklen, displ, types, &type);
+    MPI_Type_create_struct (15, blocklen, displ, types, &type);
     MPI_Type_commit ( &type );
 
     MPI_Bcast (this, 1, type, 0, MPI_COMM_WORLD);
-
     MPI_Type_free (&type);
 
     /*

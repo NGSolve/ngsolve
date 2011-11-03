@@ -914,7 +914,7 @@ namespace netgen
 	for ( int dest = 1; dest < ntasks; dest++ )
 	  {
             MyMPI_Recv (par_filledlists[dest], dest, MPI_TAG_VIS);
-            cout << "proc " << dest << " has drawn to list " << par_filledlists[dest] << endl;
+            // cout << "proc " << dest << " has drawn to list " << par_filledlists[dest] << endl;
 	  }
 
 	if (filledlist)
