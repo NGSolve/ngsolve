@@ -7,6 +7,11 @@
 /* Date:   Apr. 09                                                         */
 /* *************************************************************************/
 
+namespace ngparallel
+{
+  class ParallelDofs;
+}
+
 namespace ngla
 {
 
@@ -51,7 +56,6 @@ namespace ngla
     typedef typename mat_traits<TM>::TV_ROW TVX;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
-
 #ifdef USE_MUMPS
     typedef typename mumps_trait<TSCAL>::MUMPS_STRUC_C MUMPS_STRUC_C;
     MUMPS_STRUC_C mumps_id;
@@ -69,23 +73,89 @@ namespace ngla
                   const BitArray * ainner = NULL,
                   const Array<int> * acluster = NULL,
                   bool symmetric = 0);
+
     ///
     ~MumpsInverse ();
+
     ///
     int VHeight() const { return height; }
+    
     ///
     int VWidth() const { return height; }
+
     ///
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
 
-    ///
-    // virtual ostream & Print (ostream & ost) const;
     ///
     virtual BaseVector * CreateVector () const
     {
       return new VVector<TV> (height);
     }
   };
+
+
+
+
+
+
+
+  template<class TM, 
+	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
+	   class TV_COL = typename mat_traits<TM>::TV_COL>
+  class ParallelMumpsInverse : public BaseMatrix
+  {
+    typedef typename mat_traits<TM>::TV_COL TV;
+    typedef typename mat_traits<TM>::TV_ROW TVX;
+    typedef typename mat_traits<TM>::TSCAL TSCAL;
+
+#ifdef USE_MUMPS
+    typedef typename mumps_trait<TSCAL>::MUMPS_STRUC_C MUMPS_STRUC_C;
+    MUMPS_STRUC_C mumps_id;
+#endif
+    int height, nze, entrysize;
+
+    bool symmetric, iscomplex;
+
+    const BitArray * inner;
+    const Array<int> * cluster;
+    Array<int> select;
+    Array<int> loc2glob;
+    int num_globdofs;
+  public:
+    ///
+    ParallelMumpsInverse (const SparseMatrixTM<TM> & a, 
+			  const BitArray * ainner,
+			  const Array<int> * acluster,
+			  const ngparallel::ParallelDofs * pardofs,
+			  bool symmetric = 0);
+
+    ///
+    ~ParallelMumpsInverse ();
+
+    ///
+    int VHeight() const { return height; }
+    
+    ///
+    int VWidth() const { return height; }
+
+    ///
+    virtual void Mult (const BaseVector & x, BaseVector & y) const;
+
+    ///
+    virtual BaseVector * CreateVector () const
+    {
+      return new VVector<TV> (height);
+    }
+  };
+
+
+
+
+
+
+
+
+
 
 }
 
