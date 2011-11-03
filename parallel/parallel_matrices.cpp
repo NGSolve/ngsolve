@@ -29,7 +29,7 @@ namespace ngla
       {
 	const MeshAccess & ma = pardofs -> GetMeshAccess();
 
-	int ndof = pardofs->GetNDof(); // fes.GetNDof();
+	int ndof = pardofs->GetNDof();
 
 	Array<int> rows, cols, globid(3*ndof);
 	Array<TM> vals;
@@ -38,7 +38,7 @@ namespace ngla
 	  if (!subset || subset->Test(row))
 	    select.Append (row);
 
-
+	
 	Array<int> compress(ndof);
 	compress = -1;
 	for (int i = 0; i < select.Size(); i++)
@@ -354,6 +354,10 @@ namespace ngla
   }
 
 
+  BaseMatrix * ParallelMatrix :: CreateMatrix () const
+  {
+    return new ParallelMatrix (*mat.CreateMatrix(), pardofs);
+  }
 
   BaseVector * ParallelMatrix :: CreateVector () const
   {
@@ -381,7 +385,22 @@ namespace ngla
 
   BaseMatrix * ParallelMatrix::InverseMatrix (const BitArray * subset) const
   {
-    return new MasterInverse<double> (dynamic_cast<const SparseMatrixTM<double>&> (mat), subset, &pardofs);
+    const SparseMatrixTM<double> * dmat = dynamic_cast<const SparseMatrixTM<double>*> (&mat);
+    const SparseMatrixTM<Complex> * cmat = dynamic_cast<const SparseMatrixTM<Complex>*> (&mat);
+
+    if (mat.GetInverseType() == MUMPS)
+      {
+	if (dmat) return new ParallelMumpsInverse<double> (*dmat, subset, NULL, &pardofs);
+	if (cmat) return new ParallelMumpsInverse<Complex> (*cmat, subset, NULL, &pardofs);
+      }
+    else
+      {
+	if (dmat) return new MasterInverse<double> (*dmat, subset, &pardofs);
+	if (cmat) return new MasterInverse<Complex> (*cmat, subset, &pardofs);
+      }
+ 
+    cerr << "ParallelMatrix::Inverse(BitArray) not avail, typeid(mat) = " << typeid(mat).name() << endl;
+    return NULL;
   }
 
   BaseMatrix * ParallelMatrix::InverseMatrix (const Array<int> * clusters) const
