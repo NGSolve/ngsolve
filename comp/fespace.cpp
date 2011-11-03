@@ -313,7 +313,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	      dirichlet_vertex[dirvert[j]] = true;
 	  }
 
-
 	DynamicTable<int> dist_dir_edge(ntasks);
 	if (id != 0)
 	  {
@@ -389,6 +388,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  if (dirichlet_vertex[i])
 	    {
 	      GetVertexDofNrs (i, dnums);
+	      for (int j = 0; j < dnums.Size(); j++)
+		if (dnums[j] != -1)
+		  dirichlet_dofs.Set (dnums[j]);
+	    }
+
+	for (int i = 0; i < dirichlet_edge.Size(); i++)
+	  if (dirichlet_edge[i])
+	    {
+	      GetEdgeDofNrs (i, dnums);
 	      for (int j = 0; j < dnums.Size(); j++)
 		if (dnums[j] != -1)
 		  dirichlet_dofs.Set (dnums[j]);
