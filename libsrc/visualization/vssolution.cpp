@@ -3833,34 +3833,34 @@ namespace netgen
 					 &jacobi[0](0), &jacobi[1](0)-&jacobi[0](0),
 					 &mvalues[0], sol->components);
 	    
+	    // cout << "have multivalues, comps = " << sol->components << endl;
+
 	    if (!drawelem) ok = false;
-	    if (usetexture != 2)
+	    if (usetexture != 2 || !sol->iscomplex)
 	      for (int ii = 0; ii < nlp; ii++)
 		vals[ii] = ExtractValue(sol, scalcomp, &mvalues[ii*sol->components]);
+	    else
+	      for (int ii = 0; ii < nlp; ii++)
+		valsc[ii] = complex<double> (mvalues[ii*sol->components],
+					     mvalues[ii*sol->components+1]);
 	  }
-
-        for (int j = 0; ok && j < 3; j++)
-          {
-            p[j] = points[trig.points[j].pnr].p;
-	    Point<3> ploc = points[trig.points[j].pnr].lami;
-            
-            if (deform)
-              p[j] += GetDeformation (trig.elnr, ploc);
-            
-            if (usetexture == 2 && sol->iscomplex)
-              {
-                ok = GetValueComplex (sol, trig.elnr, ploc(0), ploc(1), ploc(2),
-				      scalcomp, valc[j]);
-              }
-          }
-
+	
 	if(ok)
 	  for(int j=0; j<3; j++)
 	    {
 	      if (usetexture != 2 || !sol->iscomplex)
 		SetOpenGlColor (vals[trig.points[j].locpnr]);
 	      else
-		glTexCoord2f ( valc[j].real(), valc[j].imag() );
+		glTexCoord2f ( valsc[trig.points[j].locpnr].real(), 
+			       valsc[trig.points[j].locpnr].imag() );
+
+	      p[j] = points[trig.points[j].pnr].p;
+
+	      if (deform)
+		{
+		  Point<3> ploc = points[trig.points[j].pnr].lami;
+		  p[j] += GetDeformation (trig.elnr, ploc);
+		}
 
 	      glVertex3dv (p[j]);
 	    }
