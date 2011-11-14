@@ -83,7 +83,6 @@ namespace netgen
 
     NgProfiler::RegionTimer reg (timer);
 
-
     BuildScene();
 
     glClearColor(backcolor, backcolor, backcolor, 1.0);
@@ -893,29 +892,15 @@ namespace netgen
     NgProfiler::RegionTimer reg (timer);
 
 #ifdef PARALLELGL
-    // cout << "buildfillelist, id = " << id << ", nse = " << mesh -> GetNSE() << endl;
-
     if (id == 0 && ntasks > 1)
       {
 	InitParallelGL();
-
 	par_filledlists.SetSize (ntasks);
-
-	/*
-	for ( int dest = 1; dest < ntasks; dest++ )
-	  {
-            MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
-            // MyMPI_Send ("filledlist", dest, MPI_TAG_VIS);
-	  }
-	*/
 
 	MyMPI_SendCmd ("redraw");
 	MyMPI_SendCmd ("filledlist");
 	for ( int dest = 1; dest < ntasks; dest++ )
-	  {
-            MyMPI_Recv (par_filledlists[dest], dest, MPI_TAG_VIS);
-            // cout << "proc " << dest << " has drawn to list " << par_filledlists[dest] << endl;
-	  }
+	  MyMPI_Recv (par_filledlists[dest], dest, MPI_TAG_VIS);
 
 	if (filledlist)
 	  glDeleteLists (filledlist, 1);
@@ -927,8 +912,6 @@ namespace netgen
 	  glCallList (par_filledlists[dest]);
 
 	glEndList();
-
-
 
 	filledtimestamp = NextTimeStamp();
 	return;
@@ -988,10 +971,6 @@ namespace netgen
 
     GLfloat matcol[] = { 0, 1, 0, 1 };
     GLfloat matcolsel[] = { 1, 0, 0, 1 };
-#ifdef PARALLEL
-    GLfloat mat_coll_transp[] = { 0, 1, 0, 0.3 };
-    GLfloat mat_coll_transp_sel[] = { 1, 0, 0, 0.3 };
-#endif
 
     GLint rendermode;
     glGetIntegerv (GL_RENDER_MODE, &rendermode);
@@ -1005,7 +984,6 @@ namespace netgen
 
     for (int faceindex = 1; faceindex <= mesh->GetNFD(); faceindex++)
       {
-	// const FaceDescriptor & fd = mesh->GetFaceDescriptor(faceindex);
 	mesh->GetSurfaceElementsOfFace (faceindex, seia);
 
 	// Philippose - 06/07/2009
@@ -1024,31 +1002,10 @@ namespace netgen
 	  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, matcol);
 	
 
-	/*
-#ifdef PARALLEL
-	if ( el.IsGhost() )
-	  {
-	    if ( faceindex == selface )
-	      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_coll_transp_sel);
-	    else
-	      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_coll_transp);
-	  }
-#endif
-	*/
-	
-	bool simpletrig = !names && !curv.IsHighOrder();
-	for (int hi = 0; hi < seia.Size(); hi++)
-	  if ((*mesh)[seia[hi]].GetType() != TRIG)
-	    simpletrig = false;
 
-	if (simpletrig)
-	  glBegin (GL_TRIANGLES);
-
-	
 	for (int hi = 0; hi < seia.Size(); hi++)
 	  {
 	    SurfaceElementIndex sei = seia[hi];
-
             const Element2d & el = (*mesh)[sei];
 
             bool drawel = (!el.IsDeleted() & el.IsVisible());
@@ -1118,42 +1075,29 @@ namespace netgen
 		    }
                   else // not high order
 		    {
-		      if (!simpletrig)
-			glBegin (GL_TRIANGLES);
+		      glBegin (GL_TRIANGLES);
 		      
 		      const Point<3> & lp0 = (*mesh) [el[0]];
 		      const Point<3> & lp1 = (*mesh) [el[1]];
 		      const Point<3> & lp2 = (*mesh) [el[2]];
-		      
+
 		      Vec<3> n = Cross (lp1-lp0, lp2-lp0).Normalize();
 		      glNormal3dv (n);
-		      
-		      if (vispar.colormeshsize)
+
+		      for (int j = 0; j < 3; j++)
 			{
-			  SetOpenGlColor  (locms(el[0]-1), minh, maxh, 0);
-			  glVertex3dv (lp0);
-			  SetOpenGlColor  (locms(el[1]-1), minh, maxh, 0);
-			  glVertex3dv (lp1);
-			  SetOpenGlColor  (locms(el[2]-1), minh, maxh, 0);
-			  glVertex3dv (lp2);
-			}
-		      else
-			{
-			  glVertex3dv (lp0);
-			  glVertex3dv (lp1);
-			  glVertex3dv (lp2);
+			  if (vispar.colormeshsize)
+			    SetOpenGlColor  (locms(el[0]-1), minh, maxh, 0);
+			  glVertex3dv ( (*mesh)[el[j]] );
 			}
 		      
-		      if (!simpletrig)
-			glEnd();
+		      glEnd();
 		    }
 		  
                   break;
 		}
 	      case QUAD:
 		{
-                  // cout << "BuildFilledList: QUAD" << endl;
-                  // CurvedElements & curv = mesh->GetCurvedElements();
                   if (curv.IsHighOrder()) //  && curv.IsSurfaceElementCurved(sei))
 		    {
 		      Point<2> xr[4];
@@ -1315,9 +1259,6 @@ namespace netgen
 
 	    
 	  }
-	
-	if (simpletrig)
-	  glEnd ();
       }
     
 
@@ -1330,9 +1271,6 @@ namespace netgen
     if (id > 0)
       MyMPI_Send (filledlist, 0, MPI_TAG_VIS);
 #endif
-
-    // endtime = clock();
-    // cout << "BuildFillList time = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
   }
 
 
@@ -1349,13 +1287,6 @@ namespace netgen
 
 	par_linelists.SetSize (ntasks);
 
-	/*
-	for ( int dest = 1; dest < ntasks; dest++ )
-	  {
-	  MyMPI_Send ("redraw", dest, MPI_TAG_CMD);
-	  MyMPI_Send ("linelist", dest, MPI_TAG_VIS);
-	  }
-	*/
 	MyMPI_SendCmd ("redraw");
 	MyMPI_SendCmd ("linelist");
 
@@ -1457,6 +1388,9 @@ namespace netgen
 		{
                   glBegin (GL_TRIANGLES);
 
+		  for (int j = 0; j < 3; j++)
+		    glVertex3dv ( (*mesh) [el[j]] );
+		  /*
                   const Point<3> & lp0 = (*mesh) [el[0]];
                   const Point<3> & lp1 = (*mesh) [el[1]];
                   const Point<3> & lp2 = (*mesh) [el[2]];
@@ -1464,7 +1398,7 @@ namespace netgen
                   glVertex3dv (lp0);
                   glVertex3dv (lp1);
                   glVertex3dv (lp2);
-
+		  */
                   glEnd();
 		}
 
