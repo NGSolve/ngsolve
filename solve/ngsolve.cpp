@@ -30,6 +30,7 @@ using namespace ngsolve;
 #include "markus/jobmanager.hpp"
 #endif
 
+// #include "/opt/intel/mkl/include/mkl.h"
 
 // #include "/home/joachim/netgen-mesher/netgen/libsrc/include/meshing.hpp"
 // volatile int & running = netgen::multithread.running;
@@ -175,6 +176,9 @@ int NGS_LoadPDE (ClientData clientData,
 
 void * SolveBVP(void *)
 {
+  if (ntasks > 1)
+    omp_set_num_threads (1);
+
   try
     {
       if (pde && pde->IsGood())
@@ -645,7 +649,10 @@ int NGSolve_Init (Tcl_Interp * interp)
 #ifdef _OPENMP
 #ifdef PARALLEL
   if (ntasks > 1)
-    omp_set_num_threads (1);
+    {
+      omp_set_num_threads (1);
+      // mkl_set_num_threads (1);
+    }
 #endif
   cout << "Running OpenMP - parallel using " << omp_get_max_threads() << " thread(s)" << endl;
   cout << "(number of threads can be changed by setting OMP_NUM_THREADS)" << endl;
@@ -779,6 +786,10 @@ extern "C" void NGS_ParallelRun ( const string & message );
 
 void * SolveBVP2(void *)
 {
+#ifdef _OPENMP
+  omp_set_num_threads (1);
+#endif
+
   if (pde && pde->IsGood())
     pde->SolveBVP();
 
