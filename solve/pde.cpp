@@ -2,6 +2,11 @@
 
 #include <parallelngs.hpp>
 
+namespace ngfem
+{
+  extern SymbolTable<double> * constant_table_for_FEM;
+}
+
 
 namespace ngsolve
 {
@@ -40,6 +45,7 @@ namespace ngsolve
     SetGood (true);
 
     constants.Set ("pi", M_PI);
+    constant_table_for_FEM = &constants;
   }
   
   PDE :: ~PDE()
