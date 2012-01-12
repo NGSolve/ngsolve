@@ -18,8 +18,6 @@ namespace netgen
 
   void AnisotropicClusters ::  Update()
   {
-    int i, j, k;
-
     const MeshTopology & top = mesh.GetTopology();
 
     bool hasedges = top.HasEdges();
@@ -37,15 +35,17 @@ namespace netgen
     int nse = mesh.GetNSE();
 
     cluster_reps.SetSize (nv+ned+nfa+ne);
+    cluster_reps = -1;
+
+    Array<int> llist (nv+ned+nfa+ne);
+    llist = 0;
   
     Array<int> nnums, ednums, fanums;
     int changed;
 
-    for (i = 1; i <= cluster_reps.Size(); i++)
-      cluster_reps.Elem(i) = -1;
 
   
-    for (i = 1; i <= ne; i++)
+    for (int i = 1; i <= ne; i++)
       {
 	const Element & el = mesh.VolumeElement(i);
 	ELEMENT_TYPE typ = el.GetType();
@@ -58,21 +58,21 @@ namespace netgen
 	int elnfa = fanums.Size();
 	  
 	nnums.SetSize(elnv+elned+elnfa+1);
-	for (j = 1; j <= elnv; j++)
+	for (int j = 1; j <= elnv; j++)
 	  nnums.Elem(j) = el.PNum(j);
-	for (j = 1; j <= elned; j++)
+	for (int j = 1; j <= elned; j++)
 	  nnums.Elem(elnv+j) = nv+ednums.Elem(j);
-	for (j = 1; j <= elnfa; j++)
+	for (int j = 1; j <= elnfa; j++)
 	  nnums.Elem(elnv+elned+j) = nv+ned+fanums.Elem(j);
 	nnums.Elem(elnv+elned+elnfa+1) = nv+ned+nfa+i;
 
-	for (j = 0; j < nnums.Size(); j++)
+	for (int j = 0; j < nnums.Size(); j++)
 	  cluster_reps.Elem(nnums[j]) = nnums[j];
       }
 
   
 
-    for (i = 1; i <= nse; i++)
+    for (int i = 1; i <= nse; i++)
       {
 	const Element2d & el = mesh.SurfaceElement(i);
 	ELEMENT_TYPE typ = el.GetType();
@@ -84,13 +84,13 @@ namespace netgen
 	int elned = ednums.Size();
 	  
 	nnums.SetSize(elnv+elned+1);
-	for (j = 1; j <= elnv; j++)
+	for (int j = 1; j <= elnv; j++)
 	  nnums.Elem(j) = el.PNum(j);
-	for (j = 1; j <= elned; j++)
+	for (int j = 1; j <= elned; j++)
 	  nnums.Elem(elnv+j) = nv+ednums.Elem(j);
 	nnums.Elem(elnv+elned+1) = fanum;
 
-	for (j = 0; j < nnums.Size(); j++)
+	for (int j = 0; j < nnums.Size(); j++)
 	  cluster_reps.Elem(nnums[j]) = nnums[j];
       }
 
@@ -143,7 +143,7 @@ namespace netgen
 	cnt++;
 	changed = 0;
       
-	for (i = 1; i <= ne; i++)
+	for (int i = 1; i <= ne; i++)
 	  {
 	    const Element & el = mesh.VolumeElement(i);
 	    ELEMENT_TYPE typ = el.GetType();
@@ -156,11 +156,11 @@ namespace netgen
 	    int elnfa = fanums.Size();
 	  
 	    nnums.SetSize(elnv+elned+elnfa+1);
-	    for (j = 1; j <= elnv; j++)
+	    for (int j = 1; j <= elnv; j++)
 	      nnums.Elem(j) = el.PNum(j);
-	    for (j = 1; j <= elned; j++)
+	    for (int j = 1; j <= elned; j++)
 	      nnums.Elem(elnv+j) = nv+ednums.Elem(j);
-	    for (j = 1; j <= elnfa; j++)
+	    for (int j = 1; j <= elnfa; j++)
 	      nnums.Elem(elnv+elned+j) = nv+ned+fanums.Elem(j);
 	    nnums.Elem(elnv+elned+elnfa+1) = nv+ned+nfa+i;
 
@@ -207,20 +207,34 @@ namespace netgen
 	      }
 	  
 	    if (clustertab)
-	      for (j = 0; j < nnums.Size(); j++)
-		for (k = 0; k < j; k++)
+	      for (int j = 0; j < nnums.Size(); j++)
+		for (int k = 0; k < j; k++)
 		  if (clustertab[j] == clustertab[k])
 		    {
 		      int jj = nnums[j];
 		      int kk = nnums[k];
+
+		      if (cluster_reps.Get(kk) < cluster_reps.Get(jj))
+			swap (jj,kk);
+
 		      if (cluster_reps.Get(jj) < cluster_reps.Get(kk))
 			{
+			  /*
 			  cluster_reps.Elem(kk) = cluster_reps.Get(jj);
 			  changed = 1;
-			}
-		      else if (cluster_reps.Get(kk) < cluster_reps.Get(jj))
-			{
-			  cluster_reps.Elem(jj) = cluster_reps.Get(kk);
+			  */
+			  int rep  = cluster_reps.Get(jj);
+			  int next = kk;
+			  do
+			    {
+			      int cur = next;
+			      next = llist.Elem(next);
+				
+			      cluster_reps.Elem(cur) = rep;
+			      llist.Elem(cur) = llist.Elem(rep);
+			      llist.Elem(rep) = cur;
+			    }
+			  while (next);
 			  changed = 1;
 			}
 		    }
