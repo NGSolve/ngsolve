@@ -223,8 +223,9 @@ namespace netgen
 			  cluster_reps.Elem(kk) = cluster_reps.Get(jj);
 			  changed = 1;
 			  */
+			  
 			  int rep  = cluster_reps.Get(jj);
-			  int next = kk;
+			  int next = cluster_reps.Get(kk);
 			  do
 			    {
 			      int cur = next;
