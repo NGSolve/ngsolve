@@ -79,8 +79,6 @@ namespace ngsolve
     ///
     SymbolTable<BilinearForm*> bilinearforms;
     ///
-    //  SymbolTable<BEMBilinearForm*> bembilinearforms;
-    ///
     SymbolTable<LinearForm*> linearforms;
     ///
     SymbolTable<Preconditioner*> preconditioners;
@@ -155,53 +153,37 @@ namespace ngsolve
     string GetStringConstant (const string & aname, bool opt = 0) const;
     ///
     bool VariableUsed (const string & aname) const;
+
     ///
     double & GetVariable (const string & aname, bool opt = 0);
     ///
     CoefficientFunction * GetCoefficientFunction (const string & name, bool opt = 0);
-
     ///
     FESpace * GetFESpace (const string & name, bool opt = 0);
-
     ///
     GridFunction * GetGridFunction (const string & name, bool opt = 0);
-
     ///
     BilinearForm * GetBilinearForm (const string & name, bool opt = 0);
-
-    ///
-    //  BEMBilinearForm * GetBEMBilinearForm (const string & name, bool opt = 0);
-
     ///
     LinearForm * GetLinearForm (const string & name, bool opt = 0);
-
     ///
     Preconditioner * GetPreconditioner (const string & name, bool opt = 0);
-
     ///
     NumProc * GetNumProc (const string & name, bool opt = 0);
 
+
     ///
     const CoefficientFunction * GetCoefficientFunction (const string & name, bool opt = 0) const;
-
     ///
     const FESpace * GetFESpace (const string & name, bool opt = 0) const;
-
     ///
     const GridFunction * GetGridFunction (const string & name, bool opt = 0) const;
-
     ///
     const BilinearForm * GetBilinearForm (const string & name, bool opt = 0) const;
-
-    ///
-    //  const BEMBilinearForm * GetBEMBilinearForm (const string & name, bool opt = 0) const;
-
     ///
     const LinearForm * GetLinearForm (const string & name, bool opt = 0) const;
-
     ///
     const Preconditioner * GetPreconditioner (const string & name, bool opt = 0) const;
-
     ///
     const NumProc * GetNumProc (const string & name, bool opt = 0) const;
 
@@ -229,8 +211,6 @@ namespace ngsolve
     void AddGridFunction (const string & name, GridFunction * gf, bool addcf = false);
     ///
     BilinearForm * AddBilinearForm (const string & name, Flags & flags);
-    ///
-    // void AddBEMElement (const string & name, Flags & flags);
     ///
     LinearForm * AddLinearForm (const string & name, Flags & flags);
     ///

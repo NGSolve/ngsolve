@@ -424,9 +424,7 @@ namespace ngsolve
       return coefficients[name]; 
 
     if (opt) return 0;
-    stringstream str;
-    str << "CoefficientFunction '" << name << "' not defined\n";
-    throw Exception (str.str());
+    throw Exception (string("CoefficientFunction '") + name + "' not defined\n");
   }
 
   const FESpace * PDE :: 
@@ -436,9 +434,7 @@ namespace ngsolve
       return spaces[name]; 
     
     if (opt) return 0;
-    stringstream str;
-    str << "FESpace '" << name << "' not defined\n";
-    throw Exception (str.str());
+    throw Exception (string("FESpace '") + name + "' not defined\n");
   }
 
   const GridFunction * PDE :: 
@@ -448,9 +444,7 @@ namespace ngsolve
       return gridfunctions[name]; 
 
     if (opt) return 0;
-    stringstream str;
-    str << "Grid-function '" << name << "' not defined\n";
-    throw Exception (str.str());
+    throw Exception (string("Grid-function '") + name + "' not defined\n");
   }
 
   const BilinearForm * PDE :: 
@@ -1116,22 +1110,25 @@ namespace ngsolve
   {
     gf -> SetName (name);
     gridfunctions.Set (name, gf);
-    if (addcf){    
-      CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf));
-      AddCoefficientFunction(name,coef);
-      
-      const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&(gf->GetFESpace()));
-      if (cfe){
-	int nsp = cfe->GetNSpaces();
-	for (int i = 0; i < nsp; i++){
-	  std::stringstream sstr;
-	  sstr << i+1;
-	  string nname(name+"."+sstr.str());
-	  CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf->GetComponent(i)));
-	  AddCoefficientFunction(nname,coef);
-	}
+    if (addcf)
+      {    
+	AddCoefficientFunction (name, new GridFunctionCoefficientFunction(*gf));
+	
+	const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace*>(&gf->GetFESpace());
+	if (cfe)
+	  {
+	    int nsp = cfe->GetNSpaces();
+	    for (int i = 0; i < nsp; i++)
+	      {
+		std::stringstream sstr;
+		sstr << i+1;
+		string nname(name+"."+sstr.str());
+		
+		AddCoefficientFunction(nname, 
+				       new GridFunctionCoefficientFunction(*gf->GetComponent(i)));
+	      }
+	  }
       }
-    }
     todo.Append(gf);
   }
 
@@ -1211,9 +1208,6 @@ namespace ngsolve
 	
 	else if (strcmp (type, "local") == 0)
 	  pre = new LocalPreconditioner (this, flags, name);
-	
-	//  else if (strcmp (type, "vefc") == 0)
-	// pre = new VEFC_Preconditioner (this, flags, name);
 	
 	else if (strcmp (type, "twolevel") == 0)
 	  pre = new TwoLevelPreconditioner (this, flags, name);
