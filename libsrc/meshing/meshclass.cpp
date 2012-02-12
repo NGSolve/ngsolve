@@ -860,6 +860,11 @@ namespace netgen
           {
             infile >> n;
             PrintMessage (3, n, " surface elements");
+
+	    bool geominfo = strcmp (str, "surfaceelementsgi") == 0;
+	    bool uv = strcmp (str, "surfaceelementsuv") == 0;
+
+
             for (i = 1; i <= n; i++)
               {
                 int surfnr, bcp, domin, domout, nep, faceind = 0;
@@ -875,13 +880,15 @@ namespace netgen
 		    Swap (domin, domout);
 		  }
 		*/
-
+		
                 for (int j = 1; j <= facedecoding.Size(); j++)
                   if (GetFaceDescriptor(j).SurfNr() == surfnr &&
                       GetFaceDescriptor(j).BCProperty() == bcp &&
                       GetFaceDescriptor(j).DomainIn() == domin &&
                       GetFaceDescriptor(j).DomainOut() == domout)
                     faceind = j;
+
+		// if (facedecoding.Size()) faceind = 1;   // for timing 
 
                 if (!faceind)
                   {
@@ -898,20 +905,18 @@ namespace netgen
                 for (int j = 1; j <= nep; j++)
                   infile >> tri.PNum(j);
 
-                if (strcmp (str, "surfaceelementsgi") == 0)
+                if (geominfo)
                   for (int j = 1; j <= nep; j++)
                     infile >> tri.GeomInfoPi(j).trignum;
 
-                if (strcmp (str, "surfaceelementsuv") == 0)
+                if (uv)
                   for (int j = 1; j <= nep; j++)
                     infile >> tri.GeomInfoPi(j).u >> tri.GeomInfoPi(j).v;
+		
+                if (invertsurf) tri.Invert();
+		if (invert_el) tri.Invert();
 
-                if (invertsurf)
-                  tri.Invert();
-		if (invert_el)
-		  tri.Invert();
-
-                AddSurfaceElement (tri);
+		AddSurfaceElement (tri);
               }
           }
 
