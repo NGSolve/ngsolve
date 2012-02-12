@@ -203,6 +203,63 @@ namespace netgen
       }
   }
 
+  class RecPol
+  {
+  protected:
+    int maxorder;
+    double *a, *b, *c;
+  public:
+    RecPol (int amaxorder)
+    {
+      maxorder = amaxorder;
+      // cout << "maxo = " << maxorder << endl;
+
+      a = new double[maxorder+1];
+      b = new double[maxorder+1];
+      c = new double[maxorder+1];
+    }
+    ~RecPol ()
+    {
+      delete a;
+      delete b;
+      delete c;
+    }
+    
+    template <class S, class T>
+    void Evaluate (int n, S x, T * values)
+    {
+      S p1 = 1.0, p2 = 0.0, p3;
+      
+      if (n >= 0) 
+	p2 = values[0] = 1.0;
+      if (n >= 1) 
+	p1 = values[1] = a[0]+b[0]*x;
+      
+      for (int i  = 1; i < n; i++)
+	{
+	  p3 = p2; p2=p1;
+	  p1 = (a[i]+b[i]*x)*p2-c[i]*p3;
+	  values[i+1] = p1;
+	}
+    }
+  };
+
+  class JacobiRecPol : public RecPol
+  {
+  public:
+    JacobiRecPol (int amo, double al, double be)
+      : RecPol (amo)
+    {
+      for (int i = 0; i <= maxorder; i++)
+	{
+	  double den = 2*(i+1)*(i+al+be+1)*(2*i+al+be);
+	  a[i] = (2*i+al+be+1)*(al*al-be*be) / den;
+	  b[i] = (2*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) / den;
+	  c[i] = 2*(i+al)*(i+be)*(2*i+al+be+2) / den;
+	}
+    }
+  };
+
 
 
   template <class S, class T>
@@ -230,8 +287,8 @@ namespace netgen
       }
   }
 
-
-
+  
+  
 
   template <class S, class St, class T>
   inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta, T * values)
@@ -264,30 +321,36 @@ namespace netgen
       }
   }
 
-
-
+  
+  Array<RecPol*> jacpols2;
 
 
   // compute face bubbles up to order n, 0 < y, y-x < 1, x+y < 1
   template <class Tx, class Ty, class Ts>
   static void CalcTrigShape (int n, Tx x, Ty y, Ts * shape)
   { 
+    // static int timer = NgProfiler::CreateTimer ("Curvedels - CalcTrigShape");
+    // NgProfiler::RegionTimer reg (timer);
+
     if (n < 3) return;
     Tx hx[50], hy[50*50];
-    // ScaledLegendrePolynomial (n-3, 2*x-1, 1-y, hx);
     ScaledJacobiPolynomial (n-3, x, 1-y, 2, 2, hx);
 
+    // for (int ix = 0; ix <= n-3; ix++)
+    // JacobiPolynomial (n-3, 2*y-1, 2*ix+5, 2, hy+50*ix);
 
-    // LegendrePolynomial (n-3, 2*y-1, hy);
     for (int ix = 0; ix <= n-3; ix++)
-      //  JacobiPolynomial (n-3, 2*y-1, 0, 0, hy+50*ix);
-      JacobiPolynomial (n-3, 2*y-1, 2*ix+5, 2, hy+50*ix);
+      jacpols2[2*ix+5] -> Evaluate (n-3, 2*y-1, hy+50*ix);
 
     int ii = 0;
+
     Tx bub = (1+x-y)*y*(1-x-y);
+    for (int ix = 0; ix <= n-3; ix++)
+      hx[ix] *= bub;
+
     for (int iy = 0; iy <= n-3; iy++)
       for (int ix = 0; ix <= n-3-iy; ix++)
-	shape[ii++] = bub * hx[ix]*hy[iy+50*ix];
+	shape[ii++] = hx[ix]*hy[iy+50*ix];
   }
 
 
@@ -447,6 +510,14 @@ namespace netgen
 #ifdef PARALLEL
     if (id > 0)
       {
+	if (!jacpols2.Size())
+	  {
+	    jacpols2.SetSize (100);
+	    for (int i = 0; i < 100; i++)
+	      jacpols2[i] = new JacobiRecPol (100, i, 2);
+	  }
+
+
 	Array<int> master_edgeorder;
 	Array<int> master_edgecoeffsindex;
 	Array<Vec<3> > master_edgecoeffs;
@@ -616,6 +687,13 @@ namespace netgen
     Array<double> xi, weight;
 
     ComputeGaussRule (aorder+4, xi, weight);  // on (0,1)
+
+    if (!jacpols2.Size())
+      {
+	jacpols2.SetSize (100);
+	for (int i = 0; i < 100; i++)
+	  jacpols2[i] = new JacobiRecPol (100, i, 2);
+      }
 
     PrintMessage (3, "Curving edges");
 
@@ -919,7 +997,9 @@ namespace netgen
     PrintMessage (3, "Curving faces");
 
     if (mesh.GetDimension() == 3)
-      for (SurfaceElementIndex i = 0; i < mesh.GetNSE(); i++)
+      { 
+#pragma omp parallel for
+	for (SurfaceElementIndex i = 0; i < mesh.GetNSE(); i++)
         {
           SetThreadPercent(double(i)/mesh.GetNSE()*100.);
           const Element2d & el = mesh[i];
@@ -927,6 +1007,12 @@ namespace netgen
 
           if (el.GetType() == TRIG && order >= 3)
             {
+	      // static int timer = NgProfiler::CreateTimer ("Curvedels - Curve face");
+	      // static int timer1 = NgProfiler::CreateTimer ("Curvedels - Curve face 1");
+	      // static int timer2 = NgProfiler::CreateTimer ("Curvedels - Curve face 2");
+
+	      // NgProfiler::RegionTimer reg (timer);
+
               int fnums[] = { 0, 1, 2 };
               if (el[fnums[0]] > el[fnums[1]]) swap (fnums[0], fnums[1]);
               if (el[fnums[1]] > el[fnums[2]]) swap (fnums[1], fnums[2]);
@@ -935,25 +1021,43 @@ namespace netgen
               int order1 = faceorder[facenr];
               int ndof = max (0, (order1-1)*(order1-2)/2);
 	    
-              Vector shape(ndof);
-              DenseMatrix mat(ndof, ndof), inv(ndof, ndof),
-                rhs(ndof, 3), sol(ndof, 3);
+              Vector shape(ndof), dmat(ndof);
+              // DenseMatrix mat(ndof, ndof), inv(ndof, ndof);
+	      MatrixFixWidth<3> rhs(ndof), sol(ndof);
 	    
               rhs = 0.0;
-              mat = 0.0;
+              dmat = 0.0;
 
-              for (int jx = 0; jx < xi.Size(); jx++)
-                for (int jy = 0; jy < xi.Size(); jy++)
+	      int np = sqr(xi.Size());
+	      Array<Point<2> > xia(np);
+	      Array<Point<3> > xa(np);
+
+	      // NgProfiler::StartTimer (timer1);
+
+              for (int jx = 0, jj = 0; jx < xi.Size(); jx++)
+                for (int jy = 0; jy < xi.Size(); jy++, jj++)
+		  xia[jj] = Point<2> ((1-xi[jy])*xi[jx], xi[jy]);
+	      CalcMultiPointSurfaceTransformation (&xia, i, &xa, NULL);
+
+	      // NgProfiler::StopTimer (timer1);
+	      // NgProfiler::StartTimer (timer2);
+
+
+              for (int jx = 0, jj = 0; jx < xi.Size(); jx++)
+                for (int jy = 0; jy < xi.Size(); jy++, jj++)
                   {
+
                     double y = xi[jy];
                     double x = (1-y) * xi[jx];
                     double lami[] = { x, y, 1-x-y };
                     double wi = weight[jx]*weight[jy]*(1-y);
-
+ 
                     Point<2> xii (x, y);
                     Point<3> p1, p2;
-                    CalcSurfaceTransformation (xii, i, p1);
+                    // CalcSurfaceTransformation (xii, i, p1);
+		    p1 = xa[jj];
                     p2 = p1;
+
                     ref -> ProjectToSurface (p2, mesh.GetFaceDescriptor(el.GetIndex()).SurfNr());
 
                     Vec<3> dist = p2-p1;
@@ -962,13 +1066,15 @@ namespace netgen
                                    1-lami[fnums[1]]-lami[fnums[0]], &shape(0));
 
                     for (int k = 0; k < ndof; k++)
-                      for (int l = 0; l < ndof; l++)
-                        mat(k,l) += wi * shape(k) * shape(l);
-		  
+		      dmat(k) += wi * shape(k) * shape(k);
+
+		    dist *= wi;
                     for (int k = 0; k < ndof; k++)
                       for (int l = 0; l < 3; l++)
-                        rhs(k,l) += wi * shape(k) * dist(l);
+                        rhs(k,l) += shape(k) * dist(l);
                   }
+
+	      // NgProfiler::StopTimer (timer2);
 
               // *testout << "mat = " << endl << mat << endl;
               // CalcInverse (mat, inv);
@@ -976,7 +1082,7 @@ namespace netgen
 
               for (int i = 0; i < ndof; i++)
                 for (int j = 0; j < 3; j++)
-                  sol(i,j) = rhs(i,j) / mat(i,i);   // Orthogonal basis !
+                  sol(i,j) = rhs(i,j) / dmat(i);   // Orthogonal basis !
 
               int first = facecoeffsindex[facenr];
               for (int j = 0; j < ndof; j++)
@@ -984,7 +1090,7 @@ namespace netgen
                   facecoeffs[first+j](k) = sol(j,k);
             }
         }
-    
+      }
     PrintMessage (3, "Complete");
 
 

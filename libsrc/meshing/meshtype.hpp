@@ -181,6 +181,7 @@ namespace netgen
     SurfaceElementIndex & operator= (int ai) { i = ai; return *this; }
     operator int () const { return i; }
     SurfaceElementIndex & operator++ (int) { i++; return *this; }
+    SurfaceElementIndex & operator+= (int inc) { i+=inc; return *this; }
     SurfaceElementIndex & operator-- (int) { i--; return *this; }
   };
 

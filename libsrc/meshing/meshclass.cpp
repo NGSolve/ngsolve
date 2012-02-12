@@ -1014,11 +1014,13 @@ namespace netgen
                 p.Z() *= scale;
                 AddPoint (p);
               }
+	    PrintMessage (3, n, " points done");
           }
 
         if (strcmp (str, "identifications") == 0)
           {
             infile >> n;
+            PrintMessage (3, n, " identifications");
             for (i = 1; i <= n; i++)
               {
                 PointIndex pi1, pi2;
@@ -1031,6 +1033,7 @@ namespace netgen
         if (strcmp (str, "identificationtypes") == 0)
           {
             infile >> n;
+            PrintMessage (3, n, " identificationtypes");
             for (i = 1; i <= n; i++)
               {
                 int type;
