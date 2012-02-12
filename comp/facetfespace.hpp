@@ -98,9 +98,10 @@ namespace ngcomp
      
     // some utility functions for convenience
     ///
-    virtual void GetVertexNumbers(int elnr, Array<int>& vnums) 
-    { ma.GetElVertices(elnr, vnums); };
+    // virtual void GetVertexNumbers(int elnr, Array<int>& vnums) 
+    // { ma.GetElVertices(elnr, vnums); };
     ///
+
     virtual INT<2> GetFacetOrder(int fnr) 
     { return order_facet[fnr]; };
   

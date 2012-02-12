@@ -49,7 +49,11 @@ public:
 
   /// set bit i
   void Set (int i)
-  { 
+  {
+#ifdef DEBUG
+    if (i < 0 || i >= size)
+      throw RangeException ("Bitarray::Set", i, 0, size-1);
+#endif
     unsigned char * p = data+Addr(i);
     unsigned char mask = Mask(i);
 
@@ -60,7 +64,13 @@ public:
 
   /// clear bit i
   void Clear (int i)
-  { data[Addr(i)] &= ~Mask(i); }
+  { 
+#ifdef DEBUG
+    if (i < 0 || i >= size)
+      throw RangeException ("Bitarray::Clear", i, 0, size-1);
+#endif
+    data[Addr(i)] &= ~Mask(i); 
+  }
 
   /// check bit i
   inline bool Test (int i) const

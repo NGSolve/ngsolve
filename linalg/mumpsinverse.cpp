@@ -4,6 +4,7 @@
 /* Date:   May. 2009                                                       */
 /* *************************************************************************/
 
+// #define DEBUG
 #ifdef USE_MUMPS
 
 #include <la.hpp>
@@ -273,7 +274,7 @@ namespace ngla
     mumps_id.icntl[12]=1;  // not using scalapck for root schur complement
     mumps_id.icntl[13]=50; // memory increase (in %) due to error -9
     mumps_id.icntl[27]=2;  // 0..default,  2..parallel analysis
-    mumps_id.icntl[28]=2;  // 0..auto, 2..parmetis
+    mumps_id.icntl[28]=2;  // 0..auto, 1..ptscotch 2..parmetis
 
     // mumps_id.comm_fortran=USE_COMM_WORLD;
     mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
@@ -440,7 +441,13 @@ namespace ngla
     inner = ainner;
     cluster = acluster;
 
-    cout << IM(1) << "Mumps Parallel inverse" << endl;
+    cout << IM(1) << "Mumps Parallel inverse " << flush;
+    MyMPI_Barrier();
+    cout << IM(1) << "all here" << endl;
+    MyMPI_Barrier();
+
+
+
 
     if (id == 0)
       {
@@ -458,12 +465,11 @@ namespace ngla
 	  }
       }
 
-
-
     // find global dofs
 
     num_globdofs = 0;   // valid on id=0
     
+
     if (id != 0)
       {
 	const MeshAccess & ma = pardofs -> GetMeshAccess();
@@ -476,6 +482,8 @@ namespace ngla
 	    select.Append (row);
 	
 	globid = -1;
+
+
 
 	const Array<Node> & dofnodes = pardofs -> GetDofNodes();
 
@@ -495,6 +503,7 @@ namespace ngla
 	      globid[3*i+1] = ma.GetGlobalNodeNum (dofnodes[i]);
 	      globid[3*i+2] = dofnr[i];
 	    }
+	
 
 	MyMPI_Send (globid, 0);
 	MyMPI_Recv (loc2glob, 0);
@@ -538,10 +547,14 @@ namespace ngla
 	  }
       }
 
-
+    /*
+    *testout << "select = " << endl << select << endl;
+    *testout << "loc2glob = " << endl << loc2glob << endl;
+    */
 
     entrysize = mat_traits<TM>::HEIGHT; 
     iscomplex = mat_traits<TM>::IS_COMPLEX;
+
 
     /*
       int * colstart = 0;
@@ -552,15 +565,6 @@ namespace ngla
     if (id != 0)
       {
 	height = a.Height() * entrysize;
-	
-	int * colstart = new int[height+1];
-	int * counter = new int[height];
-	
-	for ( int i = 0; i < height; i++ ) 
-	  counter[i] = 0;
-
-	for ( int i = 0; i < height; i++ ) 
-	  colstart[i+1] = 0;
 	
 	if ( symmetric )
 	  {
@@ -618,11 +622,24 @@ namespace ngla
 		  }
 	      }
 	    nze = ii;
+
+	    for (int i = 0; i < nze; i++)
+	      if (col_indices[i] > row_indices[i])
+		swap (col_indices[i], row_indices[i]);
 	  }
 	else
 	  {
 	    cout << "copy matrix non-symmetric" << endl;
 	    // --- transform matrix to compressed column storage format ---
+
+	    int * colstart = new int[height+1];
+	    int * counter = new int[height];
+	    for ( int i = 0; i < height; i++ ) 
+	      counter[i] = 0;
+	    for ( int i = 0; i < height; i++ ) 
+	      colstart[i+1] = 0;
+	    
+
 
 	    // 1.) build array 'colstart':
 	    // (a) get nr. of entries for each col
@@ -707,19 +724,22 @@ namespace ngla
     else
       nze = 0;
 
-
+    /*
     for (int i = 0; i < 40; i++)
       mumps_id.icntl[i] = 0;
-
-
+    */
+    
     mumps_id.job = JOB_INIT; 
     mumps_id.par = (ntasks == 1) ? 1 : 0;
     mumps_id.sym = symmetric ? 1 : 0;
-    // mumps_id.comm_fortran=USE_COMM_WORLD;
+    //mumps_id.comm_fortran=USE_COMM_WORLD;
     mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
-    mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
+
+
+    MumpsFunction (mumps_id);
 
     cout << IM(0) << "MUMPS version number is " << mumps_id.version_number << endl;
+
     
     /* distributed matrix definition */
     mumps_id.n   = num_globdofs;  // only on host
@@ -745,7 +765,7 @@ namespace ngla
     cout << IM(1) << "analysis ... " << flush;
 
     timer_analysis.Start();
-    mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
+    MumpsFunction (mumps_id);
     timer_analysis.Stop();
 
     // cout << "num floating-point ops = " << mumps_id.rinfog[0] << endl;
@@ -761,14 +781,13 @@ namespace ngla
     */
 
 
-    mumps_id.a_loc   = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)matrix; 
+    mumps_id.a_loc = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)matrix; 
     mumps_id.job = JOB_FACTOR;
     
-    if (id == 0)
-      cout << "factor ... " << flush;
+    cout << IM(1) << "factor ... " << flush;
 
     timer_factor.Start();
-    mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
+    MumpsFunction (mumps_id);
     timer_factor.Stop();
 
     if (mumps_id.infog[0] != 0)
@@ -784,7 +803,7 @@ namespace ngla
     delete [] col_indices;
     delete [] row_indices;
     delete [] matrix;
-    VT_ON();
+    // VT_ON();
   }
   
   

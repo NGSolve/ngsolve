@@ -21,6 +21,7 @@ using namespace ngfem;
 
 namespace netgen {
   ostream * testout = &cout;
+  int id;
 }
 
 

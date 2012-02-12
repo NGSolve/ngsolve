@@ -362,12 +362,12 @@ namespace ngcomp
       case 3: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
       case 4: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
       default:
-	    {
-	      stringstream str;
-	      str << "L2HighOrderFESpace " << GetClassName() 
-		  << ", undefined facet-eltype" << endl;
-	      throw Exception (str.str());
-	    }
+	{
+	  stringstream str;
+	  str << "L2HighOrderFESpace " << GetClassName() 
+	      << ", undefined facet-eltype" << endl;
+	  throw Exception (str.str());
+	}
       }
     
     if (fe1d)
@@ -484,7 +484,7 @@ namespace ngcomp
   
   void  L2HighOrderFESpace ::GetInnerDofNrs (int elnr, Array<int> & dnums) const
   { 
-    GetDofNrs ( elnr, dnums ); 
+    GetDofNrs (elnr, dnums); 
   }
 
 
@@ -707,11 +707,11 @@ namespace ngcomp
     
 
 
-  
+
+
   // register FESpaces
   namespace l2hofespace_cpp
   {
-  
     class Init
     { 
     public: 

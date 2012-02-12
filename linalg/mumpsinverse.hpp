@@ -111,6 +111,7 @@ namespace ngla
 #ifdef USE_MUMPS
     typedef typename mumps_trait<TSCAL>::MUMPS_STRUC_C MUMPS_STRUC_C;
     MUMPS_STRUC_C mumps_id;
+    int dummy[100];
 #endif
     int height, nze, entrysize;
 
@@ -146,6 +147,16 @@ namespace ngla
     {
       return new VVector<TV> (height);
     }
+
+
+  private:
+#ifdef USE_MUMPS
+    void MumpsFunction (MUMPS_STRUC_C & mumps_id)
+    {
+      mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
+    }
+#endif
+
   };
 
 

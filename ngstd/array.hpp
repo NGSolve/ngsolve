@@ -7,6 +7,10 @@
 /* Date:   01. Jun. 95                                                    */
 /**************************************************************************/
 
+#ifdef DEBUG
+#define CHECK_RANGE
+#endif
+
 
 namespace ngstd
 {
@@ -67,8 +71,14 @@ namespace ngstd
     int First() const { return first; }
     int Next() const { return next; }
     int Size() const { return next-first; }
+    bool Contains (int i) const { return ((i >= first) && (i < next)); }
   };
 
+  inline ostream & operator<< (ostream & s, const IntRange & ir)
+  {
+    s << "[" << ir.First() << "," << ir.Next() << ")";
+    return s;
+  }
 
 
 
@@ -77,7 +87,7 @@ namespace ngstd
      Array represented by size and data-pointer.
      No memory allocation and deallocation, must be provided by user.
      Helper functions for printing. 
-     Optional range check by macro RANGE_CHECK
+     Optional range check by macro CHECK_RANGE
   */
   template <class T>
   class FlatArray

@@ -1438,6 +1438,12 @@ namespace ngsolve
 		
 		  if (info)
 		    {
+		      static Timer addint1("add lfi 1");
+		      static Timer addint2("add lfi 2");
+		      static Timer addint3("add lfi 3");
+
+		      addint1.Start();
+
 		      Array<CoefficientFunction*> coeffs(info->numcoeffs);
 		      scan->ReadNext();
 		      for (int i = 0; i < info->numcoeffs; i++)
@@ -1469,6 +1475,9 @@ namespace ngsolve
 		      ngfem::LinearFormIntegrator * integrator = 
 			dynamic_cast<ngfem::LinearFormIntegrator*> (info->creator(coeffs));
 
+		      addint1.Stop();
+		      addint2.Start();
+
 		      int numregions = integrator -> BoundaryForm() ? 
 			pde->GetMeshAccess().GetNBoundaries() : pde->GetMeshAccess().GetNDomains();
 		      for (int i = 0; i < coeffs.Size(); i++)
@@ -1494,6 +1503,8 @@ namespace ngsolve
 			    (int (partflags.GetNumFlag ("order",0)));
 			}
 
+		      addint2.Stop();
+		      addint3.Start();
 
 
 		      if (partflags.NumFlagDefined ("comp"))
@@ -1570,6 +1581,9 @@ namespace ngsolve
 		      integrator -> SetConstantCoefficient (partflags.GetDefineFlag("const"));
 
 		      pde->AddLinearFormIntegrator (name, integrator);
+
+		      addint3.Stop();
+
 		      continue;
 		    }
 		  else

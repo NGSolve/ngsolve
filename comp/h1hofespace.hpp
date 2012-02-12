@@ -53,9 +53,6 @@ namespace ngcomp
 
     bool level_adapted_order; 
 
-
-    // Array<INT<2> > defined_on_one_side_of_bounding_curve;
-
   public:
 
     H1HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool checkflags=false);
@@ -101,7 +98,7 @@ namespace ngcomp
     int GetFirstEdgeDof(int i) const {return(first_edge_dof[i]);} ; 
     ///
     int GetFirstElementDof(int i) const {return(first_element_dof[i]);} ; 
-
+    ///
     void UpdateDofTables ();
     ///
     virtual void UpdateCouplingDofArray();    
@@ -114,34 +111,24 @@ namespace ngcomp
     void SetElementOrder (int elnr, int ox, int oy, int oz) 
     { order_inner[elnr] = INT<3> (ox, oy, oz); }
 
-    // int GetAugmented() const { return augmented; }
-
     /// get relative (to mesh) order of finite elements
     virtual int GetRelOrder() const { return rel_order; }
     virtual bool VarOrder() const { return var_order; }
 
-    /*
-    void RestrictToOneSideOfBoundingCurve(int index1, int index2);
-    void DeleteOneSideRestrictions(void);
-    */
-    
   protected:
     IntRange GetEdgeDofs (int nr) const
     {
-      return IntRange (first_edge_dof[nr], 
-                       first_edge_dof[nr+1]);
+      return IntRange (first_edge_dof[nr], first_edge_dof[nr+1]);
     }
 
     IntRange GetFaceDofs (int nr) const
     {
-      return IntRange (first_face_dof[nr], 
-                       first_face_dof[nr+1]);
+      return IntRange (first_face_dof[nr], first_face_dof[nr+1]);
     }
 
     IntRange GetElementDofs (int nr) const
     {
-      return IntRange (first_element_dof[nr], 
-                       first_element_dof[nr+1]);
+      return IntRange (first_element_dof[nr], first_element_dof[nr+1]);
     }
 
   };

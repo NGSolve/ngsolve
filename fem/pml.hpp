@@ -9,7 +9,6 @@
 
 namespace ngfem
 {
-
   extern Complex alpha;
   extern double pml_r;
   extern double pml_x;

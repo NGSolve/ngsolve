@@ -19,6 +19,12 @@
 using namespace std;
 using namespace ngbla;
 
+namespace netgen {
+  ostream * testout = &cout;
+  int id;
+}
+
+
 
 
 int main ()

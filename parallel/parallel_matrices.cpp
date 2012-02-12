@@ -113,7 +113,7 @@ namespace ngla
 	    inv = new MumpsInverse<TM> (dummy_matrix, 0, 0, true);
 	  }
 	else
-#endif
+#endif 
 	  inv = NULL;
       }
 
@@ -123,7 +123,7 @@ namespace ngla
 
 	Array<int> rows, cols;
 	Array<TM> vals;
-	HashTable<INT<3>, int> ht_globdofs(10000);
+	HashTable<INT<3>, int> ht_globdofs(100000);
 	int num_globdofs = 0;
 
 	for (int src = 1; src < ntasks; src++)
@@ -388,12 +388,13 @@ namespace ngla
     const SparseMatrixTM<double> * dmat = dynamic_cast<const SparseMatrixTM<double>*> (&mat);
     const SparseMatrixTM<Complex> * cmat = dynamic_cast<const SparseMatrixTM<Complex>*> (&mat);
 
+      // crashes dute to a problem in parmetis ???
     if (mat.GetInverseType() == MUMPS)
       {
 	if (dmat) return new ParallelMumpsInverse<double> (*dmat, subset, NULL, &pardofs);
 	if (cmat) return new ParallelMumpsInverse<Complex> (*cmat, subset, NULL, &pardofs);
       }
-    else
+    else 
       {
 	if (dmat) return new MasterInverse<double> (*dmat, subset, &pardofs);
 	if (cmat) return new MasterInverse<Complex> (*cmat, subset, &pardofs);

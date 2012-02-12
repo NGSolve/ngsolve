@@ -133,12 +133,14 @@ namespace ngcomp
     virtual bool VarOrder() const { return var_order; } 
     virtual int GetRelOrder() const { return rel_order; } 
 
+    /*
     virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const
     { 
       bool isfacet = ( (ma.GetDimension() == 2 && nt == NT_EDGE) || (ma.GetDimension() == 3 && nt == NT_FACE));
       if ( isfacet ) return 1;
       else return 0; 
     }
+    */
   };
 
 }

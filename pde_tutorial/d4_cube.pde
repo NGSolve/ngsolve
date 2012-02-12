@@ -1,7 +1,7 @@
 geometry = cube.geo
 mesh = cube.vol
 
-define constant heapsize = 10000000
+define constant heapsize = 100000000
 # define constant geometryorder = 1
 # define constant refinep = 1 
 
@@ -24,7 +24,7 @@ define coefficient dirich_bc
 
 
 
-define fespace v -order=6 -type=h1ho
+define fespace v -order=10 -type=h1ho
 define fespace vp -order=4 -dim=3 -type=h1ho
 
 define gridfunction u -fespace=v -nested

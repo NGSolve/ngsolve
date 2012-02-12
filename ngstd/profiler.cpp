@@ -48,9 +48,24 @@ namespace ngstd
 
     /*
     FILE *prof = fopen("ng.prof","w");
-    Print (prof);
+    Print (prof); 
     fclose(prof);
     */
+    if (getenv ("NGSPROFILE"))
+      {
+	char filename[100];
+
+#ifdef PARALLEL
+	sprintf (filename, "ngs.prof.%d", id);
+#else
+	sprintf (filename, "ngs.prof");
+#endif
+	
+	if (id == 0) printf ("write profile to file ngs.prof\n"); 
+	FILE *prof = fopen(filename,"w");
+	Print (prof);
+	fclose(prof);
+      }
   }
 
 

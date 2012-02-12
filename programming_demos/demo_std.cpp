@@ -17,6 +17,10 @@ using namespace std;
 // data types are in ngstd - namespace
 using namespace ngstd;
 
+namespace netgen {
+  ostream * testout = &cout;
+  int id;
+}
 
 
 int main ()

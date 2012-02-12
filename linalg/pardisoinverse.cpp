@@ -856,11 +856,5 @@ namespace ngla
 
 
 
-
-
-
-
-
-
 #endif
 
