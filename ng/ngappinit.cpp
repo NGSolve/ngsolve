@@ -66,11 +66,12 @@ bool shellmode = false;
 
 int main(int argc, char ** argv)
 {
-  
+
 #ifdef PARALLEL
   // MPI_Init(&argc, &argv);          
 
   int required = MPI_THREAD_MULTIPLE;
+  // int required = 0;
   int provided;
   MPI_Init_thread(&argc, &argv, required, &provided);          
 
@@ -140,7 +141,7 @@ int main(int argc, char ** argv)
 
   if (verbose)
     cout << "NETGENDIR = " << ngdir << endl;
-
+  
 
   if ( netgen::id == 0 )
     {

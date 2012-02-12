@@ -98,8 +98,6 @@ void ParallelRun()
   MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
 
-
-
   bool test = true;
 
   // testout = new ostream(0); 
@@ -195,9 +193,9 @@ void ParallelRun()
 	      MyMPI_Recv (curDrawable, 0, MPI_TAG_VIS);
 	      MyMPI_Recv (contextid, 0, MPI_TAG_VIS);
 		
-		
 	      display = XOpenDisplay (displname.c_str());
 		
+
 	      /*
 		PrintMessage (3, "displ - name = ", displname);
 		PrintMessage (3, "display = ", display,
