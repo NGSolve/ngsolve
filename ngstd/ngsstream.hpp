@@ -36,7 +36,7 @@ namespace ngstd
   inline NGSOStream operator<< (ostream & ost, const IM & im)
   {
     return NGSOStream (ost, 
-		       (im.Value() <= printmessage_importance)  &&
+		       (im.Value() <= netgen::printmessage_importance)  &&
 		       (id == 0) );
   }
 
