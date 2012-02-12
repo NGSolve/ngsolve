@@ -19,13 +19,6 @@
 using namespace ngfem;
 
 
-namespace netgen {
-  ostream * testout = &cout;
-  int id;
-}
-
-
-
 int main ()
 {
   // ***************** test integration rule
@@ -33,7 +26,7 @@ int main ()
   // integrate  x*y  over triangle [(0,0), (1,0), (0,1)]
   // with integrationrule of order 10 
 
-  const IntegrationRule & ir = SelectIntegrationRule (ET_TRIG, 10);
+  IntegrationRule ir(ET_TRIG, 10);
 
   cout << "number of ipts = " << ir.GetNIP() << endl;
 
