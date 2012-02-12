@@ -38,7 +38,7 @@ recursive_pol.cpp hybridDG.cpp DGIntegrators.cpp pml.cpp
 include_HEADERS = bdbequations.hpp hcurl_equations.hpp		       \
 elasticity_equations.hpp diffop.hpp bdbintegrator.hpp coefficient.hpp  \
 elementtopology.hpp elementtransformation.hpp facetfe.hpp	       \
-facethofe.hpp fem.hpp femtypes.hpp finiteelement.hpp		       \
+facethofe.hpp fem.hpp finiteelement.hpp		       \
 generic_recpol.hpp h1hofefo.hpp h1hofe.hpp h1lofe.hpp hcurlfe.hpp      \
 hcurlhofe.hpp hcurllofe.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp \
 integrator.hpp intrule.hpp l2hofefo.hpp l2hofe.hpp recursive_pol.hpp   \

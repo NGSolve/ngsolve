@@ -32,17 +32,17 @@ namespace ngfem
 
   
   template <>
-  SpecificIntegrationPoint<2,2,Complex> :: 
-  SpecificIntegrationPoint (const IntegrationPoint & aip,
-			    const ElementTransformation & aeltrans,
-			    LocalHeap & lh);
+  MappedIntegrationPoint<2,2,Complex> :: 
+  MappedIntegrationPoint (const IntegrationPoint & aip,
+			  const ElementTransformation & aeltrans);
+  // LocalHeap & lh);
 
   
   template <>
-  SpecificIntegrationPoint<2,2,AutoDiff<1,Complex> > :: 
-  SpecificIntegrationPoint (const IntegrationPoint & aip,
-			    const ElementTransformation & aeltrans,
-			    LocalHeap & lh);
+  MappedIntegrationPoint<2,2,AutoDiff<1,Complex> > :: 
+  MappedIntegrationPoint (const IntegrationPoint & aip,
+			  const ElementTransformation & aeltrans);
+  // LocalHeap & lh);
 
 
 
@@ -107,10 +107,10 @@ namespace ngfem
 	    {
               HeapReset hr (locheap);
 
-	      SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> 
-		sip(ir[i], eltrans, locheap);
-	      SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,double> 
-		sip_real(ir[i], eltrans, locheap);
+	      MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> 
+		sip(ir[i], eltrans);
+	      MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,double> 
+		sip_real(ir[i], eltrans);
 
 	      DIFFOP::GenerateMatrix (fel, sip, bmat, locheap);
 	      this->dmatop.GenerateMatrix (fel, sip_real, dmat, locheap);
@@ -181,11 +181,11 @@ namespace ngfem
 	
 	  for (int i = 0; i < ir.GetNIP(); i++)
 	    {
-	      SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> 
-		sip(ir[i], eltrans, locheap);
+	      MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> 
+		sip(ir[i], eltrans);
 
-	      SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,double> 
-		sip_real (ir[i], eltrans, locheap);
+	      MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,double> 
+		sip_real (ir[i], eltrans);
 	    
 	      DIFFOP::Apply (fel, sip, elx, hv1, locheap);
 	      this -> dmatop.Apply (fel, sip_real, hv1, hv2, locheap);
@@ -209,11 +209,11 @@ namespace ngfem
 	
 	  for (int i = 0; i < ir.GetNIP(); i++)
 	    {
-	      SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,AutoDiff<1,Complex> >
-		sip(ir[i], eltrans, locheap);
+	      MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,AutoDiff<1,Complex> >
+		sip(ir[i], eltrans);
 
-	      SpecificIntegrationPoint<DIM_ELEMENT,DIM_SPACE,double> 
-		sip_real (ir[i], eltrans, locheap);
+	      MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,double> 
+		sip_real (ir[i], eltrans);
 	    
 	      DIFFOP::Apply (fel, sip, helx, hv1, locheap);
 	      this -> dmatop.Apply (fel, sip_real, hv1, hv2, locheap);

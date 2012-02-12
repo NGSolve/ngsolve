@@ -123,7 +123,7 @@ namespace ngfem
 	{
 	  IntegrationPoint ip1 = transform1(LocalFacetNr1, ir_facet[l]);
 	  
-	  SpecificIntegrationPoint<D,D> sip1 (ip1, eltrans1, lh);
+	  MappedIntegrationPoint<D,D> sip1 (ip1, eltrans1);
 	  double lam = coef_lam->Evaluate(sip1);
 
 	  // Mat<D> jac1 = sip1.GetJacobian();
@@ -139,7 +139,7 @@ namespace ngfem
 	  mat1_dudn = fel1_l2->GetDShape (sip1.IP(), lh) * invjac_normal1;
 	  
 	  IntegrationPoint ip2 = (LocalFacetNr2!=-1) ? transform2(LocalFacetNr2, ir_facet[l]) : ip1;
-	  SpecificIntegrationPoint<D,D> sip2 (ip2, eltrans2, lh);
+	  MappedIntegrationPoint<D,D> sip2 (ip2, eltrans2);
 	  // double lam2 = coef_lam->Evaluate(sip2);
 	  // Mat<D> jac2 = sip2.GetJacobian();
 	  Mat<D> inv_jac2 = sip2.GetJacobianInverse();
@@ -245,7 +245,7 @@ namespace ngfem
       for (int l = 0; l < ir_vol.GetNIP(); l++)
       {
 	HeapReset hr(lh);
-	const SpecificIntegrationPoint<D,D> sip(ir_vol[l], eltrans, lh);
+	const MappedIntegrationPoint<D,D> sip(ir_vol[l], eltrans);
 	Vec<D> conv;
 	for (int j = 0; j < D; j++)
 	  conv(j) = coef_conv[j]->Evaluate(sip);
@@ -353,7 +353,7 @@ namespace ngfem
 	{
 	  IntegrationPoint ip1 = transform1(LocalFacetNr1, ir_facet[l]);
 	  
-	  SpecificIntegrationPoint<D,D> sip1 (ip1, eltrans1, lh);
+	  MappedIntegrationPoint<D,D> sip1 (ip1, eltrans1);
 
 	  // Mat<D> jac1 = sip1.GetJacobian();
 	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
@@ -364,7 +364,7 @@ namespace ngfem
 	  normal1 /= len1;
 
 	  IntegrationPoint ip2 = transform2(LocalFacetNr2, ir_facet[l]);
-	  SpecificIntegrationPoint<D,D> sip2 (ip2, eltrans2, lh);
+	  MappedIntegrationPoint<D,D> sip2 (ip2, eltrans2);
 
 	  // Mat<D> jac2 = sip2.GetJacobian();
 	  Mat<D> inv_jac2 = sip2.GetJacobianInverse();
@@ -474,7 +474,7 @@ namespace ngfem
 	{
 	  IntegrationPoint ip = transform(LocalFacetNr, ir_facet[l]);
 	  
-	  SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
+	  MappedIntegrationPoint<D,D> sip (ip, eltrans);
 
 	  // Mat<D> jac = sip.GetJacobian();
 	  Mat<D> inv_jac = sip.GetJacobianInverse();
@@ -585,10 +585,10 @@ namespace ngfem
 	{
 	  IntegrationPoint ip1 = transform1(LocalFacetNr, ir_facet[l]);
 	  
-	  SpecificIntegrationPoint<D,D> sip1 (ip1, eltrans, lh);
+	  MappedIntegrationPoint<D,D> sip1 (ip1, eltrans);
 	  double lam = coef_lam->Evaluate(sip1);
 
-	  SpecificIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans, lh);
+	  MappedIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans);
 	  
 	  // Mat<D> jac1 = sip1.GetJacobian();
 	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
@@ -705,10 +705,10 @@ namespace ngfem
 	{
 	  IntegrationPoint ip1 = transform1(LocalFacetNr, ir_facet[l]);
 	  
-	  SpecificIntegrationPoint<D,D> sip1 (ip1, eltrans, lh);
+	  MappedIntegrationPoint<D,D> sip1 (ip1, eltrans);
 	  double lam = coef_lam->Evaluate(sip1);
 
-	  SpecificIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans, lh);
+	  MappedIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans);
 	  double dir = coef_dir->Evaluate(sips);
 
 	  // Mat<D> jac1 = sip1.GetJacobian();
@@ -819,10 +819,10 @@ namespace ngfem
 	{
 	  IntegrationPoint ip1 = transform1(LocalFacetNr, ir_facet[l]);
 	  
-	  SpecificIntegrationPoint<D,D> sip1 (ip1, eltrans, lh);
+	  MappedIntegrationPoint<D,D> sip1 (ip1, eltrans);
 	  double lam = coef_lam->Evaluate(sip1);
 
-	  SpecificIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans, lh);
+	  MappedIntegrationPoint<D-1,D> sips (ir_facet[l], seltrans);
 	  
 	  // Mat<D> jac1 = sip1.GetJacobian();
 	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
@@ -917,8 +917,8 @@ namespace ngfem
 	{
 	  IntegrationPoint ip = transform(LocalFacetNr, ir_facet[l]);
 	  
-	  SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
-	  SpecificIntegrationPoint<D-1,D> sipsurf (ir_facet[l], seltrans, lh);
+	  MappedIntegrationPoint<D,D> sip (ip, eltrans);
+	  MappedIntegrationPoint<D-1,D> sipsurf (ir_facet[l], seltrans);
 
 	  // Mat<D> jac = sip.GetJacobian();
 	  Mat<D> inv_jac = sip.GetJacobianInverse();

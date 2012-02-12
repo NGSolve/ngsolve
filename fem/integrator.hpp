@@ -553,9 +553,10 @@ namespace ngfem
 
 
 
-
+    /*
     virtual const IntegrationRule & GetIntegrationRule (const FiniteElement & fel,
 							const bool use_higher_integration_order = false) const;
+    */
   };
 
   
@@ -677,7 +678,7 @@ namespace ngfem
       // elmat.AssignMemory (ndof, ndof, lh);
       elmat = 0;
       MappedIntegrationPoint<3,3> mip (GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 0)[0], 
-					 eltrans, lh);
+				       eltrans);
       double val = Evaluate (*coef, mip);
       elmat = 0;
       for (int i = 0; i < ndof; i++)
@@ -946,9 +947,10 @@ namespace ngfem
 
     virtual string Name () const;
 
-  
+    /*
     virtual const IntegrationRule & GetIntegrationRule (const FiniteElement & fel,
 							const bool use_higher_integration_order = false) const;
+    */
   };
 
 
@@ -1107,81 +1109,6 @@ namespace ngfem
 
     virtual string Name () const;
   };
-
-
-
-
-
-
-  /*
-
-  template <int DIM_SPACE>
-  class NGS_DLL_HEADER DirichletPenaltyIntegrator : public BilinearFormIntegrator
-  {
-    CoefficientFunction * penalty;
-  public:
-    DirichletPenaltyIntegrator (CoefficientFunction * apenalty)
-      : penalty(apenalty) { ; }
-
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      return new DirichletPenaltyIntegrator (coeffs[0]);
-    }
-
-    virtual bool BoundaryForm () const
-    { return 1; }
-
-    virtual string Name () const
-    { return "DirichletPenalty"; }
-
-    virtual void
-    CalcElementMatrix (const FiniteElement & fel, 
-			   const ElementTransformation & eltrans, 
-			   FlatMatrix<double> & elmat,
-			   LocalHeap & lh) const
-    {
-      int ndof = fel.GetNDof();
-
-      // elmat.AssignMemory (ndof, ndof, lh);
-    
-      const IntegrationRule & ir = GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 0);
-      MappedIntegrationPoint<DIM_SPACE-1,DIM_SPACE> mip (ir[0], eltrans, lh);
-
-      double val = Evaluate (*penalty, mip);
-
-      elmat = 0;
-      for (int i = 0; i < ndof; i++)
-	elmat(i,i) = val;
-    }
-
-
-    virtual void 
-    ApplyElementMatrix (const FiniteElement & fel, 
-			const ElementTransformation & eltrans, 
-			const FlatVector<Complex> & elx, 
-			FlatVector<Complex> & ely,
-			void * precomputed,
-			LocalHeap & lh) const
-    {
-      const IntegrationRule & ir = GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 0);
-      MappedIntegrationPoint<DIM_SPACE-1,DIM_SPACE> mip (ir[0], eltrans, lh);
-      double val = Evaluate (*penalty, mip);
-
-      ely = val * elx;
-    }
-  };
-
-  */
-
-
-
-
-
-
-
-
-
-
 
 
 

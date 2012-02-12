@@ -62,16 +62,16 @@ namespace ngfem
 
   
   template <>
-  SpecificIntegrationPoint<2,2,Complex> :: 
-  SpecificIntegrationPoint (const IntegrationPoint & aip,
-			    const ElementTransformation & aeltrans,
-			    LocalHeap & lh)
-    : DimSpecificIntegrationPoint<2,Complex> (aip, aeltrans)
+  MappedIntegrationPoint<2,2,Complex> :: 
+  MappedIntegrationPoint (const IntegrationPoint & aip,
+			    const ElementTransformation & aeltrans)
+  // LocalHeap & lh)
+    : DimMappedIntegrationPoint<2,Complex> (aip, aeltrans)
   {
     Mat<2,2> hdxdxi;
     Vec<2> hpoint;
 
-    eltrans->CalcPointJacobian (*ip, hpoint, hdxdxi, lh);
+    eltrans->CalcPointJacobian (*ip, hpoint, hdxdxi);
 
     
     // rect_pml = 3;
@@ -193,16 +193,15 @@ namespace ngfem
 
   
   template <>
-  SpecificIntegrationPoint<3,3,Complex> :: 
-  SpecificIntegrationPoint (const IntegrationPoint & aip,
-			    const ElementTransformation & aeltrans,
-			    LocalHeap & lh)
-    : DimSpecificIntegrationPoint<3,Complex> (aip, aeltrans)
+  MappedIntegrationPoint<3,3,Complex> :: 
+  MappedIntegrationPoint (const IntegrationPoint & aip,
+			    const ElementTransformation & aeltrans)
+    : DimMappedIntegrationPoint<3,Complex> (aip, aeltrans)
   {
     Mat<3,3> hdxdxi;
     Vec<3> hpoint, hvec;
 
-    eltrans->CalcPointJacobian (*ip, hpoint, hdxdxi, lh);
+    eltrans->CalcPointJacobian (*ip, hpoint, hdxdxi);
     // eltrans.CalcJacobian (ip, hdxdxi, lh);
     // eltrans.CalcPoint (ip, hpoint, lh);
 
@@ -286,8 +285,8 @@ namespace ngfem
 
 
   // SZ moved to intrule.cpp 
-  template class SpecificIntegrationPoint<2,2,Complex>;
-  template class SpecificIntegrationPoint<3,3,Complex>;
+  template class MappedIntegrationPoint<2,2,Complex>;
+  template class MappedIntegrationPoint<3,3,Complex>;
 
 
 
@@ -297,16 +296,15 @@ namespace ngfem
 
   
   template <>
-  SpecificIntegrationPoint<2,2,AutoDiff<1,Complex> > :: 
-  SpecificIntegrationPoint (const IntegrationPoint & aip,
-			    const ElementTransformation & aeltrans,
-			    LocalHeap & lh)
-    : DimSpecificIntegrationPoint<2,AutoDiff<1,Complex> > (aip, aeltrans)
+  MappedIntegrationPoint<2,2,AutoDiff<1,Complex> > :: 
+  MappedIntegrationPoint (const IntegrationPoint & aip,
+			    const ElementTransformation & aeltrans)
+    : DimMappedIntegrationPoint<2,AutoDiff<1,Complex> > (aip, aeltrans)
   {
     Mat<2,2> hdxdxi;
     Vec<2> hpoint;
 
-    eltrans->CalcPointJacobian (*ip, hpoint, hdxdxi, lh);
+    eltrans->CalcPointJacobian (*ip, hpoint, hdxdxi);
 
 
 
@@ -411,18 +409,17 @@ namespace ngfem
 
 
   template <>
-  SpecificIntegrationPoint<3,3,AutoDiff<1,Complex> > :: 
-  SpecificIntegrationPoint (const IntegrationPoint & aip,
-			    const ElementTransformation & aeltrans,
-			    LocalHeap & lh)
-    : DimSpecificIntegrationPoint<3,AutoDiff<1,Complex> > (aip, aeltrans)
+  MappedIntegrationPoint<3,3,AutoDiff<1,Complex> > :: 
+  MappedIntegrationPoint (const IntegrationPoint & aip,
+			    const ElementTransformation & aeltrans)
+    : DimMappedIntegrationPoint<3,AutoDiff<1,Complex> > (aip, aeltrans)
   {
     cout << "AD not implemented for 3D" << endl;
   };
 
 
-  // template class SpecificIntegrationPoint<2,2,AutoDiff<1,Complex> >;
-  // template class SpecificIntegrationPoint<3,3,AutoDiff<1,Complex> >;
+  // template class MappedIntegrationPoint<2,2,AutoDiff<1,Complex> >;
+  // template class MappedIntegrationPoint<3,3,AutoDiff<1,Complex> >;
 
 
 

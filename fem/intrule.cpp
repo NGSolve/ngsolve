@@ -12,8 +12,6 @@
    
 namespace ngfem
 {
-  using namespace ngfem;
-  
   ostream & operator<< (ostream & ost, const IntegrationPoint & ip)
   {
     ost << " locnr = " << ip.nr << ": (" 
@@ -27,8 +25,7 @@ namespace ngfem
   template <int S, int R, typename SCAL>
   MappedIntegrationPoint<S,R,SCAL> :: 
   MappedIntegrationPoint (const IntegrationPoint & aip,
-			  const ElementTransformation & aeltrans,
-			  LocalHeap & /* lh */)
+			  const ElementTransformation & aeltrans)
     : DimMappedIntegrationPoint<R,SCAL> (aip, aeltrans)
   {
     this->eltrans->CalcPointJacobian(this->IP(), this->point, dxdxi);
@@ -147,6 +144,13 @@ namespace ngfem
   template class MappedIntegrationPoint<1,3>;
   
 
+  IntegrationRule :: IntegrationRule (ELEMENT_TYPE eltype, int order)
+  { 
+    const IntegrationRule & ir = SelectIntegrationRule (eltype, order);
+    size = ir.Size();
+    data = &ir[0];
+    ownmem = 0;
+  }
 
 
 
@@ -2337,34 +2341,6 @@ namespace ngfem
       delete jacobirules20[i];
   }
 
-  /*
-  const Array<IntegrationPoint*> & IntegrationRules ::
-  GetIntegrationPoints (ELEMENT_TYPE eltyp) const
-  {
-    switch (eltyp)
-      {
-      case ET_SEGM:
-	return segmentpoints;
-      case ET_TRIG:
-	return trigpoints;
-      case ET_QUAD:
-	return quadpoints;
-      case ET_TET:
-	return tetpoints;
-      case ET_PRISM:
-	return prismpoints;
-      case ET_PYRAMID:
-	return pyramidpoints;
-      case ET_HEX:
-	return hexpoints;
-      }
-
-    stringstream str;
-    str<< "no intpoints available for element type " 
-       << ElementTopology::GetElementName(eltyp) << endl;
-    throw Exception (str.str());
-  }
-  */
 
 
   const IntegrationRule & IntegrationRules :: 
@@ -2549,37 +2525,6 @@ namespace ngfem
 		    }
 		trigrules[order] = trigrule;
 		break;
-
-
-		/*
-		  const IntegrationRule & segmrule = SelectIntegrationRule (ET_SEGM, order+1);
-		  IntegrationRule * trigrule = new IntegrationRule; // (segmrule.GetNIP()*segmrule.GetNIP());
-	
-		  double point[3], weight;
-	      
-		  int ii = 0;
-		  for (int i = 0; i < segmrule.GetNIP(); i++)
-		  for (int j = 0; j < segmrule.GetNIP(); j++)
-		  {
-		  const IntegrationPoint & ipsegmi = segmrule.GetIP(i);
-		  const IntegrationPoint & ipsegmj = segmrule.GetIP(j);
-		    
-		  point[0] = ipsegmi.Point()[0];
-		  point[1] = ipsegmj.Point()[0]*(1-point[0]);
-		  point[2] = 0;
-		    
-		  weight = ipsegmi.Weight() *
-		  ipsegmj.Weight() * (1-point[0]);
-		    
-		  IntegrationPoint * ip = IntegrationPoint (point, weight);
-		  ip.SetNr (ii); ii++;
-		  if (order <= 10)
-		  // ip.SetGlobNr (trigpoints.Append (ip)-1);
-		  trigrule->AddIntegrationPoint (ip);
-		  }
-		  trigrules[order] = trigrule;
-		  break;
-		*/
 	      }
 
 
@@ -2655,9 +2600,9 @@ namespace ngfem
 		  for (int j = 0; j < segmrule.GetNIP(); j++)
 		    for (int l = 0; l < segmrule.GetNIP(); l++)
 		      {
-			const IntegrationPoint & ipsegm1 = segmrule[i]; // .GetIP(i);
-			const IntegrationPoint & ipsegm2 = segmrule[j]; // .GetIP(j);
-			const IntegrationPoint & ipsegm3 = segmrule[l]; // .GetIP(l);
+			const IntegrationPoint & ipsegm1 = segmrule[i];
+			const IntegrationPoint & ipsegm2 = segmrule[j];
+			const IntegrationPoint & ipsegm3 = segmrule[l];
 		      
 			point[0] = ipsegm1.Point()[0];
 			point[1] = ipsegm2.Point()[0];
@@ -2668,8 +2613,6 @@ namespace ngfem
 			  IntegrationPoint (point, weight);
 		      
 			ip.SetNr (ii); ii++;
-			// if (order <= 6)
-			  // ip.SetGlobNr (hexpoints.Append (ip)-1);
 			hexrule->AddIntegrationPoint (ip);
 		      }
 		hexrules[order] = hexrule;
@@ -2682,8 +2625,7 @@ namespace ngfem
 		const IntegrationRule & segmrule = SelectIntegrationRule (ET_SEGM, order);
 		const IntegrationRule & trigrule = SelectIntegrationRule (ET_TRIG, order);
 
-		IntegrationRule * prismrule = 
-		  new IntegrationRule; // (segmrule.GetNIP()*trigrule.GetNIP());
+		IntegrationRule * prismrule = new IntegrationRule; 
       
 		double point[3], weight;
 	      
@@ -2701,36 +2643,9 @@ namespace ngfem
 		      IntegrationPoint ip = 
 			IntegrationPoint (point, weight);
 		      ip.SetNr (ii); ii++;
-		      // if (order <= 6)
-			// ip.SetGlobNr (prismpoints.Append (ip)-1);
 		      prismrule->AddIntegrationPoint (ip);
 		    }
 		prismrules[order] = prismrule;
-
-                /*
-		  Array<double> xxz, wxz, xy, wy;
-		  ComputeGaussRule (order/2+1, xxz, wxz);
-		  ComputeGaussJacobiRule (order/2+1, xy, wy, 1, 0);
-
-		  IntegrationRule * prismrule = new IntegrationRule(xxz.Size()*xy.Size()*xxz.Size());
-	      
-		  int ii = 0;
-		  for (int i = 0; i < xxz.Size(); i++)
-		  for (int j = 0; j < xy.Size(); j++)
-		  for (int k = 0; k < xxz.Size(); k++)
-		  {
-		  IntegrationPoint * ip = 
-		  new IntegrationPoint (xxz[i], 
-		  xy[j]*(1-xxz[i]),
-		  xxz[k],
-		  wxz[i]*wy[j]*wxz[k]*(1-xxz[i]));
-		  ip.SetNr (ii); ii++;
-		  if (order <= 6)
-		  // ip.SetGlobNr (prismpoints.Append (ip)-1);
-		  prismrule->AddIntegrationPoint (ip);
-		  }
-		  prismrules[order] = prismrule;
-                */
 		break;
 	      }
 
@@ -2740,8 +2655,7 @@ namespace ngfem
 		const IntegrationRule & quadrule = SelectIntegrationRule (ET_QUAD, order);
 		const IntegrationRule & segrule = SelectIntegrationRule (ET_SEGM, order+2);
 
-		IntegrationRule * pyramidrule = 
-		  new IntegrationRule; // (quadrule.GetNIP()*segrule.GetNIP());
+		IntegrationRule * pyramidrule = new IntegrationRule;
 	
 		double point[3], weight;
 	      
@@ -2758,8 +2672,6 @@ namespace ngfem
 		    
 		      IntegrationPoint ip = IntegrationPoint (point, weight);
 		      ip.SetNr (ii); ii++;
-		      // if (order <= 6)
-			// ip.SetGlobNr (pyramidpoints.Append (ip)-1);
 		      pyramidrule->AddIntegrationPoint (ip);
 		    }
 		pyramidrules[order] = pyramidrule;
