@@ -104,8 +104,8 @@ namespace ngstd
 
   ostream & operator<<(ostream & s, const BitArray & ba)
   {
-    int i, n = ba.Size();
-    for (i = 0; i < n; i++)
+    int n = ba.Size();
+    for (int i = 0; i < n; i++)
       {
 	if (i % 50 == 0) s << i << ": ";
 	s << int(ba[i]);

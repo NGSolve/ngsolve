@@ -1,9 +1,12 @@
+// #define DEBUG
+
+#define USE_MUMPS
+
 #include <comp.hpp>
 #include <solve.hpp>
-
 namespace ngcomp
 {
-
+ 
   template <class SCAL, class TV>
   class BDDCMatrix : public BaseMatrix
   {
@@ -36,14 +39,13 @@ namespace ngcomp
 
       
       MyMPI_Barrier ();
-
       cout << IM(1) << "BDDC-marix NEBE const" << endl;
-
       MyMPI_Barrier ();
 
       const FESpace & fes = bfa.GetFESpace();
       int ne = elmats.Size();
       int ndof = fes.GetNDof();      
+
       
       
       Array<int> wbdcnt(ne);  //count number of wirebasket dofs on each element
@@ -96,11 +98,22 @@ namespace ngcomp
 		}
 	      else
 		{
-		  ifdof.Set(dnums[j]);
-		  weight[dnums[j]] += abs( (*elmats[i])(j,j) );
-		  el2ifdofs[i][lifcnt] = dnums[j];
-		  el2ifweight[i][lifcnt] = fabs ((*elmats[i])(j,j));
-		  lifcnt++;
+		  if (typeid(SCAL) == typeid(double))
+		    {
+		      ifdof.Set(dnums[j]);
+		      weight[dnums[j]] += abs( (*elmats[i])(j,j) );
+		      el2ifdofs[i][lifcnt] = dnums[j];
+		      el2ifweight[i][lifcnt] = fabs ((*elmats[i])(j,j));
+		      lifcnt++;
+		    }
+		  else
+		    {
+		      ifdof.Set(dnums[j]);
+		      weight[dnums[j]] += 0.5;
+		      el2ifdofs[i][lifcnt] = dnums[j];
+		      el2ifweight[i][lifcnt] = 0.5;
+		      lifcnt++;
+		    }
 		}
 	    }
         }
@@ -108,19 +121,40 @@ namespace ngcomp
 
 #ifdef PARALLEL
       // accumulate weight
-      ParallelVVector<double> pv_weight (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
 
-      if (ntasks > 1 && id == 0)
+      if (typeid(SCAL) == typeid(double))
 	{
-	  pv_weight.Cumulate();  
+	  ParallelVVector<double> pv_weight (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
+	  
+	  if (ntasks > 1 && id == 0)
+	    {
+	      pv_weight.Cumulate();  
+	    }
+	  else
+	    {
+	      for (int i = 0; i < weight.Size(); i++)
+		pv_weight(i) = weight[i];
+	      pv_weight.Cumulate();  
+	      for (int i = 0; i < weight.Size(); i++)
+		weight[i] = pv_weight(i);
+	    }
 	}
       else
 	{
-	  for (int i = 0; i < weight.Size(); i++)
-	    pv_weight(i) = weight[i];
-	  pv_weight.Cumulate();  
-	  for (int i = 0; i < weight.Size(); i++)
-	    weight[i] = pv_weight(i);
+	  ParallelVVector<Complex> pv_weight (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
+	  
+	  if (ntasks > 1 && id == 0)
+	    {
+	      pv_weight.Cumulate();  
+	    }
+	  else
+	    {
+	      for (int i = 0; i < weight.Size(); i++)
+		pv_weight(i) = weight[i];
+	      pv_weight.Cumulate();  
+	      for (int i = 0; i < weight.Size(); i++)
+		weight[i] = pv_weight(i).real();
+	    }
 	}
 #endif
 
@@ -188,32 +222,20 @@ namespace ngcomp
 	  int sizew = localwbdofs.Size();
 	  int sizei = localintdofs.Size();
 
-	  Matrix<SCAL> a(sizew, sizew);
-	  Matrix<SCAL> b(sizew, sizei);
-	  Matrix<SCAL> c(sizei, sizew);
-	  Matrix<SCAL> d(sizei, sizei);
-	  for (int k = 0; k < sizew; k++)
-	    for (int l = 0; l < sizew; l++)
-	      a(k,l) = elmat(localwbdofs[k], localwbdofs[l]);
+	  Matrix<SCAL> a = elmat.Rows(localwbdofs).Cols(localwbdofs);
 
 	  if (el2ifdofs[i].Size())
-	  {      
-	    for (int k = 0; k < sizew; k++)
-	      for (int l = 0; l < sizei; l++)
-		{
-		  b(k,l) = elmat(localwbdofs[k], localintdofs[l]);
-		  c(l,k) = elmat(localintdofs[l], localwbdofs[k]);
-		}
-
-	    for (int k = 0; k < sizei; k++)
-	      for (int l = 0; l < sizei; l++)
-		d(k,l) = elmat(localintdofs[k], localintdofs[l]);
+	    {      
+	      Matrix<SCAL> b = elmat.Rows(localwbdofs).Cols(localintdofs);
+	      Matrix<SCAL> c = elmat.Rows(localintdofs).Cols(localwbdofs);
+	      Matrix<SCAL> d = elmat.Rows(localintdofs).Cols(localintdofs);
 	      
-	    LapackInverse (d);
-	    Matrix<SCAL> he (sizei, sizew);
+	      LapackInverse (d);
+	      
+	      Matrix<SCAL> he (sizei, sizew);
+	      he = SCAL(0.0);
 
-	    he = SCAL(0.0);
-	    LapackMultAddAB(d,c,-1.0,he);
+	    LapackMultAddAB (d, c, -1.0, he);
 	    LapackMultAddAB (b, he, 1.0, a);
 
 	    //R * E
@@ -228,55 +250,55 @@ namespace ngcomp
 		
 	    dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(subassembled_harmonicext)->AddElementMatrix(interfacedofs,wirebasketdofs,he);
 	    
-	    if (!bfa.IsSymmetric()){
-	      Matrix<SCAL> het (sizew, sizei);
-
-	      het = SCAL(0.0);
-	      LapackMultAddAB(b,d,-1.0,het);
-
-	      //E * R^T
-	      for (int k = 0; k < sizew; k++)
-		for (int l = 0; l < sizei; l++)
-		  if ((fes.GetFreeDofs()) && (!fes.GetFreeDofs()->Test(el2ifdofs[i][l]))) { //TEST:NIE
-		    cout << "((fes.GetFreeDofs()) && (!fes.GetFreeDofs()->Test(el2ifdofs[i][l]))) == true" << endl;
-		    het(k,l) = 0.0;
-		  }
-		  else
-		    het(k,l) *= el2ifweight[i][l] / weight[ el2ifdofs[i][l] ];
-	      
-	      dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(subassembled_harmonicexttrans)->AddElementMatrix(wirebasketdofs,interfacedofs,het);
-	    }
+	    if (!bfa.IsSymmetric())
+	      {
+		Matrix<SCAL> het (sizew, sizei);
+		
+		het = SCAL(0.0);
+		LapackMultAddAB(b,d,-1.0,het);
+		
+		//E * R^T
+		for (int k = 0; k < sizew; k++)
+		  for (int l = 0; l < sizei; l++)
+		    if ((fes.GetFreeDofs()) && (!fes.GetFreeDofs()->Test(el2ifdofs[i][l]))) { //TEST:NIE
+		      cout << "((fes.GetFreeDofs()) && (!fes.GetFreeDofs()->Test(el2ifdofs[i][l]))) == true" << endl;
+		      het(k,l) = 0.0;
+		    }
+		    else
+		      het(k,l) *= el2ifweight[i][l] / weight[ el2ifdofs[i][l] ];
+		
+		dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(subassembled_harmonicexttrans)->AddElementMatrix(wirebasketdofs,interfacedofs,het);
+	      }
+	    
 	    //R * A_ii^(-1) * R^T
 	    for (int k = 0; k < sizei; k++)
 	      for (int l = 0; l < sizei; l++)
-		if ((fes.GetFreeDofs()) && ((!fes.GetFreeDofs()->Test(el2ifdofs[i][l])) || (!fes.GetFreeDofs()->Test(el2ifdofs[i][k])))) { //TEST:NIE
-		  cout << "((fes.GetFreeDofs()) && ((!fes.GetFreeDofs()->Test(el2ifdofs[i][l])) || (!fes.GetFreeDofs()->Test(el2ifdofs[i][k])))) == true" << endl;
-		  d(k,l) = 0.0;
-		}
+		if ((fes.GetFreeDofs()) && ((!fes.GetFreeDofs()->Test(el2ifdofs[i][l])) || (!fes.GetFreeDofs()->Test(el2ifdofs[i][k])))) 
+		  { //TEST:NIE
+		    cout << "((fes.GetFreeDofs()) && ((!fes.GetFreeDofs()->Test(el2ifdofs[i][l])) || (!fes.GetFreeDofs()->Test(el2ifdofs[i][k])))) == true" << endl;
+		    d(k,l) = 0.0;
+		  }
 		else
-		  d(k,l) *= el2ifweight[i][k] * el2ifweight[i][l] / 
-		    (weight[el2ifdofs[i][k]] * weight[el2ifdofs[i][l]]);	    
-
+		  d(k,l) *= el2ifweight[i][k] * el2ifweight[i][l] / (weight[el2ifdofs[i][k]] * weight[el2ifdofs[i][l]]);	    
 	    if (bfa.IsSymmetric())
 	      dynamic_cast<SparseMatrixSymmetric<SCAL,TV>*>(subassembled_innersolve)->AddElementMatrix(interfacedofs,d);
 	    else
 	      dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(subassembled_innersolve)->AddElementMatrix(interfacedofs,interfacedofs,d);
-	  }
-
+	    }
+	  
 	  
 	  if (bfa.IsSymmetric())
 	    dynamic_cast<SparseMatrixSymmetric<SCAL,TV>*>(pwbmat)->AddElementMatrix(wirebasketdofs,a);
 	  else
 	    dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(pwbmat)->AddElementMatrix(wirebasketdofs,wirebasketdofs,a);
-
         }
-
 
       for (int i = 0; i < elmats.Size(); i++)
 	{
 	  delete elmats[i];
 	  delete eldnums[i];
 	}
+
       elmats.SetSize(0);
       eldnums.SetSize(0);
       
@@ -290,7 +312,7 @@ namespace ngcomp
       *free_dofs = wbdof;
       if (fes.GetFreeDofs())
 	free_dofs -> And (*fes.GetFreeDofs());
-      int cntfreedofs=0;
+      int cntfreedofs = 0;
       for (int i = 0; i < free_dofs->Size(); i++)
 	if (free_dofs->Test(i)) cntfreedofs++;
 
@@ -325,7 +347,23 @@ namespace ngcomp
 #ifdef PARALLEL
 	if (ntasks > 1)
 	  {
-	    inv = new MasterInverse<SCAL> (dynamic_cast<SparseMatrixTM<SCAL>&> (*pwbmat), free_dofs, &bfa.GetFESpace().GetParallelDofs());
+	    MyMPI_Barrier();
+	    /*
+	    inv = new MasterInverse<SCAL> (dynamic_cast<SparseMatrixTM<SCAL>&> (*pwbmat), 
+					   free_dofs, &bfa.GetFESpace().GetParallelDofs());
+	    */
+
+	    /*
+	    inv = new ParallelMumpsInverse<SCAL> (dynamic_cast<SparseMatrixTM<SCAL>&> (*pwbmat), 
+						  free_dofs, NULL, 
+						  &bfa.GetFESpace().GetParallelDofs());
+	    */
+
+	    ParallelMatrix parwb(*pwbmat, bfa.GetFESpace().GetParallelDofs());
+	    parwb.SetInverseType (inversetype);
+	    inv = parwb.InverseMatrix (free_dofs);
+
+
 	    tmp = new ParallelVVector<TV>(ndof, &bfa.GetFESpace().GetParallelDofs());
 	    subassembled_innersolve = new ParallelMatrix (*subassembled_innersolve, bfa.GetFESpace().GetParallelDofs());
 	    subassembled_harmonicext = new ParallelMatrix (*subassembled_harmonicext, bfa.GetFESpace().GetParallelDofs());
@@ -641,9 +679,7 @@ namespace ngcomp
       
       NgProfiler::RegionTimer reg (timer);
 
-
       x.Cumulate();
-    
       y = x;
 
       timerharmonicexttrans.Start();
@@ -652,7 +688,7 @@ namespace ngcomp
 	y += Transpose(*subassembled_harmonicext) * x; 
       else
 	y += *subassembled_harmonicexttrans * x;
-      
+
       timerharmonicexttrans.Stop();
 
       timerwb.Start();
@@ -1832,12 +1868,13 @@ namespace ngcomp
 
     if (L2Norm (*elmats[hnr]) == 0)
       {
+	/*
 	static int cnt_warn = 0;
 	cnt_warn++;
 	if (cnt_warn < 5)
 	  cout << "msg: BDDC::got 0 matrix, delete it" << endl;
 	if (cnt_warn == 5) cout << "(suppress more msgs)" << endl;
-
+	*/
 	delete elmats[hnr];
 	delete eldnums[hnr];
 	elmats[hnr] = NULL;

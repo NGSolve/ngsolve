@@ -182,27 +182,48 @@ namespace ngcomp
   void MeshAccess :: UpdateBuffers()
   {
     dim = Ng_GetDimension();
-
     if (dim == -1)
       for (int i = 0; i < 4; i++)  
         {
           nnodes[i] = 0;
           nelements[i] = 0;
+	  nnodes_cd[i] = 0;
+	  nelements_cd[i] = 0;
         }
     else
-      for (int i = 0; i < 4; i++)  
-        {
-          nnodes[i] = Ng_GetNNodes(i);
-          nelements[i] = Ng_GetNElements(i);
-        }
-
-    for (int i = 0; i <= dim; i++)
       {
-        nnodes_cd[i] = nnodes[dim-i];
-        nelements_cd[i] = nelements[dim-i];
+	for (int i = 0; i < 4; i++)  
+	  {
+	    nnodes[i] = Ng_GetNNodes(i);
+	    nelements[i] = Ng_GetNElements(i);
+	  }
+	for (int i = 0; i <= dim; i++)
+	  {
+	    nnodes_cd[i] = nnodes[dim-i];
+	    nelements_cd[i] = nelements[dim-i];
+	  }
       }
 
     nlevels = Ng_GetNLevels(); 
+
+
+    ndomains = -1;
+    int ne = GetNE(); 
+    for (int i = 0; i < ne; i++)
+      { 
+	int ind = GetElIndex(i);
+	if (ind > ndomains) ndomains = ind;
+      }
+    ndomains++;
+
+    nboundaries = -1;
+    int nse = GetNSE(); 
+    for (int i = 0; i < nse; i++)
+      { 
+	int ind = GetSElIndex(i);
+	if (ind > nboundaries) nboundaries = ind;
+      }
+    nboundaries++;
   }
 
 
@@ -252,6 +273,11 @@ namespace ngcomp
 
   int MeshAccess :: GetNDomains () const
   {
+    static Timer timer("MeshAccess::GetNDomains");
+    RegionTimer reg(timer);
+
+    return ndomains;
+
     int maxind = -1;
     int ne = GetNE(); 
     for (int i = 0; i < ne; i++)
@@ -265,6 +291,11 @@ namespace ngcomp
 
   int MeshAccess :: GetNBoundaries () const
   {
+    static Timer timer("MeshAccess::GetNBoundaries");
+    RegionTimer reg(timer);
+
+    return nboundaries;
+
     int maxind = -1;
     int nse = GetNSE(); 
     for (int i = 0; i < nse; i++)
@@ -272,6 +303,7 @@ namespace ngcomp
 	int ind = GetSElIndex(i);
 	if (ind > maxind) maxind = ind;
       }
+    
     return maxind+1;
   }
 

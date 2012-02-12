@@ -55,6 +55,13 @@ namespace ngcomp
 
     /// number of multigrid levels 
     int nlevels;
+
+    /// max domain index
+    int ndomains;
+
+    /// max boundary index
+    int nboundaries;
+
   public:
 
     /*

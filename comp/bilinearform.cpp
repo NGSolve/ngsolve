@@ -1070,6 +1070,8 @@ namespace ngcomp
 			  sum += computed[j];
 			cout << IM(2) << "\rassemble element " << sum << "/" << ne 
 			     << " (" << num_working << " procs working) " << flush;
+			ma.SetThreadPercentage ( 100.0*sum / ne );
+
 			if (!num_working) break;
 			if (!got_flag) usleep (100000);
 		      }
@@ -1654,6 +1656,7 @@ namespace ngcomp
 
 	    int MASK = eliminate_internal ? EXTERNAL_DOF : ANY_DOF;
 	    bool first_time = true;
+	    if (ntasks == 0 || id > 0)
             for (int i = 0; i < useddof.Size(); i++)
 	      if (useddof.Test(i) != 
 		  ((fespace.GetDofCouplingType(i) & MASK) != 0) )
@@ -3023,11 +3026,24 @@ cout << "catch in AssembleBilinearform 2" << endl;
                     bool inner_element, int elnr,
                     LocalHeap & lh) 
   {
+    BaseMatrix * hmat = this->mats.Last();
+    
+#ifdef PARALLEL
+    ParallelMatrix * parmat = dynamic_cast<ParallelMatrix*> (hmat);
+    if (parmat) hmat = &parmat->GetMatrix();
+#endif   
+
+    TMATRIX & mat = dynamic_cast<TMATRIX&> (*hmat);
+
+    mat.AddElementMatrix (dnums1, dnums2, elmat);
+    
+    /*
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
     mat.AddElementMatrix (dnums1, dnums2, elmat);
+    */
   }
 
-
+  /*
   ///
   template <> void T_BilinearForm<double, double>::
   AddElementMatrix (const Array<int> & dnums1,
@@ -3061,8 +3077,6 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
   }
 
-
-
   template <> void T_BilinearForm<double, Complex>::
   AddElementMatrix (const Array<int> & dnums1,
                     const Array<int> & dnums2,
@@ -3081,8 +3095,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
                                    elmat, i, j);
       //mat(dnums1[i], dnums2[j]) += elmat(i, j);
     }
-
   }
+  */
 
 
   template <class TM, class TV>
