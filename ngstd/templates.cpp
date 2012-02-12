@@ -9,6 +9,8 @@
 
 namespace ngstd
 {
+  ostream * testout = &cout;
+
   using namespace ngstd;
   
   template <class T>
