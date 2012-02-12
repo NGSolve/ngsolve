@@ -131,7 +131,7 @@ namespace ngcomp
 
     virtual BaseSpecificIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
     {
-      return *new (lh) SpecificIntegrationPoint<DIMS,DIMR> (ip, *this, lh);
+      return *new (lh) SpecificIntegrationPoint<DIMS,DIMR> (ip, *this);
     }
 
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const
@@ -169,6 +169,7 @@ namespace ngcomp
 
   MeshAccess :: MeshAccess ()
   {
+    ngstd::testout = netgen::testout;
     Ng_UpdateTopology();  // for netgen/ngsolve stand alone (pillendose)
     UpdateBuffers();
   }

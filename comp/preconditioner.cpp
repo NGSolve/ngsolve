@@ -1021,7 +1021,7 @@ namespace ngcomp
 	ma.GetElEdges (i, ednums);
 
 	ma.GetElementTransformation (i, eltrans, lh);
-	SpecificIntegrationPoint<3,3> sip(ip, eltrans, lh);
+	SpecificIntegrationPoint<3,3> sip(ip, eltrans);
 
 	double vol = ma.ElementVolume (i);
 
@@ -1048,7 +1048,7 @@ namespace ngcomp
 	  ma.GetSElEdges (i, ednums);
 
 	  ma.GetSurfaceElementTransformation (i, eltrans, lh);
-	  SpecificIntegrationPoint<2,3> sip(ip, eltrans, lh);
+	  SpecificIntegrationPoint<2,3> sip(ip, eltrans);
 
 	  double vol = ma.SurfaceElementVolume (i);
 	  double vale = Evaluate (*coefse, sip);

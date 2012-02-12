@@ -603,7 +603,7 @@ namespace ngcomp
 	  {
 	    ElementTransformation & eltrans = ma.GetTrafo (el, false, lh);
 	    IntegrationPoint ip(0.3333, 0.3333, 0.5);
-	    MappedIntegrationPoint<3,3> mip(ip, eltrans, lh);
+	    MappedIntegrationPoint<3,3> mip(ip, eltrans);
 
 	    Mat<3> jac = mip.GetJacobian();
 	    double jaclong = L2Norm (jac.Col(2));
@@ -668,7 +668,7 @@ namespace ngcomp
 	  {
 	    ElementTransformation & eltrans = ma.GetTrafo (el, false, lh);
 	    IntegrationPoint ip(0.25, 0.25, 0.25);
-	    MappedIntegrationPoint<3,3> mip(ip, eltrans, lh);
+	    MappedIntegrationPoint<3,3> mip(ip, eltrans);
 
 	    double cond = L2Norm (mip.GetJacobian()) * L2Norm (mip.GetJacobianInverse());
 	    if (cond > 10) upgrade = true;
