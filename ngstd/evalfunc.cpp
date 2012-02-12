@@ -528,8 +528,26 @@ namespace ngstd
     for (int i = 0; i < program.Size(); i++)
       {
 	EVAL_TOKEN op = program[i].op;
-	ost << "Step " << i << ": " << (int)op << " = " << (char) op 
-	    << ", val = " << program[i].operand.val << endl;
+	ost << "Step " << i << ": " << (int)op << " = ";
+	switch (op)
+	  {
+	  case CONSTANT: ost << " const, val = " << program[i].operand.val; break;
+	  case VARIABLE: ost << " input var " << program[i].operand.varnum; break;
+	  case SIN: ost << " sin"; break;
+	  case COS: ost << " cos"; break;
+	  case TAN: ost << " tan"; break;
+	  case ATAN: ost << " atan"; break;
+	  case ATAN2: ost << " atan2"; break;
+	  case EXP: ost << " exp"; break;
+	  case LOG: ost << " log"; break;
+	  case ABS: ost << " abs"; break;
+	  case SIGN: ost << " sign"; break;
+	  case SQRT: ost << " sqrt"; break;
+	  case STEP: ost << " step"; break;
+	  default:
+	    ost << (char) op;
+	  }
+	ost << endl;
       }
   }
 
@@ -795,12 +813,17 @@ namespace ngstd
     // skip whitespaces
     do
       {
-	(*ist).get(ch);
-	if ((*ist).eof())
+	if (!ist -> good())
 	  {
 	    token = END;
 	    return;
 	  }
+	if (ist -> eof())
+	  {
+	    token = END;
+	    return;
+	  }
+	(*ist).get(ch);
       }
     while (isspace(ch));
   
