@@ -388,13 +388,14 @@ namespace ngla
     const SparseMatrixTM<double> * dmat = dynamic_cast<const SparseMatrixTM<double>*> (&mat);
     const SparseMatrixTM<Complex> * cmat = dynamic_cast<const SparseMatrixTM<Complex>*> (&mat);
 
-      // crashes dute to a problem in parmetis ???
+#ifdef USE_MUMPS
     if (mat.GetInverseType() == MUMPS)
       {
 	if (dmat) return new ParallelMumpsInverse<double> (*dmat, subset, NULL, &pardofs);
 	if (cmat) return new ParallelMumpsInverse<Complex> (*cmat, subset, NULL, &pardofs);
       }
     else 
+#endif
       {
 	if (dmat) return new MasterInverse<double> (*dmat, subset, &pardofs);
 	if (cmat) return new MasterInverse<Complex> (*cmat, subset, &pardofs);
