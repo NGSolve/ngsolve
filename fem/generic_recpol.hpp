@@ -141,7 +141,7 @@ namespace ngfem
 
 
   /**
-     Initialize coefficients with Legendre polynomials.
+     Initialize coefficients with x^i
   */
   class RecPolMonomial : public RecPol
   {
@@ -181,9 +181,8 @@ namespace ngfem
   };
 
 
-
   /**
-     Initialize coefficients with x^i
+     Initialize coefficients with Legendre polynomials.
   */
   class RecPolLegendre : public RecPol
   {

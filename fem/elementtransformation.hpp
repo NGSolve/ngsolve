@@ -71,6 +71,7 @@ namespace ngfem
       specific -> CalcJacobian (ip, dxdxi);
     }
 
+    /*
     /// Calculates the Jacobi matrix
     void CalcJacobian (const IntegrationPoint & ip,
 		       FlatMatrix<> dxdxi,
@@ -78,7 +79,7 @@ namespace ngfem
     {
       CalcJacobian (ip, dxdxi);
     }
-
+    */
     /// calculate the mapped point
     virtual void CalcPoint (const IntegrationPoint & ip,
 			    FlatVector<> point) const
@@ -86,6 +87,7 @@ namespace ngfem
       specific -> CalcPoint (ip, point);
     }
 
+    /*
     /// calculate the mapped point
     void CalcPoint (const IntegrationPoint & ip,
 		    FlatVector<> point,
@@ -93,6 +95,7 @@ namespace ngfem
     {
       CalcPoint (ip, point);
     }
+    */
 
     /// calculate point and Jacobi matrix
     virtual void CalcPointJacobian (const IntegrationPoint & ip,
@@ -101,6 +104,7 @@ namespace ngfem
       specific -> CalcPointJacobian (ip, point, dxdxi);
     }
 
+    /*
     /// calculate point and Jacobi matrix
     void CalcPointJacobian (const IntegrationPoint & ip,
 			    FlatVector<> point, FlatMatrix<> dxdxi,
@@ -108,7 +112,7 @@ namespace ngfem
     {
       CalcPointJacobian (ip, point, dxdxi);
     }
-
+    */
 
     /// Calculate points and Jacobimatrices in all points of integrationrule
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
@@ -302,7 +306,7 @@ namespace ngfem
 
     virtual BaseSpecificIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
     {
-      return *new (lh) SpecificIntegrationPoint<DIMS,DIMR> (ip, *this, lh);
+      return *new (lh) SpecificIntegrationPoint<DIMS,DIMR> (ip, *this);
     }
 
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const

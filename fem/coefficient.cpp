@@ -261,14 +261,12 @@ namespace ngfem
   //////////////////
 
   FileCoefficientFunction :: FileCoefficientFunction ()
-    : lh2("FileCoefficientFunction")
   {
     writeips = false;
   }
 
   
   FileCoefficientFunction :: FileCoefficientFunction (const string & filename)
-    : lh2("FileCoefficientFunction")
   {
     StartWriteIps(filename);
   }
@@ -277,7 +275,6 @@ namespace ngfem
 						      const string & ainfofilename,
 						      const string & avaluesfilename,
 						      const bool loadvalues)
-    : lh2("FileCoefficientFunction")
   {
     ipfilename = aipfilename;
     infofilename = ainfofilename;
@@ -369,9 +366,7 @@ namespace ngfem
 	const_cast<int&> (totalipnum)++;
 
 	Vec<3> point;
-	void * heapp = const_cast<LocalHeapMem<10000>&> (lh2).GetPointer();
-	eltrans.CalcPoint(ip.IP(),point, const_cast<LocalHeapMem<10000>&> (lh2) );
-	const_cast<LocalHeapMem<10000>&> (lh2).CleanUp(heapp);
+	eltrans.CalcPoint(ip.IP(),point);
 
 	const_cast<ofstream&> (outfile) << elnum << " " << ipnum << " " << point << "\n";
       }

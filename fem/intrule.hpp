@@ -11,7 +11,7 @@ namespace ngfem
 {
 
   /// An integration point 
-  class NGS_DLL_HEADER IntegrationPoint
+  class IntegrationPoint
   {
   private:
     /// number within intergration Rule
@@ -115,7 +115,7 @@ namespace ngfem
     int IPNr () const { return -1; }
 
     ///
-    friend ostream & operator<< (ostream & ost, const IntegrationPoint & ip);
+    friend NGS_DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationPoint & ip);
   };
 
 
@@ -196,8 +196,8 @@ namespace ngfem
     typedef SCAL TSCAL;
     ///
     NGS_DLL_HEADER MappedIntegrationPoint (const IntegrationPoint & aip,
-			      const ElementTransformation & aeltrans,
-			      LocalHeap & lh);
+					   const ElementTransformation & aeltrans);
+    // LocalHeap & lh);
 
     MappedIntegrationPoint (const IntegrationPoint & aip,
 			    const ElementTransformation & aeltrans,
@@ -302,11 +302,18 @@ namespace ngfem
     ///
     IntegrationRule () { ; }
 
-    /*
-    /// allocate for nips points
-    IntegrationRule (int nips)
-      : Array<IntegrationPoint> () { SetAllocSize(nips); }
+    /**
+       An integration rule for element type of certain order.
+       Obtains a reference to the precomputed integration rule
     */
+    NGS_DLL_HEADER IntegrationRule (ELEMENT_TYPE eltype, int order);
+
+
+    NGS_DLL_HEADER IntegrationRule (const IntegrationRule & ir2)
+    {
+      throw Exception ("should not call copy-constructor of ir\n");
+    }
+
 
     // make it polymorphic
     virtual ~IntegrationRule() { ; }

@@ -30,31 +30,31 @@ public:
   enum { SYMMETRIC = 1 };
 
   /// generate linearized matrix in linearization point vec
-  template <typename FEL, typename SIP, typename VEC, typename MAT>
-  void GenerateLinearizedMatrix (const FEL & fel, const SIP & sip, VEC & vec,
+  template <typename FEL, typename MIP, typename VEC, typename MAT>
+  void GenerateLinearizedMatrix (const FEL & fel, const MIP & mip, VEC & vec,
 				 MAT & mat, LocalHeap & lh) const
   {
-    static_cast<const DMO*>(this) -> GenerateMatrix (fel, sip, mat, lh);
+    static_cast<const DMO*>(this) -> GenerateMatrix (fel, mip, mat, lh);
   }
 
 
   /// apply coefficient matrix.
-  template <typename FEL, typename SIP, class TVX, class TVY>
-  void Apply (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class TVX, class TVY>
+  void Apply (const FEL & fel, const MIP & mip,
 	      const TVX & x, TVY & y,
 	      LocalHeap & lh) const
   {
     Mat<DMO::DIM_DMAT, DMO::DIM_DMAT, double> mat;
-    static_cast<const DMO*>(this) -> GenerateMatrix (fel, sip, mat, lh);
+    static_cast<const DMO*>(this) -> GenerateMatrix (fel, mip, mat, lh);
     y = mat * x;
   }
 
-  template <typename FEL, typename SIP, class TVX>
-  void Apply1 (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class TVX>
+  void Apply1 (const FEL & fel, const MIP & mip,
 	       TVX & x, LocalHeap & lh) const
   {
     Vec<DMO::DIM_DMAT, typename TVX::TSCAL> y;
-    static_cast<const DMO*>(this) -> Apply (fel, sip, x, y, lh);
+    static_cast<const DMO*>(this) -> Apply (fel, mip, x, y, lh);
     x = y;
   }
 
@@ -68,38 +68,38 @@ public:
 
 
 
-  template <typename FEL, typename SIP, class TVX, class TVY>
-  void ApplyInv (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class TVX, class TVY>
+  void ApplyInv (const FEL & fel, const MIP & mip,
 		 const TVX & x, TVY & y,
 		 LocalHeap & lh) const
   {
     Mat<DMO::DIM_DMAT, DMO::DIM_DMAT, double> mat;
     Mat<DMO::DIM_DMAT, DMO::DIM_DMAT, double> inv;
 
-    static_cast<const DMO*>(this) -> GenerateMatrix (fel, sip, mat, lh);
+    static_cast<const DMO*>(this) -> GenerateMatrix (fel, mip, mat, lh);
     CalcInverse (mat, inv);
     y = inv * x;
   }
 
 
   /// apply transpose coefficient tensor
-  template <typename FEL, typename SIP, class TVX, class TVY>
-  void ApplyTrans (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class TVX, class TVY>
+  void ApplyTrans (const FEL & fel, const MIP & mip,
 		   const TVX & x, TVY & y,
 		   LocalHeap & lh) const
   {
     Mat<DMO::DIM_DMAT, DMO::DIM_DMAT, double> mat;
-    static_cast<const DMO*>(this) -> GenerateMatrix (fel, sip, mat, lh);
+    static_cast<const DMO*>(this) -> GenerateMatrix (fel, mip, mat, lh);
     y = Trans (mat) * x;
   }
 
   /// computes energy 
-  template <typename FEL, typename SIP, class TVX>
-  double Energy (const FEL & fel, const SIP & sip,
+  template <typename FEL, typename MIP, class TVX>
+  double Energy (const FEL & fel, const MIP & mip,
 		 const TVX & x, LocalHeap & lh) const  
   {
     TVX y;
-    static_cast<const DMO*>(this) -> Apply (fel, sip, x, y, lh);
+    static_cast<const DMO*>(this) -> Apply (fel, mip, x, y, lh);
     return 0.5 * InnerProduct (x,y);
   }
 };
@@ -189,24 +189,24 @@ public:
 
 
   virtual void ApplyDMat (const FiniteElement & bfel,
-			  const BaseMappedIntegrationPoint & bsip,
+			  const BaseMappedIntegrationPoint & bmip,
 			  const FlatVector<double> & elx, 
 			  FlatVector<double> & eldx,
 			  LocalHeap & lh) const
   {
     dmatop.Apply(static_cast<const FEL&> (bfel),
-		 static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bsip),
+		 static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bmip),
 		 elx, eldx ,lh);
   }
 
   virtual void ApplyDMat (const FiniteElement & bfel,
-			  const BaseMappedIntegrationPoint & bsip,
+			  const BaseMappedIntegrationPoint & bmip,
 			  const FlatVector<Complex> & elx, 
 			  FlatVector<Complex> & eldx,
 			  LocalHeap & lh) const
   {
     dmatop.Apply(static_cast<const FEL&> (bfel),
-		 static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bsip),
+		 static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bmip),
 		 elx,eldx,lh);
   }
 
@@ -306,12 +306,12 @@ public:
 	    HeapReset hr(lh);
 
 	    MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-	      sip(ir[i], eltrans, lh);
+	      mip(ir[i], eltrans, lh);
 
-	    dmatop.GenerateMatrix (fel, sip, dmat, lh);
+	    dmatop.GenerateMatrix (fel, mip, dmat, lh);
 
-	    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
-	    double fac = sip.GetMeasure() * sip.IP().Weight();
+	    DIFFOP::GenerateMatrix (fel, mip, bmat, lh);
+	    double fac = mip.GetMeasure() * mip.IP().Weight();
 	    
 	    dbmat = fac * (dmat * bmat);
 	    elmat += Trans (bmat) * dbmat; 
@@ -501,11 +501,11 @@ public:
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
 	    HeapReset hr(lh);
-	    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
+	    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip = mir[i];
 
-	    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
-	    dmatop.GenerateMatrix (fel, sip, dmat, lh);
-	    dmat *= sip.GetWeight();
+	    DIFFOP::GenerateMatrix (fel, mip, bmat, lh);
+	    dmatop.GenerateMatrix (fel, mip, dmat, lh);
+	    dmat *= mip.GetWeight();
 
 	    bbmat.Cols(i*DIM_DMAT, (i+1)*DIM_DMAT) = Trans (bmat);
 	    bdbmat.Cols(i*DIM_DMAT, (i+1)*DIM_DMAT) = Trans (dmat * bmat);
@@ -568,14 +568,13 @@ public:
 	void * heapp = lh.GetPointer();
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
-	    MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-	      sip(ir[i], eltrans, lh);
+	    MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip(ir[i], eltrans);
 
-	    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
-	    dmatop.GenerateMatrix (fel, sip, dmat, lh);
+	    DIFFOP::GenerateMatrix (fel, mip, bmat, lh);
+	    dmatop.GenerateMatrix (fel, mip, dmat, lh);
 
 	    double fac =  
-	      fabs (sip.GetJacobiDet()) * sip.IP().Weight();
+	      fabs (mip.GetJacobiDet()) * mip.IP().Weight();
 
 	    for (int j = 0; j < diag.Size(); j++)
 	      {
@@ -636,13 +635,13 @@ public:
     for (int i = 0; i < ir.GetNIP(); i++)
       {
 	HeapReset hr (lh);
-	const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
+	const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip = mir[i];
 
-	DIFFOP::Apply (fel, sip, elx, hv1, lh);
-	dmatop.Apply (fel, sip, hv1, hv2, lh);
-	DIFFOP::ApplyTrans (fel, sip, hv2, hely, lh);
+	DIFFOP::Apply (fel, mip, elx, hv1, lh);
+	dmatop.Apply (fel, mip, hv1, hv2, lh);
+	DIFFOP::ApplyTrans (fel, mip, hv2, hely, lh);
 
-	double fac = fabs (sip.GetJacobiDet()) * ir[i].Weight();
+	double fac = fabs (mip.GetJacobiDet()) * ir[i].Weight();
 	ely += fac * hely;
       }     
   }
@@ -675,13 +674,13 @@ public:
     for (int i = 0; i < ir.GetNIP(); i++)
       {
 	HeapReset hr (lh);
-	const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
+	const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip = mir[i];
 
-	DIFFOP::Apply (fel, sip, elx, hv1, lh);
-	dmatop.Apply (fel, sip, hv1, hv2, lh);
-	DIFFOP::ApplyTrans (fel, sip, hv2, hely, lh);
+	DIFFOP::Apply (fel, mip, elx, hv1, lh);
+	dmatop.Apply (fel, mip, hv1, hv2, lh);
+	DIFFOP::ApplyTrans (fel, mip, hv2, hely, lh);
 
-	double fac = fabs (sip.GetJacobiDet()) * sip.IP().Weight();
+	double fac = fabs (mip.GetJacobiDet()) * mip.IP().Weight();
 	ely += fac * hely;
       }     
   }
@@ -741,13 +740,13 @@ public:
     for (int i = 0; i < ir.GetNIP(); i++)
       {
 	HeapReset hr (lh);
-	const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
+	const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip = mir[i];
 
-	DIFFOP::Apply (fel, sip, elx, hv1, lh);
-	dmatop.Apply (fel, sip, hv1, hv2, lh);
-	DIFFOP::ApplyTrans (fel, sip, hv2, hely, lh);
+	DIFFOP::Apply (fel, mip, elx, hv1, lh);
+	dmatop.Apply (fel, mip, hv1, hv2, lh);
+	DIFFOP::ApplyTrans (fel, mip, hv2, hely, lh);
 
-	double fac = fabs (sip.GetJacobiDet()) * sip.IP().Weight();
+	double fac = fabs (mip.GetJacobiDet()) * mip.IP().Weight();
 	ely += fac * hely;
       }     
   }
@@ -786,13 +785,13 @@ public:
       {
 	const IntegrationPoint & ip = ir[i];
 	
-	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
+	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip (ir[i], eltrans);
 
-	DIFFOP::Apply (fel1, sip, elx, hv1, lh);
-	dmatop.Apply (fel1, sip, hv1, hv2, lh);
-	DIFFOP::ApplyTrans (fel2, sip, hv2, hely, lh);
+	DIFFOP::Apply (fel1, mip, elx, hv1, lh);
+	dmatop.Apply (fel1, mip, hv1, hv2, lh);
+	DIFFOP::ApplyTrans (fel2, mip, hv2, hely, lh);
 
-	double fac = fabs (sip.GetJacobiDet()) * ip.Weight();
+	double fac = fabs (mip.GetJacobiDet()) * ip.Weight();
 	ely += fac * hely;
 	lh.CleanUp (heapp);
       }     
@@ -800,7 +799,7 @@ public:
 
 
 
-  virtual const IntegrationRule & GetIntegrationRule (const FiniteElement & fel, const bool use_higher_integration_order = false) const
+  IntegrationRule GetIntegrationRule (const FiniteElement & fel, const bool use_higher_integration_order = false) const
   {
     int order = 2 * fel.Order();
 
@@ -821,7 +820,8 @@ public:
 	order = higher_integration_order;
       }
       
-    return SelectIntegrationRule (et, order);
+    // return SelectIntegrationRule (et, order);
+    return IntegrationRule (et, order);
   }
 
 
@@ -835,20 +835,20 @@ public:
 
   virtual void
   CalcFlux (const FiniteElement & bfel,
-	    const BaseMappedIntegrationPoint & bsip,
+	    const BaseMappedIntegrationPoint & bmip,
 	    const FlatVector<double> & elx, 
 	    FlatVector<double> & flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
     const FEL & fel = static_cast<const FEL&> (bfel);
-    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
-      static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
+      static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
 
 
-    DIFFOP::Apply (fel, sip, elx, flux, lh);
+    DIFFOP::Apply (fel, mip, elx, flux, lh);
     if (applyd)
-      dmatop.Apply1 (fel, sip, flux, lh);
+      dmatop.Apply1 (fel, mip, flux, lh);
   }
 
   virtual void
@@ -871,25 +871,25 @@ public:
 
   virtual void
   CalcFlux (const FiniteElement & bfel,
-	    const BaseMappedIntegrationPoint & bsip,
+	    const BaseMappedIntegrationPoint & bmip,
 	    const FlatVector<Complex> & elx, 
 	    FlatVector<Complex> & flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
     const FEL & fel = static_cast<const FEL&> (bfel);
-    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip =
-      static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
+      static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
 
     if (applyd)
       {
 	Vec<DIM_DMAT,Complex> hv1;
-	DIFFOP::Apply (fel, sip, elx, hv1, lh);
-	dmatop.Apply (fel, sip, hv1, flux, lh);
+	DIFFOP::Apply (fel, mip, elx, hv1, lh);
+	dmatop.Apply (fel, mip, hv1, flux, lh);
       }
     else
       {
-	DIFFOP::Apply (fel, sip, elx, flux, lh);
+	DIFFOP::Apply (fel, mip, elx, flux, lh);
       }
   }
   
@@ -900,7 +900,7 @@ public:
 
   virtual void
   CalcFluxMulti (const FiniteElement & bfel,
-		 const BaseMappedIntegrationPoint & bsip,		
+		 const BaseMappedIntegrationPoint & bmip,		
 		 int m,
 		 const FlatVector<double> & elx, 
 		 FlatVector<double> & flux,
@@ -908,19 +908,19 @@ public:
 		 LocalHeap & lh) const
   {
     const FEL & fel = static_cast<const FEL&> (bfel);
-    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = 
-      static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip = 
+      static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
 
     int ndof = fel.GetNDof();
     FlatMatrixFixHeight<DIM_DMAT> bmat (ndof * DIM, lh);
 
-    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
+    DIFFOP::GenerateMatrix (fel, mip, bmat, lh);
 
     if (applyd)
       {
 	Vec<DIM_DMAT> hv1;
 	Mat<DIM_DMAT,DIM_DMAT> dmat;
-	dmatop.GenerateMatrix (fel, sip, dmat, lh);
+	dmatop.GenerateMatrix (fel, mip, dmat, lh);
 
 	for (int i = 0; i < m; i++)
 	  {
@@ -948,31 +948,31 @@ public:
 
   virtual void
   ApplyBTrans (const FiniteElement & bfel,
-	       const BaseMappedIntegrationPoint & bsip,
+	       const BaseMappedIntegrationPoint & bmip,
 	       const FlatVector<double> & elx, 
 	       FlatVector<double> & ely,
 	       LocalHeap & lh) const
   {
     const FEL & fel = static_cast<const FEL&> (bfel);
-    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
-      static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip =
+      static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
 
-    DIFFOP::ApplyTrans (fel, sip, elx, ely, lh);
+    DIFFOP::ApplyTrans (fel, mip, elx, ely, lh);
   }
   
 
   virtual void
   ApplyBTrans (const FiniteElement & bfel,
-	       const BaseMappedIntegrationPoint & bsip,
+	       const BaseMappedIntegrationPoint & bmip,
 	       const FlatVector<Complex> & elx, 
 	       FlatVector<Complex> & ely,
 	       LocalHeap & lh) const
   {
     const FEL & fel = static_cast<const FEL&> (bfel);
-    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip =
-      static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bsip);
+    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip =
+      static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
 
-    DIFFOP::ApplyTrans (fel, sip, elx, ely, lh);
+    DIFFOP::ApplyTrans (fel, mip, elx, ely, lh);
   }
 
 
@@ -1093,16 +1093,16 @@ public:
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
 	    MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-	      sip(ir[i], eltrans, lh);
+	      mip(ir[i], eltrans, lh);
 
-	    DIFFOP::Apply (fel, sip, elveclin, hvlin, lh);
+	    DIFFOP::Apply (fel, mip, elveclin, hvlin, lh);
 
-	    DIFFOP::GenerateMatrix (fel, sip, bmat, lh);
+	    DIFFOP::GenerateMatrix (fel, mip, bmat, lh);
 
-	    this->dmatop . GenerateLinearizedMatrix (fel, sip, hvlin, dmat, lh);
+	    this->dmatop . GenerateLinearizedMatrix (fel, mip, hvlin, dmat, lh);
 
 	    double fac =  
-	      fabs (sip.GetJacobiDet()) * sip.IP().Weight();
+	      fabs (mip.GetJacobiDet()) * mip.IP().Weight();
 
 	    {
 	      NgProfiler::RegionTimer reg(bdbtimer);
@@ -1258,14 +1258,14 @@ public:
       {
 	const IntegrationPoint & ip = ir[i];
 	
-	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
+	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip (ir[i], eltrans, lh);
 
-	DIFFOP::Apply (fel, sip, ellin, hvlin, lh);
-	DIFFOP::Apply (fel, sip, elx, hvx, lh);
-	this->dmatop.ApplyLinearized (fel, sip, hvlin, hvx, hvy, lh);
-	DIFFOP::ApplyTrans (fel, sip, hvy, hely, lh);
+	DIFFOP::Apply (fel, mip, ellin, hvlin, lh);
+	DIFFOP::Apply (fel, mip, elx, hvx, lh);
+	this->dmatop.ApplyLinearized (fel, mip, hvlin, hvx, hvy, lh);
+	DIFFOP::ApplyTrans (fel, mip, hvy, hely, lh);
 
-	double fac = fabs (sip.GetJacobiDet()) * ip.Weight();
+	double fac = fabs (mip.GetJacobiDet()) * ip.Weight();
 	ely += fac * hely;
       }     
   }
@@ -1303,14 +1303,14 @@ public:
 
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
+	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip (ir[i], eltrans, lh);
 
-	DIFFOP::Apply (fel, sip, ellin, hvlin, lh);
-	DIFFOP::Apply (fel, sip, elx, hvx, lh);
-	this->dmatop.ApplyLinearized (fel, sip, hvlin, hvx, hvy, lh);
-	DIFFOP::ApplyTrans (fel, sip, hvy, hely, lh);
+	DIFFOP::Apply (fel, mip, ellin, hvlin, lh);
+	DIFFOP::Apply (fel, mip, elx, hvx, lh);
+	this->dmatop.ApplyLinearized (fel, mip, hvlin, hvx, hvy, lh);
+	DIFFOP::ApplyTrans (fel, mip, hvy, hely, lh);
 	
-	double fac = fabs (sip.GetJacobiDet()) * sip.IP().Weight();
+	double fac = fabs (mip.GetJacobiDet()) * mip.IP().Weight();
 	ely += fac * hely;
       }     
   }
@@ -1334,11 +1334,11 @@ public:
       {
 	const IntegrationPoint & ip = ir[i];
 	
-	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip (ir[i], eltrans, lh);
-	DIFFOP::Apply (fel, sip, elx, hvx, lh);
+	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip (ir[i], eltrans, lh);
+	DIFFOP::Apply (fel, mip, elx, hvx, lh);
 
-	double fac = fabs (sip.GetJacobiDet()) * ip.Weight();
-	energy += fac * this->dmatop.Energy (fel, sip, hvx, lh);
+	double fac = fabs (mip.GetJacobiDet()) * ip.Weight();
+	energy += fac * this->dmatop.Energy (fel, mip, hvx, lh);
       }     
 
     return energy;
@@ -1457,26 +1457,18 @@ public:
 	FlatVector<TSCAL> hv(ndof * DIM, lh);
 	Vec<DIM_DMAT, TSCAL> dvec;
 	
-	int order = IntegrationOrder (fel);
-	const IntegrationRule & ir = SelectIntegrationRule (fel.ElementType(), order);
+	IntegrationRule ir(fel.ElementType(), IntegrationOrder(fel));
 	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
 
-	/*
-        FlatArray<Vec<DIM_SPACE> > pts(ir.GetNIP(), lh);
-        FlatArray<Mat<DIM_SPACE, DIM_ELEMENT> > dxdxi(ir.GetNIP(), lh);
-        eltrans.CalcMultiPointJacobian (ir, pts, dxdxi, lh);
-	*/
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
             HeapReset hr(lh);
-            // MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> sip(ir[i], eltrans, pts[i], dxdxi[i]);
-	    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & sip = mir[i];
+	    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip = mir[i];
 
-	    dvecop.GenerateVector (fel, sip, dvec, lh);
-	    DIFFOP::ApplyTrans (fel, sip, dvec, hv, lh);
+	    dvecop.GenerateVector (fel, mip, dvec, lh);
+	    DIFFOP::ApplyTrans (fel, mip, dvec, hv, lh);
 
-	    double fac = fabs (sip.GetJacobiDet()) * sip.IP().Weight();
-	    elvec += fac * hv;
+	    elvec += mip.GetWeight() * hv;
 	  }
       }
     
@@ -1503,31 +1495,31 @@ public:
 
   virtual void
   CalcElementVectorIndependent (const FiniteElement & gfel, 
-				    const BaseMappedIntegrationPoint & s_sip,
-				    const BaseMappedIntegrationPoint & g_sip,
+				    const BaseMappedIntegrationPoint & s_mip,
+				    const BaseMappedIntegrationPoint & g_mip,
 				    FlatVector<double> & elvec,
 				    LocalHeap & lh,
 				    const bool curveint = false) const
   {
-    T_CalcElementVectorIndependent (gfel, s_sip, g_sip, elvec, lh, curveint);
+    T_CalcElementVectorIndependent (gfel, s_mip, g_mip, elvec, lh, curveint);
   }
 
   virtual void
   CalcElementVectorIndependent (const FiniteElement & gfel, 
-				    const BaseMappedIntegrationPoint & s_sip,
-				    const BaseMappedIntegrationPoint & g_sip,
+				    const BaseMappedIntegrationPoint & s_mip,
+				    const BaseMappedIntegrationPoint & g_mip,
 				    FlatVector<Complex> & elvec,
 				    LocalHeap & lh,
 				    const bool curveint = false) const
   {
-    T_CalcElementVectorIndependent (gfel, s_sip, g_sip, elvec, lh, curveint);
+    T_CalcElementVectorIndependent (gfel, s_mip, g_mip, elvec, lh, curveint);
   }
 
 
   template <typename TSCAL>
   void T_CalcElementVectorIndependent (const FiniteElement & gfel, 
-					   const BaseMappedIntegrationPoint & s_sip,
-					   const BaseMappedIntegrationPoint & g_sip,
+					   const BaseMappedIntegrationPoint & s_mip,
+					   const BaseMappedIntegrationPoint & g_mip,
 					   FlatVector<TSCAL> & elvec,
 					   LocalHeap & lh,
 					   const bool curveint = false) const
@@ -1540,28 +1532,28 @@ public:
 
     Vec<DIM_DMAT, TSCAL> dvec;
 	
-    const MappedIntegrationPoint< DIM_SPACE, DIM_SPACE > & d_g_sip
-      (static_cast<const MappedIntegrationPoint< DIM_SPACE, DIM_SPACE > &>(g_sip));
+    const MappedIntegrationPoint< DIM_SPACE, DIM_SPACE > & d_g_mip
+      (static_cast<const MappedIntegrationPoint< DIM_SPACE, DIM_SPACE > &>(g_mip));
 
     if(curveint)
       {
-	const MappedIntegrationPoint< 1, DIM_SPACE > & d_s_sip
-	  (static_cast<const MappedIntegrationPoint< 1, DIM_SPACE > &>(s_sip));
+	const MappedIntegrationPoint< 1, DIM_SPACE > & d_s_mip
+	  (static_cast<const MappedIntegrationPoint< 1, DIM_SPACE > &>(s_mip));
 
-	dvecop.GenerateVector (fel, d_s_sip, dvec, lh);
+	dvecop.GenerateVector (fel, d_s_mip, dvec, lh);
       }
     else
       {
 	enum { HDIM = (DIM_SPACE > 1) ? DIM_SPACE-1 : 1 };
 	
-	const MappedIntegrationPoint< HDIM, DIM_SPACE > & d_s_sip
-	  (static_cast<const MappedIntegrationPoint< HDIM, DIM_SPACE > &>(s_sip));
+	const MappedIntegrationPoint< HDIM, DIM_SPACE > & d_s_mip
+	  (static_cast<const MappedIntegrationPoint< HDIM, DIM_SPACE > &>(s_mip));
 	
-	dvecop.GenerateVector (fel, d_s_sip, dvec, lh);
+	dvecop.GenerateVector (fel, d_s_mip, dvec, lh);
       }
 
 
-    DIFFOP::ApplyTrans (fel, d_g_sip, dvec, elvec, lh);
+    DIFFOP::ApplyTrans (fel, d_g_mip, dvec, elvec, lh);
   
     //(*testout) << "dvec " << dvec << " elvec " << elvec << endl;
 

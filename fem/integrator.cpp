@@ -678,7 +678,7 @@ namespace ngfem
 
 
 
-
+  /*
   const IntegrationRule &  BilinearFormIntegrator :: 
   GetIntegrationRule (const FiniteElement & fel,
                       const bool use_higher_integration_order) const
@@ -688,7 +688,7 @@ namespace ngfem
 	 << endl;
     static IntegrationRule dummy; return dummy;
   }
-  
+  */
 
 
 
@@ -1581,13 +1581,13 @@ double BlockBilinearFormIntegrator ::
 
 
 
-  
+  /*
   const IntegrationRule & ComplexBilinearFormIntegrator :: GetIntegrationRule (const FiniteElement & fel,
 									       const bool use_higher_integration_order) const
   {
     return bfi.GetIntegrationRule(fel,use_higher_integration_order);
   }
-
+  */
 
   CompoundBilinearFormIntegrator :: 
   CompoundBilinearFormIntegrator (const BilinearFormIntegrator & abfi, int acomp)

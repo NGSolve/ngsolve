@@ -85,7 +85,7 @@ namespace ngfem
 
 	for (int l = 0; l < ir_vol.GetNIP(); l++)
 	  {
-	    const SpecificIntegrationPoint<D,D> & sip = mir_vol[l];
+	    const MappedIntegrationPoint<D,D> & sip = mir_vol[l];
 	    double lam = coef_lam->Evaluate(sip);
 	    
 	    fel_l2.CalcMappedDShape (sip, dshape);
@@ -155,7 +155,7 @@ namespace ngfem
 	    for (int l = 0; l < ir_facet.GetNIP(); l++)
 	      {
 		IntegrationPoint ip = transform(k, ir_facet[l]);
-		SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
+		MappedIntegrationPoint<D,D> sip (ip, eltrans);
 		double lam = coef_lam->Evaluate(sip);
               
 		Mat<D> inv_jac = sip.GetJacobianInverse();
@@ -272,7 +272,7 @@ namespace ngfem
 		    {
 		      Vec<3> p = p1 + ir1d[k](0) * (p2-p1);
 		      IntegrationPoint ip (p(0), p(1), p(2), ir1d[k].Weight());
-		      SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
+		      MappedIntegrationPoint<D,D> sip (ip, eltrans);
 		      double lam = coef_lam->Evaluate(sip);
 
 		      
@@ -352,7 +352,7 @@ namespace ngfem
 
 	for (int l = 0; l < ir_vol.GetNIP(); l++)
 	  {
-	    const SpecificIntegrationPoint<D,D> & sip = mir_vol[l];
+	    const MappedIntegrationPoint<D,D> & sip = mir_vol[l];
 	    double lam = coef_lam->Evaluate(sip);
 	    
 	    Vec<D> gi = grad.Row(l);
@@ -433,7 +433,7 @@ namespace ngfem
 
 	    for (int l = 0; l < ir_vol.GetNIP(); l++)
 	      {
-		const SpecificIntegrationPoint<D,D> & sip = mir[l];
+		const MappedIntegrationPoint<D,D> & sip = mir[l];
 		double lam = coef_lam->Evaluate(sip);
               
 		Mat<D> inv_jac = sip.GetJacobianInverse();
@@ -579,7 +579,7 @@ namespace ngfem
 
 		  for (int k = 0; k < ir_vol.Size(); k++)
 		    {
-		      const SpecificIntegrationPoint<D,D> & sip = mir[k];
+		      const MappedIntegrationPoint<D,D> & sip = mir[k];
 
 		      double lam = coef_lam->Evaluate(sip);
 		      
@@ -726,7 +726,7 @@ namespace ngfem
 	  helmat = 0.0;
 	  for (int l = 0; l < ir_facet.GetNIP(); l++)
 	    {
-	      const SpecificIntegrationPoint<D,D> & sip = mir[l];
+	      const MappedIntegrationPoint<D,D> & sip = mir[l];
 	      double lam = coef_lam->Evaluate(sip);
 
               
@@ -853,7 +853,7 @@ namespace ngfem
 
 	for (int l = 0; l < ir_vol.GetNIP(); l++)
 	  {
-	    const SpecificIntegrationPoint<D,D> & sip = mir_vol[l];
+	    const MappedIntegrationPoint<D,D> & sip = mir_vol[l];
 	    double lam = coef_lam->Evaluate(sip);
 	    
 	    fel_l2.CalcMappedDShape (sip, dshape);
@@ -904,7 +904,7 @@ namespace ngfem
 	      for (int l = 0; l < ir_facet.GetNIP(); l++)
 		{
 		  IntegrationPoint ip = transform(k, ir_facet[l]);
-		  SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
+		  MappedIntegrationPoint<D,D> sip (ip, eltrans);
 		  double lam = coef_lam->Evaluate(sip);
               
 		  Mat<D> inv_jac = sip.GetJacobianInverse();
@@ -1117,7 +1117,7 @@ namespace ngfem
 	      for (int l = 0; l < ir_facet.GetNIP(); l++)
 		{
 		  IntegrationPoint ip = transform(k, ir_facet[l]);
-		  SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
+		  SpecificIntegrationPoint<D,D> sip (ip, eltrans);
 		  double lam = coef_lam->Evaluate(sip);
               
 		  Mat<D> inv_jac = sip.GetJacobianInverse();
@@ -1332,7 +1332,7 @@ namespace ngfem
 		  for (int l = 0; l < ir_facet.GetNIP(); l++)
 		    {
 		      IntegrationPoint ip = transform(k, ir_facet[l]);
-		      SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
+		      SpecificIntegrationPoint<D,D> sip (ip, eltrans);
 		      double lam = coef_lam->Evaluate(sip);
 		      
 		      Mat<D> inv_jac = sip.GetJacobianInverse();
@@ -1474,7 +1474,7 @@ namespace ngfem
       for (int l = 0; l < ir_vol.GetNIP(); l++)
         {
           HeapReset hr(lh);
-          const SpecificIntegrationPoint<D,D> sip(ir_vol[l], eltrans, lh);
+          const MappedIntegrationPoint<D,D> sip(ir_vol[l], eltrans);
           Vec<D> conv;
 
           if (coef_conv.Size()>1)
@@ -1538,7 +1538,7 @@ namespace ngfem
           for (int l = 0; l < ir_facet.GetNIP(); l++)
             {
               IntegrationPoint ip = transform(k, ir_facet[l]);
-              SpecificIntegrationPoint<D,D> sip (ip, eltrans, lh);
+              MappedIntegrationPoint<D,D> sip (ip, eltrans);
 	      
               Vec<D> conv;
 	      if (coef_conv.Size()>1)

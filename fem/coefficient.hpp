@@ -458,9 +458,6 @@ namespace ngfem
 
     bool writeips;
 
-    LocalHeapMem<10000> lh2;
-
-
   private:
     void EmptyValues(void);
 
