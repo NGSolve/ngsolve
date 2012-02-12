@@ -15,7 +15,7 @@ namespace ngstd
 /**
    Numerical expression parser.
    The expression is stored in reverse Polnish notation.
-   The evaluatino tree can be filled form an external parser,
+   The evaluation tree can be filled form an external parser,
    see Addxxx methods.
 */
 class NGS_DLL_HEADER EvalFunction
