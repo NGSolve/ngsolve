@@ -11,16 +11,7 @@
 
 // ng-soft header files
 #include <ngstd.hpp>
-
-
-using namespace std;
-// data types are in ngstd - namespace
 using namespace ngstd;
-
-namespace netgen {
-  ostream * testout = &cout;
-  int id;
-}
 
 
 int main ()
@@ -38,6 +29,9 @@ int main ()
   // an array without memory handling, initialize with size and pointer
   FlatArray<int> sub(3, &ia[2]);
   cout << "sub-array = " << sub << endl;
+
+  // access a semi-open sub-array [first,next)
+  cout << "sub-array = " << ia.Range (2,5) << endl;
 
 
 

@@ -11,19 +11,12 @@
 #include <cmath>
 
 
-
 // ng-soft header files
 #include <bla.hpp>
 
 
 using namespace std;
 using namespace ngbla;
-
-namespace netgen {
-  ostream * testout = &cout;
-  int id;
-}
-
 
 
 
@@ -106,7 +99,6 @@ int main ()
 
   clock_t starttime, endtime;
 
-
   starttime = clock();
 
   double sum = 0;
@@ -118,12 +110,12 @@ int main ()
   cout << "sum = " << sum << endl;
 
 
-  //  Vector<Complex> ac(1000);
-  //  Vector<Complex> bc(1000);
+  // Vector<Complex> ac(1000);
+  // Vector<Complex> bc(1000);
   Vector<complex<double> > ac(1000);
   Vector<complex<double> > bc(1000);
-  //  Vector<Vec<2> > ac(1000);
-  //  Vector<Vec<2> > bc(1000);
+  // Vector<Vec<2> > ac(1000);
+  // Vector<Vec<2> > bc(1000);
   ac = 1.0;
   bc = 1.0;
 
@@ -207,8 +199,3 @@ int main ()
 }
 
 
-
-/*
-  icc7.1 ... 2.37 sec  (3.67, 2.76, ..),   Complex .. 200
-  gcc3.3 ...  Complex 15
- */

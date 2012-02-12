@@ -26,11 +26,6 @@ using namespace ngfem;
 using namespace ngcomp;
 
 
-namespace netgen {
-  ostream * testout = &cout;
-}
-
-
 
 int main ()
 {
@@ -61,6 +56,8 @@ int main ()
 
   Array<EvalFunction*> asource(1);
   asource[0] = new EvalFunction ("sin(x)*y");
+  asource[0]->Print(cout);
+
   lff.AddIntegrator (new SourceIntegrator<3> (new DomainVariableCoefficientFunction<3>(asource)));
 
 
