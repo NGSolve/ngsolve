@@ -36,9 +36,16 @@
 
 #include "dynamicmem.hpp"
 
-namespace netgen
+
+namespace ngstd
 {
   DLL_HEADER extern ::std::ostream * testout;
+}
+using ngstd::testout;
+
+namespace netgen
+{
+  // DLL_HEADER extern ::std::ostream * testout;
   DLL_HEADER extern int printmessage_importance;
 }
 
@@ -61,9 +68,9 @@ using netgen::ntasks;
 
 
 
-using netgen::printmessage_importance;
+// using netgen::printmessage_importance;
 using netgen::DynamicMem;
-using netgen::testout;
+// using netgen::testout;
 
 
 
