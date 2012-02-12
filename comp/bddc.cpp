@@ -119,6 +119,11 @@ namespace ngcomp
         }
 
 
+	    MyMPI_Barrier();
+	    cout << "aaaa" << endl;
+	    MyMPI_Barrier();
+
+
 #ifdef PARALLEL
       // accumulate weight
 
@@ -158,7 +163,11 @@ namespace ngcomp
 	}
 #endif
 
-      
+	    MyMPI_Barrier();
+	    cout << "bbbb" << endl;
+	    MyMPI_Barrier();
+
+
       MatrixGraph graph_harmonicext(ndof, el2ifdofs, el2wbdofs, false);
       MatrixGraph graph_innersolve(ndof, el2ifdofs, el2ifdofs, bfa.IsSymmetric());
       MatrixGraph graph_wbschur(ndof, el2wbdofs, el2wbdofs, bfa.IsSymmetric());
@@ -362,7 +371,6 @@ namespace ngcomp
 	    ParallelMatrix parwb(*pwbmat, bfa.GetFESpace().GetParallelDofs());
 	    parwb.SetInverseType (inversetype);
 	    inv = parwb.InverseMatrix (free_dofs);
-
 
 	    tmp = new ParallelVVector<TV>(ndof, &bfa.GetFESpace().GetParallelDofs());
 	    subassembled_innersolve = new ParallelMatrix (*subassembled_innersolve, bfa.GetFESpace().GetParallelDofs());

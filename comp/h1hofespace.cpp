@@ -447,23 +447,17 @@ namespace ngcomp
 	for (int edge = 0; edge < ma.GetNEdges(); edge++)
 	  {
 	    IntRange range = GetEdgeDofs (edge);
-	    ctofdof.Range(range) = INTERFACE_DOF;
-	    if (range.Next() > range.First())
+	    ctofdof[range] = INTERFACE_DOF;
+	    if (range.Size() > 0)
 	      ctofdof[range.First()] = WIREBASKET_DOF;
 	  }
 	
 	for (int face = 0; face < ma.GetNFaces(); face++)
-	  {
-	    IntRange range = GetFaceDofs (face);
-	    ctofdof.Range(range) = INTERFACE_DOF;
-	  }
+	  ctofdof[GetFaceDofs(face)] = INTERFACE_DOF;
       }
 
     for (int el = 0; el < ma.GetNE(); el ++)
-      {
-	IntRange range = GetElementDofs (el);
-	ctofdof.Range(range) = LOCAL_DOF;
-      }
+      ctofdof[GetElementDofs(el)] = LOCAL_DOF;
   }
 
 

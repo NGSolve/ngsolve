@@ -315,7 +315,7 @@ namespace ngcomp
 
   
 
-  double GridFunctionCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip) const
+  double GridFunctionCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction - evaluate");
     
@@ -357,7 +357,7 @@ namespace ngcomp
       }
   }
 
-  void GridFunctionCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip,
+  void GridFunctionCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip,
 						    FlatVector<> result) const
   {
     LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction, Eval 2");
@@ -540,7 +540,7 @@ namespace ngcomp
       }
     
     IntegrationPoint ip(lam1, lam2, lam3, 0);
-    SpecificIntegrationPoint<3,3> sip (ip, eltrans, lh);
+    MappedIntegrationPoint<3,3> sip (ip, eltrans);
 
 
     for(int j = 0; j<bfi3d.Size(); j++)
@@ -623,7 +623,7 @@ namespace ngcomp
       }
 
     IntegrationPoint ip(xref[0], xref[1], xref[2], 0);
-    SpecificIntegrationPoint<3,3> sip (ip, eltrans, vx, mdxdxref); // , lh);
+    MappedIntegrationPoint<3,3> sip (ip, eltrans, vx, mdxdxref); // , lh);
 
     for(int j = 0; j<bfi3d.Size(); j++)
       {
@@ -700,7 +700,7 @@ namespace ngcomp
 	  {
 	    Mat<3,3> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<3,3>;
 	    FlatVec<3> vx( (double*)x + k*sx);
-	    mir[k] = SpecificIntegrationPoint<3,3> (ir[k], eltrans, vx, mdxdxref);
+	    mir[k] = MappedIntegrationPoint<3,3> (ir[k], eltrans, vx, mdxdxref);
 	  }
 
 	for (int k = 0; k < npts; k++)
@@ -833,7 +833,7 @@ namespace ngcomp
 
     if (bound)
       {
-	SpecificIntegrationPoint<2,3> sip (ip, eltrans, lh);
+	MappedIntegrationPoint<2,3> sip (ip, eltrans);
 	for(int j = 0; j<bfi2d.Size(); j++)
 	  {
             FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
@@ -850,7 +850,7 @@ namespace ngcomp
       }
     else
       {
-	SpecificIntegrationPoint<2,2> sip (ip, eltrans, lh);
+	MappedIntegrationPoint<2,2> sip (ip, eltrans);
 	for(int j = 0; j<bfi2d.Size(); j++)
 	  {
             FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
@@ -955,7 +955,7 @@ namespace ngcomp
                 for (int j = 0; j < 2; j++)
                   mdxdxref(i,j) = dxdxref[2*i+j];
               }
-            SpecificIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref); 
+            MappedIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref); 
             for (int i = 0; i < components; i++)
               values[i] = 0.0;
             for(int j = 0; j<bfi2d.Size(); j++)
@@ -976,7 +976,7 @@ namespace ngcomp
                 for (int j = 0; j < 2; j++)
                   mdxdxref(i,j) = dxdxref[2*i+j];
               }
-            SpecificIntegrationPoint<2,2> sip (ip, eltrans, vx, mdxdxref); 
+            MappedIntegrationPoint<2,2> sip (ip, eltrans, vx, mdxdxref); 
 
             for (int i = 0; i < components; i++)
               values[i] = 0.0;
@@ -1085,8 +1085,8 @@ namespace ngcomp
                   for (int j = 0; j < 2; j++)
                     mdxdxref(i,j) = dxdxref[k*sdxdxref+2*i+j];
 
-		SpecificIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref); 
-		// SpecificIntegrationPoint<2,3> sip (ip, eltrans, x+k*sx, mdxdxref); 
+		MappedIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref); 
+		// MappedIntegrationPoint<2,3> sip (ip, eltrans, x+k*sx, mdxdxref); 
                 
                 for(int j = 0; j<bfi2d.Size(); j++)
                   {
@@ -1112,7 +1112,7 @@ namespace ngcomp
 	      {
 		Mat<2,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,2>;
 		FlatVec<2> vx( (double*)x + k*sx);
-		mir[k] = SpecificIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
+		mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
 	      }
 
             for (int k = 0; k < npts; k++)

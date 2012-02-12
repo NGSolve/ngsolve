@@ -110,9 +110,13 @@ namespace ngcomp
 	  
 	  u.GetElementVector (dnums, elu);
 	  fes.TransformVec (i, bound, elu, TRANSFORM_SOL);
-	  
+
+	  /*
 	  const IntegrationRule & ir = 
 	    SelectIntegrationRule(fel.ElementType(), max(fel.Order(),felflux.Order())+felflux.Order());
+	  */
+	  IntegrationRule ir(fel.ElementType(), 
+			     max(fel.Order(),felflux.Order())+felflux.Order());
 
 
 	  BaseMappedIntegrationRule & mir = eltrans(ir, lh);
@@ -516,8 +520,11 @@ namespace ngcomp
 	  FlatVector<SCAL> elfluxi(dnums.Size() * dim, lh);
 	  FlatVector<SCAL> fluxi(dimflux, lh);
 	  
+	  /*
 	  const IntegrationRule & ir = 
 	    GetIntegrationRules().SelectIntegrationRule(fel.ElementType(), 2*fel.Order());
+	  */
+	  IntegrationRule ir(fel.ElementType(), 2*fel.Order());
 
 	  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
 
@@ -680,10 +687,11 @@ namespace ngcomp
 	flux.GetElementVector (dnumsflux, elflux);
 	fesflux.TransformVec (i, bound, elflux, TRANSFORM_SOL);
 
-
+	/*
 	const IntegrationRule & ir = 
 	  SelectIntegrationRule(felflux.ElementType(), 2*felflux.Order());
-
+	*/
+	IntegrationRule ir(felflux.ElementType(), 2*felflux.Order());
 
 	FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimfluxvec, lh);
 	FlatMatrix<SCAL> mfluxi2(ir.GetNIP(), dimfluxvec, lh);
@@ -848,10 +856,14 @@ namespace ngcomp
 	double elerr = 0;
 
 	int io = max(fel1.Order(),fel2.Order()); 
-
+	
+	/*
 	const IntegrationRule & ir = 
 	  GetIntegrationRules().SelectIntegrationRule(fel1.ElementType(), 
 						      2*io+2);
+	*/
+	IntegrationRule ir(fel1.ElementType(), 2*io+2);
+
 	double det; 
 	
 	for (int j = 0; j < ir.GetNIP(); j++)
@@ -861,34 +873,34 @@ namespace ngcomp
 	      {
 		if (ma.GetDimension() == 2)
 		  {
-		    SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
-		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-		    bli2.CalcFlux (fel2, sip, elu2, fluxi2, applyd2, lh);
-		    det = fabs(sip.GetJacobiDet()); 
+		    MappedIntegrationPoint<2,2> mip (ir[j], eltrans);
+		    bli1.CalcFlux (fel1, mip, elu1, fluxi1, applyd1, lh);
+		    bli2.CalcFlux (fel2, mip, elu2, fluxi2, applyd2, lh);
+		    det = fabs(mip.GetJacobiDet()); 
 		  }
 		else
 		  {
-		    SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
-		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-		    bli2.CalcFlux (fel2, sip, elu2, fluxi2, applyd2, lh);
-		    det = fabs(sip.GetJacobiDet());  
+		    MappedIntegrationPoint<3,3> mip (ir[j], eltrans);
+		    bli1.CalcFlux (fel1, mip, elu1, fluxi1, applyd1, lh);
+		    bli2.CalcFlux (fel2, mip, elu2, fluxi2, applyd2, lh);
+		    det = fabs(mip.GetJacobiDet());  
 		  }
 	      }
 	    else 
 	      {
 		if (ma.GetDimension() == 3)
 		  {
-		    SpecificIntegrationPoint<2,3> sip (ir[j], eltrans, lh);
-		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-		    bli2.CalcFlux (fel2, sip, elu2, fluxi2, applyd2, lh);
-		    det = fabs(sip.GetJacobiDet()); 
+		    MappedIntegrationPoint<2,3> mip (ir[j], eltrans);
+		    bli1.CalcFlux (fel1, mip, elu1, fluxi1, applyd1, lh);
+		    bli2.CalcFlux (fel2, mip, elu2, fluxi2, applyd2, lh);
+		    det = fabs(mip.GetJacobiDet()); 
 		  }
 		else
 		  {
-		    SpecificIntegrationPoint<1,2> sip (ir[j], eltrans, lh);
-		    bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-		    bli2.CalcFlux (fel2, sip, elu2, fluxi2, applyd2, lh);
-		    det = fabs(sip.GetJacobiDet()); 
+		    MappedIntegrationPoint<1,2> mip (ir[j], eltrans);
+		    bli1.CalcFlux (fel1, mip, elu1, fluxi1, applyd1, lh);
+		    bli2.CalcFlux (fel2, mip, elu2, fluxi2, applyd2, lh);
+		    det = fabs(mip.GetJacobiDet()); 
 		  }
 	      }
 
@@ -991,9 +1003,12 @@ namespace ngcomp
 
 	double elerr = 0;
 
+	/*
 	const IntegrationRule & ir = 
 	  GetIntegrationRules().SelectIntegrationRule(fel1.ElementType(), 
 						      2*fel1.Order()+3);
+	*/
+	IntegrationRule ir(fel1.ElementType(), 2*fel1.Order()+3);
 	double det = 0;
 	
 	if (bound1) 
@@ -1036,20 +1051,20 @@ namespace ngcomp
 		    if (ma.GetDimension() == 2)
 		      {
 			Vec<2> point; 
-			SpecificIntegrationPoint<2,2> sip (ir[j], eltrans, lh);
-			eltrans.CalcPoint(sip.IP(), point, lh);
-			bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-			const_cast<CoefficientFunction*>(coef)->Evaluate(sip,fluxi2);
-			det = fabs(sip.GetJacobiDet()); 
+			MappedIntegrationPoint<2,2> mip (ir[j], eltrans);
+			eltrans.CalcPoint(mip.IP(), point);
+			bli1.CalcFlux (fel1, mip, elu1, fluxi1, applyd1, lh);
+			const_cast<CoefficientFunction*>(coef)->Evaluate(mip,fluxi2);
+			det = fabs(mip.GetJacobiDet()); 
 		      }
 		    else
 		      {
 			Vec<3> point;
-			SpecificIntegrationPoint<3,3> sip (ir[j], eltrans, lh);
-			eltrans.CalcPoint(sip.IP(), point, lh);
-			bli1.CalcFlux (fel1, sip, elu1, fluxi1, applyd1, lh);
-			const_cast<CoefficientFunction*>(coef)->Evaluate(sip,fluxi2);
-			det = fabs(sip.GetJacobiDet());  
+			MappedIntegrationPoint<3,3> mip (ir[j], eltrans);
+			eltrans.CalcPoint(mip.IP(), point);
+			bli1.CalcFlux (fel1, mip, elu1, fluxi1, applyd1, lh);
+			const_cast<CoefficientFunction*>(coef)->Evaluate(mip,fluxi2);
+			det = fabs(mip.GetJacobiDet());  
 		      }
 		  }
 
