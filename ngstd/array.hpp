@@ -223,6 +223,12 @@ namespace ngstd
       return FlatArray<T> (range.Size(), data+range.First());
     }
 
+    /// takes range starting from position start of end-start elements
+    const FlatArray<T> operator[] (class IntRange range) const
+    {
+      return FlatArray<T> (range.Size(), data+range.First());
+    }
+
 
     /// first position of element elem, returns -1 if element not contained in array 
     int Pos(const T & elem) const
