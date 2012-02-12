@@ -478,8 +478,9 @@ int Exists(int p1, int p2, const Array<twoint>& line)
   int i;
   for (i = 1; i <= line.Size(); i++)
     {
-      if (line.Get(i).i1 == p1 && line.Get(i).i2 == p2 ||
-	  line.Get(i).i1 == p2 && line.Get(i).i2 == p1) {return 1;}
+      if ( (line.Get(i).i1 == p1 && line.Get(i).i2 == p2) ||
+	   (line.Get(i).i1 == p2 && line.Get(i).i2 == p1) )
+	{return 1;}
     }
   return 0;
 }
