@@ -43,7 +43,6 @@ namespace ngla
     static void MumpsFunction (ZMUMPS_STRUC_C * id)
     { zmumps_c (id); }
   };
-#endif
 
 
 
@@ -56,10 +55,10 @@ namespace ngla
     typedef typename mat_traits<TM>::TV_ROW TVX;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
-#ifdef USE_MUMPS
+
     typedef typename mumps_trait<TSCAL>::MUMPS_STRUC_C MUMPS_STRUC_C;
     MUMPS_STRUC_C mumps_id;
-#endif
+
     int height, nze, entrysize;
 
     bool symmetric, iscomplex;
@@ -108,11 +107,9 @@ namespace ngla
     typedef typename mat_traits<TM>::TV_ROW TVX;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
-#ifdef USE_MUMPS
+
     typedef typename mumps_trait<TSCAL>::MUMPS_STRUC_C MUMPS_STRUC_C;
     MUMPS_STRUC_C mumps_id;
-    int dummy[100];
-#endif
     int height, nze, entrysize;
 
     bool symmetric, iscomplex;
@@ -150,20 +147,17 @@ namespace ngla
 
 
   private:
-#ifdef USE_MUMPS
     void MumpsFunction (MUMPS_STRUC_C & mumps_id)
     {
       mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
     }
-#endif
-
   };
 
 
 
 
 
-
+#endif
 
 
 
