@@ -1506,7 +1506,11 @@ namespace ngcomp
 			  fbfi.CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
 						fel2,facnr2,eltrans2,vnums2, elmat, lh);
 			  *testout << "elmat : \n" << elmat << endl;
-                          fespace.TransformMat (i, false, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+
+                          fespace.TransformMat (el1, false, elmat.Rows(0,dnums1.Size()), TRANSFORM_MAT_LEFT);
+                          fespace.TransformMat (el2, false, elmat.Rows(dnums1.Size(),dnums2.Size()), TRANSFORM_MAT_LEFT);
+                          fespace.TransformMat (el1, false, elmat.Cols(0,dnums1.Size()), TRANSFORM_MAT_RIGHT);
+                          fespace.TransformMat (el2, false, elmat.Cols(dnums1.Size(),dnums2.Size()), TRANSFORM_MAT_RIGHT);
 
                           if (printelmat)
                             {
