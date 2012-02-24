@@ -1424,6 +1424,20 @@ namespace ngcomp
 	      }//end of hasskeletonbound
             if (hasskeletoninner)
 	      {
+                int dim = ma.GetDimension();
+                BitArray fine_facet(nf);
+                fine_facet.Clear();
+                Array<int> elfacets;
+                for (int i = 0; i < ne; ++i)
+                {
+                  if(dim==2)
+                    ma.GetElEdges(i,elfacets);
+                  else
+                    ma.GetElFaces(i,elfacets);
+                  for (int j=0;j<elfacets.Size();j++)
+                    fine_facet.Set(elfacets[j]);
+                }
+
                 int cnt = 0;
 #pragma omp parallel 
                 {
@@ -1434,6 +1448,7 @@ namespace ngcomp
 #pragma omp for 
                   for (int i = 0; i < nf; i++)
                     {
+                      if (!fine_facet.Test(i)) continue;
 		      HeapReset hr(lh);
 		      
 		      int el1 = -1;
