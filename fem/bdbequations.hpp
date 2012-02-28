@@ -857,66 +857,6 @@ public:
 
 
 
-
-
-
-/*
-template <int N, typename TSCAL> 
-class DVecBase 
-{
- protected:
-  CoefficientFunction * coefs[N];
- public:
-  template <typename FEL, typename MIP, typename VEC>
-  void GenerateVector (const FEL & fel, const MIP & mip,
-		       VEC & vec, LocalHeap & lh) const
-  {
-    for (int i = 0; i < N; i++)
-      vec(i) = coefs[i] -> Evaluate (mip);
-  }  
-};
-
-template <int N>
-class DVecBase<N, Complex>
-{
- protected:
-  CoefficientFunction * coefs[N];
- public:
-  template <typename FEL, typename MIP, typename VEC>
-  void GenerateVector (const FEL & fel, const MIP & mip,
-		       VEC & vec, LocalHeap & lh) const
-  {
-    typedef typename VEC::TSCAL TRESULT;
-    
-    for (int i = 0; i < N; i++)
-      vec(i) = ConvertTo<TRESULT> (coefs[i] -> EvaluateComplex (mip));
-  }  
-};
-*/
-
-
-// template <typename T = double> 
-// class DVecVec
-// {
-//  protected:
-//   CoefficientFunction * coefs;
-//  public:
-//   typedef T TSCAL; 
-//   
-//   DVecVec (CoefficientFunction * acoef)
-//   { 
-//     coefs = acoef;
-//   }
-//   
-//   template <typename FEL, typename MIP, typename VEC>
-//   void GenerateVector (const FEL & fel, const MIP & mip,
-// 		       VEC & vec, LocalHeap & lh) const
-//   {
-//       coefs -> Evaluate (mip,vec);
-//   }  
-// };
-
-
 template <int N>
 class NGS_DLL_HEADER DVec  // : public DVecBase<N,T>
 {
@@ -988,16 +928,21 @@ public:
 
     if (vectorial)
       {
+	/*
 	Vec<N,TSCAL> hv;
 	coefs[0] -> Evaluate (mip, hv);
 	vec = hv;
+	*/
+	coefs[0] -> Evaluate (mip, vec);
       }
     else
       for (int i = 0; i < N; i++)
 	{
 	  CoefficientFunction * hp = coefs[i];
 	  vec(i) = hp -> T_Evaluate<TSCAL> (mip);
-	  // vec(i) = coefs[i] -> T_Evaluate<TSCAL> (mip);   // why not ????
+
+	  // gcc 4.6 complains, why ???? (JS)
+	  // vec(i) = (coefs[i]) -> T_Evaluate<TSCAL> (mip);  
 	}
   }  
 };

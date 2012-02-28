@@ -652,7 +652,7 @@ namespace ngfem
 
 
 
-
+  /*
   // returns coef * Identity-matrix
   class RegularizationBilinearFormIntegrator : public BilinearFormIntegrator
   {
@@ -675,7 +675,6 @@ namespace ngfem
     {
       int ndof = fel.GetNDof();
 
-      // elmat.AssignMemory (ndof, ndof, lh);
       elmat = 0;
       MappedIntegrationPoint<3,3> mip (GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 0)[0], 
 				       eltrans);
@@ -687,7 +686,7 @@ namespace ngfem
 
     virtual string Name () const { return "Regularization"; }
   };
-  
+  */  
 
 
 
@@ -1037,25 +1036,6 @@ namespace ngfem
 				  FlatVector<Complex> & ely,
 				  LocalHeap & lh) const;
 
-    /*
-    virtual void
-    CalcFlux (const FiniteElement & bfel,
-	      const ElementTransformation & eltrans,
-	      const IntegrationPoint & ip,
-	      const FlatVector<double> & elx, 
-	      FlatVector<double> & flux,
-	      bool applyd,
-	      LocalHeap & lh) const;
-
-    virtual void
-    CalcFlux (const FiniteElement & bfel,
-	      const ElementTransformation & eltrans,
-	      const IntegrationPoint & ip,
-	      const FlatVector<Complex> & elx, 
-	      FlatVector<Complex> & flux,
-	      bool applyd,
-	      LocalHeap & lh) const;
-    */
 
     virtual void
     CalcFlux (const FiniteElement & fel,

@@ -314,6 +314,11 @@ namespace ngfem
       throw Exception ("should not call copy-constructor of ir\n");
     }
 
+    NGS_DLL_HEADER IntegrationRule (int asize, LocalHeap & lh)
+      : Array (asize, lh)
+    {
+      ;
+    }
 
     // make it polymorphic
     virtual ~IntegrationRule() { ; }
@@ -527,22 +532,27 @@ namespace ngfem
   protected:
     // mutable IntegrationPoint elpoint;  
     ELEMENT_TYPE eltype;
-    const POINT3D * points;
+    // const POINT3D * points;
+    FlatVector<Vec<3> > points;
     const EDGE * edges;
     const FACE * faces;
     EDGE hedges[4];
     FACE hfaces[6];
   public:
-    Facet2ElementTrafo(ELEMENT_TYPE aeltype) : eltype(aeltype) 
+    Facet2ElementTrafo(ELEMENT_TYPE aeltype) 
+      : eltype(aeltype),
+	points(99,(double*)ElementTopology::GetVertices (aeltype))
     {
-      points = ElementTopology::GetVertices (eltype);
+      // points = ElementTopology::GetVertices (eltype);
       edges = ElementTopology::GetEdges (eltype);
       faces = ElementTopology::GetFaces (eltype);
     }
   
-    Facet2ElementTrafo(ELEMENT_TYPE aeltype, const FlatArray<int> & vnums) : eltype(aeltype) 
+    Facet2ElementTrafo(ELEMENT_TYPE aeltype, const FlatArray<int> & vnums) 
+      : eltype(aeltype),
+	points(99,(double*)ElementTopology::GetVertices (aeltype))
     {
-      points = ElementTopology::GetVertices (eltype);
+      // points = ElementTopology::GetVertices (eltype);
       edges = ElementTopology::GetEdges (eltype);
       faces = ElementTopology::GetFaces (eltype);
 
@@ -619,74 +629,98 @@ namespace ngfem
 
     void operator()(int fnr, const IntegrationPoint &ipfac, IntegrationPoint & ipvol) const 
     {
-      ELEMENT_TYPE facettype;
-      switch (eltype) 
-	{
-	case ET_TRIG:
-	case ET_QUAD:
-	  facettype = ET_SEGM;
-	  break;
-	case ET_TET:
-	  facettype = ET_TRIG;
-	  break;
-	case ET_HEX:
-	  facettype = ET_QUAD;
-	  break;
-	case ET_PRISM:
-	  if (fnr < 2) facettype = ET_TRIG;
-	  else facettype = ET_QUAD;
-	  break;
-	case ET_PYRAMID:
-	  if (fnr < 4) facettype = ET_TRIG;
-	  else facettype = ET_QUAD;
-	  break;
-	default:
-	  throw Exception ("undefined element type in Facet2ElementTrafo()\n");
-	}
-    
+      ELEMENT_TYPE facettype = ElementTopology::GetFacetType(eltype, fnr);
+
       switch (facettype)
 	{
 	case ET_SEGM:
 	  {
-	    const POINT3D & p1 = points[edges[fnr][0]];
-	    const POINT3D & p2 = points[edges[fnr][1]];
-            for (int j = 0; j < 3; j++)
-              ipvol(j) = p2[j] + (ipfac(0))*(p1[j]-p2[j]);
+	    FlatVec<3> p1 = points (edges[fnr][0]);
+	    FlatVec<3> p2 = points (edges[fnr][1]);
+
+	    // Vec<3> volp = p2 + ipfac(0) * (p1-p2);
+	    // ipvol = volp;
+	    ipvol = Vec<3> (p2 + ipfac(0) * (p1-p2));
 	    break;
 	  }
 	case ET_TRIG:
 	  {
-	    const POINT3D & p0 = points[faces[fnr][0]];
-	    const POINT3D & p1 = points[faces[fnr][1]];
-	    const POINT3D & p2 = points[faces[fnr][2]];
-	    ipvol(0) = p2[0] + ipfac(0)*(p0[0]-p2[0]) + ipfac(1)*(p1[0]-p2[0]);
-	    ipvol(1) = p2[1] + ipfac(0)*(p0[1]-p2[1]) + ipfac(1)*(p1[1]-p2[1]);
-	    ipvol(2) = p2[2] + ipfac(0)*(p0[2]-p2[2]) + ipfac(1)*(p1[2]-p2[2]);
+	    FlatVec<3> p0 = points(faces[fnr][0]);
+	    FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][2]);
+
+            // for (int j = 0; j < 3; j++)
+	    //   ipvol(j) = p2[j] + ipfac(0)*(p0[j]-p2[j]) + ipfac(1)*(p1[j]-p2[j]);
+	    ipvol = Vec<3> (p2 + ipfac(0) * (p0-p2) + ipfac(1)*(p1-p2));
 	    break;
 	  }
 	case ET_QUAD:
 	  {
-	    const POINT3D & p0 = points[faces[fnr][0]];
-	    const POINT3D & p1 = points[faces[fnr][1]];
-	    const POINT3D & p2 = points[faces[fnr][3]];
-	    ipvol(0) = p0[0] + ipfac(0)*(p1[0]-p0[0]) + ipfac(1)*(p2[0]-p0[0]);
-	    ipvol(1) = p0[1] + ipfac(0)*(p1[1]-p0[1]) + ipfac(1)*(p2[1]-p0[1]);
-	    ipvol(2) = p0[2] + ipfac(0)*(p1[2]-p0[2]) + ipfac(1)*(p2[2]-p0[2]);
+	    FlatVec<3> p0 = points(faces[fnr][0]);
+	    FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][3]);
+
+            // for (int j = 0; j < 3; j++)
+	    //  ipvol(j) = p0[j] + ipfac(0)*(p1[j]-p0[j]) + ipfac(1)*(p2[j]-p0[j]);
+	    ipvol = Vec<3> (p0 + ipfac(0) * (p1-p0) + ipfac(1)*(p2-p0));
 	    break;
 	  }
 	default:
 	  throw Exception ("undefined facet type in Facet2ElementTrafo()\n");
-
 	} 
-      /*      cerr << "*** mapping integrationpoint for element " << eltype << " and facel " << fnr << " of type " << facettype << endl;
-	      cerr << "  * ipfac = " << ipfac;
-	      cerr << "  * ipvol = " << ipvol;*/
     }
+
     const IntegrationPoint operator()(int fnr, const IntegrationPoint &ip1d) const 
     {
       IntegrationPoint elpoint;
       operator()(fnr, ip1d, elpoint);
       return elpoint;
+    }
+
+    IntegrationRule & operator() (int fnr, const IntegrationRule & irfacet, LocalHeap & lh)
+    {
+      IntegrationRule & irvol = *new (lh) IntegrationRule (irfacet.GetNIP(), lh);
+
+      switch (ElementTopology::GetFacetType(eltype, fnr))
+	{
+	case ET_SEGM:
+	  {
+	    FlatVec<3> p1 = points (edges[fnr][0]);
+	    FlatVec<3> p2 = points (edges[fnr][1]);
+
+	    for (int i = 0; i < irfacet.GetNIP(); i++)
+	      irvol[i] = Vec<3> (p2 + irfacet[i](0) * (p1-p2));
+	    break;
+	  }
+	case ET_TRIG:
+	  {
+	    FlatVec<3> p0 = points(faces[fnr][0]);
+	    FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][2]);
+
+	    for (int i = 0; i < irfacet.GetNIP(); i++)
+	      irvol[i] = Vec<3> (p2 + irfacet[i](0) * (p0-p2) + irfacet[i](1)*(p1-p2));
+	    break;
+	  }
+	case ET_QUAD:
+	  {
+	    FlatVec<3> p0 = points(faces[fnr][0]);
+	    FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][3]);
+
+	    for (int i = 0; i < irfacet.GetNIP(); i++)
+	      irvol[i] = Vec<3> (p0 + irfacet[i](0) * (p1-p0) + irfacet[i](1)*(p2-p0));
+	    break;
+	  }
+	default:
+	  throw Exception ("undefined facet type in Facet2ElementTrafo()\n");
+	} 
+
+      /*
+      for (int i = 0; i < irfacet.GetNIP(); i++)
+	(*this) (fnr, irfacet[i], irvol[i]);
+      */
+      return irvol;
     }
   };
 
