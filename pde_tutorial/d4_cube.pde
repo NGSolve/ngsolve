@@ -24,8 +24,8 @@ define coefficient dirich_bc
 
 
 
-define fespace v -order=10 -type=h1ho
-define fespace vp -order=4 -dim=3 -type=h1ho
+define fespace v -order=6 -type=h1ho
+define fespace vp -order=5 -dim=3 -type=h1ho
 
 define gridfunction u -fespace=v -nested
 

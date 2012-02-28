@@ -40,7 +40,7 @@ define coefficient alpha
 
 
 define coefficient b
-(500,100),
+(50,10),
 
 define coefficient cf 
 1,
