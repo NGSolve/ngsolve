@@ -10,8 +10,10 @@
 namespace ngstd
 {
   ostream * testout = &cout;
+#ifdef PARALLEL
+  int id = 0, ntasks = 1;
+#endif
 
-  using namespace ngstd;
   
   template <class T>
   void MergeSort (int size, T * data, T * help)

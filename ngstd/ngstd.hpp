@@ -79,11 +79,11 @@ enum { ntasks = 1 };
 
 #else
 
-namespace netgen {
+namespace ngstd {
   extern int id, ntasks;
 }
-using netgen::id;
-using netgen::ntasks;
+using ngstd::id;
+using ngstd::ntasks;
 
 #endif
 

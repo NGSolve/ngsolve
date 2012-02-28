@@ -643,6 +643,11 @@ int NGSolve_Init (Tcl_Interp * interp)
 #ifdef USE_SUPERLU
   cout << "Including sparse direct solver SuperLU by Lawrence Berkeley National Laboratory" << endl;
 #endif
+
+#ifdef PARALLEL
+  MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+  MPI_Comm_rank(MPI_COMM_WORLD, &id);
+#endif
   
 #ifdef _OPENMP
 #ifdef PARALLEL
@@ -800,6 +805,8 @@ void NGS_ParallelRun ( const string & message )
   omp_set_num_threads (1);
 #endif
 
+  MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+  MPI_Comm_rank(MPI_COMM_WORLD, &id);
 
   if ( message == "ngs_pdefile" )
     {
