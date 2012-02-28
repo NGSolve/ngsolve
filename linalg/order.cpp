@@ -34,7 +34,7 @@ namespace ngla
     :  n(an), 
        cliques(an), order(an), blocknr(an), vertices(an), 
        priqueue(an, an+1),
-       ball(sizeof (CliqueEl))
+       ball(sizeof (CliqueEl), 1000)
   {
     cliques = NULL;
     blocknr = 0;
