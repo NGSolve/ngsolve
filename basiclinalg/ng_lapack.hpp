@@ -436,19 +436,20 @@ namespace ngbla
     int lda = a.Width();
     int ldb = b.Width();
     int nrhs = b.Height();
-    int * ipiv = new int[n];
+    //int * ipiv = new int[n];
+    ArrayMem<int,100> ipiv(n);
     int info;
     // char uplo = 'L';
 
-    dgetrf_ (&n, &m, &a(0,0), &lda, ipiv, &info);
-    dgetrs_ (&trans, &n, &nrhs, &a(0,0), &lda, ipiv, &b(0,0), &ldb, &info);
+    dgetrf_ (&n, &m, &a(0,0), &lda, &ipiv[0], &info);
+    dgetrs_ (&trans, &n, &nrhs, &a(0,0), &lda, &ipiv[0], &b(0,0), &ldb, &info);
 
     /*
       dpotrf_ (uplo, n, a(0,0), lda, info);
       dpotrs_ (uplo, n, nrhs, a(0,0), lda, b(0,0), ldb, info);
     */
 
-    delete [] ipiv;
+    // delete [] ipiv;
   }
 
 
