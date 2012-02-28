@@ -211,8 +211,7 @@ namespace ngfem
 	case ET_PRISM: return (k<2 ? ET_TRIG : ET_QUAD);
 	case ET_HEX: return ET_QUAD;
 	default:
-	  cerr << "*** error in GetFacetType: Unhandled Elementtype" << endl;
-	  return ET_SEGM;
+	  throw Exception ("undefined element type in ElementTopology::GetFacetType()\n");
 	}  
     }
 

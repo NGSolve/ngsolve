@@ -196,6 +196,11 @@ namespace ngfem
       return (*specific) (ir, lh);
     }
 
+
+  private:
+    ElementTransformation (const ElementTransformation & eltrans2) { ; }
+    ElementTransformation & operator= (const ElementTransformation & eltrans2) 
+    { return *this; }
   };
 
 

@@ -26,7 +26,7 @@ namespace ngfem
     ///
     virtual int NumRegions () { return INT_MAX; }
     ///
-    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const = 0;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const = 0;
     
     ///
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
@@ -35,34 +35,34 @@ namespace ngfem
 
 
     ///
-    virtual Complex EvaluateComplex (const BaseSpecificIntegrationPoint & ip) const 
+    virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
     { 
       return Evaluate (ip);
     }
 
 
     template <typename SCAL>
-    inline SCAL T_Evaluate (const BaseSpecificIntegrationPoint & ip) const
+    inline SCAL T_Evaluate (const BaseMappedIntegrationPoint & ip) const
     {
       return SCAL (Evaluate (ip));
     }
 
 
-    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip, const double & t) const
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip, const double & t) const
     {
       return Evaluate(ip);
     }
-    virtual double EvaluateDeri (const BaseSpecificIntegrationPoint & ip, const double & t) const
+    virtual double EvaluateDeri (const BaseMappedIntegrationPoint & ip, const double & t) const
     {
       return 0;
     }
 
     // to be changed
-    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip,
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip,
 			     const complex<double> & t) const
     { return Evaluate(ip,t.real()); }
     // to be changed
-    virtual double EvaluateDeri (const BaseSpecificIntegrationPoint & ip,
+    virtual double EvaluateDeri (const BaseMappedIntegrationPoint & ip,
 				 const complex<double> & t) const
     { return EvaluateDeri(ip,t.real()); }
 
@@ -76,14 +76,14 @@ namespace ngfem
     virtual bool IsComplex() const { return false; }
     virtual int Dimension() const { return 1; }
 
-    virtual void Evaluate(const BaseSpecificIntegrationPoint & ip,
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
 			  FlatVector<> result) const
     {
       double f = Evaluate (ip);
       result(0) = f; 
     }
 
-    virtual void Evaluate(const BaseSpecificIntegrationPoint & ip,
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
 			  FlatVector<Complex> result) const
     {
       Complex f = EvaluateComplex (ip);
@@ -100,14 +100,14 @@ namespace ngfem
 
   template <>
   inline double CoefficientFunction :: 
-  T_Evaluate<double> (const BaseSpecificIntegrationPoint & ip) const
+  T_Evaluate<double> (const BaseMappedIntegrationPoint & ip) const
   {
     return Evaluate (ip);
   }
 
   template <>
   inline Complex CoefficientFunction :: 
-  T_Evaluate<Complex> (const BaseSpecificIntegrationPoint & ip) const
+  T_Evaluate<Complex> (const BaseMappedIntegrationPoint & ip) const
   {
     return EvaluateComplex (ip);
   }
@@ -117,14 +117,14 @@ namespace ngfem
   /*
   template <int S, int R>
   inline double Evaluate (const CoefficientFunction & fun,
-			  const SpecificIntegrationPoint<S,R> & ip) 
+			  const MappedIntegrationPoint<S,R> & ip) 
   { 
     return fun.Evaluate(ip); 
   }
   */
   
   inline double Evaluate (const CoefficientFunction & fun,
-			  const BaseSpecificIntegrationPoint & ip) 
+			  const BaseMappedIntegrationPoint & ip) 
   { 
     return fun.Evaluate(ip); 
   }
@@ -143,7 +143,7 @@ namespace ngfem
     ///
     virtual ~ConstantCoefficientFunction ();
     ///
-    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
     {
       return val;
     }
@@ -170,7 +170,7 @@ namespace ngfem
     virtual ~DomainConstantCoefficientFunction ();
     ///
 
-    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
 
@@ -203,18 +203,18 @@ namespace ngfem
     ///
     virtual int NumRegions () { return fun.Size(); }
     ///
-    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
     {
       int elind = ip.GetTransformation().GetElementIndex();
-      return fun[elind]->Eval (&static_cast<const DimSpecificIntegrationPoint<DIM>&>(ip).GetPoint()(0));
+      return fun[elind]->Eval (&static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint()(0));
     }
 
-    virtual Complex EvaluateComplex (const BaseSpecificIntegrationPoint & ip) const
+    virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const
     {
       int elind = ip.GetTransformation().GetElementIndex();
       Vec<DIM, Complex> hp;
       for (int i = 0; i < DIM; i++)
-	hp(i) = static_cast<const DimSpecificIntegrationPoint<DIM>&>(ip).GetPoint()(i);
+	hp(i) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint()(i);
       return fun[elind]->Eval (&hp(0));
     }
 
@@ -234,19 +234,19 @@ namespace ngfem
     }
     virtual int Dimension() const { return fun[0]->Dimension(); }
 
-    virtual void Evaluate(const BaseSpecificIntegrationPoint & ip,
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
 			  FlatVector<> result) const
     {
       int elind = ip.GetTransformation().GetElementIndex();
-      fun[elind]->Eval (&static_cast<const DimSpecificIntegrationPoint<DIM>&>(ip).GetPoint()(0), &result(0), result.Size());
+      fun[elind]->Eval (&static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint()(0), &result(0), result.Size());
     }
 
 
-    virtual void Evaluate(const BaseSpecificIntegrationPoint & ip,
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
 			  FlatVector<Complex> result) const
     {
       int elind = ip.GetTransformation().GetElementIndex();
-      fun[elind]->Eval (&static_cast<const DimSpecificIntegrationPoint<DIM>&>(ip).GetPoint()(0), &result(0), result.Size());
+      fun[elind]->Eval (&static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint()(0), &result(0), result.Size());
     }
 
 
@@ -270,7 +270,7 @@ namespace ngfem
     ///
     /*
       template <int S, int R>
-      double Evaluate (const SpecificIntegrationPoint<S,R> & ip)
+      double Evaluate (const MappedIntegrationPoint<S,R> & ip)
       {
       int elind = ip.GetTransformation().GetElementIndex();
       if (elind != matnr && matnr > 0) return 0;
@@ -279,12 +279,12 @@ namespace ngfem
       }
     */
   
-    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
     {
       int elind = ip.GetTransformation().GetElementIndex();
       if (elind != matnr && matnr > 0) return 0;
 
-      return f(&static_cast<const DimSpecificIntegrationPoint<DIM>&>(ip).GetPoint()(0));
+      return f(&static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint()(0));
       // return f(&ip.GetPoint().REval(0));
     }
   
@@ -330,7 +330,7 @@ namespace ngfem
     ///
     /*
       template <int S, int R>
-      double Evaluate (const SpecificIntegrationPoint<S,R> & ip)
+      double Evaluate (const MappedIntegrationPoint<S,R> & ip)
       {
       int ipnr = ip.GetIPNr();
       int elnr = ip.GetTransformation().GetElementNr();
@@ -347,7 +347,7 @@ namespace ngfem
       return values[elnr*ips_per_elem+ipnr];
       }
     */
-    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
     {
       int ipnr = ip.GetIPNr();
       int elnr = ip.GetTransformation().GetElementNr();
@@ -430,11 +430,11 @@ namespace ngfem
   
     virtual ~PolynomialCoefficientFunction();
 
-    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const; 
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const; 
 
-    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip, const double & t) const;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip, const double & t) const;
 
-    virtual double EvaluateDeri (const BaseSpecificIntegrationPoint & ip, const double & t) const;
+    virtual double EvaluateDeri (const BaseMappedIntegrationPoint & ip, const double & t) const;
 
     virtual double EvaluateConst () const;
   };
@@ -473,7 +473,7 @@ namespace ngfem
 
     virtual ~FileCoefficientFunction();
 
-    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
 
     void LoadValues(const string & filename);
     inline void LoadValues(void){ LoadValues(valuesfilename); }

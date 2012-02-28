@@ -66,7 +66,7 @@ namespace ngfem
 
 
 
-  
+  /*
   
 
   template <int DIM>
@@ -139,6 +139,8 @@ namespace ngfem
 			  shape.Addr(base));
     }
   };
+
+  */
 
 
 }

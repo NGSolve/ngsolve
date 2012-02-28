@@ -10,33 +10,12 @@
 */
 
 
-
-
 #include <fem.hpp>
 
 namespace ngfem
 {
 
-  /*
-  NeedsUpdateException :: NeedsUpdateException ()
-    : Exception ("FE needs update")
-  { ; }
-  */
-
-  /*
-  void FiniteElement :: GetInternalDofs (Array<int> & idofs) const
-  {
-    idofs.SetSize(0);
-  }
-  */
   
-  /*
-  void FiniteElement :: GetDofs (Array<Dof> & dofs) const
-  {
-    throw Exception(string ("GetDofs not implemented for element ") + typeid(*this).name());
-  }
-  */
-
   CompoundFiniteElement ::  CompoundFiniteElement (Array<const FiniteElement*> & afea)
     : FiniteElement (), fea(afea)
   {
@@ -65,26 +44,4 @@ namespace ngfem
 	eltype = ET_TRIG;
       }
   }
-
-
-    /*
-  void CompoundFiniteElement :: GetInternalDofs (Array<int> & idofs) const
-  {
-    idofs.SetSize (0);
-    ArrayMem<int,20> bidofs;
-    int base = 0;
-    for (int i = 0; i < fea.Size(); i++)
-      {
-	(*this)[i].GetInternalDofs (bidofs);
-	for (int j = 0; j < bidofs.Size(); j++)
-	  idofs.Append (base+bidofs[j]);
-	base += (*this)[i].GetNDof();
-      }
-  }
-    */
-
-
-
-
-
 }

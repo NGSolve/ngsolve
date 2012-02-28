@@ -270,6 +270,14 @@ namespace ngfem
     return 0;
   }
 #endif  
+
+
+
+
+
+
+
+
   
   NORMAL * ElementTopology::GetNormals(ELEMENT_TYPE et)
   {

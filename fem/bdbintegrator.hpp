@@ -37,7 +37,6 @@ public:
     static_cast<const DMO*>(this) -> GenerateMatrix (fel, mip, mat, lh);
   }
 
-
   /// apply coefficient matrix.
   template <typename FEL, typename MIP, class TVX, class TVY>
   void Apply (const FEL & fel, const MIP & mip,
@@ -67,7 +66,6 @@ public:
   }
 
 
-
   template <typename FEL, typename MIP, class TVX, class TVY>
   void ApplyInv (const FEL & fel, const MIP & mip,
 		 const TVX & x, TVY & y,
@@ -80,7 +78,6 @@ public:
     CalcInverse (mat, inv);
     y = inv * x;
   }
-
 
   /// apply transpose coefficient tensor
   template <typename FEL, typename MIP, class TVX, class TVY>
@@ -148,6 +145,7 @@ public:
   enum { DIM         = DIFFOP::DIM };
   // typedef typename DMATOP::TSCAL TSCAL;
 
+  ///
   T_BDBIntegrator  (Array<CoefficientFunction*> & coeffs)
   : dmatop(coeffs)
   { ; }
@@ -746,8 +744,7 @@ public:
 	dmatop.Apply (fel, mip, hv1, hv2, lh);
 	DIFFOP::ApplyTrans (fel, mip, hv2, hely, lh);
 
-	double fac = fabs (mip.GetJacobiDet()) * mip.IP().Weight();
-	ely += fac * hely;
+	ely += mip.GetWeight() * hely;
       }     
   }
 

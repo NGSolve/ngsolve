@@ -564,7 +564,7 @@ namespace ngfem {
 
 
 
-
+  /*
 
 
 
@@ -622,15 +622,15 @@ namespace ngfem {
       }
   }
 
-
+  */
 
 
 
   
   //template class FacetVolumeFiniteElement<1>;
 
-  template class EdgeVolumeFiniteElement<2>;
-  template class EdgeVolumeFiniteElement<3>;
+  // template class EdgeVolumeFiniteElement<2>;
+  // template class EdgeVolumeFiniteElement<3>;
 
   template class FacetVolumeFiniteElement<2>;
   template class FacetVolumeFiniteElement<3>;
