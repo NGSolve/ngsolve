@@ -498,6 +498,7 @@ namespace ngcomp
 						double lam1, double lam2, double lam3,
 						double * values) 
   { 
+    // cout << "VisGF::GetValue" << endl;
     if (!bfi3d.Size()) return 0;
     if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
@@ -505,15 +506,13 @@ namespace ngcomp
 
     int dim     = fes.GetDimension();
 
-    // NgLock lock(const_cast<S_GridFunction<SCAL>*> (gf) -> Mutex(), 1);
-
     if ( !fes.DefinedOn(ma.GetElIndex(elnr)) ) 
-      return 0;
+      return false;
 
     if (cache_elnr != elnr || cache_bound)
       {
 	lh.CleanUp();
-	ma.GetElementTransformation (elnr, eltrans, lh);
+
 	fes.GetDofNrs (elnr, dnums);
 	elu.AssignMemory (dnums.Size() * dim, lh);
 
@@ -538,12 +537,15 @@ namespace ngcomp
 	cache_bound = 0;
 
       }
-    
+
+    HeapReset hr(lh);
+    ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
+
     IntegrationPoint ip(lam1, lam2, lam3, 0);
     MappedIntegrationPoint<3,3> sip (ip, eltrans);
 
 
-    for(int j = 0; j<bfi3d.Size(); j++)
+    for(int j = 0; j < bfi3d.Size(); j++)
       {
 	HeapReset hr(lh);
 	FlatVector<SCAL> flux(bfi3d[j] -> DimFlux(), lh);
@@ -551,14 +553,12 @@ namespace ngcomp
 
 	for (int i = 0; i < components; i++)
 	  {
-	    if(j == 0)
-	      values[i] = ((double*)(void*)&flux(0))[i];
-	    else
-	      values[i] += ((double*)(void*)&flux(0))[i];
+	    if(j == 0) values[i] = 0;
+	    values[i] += ((double*)(void*)&flux(0))[i];
 	  }
       }
 
-    return 1; 
+    return true; 
   }
 
 
@@ -567,25 +567,20 @@ namespace ngcomp
 						const double xref[], const double x[], const double dxdxref[],
 						double * values) 
   { 
+    // cout << "VisGF::GetValue2" << endl;
     if (!bfi3d.Size()) return 0;
     if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
-    //LocalHeapMem<10000> lh2;
 
     const FESpace & fes = gf->GetFESpace();
-    // const FiniteElement & fel = fes.GetFE (elnr, lh2);
 
     int dim     = fes.GetDimension();
 
-    // NgLock lock(const_cast<S_GridFunction<SCAL>*> (gf) -> Mutex(), 1);
-
-    // added 07.04.2004 (FB): don't draw, if not defined on this domain
     if ( !fes.DefinedOn(ma.GetElIndex(elnr)) ) return 0;
 
     if (cache_elnr != elnr || cache_bound)
       {
 	lh.CleanUp();
-	ma.GetElementTransformation (elnr, eltrans, lh);
 	fes.GetDofNrs (elnr, dnums);
     
 	elu.AssignMemory (dnums.Size() * dim, lh);
@@ -609,9 +604,7 @@ namespace ngcomp
 	cache_bound = 0;
       }
 
-    void * hp = lh.GetPointer();
-
-    
+    HeapReset hr(lh);
 
     Vec<3> vx;
     Mat<3,3> mdxdxref;
@@ -622,28 +615,24 @@ namespace ngcomp
 	  mdxdxref(i,j) = dxdxref[3*i+j];
       }
 
+    ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
     IntegrationPoint ip(xref[0], xref[1], xref[2], 0);
-    MappedIntegrationPoint<3,3> sip (ip, eltrans, vx, mdxdxref); // , lh);
+    MappedIntegrationPoint<3,3> sip (ip, eltrans, vx, mdxdxref);
 
-    for(int j = 0; j<bfi3d.Size(); j++)
+    for(int j = 0; j < bfi3d.Size(); j++)
       {
 	FlatVector<SCAL> flux (bfi3d[j]->DimFlux(), lh);
 	bfi3d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
 
-
 	for (int i = 0; i < components; i++)
 	  {
-	    if(j == 0)
-	      values[i] = ((double*)(void*)&flux(0))[i];
-	    else
-	      values[i] += ((double*)(void*)&flux(0))[i];
+	    if(j == 0) values[i] = 0;
+	    values[i] += ((double*)(void*)&flux(0))[i];
 	  }
       }
 
-    lh.CleanUp(hp);
-    return 1; 
+    return true; 
   }
-
 
 
 
@@ -655,6 +644,7 @@ namespace ngcomp
 		 const double * dxdxref, int sdxdxref,
 		 double * values, int svalues)
   {
+    // cout << "VisGF::GetMultiValue" << endl;
     try
       {
         if (!bfi3d.Size()) return 0;
@@ -664,8 +654,8 @@ namespace ngcomp
         int dim = fes.GetDimension();
 	
         HeapReset hr(lh);
-	
-	ma.GetElementTransformation (elnr, eltrans, lh);
+	ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
+
 	fes.GetDofNrs (elnr, dnums);
 	fel = &fes.GetFE (elnr, lh);
         
@@ -687,12 +677,10 @@ namespace ngcomp
         
 	if (!fes.DefinedOn(eltrans.GetElementIndex()))return 0;
 
-	IntegrationRule ir; // (npts);
+	IntegrationRule ir; 
+	ir.SetAllocSize(npts);
 	for (int i = 0; i < npts; i++)
 	  ir.Append (IntegrationPoint (xref[i*sxref], xref[i*sxref+1], xref[i*sxref+2]));
-
-	// ElementTransformation eltrans;
-	// ma.GetElementTransformation (elnr, eltrans, lh);
 
 	MappedIntegrationRule<3,3> mir(ir, eltrans, 1, lh);
 
@@ -719,7 +707,7 @@ namespace ngcomp
 		values[k*svalues+i] += ((double*)(void*)&flux(k,0))[i];
           }
 
-        return 1; 
+        return true;
       }
     catch (Exception & e)
       {
@@ -765,14 +753,13 @@ namespace ngcomp
                                                     double lam1, double lam2, 
                                                     double * values) 
   { 
+    // cout << "VisGF::GetSurfValue" << endl;
     if (!bfi2d.Size()) return 0;
     if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
     bool bound = (ma.GetDimension() == 3);
     const FESpace & fes = gf->GetFESpace();
 
-
-    // NgLock lock(const_cast<S_GridFunction<SCAL>*> (gf) -> Mutex(), 1);
 
     int dim = fes.GetDimension();
 
@@ -786,15 +773,17 @@ namespace ngcomp
       {
 	lh.CleanUp();
 
+	// ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
+
 	if (bound)
 	  {
-	    ma.GetSurfaceElementTransformation (elnr, eltrans, lh);
+	    // ma.GetSurfaceElementTransformation (elnr, eltrans, lh);
 	    fes.GetSDofNrs (elnr, dnums);
 	    fel = &fes.GetSFE (elnr, lh);
 	  }
 	else
 	  {
-	    ma.GetElementTransformation (elnr, eltrans, lh);
+	    // ma.GetElementTransformation (elnr, eltrans, lh);
 	    fes.GetDofNrs (elnr, dnums);
 	    fel = &fes.GetFE (elnr, lh);
 	  }
@@ -820,53 +809,29 @@ namespace ngcomp
 	cache_bound = 1;
       }
 
+    HeapReset hr(lh);
+    ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
+
     if ( bound ? 
 	 !fes.DefinedOnBoundary(eltrans.GetElementIndex()) : 
-	 !fes.DefinedOn(eltrans.GetElementIndex()) ) return 0;
-
-
-    HeapReset hr(lh);
-
+	 !fes.DefinedOn(eltrans.GetElementIndex()) ) return false;
 
     IntegrationPoint ip(lam1, lam2, 0, 0);
 
-
-    if (bound)
+    BaseMappedIntegrationPoint & sip = eltrans(ip, lh);
+    for(int j = 0; j < bfi2d.Size(); j++)
       {
-	MappedIntegrationPoint<2,3> sip (ip, eltrans);
-	for(int j = 0; j<bfi2d.Size(); j++)
+	FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
+	bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
+	
+	for (int i = 0; i < components; i++)
 	  {
-            FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
-	    bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
-
-	    for (int i = 0; i < components; i++)
-	      {
-		if(j == 0)
-		  values[i] = ((double*)(void*)&flux(0))[i];
-		else
-		  values[i] += ((double*)(void*)&flux(0))[i];
-	      }
-	  }
-      }
-    else
-      {
-	MappedIntegrationPoint<2,2> sip (ip, eltrans);
-	for(int j = 0; j<bfi2d.Size(); j++)
-	  {
-            FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
-	    bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
-
-	    for (int i = 0; i < components; i++)
-	      {
-		if(j == 0)
-		  values[i] = ((double*)(void*)&flux(0))[i];
-		else
-		  values[i] += ((double*)(void*)&flux(0))[i];
-	      }
+	    if(j == 0) values[i] = 0;
+	    values[i] += ((double*)(void*)&flux(0))[i];
 	  }
       }
 
-    return 1; 
+    return true;
   }
 
 
@@ -877,6 +842,7 @@ namespace ngcomp
 						    const double xref[], const double x[], const double dxdxref[],
 						    double * values) 
   { 
+    // cout << "VisGF::GetSurfValue2" << endl;
     try
       {
         if (!bfi2d.Size()) return 0;
@@ -885,11 +851,7 @@ namespace ngcomp
         bool bound = (ma.GetDimension() == 3);
         const FESpace & fes = gf->GetFESpace();
 
-
-        // NgLock lock(const_cast<S_GridFunction<SCAL>*> (gf) -> Mutex(), 1);
-
         int dim     = fes.GetDimension();
-
 
         if (cache_elnr != elnr || !cache_bound)
           {
@@ -897,13 +859,11 @@ namespace ngcomp
 
             if (bound)
               {
-                ma.GetSurfaceElementTransformation (elnr, eltrans, lh);
                 fes.GetSDofNrs (elnr, dnums);
                 fel = &fes.GetSFE (elnr, lh);
               }
             else
               {
-                ma.GetElementTransformation (elnr, eltrans, lh);
                 fes.GetDofNrs (elnr, dnums);
                 fel = &fes.GetFE (elnr, lh);
               }
@@ -929,20 +889,12 @@ namespace ngcomp
             cache_bound = 1;
           }
 
+	HeapReset hr(lh);
+	ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
 
-        /*
-          if ( bound ? 
-          !fes.DefinedOnBoundary(ma.GetSElIndex(elnr)) :
-          !fes.DefinedOn(ma.GetElIndex(elnr)) ) return 0;
-        */
         if ( bound ? 
              !fes.DefinedOnBoundary(eltrans.GetElementIndex()) : 
              !fes.DefinedOn(eltrans.GetElementIndex()) ) return 0;
-
-
-
-        HeapReset hr(lh);
-
 
         IntegrationPoint ip(xref[0], xref[1], 0, 0);
         if (bound)
@@ -1014,6 +966,7 @@ namespace ngcomp
                      const double * dxdxref, int sdxdxref,
                      double * values, int svalues)
   {
+    // cout << "VisGF::GetMultiSurfValue" << endl;
     try
       {
         if (!bfi2d.Size()) return 0;
@@ -1026,16 +979,16 @@ namespace ngcomp
 
         
         HeapReset hr(lh);
+
+	ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
         
         if (bound)
           {
-            ma.GetSurfaceElementTransformation (elnr, eltrans, lh);
             fes.GetSDofNrs (elnr, dnums);
             fel = &fes.GetSFE (elnr, lh);
           }
         else
           {
-            ma.GetElementTransformation (elnr, eltrans, lh);
             fes.GetDofNrs (elnr, dnums);
             fel = &fes.GetFE (elnr, lh);
           }
@@ -1061,32 +1014,21 @@ namespace ngcomp
              !fes.DefinedOnBoundary(eltrans.GetElementIndex()) : 
              !fes.DefinedOn(eltrans.GetElementIndex()) ) return 0;
 
-
-
+	for (int k = 0; k < npts; k++)
+	  for (int i = 0; i < components; i++)
+	    values[k*svalues+i] = 0.0;
 
         if (bound)
           {
-
-            for (int k = 0; k < npts; k++)
-              for (int i = 0; i < components; i++)
-                values[k*svalues+i] = 0.0;
-            
             for (int k = 0; k < npts; k++)
               {
                 HeapReset hr(lh);
                 
                 IntegrationPoint ip(xref[k*sxref], xref[k*sxref+1], 0, 0);
-                Vec<3> vx;
-                Mat<3,2> mdxdxref;
-
-                for (int i = 0; i < 3; i++)
-                  vx(i) = x[k*sx+i];
-                for (int i = 0; i < 3; i++)
-                  for (int j = 0; j < 2; j++)
-                    mdxdxref(i,j) = dxdxref[k*sdxdxref+2*i+j];
+		FlatVec<3> vx( (double*)x + k*sx);
+		Mat<3,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<3,2>;
 
 		MappedIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref); 
-		// MappedIntegrationPoint<2,3> sip (ip, eltrans, x+k*sx, mdxdxref); 
                 
                 for(int j = 0; j<bfi2d.Size(); j++)
                   {
@@ -1099,12 +1041,9 @@ namespace ngcomp
           }
         else
           {
-	    IntegrationRule ir; // (npts);
+	    IntegrationRule ir(npts, lh);
 	    for (int i = 0; i < npts; i++)
-	      ir.Append (IntegrationPoint (xref[i*sxref], xref[i*sxref+1]));
-
-	    ElementTransformation eltrans;
-	    ma.GetElementTransformation (elnr, eltrans, lh);
+	      ir[i] = IntegrationPoint (xref[i*sxref], xref[i*sxref+1]);
 
 	    MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
 
@@ -1115,11 +1054,7 @@ namespace ngcomp
 		mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
 	      }
 
-            for (int k = 0; k < npts; k++)
-              for (int i = 0; i < components; i++)
-                values[k*svalues+i] = 0.0;
-	    
-	    for(int j = 0; j<bfi2d.Size(); j++)
+	    for(int j = 0; j < bfi2d.Size(); j++)
 	      {
 		FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
 		bfi2d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
@@ -1130,7 +1065,7 @@ namespace ngcomp
 	      }
           }
 
-        return 1; 
+        return true; 
       }
     catch (Exception & e)
       {
@@ -1159,6 +1094,7 @@ namespace ngcomp
   void VisualizeGridFunction<SCAL> :: 
   Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages, int component)
   {
+    cout << "VisGF::Analyze" << endl;
     int ndomains = 0;
 
     if (bfi3d.Size()) 
@@ -1187,6 +1123,7 @@ namespace ngcomp
   void VisualizeGridFunction<SCAL> :: 
   Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages_times_volumes, Array<double> & volumes, int component)
   {
+    cout << "VisGF::Analyze2" << endl;
     const FESpace & fes = gf->GetFESpace();
 
     int domain;

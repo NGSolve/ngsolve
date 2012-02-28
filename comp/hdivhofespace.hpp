@@ -141,6 +141,17 @@ namespace ngcomp
       else return 0; 
     }
     */
+
+    IntRange GetFacetDofs (int nr) const
+    {
+      return IntRange (first_facet_dof[nr], first_facet_dof[nr+1]);
+    }
+
+    IntRange GetElementDofs (int nr) const
+    {
+      return IntRange (first_inner_dof[nr], first_inner_dof[nr+1]);
+    }
+
   };
 
 }

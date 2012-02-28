@@ -1249,51 +1249,39 @@ namespace ngcomp
 
   }
 
-  /// 
   void HDivHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
-  { dnums.SetSize(0); return; }
-  /// 
+  {
+    dnums.SetSize(0); 
+  }
+  
   void HDivHighOrderFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   { 
     dnums.SetSize(0);
     if(ma.GetDimension() == 3 || discont) return; 
 
-    dnums.Append (ednr);
-    
-    int first = first_facet_dof[ednr];
-    int next = first_facet_dof[ednr+1];
-    for (int j = first; j <next; j++)
-      dnums.Append (j);
+    dnums += ednr;
+    dnums += GetFacetDofs (ednr);
   }
-  /// 
+
   void HDivHighOrderFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     if(ma.GetDimension() == 2 || discont) return; 
    
-    //Ravier-Thomas
-    dnums.Append (fanr);
-    
-    // faces
-    int first = first_facet_dof[fanr];
-    int next = first_facet_dof[fanr+1];
-    for(int j=first ; j<next; j++)
-      dnums.Append(j);
+    dnums += fanr;
+    dnums += GetFacetDofs (fanr);
   }
-  
-  /// 
+
   void HDivHighOrderFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
-    int first = first_inner_dof[elnr];
-    int next = first_inner_dof[elnr+1];
-    for(int j=first; j<next; j++)
-      dnums.Append(j);
-
+    dnums += GetElementDofs (elnr);
   }
 
-
   
+  // there is a decision in Create ...
+  // static RegisterFESpace<HDivHighOrderFESpace> init ("hdivho");
+
   // register FESpaces
   namespace hdivhofespace_cpp
   {
@@ -1311,8 +1299,8 @@ namespace ngcomp
     
     Init init;
   }
-  
-  int link_it_hdivhofes;
+
+  // int link_it_hdivhofes;
 }
 
 
