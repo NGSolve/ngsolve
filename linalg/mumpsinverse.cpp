@@ -13,10 +13,11 @@
 using namespace ngparallel;
 using namespace ngcomp;
 
-
+/*
 namespace netgen {
   extern int id, ntasks;
 }
+*/
 
 namespace ngla
 {
