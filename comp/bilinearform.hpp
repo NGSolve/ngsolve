@@ -67,10 +67,6 @@ namespace ngcomp
     ///
     Array< Vec<2,int> > independent_meshindex;
 
-    BaseMatrix * harmonicext;
-    BaseMatrix * harmonicexttrans;
-    BaseMatrix * innersolve;
-    BaseMatrix * innermatrix;
     ///
     bool timing;
     bool print;
@@ -217,27 +213,13 @@ namespace ngcomp
     }
 
     ///  
-    BaseMatrix & GetHarmonicExtension () const 
-    { 
-      return *harmonicext; 
-    }
-
+    virtual BaseMatrix & GetHarmonicExtension () const = 0;
     ///  
-    BaseMatrix & GetHarmonicExtensionTrans () const
-    { 
-      return *harmonicexttrans; 
-    }
+    virtual BaseMatrix & GetHarmonicExtensionTrans () const = 0;
     ///  
-    BaseMatrix & GetInnerSolve () const
-    { 
-      return *innersolve; 
-    }
+    virtual BaseMatrix & GetInnerSolve () const = 0;
     ///  
-    BaseMatrix & GetInnerMatrix () const
-    { 
-      return *innermatrix; 
-    }
-
+    virtual BaseMatrix & GetInnerMatrix () const = 0;
 
     bool HasLowOrderBilinearForm(void) const {return low_order_bilinear_form != NULL;}
     bool UsesEliminateInternal(void) const {return eliminate_internal;}
@@ -360,6 +342,17 @@ namespace ngcomp
   {
   protected:
 
+    /*
+    BaseMatrix * harmonicext;
+    BaseMatrix * innersolve;
+    BaseMatrix * innermatrix;
+    */
+    ElementByElementMatrix<SCAL> * harmonicext;
+    BaseMatrix * harmonicexttrans;
+    // ElementByElementMatrix<SCAL> * harmonicexttrans;
+    ElementByElementMatrix<SCAL> * innersolve;
+    ElementByElementMatrix<SCAL> * innermatrix;
+
         
   public:
     S_BilinearForm (const FESpace & afespace, const string & aname,
@@ -456,6 +449,27 @@ namespace ngcomp
 				       const FlatVector<SCAL> & diag,
 				       bool inner_element, int elnr,
 				       LocalHeap & lh);
+
+
+    BaseMatrix & GetHarmonicExtension () const 
+    { 
+      return *harmonicext; 
+    }
+    ///  
+    BaseMatrix & GetHarmonicExtensionTrans () const
+    { 
+      return *harmonicexttrans; 
+    }
+    ///  
+    BaseMatrix & GetInnerSolve () const
+    { 
+      return *innersolve; 
+    }
+    ///  
+    BaseMatrix & GetInnerMatrix () const
+    { 
+      return *innermatrix; 
+    }
 
 
   };

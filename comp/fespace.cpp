@@ -183,7 +183,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  }
 	for(int i=0; i<defon.Size(); i++)
 	  delete defon[i];
-	
       }
     
 
@@ -554,7 +553,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   /// get coupling types of dofs
   void  FESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
   { 
-    Array<int> dnums;
+    ArrayMem<int,100> dnums;
     GetDofNrs(elnr, dnums);
     ctypes.SetSize(dnums.Size());
     if (ctofdof.Size()==0){
@@ -570,8 +569,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const
   {
-    Array<int> alldnums; 
-    Array<COUPLING_TYPE> couptype;
+    /*
+    ArrayMem<int,100> alldnums; 
+    ArrayMem<COUPLING_TYPE,100> couptype;
     GetDofNrs(elnr, alldnums);
     GetDofCouplingTypes(elnr, couptype);
     dnums.SetSize(0);
@@ -580,6 +580,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	dnums.Append(alldnums[i]);
       }
     }
+    */
+
+    ArrayMem<int,100> alldnums; 
+    GetDofNrs(elnr, alldnums);
+
+    dnums.SetSize(0);
+    if (ctofdof.Size() == 0)
+      {
+	if ( (INTERFACE_DOF & ctype) != 0)
+	  for (int i = 0; i < alldnums.Size(); i++)
+	    dnums.Append(alldnums[i]);
+      }
+    else
+      {
+	for (int i = 0; i < alldnums.Size(); i++)
+	  if ( (ctofdof[alldnums[i]] & ctype) != 0)
+	    dnums.Append(alldnums[i]);
+      }
   }
 
   void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const
@@ -699,13 +717,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
     int steps;
     LocalHeap lh (100000, "FESpace - Timing");
 
-
     cout << endl << "timing ..." << endl;
     
     starttime = WallTime();
     
     steps = 0;
-    Array<int> dnums;
     do
       {
 #pragma omp parallel
@@ -723,7 +739,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     while (time < 5.0);
     
-    cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs(parallel)" << endl;
+    cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
 
 
 
@@ -754,12 +770,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
     starttime = WallTime();
     
     steps = 0;
-    //    Array<int> dnums;
     do
       {
-	ArrayMem<int,10> dnums;
         for (int i = 0; i < ma.GetNE(); i++)
 	  {
+	    ArrayMem<int,100> dnums;
 	    GetDofNrs (i, dnums);
 	  }
         steps++;
@@ -788,8 +803,20 @@ lot of new non-zero entries in the matrix!\n" << endl;
     cout << 1e9 * time / (ma.GetNE()*steps) << " ns per GetFE" << endl;
 
 
-
-
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+        for (int i = 0; i < ma.GetNE(); i++)
+          {
+	    Ng_Element ngel = ma.GetElement(i);
+          }
+        steps++;
+        time = WallTime()-starttime;
+      }
+    while (time < 5.0);
+    
+    cout << 1e9 * time / (ma.GetNE()*steps) << " ns per Get - Ng_Element" << endl;
   }
 
 

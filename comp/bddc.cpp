@@ -1,6 +1,6 @@
 // #define DEBUG
 
-#define USE_MUMPS
+// #define USE_MUMPS
 
 #include <comp.hpp>
 #include <solve.hpp>

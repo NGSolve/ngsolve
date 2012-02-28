@@ -530,7 +530,7 @@ namespace ngcomp
     static Timer timerb3 ("Matrix assembling bound - 3");
 
     RegionTimer reg (mattimer);
-    
+
     // check if integrators fit to space
     for (int i = 0; i < NumIntegrators(); i++)
       if (parts[i] -> BoundaryForm())
@@ -611,7 +611,9 @@ namespace ngcomp
 	    if (fespace.specialelements.Size()>0) {nrcases++; loopsteps+=fespace.specialelements.Size();}
 	    int actcase = 0;
 	    int gcnt = 0; //global count (for all cases)
-	    clock_t prevtime = clock();
+
+	    // clock_t prevtime = clock();
+	    double prevtime = WallTime();
 
 
 
@@ -620,7 +622,6 @@ namespace ngcomp
 	      {
 		actcase++;
 		int cnt = 0;
-		  
 		const Table<int> * element_coloring = &fespace.ElementColoring();
 		int ncolors = (element_coloring) ? element_coloring->Size() : 1;
 
@@ -651,31 +652,29 @@ namespace ngcomp
 			{
 			  int i = (element_coloring) ? (*element_coloring)[icol][ii] : ii;
 			  
-			  
 			  timer1.Start();
-			  
 			  HeapReset hr (lh);
 			  
-			  if(elmat_ev) *testout << " Assemble Element " << i << endl;  
-			  
 
+			  if (elmat_ev) 
+			    *testout << " Assemble Element " << i << endl;  
+			  
 #pragma omp atomic
 			  cnt++;
-
 #pragma omp atomic
 			  gcnt++;
 
-
-
-			  if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
+			  // if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
+			  if (WallTime()-prevtime > 0.1)
 			    {
-#pragma omp critical(printmatasstatus)
+#pragma omp critical(printmatasstatus) 
 			      {
 				if (ntasks == 1)
 				  {
 				    cout << "\rassemble element " << cnt << "/" << ne << flush;
 				    ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
-				    prevtime = clock();
+				    // prevtime = clock();
+				    prevtime = WallTime();
 				  }
 
 #ifdef PARALLEL
@@ -687,7 +686,6 @@ namespace ngcomp
 
 
 			  if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
-
 
 			  const FiniteElement & fel = fespace.GetFE (i, lh);
 			  ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
@@ -708,8 +706,9 @@ namespace ngcomp
 			  int elmat_size = dnums.Size()*fespace.GetDimension();
 			  FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
 			  sum_elmat = 0;
-                      
+
 			  timer1.Stop();
+
 			  timer2.Start();
 
 			  for (int j = 0; j < NumIntegrators(); j++)
@@ -751,7 +750,6 @@ namespace ngcomp
 				      (*testout) << "elmat = " << endl << elmat << endl;
 				    }
 
-
 				  if (elmat_ev)
 				    {
 #ifdef LAPACK
@@ -764,7 +762,6 @@ namespace ngcomp
 				      (*testout) << "lami = " << endl << lami << endl;
 #endif
 				    } 
-			  
 				}
 			      catch (Exception & e)
 				{
@@ -784,10 +781,8 @@ namespace ngcomp
 			    }
 
 
-
 			  NgProfiler::StopTimer (timer2);
-			  NgProfiler::StartTimer (timer3);
-
+			  timer3.Start();
 			  fespace.TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
 
@@ -806,7 +801,6 @@ namespace ngcomp
 			    }
 
 
-
 			  if (eliminate_internal)
 			    {
 			      static Timer statcondtimer("static condensation");
@@ -823,8 +817,6 @@ namespace ngcomp
 				  *testout << "idofs1 = " << idofs1 << endl;
 				}
 			      
-
-
 			      if (idofs1.Size())
 				{
 				  HeapReset hr (lh);
@@ -851,6 +843,7 @@ namespace ngcomp
 				      (*testout) << "odofs = " << endl << odofs << endl;
 				    }
 
+
 				  FlatMatrix<SCAL> a(sizeo, sizeo, lh);
 				  FlatMatrix<SCAL> b(sizeo, sizei, lh);
 				  FlatMatrix<SCAL> c(sizeo, sizei, lh);
@@ -861,38 +854,34 @@ namespace ngcomp
 				  c = Trans(sum_elmat.Rows(idofs).Cols(odofs));
 				  d = sum_elmat.Rows(idofs).Cols(idofs);
 
-			    
-#ifdef LAPACK
 
+#ifdef LAPACK
 				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizei*sizei/3);  // LU fact
 				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizei*sizeo);  
 				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizeo*sizeo);  
-				  
 				  
 				  // A := A - B D^{-1} C^T
 				  // new Versions, July 07
 				  if (!keep_internal)
 				    {
 				      LapackAInvBt (d, b);    // b <--- b d^-1
-				      LapackMultAddABt (b, c, -1, a);
+				      LapackMultAddABt (b, c, -1, a);				      
 				    }
 				  else
 				    {
-				      Array<int> idnums;
-				      Array<int> ednums;
+				      ArrayMem<int,50> idnums;
+				      ArrayMem<int,50> ednums;
 				      fespace.GetDofNrs(i,idnums,LOCAL_DOF);
 				      fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
 				      if (store_inner)
-					static_cast<ElementByElementMatrix<SCAL>*>(innermatrix)
-					  ->AddElementMatrix(i,idnums,idnums,d);
+					innermatrix ->AddElementMatrix(i,idnums,idnums,d);
 
 				      LapackInverse (d);
 				      FlatMatrix<SCAL> he (sizei, sizeo, lh);
 				      he=0.0;
 				      LapackMultAddABt (d, c, -1, he);
 				      // he = -1.0 * d * Trans(c);
-				      static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)
-					->AddElementMatrix(i,idnums,ednums,he);
+				      harmonicext ->AddElementMatrix(i,idnums,ednums,he);
 				      
 				      if (!symmetric)
 					{
@@ -903,20 +892,18 @@ namespace ngcomp
 					  static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)
 					    ->AddElementMatrix(i,ednums,idnums,het);
 					}
-				      static_cast<ElementByElementMatrix<SCAL>*>(innersolve)
-					->AddElementMatrix(i,idnums,idnums,d);
+				      innersolve ->AddElementMatrix(i,idnums,idnums,d);
 				      
 				      LapackMultAddAB (b, he, 1.0, a);
 				    }				  
-				  
 #else
 				  FlatMatrix<SCAL> invd(sizei, sizei, lh);
 				  FlatMatrix<SCAL> idc(sizeo, sizei, lh);
 				  CalcInverse (d, invd);
 				  if (keep_internal) 
 				    { 
-				      Array<int> idnums;
-				      Array<int> ednums;
+				      ArrayMem<int,50> idnums;
+				      ArrayMem<int,50> ednums;
 				      fespace.GetDofNrs(i,idnums,LOCAL_DOF);
 				      fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
 				      if (store_inner)
@@ -937,8 +924,6 @@ namespace ngcomp
 				  a -= b * Trans (idc);
 				  
 #endif
-	
-		    
 				  if (printelmat) 
 				    {
 				      testout->precision(8);
@@ -970,7 +955,6 @@ namespace ngcomp
 				    }
 				  
 				  sum_elmat.Rows(odofs).Cols(odofs) = a;
-				  
 				  if (linearform && (!keep_internal ))
 				    {
 				      
@@ -995,7 +979,7 @@ namespace ngcomp
 				      linearform->GetVector().SetIndirect (dnums, elvec);
 				      
 				    }
-				  
+
 				  for (int k = 0; k < idofs1.Size(); k++)
 				    dnums[idofs1[k]] = -1;
 				}
@@ -1011,7 +995,6 @@ namespace ngcomp
 			      }
 			    }
                       
-
 			  if (element_coloring)
 			    AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
 			  else
@@ -1027,7 +1010,7 @@ namespace ngcomp
 			    if (dnums[j] != -1)
 			      useddof.Set (dnums[j]);
 
-			  NgProfiler::StopTimer (timer3);
+			  timer3.Stop();
 			}
 		    }//end of parallel
 		  } //end loop over colors
@@ -1887,7 +1870,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 	      {
 		LocalHeap lh = clh.Split();
 		Array<int> dnums, idofs;
-		ElementTransformation eltrans;
+		// ElementTransformation eltrans;
 	      
 	      
 #pragma omp for
@@ -1912,7 +1895,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		    
 		    const FiniteElement & fel = fespace.GetFE (i, lh);
 		
-		    ma.GetElementTransformation (i, eltrans, lh);
+		    // ma.GetElementTransformation (i, eltrans, lh);
+		    ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
 		    fespace.GetDofNrs (i, dnums);
 		
 		    int elmat_size = dnums.Size()*fespace.GetDimension();
@@ -3055,67 +3039,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*hmat);
 
     mat.AddElementMatrix (dnums1, dnums2, elmat);
-    
-    /*
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
-    mat.AddElementMatrix (dnums1, dnums2, elmat);
-    */
   }
-
-  /*
-  ///
-  template <> void T_BilinearForm<double, double>::
-  AddElementMatrix (const Array<int> & dnums1,
-                    const Array<int> & dnums2,
-                    const FlatMatrix<double> & elmat,
-                    bool inner_element, int elnr,
-                    LocalHeap & lh) 
-  {
-    TMATRIX & mat = dynamic_cast<TMATRIX&>(*this->mats.Last());
-    mat.AddElementMatrix (dnums1, dnums2, elmat);
-  }
-
-
-  template <> void T_BilinearForm<Complex, Complex>::
-  AddElementMatrix (const Array<int> & dnums1,
-                    const Array<int> & dnums2,
-                    const FlatMatrix<Complex> & elmat,
-                    bool inner_element, int elnr,
-                    LocalHeap & lh)
-  {
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
-    // #pragma omp critical (addelmat)
-    {
-      for (int i = 0; i < dnums1.Size(); i++)
-        for (int j = 0; j < dnums2.Size(); j++)
-          if (dnums1[i] != -1 && dnums2[j] != -1)
-            AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
-                                   elmat, i, j);
-      //mat(dnums1[i], dnums2[j]) += elmat(i, j);
-    }
-
-  }
-
-  template <> void T_BilinearForm<double, Complex>::
-  AddElementMatrix (const Array<int> & dnums1,
-                    const Array<int> & dnums2,
-                    const FlatMatrix<double> & elmat,
-                    bool inner_element, int elnr,
-                    LocalHeap & lh)
-  {
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
-
-    // #pragma omp critical (addelmat)
-    {
-      for (int i = 0; i < dnums1.Size(); i++)
-        for (int j = 0; j < dnums2.Size(); j++)
-          if (dnums1[i] != -1 && dnums2[j] != -1)
-            AddPartOfElementMatrix(mat(dnums1[i], dnums2[j]),
-                                   elmat, i, j);
-      //mat(dnums1[i], dnums2[j]) += elmat(i, j);
-    }
-  }
-  */
 
 
   template <class TM, class TV>

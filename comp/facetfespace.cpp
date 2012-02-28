@@ -585,7 +585,7 @@ namespace ngcomp
 
 
 
-
+#ifdef NOTSUPPORTED
 
 
   EdgeFESpace :: EdgeFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
@@ -694,7 +694,7 @@ namespace ngcomp
   }
 
 
-
+#endif
 
 
 
@@ -742,6 +742,8 @@ public:
 
     if (flags.GetDefineFlag ("edges"))
       {
+	throw Exception ("HDG fespace with edges not supported");
+	/*
 	if (ma.GetDimension() == 2)
 	  {
 	    Flags h1flags(flags);
@@ -755,6 +757,7 @@ public:
 	    // spaces.Append (new EdgeFESpace (ma, edgeflags));            
 	    AddSpace (new EdgeFESpace (ma, edgeflags));            
 	  }
+	*/
       }
 
 
@@ -790,7 +793,7 @@ public:
   virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const
   {
     if (flags.GetDefineFlag("subassembled"))
-    {
+      {
 	cout << "creating bddc-coarse grid(vertices)" << endl;
 	Array<int> & clusters = *new Array<int> (GetNDof());
 	clusters = 0;
@@ -993,7 +996,7 @@ public:
 
   
   static RegisterFESpace<FacetFESpace> init_facet ("facet");
-  static RegisterFESpace<EdgeFESpace> init_edge ("edge");
+  // static RegisterFESpace<EdgeFESpace> init_edge ("edge");
   static RegisterFESpace<HybridDGFESpace> init_hde ("HDG");
 
 }

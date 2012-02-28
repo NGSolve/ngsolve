@@ -148,7 +148,7 @@ namespace ngcomp
 
 
 
-
+  /*
   class NGS_DLL_HEADER EdgeFESpace : public FESpace 
   {
   protected:  
@@ -204,7 +204,7 @@ namespace ngcomp
     ///
     virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
   };     
-
+  */
 
 
 

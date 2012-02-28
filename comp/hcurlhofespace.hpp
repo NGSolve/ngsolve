@@ -86,7 +86,7 @@ namespace ngcomp
     ///
     virtual ~HCurlHighOrderFESpace ();
   
-    static FESpace * Create (const MeshAccess & ma, const Flags & flags);
+    // static FESpace * Create (const MeshAccess & ma, const Flags & flags);
 
     virtual string GetClassName () const
     {

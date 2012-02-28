@@ -148,13 +148,15 @@ namespace ngcomp
   {
     ;
   }
-  
+
+  /*
   FESpace * HCurlHighOrderFESpace :: 
   Create (const MeshAccess & ma, const Flags & flags)
   {
     return new HCurlHighOrderFESpace (ma, flags, true);
   }
-  
+  */
+
   void HCurlHighOrderFESpace :: Update(LocalHeap & lh)
   {
     FESpace :: Update (lh);

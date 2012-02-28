@@ -225,7 +225,7 @@ namespace ngcomp
     int cache_elnr;
     bool cache_bound;
     LocalHeap lh;
-    ElementTransformation eltrans;
+    // ElementTransformation eltrans;
     const FiniteElement * fel;
     Array<int> dnums;
     FlatVector<SCAL> elu;

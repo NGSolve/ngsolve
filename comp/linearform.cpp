@@ -67,8 +67,11 @@ namespace ngcomp
   template <class SCAL>
   void S_LinearForm<SCAL> :: Assemble (LocalHeap & clh)
   {
-    static int vectimer = NgProfiler::CreateTimer ("Vector assembling");
-    NgProfiler::RegionTimer reg (vectimer);
+    static Timer timer("Vector assembling");
+    static Timer timer1("Vector assembling 1");
+    static Timer timer2("Vector assembling 2");
+    static Timer timer3("Vector assembling 3");
+    RegionTimer reg (timer);
 
     assembled = true;
 
@@ -81,6 +84,8 @@ namespace ngcomp
     try
       {
 	ma.PushStatus ("Assemble Vector");
+
+	timer1.Start();
 
         // check if integrators fit to space
         for (int i = 0; i < NumIntegrators(); i++)
@@ -166,6 +171,8 @@ namespace ngcomp
 	// int actcase = 0;
 	int gcnt = 0; //global count (for all cases)
 	
+	timer1.Stop();
+
 	clock_t prevtime = clock();
 	if (hasinner)
 	  {
@@ -178,6 +185,7 @@ namespace ngcomp
 #pragma omp for	      
 	      for (int i = 0; i < ne; i++)
 		{
+		  timer2.Start();
 #pragma omp critical(printvecasstatus)
 		  {
 		    cnt++;
@@ -222,13 +230,12 @@ namespace ngcomp
 			}
 		
 		      fespace.TransformVec (i, false, elvec, TRANSFORM_RHS);
-		
 #pragma omp critical (addelvec1) 
 		      {
 			AddElementVector (dnums, elvec, parts[j]->CacheComp()-1);
 		      } 
-		    
 		    }
+		  timer2.Stop();
 		}
 	    }
 
@@ -237,6 +244,8 @@ namespace ngcomp
 	    if (id == 0)
 	      cout << "\rassemble element " << ne << "/" << ne << endl;
 	  }
+
+	RegionTimer reg3(timer3);
 
 	if (hasbound)
 	  {
