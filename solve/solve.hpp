@@ -18,6 +18,7 @@
 
 struct Tcl_Interp;
 
+
 /*
 #ifdef WIN32
    #define LOCAL_EXPORTS __declspec(dllexport)
@@ -49,6 +50,7 @@ namespace ngsolve
 
 #include "numproc.hpp"
 #include "pde.hpp"
+
 
 
 /*
