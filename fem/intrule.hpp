@@ -315,7 +315,7 @@ namespace ngfem
     }
 
     NGS_DLL_HEADER IntegrationRule (int asize, LocalHeap & lh)
-      : Array (asize, lh)
+      : Array<IntegrationPoint> (asize, lh)
     {
       ;
     }
