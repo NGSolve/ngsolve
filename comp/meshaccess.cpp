@@ -129,9 +129,9 @@ namespace ngcomp
 	Ng_GetElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0));
     }
 
-    virtual BaseSpecificIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
+    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
     {
-      return *new (lh) SpecificIntegrationPoint<DIMS,DIMR> (ip, *this);
+      return *new (lh) MappedIntegrationPoint<DIMS,DIMR> (ip, *this);
     }
 
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const
