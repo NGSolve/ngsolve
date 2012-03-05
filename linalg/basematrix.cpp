@@ -211,8 +211,6 @@ namespace ngla
 
 
 
-
-
   template<>
   S_BaseMatrix<double> :: S_BaseMatrix () 
   { ; }
@@ -222,18 +220,12 @@ namespace ngla
   S_BaseMatrix<double> :: ~S_BaseMatrix () 
   { ; }
 
-
-
-
   S_BaseMatrix<Complex> :: S_BaseMatrix () 
   { ; }
 
   S_BaseMatrix<Complex> :: ~S_BaseMatrix () 
   { ; }
 
-//   S_BaseMatrix<Complex> :: S_BaseMatrix (const ngparallel::ParallelDofs * aparalleldofs)
-//     : BaseMatrix(aparalleldofs) 
-//   { ; }
 
   void S_BaseMatrix<Complex> :: 
   MultAdd (double s, const BaseVector & x, BaseVector & y) const 
@@ -264,7 +256,5 @@ namespace ngla
 	<< typeid(*this).name();
     throw Exception (err.str());
   }
-
-
 
 }

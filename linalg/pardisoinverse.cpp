@@ -421,7 +421,7 @@ namespace ngla
                 {
                   int col = a.GetRowIndices(i)[j];
                   // TM entry = a(i,col);
-		  const TM & entry = a.GetRowValue(i,j);
+		  const TM & entry = a.GetRowValues(i)(j);
                   for (int k = 0; k < entrysize; k++)
                     for (int l = 0; l < entrysize; l++)
                       {

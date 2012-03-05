@@ -128,17 +128,14 @@ namespace ngla
 
   /// specifies the scalar type.
   template <typename SCAL>
-  class NGS_DLL_HEADER S_BaseMatrix :  virtual public BaseMatrix
+  class NGS_DLL_HEADER S_BaseMatrix : virtual public BaseMatrix
   {
   public:
     ///
     S_BaseMatrix ();
-    //
-    //S_BaseMatrix (const ngparallel::ParallelDofs * aparallelsdof);
     ///
     virtual ~S_BaseMatrix ();
   };
-
 
   // specifies the scalar type Complex.
   template <>
@@ -147,7 +144,6 @@ namespace ngla
   public:
     ///
     S_BaseMatrix ();
-    // S_BaseMatrix (const ngparallel::ParallelDofs * aparallelsdof);
     ///
     virtual ~S_BaseMatrix ();
 

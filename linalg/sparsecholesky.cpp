@@ -61,7 +61,7 @@ namespace ngla
     else 
       for (int i = 0; i < n; i++)
 	{
-	  FlatArray<const int> row = a.GetRowIndices(i);
+	  FlatArray<int> row = a.GetRowIndices(i);
 	  for (int j = 0; j < row.Size(); j++)
 	    {
 	      int col = row[j];
@@ -133,7 +133,7 @@ namespace ngla
 	  {
 	    int col = a.GetRowIndices(i)[j];
 	    if (col <= i)
-	      SetOrig (i, col, a.GetRow(i)[j]);
+	      SetOrig (i, col, a.GetRowValues(i)[j]);
 	  }
     
     else if (inner)
@@ -144,7 +144,7 @@ namespace ngla
 	    if (col <= i)
 	      {
 		if ( (inner->Test(i) && inner->Test(col)) )
-		  SetOrig (i, col, a.GetRow(i)[j]);
+		  SetOrig (i, col, a.GetRowValues(i)[j]);
 		else
 		  if (i==col)
 		    SetOrig (i, col, id);
@@ -153,14 +153,14 @@ namespace ngla
     else
       for (int i = 0; i < n; i++)
 	{
-	  FlatArray<const int> row = a.GetRowIndices(i);
+	  FlatArray<int> row = a.GetRowIndices(i);
 	  for (int j = 0; j < row.Size(); j++)
 	    {
 	      int col = row[j];
 	      if (col <= i)
 		if ( ( (*cluster)[i] == (*cluster)[col] && (*cluster)[i]) ||
 		     i == col )
-                  SetOrig (i, col, a.GetRow(i)[j]);
+                  SetOrig (i, col, a.GetRowValues(i)[j]);
 	    }
 	}
     
@@ -322,7 +322,7 @@ namespace ngla
 	      (inner && inner->Test(i) && inner->Test(col)) ||
 	      (!inner && cluster && (*cluster)[i] == (*cluster)[col] && (*cluster)[i]) )
 	    {
-	      if ( col <= i ) SetOrig (i, col, a.GetRow(i)[j]);
+	      if ( col <= i ) SetOrig (i, col, a.GetRowValues(i)[j]);
 	    }
 	  else if (i == col)
 	    SetOrig (i, i, id);

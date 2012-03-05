@@ -212,6 +212,7 @@ public:
   virtual void SetRandom ();
 
   virtual BaseVector * Range (int begin, int end) const;
+  virtual BaseVector * Range (IntRange range) const;
 
   void GetIndirect (const FlatArray<int> & ind, 
 		    const FlatVector<double> & v) const;
