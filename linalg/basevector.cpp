@@ -91,6 +91,12 @@ namespace ngla
     throw Exception ("BaseVector::Range const called");
   }
 
+  BaseVector * BaseVector :: Range (IntRange range) const
+  {
+    throw Exception ("BaseVector::Range (IntRange) const called");
+  }
+
+
   ostream & BaseVector :: Print (ostream & ost) const
   {
     throw Exception ("BaseVector::Print called");

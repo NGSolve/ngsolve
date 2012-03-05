@@ -64,6 +64,12 @@ namespace ngla
       return new S_BaseVectorPtr<TSCAL> (end-begin, es, pdata+begin*es);
     }
 
+    virtual BaseVector * Range (IntRange range) const
+    {
+      return new S_BaseVectorPtr<TSCAL> (range.Size(), es, pdata+range.First()*es);
+    }
+
+
     FlatVector<TSCAL> operator() (int i) const
     {
       return FlatVector<TSCAL> (es, pdata+i*es);
