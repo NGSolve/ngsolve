@@ -78,7 +78,7 @@ namespace ngla
     int size;
 
     /// non-zero elements
-    int nze; 
+    size_t nze; 
 
     /// column numbers
     // int * colnr;
@@ -86,7 +86,7 @@ namespace ngla
 
     /// pointer to first in row
     // int * firsti;
-    DynamicMem<int> firsti;
+    DynamicMem<size_t> firsti;
   
     /// row has same non-zero elements as previous row
     Array<int> same_nze;

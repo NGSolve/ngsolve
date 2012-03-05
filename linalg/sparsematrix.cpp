@@ -32,7 +32,7 @@ namespace ngla
     colnr.Alloc (nze+1);
     colnr.SetName ("matrix graph");
     
-    for (int i = 0; i < nze; i++)
+    for (size_t i = 0; i < nze; i++)
       colnr[i] = -1;
     colnr[nze] = 0;
   }
@@ -83,7 +83,7 @@ namespace ngla
 	colnr.Alloc (nze);
 	for (int i = 0; i < size+1; i++)
 	  firsti[i] = graph.firsti[i];
-	for (int i = 0; i < nze; i++)
+	for (size_t i = 0; i < nze; i++)
 	  colnr[i] = graph.colnr[i];
       }
     // inversetype = agraph.GetInverseType();
@@ -116,10 +116,10 @@ namespace ngla
     
     Table<int> & dof2element = *(creator.GetTable());
   
-    Array<int> mark(ndof);
-
     Array<int> cnt(ndof);
     cnt = 0;
+
+    Array<int> mark(ndof);
     mark = -1;
 
     if (!symmetric)
@@ -147,46 +147,40 @@ namespace ngla
     
     else
       {
-      for (int i = 0; i < ndof; i++)
-        {
-          int cnti = includediag? 1 : 0;
-          mark[i] = includediag? i : -1;
-          for (int j = 0; j < dof2element[i].Size(); j++)
-            {
-              int elnr = dof2element[i][j];
-              FlatArray<int> el = colelements[elnr];
 
-	      /*
-              for (int k = 0; k < el.Size(); k++)
-                {
-                  int d2 = el[k];
-                  if (d2 <= i && ((!includediag) || (d2<i) ))
-                    if (mark[d2] != i)
-                      {
-                        mark[d2] = i;
-                        cnti++;
-                      }
-                }
-	      */
-	      
-	      for (int k = 0; k < el.Size(); k++)
+#pragma omp parallel 
+	{
+	  Array<int> pmark(ndof);
+	  pmark = -1;
+#pragma omp for
+	  for (int i = 0; i < ndof; i++)
+	    {
+	      int cnti = includediag? 1 : 0;
+	      pmark[i] = includediag? i : -1;
+	      for (int j = 0; j < dof2element[i].Size(); j++)
 		{
-		  int d2 = el[k];
-		  if (d2 <= i)
-		    if (mark[d2] != i)
-		      {
-			mark[d2] = i;
-			cnti++;
-		      }
+		  int elnr = dof2element[i][j];
+		  FlatArray<int> el = colelements[elnr];
+		  
+		  for (int k = 0; k < el.Size(); k++)
+		    {
+		      int d2 = el[k];
+		      if (d2 <= i)
+			if (pmark[d2] != i)
+			  {
+			    pmark[d2] = i;
+			    cnti++;
+			  }
+		    }
 		}
-            }
-          cnt[i] = cnti;
-        }
+	      cnt[i] = cnti;
+	    }
+	}
       }
 
     size = ndof;
     owner = true;
-    
+
     firsti.Alloc (size+1);
     firsti.SetName ("matrix graph, table 1");
 
@@ -198,11 +192,10 @@ namespace ngla
       }
     firsti[size] = nze;
     
-
     colnr.Alloc (nze+1);
     colnr.SetName ("matrix graph");
     
-
+    
     mark = -1;
 
     if (!symmetric)
@@ -231,42 +224,37 @@ namespace ngla
         }
     
     else
-      
-      for (int i = 0; i < ndof; i++)
-        {
-          int cnti = firsti[i];
-          mark[i] = includediag? i : -1;
-	  if (includediag) colnr[cnti++] = i;
-          for (int j = 0; j < dof2element[i].Size(); j++)
-            {
-              int elnr = dof2element[i][j];
-              FlatArray<int> el = colelements[elnr];
-              
-	      /*
-              for (int k = 0; k < el.Size(); k++)
-                {
-                  int d2 = el[k];
-                  if (d2 <= i && ((!includediag) || (d2<i) ))
-                    if (mark[d2] != i)
-                      {
-                        mark[d2] = i;
-                        colnr[cnti++] = d2;
-                      }
-                }
-	      */
 
-	      for (int k = 0; k < el.Size(); k++)
-		{
-		  int d2 = el[k];
-		  if (d2 <= i)
-		    if (mark[d2] != i)
-		      {
-			mark[d2] = i;
-			colnr[cnti++] = d2;
-		      }
-		}
-            }
-        }
+#pragma omp parallel  
+      {
+	Array<int> pmark(ndof);
+	pmark = -1;
+#pragma omp for
+	
+	for (int i = 0; i < ndof; i++) 
+	  {
+	    size_t cnti = firsti[i];
+	    pmark[i] = includediag? i : -1;
+	    if (includediag) colnr[cnti++] = i;
+	    for (int j = 0; j < dof2element[i].Size(); j++)
+	      {
+		int elnr = dof2element[i][j];
+		FlatArray<int> el = colelements[elnr];
+		
+		for (int k = 0; k < el.Size(); k++)
+		  {
+		    int d2 = el[k];
+		    if (d2 <= i)
+		      if (pmark[d2] != i)
+			{
+			  pmark[d2] = i;
+			  colnr[cnti++] = d2;
+			}
+		  }
+	      }
+	  }
+      }
+
 
 #pragma omp parallel for
     for (int i = 0; i < ndof; i++)
@@ -564,7 +552,7 @@ namespace ngla
       {
 	ost << "Row " << i << ":";
 	
-	for (int j = firsti[i]; j < firsti[i+1]; j++)
+	for (size_t j = firsti[i]; j < firsti[i+1]; j++)
 	  ost << " " << colnr[j];
 	ost << "\n";
       }
@@ -914,7 +902,7 @@ namespace ngla
       {
 	ost << "Row " << i << ":";
 	
-	for (int j = firsti[i]; j < firsti[i+1]; j++)
+	for (size_t j = firsti[i]; j < firsti[i+1]; j++)
 	  ost << "   " << colnr[j] << ": " << data[j];
 	ost << "\n";
       }
@@ -1616,7 +1604,7 @@ namespace ngla
 
     int ii = 0, cnt = 0;
     for (int i = 0; i < size; i++)
-      for (int j = firsti[i]; j < firsti[i+1]; j++)
+      for (size_t j = firsti[i]; j < firsti[i+1]; j++)
 	{
 	  int col = colnr[j];
 	  int h = block2linear[i+1]-block2linear[i];
@@ -1635,7 +1623,7 @@ namespace ngla
     
     ii = 0;
     for (int i = 0; i < size; i++)
-      for (int j = firsti[i]; j < firsti[i+1]; j++)
+      for (size_t j = firsti[i]; j < firsti[i+1]; j++)
 	{
 	  int col = colnr[j];
 	  int h = block2linear[i+1]-block2linear[i];
@@ -1723,7 +1711,7 @@ namespace ngla
     for (int i = 0; i < size; i++)
       {
 	FlatVector<TVY> fyi (block2linear[i+1]-block2linear[i], &fy[block2linear[i]]);
-	for (int j = firsti[i]; j < firsti[i+1]; j++)
+	for (size_t j = firsti[i]; j < firsti[i+1]; j++)
 	  {
 	    int col = colnr[j];
 	    FlatVector<TVX> fxi (block2linear[col+1]-block2linear[col], &fy[block2linear[col]]);
