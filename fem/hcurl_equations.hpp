@@ -28,9 +28,6 @@ namespace ngfem
 
 
 
-
-
-
   /// Identity operator, covariant transformation
   template <int D>
   class DiffOpIdEdge : public DiffOp<DiffOpIdEdge<D> >
@@ -42,45 +39,45 @@ namespace ngfem
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
 
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      mat = Trans (sip.GetJacobianInverse ()) * 
-	Trans (fel.GetShape(sip.IP(), lh));
+      mat = Trans (mip.GetJacobianInverse ()) * 
+	Trans (fel.GetShape(mip.IP(), lh));
     }
 
     template <typename FEL>
     static void GenerateMatrix (const FEL & fel, 
-				const SpecificIntegrationPoint<D,D> & sip,
+				const MappedIntegrationPoint<D,D> & mip,
 				FlatMatrixFixHeight<D> & mat, LocalHeap & lh)
     {
-      fel.CalcMappedShape (sip, mat.Trans());
+      fel.CalcMappedShape (mip, mat.Trans());
     }
 
 
-    template <typename FEL, typename SIP, class TVX, class TVY>
-    static void Apply (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, class TVX, class TVY>
+    static void Apply (const FEL & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
 
       Vec<D,TSCAL> hx;
-      hx = Trans (fel.GetShape (sip.IP(), lh)) * x;
-      y = Trans (sip.GetJacobianInverse()) * hx;
+      hx = Trans (fel.GetShape (mip.IP(), lh)) * x;
+      y = Trans (mip.GetJacobianInverse()) * hx;
     }
 
-    template <typename FEL, typename SIP, class TVX, class TVY>
-    static void ApplyTrans (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const FEL & fel, const MIP & mip,
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
 
       Vec<D,TSCAL> hx;
-      hx = sip.GetJacobianInverse() * x;
-      y = fel.GetShape (sip.IP(),lh) * hx;
+      hx = mip.GetJacobianInverse() * x;
+      y = fel.GetShape (mip.IP(),lh) * hx;
     }
   };
 
@@ -107,22 +104,22 @@ namespace ngfem
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 1 };
 
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      mat = 1.0/sip.GetJacobiDet() * 
-	Trans (fel.GetCurlShape(sip.IP(), lh));
+      mat = 1.0/mip.GetJacobiDet() * 
+	Trans (fel.GetCurlShape(mip.IP(), lh));
     }
 
 
-    template <typename FEL, typename SIP, class TVX, class TVY>
-    static void Apply (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, class TVX, class TVY>
+    static void Apply (const FEL & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh) 
     {
-      y = (1.0/sip.GetJacobiDet()) * 
-	(Trans (fel.GetCurlShape(sip.IP(), lh)) * x);
+      y = (1.0/mip.GetJacobiDet()) * 
+	(Trans (fel.GetCurlShape(mip.IP(), lh)) * x);
     }
   };
 
@@ -135,47 +132,47 @@ namespace ngfem
     enum { DIM_DMAT = 3 };
     enum { DIFFORDER = 1 };
 
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      mat = (1.0/sip.GetJacobiDet())
-	* (sip.GetJacobian() * Trans (fel.GetCurlShape(sip.IP(), lh)));
+      mat = (1.0/mip.GetJacobiDet())
+	* (mip.GetJacobian() * Trans (fel.GetCurlShape(mip.IP(), lh)));
     }
 
     template <typename FEL>
     static void GenerateMatrix (const FEL & fel, 
-				const SpecificIntegrationPoint<3,3> & sip,
+				const MappedIntegrationPoint<3,3> & mip,
 				FlatMatrixFixHeight<3> & mat, LocalHeap & lh)
     {
-      fel.CalcMappedCurlShape (sip, mat.Trans());
+      fel.CalcMappedCurlShape (mip, mat.Trans());
     }
 
 
 
-    template <typename FEL, typename SIP, class TVX, class TVY>
-    static void Apply (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, class TVX, class TVY>
+    static void Apply (const FEL & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
 
       Vec<3,TSCAL> hx;
-      hx = fel.EvaluateCurlShape (sip.IP(), x, lh);
-      y = (1.0/sip.GetJacobiDet()) * (sip.GetJacobian() * hx);
+      hx = fel.EvaluateCurlShape (mip.IP(), x, lh);
+      y = (1.0/mip.GetJacobiDet()) * (mip.GetJacobian() * hx);
     }
 
 
-    template <typename FEL, typename SIP, class TVX, class TVY>
-    static void ApplyTrans (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const FEL & fel, const MIP & mip,
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
 
       Vec<3,TSCAL> hx;
-      hx = (1.0/sip.GetJacobiDet()) * (Trans (sip.GetJacobian()) * x);
-      y = fel.GetCurlShape(sip.IP(), lh) * hx;
+      hx = (1.0/mip.GetJacobiDet()) * (Trans (mip.GetJacobian()) * x);
+      y = fel.GetCurlShape(mip.IP(), lh) * hx;
     }
   };
 
@@ -206,14 +203,14 @@ namespace ngfem
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
 
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      Vec<D> tv = sip.GetTV();
-      Vec<D> tv_JI = sip.GetJacobianInverse () * tv;
+      Vec<D> tv = mip.GetTV();
+      Vec<D> tv_JI = mip.GetJacobianInverse () * tv;
    
-      mat = Trans ( fel.GetShape(sip.IP(), lh) * tv_JI );
+      mat = Trans ( fel.GetShape(mip.IP(), lh) * tv_JI );
     
     }
 
@@ -232,36 +229,36 @@ namespace ngfem
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
 
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      mat = Trans (sip.GetJacobianInverse ()) * Trans (fel.GetShape(sip.IP(),lh));
+      mat = Trans (mip.GetJacobianInverse ()) * Trans (fel.GetShape(mip.IP(),lh));
     
     }
 
-    template <typename FEL, typename SIP, class TVX, class TVY>
-    static void Apply (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, class TVX, class TVY>
+    static void Apply (const FEL & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
 
       Vec<D-1,TSCAL> hx;
-      hx = Trans (fel.GetShape (sip.IP(),lh)) * x;
-      y = Trans (sip.GetJacobianInverse()) * hx;
+      hx = Trans (fel.GetShape (mip.IP(),lh)) * x;
+      y = Trans (mip.GetJacobianInverse()) * hx;
     }
 
-    template <typename FEL, typename SIP, class TVX, class TVY>
-    static void ApplyTrans (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const FEL & fel, const MIP & mip,
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
 
       Vec<DIM_ELEMENT,TSCAL> hx;
-      hx = sip.GetJacobianInverse() * x;
-      y = fel.GetShape (sip.IP(),lh) * hx;
+      hx = mip.GetJacobianInverse() * x;
+      y = fel.GetShape (mip.IP(),lh) * hx;
 
       /*
       FlatMatrixFixWidth<DIM_ELEMENT> mshape (y.Height(), &hv(0)); 
@@ -283,29 +280,29 @@ namespace ngfem
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 1 };
 
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      mat = 1.0/sip.GetJacobiDet() * Trans (fel.GetCurlShape(sip.IP(),lh));
+      mat = 1.0/mip.GetJacobiDet() * Trans (fel.GetCurlShape(mip.IP(),lh));
     }
 
 
-    template <typename FEL, typename SIP, class TVX, class TVY>
-    static void Apply (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, class TVX, class TVY>
+    static void Apply (const FEL & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh) 
     {
-      y = (1.0/sip.GetJacobiDet()) * (Trans (fel.GetCurlShape(sip.IP(),lh)) * x);
+      y = (1.0/mip.GetJacobiDet()) * (Trans (fel.GetCurlShape(mip.IP(),lh)) * x);
     }
 
-    template <typename FEL, typename SIP, class TVX, class TVY>
-    static void ApplyTrans (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const FEL & fel, const MIP & mip,
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
-      y = fel.GetCurlShape(sip.IP(),lh) * ((1.0/sip.GetJacobiDet()) * x);
+      y = fel.GetCurlShape(mip.IP(),lh) * ((1.0/mip.GetJacobiDet()) * x);
     
     }
   };

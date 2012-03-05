@@ -110,17 +110,17 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET>
   void T_ScalarFiniteElement2<FEL,ET> :: 
-  CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
+  CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
 		    FlatMatrixFixWidth<DIM> dshape) const
   {
     AutoDiff<DIM> adp[DIM];
       
     for (int i = 0; i < DIM; i++)
-      adp[i].Value() = sip.IP()(i);
+      adp[i].Value() = mip.IP()(i);
       
     for (int i = 0; i < DIM; i++)
       for (int j = 0; j < DIM; j++)
-	adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
+	adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
       
     DShapeAssign<DIM> ds(dshape); 
     static_cast<const FEL*> (this) -> T_CalcShape (adp, ds);

@@ -165,11 +165,11 @@ namespace ngfem
   /// compute shape
   template <int D>
   void HCurlFiniteElement<D> ::
-  CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+  CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                    FlatMatrixFixWidth<DIM> shape) const
   {
-    CalcShape (sip.IP(), shape);
-    Mat<DIM> trans = Trans (sip.GetJacobianInverse());
+    CalcShape (mip.IP(), shape);
+    Mat<DIM> trans = Trans (mip.GetJacobianInverse());
     for (int i = 0; i < ndof; i++)
       {
         Vec<DIM> hs = shape.Row(i);
@@ -180,17 +180,17 @@ namespace ngfem
   /// compute curl of shape
   template <int D>
   void HCurlFiniteElement<D> ::
-  CalcMappedCurlShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+  CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                        FlatMatrixFixWidth<DIM_CURL> curlshape) const
   {
-    CalcCurlShape (sip.IP(), curlshape);
+    CalcCurlShape (mip.IP(), curlshape);
     if (DIM == 2)
       {
-        curlshape /= sip.GetJacobiDet();        
+        curlshape /= mip.GetJacobiDet();        
       }
     else
       {
-        Mat<DIM> trans = (1.0/sip.GetJacobiDet()) * sip.GetJacobian();
+        Mat<DIM> trans = (1.0/mip.GetJacobiDet()) * mip.GetJacobian();
         for (int i = 0; i < ndof; i++)
           {
             Vec<DIM> hs = curlshape.Row(i);
@@ -216,7 +216,7 @@ namespace ngfem
     Vector<> tau(D), p1(D), p2(D), p(D);
     
     const IntegrationRule & linerule = 
-      GetIntegrationRules().SelectIntegrationRule (ET_SEGM, order);
+      SelectIntegrationRule (ET_SEGM, order);
     
     const POINT3D * points = ElementTopology::GetVertices (ElementType());
     const EDGE & edge = ElementTopology::GetEdges (ElementType()) [enr];
@@ -267,7 +267,7 @@ namespace ngfem
     Matrix<> tau(D, 2);
     
     const IntegrationRule & facerule = 
-      GetIntegrationRules().SelectIntegrationRule (testfe.ElementType(), order);
+      SelectIntegrationRule (testfe.ElementType(), order);
     
     const POINT3D * points = ElementTopology::GetVertices (ElementType());
     const FACE & face = ElementTopology::GetFaces (ElementType()) [fnr];
@@ -354,7 +354,7 @@ namespace ngfem
     MatrixFixWidth<3> testshape(test_ndof);
     
     const IntegrationRule & rule = 
-      GetIntegrationRules().SelectIntegrationRule (ElementType(), order);
+      SelectIntegrationRule (ElementType(), order);
 
 
     moments = 0;
@@ -580,8 +580,7 @@ namespace ngfem
     MatrixFixWidth<D> shapehcurl(ndhcurl);
 
     const IntegrationRule & ir = 
-      GetIntegrationRules().SelectIntegrationRule (h1fe.ElementType(), 
-						   2*hcurlfe.Order());
+      SelectIntegrationRule (h1fe.ElementType(), 2*hcurlfe.Order());
     
     mathchc = 0;
     mathch1 = 0;

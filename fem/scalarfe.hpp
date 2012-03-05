@@ -67,7 +67,7 @@ namespace ngfem
 			     FlatMatrixFixWidth<D> dshape) const;
 
     /// compute dshape, matrix: ndof x spacedim
-    virtual void CalcMappedDShape (const SpecificIntegrationPoint<D,D> & sip, 
+    virtual void CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
 				   FlatMatrixFixWidth<D> dshape) const;
 
 

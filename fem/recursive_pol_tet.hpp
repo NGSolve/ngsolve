@@ -260,8 +260,7 @@ namespace ngfem
       int ii = 0;
       ArrayMem<Sx, 20> polx(n+1), poly(n+1);
 
-      const IntegrationRule & rule =
-	GetIntegrationRules().SelectIntegrationRule (ET_TRIG, n+2);
+      const IntegrationRule & rule = SelectIntegrationRule (ET_TRIG, n+2);
 
       for (int ix = 0; ix <= n-3; ix++)
 	for (int j = 0; j <= n-3-ix; j++)
@@ -302,8 +301,7 @@ namespace ngfem
       int ii = 0, i, j;
       ArrayMem<Sx, 20> polx(n+1), poly(n+1);
 
-      const IntegrationRule & rule =
-	GetIntegrationRules().SelectIntegrationRule (ET_TRIG, n+2);
+      const IntegrationRule & rule = SelectIntegrationRule (ET_TRIG, n+2);
 
       for (int ix = 0; ix <= n-3; ix++)
 	for (j = 0; j <= n-3-ix; j++)

@@ -997,23 +997,9 @@ public:
     */
   }
 
-  
-
 
   ///
-  virtual int GetDimension () const
-  { return DIM; }
-
-  ///
-  virtual int Lumping () const
-    { return 0; }
-  ///
-  /*
-  virtual string Name () const 
-  {
-    return "BDB integrator"; 
-  }
-  */
+  virtual int GetDimension () const { return DIM; }
 };
 
 
@@ -1581,12 +1567,7 @@ public:
 
   
   ///
-  virtual int GetDimension () const
-  { return DIM; }
-
-  ///
-  virtual int Lumping () const
-    { return 0; }
+  virtual int GetDimension () const { return DIM; }
 
   ///
   virtual string Name () const { return "BDB integrator"; }

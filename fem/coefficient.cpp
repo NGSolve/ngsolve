@@ -13,8 +13,6 @@
 
 namespace ngfem
 {
-  using namespace ngfem;
-
   
   CoefficientFunction :: CoefficientFunction ()
   { ; }
@@ -59,7 +57,7 @@ namespace ngfem
   }
   */
  
-  double DomainConstantCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip) const
+  double DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     int elind = ip.GetTransformation().GetElementIndex();
     
@@ -173,7 +171,7 @@ namespace ngfem
     
   
   
-  double PolynomialCoefficientFunction::Evaluate (const BaseSpecificIntegrationPoint & ip) const
+  double PolynomialCoefficientFunction::Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     return Evaluate(ip,0);
   }
@@ -210,7 +208,7 @@ namespace ngfem
   }
 
 
-  double PolynomialCoefficientFunction::Evaluate (const BaseSpecificIntegrationPoint & ip, const double & t) const
+  double PolynomialCoefficientFunction::Evaluate (const BaseMappedIntegrationPoint & ip, const double & t) const
   {
     const int elind = ip.GetTransformation().GetElementIndex();
     
@@ -232,7 +230,7 @@ namespace ngfem
 
 
  
-  double PolynomialCoefficientFunction::EvaluateDeri (const BaseSpecificIntegrationPoint & ip, const double & t) const
+  double PolynomialCoefficientFunction::EvaluateDeri (const BaseMappedIntegrationPoint & ip, const double & t) const
   {
     const int elind = ip.GetTransformation().GetElementIndex();
     
@@ -353,7 +351,7 @@ namespace ngfem
 
 
 
-  double FileCoefficientFunction :: Evaluate (const BaseSpecificIntegrationPoint & ip) const
+  double FileCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     const ElementTransformation & eltrans = ip.GetTransformation();
     const int elnum = eltrans.GetElementNr();

@@ -183,17 +183,17 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET>
   void T_HCurlHighOrderFiniteElement<ET> :: 
-  CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+  CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                    FlatMatrixFixWidth<DIM> shape) const
   {
     AutoDiff<DIM> adp[DIM];
 
     for (int i = 0; i < DIM; i++)
-      adp[i].Value() = sip.IP()(i);
+      adp[i].Value() = mip.IP()(i);
 
     for (int i = 0; i < DIM; i++)
       for (int j = 0; j < DIM; j++)
-        adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
+        adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
 
     HCurlShapeAssign<DIM> ds(shape); 
     static_cast<const HCurlHighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
@@ -202,29 +202,29 @@ namespace ngfem
   /// compute curl of shape
   template <ELEMENT_TYPE ET>
   void T_HCurlHighOrderFiniteElement<ET> :: 
-  CalcMappedCurlShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+  CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                        FlatMatrixFixWidth<DIM_CURL> curlshape) const
   { // not yet tested
-    CalcCurlShape (sip.IP(), curlshape);
+    CalcCurlShape (mip.IP(), curlshape);
     if (DIM == 2)
       {
-        curlshape /= sip.GetJacobiDet();        
+        curlshape /= mip.GetJacobiDet();        
       }
     else
       {
 	AutoDiff<DIM> adp[DIM];
 	
 	for (int i = 0; i < DIM; i++)
-	  adp[i].Value() = sip.IP()(i);
+	  adp[i].Value() = mip.IP()(i);
 	
 	for (int i = 0; i < DIM; i++)
 	  for (int j = 0; j < DIM; j++)
-	    adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
+	    adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
 
 	HCurlCurlShapeAssign<DIM> ds(curlshape); 
 	static_cast<const HCurlHighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
 	/*
-        Mat<DIM> trans = (1.0/sip.GetJacobiDet()) * sip.GetJacobian();
+        Mat<DIM> trans = (1.0/mip.GetJacobiDet()) * mip.GetJacobian();
         for (int i = 0; i < ndof; i++)
           {
             Vec<DIM> hs = curlshape.Row(i);

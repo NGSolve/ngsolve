@@ -354,7 +354,7 @@ namespace ngfem
     }
 
     virtual void 
-    CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
+    CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & sip, 
                       FlatMatrixFixWidth<DIM> dshape) const
     {
       AutoDiff<DIM> adp[DIM];
@@ -429,7 +429,7 @@ namespace ngfem
 			     FlatMatrixFixWidth<DIM> dshape) const;
 
     virtual void 
-    CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
+    CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & sip, 
                       FlatMatrixFixWidth<DIM> dshape) const;
 
 

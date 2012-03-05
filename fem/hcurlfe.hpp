@@ -69,11 +69,11 @@ namespace ngfem
 				FlatMatrixFixWidth<DIM_CURL> curlshape) const;
 
     /// compute shape
-    virtual void CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
 				  FlatMatrixFixWidth<DIM> shape) const;
 
     /// compute curl of shape
-    virtual void CalcMappedCurlShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+    virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
 				      FlatMatrixFixWidth<DIM_CURL> curlshape) const;
 
 
@@ -425,17 +425,17 @@ namespace ngfem
     }
 
     virtual void
-    CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+    CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                      FlatMatrixFixWidth<DIM> shape) const
     {
       AutoDiff<DIM> adp[DIM];
       
       for (int i = 0; i < DIM; i++)
-        adp[i].Value() = sip.IP()(i);
+        adp[i].Value() = mip.IP()(i);
       
       for (int i = 0; i < DIM; i++)
         for (int j = 0; j < DIM; j++)
-          adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
+          adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
       
       HCurlShapeAssign<DIM> ds(shape); 
       FEL::T_CalcShape (adp, ds);
@@ -454,17 +454,17 @@ namespace ngfem
     }
 
     virtual void
-    CalcMappedCurlShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+    CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                          FlatMatrixFixWidth<DIM_CURL> curlshape) const
     {
       AutoDiff<DIM> adp[DIM];
 
       for (int i = 0; i < DIM; i++)
-        adp[i].Value() = sip.IP()(i);
+        adp[i].Value() = mip.IP()(i);
       
       for (int i = 0; i < DIM; i++)
         for (int j = 0; j < DIM; j++)
-          adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
+          adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
 
       HCurlCurlShapeAssign<DIM> ds(curlshape); 
       FEL::T_CalcShape (adp, ds);
