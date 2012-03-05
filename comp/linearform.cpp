@@ -475,8 +475,8 @@ namespace ngcomp
 		    
 		    if (eltrans.SpaceDim() == 3)
 		      {
-			SpecificIntegrationPoint<1,3> s_sip(ip,eltrans);
-			SpecificIntegrationPoint<3,3> g_sip(ip,eltrans);
+			MappedIntegrationPoint<1,3> s_sip(ip,eltrans);
+			MappedIntegrationPoint<3,3> g_sip(ip,eltrans);
 			Vec<3> tv;
 			tv(0) = tangent(0); tv(1) = tangent(1); tv(2) = tangent(2);
 			s_sip.SetTV(tv);
@@ -487,8 +487,8 @@ namespace ngcomp
 		      }
 		    else if (eltrans.SpaceDim() == 2)
 		      {
-			SpecificIntegrationPoint<1,2> s_sip(ip,eltrans);
-			SpecificIntegrationPoint<2,2> g_sip(ip,eltrans);
+			MappedIntegrationPoint<1,2> s_sip(ip,eltrans);
+			MappedIntegrationPoint<2,2> g_sip(ip,eltrans);
 			Vec<2> tv;
 			tv(0) = tangent(0); tv(1) = tangent(1);
 			s_sip.SetTV(tv);
@@ -619,13 +619,12 @@ namespace ngcomp
 	    if (!parts[0]->DefinedOn (ma.GetSElIndex(i))) continue;
 	    // (*testout) << "integrate surf el " << endl;
 	    
-	    const IntegrationRule & ir =
-	      GetIntegrationRules().SelectIntegrationRule (sfel.ElementType(), 5);
+	    const IntegrationRule & ir = SelectIntegrationRule (sfel.ElementType(), 5);
 	    
 	    for (int j = 0; j < ir.GetNIP(); j++)
 	      {
 		const IntegrationPoint & ip = ir[j];
-		SpecificIntegrationPoint<2,3> sip(ip, seltrans);
+		MappedIntegrationPoint<2,3> sip(ip, seltrans);
 		
 		// (*testout) << "point = " << sip.GetPoint() << endl;
 		
@@ -639,7 +638,7 @@ namespace ngcomp
 		
 		const FiniteElement & gfel = fespace.GetFE (elnr, lh);
 		ma.GetElementTransformation (elnr, geltrans);
-		SpecificIntegrationPoint<3,3> gsip(gip, geltrans);
+		MappedIntegrationPoint<3,3> gsip(gip, geltrans);
 		
 		// (*testout) << " =?= p = " << gsip.GetPoint() << endl;
 
@@ -651,15 +650,15 @@ namespace ngcomp
 		    
 		    if(geltrans.SpaceDim() == 3)
 		      {
-			SpecificIntegrationPoint<2,3> s_sip(ip,seltrans);
-			SpecificIntegrationPoint<3,3> g_sip(gip,geltrans);
+			MappedIntegrationPoint<2,3> s_sip(ip,seltrans);
+			MappedIntegrationPoint<3,3> g_sip(gip,geltrans);
 			parts[k] -> AssembleElementVectorIndependent
 			  (gfel,s_sip,g_sip,elvec,lh);
 		      }
 		    else if(geltrans.SpaceDim() == 2)
 		      {
-			SpecificIntegrationPoint<1,2> s_sip(ip,seltrans);
-			SpecificIntegrationPoint<2,2> g_sip(gip,geltrans);
+			MappedIntegrationPoint<1,2> s_sip(ip,seltrans);
+			MappedIntegrationPoint<2,2> g_sip(gip,geltrans);
 			parts[k] -> AssembleElementVectorIndependent
 			  (gfel,s_sip,g_sip,elvec,lh);
 		      }

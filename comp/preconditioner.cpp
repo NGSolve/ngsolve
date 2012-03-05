@@ -90,7 +90,7 @@ namespace ngcomp
 
 	for ( int i = 0; i < n; i++ )
 	  {
-	    const FlatArray<const int> rowindices = 
+	    FlatArray<int> rowindices = 
 	      dynamic_cast<const BaseSparseMatrix&>(amat).GetRowIndices(i);
 	    if ( rowindices.Size() <= 1 )
 	      internaldofs.Set(i);
@@ -1021,7 +1021,7 @@ namespace ngcomp
 	ma.GetElEdges (i, ednums);
 
 	ma.GetElementTransformation (i, eltrans, lh);
-	SpecificIntegrationPoint<3,3> sip(ip, eltrans);
+	MappedIntegrationPoint<3,3> sip(ip, eltrans);
 
 	double vol = ma.ElementVolume (i);
 
@@ -1048,7 +1048,7 @@ namespace ngcomp
 	  ma.GetSElEdges (i, ednums);
 
 	  ma.GetSurfaceElementTransformation (i, eltrans, lh);
-	  SpecificIntegrationPoint<2,3> sip(ip, eltrans);
+	  MappedIntegrationPoint<2,3> sip(ip, eltrans);
 
 	  double vol = ma.SurfaceElementVolume (i);
 	  double vale = Evaluate (*coefse, sip);

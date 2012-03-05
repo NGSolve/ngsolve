@@ -171,15 +171,20 @@ namespace ngcomp
     /// number of global dofs on the level
     virtual int GetNDofLevel (int level) const;
   
-    /// returns finite element. attention: should be thread-safe, but is not always
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    /// returns finite element. 
+    const FiniteElement & GetFE (int elnr, bool boundary, LocalHeap & lh) const
+    {
+      return boundary ? GetSFE(elnr, lh) : GetFE(elnr, lh);
+    }
 
+    /// returns finite element. 
+    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
 
     /// get dof-nrs of the element
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const = 0;
 
     /// get dof-nrs of domain or boundary element elnr
-    void GetDofNrs (int elnr, Array<int> & dnums, bool boundary) const
+    void GetDofNrs (int elnr, bool boundary, Array<int> & dnums) const
     {
       if (boundary)
 	GetSDofNrs (elnr, dnums);

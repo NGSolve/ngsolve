@@ -514,7 +514,7 @@ namespace ngcomp
 	  Array<int> dnums(fel.GetNDof(), lh);
 	  
 	  ElementTransformation & eltrans = ma.GetTrafo (i, bound, lh); 
-	  fes.GetDofNrs (i, dnums, bound);
+	  fes.GetDofNrs (i, bound, dnums);
 
 	  FlatVector<SCAL> elflux(dnums.Size() * dim, lh);
 	  FlatVector<SCAL> elfluxi(dnums.Size() * dim, lh);
