@@ -780,18 +780,6 @@ namespace ngbla
       return *this;
     }
 
-    /*
-      template<typename TB>
-      Vec & operator+= (const Expr<TB> & v)
-      {
-      for (int i = 0; i < S; i++)
-      data[i] += v.Spec()(i,0);
-      return *this;
-      }
-    */
-
-
-
     /// access vector
     TELEM & operator() (int i) 
     {
@@ -829,9 +817,6 @@ namespace ngbla
       return data[i]; 
     }
 
-
-
-
     /// access vector
     TELEM & operator() (int i, int j) 
     {
@@ -862,11 +847,6 @@ namespace ngbla
 
     const FlatVector<T> Range(int first, int next) 
     { return FlatVector<T> (next-first, data+first); }
-
-
-    // operator FlatVector<T> () { return FlatVector<T> (S, &data[0]); }
-    // operator FlatVector<const T> () const { return FlatVector<T> (S, &data[0]); }
-    //  operator FlatVector<T> () const { return FlatVector<T> (S, const_cast<T*> (&data[0])); }
   };
 
 
