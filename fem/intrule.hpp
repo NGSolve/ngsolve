@@ -16,8 +16,6 @@ namespace ngfem
   private:
     /// number within intergration Rule
     int nr; 
-    /// enumerates ALL intergration points for element type
-    // int glob_nr; 
     /// coordinates (empty values for 1D and 2D)
     double pi[3];
     /// weight of integration point
@@ -29,7 +27,6 @@ namespace ngfem
     ///
     IntegrationPoint & operator=(const IntegrationPoint & aip)
     {
-      // glob_nr = aip.IPNr();
       nr = aip.Nr();
       pi[0] = aip(0);
       pi[1] = aip(1);
@@ -42,7 +39,6 @@ namespace ngfem
     ///
     IntegrationPoint (const double api[3], double aw)
     {
-      // glob_nr = -1;
       nr = -1;
       pi[0] = api[0];
       pi[1] = api[1];
@@ -54,7 +50,6 @@ namespace ngfem
     ///
     IntegrationPoint (double p1 = 0, double p2 = 0, double p3 = 0, double aw = 0)
     {
-      // glob_nr = -1;
       nr = -1;
       pi[0] = p1;
       pi[1] = p2;
@@ -66,7 +61,6 @@ namespace ngfem
     ///
     IntegrationPoint (const FlatVector<double> & ap, double aw)
     {
-      // glob_nr = -1;
       nr = -1;
       pi[0] = (ap.Size() >= 1) ? ap(0) : 0;
       pi[1] = (ap.Size() >= 2) ? ap(1) : 0;
@@ -79,7 +73,6 @@ namespace ngfem
     template <int D>
     IntegrationPoint (const Vec<D> & ap, double aw = -1)
     {
-      // glob_nr = -1;
       nr = -1;
       for (int j = 0; j < D; j++)
 	pi[j] = ap(j);
@@ -93,8 +86,6 @@ namespace ngfem
 
     ///
     void SetNr (int anr) { nr = anr; }
-    ///
-    // void SetGlobNr (int aipnr) { glob_nr = aipnr; }
     ///
     const double * Point () const { return pi; }
     ///
@@ -132,17 +123,16 @@ namespace ngfem
   protected:
     /// IP on the reference element
     const IntegrationPoint * ip;
-    /// 
+    /// computed by the transformation
     const ElementTransformation * eltrans;
     /// fabs(det)
     double measure; 
   public:
     ///
     BaseMappedIntegrationPoint (const IntegrationPoint & aip,
-				  const ElementTransformation & aeltrans)
+				const ElementTransformation & aeltrans)
       : ip(&aip), eltrans(&aeltrans)  { ; }
-
-    ///
+    /// 
     const IntegrationPoint & IP () const { return *ip; }
     ///
     const ElementTransformation & GetTransformation () const { return *eltrans; }
@@ -171,8 +161,7 @@ namespace ngfem
     const Vec<R,SCAL> & GetPoint () const { return point; }
     Vec<R,SCAL> & Point () { return point; }
     ///
-    SCAL operator() (int i) const 
-    { return point(i); }
+    SCAL operator() (int i) const { return point(i); }
   };
 
 
@@ -197,7 +186,6 @@ namespace ngfem
     ///
     NGS_DLL_HEADER MappedIntegrationPoint (const IntegrationPoint & aip,
 					   const ElementTransformation & aeltrans);
-    // LocalHeap & lh);
 
     MappedIntegrationPoint (const IntegrationPoint & aip,
 			    const ElementTransformation & aeltrans,
@@ -207,10 +195,9 @@ namespace ngfem
 
     ///
     MappedIntegrationPoint (const IntegrationPoint & aip,
-			      const ElementTransformation & aeltrans,
-			      // const Vec<DIMR, SCAL> & ax,
-			      const FlatVec<DIMR, SCAL> ax,
-			      const Mat<DIMR, DIMS, SCAL> & adxdxi)
+			    const ElementTransformation & aeltrans,
+			    const FlatVec<DIMR, SCAL> ax,
+			    const Mat<DIMR, DIMS, SCAL> & adxdxi)
     // LocalHeap & lh)
       : DimMappedIntegrationPoint<DIMR,SCAL> (aip, aeltrans)
     {
@@ -320,6 +307,8 @@ namespace ngfem
       ;
     }
 
+    NGS_DLL_HEADER IntegrationRule (int asize, double (*pts)[3], double * weights);
+
     // make it polymorphic
     virtual ~IntegrationRule() { ; }
 
@@ -384,103 +373,6 @@ namespace ngfem
 
 
 
-
-
-
-
-  /** 
-      Integration Rules.
-      A global class maintaining integration rules. If a rule of specific
-      order is requested for the first time, than the rule is generated.
-  */
-  class NGS_DLL_HEADER IntegrationRules
-  {
-    ///
-    Array<IntegrationRule*> segmentrules;
-    ///
-    IntegrationRule segmentlumping;
-    ///
-    // Array<IntegrationPoint*> segmentpoints;
-    ///
-    Array<IntegrationRule*> jacobirules10;
-    ///
-    Array<IntegrationRule*> jacobirules20;
-    ///
-    Array<IntegrationRule*> trigrules;
-    ///
-    Array<IntegrationRule*> trignodalrules;
-    ///
-    IntegrationRule triglumping;
-    ///
-    IntegrationRule triglumping2;
-    ///
-    // Array<IntegrationPoint*> trigpoints;
-
-    ///
-    Array<IntegrationRule*> quadrules;
-    ///
-    IntegrationRule quadlumping;
-    ///
-    // Array<IntegrationPoint*> quadpoints;
-
-    ///
-    Array<IntegrationRule*> tetrules;
-    ///
-    IntegrationRule tetlumping;
-    ///
-    Array<IntegrationRule*> tetnodalrules;
-    ///
-    // Array<IntegrationPoint*> tetpoints;
-
-    ///
-    Array<IntegrationRule*> prismrules;
-    ///
-    IntegrationRule prismlumping;
-    ///
-    IntegrationRule prismfacemidpoint;
-    ///
-    // Array<IntegrationPoint*> prismpoints;
-
-    ///
-    Array<IntegrationRule*> pyramidrules;
-    ///
-    IntegrationRule pyramidlumping;
-    ///
-    // Array<IntegrationPoint*> pyramidpoints;
-
-    ///
-    Array<IntegrationRule*> hexrules;
-    ///
-    // Array<IntegrationPoint*> hexpoints;
-
-  public:
-    ///
-    IntegrationRules ();
-    ///
-    ~IntegrationRules ();
-    /// returns the integration rule for the element type and integration order
-    const IntegrationRule & SelectIntegrationRule (ELEMENT_TYPE eltyp, int order) const;
-    ///
-    const IntegrationRule & SelectLumpingIntegrationRule (ELEMENT_TYPE eltyp) const;
-    ///
-    const IntegrationRule & SelectNodalIntegrationRule (ELEMENT_TYPE eltyp, int order) const;
-    ///
-    const IntegrationRule & SelectIntegrationRuleJacobi10 (int order) const;
-    ///
-    const IntegrationRule & SelectIntegrationRuleJacobi20 (int order) const;
-    ///
-    const IntegrationRule & PrismFaceMidPoint () const
-    { return prismfacemidpoint; }
-    ///
-    // const Array<IntegrationPoint*> & GetIntegrationPoints (ELEMENT_TYPE eltyp) const;
-    ///
-    const IntegrationRule & GenerateIntegrationRule (ELEMENT_TYPE eltyp, int order);
-
-    const IntegrationRule & GenerateIntegrationRuleJacobi10 (int order);
-    const IntegrationRule & GenerateIntegrationRuleJacobi20 (int order);
-  };
-
-
   /**
      Computes Gaussean integration.
      Integration rule on (0,1), contains n points,
@@ -519,7 +411,8 @@ namespace ngfem
 
 
   /// Get a reference to the integration-rules container
-  extern NGS_DLL_HEADER const IntegrationRules & GetIntegrationRules ();
+  // extern NGS_DLL_HEADER const IntegrationRules & GetIntegrationRules ();
+
   extern NGS_DLL_HEADER const IntegrationRule & SelectIntegrationRule (ELEMENT_TYPE eltype, int order);
   extern NGS_DLL_HEADER const IntegrationRule & SelectIntegrationRuleJacobi10 (int order);
   extern NGS_DLL_HEADER const IntegrationRule & SelectIntegrationRuleJacobi20 (int order);
@@ -904,9 +797,10 @@ namespace ngfem
   };
 
 #define SpecificIntegrationPoint MappedIntegrationPoint 
+  /*
 #define BaseSpecificIntegrationPoint BaseMappedIntegrationPoint 
 #define DimSpecificIntegrationPoint DimMappedIntegrationPoint 
-
+  */
 
 
 
