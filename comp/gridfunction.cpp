@@ -17,7 +17,6 @@ namespace ngcomp
     multidim = int (flags.GetNumFlag ("multidim", 1));
     level_updated = -1;
     cacheblocksize = 1;
-    // vis = 0;
   }
 
   GridFunction :: ~GridFunction()
@@ -25,7 +24,6 @@ namespace ngcomp
     for (int i = 0; i < vec.Size(); i++)
       delete vec[i];
   }
-
 
 
   void GridFunction :: Update ()
@@ -43,8 +41,6 @@ namespace ngcomp
       }
     return true;
   }
-
-
 
   void GridFunction :: PrintReport (ostream & ost)
   {
@@ -69,13 +65,9 @@ namespace ngcomp
 
 
 
-
-
   void GridFunction :: Visualize(const string & given_name)
   {
     if (!visual) return;
-
-    // cout << "visualize gridfunction " << name << endl;
 
     const BilinearFormIntegrator * bfi2d = 0, * bfi3d = 0;
 
@@ -119,46 +111,34 @@ namespace ngcomp
 
 
   template <class SCAL>
-  GridFunction * S_GridFunction<SCAL> :: GetComponent (int compound_comp) const
+  GridFunction * S_GridFunction<SCAL> :: 
+  GetComponent (int compound_comp) const
   {
-/*    GridFunction * gf = new S_ComponentGridFunction<SCAL> (*this, compound_comp);
-    if (level_updated != -1) gf->Update();
-    return gf;*/
-    
     if (!comp.Size() || comp.Size() < compound_comp)
       throw Exception("GetComponent: compound_comp does not exist!");
     else
       return comp[compound_comp];
   }
 
-
   template <class SCAL>
-  S_ComponentGridFunction<SCAL> :: S_ComponentGridFunction (const S_GridFunction<SCAL> & agf, int acomp)
-    : S_GridFunction<SCAL> (*dynamic_cast<const CompoundFESpace&> (agf.GetFESpace())[acomp], agf.GetName(), Flags()),
+  S_ComponentGridFunction<SCAL> :: 
+  S_ComponentGridFunction (const S_GridFunction<SCAL> & agf, int acomp)
+    : S_GridFunction<SCAL> (*dynamic_cast<const CompoundFESpace&> (agf.GetFESpace())[acomp], 
+			    agf.GetName(), Flags()),
       gf(agf), comp(acomp)
-  { 
-    ;
-  }
-  
+  { ; }
 
   template <class SCAL>
   void S_ComponentGridFunction<SCAL> :: Update()
   {
     const CompoundFESpace & cfes = dynamic_cast<const CompoundFESpace&> (gf.GetFESpace());
 
-    int begin = cfes.GetStorageStart(comp);
-    int end = cfes.GetStorageEnd(comp);
-  
     this -> vec.SetSize (gf.GetMultiDim());
     for (int i = 0; i < gf.GetMultiDim(); i++)
-      (this->vec)[i] = gf.GetVector(i).Range (begin, end);
+      (this->vec)[i] = gf.GetVector(i).Range (cfes.GetRange(comp));
   
     this -> level_updated = this -> ma.GetNLevels();
   }
-
-
-
-
 
 
 
@@ -172,14 +152,14 @@ namespace ngcomp
 
     Visualize (this->name);
     
-    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&GridFunction :: GetFESpace());
-    if (cfe){
-      int nsp = cfe->GetNSpaces();
-      comp.SetSize(nsp);
-      for (int i = 0; i < nsp; i++){
-	comp[i] = new S_ComponentGridFunction<TSCAL> (*this, i);
-      }
-    }    
+    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&this->GetFESpace());
+    if (cfe)
+      {
+	int nsp = cfe->GetNSpaces();
+	comp.SetSize(nsp);
+	for (int i = 0; i < nsp; i++)
+	  comp[i] = new S_ComponentGridFunction<TSCAL> (*this, i);
+      }    
   }
 
   template <class TV>
@@ -188,19 +168,6 @@ namespace ngcomp
     ;
   }
 
-  /*
-  template <class TV>
-  bool T_GridFunction<TV> :: IsUpdated (void) const
-  {
-    int ndof = this->GetFESpace().GetNDof();
-    bool retval = true;
-
-    for (int i = 0; retval && i < this->multidim; i++)
-      retval = (vec[i] && ndof == vec[i]->Size());
-
-    return retval;
-  }
-  */
 
   template <class TV>
   void T_GridFunction<TV> :: Update () 
@@ -265,8 +232,6 @@ namespace ngcomp
 
 
 
-
-
   GridFunction * CreateGridFunction (const FESpace * space,
 				     const string & name, const Flags & flags)
   {
@@ -282,24 +247,29 @@ namespace ngcomp
 
 
 
+
+
+
+
+
+
+
+
+
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (GridFunction & agf, int acomp)
-    : gf(agf), // gf(dynamic_cast<S_GridFunction<double>&> (agf)),
-      diffop (NULL),
-      comp (acomp) 
+    : gf(agf), diffop (NULL), comp (acomp) 
   {
     ;
   }
 
-
-
   GridFunctionCoefficientFunction :: 
-  GridFunctionCoefficientFunction (GridFunction & agf, DifferentialOperator * adiffop, int acomp)
+  GridFunctionCoefficientFunction (GridFunction & agf, 
+				   DifferentialOperator * adiffop, int acomp)
     : gf(agf), diffop (adiffop), comp (acomp) 
   {
     ;
   }
-
 
   GridFunctionCoefficientFunction :: 
   ~GridFunctionCoefficientFunction ()
@@ -313,7 +283,6 @@ namespace ngcomp
     return gf.GetFESpace().GetEvaluator()->DimFlux();
   }
 
-  
 
   double GridFunctionCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
@@ -328,10 +297,9 @@ namespace ngcomp
     
     const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
     int dim     = fes.GetDimension();
-    
 
     ArrayMem<int, 50> dnums;
-    if(boundary)
+    if (boundary)
       fes.GetSDofNrs(elnr, dnums);
     else
       fes.GetDofNrs (elnr, dnums);
@@ -341,7 +309,6 @@ namespace ngcomp
     gf.GetElementVector (comp, dnums, elu);
     fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
 
-
     if (diffop)
       {
 	VectorMem<10> flux(diffop->Dim());
@@ -350,7 +317,8 @@ namespace ngcomp
       }
     else
       {
-	const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
+	const BilinearFormIntegrator * bfi = 
+	  boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
 	VectorMem<10> flux(bfi->DimFlux());
 	bfi->CalcFlux (fel, ip, elu, flux, false, lh2);
 	return flux(0); 
@@ -372,7 +340,6 @@ namespace ngcomp
     const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
     const int dim     = fes.GetDimension();
     
-
     ArrayMem<int, 50> dnums;
     if(boundary)
       fes.GetSDofNrs(elnr, dnums);
@@ -411,7 +378,6 @@ namespace ngcomp
     
     const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
     const int dim     = fes.GetDimension();
-    
 
     ArrayMem<int, 50> dnums;
     if(boundary)
@@ -773,20 +739,8 @@ namespace ngcomp
       {
 	lh.CleanUp();
 
-	// ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
-
-	if (bound)
-	  {
-	    // ma.GetSurfaceElementTransformation (elnr, eltrans, lh);
-	    fes.GetSDofNrs (elnr, dnums);
-	    fel = &fes.GetSFE (elnr, lh);
-	  }
-	else
-	  {
-	    // ma.GetElementTransformation (elnr, eltrans, lh);
-	    fes.GetDofNrs (elnr, dnums);
-	    fel = &fes.GetFE (elnr, lh);
-	  }
+	fel = &fes.GetFE (elnr, bound, lh);
+	fes.GetDofNrs (elnr, bound, dnums);
 
 	elu.AssignMemory (dnums.Size() * dim, lh);
 
@@ -818,11 +772,11 @@ namespace ngcomp
 
     IntegrationPoint ip(lam1, lam2, 0, 0);
 
-    BaseMappedIntegrationPoint & sip = eltrans(ip, lh);
+    BaseMappedIntegrationPoint & mip = eltrans(ip, lh);
     for(int j = 0; j < bfi2d.Size(); j++)
       {
 	FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
-	bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
+	bfi2d[j]->CalcFlux (*fel, mip, elu, flux, applyd, lh);
 	
 	for (int i = 0; i < components; i++)
 	  {
@@ -838,9 +792,10 @@ namespace ngcomp
 
 
   template <class SCAL>
-  bool VisualizeGridFunction<SCAL> :: GetSurfValue (int elnr,
-						    const double xref[], const double x[], const double dxdxref[],
-						    double * values) 
+  bool VisualizeGridFunction<SCAL> :: 
+  GetSurfValue (int elnr,
+		const double xref[], const double x[], const double dxdxref[],
+		double * values) 
   { 
     // cout << "VisGF::GetSurfValue2" << endl;
     try
@@ -857,17 +812,8 @@ namespace ngcomp
           {
             lh.CleanUp();
 
-            if (bound)
-              {
-                fes.GetSDofNrs (elnr, dnums);
-                fel = &fes.GetSFE (elnr, lh);
-              }
-            else
-              {
-                fes.GetDofNrs (elnr, dnums);
-                fel = &fes.GetFE (elnr, lh);
-              }
-
+	    fes.GetDofNrs (elnr, bound, dnums);
+	    fel = &fes.GetFE (elnr, bound, lh);
             elu.AssignMemory (dnums.Size() * dim, lh);
 
             if(gf->GetCacheBlockSize() == 1)
@@ -899,43 +845,43 @@ namespace ngcomp
         IntegrationPoint ip(xref[0], xref[1], 0, 0);
         if (bound)
           {
-            Vec<3> vx;
+            // Vec<3> vx;
             Mat<3,2> mdxdxref;
             for (int i = 0; i < 3; i++)
               {
-                vx(i) = x[i];
+                // vx(i) = x[i];
                 for (int j = 0; j < 2; j++)
                   mdxdxref(i,j) = dxdxref[2*i+j];
               }
-            MappedIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref); 
+            MappedIntegrationPoint<2,3> mip (ip, eltrans, (double*)x, mdxdxref); 
             for (int i = 0; i < components; i++)
               values[i] = 0.0;
             for(int j = 0; j<bfi2d.Size(); j++)
               {
-		FlatVector<SCAL> flux(bfi3d[j]->DimFlux(), lh);
-                bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
+		FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
+                bfi2d[j]->CalcFlux (*fel, mip, elu, flux, applyd, lh);
                 for (int i = 0; i < components; i++)
                   values[i] += ((double*)(void*)&flux(0))[i];
               }
           }
         else
           {
-            Vec<2> vx;
+            // Vec<2> vx;
             Mat<2,2> mdxdxref;
             for (int i = 0; i < 2; i++)
               {
-                vx(i) = x[i];
+                // vx(i) = x[i];
                 for (int j = 0; j < 2; j++)
                   mdxdxref(i,j) = dxdxref[2*i+j];
               }
-            MappedIntegrationPoint<2,2> sip (ip, eltrans, vx, mdxdxref); 
+            MappedIntegrationPoint<2,2> mip (ip, eltrans, (double*)x, mdxdxref); 
 
             for (int i = 0; i < components; i++)
               values[i] = 0.0;
             for(int j = 0; j<bfi2d.Size(); j++)
               {
                 FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
-                bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
+                bfi2d[j]->CalcFlux (*fel, mip, elu, flux, applyd, lh);
                 for (int i = 0; i < components; i++)
                   values[i] += ((double*)(void*)&flux(0))[i];
               }
@@ -981,7 +927,10 @@ namespace ngcomp
         HeapReset hr(lh);
 
 	ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
-        
+
+	fes.GetDofNrs (elnr, bound, dnums);
+	fel = &fes.GetFE (elnr, bound, lh);
+	/*
         if (bound)
           {
             fes.GetSDofNrs (elnr, dnums);
@@ -992,7 +941,7 @@ namespace ngcomp
             fes.GetDofNrs (elnr, dnums);
             fel = &fes.GetFE (elnr, lh);
           }
-        
+	*/
         elu.AssignMemory (dnums.Size() * dim, lh);
 
         if(gf->GetCacheBlockSize() == 1)
@@ -1028,12 +977,12 @@ namespace ngcomp
 		FlatVec<3> vx( (double*)x + k*sx);
 		Mat<3,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<3,2>;
 
-		MappedIntegrationPoint<2,3> sip (ip, eltrans, vx, mdxdxref); 
+		MappedIntegrationPoint<2,3> mip (ip, eltrans, vx, mdxdxref); 
                 
                 for(int j = 0; j<bfi2d.Size(); j++)
                   {
 		    FlatVector<SCAL> flux (bfi2d[j]->DimFlux(), lh);
-                    bfi2d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
+                    bfi2d[j]->CalcFlux (*fel, mip, elu, flux, applyd, lh);
                     for (int i = 0; i < components; i++)
                       values[k*svalues+i] += ((double*)(void*)&flux(0))[i];
                   }
@@ -1110,9 +1059,7 @@ namespace ngcomp
       {
 	if(component == -1)
 	  for(int j=0; j<components; j++)
-	    {
-	      averages[i*components+j] /= volumes[i];
-	    }
+	    averages[i*components+j] /= volumes[i];
 	else
 	  averages[i] /= volumes[i];
       }
