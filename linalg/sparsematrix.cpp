@@ -263,7 +263,8 @@ namespace ngla
     colnr[nze] = 0;
   }
 
-
+  
+  /*
   MatrixGraph :: MatrixGraph (const Table<int> & dof2dof, 
 			      bool symmetric)
   {
@@ -348,6 +349,8 @@ namespace ngla
     
     colnr[nze] = 0;
   }
+  */
+
   
   MatrixGraph :: ~MatrixGraph ()
   {
@@ -578,17 +581,30 @@ namespace ngla
     ;
   }
 
+  INVERSETYPE BaseSparseMatrix ::
+  SetInverseType (string ainversetype) const
+  {
+    INVERSETYPE old_invtype = inversetype;
+
+    if      (ainversetype == "pardiso" )      SetInverseType ( PARDISO );
+    else if (ainversetype == "pardisospd")    SetInverseType ( PARDISOSPD );
+    else if (ainversetype == "superlu")       SetInverseType ( SUPERLU );
+    else if (ainversetype == "superlu_dist")  SetInverseType ( SUPERLU_DIST );
+    else if (ainversetype == "mumps")         SetInverseType ( MUMPS );
+    else if (ainversetype == "masterinverse") SetInverseType ( MASTERINVERSE );
+    else SetInverseType ( SPARSECHOLESKY );
+    return old_invtype;
+  }
 
 
   template <class TM>
   SparseMatrixTM<TM> ::
   SparseMatrixTM (int as, int max_elsperrow)
-    : BaseMatrix(),
+    : // BaseMatrix(),
       BaseSparseMatrix (as, max_elsperrow),
-      S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
-      /* asvec(nze, data), */ nul(TSCAL(0))
+      //      S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
+      nul(TSCAL(0))
   {
-    // data = new TM[nze];
     data.Alloc (nze);
     data.SetName ("sparse matrix");
   }
@@ -598,56 +614,53 @@ namespace ngla
   template <class TM>
   SparseMatrixTM<TM> ::
   SparseMatrixTM (const Array<int> & elsperrow)
-    : BaseMatrix(),
+    : // BaseMatrix(),
       BaseSparseMatrix (elsperrow), 
-      S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
-      /* asvec(nze, data), */ nul(TSCAL(0))
+      // S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
+      nul(TSCAL(0))
   { 
-    // data = new TM[nze];
+    data.Alloc (nze);
+    data.SetName ("sparse matrix");
+  }
+
+  template <class TM>
+  SparseMatrixTM<TM> ::
+  SparseMatrixTM (int size, const Table<int> & rowelements, 
+		  const Table<int> & colelements, bool symmetric)
+    : BaseSparseMatrix (size, rowelements, colelements, symmetric), 
+      nul(TSCAL(0))
+  { 
     data.Alloc (nze);
     data.SetName ("sparse matrix");
   }
 
 
-
-
-  //  template <class TM>
-  //  SparseMatrix<TM> ::
   template <class TM>
   SparseMatrixTM<TM> ::
   SparseMatrixTM (const MatrixGraph & agraph, bool stealgraph)
-    : BaseMatrix(),
+    : // BaseMatrix(),
       BaseSparseMatrix (agraph, stealgraph), 
-      S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
+      // S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
       nul(TSCAL(0))
   { 
-    // data = new TM[nze];
     data.Alloc (nze);
     data.SetName ("sparse matrix");
     FindSameNZE();
   }
 
-
-  //  template <class TM>
-  //  SparseMatrix<TM> ::
   template <class TM>
   SparseMatrixTM<TM> ::
   SparseMatrixTM (const SparseMatrixTM & amat)
-    : BaseMatrix(amat),
+    : // BaseMatrix(amat),
       BaseSparseMatrix (amat), 
-      S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
+      // S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
       nul(TSCAL(0)) 
   { 
-    // BaseMoveableMem::Print ();
-    // data = new TM[nze];
     data.Alloc (nze);
     data.SetName ("sparse matrix");
     AsVector() = amat.AsVector(); 
   }
-  
 
-  //  template <class TM>
-  //  SparseMatrix<TM> 
   template <class TM>
   SparseMatrixTM<TM> :: ~SparseMatrixTM ()
   { 
@@ -658,42 +671,16 @@ namespace ngla
 
 
 
-
-  /*
-    template<class TM, class TV_ROW, class TV_COL>
-    BaseVector *  SparseMatrix<TM,TV_ROW,TV_COL> :: CreateVector () const
-    {
-    return new VVector<TV_COL> (size);
-    }
-  
-  
-    template<class TM, class TV_ROW, class TV_COL>
-    BaseVector *  SparseMatrix<TM, FlatVector<TV_ROW>, FlatVector<TV_COL> > :: CreateVector () const
-    {
-    return new VVector<FlatVector<TV_COL> > (size, 10);
-    }
-  */
-  
-
-
-
   template <class TM>
   void SparseMatrixTM<TM> ::
-  AddElementMatrix(const FlatArray<int> & dnums1, const FlatArray<int> & dnums2, const FlatMatrix<TSCAL> & elmat1)
+  AddElementMatrix(const FlatArray<int> & dnums1, const FlatArray<int> & dnums2, 
+		   const FlatMatrix<TSCAL> & elmat1)
   {
-    // cout << "AddelementMatrix not impelmented" << endl;
-
-
-
     ArrayMem<int, 50> dnums_sort(dnums2.Size()), map(dnums2.Size());
     dnums_sort = dnums2;
     for (int i = 0; i < map.Size(); i++)
       map[i] = i;
     BubbleSort (dnums2.Size(), &dnums_sort[0], &map[0]);
-    
-    // cout << "sorted: " << endl;
-    // for (int j = 0; j < map.Size(); j++)
-    // cout << dnums[map[j]] << endl;
     
     Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
 
@@ -723,8 +710,6 @@ namespace ngla
   
 
 
-
-
   
   template <class TM, class TV_ROW, class TV_COL>
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
@@ -734,9 +719,8 @@ namespace ngla
     RegionTimer reg (timer);
     NgProfiler::AddFlops (timer, this->nze);
 
-
-    FlatVector<TVX> fx = x.FV<TVX> (); 
-    FlatVector<TVY> fy = y.FV<TVY> (); 
+    FlatVector<TVX> fx = x.FV<TVX>(); 
+    FlatVector<TVY> fy = y.FV<TVY>(); 
     
     int h = this->Height();
     for (int i = 0; i < h; i++)
@@ -751,8 +735,8 @@ namespace ngla
     static Timer timer ("SparseMatrix::MultTransAdd");
     RegionTimer reg (timer);
 
-    FlatVector<TVX> fx = x.FV<TVX> (); // (x.Size(), x.Memory());
-    FlatVector<TVX> fy = y.FV<TVY> (); // (y.Size(), y.Memory());
+    FlatVector<TVX> fx = x.FV<TVX>(); 
+    FlatVector<TVX> fy = y.FV<TVY>(); 
     
     for (int i = 0; i < this->Height(); i++)
       AddRowTransToVector (i, s*fx(i), fy);
@@ -791,12 +775,6 @@ namespace ngla
 
 
 
-
-
-
-
-  // template <class TM>
-  // BaseMatrix * SparseMatrix<TM> :: 
   template <class TM, class TV_ROW, class TV_COL>
   BaseMatrix * SparseMatrix<TM,TV_ROW,TV_COL> ::
   InverseMatrix (const BitArray * subset) const
@@ -889,10 +867,6 @@ namespace ngla
 
 
 
-  //   // template <class TM>
-
-
-
   template <class TM>
   ostream & SparseMatrixTM<TM> ::
   Print (ostream & ost) const
@@ -910,9 +884,6 @@ namespace ngla
   }
 
 
-  // template <class TM>
-  // void SparseMatrix<TM> :: 
-
   template <class TM>
   void SparseMatrixTM<TM> ::
   MemoryUsage (Array<MemoryUsageStruct*> & mu) const
@@ -920,8 +891,6 @@ namespace ngla
     mu.Append (new MemoryUsageStruct ("SparseMatrix", nze*sizeof(TM), 1));
     if (owner) MatrixGraph::MemoryUsage (mu);
   }
-
-
 
 
   template <class TM, class TV_ROW, class TV_COL>
@@ -960,14 +929,6 @@ namespace ngla
     RegionTimer reg (timer);
 
 
-    /*
-    for (int i = 0; i < dnums.Size(); i++)
-      if (dnums[i] != -1)
-	for (int j = 0; j < dnums.Size(); j++)
-	  if (dnums[j] != -1 && dnums[i] >= dnums[j])
-	    (*this)(dnums[i], dnums[j]) += elmat(i,j);
-    */
-
     ArrayMem<int, 50> dnums_sort(dnums.Size()), map(dnums.Size());
     dnums_sort = dnums;
     for (int i = 0; i < map.Size(); i++)
@@ -997,47 +958,6 @@ namespace ngla
       }
   }
   
-
-
-  /*
-    template <class TM, class TV>
-    SparseMatrixSymmetric<TM,TV> ::
-    SparseMatrixSymmetric (int as, int max_elsperrow)
-    : SparseMatrixTM<TM> (as, max_elsperrow) , 
-    SparseMatrix<TM,TV,TV> (as, max_elsperrow),
-    SparseMatrixSymmetricTM<TM> (as, max_elsperrow)
-    { ; }
-  
-    template <class TM, class TV>
-    SparseMatrixSymmetric<TM,TV> ::
-    SparseMatrixSymmetric (const Array<int> & elsperrow)
-    : SparseMatrixTM<TM> (elsperrow), 
-    SparseMatrix<TM,TV,TV> (elsperrow),
-    SparseMatrixSymmetricTM<TM> (elsperrow)
-    { ; }
-
-
-    template <class TM, class TV>  
-    SparseMatrixSymmetric<TM,TV> ::
-    SparseMatrixSymmetric (const MatrixGraph & agraph, bool stealgraph)
-    : SparseMatrixTM<TM> (agraph, stealgraph), 
-    SparseMatrix<TM,TV,TV> (agraph, stealgraph),
-    SparseMatrixSymmetricTM<TM> (agraph, stealgraph)
-    { ; }
-
-    template <class TM, class TV>
-    SparseMatrixSymmetric<TM,TV> ::
-    SparseMatrixSymmetric (const SparseMatrixSymmetric & amat)
-    : 
-    SparseMatrixTM<TM> (amat), 
-    SparseMatrix<TM,TV,TV> (amat),
-    SparseMatrixSymmetricTM<TM> (amat)
-    //    : BaseSparseMatrix (amat), data(new TM[nze]), 
-    //      asvec(nze, data), nul(TSCAL(0))
-    { 
-    this->AsVector() = amat.AsVector(); 
-    }
-  */
   
   template <class TM, class TV>
   SparseMatrixSymmetric<TM,TV> :: ~SparseMatrixSymmetric ()
@@ -1053,15 +973,8 @@ namespace ngla
     NgProfiler::RegionTimer reg (timer);
     NgProfiler::AddFlops (timer, 2*this->nze);
 
-    /*
-    const FlatVector<TV_ROW> fx = 
-      dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
-    FlatVector<TV_COL> fy = 
-      dynamic_cast<T_BaseVector<TV_COL> &> (y).FV();
-    */
-
-    const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-    FlatVector<TV_COL> fy = y.FV<TV_COL> ();
+    const FlatVector<TV_ROW> fx = x.FV<TV_ROW>();
+    FlatVector<TV_COL> fy = y.FV<TV_COL>();
 
     for (int i = 0; i < this->Height(); i++)
       {
@@ -1069,8 +982,6 @@ namespace ngla
 	AddRowTransToVectorNoDiag (i, s * fx(i), fy);
       }
   }
-  
-
 
   template <class TM, class TV>
   void SparseMatrixSymmetric<TM,TV> :: 
@@ -1130,59 +1041,6 @@ namespace ngla
       for (int i = 0; i < this->Height(); i++)
 	AddRowTransToVector (i, s * fx(i), fy);
   }
-
-
-
-
-
-
-
-
-
-  /*
-    template <>
-    void SparseMatrixSymmetric<double> :: 
-    MultAdd (double s, const BaseVector & x, BaseVector & y) const
-    {
-    const FlatVector<double> fx = 
-    dynamic_cast<const T_BaseVector<double> &> (x).FV();
-    FlatVector<double> fy = 
-    dynamic_cast<T_BaseVector<double> &> (y).FV();
-
-    const double * vecpx = &fx(0);
-    double * vecpy = &fy(0);
-
-    for (int row = 0; row < this->Height(); row++)
-    {
-    int first = this->firsti[row];
-    int last = this->firsti[row+1];
-
-    int nj = last - first;
-    int nj2 = nj;
-
-    if (this->colnr[last-1] == row) nj2--;
-
-    const int * colpi = this->colnr + first;
-    const double * datap = this->data + first;
-
-    double sum = 0.0;
-    double el = s * fx(row);
-
-    for (int j = 0; j < nj2; j++)
-    {
-    sum += datap[j] * vecpx[colpi[j]];
-    vecpy[colpi[j]] += datap[j] * el;
-    }
-
-    if (nj2 < nj)
-    sum += datap[nj2] * vecpx[colpi[nj2]];
-
-    fy(row) += s * sum;
-    }
-    }
-  */
-
-
 
 
 
@@ -1580,7 +1438,7 @@ namespace ngla
     
     for (int i = 0; i < block2linear.Size()-1; i++)
       {
-	FlatArray<const int> rlin = sm.GetRowIndices(block2linear[i]);
+	FlatArray<int> rlin = sm.GetRowIndices(block2linear[i]);
 	Array<int> rblock(rlin.Size());
 	for (int j = 0; j < rlin.Size(); j++)
 	  rblock[j] = linear2block[rlin[j]];
@@ -1653,8 +1511,8 @@ namespace ngla
     l2b[0] = 0;
     for (int i = 1; i < sm.Height(); i++)
       {
-	FlatArray<const int> rold = sm.GetRowIndices(i-1);
-	FlatArray<const int> rnew = sm.GetRowIndices(i);
+	FlatArray<int> rold = sm.GetRowIndices(i-1);
+	FlatArray<int> rnew = sm.GetRowIndices(i);
 
 
 	if (rold == rnew)
@@ -1676,7 +1534,7 @@ namespace ngla
 
     for (int i = 0; i < b2l.Size()-1; i++)
       {
-	FlatArray<const int> rlin = sm.GetRowIndices(b2l[i]);
+	FlatArray<int> rlin = sm.GetRowIndices(b2l[i]);
 	Array<int> rblock(rlin.Size());
 	for (int j = 0; j < rlin.Size(); j++)
 	  rblock[j] = l2b[rlin[j]];
@@ -1725,27 +1583,8 @@ namespace ngla
 
 
 
-  INVERSETYPE BaseSparseMatrix ::
-  SetInverseType ( string ainversetype ) const
-  {
-    INVERSETYPE old_invtype = inversetype;
-
-    // MatrixGraph & matrix = const_cast<MatrixGraph & > (*this);
-    if ( ainversetype == "pardiso" ) SetInverseType ( PARDISO );
-    else if ( ainversetype == "pardisospd" ) SetInverseType ( PARDISOSPD );
-    else if ( ainversetype == "superlu" ) SetInverseType ( SUPERLU );
-    else if ( ainversetype == "superlu_dist" ) SetInverseType ( SUPERLU_DIST );
-    else if ( ainversetype == "mumps" ) SetInverseType ( MUMPS );
-    else if ( ainversetype == "masterinverse" ) SetInverseType ( MASTERINVERSE );
-    else SetInverseType ( SPARSECHOLESKY );
-    return old_invtype;
-  }
-
-
-  // compiled in separate file, for testing only
   template class SparseMatrixTM<double>;
   template class SparseMatrixTM<Complex>;
-
 
 #if MAX_SYS_DIM >= 1
   template class SparseMatrixTM<Mat<1,1,double> >;
