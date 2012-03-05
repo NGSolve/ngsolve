@@ -490,24 +490,24 @@ namespace ngfem
     }
 
     
-    virtual void CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
 				  FlatMatrixFixWidth<DIM> shape) const
     {   
       AutoDiff<DIM> adp[DIM];
 
       for (int i = 0; i < DIM; i++)
-	adp[i].Value() = sip.IP()(i);
+	adp[i].Value() = mip.IP()(i);
 
       for (int i = 0; i < DIM; i++)
 	for (int j = 0; j < DIM; j++)
-	  adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
+	  adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
 
       HDivShapeAssign<DIM> ds(shape); 
       static_cast<const FEL*> (this) -> T_CalcShape (adp, ds);
 
       /*
       MatrixFixWidth<DIM> hshape(shape.Height());
-      HDivFiniteElement<DIM>::CalcMappedShape (sip, hshape);
+      HDivFiniteElement<DIM>::CalcMappedShape (mip, hshape);
       *testout << "mapped = " << endl << shape << endl;
       *testout << "base = " << endl << hshape << endl;
       *testout << "diff = " << endl << shape-hshape << endl;

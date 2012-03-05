@@ -79,14 +79,14 @@ namespace ngfem
   /// compute dshape, matrix: ndof x spacedim
   template<int D>
   void ScalarFiniteElement<D> :: 
-  CalcMappedDShape (const SpecificIntegrationPoint<D,D> & sip, 
+  CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
                     FlatMatrixFixWidth<D> dshape) const
   {
-    CalcDShape (sip.IP(), dshape);
+    CalcDShape (mip.IP(), dshape);
     for (int i = 0; i < dshape.Height(); i++)
       {
         Vec<D> hv = dshape.Row(i);
-        dshape.Row(i) = Trans (sip.GetJacobianInverse ()) * hv;
+        dshape.Row(i) = Trans (mip.GetJacobianInverse ()) * hv;
       }
   }
 
@@ -193,18 +193,6 @@ namespace ngfem
 
 
 
-
-  
-
-
-  /*
-  template<int D>
-  const IntegrationRule &
-  ScalarFiniteElement<D> :: NodalIntegrationRule() const
-  {
-    return GetIntegrationRules().SelectNodalIntegrationRule (ElementType(), Order());
-  }
-  */
 
   template<int D>
   void ScalarFiniteElement<D> ::

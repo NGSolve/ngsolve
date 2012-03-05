@@ -191,7 +191,6 @@ namespace ngfem
   ///
   template <int DIM>
   class NGS_DLL_HEADER DomainVariableCoefficientFunction : public CoefficientFunction
-					    //  : public SpecCoefficientFunction<DomainVariableCoefficientFunction>
   {
     ///
     Array<EvalFunction*> fun;

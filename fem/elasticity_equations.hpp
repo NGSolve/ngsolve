@@ -41,16 +41,16 @@ namespace ngfem
     enum { DIM_DMAT = 3 };
     enum { DIFFORDER = 1 };
 
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
       typedef typename MAT::TSCAL TSCAL;
       int nd = fel.GetNDof();
 
       FlatMatrixFixHeight<2, TSCAL> grad (nd, lh);
-      grad = Trans (sip.GetJacobianInverse ()) * 
-	Trans (fel.GetDShape(sip.IP(), lh));
+      grad = Trans (mip.GetJacobianInverse ()) * 
+	Trans (fel.GetDShape(mip.IP(), lh));
     
       mat = TSCAL (0);
       for (int i = 0; i < nd; i++)
@@ -76,8 +76,8 @@ namespace ngfem
     enum { DIM_DMAT = 6 };
     enum { DIFFORDER = 1 };
 
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
       typedef typename MAT::TSCAL TSCAL;
@@ -87,8 +87,8 @@ namespace ngfem
       int nd = fel.GetNDof();
 
       FlatMatrixFixHeight<3,TSCAL> grad (nd, lh);
-      grad =  Trans (sip.GetJacobianInverse ()) * 
-	Trans (fel.GetDShape(sip.IP(),lh));
+      grad =  Trans (mip.GetJacobianInverse ()) * 
+	Trans (fel.GetDShape(mip.IP(),lh));
 
       mat = TSCAL (0);
       for (int i = 0; i < nd; i++)
@@ -112,7 +112,7 @@ namespace ngfem
 
     template <typename FEL, typename MAT>
     static void GenerateMatrix (const FEL & fel, 
-				const SpecificIntegrationPoint<3,3> & sip,
+				const MappedIntegrationPoint<3,3> & mip,
 				MAT & mat, LocalHeap & lh)
     {
       typedef typename MAT::TSCAL TSCAL;
@@ -121,7 +121,7 @@ namespace ngfem
       HeapReset hr(lh);
 
       FlatMatrixFixWidth<3> grad (nd, lh);
-      fel.CalcMappedDShape (sip, grad);
+      fel.CalcMappedDShape (mip, grad);
 
       mat = TSCAL (0);
       for (int i = 0; i < nd; i++)
@@ -159,13 +159,13 @@ namespace ngfem
 		    CoefficientFunction * acoefnu) 
       : coefe(acoefe), coefnu(acoefnu) { ; }
 
-    template <typename FEL, typename SIP, typename MAT>
-    void GenerateMatrix (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, typename MAT>
+    void GenerateMatrix (const FEL & fel, const MIP & mip,
 			 MAT & mat, LocalHeap & lh) const
     {
       mat = 0;
-      double nu = Evaluate (*coefnu, sip);
-      double e = Evaluate (*coefe, sip);
+      double nu = Evaluate (*coefnu, mip);
+      double e = Evaluate (*coefe, mip);
       int i;
       for (i = 0; i < DIM; i++)
 	{
@@ -211,22 +211,22 @@ namespace ngfem
 	coefnu12(acoefnu12), coefnu13(acoefnu13), coefnu23(acoefnu23),
 	coefG12(acoefG12), coefG13(acoefG13), coefG23(acoefG23) { ; }
 
-    template <typename FEL, typename SIP, typename MAT>
-    void GenerateMatrix (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, typename MAT>
+    void GenerateMatrix (const FEL & fel, const MIP & mip,
 			 MAT & mat, LocalHeap & lh) const
     {
       mat = 0;
-      const double E1 = Evaluate (*coefE1, sip);
-      const double E2 = Evaluate (*coefE2, sip);
-      const double E3 = Evaluate (*coefE3, sip);
+      const double E1 = Evaluate (*coefE1, mip);
+      const double E2 = Evaluate (*coefE2, mip);
+      const double E3 = Evaluate (*coefE3, mip);
 
       if(E1 < 1.e-5 || E2 < 1.e-5 || E3 < 1.e-5) return;
 
-      const double nu12 = Evaluate (*coefnu12, sip);
+      const double nu12 = Evaluate (*coefnu12, mip);
       const double nu21 = nu12*(E2/E1);
-      const double nu13 = Evaluate (*coefnu13, sip);
+      const double nu13 = Evaluate (*coefnu13, mip);
       const double nu31 = nu13*(E3/E1);
-      const double nu23 = Evaluate (*coefnu23, sip);
+      const double nu23 = Evaluate (*coefnu23, mip);
       const double nu32 = nu23*(E3/E2);
 
       if(nu12 < 0 || nu12 > 0.5 || nu21 < 0 || nu21 > 0.5 || nu13 < 0 || nu13 > 0.5 || nu31 < 0 || nu31 > 0.5 || nu23 < 0 || nu23 > 0.5 || nu32 < 0 || nu32 > 0.5)
@@ -242,9 +242,9 @@ namespace ngfem
       mat(1,0) = mat(0,1) = E2*(nu12+nu13*nu32)/denom; mat(1,1) = E2*(1.-nu13*nu31)/denom;
       mat(2,0) = mat(0,2) = E3*(nu13+nu12*nu23)/denom; mat(2,1) = mat(1,2) = E3*(nu23+nu13*nu21)/denom; mat(2,2) = E3*(1.-nu12*nu21)/denom;
 
-      mat(3,3) = Evaluate (*coefG12, sip);
-      mat(4,4) = Evaluate (*coefG13, sip);
-      mat(5,5) = Evaluate (*coefG23, sip);
+      mat(3,3) = Evaluate (*coefG12, mip);
+      mat(4,4) = Evaluate (*coefG13, mip);
+      mat(5,5) = Evaluate (*coefG23, mip);
     }  
   };
 
@@ -280,34 +280,34 @@ namespace ngfem
 	coefnu12(acoefnu12), coefnu13(acoefnu13), coefnu23(acoefnu23),
 	coefG12(acoefG12), coefG13(acoefG13), coefG23(acoefG23), coefUseCyl(acoefUseCyl) { ; }
 
-    template <typename FEL, typename SIP, typename MAT>
-    void GenerateMatrix (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, typename MAT>
+    void GenerateMatrix (const FEL & fel, const MIP & mip,
 			 MAT & mat, LocalHeap & lh) const
     {
     
-      double E1 = Evaluate (*coefE1, sip);
-      double E2 = Evaluate (*coefE2, sip);
-      double E3 = Evaluate (*coefE3, sip);
+      double E1 = Evaluate (*coefE1, mip);
+      double E2 = Evaluate (*coefE2, mip);
+      double E3 = Evaluate (*coefE3, mip);
 
       if(E1 < 1.e-5 || E2 < 1.e-5 || E3 < 1.e-5) return;
 
-      double nu12 = Evaluate (*coefnu12, sip);
+      double nu12 = Evaluate (*coefnu12, mip);
       double nu21 = nu12*(E2/E1);
-      double nu13 = Evaluate (*coefnu13, sip);
+      double nu13 = Evaluate (*coefnu13, mip);
       double nu31 = nu13*(E3/E1);
-      double nu23 = Evaluate (*coefnu23, sip);
+      double nu23 = Evaluate (*coefnu23, mip);
       double nu32 = nu23*(E3/E2);
 
-      const double useCyl = Evaluate (*coefUseCyl, sip);
+      const double useCyl = Evaluate (*coefUseCyl, mip);
 
-      double G12 = Evaluate (*coefG12, sip);
-      double G13 = Evaluate (*coefG13, sip);
-      double G23 = Evaluate (*coefG23, sip);
+      double G12 = Evaluate (*coefG12, mip);
+      double G13 = Evaluate (*coefG13, mip);
+      double G23 = Evaluate (*coefG23, mip);
 
 
 
-      double n1 = sip.GetPoint()(0);
-      double n2 = sip.GetPoint()(1);
+      double n1 = mip.GetPoint()(0);
+      double n2 = mip.GetPoint()(1);
       const double l = sqrt(n1*n1+n2*n2);
 
       n1 /= l; n2 /= l;
@@ -368,13 +368,13 @@ namespace ngfem
 		     CoefficientFunction * acoefnu) 
       : coefe(acoefe), coefnu(acoefnu) { ; }
   
-    template <typename FEL, typename SIP, typename MAT>
-    void GenerateMatrix (const FEL & fel, const SIP & sip,
+    template <typename FEL, typename MIP, typename MAT>
+    void GenerateMatrix (const FEL & fel, const MIP & mip,
 			 MAT & mat, LocalHeap & lh) const
     {
       mat = 0;
-      double nu = Evaluate (*coefnu, sip);
-      double e = Evaluate (*coefe, sip);
+      double nu = Evaluate (*coefnu, mip);
+      double e = Evaluate (*coefe, mip);
 
       mat(0,0) = mat(1,1) = 1;
       mat(0,1) = mat(1,0) = nu;

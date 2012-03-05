@@ -130,10 +130,10 @@ public:
   virtual void CalcCurlShape (const IntegrationPoint & ip, 
                               FlatMatrixFixWidth<DIM_CURL> curlshape) const;
 
-  virtual void CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+  virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                                 FlatMatrixFixWidth<DIM> shape) const;
 
-  virtual void CalcMappedCurlShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+  virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                                     FlatMatrixFixWidth<DIM_CURL> curlshape) const;
 
   /*

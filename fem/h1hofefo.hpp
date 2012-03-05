@@ -74,7 +74,7 @@ namespace ngfem
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     FlatMatrixFixWidth<DIM> dshape) const;
 
-    virtual void CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
+    virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & sip, 
 				   FlatMatrixFixWidth<DIM> dshape) const;
 
     virtual double Evaluate (const IntegrationPoint & ip, 

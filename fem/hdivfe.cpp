@@ -104,7 +104,7 @@ namespace ngfem
   /// compute shape
   template <int D>
   void HDivFiniteElement<D> ::
-  CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+  CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & sip,
                    FlatMatrixFixWidth<DIM> shape) const
   {
     CalcShape (sip.IP(), shape);
@@ -119,7 +119,7 @@ namespace ngfem
   /// compute curl of shape
   template <int D>
   void HDivFiniteElement<D> ::
-  CalcMappedDivShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+  CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & sip,
                       FlatVector<> divshape) const
   {
     CalcDivShape (sip.IP(), divshape);
@@ -143,8 +143,7 @@ namespace ngfem
 
    moments = 0;
 
-   const IntegrationRule & facerule = 
-     GetIntegrationRules().SelectIntegrationRule (testfe.ElementType(), order);
+   const IntegrationRule & facerule = SelectIntegrationRule (testfe.ElementType(), order);
     
    if (dim == 2)
      {
@@ -793,8 +792,7 @@ namespace ngfem
       { 0, 1, 0 },
       { 0, 0, 0 } };
 
-    const IntegrationRule & trigrule = 
-      GetIntegrationRules().SelectIntegrationRule (ET_TRIG, 5);
+    const IntegrationRule & trigrule = SelectIntegrationRule (ET_TRIG, 5);
 
     DenseMatrix fiphij(nd);
     fiphij.SetScalar (0);
@@ -1009,10 +1007,8 @@ namespace ngfem
       { 3, 2 },
       { 1, 2 } };
 
-    const IntegrationRule & linerule = 
-      GetIntegrationRules().SelectIntegrationRule (ET_SEGM, 4);
-    const IntegrationRule & trigrule = 
-      GetIntegrationRules().SelectIntegrationRule (ET_TRIG, 5);
+    const IntegrationRule & linerule = SelectIntegrationRule (ET_SEGM, 4);
+    const IntegrationRule & trigrule = SelectIntegrationRule (ET_TRIG, 5);
 
 
     DenseMatrix fiphij(nd);
@@ -1226,10 +1222,8 @@ namespace ngfem
       { 3, 2 },
       { 1, 2 } };
 
-    const IntegrationRule & linerule = 
-      GetIntegrationRules().SelectIntegrationRule (ET_SEGM, 4);
-    const IntegrationRule & trigrule = 
-      GetIntegrationRules().SelectIntegrationRule (ET_TRIG, 5);
+    const IntegrationRule & linerule = SelectIntegrationRule (ET_SEGM, 4);
+    const IntegrationRule & trigrule = SelectIntegrationRule (ET_TRIG, 5);
 
 
     DenseMatrix fiphij(nd);
@@ -1876,8 +1870,7 @@ void FE_BDMTet1 :: Orthogonalize()
 
     const POINT3D * points = MeshAccess::ME_GetVertices (ET_TET);
 
-    const IntegrationRule & tetrule = 
-      GetIntegrationRules().SelectIntegrationRule (ET_TET, 5);
+    const IntegrationRule & tetrule = SelectIntegrationRule (ET_TET, 5);
 
     DenseMatrix fiphij(nd);
     fiphij.SetScalar (0);
@@ -2344,8 +2337,7 @@ void FE_BDFMPrism2 :: Orthogonalize()
 
 
   const POINT3D * points = MeshAccess::ME_GetVertices (ET_PRISM);
-  const IntegrationRule & prismrule = 
-    GetIntegrationRules().SelectIntegrationRule (ET_PRISM, 5);
+  const IntegrationRule & prismrule = SelectIntegrationRule (ET_PRISM, 5);
 
   Vector shape1(nd), sum1(nd), sum2(nd), sum3(nd);
 

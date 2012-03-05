@@ -159,7 +159,7 @@ namespace ngfem
   /// compute dshape, matrix: ndof x spacedim
   template <ELEMENT_TYPE ET, int ORDER>
   void T_H1HighOrderFiniteElementFO<ET, ORDER> :: 
-  CalcMappedDShape (const SpecificIntegrationPoint<DIM,DIM> & sip, 
+  CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & sip, 
                     FlatMatrixFixWidth<DIM> dshape) const
   {
     AutoDiff<DIM> adp[DIM];

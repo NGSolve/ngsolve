@@ -43,11 +43,11 @@ namespace ngfem
 			       FlatVector<> divshape) const;
 
     /// compute shape
-    virtual void CalcMappedShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & sip,
 				  FlatMatrixFixWidth<DIM> shape) const;
 
     /// compute div of shape
-    virtual void CalcMappedDivShape (const SpecificIntegrationPoint<DIM,DIM> & sip,
+    virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & sip,
 				     FlatVector<> divshape) const;
 
 

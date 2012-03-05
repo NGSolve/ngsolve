@@ -231,8 +231,6 @@ namespace ngfem
     ///
     virtual int GetDimension () const { return DIM; }
     ///
-    virtual int Lumping () const { return 0; }
-    ///
     virtual string Name () const { return "PML-BDB integrator"; }
   };
 
