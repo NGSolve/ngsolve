@@ -151,6 +151,16 @@ namespace ngfem
     data = &ir[0];
     ownmem = 0;
   }
+  
+  IntegrationRule :: IntegrationRule (int asize, double (*pts)[3], double * weights)
+  {
+    for (int i = 0; i < asize; i++)
+      {
+	IntegrationPoint ip(pts[i], weights[i]);
+	ip.SetNr(i);
+	AddIntegrationPoint (ip);
+      }
+  }
 
 
 
@@ -1571,46 +1581,58 @@ namespace ngfem
 
 
 
+  /** 
+      Integration Rules.
+      A global class maintaining integration rules. If a rule of specific
+      order is requested for the first time, than the rule is generated.
+  */
+  class NGS_DLL_HEADER IntegrationRules
+  {
+    Array<IntegrationRule*> segmentrules;
+    Array<IntegrationRule*> trigrules;
+    Array<IntegrationRule*> quadrules;
+    Array<IntegrationRule*> tetrules;
+    Array<IntegrationRule*> prismrules;
+    Array<IntegrationRule*> pyramidrules;
+    Array<IntegrationRule*> hexrules;
+    
+    Array<IntegrationRule*> jacobirules10;
+    Array<IntegrationRule*> jacobirules20;
+  public:
+    ///
+    IntegrationRules ();
+    ///
+    ~IntegrationRules ();
+    /// returns the integration rule for the element type and integration order
+    const IntegrationRule & SelectIntegrationRule (ELEMENT_TYPE eltyp, int order) const;
+    ///
+    const IntegrationRule & SelectIntegrationRuleJacobi10 (int order) const;
+    ///
+    const IntegrationRule & SelectIntegrationRuleJacobi20 (int order) const;
+    ///
+    const IntegrationRule & GenerateIntegrationRule (ELEMENT_TYPE eltyp, int order);
+    const IntegrationRule & GenerateIntegrationRuleJacobi10 (int order);
+    const IntegrationRule & GenerateIntegrationRuleJacobi20 (int order);
+  };
+
+
+
 
 
   IntegrationRules :: IntegrationRules ()
   {
-    int i, p;
-    IntegrationRule * rule;    
-    IntegrationPoint ip;
-
-
-    Array<double> xi;
-    Array<double> wi;
 
     // ************************************
     // ** Segment integration rules
     // ************************************
 
-
-    for (p = 0; p < 20; p++)
+    for (int p = 0; p < 20; p++)
       GenerateIntegrationRule (ET_SEGM, p);
-
-    static double qf_segm_lumping_points[][3] = 
-      { 
-	{ 0 },
-	{ 1 },
-      };
-    static double qf_segm_lumping_weights[] = 
-      { 0.5, 0.5 } ;
-    for (i = 0; i < 2; i++)
-      {
-	IntegrationPoint ip(qf_segm_lumping_points[i],
-                            qf_segm_lumping_weights[i]);
-	ip.SetNr (i);
-	// ip->SetGlobNr (segmentpoints.Append (ip)-1);
-	segmentlumping.AddIntegrationPoint (ip);
-      }
-
 
     // ************************************
     // ** Triangle integration rules
     // ************************************
+
 
     trigrules.SetSize (7);
 
@@ -1620,51 +1642,29 @@ namespace ngfem
       };
     
     static double qf_trig_order1_weights[] = 
-      {  0.5} ;
+      {  
+	0.5
+      } ;
+
+    trigrules[0] = new IntegrationRule (1, qf_trig_order1_points, qf_trig_order1_weights);
+    trigrules[1] = new IntegrationRule (1, qf_trig_order1_points, qf_trig_order1_weights);
 
 
-    
-    rule = new IntegrationRule; //  (1);
-    ip = IntegrationPoint (qf_trig_order1_points[0],
-                           qf_trig_order1_weights[0]);
-    ip.SetNr (0);
-    // ip->SetGlobNr (trigpoints.Append (ip)-1);
-    rule->AddIntegrationPoint (ip);
-    trigrules[0] = rule;
-
-
-    rule = new IntegrationRule; //  (1);
-    ip = IntegrationPoint (qf_trig_order1_points[0],
-                           qf_trig_order1_weights[0]);
-    ip.SetNr (0);
-    // ip->SetGlobNr (trigpoints.Append (ip)-1);
-    rule->AddIntegrationPoint (ip);
-    trigrules[1] = rule;
-
-
-    static double qf_tria_order2_points[][3] = 
+    static double qf_trig_order2_points[][3] = 
       {
 	{ 0,   0.5 },
 	{ 0.5, 0,  },
 	{ 0.5, 0.5 }
       };
    
-    static double qf_tria_order2_weights[] = 
+    static double qf_trig_order2_weights[] = 
       {
 	1.0/6.0, 1.0/6.0 , 1.0/6.0
       };
-    
-    rule = new IntegrationRule; // (3);
-    for (i = 0; i < 3; i++)
-      {
-	ip = IntegrationPoint (qf_tria_order2_points[i],
-                               qf_tria_order2_weights[i]);
-	ip.SetNr (i);
-	// ip->SetGlobNr (trigpoints.Append (ip)-1);
-	rule->AddIntegrationPoint (ip);
-      }
 
-    trigrules[2] = rule;
+    trigrules[2] = new IntegrationRule (3, qf_trig_order2_points, qf_trig_order2_weights);
+
+
 
 
     static double qf_trig_order4_points[][3] = 
@@ -1676,38 +1676,15 @@ namespace ngfem
 	{ 0.445948490915965, 0.108103018168070, },
 	{ 0.445948490915965, 0.445948490915965 }
       };
-    
-    
+
     static double qf_trig_order4_weights[] = 
       {
 	0.054975871827661, 0.054975871827661, 0.054975871827661,
 	0.111690794839005, 0.111690794839005, 0.111690794839005
       };
 
-    rule = new IntegrationRule; //  (6);
-    for (i = 0; i < 6; i++)
-      {
-	ip = IntegrationPoint (qf_trig_order4_points[i],
-                               qf_trig_order4_weights[i]);
-	ip.SetNr (i);
-	// ip->SetGlobNr (trigpoints.Append (ip)-1);
-	rule->AddIntegrationPoint (ip);
-      }
-
-    trigrules[3] = rule;
-
-
-    rule = new IntegrationRule; // (6);
-    for (i = 0; i < 6; i++)
-      {
-	ip = IntegrationPoint (qf_trig_order4_points[i],
-                               qf_trig_order4_weights[i]);
-	ip.SetNr (i);
-	// ip.SetGlobNr (trigpoints.Append (ip)-1);
-	rule->AddIntegrationPoint (ip);
-      }
-
-    trigrules[4] = rule;
+    trigrules[3] = new IntegrationRule (6, qf_trig_order4_points, qf_trig_order4_weights);
+    trigrules[4] = new IntegrationRule (6, qf_trig_order4_points, qf_trig_order4_weights);
 
 
 
@@ -1736,155 +1713,21 @@ namespace ngfem
 	0.041425537809187, 0.041425537809187, 0.041425537809187,
 	0.041425537809187, 0.041425537809187, 0.041425537809187 
       };
-  
-    rule = new IntegrationRule; // (12);
-    for (i = 0; i < 12; i++)
-      {
-	ip = IntegrationPoint (qf_trig_order6_points[i],
-				   qf_trig_order6_weights[i]);
-	ip.SetNr (i);
-	// ip.SetGlobNr (trigpoints.Append (ip)-1);
-	rule->AddIntegrationPoint (ip);
-      }
 
-    trigrules[5] = rule;
+    trigrules[5] = new IntegrationRule (12, qf_trig_order6_points, qf_trig_order6_weights);
+    trigrules[6] = new IntegrationRule (12, qf_trig_order6_points, qf_trig_order6_weights);
 
-    rule = new IntegrationRule; // (12);
-    for (i = 0; i < 12; i++)
-      {
-	ip = IntegrationPoint (qf_trig_order6_points[i],
-				   qf_trig_order6_weights[i]);
-	ip.SetNr (i);
-	// ip.SetGlobNr (trigpoints.Append (ip)-1);
-	rule->AddIntegrationPoint (ip);
-      }
 
-    trigrules[6] = rule;
-
-    for (p = 7; p <= 10; p++)
+    for (int p = 7; p <= 10; p++)
       GenerateIntegrationRule (ET_TRIG, p);
-
-
-
-    static double qf_trig_lumping_points[][3] = 
-      {
-	{ 1, 0 },
-	{ 0, 1, },
-	{ 0, 0, }
-      };
-
-    static double qf_trig_lumping_weights[] = 
-      {
-	1.0/6.0, 1.0/6.0 , 1.0/6.0
-      };
-    
-    for (i = 0; i < 3; i++)
-      {
-	ip = IntegrationPoint (qf_trig_lumping_points[i],
-				   qf_trig_lumping_weights[i]);
-	ip.SetNr (i);
-	// ip.SetGlobNr (trigpoints.Append (ip)-1);
-	triglumping.AddIntegrationPoint (ip);
-      }
-
-
-
-    static double qf_trig_lumping2_points[][3] = 
-      {
-	{ 1, 0 },
-	{ 0, 1, },
-	{ 0, 0, },
-	{ 0, 0.5 },
-	{ 0.5, 0 },
-	{ 0.5, 0.5 }
-      };
-       
-    static double qf_trig_lumping2_weights[] = 
-      {
-	1.0/12.0, 1.0/12.0 , 1.0/12.0, 
-	1.0/12.0, 1.0/12.0 , 1.0/12.0 
-      };
-    
-    for (i = 0; i < 6; i++)
-      {
-	ip = IntegrationPoint (qf_trig_lumping2_points[i],
-				   qf_trig_lumping2_weights[i]);
-	ip.SetNr (i);
-	// ip.SetGlobNr (trigpoints.Append (ip)-1);
-	triglumping2.AddIntegrationPoint (ip);
-      }
-
-
-
-
-
-    trignodalrules.SetSize(12);
-    for (p = 1; p <= trignodalrules.Size(); p++)
-      {
-	rule = new IntegrationRule; // ((p+1)*(p+2)/2);
-	int nelp = (p*p+3*p+2) / 2;
-      
-	int lami[3];
-	double xi[3];
-	int i = 0;
-	for (lami[0] = 0; lami[0] <= p; lami[0]++)
-	  for (lami[1] = 0; lami[1] <= p-lami[0]; lami[1]++)
-	    {
-	      lami[2] = p - lami[0] - lami[1];
-	      
-	      for (int n = 0; n < 3; n++)
-		xi[n] = double(lami[n]) / p;
-	    
-	      ip = IntegrationPoint (xi, 1.0 / (2.0 * nelp));
-	      ip.SetNr (i); i++;
-	      // ip.SetGlobNr (trigpoints.Append (ip)-1);
-	      rule->AddIntegrationPoint (ip);
-	    }
-	trignodalrules[p-1] = rule;
-      }
-  
-
 
 
     // ************************************
     // ** Quadrilateral integration rules
     // ************************************
     
-    for (p = 0; p <= 10; p++)
+    for (int p = 0; p <= 10; p++)
       GenerateIntegrationRule (ET_QUAD, p);
-
-
-    {
-      static double qf_quad_lumping_points[][4] = 
-	{
-	  { 0, 0 },
-	  { 1, 0 },
-	  { 1, 1 },
-	  { 0, 1 }
-	};
-      
-      static double qf_quad_lumping_weights[] = 
-	{
-	  0.25, 0.25, 0.25, 0.25, 
-	};
-    
-      for (i = 0; i < 4; i++)
-	{
-	  ip = IntegrationPoint (qf_quad_lumping_points[i],
-				     qf_quad_lumping_weights[i]);
-	  ip.SetNr (i);
-	  // ip.SetGlobNr (quadpoints.Append (ip)-1);
-	  quadlumping.AddIntegrationPoint (ip);
-	}
-
-    }
-
-
-
-
-
-
-
 
 
 
@@ -1893,7 +1736,7 @@ namespace ngfem
     // ************************************
 
 
-    tetrules.SetSize(5);
+    tetrules.SetSize(6);
 
     static double qf_tetra_order1_points[][3] = 
       { 
@@ -1904,20 +1747,9 @@ namespace ngfem
       {
 	1.0/6.0
       };
-    
-    rule = new IntegrationRule; // (1);
 
-    ip = IntegrationPoint (qf_tetra_order1_points[0],
-			       qf_tetra_order1_weights[0]);
-    ip.SetNr (0);
-    // ip.SetGlobNr (tetpoints.Append (ip)-1);
-    rule->AddIntegrationPoint (ip);
-
-    tetrules[0] = rule;
-    
-
-
-
+    tetrules[0] = new IntegrationRule (1, qf_tetra_order1_points, qf_tetra_order1_weights);
+    tetrules[1] = new IntegrationRule (1, qf_tetra_order1_points, qf_tetra_order1_weights);    
 
     static double qf_tetra_order2_points[][3] = 
       {
@@ -1929,47 +1761,8 @@ namespace ngfem
     
     static double qf_tetra_order2_weights[] = 
       { 1.0/24.0, 1.0/24.0, 1.0/24.0, 1.0/24.0 };
-    
-    /*
-      rule = new IntegrationRule; // (4);
-      for (i = 0; i < 4; i++)
-      {
-      ip = IntegrationPoint (qf_tetra_order2_points[i],
-      qf_tetra_order2_weights[i]);
-      ip.SetNr (i);
-      // ip.SetGlobNr (tetpoints.Append (ip)-1);
-      rule->AddIntegrationPoint (ip);
-      }
 
-      tetrules[1] = rule;
-    */
-    rule = new IntegrationRule; // (1);
-    for (i = 0; i < 1; i++)
-      {
-	ip = IntegrationPoint (qf_tetra_order1_points[i],
-				   qf_tetra_order1_weights[i]);
-	ip.SetNr (i);
-	// ip.SetGlobNr (tetpoints.Append (ip)-1);
-	rule->AddIntegrationPoint (ip);
-      }
-
-    tetrules[1] = rule;
-
-
-
-
-    rule = new IntegrationRule; //  (4);
-    for (i = 0; i < 4; i++)
-      {
-	ip = IntegrationPoint (qf_tetra_order2_points[i],
-				   qf_tetra_order2_weights[i]);
-	ip.SetNr (i);
-	// ip.SetGlobNr (tetpoints.Append (ip)-1);
-	rule->AddIntegrationPoint (ip);
-      }
-
-    tetrules[2] = rule;
-
+    tetrules[2] = new IntegrationRule (4, qf_tetra_order2_points, qf_tetra_order2_weights);    
 
 
 
@@ -1999,302 +1792,105 @@ namespace ngfem
 	0.018781320953003, 0.018781320953003, 0.018781320953003, 0.018781320953003,
 	0.012248840519394, 0.012248840519394, 0.012248840519394, 0.012248840519394
       };
-
-    rule = new IntegrationRule; // (14);
-    for (i = 0; i < 14; i++)
-      {
-	ip = IntegrationPoint (qf_tetra_order5_points[i],
-				   qf_tetra_order5_weights[i]);
-	ip.SetNr (i);
-	// ip.SetGlobNr (tetpoints.Append (ip)-1);
-	rule->AddIntegrationPoint (ip);
-      }
-
-    tetrules[3] = rule;
-
-    rule = new IntegrationRule; // (14);
-    for (i = 0; i < 14; i++)
-      {
-	ip = IntegrationPoint (qf_tetra_order5_points[i],
-				   qf_tetra_order5_weights[i]);
-	ip.SetNr (i);
-	// ip.SetGlobNr (tetpoints.Append (ip)-1);
-	rule->AddIntegrationPoint (ip);
-      }
-
-    tetrules[4] = rule;
-
-    for (p = 5; p <= 8; p++)
-      GenerateIntegrationRule (ET_TET, p);
-
-
-
-    tetnodalrules.SetSize(8);
-    for (p = 3; p <= tetnodalrules.Size(); p++)
-      {
-	int nelp = (p*p*p + 6 * p * p + 11 * p + 6) / 6;
-	rule = new IntegrationRule; // (nelp);
-      
-	int lami[4];
-	double xi[4];
-	int i = 0;
-	for (lami[0] = 0; lami[0] <= p; lami[0]++)
-	  for (lami[1] = 0; lami[1] <= p-lami[0]; lami[1]++)
-	    for (lami[2] = 0; lami[2] <= p-lami[0]-lami[1]; lami[2]++)
-	      {
-		lami[3] = p - lami[0] - lami[1] - lami[2];
-	      
-		int n;
-		for (n = 0; n < 4; n++)
-		  xi[n] = double(lami[n]) / p;
-
-		ip = IntegrationPoint (xi, 1.0 / (6.0 * nelp));
-		ip.SetNr (i); i++;
-		// ip.SetGlobNr (tetpoints.Append (ip)-1);
-		rule->AddIntegrationPoint (ip);
-	      }
-	tetnodalrules[p-1] = rule;
-      }
-
-    double tet1pts[][3] = 
-      { { 1, 0, 0 },
-	{ 0, 1, 0 },
-	{ 0, 0, 1 },
-	{ 0, 0, 0 } };
-      
-    rule = new IntegrationRule; // (4);
-    for (i = 0; i < 4; i++)
-      {
-	ip = IntegrationPoint (tet1pts[i], 1.0 / (6.0 * 4));
-	ip.SetNr (i);
-	// ip.SetGlobNr (tetpoints.Append (ip)-1);
-	rule->AddIntegrationPoint (ip);
-      }
-
-    tetnodalrules[0] = rule;
-
-    rule = new IntegrationRule; // (4);
-    for (i = 0; i < 4; i++)
-      {
-	ip = IntegrationPoint (tet1pts[i], 1.0 / (6.0 * 4));
-	ip.SetNr (i);
-	// ip.SetGlobNr (tetpoints.Append (ip)-1);
-	rule->AddIntegrationPoint (ip);
-      }
-
-    tetnodalrules[1] = rule;
-  
-
-
-
-
-    static double qf_tet_lumping_points[][3] = 
-      {
-	{ 0, 0, 0,},
-	{ 1, 0, 0,},
-	{ 0, 1, 0,},
-	{ 0, 0, 1,},
-      };
-       
-    static double qf_tet_lumping_weights[] = 
-      {
-	1.0/24.0, 1.0/24.0, 1.0/24.0, 1.0/24.0, 
-      };
     
-    for (i = 0; i < 4; i++)
-      {
-	ip = IntegrationPoint (qf_tet_lumping_points[i],
-				   qf_tet_lumping_weights[i]);
-	ip.SetNr (i);
-	// ip.SetGlobNr (tetpoints.Append (ip)-1);
-	tetlumping.AddIntegrationPoint (ip);
-      }
+    tetrules[3] = new IntegrationRule (14, qf_tetra_order5_points, qf_tetra_order5_weights);    
+    tetrules[4] = new IntegrationRule (14, qf_tetra_order5_points, qf_tetra_order5_weights);    
+    tetrules[5] = new IntegrationRule (14, qf_tetra_order5_points, qf_tetra_order5_weights);    
 
 
+
+    for (int p = 6; p <= 10; p++)
+      GenerateIntegrationRule (ET_TET, p);
 
     // ************************************
     // ** Prismatic integration rules
     // ************************************
 
-    for (p = 0; p <= 6; p++)
+    for (int p = 0; p <= 6; p++)
       GenerateIntegrationRule (ET_PRISM, p);
-
-
-
-    static double qf_prismfacemidpoint[][3] = 
-      {
-	{ 0.5, 0, 0.5 },
-	{ 0.5, 0.5, 0.5 },
-	{ 0, 0.5, 0.5 },
-      };
-
-    for (i = 0; i < 3; i++)
-      {
-	ip = IntegrationPoint (qf_prismfacemidpoint[i], 0.5);
-	ip.SetNr (i);
-	// ip.SetGlobNr (prismpoints.Append (ip)-1);
-	prismfacemidpoint.AddIntegrationPoint (ip);
-      }
-
-    static double qf_prism_lumping_points[][3] = 
-      {
-	{ 1, 0, 0 },
-	{ 0, 1, 0 },
-	{ 0, 0, 0 },
-	{ 1, 0, 1 },
-	{ 0, 1, 1 },
-	{ 0, 0, 1 }
-      };
-       
-    static double qf_prism_lumping_weights[] = 
-      {
-	1.0/12.0, 1.0/12.0, 1.0/12.0, 1.0/12.0, 
-	1.0/12.0, 1.0/12.0, 
-      };
-    
-    for (i = 0; i < 6; i++)
-      {
-	ip = IntegrationPoint (qf_prism_lumping_points[i],
-				   qf_prism_lumping_weights[i]);
-	ip.SetNr (i);
-	// ip.SetGlobNr (prismpoints.Append (ip)-1);
-	prismlumping.AddIntegrationPoint (ip);
-      }
-
-
-
-
-
 
 
     // ************************************
     // ** Pyramid integration rules
     // ************************************
 
-    /*
-
-    static double qf_pyramidz_order1_points_weight[][2] = 
-    {
-    { 0.75,  1.0/3.0 }
-    };
-
-    static double qf_pyramidz_order3_points_weight[][2] = 
-    {
-    { 0.455848155988775, 0.100785882079825 },
-    { 0.877485177344559, 0.232547451253508 }
-    };
-    static double qf_pyramidz_order5_points_weight[][2] = 
-    {
-    { 0.294997790111502, 0.029950703008581 },
-    { 0.652996233961648, 0.146246269259866 },
-    { 0.927005975926850, 0.157136361064887 }
-    };
-
-    pyramidrules.SetSize(order3d);
-    for (k = 0; k < pyramidrules.Size(); k++)
-    {
-    const IntegrationRule & quadrule = *quadrules[k];
-    double (*zrule) [2];
-    int nz;
-    switch (k+1)
-    {
-    case 1: 
-    zrule = qf_pyramidz_order1_points_weight; 
-    nz = 1;
-    break;
-    case 2: case 3:
-    zrule = qf_pyramidz_order3_points_weight; 
-    nz = 2;
-    break;
-    // case 4: case 5:
-    default:
-    zrule = qf_pyramidz_order5_points_weight; 
-    nz = 3;
-    break;
-    }
-
-    IntegrationRule * pyramidrule = new IntegrationRule();
-	
-    double point[3], weight;
-	
-    for (i = 0; i < quadrule.GetNIP(); i++)
-    for (j = 0; j < nz; j++)
-    {
-    const IntegrationPoint & ipquad = quadrule.GetIP(i);
-    point[0] = zrule[j][0] * ipquad.Point()[0];
-    point[1] = zrule[j][0] * ipquad.Point()[1];
-    point[2] = 1-zrule[j][0];
-    weight = zrule[j][1] * ipquad.Weight();
-	      
-    ip = IntegrationPoint (point, weight);
-    // ip.SetGlobNr (pyramidpoints.Append (ip)-1);
-    pyramidrule->AddIntegrationPoint (ip);
-    }
-    pyramidrules[k] = pyramidrule;
-    }
-    */    
-
-
-    for (p = 0; p <= 6; p++)
+    for (int p = 0; p <= 6; p++)
       GenerateIntegrationRule (ET_PYRAMID, p);
-
-    static double qf_pyramid_lumping_points[][3] = 
-      {
-	{ 0, 0, 0 },
-	{ 1, 0, 0 },
-	{ 1, 1, 0 },
-	{ 0, 1, 0 },
-	{ 0, 0, 1-1e-14 },
-      };
-       
-    static double qf_pyramid_lumping_weights[] = 
-      {
-	1.0/15.0,
-	1.0/15.0,
-	1.0/15.0,
-	1.0/15.0,
-	1.0/15.0,
-      };    // not optimal, JS !!!
-    
-    for (i = 0; i < 5; i++)
-      {
-	ip = IntegrationPoint (qf_pyramid_lumping_points[i],
-				   qf_pyramid_lumping_weights[i]);
-	ip.SetNr (i);
-	// ip.SetGlobNr (pyramidpoints.Append (ip)-1);
-	pyramidlumping.AddIntegrationPoint (ip);
-      }
 
 
     // ************************************
     // ** Hexaeder integration rules
     // ************************************
 
-    for (p = 0; p <= 6; p++)
+    for (int p = 0; p <= 6; p++)
       GenerateIntegrationRule (ET_HEX, p);
 
-    /*
-      cout << "Check trig intrule:";
-      for (int order = 0; order < 10; order++)
-      {
-      cout << "order = " << order << endl;
-      const IntegrationRule & rule = *trigrules[order];
-      for (int ox = 0; ox <= 4; ox++)
-      for (int oy = 0; ox+oy <= 4; oy++)
-      {
-      double sum = 0;
-      for (int j = 0; j < rule.GetNIP(); j++)
-      {
-      const IntegrationPoint & ip = rule[j];
-      sum += ip.Weight() * pow (ip(0), ox) * pow (ip(1), oy);
-      }
-      cout << "\\int x^" << ox << " y^" << oy << " = " << sum << endl;
-      }
-      }
-    */      
 
 
-    // segfaults with openmp
+
+
+    // cout << "Check trig intrule:";
+    for (int order = 0; order < 6; order++)
+      {
+	// cout << "order = " << order << endl;
+
+	const IntegrationRule & rule = *trigrules[order];
+	const IntegrationRule & rule2 = *trigrules[10];
+
+	for (int ox = 0; ox <= order+2; ox++)
+	  for (int oy = 0; ox+oy <= order; oy++)
+	    {
+	      double sum = 0;
+	      for (int j = 0; j < rule.GetNIP(); j++)
+		{
+		  const IntegrationPoint & ip = rule[j];
+		  sum += ip.Weight() * pow (ip(0), ox) * pow (ip(1), oy);
+		}
+	      double sum2 = 0;
+	      for (int j = 0; j < rule2.GetNIP(); j++)
+		{
+		  const IntegrationPoint & ip = rule2[j];
+		  sum2 += ip.Weight() * pow (ip(0), ox) * pow (ip(1), oy);
+		}
+	      
+	      if (fabs (sum - sum2) > 1e-12)
+		cout << "ERROR trig rule: \\int x^" << ox << " y^" << oy << " = " << sum << ", diff = " << sum-sum2 << endl;
+	    }
+      }
+
+    // cout << "Check tet intrule:";
+    for (int order = 0; order < 6; order++)
+      {
+	// cout << "order = " << order << endl;
+
+	const IntegrationRule & rule = *tetrules[order];
+	const IntegrationRule & rule2 = *tetrules[10];
+
+	for (int ox = 0; ox <= order+2; ox++)
+	  for (int oy = 0; ox+oy <= order+2; oy++)
+	    for (int oz = 0; ox+oy+oz <= order; oz++)
+	      {
+		double sum = 0;
+		for (int j = 0; j < rule.GetNIP(); j++)
+		  {
+		    const IntegrationPoint & ip = rule[j];
+		    sum += ip.Weight() * pow (ip(0), ox) * pow (ip(1), oy) * pow(ip(2), oz);
+		  }
+		double sum2 = 0;
+		for (int j = 0; j < rule2.GetNIP(); j++)
+		  {
+		    const IntegrationPoint & ip = rule2[j];
+		    sum2 += ip.Weight() * pow (ip(0), ox) * pow (ip(1), oy) * pow(ip(2), oz);
+		  }
+		
+		if (fabs (sum - sum2) > 1e-12)
+		  cout << "ERROR, tet rule: \\int x^" << ox << " y^" << oy << " z^" << oz <<  " = " << sum << ", diff = " << sum-sum2 << endl;
+	      }
+      }
+    
+
+
+
     for (int i = 0; i < 50; i++)
       {
 	GenerateIntegrationRuleJacobi10 (i);
@@ -2313,17 +1909,11 @@ namespace ngfem
     for (int i = 0; i < trigrules.Size(); i++)
       delete trigrules[i];
 
-    for (int i = 0; i < trignodalrules.Size(); i++)
-      delete trignodalrules[i];
-
     for (int i = 0; i < quadrules.Size(); i++)
       delete quadrules[i];
 
     for (int i = 0; i < tetrules.Size(); i++)
       delete tetrules[i];
-
-    for (int i = 0; i < tetnodalrules.Size(); i++)
-      delete tetnodalrules[i];
 
     for (int i = 0; i < prismrules.Size(); i++)
       delete prismrules[i];
@@ -2766,17 +2356,14 @@ namespace ngfem
       if ( (*ira)[order] == 0)
 	{
 	  Array<double> xi, wi;
-	  // ComputeGaussRule (order/2+1, xi, wi);
 	  ComputeGaussJacobiRule (order/2+1, xi, wi, 2, 0);
-	  IntegrationRule * rule = new IntegrationRule; // (xi.Size());
+	  IntegrationRule * rule = new IntegrationRule; 
 	  double xip[3] = { 0, 0, 0 };
 	  for (int j = 0; j < xi.Size(); j++)
 	    {
 	      xip[0] = xi[j];
 	      IntegrationPoint ip = IntegrationPoint (xip, wi[j]);
 	      ip.SetNr (j);
-	      // if (order < 20)
-		// ip.SetGlobNr (segmentpoints.Append (ip)-1);
 	      rule->AddIntegrationPoint (ip);
 	    }
 	  jacobirules20[order] = rule;	      
@@ -2796,87 +2383,6 @@ namespace ngfem
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-  const IntegrationRule & IntegrationRules :: 
-  SelectLumpingIntegrationRule (ELEMENT_TYPE eltyp) const
-  {
-    const IntegrationRule * ir = &triglumping;
-
-    switch (eltyp)
-      {
-      case ET_SEGM:
-	ir = &segmentlumping; break;
-      case ET_TRIG:
-	ir = &triglumping; break;
-      case ET_QUAD:
-	ir = &quadlumping; break;
-      case ET_TET:
-	ir = &tetlumping; break;
-      case ET_PRISM:
-	ir = &prismlumping; break;
-      case ET_PYRAMID:      
-	ir = &pyramidlumping; break;
-      default:
-	{
-	  cout << "no lumping integration rules for element " << int(eltyp) << endl;
-	  ir = &SelectIntegrationRule (eltyp, 1);
-	  //	ir = &triglumping;
-	}
-      }
-
-    return *ir;
-  }
-  
-
-  const IntegrationRule & IntegrationRules :: 
-  SelectNodalIntegrationRule (ELEMENT_TYPE eltyp, int order) const
-  {
-    const IntegrationRule * ir;
-    ir = NULL;
-
-    switch (eltyp)
-      {
-      case ET_TET:
-	ir = tetnodalrules[order-1]; break;
-      case ET_TRIG:
-	if (order == 1)
-	  ir = &triglumping;
-	else if (order == 2)
-	  ir = &triglumping2;
-	else ir = trignodalrules[order-1]; break;
-	break;
-      case ET_PYRAMID:
-	ir = &pyramidlumping; break;
-      case ET_PRISM:
-	ir = &prismlumping; break;
-      case ET_QUAD:
-	ir = &quadlumping; break;
-      default:
-	{
-	  cout << "no nodal integration rules for element " << int(eltyp) << endl;
-	  ir = &triglumping;
-	}
-      }
-    if (!ir)
-      {
-	cout << "no nodal integration rules for element " << int(eltyp)
-	     << ", order " << order << endl;
-	ir = &triglumping;
-      }
-    return *ir;
-  }
 
 
   int Integrator :: common_integration_order = -1;
