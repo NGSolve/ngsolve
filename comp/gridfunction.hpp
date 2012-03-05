@@ -16,22 +16,26 @@ namespace ngcomp
   class NGS_DLL_HEADER GridFunction : public NGS_Object
   {
   protected:
+    /// the finite element space
     const FESpace & fespace;
+    /// should we do a prolongation from one multigrid-level to the next ?
     bool nested;
+    /// should we visualize the gridfunction ?
     bool visual;
+    /// how many functions
     int multidim;
+    /// highest multigrid-level for which Update was called (memory allocation)
     int level_updated;
 
-    // netgen::SolutionData * vis;
+    /// used for many right-hand-sides
     int cacheblocksize;
-
-
+    /// the actual data, array for multi-dim 
     Array<BaseVector*> vec;
-    ///GridFunctions if GridFunctions is a compound GridFunction
+    /// component GridFunctions if fespace is a CompoundFESpace
     Array<GridFunction*> comp;
 
   public:
-    ///
+    /// 
     GridFunction (const FESpace & afespace, const string & name, const Flags & flags);
     ///
     virtual ~GridFunction ();
@@ -163,8 +167,6 @@ namespace ngcomp
 
     virtual void Update ();
 
-    // virtual bool IsUpdated () const;
-
     friend class GridFunctionCoefficientFunction;
   };
 
@@ -191,24 +193,23 @@ namespace ngcomp
   class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunction
   {
   protected:
-    // S_GridFunction<double> & gf;
     GridFunction & gf;
     DifferentialOperator * diffop;
     int comp;
   public:
     GridFunctionCoefficientFunction (GridFunction & agf, int acomp = 0);
     GridFunctionCoefficientFunction (GridFunction & agf, DifferentialOperator * adiffop, int acomp = 0);
-
+    
     virtual ~GridFunctionCoefficientFunction ();
-//     virtual bool IsComplex() const; 
+    /// scalar valued or vector valued
     virtual int Dimension() const;
-    virtual double Evaluate (const BaseSpecificIntegrationPoint & ip) const;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
 
-    virtual void Evaluate(const BaseSpecificIntegrationPoint & ip,
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
 			  FlatVector<> result) const;
     
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
-
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+			   FlatMatrix<double> values) const;
   };
 
 
