@@ -22,8 +22,8 @@ namespace ngbla
 
 
   // compatibility (for a while)
-#define VRange Rows
-#define HRange Cols
+  // #define VRange Rows
+  // #define HRange Cols
 
   /**
      A simple matrix.
@@ -1129,6 +1129,28 @@ namespace ngbla
     int Width () const { return H; }
   };
 
+
+
+
+  /// Variable size identity matrix
+  class Identity : public MatExpr<Identity >
+  {
+    int size;
+  public:
+    typedef double TELEM;
+    typedef double TSCAL;
+    enum { IS_LINEAR = 0 };
+
+    Identity (int s) : size(s) { ; }
+
+    double operator() (int i) const
+    { cerr << "Identity, linear access" << endl; return 0; }
+
+    double operator() (int i, int j) const { return (i == j) ? 1 : 0; }
+
+    int Height () const { return size; }
+    int Width () const { return size; }
+  };
 
 
 
