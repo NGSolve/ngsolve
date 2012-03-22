@@ -303,7 +303,7 @@ namespace ngla
 		  {
 		    int col = a.GetRowIndices(i)[j];
 		    if ( (*cluster)[i] == (*cluster)[col] && (*cluster)[i])
-		      rowelems+=entrysize;
+		      rowelems += entrysize;
 		    else if ( i == col )
 		      rowelems++;
 		  }
