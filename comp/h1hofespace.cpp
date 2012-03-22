@@ -1248,29 +1248,22 @@ namespace ngcomp
 	  case 51: 
 	  //for BDDC: we have only the condensated (after subassembling) dofs, 
 	  //and build patches around each vertex Vertices + Edges
-		
+	    
 	    if (creator.GetMode() == 1)
 	      cout << "BDDC-Edges-around-Vertex-Block" << endl;
-		
-// 	    int ds_order = precflags.GetNumFlag ("ds_order", 1);
-// 	    cout << "ds_order = " << ds_order << endl;
-// 		
+
 	    for (int i = 0; i < nv; i++)
 	      creator.Add (i, i);
-
+	    
 	    for (int i = 0; i < ned; i++)
 	      {
-		// 		  creator.Add (nv+i, GetEdgeDofs(i));
 		Ng_Node<1> edge = ma.GetNode<1> (i);
-		for (int k = 0; k < 2; k++){
-		  if (GetEdgeDofs(i).Next() > GetEdgeDofs(i).First())
-		    {
-			if (ma.GetDimension() == 2)
-			  creator.Add (edge.vertices[k], GetEdgeDofs(i).First());
-			else
-			  creator.Add (edge.vertices[k], GetEdgeDofs(i));
-		    }
-		}
+		IntRange edgedofs = GetEdgeDofs(i);
+
+		for (int k = 0; k < 2; k++)
+		  for (int l = edgedofs.First(); l < edgedofs.Next(); l++)
+		    if (ctofdof[l] == WIREBASKET_DOF)
+		      creator.Add (edge.vertices[k], l);
 	      }
 	    
 	    break; 	    

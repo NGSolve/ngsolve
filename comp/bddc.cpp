@@ -312,10 +312,12 @@ namespace ngcomp
 	  cout << "call Create Smoothing Blocks of " << bfa.GetFESpace().GetName() << endl;
 	  Table<int> & blocks = *(bfa.GetFESpace().CreateSmoothingBlocks(flags));
 	  cout << "has blocks" << endl << endl;
-
+	  // *testout << "blocks = " << endl << blocks << endl;
+	  // *testout << "pwbmat = " << endl << *pwbmat << endl;
 	  cout << "call block-jacobi inverse" << endl;
 	  inv = dynamic_cast<BaseSparseMatrix*> (pwbmat)->CreateBlockJacobiPrecond(blocks, 0, 0, 0);      
 	  cout << "has inverse" << endl << endl;
+	  // *testout << "blockjacobi = " << endl << *inv << endl;
 	  
 	  //Coarse Grid of Wirebasket
 	  cout << "call directsolverclusters inverse" << endl;
@@ -410,18 +412,22 @@ namespace ngcomp
 
       timerwb.Start();
       *tmp = 0;
-      if (block){
-	if (true) //GS
-	  {
-	    dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothResiduum (*tmp, y, *tmp2 ,1);
-	    if (inv_coarse)
-	      *tmp += (*inv_coarse) * *tmp2; 
-	    dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothBack (*tmp, y);
-	  }else{ //jacobi only (old)
-	  *tmp = (*inv) * y;
-	  *tmp += (*inv_coarse) * y; 
+      if (block)
+	{
+	  if (true) //GS
+	    {
+	      dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothResiduum (*tmp, y, *tmp2 ,1);
+	      
+	      if (inv_coarse)
+		*tmp += (*inv_coarse) * *tmp2; 
+	      dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothBack (*tmp, y);
+	    }
+	  else
+	    { //jacobi only (old)
+	      *tmp = (*inv) * y;
+	      *tmp += (*inv_coarse) * y; 
+	    }
 	}
-      }
       else
 	{
 	  *tmp = (*inv) * y;
@@ -541,7 +547,7 @@ namespace ngcomp
       int totdofs  = fes.GetNDof();
       for (int i = 0; i < ne; i++)
         {
-	  *testout << "element " << i << endl;
+	  //*testout << "element " << i << endl;
 
           fes.GetDofNrs (i, dnums);
           fes.GetDofNrs (i, extdnums, EXTERNAL_DOF);
