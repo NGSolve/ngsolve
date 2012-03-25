@@ -32,17 +32,16 @@ namespace ngla
     long int pt[128];
 
     int hparams[64];
-    int * rowstart, * indices;
+    // int * rowstart, * indices;
+    Array<int> rowstart, indices; 
     typename mat_traits<TM>::TSCAL * matrix;
 
     int symmetric, matrixtype, spd;
 
-    // const BitArray * inner;
-    // const Array<int> * cluster;
+    void SetMatrixType(); // TM entry
 
-    //
-    void SetMatrixType(); // TM entry);
-
+    bool compressed;
+    Array<int> compress;
     BitArray used;
   
   public:
