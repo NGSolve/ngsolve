@@ -130,7 +130,7 @@ namespace ngfem
         // const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
         for (int i = 0; i < 3; i++)
         {
-          INT<2> e = GetEdgeSort (i, vnums);
+          INT<2> e = this->GetEdgeSort (i, vnums);
           // int es = edges[i][0], ee = edges[i][1];
           // if (vnums[es] > vnums[ee])  swap (es, ee);
           
@@ -155,7 +155,7 @@ namespace ngfem
       //Inner shapes (Face) 
       if(ORDER > 1) 
 	{
-	  INT<4> fav = GetFaceSort (0, vnums);
+	  INT<4> fav = this->GetFaceSort (0, vnums);
 
 	  AutoDiff<2> xi  = lami[fav[2]]-lami[fav[1]];
 	  AutoDiff<2> eta = lami[fav[0]]; 

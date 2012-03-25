@@ -150,7 +150,7 @@ namespace ngcomp
     vec.SetSize (this->multidim);
     vec = 0;
 
-    Visualize (this->name);
+    this->Visualize (this->name);
     
     const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&this->GetFESpace());
     if (cfe)

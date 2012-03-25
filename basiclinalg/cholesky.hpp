@@ -74,7 +74,7 @@ namespace ngbla
   public:
     /// Factor the matrix A
     CholeskyFactors (const FlatMatrix<T> & a)
-      : FlatCholeskyFactors<T> (a, new T[RequiredMem(a.Height())])
+      : FlatCholeskyFactors<T> (a, new T[this->RequiredMem(a.Height())])
     { ; }
     /// Delete memory
     ~CholeskyFactors ()
