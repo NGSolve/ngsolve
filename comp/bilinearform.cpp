@@ -2935,7 +2935,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
     if (this->mats.Size() == this->ma.GetNLevels())
       return;
 
-    MatrixGraph * graph = GetGraph (this->ma.GetNLevels()-1, false);
+    MatrixGraph * graph = this->GetGraph (this->ma.GetNLevels()-1, false);
 
     BaseMatrix * mat = new SparseMatrix<TM,TV,TV> (*graph, 1);
 #ifdef PARALLEL
@@ -3151,7 +3151,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
     if (this->mats.Size() == this->ma.GetNLevels())
       return;
 
-    MatrixGraph * graph = GetGraph (this->ma.GetNLevels()-1, true);
+    MatrixGraph * graph = this->GetGraph (this->ma.GetNLevels()-1, true);
 
 
 
