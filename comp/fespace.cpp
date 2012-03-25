@@ -809,7 +809,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         for (int i = 0; i < ma.GetNE(); i++)
           {
-	    Ng_Element ngel = ma.GetElement(i);
+	    // Ng_Element ngel = 
+	    ma.GetElement(i);
           }
         steps++;
         time = WallTime()-starttime;
