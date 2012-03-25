@@ -1351,6 +1351,13 @@ operator* (const Expr<TA> & a, const Expr<TB> & b)
 /* ************************** Trans *************************** */
 
 
+inline double Trans (double a) { return a; }
+inline Complex Trans (Complex a) { return a; }
+template<int D, typename TAD>
+inline AutoDiff<D,TAD> Trans (const AutoDiff<D,TAD> & a) { return a; }
+
+
+
 /**
    Transpose of Matrix-expr
 */
@@ -1371,7 +1378,6 @@ public:
   enum { IS_LINEAR = 0 };
 };
 
-
 /// Transpose 
 template <typename TA>
 inline TransExpr<TA>
@@ -1380,10 +1386,6 @@ Trans (const Expr<TA> & a)
   return TransExpr<TA> (static_cast <const TA&> (a));
 }
 
-inline double Trans (double a) { return a; }
-inline Complex Trans (Complex a) { return a; }
-template<int D, typename TAD>
-inline AutoDiff<D,TAD> Trans (const AutoDiff<D,TAD> & a) { return a; }
 
 /* ************************* RowsArray ************************ */
 
