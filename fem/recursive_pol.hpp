@@ -546,6 +546,144 @@ namespace ngfem
 
 
 
+
+
+  template <class S, class T>
+  inline void JacobiPolynomial (int n, S x, double alpha, double beta, T & values)
+  {
+    S p1 = 1.0, p2 = 0.0, p3;
+
+    if (n >= 0) 
+      p2 = values[0] = 1.0;
+    if (n >= 1) 
+      p1 = values[1] = 0.5 * (2*(alpha+1)+(alpha+beta+2)*(x-1));
+
+    for (int i  = 1; i < n; i++)
+      {
+	p3 = p2; p2=p1;
+	p1 =
+	  1.0 / ( 2 * (i+1) * (i+alpha+beta+1) * (2*i+alpha+beta) ) *
+	  ( 
+	   ( (2*i+alpha+beta+1)*(alpha*alpha-beta*beta) + 
+	     (2*i+alpha+beta)*(2*i+alpha+beta+1)*(2*i+alpha+beta+2) * x) 
+	   * p2
+	   - 2*(i+alpha)*(i+beta) * (2*i+alpha+beta+2) * p3
+	   );
+	values[i+1] = p1;
+      }
+  }
+
+
+
+
+
+  template <class S, class Sc, class T>
+  inline void JacobiPolynomialMult (int n, S x, double alpha, double beta, Sc c, T & values)
+  {
+    S p1 = c, p2 = 0.0, p3;
+
+    if (n >= 0) 
+      p2 = values[0] = c;
+    if (n >= 1) 
+      p1 = values[1] = 0.5 * c * (2*(alpha+1)+(alpha+beta+2)*(x-1));
+
+    for (int i  = 1; i < n; i++)
+      {
+	p3 = p2; p2=p1;
+	p1 =
+	  1.0 / ( 2 * (i+1) * (i+alpha+beta+1) * (2*i+alpha+beta) ) *
+	  ( 
+	   ( (2*i+alpha+beta+1)*(alpha*alpha-beta*beta) + 
+	     (2*i+alpha+beta)*(2*i+alpha+beta+1)*(2*i+alpha+beta+2) * x) 
+	   * p2
+	   - 2*(i+alpha)*(i+beta) * (2*i+alpha+beta+2) * p3
+	   );
+	values[i+1] = p1;
+      }
+  }
+
+
+
+
+
+
+
+  template <class S, class St, class T>
+  inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta, T & values)
+  {
+    /*
+      S p1 = 1.0, p2 = 0.0, p3;
+
+      if (n >= 0) values[0] = 1.0;
+    */
+
+    S p1 = 1.0, p2 = 0.0, p3;
+
+    if (n >= 0) 
+      p2 = values[0] = 1.0;
+    if (n >= 1) 
+      p1 = values[1] = 0.5 * (2*(alpha+1)*t+(alpha+beta+2)*(x-t));
+
+    for (int i=1; i < n; i++)
+      {
+	p3 = p2; p2=p1;
+	p1 =
+	  1.0 / ( 2 * (i+1) * (i+alpha+beta+1) * (2*i+alpha+beta) ) *
+	  ( 
+	   ( (2*i+alpha+beta+1)*(alpha*alpha-beta*beta) * t + 
+	     (2*i+alpha+beta)*(2*i+alpha+beta+1)*(2*i+alpha+beta+2) * x) 
+	   * p2
+	   - 2*(i+alpha)*(i+beta) * (2*i+alpha+beta+2) * t * t * p3
+	   );
+	values[i+1] = p1;
+      }
+  }
+
+
+
+
+
+
+  template <class S, class St, class Sc, class T>
+  inline void ScaledJacobiPolynomialMult (int n, S x, St t, double alpha, double beta, Sc c, T & values)
+  {
+    /*
+      S p1 = 1.0, p2 = 0.0, p3;
+      if (n >= 0) values[0] = 1.0;
+    */
+
+    S p1 = c, p2 = 0.0, p3;
+
+    if (n >= 0) 
+      p2 = values[0] = c;
+    if (n >= 1) 
+      p1 = values[1] = 0.5 * c * (2*(alpha+1)*t+(alpha+beta+2)*(x-t));
+
+    for (int i=1; i < n; i++)
+      {
+	p3 = p2; p2=p1;
+	p1 =
+	  1.0 / ( 2 * (i+1) * (i+alpha+beta+1) * (2*i+alpha+beta) ) *
+	  ( 
+	   ( (2*i+alpha+beta+1)*(alpha*alpha-beta*beta) * t + 
+	     (2*i+alpha+beta)*(2*i+alpha+beta+1)*(2*i+alpha+beta+2) * x) 
+	   * p2
+	   - 2*(i+alpha)*(i+beta) * (2*i+alpha+beta+2) * t * t * p3
+	   );
+	values[i+1] = p1;
+      }
+  }
+
+
+
+
+
+
+
+
+
+
+
 #ifdef V1
   /**
      c P_i 
@@ -1578,136 +1716,6 @@ namespace ngfem
 	values[j] = p1;
       }
   }
-
-
-
-  template <class S, class T>
-  inline void JacobiPolynomial (int n, S x, double alpha, double beta, T & values)
-  {
-    S p1 = 1.0, p2 = 0.0, p3;
-
-    if (n >= 0) 
-      p2 = values[0] = 1.0;
-    if (n >= 1) 
-      p1 = values[1] = 0.5 * (2*(alpha+1)+(alpha+beta+2)*(x-1));
-
-    for (int i  = 1; i < n; i++)
-      {
-	p3 = p2; p2=p1;
-	p1 =
-	  1.0 / ( 2 * (i+1) * (i+alpha+beta+1) * (2*i+alpha+beta) ) *
-	  ( 
-	   ( (2*i+alpha+beta+1)*(alpha*alpha-beta*beta) + 
-	     (2*i+alpha+beta)*(2*i+alpha+beta+1)*(2*i+alpha+beta+2) * x) 
-	   * p2
-	   - 2*(i+alpha)*(i+beta) * (2*i+alpha+beta+2) * p3
-	   );
-	values[i+1] = p1;
-      }
-  }
-
-
-
-
-
-  template <class S, class Sc, class T>
-  inline void JacobiPolynomialMult (int n, S x, double alpha, double beta, Sc c, T & values)
-  {
-    S p1 = c, p2 = 0.0, p3;
-
-    if (n >= 0) 
-      p2 = values[0] = c;
-    if (n >= 1) 
-      p1 = values[1] = 0.5 * c * (2*(alpha+1)+(alpha+beta+2)*(x-1));
-
-    for (int i  = 1; i < n; i++)
-      {
-	p3 = p2; p2=p1;
-	p1 =
-	  1.0 / ( 2 * (i+1) * (i+alpha+beta+1) * (2*i+alpha+beta) ) *
-	  ( 
-	   ( (2*i+alpha+beta+1)*(alpha*alpha-beta*beta) + 
-	     (2*i+alpha+beta)*(2*i+alpha+beta+1)*(2*i+alpha+beta+2) * x) 
-	   * p2
-	   - 2*(i+alpha)*(i+beta) * (2*i+alpha+beta+2) * p3
-	   );
-	values[i+1] = p1;
-      }
-  }
-
-
-
-
-
-
-
-  template <class S, class St, class T>
-  inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta, T & values)
-  {
-    /*
-      S p1 = 1.0, p2 = 0.0, p3;
-
-      if (n >= 0) values[0] = 1.0;
-    */
-
-    S p1 = 1.0, p2 = 0.0, p3;
-
-    if (n >= 0) 
-      p2 = values[0] = 1.0;
-    if (n >= 1) 
-      p1 = values[1] = 0.5 * (2*(alpha+1)*t+(alpha+beta+2)*(x-t));
-
-    for (int i=1; i < n; i++)
-      {
-	p3 = p2; p2=p1;
-	p1 =
-	  1.0 / ( 2 * (i+1) * (i+alpha+beta+1) * (2*i+alpha+beta) ) *
-	  ( 
-	   ( (2*i+alpha+beta+1)*(alpha*alpha-beta*beta) * t + 
-	     (2*i+alpha+beta)*(2*i+alpha+beta+1)*(2*i+alpha+beta+2) * x) 
-	   * p2
-	   - 2*(i+alpha)*(i+beta) * (2*i+alpha+beta+2) * t * t * p3
-	   );
-	values[i+1] = p1;
-      }
-  }
-
-
-
-
-
-
-  template <class S, class St, class Sc, class T>
-  inline void ScaledJacobiPolynomialMult (int n, S x, St t, double alpha, double beta, Sc c, T & values)
-  {
-    /*
-      S p1 = 1.0, p2 = 0.0, p3;
-      if (n >= 0) values[0] = 1.0;
-    */
-
-    S p1 = c, p2 = 0.0, p3;
-
-    if (n >= 0) 
-      p2 = values[0] = c;
-    if (n >= 1) 
-      p1 = values[1] = 0.5 * c * (2*(alpha+1)*t+(alpha+beta+2)*(x-t));
-
-    for (int i=1; i < n; i++)
-      {
-	p3 = p2; p2=p1;
-	p1 =
-	  1.0 / ( 2 * (i+1) * (i+alpha+beta+1) * (2*i+alpha+beta) ) *
-	  ( 
-	   ( (2*i+alpha+beta+1)*(alpha*alpha-beta*beta) * t + 
-	     (2*i+alpha+beta)*(2*i+alpha+beta+1)*(2*i+alpha+beta+2) * x) 
-	   * p2
-	   - 2*(i+alpha)*(i+beta) * (2*i+alpha+beta+2) * t * t * p3
-	   );
-	values[i+1] = p1;
-      }
-  }
-
-
 
 
 
