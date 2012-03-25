@@ -73,6 +73,7 @@ namespace ngla
     symmetric = asymmetric;
     // inner = ainner;
     // cluster = acluster;
+    compressed = false;
 
     (*testout) << "Pardiso, symmetric = " << symmetric << endl;
 
@@ -96,8 +97,10 @@ namespace ngla
     entrysize = mat_traits<TM>::HEIGHT; 
     height = a.Height() * entrysize;
 
-    rowstart = new int[height+1];
-    indices = new int[a.NZE() * entrysize * entrysize ];
+    rowstart.SetSize(height+1);
+    indices.SetSize(a.NZE() * sqr(entrysize));
+    // rowstart = new int[height+1];
+    // indices = new int[a.NZE() * entrysize * entrysize ];
     matrix = new TSCAL[a.NZE() * entrysize * entrysize ];     
 
     *testout << "matrix.InverseTpye = " <<  a.GetInverseType() << endl;
@@ -157,10 +160,53 @@ namespace ngla
 	// 1.) build array 'rowstart':
 	// (a) get nr. of entries for each row
 
-	for (int i=0; i<=height; i++ ) rowstart[i] = 0;
-
-	for (int i=0; i < a.Height(); i++ )
+	Array<int> icompress(a.Height());
+	compress.SetSize(0);
+	if (inner)
 	  {
+	    compressed = true;
+	    icompress = -1;
+
+	    for (int i = 0; i < a.Height(); i++)
+	      if (inner->Test(i))
+		{
+		  icompress[i] = compress.Size();
+		  compress.Append (i);
+		}
+
+	    height = compress.Size() * entrysize;
+	    rowstart.SetSize(height+1);
+	  }
+
+	
+	rowstart = 0;
+	
+	if (inner)
+	  for (int i = 0; i < a.Height(); i++ )
+	    {
+	      if (inner->Test(i))
+		for (int j = 0; j < a.GetRowIndices(i).Size(); j++ )
+		  {
+		    int col = a.GetRowIndices(i)[j];
+		    int ccol = icompress[col];
+		    
+		    if ( i != col )
+		      {
+			if (inner->Test(col))
+			  for (int k = 0; k < entrysize; k++ )
+			    rowstart[ccol*entrysize+k+1] += entrysize;
+		      }
+		    else
+		      {
+			for (int k=0; k<entrysize; k++ )
+			  rowstart[ccol*entrysize+k+1] += entrysize-k;
+		      }
+		  }
+	    }
+
+	else
+	  for (int i=0; i < a.Height(); i++ )
+	    {
 	    for (int j = 0; j < a.GetRowIndices(i).Size(); j++ )
 	      {
 		int col = a.GetRowIndices(i)[j];
@@ -190,13 +236,81 @@ namespace ngla
 		  }
 	      }
 	  }
+
 	// (b) accumulate
-	rowstart[0] = 1;
-	for (int i=1; i<=height; i++ ) rowstart[i] += rowstart[i-1];
+	rowstart[0] = 0;
+	for (int i = 1; i <= height; i++) 
+	  rowstart[i] += rowstart[i-1];
 	
 	
 	// 2.) build whole matrix:
-	int * counter = new int[height];
+	// int * counter = new int[height];
+	Array<int> counter(height);
+
+	if (inner)
+	  {
+	    for (int i = 0; i < a.Height(); i++ )
+	      {
+		int ci = icompress[i];
+		if (ci < 0) continue;
+		for (int k = 0; k < entrysize; k++) counter[ci*entrysize+k]=0;
+
+		for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
+		  {
+		    int col = a.GetRowIndices(i)[j];
+		    int ccol = icompress[col];
+
+		    if (i != col)
+		      {
+			if (inner->Test(i) && inner->Test(col))
+			  {
+			    TM entry = a(i,col);
+			    for (int k = 0; k < entrysize; k++)
+			      for (int l = 0; l < entrysize; l++ )
+				{
+				  indices[rowstart[ccol*entrysize+k]+
+					  counter[ccol*entrysize+k]] = ci*entrysize+l+1;
+				  matrix[rowstart[ccol*entrysize+k]+
+					 counter[ccol*entrysize+k]] = Access(entry,l,k);
+				  counter[ccol*entrysize+k]++;
+				}
+			  }
+		      }
+		    else 
+		      {
+			if (inner->Test(i))
+			  {
+			    TM entry = a(i,col);
+			    for (int l = 0; l < entrysize; l++ )
+			      for (int k = 0; k <= l; k++)
+				{
+				  indices[rowstart[ccol*entrysize+k]+
+					  counter[ccol*entrysize+k]] = ci*entrysize+l+1;
+				  matrix[rowstart[ccol*entrysize+k]+
+					 counter[ccol*entrysize+k]] = Access(entry,l,k);
+				  counter[ccol*entrysize+k]++;
+				}
+			  }
+			/*
+			else
+			  {
+			    // in the case of 'inner' or 'cluster': 1 on the diagonal for
+			    // unused dofs.
+			    for (int l=0; l<entrysize; l++ )
+			      {
+				indices[rowstart[col*entrysize+l]+
+					counter[col*entrysize+l]] = i*entrysize+l+1;
+				matrix[rowstart[col*entrysize+l]+
+				       counter[col*entrysize+l]] = 1;
+				counter[col*entrysize+l]++;
+			      }
+			  }
+			*/
+		      }
+		  }
+	      }
+	  }	
+	else
 	for (int i=0; i<a.Height(); i++ )
 	  {
 	    // int rowsize = a.GetRowIndices(i).Size();
@@ -219,9 +333,9 @@ namespace ngla
 			  for (int l=0; l<entrysize; l++ )
 			    {
 			      indices[ rowstart[col*entrysize+k]+
-				       counter[col*entrysize+k]-1 ] = i*entrysize+l+1;
+				       counter[col*entrysize+k]] = i*entrysize+l+1;
 			      matrix[ rowstart[col*entrysize+k]+
-				      counter[col*entrysize+k]-1 ] = Access(entry,l,k);
+				      counter[col*entrysize+k]] = Access(entry,l,k);
 			      counter[col*entrysize+k]++;
 			    }
 		      }
@@ -235,9 +349,9 @@ namespace ngla
 		      for (int k=0; k<=l; k++)
 			{
 			  indices[ rowstart[col*entrysize+k]+
-				   counter[col*entrysize+k]-1 ] = i*entrysize+l+1;
+				   counter[col*entrysize+k]] = i*entrysize+l+1;
 			  matrix[ rowstart[col*entrysize+k]+
-				  counter[col*entrysize+k]-1 ] = Access(entry,l,k);
+				  counter[col*entrysize+k]] = Access(entry,l,k);
 			  counter[col*entrysize+k]++;
 			}
 		  }
@@ -248,16 +362,19 @@ namespace ngla
 		    for (int l=0; l<entrysize; l++ )
 		      {
 			indices[ rowstart[col*entrysize+l]+
-				 counter[col*entrysize+l]-1 ] = i*entrysize+l+1;
+				 counter[col*entrysize+l]] = i*entrysize+l+1;
 			matrix[ rowstart[col*entrysize+l]+
-				counter[col*entrysize+l]-1 ] = 1;
+				counter[col*entrysize+l]] = 1;
 			counter[col*entrysize+l]++;
 		      }
 		  }
 	      }
 	  }
-	
-
+	    
+	// pardiso is 1-based
+	for (int i = 0; i <= height; i++)
+	  rowstart[i]++;
+	    
 	/*
 	  (*testout) << endl << "row, rowstart / indices, matrix-entries" << endl;
 	  for ( i=0; i<height; i++ )
@@ -269,7 +386,7 @@ namespace ngla
 	  (*testout) << endl;
 	*/
 
-	delete [] counter;
+	// delete [] counter;
       }
     else
       {
@@ -451,7 +568,6 @@ namespace ngla
       }
 
     nze = rowstart[height];
-
     
     {
       int n = a.Height();
@@ -484,7 +600,7 @@ namespace ngla
     // retvalue = 
     F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &height, 
 			reinterpret_cast<double *>(matrix),
-			rowstart, indices, NULL, &nrhs, params, &msglevel,
+			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
     
     cout << " done" << endl;
@@ -602,20 +718,52 @@ namespace ngla
 
     int * params = const_cast <int*> (&hparams[0]);
 
-    F77_FUNC(pardiso) ( const_cast<long int *>(pt), &maxfct, &mnum, const_cast<int *>(&matrixtype),
-			&phase, const_cast<int *>(&height), 
-			reinterpret_cast<double *>(matrix),
-			rowstart, indices,
-			NULL, &nrhs, params, &msglevel,
-			static_cast<double *>(fx.Data()), 
-			static_cast<double *>(fy.Data()), &error );
+    if (compressed)
+      {
+	Vector<TVX> hx(compress.Size());
+	Vector<TVX> hy(compress.Size());
+
+	/*
+	for (int i = 0; i < compress.Size(); i++)
+	  hx(i) = fx(compress[i]);
+	*/
+	hx = fx(compress);
+
+	F77_FUNC(pardiso) ( const_cast<long int *>(pt), &maxfct, &mnum, 
+			    const_cast<int *>(&matrixtype),
+			    &phase, const_cast<int *>(&height), 
+			    reinterpret_cast<double *>(matrix),
+			    &rowstart[0], &indices[0],
+			    NULL, &nrhs, params, &msglevel,
+			    static_cast<double *>(hx.Data()), 
+			    static_cast<double *>(hy.Data()), &error );
+
+	fy = 0;
+	fy(compress) = hy;
+	/*
+	for (int i = 0; i < compress.Size(); i++)
+	  fy(compress[i]) = hy(i);
+	*/
+      }
+    else
+      {
+	F77_FUNC(pardiso) ( const_cast<long int *>(pt), &maxfct, &mnum, 
+			    const_cast<int *>(&matrixtype),
+			    &phase, const_cast<int *>(&height), 
+			    reinterpret_cast<double *>(matrix),
+			    &rowstart[0], &indices[0],
+			    NULL, &nrhs, params, &msglevel,
+			    static_cast<double *>(fx.Data()), 
+			    static_cast<double *>(fy.Data()), &error );
+
+	for (int i = 0; i < height/entrysize; i++)
+	  if (!used.Test(i))
+	    for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0.0;
+      }
 
     if ( error != 0 )
       cout << "Apply Inverse: PARDISO returned error " << error << "!" << endl;
 
-    for (int i = 0; i < height/entrysize; i++)
-      if (!used.Test(i))
-	for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0.0;
   }
   
   
@@ -650,7 +798,7 @@ namespace ngla
     F77_FUNC(pardiso) ( const_cast<long int *>(pt), &maxfct, &mnum, const_cast<int *>(&matrixtype),
 			&phase, const_cast<int *>(&height), 
 			reinterpret_cast<double *>(matrix),
-			rowstart, indices,
+			&rowstart[0], &indices[0],
 			NULL, &nrhs, params, &msglevel, &tx(0,0), &ty(0,0),
 			&error );
 
@@ -687,13 +835,13 @@ namespace ngla
 
     //    cout << "call pardiso (clean up) ..." << endl;
     F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &height, NULL,
-			rowstart, indices, NULL, &nrhs, params, &msglevel,
+			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
     if ( error != 0 )
       cout << "Clean Up: PARDISO returned error " << error << "!" << endl;
 
-    delete [] rowstart;
-    delete [] indices;
+    // delete [] rowstart;
+    // delete [] indices;
     delete [] matrix;
   }
 
