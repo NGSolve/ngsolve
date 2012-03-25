@@ -2,7 +2,13 @@
 
 namespace ngbla
 {
-  using namespace ngbla;
+  void test()
+  {
+    Array<int> ia(3);
+    Vector<Vec<2> > hv(10);
+    cout << hv(ia) << endl;
+  }
+
 
 
   void CheckMatRange(int h, int w, int i)
