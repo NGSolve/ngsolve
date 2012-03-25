@@ -106,7 +106,7 @@ namespace ngla
 	    int ii = 0;
 	    for (int i = 0; i < a.Height(); i++ )
 	      {
-		FlatArray<const int> rowind = a.GetRowIndices(i);
+		FlatArray<int> rowind = a.GetRowIndices(i);
 
 		for (int j = 0; j < rowind.Size(); j++ )
 		  {
@@ -576,7 +576,7 @@ namespace ngla
 	    int ii = 0;
 	    for (int i = 0; i < a.Height(); i++ )
 	      {
-		FlatArray<const int> rowind = a.GetRowIndices(i);
+		FlatArray<int> rowind = a.GetRowIndices(i);
 
 		for (int j = 0; j < rowind.Size(); j++ )
 		  {

@@ -631,6 +631,8 @@ namespace ngla
 
 
 
+    using SparseMatrix<TM,TV,TV>::RowTimesVector;
+    using SparseMatrix<TM,TV,TV>::AddRowTransToVector;
 
 
     TV_COL RowTimesVectorNoDiag (int row, const FlatVector<TVX> & vec) const
