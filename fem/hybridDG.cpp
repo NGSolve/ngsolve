@@ -1202,7 +1202,7 @@ namespace ngfem
       ELEMENT_TYPE eltype = cfel.ElementType();
 
       IntRange l2_dofs = cfel.GetRange (0);
-      IntRange facet_dofs = cfel.GetRange (1);
+      // IntRange facet_dofs = cfel.GetRange (1);
       
       int nd_l2 = fel_l2.GetNDof();
       int nd_facet = fel_facet.GetNDof();
