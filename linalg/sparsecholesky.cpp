@@ -11,6 +11,19 @@ namespace ngla
   using namespace ngla;
   using namespace ngstd;
 
+
+
+  template <class TM>
+  void SetIdentity( TM &identity )
+  {
+    for (int i=0; i<identity.Width(); i++ ) identity(i,i) = 1;
+  }
+  void SetIdentity( double &identity ) { identity = 1; }
+  void SetIdentity( Complex &identity ) { identity = 1; }
+
+
+
+
   template <class TM, class TV_ROW, class TV_COL>
   SparseCholesky<TM, TV_ROW, TV_COL> :: 
   SparseCholesky (const SparseMatrix<TM, TV_ROW, TV_COL> & a, 
@@ -288,13 +301,6 @@ namespace ngla
   
 
 
-  template <class TM>
-  void SetIdentity( TM &identity )
-  {
-    for (int i=0; i<identity.Width(); i++ ) identity(i,i) = 1;
-  }
-  void SetIdentity( double &identity ) { identity = 1; }
-  void SetIdentity( Complex &identity ) { identity = 1; }
 
 
   template <class TM, class TV_ROW, class TV_COL>
