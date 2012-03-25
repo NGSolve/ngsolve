@@ -554,7 +554,7 @@ namespace ngstd
     /// array copy
     ArrayMem & operator= (const FlatArray<T> & a2)
     {
-      SetSize (a2.Size());
+      this->SetSize (a2.Size());
       for (int i = 0; i < size; i++)
         (*this)[i] = a2[i];
       return *this;
