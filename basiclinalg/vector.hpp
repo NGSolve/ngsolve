@@ -40,6 +40,7 @@ namespace ngbla
   public:
     /// element type
     typedef T TELEM;
+    typedef T& TREF;
     /// scalar of element type
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
@@ -132,7 +133,7 @@ namespace ngbla
       return data[i]; 
     }
 
-    RowsArrayExpr<FlatVector> operator() (FlatArray<int> rows)
+    RowsArrayExpr<FlatVector> operator() (FlatArray<int> rows) const
     { 
       return RowsArrayExpr<FlatVector> (*this, rows);
     }
@@ -230,6 +231,7 @@ namespace ngbla
   public:
     /// element type
     typedef Vec<S,T> TELEM;
+    typedef FlatVec<S,T> TREF;
     /// scalar of element type
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
@@ -318,21 +320,26 @@ namespace ngbla
     }
 
     /// constant element access
-    FlatVec<S,T> operator() (int i) const
+    const FlatVec<S,T> operator() (int i) const
     {
       return FlatVec<S,T> (data+i*S); 
     }
 
     /// element access. index j is ignored
-    FlatVec<S,T> operator() (int i, int j) const
+    const FlatVec<S,T> operator() (int i, int j) const
     {
       return FlatVec<S,T> (data+i*S); 
     }
 
     /// constant element access
-    FlatVec<S,T> operator[] (int i) const
+    const FlatVec<S,T> operator[] (int i) const
     {
       return FlatVec<S,T> (data+i*S); 
+    }
+
+    RowsArrayExpr<FlatVector> operator() (FlatArray<int> rows) const
+    { 
+      return RowsArrayExpr<FlatVector> (*this, rows);
     }
 
 

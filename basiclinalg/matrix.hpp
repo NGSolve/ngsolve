@@ -44,6 +44,7 @@ namespace ngbla
 
     /// element type
     typedef T TELEM;
+    typedef T& TREF;
     /// scalar type of elements (double or Complex)
     typedef typename mat_traits<T>::TSCAL TSCAL;
     /// 
