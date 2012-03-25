@@ -14,6 +14,7 @@ namespace ngbla
 
   template <int H, int W, typename T> class Mat;
   template <int S, typename T> class Vec;
+  // template <int S, typename T> class FlatVec;
 
 
   /*
@@ -269,13 +270,20 @@ namespace ngbla
   public:
     enum { HEIGHT = mat_traits<TA>::HEIGHT };
     enum { WIDTH  = mat_traits<TB>::WIDTH };
-    typedef typename mat_prod_type<typename TA::TELEM, 
-                                   typename TB::TELEM>::TMAT TELEM;
+    
+    typedef typename mat_prod_type<typename mat_traits<TA>::TELEM, 
+				   typename mat_traits<TB>::TELEM>::TMAT TELEM;
+    
     typedef Mat<HEIGHT,WIDTH,TELEM> TMAT;
   };
+  
+  /*
+    template <int S, typename T> class mat_prod_type<double, Vec<S,T> > { public: typedef Vec<S,T> TMAT; };
+    template <int S, typename T> class mat_prod_type<Complex, Vec<S,T> > { public: typedef Vec<S,T> TMAT; };
+    template <int S, typename T> class mat_prod_type<double, const FlatVec<S,T> > { public: typedef Vec<S,T> TMAT; };
+    template <int S, typename T> class mat_prod_type<Complex, const FlatVec<S,T> > { public: typedef Vec<S,T> TMAT; };
+  */
 
-  template <int S, typename T> class mat_prod_type<double, Vec<S,T> > { public: typedef Vec<S,T> TMAT; };
-  template <int S, typename T> class mat_prod_type<Complex, Vec<S,T> > { public: typedef Vec<S,T> TMAT; };
   template <> class mat_prod_type<double,double> { public: typedef double TMAT; };
   template <> class mat_prod_type<double,Complex> { public: typedef Complex TMAT; };
   template <> class mat_prod_type<Complex,double> { public: typedef Complex TMAT; };
@@ -303,7 +311,7 @@ namespace ngbla
     enum { HEIGHT = mat_traits<TA>::HEIGHT };
     enum { WIDTH  = mat_traits<TA>::WIDTH };
     typedef typename mat_sum_type<typename TA::TELEM, 
-                                  typename TB::TELEM>::TMAT TELEM;
+				  typename TB::TELEM>::TMAT TELEM;
     typedef Mat<HEIGHT,WIDTH,TELEM> TMAT;
   };
 
@@ -391,52 +399,6 @@ namespace ngbla
       : Exception("Assignment of Complex 2 Real") { ; }
   };
 
-  /*
- /// converts Complex to type T. Throw exception if illegal
- template<class T>
- inline T ReduceComplex (Complex x)
- {
- return x;
- }
-
- template<> 
- inline double ReduceComplex<double> (Complex x)
- {
- throw Complex2RealException();
- }
-  */
-
-  /*
- /// converts Complex to type T.
- template<class T>
- inline T ReduceComplex2 (Complex x)
- {
- return x;
- }
-
- template<> 
- inline double ReduceComplex2<double> (Complex x)
- {
- return x.real()+x.imag();//abs(x);
- }
-  */
-
-  /*
- /// converts type T to double. Throw exception if illegal
- template<class T>
- inline double ReduceToReal (T x)
- {
- return x;
- }
-
- template<>
- inline double ReduceToReal (Complex x)
- {
- throw Complex2RealException();
- }
-  */
-
-
 
 
   template <typename TO>
@@ -473,17 +435,13 @@ namespace ngbla
 
 
 
-  
-
-
-
 #ifdef CHECK_RANGE
   /// matrices do not fit for matrix-matrix operation
   class MatrixNotFittingException : public Exception
   {
   public:
     MatrixNotFittingException (const string & where, int h1, int w1,
-                               int h2, int w2)
+			       int h2, int w2)
       : Exception ("") 
     {
       stringstream str;
@@ -508,11 +466,12 @@ namespace ngbla
   public:
     Expr () { ; }
 
-    // typedef T TConv;  
     /// cast to specific type
     T & Spec() { return static_cast<T&> (*this); }
+
     /// cast to specific type
     const T & Spec() const { return static_cast<const T&> (*this); }
+
 
     /// height 
     int Height() const { return Spec().T::Height(); }
@@ -636,52 +595,52 @@ namespace ngbla
     {
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
-        {
-          throw MatrixNotFittingException ("operator=", 
-                                           Height(), Width(),
-                                           v.Height(), v.Width());
-        }
+	{
+	  throw MatrixNotFittingException ("operator=", 
+					   Height(), Width(),
+					   v.Height(), v.Width());
+	}
 #endif
 
       if (TB::IS_LINEAR)
-        {
-          if (T::IS_LINEAR)
-            {
-              int hw = Expr<T>::Height() * Expr<T>::Width();
-              for (int i = 0; i < hw; i++)
-                Spec()(i) = v.Spec()(i);
-            }
-          else
-            {
-              int h = Expr<T>::Height();
-              int w = Expr<T>::Width();
-              for (int i = 0, k = 0; i < h; i++)
-                for (int j = 0; j < w; j++, k++)
-                  Spec()(i,j) = v.Spec()(k);
-            }
-        }
+	{
+	  if (T::IS_LINEAR)
+	    {
+	      int hw = Expr<T>::Height() * Expr<T>::Width();
+	      for (int i = 0; i < hw; i++)
+		Spec()(i) = v.Spec()(i);
+	    }
+	  else
+	    {
+	      int h = Expr<T>::Height();
+	      int w = Expr<T>::Width();
+	      for (int i = 0, k = 0; i < h; i++)
+		for (int j = 0; j < w; j++, k++)
+		  Spec()(i,j) = v.Spec()(k);
+	    }
+	}
       /*
 	if (TB::IS_LINEAR && T::IS_LINEAR)
-        {
+	{
 	int hw = Expr<T>::Height() * Expr<T>::Width();
 	for (int i = 0; i < hw; i++)
 	Spec()(i) = v.Spec()(i);
-        }
+	}
       */
       else
-        {
-          int h = Expr<T>::Height();
-          int w = Expr<T>::Width();
+	{
+	  int h = Expr<T>::Height();
+	  int w = Expr<T>::Width();
 
-          if (T::IS_LINEAR)
-            for (int i = 0, k = 0; i < h; i++)
-              for (int j = 0; j < w; j++, k++)
-                Spec()(k) = v.Spec()(i,j);
-          else
-            for (int i = 0; i < h; i++)
-              for (int j = 0; j < w; j++)
-                Spec()(i,j) = v.Spec()(i,j);
-        }
+	  if (T::IS_LINEAR)
+	    for (int i = 0, k = 0; i < h; i++)
+	      for (int j = 0; j < w; j++, k++)
+		Spec()(k) = v.Spec()(i,j);
+	  else
+	    for (int i = 0; i < h; i++)
+	      for (int j = 0; j < w; j++)
+		Spec()(i,j) = v.Spec()(i,j);
+	}
       return Spec();
     }
 
@@ -691,42 +650,42 @@ namespace ngbla
     {
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
-        throw MatrixNotFittingException ("operator+=", 
-                                         Height(), Width(),
-                                         v.Height(), v.Width());
+	throw MatrixNotFittingException ("operator+=", 
+					 Height(), Width(),
+					 v.Height(), v.Width());
 #endif
 
       if (TB::IS_LINEAR)
-        {
-          if (T::IS_LINEAR)
-            {
-              int hw = Height() * Width(); 
-              for (int i = 0; i < hw; i++)
-                Spec()(i) += v.Spec()(i);
-            }
-          else
-            {
-              int h = Height();
-              int w = Width();
-              for (int i = 0, k = 0; i < h; i++)
-                for (int j = 0; j < w; j++, k++)
-                  Spec()(i,j) += v.Spec()(k);
-            }
-        }
+	{
+	  if (T::IS_LINEAR)
+	    {
+	      int hw = Height() * Width(); 
+	      for (int i = 0; i < hw; i++)
+		Spec()(i) += v.Spec()(i);
+	    }
+	  else
+	    {
+	      int h = Height();
+	      int w = Width();
+	      for (int i = 0, k = 0; i < h; i++)
+		for (int j = 0; j < w; j++, k++)
+		  Spec()(i,j) += v.Spec()(k);
+	    }
+	}
       else
-        {
-          int h = Height();
-          int w = Width();
+	{
+	  int h = Height();
+	  int w = Width();
 
-          if (T::IS_LINEAR)
-            for (int i = 0, k = 0; i < h; i++)
-              for (int j = 0; j < w; j++, k++)
-                Spec()(k) += v.Spec()(i,j);
-          else
-            for (int i = 0; i < h; i++)
-              for (int j = 0; j < w; j++)
-                Spec()(i,j) += v.Spec()(i,j);
-        }
+	  if (T::IS_LINEAR)
+	    for (int i = 0, k = 0; i < h; i++)
+	      for (int j = 0; j < w; j++, k++)
+		Spec()(k) += v.Spec()(i,j);
+	  else
+	    for (int i = 0; i < h; i++)
+	      for (int j = 0; j < w; j++)
+		Spec()(i,j) += v.Spec()(i,j);
+	}
       return Spec();
     }
 
@@ -738,21 +697,21 @@ namespace ngbla
     {
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
-        throw MatrixNotFittingException ("operator+=", 
-                                         Height(), Width(),
-                                         v.Height(), v.Width());
+	throw MatrixNotFittingException ("operator+=", 
+					 Height(), Width(),
+					 v.Height(), v.Width());
 #endif
       int h = Height();
       for (int i = 0; i < h; i++)
-        {
-          for (int j = 0; j < i; j++)
-            {
-              double val = v.Spec()(i,j);
-              Spec()(i,j) += val;
-              Spec()(j,i) += val;
-            }
-          Spec()(i,i) += v.Spec()(i,i);
-        }
+	{
+	  for (int j = 0; j < i; j++)
+	    {
+	      double val = v.Spec()(i,j);
+	      Spec()(i,j) += val;
+	      Spec()(j,i) += val;
+	    }
+	  Spec()(i,i) += v.Spec()(i,i);
+	}
       return Spec();
     }
 
@@ -762,7 +721,7 @@ namespace ngbla
     {
       int hw = Height() * Width();
       for (int i = 0; i < hw; i++)
-        Spec()(i) += scal;
+	Spec()(i) += scal;
       return *this;
     }
   
@@ -772,41 +731,41 @@ namespace ngbla
     {
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
-        throw MatrixNotFittingException ("operator-=", 
-                                         Height(), Width(),
-                                         v.Height(), v.Width());
+	throw MatrixNotFittingException ("operator-=", 
+					 Height(), Width(),
+					 v.Height(), v.Width());
 #endif
       if (TB::IS_LINEAR)
-        {
-          if (T::IS_LINEAR)
-            {
-              int hw = Height() * Width(); 
-              for (int i = 0; i < hw; i++)
-                Spec()(i) -= v.Spec()(i);
-            }
-          else
-            {
-              int h = Height();
-              int w = Width();
-              for (int i = 0, k = 0; i < h; i++)
-                for (int j = 0; j < w; j++, k++)
-                  Spec()(i,j) -= v.Spec()(k);
-            }
-        }
+	{
+	  if (T::IS_LINEAR)
+	    {
+	      int hw = Height() * Width(); 
+	      for (int i = 0; i < hw; i++)
+		Spec()(i) -= v.Spec()(i);
+	    }
+	  else
+	    {
+	      int h = Height();
+	      int w = Width();
+	      for (int i = 0, k = 0; i < h; i++)
+		for (int j = 0; j < w; j++, k++)
+		  Spec()(i,j) -= v.Spec()(k);
+	    }
+	}
       else
-        {
-          int h = Height();
-          int w = Width();
+	{
+	  int h = Height();
+	  int w = Width();
 
-          if (T::IS_LINEAR)
-            for (int i = 0, k = 0; i < h; i++)
-              for (int j = 0; j < w; j++, k++)
-                Spec()(k) -= v.Spec()(i,j);
-          else
-            for (int i = 0; i < h; i++)
-              for (int j = 0; j < w; j++)
-                Spec()(i,j) -= v.Spec()(i,j);
-        }
+	  if (T::IS_LINEAR)
+	    for (int i = 0, k = 0; i < h; i++)
+	      for (int j = 0; j < w; j++, k++)
+		Spec()(k) -= v.Spec()(i,j);
+	  else
+	    for (int i = 0; i < h; i++)
+	      for (int j = 0; j < w; j++)
+		Spec()(i,j) -= v.Spec()(i,j);
+	}
       return Spec();
     }
 
@@ -816,7 +775,7 @@ namespace ngbla
     {
       int hw = Height() * Width();
       for (int i = 0; i < hw; i++)
-        Spec()(i) *= s;
+	Spec()(i) *= s;
       return Spec();
     }
 
@@ -844,8 +803,6 @@ namespace ngbla
   class CMCPMatExpr : public MatExpr<T>
   {
   public:
-    // typedef RefMatExpr<T> TConv;
-
     // int Height() const { return Spec().T::Height(); }
     // int Width() const { return Spec().T::Width(); }
 
@@ -854,9 +811,9 @@ namespace ngbla
     using MatExpr<T>::Spec;
     using MatExpr<T>::Height;
     using MatExpr<T>::Width;
+
     // T & Spec() { return static_cast<T&> (*this); }
     // const T & Spec() const { return static_cast<const T&> (*this); }
-
     // enum { IS_LINEAR = 1 };
 
     template<typename TB>
@@ -864,141 +821,27 @@ namespace ngbla
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator= (v);
       return Spec();
-
-      /*
-	#ifdef CHECK_RANGE
-	if (Height() != v.Height() || Width() != v.Width())
-        {
-	throw MatrixNotFittingException (operator=", 
-	Height(), Width(),
-	v.Height(), v.Width());
-        }
-	#endif
-
-	if (TB::IS_LINEAR)
-        {
-	if (T::IS_LINEAR)
-	{
-	int hw = Expr<T>::Height() * Expr<T>::Width();
-	for (int i = 0; i < hw; i++)
-	Spec()(i) = v.Spec()(i);
-	}
-	else
-	{
-	int h = Expr<T>::Height();
-	int w = Expr<T>::Width();
-	for (int i = 0, k = 0; i < h; i++)
-	for (int j = 0; j < w; j++, k++)
-	Spec()(i,j) = v.Spec()(k);
-	}
-        }
-	else
-        {
-	int h = Expr<T>::Height();
-	int w = Expr<T>::Width();
-
-	if (T::IS_LINEAR)
-	for (int i = 0, k = 0; i < h; i++)
-	for (int j = 0; j < w; j++, k++)
-	Spec()(k) = v.Spec()(i,j);
-	else
-	for (int i = 0; i < h; i++)
-	for (int j = 0; j < w; j++)
-	Spec()(i,j) = v.Spec()(i,j);
-        }
-	return Spec();
-      */
     }
-
 
     template<typename TB>
     const T & operator+= (const Expr<TB> & v) const
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator+= (v);
       return Spec();
-
-      /*
-	#ifdef CHECK_RANGE
-	if (Height() != v.Height() || Width() != v.Width())
-        throw MatrixNotFittingException ("operator+=", 
-	Height(), Width(),
-	v.Height(), v.Width());
-	#endif
-
-	if (TB::IS_LINEAR)
-        {
-	if (T::IS_LINEAR)
-	{
-	int hw = Height() * Width(); 
-	for (int i = 0; i < hw; i++)
-	Spec()(i) += v.Spec()(i);
-	}
-	else
-	{
-	int h = Height();
-	int w = Width();
-	for (int i = 0, k = 0; i < h; i++)
-	for (int j = 0; j < w; j++, k++)
-	Spec()(i,j) += v.Spec()(k);
-	}
-        }
-	else
-        {
-	int h = Height();
-	int w = Width();
-
-	if (T::IS_LINEAR)
-	for (int i = 0, k = 0; i < h; i++)
-	for (int j = 0; j < w; j++, k++)
-	Spec()(k) += v.Spec()(i,j);
-	else
-	{
-	for (int i = 0; i < h; i++)
-	for (int j = 0; j < w; j++)
-	Spec()(i,j) += v.Spec()(i,j);
-	}
-        }
-	return Spec();
-      */
     }
-
 
     template<typename TB>
     const T & operator+= (const Expr<SymExpr<TB> > & v) const
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator+= (v);
       return Spec();
-      /*
-	#ifdef CHECK_RANGE
-	if (Height() != v.Height() || Width() != v.Width())
-        throw MatrixNotFittingException ("operator+=", 
-	Height(), Width(),
-	v.Height(), v.Width());
-	#endif
-	typedef typename mat_traits<typename TB::TELEM>::TSCAL TSCAL;
-
-	int h = Height();
-	for (int i = 0; i < h; i++)
-        {
-	for (int j = 0; j < i; j++)
-	{
-	TSCAL val = v.Spec()(i,j);
-	Spec()(i,j) += val;
-	Spec()(j,i) += val;
-	}
-	Spec()(i,i) += v.Spec()(i,i);
-        }
-	return Spec();
-      */
     }
-
-
 
     const T & operator+= (double scal) const
     {
       int hw = Height() * Width();
       for (int i = 0; i < hw; i++)
-        Spec()(i) += scal;
+	Spec()(i) += scal;
       return Spec();
     }
   
@@ -1008,59 +851,14 @@ namespace ngbla
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator-= (v);
       return Spec();
-      
-      /*
-	#ifdef CHECK_RANGE
-	if (Height() != v.Height() || Width() != v.Width())
-        throw MatrixNotFittingException ("operator-=", 
-	Height(), Width(),
-	v.Height(), v.Width());
-	#endif
-
-	if (TB::IS_LINEAR)
-        {
-	if (T::IS_LINEAR)
-	{
-	int hw = Height() * Width(); 
-	for (int i = 0; i < hw; i++)
-	Spec()(i) -= v.Spec()(i);
-	}
-	else
-	{
-	int h = Height();
-	int w = Width();
-	for (int i = 0, k = 0; i < h; i++)
-	for (int j = 0; j < w; j++, k++)
-	Spec()(i,j) -= v.Spec()(k);
-	}
-        }
-	else
-        {
-	int h = Height();
-	int w = Width();
-
-	if (T::IS_LINEAR)
-	for (int i = 0, k = 0; i < h; i++)
-	for (int j = 0; j < w; j++, k++)
-	Spec()(k) -= v.Spec()(i,j);
-	else
-	{
-	for (int i = 0; i < h; i++)
-	for (int j = 0; j < w; j++)
-	Spec()(i,j) -= v.Spec()(i,j);
-	}
-        }
-	return Spec();
-      */
     }
-
 
     template <class SCAL2>
     const T & operator*= (const SCAL2 & s) const
     {
       int hw = Height() * Width();
       for (int i = 0; i < hw; i++)
-        Spec()(i) *= s;
+	Spec()(i) *= s;
       return Spec();
     }
 
@@ -1070,7 +868,7 @@ namespace ngbla
       return (*this) *= (1.0/s);
     }
 
-    
+
     RowsArrayExpr<T>
     Rows (FlatArray<int> rows) const
     { 
@@ -1082,7 +880,6 @@ namespace ngbla
     { 
       return ColsArrayExpr<T> (static_cast<const T&> (*this), cols); 
     }
-
   };
 
 
@@ -1107,39 +904,6 @@ namespace ngbla
      Sum of 2 matrix expressions
   */
 
-  /*
-    template <class TA, class TB> 
-    class SumExpr : public Expr<SumExpr<TA,TB> >
-    {
-    const TA a;
-    const TB b;
-    public:
-    typedef typename mat_sum_type<typename TA::TELEM,
-    typename TB::TELEM>::TMAT TELEM;
-    typedef typename mat_traits<TELEM>::TSCAL TSCAL;
-
-    SumExpr (const TA & aa, const TB & ab) : a(aa), b(ab) 
-    { ; }
-
-    TELEM operator() (int i) const { return a(i)+b(i); }
-    TELEM operator() (int i, int j) const { return a(i,j)+b(i,j); }
-    int Height() const { return a.Height(); }
-    int Width() const { return a.Width(); }
-
-    enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
-    void Dump (ostream & ost) const
-    { ost << "("; a.Dump(ost); ost << ") + ("; b.Dump(ost); ost << ")"; }
-    };
-
-    template <typename TA, typename TB>
-    inline SumExpr<typename TA::TConv, typename TB::TConv>
-    operator+ (const Expr<TA> & a, const Expr<TB> & b)
-    {
-    return SumExpr<typename TA::TConv, typename TB::TConv> (static_cast <const TA&> (a), static_cast <const TB&> (b));
-    }
-  */
-
-
   template <class TA, class TB> 
   class SumExpr : public Expr<SumExpr<TA,TB> >
   {
@@ -1147,18 +911,17 @@ namespace ngbla
     const TB & b;
   public:
     typedef typename mat_sum_type<typename TA::TELEM,
-                                  typename TB::TELEM>::TMAT TELEM;
-    typedef typename mat_traits<TELEM>::TSCAL TSCAL;
+				  typename TB::TELEM>::TMAT TELEM;
+    // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
+    enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
 
-    SumExpr (const TA & aa, const TB & ab) : a(aa), b(ab) 
-    { ; }
+    SumExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
     TELEM operator() (int i) const { return a(i)+b(i); }
     TELEM operator() (int i, int j) const { return a(i,j)+b(i,j); }
     int Height() const { return a.Height(); }
     int Width() const { return a.Width(); }
 
-    enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
     void Dump (ostream & ost) const
     { ost << "("; a.Dump(ost); ost << ") + ("; b.Dump(ost); ost << ")"; }
   };
@@ -1167,7 +930,7 @@ namespace ngbla
   inline SumExpr<TA, TB>
   operator+ (const Expr<TA> & a, const Expr<TB> & b)
   {
-    return SumExpr<TA, TB> (static_cast <const TA&> (a), static_cast <const TB&> (b));
+    return SumExpr<TA, TB> (a.Spec(), b.Spec());
   }
 
 
@@ -1187,661 +950,591 @@ namespace ngbla
     const TB & b;
   public:
     typedef typename mat_sum_type<typename TA::TELEM,
-                                  typename TB::TELEM>::TMAT TELEM;
-  typedef typename mat_traits<TELEM>::TSCAL TSCAL;
-  enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
+				  typename TB::TELEM>::TMAT TELEM;
+    // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
+    enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
 
-  SubExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
+    SubExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-  TELEM operator() (int i) const { return a(i)-b(i); }
-  TELEM operator() (int i, int j) const { return a(i,j)-b(i,j); }
-  int Height() const { return a.Height(); }
-  int Width() const { return a.Width(); }
-};
+    TELEM operator() (int i) const { return a(i)-b(i); }
+    TELEM operator() (int i, int j) const { return a(i,j)-b(i,j); }
+    int Height() const { return a.Height(); }
+    int Width() const { return a.Width(); }
+  };
 
 
-template <typename TA, typename TB>
-inline SubExpr<TA, TB>
-operator- (const Expr<TA> & a, const Expr<TB> & b)
-{
-  return SubExpr<TA, TB> 
-    (static_cast <const TA&> (a), static_cast <const TB&> (b));
-}
-
+  template <typename TA, typename TB>
+  inline SubExpr<TA, TB>
+  operator- (const Expr<TA> & a, const Expr<TB> & b)
+  {
+    return SubExpr<TA, TB> (a.Spec(), b.Spec());
+  }
 
 
 
 
 
 
-/* *************************** MinusExpr **************************** */
+
+  /* *************************** MinusExpr **************************** */
 
 
-/**
-   minus Matrix-expr
-*/
+  /**
+     minus Matrix-expr
+  */
 
-template <class TA>
-class MinusExpr : public Expr<MinusExpr<TA> >
-{
-  const TA & a;
-public:
-  typedef typename TA::TELEM TELEM;
-  typedef typename TA::TSCAL TSCAL;
+  template <class TA>
+  class MinusExpr : public Expr<MinusExpr<TA> >
+  {
+    const TA & a;
+  public:
+    typedef typename TA::TELEM TELEM;
 
-  MinusExpr (const TA & aa) : a(aa) { ; }
+    MinusExpr (const TA & aa) : a(aa) { ; }
 
-  TELEM operator() (int i) const { return -a(i); }
-  TELEM operator() (int i, int j) const { return -a(i,j); }
-  int Height() const { return a.Height(); }
-  int Width() const { return a.Width(); }
+    TELEM operator() (int i) const { return -a(i); }
+    TELEM operator() (int i, int j) const { return -a(i,j); }
+    int Height() const { return a.Height(); }
+    int Width() const { return a.Width(); }
 
-  enum { IS_LINEAR = TA::IS_LINEAR };
-};
-
-
-template <typename TA>
-inline MinusExpr<TA>
-operator- (const Expr<TA> & a)
-{
-  return MinusExpr<TA> (static_cast<const TA&> (a) );
-}
+    enum { IS_LINEAR = TA::IS_LINEAR };
+  };
 
 
-/* *************************** ScaleExpr **************************** */
+  template <typename TA>
+  inline MinusExpr<TA>
+  operator- (const Expr<TA> & a)
+  {
+    return MinusExpr<TA> (a.Spec());
+  }
 
 
-/**
-   Scalar times Matrix-expr
-*/
-template <class TA, class TS> 
-class ScaleExpr : public Expr<ScaleExpr<TA,TS> >
-{
-  const TA & a;
-  TS s;
-public:
-  typedef typename mat_scale_type<typename TA::TELEM, TS>::TMAT TELEM;
-  typedef typename mat_traits<TELEM>::TSCAL TSCAL;
-  enum { IS_LINEAR = TA::IS_LINEAR };
+  /* *************************** ScaleExpr **************************** */
 
-  ScaleExpr (const TA & aa, TS as) : a(aa), s(as) { ; }
 
-  TELEM operator() (int i) const { return s * a(i); }
-  TELEM operator() (int i, int j) const { return s * a(i,j); }
+  /**
+     Scalar times Matrix-expr
+  */
+  template <class TA, class TS> 
+  class ScaleExpr : public Expr<ScaleExpr<TA,TS> >
+  {
+    const TA & a;
+    TS s;
+  public:
+    typedef typename mat_scale_type<typename TA::TELEM, TS>::TMAT TELEM;
+    typedef typename mat_traits<TELEM>::TSCAL TSCAL;
+    enum { IS_LINEAR = TA::IS_LINEAR };
 
-  int Height() const { return a.Height(); }
-  int Width() const { return a.Width(); }
-  void Dump (ostream & ost) const
-  { ost << "Scale, s=" << s << " * "; a.Dump(ost);  }
-};
+    ScaleExpr (const TA & aa, TS as) : a(aa), s(as) { ; }
 
-template <typename TA>
-inline ScaleExpr<TA, double> 
-operator* (double b, const Expr<TA> & a)
-{
-  return ScaleExpr<TA, double> (static_cast<const TA&> (a), b);
-}
+    TELEM operator() (int i) const { return s * a(i); }
+    TELEM operator() (int i, int j) const { return s * a(i,j); }
 
-template <typename TA>
-inline ScaleExpr<TA, Complex> 
-operator* (Complex b, const Expr<TA> & a)
-{
-  return ScaleExpr<TA, Complex> (static_cast<const TA&> (a), b);
-}
+    int Height() const { return a.Height(); }
+    int Width() const { return a.Width(); }
+    void Dump (ostream & ost) const
+    { ost << "Scale, s=" << s << " * "; a.Dump(ost);  }
+  };
 
-template <int D, typename TAD, typename TA>
-inline ScaleExpr<TA, AutoDiff<D,TAD> > 
-operator* (const AutoDiff<D,TAD> & b, const Expr<TA> & a)
-{
-  return ScaleExpr<TA, AutoDiff<D,TAD> > (static_cast<const TA&> (a), b );
-}
+  template <typename TA>
+  inline ScaleExpr<TA, double> 
+  operator* (double b, const Expr<TA> & a)
+  {
+    return ScaleExpr<TA, double> (a.Spec(), b);
+  }
 
+  template <typename TA>
+  inline ScaleExpr<TA, Complex> 
+  operator* (Complex b, const Expr<TA> & a)
+  {
+    return ScaleExpr<TA, Complex> (a.Spec(), b);
+  }
+
+  template <int D, typename TAD, typename TA>
+  inline ScaleExpr<TA, AutoDiff<D,TAD> > 
+  operator* (const AutoDiff<D,TAD> & b, const Expr<TA> & a)
+  {
+    return ScaleExpr<TA, AutoDiff<D,TAD> > (a.Spec(), b );
+  }
 
 
 
-/* ************************* MultExpr ************************* */
+
+  /* ************************* MultExpr ************************* */
 
 
-/**
-   Matrix-expr timex Matrix-expr
-*/
-template <class TA, class TB> class MultExpr : public Expr<MultExpr<TA,TB> >
-{
-  const TA & a;
-  const TB & b;
-public:
-  typedef typename mat_prod_type<typename TA::TELEM, 
-				 typename TB::TELEM>::TMAT TELEM;
-  typedef typename mat_traits<TELEM>::TSCAL TSCAL;
+  /**
+     Matrix-expr timex Matrix-expr
+  */
+  template <class TA, class TB> class MultExpr : public Expr<MultExpr<TA,TB> >
+  {
+    const TA & a;
+    const TB & b;
+  public:
+    typedef typename mat_prod_type<typename TA::TELEM, 
+				   typename TB::TELEM>::TMAT TELEM;
+    typedef typename mat_traits<TELEM>::TSCAL TSCAL;
 
-  MultExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
+    MultExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-  TELEM operator() (int i) const { return operator()(i,0); }  //   TELEM(TSCAL(0)); }  JS, 310508
-  TELEM operator() (int i, int j) const
+    TELEM operator() (int i) const { return operator()(i,0); }  //   TELEM(TSCAL(0)); }  JS, 310508
+    TELEM operator() (int i, int j) const
+    { 
+      int wa = a.Width();
+      TELEM sum;
+      if (wa >= 1)
+	{
+	  sum = a(i,0) * b(0,j);
+	  for (int k = 1; k < wa; k++)
+	    sum += a(i,k) * b(k,j);
+	}
+      else
+	sum = TSCAL(0);
+    
+      return sum;
+    }
+
+    int Height() const { return a.Height(); }
+    int Width() const { return b.Width(); }
+    enum { IS_LINEAR = 0 };
+  };
+
+
+  template <typename TA, typename TB>
+  inline MultExpr<TA, TB>
+  operator* (const Expr<TA> & a, const Expr<TB> & b)
+  {
+    return MultExpr<TA, TB> (a.Spec(), b.Spec());
+    // (static_cast <const TA&> (a), static_cast <const TB&> (b));
+  }
+
+
+  /* ************************** Trans *************************** */
+
+
+  inline double Trans (double a) { return a; }
+  inline Complex Trans (Complex a) { return a; }
+  template<int D, typename TAD>
+  inline AutoDiff<D,TAD> Trans (const AutoDiff<D,TAD> & a) { return a; }
+
+
+  /**
+     Transpose of Matrix-expr
+  */
+  template <class TA> class TransExpr : public Expr<TransExpr<TA> >
+  {
+    const TA & a;
+  public:
+    typedef typename TA::TELEM TELEM;
+
+    TransExpr (const TA & aa) : a(aa) { ; }
+
+    int Height() const { return a.Width(); }
+    int Width() const { return a.Height(); }
+
+    TELEM operator() (int i, int j) const { return Trans (a(j,i)); }
+    TELEM operator() (int i) const { return 0; }
+
+    enum { IS_LINEAR = 0 };
+  };
+
+
+  /// Transpose 
+  template <typename TA>
+  inline TransExpr<TA>
+  Trans (const Expr<TA> & a)
+  {
+    return TransExpr<TA> (a.Spec());
+  }
+
+
+  /* ************************* RowsArray ************************ */
+
+  /**
+     RowsArray
+  */
+  template <class TA> class RowsArrayExpr : public MatExpr<RowsArrayExpr<TA> >
+  {
+    const TA & a;
+    FlatArray<int> rows;
+  public:
+    typedef typename TA::TELEM TELEM;
+    typedef typename TA::TREF TREF;
+    typedef typename TA::TSCAL TSCAL;
+
+    RowsArrayExpr (const TA & aa, FlatArray<int> arows) : a(aa), rows(arows) { ; }
+
+    int Height() const { return rows.Size(); }
+    int Width() const { return a.Width(); }
+
+    /*
+      TELEM & operator() (int i, int j) const { return a(rows[i], j); }
+      TELEM & operator() (int i) const { return a(rows[i]); }
+    */
+
+    TREF operator() (int i, int j) const { return a(rows[i], j); }
+    TREF operator() (int i) const { return a(rows[i]); }
+
+
+    enum { IS_LINEAR = 0 };
+
+    template<typename TB>
+    const RowsArrayExpr & operator= (const Expr<TB> & m) 
+    {
+      MatExpr<RowsArrayExpr<TA> >::operator= (m);
+      return *this;
+    }
+  };
+  
+
+  /**
+     ColsArray
+  */
+  template <class TA> class ColsArrayExpr : public MatExpr<ColsArrayExpr<TA> >
+  {
+    const TA & a;
+    FlatArray<int> cols;
+  public:
+    typedef typename TA::TELEM TELEM;
+    typedef typename TA::TSCAL TSCAL;
+
+    ColsArrayExpr (const TA & aa, FlatArray<int> acols) : a(aa), cols(acols) { ; }
+
+    int Height() const { return a.Height(); }
+    int Width() const { return cols.Size(); }
+
+    TELEM & operator() (int i, int j) const { return a(i, cols[j]); }
+    TELEM & operator() (int i) const { return a(i, cols[0]); }
+
+    enum { IS_LINEAR = 0 };
+
+    template<typename TB>
+    const ColsArrayExpr & operator= (const Expr<TB> & m) 
+    {
+      MatExpr<ColsArrayExpr<TA> >::operator= (m);
+      return *this;
+    }
+
+  };
+  
+
+
+
+  /* ************************* Conjugate *********************** */ 
+
+
+  inline double Conj (double a)
+  {
+    return a;
+  }
+
+  inline Complex Conj (Complex a)
+  {
+    return conj(a);
+  }
+
+  /**
+     Conjugate of Matrix-expr
+  */
+  // Attention NOT transpose !!! elemwise conjugate !!! 
+  template <class TA> class ConjExpr : public Expr<ConjExpr<TA> >
+  {
+    const TA & a;
+  public:
+    typedef typename TA::TELEM TELEM;
+
+    ConjExpr (const TA & aa) : a(aa) { ; }
+
+    int Height() const { return a.Height(); }
+    int Width() const { return a.Width(); }
+ 
+    TELEM operator() (int i, int j) const { return Conj(a(i,j)); }
+    TELEM operator() (int i) const { return Conj(a(i)); }
+
+    enum { IS_LINEAR = 0 };
+  };
+
+
+  /// Conjugate
+  template <typename TA>
+  inline ConjExpr<TA>
+  Conj (const Expr<TA> & a)
+  {
+    return ConjExpr<TA> (static_cast <const TA&> (a));
+  }
+
+  template<int D, typename TAD>
+  inline AutoDiff<D,TAD> Conj (const AutoDiff<D,TAD> & a) 
   { 
-    int wa = a.Width();
-    TELEM sum;
-    if (wa >= 1)
-      {
-	sum = a(i,0) * b(0,j);
-	for (int k = 1; k < wa; k++)
-	  sum += a(i,k) * b(k,j);
-      }
+    AutoDiff<D,TAD> b; 
+    b.Value() = conj(a.Value()); 
+  
+    for(int i=0;i<D;i++) 
+      b.DValue(i) = conj(a.DValue(i)); 
+
+    return b;
+  }
+
+
+
+
+
+  /* ************************* InnerProduct ********************** */
+
+
+  inline double InnerProduct (double a, double b)
+  {
+    return a * b;
+  }
+
+  inline Complex InnerProduct (Complex a, Complex b)
+  {
+    return a * b;
+  }
+
+
+  /**
+     Inner product
+  */
+  template <class TA, class TB>
+  inline typename TA::TSCAL InnerProduct (const Expr<TA> & a, const Expr<TB> & b)
+  {
+    typedef typename TA::TSCAL TSCAL;
+
+    if (a.Height() == 0) return TSCAL(0);
+
+    TSCAL sum = InnerProduct (a.Spec()(0), b.Spec()(0));
+    for (int i = 1; i < a.Height(); i++)
+      sum += InnerProduct (a.Spec()(i), b.Spec()(i));
+
+    return sum;
+  }
+
+
+  /* **************************** Trace **************************** */
+
+
+  /**
+     Calculates the trace of a matrix expression.
+  */
+  template <class TA>
+  inline typename TA::TELEM Trace (const Expr<TA> & a)
+  {
+    typedef typename TA::TELEM TELEM;
+    TELEM sum = 0;
+    for (int i = 0; i < Height(a); i++)
+      sum += a.Spec()(i,i);
+    return sum;
+  }
+
+  /* **************************** L2Norm **************************** */
+
+  /// Euklidean norm squared
+  inline double L2Norm2 (double v)
+  {
+    return v*v;
+  }
+
+  inline double L2Norm2 (Complex v)
+  {
+    return v.real()*v.real()+v.imag()*v.imag();
+  }
+
+  template<int D, typename SCAL>
+  inline double L2Norm2 (const AutoDiff<D,SCAL> & x) throw()
+  {
+    return L2Norm2(x.Value());
+  }
+
+  template <class TA>
+  inline double L2Norm2 (const Expr<TA> & v)
+  {
+    // typedef typename TA::TSCAL TSCAL;
+    double sum = 0;
+    if (TA::IS_LINEAR)
+      for (int i = 0; i < v.Height()*v.Width(); i++)
+	sum += L2Norm2 (v.Spec()(i));  
     else
-      sum = TSCAL(0);
+      for (int i = 0; i < v.Height(); i++)
+	for (int j = 0; j < v.Width(); j++)
+	  sum += L2Norm2 (v.Spec()(i,j));  
     
     return sum;
   }
 
-  int Height() const { return a.Height(); }
-  int Width() const { return b.Width(); }
-  enum { IS_LINEAR = 0 };
-};
-
-
-template <typename TA, typename TB>
-inline MultExpr<TA, TB>
-operator* (const Expr<TA> & a, const Expr<TB> & b)
-{
-  return MultExpr<TA, TB> 
-    (static_cast <const TA&> (a), static_cast <const TB&> (b));
-}
-
-
-/* ************************** Trans *************************** */
-
-
-inline double Trans (double a) { return a; }
-inline Complex Trans (Complex a) { return a; }
-template<int D, typename TAD>
-inline AutoDiff<D,TAD> Trans (const AutoDiff<D,TAD> & a) { return a; }
-
-
-
-/**
-   Transpose of Matrix-expr
-*/
-template <class TA> class TransExpr : public Expr<TransExpr<TA> >
-{
-  const TA & a;
-public:
-  typedef typename TA::TELEM TELEM;
-
-  TransExpr (const TA & aa) : a(aa) { ; }
-
-  int Height() const { return a.Width(); }
-  int Width() const { return a.Height(); }
-
-  TELEM operator() (int i, int j) const { return Trans (a(j,i)); }
-  TELEM operator() (int i) const { return 0; }
-
-  enum { IS_LINEAR = 0 };
-};
-
-/// Transpose 
-template <typename TA>
-inline TransExpr<TA>
-Trans (const Expr<TA> & a)
-{
-  return TransExpr<TA> (static_cast <const TA&> (a));
-}
-
-
-/* ************************* RowsArray ************************ */
-
-/**
-   RowsArray
-*/
-template <class TA> class RowsArrayExpr : public MatExpr<RowsArrayExpr<TA> >
-{
-  const TA & a;
-  FlatArray<int> rows;
-public:
-  typedef typename TA::TELEM TELEM;
-  typedef typename TA::TSCAL TSCAL;
-
-  RowsArrayExpr (const TA & aa, FlatArray<int> arows) : a(aa), rows(arows) { ; }
-
-  int Height() const { return rows.Size(); }
-  int Width() const { return a.Width(); }
-
-  TELEM & operator() (int i, int j) const { return a(rows[i], j); }
-  TELEM & operator() (int i) const { return a(rows[i]); }
-
-  enum { IS_LINEAR = 0 };
-
-  template<typename TB>
-  const RowsArrayExpr & operator= (const Expr<TB> & m) 
-  {
-    MatExpr<RowsArrayExpr<TA> >::operator= (m);
-    return *this;
-  }
-};
-  
-
-/**
-   ColsArray
-*/
-template <class TA> class ColsArrayExpr : public MatExpr<ColsArrayExpr<TA> >
-{
-  const TA & a;
-  FlatArray<int> cols;
-public:
-  typedef typename TA::TELEM TELEM;
-  typedef typename TA::TSCAL TSCAL;
-
-  ColsArrayExpr (const TA & aa, FlatArray<int> acols) : a(aa), cols(acols) { ; }
-
-  int Height() const { return a.Height(); }
-  int Width() const { return cols.Size(); }
-
-  TELEM & operator() (int i, int j) const { return a(i, cols[j]); }
-  TELEM & operator() (int i) const { return a(i, cols[0]); }
-
-  enum { IS_LINEAR = 0 };
-
-  template<typename TB>
-  const ColsArrayExpr & operator= (const Expr<TB> & m) 
-  {
-    MatExpr<ColsArrayExpr<TA> >::operator= (m);
-    return *this;
-  }
-
-};
-  
-
-
-
-/* ************************* Conjugate *********************** */ 
-
-
-inline double Conj (double a)
-{
-  return a;
-}
-
-inline Complex Conj (Complex a)
-{
-  return conj(a);
-}
-
-/**
-   Conjugate of Matrix-expr
-*/
-// Attention NOT transpose !!! elemwise conjugate !!! 
-template <class TA> class ConjExpr : public Expr<ConjExpr<TA> >
-{
-  const TA & a;
-public:
-  typedef typename TA::TELEM TELEM;
-
-  ConjExpr (const TA & aa) : a(aa) { ; }
-
-  int Height() const { return a.Height(); }
-  int Width() const { return a.Width(); }
- 
-  TELEM operator() (int i, int j) const { return Conj(a(i,j)); }
-  TELEM operator() (int i) const { return Conj(a(i)); }
-
-  enum { IS_LINEAR = 0 };
-};
-
-
-/// Conjugate
-template <typename TA>
-inline ConjExpr<TA>
-Conj (const Expr<TA> & a)
-{
-  return ConjExpr<TA> (static_cast <const TA&> (a));
-}
-
-template<int D, typename TAD>
-inline AutoDiff<D,TAD> Conj (const AutoDiff<D,TAD> & a) 
-{ 
-  AutoDiff<D,TAD> b; 
-  b.Value() = conj(a.Value()); 
-  
-  for(int i=0;i<D;i++) 
-    b.DValue(i) = conj(a.DValue(i)); 
-
-  return b;
-}
-
-
-
-/* ************************* ChangeSize ********************** */
-
-/*
+  /**
+     Calculates the Euklidean norm
+  */
   template <class TA>
-  class ChangeSizeExpr : public Expr<ChangeSizeExpr<TA> >
+  inline double L2Norm (const Expr<TA> & v)
   {
-  const TA & a;
-  const int height;
-  const int width;
-  public:
-  typedef typename TA::TELEM TELEM;
-  typedef typename TA::TSCAL TSCAL;
-
-  ChangeSizeExpr (const TA & aa, const int h, const int w) : a(aa),height(h),width(w) { ; }
-
-  TELEM operator() (int i) const { return a(i); }
-  TELEM operator() (int i, int j) const 
-  { 
-  //if(i >= a.Height() || j>= a.Width())
-  //  return 0;
-  return a(i,j); 
+    return sqrt (L2Norm2(v));
   }
-  int Height() const { return height; }
-  int Width() const { return width; }
 
-  enum { IS_LINEAR = TA::IS_LINEAR };
-  };
+  /* *************************** Output ****************************** */
 
-  template <typename TA>
-  inline ChangeSizeExpr<TA>
-  ChangeSize (const Expr<TA> & a, const int h, const int w)
+
+
+  /// Print matrix-expr
+  template<typename T>
+  std::ostream & operator<< (std::ostream & s, const Expr<T> & v)
   {
-  return ChangeSizeExpr<TA> (static_cast<const TA&> (a),h,w );
-  }
-*/
-
-/* ************************* InnerProduct ********************** */
-
-
-inline double InnerProduct (double a, double b)
-{
-  return a * b;
-}
-
-inline Complex InnerProduct (Complex a, Complex b)
-{
-  return a * b;
-}
-
-
-/**
-   Inner product
-*/
-template <class TA, class TB>
-// inline typename TA::TSCAL InnerProduct (const MatExpr<TA> & a, const MatExpr<TB> & b)
-inline typename TA::TSCAL InnerProduct (const Expr<TA> & a, const Expr<TB> & b)
-{
-  typedef typename TA::TSCAL TSCAL;
-
-  if (a.Height() == 0) return TSCAL(0);
-
-  TSCAL sum = InnerProduct (a.Spec()(0), b.Spec()(0));
-  for (int i = 1; i < a.Height(); i++)
-    sum += InnerProduct (a.Spec()(i), b.Spec()(i));
-
-  return sum;
-}
-
-/*
-// shouldn't be necessary with InnerProduct (Expr<>,Expr<>)
-template <class TA, class TB>
-inline typename TA::TSCAL InnerProduct (const MatExpr<TA> & a, const ConjExpr<TB> & b)
-{
-typedef typename TA::TSCAL TSCAL;
-TSCAL sum = 0;
-for (int i = 0; i < a.Height(); i++)
-sum += InnerProduct (a.Spec()(i), b.Spec()(i));
-   
-return sum;
-}
-
-template <class TA, class TB>
-inline typename TA::TSCAL InnerProduct (const ConjExpr<TA> & a, const MatExpr<TB> & b)
-{
-typedef typename TA::TSCAL TSCAL;
-TSCAL sum = 0;
-
-for (int i = 0; i < a.Height(); i++)
-sum += InnerProduct (a.Spec()(i), b.Spec()(i));
-   
-return sum;
-}
-
-
-template <class TA, class TB>
-inline typename TA::TSCAL InnerProduct (const ConjExpr<TA> & a, const ConjExpr<TB> & b)
-{
-typedef typename TA::TSCAL TSCAL;
-TSCAL sum = 0;
-for (int i = 0; i < a.Height(); i++)
-sum += InnerProduct (a.Spec()(i), b.Spec()(i));
-     
-return sum;
-}
-*/
-
-
-
-
-
-/* **************************** Trace **************************** */
-
-
-/**
-   Calculates the trace of a matrix expression.
-*/
-template <class TA>
-inline typename TA::TELEM Trace (const Expr<TA> & a)
-{
-  typedef typename TA::TELEM TELEM;
-  TELEM sum = 0;
-  for (int i = 0; i < Height(a); i++)
-    sum += a.Spec()(i,i);
-  return sum;
-}
-
-/* **************************** L2Norm **************************** */
-
-/// Euklidean norm squared
-inline double L2Norm2 (double v)
-{
-  return v*v;
-}
-
-inline double L2Norm2 (Complex v)
-{
-  return v.real()*v.real()+v.imag()*v.imag();
-}
-
-template<int D, typename SCAL>
-inline double L2Norm2 (const AutoDiff<D,SCAL> & x) throw()
-{
-  return L2Norm2(x.Value());
-}
-
-template <class TA>
-inline double L2Norm2 (const Expr<TA> & v)
-{
-  typedef typename TA::TSCAL TSCAL;
-  double sum = 0;
-  if (TA::IS_LINEAR)
-    for (int i = 0; i < v.Height()*v.Width(); i++)
-      sum += L2Norm2 (v.Spec()(i));  
-  else
     for (int i = 0; i < v.Height(); i++)
-      for (int j = 0; j < v.Width(); j++)
-	sum += L2Norm2 (v.Spec()(i,j));  
-    
-  return sum;
-}
-
-/**
-   Calculates the Euklidean norm
-*/
-template <class TA>
-inline double L2Norm (const Expr<TA> & v)
-{
-  return sqrt (L2Norm2(v));
-}
-
-/* *************************** Output ****************************** */
-
-
-
-/// Print matrix-expr
-template<typename T>
-std::ostream & operator<< (std::ostream & s, const Expr<T> & v)
-{
-  for (int i = 0; i < v.Height(); i++)
-    {
-      for (int j = 0 ; j < v.Width(); j++)
-	s << " " << setw(7) << v.Spec()(i,j);
-      s << endl;
-    }
-  return s;
-}
-
-
-
-/* **************************** Inverse *************************** */
-
-template <typename T> class FlatMatrix;
-template <typename T> class Matrix;
-template <int H, int W, typename T> class Mat;
-
-
-/// Calculate inverse. Gauss elimination with row pivoting
-template <class T, class T2>
-extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv);
-
-extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<double> m, FlatMatrix<double> inv);
-
-
-/**
-   Calculates the inverse of a Matrix.
-*/
-template <typename T>
-inline Matrix<T> Inv (const FlatMatrix<T> & m)
-{
-  Matrix<T> inv(m.Height(),m.Height());
-  CalcInverse (m, inv);
-  return inv;
-}
-
-
-
-inline void CalcInverse (const double & m, double & inv)
-{
-  inv = 1 / m;
-}
-
-inline void CalcInverse (const Complex & m, Complex & inv)
-{
-  inv = 1.0 / m;
-}
-
-template <int H, int W, typename T, typename TINV>
-inline void CalcInverse (const Mat<H,W,T> & m, TINV & inv)
-{
-  switch (H)
-    {
-    case 1:
       {
-	inv(0,0) = 1.0 / m(0,0);
-	return;
+	for (int j = 0 ; j < v.Width(); j++)
+	  s << " " << setw(7) << v.Spec()(i,j);
+	s << endl;
       }
-    case 2:
-      {
-	T idet = 1.0 / (m(0,0) * m(1,1) - m(0,1) * m(1,0));
-	inv(0,0) = idet * m(1,1);
-	inv(0,1) = -idet * m(0,1);
-	inv(1,0) = -idet * m(1,0);
-	inv(1,1) = idet * m(0,0);
-	return;
-      }
-    case 3:
-      {
-	T h0 = m(4)*m(8)-m(5)*m(7);
-	T h1 = m(5)*m(6)-m(3)*m(8);
-	T h2 = m(3)*m(7)-m(4)*m(6);
-	T det = m(0) * h0 + m(1) * h1 + m(2) * h2;
-	T idet = 1.0 / det;
+    return s;
+  }
 
-	inv(0,0) =  idet * h0; 
-	inv(0,1) = -idet * (m(1) * m(8) - m(2) * m(7));
-	inv(0,2) =  idet * (m(1) * m(5) - m(2) * m(4));
+
+
+  /* **************************** Inverse *************************** */
+
+  template <typename T> class FlatMatrix;
+  template <typename T> class Matrix;
+  template <int H, int W, typename T> class Mat;
+
+
+  /// Calculate inverse. Gauss elimination with row pivoting
+  template <class T, class T2>
+  extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv);
+
+  extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<double> m, FlatMatrix<double> inv);
+
+
+  /**
+     Calculates the inverse of a Matrix.
+  */
+  template <typename T>
+  inline Matrix<T> Inv (const FlatMatrix<T> & m)
+  {
+    Matrix<T> inv(m.Height(),m.Height());
+    CalcInverse (m, inv);
+    return inv;
+  }
+
+
+
+  inline void CalcInverse (const double & m, double & inv)
+  {
+    inv = 1 / m;
+  }
+
+  inline void CalcInverse (const Complex & m, Complex & inv)
+  {
+    inv = 1.0 / m;
+  }
+
+  template <int H, int W, typename T, typename TINV>
+  inline void CalcInverse (const Mat<H,W,T> & m, TINV & inv)
+  {
+    switch (H)
+      {
+      case 1:
+	{
+	  inv(0,0) = 1.0 / m(0,0);
+	  return;
+	}
+      case 2:
+	{
+	  T idet = 1.0 / (m(0,0) * m(1,1) - m(0,1) * m(1,0));
+	  inv(0,0) = idet * m(1,1);
+	  inv(0,1) = -idet * m(0,1);
+	  inv(1,0) = -idet * m(1,0);
+	  inv(1,1) = idet * m(0,0);
+	  return;
+	}
+      case 3:
+	{
+	  T h0 = m(4)*m(8)-m(5)*m(7);
+	  T h1 = m(5)*m(6)-m(3)*m(8);
+	  T h2 = m(3)*m(7)-m(4)*m(6);
+	  T det = m(0) * h0 + m(1) * h1 + m(2) * h2;
+	  T idet = 1.0 / det;
+
+	  inv(0,0) =  idet * h0; 
+	  inv(0,1) = -idet * (m(1) * m(8) - m(2) * m(7));
+	  inv(0,2) =  idet * (m(1) * m(5) - m(2) * m(4));
 	
-	inv(1,0) =  idet * h1; 
-	inv(1,1) =  idet * (m(0) * m(8) - m(2) * m(6));
-	inv(1,2) = -idet * (m(0) * m(5) - m(2) * m(3));
+	  inv(1,0) =  idet * h1; 
+	  inv(1,1) =  idet * (m(0) * m(8) - m(2) * m(6));
+	  inv(1,2) = -idet * (m(0) * m(5) - m(2) * m(3));
 	
-	inv(2,0) =  idet * h2; 
-	inv(2,1) = -idet * (m(0) * m(7) - m(1) * m(6));
-	inv(2,2) =  idet * (m(0) * m(4) - m(1) * m(3));
-	return;
+	  inv(2,0) =  idet * h2; 
+	  inv(2,1) = -idet * (m(0) * m(7) - m(1) * m(6));
+	  inv(2,2) =  idet * (m(0) * m(4) - m(1) * m(3));
+	  return;
+	}
+      default:
+	{
+	  FlatMatrix<T> fm(m);
+	  FlatMatrix<T> finv(inv);
+	  CalcInverse (fm, finv);
+	}
       }
-    default:
+  }
+
+
+  template <typename T, typename TINV>
+  inline void CalcInverse (const Mat<2,2,T> & m, Mat<2,2,TINV> & inv)
+  {
+    T idet = 1.0 / (m(0,0) * m(1,1) - m(0,1) * m(1,0));
+    inv(0,0) = idet * m(1,1);
+    inv(0,1) = -idet * m(0,1);
+    inv(1,0) = -idet * m(1,0);
+    inv(1,1) = idet * m(0,0);
+  }
+
+
+
+
+  template <int H, int W, typename T>
+  inline Mat<H,W,T> Inv (const Mat<H,W,T> & m)
+  {
+    Mat<H,W,T> inv;
+    CalcInverse (m, inv);
+    return inv;
+  }
+
+
+
+  /* ********************** Determinant *********************** */
+
+
+  /**
+     Calculates the determinant of a Matrix.
+  */
+  template <class T>
+  // inline typename T::TSCAL Det (const MatExpr<T> & m)
+  inline typename mat_traits<typename T::TELEM>::TSCAL Det (const MatExpr<T> & m)
+  {
+    const T & sm = m.Spec();
+    switch (sm.Height())
       {
-	FlatMatrix<T> fm(m);
-	FlatMatrix<T> finv(inv);
-	CalcInverse (fm, finv);
+      case 1: 
+	{
+	  return sm(0,0); 
+	}
+      case 2:
+	{
+	  return ( sm(0,0)*sm(1,1) - sm(0,1)*sm(1,0) ); 
+	}
+      case 3:
+	{
+	  return 
+	    sm(0) * (sm(4) * sm(8) - sm(5) * sm(7)) +
+	    sm(1) * (sm(5) * sm(6) - sm(3) * sm(8)) +
+	    sm(2) * (sm(3) * sm(7) - sm(4) * sm(6));
+	}
+      default:
+	{
+	  cerr << "general det not implemented" << endl;
+	}
       }
-    }
-}
-
-
-template <typename T, typename TINV>
-inline void CalcInverse (const Mat<2,2,T> & m, Mat<2,2,TINV> & inv)
-{
-  T idet = 1.0 / (m(0,0) * m(1,1) - m(0,1) * m(1,0));
-  inv(0,0) = idet * m(1,1);
-  inv(0,1) = -idet * m(0,1);
-  inv(1,0) = -idet * m(1,0);
-  inv(1,1) = idet * m(0,0);
-}
-
-
-
-
-template <int H, int W, typename T>
-inline Mat<H,W,T> Inv (const Mat<H,W,T> & m)
-{
-  Mat<H,W,T> inv;
-  CalcInverse (m, inv);
-  return inv;
-}
-
-
-
-/* ********************** Determinant *********************** */
-
-
-/**
-   Calculates the determinant of a Matrix.
-*/
-template <class T>
-inline typename T::TSCAL Det (const MatExpr<T> & m)
-{
-  const T & sm = m.Spec();
-  switch (sm.Height())
-    {
-    case 1: 
-      {
-	return sm(0,0); 
-      }
-    case 2:
-      {
-	return ( sm(0,0)*sm(1,1) - sm(0,1)*sm(1,0) ); 
-      }
-    case 3:
-      {
-	return 
-	  sm(0) * (sm(4) * sm(8) - sm(5) * sm(7)) +
-	  sm(1) * (sm(5) * sm(6) - sm(3) * sm(8)) +
-	  sm(2) * (sm(3) * sm(7) - sm(4) * sm(6));
-      }
-    default:
-      {
-	cerr << "general det not implemented" << endl;
-      }
-    }
-  return typename T::TSCAL(0);
-}
+    return typename mat_traits<typename T::TELEM>::TSCAL (0);  // typename T::TSCAL(0);
+  }
 }
 
 #endif
