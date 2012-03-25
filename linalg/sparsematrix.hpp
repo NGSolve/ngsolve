@@ -128,12 +128,6 @@ namespace ngla
 
     FlatArray<int> GetRowIndices(int i) const
     { return FlatArray<int> (firsti[i+1]-firsti[i], colnr+firsti[i]); }
-    /*
-    FlatArray<int> GetRowIndices(int i) 
-    { return FlatArray<int> (firsti[i+1]-firsti[i], colnr+firsti[i]); }
-    */
-    // int * GetRowIndicesPointer (int i) 
-    // { return colnr+firsti[i]; }
 
     int First (int i) const { return firsti[i]; }
 
@@ -142,9 +136,6 @@ namespace ngla
     ostream & Print (ostream & ost) const;
 
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
-
-    // virtual int GetNRowEntries (const int & row)
-    // { return (firsti[row+1] - firsti[row]); }
   };
 
 
@@ -284,13 +275,6 @@ namespace ngla
     TM & operator[] (int i)  { return data[i]; }
     const TM & operator[] (int i) const { return data[i]; }
 
-    /*
-    FlatArray<const TM> GetRow(int i) const
-    { 
-      return FlatArray<const TM> (firsti[i+1]-firsti[i], data+firsti[i]); 
-    }
-    */
-
     TM & operator() (int row, int col)
     {
       return data[CreatePosition(row, col)];
@@ -308,13 +292,6 @@ namespace ngla
     FlatVector<TM> GetRowValues(int i) const
     { return FlatVector<TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
 
-    /*
-    const TM & GetRowValue(int i, int j) const
-    { return data[firsti[i]+j]; }
-
-    TM & GetRowValue(int i, int j) 
-    { return data[firsti[i]+j]; }
-    */
 
     virtual void AddElementMatrix(const FlatArray<int> & dnums1, 
 				  const FlatArray<int> & dnums2, 
