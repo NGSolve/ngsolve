@@ -89,7 +89,7 @@ namespace ngla
 	for (int row = 0; row < mat.Height(); row++)
 	  if (!subset || subset->Test(row))
 	    {
-	      FlatArray<const int> rcols = mat.GetRowIndices(row);
+	      FlatArray<int> rcols = mat.GetRowIndices(row);
 	      FlatVector<TM> rvals = mat.GetRowValues(row);
 
 	      for (int j = 0; j < rcols.Size(); j++)
