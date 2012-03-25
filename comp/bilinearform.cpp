@@ -202,7 +202,7 @@ namespace ngcomp
 	      if (dnums[j] != -1)
 		creator.Add (i, dnums[j]);
 	  }
-	
+
 	
 	if (fespace.UsesDGCoupling())
 	  //add dofs of neighbour elements as well
@@ -250,9 +250,8 @@ namespace ngcomp
       }
 
     MatrixGraph * graph = new MatrixGraph (ndof, *creator.GetTable(), *creator.GetTable(), symmetric);
-
+    
     graph -> FindSameNZE();
-
     return graph;
   }
 
@@ -674,13 +673,13 @@ namespace ngcomp
 				    cout << "\rassemble element " << cnt << "/" << ne << flush;
 				    ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
 				    // prevtime = clock();
-				    prevtime = WallTime();
 				  }
 
 #ifdef PARALLEL
 				if (id != 0)
 				  MPI_Bsend (&gcnt, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
 #endif
+				prevtime = WallTime();
 			      }
 			    }
 
@@ -1152,10 +1151,6 @@ namespace ngcomp
                 clh.CleanUp(heapp);
 		cout << "\rassemble element " << ne << "/" << ne << endl;
               }
-
-
-
-
 
             if (hasbound)
               {
