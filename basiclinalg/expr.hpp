@@ -1434,11 +1434,13 @@ namespace ngbla
       {
       case 1:
 	{
+	  cout << "mat 1 inv, should not be called" << endl;
 	  inv(0,0) = 1.0 / m(0,0);
 	  return;
 	}
       case 2:
 	{
+	  cout << "mat 2 inv, should not be called" << endl;
 	  T idet = 1.0 / (m(0,0) * m(1,1) - m(0,1) * m(1,0));
 	  inv(0,0) = idet * m(1,1);
 	  inv(0,1) = -idet * m(0,1);
@@ -1448,6 +1450,7 @@ namespace ngbla
 	}
       case 3:
 	{
+	  cout << "mat 3 inv, should not be called" << endl;
 	  T h0 = m(4)*m(8)-m(5)*m(7);
 	  T h1 = m(5)*m(6)-m(3)*m(8);
 	  T h2 = m(3)*m(7)-m(4)*m(6);
@@ -1476,9 +1479,14 @@ namespace ngbla
       }
   }
 
+  template <typename T, typename TINV>
+  inline void CalcInverse (const Mat<1,1,T> & m, TINV & inv)
+  {
+    inv(0,0) = 1.0 / m(0,0);
+  }
 
   template <typename T, typename TINV>
-  inline void CalcInverse (const Mat<2,2,T> & m, Mat<2,2,TINV> & inv)
+  inline void CalcInverse (const Mat<2,2,T> & m, TINV & inv)
   {
     T idet = 1.0 / (m(0,0) * m(1,1) - m(0,1) * m(1,0));
     inv(0,0) = idet * m(1,1);
@@ -1487,6 +1495,28 @@ namespace ngbla
     inv(1,1) = idet * m(0,0);
   }
 
+  template <typename T, typename TINV>
+  inline void CalcInverse (const Mat<3,3,T> & m, TINV & inv)
+  {
+    T h0 = m(4)*m(8)-m(5)*m(7);
+    T h1 = m(5)*m(6)-m(3)*m(8);
+    T h2 = m(3)*m(7)-m(4)*m(6);
+    T det = m(0) * h0 + m(1) * h1 + m(2) * h2;
+    T idet = 1.0 / det;
+    
+    inv(0,0) =  idet * h0; 
+    inv(0,1) = -idet * (m(1) * m(8) - m(2) * m(7));
+    inv(0,2) =  idet * (m(1) * m(5) - m(2) * m(4));
+    
+    inv(1,0) =  idet * h1; 
+    inv(1,1) =  idet * (m(0) * m(8) - m(2) * m(6));
+    inv(1,2) = -idet * (m(0) * m(5) - m(2) * m(3));
+    
+    inv(2,0) =  idet * h2; 
+    inv(2,1) = -idet * (m(0) * m(7) - m(1) * m(6));
+    inv(2,2) =  idet * (m(0) * m(4) - m(1) * m(3));
+    return;
+  }
 
 
 
@@ -1508,7 +1538,8 @@ namespace ngbla
   */
   template <class T>
   // inline typename T::TSCAL Det (const MatExpr<T> & m)
-  inline typename mat_traits<typename T::TELEM>::TSCAL Det (const MatExpr<T> & m)
+  // inline typename mat_traits<typename T::TELEM>::TSCAL Det (const MatExpr<T> & m)
+  inline typename T::TELEM Det (const MatExpr<T> & m)
   {
     const T & sm = m.Spec();
     switch (sm.Height())
@@ -1533,7 +1564,8 @@ namespace ngbla
 	  cerr << "general det not implemented" << endl;
 	}
       }
-    return typename mat_traits<typename T::TELEM>::TSCAL (0);  // typename T::TSCAL(0);
+    // return typename mat_traits<typename T::TELEM>::TSCAL (0);  // typename T::TSCAL(0);
+    return typename T::TELEM (0);  // typename T::TSCAL(0);
   }
 }
 
