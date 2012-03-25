@@ -180,8 +180,8 @@ namespace ngfem
     MatrixFixWidth<DIM> dshapes(ndof);
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	CalcShape (ir[i], pre->shapes.Row(i));
-	CalcDShape (ir[i], dshapes);
+	this->CalcShape (ir[i], pre->shapes.Row(i));
+	this->CalcDShape (ir[i], dshapes);
 	pre->dshapes.Rows (DIM*i, DIM*(i+1)) = Trans (dshapes);
       }
     

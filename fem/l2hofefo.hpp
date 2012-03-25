@@ -77,8 +77,8 @@ namespace ngfem
       Mat<SHAPES::NDOF, DIM> dshapes;
       for (int i = 0; i < ir.GetNIP(); i++)
 	{
-	  CalcShape (ir[i], pre->shapes.Row(i));
-	  CalcDShape (ir[i], dshapes);
+	  this->CalcShape (ir[i], pre->shapes.Row(i));
+	  this->CalcDShape (ir[i], dshapes);
 	  pre->dshapes.Rows (DIM*i, DIM*(i+1)) = Trans (dshapes);
 	}
 
@@ -132,7 +132,7 @@ namespace ngfem
     void T_CalcShape (Tx hx[2], TFA & shape) const
     {
       Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
-      INT<4> f = GetFaceSort (0, vnums);
+      INT<4> f = this->GetFaceSort (0, vnums);
       Tx x = lami[f[0]],  y = lami[f[1]],  l3 = lami[f[2]];
 
       Vec<ORDER+1, Tx> polx;

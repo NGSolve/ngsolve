@@ -101,7 +101,7 @@ namespace ngfem
 
 	  Mat<DIM_DMAT,DIM_DMAT, Complex> dmat;
 
-	  const IntegrationRule & ir = GetIntegrationRule (fel);
+	  const IntegrationRule & ir = this->GetIntegrationRule (fel);
 
 	  for (int i = 0; i < ir.GetNIP(); i++)
 	    {
@@ -176,7 +176,7 @@ namespace ngfem
 	  Vec<DIM_DMAT,Complex> hv2;
 	
 	  FlatVector<Complex> hely (ndof*DIM, locheap);
-	  const IntegrationRule & ir = GetIntegrationRule (fel);
+	  const IntegrationRule & ir = this->GetIntegrationRule (fel);
 	
 	
 	  for (int i = 0; i < ir.GetNIP(); i++)
@@ -202,7 +202,7 @@ namespace ngfem
 	
 	  FlatVector<AutoDiff<1,Complex> > hely (ndof*DIM, locheap);
 	  FlatVector<AutoDiff<1,Complex> > helx (ndof*DIM, locheap);
-	  const IntegrationRule & ir = GetIntegrationRule (fel);
+	  const IntegrationRule & ir = this->GetIntegrationRule (fel);
 	
 	  for (int j = 0; j < helx.Size(); j++)
 	    helx(j) = elx(j);
