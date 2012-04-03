@@ -1398,10 +1398,26 @@ namespace ngbla
 
 
   /// Calculate inverse. Gauss elimination with row pivoting
-  template <class T, class T2>
-  extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv);
+  template <class T2>
+  extern NGS_DLL_HEADER void CalcInverse (FlatMatrix<T2> inv);
 
-  extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<double> m, FlatMatrix<double> inv);
+  extern NGS_DLL_HEADER void CalcInverse (FlatMatrix<double> inv);
+
+  template <class T, class T2>
+  inline void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)
+  {
+    inv = m;
+    CalcInverse (inv);
+  }
+
+  template <class T, class T2>
+  inline void CalcInverse (const FlatMatrix<T> m, Matrix<T2> & inv)
+  {
+    inv = m;
+    CalcInverse (inv);
+  }
+
+
 
 
   /**
@@ -1430,7 +1446,8 @@ namespace ngbla
   template <int H, int W, typename T, typename TINV>
   inline void CalcInverse (const Mat<H,W,T> & m, TINV & inv)
   {
-    switch (H)
+    /*
+      switch (H)
       {
       case 1:
 	{
@@ -1472,11 +1489,10 @@ namespace ngbla
 	}
       default:
 	{
-	  FlatMatrix<T> fm(m);
-	  FlatMatrix<T> finv(inv);
-	  CalcInverse (fm, finv);
-	}
-      }
+    */
+    FlatMatrix<T> fm(m);
+    FlatMatrix<T> finv(inv);
+    CalcInverse (fm, finv);
   }
 
   template <typename T, typename TINV>
