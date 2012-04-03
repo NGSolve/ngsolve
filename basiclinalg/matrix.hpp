@@ -47,9 +47,6 @@ namespace ngbla
     typedef T& TREF;
     /// scalar type of elements (double or Complex)
     typedef typename mat_traits<T>::TSCAL TSCAL;
-    /// 
-    // typedef CMCPMatExpr<FlatMatrix<T> > TConv;
-    // typedef FlatMatrix<T> TConv;
 
     /// nothing done in default constructor
     FlatMatrix () throw () { ; }
@@ -240,7 +237,7 @@ namespace ngbla
     Matrix (const Matrix & m2) 
       : FlatMatrix<T> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
     {
-      CMCPMatExpr<FlatMatrix<T> >::operator= (m2);
+      FlatMatrix<T>::operator= (m2);
     }
 
     /// allocate and compute 
@@ -279,6 +276,7 @@ namespace ngbla
     template<typename TB>
     Matrix & operator= (const Expr<TB> & m)
     {
+      SetSize (m.Height(), m.Width());
       CMCPMatExpr<FlatMatrix<T> >::operator= (m);
       return *this;
     }
