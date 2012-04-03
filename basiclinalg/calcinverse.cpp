@@ -24,122 +24,18 @@ namespace ngbla
   }
 
 
-  // #define COLWISE
-#ifdef COLWISE 
-
-  // slow memory access
-
-  template <class T, class T2>
-  void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)
-  {
-    //	  Gauss - Jordan - algorithm
-  
-    int n = m.Height();
-
-    T hr;
-
-    ngstd::Array<int> p(n);   // pivot-permutation
-    Vector<T> hv(n);
-   
-    inv = m;
-
-    // Algorithm of Stoer, Einf. i. d. Num. Math, S 145
-
-    for (int j = 0; j < n; j++)
-      p[j] = j;
-    
-    for (int j = 0; j < n; j++)
-      {
-	// pivot search
-
-	double maxval = abs(inv(j,j));
-	int r = j;
-
-	for (int i = j+1; i < n ;i++)
-	  if (abs (inv(i, j)) > maxval)
-	    {
-	      r = i;
-	      maxval = abs (inv(i, j));
-	    }
-      
-	if (maxval < 1e-20)
-	  {
-	    throw Exception ("Inverse matrix: Matrix singular");
-	  }
-
-	// exchange rows
-	if (r > j)
-	  {
-	    for (int k = 0; k < n; k++)
-	      swap (inv(j,k), inv(r,k));
-	    swap (p[j], p[r]);
-	  }
-      
-
-	// transformation
-
-	CalcInverse (inv(j,j), hr);
-	for (int i = 0; i < n; i++)
-	  {
-	    T  h = inv(i,j) * hr;
-	    inv(i,j) = h;
-	  }
-	inv(j,j) = hr;
-
-
-	for (int k = 0; k < n; k++)
-	  if (k != j)
-	    {
-	      
-	      /*
-	      for (i = 0; i < n; i++)
-		if (i != j)
-		  {
-		    T h = inv(n*i+j) * inv(n*j+k);
-		    inv(n*i+k) -= h;
-		  }
-	      */
-	      T help = inv(n*j+k);
-	      for (int i = 0; i < j; i++)
-		{
-		  T h = inv(n*i+j) * help; // inv(n*j+k);
-		  inv(n*i+k) -= h;
-		}
-	      for (int i = j+1; i < n; i++)
-		{
-		  T h = inv(n*i+j) * help; // inv(n*j+k);
-		  inv(n*i+k) -= h;
-		}
-
-	      T h = hr * inv(j,k);   
-	      inv(j,k) = -h;
-	    }
-      }
-
-    // col exchange
-  
-    for (int i = 0; i < n; i++)
-      {
-	for (int k = 0; k < n; k++)
-	  hv(p[k]) = inv(i, k);
-	for (int k = 0; k < n; k++)
-	  inv(i, k) = hv(k);
-      }
-  }
-
-#else
-
-  template <class T, class T2>
-  void T_CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)
+  template <class T2>
+  // void T_CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)
+  void T_CalcInverse (FlatMatrix<T2> inv)
   {
     // Gauss - Jordan - algorithm
     // Algorithm of Stoer, Einf. i. d. Num. Math, S 145
-    int n = m.Height();
+    // int n = m.Height();
+    int n = inv.Height();
 
     ngstd::Array<int> p(n);   // pivot-permutation
 
-    T hr;
-    inv = m;
+    // inv = m;
 
     for (int j = 0; j < n; j++) p[j] = j;
     
@@ -171,11 +67,13 @@ namespace ngbla
       
 
 	// transformation
+	
 
+	T2 hr;
 	CalcInverse (inv(j,j), hr);
 	for (int i = 0; i < n; i++)
 	  {
-	    T  h = hr * inv(j, i);
+	    T2 h = hr * inv(j, i);
 	    inv(j, i) = h;
 	  }
 	inv(j,j) = hr;
@@ -184,47 +82,32 @@ namespace ngbla
 	for (int k = 0; k < n; k++)
 	  if (k != j)
 	    {
-	      /*
-	      for (int i = 0; i < n; i++)
-		if (i != j)
-		  {
-		    T h = inv(n*j+i) * inv(n*k+j);  // exchange both ?
-		    inv(n*k+i) -= h;
-		  }
-	      */
-
-	      T help = inv(n*k+j);
+	      T2 help = inv(n*k+j);
 	      for (int i = 0; i < j; i++)
 		{
-		  T h = help * inv(n*j+i); 
+		  T2 h = help * inv(n*j+i); 
 		  inv(n*k+i) -= h;
 		}
 	      for (int i = j+1; i < n; i++)
 		{
-		  T h = help * inv(n*j+i); 
+		  T2 h = help * inv(n*j+i); 
 		  inv(n*k+i) -= h;
 		}
 
-	      T h = inv(k,j) * hr;   
+	      T2 h = inv(k,j) * hr;   
 	      inv(k,j) = -h;
 	    }
       }
 
     // row exchange
   
-    Vector<T> hv(n);
+    Vector<T2> hv(n);
     for (int i = 0; i < n; i++)
       {
 	for (int k = 0; k < n; k++) hv(p[k]) = inv(k, i);
 	for (int k = 0; k < n; k++) inv(k, i) = hv(k);
       }
   }
-
-
-
-#endif
-
-
 
 
 
@@ -312,69 +195,47 @@ namespace ngbla
 
 #ifdef LAPACK
   template <>
-  void CalcInverse (const FlatMatrix<Complex> m, 
-                    FlatMatrix<Complex> inv)
+  void CalcInverse (FlatMatrix<Complex> inv)
   {
-    inv = m;
     LapackInverse (inv);
   }
 #endif
 
 
 
-  template <class T, class T2>
-  extern void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)
+  template <class T2>
+  extern void CalcInverse (FlatMatrix<T2> inv)
   {
-    T_CalcInverse (m, inv);
+    T_CalcInverse (inv);
+  }
+
+  extern NGS_DLL_HEADER void CalcInverse (FlatMatrix<double> inv)
+  {
+    T_CalcInverse (inv);
   }
 
 
-  extern NGS_DLL_HEADER void CalcInverse (const FlatMatrix<double> m, 
-					  FlatMatrix<double> inv)
-  {
-    T_CalcInverse (m, inv);
-  }
 
-
-
-  template void CalcInverse (const FlatMatrix<Mat<1,1,double> > m, 
-			     FlatMatrix<Mat<1,1,double> > inv);
-
-  template void CalcInverse (const FlatMatrix<Mat<2,2,double> > m, 
-			     FlatMatrix<Mat<2,2,double> > inv);
-  template void CalcInverse (const FlatMatrix<Mat<3,3,double> > m, 
-			     FlatMatrix<Mat<3,3,double> > inv);
-  template void CalcInverse (const FlatMatrix<Mat<4,4,double> > m, 
-			     FlatMatrix<Mat<4,4,double> > inv);
-  template void CalcInverse (const FlatMatrix<Mat<5,5,double> > m, 
-			     FlatMatrix<Mat<5,5,double> > inv);
-  template void CalcInverse (const FlatMatrix<Mat<6,6,double> > m, 
-			     FlatMatrix<Mat<6,6,double> > inv);
-  template void CalcInverse (const FlatMatrix<Mat<7,7,double> > m, 
-			     FlatMatrix<Mat<7,7,double> > inv);
-  template void CalcInverse (const FlatMatrix<Mat<8,8,double> > m, 
-			     FlatMatrix<Mat<8,8,double> > inv);
+  template void CalcInverse (FlatMatrix<Mat<1,1,double> > inv);
+  template void CalcInverse (FlatMatrix<Mat<2,2,double> > inv);
+  template void CalcInverse (FlatMatrix<Mat<3,3,double> > inv);
+  template void CalcInverse (FlatMatrix<Mat<4,4,double> > inv);
+  template void CalcInverse (FlatMatrix<Mat<5,5,double> > inv);
+  template void CalcInverse (FlatMatrix<Mat<6,6,double> > inv);
+  template void CalcInverse (FlatMatrix<Mat<7,7,double> > inv);
+  template void CalcInverse (FlatMatrix<Mat<8,8,double> > inv);
 
 
 #ifndef LAPACK
-  template void CalcInverse (const FlatMatrix<Complex> m, 
-                             FlatMatrix<Complex> inv);
+  template void CalcInverse (FlatMatrix<Complex> inv);
 #endif
 
-  template void CalcInverse (const FlatMatrix<Mat<1,1,Complex> > m, 
-			     FlatMatrix<Mat<1,1,Complex> > inv);
-  template void CalcInverse (const FlatMatrix<Mat<2,2,Complex> > m, 
-			     FlatMatrix<Mat<2,2,Complex> > inv);
-  template void CalcInverse (const FlatMatrix<Mat<3,3,Complex> > m, 
-			     FlatMatrix<Mat<3,3,Complex> > inv);
-  template void CalcInverse (const FlatMatrix<Mat<4,4,Complex> > m, 
-			     FlatMatrix<Mat<4,4,Complex> > inv);
-  template void CalcInverse (const FlatMatrix<Mat<5,5,Complex> > m, 
-			     FlatMatrix<Mat<5,5,Complex> > inv);
-  template void CalcInverse (const FlatMatrix<Mat<6,6,Complex> > m, 
-			     FlatMatrix<Mat<6,6,Complex> > inv);
-  template void CalcInverse (const FlatMatrix<Mat<7,7,Complex> > m, 
-			     FlatMatrix<Mat<7,7,Complex> > inv);
-  template void CalcInverse (const FlatMatrix<Mat<8,8,Complex> > m, 
-			     FlatMatrix<Mat<8,8,Complex> > inv);
+  template void CalcInverse (FlatMatrix<Mat<1,1,Complex> > inv);
+  template void CalcInverse (FlatMatrix<Mat<2,2,Complex> > inv);
+  template void CalcInverse (FlatMatrix<Mat<3,3,Complex> > inv);
+  template void CalcInverse (FlatMatrix<Mat<4,4,Complex> > inv);
+  template void CalcInverse (FlatMatrix<Mat<5,5,Complex> > inv);
+  template void CalcInverse (FlatMatrix<Mat<6,6,Complex> > inv);
+  template void CalcInverse (FlatMatrix<Mat<7,7,Complex> > inv);
+  template void CalcInverse (FlatMatrix<Mat<8,8,Complex> > inv);
 }
