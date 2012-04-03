@@ -416,6 +416,7 @@ namespace ngsolve
   void DefineCommand ();
   void NumProcCommand ();
   void CheckFlags (Flags & flags);
+  Flags ParseFlags ();
 
   
   static PDEScanner * scan;
@@ -1183,9 +1184,12 @@ namespace ngsolve
 
 	  string name = scan->GetStringValue ();
 	  scan->ReadNext();
+	  /*
 	  Flags flags;
 	  CheckFlags (flags);
 	  pde->AddFESpace (name, flags);
+	  */	  
+	  pde->AddFESpace (name, ParseFlags());
 	  break;
 	}
 
@@ -1666,6 +1670,13 @@ namespace ngsolve
       }
   }
 
+
+  Flags ParseFlags()
+  {
+    Flags flags;
+    CheckFlags (flags);
+    return flags;
+  }
 
   
   void BuildLineIntegratorCurvePoints ( const string filename,

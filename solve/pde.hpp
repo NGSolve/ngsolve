@@ -10,25 +10,34 @@
 namespace ngsolve
 {
 
+
   class EvalVariable : public NGS_Object
   {
   private:
     double * variable;
-
     EvalFunction evaluator;
-
-
   public:
-    EvalVariable(const MeshAccess & ama, const string & aname);
-
-    void SetVariable(double & avariable);
-
+    EvalVariable(const MeshAccess & ama, const string & aname)
+      : NGS_Object(ama,aname), variable(NULL)
+    { ; }
+      
+    void SetVariable(double & avariable)
+    { 
+      variable = &avariable; 
+    }
+    
     EvalFunction & GetEvaluator(void)
     {
       return evaluator;
     }
 
-    double Evaluate(void);
+    double Evaluate(void)
+    {
+      if(variable)
+	return *variable = evaluator.Eval((double*)(0));
+      else
+	return evaluator.Eval((double*)(0));
+    }
 
     virtual string GetClassName () const
     {
@@ -36,7 +45,6 @@ namespace ngsolve
     }
  
   };
-
 
 
   void BuildLineIntegratorCurvePoints ( const string filename,
@@ -202,7 +210,7 @@ namespace ngsolve
     ///
     void AddCoefficientFunction (const string & name, CoefficientFunction* fun);
     ///
-    FESpace * AddFESpace (const string & name, Flags & flags);
+    FESpace * AddFESpace (const string & name, const Flags & flags);
     ///
     void AddFESpace (const string & name, FESpace * space);
     ///

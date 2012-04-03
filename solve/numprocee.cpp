@@ -2,10 +2,6 @@
 
 namespace ngsolve
 {
-  using namespace ngsolve;
-  using namespace ngcomp; 
-  // using namespace ngbla;
-  // using namespace ngla;
 
   ///
   class NumProcZZErrorEstimator : public NumProc
@@ -17,18 +13,14 @@ namespace ngsolve
     GridFunction * gfu;
     ///
     GridFunction * gferr;
+    ///
     string filename; 
-
+    ///
     ofstream outfile;
 
   public:
     NumProcZZErrorEstimator (PDE & apde, const Flags & flags);
-    virtual ~NumProcZZErrorEstimator();
-
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcZZErrorEstimator (pde, flags);
-    }
+    virtual ~NumProcZZErrorEstimator() { ; }
 
     static void PrintDoc (ostream & ost);
     virtual void Do(LocalHeap & lh);
@@ -41,7 +33,6 @@ namespace ngsolve
   };
 
 
-
   NumProcZZErrorEstimator :: NumProcZZErrorEstimator (PDE & apde, const Flags & flags)
     : NumProc (apde)
   {
@@ -52,11 +43,7 @@ namespace ngsolve
     outfile.open (filename.c_str());
   }
 
-  NumProcZZErrorEstimator :: ~NumProcZZErrorEstimator()
-  {
-    ;
-  }
-  
+
   void NumProcZZErrorEstimator :: PrintDoc (ostream & ost)
   {
     ost << 
@@ -86,7 +73,6 @@ namespace ngsolve
     BilinearFormIntegrator * bfi = bfa->GetIntegrator(0);
 
     Flags fesflags;
-  
      
     if(bfa->GetFESpace().VarOrder())
       {
@@ -101,7 +87,6 @@ namespace ngsolve
 	cout << "Set Flux Space order " << order << endl;
 	fesflags.SetFlag("order", order);
       } 
-
     
     fesflags.SetFlag ("dim", bfi->DimFlux());
     if (bfa->GetFESpace().IsComplex())
@@ -109,22 +94,15 @@ namespace ngsolve
     
 
     *testout << " ************ ZZ ErrorEstimator fesflux " << endl; 
-    FESpace * fesflux = 
-      new H1HighOrderFESpace (ma, fesflags);
-    // new NodalFESpace (ma, fesflags);   // for low order fe
- 
-    
-    
+
+    FESpace * fesflux = new H1HighOrderFESpace (ma, fesflags);
     fesflux -> Update(lh);
 
-    Flags flags;
-    flags.SetFlag ("novisual");
-    GridFunction * flux = CreateGridFunction (fesflux, "fluxzz", flags);
+    GridFunction * flux = CreateGridFunction (fesflux, "fluxzz", 
+					      Flags().SetFlag("novisual"));
     flux->Update();
 
     FlatVector<double> err = gferr->GetVector().FV<double>();
-    // dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
-
     err = 0;
   
     int ndom = ma.GetNDomains();
@@ -135,19 +113,17 @@ namespace ngsolve
       }
 
     delete flux;
+
     double sum = 0;
-    for (int i = 0; i < err.Size(); i++)
+    for (int i = 0; i < err.Size(); i++) 
       sum += err(i);
+
     cout << " estimated error = " << sqrt (sum) << endl;
 
     outfile << ma.GetNLevels() 
-	   << "  "<< bfa->GetFESpace().GetNDof() 
-	   << " " << sqrt(sum) << endl;
-       
+	    << "  "<< bfa->GetFESpace().GetNDof() 
+	    << " " << sqrt(sum) << endl;
   }
-
-
-
 
   void NumProcZZErrorEstimator :: PrintReport (ostream & ost)
   {
@@ -194,10 +170,6 @@ namespace ngsolve
     NumProcDifference (PDE & apde, const Flags & flags);
     virtual ~NumProcDifference();
 
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcDifference (pde, flags);
-    }
 
     static void PrintDoc (ostream & ost);
     virtual void Do(LocalHeap & lh);
@@ -278,14 +250,11 @@ namespace ngsolve
   {
     cout << "Compute difference" << endl;
 
-    
-
     if (bfa1->NumIntegrators() == 0)
       throw Exception ("Difference: Bilinearform1 needs an integrator");
 
     BilinearFormIntegrator * bfi1 = bfa1->GetIntegrator(0);
     FlatVector<double> diff = gfdiff->GetVector().FV<double> ();
-      // dynamic_cast<T_BaseVector<double>&> (gfdiff->GetVector()).FV();
     diff = 0;
 
     int ndom = ma.GetNDomains();
@@ -372,11 +341,6 @@ namespace ngsolve
     NumProcRTZZErrorEstimator (PDE & apde, const Flags & flags);
     virtual ~NumProcRTZZErrorEstimator();
   
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcRTZZErrorEstimator (pde, flags);
-    }
-
     virtual void Do(LocalHeap & lh);
     virtual void PrintReport (ostream & ost);
 
@@ -415,18 +379,16 @@ namespace ngsolve
     if (bfa->GetFESpace().IsComplex())
       fesflags.SetFlag ("complex");
 
-    HDivHighOrderFESpace & fesflux = 
-      *new HDivHighOrderFESpace (ma, fesflags);
+    HDivHighOrderFESpace * fesflux = new HDivHighOrderFESpace (ma, fesflags);
+    fesflux -> Update(lh);
 
-    fesflux.Update(lh);
-
-    Flags flags;
-    flags.SetFlag ("novisual");
-    GridFunction * flux = CreateGridFunction (&fesflux, "fluxzz", flags);
+    // Flags flags;
+    // flags.SetFlag ("novisual");
+    GridFunction * flux = CreateGridFunction (fesflux, "fluxzz", 
+					      Flags().SetFlag("novisual"));
     flux->Update();
 
     FlatVector<double> err = gferr->GetVector().FV<double>();
-      // dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
 
     err = 0;
 
@@ -435,7 +397,7 @@ namespace ngsolve
 
 
     delete flux;
-    delete &fesflux;
+    delete fesflux;
 
     double sum = 0;
     for (int i = 0; i < err.Size(); i++)
@@ -494,10 +456,12 @@ namespace ngsolve
       ;
     }
   
+    /*
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
       return new NumProcHierarchicalErrorEstimator (pde, flags);
     }
+    */
 
     virtual void Do(LocalHeap & lh)
     {
@@ -566,12 +530,7 @@ namespace ngsolve
     ///
     NumProcMarkElements (PDE & apde, const Flags & flags);
     ///
-    virtual ~NumProcMarkElements();
-
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcMarkElements (pde, flags);
-    }
+    virtual ~NumProcMarkElements() { ; }
     ///
     virtual void Do(LocalHeap & lh);
     ///
@@ -600,11 +559,6 @@ namespace ngsolve
     factor = flags.GetNumFlag ("factor", 0.5);
   }
 
-  NumProcMarkElements :: ~NumProcMarkElements()
-  {
-    ;
-  }
-
   void NumProcMarkElements :: Do(LocalHeap & lh)
   {
     cout << "Element marker, " << flush;
@@ -615,10 +569,7 @@ namespace ngsolve
 	return;
       }
 
-
-    int i;
     FlatVector<double> err = gferr->GetVector().FV<double> ();
-      // dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
 
     double maxerr = 0;
     double toterr = 0;
@@ -626,9 +577,8 @@ namespace ngsolve
     if (gferr2)
       {
 	const FlatVector<double> & err2 = gferr2->GetVector().FV<double>();
-	// dynamic_cast<T_BaseVector<double>&> (gferr2->GetVector()).FV();
       
-	for (i = 0; i < err.Size(); i++)
+	for (int i = 0; i < err.Size(); i++)
 	  {
 	    err(i) = sqrt (err(i) * err2(i));
 
@@ -640,7 +590,7 @@ namespace ngsolve
       }
     else
       {
-	for (i = 0; i < err.Size(); i++)
+	for (int i = 0; i < err.Size(); i++)
 	  {
 	    toterr += err(i);
 	    if (err(i) > maxerr) maxerr = err(i);
@@ -660,7 +610,7 @@ namespace ngsolve
 	double markerr = 0;
 	nref = 0;
 
-	for (i = 0; i < err.Size(); i++)
+	for (int i = 0; i < err.Size(); i++)
 	  {
 	    if (err(i) > fac * maxerr)
 	      {
@@ -675,13 +625,7 @@ namespace ngsolve
 	      }
 	  }
 
-
-	//cout << "fac = " << fac << ", nmark = " << nref 
-	//  << ", markerr = " << markerr << ", toterr = " << toterr << endl;
-
-
 	if (markerr >= factor * toterr) break;
-	//if(nref >= factor*err.Size()) break;
       }
 
     /*
@@ -694,11 +638,6 @@ namespace ngsolve
 	    Ng_SetSurfaceRefinementFlag(i+1,1);
       }
     */
-
-	
-    
-
-    
 
     /*
     (*testout) << "toterr = " << toterr << " marked: " << endl;
@@ -719,9 +658,6 @@ namespace ngsolve
       }
 	  
   }
-
-
-
 
   void NumProcMarkElements :: PrintReport (ostream & ost)
   {
@@ -745,13 +681,6 @@ Flags visflags;
     ///
     virtual ~NumProcSetVisual ();
 
-    ///
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcSetVisual (pde, flags);
-    }
-
-    ///
     virtual void Do(LocalHeap & lh);
   };
 
@@ -820,16 +749,11 @@ Flags visflags;
     GridFunction * gferr;
   public:
     NumProcPrimalDualErrorEstimator (PDE & apde, const Flags & flags);
-    virtual ~NumProcPrimalDualErrorEstimator();
-  
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcPrimalDualErrorEstimator (pde, flags);
-    }
+    virtual ~NumProcPrimalDualErrorEstimator() { ; }
 
     virtual void Do(LocalHeap & lh);
     virtual void PrintReport (ostream & ost);
-    virtual void PrintDoc (ostream & ost);
+    static void PrintDoc (ostream & ost);
 
     virtual string GetClassName () const
     {
@@ -848,10 +772,6 @@ Flags visflags;
     gferr = pde.GetGridFunction (flags.GetStringFlag ("error", ""));
   }
 
-  NumProcPrimalDualErrorEstimator :: ~NumProcPrimalDualErrorEstimator()
-  {
-    ;
-  }
 
   void NumProcPrimalDualErrorEstimator :: Do(LocalHeap & lh)
   {
@@ -901,18 +821,21 @@ Flags visflags;
   }
 
 
-
-
-
-
-
-
-
   
+  static RegisterNumProc<NumProcZZErrorEstimator> npinitzz("zzerrorestimator");
+  static RegisterNumProc<NumProcRTZZErrorEstimator> npinitrtzz("rtzzerrorestimator");
+
+  static RegisterNumProc<NumProcHierarchicalErrorEstimator> npinithieree("hierarchicalerrorestimator");
+  static RegisterNumProc<NumProcPrimalDualErrorEstimator> npinitpdee("primaldualerrorestimator");  
+
+  static RegisterNumProc<NumProcDifference> npinitdiff("difference");
+  static RegisterNumProc<NumProcMarkElements> npinitmark("markelements");
+
 
 
   namespace numprocee_cpp
   {
+  /*
     class Init
     { 
     public: 
@@ -921,19 +844,18 @@ Flags visflags;
     
     Init::Init()
     {
-      GetNumProcs().AddNumProc ("zzerrorestimator", NumProcZZErrorEstimator::Create, NumProcZZErrorEstimator::PrintDoc);
-      GetNumProcs().AddNumProc ("difference", NumProcDifference::Create, NumProcDifference::PrintDoc);
+      // GetNumProcs().AddNumProc ("zzerrorestimator", NumProcZZErrorEstimator::Create, NumProcZZErrorEstimator::PrintDoc);
+      // GetNumProcs().AddNumProc ("difference", NumProcDifference::Create, NumProcDifference::PrintDoc);
 //       GetNumProcs().AddNumProc ("difference_exact", NumProcDifferenceExact::Create, NumProcDifferenceExact::PrintDoc);
-      GetNumProcs().AddNumProc ("rtzzerrorestimator", NumProcRTZZErrorEstimator::Create);
-      GetNumProcs().AddNumProc ("hierarchicalerrorestimator", 
-				NumProcHierarchicalErrorEstimator::Create);
-      GetNumProcs().AddNumProc ("primaldualerrorestimator", 
-				NumProcPrimalDualErrorEstimator::Create);
-      GetNumProcs().AddNumProc ("markelements", NumProcMarkElements::Create);    }
+      // GetNumProcs().AddNumProc ("rtzzerrorestimator", NumProcRTZZErrorEstimator::Create);
+      // GetNumProcs().AddNumProc ("hierarchicalerrorestimator", NumProcHierarchicalErrorEstimator::Create);
+      // GetNumProcs().AddNumProc ("primaldualerrorestimator", NumProcPrimalDualErrorEstimator::Create);
+      // GetNumProcs().AddNumProc ("markelements", NumProcMarkElements::Create);    }
     
     
     Init init;
+  */
+
     int link_it;
   }
-  
 }

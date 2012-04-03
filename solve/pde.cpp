@@ -10,9 +10,8 @@ namespace ngfem
 
 namespace ngsolve
 {
-  using namespace ngsolve;
 
-
+  /*
   EvalVariable :: EvalVariable(const MeshAccess & ama, const string & aname)
     : NGS_Object(ama,aname)
   {
@@ -34,7 +33,7 @@ namespace ngsolve
     else
       return evaluator.Eval((double*)(0));
   }
-
+  */
 
 
 
@@ -302,11 +301,9 @@ namespace ngsolve
   { 
     if (constants.Used(name))
       return constants[name]; 
-    if (opt) return 0;
 
-    stringstream str;
-    str << "Constant '" << name << "' not defined\n";
-    throw Exception (str.str());
+    if (opt) return 0;
+    throw Exception (string ("Constant '") + name + "' not defined\n");
   }
 
   bool PDE ::
@@ -320,11 +317,9 @@ namespace ngsolve
   { 
     if (string_constants.Used(name))
       return *string_constants[name]; 
-    if (opt) return string("");
 
-    stringstream str;
-    str << "String constant '" << name << "' not defined\n";
-    throw Exception (str.str());
+    if (opt) return string("");
+    throw Exception (string ("String onstant '") + name + "' not defined\n");
   }
 
   bool PDE ::
@@ -341,10 +336,7 @@ namespace ngsolve
 
     static double dummy;
     if (opt) return dummy;
-
-    stringstream str;
-    str << "Variable '" << name << "' not defined\n";
-    throw Exception (str.str());
+    throw Exception (string ("Variable '") + name + "' not defined\n");
   }
 
   CoefficientFunction * PDE :: 
@@ -454,10 +446,7 @@ namespace ngsolve
       return bilinearforms[name]; 
 
     if (opt) return 0;
-    cout << "name = (" << name << ")" << endl;
-    stringstream str;
-    str << "Bilinear-form '" << name << "' not defined\n";
-    throw Exception (str.str());
+    throw Exception (string("Bilinear-form '") + name + "' not defined\n");
   }
 
   const LinearForm * PDE :: 
@@ -467,9 +456,7 @@ namespace ngsolve
       return linearforms[name]; 
 
     if (opt) return 0;
-    stringstream str;
-    str << "Linear-form '" << name << "' not defined\n";
-    throw Exception (str.str());
+    throw Exception (string("Linear-form '") + name + "' not defined\n");
   }
 
   const Preconditioner * PDE :: 
@@ -519,9 +506,6 @@ namespace ngsolve
 
     MyMPI_Barrier();
 
-    // bool solvebvpstd = true;
-    // if(solvebvpstd)
-    // {
     static Timer meshtimer("Mesh adaption");
     meshtimer.Start();
     
@@ -594,7 +578,7 @@ namespace ngsolve
 		    
 
 
-    for(int i=0; i<todo.Size(); i++)
+    for(int i = 0; i < todo.Size(); i++)
       {
 	EvalVariable * ev = dynamic_cast<EvalVariable *>(todo[i]);
 	FESpace * fes = dynamic_cast<FESpace *>(todo[i]);
@@ -948,9 +932,11 @@ namespace ngsolve
 
 
 
-  FESpace * PDE :: AddFESpace (const string & name, Flags & flags)
+  FESpace * PDE :: AddFESpace (const string & name, const Flags & hflags)
   {
     cout << IM(1) << "add fespace " << name << endl;
+
+    Flags flags = hflags;
 
     FESpace * space = 0;
     if (flags.GetDefineFlag ("vec")) 
@@ -1230,17 +1216,7 @@ namespace ngsolve
 	// changed 08/19/2003, Bachinger
 	else if (strcmp (type, "nonsymmetric") == 0)
 	  pre = new NonsymmetricPreconditioner (this, flags, name);
-        /*
-	  else if (strcmp (type, "wirebasket" ) == 0 )
-	  {
-	  const BilinearForm * bfa = 
-	  GetBilinearForm(flags.GetStringFlag("bilinearform", "") );
-	  if ( bfa -> GetFESpace() . IsComplex() )
-	  pre = new WireBasketPreconditioner<Complex>(this, flags, name);
-	  else
-	  pre = new WireBasketPreconditioner<double>(this, flags, name);
-	  }
-        */
+
 	else
 	  for (int i = 0; i < GetPreconditionerClasses().GetPreconditioners().Size(); i++)
 	    {
