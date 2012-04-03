@@ -13,9 +13,6 @@
 
 namespace ngsolve
 {
-  using namespace ngsolve;
-
-
 
   NumProc :: NumProc (PDE & apde, const int acallposition)
     : NGS_Object (apde.GetMeshAccess(), "numproc"), pde(apde)
@@ -27,18 +24,6 @@ namespace ngsolve
   {
     ;
   }
-
-  /*
-  void NumProc :: Do()
-  {
-    ;
-  }
-
-  void NumProc :: Do (LocalHeap & lh)
-  {
-    Do();
-  }
-  */
 
   void NumProc :: PrintReport (ostream & ost)
   {
@@ -81,12 +66,7 @@ namespace ngsolve
     ///
     NumProcCalcFlux (PDE & apde, const Flags & flags);
     ///
-    virtual ~NumProcCalcFlux();
-
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcCalcFlux (pde, flags);
-    }
+    virtual ~NumProcCalcFlux() { ; }
 
     static void PrintDoc (ostream & ost);
 
@@ -126,11 +106,6 @@ namespace ngsolve
     domain = static_cast<int>(flags.GetNumFlag("domain",0))-1;
   }
 
-
-  NumProcCalcFlux :: ~NumProcCalcFlux()
-  {
-    ;
-  }
 
   void NumProcCalcFlux :: PrintDoc (ostream & ost)
   {
@@ -187,7 +162,7 @@ namespace ngsolve
 
 
 
-  /* ***************************** Numproc CalcFlux ************************** */
+  /* ***************************** Numproc SetValues ************************** */
 
 
 
@@ -217,10 +192,6 @@ namespace ngsolve
     ///
     virtual ~NumProcSetValues() { ; }
 
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcSetValues (pde, flags);
-    }
 
     static void PrintDoc (ostream & ost)
     {
@@ -250,7 +221,7 @@ namespace ngsolve
       SetValues (pde.GetMeshAccess(), *coef, 
 		 *hgfu, boundary, 0, lh);
 
-      *testout << "setvalues: gfu = " << endl << gfu->GetVector() << endl;
+      // *testout << "setvalues: gfu = " << endl << gfu->GetVector() << endl;
       
       if (component != -1)
 	delete hgfu;
@@ -297,7 +268,7 @@ namespace ngsolve
     ///
     NumProcDrawFlux (PDE & apde, const Flags & flags);
     ///
-    virtual ~NumProcDrawFlux();
+    virtual ~NumProcDrawFlux() { ; }
 
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
@@ -401,22 +372,11 @@ namespace ngsolve
     Ng_SetSolutionData (&soldata);
   }
 
-  NumProcDrawFlux :: ~NumProcDrawFlux()
-  {
-    ;
-  }
 
   void NumProcDrawFlux :: Do(LocalHeap & lh)
   {
     // cout << "Num-proc draw flux" << endl;
   }
-
-
-
-
-
-
-
 
 
 
@@ -497,7 +457,7 @@ namespace ngsolve
     ///
     NumProcEvaluate (PDE & apde, const Flags & flags);
     ///
-    virtual ~NumProcEvaluate();
+    virtual ~NumProcEvaluate() { ; }
 
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
@@ -596,11 +556,6 @@ namespace ngsolve
       outputprecision = int(flags.GetNumFlag("outputprecision",-1));
 
     component = static_cast<int>(flags.GetNumFlag("cachecomp",1))-1;
-  }
-
-  NumProcEvaluate :: ~NumProcEvaluate()
-  {
-    ;
   }
 
 
@@ -2378,12 +2333,14 @@ namespace ngsolve
     ///
     NumProcVisualization (PDE & apde, const Flags & flags);
     ///
-    virtual ~NumProcVisualization();
+    virtual ~NumProcVisualization() { ; }
 
+    /*
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
       return new NumProcVisualization (pde, flags);
     }
+    */
 
     static void PrintDoc (ostream & ost);
 
@@ -2638,7 +2595,6 @@ namespace ngsolve
     delete [] dummy;
   }
   
-  NumProcVisualization :: ~NumProcVisualization(){;}
   
   void NumProcVisualization :: PrintDoc (ostream & ost)
   {
@@ -2897,7 +2853,6 @@ namespace ngsolve
   }
 
 
-
  
   NumProcs & GetNumProcs ()
   {
@@ -2908,7 +2863,9 @@ namespace ngsolve
 
   // standard numprocs:
 
-  static RegisterNumProc<NumProcSetValues> npinitbvp("setvalues");
+  static RegisterNumProc<NumProcSetValues> npinitsetvlues("setvalues");
+  static RegisterNumProc<NumProcCalcFlux> npinitcalcflux("calcflux");
+  static RegisterNumProc<NumProcVisualization> npinitvisual("visualization");
 
 
 
@@ -2922,7 +2879,7 @@ namespace ngsolve
     
     Init::Init()
     {
-      GetNumProcs().AddNumProc ("calcflux", NumProcCalcFlux::Create, NumProcCalcFlux::PrintDoc);
+      // GetNumProcs().AddNumProc ("calcflux", NumProcCalcFlux::Create, NumProcCalcFlux::PrintDoc);
       // GetNumProcs().AddNumProc ("setvalues", NumProcSetValues::Create, NumProcSetValues::PrintDoc);
       GetNumProcs().AddNumProc ("drawflux", NumProcDrawFlux::Create, NumProcDrawFlux::PrintDoc);
       GetNumProcs().AddNumProc ("evaluate", NumProcEvaluate::Create, NumProcEvaluate::PrintDoc);
@@ -2930,7 +2887,7 @@ namespace ngsolve
       GetNumProcs().AddNumProc ("warn", NumProcWarn::Create, NumProcWarn::PrintDoc);
       GetNumProcs().AddNumProc ("tcltable", NumProcTclTable::Create, NumProcTclTable::PrintDoc);
       GetNumProcs().AddNumProc ("tclmenu", NumProcTclMenu::Create, NumProcTclMenu::PrintDoc);
-      GetNumProcs().AddNumProc ("visualization", NumProcVisualization::Create, NumProcVisualization::PrintDoc);
+      // GetNumProcs().AddNumProc ("visualization", NumProcVisualization::Create, NumProcVisualization::PrintDoc);
       GetNumProcs().AddNumProc ("loadsolution", NumProcLoadSolution::Create, NumProcLoadSolution::PrintDoc);
 #ifdef ASTRID
       GetNumProcs().AddNumProc ("loadzipsolution", NumProcLoadZipSolution::Create, NumProcLoadZipSolution::PrintDoc);

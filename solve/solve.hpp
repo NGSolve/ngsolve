@@ -42,11 +42,8 @@ namespace ngsolve
   using namespace ngfem;
   using namespace ngcomp;
   using namespace ngmg;
-
-// #ifdef SOCKETS
-// #include "../markus/clientsocketaccess.hpp"
-// #endif
 }
+
 
 #include "numproc.hpp"
 #include "pde.hpp"

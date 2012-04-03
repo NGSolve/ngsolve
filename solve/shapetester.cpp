@@ -12,8 +12,6 @@
 
 namespace ngsolve
 {
-  using namespace ngsolve;
-
   int NGS_DrawShape (ClientData clientData,
 		     Tcl_Interp * interp,
 		     int argc, tcl_const char *argv[]);
@@ -39,7 +37,6 @@ namespace ngsolve
       : NumProc (apde)
     {
       gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
-      // bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
       dof = int(flags.GetNumFlag ("dof", 0));
 
       Tcl_Eval (pde.tcl_interpreter,
@@ -64,16 +61,8 @@ namespace ngsolve
     }
 
     ///
-    virtual ~NumProcShapeTester()
-    {
-      ;
-    }
+    virtual ~NumProcShapeTester() { ; }
     
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcShapeTester (pde, flags);
-    }
-
     void SetDof (int adof)
     {
       dof = adof;
@@ -102,7 +91,6 @@ namespace ngsolve
       Ng_Redraw ();
     }
 
-
     ///
     virtual string GetClassName () const
     {
@@ -114,7 +102,10 @@ namespace ngsolve
       ;
     }
 
-    static void PrintDoc (ostream & ost);
+    static void PrintDoc (ostream & ost)
+    {
+      ;
+    }
   };
 
 
@@ -129,24 +120,5 @@ namespace ngsolve
   }
 
 
-
-
-
-  namespace
-  {
-    class Init
-    { 
-    public: 
-      Init ();
-    };
-    
-    Init::Init()
-    {
-      GetNumProcs().AddNumProc ("shapetester", NumProcShapeTester::Create);
-    }
-    
-    
-    Init init;
-    
-  }
+  static RegisterNumProc<NumProcShapeTester> npinitshapetester("shapetester");
 }
