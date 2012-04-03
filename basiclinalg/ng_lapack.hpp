@@ -952,17 +952,23 @@ namespace ngbla
 
   inline void LapackInverse (ngbla::FlatMatrix<double> a)
   { 
+    CalcInverse (a);
+    /*
     ngbla::Matrix<> hm(a.Height());
     CalcInverse (a, hm);
     a = hm;
+    */
   }
 
   inline void LapackInverse (ngbla::FlatMatrix<ngbla::Complex> a)
   { 
+    CalcInverse (a);
+    /*
     // std::cerr << "sorry, Inverse not available without LAPACK" << std::endl;
     ngbla::Matrix<Complex> hm(a.Height());
     CalcInverse (a, hm);
     a = hm;
+    */
   }
 
   inline void LapackAInvBt (ngbla::FlatMatrix<double> a, ngbla::FlatMatrix<double> b, char trans = 'N')
