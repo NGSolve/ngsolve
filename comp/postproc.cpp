@@ -10,17 +10,8 @@
 
 #include <comp.hpp>
 
-// #include <solve.hpp>
-// #include <fem.hpp>
-// extern PDE * pde;
-// extern ngstd::AutoPtr<ngsolve::PDE> pde;
-
-
 namespace ngcomp
 { 
-  using namespace ngcomp;
-
-
 
   template <class SCAL>
   void CalcFluxProject (const MeshAccess & ma, 
@@ -75,29 +66,23 @@ namespace ngcomp
 	      }
 	  }
 
-	  int eldom = 
-	    bound ? ma.GetSElIndex(i) : ma.GetElIndex(i);
+	  int eldom = bound ? ma.GetSElIndex(i) : ma.GetElIndex(i);
 	  
 	  if(!domains[eldom])
 	    continue;
 	  
-	  const FiniteElement & fel = 
-	    bound ? fes.GetSFE(i, lh) : fes.GetFE (i, lh);
-	  
-	  const FiniteElement & felflux = 
-	    bound ? fesflux.GetSFE(i, lh) : fesflux.GetFE (i, lh);
+	  const FiniteElement & fel = fes.GetFE (i, bound, lh);
+	  const FiniteElement & felflux = fesflux.GetFE (i, bound, lh);
 	  
 	  ElementTransformation & eltrans = ma.GetTrafo (i, bound, lh);
 	  
 	  if (bound)
 	    {
-	      // ma.GetSurfaceElementTransformation (i, eltrans, lh);
 	      fes.GetSDofNrs (i, dnums);
 	      fesflux.GetSDofNrs (i, dnumsflux);
 	    }
 	  else
 	    {
-	      // ma.GetElementTransformation (i, eltrans, lh);
 	      fes.GetDofNrs (i, dnums);
 	      fesflux.GetDofNrs (i, dnumsflux);
 	    }
