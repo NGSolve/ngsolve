@@ -879,13 +879,13 @@ public:
     vectorial = (N > 1) && (N == acoef->Dimension());
     coefs[0] = acoef;
   }
-
+  /*
   DVec (CoefficientFunction * acoef1,
 	CoefficientFunction * acoef2)
   { 
     vectorial = false;
     coefs[0] = acoef1;
-    coefs[1] = acoef2;
+    if (N >= 2) coefs[1] = acoef2;
   }
 
   DVec (CoefficientFunction * acoef1,
@@ -895,26 +895,26 @@ public:
     vectorial = false;
 
     coefs[0] = acoef1;
-    coefs[1] = acoef2;
-    coefs[2] = acoef3;
+    if (N >= 2) coefs[1] = acoef2;
+    if (N >= 3) coefs[2] = acoef3;
   }
-
+  */
 
   DVec (CoefficientFunction * acoef1,
 	CoefficientFunction * acoef2,
-	CoefficientFunction * acoef3,
-	CoefficientFunction * acoef4,
-	CoefficientFunction * acoef5,
-	CoefficientFunction * acoef6)
+	CoefficientFunction * acoef3 = NULL,
+	CoefficientFunction * acoef4 = NULL,
+	CoefficientFunction * acoef5 = NULL,
+	CoefficientFunction * acoef6 = NULL)
   { 
     vectorial = false;
 
     coefs[0] = acoef1;
     coefs[1] = acoef2;
-    coefs[2] = acoef3;
-    coefs[3] = acoef4;
-    coefs[4] = acoef5;
-    coefs[5] = acoef6;
+    if (N >= 3) coefs[2] = acoef3;
+    if (N >= 4) coefs[3] = acoef4;
+    if (N >= 5) coefs[4] = acoef5;
+    if (N >= 6) coefs[5] = acoef6;
   }
     
 
@@ -928,11 +928,6 @@ public:
 
     if (vectorial)
       {
-	/*
-	Vec<N,TSCAL> hv;
-	coefs[0] -> Evaluate (mip, hv);
-	vec = hv;
-	*/
 	coefs[0] -> Evaluate (mip, vec);
       }
     else
