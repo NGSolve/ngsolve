@@ -778,7 +778,7 @@ namespace ngla
     static Timer timer ("Pardiso Solve");
     RegionTimer reg (timer);
 
-    FlatVector<TVX> fx = x.FV<TVX> ();
+    // FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
 
