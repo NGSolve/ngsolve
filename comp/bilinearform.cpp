@@ -10,8 +10,8 @@ namespace ngcomp
 
   // dummy function header 
   void CalcEigenSystem (FlatMatrix<Complex> & elmat, 
-			FlatVector<> & lami, 
-			FlatMatrix<> & evecs)
+			FlatVector<Complex> & lami, 
+			FlatMatrix<Complex> & evecs)
   { ; }
 
 
@@ -751,17 +751,7 @@ namespace ngcomp
 				    }
 
 				  if (elmat_ev)
-				    {
-#ifdef LAPACK
-				      LapackEigenSystem(elmat, lh);
-#else
-				      Vector<> lami(elmat.Height());
-				      Matrix<> evecs(elmat.Height());
-			      
-				      CalcEigenSystem (elmat, lami, evecs);
-				      (*testout) << "lami = " << endl << lami << endl;
-#endif
-				    } 
+				    LapackEigenSystem(elmat, lh);
 				}
 			      catch (Exception & e)
 				{
@@ -789,15 +779,7 @@ namespace ngcomp
 			  if (elmat_ev)
 			    {
 			      (*testout) << "sum matrix:" << endl;
-#ifdef LAPACK
 			      LapackEigenSystem(sum_elmat, lh);
-#else
-			      Vector<> lami(sum_elmat.Height());
-			      Matrix<> evecs(sum_elmat.Height());
-			
-			      CalcEigenSystem (sum_elmat, lami, evecs);
-			      (*testout) << "lami = " << endl << lami << endl ;
-#endif
 			    }
 
 
@@ -855,7 +837,7 @@ namespace ngcomp
 				  d = sum_elmat.Rows(idofs).Cols(idofs);
 
 
-#ifdef LAPACK
+
 				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizei*sizei/3);  // LU fact
 				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizei*sizeo);  
 				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizeo*sizeo);  
@@ -878,7 +860,7 @@ namespace ngcomp
 
 				      LapackInverse (d);
 				      FlatMatrix<SCAL> he (sizei, sizeo, lh);
-				      he=0.0;
+				      he = 0.0;
 				      LapackMultAddABt (d, c, -1, he);
 				      // he = -1.0 * d * Trans(c);
 				      harmonicext ->AddElementMatrix(i,idnums,ednums,he);
@@ -892,38 +874,12 @@ namespace ngcomp
 					  static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)
 					    ->AddElementMatrix(i,ednums,idnums,het);
 					}
+
 				      innersolve ->AddElementMatrix(i,idnums,idnums,d);
-				      
+
 				      LapackMultAddAB (b, he, 1.0, a);
 				    }				  
-#else
-				  FlatMatrix<SCAL> invd(sizei, sizei, lh);
-				  FlatMatrix<SCAL> idc(sizeo, sizei, lh);
-				  CalcInverse (d, invd);
-				  if (keep_internal) 
-				    { 
-				      ArrayMem<int,50> idnums;
-				      ArrayMem<int,50> ednums;
-				      fespace.GetDofNrs(i,idnums,LOCAL_DOF);
-				      fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
-				      if (store_inner)
-					static_cast<ElementByElementMatrix<SCAL>*>(innermatrix)->AddElementMatrix(i,idnums,idnums,d);
-				      d = invd;
-				      FlatMatrix<SCAL> he (sizei, sizeo, lh);
-				      he = -1.0 * invd * Trans(c);
-				      static_cast<ElementByElementMatrix<SCAL>*>(harmonicext)->AddElementMatrix(i,idnums,ednums,he);
-				      if (!symmetric){
-					FlatMatrix<SCAL> het (sizeo, sizei, lh);
-					het = -1.0 * b * invd;
-					static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)->AddElementMatrix(i,ednums,idnums,het);
-				      }
-				      static_cast<ElementByElementMatrix<SCAL>*>(innersolve)->AddElementMatrix(i,idnums,idnums,d);
-				    }
-				  
-				  idc = c * Trans (invd);
-				  a -= b * Trans (idc);
-				  
-#endif
+
 				  if (printelmat) 
 				    {
 				      testout->precision(8);
@@ -935,49 +891,23 @@ namespace ngcomp
 				      testout->precision(8);
 				
 				      (*testout) << "EV of Schur complement:" << endl;
-#ifdef LAPACK
-				      // LapackEigenSystem(a, lh);
-
-				      Matrix<SCAL> hmat(a.Height());
-				      Vector<SCAL> lami2(a.Height());
-				      hmat = a;
-				      LapackEigenValuesSymmetric (hmat, lami2);
-				      (*testout) << "lapack ev = " << lami2 << endl;
-
-#else
-				      Vector<> lami(a.Height());
-				      Matrix<> evecs(a.Height());
-				
-				      CalcEigenSystem (a, lami, evecs);
-				      (*testout) << "lami = " << endl << lami << endl; // << "evecs = " << endl << evecs << endl;
-#endif
-				
+				      LapackEigenSystem(a, lh);
 				    }
 				  
 				  sum_elmat.Rows(odofs).Cols(odofs) = a;
-				  if (linearform && (!keep_internal ))
+				  if (linearform && (!keep_internal))
 				    {
 				      
 				      FlatVector<SCAL> elvec (size, lh);
 				      linearform -> GetVector().GetIndirect (dnums, elvec);
-				      FlatVector<SCAL> hfi1(sizei, lh);
-				      FlatVector<SCAL> hfi2(sizei, lh);
+				      FlatVector<SCAL> hfi(sizei, lh);
 				      FlatVector<SCAL> hfo(sizeo, lh);
 				      
-				      for (int k = 0; k < idofs.Size(); k++)
-					hfi1(k) = elvec(idofs[k]);
-				      
-#ifdef LAPACK
-				      hfo = b * hfi1;
-#else
-				      hfi2 = d * hfi1;
-				      hfo = b * hfi2;
-#endif
-				      for (int k = 0; k < odofs.Size(); k++)
-					elvec(odofs[k]) -= hfo(k);
-				      
+				      hfi = elvec(idofs);
+				      hfo = b * hfi;
+				      elvec(odofs) -= hfo;
+
 				      linearform->GetVector().SetIndirect (dnums, elvec);
-				      
 				    }
 
 				  for (int k = 0; k < idofs1.Size(); k++)
@@ -1248,24 +1178,9 @@ namespace ngcomp
 			  if (elmat_ev)
 			    {
 			      testout->precision(8);
-			      
 			      (*testout) << "elind = " << eltrans.GetElementIndex() << endl;
-#ifdef LAPACK
 			      LapackEigenSystem(elmat, lh);
-#else
-			      Vector<> lami(elmat.Height());
-			      Matrix<> evecs(elmat.Height());
-			      
-			      CalcEigenSystem (elmat, lami, evecs);
-			      (*testout) << "lami = " << endl << lami << endl;
-#endif
-			      // << "evecs = " << endl << evecs << endl;
 			    }
-			  
-			  // 			for(int k=0; k<elmat.Height(); k++)
-			  // 			  if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
-			  // 			    cout << "dnums " << dnums << " elmat " << elmat << endl; 
-			  
 			  
 			  sumelmat += elmat;
 			}
@@ -1380,8 +1295,8 @@ namespace ngcomp
 #ifdef LAPACK
 			      LapackEigenSystem(elmat, lh);
 #else
-			      Vector<> lami(elmat.Height());
-			      Matrix<> evecs(elmat.Height());
+			      Vector<SCAL> lami(elmat.Height());
+			      Matrix<SCAL> evecs(elmat.Height());
 			
 			      CalcEigenSystem (elmat, lami, evecs);
 			      (*testout) << "lami = " << endl << lami << endl;
@@ -1529,8 +1444,8 @@ namespace ngcomp
 #ifdef LAPACK
                               LapackEigenSystem(elmat, lh);
 #else
-                              Vector<> lami(elmat.Height());
-                              Matrix<> evecs(elmat.Height());
+                              Vector<SCAL> lami(elmat.Height());
+                              Matrix<SCAL> evecs(elmat.Height());
 			    
                               CalcEigenSystem (elmat, lami, evecs);
                               (*testout) << "lami = " << endl << lami << endl;
@@ -3098,14 +3013,16 @@ cout << "catch in AssembleBilinearform 2" << endl;
             static int elementtimer = NgProfiler::CreateTimer ("Element matrix application");
             NgProfiler::StartTimer (elementtimer);
 	    
-	    
+	    /*
             if (this->precompute)
               // bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 
                                       this->precomputed_data[elnum*this->NumIntegrators()+j], lh);
             else
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 0, lh);
-	    
+	    */
+
+
             NgProfiler::StopTimer (elementtimer);
 	    
             /*
@@ -3250,8 +3167,10 @@ cout << "catch in AssembleBilinearform 2" << endl;
         Matrix<TSCAL> evecs(elmat.Height());
 #ifdef LAPACK
         LapackEigenValuesSymmetric (elmat, lami, evecs);
-        (*testout) << "lami = " << endl << lami << endl << "evecs: " << endl << evecs << endl;
+#else
+	CalcEigenSystem (elmat, lami, evecs);
 #endif
+        (*testout) << "lami = " << endl << lami << endl << "evecs: " << endl << evecs << endl;
       }
     else
       {
@@ -3283,8 +3202,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
   {
     // FlatVector<TV> elvecx (dnums.Size() * this->GetFESpace().GetDimension(), lh);
     // FlatVector<TV> elvecy (dnums.Size() * this->GetFESpace().GetDimension(), lh);
-    FlatVector<TSCAL> elvecx (dnums.Size() * this->GetFESpace().GetDimension(), lh);
-    FlatVector<TSCAL> elvecy (dnums.Size() * this->GetFESpace().GetDimension(), lh);
+    FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->GetFESpace().GetDimension(), lh);
+    FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->GetFESpace().GetDimension(), lh);
 		      
     x.GetIndirect (dnums, elvecx);
 
@@ -3494,8 +3413,11 @@ cout << "catch in AssembleBilinearform 2" << endl;
                                                       const FiniteElement * fel,
                                                       const SpecialElement * sel) const
   {
-    FlatVector<typename mat_traits<TM>::TV_ROW > elvecx (dnums.Size() * this->GetFESpace().GetDimension(), lh);
-    FlatVector<typename mat_traits<TM>::TV_COL > elvecy (dnums.Size() * this->GetFESpace().GetDimension(), lh);
+    typedef typename mat_traits<TM>::TV_ROW TV_ROW;
+    typedef typename mat_traits<TM>::TV_COL TV_COL;
+
+    FlatVector<typename mat_traits<TV_ROW>::TSCAL> elvecx (dnums.Size() * this->GetFESpace().GetDimension(), lh);
+    FlatVector<typename mat_traits<TV_COL>::TSCAL> elvecy (dnums.Size() * this->GetFESpace().GetDimension(), lh);
 		      
     x.GetIndirect (dnums, elvecx);
 
@@ -3515,12 +3437,11 @@ cout << "catch in AssembleBilinearform 2" << endl;
             static int elementtimer = NgProfiler::CreateTimer ("Element matrix application");
             NgProfiler::StartTimer (elementtimer);
 	    
-	    
             if (this->precompute)
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
             else
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 0, lh);
-	    
+
             NgProfiler::StopTimer (elementtimer);
 	    
             /*
@@ -3915,7 +3836,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
   /*
     void BilinearFormApplication :: 
-    MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const
+    MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const 
     {
     bf -> AddMatrix (val, v, prod);
     }
