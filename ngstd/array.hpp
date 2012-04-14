@@ -74,6 +74,11 @@ namespace ngstd
     bool Contains (int i) const { return ((i >= first) && (i < next)); }
   };
 
+  inline IntRange operator+ (const IntRange & range, int shift)
+  {
+    return IntRange (range.First()+shift, range.Next()+shift);
+  }
+
   inline ostream & operator<< (ostream & s, const IntRange & ir)
   {
     s << "[" << ir.First() << "," << ir.Next() << ")";
@@ -460,7 +465,7 @@ namespace ngstd
     /// fill array with first, first+1, ... 
     Array & operator= (const IntRange & range)
     {
-      SetSize (range.Next()-range.First());
+      SetSize (range.Size());
       for (int i = 0; i < size; i++)
         (*this)[i] = range.First()+i;
       return *this;
