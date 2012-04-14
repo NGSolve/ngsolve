@@ -479,6 +479,7 @@ namespace ngcomp
 	<< "multilevel  = " << multilevel << endl
 	<< "nonassemble = " << nonassemble << endl
 	<< "printelmat = " << printelmat << endl
+	<< "elmatev    = " << elmat_ev << endl
 	<< "eliminate_internal = " << eliminate_internal << endl
 	<< "keep_internal = " << keep_internal << endl
 	<< "store_inner = " << store_inner << endl
@@ -1837,17 +1838,28 @@ cout << "catch in AssembleBilinearform 2" << endl;
           {
 	    if (keep_internal){
 	      cout << IM(1) << "compute internal element ... ";
-	      
-/*	      //Set u_inner to zero
+	 
+
+	      //Set u_inner to zero
 	      for (int i = 0; i < ne; i++){
 		HeapReset hr(clh);
 		Array<int> dnums;
 		fespace.GetDofNrs (i, dnums, LOCAL_DOF);		
 		FlatVector<SCAL> elu (dnums.Size(), clh);
 		elu = 0.0;
+
+		/*
+		u.GetIndirect (dnums, elu);
+		if (L2Norm (elu) > 1e-8)
+		  {
+		    *testout << "loc u not 0" << endl;
+		    *testout << "dnums = " << dnums << endl;
+		    *testout << "loc u = " << endl << elu << endl;
+		  }
+		*/
 		u.SetIndirect (dnums, elu);
 	      }
-*/
+
 
 	      if (linearform)
 		u += GetInnerSolve() * linearform -> GetVector();
