@@ -42,7 +42,6 @@ namespace ngfem
 
 
 
-
   template <int D, typename FEL> SourceEdgeIntegrator<D,FEL> ::
   SourceEdgeIntegrator (CoefficientFunction * coeff)
     : T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> (DVec<D> (coeff))
@@ -60,6 +59,7 @@ namespace ngfem
 			CoefficientFunction * coef3)
     : T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> (DVec<D> (coef1, coef2, coef3))
   { ; }
+
 
   template <int D, typename FEL> SourceEdgeIntegrator<D,FEL> ::
   SourceEdgeIntegrator (Array<CoefficientFunction*> & coeffs)

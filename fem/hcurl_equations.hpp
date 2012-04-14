@@ -528,6 +528,7 @@ namespace ngfem
   {
   public:
     SourceEdgeIntegrator (Array<CoefficientFunction*> & coeffs);
+
     SourceEdgeIntegrator (CoefficientFunction * coeff1);
 
     SourceEdgeIntegrator (CoefficientFunction * coeff1,
