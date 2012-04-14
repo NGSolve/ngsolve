@@ -50,6 +50,7 @@ namespace ngfem
 	    case ET_SEGM: ndof += fo+1; break;
 	    case ET_TRIG: ndof += ( (fo+1) * (fo+2) ) / 2; break;
 	    case ET_QUAD: ndof += sqr (fo+1); break;
+	    default: ;
 	    }
 	}
       first_facet_dof[ET_trait<ET>::N_FACET] = ndof;

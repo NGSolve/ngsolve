@@ -165,8 +165,6 @@ namespace ngfem
 		normal /= len;
 
 		fel_facet.Facet(k).CalcShape (ir_facet_vol[l], mat_facet);
-		// fel_facet.CalcFacetShape(k, ir_facet[l], mat_facet);
-		// fel_facet.CalcShape(ip, mat_facet);
 		fel_l2.CalcShape(ir_facet_vol[l], mat_l2);
 
 		Vec<D> invjac_normal = inv_jac * normal;
@@ -181,8 +179,7 @@ namespace ngfem
 
 		dmat(0,0) = 0;
 		dmat(1,0) = dmat(0,1) = -1;
-		// dmat(1,1) = alpha * sqr (fel_l2.Order()) * (len/det);
-		dmat(1,1) = alpha * ((fel_l2.Order()+1)*(fel_l2.Order()+D)/D) * (len/det);
+		dmat(1,1) = alpha * sqr (fel_l2.Order()+1) * (len/det);
 
 		dmat *= lam * len * ir_facet[l].Weight();
 
@@ -576,7 +573,7 @@ namespace ngfem
       const FacetVolumeFiniteElement<D> & fel_facet = 
         dynamic_cast<const FacetVolumeFiniteElement<D> &> (cfel[1]);
 
-      double alpha = 10;
+      // double alpha = 10;
   
       ELEMENT_TYPE eltype = cfel.ElementType();
       
@@ -696,7 +693,7 @@ namespace ngfem
 
 	    FlatMatrix<> comp_elmat(comp_facetdofs.Size(), comp_facetdofs.Size(), lh);
 	    LapackMultAtB (comp_facjumps, comp_jumps, comp_elmat);
-	    elmat.Rows(comp_facetdofs).Cols(comp_facetdofs) += comp_elmat;
+	    elmat.Rows(comp_facetdofs).Cols(comp_facetdofs) += 3 * comp_elmat;
 
 	    FlatMatrix<> comp_elmat2(nd_l2, comp_facetdofs.Size(), lh);
 	    LapackMultAtB (facdudn, comp_jumps, comp_elmat2);
