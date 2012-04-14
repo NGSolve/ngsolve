@@ -517,6 +517,7 @@ namespace ngfem
     enum { N_VERTEX = 2 };
     enum { N_EDGE = 1 };
     enum { N_FACE = 0 };
+    enum { N_FACET = 2 };
 
     static int PolDimension (int order) { return order+1; }
     static int PolBubbleDimension (INT<1> order) { return order[0]-1; }
@@ -573,6 +574,7 @@ namespace ngfem
     enum { N_VERTEX = 3 };
     enum { N_EDGE = 3 };
     enum { N_FACE = 1 };
+    enum { N_FACET = 3 };
 
     // static int PolDimension (int order) { return (order+1)*(order+2)/2; }
     static int PolDimension (INT<2> order) { return (order[0]+1)*(order[0]+2)/2; }
@@ -659,6 +661,8 @@ namespace ngfem
     enum { N_VERTEX = 4 };
     enum { N_EDGE = 4 };
     enum { N_FACE = 1 };
+    enum { N_FACET = 4 };
+
 
     // static int PolDimension (int order) { return (order+1)*(order+1); }
     static int PolDimension (INT<2> order) { return (order[0]+1)*(order[1]+1); }
@@ -752,6 +756,7 @@ namespace ngfem
     enum { N_VERTEX = 4 };
     enum { N_EDGE = 6 };
     enum { N_FACE = 4 };
+    enum { N_FACET = 4 };
 
     static int PolDimension (int order) { return (order+1)*(order+2)*(order+3)/6; }
     static int PolBubbleDimension (INT<3> p) { return (p[0] <= 3) ? 0 : (p[0]-1)*(p[0]-2)*(p[0]-3)/6;  }
@@ -846,6 +851,7 @@ namespace ngfem
     enum { N_VERTEX = 6 };
     enum { N_EDGE = 9 };
     enum { N_FACE = 5 };
+    enum { N_FACET = 5 };
 
     static int PolDimension (int order) { return (order+1)*(order+2)*(order+1)/2; }
     static int PolBubbleDimension (INT<3> p) { return (p[0] <= 2) ? 0 : (p[0]-1)*(p[0]-2)*(p[2]-1)/2; }
@@ -944,6 +950,8 @@ namespace ngfem
     enum { N_VERTEX = 5 };
     enum { N_EDGE = 8 };
     enum { N_FACE = 5 };
+    enum { N_FACET = 5 };
+
     static ELEMENT_TYPE FaceType(int i) { return (i < 4) ? ET_TRIG : ET_QUAD; }
 
     static int PolDimension (int order) { return (order+2)*(order+1)*(2*order+3) / 6; }
@@ -1038,6 +1046,8 @@ namespace ngfem
     enum { N_VERTEX = 8 };
     enum { N_EDGE = 12 };
     enum { N_FACE = 6 };
+    enum { N_FACET = 6 };
+
     static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
 
     static inline int PolDimension (int order) { return (order+1)*(order+2)*(order+1)/2; }

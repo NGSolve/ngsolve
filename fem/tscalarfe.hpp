@@ -433,25 +433,25 @@ namespace ngfem
                       FlatMatrixFixWidth<DIM> dshape) const;
 
 
-    template <typename TFA>
-    void SetZero (TFA & shape, int first, int next) const
-    {
-      for (int i = first; i < next; i++)
-	shape[i] = 0.0;
-    }
-
-    void SetZero (EvaluateShape & shape, int first, int next) const
-    {
-      ;
-    }
-
-    void SetZero (EvaluateShapeTrans & shape, int first, int next) const
-    {
-      ;
-    }
 
   };
 
+  template <typename TFA>
+  inline void SetZero (TFA & shape, int first, int next) // const
+  {
+    for (int i = first; i < next; i++)
+      shape[i] = 0.0;
+  }
+  
+  inline void SetZero (EvaluateShape & shape, int first, int next) // const
+  {
+    ;
+  }
+  
+  inline void SetZero (EvaluateShapeTrans & shape, int first, int next) // const
+  {
+    ;
+  }
 
 
 }

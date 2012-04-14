@@ -357,7 +357,6 @@ namespace ngfem
 			void * precomputed,
 			LocalHeap & lh) const;
 
-
     template < int S, class T>
     void ApplyElementMatrix (const FiniteElement & fel, 
 			     const ElementTransformation & eltrans, 
@@ -371,7 +370,6 @@ namespace ngfem
       CalcElementMatrix (fel, eltrans, mat, lh);
       ely = mat * elx;
     }
-
 
     virtual void 
     ApplyLinearizedElementMatrix (const FiniteElement & fel, 
