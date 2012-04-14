@@ -272,6 +272,8 @@ namespace ngcomp
       } 
 
     UpdateCouplingDofArray();
+
+    if (timing) Timing();
   }
 
 
@@ -585,119 +587,6 @@ namespace ngcomp
 
 
 
-#ifdef NOTSUPPORTED
-
-
-  EdgeFESpace :: EdgeFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
-    : FESpace (ama, flags)
-  {
-    name = "EdgeFESpace";
-  }
-
-  EdgeFESpace :: ~EdgeFESpace ()
-  {
-    ;
-  }
-
-  /*
-  ///
-  FESpace * EdgeFESpace :: Create (const MeshAccess & ma, const Flags & flags)
-  {
-    return new EdgeFESpace (ma, flags, true);
-  }
-  */
-  ///
-  
-  void EdgeFESpace :: Update(LocalHeap & lh)
-  {
-    FESpace :: Update (lh);
-    
-    ned = ma.GetNEdges();
-    order_edge.SetSize (ned);
-    first_edge_dof.SetSize (ned+1);
-    
-    order_edge = order;
-    for (int i = 0; i <= ned; i++)
-      first_edge_dof[i] = (order+1)*i;
-    UpdateCouplingDofArray();
-    // FinalizeUpdate (lh);
-  }
-
-  void EdgeFESpace :: UpdateCouplingDofArray()
-  {
-    ctofdof.SetSize(first_edge_dof[ned]);
-    ctofdof = WIREBASKET_DOF;
-    // ctofdof = INTERFACE_DOF;
-  }
-
-  const FiniteElement & EdgeFESpace :: GetFE (int elnr, LocalHeap & lh) const
-  {
-    EdgeVolumeFiniteElement<3> * fe3d = new (lh) EdgeVolumeTet (order);
-
-
-    ArrayMem<int, 12> vnums;
-    ma.GetElVertices(elnr, vnums);
-
-    fe3d -> SetVertexNumbers (vnums);
-    return *fe3d;
-  }
-
-
-  const FiniteElement & EdgeFESpace :: GetSFE (int selnr, LocalHeap & lh) const
-  {
-    EdgeVolumeFiniteElement<2> * fe3d = new (lh) EdgeVolumeTrig (order);
-
-    ArrayMem<int, 12> vnums;
-    ma.GetSElVertices(selnr, vnums);
-
-    fe3d -> SetVertexNumbers (vnums);
-    return *fe3d;
-  }
-
-
-  void EdgeFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
-  {
-    ArrayMem<int, 12> enums;
-    ma.GetElEdges(elnr, enums);
-
-    
-    dnums.SetSize(0);
-    for (int i = 0; i < enums.Size(); i++)
-      dnums += IntRange (first_edge_dof[enums[i]], first_edge_dof[enums[i]+1]);
-  }
-
-  void EdgeFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
-    ArrayMem<int, 12> enums;
-    ma.GetSElEdges(selnr, enums);
-    
-    dnums.SetSize(0);
-    for (int i = 0; i < enums.Size(); i++)
-      dnums += IntRange (first_edge_dof[enums[i]], first_edge_dof[enums[i]+1]);
-  }
-
-
-  void EdgeFESpace :: GetEdgeDofNrs (int ednum, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
-    dnums += IntRange (first_edge_dof[ednum], first_edge_dof[ednum+1]);
-  }
-
-  Table<int> * EdgeFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
-  {
-    return NULL;
-  }
-  
-  Array<int> * EdgeFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
-  {
-    return NULL;
-  }
-
-
-#endif
-
-
-
 
 
 class HybridDGFESpace : public CompoundFESpace
@@ -996,9 +885,7 @@ public:
 
   
   static RegisterFESpace<FacetFESpace> init_facet ("facet");
-  // static RegisterFESpace<EdgeFESpace> init_edge ("edge");
   static RegisterFESpace<HybridDGFESpace> init_hde ("HDG");
-
 }
 
 
