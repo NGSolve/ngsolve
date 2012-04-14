@@ -226,9 +226,11 @@ namespace ngcomp
 	    for (int i = 0; i < ne; i++)
 	      {
 		first_inner_dof[i] = ndof;
-		
-		// only trigs supported:
-		ndof += 3;
+		ELEMENT_TYPE eltype = ma.GetElType(i);
+		if (eltype == ET_TRIG)
+		  ndof += 3;
+		else
+		  ndof += 4;
 	      }
 	    first_inner_dof[ne] = ndof;
 	  }
@@ -237,26 +239,42 @@ namespace ngcomp
     else  // 3D
       {
         int inci = 0;
-        INT<2> p; 
         Array<int> pnums;
         for (int i=0; i< nfa; i++)
           {
-            p = order_facet[i];
+            int p = order_facet[i][0];
+	    if (highest_order_dc) p--;
             ma.GetFacePNums(i,pnums);
 
             switch(pnums.Size())
               {
-              case 3: 
-                inci = ((p[0]+1)*(p[0]+2))/2 - 1;
-                break;
-              case 4: 
-                inci= (p[0]+1)*(p[1]+1) - 1;
-                break;
+              case 3: inci = ((p+1)*(p+2))/2 - 1; break;
+              case 4: inci= (p+1)*(p+1) - 1; break;
               }
             first_facet_dof[i] = ndof;
             ndof+= inci;
           }
         first_facet_dof[nfa] = ndof;
+
+	if (highest_order_dc)
+	  {
+	    int ne = ma.GetNE();
+	    first_inner_dof.SetSize(ne+1);
+	    for (int i = 0; i < ne; i++)
+	      {
+		first_inner_dof[i] = ndof;
+		
+		ELEMENT_TYPE eltype = ma.GetElType(i);
+		for (int k = 0; k < ElementTopology::GetNFacets(eltype); k++)
+		  if (ElementTopology::GetFacetType(eltype, k) == ET_TRIG)
+		    ndof += order+1;
+		  else
+		    ndof += 2*order+1;
+		
+		// ndof += 4*(order+1);
+	      }
+	    first_inner_dof[ne] = ndof;
+	  }
       } // 3D
 
 
@@ -284,25 +302,15 @@ namespace ngcomp
 
     for (int facet = 0; facet < ma.GetNFacets(); facet++)
       {
-	int first = first_facet_dof[facet];
-	int next = first_facet_dof[facet+1];
-
 	ctofdof[facet] = WIREBASKET_DOF;
-	// ctofdof[facet] = INTERFACE_DOF;
-	
-	for (int j=first; j<next; j++)
-	  ctofdof[j] = INTERFACE_DOF;
-
-	/*
-	for (int j=0; j < (next-first)/2; j++)
-	  ctofdof[first+j] = WIREBASKET_DOF;
-	*/
+	ctofdof[GetFacetDofs(facet)] = INTERFACE_DOF;
       }
-
 
     if (highest_order_dc)
       ctofdof.Range(first_inner_dof[0], ndof) = LOCAL_DOF;
-    *testout << "FacetFESpace, ctofdof = " << endl << ctofdof << endl;
+    
+    if (print)
+      *testout << "FacetFESpace, ctofdof = " << endl << ctofdof << endl;
   }
 
 
@@ -346,7 +354,6 @@ namespace ngcomp
     if (ma.GetDimension() == 2)
       {
         fe2d -> SetVertexNumbers (vnums);
-	// fe2d -> SetHighestOrderDC (highest_order_dc);
         fe2d -> SetOrder (order_fa);
         fe2d -> ComputeNDof();
         return *fe2d;
@@ -369,28 +376,12 @@ namespace ngcomp
 
     switch (ma.GetSElType(selnr))
       {
-      case ET_SEGM:
-        fe1d = new (lh.Alloc (sizeof(L2HighOrderFE<ET_SEGM>))) L2HighOrderFE<ET_SEGM> ();
-        break;
-      case ET_TRIG:
-        fe2d = new (lh.Alloc (sizeof(L2HighOrderFE<ET_TRIG>))) L2HighOrderFE<ET_TRIG> ();
-        break;
-      case ET_QUAD:
-        fe2d = new (lh.Alloc (sizeof(L2HighOrderFE<ET_QUAD>))) L2HighOrderFE<ET_QUAD> ();
-        break;
+      case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
+      case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
+      case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
       default:
         throw Exception (string("FacetFESpace::GetSFE: unsupported element ")+
                          ElementTopology::GetElementName(ma.GetSElType(selnr)));
-      }
-     
-    if (!fe1d && !fe2d)
-      {
-        stringstream str;
-        str << "FacetFESpace " << GetClassName()
-            << ", undefined eltype "
-            << ElementTopology::GetElementName(ma.GetSElType(selnr))
-            << ", order = " << order << endl;
-        throw Exception (str.str());
       }
      
     ArrayMem<int,4> vnums;
@@ -400,19 +391,27 @@ namespace ngcomp
     switch (ma.GetSElType(selnr))
       {
       case ET_SEGM:
-        fe1d -> SetVertexNumbers (vnums);
-        ma.GetSElEdges(selnr, ednums);
-        fe1d -> SetOrder (order_facet[ednums[0]][0]); 
-        fe1d -> ComputeNDof();
-        return *fe1d;
-        break;
+	{
+	  fe1d -> SetVertexNumbers (vnums);
+	  ma.GetSElEdges(selnr, ednums);
+	  int p = order_facet[ednums[0]][0];
+	  if (highest_order_dc) p--;
+	  fe1d -> SetOrder (p); 
+	  fe1d -> ComputeNDof();
+	  return *fe1d;
+	  break;
+	}
       case ET_TRIG: 
-      case ET_QUAD:
-        fe2d -> SetVertexNumbers (vnums);
-        fe2d -> SetOrder (order_facet[ma.GetSElFace(selnr)][0]);// SZ not yet anisotropic order for facet fe !!! 
-        fe2d -> ComputeNDof();
-        return *fe2d;
-        break;
+      case ET_QUAD: 
+	{
+	  fe2d -> SetVertexNumbers (vnums);
+	  int p = order_facet[ma.GetSElFace(selnr)][0];
+	  if (highest_order_dc) p--;
+	  fe2d -> SetOrder (p);   // SZ not yet anisotropic order for facet fe !!! 
+	  fe2d -> ComputeNDof();
+	  return *fe2d;
+	  break;
+	}
       default:
         break;
       }
@@ -448,82 +447,68 @@ namespace ngcomp
 	for(int i=0; i<fanums.Size(); i++)
 	  {
 	    dnums.Append(fanums[i]); // low_order
-	    
-	    dnums += IntRange (first_facet_dof[fanums[i]],
-			       first_facet_dof[fanums[i]+1]);
+	    dnums += GetFacetDofs (fanums[i]);
 	  }
       }
     else
       {
-	if (ma.GetDimension() == 2)
-	  {
-	    int innerdof = first_inner_dof[elnr];
-	    for(int i=0; i<fanums.Size(); i++)
-	      {
-		dnums.Append(fanums[i]); // low_order
-		
-		dnums += IntRange (first_facet_dof[fanums[i]],
-				   first_facet_dof[fanums[i]+1]);
+	int innerdof = first_inner_dof[elnr];
+	ELEMENT_TYPE eltype = ma.GetElType (elnr);
 
-		dnums.Append (innerdof);
-		innerdof++;
-	      }
-	  }
-	else
+	for(int i=0; i<fanums.Size(); i++)
 	  {
-	    cerr << "highest_order_dc not supported for 3d" << endl;
-	    exit(1);
+	    int facetdof = first_facet_dof[fanums[i]];
+
+	    if (ma.GetDimension()==2)
+	      {
+		for (int j = 0; j <= order; j++)
+		  {
+		    if (j == 0) dnums.Append (fanums[i]);
+		    else if (j == order) dnums.Append (innerdof++);
+		    else dnums.Append (facetdof++);
+		  }
+	      }
+	    else
+	      {
+		if (ElementTopology::GetFacetType(eltype, i) == ET_TRIG)
+		  for (int j = 0; j <= order; j++)
+		    for (int k = 0; k <= order-j; k++)
+		      {
+			if (j + k == 0) dnums.Append (fanums[i]);
+			else if (j + k == order) dnums.Append (innerdof++);
+			else dnums.Append (facetdof++);
+		      }
+		else
+		  for (int j = 0; j <= order; j++)
+		    for (int k = 0; k <= order; k++)
+		      {
+			if (j + k == 0) dnums.Append (fanums[i]);
+			else if (j == order || k == order) dnums.Append (innerdof++);
+			else dnums.Append (facetdof++);
+		      }
+	      }
+		  
 	  }
-	
       }
   }
 
   // ------------------------------------------------------------------------
   void FacetFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
-    int first,next;
-
     dnums.SetSize(0);
+    
+    int fnum = 0;
     if (ma.GetDimension() == 2)
       {
         ArrayMem<int, 4> fanums;
         ma.GetSElEdges (selnr, fanums);
-
-        dnums.Append(fanums[0]);
-      
-        first = first_facet_dof[fanums[0]];
-        next = first_facet_dof[fanums[0]+1];
-        for (int j = first; j <next; j++)
-          dnums.Append (j);
-      
-        /*      for (int i = 0; i < fanums.Size(); i++)
-                {
-                dnums.Append(fanums[i]);
-      
-                first = first_facet_dof[ednums[i]];
-                next = first_facet_dof[ednums[i]+1];
-                for (int j = first; j <next; j++)
-                dnums.Append (j);
-                }*/
+	fnum = fanums[0];
       }
-    else// 3D
-      {
-        int fnum = ma.GetSElFace(selnr);
-        dnums.Append(fnum);
-        first = first_facet_dof[fnum];
-        next = first_facet_dof[fnum+1];
-        for(int j=first; j<next; j++)
-          dnums.Append(j);
-      }
-
-    /*      if(first_facet_dof.Size()>1)
-            {
-            int fnum = ma.GetSElFace(selnr);
-            first = first_facet_dof[fnum];
-            next = first_facet_dof[fnum+1];
-            for(int j=first; j<next; j++)
-            dnums.Append(j);
-            }*/
+    else
+      fnum = ma.GetSElFace(selnr);
+      
+    dnums.Append (fnum);
+    dnums += GetFacetDofs(fnum);
   }
 
   // ------------------------------------------------------------------------
@@ -591,8 +576,6 @@ namespace ngcomp
 
 class HybridDGFESpace : public CompoundFESpace
 {
-protected:
-  bool withedges;
 public:
   HybridDGFESpace (const MeshAccess & ama, 
                    // const Array<FESpace*> & aspaces,
@@ -630,27 +613,7 @@ public:
 
 
     if (flags.GetDefineFlag ("edges"))
-      {
-	throw Exception ("HDG fespace with edges not supported");
-	/*
-	if (ma.GetDimension() == 2)
-	  {
-	    Flags h1flags(flags);
-	    h1flags.SetFlag ("order", 1);
-	    // spaces.Append (new H1HighOrderFESpace (ma, h1flags));        
-	    AddSpace (new H1HighOrderFESpace (ma, h1flags));        
-	  }
-	else
-	  {
-	    Flags edgeflags(flags);
-	    // spaces.Append (new EdgeFESpace (ma, edgeflags));            
-	    AddSpace (new EdgeFESpace (ma, edgeflags));            
-	  }
-	*/
-      }
-
-
-    withedges = (spaces.Size()==3);
+      throw Exception ("HDG fespace with edges not supported");
 
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
@@ -686,6 +649,7 @@ public:
 	cout << "creating bddc-coarse grid(vertices)" << endl;
 	Array<int> & clusters = *new Array<int> (GetNDof());
 	clusters = 0;
+	/*
 	int nv = ma.GetNV();
 	int ned = ma.GetNEdges();
 	// int nfa = ma.GetNFaces();
@@ -715,7 +679,7 @@ public:
 		clusters[dnums[0]+baseh1]=1;
 	      }
 	    }
-
+	*/
 
 
 	/*
