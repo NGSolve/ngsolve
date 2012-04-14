@@ -316,6 +316,9 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
 	  __m128d sum11, sum12, sum21, sum22;
 	  __m128d sum31, sum32, sum41, sum42;
 
+	  sum11 = sum12 = sum21 = sum22 = _mm_setzero_pd();
+	  sum31 = sum32 = sum41 = sum42 = _mm_setzero_pd();
+
 	  double * lpa1 = pa + i * M;
 	  double * lpa2 = pa + (i+1) * M;
 	  double * lpa3 = pa + (i+2) * M;
@@ -326,7 +329,7 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
 	  for (int k = 0; k < M-1; k+=2)
 	    {
 	      __m128d a1, a2, a3, a4, b1, b2;
-
+	      
 	      a1 = _mm_load_pd(lpa1+k);
 	      a3 = _mm_load_pd(lpa3+k);
 	      b1 = _mm_load_pd(lpb1+k);
