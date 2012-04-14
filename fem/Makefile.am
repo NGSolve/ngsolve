@@ -9,7 +9,7 @@ libngfem_la_LIBADD = $(top_builddir)/ngstd/libngstd.la \
 
 libngfem_la_SOURCES =  vectorfacetfe.cpp bdbequations.cpp recursive_pol_trig.cpp	      \
 coefficient.cpp integrator.cpp specialelement.cpp elementtopology.cpp \
-hcurlfe.cpp intrule.cpp facetfe.cpp hcurlhofe.cpp l2hofe.cpp	      \
+hcurlfe.cpp intrule.cpp hcurlhofe.cpp l2hofe.cpp	      \
 l2hofefo.cpp fastmat.cpp finiteelement.cpp elementtransformation.cpp	      \
 scalarfe.cpp hdiv_equations.cpp maxwellintegrator.cpp		      \
 generic_recpol.cpp hdivfe.cpp h1hofe.cpp h1hofefo.cpp hdivhofe.cpp    \
