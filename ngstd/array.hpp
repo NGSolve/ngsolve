@@ -29,6 +29,48 @@ namespace ngstd
 
 
 
+  /*
+    Some class which can be treated as array
+   */
+  template <typename T, typename TA = T>
+  class BaseArrayObject
+  {
+  public:
+    const TA & Spec() const { return static_cast<const T&>(*this).Spec2 (); }
+    const TA & Spec2() const { return static_cast<const T&> (*this); }
+  };
+
+
+  template <typename T, typename TA>
+  inline ostream & operator<< (ostream & ost, const BaseArrayObject<T,TA> & array)
+  {
+    for (int i = 0; i < array.Spec().Size(); i++)
+      ost << i << ":" << array.Spec()[i] << endl;
+    return ost;
+  }
+  
+  template <typename T>
+  class AOWrapper : public BaseArrayObject< AOWrapper<T> , T>
+  {
+    const T & ar;
+  public:
+    AOWrapper (const T & aar) : ar(aar) { ; }
+    const T & Spec2() const { return ar; }
+  };
+
+
+  template <typename T>
+  inline AOWrapper<T> ArrayObject (const T & ar)
+  {
+    return AOWrapper<T> (ar);
+  }
+
+
+
+
+
+
+
   /**
      nothing more but a new type for a C array.
      return value for Addr - operator of array 
@@ -63,7 +105,7 @@ namespace ngstd
 
 
   /// a range of intergers
-  class IntRange
+  class IntRange : public BaseArrayObject <IntRange>
   {
     int first, next;
   public: 
@@ -71,6 +113,7 @@ namespace ngstd
     int First() const { return first; }
     int Next() const { return next; }
     int Size() const { return next-first; }
+    int operator[] (int i) const { return first+i; }
     bool Contains (int i) const { return ((i >= first) && (i < next)); }
   };
 
@@ -462,6 +505,7 @@ namespace ngstd
       return *this;
     }
 
+    /*
     /// fill array with first, first+1, ... 
     Array & operator= (const IntRange & range)
     {
@@ -470,7 +514,16 @@ namespace ngstd
         (*this)[i] = range.First()+i;
       return *this;
     }
-
+    */
+    template <typename T2, typename TA>
+    Array & operator= (const BaseArrayObject<T2,TA> & a2)
+    {
+      SetSize (a2.Spec().Size());
+      for (int i = 0; i < size; i++)
+        (*this)[i] = a2.Spec()[i];
+      return *this;
+    }
+    
 
   private:
 
@@ -571,7 +624,7 @@ namespace ngstd
 
 
 
-
+  /*
   /// append integers to array
   inline Array<int> & operator+= (Array<int> & array, const IntRange & range)
   {
@@ -585,7 +638,22 @@ namespace ngstd
 
     return array;
   }
+  */
+  
 
+  template <typename T2, typename TA>
+  inline Array<int> & operator+= (Array<int> & array, const BaseArrayObject<T2,TA> & a2)
+  {
+    int oldsize = array.Size();
+    int s = a2.Spec().Size();
+    
+    array.SetSize (oldsize+s);
+
+    for (int i = 0; i < s; i++)
+      array[oldsize+i] = a2.Spec()[i];
+
+    return array;
+  }
 
 
 
