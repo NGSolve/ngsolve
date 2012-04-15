@@ -164,7 +164,9 @@ namespace ngfem
 		double len = L2Norm (normal);
 		normal /= len;
 
-		fel_facet.Facet(k).CalcShape (ir_facet_vol[l], mat_facet);
+		mat_facet = 0.0;
+		fel_facet.Facet(k).CalcShape (ir_facet_vol[l], 
+					      mat_facet.Range(fel_facet.GetFacetDofs(k)));
 		fel_l2.CalcShape(ir_facet_vol[l], mat_l2);
 
 		Vec<D> invjac_normal = inv_jac * normal;
@@ -673,8 +675,9 @@ namespace ngfem
 		double len = L2Norm (normal);
 		normal /= len;
 
-
-		fel_facet.Facet(k).CalcShape (ir_facet_vol[l], mat_facet);
+		mat_facet = 0.0;
+		fel_facet.Facet(k).CalcShape (ir_facet_vol[l], 
+					      mat_facet.Range(fel_facet.GetFacetDofs(k)));
 		fel_l2.CalcShape(ir_facet_vol[l], mat_l2);
 
 		Vec<D> invjac_normal = inv_jac * normal;
@@ -863,8 +866,9 @@ namespace ngfem
 		  double len = L2Norm (normal);
 		  normal /= len;
 
+		  jump = 0.0;
 		  fel_l2.CalcShape(ip, jump.Range (l2_dofs) );
-		  fel_facet.Facet(k).CalcShape(ip, jump.Range (facet_dofs));
+		  fel_facet.Facet(k).CalcShape(ip, jump.Range (facet_dofs).Range(fel_facet.GetFacetDofs(k)));
 		  jump.Range (facet_dofs) *= -1;
 
 		  Vec<D> invjac_normal = inv_jac * normal;
@@ -1509,7 +1513,7 @@ namespace ngfem
               bool inflow = (bn < 0);
 
               // fel_facet.CalcFacetShape(k, ir_facet[l], shape_facet);
-	      fel_facet.Facet(k).CalcShape(mip.IP(), shape_facet);
+	      fel_facet.Facet(k).CalcShape(mip.IP(), shape_facet.Range(fel_facet.GetFacetDofs(k)));
               fel_l2.CalcShape(mip.IP(), shape);
               
               bmat.Row(0).Range (base_l2   , base_l2   +nd_l2   ) = shape;

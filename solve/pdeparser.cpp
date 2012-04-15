@@ -1232,11 +1232,8 @@ namespace ngsolve
 	  //
 	
 	  // read bilinear-form components
-	  int ncoeffs;
 	  while (1)
 	    {
-	      ncoeffs = -1;
-
 	      TOKEN_TYPE integrator_token = scan->GetToken();
 
 	      if (integrator_token == KW_INTEGRATOR)
@@ -1428,11 +1425,8 @@ namespace ngsolve
 	  pde->AddLinearForm (name, flags);
 	
 	  // read linear-form components
-	  int ncoeffs;
 	  while (1)
 	    {
-	      ncoeffs = -1;
-
 	      TOKEN_TYPE integrator_token = scan->GetToken();
 
 	      if (integrator_token == KW_INTEGRATOR)

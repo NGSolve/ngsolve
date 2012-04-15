@@ -63,15 +63,6 @@ namespace ngcomp
     int nboundaries;
 
   public:
-
-    /*
-    // for pre-computed geometry information
-    Array<Vec<3> > pts;
-    Array<Mat<3,3> > dxdxis;
-    Array<int> first_of_element;
-    */
-
-  public:
     ///
     MeshAccess ();
     ///

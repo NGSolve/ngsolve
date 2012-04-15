@@ -77,11 +77,9 @@ namespace ngfem
       Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
       
       INT<2> e = GetEdgeSort (fnr, vnums);
-      SetZero (shape, 0, ndof);
-
       int p = facet_order[fnr];
-      int ii = first_facet_dof[fnr];
-      LegendrePolynomial::Eval (p, lam[e[1]]-lam[e[0]], shape.Addr(ii));
+
+      LegendrePolynomial::Eval (p, lam[e[1]]-lam[e[0]], shape);
     }
   };
 
@@ -99,11 +97,9 @@ namespace ngfem
       Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
       
       INT<2> e = GetEdgeSort (fnr, vnums);
-      SetZero (shape, 0, ndof);
-
       int p = facet_order[fnr];
-      int ii = first_facet_dof[fnr];
-      LegendrePolynomial::Eval (p, sigma[e[1]]-sigma[e[0]], shape.Addr(ii));
+
+      LegendrePolynomial::Eval (p, sigma[e[1]]-sigma[e[0]], shape);
     }
   };
 
@@ -119,12 +115,9 @@ namespace ngfem
       Tx lam[4] = { hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };
 
       INT<4> f = GetFaceSort (fnr, vnums);
-
-      SetZero (shape, 0, ndof);
-      
       int p = facet_order[fnr];
-      int ii = first_facet_dof[fnr];
-      DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape.Addr(ii));
+
+      DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
     }
   };
 
@@ -143,7 +136,6 @@ namespace ngfem
 		   (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z}; 
       
       int p = facet_order[fnr];
-      int ii = first_facet_dof[fnr];
 
       INT<4> f = GetFaceSort (fnr, vnums);	  
 	    
@@ -155,12 +147,10 @@ namespace ngfem
       LegendrePolynomial::Eval(p, xi, polx);
       LegendrePolynomial::Eval(p, eta, poly);
 
-      SetZero (shape, 0, ndof);
-      for (int i = 0; i <= p; i++)
+      for (int i = 0, ii = 0; i <= p; i++)
 	for (int j = 0; j <= p; j++)
 	  shape[ii++] = polx[i] * poly[j];
     }
-
   };
 
   // --------------------------------------------------------
@@ -178,13 +168,10 @@ namespace ngfem
 
       INT<4> f = GetFaceSort (fnr, vnums);
 
-      SetZero (shape, 0, ndof);
-      
       int p = facet_order[fnr];
-      int ii = first_facet_dof[fnr];
 
       if (fnr < 2)
-	DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape.Addr(ii));
+	DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
       else
 	{
 	  Tx xi  = lam[f[0]]+muz[f[0]] - lam[f[1]]-muz[f[1]];
@@ -195,7 +182,7 @@ namespace ngfem
 	  LegendrePolynomial::Eval (p, xi, polx);
 	  LegendrePolynomial::Eval (p, eta, poly);
 
-	  for (int i = 0; i <= p; i++)
+	  for (int i = 0, ii = 0; i <= p; i++)
 	    for (int j = 0; j <= p; j++)
 	      shape[ii++] = polx[i] * poly[j];
 	}
@@ -230,13 +217,10 @@ namespace ngfem
 
       INT<4> f = GetFaceSort (fnr, vnums);
 
-      SetZero (shape, 0, ndof);
-      
       int p = facet_order[fnr];
-      int ii = first_facet_dof[fnr];
 
       if (fnr < 4)
-	DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape.Addr(ii));
+	DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
       else
 	{
 	  Tx xi  = sigma[f[0]]-sigma[f[1]];
@@ -247,7 +231,7 @@ namespace ngfem
 	  LegendrePolynomial::Eval (p, xi, polx);
 	  LegendrePolynomial::Eval (p, eta, poly);
 
-	  for (int i = 0; i <= p; i++)
+	  for (int i = 0, ii = 0; i <= p; i++)
 	    for (int j = 0; j <= p; j++)
 	      shape[ii++] = polx[i] * poly[j];
 	}

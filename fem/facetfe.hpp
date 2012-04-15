@@ -25,8 +25,9 @@ namespace ngfem
     const FacetVolumeFiniteElement<D> & fe;
   public:
     FacetFEFacet (int afnr,
-		  const FacetVolumeFiniteElement<D> & afe) 
-      : fnr(afnr), fe(afe) { ; }
+		  const FacetVolumeFiniteElement<D> & afe,
+		  ELEMENT_TYPE aeltype, int andof, int aorder)
+      : ScalarFiniteElement<D> (aeltype, andof, aorder), fnr(afnr), fe(afe) { ; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const
@@ -90,7 +91,7 @@ namespace ngfem
     }
     
     
-    FacetFEFacet<D> Facet (int fnr) const { return FacetFEFacet<D> (fnr, *this); }
+    FacetFEFacet<D> Facet (int fnr) const { return FacetFEFacet<D> (fnr, *this, eltype, ndof, facet_order[fnr]); }
     virtual void CalcFacetShapeVolIP (int fnr, const IntegrationPoint & ip, FlatVector<> shape) const = 0;
 
 
