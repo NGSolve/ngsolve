@@ -25,6 +25,42 @@ namespace ngcomp
   using netgen::Ng_GetNode;
 
 
+
+
+
+
+  inline ELEMENT_TYPE ConvertElementType (NG_ELEMENT_TYPE type)
+  {
+    switch (type)
+      {
+      case NG_SEGM: case NG_SEGM3:
+	return ET_SEGM;
+
+      case NG_TRIG: case NG_TRIG6: 
+	return ET_TRIG;
+	
+      case NG_QUAD: case NG_QUAD6:
+	return ET_QUAD;
+	
+      case NG_TET: case NG_TET10:
+	return ET_TET;
+
+      case NG_PRISM: case NG_PRISM12:
+	return ET_PRISM;
+
+      case NG_PYRAMID:
+	return ET_PYRAMID;
+
+      case NG_HEX:
+	return ET_HEX;
+      }
+    throw Exception ("Netgen2NgS type conversion: Unhandled element type");
+  }
+
+
+
+
+
   /** 
       Access to mesh geometry.
       This class provides topology, as element to vertex,
@@ -92,10 +128,10 @@ namespace ngcomp
 
 
     /// number of distinct domains
-    int GetNDomains () const;
+    int GetNDomains () const  { return ndomains; }
 
     /// number of distinct boundaries
-    int GetNBoundaries () const;
+    int GetNBoundaries () const { return nboundaries; }
 
     /*
     ///
@@ -132,20 +168,12 @@ namespace ngcomp
       return p;
     }
 
-
-
     ///
-    ELEMENT_TYPE GetElType (int elnr) const;
+    ELEMENT_TYPE GetElType (int elnr) const
+    { return ConvertElementType (GetElement(elnr).GetType()); }
+
     ///
     int GetElIndex (int elnr) const
-    /*
-    {
-      if (dim == 2)
-        return Ng_GetElementIndex<2> (elnr)-1;
-      else
-        return Ng_GetElementIndex<3> (elnr)-1;
-    }
-    */
     { return Ng_GetElementIndex (elnr+1)-1; }
 
     void SetElIndex (int elnr, int index) const
@@ -158,7 +186,9 @@ namespace ngcomp
     { return Ng_GetDomainMaterial(domnr+1); }
 
     ///
-    ELEMENT_TYPE GetSElType (int elnr) const;
+    ELEMENT_TYPE GetSElType (int elnr) const
+    { return ConvertElementType (GetSElement(elnr).GetType()); }
+      
     ///
     int GetSElIndex (const int elnr) const
     /*
@@ -394,23 +424,6 @@ namespace ngcomp
     int GetClusterRepElement (int pi) const
     { return Ng_GetClusterRepElement (pi+1)-1; }
 
-    /*
-    template <int A, int B, int C, int D>
-    void GetSurfaceElementTransformation (int sei, const Vec<A> & xi,
-					  Vec<B> & x, Mat<C,D> & dxdxi)
-    {
-      double xl[2];
-      double xg[3];
-      double dxgdxl[6];
-      int i, j;
-      for (i=0; i<A; i++) xl[i] = xi(i);
-      Ng_GetSurfaceElementTransformation (sei, &xl[0], &xg[0], &dxgdxl[0]);
-      for (i=0; i<B; i++) x(i) = xg[i];
-      for (i=0; i<D; i++)
-	for (j=0; j<C; j++) dxdxi(i,j) = dxgdxl[i*C+j];
-    }
-    */
-
     ///
     void GetElementTransformation (int elnr, ElementTransformation & eltrans) const;
 
@@ -522,42 +535,6 @@ namespace ngcomp
 
 
 
-
-
-  inline ELEMENT_TYPE ConvertElementType (NG_ELEMENT_TYPE type)
-  {
-    switch (type)
-      {
-      case NG_SEGM: case NG_SEGM3:
-	return ET_SEGM;
-
-      case NG_TRIG: case NG_TRIG6: 
-	return ET_TRIG;
-	
-      case NG_QUAD:
-      case NG_QUAD6:
-	return ET_QUAD;
-	
-      case NG_TET:
-      case NG_TET10:
-	return ET_TET;
-
-      case NG_PRISM:
-      case NG_PRISM12:
-	return ET_PRISM;
-
-      case NG_PYRAMID:
-	return ET_PYRAMID;
-
-      case NG_HEX:
-	return ET_HEX;
-	
-      default:
-	throw Exception ("Netgen2NgS type conversion: Unhandled element type");
-      }
-    
-    return ET_TRIG;  // return something for the  compiler
-  }
 
 
 
