@@ -46,32 +46,16 @@ namespace ngfem
     int facet_order[6]; 
     int first_facet_dof[7];
 
-    // bool highest_order_dc;
-
     using FiniteElement::eltype;
     using FiniteElement::order;
 
   public:
-    FacetVolumeFiniteElement (ELEMENT_TYPE aeltype)
-      : FiniteElement (D, aeltype,-1,-1)
-    {
-      // highest_order_dc = false;
-      for (int i=0; i<8; i++) 
-	vnums[i] = i;
-      for (int i = 0; i < 6; i++) 
-	facet_order[i] = -1;
-      for (int i=0; i < 7; i++) 
-	first_facet_dof[i] = 0;
-    }
-
 
     void SetVertexNumbers (FlatArray<int> & avnums)
     {
       for (int i = 0; i < avnums.Size(); i++)
 	vnums[i] = avnums[i];
     }
-
-    // void SetHighestOrderDC(bool set){highest_order_dc=set;}
 
     void SetOrder (int ao)  
     {
@@ -90,14 +74,21 @@ namespace ngfem
 	order = max(order, ao[i]);
     }
     
-    
-    FacetFEFacet<D> Facet (int fnr) const { return FacetFEFacet<D> (fnr, *this, eltype, ndof, facet_order[fnr]); }
-    virtual void CalcFacetShapeVolIP (int fnr, const IntegrationPoint & ip, FlatVector<> shape) const = 0;
+    FacetFEFacet<D> Facet (int fnr) const 
+    { 
+      return FacetFEFacet<D> (fnr, *this, eltype, 
+			      GetFacetDofs(fnr).Size(), facet_order[fnr]); 
+    }
+
+    virtual void CalcFacetShapeVolIP (int fnr, const IntegrationPoint & ip, 
+				      FlatVector<> shape) const = 0;
+
 
 
     /*
       // please use Facet(k).CalcShape (ip, shape)   instead
       // ip .. vol point
+      // shape .. size is facet.ndof
 
     void CalcFacetShape(int fnr, const IntegrationPoint & ip, FlatVector<> shape) const;
     void EvaluateFacet (int fnr, const IntegrationRule & ir, FlatVector<> coefs, FlatVector<> values) const;
@@ -111,14 +102,6 @@ namespace ngfem
       return IntRange (first_facet_dof[fnr], first_facet_dof[fnr+1]);
     }
 
-    void GetFacetDofNrs(int fnr, Array<int>& fdnums) const
-    {
-      fdnums = GetFacetDofs(fnr);
-    }
-
-    int GetFacetNDof(int afnr) const { return first_facet_dof[afnr+1] - first_facet_dof[afnr]; };
-    int GetFirstFacetDof(int afnr) const { return first_facet_dof[afnr]; } 
-  
     virtual void ComputeNDof () = 0;
   };
 

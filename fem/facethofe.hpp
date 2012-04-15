@@ -7,11 +7,7 @@
 /* Date:   2008                                                      */
 /*********************************************************************/
 
-#include "facetfe.hpp"
-#include "l2hofe.hpp"
 #include "tscalarfe.cpp"
-
-
 
 namespace ngfem
 {
@@ -21,27 +17,29 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET> 
   class FacetFiniteElement_Family :
-    public FacetVolumeFiniteElement<ET_trait<ET>::DIM>, 
+    public FacetVolumeFiniteElement<ET_trait<ET>::DIM>,
     public ET_trait<ET> 
   {
   protected:
     enum { DIM = ET_trait<ET>::DIM };
+    using ET_trait<ET>::N_FACET;
 
-    // using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::ndof;
     using FiniteElement::ndof;
+    using FiniteElement::eltype;
+
     using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::first_facet_dof;
     using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::facet_order;
 
   public:
     FacetFiniteElement_Family ()
-      : FacetVolumeFiniteElement<DIM> (ET_TET) 
-    { ; }
-
+    { 
+      eltype = ET;
+    }
     
     virtual void ComputeNDof() 
     {
       ndof = 0;
-      for (int i = 0; i < ET_trait<ET>::N_FACET; i++)
+      for (int i = 0; i < N_FACET; i++)
 	{
 	  first_facet_dof[i] = ndof;
 	  int fo = facet_order[i];
@@ -53,11 +51,12 @@ namespace ngfem
 	    default: ;
 	    }
 	}
-      first_facet_dof[ET_trait<ET>::N_FACET] = ndof;
+      first_facet_dof[N_FACET] = ndof;
     }
     
 
-    virtual void CalcFacetShapeVolIP(int fnr, const IntegrationPoint & ip, FlatVector<> shape) const
+    virtual void CalcFacetShapeVolIP(int fnr, const IntegrationPoint & ip, 
+				     FlatVector<> shape) const
     {
       double pt[DIM];
       for (int i = 0; i < DIM; i++) pt[i] = ip(i);

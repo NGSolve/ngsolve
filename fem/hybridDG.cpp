@@ -59,18 +59,9 @@ namespace ngfem
       IntRange facet_dofs = cfel.GetRange (1);
 
       int nd_l2 = fel_l2.GetNDof();
-      int nd_facet = fel_facet.GetNDof();
-      int nd = cfel.GetNDof();  
 
-      int base_l2 = 0;
-      int base_facet = base_l2+nd_l2;
-      
       elmat = 0.0;
 
-      FlatVector<> mat_l2(nd_l2, lh);
-      FlatVector<> mat_dudn(nd_l2, lh);
-      FlatVector<> mat_facet(nd_facet, lh);
-      
       {
 	NgProfiler::RegionTimer reg (timer1);     
 	HeapReset hr(lh);
@@ -113,8 +104,6 @@ namespace ngfem
 	Facet2ElementTrafo transform(eltype); 
 	FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
 
-	FlatMatrixFixHeight<2> bmat(nd, lh);
-	FlatMatrixFixHeight<2> dbmat(nd, lh);
 	Mat<2> dmat;
 
 	for (int k = 0; k < nfacet; k++)
@@ -127,27 +116,18 @@ namespace ngfem
 	    IntegrationRule ir_facet(etfacet, 2*fel_l2.Order());
 	    IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
 
-	    Array<int> facetdofs, fdofs;
-	    for (int i = 0; i < nd_l2; i++)
-	      facetdofs.Append(i);
-
-	    fel_facet.GetFacetDofNrs(k, fdofs);
-	    for (int i = 0; i < fdofs.Size(); i++)
-	      facetdofs.Append(base_facet+fdofs[i]);
+	    Array<int> facetdofs;
+	    facetdofs = l2_dofs;
+	    facetdofs += fel_facet.GetFacetDofs(k) + facet_dofs.First();
 
 	    FlatMatrixFixHeight<2> comp_bmat(facetdofs.Size(), lh);
-	    FlatMatrixFixHeight<2> comp_dbmat(facetdofs.Size(), lh);
-
 	    FlatMatrix<> comp_bmats(2*ir_facet.GetNIP(), facetdofs.Size(), lh);
 	    FlatMatrix<> comp_dbmats(2*ir_facet.GetNIP(), facetdofs.Size(), lh);
 
 	    FlatMatrix<> comp_elmat(facetdofs.Size(), facetdofs.Size(), lh);
 	  
-	    comp_elmat = 0;
-	    bmat = 0.0;
+	    comp_bmat = 0.0;
 
-	    // fel_facet.SelectFacet (k);
-	    
 	    MappedIntegrationRule<D,D> mir(ir_facet_vol, eltrans, lh);
 
 	    for (int l = 0; l < ir_facet.GetNIP(); l++)
@@ -164,20 +144,16 @@ namespace ngfem
 		double len = L2Norm (normal);
 		normal /= len;
 
-		mat_facet = 0.0;
-		fel_facet.Facet(k).CalcShape (ir_facet_vol[l], 
-					      mat_facet.Range(fel_facet.GetFacetDofs(k)));
-		fel_l2.CalcShape(ir_facet_vol[l], mat_l2);
-
 		Vec<D> invjac_normal = inv_jac * normal;
-		mat_dudn = fel_l2.GetDShape (mip.IP(), lh) * invjac_normal;
 		
-		bmat.Row(0).Range (l2_dofs)    = mat_dudn;
-		bmat.Row(1).Range (l2_dofs)    = mat_l2;
-		bmat.Row(1).Range (facet_dofs) = -mat_facet;
+		comp_bmat.Row(0).Range(l2_dofs) =    // dudn
+		  fel_l2.GetDShape (ir_facet_vol[l], lh) * invjac_normal;
 
-		for (int i = 0; i < facetdofs.Size(); i++)
-		  comp_bmat.Col(i) = bmat.Col(facetdofs[i]);
+		comp_bmat.Row(1).Range(l2_dofs) =    // u
+		  fel_l2.GetShape(ir_facet_vol[l], lh);
+
+		comp_bmat.Row(1).Range(nd_l2, comp_bmat.Width()) =
+		  -fel_facet.Facet(k).GetShape(ir_facet_vol[l], lh);
 
 		dmat(0,0) = 0;
 		dmat(1,0) = dmat(0,1) = -1;
@@ -187,8 +163,6 @@ namespace ngfem
 
 		comp_bmats.Rows (2*l, 2*l+2) = comp_bmat;
 		comp_dbmats.Rows (2*l, 2*l+2) = dmat * comp_bmat;
-
-		NgProfiler::AddFlops (timer2, nd*nd*4);
 	      }
 	    // comp_elmat = Trans (comp_bmats) * comp_dbmats;
 	    LapackMultAtB (comp_bmats, comp_dbmats, comp_elmat);
@@ -403,7 +377,7 @@ namespace ngfem
 
 
       int ndflux = felflux.GetNDof();
-      int ndu = fel.GetNDof();
+      // int ndu = fel.GetNDof();
       int ndut = fel_l2.GetNDof();
 
 
@@ -479,7 +453,9 @@ namespace ngfem
 
 	  fel_l2.Evaluate (ir_vol, elu.Range(0, ndut), shapes_l2);
 	  fel_l2.EvaluateGrad (ir_vol, elu.Range(0, ndut), grad_l2);
-	  fel_facet.Facet(k).Evaluate (ir_vol, elu.Range(ndut, ndu), shapes_facet);
+	  fel_facet.Facet(k).Evaluate (ir_vol, 
+				       elu.Range(fel_facet.GetFacetDofs(k)+ndut), 
+				       shapes_facet);
 	  
 	  helmat = 0.0;
 	  for (int l = 0; l < ir_facet.GetNIP(); l++)
@@ -1472,13 +1448,16 @@ namespace ngfem
             SelectIntegrationRule (etfacet, fel_l2.Order()+fel_facet.Order());
       
 
-	  Array<int> facetdofs, fdofs;
-	  for (int i = 0; i < nd_l2; i++)
-	    facetdofs.Append(i);
+	  Array<int> facetdofs; 
+	  // for (int i = 0; i < nd_l2; i++) facetdofs.Append(i);
+	  facetdofs = l2_dofs;
+	  facetdofs += fel_facet.GetFacetDofs(k) + base_facet;
 
+	  /*
 	  fel_facet.GetFacetDofNrs(k, fdofs);
 	  for (int i = 0; i < fdofs.Size(); i++)
 	    facetdofs.Append(base_facet+fdofs[i]);
+	  */
 
 	  FlatMatrixFixHeight<2> comp_bmat(facetdofs.Size(), lh);
 	  FlatMatrixFixHeight<2> comp_dbmat(facetdofs.Size(), lh);
