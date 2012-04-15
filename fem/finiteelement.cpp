@@ -15,7 +15,7 @@
 namespace ngfem
 {
 
-  
+
   CompoundFiniteElement ::  CompoundFiniteElement (Array<const FiniteElement*> & afea)
     : FiniteElement (), fea(afea)
   {

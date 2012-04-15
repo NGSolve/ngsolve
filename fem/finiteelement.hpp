@@ -22,6 +22,8 @@ namespace ngfem
      On the element level, node corresponds to the local number, and it is global number on the mesh level.
      Dof-concept is not yet used very consistently
   */
+
+  /*
   class Dof
   {
   public:
@@ -55,7 +57,7 @@ namespace ngfem
     ost << dof.GetNode() << "," << dof.GetNrOnNode();
     return ost;
   }
-
+  */
 
 
   /** 
