@@ -46,8 +46,6 @@ namespace ngcomp
     //  DefineNumListFlag("dom_order_min_z");
     //  DefineNumListFlag("dom_order_max_z");
     DefineNumFlag("smoothing");
-    // DefineDefineFlag("minext");
-    // DefineDefineFlag("optext");
     DefineDefineFlag("print");
     DefineDefineFlag("noprint");
     DefineDefineFlag("wb_withedges");
@@ -100,11 +98,6 @@ namespace ngcomp
 
     low_order_space = new NodalFESpace (ma, loflags);
     low_order_space -> SetLowOrderSpace (true);
-
-    // minext = flags.GetDefineFlag ("minext");
-    // optext = flags.GetDefineFlag ("optext");
-    // fast_pfem = flags.GetDefineFlag ("fast");
-    
 
     static ConstantCoefficientFunction one(1);
     evaluator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
@@ -548,7 +541,7 @@ namespace ngcomp
           default:
             {
               throw Exception (string ("GetFE not supported for element") + 
-                               ElementTopology::GetElementName(ma.GetElType(elnr)));
+                               ElementTopology::GetElementName(eltype));
             }
           }
 
@@ -556,15 +549,12 @@ namespace ngcomp
         if (ma.GetDimension() == 2)
           {
 	    hofe2d -> SetVertexNumbers (ngel.vertices);
-            
-            for (int j = 0; j < ngel.edges.Size(); j++)
-              hofe2d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
-            
-            INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
-            hofe2d -> SetOrderFace (0, p);
+	    hofe2d -> SetOrderEdge ( order_edge[ArrayObject(ngel.edges)] );
+
+	    INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
+	    hofe2d -> SetOrderFace (0, p);
 
             hofe2d -> ComputeNDof();
-
             return *hofe2d;
           }
 
@@ -572,13 +562,8 @@ namespace ngcomp
 
           {
 	    hofe3d -> SetVertexNumbers (ngel.vertices);
-
-            for (int j = 0; j < ngel.edges.Size(); j++)
-              hofe3d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
-            
-            for (int j = 0; j < ngel.faces.Size(); j++)
-              hofe3d -> SetOrderFace (j, order_face[ngel.faces[j]]);
-
+	    hofe3d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
+	    hofe3d -> SetOrderFace (order_face[ArrayObject(ngel.faces)]);
             hofe3d -> SetOrderCell (order_inner[elnr]);
 
             hofe3d -> ComputeNDof();
@@ -609,8 +594,6 @@ namespace ngcomp
 	  }
       }
 
-
-
     H1HighOrderFiniteElement<1> * hofe1d = NULL;
     H1HighOrderFiniteElement<2> * hofe2d = NULL;
 
@@ -619,22 +602,15 @@ namespace ngcomp
       case ET_TRIG: hofe2d = new (lh) H1HighOrderFE<ET_TRIG> (); break;
       case ET_QUAD: hofe2d = new (lh) H1HighOrderFE<ET_QUAD> (); break;
       case ET_SEGM: hofe1d = new (lh) H1HighOrderFE<ET_SEGM> (); break;
-      default:
-        {
-          throw Exception ("GetFE not supported for element");
-        }
+      default: throw Exception ("GetFE not supported for element");
       }
   
     Ng_Element ngel = ma.GetSElement(elnr);
     
-    
     if (ma.GetDimension() == 2)
       {
-        for (int j = 0; j < ngel.vertices.Size(); j++)
-          hofe1d -> SetVertexNumber (j, ngel.vertices[j]);
-
-        for (int j = 0; j < ngel.edges.Size(); j++)
-          hofe1d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
+	hofe1d -> SetVertexNumbers (ngel.vertices);
+	hofe1d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
 
         hofe1d -> ComputeNDof();
         return *hofe1d;
@@ -642,13 +618,8 @@ namespace ngcomp
     else
       {
 	hofe2d -> SetVertexNumbers (ngel.vertices);
-	
-        for (int j = 0; j < ngel.edges.Size(); j++)
-          hofe2d -> SetOrderEdge (j, order_edge[ngel.edges[j]]);
-
-        INT<2> p = order_face[ma.GetSElFace(elnr)];
-        FlatArray<INT<2> > of(1, &p);
-        hofe2d -> SetOrderFace (of);
+	hofe2d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
+        hofe2d -> SetOrderFace (0, order_face[ma.GetSElFace(elnr)]);
 
         hofe2d  -> ComputeNDof();
         return *hofe2d;
@@ -1386,3 +1357,4 @@ namespace ngcomp
 
   static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
 }
+ 

@@ -12,7 +12,15 @@
 
 namespace ngstd
 {
-  using namespace ngstd;
+
+  void func()
+  {
+    Array<double> ba(10);
+    Array<int> ia(5);
+    ba = 0;
+    ia = 0;
+    cout << ba[ArrayObject(ia)] << endl;
+  }
 
   BaseTable :: BaseTable (int asize, int entrysize)
   {

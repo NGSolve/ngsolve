@@ -42,7 +42,7 @@ namespace ngfem
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
 
     /// set polynomial order
-    void SetOrder (int p)  { order_inner = p; }
+    // void SetOrder (int p)  { order_inner = p; }
 
     /// different orders in differnt directions
     void SetOrder (INT<DIM> p) { order_inner = p; }
