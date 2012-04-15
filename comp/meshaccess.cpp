@@ -14,6 +14,9 @@
 #include <../fem/h1lofe.hpp>
 
 
+
+
+
 namespace ngcomp
 {
 
@@ -274,11 +277,8 @@ namespace ngcomp
 
   int MeshAccess :: GetNDomains () const
   {
-    static Timer timer("MeshAccess::GetNDomains");
-    RegionTimer reg(timer);
-
     return ndomains;
-
+    /*
     int maxind = -1;
     int ne = GetNE(); 
     for (int i = 0; i < ne; i++)
@@ -287,16 +287,14 @@ namespace ngcomp
 	if (ind > maxind) maxind = ind;
       }
     return maxind+1;
+    */
   }
 
 
   int MeshAccess :: GetNBoundaries () const
   {
-    static Timer timer("MeshAccess::GetNBoundaries");
-    RegionTimer reg(timer);
-
     return nboundaries;
-
+    /*
     int maxind = -1;
     int nse = GetNSE(); 
     for (int i = 0; i < nse; i++)
@@ -306,20 +304,16 @@ namespace ngcomp
       }
     
     return maxind+1;
+    */
   }
 
 
   
   ELEMENT_TYPE MeshAccess :: GetElType (int elnr) const
   {
-    // elnr++;
-    // switch (Ng_GetElementType (elnr))
-
-    Ng_Element ngel = (dim == 2) 
-      ? Ng_GetElement<2> (elnr)
-      : Ng_GetElement<3> (elnr);
-    
-    switch (ngel.GetType())
+    return ConvertElementType (GetElement(elnr).GetType());
+    /*
+    switch (GetElement(elnr).GetType())
       {
       case NG_TRIG:
       case NG_TRIG6:
@@ -361,23 +355,20 @@ namespace ngcomp
     default:
       {
 	cerr << "MeshAccess::GetElType undefined type "
-	     << int(ngel.GetType()) << endl;
+	     << int(GetElement(elnr).GetType()) << endl;
       }
     }
   return ET_TET;
-}
+    */
+  }
 
 
 ELEMENT_TYPE MeshAccess :: GetSElType (int elnr) const
 {
-  // int pi[NG_SURFACE_ELEMENT_MAXPOINTS];
-  // switch (Ng_GetSurfaceElement (elnr+1, pi))
+  return ConvertElementType (GetSElement(elnr).GetType());
 
-  Ng_Element ngel = (dim == 2) 
-    ? Ng_GetElement<1> (elnr)
-    : Ng_GetElement<2> (elnr);
-
-  switch (ngel.GetType())
+  /*
+  switch (GetSElement(elnr).GetType())
     {
     case NG_SEGM:
     case NG_SEGM3:
@@ -410,88 +401,23 @@ ELEMENT_TYPE MeshAccess :: GetSElType (int elnr) const
   str << "MeshAccess::GetSElType undefined type "
       << int(ngel.GetType()) << endl;
   throw Exception (str.str());
+  */
 }
 
 
-
-// von astrid
-int MeshAccess :: GetElNV ( int elnr ) const 
-{
-  int nv;
-  NG_ELEMENT_TYPE typ = Ng_GetElementType (elnr+1);
-
-  switch (typ)
-    {
-    case NG_TRIG: nv = 3; break;
-    case NG_TRIG6: nv = 6; break;
-    case NG_QUAD: nv = 4; break;
-    case NG_QUAD6: nv = 6; break;
-
-    case NG_TET: nv = 4; break;
-    case NG_TET10: nv = 10; break;
-    case NG_PYRAMID: nv = 5; break;
-    case NG_PRISM: nv = 6; break;
-    case NG_PRISM12: nv = 12; break;
-    case NG_HEX: nv = 8; break;
-
-    default:
-      {
-	stringstream err;
-	err << "MeshAccess::GetElNV elnr = " << elnr 
-            << " has undefined type " << int(typ) << endl;
-	throw Exception (err.str());
-      }
-    }
-
-
-  return nv;
-
-
-} 
+  
+  // von astrid
+  int MeshAccess :: GetElNV ( int elnr ) const 
+  {
+    return GetElement(elnr).vertices.Size();
+  } 
 
 
 
 
 void MeshAccess :: GetElPNums (int elnr, Array<int> & pnums) const
 {
-  Ng_Element ngel = (dim == 2) 
-    ? Ng_GetElement<2> (elnr)
-    : Ng_GetElement<3> (elnr);
-
-  pnums.SetSize(ngel.points.Size());
-  for (int j = 0; j < ngel.points.Size(); j++)
-    pnums[j] = ngel.points[j];
-  
-  /*
-  pnums.SetSize (NG_ELEMENT_MAXPOINTS);
-  NG_ELEMENT_TYPE typ = Ng_GetElement (elnr+1, &pnums[0]);
-  
-  switch (typ)
-    {
-    case NG_TRIG: pnums.SetSize(3); break;
-    case NG_TRIG6: pnums.SetSize(6); break;
-    case NG_QUAD: pnums.SetSize(4); break;
-    case NG_QUAD6: pnums.SetSize(6); break;
-
-    case NG_TET: pnums.SetSize(4); break;
-    case NG_TET10: pnums.SetSize(10); break;
-    case NG_PYRAMID: pnums.SetSize(5); break;
-    case NG_PRISM: pnums.SetSize(6); break;
-    case NG_PRISM12: pnums.SetSize(12); break;
-    case NG_HEX: pnums.SetSize(8); break;
-
-    default:
-      {
-	stringstream err;
-	err << "MeshAccess::GetElPNums elnr = " << elnr 
-            << " has undefined type " << int(typ) << endl;
-	throw Exception (err.str());
-      }
-    }
-
-  for (int i = 0; i < pnums.Size(); i++)
-    pnums[i]--;
-  */
+  pnums = ArrayObject (GetElement(elnr).points);
 }
 
 
@@ -512,49 +438,12 @@ int MeshAccess :: GetSegmentIndex (int snr) const
   return Ng_GetSegmentIndex(snr+1);
 }
 
-
-
-
+  /*
 void MeshAccess :: GetElVertices (int elnr, Array<int> & vnums) const
 {
-  Ng_Element ngel = (dim == 2) ? GetElement<2> (elnr) : GetElement<3> (elnr);
-  vnums.SetSize (ngel.vertices.Size());
-  for (int j = 0; j < ngel.vertices.Size(); j++)
-    vnums[j] = ngel.vertices[j];
-
-
-  /*
-  vnums.SetSize (NG_ELEMENT_MAXPOINTS);
-  NG_ELEMENT_TYPE typ = Ng_GetElement (elnr+1, &vnums[0]);
-  
-  switch (typ)
-    {
-    case NG_TRIG: vnums.SetSize(3); break;
-    case NG_TRIG6: vnums.SetSize(3); break;
-    case NG_QUAD: vnums.SetSize(4); break;
-    case NG_QUAD6: vnums.SetSize(4); break;
-
-    case NG_TET: vnums.SetSize(4); break;
-    case NG_TET10: vnums.SetSize(4); break;
-    case NG_PYRAMID: vnums.SetSize(5); break;
-    case NG_PRISM: vnums.SetSize(6); break;
-    case NG_PRISM12: vnums.SetSize(6); break;
-    case NG_HEX: vnums.SetSize(8); break;
-
-    default:
-      {
-	stringstream err;
-	err << "MeshAccess::GetElVertices undefined type "
-	     << int(typ) << endl;
-	throw Exception (err.str());
-      }
-    }
-
-  for (int i = 0; i < vnums.Size(); i++)
-    vnums[i]--;
-  */
+  vnums = ArrayObject (GetElement(elnr).vertices);
 }
-
+  */
   
 void MeshAccess :: 
 GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const
@@ -569,49 +458,17 @@ GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const
     ednums[i]--;
 }
 
+  /*
 void MeshAccess :: 
 GetElEdges (int elnr, Array<int> & ednums) const
 {
-  /*
-  ednums.SetSize (12);
-  int ned = 
-    Ng_GetElement_Edges (elnr+1, &ednums[0], 0);
-  ednums.SetSize (ned);
-  for (int i = 0; i < ned; i++)
-    ednums[i]--;
-
-  cout << "ednums, old = " << ednums << endl;
-  */
-
-  Ng_Element ngel = (dim == 2) 
-    ? Ng_GetElement<2> (elnr)
-    : Ng_GetElement<3> (elnr);
-  ednums.SetSize(ngel.edges.Size());
-  for (int j = 0; j < ngel.edges.Size(); j++)
-    ednums[j] = ngel.edges[j];
-
-  // cout << "ednums, new = " << ednums << endl;
-
+  ednums = ArrayObject (GetElement(elnr).edges);
 }
-
-  
+  */
 void MeshAccess :: 
 GetSElEdges (int elnr, Array<int> & ednums) const
 {
-  /*
-  ednums.SetSize (4);
-  int ned = 
-    Ng_GetSurfaceElement_Edges (selnr+1, &ednums[0], 0);
-  ednums.SetSize (ned);
-  for (int i = 0; i < ned; i++)
-    ednums[i]--;
-  */
-  Ng_Element ngel = (dim == 2) 
-    ? Ng_GetElement<1> (elnr)
-    : Ng_GetElement<2> (elnr);
-  ednums.SetSize(ngel.edges.Size());
-  for (int j = 0; j < ngel.edges.Size(); j++)
-    ednums[j] = ngel.edges[j];
+  ednums = ArrayObject (GetSElement(elnr).edges);
 }
 
 void MeshAccess :: 
@@ -671,27 +528,7 @@ void MeshAccess :: GetEdgeElements (int enr, Array<int> & elnums) const
 void MeshAccess :: 
 GetElFaces (int elnr, Array<int> & fnums) const
 {
-  /*
-  fnums.SetSize (6);
-  int nfa = 
-    Ng_GetElement_Faces (elnr+1, &fnums[0], 0);
-  fnums.SetSize (nfa);
-
-  for (int i = 0; i < nfa; i++)
-    fnums[i]--;
-
-  // cout << "fnums, old = " << fnums << endl;
-  */
-
-  Ng_Element ngel = (dim == 2) 
-    ? Ng_GetElement<2> (elnr)
-    : Ng_GetElement<3> (elnr);
-
-  fnums.SetSize(ngel.faces.Size());
-  for (int j = 0; j < ngel.faces.Size(); j++)
-    fnums[j] = ngel.faces[j];
-
-  // cout << "fnums, new = " << fnums << endl;
+  fnums = ArrayObject (GetElement(elnr).faces);
 }
 
 void MeshAccess :: 
@@ -846,26 +683,7 @@ void MeshAccess :: GetSElPNums (int selnr, Array<int> & pnums) const
 
 void MeshAccess :: GetSElVertices (int selnr, Array<int> & vnums) const
 {
-  vnums.SetSize (NG_SURFACE_ELEMENT_MAXPOINTS);
-  NG_ELEMENT_TYPE typ = Ng_GetSurfaceElement (selnr+1, &vnums[0]);
-  switch (typ)
-    {
-    case NG_SEGM: vnums.SetSize(2); break;
-    case NG_SEGM3: vnums.SetSize(2); break;
-
-    case NG_TRIG: vnums.SetSize(3); break;
-    case NG_TRIG6: vnums.SetSize(3); break;
-    case NG_QUAD: vnums.SetSize(4); break;
-    case NG_QUAD6: vnums.SetSize(4); break;
-
-    default:
-      {
-	cerr << "MeshAccess::GetSElPNums undefined type "
-	     << int(Ng_GetSurfaceElement (selnr+1, &vnums[0])) << endl;
-      }
-
-    }
-  for (int i = 0; i < vnums.Size(); i++) vnums[i]--;
+  vnums = ArrayObject (GetSElement(selnr).vertices);
 }
 
 
@@ -1026,7 +844,7 @@ GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans) cons
 ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, LocalHeap & lh) const
 
 {
-  ElementTransformation * eltrans;  // = new (lh) ElementTransformation();
+  ElementTransformation * eltrans;  
 
   if (!boundary)
     {
@@ -1399,35 +1217,11 @@ void MeshAccess :: AddPointCurvePoint(const Vec<3> & point) const
 }
 
 
-
-
 #ifdef PARALLEL
  
 namespace ngcomp
 {
-  /*
-int MeshAccess ::GetGlobalNodeNum (NODE_TYPE nt, int locnum) const
-  {
-    switch (nt)
-      {
-      case NT_VERTEX: return NgPar_GetDistantPNum ( 0, locnum ); 
-      case NT_EDGE: return NgPar_GetDistantEdgeNum ( 0, locnum ); 
-      case NT_FACE: return NgPar_GetDistantFaceNum ( 0, locnum ); 
-      case NT_CELL: return NgPar_GetDistantElNum ( 0, locnum ); 
-      }
-    return -1;
-  }
-
-
-  int MeshAccess :: GetDistantNodeNums (NODE_TYPE nt, int locnum, 
-					ngstd::Array<int[2]> & distnums ) const
-  {
-    distnums.SetSize( NgPar_GetNDistantNodeNums(nt, locnum) );
-    return NgPar_GetDistantNodeNums ( nt, locnum, &distnums[0][0] );
-  }
-  */
-
-int MeshAccess ::GetGlobalNodeNum (Node node) const
+  int MeshAccess ::GetGlobalNodeNum (Node node) const
   {
     switch (node.GetType())
       {
@@ -1438,16 +1232,14 @@ int MeshAccess ::GetGlobalNodeNum (Node node) const
       }
     return -1;
   }
-
-
+  
+  
   int MeshAccess :: GetDistantNodeNums (Node node,
 					ngstd::Array<int[2]> & distnums ) const
   {
     distnums.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );
     return NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &distnums[0][0] );
   }
-
-
 }
 
 #else

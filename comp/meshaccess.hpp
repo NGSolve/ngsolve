@@ -274,11 +274,17 @@ namespace ngcomp
     ///
     void GetSElPNums (int selnr, Array<int> & pnums) const;
 
-    void GetElVertices (int elnr, Array<int> & vnums) const;
+    void GetElVertices (int elnr, Array<int> & vnums) const
+    {
+      vnums = ArrayObject (GetElement(elnr).vertices);
+    }
     ///
     void GetSElVertices (int selnr, Array<int> & vnums) const;
     ///
-    void GetElEdges (int elnr, Array<int> & ednums) const;
+    void GetElEdges (int elnr, Array<int> & ednums) const
+    {
+      ednums = ArrayObject (GetElement(elnr).edges);
+    }
     ///
     void GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const;
     ///
@@ -554,6 +560,9 @@ namespace ngcomp
 
       case NG_HEX:
 	return ET_HEX;
+	
+      default:
+	throw Exception ("Netgen2NgS type conversion: Unhandled element type");
       }
     
     return ET_TRIG;  // return something for the  compiler
