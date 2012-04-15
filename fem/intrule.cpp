@@ -974,20 +974,21 @@ namespace ngfem
 
     switch (eltrans.GetElementType())
       {
+
       case ET_TET:
         {
           irx = &SelectIntegrationRuleJacobi20 (order);
           iry = &SelectIntegrationRuleJacobi10 (order);
           irz = &SelectIntegrationRule (ET_SEGM, order);
-          
+
           int sort[4] = { 0, 1, 2, 3}, isort[4];   // compiler warnings
-          eltrans.GetSort (FlatArray<int> (4, sort) );
+	  eltrans.GetSort (FlatArray<int> (4, sort) );
           for (int i = 0; i < 4; i++) isort[sort[i]] = i;
           
           nip = irx->GetNIP() * iry->GetNIP() * irz->GetNIP();
 
 	  SetSize(nip);
-
+ 
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++)
               for (int i3 = 0; i3 < irz->GetNIP(); i3++, ii++)
@@ -1009,7 +1010,6 @@ namespace ngfem
 						  sqr(1-x) * (1-y) );
                 }
 
-
           // tet permutation transformation
           double dlamdx[4][3] = 
             { { 1, 0, 0 },
@@ -1025,11 +1025,12 @@ namespace ngfem
         
           // tet permutation plus hex -> tet mapping
           dxdxi_duffy.SetSize(nip);
+
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             {
               double x = (*irx)[i1](0);
               double invx = 1.0 / (1-x);
-            
+
               for (int i2 = 0; i2 < iry->GetNIP(); i2++)
                 {
                   double y = (*iry)[i2](0);
@@ -1045,7 +1046,7 @@ namespace ngfem
                       trans3(0,0) = 1;
                       trans3(0,1) = 0;
                       trans3(0,2) = 0;
-                    
+
                       trans3(1,0) = y*invx;
                       trans3(1,1) = 1*invx;
                       trans3(1,2) = 0;
@@ -1053,8 +1054,8 @@ namespace ngfem
                       trans3(2,0) = z*invxy;
                       trans3(2,1) = z*invxy;
                       trans3(2,2) = 1*invxy;
-                    
-                      dxdxi_duffy[ii] = trans3 * trans2;
+		      
+		      dxdxi_duffy[ii] = trans3 * trans2;
                     }
                 }
             }
@@ -1071,7 +1072,6 @@ namespace ngfem
 
           eltrans.GetSort (FlatArray<int> (6, sort) );
           for (int i = 0; i < 6; i++) isort[sort[i]] = i;
-
 
           nip = irx->GetNIP() * iry->GetNIP() * irz->GetNIP();
 	  
@@ -1142,7 +1142,6 @@ namespace ngfem
 
                   dxdxi_duffy[ii] = trans3 * trans2;
                 }
-
           break;
         }
 
@@ -1178,13 +1177,14 @@ namespace ngfem
 		  */
                 }
         
+
+	  /*
           Mat<3> id;
           id = 0;
           id(0,0) = id(1,1) = id(2,2) = 1;
-        
+	  */
           for (int i = 0; i < nip; i++)
-            dxdxi_duffy[i] = id;
-
+            dxdxi_duffy[i] = Id<3>();
           break;
         }
 
