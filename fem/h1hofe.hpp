@@ -42,24 +42,27 @@ namespace ngfem
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
 
     /// set isotropic cell order
-    void SetOrderCell (int oi)   { order_cell = oi; }
+    // void SetOrderCell (int oi)   { order_cell = oi; }
 
     /// set anisotropic cell order
     void SetOrderCell (INT<3> oi)  { order_cell = oi; }
 
     /// set isotropic face orders
-    void SetOrderFace (FlatArray<int> & of)
-    { for (int i = 0; i < of.Size(); i++) order_face[i] = of[i]; }
+    // void SetOrderFace (FlatArray<int> & of)
+    // { for (int i = 0; i < of.Size(); i++) order_face[i] = of[i]; }
 
     /// set anisotropic face orders
-    void SetOrderFace (FlatArray<INT<2> > & of)
+    // void SetOrderFace (FlatArray<INT<2> > & of)
+    template <typename TA>
+    void SetOrderFace (const TA & of)
     { for (int i = 0; i < of.Size(); i++) order_face[i] = of[i]; }
 
     /// set anisotropic face order for face nr
     void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
 
     /// set edge orders
-    void SetOrderEdge (FlatArray<int> & oe)
+    template <typename TA>
+    void SetOrderEdge (const TA & oe)
     { for (int i = 0; i < oe.Size(); i++) order_edge[i] = oe[i]; }
 
     /// set edge order for edge nr

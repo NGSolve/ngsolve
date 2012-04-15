@@ -287,53 +287,6 @@ namespace ngcomp
 	    fe3d -> ComputeNDof(); 
             return *fe3d;
           }
-
-
-	/*	
-	L2HighOrderFiniteElement<2> * fe2d = 0;
-	L2HighOrderFiniteElement<3> * fe3d = 0;
-
-	switch (ma.GetElType(elnr))
-	  {
-	  case ET_TET:     fe3d = new (lh) L2HighOrderFE<ET_TET> (); break;
-	  case ET_PYRAMID: fe3d = new (lh) L2HighOrderFE<ET_PYRAMID> (); break;
-	  case ET_PRISM:   fe3d = new (lh) L2HighOrderFE<ET_PRISM> (); break;
-	  case ET_HEX:     fe3d = new (lh) L2HighOrderFE<ET_HEX> (); break;
-	  case ET_TRIG:    fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
-	  case ET_QUAD:    fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
-	  default:
-	    {
-	      stringstream str;
-	      str << "L2HighOrderFESpace " << GetClassName() 
-		  << ", undefined eltype " 
-		  << ElementTopology::GetElementName(ma.GetElType(elnr))
-		  << ", order = " << order << endl;
-	      throw Exception (str.str());
-	    }
-	  }
-
-	if (fe2d)
-	  {
-            Ng_Element ngel = ma.GetElement<2> (elnr);
-	    for (int j = 0; j < ngel.vertices.Size(); j++)
-	      fe2d -> SetVertexNumber (j, ngel.vertices[j]);
-
-	    INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
-	    fe2d -> SetOrder(p);
-	    fe2d -> ComputeNDof(); 
-            return *fe2d;
-          }
-        else
-          {
-            Ng_Element ngel = ma.GetElement<3> (elnr);
-	    for (int j = 0; j < ngel.vertices.Size(); j++)
-	      fe3d -> SetVertexNumber (j, ngel.vertices[j]);
-
-	    fe3d -> SetOrder(order_inner[elnr]); 
-	    fe3d -> ComputeNDof(); 
-            return *fe3d;
-          }
-	*/
       } 
     catch (Exception & e)
       {

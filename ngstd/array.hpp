@@ -129,6 +129,24 @@ namespace ngstd
   }
 
 
+  template <class T> class FlatArray;
+
+  template <typename T, typename INDEX_ARRAY>
+  class IndirectArray : public BaseArrayObject<IndirectArray<T, INDEX_ARRAY> >
+  {
+    const FlatArray<T> & ba;
+    const INDEX_ARRAY & ia;
+
+  public:
+    IndirectArray (const FlatArray<T> & aba,
+		   const INDEX_ARRAY & aia)
+      : ba(aba), ia(aia) { ; }
+
+    int Size() const { return ia.Spec().Size(); }
+    T operator[] (int i) const { return ba[ia.Spec()[i]]; }
+  };
+
+
 
   /**
      A simple array container.
@@ -182,20 +200,6 @@ namespace ngstd
     }
 
 
-    /*
-   /// access array. range check by macro CHECK_RANGE
-   T & operator[] (int i) 
-   { 
-
-   #ifdef CHECK_RANGE
-   if (i < 0 || i >= size)
-   throw RangeException ("FlatArray::operator[]", i, 0, size-1);
-   #endif
-
-   return data[i]; 
-   }
-    */
-
     /// Access array. range check by macro CHECK_RANGE
     T & operator[] (int i) const
     {
@@ -220,20 +224,6 @@ namespace ngstd
     {
     return data+i;
     }
-    */
-
-
-    /*
-   /// access last element. check by macro CHECK_RANGE
-   T & Last ()
-   {
-   #ifdef CHECK_RANGE
-   if (!size)
-   throw Exception ("Array should not be empty");
-   #endif
-
-   return data[size-1];
-   }
     */
 
     /// access last element. check by macro CHECK_RANGE
@@ -272,11 +262,17 @@ namespace ngstd
     }
 
     /// takes range starting from position start of end-start elements
-    const FlatArray<T> operator[] (class IntRange range) const
+    const FlatArray<T> operator[] (const IntRange range) const
     {
       return FlatArray<T> (range.Size(), data+range.First());
     }
-
+    
+    template <typename TI1, typename TI2>
+    const IndirectArray<T, BaseArrayObject<TI1,TI2> > 
+    operator[] (const BaseArrayObject<TI1,TI2> & ind_array) const
+    {
+      return IndirectArray<T, BaseArrayObject<TI1,TI2> > (*this, ind_array);
+    }
 
     /// first position of element elem, returns -1 if element not contained in array 
     int Pos(const T & elem) const
@@ -523,7 +519,6 @@ namespace ngstd
         (*this)[i] = a2.Spec()[i];
       return *this;
     }
-    
 
   private:
 
