@@ -269,52 +269,17 @@ namespace ngcomp
   }
 
 
-
-
-  int MeshAccess :: GetNDomains () const
-  {
-    return ndomains;
-    /*
-      int maxind = -1;
-      int ne = GetNE(); 
-      for (int i = 0; i < ne; i++)
-      { 
-      int ind = GetElIndex(i);
-      if (ind > maxind) maxind = ind;
-      }
-      return maxind+1;
-    */
-  }
-
-
-  int MeshAccess :: GetNBoundaries () const
-  {
-    return nboundaries;
-    /*
-      int maxind = -1;
-      int nse = GetNSE(); 
-      for (int i = 0; i < nse; i++)
-      { 
-      int ind = GetSElIndex(i);
-      if (ind > maxind) maxind = ind;
-      }
-    
-      return maxind+1;
-    */
-  }
-
-
-  
+  /*
   ELEMENT_TYPE MeshAccess :: GetElType (int elnr) const
   {
     return ConvertElementType (GetElement(elnr).GetType());
   }
 
-
   ELEMENT_TYPE MeshAccess :: GetSElType (int elnr) const
   {
     return ConvertElementType (GetSElement(elnr).GetType());
   }
+  */
   
   int MeshAccess :: GetElNV ( int elnr ) const 
   {
@@ -347,7 +312,7 @@ namespace ngcomp
     return Ng_GetSegmentIndex(snr+1);
   }
 
-  
+
   void MeshAccess :: 
   GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const
   {
@@ -360,7 +325,6 @@ namespace ngcomp
     for (int i = 0; i < ned; i++)
       ednums[i]--;
   }
-
 
   void MeshAccess :: 
   GetSElEdges (int elnr, Array<int> & ednums) const
@@ -441,7 +405,6 @@ namespace ngcomp
     for (int i = 0; i < nfa; i++)
       fnums[i]--;
   }
-
 
   int MeshAccess :: 
   GetSElFace (int selnr) const
@@ -848,14 +811,6 @@ namespace ngcomp
 	return elvec(0);
       }
   }
-
-  /*
-    int MeshAccess :: GetNLevels() const
-    {
-    return Ng_GetNLevels();
-    }
-  */
-
 
 
   void MeshAccess :: SetPointSearchStartElement(const int el) const

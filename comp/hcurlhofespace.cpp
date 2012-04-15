@@ -1076,7 +1076,7 @@ namespace ngcomp
     cout << " EXCLUDE GRADS " << excl_grads << endl; 
     
     Array<int> vnums,elnums; 
-    Array<int> orient; 
+    // Array<int> orient; 
     Array<int> ednums, fanums, enums, f2ed;
     
     // int augv = augmented; 
@@ -1412,7 +1412,7 @@ namespace ngcomp
 	    }
 	  for (i=0; i< ni; i++) 
 	    {
-	      ma.GetElEdges (i, enums, orient);
+	      ma.GetElEdges (i, enums);
 	      int ndi = first_inner_dof[i+1] - first_inner_dof[i];
 	      for (j = 0; j < enums.Size(); j++)
 		cnt[nv+enums[j]] += ndi;
@@ -1803,7 +1803,7 @@ namespace ngcomp
 	 
 	  for (i = 0; i < ni; i++)
 	    {
-	      ma.GetElEdges (i, enums, orient);
+	      ma.GetElEdges (i, enums);
 	      first = first_inner_dof[i];
 	      int ndof = first_inner_dof[i+1] - first_inner_dof[i];
 	      for (j = 0; j < enums.Size(); j++)

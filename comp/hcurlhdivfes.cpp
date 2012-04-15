@@ -96,7 +96,7 @@ namespace ngcomp
     // int np = ma.GetNP();
     int ned = ma.GetNEdges();
     
-    Array<int> pnums, enums, eorient;
+    Array<int> pnums, enums;
     
     
     int level = ma.GetNLevels();
@@ -120,14 +120,14 @@ namespace ngcomp
     
     for (i = 0; i < ne; i++)
       {
-	ma.GetElEdges (i, enums, eorient);
+	ma.GetElEdges (i, enums);
 	for (j = 0; j < enums.Size(); j++)
 	  finelevelofedge[enums[j]] = level-1;
       }
 
     for (i = 0; i < nse; i++)
       {
-	ma.GetSElEdges (i, enums, eorient);
+	ma.GetSElEdges (i, enums);
 	for (j = 0; j < enums.Size(); j++)
 	  finelevelofedge[enums[j]] = level-1;
       }
@@ -361,23 +361,15 @@ namespace ngcomp
   
   void NedelecFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    int eoa[12];
-    Array<int> eorient(12, eoa);
-    GetMeshAccess().GetElEdges (elnr, dnums, eorient);
-
+    GetMeshAccess().GetElEdges (elnr, dnums);
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
-
-    //(*testout) << "el = " << elnr << ", dofs = " << dnums << endl;
   }
 
 
   void NedelecFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
-    int eoa[12];
-    Array<int> eorient(12, eoa);
-    GetMeshAccess().GetSElEdges (selnr, dnums, eorient);
-
+    GetMeshAccess().GetSElEdges (selnr, dnums);
     if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
       dnums = -1;
   }
@@ -943,7 +935,7 @@ namespace ngcomp
 
     // new definition of gradient edges
 
-    Array<int> enums, eorient, fnums, forient;
+    Array<int> enums, fnums, forient;
 
     gradientedge.SetSize(ned);
     gradientedge = 1;
@@ -1009,7 +1001,7 @@ namespace ngcomp
 	  {
 	    if (gradientdomains[ma.GetElIndex(i)])
 	      {
-		ma.GetElEdges (i, enums, eorient);
+		ma.GetElEdges (i, enums);
 		for (j = 0; j < enums.Size(); j++)
 		  gradientedge[enums[j]] = 1;
 		ma.GetElFaces (i, fnums, forient);
@@ -1027,7 +1019,7 @@ namespace ngcomp
 	{
 	  if (gradientboundaries[ma.GetSElIndex(i)])
 	    {
-	      ma.GetSElEdges (i, enums, eorient);
+	      ma.GetSElEdges (i, enums);
 	      for (j = 0; j < enums.Size(); j++)
 		gradientedge[enums[j]] = 1;
 	      ma.GetSElFace (i, fnums[0], forient[0]);
@@ -1404,11 +1396,11 @@ namespace ngcomp
   void NedelecFESpace2 :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     int fnum, forient;
-    int ena[4], eoa[4];
-    Array<int> enums(4, ena), eorient(4, eoa);
+    int ena[4];
+    Array<int> enums(4, ena);
 
     ma.GetSElFace (selnr, fnum, forient);
-    ma.GetSElEdges (selnr, enums, eorient);
+    ma.GetSElEdges (selnr, enums);
 
     LocalHeapMem<1000> lh("NedelecFESpace2, GetSDofNrs");
     int nd = GetSFE (selnr, lh).GetNDof();
@@ -2723,7 +2715,7 @@ namespace ngcomp
     Array<int> dnums(1);
 
     Array<int> fnums, forient;
-    Array<int> enums, eorient;
+    Array<int> enums;
     Array<int> lock;
 
     cout << "type is " << typeid(mat).name() << endl;
@@ -2738,7 +2730,7 @@ namespace ngcomp
 	  case ET_PRISM:
 	    {
 	      ma.GetElFaces (i, fnums, forient);
-	      ma.GetElEdges (i, enums, eorient);
+	      ma.GetElEdges (i, enums);
 	    
 	      if (order == 3)
 		{
