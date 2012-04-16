@@ -5,11 +5,38 @@ if { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
 
 # check some NGS command
 if { [catch { NGS_GetData } ] == 0 } { 
-    
 
+set sbatchmode [Ng_GetCommandLineParameter batchmode]
+if { $sbatchmode == "defined" } {
+    puts "batchmode ..."
 
-
-
+    set pdefilename [Ng_GetCommandLineParameter pdefile]
+    if { $pdefilename != "undefined" } {
+	NGS_LoadPDE  $pdefilename;  
+	set solve [Ng_GetCommandLineParameter solve]
+	if { $zugstange == 1 } {
+	    set options.parthread 0
+            Ng_SetMeshingParameters
+	    NGS_SolvePDE;
+	} {
+	    if { $solve == "defined" } {
+		set options.parthread 0
+                Ng_SetMeshingParameters
+		NGS_SolvePDE;
+	        NGS_PrintTiming
+                puts "Thank you for using $progname/NGSolve"; Ng_Exit; destroy .
+	    } {
+	        if { $solve != "undefined" } {
+                    set options.parthread 0
+                    Ng_SetMeshingParameters
+                    for { set l 1 } { $l <= $solve } { incr l } { NGS_SolvePDE $l }
+                    NGS_PrintTiming
+                    puts "Thank you for using $progname/NGSolve"; Ng_Exit; destroy .
+	         }
+	    }
+	}
+    }
+}
 
     set pdefilename [Ng_GetCommandLineParameter pdefile]
     if { $pdefilename != "undefined" } {
@@ -18,29 +45,28 @@ if { [catch { NGS_GetData } ] == 0 } {
 	set solve [Ng_GetCommandLineParameter solve]
 	if { $zugstange == 1 } {
 	    set options.parthread 0
+            Ng_SetMeshingParameters
 	    NGS_SolvePDE;
 	} {
 	    if { $solve == "defined" } {
 		set options.parthread 0
+                Ng_SetMeshingParameters
 		NGS_SolvePDE
-		NGS_PrintTiming
-		Ng_Exit;
-		destroy .
+                set selectvisual solution
+                Ng_SetVisParameters	
+                redraw
 	    } {
 		if { $solve != "undefined" } {
 		    set options.parthread 0
+                    Ng_SetMeshingParameters
 		    for { set l 1 } { $l <= $solve } { incr l } { NGS_SolvePDE $l }
-		    NGS_PrintTiming
-		    Ng_Exit;
-		    destroy .
+                    set selectvisual solution
+                    Ng_SetVisParameters	
+                    redraw
 		}
 	    }
 	}
     }
-
-    
-
-
 
 
     set progname "NGSolve"
