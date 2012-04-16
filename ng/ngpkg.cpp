@@ -1832,6 +1832,9 @@ namespace netgen
 
   void MyOpenGLText (const char * text)
   {
+    if (nodisplay)
+      return;
+      
     glListBase (fontbase);
     glCallLists (GLsizei(strlen(text)), GL_UNSIGNED_BYTE, text);
   }
@@ -1840,6 +1843,9 @@ namespace netgen
 
   static void init( struct Togl *togl )
   {
+    if (nodisplay)
+      return;
+      
     fontbase = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
 
     glMatrixMode(GL_PROJECTION);
@@ -1857,6 +1863,9 @@ namespace netgen
 
   static void draw( struct Togl *togl )
   {
+    if (nodisplay)
+      return;
+      
     Tcl_Interp * interp = Togl_Interp(togl);
 
     SetVisualScene (interp);
@@ -1898,6 +1907,9 @@ namespace netgen
 
   static void reshape( struct Togl *togl)
   {
+    if (nodisplay)
+      return;
+      
     int w = Togl_Width (togl);
     int h = Togl_Height (togl);
 
@@ -2679,6 +2691,8 @@ void Ng_InitSolutionData (Ng_SolutionData * soldata)
 void Ng_SetSolutionData (Ng_SolutionData * soldata)
 {
 #ifdef OPENGL
+  if (nodisplay)
+    return;
   //   vssolution.ClearSolutionData ();
   VisualSceneSolution::SolData * vss = new VisualSceneSolution::SolData;
 
@@ -2701,6 +2715,8 @@ void Ng_SetSolutionData (Ng_SolutionData * soldata)
 void Ng_ClearSolutionData ()
 {
 #ifdef OPENGL
+  if (nodisplay)
+    return;
   vssolution.ClearSolutionData();
 #endif
 }
