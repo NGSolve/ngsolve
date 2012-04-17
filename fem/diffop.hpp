@@ -161,15 +161,18 @@ namespace ngfem
     /// destructor
     virtual ~DifferentialOperator ();
     /// dimension of range
-    virtual int Dim() const = 0;   
+    virtual int Dim() const = 0;
     /// does it live on the boundary ?
-    virtual bool Boundary() const = 0;
+    virtual bool Boundary() const { return false; }
     /// calculates the matrix
     virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatMatrix<double> mat, 
-		LocalHeap & lh) const = 0;
+		LocalHeap & lh) const 
+    {
+      cerr << "DifferentialOperator::CalcMatrix called for base class" << endl;
+    }
 
     virtual void
     Apply (const FiniteElement & fel,
