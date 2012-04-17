@@ -284,8 +284,14 @@ namespace ngcomp
   }
 
 
-  double GridFunctionCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
+  double GridFunctionCoefficientFunction :: 
+  Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
+    VectorMem<10> flux(Dimension());
+    Evaluate (ip, flux);
+    return flux(0);
+
+    /*
     LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction - evaluate");
     
     int elnr = ip.GetTransformation().GetElementNr();
@@ -293,16 +299,14 @@ namespace ngcomp
 
     const FESpace & fes = gf.GetFESpace();
     
-    if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex())) return 0;
+    if (!boundary)
+      if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex())) return 0;
     
     const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
     int dim     = fes.GetDimension();
 
     ArrayMem<int, 50> dnums;
-    if (boundary)
-      fes.GetSDofNrs(elnr, dnums);
-    else
-      fes.GetDofNrs (elnr, dnums);
+    fes.GetDofNrs (elnr, boundary, dnums);
     
     VectorMem<50> elu(dnums.Size()*dim);
 
@@ -317,16 +321,16 @@ namespace ngcomp
       }
     else
       {
-	const BilinearFormIntegrator * bfi = 
-	  boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
+	const BilinearFormIntegrator * bfi = fes.GetEvaluator(boundary);
 	VectorMem<10> flux(bfi->DimFlux());
 	bfi->CalcFlux (fel, ip, elu, flux, false, lh2);
 	return flux(0); 
       }
+    */
   }
 
-  void GridFunctionCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip,
-						    FlatVector<> result) const
+  void GridFunctionCoefficientFunction :: 
+  Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> result) const
   {
     LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction, Eval 2");
     
@@ -334,17 +338,16 @@ namespace ngcomp
     bool boundary = ip.GetTransformation().Boundary();
 
     const FESpace & fes = gf.GetFESpace();
+
+    if (!boundary)    
+      if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex()))
+	{ result = 0.0; return;};
     
-    if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex())) { result = 0.0; return;};
-    
-    const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
+    const FiniteElement & fel = fes.GetFE (elnr, boundary, lh2);
     const int dim     = fes.GetDimension();
     
     ArrayMem<int, 50> dnums;
-    if(boundary)
-      fes.GetSDofNrs(elnr, dnums);
-    else
-      fes.GetDofNrs (elnr, dnums);
+    fes.GetDofNrs (elnr, boundary, dnums);
     
     VectorMem<50> elu(dnums.Size()*dim);
 
@@ -352,15 +355,9 @@ namespace ngcomp
     fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
 
     if (diffop)
-      {
-	diffop->Apply (fel, ip, elu, result, lh2);
-      }
+      diffop->Apply (fel, ip, elu, result, lh2);
     else
-      {
-	const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
-	bfi->CalcFlux (fel, ip, elu, result, false, lh2);
-      }
-
+      fes.GetEvaluator(boundary) -> CalcFlux (fel, ip, elu, result, false, lh2);
   }
 
 
@@ -374,32 +371,25 @@ namespace ngcomp
 
     const FESpace & fes = gf.GetFESpace();
     
-    if (!fes.DefinedOn(ir.GetTransformation().GetElementIndex())) { values = 0.0; return;};
+    if (!boundary)
+      if (!fes.DefinedOn(ir.GetTransformation().GetElementIndex())) 
+	{ values = 0.0; return;};
     
-    const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
-    const int dim     = fes.GetDimension();
+    const FiniteElement & fel = fes.GetFE (elnr, boundary, lh2);
+    int dim = fes.GetDimension();
 
     ArrayMem<int, 50> dnums;
-    if(boundary)
-      fes.GetSDofNrs(elnr, dnums);
-    else
-      fes.GetDofNrs (elnr, dnums);
-    
+    fes.GetDofNrs (elnr, boundary, dnums);
+     
     VectorMem<50> elu(dnums.Size()*dim);
 
     gf.GetElementVector (comp, dnums, elu);
     fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
-
     
     if (diffop)
-      {
-	diffop->Apply (fel, ir, elu, values, lh2);
-      }
+      diffop->Apply (fel, ir, elu, values, lh2);
     else
-      {
-	const BilinearFormIntegrator * bfi = boundary ? fes.GetBoundaryEvaluator() : fes.GetEvaluator();
-	bfi->CalcFlux (fel, ir, elu, values, false, lh2);
-      }
+      fes.GetEvaluator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
   }
 
 
