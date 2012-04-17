@@ -345,8 +345,14 @@ namespace ngcomp
 
 
     /// returns function-evaluator
-    const BilinearFormIntegrator * GetEvaluator () const
-    { return evaluator; }
+    const BilinearFormIntegrator * GetEvaluator (bool boundary = false) const
+    { 
+      if (boundary)
+	return boundary_evaluator; 
+      else
+	return evaluator; 
+    }
+
     /// returns function-evaluator for boundary values
     const BilinearFormIntegrator * GetBoundaryEvaluator () const
     { return boundary_evaluator; }
