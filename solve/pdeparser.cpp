@@ -840,12 +840,20 @@ namespace ngsolve
 		    }
 		  
 			 
-		  if(coeffs[index] == NULL) coeffs[index] = new EvalFunction(*fun);
+		  coeffs[index] = new EvalFunction(*fun);
 		  if(fun->IsConstant())
 		    dcoeffs[index] = fun->Eval( (double*)(0));
 		  else
 		    only_constant = false;
 		}
+
+	      // iff not all indices are in use ...
+	      EvalFunction * some_fun = NULL;
+	      for (int i = 0; i < coeffs.Size(); i++)
+		if (coeffs[i]) some_fun = coeffs[i];
+	      for (int i = 0; i < coeffs.Size(); i++)
+		if (!coeffs[i])
+		  coeffs[i] = new EvalFunction (*some_fun);
 
 	      for(int i=0; i<funs.Size(); i++)
 		delete funs[i];
@@ -1463,6 +1471,7 @@ namespace ngsolve
 			  scan->ReadNext();
 
 			  // for vector valued coefficient functions
+
 			  if (i == 0 &&
 			      coeffs[i]->Dimension() == info->numcoeffs)
 			    {
