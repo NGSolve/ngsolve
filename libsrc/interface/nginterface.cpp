@@ -1269,7 +1269,7 @@ void Ng_HPRefinement (int levels, double parameter, bool setorders,
 {
   NgLock meshlock (mesh->MajorMutex(), true);
   Refinement & ref = const_cast<Refinement&> (ng_geometry -> GetRefinement());
-  HPRefinement (*mesh, &ref, levels);
+  HPRefinement (*mesh, &ref, levels, parameter, setorders, ref_level);
   /*
     Refinement * ref;
 

@@ -1334,14 +1334,18 @@ namespace netgen
     ArrayMem<Point<3>, 65> ptsglob(n+1);
 
     /*
-    double trigpts[3][2] = { { 0, 0 }, { 1, 0 }, { 0, 1} };
+    double trigpts[3][2]  = { { 0, 0 }, { 1, 0 }, { 0, 1} };
     double trigvecs[3][2] = { { 1, 0 }, { -1,1 }, { 0, -1} };
     */
-    double trigpts[3][2] = { { 0, 0 }, { 0, 1 }, { 1, 0} };
+    double trigpts[3][2]  = { { 0, 0 }, { 0, 1 }, { 1, 0} };
     double trigvecs[3][2] = { { 1, 0 }, { 0, -1 }, { -1, 1} };
-
+    
+    /*
     double quadpts[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1} };
     double quadvecs[4][2] = { { 1, 0 }, { 0, 1 }, { -1, 0}, { 0, -1} };
+    */
+    double quadpts[4][2]  = { { 0, 0 },  { 1, 1 }, { 0, 1}, { 1, 0 } };
+    double quadvecs[4][2] = { { 1, 0 },  { -1, 0}, { 0, -1}, { 0, 1 } };
 
     for (SurfaceElementIndex sei = 0; sei < nse; sei++)
       {
