@@ -319,6 +319,7 @@ namespace ngfem
   }
 
 
+
   void BilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & fel,
 	    const FiniteElement & felflux,
@@ -332,7 +333,6 @@ namespace ngfem
 	 << typeid(*this).name()
 	 << endl;
   }
-  
 
 
   void BilinearFormIntegrator :: 

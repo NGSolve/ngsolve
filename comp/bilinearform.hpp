@@ -193,6 +193,7 @@ namespace ngcomp
     { 
       return *mats.Last(); 
     }
+    operator const BaseMatrix& () const { return GetMatrix(); }
 
     ///
     const BaseMatrix & GetMatrix (int level) const

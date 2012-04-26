@@ -20,6 +20,9 @@ namespace ngfem
     double pi[3];
     /// weight of integration point
     double weight;
+    /// point is on facetnr, -1 for volume
+    int facetnr;
+
   public:
     ///
     bool precomputed_geometry;
@@ -33,6 +36,7 @@ namespace ngfem
       pi[2] = aip(2);
       weight = aip.Weight();
       precomputed_geometry = aip.precomputed_geometry;
+      facetnr = -1;
       return *this;
     }
 
@@ -44,6 +48,7 @@ namespace ngfem
       pi[1] = api[1];
       pi[2] = api[2];
       weight = aw;
+      facetnr = -1;
       precomputed_geometry = 0;
     }
 
@@ -55,6 +60,7 @@ namespace ngfem
       pi[1] = p2;
       pi[2] = p3;
       weight = aw;
+      facetnr = -1;
       precomputed_geometry = 0;
     }
 
@@ -66,6 +72,7 @@ namespace ngfem
       pi[1] = (ap.Size() >= 2) ? ap(1) : 0;
       pi[2] = (ap.Size() >= 3) ? ap(2) : 0;
       weight = aw;
+      facetnr = -1;
       precomputed_geometry = 0;
     }
 
@@ -77,6 +84,7 @@ namespace ngfem
       for (int j = 0; j < D; j++)
 	pi[j] = ap(j);
       weight = aw;
+      facetnr = -1;
       precomputed_geometry = 0;
     }
 
@@ -104,6 +112,9 @@ namespace ngfem
 
     /// global number of ip
     int IPNr () const { return -1; }
+  public:
+    int & FacetNr() { return facetnr; }
+    int FacetNr() const { return facetnr; }
 
     ///
     friend NGS_DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationPoint & ip);

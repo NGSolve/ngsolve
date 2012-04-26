@@ -46,6 +46,20 @@ namespace ngcomp
     ///  
     virtual const BaseVector & GetVector (int comp = 0) const  { return *(vec[comp]); }
 
+
+
+    operator BaseVector& () { return GetVector(); }
+    template <typename T> 
+    GridFunction & operator= (const VVecExpr<T> & v) { GetVector() = v; return *this; }
+    GridFunction & operator= (const BaseVector & v) { GetVector() = v; return *this; }
+    template <typename T> 
+    GridFunction & operator+= (const VVecExpr<T> & v) { GetVector() += v; return *this; }
+    GridFunction & operator+= (const BaseVector & v) { GetVector() += v; return *this; }
+    template <typename T> 
+    GridFunction & operator-= (const VVecExpr<T> & v) { GetVector() -= v; return *this; }
+    GridFunction & operator-= (const BaseVector & v) { GetVector() -= v; return *this; }
+
+
     ///
     void SetNested (int anested = 1) { nested = anested; }
     ///
@@ -259,15 +273,15 @@ namespace ngcomp
 				const double * dxdxref, int sdxdxref,
 				double * values, int svalues);
 
-    virtual bool GetSurfValue (int elnr,
+    virtual bool GetSurfValue (int elnr, int facetnr,
 			       double lam1, double lam2, 
 			       double * values) ;
 
-    virtual bool GetSurfValue (int selnr,
+    virtual bool GetSurfValue (int selnr, int facetnr, 
 			       const double xref[], const double x[], const double dxdxref[],
 			       double * values);
 
-    virtual bool GetMultiSurfValue (int selnr, int npts,
+    virtual bool GetMultiSurfValue (int selnr, int facetnr, int npts,
                                     const double * xref, int sxref,
                                     const double * x, int sx,
                                     const double * dxdxref, int sdxdxref,
