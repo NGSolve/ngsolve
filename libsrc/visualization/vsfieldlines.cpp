@@ -215,7 +215,7 @@ namespace netgen
 	    if (mesh.GetDimension()==3)
               vss.GetValues ( vsol, elnr, lami[0], lami[1], lami[2], values);
             else
-              vss.GetSurfValues ( vsol, elnr, lami[0], lami[1], values);
+              vss.GetSurfValues ( vsol, elnr, -1, lami[0], lami[1], values);
               
 	    
 	    VisualSceneSolution::RealVec3d ( values, v, vsol->iscomplex, phaser, phasei);
@@ -354,7 +354,7 @@ namespace netgen
     if (mesh.GetDimension()==3)
       startdraw = vss.GetValues ( vsol, startelnr, startlami[0], startlami[1], startlami[2], values);
     else
-      startdraw = vss.GetSurfValues ( vsol, startelnr, startlami[0], startlami[1], values);
+      startdraw = vss.GetSurfValues ( vsol, startelnr, -1, startlami[0], startlami[1], values);
 
     VisualSceneSolution::RealVec3d ( values, startv, vsol->iscomplex, phaser, phasei);
 
@@ -404,7 +404,7 @@ namespace netgen
                     if (mesh.GetDimension()==3)
                         drawelem = vss.GetValues (vsol, elnr, lami[0], lami[1], lami[2], values);
                     else
-                      drawelem = vss.GetSurfValues (vsol, elnr, lami[0], lami[1], values);
+                      drawelem = vss.GetSurfValues (vsol, elnr, -1, lami[0], lami[1], values);
 
 		    VisualSceneSolution::RealVec3d (values, v, vsol->iscomplex, phaser, phasei);
 		    if(dir == -1) v *= -1.;

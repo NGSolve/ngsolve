@@ -851,7 +851,7 @@ namespace netgen
                           double y = double(iy) / n;
                         
                           // TODO: consider return value (bool: draw/don't draw element)
-                          GetSurfValue (sol, sei, x, y, scalcomp, values[ii]);
+                          GetSurfValue (sol, sei, -1, x, y, scalcomp, values[ii]);
                           Point<2> xref(x,y);
                         
                           if (curved)
@@ -862,7 +862,7 @@ namespace netgen
                         
                           if (deform)
                             {
-                              points[ii] += GetSurfDeformation (sei, x, y);
+                              points[ii] += GetSurfDeformation (sei, -1, x, y);
                             }
                           ii++;
                         }
@@ -887,7 +887,7 @@ namespace netgen
                 if (el.GetType() == QUAD || el.GetType() == QUAD6 || el.GetType() == QUAD8 )
                   {
                     Point<3> lpi[4];
-                    Vec<3> vx, vy, vtwist, def;
+                    Vec<3> vx = 0.0, vy = 0.0, vtwist = 0.0, def;
                     if (!curved)
                       {
                         for (int j = 0; j < 4; j++)
@@ -906,7 +906,7 @@ namespace netgen
                           double y = double(iy) / n;
                         
                           // TODO: consider return value (bool: draw/don't draw element)
-                          GetSurfValue (sol, sei, x, y, scalcomp, values[ii]);
+                          GetSurfValue (sol, sei, -1, x, y, scalcomp, values[ii]);
                           Point<2> xref(x,y);
                         
                           if (curved)
@@ -916,7 +916,7 @@ namespace netgen
                             points[ii] = lpi[0] + x * vx + y * vy + x*y * vtwist;
                         
                           if (deform)
-                            points[ii] += GetSurfDeformation (sei, x, y);
+                            points[ii] += GetSurfDeformation (sei, -1, x, y);
                         }
                   
                     ii = 0;
@@ -1132,15 +1132,15 @@ namespace netgen
               {
                 if (usetexture == 2)
                   for (int ii = 0; ii < npt; ii++)
-                    drawelem = GetSurfValueComplex (sol, sei, pref[ii](0), pref[ii](1), scalcomp, valuesc[ii]);
+                    drawelem = GetSurfValueComplex (sol, sei, -1, pref[ii](0), pref[ii](1), scalcomp, valuesc[ii]);
                 else
                   for (int ii = 0; ii < npt; ii++)
-                    drawelem = GetSurfValue (sol, sei, pref[ii](0), pref[ii](1), scalcomp, values[ii]);
+                    drawelem = GetSurfValue (sol, sei, -1, pref[ii](0), pref[ii](1), scalcomp, values[ii]);
               }
             
             if (deform)
               for (int ii = 0; ii < npt; ii++)
-                points[ii] += GetSurfDeformation (sei, pref[ii](0), pref[ii](1));
+                points[ii] += GetSurfDeformation (sei, -1, pref[ii](0), pref[ii](1));
 
 
             int save_usetexture = usetexture;
@@ -1254,7 +1254,7 @@ namespace netgen
             bool drawelem = false;
             if (sol && sol->draw_surface) 
               {
-		drawelem = GetMultiSurfValues (sol, sei, npt, 
+		drawelem = GetMultiSurfValues (sol, sei, -1, npt, 
 					       &pref[0](0), &pref[1](0)-&pref[0](0),
 					       &points[0](0), &points[1](0)-&points[0](0),
 					       &dxdxis[0](0), &dxdxis[1](0)-&dxdxis[0](0),
@@ -1269,7 +1269,7 @@ namespace netgen
             
             if (deform)
               for (int ii = 0; ii < npt; ii++)
-                points[ii] += GetSurfDeformation (sei, pref[ii](0), pref[ii](1));
+                points[ii] += GetSurfDeformation (sei, -1, pref[ii](0), pref[ii](1));
 
             int save_usetexture = usetexture;
             if (!drawelem)
@@ -1333,8 +1333,12 @@ namespace netgen
     ArrayMem<Point<2>, 65> ptsloc(n+1);
     ArrayMem<Point<3>, 65> ptsglob(n+1);
 
+    /*
     double trigpts[3][2] = { { 0, 0 }, { 1, 0 }, { 0, 1} };
     double trigvecs[3][2] = { { 1, 0 }, { -1,1 }, { 0, -1} };
+    */
+    double trigpts[3][2] = { { 0, 0 }, { 0, 1 }, { 1, 0} };
+    double trigvecs[3][2] = { { 1, 0 }, { 0, -1 }, { -1, 1} };
 
     double quadpts[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1} };
     double quadvecs[4][2] = { { 1, 0 }, { 0, 1 }, { -1, 0}, { 0, -1} };
@@ -1386,7 +1390,7 @@ namespace netgen
                 for (int ix = 0; ix <= n; ix++)
                   {
                     if (deform)
-                      ptsglob[ix] += GetSurfDeformation (sei, ptsloc[ix](0), ptsloc[ix](1));
+                      ptsglob[ix] += GetSurfDeformation (sei, k, ptsloc[ix](0), ptsloc[ix](1));
                     glVertex3dv (ptsglob[ix]);
                   }
               }
@@ -1749,7 +1753,7 @@ namespace netgen
                   Vec<3> v;
                   double values[6];
                   bool drawelem = 
-                    GetSurfValues (vsol, sei, lam1, lam2, values);
+                    GetSurfValues (vsol, sei, -1, lam1, lam2, values);
                   
                   if (!vsol->iscomplex)
                     for (k = 0; k < 3; k++)
@@ -2003,7 +2007,7 @@ namespace netgen
                               
                               Vec<3> v;
                               double values[6];
-                              bool drawelem = GetSurfValues (vsol, sei, lam1, lam2, values);
+                              bool drawelem = GetSurfValues (vsol, sei, -1, lam1, lam2, values);
                               (*testout) << "sei " << sei << " lam1 " << lam1 << " lam2 " << lam2 << " drawelem " << drawelem << endl;
                               
                               if (!vsol->iscomplex)
@@ -2168,9 +2172,9 @@ namespace netgen
               {
                 ELEMENT_TYPE type = mesh->SurfaceElement(i+1).GetType();
                 if (type == QUAD)
-                  considerElem = GetSurfValue (sol, i, 0.5, 0.5, comp, val);
+                  considerElem = GetSurfValue (sol, i, -1, 0.5, 0.5, comp, val);
                 else
-                  considerElem = GetSurfValue (sol, i, 0.3333333, 0.3333333, comp, val);
+                  considerElem = GetSurfValue (sol, i, -1, 0.3333333, 0.3333333, comp, val);
                 if (considerElem)
                   {
                     if (val > maxv || !hasit)
@@ -2614,7 +2618,7 @@ namespace netgen
   
 
   bool VisualSceneSolution :: 
-  GetMultiValues (const SolData * data, ElementIndex elnr, int npt,
+  GetMultiValues (const SolData * data, ElementIndex elnr, int facetnr, int npt,
 		  const double * xref, int sxref,
 		  const double * x, int sx,
 		  const double * dxdxref, int sdxdxref,
@@ -2622,7 +2626,7 @@ namespace netgen
   {
     bool drawelem = false;
     if (data->soltype == SOL_VIRTUALFUNCTION)
-      drawelem = data->solclass->GetMultiValue(elnr, npt, xref, sxref, x, sx, dxdxref, sdxdxref, val, sval);
+      drawelem = data->solclass->GetMultiValue(elnr, facetnr, npt, xref, sxref, x, sx, dxdxref, sdxdxref, val, sval);
     else
       for (int i = 0; i < npt; i++)
         drawelem = GetValues (data, elnr, xref+i*sxref, x+i*sx, dxdxref+i*sdxdxref, val+i*sval);
@@ -2635,7 +2639,7 @@ namespace netgen
 
 
   bool VisualSceneSolution :: 
-  GetSurfValues (const SolData * data, SurfaceElementIndex selnr, 
+  GetSurfValues (const SolData * data, SurfaceElementIndex selnr, int facetnr, 
                  double lam1, double lam2, 
                  double * values) const
   {
@@ -2644,7 +2648,7 @@ namespace netgen
       {
       case SOL_VIRTUALFUNCTION:
         {
-          ok = data->solclass->GetSurfValue (selnr, lam1, lam2, values);
+          ok = data->solclass->GetSurfValue (selnr, facetnr, lam1, lam2, values);
           // ok = 1;
           // values[0] = 1.0;
           break;
@@ -2652,7 +2656,7 @@ namespace netgen
       default:
         {
           for (int i = 0; i < data->components; i++)
-            ok = GetSurfValue (data, selnr, lam1, lam2, i+1, values[i]);
+            ok = GetSurfValue (data, selnr, facetnr, lam1, lam2, i+1, values[i]);
         }
       }
     return ok;
@@ -2660,7 +2664,7 @@ namespace netgen
 
 
   bool VisualSceneSolution :: 
-  GetSurfValues (const SolData * data, SurfaceElementIndex selnr, 
+  GetSurfValues (const SolData * data, SurfaceElementIndex selnr, int facetnr, 
                  const double xref[], const double x[], const double dxdxref[], 
                  double * values) const
   {
@@ -2669,20 +2673,20 @@ namespace netgen
       {
       case SOL_VIRTUALFUNCTION:
         {
-          ok = data->solclass->GetSurfValue (selnr, xref, x, dxdxref, values);
+          ok = data->solclass->GetSurfValue (selnr, facetnr, xref, x, dxdxref, values);
           break;
         }
       default:
         {
           for (int i = 0; i < data->components; i++)
-            ok = GetSurfValue (data, selnr, xref[0], xref[1], i+1, values[i]);
+            ok = GetSurfValue (data, selnr, facetnr, xref[0], xref[1], i+1, values[i]);
         }
       }
     return ok;
   }
 
   bool VisualSceneSolution :: 
-  GetMultiSurfValues (const SolData * data, SurfaceElementIndex elnr, int npt,
+  GetMultiSurfValues (const SolData * data, SurfaceElementIndex elnr, int facetnr, int npt,
                       const double * xref, int sxref,
                       const double * x, int sx,
                       const double * dxdxref, int sdxdxref,
@@ -2690,10 +2694,10 @@ namespace netgen
   {
     bool drawelem = false;
     if (data->soltype == SOL_VIRTUALFUNCTION)
-      drawelem = data->solclass->GetMultiSurfValue(elnr, npt, xref, sxref, x, sx, dxdxref, sdxdxref, val, sval);
+      drawelem = data->solclass->GetMultiSurfValue(elnr, facetnr, npt, xref, sxref, x, sx, dxdxref, sdxdxref, val, sval);
     else
       for (int i = 0; i < npt; i++)
-        drawelem = GetSurfValues (data, elnr, xref+i*sxref, x+i*sx, dxdxref+i*sdxdxref, val+i*sval);
+        drawelem = GetSurfValues (data, elnr, facetnr, xref+i*sxref, x+i*sx, dxdxref+i*sdxdxref, val+i*sval);
     return drawelem;
   }
   
@@ -2802,7 +2806,7 @@ namespace netgen
 
 
   bool VisualSceneSolution :: 
-  GetSurfValueComplex (const SolData * data, SurfaceElementIndex selnr, 
+  GetSurfValueComplex (const SolData * data, SurfaceElementIndex selnr, int facetnr, 
                        double lam1, double lam2, 
                        int comp, complex<double> & val) const
   {
@@ -2813,7 +2817,7 @@ namespace netgen
           ArrayMem<double,20> values(data->components);
           bool ok;
           
-          ok = data->solclass->GetSurfValue (selnr, lam1, lam2, &values[0]);
+          ok = data->solclass->GetSurfValue (selnr, facetnr, lam1, lam2, &values[0]);
           
           if (ok)
             {
@@ -2832,7 +2836,7 @@ namespace netgen
   }
   
   bool VisualSceneSolution :: 
-  GetSurfValue (const SolData * data, SurfaceElementIndex selnr, 
+  GetSurfValue (const SolData * data, SurfaceElementIndex selnr, int facetnr, 
                 double lam1, double lam2, 
                 int comp, double & val) const
   {
@@ -2841,7 +2845,7 @@ namespace netgen
       {
         val = 0;
         ArrayMem<double,20> values(data->components);
-        ok = GetSurfValues (data, selnr, lam1, lam2, &values[0]);
+        ok = GetSurfValues (data, selnr, facetnr, lam1, lam2, &values[0]);
 	val = ExtractValue (data, 0, &values[0]);
 	return ok;
       }
@@ -2855,7 +2859,7 @@ namespace netgen
           ArrayMem<double,20> values(data->components);
           bool ok;
 
-          ok = data->solclass->GetSurfValue (selnr, lam1, lam2, &values[0]);
+          ok = data->solclass->GetSurfValue (selnr, facetnr, lam1, lam2, &values[0]);
 
           if (ok)
             {
@@ -3064,7 +3068,7 @@ namespace netgen
 
 
   bool VisualSceneSolution :: 
-  GetSurfValue (const SolData * data, SurfaceElementIndex selnr,
+  GetSurfValue (const SolData * data, SurfaceElementIndex selnr, int facetnr, 
                 const double xref[], const double x[], const double dxdxref[], 
                 int comp, double & val) const
   {
@@ -3075,7 +3079,7 @@ namespace netgen
       {
         val = 0;
         ArrayMem<double,20> values(data->components);
-        ok = GetSurfValues (data, selnr, xref, x, dxdxref, &values[0]);
+        ok = GetSurfValues (data, selnr, facetnr, xref, x, dxdxref, &values[0]);
 	val = ExtractValue (data, 0, &values[0]);
 	return ok;
       }
@@ -3090,7 +3094,7 @@ namespace netgen
 
           // ok = data->solclass->GetSurfValue (selnr, lam1, lam2, &values[0]);
           // cout << "data->solclass = " << flush << data->solclass << endl;
-          ok = data->solclass->GetSurfValue (selnr, xref, x, dxdxref, &values[0]);
+          ok = data->solclass->GetSurfValue (selnr, facetnr, xref, x, dxdxref, &values[0]);
           // ok = 1;
           // values[0] = 1.0;
 
@@ -3313,12 +3317,12 @@ namespace netgen
 
 
   Vec<3> VisualSceneSolution :: 
-  GetSurfDeformation (SurfaceElementIndex elnr, double lam1, double lam2) const
+  GetSurfDeformation (SurfaceElementIndex elnr, int facetnr, double lam1, double lam2) const
   {
     Vec<3> def;
     if (deform && vecfunction != -1)
       {
-        GetSurfValues (soldata[vecfunction], elnr, lam1, lam2,  &def(0));
+        GetSurfValues (soldata[vecfunction], elnr, facetnr, lam1, lam2,  &def(0));
         def *= scaledeform;
 
         if (soldata[vecfunction]->components == 2) def(2) = 0;
@@ -3326,7 +3330,7 @@ namespace netgen
     else if (deform && scalfunction != -1 && mesh->GetDimension()==2)
       { // he: allow for 3d plots of 2d surfaces: usage: turn deformation on
         def = 0;
-        GetSurfValue (soldata[scalfunction], elnr, lam1, lam2, scalcomp, def(2));
+        GetSurfValue (soldata[scalfunction], elnr, facetnr, lam1, lam2, scalcomp, def(2));
         def *= scaledeform;
       }
     else
@@ -3793,7 +3797,7 @@ namespace netgen
 
     Point<3> p[3];
     // double val[3];
-    complex<double> valc[3];
+    // complex<double> valc[3];
     int lastelnr = -1;
     int nlp = -1;
 
@@ -3827,7 +3831,7 @@ namespace netgen
 						   &globpoints, &jacobi);
 
 	    bool
-	      drawelem = GetMultiValues (sol, trig.elnr, nlp, 
+	      drawelem = GetMultiValues (sol, trig.elnr, -1, nlp, 
 					 &locpoints[0](0), &locpoints[1](0)-&locpoints[0](0),
 					 &globpoints[0](0), &globpoints[1](0)-&globpoints[0](0),
 					 &jacobi[0](0), &jacobi[1](0)-&jacobi[0](0),

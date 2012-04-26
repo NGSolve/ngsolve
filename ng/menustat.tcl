@@ -42,12 +42,12 @@ menu .ngmenu.file
 	    lappend types {"ACIS Geometry" {.sat} }
 	}
 
-	
 	if {[catch {
 	    set file [tk_getOpenFile -filetypes $types -initialdir $dirname -typevariable loadgeomtypevar]
 	}]} {
 	    set file [tk_getOpenFile -filetypes $types -initialdir $dirname]
 	}
+
 	if {$file != ""} {
 	    AddRecentFile $file
 	    Ng_LoadGeometry $file 

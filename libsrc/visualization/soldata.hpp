@@ -45,12 +45,12 @@ namespace netgen
 
     virtual bool GetValue (int selnr,
                            const double xref[], const double x[], const double dxdxref[],
-                           double * values)
+                           double * values) 
     {
       return GetValue (selnr, xref[0], xref[1], xref[2], values); 
     }
 
-    virtual bool GetMultiValue (int elnr, int npts,
+    virtual bool GetMultiValue (int elnr, int facetnr, int npts,
 				const double * xref, int sxref,
 				const double * x, int sx,
 				const double * dxdxref, int sdxdxref,
@@ -64,7 +64,7 @@ namespace netgen
 
 
 
-    virtual bool GetSurfValue (int /* selnr */,
+    virtual bool GetSurfValue (int /* selnr */, int facetnr, 
                                double /* lam1 */, double /* lam2 */, 
                                double * /* values */)
     { 
@@ -72,15 +72,15 @@ namespace netgen
     }
 
 
-    virtual bool GetSurfValue (int selnr,
+    virtual bool GetSurfValue (int selnr, int facetnr, 
                                const double xref[], const double x[], const double dxdxref[],
                                double * values)
     { 
-      return GetSurfValue (selnr, xref[0], xref[1], values); 
+      return GetSurfValue (selnr, facetnr, xref[0], xref[1], values); 
     }
 
 
-    virtual bool GetMultiSurfValue (int selnr, int npts,
+    virtual bool GetMultiSurfValue (int selnr, int facetnr, int npts,
                                     const double * xref, int sxref,
                                     const double * x, int sx,
                                     const double * dxdxref, int sdxdxref,
@@ -88,7 +88,7 @@ namespace netgen
     {
       bool res = false;
       for (int i = 0; i < npts; i++)
-	res = GetSurfValue (selnr, &xref[i*sxref], &x[i*sx], &dxdxref[i*sdxdxref], &values[i*svalues]);
+	res = GetSurfValue (selnr, facetnr, &xref[i*sxref], &x[i*sx], &dxdxref[i*sdxdxref], &values[i*svalues]);
       return res;
     }
 

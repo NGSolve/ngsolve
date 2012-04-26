@@ -235,35 +235,36 @@ private:
 		  const double xref[], const double x[], const double dxdxref[], 
 		  double * values) const;
 
-  bool GetMultiValues (const SolData * data, ElementIndex elnr, int npt,
+  bool GetMultiValues (const SolData * data, ElementIndex elnr, int facetnr, int npt,
 		       const double * xref, int sxref,
 		       const double * x, int sx,
 		       const double * dxdxref, int sdxdxref,
 		       double * val, int sval) const;
 
 
-  bool GetSurfValue (const SolData * data, SurfaceElementIndex elnr,
+  bool GetSurfValue (const SolData * data, SurfaceElementIndex elnr, int facetnr,
 		     double lam1, double lam2, 
 		     int comp, double & val) const;
 
-  bool GetSurfValue (const SolData * data, SurfaceElementIndex elnr,
+  bool GetSurfValue (const SolData * data, SurfaceElementIndex elnr, int facetnr, 
 		     const double xref[], const double x[], const double dxdxref[], 
 		     int comp, double & val) const;
 
   
-  bool GetSurfValueComplex (const SolData * data, SurfaceElementIndex elnr,
+  bool GetSurfValueComplex (const SolData * data, SurfaceElementIndex elnr, int facetnr, 
 			    double lam1, double lam2, 
 			    int comp, complex<double> & val) const;
 
-  bool GetSurfValues (const SolData * data, SurfaceElementIndex elnr,
+  bool GetSurfValues (const SolData * data, SurfaceElementIndex elnr, int facetnr, 
 		      double lam1, double lam2, 
 		      double * values) const;
 
-  bool GetSurfValues (const SolData * data, SurfaceElementIndex elnr,
+  bool GetSurfValues (const SolData * data, SurfaceElementIndex elnr, int facetnr, 
 		      const double xref[], const double x[], const double dxdxref[], 
 		      double * values) const;
 
-  bool GetMultiSurfValues (const SolData * data, SurfaceElementIndex elnr, int npt,
+  bool GetMultiSurfValues (const SolData * data, SurfaceElementIndex elnr, int facetnr, 
+			   int npt,
                            const double * xref, int sxref,
                            const double * x, int sx,
                            const double * dxdxref, int sdxdxref,
@@ -274,7 +275,7 @@ private:
 
 
   Vec<3> GetDeformation (ElementIndex elnr, const Point<3> & p) const;
-  Vec<3> GetSurfDeformation (SurfaceElementIndex selnr, double lam1, double lam2) const;
+  Vec<3> GetSurfDeformation (SurfaceElementIndex selnr, int facetnr, double lam1, double lam2) const;
 
   void GetPointDeformation (int pnum, Point<3> & p, SurfaceElementIndex elnr = -1) const;
 
