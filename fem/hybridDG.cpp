@@ -626,6 +626,9 @@ namespace ngfem
 
 	    IntegrationRule ir_facet(etfacet, 2*fel_l2.Order());
 	    IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+	    
+	    for (int i = 0; i < ir_facet_vol.Size(); i++)
+	      ir_facet_vol[i].FacetNr() = k;
 
 	    Array<int> comp_facetdofs;
 	    comp_facetdofs += l2_dofs;
