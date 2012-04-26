@@ -786,6 +786,8 @@ namespace ngcomp
 			  if (eliminate_internal)
 			    {
 			      static Timer statcondtimer("static condensation");
+			      static Timer statcondtimer2a("static condensation - Lapack a");
+			      static Timer statcondtimer2b("static condensation - Lapack b");
 			      statcondtimer.Start();
 
 			      fespace.GetDofNrs (i, idofs1, LOCAL_DOF);
@@ -844,10 +846,14 @@ namespace ngcomp
 				  
 				  // A := A - B D^{-1} C^T
 				  // new Versions, July 07
-				  if (!keep_internal)
+				  if (!keep_internal) 
 				    {
+				      statcondtimer2a.Start();
 				      LapackAInvBt (d, b);    // b <--- b d^-1
+				      statcondtimer2a.Stop();
+				      statcondtimer2b.Start();
 				      LapackMultAddABt (b, c, -1, a);				      
+				      statcondtimer2b.Stop();
 				    }
 				  else
 				    {

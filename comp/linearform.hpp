@@ -84,6 +84,8 @@ namespace ngcomp
 
     ///
     virtual BaseVector & GetVector () const = 0;
+    operator BaseVector& () const { return GetVector(); }
+
     ///
     virtual string GetClassName () const
     {

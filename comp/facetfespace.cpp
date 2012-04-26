@@ -570,7 +570,49 @@ namespace ngcomp
 
 
 
+/// Identity
+template <int D>
+class DiffOpIdHDG : public DiffOp<DiffOpIdHDG<D> >
+{
+public:
+  enum { DIM = 1 };
+  enum { DIM_SPACE = D };
+  enum { DIM_ELEMENT = D };
+  enum { DIM_DMAT = 1 };
+  enum { DIFFORDER = 0 };
 
+  template <typename FEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+			      MAT & mat, LocalHeap & lh)
+  {
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    const ScalarFiniteElement<D> & fel_vol = static_cast<const ScalarFiniteElement<D>&> (fel[0]);
+    const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (fel[1]);
+
+    int facetnr = mip.IP().FacetNr();
+    mat = 0.0;
+    if (facetnr < 0)
+      mat.Row(0).Range(fel.GetRange(0)) = fel_vol.GetShape(mip.IP(), lh);
+    else
+      mat.Row(0).Range(fel.GetRange(1)).Range(fel_facet.GetFacetDofs(facetnr)) = 
+	fel_facet.Facet(facetnr).GetShape(mip.IP(), lh);
+  }
+};
+
+
+template <int D>
+class NGS_DLL_HEADER MassHDGIntegrator 
+  : public T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> >
+{
+public:
+  MassHDGIntegrator (CoefficientFunction * coeff)
+    : T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> > (DiagDMat<1> (coeff))
+  { ; }
+    
+  // MassHDGIntegrator (Array<CoefficientFunction*> & coeffs);
+  virtual ~MassHDGIntegrator () { ; }
+  virtual string Name () const { return "Mass-HDG"; }
+};
 
 
 
@@ -618,15 +660,17 @@ public:
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
-        evaluator = new MassIntegrator<2> (&one);
+        // evaluator = new MassIntegrator<2> (&one);
+	evaluator = new MassHDGIntegrator<2> (&one);
         boundary_evaluator = new RobinIntegrator<2> (&one);
       }
     else
       {
-        evaluator = new MassIntegrator<3> (&one);
+        // evaluator = new MassIntegrator<3> (&one);
+        evaluator = new MassHDGIntegrator<3> (&one);
         boundary_evaluator = new RobinIntegrator<3> (&one);
       }
-    evaluator = new CompoundBilinearFormIntegrator (*evaluator, 0);
+    // evaluator = new CompoundBilinearFormIntegrator (*evaluator, 0);
     boundary_evaluator = new CompoundBilinearFormIntegrator (*boundary_evaluator, 1);
   }
 

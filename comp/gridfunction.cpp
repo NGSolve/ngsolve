@@ -705,7 +705,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  bool VisualizeGridFunction<SCAL> :: GetSurfValue (int elnr,
+  bool VisualizeGridFunction<SCAL> :: GetSurfValue (int elnr, int facetnr, 
                                                     double lam1, double lam2, 
                                                     double * values) 
   { 
@@ -761,6 +761,7 @@ namespace ngcomp
 	 !fes.DefinedOn(eltrans.GetElementIndex()) ) return false;
 
     IntegrationPoint ip(lam1, lam2, 0, 0);
+    ip.FacetNr() = facetnr;
 
     BaseMappedIntegrationPoint & mip = eltrans(ip, lh);
     for(int j = 0; j < bfi2d.Size(); j++)
@@ -783,7 +784,7 @@ namespace ngcomp
 
   template <class SCAL>
   bool VisualizeGridFunction<SCAL> :: 
-  GetSurfValue (int elnr,
+  GetSurfValue (int elnr, int facetnr, 
 		const double xref[], const double x[], const double dxdxref[],
 		double * values) 
   { 
@@ -833,6 +834,7 @@ namespace ngcomp
              !fes.DefinedOn(eltrans.GetElementIndex()) ) return 0;
 
         IntegrationPoint ip(xref[0], xref[1], 0, 0);
+	ip.FacetNr() = facetnr;
         if (bound)
           {
             // Vec<3> vx;
@@ -896,7 +898,7 @@ namespace ngcomp
 
   template <class SCAL>
   bool VisualizeGridFunction<SCAL> ::
-  GetMultiSurfValue (int elnr, int npts,
+  GetMultiSurfValue (int elnr, int facetnr, int npts,
                      const double * xref, int sxref,
                      const double * x, int sx,
                      const double * dxdxref, int sdxdxref,
@@ -982,8 +984,10 @@ namespace ngcomp
           {
 	    IntegrationRule ir(npts, lh);
 	    for (int i = 0; i < npts; i++)
-	      ir[i] = IntegrationPoint (xref[i*sxref], xref[i*sxref+1]);
-
+	      {
+		ir[i] = IntegrationPoint (xref[i*sxref], xref[i*sxref+1]);
+		ir[i].FacetNr() = facetnr;
+	      }
 	    MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
 
 	    for (int k = 0; k < npts; k++)
@@ -1210,7 +1214,7 @@ namespace ngcomp
 	      }
 	    for(int k=0; k<posx.Size(); k++)
 	      {
-		GetSurfValue(i,posx[k],posy[k],val);
+		GetSurfValue(i,-1, posx[k],posy[k],val);
 		if(component == -1)
 		  {
 		    for(int j=0; j<components; j++)

@@ -451,8 +451,6 @@ namespace ngfem
 	      LocalHeap & lh) const;
 
 
-
-
     virtual void
     CalcFluxMulti (const FiniteElement & fel,
 		   const BaseMappedIntegrationPoint & bmip,
