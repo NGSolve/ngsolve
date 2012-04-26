@@ -436,7 +436,7 @@ namespace ngbla
     int lda = a.Width();
     int ldb = b.Width();
     int nrhs = b.Height();
-    //int * ipiv = new int[n];
+
     ArrayMem<int,100> ipiv(n);
     int info;
     // char uplo = 'L';
@@ -445,11 +445,21 @@ namespace ngbla
     dgetrs_ (&trans, &n, &nrhs, &a(0,0), &lda, &ipiv[0], &b(0,0), &ldb, &info);
 
     /*
-      dpotrf_ (uplo, n, a(0,0), lda, info);
-      dpotrs_ (uplo, n, nrhs, a(0,0), lda, b(0,0), ldb, info);
+    // symmetric, non-spd
+    int lwork = -1;
+    double hwork[1] = { 1.0 };
+    dsytrf_ (&uplo, &n, &a(0,0), &lda, &ipiv[0], &hwork[0], &lwork, &info);
+    lwork = int(hwork[0]);
+    ArrayMem<double, 1000> work(lwork);
+    dsytrf_ (&uplo, &n, &a(0,0), &lda, &ipiv[0], &work[0], &lwork, &info);
+    dsytrs_ (&uplo, &n, &nrhs, &a(0,0), &lda, &ipiv[0], &b(0,0), &ldb, &info);
     */
 
-    // delete [] ipiv;
+    /*
+    // spd
+    dpotrf_ (&uplo, &n, &a(0,0), &lda, &info);
+    dpotrs_ (&uplo, &n, &nrhs, &a(0,0), &lda, &b(0,0), &ldb, &info);
+    */
   }
 
 
