@@ -2,7 +2,18 @@
 
 namespace ngbla
 {
-  using namespace ngbla;
+
+
+  void test()
+  {
+    Matrix<Complex> a, b, c;
+ 
+    LapackMult (a, b, c);
+    LapackMult (Trans(a), b, c);
+    LapackMult (a, Trans(b), c);
+  }
+
+
   
   inline double abs (double a)
   {
@@ -170,7 +181,7 @@ namespace ngbla
 #ifdef LAPACK
 
     LapackInverse (c);
-    LapackMultAB (c, b1, hb1);
+    LapackMult (c, b1, hb1);
     // hb1 = c * b1;
     // s -= b2 * hb1;
     LapackMultAddAB (b2, hb1, -1, s);

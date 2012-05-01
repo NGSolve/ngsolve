@@ -113,6 +113,15 @@ namespace ngbla
       return CMCPMatExpr<FlatMatrix>::operator= (m);
     }
 
+    /*
+    template <typename TA, typename TB>
+    const FlatMatrix & operator= (const LapackProduct<TA, TB> & prod) const
+    {
+      LapackMult (prod.A(), prod.B(), *this);
+      return *this;
+    }
+    */
+
     /// copy contents
     const FlatMatrix & operator= (const FlatMatrix & m) throw()
     {
@@ -274,15 +283,25 @@ namespace ngbla
 
     /// assign matrix, sizes must match
     template<typename TB>
-    Matrix & operator= (const Expr<TB> & m)
-    {
+    Matrix & operator= (const Expr<TB> & m) 
+    { 
       SetSize (m.Height(), m.Width());
       CMCPMatExpr<FlatMatrix<T> >::operator= (m);
       return *this;
     }
 
+    /*
+    template <typename TA, typename TB>
+    Matrix & operator= (const LapackProduct<TA, TB> & prod) 
+    {
+      // SetSize (m.Height(), m.Width());
+      LapackMult (prod.A(), prod.B(), *this);
+      return *this;
+    }
+    */
+
     /// fill matrix with scalar
-    Matrix & operator= (TSCAL s)
+    Matrix & operator= (TSCAL s) 
     {
       FlatMatrix<T>::operator= (s);
       return *this;
@@ -913,6 +932,15 @@ namespace ngbla
       return CMCPMatExpr<SliceMatrix>::operator= (m);
     }
 
+    /*
+    template <typename TA, typename TB>
+    const SliceMatrix & operator= (const LapackProduct<TA, TB> & prod) const
+    {
+      LapackMult (prod.A(), prod.B(), *this);
+      return *this;
+    }
+    */
+
     /// assign constant
     SliceMatrix & operator= (TSCAL s) throw()
     {
@@ -945,6 +973,9 @@ namespace ngbla
 
     /// the width
     int Width () const throw() { return w; }
+
+    /// 
+    int Dist () const throw() { return dist; }
 
     const SliceMatrix Rows (int first, int next) const
     {
