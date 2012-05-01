@@ -200,6 +200,10 @@ namespace ngstd
     {
       NgProfiler::StopTimer (timernr);
     }
+    void AddFlops (double aflops)
+    {
+      NgProfiler::AddFlops (timernr, aflops);
+    }
 
     double GetTime () { return NgProfiler::GetTime(timernr); }
     long int GetCounts () { return NgProfiler::GetCounts(timernr); }

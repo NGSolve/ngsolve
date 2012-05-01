@@ -189,10 +189,22 @@ int main ()
   cout << "bmat = " << endl << bmat << endl;
 
   {
+    Timer timer("Lapack timer");
     Matrix<> a(1000), b(1000), c(1000);
     a = 1;
     b = 2;
-    LapackMultAB (a, b, c);
+
+
+    timer.Start();
+    // old style:
+    // LapackMult (Trans(a), b, c);
+
+    // new style:
+    c = Trans(a) * b   | Lapack;  
+    timer.Stop();
+    timer.AddFlops (double(a.Height())*a.Width()*b.Width());
+
+    NgProfiler::Print (stdout);
   }
 
   return 0;

@@ -237,10 +237,10 @@ namespace ngcomp
 	      
 		Matrix<SCAL> he (sizei, sizew);
 		he = SCAL(0.0);
-
-		LapackMultAddAB (d, c, -1.0, he);
-		LapackMultAddAB (b, he, 1.0, a);
-
+		
+		he -= d*c   | Lapack;
+		a += b*he   | Lapack;
+		
 		//R * E
 		for (int k = 0; k < sizei; k++)
 		  he.Row(k) *= el2ifweight[i][k] / weight[el2ifdofs[i][k]];
@@ -1129,7 +1129,8 @@ namespace ngcomp
 
 	    NgProfiler::StartTimer(timertransx1a);
 
-	    LapackMultABt (vim, ext, vem);
+	    // LapackMultABt (vim, ext, vem);
+	    LapackMult (vim, Trans(ext), vem);
 
 	    NgProfiler::StopTimer(timertransx1a);
 
@@ -1182,7 +1183,7 @@ namespace ngcomp
 		  v1(ii,j) = w[j] * transx(ifs[j]);
 	      }
 
-	    LapackMultAB (v1, ext, v2);
+	    LapackMult (v1, ext, v2);
 
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
@@ -1258,7 +1259,8 @@ namespace ngcomp
 		  v1(ii, j) = transy(wb[j]);
 	      }
 
-	    LapackMultABt (v1, ext, v2);
+	    // LapackMultABt (v1, ext, v2);
+	    LapackMult (v1, Trans(ext), v2);
 
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
@@ -1298,7 +1300,7 @@ namespace ngcomp
 		  dc1(ii,j) = w[j] * transx(ifs[j]);
 	      }
 
-	    LapackMultAB (dc1, invdc, dc2);
+	    LapackMult (dc1, invdc, dc2);
 
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
@@ -1343,7 +1345,7 @@ namespace ngcomp
 	    NgProfiler::StopTimer (timertransyr);
 
 
-	    LapackMultAB (vem, ext, vim);
+	    LapackMult (vem, ext, vim);
 
 
 	    NgProfiler::StartTimer (timertransyw);
@@ -1383,7 +1385,7 @@ namespace ngcomp
 		  v1(ii, j) = transx(dint[j]);
 	      }
 
-	    LapackMultAB (v1, inv_int, v2);
+	    LapackMult (v1, inv_int, v2);
 
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
