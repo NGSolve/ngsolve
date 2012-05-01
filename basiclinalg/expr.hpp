@@ -530,35 +530,30 @@ namespace ngbla
 
 
 
-  /*
-    Reference to matrix expression.
-    T is matrix class.
-  */
-  /*
-    template <typename T>
-    class RefMatExpr : public Expr<RefMatExpr<T> >
-    {
-    protected:
-    const T & data;
-    public:
-    typedef typename T::TELEM TELEM;
-    typedef typename T::TSCAL TSCAL;
+  template <typename TA>
+  class LapackExpr : public Expr<LapackExpr<TA> >
+  {
+    const TA & a;
+  public:
+    LapackExpr (const TA & aa) : a(aa) { ; }
+    const TA & A() const { return a; }
+    int Height() const { return a.Height(); }
+    int Width() const { return a.Width(); }
+  };
+  
+  typedef int T_Lapack;
+  static T_Lapack Lapack;
 
-    RefMatExpr (const T & d) : data(d) { ; }
+  template <typename TA>
+  LapackExpr<TA> operator| (const Expr<TA> & a, T_Lapack /* tl */)
+  {
+    return LapackExpr<TA> (a.Spec());
+  }
 
-    TELEM operator() (int i) const  { return data(i); }
-    TELEM operator() (int i, int j) const  { return data(i, j); }
-
-    int Height() const { return data.T::Height(); }
-    int Width() const { return data.T::Width(); }
-
-    enum { IS_LINEAR = T::IS_LINEAR };
-
-    void Dump (ostream & ost) const { ost << "Matrix-Ref(" << data << ")"; }
-    };
-  */
-
-
+  
+  template <class TA, class TB> class MultExpr;
+  
+  
   /**
      The base class for matrices.
   */
@@ -566,25 +561,12 @@ namespace ngbla
   class MatExpr : public Expr<T>
   {
   public:
-    // typedef RefMatExpr<T> TConv;
-
-
-    // typedef typename mat_traits<T>::TELEM TELEM;
-    // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
-
-    //	typedef typename T::TSCAL TSCAL;
-
+ 
     MatExpr () { ; }
-
-    // int Height() const { return Spec().T::Height(); }
-    // int Width() const { return Spec().T::Width(); }
 
     using Expr<T>::Spec;
     using Expr<T>::Height;
     using Expr<T>::Width;
-
-    // T & Spec() { return static_cast<T&> (*this); }
-    // const T & Spec() const { return static_cast<const T&> (*this); }
 
     enum { IS_LINEAR = 1 };
 
@@ -619,14 +601,6 @@ namespace ngbla
 		  Spec()(i,j) = v.Spec()(k);
 	    }
 	}
-      /*
-	if (TB::IS_LINEAR && T::IS_LINEAR)
-	{
-	int hw = Expr<T>::Height() * Expr<T>::Width();
-	for (int i = 0; i < hw; i++)
-	Spec()(i) = v.Spec()(i);
-	}
-      */
       else
 	{
 	  int h = Expr<T>::Height();
@@ -689,6 +663,26 @@ namespace ngbla
       return Spec();
     }
 
+    template <typename TA, typename TB>
+    T & operator= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod) 
+    {
+      LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), 1.0, Spec(), 0.0);
+      return Spec();
+    }
+
+    template <typename TA, typename TB>
+    T & operator+= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod)
+    {
+      LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), 1.0, Spec(), 1.0);
+      return Spec();
+    }
+
+    template <typename TA, typename TB>
+    T & operator-= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod)
+    {
+      LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), -1.0, Spec(), 1.0);
+      return Spec();
+    }
 
 
 
@@ -844,7 +838,6 @@ namespace ngbla
 	Spec()(i) += scal;
       return Spec();
     }
-  
 
     template<typename TB>
     const T & operator-= (const Expr<TB> & v) const
@@ -1094,6 +1087,8 @@ namespace ngbla
       return sum;
     }
 
+    const TA & A() const { return a; }
+    const TB & B() const { return b; }
     int Height() const { return a.Height(); }
     int Width() const { return b.Width(); }
     enum { IS_LINEAR = 0 };
@@ -1136,6 +1131,8 @@ namespace ngbla
     TELEM operator() (int i) const { return 0; }
 
     enum { IS_LINEAR = 0 };
+
+    const TA & A() { return a; }
   };
 
 

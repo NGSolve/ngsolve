@@ -132,10 +132,251 @@ namespace ngbla
 
 
 
+  inline int gemm(char *transa, char *transb, integer *m, integer *
+		  n, integer *k, doublereal *alpha, doublereal *a, integer *lda, 
+		  doublereal *b, integer *ldb, doublereal *beta, doublereal *c__, 
+		  integer *ldc)
+  {
+    return dgemm_ (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
+  }
+
+  inline int gemm(char *transa, char *transb, integer *m, integer *
+		    n, integer *k, doublecomplex *alpha, doublecomplex *a, integer *lda, 
+		    doublecomplex *b, integer *ldb, doublecomplex *beta, doublecomplex *
+		    c__, integer *ldc)
+  {
+    return zgemm_ (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
+  }
+
+
+  template <typename SCAL>
+  inline void BASE_LapackMult (SliceMatrix<SCAL> a, bool transa, 
+			       SliceMatrix<SCAL> b, bool transb, 
+			       SliceMatrix<SCAL> c)
+  {
+    char transa_ = transa ? 'T' : 'N';
+    char transb_ = transb ? 'T' : 'N'; 
+
+    int n = c.Width();
+    int m = c.Height();
+    int k = transa ? a.Height() : a.Width();
+    SCAL alpha = 1.0;
+    SCAL beta = 0;
+    int lda = a.Dist();
+    int ldb = b.Dist();
+    int ldc = c.Dist();
+
+    gemm (&transb_, &transa_, &n, &m, &k, &alpha, 
+	  &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
+  }
+
+  template <typename SCAL>
+  inline void BASE_LapackMultAdd (SliceMatrix<SCAL> a, bool transa, 
+				  SliceMatrix<SCAL> b, bool transb, 
+				  SCAL aalpha,
+				  SliceMatrix<SCAL> c,
+				  SCAL abeta)
+  {
+    char transa_ = transa ? 'T' : 'N';
+    char transb_ = transb ? 'T' : 'N'; 
+
+    int n = c.Width();
+    int m = c.Height();
+    int k = transa ? a.Height() : a.Width();
+    SCAL alpha = aalpha;
+    SCAL beta = abeta;
+    int lda = a.Dist();
+    int ldb = b.Dist();
+    int ldc = c.Dist();
+
+    gemm (&transb_, &transa_, &n, &m, &k, &alpha, 
+	  &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
+  }
 
 
 
-  inline void LapackMultABt (FlatMatrix<double> a, FlatMatrix<double> b, FlatMatrix<double> c)
+  inline void LapackMult (SliceMatrix<double> a, 
+			  SliceMatrix<double> b, 
+			  SliceMatrix<double> c)
+  { BASE_LapackMult<double> (a, false, b, false, c); }
+
+  template <typename TA>
+  inline void LapackMult (SliceMatrix<double> a, 
+			  TransExpr<TA> b, 
+			  SliceMatrix<double> c)
+  { BASE_LapackMult<double> (a, false, b.A(), true, c); }
+
+  template <typename TA>
+  inline void LapackMult (TransExpr<TA> a, 
+			  SliceMatrix<double> b, 
+			  SliceMatrix<double> c)
+  { BASE_LapackMult<double> (a.A(), true, b, false, c); }
+  
+  template <typename TA, typename TB>
+  inline void LapackMult (TransExpr<TA> a, 
+			  TransExpr<TB> b,
+			  SliceMatrix<double> c)
+  { BASE_LapackMult<double> (a.A(), true, b.A(), true, c); }
+
+
+
+
+  inline void LapackMult (SliceMatrix<Complex> a, 
+			  SliceMatrix<Complex> b, 
+			  SliceMatrix<Complex> c)
+  { BASE_LapackMult<Complex> (a, false, b, false, c); }
+
+  template <typename TA>
+  inline void LapackMult (SliceMatrix<Complex> a, 
+			  TransExpr<TA> b, 
+			  SliceMatrix<Complex> c)
+  { BASE_LapackMult<Complex> (a, false, b.A(), true, c); }
+
+  template <typename TA>
+  inline void LapackMult (TransExpr<TA> a, 
+			  SliceMatrix<Complex> b, 
+			  SliceMatrix<Complex> c)
+  { BASE_LapackMult<Complex> (a.A(), true, b, false, c); }
+  
+  template <typename TA, typename TB>
+  inline void LapackMult (TransExpr<TA> a, 
+			  TransExpr<TB> b,
+			  SliceMatrix<Complex> c)
+  { BASE_LapackMult<Complex> (a.A(), true, b.A(), true, c); }
+
+
+
+
+
+
+
+  inline void LapackMultAdd (SliceMatrix<double> a, 
+			     SliceMatrix<double> b, 
+			     double alpha,
+			     SliceMatrix<double> c,
+			     double beta)
+  { BASE_LapackMultAdd<double> (a, false, b, false, alpha, c, beta); }
+
+  template <typename TA>
+  inline void LapackMultAdd (SliceMatrix<double> a, 
+			     TransExpr<TA> b, 
+			     double alpha,			     
+			     SliceMatrix<double> c,
+			     double beta = 1.0)
+  { BASE_LapackMultAdd<double> (a, false, b.A(), true, alpha, c, beta); }
+
+  template <typename TA>
+  inline void LapackMultAdd (TransExpr<TA> a, 
+			     SliceMatrix<double> b, 
+			     double alpha,
+			     SliceMatrix<double> c,
+			     double beta = 1.0)
+  { BASE_LapackMultAdd<double> (a.A(), true, b, false, alpha, c, beta); }
+  
+  template <typename TA, typename TB>
+  inline void LapackMultAdd (TransExpr<TA> a, 
+			     TransExpr<TB> b,
+			     double alpha,
+			     SliceMatrix<double> c,
+			     double beta = 1.0)
+  { BASE_LapackMultAdd<double> (a.A(), true, b.A(), true, alpha, c, beta); }
+
+
+
+
+  inline void LapackMultAdd (SliceMatrix<Complex> a, 
+			     SliceMatrix<Complex> b, 
+			     Complex alpha,
+			     SliceMatrix<Complex> c,
+			     Complex beta = 1.0)
+  { BASE_LapackMultAdd<Complex> (a, false, b, false, alpha, c, beta); }
+
+  template <typename TA>
+  inline void LapackMultAdd (SliceMatrix<Complex> a, 
+			     TransExpr<TA> b, 
+			     Complex alpha,
+			     SliceMatrix<Complex> c,
+			     Complex beta = 1.0)
+  { BASE_LapackMultAdd<Complex> (a, false, b.A(), true, alpha, c, beta); }
+
+  template <typename TA>
+  inline void LapackMultAdd (TransExpr<TA> a, 
+			     SliceMatrix<Complex> b, 
+			     Complex alpha,
+			     SliceMatrix<Complex> c,
+			     Complex beta)
+  { BASE_LapackMultAdd<Complex> (a.A(), true, b, false, alpha, c, beta); }
+  
+  template <typename TA, typename TB>
+  inline void LapackMultAdd (TransExpr<TA> a, 
+			     TransExpr<TB> b,
+			     Complex alpha,
+			     SliceMatrix<Complex> c,
+			     Complex beta)
+  { BASE_LapackMultAdd<Complex> (a.A(), true, b.A(), true, alpha, c, beta); }
+
+
+
+
+
+
+
+  /*
+
+    // old-style function names, new driver
+  inline void LapackMultABt (SliceMatrix<double> a, 
+			     SliceMatrix<double> b, 
+			     SliceMatrix<double> c)
+  { BASE_LapackMult (a, false, b, true, c); }
+
+  inline void LapackMultABt (SliceMatrix<Complex> a, 
+			     SliceMatrix<Complex> b, 
+			     SliceMatrix<Complex> c)
+  { BASE_LapackMult (a, false, b, true, c); }
+
+  inline void LapackMultAB (SliceMatrix<double> a, 
+			    SliceMatrix<double> b, 
+			    SliceMatrix<double> c)
+  { BASE_LapackMult (a, false, b, false, c); }
+
+  inline void LapackMultAB (SliceMatrix<Complex> a, 
+			    SliceMatrix<Complex> b, 
+			    SliceMatrix<Complex> c)
+  { BASE_LapackMult (a, false, b, false, c); }
+
+
+  inline void LapackMultAtB (SliceMatrix<double> a, 
+			     SliceMatrix<double> b, 
+			     SliceMatrix<double> c)
+  { BASE_LapackMult (a, true, b, false, c); }
+
+  inline void LapackMultAtB (SliceMatrix<Complex> a, 
+			     SliceMatrix<Complex> b, 
+			     SliceMatrix<Complex> c)
+  { BASE_LapackMult (a, true, b, false, c); }
+
+
+  inline void LapackMultAtBt (SliceMatrix<double> a, 
+			      SliceMatrix<double> b, 
+			      SliceMatrix<double> c)
+  { BASE_LapackMult (a, true, b, true, c); }
+  inline void LapackMultAtBt (SliceMatrix<Complex> a, 
+			      SliceMatrix<Complex> b, 
+			      SliceMatrix<Complex> c)
+  { BASE_LapackMult (a, true, b, true, c); }
+
+  */
+
+
+
+
+
+
+
+    // old functions for compatibilty 
+  inline void LapackMultABt (SliceMatrix<double> a, 
+			     SliceMatrix<double> b, 
+			     SliceMatrix<double> c)
   {
     char transa = 'T';
     char transb = 'N';
@@ -144,15 +385,17 @@ namespace ngbla
     int k = a.Width();
     double alpha = 1.0;
     double beta = 0;
-    int lda = a.Width();
-    int ldb = b.Width();
-    int ldc = c.Width();
+    int lda = a.Dist();
+    int ldb = b.Dist();
+    int ldc = c.Dist();
 
     dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
-  
 
-  inline void LapackMultAB (FlatMatrix<double> a, FlatMatrix<double> b, FlatMatrix<double> c)
+ 
+  inline void LapackMultAB (SliceMatrix<double> a, 
+			    SliceMatrix<double> b, 
+			    SliceMatrix<double> c)
   {
     char transa = 'N';
     char transb = 'N';
@@ -161,16 +404,15 @@ namespace ngbla
     int k = a.Width();
     double alpha = 1.0;
     double beta = 0;
-    int lda = a.Width();
-    int ldb = b.Width();
-    int ldc = c.Width();
+    int lda = a.Dist();
+    int ldb = b.Dist();
+    int ldc = c.Dist();
     dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
-
   inline void LapackMultAtB (ngbla::FlatMatrix<double> a, 
                              ngbla::FlatMatrix<double> b,
-                             ngbla::FlatMatrix<double> c)
+                             ngbla::SliceMatrix<double> c)
   {
     char transa = 'N';
     char transb = 'T';
@@ -181,11 +423,10 @@ namespace ngbla
     double beta = 0;
     int lda = a.Width();
     int ldb = b.Width();
-    int ldc = c.Width();
+    int ldc = c.Dist(); // c.Width();
 
     dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
-
 
   inline void LapackMultAtBt (ngbla::FlatMatrix<double> a, 
                               ngbla::FlatMatrix<double> b,
@@ -204,13 +445,6 @@ namespace ngbla
 
     dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
-
-
-
-
-
-
-
 
   inline void LapackMultABt (ngbla::FlatMatrix<ngbla::Complex> a, 
                              ngbla::FlatMatrix<ngbla::Complex> b,
@@ -235,7 +469,6 @@ namespace ngbla
             &c(0,0), &ldc);
 
   }
-
 
 
 
@@ -322,7 +555,7 @@ namespace ngbla
   }
 
 
-
+ 
   inline void LapackMultAddAtB (ngbla::FlatMatrix<ngbla::Complex> a, 
                                 ngbla::FlatMatrix<ngbla::Complex> b,
                                 double fac,
@@ -890,6 +1123,17 @@ namespace ngbla
                             ngbla::FlatVector<double> x,
                             ngbla::FlatVector<double> y)
   { y += Trans (a) * x; }
+
+
+  template <typename TA, typename TB>
+  inline void LapackMult (const TA & a, const TB & b, 
+			  ngbla::SliceMatrix<double> c)
+  { c = a * b; }
+
+  template <typename TA, typename TB>
+  inline void LapackMult (const TA & a, const TB & b, 
+			  ngbla::SliceMatrix<Complex> c)
+  { c = a * b; }
 
 
 
