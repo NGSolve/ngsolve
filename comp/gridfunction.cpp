@@ -290,43 +290,6 @@ namespace ngcomp
     VectorMem<10> flux(Dimension());
     Evaluate (ip, flux);
     return flux(0);
-
-    /*
-    LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction - evaluate");
-    
-    int elnr = ip.GetTransformation().GetElementNr();
-    bool boundary = ip.GetTransformation().Boundary();
-
-    const FESpace & fes = gf.GetFESpace();
-    
-    if (!boundary)
-      if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex())) return 0;
-    
-    const FiniteElement & fel = (boundary) ? fes.GetSFE(elnr, lh2) : fes.GetFE (elnr, lh2);
-    int dim     = fes.GetDimension();
-
-    ArrayMem<int, 50> dnums;
-    fes.GetDofNrs (elnr, boundary, dnums);
-    
-    VectorMem<50> elu(dnums.Size()*dim);
-
-    gf.GetElementVector (comp, dnums, elu);
-    fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
-
-    if (diffop)
-      {
-	VectorMem<10> flux(diffop->Dim());
-	diffop->Apply (fel, ip, elu, flux, lh2);
-	return flux(0);
-      }
-    else
-      {
-	const BilinearFormIntegrator * bfi = fes.GetEvaluator(boundary);
-	VectorMem<10> flux(bfi->DimFlux());
-	bfi->CalcFlux (fel, ip, elu, flux, false, lh2);
-	return flux(0); 
-      }
-    */
   }
 
   void GridFunctionCoefficientFunction :: 
@@ -344,7 +307,7 @@ namespace ngcomp
 	{ result = 0.0; return;};
     
     const FiniteElement & fel = fes.GetFE (elnr, boundary, lh2);
-    const int dim     = fes.GetDimension();
+    int dim = fes.GetDimension();
     
     ArrayMem<int, 50> dnums;
     fes.GetDofNrs (elnr, boundary, dnums);

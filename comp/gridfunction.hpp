@@ -72,9 +72,6 @@ namespace ngcomp
     const FESpace & GetFESpace() const
     { return fespace; }
 
-  
-    // NgMutex & Mutex () { return mutex; }
-
     ///
     virtual string GetClassName () const
     {
@@ -180,8 +177,6 @@ namespace ngcomp
     virtual ~T_GridFunction ();
 
     virtual void Update ();
-
-    friend class GridFunctionCoefficientFunction;
   };
 
 

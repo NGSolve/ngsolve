@@ -89,11 +89,18 @@ namespace ngfem
 	NgProfiler::RegionTimer reg1a (timer1a);     
 
 	// mat_gradgrad = Trans (dbmats) * bmats;
-        LapackMultAtB (dbmats, bmats, mat_gradgrad);
+        // LapackMultAtB (dbmats, bmats, mat_gradgrad);
+	// elmat.Cols(l2_dofs).Rows(l2_dofs) += mat_gradgrad;
 
-	elmat.Cols(l2_dofs).Rows(l2_dofs) += mat_gradgrad;
+	// LapackMultAtB (dbmats, bmats, elmat.Cols(l2_dofs).Rows(l2_dofs));
+	// LapackMult (Trans(dbmats), bmats, elmat.Cols(l2_dofs).Rows(l2_dofs));
+
+	// elmat.Cols(l2_dofs).Rows(l2_dofs) = LapackMult (Trans(dbmats), bmats);
+
+	// elmat.Cols(l2_dofs).Rows(l2_dofs) = Lapack (Trans(dbmats) * bmats);
+	elmat.Cols(l2_dofs).Rows(l2_dofs) = Trans(dbmats) * bmats  | Lapack;
       }
-
+ 
 
       // The facet contribution
       {
@@ -115,6 +122,9 @@ namespace ngfem
 
 	    IntegrationRule ir_facet(etfacet, 2*fel_l2.Order());
 	    IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+
+	    for (int i = 0; i < ir_facet_vol.Size(); i++)
+	      ir_facet_vol[i].FacetNr() = k;
 
 	    Array<int> facetdofs;
 	    facetdofs = l2_dofs;
@@ -164,9 +174,12 @@ namespace ngfem
 		comp_bmats.Rows (2*l, 2*l+2) = comp_bmat;
 		comp_dbmats.Rows (2*l, 2*l+2) = dmat * comp_bmat;
 	      }
-	    // comp_elmat = Trans (comp_bmats) * comp_dbmats;
-	    LapackMultAtB (comp_bmats, comp_dbmats, comp_elmat);
 
+	    // comp_elmat = Trans (comp_bmats) * comp_dbmats;
+	    // LapackMultAtB (comp_bmats, comp_dbmats, comp_elmat);
+
+	    // comp_elmat = LapackMult (Trans(comp_bmats), comp_dbmats);
+	    comp_elmat = Trans(comp_bmats) * comp_dbmats    | Lapack;
 	    elmat.Rows(facetdofs).Cols(facetdofs) += comp_elmat;
 	  }
       }
@@ -599,9 +612,9 @@ namespace ngfem
 	NgProfiler::RegionTimer reg1a (timer1a);     
 
 	// mat_gradgrad = Trans (dbmats) * bmats;
-        LapackMultAtB (dbmats, bmats, mat_gradgrad);
+        // LapackMultAtB (dbmats, bmats, mat_gradgrad);
 
-	elmat.Cols(l2_dofs).Rows(l2_dofs) += mat_gradgrad;
+	elmat.Cols(l2_dofs).Rows(l2_dofs) += Trans(dbmats)*bmats  | Lapack;
       }
 
 
@@ -674,11 +687,13 @@ namespace ngfem
 
 
 	    FlatMatrix<> comp_elmat(comp_facetdofs.Size(), comp_facetdofs.Size(), lh);
-	    LapackMultAtB (comp_facjumps, comp_jumps, comp_elmat);
+	    // LapackMultAtB (comp_facjumps, comp_jumps, comp_elmat);
+	    LapackMult (Trans(comp_facjumps), comp_jumps, comp_elmat);
 	    elmat.Rows(comp_facetdofs).Cols(comp_facetdofs) += 3 * comp_elmat;
 
 	    FlatMatrix<> comp_elmat2(nd_l2, comp_facetdofs.Size(), lh);
-	    LapackMultAtB (facdudn, comp_jumps, comp_elmat2);
+	    // LapackMultAtB (facdudn, comp_jumps, comp_elmat2);
+	    LapackMult (Trans(facdudn), comp_jumps, comp_elmat2);
 	    mat_coupling.Cols(comp_facetdofs) += comp_elmat2;
 	  }
 
@@ -694,7 +709,8 @@ namespace ngfem
 	FlatMatrix<> help(nd_l2, nd, lh);
 	// help = mat_gradgrad * mat_coupling;
 	// elmat += 1.5*Trans (mat_coupling) * help;
-	LapackMultAB (mat_gradgrad, mat_coupling, help);
+	// LapackMultAB (mat_gradgrad, mat_coupling, help);
+	LapackMult (mat_gradgrad, mat_coupling, help);
 	LapackMultAddAtB (mat_coupling, help, 1.5, elmat);
       }
     }
@@ -796,7 +812,8 @@ namespace ngfem
 	NgProfiler::RegionTimer reg1a (timer1a);     
 
 	// mat_gradgrad = Trans (dbmats) * bmats;
-        LapackMultAtB (dbmats, bmats, mat_gradgrad);
+        // LapackMultAtB (dbmats, bmats, mat_gradgrad);
+	LapackMult (Trans(dbmats), bmats, mat_gradgrad);
 	elmat.Cols(l2_dofs).Rows(l2_dofs) = mat_gradgrad;
       }
 
@@ -890,7 +907,8 @@ namespace ngfem
 	  hmT = mat_mixedT * Trans (mat_gradgrad);
 	  elmat += (1+alpha) * mat_mixedT * Trans (hmT);
 	*/
-	LapackMultABt (mat_mixedT, mat_gradgrad, hmT);
+	// LapackMultABt (mat_mixedT, mat_gradgrad, hmT);
+	LapackMult (mat_mixedT, Trans(mat_gradgrad), hmT);
 	LapackMultAddABt (mat_mixedT, hmT, 1+alpha, elmat);
       }
     }
@@ -1002,7 +1020,8 @@ namespace ngfem
 	NgProfiler::RegionTimer reg1a (timer1a);     
 
 	// mat_gradgrad = Trans (dbmats) * bmats;
-        LapackMultAtB (dbmats, bmats, mat_gradgrad);
+        // LapackMultAtB (dbmats, bmats, mat_gradgrad);
+	LapackMult (Trans(dbmats), bmats, mat_gradgrad);
 	elmat.Cols(l2_dofs).Rows(l2_dofs) = mat_gradgrad;
 
 	mat_inv_mass = mat_mass;
@@ -1083,8 +1102,9 @@ namespace ngfem
 	      LapackMultAddABt (fac_jumps2, jumps, 1, elmat);
 	      LapackMultAddABt (fac_dudns, jumps, 1, mat_mixed);
 
-	      LapackMultABt (fac_jumps.Rows(l2_dofs), jumps, mat_mixed2);
-	      LapackMultAB (mat_inv_mass, mat_mixed2, mat_mixed2h);
+	      // LapackMultABt (fac_jumps.Rows(l2_dofs), jumps, mat_mixed2);
+	      LapackMult (fac_jumps.Rows(l2_dofs), Trans(jumps), mat_mixed2);
+	      LapackMult (mat_inv_mass, mat_mixed2, mat_mixed2h);
 	      LapackMultAddAtB (mat_mixed2, mat_mixed2h, nfacet+1, elmat);
 	      // mat_mixed2 = fac_jumps.Rows(l2_dofs) * Trans (jumps);
 	      // mat_mixed2h = mat_inv_mass * mat_mixed2;
@@ -1213,7 +1233,8 @@ namespace ngfem
 	NgProfiler::RegionTimer reg1a (timer1a);     
 
 	// mat_gradgrad = Trans (dbmats) * bmats;
-        LapackMultAtB (dbmats, bmats, mat_gradgrad);
+        // LapackMultAtB (dbmats, bmats, mat_gradgrad);
+	LapackMult (Trans(dbmats), bmats, mat_gradgrad);
 	elmat.Cols(l2_dofs).Rows(l2_dofs) = mat_gradgrad;
 
 	mat_inv_mass = mat_mass;
@@ -1300,7 +1321,8 @@ namespace ngfem
 		  LapackMultAddABt (fac_jumps.Rows(l2_dofs), jumps, normal(dir), mat_mixed2);
 		}
 	      
-	      LapackMultAB (mat_inv_mass, mat_mixed2, mat_mixed2h);
+	      // LapackMultAB (mat_inv_mass, mat_mixed2, mat_mixed2h);
+	      LapackMult (mat_inv_mass, mat_mixed2, mat_mixed2h);
 	      LapackMultAddAtB (mat_mixed2, mat_mixed2h, 1.5, elmat);
 	    }
 	}

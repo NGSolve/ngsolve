@@ -1181,7 +1181,8 @@ public:
 	      elmat = bbmat * Trans (bdbmat); 
 	  }
 	else
-	  LapackMultABt (bbmat, bdbmat, elmat);
+	  // LapackMultABt (bbmat, bdbmat, elmat);
+	  LapackMult (bbmat, Trans(bdbmat), elmat);
 
 
       }
