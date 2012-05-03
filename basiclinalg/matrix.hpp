@@ -564,6 +564,9 @@ namespace ngbla
     int Width () const throw() { return W; }
 
     ///
+    operator const FlatMatrix<T>() const { return FlatMatrix<T> (h, W, data); }
+
+    ///
     const FlatVec<W,T> Row (int i) const
     {
       return FlatVec<W,T> (&(*this)(i,0));
