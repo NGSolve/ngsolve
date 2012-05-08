@@ -296,6 +296,9 @@ namespace ngcomp
   Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> result) const
   {
     LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction, Eval 2");
+    static Timer timer ("GFCoeffFunc::Eval-scal");
+    RegionTimer reg (timer);
+
     
     const int elnr = ip.GetTransformation().GetElementNr();
     bool boundary = ip.GetTransformation().Boundary();
@@ -328,6 +331,9 @@ namespace ngcomp
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
+    static Timer timer ("GFCoeffFunc::Eval-vec");
+    RegionTimer reg (timer);
+
     
     const int elnr = ir.GetTransformation().GetElementNr();
     bool boundary = ir.GetTransformation().Boundary();

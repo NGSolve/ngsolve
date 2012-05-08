@@ -363,6 +363,72 @@ namespace ngfem
 
 
 
+
+
+
+
+  
+  // new design, code is still experimental ...
+  
+  template <typename DOP, typename F>
+  class T_FunctionDiffOp : public DifferentialOperator
+  {
+
+    // possible conversion from vector to scalar 
+    class V2VS 
+    {
+      FlatVector<> v;
+    public:
+      V2VS (FlatVector<> av) : v(av) { ; }
+      
+      template <int D>
+      V2VS (Vec<D> av) : v(av) { ; }
+      
+      operator double () { return v(0); }
+      
+      operator FlatVector<> () { return v; }
+      
+      template <int D>
+      operator Vec<D> () { return v; }
+    };
+    
+    
+    int dim;
+    const F & func;
+  public:
+    
+    T_FunctionDiffOp (const F & afunc, int adim) : func(afunc), dim(adim) { ; }
+    
+    virtual int Dim() const { return dim; }
+    
+    virtual void Apply (const FiniteElement & fel,
+			const BaseMappedIntegrationPoint & mip,
+			FlatVector<double> x, 
+			FlatVector<double> flux,
+			LocalHeap & lh) const 
+    {
+      Vec<DOP::DIM_DMAT> u;
+      DOP::Apply (fel, mip, x, u, lh);
+      flux = func(V2VS(u));
+    }
+  };
+  
+  
+  template <typename DOP, typename F>
+  DifferentialOperator * CreateFunctionDiffOp (const DOP & dop, const F & func, int dim = 1)
+  {
+    return new T_FunctionDiffOp<DOP, F> (func, dim);
+  }
+
+
+  /* examples:
+     
+  double myexp (double x)  { return exp(x); }
+  Vec<1> myexpVec (FlatVector<> x)  { return Vec<1> (exp(x(0))); }
+
+  CreateFunctionDiffOp(DiffOpId<2>(), myexpVec));
+  */
+  
 }
 
 
