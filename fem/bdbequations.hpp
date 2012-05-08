@@ -196,8 +196,8 @@ public:
 
 
 /// Identity
-template <int D>
-class DiffOpId : public DiffOp<DiffOpId<D> >
+template <int D, typename AFEL = ScalarFiniteElement<D> >
+class DiffOpId : public DiffOp<DiffOpId<D, AFEL> >
 {
 public:
   enum { DIM = 1 };
@@ -210,14 +210,14 @@ public:
   static void GenerateMatrix (const FEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    mat.Row(0) = fel.GetShape(mip.IP(), lh);
+    mat.Row(0) = static_cast<const AFEL&> (fel).GetShape(mip.IP(), lh);
   }
 
   static void GenerateMatrix (const ScalarFiniteElement<D> & fel, 
 			      const MappedIntegrationPoint<D,D> & mip,
 			      FlatMatrixFixHeight<1> & mat, LocalHeap & lh)
   {
-    fel.CalcShape (mip.IP(), FlatVector<> (fel.GetNDof(), &mat(0,0)));
+    static_cast<const AFEL&> (fel).CalcShape (mip.IP(), FlatVector<> (fel.GetNDof(), &mat(0,0)));
   }
 
 
@@ -226,14 +226,14 @@ public:
 		     const TVX & x, TVY & y,
 		     LocalHeap & lh) 
   {
-    y = Trans (fel.GetShape (mip.IP(), lh)) * x;
+    y = Trans (static_cast<const AFEL&> (fel).GetShape (mip.IP(), lh)) * x;
   }
 
   static void Apply (const ScalarFiniteElement<D> & fel, const MappedIntegrationPoint<D,D> & mip,
 		     const FlatVector<double> & x, FlatVector<double> & y,
 		     LocalHeap & lh) 
   {
-    y(0) = fel.Evaluate(mip.IP(), x);
+    y(0) = static_cast<const AFEL&> (fel).Evaluate(mip.IP(), x);
   }
 
   template <typename FEL, class MIR>
@@ -241,7 +241,7 @@ public:
 		       const FlatVector<double> & x, FlatMatrix<double> & y,
 		       LocalHeap & lh)
   {
-    fel.Evaluate (mir.IR(), x, FlatVector<> (mir.Size(), &y(0,0)));
+    static_cast<const AFEL&> (fel).Evaluate (mir.IR(), x, FlatVector<> (mir.Size(), &y(0,0)));
   }
 
 
@@ -251,7 +251,7 @@ public:
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh) 
   {
-    y = fel.GetShape (mip.IP(), lh) * x;
+    y = static_cast<const AFEL&> (fel).GetShape (mip.IP(), lh) * x;
   }
 
 
@@ -279,7 +279,7 @@ public:
 			 LocalHeap & lh)
   {
     FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
-    fel.EvaluateShapeGrid (ir, hv, dvec, lh);
+    static_cast<const AFEL&> (fel).EvaluateShapeGrid (ir, hv, dvec, lh);
   }
 
 
@@ -290,7 +290,7 @@ public:
 			      TVY & hv, LocalHeap & lh)
   {
     FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
-    fel.EvaluateShapeGridTrans (ir, dvec, hv, lh);
+    static_cast<const AFEL&> (fel).EvaluateShapeGridTrans (ir, dvec, hv, lh);
   }
 };
 
@@ -879,26 +879,6 @@ public:
     vectorial = (N > 1) && (N == acoef->Dimension());
     coefs[0] = acoef;
   }
-  /*
-  DVec (CoefficientFunction * acoef1,
-	CoefficientFunction * acoef2)
-  { 
-    vectorial = false;
-    coefs[0] = acoef1;
-    if (N >= 2) coefs[1] = acoef2;
-  }
-
-  DVec (CoefficientFunction * acoef1,
-	CoefficientFunction * acoef2,
-	CoefficientFunction * acoef3)
-  { 
-    vectorial = false;
-
-    coefs[0] = acoef1;
-    if (N >= 2) coefs[1] = acoef2;
-    if (N >= 3) coefs[2] = acoef3;
-  }
-  */
 
   DVec (CoefficientFunction * acoef1,
 	CoefficientFunction * acoef2,
@@ -937,8 +917,33 @@ public:
 	  vec(i) = hp -> T_Evaluate<TSCAL> (mip);
 
 	  // gcc 4.6 complains, why ???? (JS)
-	  // vec(i) = (coefs[i]) -> T_Evaluate<TSCAL> (mip);  
+	  // vec(i) = coefs[i] -> T_Evaluate<TSCAL> (mip);  
 	}
+  }  
+
+
+
+  template <typename FEL, typename MIR, typename VEC>
+  void GenerateVectorIR (const FEL & fel, const MIR & mir,
+			 VEC & vecs, LocalHeap & lh) const
+  {
+    typedef typename VEC::TSCAL TSCAL;
+
+    // if (vectorial)
+    if (N == 1)
+      {
+	coefs[0] -> Evaluate (mir, vecs);
+      }
+    else
+      for (int j = 0; j < mir.Size(); j++)
+	for (int i = 0; i < N; i++)
+	  {
+	    CoefficientFunction * hp = coefs[i];
+	    vecs(j,i) = hp -> T_Evaluate<TSCAL> (mir[j]);
+	    
+	    // gcc 4.6 complains, why ???? (JS)
+	    // vec(i) = (coefs[i]) -> T_Evaluate<TSCAL> (mip);  
+	  }
   }  
 };
 
@@ -964,6 +969,14 @@ public:
     for (int i = 0; i < N; i++)
       vec(i) = hv(i);
   }  
+
+  template <typename FEL, typename MIR, typename VEC>
+  void GenerateVectorIR (const FEL & fel, const MIR & mir,
+			 VEC & vecs, LocalHeap & lh) const
+  {
+    for (int i = 0; i < mir.Size(); i++)
+      GenerateVector (fel, mir[i], vecs.Row(i), lh);
+  }
 };
 
 
@@ -983,7 +996,7 @@ public:
   void GenerateVector (const FEL & fel, const MIP & mip,
 		       VEC & vec, LocalHeap & lh) const
   {
-    vec = 0;
+    vec = 0.0;
 
     typedef typename VEC::TSCAL TSCAL;
     
@@ -997,6 +1010,14 @@ public:
     //(*testout) << "point " << mip.GetPoint() << " tv " << vec;
     vec *= Evaluate (*coef, mip)/sqrt(length);
     //(*testout) << " retval " << vec << endl;
+  }
+
+  template <typename FEL, typename MIR, typename VEC>
+  void GenerateVectorIR (const FEL & fel, const MIR & mir,
+			 VEC & vecs, LocalHeap & lh) const
+  {
+    for (int i = 0; i < mir.Size(); i++)
+      GenerateVector (fel, mir[i], vecs.Row(i), lh);
   }
 
 };
