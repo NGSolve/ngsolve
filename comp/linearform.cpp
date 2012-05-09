@@ -192,7 +192,7 @@ namespace ngcomp
 		    gcnt++;
 		    if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
 		      {
-			cout << "\rassemble element " << cnt << "/" << ne << flush;
+			cout << IM(3) << "\rassemble element " << cnt << "/" << ne << flush;
 			ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
 			prevtime = clock();
 		      }
@@ -242,7 +242,7 @@ namespace ngcomp
 	    MyMPI_Barrier();
 
 	    if (id == 0)
-	      cout << "\rassemble element " << ne << "/" << ne << endl;
+	      cout << IM(3) << "\rassemble element " << ne << "/" << ne << endl;
 	  }
 
 	RegionTimer reg3(timer3);

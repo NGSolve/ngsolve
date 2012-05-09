@@ -591,7 +591,7 @@ namespace ngla
 
     // call pardiso for factorization:
     // time1 = clock();
-    cout << "call pardiso ..." << flush;
+    cout << IM(3) << "call pardiso ..." << flush;
 
 
     
@@ -603,7 +603,7 @@ namespace ngla
 			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
     
-    cout << " done" << endl;
+    cout << IM(3) << " done" << endl;
 
     if ( error != 0 )
       {
