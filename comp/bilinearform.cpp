@@ -671,7 +671,8 @@ namespace ngcomp
 			      {
 				if (ntasks == 1)
 				  {
-				    cout << "\rassemble element " << cnt << "/" << ne << flush;
+				    cout << IM(3) 
+					 << "\rassemble element " << cnt << "/" << ne << flush;
 				    ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
 				    // prevtime = clock();
 				  }
@@ -987,7 +988,8 @@ namespace ngcomp
 			int sum = 0;
 			for (int j = 1; j < ntasks; j++) 
 			  sum += computed[j];
-			cout << IM(2) << "\rassemble element " << sum << "/" << ne 
+			cout << IM(3) 
+			     << "\rassemble element " << sum << "/" << ne 
 			     << " (" << num_working << " procs working) " << flush;
 			ma.SetThreadPercentage ( 100.0*sum / ne );
 
@@ -998,7 +1000,7 @@ namespace ngcomp
 #endif
 
 		if (id == 0)
-		  cout << IM(2) << "\rassemble element " << ne << "/" << ne 
+		  cout << IM(3) << "\rassemble element " << ne << "/" << ne 
 		       << "                               " << endl;
 		
 		MyMPI_Barrier();
@@ -1024,7 +1026,7 @@ namespace ngcomp
 
                     if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
                       {
-                        cout << "\rassemble element " << i << "/" << ne << flush;
+                        cout << IM(3) << "\rassemble element " << i << "/" << ne << flush;
                         ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
                         prevtime = clock();
                       }
@@ -1086,7 +1088,7 @@ namespace ngcomp
                         useddof.Set (dnums[j]);
                   }
                 clh.CleanUp(heapp);
-		cout << "\rassemble element " << ne << "/" << ne << endl;
+		cout << IM(3) << "\rassemble element " << ne << "/" << ne << endl;
               }
 
             if (hasbound)
@@ -1568,7 +1570,7 @@ namespace ngcomp
                 cntused++;
 	    
 	    if (ntasks == 1)
-	      cout << "used " << cntused
+	      cout << IM(4) << "used " << cntused
 		   << ", unused = " << useddof.Size()-cntused
 		   << ", total = " << useddof.Size() << endl;
 	    

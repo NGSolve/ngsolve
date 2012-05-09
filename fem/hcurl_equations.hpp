@@ -29,8 +29,8 @@ namespace ngfem
 
 
   /// Identity operator, covariant transformation
-  template <int D>
-  class DiffOpIdEdge : public DiffOp<DiffOpIdEdge<D> >
+  template <int D, typename FEL = HCurlFiniteElement<D> >
+  class DiffOpIdEdge : public DiffOp<DiffOpIdEdge<D, FEL> >
   {
   public:
     enum { DIM = 1 };
@@ -39,37 +39,37 @@ namespace ngfem
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
 
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const MIP & mip,
+    template <typename FEL1, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL1 & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
       mat = Trans (mip.GetJacobianInverse ()) * 
-	Trans (fel.GetShape(mip.IP(), lh));
+	Trans (static_cast<const FEL&> (fel).GetShape(mip.IP(), lh));
     }
 
-    template <typename FEL>
-    static void GenerateMatrix (const FEL & fel, 
+    template <typename FEL1>
+    static void GenerateMatrix (const FEL1 & fel, 
 				const MappedIntegrationPoint<D,D> & mip,
 				FlatMatrixFixHeight<D> & mat, LocalHeap & lh)
     {
-      fel.CalcMappedShape (mip, mat.Trans());
+      static_cast<const FEL&> (fel).CalcMappedShape (mip, mat.Trans());
     }
 
 
-    template <typename FEL, typename MIP, class TVX, class TVY>
-    static void Apply (const FEL & fel, const MIP & mip,
+    template <typename FEL1, typename MIP, class TVX, class TVY>
+    static void Apply (const FEL1 & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
 
       Vec<D,TSCAL> hx;
-      hx = Trans (fel.GetShape (mip.IP(), lh)) * x;
+      hx = Trans (static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)) * x;
       y = Trans (mip.GetJacobianInverse()) * hx;
     }
 
-    template <typename FEL, typename MIP, class TVX, class TVY>
-    static void ApplyTrans (const FEL & fel, const MIP & mip,
+    template <typename FEL1, typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const FEL1 & fel, const MIP & mip,
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
@@ -77,7 +77,7 @@ namespace ngfem
 
       Vec<D,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
-      y = fel.GetShape (mip.IP(),lh) * hx;
+      y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
     }
   };
 
@@ -219,8 +219,8 @@ namespace ngfem
 
 
   /// Identity on boundary
-  template <int D>
-  class DiffOpIdBoundaryEdge : public DiffOp<DiffOpIdBoundaryEdge<D> >
+  template <int D, typename FEL = HCurlFiniteElement<D-1> >
+  class DiffOpIdBoundaryEdge : public DiffOp<DiffOpIdBoundaryEdge<D,FEL> >
   {
   public:
     enum { DIM = 1 };
@@ -229,28 +229,28 @@ namespace ngfem
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
 
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const MIP & mip,
+    template <typename FEL1, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL1 & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      mat = Trans (mip.GetJacobianInverse ()) * Trans (fel.GetShape(mip.IP(),lh));
-    
+      mat = Trans (mip.GetJacobianInverse ()) * 
+	Trans (static_cast<const FEL&> (fel).GetShape(mip.IP(),lh));
     }
 
-    template <typename FEL, typename MIP, class TVX, class TVY>
-    static void Apply (const FEL & fel, const MIP & mip,
+    template <typename FEL1, typename MIP, class TVX, class TVY>
+    static void Apply (const FEL1 & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
 
       Vec<D-1,TSCAL> hx;
-      hx = Trans (fel.GetShape (mip.IP(),lh)) * x;
+      hx = Trans (static_cast<const FEL&> (fel).GetShape (mip.IP(),lh)) * x;
       y = Trans (mip.GetJacobianInverse()) * hx;
     }
 
-    template <typename FEL, typename MIP, class TVX, class TVY>
-    static void ApplyTrans (const FEL & fel, const MIP & mip,
+    template <typename FEL1, typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const FEL1 & fel, const MIP & mip,
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
@@ -258,7 +258,7 @@ namespace ngfem
 
       Vec<DIM_ELEMENT,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
-      y = fel.GetShape (mip.IP(),lh) * hx;
+      y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
 
       /*
       FlatMatrixFixWidth<DIM_ELEMENT> mshape (y.Height(), &hv(0)); 
@@ -489,23 +489,16 @@ namespace ngfem
   ///
   template <int D, typename FEL = HCurlFiniteElement<D-1> >
   class RobinEdgeIntegrator 
-    : public T_BDBIntegrator<DiffOpIdBoundaryEdge<D>, DiagDMat<D>, FEL>
+    : public T_BDBIntegrator<DiffOpIdBoundaryEdge<D,FEL>, DiagDMat<D>, FEL>
   {
   public:
     ///
     RobinEdgeIntegrator (CoefficientFunction * coeff)
-      : T_BDBIntegrator<DiffOpIdBoundaryEdge<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
+      : T_BDBIntegrator<DiffOpIdBoundaryEdge<D,FEL>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
     { ; }
     RobinEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
-      : T_BDBIntegrator<DiffOpIdBoundaryEdge<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeffs[0]))
+      : T_BDBIntegrator<DiffOpIdBoundaryEdge<D,FEL>, DiagDMat<D>, FEL> (DiagDMat<D> (coeffs[0]))
     { ; }
-
-    /*
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      return new RobinEdgeIntegrator (coeffs[0]);
-    }
-    */
 
     ///
     virtual bool BoundaryForm () const { return 1; }
@@ -574,24 +567,24 @@ namespace ngfem
   ///
   template <int D, typename FEL = HCurlFiniteElement<D-1> >
   class NeumannEdgeIntegrator
-    : public T_BIntegrator<DiffOpIdBoundaryEdge<D>, DVec<D>, FEL>
+    : public T_BIntegrator<DiffOpIdBoundaryEdge<D,FEL>, DVec<D>, FEL>
   {
   public:
     ///
     NeumannEdgeIntegrator (CoefficientFunction * coeff1,
 			   CoefficientFunction * coeff2,
 			   CoefficientFunction * coeff3)
-      : T_BIntegrator<DiffOpIdBoundaryEdge<D>,DVec<D>, FEL> 
+      : T_BIntegrator<DiffOpIdBoundaryEdge<D,FEL>,DVec<D>, FEL> 
     (DVec<D> (coeff1, coeff2, coeff3))
     { ; }
     NeumannEdgeIntegrator (CoefficientFunction * coeff1,
 			   CoefficientFunction * coeff2)
-      : T_BIntegrator<DiffOpIdBoundaryEdge<D>,DVec<D>, FEL> 
+      : T_BIntegrator<DiffOpIdBoundaryEdge<D,FEL>,DVec<D>, FEL> 
     (DVec<D> (coeff1, coeff2))
     { ; }
 
     NeumannEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
-      : T_BIntegrator<DiffOpIdBoundaryEdge<D>,DVec<D>, FEL> 
+      : T_BIntegrator<DiffOpIdBoundaryEdge<D,FEL>,DVec<D>, FEL> 
     (DVec<D> (coeffs))
     { ; }
       

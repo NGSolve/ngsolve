@@ -929,8 +929,7 @@ public:
   {
     typedef typename VEC::TSCAL TSCAL;
 
-    // if (vectorial)
-    if (N == 1)
+    if (vectorial || N == 1)
       {
 	coefs[0] -> Evaluate (mir, vecs);
       }
