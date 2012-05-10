@@ -462,29 +462,29 @@ namespace ngfem
   void  HCurlHighOrderFE<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1];
-    Tx lami[3] = { x, y, 1-x-y };
+    Tx lam[3] = { x, y, 1-x-y };
 
     ArrayMem<AutoDiff<2>,10> adpol1(order),adpol2(order);	
 	
     int ii = 3; 
-    const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+    // const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
     for (int i = 0; i < 3; i++)
       {
-	int es = edges[i][0], ee = edges[i][1];
-	if (vnums[es] > vnums[ee])  swap (es, ee);
+        INT<2> e = GetEdgeSort (i, vnums);	  
 
 	//Nedelec low order edge shape function 
-        shape[i] = uDv_minus_vDu<2> (lami[es], lami[ee]);
+        shape[i] = uDv_minus_vDu<2> (lam[e[0]], lam[e[1]]);
 
 	int p = order_edge[i]; 
 	//HO-Edge shapes (Gradient Fields)   
 	if(p > 0 && usegrad_edge[i]) 
 	  { 
-	    AutoDiff<2> xi = lami[ee] - lami[es]; 
-	    AutoDiff<2> eta = 1 - lami[ee] - lami[es]; 
-	    T_ORTHOPOL::CalcTrigExt(p+1, xi, eta, adpol1); 
-	   
-	    for(int j = 0; j < p; j++) 
+	    LegendrePolynomial::
+	      EvalScaledMult (order_edge[i]-1, 
+			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+			      lam[e[0]]*lam[e[1]], adpol1);
+	    
+	    for(int j = 0; j < p; j++) 	      
               shape[ii++] = Du<2> (adpol1[j]);
 	  }
       }   
@@ -499,8 +499,8 @@ namespace ngfem
 	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
 	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  
 
-	AutoDiff<2> xi  = lami[fav[2]]-lami[fav[1]];
-	AutoDiff<2> eta = lami[fav[0]]; 
+	AutoDiff<2> xi  = lam[fav[2]]-lam[fav[1]];
+	AutoDiff<2> eta = lam[fav[0]]; 
 
 	T_INNERSHAPES::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
 	
@@ -517,7 +517,7 @@ namespace ngfem
 	
 	// rec_pol * Nedelec0 
 	for (int j = 0; j < p-1; j++, ii++)
-          shape[ii] = wuDv_minus_wvDu<2> (lami[fav[1]], lami[fav[2]], adpol2[j]);
+          shape[ii] = wuDv_minus_wvDu<2> (lam[fav[1]], lam[fav[2]], adpol2[j]);
       }
   }
 
@@ -545,26 +545,27 @@ namespace ngfem
     int ii = 4;
     ArrayMem<AutoDiff<2>, 10> pol_xi(order+2), pol_eta(order+2);
 
-    // edges
-    const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
     for (int i = 0; i < 4; i++)
       {
 	int p = order_edge[i]; 
-	int es = edges[i][0], ee = edges[i][1];
-	if (vnums[es] > vnums[ee]) swap (es, ee);
-
-	AutoDiff<2> xi  = sigma[ee]-sigma[es];
-	AutoDiff<2> lam_e = lami[ee]+lami[es];  
+        INT<2> e = GetEdgeSort (i, vnums);	  
+	
+	AutoDiff<2> xi  = sigma[e[1]]-sigma[e[0]];
+	AutoDiff<2> lam_e = lami[e[0]]+lami[e[1]];  
+        Tx bub = 0.25 * lam_e * (1 - xi*xi);
 
 	// Nedelec0-shapes
-        shape[i] = uDv<2> (0.5 * lam_e, xi); 
+	shape[i] = uDv<2> (0.5 * lam_e, xi); 
 
 	// High Order edges ... Gradient fields 
 	if(usegrad_edge[i])
 	  {
-	    T_ORTHOPOL::Calc (p+1, xi, pol_xi);  
+	    LegendrePolynomial::
+	      EvalMult (order_edge[i]-1, 
+			xi, bub, pol_xi);
+
 	    for (int j = 0; j < p; j++)
-              shape[ii++] = Du<2> (pol_xi[j] * lam_e);
+              shape[ii++] = Du<2> (pol_xi[j]);
 	  }
       }
      
@@ -620,7 +621,7 @@ namespace ngfem
   void  HCurlHighOrderFE<ET_TET> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
-    Tx lami[4] = { x, y, z, 1-x-y-z };
+    Tx lam[4] = { x, y, z, 1-x-y-z };
 
     ArrayMem<AutoDiff<3>,10> adpol1(order+2),adpol2(order+2),adpol3(order+2); 
     int ii = 6; 
@@ -632,15 +633,16 @@ namespace ngfem
         INT<2> e = GetEdgeSort (i, vnums);	  
 	
 	//Nedelec low order edge shape function 
-        shape[i] = uDv_minus_vDu<3> (lami[e[0]], lami[e[1]]);
+        shape[i] = uDv_minus_vDu<3> (lam[e[0]], lam[e[1]]);
 
 	//HO-Edge shape functions (Gradient Fields) 	
 	if (p > 0 && usegrad_edge[i]) 
-	  {
-	    AutoDiff<3> xi = lami[e[1]]-lami[e[0]]; 
-	    AutoDiff<3> eta = 1-lami[e[1]]-lami[e[0]]; 
-	    T_ORTHOPOL::CalcTrigExt(p+1,xi,eta, adpol1); 
-
+	  {     
+	    LegendrePolynomial::
+	      EvalScaledMult (order_edge[i]-1, 
+			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+			      lam[e[0]]*lam[e[1]], adpol1);
+	    
 	    for(int j = 0; j < p; j++) 	      
               shape[ii++] = Du<3> (adpol1[j]);
 	  }
@@ -655,9 +657,9 @@ namespace ngfem
           int vop = 6 - fav[0] - fav[1] - fav[2];  	
           int p = order_face[i][0];
           
-          AutoDiff<3> xi = lami[fav[2]]-lami[fav[1]];
-          AutoDiff<3> eta = lami[fav[0]]; // lo 
-          AutoDiff<3> zeta = lami[vop];   // lz 
+          AutoDiff<3> xi = lam[fav[2]]-lam[fav[1]];
+          AutoDiff<3> eta = lam[fav[0]]; // lo 
+          AutoDiff<3> zeta = lam[vop];   // lz 
           
           T_FACESHAPES::CalcSplitted (p+1, xi, eta, zeta, adpol1, adpol2); 
           
@@ -674,7 +676,7 @@ namespace ngfem
           
           // type 3
           for (int j = 0; j <= p-2; j++, ii++)
-            shape[ii] = wuDv_minus_wvDu<3> (lami[fav[1]], lami[fav[2]], adpol2[j]);
+            shape[ii] = wuDv_minus_wvDu<3> (lam[fav[1]], lam[fav[2]], adpol2[j]);
         }
 
     
@@ -700,7 +702,7 @@ namespace ngfem
        
     for (int j= 0; j <= p-3; j++)
       for (int k = 0; k <= p-3-j; k++)
-        shape[ii++] = wuDv_minus_wvDu<3> (lami[0], lami[3], adpol2[j] * adpol3[k]);
+        shape[ii++] = wuDv_minus_wvDu<3> (lam[0], lam[3], adpol2[j] * adpol3[k]);
   }
 
 
@@ -720,7 +722,7 @@ namespace ngfem
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
 
-    AutoDiff<3> lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
+    AutoDiff<3> lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
     AutoDiff<3> muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
        
        
@@ -738,16 +740,23 @@ namespace ngfem
         INT<2> e = GetEdgeSort (i, vnums);	  
 	
 	//Nedelec0
-        shape[i] = wuDv_minus_wvDu<3> (lami[e[0]], lami[e[1]], muz[e[1]]);
+        shape[i] = wuDv_minus_wvDu<3> (lam[e[0]], lam[e[1]], muz[e[1]]);
    
 	//high order \nabla (P_edge(x,y) * muz)
 	if(usegrad_edge[i])
 	  {
-	    T_ORTHOPOL::CalcTrigExt(p+1, lami[e[1]]-lami[e[0]],
-				    1-lami[e[0]]-lami[e[1]],adpolxy1);
-	    
+	    /*
+	    T_ORTHOPOL::CalcTrigExt(p+1, lam[e[1]]-lam[e[0]],
+				    1-lam[e[0]]-lam[e[1]],adpolxy1);
 	    for(int j = 0; j <= p-1; j++)
               shape[ii++] = Du<3> (adpolxy1[j] * muz[e[1]]);
+	    */
+	    LegendrePolynomial::
+	      EvalScaledMult (order_edge[i]-1, 
+			lam[e[1]]-lam[e[0]], lam[e[1]]+lam[e[0]], 
+			lam[e[0]]*lam[e[1]]*muz[e[1]], adpolxy1);
+	    for(int j = 0; j <= p-1; j++)
+              shape[ii++] = Du<3> (adpolxy1[j]);
 	  }
       }
 
@@ -757,15 +766,22 @@ namespace ngfem
 	int p = order_edge[i]; 
         INT<2> e = GetEdgeSort (i, vnums);	  
 
-        shape[i] = wuDv_minus_wvDu<3> (muz[e[0]], muz[e[1]], lami[e[1]]);
+        shape[i] = wuDv_minus_wvDu<3> (muz[e[0]], muz[e[1]], lam[e[1]]);
 	
-	//high order edges:  \nabla (T_ORTHOPOL^{p+1}(2z-1) * lami(x,y))
+	//high order edges:  \nabla (T_ORTHOPOL^{p+1}(2z-1) * lam(x,y))
 	if(usegrad_edge[i])
 	  {
-	    T_ORTHOPOL::Calc (p+1, muz[e[1]]-muz[e[0]], adpolz);
+	    // T_ORTHOPOL::Calc (p+1, muz[e[1]]-muz[e[0]], adpolz);
+	    // for (int j = 0; j < p; j++)
+	    //   shape[ii++] = Du<3> (adpolz[j] * lam[e[1]]);
+
+	    LegendrePolynomial::
+	      EvalMult (order_edge[i]-1, 
+			muz[e[1]]-muz[e[0]], 
+			muz[e[0]]*muz[e[1]]*lam[e[1]], adpolz);
 	    
 	    for (int j = 0; j < p; j++)
-              shape[ii++] = Du<3> (adpolz[j] * lami[e[1]]);
+              shape[ii++] = Du<3> (adpolz[j]);
 	  }
       }
 
@@ -780,8 +796,8 @@ namespace ngfem
 
 	INT<4> fav = GetFaceSort (i, vnums);
 
-	AutoDiff<3> xi = lami[fav[2]]-lami[fav[1]];
-	AutoDiff<3> eta = lami[fav[0]]; // 1-lami[f2]-lami[f1];
+	AutoDiff<3> xi = lam[fav[2]]-lam[fav[1]];
+	AutoDiff<3> eta = lam[fav[0]]; // 1-lam[f2]-lam[f1];
 	
 	T_TRIGFACESHAPES::CalcSplitted(p+1,xi,eta,adpolxy1,adpolxy2); 
 
@@ -798,7 +814,7 @@ namespace ngfem
 
 	//  Ned0*adpolxy2[j]*muz 
 	for (int j = 0; j <= p-2; j++,ii++)
-          shape[ii] = wuDv_minus_wvDu<3> (lami[fav[1]], lami[fav[2]], adpolxy2[j]*muz[fav[2]]);
+          shape[ii] = wuDv_minus_wvDu<3> (lam[fav[1]], lam[fav[2]], adpolxy2[j]*muz[fav[2]]);
       }
     
 
@@ -813,8 +829,8 @@ namespace ngfem
 
 	int fz = 3-fmax; 
 	int ftrig = fmax^1; 
-	AutoDiff<3> xi = lami[faces[i][fmax]]-lami[faces[i][ftrig]]; 
-	AutoDiff<3> eta = 1-lami[faces[i][fmax]]-lami[faces[i][ftrig]]; 
+	AutoDiff<3> xi = lam[faces[i][fmax]]-lam[faces[i][ftrig]]; 
+	AutoDiff<3> eta = 1-lam[faces[i][fmax]]-lam[faces[i][ftrig]]; 
 	AutoDiff<3> zeta = muz[faces[i][fmax]]-muz[faces[i][fz]]; 
 	
 	int pp = int(max2(p[0],p[1]))+1;
@@ -852,12 +868,12 @@ namespace ngfem
 	    for(int j=0;j<=p[0]-1;j++) 
               shape[ii++] = wuDv_minus_wvDu<3> (muz[faces[i][fz]], muz[faces[i][fmax]], adpolxy1[j]);
 	    for(int j=0;j<=p[1]-1;j++) 
-              shape[ii++] = wuDv_minus_wvDu<3> (lami[faces[i][ftrig]], lami[faces[i][fmax]], adpolz[j]);
+              shape[ii++] = wuDv_minus_wvDu<3> (lam[faces[i][ftrig]], lam[faces[i][fmax]], adpolz[j]);
 	  }
 	else 
 	  {
 	    for(int j=0;j<=p[0]-1;j++) 
-              shape[ii++] = wuDv_minus_wvDu<3> (lami[faces[i][ftrig]], lami[faces[i][fmax]], adpolz[j]);
+              shape[ii++] = wuDv_minus_wvDu<3> (lam[faces[i][ftrig]], lam[faces[i][fmax]], adpolz[j]);
 	    for(int j=0;j<=p[1]-1;j++) 
               shape[ii++] = wuDv_minus_wvDu<3> (muz[faces[i][fz]], muz[faces[i][fmax]], adpolxy1[j]);
 	  }
@@ -927,23 +943,25 @@ namespace ngfem
     const EDGE * edges = ElementTopology::GetEdges (ET_HEX);
     for (int i = 0; i < 12; i++)
       {
-	int es = edges[i][0], ee = edges[i][1];
 	int p = order_edge[i]; 
-	if (vnums[es] > vnums[ee]) swap (es, ee);
-
-	AutoDiff<3> xi = sigma[ee]-sigma[es]; 
-	AutoDiff<3> lam_e = lami[ee]+lami[es]; 
+        INT<2> e = GetEdgeSort (i, vnums);	  
 	
-	// Nedelec0-shapes
-        shape[i] = uDv<3> (0.5*lam_e, xi);
+	AutoDiff<3> xi  = sigma[e[1]]-sigma[e[0]];
+	AutoDiff<3> lam_e = lami[e[0]]+lami[e[1]];  
+        Tx bub = 0.25 * lam_e * (1 - xi*xi);
 
+	// Nedelec0-shapes
+	shape[i] = uDv<3> (0.5 * lam_e, xi); 
+
+	// High Order edges ... Gradient fields 
 	if(usegrad_edge[i])
 	  {
-	    // High Order edges ... Gradient fields 
-	    T_ORTHOPOL::Calc (p+1, xi, pol_xi);
-	    
+	    LegendrePolynomial::
+	      EvalMult (order_edge[i]-1, 
+			xi, bub, pol_xi);
+
 	    for (int j = 0; j < p; j++)
-              shape[ii++] = Du<3> (pol_xi[j] * lam_e);
+              shape[ii++] = Du<3> (pol_xi[j]);
 	  }
       }
     
