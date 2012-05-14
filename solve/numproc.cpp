@@ -645,7 +645,8 @@ namespace ngsolve
       }
     else if (point.Size() >= 2)
       {
-	const BilinearFormIntegrator & bfi = (bfa) ? *bfa->GetIntegrator(0) : *gfu->GetFESpace().GetEvaluator();
+	const BilinearFormIntegrator & bfi = (bfa) ? *bfa->GetIntegrator(0) 
+	  : *gfu->GetFESpace().GetIntegrator();
 
 	if (point2.Size() >= 2)
 	  {
@@ -1078,13 +1079,13 @@ namespace ngsolve
     bool writevar = (strcmp(variablename.c_str(), "") != 0);
     string actvarname;
 
-    const BilinearFormIntegrator * Evaluator_ptr;
-    const BilinearFormIntegrator * BoundaryEvaluator_ptr;
+    const BilinearFormIntegrator * Integrator_ptr;
+    const BilinearFormIntegrator * BoundaryIntegrator_ptr;
     
 
     const FESpace & fes = gfu->GetFESpace();
 
-    const int components = fes.GetEvaluator()->DimFlux();
+    const int components = fes.GetIntegrator()->DimFlux();
     int ndomains;
     
     string typestring;
@@ -1097,8 +1098,8 @@ namespace ngsolve
 
 	    typestring = ".vol";
 
-	    Evaluator_ptr = fes.GetEvaluator();
-	    BoundaryEvaluator_ptr = NULL;
+	    Integrator_ptr = fes.GetIntegrator();
+	    BoundaryIntegrator_ptr = NULL;
 	    ndomains = pde.GetMeshAccess().GetNDomains();
 
 	  }
@@ -1108,8 +1109,8 @@ namespace ngsolve
 
 	    typestring = ".surf";
 
-	    Evaluator_ptr = NULL;
-	    BoundaryEvaluator_ptr = fes.GetBoundaryEvaluator();
+	    Integrator_ptr = NULL;
+	    BoundaryIntegrator_ptr = fes.GetBoundaryIntegrator();
 	    ndomains = pde.GetMeshAccess().GetNBoundaries();
 	  }
 
@@ -1128,8 +1129,8 @@ namespace ngsolve
 	// const FESpace & fes = gfu->GetFESpace();
 
 	VisualizeGridFunction<double> vgfu(pde.GetMeshAccess(),gfu,
-					   BoundaryEvaluator_ptr,
-					   Evaluator_ptr,false);
+					   BoundaryIntegrator_ptr,
+					   Integrator_ptr,false);
 
 
 	Array<double> mini, maxi, average, vol;
