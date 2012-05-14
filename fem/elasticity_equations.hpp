@@ -26,13 +26,13 @@ namespace ngfem
 
 
   /// Elasticity operator $(e_{11},e_{22},2 e_{12})$
-  template <int D> 
-  class DiffOpStrain : public DiffOp<DiffOpStrain<D> >
+  template <int D, typename FEL = ScalarFiniteElement<D> > 
+  class DiffOpStrain : public DiffOp<DiffOpStrain<D, FEL> >
   {
   };
 
-  template <>
-  class DiffOpStrain<2> : public DiffOp<DiffOpStrain<2> >
+  template <typename FEL>
+  class DiffOpStrain<2, FEL> : public DiffOp<DiffOpStrain<2, FEL> >
   {
   public:
     enum { DIM = 2 };
@@ -41,8 +41,8 @@ namespace ngfem
     enum { DIM_DMAT = 3 };
     enum { DIFFORDER = 1 };
 
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const MIP & mip,
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
       typedef typename MAT::TSCAL TSCAL;
@@ -50,7 +50,7 @@ namespace ngfem
 
       FlatMatrixFixHeight<2, TSCAL> grad (nd, lh);
       grad = Trans (mip.GetJacobianInverse ()) * 
-	Trans (fel.GetDShape(mip.IP(), lh));
+	Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(), lh));
     
       mat = TSCAL (0);
       for (int i = 0; i < nd; i++)
@@ -66,8 +66,8 @@ namespace ngfem
 
 
 
-  template <>
-  class DiffOpStrain<3> : public DiffOp<DiffOpStrain<3> >
+  template <typename FEL>
+  class DiffOpStrain<3, FEL> : public DiffOp<DiffOpStrain<3, FEL> >
   {
   public:
     enum { DIM = 3 };
@@ -76,8 +76,8 @@ namespace ngfem
     enum { DIM_DMAT = 6 };
     enum { DIFFORDER = 1 };
 
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const MIP & mip,
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
       typedef typename MAT::TSCAL TSCAL;
@@ -110,8 +110,8 @@ namespace ngfem
 
 
 
-    template <typename FEL, typename MAT>
-    static void GenerateMatrix (const FEL & fel, 
+    template <typename AFEL, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, 
 				const MappedIntegrationPoint<3,3> & mip,
 				MAT & mat, LocalHeap & lh)
     {
@@ -121,7 +121,7 @@ namespace ngfem
       HeapReset hr(lh);
 
       FlatMatrixFixWidth<3> grad (nd, lh);
-      fel.CalcMappedDShape (mip, grad);
+      static_cast<const FEL &>(fel).CalcMappedDShape (mip, grad);
 
       mat = TSCAL (0);
       for (int i = 0; i < nd; i++)

@@ -18,8 +18,8 @@ namespace ngfem
 
 
 /// Gradient operator of dimension D
-template <int D>
-class DiffOpGradient : public DiffOp<DiffOpGradient<D> >
+template <int D, typename FEL = ScalarFiniteElement<D> >
+class DiffOpGradient : public DiffOp<DiffOpGradient<D, FEL> >
 {
 public:
   enum { DIM = 1 };
@@ -27,44 +27,46 @@ public:
   enum { DIM_ELEMENT = D };
   enum { DIM_DMAT = D };
   enum { DIFFORDER = 1 };
-
+  
+  static const FEL & Cast (const FiniteElement & fel) 
+  { return static_cast<const FEL&> (fel); }
 
   ///
-  template <typename FEL, typename MIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const MIP & mip,
+  template <typename MIP, typename MAT>
+  static void GenerateMatrix (const FiniteElement & fel, 
+			      const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
     mat = Trans (mip.GetJacobianInverse ()) * 
-      Trans (fel.GetDShape(mip.IP(),lh));
+      Trans (Cast(fel).GetDShape(mip.IP(),lh));
   }
 
-  template <typename FEL>
-  static void GenerateMatrix (const FEL & fel, 
+  static void GenerateMatrix (const FiniteElement & fel, 
                               const MappedIntegrationPoint<D,D> & mip,
 			      FlatMatrixFixHeight<D> & mat, LocalHeap & lh)
   {
-    fel.CalcMappedDShape (mip, mat.Trans());
+    Cast(fel).CalcMappedDShape (mip, mat.Trans());
   }
 
   ///
-  template <typename FEL, typename MIP, class TVX, class TVY>
-  static void Apply (const FEL & fel, const MIP & mip,
+  template <typename MIP, class TVX, class TVY>
+  static void Apply (const FiniteElement & fel, const MIP & mip,
 		     const TVX & x, TVY & y,
 		     LocalHeap & lh) 
   {
     typedef typename TVX::TSCAL TSCAL;
 
-    Vec<D,TSCAL> hv = Trans (fel.GetDShape(mip.IP(), lh)) * x;
+    Vec<D,TSCAL> hv = Trans (Cast(fel).GetDShape(mip.IP(), lh)) * x;
     y = Trans (mip.GetJacobianInverse()) * hv;
   }
 
-  template <typename FEL, class MIR>
-  static void ApplyIR (const FEL & fel, const MIR & mir,
+  template <class MIR>
+  static void ApplyIR (const FiniteElement & fel, const MIR & mir,
 		       const FlatVector<double> & x, FlatMatrix<double> & y,
 		       LocalHeap & lh)
   {
     FlatMatrixFixWidth<D> grad(mir.Size(), &y(0));
-    fel.EvaluateGrad (mir.IR(), x, grad);
+    Cast(fel).EvaluateGrad (mir.IR(), x, grad);
     for  (int i = 0; i < mir.Size(); i++)
       {
 	Vec<D> hv = grad.Row(i);
@@ -74,15 +76,15 @@ public:
 
 
   ///
-  template <typename FEL, typename MIP, class TVX, class TVY>
-  static void ApplyTrans (const FEL & fel, const MIP & mip,
+  template <typename MIP, class TVX, class TVY>
+  static void ApplyTrans (const FiniteElement & fel, const MIP & mip,
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh) 
   {
     typedef typename TVX::TSCAL TSCAL;
 
     Vec<D,TSCAL> hv = mip.GetJacobianInverse() * x;
-    y = fel.GetDShape(mip.IP(),lh) * hv;
+    y = Cast(fel).GetDShape(mip.IP(),lh) * hv;
   }
 
 
@@ -103,26 +105,26 @@ public:
   }
   
   ///
-  template <typename FEL, class TVD, class TVY>
-  static void ApplyGrid (const FEL & fel, 
+  template <class TVD, class TVY>
+  static void ApplyGrid (const FiniteElement & fel, 
 			 const IntegrationRuleTP<D> & ir,
 			 const TVY & hv, 
 			 TVD & dvecs, 
 			 LocalHeap & lh)
   {
     FlatMatrix<double> dmat(dvecs.Size(), D, const_cast<double*> (&dvecs[0](0)));
-    fel.EvaluateDShapeGrid (ir, hv, dmat, lh);
+    Cast(fel).EvaluateDShapeGrid (ir, hv, dmat, lh);
   }
 
   ///
-  template <typename FEL, class TVD, class TVY>
-  static void ApplyTransGrid (const FEL & fel, 
+  template <class TVD, class TVY>
+  static void ApplyTransGrid (const FiniteElement & fel, 
 			      const IntegrationRuleTP<D> & ir,
 			      const TVD & dvecs, 
 			      TVY & hv, LocalHeap & lh)
   {
     FlatMatrix<double> dmat(dvecs.Size(), D, const_cast<double*> (&dvecs[0](0)));
-    fel.EvaluateDShapeGridTrans (ir, dmat, hv, lh);
+    Cast(fel).EvaluateDShapeGridTrans (ir, dmat, hv, lh);
   }
 
 };
@@ -131,8 +133,8 @@ public:
 
 
 /// Boundary Gradient operator of dimension D
-template <int D>
-class DiffOpGradientBoundary : public DiffOp<DiffOpGradientBoundary<D> >
+template <int D, typename FEL = ScalarFiniteElement<D-1> >
+class DiffOpGradientBoundary : public DiffOp<DiffOpGradientBoundary<D, FEL> >
 {
 public:
   enum { DIM = 1 };
@@ -142,12 +144,12 @@ public:
   enum { DIFFORDER = 1 };
 
   ///
-  template <typename FEL, typename MIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const MIP & mip,
+  template <typename AFEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
     mat = Trans (mip.GetJacobianInverse ()) * 
-      Trans (fel.GetDShape(mip.IP(),lh));
+      Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(),lh));
   }
 };
 
@@ -196,8 +198,8 @@ public:
 
 
 /// Identity
-template <int D, typename AFEL = ScalarFiniteElement<D> >
-class DiffOpId : public DiffOp<DiffOpId<D, AFEL> >
+template <int D, typename FEL = ScalarFiniteElement<D> >
+class DiffOpId : public DiffOp<DiffOpId<D, FEL> >
 {
 public:
   enum { DIM = 1 };
@@ -206,52 +208,55 @@ public:
   enum { DIM_DMAT = 1 };
   enum { DIFFORDER = 0 };
 
-  template <typename FEL, typename MIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const MIP & mip,
+  static const FEL & Cast (const FiniteElement & fel) 
+  { return static_cast<const FEL&> (fel); }
+
+  template <typename MIP, typename MAT>
+  static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    mat.Row(0) = static_cast<const AFEL&> (fel).GetShape(mip.IP(), lh);
+    mat.Row(0) = Cast(fel).GetShape(mip.IP(), lh);
   }
 
-  static void GenerateMatrix (const ScalarFiniteElement<D> & fel, 
+  static void GenerateMatrix (const FiniteElement & fel, 
 			      const MappedIntegrationPoint<D,D> & mip,
 			      FlatMatrixFixHeight<1> & mat, LocalHeap & lh)
   {
-    static_cast<const AFEL&> (fel).CalcShape (mip.IP(), FlatVector<> (fel.GetNDof(), &mat(0,0)));
+    Cast(fel).CalcShape (mip.IP(), FlatVector<> (fel.GetNDof(), &mat(0,0)));
   }
 
 
-  template <typename FEL, typename MIP, class TVX, class TVY>
-  static void Apply (const FEL & fel, const MIP & mip,
+  template <typename MIP, class TVX, class TVY>
+  static void Apply (const FiniteElement & fel, const MIP & mip,
 		     const TVX & x, TVY & y,
 		     LocalHeap & lh) 
   {
-    y = Trans (static_cast<const AFEL&> (fel).GetShape (mip.IP(), lh)) * x;
+    y = Trans (Cast(fel).GetShape (mip.IP(), lh)) * x;
   }
 
-  static void Apply (const ScalarFiniteElement<D> & fel, const MappedIntegrationPoint<D,D> & mip,
+  static void Apply (const FiniteElement & fel, const MappedIntegrationPoint<D,D> & mip,
 		     const FlatVector<double> & x, FlatVector<double> & y,
 		     LocalHeap & lh) 
   {
-    y(0) = static_cast<const AFEL&> (fel).Evaluate(mip.IP(), x);
+    y(0) = Cast(fel).Evaluate(mip.IP(), x);
   }
 
-  template <typename FEL, class MIR>
-  static void ApplyIR (const FEL & fel, const MIR & mir,
+  template <class MIR>
+  static void ApplyIR (const FiniteElement & fel, const MIR & mir,
 		       const FlatVector<double> & x, FlatMatrix<double> & y,
 		       LocalHeap & lh)
   {
-    static_cast<const AFEL&> (fel).Evaluate (mir.IR(), x, FlatVector<> (mir.Size(), &y(0,0)));
+    Cast(fel).Evaluate (mir.IR(), x, FlatVector<> (mir.Size(), &y(0,0)));
   }
 
 
 
-  template <typename FEL, typename MIP, class TVX, class TVY>
-  static void ApplyTrans (const FEL & fel, const MIP & mip,
+  template <typename MIP, class TVX, class TVY>
+  static void ApplyTrans (const FiniteElement & fel, const MIP & mip,
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh) 
   {
-    y = static_cast<const AFEL&> (fel).GetShape (mip.IP(), lh) * x;
+    y = Cast(fel).GetShape (mip.IP(), lh) * x;
   }
 
 
@@ -271,26 +276,26 @@ public:
   }
 
 
-  template <typename FEL, class TVD, class TVY>
-  static void ApplyGrid (const FEL & fel, 
+  template <class TVD, class TVY>
+  static void ApplyGrid (const FiniteElement & fel, 
 			 const IntegrationRuleTP<D> & ir,
 			 const TVY & hv, 
 			 TVD & dvecs, 
 			 LocalHeap & lh)
   {
     FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
-    static_cast<const AFEL&> (fel).EvaluateShapeGrid (ir, hv, dvec, lh);
+    Cast(fel).EvaluateShapeGrid (ir, hv, dvec, lh);
   }
 
 
-  template <typename FEL, class TVD, class TVY>
-  static void ApplyTransGrid (const FEL & fel, 
+  template <class TVD, class TVY>
+  static void ApplyTransGrid (const FiniteElement & fel, 
 			      const IntegrationRuleTP<D> & ir,
 			      const TVD & dvecs, 
 			      TVY & hv, LocalHeap & lh)
   {
     FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
-    static_cast<const AFEL&> (fel).EvaluateShapeGridTrans (ir, dvec, hv, lh);
+    Cast(fel).EvaluateShapeGridTrans (ir, dvec, hv, lh);
   }
 };
 
@@ -327,8 +332,8 @@ public:
 
 
 /// Identity on boundary
-template <int D>
-class DiffOpIdBoundary : public DiffOp<DiffOpIdBoundary<D> >
+template <int D, typename FEL = ScalarFiniteElement<D-1> >
+class DiffOpIdBoundary : public DiffOp<DiffOpIdBoundary<D, FEL> >
 {
 public:
   enum { DIM = 1 };
@@ -337,35 +342,35 @@ public:
   enum { DIM_DMAT = 1 };
   enum { DIFFORDER = 0 };
 
-  template <typename FEL, typename MIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const MIP & mip,
+  template <typename AFEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    mat.Row(0) = fel.GetShape(mip.IP(), lh);
+    mat.Row(0) = static_cast<const FEL&>(fel).GetShape(mip.IP(), lh);
   }
 
-  template <typename FEL, typename MIP, class TVX, class TVY>
-  static void Apply (const FEL & fel, const MIP & mip,
+  template <typename AFEL, typename MIP, class TVX, class TVY>
+  static void Apply (const AFEL & fel, const MIP & mip,
 		     const TVX & x, TVY & y,
 		     LocalHeap & lh) 
   {
-    y = Trans (fel.GetShape (mip.IP(), lh)) * x;
+    y = Trans (static_cast<const FEL&>(fel).GetShape (mip.IP(), lh)) * x;
   }
 
   static void Apply (const ScalarFiniteElement<D-1> & fel, const MappedIntegrationPoint<D-1,D> & mip,
 		     const FlatVector<double> & x, FlatVector<double> & y,
 		     LocalHeap & lh) 
   {
-    y(0) = fel.Evaluate(mip.IP(), x);
+    y(0) = static_cast<const FEL&>(fel).Evaluate(mip.IP(), x);
   }
 
 
-  template <typename FEL, typename MIP, class TVX, class TVY>
-  static void ApplyTrans (const FEL & fel, const MIP & mip,
+  template <typename AFEL, typename MIP, class TVX, class TVY>
+  static void ApplyTrans (const AFEL & fel, const MIP & mip,
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh) 
   {
-    y = fel.GetShape (mip.IP(), lh) * x;
+    y = static_cast<const FEL&>(fel).GetShape (mip.IP(), lh) * x;
   }
 
 
@@ -385,8 +390,8 @@ public:
   }
 
 
-  template <typename FEL, class TVD, class TVY>
-  static void ApplyGrid (const FEL & fel, 
+  template <typename AFEL, class TVD, class TVY>
+  static void ApplyGrid (const AFEL & fel, 
 			 const IntegrationRuleTP<D-1> & ir,
 			 const TVY & hv, 
 			 TVD & dvecs, 
@@ -394,19 +399,19 @@ public:
   {
     void * heapp = lh.GetPointer();
     FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
-    fel.EvaluateShapeGrid (ir, hv, dvec, lh);
+    static_cast<const FEL&>(fel).EvaluateShapeGrid (ir, hv, dvec, lh);
   }
 
 
-  template <typename FEL, class TVD, class TVY>
-  static void ApplyTransGrid (const FEL & fel, 
+  template <typename AFEL, class TVD, class TVY>
+  static void ApplyTransGrid (const AFEL & fel, 
 			      const IntegrationRuleTP<D-1> & ir,
 			      const TVD & dvecs, 
 			      TVY & hv, LocalHeap & lh)
   {
     void * heapp = lh.GetPointer();
     FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
-    fel.EvaluateShapeGridTrans (ir, dvec, hv, lh);
+    static_cast<const FEL&>(fel).EvaluateShapeGridTrans (ir, dvec, hv, lh);
   }
 
 };

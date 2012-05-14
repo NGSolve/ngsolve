@@ -289,7 +289,7 @@ namespace ngfem
   /**
      Connect compile-time polymorph DiffOp to run-time polymorph DifferentialOperator.
    */
-  template <typename DIFFOP, typename FEL>
+  template <typename DIFFOP>
   class T_DifferentialOperator : public DifferentialOperator
   {
   protected:
@@ -310,10 +310,7 @@ namespace ngfem
     {
       const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
 	static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
-
-      const FEL & fel = static_cast<const FEL&> (bfel);
-
-      DIFFOP::GenerateMatrix (fel, mip, mat, lh);
+      DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
     }
 
     virtual void
@@ -325,8 +322,7 @@ namespace ngfem
     {
       const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
 	static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
-      const FEL & fel = static_cast<const FEL&> (bfel);
-      DIFFOP::Apply (fel, mip, x, flux, lh);
+      DIFFOP::Apply (bfel, mip, x, flux, lh);
     }
 
 
@@ -339,12 +335,8 @@ namespace ngfem
     {
       const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
 	static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
-      const FEL & fel = static_cast<const FEL&> (bfel);
-      DIFFOP::ApplyIR (fel, mir, x, flux, lh);
+      DIFFOP::ApplyIR (bfel, mir, x, flux, lh);
     }
-
-
-
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
@@ -355,8 +347,7 @@ namespace ngfem
     {
       const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
 	static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
-      const FEL & fel = static_cast<const FEL&> (bfel);
-      DIFFOP::ApplyTrans (fel, mip, flux, x, lh);
+      DIFFOP::ApplyTrans (bfel, mip, flux, x, lh);
     }    
   };
 
@@ -415,7 +406,8 @@ namespace ngfem
   
   
   template <typename DOP, typename F>
-  DifferentialOperator * CreateFunctionDiffOp (const DOP & dop, const F & func, int dim = 1)
+  DifferentialOperator * CreateFunctionDiffOp (const DOP & dop, 
+					       const F & func, int dim = 1)
   {
     return new T_FunctionDiffOp<DOP, F> (func, dim);
   }

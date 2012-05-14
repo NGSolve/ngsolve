@@ -345,7 +345,7 @@ public:
 #ifdef BLOCK_VERSION
 
   template <typename TSCAL>
-  void T_CalcElementMatrix (const FiniteElement & bfel,
+  void T_CalcElementMatrix (const FiniteElement & fel,
 			    const ElementTransformation & eltrans, 
 			    FlatMatrix<TSCAL> & elmat,
 			    LocalHeap & lh) const
@@ -355,7 +355,7 @@ public:
 
     try
       {
-        const FEL & fel = *static_cast<const FEL*> (&bfel);
+        // const FEL & fel = *static_cast<const FEL*> (&bfel);
 	int ndof = fel.GetNDof();
         
 	elmat = 0;
@@ -471,7 +471,7 @@ public:
   // one matrix matrix multiplication
   ///
   template <typename TSCAL>
-  void T_CalcElementMatrix (const FiniteElement & bfel,
+  void T_CalcElementMatrix (const FiniteElement & fel,
 			    const ElementTransformation & eltrans, 
 			    FlatMatrix<TSCAL> & elmat,
 			    LocalHeap & lh) const
@@ -482,7 +482,7 @@ public:
 
     try
       {
-	const FEL & fel = static_cast<const FEL&> (bfel);
+	// const FEL & fel = static_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 
 	HeapReset hr(lh);
@@ -712,7 +712,7 @@ public:
 
 
   template <typename TSCAL>
-  void T_ApplyElementMatrix (const FiniteElement & bfel, 
+  void T_ApplyElementMatrix (const FiniteElement & fel, 
 			     const ElementTransformation & eltrans, 
 			     const FlatVector<TSCAL> & elx, 
 			     FlatVector<TSCAL> & ely,
@@ -723,7 +723,7 @@ public:
 			+ typeid(TSCAL).name() + ">" + Name());
     RegionTimer reg (timer);
 
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    // const FEL & fel = static_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
     
     ely = 0;

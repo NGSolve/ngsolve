@@ -12,9 +12,6 @@
   
 namespace ngfem
 {
-  using namespace ngfem;
-  
-
 
   template <int D, typename FEL>  MassIntegrator<D,FEL> :: 
   MassIntegrator (CoefficientFunction * coeff)

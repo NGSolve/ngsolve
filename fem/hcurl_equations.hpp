@@ -89,13 +89,14 @@ namespace ngfem
 
 
   /// Operator $curl$, Piola-transformation
-  template <int D>
-  class DiffOpCurlEdge : public DiffOp<DiffOpCurlEdge<D> >
+  template <int D, typename FEL = HCurlFiniteElement<D> >
+  class DiffOpCurlEdge : public DiffOp<DiffOpCurlEdge<D, FEL> >
   {
   };
 
 
-  template <> class DiffOpCurlEdge<2> : public DiffOp<DiffOpCurlEdge<2> >
+  template <typename FEL> class DiffOpCurlEdge<2,FEL> 
+    : public DiffOp<DiffOpCurlEdge<2, FEL> >
   {
   public:
     enum { DIM = 1 };
@@ -104,26 +105,26 @@ namespace ngfem
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 1 };
 
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const MIP & mip,
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
       mat = 1.0/mip.GetJacobiDet() * 
-	Trans (fel.GetCurlShape(mip.IP(), lh));
+	Trans (static_cast<const FEL&> (fel).GetCurlShape(mip.IP(), lh));
     }
 
 
-    template <typename FEL, typename MIP, class TVX, class TVY>
-    static void Apply (const FEL & fel, const MIP & mip,
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh) 
     {
       y = (1.0/mip.GetJacobiDet()) * 
-	(Trans (fel.GetCurlShape(mip.IP(), lh)) * x);
+	(Trans (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh)) * x);
     }
   };
 
-  template <> class DiffOpCurlEdge<3> : public DiffOp<DiffOpCurlEdge<3> >
+  template <typename FEL> class DiffOpCurlEdge<3,FEL> : public DiffOp<DiffOpCurlEdge<3,FEL> >
   {
   public:
     enum { DIM = 1 };
@@ -132,39 +133,39 @@ namespace ngfem
     enum { DIM_DMAT = 3 };
     enum { DIFFORDER = 1 };
 
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const MIP & mip,
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
       mat = (1.0/mip.GetJacobiDet())
-	* (mip.GetJacobian() * Trans (fel.GetCurlShape(mip.IP(), lh)));
+	* (mip.GetJacobian() * Trans (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh)));
     }
 
-    template <typename FEL>
-    static void GenerateMatrix (const FEL & fel, 
+    template <typename AFEL>
+    static void GenerateMatrix (const AFEL & fel, 
 				const MappedIntegrationPoint<3,3> & mip,
 				FlatMatrixFixHeight<3> & mat, LocalHeap & lh)
     {
-      fel.CalcMappedCurlShape (mip, mat.Trans());
+      static_cast<const FEL&> (fel).CalcMappedCurlShape (mip, mat.Trans());
     }
 
 
 
-    template <typename FEL, typename MIP, class TVX, class TVY>
-    static void Apply (const FEL & fel, const MIP & mip,
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
 
       Vec<3,TSCAL> hx;
-      hx = fel.EvaluateCurlShape (mip.IP(), x, lh);
+      hx = static_cast<const FEL&>(fel).EvaluateCurlShape (mip.IP(), x, lh);
       y = (1.0/mip.GetJacobiDet()) * (mip.GetJacobian() * hx);
     }
 
 
-    template <typename FEL, typename MIP, class TVX, class TVY>
-    static void ApplyTrans (const FEL & fel, const MIP & mip,
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const AFEL & fel, const MIP & mip,
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
@@ -172,7 +173,7 @@ namespace ngfem
 
       Vec<3,TSCAL> hx;
       hx = (1.0/mip.GetJacobiDet()) * (Trans (mip.GetJacobian()) * x);
-      y = fel.GetCurlShape(mip.IP(), lh) * hx;
+      y = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh) * hx;
     }
   };
 
@@ -271,7 +272,8 @@ namespace ngfem
 
 
   /// Curl on boundary
-  class DiffOpCurlBoundaryEdge : public DiffOp<DiffOpCurlBoundaryEdge>
+  template <typename FEL = HCurlFiniteElement<2> > 
+  class DiffOpCurlBoundaryEdge : public DiffOp<DiffOpCurlBoundaryEdge<FEL> >
   {
   public:
     enum { DIM = 1 };
@@ -280,29 +282,31 @@ namespace ngfem
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 1 };
 
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & fel, const MIP & mip,
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      mat = 1.0/mip.GetJacobiDet() * Trans (fel.GetCurlShape(mip.IP(),lh));
+      mat = 1.0/mip.GetJacobiDet() * 
+	Trans (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(),lh));
     }
 
 
-    template <typename FEL, typename MIP, class TVX, class TVY>
-    static void Apply (const FEL & fel, const MIP & mip,
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh) 
     {
-      y = (1.0/mip.GetJacobiDet()) * (Trans (fel.GetCurlShape(mip.IP(),lh)) * x);
+      y = (1.0/mip.GetJacobiDet()) * 
+	(Trans (static_cast<const FEL&> (fel).GetCurlShape(mip.IP(),lh)) * x);
     }
 
-    template <typename FEL, typename MIP, class TVX, class TVY>
-    static void ApplyTrans (const FEL & fel, const MIP & mip,
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const AFEL & fel, const MIP & mip,
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
-      y = fel.GetCurlShape(mip.IP(),lh) * ((1.0/mip.GetJacobiDet()) * x);
+      y = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(),lh) * ((1.0/mip.GetJacobiDet()) * x);
     
     }
   };
@@ -330,12 +334,6 @@ namespace ngfem
     CurlCurlEdgeIntegrator (CoefficientFunction * coeff);
     CurlCurlEdgeIntegrator (Array<CoefficientFunction*> & coeffs);
   
-    /*
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      return new CurlCurlEdgeIntegrator (coeffs[0]);
-    }
-    */
     virtual string Name () const { return "CurlCurlEdge"; }
   };
 
@@ -343,12 +341,12 @@ namespace ngfem
 
   /// 
   class CurlCurlBoundaryEdgeIntegrator 
-    : public T_BDBIntegrator<DiffOpCurlBoundaryEdge, DiagDMat<1>, HCurlFiniteElement<2> >
+    : public T_BDBIntegrator<DiffOpCurlBoundaryEdge<>, DiagDMat<1>, HCurlFiniteElement<2> >
   {
   public:
     ///
     CurlCurlBoundaryEdgeIntegrator (CoefficientFunction * coeff)
-      : T_BDBIntegrator<DiffOpCurlBoundaryEdge, DiagDMat<1>, HCurlFiniteElement<2> > 
+      : T_BDBIntegrator<DiffOpCurlBoundaryEdge<>, DiagDMat<1>, HCurlFiniteElement<2> > 
     (DiagDMat<1> (coeff))
     { ; }
   
@@ -398,18 +396,6 @@ namespace ngfem
     ///
     MassEdgeIntegrator (CoefficientFunction * coeff);
     MassEdgeIntegrator (Array<CoefficientFunction*> & coeffs);
-    /*
-      : T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
-    { ; }
-    */
-
-
-    /*
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      return new MassEdgeIntegrator (coeffs[0]);
-    }
-    */
     ///
     virtual string Name () const { return "MassEdge"; }
   };
@@ -633,9 +619,9 @@ namespace ngfem
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       if (D == 2)
-	return new CurlEdgeIntegrator<2,FEL> (coeffs[0]);
+	return new CurlEdgeIntegrator<2> (coeffs[0]);
       else
-	return new CurlEdgeIntegrator<3,FEL> (coeffs[0], coeffs[1], coeffs[2]);
+	return new CurlEdgeIntegrator<3> (coeffs[0], coeffs[1], coeffs[2]);
     }
   
     ///
@@ -650,12 +636,12 @@ namespace ngfem
   ///
   template <typename FEL = HCurlFiniteElement<2> >
   class CurlBoundaryEdgeIntegrator 
-    : public T_BIntegrator<DiffOpCurlBoundaryEdge, DVec<1>, FEL>
+    : public T_BIntegrator<DiffOpCurlBoundaryEdge<FEL>, DVec<1>, FEL>
   {
   public:
     ///
     CurlBoundaryEdgeIntegrator (CoefficientFunction * coeff1)
-      : T_BIntegrator<DiffOpCurlBoundaryEdge, DVec<1>, FEL> 
+      : T_BIntegrator<DiffOpCurlBoundaryEdge<FEL>, DVec<1>, FEL> 
     (DVec<1> (coeff1))
     { ; }
 
