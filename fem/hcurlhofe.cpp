@@ -940,7 +940,6 @@ namespace ngfem
     ArrayMem<AutoDiff<3>, 20> pol_xi(order+2),pol_eta(order+2),pol_zeta(order+2);
    
     // edges
-    const EDGE * edges = ElementTopology::GetEdges (ET_HEX);
     for (int i = 0; i < 12; i++)
       {
 	int p = order_edge[i]; 
