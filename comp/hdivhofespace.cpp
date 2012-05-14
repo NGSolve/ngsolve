@@ -133,21 +133,21 @@ namespace ngcomp
       {
         Array<CoefficientFunction*> coeffs(1);
         coeffs[0] = new ConstantCoefficientFunction(1);
-        evaluator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
-        boundary_evaluator = GetIntegrators().CreateBFI("robinhdiv", 2, coeffs);
+        integrator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
+        boundary_integrator = GetIntegrators().CreateBFI("robinhdiv", 2, coeffs);
       }
     else
       {
         Array<CoefficientFunction*> coeffs(1);
         coeffs[0] = new ConstantCoefficientFunction(1);
-        evaluator = GetIntegrators().CreateBFI("masshdiv", 3, coeffs);
-        boundary_evaluator = GetIntegrators().CreateBFI("robinhdiv", 3, coeffs);
+        integrator = GetIntegrators().CreateBFI("masshdiv", 3, coeffs);
+        boundary_integrator = GetIntegrators().CreateBFI("robinhdiv", 3, coeffs);
       }
     if (dimension > 1)
       {
-        evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
-        boundary_evaluator =
-          new BlockBilinearFormIntegrator (*boundary_evaluator, dimension);
+        integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
+        boundary_integrator =
+          new BlockBilinearFormIntegrator (*boundary_integrator, dimension);
       }
 
   }

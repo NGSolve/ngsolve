@@ -203,7 +203,7 @@ namespace ngcomp
   {
   protected:
     GridFunction & gf;
-    DifferentialOperator * diffop;
+    const DifferentialOperator * diffop;
     int comp;
   public:
     GridFunctionCoefficientFunction (GridFunction & agf, int acomp = 0);

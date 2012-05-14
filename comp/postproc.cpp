@@ -36,7 +36,7 @@ namespace ngcomp
     int dimfluxvec = bli.DimFlux(); 
 
     const BilinearFormIntegrator & fluxbli =
-      bound ? (*fesflux.GetBoundaryEvaluator()) : (*fesflux.GetEvaluator());
+      bound ? (*fesflux.GetBoundaryIntegrator()) : (*fesflux.GetIntegrator());
 
     Array<int> cnti(fesflux.GetNDof());
     cnti = 0;
@@ -454,10 +454,10 @@ namespace ngcomp
     int dim     = fes.GetDimension();
 
     const BilinearFormIntegrator & bli =
-      bound ? (*fes.GetBoundaryEvaluator()) : (*fes.GetEvaluator());
+      bound ? (*fes.GetBoundaryIntegrator()) : (*fes.GetIntegrator());
 
     if (&bli == NULL)
-      throw Exception ("no evaluator available");
+      throw Exception ("no integrator available");
 
     int dimflux = diffop ? diffop->Dim() : bli.DimFlux(); 
     
@@ -623,7 +623,7 @@ namespace ngcomp
     int dimfluxvec = bli.DimFlux(); // fesflux.GetDimension();
 
     const BilinearFormIntegrator & fluxbli =
-      bound ? (*fesflux.GetBoundaryEvaluator()) : (*fesflux.GetEvaluator());
+      bound ? (*fesflux.GetBoundaryIntegrator()) : (*fesflux.GetIntegrator());
 
     ElementTransformation eltrans;
 

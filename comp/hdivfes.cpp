@@ -55,7 +55,7 @@ namespace ngcomp
     {
       Array<CoefficientFunction*> coeffs(1);
       coeffs[0] = new ConstantCoefficientFunction(1);
-      evaluator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
+      integrator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
     }
   }
       

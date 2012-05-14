@@ -66,10 +66,10 @@ namespace ngcomp
       }
     
     static ConstantCoefficientFunction one(1);
-    evaluator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
+    integrator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
 
     if (dimension > 1)
-      evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
+      integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
 
     fast_pfem = flags.GetDefineFlag ("fast");
     all_dofs_together = flags.GetDefineFlag ("all_dofs_together");
@@ -469,19 +469,19 @@ namespace ngcomp
 
     if (ma.GetDimension() == 2)
       {
-	boundary_evaluator = 
+	boundary_integrator = 
 	  new RobinIntegrator<2> (new ConstantCoefficientFunction(1));
       }
     else
       {
-	boundary_evaluator = 
+	boundary_integrator = 
 	  new RobinIntegrator<3> (new ConstantCoefficientFunction(1));
       }
 
     if (dimension > 1)
       {
-	boundary_evaluator = 
-	  new BlockBilinearFormIntegrator (*boundary_evaluator, dimension);
+	boundary_integrator = 
+	  new BlockBilinearFormIntegrator (*boundary_integrator, dimension);
       }
   }
 
