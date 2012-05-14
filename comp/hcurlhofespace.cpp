@@ -139,23 +139,20 @@ namespace ngcomp
 
     // Evaluator 
     static ConstantCoefficientFunction one(1);
-    evaluator = GetIntegrators().CreateBFI("massedge", ma.GetDimension(), &one);
+    integrator = GetIntegrators().CreateBFI("massedge", ma.GetDimension(), &one);
     if ( !discontinuous )
-      boundary_evaluator = GetIntegrators().CreateBFI("robinedge", ma.GetDimension(), &one); 
+      boundary_integrator = GetIntegrators().CreateBFI("robinedge", ma.GetDimension(), &one); 
+    
+    if (ma.GetDimension() == 2)
+      evaluator = new T_DifferentialOperator<DiffOpIdEdge<2> >;
+    else
+      evaluator = new T_DifferentialOperator<DiffOpIdEdge<3> >;
   }
   
   HCurlHighOrderFESpace :: ~HCurlHighOrderFESpace ()
   {
     ;
   }
-
-  /*
-  FESpace * HCurlHighOrderFESpace :: 
-  Create (const MeshAccess & ma, const Flags & flags)
-  {
-    return new HCurlHighOrderFESpace (ma, flags, true);
-  }
-  */
 
   void HCurlHighOrderFESpace :: Update(LocalHeap & lh)
   {

@@ -73,12 +73,12 @@ namespace ngcomp
 
     if (ma.GetDimension() == 2)
       {
-	bfi2d = fespace.GetEvaluator();
+	bfi2d = fespace.GetIntegrator();
       }
     else
       {
-	bfi3d = fespace.GetEvaluator();
-	bfi2d = fespace.GetBoundaryEvaluator();
+	bfi3d = fespace.GetIntegrator();
+	bfi2d = fespace.GetBoundaryIntegrator();
       }
 
     if (bfi2d || bfi3d)
@@ -260,7 +260,7 @@ namespace ngcomp
   GridFunctionCoefficientFunction (GridFunction & agf, int acomp)
     : gf(agf), diffop (NULL), comp (acomp) 
   {
-    ;
+    diffop = gf.GetFESpace().GetEvaluator();
   }
 
   GridFunctionCoefficientFunction :: 
@@ -280,7 +280,7 @@ namespace ngcomp
   int GridFunctionCoefficientFunction::Dimension() const
   { 
     if (diffop) return diffop->Dim();
-    return gf.GetFESpace().GetEvaluator()->DimFlux();
+    return gf.GetFESpace().GetIntegrator()->DimFlux();
   }
 
 
@@ -323,7 +323,7 @@ namespace ngcomp
     if (diffop)
       diffop->Apply (fel, ip, elu, result, lh2);
     else
-      fes.GetEvaluator(boundary) -> CalcFlux (fel, ip, elu, result, false, lh2);
+      fes.GetIntegrator(boundary) -> CalcFlux (fel, ip, elu, result, false, lh2);
   }
 
 
@@ -358,7 +358,7 @@ namespace ngcomp
     if (diffop)
       diffop->Apply (fel, ir, elu, values, lh2);
     else
-      fes.GetEvaluator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
+      fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
   }
 
 

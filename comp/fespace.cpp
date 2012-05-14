@@ -201,6 +201,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     evaluator = 0;
     boundary_evaluator = 0;
+    integrator = 0;
+    boundary_integrator = 0;
 
     element_coloring = NULL;
     paralleldofs = NULL;
@@ -1065,19 +1067,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
-	evaluator = new MassIntegrator<2> (&one);
-	boundary_evaluator = new RobinIntegrator<2> (&one);
+	integrator = new MassIntegrator<2> (&one);
+	boundary_integrator = new RobinIntegrator<2> (&one);
       }
     else
       {
-	evaluator = new MassIntegrator<3> (&one);
-	boundary_evaluator = new RobinIntegrator<3> (&one);
+	integrator = new MassIntegrator<3> (&one);
+	boundary_integrator = new RobinIntegrator<3> (&one);
       }
 
     if (dimension > 1)
       {
-	evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
-	boundary_evaluator = new BlockBilinearFormIntegrator (*boundary_evaluator, dimension);  
+	integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
+	boundary_integrator = new BlockBilinearFormIntegrator (*boundary_integrator, dimension);  
       }
   }
 
@@ -1284,23 +1286,23 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (ma.GetDimension() == 2)
       {
-	evaluator = 
+	integrator = 
 	  new MassIntegrator<2> (new ConstantCoefficientFunction(1));
-	boundary_evaluator = 0;
+	boundary_integrator = 0;
       }
     else
       {
-	evaluator = 
+	integrator = 
 	  new MassIntegrator<3> (new ConstantCoefficientFunction(1));
-	boundary_evaluator = 
+	boundary_integrator = 
 	  new RobinIntegrator<3> (new ConstantCoefficientFunction(1));
       }
 
     if (dimension > 1)
       {
-	evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
-	boundary_evaluator = 
-	  new BlockBilinearFormIntegrator (*boundary_evaluator, dimension);  
+	integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
+	boundary_integrator = 
+	  new BlockBilinearFormIntegrator (*boundary_integrator, dimension);  
       }
   }
 
@@ -1430,19 +1432,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (ma.GetDimension() == 2)
     {
-      evaluator = 
+      integrator = 
           new MassIntegrator<2> (new ConstantCoefficientFunction(1));
-      boundary_evaluator = 0;
+      boundary_integrator = 0;
     }
     else
     {
-      evaluator = 
+      integrator = 
           new MassIntegrator<3> (new ConstantCoefficientFunction(1));
-      boundary_evaluator = 0;
+      boundary_integrator = 0;
     }
 
     if (dimension > 1)
-      evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
+      integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
   }
   
   ElementFESpace :: ~ElementFESpace ()
@@ -1552,11 +1554,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
         n_el_dofs = 9;
     }
 
-    boundary_evaluator = 
+    boundary_integrator = 
         new RobinIntegrator<3> (new ConstantCoefficientFunction(1));
 
     if (dimension > 1)
-      boundary_evaluator = new BlockBilinearFormIntegrator (*boundary_evaluator, dimension);
+      boundary_integrator = new BlockBilinearFormIntegrator (*boundary_integrator, dimension);
   }
 
   

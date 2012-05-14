@@ -101,10 +101,16 @@ namespace ngcomp
     /// Reference - element (low order only)
     FiniteElement * segm;
 
-    /// Evaluator for visualization
-    BilinearFormIntegrator * evaluator;
+    /// Evaluator for visualization (future style)
+    DifferentialOperator * evaluator;
     /// Evaluator for visualization of boundary data
-    BilinearFormIntegrator * boundary_evaluator;
+    DifferentialOperator * boundary_evaluator;
+
+    /// Evaluator for visualization (old style)
+    BilinearFormIntegrator * integrator;
+    /// Evaluator for visualization of boundary data
+    BilinearFormIntegrator * boundary_integrator;
+
 
 
     /// if non-zero, pointer to low order space
@@ -345,7 +351,7 @@ namespace ngcomp
 
 
     /// returns function-evaluator
-    const BilinearFormIntegrator * GetEvaluator (bool boundary = false) const
+    const DifferentialOperator * GetEvaluator (bool boundary = false) const
     { 
       if (boundary)
 	return boundary_evaluator; 
@@ -353,9 +359,22 @@ namespace ngcomp
 	return evaluator; 
     }
 
+
+    /// returns function-evaluator
+    const BilinearFormIntegrator * GetIntegrator (bool boundary = false) const
+    { 
+      if (boundary)
+	return boundary_integrator; 
+      else
+	return integrator; 
+    }
+
+
     /// returns function-evaluator for boundary values
-    const BilinearFormIntegrator * GetBoundaryEvaluator () const
+    const DifferentialOperator * GetBoundaryEvaluator () const
     { return boundary_evaluator; }
+    const BilinearFormIntegrator * GetBoundaryIntegrator () const
+    { return boundary_integrator; }
 
 
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...

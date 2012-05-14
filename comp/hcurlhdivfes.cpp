@@ -45,20 +45,20 @@ namespace ngcomp
     prol = new EdgeProlongation (*this);
     order = 1;
 
-    // Evaluator for shape tester 
+    // Integrator for shape tester 
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
 	Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = &one;
-	evaluator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
+	integrator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
       }
     else if(ma.GetDimension() == 3) 
       {
 	Array<CoefficientFunction*> coeffs(1); 
 	coeffs[0] = &one;
-	evaluator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
-	boundary_evaluator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
+	integrator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
+	boundary_integrator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
 	
       }
 
@@ -872,14 +872,14 @@ namespace ngcomp
       {
 	Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = new ConstantCoefficientFunction(1);
-	evaluator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
+	integrator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
       }
     else if(ma.GetDimension() == 3) 
       {
 	Array<CoefficientFunction*> coeffs(1); 
 	coeffs[0] = new ConstantCoefficientFunction(1); 
-	evaluator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
-	boundary_evaluator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
+	integrator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
+	boundary_integrator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
 	
       }
 

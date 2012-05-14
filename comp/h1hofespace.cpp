@@ -23,8 +23,6 @@ namespace ngfem
 
 namespace ngcomp
 {
-  using namespace ngcomp;
-
   H1HighOrderFESpace ::  
   H1HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
@@ -100,14 +98,19 @@ namespace ngcomp
     low_order_space -> SetLowOrderSpace (true);
 
     static ConstantCoefficientFunction one(1);
-    evaluator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
-    boundary_evaluator = GetIntegrators().CreateBFI("robin", ma.GetDimension(), &one);
+    integrator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
+    boundary_integrator = GetIntegrators().CreateBFI("robin", ma.GetDimension(), &one);
+
+    if (ma.GetDimension() == 2)
+      evaluator = new T_DifferentialOperator<DiffOpId<2> >;
+    else
+      evaluator = new T_DifferentialOperator<DiffOpId<3> >;
 
     if (dimension > 1)
       {
-	evaluator = new BlockBilinearFormIntegrator (*evaluator, dimension);
-	boundary_evaluator = 
-	  new BlockBilinearFormIntegrator (*boundary_evaluator, dimension);
+	integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
+	boundary_integrator = 
+	  new BlockBilinearFormIntegrator (*boundary_integrator, dimension);
       }
 
     prol = new LinearProlongation(*this);
