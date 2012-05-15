@@ -572,6 +572,7 @@ namespace ngfem
 	default:
 	  throw Exception ("undefined facet type in Facet2ElementTrafo()\n");
 	} 
+      ipvol.FacetNr() = fnr;
     }
 
     const IntegrationPoint operator()(int fnr, const IntegrationPoint &ip1d) const 
@@ -624,6 +625,9 @@ namespace ngfem
       for (int i = 0; i < irfacet.GetNIP(); i++)
 	(*this) (fnr, irfacet[i], irvol[i]);
       */
+      for (int i = 0; i < irfacet.GetNIP(); i++)
+	irvol[i].FacetNr() = fnr;
+
       return irvol;
     }
   };

@@ -178,8 +178,8 @@ public:
 
 
 /// Identity for boundary-normal elements, gives q_n n
-template <int D>
-class DiffOpIdVecHDivBoundary : public DiffOp<DiffOpIdVecHDivBoundary<D> >
+template <int D, typename FEL = HDivNormalFiniteElement<D-1> >
+class DiffOpIdVecHDivBoundary : public DiffOp<DiffOpIdVecHDivBoundary<D,FEL> >
 {
 public:
   enum { DIM = 1 };
@@ -188,27 +188,29 @@ public:
   enum { DIM_DMAT = D };
   enum { DIFFORDER = 0 };
 
-  template <typename FEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const SIP & sip,
+  template <typename AFEL, typename SIP, typename MAT>
+  static void GenerateMatrix (const AFEL & fel, const SIP & sip,
 			      MAT & mat, LocalHeap & lh)
   {
-    mat =  (1.0/sip.GetJacobiDet())*Trans(fel.GetShape (sip.IP(), lh)) * Trans (sip.GetNV());;
+    mat =  (1.0/sip.GetJacobiDet())*
+      Trans(static_cast<const FEL&> (fel).GetShape (sip.IP(), lh)) 
+      * Trans (sip.GetNV());;
   }
 
-  template <typename FEL, typename SIP, class TVX, class TVY>
-  static void Apply (const FEL & fel, const SIP & sip,
+  template <typename AFEL, typename SIP, class TVX, class TVY> 
+  static void Apply (const AFEL & fel, const SIP & sip,
 		     const TVX & x, TVY & y,
 		     LocalHeap & lh)
   {
-    y = ( (1.0/sip.GetJacobiDet())*(InnerProduct (fel.GetShape (sip.IP(), lh), x) )) * sip.GetNV();
+    y = ( (1.0/sip.GetJacobiDet())*(InnerProduct (static_cast<const FEL&> (fel).GetShape (sip.IP(), lh), x) )) * sip.GetNV();
   }
 
-  template <typename FEL, typename SIP, class TVX, class TVY>
-  static void ApplyTrans (const FEL & fel, const SIP & sip,
+  template <typename AFEL, typename SIP, class TVX, class TVY>
+  static void ApplyTrans (const AFEL & fel, const SIP & sip,
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh)
   {
-    y = ((1.0/sip.GetJacobiDet())* InnerProduct (x, sip.GetNV()) ) * fel.GetShape (sip.IP(), lh);
+    y = ((1.0/sip.GetJacobiDet())* InnerProduct (x, sip.GetNV()) ) * static_cast<const FEL&> (fel).GetShape (sip.IP(), lh);
   }
 };
 

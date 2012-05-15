@@ -66,7 +66,6 @@ namespace ngfem
 	NgProfiler::RegionTimer reg (timer1);     
 	HeapReset hr(lh);
 
-	FlatMatrix<> mat_gradgrad (nd_l2, lh);
 	FlatMatrixFixWidth<D> dshape(nd_l2, lh);
 
 	IntegrationRule ir_vol(eltype, 2*fel_l2.Order());
@@ -74,44 +73,33 @@ namespace ngfem
 	
 	FlatMatrix<> bmats(ir_vol.GetNIP()*D, nd_l2, lh);
 	FlatMatrix<> dbmats(ir_vol.GetNIP()*D, nd_l2, lh);
+	FlatMatrix<> mat_lam(ir_vol.GetNIP(), 1, lh);
 
-	for (int l = 0; l < ir_vol.GetNIP(); l++)
+	coef_lam -> Evaluate (mir_vol, mat_lam); 
+
+	for (int i = 0; i < ir_vol.GetNIP(); i++)
 	  {
-	    const MappedIntegrationPoint<D,D> & mip = mir_vol[l];
-	    double lam = coef_lam->Evaluate(mip);
+	    const MappedIntegrationPoint<D,D> & mip = mir_vol[i];
 	    
 	    fel_l2.CalcMappedDShape (mip, dshape);
 
-	    bmats.Rows(l*D, (l+1)*D) = Trans(dshape);
-	    dbmats.Rows(l*D, (l+1)*D) = (lam * mip.GetWeight()) * Trans(dshape);
+	    bmats.Rows(i*D, i*D+D) = Trans(dshape);
+	    dbmats.Rows(i*D, i*D+D) = mat_lam(i,0) * mip.GetWeight() * Trans(dshape);
 	  }
 
-	NgProfiler::RegionTimer reg1a (timer1a);     
-
-	// mat_gradgrad = Trans (dbmats) * bmats;
-        // LapackMultAtB (dbmats, bmats, mat_gradgrad);
-	// elmat.Cols(l2_dofs).Rows(l2_dofs) += mat_gradgrad;
-
-	// LapackMultAtB (dbmats, bmats, elmat.Cols(l2_dofs).Rows(l2_dofs));
-	// LapackMult (Trans(dbmats), bmats, elmat.Cols(l2_dofs).Rows(l2_dofs));
-
-	// elmat.Cols(l2_dofs).Rows(l2_dofs) = LapackMult (Trans(dbmats), bmats);
-
-	// elmat.Cols(l2_dofs).Rows(l2_dofs) = Lapack (Trans(dbmats) * bmats);
+	RegionTimer reg1a (timer1a);     
 	elmat.Cols(l2_dofs).Rows(l2_dofs) = Trans(dbmats) * bmats  | Lapack;
       }
- 
+  
 
       // The facet contribution
       {
-	NgProfiler::RegionTimer reg2 (timer2);     
+	RegionTimer reg2 (timer2);     
 
 	int nfacet = ElementTopology::GetNFacets(eltype);
       
 	Facet2ElementTrafo transform(eltype); 
 	FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
-
-	Mat<2> dmat;
 
 	for (int k = 0; k < nfacet; k++)
 	  {
@@ -122,9 +110,6 @@ namespace ngfem
 
 	    IntegrationRule ir_facet(etfacet, 2*fel_l2.Order());
 	    IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
-
-	    for (int i = 0; i < ir_facet_vol.Size(); i++)
-	      ir_facet_vol[i].FacetNr() = k;
 
 	    Array<int> facetdofs;
 	    facetdofs = l2_dofs;
@@ -165,7 +150,7 @@ namespace ngfem
 		comp_bmat.Row(1).Range(nd_l2, comp_bmat.Width()) =
 		  -fel_facet.Facet(k).GetShape(ir_facet_vol[l], lh);
 
-		dmat(0,0) = 0;
+		Mat<2,2> dmat = 0.0;
 		dmat(1,0) = dmat(0,1) = -1;
 		dmat(1,1) = alpha * sqr (fel_l2.Order()+1) * (len/det);
 
@@ -175,10 +160,6 @@ namespace ngfem
 		comp_dbmats.Rows (2*l, 2*l+2) = dmat * comp_bmat;
 	      }
 
-	    // comp_elmat = Trans (comp_bmats) * comp_dbmats;
-	    // LapackMultAtB (comp_bmats, comp_dbmats, comp_elmat);
-
-	    // comp_elmat = LapackMult (Trans(comp_bmats), comp_dbmats);
 	    comp_elmat = Trans(comp_bmats) * comp_dbmats    | Lapack;
 	    elmat.Rows(facetdofs).Cols(facetdofs) += comp_elmat;
 	  }
