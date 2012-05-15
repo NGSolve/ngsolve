@@ -356,8 +356,30 @@ namespace ngfem
   }
     
 
+#ifdef LAPACK
+  void ComputeHermiteRule (int n, 
+			   Array<double> & x,
+			   Array<double> & w)
+  {
+    Matrix<> m(n,n), evecs(n,n);
+    m = 0.0;
+    for (int i = 0; i < n-1; i++)
+      m(i,i+1) = m(i+1, i) = sqrt( (i+1.0)/2);
+    
+    Vector<> lam(n);
+    LapackEigenValuesSymmetric (m, lam, evecs);
 
-  
+    x.SetSize (n);
+    w.SetSize (n);
+
+    for (int i = 0; i < n; i++)
+      {
+	x[i] = lam(i);
+	w[i] = sqrt(M_PI) * sqr(evecs(i,0));
+      }
+  }
+#else
+
   void ComputeHermiteRule (int n, 
                            Array<double> & x,
                            Array<double> & w)
@@ -419,6 +441,7 @@ namespace ngfem
         w[n-i] = w[i-1];
       }
   }
+#endif
 
 
 
