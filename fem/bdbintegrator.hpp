@@ -796,7 +796,8 @@ public:
 
 
 
-  IntegrationRule GetIntegrationRule (const FiniteElement & fel, const bool use_higher_integration_order = false) const
+  IntegrationRule GetIntegrationRule (const FiniteElement & fel, 
+				      const bool use_higher_integration_order = false) const
   {
     int order = 2 * fel.Order();
 
@@ -831,14 +832,14 @@ public:
 
 
   virtual void
-  CalcFlux (const FiniteElement & bfel,
+  CalcFlux (const FiniteElement & fel,
 	    const BaseMappedIntegrationPoint & bmip,
 	    const FlatVector<double> & elx, 
 	    FlatVector<double> & flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    // const FEL & fel = static_cast<const FEL&> (bfel);
     const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
       static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
 
@@ -849,14 +850,14 @@ public:
   }
 
   virtual void
-  CalcFlux (const FiniteElement & bfel,
+  CalcFlux (const FiniteElement & fel,
 	    const BaseMappedIntegrationRule & bmir,
 	    const FlatVector<double> & elx, 
 	    FlatMatrix<double> & flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    // const FEL & fel = static_cast<const FEL&> (bfel);
     const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
       static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
 
@@ -867,14 +868,14 @@ public:
   }
 
   virtual void
-  CalcFlux (const FiniteElement & bfel,
+  CalcFlux (const FiniteElement & fel,
 	    const BaseMappedIntegrationPoint & bmip,
 	    const FlatVector<Complex> & elx, 
 	    FlatVector<Complex> & flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    // const FEL & fel = static_cast<const FEL&> (bfel);
     const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
       static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
 
@@ -944,13 +945,13 @@ public:
 
 
   virtual void
-  ApplyBTrans (const FiniteElement & bfel,
+  ApplyBTrans (const FiniteElement & fel,
 	       const BaseMappedIntegrationPoint & bmip,
 	       const FlatVector<double> & elx, 
 	       FlatVector<double> & ely,
 	       LocalHeap & lh) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    // const FEL & fel = static_cast<const FEL&> (bfel);
     const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip =
       static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
 
@@ -959,13 +960,13 @@ public:
   
 
   virtual void
-  ApplyBTrans (const FiniteElement & bfel,
+  ApplyBTrans (const FiniteElement & fel,
 	       const BaseMappedIntegrationPoint & bmip,
 	       const FlatVector<Complex> & elx, 
 	       FlatVector<Complex> & ely,
 	       LocalHeap & lh) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    // const FEL & fel = static_cast<const FEL&> (bfel);
     const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip =
       static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
 
@@ -974,29 +975,18 @@ public:
 
 
   virtual void
-  ApplyBTrans (const FiniteElement & bfel,
+  ApplyBTrans (const FiniteElement & fel,
 	       const BaseMappedIntegrationRule & bmir,
 	       const FlatMatrix<double> & elx, 
 	       FlatVector<double> & ely,
 	       LocalHeap & lh) const
   {
-    const FEL & fel = static_cast<const FEL&> (bfel);
+    // const FEL & fel = static_cast<const FEL&> (bfel);
     const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
       static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
 
     DIFFOP::ApplyTransIR (fel, mir, elx, ely, lh);
-    /*
-    HeapReset hr(lh);
-    FlatVector<> hv(ely.Size(), lh);
-    ely = 0.0;
-    for (int i = 0; i < mir.Size(); i++)
-      {
-	DIFFOP::ApplyTrans (fel, mir[i], elx.Row(i), hv, lh);
-	ely += hv;
-      }
-    */
   }
-
 
   ///
   virtual int GetDimension () const { return DIM; }
@@ -1034,6 +1024,8 @@ protected:
   enum { DIM_DMAT    = DIFFOP::DIM_DMAT };
   enum { DIM         = DIFFOP::DIM };
 
+  using T_BDBIntegrator<DIFFOP,DMATOP,FEL>::GetIntegrationRule;
+
 public:
   ///
   T_NonlinearBDBIntegrator (const DMATOP & admat)
@@ -1047,7 +1039,7 @@ public:
 
 
   virtual void
-  CalcLinearizedElementMatrix (const FiniteElement & bfel, 
+  CalcLinearizedElementMatrix (const FiniteElement & fel, 
 				   const ElementTransformation & eltrans, 
 				   FlatVector<double> & elveclin,
 				   FlatMatrix<double> & elmat,
@@ -1059,7 +1051,7 @@ public:
 
     try
       {
-	const FEL & fel = dynamic_cast<const FEL&> (bfel);
+	// const FEL & fel = dynamic_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 
 	elmat = 0;
@@ -1092,7 +1084,7 @@ public:
 	      dbmat = fac * (dmat * bmat);
 	      elmat += Trans (bmat) * dbmat; 
 	    }
-
+	    
 	    lh.CleanUp (heapp);
 	  } 
       }
@@ -1212,14 +1204,14 @@ public:
 
   ///
   virtual void 
-  ApplyLinearizedElementMatrix (const FiniteElement & bfel, 
+  ApplyLinearizedElementMatrix (const FiniteElement & fel, 
 				const ElementTransformation & eltrans, 
 				const FlatVector<double> & ellin, 
 				const FlatVector<double> & elx, 
 				FlatVector<double> & ely,
 				LocalHeap & lh) const
   {
-    const FEL & fel = dynamic_cast<const FEL&> (bfel);
+    // const FEL & fel = dynamic_cast<const FEL&> (bfel);
     int ndof = fel.GetNDof ();
     
     ely = 0;
@@ -1230,13 +1222,7 @@ public:
     
     FlatVector<double> hely (ndof*DIM, lh);
 
-    /*    
-    int order = IntegrationOrder (fel);
-    const IntegrationRule & ir = 
-      GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), order);
-    */
     const IntegrationRule & ir = GetIntegrationRule (fel);
-
 
     for (int i = 0; i < ir.GetNIP(); i++)
       {
@@ -1426,14 +1412,14 @@ public:
   ///
 
   template <typename TSCAL>
-  void T_CalcElementVector (const FiniteElement & bfel,
+  void T_CalcElementVector (const FiniteElement & fel,
 			    const ElementTransformation & eltrans, 
 			    FlatVector<TSCAL> & elvec,
 			    LocalHeap & lh) const
   {
     try
       {
-	const FEL & fel = static_cast<const FEL&> (bfel);
+	// const FEL & fel = static_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 	
 	elvec = 0;
@@ -1550,7 +1536,7 @@ public:
 
 
 
-  int IntegrationOrder (const FEL & fel) const
+  int IntegrationOrder (const FiniteElement & fel) const
   {
     // int order = fel.Order()+2;    // low order case
     int order = 2*fel.Order()+1;  // high order case

@@ -544,7 +544,7 @@ namespace ngfem
         dynamic_cast<const ScalarFiniteElement<D>&> (cfel[0]);
       const FacetVolumeFiniteElement<D> & fel_facet = 
         dynamic_cast<const FacetVolumeFiniteElement<D> &> (cfel[1]);
-
+    
       // double alpha = 10;
   
       ELEMENT_TYPE eltype = cfel.ElementType();

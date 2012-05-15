@@ -1074,8 +1074,8 @@ public:
 
 
 /// Identity on boundary
-template <int D>
-class DiffOpNormal : public DiffOp<DiffOpNormal<D> >
+template <int D, typename FEL = ScalarFiniteElement<D> >
+class DiffOpNormal : public DiffOp<DiffOpNormal<D, FEL> >
 {
 public:
   enum { DIM = D };
@@ -1084,11 +1084,11 @@ public:
   enum { DIM_DMAT = 1 };
   enum { DIFFORDER = 0 };
 
-  template <typename FEL, typename MIP, typename MAT>
-  static void GenerateMatrix (const FEL & fel, const MIP & mip,
+  template <typename MIP, typename MAT>
+  static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    FlatVector<> shape = fel.GetShape (mip.IP(), lh);
+    FlatVector<> shape = static_cast<const FEL&> (fel).GetShape (mip.IP(), lh);
     Vec<D> nv = mip.GetNV();
     //Vec<D> p = mip.GetPoint();
     for (int j = 0; j < shape.Size(); j++)
