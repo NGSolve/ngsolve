@@ -799,12 +799,12 @@ namespace ngbla
     int Width () const { return w; }
 
 
-    const FlatVec<H,T> Col (int i) 
+    const FlatVec<H,T> Col (int i) const
     {
       return FlatVec<H,T> ( data+i*H ); 
     }
 
-    const SliceVector<T> Row (int i)
+    const SliceVector<T> Row (int i) const
     {
       return SliceVector<T> (w, H, &data[i]);
     }
