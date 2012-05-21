@@ -161,7 +161,8 @@ void Ng_LoadGeometry (const char * filename)
       return;
     }
 
-  cerr << "cannot load geometry '" << filename << "'" << endl;
+  if (id == 0)
+    cerr << "cannot load geometry '" << filename << "'" << endl;
 }                          
 
 
