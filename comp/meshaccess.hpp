@@ -538,6 +538,23 @@ namespace ngcomp
 
 
 
+  class ProgressOutput
+  {
+    const MeshAccess & ma;
+    string task;
+    int total;
+    double prevtime;
+    
+  public:
+    ProgressOutput (const MeshAccess & ama,
+		    string atask, int atotal);
+    void Update (int nr);
+    void Done();
+  };
+
+
+
+
 }
 
 #endif

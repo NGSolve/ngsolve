@@ -351,7 +351,6 @@ public:
 #define BLOCK_VERSION
 #endif
 
-
 #ifdef BLOCK_VERSION
 
   template <typename TSCAL>
