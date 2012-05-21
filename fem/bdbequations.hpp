@@ -72,6 +72,9 @@ public:
 	Vec<D> hv = grad.Row(i);
 	grad.Row(i) = Trans (mir[i].GetJacobianInverse()) * hv;
       }
+
+    // for  (int i = 0; i < mir.Size(); i++)
+    //   grad.Row(i) = Trans (mir[i].GetJacobianInverse()) * Vec<D> (grad.Row(i));
   }
 
 
@@ -397,7 +400,6 @@ public:
 			 TVD & dvecs, 
 			 LocalHeap & lh)
   {
-    void * heapp = lh.GetPointer();
     FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
     static_cast<const FEL&>(fel).EvaluateShapeGrid (ir, hv, dvec, lh);
   }
@@ -409,7 +411,6 @@ public:
 			      const TVD & dvecs, 
 			      TVY & hv, LocalHeap & lh)
   {
-    void * heapp = lh.GetPointer();
     FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
     static_cast<const FEL&>(fel).EvaluateShapeGridTrans (ir, dvec, hv, lh);
   }
@@ -463,59 +464,6 @@ public:
 
 
 
-/*
-/// diagonal tensor, all values are the same
-template <int DIM, typename SCAL = double>
-class DiagDMat : public DMatOp<DiagDMat<DIM,SCAL> >
-{
-  CoefficientFunction * coef;
-public:
-  typedef SCAL TSCAL;
-  enum { DIM_DMAT = DIM };
-  DiagDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
-
-  DiagDMat (Array<CoefficientFunction*> & acoefs) : coef(acoefs[0]) { ; }
-
-  template <typename FEL, typename MIP, typename MAT>
-  void GenerateMatrix (const FEL & fel, const MIP & mip,
-		       MAT & mat, LocalHeap & lh) const
-  {
-    typedef typename MAT::TSCAL TRESULT;
-    mat = TRESULT(0);
-    TSCAL val = coef -> T_Evaluate<TSCAL> (mip);
-    for (int i = 0; i < DIM; i++)
-      mat(i, i) = ConvertTo<TRESULT> (val);
-  }  
-
-  template <typename FEL, class VECX, class VECY>
-  void Apply (const FEL & fel, const BaseMappedIntegrationPoint & mip,
-	      const VECX & x, VECY & y, LocalHeap & lh) const
-  {
-    typedef typename VECY::TSCAL TRESULT;
-    TSCAL val = coef -> T_Evaluate<TSCAL> (mip);
-    for (int i = 0; i < DIM; i++)
-      y(i) = ConvertTo<TRESULT> (val * x(i));
-  }
-
-  template <typename FEL, class VECX>
-  void Apply1 (const FEL & fel, const BaseMappedIntegrationPoint & mip,
-	      const VECX & x, LocalHeap & lh) const
-  {
-    TSCAL val = coef -> T_Evaluate<TSCAL> (mip);
-    x *= ConvertTo<typename VECX::TSCAL> (val);
-  }
-
-  template <typename FEL, typename MIR, typename TVX>
-  void ApplyIR (const FEL & fel, const MIR & mir,
-		TVX & x, LocalHeap & lh) const
-  {
-    FlatMatrix<TSCAL> values(mir.Size(), 1, lh);
-    coef -> Evaluate (mir, values);
-    for (int i = 0; i < mir.Size(); i++)
-      x.Row(i) *=  ConvertTo<typename TVX::TSCAL>  (values(i, 0));
-  }
-};
-*/
 
 /// diagonal tensor, all values are the same
 template <int DIM>
@@ -534,10 +482,32 @@ public:
 		       MAT & mat, LocalHeap & lh) const
   {
     typedef typename MAT::TSCAL TRESULT;
-    mat = TRESULT(0);
     TRESULT val = coef -> T_Evaluate<TRESULT> (mip);
+    /*
+    mat = TRESULT(0);
     for (int i = 0; i < DIM; i++)
       mat(i, i) = val;
+    */
+    mat = val * Id<DIM>();
+  }  
+
+  template <typename FEL, typename MIR, typename MAT>
+  void GenerateMatrixIR (const FEL & fel, const MIR & mir,
+			 const FlatArray<MAT> & mats, LocalHeap & lh) const
+  {
+    typedef typename MAT::TSCAL TRESULT;
+    FlatMatrix<TRESULT> vals(mir.IR().GetNIP(), 1, lh);
+    coef -> Evaluate (mir, vals);
+    
+    for (int j = 0; j < mir.IR().GetNIP(); j++)
+      {
+	mats[j] = vals(j,0) * Id<DIM>();
+	/*
+	mats[j] = TRESULT(0.0);
+	for (int i = 0; i < DIM; i++)
+	  mats[j](i, i) = vals(j,0);
+	*/
+      }
   }  
 
   template <typename FEL, class VECX, class VECY>
@@ -1545,7 +1515,9 @@ class GradSourceIntegrator
 {
 public:
   ///
-  GradSourceIntegrator (CoefficientFunction * coeff1, CoefficientFunction *coeff2, CoefficientFunction *coeff3)
+  GradSourceIntegrator (CoefficientFunction * coeff1, 
+			CoefficientFunction * coeff2, 
+			CoefficientFunction * coeff3)
     : T_BIntegrator<DiffOpGradient<D>, DVec<D>, FEL> (DVec<D> (coeff1, coeff2, coeff3))
   { ; }
   

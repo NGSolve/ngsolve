@@ -38,17 +38,15 @@ namespace ngfem
     : T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> (coeffs)
   { ; }
 
-  template <int D, typename FEL> LaplaceIntegrator<D,FEL> :: ~LaplaceIntegrator () { ; }
-
-
-
+  template <int D, typename FEL> LaplaceIntegrator<D,FEL> ::
+  ~LaplaceIntegrator ()
+  { ; }
 
 
   template <int D, typename FEL> LaplaceBoundaryIntegrator<D,FEL> ::
   LaplaceBoundaryIntegrator (CoefficientFunction * coeff)
     : T_BDBIntegrator<DiffOpGradientBoundary<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
   { ; }
-
 
   template <int D, typename FEL> RotSymLaplaceIntegrator<D,FEL> ::
   RotSymLaplaceIntegrator (CoefficientFunction * coeff)
@@ -63,14 +61,15 @@ namespace ngfem
   RobinIntegrator (CoefficientFunction * coeff)
     : BASE(DiagDMat<1> (coeff))
   { ; }
-  
 
   template <int D, typename FEL> RobinIntegrator<D,FEL> ::
   RobinIntegrator (Array<CoefficientFunction*> & coeffs)
     : BASE(coeffs)
   { ; }
 
-  template <int D, typename FEL> RobinIntegrator<D,FEL> :: ~RobinIntegrator () { ; }
+  template <int D, typename FEL> RobinIntegrator<D,FEL> :: 
+  ~RobinIntegrator () 
+  { ; }
 
 
 
@@ -89,7 +88,9 @@ namespace ngfem
     : T_BIntegrator<DiffOpId<D>, DVec<1>, FEL> (coeffs)
   { ; }
   
-  template <int D, typename FEL>  SourceIntegrator<D,FEL> :: ~SourceIntegrator () { ; }
+  template <int D, typename FEL>  SourceIntegrator<D,FEL> :: 
+  ~SourceIntegrator () 
+  { ; }
 
 
 
@@ -105,7 +106,9 @@ namespace ngfem
     : T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL> (DVec<1> (coeffs))
   { ; }
 
-  template <int D, typename FEL>  NeumannIntegrator<D,FEL> :: ~NeumannIntegrator () { ; }
+  template <int D, typename FEL> NeumannIntegrator<D,FEL> :: 
+  ~NeumannIntegrator () 
+  { ; }
 
 
 

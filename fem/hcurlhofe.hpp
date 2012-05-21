@@ -167,7 +167,6 @@ class HCurlHighOrderFE<ET_TRIG> : public T_HCurlHighOrderFiniteElement<ET_TRIG>
 {
 private:
   typedef TrigShapesInnerLegendre T_INNERSHAPES; 
-  // typedef VertexExtensionOptimal<3> T_VERTEXSHAPES;
 public:
   HCurlHighOrderFE () { ; }
   HCurlHighOrderFE (int aorder);
@@ -180,8 +179,6 @@ public:
 template <>
 class HCurlHighOrderFE<ET_QUAD> : public T_HCurlHighOrderFiniteElement<ET_QUAD>
 {
-private: 
-  // typedef VertexExtensionOptimal<3> T_VERTEXSHAPES;
 public:
   HCurlHighOrderFE () { ; }
   HCurlHighOrderFE (int aorder);
