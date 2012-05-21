@@ -10,9 +10,6 @@
 
 namespace ngfem 
 {
-
-  // #include <fem.hpp>
-
   template <int D>
   class NGS_DLL_HEADER VectorFacetFacetFiniteElement : public FiniteElement
   {

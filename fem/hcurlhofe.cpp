@@ -467,7 +467,6 @@ namespace ngfem
     ArrayMem<AutoDiff<2>,10> adpol1(order),adpol2(order);	
 	
     int ii = 3; 
-    // const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
     for (int i = 0; i < 3; i++)
       {
         INT<2> e = GetEdgeSort (i, vnums);	  
@@ -493,11 +492,7 @@ namespace ngfem
     int p = order_face[0][0];      
     if(p > 1) 
       {
-	int fav[3] = { 0, 1, 2 }; 
-	//Sort vertices ... v(f0) < v(f1) < v(f2) 
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  
+	INT<4> fav = GetFaceSort (0, vnums);
 
 	AutoDiff<2> xi  = lam[fav[2]]-lam[fav[1]];
 	AutoDiff<2> eta = lam[fav[0]]; 
@@ -724,9 +719,6 @@ namespace ngfem
 
     AutoDiff<3> lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
     AutoDiff<3> muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
-       
-       
-
 
     ArrayMem<AutoDiff<3>,20> adpolxy1(order+3),adpolxy2(order+3); 
     ArrayMem<AutoDiff<3>,20> adpolz(order+3);   

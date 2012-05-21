@@ -29,6 +29,16 @@ public:
   /// is coefficient tensor symmetric ?
   enum { SYMMETRIC = 1 };
 
+  template <typename FEL, typename MIR, typename MAT>
+  void GenerateMatrixIR (const FEL & fel, const MIR & mir, 
+			 const FlatArray<MAT> & dmats, 
+			 LocalHeap & lh) const
+  {
+    for (int i = 0; i < mir.IR().GetNIP(); i++)
+      static_cast<const DMO*>(this) -> GenerateMatrix (fel, mir[i], dmats[i], lh);
+  }
+
+
   /// generate linearized matrix in linearization point vec
   template <typename FEL, typename MIP, typename VEC, typename MAT>
   void GenerateLinearizedMatrix (const FEL & fel, const MIP & mip, VEC & vec,
@@ -378,6 +388,9 @@ public:
         const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
 
+	FlatArray<Mat<DIM_DMAT,DIM_DMAT,TSCAL> >dmats(ir.GetNIP(), lh);
+	dmatop.GenerateMatrixIR (fel, mir, dmats, lh);
+
         int i = 0;
         for (int i1 = 0; i1 < ir.GetNIP() / BLOCK; i1++)
           {
@@ -386,7 +399,8 @@ public:
                 HeapReset hr(lh);
 
                 DIFFOP::GenerateMatrix (fel, mir[i], bmat, lh);
-                dmatop.GenerateMatrix (fel, mir[i], dmat, lh);
+                // dmatop.GenerateMatrix (fel, mir[i], dmat, lh);
+		dmat = dmats[i];
                 dmat *= mir[i].GetWeight();
 
 		bbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = bmat;
@@ -404,14 +418,16 @@ public:
             HeapReset hr(lh);
 
             DIFFOP::GenerateMatrix (fel, mir[i], bmat, lh);
-            dmatop.GenerateMatrix (fel, mir[i], dmat, lh);
+            // dmatop.GenerateMatrix (fel, mir[i], dmat, lh);
+	    dmat = dmats[i];
             dmat *= mir[i].GetWeight();
 
 	    bmat2.Rows(0,DIM_DMAT) = bmat;
 	    dbmat2.Rows(0,DIM_DMAT) = dmat * bmat;
 
             DIFFOP::GenerateMatrix (fel, mir[i+1], bmat, lh);
-            dmatop.GenerateMatrix (fel, mir[i+1], dmat, lh);
+            // dmatop.GenerateMatrix (fel, mir[i+1], dmat, lh);
+	    dmat = dmats[i+1];
             dmat *= mir[i+1].GetWeight();
 
 	    bmat2.Rows(DIM_DMAT,2*DIM_DMAT) = bmat;
@@ -428,7 +444,8 @@ public:
             HeapReset hr(lh);
 
             DIFFOP::GenerateMatrix (fel, mir[i], bmat, lh);
-            dmatop.GenerateMatrix (fel, mir[i], dmat, lh);
+            // dmatop.GenerateMatrix (fel, mir[i], dmat, lh);
+	    dmat = dmats[i];
             dmat *= mir[i].GetWeight();
 
             dbmat = dmat * bmat;
