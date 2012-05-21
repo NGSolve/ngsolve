@@ -173,11 +173,15 @@ namespace ngcomp
 	
 	timer1.Stop();
 
-	clock_t prevtime = clock();
 	if (hasinner)
 	  {
+	    ProgressOutput progress (ma, "assemble element", ma.GetNE());
+
+
 	    int cnt = 0;
 
+	    if (ntasks == 1 || id != 0)
+	      
 #pragma omp parallel
 	    {
 	      LocalHeap lh = clh.Split();
@@ -186,17 +190,14 @@ namespace ngcomp
 	      for (int i = 0; i < ne; i++)
 		{
 		  timer2.Start();
-#pragma omp critical(printvecasstatus)
-		  {
-		    cnt++;
-		    gcnt++;
-		    if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
-		      {
-			cout << IM(3) << "\rassemble element " << cnt << "/" << ne << flush;
-			ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
-			prevtime = clock();
-		      }
-		  }
+
+
+#pragma omp atomic
+		  cnt++;
+#pragma omp atomic
+		  gcnt++;
+
+		  progress.Update (cnt);
 		  
 		  HeapReset hr(lh);
 
@@ -239,10 +240,15 @@ namespace ngcomp
 		}
 	    }
 
+
+	    progress.Done();
 	    MyMPI_Barrier();
 
+
+	    /*
 	    if (id == 0)
 	      cout << IM(3) << "\rassemble element " << ne << "/" << ne << endl;
+	    */
 	  }
 
 	RegionTimer reg3(timer3);

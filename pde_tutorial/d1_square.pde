@@ -43,9 +43,9 @@ define bilinearform a -fespace=v -eliminate_internal -keep_internal -symmetric -
 laplace lam
 
 
-# define preconditioner c -type=direct -bilinearform=a
+define preconditioner c -type=direct -bilinearform=a
 # define preconditioner c -type=local -bilinearform=a 
-define preconditioner c -type=multigrid -bilinearform=a -smoother=block
+# define preconditioner c -type=multigrid -bilinearform=a -smoother=block
 # define preconditioner c -type=bddc -bilinearform=a
 
 

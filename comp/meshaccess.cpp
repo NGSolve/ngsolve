@@ -270,15 +270,15 @@ namespace ngcomp
 
 
   /*
-  ELEMENT_TYPE MeshAccess :: GetElType (int elnr) const
-  {
+    ELEMENT_TYPE MeshAccess :: GetElType (int elnr) const
+    {
     return ConvertElementType (GetElement(elnr).GetType());
-  }
+    }
 
-  ELEMENT_TYPE MeshAccess :: GetSElType (int elnr) const
-  {
+    ELEMENT_TYPE MeshAccess :: GetSElType (int elnr) const
+    {
     return ConvertElementType (GetSElement(elnr).GetType());
-  }
+    }
   */
   
   int MeshAccess :: GetElNV ( int elnr ) const 
@@ -1070,7 +1070,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 #else
 
 
-  int MeshAccess ::GetGlobalNodeNum (Node node) const
+  int MeshAccess ::GetGlobalNodeNum (Node node) const  
   {
     return -1;
   }
@@ -1084,8 +1084,108 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
 #endif
 
-}
 
+
+
+  
+  ProgressOutput :: ProgressOutput (const MeshAccess & ama,
+				    string atask, int atotal)
+    : ma(ama), task(atask), total(atotal)
+  {
+    prevtime = WallTime();
+  }
+  
+  void ProgressOutput :: Update (int nr)
+  {
+      double time = WallTime();
+      if (time > prevtime+0.1)
+	{
+	  prevtime = WallTime();
+	  
+	  if (id == 0)
+	    {
+#pragma omp critical(printmatasstatus) 
+	      {
+		cout << IM(3) << "\r" << task << " " << nr << "/" << total << flush;
+		ma.SetThreadPercentage ( 100.0*nr / total);
+	      }
+	    }
+#ifdef PARALLEL
+	  else
+	    MPI_Bsend (&nr, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+#endif
+	}
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+  void ProgressOutput :: Done()
+    {
+      if (id == 0)
+	{
+#ifdef PARALLEL	  
+	  if (ntasks > 1)
+	    {
+	      Array<int> working(ntasks), computed(ntasks);
+	      working = 1;
+	      computed = 0;
+	      while (1)
+		{
+		  int flag, data, num_working = 0, got_flag = false;
+		  for (int source = 1; source < ntasks; source++)
+		    {
+		      if (!working[source]) continue;
+		      num_working++;
+		      MPI_Iprobe (source, MPI_TAG_SOLVE, ngs_comm, &flag, MPI_STATUS_IGNORE);
+		      if (flag)
+			{
+			  got_flag = true;
+			  MPI_Recv (&data, 1, MPI_INT, source, MPI_TAG_SOLVE, ngs_comm, MPI_STATUS_IGNORE);
+			  if (data == -1) 
+			    working[source] = 0;
+			  else
+			    computed[source] = data;
+			}
+		    }
+		  int sum = 0;
+		  for (int j = 1; j < ntasks; j++) 
+		    sum += computed[j];
+		  cout << IM(3) 
+		       << "\r" << task << " " << sum << "/" << total
+		       << " (" << num_working << " procs working) " << flush;
+		  ma.SetThreadPercentage ( 100.0*sum / total );
+		  
+		  if (!num_working) break;
+		  if (!got_flag) usleep (100000);
+		}
+	    }
+#endif
+	  cout << IM(3) << "\r" << task << " " << total << "/" << total
+	       << "                                 " << endl;
+	}
+      else
+	{
+#ifdef PARALLEL
+	  MPI_Bsend (&total, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+	  int final = -1;
+	  MPI_Bsend (&final, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+#endif
+	}
+	
+    }
+  
+
+
+}
 
 
 

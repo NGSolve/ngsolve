@@ -16,6 +16,12 @@ namespace ngcomp
 
 
 
+
+
+
+
+
+
   BilinearForm :: 
   BilinearForm (const FESpace & afespace,
 		const string & aname,
@@ -615,7 +621,7 @@ namespace ngcomp
 	    // clock_t prevtime = clock();
 	    double prevtime = WallTime();
 
-
+	    ProgressOutput progress (ma, "assemble element", ma.GetNE());
 
 
 	    if (hasinner && !diagonal)
@@ -665,26 +671,31 @@ namespace ngcomp
 			  gcnt++;
 
 			  // if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
+			  progress.Update (cnt);
+
+
+			  /*
 			  if (WallTime()-prevtime > 0.1)
 			    {
 #pragma omp critical(printmatasstatus) 
 			      {
 				if (ntasks == 1)
 				  {
-				    cout << IM(3) 
-					 << "\rassemble element " << cnt << "/" << ne << flush;
-				    ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
+				    // cout << IM(3) 
+				    // << "\rassemble element " << cnt << "/" << ne << flush;
+				    // ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
 				    // prevtime = clock();
 				  }
 
-#ifdef PARALLEL
+				
+#ifdef PARALLELxx
 				if (id != 0)
 				  MPI_Bsend (&gcnt, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
 #endif
 				prevtime = WallTime();
 			      }
 			    }
-
+			  */
 
 			  if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
 
@@ -953,15 +964,16 @@ namespace ngcomp
 		  } //end loop over colors
 		
 
-#ifdef PARALLEL
+#ifdef PARALLELxxx
 		if (id != 0)
 		  {
 		    MPI_Bsend (&gcnt, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
 		    int final = -1;
 		    MPI_Bsend (&final, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
 		  }
+#endif
 
-
+#ifdef PARALLELxx
 		if (id == 0)
 		  {
 		    Array<int> working(ntasks), computed(ntasks);
@@ -999,16 +1011,20 @@ namespace ngcomp
 		  }
 #endif
 
+		/*
 		if (id == 0)
 		  cout << IM(3) << "\rassemble element " << ne << "/" << ne 
 		       << "                               " << endl;
+		*/
+
+		progress.Done();
 		
 		MyMPI_Barrier();
 		if (linearform && keep_internal)
 		  {
-		    cout << "\rmodifying condensated rhs";
+		    cout << IM(3) << "\rmodifying condensated rhs";
 		    linearform -> GetVector() += GetHarmonicExtensionTrans() * linearform -> GetVector();
-		    cout << "\t done" << endl;
+		    cout << IM(3) << "\t done" << endl;
 		  }
 		
               }
@@ -1093,6 +1109,8 @@ namespace ngcomp
 
             if (hasbound)
               {
+		ProgressOutput progress (ma, "assemble surface element", ma.GetNSE());
+
                 int cnt = 0;
 #pragma omp parallel 
                 {
@@ -1105,12 +1123,15 @@ namespace ngcomp
 		      {
 			cnt++;
 			gcnt++;
+			/*
 			if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
 			  {
 			    cout << "\rassemble surface element " << cnt << "/" << nse << flush;
 			    ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
 			    prevtime = clock();
 			  }
+			*/
+			progress.Update (cnt);
 		      }
 
                       lh.CleanUp();
@@ -1207,7 +1228,10 @@ namespace ngcomp
 		      NgProfiler::StopTimer (timerb3);
                     }
 		}//endof parallel 
-		cout << "\rassemble surface element " << cnt << "/" << nse << endl;
+		// cout << "\rassemble surface element " << cnt << "/" << nse << endl;
+
+		progress.Done();
+
 	      }//endof hasbound
 
 	    if (hasskeletonbound)
