@@ -1326,7 +1326,7 @@ namespace ngbla
 
   /* **************************** L2Norm **************************** */
 
-  /// Euklidean norm squared
+  /// Euclidean norm squared
   inline double L2Norm2 (double v)
   {
     return v*v;
@@ -1360,13 +1360,51 @@ namespace ngbla
   }
 
   /**
-     Calculates the Euklidean norm
+     Calculates the Euclidean norm
   */
   template <class TA>
   inline double L2Norm (const Expr<TA> & v)
   {
     return sqrt (L2Norm2(v));
   }
+
+
+
+  /* **************************** MaxNorm **************************** */
+
+  /// Euclidean norm squared
+  inline double MaxNorm (double v)
+  {
+    return fabs(v);
+  }
+
+  inline double MaxNorm (Complex v)
+  {
+    return fabs(v);
+  }
+
+  template<int D, typename SCAL>
+  inline double L2Norm (const AutoDiff<D,SCAL> & x) throw()
+  {
+    return MaxNorm(x.Value());
+  }
+
+  template <class TA>
+  inline double MaxNorm (const Expr<TA> & v)
+  {
+    double sum = 0;
+
+    if (TA::IS_LINEAR)
+      for (int i = 0; i < v.Height()*v.Width(); i++)
+	sum = max(sum, v.Spec()(i));  
+    else
+      for (int i = 0; i < v.Height(); i++)
+	for (int j = 0; j < v.Width(); j++)
+	  sum = max(sum, v.Spec()(i,j));  
+    
+    return sum;
+  }
+
 
   /* *************************** Output ****************************** */
 

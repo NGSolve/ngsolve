@@ -165,7 +165,7 @@ namespace ngbla
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i,j);
 #endif
-      return data[i*w+j]; 
+      return data[i*size_t(w)+j]; 
     }
 
     /// the height
@@ -176,7 +176,7 @@ namespace ngbla
 
     const FlatVector<T> Row (int i) const
     {
-      return FlatVector<T> (w, &data[i*w]);
+      return FlatVector<T> (w, &data[i*size_t(w)]);
     }
 
     const SliceVector<T> Col (int i) const
@@ -237,10 +237,10 @@ namespace ngbla
     Matrix () throw () : FlatMatrix<T> (0, 0) { ; }
 
     /// allocate matrix of size ah * ah
-    Matrix (int ah) : FlatMatrix<T> (ah, new T[ah*ah]) { ; }
+    Matrix (int ah) : FlatMatrix<T> (ah, new T[size_t(ah)*size_t(ah)]) { ; }
     
     /// allocate matrix of size ah * aw
-    Matrix (int ah, int aw) : FlatMatrix<T> (ah, aw, new T[ah*aw]) { ; }
+    Matrix (int ah, int aw) : FlatMatrix<T> (ah, aw, new T[size_t(ah)*size_t(aw)]) { ; }
 
     /// allocate and copy matrix  
     Matrix (const Matrix & m2) 
