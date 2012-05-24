@@ -38,6 +38,7 @@ namespace netgen
   void BaseDynamicMem :: SetName (const char * aname)
   {
     delete [] name;
+    name = NULL;
     if (aname)
       {
 	name = new char[strlen(aname)+1];
