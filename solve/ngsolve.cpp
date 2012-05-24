@@ -174,8 +174,10 @@ int NGS_LoadPDE (ClientData clientData,
 
 void * SolveBVP(void *)
 {
+#ifdef _OPENMP
   if (ntasks > 1)
     omp_set_num_threads (1);
+#endif
 
   try
     {
