@@ -213,7 +213,7 @@ namespace ngcomp
 		      if (parts[j] -> BoundaryForm()) continue;
 		      if (parts[j] -> IntegrationAlongCurve()) continue;
 		      if (!parts[j] -> DefinedOn (ma.GetElIndex (i))) continue;
-
+		      
                       int elvec_size = dnums.Size()*fespace.GetDimension();
 		      FlatVector<TSCAL> elvec(elvec_size, lh);
 		  

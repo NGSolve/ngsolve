@@ -1098,24 +1098,23 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
   void ProgressOutput :: Update (int nr)
   {
       double time = WallTime();
-      if (time > prevtime+0.1)
+      if (time > prevtime+0.05)
 	{
-	  prevtime = WallTime();
-	  
-	  if (id == 0)
-	    {
-#pragma omp critical(printmatasstatus) 
+#pragma omp critical(progressupdate) 
+	  {
+	    if (id == 0)
 	      {
 		cout << IM(3) << "\r" << task << " " << nr << "/" << total << flush;
 		ma.SetThreadPercentage ( 100.0*nr / total);
 	      }
-	    }
 #ifdef PARALLEL
-	  else
-	    MPI_Bsend (&nr, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+	    else
+	      MPI_Bsend (&nr, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
 #endif
+	    
+	    prevtime = WallTime();
+	  }
 	}
-
     }
 
 
