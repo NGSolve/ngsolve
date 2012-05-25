@@ -1396,11 +1396,11 @@ namespace ngbla
 
     if (TA::IS_LINEAR)
       for (int i = 0; i < v.Height()*v.Width(); i++)
-	sum = max(sum, v.Spec()(i));  
+	sum = max(sum, MaxNorm( v.Spec()(i)) );  
     else
       for (int i = 0; i < v.Height(); i++)
 	for (int j = 0; j < v.Width(); j++)
-	  sum = max(sum, v.Spec()(i,j));  
+	  sum = max(sum, MaxNorm ( v.Spec()(i,j)) );  
     
     return sum;
   }
