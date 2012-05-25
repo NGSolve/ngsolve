@@ -667,35 +667,8 @@ namespace ngcomp
 			  
 #pragma omp atomic
 			  cnt++;
-#pragma omp atomic
-			  gcnt++;
 
-			  // if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
 			  progress.Update (cnt);
-
-
-			  /*
-			  if (WallTime()-prevtime > 0.1)
-			    {
-#pragma omp critical(printmatasstatus) 
-			      {
-				if (ntasks == 1)
-				  {
-				    // cout << IM(3) 
-				    // << "\rassemble element " << cnt << "/" << ne << flush;
-				    // ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
-				    // prevtime = clock();
-				  }
-
-				
-#ifdef PARALLELxx
-				if (id != 0)
-				  MPI_Bsend (&gcnt, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
-#endif
-				prevtime = WallTime();
-			      }
-			    }
-			  */
 
 			  if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
 
@@ -964,72 +937,23 @@ namespace ngcomp
 		  } //end loop over colors
 		
 
-#ifdef PARALLELxxx
-		if (id != 0)
-		  {
-		    MPI_Bsend (&gcnt, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
-		    int final = -1;
-		    MPI_Bsend (&final, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
-		  }
-#endif
-
-#ifdef PARALLELxx
-		if (id == 0)
-		  {
-		    Array<int> working(ntasks), computed(ntasks);
-		    working = 1;
-		    computed = 0;
-		    while (1)
-		      {
-			int flag, data, num_working = 0, got_flag = false;
-			for (int source = 1; source < ntasks; source++)
-			  {
-			    if (!working[source]) continue;
-			    num_working++;
-			    MPI_Iprobe (source, MPI_TAG_SOLVE, ngs_comm, &flag, MPI_STATUS_IGNORE);
-			    if (flag)
-			      {
-				got_flag = true;
-				MPI_Recv (&data, 1, MPI_INT, source, MPI_TAG_SOLVE, ngs_comm, MPI_STATUS_IGNORE);
-				if (data == -1) 
-				  working[source] = 0;
-				else
-				  computed[source] = data;
-			      }
-			  }
-			int sum = 0;
-			for (int j = 1; j < ntasks; j++) 
-			  sum += computed[j];
-			cout << IM(3) 
-			     << "\rassemble element " << sum << "/" << ne 
-			     << " (" << num_working << " procs working) " << flush;
-			ma.SetThreadPercentage ( 100.0*sum / ne );
-
-			if (!num_working) break;
-			if (!got_flag) usleep (100000);
-		      }
-		  }
-#endif
-
-		/*
-		if (id == 0)
-		  cout << IM(3) << "\rassemble element " << ne << "/" << ne 
-		       << "                               " << endl;
-		*/
 
 		progress.Done();
 		
 		MyMPI_Barrier();
+
 		if (linearform && keep_internal)
 		  {
 		    cout << IM(3) << "\rmodifying condensated rhs";
-		    linearform -> GetVector() += GetHarmonicExtensionTrans() * linearform -> GetVector();
+
+		    linearform -> GetVector() += 
+		      GetHarmonicExtensionTrans() * linearform -> GetVector();
+
 		    cout << IM(3) << "\t done" << endl;
 		  }
 		
+		gcnt += cnt;
               }
-
-
 
 
             if (hasinner && diagonal)
@@ -1119,21 +1043,13 @@ namespace ngcomp
 #pragma omp for 
                   for (int i = 0; i < nse; i++)
                     {
-#pragma omp critical(printmatasstatus)
-		      {
-			cnt++;
-			gcnt++;
-			/*
-			if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
-			  {
-			    cout << "\rassemble surface element " << cnt << "/" << nse << flush;
-			    ma.SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
-			    prevtime = clock();
-			  }
-			*/
-			progress.Update (cnt);
-		      }
 
+#pragma omp atomic
+		      cnt++;
+#pragma omp atomic
+		      gcnt++;
+
+		      progress.Update (cnt);
                       lh.CleanUp();
 		  
 		      if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
@@ -1780,7 +1696,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
               hasinner = 1;
           }	  
 	 
-        clock_t prevtime = clock();
+        // clock_t prevtime = clock();
         if (hasinner)
           {
 	    if (keep_internal){
@@ -1818,7 +1734,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 	    }
 	    else
 	    {  
-	    
+	      ProgressOutput progress (ma, "compute internal element", ma.GetNE());
 	      int cnt = 0;
 #pragma omp parallel
 	      {
@@ -1831,7 +1747,11 @@ cout << "catch in AssembleBilinearform 2" << endl;
               for (int i = 0; i < ne; i++)
                 {
 		  
-		
+#pragma omp atomic
+		  cnt++;
+
+		  progress.Update (cnt);
+		  /*
 #pragma omp critical(printinternalstatus)
 		    {
 		      cnt++;
@@ -1842,7 +1762,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
 			  prevtime = clock();
 			}
 		    }
-		
+		  */
+
 		    HeapReset hr(lh);
 		
 		    if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
@@ -1953,15 +1874,15 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		      }
 		  }//end of sum over elements
 	      }//end of parallel
-	      
 
+	      progress.Done();
 	      MyMPI_Barrier();
 
-	      cout << IM(2) << "\rcompute internal element " << ne << "/" << ne << endl;
+	      // cout << IM(2) << "\rcompute internal element " << ne << "/" << ne << endl;
 	    }//end of keep_internal-if
           }
 	  
-        ma.SetThreadPercentage ( 100.0 );
+        // ma.SetThreadPercentage ( 100.0 );
       
         ma.PopStatus ();
       }

@@ -926,15 +926,19 @@ namespace ngla
   AddElementMatrix(const FlatArray<int> & dnums, const FlatMatrix<TSCAL> & elmat1)
   {
     static Timer timer ("SparseMatrixSymmetric::AddElementMatrix");
+    static Timer timers ("SparseMatrixSymmetric::AddElementMatrix - sort");
+
     RegionTimer reg (timer);
 
-
+    timers.Start();
     ArrayMem<int, 50> dnums_sort(dnums.Size()), map(dnums.Size());
     dnums_sort = dnums;
     for (int i = 0; i < map.Size(); i++)
       map[i] = i;
     BubbleSort (dnums.Size(), &dnums_sort[0], &map[0]);
-    
+    timers.Stop();
+
+
     Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
 
     int first_used = 0;
