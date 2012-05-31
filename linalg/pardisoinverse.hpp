@@ -24,7 +24,8 @@ namespace ngla
 	   class TV_COL = typename mat_traits<TM>::TV_COL>
   class PardisoInverse : public SparseFactorization
   {
-    int height;  // matrix size in scalars
+    int height;   // matrix size in scalars
+    int compressed_height;  // matrix size after compression in scalars
     int nze, entrysize;
     bool print;
 
