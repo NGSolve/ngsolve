@@ -546,8 +546,11 @@ namespace ngcomp
 	    {
 	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
 	      bli.CalcElementMatrix (fel, eltrans, elmat, lh);
-	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-	      invelmat.Mult (elflux, elfluxi);
+
+	      // FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+	      // invelmat.Mult (elflux, elfluxi);
+	      LapackInverse (elmat);
+	      elfluxi = elmat * elflux;
 	    }
 	  
 	  fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
