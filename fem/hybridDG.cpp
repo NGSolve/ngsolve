@@ -732,11 +732,11 @@ namespace ngfem
 				    FlatMatrix<double> & elmat,
 				    LocalHeap & lh) const
     {
-      static Timer timer ("HDG laplace");
-      static Timer timer1 ("HDG laplace volume");
-      static Timer timer1a ("HDG laplace volume, lapack");
-      static Timer timer2 ("HDG laplace boundary");
-      static Timer timer3 ("HDG laplace boundary - BR stab");
+      static Timer timer ("HDGBRF laplace");
+      static Timer timer1 ("HDGBRF laplace volume");
+      static Timer timer1a ("HDGBRF laplace volume, lapack");
+      static Timer timer2 ("HDGBRF laplace boundary");
+      // static Timer timer3 ("HDGBRF laplace boundary - BR stab");
 
       RegionTimer reg (timer);
 
@@ -805,7 +805,7 @@ namespace ngfem
 
       // The facet contribution
       {
-	timer2.Start();
+	NgProfiler::RegionTimer reg (timer2);     
 	int nfacet = ElementTopology::GetNFacets(eltype);
       
 	Facet2ElementTrafo transform(eltype); 
@@ -885,8 +885,6 @@ namespace ngfem
 
 	    elmat.Rows(l2_dofs) += mat_coupling;
 	    elmat.Cols(l2_dofs) += Trans(mat_coupling);
-
-	    timer2.Stop();
 
 
 	    help = mat_gradgrad * mat_coupling | Lapack;
