@@ -1119,7 +1119,6 @@ namespace ngla
   void SparseCholesky<TM, TV_ROW, TV_COL> :: 
   MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
   {
-    cout << "multadd, s = " << s << endl;
     static Timer timer("SparseCholesky::MultAdd");
     RegionTimer reg (timer);
 
