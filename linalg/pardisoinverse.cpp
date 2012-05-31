@@ -96,11 +96,10 @@ namespace ngla
 
     entrysize = mat_traits<TM>::HEIGHT; 
     height = a.Height() * entrysize;
+    compressed_height = height;
 
-    rowstart.SetSize(height+1);
+    rowstart.SetSize(compressed_height+1);
     indices.SetSize(a.NZE() * sqr(entrysize));
-    // rowstart = new int[height+1];
-    // indices = new int[a.NZE() * entrysize * entrysize ];
     matrix = new TSCAL[a.NZE() * entrysize * entrysize ];     
 
     *testout << "matrix.InverseTpye = " <<  a.GetInverseType() << endl;
@@ -134,7 +133,7 @@ namespace ngla
 
 #ifdef USE_MKL
     //    no init in MKL PARDISO
-    //     retvalue = F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &height, 
+    //     retvalue = F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, 
     // 				   reinterpret_cast<double *>(matrix),
     // 				   rowstart, indices, NULL, &nrhs, params, &msglevel,
     // 				   NULL, NULL, &error );
@@ -174,8 +173,8 @@ namespace ngla
 		  compress.Append (i);
 		}
 
-	    height = compress.Size() * entrysize;
-	    rowstart.SetSize(height+1);
+	    compressed_height = compress.Size() * entrysize;
+	    rowstart.SetSize(compressed_height+1);
 	  }
 
 	
@@ -239,13 +238,12 @@ namespace ngla
 
 	// (b) accumulate
 	rowstart[0] = 0;
-	for (int i = 1; i <= height; i++) 
+	for (int i = 1; i <= compressed_height; i++) 
 	  rowstart[i] += rowstart[i-1];
 	
 	
 	// 2.) build whole matrix:
-	// int * counter = new int[height];
-	Array<int> counter(height);
+	Array<int> counter(compressed_height);
 
 	if (inner)
 	  {
@@ -372,7 +370,7 @@ namespace ngla
 	  }
 	    
 	// pardiso is 1-based
-	for (int i = 0; i <= height; i++)
+	for (int i = 0; i <= compressed_height; i++)
 	  rowstart[i]++;
 	    
 	/*
@@ -552,7 +550,7 @@ namespace ngla
 
 	    // counter += rowelems * ( entrysize-1 );    should not be here ???? (JS, Oct 2009)
 	  }
-	rowstart[height] = counter+1;
+	rowstart[compressed_height] = counter+1;
 	
 	/*
 	  (*testout) << endl << "row, rowstart / indices, matrix-entries" << endl;
@@ -567,7 +565,7 @@ namespace ngla
 
       }
 
-    nze = rowstart[height];
+    nze = rowstart[compressed_height];
     
     {
       int n = a.Height();
@@ -598,7 +596,7 @@ namespace ngla
 
 
     // retvalue = 
-    F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &height, 
+    F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, 
 			reinterpret_cast<double *>(matrix),
 			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
@@ -637,7 +635,7 @@ namespace ngla
 	ofstream err("pardiso.err");
 	err << "ngsolve-matrix = " << endl << a << endl;
 	err << "pardiso matrix = " << endl;
-	for (int i = 0; i < height; i++)
+	for (int i = 0; i < compressed_height; i++)
 	  {
 	    err << "Row " << i << " start " << rowstart[i] << ": ";
 	    if ( inner ) err << " free=" << inner->Test(i) << " ";
@@ -731,7 +729,7 @@ namespace ngla
 
 	F77_FUNC(pardiso) ( const_cast<long int *>(pt), &maxfct, &mnum, 
 			    const_cast<int *>(&matrixtype),
-			    &phase, const_cast<int *>(&height), 
+			    &phase, const_cast<int *>(&compressed_height), 
 			    reinterpret_cast<double *>(matrix),
 			    &rowstart[0], &indices[0],
 			    NULL, &nrhs, params, &msglevel,
@@ -749,14 +747,14 @@ namespace ngla
       {
 	F77_FUNC(pardiso) ( const_cast<long int *>(pt), &maxfct, &mnum, 
 			    const_cast<int *>(&matrixtype),
-			    &phase, const_cast<int *>(&height), 
+			    &phase, const_cast<int *>(&compressed_height), 
 			    reinterpret_cast<double *>(matrix),
 			    &rowstart[0], &indices[0],
 			    NULL, &nrhs, params, &msglevel,
 			    static_cast<double *>(fx.Data()), 
 			    static_cast<double *>(fy.Data()), &error );
 
-	for (int i = 0; i < height/entrysize; i++)
+	for (int i = 0; i < compressed_height/entrysize; i++)
 	  if (!used.Test(i))
 	    for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0.0;
       }
@@ -796,7 +794,7 @@ namespace ngla
     int * params = const_cast <int*> (&hparams[0]);
 
     F77_FUNC(pardiso) ( const_cast<long int *>(pt), &maxfct, &mnum, const_cast<int *>(&matrixtype),
-			&phase, const_cast<int *>(&height), 
+			&phase, const_cast<int *>(&compressed_height), 
 			reinterpret_cast<double *>(matrix),
 			&rowstart[0], &indices[0],
 			NULL, &nrhs, params, &msglevel, &tx(0,0), &ty(0,0),
@@ -807,7 +805,7 @@ namespace ngla
 
     hy = Trans (ty);
 
-    for (int i=0; i<height/entrysize; i++)
+    for (int i=0; i<compressed_height/entrysize; i++)
       if (!used.Test(i))
 	for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0.0;
   }
@@ -834,7 +832,7 @@ namespace ngla
     int * params = const_cast <int*> (&hparams[0]);
 
     //    cout << "call pardiso (clean up) ..." << endl;
-    F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &height, NULL,
+    F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, NULL,
 			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
     if ( error != 0 )

@@ -45,7 +45,7 @@ namespace ngla
     int printstat = 0;
     
     if (printstat)
-      cout << "Minimal degree ordering: N = " << n << endl;
+      cout << IM(4) << "Minimal degree ordering: N = " << n << endl;
     
     clock_t starttime, endtime;
     starttime = clock();
@@ -93,21 +93,21 @@ namespace ngla
 	}
 
     if (printstat)
-      cout << "start ordering" << endl;
+      cout << IM(4) << "start ordering" << endl;
     
     // mdo -> PrintCliques ();
     mdo->Order();
     
     endtime = clock();
     if (printstat)
-      cout << "ordering time = "
+      cout << IM(4) << "ordering time = "
 	   << double (endtime - starttime) / CLOCKS_PER_SEC 
 	   << " secs" << endl;
     
     starttime = endtime;
     
     if (printstat)
-      cout << "," << flush;
+      cout << IM(4) << "," << flush;
     Allocate (mdo->order,  mdo->vertices, &mdo->blocknr[0]);
 
     delete mdo;
@@ -178,7 +178,7 @@ namespace ngla
 	}
     
     if (printstat)
-      cout << "do factor " << flush;
+      cout << IM(4) << "do factor " << flush;
     
     Factor(); 
 
@@ -204,7 +204,7 @@ namespace ngla
 
 
     if (printstat)
-      cout << "done" << endl;
+      cout << IM(4) << "done" << endl;
     
     endtime = clock();
 
@@ -251,8 +251,8 @@ namespace ngla
     nze = cnt;
 
     if (n > 2000)
-      cout << " " << cnt*sizeof(TM)+cnt_master*sizeof(int) << " Bytes " << flush;
-    //cout <<"(cnt="<<cnt<<", sizeof(TM)="<<sizeof(TM)<< ", cnt_master=" << cnt_master << ", sizeof(int)=" << sizeof(int) <<") " << flush;
+      cout << IM(4) << " " << cnt*sizeof(TM)+cnt_master*sizeof(int) << " Bytes " << flush;
+    //cout << IM(4) <<"(cnt="<<cnt<<", sizeof(TM)="<<sizeof(TM)<< ", cnt_master=" << cnt_master << ", sizeof(int)=" << sizeof(int) <<") " << flush;
 
 
     /* 
@@ -309,7 +309,7 @@ namespace ngla
   {
     if ( height != a.Height() )
       {
-	cout << "SparseCholesky::FactorNew called with matrix of different size." << endl;
+	cout << IM(4) << "SparseCholesky::FactorNew called with matrix of different size." << endl;
 	return;
       }
 
@@ -352,7 +352,7 @@ namespace ngla
     
     int n = Height();
     if (n > 2000)
-      cout << " factor " << flush;
+      cout << IM(4) << " factor " << flush;
 
     // to avoid aliasing:
     int * hfirstinrow = firstinrow;
@@ -393,9 +393,9 @@ namespace ngla
                 if (n > 2000 && (i1+j2) % 1000 == 999)
                   {
                     if ((i1+j2) % 10000 == 9999)
-                      cout << "+" << flush;
+                      cout << IM(4) << "+" << flush;
                     else
-                      cout << "." << flush;
+                      cout << IM(4) << "." << flush;
                   }
 
               int nk = hfirstinrow[i1+jj+1]-hfirstinrow[i1+jj];
@@ -479,9 +479,9 @@ namespace ngla
 	    if (n > 2000 && (i1+jj) % 1000 == 999)
 	      {
 		if ((i1+jj) % 10000 == 9999)
-		  cout << "+" << flush;
+		  cout << IM(4) << "+" << flush;
 		else
-		  cout << "." << flush;
+		  cout << IM(4) << "." << flush;
 	      }
 
 
@@ -658,19 +658,19 @@ namespace ngla
 
 
     if (n > 2000)
-      cout << endl;
+      cout << IM(4) << endl;
 
     /*
     time = double(clock() - starttime1) / CLOCKS_PER_SEC;
-    cout << "factorization, time = " << time << endl;
+    cout << IM(4) << "factorization, time = " << time << endl;
 
-    cout << "flops1 = " << flops1 << endl;
-    cout << "flops2 = " << flops2 << endl;
-    cout << "time1 = " << time1 << endl;
-    cout << "time2 = " << time2 << endl;
-    cout << "MFLOP1 = " << flops1 / time1 * 1e-6 << endl;
-    cout << "MFLOP2 = " << flops2 / time2 * 1e-6 << endl;
-    cout << "MFLOP = " << (flops1+flops2) / time * 1e-6 << endl;
+    cout << IM(4) << "flops1 = " << flops1 << endl;
+    cout << IM(4) << "flops2 = " << flops2 << endl;
+    cout << IM(4) << "time1 = " << time1 << endl;
+    cout << IM(4) << "time2 = " << time2 << endl;
+    cout << IM(4) << "MFLOP1 = " << flops1 / time1 * 1e-6 << endl;
+    cout << IM(4) << "MFLOP2 = " << flops2 / time2 * 1e-6 << endl;
+    cout << IM(4) << "MFLOP = " << (flops1+flops2) / time * 1e-6 << endl;
     */
   }
 
@@ -692,7 +692,7 @@ namespace ngla
     
     int n = Height();
     if (n > 2000)
-    cout << " factor " << flush;
+    cout << IM(4) << " factor " << flush;
 
     // to avoid aliasing:
     int * hfirstinrow = firstinrow;
@@ -729,9 +729,9 @@ namespace ngla
     if (n > 2000 && (i1+j2) % 1000 == 999)
     {
     if ((i1+j2) % 10000 == 9999)
-    cout << "+" << flush;
+    cout << IM(4) << "+" << flush;
     else
-    cout << "." << flush;
+    cout << IM(4) << "." << flush;
     }
 
 
@@ -819,9 +819,9 @@ namespace ngla
     if (n > 2000 && (i1+jj) % 1000 == 999)
     {
     if ((i1+jj) % 10000 == 9999)
-    cout << "+" << flush;
+    cout << IM(4) << "+" << flush;
     else
-    cout << "." << flush;
+    cout << IM(4) << "." << flush;
     }
 
 
@@ -998,19 +998,19 @@ namespace ngla
     _mm_free (dsum);
 
     if (n > 2000)
-    cout << endl;
+    cout << IM(4) << endl;
 
     time = double(clock() - starttime1) / CLOCKS_PER_SEC;
-    cout << "factorization, time = " << time << endl;
+    cout << IM(4) << "factorization, time = " << time << endl;
 
-    cout << "flops1 = " << flops1 << endl;
-    cout << "flops2 = " << flops2 << endl;
-    cout << "time1 = " << time1 << endl;
-    cout << "time2 = " << time2 << endl;
-    cout << "time3 = " << time3 << endl;
-    cout << "MFLOP1 = " << flops1 / time1 * 1e-6 << endl;
-    cout << "MFLOP2 = " << flops2 / time2 * 1e-6 << endl;
-    cout << "MFLOP = " << (flops1+flops2) / time * 1e-6 << endl;
+    cout << IM(4) << "flops1 = " << flops1 << endl;
+    cout << IM(4) << "flops2 = " << flops2 << endl;
+    cout << IM(4) << "time1 = " << time1 << endl;
+    cout << IM(4) << "time2 = " << time2 << endl;
+    cout << IM(4) << "time3 = " << time3 << endl;
+    cout << IM(4) << "MFLOP1 = " << flops1 / time1 * 1e-6 << endl;
+    cout << IM(4) << "MFLOP2 = " << flops2 / time2 * 1e-6 << endl;
+    cout << IM(4) << "MFLOP = " << (flops1+flops2) / time * 1e-6 << endl;
     }
   */
 
@@ -1119,6 +1119,7 @@ namespace ngla
   void SparseCholesky<TM, TV_ROW, TV_COL> :: 
   MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
   {
+    cout << "multadd, s = " << s << endl;
     static Timer timer("SparseCholesky::MultAdd");
     RegionTimer reg (timer);
 
