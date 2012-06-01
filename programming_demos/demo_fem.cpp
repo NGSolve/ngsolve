@@ -72,10 +72,10 @@ int main ()
   // ***************** element matrix integration
 
   // own memory management
-  LocalHeap lh(10000, "demofem - localheap");
+  LocalHeap lh(1000000, "demofem - localheap");
 
   // reference finite element
-  // FE_Trig1 trig;
+  FE_Trig1 trig_mapping;
   H1HighOrderFE<ET_TRIG> trig(2);
 
   // integrators for (\nabla u, \nabla v) and (u,v)
@@ -87,7 +87,7 @@ int main ()
   // element geometry:
   FE_ElementTransformation<2,2> eltrans;
 
-  eltrans.SetElement (&trig, 0, 0);
+  eltrans.SetElement (&trig_mapping, 0, 0);
 
   // vertex coordinates  
   double pts[3][2] = { { 0, 0 }, { 1, 0 }, { 0, 1 } };
