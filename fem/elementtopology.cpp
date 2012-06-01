@@ -421,8 +421,8 @@ namespace ngfem
   }
 
    
-  template FlatVector< Vec<2> > ElementTopology::GetNormals<2> (ELEMENT_TYPE et);
-  template FlatVector< Vec<3> > ElementTopology::GetNormals<3> (ELEMENT_TYPE et);
+  template NGS_DLL_HEADER FlatVector< Vec<2> > ElementTopology::GetNormals<2> (ELEMENT_TYPE et);
+  template NGS_DLL_HEADER FlatVector< Vec<3> > ElementTopology::GetNormals<3> (ELEMENT_TYPE et);
 
   
   int ElementTopology :: GetEdgeNr (ELEMENT_TYPE et, int v1, int v2)
