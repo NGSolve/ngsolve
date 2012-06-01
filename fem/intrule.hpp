@@ -389,7 +389,7 @@ namespace ngfem
      Integration rule on (0,1), contains n points,
      Exact for polynomials up to order 2n-1
   */ 
-  extern void ComputeGaussRule (int n, 
+  NGS_DLL_HEADER extern void ComputeGaussRule (int n, 
 				Array<double> & xi, 
 				Array<double> & wi);
 
@@ -402,7 +402,7 @@ namespace ngfem
      Assumes that the polynomial has alpha roots in 1, and beta roots in 0.
      Exact for polynomials up to order 2n-1 + alpha + beta
   */ 
-  extern void ComputeGaussJacobiRule (int n, 
+  NGS_DLL_HEADER extern void ComputeGaussJacobiRule (int n, 
 				      Array<double> & xi, 
 				      Array<double> & wi,
 				      double alf,
@@ -414,7 +414,7 @@ namespace ngfem
      Integration rule on R, contains n points.
      Exact for exp{-x*x} * p(x),  with polynomials p(x) up to order 2n-1
   */ 
-  extern void ComputeHermiteRule (int n, 
+  NGS_DLL_HEADER extern void ComputeHermiteRule (int n, 
 				  Array<double> & x,
 				  Array<double> & w);
   
