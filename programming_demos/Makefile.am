@@ -25,7 +25,7 @@ demo_comp_LDADD = \
 	$(top_builddir)/ngstd/libngstd.la \
 	$(top_builddir)/solve/libngsolve.la \
 	$(top_builddir)/parallel/libparallel.la \
-	-L/opt/netgen/lib -lnglib -linterface $(LAPACK_LIBS) 
+	-L$(libdir) -lnglib -linterface $(LAPACK_LIBS) 
 demo_comp_CPPFLAGS = $(NETGEN_INCLUDES)  -I$(top_srcdir)/include
 
 
