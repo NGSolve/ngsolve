@@ -652,7 +652,7 @@ namespace ngcomp
 		    {
 		      LocalHeap lh = clh.Split();
 		      int nec = (element_coloring) ? (*element_coloring)[icol].Size() : ne;
-		      
+
 #pragma omp for 
 		      for (int ii = 0; ii < nec; ii++)
 			{
