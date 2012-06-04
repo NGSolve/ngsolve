@@ -87,6 +87,7 @@ namespace ngfem
   }
   
   
+  template class FE_ElementTransformation<1,1>;
   template class FE_ElementTransformation<2,2>;
   template class FE_ElementTransformation<3,3>;
   template class FE_ElementTransformation<1,2>;
