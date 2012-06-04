@@ -2015,9 +2015,7 @@ namespace ngsolve
       {
 	MyMPI_SendCmd ("ngs_pdefile");
 #ifdef PARALLEL
-	MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
-	// ngs_comm = MPI_COMM_WORLD;
-
+	MPI_Comm_dup (MPI_COMM_WORLD, &ngs_comm);
 
 	ifstream infile (filename.c_str());
 	string data;
@@ -2034,10 +2032,6 @@ namespace ngsolve
 	    MyMPI_Send (pde_directory, dest);
 	    MyMPI_Send (data, dest);
 	  }
-	/*
-	for ( int dest = 1; dest < ntasks; dest ++)
-	  MyMPI_Send (filename, dest);
-	*/
 #endif
 
       }
