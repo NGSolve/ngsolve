@@ -496,6 +496,9 @@ namespace ngsolve
       heapsize = size_t(constants["heapsize"]);
 
 #ifdef _OPENMP
+    if (constants.Used ("numthreads"))
+      omp_set_num_threads (int (constants["numthreads"]));
+
     heapsize *= omp_get_max_threads();
 #endif
     
@@ -903,6 +906,8 @@ namespace ngsolve
       delete string_constants[name];
 
     string_constants.Set (name.c_str(), new string(val));
+
+    if (name == "testout") testout = new ofstream (val.c_str());
   }
 
   void PDE :: AddVariable (const string & name, double val)
