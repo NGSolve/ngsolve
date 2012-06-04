@@ -32,6 +32,7 @@ if { $sbatchmode == "defined" } {
                     for { set l 1 } { $l <= $solve } { incr l } { NGS_SolvePDE $l }
                     NGS_PrintTiming
                     puts "Thank you for using $progname/NGSolve"; Ng_Exit; destroy .
+		    exit
 	         }
 	    }
 	}
