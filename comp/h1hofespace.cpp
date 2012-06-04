@@ -97,14 +97,20 @@ namespace ngcomp
     low_order_space = new NodalFESpace (ma, loflags);
     low_order_space -> SetLowOrderSpace (true);
 
-    static ConstantCoefficientFunction one(1);
-    integrator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
-    boundary_integrator = GetIntegrators().CreateBFI("robin", ma.GetDimension(), &one);
-
     if (ma.GetDimension() == 2)
       evaluator = new T_DifferentialOperator<DiffOpId<2> >;
     else
       evaluator = new T_DifferentialOperator<DiffOpId<3> >;
+
+    if (ma.GetDimension() == 2)
+      boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<2> >;
+    else
+      boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<3> >;
+
+
+    static ConstantCoefficientFunction one(1);
+    integrator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
+    boundary_integrator = GetIntegrators().CreateBFI("robin", ma.GetDimension(), &one);
 
     if (dimension > 1)
       {
