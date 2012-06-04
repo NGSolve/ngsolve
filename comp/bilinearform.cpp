@@ -1043,20 +1043,20 @@ namespace ngcomp
 #pragma omp for 
                   for (int i = 0; i < nse; i++)
                     {
-
 #pragma omp atomic
 		      cnt++;
 #pragma omp atomic
 		      gcnt++;
 
 		      progress.Update (cnt);
-                      lh.CleanUp();
+		      
+		      HeapReset hr(lh);
 		  
 		      if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
 		      
 		      NgProfiler::StartTimer (timerb1);
 		      
-                      const FiniteElement & fel = fespace.GetSFE (i, lh);
+		      const FiniteElement & fel = fespace.GetSFE (i, lh);
 		      
 		      ElementTransformation & eltrans = ma.GetTrafo (i, 1, lh);
                       fespace.GetSDofNrs (i, dnums);
@@ -1073,17 +1073,15 @@ namespace ngcomp
                         }
 
 		      NgProfiler::StopTimer (timerb1);
-
 		      
 		      int elmat_size = dnums.Size()*fespace.GetDimension();
 		      FlatMatrix<SCAL> elmat(elmat_size, lh);
 		      FlatMatrix<SCAL> sumelmat(elmat_size, lh);
 		      sumelmat = SCAL (0.0);
-
+		      
 		      for (int k = 0; k < dnums.Size(); k++)
 			if (dnums[k] != -1)
 			  useddof.Set (dnums[k]);
-
 
                       for (int j = 0; j < NumIntegrators(); j++)
                         {
@@ -1092,12 +1090,11 @@ namespace ngcomp
                           if (!bfi.BoundaryForm()) continue;
                           if (bfi.SkeletonForm()) continue;
                           if (!bfi.DefinedOn (ma.GetSElIndex (i))) continue;		    
-
+			  
 			  NgProfiler::StartTimer (timerb2);
 
-
 			  bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
-                          fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+			  fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
 			  NgProfiler::StopTimer (timerb2);
 
@@ -1129,8 +1126,8 @@ namespace ngcomp
 			  
 			  sumelmat += elmat;
 			}
-		      
-		      
+
+
 		      NgProfiler::StartTimer (timerb3);
 		      
 #pragma omp critical (addelmatboundary)
