@@ -791,7 +791,7 @@ namespace ngcomp
 	return; 	
       } 
 
-    ElementTransformation eltrans;
+    // ElementTransformation eltrans;
 
     bool applyd1 = 0;
     bool applyd2 = 0;
@@ -802,9 +802,9 @@ namespace ngcomp
     double sum = 0;
     for (int i = 0; i < ne; i++)
       {
+	HeapReset hr (lh);
+	
 	ma.SetThreadPercentage ( 100.0*i / ne );
-
-	lh.CleanUp();
 
 	int eldom = 
 	  bound1 ? ma.GetSElIndex(i) : ma.GetElIndex(i);
@@ -812,24 +812,25 @@ namespace ngcomp
 	if ((domain != -1) && (domain != eldom))
 	  continue;
 
-	const FiniteElement & fel1 = 
-	  bound1 ? fes1.GetSFE(i, lh) : fes1.GetFE (i, lh);
+	const FiniteElement & fel1 = fes1.GetFE (i, bound1, lh);
+	const FiniteElement & fel2 = fes2.GetFE (i, bound1, lh);
+	ElementTransformation & eltrans = ma.GetTrafo (i, bound1, lh);
 
-	const FiniteElement & fel2 = 
-	  bound1 ? fes2.GetSFE(i, lh) : fes2.GetFE (i, lh);
+	fes1.GetDofNrs (i, bound1, dnums1);
+	fes2.GetDofNrs (i, bound1, dnums2);
 
+	/*
 	if (bound1)
 	  {
-	    ma.GetSurfaceElementTransformation (i, eltrans, lh);
 	    fes1.GetSDofNrs (i, dnums1);
 	    fes2.GetSDofNrs (i, dnums2);
 	  }
 	else
 	  {
-	    ma.GetElementTransformation (i, eltrans, lh);
 	    fes1.GetDofNrs (i, dnums1);
 	    fes2.GetDofNrs (i, dnums2);
 	  }
+	*/
 
 	FlatVector<SCAL> elu1(dnums1.Size() * dim1, lh);
 	FlatVector<SCAL> elu2(dnums2.Size() * dim2, lh);
@@ -845,68 +846,28 @@ namespace ngcomp
 	double elerr = 0;
 
 	int io = max(fel1.Order(),fel2.Order()); 
-	
-	/*
-	const IntegrationRule & ir = 
-	  GetIntegrationRules().SelectIntegrationRule(fel1.ElementType(), 
-						      2*io+2);
-	*/
-	IntegrationRule ir(fel1.ElementType(), 2*io+2);
 
-	double det; 
+	IntegrationRule ir(fel1.ElementType(), 2*io+2);
+	BaseMappedIntegrationRule & mir = eltrans(ir, lh);
 	
 	for (int j = 0; j < ir.GetNIP(); j++)
 	  {
-	    void * heapp = lh.GetPointer();
-	    if (!bound1)
-	      {
-		if (ma.GetDimension() == 2)
-		  {
-		    MappedIntegrationPoint<2,2> mip (ir[j], eltrans);
-		    bli1.CalcFlux (fel1, mip, elu1, fluxi1, applyd1, lh);
-		    bli2.CalcFlux (fel2, mip, elu2, fluxi2, applyd2, lh);
-		    det = fabs(mip.GetJacobiDet()); 
-		  }
-		else
-		  {
-		    MappedIntegrationPoint<3,3> mip (ir[j], eltrans);
-		    bli1.CalcFlux (fel1, mip, elu1, fluxi1, applyd1, lh);
-		    bli2.CalcFlux (fel2, mip, elu2, fluxi2, applyd2, lh);
-		    det = fabs(mip.GetJacobiDet());  
-		  }
-	      }
-	    else 
-	      {
-		if (ma.GetDimension() == 3)
-		  {
-		    MappedIntegrationPoint<2,3> mip (ir[j], eltrans);
-		    bli1.CalcFlux (fel1, mip, elu1, fluxi1, applyd1, lh);
-		    bli2.CalcFlux (fel2, mip, elu2, fluxi2, applyd2, lh);
-		    det = fabs(mip.GetJacobiDet()); 
-		  }
-		else
-		  {
-		    MappedIntegrationPoint<1,2> mip (ir[j], eltrans);
-		    bli1.CalcFlux (fel1, mip, elu1, fluxi1, applyd1, lh);
-		    bli2.CalcFlux (fel2, mip, elu2, fluxi2, applyd2, lh);
-		    det = fabs(mip.GetJacobiDet()); 
-		  }
-	      }
-
-	    	  
+	    HeapReset hr (lh);
+	    
+	    bli1.CalcFlux (fel1, mir[j], elu1, fluxi1, applyd1, lh);
+	    bli2.CalcFlux (fel2, mir[j], elu2, fluxi2, applyd2, lh);
+	    // double det = mir[j].GetMeasure();
+	    
 	    fluxi1 -= fluxi2;
 	     
-	    double dx = ir[j].Weight() * det; 
-	    
+	    double dx = mir[j].GetWeight();
 	    elerr += dx * L2Norm2 (fluxi1);
-	    
-	    lh.CleanUp (heapp);
 	  }
 
 	diff(i) += elerr;
 	sum += elerr;
       }
-    cout << "difference = " << sqrt(sum) << endl;
+    // cout << "difference = " << sqrt(sum) << endl;
     ma.PopStatus ();
   }
   
