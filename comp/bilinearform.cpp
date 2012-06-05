@@ -2941,8 +2941,10 @@ cout << "catch in AssembleBilinearform 2" << endl;
                                                  const FiniteElement * fel,
                                                  const SpecialElement * sel) const
   {
-    FlatVector<TV> elvecx(dnums.Size() * this->GetFESpace().GetDimension(), lh);
-    FlatVector<TV> elvecy(dnums.Size() * this->GetFESpace().GetDimension(), lh);
+    // FlatVector<TV> elvecx(dnums.Size() * this->GetFESpace().GetDimension(), lh);
+    // FlatVector<TV> elvecy(dnums.Size() * this->GetFESpace().GetDimension(), lh);
+    FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->GetFESpace().GetDimension(), lh);
+    FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->GetFESpace().GetDimension(), lh);
 
     x.GetIndirect (dnums, elvecx);
 
@@ -2963,14 +2965,12 @@ cout << "catch in AssembleBilinearform 2" << endl;
             static int elementtimer = NgProfiler::CreateTimer ("Element matrix application");
             NgProfiler::StartTimer (elementtimer);
 	    
-	    /*
             if (this->precompute)
               // bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 
                                       this->precomputed_data[elnum*this->NumIntegrators()+j], lh);
             else
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 0, lh);
-	    */
 
 
             NgProfiler::StopTimer (elementtimer);
