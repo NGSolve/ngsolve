@@ -248,7 +248,7 @@ namespace ngsolve
 
   void NumProcDifference :: Do(LocalHeap & lh)
   {
-    cout << "Compute difference" << endl;
+    cout << IM(3) << "Compute difference ... " << flush;
 
     if (bfa1->NumIntegrators() == 0)
       throw Exception ("Difference: Bilinearform1 needs an integrator");
@@ -306,13 +306,13 @@ namespace ngsolve
 #endif
 
     cout << IM(1) << " total difference = " << sqrt (sum) << endl;
+    
+    int ndof = (ntasks == 1) ? 
+      bfa1->GetFESpace().GetNDof() : 
+      bfa1->GetFESpace().GetParallelDofs().GetNDofGlobal();
 
     if (file)
       {
-	int ndof = (ntasks == 1) ? 
-	  bfa1->GetFESpace().GetNDof() : 
-	  bfa1->GetFESpace().GetParallelDofs().GetNDofGlobal();
-
 	(*file) << ma.GetNLevels() 
 		<< "  " << ndof
 		<< "  " << sqrt(double (ndof))
