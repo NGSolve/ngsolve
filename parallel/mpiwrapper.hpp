@@ -145,8 +145,13 @@ namespace ngparallel
   }
 
  
-
-
+  template <typename T>
+  inline T MyMPI_AllReduce (T d)
+  {
+    T global_d;
+    MPI_Allreduce ( &d, &global_d, 1, MyGetMPIType<T>(), MPI_SUM, ngs_comm);
+    return global_d;
+  }
 
 
 

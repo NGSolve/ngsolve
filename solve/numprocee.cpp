@@ -208,7 +208,7 @@ namespace ngsolve
     gfdiff = pde.GetGridFunction (flags.GetStringFlag ("diff", ""), 1);
 
     filename = flags.GetStringFlag ("filename","");
-    if (filename.length())
+    if (filename.length() && id == 0)
       file = new ofstream (filename.c_str());
     else
       file = 0;
@@ -294,13 +294,28 @@ namespace ngsolve
     for (int i = 0; i < diff.Size(); i++)
       sum += diff(i);
 
-    cout << " total difference = " << sqrt (sum) << endl;
+    
+#ifdef PARALLEL
+    /*
+    double global_sum = 0;
+    MPI_Reduce ( &sum, &global_sum, 1,  MPI_DOUBLE, MPI_SUM,
+		 0,ngs_comm);
+    sum = global_sum;
+    */
+    sum = MyMPI_AllReduce (sum);
+#endif
+
+    cout << IM(1) << " total difference = " << sqrt (sum) << endl;
 
     if (file)
       {
+	int ndof = (ntasks == 1) ? 
+	  bfa1->GetFESpace().GetNDof() : 
+	  bfa1->GetFESpace().GetParallelDofs().GetNDofGlobal();
+
 	(*file) << ma.GetNLevels() 
-		<< "  " << bfa1->GetFESpace().GetNDof() 
-		<< "  " << sqrt(double (bfa1->GetFESpace().GetNDof())) 
+		<< "  " << ndof
+		<< "  " << sqrt(double (ndof))
 		<< " " << sqrt(sum) << endl;
       }
   }
