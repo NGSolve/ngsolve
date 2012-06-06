@@ -48,8 +48,6 @@ namespace netgen
 
   void VisualSceneGeometry :: DrawScene ()
   {
-    int i;
-
     if (changeval != geometry->GetChangeVal())
       BuildScene();
     changeval = geometry->GetChangeVal();
@@ -80,13 +78,12 @@ namespace netgen
     double shine = vispar.shininess;
     double transp = vispar.transp;
 
-
     glMaterialf (GL_FRONT_AND_BACK, GL_SHININESS, shine);
     glLogicOp (GL_COPY);
   
     glEnable (GL_NORMALIZE);
 
-    for (i = 0; i < geometry->GetNTopLevelObjects(); i++)
+    for (int i = 0; i < geometry->GetNTopLevelObjects(); i++)
       {
 	const TopLevelObject * tlo = geometry -> GetTopLevelObject (i);
 	if (tlo->GetVisible() && !tlo->GetTransparent())
@@ -103,7 +100,7 @@ namespace netgen
     glEnable (GL_POLYGON_OFFSET_FILL);
 
     glLogicOp (GL_NOOP);
-    for (i = 0; i < geometry->GetNTopLevelObjects(); i++)
+    for (int i = 0; i < geometry->GetNTopLevelObjects(); i++)
       {
 	const TopLevelObject * tlo = geometry -> GetTopLevelObject (i);
 	if (tlo->GetVisible() && tlo->GetTransparent())
@@ -118,82 +115,9 @@ namespace netgen
 
     glDisable (GL_POLYGON_OFFSET_FILL);
 
-    /*
-      cout << "draw " << project1.Size() << " lines " << endl;
-      glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
-      glLineWidth (1.0f);
-      glEnable (GL_COLOR_MATERIAL);
-
-      glColor3f (1.0f, 0.0f, 0.0f);
-
-      glBegin (GL_LINES);
-      for (int i = 0; i < project1.Size(); i++)
-      {
-      glVertex3dv (project1[i]);
-      glVertex3dv (project2[i]);
-      }
-      glEnd();
-    */
-
-
     glPopMatrix();
     glDisable(GL_CLIP_PLANE0);
  
-
-
-    /*
-      glFlush();
-  
-      int err;
-      do
-      {
-      err = glGetError();
-      // cout << "glerr,1 = " << err << endl;
-      }
-      while (err != GL_NO_ERROR);
-
-
-      // CreateTexture (0, 1, GL_DECAL);
-      CreateTexture (0, 1, GL_MODULATE);
-      glEnable (GL_TEXTURE_1D);
-
-      float mat_col[] = { 1.0, 1.0, 1.0 }; 
-      glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_col);
-
-      glDisable (GL_BLEND);
-      glDisable (GL_COLOR_MATERIAL);
-      glEnable (GL_NORMALIZE);
-
-      if (geometry->GetNTopLevelObjects())
-      {
-      cout << "call list" << endl;
-      glCallList (trilists[0]);
-      }
-
-      glColor3d (1.0, 1.0, 1.0);
-  
-      glBegin (GL_TRIANGLES);
-      glNormal3f (0, 0, 1);
-      SetOpenGlColor  (-1.0, 0, 1, 0);
-      glVertex3f (0.0, 0.0, 0.0);
-      SetOpenGlColor  (0.5, 0, 1, 0);
-      glNormal3f (0, 0, 1);
-      glVertex3f (1.0, 0.0, 0.0);
-      SetOpenGlColor  (2.0, 0, 1, 0);
-      glNormal3f (0, 0, 1);
-      glVertex3f (0.0, 1.0, 0.0);
-
-      glEnd ();
-
-      cout << "trig drawn" << endl;
-
-      glDisable (GL_TEXTURE_1D);
-      glDisable (GL_COLOR_MATERIAL);
-      glFlush();
-
-      cout << "glerr,2 = " << glGetError() << endl;
-    */
-
 
 
     DrawCoordinateCross ();
@@ -244,7 +168,7 @@ namespace netgen
     for (int i = 0; i < geometry->GetNTopLevelObjects(); i++)
       {
 	trilists.Append (glGenLists (1));
-	glNewList (trilists.Last(), GL_COMPILE);
+	glNewList (trilists.Last(), GL_COMPILE); 
 
 	glEnable (GL_NORMALIZE);
 	const TriangleApproximation & ta =
@@ -257,15 +181,19 @@ namespace netgen
 		for (int k = 0; k < 3; k++)
 		  {
 		    int pi = ta.GetTriangle(j)[k];
-		    glNormal3dv (ta.GetNormal (pi));
+		    glNormal3dv (ta.GetNormal(pi));
 		    glVertex3dv (ta.GetPoint(pi));
+		  }
+		if (j % 1000 == 9999)  // got crashes on NVIDA
+		  {
+		    glEnd ();
+		    glBegin (GL_TRIANGLES);
 		  }
 	      }
 	    glEnd ();
 	  }
 	glEndList ();
       }
-
   }
 
 
