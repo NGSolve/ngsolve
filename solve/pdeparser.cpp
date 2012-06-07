@@ -1055,14 +1055,14 @@ namespace ngsolve
 		      for (int i = 0; i < pde->GetVariableTable().Size(); i++)
 			fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
 						   &pde->GetVariableTable()[i]);
+		      for (int i = 0; i < pde->GetCoefficientTable().Size(); i++)
+			fun->DefineArgument (pde->GetCoefficientTable().GetName(i),-1);
 		      
 		      fun->Parse (*scan->scanin);
 		      coeffs.Append (fun);
-		      // fun -> Print (cout);
 		      if (fun->IsConstant())
 			dcoeffs.Append (fun->Eval ( (double*)(0) ));
 		      scan->ReadNext();
-		      // fun -> Print(cout);
 		    }
 		  else if (scan->GetToken() == LSB) // polynomial [MW]
 		    {
@@ -1146,10 +1146,10 @@ namespace ngsolve
 		    scan->ReadNext();
 		}
 
-	      bool allconst = 1;
+	      bool allconst = true;
 	      for (int i = 0; i < coeffs.Size(); i++)
 		if (!coeffs[i]->IsConstant())
-		  allconst = 0;
+		  allconst = false;
 	      
 	      if (polycoeffs.Size() > 0)
 		{
@@ -1169,14 +1169,29 @@ namespace ngsolve
 		}
 	      else
 		{
-		  if (pde->GetMeshAccess().GetDimension() == 2)
+		  Array<CoefficientFunction*> depends (pde->GetCoefficientTable().Size()+3);
+		  depends = NULL;
+		  if (coeffs[0])
 		    {
-		      pde->AddCoefficientFunction
-			(name, new DomainVariableCoefficientFunction<2>(coeffs));
+		      for (int i = 0; i < coeffs[0]->arguments.Size(); i++)
+			{
+			  string name = coeffs[0]->arguments.GetName(i);
+			  int num = coeffs[0]->arguments[i];
+			  if (num >= 3)
+			    depends[num] = pde->GetCoefficientTable()[name];
+			}
+
+		      while (depends.Size() && !depends.Last())
+			depends.SetSize(depends.Size()-1);
+		      // cout << "depends = " << endl << depends << endl;
 		    }
+
+		  if (pde->GetMeshAccess().GetDimension() == 2)
+		    pde->AddCoefficientFunction
+		      (name, new DomainVariableCoefficientFunction<2>(coeffs, depends));
 		  else
 		    pde->AddCoefficientFunction
-		      (name, new DomainVariableCoefficientFunction<3>(coeffs));
+		      (name, new DomainVariableCoefficientFunction<3>(coeffs, depends));
 
 		  for (int hi = 0; hi < coeffs.Size(); hi++)
 		    delete coeffs[hi];

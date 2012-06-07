@@ -51,6 +51,8 @@ public:
   void DefineConstant (const char * name, double val);
   /// define constant 
   void DefineGlobalVariable (const char * name, double * var);
+  /// define arguments 
+  void DefineArgument (const char * name, int num);
 
   /// evaluate function
   double Eval (const double * x = NULL) const;
@@ -112,7 +114,7 @@ protected:
       const double *globvar;
       /// the input argument number varnum
       int varnum;
-      /// a pointer to a uniary function
+      /// a pointer to a unary function
       double (*fun) (double);
     }; 
     ///
@@ -179,7 +181,7 @@ protected:
   ///
   char string_value[1000];
   ///
-  char var_num;
+  int var_num;
   ///
   double * globvar;
  
@@ -192,6 +194,11 @@ protected:
 
   /// registerd variables
   SymbolTable<double*> globvariables;
+  
+public:
+  /// the arguments passed to the function
+  SymbolTable<int> arguments;
+  int num_arguments;
 
   /// returns last token
   EVAL_TOKEN GetToken() const

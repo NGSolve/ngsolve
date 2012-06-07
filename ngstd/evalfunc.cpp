@@ -27,16 +27,28 @@ namespace ngstd
 
   EvalFunction :: EvalFunction () : eps(1e-14)
   {
+    DefineArgument ("x", 0);
+    DefineArgument ("y", 1);
+    DefineArgument ("z", 2);
+    num_arguments = 3;
   }
 
   EvalFunction :: EvalFunction (istream & aist) : eps(1e-14)
   {
+    DefineArgument ("x", 0);
+    DefineArgument ("y", 1);
+    DefineArgument ("z", 2);
+    num_arguments = 3;
     Parse (aist);
   }
 
 
   EvalFunction :: EvalFunction (const string & str) : eps(1e-14)
   {
+    DefineArgument ("x", 0);
+    DefineArgument ("y", 1);
+    DefineArgument ("z", 2);
+    num_arguments = 3;
     stringstream strstr(str);
     Parse (strstr);
   }
@@ -46,6 +58,8 @@ namespace ngstd
     program = eval2.program;
     constants = eval2.constants;
     globvariables = eval2.globvariables;
+    arguments = eval2.arguments;
+    num_arguments = eval2.num_arguments;
   }
 
   EvalFunction :: ~EvalFunction ()
@@ -83,6 +97,11 @@ namespace ngstd
   void EvalFunction :: DefineGlobalVariable (const char * name, double * var)
   {
     globvariables.Set (name, var);
+  }
+
+  void EvalFunction :: DefineArgument (const char * name, int num)
+  {
+    arguments.Set (name, num);
   }
 
   void EvalFunction :: Eval (const double * x, double * y, int ydim) const
@@ -1039,6 +1058,20 @@ namespace ngstd
 // 		}
 	
 
+	      if (arguments.Used (string_value))
+		{
+		  var_num = arguments[string_value];
+		  if (var_num == -1)
+		    {
+		      var_num = arguments[string_value] = num_arguments;
+		      num_arguments++;
+		      cout << "argument " << string_value << " becomes arg " << var_num << endl;
+		    }
+		  token = VARIABLE;
+		  return;
+		}
+
+	      /*
 	      if (strcmp (string_value, "x1") == 0 ||
 		  strcmp (string_value, "x") == 0)
 		{
@@ -1062,7 +1095,7 @@ namespace ngstd
 		  token = VARIABLE;
 		  return;
 		}
-		  
+	      */  
 
 	      /*	    
 	      if (cnt == 2 &&

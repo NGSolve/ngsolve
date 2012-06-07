@@ -192,33 +192,22 @@ namespace ngfem
   template <int DIM>
   class NGS_DLL_HEADER DomainVariableCoefficientFunction : public CoefficientFunction
   {
-    ///
     Array<EvalFunction*> fun;
+    Array<CoefficientFunction*> depends_on;
   public:
     ///
     DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun);
+    DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun,
+				       const Array<CoefficientFunction*> & adepends_on);
+
     ///
     virtual ~DomainVariableCoefficientFunction ();
     ///
-    virtual int NumRegions () { return fun.Size(); }
+    virtual int NumRegions () { return (fun.Size() == 1) ? INT_MAX : fun.Size(); }
     ///
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
-    {
-      int elind = ip.GetTransformation().GetElementIndex();
-      return fun[elind]->Eval (&static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint()(0));
-    }
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
 
-    virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const
-    {
-      int elind = ip.GetTransformation().GetElementIndex();
-      Vec<DIM, Complex> hp;
-      for (int i = 0; i < DIM; i++)
-	hp(i) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint()(i);
-      return fun[elind]->Eval (&hp(0));
-    }
-
-
-
+    virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const;
 
     EvalFunction & GetEvalFunction(const int index)
     {
@@ -234,22 +223,13 @@ namespace ngfem
     virtual int Dimension() const { return fun[0]->Dimension(); }
 
     virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
-			  FlatVector<> result) const
-    {
-      int elind = ip.GetTransformation().GetElementIndex();
-      fun[elind]->Eval (&static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint()(0), &result(0), result.Size());
-    }
-
+			  FlatVector<> result) const;
 
     virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
-			  FlatVector<Complex> result) const
-    {
-      int elind = ip.GetTransformation().GetElementIndex();
-      fun[elind]->Eval (&static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint()(0), &result(0), result.Size());
-    }
+			  FlatVector<Complex> result) const;
 
-
-
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+			   FlatMatrix<double> values) const;
   };
 
   ///
