@@ -18,14 +18,14 @@ namespace ngfem
 {
   template <int DIMS, int DIMR>
   FE_ElementTransformation<DIMS, DIMR> :: FE_ElementTransformation ()
-    : pointmat(0,0,0), pointmat_ownmem(false), nvmat(0,0,0)
+    : /* pointmat(0,0,0), pointmat_ownmem(false), */ nvmat(0,0,0)
   { ; }
   
 
   template <int DIMS, int DIMR>
   FE_ElementTransformation<DIMS, DIMR> :: ~FE_ElementTransformation ()
   {
-    if (pointmat_ownmem) delete [] &pointmat(0,0); 
+    // if (pointmat_ownmem) delete [] &pointmat(0,0); 
   }
   
   
