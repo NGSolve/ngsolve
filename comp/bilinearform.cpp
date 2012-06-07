@@ -281,7 +281,7 @@ namespace ngcomp
 	    precomputed_data.SetSize(0);
 
 	    Array<int> dnums;
-	    ElementTransformation eltrans;
+	    // ElementTransformation eltrans;
 	    
 	    int ne = ma.GetNE();
 	    int nse = ma.GetNSE();
@@ -309,7 +309,8 @@ namespace ngcomp
 		  if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
 	  
 		  const FiniteElement & fel = fespace.GetFE (i, lh);
-		  ma.GetElementTransformation (i, eltrans, lh);
+		  // ma.GetElementTransformation (i, eltrans, lh);
+		  ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
 		  fespace.GetDofNrs (i, dnums);
 	  
 		  for (int j = 0; j < NumIntegrators(); j++)
@@ -330,7 +331,9 @@ namespace ngcomp
 		  lh.CleanUp();
 		  
 		  const FiniteElement & fel = fespace.GetSFE (i, lh);
-		  ma.GetSurfaceElementTransformation (i, eltrans, lh);
+		  // ma.GetSurfaceElementTransformation (i, eltrans, lh);
+		  ElementTransformation & eltrans = ma.GetTrafo (i, 1, lh);
+
 		  fespace.GetSDofNrs (i, dnums);
 	  
 		  for (int j = 0; j < NumIntegrators(); j++)
@@ -958,7 +961,7 @@ namespace ngcomp
 
             if (hasinner && diagonal)
               {
-                ElementTransformation eltrans;
+                // ElementTransformation eltrans;
                 void * heapp = clh.GetPointer();
                 for (int i = 0; i < ne; i++)
                   {
@@ -977,9 +980,9 @@ namespace ngcomp
 		  
                     const FiniteElement & fel = fespace.GetFE (i, clh);
 		  
-                    ma.GetElementTransformation (i, eltrans, clh);
+                    // ma.GetElementTransformation (i, eltrans, clh);
+		    ElementTransformation & eltrans = ma.GetTrafo (i, 0, clh);
                     fespace.GetDofNrs (i, dnums);
-		  
 		  
                     FlatVector<SCAL> sum_diag(dnums.Size()*fespace.GetDimension(), clh);
                     sum_diag = 0;
@@ -1154,7 +1157,7 @@ namespace ngcomp
 		{
 		  LocalHeap lh = clh.Split();
 		  Array<int> fnums, elnums, vnums, dnums;
-		  ElementTransformation eltrans, seltrans;
+		  // ElementTransformation eltrans, seltrans;
 		
 #pragma omp for 
 		  for (int i = 0; i < nse; i++)
@@ -1182,8 +1185,12 @@ namespace ngcomp
 		      for (int k=0; k<fnums.Size(); k++)
 			if(fac==fnums[k]) facnr = k;
 		      ma.GetElVertices (el, vnums);	
-		      ma.GetElementTransformation (el, eltrans, lh);
-		      ma.GetSurfaceElementTransformation (i, seltrans, lh);
+		      // ma.GetElementTransformation (el, eltrans, lh);
+		      // ma.GetSurfaceElementTransformation (i, seltrans, lh);
+		      ElementTransformation & eltrans = ma.GetTrafo (el, false, lh);
+		      ElementTransformation & seltrans = ma.GetTrafo (i, true, lh);
+
+		      
 		      fespace.GetDofNrs (el, dnums);
 		      if(fel.GetNDof() != dnums.Size())
 			{
@@ -1282,7 +1289,7 @@ namespace ngcomp
                 {
                   LocalHeap lh = clh.Split();
 
-                  ElementTransformation eltrans1, eltrans2;
+                  // ElementTransformation eltrans1, eltrans2;
                   Array<int> dnums, dnums1, dnums2, elnums, fnums, vnums1, vnums2;
 #pragma omp for 
                   for (int i = 0; i < nf; i++)
@@ -1322,8 +1329,13 @@ namespace ngcomp
 		  
                       const FiniteElement & fel1 = fespace.GetFE (el1, lh);
                       const FiniteElement & fel2 = fespace.GetFE (el2, lh);
-                      ma.GetElementTransformation (el1, eltrans1, lh);
-		      ma.GetElementTransformation (el2, eltrans2, lh);
+                      // ma.GetElementTransformation (el1, eltrans1, lh);
+		      // ma.GetElementTransformation (el2, eltrans2, lh);
+
+		      ElementTransformation & eltrans1 = ma.GetTrafo (el1, false, lh);
+		      ElementTransformation & eltrans2 = ma.GetTrafo (el2, false, lh);
+
+
                       fespace.GetDofNrs (el1, dnums1);
 		      dnums=dnums1;
                       fespace.GetDofNrs (el2, dnums2);
@@ -1964,7 +1976,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		  
 		  Array<int> dnums, idofs, idofs1, odofs;
 
-		  ElementTransformation eltrans;
+		  // ElementTransformation eltrans;
 		  
 		  int nec = (element_coloring) ? (*element_coloring)[icol].Size() : ne;
 		  
@@ -1996,7 +2008,9 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		      if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
 		      
 		      const FiniteElement & fel = fespace.GetFE (i, lh);
-		      ma.GetElementTransformation (i, eltrans, lh);
+		      // ma.GetElementTransformation (i, eltrans, lh);
+		      ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
+
 		      fespace.GetDofNrs (i, dnums);
 		      
 		      for (int j = 0; j < dnums.Size(); j++)
@@ -2217,7 +2231,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 	      LocalHeap & clh = lh;
 	      LocalHeap lh = clh.Split();
 	      
-	      ElementTransformation eltrans;
+	      // ElementTransformation eltrans;
 	      Array<int> dnums;
 #pragma omp for 
 	      for (int i = 0; i < nse; i++)
@@ -2242,7 +2256,9 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		    
 		    const FiniteElement & fel = fespace.GetSFE (i, lh);
 	      
-		    ma.GetSurfaceElementTransformation (i, eltrans, lh);
+		    // ma.GetSurfaceElementTransformation (i, eltrans, lh);
+		    ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
+
 		    fespace.GetSDofNrs (i, dnums);
 	      
 		    for (int j = 0; j < dnums.Size(); j++)
@@ -2443,7 +2459,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
                   {
                     LocalHeap lh(lh_size, "biform-AddMatrix (a)");
                     Array<int> dnums;
-                    ElementTransformation eltrans;
+                    // ElementTransformation eltrans;
                     
 #pragma omp for
                     for (int i = 0; i < ne; i++)
@@ -2453,7 +2469,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
                         if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
                         
                         const FiniteElement & fel = fespace.GetFE (i, lh);
-                        ma.GetElementTransformation (i, eltrans, lh);
+                        // ma.GetElementTransformation (i, eltrans, lh);
+			ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
                         fespace.GetDofNrs (i, dnums);
                         
                         ApplyElementMatrix(x,y,val,dnums,eltrans,i,0,cnt,lh,&fel);
@@ -2470,7 +2487,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
                   {
                     LocalHeap lh(lh_size, "biform-AddMatrix (b)");
                     Array<int> dnums;
-                    ElementTransformation eltrans;
+                    // ElementTransformation eltrans;
                     
 #pragma omp for
 		    for (int i = 0; i < nse; i++)
@@ -2479,7 +2496,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
 			
 			const FiniteElement & fel = fespace.GetSFE (i, lh);
 			
-			ma.GetSurfaceElementTransformation (i, eltrans, lh);
+			// ma.GetSurfaceElementTransformation (i, eltrans, lh);
+			ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
 			fespace.GetSDofNrs (i, dnums);
 			
 			ApplyElementMatrix(x,y,val,dnums,eltrans,i,1,cnt,lh,&fel);
@@ -2543,7 +2561,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
           (*testout) << "global y,in = " << endl << y << endl;
         */
         Array<int> dnums;
-        ElementTransformation eltrans;
+        // ElementTransformation eltrans;
       
         int ne = ma.GetNE();
         int dim = GetFESpace().GetDimension(); 
@@ -2568,7 +2586,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
               lh.CleanUp();
 	  
               const FiniteElement & fel = fespace.GetFE (i, lh);
-              ma.GetElementTransformation (i, eltrans, lh);
+              // ma.GetElementTransformation (i, eltrans, lh);
+	      ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
               fespace.GetDofNrs (i, dnums);
 	  
               FlatVector<SCAL> elveclin (dnums.Size() * dim, lh);
@@ -2606,7 +2625,9 @@ cout << "catch in AssembleBilinearform 2" << endl;
               lh.CleanUp();
               const FiniteElement & fel = fespace.GetSFE (i, lh);
 	    
-              ma.GetSurfaceElementTransformation (i, eltrans, lh);
+              // ma.GetSurfaceElementTransformation (i, eltrans, lh);
+	      ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
+
               fespace.GetSDofNrs (i, dnums);
 	    
               FlatVector<SCAL> elveclin (dnums.Size() * dim, lh);
@@ -2669,7 +2690,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
     if (!MixedSpaces())
       {
         Array<int> dnums;
-        ElementTransformation eltrans;
+        // ElementTransformation eltrans;
 
         int ne = ma.GetNE();
       
@@ -2693,7 +2714,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
               lh.CleanUp();
 	  
               const FiniteElement & fel = fespace.GetFE (i, lh);
-              ma.GetElementTransformation (i, eltrans, lh);
+              // ma.GetElementTransformation (i, eltrans, lh);
+	      ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
               fespace.GetDofNrs (i, dnums);
 	  
               FlatVector<SCAL> elvecx (dnums.Size() * GetFESpace().GetDimension(), 
@@ -2719,7 +2741,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
               lh.CleanUp();
               const FiniteElement & fel = fespace.GetSFE (i, lh);
 	    
-              ma.GetSurfaceElementTransformation (i, eltrans, lh);
+              //ma.GetSurfaceElementTransformation (i, eltrans, lh);
+	      ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
               fespace.GetSDofNrs (i, dnums);
 	    
               FlatVector<SCAL> elvecx (dnums.Size() * GetFESpace().GetDimension(), lh);

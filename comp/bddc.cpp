@@ -697,8 +697,10 @@ namespace ngcomp
           Matrix<> partelmat(dnums.Size());
           elmat = 0.0;
 
-          ElementTransformation eltrans;
-          ma.GetElementTransformation (i, eltrans, lh);
+          // ElementTransformation eltrans;
+          // ma.GetElementTransformation (i, eltrans, lh);
+	  ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
+
           const FiniteElement & fel = fes.GetFE(i, lh);
 
           for (int j = 0; j < bfa.NumIntegrators(); j++)

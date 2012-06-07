@@ -243,12 +243,6 @@ namespace ngcomp
 
 	    progress.Done();
 	    MyMPI_Barrier();
-
-
-	    /*
-	    if (id == 0)
-	      cout << IM(3) << "\rassemble element " << ne << "/" << ne << endl;
-	    */
 	  }
 
 	RegionTimer reg3(timer3);
@@ -328,7 +322,7 @@ namespace ngcomp
 	  {
 	    LocalHeap lh = clh.Split();
 	    Array<int> dnums;
-	    ElementTransformation eltrans, seltrans;
+	    // ElementTransformation eltrans, seltrans;
 	    Array<int> fnums, elnums, vnums;
 	    //Schleife fuer Facet-Integrators: 
 #pragma omp for	      
@@ -356,8 +350,11 @@ namespace ngcomp
 		  
 		  const FiniteElement & fel = fespace.GetFE (el, lh);
 		
-		  ma.GetElementTransformation (el, eltrans);
-		  ma.GetSurfaceElementTransformation (i, seltrans);
+		  // ma.GetElementTransformation (el, eltrans);
+		  // ma.GetSurfaceElementTransformation (i, seltrans);
+		  ElementTransformation & eltrans = ma.GetTrafo (el, false, lh);
+		  ElementTransformation & seltrans = ma.GetTrafo (i, true, lh);
+
 		  fespace.GetDofNrs (el, dnums);
 		  ma.GetElVertices (el, vnums);		
 	      
@@ -448,9 +445,11 @@ namespace ngcomp
 		      { 
 			clh.CleanUp();
 			fel = &fespace.GetFE(element,clh);
-			ma.GetElementTransformation(element,eltrans,clh);
+			// ma.GetElementTransformation(element,eltrans,clh);
 			fespace.GetDofNrs(element,dnums);
 		      }
+		    ElementTransformation & eltrans = ma.GetTrafo (element, false, clh);
+
 		    
 		    void * heapp = clh.GetPointer();
 		    
@@ -612,14 +611,16 @@ namespace ngcomp
 	
 	
 	Array<int> dnums;
-	ElementTransformation seltrans, geltrans;
+	// ElementTransformation seltrans, geltrans;
 
 	for (int i = 0; i < nse; i++)
 	  {
 	    lh.CleanUp();
 	    
 	    const FiniteElement & sfel = fespace.GetSFE (i, lh);
-	    ma.GetSurfaceElementTransformation (i, seltrans);
+	    // ma.GetSurfaceElementTransformation (i, seltrans);
+	    ElementTransformation & seltrans = ma.GetTrafo (i, true, lh);
+
 	      	
 	    // (*testout) << "el = " << i << ", ind = " << ma.GetSElIndex(i) << endl;
 	    if (!parts[0]->DefinedOn (ma.GetSElIndex(i))) continue;
@@ -643,7 +644,9 @@ namespace ngcomp
 		if (elnr == -1) continue;
 		
 		const FiniteElement & gfel = fespace.GetFE (elnr, lh);
-		ma.GetElementTransformation (elnr, geltrans);
+		// ma.GetElementTransformation (elnr, geltrans);
+		ElementTransformation & geltrans = ma.GetTrafo (elnr, false, lh);
+
 		MappedIntegrationPoint<3,3> gsip(gip, geltrans);
 		
 		// (*testout) << " =?= p = " << gsip.GetPoint() << endl;
