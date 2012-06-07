@@ -18,10 +18,10 @@ define coefficient sigma
 1e-1, 1e-1,
 
 # 1000 Ampere-turns
+define coefficient r (sqrt(x*x+y*y))
 define coefficient cs
-( 1000 * y / sqrt(x*x+y*y) / 0.16,  1000 * (-x) / sqrt(x*x+y*y) / 0.16,  0),   
+( 1000*y/r/0.16, 1000*(-x)/r/0.16,  0),   
 (0, 0, 0),
-
 
 
 define fespace v -type=hcurlho -order=4 -nograds -dirichlet=[1]
