@@ -141,6 +141,11 @@ namespace ngcomp
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & bmir) const
     {
+      static Timer t1 ("multipointjac");
+      // static Timer t1a ("multipointjac - A");
+      // static Timer t1b ("multipointjac - B");
+
+      t1.Start();
       MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
       netgen::Ng_MultiElementTransformation <DIMS,DIMR> (elnr, ir.Size(),
 							 &ir[0](0), &ir[1](0)-&ir[0](0),
@@ -151,6 +156,7 @@ namespace ngcomp
 
       for (int i = 0; i < ir.Size(); i++)
 	mir[i].Compute();
+      t1.Stop();
     }
   };
   
@@ -629,7 +635,7 @@ namespace ngcomp
 
 
 
-
+  /*
 
   
 
@@ -676,6 +682,7 @@ namespace ngcomp
     eltrans.specific->SetElement (1, elnr, elind);
     eltrans.specific->SetElementType (GetSElType(elnr));
   }    
+  */
 
 
   ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, LocalHeap & lh) const
@@ -749,8 +756,10 @@ namespace ngcomp
     char d[10000];
     LocalHeap lh(d, 10000, "MeshAccess - elementvolume");
 
-    ElementTransformation trans;
-    GetElementTransformation (elnr, trans, lh);
+    // ElementTransformation trans;
+    // GetElementTransformation (elnr, trans, lh);
+    ElementTransformation & trans = GetTrafo (elnr, false, lh);
+	      
     ConstantCoefficientFunction ccf(1);
 
 
@@ -792,8 +801,9 @@ namespace ngcomp
     char d[10000];
     LocalHeap lh(d, 10000, "MeshAccess - surfaceelementvolume");
 
-    ElementTransformation trans;
-    GetSurfaceElementTransformation (selnr, trans, lh);
+    // ElementTransformation trans;
+    // GetSurfaceElementTransformation (selnr, trans, lh);
+    ElementTransformation & trans = GetTrafo (selnr, true, lh);
     ConstantCoefficientFunction ccf(1);
 
     if (GetDimension() == 2)

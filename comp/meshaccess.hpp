@@ -425,18 +425,18 @@ namespace ngcomp
     { return Ng_GetClusterRepElement (pi+1)-1; }
 
     ///
-    void GetElementTransformation (int elnr, ElementTransformation & eltrans) const;
+    // void GetElementTransformation (int elnr, ElementTransformation & eltrans) const;
 
     ///
     ElementTransformation & GetTrafo (int elnr, bool boundary, LocalHeap & lh) const;
 
     ///
-    void GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans) const;
+    // void GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans) const;
 
 
 
 
-
+    /*
     // compatibility for a while ...
     void GetElementTransformation (int elnr, ElementTransformation & eltrans,
 				   LocalHeap & lh) const
@@ -449,7 +449,7 @@ namespace ngcomp
     {
       GetSurfaceElementTransformation (elnr, eltrans);
     }
-    
+    */
 
 
 
