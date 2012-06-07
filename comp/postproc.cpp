@@ -452,8 +452,9 @@ namespace ngcomp
     u.GetVector() = 0.0;
 
     int cnt = 0;
-    clock_t prevtime = clock();
+    // clock_t prevtime = clock();
 
+    ProgressOutput progress (ma, "setvalues element", ma.GetNE());
 
 #pragma omp parallel 
     {
@@ -465,9 +466,14 @@ namespace ngcomp
       for (int i = 0; i < ne; i++)
 	{
 	  HeapReset hr(lh);
+
+#pragma omp atomic
+	  cnt++;
+	  progress.Update (cnt);
+
+	  /*
 #pragma omp critical(fluxprojetpercent)
 	  {
-	    cnt++;
 	    if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
 	      {
 		// cout << "\rsetvalues element " << cnt << "/" << ne << flush;
@@ -475,7 +481,7 @@ namespace ngcomp
 		prevtime = clock();
 	      }
 	  }
-
+	  */
 
 	  if (bound && !fes.IsDirichletBoundary(ma.GetSElIndex(i)))
 	    continue;
@@ -552,6 +558,9 @@ namespace ngcomp
 	  }
 	}
     }
+
+    progress.Done();
+
 
 
     // cout << "\rsetvalues element " << ne << "/" << ne << endl;
