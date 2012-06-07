@@ -169,28 +169,36 @@ namespace netgen
       {
 	trilists.Append (glGenLists (1));
 	glNewList (trilists.Last(), GL_COMPILE); 
-
 	glEnable (GL_NORMALIZE);
 	const TriangleApproximation & ta =
 	  *geometry->GetTriApprox(i);
 	if (&ta) 
 	  {
-	    glBegin (GL_TRIANGLES);
+	    glEnableClientState(GL_VERTEX_ARRAY);
+	    glVertexPointer(3, GL_DOUBLE, 0, &ta.GetPoint(0)(0));
+
+	    glEnableClientState(GL_NORMAL_ARRAY);
+	    glNormalPointer(GL_DOUBLE, 0, &ta.GetNormal(0)(0));
+	    
+	    for (int j = 0; j < ta.GetNT(); j++)
+	      glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, & (ta.GetTriangle(j)[0]));
+
+	    glDisableClientState(GL_VERTEX_ARRAY);
+	    glDisableClientState(GL_NORMAL_ARRAY);
+
+	    /*
 	    for (int j = 0; j < ta.GetNT(); j++)
 	      {
+		glBegin (GL_TRIANGLES);
 		for (int k = 0; k < 3; k++)
 		  {
 		    int pi = ta.GetTriangle(j)[k];
 		    glNormal3dv (ta.GetNormal(pi));
 		    glVertex3dv (ta.GetPoint(pi));
 		  }
-		if (j % 1000 == 9999)  // got crashes on NVIDA
-		  {
-		    glEnd ();
-		    glBegin (GL_TRIANGLES);
-		  }
+		glEnd ();
 	      }
-	    glEnd ();
+	    */
 	  }
 	glEndList ();
       }
