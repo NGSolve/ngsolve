@@ -1304,7 +1304,41 @@ namespace ngsolve
 
 
 
+  class NumProcIntegrate : public NumProc
+  {
+    CoefficientFunction * coef;
+    int order;
+  public:
+    NumProcIntegrate (PDE & apde, const Flags & flags)
+      : NumProc (apde)
+    {
+      order = int (flags.GetNumFlag ("order", 2));
+      coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", "") );
+    }
 
+    virtual void Do (LocalHeap & lh)
+    {
+      double sum = 0;
+      for (int i = 0; i < ma.GetNE(); i++)
+	{
+	  HeapReset hr(lh);
+	  ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
+	  IntegrationRule ir (eltrans.GetElementType(), order);
+	  const BaseMappedIntegrationRule & mir = eltrans(ir, lh);
+
+	  FlatMatrix<> result(mir.Size(), 1, lh);
+	  coef -> Evaluate (mir, result);
+	  double hsum = 0;
+	  for (int j = 0; j < mir.Size(); j++)
+	    {
+	      // cout << "w = " << mir[j].GetWeight() << ", res = " << result(j) << endl;
+	      hsum += mir[j].GetWeight() * result(j);
+	    }
+	  sum += hsum;
+	}
+      cout << "Integral = " << sum << endl;
+    }
+  };
 
 
 
@@ -2867,6 +2901,7 @@ namespace ngsolve
   static RegisterNumProc<NumProcSetValues> npinitsetvlues("setvalues");
   static RegisterNumProc<NumProcCalcFlux> npinitcalcflux("calcflux");
   static RegisterNumProc<NumProcVisualization> npinitvisual("visualization");
+  static RegisterNumProc<NumProcIntegrate> npinitintegrate("integrate");
 
 
 
