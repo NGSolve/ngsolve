@@ -283,6 +283,44 @@ namespace ngfem
   };
 
 
+  class BlockDifferentialOperator : public DifferentialOperator
+  {
+    const DifferentialOperator & diffop;
+    int dim;
+    int comp;
+  public:
+    BlockDifferentialOperator (const DifferentialOperator & adiffop, 
+			       int adim, int acomp = -1)
+      : diffop(adiffop), dim(adim), comp(acomp) { ; }
+
+    /// dimension of range
+    virtual int Dim() const { return dim*diffop.Dim(); }
+    virtual bool Boundary() const { return diffop.Boundary(); }
+
+
+
+    virtual void
+    CalcMatrix (const FiniteElement & fel,
+		const BaseMappedIntegrationPoint & mip,
+		FlatMatrix<double> mat, 
+		LocalHeap & lh) const 
+    {
+      FlatMatrix<double> mat1(diffop.Dim(), fel.GetNDof(), lh);
+      diffop.CalcMatrix (fel, mip, mat1, lh);
+      mat = 0;
+      
+      if (comp == -1)
+	for (int i = 0; i < mat1.Height(); i++)
+	  for (int j = 0; j < mat1.Width(); j++)
+	    for (int k = 0; k < dim; k++)
+	      mat(dim*i+k, dim*j+k) = mat1(i,j);
+      else
+	for (int i = 0; i < mat1.Height(); i++)
+	  for (int j = 0; j < mat1.Width(); j++)
+	    mat(dim*i+comp, dim*j+comp) = mat1(i,j);
+    }
+
+  };
 
 
 
