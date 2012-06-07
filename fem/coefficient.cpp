@@ -124,11 +124,112 @@ namespace ngfem
 
   template <int DIM>
   DomainVariableCoefficientFunction<DIM> ::
+  DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun,
+				     const Array<CoefficientFunction*> & adepends_on)
+    : fun(afun.Size()), depends_on(adepends_on)
+  {
+    for (int i = 0; i < fun.Size(); i++)
+      if (afun[i])
+        fun[i] = new EvalFunction (*afun[i]);
+      else
+        fun[i] = 0;
+  }
+
+
+  template <int DIM>
+  DomainVariableCoefficientFunction<DIM> ::
   ~DomainVariableCoefficientFunction ()
   {
     for (int i = 0; i < fun.Size(); i++)
       delete fun[i];
   }
+
+  template <int DIM>
+  double DomainVariableCoefficientFunction<DIM> ::
+  Evaluate (const BaseMappedIntegrationPoint & ip) const
+  {
+    int numarg = max(3, depends_on.Size());
+    VectorMem<10> args(numarg);
+    args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
+    
+    for (int i = 3; i < depends_on.Size(); i++)
+      args(i) = depends_on[i] -> Evaluate (ip);
+
+    int elind = ip.GetTransformation().GetElementIndex();
+    if (fun.Size() == 1) elind = 0;
+    double val = fun[elind]->Eval (&args(0));
+    return val;
+  }
+
+
+  template <int DIM>
+  Complex DomainVariableCoefficientFunction<DIM> ::
+  EvaluateComplex (const BaseMappedIntegrationPoint & ip) const
+  {
+    int elind = ip.GetTransformation().GetElementIndex();
+    Vec<DIM, Complex> hp;
+    for (int i = 0; i < DIM; i++)
+      hp(i) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint()(i);
+    return fun[elind]->Eval (&hp(0));
+  }
+  
+  template <int DIM>
+  void DomainVariableCoefficientFunction<DIM> ::
+  Evaluate(const BaseMappedIntegrationPoint & ip,
+	   FlatVector<> result) const
+  {
+    int numarg = max(3, depends_on.Size());
+    VectorMem<10> args(numarg);
+    args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
+    
+    for (int i = 3; i < depends_on.Size(); i++)
+      args(i) = depends_on[i] -> Evaluate (ip);
+
+    int elind = ip.GetTransformation().GetElementIndex();
+    if (fun.Size() == 1) elind = 0;
+    fun[elind]->Eval (&args(0), &result(0), result.Size());
+  }
+
+
+  template <int DIM>
+  void DomainVariableCoefficientFunction<DIM> ::
+  Evaluate(const BaseMappedIntegrationPoint & ip,
+	   FlatVector<Complex> result) const
+  {
+    int elind = ip.GetTransformation().GetElementIndex();
+    fun[elind]->Eval (&static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint()(0), &result(0), result.Size());
+  }
+
+  
+  template <int DIM>
+  void DomainVariableCoefficientFunction<DIM> ::
+  Evaluate (const BaseMappedIntegrationRule & ir, 
+	    FlatMatrix<double> values) const
+  {
+    int numarg = max(3, depends_on.Size());
+    Matrix<> args(ir.Size(), numarg);
+    
+    for (int i = 0; i < ir.Size(); i++)
+      args.Row(i).Range(0,DIM) = 
+	static_cast<const DimMappedIntegrationPoint<DIM> & > (ir[i]).GetPoint();
+    
+    for (int i = 3; i < depends_on.Size(); i++)
+      {
+	Matrix<> hmat(ir.Size(), depends_on[i]->Dimension());
+	depends_on[i] -> Evaluate (ir, hmat);
+	args.Col(i) = hmat.Col(0); // only first compenent is used by now !!!
+      }
+    
+    int elind = ir.GetTransformation().GetElementIndex();
+    if (fun.Size() == 1) elind = 0;
+    
+    for (int i = 0; i < ir.Size(); i++)
+      fun[elind]->Eval (&args(i,0), &values(i,0), values.Width());
+  }
+
+  
+
+
 
   template class DomainVariableCoefficientFunction<1>;
   template class DomainVariableCoefficientFunction<2>;
