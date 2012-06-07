@@ -1998,13 +1998,13 @@ namespace netgen
 
 		Vec<3> n;
 
-		glBegin (GL_TRIANGLE_STRIP);
 
 		// Philippose - 16/02/2010
 		// Add Mesh size based coloring of 
 		// meshes also for the volume elements
 		if(vispar.colormeshsize)
 		  {
+		    glBegin (GL_TRIANGLE_STRIP);
 		    n = Cross (pts[1]-pts[0], pts[2]-pts[0]);
 		    glNormal3dv (n);
 
@@ -2034,9 +2034,27 @@ namespace netgen
 
 		    SetOpenGlColor (locms(el[1]-1), minh, maxh, 0);
 		    glVertex3dv (pts[1]);
+		    glEnd();
 		  }
 		else // Do not color mesh based on mesh size
 		  {
+		    GLubyte ind[4][3] = { { 0,1,2 }, { 3,1,0 },
+					  { 1,3,2 }, { 2,3,0 } };
+		    
+		    glEnableClientState(GL_VERTEX_ARRAY);
+		    glVertexPointer(3, GL_DOUBLE, 0, &pts[0](0));
+
+		    for (int j = 0; j < 4; j++)
+		      { 
+			glNormal3dv (Cross (pts[ind[j][1]]-pts[ind[j][0]],
+					    pts[ind[j][2]]-pts[ind[j][0]]));
+
+			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_BYTE, &ind[j][0]);
+		      }
+		    glDisableClientState(GL_VERTEX_ARRAY);
+
+		    /*
+		    glBegin (GL_TRIANGLE_STRIP);
 		    glNormal3dv (Cross (pts[1]-pts[0], pts[2]-pts[0]));
 
 		    glVertex3dv (pts[0]);
@@ -2051,9 +2069,10 @@ namespace netgen
 
 		    glNormal3dv (Cross (pts[1]-pts[3], pts[0]-pts[3]));
 		    glVertex3dv (pts[1]);
+		    glEnd();
+		    */
 		  }
 
-		glEnd();
 	      }
 	  }
       }
