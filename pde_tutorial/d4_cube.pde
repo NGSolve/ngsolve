@@ -28,6 +28,7 @@ define fespace v -order=6 -type=h1ho
 define fespace vp -order=5 -dim=3 -type=h1ho
 
 define gridfunction u -fespace=v -nested
+define gridfunction p -fespace=vp
 
 
 define linearform f -fespace=v
@@ -47,7 +48,11 @@ define preconditioner c -type=multigrid -bilinearform=a -smoothingsteps=1 -smoot
 # define preconditioner c -type=amg -bilinearform=a -coefe=lam -notiming -test
 
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=200 -noprint -prec=1e-8
-#numproc calcflux np2 -bilinearform=a -solution=u -flux=p -applyd
+
+
+numproc calcflux np2 -bilinearform=a -solution=u -flux=p -applyd
+
 #numproc drawflux np4 -order
 #numproc drawflux np3 -bilinearform=aid -solution=u -noapplyd -label=sol
         
+numproc visualization npv1 -scalarfunction=u -subdivision=2 -nolineartexture
