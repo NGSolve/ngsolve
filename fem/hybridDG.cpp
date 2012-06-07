@@ -780,11 +780,15 @@ namespace ngfem
 	
 	FlatMatrix<> bmats(ir_vol.GetNIP()*D, nd_l2, lh);
 	FlatMatrix<> dbmats(ir_vol.GetNIP()*D, nd_l2, lh);
+	FlatMatrix<> mat_lam(ir_vol.GetNIP(), 1, lh);
+
+	coef_lam -> Evaluate (mir_vol, mat_lam); 
 
 	for (int l = 0; l < ir_vol.GetNIP(); l++)
 	  {
 	    const MappedIntegrationPoint<D,D> & mip = mir_vol[l];
-	    double lam = coef_lam->Evaluate(mip);
+	    double lam = mat_lam(l,0); 
+	    // double lam = coef_lam->Evaluate(mip);
 	    
 	    fel_l2.CalcMappedDShape (mip, dshape);
 
@@ -837,14 +841,16 @@ namespace ngfem
 	    FlatMatrix<> comp_jumps(ir_facet.GetNIP(), comp_facetdofs.Size(), lh);
 	    FlatMatrix<> comp_facjumps(ir_facet.GetNIP(), comp_facetdofs.Size(), lh);
 	    FlatMatrix<> facdudn(ir_facet.GetNIP(), nd_l2, lh);
-	    
-	    MappedIntegrationRule<D,D> mir(ir_facet_vol, eltrans, lh);
+	    FlatMatrix<> mat_lam(ir_facet.GetNIP(), 1, lh);
 
+	    MappedIntegrationRule<D,D> mir(ir_facet_vol, eltrans, lh);
+	    coef_lam -> Evaluate (mir, mat_lam); 
+	    
 	    for (int l = 0; l < ir_facet.GetNIP(); l++)
 	      {
 		MappedIntegrationPoint<D,D> & mip = mir[l];
 
-		double lam = coef_lam->Evaluate(mip);
+		double lam = mat_lam(l,0); // coef_lam->Evaluate(mip);
               
 		Mat<D> inv_jac = mip.GetJacobianInverse();
 		double det = mip.GetMeasure();
