@@ -224,9 +224,9 @@ namespace ngfem
     const ScalarFiniteElement<DIMS> * fel;
 
     /// matrix with points, dim * np
-    FlatMatrix<> pointmat;
+    Matrix<> pointmat;
     ///
-    bool pointmat_ownmem;
+    // bool pointmat_ownmem;
 
     /// normal vectors (only surfelements)
     FlatMatrix<> nvmat;
@@ -244,6 +244,7 @@ namespace ngfem
       elnr = aelnr; 
       elindex = aelindex;
       SetElementType (fel->ElementType());
+      pointmat.SetSize (DIMR, fel->GetNDof());
     }
 
     ///
@@ -272,16 +273,18 @@ namespace ngfem
 					 BaseMappedIntegrationRule & bmir) const;
 
     ///
-    const FlatMatrix<> & PointMatrix () const { return pointmat; }
+    // const FlatMatrix<> & PointMatrix () const { return pointmat; }
     ///
-    FlatMatrix<> & PointMatrix () { return pointmat; }
+    FlatMatrix<> PointMatrix () const { return pointmat; }
     ///
+    /*
     void AllocPointMatrix (int spacedim, int vertices)
     {
       if (pointmat_ownmem) delete [] &pointmat(0,0);
       pointmat.AssignMemory (spacedim, vertices, new double[spacedim*vertices]);
       pointmat_ownmem = 1;
     }
+    */
     ///
     const FlatMatrix<> & NVMatrix () const { return nvmat; }
 
