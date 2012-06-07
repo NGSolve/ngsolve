@@ -1956,8 +1956,8 @@ namespace netgen
     cout << "call Togl - load font (crashes on my OpenSuse Linux64)" << endl;
     // togl_font = Togl_LoadBitmapFont( togl, "Helvetica"); 
     // togl_font = Togl_LoadBitmapFont( togl, "Times"); 
-    togl_font = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
-    // togl_font = Togl_LoadBitmapFont( togl, NULL );
+    // togl_font = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
+    togl_font = Togl_LoadBitmapFont( togl, NULL );
     cout << "success" << endl;
 
     glMatrixMode(GL_PROJECTION);
