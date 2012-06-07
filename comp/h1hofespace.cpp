@@ -107,6 +107,12 @@ namespace ngcomp
     else
       boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<3> >;
 
+    if (dimension > 1)
+      {
+	evaluator = new BlockDifferentialOperator (*evaluator, dimension);
+	boundary_evaluator = 
+	  new BlockDifferentialOperator (*boundary_evaluator, dimension);
+      }
 
     static ConstantCoefficientFunction one(1);
     integrator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
