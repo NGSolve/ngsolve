@@ -3270,37 +3270,73 @@ namespace netgen
 
     if (x)
       {
-	for (int j = 0; j < npts; j++)
+	if (info.order == 1 && type == TRIG)
 	  {
-            Point<2> vxi(xi[j*sxi], xi[j*sxi+1]);
-	    CalcElementShapes (info, vxi, shapes);
+	    for (int j = 0; j < npts; j++)
+	      {
+		Point<2> vxi(xi[j*sxi], xi[j*sxi+1]);
 
-	    Point<DIM_SPACE> val = 0.0;
-	    for (int i = 0; i < coefs.Size(); i++)
-	      val += shapes(i) * coefs[i];
-            
-            for (int k = 0; k < DIM_SPACE; k++)
-              x[j*sx+k] = val(k);
+		Point<DIM_SPACE> val (coefs[2]);
+		val += vxi(0) * (coefs[0]-coefs[2]);
+		val += vxi(1) * (coefs[1]-coefs[2]);
+
+		for (int k = 0; k < DIM_SPACE; k++)
+		  x[j*sx+k] = val(k);
+	      }
 	  }
+	else
+	  for (int j = 0; j < npts; j++)
+	    {
+	      Point<2> vxi(xi[j*sxi], xi[j*sxi+1]);
+	      CalcElementShapes (info, vxi, shapes);
+	      
+	      Point<DIM_SPACE> val = 0.0;
+	      for (int i = 0; i < coefs.Size(); i++)
+		val += shapes(i) * coefs[i];
+	      
+	      for (int k = 0; k < DIM_SPACE; k++)
+		x[j*sx+k] = val(k);
+	    }
       }
 
     if (dxdxi)
       {
-	for (int j = 0; j < npts; j++)
+	if (info.order == 1 && type == TRIG)
 	  {
-            Point<2> vxi(xi[j*sxi], xi[j*sxi+1]);
-	    CalcElementDShapes (info, vxi, dshapes);
-
-	    Mat<DIM_SPACE,2> ds;
-            ds = 0.0;
+	    Point<2> xij(xi[0], xi[1]);
+	    CalcElementDShapes (info, xij, dshapes);
+	    
+	    Mat<3,2> dxdxij;
+	    dxdxij = 0.0;
 	    for (int i = 0; i < coefs.Size(); i++)
 	      for (int j = 0; j < DIM_SPACE; j++)
 		for (int k = 0; k < 2; k++)
-                  ds(j,k) += dshapes(i,k) * coefs[i](j);
-            // (*dxdxi)[ip] = ds;
-
-            for (int k = 0; k < 2*DIM_SPACE; k++)
-              dxdxi[j*sdxdxi+k] = ds(k);
+		  dxdxij(j,k) += dshapes(i,k) * coefs[i](j);
+	    
+		
+	    for (int ip = 0; ip < npts; ip++)
+	      for (int j = 0; j < DIM_SPACE; j++)
+		for (int k = 0; k < 2; k++)
+		  dxdxi[ip*sdxdxi+2*j+k] = dxdxij(j,k);
+	  }
+	else
+	  {
+	    for (int j = 0; j < npts; j++)
+	      {
+		Point<2> vxi(xi[j*sxi], xi[j*sxi+1]);
+		CalcElementDShapes (info, vxi, dshapes);
+		
+		Mat<DIM_SPACE,2> ds;
+		ds = 0.0;
+		for (int i = 0; i < coefs.Size(); i++)
+		  for (int j = 0; j < DIM_SPACE; j++)
+		    for (int k = 0; k < 2; k++)
+		      ds(j,k) += dshapes(i,k) * coefs[i](j);
+		// (*dxdxi)[ip] = ds;
+		
+		for (int k = 0; k < 2*DIM_SPACE; k++)
+		  dxdxi[j*sdxdxi+k] = ds(k);
+	      }
 	  }
       }
   }
