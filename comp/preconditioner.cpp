@@ -1007,7 +1007,7 @@ namespace ngcomp
     Array<int> ednums(12), edorient(12);
     Array<int> fanums(12), faorient(12);
     LocalHeap lh (10000, "CommutingAMG");
-    ElementTransformation eltrans;
+    // ElementTransformation eltrans;
     IntegrationPoint ip(0, 0, 0, 0);
 
 
@@ -1020,7 +1020,8 @@ namespace ngcomp
 	lh.CleanUp();
 	ma.GetElEdges (i, ednums);
 
-	ma.GetElementTransformation (i, eltrans, lh);
+	// ma.GetElementTransformation (i, eltrans, lh);
+	ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
 	MappedIntegrationPoint<3,3> sip(ip, eltrans);
 
 	double vol = ma.ElementVolume (i);
@@ -1047,7 +1048,9 @@ namespace ngcomp
 	  lh.CleanUp();
 	  ma.GetSElEdges (i, ednums);
 
-	  ma.GetSurfaceElementTransformation (i, eltrans, lh);
+	  // ma.GetSurfaceElementTransformation (i, eltrans, lh);
+	  ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
+
 	  MappedIntegrationPoint<2,3> sip(ip, eltrans);
 
 	  double vol = ma.SurfaceElementVolume (i);
