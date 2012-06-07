@@ -90,8 +90,7 @@ int main ()
   eltrans.SetElement (&trig_mapping, 0, 0);
 
   // vertex coordinates  
-  double pts[3][2] = { { 0, 0 }, { 1, 0 }, { 0, 1 } };
-  eltrans.AllocPointMatrix (2,3);
+  double pts[3][2] = { { 1, 0 }, { 0, 1 }, { 0, 0 } };
   eltrans.PointMatrix() = Trans (FlatMatrix<double> (3, 2, &pts[0][0]));
 
   cout << "PointMatrix = " << endl << eltrans.PointMatrix() << endl;
