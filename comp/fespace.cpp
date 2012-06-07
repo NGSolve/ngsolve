@@ -199,10 +199,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     quad = 0;
     segm = 0;
 
-    evaluator = 0;
-    boundary_evaluator = 0;
-    integrator = 0;
-    boundary_integrator = 0;
+    evaluator = NULL;
+    boundary_evaluator = NULL;
+    integrator = NULL;
+    boundary_integrator = NULL;
 
     element_coloring = NULL;
     paralleldofs = NULL;
