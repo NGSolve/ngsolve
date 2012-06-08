@@ -183,7 +183,7 @@ namespace ngfem
     args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
     
     for (int i = 3; i < depends_on.Size(); i++)
-      args(i) = depends_on[i] -> Evaluate (ip);
+      depends_on[i] -> Evaluate (ip, args.Range(i,i+1));
 
     int elind = ip.GetTransformation().GetElementIndex();
     if (fun.Size() == 1) elind = 0;
@@ -196,8 +196,20 @@ namespace ngfem
   Evaluate(const BaseMappedIntegrationPoint & ip,
 	   FlatVector<Complex> result) const
   {
+    int numarg = max(3, depends_on.Size());
+    VectorMem<10,Complex> args(numarg);
+    args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
+    
+    for (int i = 3; i < depends_on.Size(); i++)
+      depends_on[i] -> Evaluate (ip, args.Range(i,i+1));
+
+    int elind = ip.GetTransformation().GetElementIndex();
+    if (fun.Size() == 1) elind = 0;
+    fun[elind]->Eval (&args(0), &result(0), result.Size());
+    /*
     int elind = ip.GetTransformation().GetElementIndex();
     fun[elind]->Eval (&static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint()(0), &result(0), result.Size());
+    */
   }
 
   
