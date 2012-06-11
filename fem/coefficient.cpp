@@ -120,6 +120,7 @@ namespace ngfem
         fun[i] = new EvalFunction (*afun[i]);
       else
         fun[i] = 0;
+    numarg = 3;
   }
 
   template <int DIM>
@@ -133,6 +134,10 @@ namespace ngfem
         fun[i] = new EvalFunction (*afun[i]);
       else
         fun[i] = 0;
+
+    numarg = 3;
+    for (int i = 3; i < depends_on.Size(); i++)
+      numarg += depends_on[i]->Dimension();
   }
 
 
@@ -188,10 +193,6 @@ namespace ngfem
   Evaluate(const BaseMappedIntegrationPoint & ip,
 	   FlatVector<> result) const
   {
-    int numarg = 3;
-    for (int i = 3; i < depends_on.Size(); i++)
-      numarg += depends_on[i]->Dimension();
-
     VectorMem<10> args(numarg);
     args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
     
@@ -213,12 +214,15 @@ namespace ngfem
   Evaluate(const BaseMappedIntegrationPoint & ip,
 	   FlatVector<Complex> result) const
   {
-    int numarg = max(3, depends_on.Size());
     VectorMem<10,Complex> args(numarg);
     args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
     
-    for (int i = 3; i < depends_on.Size(); i++)
-      depends_on[i] -> Evaluate (ip, args.Range(i,i+1));
+    for (int i = 3, an = 3; i < depends_on.Size(); i++)
+      {
+	int dim = depends_on[i]->Dimension();
+	depends_on[i] -> Evaluate (ip, args.Range(an,an+dim));
+	an += dim;
+      }
 
     int elind = ip.GetTransformation().GetElementIndex();
     if (fun.Size() == 1) elind = 0;
@@ -231,10 +235,6 @@ namespace ngfem
   Evaluate (const BaseMappedIntegrationRule & ir, 
 	    FlatMatrix<double> values) const
   {
-    int numarg = 3;
-    for (int i = 3; i < depends_on.Size(); i++)
-      numarg += depends_on[i]->Dimension();
-
     Matrix<> args(ir.Size(), numarg);
     for (int i = 0; i < ir.Size(); i++)
       args.Row(i).Range(0,DIM) = 
