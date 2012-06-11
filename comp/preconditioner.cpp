@@ -431,7 +431,7 @@ namespace ngcomp
     try
       {
 	bfa->GetMatrix().SetInverseType (inversetype);
-	const BitArray * freedofs = bfa->GetFESpace().GetFreeDofs();
+	const BitArray * freedofs = bfa->GetFESpace().GetFreeDofs( bfa->UsesEliminateInternal() );
 	inverse = bfa->GetMatrix().InverseMatrix(freedofs);
       }
     catch (exception & e)
