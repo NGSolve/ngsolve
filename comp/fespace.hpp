@@ -79,6 +79,7 @@ namespace ngcomp
     /// dofs on Dirichlet boundary
     BitArray dirichlet_dofs;
     BitArray free_dofs;
+    BitArray external_free_dofs;
 
 
     Array<bool> dirichlet_vertex;
@@ -258,7 +259,7 @@ namespace ngcomp
     bool IsLowOrderSpace () const { return is_low_order_space; }
 
     /// non Dirichlet dofs
-    virtual const BitArray * GetFreeDofs () const;
+    virtual const BitArray * GetFreeDofs (bool external = false) const;
     ///
     bool IsDirichletDof (int i) const
     { return dirichlet_dofs.Size() && dirichlet_dofs[i]; }

@@ -256,7 +256,6 @@ namespace ngcomp
       }
 
     MatrixGraph * graph = new MatrixGraph (ndof, *creator.GetTable(), *creator.GetTable(), symmetric);
-    
     graph -> FindSameNZE();
     return graph;
   }
@@ -1495,7 +1494,7 @@ namespace ngcomp
                     AddElementMatrix (dnums, dnums, elmat, 0, i, clh);
                   }
               }
-            if (unuseddiag != 0)
+	    if (unuseddiag != 0)
               {
                 for (int i = 0; i < elmat.Height(); i++)
                   elmat(i, i) = unuseddiag;

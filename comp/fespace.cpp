@@ -407,7 +407,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	free_dofs.SetSize (GetNDof());
 	free_dofs = dirichlet_dofs;
 	free_dofs.Invert();
-
+	
+	external_free_dofs.SetSize (GetNDof());
+	external_free_dofs = free_dofs;
+	for (int i = 0; i < ctofdof.Size(); i++)
+	  if (ctofdof[i] & LOCAL_DOF)
+	    external_free_dofs.Clear(i);
+	
 	*testout << "freedofs = " << endl << free_dofs << endl;
       }
     
@@ -874,12 +880,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
-  const BitArray * FESpace :: GetFreeDofs () const
+  const BitArray * FESpace :: GetFreeDofs (bool external) const
   {
     if (!free_dofs.Size())
       return NULL;
     else
-      return &free_dofs;
+      {
+	if (external)
+	  return &external_free_dofs;
+	else
+	  return &free_dofs;
+      }
   }
 
 
