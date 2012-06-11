@@ -133,6 +133,9 @@ namespace ngsolve
     print = flags.GetDefineFlag ("print");
 
     useseedvariant = flags.GetDefineFlag ("seed");
+
+    if (solver != DIRECT)
+      pde.AddVariable (string("bvp.")+flags.GetStringFlag ("name",NULL)+".its", 0.0);
   }
 
   NumProcBVP :: ~NumProcBVP()
@@ -366,11 +369,12 @@ namespace ngsolve
       (*testout) << "Solution = " << endl << vecu << endl;
 
     endtime = WallTime(); // clock();
-    if (id == 0)
+    
+    cout << IM(1) << "Solution time = " << endtime - starttime << " sec wall time" << endl;
+    if (solver != DIRECT)
       {
-	cout << "Solution time = " << endtime - starttime << " sec wall time" << endl;
-	if (solver != DIRECT)
-	  cout << "Iterations: " << invmat->GetSteps() << endl;
+	cout << IM(1) << "Iterations: " << invmat->GetSteps() << endl;
+	pde.AddVariable (string("bvp.")+GetName()+".its", invmat->GetSteps());
       }
 
     *testout << "Solution time = " << endtime - starttime << endl;

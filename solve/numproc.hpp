@@ -28,6 +28,8 @@ public:
   ///
   NumProc (PDE & apde, const int acallposition = 0);
   ///
+  NumProc (PDE & apde, const Flags & flags, const int acallposition = 0);
+  ///
   virtual ~NumProc();
   ///
   virtual void Do(LocalHeap & lh) = 0;

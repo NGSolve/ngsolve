@@ -11,11 +11,9 @@ define coefficient coef_mass
 define coefficient absorb
 0, 0, 0, (-k*I), 
 
-define coefficient coef_source
-1, -1, 0, 0,
 
 define coefficient coef_dirichlet
-1e5, (-1e5), 0, 0,
+1, -1, 0, 0,
 
 
 define fespace v -type=h1ho -order=3 -complex -dirichlet=[1,2]
@@ -27,12 +25,12 @@ mass coef_mass
 robin absorb
 
 define linearform f -fespace=v
-neumann coef_source
 
 
 define preconditioner c -type=direct -bilinearform=a  # -inverse=pardiso
 
 numproc setvalues npsv -coefficient=coef_dirichlet -gridfunction=u -boundary
+
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -cg -maxsteps=5000
 
 

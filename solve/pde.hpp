@@ -75,7 +75,7 @@ namespace ngsolve
     ///
     SymbolTable<string*> string_constants;
     ///
-    SymbolTable<double> variables;
+    SymbolTable<double*> variables;
     ///
     Array<EvalVariable*> evaluators;
     ///
@@ -204,7 +204,7 @@ namespace ngsolve
     ///
     void AddStringConstant (const string & name, const string & val);
     ///
-    void AddVariable (const string & name, double val);
+    void AddVariable (const string & name, double val, int im = 5);
     ///
     void AddVariable (const string & name, EvalVariable * eval);
     ///
@@ -248,7 +248,7 @@ namespace ngsolve
     SymbolTable<string*> & GetStringConstantTable ()
     { return string_constants; }
     ///
-    SymbolTable<double> & GetVariableTable ()
+    SymbolTable<double*> & GetVariableTable ()
     { return variables; }
     ///
     SymbolTable<CoefficientFunction*> & GetCoefficientTable ()

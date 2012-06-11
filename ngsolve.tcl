@@ -85,6 +85,8 @@ if { $sbatchmode == "defined" } {
     menu .ngmenusolvehelp
     .ngmenu.solve add cascade -label "Help" -menu .ngmenusolvehelp
     
+    .ngmenusolvehelp add command -label "Constants..." \
+	-command { tk_messageBox -title "Help" -message  [ NGS_Help  constant ] -type ok }
     .ngmenusolvehelp add command -label "Coefficient..." \
 	-command { tk_messageBox -title "Help" -message  [ NGS_Help  coefficient ] -type ok }
     .ngmenusolvehelp add command -label "Bilinear-form..." \
@@ -333,6 +335,17 @@ if { $sbatchmode == "defined" } {
 	    pack $w.mtre -fill both -expand y
 	    set hlist [$w.mtre subwidget hlist]
 
+	    $hlist add constants -itemtype text -text "Constants"
+	    set constants [NGS_GetData constants]
+	    foreach co $constants {
+		$hlist add constants\\$co -itemtype text -text $co
+	    }
+
+	    $hlist add variables -itemtype text -text "Variables"
+	    set variables [NGS_GetData variableswithval]
+	    foreach va $variables {
+		$hlist add variables\\$va -itemtype text -text $va
+	    }
 
 	    $hlist add coeffs -itemtype text -text "Coefficients"
 	    set coefs [NGS_GetData coefficients]
@@ -383,12 +396,12 @@ if { $sbatchmode == "defined" } {
 	    #		$hlist add varis\\$vari -itemtype text -text $vari
 	    #	    }
 
-	    #	    $hlist add varis2 -itemtype text -text "Variables2"
-	    #	    set varis2 [NGS_GetData variablesval]
-	    #	    foreach vari $varis2 {
-	    #		scan $vari "val%fname%s" vval vname
-	    #		$hlist add varis2\\$vari  -itemtype text -text [format "%s %1.3e" $vname $vval]
-	    #	    }
+	    # $hlist add varis2 -itemtype text -text "Variables2"
+	    # set varis2 [NGS_GetData variablesval]
+	    # foreach vari $varis2 {
+	    # scan $vari "val%fname%s" vval vname
+	    # $hlist add varis2\\$vari  -itemtype text -text [format "%s %1.3e" $vname $vval]
+	    # }
 
 	    
 

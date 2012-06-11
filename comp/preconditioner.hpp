@@ -271,7 +271,7 @@ namespace ngcomp
 
 
 
-
+#ifdef OLD
 
   /**
      V-E-F-C preconditioner
@@ -303,7 +303,7 @@ namespace ngcomp
     { return "Local Preconditioner"; }
   };
 
-
+#endif
 
 
 
