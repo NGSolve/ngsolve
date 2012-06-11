@@ -8,13 +8,12 @@ netgen_SOURCES = demoview.cpp ngappinit.cpp onetcl.cpp parallelfunc.cpp ngpkg.cp
 
 netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
 	$(top_builddir)/libsrc/csg/libcsgvis.la \
-	$(top_builddir)/libsrc/csg/libcsg.la \
 	$(top_builddir)/libsrc/interface/libinterface.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
 	$(top_builddir)/libsrc/linalg/libla.la \
 	$(top_builddir)/libsrc/general/libgen.la \
-	-L$(TK_BIN_DIR)/Togl1.7 $(TOGLLIBDIR) -lTogl $(LIBGLU) $(TK_LIB_SPEC) $(TCL_LIB_SPEC) $(MPI_LIBS) $(FFMPEG_LIBS) $(JPEGLIB_LIBS) $(PKG_LIBS)
+	-L$(TK_BIN_DIR)/Togl1.7 $(TOGLLIBDIR) -lTogl1.7 $(LIBGLU) $(TK_LIB_SPEC) $(TCL_LIB_SPEC) $(MPI_LIBS) $(FFMPEG_LIBS) $(JPEGLIB_LIBS) $(PKG_LIBS)
 #
 #	$(top_builddir)/libsrc/occ/liboccvis.la 
 #	$(top_builddir)/libsrc/occ/libocc.la 
@@ -22,7 +21,6 @@ netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
 #	$(top_builddir)/libsrc/stlgeom/libstl.la 
 #	$(top_builddir)/libsrc/geom2d/libgeom2d.la 
 #	$(top_builddir)/libsrc/geom2d/libgeom2dvis.la 
-#	$(top_builddir)/libsrc/csg/libcsg.la 
 
 
 # add for static linkage of ngsolve:
@@ -35,9 +33,6 @@ ngvisual.tcl sockets.tcl drawing.tcl nghelp.tcl ngshell.tcl	  \
 ngtesting.tcl parameters.tcl variables.tcl csgeom.tcl stlgeom.tcl \
 occgeom.tcl acisgeom.tcl netgen.ocf
 
-netgen_LDFLAGS = -rdynamic
-#  -static
-
-
+netgen_LDFLAGS = -rdynamic  -static
 
 
