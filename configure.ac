@@ -87,7 +87,7 @@ AC_ARG_ENABLE([nglib],
 
 AC_ARG_ENABLE([parallel],
         [AC_HELP_STRING([--enable-parallel],[enable mpi parallelization])],
-        [AC_SUBST([MPI_INCLUDES], "-I/usr/lib64/mpi/gcc/openmpi/include -DPARALLEL -I/usr/include/metis -I/home/lv70202/jschoebe/tcltk/include -DMETIS -I/usr/local/include/vampirtrace")
+        [AC_SUBST([MPI_INCLUDES], "-I/usr/lib64/mpi/gcc/openmpi/include -DPARALLEL -I/usr/local/include/METISLib -I/usr/include/metis -I/home/lv70202/jschoebe/tcltk/include -DMETIS -I/usr/local/include/vampirtrace")
         AC_SUBST([MPI_LIBS], "-L/usr/lib64/mpi/gcc/openmpi/lib64 -L/home/lv70202/jschoebe/tcltk/lib -lmetis -L/opt/sw/vampirtrace/lib")
         ]
         )       
@@ -121,7 +121,7 @@ AC_ARG_ENABLE([jpeglib],
 ffmpegon=false
 AC_ARG_ENABLE([ffmpeg],
         [AS_HELP_STRING([--enable-ffmpeg],[enable video recording with FFmpeg, uses libavcodec])],
-        [AC_SUBST([FFMPEG_INCLUDES], "-DFFMPEG")
+        [AC_SUBST([FFMPEG_INCLUDES], "-DFFMPEG -D__STDC_CONSTANT_MACROS")
         AC_SUBST([FFMPEG_LIBS], "-lavutil -lavformat -lavcodec -lavutil -lswscale -lz -lbz2")
         [if test "$enableval" = yes; then ffmpegon=true; else ffmpegon=false; fi]
         ]       
