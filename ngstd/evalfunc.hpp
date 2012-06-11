@@ -27,8 +27,9 @@ class NGS_DLL_HEADER EvalFunction
     ADD = '+', SUB = '-', MULT = '*', DIV = '/', LP ='(', RP = ')',
     COMMA = ',',
     NEG = 100, 
+    VEC_ADD, VEC_SUB, VEC_SCAL_MULT, SCAL_VEC_MULT, VEC_VEC_MULT, VEC_SCAL_DIV,
     AND, OR, NOT, GREATER, LESS, GREATEREQUAL, LESSEQUAL, EQUAL,
-    CONSTANT, IMAG, VARIABLE, FUNCTION, GLOBVAR, COEFF_FUNC, END, STRING,
+    CONSTANT, IMAG, VARIABLE, FUNCTION, GLOBVAR, /* COEFF_FUNC,*/ END, STRING,
     SIN, COS, TAN, ATAN, ATAN2, EXP, LOG, ABS, SIGN, SQRT, STEP,
     BESSELJ0, BESSELY0, BESSELJ1, BESSELY1
   };
@@ -52,7 +53,7 @@ public:
   /// define constant 
   void DefineGlobalVariable (const char * name, double * var);
   /// define arguments 
-  void DefineArgument (const char * name, int num);
+  void DefineArgument (const char * name, int num, int vecdim = 1, bool iscomplex = false);
 
   /// evaluate function
   double Eval (const double * x = NULL) const;
@@ -61,10 +62,17 @@ public:
 
   /// evaluate function
   complex<double> Eval (const complex<double> * x = NULL) const;
+  /// evaluate multi-value complex function
+  void Eval (const complex<double> * x, complex<double> * y, int ydim) const;
 
+  /*
   /// evaluate multi-value function
   template <typename TIN>
   void Eval (const TIN * x, complex<double> * y, int ydim) const;
+  */
+  template <typename TIN, typename TOUT, typename TCALC>
+  void Eval (const TIN * x, TOUT * y) const;
+
 
   /// is expression complex valued ?
   bool IsComplex () const;
@@ -73,7 +81,7 @@ public:
   bool IsConstant () const;
 
   /// vector dimension of result
-  int Dimension() const;
+  int Dimension() const { return res_type.vecdim; }
 
   /// push constant on stack. 
   void AddConstant (double val)
@@ -120,6 +128,8 @@ protected:
     ///
     UNION_OP operand;
 
+    /// dimension of vector
+    short int vecdim;
 
     step () { ; }
 
@@ -157,19 +167,30 @@ protected:
   /// the evaluation sequence
   Array<step> program;
 
+  class ResultType
+  {
+  public:
+    int vecdim;
+    bool isbool;
+    bool iscomplex;
+    ResultType ()
+      : vecdim(1), isbool(false), iscomplex(false)
+    { ; }
+  };
+
+  ResultType res_type;
   const double eps;
 
-
   /// parsing expression (standard parsing grammer)
-  void ParseExpression ();
+  ResultType ParseExpression ();
   /// parsing expression (standard parsing grammer)
-  void ParseExpression2 ();
+  ResultType ParseExpression2 ();
   /// parsing expression (standard parsing grammer)
-  void ParseSubExpression ();
+  ResultType ParseSubExpression ();
   /// parsing expression (standard parsing grammer)
-  void ParseTerm ();
+  ResultType ParseTerm ();
   /// parsing expression (standard parsing grammer)
-  void ParsePrimary ();
+  ResultType ParsePrimary ();
 
   /// parse from stream
   istream * ist;
@@ -181,7 +202,7 @@ protected:
   ///
   char string_value[1000];
   ///
-  int var_num;
+  int var_num, var_dim;
   ///
   double * globvar;
  
@@ -197,7 +218,18 @@ protected:
   
 public:
   /// the arguments passed to the function
-  SymbolTable<int> arguments;
+  struct argtype
+  {
+    int argnum;
+    int dim;
+    bool iscomplex;
+  public:
+    argtype ()
+      : argnum(-1), dim(1), iscomplex(false) { ; }
+    argtype (int aanum, int adim = 1, bool acomplex = false)
+      : argnum(aanum), dim(adim), iscomplex(acomplex) { ; }
+  };
+  SymbolTable<argtype> arguments;
   int num_arguments;
 
   /// returns last token
@@ -211,6 +243,9 @@ public:
   /// returns variable number of last token
   int GetVariableNumber() const
     { return var_num; }
+  /// returns dimension of variable of last token
+  int GetVariableDimension() const
+    { return var_dim; }
 
   /// returns identifier of last token
   const char * GetStringValue() const
@@ -218,7 +253,17 @@ public:
   
   /// read next token
   void ReadNext();
+
+  bool ToBool (double x)  const { return x > eps; }
+  bool ToBool (complex<double> x) const { return x.real() > eps; }
+  double CheckReal (double x)  const { return x; }
+  double CheckReal (complex<double> x) const { cerr << "illegal complex value" << endl; return 0; }
+
+  double Abs (double x) const { return fabs(x); }
+  double Abs (complex<double> x) const { return abs(x); }
 };
+
+
 }
 
 
