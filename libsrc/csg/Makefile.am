@@ -22,9 +22,7 @@ libcsgvis_la_SOURCES = vscsg.cpp csgpkg.cpp
 
 
 libcsgvis_la_LIBADD = libcsg.la
-libcsg_la_LIBADD = $(top_builddir)/libsrc/meshing/libmesh.la \
-	$(top_builddir)/libsrc/gprim/libgprim.la \
-	$(top_builddir)/libsrc/linalg/libla.la \
-	$(top_builddir)/libsrc/general/libgen.la 
+# libcsg_la_LIBADD = $(top_builddir)/libsrc/meshing/libmesh.la 
+
 
 
