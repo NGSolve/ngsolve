@@ -27,6 +27,7 @@ namespace ngstd
 
   EvalFunction :: EvalFunction () : eps(1e-14)
   {
+    DefineConstant ("pi", M_PI);
     DefineArgument ("x", 0);
     DefineArgument ("y", 1);
     DefineArgument ("z", 2);
@@ -35,6 +36,7 @@ namespace ngstd
 
   EvalFunction :: EvalFunction (istream & aist) : eps(1e-14)
   {
+    DefineConstant ("pi", M_PI);
     DefineArgument ("x", 0);
     DefineArgument ("y", 1);
     DefineArgument ("z", 2);
@@ -45,6 +47,7 @@ namespace ngstd
 
   EvalFunction :: EvalFunction (const string & str) : eps(1e-14)
   {
+    DefineConstant ("pi", M_PI);
     DefineArgument ("x", 0);
     DefineArgument ("y", 1);
     DefineArgument ("z", 2);
@@ -56,6 +59,7 @@ namespace ngstd
   EvalFunction :: EvalFunction (const EvalFunction & eval2) : eps(1e-14)
   {
     program = eval2.program;
+    res_type = eval2.res_type;
     constants = eval2.constants;
     globvariables = eval2.globvariables;
     arguments = eval2.arguments;
@@ -71,21 +75,8 @@ namespace ngstd
   {
     ist = &aist;
     ReadNext();
-    ParseExpression ();
-  }
-
-  double EvalFunction :: Eval (const double * x) const
-  {
-    double y;
-    Eval (x, &y, 1);
-    return y;
-  }
-
-  complex<double> EvalFunction :: Eval (const complex<double> * x) const
-  {
-    complex<double> y;
-    Eval (x, &y, 1);
-    return y;
+    res_type = ParseExpression ();
+    // cout << "resulttype: dim = " << res_type.vecdim << ", complex = " << res_type.iscomplex << endl;
   }
 
 
@@ -99,11 +90,298 @@ namespace ngstd
     globvariables.Set (name, var);
   }
 
-  void EvalFunction :: DefineArgument (const char * name, int num)
+  void EvalFunction :: DefineArgument (const char * name, int num, int vecdim, bool iscomplex)
   {
-    arguments.Set (name, num);
+    arguments.Set (name, argtype(num, vecdim, iscomplex));
   }
 
+
+
+
+
+  double EvalFunction :: Eval (const double * x) const
+  {
+    if (res_type.vecdim != 1)
+      {
+	cout << "Eval (double) called, but result.dim = " << res_type.vecdim << endl;
+	return 0.0;
+      }
+
+    double y;
+    Eval<double,double,double> (x, &y);
+    return y;
+  }
+
+  complex<double> EvalFunction :: Eval (const complex<double> * x) const
+  {
+    if (res_type.vecdim != 1)
+      {
+	cout << "Eval (Complex) called, but result.dim = " << res_type.vecdim << endl;
+	return 0.0;
+      }
+    complex<double> y;
+    Eval<complex<double>,complex<double>,complex<double> > (x, &y);
+    return y;
+  }
+
+  void EvalFunction :: Eval (const double * x, double * y, int ydim) const
+  {
+    if (res_type.vecdim != ydim)
+      {
+	cout << "Eval called with ydim = " << ydim << ", but result.dim = " << res_type.vecdim << endl;
+	return;
+      }
+
+    Eval<double,double,double> (x, y);
+  }
+
+  void EvalFunction :: Eval (const complex<double> * x, complex<double> * y, int ydim) const
+  {
+    if (res_type.vecdim != ydim)
+      {
+	cout << "Eval complex called with ydim = " << ydim << ", but result.dim = " << res_type.vecdim << endl;
+	return;
+      }
+    Eval<complex<double>, complex<double>, complex<double> > (x, y);
+  }
+
+
+  template <typename SCAL> SCAL Imag ();
+
+  template <> double Imag<double> ()
+  {
+    cerr << "IMAG used for real" << endl;
+    return 0;
+  }
+  template <> complex<double> Imag<complex<double> > ()
+  {
+    return complex<double> (0,1); 
+  }
+
+
+  template <typename TIN, typename TOUT, typename TCALC>
+  void EvalFunction :: Eval (const TIN * x, TOUT * y) const
+  {
+    ArrayMem<TCALC, 100> stack(program.Size());
+
+    int stacksize = -1;
+    for (int i = 0; i < program.Size(); i++)
+      {
+	switch (program[i].op)
+	  {
+	  case ADD:
+	    stack[stacksize-1] += stack[stacksize];
+	    stacksize--;
+	    break;
+
+	  case SUB:
+	    stack[stacksize-1] -= stack[stacksize];
+	    stacksize--;
+	    break;
+
+	  case MULT:
+	    stack[stacksize-1] *= stack[stacksize];
+	    stacksize--;
+	    break;
+
+	  case DIV:
+	    stack[stacksize-1] /= stack[stacksize];
+	    stacksize--;
+	    break;
+
+	  case VEC_ADD:
+	    {
+	      int dim = program[i].vecdim;
+	      for (int j = 0; j < dim; j++)
+		stack[stacksize-2*dim+j+1] += stack[stacksize-dim+j+1];
+	      stacksize -= dim;
+	      break;
+	    }
+
+	  case VEC_SUB:
+	    {
+	      int dim = program[i].vecdim;
+	      for (int j = 0; j < dim; j++)
+		stack[stacksize-2*dim+j+1] -= stack[stacksize-dim+j+1];
+	      stacksize -= dim;
+	      break;
+	    }
+
+	  case SCAL_VEC_MULT:
+	    {
+	      int dim = program[i].vecdim;
+	      TCALC scal = stack[stacksize-dim];
+	      for (int j = 0; j < dim; j++)
+		stack[stacksize-dim+j] = scal * stack[stacksize-dim+j+1];
+	      stacksize--;
+	      break;
+	    }
+
+	  case NEG:
+	    stack[stacksize] = -stack[stacksize];
+	    break;
+
+	  case AND:
+	    if( ToBool (stack[stacksize-1]) && ToBool (stack[stacksize]) )
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+	    
+	  case OR:
+	    if( ToBool(stack[stacksize-1]) || ToBool (stack[stacksize]) )
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+	    
+	  case NOT:
+	    if( ToBool (stack[stacksize]) )
+	      stack[stacksize] = 0;
+	    else
+	      stack[stacksize] = 1;
+	    break;
+	    
+	  case GREATER:
+	    if( CheckReal (stack[stacksize-1]) > CheckReal (stack[stacksize]))
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+
+	  case GREATEREQUAL:
+	    if( CheckReal (stack[stacksize-1]) >= CheckReal (stack[stacksize]) )
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+
+	  case EQUAL:
+	    if(Abs(stack[stacksize-1] - stack[stacksize]) < eps)
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+
+	  case LESSEQUAL:
+	    if( CheckReal (stack[stacksize-1]) <= CheckReal (stack[stacksize]) )
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+
+	  case LESS:
+	    if( CheckReal (stack[stacksize-1]) < CheckReal (stack[stacksize]) )
+	      stack[stacksize-1] = 1;
+	    else
+	      stack[stacksize-1] = 0;
+	    stacksize--;
+	    break;
+
+	  case CONSTANT:
+	    stacksize++;
+	    stack[stacksize] = program[i].operand.val;
+	    break;
+
+	  case VARIABLE:
+	    for (int j = 0; j < program[i].vecdim; j++)
+	      {
+		stacksize++;
+		stack[stacksize] = x[program[i].operand.varnum+j];
+	      }
+	    break;
+
+	  case GLOBVAR:
+	    stacksize++;
+	    stack[stacksize] = *program[i].operand.globvar;
+	    break;
+
+	  case IMAG:
+	    // throw Exception ("Real Eval called for Complex EvalFunction\n");
+
+	    stacksize++;
+	    stack[stacksize] = Imag<TCALC>(); // complex<double> (0, 1);
+	    break;
+
+
+	  case FUNCTION:
+	    stack[stacksize] = (*program[i].operand.fun) ( CheckReal (stack[stacksize]) );
+	    break;
+
+	  case SIN:
+	    stack[stacksize] = sin (stack[stacksize]);
+	    break;
+	  case COS:
+	    stack[stacksize] = cos (stack[stacksize]);
+	    break;
+	  case TAN:
+	    stack[stacksize] = tan (stack[stacksize]);
+	    break;
+	  case ATAN:
+	    stack[stacksize] = atan ( CheckReal (stack[stacksize]) );
+	    break;
+	  case ATAN2:
+	    stack[stacksize-1] = atan2( CheckReal (stack[stacksize-1]),
+					CheckReal (stack[stacksize]) );
+	    stacksize--;
+	    break;
+	  case EXP:
+	    stack[stacksize] = exp (stack[stacksize]);
+	    break;
+	  case LOG:
+	    stack[stacksize] = log (stack[stacksize]);
+	    break;
+	  case ABS:
+	    stack[stacksize] = Abs (stack[stacksize]);
+	    break;
+	  case SIGN:
+	    if( CheckReal (stack[stacksize]) > 0)
+	      stack[stacksize] = 1;
+	    else if( CheckReal (stack[stacksize]) < 0)
+	      stack[stacksize] = -1;
+	    else
+	      stack[stacksize] = 0;
+	    break;
+	  case SQRT:
+	    stack[stacksize] = sqrt (stack[stacksize]);
+	    break;
+	  case STEP:
+	    stack[stacksize] = ( CheckReal (stack[stacksize]) >= 0) ? 1 : 0;
+	    break;
+	    
+	  case COMMA:
+	    break;
+
+	  case BESSELJ0:
+	    stack[stacksize] = bessj0 ( CheckReal (stack[stacksize]) );
+	    break;
+	  case BESSELJ1:
+	    stack[stacksize] = bessj1 ( CheckReal (stack[stacksize]) );
+	    break;
+	  case BESSELY0:
+	    stack[stacksize] = bessy0 ( CheckReal (stack[stacksize]) );
+	    break;
+	  case BESSELY1:
+	    stack[stacksize] = bessy1 ( CheckReal (stack[stacksize]) );
+	    break;
+
+	  default:
+	    cerr << "undefined operation for EvalFunction" << endl;
+	  }
+      }
+    
+    for (int i = 0; i < res_type.vecdim; i++)
+      y[i] = stack[i];
+  }
+
+
+  /*
   void EvalFunction :: Eval (const double * x, double * y, int ydim) const
   {
     ArrayMem<double, 100> stack(program.Size());
@@ -133,12 +411,40 @@ namespace ngstd
 	    stacksize--;
 	    break;
 
+	  case VEC_ADD:
+	    {
+	      int dim = program[i].vecdim;
+	      for (int j = 0; j < dim; j++)
+		stack[stacksize-2*dim+j+1] += stack[stacksize-dim+j+1];
+	      stacksize -= dim;
+	      break;
+	    }
+
+	  case VEC_SUB:
+	    {
+	      int dim = program[i].vecdim;
+	      for (int j = 0; j < dim; j++)
+		stack[stacksize-2*dim+j+1] -= stack[stacksize-dim+j+1];
+	      stacksize -= dim;
+	      break;
+	    }
+
+	  case SCAL_VEC_MULT:
+	    {
+	      int dim = program[i].vecdim;
+	      double scal = stack[stacksize-dim];
+	      for (int j = 0; j < dim; j++)
+		stack[stacksize-dim+j] = scal * stack[stacksize-dim+j+1];
+	      stacksize--;
+	      break;
+	    }
+
 	  case NEG:
 	    stack[stacksize] = -stack[stacksize];
 	    break;
 
 	  case AND:
-	    if(stack[stacksize-1] > eps && stack[stacksize] > eps)
+	    if( ToBool (stack[stacksize-1]) && ToBool (stack[stacksize]))
 	      stack[stacksize-1] = 1;
 	    else
 	      stack[stacksize-1] = 0;
@@ -293,8 +599,10 @@ namespace ngstd
     for (int i = 0; i < ydim; i++)
       y[i] = stack[i];
   }
+  */
 
 
+#ifdef NONE
   template <typename TIN>
   void EvalFunction :: Eval (const TIN * x, complex<double> * y, int ydim) const
   {
@@ -498,9 +806,10 @@ namespace ngstd
     for (int i = 0; i < ydim; i++)
       y[i] = stack[i];
   }
+#endif
 
-  template void EvalFunction :: Eval<double> (const double * x, complex<double> * y, int ydim) const;
-  template void EvalFunction :: Eval<complex<double> > (const complex<double> * x, complex<double> * y, int ydim) const;
+  //   template void EvalFunction :: Eval<double> (const double * x, complex<double> * y, int ydim) const;
+  // template void EvalFunction :: Eval<complex<double> > (const complex<double> * x, complex<double> * y, int ydim) const;
   
   
 
@@ -510,11 +819,13 @@ namespace ngstd
 
   bool EvalFunction :: IsConstant () const
   {
+    if (res_type.iscomplex) return false;
+    if (res_type.vecdim > 1) return false;
+    
     for (int i = 0; i < program.Size(); i++)
       {
 	EVAL_TOKEN op = program[i].op;
-
-	if (op == VARIABLE || op == GLOBVAR || op == COEFF_FUNC  || op == COMMA || op == IMAG)
+	if (op == VARIABLE || op == GLOBVAR)
 	  return false;
       }
     return true;
@@ -532,6 +843,7 @@ namespace ngstd
     return false;
   }
 
+  /*
   int EvalFunction :: Dimension() const
   {
     int dim = 1;
@@ -540,7 +852,7 @@ namespace ngstd
 
     return dim;
   }
-
+  */
 
   void EvalFunction :: Print (ostream & ost) const
   {
@@ -566,6 +878,7 @@ namespace ngstd
 	  default:
 	    ost << (char) op;
 	  }
+	ost << " vdim = " << program[i].vecdim;
 	ost << endl;
       }
   }
@@ -574,13 +887,22 @@ namespace ngstd
 
 
 
-  void EvalFunction :: ParseExpression ()
+  EvalFunction::ResultType EvalFunction :: ParseExpression ()
   {
-    ParseExpression2 ();
+    ResultType result = ParseExpression2 ();
 
+    if (GetToken() == COMMA)
+      {
+	ReadNext();   // ','
+	result = ParseExpression ();
+	result.vecdim++;
+	AddOperation (COMMA);
+      }
+    return result;
+
+    /*
     while (1)
       {
-	//      cout << "parseexpr, goken = " << GetToken() << endl;
 	switch (GetToken())
 	  {
 	  case COMMA:
@@ -591,21 +913,21 @@ namespace ngstd
 	      break;
 	    }
 	  default:
-	    return;
+	    return ResultType();
 	  }
       }
+    */
   }
 
 
 
 
-  void EvalFunction :: ParseExpression2 ()
+  EvalFunction::ResultType EvalFunction :: ParseExpression2 ()
   {
-    ParseSubExpression ();
+    ResultType result = ParseSubExpression ();
 
     while (1)
       {
-	//      cout << "parseexpr, goken = " << GetToken() << endl;
 	switch (GetToken())
 	  {
 	  case GREATER:
@@ -644,16 +966,17 @@ namespace ngstd
 	      break;
 	    }
 	  default:
-	    return;
+	    return result;
 	  }
       }
+    return result;
   }
   
 
 
-  void EvalFunction :: ParseSubExpression ()
+  EvalFunction::ResultType EvalFunction :: ParseSubExpression ()
   {
-    ParseTerm ();
+    ResultType result = ParseTerm ();
 
     while (1)
       {
@@ -662,16 +985,32 @@ namespace ngstd
 	  {
 	  case ADD:
 	    {
-	      ReadNext();
-	      ParseTerm ();
-	      AddOperation (ADD);
+	      ReadNext();   // '+'
+	      ResultType result2 = ParseTerm ();
+	      if (result.vecdim != result2.vecdim) cerr << "vec error" << endl;
+	      result.iscomplex |= result2.iscomplex;
+	      if (result.vecdim == 1)
+		AddOperation (ADD);
+	      else
+		{
+		  AddOperation (VEC_ADD);
+		  program.Last().vecdim = result.vecdim;
+		}
 	      break;
 	    }
 	  case SUB:
 	    {
-	      ReadNext();
-	      ParseTerm ();
-	      AddOperation (SUB);
+	      ReadNext();   // '+'
+	      ResultType result2 = ParseTerm ();
+	      if (result.vecdim != result2.vecdim) cerr << "vec error" << endl;
+	      result.iscomplex |= result2.iscomplex;
+	      if (result.vecdim == 1)
+		AddOperation (SUB);
+	      else
+		{
+		  AddOperation (VEC_SUB);
+		  program.Last().vecdim = result.vecdim;
+		}
 	      break;
 	    }
 	  case OR:
@@ -682,15 +1021,15 @@ namespace ngstd
 	      break;
 	    }
 	  default:
-	    return;
+	    return result;
 	  }
       }
   }
 
 
-  void EvalFunction :: ParseTerm ()
+  EvalFunction::ResultType EvalFunction :: ParseTerm ()
   {
-    ParsePrimary();
+    ResultType result = ParsePrimary();
   
     while (1)
       {
@@ -699,9 +1038,19 @@ namespace ngstd
 	  {
 	  case MULT:
 	    {
-	      ReadNext();
-	      ParsePrimary();
-	      AddOperation (MULT);
+	      ReadNext();    // '*'
+	      ResultType result2 = ParsePrimary();
+	      result.iscomplex |= result2.iscomplex;
+	      if (result.vecdim == 1 && result2.vecdim == 1)
+		{
+		  AddOperation (MULT);
+		}
+	      else if (result.vecdim == 1 && result2.vecdim > 1)
+		{
+		  AddOperation (SCAL_VEC_MULT);
+		  program.Last().vecdim = result2.vecdim;
+		  result.vecdim = result2.vecdim;
+		}
 	      break;
 	    }
 	  case DIV:
@@ -719,15 +1068,17 @@ namespace ngstd
 	      break;
 	    }
 	  default:
-	    return;
+	    return result;
 	  }
       }
   }
 
 
-
-  void EvalFunction :: ParsePrimary()
+  
+  EvalFunction::ResultType EvalFunction :: ParsePrimary()
   {
+    ResultType result;
+
     switch (GetToken())
       {
       case CONSTANT:
@@ -739,7 +1090,7 @@ namespace ngstd
       case SUB:
 	{
 	  ReadNext();
-	  ParsePrimary();
+	  result = ParsePrimary();
 	  AddConstant (-1);
 	  AddOperation (MULT);
 	  break;
@@ -747,14 +1098,16 @@ namespace ngstd
       case LP:
 	{
 	  ReadNext();
-	  ParseExpression();
-	  ReadNext();
+	  result = ParseExpression();
+	  ReadNext();  // ')'
 	  break;
 	}
       case VARIABLE:
 	{
 	  ReadNext();
 	  AddVariable (GetVariableNumber());
+	  program.Last().vecdim = GetVariableDimension();
+	  result.vecdim = GetVariableDimension();
 	  break;
 	}
       case GLOBVAR:
@@ -767,13 +1120,14 @@ namespace ngstd
 	{
 	  ReadNext();
 	  AddOperation (IMAG);
+	  result.iscomplex = true;
 	  break;
 	}
       case FUNCTION:
 	{
 	  ReadNext();
 	  double (*funp)(double) = functions[string_value];
-	  ParsePrimary();
+	  result = ParsePrimary();
 	  AddFunction (funp);
 	  break;
 	}
@@ -794,7 +1148,7 @@ namespace ngstd
 	{
 	  EVAL_TOKEN op = GetToken();
 	  ReadNext();
-	  ParsePrimary();
+	  result = ParsePrimary();
 	  AddOperation (op);
 	  break;
 	}
@@ -819,8 +1173,9 @@ namespace ngstd
 	  */
 	}
       default:
-        return;
+	cout << "why did I get here  ???" << endl;
       }
+    return result;
   }
 
 
@@ -869,7 +1224,7 @@ namespace ngstd
 	  else
 	    {
 	      int cnt = 0;
-	      while ((*ist) && (isalnum (ch) || ch == '_' || ch == '>' || ch == '<' || ch == '='))
+	      while ((*ist) && (isalnum (ch) || ch == '_' || ch == '>' || ch == '<' || ch == '=') || ch == '.')
 		{
 		  string_value[cnt] = ch;
 		  cnt++;
@@ -1060,11 +1415,12 @@ namespace ngstd
 
 	      if (arguments.Used (string_value))
 		{
-		  var_num = arguments[string_value];
+		  var_num = arguments[string_value].argnum;
+		  var_dim = arguments[string_value].dim;
 		  if (var_num == -1)
 		    {
-		      var_num = arguments[string_value] = num_arguments;
-		      num_arguments++;
+		      var_num = arguments[string_value].argnum = num_arguments;
+		      num_arguments += arguments[string_value].dim;
 		      cout << "argument " << string_value << " becomes arg " << var_num << endl;
 		    }
 		  token = VARIABLE;
