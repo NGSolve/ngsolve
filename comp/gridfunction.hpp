@@ -211,11 +211,14 @@ namespace ngcomp
     
     virtual ~GridFunctionCoefficientFunction ();
     /// scalar valued or vector valued
+    virtual bool IsComplex() const;
     virtual int Dimension() const;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
 
     virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
 			  FlatVector<> result) const;
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+			  FlatVector<Complex> result) const;
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
 			   FlatMatrix<double> values) const;
