@@ -11,5 +11,7 @@ libstl_la_SOURCES = meshstlsurface.cpp stlgeom.cpp stlgeomchart.cpp \
 
 
 libstlvis_la_SOURCES = stlpkg.cpp vsstl.cpp
-libstlvis_la_LIBADD = libstl.la $(top_builddir)/libsrc/linalg/libla.la 
+libstlvis_la_LIBADD = libstl.la
+libstl_la_LIBADD =  $(top_builddir)/libsrc/meshing/libmesh.la
+# libstlvis_la_LIBADD = libstl.la $(top_builddir)/libsrc/linalg/libla.la 
 
