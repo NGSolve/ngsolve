@@ -194,6 +194,7 @@ namespace ngfem
   {
     Array<EvalFunction*> fun;
     Array<CoefficientFunction*> depends_on;
+    int numarg;
   public:
     ///
     DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun);
