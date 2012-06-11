@@ -159,7 +159,7 @@ namespace ngfem
   {
   public:
     /// destructor
-    virtual ~DifferentialOperator ();
+    NGS_DLL_HEADER virtual ~DifferentialOperator ();
     /// dimension of range
     virtual int Dim() const = 0;
     /// does it live on the boundary ?
