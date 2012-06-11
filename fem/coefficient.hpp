@@ -218,7 +218,7 @@ namespace ngfem
     virtual bool IsComplex() const 
     {
       for (int i = 0; i < fun.Size(); i++)
-	if (fun[i]->IsComplex()) return true;
+	if (fun[i]->IsResultComplex()) return true;
       return false;
     }
     virtual int Dimension() const { return fun[0]->Dimension(); }

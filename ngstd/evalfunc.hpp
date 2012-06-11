@@ -64,18 +64,23 @@ public:
   complex<double> Eval (const complex<double> * x = NULL) const;
   /// evaluate multi-value complex function
   void Eval (const complex<double> * x, complex<double> * y, int ydim) const;
+  /// evaluate multi-value complex function with real result
+  void Eval (const complex<double> * x, double * y, int ydim) const;
 
   /*
   /// evaluate multi-value function
   template <typename TIN>
   void Eval (const TIN * x, complex<double> * y, int ydim) const;
   */
-  template <typename TIN, typename TOUT, typename TCALC>
-  void Eval (const TIN * x, TOUT * y) const;
+  template <typename TIN, typename TCALC>
+  void Eval (const TIN * x, TCALC * stack) const;
 
 
   /// is expression complex valued ?
   bool IsComplex () const;
+
+  /// is expression complex valued ?
+  bool IsResultComplex () const { return res_type.iscomplex; }
 
   /// is expression a constant ?
   bool IsConstant () const;
@@ -204,6 +209,8 @@ protected:
   ///
   int var_num, var_dim;
   ///
+  bool var_iscomplex;
+  ///
   double * globvar;
  
   typedef double(*TFUNP) (double);
@@ -246,6 +253,8 @@ public:
   /// returns dimension of variable of last token
   int GetVariableDimension() const
     { return var_dim; }
+  bool GetVariableIsComplex() const
+    { return var_iscomplex; }
 
   /// returns identifier of last token
   const char * GetStringValue() const

@@ -1318,10 +1318,11 @@ namespace ngsolve
     int order;
   public:
     NumProcIntegrate (PDE & apde, const Flags & flags)
-      : NumProc (apde)
+      : NumProc (apde, flags)
     {
       order = int (flags.GetNumFlag ("order", 2));
       coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", "") );
+      pde.AddVariable (string("integrate.")+GetName()+".value", 0.0, 6);
     }
 
     virtual string GetClassName () const
@@ -1366,7 +1367,7 @@ namespace ngsolve
       sum = MyMPI_AllReduce (sum);
 #endif
       cout << IM(1) << "Integral = " << sum << endl;
-      pde.AddConstant (string("integrate.")+GetName()+".value", sum);
+      pde.AddVariable (string("integrate.")+GetName()+".value", sum, 6);
     }
   };
 

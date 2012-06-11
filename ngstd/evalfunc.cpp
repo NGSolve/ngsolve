@@ -101,26 +101,15 @@ namespace ngstd
 
   double EvalFunction :: Eval (const double * x) const
   {
-    if (res_type.vecdim != 1)
-      {
-	cout << "Eval (double) called, but result.dim = " << res_type.vecdim << endl;
-	return 0.0;
-      }
-
     double y;
-    Eval<double,double,double> (x, &y);
+    Eval (x, &y, 1);
     return y;
   }
 
   complex<double> EvalFunction :: Eval (const complex<double> * x) const
   {
-    if (res_type.vecdim != 1)
-      {
-	cout << "Eval (Complex) called, but result.dim = " << res_type.vecdim << endl;
-	return 0.0;
-      }
     complex<double> y;
-    Eval<complex<double>,complex<double>,complex<double> > (x, &y);
+    Eval (x, &y, 1);
     return y;
   }
 
@@ -132,7 +121,11 @@ namespace ngstd
 	return;
       }
 
-    Eval<double,double,double> (x, y);
+    ArrayMem<double, 100> stack(program.Size());
+    Eval<double,double> (x, &stack[0]);
+
+    for (int i = 0; i < res_type.vecdim; i++)
+      y[i] = stack[i];
   }
 
   void EvalFunction :: Eval (const complex<double> * x, complex<double> * y, int ydim) const
@@ -142,9 +135,28 @@ namespace ngstd
 	cout << "Eval complex called with ydim = " << ydim << ", but result.dim = " << res_type.vecdim << endl;
 	return;
       }
-    Eval<complex<double>, complex<double>, complex<double> > (x, y);
+
+    ArrayMem<complex<double>, 100> stack(program.Size());
+    Eval<complex<double>, complex<double> > (x, &stack[0]);
+
+    for (int i = 0; i < res_type.vecdim; i++)
+      y[i] = stack[i];
   }
 
+  void EvalFunction :: Eval (const complex<double> * x, double * y, int ydim) const
+  {
+    if (res_type.vecdim != ydim)
+      {
+	cout << "Eval complex/double called with ydim = " << ydim << ", but result.dim = " << res_type.vecdim << endl;
+	return;
+      }
+
+    ArrayMem<complex<double>, 100> stack(program.Size());
+    Eval<complex<double>, complex<double> > (x, &stack[0]);
+
+    for (int i = 0; i < res_type.vecdim; i++)
+      y[i] = stack[i].real();
+  }
 
   template <typename SCAL> SCAL Imag ();
 
@@ -159,10 +171,10 @@ namespace ngstd
   }
 
 
-  template <typename TIN, typename TOUT, typename TCALC>
-  void EvalFunction :: Eval (const TIN * x, TOUT * y) const
+  template <typename TIN, typename TCALC>
+  void EvalFunction :: Eval (const TIN * x, TCALC * stack) const
   {
-    ArrayMem<TCALC, 100> stack(program.Size());
+    // ArrayMem<TCALC, 100> stack(program.Size());
 
     int stacksize = -1;
     for (int i = 0; i < program.Size(); i++)
@@ -338,9 +350,21 @@ namespace ngstd
 	    stack[stacksize] = log (stack[stacksize]);
 	    break;
 	  case ABS:
-	    stack[stacksize] = Abs (stack[stacksize]);
-	    break;
-	  case SIGN:
+	    {
+	      int dim = program[i].vecdim;
+	      if (dim == 1)
+		stack[stacksize] = Abs (stack[stacksize]);
+	      else
+		{
+		  double sum = 0.0; 
+		  for (int j = 0; j < dim; j++)
+		    sum += sqr (Abs (stack[stacksize-j]));
+		  stacksize -= dim-1;
+		  stack[stacksize] = sqrt(sum);
+		}
+	      break;
+	    }
+	  case SIGN: 
 	    if( CheckReal (stack[stacksize]) > 0)
 	      stack[stacksize] = 1;
 	    else if( CheckReal (stack[stacksize]) < 0)
@@ -375,9 +399,6 @@ namespace ngstd
 	    cerr << "undefined operation for EvalFunction" << endl;
 	  }
       }
-    
-    for (int i = 0; i < res_type.vecdim; i++)
-      y[i] = stack[i];
   }
 
 
@@ -839,7 +860,9 @@ namespace ngstd
 	EVAL_TOKEN op = program[i].op;
 	if (op == IMAG) return true;
       }
-    // cout << "return false" << endl;
+    for (int i = 0; i < arguments.Size(); i++)
+      if (arguments[i].argnum != -1 && arguments[i].iscomplex)
+	return true;
     return false;
   }
 
@@ -1108,6 +1131,7 @@ namespace ngstd
 	  AddVariable (GetVariableNumber());
 	  program.Last().vecdim = GetVariableDimension();
 	  result.vecdim = GetVariableDimension();
+	  result.iscomplex = GetVariableIsComplex();
 	  break;
 	}
       case GLOBVAR:
@@ -1137,7 +1161,6 @@ namespace ngstd
       case ATAN:
       case EXP:
       case LOG:
-      case ABS:
       case SIGN:
       case SQRT:
       case STEP:
@@ -1171,6 +1194,17 @@ namespace ngstd
 	  AddOperation (op);
 	  break;
 	  */
+	}
+      case ABS:
+	{
+	  EVAL_TOKEN op = GetToken();
+	  ReadNext();
+	  result = ParsePrimary();
+	  result.iscomplex = false;
+	  AddOperation (op);
+	  program.Last().vecdim = GetVariableDimension();	  
+	  result.vecdim = 1;
+	  break; 
 	}
       default:
 	cout << "why did I get here  ???" << endl;
@@ -1224,7 +1258,8 @@ namespace ngstd
 	  else
 	    {
 	      int cnt = 0;
-	      while ((*ist) && (isalnum (ch) || ch == '_' || ch == '>' || ch == '<' || ch == '=') || ch == '.')
+	      while ((*ist) && ((isalnum (ch) || ch == '_' || ch == '>' || ch == '<' || 
+				 ch == '=') || ch == '.') )
 		{
 		  string_value[cnt] = ch;
 		  cnt++;
@@ -1417,11 +1452,16 @@ namespace ngstd
 		{
 		  var_num = arguments[string_value].argnum;
 		  var_dim = arguments[string_value].dim;
+		  var_iscomplex = arguments[string_value].iscomplex;
 		  if (var_num == -1)
 		    {
 		      var_num = arguments[string_value].argnum = num_arguments;
 		      num_arguments += arguments[string_value].dim;
-		      cout << "argument " << string_value << " becomes arg " << var_num << endl;
+		      cout << "argument " << string_value 
+			   << " becomes arg " << var_num 
+			   << " vecdim = " << arguments[string_value].dim
+			   << " complex = " << arguments[string_value].iscomplex
+			   << endl;
 		    }
 		  token = VARIABLE;
 		  return;

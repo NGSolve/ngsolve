@@ -283,6 +283,11 @@ namespace ngcomp
     return gf.GetFESpace().GetIntegrator()->DimFlux();
   }
 
+  bool GridFunctionCoefficientFunction::IsComplex() const
+  { 
+    return gf.GetFESpace().IsComplex(); 
+  }
+
 
   double GridFunctionCoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationPoint & ip) const
@@ -316,6 +321,40 @@ namespace ngcomp
     fes.GetDofNrs (elnr, boundary, dnums);
     
     VectorMem<50> elu(dnums.Size()*dim);
+
+    gf.GetElementVector (comp, dnums, elu);
+    fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
+
+    if (diffop)
+      diffop->Apply (fel, ip, elu, result, lh2);
+    else
+      fes.GetIntegrator(boundary) -> CalcFlux (fel, ip, elu, result, false, lh2);
+  }
+
+  void GridFunctionCoefficientFunction :: 
+  Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<Complex> result) const
+  {
+    LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction, Eval complex");
+    static Timer timer ("GFCoeffFunc::Eval-scal");
+    RegionTimer reg (timer);
+
+    
+    const int elnr = ip.GetTransformation().GetElementNr();
+    bool boundary = ip.GetTransformation().Boundary();
+
+    const FESpace & fes = gf.GetFESpace();
+
+    if (!boundary)    
+      if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex()))
+	{ result = 0.0; return;};
+    
+    const FiniteElement & fel = fes.GetFE (elnr, boundary, lh2);
+    int dim = fes.GetDimension();
+    
+    ArrayMem<int, 50> dnums;
+    fes.GetDofNrs (elnr, boundary, dnums);
+    
+    VectorMem<50, Complex> elu(dnums.Size()*dim);
 
     gf.GetElementVector (comp, dnums, elu);
     fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);

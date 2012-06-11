@@ -1174,10 +1174,29 @@ namespace ngsolve
 		}
 	      else
 		{
-		  Array<CoefficientFunction*> depends (pde->GetCoefficientTable().Size()+3);
-		  depends = NULL;
+		  Array<CoefficientFunction*> depends; // pde->GetCoefficientTable().Size()+3);
 		  if (coeffs[0])
 		    {
+		      int tot = 3;
+		      for (int i = 0; i < pde->GetCoefficientTable().Size(); i++)
+			tot += pde->GetCoefficientTable()[i]->Dimension();
+		      Array<const char*> names(tot);
+		      names = NULL;
+		      for (int i = 0; i < coeffs[0]->arguments.Size(); i++)
+			{
+			  string name = coeffs[0]->arguments.GetName(i);
+			  int num = coeffs[0]->arguments[i].argnum;
+			  if (num >= 3)
+			    names[num] = coeffs[0]->arguments.GetName(i);
+			}
+		      for (int i = 0; i < names.Size(); i++)
+			if (names[i])
+			  {
+			    cout << "depend on " << names[i] << endl;
+			    depends.Append (pde->GetCoefficientTable()[names[i]]);
+			  }
+		      
+		      /*
 		      for (int i = 0; i < coeffs[0]->arguments.Size(); i++)
 			{
 			  string name = coeffs[0]->arguments.GetName(i);
@@ -1188,6 +1207,8 @@ namespace ngsolve
 
 		      while (depends.Size() && !depends.Last())
 			depends.SetSize(depends.Size()-1);
+		      */
+
 		      // cout << "depends = " << endl << depends << endl;
 		    }
 
