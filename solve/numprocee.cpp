@@ -34,13 +34,14 @@ namespace ngsolve
 
 
   NumProcZZErrorEstimator :: NumProcZZErrorEstimator (PDE & apde, const Flags & flags)
-    : NumProc (apde)
+    : NumProc (apde, flags)
   {
     bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
     gfu = pde.GetGridFunction (flags.GetStringFlag ("solution", ""));
     gferr = pde.GetGridFunction (flags.GetStringFlag ("error", ""));
     filename = flags.GetStringFlag ("filename","error.out");
     outfile.open (filename.c_str());
+    pde.AddVariable (string("ZZerrest.")+GetName()+".err", 1e99);
   }
 
 
@@ -119,6 +120,8 @@ namespace ngsolve
       sum += err(i);
 
     cout << " estimated error = " << sqrt (sum) << endl;
+    pde.AddVariable (string("ZZerrest.")+GetName()+".err", sqrt(sum));
+    
 
     outfile << ma.GetNLevels() 
 	    << "  "<< bfa->GetFESpace().GetNDof() 
@@ -296,16 +299,11 @@ namespace ngsolve
 
     
 #ifdef PARALLEL
-    /*
-    double global_sum = 0;
-    MPI_Reduce ( &sum, &global_sum, 1,  MPI_DOUBLE, MPI_SUM,
-		 0,ngs_comm);
-    sum = global_sum;
-    */
     sum = MyMPI_AllReduce (sum);
 #endif
 
     cout << IM(1) << " total difference = " << sqrt (sum) << endl;
+    pde.AddVariable (string("calcdiff.")+GetName()+".diff", sqrt(sum));
     
     int ndof = (ntasks == 1) ? 
       bfa1->GetFESpace().GetNDof() : 
@@ -418,8 +416,10 @@ namespace ngsolve
     for (int i = 0; i < err.Size(); i++)
       sum += err(i);
     cout << "estimated error = " << sqrt (sum) << endl;
-    static ofstream errout ("error.out");
 
+    pde.AddVariable (string("RTZZerrest.")+GetName()+".err", sqrt(sum));
+
+    static ofstream errout ("error.out");
     errout << ma.GetNLevels() 
 	   << "  " << bfa->GetFESpace().GetNDof() 
 	   << " " << sqrt(sum) << endl;
@@ -689,13 +689,13 @@ namespace ngsolve
   class NumProcSetVisual : public NumProc
   {
     ///
-Flags visflags;
+    Flags visflags;
   public:
     ///
     NumProcSetVisual (PDE & apde, const Flags & flags);
     ///
     virtual ~NumProcSetVisual ();
-
+    
     virtual void Do(LocalHeap & lh);
   };
 
@@ -847,30 +847,8 @@ Flags visflags;
   static RegisterNumProc<NumProcMarkElements> npinitmark("markelements");
 
 
-
   namespace numprocee_cpp
   {
-  /*
-    class Init
-    { 
-    public: 
-      Init ();
-    };
-    
-    Init::Init()
-    {
-      // GetNumProcs().AddNumProc ("zzerrorestimator", NumProcZZErrorEstimator::Create, NumProcZZErrorEstimator::PrintDoc);
-      // GetNumProcs().AddNumProc ("difference", NumProcDifference::Create, NumProcDifference::PrintDoc);
-//       GetNumProcs().AddNumProc ("difference_exact", NumProcDifferenceExact::Create, NumProcDifferenceExact::PrintDoc);
-      // GetNumProcs().AddNumProc ("rtzzerrorestimator", NumProcRTZZErrorEstimator::Create);
-      // GetNumProcs().AddNumProc ("hierarchicalerrorestimator", NumProcHierarchicalErrorEstimator::Create);
-      // GetNumProcs().AddNumProc ("primaldualerrorestimator", NumProcPrimalDualErrorEstimator::Create);
-      // GetNumProcs().AddNumProc ("markelements", NumProcMarkElements::Create);    }
-    
-    
-    Init init;
-  */
-
     int link_it;
   }
 }

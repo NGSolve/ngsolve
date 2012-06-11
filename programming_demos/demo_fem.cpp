@@ -4,15 +4,6 @@
   compile with:  'make fem'
 */
 
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-
-#include <time.h>
-#include <math.h>
-#include <complex>
-
-
 
 // ng-soft header files
 #include <fem.hpp>

@@ -1518,7 +1518,7 @@ namespace ngcomp
               if (useddof.Test(i))
                 cntused++;
 	    
-	    if (ntasks == 1)
+	    if ( (ntasks == 1) && (cntused < useddof.Size()))
 	      cout << IM(4) << "used " << cntused
 		   << ", unused = " << useddof.Size()-cntused
 		   << ", total = " << useddof.Size() << endl;

@@ -1,17 +1,11 @@
 #include <comp.hpp>
-
 #include <multigrid.hpp>
-//using namespace ngmg;
-
 #include <solve.hpp>
-
 #include <parallelngs.hpp>
 
 namespace ngcomp
 {
   using namespace ngmg;
-  using namespace ngcomp;
-
 
   
   Preconditioner :: Preconditioner (const PDE * const apde, const Flags & aflags, 
@@ -144,7 +138,7 @@ namespace ngcomp
 
   void Preconditioner :: Timing () const
   {
-    cout << "Timing Preconditioner ... " << flush;
+    cout << IM(1) << "Timing Preconditioner ... " << flush;
     const BaseMatrix & amat = GetAMatrix();
     const BaseMatrix & pre = GetMatrix();
 
@@ -165,10 +159,7 @@ namespace ngcomp
       }
     while (time < 2.0);
 
-    cout << " 1 step takes " 
-	 << time / steps
-	 << " seconds" << endl;
-
+    cout << IM(1) << " 1 step takes " << time / steps << " seconds" << endl;
 
 
     starttime = clock();
@@ -181,10 +172,8 @@ namespace ngcomp
       }
     while (time < 2.0);
 
-    cout << ", 1 matrix takes " 
-	 << time / steps
-	 << " seconds" << endl;
-
+    cout << IM(1) << ", 1 matrix takes "
+	 << time / steps << " seconds" << endl;
   }
 
 
@@ -651,47 +640,6 @@ namespace ngcomp
 
   }
 
-
-
-
- 
- 
-#ifdef OLD
-  VEFC_Preconditioner :: VEFC_Preconditioner (PDE * pde, Flags & aflags, const string aname)
-    : Preconditioner (pde,aflags,aname)
-  {
-    bfa = pde->GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-    jacobi = NULL;
-  }
-
-  VEFC_Preconditioner :: ~VEFC_Preconditioner()
-  {
-    delete jacobi;
-  }
-
-  void VEFC_Preconditioner :: Update ()
-  {
-    cout << "Update VEFC_ Preconditioner" << flush;
-    //  delete jacobi;
-
-    
-    jacobi = new VEFC_Matrix (bfa->GetMatrix(),
-			      bfa->GetFESpace());
-    /*
-    Table<int> * blocks = bfa->GetFESpace().CreateSmoothingBlocks();
-
-    jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-      .CreateBlockJacobiPrecond(*blocks);
-    */
-
-    if (test) Test();
-  }
-#endif
-
-  const ngla::BaseMatrix & VEFC_Preconditioner :: GetMatrix() const
-  {
-    return *jacobi;
-  }
 
 
   TwoLevelPreconditioner :: TwoLevelPreconditioner (PDE * apde, Flags & aflags, const string aname)

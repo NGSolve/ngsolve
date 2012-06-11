@@ -15,10 +15,18 @@ namespace ngsolve
 {
 
   NumProc :: NumProc (PDE & apde, const int acallposition)
-    : NGS_Object (apde.GetMeshAccess(), "numproc"), pde(apde)
+    : NGS_Object (apde.GetMeshAccess(), "numproc"), pde(apde),     
+      callposition(acallposition) 
+  { ; }
+
+  NumProc :: NumProc (PDE & apde, const Flags & flags, const int acallposition)
+    : NGS_Object (apde.GetMeshAccess(), "numproc"), pde(apde),     
+      callposition(acallposition) 
   {
-    callposition = acallposition;
+    if (flags.StringFlagDefined ("name"))
+      SetName (flags.GetStringFlag ("name",""));
   }
+
   
   NumProc :: ~NumProc()
   {
@@ -1316,6 +1324,26 @@ namespace ngsolve
       coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", "") );
     }
 
+    virtual string GetClassName () const
+    {
+      return "Integrate";
+    }
+
+    static void PrintDoc (ostream & ost)
+    {
+      ost <<
+	"\n\nNumproc integrate:\n"					\
+	"--------------------------\n"					\
+	"\nIntegrates a coefficient function\n"				\
+	"\nRequired flags:\n"						\
+	"-coefficient=<cfname>\n"					\
+	"    coefficientfunction to integrate\n"					\
+	"\nOptional flags:\n"						\
+	"-order\n"							\
+	"    integration order\n"; 
+    }
+
+
     virtual void Do (LocalHeap & lh)
     {
       double sum = 0;
@@ -1330,15 +1358,81 @@ namespace ngsolve
 	  coef -> Evaluate (mir, result);
 	  double hsum = 0;
 	  for (int j = 0; j < mir.Size(); j++)
-	    {
-	      // cout << "w = " << mir[j].GetWeight() << ", res = " << result(j) << endl;
-	      hsum += mir[j].GetWeight() * result(j);
-	    }
+	    hsum += mir[j].GetWeight() * result(j);
 	  sum += hsum;
 	}
-      cout << "Integral = " << sum << endl;
+
+#ifdef PARALLEL
+      sum = MyMPI_AllReduce (sum);
+#endif
+      cout << IM(1) << "Integral = " << sum << endl;
+      pde.AddConstant (string("integrate.")+GetName()+".value", sum);
     }
   };
+
+
+
+  class NumProcWriteFile : public NumProc
+  {
+    ofstream * outfile;
+    Array<char*> output_vars;
+  public:
+    NumProcWriteFile (PDE & apde, const Flags & flags)
+      : NumProc (apde)
+    {
+      outfile = NULL;
+
+      string filename = flags.GetStringFlag ("filename","");
+      if (filename.length() && id == 0)
+	{
+	  filename = pde.GetDirectory() + dirslash + filename;
+	  outfile = new ofstream (filename.c_str());
+	}
+
+      output_vars = flags.GetStringListFlag ("variables");
+      // cout << "variables = " << endl << output_vars;
+
+      if (outfile)
+	{
+	  *outfile << "# ";
+	  for (int i = 0; i < output_vars.Size(); i++)
+	    *outfile << output_vars[i] << " ";
+	  *outfile << endl;
+	}
+    }
+
+    virtual string GetClassName () const
+    {
+      return "WriteFile";
+    }
+
+    static void PrintDoc (ostream & ost)
+    {
+      ost <<
+	"\n\nNumproc writefile:\n"					\
+	"--------------------------\n"					\
+	"\nDumps variables/constants to a file\n"			\
+	"\nRequired flags:\n"						\
+	"-filename=<name>\n"						\
+	"    specify the filename\n"					\
+	"-variables=[var1,var2...]\n"					\
+	"    variables for output\n";					
+    }
+
+    virtual void Do (LocalHeap & lh)
+    {
+      for (int i = 0; i < output_vars.Size(); i++)
+	{
+	  double val = -1e99;
+	  if (pde.ConstantUsed (output_vars[i])) val = pde.GetConstant(output_vars[i]);
+	  if (pde.VariableUsed (output_vars[i])) val = pde.GetVariable(output_vars[i]);
+	  cout << IM(3) << output_vars[i] << " = " << val << endl;
+	  *outfile << val << " ";
+	}
+      if (outfile) *outfile << endl;
+    }
+  };
+
 
 
 
@@ -2902,6 +2996,7 @@ namespace ngsolve
   static RegisterNumProc<NumProcCalcFlux> npinitcalcflux("calcflux");
   static RegisterNumProc<NumProcVisualization> npinitvisual("visualization");
   static RegisterNumProc<NumProcIntegrate> npinitintegrate("integrate");
+  static RegisterNumProc<NumProcWriteFile> npinitwf ("writefile");
 
 
 

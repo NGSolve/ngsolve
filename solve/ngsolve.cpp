@@ -57,6 +57,23 @@ int NGS_Help (ClientData clientData,
 
       stringstream str;
 
+      if (topics == "constant")
+	{
+	  str << "heapsize = <num bytes>\n"
+	      << "   size for optimized memory handler\n\n"
+	      << "testout = <filename>\n"
+	      << "   filename for testoutput\n\n"
+	      << "numthreads = <num>\n"
+	      << "   threads for openmp parallelization\n\n"
+	      << "geometryorder = <num>\n"
+	      << "   curved elements of this polynomial order\n\n"
+	      << "refinep = 0|1\n"
+	      << "   increase p instead of mesh refinement\n\n"
+	      << "refinehp = 0|1\n"
+	      << "   h-refinement only for singular elements, otherwise p\n\n"
+	      << endl;
+	}
+
       if (topics == "coefficient")
 	{
 	  str << "define coefficient <name>" << endl;
@@ -342,10 +359,18 @@ int NGS_GetData (ClientData clientData,
 
   if (argc >= 2 && pde)
     {
-      if (strcmp (argv[1], "coefficients") == 0)
+      if (strcmp (argv[1], "constants") == 0)
 	{
-	  for (int i = 0; i < pde->GetCoefficientTable().Size(); i++)
-	    str << pde->GetCoefficientTable().GetName(i) << " ";
+	  for (int i = 0; i < pde->GetConstantTable().Size(); i++)
+	    str << "{ " << pde->GetConstantTable().GetName(i) << " = " 
+		<< pde->GetConstantTable()[i] << " } ";
+	}
+
+      if (strcmp (argv[1], "variableswithval") == 0)
+	{
+	  for (int i = 0; i < pde->GetVariableTable().Size(); i++)
+	    str << "{ " << pde->GetVariableTable().GetName(i) << " = " 
+		<< *pde->GetVariableTable()[i] << " } ";
 	}
 
       if (strcmp (argv[1], "variables") == 0)
@@ -357,7 +382,14 @@ int NGS_GetData (ClientData clientData,
       if (strcmp (argv[1], "variablesval") == 0)
 	{
 	  for (int i = 0; i < pde->GetVariableTable().Size(); i++)
-	    str << "val" << pde->GetVariableTable()[i] <<  "name" << pde->GetVariableTable().GetName(i) << " ";
+	    str << "val" << *pde->GetVariableTable()[i] 
+		<<  "name" << pde->GetVariableTable().GetName(i) << " ";
+	}
+
+      if (strcmp (argv[1], "coefficients") == 0)
+	{
+	  for (int i = 0; i < pde->GetCoefficientTable().Size(); i++)
+	    str << pde->GetCoefficientTable().GetName(i) << " ";
 	}
 
       if (strcmp (argv[1], "spaces") == 0)

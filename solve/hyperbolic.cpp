@@ -67,12 +67,6 @@ public:
   { ; }
 
 
-  // creates an solver object
-  static NumProc * Create (PDE & pde, const Flags & flags)
-  {
-    return new NumProcHyperbolic (pde, flags);
-  }
-
   // solve at one level
   virtual void Do(LocalHeap & lh)
   {
@@ -177,24 +171,6 @@ public:
 };
 
 
+static RegisterNumProc<NumProcHyperbolic> nphyper("hyperbolic");
 
-
-
-// declare the numproc 'hyperbolic' 
-
-namespace
-{
-  class Init
-  { 
-  public: 
-    Init ();
-  };
-    
-  Init::Init()
-  {
-    GetNumProcs().AddNumProc ("hyperbolic", NumProcHyperbolic::Create, NumProcHyperbolic::PrintDoc);
-  }
-    
-  Init init;
-}
   

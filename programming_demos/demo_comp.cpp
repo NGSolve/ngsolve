@@ -4,25 +4,8 @@
 
 */
 
-
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-
-#include <time.h>
-#include <math.h>
-#include <complex>
-
-
-
 // ng-soft header files
 #include <comp.hpp>
-
-
-using namespace std;
-using namespace ngstd;
-using namespace ngbla;
-using namespace ngfem;
 using namespace ngcomp;
 
 
@@ -35,31 +18,25 @@ int main ()
   LocalHeap lh(10000000, "main heap");
   MeshAccess ma;
 
-  Flags fesflags;
-  fesflags.SetFlag ("order", 2);
-  H1HighOrderFESpace fes(ma, fesflags);
+  H1HighOrderFESpace fes(ma, Flags().SetFlag("order",2) );
   
-  Flags uflags;
-  T_GridFunction<double> gfu (fes, "gfu", uflags);
+  T_GridFunction<double> gfu (fes, "gfu", Flags());
 
-  Flags aflags;
-  T_BilinearFormSymmetric<double> bfa(fes, "bfa", aflags);
+  T_BilinearFormSymmetric<double> bfa(fes, "bfa", 
+				      Flags().SetFlag("symmetric"));
 
   bfa.AddIntegrator (new LaplaceIntegrator<3> (new ConstantCoefficientFunction(1)));
   bfa.AddIntegrator (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
 
 
 
-
-  Flags fflags;
-  T_LinearForm<double> lff(fes, "lff", fflags);
+  T_LinearForm<double> lff(fes, "lff", Flags());
 
   Array<EvalFunction*> asource(1);
   asource[0] = new EvalFunction ("sin(x)*y");
   asource[0]->Print(cout);
 
   lff.AddIntegrator (new SourceIntegrator<3> (new DomainVariableCoefficientFunction<3>(asource)));
-
 
 
   fes.Update(lh);

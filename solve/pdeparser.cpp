@@ -486,7 +486,10 @@ namespace ngsolve
 		}
 
               pde->GetMeshAccess().UpdateBuffers();
-
+	      pde->AddVariable ("mesh.levels", pde->GetMeshAccess().GetNLevels());
+	      pde->AddVariable ("mesh.ne", pde->GetMeshAccess().GetNE());
+	      pde->AddVariable ("mesh.nv", pde->GetMeshAccess().GetNV());
+	      
 	      if (!pde->GetMeshAccess().GetNP())
 		throw Exception ("No mesh or empty mesh file\n");
 	      scan->ReadNext();
@@ -573,7 +576,8 @@ namespace ngsolve
 	      scan->ReadNext();
 	      Flags flags;
 	      CheckFlags (flags);
-	      
+	      flags.SetFlag ("name", name.c_str());
+
 	      int dim = pde->GetMeshAccess().GetDimension();
 	      if (GetNumProcs().GetNumProc(npid, dim))
 		{
@@ -638,7 +642,7 @@ namespace ngsolve
 				     pde->GetConstantTable()[i]);
 	      for (int i = 0; i < pde->GetVariableTable().Size(); i++)
 		fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
-					   &pde->GetVariableTable()[i]);
+					   pde->GetVariableTable()[i]);
 	      
 	      fun->Parse (*scan->scanin);
 	      if (fun->IsConstant())
@@ -699,8 +703,7 @@ namespace ngsolve
 						     pde->GetConstantTable()[i]);
 	      for (int i = 0; i < pde->GetVariableTable().Size(); i++)
 		eval->GetEvaluator().DefineGlobalVariable (pde->GetVariableTable().GetName(i),
-							   &pde->GetVariableTable()[i]);
-	      
+							   pde->GetVariableTable()[i]);
 	      
 	      eval->GetEvaluator().Parse (*scan->scanin);
 	    }
@@ -719,7 +722,7 @@ namespace ngsolve
 	  if(eval)
 	    pde->AddVariable(name,eval);
 	  else
-	    pde->AddVariable (name, val);
+	    pde->AddVariable (name, val, 1);
 	  scan->ReadNext();
 	  break;
 	}
@@ -757,7 +760,7 @@ namespace ngsolve
 					     pde->GetConstantTable()[i]);
 		      for (int i = 0; i < pde->GetVariableTable().Size(); i++)
 			fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
-						   &pde->GetVariableTable()[i]);
+						   pde->GetVariableTable()[i]);
 		      
 		      
 		      fun->Parse (*scan->scanin);
@@ -936,7 +939,7 @@ namespace ngsolve
 					     pde->GetConstantTable()[i]);
 		      for (int i = 0; i < pde->GetVariableTable().Size(); i++)
 			fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
-						   &pde->GetVariableTable()[i]);
+						   pde->GetVariableTable()[i]);
 		      
 		      
 		      fun->Parse (*scan->scanin);
@@ -1054,10 +1057,12 @@ namespace ngsolve
 					     pde->GetConstantTable()[i]);
 		      for (int i = 0; i < pde->GetVariableTable().Size(); i++)
 			fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
-						   &pde->GetVariableTable()[i]);
+						   pde->GetVariableTable()[i]);
 		      for (int i = 0; i < pde->GetCoefficientTable().Size(); i++)
-			fun->DefineArgument (pde->GetCoefficientTable().GetName(i),-1);
-		      
+			fun->DefineArgument (pde->GetCoefficientTable().GetName(i),-1,
+					     pde->GetCoefficientTable()[i]->Dimension(),
+					     pde->GetCoefficientTable()[i]->IsComplex());
+
 		      fun->Parse (*scan->scanin);
 		      coeffs.Append (fun);
 		      if (fun->IsConstant())
@@ -1176,7 +1181,7 @@ namespace ngsolve
 		      for (int i = 0; i < coeffs[0]->arguments.Size(); i++)
 			{
 			  string name = coeffs[0]->arguments.GetName(i);
-			  int num = coeffs[0]->arguments[i];
+			  int num = coeffs[0]->arguments[i].argnum;
 			  if (num >= 3)
 			    depends[num] = pde->GetCoefficientTable()[name];
 			}
@@ -1463,12 +1468,6 @@ namespace ngsolve
 		
 		  if (info)
 		    {
-		      static Timer addint1("add lfi 1");
-		      static Timer addint2("add lfi 2");
-		      static Timer addint3("add lfi 3");
-
-		      addint1.Start();
-
 		      Array<CoefficientFunction*> coeffs(info->numcoeffs);
 		      scan->ReadNext();
 		      for (int i = 0; i < info->numcoeffs; i++)
@@ -1486,7 +1485,6 @@ namespace ngsolve
 			  scan->ReadNext();
 
 			  // for vector valued coefficient functions
-
 			  if (i == 0 &&
 			      coeffs[i]->Dimension() == info->numcoeffs)
 			    {
@@ -1500,9 +1498,6 @@ namespace ngsolve
 		    
 		      ngfem::LinearFormIntegrator * integrator = 
 			dynamic_cast<ngfem::LinearFormIntegrator*> (info->creator(coeffs));
-
-		      addint1.Stop();
-		      addint2.Start();
 
 		      int numregions = integrator -> BoundaryForm() ? 
 			pde->GetMeshAccess().GetNBoundaries() : pde->GetMeshAccess().GetNDomains();
@@ -1528,10 +1523,6 @@ namespace ngsolve
 			    SetIntegrationOrder
 			    (int (partflags.GetNumFlag ("order",0)));
 			}
-
-		      addint2.Stop();
-		      addint3.Start();
-
 
 		      if (partflags.NumFlagDefined ("comp"))
 			{
@@ -1607,9 +1598,6 @@ namespace ngsolve
 		      integrator -> SetConstantCoefficient (partflags.GetDefineFlag("const"));
 
 		      pde->AddLinearFormIntegrator (name, integrator);
-
-		      addint3.Stop();
-
 		      continue;
 		    }
 		  else

@@ -43,8 +43,9 @@ namespace ngsolve
     levelsolved = -1;
     SetGood (true);
 
-    constants.Set ("pi", M_PI);
     constant_table_for_FEM = &constants;
+
+    AddVariable ("timing.level", 0.0);
   }
   
   PDE :: ~PDE()
@@ -332,7 +333,7 @@ namespace ngsolve
   GetVariable (const string & name, bool opt)
   { 
     if (variables.Used(name))
-      return variables[name]; 
+      return *variables[name]; 
 
     static double dummy;
     if (opt) return dummy;
@@ -572,6 +573,10 @@ namespace ngsolve
 	 << ", NP = " << ma.GetNP() << endl;
 
 
+    AddVariable ("mesh.levels", ma.GetNLevels());
+    AddVariable ("mesh.ne", ma.GetNE());
+    AddVariable ("mesh.nv", ma.GetNV());
+
     // line-integrator curve points can only be built if
     // element-curving has been done
     for(int i=0; i<CurvePointIntegrators.Size(); i++)
@@ -613,7 +618,8 @@ namespace ngsolve
 
 		int ndof = (ntasks == 1) ? 
 		  fes->GetNDof() : fes->GetParallelDofs().GetNDofGlobal();
-
+		
+		AddVariable (string("fes.")+fes->GetName()+".ndof", ndof, 6);
 
 		if (fes->GetDimension() == 1)
 		  cout << IM(1) << ", ndof = " << ndof << endl;
@@ -851,7 +857,7 @@ namespace ngsolve
 	else
 	  cerr << "???????????????" << endl;
 
-
+	AddVariable ("timing.level", WallTime()-starttime, 6);
       }
 
 
@@ -876,9 +882,9 @@ namespace ngsolve
     levelsolved++;
     // }
     
-    double endtime = WallTime();
     
     MyMPI_Barrier();
+    double endtime = WallTime();
     
     cout << IM(1) << "Equation Solved" << endl;
     cout << IM(1) << "Total Time = " << endtime-starttime << " sec wall time" << endl << endl;
@@ -910,10 +916,17 @@ namespace ngsolve
     if (name == "testout") testout = new ofstream (val.c_str());
   }
 
-  void PDE :: AddVariable (const string & name, double val)
+  void PDE :: AddVariable (const string & name, double val, int im)
   {
-    cout << IM(1) << "add variable " << name << " = " << val << endl;
-    variables.Set (name.c_str(), val);
+    cout << IM(im) << "add variable " << name << " = " << val << endl;
+    if (variables.Used(name))
+      *variables[name] = val;
+    else
+      {
+	double * varp = new double;
+	*varp = val;
+	variables.Set (name, varp);
+      }
   }
 
   
@@ -921,8 +934,9 @@ namespace ngsolve
   {
     evaluators.Append(eval);
     todo.Append(eval);
-    variables.Set (name, 0);
-    eval->SetVariable(variables[name]);
+    // variables.Set (name, 0);
+    AddVariable (name, 0.0);
+    eval->SetVariable(*variables[name]);
     cout << IM(1) << "add variable " << name << " = " << eval->Evaluate() << endl;
   }
 
@@ -1045,6 +1059,7 @@ namespace ngsolve
     space->SetName (name);
     spaces.Set (name, space);
     todo.Append(space);
+    AddVariable (string("fes.")+space->GetName()+".ndof", 0.0);
 
     return space;
   }

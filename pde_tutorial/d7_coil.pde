@@ -1,4 +1,3 @@
-
 geometry = coil.geo
 mesh = coil.vol
 
@@ -19,8 +18,8 @@ define coefficient sigma
 
 # 1000 Ampere-turns
 define coefficient r (sqrt(x*x+y*y))
-define coefficient cs
-( 1000*y/r/0.16, 1000*(-x)/r/0.16,  0),   
+define coefficient cs 
+( 1000/16 * (y/r,-x/r,0))
 (0, 0, 0),
 
 

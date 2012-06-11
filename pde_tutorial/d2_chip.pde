@@ -29,6 +29,7 @@ numproc drawflux np2 -bilinearform=a -solution=u -applyd -label=flux
 numproc zzerrorestimator np3 -bilinearform=a -linearform=f -solution=u -error=err -minlevel=1
 numproc markelements np4 -error=err -minlevel=1 -factor=0.5 
 
+numproc writefile wf -variables=[mesh.levels,fes.v.ndof,ZZerrest.np3.err]  -filename=d2_error.out
 
 
 numproc visualization npv1 -scalarfunction=u -subdivision=2 -nolineartexture

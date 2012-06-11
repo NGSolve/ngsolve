@@ -21,8 +21,6 @@ using namespace ngla;
 
 namespace ngsolve
 {
-  using namespace ngsolve;
-
   class NumProcEVP_AM : public NumProc
   {
   protected:
@@ -49,11 +47,6 @@ namespace ngsolve
     NumProcEVP_AM (PDE & apde, const Flags & flags);
     ///
     virtual ~NumProcEVP_AM();
-
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcEVP_AM (pde, flags);
-    }
 
     ///
     virtual void Do(LocalHeap & lh);
@@ -632,23 +625,6 @@ namespace ngsolve
   }
 
 
-
-
-  namespace {
-    class Init
-    { 
-    public: 
-      Init ();
-    };
-    
-    Init::Init()
-    {
-      GetNumProcs().AddNumProc ("evpAM", NumProcEVP_AM::Create);
-    }
-
-    
-    Init init;
-  }
-
+  static RegisterNumProc<NumProcEVP_AM> npevpam("evpAM");
 }
 #endif
