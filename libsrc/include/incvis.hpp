@@ -1,6 +1,5 @@
 // libraries for User interface:
 
-
 #include <tcl.h>
 #include <tk.h>
 
@@ -9,6 +8,8 @@
 #else
 #define tcl_const
 #endif
+
+#define GL_GLEXT_PROTOTYPES
 
 
 #  if defined(TOGL_AGL) || defined(TOGL_AGL_CLASSIC)

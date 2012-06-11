@@ -8,8 +8,10 @@
 #include <csg.hpp>
 #include <stlgeom.hpp>
 
+
 // #include <parallel.hpp>
 #include <visual.hpp>
+
 
 
 namespace netgen
@@ -1277,7 +1279,7 @@ namespace netgen
                 usetexture = 0;
                 SetTextureMode (usetexture);
               }
-            
+
             for (int iy = 0, ii = 0; iy < n; iy++)
               {
                 glBegin (GL_TRIANGLE_STRIP);
@@ -1302,6 +1304,84 @@ namespace netgen
                     }
                 glEnd();
               }
+
+
+	    /*
+
+ 	    GLuint vboId[3];
+ 	    glGenBuffersARB (3, &vboId[0]);
+// 	    cout << "vboId = " << vboId << endl;
+
+ 	    glBindBufferARB (GL_ARRAY_BUFFER_ARB, vboId[0]);
+ 	    glBufferDataARB (GL_ARRAY_BUFFER_ARB, points.Size()*sizeof(Point<3>), 
+ 			     &points[0][0], GL_STATIC_DRAW_ARB);
+
+
+	    // not so fast as old-fashened style
+	    glEnableClientState(GL_VERTEX_ARRAY);
+	    // glVertexPointer(3, GL_DOUBLE, 0, &points[0][0]);
+	    glVertexPointer(3, GL_DOUBLE, 0, 0);  //ARB
+
+ 	    glBindBufferARB (GL_ARRAY_BUFFER_ARB, vboId[1]);
+ 	    glBufferDataARB (GL_ARRAY_BUFFER_ARB, nvs.Size()*sizeof(Point<3>), 
+ 			     &nvs[0][0], GL_STATIC_DRAW_ARB);
+
+	    glEnableClientState(GL_NORMAL_ARRAY);
+	    // glNormalPointer(GL_DOUBLE, 0, &nvs[0][0]);
+	    glNormalPointer(GL_DOUBLE, 0, 0);  // ARB
+
+	    // if (drawelem && usetexture == 1)
+	      {
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		// glTexCoordPointer(1, GL_DOUBLE, 0, &values[0]);
+
+		glBindBufferARB (GL_ARRAY_BUFFER_ARB, vboId[2]);
+		glBufferDataARB (GL_ARRAY_BUFFER_ARB, values.Size()*sizeof(double), 
+				 &values[0], GL_STATIC_DRAW_ARB);
+		glTexCoordPointer(1, GL_DOUBLE, 0, 0);
+	      }
+
+	    Array<int> gind;
+
+            for (int iy = 0, ii = 0; iy < n; iy++,ii++)
+              {
+                for (int ix = 0; ix < n-iy; ix++, ii++)
+                    {
+                      int nv = (ix+iy+1 < n) ? 6 : 3;
+
+		      int ind[] = { ii, ii+1, ii+n-iy+1,  
+				    ii+n-iy+1, ii+1, ii+n-iy+2 };
+
+// 		      if (ix == 0 && iy == 0)
+// 		      for (int l = 0; l < 3; l++)
+// 			{
+// 			  if (drawelem)
+// 			    {
+// 			      if (usetexture != 2)
+// 				// SetOpenGlColor (values[ind[l]]); 
+// 				glTexCoord1f ( values[ind[l]] );
+// 			      else
+// 				glTexCoord2f ( valuesc[ind[l]].real(), valuesc[ind[l]].imag() );
+// 			    }
+// 			  else
+// 			    glColor3fv (col_grey);
+// 			}
+
+		      for (int j = 0; j < nv; j++)
+			gind.Append(ind[j]);
+		      // glDrawElements(GL_TRIANGLES, nv, GL_UNSIGNED_INT, &ind[0]);
+                    }
+              }
+	    glDrawElements(GL_TRIANGLES, gind.Size(), GL_UNSIGNED_INT, &gind[0]);
+
+	    glDisableClientState(GL_VERTEX_ARRAY);
+	    glDisableClientState(GL_NORMAL_ARRAY);
+	    glDisableClientState(GL_TEXTURE_COORD_ARRAY);	    
+	    
+ 	    glDeleteBuffersARB (3, &vboId[0]);
+	    */
+	    
+
             if (!drawelem && (usetexture != save_usetexture))
               {
                 usetexture = save_usetexture;
