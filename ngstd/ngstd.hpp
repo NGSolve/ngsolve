@@ -60,7 +60,7 @@ inline void * operator new[] (size_t cnt)
 
 namespace ngstd
 {
-  DLL_HEADER extern ::std::ostream * testout;
+  NGS_DLL_HEADER extern ::std::ostream * testout;
 }
 using ngstd::testout;
 
