@@ -213,7 +213,7 @@
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\blas&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\lapack&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
 				PreprocessorDefinitions="NETGEN_ELTRANS;WIN32;LAPACK;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -302,7 +302,7 @@
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\blas&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\include\lapack&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\include&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
 				PreprocessorDefinitions="NETGEN_ELTRANS;WIN32;noLAPACK;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -329,7 +329,7 @@
 				AdditionalDependencies="nginterface.lib tcl85.lib libcpmt.lib"
 				OutputFile="$(OutDir)\libngsolve.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\lib&quot;"
 				IgnoreDefaultLibraryNames="nafxcw.lib;libcpmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -493,10 +493,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\fem\facetfe.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\fem\fastmat.cpp"
 					>
 				</File>
@@ -617,6 +613,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\linalg\elementbyelement.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\linalg\jacobi.cpp"
 					>
 				</File>
@@ -648,15 +648,6 @@
 					RelativePath="..\linalg\superluinverse.cpp"
 					>
 				</File>
-				<File
-					RelativePath="..\linalg\vvector.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\linalg\elementbyelement.cpp"
-					>
-				</File>
-
 			</Filter>
 			<Filter
 				Name="multigrid"
@@ -726,19 +717,7 @@
 				Name="parallel"
 				>
 				<File
-					RelativePath="..\parallel\bvpparallel.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\parallel\parallelblockjacobi.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\parallel\paralleldofs.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\parallel\parallelmeshaccess.cpp"
 					>
 				</File>
 				<File
@@ -746,15 +725,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\parallel\parallelsparsematrix.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\parallel\parallelvvector.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\parallel\superlu_dist.cpp"
 					>
 				</File>
 			</Filter>
@@ -1156,6 +1127,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\linalg\elementbyelement.hpp"
+					>
+				</File>
+				<File
 					RelativePath="..\linalg\jacobi.hpp"
 					>
 				</File>
@@ -1193,10 +1168,6 @@
 				</File>
 				<File
 					RelativePath="..\linalg\vvector.hpp"
-					>
-				</File>
-				<File
-					RelativePath="..\linalg\elementbyelement.hpp"
 					>
 				</File>
 			</Filter>
@@ -1351,5 +1322,9 @@
 		</Filter>
 	</Files>
 	<Globals>
+		<Global
+			Name="HPC_Debug"
+			Value="&#65279;&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;&lt;Properties xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot;&gt;&lt;ProjectNameDisplay /&gt;&lt;CollapseAdvanced&gt;true&lt;/CollapseAdvanced&gt;&lt;ApplicationPlatform&gt;x86&lt;/ApplicationPlatform&gt;&lt;/Properties&gt;"
+		/>
 	</Globals>
 </VisualStudioProject>
