@@ -226,7 +226,8 @@ namespace ngsolve
       if (component != -1)
 	hgfu = gfu->GetComponent(component);
 
-      SetValues (pde.GetMeshAccess(), *coef, 
+      if ((ntasks==1) || (id>=1))
+	SetValues (pde.GetMeshAccess(), *coef, 
 		 *hgfu, boundary, 0, lh);
 
       // *testout << "setvalues: gfu = " << endl << gfu->GetVector() << endl;
@@ -1348,21 +1349,23 @@ namespace ngsolve
     virtual void Do (LocalHeap & lh)
     {
       double sum = 0;
-      for (int i = 0; i < ma.GetNE(); i++)
+      if ( ( id >= 1) || (ntasks==1))
 	{
-	  HeapReset hr(lh);
-	  ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
-	  IntegrationRule ir (eltrans.GetElementType(), order);
-	  const BaseMappedIntegrationRule & mir = eltrans(ir, lh);
+	  for (int i = 0; i < ma.GetNE(); i++)
+	    {
+	      HeapReset hr(lh);
+	      ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
+	      IntegrationRule ir (eltrans.GetElementType(), order);
+	      const BaseMappedIntegrationRule & mir = eltrans(ir, lh);
 
-	  FlatMatrix<> result(mir.Size(), 1, lh);
-	  coef -> Evaluate (mir, result);
-	  double hsum = 0;
-	  for (int j = 0; j < mir.Size(); j++)
-	    hsum += mir[j].GetWeight() * result(j);
-	  sum += hsum;
+	      FlatMatrix<> result(mir.Size(), 1, lh);
+	      coef -> Evaluate (mir, result);
+	      double hsum = 0;
+	      for (int j = 0; j < mir.Size(); j++)
+		hsum += mir[j].GetWeight() * result(j);
+	      sum += hsum;
+	    }
 	}
-
 #ifdef PARALLEL
       sum = MyMPI_AllReduce (sum);
 #endif
@@ -1384,11 +1387,14 @@ namespace ngsolve
       outfile = NULL;
 
       string filename = flags.GetStringFlag ("filename","");
+      
       if (filename.length() && id == 0)
 	{
 	  filename = pde.GetDirectory() + dirslash + filename;
 	  outfile = new ofstream (filename.c_str());
 	}
+      else
+	outfile = 0;
 
       output_vars = flags.GetStringListFlag ("variables");
       // cout << "variables = " << endl << output_vars;

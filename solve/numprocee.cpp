@@ -251,52 +251,53 @@ namespace ngsolve
 
   void NumProcDifference :: Do(LocalHeap & lh)
   {
-    cout << IM(3) << "Compute difference ... " << flush;
-
-    if (bfa1->NumIntegrators() == 0)
-      throw Exception ("Difference: Bilinearform1 needs an integrator");
-
-    BilinearFormIntegrator * bfi1 = bfa1->GetIntegrator(0);
-    FlatVector<double> diff = gfdiff->GetVector().FV<double> ();
-    diff = 0;
-
-    int ndom = ma.GetNDomains();
-
-    if ( bfa2 )
+    double sum = 0;
+    if ( ( id >= 1) || (ntasks==1))
       {
-	BilinearFormIntegrator * bfi2 = bfa2->GetIntegrator(0);
-    
-	for (int k = 0; k < ndom; k++)
+	cout << IM(3) << "Compute difference ... " << flush;
+
+	if (bfa1->NumIntegrators() == 0)
+	  throw Exception ("Difference: Bilinearform1 needs an integrator");
+
+	BilinearFormIntegrator * bfi1 = bfa1->GetIntegrator(0);
+	FlatVector<double> diff = gfdiff->GetVector().FV<double> ();
+	diff = 0;
+
+	int ndom = ma.GetNDomains();
+
+	if ( bfa2 )
 	  {
-	    if (!bfa1->GetFESpace().IsComplex())
+	    BilinearFormIntegrator * bfi2 = bfa2->GetIntegrator(0);
+    
+	    for (int k = 0; k < ndom; k++)
 	      {
-		CalcDifference (ma, 
+		if (!bfa1->GetFESpace().IsComplex())
+		  {
+		    CalcDifference (ma, 
 				dynamic_cast<const S_GridFunction<double>&> (*gfu1), 
 				dynamic_cast<const S_GridFunction<double>&> (*gfu2), 
 				*bfi1, *bfi2,
 				diff, k, lh);
-	      }
-	    else
-	      {
-		CalcDifference (ma,
+		  }
+		else
+		  {
+		    CalcDifference (ma,
 				dynamic_cast<const S_GridFunction<Complex>&> (*gfu1), 
 				dynamic_cast<const S_GridFunction<Complex>&> (*gfu2), 
 				*bfi1, *bfi2,
 				diff, k, lh);
+		  }	    
 	      }
-	    
 	  }
-      }
-    else
-      {
-	for (int k = 0; k < ndom; k++)
-	  CalcDifference (ma, *gfu1, *bfi1, coef_real, diff, k, lh);
-      }
-   
-    double sum = 0;
-    for (int i = 0; i < diff.Size(); i++)
-      sum += diff(i);
+	else
+	  {
+	    for (int k = 0; k < ndom; k++)
+	      CalcDifference (ma, *gfu1, *bfi1, coef_real, diff, k, lh);
+	  }
 
+	for (int i = 0; i < diff.Size(); i++)
+	  sum += diff(i);
+      }
     
 #ifdef PARALLEL
     sum = MyMPI_AllReduce (sum);
