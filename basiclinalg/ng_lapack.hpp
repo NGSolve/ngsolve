@@ -1136,6 +1136,22 @@ namespace ngbla
   { c = a * b; }
 
 
+  template <typename TA, typename TB>
+  inline void LapackMultAdd (const TA & a,
+			     const TB & b, 
+			     double alpha,
+			     SliceMatrix<double> c,
+			     double beta)
+  { c *= beta; c += alpha * a * b; }
+
+  template <typename TA, typename TB>
+  inline void LapackMultAdd (const TA & a,
+			     const TB & b, 
+			     Complex alpha,
+			     SliceMatrix<Complex> c,
+			     Complex beta)
+  { c *= beta; c += alpha * a * b; }
+
 
 
   inline void LapackMultABt (ngbla::FlatMatrix<double> a, 
