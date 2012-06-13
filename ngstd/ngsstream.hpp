@@ -26,18 +26,19 @@ namespace ngstd
   {
     ostream & ost;
     bool active;
+    static bool glob_active;
   public:
     NGSOStream (ostream & aost, bool aactive)
       : ost(aost), active(aactive) { ; }
-    bool Active () const { return active; }
+    bool Active () const { return active && glob_active; }
     ostream & GetStream () { return ost; }
+    static void SetGlobalActive (bool b) { glob_active = b; }
   };
   
   inline NGSOStream operator<< (ostream & ost, const IM & im)
   {
     return NGSOStream (ost, 
-		       (im.Value() <= netgen::printmessage_importance)  &&
-		       (id == 0) );
+		       (im.Value() <= netgen::printmessage_importance));
   }
 
 

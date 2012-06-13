@@ -12,7 +12,10 @@ namespace ngstd
   ostream * testout = &cout;
 #ifdef PARALLEL
   int id = 0, ntasks = 1;
+  bool working_proc = true;
 #endif
+
+  bool NGSOStream :: glob_active = true;
 
   
   template <class T>

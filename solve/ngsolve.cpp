@@ -681,6 +681,8 @@ int NGSolve_Init (Tcl_Interp * interp)
 #ifdef PARALLEL
   MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
+  working_proc = (ntasks == 1) || (id > 0);
+  NGSOStream::SetGlobalActive (id == 0);
 #endif
   
 #ifdef _OPENMP
@@ -692,9 +694,6 @@ int NGSolve_Init (Tcl_Interp * interp)
   cout << "(number of threads can be changed by setting OMP_NUM_THREADS)" << endl;
 #endif
   
-#ifdef MPI_VERSION
-  cout << "MPI-version = " << MPI_VERSION << '.' << MPI_SUBVERSION << endl;
-#endif
 
   
 #ifdef SOCKETS
@@ -841,24 +840,17 @@ void NGS_ParallelRun ( const string & message )
 
   MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
+  working_proc = (ntasks == 1) || (id > 0);
+  NGSOStream::SetGlobalActive (id == 0);
+      
 
   if ( message == "ngs_pdefile" )
     {
       MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
       // ngs_comm = MPI_COMM_WORLD;
 
-
-      // delete ma;
-      // ma = new MeshAccess;
       ma.Reset(new ngcomp::MeshAccess());
       pde.Reset(new PDE ( *ma ));
-
-
-      /*
-      string pdefilename;
-      MyMPI_Recv (pdefilename, 0);
-      pde -> LoadPDE (pdefilename, 1, 0);
-      */
 
       // transfer file contents, not filename
       string pdefiledata;

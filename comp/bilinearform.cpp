@@ -646,7 +646,7 @@ namespace ngcomp
 		  }
 		
 
-		if (ntasks == 1 || id != 0)
+		if (working_proc)
 
 		for (int icol = 0; icol < ncolors; icol++)
 		  {
@@ -1525,7 +1525,7 @@ namespace ngcomp
 
 	    int MASK = eliminate_internal ? EXTERNAL_DOF : ANY_DOF;
 	    bool first_time = true;
-	    if (ntasks == 0 || id > 0)
+	    if (working_proc)
             for (int i = 0; i < useddof.Size(); i++)
 	      if (useddof.Test(i) != 
 		  ((fespace.GetDofCouplingType(i) & MASK) != 0) )

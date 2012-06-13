@@ -226,7 +226,7 @@ namespace ngsolve
       if (component != -1)
 	hgfu = gfu->GetComponent(component);
 
-      if ((ntasks==1) || (id>=1))
+      if (working_proc)
 	SetValues (pde.GetMeshAccess(), *coef, 
 		 *hgfu, boundary, 0, lh);
 
@@ -1349,7 +1349,7 @@ namespace ngsolve
     virtual void Do (LocalHeap & lh)
     {
       double sum = 0;
-      if ( ( id >= 1) || (ntasks==1))
+      if (working_proc)
 	{
 	  for (int i = 0; i < ma.GetNE(); i++)
 	    {
@@ -1366,9 +1366,9 @@ namespace ngsolve
 	      sum += hsum;
 	    }
 	}
-#ifdef PARALLEL
+
       sum = MyMPI_AllReduce (sum);
-#endif
+
       cout << IM(1) << "Integral = " << sum << endl;
       pde.AddVariable (string("integrate.")+GetName()+".value", sum, 6);
     }

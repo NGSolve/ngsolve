@@ -188,7 +188,7 @@ namespace ngcomp
   void MeshAccess :: UpdateBuffers()
   {
     dim = Ng_GetDimension();
-    if (dim == -1)
+    if (dim == -1 || (ntasks > 1 && id == 0))
       for (int i = 0; i < 4; i++)  
         {
           nnodes[i] = 0;
@@ -1059,14 +1059,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
  
   int MeshAccess ::GetGlobalNodeNum (Node node) const
   {
-    switch (node.GetType())
-      {
-      case NT_VERTEX: return NgPar_GetDistantPNum ( 0, node.GetNr() ); 
-      case NT_EDGE: return NgPar_GetDistantEdgeNum ( 0, node.GetNr() ); 
-      case NT_FACE: return NgPar_GetDistantFaceNum ( 0, node.GetNr() ); 
-      case NT_CELL: return NgPar_GetDistantElNum ( 0, node.GetNr() ); 
-      }
-    return -1;
+    return NgPar_GetGlobalNodeNum (node.GetType(), node.GetNr());
   }
   
   
@@ -1103,38 +1096,32 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
     : ma(ama), task(atask), total(atotal)
   {
     prevtime = WallTime();
+    int glob_total = MyMPI_AllReduce (total);
+    if (id == 0) total = glob_total;
   }
   
   void ProgressOutput :: Update (int nr)
   {
-      double time = WallTime();
-      if (time > prevtime+0.05)
-	{
+    double time = WallTime();
+    if (time > prevtime+0.05)
+      {
 #pragma omp critical(progressupdate) 
-	  {
-	    if (id == 0)
-	      {
-		cout << IM(3) << "\r" << task << " " << nr << "/" << total << flush;
-		ma.SetThreadPercentage ( 100.0*nr / total);
-	      }
+	{
+	  if (id == 0)
+	    {
+	      cout << IM(3) << "\r" << task << " " << nr << "/" << total << flush;
+	      ma.SetThreadPercentage ( 100.0*nr / total);
+	    }
 #ifdef PARALLEL
-	    else
-	      MPI_Bsend (&nr, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+	  else
+	    MPI_Bsend (&nr, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
 #endif
-	    
-	    prevtime = WallTime();
-	  }
+	  
+	  prevtime = WallTime();
 	}
-    }
-
-
-
-
-
-
-
-
-
+      }
+  }
+  
 
 
   void ProgressOutput :: Done()
@@ -1189,7 +1176,6 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 	  MPI_Bsend (&final, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
 #endif
 	}
-	
     }
   
 

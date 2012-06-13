@@ -76,14 +76,16 @@ namespace netgen
 
 enum { id = 0 };
 enum { ntasks = 1 };
-
+enum { working_proc = 1 };
 #else
 
 namespace ngstd {
   extern int id, ntasks;
+  extern bool working_proc;
 }
 using ngstd::id;
 using ngstd::ntasks;
+using ngstd::working_proc;
 
 #endif
 

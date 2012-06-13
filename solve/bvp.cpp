@@ -135,7 +135,7 @@ namespace ngsolve
     useseedvariant = flags.GetDefineFlag ("seed");
 
     if (solver != DIRECT)
-      pde.AddVariable (string("bvp.")+flags.GetStringFlag ("name",NULL)+".its", 0.0);
+      pde.AddVariable (string("bvp.")+flags.GetStringFlag ("name",NULL)+".its", 0.0, 6);
   }
 
   NumProcBVP :: ~NumProcBVP()
@@ -355,12 +355,10 @@ namespace ngsolve
       invmat->Mult (vecf, vecu);
     else 
       {
-
 	BaseVector & hv = *vecu.CreateVector();
 	hv = vecf - mat * vecu;
 	vecu += (*invmat2) * hv;
 	delete &hv;
-	// vecu = (*invmat2) * vecf;
       }
 
     ma.PopStatus ();
@@ -374,15 +372,11 @@ namespace ngsolve
     if (solver != DIRECT)
       {
 	cout << IM(1) << "Iterations: " << invmat->GetSteps() << endl;
-	pde.AddVariable (string("bvp.")+GetName()+".its", invmat->GetSteps());
+	pde.AddVariable (string("bvp.")+GetName()+".its", invmat->GetSteps(), 6);
       }
 
-    *testout << "Solution time = " << endtime - starttime << endl;
     if (solver != DIRECT)
-      {
-	*testout << "Iterations: " << invmat->GetSteps() << endl;
-        delete invmat;
-      }
+      delete invmat;
     else
       delete invmat2;
 
