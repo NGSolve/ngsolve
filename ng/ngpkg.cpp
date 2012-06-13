@@ -2975,6 +2975,7 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
 	       Tcl_Interp * interp,
 	       int argc, tcl_const char *argv[])
   {
+    /*
 #ifdef PARALLEL
     int id, rc, ntasks;
     MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
@@ -2982,7 +2983,7 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
     if ( id != 0 )
       return TCL_OK;
 #endif
-
+    */
 
     /*
     if (ngsolve_handle)
@@ -3018,7 +3019,9 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
 #endif
 
 #ifdef PARALLEL
-    MyMPI_SendCmd ("end");
+    if (id == 0) MyMPI_SendCmd ("end");
+    cout << "finalize, id = " << id << endl;
+    MPI_Finalize();
 #endif
 
     mesh.Reset (NULL);

@@ -80,14 +80,6 @@ using netgen::RegisterUserFormats;
 
 
 
-#ifdef PARALLEL
-void Ng_Exit ()
-{
-  // Parallel_Exit();
-}
-#endif
-
-
 
 void ParallelRun()
 {   
@@ -98,12 +90,10 @@ void ParallelRun()
   MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
 
-  bool test = true;
-
   // testout = new ostream(0); 
   testout = new ofstream (string("testout_proc") + id  );      
 
-  while ( test )
+  while ( true )
     {
 #ifdef SCALASCA
 #pragma pomp inst begin (message)
@@ -336,26 +326,18 @@ void ParallelRun()
 
 
 
-
-
-
       else if ( message ==  "end" )
 	{
-	  test = false;
-	  Ng_Exit();
+	  break;
 	}
-
       
       else
 	{
 	  PrintMessage ( 1, "received unidentified message '" + message + "'\n");
-	    
-	  test = false;
+	  break;
 	}
       
     }
-  
-  return;
 }
 
 

@@ -163,9 +163,6 @@ int main(int argc, char ** argv)
   
       if(parameters.GetDefineFlag("batchmode"))
         nodisplay = true;
-      if(parameters.GetDefineFlag("solve"))
-        nodisplay = true;
-
 
     
       if(parameters.GetDefineFlag("shellmode"))
@@ -281,12 +278,7 @@ int main(int argc, char ** argv)
 
       // start event-loop
       Tk_MainLoop();
-  
       Tcl_DeleteInterp (myinterp); 
-
-#ifdef PARALLEL
-      MPI_Finalize();
-#endif
       Tcl_Exit(0);
     }
 
