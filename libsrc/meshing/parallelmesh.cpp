@@ -249,7 +249,6 @@ namespace netgen
     for (int dest = 1; dest < ntasks; dest++)
       {
 	FlatArray<PointIndex> verts = verts_of_proc[dest];
-
 	sendrequests.Append (MyMPI_ISend (verts, dest, MPI_TAG_MESH+1));
 
 	MPI_Datatype mptype = MeshPoint::MyGetMPIType();
@@ -257,7 +256,7 @@ namespace netgen
 	int numv = verts.Size();
 
 	MPI_Datatype newtype;
-	Array<int> blocklen (numv);
+	Array<int> blocklen (numv);  
 	blocklen = 1;
 	
 	MPI_Type_indexed (numv, &blocklen[0], 
@@ -269,7 +268,6 @@ namespace netgen
 	MPI_Isend( &points[0], 1, newtype, dest, MPI_TAG_MESH+1, MPI_COMM_WORLD, &request);
 	sendrequests.Append (request);
       }
-
 
     Array<int> num_distpnums(ntasks);
     num_distpnums = 0;
@@ -481,10 +479,10 @@ namespace netgen
 
     // receive vertices
     NgProfiler::StartTimer (timer_pts);
-    
+
     Array<int> verts;
     MyMPI_Recv (verts, 0, MPI_TAG_MESH+1);
-      
+
     int numvert = verts.Size();
     paralleltop -> SetNV (numvert);
     
@@ -542,7 +540,8 @@ namespace netgen
       MyMPI_Recv (fddata, 0, MPI_TAG_MESH+3);
       for (int i = 0; i < fddata.Size(); i += 6)
 	{
-	  int faceind = AddFaceDescriptor (FaceDescriptor(int(fddata[i]), int(fddata[i+1]), int(fddata[i+2]), 0));
+	  int faceind = AddFaceDescriptor 
+	    (FaceDescriptor(int(fddata[i]), int(fddata[i+1]), int(fddata[i+2]), 0));
 	  GetFaceDescriptor(faceind).SetBCProperty (int(fddata[i+3]));
 	  GetFaceDescriptor(faceind).domin_singular = fddata[i+4];
 	  GetFaceDescriptor(faceind).domout_singular = fddata[i+5];
@@ -1147,22 +1146,6 @@ namespace netgen
 #endif
 
   }
-
-
-
-
-
-
-  
-  void Mesh :: UpdateOverlap()
-  {
-    cout << "UpdateOverlap depreciated" << endl;
-  }
-
-
-
-
-
 
 
 

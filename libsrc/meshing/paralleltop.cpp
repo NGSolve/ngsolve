@@ -11,8 +11,9 @@ namespace netgen
   static MPI_Group MPI_HIGHORDER_WORLD;
   static MPI_Comm MPI_HIGHORDER_COMM;
 
-  void MyMPI_ExchangeTable (TABLE<int> & send_verts, 
-			    TABLE<int> & recv_verts, int tag,
+  template <typename T>
+  void MyMPI_ExchangeTable (TABLE<T> & send_verts, 
+			    TABLE<T> & recv_verts, int tag,
 			    MPI_Comm comm = MPI_COMM_WORLD)
   {
     int ntasks, rank;

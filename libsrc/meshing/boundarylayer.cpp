@@ -343,8 +343,8 @@ namespace netgen
                      // boundary layer list
                      if(!surfid.Contains(mesh.LineSegment(j).si))
                      {
-                        int pnt_commelem = 0;
-                        int pnum_commelem = 0;
+		        int pnt_commelem = 0;
+			int pnum_commelem = 0;
                         Array<int> pnt1_elems;
                         Array<int> pnt2_elems;
                        

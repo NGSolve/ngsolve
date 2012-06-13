@@ -748,9 +748,6 @@ namespace netgen
     /// loads a mesh sent from master processor
     void ReceiveParallelMesh ();
 
-
-    void UpdateOverlap ();
- 
 #endif
 
 

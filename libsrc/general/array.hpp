@@ -170,8 +170,15 @@ namespace netgen
   public:
 
     /// Generate array of logical and physical size asize
-    explicit Array(int asize = 0)
-      : FlatArray<T, BASE> (asize, asize ? new T[asize] : 0)
+    explicit Array()
+      : FlatArray<T, BASE> (0, NULL)
+    {
+      allocsize = 0; 
+      ownmem = 1;
+    }
+
+    explicit Array(int asize)
+      : FlatArray<T, BASE> (asize, new T[asize])
     {
       allocsize = asize; 
       ownmem = 1;

@@ -746,14 +746,14 @@ namespace netgen
 	  {
 	    string displname;
 	    
-	    Display * dpy = glXGetCurrentDisplay();
+	    // Display * dpy = glXGetCurrentDisplay();
 	    GLXDrawable drawable = glXGetCurrentDrawable();
 	    GLXContext ctx = glXGetCurrentContext();
 	    GLXContextID xid = glXGetContextIDEXT (ctx);
 	    
 	    displname = XDisplayName (0);
-	    /*
 
+	    /*
 	    cout << "Init Parallel GL" << endl;
 	    cout << "DisplayName = " << displname << endl;
 	    cout << "current display = " << dpy << endl;

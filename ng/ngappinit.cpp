@@ -68,18 +68,12 @@ int main(int argc, char ** argv)
 {
 
 #ifdef PARALLEL
-  // MPI_Init(&argc, &argv);          
-
-  int required = MPI_THREAD_MULTIPLE;
-  // int required = 0;
-  int provided;
-  MPI_Init_thread(&argc, &argv, required, &provided);          
+  int mpi_required = MPI_THREAD_MULTIPLE, mpi_provided;
+  MPI_Init_thread(&argc, &argv, mpi_required, &mpi_provided);          
 
   MPI_Comm_size(MPI_COMM_WORLD, &netgen::ntasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &netgen::id);
   
-  if (netgen::id == 0 && provided == MPI_THREAD_MULTIPLE)
-    cout << "multithreaded mpi is supported" << endl;
 
   MPI_Comm_dup ( MPI_COMM_WORLD, &netgen::mesh_comm);
 #endif
@@ -114,9 +108,21 @@ int main(int argc, char ** argv)
 
 
 #ifdef PARALLEL
-      cout << "Running MPI - parallel using " 
-	   << netgen::ntasks << " processor" 
-           << ((netgen::ntasks > 1) ? "s " : " ") << endl;
+      if (netgen::ntasks == 1)
+	{
+	  cout << "Run parallel Netgen with 'mpirun -np xy netgen'" << endl;
+	}
+      else
+	{
+	  cout << "Running MPI - parallel using " 
+	       << netgen::ntasks << " processor" 
+	       << ((netgen::ntasks > 1) ? "s " : " ") << endl;
+	  
+	  cout << "MPI-version = " << MPI_VERSION << '.' << MPI_SUBVERSION << endl;
+
+	  if (mpi_provided == MPI_THREAD_MULTIPLE)
+	    cout << "multithreaded MPI is supported" << endl;
+	}
 #endif
     }
 

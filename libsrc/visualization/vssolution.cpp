@@ -2223,28 +2223,27 @@ namespace netgen
     MyMPI_Bcast (comp);
 #endif
 
-    const SolData * sol;
     double val;
-    bool considerElem;
+    // bool considerElem;
 
     bool hasit = false;
     minv = 0; maxv = 1;
-    if (funcnr != -1)
+
+    if ((ntasks == 1) || (id > 0))
+      if (funcnr != -1)
       {
-        sol = soldata[funcnr];
+        const SolData * sol = soldata[funcnr];
 
         if (sol->draw_volume)
           {
             int ne = mesh->GetNE();
             for (int i = 0; i < ne; i++)
               {
-                considerElem = GetValue (sol, i, 0.333, 0.333, 0.333, comp, val);
+                bool considerElem = GetValue (sol, i, 0.333, 0.333, 0.333, comp, val);
                 if (considerElem)
                   {
-                    if (val > maxv || !hasit)
-                      maxv = val;
-                    if (val < minv || !hasit)
-                      minv = val;
+                    if (val > maxv || !hasit) maxv = val;
+                    if (val < minv || !hasit) minv = val;
                     hasit = true;
                   }
               }
@@ -2255,16 +2254,14 @@ namespace netgen
             for (int i = 0; i < nse; i++)
               {
                 ELEMENT_TYPE type = mesh->SurfaceElement(i+1).GetType();
-                if (type == QUAD)
-                  considerElem = GetSurfValue (sol, i, -1, 0.5, 0.5, comp, val);
-                else
-                  considerElem = GetSurfValue (sol, i, -1, 0.3333333, 0.3333333, comp, val);
+		bool considerElem = (type == QUAD) 
+		  ? GetSurfValue (sol, i, -1, 0.5, 0.5, comp, val)
+		  : GetSurfValue (sol, i, -1, 0.3333333, 0.3333333, comp, val);
+
                 if (considerElem)
                   {
-                    if (val > maxv || !hasit)
-                      maxv = val;
-                    if (val < minv || !hasit)
-                      minv = val;
+                    if (val > maxv || !hasit) maxv = val;
+                    if (val < minv || !hasit) minv = val;
                     hasit = true;
                   }
               }

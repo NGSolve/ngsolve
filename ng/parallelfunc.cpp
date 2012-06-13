@@ -148,12 +148,6 @@ void ParallelRun()
 	  VT_USER_END ("Mesh::ReceiveParallelMesh");
 	}
 
-      else if ( message == "overlap++" )
-	{
-	  PrintMessage (1, "overlap++++++");
-	  mesh -> UpdateOverlap();
-	}
-
       else if ( message == "visualize" )
 	{
 	  cout << "parallel message visualize depreciated" << endl;

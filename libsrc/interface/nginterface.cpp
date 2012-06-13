@@ -24,42 +24,42 @@
 
 // #include <pthread.h>
 
-  static pthread_t meshingthread;
-  void RunParallel ( void * (*fun)(void *), void * in)
-  {
-    if (netgen::mparam.parthread) //  && (ntasks == 1) )
-     {
-	     pthread_attr_t attr;
-	     pthread_attr_init (&attr);
-	     // the following call can be removed if not available:
-	     pthread_attr_setstacksize(&attr, 1000000);
-	     //pthread_create (&meshingthread, &attr, fun, NULL);
-	     pthread_create (&meshingthread, &attr, fun, in);
-     }
-     else
-       fun (in);
-  }
+static pthread_t meshingthread;
+void RunParallel ( void * (*fun)(void *), void * in)
+{
+  if (netgen::mparam.parthread) //  && (ntasks == 1) )
+    {
+      pthread_attr_t attr;
+      pthread_attr_init (&attr);
+      // the following call can be removed if not available:
+      pthread_attr_setstacksize(&attr, 1000000);
+      //pthread_create (&meshingthread, &attr, fun, NULL);
+      pthread_create (&meshingthread, &attr, fun, in);
+    }
+  else
+    fun (in);
+}
 
 #else // Using MS VC++ Standard / Enterprise / Professional edition
 
-  // Afx - Threads need different return - value:
+// Afx - Threads need different return - value:
 
-  static void* (*sfun)(void *);
-  unsigned int fun2 (void * val)
-  {
-    sfun (val);
-    return 0;
-  }
+static void* (*sfun)(void *);
+unsigned int fun2 (void * val)
+{
+  sfun (val);
+  return 0;
+}
 
-  void RunParallel ( void* (*fun)(void *), void * in)
-  {
-    sfun = fun;
-    if (netgen::mparam.parthread)
-      AfxBeginThread (fun2, in);
-    //AfxBeginThread (fun2, NULL);
-    else
-      fun (in);
-  }
+void RunParallel ( void* (*fun)(void *), void * in)
+{
+  sfun = fun;
+  if (netgen::mparam.parthread)
+    AfxBeginThread (fun2, in);
+  //AfxBeginThread (fun2, NULL);
+  else
+    fun (in);
+}
 
 #endif // #ifdef MSVC_EXPRESS
 
@@ -67,31 +67,31 @@
 
 // #include <pthread.h>
  
-  static pthread_t meshingthread;
-  void RunParallel ( void * (*fun)(void *), void * in)
-  {
-    bool parthread = netgen::mparam.parthread;
+static pthread_t meshingthread;
+void RunParallel ( void * (*fun)(void *), void * in)
+{
+  bool parthread = netgen::mparam.parthread;
 
 #ifdef PARALLEL
-    int provided;
-    MPI_Query_thread(&provided);
-    if (provided < 3)
-      if (netgen::ntasks > 1) parthread = false;
-    // cout << "runparallel = " << parthread << endl;
+  int provided;
+  MPI_Query_thread(&provided);
+  if (provided < 3)
+    if (netgen::ntasks > 1) parthread = false;
+  // cout << "runparallel = " << parthread << endl;
 #endif
 
-    if (parthread)
-      {
-	pthread_attr_t attr;
-	pthread_attr_init (&attr);
-	// the following call can be removed if not available:
-	pthread_attr_setstacksize(&attr, 1000000);
-	//pthread_create (&meshingthread, &attr, fun, NULL);
-	pthread_create (&meshingthread, &attr, fun, in);
-      }
-    else
-      fun (in);
-  }
+  if (parthread)
+    {
+      pthread_attr_t attr;
+      pthread_attr_init (&attr);
+      // the following call can be removed if not available:
+      pthread_attr_setstacksize(&attr, 1000000);
+      //pthread_create (&meshingthread, &attr, fun, NULL);
+      pthread_create (&meshingthread, &attr, fun, in);
+    }
+  else
+    fun (in);
+}
 
 #endif // #ifdef _MSC_VER
 
@@ -937,9 +937,9 @@ bool Ng_IsGhostEl (int ei)
 {
   return false;
   /*
-  if ( mesh->GetDimension() == 3 )
+    if ( mesh->GetDimension() == 3 )
     return mesh->VolumeElement(ei).IsGhost();
-  else
+    else
     return false;
   */
 }
@@ -948,7 +948,7 @@ void Ng_SetGhostEl(const int ei, const bool aisghost )
 {
   ;
   /*
-  if ( mesh -> GetDimension () == 3 )
+    if ( mesh -> GetDimension () == 3 )
     mesh -> VolumeElement(ei).SetGhost (aisghost);
   */
 }
@@ -957,9 +957,9 @@ bool Ng_IsGhostSEl (int ei)
 {
   return false;
   /*
-  if ( mesh -> GetDimension () == 3 )
+    if ( mesh -> GetDimension () == 3 )
     return mesh->SurfaceElement(ei).IsGhost();
-  else
+    else
     return false;
   */
 }
@@ -968,7 +968,7 @@ void Ng_SetGhostSEl(const int ei, const bool aisghost )
 {
   ;
   /*
-  if ( mesh -> GetDimension () == 3 )
+    if ( mesh -> GetDimension () == 3 )
     mesh -> SurfaceElement(ei).SetGhost (aisghost);
   */
 }
@@ -1015,106 +1015,120 @@ int Ng_Overlap ()
 
 
 
- int NgPar_GetLoc2Glob_VolEl ( int locnum )
-  { 
-    return mesh -> GetParallelTopology().GetLoc2Glob_VolEl ( locnum+1) -1; 
-  }
+int NgPar_GetLoc2Glob_VolEl ( int locnum )
+{ 
+  return mesh -> GetParallelTopology().GetLoc2Glob_VolEl ( locnum+1) -1; 
+}
 
-  // gibt anzahl an distant pnums zurueck
-  // * pnums entspricht ARRAY<int[2] >
-  int NgPar_GetDistantNodeNums ( int nodetype, int locnum, int * distnums )
-  {
-    int size;
-    switch ( nodetype )
-      {
-      case 0:
-	size = mesh->GetParallelTopology().GetDistantPNums( locnum+1, distnums ); 
-	break;
-      case 1:
-	size = mesh->GetParallelTopology().GetDistantEdgeNums( locnum+1, distnums ); 
-	break;
-      case 2:
-	size = mesh->GetParallelTopology().GetDistantFaceNums( locnum+1, distnums );
-	break;
-      case 3:
-	size = mesh->GetParallelTopology().GetDistantElNums( locnum+1, distnums );
-	break;
-      default:
-	cerr << "NgPar_GetDistantNodeNums() Unknown nodetype " << nodetype << endl;
-	size = -1;
-      }
-    // 0 - based 
-    for ( int i = 0; i < size; i++ )
-      distnums[2*i+1]--;
+// gibt anzahl an distant pnums zurueck
+// * pnums entspricht ARRAY<int[2] >
+int NgPar_GetDistantNodeNums ( int nodetype, int locnum, int * distnums )
+{
+  int size;
+  switch ( nodetype )
+    {
+    case 0:
+      size = mesh->GetParallelTopology().GetDistantPNums( locnum+1, distnums ); 
+      break;
+    case 1:
+      size = mesh->GetParallelTopology().GetDistantEdgeNums( locnum+1, distnums ); 
+      break;
+    case 2:
+      size = mesh->GetParallelTopology().GetDistantFaceNums( locnum+1, distnums );
+      break;
+    case 3:
+      size = mesh->GetParallelTopology().GetDistantElNums( locnum+1, distnums );
+      break;
+    default:
+      cerr << "NgPar_GetDistantNodeNums() Unknown nodetype " << nodetype << endl;
+      size = -1;
+    }
+  // 0 - based 
+  for ( int i = 0; i < size; i++ )
+    distnums[2*i+1]--;
 
-    return size;
-  }
+  return size;
+}
 
-  int NgPar_GetNDistantNodeNums ( int nodetype, int locnum )
-  {
-    switch ( nodetype )
-      {
-      case 0:
-	return mesh->GetParallelTopology().GetNDistantPNums( locnum+1 );
-      case 1:
-	return mesh->GetParallelTopology().GetNDistantEdgeNums( locnum+1 );
-      case 2:
-	return mesh->GetParallelTopology().GetNDistantFaceNums( locnum+1 );
-      case 3:
-	return mesh->GetParallelTopology().GetNDistantElNums( locnum+1 );
-      }
-    return -1;
-  }
+int NgPar_GetNDistantNodeNums ( int nodetype, int locnum )
+{
+  switch ( nodetype )
+    {
+    case 0:
+      return mesh->GetParallelTopology().GetNDistantPNums( locnum+1 );
+    case 1:
+      return mesh->GetParallelTopology().GetNDistantEdgeNums( locnum+1 );
+    case 2:
+      return mesh->GetParallelTopology().GetNDistantFaceNums( locnum+1 );
+    case 3:
+      return mesh->GetParallelTopology().GetNDistantElNums( locnum+1 );
+    }
+  return -1;
+}
 
-  int NgPar_GetDistantPNum ( int proc, int locpnum )  
-  { 
-    return mesh->GetParallelTopology().GetDistantPNum( proc, locpnum+1) - 1; 
-  }
-
-  int NgPar_GetDistantEdgeNum ( int proc, int locpnum )  
-  { 
-    return mesh->GetParallelTopology().GetDistantEdgeNum( proc, locpnum+1) - 1; 
-  }
-
-  int NgPar_GetDistantFaceNum ( int proc, int locpnum )  
-  { 
-    return mesh->GetParallelTopology().GetDistantFaceNum (proc, locpnum+1 ) - 1; 
-  }
-
-  int NgPar_GetDistantElNum ( int proc, int locelnum )
-  { 
-    return mesh->GetParallelTopology().GetDistantElNum (proc, locelnum+1 ) - 1; 
-  }
-
-  bool NgPar_IsExchangeFace ( int fnr ) 
-  { 
-    return (mesh->GetParallelTopology().GetNDistantFaceNums( fnr+1 ) > 0);
-    // return mesh->GetParallelTopology().IsExchangeFace ( fnr+1 ); 
-  }
-
-  bool NgPar_IsExchangeVert ( int vnum )
-  { 
-    return (mesh->GetParallelTopology().GetNDistantPNums( vnum+1 ) > 0);
-    // return mesh->GetParallelTopology().IsExchangeVert ( vnum+1 ); 
-  }
-
-  bool NgPar_IsExchangeEdge ( int ednum )  
-  { 
-    return (mesh->GetParallelTopology().GetNDistantEdgeNums( ednum+1 ) > 0);
-    // return mesh->GetParallelTopology().IsExchangeEdge ( ednum+1 ); 
-  }
-
-  bool NgPar_IsExchangeElement ( int elnum )  
-  { 
-    return (mesh->GetParallelTopology().GetNDistantElNums( elnum+1 ) > 0);
-    // return mesh->GetParallelTopology().IsExchangeElement ( elnum+1 ); 
-  }
+int NgPar_GetGlobalNodeNum (int nodetype, int locnum)
+{
+  switch (nodetype)
+    {
+    case 0: return mesh->GetParallelTopology().GetDistantPNum (0, locnum+1)-1;
+    case 1: return mesh->GetParallelTopology().GetDistantEdgeNum (0, locnum+1)-1;
+    case 2: return mesh->GetParallelTopology().GetDistantFaceNum (0, locnum+1)-1;
+    case 3: return mesh->GetParallelTopology().GetDistantElNum (0, locnum+1)-1;
+    }
+  return -1;
+}
 
 
-  void NgPar_PrintParallelMeshTopology ()
-  { 
-    mesh -> GetParallelTopology().Print (); 
-  }
+
+int NgPar_GetDistantPNum ( int proc, int locpnum )  
+{ 
+  return mesh->GetParallelTopology().GetDistantPNum( proc, locpnum+1) - 1; 
+}
+
+int NgPar_GetDistantEdgeNum ( int proc, int locpnum )  
+{ 
+  return mesh->GetParallelTopology().GetDistantEdgeNum( proc, locpnum+1) - 1; 
+}
+
+int NgPar_GetDistantFaceNum ( int proc, int locpnum )  
+{ 
+  return mesh->GetParallelTopology().GetDistantFaceNum (proc, locpnum+1 ) - 1; 
+}
+
+int NgPar_GetDistantElNum ( int proc, int locelnum )
+{ 
+  return mesh->GetParallelTopology().GetDistantElNum (proc, locelnum+1 ) - 1; 
+}
+
+bool NgPar_IsExchangeFace ( int fnr ) 
+{ 
+  return (mesh->GetParallelTopology().GetNDistantFaceNums( fnr+1 ) > 0);
+  // return mesh->GetParallelTopology().IsExchangeFace ( fnr+1 ); 
+}
+
+bool NgPar_IsExchangeVert ( int vnum )
+{ 
+  return (mesh->GetParallelTopology().GetNDistantPNums( vnum+1 ) > 0);
+  // return mesh->GetParallelTopology().IsExchangeVert ( vnum+1 ); 
+}
+
+bool NgPar_IsExchangeEdge ( int ednum )  
+{ 
+  return (mesh->GetParallelTopology().GetNDistantEdgeNums( ednum+1 ) > 0);
+  // return mesh->GetParallelTopology().IsExchangeEdge ( ednum+1 ); 
+}
+
+bool NgPar_IsExchangeElement ( int elnum )  
+{ 
+  return (mesh->GetParallelTopology().GetNDistantElNums( elnum+1 ) > 0);
+  // return mesh->GetParallelTopology().IsExchangeElement ( elnum+1 ); 
+}
+
+
+void NgPar_PrintParallelMeshTopology ()
+{ 
+  mesh -> GetParallelTopology().Print (); 
+}
 
 
 #endif

@@ -272,59 +272,15 @@ extern "C" {
 					double * p3d, double * jacobian);
 
 #ifdef PARALLEL
-  // Is Element ei an element of this processor ??
-  bool Ng_IsGhostEl (int ei);
-
-  void Ng_SetGhostEl(const int ei, const bool aisghost );
-
-  bool Ng_IsGhostSEl (int ei);
-
-  void Ng_SetGhostSEl(const int ei, const bool aisghost );
-
-  bool Ng_IsGhostVert ( int pnum );
-  bool Ng_IsGhostEdge ( int ednum );
-  bool Ng_IsGhostFace ( int fanum );
-
-  bool Ng_IsExchangeEl ( int elnum );
-  bool Ng_IsExchangeSEl ( int selnr );
-
-  void Ng_UpdateOverlap ();
-  int Ng_Overlap();
-/*   void Ng_SetGhostVert ( const int pnum, const bool aisghost ); */
-/*   void Ng_SetGhostEdge ( const int ednum, const bool aisghost ); */
-/*   void Ng_SetGhostFace ( const int fanum, const bool aisghost ); */
-
-
-
 
   // the folling functions are 0-base  !!
-  int NgPar_GetLoc2Glob_VolEl ( int locnum );
-
-  // int NgPar_GetDistantNodeNums ( int nt, int locnum, int * procs, int * distnum);
 
   // number on distant processor 
-
-  // gibt anzahl an distant pnums zurueck
-  // * pnums entspricht ARRAY<int[2] >
+  // returns pairs  (dist_proc, num_on_dist_proc)
   int NgPar_GetDistantNodeNums ( int nodetype, int locnum, int * pnums );
   int NgPar_GetNDistantNodeNums ( int nodetype, int locnum );
-
-  int NgPar_GetDistantPNum ( int proc, int locnum ) ;
-  int NgPar_GetDistantEdgeNum ( int proc, int locnum ) ;
-  int NgPar_GetDistantFaceNum ( int proc, int locnum ) ;
-  int NgPar_GetDistantElNum ( int proc, int locnum );
-
-  bool NgPar_IsExchangeFace ( int fnr ) ;
-  bool NgPar_IsExchangeVert ( int vnum );
-  bool NgPar_IsExchangeEdge ( int ednum );
-  bool NgPar_IsExchangeElement ( int elnum );
-
-  void NgPar_PrintParallelMeshTopology ();
-  bool NgPar_IsElementInPartition ( int elnum, int dest );
-
-  bool NgPar_IsGhostFace ( int facenum );
-  bool NgPar_IsGhostEdge ( int edgenum );
-
+  
+  int NgPar_GetGlobalNodeNum (int nodetype, int locnum);
 
 #endif
   

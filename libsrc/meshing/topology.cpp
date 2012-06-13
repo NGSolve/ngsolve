@@ -76,8 +76,6 @@ namespace netgen
     ParallelMeshTopology & paralleltop = mesh.GetParallelTopology();
 #endif
 
-    bool isparallel = 0;
-
   
     if (timestamp > mesh.GetTimeStamp()) return;
   
@@ -1151,23 +1149,12 @@ namespace netgen
 
 	    if (cnt_err && ntasks == 1)
 	      cout << cnt_err << " elements are not matching !!!" << endl;
-
-	    if (cnt_err && ntasks > 1)
-	      isparallel = 1;
 	  }
       }
     
 
 #ifdef PARALLEL
-    if (mesh.GetDimension() == 3)
-      if (isparallel != (id != 0))
-	{
-	  cerr << " ****************************** " << endl;
-	  cerr << " **** wrong isparallel   ****** " << endl;
-	  cerr << " ****************************** " << endl;
-	}
-    
-    if (id != 0)    // if (isparallel)
+    if (id != 0)  
       {
 	paralleltop.Update();
 	if ( paralleltop.DoCoarseUpdate() )

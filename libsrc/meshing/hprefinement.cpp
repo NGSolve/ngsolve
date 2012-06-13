@@ -1446,7 +1446,7 @@ namespace netgen
       { 
 	for(ElementIndex i=0;i<mesh.GetNE(); i++) 
 	  { 
-	    Element el = mesh[i] ;
+	    // Element el = mesh[i] ;
 	    HPRefElement & hpel = hpelements[mesh[i].hp_elnr];
 	    const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (mesh[i].GetType());
 	    double dist[3] = {0,0,0}; 
