@@ -486,11 +486,12 @@ namespace ngsolve
 		}
 
               pde->GetMeshAccess().UpdateBuffers();
-	      pde->AddVariable ("mesh.levels", pde->GetMeshAccess().GetNLevels());
-	      pde->AddVariable ("mesh.ne", pde->GetMeshAccess().GetNE());
-	      pde->AddVariable ("mesh.nv", pde->GetMeshAccess().GetNV());
+	      pde->AddVariable ("mesh.levels", pde->GetMeshAccess().GetNLevels(), 6);
+	      pde->AddVariable ("mesh.ne", pde->GetMeshAccess().GetNE(), 6);
+	      pde->AddVariable ("mesh.nv", pde->GetMeshAccess().GetNV(), 6);
 	      
-	      if (!pde->GetMeshAccess().GetNP())
+	      // if (!pde->GetMeshAccess().GetNP())
+	      if (pde->GetMeshAccess().GetDimension() == -1)
 		throw Exception ("No mesh or empty mesh file\n");
 	      scan->ReadNext();
 	      break;

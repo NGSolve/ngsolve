@@ -1,9 +1,6 @@
 #include <comp.hpp>
 #include <parallelngs.hpp>
 
-#include <parallelngs.hpp>
-
-
 
 namespace ngcomp
 {
@@ -180,7 +177,7 @@ namespace ngcomp
 
 	    int cnt = 0;
 
-	    if (ntasks == 1 || id != 0)
+	    if (working_proc)
 	      
 #pragma omp parallel
 	    {

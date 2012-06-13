@@ -251,11 +251,11 @@ namespace ngsolve
 
   void NumProcDifference :: Do(LocalHeap & lh)
   {
-    double sum = 0;
-    if ( ( id >= 1) || (ntasks==1))
-      {
-	cout << IM(3) << "Compute difference ... " << flush;
+    cout << IM(3) << "Compute difference ... " << flush;
 
+    double sum = 0;
+    if (working_proc)
+      {
 	if (bfa1->NumIntegrators() == 0)
 	  throw Exception ("Difference: Bilinearform1 needs an integrator");
 
@@ -299,12 +299,10 @@ namespace ngsolve
 	  sum += diff(i);
       }
     
-#ifdef PARALLEL
     sum = MyMPI_AllReduce (sum);
-#endif
 
     cout << IM(1) << " total difference = " << sqrt (sum) << endl;
-    pde.AddVariable (string("calcdiff.")+GetName()+".diff", sqrt(sum));
+    pde.AddVariable (string("calcdiff.")+GetName()+".diff", sqrt(sum), 6);
     
     int ndof = (ntasks == 1) ? 
       bfa1->GetFESpace().GetNDof() : 

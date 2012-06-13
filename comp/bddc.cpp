@@ -1529,8 +1529,7 @@ namespace ngcomp
   void BDDCPreconditioner<SCAL, TV> ::
   Update ()
   {
-    if (id == 0)
-      cout << "update bddc, inversetype = " << inversetype << endl;
+    cout << IM(3) << "update bddc, inversetype = " << inversetype << endl;
 
     if (refelement)
       {
