@@ -373,6 +373,10 @@
 				Name="comp"
 				>
 				<File
+					RelativePath="..\comp\bddc.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\comp\bilinearform.cpp"
 					>
 				</File>
@@ -786,6 +790,10 @@
 			<Filter
 				Name="comp"
 				>
+				<File
+					RelativePath="..\comp\bddc.hpp"
+					>
+				</File>
 				<File
 					RelativePath="..\comp\bilinearform.hpp"
 					>
