@@ -1,5 +1,3 @@
-#define NGSOLVE
-
 #ifdef PARALLEL
 
 #include "dlfcn.h"
@@ -73,6 +71,7 @@ void Parallel_Exit();
 namespace netgen {
   extern AutoPtr<Mesh>  mesh;
   extern VisualSceneMesh vsmesh;
+  extern Flags parameters;
 }
 
 using namespace netgen;
@@ -90,22 +89,13 @@ void ParallelRun()
   MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
 
-  // testout = new ostream(0); 
-  testout = new ofstream (string("testout_proc") + id  );      
+  if (parameters.StringFlagDefined ("testout"))      
+    testout = new ofstream (string("testout_proc") + id  );      
+    
 
   while ( true )
     {
-#ifdef SCALASCA
-#pragma pomp inst begin (message)
-#endif
-
-      // MyMPI_Recv ( message, 0, MPI_TAG_CMD );
       message = MyMPI_RecvCmd();
-
-#ifdef SCALASCA
-#pragma pomp inst end (message)
-#endif
-
 
       if ( message.compare(0, 3, "ngs") == 0 ) 
         {
