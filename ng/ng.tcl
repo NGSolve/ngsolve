@@ -10,8 +10,6 @@ if {[catch {package require Tix } result ]} {
 
 
 
-
-
 # userlevel 1..standard user 2..power-user 3..developer
 
 set userlevel 3

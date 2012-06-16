@@ -3020,7 +3020,6 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
 
 #ifdef PARALLEL
     if (id == 0) MyMPI_SendCmd ("end");
-    cout << "finalize, id = " << id << endl;
     MPI_Finalize();
 #endif
 
@@ -3069,7 +3068,6 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
   #ifdef OCCGEOMETRY
     extern "C" int Ng_occ_Init (Tcl_Interp * interp);
   #endif
-
 #endif
 
 
