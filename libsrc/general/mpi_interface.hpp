@@ -178,6 +178,42 @@ namespace netgen
   }
   */
 
+
+
+  /*
+    send a table entry to each of the prcesses in the group ...
+    receive-table entries will be set
+   */
+  template <typename T>
+  inline void MyMPI_ExchangeTable (TABLE<T> & send_verts, 
+				   TABLE<T> & recv_verts, int tag,
+				   MPI_Comm comm = MPI_COMM_WORLD)
+  {
+    int ntasks, rank;
+    MPI_Comm_size(comm, &ntasks);
+    MPI_Comm_rank(comm, &rank);
+
+    Array<MPI_Request> requests;
+    for (int dest = 0; dest < ntasks; dest++)
+      if (dest != rank)
+	requests.Append (MyMPI_ISend (send_verts[dest], dest, tag, comm));
+
+    for (int i = 0; i < ntasks-1; i++)
+      {
+	MPI_Status status;
+	MPI_Probe (MPI_ANY_SOURCE, tag, comm, &status);
+	int size, src = status.MPI_SOURCE;
+	MPI_Get_count (&status, MPI_INT, &size);
+	recv_verts.SetEntrySize (src, size, sizeof(int));
+	requests.Append (MyMPI_IRecv (recv_verts[src], src, tag, comm));
+      }
+    MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
+  }
+
+
+
+
+
   inline void MyMPI_SendCmd (const char * cmd)
   {
     char buf[100];
