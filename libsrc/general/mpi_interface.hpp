@@ -229,6 +229,7 @@ namespace netgen
     char buf[100];
     // MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
 
+    VT_OFF();
     MPI_Status status;
     int flag;
     do
@@ -237,6 +238,8 @@ namespace netgen
 	if (!flag) usleep (1000);
       }
     while (!flag);
+    VT_ON();
+
     MPI_Recv( &buf, 100, MPI_CHAR, 0, MPI_TAG_CMD, MPI_COMM_WORLD, &status);
     
     return string(buf);
