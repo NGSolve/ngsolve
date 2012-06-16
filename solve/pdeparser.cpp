@@ -1398,11 +1398,16 @@ namespace ngsolve
 			  definedon.Clear();
 
 			  if(partflags.NumFlagDefined ("definedon"))
-			    definedon.Set(int(partflags.GetNumFlag("definedon", 0))-1);
-			  
+			    {
+			      int defon = int(partflags.GetNumFlag("definedon", 0))-1;
+			      if (defon < size) definedon.Set(defon);
+			    }
 			  if(partflags.NumListFlagDefined("definedon"))
 			    for(int i=0; i<partflags.GetNumListFlag("definedon").Size(); i++)
-			      definedon.Set(int(partflags.GetNumListFlag("definedon")[i])-1);
+			      {
+				int defon = int(partflags.GetNumListFlag("definedon")[i])-1;
+				if (defon < size) definedon.Set(defon);
+			      }
 			  integrator->SetDefinedOn (definedon);
 			}
 
@@ -1589,12 +1594,16 @@ namespace ngsolve
 			  definedon.Clear();
 
 			  if(partflags.NumFlagDefined ("definedon"))
-			    definedon.Set(int(partflags.GetNumFlag("definedon", 0))-1);
-			  
+			    {
+			      int defon = int(partflags.GetNumFlag("definedon", 0))-1;
+			      if (defon < size) definedon.Set(defon);
+			    }
 			  if(partflags.NumListFlagDefined("definedon"))
 			    for(int i=0; i<partflags.GetNumListFlag("definedon").Size(); i++)
-			      definedon.Set(int(partflags.GetNumListFlag("definedon")[i])-1);
-			      
+			      {
+				int defon = int(partflags.GetNumListFlag("definedon")[i])-1;
+				if (defon < size) definedon.Set(defon);
+			      }
 
 			  integrator->SetDefinedOn (definedon);
 			}
