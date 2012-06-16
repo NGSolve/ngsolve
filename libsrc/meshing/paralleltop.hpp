@@ -78,15 +78,29 @@ namespace netgen
     int GetNDistantElNums ( int locelnum ) const      
     { return loc2distel[locelnum-1].Size() / 2 + 1; }
 
+    int GetGlobalPNum ( int locpnum ) const 
+    { return loc2distvert[locpnum][0]; }
+
+    int GetGlobalEdgeNum ( int locedgenum ) const 
+    { return loc2distedge[locedgenum-1][0]; }
+
+    int GetGlobalFaceNum ( int locfacenum ) const
+    { return loc2distface[locfacenum-1][0]; }
+
+    int GetGlobalElNum ( int locelnum ) const
+    { return loc2distel[locelnum-1][0]; }
+
+    /*
     int GetDistantPNum ( int proc, int locpnum ) const;
     int GetDistantEdgeNum ( int proc, int locedgenum ) const;
     int GetDistantFaceNum ( int proc, int locedgenum ) const;
     int GetDistantElNum ( int proc, int locelnum ) const;
+    */
 
-    int GetDistantPNums ( int locpnum, int * distpnums ) const;
-    int GetDistantEdgeNums ( int locedgenum, int * distedgenums ) const;
-    int GetDistantFaceNums ( int locedgenum, int * distfacenums ) const;
-    int GetDistantElNums ( int locelnum, int * distfacenums ) const;
+    void GetDistantPNums ( int locpnum, int * distpnums ) const;
+    void GetDistantEdgeNums ( int locedgenum, int * distedgenums ) const;
+    void GetDistantFaceNums ( int locedgenum, int * distfacenums ) const;
+    void GetDistantElNums ( int locelnum, int * distfacenums ) const;
 
     void Print() const;
 
@@ -97,8 +111,7 @@ namespace netgen
     bool IsExchangeElement ( int elnum ) const   { return false; }
 
 
-    bool IsExchangeSEl ( int selnum ) const { return loc2distsurfel[selnum-1].Size() > 1; }
-
+    // bool IsExchangeSEl ( int selnum ) const { return loc2distsurfel[selnum-1].Size() > 1; }
 
     bool IsExchangeVert (int dest, int vnum ) const
     {
@@ -124,13 +137,11 @@ namespace netgen
       return false;
     }
 
-    bool IsExchangeElement (int dest, int elnum ) const  { return false; }
+    // bool IsExchangeElement (int dest, int elnum ) const  { return false; }
 
     void Update();
 
     void UpdateCoarseGrid();
-    void UpdateRefinement ();
-    void UpdateTopology ();
     void UpdateExchangeElements();
 
     void UpdateCoarseGridGlobal();

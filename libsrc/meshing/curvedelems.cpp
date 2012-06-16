@@ -545,7 +545,8 @@ namespace netgen
 	edgecoeffsindex[0] = 0;
 	for (int i = 0; i < top.GetNEdges(); i++)
 	  {
-	    int glob = partop.GetDistantEdgeNum (0, i+1);
+	    // int glob = partop.GetDistantEdgeNum (0, i+1);
+	    int glob = partop.GetGlobalEdgeNum (i+1);
 	    edgeorder[i] = master_edgeorder[glob-1];
 	    int ncoefs = master_edgecoeffsindex[glob]-master_edgecoeffsindex[glob-1];
 	    edgecoeffsindex[i+1] = edgecoeffsindex[i] + ncoefs;
@@ -554,7 +555,8 @@ namespace netgen
 	
 	for (int i = 0; i < top.GetNEdges(); i++)
 	  {
-	    int glob = partop.GetDistantEdgeNum (0, i+1);
+	    // int glob = partop.GetDistantEdgeNum (0, i+1);
+	    int glob = partop.GetGlobalEdgeNum (i+1);
 	    int ncoefs = master_edgecoeffsindex[glob]-master_edgecoeffsindex[glob-1];
 	    for (int j = 0; j < ncoefs; j++)
 	      edgecoeffs[edgecoeffsindex[i]+j] = master_edgecoeffs[master_edgecoeffsindex[glob-1]+j];
@@ -567,7 +569,8 @@ namespace netgen
 	    facecoeffsindex[0] = 0;
 	    for (int i = 0; i < top.GetNFaces(); i++)
 	      {
-		int glob = partop.GetDistantFaceNum (0, i+1);
+		// int glob = partop.GetDistantFaceNum (0, i+1);
+		int glob = partop.GetGlobalFaceNum (i+1);
 		faceorder[i] = master_faceorder[glob-1];
 		int ncoefs = master_facecoeffsindex[glob]-master_facecoeffsindex[glob-1];
 		facecoeffsindex[i+1] = facecoeffsindex[i] + ncoefs;
@@ -576,7 +579,8 @@ namespace netgen
 	    
 	    for (int i = 0; i < top.GetNFaces(); i++)
 	      {
-		int glob = partop.GetDistantFaceNum (0, i+1);
+		// int glob = partop.GetDistantFaceNum (0, i+1);
+		int glob = partop.GetGlobalFaceNum (i+1);
 		int ncoefs = master_facecoeffsindex[glob]-master_facecoeffsindex[glob-1];
 		for (int j = 0; j < ncoefs; j++)
 		  facecoeffs[facecoeffsindex[i]+j] = master_facecoeffs[master_facecoeffsindex[glob-1]+j];
