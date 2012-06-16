@@ -68,7 +68,11 @@ int main(int argc, char ** argv)
 {
 
 #ifdef PARALLEL
-  int mpi_required = MPI_THREAD_MULTIPLE, mpi_provided;
+  int mpi_required = MPI_THREAD_MULTIPLE;
+#ifdef VTRACE
+  mpi_required = 0;
+#endif
+  int mpi_provided;
   MPI_Init_thread(&argc, &argv, mpi_required, &mpi_provided);          
 
   MPI_Comm_size(MPI_COMM_WORLD, &netgen::ntasks);
