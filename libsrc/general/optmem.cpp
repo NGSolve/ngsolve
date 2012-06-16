@@ -1,5 +1,5 @@
 /**************************************************************************/
-/* File:   optmem.cc                                                      */
+/* File:   optmem.cpp                                                     */
 /* Author: Joachim Schoeberl                                              */
 /* Date:   04. Apr. 97                                                    */
 /**************************************************************************/
@@ -14,7 +14,6 @@
 
 namespace netgen
 {
-  //using namespace netgen;
 
   BlockAllocator :: BlockAllocator (unsigned asize, unsigned ablocks)
     : bablocks (0)

@@ -27,10 +27,11 @@ namespace netgen
   extern MPI_Comm mesh_comm;
 
   template <class T>
-  MPI_Datatype MyGetMPIType ( ) { cerr << "ERROR in GetMPIType() -- no type found" << endl;return 0;}
+  MPI_Datatype MyGetMPIType ( ) 
+  { cerr << "ERROR in GetMPIType() -- no type found" << endl;return 0; }
 
   template <>
-  inline MPI_Datatype MyGetMPIType<int> ( ) 
+  inline MPI_Datatype MyGetMPIType<int> ( )
   { return MPI_INT; }
   
   template <>
@@ -214,36 +215,11 @@ namespace netgen
 
 
 
-  inline void MyMPI_SendCmd (const char * cmd)
-  {
-    char buf[100];
-    strcpy (buf, cmd);
-    // MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
+  extern void MyMPI_SendCmd (const char * cmd);
+  extern string MyMPI_RecvCmd ();
 
-    for (int dest = 1; dest < ntasks; dest++)
-      MPI_Bsend( &buf, 100, MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
-  }
 
-  inline string MyMPI_RecvCmd ()
-  {
-    char buf[100];
-    // MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
 
-    VT_OFF();
-    MPI_Status status;
-    int flag;
-    do
-      {
-	MPI_Iprobe (0, MPI_TAG_CMD, MPI_COMM_WORLD, &flag, &status);
-	if (!flag) usleep (1000);
-      }
-    while (!flag);
-    VT_ON();
-
-    MPI_Recv( &buf, 100, MPI_CHAR, 0, MPI_TAG_CMD, MPI_COMM_WORLD, &status);
-    
-    return string(buf);
-  }
 
   template <class T>
   inline void MyMPI_Bcast (T & s, MPI_Comm comm = MPI_COMM_WORLD)
