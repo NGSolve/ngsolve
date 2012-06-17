@@ -3,11 +3,19 @@
 #include <comp.hpp>
 #include <parallelngs.hpp> 
 
+
+
 namespace ngparallel
 {
   using namespace ngcomp;
 
+
   MPI_Comm ngs_comm;
+  int id = 0;
+  int ntasks = 1;
+  bool working_proc = true;
+
+
 
 
   ParallelDofs :: ParallelDofs (const MeshAccess & ama, 
