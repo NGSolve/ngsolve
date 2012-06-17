@@ -34,6 +34,28 @@ using namespace ngla;
 
 
 
+#ifndef PARALLEL
+
+enum { id = 0 };
+enum { ntasks = 1 };
+enum { working_proc = 1 };
+
+#else
+
+namespace ngparallel
+{
+  extern int id, ntasks;
+  extern bool working_proc;
+}
+using ngparallel::id;
+using ngparallel::ntasks;
+using ngparallel::working_proc;
+
+#endif
+
+
+
+
 #include "mpiwrapper.hpp"
 #include "paralleldofs.hpp"
 
