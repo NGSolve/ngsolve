@@ -20,7 +20,6 @@ $(LAPACK_LIBS) $(TCL_LIB_SPEC)
 
 include_HEADERS = solve.hpp pde.hpp numproc.hpp
 
-libngsolve_la_LDFLAGS = -rdynamic
-# libngsolve_la_LDFLAGS = -avoid-version -rdynamic
+libngsolve_la_LDFLAGS = -avoid-version -rdynamic
 
 
