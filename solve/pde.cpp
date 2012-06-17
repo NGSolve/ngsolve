@@ -573,9 +573,9 @@ namespace ngsolve
 	 << ", NP = " << ma.GetNP() << endl;
 
 
-    AddVariable ("mesh.levels", ma.GetNLevels());
-    AddVariable ("mesh.ne", ma.GetNE());
-    AddVariable ("mesh.nv", ma.GetNV());
+    AddVariable ("mesh.levels", ma.GetNLevels(), 6);
+    AddVariable ("mesh.ne", ma.GetNE(), 6);
+    AddVariable ("mesh.nv", ma.GetNV(), 6);
 
     // line-integrator curve points can only be built if
     // element-curving has been done
