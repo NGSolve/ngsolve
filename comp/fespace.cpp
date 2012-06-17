@@ -1107,7 +1107,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void NodalFESpace :: Update(LocalHeap & lh)
   {
     FESpace :: Update (lh);
-
     if (low_order_space) low_order_space -> Update(lh);
 
     if (ma.GetNLevels() > ndlevel.Size())
@@ -1116,7 +1115,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	int i, j;
 	int ne = ma.GetNE();
 	int nse = ma.GetNSE();
-	int ndof = 0;
+	int ndof = -1;
 	for (i = 0; i < ne; i++)
 	  {
 	    GetDofNrs (i, dnums);
@@ -1154,7 +1153,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	      }
 	  }
       }
-
 
     if (timing) Timing();
   }
