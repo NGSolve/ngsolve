@@ -535,7 +535,7 @@ public:
 	      elmat = bbmat * Trans (bdbmat); 
 	  }
 	else
-	  LapackMultABt (bbmat, bdbmat, elmat);
+	  elmat = bbmat * Trans(bdbmat) | Lapack;
 
 	timer.AddFlops (long(elmat.Height())*long(elmat.Width())*bbmat.Width());
       } 
