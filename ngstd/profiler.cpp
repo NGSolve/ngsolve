@@ -4,8 +4,10 @@
 /* Date:   19. Apr. 2002                                                  */
 /**************************************************************************/
 
-
 #include <ngstd.hpp>
+#ifdef PARALLEL
+#include <mpi.h>
+#endif
 
 namespace ngstd
 {
@@ -54,6 +56,8 @@ namespace ngstd
 	char filename[100];
 
 #ifdef PARALLEL
+	int id;
+	MPI_Comm_rank(MPI_COMM_WORLD, &id);
 	sprintf (filename, "ngs.prof.%d", id);
 #else
 	sprintf (filename, "ngs.prof");
