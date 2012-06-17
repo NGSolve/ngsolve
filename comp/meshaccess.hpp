@@ -524,11 +524,9 @@ namespace ngcomp
     void InitPointCurve(double red = 1, double green = 0, double blue = 0) const;
     void AddPointCurvePoint(const Vec<3> & point) const;
 
-    // returns number of distant processes which share this node
-    // int GetDistantNodeNums (NODE_TYPE nt, int locnum, Array<int[2]> & distnums) const;
-    // int GetGlobalNodeNum (NODE_TYPE nt, int locnum) const;
 
-    int GetDistantNodeNums (Node node, Array<int[2]> & distnums) const;
+    // void GetDistantNodeNums (Node node, Array<int[2]> & distnums) const;
+    void GetDistantProcs (Node node, Array<int> & procs) const;
     int GetGlobalNodeNum (Node node) const;
   };
 

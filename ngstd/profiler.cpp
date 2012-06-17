@@ -59,11 +59,12 @@ namespace ngstd
 	int id;
 	MPI_Comm_rank(MPI_COMM_WORLD, &id);
 	sprintf (filename, "ngs.prof.%d", id);
+	printf ("write profiles to files ngs.prof.<id>\n"); 
 #else
 	sprintf (filename, "ngs.prof");
+	printf ("write profile to file ngs.prof\n"); 
 #endif
 	
-	if (id == 0) printf ("write profile to file ngs.prof\n"); 
 	FILE *prof = fopen(filename,"w");
 	Print (prof);
 	fclose(prof);

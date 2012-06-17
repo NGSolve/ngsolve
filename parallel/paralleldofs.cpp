@@ -22,22 +22,20 @@ namespace ngparallel
 				const Array<Node> & adofnodes, int dim, bool iscomplex)
     : ma(ama), dofnodes(adofnodes) 
   {
-    // fes = NULL;
+    static Timer timer ("ParallelDofs");
+    RegionTimer reg(timer);
+
     ndof = dofnodes.Size();
-    Array<int[2]> distnums;
+    Array<int> distprocs;
 
     Array<int> nexdofs(ntasks);
     nexdofs = 0;
     for (int i = 0; i < ndof; i++)
       {
 	if (dofnodes[i].GetNr() == -1) continue;
-	ma.GetDistantNodeNums (dofnodes[i], distnums);
-	for (int j = 0; j < distnums.Size(); j++)
-	  {
-	    int dest = distnums[j][0];
-	    if (dest == 0) continue;
-	    nexdofs[dest]++;
-	  }
+	ma.GetDistantProcs (dofnodes[i], distprocs);
+	for (int j = 0; j < distprocs.Size(); j++)
+	  nexdofs[distprocs[j]]++;
       }
 
     exchangedofs = new Table<int> (nexdofs);
@@ -46,11 +44,10 @@ namespace ngparallel
     for (int i = 0; i < ndof; i++)
       {
 	if (dofnodes[i].GetNr() == -1) continue;
-	ma.GetDistantNodeNums (dofnodes[i], distnums);
-	for (int j = 0; j < distnums.Size(); j++)
+	ma.GetDistantProcs (dofnodes[i], distprocs);
+	for (int j = 0; j < distprocs.Size(); j++)
 	  {
-	    int dest = distnums[j][0];
-	    if (dest == 0) continue;
+	    int dest = distprocs[j];
 	    (*exchangedofs)[dest][nexdofs[dest]++] = i;
 	  }
       }

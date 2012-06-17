@@ -1061,12 +1061,25 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
     return NgPar_GetGlobalNodeNum (node.GetType(), node.GetNr());
   }
   
-  
-  int MeshAccess :: GetDistantNodeNums (Node node,
-					Array<int[2]> & distnums ) const
+/*
+  void MeshAccess :: GetDistantNodeNums (Node node,
+					 Array<int[2]> & distnums ) const
   {
     distnums.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );
-    return NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &distnums[0][0] );
+    NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &distnums[0][0] );
+  }
+*/
+  void MeshAccess :: GetDistantProcs (Node node, Array<int> & procs) const
+  {
+    Array<int[2]> distnums;
+    
+    distnums.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );
+    NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &distnums[0][0] );
+
+    procs.SetSize(0);
+    for (int j = 0; j < distnums.Size(); j++)
+      if (distnums[j][0] != 0)
+	procs.Append (distnums[j][0]);
   }
 
 #else
@@ -1076,14 +1089,17 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
   {
     return -1;
   }
-
-  int MeshAccess :: GetDistantNodeNums (Node node, 
+/*
+  void MeshAccess :: GetDistantNodeNums (Node node, 
 					Array<int[2]> & distnums ) const
   {
     distnums.SetSize (0);
-    return 0;
   }
-
+*/
+  void MeshAccess :: GetDistantProcs (Node node, Array<int> & procs) const
+  {
+    procs.SetSize (0);
+  }
 #endif
 
 
@@ -1158,9 +1174,8 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 		       << "\r" << task << " " << sum << "/" << total
 		       << " (" << num_working << " procs working) " << flush;
 		  ma.SetThreadPercentage ( 100.0*sum / total );
-		  
 		  if (!num_working) break;
-		  if (!got_flag) usleep (10000);
+		  if (!got_flag) usleep (1000);
 		}
 	    }
 #endif
@@ -1172,7 +1187,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 #ifdef PARALLEL
 	  MPI_Bsend (&total, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
 	  int final = -1;
-	  MPI_Bsend (&final, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+	  MPI_Send (&final, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
 #endif
 	}
     }

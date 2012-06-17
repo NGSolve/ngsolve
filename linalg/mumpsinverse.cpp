@@ -350,8 +350,8 @@ namespace ngla
   void MumpsInverse<TM,TV_ROW,TV_COL> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
-    static int timer = NgProfiler::CreateTimer ("Mumps mult inverse");
-    NgProfiler::RegionTimer reg (timer);
+    // static int timer = NgProfiler::CreateTimer ("Mumps mult inverse");
+    // NgProfiler::RegionTimer reg (timer);
 
     VT_OFF();
 
@@ -390,7 +390,6 @@ namespace ngla
 	ncid.job = JOB_SOLVE;
 	mumps_trait<TSCAL>::MumpsFunction (&ncid);
       }
-
     VT_ON();
   }
   
@@ -804,7 +803,7 @@ namespace ngla
     delete [] col_indices;
     delete [] row_indices;
     delete [] matrix;
-    // VT_ON();
+    VT_ON();
   }
   
   
@@ -813,7 +812,7 @@ namespace ngla
   void ParallelMumpsInverse<TM,TV_ROW,TV_COL> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
-    static Timer timer("Mumps mult inverse");
+    static Timer timer("Parallelmumps mult inverse");
     RegionTimer reg (timer);
 
     VT_OFF();
