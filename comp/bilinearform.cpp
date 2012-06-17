@@ -758,7 +758,7 @@ namespace ngcomp
 			    }
 
 
-			  NgProfiler::StopTimer (timer2);
+			  timer2.Stop();
 			  timer3.Start();
 			  fespace.TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
@@ -827,9 +827,9 @@ namespace ngcomp
 
 
 
-				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizei*sizei/3);  // LU fact
-				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizei*sizeo);  
-				  NgProfiler::AddFlops (statcondtimer, double(sizei)*sizeo*sizeo);  
+				  statcondtimer.AddFlops (double(sizei)*sizei*sizei/3);  // LU fact
+				  statcondtimer.AddFlops (double(sizei)*sizei*sizeo);  
+				  statcondtimer.AddFlops (double(sizei)*sizeo*sizeo);  
 				  
 				  // A := A - B D^{-1} C^T
 				  // new Versions, July 07
@@ -1056,7 +1056,7 @@ namespace ngcomp
 		  
 		      if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
 		      
-		      NgProfiler::StartTimer (timerb1);
+		      timerb1.Start();
 		      
 		      const FiniteElement & fel = fespace.GetSFE (i, lh);
 		      
@@ -1074,7 +1074,7 @@ namespace ngcomp
                           throw Exception ( "Inconsistent number of degrees of freedom " );
                         }
 
-		      NgProfiler::StopTimer (timerb1);
+		      timerb1.Stop();
 		      
 		      int elmat_size = dnums.Size()*fespace.GetDimension();
 		      FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -1093,12 +1093,12 @@ namespace ngcomp
                           if (bfi.SkeletonForm()) continue;
                           if (!bfi.DefinedOn (ma.GetSElIndex (i))) continue;		    
 			  
-			  NgProfiler::StartTimer (timerb2);
+			  timerb2.Start();
 
 			  bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
 			  fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
-			  NgProfiler::StopTimer (timerb2);
+			  timerb2.Stop();
 
 			  if (printelmat)
 			    {
@@ -1130,7 +1130,7 @@ namespace ngcomp
 			}
 
 
-		      NgProfiler::StartTimer (timerb3);
+		      timerb3.Start();
 		      
 #pragma omp critical (addelmatboundary)
 		      {
@@ -1140,7 +1140,7 @@ namespace ngcomp
 		      if (preconditioner)
 			preconditioner -> AddElementMatrix (dnums, sumelmat, false, i, lh);
 		      
-		      NgProfiler::StopTimer (timerb3);
+		      timerb3.Stop();
                     }
 		}//endof parallel 
 		// cout << "\rassemble surface element " << cnt << "/" << nse << endl;
@@ -1687,7 +1687,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
     */
 
     static Timer timer ("Compute Internal");
-    NgProfiler::RegionTimer reg (timer);
+    RegionTimer reg (timer);
 
 
     try
@@ -2984,8 +2984,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
             if (type == 1 && !bfi.BoundaryForm()) continue;
 	    
 	    
-            static int elementtimer = NgProfiler::CreateTimer ("Element matrix application");
-            NgProfiler::StartTimer (elementtimer);
+            static Timer elementtimer ("Element matrix application");
+            elementtimer.Start();
 	    
             if (this->precompute)
               // bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
@@ -2995,7 +2995,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 0, lh);
 
 
-            NgProfiler::StopTimer (elementtimer);
+            elementtimer.Stop();
 	    
             /*
               testout->precision (12);
@@ -3193,8 +3193,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
             if (type == 1 && !bfi.BoundaryForm()) continue;
 	    
 	    
-            static int elementtimer = NgProfiler::CreateTimer ("Element matrix application");
-            NgProfiler::StartTimer (elementtimer);
+            static Timer elementtimer ("Element matrix application");
+            elementtimer.Start();
 	    
 	    
             if (this->precompute)
@@ -3204,7 +3204,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
             else
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 0, lh);
 	    
-            NgProfiler::StopTimer (elementtimer);
+            elementtimer.Stop();
 	    
             /*
               testout->precision (12);
@@ -3406,15 +3406,15 @@ cout << "catch in AssembleBilinearform 2" << endl;
             if (type == 1 && !bfi.BoundaryForm()) continue;
 	    
 	    
-            static int elementtimer = NgProfiler::CreateTimer ("Element matrix application");
-            NgProfiler::StartTimer (elementtimer);
+            static Timer elementtimer ("Element matrix application");
+            elementtimer.Start();
 	    
             if (this->precompute)
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
             else
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 0, lh);
 
-            NgProfiler::StopTimer (elementtimer);
+            elementtimer.Stop();
 	    
             /*
               testout->precision (12);

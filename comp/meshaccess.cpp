@@ -1161,7 +1161,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 		  ma.SetThreadPercentage ( 100.0*sum / total );
 		  
 		  if (!num_working) break;
-		  if (!got_flag) usleep (100000);
+		  if (!got_flag) usleep (10000);
 		}
 	    }
 #endif

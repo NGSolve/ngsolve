@@ -730,7 +730,7 @@ namespace ngla
   {
     static Timer timer("SparseMatrix::MultAdd");
     RegionTimer reg (timer);
-    NgProfiler::AddFlops (timer, this->nze);
+    timer.AddFlops (this->nze);
 
     FlatVector<TVX> fx = x.FV<TVX>(); 
     FlatVector<TVY> fy = y.FV<TVY>(); 
@@ -986,9 +986,9 @@ namespace ngla
   void SparseMatrixSymmetric<TM,TV> :: 
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static int timer = NgProfiler::CreateTimer ("SparseMatrixSymmetric::MultAdd");
-    NgProfiler::RegionTimer reg (timer);
-    NgProfiler::AddFlops (timer, 2*this->nze);
+    static Timer timer("SparseMatrixSymmetric::MultAdd");
+    RegionTimer reg (timer);
+    timer.AddFlops (2*this->nze);
 
     const FlatVector<TV_ROW> fx = x.FV<TV_ROW>();
     FlatVector<TV_COL> fy = y.FV<TV_COL>();
@@ -1006,8 +1006,8 @@ namespace ngla
 	    const BitArray * inner,
 	    const Array<int> * cluster) const
   {
-    static int timer = NgProfiler::CreateTimer ("SparseMatrixSymmetric::MultAdd1");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("SparseMatrixSymmetric::MultAdd1");
+    RegionTimer reg (timer);
 
     const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
     FlatVector<TV_COL> fy = y.FV<TV_COL> ();

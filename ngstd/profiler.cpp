@@ -126,4 +126,12 @@ namespace ngstd
 
 
   NgProfiler prof;
+
+
+
+#ifdef  VTRACE
+  Timer * Timer::stack_top = NULL;
+#endif
+
+
 }
