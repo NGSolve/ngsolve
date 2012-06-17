@@ -183,7 +183,7 @@ namespace ngstd
 
 
   
-
+#ifndef VTRACE
   class Timer
   {
     int timernr;
@@ -210,6 +210,62 @@ namespace ngstd
 
     operator int () { return timernr; }
   };
+  
+  
+  /**
+     Timer object.
+       Start / stop timer at constructor / destructor.
+  */
+  class RegionTimer
+  {
+    Timer & timer;
+  public:
+    /// start timer
+    RegionTimer (Timer & atimer) : timer(atimer) { timer.Start(); }
+    /// stop timer
+    ~RegionTimer () { timer.Stop(); }
+  };
+#else
+
+
+  
+
+  class Timer
+  {
+    static Timer * stack_top;
+
+    int timer_id;
+    Timer * prev;
+
+  public:
+    Timer (const string & name)
+    {
+      timer_id = VT_USER_DEF(name.c_str());
+    }
+    void Start () 
+    {
+      prev = stack_top;
+      stack_top = this;
+      if (prev)
+	VT_USER_END_ID (prev -> timer_id);
+      VT_USER_START_ID(timer_id);
+    }
+    void Stop () 
+    {
+      VT_USER_END_ID(timer_id);
+      if (prev != NULL)
+	VT_USER_START_ID(prev -> timer_id);
+      stack_top = prev;
+    }
+    void AddFlops (double aflops)
+    {
+      ; // NgProfiler::AddFlops (timernr, aflops);
+    }
+
+    double GetTime () { return 0; }
+    long int GetCounts () { return 0; }
+    // operator int () { return timernr; }
+  };
 
   
   /**
@@ -225,6 +281,7 @@ namespace ngstd
     /// stop timer
     ~RegionTimer () { timer.Stop(); }
   };
+#endif
 
 }
 

@@ -605,7 +605,7 @@ namespace ngsolve
 	  {
 	    try
 	      {
-		NgProfiler::RegionTimer timer(fes->GetTimer());
+		RegionTimer timer(fes->GetTimer());
 
 		cout << IM(1)
 		     << "Update " << fes -> GetClassName()
@@ -659,7 +659,7 @@ namespace ngsolve
 	    try
 	      {
 		cout << IM(1) << "Update gridfunction " << gf->GetName() << endl;
-		NgProfiler::RegionTimer timer(gf->GetTimer());
+		RegionTimer timer(gf->GetTimer());
 		gf->Update();
 
 	      }
@@ -697,7 +697,7 @@ namespace ngsolve
 		     << "update bilinear-form " << bf->GetName() << endl;
 		(*testout) << "update bilinear-form " << bf->GetName() << endl;
 
-		NgProfiler::RegionTimer timer(bf->GetTimer());
+		RegionTimer timer(bf->GetTimer());
 		bf->Assemble(lh);
 		lh.CleanUp();
 	      }
@@ -736,7 +736,7 @@ namespace ngsolve
 		try
 		  {
 		    cout << IM(1) << "Update linear-form " << lf->GetName() << endl;
-		    NgProfiler::RegionTimer timer(lf->GetTimer());
+		    RegionTimer timer(lf->GetTimer());
 			
 		    lf->Assemble(lh);
 		    lh.CleanUp();
@@ -785,7 +785,7 @@ namespace ngsolve
 		    cout << IM(1) << "Update " << pre->ClassName() 
 			 << "  " << pre->GetName() << endl;
 
-		    NgProfiler::RegionTimer timer(pre->GetTimer());
+		    RegionTimer timer(pre->GetTimer());
 		    pre->Update();
 		    //	  preconditioners[i]->Test();
 		  }

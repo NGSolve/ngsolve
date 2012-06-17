@@ -102,7 +102,7 @@ namespace ngla
 	      hv1 = vx(cdi);
 	      vy(rdi) += s * elmats[i] * hv1;
 
-	      NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
+	      timer.AddFlops (cdi.Size()*rdi.Size());
 	    }
 	}//end of parallel    
 	
@@ -126,7 +126,7 @@ namespace ngla
 	    hv = vx(cdi);
 	    vy(rdi) += s * elmats[i] * hv;
 	    
-	    NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
+	    timer.AddFlops (cdi.Size()*rdi.Size());
 	  }
       }
   }
@@ -136,8 +136,8 @@ namespace ngla
   void ElementByElementMatrix<SCAL> :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
 //     cout << " ElementByElementMatrix<SCAL> :: MultTansAdd here " << endl << flush;
-    static int timer = NgProfiler::CreateTimer ("EBE-matrix::MultTransAdd");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("EBE-matrix::MultTransAdd");
+    RegionTimer reg (timer);
     int maxs = 0;
     for (int i = 0; i < rowdnums.Size(); i++)
       maxs = max2 (maxs, rowdnums[i].Size());
@@ -163,7 +163,7 @@ namespace ngla
 	      hv1 = vx(rdi);
 	      vy(cdi) += s * Trans(elmats[i]) * hv1;
 
-	      NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
+	      timer.AddFlops (cdi.Size()*rdi.Size());
 	    }
 	}//end of parallel
       }
@@ -186,7 +186,7 @@ namespace ngla
 	    hv1 = vx(rdi);
 	    vy(cdi) += s * Trans(elmats[i]) * hv1;
 
-	    NgProfiler::AddFlops (timer, cdi.Size()*rdi.Size());
+	    timer.AddFlops (cdi.Size()*rdi.Size());
 	  }
       }
   }

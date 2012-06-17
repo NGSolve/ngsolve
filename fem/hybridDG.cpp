@@ -64,7 +64,7 @@ namespace ngfem
       elmat = 0.0;
 
       {
-	NgProfiler::RegionTimer reg (timer1);     
+	RegionTimer reg (timer1);     
 	HeapReset hr(lh);
 
 	FlatMatrixFixWidth<D> dshape(nd_l2, lh);
@@ -181,11 +181,11 @@ namespace ngfem
 				     void * precomputed,
 				     LocalHeap & lh) const
     {
-      static int timer = NgProfiler::CreateTimer ("HDG apply laplace");
-      static int timer1 = NgProfiler::CreateTimer ("HDG apply laplace volume");
-      static int timer2 = NgProfiler::CreateTimer ("HDG apply laplace boundary");
+      static Timer timer ("HDG apply laplace");
+      static Timer timer1 ("HDG apply laplace volume");
+      static Timer timer2 ("HDG apply laplace boundary");
 
-      NgProfiler::RegionTimer reg (timer);
+      RegionTimer reg (timer);
 
 
       const CompoundFiniteElement & cfel = 
@@ -209,7 +209,7 @@ namespace ngfem
       ely = 0.0;
 
       {
-	NgProfiler::RegionTimer reg (timer1);     
+	RegionTimer reg (timer1);     
 	HeapReset hr(lh);
 
 
@@ -240,7 +240,7 @@ namespace ngfem
       
       // The facet contribution
       {
-	NgProfiler::RegionTimer reg2 (timer2);     
+	RegionTimer reg2 (timer2);     
 
 
 	int nfacet = ElementTopology::GetNFacets(eltype);
@@ -575,7 +575,7 @@ namespace ngfem
       FlatMatrix<> mat_gradgrad (nd_l2, lh);
       
       {
-	NgProfiler::RegionTimer reg (timer1);     
+	RegionTimer reg (timer1);     
 	HeapReset hr(lh);
 
 	FlatMatrixFixWidth<D> dshape(nd_l2, lh);
@@ -597,7 +597,7 @@ namespace ngfem
 	    dbmats.Rows(l*D, (l+1)*D) = (lam * mip.GetWeight()) * Trans(dshape);
 	  }
 
-	NgProfiler::RegionTimer reg1a (timer1a);     
+	RegionTimer reg1a (timer1a);     
 
 	mat_gradgrad = Trans (dbmats) * bmats | Lapack;
 	elmat.Cols(l2_dofs).Rows(l2_dofs) += mat_gradgrad; 
@@ -688,7 +688,7 @@ namespace ngfem
 
 	timer2.Stop();
 
-	NgProfiler::RegionTimer reg3 (timer3);     
+	RegionTimer reg3 (timer3);     
 
 	mat_gradgrad(0,0) += 1;
 	LapackInverse (mat_gradgrad);
@@ -770,7 +770,7 @@ namespace ngfem
       FlatMatrix<> mat_gradgrad (nd_l2, lh);
       
       {
-	NgProfiler::RegionTimer reg (timer1);     
+	RegionTimer reg (timer1);     
 	HeapReset hr(lh);
 
 	FlatMatrixFixWidth<D> dshape(nd_l2, lh);
@@ -796,7 +796,7 @@ namespace ngfem
 	    dbmats.Rows(l*D, (l+1)*D) = (lam * mip.GetWeight()) * Trans(dshape);
 	  }
 
-	NgProfiler::RegionTimer reg1a (timer1a);     
+	RegionTimer reg1a (timer1a);     
 
 	mat_gradgrad = Trans (dbmats) * bmats | Lapack;
 	elmat.Cols(l2_dofs).Rows(l2_dofs) += mat_gradgrad; 
@@ -809,7 +809,7 @@ namespace ngfem
 
       // The facet contribution
       {
-	NgProfiler::RegionTimer reg (timer2);     
+	RegionTimer reg (timer2);     
 	int nfacet = ElementTopology::GetNFacets(eltype);
       
 	Facet2ElementTrafo transform(eltype); 
@@ -981,7 +981,7 @@ namespace ngfem
       FlatMatrix<> mat_robin (nd_l2, lh);
 
       {
-	NgProfiler::RegionTimer reg (timer1);     
+	RegionTimer reg (timer1);     
 	HeapReset hr(lh);
 
 	FlatMatrixFixWidth<D> dshape(nd_l2, lh);
@@ -1004,7 +1004,7 @@ namespace ngfem
 	    dbmats.Rows(l*D, (l+1)*D) = (lam * mip.GetWeight()) * Trans(dshape);
 	  }
 
-	NgProfiler::RegionTimer reg1a (timer1a);     
+	RegionTimer reg1a (timer1a);     
 
 	// mat_gradgrad = Trans (dbmats) * bmats;
         // LapackMultAtB (dbmats, bmats, mat_gradgrad);
@@ -1029,7 +1029,7 @@ namespace ngfem
 	mat_robin = 0.0;
 	
 	{
-	  NgProfiler::RegionTimer reg2 (timer2);     
+	  RegionTimer reg2 (timer2);     
 	  for (int k = 0; k < nfacet; k++)
 	    {
 	      HeapReset hr(lh);
@@ -1070,10 +1070,10 @@ namespace ngfem
 		  fac_dudns.Col(l) = lam * len * ir_facet[l].Weight() * mat_dudn;
 		}
 
-	      NgProfiler::RegionTimer reg2a (timer2a);     
-	      NgProfiler::AddFlops (timer2a, nd*nd*ir_facet.GetNIP());
-	      NgProfiler::AddFlops (timer2a, nd_l2*nd*ir_facet.GetNIP());
-	      NgProfiler::AddFlops (timer2a, nd_l2*nd_l2*ir_facet.GetNIP());
+	      RegionTimer reg2a (timer2a);     
+	      timer2a.AddFlops (nd*nd*ir_facet.GetNIP());
+	      timer2a.AddFlops (nd_l2*nd*ir_facet.GetNIP());
+	      timer2a.AddFlops (nd_l2*nd_l2*ir_facet.GetNIP());
 	      /*
 		elmat += Symmetric (fac_jumps * Trans (jumps));
 		mat_mixed += fac_dudns * Trans (jumps);
@@ -1187,7 +1187,7 @@ namespace ngfem
       mat_mass = 0.0;
 
       {
-	NgProfiler::RegionTimer reg (timer1);     
+	RegionTimer reg (timer1);     
 	HeapReset hr(lh);
 
 	FlatMatrixFixWidth<D> dshape(nd_l2, lh);
@@ -1212,7 +1212,7 @@ namespace ngfem
 	    mat_mass += (lam*mip.GetWeight()) * mat_l2 * Trans(mat_l2);
 	  }
 
-	NgProfiler::RegionTimer reg1a (timer1a);     
+	RegionTimer reg1a (timer1a);     
 
 	// mat_gradgrad = Trans (dbmats) * bmats;
         // LapackMultAtB (dbmats, bmats, mat_gradgrad);
@@ -1242,7 +1242,7 @@ namespace ngfem
 	mat_robin = 0.0;
 	
 	{
-	  NgProfiler::RegionTimer reg2 (timer2);     
+	  RegionTimer reg2 (timer2);     
 	  for (int k = 0; k < nfacet; k++)
 	    {
 	      HeapReset hr(lh);
@@ -1283,10 +1283,10 @@ namespace ngfem
 		  fac_dudns.Col(l) = lam * len * ir_facet[l].Weight() * mat_dudn;
 		}
 
-	      NgProfiler::RegionTimer reg2a (timer2a);     
-	      NgProfiler::AddFlops (timer2a, nd*nd*ir_facet.GetNIP());
-	      NgProfiler::AddFlops (timer2a, nd_l2*nd*ir_facet.GetNIP());
-	      NgProfiler::AddFlops (timer2a, nd_l2*nd_l2*ir_facet.GetNIP());
+	      RegionTimer reg2a (timer2a);     
+	      timer2a.AddFlops (nd*nd*ir_facet.GetNIP());
+	      timer2a.AddFlops (nd_l2*nd*ir_facet.GetNIP());
+	      timer2a.AddFlops (nd_l2*nd_l2*ir_facet.GetNIP());
 	      /*
 		elmat += Symmetric (fac_jumps * Trans (jumps));
 		mat_mixed += fac_dudns * Trans (jumps);
@@ -1399,7 +1399,7 @@ namespace ngfem
       mat_mass = 0.0;
 
       {
-	NgProfiler::RegionTimer reg (timer1);     
+	RegionTimer reg (timer1);     
 	HeapReset hr(lh);
 
 	FlatMatrixFixWidth<D> dshape(nd_l2, lh);
@@ -1425,7 +1425,7 @@ namespace ngfem
 	    mat_mass += (lam*mip.GetWeight()) * mat_l2 * Trans(mat_l2);
 	  }
 
-	NgProfiler::RegionTimer reg1a (timer1a);     
+	RegionTimer reg1a (timer1a);     
 
 	// mat_gradgrad = Trans (dbmats) * bmats;
         // LapackMultAtB (dbmats, bmats, mat_gradgrad);
@@ -1455,7 +1455,7 @@ namespace ngfem
 	mat_robin = 0.0;
 	
 	{
-	  NgProfiler::RegionTimer reg2 (timer2);     
+	  RegionTimer reg2 (timer2);     
 
 	  for (int dir = 0; dir < D; dir++)
 	    {
@@ -1576,10 +1576,10 @@ namespace ngfem
 				    FlatMatrix<double> & elmat,
 				    LocalHeap & lh) const
     {
-      static int timer = NgProfiler::CreateTimer ("HDG convection");
-      static int timer2 = NgProfiler::CreateTimer ("HDG convection boundary");
+      static Timer timer ("HDG convection");
+      static Timer timer2 ("HDG convection boundary");
 
-      NgProfiler::RegionTimer reg (timer);
+      RegionTimer reg (timer);
 
       const CompoundFiniteElement & cfel = 
         dynamic_cast<const CompoundFiniteElement&> (fel);
@@ -1653,7 +1653,7 @@ namespace ngfem
       Facet2ElementTrafo transform(eltype); 
       const NORMAL * normals = ElementTopology::GetNormals(eltype);
 
-      NgProfiler::RegionTimer reg2 (timer2);     
+      RegionTimer reg2 (timer2);     
 
       for (int k = 0; k < nfacet; k++)
         {

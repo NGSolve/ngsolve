@@ -57,7 +57,9 @@ public:
   void SetName (const string & aname)
   { 
     name = aname; 
+#ifndef VTRACE
     NgProfiler::SetName (timer, name); 
+#endif
   }
 
   ///

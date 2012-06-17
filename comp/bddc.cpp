@@ -396,7 +396,7 @@ namespace ngcomp
       static Timer timerharmonicexttrans ("Apply BDDC preconditioner - harmonic extension trans");
       
 
-      NgProfiler::RegionTimer reg (timer);
+      RegionTimer reg (timer);
 
       x.Cumulate();
       y = x;
@@ -1047,26 +1047,26 @@ namespace ngcomp
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {
       // cout << "Multadd, |x| = " << L2Norm(x) << ", |y| = " << L2Norm(y) << endl;
-      static int timer = NgProfiler::CreateTimer ("Apply BDDC preconditioner");
-      static int timertransx = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx");
-      static int timertransx1a = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - lapack");
-      static int timertransx1b = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - read");
-      static int timertransx1c = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - write");
-      // static int timertransx1d = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - indices");
+      static Timer timer ("Apply BDDC preconditioner");
+      static Timer timertransx ("Apply BDDC preconditioner, transx");
+      static Timer timertransx1a ("Apply BDDC preconditioner, transx - lapack");
+      static Timer timertransx1b ("Apply BDDC preconditioner, transx - read");
+      static Timer timertransx1c ("Apply BDDC preconditioner, transx - write");
+      // static Timer timertransx1d = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transx - indices");
 
-      static int timertransy = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy");
-      static int timertransyr = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy - read");
-      static int timertransyw = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy - write");
-      // static int timertransyi = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy - ind");
+      static Timer timertransy ("Apply BDDC preconditioner, transy");
+      static Timer timertransyr ("Apply BDDC preconditioner, transy - read");
+      static Timer timertransyw ("Apply BDDC preconditioner, transy - write");
+      // static Timer timertransyi = NgProfiler::CreateTimer ("Apply BDDC preconditioner, transy - ind");
 
 
-      static int timerrest = NgProfiler::CreateTimer ("Apply BDDC preconditioner, restrict");
-      static int timerdc = NgProfiler::CreateTimer ("Apply BDDC preconditioner, decoupled");
-      static int timerext = NgProfiler::CreateTimer ("Apply BDDC preconditioner, extend");
-      static int timerinner = NgProfiler::CreateTimer ("Apply BDDC preconditioner, inner");
-      static int timersolve = NgProfiler::CreateTimer ("Apply BDDC preconditioner, solve");
-      // static int timeretc = NgProfiler::CreateTimer ("Apply BDDC preconditioner, etc");
-      NgProfiler::RegionTimer reg (timer);
+      static Timer timerrest ("Apply BDDC preconditioner, restrict");
+      static Timer timerdc ("Apply BDDC preconditioner, decoupled");
+      static Timer timerext ("Apply BDDC preconditioner, extend");
+      static Timer timerinner ("Apply BDDC preconditioner, inner");
+      static Timer timersolve ("Apply BDDC preconditioner, solve");
+      // static Timer timeretc  ("Apply BDDC preconditioner, etc");
+      RegionTimer reg (timer);
 
 
       FlatVector<> fx = x.FVDouble();
@@ -1092,7 +1092,7 @@ namespace ngcomp
       
 
       {
-	NgProfiler::RegionTimer reg(timertransx);
+	RegionTimer reg(timertransx);
 	transx.FV() = fx;  
 
 
@@ -1107,10 +1107,10 @@ namespace ngcomp
 	    FlatMatrix<> vim(els.Size(), ext.Width(), &hmem1(0));
 	    FlatMatrix<> vem(els.Size(), ext.Height(), &hmem2(0));
 
-	    NgProfiler::AddFlops (timertransx, ext.Width()*ext.Height()*els.Size());
-	    NgProfiler::AddFlops (timertransx1a, ext.Width()*ext.Height()*els.Size());
+	    timertransx.AddFlops (ext.Width()*ext.Height()*els.Size());
+	    timertransx1a.AddFlops (ext.Width()*ext.Height()*els.Size());
 
-	    NgProfiler::StartTimer(timertransx1b);
+	    timertransx1b.Start();
 
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
@@ -1121,22 +1121,22 @@ namespace ngcomp
 		  vim_row(j) = transx(dint[j]);
 	      }
 
-	    NgProfiler::StopTimer(timertransx1b);
+	    timertransx1b.Stop();
 
 
-	    NgProfiler::AddLoads (timertransx1b, els.Size()*vim.Width()*12);
-	    NgProfiler::AddStores (timertransx1b, els.Size()*vim.Width()*8);
+	    // NgProfiler::AddLoads (timertransx1b, els.Size()*vim.Width()*12);
+	    // NgProfiler::AddStores (timertransx1b, els.Size()*vim.Width()*8);
 
 
-
-	    NgProfiler::StartTimer(timertransx1a);
+	    
+	    timertransx1a.Start();
 
 	    // LapackMultABt (vim, ext, vem);
 	    LapackMult (vim, Trans(ext), vem);
 
-	    NgProfiler::StopTimer(timertransx1a);
+	    timertransx1a.Stop();
 
-	    NgProfiler::StartTimer(timertransx1c);
+	    timertransx1c.Start();
 	    for (int i = 0, ii = 0; i < els.Size(); i++)
 	      {
 		FlatArray<int> dext = (*globexternaldofs)[els[i]];
@@ -1145,25 +1145,19 @@ namespace ngcomp
 		  transx(dext[j]) -= vem(ii);
 	      }
 
-	    NgProfiler::StopTimer(timertransx1c);
+	    timertransx1c.Stop();
 
 
-
-
-
-
-
-
-
-	    NgProfiler::AddLoads (timertransx1c, els.Size()*vem.Width()*20);
-	    NgProfiler::AddStores (timertransx1c, els.Size()*vem.Width()*8);
+	    
+	    // NgProfiler::AddLoads (timertransx1c, els.Size()*vem.Width()*20);
+	    // NgProfiler::AddStores (timertransx1c, els.Size()*vem.Width()*8);
 	  }
       }
 
 
       // restrict
       { 
-	NgProfiler::RegionTimer reg(timerrest);
+	RegionTimer reg(timerrest);
 
 	for (int cl = 0; cl < els_of_class->Size(); cl++)
 	  {
@@ -1174,7 +1168,7 @@ namespace ngcomp
 	    Matrix<> v1(els.Size(), ext.Height());
 	    Matrix<> v2(els.Size(), ext.Width());
 	    
-	    NgProfiler::AddFlops (timerrest, v1.Width()*v2.Width()*els.Size());
+	    timerrest.AddFlops (v1.Width()*v2.Width()*els.Size());
 		
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
@@ -1204,7 +1198,7 @@ namespace ngcomp
 
       {
 	// cout << "|lx| = " << L2Norm(lx) << flush;
-	NgProfiler::RegionTimer reg (timersolve);
+	RegionTimer reg (timersolve);
 
 	BaseVector & subx = *(transx.Range(0, inv->Height()));
 	BaseVector & suby = *(transy.Range(0, inv->Height()));
@@ -1241,7 +1235,7 @@ namespace ngcomp
 
       // extend
       {
-	NgProfiler::RegionTimer reg(timerext);
+	RegionTimer reg(timerext);
 
 	for (int cl = 0; cl < els_of_class->Size(); cl++)
 	  {
@@ -1252,7 +1246,7 @@ namespace ngcomp
 	    Matrix<> v1(els.Size(), ext.Width());
 	    Matrix<> v2(els.Size(), ext.Height());
 	    
-	    NgProfiler::AddFlops (timerext, v1.Width()*v2.Width()*els.Size());
+	    timerext.AddFlops (v1.Width()*v2.Width()*els.Size());
 		
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
@@ -1280,7 +1274,7 @@ namespace ngcomp
 
       // solve decoupled
       {
-	NgProfiler::RegionTimer reg(timerdc);
+	RegionTimer reg(timerdc);
 
 	for (int cl = 0; cl < els_of_class->Size(); cl++)
 	  {
@@ -1291,7 +1285,7 @@ namespace ngcomp
 	    Matrix<> dc1(els.Size(), invdc.Height());
 	    Matrix<> dc2(els.Size(), invdc.Height());
 
-	    NgProfiler::AddFlops (timerdc, invdc.Width()*invdc.Height()*els.Size());
+	    timerdc.AddFlops (invdc.Width()*invdc.Height()*els.Size());
 		
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
@@ -1320,7 +1314,7 @@ namespace ngcomp
 
 
       {
-	NgProfiler::RegionTimer reg(timertransy);
+	RegionTimer reg(timertransy);
 
 	for (int cl = 0; cl < els_of_class->Size(); cl++)
 	  {
@@ -1331,11 +1325,11 @@ namespace ngcomp
 	    Matrix<> vim(els.Size(), ext.Width());
 	    Matrix<> vem(els.Size(), ext.Height());
 
-	    NgProfiler::AddFlops (timertransy, ext.Width()*ext.Height()*els.Size());
+	    timertransy.AddFlops (ext.Width()*ext.Height()*els.Size());
 		
 
 
-	    NgProfiler::StartTimer (timertransyr);
+	    timertransyr.Start();
 
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
@@ -1344,13 +1338,13 @@ namespace ngcomp
 		  vem(ii, j) = transy(dext[j]);
 	      }
 
-	    NgProfiler::StopTimer (timertransyr);
+	    timertransyr.Stop();
 
 
 	    LapackMult (vem, ext, vim);
 
 
-	    NgProfiler::StartTimer (timertransyw);
+	    timertransyw.Start();
 
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {
@@ -1360,14 +1354,13 @@ namespace ngcomp
 		  transy(dint[j]) -= vim(ii, j);
 	      }
 
-	    NgProfiler::StopTimer (timertransyw);
-
+	    timertransyw.Stop();
 	  }
       }
       
 
       {
-	NgProfiler::RegionTimer reg(timerinner);
+	RegionTimer reg(timerinner);
 
 	for (int cl = 0; cl < els_of_class->Size(); cl++)
 	  {
@@ -1378,7 +1371,7 @@ namespace ngcomp
 	    Matrix<> v1(els.Size(), inv_int.Width());
 	    Matrix<> v2(els.Size(), inv_int.Width());
 
-	    NgProfiler::AddFlops (timerinner, v1.Width()*v2.Width()*els.Size());
+	    timerinner.AddFlops (v1.Width()*v2.Width()*els.Size());
 		
 	    for (int ii = 0; ii < els.Size(); ii++)
 	      {

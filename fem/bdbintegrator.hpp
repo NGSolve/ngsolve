@@ -537,7 +537,7 @@ public:
 	else
 	  LapackMultABt (bbmat, bdbmat, elmat);
 
-	NgProfiler::AddFlops (timer, long(elmat.Height())*long(elmat.Width())*bbmat.Width());
+	timer.AddFlops (long(elmat.Height())*long(elmat.Width())*bbmat.Width());
       } 
     
 
