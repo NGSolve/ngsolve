@@ -974,7 +974,7 @@ namespace ngsolve
 	      flags.GetDefineFlag (GetFESpaceClasses().GetFESpaces()[i]->name) )
 	    {
 	      space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
-		
+	      /*
 	      if (id == 0 && ntasks > 1)
 		{
 		  FESpace * hospace = space;
@@ -989,6 +989,7 @@ namespace ngsolve
 		      space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
 		    }
 		}
+	      */
 	    }
 	
 	if (type == "compound" || flags.GetDefineFlag ("compound"))
