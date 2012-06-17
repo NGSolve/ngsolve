@@ -174,10 +174,9 @@ namespace ngcomp
 	  {
 	    ProgressOutput progress (ma, "assemble element", ma.GetNE());
 
-
 	    int cnt = 0;
 
-	    if (working_proc)
+	    // if (working_proc)
 	      
 #pragma omp parallel
 	    {
@@ -186,8 +185,7 @@ namespace ngcomp
 #pragma omp for	      
 	      for (int i = 0; i < ne; i++)
 		{
-		  timer2.Start();
-
+		  RegionTimer reg2 (timer2);
 
 #pragma omp atomic
 		  cnt++;
@@ -233,13 +231,12 @@ namespace ngcomp
 			AddElementVector (dnums, elvec, parts[j]->CacheComp()-1);
 		      } 
 		    }
-		  timer2.Stop();
 		}
 	    }
 
 
 	    progress.Done();
-	    MyMPI_Barrier();
+	    // MyMPI_Barrier();
 	  }
 
 	RegionTimer reg3(timer3);

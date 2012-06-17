@@ -645,8 +645,9 @@ namespace ngcomp
 		      innermatrix = new ElementByElementMatrix<SCAL>(ndof, ne);
 		  }
 		
+		// MPI_Barrier (MPI_COMM_WORLD);
 
-		if (working_proc)
+		// if (working_proc)
 
 		for (int icol = 0; icol < ncolors; icol++)
 		  {
@@ -660,10 +661,8 @@ namespace ngcomp
 			{
 			  int i = (element_coloring) ? (*element_coloring)[icol][ii] : ii;
 			  
-			  timer1.Start();
 			  HeapReset hr (lh);
 			  
-
 			  if (elmat_ev) 
 			    *testout << " Assemble Element " << i << endl;  
 			  
@@ -673,6 +672,8 @@ namespace ngcomp
 			  progress.Update (cnt);
 
 			  if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
+
+			  timer1.Start();
 
 			  const FiniteElement & fel = fespace.GetFE (i, lh);
 			  ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
@@ -695,7 +696,6 @@ namespace ngcomp
 			  sum_elmat = 0;
 
 			  timer1.Stop();
-
 			  timer2.Start();
 
 			  for (int j = 0; j < NumIntegrators(); j++)
@@ -713,7 +713,6 @@ namespace ngcomp
 				{
 				  static Timer elementtimer ("Element matrix integration");
 				  elementtimer.Start();
- 
 				  if (!diagonal)
 				    bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
 				  else
@@ -726,7 +725,7 @@ namespace ngcomp
 				    }
 
 				  elementtimer.Stop();
-			  
+
 				  if (printelmat)
 				    {
 				      testout->precision(8);
@@ -756,7 +755,6 @@ namespace ngcomp
 		      
 			      sum_elmat += elmat;
 			    }
-
 
 			  timer2.Stop();
 			  timer3.Start();
@@ -942,7 +940,7 @@ namespace ngcomp
 
 		progress.Done();
 		
-		MyMPI_Barrier();
+		// MPI_Barrier (MPI_COMM_WORLD);
 
 		if (linearform && keep_internal)
 		  {
@@ -1525,13 +1523,13 @@ namespace ngcomp
 
 	    int MASK = eliminate_internal ? EXTERNAL_DOF : ANY_DOF;
 	    bool first_time = true;
-	    if (working_proc)
+	    // if (working_proc)
             for (int i = 0; i < useddof.Size(); i++)
 	      if (useddof.Test(i) != 
 		  ((fespace.GetDofCouplingType(i) & MASK) != 0) )
 		{
 		  *testout << "used dof inconsistency: " 
-			   << " dof " << i << "-847091 = " << (i-847091) << " used = " << int(useddof.Test(i))
+			   << " dof " << i << " used = " << int(useddof.Test(i))
 			   << " ct = " << fespace.GetDofCouplingType(i) << endl;
 		  
 		  if (first_time)
@@ -1884,7 +1882,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 	      }//end of parallel
 
 	      progress.Done();
-	      MyMPI_Barrier();
+	      // MyMPI_Barrier();
 
 	      // cout << IM(2) << "\rcompute internal element " << ne << "/" << ne << endl;
 	    }//end of keep_internal-if
