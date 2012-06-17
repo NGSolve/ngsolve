@@ -145,7 +145,7 @@ namespace ngcomp
       // static Timer t1a ("multipointjac - A");
       // static Timer t1b ("multipointjac - B");
 
-      t1.Start();
+      RegionTimer reg(t1);
       MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
       netgen::Ng_MultiElementTransformation <DIMS,DIMR> (elnr, ir.Size(),
 							 &ir[0](0), &ir[1](0)-&ir[0](0),
@@ -156,7 +156,6 @@ namespace ngcomp
 
       for (int i = 0; i < ir.Size(); i++)
 	mir[i].Compute();
-      t1.Stop();
     }
   };
   
