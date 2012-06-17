@@ -257,14 +257,10 @@ namespace ngstd
 	VT_USER_START_ID(prev -> timer_id);
       stack_top = prev;
     }
-    void AddFlops (double aflops)
-    {
-      ; // NgProfiler::AddFlops (timernr, aflops);
-    }
 
+    void AddFlops (double aflops)  { ; }
     double GetTime () { return 0; }
     long int GetCounts () { return 0; }
-    // operator int () { return timernr; }
   };
 
   
