@@ -3,6 +3,8 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
 
+AC_LANG([C++])
+
 # AC_PROG_CC
 AC_PROG_CXX
 
@@ -11,27 +13,20 @@ AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
 
 
-# AC_OPENMP
-# AC_SUBST([CXXFLAGS], [$(CXXFLAGS)] $(OPENMP_CFLAGS))
-# AC_MSG_NOTICE([openmp_cflags = $(OPENMP_CFLAGS)])
+AC_OPENMP
+# AC_MSG_NOTICE([openmp_cxxflags = $OPENMP_CXXFLAGS])
+CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
+LDFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
 
-
+CXXFLAGS="$CXXFLAGS -DUSE_TIMEOFDAY"
 # ACX_LAPACK
 
 
-
-# Tcl/Tk configuration:
-
+# Tcl configuration:
 TEA_INIT([3.6])
-
 TEA_PATH_TCLCONFIG
 TEA_LOAD_TCLCONFIG 
-
-# TEA_PATH_TKCONFIG
-# TEA_LOAD_TKCONFIG
-
 TEA_PUBLIC_TCL_HEADERS
-
 
 
 
@@ -69,11 +64,11 @@ AC_ARG_WITH([pardiso],
         )
 
 
-AC_ARG_WITH([superlu],
-        [AC_HELP_STRING([--with-superlu=-I/usr/include/superlu],[enable sparse LU factorization library])],
-        [AC_SUBST([SUPERLU_INCLUDES], ["-DUSE_SUPERLU $withval"])]
-        [AC_SUBST([SUPERLU_LIBS], ["-lsuperlu $withval"])]
-        )
+# AC_ARG_WITH([superlu],
+#        [AC_HELP_STRING([--with-superlu=-I/usr/include/superlu],[enable sparse LU factorization library])],
+#        [AC_SUBST([SUPERLU_INCLUDES], ["-DUSE_SUPERLU $withval"])]
+#        [AC_SUBST([SUPERLU_LIBS], ["-lsuperlu $withval"])]
+#        )
 
 
 AC_ARG_ENABLE([MKLpardiso],
@@ -90,6 +85,7 @@ AC_ARG_ENABLE([mumps],
 
 
 
+
 # AC_ARG_WITH([pardiso],
 #       [  --with-pardiso=libpardiso.so  enable sparse direct solver pardiso],          
 #       [AC_SUBST([PARDISO_INCLUDES], ["-DUSE_PARDISO"])]
@@ -101,19 +97,24 @@ AC_ARG_ENABLE([mumps],
 #	[AC_SUBST([LAPACK_LIB], ["-L/opt/intel/mkl/10.0.2.018/lib/em64t -lmkl_sequential"])]
 
 
-AC_SUBST([NETGEN_INCLUDES], ["-I$netgendir/include"])
+#AC_SUBST([NETGEN_INCLUDES], ["-I$netgendir/include"])
+AC_SUBST(NETGEN_INCLUDES, "-I$netgendir/include")
+AC_MSG_NOTICE([Netgen includes... $NETGEN_INCLUDES])
+
 
 AC_ARG_ENABLE([parallel],
         [AC_HELP_STRING([--enable-parallel],[enable mpi parallelization])],
-        [AC_SUBST([MPI_INCLUDES], "-DPARALLEL -I/usr/local/include/vampirtrace -DnoVTRACE")
+        [AC_SUBST([MPI_INCLUDES], "-DPARALLEL")
         ]
         )       
 
-#        [AC_SUBST([MPI_INCLUDES], "-I/usr/lib64/mpi/gcc/openmpi/include -DPARALLEL")
-#        [AC_SUBST([MPI_INCLUDES], "-I/opt/mpich/include -I/usr/include/mpich2 -I/usr/include/metis -DPARALLEL")
-#        AC_SUBST([MPI_LIBS], "-lmetis")
+AC_ARG_ENABLE([vt],
+        [AC_HELP_STRING([--enable-vt],[enable vampirtrace])],
+        [AC_SUBST([MPI_INCLUDES], "-DPARALLEL")
+	 CXXFLAGS="$CXXFLAGS -vt:inst manual -DVTRACE"
+        ]
+        )       
 
- 
 
 
 AC_CONFIG_HEADERS(config.h) AC_CONFIG_FILES(Makefile include/Makefile
