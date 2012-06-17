@@ -62,6 +62,20 @@ namespace ngparallel
     }
   };
 
+  template <>
+  class MPI_Traits<bool>
+  {
+  public:
+    static MPI_Datatype MPIType () { return MPI_C_BOOL; }
+  };
+
+  template <>
+  class MPI_Traits<short>
+  {
+  public:
+    static MPI_Datatype MPIType () { return MPI_SHORT; }
+  }; 
+
   
   template<int S, typename T>
   class MPI_Traits<ngbla::Vec<S, T> >
@@ -178,6 +192,9 @@ namespace ngparallel
   template <class T>
   MPI_Request MyMPI_ISend (const FlatArray<T> & s, int dest, int tag)
   { 
+    static Timer t("dummy - irecv");
+    RegionTimer r(t);
+
     MPI_Request request;
     MPI_Datatype MPI_T  = MyGetMPIType<T> ();
     MPI_Isend (&s[0], s.Size(), MPI_T, dest, tag, ngs_comm, &request);
@@ -187,11 +204,23 @@ namespace ngparallel
   template <class T>
   MPI_Request  MyMPI_IRecv (const FlatArray<T> & s, int src, int tag)
   { 
+    static Timer t("dummy - irecv");
+    RegionTimer r(t);
+
     MPI_Request request;
     MPI_Datatype MPI_T = MyGetMPIType<T> ();
     MPI_Irecv (&s[0], s.Size(), MPI_T, src, tag, ngs_comm, &request);
     return request;
   }
+
+  inline void MyMPI_WaitAll (const Array<MPI_Request> & requests)
+  {
+    static Timer t("dummy - waitall");
+    RegionTimer r(t);
+    MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
+  }
+  
+
 
 
   inline void MyMPI_SendCmd (const char * cmd)
@@ -205,8 +234,6 @@ namespace ngparallel
     for (int dest = 1; dest < ntasks; dest++)
       MPI_Bsend( &buf, 100, MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
   }
-
-
 
 
 

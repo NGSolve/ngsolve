@@ -275,80 +275,80 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	
 	// cout << "exchange dirichlet vertices" << endl;
 #ifdef PARALLEL	
-	DynamicTable<int> dist_dir_vertex(ntasks);
-	Array<int[2]> distnums;
-	if (id != 0)
-	  {
-	    for (int i = 0; i < dirichlet_vertex.Size(); i++)
-	      if (dirichlet_vertex[i])
-		{
-		  ma.GetDistantNodeNums (Node (NT_VERTEX, i), distnums);
-		  for (int j = 0; j < distnums.Size(); j++)
-		    if (distnums[j][0] > 0)  // not master
-		      dist_dir_vertex.Add (distnums[j][0], distnums[j][1]);
-		}
-	  }
+	DynamicTable<bool> dist_dir_vertex(ntasks);
+	Array<int> distprocs;
 
-	Array<int> nsend(ntasks), nrecv(ntasks);
+	for (int i = 0; i < dirichlet_vertex.Size(); i++)
+	  {
+	    ma.GetDistantProcs (Node (NT_VERTEX, i), distprocs);
+	    for (int j = 0; j < distprocs.Size(); j++)
+	      dist_dir_vertex.Add (distprocs[j], dirichlet_vertex[i]);
+	  }
+	
+	Array<int> nsend(ntasks); // , nrecv(ntasks);
 	for (int i = 0; i < ntasks; i++)
 	  nsend[i] = dist_dir_vertex[i].Size();
-	
-	MPI_Alltoall (&nsend[0], 1, MPI_INT, &nrecv[0], 1, MPI_INT, ngs_comm);
 
-	Table<int> recv_dir_vert(nrecv);
+	Table<bool> recv_dir_vert(nsend);
+
 	Array<MPI_Request> requests;
-
 	for (int i = 0; i < ntasks; i++)
 	  {
 	    if (nsend[i])
 	      requests.Append (MyMPI_ISend (dist_dir_vertex[i], i, MPI_TAG_SOLVE));
-	    if (nrecv[i])
+	    if (nsend[i])
 	      requests.Append (MyMPI_IRecv (recv_dir_vert[i], i, MPI_TAG_SOLVE));
 	  }
-	MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
+	MyMPI_WaitAll (requests);
 
-	for (int i = 0; i < ntasks; i++)
+	
+	Array<int> cnt(ntasks);
+	cnt = 0;
+	for (int i = 0; i < dirichlet_vertex.Size(); i++)
 	  {
-	    FlatArray<int> dirvert = recv_dir_vert[i];
-	    for (int j = 0; j < dirvert.Size(); j++)
-	      dirichlet_vertex[dirvert[j]] = true;
+	    ma.GetDistantProcs (Node (NT_VERTEX, i), distprocs);
+	    for (int j = 0; j < distprocs.Size(); j++)
+	      {
+		int dist_proc = distprocs[j];
+		if (recv_dir_vert[dist_proc][cnt[dist_proc]++])
+		  dirichlet_vertex[i] = true;
+	      }
 	  }
 
-	DynamicTable<int> dist_dir_edge(ntasks);
-	if (id != 0)
+
+	DynamicTable<bool> dist_dir_edge(ntasks);
+	for (int i = 0; i < dirichlet_edge.Size(); i++)
 	  {
-	    for (int i = 0; i < dirichlet_edge.Size(); i++)
-	      if (dirichlet_edge[i])
-		{
-		  ma.GetDistantNodeNums (Node (NT_EDGE, i), distnums);
-		  for (int j = 0; j < distnums.Size(); j++)
-		    if (distnums[j][0] > 0)  // not master
-		      dist_dir_edge.Add (distnums[j][0], distnums[j][1]);
-		}
+	    ma.GetDistantProcs (Node (NT_EDGE, i), distprocs);
+	    for (int j = 0; j < distprocs.Size(); j++)
+	      dist_dir_edge.Add (distprocs[j], dirichlet_edge[i]);
 	  }
 
 	for (int i = 0; i < ntasks; i++)
 	  nsend[i] = dist_dir_edge[i].Size();
 	
-	MPI_Alltoall (&nsend[0], 1, MPI_INT, &nrecv[0], 1, MPI_INT, ngs_comm);
+	Table<bool> recv_dir_edge(nsend);
 
-	Table<int> recv_dir_edge(nrecv);
 	requests.SetSize (0);
-
 	for (int i = 0; i < ntasks; i++)
 	  {
 	    if (nsend[i])
 	      requests.Append (MyMPI_ISend (dist_dir_edge[i], i, MPI_TAG_SOLVE));
-	    if (nrecv[i])
+	    if (nsend[i])
 	      requests.Append (MyMPI_IRecv (recv_dir_edge[i], i, MPI_TAG_SOLVE));
 	  }
-	MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
+	MyMPI_WaitAll (requests);
 
-	for (int i = 0; i < ntasks; i++)
+	cnt = 0;
+	for (int i = 0; i < dirichlet_edge.Size(); i++)
 	  {
-	    FlatArray<int> diredge = recv_dir_edge[i];
-	    for (int j = 0; j < diredge.Size(); j++)
-	      dirichlet_edge[diredge[j]] = true;
+	    ma.GetDistantProcs (Node (NT_EDGE, i), distprocs);
+	    for (int j = 0; j < distprocs.Size(); j++)
+	      {
+		int dist_proc = distprocs[j];
+		if (recv_dir_edge[dist_proc][cnt[dist_proc]++])
+		  dirichlet_edge[i] = true;
+	      }
 	  }
 
 
@@ -981,25 +981,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if  ( ntasks == 1 ) 
       return;
 
-    /*
-    *testout << "updagteparalleldofs" << endl;
-    for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
-      *testout << "nnodes(" << nt << ") = " << ma.GetNNodes(nt) << endl;
-
-    Array<int[2]> dist;
-    for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
-      for ( int nr = 0; nr < ma.GetNNodes (nt); nr++ )
-	{
-	  Node node (nt,nr);
-	  *testout << "node " << node << ": " << ma.GetGlobalNodeNum(node);
-	  ma.GetDistantNodeNums (node, dist);
-	  
-	  for (int j = 0; j < dist.Size(); j++)
-	    *testout << "   " << dist[j][0] << "(" << dist[j][1] << ")  ";
-	  *testout << endl;
-	}
-    */
-
     Array<Node> dofnodes (GetNDof());
     dofnodes = Node (NT_VERTEX, -1);
     Array<int> dnums;
@@ -1012,8 +993,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    for (int j = 0; j < dnums.Size(); j++)
 	      dofnodes[dnums[j]] = Node (nt, nr);
 	  }
-    
-    // paralleldofs = new ParallelDofs (ma, dofnodes, this);
+
     paralleldofs = new ParallelDofs (ma, dofnodes, dimension, iscomplex);
   }
 
