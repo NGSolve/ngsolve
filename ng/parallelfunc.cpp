@@ -103,6 +103,10 @@ void ParallelRun()
 
 	  if (NGS_ParallelRun == NULL)
 	    {
+	      static int timer = NgProfiler::CreateTimer ("load shared library ngsolve");
+	      NgProfiler::RegionTimer reg (timer);
+  
+
 	      void * handle = dlopen ("libngsolve.so", RTLD_NOW | RTLD_GLOBAL);
 	      if (!handle)
 		{
