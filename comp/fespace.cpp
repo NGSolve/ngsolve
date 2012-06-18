@@ -272,87 +272,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		}
 	    }
 
-	
-	// cout << "exchange dirichlet vertices" << endl;
 #ifdef PARALLEL	
-	DynamicTable<bool> dist_dir_vertex(ntasks);
-	Array<int> distprocs;
-
-	for (int i = 0; i < dirichlet_vertex.Size(); i++)
-	  {
-	    ma.GetDistantProcs (Node (NT_VERTEX, i), distprocs);
-	    for (int j = 0; j < distprocs.Size(); j++)
-	      dist_dir_vertex.Add (distprocs[j], dirichlet_vertex[i]);
-	  }
-	
-	Array<int> nsend(ntasks); // , nrecv(ntasks);
-	for (int i = 0; i < ntasks; i++)
-	  nsend[i] = dist_dir_vertex[i].Size();
-
-	Table<bool> recv_dir_vert(nsend);
-
-	Array<MPI_Request> requests;
-	for (int i = 0; i < ntasks; i++)
-	  {
-	    if (nsend[i])
-	      requests.Append (MyMPI_ISend (dist_dir_vertex[i], i, MPI_TAG_SOLVE));
-	    if (nsend[i])
-	      requests.Append (MyMPI_IRecv (recv_dir_vert[i], i, MPI_TAG_SOLVE));
-	  }
-	MyMPI_WaitAll (requests);
-
-	
-	Array<int> cnt(ntasks);
-	cnt = 0;
-	for (int i = 0; i < dirichlet_vertex.Size(); i++)
-	  {
-	    ma.GetDistantProcs (Node (NT_VERTEX, i), distprocs);
-	    for (int j = 0; j < distprocs.Size(); j++)
-	      {
-		int dist_proc = distprocs[j];
-		if (recv_dir_vert[dist_proc][cnt[dist_proc]++])
-		  dirichlet_vertex[i] = true;
-	      }
-	  }
-
-
-	DynamicTable<bool> dist_dir_edge(ntasks);
-	for (int i = 0; i < dirichlet_edge.Size(); i++)
-	  {
-	    ma.GetDistantProcs (Node (NT_EDGE, i), distprocs);
-	    for (int j = 0; j < distprocs.Size(); j++)
-	      dist_dir_edge.Add (distprocs[j], dirichlet_edge[i]);
-	  }
-
-	for (int i = 0; i < ntasks; i++)
-	  nsend[i] = dist_dir_edge[i].Size();
-	
-	Table<bool> recv_dir_edge(nsend);
-
-	requests.SetSize (0);
-	for (int i = 0; i < ntasks; i++)
-	  {
-	    if (nsend[i])
-	      requests.Append (MyMPI_ISend (dist_dir_edge[i], i, MPI_TAG_SOLVE));
-	    if (nsend[i])
-	      requests.Append (MyMPI_IRecv (recv_dir_edge[i], i, MPI_TAG_SOLVE));
-	  }
-	MyMPI_WaitAll (requests);
-
-	cnt = 0;
-	for (int i = 0; i < dirichlet_edge.Size(); i++)
-	  {
-	    ma.GetDistantProcs (Node (NT_EDGE, i), distprocs);
-	    for (int j = 0; j < distprocs.Size(); j++)
-	      {
-		int dist_proc = distprocs[j];
-		if (recv_dir_edge[dist_proc][cnt[dist_proc]++])
-		  dirichlet_edge[i] = true;
-	      }
-	  }
-
-
+	ReduceNodalData (NT_VERTEX, dirichlet_vertex, MPI_LOR, ma);
+	ReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR, ma);
 #endif
+
 	(*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
 	(*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;
 	(*testout) << "Dirichlet_face = " << endl << dirichlet_face << endl;

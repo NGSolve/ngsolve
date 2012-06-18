@@ -17,7 +17,6 @@ namespace ngparallel
 
 
 
-
   ParallelDofs :: ParallelDofs (const MeshAccess & ama, 
 				const Array<Node> & adofnodes, int dim, bool iscomplex)
     : ma(ama), dofnodes(adofnodes) 

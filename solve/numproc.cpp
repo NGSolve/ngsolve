@@ -226,7 +226,7 @@ namespace ngsolve
       if (component != -1)
 	hgfu = gfu->GetComponent(component);
 
-      if (working_proc)
+      // if (working_proc)
 	SetValues (pde.GetMeshAccess(), *coef, 
 		 *hgfu, boundary, 0, lh);
 
@@ -1349,7 +1349,7 @@ namespace ngsolve
     virtual void Do (LocalHeap & lh)
     {
       double sum = 0;
-      if (working_proc)
+      // if (working_proc)
 	{
 	  for (int i = 0; i < ma.GetNE(); i++)
 	    {
