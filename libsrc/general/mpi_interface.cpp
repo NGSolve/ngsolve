@@ -28,16 +28,20 @@ namespace netgen
     char buf[100];
     // MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
 
-    VT_OFF();
+    // VT_OFF();
     MPI_Status status;
     int flag;
     do
       {
 	MPI_Iprobe (0, MPI_TAG_CMD, MPI_COMM_WORLD, &flag, &status);
-	if (!flag) usleep (1000);
+	if (!flag) 
+	  {
+	    VT_TRACER ("sleep");
+	    usleep (1000);
+	  }
       }
     while (!flag);
-    VT_ON();
+    // VT_ON();
 
     MPI_Recv( &buf, 100, MPI_CHAR, 0, MPI_TAG_CMD, MPI_COMM_WORLD, &status);
     
