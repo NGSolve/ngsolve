@@ -5,10 +5,11 @@
 /**************************************************************************/
 
 #include <ngstd.hpp>
+/*
 #ifdef PARALLEL
 #include <mpi.h>
 #endif
-
+*/
 namespace ngstd
 {
   using namespace ngstd;
@@ -21,7 +22,7 @@ namespace ngstd
   double NgProfiler::stores[SIZE];
   string NgProfiler::names[SIZE];
   int NgProfiler::usedcounter[SIZE];
-  
+  string NgProfiler::filename;
 
   NgProfiler :: NgProfiler()
   {
@@ -51,6 +52,18 @@ namespace ngstd
     FILE *prof = fopen("ng.prof","w");
     Print (prof); 
     fclose(prof);
+
+    if (filename.length())
+      {
+	// printf ("write profile to file %s\n", filename.c_str());
+	// cout << "write profile to file " << filename << endl;
+	FILE *prof = fopen(filename.c_str(),"w");
+	Print (prof);
+	fclose(prof);
+      }
+
+
+    /*
     if (getenv ("NGSPROFILE"))
       {
 	char filename[100];
@@ -69,6 +82,7 @@ namespace ngstd
 	Print (prof);
 	fclose(prof);
       }
+    */
   }
 
 

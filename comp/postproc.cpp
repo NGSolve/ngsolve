@@ -144,7 +144,7 @@ namespace ngcomp
     progress.Done();
     
 #ifdef PARALLEL
-    if ( working_proc )
+    // if ( working_proc )
     {
 	 BaseVector & hv  = *( ( flux.GetVector() ).CreateVector()); 
 	 FlatVector<SCAL> fhv (dimflux*cnti.Size(),  &hv.FV<SCAL>()(0));
@@ -584,7 +584,7 @@ namespace ngcomp
     // cout << "\rsetvalues element " << ne << "/" << ne << endl;
     
 #ifdef PARALLEL
-    if ( working_proc )
+    // if ( working_proc )
     {
 	 BaseVector & hv  = *( ( u.GetVector() ).CreateVector()); 
 	 FlatVector<SCAL> fhv (dim*cnti.Size(),  &hv.FV<SCAL>()(0));

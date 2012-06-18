@@ -681,9 +681,11 @@ int NGSolve_Init (Tcl_Interp * interp)
 #ifdef PARALLEL
   MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
-  working_proc = (ntasks == 1) || (id > 0);
-  NGSOStream::SetGlobalActive (id == 0);
+  // working_proc = (ntasks == 1) || (id > 0);
+  NGSOStream::SetGlobalActive (true);
 #endif
+  if (getenv ("NGSPROFILE"))
+    NgProfiler::SetFileName (string("ngs.prof"));
   
 #ifdef _OPENMP
 #ifdef PARALLEL
@@ -840,9 +842,15 @@ void NGS_ParallelRun ( const string & message )
 
   MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
-  working_proc = (ntasks == 1) || (id > 0);
-  NGSOStream::SetGlobalActive (id == 0);
-      
+  // working_proc = (ntasks == 1) || (id > 0);
+  NGSOStream::SetGlobalActive (false);
+
+  if (getenv ("NGSPROFILE"))
+    {
+      stringstream filename;
+      filename << "ngs.prof." << id;
+      NgProfiler::SetFileName (filename.str());
+    }
 
   if ( message == "ngs_pdefile" )
     {

@@ -254,7 +254,7 @@ namespace ngsolve
     cout << IM(3) << "Compute difference ... " << flush;
 
     double sum = 0;
-    if (working_proc)
+    // if (working_proc)
       {
 	if (bfa1->NumIntegrators() == 0)
 	  throw Exception ("Difference: Bilinearform1 needs an integrator");
