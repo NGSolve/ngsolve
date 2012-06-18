@@ -46,11 +46,10 @@ namespace ngparallel
 {
   extern int id;
   extern int ntasks;
-  // extern bool working_proc;
 }
+
 using ngparallel::id;
 using ngparallel::ntasks;
-// using ngparallel::working_proc;
 #endif
 
 

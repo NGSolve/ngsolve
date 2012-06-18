@@ -2836,7 +2836,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
     BaseMatrix * mat = new SparseMatrix<TM,TV,TV> (*graph, 1);
 #ifdef PARALLEL
-    if ( ntasks > 1 )
+    if ( &this->GetFESpace().GetParallelDofs() )
       mat = new ParallelMatrix (*mat, this->GetFESpace().GetParallelDofs());
 #endif
     this->mats.Append (mat);
@@ -3056,7 +3056,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
     BaseMatrix * mat = new SparseMatrixSymmetric<TM,TV> (*graph, 1);
 #ifdef PARALLEL
-    if ( ntasks > 1 )
+    if ( &this->GetFESpace().GetParallelDofs() )
       mat = new ParallelMatrix (*mat, this->GetFESpace().GetParallelDofs());
 #endif
     this->mats.Append (mat);
