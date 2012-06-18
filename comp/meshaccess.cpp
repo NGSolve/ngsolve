@@ -1071,6 +1071,12 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 */
   void MeshAccess :: GetDistantProcs (Node node, Array<int> & procs) const
   {
+    if (id == 0)
+      {
+	procs.SetSize(0);
+	return;
+      }
+
     Array<int[2]> distnums;
     
     distnums.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );

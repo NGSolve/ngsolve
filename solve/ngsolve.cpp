@@ -697,6 +697,11 @@ int NGSolve_Init (Tcl_Interp * interp)
 #endif
   
 
+#ifdef VTRACE
+  cout << "Vampirtrace - enabled. Might not run in sequential version" << endl;
+#endif
+
+
   
 #ifdef SOCKETS
   if(netgen::serversocketmanager.Good())
