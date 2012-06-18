@@ -4,6 +4,6 @@ SUBDIRS = include ngstd basiclinalg linalg parallel fem multigrid comp solve pro
 
 
 
-dist_bin_SCRIPTS = ngsolve.tcl
+dist_bin_SCRIPTS = ngsolve.tcl ngscxx
 
 
