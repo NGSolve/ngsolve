@@ -552,6 +552,62 @@ namespace ngcomp
 
 
 
+#ifdef PARALLEL
+  template <typename T>
+  void ReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op, const MeshAccess & ma,
+			MPI_Comm comm = ngs_comm)
+  {
+    int ntasks;
+    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+
+    DynamicTable<T> dist_data(ntasks);
+    Array<int> distprocs;
+
+    for (int i = 0; i < ma.GetNNodes(nt); i++)
+      {
+	ma.GetDistantProcs (Node (nt, i), distprocs);
+	for (int j = 0; j < distprocs.Size(); j++)
+	  dist_data.Add (distprocs[j], data[i]);
+      }
+    
+    Array<int> nsend(ntasks); // , nrecv(ntasks);
+    for (int i = 0; i < ntasks; i++)
+      nsend[i] = dist_data[i].Size();
+
+    Table<T> recv_data(nsend);
+
+    Array<MPI_Request> requests;
+    for (int i = 0; i < ntasks; i++)
+      {
+	if (nsend[i])
+	  requests.Append (MyMPI_ISend (dist_data[i], i, MPI_TAG_SOLVE));
+	if (nsend[i])
+	  requests.Append (MyMPI_IRecv (recv_data[i], i, MPI_TAG_SOLVE));
+      }
+
+    MyMPI_WaitAll (requests);
+
+    Array<int> cnt(ntasks);
+    cnt = 0;
+    
+    MPI_Datatype type = MyGetMPIType<T>();
+    for (int i = 0; i < data.Size(); i++)
+      {
+	ma.GetDistantProcs (Node (nt, i), distprocs);
+	for (int j = 0; j < distprocs.Size(); j++)
+	  {
+	    int dist_proc = distprocs[j];
+
+	    MPI_Reduce_local (&recv_data[dist_proc][cnt[dist_proc]++], 
+			      &data[i], 1, type, op);
+	    /*
+	    if (recv_dir_vert[dist_proc][cnt[dist_proc]++])
+	      dirichlet_vertex[i] = true;
+	    */
+	  }
+      }
+  }
+#endif
 
 }
 
