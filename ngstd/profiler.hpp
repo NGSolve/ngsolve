@@ -82,11 +82,14 @@ namespace ngstd
     NGS_DLL_HEADER static int usedcounter[SIZE];
 
     int total_timer;
+    static string filename;
   public: 
     /// create new profile
     NgProfiler();
     /// delete profiler
     ~NgProfiler();
+
+    static void SetFileName (const string & afilename) { filename = afilename; }
 
     /// create new timer, use integer index
     NGS_DLL_HEADER static int CreateTimer (const string & name);

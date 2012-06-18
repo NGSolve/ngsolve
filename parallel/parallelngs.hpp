@@ -44,13 +44,13 @@ enum { working_proc = 1 };
 
 namespace ngparallel
 {
-  extern int id, ntasks;
-  extern bool working_proc;
+  extern int id;
+  extern int ntasks;
+  // extern bool working_proc;
 }
 using ngparallel::id;
 using ngparallel::ntasks;
-using ngparallel::working_proc;
-
+// using ngparallel::working_proc;
 #endif
 
 
