@@ -343,8 +343,8 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   void SparseCholesky<TM, TV_ROW, TV_COL> :: Factor () 
   {
-    static int factor_timer = NgProfiler::CreateTimer ("SparseCholesky::Factor");
-    NgProfiler::RegionTimer reg (factor_timer);
+    static Timer factor_timer("SparseCholesky::Factor");
+    RegionTimer reg (factor_timer);
 
     clock_t starttime; // , starttime1;
     double time1 = 0, time2 = 0;

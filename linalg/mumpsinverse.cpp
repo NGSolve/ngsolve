@@ -35,7 +35,6 @@ namespace ngla
 #define USE_COMM_WORLD -987654
 
   
-
   template <class TM, class TV_ROW, class TV_COL>
   MumpsInverse<TM,TV_ROW,TV_COL> :: 
   MumpsInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
@@ -54,8 +53,9 @@ namespace ngla
     inner = ainner;
     cluster = acluster;
 
-
-
+    int ntasks = MyMPI_GetNTasks();
+    int id = MyMPI_GetId();
+    
     if (id == 0)
       {
 	if ( ( inner && inner->Size() < a.Height() ) ||
@@ -243,8 +243,8 @@ namespace ngla
 
 
     mumps_id.job =JOB_INIT; 
-    mumps_id.par= (ntasks == 1) ? 1 : 0;
-    mumps_id.sym= symmetric ? 1 : 0;
+    mumps_id.par = (ntasks == 1) ? 1 : 0;
+    mumps_id.sym = symmetric ? 1 : 0;
     // mumps_id.comm_fortran=USE_COMM_WORLD;
     mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
@@ -350,8 +350,10 @@ namespace ngla
   void MumpsInverse<TM,TV_ROW,TV_COL> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
-    // static int timer = NgProfiler::CreateTimer ("Mumps mult inverse");
-    // NgProfiler::RegionTimer reg (timer);
+    int id = MyMPI_GetId();
+
+    static int timer = NgProfiler::CreateTimer ("Mumps mult inverse");
+    NgProfiler::RegionTimer reg (timer);
 
     VT_OFF();
 
@@ -447,7 +449,8 @@ namespace ngla
     MyMPI_Barrier();
 
 
-
+    int ntasks = MyMPI_GetNTasks();
+    int id = MyMPI_GetId();
 
     if (id == 0)
       {
@@ -816,6 +819,10 @@ namespace ngla
     RegionTimer reg (timer);
 
     VT_OFF();
+
+    int ntasks = MyMPI_GetNTasks();
+    int id = MyMPI_GetId();
+
 
     if (id != 0)
       {
