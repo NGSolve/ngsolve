@@ -134,7 +134,7 @@ namespace ngmg
 
 	//cout << "coarsetype " << coarsetype << endl;
 
-	if (coarsetype == EXACT_COARSE && id == 0 )
+	if (coarsetype == EXACT_COARSE) //  && id == 0 )
 	  {
 	    /*
 	      double checksum = biform.GetMatrix(1).CheckSum();
@@ -382,7 +382,6 @@ namespace ngmg
 
     u = 0;
 
-    if ( ntasks == 1 )
       {
         // smoother->PreSmooth (level, u, f, smoothingsteps);
         // res = f - (*mat) * u;    
@@ -394,32 +393,6 @@ namespace ngmg
         *(u.Range (0, cw.Size())) += cw;
 
         smoother->PostSmooth (level, u, f, smoothingsteps);
-      }
-    else
-      {
-#ifdef PARALLEL
-	if ( id > 0 )
-	  smoother->PreSmoothResiduum (level, u, f, res, smoothingsteps);
-	//res.SetStatus(DISTRIBUTED);
-        res = f - (*mat) * u;    // zur Sicheheit
-	Array<int> loprocs(1);
-	loprocs[0] = 0;
- 	res.Cumulate();   // AllReduce(&hoprocs, &loprocs );
-	res.Distribute();
- 	u.Distribute();
- 	u.Cumulate();   // AllReduce(&hoprocs);
-	if ( id == 0 )
-	  {
-	    cw = (*cpre) * res;
-	    cw.SetParallelStatus(CUMULATED);
-	    u += cw;//(*cpre) * res;
-	  }
-	u.SetParallelStatus(DISTRIBUTED);	
-	u.Cumulate();   // AllReduce(&loprocs, &hoprocs );
-
-	if ( id > 0 )
-          smoother->PostSmooth (level, u, f, smoothingsteps);
-#endif
       }
     delete &cres;
     delete &cw;

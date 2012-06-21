@@ -33,8 +33,8 @@ namespace ngstd
 	flops[i] = 0;
       }
 
-    total_timer = CreateTimer ("total CPU time");
-    StartTimer (total_timer);
+    // total_timer = CreateTimer ("total CPU time");
+    // StartTimer (total_timer);
   }
 
   NgProfiler :: ~NgProfiler()
