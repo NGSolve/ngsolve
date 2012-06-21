@@ -132,11 +132,13 @@ namespace ngcomp
 	{
 	  ParallelVVector<double> pv_weight (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
 	  
+	  /*
 	  if (ntasks > 1 && id == 0)
 	    {
 	      pv_weight.Cumulate();  
 	    }
 	  else
+	  */
 	    {
 	      for (int i = 0; i < weight.Size(); i++)
 		pv_weight(i) = weight[i];
@@ -149,11 +151,13 @@ namespace ngcomp
 	{
 	  ParallelVVector<Complex> pv_weight (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
 	  
+	  /*
 	  if (ntasks > 1 && id == 0)
 	    {
 	      pv_weight.Cumulate();  
 	    }
 	  else
+	  */
 	    {
 	      for (int i = 0; i < weight.Size(); i++)
 		pv_weight(i) = weight[i];
@@ -164,8 +168,7 @@ namespace ngcomp
 	}
 #endif
 
-      if (id == 0)
-	cout << ( bfa.IsSymmetric() ? "symmetric" : "non-symmetric") << endl;
+      cout << IM(3) << ( bfa.IsSymmetric() ? "symmetric" : "non-symmetric") << endl;
 
       if (!bfa.IsSymmetric())
 	{
@@ -192,7 +195,7 @@ namespace ngcomp
       timer1.Stop();
       timer2.Start();
 
-      if (ntasks == 1 || id > 0)
+      // if (ntasks == 1 || id > 0)
 	for (int i = 0; i < ne; i++)
 	  {
 	    if (!eldnums[i]) continue;
@@ -334,7 +337,7 @@ namespace ngcomp
       else
 	{
 #ifdef PARALLEL
-	  if (ntasks > 1)
+	  if (MyMPI_GetNTasks() > 1)
 	    {
 	      MyMPI_Barrier();
 	      /*
@@ -1531,7 +1534,7 @@ namespace ngcomp
       }
     else
       {
-	if (elmats.Size() || (id == 0 && ntasks > 1))
+	if (elmats.Size() || (MyMPI_GetId() == 0 && MyMPI_GetNTasks() > 1))
 	  {
 	    delete pre;
 	    pre = new BDDCMatrix<SCAL,TV>(*bfa, elmats, eldnums, inversetype, block,ebe);
