@@ -81,7 +81,7 @@ namespace ngstd
     NGS_DLL_HEADER static string names[SIZE];
     NGS_DLL_HEADER static int usedcounter[SIZE];
 
-    int total_timer;
+    // int total_timer;
     static string filename;
   public: 
     /// create new profile
