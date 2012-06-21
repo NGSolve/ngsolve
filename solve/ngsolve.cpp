@@ -192,7 +192,7 @@ int NGS_LoadPDE (ClientData clientData,
 void * SolveBVP(void *)
 {
 #ifdef _OPENMP
-  if (ntasks > 1)
+  if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
     omp_set_num_threads (1);
 #endif
 
@@ -679,17 +679,22 @@ int NGSolve_Init (Tcl_Interp * interp)
 #endif
 
 #ifdef PARALLEL
-  MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-  MPI_Comm_rank(MPI_COMM_WORLD, &id);
+  MyMPI_SendCmd ("ngs_loadngs");
+  MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
+
+  // MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+  // MPI_Comm_rank(MPI_COMM_WORLD, &id);
   // working_proc = (ntasks == 1) || (id > 0);
   NGSOStream::SetGlobalActive (true);
+
 #endif
+
   if (getenv ("NGSPROFILE"))
     NgProfiler::SetFileName (string("ngs.prof"));
   
 #ifdef _OPENMP
 #ifdef PARALLEL
-  if (ntasks > 1)
+  if (MyMPI_GetNTasks(MPI_COMM_WORLD) > 1)
     omp_set_num_threads (1);
 #endif
   cout << "Running OpenMP - parallel using " << omp_get_max_threads() << " thread(s)" << endl;
@@ -698,7 +703,12 @@ int NGSolve_Init (Tcl_Interp * interp)
   
 
 #ifdef VTRACE
-  cout << "Vampirtrace - enabled. Might not run in sequential version" << endl;
+  cout << "Vampirtrace - enabled" << endl;
+  if (MyMPI_GetNTasks(MPI_COMM_WORLD) == 1 && omp_get_num_threads() > 1)
+    {
+      cout << " ... thus setting num_omp_threads to 1" << endl;
+      omp_set_num_threads (1);
+    }
 #endif
 
 
@@ -845,21 +855,24 @@ void NGS_ParallelRun ( const string & message )
   omp_set_num_threads (1);
 #endif
 
-  MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-  MPI_Comm_rank(MPI_COMM_WORLD, &id);
-  // working_proc = (ntasks == 1) || (id > 0);
+  // MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+  // MPI_Comm_rank(MPI_COMM_WORLD, &id);
   NGSOStream::SetGlobalActive (false);
 
   if (getenv ("NGSPROFILE"))
     {
       stringstream filename;
-      filename << "ngs.prof." << id;
+      filename << "ngs.prof." << MyMPI_GetId (MPI_COMM_WORLD);
       NgProfiler::SetFileName (filename.str());
     }
 
-  if ( message == "ngs_pdefile" )
+  if ( message == "ngs_loadngs" )
     {
-      MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
+      MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
+    }
+
+  else if ( message == "ngs_pdefile" )
+    {
       // ngs_comm = MPI_COMM_WORLD;
 
       ma.Reset(new ngcomp::MeshAccess());

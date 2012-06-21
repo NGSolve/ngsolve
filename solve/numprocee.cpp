@@ -211,7 +211,7 @@ namespace ngsolve
     gfdiff = pde.GetGridFunction (flags.GetStringFlag ("diff", ""), 1);
 
     filename = flags.GetStringFlag ("filename","");
-    if (filename.length() && id == 0)
+    if (filename.length() && MyMPI_GetId() == 0)
       file = new ofstream (filename.c_str());
     else
       file = 0;
@@ -304,9 +304,7 @@ namespace ngsolve
     cout << IM(1) << " total difference = " << sqrt (sum) << endl;
     pde.AddVariable (string("calcdiff.")+GetName()+".diff", sqrt(sum), 6);
     
-    int ndof = (ntasks == 1) ? 
-      bfa1->GetFESpace().GetNDof() : 
-      bfa1->GetFESpace().GetParallelDofs().GetNDofGlobal();
+    int ndof = bfa1 -> GetFESpace().GetNDofGlobal();
 
     if (file)
       {

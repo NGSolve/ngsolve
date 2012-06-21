@@ -616,9 +616,7 @@ namespace ngsolve
 
 		lh.CleanUp();
 
-		int ndof = (ntasks == 1) ? 
-		  fes->GetNDof() : fes->GetParallelDofs().GetNDofGlobal();
-		
+		int ndof = fes->GetNDofGlobal();
 		AddVariable (string("fes.")+fes->GetName()+".ndof", ndof, 6);
 
 		if (fes->GetDimension() == 1)
@@ -1204,6 +1202,9 @@ namespace ngsolve
     Preconditioner * pre = NULL;
     const char * type = flags.GetStringFlag ("type", NULL);
 
+    int id = MyMPI_GetId ();
+    int ntasks = MyMPI_GetNTasks ();
+    
     if ( ntasks == 1 )
       {
 

@@ -1388,7 +1388,7 @@ namespace ngsolve
 
       string filename = flags.GetStringFlag ("filename","");
       
-      if (filename.length() && id == 0)
+      if (filename.length() && (MyMPI_GetId() == 0) )
 	{
 	  filename = pde.GetDirectory() + dirslash + filename;
 	  outfile = new ofstream (filename.c_str());
@@ -2497,7 +2497,7 @@ namespace ngsolve
     : NumProc(apde)
   {
 
-    if ( id > 0 ) return;
+    if ( MyMPI_GetId() != 0 ) return;
 
     Array<double> centerpoint;
     bool center = flags.NumListFlagDefined("centerpoint");
