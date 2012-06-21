@@ -273,10 +273,12 @@ namespace ngparallel
 
 
 #else
-  inline int MyMPI_GetNTasks () { return 1; }
-  inline int MyMPI_GetId () { return 0; }
+  enum { MPI_COMM_WORLD = 12345 };
+  typedef int MPI_Comm;
+  inline int MyMPI_GetNTasks (MPI_Comm comm = MPI_COMM_WORLD) { return 1; }
+  inline int MyMPI_GetId (MPI_Comm comm = MPI_COMM_WORLD) { return 0; }
 
-  inline void MyMPI_Barrier (int comm = 0 ) { ; }
+  inline void MyMPI_Barrier (MPI_Comm comm = 0 ) { ; }
   inline void MyMPI_SendCmd (const char * cmd) { ; }
 
   template <typename T>
@@ -287,8 +289,8 @@ namespace ngparallel
   inline void MyMPI_Recv (const T & data, int dest, int tag = 0)
   { ; }
 
-  template <typename T, typename H1, typename H2>
-  inline T MyMPI_AllReduce (T d, H1 x, H2 y)  { return d; }
+  template <typename T>
+  inline T MyMPI_AllReduce (T d, int op = 0, MPI_Comm comm = 0)  { return d; }
 
 #endif
 
