@@ -11,9 +11,9 @@ using namespace ngfem;
 
 namespace ngcomp
 {
-  class FESpace;
   class MeshAccess;
 }
+
 
 namespace ngparallel
 {
@@ -47,6 +47,8 @@ namespace ngparallel
     const Array<Node> & GetDofNodes() const 
     { return dofnodes; }
 
+    int GetNTasks() const { return exchangedofs->Size(); }
+
     const FlatArray<int>  GetExchangeDofs (int proc) const
     { return (*exchangedofs)[proc]; }
 
@@ -64,32 +66,32 @@ namespace ngparallel
 
     MPI_Datatype MyGetMPI_Type ( int dest )
     { return mpi_t[dest]; }
+
+    MPI_Comm GetCommunicator () const { return ngs_comm; }
   };
+
+
+
 
 #else
 
   class ParallelDofs 
   {
     int ndof;
-    // const FESpace * fes;
 
   public:
-    /*
-    ParallelDofs (int andof, Table<int> * exdofs, const FESpace * afes)
-      : ndof(andof), fes(afes) 
-    { ; }
-    */
-    // ParallelDofs (const MeshAccess & ma, const Array<Node> & dofnodes, const FESpace * afes = NULL)
-    // { ndof = dofnodes.Size(); }
 
-
-    ParallelDofs (const MeshAccess & ama, const Array<Node> & adofnodes, int dim = 1, bool iscomplex = false)
+    ParallelDofs (const MeshAccess & ama, const Array<Node> & adofnodes, 
+		  int dim = 1, bool iscomplex = false)
     { ndof = adofnodes.Size(); }
 
     int GetNDofGlobal () const { return ndof; }
 
   };
 
+
+
+  
 #endif //PARALLEL
 }
 

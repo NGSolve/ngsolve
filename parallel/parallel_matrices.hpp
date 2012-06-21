@@ -21,8 +21,9 @@ namespace ngla
     DynamicTable<int> loc2glob;
     Array<int> select;
     string invtype;
+    const ParallelDofs * pardofs;
   public:
-    MasterInverse (const SparseMatrixTM<TM> & mat, const BitArray * asubset, const ParallelDofs * pardofs);
+    MasterInverse (const SparseMatrixTM<TM> & mat, const BitArray * asubset, const ParallelDofs * apardofs);
     virtual ~MasterInverse ();
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
   };

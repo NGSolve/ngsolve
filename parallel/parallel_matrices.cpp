@@ -4,8 +4,6 @@
 /* Date:   June 2011                                                 */
 /*********************************************************************/
 
-// #undef USE_MUMPS
-
 #ifdef PARALLEL
  
 #include <la.hpp>
@@ -18,13 +16,64 @@ namespace ngla
   using namespace ngparallel;
 
 
+
+
+
+
+
+
+
+
+
+
+
+
   template <typename TM>
   MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, 
-				      const BitArray * subset, const ParallelDofs * pardofs)
-    : loc2glob(ntasks)
+				      const BitArray * subset, const ParallelDofs * apardofs)
+    : loc2glob(MyMPI_GetNTasks (pardofs -> GetCommunicator())),
+      pardofs(apardofs)
   {
     inv = NULL;
+    
+    int id = MyMPI_GetId (pardofs -> GetCommunicator());
+    int ntasks = MyMPI_GetNTasks (pardofs -> GetCommunicator());
 
+
+    // consistent enumeration
+    
+    int ndof = pardofs->GetNDof();
+    
+    Array<int> global_nums(ndof);
+    global_nums = -9999;
+    int num_master_dofs = 0;
+    for (int i = 0; i < ndof; i++)
+      if (pardofs -> IsMasterDof (i) && (!subset || (subset && subset->Test(i))))
+	global_nums[i] = num_master_dofs++;
+    
+    Array<int> first_master_dof(ntasks);
+    MPI_Allgather (&num_master_dofs, 1, MPI_INT, 
+		   &first_master_dof[0], 1, MPI_INT, 
+		   pardofs -> GetCommunicator());
+    
+    int num_glob_dofs = 0;
+    for (int i = 0; i < ntasks; i++)
+      {
+	int cur = first_master_dof[i];
+	first_master_dof[i] = num_glob_dofs;
+	num_glob_dofs += cur;
+      }
+    
+    for (int i = 0; i < ndof; i++)
+      global_nums[i] += first_master_dof[id];
+    
+    ScatterDofData (global_nums, *pardofs);
+    
+
+
+
+
+    
     if (id != 0)
       {
 	const MeshAccess & ma = pardofs -> GetMeshAccess();
@@ -47,26 +96,6 @@ namespace ngla
 
 	globid = -1;
 
-	/*
-	Array<int> dnums;
-	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
-	  for (int i = 0; i < ma.GetNNodes (nt); i++)
-	    {
-	      fes.GetNodeDofNrs (nt, i, dnums);
-	      // int distnum = parallelma->GetGlobalNodeNum (nt, i);
-	      int distnum = ma.GetGlobalNodeNum (Node (nt, i));
-
-	      for (int j = 0; j < dnums.Size(); j++)
-		if (dnums[j] != -1 && (!subset || subset->Test(dnums[j])))
-		  {
-		    int dn = dnums[j];
-		    globid[3*dn+0] = int(nt);
-		    globid[3*dn+1] = distnum;
-		    globid[3*dn+2] = j;
-		  }
-	    }
-	*/
-
 	const Array<Node> & dofnodes = pardofs -> GetDofNodes();
 
 	Array<int> nnodes(4);
@@ -81,10 +110,16 @@ namespace ngla
 	for (int i = 0; i < ndof; i++)
 	  if (!subset || subset->Test(i))
 	    {
+	      /*
 	      globid[3*i+0] = dofnodes[i].GetType();
 	      globid[3*i+1] = ma.GetGlobalNodeNum (dofnodes[i]);
 	      globid[3*i+2] = dofnr[i];
+	      */
+	      globid[3*i  ] = 0;	      
+	      globid[3*i+1] = 0;
+	      globid[3*i+2] = global_nums[i];
 	    }
+
 
 	for (int row = 0; row < mat.Height(); row++)
 	  if (!subset || subset->Test(row))
@@ -97,6 +132,9 @@ namespace ngla
 		  {
 		    rows.Append (row);
 		    cols.Append (rcols[j]);
+
+		    // rows.Append (global_nums[row]);
+		    // cols.Append (global_nums[rcols[j]]);
 		    vals.Append (rvals[j]);
 		  }
 	    }
@@ -124,7 +162,7 @@ namespace ngla
 	Array<int> rows, cols;
 	Array<TM> vals;
 	HashTable<INT<3>, int> ht_globdofs(100000);
-	int num_globdofs = 0;
+	int num_globdofs = 0; //  num_glob_dofs;
 
 	for (int src = 1; src < ntasks; src++)
 	  {
@@ -151,8 +189,7 @@ namespace ngla
 	    for (int i = 0; i < hrows.Size(); i++)
 	      if (hglobid[3*hcols[i]] < 0)
 		cout << "globid missing (cols) !!!! " << endl;
-
-
+		
 	    Array<int> full_loc2glob(hglobid.Size()/3);
 	    full_loc2glob = -1;
 	    for (int i = 0; i < hglobid.Size(); i += 3)
@@ -179,11 +216,15 @@ namespace ngla
 		full_loc2glob[i/3] = found;
 	      }
 	    // *testout << "full_loc2glob = " << endl << full_loc2glob << endl;
-	 
+
 	    for (int i = 0; i < hrows.Size(); i++)
 	      {
 		rows.Append (full_loc2glob[hrows[i]]);
 		cols.Append (full_loc2glob[hcols[i]]);
+		/*
+		rows.Append (hrows[i]);
+		cols.Append (hcols[i]);
+		*/
 		vals.Append (hvals[i]);
 	      }
 
@@ -254,6 +295,9 @@ namespace ngla
   {
     typedef typename mat_traits<TM>::TV_ROW TV;
 
+    int id = MyMPI_GetId (pardofs -> GetCommunicator());
+    int ntasks = MyMPI_GetNTasks (pardofs -> GetCommunicator());
+
     bool is_x_cum = (dynamic_cast<const ParallelBaseVector&> (x) . Status() == CUMULATED);
     x.Distribute();
     y.Cumulate();
@@ -320,7 +364,7 @@ namespace ngla
 	      exdata[src][j] = hy(selecti[j]);
 	    requ.Append (MyMPI_ISend (exdata[src], src, MPI_TAG_SOLVE));
 	  }
-	MPI_Waitall (requ.Size(), &requ[0], MPI_STATUS_IGNORE);
+	MyMPI_WaitAll (requ);
       }
 
     if (is_x_cum)
@@ -339,7 +383,7 @@ namespace ngla
   {
     x.Cumulate();
     y.Distribute();
-    if (id > 0)
+    // if (id > 0)
       mat.MultAdd (s, x, y);
   }
 
@@ -349,7 +393,7 @@ namespace ngla
   {
     x.Cumulate();
     y.Distribute();
-    if (id > 0)
+    // if (id > 0)
       mat.MultTransAdd (s, x, y);
   }
 
@@ -368,18 +412,20 @@ namespace ngla
 
   ostream & ParallelMatrix :: Print (ostream & ost) const
   {
-    if (id > 0)
+    // if (id > 0)
       ost << mat;
     return ost;
   }
 
   int ParallelMatrix :: VHeight() const
   {
-    return (id == 0) ? 0 : mat.VHeight();
+    // return (id == 0) ? 0 : mat.VHeight();
+    return mat.VHeight();
   }
   int ParallelMatrix :: VWidth() const
   {
-    return (id == 0) ? 0 : mat.VWidth();
+    // return (id == 0) ? 0 : mat.VWidth();
+    return mat.VWidth();
   }
 
 
