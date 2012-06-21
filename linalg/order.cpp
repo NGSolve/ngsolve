@@ -751,8 +751,8 @@ namespace ngla
 
   void MinimumDegreeOrdering :: Order()
   {
-    static int reorder_timer = NgProfiler::CreateTimer ("MinimumDegreeOrdering::Order");
-    NgProfiler::StartTimer (reorder_timer);
+    static Timer reorder_timer("MinimumDegreeOrdering::Order");
+    RegionTimer reg(reorder_timer);
 
     cout << "start order" << endl;
 
@@ -815,9 +815,6 @@ namespace ngla
 	lastel = minj;
       }
     // PrintCliques();
-
-
-    NgProfiler::StopTimer (reorder_timer);
     // NgProfiler::Print (cout);
   }
 
