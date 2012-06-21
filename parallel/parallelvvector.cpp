@@ -107,14 +107,11 @@ namespace ngla
 
   void ParallelBaseVector :: Cumulate () const
   {
-    if ( status != DISTRIBUTED ) return;
-    // (*testout) << "CUMULATE" << endl;
-
+    if (status != DISTRIBUTED) return;
     
+    int ntasks = paralleldofs->GetNTasks();
     Array<int> exprocs;
-    
-    // find which processors to communicate with
-    for ( int i = 1; i < ntasks; i++)
+    for (int i = 0; i < ntasks; i++)
       if (paralleldofs -> GetExchangeDofs (i).Size())
 	exprocs.Append(i);
     
@@ -124,34 +121,19 @@ namespace ngla
     
     Array<MPI_Request> sendrequest(nexprocs), recvrequest(nexprocs);
 
-    // *testout << "exprocs = " << exprocs << endl;
-    // if the vectors are distributed, reduce
-    if ( id >= 1)
+    for (int idest = 0; idest < nexprocs; idest ++ ) 
+      constvec->ISend (exprocs[idest], sendrequest[idest] );
+    for (int isender=0; isender < nexprocs; isender++)
+      constvec -> IRecvVec (exprocs[isender], recvrequest[isender] );
+    
+    MyMPI_WaitAll (sendrequest);
+    
+    // cumulate
+    for (int cntexproc=0; cntexproc < nexprocs; cntexproc++)
       {
-	for ( int idest = 0; idest < nexprocs; idest ++ ) 
-          constvec->ISend ( exprocs[idest], sendrequest[idest] );
-
-	for ( int isender=0; isender < nexprocs; isender++)
-          constvec -> IRecvVec ( exprocs[isender], recvrequest[isender] );
-
-        // wait till everything is sent 
-	for ( int isender = 0;  isender < nexprocs; isender ++)
-	  MPI_Wait ( &sendrequest[isender], MPI_STATUS_IGNORE);
-
-	// *testout << "everything sent, id = " << id << endl;
- 
-	// cumulate
-	// MPI_Waitany --> wait for first receive, not necessarily the one with smallest id
-	for ( int cntexproc=0; cntexproc < nexprocs; cntexproc++ )
-	  {
-	    int isender;
-	    MPI_Waitany ( nexprocs, &recvrequest[0], &isender, MPI_STATUS_IGNORE); 
-	    constvec->AddRecvValues(exprocs[isender]);
-	    // *testout << "got from proc " << isender << endl;
-	  } 
-
-	// *testout << "got all, id = " << id << endl;
-      }
+	int isender = MyMPI_WaitAny (recvrequest);
+	constvec->AddRecvValues(exprocs[isender]);
+      } 
 
     SetStatus(CUMULATED);
   }
@@ -180,49 +162,23 @@ namespace ngla
   {
     const ParallelBaseVector * parv2 = dynamic_cast<const ParallelBaseVector *> (&v2);
 
-    SCAL globalsum = 0;
-    if ( id == 0 && ntasks > 1 )
-      {
-	if (this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
-	  Cumulate();
+    if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
+      return ngbla::InnerProduct (this->FVScal(), 
+				  dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
 
-	// two cumulated vectors -- distribute one
-	else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
-	  this->Distribute();
-	// MyMPI_Recv ( globalsum, 1 );
+    // two distributed vectors -- cumulate one
+    else if ( this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
+      Cumulate();
+    
+    // two cumulated vectors -- distribute one
+    else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
+      this->Distribute();
+    
+    SCAL localsum = ngbla::InnerProduct (this->FVScal(), 
+					 dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
 
 
-	SCAL localsum = SCAL (0.0);
-	MPI_Datatype MPI_SCAL = MyGetMPIType<SCAL>();
-	MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, ngs_comm);
-
-
-      }
-    else
-      {
-	// not parallel
-	if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
-	  return ngbla::InnerProduct (this->FVScal(), 
-				      dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
-	// two distributed vectors -- cumulate one
-	else if ( this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
-	  Cumulate();
-
-	// two cumulated vectors -- distribute one
-	else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
-	  this->Distribute();
-
-	SCAL localsum = ngbla::InnerProduct (this->FVScal(), 
-					     dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
-	MPI_Datatype MPI_SCAL = MyGetMPIType<SCAL>();
-      
-	MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, ngs_comm);
-
-	// MPI_Allreduce ( &localsum, &globalsum, 1,  MPI_SCAL, MPI_SUM, MPI_HIGHORDER_COMM); //ngs_comm);
-	// if ( id == 1 ) MyMPI_Send( globalsum, 0 );
-      }
-  
-    return globalsum;
+    return MyMPI_AllReduce (localsum);
   }
 
 
@@ -247,9 +203,11 @@ namespace ngla
 
     Complex localsum ;
     Complex globalsum = 0;
+    /*
     if ( id == 0 )
       localsum = 0;
     else 
+    */
       localsum = ngbla::InnerProduct (FVComplex(), 
 				      dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex());
     MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, ngs_comm);
@@ -259,20 +217,8 @@ namespace ngla
   }
 
 
-
-
-  // template
-  // Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const;
-
-  //template <>
-  // Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
-
-
   template class S_ParallelBaseVector<double>;
   template class S_ParallelBaseVector<Complex>;
-
-
-
 
 
 
@@ -325,6 +271,7 @@ namespace ngla
     this -> paralleldofs = aparalleldofs;
     if ( this -> paralleldofs == 0 ) return;
     
+    int ntasks = this->paralleldofs->GetNTasks();
     Array<int> exdofs(ntasks);
     for (int i = 0; i < ntasks; i++)
       exdofs[i] = this->es * this->paralleldofs->GetExchangeDofs(i).Size();
@@ -406,9 +353,9 @@ namespace ngla
     this->Cumulate();
     
     double sum = 0;
-
-    if (id > 0)
-      {
+    
+    // if (id > 0)
+    {
 	if (this->entrysize == 1)
 	  {
 	    FlatVector<double> fv = this -> FVDouble ();
@@ -424,11 +371,13 @@ namespace ngla
 		sum += L2Norm2 (fv.Row(dof));
 	  }
       }
-    
-    double globalsum = 0;
-    MPI_Allreduce (&sum, &globalsum, 1, MPI_DOUBLE, MPI_SUM, ngs_comm);
-    
-    return sqrt (globalsum);
+      
+      /*
+	double globalsum = 0;
+	MPI_Allreduce (&sum, &globalsum, 1, MPI_DOUBLE, MPI_SUM, ngs_comm);
+      */
+    double globsum = MyMPI_AllReduce (sum, MPI_SUM, ngs_comm);
+    return sqrt (globsum);
   }
 
 

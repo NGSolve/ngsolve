@@ -11,11 +11,10 @@ namespace ngparallel
 
 
   MPI_Comm ngs_comm;
+  /*
   int id = 0;
   int ntasks = 1;
-  bool working_proc = true;
-
-
+  */
 
   ParallelDofs :: ParallelDofs (const MeshAccess & ama, 
 				const Array<Node> & adofnodes, int dim, bool iscomplex)
@@ -23,6 +22,9 @@ namespace ngparallel
   {
     static Timer timer ("ParallelDofs");
     RegionTimer reg(timer);
+
+    int ntasks = MyMPI_GetNTasks();
+    int id = MyMPI_GetId();
 
     ndof = dofnodes.Size();
     Array<int> distprocs;
@@ -96,27 +98,26 @@ namespace ngparallel
 
 
 
-
-
-
-
-
-
-
-
   int ParallelDofs :: GetNDofGlobal () const
   {
-    if (ntasks == 1) return ndof;
+    if (GetNTasks() == 1) return ndof;
     
-    int nlocal = 0, nglobal;
+    int nlocal = 0;
 
-    if (id > 0)
-      for (int i = 0; i < ndof; i++)
-	if (ismasterdof.Test(i)) nlocal++;
+    for (int i = 0; i < ndof; i++)
+      if (ismasterdof.Test(i)) nlocal++;
 
-    MPI_Allreduce (&nlocal, &nglobal, 1,  MPI_INT, MPI_SUM, ngs_comm);
-    return nglobal;
+    return MyMPI_AllReduce (nlocal);
+
+    // MPI_Allreduce (&nlocal, &nglobal, 1,  MPI_INT, MPI_SUM, ngs_comm);
+    // return nglobal;
   }
+
+
+
+
+
+
 }
 
 #endif

@@ -38,18 +38,17 @@ using namespace ngla;
 
 enum { id = 0 };
 enum { ntasks = 1 };
-enum { working_proc = 1 };
 
 #else
 
 namespace ngparallel
 {
-  extern int id;
-  extern int ntasks;
+  // extern int id;
+  // extern int ntasks;
 }
 
-using ngparallel::id;
-using ngparallel::ntasks;
+// using ngparallel::id;
+// using ngparallel::ntasks;
 #endif
 
 

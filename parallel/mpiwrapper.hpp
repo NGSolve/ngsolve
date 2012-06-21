@@ -117,6 +117,26 @@ namespace ngparallel
     return MPI_Traits<T>::MPIType();
   }
 
+  inline int MyMPI_GetNTasks (MPI_Comm comm = ngs_comm)
+  {
+    static Timer t("dummy - size");
+    RegionTimer r(t);
+
+    int ntasks;
+    MPI_Comm_size(comm, &ntasks);
+    return ntasks;
+  }
+  
+  inline int MyMPI_GetId (MPI_Comm comm = ngs_comm)
+  {
+    static Timer t("dummy - rank");
+    RegionTimer r(t);
+
+    int id;
+    MPI_Comm_rank(comm, &id);
+    return id;
+  }
+
   inline void MyMPI_Barrier (MPI_Comm comm = ngs_comm)
   {
     MPI_Barrier (comm);
@@ -160,13 +180,19 @@ namespace ngparallel
 
  
   template <typename T>
-  inline T MyMPI_AllReduce (T d)
+  inline T MyMPI_AllReduce (T d, const MPI_Op & op = MPI_SUM, MPI_Comm comm = ngs_comm)
   {
     T global_d;
-    MPI_Allreduce ( &d, &global_d, 1, MyGetMPIType<T>(), MPI_SUM, ngs_comm);
+    MPI_Allreduce ( &d, &global_d, 1, MyGetMPIType<T>(), MPI_SUM, comm);
     return global_d;
   }
 
+  template <typename T>
+  inline void MyMPI_AllToAll (FlatArray<T> send, FlatArray<T> recv, MPI_Comm comm)
+  {
+    MPI_Alltoall (&send[0], 1, MyGetMPIType<T>(), 
+		  &recv[0], 1, MyGetMPIType<T>(), comm);
+  }
 
 
   template <class T>
@@ -190,26 +216,26 @@ namespace ngparallel
   }
 
   template <class T>
-  MPI_Request MyMPI_ISend (const FlatArray<T> & s, int dest, int tag)
+  MPI_Request MyMPI_ISend (const FlatArray<T> & s, int dest, int tag, MPI_Comm comm = ngs_comm)
   { 
     static Timer t("dummy - irecv");
     RegionTimer r(t);
 
     MPI_Request request;
     MPI_Datatype MPI_T  = MyGetMPIType<T> ();
-    MPI_Isend (&s[0], s.Size(), MPI_T, dest, tag, ngs_comm, &request);
+    MPI_Isend (&s[0], s.Size(), MPI_T, dest, tag, comm, &request);
     return request;
   }
 
   template <class T>
-  MPI_Request  MyMPI_IRecv (const FlatArray<T> & s, int src, int tag)
+  MPI_Request  MyMPI_IRecv (const FlatArray<T> & s, int src, int tag, MPI_Comm comm = ngs_comm)
   { 
     static Timer t("dummy - irecv");
     RegionTimer r(t);
 
     MPI_Request request;
     MPI_Datatype MPI_T = MyGetMPIType<T> ();
-    MPI_Irecv (&s[0], s.Size(), MPI_T, src, tag, ngs_comm, &request);
+    MPI_Irecv (&s[0], s.Size(), MPI_T, src, tag, comm, &request);
     return request;
   }
 
@@ -220,8 +246,17 @@ namespace ngparallel
     MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
   }
   
+  inline int MyMPI_WaitAny (const Array<MPI_Request> & requests)
+  {
+    static Timer t("dummy - waitany");
+    RegionTimer r(t);
 
-
+    int nr;
+    MPI_Waitany (requests.Size(), &requests[0], &nr, MPI_STATUS_IGNORE);
+    return nr;
+  }
+  
+  
 
   inline void MyMPI_SendCmd (const char * cmd)
   {
@@ -238,6 +273,8 @@ namespace ngparallel
 
 
 #else
+  inline int MyMPI_GetNTasks () { return 1; }
+  inline int MyMPI_GetId () { return 0; }
 
   inline void MyMPI_Barrier (int comm = 0 ) { ; }
   inline void MyMPI_SendCmd (const char * cmd) { ; }
@@ -250,8 +287,8 @@ namespace ngparallel
   inline void MyMPI_Recv (const T & data, int dest, int tag = 0)
   { ; }
 
-  template <typename T>
-  inline T MyMPI_AllReduce (T d)  { return d; }
+  template <typename T, typename H1, typename H2>
+  inline T MyMPI_AllReduce (T d, H1 x, H2 y)  { return d; }
 
 #endif
 
