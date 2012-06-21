@@ -135,6 +135,7 @@ namespace netgen
   // Destination for messages, errors, ...
   DLL_HEADER void Ng_PrintDest(const char * s)
   {
+    /*
 #ifdef PARALLEL
     int id, ntasks;
     MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
@@ -142,7 +143,7 @@ namespace netgen
 #else
     int id = 0; int ntasks = 1;
 #endif
-
+    */
 
     if ( ntasks == 1 )
       (*mycout) << s << flush;
