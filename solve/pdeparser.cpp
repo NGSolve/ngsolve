@@ -2045,30 +2045,28 @@ namespace ngsolve
     LoadPDE(infile,nomeshload,nogeometryload);
     infile.close();
 
-    if ( id == 0 )
-      {
-	MyMPI_SendCmd ("ngs_pdefile");
 #ifdef PARALLEL
-	MPI_Comm_dup (MPI_COMM_WORLD, &ngs_comm);
-
-	ifstream infile (filename.c_str());
-	string data;
-	while (!infile.eof())
-	  {
-	    char ch;
-	    infile.get(ch);
-	    data += ch;
-	  }
-
-	for ( int dest = 1; dest < ntasks; dest ++)
-	  {
-	    MyMPI_Send (filename, dest);
-	    MyMPI_Send (pde_directory, dest);
-	    MyMPI_Send (data, dest);
-	  }
-#endif
-
+    {
+      MyMPI_SendCmd ("ngs_pdefile");
+      
+      ifstream infile (filename.c_str());
+      string data;
+      while (!infile.eof())
+	{
+	  char ch;
+	  infile.get(ch);
+	  data += ch;
       }
+      
+      int ntasks = MyMPI_GetNTasks ();
+      for (int dest = 1; dest < ntasks; dest ++)
+	{
+	  MyMPI_Send (filename, dest);
+	  MyMPI_Send (pde_directory, dest);
+	  MyMPI_Send (data, dest);
+	}
+    }
+#endif
   }
 
 

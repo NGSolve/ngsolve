@@ -339,7 +339,7 @@ namespace ngsolve
         ma.PushStatus ("Iterative solver");
         invmat->SetMaxSteps (maxsteps);
         invmat->SetPrecision (prec);
-        invmat->SetPrintRates (id == 0);
+        invmat->SetPrintRates (MyMPI_GetId() == 0);
         invmat->SetInitialize (0);
         invmat->SetStatusHandler(ma);
 	invmat->UseSeed(useseedvariant);
@@ -675,7 +675,7 @@ namespace ngsolve
 
     invmat->SetMaxSteps (maxsteps);
     invmat->SetPrecision (prec);
-    invmat->SetPrintRates (id == 0);
+    invmat->SetPrintRates (MyMPI_GetId() == 0);
     invmat->SetInitialize (0);
 
     clock_t starttime, endtime;
