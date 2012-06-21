@@ -207,12 +207,14 @@ namespace ngcomp
 	lo_bfa = &bfa->GetLowOrderBilinearForm();
 	lo_fes = &fes.LowOrderFESpace();
       }
-    else if (id == 0 && ntasks > 1 )
+    /*
+    else if (id == 0 && ntasks > 1 )  // not supported anymore
       {
 	lo_bfa = bfa;
 	lo_fes = &fes;
       }
-    
+    */
+
     Smoother * sm = NULL;
     //    const char * smoother = flags.GetStringFlag ("smoother", "point");
     smoothertype = flags.GetStringFlag ("smoother", "point");
@@ -308,7 +310,7 @@ namespace ngcomp
 	mgp->SetOwnCoarseGridPreconditioner(false);
       }
 
-    if (&bfa->GetLowOrderBilinearForm() || ntasks > 1)
+    if (&bfa->GetLowOrderBilinearForm()) //  || ntasks > 1) not supported anymore
       {
 	delete tlp;
 
@@ -559,12 +561,15 @@ namespace ngcomp
 	
     int blocktype = int (flags.GetNumFlag ( "blocktype", -1));
 
+    if (MyMPI_GetNTasks() != 1) return;
     bool parallel = (this->on_proc == -1);
+    /*
     if ( !parallel && id != this->on_proc )
       {
 	jacobi = 0; 
 	return;
       }
+    */
 
 //     BaseBlockJacobiPrecond::COARSE_TYPE bbct;
 //     switch ( ct  )
@@ -857,7 +862,7 @@ namespace ngcomp
     cout << "Update amg" << endl;
 
 #ifdef PARALLEL
-    if ( this->on_proc != id && this->on_proc != -1)
+    if ( this->on_proc != MyMPI_GetId() && this->on_proc != -1)
       {
 	amg = NULL;
 	return;

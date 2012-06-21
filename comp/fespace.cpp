@@ -241,46 +241,44 @@ lot of new non-zero entries in the matrix!\n" << endl;
     specialelements.SetSize(0);
 
 
-      {
-	int dim = ma.GetDimension();
-
-	dirichlet_vertex.SetSize (ma.GetNV());
-	dirichlet_edge.SetSize (ma.GetNEdges());
-        if (dim == 3)
-          dirichlet_face.SetSize (ma.GetNFaces());
-	
-	dirichlet_vertex = false;
-	dirichlet_edge = false;
-	dirichlet_face = false;
-
-	if (dirichlet_boundaries.Size())
-	  for (int i = 0; i < ma.GetNSE(); i++)
+    int dim = ma.GetDimension();
+    
+    dirichlet_vertex.SetSize (ma.GetNV());
+    dirichlet_edge.SetSize (ma.GetNEdges());
+    if (dim == 3)
+      dirichlet_face.SetSize (ma.GetNFaces());
+    
+    dirichlet_vertex = false;
+    dirichlet_edge = false;
+    dirichlet_face = false;
+    
+    if (dirichlet_boundaries.Size())
+      for (int i = 0; i < ma.GetNSE(); i++)
+	{
+	  int ind = ma.GetSElIndex (i);
+	  if (dirichlet_boundaries.Test(ind))
 	    {
-	      int ind = ma.GetSElIndex (i);
-	      if (dirichlet_boundaries.Test(ind))
-		{
-		  Ng_Element ngel = ma.GetSElement(i);
-		  
-		  for (int j = 0; j < ngel.vertices.Size(); j++)
-		    dirichlet_vertex[ngel.vertices[j]] = true;
-		  
-		  for (int j = 0; j < ngel.edges.Size(); j++)
-		    dirichlet_edge[ngel.edges[j]] = true;
-		  
-		  if (dim == 3)
-		    dirichlet_face[ngel.faces[0]] = true;
-		}
+	      Ng_Element ngel = ma.GetSElement(i);
+	      
+	      for (int j = 0; j < ngel.vertices.Size(); j++)
+		dirichlet_vertex[ngel.vertices[j]] = true;
+	      
+	      for (int j = 0; j < ngel.edges.Size(); j++)
+		dirichlet_edge[ngel.edges[j]] = true;
+	      
+	      if (dim == 3)
+		dirichlet_face[ngel.faces[0]] = true;
 	    }
-
+	}
+    
 #ifdef PARALLEL	
-	ReduceNodalData (NT_VERTEX, dirichlet_vertex, MPI_LOR, ma);
-	ReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR, ma);
+    ReduceNodalData (NT_VERTEX, dirichlet_vertex, MPI_LOR, ma);
+    ReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR, ma);
 #endif
-
-	(*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
-	(*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;
-	(*testout) << "Dirichlet_face = " << endl << dirichlet_face << endl;
-      }
+    
+    (*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
+    (*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;
+    (*testout) << "Dirichlet_face = " << endl << dirichlet_face << endl;
   }
 
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
@@ -902,26 +900,34 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: UpdateParallelDofs ( )
   {
-    if  ( ntasks == 1 ) 
-      return;
+    if (MyMPI_GetNTasks() == 1) return;
 
     Array<Node> dofnodes (GetNDof());
     dofnodes = Node (NT_VERTEX, -1);
     Array<int> dnums;
-    
-    if (id != 0)
-      for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
-	for ( int nr = 0; nr < ma.GetNNodes (nt); nr++ )
-	  {
-	    GetNodeDofNrs (nt, nr, dnums);
-	    for (int j = 0; j < dnums.Size(); j++)
-	      dofnodes[dnums[j]] = Node (nt, nr);
-	  }
+
+    for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+      for ( int nr = 0; nr < ma.GetNNodes (nt); nr++ )
+	{
+	  GetNodeDofNrs (nt, nr, dnums);
+	  for (int j = 0; j < dnums.Size(); j++)
+	    dofnodes[dnums[j]] = Node (nt, nr);
+	}
 
     paralleldofs = new ParallelDofs (ma, dofnodes, dimension, iscomplex);
   }
 
 
+  bool FESpace :: IsParallel() const
+  { 
+    return paralleldofs != NULL; 
+  }
+
+  int FESpace :: GetNDofGlobal() const 
+  { 
+    return IsParallel() ?
+      paralleldofs -> GetNDofGlobal() : GetNDof(); 
+  }
 
 
 

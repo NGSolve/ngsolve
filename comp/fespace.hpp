@@ -390,6 +390,12 @@ namespace ngcomp
     ParallelDofs & GetParallelDofs () const { return *paralleldofs; }
     virtual void UpdateParallelDofs ();
 
+    //// is FESpace mpi-distributed ?
+    bool IsParallel() const;
+
+    /// ndof over all mpi-partitions
+    int GetNDofGlobal() const;
+
     virtual int GetRelOrder() const
     { 
       cout << "virtual GetRelOrder called for FiniteElementSpace, not available ! " << endl; 

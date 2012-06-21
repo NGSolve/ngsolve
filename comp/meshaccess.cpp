@@ -187,7 +187,9 @@ namespace ngcomp
   void MeshAccess :: UpdateBuffers()
   {
     dim = Ng_GetDimension();
-    if (dim == -1 || (ntasks > 1 && id == 0))
+    if (dim == -1 || 
+	(MyMPI_GetNTasks() > 1 && MyMPI_GetId() == 0) )
+      // (ntasks > 1 && id == 0))
       for (int i = 0; i < 4; i++)  
         {
           nnodes[i] = 0;
@@ -1058,35 +1060,16 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
  
   int MeshAccess ::GetGlobalNodeNum (Node node) const
   {
-    return NgPar_GetGlobalNodeNum (node.GetType(), node.GetNr());
+    int glob = NgPar_GetGlobalNodeNum (node.GetType(), node.GetNr());
+    return glob;
   }
   
-/*
-  void MeshAccess :: GetDistantNodeNums (Node node,
-					 Array<int[2]> & distnums ) const
-  {
-    distnums.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );
-    NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &distnums[0][0] );
-  }
-*/
   void MeshAccess :: GetDistantProcs (Node node, Array<int> & procs) const
   {
-    if (id == 0)
-      {
-	procs.SetSize(0);
-	return;
-      }
-
-    Array<int[2]> distnums;
-    
-    distnums.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );
-    NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &distnums[0][0] );
-
-    procs.SetSize(0);
-    for (int j = 0; j < distnums.Size(); j++)
-      if (distnums[j][0] != 0)
-	procs.Append (distnums[j][0]);
+    procs.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );
+    NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &procs[0] );
   }
+
 
 #else
 
@@ -1095,13 +1078,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
   {
     return -1;
   }
-/*
-  void MeshAccess :: GetDistantNodeNums (Node node, 
-					Array<int[2]> & distnums ) const
-  {
-    distnums.SetSize (0);
-  }
-*/
+
   void MeshAccess :: GetDistantProcs (Node node, Array<int> & procs) const
   {
     procs.SetSize (0);
@@ -1116,9 +1093,10 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 				    string atask, int atotal)
     : ma(ama), task(atask), total(atotal)
   {
+    is_root = (MyMPI_GetId() == 0);
     prevtime = WallTime();
     int glob_total = MyMPI_AllReduce (total);
-    if (id == 0) total = glob_total;
+    if (is_root) total = glob_total;
   }
   
   void ProgressOutput :: Update (int nr)
@@ -1128,7 +1106,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
       {
 #pragma omp critical(progressupdate) 
 	{
-	  if (id == 0)
+	  if (is_root)
 	    {
 	      cout << IM(3) << "\r" << task << " " << nr << "/" << total << flush;
 	      ma.SetThreadPercentage ( 100.0*nr / total);
@@ -1147,9 +1125,10 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
   void ProgressOutput :: Done()
     {
-      if (id == 0)
+      if (is_root)
 	{
 #ifdef PARALLEL	  
+	  int ntasks = MyMPI_GetNTasks();
 	  if (ntasks > 1)
 	    {
 	      Array<int> working(ntasks), computed(ntasks);

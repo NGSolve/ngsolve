@@ -524,8 +524,6 @@ namespace ngcomp
     void InitPointCurve(double red = 1, double green = 0, double blue = 0) const;
     void AddPointCurvePoint(const Vec<3> & point) const;
 
-
-    // void GetDistantNodeNums (Node node, Array<int[2]> & distnums) const;
     void GetDistantProcs (Node node, Array<int> & procs) const;
     int GetGlobalNodeNum (Node node) const;
   };
@@ -542,7 +540,7 @@ namespace ngcomp
     string task;
     int total;
     double prevtime;
-    
+    bool is_root;
   public:
     ProgressOutput (const MeshAccess & ama,
 		    string atask, int atotal);
@@ -557,8 +555,8 @@ namespace ngcomp
   void ReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op, const MeshAccess & ma,
 			MPI_Comm comm = ngs_comm)
   {
-    int ntasks;
-    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+    int ntasks = MyMPI_GetNTasks (comm);
+    if (ntasks <= 1) return;
 
     DynamicTable<T> dist_data(ntasks);
     Array<int> distprocs;
@@ -580,9 +578,9 @@ namespace ngcomp
     for (int i = 0; i < ntasks; i++)
       {
 	if (nsend[i])
-	  requests.Append (MyMPI_ISend (dist_data[i], i, MPI_TAG_SOLVE));
+	  requests.Append (MyMPI_ISend (dist_data[i], i, MPI_TAG_SOLVE, ngs_comm));
 	if (nsend[i])
-	  requests.Append (MyMPI_IRecv (recv_data[i], i, MPI_TAG_SOLVE));
+	  requests.Append (MyMPI_IRecv (recv_data[i], i, MPI_TAG_SOLVE, ngs_comm));
       }
 
     MyMPI_WaitAll (requests);
@@ -597,16 +595,79 @@ namespace ngcomp
 	for (int j = 0; j < distprocs.Size(); j++)
 	  {
 	    int dist_proc = distprocs[j];
-
 	    MPI_Reduce_local (&recv_data[dist_proc][cnt[dist_proc]++], 
 			      &data[i], 1, type, op);
-	    /*
-	    if (recv_dir_vert[dist_proc][cnt[dist_proc]++])
-	      dirichlet_vertex[i] = true;
-	    */
 	  }
       }
   }
+
+
+
+
+
+
+
+
+  template <typename T>
+  void ScatterDofData (FlatArray<T> data, const ParallelDofs & pardofs)
+  {
+    MPI_Comm comm = pardofs.GetCommunicator();
+    const MeshAccess & ma = pardofs.GetMeshAccess();
+
+    int ntasks = MyMPI_GetNTasks (comm);
+    if (ntasks <= 1) return;
+
+    DynamicTable<T> dist_data(ntasks);
+    Array<int> distprocs;
+
+    for (int i = 0; i < pardofs.GetNDof(); i++)
+      {
+	if (pardofs.IsMasterDof(i))
+	  {
+	    Node node = pardofs.GetDofNodes()[i];
+	    ma.GetDistantProcs (node, distprocs);
+	    for (int j = 0; j < distprocs.Size(); j++)
+	      dist_data.Add (distprocs[j], data[i]);
+	  }
+      }
+    
+    Array<int> nsend(ntasks), nrecv(ntasks);
+    for (int i = 0; i < ntasks; i++)
+      nsend[i] = dist_data[i].Size();
+
+    MyMPI_AllToAll (nsend, nrecv, comm);
+
+    Table<T> recv_data(nrecv);
+
+    Array<MPI_Request> requests;
+    for (int i = 0; i < ntasks; i++)
+      {
+	if (nsend[i])
+	  requests.Append (MyMPI_ISend (dist_data[i], i, MPI_TAG_SOLVE, comm));
+	if (nrecv[i])
+	  requests.Append (MyMPI_IRecv (recv_data[i], i, MPI_TAG_SOLVE, comm));
+      }
+
+    MyMPI_WaitAll (requests);
+
+    Array<int> cnt(ntasks);
+    cnt = 0;
+    
+    for (int i = 0; i < pardofs.GetNDof(); i++)
+      {
+	if (!pardofs.IsMasterDof(i))
+	  {
+	    Node node = pardofs.GetDofNodes()[i];
+	    ma.GetDistantProcs (node, distprocs);
+	    int master = ntasks;
+	    for (int j = 0; j < distprocs.Size(); j++)
+	      master = min (master, distprocs[j]);
+	    data[i] = recv_data[master][cnt[master]++];
+	  }
+      }
+  }    
+
+
 #endif
 
 }
