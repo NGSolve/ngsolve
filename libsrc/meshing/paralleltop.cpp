@@ -8,39 +8,12 @@
 namespace netgen
 {
 
-
-  void ParallelMeshTopology :: Reset ()
+  ParallelMeshTopology :: ParallelMeshTopology (const Mesh & amesh)
+    : mesh(amesh)
   {
-    *testout << "ParallelMeshTopology::Reset" << endl;
-    
-    if ( ntasks == 1 ) return;
-    
-    int nvold = nv;
-    
-    ne = mesh.GetNE();
-    nv = mesh.GetNV();
-    nseg = mesh.GetNSeg();
-    nsurfel = mesh.GetNSE();
-    
-    ned = mesh.GetTopology().GetNEdges();
-    nfa = mesh.GetTopology().GetNFaces();
-    
-    loc2distedge.ChangeSize (ned);
-    for (int i = 0; i < ned; i++)
-      if (loc2distedge[i].Size() == 0)
-        loc2distedge.Add (i, -1);  // will be the global nr
-
-    loc2distface.ChangeSize (nfa);
-    for (int i = 0; i < nfa; i++)
-      if (loc2distface[i].Size() == 0)
-        loc2distface.Add (i, -1);  // will be the global nr
-
-    if ( nvold == nv ) return;
-
-    SetNV(nv);
-    SetNE(ne);
+    is_updated = false;
   }
-
+ 
 
   ParallelMeshTopology :: ~ParallelMeshTopology ()
   {
@@ -48,341 +21,89 @@ namespace netgen
   }
 
 
-
-  ParallelMeshTopology :: ParallelMeshTopology ( const netgen::Mesh & amesh )
-    : mesh(amesh)
+  void ParallelMeshTopology :: Reset ()
   {
-    ned = 0; 
-    nfa = 0; 
-    nv = 0;
-    ne = 0;
-    np = 0;
-    nseg = 0;
-    nsurfel = 0;
-    neglob = 0;
-    nvglob = 0;
+    *testout << "ParallelMeshTopology::Reset" << endl;
+    
+    if ( ntasks == 1 ) return;
 
-    nparel = 0;
+    int ned = mesh.GetTopology().GetNEdges();
+    int nfa = mesh.GetTopology().GetNFaces();
 
-    coarseupdate = 0;
+    if (glob_edge.Size() != ned)
+      {
+	glob_edge.SetSize(ned);
+	glob_face.SetSize(nfa);
+	glob_edge = -1;
+	glob_face = -1;
+
+	loc2distedge.ChangeSize (ned);
+	loc2distface.ChangeSize (nfa);
+      }
+
+    if (glob_vert.Size() != mesh.GetNV())
+      {
+	SetNV(mesh.GetNV());
+	SetNE(mesh.GetNE());
+      }
   }
 
- 
 
   void ParallelMeshTopology ::  Print() const
   {
-    /*
-    (*testout) << endl <<  "TOPOLOGY FOR PARALLEL MESHES" << endl << endl;
-
-    for ( int i = 1; i <= nv; i++ )
-      if ( IsExchangeVert (i) )
-	{
-	  (*testout) << "exchange point  " << i << ":  global " << GetLoc2Glob_Vert(i) << endl;
-	  for ( int dest = 0; dest < ntasks; dest ++)
-	    if ( dest != id )
- 	      if ( GetDistantPNum( dest, i  ) > 0 )
- 		(*testout) << "   p" << dest << ": " << GetDistantPNum ( dest, i ) << endl; 
-	}
-
-    for ( int i = 1; i <= ned; i++ )
-      if ( IsExchangeEdge ( i ) )
-	{
-	  int v1, v2;
-	  mesh . GetTopology().GetEdgeVertices(i, v1, v2);
-	  (*testout) << "exchange edge  " << i << ":  global vertices "  << GetLoc2Glob_Vert(v1) << "  " 
-		     << GetLoc2Glob_Vert(v2) << endl;
-	  for ( int dest = 0; dest < ntasks; dest++)
-	    if ( GetDistantEdgeNum ( dest, i ) > 0 )
-	      if ( dest != id )
-		(*testout) << "   p" << dest << ": " << GetDistantEdgeNum ( dest, i ) << endl;
-	}
-
-    for ( int i = 1; i <= nfa; i++ )
-      if ( IsExchangeFace(i) )
-	{
-	  Array<int> facevert;
-	  mesh . GetTopology().GetFaceVertices(i, facevert);
-	    
-	  (*testout) << "exchange face  " << i << ":  global vertices " ;
-	  for ( int fi=0; fi < facevert.Size(); fi++)
-	    (*testout) << GetLoc2Glob_Vert(facevert[fi]) << "  ";
-	  (*testout) << endl; 
-	  for ( int dest = 0; dest < ntasks; dest++)
-	    if ( dest != id )
-	      {
-		if ( GetDistantFaceNum ( dest, i ) >= 0 )
-		  (*testout) << "   p" << dest << ": " << GetDistantFaceNum ( dest, i ) << endl;
-	      }
-	}
-    */
-
-
-
-    /*
-    for ( int i = 1; i < mesh.GetNE(); i++)
-      {
-	if ( !IsExchangeElement(i) ) continue;
-	Array<int> vert;
-	const Element & el = mesh.VolumeElement(i);
-
-	(*testout) << "parallel local element " << i << endl;
-	  
-	(*testout) << "vertices " ;
-	for ( int j = 0; j < el.GetNV(); j++)
-	  (*testout) << el.PNum(j+1)  << "  ";
-	(*testout) << "is ghost " << IsGhostEl(i) << endl;
-	(*testout) << endl;
-      }
-    */
+    ;
   }
 
 
-
-  // gibt anzahl an distant pnums zurueck
-  // * pnums entspricht Array<int[2] >
-  void  ParallelMeshTopology :: GetDistantPNums ( int locpnum, int * distpnums ) const
+  void ParallelMeshTopology :: SetDistantFaceNum (int dest, int locnum)
   {
-    distpnums[0] = 0;
-    distpnums[1] = loc2distvert[locpnum][0];
-    for ( int i = 1; i < loc2distvert[locpnum].Size(); i++ )
-      distpnums[i+1] = loc2distvert[locpnum][i];
-
-    // int size = loc2distvert[locpnum].Size() / 2 + 1;
-    // return size;
-  } 
-
-  void  ParallelMeshTopology :: GetDistantFaceNums ( int locfacenum, int * distfacenums ) const
-  {
-    distfacenums[0] = 0;
-    distfacenums[1] = loc2distface[locfacenum-1][0];
-
-    for ( int i = 1; i < loc2distface[locfacenum-1].Size(); i++ )
-      distfacenums[i+1] = loc2distface[locfacenum-1][i];
-
-    // int size = loc2distface[locfacenum-1].Size() / 2 + 1;
-    // return size;
-  } 
-
-  void  ParallelMeshTopology :: GetDistantEdgeNums ( int locedgenum, int * distedgenums ) const
-  {
-    distedgenums[0] = 0;
-    distedgenums[1] = loc2distedge[locedgenum-1][0];
-
-    for ( int i = 1; i < loc2distedge[locedgenum-1].Size(); i++ )
-      distedgenums[i+1] = loc2distedge[locedgenum-1][i];
-
-    // int size = loc2distedge[locedgenum-1].Size() / 2 + 1;
-    // return size;
-  } 
-
-  void  ParallelMeshTopology :: GetDistantElNums ( int locelnum, int * distelnums ) const
-  {
-    distelnums[0] = 0;
-    distelnums[1] = loc2distel[locelnum-1][0];
-
-    for ( int i = 1; i < loc2distel[locelnum-1].Size(); i++ )
-      distelnums[i+1] = loc2distel[locelnum-1][i];
-
-    // int size = loc2distel[locelnum-1].Size() / 2 + 1;
-    // return size;
-  } 
-
-
-
-
-  void ParallelMeshTopology :: SetDistantFaceNum ( int dest, int locnum, int distnum )
-  {
-    if ( dest == 0 )
-      {
-	loc2distface[locnum-1][0] = distnum;
-	return;
-      }
-
-    for ( int i = 1; i < loc2distface[locnum-1].Size(); i+=2 )
+    for ( int i = 0; i < loc2distface[locnum-1].Size(); i+=1 )
       if ( loc2distface[locnum-1][i] == dest )
-	{
-	  loc2distface[locnum-1][i+1] = distnum;
-	  return;
-	}
-
+	return;
     loc2distface.Add(locnum-1, dest);
-    loc2distface.Add(locnum-1, distnum);
   }
 
-  void ParallelMeshTopology :: SetDistantPNum ( int dest, int locnum, int distnum )
+  void ParallelMeshTopology :: SetDistantPNum (int dest, int locnum)
   {
-    if ( dest == 0 )
-      {
-	loc2distvert[locnum][0] = distnum;  // HERE
+    for ( int i = 0;  i < loc2distvert[locnum-1].Size(); i+=1 )
+      if ( loc2distvert[locnum-1][i] == dest )
 	return;
-      }
-
-    for ( int i = 1;  i < loc2distvert[locnum].Size(); i+=2 )
-      if ( loc2distvert[locnum][i] == dest )
-	{
-	  loc2distvert[locnum][i+1] = distnum;
-	  return;
-	}
-
-    loc2distvert.Add (locnum, dest);  
-    loc2distvert.Add (locnum, distnum); 
+    loc2distvert.Add (locnum-1, dest);  
   }
 
 
-  void ParallelMeshTopology :: SetDistantEdgeNum ( int dest, int locnum, int distnum )
+  void ParallelMeshTopology :: SetDistantEdgeNum (int dest, int locnum)
   {
-    if ( dest == 0 )
-      {
-	loc2distedge[locnum-1][0] = distnum;
-	return;
-      }
-
-    for ( int i = 1; i < loc2distedge[locnum-1].Size(); i+=2 )
+    for ( int i = 0; i < loc2distedge[locnum-1].Size(); i+=1 )
       if ( loc2distedge[locnum-1][i] == dest )
-	{
-	  loc2distedge[locnum-1][i+1] = distnum;
-	  return;
-	}
-
+	return;
     loc2distedge.Add (locnum-1, dest);
-    loc2distedge.Add (locnum-1, distnum);
   }
-
-  void ParallelMeshTopology :: SetDistantEl ( int dest, int locnum, int distnum )
-  {
-    if ( dest == 0 )
-      {
-	loc2distel[locnum-1][0] = distnum;
-	return;
-      }
-
-    for ( int i = 1; i < loc2distel[locnum-1].Size(); i+=2 )
-      if ( loc2distel[locnum-1][i] == dest )
-	{
-	  loc2distel[locnum-1][i+1] = distnum;
-	  return;
-	}
-
-
-    loc2distel.Add (locnum-1, dest);
-    loc2distel.Add (locnum-1, distnum);
-  }
-
-  void ParallelMeshTopology :: SetDistantSurfEl ( int dest, int locnum, int distnum )
-  {
-    if ( dest == 0 )
-      {
-	loc2distsurfel[locnum-1][0] = distnum;
-	return;
-      }
-
-    for ( int i = 1;  i < loc2distsurfel[locnum-1].Size(); i+=2 )
-      if ( loc2distsurfel[locnum-1][i] == dest )
-	{
-	  loc2distsurfel[locnum-1][i+1] = distnum;
-	  return;
-	}
-
-    loc2distsurfel.Add (locnum-1, dest);
-    loc2distsurfel.Add (locnum-1, distnum);
-  }
-
-  void ParallelMeshTopology :: SetDistantSegm ( int dest, int locnum, int distnum )
-  {
-    if ( dest == 0 )
-      {
-	loc2distsegm[locnum-1][0] = distnum;
-	return;
-      }
-
-    for (int i = 1; i < loc2distsegm[locnum-1].Size(); i+=2 )
-      if ( loc2distsegm[locnum-1][i] == dest )
-	{
-	  loc2distsegm[locnum-1][i+1] = distnum;
-	  return;
-	}
-
-    loc2distsegm.Add (locnum-1, dest);
-    loc2distsegm.Add (locnum-1, distnum);
-  }
-
-  void ParallelMeshTopology :: GetVertNeighbours ( int vnum, Array<int> & dests ) const
-  {
-    dests.SetSize(0);
-    int i = 1;
-    while ( i < loc2distvert[vnum].Size() )
-      {
-	dests.Append ( loc2distvert[vnum][i] );
-	i+=2;
-      }
-  }
-
-
-
-
-
-
-
 
   void ParallelMeshTopology :: SetNV (int anv)
   {
-    *testout << "called setnv"  << endl
-             << "old size: " << loc2distvert.Size() << endl
-             << "new size: " << anv << endl;
-
+    glob_vert.SetSize(anv);
+    glob_vert = -1;
     loc2distvert.ChangeSize (anv);
-    for (int i = 1; i <= anv; i++)
-      if (loc2distvert.EntrySize(i) == 0)
-        loc2distvert.Add (i, -1);  // will be the global nr
-
-    nv = anv;
   }
 
-  void ParallelMeshTopology :: SetNE ( const int ane )
+  void ParallelMeshTopology :: SetNE ( int ane )
   {
-    loc2distel.ChangeSize (ane);
-    for (int i = 0; i < ane; i++)
-      if (loc2distel[i].Size() == 0)
-	loc2distel.Add (i, -1);   // will be the global nr
-    ne = ane;
+    glob_el.SetSize (ane);
+    glob_el = -1;
   }
 
   void ParallelMeshTopology :: SetNSE ( int anse )
   {
-    loc2distsurfel.ChangeSize (anse);
-    for (int i = 0; i < anse; i++)
-      if (loc2distsurfel[i].Size() == 0)
-        loc2distsurfel.Add (i, -1);  // will be the global nr
-
-    nsurfel = anse;
+    glob_surfel.SetSize(anse);
+    glob_surfel = -1;
   }
 
   void ParallelMeshTopology :: SetNSegm ( int anseg )
   {
-    loc2distsegm.ChangeSize (anseg);
-    for (int i = 0; i < anseg; i++)
-      if (loc2distsegm[i].Size() == 0)
-        loc2distsegm.Add (i, -1);  // will be the global nr
-
-    nseg = anseg;
+    glob_segm.SetSize (anseg);
+    glob_segm = -1;
   }
-
-
-
-
-
-
-  void ParallelMeshTopology :: Update ()
-  {
-    ne = mesh.GetNE();
-    nv = mesh.GetNV();
-    nseg = mesh.GetNSeg();
-    nsurfel = mesh.GetNSE();
-    
-    ned = mesh.GetTopology().GetNEdges();
-    nfa = mesh.GetTopology().GetNFaces();
-  }
-
 
 
 
@@ -394,104 +115,43 @@ namespace netgen
     if (id == 0)
       PrintMessage ( 3, "UPDATE GLOBAL COARSEGRID STARTS" );      // JS
 
-
-
-
     int timer = NgProfiler::CreateTimer ("UpdateCoarseGridGlobal");
     NgProfiler::RegionTimer reg(timer);
-
 
     *testout << "ParallelMeshTopology :: UpdateCoarseGridGlobal" << endl;
 
     const MeshTopology & topology = mesh.GetTopology();
-  
-
-    nfa = topology . GetNFaces();
-    ned = topology . GetNEdges();
-    np = mesh . GetNP();
-    nv = mesh . GetNV();
-    ne = mesh . GetNE();
-    nseg = mesh.GetNSeg();
-    nsurfel = mesh.GetNSE();
-
-    // low order processor - save mesh partition
-    if ( id == 0 )
-      {
-	for ( int eli = 1; eli <= ne; eli++ )
-	  loc2distel[eli-1][0] = eli;
-      
-	for ( int i = 1; i <= mesh .GetNV(); i++)
-	  loc2distvert[i][0] = i;
-      
-	for ( int i = 0; i < mesh . GetNSeg(); i++)
-	  loc2distsegm[i][0] = i+1;
-      
-	for ( int i = 0; i < mesh . GetNSE(); i++)
-	  loc2distsurfel[i][0] = i+1;
-      
-	for ( int i = 0; i < topology .GetNEdges(); i++)
-	  loc2distedge[i][0] = i+1;
-
-	for ( int i = 0; i < topology .GetNFaces(); i++)
-	  loc2distface[i][0] = i+1;
-      }
-
-
-    // Array<int> sendarray, recvarray;
 
     if ( id == 0 )
       {
 	Array<Array<int>*> sendarrays(ntasks);
 	for (int dest = 1; dest < ntasks; dest++)
-	  {
-	    sendarrays[dest] = new Array<int>;
-	    sendarrays[dest]->Append (nfa);
-	    sendarrays[dest]->Append (ned);
-	  }
+	  sendarrays[dest] = new Array<int>;
 
-	Array<int> edges, pnums, faces, elpnums;
-	for (int el = 1; el <= ne; el++)
+	Array<int> edges, faces;
+	for (int el = 1; el <= mesh.GetNE(); el++)
 	  {
 	    topology.GetElementFaces (el, faces);
 	    topology.GetElementEdges (el, edges);
 	    const Element & volel = mesh.VolumeElement (el);
 
 	    Array<int> & sendarray = *sendarrays[volel.GetPartition()];
-	    sendarray. Append ( el );
 
-	    sendarray. Append ( faces.Size() );
-	    sendarray. Append ( edges.Size() );
-	    sendarray. Append ( volel.GetNP() );
-
-	    for ( int i = 0; i < faces.Size(); i++ )
-	      sendarray. Append(faces[i] );
 	    for ( int i = 0; i < edges.Size(); i++ )
-	      sendarray. Append(edges[i] );
-	    for ( int i = 0; i < volel.GetNP(); i++ )
-	      sendarray. Append(volel[i] );
+	      sendarray.Append (edges[i]);
+	    for ( int i = 0; i < faces.Size(); i++ )
+	      sendarray.Append (faces[i]);
 	  }
 
-	for (int dest = 1; dest < ntasks; dest++)
-	  sendarrays[dest]->Append (-1);
-
-	for (int el = 1; el <= nsurfel; el++)
+	for (int el = 1; el <= mesh.GetNSE(); el++)
 	  {
 	    topology.GetSurfaceElementEdges (el, edges);
 	    const Element2d & surfel = mesh.SurfaceElement (el);
 	    Array<int> & sendarray = *sendarrays[surfel.GetPartition()];
 
-	    sendarray.Append (el);
-	    sendarray.Append (edges.Size());
-	    sendarray.Append (surfel.GetNP());
-	    
 	    for ( int i = 0; i < edges.Size(); i++ )
 	      sendarray.Append (edges[i]);
-	    
-	    for ( int i = 0; i < surfel.GetNP(); i++ )
-	      sendarray.Append (surfel[i]);
 	  }
-	for (int dest = 1; dest < ntasks; dest++)
-	  sendarrays[dest]->Append (-1);
 
 	Array<MPI_Request> sendrequests;
 	for (int dest = 1; dest < ntasks; dest++)
@@ -506,113 +166,44 @@ namespace netgen
 
       {
 	Array<int> recvarray;
-	// MyMPI_Bcast ( recvarray );
 	MyMPI_Recv (recvarray, 0, MPI_TAG_MESH+10);
 
-	Array<int,1> glob2loc_el;
-
-	glob2loc_el.SetSize (neglob);  
-	glob2loc_el = -1;
-	for ( int locel = 1; locel <= mesh.GetNE(); locel++)
-	  glob2loc_el[GetLoc2Glob_VolEl(locel)] = locel;
-
 	int ii = 0;
-	nfaglob = recvarray[ii++];
-	nedglob = recvarray[ii++];
 
 	Array<int> faces, edges;
-	Array<int> pnums, globalpnums;
 
-	// int recv_ne = recvarray[ii++];
-	// for (int hi = 0; hi < recv_ne; hi++)
-	while (1)
+	for (int volel = 1; volel <= mesh.GetNE(); volel++)
 	  {
-	    int globvolel = recvarray[ii++];
-	    if (globvolel == -1) break;
+	    topology.GetElementEdges ( volel, edges);
+	    for ( int i = 0; i  < edges.Size(); i++)
+	      SetLoc2Glob_Edge ( edges[i], recvarray[ii++]);
 
-	    int distnfa = recvarray[ii++];
-	    int distned = recvarray[ii++];
-	    int distnp  = recvarray[ii++];
-
-	    int volel = glob2loc_el[globvolel];
-	    if (volel != -1)
-	      {
-		topology.GetElementFaces( volel, faces);
-		topology.GetElementEdges ( volel, edges);
-		const Element & volelement = mesh.VolumeElement (volel);
-
-		for ( int i = 0; i  < faces.Size(); i++)
-		  SetDistantFaceNum ( 0, faces[i], recvarray[ii++]);
-		
-		for ( int i = 0; i  < edges.Size(); i++)
-		  SetDistantEdgeNum ( 0, edges[i], recvarray[ii++]);
-
-		for ( int i = 0; i  < volelement.GetNP(); i++)
-		  SetDistantPNum ( 0, volelement[i], recvarray[ii++]);
-	      }
-	    else
-	      ii += distnfa + distned + distnp;
+	    topology.GetElementFaces( volel, faces);
+	    for ( int i = 0; i  < faces.Size(); i++)
+	      SetLoc2Glob_Face ( faces[i], recvarray[ii++]);
 	  }
 
-	
-	Array<int,1> glob2loc_sel;
-
-	// int recv_nse = recvarray[ii++];
-	// nseglob = recv_nse;
-
-	glob2loc_sel.SetSize (nseglob);  
-	glob2loc_sel = -1;
-	for ( int locel = 1; locel <= mesh.GetNSE(); locel++)
-	  glob2loc_sel[GetLoc2Glob_SurfEl(locel)] = locel;
-
-
-	// for (int hi = 0; hi < recv_nse; hi++)
-	while (1)
+	for (int surfel = 1; surfel <= mesh.GetNSE(); surfel++)
 	  {
-	    int globvolel = recvarray[ii++];
-	    if (globvolel == -1) break;
-
-	    int distned = recvarray[ii++];
-	    int distnp  = recvarray[ii++];
-
-	    int surfel = glob2loc_sel[globvolel];
-	    if (surfel != -1)
-	      {
-		topology.GetSurfaceElementEdges ( surfel, edges);
-		const Element2d & element = mesh.SurfaceElement (surfel);
-		
-		for ( int i = 0; i  < edges.Size(); i++)
-		  SetDistantEdgeNum ( 0, edges[i], recvarray[ii++]);
-
-		for ( int i = 0; i  < element.GetNP(); i++)
-		  SetDistantPNum ( 0, element[i], recvarray[ii++]);
-	      }
-	    else
-	      ii += distned + distnp;
+	    topology.GetSurfaceElementEdges (surfel, edges);
+	    for (int i = 0; i  < edges.Size(); i++)
+	      SetLoc2Glob_Edge (edges[i], recvarray[ii++]);
 	  }
 
 
       }
     
-
-    if (id != 0)
-      {
-	*testout << "l2d - vert = " << loc2distvert << endl;
-	*testout << "l2d - edge = " << loc2distedge << endl;
-	*testout << "l2d - el = " << loc2distel << endl;
-	*testout << "l2d - sel = " << loc2distsurfel << endl;
-      }
-
-    coarseupdate = 1;
+    is_updated = true;
   }
-
-
 
 
 
 
   void ParallelMeshTopology :: UpdateCoarseGrid ()
   {
+    if (is_updated) return;
+
+    Reset();
     static int timer = NgProfiler::CreateTimer ("UpdateCoarseGrid");
     NgProfiler::RegionTimer reg(timer);
 
@@ -628,9 +219,11 @@ namespace netgen
     const MeshTopology & topology = mesh.GetTopology();
 
     UpdateCoarseGridGlobal();
+
+
+
     
     MPI_Barrier (MPI_COMM_WORLD);
-
 
     MPI_Group MPI_GROUP_WORLD;
     MPI_Group MPI_LocalGroup;
@@ -647,14 +240,6 @@ namespace netgen
 
     Array<int> sendarray, recvarray;
 
-    nfa = topology . GetNFaces();
-    ned = topology . GetNEdges();
-    np = mesh . GetNP();
-    nv = mesh . GetNV();
-    ne = mesh . GetNE();
-    nseg = mesh.GetNSeg();
-    nsurfel = mesh.GetNSE();
-    
 
     static int timerv = NgProfiler::CreateTimer ("UpdateCoarseGrid - ex vertices");
     static int timere = NgProfiler::CreateTimer ("UpdateCoarseGrid - ex edges");
@@ -666,72 +251,56 @@ namespace netgen
 
     NgProfiler::StartTimer (timere);
 
-    // exchange edges
-    int maxedge = 0;
-    for (int edge = 1; edge <= ned; edge++)
-      maxedge = max (maxedge, GetGlobalEdgeNum (edge));
-
-    glob2loc.SetSize (maxedge);
-    glob2loc = -1;
+    int nfa = topology . GetNFaces();
+    int ned = topology . GetNEdges();
     
-    for (int edge = 1; edge <= ned; edge++)
-      glob2loc[GetGlobalEdgeNum(edge)] = edge;
 
+    // exchange edges
     cnt_send = 0;
     int v1, v2;
     for (int edge = 1; edge <= ned; edge++)
       {
 	topology.GetEdgeVertices (edge, v1, v2);
 	for (int dest = 1; dest < ntasks; dest++)
-	  if (IsExchangeVert (dest, v1) && 
-	      IsExchangeVert (dest, v2))
-	    {
-	      cnt_send[dest-1]+=2;
-	    }
+	  if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
+	    cnt_send[dest-1]+=2;
       }
     
     TABLE<int> send_edges(cnt_send);
+    INDEX_2_HASHTABLE<int> gv2e(2*ned);
+
     for (int edge = 1; edge <= ned; edge++)
       {
 	topology.GetEdgeVertices (edge, v1, v2);
+	INDEX_2 es(GetGlobalPNum(v1), GetGlobalPNum(v2));
+	es.Sort();
+
+	gv2e.Set (es, edge);
+
 	for (int dest = 1; dest < ntasks; dest++)
 	  {
-	    if (IsExchangeVert (dest, v1) && 
-		IsExchangeVert (dest, v2))
+	    if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
 	      {
-		send_edges.Add (dest-1, GetGlobalEdgeNum(edge));
-		send_edges.Add (dest-1, edge);
+		send_edges.Add (dest-1, es[0]);
+		send_edges.Add (dest-1, es[1]);
 	      }
 	  }
       }
 
-
-    // *testout << "send exchange edges: " << send_edges << endl;
-
     TABLE<int> recv_edges(ntasks-1);
     MyMPI_ExchangeTable (send_edges, recv_edges, MPI_TAG_MESH+9, MPI_LocalComm);
-
-    // *testout << "recv exchange edges: " << recv_edges << endl;
 
     for (int sender = 1; sender < ntasks; sender ++)
       if (id != sender)
 	{
 	  FlatArray<int> recvarray = recv_edges[sender-1];
-
-	  for (int ii = 0; ii < recvarray.Size(); )
+	  for (int ii = 0; ii < recvarray.Size(); ii+=2)
 	    { 
-	      int globe = recvarray[ii++];
-	      int diste = recvarray[ii++];
-
-	      if (globe <= maxedge)
-		{
-		  int loce = glob2loc[globe];
-		  if (loce != -1)
-		    SetDistantEdgeNum (sender, loce, diste);
-		}
+	      INDEX_2 gv12 (recvarray[ii],recvarray[ii+1]);
+	      if (gv2e.Used (gv12))
+		SetDistantEdgeNum (sender, gv2e.Get(gv12));
 	    }
-	} 
-
+	}
 
  
     NgProfiler::StopTimer (timere);
@@ -741,85 +310,77 @@ namespace netgen
 
     if (mesh.GetDimension() == 3)
       {
-
-    NgProfiler::StartTimer (timerf);
-
-    glob2loc.SetSize (nfaglob);
-    glob2loc = -1;
-    
-    for (int loc = 1; loc <= nfa; loc++)
-      glob2loc[GetGlobalFaceNum(loc)] = loc;
-
-    cnt_send = 0;
-    Array<int> verts;
-    for (int face = 1; face <= nfa; face++)
-      {
-	topology.GetFaceVertices (face, verts);
-	for (int dest = 1; dest < ntasks; dest++)
-	  if (IsExchangeVert (dest, verts[0]) && 
-	      IsExchangeVert (dest, verts[1]) &&
-	      IsExchangeVert (dest, verts[2]))
-	    {
-	      cnt_send[dest-1]+=2;
-	    }
-      }
-    
-    TABLE<int> send_faces(cnt_send);
-    for (int face = 1; face <= nfa; face++)
-      {
-	topology.GetFaceVertices (face, verts);
-	for (int dest = 1; dest < ntasks; dest++)
+	NgProfiler::StartTimer (timerf);
+	
+	int maxface = 0;
+	for (int face = 1; face <= nfa; face++)
+	  maxface = max (maxface, GetGlobalFaceNum (face));
+	
+	// glob2loc.SetSize (nfaglob);
+	glob2loc.SetSize (maxface);
+	glob2loc = -1;
+	
+	for (int loc = 1; loc <= nfa; loc++)
+	  glob2loc[GetGlobalFaceNum(loc)] = loc;
+	
+	cnt_send = 0;
+	Array<int> verts;
+	for (int face = 1; face <= nfa; face++)
 	  {
-	    if (IsExchangeVert (dest, verts[0]) && 
-		IsExchangeVert (dest, verts[1]) &&
-		IsExchangeVert (dest, verts[2]))
-	      {
-		send_faces.Add (dest-1, GetGlobalFaceNum(face));
-		send_faces.Add (dest-1, face);
-	      }
+	    topology.GetFaceVertices (face, verts);
+	    for (int dest = 1; dest < ntasks; dest++)
+	      if (IsExchangeVert (dest, verts[0]) && 
+		  IsExchangeVert (dest, verts[1]) &&
+		  IsExchangeVert (dest, verts[2]))
+		{
+		  cnt_send[dest-1]+=2;
+		}
 	  }
+	
+	TABLE<int> send_faces(cnt_send);
+	for (int face = 1; face <= nfa; face++)
+	  {
+	    topology.GetFaceVertices (face, verts);
+	    for (int dest = 1; dest < ntasks; dest++)
+	      {
+		if (IsExchangeVert (dest, verts[0]) && 
+		    IsExchangeVert (dest, verts[1]) &&
+		    IsExchangeVert (dest, verts[2]))
+		  {
+		    send_faces.Add (dest-1, GetGlobalFaceNum(face));
+		    send_faces.Add (dest-1, face);
+		  }
+	      }
       }
-    TABLE<int> recv_faces(ntasks-1);
-    MyMPI_ExchangeTable (send_faces, recv_faces, MPI_TAG_MESH+8, MPI_LocalComm);
-
-    // *testout << "send exchange faces: " << send_faces << endl;
-    // *testout << "recv exchange faces: " << recv_faces << endl;
-
-    for (int sender = 1; sender < ntasks; sender ++)
-      if (id != sender)
-	{
-	  FlatArray<int> recvarray = recv_faces[sender-1];
-
-	  for (int ii = 0; ii < recvarray.Size(); )
-	    { 
-	      int globf = recvarray[ii++];
-	      int distf = recvarray[ii++];
-	      int locf = glob2loc[globf];
-
-	      // *testout << "set distant face, sender = " << sender << ", locf = " << locf << "; distf = " << distf << endl;
-	      if (locf != -1)
-		SetDistantFaceNum (sender, locf, distf);
-	    }
-	} 
-
-
-    NgProfiler::StopTimer (timerf);
+	TABLE<int> recv_faces(ntasks-1);
+	MyMPI_ExchangeTable (send_faces, recv_faces, MPI_TAG_MESH+8, MPI_LocalComm);
+	
+	for (int sender = 1; sender < ntasks; sender ++)
+	  if (id != sender)
+	    {
+	      FlatArray<int> recvarray = recv_faces[sender-1];
+	      
+	      for (int ii = 0; ii < recvarray.Size(); )
+		{ 
+		  int globf = recvarray[ii++];
+		  int distf = recvarray[ii++];
+		  
+		  if (globf <= maxface)
+		    {
+		      int locf = glob2loc[globf];
+		      if (locf != -1)
+			SetDistantFaceNum (sender, locf);
+		    }
+		}
+	    } 
+	
+	
+	NgProfiler::StopTimer (timerf);
       }
-
-
-    // set which elements are where for the master processor
-
-    coarseupdate = 1;
+    
+    is_updated = true;
   }
-
-
-
-
-
-
 }
-
-
 
 
 #endif

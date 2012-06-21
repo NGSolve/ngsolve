@@ -73,7 +73,7 @@ namespace netgen
     NgProfiler::RegionTimer reg (timer);
 
 #ifdef PARALLEL
-    ParallelMeshTopology & paralleltop = mesh.GetParallelTopology();
+    // ParallelMeshTopology & paralleltop = mesh.GetParallelTopology();
 #endif
 
   
@@ -399,8 +399,6 @@ namespace netgen
 	      }
 	  }
 
-
-
 	edge2vert.SetSize (ned);
 	for (int i = 1; i <= ne; i++)
 	  {
@@ -484,8 +482,6 @@ namespace netgen
 	  << surfedges.Elem(i)[1] << ", "
 	  << surfedges.Elem(i)[2] << endl;
 	*/ 
-     
-    
       }
 
 
@@ -1077,8 +1073,8 @@ namespace netgen
 
 
 #ifdef PARALLEL
-	(*testout) << " RESET Paralleltop" << endl;
-	paralleltop.Reset ();
+	// (*testout) << " RESET Paralleltop" << endl;
+	// paralleltop.Reset ();
 #endif
 
 	Array<short int> face_els(nfa), face_surfels(nfa);
@@ -1111,7 +1107,8 @@ namespace netgen
 #ifdef PARALLEL
 		    if ( ntasks > 1 )
 		      {
-			if ( !paralleltop.DoCoarseUpdate() ) continue;
+			continue;
+			// if ( !paralleltop.DoCoarseUpdate() ) continue;
 		      }
 		    else
 #endif
@@ -1156,9 +1153,8 @@ namespace netgen
 #ifdef PARALLEL
     if (id != 0)  
       {
-	paralleltop.Update();
-	if ( paralleltop.DoCoarseUpdate() )
-	  paralleltop.UpdateCoarseGrid();
+	// if ( paralleltop.DoCoarseUpdate() )
+	// paralleltop.UpdateCoarseGrid();
       }
 #endif
  

@@ -29,7 +29,7 @@ namespace netgen
 {
 
   template <>
-  inline MPI_Datatype MyGetMPIType<netgen::PointIndex> ( ) 
+  inline MPI_Datatype MyGetMPIType<PointIndex> ( ) 
   { return MPI_INT; }
 
 
@@ -50,7 +50,7 @@ namespace netgen
 	  paralleltop -> SetNE (GetNE());
 	  paralleltop -> SetNSegm (GetNSeg());
 	  paralleltop -> SetNSE (GetNSE());
-	  
+
 	  nelglob = GetNE();
 	  nseglob = GetNSE();
 	  nvglob = GetNV();
@@ -60,14 +60,10 @@ namespace netgen
       MyMPI_Bcast (nelglob);
       MyMPI_Bcast (nseglob);
       MyMPI_Bcast (nvglob);
-      
-      if (id > 0)
-	{
-	  paralleltop -> SetNEGlob (nelglob);
-	  paralleltop -> SetNSEGlob (nseglob);
-	  paralleltop -> SetNVGlob (nvglob);
-	}
     }
+
+
+
 
 
 
@@ -97,6 +93,10 @@ namespace netgen
       SendMesh ();
     else
       ReceiveParallelMesh();
+
+
+    paralleltop -> UpdateCoarseGrid();
+
   }
 
 
@@ -165,11 +165,11 @@ namespace netgen
 		    num_verts_on_proc[dest]++;
 		    num_procs_on_vert[epi]++;
 
-		    paralleltop -> SetDistantPNum ( dest, epi, num_verts_on_proc[dest]);
+		    paralleltop -> SetDistantPNum (dest, epi); // , num_verts_on_proc[dest]);
 		  }
 	      }
 	    nelloc[dest] ++;
-	    paralleltop -> SetDistantEl ( dest, els[hi]+1, nelloc[dest] );
+	    // paralleltop -> SetDistantEl ( dest, els[hi]+1, nelloc[dest] );
 	  }
 
 
@@ -188,11 +188,11 @@ namespace netgen
 		    num_verts_on_proc[dest]++;
 		    num_procs_on_vert[epi]++;
 
-		    paralleltop -> SetDistantPNum ( dest, epi, num_verts_on_proc[dest]);
+		    paralleltop -> SetDistantPNum ( dest, epi); //  num_verts_on_proc[dest]);
 		  }
 	      }
 	    nselloc[dest] ++;
-	    paralleltop -> SetDistantSurfEl ( dest, sels[hi]+1, nselloc[dest] );
+	    // paralleltop -> SetDistantSurfEl ( dest, sels[hi]+1, nselloc[dest] );
 	  }
       }
 
@@ -445,7 +445,7 @@ namespace netgen
 		    segmbuf.Add (dest, seg.singedge_left);
 		    segi[dest] += 14;
 		  }
-		paralleltop -> SetDistantSegm ( dest, ls, int ( segi[dest] / 14 ) );
+		// paralleltop -> SetDistantSegm ( dest, ls, int ( segi[dest] / 14 ) );
 	      }
 	  }
       }
@@ -508,7 +508,7 @@ namespace netgen
     
     for (int hi = 0; hi < dist_pnums.Size(); hi += 3)
       paralleltop ->
-	SetDistantPNum (dist_pnums[hi+1], dist_pnums[hi], dist_pnums[hi+2]);
+	SetDistantPNum (dist_pnums[hi+1], dist_pnums[hi]); // , dist_pnums[hi+2]);
     
     NgProfiler::StopTimer (timer_pts);
     *testout << "got " << numvert << " vertices" << endl;
@@ -573,8 +573,6 @@ namespace netgen
 	      tri.PNum(j) = glob2loc_vert_ht.Get (selbuf[ii++]);
 	      tri.GeomInfoPi(j).trignum = selbuf[ii++];
 	    }
-	  
-	  tri.SetGhost(isghost);
 	  
 	  paralleltop->SetLoc2Glob_SurfEl ( sel+1, globsel );
 	  AddSurfaceElement (tri);
@@ -645,9 +643,10 @@ namespace netgen
 
     topology -> Update();
     clusters -> Update();
+
+    // paralleltop -> UpdateCoarseGrid();
     
     SetNextMajorTimeStamp();
-    // paralleltop->Print();
   }
   
 
@@ -676,7 +675,7 @@ namespace netgen
     MyMPI_SendCmd ("mesh");
     SendRecvMesh (); 
 
-    paralleltop -> UpdateCoarseGrid();
+    // paralleltop -> UpdateCoarseGrid();
     // paralleltop -> Print();
   }
   
@@ -719,8 +718,8 @@ namespace netgen
     bool uniform_els = true;
 
     ELEMENT_TYPE elementtype = TET; 
-    for ( int el = 1; el <= GetNE(); el++ )
-      if ( VolumeElement(el).GetType() != elementtype )
+    for (int el = 1; el <= GetNE(); el++)
+      if (VolumeElement(el).GetType() != elementtype)
 	{
 	  uniform_els = false;
 	  break;
@@ -745,72 +744,69 @@ namespace netgen
 	  etype = 3;
 	
     
-    for (int i=1; i<=ne; i++)
-      for (int j=1; j<=npe; j++)
-	elmnts[(i-1)*npe+(j-1)] = VolumeElement(i).PNum(j)-1;
-    
-    int numflag = 0;
-    int nparts = ntasks-1;
-    int ncommon = 3;
-    int edgecut;
-    Array<idxtype> epart(ne), npart(nn);
-
-//     if ( ntasks == 1 ) 
-//       {
-// 	(*this) = *mastermesh;
-// 	nparts = 4;	   
-// 	metis :: METIS_PartMeshDual (&ne, &nn, elmnts, &etype, &numflag, &nparts,
-// 				     &edgecut, epart, npart);
-// 	cout << "done" << endl;
+	for (int i=1; i<=ne; i++)
+	  for (int j=1; j<=npe; j++)
+	    elmnts[(i-1)*npe+(j-1)] = VolumeElement(i).PNum(j)-1;
 	
-// 	cout << "edge-cut: " << edgecut << ", balance: " << metis :: ComputeElementBalance(ne, nparts, epart) << endl;
+	int numflag = 0;
+	int nparts = ntasks-1;
+	int ncommon = 3;
+	int edgecut;
+	Array<idxtype> epart(ne), npart(nn);
 	
-// 	for (int i=1; i<=ne; i++)
-// 	  {
-// 	    mastermesh->VolumeElement(i).SetPartition(epart[i-1]);
-// 	  }
+	//     if ( ntasks == 1 ) 
+	//       {
+	// 	(*this) = *mastermesh;
+	// 	nparts = 4;	   
+	// 	metis :: METIS_PartMeshDual (&ne, &nn, elmnts, &etype, &numflag, &nparts,
+	// 				     &edgecut, epart, npart);
+	// 	cout << "done" << endl;
 	
-// 	return;
-//       }
-    
-
-
-
-    int timermetis = NgProfiler::CreateTimer ("Metis itself");
-    NgProfiler::StartTimer (timermetis);
-
+	// 	cout << "edge-cut: " << edgecut << ", balance: " << metis :: ComputeElementBalance(ne, nparts, epart) << endl;
+	
+	// 	for (int i=1; i<=ne; i++)
+	// 	  {
+	// 	    mastermesh->VolumeElement(i).SetPartition(epart[i-1]);
+	// 	  }
+	
+	// 	return;
+	//       }
+	
+	
+	int timermetis = NgProfiler::CreateTimer ("Metis itself");
+	NgProfiler::StartTimer (timermetis);
+	
 #ifdef METIS4
-    cout << "call metis ... " << flush;
-    METIS_PartMeshDual (&ne, &nn, &elmnts[0], &etype, &numflag, &nparts,
-			&edgecut, &epart[0], &npart[0]);
+	cout << "call metis(4)_PartMeshDual ... " << flush;
+	METIS_PartMeshDual (&ne, &nn, &elmnts[0], &etype, &numflag, &nparts,
+			    &edgecut, &epart[0], &npart[0]);
 #else
-    cout << "call metis-5 ... " << endl;
-    idx_t options[METIS_NOPTIONS];
-    
-    Array<idx_t> eptr(ne+1);
-    for (int j = 0; j < ne+1; j++)
-      eptr[j] = 4*j;
-
-    METIS_PartMeshDual (&ne, &nn, &eptr[0], &elmnts[0], NULL, NULL, &ncommon, &nparts,
-			NULL, NULL,
-			&edgecut, &epart[0], &npart[0]);
+	cout << "call metis(5)_PartMeshDual ... " << endl;
+	idx_t options[METIS_NOPTIONS];
+	
+	Array<idx_t> eptr(ne+1);
+	for (int j = 0; j < ne+1; j++)
+	  eptr[j] = 4*j;
+	
+	METIS_PartMeshDual (&ne, &nn, &eptr[0], &elmnts[0], NULL, NULL, &ncommon, &nparts,
+			    NULL, NULL,
+			    &edgecut, &epart[0], &npart[0]);
 #endif
-
-    NgProfiler::StopTimer (timermetis);
-
-    cout << "complete" << endl;
+	
+	NgProfiler::StopTimer (timermetis);
+	
+	cout << "complete" << endl;
 #ifdef METIS4
-    cout << "edge-cut: " << edgecut << ", balance: " 
-     	 << ComputeElementBalance(ne, nparts, &epart[0]) << endl;
+	cout << "edge-cut: " << edgecut << ", balance: " 
+	     << ComputeElementBalance(ne, nparts, &epart[0]) << endl;
 #endif
-
-    // partition numbering by metis : 0 ...  ntasks - 1
-    // we want:                       1 ...  ntasks
-    for (int i=1; i<=ne; i++)
-      VolumeElement(i).SetPartition(epart[i-1] + 1);
+	
+	// partition numbering by metis : 0 ...  ntasks - 1
+	// we want:                       1 ...  ntasks
+	for (int i=1; i<=ne; i++)
+	  VolumeElement(i).SetPartition(epart[i-1] + 1);
       }
-
-
+    
 
     for (int sei = 1; sei <= GetNSE(); sei++ )
       {
@@ -905,7 +901,6 @@ namespace netgen
 	Element & volel = VolumeElement(el);
 	nodesinpart = 0;
 
-	//	VolumeElement(el).SetPartition(part[ volel[1] ] + 1);
 	
 	int el_np = volel.GetNP();
 	int partition = 0; 
@@ -917,15 +912,7 @@ namespace netgen
 	    partition = i;
 
 	volel.SetPartition(partition);
-
       }
-
-    /*
-    for ( int i=1; i<=ne; i++)
-      {
-	neloc[ VolumeElement(i).GetPartition() ] ++;
-      }
-    */
 
     delete [] xadj;
     delete [] part;

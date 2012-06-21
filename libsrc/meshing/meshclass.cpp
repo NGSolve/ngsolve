@@ -157,10 +157,6 @@ namespace netgen
     PointIndex pi = points.Size() + PointIndex::BASE;
     points.Append ( MeshPoint (p, layer, INNERPOINT) ); 
 
-#ifdef PARALLEL
-    points.Last().SetGhost(0);
-#endif
-
     lock.UnLock();
 
     return pi;
@@ -175,10 +171,6 @@ namespace netgen
 
     PointIndex pi = points.Size() + PointIndex::BASE;
     points.Append ( MeshPoint (p, layer, type) ); 
-
-#ifdef PARALLEL
-    points.Last().SetGhost(0);
-#endif
 
     lock.UnLock();
 
@@ -197,8 +189,6 @@ namespace netgen
     PointIndex pi = points.Size() + PointIndex::BASE;
     points.Append ( MeshPoint (p, layer, INNERPOINT) ); 
 
-    points.Last().SetGhost(isghost);
-
     lock.UnLock();
 
     return pi;
@@ -213,8 +203,6 @@ namespace netgen
 
     PointIndex pi = points.Size() + PointIndex::BASE;
     points.Append ( MeshPoint (p, layer, type) ); 
-
-    points.Last().SetGhost(isghost);
 
     lock.UnLock();
 
@@ -313,10 +301,6 @@ namespace netgen
     surfelements.Last().next = facedecoding[el.index-1].firstelement;
     facedecoding[el.index-1].firstelement = si;
 
-#ifdef PARALLEL
-    surfelements.Last().SetGhost ( el.IsGhost() );
-#endif
-
     lock.UnLock();
     return si;
   }
@@ -354,10 +338,6 @@ namespace netgen
 
     volelements.Append (el); 
     volelements.Last().flags.illegal_valid = 0;
-
-#ifdef PARALLEL
-    volelements.Last().SetGhost ( el.IsGhost() );
-#endif
 
     // while (volelements.Size() > eltyps.Size())
     // eltyps.Append (FREEELEMENT);
@@ -1209,23 +1189,23 @@ namespace netgen
         strcpy (str, "");
       }
 
+
+
+
     CalcSurfacesOfNode ();
     //  BuildConnectedNodes ();
     topology -> Update();
     clusters -> Update();
 
+#ifdef PARALLEL
+    if ( ntasks > 1 ) Distribute ();
+#endif
+
+
     SetNextMajorTimeStamp();
     //  PrintMemInfo (cout);
 
 
-#ifdef PARALLEL
-    if ( ntasks > 1 )
-      {
-        // for parallel processing
-        Distribute ();
-        return;
-      }
-#endif
 
   }
 

@@ -938,55 +938,51 @@ void Ng_GetSurfaceElementNeighbouringDomains(const int selnr, int & in, int & ou
 int NgPar_GetDistantNodeNums ( int nodetype, int locnum, int * distnums )
 {
   int size = NgPar_GetNDistantNodeNums (nodetype, locnum);
+  locnum++;
   switch ( nodetype )
     {
     case 0:
-      mesh->GetParallelTopology().GetDistantPNums( locnum+1, distnums ); 
+      mesh->GetParallelTopology().GetDistantPNums( locnum, distnums ); 
       break;
     case 1:
-      mesh->GetParallelTopology().GetDistantEdgeNums( locnum+1, distnums ); 
+      mesh->GetParallelTopology().GetDistantEdgeNums( locnum, distnums ); 
       break;
     case 2:
-      mesh->GetParallelTopology().GetDistantFaceNums( locnum+1, distnums );
+      mesh->GetParallelTopology().GetDistantFaceNums( locnum, distnums );
       break;
     case 3:
-      mesh->GetParallelTopology().GetDistantElNums( locnum+1, distnums );
+      // mesh->GetParallelTopology().GetDistantElNums( locnum, distnums );
       break;
     default:
       cerr << "NgPar_GetDistantNodeNums() Unknown nodetype " << nodetype << endl;
       size = -1;
     }
-  // 0 - based 
-  for ( int i = 0; i < size; i++ )
-    distnums[2*i+1]--;
 
   return size;
 }
 
 int NgPar_GetNDistantNodeNums ( int nodetype, int locnum )
 {
+  locnum++;
   switch ( nodetype )
     {
-    case 0:
-      return mesh->GetParallelTopology().GetNDistantPNums( locnum+1 );
-    case 1:
-      return mesh->GetParallelTopology().GetNDistantEdgeNums( locnum+1 );
-    case 2:
-      return mesh->GetParallelTopology().GetNDistantFaceNums( locnum+1 );
-    case 3:
-      return mesh->GetParallelTopology().GetNDistantElNums( locnum+1 );
+    case 0: return mesh->GetParallelTopology().GetNDistantPNums (locnum);
+    case 1: return mesh->GetParallelTopology().GetNDistantEdgeNums (locnum);
+    case 2: return mesh->GetParallelTopology().GetNDistantFaceNums(locnum );
+    case 3: return 0; 
     }
   return -1;
 }
 
 int NgPar_GetGlobalNodeNum (int nodetype, int locnum)
 {
+  locnum++;
   switch (nodetype)
     {
-    case 0: return mesh->GetParallelTopology().GetGlobalPNum (locnum+1)-1;
-    case 1: return mesh->GetParallelTopology().GetGlobalEdgeNum (locnum+1)-1;
-    case 2: return mesh->GetParallelTopology().GetGlobalFaceNum (locnum+1)-1;
-    case 3: return mesh->GetParallelTopology().GetGlobalElNum (locnum+1)-1;
+    case 0: return mesh->GetParallelTopology().GetGlobalPNum (locnum)-1;
+    case 1: return mesh->GetParallelTopology().GetGlobalEdgeNum (locnum)-1;
+    case 2: return mesh->GetParallelTopology().GetGlobalFaceNum (locnum)-1;
+    case 3: return mesh->GetParallelTopology().GetGlobalElNum (locnum)-1;
     }
   return -1;
 }

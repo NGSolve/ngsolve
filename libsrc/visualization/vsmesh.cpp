@@ -1858,10 +1858,7 @@ namespace netgen
             if (vispar.drawmetispartition && el.GetPartition()!=-1)
 	      ind = el.GetPartition() % 4;
 
-            if ( el.IsGhost() )
-	      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, tetcols_ghost[ind]);
-            else
-	      glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, tetcols[ind]);
+	    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, tetcols[ind]);
 
 
             if (curv.IsHighOrder()) //  && curv.IsElementCurved(ei))

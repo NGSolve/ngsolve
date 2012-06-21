@@ -172,9 +172,6 @@ namespace netgen
     orderx = ordery = 1;
     refflag = 1;
     strongrefflag = false;
-#ifdef PARALLEL
-    isghost = 0;
-#endif
   } 
 
 
@@ -200,9 +197,6 @@ namespace netgen
     orderx = ordery = 1;
     refflag = 1;
     strongrefflag = false;
-#ifdef PARALLEL
-    isghost = 0;
-#endif
   } 
 
   Element2d :: Element2d (ELEMENT_TYPE atyp)
@@ -222,10 +216,6 @@ namespace netgen
     orderx = ordery = 1;
     refflag = 1;
     strongrefflag = false;
-#ifdef PARALLEL
-    isghost = 0;
-#endif
-
   } 
 
 
@@ -250,11 +240,6 @@ namespace netgen
     deleted = 0;
     visible = 1;
     orderx = ordery = 1;
-
-#ifdef PARALLEL
-    isghost = 0;
-#endif
-
   }
 
   Element2d :: Element2d (int pi1, int pi2, int pi3, int pi4)
@@ -278,10 +263,6 @@ namespace netgen
     deleted = 0;
     visible = 1;
     orderx = ordery = 1;
-
-#ifdef PARALLEL
-    isghost = 0;
-#endif
   }
 
 
@@ -966,7 +947,6 @@ namespace netgen
 
 #ifdef PARALLEL
     partitionNumber = -1;
-    isghost = 0;
 #endif
 
   }
@@ -1000,10 +980,6 @@ namespace netgen
       default: cerr << "Element::Element: unknown element with " << np << " points" << endl;
       }
     orderx = ordery = orderz = 1;
-
-#ifdef PARALLEL
-    isghost = 0;
-#endif
   }
 
   void Element :: SetOrder (const int aorder) 
@@ -1041,10 +1017,6 @@ namespace netgen
     flags.deleted = 0;
     flags.fixed = 0;
     orderx = ordery = orderz = 1;
-
-#ifdef PARALLEL
-    isghost = 0;
-#endif
   }
 
 

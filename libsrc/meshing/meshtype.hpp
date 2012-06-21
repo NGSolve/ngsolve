@@ -232,25 +232,16 @@ namespace netgen
     double singular; // singular factor for hp-refinement
     POINTTYPE type;
 
-#ifdef PARALLEL
-    bool isghost;
-#endif
 
   public:
     MeshPoint () 
     { 
-#ifdef PARALLEL
-      isghost = 0;
-#endif
       ;
     }
 
     MeshPoint (const Point<3> & ap, int alayer = 1, POINTTYPE apt = INNERPOINT)
       : Point<3> (ap), layer(alayer), singular(0.),type(apt) 
     { 
-#ifdef PARALLEL
-      isghost = 0;
-#endif  
       ;
     }
   
@@ -259,9 +250,6 @@ namespace netgen
       Point<3>::operator= (ap); 
       layer = 0; 
       singular = 0; 
-#ifdef PARALLEL
-      isghost = 0;
-#endif
     }
 
     int GetLayer() const { return layer; }
@@ -274,9 +262,6 @@ namespace netgen
     bool IsSingular() const { return (singular != 0.0); }
 
 #ifdef PARALLEL
-    bool IsGhost () const { return isghost; }
-    void SetGhost ( bool aisghost ) { isghost = aisghost; }
-
     static MPI_Datatype MyGetMPIType ( );
 #endif
 
@@ -325,7 +310,6 @@ namespace netgen
     unsigned int ordery:6;
 
 #ifdef PARALLEL
-    bool isghost;
     int partitionNumber; 
 #endif
 
@@ -506,15 +490,8 @@ namespace netgen
     int hp_elnr;
 
 #ifdef PARALLEL
-    bool IsGhost () const { return isghost; }
-    void SetGhost ( bool aisghost ) { isghost = aisghost; }
-
-    // by JS, only for 2D meshes ????
     int GetPartition () const { return partitionNumber; }
     void SetPartition (int nr) { partitionNumber = nr; }; 
-
-#else
-    bool IsGhost () const { return false; }
 #endif
   };
 
@@ -583,7 +560,7 @@ namespace netgen
 #ifdef PARALLEL
     /// number of partition for parallel computation 
     int partitionNumber;
-    bool isghost;
+
 #endif
 
   public:
@@ -778,11 +755,7 @@ namespace netgen
 #ifdef PARALLEL
     int GetPartition () const { return partitionNumber; }
     void SetPartition (int nr) { partitionNumber = nr; }; 
-
-    bool IsGhost () const { return isghost; }
-    void SetGhost ( const bool aisghost ) { isghost = aisghost; }
 #else
-    bool IsGhost () const { return false; }
     int GetPartition () const { return 0; }
 #endif
 

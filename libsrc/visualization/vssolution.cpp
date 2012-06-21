@@ -827,10 +827,6 @@ namespace netgen
               {
                 const Element2d & el = (*mesh)[sei];
 
-#ifdef PARALLEL
-		// parallel visualization --> dont draw ghost elements
-		if ( el . IsGhost() ) continue;
-#endif
                 bool curved = curv.IsHighOrder(); //  && curv.IsSurfaceElementCurved(sei);
               
                 if (el.GetType() == TRIG || el.GetType() == TRIG6)
@@ -1064,8 +1060,6 @@ namespace netgen
       {
         const Element2d & el = (*mesh)[sei];
 
-	if ( el . IsGhost() ) continue;
-
         if (vispar.drawdomainsurf > 0)
           {
             if (mesh->GetDimension() == 3)
@@ -1196,8 +1190,6 @@ namespace netgen
     for(SurfaceElementIndex sei = 0; sei < nse; sei++)
       {
         const Element2d & el = (*mesh)[sei];
-
-	if ( el . IsGhost() ) continue;
 
         if(vispar.drawdomainsurf > 0)
 	  {
@@ -1431,8 +1423,6 @@ namespace netgen
       {
         Element2d & el = (*mesh)[sei];
 
-	if ( el . IsGhost() ) continue;
-
         // bool curved = curv.IsSurfaceElementCurved (sei);
 
         int nv = (el.GetType() == TRIG || el.GetType() == TRIG6) ? 3 : 4;
@@ -1558,8 +1548,6 @@ namespace netgen
       {
         // if(vispar.clipdomain > 0 && vispar.clipdomain != (*mesh)[ei].GetIndex()) continue;
         // if(vispar.donotclipdomain > 0 && vispar.donotclipdomain == (*mesh)[ei].GetIndex()) continue;
-
-	if ( (*mesh)[ei] . IsGhost() ) continue;
 
         ELEMENT_TYPE type = (*mesh)[ei].GetType();
         if (type == HEX || type == PRISM || type == TET || type == PYRAMID)
@@ -1905,8 +1893,6 @@ namespace netgen
           {
             const Element2d & el = (*mesh)[sei];
           
-	    if ( el . IsGhost() ) continue;
-
             if (el.GetType() == TRIG || el.GetType() == TRIG6)
               {
           
@@ -3498,11 +3484,6 @@ namespace netgen
     for (ElementIndex ei = 0; ei < ne; ei++)
       {
         int first_point_of_element = pts.Size();
-
-#ifdef PARALLEL
-	// parallel visualization --> dont draw ghost elements
-	if ( (*mesh)[ei] . IsGhost() ) continue;
-#endif
 
 	locgrid.SetSize(n3);
         if(vispar.clipdomain > 0 && vispar.clipdomain != (*mesh)[ei].GetIndex()) continue;
