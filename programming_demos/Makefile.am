@@ -1,4 +1,4 @@
-bin_PROGRAMS = demo_std demo_bla demo_fem demo_comp
+bin_PROGRAMS = demo_std demo_bla demo_fem demo_comp demo_comp1d
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -DLAPACK  $(MPI_INCLUDES)
 
@@ -16,8 +16,22 @@ demo_fem_LDADD = $(top_builddir)/fem/libngfem.la \
 	$(top_builddir)/basiclinalg/libngbla.la \
 	$(top_builddir)/ngstd/libngstd.la $(LAPACK_LIBS) $(MPI_LIBS)
 
-demo_comp_SOURCES = demo_comp.cpp netgen_dummy.cpp
+
+demo_comp_SOURCES = demo_comp.cpp
 demo_comp_LDADD = \
+	$(top_builddir)/comp/libngcomp.la \
+	$(top_builddir)/fem/libngfem.la \
+	$(top_builddir)/linalg/libngla.la \
+	$(top_builddir)/ngstd/libngstd.la \
+	$(top_builddir)/solve/libngsolve.la \
+	$(top_builddir)/parallel/libparallel.la \
+	$(LAPACK_LIBS) \
+        -L$(libdir) -lnglib -linterface 
+demo_comp_CPPFLAGS = $(NETGEN_INCLUDES)  -I$(top_srcdir)/include $(MPI_INCLUDES)
+
+
+demo_comp1d_SOURCES = demo_comp1d.cpp netgen_dummy.cpp
+demo_comp1d_LDADD = \
 	$(top_builddir)/comp/libngcomp.la \
 	$(top_builddir)/fem/libngfem.la \
 	$(top_builddir)/linalg/libngla.la \
@@ -26,7 +40,9 @@ demo_comp_LDADD = \
 	$(top_builddir)/parallel/libparallel.la \
 	$(LAPACK_LIBS) 
 #        -L$(libdir) -lnglib -linterface 
-demo_comp_CPPFLAGS = $(NETGEN_INCLUDES)  -I$(top_srcdir)/include $(MPI_INCLUDES)
+demo_comp1d_CPPFLAGS = $(NETGEN_INCLUDES)  -I$(top_srcdir)/include $(MPI_INCLUDES)
+
+
 
 
 

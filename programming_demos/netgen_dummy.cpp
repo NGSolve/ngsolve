@@ -1,4 +1,5 @@
 #include <ngstd.hpp>
+#include <bla.hpp>
 
 #include <nginterface.h>
 #include <nginterface_v2.hpp>
@@ -7,11 +8,13 @@ using namespace std;
 #include <ngexception.hpp>
 
 
-using namespace ngstd;
+using namespace ngbla;
 
+/*
 int dim = 2;
 int nv = 4;
-int ne = 2;
+int nseg = 0;
+int ntrig = 2;
 
 double points [][2] =
   { { 0, 0 },
@@ -26,6 +29,28 @@ int trigs[][3] =
     { 2, 3, 4} 
   };
 
+*/
+
+
+
+// one-1 mesh example
+
+
+int dim = 1;
+int nv = 5;
+int nseg = 4;
+int ntrig = 0;
+
+double points[][1] = { 0, 0.25, 0.5, 0.75, 1 };
+int trigs[][3] = { { 0,0,0 } } ;
+
+int segms[][2] = 
+  {
+    { 2, 1 },
+    { 3, 2 },
+    { 4, 3 },
+    { 5, 4 } 
+  };
 
 
 
@@ -34,6 +59,35 @@ int trigs[][3] =
 
 
 // here are the tested functions
+
+
+// space dimension (2 or 3)
+DLL_HEADER int Ng_GetDimension ()
+{
+  return dim;
+}
+
+
+DLL_HEADER int Ng_GetNNodes (int nt)
+{
+  switch (nt)
+    {
+    case 0: return nv;
+    case 1: return 0;
+    case 2: return 0;
+    case 3: return 0;
+    }
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -59,11 +113,6 @@ extern "C"
     ;
   }
 
-  // space dimension (2 or 3)
-  DLL_HEADER int Ng_GetDimension ()
-  {
-    return dim;
-  }
 
   // number of mesh points
   int Ng_GetNP ()
@@ -78,13 +127,13 @@ extern "C"
   // number of mesh elements
   DLL_HEADER int Ng_GetNE ()
   {
-    return 0;
+    return Ng_GetNElements (dim);
   }
 
   // number of surface triangles
   DLL_HEADER int Ng_GetNSE ()
   {
-    return ne;
+    return Ng_GetNElements (dim-1);
   }
   
   // Get Point coordintes, index from 1 .. np
@@ -235,7 +284,7 @@ extern "C"
   DLL_HEADER void Ng_GetElementTransformation (int ei, const double * xi, 
                                                double * x, double * dxdxi)
   {
-    ;
+    cout << "geteltrafo" << endl;
   }
 
   
@@ -244,7 +293,7 @@ extern "C"
                                                        double * x, double * dxdxi,
                                                        void * buffer, int buffervalid)
   {
-    ;
+    cout << "getbufferedtrafo" << endl;
   }
   
 
@@ -257,7 +306,7 @@ extern "C"
   DLL_HEADER void Ng_GetSurfaceElementTransformation (int sei, const double * xi, 
                                                       double * x, double * dxdxi)
   {
-    ;
+    cout << "get sel trafo" << endl;
   }
   
   /// Curved Elemens:
@@ -270,7 +319,7 @@ extern "C"
                                                     double * x, size_t sx,
                                                     double * dxdxi, size_t sdxdxi)
   {
-    ;
+    cout << "nget_getmultielementtrafo" << endl;
   }
 
    
@@ -348,7 +397,7 @@ extern "C"
   // Multilevel functions:
 
   // number of levels:
-  DLL_HEADER int Ng_GetNLevels () { return 0; }
+  DLL_HEADER int Ng_GetNLevels () { return 1; }
   // get two parent nodes (indeed vertices !) of node ni
   DLL_HEADER void Ng_GetParentNodes (int ni, int * parents) { ; }
 
@@ -366,7 +415,10 @@ extern "C"
 
 
   void Ng_SurfaceElementTransformation (int eli, double x, double y, 
-					double * p3d, double * jacobian);
+					double * p3d, double * jacobian)
+  {
+    cout << "surfaceelementtrafo" << endl;
+  }
 
 
   // the folling functions are 0-base  !!
@@ -464,15 +516,6 @@ extern "C" {
     nt = 2 is Face
     nt = 3 is Cell
   */
-  DLL_HEADER int Ng_GetNNodes (int nt)
-  {
-    switch (nt)
-      {
-      case 0: return nv;
-      case 1: return 0;
-      case 2: return ne;
-      }
-  }
 
   /*
     closure nodes of node (nt, nodenr):
@@ -495,9 +538,10 @@ extern "C" {
   {
     switch (dim)
       {
-      case 2: return ne;
-      default:
-	return 0;
+      case 0: return 0;
+      case 1: return nseg;
+      case 2: return ntrig;
+      case 3: return 0;
       }
   }
 
@@ -523,6 +567,9 @@ extern "C" {
 
 
 
+
+
+
 // dummies, V2
 namespace netgen
 {
@@ -537,17 +584,41 @@ namespace netgen
 
   template<> Ng_Element Ng_GetElement<1> (int nr) 
   { 
-    ;
+    Ng_Element ret;
+    ret.type = NG_SEGM; 
+    ret.points.num = 2;
+    ret.points.ptr  = &segms[nr][0];
+    ret.vertices.num = 2;
+    ret.vertices.ptr  = &segms[nr][0];
+
+    ret.edges.num = 0;
+    ret.edges.ptr = NULL;
+    ret.faces.num = 0;
+    ret.faces.ptr = NULL;
+    return ret;
   }
 
   template<> Ng_Element Ng_GetElement<2> (int nr) 
   { 
-    ;
+    Ng_Element ret;
+    ret.type = NG_TRIG; 
+    ret.points.num = 3;
+    ret.points.ptr  = &trigs[nr][0];
+
+    ret.vertices.num = 3;
+    ret.vertices.ptr = &trigs[nr][0];
+
+    ret.edges.num = 0;
+    ret.edges.ptr = NULL;
+
+    ret.faces.num = 0;
+    ret.faces.ptr = NULL;
+    return ret;
   }
 
   template<> Ng_Element Ng_GetElement<3> (int nr) 
   { 
-    ;
+    cout << "calls ng_getelement<3>" << endl;
   }
 
   template<> Ng_Node<1> Ng_GetNode<1> (int nr)
@@ -562,12 +633,37 @@ namespace netgen
 
 
   template <>
+  void Ng_MultiElementTransformation<1,1> (int elnr, int npts,
+					   const double * xi, size_t sxi,
+					   double * x, size_t sx,
+					   double * dxdxi, size_t sdxdxi)
+  {
+    double pts[2] = { points[segms[elnr][0]-1][0], 
+		      points[segms[elnr][1]-1][0] };
+
+    for (int i = 0; i < npts; i++)
+      {
+	double xi_ = xi[i*sxi];
+	if (x)
+	  {
+	    x[i*sx] = pts[1] + xi_ * (pts[0]-pts[1]);
+	  }
+	if (dxdxi)
+	  {
+	    dxdxi[i*sdxdxi  ] = pts[0]-pts[1];
+	  }
+      }
+  }
+
+
+
+  template <>
   void Ng_MultiElementTransformation<1,2> (int elnr, int npts,
 					   const double * xi, size_t sxi,
 					   double * x, size_t sx,
 					   double * dxdxi, size_t sdxdxi)
   {
-    ;
+    cout << "multi - trafo<1,2>" << endl;
   }
 
   template <>
@@ -576,7 +672,31 @@ namespace netgen
 					   double * x, size_t sx,
 					   double * dxdxi, size_t sdxdxi)
   {
-    ;
+    Vec<2> pts[3];
+    for (int i = 0; i < 3; i++)
+      pts[i] = Vec<2> (points[trigs[elnr][i]-1][0], 
+		       points[trigs[elnr][i]-1][1]);
+
+    for (int i = 0; i < npts; i++)
+      {
+	Vec<2> xi_ (xi[i*sxi], xi[i*sxi+1]);
+	Vec<2> x_map = pts[2] + xi_(0) * (pts[0]-pts[2]) + xi_(1) * (pts[1]-pts[2]);
+	Mat<2,2> grad; 
+	grad.Col(0) = pts[0]-pts[2];
+	grad.Col(1) = pts[1]-pts[2];
+	if (x)
+	  {
+	    x[i*sx  ] = x_map(0);
+	    x[i*sx+1] = x_map(1);
+	  }
+	if (dxdxi)
+	  {
+	    dxdxi[i*sdxdxi  ] = grad(0,0);
+	    dxdxi[i*sdxdxi+1] = grad(0,1);
+	    dxdxi[i*sdxdxi+2] = grad(1,0);
+	    dxdxi[i*sdxdxi+3] = grad(1,1);
+	  }
+      }
   }
   
   template <>
@@ -585,7 +705,7 @@ namespace netgen
 					   double * x, size_t sx,
 					   double * dxdxi, size_t sdxdxi)
   {
-    ;
+    cout << "multi - trafo<2,3>" << endl;
   }
   
   template <>
@@ -594,7 +714,7 @@ namespace netgen
 					   double * x, size_t sx,
 					   double * dxdxi, size_t sdxdxi)
   {
-    ;
+    cout << "multi - trafo<3,3>" << endl;
   }
   
 
