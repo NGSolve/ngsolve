@@ -130,6 +130,7 @@ namespace ngfem
   template class LaplaceBoundaryIntegrator<3>;
 
 
+  template class RobinIntegrator<1>;
   template class RobinIntegrator<2>;
   template class RobinIntegrator<3>;
 
@@ -138,6 +139,7 @@ namespace ngfem
   template class SourceIntegrator<2>;
   template class SourceIntegrator<3>;
 
+  template class NeumannIntegrator<1>;
   template class NeumannIntegrator<2>;
   template class NeumannIntegrator<3>;
 
