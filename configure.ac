@@ -87,8 +87,8 @@ AC_ARG_ENABLE([nglib],
 
 AC_ARG_ENABLE([parallel],
         [AC_HELP_STRING([--enable-parallel],[enable mpi parallelization])],
-        [AC_SUBST([MPI_INCLUDES], "-I/usr/lib64/mpi/gcc/openmpi/include -DPARALLEL -I/usr/local/include/METISLib -I/usr/include/metis -I/home/lv70202/jschoebe/tcltk/include -DMETIS -I/usr/local/include/vampirtrace")
-        AC_SUBST([MPI_LIBS], "-L/usr/lib64/mpi/gcc/openmpi/lib64 -L/home/lv70202/jschoebe/tcltk/lib -lmetis -L/opt/sw/vampirtrace/lib")
+        [AC_SUBST([MPI_INCLUDES], "-DPARALLEL -I/usr/local/include/METISLib -I/usr/include/metis  -DMETIS")
+        AC_SUBST([MPI_LIBS], "-lmetis")
         ]
         )       
 #          -DVTRACE
