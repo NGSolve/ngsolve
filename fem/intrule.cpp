@@ -136,12 +136,13 @@ namespace ngfem
   }
 
 
+  template class MappedIntegrationPoint<0,1>;
   template class MappedIntegrationPoint<1,1>;
-  template class MappedIntegrationPoint<2,2>;
-  template class MappedIntegrationPoint<3,3>;
   template class MappedIntegrationPoint<1,2>;
-  template class MappedIntegrationPoint<2,3>;
+  template class MappedIntegrationPoint<2,2>;
   template class MappedIntegrationPoint<1,3>;
+  template class MappedIntegrationPoint<2,3>;
+  template class MappedIntegrationPoint<3,3>;
   
 
   IntegrationRule :: IntegrationRule (ELEMENT_TYPE eltype, int order)
@@ -180,6 +181,7 @@ namespace ngfem
     eltrans.CalcMultiPointJacobian (ir, *this);
   }
 
+  template class MappedIntegrationRule<0,1>;
   template class MappedIntegrationRule<1,1>;
   template class MappedIntegrationRule<2,2>;
   template class MappedIntegrationRule<3,3>;
