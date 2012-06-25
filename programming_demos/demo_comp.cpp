@@ -8,17 +8,22 @@
 #include <comp.hpp>
 using namespace ngcomp;
 
+ 
 
-
-int main ()
+int main (int argc, char **argv)
 {
+#ifdef PARALLEL
+  MPI_Init (&argc, &argv);
+  ngs_comm = MPI_COMM_WORLD;
+#endif 
+
   Ng_LoadGeometry ("cube.geo");
   Ng_LoadMesh ("cube.vol");
   
   LocalHeap lh(10000000, "main heap");
   MeshAccess ma;
 
-  H1HighOrderFESpace fes(ma, Flags().SetFlag("order",2) );
+  H1HighOrderFESpace fes(ma, Flags().SetFlag("order",2).SetFlag("print") );
   
   T_GridFunction<double> gfu (fes, "gfu", Flags());
 
@@ -56,4 +61,10 @@ int main ()
   inva.SetMaxSteps(1000);
 
   vecu = inva * vecf;
+
+
+#ifdef PARALLEL
+  MPI_Finalize ();
+#endif
+
 }
