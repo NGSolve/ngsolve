@@ -259,7 +259,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  if (dirichlet_boundaries.Test(ind))
 	    {
 	      Ng_Element ngel = ma.GetSElement(i);
-	      
 	      for (int j = 0; j < ngel.vertices.Size(); j++)
 		dirichlet_vertex[ngel.vertices[j]] = true;
 	      
@@ -289,55 +288,56 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     RegionTimer reg (timer);
 
-      {
-	dirichlet_dofs.SetSize (GetNDof());
-	dirichlet_dofs.Clear();
-	Array<int> dnums;
 
-	if (dirichlet_boundaries.Size())
-	  for (int i = 0; i < ma.GetNSE(); i++)
+    dirichlet_dofs.SetSize (GetNDof());
+    dirichlet_dofs.Clear();
+    Array<int> dnums;
+
+    if (dirichlet_boundaries.Size())
+      for (int i = 0; i < ma.GetNSE(); i++)
+	{
+	  if (dirichlet_boundaries[ma.GetSElIndex(i)])
 	    {
-	      if (dirichlet_boundaries[ma.GetSElIndex(i)])
-		{
-		  GetSDofNrs (i, dnums);
-		  for (int j = 0; j < dnums.Size(); j++)
-		    if (dnums[j] != -1)
-		      dirichlet_dofs.Set (dnums[j]);
-		}
-	    }	 
-	
-	
-	for (int i = 0; i < dirichlet_vertex.Size(); i++)
-	  if (dirichlet_vertex[i])
-	    {
-	      GetVertexDofNrs (i, dnums);
+	      GetSDofNrs (i, dnums);
 	      for (int j = 0; j < dnums.Size(); j++)
 		if (dnums[j] != -1)
 		  dirichlet_dofs.Set (dnums[j]);
 	    }
+	}	 
+	
+	
+    for (int i = 0; i < dirichlet_vertex.Size(); i++)
+      if (dirichlet_vertex[i])
+	{
+	  GetVertexDofNrs (i, dnums);
+	  for (int j = 0; j < dnums.Size(); j++)
+	    if (dnums[j] != -1)
+	      dirichlet_dofs.Set (dnums[j]);
+	}
 
-	for (int i = 0; i < dirichlet_edge.Size(); i++)
-	  if (dirichlet_edge[i])
-	    {
-	      GetEdgeDofNrs (i, dnums);
-	      for (int j = 0; j < dnums.Size(); j++)
-		if (dnums[j] != -1)
-		  dirichlet_dofs.Set (dnums[j]);
-	    }
+    for (int i = 0; i < dirichlet_edge.Size(); i++)
+      if (dirichlet_edge[i])
+	{
+	  GetEdgeDofNrs (i, dnums);
+	  for (int j = 0; j < dnums.Size(); j++)
+	    if (dnums[j] != -1)
+	      dirichlet_dofs.Set (dnums[j]);
+	}
 	
 
-	free_dofs.SetSize (GetNDof());
-	free_dofs = dirichlet_dofs;
-	free_dofs.Invert();
+    free_dofs.SetSize (GetNDof());
+    free_dofs = dirichlet_dofs;
+    free_dofs.Invert();
 	
-	external_free_dofs.SetSize (GetNDof());
-	external_free_dofs = free_dofs;
-	for (int i = 0; i < ctofdof.Size(); i++)
-	  if (ctofdof[i] & LOCAL_DOF)
-	    external_free_dofs.Clear(i);
+
+    external_free_dofs.SetSize (GetNDof());
+    external_free_dofs = free_dofs;
+    for (int i = 0; i < ctofdof.Size(); i++)
+      if (ctofdof[i] & LOCAL_DOF)
+	external_free_dofs.Clear(i);
 	
-	*testout << "freedofs = " << endl << free_dofs << endl;
-      }
+    *testout << "freedofs = " << endl << free_dofs << endl;
+
     
     UpdateParallelDofs();
 
@@ -347,7 +347,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     col = -1;
 
     bool found;
-    Array<int> dnums;
     int maxcolor = 0;
 
 
@@ -422,6 +421,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       case ET_HEX: fe = hex; break;
       case ET_TRIG: fe = trig; break;
       case ET_QUAD: fe = quad; break;
+      case ET_SEGM: fe = segm; break;
       default:
         ;
       }
