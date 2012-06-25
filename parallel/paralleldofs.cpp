@@ -1,7 +1,7 @@
 #ifdef PARALLEL
 
-#include <comp.hpp>
 #include <parallelngs.hpp> 
+#include <comp.hpp>
 
 
 
@@ -17,8 +17,9 @@ namespace ngparallel
   */
 
   ParallelDofs :: ParallelDofs (const MeshAccess & ama, 
-				const Array<Node> & adofnodes, int dim, bool iscomplex)
-    : ma(ama), dofnodes(adofnodes) 
+				const Array<Node> & adofnodes, 
+				int dim, bool iscomplex)
+    : ma(ama), dofnodes(adofnodes)
   {
     static Timer timer ("ParallelDofs");
     RegionTimer reg(timer);
@@ -29,17 +30,21 @@ namespace ngparallel
     ndof = dofnodes.Size();
     Array<int> distprocs;
 
-    Array<int> nexdofs(ntasks);
+
+    Array<int> nexdofs(ntasks), ndistprocs(ndof);
     nexdofs = 0;
+    ndistprocs = 0;
     for (int i = 0; i < ndof; i++)
       {
 	if (dofnodes[i].GetNr() == -1) continue;
 	ma.GetDistantProcs (dofnodes[i], distprocs);
+	ndistprocs[i] = distprocs.Size();
 	for (int j = 0; j < distprocs.Size(); j++)
 	  nexdofs[distprocs[j]]++;
       }
 
     exchangedofs = new Table<int> (nexdofs);
+    dist_procs = new Table<int> (ndistprocs);
     nexdofs = 0;
 
     for (int i = 0; i < ndof; i++)
@@ -50,6 +55,7 @@ namespace ngparallel
 	  {
 	    int dest = distprocs[j];
 	    (*exchangedofs)[dest][nexdofs[dest]++] = i;
+	    (*dist_procs)[i][j] = distprocs[j];
 	  }
       }
 
@@ -66,7 +72,7 @@ namespace ngparallel
       }
 
     mpi_t.SetSize (ntasks); 
-
+    
     MPI_Datatype mpi_type;
 
     mpi_type = iscomplex ?
@@ -96,6 +102,10 @@ namespace ngparallel
       }
   }
 
+  ParallelDofs :: ~ParallelDofs()
+  {
+    ;
+  }
 
 
   int ParallelDofs :: GetNDofGlobal () const

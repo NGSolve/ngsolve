@@ -135,7 +135,7 @@ namespace ngcomp
 
   public:
     ///
-    MGPreconditioner (PDE * pde, Flags & aflags,
+    MGPreconditioner (const PDE & pde, const Flags & aflags,
 		      const string aname = "mgprecond");
     ///
     virtual ~MGPreconditioner();
@@ -167,67 +167,6 @@ namespace ngcomp
 
 
   ///
-  class NGS_DLL_HEADER DirectPreconditioner : public Preconditioner
-  {
-    ///
-    BilinearForm * bfa;
-    ///
-    BaseMatrix * inverse;
-
-    string inversetype;
-
-  public:
-    ///
-    DirectPreconditioner (PDE * pde, Flags & aflags,
-			  const string aname = "directprecond");
-    ///
-    virtual ~DirectPreconditioner();
-
-    ///
-    virtual void Update ();
-    ///
-    virtual void CleanUpLevel ();
-    ///
-    virtual const BaseMatrix & GetMatrix() const;
-    ///
-    virtual const BaseMatrix & GetAMatrix() const
-    {
-      return bfa->GetMatrix(); 
-    }
-
-    ///
-    virtual const char * ClassName() const
-    { return "Direct Preconditioner"; }
-  };
-
-
-
-  ///
-  class DNDDPreconditioner : public Preconditioner
-  {
-    ///
-    BilinearForm * bfa;
-    ///
-    BaseMatrix * inverse;
-    ///
-    PDE * pde;
-  public:
-    ///
-    DNDDPreconditioner (PDE * apde, Flags & aflags,
-			const string aname = "dnddprecond");
-    ///
-    virtual ~DNDDPreconditioner();
-  
-    ///
-    virtual void Update ();
-    ///
-    virtual const BaseMatrix & GetMatrix() const;
-    ///
-    virtual const char * ClassName() const
-    { return "DN-DD Preconditioner"; }
-  };
-
-
 
 
   /**
@@ -267,46 +206,6 @@ namespace ngcomp
     { return "Local Preconditioner"; }
     void LocPrecTest () const;
   };
-
-
-
-
-#ifdef OLD
-
-  /**
-     V-E-F-C preconditioner
-  */
-  class VEFC_Preconditioner : public Preconditioner
-  {
-  protected:
-    ///
-    BilinearForm * bfa;
-    ///
-    BaseMatrix * jacobi;
-  public:
-    ///
-    VEFC_Preconditioner (PDE * pde, Flags & aflags,
-			 const string aname = "vefcprecond");
-    ///
-    virtual ~VEFC_Preconditioner();
-    ///
-    virtual void Update ();
-    ///
-    virtual const BaseMatrix & GetMatrix() const;
-    ///
-    virtual const BaseMatrix & GetAMatrix() const
-    {
-      return bfa->GetMatrix(); 
-    }
-    ///
-    virtual const char * ClassName() const
-    { return "Local Preconditioner"; }
-  };
-
-#endif
-
-
-
 
 
 
@@ -416,37 +315,6 @@ namespace ngcomp
 
 
 
-  /*
-
-  ///
-  class ConstrainedPreconditioner : public Preconditioner
-  {
-  protected:
-  ///
-  Preconditioner * c1;
-  ///
-  BaseMatrix * mat;
-  public:
-  ///
-  ConstrainedPreconditioner (PDE * apde, Flags & aflags);
-  ///
-  virtual ~ConstrainedPreconditioner();
-  ///
-  virtual void Update ();
-  ///
-  virtual const BaseMatrix & GetMatrix() const
-  { 
-  return *mat;
-  }
-  ///
-  virtual const char * ClassName() const
-  { return "Constrained Preconditioner"; }
-  };
-  */
-
-
-
-
 
   class CommutingAMGPreconditioner : public Preconditioner
   {
@@ -542,10 +410,11 @@ namespace ngcomp
     struct PreconditionerInfo
     {
       string name;
-      Preconditioner* (*creator)(const PDE & pde, const Flags & aflags);
+      Preconditioner* (*creator)(const PDE & pde, const Flags & aflags, const string & name);
       PreconditionerInfo (const string & aname,
 			  Preconditioner* (*acreator)(const PDE & pde, 
-						      const Flags & aflags));
+						      const Flags & aflags,
+						      const string & name));
     };
   
     Array<PreconditionerInfo*> prea;
@@ -554,7 +423,8 @@ namespace ngcomp
     ~PreconditionerClasses();  
     void AddPreconditioner (const string & aname, 
 			    Preconditioner* (*acreator)(const PDE & pde, 
-							const Flags & aflags));
+							const Flags & aflags, 
+							const string & name));
   
     const Array<PreconditionerInfo*> & GetPreconditioners() { return prea; }
     const PreconditionerInfo * GetPreconditioner(const string & name);
@@ -568,15 +438,15 @@ namespace ngcomp
   class RegisterPreconditioner
   {
   public:
-    RegisterPreconditioner (string label)
+    RegisterPreconditioner (string label, bool isparallel = true)
     {
       GetPreconditionerClasses().AddPreconditioner (label, Create);
       // cout << "register preconditioner '" << label << "'" << endl;
     }
     
-    static Preconditioner * Create (const PDE & pde, const Flags & flags)
+    static Preconditioner * Create (const PDE & pde, const Flags & flags, const string & name)
     {
-      return new PRECOND (pde, flags);
+      return new PRECOND (pde, flags, name);
     }
   };
 

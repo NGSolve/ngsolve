@@ -180,8 +180,8 @@ namespace ngcomp
 
 
 
-  MGPreconditioner :: MGPreconditioner (PDE * pde, Flags & aflags, const string aname)
-    : Preconditioner (pde,aflags,aname)
+  MGPreconditioner :: MGPreconditioner (const PDE & pde, const Flags & aflags, const string aname)
+    : Preconditioner (&pde,aflags,aname)
   {
     // cout << "*** MGPreconditioner constructor called" << endl;
     mgtest = flags.GetDefineFlag ("mgtest");
@@ -190,13 +190,12 @@ namespace ngcomp
    
  
 
-    const MeshAccess & ma = pde->GetMeshAccess();
-    bfa = pde->GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
+    const MeshAccess & ma = pde.GetMeshAccess();
+    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
 
     const LinearForm * lfconstraint = 
-      pde->GetLinearForm (flags.GetStringFlag ("constraint", ""),1);
+      pde.GetLinearForm (flags.GetStringFlag ("constraint", ""),1);
     const FESpace & fes = bfa->GetFESpace();
-
     
 
     const BilinearForm * lo_bfa = bfa;
@@ -267,7 +266,7 @@ namespace ngcomp
     
 
     coarse_pre = 
-      pde->GetPreconditioner (flags.GetStringFlag ("coarseprecond", ""), 1);
+      pde.GetPreconditioner (flags.GetStringFlag ("coarseprecond", ""), 1);
 
     if (coarse_pre)
       mgp->SetCoarseType (MultigridPreconditioner::USER_COARSE);
@@ -413,100 +412,73 @@ namespace ngcomp
 
 
 
-  DirectPreconditioner :: DirectPreconditioner (PDE * pde, Flags & aflags, const string aname)
-    : Preconditioner(pde,aflags,aname)
+
+  
+  // ****************************** DirectPreconditioner **************************
+
+
+  class NGS_DLL_HEADER DirectPreconditioner : public Preconditioner
   {
-    bfa = pde->GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-    inverse = NULL;
-    inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
-  }
+    const BilinearForm * bfa;
+    BaseMatrix * inverse;
+    string inversetype;
 
-  DirectPreconditioner :: ~DirectPreconditioner()
-  {
-    delete inverse;
-  }
+  public:
+    DirectPreconditioner (const PDE & pde, const Flags & aflags,
+			  const string aname = "directprecond")
+      : Preconditioner(&pde,aflags,aname)
+    {
+      bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
+      inverse = NULL;
+      inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
+    }
+    
+    ///
+    virtual ~DirectPreconditioner()
+    {
+      delete inverse;
+    }
+    
+    
+    ///
+    virtual void Update ()
+    {
+      delete inverse;
+      
+      try
+	{
+	  bfa->GetMatrix().SetInverseType (inversetype);
+	  const BitArray * freedofs = 
+	    bfa->GetFESpace().GetFreeDofs (bfa->UsesEliminateInternal());
+	  inverse = bfa->GetMatrix().InverseMatrix(freedofs);
+	}
+      catch (exception & e)
+	{
+	  throw Exception ("DirectPreconditioner: needs a sparse matrix (or has memory problems)");
+	}
+    }
 
-  void DirectPreconditioner :: Update ()
-  {
-    delete inverse;
+    virtual void CleanUpLevel ()
+    {
+      delete inverse;
+      inverse = NULL;
+    }
 
-    try
-      {
-	bfa->GetMatrix().SetInverseType (inversetype);
-	const BitArray * freedofs = bfa->GetFESpace().GetFreeDofs( bfa->UsesEliminateInternal() );
-	inverse = bfa->GetMatrix().InverseMatrix(freedofs);
-      }
-    catch (exception & e)
-      {
-	throw Exception ("DirectPreconditioner: needs a sparse matrix (or has memory problems)");
-      }
-  }
+    virtual const BaseMatrix & GetMatrix() const
+    {
+      return *inverse;
+    }
 
-  void DirectPreconditioner :: CleanUpLevel ()
-  {
-    delete inverse;
-    inverse = 0;
-  }
+    virtual const BaseMatrix & GetAMatrix() const
+    {
+      return bfa->GetMatrix(); 
+    }
 
-  const ngla::BaseMatrix & DirectPreconditioner :: GetMatrix() const
-  {
-    return *inverse;
-  }
-
-
-
-
-
-
-
-
-
-  DNDDPreconditioner :: DNDDPreconditioner (PDE * apde, Flags & aflags, const string aname)
-    : Preconditioner(apde,aflags,aname)  {
-    pde = apde;
-    bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-    inverse = NULL;
-  }
-
-  DNDDPreconditioner :: ~DNDDPreconditioner()
-  {
-    delete inverse;
-  }
-
-  void DNDDPreconditioner :: Update ()
-  {
-    cout << "Dirichlet-Neumann DD Preconditioner" << endl;
-
-    int i, j;
-
-    const MeshAccess & ma = pde->GetMeshAccess();
-
-    int np = bfa->GetFESpace().GetNDof();
-    int ne = ma.GetNE();
-    Array<int> domain(np), dnums;
-    const FESpace & space = bfa->GetFESpace();
-
-    for (i = 0; i < np; i++)
-      domain[i] = 1;
-
-    for (i = 0; i < ne; i++)
-      {
-	space.GetDofNrs (i, dnums);
-	int elind = ma.GetElIndex(i);
-	if (elind == 2 || elind == 4)
-	  for (j = 0; j < dnums.Size(); j++)
-	    domain[dnums[j]] = 2;
-      }
-
-    delete inverse;
-    //  inverse = bfa->GetMatrix().InverseMatrix();
-    // inverse = new SparseSystemLDL<SysMatrixC1d,SysVectorC1d> (dynamic_cast<const SparseSystemMatrix<SysMatrixC1d,SysVectorC1d>&> (bfa->GetMatrix()), NULL, &domain);
-  }
-
-  const ngla::BaseMatrix & DNDDPreconditioner :: GetMatrix() const
-  {
-    return *inverse;
-  }
+    virtual const char * ClassName() const
+    {
+      return "Direct Preconditioner"; 
+    }
+  };
 
 
 
@@ -514,7 +486,12 @@ namespace ngcomp
 
 
 
-  LocalPreconditioner :: LocalPreconditioner (PDE * pde, Flags & aflags, const string aname)
+  // ****************************** LocalPreconditioner *******************************
+
+
+
+  LocalPreconditioner :: LocalPreconditioner (PDE * pde, Flags & aflags, 
+					      const string aname)
     : Preconditioner (pde,aflags,aname),
       coarse_pre(0)
   {
@@ -647,6 +624,13 @@ namespace ngcomp
 
 
 
+
+
+
+
+  // ****************************** TwoLevelPreconditioner *******************************
+
+
   TwoLevelPreconditioner :: TwoLevelPreconditioner (PDE * apde, Flags & aflags, const string aname)
     : Preconditioner(apde,aflags,aname)
   {
@@ -690,7 +674,7 @@ namespace ngcomp
 
 
 
-  ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, Flags & aflags, const string aname)
+ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, Flags & aflags, const string aname)
     : Preconditioner(apde,aflags,aname)
   {
     dim = int (flags.GetNumFlag ("dim", 1));
@@ -1074,7 +1058,7 @@ namespace ngcomp
 
   PreconditionerClasses::PreconditionerInfo::
   PreconditionerInfo (const string & aname,
-	       Preconditioner* (*acreator)(const PDE & pde, const Flags & flags))
+		      Preconditioner* (*acreator)(const PDE & pde, const Flags & flags, const string & name))
     : name(aname), creator(acreator) 
   {
     ;
@@ -1094,7 +1078,8 @@ namespace ngcomp
   void PreconditionerClasses :: 
   AddPreconditioner (const string & aname,
 		     Preconditioner* (*acreator)(const PDE & pde, 
-						 const Flags & flags))
+						 const Flags & flags,
+						 const string & name))
   {
     prea.Append (new PreconditionerInfo(aname, acreator));
   }
@@ -1126,8 +1111,8 @@ namespace ngcomp
     return fecl;
   }
 
-
-
+  RegisterPreconditioner<MGPreconditioner> registerMG("multigrid");
+  RegisterPreconditioner<DirectPreconditioner> registerDirect("direct");
 
 }
 

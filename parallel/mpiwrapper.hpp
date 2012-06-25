@@ -10,7 +10,6 @@
 
 namespace ngparallel
 {
-  using namespace ngcomp;
 
 
 #ifdef PARALLEL
@@ -139,6 +138,9 @@ namespace ngparallel
 
   inline void MyMPI_Barrier (MPI_Comm comm = ngs_comm)
   {
+    static Timer t("dummy - barrier");
+    RegionTimer r(t);
+
     MPI_Barrier (comm);
   }
 
@@ -262,7 +264,6 @@ namespace ngparallel
   {
     char buf[100];
     strcpy (buf, cmd);
-    // MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
 
     int ntasks;
     MPI_Comm_size(MPI_COMM_WORLD, &ntasks);

@@ -967,29 +967,16 @@ namespace ngsolve
     
     // if (type != "") // this should become standard
       {
+	space = CreateFESpace (type, ma, flags);
+	/*
 	for (int i = 0; i < GetFESpaceClasses().GetFESpaces().Size(); i++)
 	  if (type == GetFESpaceClasses().GetFESpaces()[i]->name ||
 	      flags.GetDefineFlag (GetFESpaceClasses().GetFESpaces()[i]->name) )
 	    {
 	      space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
-	      /*
-	      if (id == 0 && ntasks > 1)
-		{
-		  FESpace * hospace = space;
-		  // low order space if existent
-		  // space = & hospace -> LowOrderFESpace();
-		  space = NULL;
-		  // else space, but with  order 0
-		  if ( space == 0 )
-		    {
-		      flags.SetFlag("order",0.0);
-		      if ( hospace->IsComplex() ) flags.SetFlag("complex");
-		      space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
-		    }
-		}
-	      */
 	    }
-	
+	*/
+
 	if (type == "compound" || flags.GetDefineFlag ("compound"))
 	  {
 	    const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
@@ -1207,14 +1194,16 @@ namespace ngsolve
     
     if ( ntasks == 1 )
       {
-
+	/*
 	if (strcmp (type, "multigrid") == 0)
 	  pre = new MGPreconditioner (this, flags, name);
-	
-	else if (strcmp (type, "direct") == 0)
+	else 
+	if (strcmp (type, "direct") == 0)
 	  pre = new DirectPreconditioner (this, flags, name);
-	
-	else if (strcmp (type, "local") == 0)
+	else 
+	*/
+
+	if (strcmp (type, "local") == 0)
 	  pre = new LocalPreconditioner (this, flags, name);
 	
 	else if (strcmp (type, "twolevel") == 0)
@@ -1232,9 +1221,6 @@ namespace ngsolve
 	else if (strcmp (type, "amg") == 0)
 	  pre = new CommutingAMGPreconditioner (this, flags, name);
 	
-	else if (strcmp (type, "dndd") == 0)
-	  pre = new DNDDPreconditioner (this, flags, name);
-	
 	// changed 08/19/2003, Bachinger
 	else if (strcmp (type, "nonsymmetric") == 0)
 	  pre = new NonsymmetricPreconditioner (this, flags, name);
@@ -1243,27 +1229,30 @@ namespace ngsolve
 	  for (int i = 0; i < GetPreconditionerClasses().GetPreconditioners().Size(); i++)
 	    {
 	      if (flags.GetDefineFlag (GetPreconditionerClasses().GetPreconditioners()[i]->name))
-		pre = GetPreconditionerClasses().GetPreconditioners()[i]->creator (*this, flags);
+		pre = GetPreconditionerClasses().GetPreconditioners()[i]->creator (*this, flags, name);
 	      
 	      if (string(type) == GetPreconditionerClasses().GetPreconditioners()[i]->name)
-		pre = GetPreconditionerClasses().GetPreconditioners()[i]->creator (*this, flags);
+		pre = GetPreconditionerClasses().GetPreconditioners()[i]->creator (*this, flags, name);
 	    }
       }
     else  // parallel computations
       {
+	/*
 	if (strcmp (type, "multigrid") == 0)
 	  {
 	    pre = new MGPreconditioner (this, flags, name);
 	  }
-	else if (strcmp (type, "local") == 0)
+	else 
+	*/
+	if (strcmp (type, "local") == 0)
 	  {
 	    if ( id >= 0 )
 	      pre = new LocalPreconditioner (this, flags, name);
 	  }
-	
-	else if (strcmp (type, "direct") == 0)
+	/*
+	  else if (strcmp (type, "direct") == 0)
 	  pre = new DirectPreconditioner (this, flags, name);
-	
+	*/
 	else if (strcmp (type, "twolevel") == 0)
 	  pre = new TwoLevelPreconditioner (this, flags, name);
 
@@ -1279,9 +1268,6 @@ namespace ngsolve
 	else if (strcmp (type, "amg") == 0)
 	  pre = new CommutingAMGPreconditioner (this, flags, name);
 	
-	else if (strcmp (type, "dndd") == 0)
-	  pre = new DNDDPreconditioner (this, flags, name);
-	
 	// changed 08/19/2003, Bachinger
 	else if (strcmp (type, "nonsymmetric") == 0)
 	  pre = new NonsymmetricPreconditioner (this, flags, name);
@@ -1289,10 +1275,10 @@ namespace ngsolve
 	  for (int i = 0; i < GetPreconditionerClasses().GetPreconditioners().Size(); i++)
 	    {
 	      if (flags.GetDefineFlag (GetPreconditionerClasses().GetPreconditioners()[i]->name))
-		pre = GetPreconditionerClasses().GetPreconditioners()[i]->creator (*this, flags);
+		pre = GetPreconditionerClasses().GetPreconditioners()[i]->creator (*this, flags, name);
 
 	      if (string(type) == GetPreconditionerClasses().GetPreconditioners()[i]->name)
-		pre = GetPreconditionerClasses().GetPreconditioners()[i]->creator (*this, flags);
+		pre = GetPreconditionerClasses().GetPreconditioners()[i]->creator (*this, flags, name);
 	      
 	      
 	    }

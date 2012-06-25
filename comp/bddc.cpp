@@ -4,6 +4,7 @@
 
 namespace ngcomp
 {
+
  
   template <class SCAL, class TV>
   class BDDCMatrix : public BaseMatrix
@@ -90,7 +91,7 @@ namespace ngcomp
       ifdof.Clear();
       wbdof.Clear();
 
-      Vector<> weight(fes.GetNDof());
+      Array<double> weight(fes.GetNDof());      
       weight = 0;
 
       for (int i = 0; i < ne; i++)
@@ -124,48 +125,9 @@ namespace ngcomp
 	    }
         }
 
-
 #ifdef PARALLEL
-      // accumulate weight
-
-      if (typeid(SCAL) == typeid(double))
-	{
-	  ParallelVVector<double> pv_weight (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
-	  
-	  /*
-	  if (ntasks > 1 && id == 0)
-	    {
-	      pv_weight.Cumulate();  
-	    }
-	  else
-	  */
-	    {
-	      for (int i = 0; i < weight.Size(); i++)
-		pv_weight(i) = weight[i];
-	      pv_weight.Cumulate();  
-	      for (int i = 0; i < weight.Size(); i++)
-		weight[i] = pv_weight(i);
-	    }
-	}
-      else
-	{
-	  ParallelVVector<Complex> pv_weight (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
-	  
-	  /*
-	  if (ntasks > 1 && id == 0)
-	    {
-	      pv_weight.Cumulate();  
-	    }
-	  else
-	  */
-	    {
-	      for (int i = 0; i < weight.Size(); i++)
-		pv_weight(i) = weight[i];
-	      pv_weight.Cumulate();  
-	      for (int i = 0; i < weight.Size(); i++)
-		weight[i] = pv_weight(i).real();
-	    }
-	}
+      ReduceDofData (weight, MPI_SUM, fes.GetParallelDofs());
+      ScatterDofData (weight, fes.GetParallelDofs());
 #endif
 
       cout << IM(3) << ( bfa.IsSymmetric() ? "symmetric" : "non-symmetric") << endl;
@@ -195,9 +157,8 @@ namespace ngcomp
       timer1.Stop();
       timer2.Start();
 
-      // if (ntasks == 1 || id > 0)
-	for (int i = 0; i < ne; i++)
-	  {
+      for (int i = 0; i < ne; i++)
+	{
 	    if (!eldnums[i]) continue;
 
 	    FlatMatrix<SCAL> elmat = *elmats[i]; 
@@ -340,16 +301,6 @@ namespace ngcomp
 	  if (MyMPI_GetNTasks() > 1)
 	    {
 	      MyMPI_Barrier();
-	      /*
-		inv = new MasterInverse<SCAL> (dynamic_cast<SparseMatrixTM<SCAL>&> (*pwbmat), 
-		free_dofs, &bfa.GetFESpace().GetParallelDofs());
-	      */
-
-	      /*
-		inv = new ParallelMumpsInverse<SCAL> (dynamic_cast<SparseMatrixTM<SCAL>&> (*pwbmat), 
-		free_dofs, NULL, 
-		&bfa.GetFESpace().GetParallelDofs());
-	      */
 
 	      ParallelMatrix parwb(*pwbmat, bfa.GetFESpace().GetParallelDofs());
 	      parwb.SetInverseType (inversetype);
@@ -1405,8 +1356,45 @@ namespace ngcomp
 
 
 
+  template <class SCAL, class TV = SCAL>
+  class NGS_DLL_HEADER BDDCPreconditioner : public Preconditioner
+  {
+    const S_BilinearForm<SCAL> * bfa;
+    BaseMatrix * pre;
+    string inversetype;
+    bool refelement;
+    bool block;
+    bool ebe;
 
+    Array<Matrix<SCAL>*> elmats;
+    Array<Array<int>*> eldnums;
+  public:
+    BDDCPreconditioner (const PDE & pde, const Flags & aflags, const string & aname);
 
+    virtual ~BDDCPreconditioner();
+
+    virtual void AddElementMatrix (const Array<int> & dnums,
+				   const FlatMatrix<SCAL> & elmat,
+				   bool inner_element, int elnr,
+				   LocalHeap & lh);
+
+    virtual void Update ();
+
+    virtual const BaseMatrix & GetAMatrix() const
+    {
+      return bfa->GetMatrix();
+    }
+
+    virtual const BaseMatrix & GetMatrix() const
+    {
+      return *pre;
+    }
+
+    virtual void CleanUpLevel ();
+
+    virtual const char * ClassName() const
+    { return "BDDC Preconditioner"; }
+  };
 
 
 
@@ -1414,8 +1402,8 @@ namespace ngcomp
 
   template <class SCAL, class TV>
   BDDCPreconditioner<SCAL, TV> ::
-  BDDCPreconditioner (const PDE & pde, const Flags & aflags)
-    : Preconditioner (&pde, aflags)
+  BDDCPreconditioner (const PDE & pde, const Flags & aflags, const string & aname)
+    : Preconditioner (&pde, aflags, aname)
   {
     bfa = dynamic_cast<const S_BilinearForm<SCAL>*>(pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform", NULL)));
     const_cast<S_BilinearForm<SCAL>*> (bfa) -> SetPreconditioner (this);
