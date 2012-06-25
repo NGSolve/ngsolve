@@ -69,6 +69,6 @@ namespace ngcomp
 #include "vectorfacetfespace.hpp"
 
 #include "preconditioner.hpp"
-#include "bddc.hpp"
+// #include "bddc.hpp"
 
 #endif

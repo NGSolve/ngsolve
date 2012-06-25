@@ -238,8 +238,9 @@ namespace ngla
   }
   
   template <class SCAL>
-  S_ParallelBaseVectorPtr<SCAL> :: S_ParallelBaseVectorPtr (int as, int aes, 
-							    ParallelDofs * apd, PARALLEL_STATUS stat) throw()
+  S_ParallelBaseVectorPtr<SCAL> :: 
+  S_ParallelBaseVectorPtr (int as, int aes, 
+			   ParallelDofs * apd, PARALLEL_STATUS stat) throw()
     : S_BaseVectorPtr<SCAL> (as, aes)
   { 
     recvvalues = NULL;

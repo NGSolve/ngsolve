@@ -47,7 +47,7 @@ namespace ngcomp
     virtual const BaseVector & GetVector (int comp = 0) const  { return *(vec[comp]); }
 
 
-
+    /*
     operator BaseVector& () { return GetVector(); }
     template <typename T> 
     GridFunction & operator= (const VVecExpr<T> & v) { GetVector() = v; return *this; }
@@ -58,7 +58,7 @@ namespace ngcomp
     template <typename T> 
     GridFunction & operator-= (const VVecExpr<T> & v) { GetVector() -= v; return *this; }
     GridFunction & operator-= (const BaseVector & v) { GetVector() -= v; return *this; }
-
+    */
 
     ///
     void SetNested (int anested = 1) { nested = anested; }

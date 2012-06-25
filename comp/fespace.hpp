@@ -705,7 +705,9 @@ namespace ngcomp
   };
  
   extern NGS_DLL_HEADER FESpaceClasses & GetFESpaceClasses ();
-
+  extern NGS_DLL_HEADER FESpace * CreateFESpace (const string & type,
+						 const MeshAccess & ma,
+						 const Flags & flags);
 
   template <typename FES>
   class RegisterFESpace

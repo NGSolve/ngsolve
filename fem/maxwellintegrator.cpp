@@ -41,6 +41,33 @@ namespace ngfem
   
 
 
+  CurlCurlBoundaryEdgeIntegrator ::
+  CurlCurlBoundaryEdgeIntegrator (CoefficientFunction * coeff)
+    : T_BDBIntegrator<DiffOpCurlBoundaryEdge<>, DiagDMat<1>, HCurlFiniteElement<2> > 
+  (DiagDMat<1> (coeff))
+  { ; }
+  
+  CurlCurlBoundaryEdgeIntegrator :: 
+  CurlCurlBoundaryEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
+    : T_BDBIntegrator<DiffOpCurlBoundaryEdge<>, DiagDMat<1>, HCurlFiniteElement<2> > (coeffs)
+  { ; }
+
+
+
+  // template <> 
+  MassEdgeAnisotropicIntegrator<3, HCurlFiniteElement<3> > ::
+  MassEdgeAnisotropicIntegrator (CoefficientFunction * coeff00,
+				 CoefficientFunction * coeff10,
+				 CoefficientFunction * coeff11,
+				 CoefficientFunction * coeff20,
+				 CoefficientFunction * coeff21,
+				 CoefficientFunction * coeff22)
+    : T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElement<3> >
+  (SymDMat<3> (coeff00, coeff10, coeff11, coeff20, coeff21, coeff22))
+  { ; }
+  
+
+
 
   template <int D, typename FEL> SourceEdgeIntegrator<D,FEL> ::
   SourceEdgeIntegrator (CoefficientFunction * coeff)
@@ -89,10 +116,17 @@ namespace ngfem
 
     static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<2> > initrobin2 ("robinedge", 2, 1);
     static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<3> > initrobin3 ("robinedge", 3, 1);
+    static RegisterBilinearFormIntegrator<CurlCurlBoundaryEdgeIntegrator> initccb ("curlcurlboundaryedge", 3, 1);
 
 
     static RegisterLinearFormIntegrator<SourceEdgeIntegrator<2> > initse2 ("sourceedge", 2, 2);
     static RegisterLinearFormIntegrator<SourceEdgeIntegrator<3> > initse3 ("sourceedge", 3, 3);
+
+    static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<2> > initneue2 ("neumannedge", 2, 2);
+    static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<3> > initneue3 ("neumannedge", 3, 3);
+
+    static RegisterLinearFormIntegrator<CurlEdgeIntegrator<2> > initcurle2 ("curledge", 2, 1);
+    static RegisterLinearFormIntegrator<CurlEdgeIntegrator<3> > initcurle3 ("curledge", 3, 3);
 
 
     class Init
@@ -104,8 +138,10 @@ namespace ngfem
     
     Init::Init()
     {
+      /*
       GetIntegrators().AddBFIntegrator ("curlcurlboundaryedge", 3, 1,
 					CurlCurlBoundaryEdgeIntegrator::Create);
+      */
       GetIntegrators().AddBFIntegrator ("orthocurlcurledge", 3, 3,
 					CurlCurlEdgeOrthoIntegrator<3>::Create);
       GetIntegrators().AddBFIntegrator ("orthomassedge", 2, 2,
@@ -121,16 +157,20 @@ namespace ngfem
       GetIntegrators().AddBFIntegrator ("massedgeanisotropic", 3, 6,
 					MassEdgeAnisotropicIntegrator<3>::Create);
 
+      /*
       GetIntegrators().AddLFIntegrator ("neumannedge", 3, 3,
 					NeumannEdgeIntegrator<3>::Create);
       GetIntegrators().AddLFIntegrator ("neumannedge", 2, 2,
 					NeumannEdgeIntegrator<2>::Create);
+      */
       GetIntegrators().AddLFIntegrator ("curlboundaryedge", 3, 1,
 					CurlBoundaryEdgeIntegrator<>::Create);
+      /*
       GetIntegrators().AddLFIntegrator ("curledge", 2, 1,
 					CurlEdgeIntegrator<2>::Create); 
       GetIntegrators().AddLFIntegrator ("curledge", 3, 3,
 					CurlEdgeIntegrator<3>::Create);
+      */
       GetIntegrators().AddLFIntegrator ("tangentialsourceedge", 3, 1,
 					TangentialSourceEdgeIntegrator<3>::Create);
       GetIntegrators().AddLFIntegrator ("tangentialsourceedge", 2, 1,

@@ -27,7 +27,6 @@ namespace ngfem
 
 
 
-
   /// Identity operator, covariant transformation
   template <int D, typename FEL = HCurlFiniteElement<D> >
   class DiffOpIdEdge : public DiffOp<DiffOpIdEdge<D, FEL> >
@@ -324,7 +323,6 @@ namespace ngfem
 
 
 
-
   /// 
   template <int D, typename FEL = HCurlFiniteElement<D> >
   class CurlCurlEdgeIntegrator 
@@ -345,15 +343,15 @@ namespace ngfem
   {
   public:
     ///
-    CurlCurlBoundaryEdgeIntegrator (CoefficientFunction * coeff)
-      : T_BDBIntegrator<DiffOpCurlBoundaryEdge<>, DiagDMat<1>, HCurlFiniteElement<2> > 
-    (DiagDMat<1> (coeff))
-    { ; }
-  
+    CurlCurlBoundaryEdgeIntegrator (CoefficientFunction * coeff);
+    CurlCurlBoundaryEdgeIntegrator (Array<CoefficientFunction*> & coeffs);
+
+    /*
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       return new CurlCurlBoundaryEdgeIntegrator (coeffs[0]);
     }
+    */
 
     ///
     virtual bool BoundaryForm () const { return 1; }
@@ -399,6 +397,7 @@ namespace ngfem
     ///
     virtual string Name () const { return "MassEdge"; }
   };
+
 
 
   ///
@@ -452,10 +451,12 @@ namespace ngfem
 				   CoefficientFunction * coeff11,
 				   CoefficientFunction * coeff20,
 				   CoefficientFunction * coeff21,
-				   CoefficientFunction * coeff22)
+				   CoefficientFunction * coeff22);
+    /*
       : T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElement<3> >
     (SymDMat<3> (coeff00, coeff10, coeff11, coeff20, coeff21, coeff22))
     { ; }
+    */
 
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
@@ -492,7 +493,6 @@ namespace ngfem
     ///
     virtual string Name () const { return "RobinEdge"; }
   };
-
 
 
 
@@ -549,7 +549,6 @@ namespace ngfem
   };
   
 
-
   ///
   template <int D, typename FEL = HCurlFiniteElement<D-1> >
   class NeumannEdgeIntegrator
@@ -575,7 +574,7 @@ namespace ngfem
     { ; }
       
 
-
+    /*
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       if (D == 3)
@@ -583,7 +582,7 @@ namespace ngfem
       else
 	return new NeumannEdgeIntegrator<2> (coeffs[0], coeffs[1]);
     }
-  
+    */
     ///
     virtual bool BoundaryForm () const { return 1; }
     ///
@@ -610,12 +609,18 @@ namespace ngfem
     CurlEdgeIntegrator (CoefficientFunction * coeffx,
 			CoefficientFunction * coeffy,
 			CoefficientFunction * coeffz)
-      : T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_TRAIT<D>::DIM>, FEL> 
+      : T_BIntegrator<DiffOpCurlEdge<D,FEL>, DVec<DIM_CURL_TRAIT<D>::DIM>, FEL> 
     (DVec<DIM_CURL_TRAIT<D>::DIM> (coeffx, coeffy, coeffz))
+    { ; }
+
+    CurlEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
+      : T_BIntegrator<DiffOpCurlEdge<D,FEL>, DVec<DIM_CURL_TRAIT<D>::DIM>, FEL> 
+    (DVec<DIM_CURL_TRAIT<D>::DIM> (coeffs))
     { ; }
 
 
 
+    /*
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       if (D == 2)
@@ -623,7 +628,8 @@ namespace ngfem
       else
 	return new CurlEdgeIntegrator<3> (coeffs[0], coeffs[1], coeffs[2]);
     }
-  
+    */
+
     ///
     virtual bool BoundaryForm () const { return 0; }
     ///
@@ -655,9 +661,6 @@ namespace ngfem
     ///
     virtual string Name () const { return "CurlBoundaryEdge"; }
   };
-
-
-
 
 
 

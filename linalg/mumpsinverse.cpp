@@ -428,7 +428,7 @@ namespace ngla
   ParallelMumpsInverse (const SparseMatrixTM<TM> & a, 
 			const BitArray * ainner,
 			const Array<int> * acluster,
-			const ngparallel::ParallelDofs * pardofs,
+			const ParallelDofs * pardofs,
 			bool asymmetric)
   { 
     static Timer timer ("Mumps Inverse");
@@ -437,7 +437,7 @@ namespace ngla
     RegionTimer reg (timer);
 
     VT_OFF();
-
+    
     // symmetric = asymmetric;
     symmetric = true;
     inner = ainner;

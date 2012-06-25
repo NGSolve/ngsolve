@@ -2,22 +2,11 @@
 #define FILE_PARALLELNGS
 
 
-
-
-#ifdef VTRACE
-#include "vt_user.h"
-#else
-#define VT_USER_START(n)
-#define VT_USER_END(n)
-#define VT_TRACER(n)
-#endif
-
 #include <ngstd.hpp>
 #include <la.hpp>
 
 using namespace ngstd;
 using namespace ngla;
-// #include <comp.hpp>
 
 
 #ifdef PARALLEL
@@ -28,27 +17,9 @@ using namespace ngla;
 #undef SEEK_END
 */
 
+#define OMPI_SKIP_MPICXX
 #include <mpi.h>
 
-#endif
-
-
-
-#ifndef PARALLEL
-
-enum { id = 0 };
-enum { ntasks = 1 };
-
-#else
-
-namespace ngparallel
-{
-  // extern int id;
-  // extern int ntasks;
-}
-
-// using ngparallel::id;
-// using ngparallel::ntasks;
 #endif
 
 
@@ -60,10 +31,7 @@ namespace ngparallel
 #include "parallelvector.hpp"
 #include "parallel_matrices.hpp"
 
-extern void Parallel_Exit ();
-
-
-
+// extern void Parallel_Exit ();
 
 
 #endif

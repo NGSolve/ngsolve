@@ -7,7 +7,6 @@
 #ifdef PARALLEL
  
 #include <la.hpp>
-#include <comp.hpp>
 #include <parallelngs.hpp>
 
 
@@ -15,24 +14,13 @@ namespace ngla
 {
   using namespace ngparallel;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
   template <typename TM>
   MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, 
-				      const BitArray * subset, const ParallelDofs * apardofs)
+				      const BitArray * subset, 
+				      const ParallelDofs * hpardofs)
+
     : loc2glob(MyMPI_GetNTasks (pardofs -> GetCommunicator())),
-      pardofs(apardofs)
+      pardofs(hpardofs)
   {
     inv = NULL;
     
@@ -45,7 +33,7 @@ namespace ngla
     int ndof = pardofs->GetNDof();
     
     Array<int> global_nums(ndof);
-    global_nums = -9999;
+    global_nums = -1;
     int num_master_dofs = 0;
     for (int i = 0; i < ndof; i++)
       if (pardofs -> IsMasterDof (i) && (!subset || (subset && subset->Test(i))))
@@ -65,62 +53,27 @@ namespace ngla
       }
     
     for (int i = 0; i < ndof; i++)
-      global_nums[i] += first_master_dof[id];
+      if (global_nums[i] != -1)
+	global_nums[i] += first_master_dof[id];
     
     ScatterDofData (global_nums, *pardofs);
-    
-
 
 
 
     
     if (id != 0)
       {
-	const MeshAccess & ma = pardofs -> GetMeshAccess();
+	// const MeshAccess & ma = nodaldofs -> GetMeshAccess();
 
 	int ndof = pardofs->GetNDof();
 
-	Array<int> rows, cols, globid(3*ndof);
+	Array<int> rows, cols;
 	Array<TM> vals;
 
 	for (int row = 0; row < ndof; row++)
 	  if (!subset || subset->Test(row))
 	    select.Append (row);
-
 	
-	Array<int> compress(ndof);
-	compress = -1;
-	for (int i = 0; i < select.Size(); i++)
-	  compress[select[i]] = i;
-
-
-	globid = -1;
-
-	const Array<Node> & dofnodes = pardofs -> GetDofNodes();
-
-	Array<int> nnodes(4);
-	for (int j = 0; j < 4; j++) nnodes[j] = ma.GetNNodes(NODE_TYPE(j));
-	Table<int> tdofnr(nnodes);
-	for (int j = 0; j < 4; j++) tdofnr[j] = 0;
-	Array<int> dofnr(ndof);
-
-	for (int i = 0; i < ndof; i++)
-	  dofnr[i] = tdofnr[dofnodes[i].GetType()][dofnodes[i].GetNr()]++;
-
-	for (int i = 0; i < ndof; i++)
-	  if (!subset || subset->Test(i))
-	    {
-	      /*
-	      globid[3*i+0] = dofnodes[i].GetType();
-	      globid[3*i+1] = ma.GetGlobalNodeNum (dofnodes[i]);
-	      globid[3*i+2] = dofnr[i];
-	      */
-	      globid[3*i  ] = 0;	      
-	      globid[3*i+1] = 0;
-	      globid[3*i+2] = global_nums[i];
-	    }
-
-
 	for (int row = 0; row < mat.Height(); row++)
 	  if (!subset || subset->Test(row))
 	    {
@@ -130,11 +83,8 @@ namespace ngla
 	      for (int j = 0; j < rcols.Size(); j++)
 		if (!subset || subset->Test(rcols[j]))
 		  {
-		    rows.Append (row);
-		    cols.Append (rcols[j]);
-
-		    // rows.Append (global_nums[row]);
-		    // cols.Append (global_nums[rcols[j]]);
+		    rows.Append (global_nums[row]);
+		    cols.Append (global_nums[rcols[j]]);
 		    vals.Append (rvals[j]);
 		  }
 	    }
@@ -142,7 +92,7 @@ namespace ngla
 	MyMPI_Send (rows, 0);
 	MyMPI_Send (cols, 0);
 	MyMPI_Send (vals, 0);
-	MyMPI_Send (globid, 0);
+	MyMPI_Send (global_nums, 0);
 
 #ifdef USE_MUMPS
 	if (mat.GetInverseType() == MUMPS)
@@ -161,8 +111,8 @@ namespace ngla
 
 	Array<int> rows, cols;
 	Array<TM> vals;
-	HashTable<INT<3>, int> ht_globdofs(100000);
-	int num_globdofs = 0; //  num_glob_dofs;
+	HashTable<INT<1>, int> ht_globdofs(100000);
+	// int num_globdofs = 0; 
 
 	for (int src = 1; src < ntasks; src++)
 	  {
@@ -175,85 +125,39 @@ namespace ngla
 	    MyMPI_Recv (hvals, src);
 	    MyMPI_Recv (hglobid, src);
 
-	    /*
-	    *testout << "got from proc " << src << ":" << endl
-		     << "rows = " << endl << hrows << endl
-		     << "cols = " << endl << hcols << endl
-		     << "vals = " << endl << hvals << endl
-		     << "globid = " << endl << hglobid << endl;
-	    */
-
-	    for (int i = 0; i < hrows.Size(); i++)
-	      if (hglobid[3*hrows[i]] < 0)
-		cout << "globid missing (rows) !!!! " << endl;
-	    for (int i = 0; i < hrows.Size(); i++)
-	      if (hglobid[3*hcols[i]] < 0)
-		cout << "globid missing (cols) !!!! " << endl;
-		
-	    Array<int> full_loc2glob(hglobid.Size()/3);
-	    full_loc2glob = -1;
-	    for (int i = 0; i < hglobid.Size(); i += 3)
+	    for (int i = 0; i < hglobid.Size(); i ++)
 	      {
 		if (hglobid[i] == -1) continue;
-	      
-		INT<3> nentry;
-		nentry[0] = hglobid[i];
-		nentry[1] = hglobid[i+1];
-		nentry[2] = hglobid[i+2];
-
-		int found;
-
-		if (ht_globdofs.Used (nentry))
-		  found = ht_globdofs.Get(nentry);
-		else
-		  {
-		    found = num_globdofs;
-		    num_globdofs++;
-		    ht_globdofs.Set(nentry, found);
-		  }
-	      
-		loc2glob.Add (src, found);
-		full_loc2glob[i/3] = found;
+		loc2glob.Add (src, hglobid[i]);
 	      }
-	    // *testout << "full_loc2glob = " << endl << full_loc2glob << endl;
 
 	    for (int i = 0; i < hrows.Size(); i++)
 	      {
-		rows.Append (full_loc2glob[hrows[i]]);
-		cols.Append (full_loc2glob[hcols[i]]);
-		/*
 		rows.Append (hrows[i]);
 		cols.Append (hcols[i]);
-		*/
 		vals.Append (hvals[i]);
 	      }
 
 	    cout << "\rmaster: got data from " << src << flush;
 	  }
 	cout << endl;
-	/*
-	 *testout << "rows = " << endl << rows << endl;
-	 *testout << "cols = " << endl << cols << endl;
-	 *testout << "vals = " << endl << vals << endl;
-	 */
+
 	cout << "now build graph" << endl;
 
 	// build matrix
-	DynamicTable<int> graph(num_globdofs);
-	cout << "n = " << num_globdofs << endl;
+	DynamicTable<int> graph(num_glob_dofs);
+	cout << "n = " << num_glob_dofs << endl;
 	for (int i = 0; i < rows.Size(); i++)
 	  {
 	    int r = rows[i], c = cols[i];
 	    if (r < c) swap (r, c);
-	    if (r < 0 || c < 0)
-	      cout << "r,c = " << r << ", " << c << endl;
 	    graph.AddUnique (r, c);
 	  }
 
 	// *testout << "graphi = " << endl << graph << endl;
 
-	Array<int> els_per_row(num_globdofs);
-	for (int i = 0; i < num_globdofs; i++)
+	Array<int> els_per_row(num_glob_dofs);
+	for (int i = 0; i < num_glob_dofs; i++)
 	  els_per_row[i] = graph[i].Size();
 
 	cout << "now build matrix" << endl;
@@ -281,7 +185,7 @@ namespace ngla
 	inv = matrix.InverseMatrix ();
       }
 
-    MPI_Barrier (ngs_comm);
+    // MPI_Barrier (ngs_comm);
   }
 
   template <typename TM>
@@ -349,12 +253,7 @@ namespace ngla
 	      hx(selecti[i]) += lx[i];
 	  }
 
-	// *testout << "before *inv, hx = " << endl << hx << endl;
-
 	hy = (*inv) * hx;
-
-	// *testout << "before *inv, hy = " << endl << hy << endl;
-
 
 	Array<MPI_Request> requ;
 	for (int src = 1; src < ntasks; src++)
@@ -383,20 +282,15 @@ namespace ngla
   {
     x.Cumulate();
     y.Distribute();
-    // if (id > 0)
-      mat.MultAdd (s, x, y);
+    mat.MultAdd (s, x, y);
   }
-
-
 
   void ParallelMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     x.Cumulate();
     y.Distribute();
-    // if (id > 0)
-      mat.MultTransAdd (s, x, y);
+    mat.MultTransAdd (s, x, y);
   }
-
 
   BaseMatrix * ParallelMatrix :: CreateMatrix () const
   {
@@ -409,22 +303,19 @@ namespace ngla
     return NULL;
   }
 
-
   ostream & ParallelMatrix :: Print (ostream & ost) const
   {
-    // if (id > 0)
-      ost << mat;
+    ost << mat;
     return ost;
   }
 
   int ParallelMatrix :: VHeight() const
   {
-    // return (id == 0) ? 0 : mat.VHeight();
     return mat.VHeight();
   }
+
   int ParallelMatrix :: VWidth() const
   {
-    // return (id == 0) ? 0 : mat.VWidth();
     return mat.VWidth();
   }
 
@@ -457,25 +348,19 @@ namespace ngla
     return NULL;
   }
 
-  INVERSETYPE ParallelMatrix::SetInverseType ( INVERSETYPE ainversetype ) const
+  INVERSETYPE ParallelMatrix::SetInverseType (INVERSETYPE ainversetype) const
   {
-    // if (id != 0) 
     return mat.SetInverseType (ainversetype);
-    // return SPARSECHOLESKY;
   }
 
-  INVERSETYPE ParallelMatrix::SetInverseType ( string ainversetype ) const
+  INVERSETYPE ParallelMatrix::SetInverseType (string ainversetype) const
   {
-    // if (id != 0) 
     return mat.SetInverseType (ainversetype);
-    // return SPARSECHOLESKY;
   }
   
   INVERSETYPE ParallelMatrix::GetInverseType () const
   {
-    // if (id != 0) 
     return mat.GetInverseType ();
-    // return SPARSECHOLESKY;
   }
 
 

@@ -18,6 +18,6 @@ include_HEADERS = bilinearform.hpp comp.hpp facetfespace.hpp	   \
  fespace.hpp gridfunction.hpp h1hofespace.hpp hcurlhdivfes.hpp	   \
  hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp		   \
  l2hofespace.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   \
- postproc.hpp preconditioner.hpp vectorfacetfespace.hpp bddc.hpp   
+ postproc.hpp preconditioner.hpp vectorfacetfespace.hpp   
 
 libngcomp_la_LDFLAGS = -avoid-version				 

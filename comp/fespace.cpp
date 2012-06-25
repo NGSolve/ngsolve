@@ -272,8 +272,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	}
     
 #ifdef PARALLEL	
-    ReduceNodalData (NT_VERTEX, dirichlet_vertex, MPI_LOR, ma);
-    ReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR, ma);
+    AllReduceNodalData (NT_VERTEX, dirichlet_vertex, MPI_LOR, ma);
+    AllReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR, ma);
 #endif
     
     (*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
@@ -1980,6 +1980,21 @@ void CompoundFESpace::TransformMat<SliceMatrix<Complex> >
     static FESpaceClasses fecl;
     return fecl;
   }
+
+  extern NGS_DLL_HEADER FESpace * CreateFESpace (const string & type,
+						 const MeshAccess & ma,
+						 const Flags & flags)
+  {
+    FESpace * space = NULL;
+    for (int i = 0; i < GetFESpaceClasses().GetFESpaces().Size(); i++)
+      if (type == GetFESpaceClasses().GetFESpaces()[i]->name ||
+	  flags.GetDefineFlag (GetFESpaceClasses().GetFESpaces()[i]->name) )
+	{
+	  space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
+	}
+    return space;
+  }
+
 
 
   // standard fespaces:

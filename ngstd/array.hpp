@@ -198,8 +198,7 @@ namespace ngstd
       data = a2.data;
       return *this;
     }
-
-
+    
     /// Access array. range check by macro CHECK_RANGE
     T & operator[] (int i) const
     {

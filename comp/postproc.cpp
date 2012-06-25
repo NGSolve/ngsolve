@@ -144,8 +144,10 @@ namespace ngcomp
     progress.Done();
     
 #ifdef PARALLEL
-    // if ( working_proc )
-    {
+
+    AllReduceDofData (cnti, MPI_SUM, fesflux.GetParallelDofs());
+
+    /*
 	 BaseVector & hv  = *( ( flux.GetVector() ).CreateVector()); 
 	 FlatVector<SCAL> fhv (dimflux*cnti.Size(),  &hv.FV<SCAL>()(0));
 	 
@@ -155,10 +157,10 @@ namespace ngcomp
          hv.Cumulate();
 	 for (int j=0; j< cnti.Size(); j++)
 	   cnti[j]=int (abs((fhv(j*dimflux))));
-	 
-	 (flux.GetVector()).SetParallelStatus(DISTRIBUTED);
-	 (flux.GetVector()).Cumulate(); 	 
-    }    
+    */
+ 
+    flux.GetVector().SetParallelStatus(DISTRIBUTED);
+    flux.GetVector().Cumulate(); 	 
 #endif
 
 
@@ -584,21 +586,9 @@ namespace ngcomp
     // cout << "\rsetvalues element " << ne << "/" << ne << endl;
     
 #ifdef PARALLEL
-    // if ( working_proc )
-    {
-	 BaseVector & hv  = *( ( u.GetVector() ).CreateVector()); 
-	 FlatVector<SCAL> fhv (dim*cnti.Size(),  &hv.FV<SCAL>()(0));
-	 
-	 hv.SetParallelStatus(DISTRIBUTED);
-	 for (int j=0; j< cnti.Size(); j++)
-	   fhv.Range(j*dim,(j+1)*dim)=cnti[j];
-         hv.Cumulate();
-	 for (int j=0; j< cnti.Size(); j++)
-	   cnti[j]=int (abs((fhv(j*dim))));
-	 
-	 (u.GetVector()).SetParallelStatus(DISTRIBUTED);
-	 (u.GetVector()).Cumulate(); 	 
-    }    
+    AllReduceDofData (cnti, MPI_SUM, fes.GetParallelDofs());
+    u.GetVector().SetParallelStatus(DISTRIBUTED);
+    u.GetVector().Cumulate(); 	 
 #endif
 
     FlatVector<SCAL> fluxi(dim, clh);

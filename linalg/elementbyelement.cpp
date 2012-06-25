@@ -31,8 +31,12 @@ namespace ngla
     for (int i = 0; i < ne; i++)
       {
         elmats[i].AssignMemory (0, 0, NULL);
+	new (&rowdnums[i]) FlatArray<int> (0, NULL);
+	new (&coldnums[i]) FlatArray<int> (0, NULL);
+	/*
         rowdnums[i] = FlatArray<int> (0, NULL);
 	coldnums[i] = FlatArray<int> (0, NULL);
+	*/
       }
   }
   
@@ -52,8 +56,12 @@ namespace ngla
     for (int i = 0; i < ne; i++)
       {
         elmats[i].AssignMemory (0, 0, NULL);
+	new (&rowdnums[i]) FlatArray<int> (0, NULL);
+	new (&coldnums[i]) FlatArray<int> (0, NULL);
+	/*
         rowdnums[i] = FlatArray<int> (0, NULL);
 	coldnums[i] = FlatArray<int> (0, NULL);
+	*/
       }
   }
 

@@ -88,7 +88,8 @@ namespace ngla
     virtual void AddRecvValues( int sender )
     { cerr << "ERROR -- AddRecvValues called for BaseVector, is not parallel" << endl; }
 
-    virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs, const Array<int> * procs =0 )
+    virtual void SetParallelDofs (ParallelDofs * aparalleldofs, 
+				  const Array<int> * procs = 0)
     { 
       if ( aparalleldofs == 0 ) return;
       cerr << "ERROR -- SetParallelDofs called for BaseVector, is not parallel" << endl; 
@@ -123,7 +124,7 @@ namespace ngla
     S_ParallelBaseVectorPtr (int as, int aes, ParallelDofs * apd, PARALLEL_STATUS stat) throw();
 
     virtual ~S_ParallelBaseVectorPtr ();
-    virtual void SetParallelDofs ( ngparallel::ParallelDofs * aparalleldofs, const Array<int> * procs=0 );
+    virtual void SetParallelDofs (ParallelDofs * aparalleldofs, const Array<int> * procs=0 );
 
     virtual void Distribute() const;
     virtual ostream & Print (ostream & ost) const;
@@ -174,7 +175,8 @@ namespace ngla
     enum { ES = sizeof(T) / sizeof(TSCAL) };
 
   public:
-    explicit ParallelVFlatVector (int as, T * adata, ParallelDofs * aparalleldofs, 
+    explicit ParallelVFlatVector (int as, T * adata, 
+				  ParallelDofs * aparalleldofs, 
 				  PARALLEL_STATUS astatus)
     : S_BaseVectorPtr<TSCAL> (as, ES, adata),
       VFlatVector<T> (as, adata),

@@ -12,8 +12,18 @@
 #include <nginterface_v2.hpp>
 
 
+#include <../fem/elementtopology.hpp>
+namespace ngfem
+{
+  class ElementTransformation;
+  class IntegrationPoint;
+}
+
+
+
 namespace ngcomp
 {
+  using namespace ngfem;
 
 
   using netgen::Ng_Element;
@@ -428,7 +438,7 @@ namespace ngcomp
     // void GetElementTransformation (int elnr, ElementTransformation & eltrans) const;
 
     ///
-    ElementTransformation & GetTrafo (int elnr, bool boundary, LocalHeap & lh) const;
+    ngfem::ElementTransformation & GetTrafo (int elnr, bool boundary, LocalHeap & lh) const;
 
     ///
     // void GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans) const;
@@ -459,19 +469,19 @@ namespace ngcomp
     void SetPointSearchStartElement(const int el) const;
 
     int FindElementOfPoint (FlatVector<double> point,
-			    IntegrationPoint & ip, 
+			    ngfem::IntegrationPoint & ip, 
 			    bool build_searchtree,
 			    const Array<int> * const indices = NULL) const;
     int FindElementOfPoint (FlatVector<double> point,
-			    IntegrationPoint & ip, 
+			    ngfem::IntegrationPoint & ip, 
 			    bool build_searchtree,
 			    const int index) const;
     int FindSurfaceElementOfPoint (FlatVector<double> point,
-				   IntegrationPoint & ip, 
+				   ngfem::IntegrationPoint & ip, 
 				   bool build_searchtree,
 				   const Array<int> * const indices = NULL) const;
     int FindSurfaceElementOfPoint (FlatVector<double> point,
-				   IntegrationPoint & ip, 
+				   ngfem::IntegrationPoint & ip, 
 				   bool build_searchtree,
 				   const int index) const;
 
@@ -552,8 +562,8 @@ namespace ngcomp
 
 #ifdef PARALLEL
   template <typename T>
-  void ReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op, const MeshAccess & ma,
-			MPI_Comm comm = ngs_comm)
+  void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op, const MeshAccess & ma,
+			   MPI_Comm comm = ngs_comm)
   {
     int ntasks = MyMPI_GetNTasks (comm);
     if (ntasks <= 1) return;
@@ -600,75 +610,9 @@ namespace ngcomp
 	  }
       }
   }
-
-
-
-
-
-
-
-
-  template <typename T>
-  void ScatterDofData (FlatArray<T> data, const ParallelDofs & pardofs)
-  {
-    MPI_Comm comm = pardofs.GetCommunicator();
-    const MeshAccess & ma = pardofs.GetMeshAccess();
-
-    int ntasks = MyMPI_GetNTasks (comm);
-    if (ntasks <= 1) return;
-
-    DynamicTable<T> dist_data(ntasks);
-    Array<int> distprocs;
-
-    for (int i = 0; i < pardofs.GetNDof(); i++)
-      {
-	if (pardofs.IsMasterDof(i))
-	  {
-	    Node node = pardofs.GetDofNodes()[i];
-	    ma.GetDistantProcs (node, distprocs);
-	    for (int j = 0; j < distprocs.Size(); j++)
-	      dist_data.Add (distprocs[j], data[i]);
-	  }
-      }
-    
-    Array<int> nsend(ntasks), nrecv(ntasks);
-    for (int i = 0; i < ntasks; i++)
-      nsend[i] = dist_data[i].Size();
-
-    MyMPI_AllToAll (nsend, nrecv, comm);
-
-    Table<T> recv_data(nrecv);
-
-    Array<MPI_Request> requests;
-    for (int i = 0; i < ntasks; i++)
-      {
-	if (nsend[i])
-	  requests.Append (MyMPI_ISend (dist_data[i], i, MPI_TAG_SOLVE, comm));
-	if (nrecv[i])
-	  requests.Append (MyMPI_IRecv (recv_data[i], i, MPI_TAG_SOLVE, comm));
-      }
-
-    MyMPI_WaitAll (requests);
-
-    Array<int> cnt(ntasks);
-    cnt = 0;
-    
-    for (int i = 0; i < pardofs.GetNDof(); i++)
-      {
-	if (!pardofs.IsMasterDof(i))
-	  {
-	    Node node = pardofs.GetDofNodes()[i];
-	    ma.GetDistantProcs (node, distprocs);
-	    int master = ntasks;
-	    for (int j = 0; j < distprocs.Size(); j++)
-	      master = min (master, distprocs[j]);
-	    data[i] = recv_data[master][cnt[master]++];
-	  }
-      }
-  }    
-
-
 #endif
+
+
 
 }
 
