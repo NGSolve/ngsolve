@@ -693,11 +693,15 @@ namespace ngcomp
 
     if (!boundary)
       {
-	if (GetDimension() == 2)
-	  eltrans = new (lh) Ng_ElementTransformation<2,2> ();
-	else
-	  eltrans = new (lh) Ng_ElementTransformation<3,3> ();
-	
+	switch (dim)
+	  {
+	  case 1: eltrans = new (lh) Ng_ElementTransformation<1,1> (); break;
+	  case 2: eltrans = new (lh) Ng_ElementTransformation<2,2> (); break;
+	  case 3: eltrans = new (lh) Ng_ElementTransformation<3,3> (); break;
+	  default:
+	    ;
+	  }
+
 	int elind = Ng_GetElementIndex (elnr+1)-1;
 	eltrans->SetElement (0, elnr, elind);
 	eltrans->SetElementType (GetElType(elnr));

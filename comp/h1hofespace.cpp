@@ -407,7 +407,8 @@ namespace ngcomp
 	      ndof += (p[0]-1)*(p[1]-1)*(p[2]-1);
 	    break;
           case ET_SEGM:
-            cerr << "should not be" << endl;
+            if (p[0] > 1)
+	      ndof += p[0]-1;
             break;
 	  }
       } 
@@ -541,6 +542,7 @@ namespace ngcomp
 
     try
       {
+	H1HighOrderFiniteElement<1> * hofe1d = 0;
 	H1HighOrderFiniteElement<2> * hofe2d = 0;
 	H1HighOrderFiniteElement<3> * hofe3d = 0;
 
@@ -552,6 +554,7 @@ namespace ngcomp
           case ET_HEX:     hofe3d = new (lh) H1HighOrderFE<ET_HEX> ();  break;
           case ET_TRIG:    hofe2d = new (lh) H1HighOrderFE<ET_TRIG> (); break;
           case ET_QUAD:    hofe2d = new (lh) H1HighOrderFE<ET_QUAD> (); break;
+          case ET_SEGM:    hofe1d = new (lh) H1HighOrderFE<ET_SEGM> (); break;
 
           default:
             {
@@ -560,8 +563,15 @@ namespace ngcomp
             }
           }
 
+        if (ma.GetDimension() == 1)
+	  {
+	    hofe1d -> SetVertexNumbers (ngel.vertices);
+	    hofe1d -> SetOrderEdge (0, order_inner[elnr][0]);
+            hofe1d -> ComputeNDof();
+            return *hofe1d;
+	  }
 
-        if (ma.GetDimension() == 2)
+        else if (ma.GetDimension() == 2)
           {
 	    hofe2d -> SetVertexNumbers (ngel.vertices);
 	    hofe2d -> SetOrderEdge ( order_edge[ArrayObject(ngel.edges)] );

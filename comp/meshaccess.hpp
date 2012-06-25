@@ -11,8 +11,6 @@
 #include <nginterface.h>
 #include <nginterface_v2.hpp>
 
-
-#include <../fem/elementtopology.hpp>
 namespace ngfem
 {
   class ElementTransformation;
@@ -43,6 +41,9 @@ namespace ngcomp
   {
     switch (type)
       {
+      case NG_PNT: 
+	return ET_POINT;
+
       case NG_SEGM: case NG_SEGM3:
 	return ET_SEGM;
 
@@ -272,9 +273,13 @@ namespace ngcomp
 
     Ng_Element GetElement (int elnr) const
     {
-      return (dim == 2) 
-	? Ng_GetElement<2> (elnr)
-	: Ng_GetElement<3> (elnr);
+      switch (dim)
+	{
+	case 1:	return Ng_GetElement<1> (elnr);
+	case 2: return Ng_GetElement<2> (elnr);
+	default:
+	case 3: return Ng_GetElement<3> (elnr);
+	}
     }
 
     template <int DIM>
@@ -286,9 +291,13 @@ namespace ngcomp
 
     Ng_Element GetSElement (int elnr) const
     {
-      return (dim == 2) 
-	? Ng_GetElement<1> (elnr)
-	: Ng_GetElement<2> (elnr);
+      switch (dim)
+	{
+	case 1:	return Ng_GetElement<0> (elnr);
+	case 2: return Ng_GetElement<1> (elnr);
+	default:
+	case 3: return Ng_GetElement<2> (elnr);
+	}
     }
 
     template <int DIM>
