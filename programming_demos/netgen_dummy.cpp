@@ -38,6 +38,7 @@ int trigs[][3] =
 
 int dim = 1;
 int nv = 5;
+int npoint = 2;  // geom points
 int nseg = 4;
 int ntrig = 0;
 
@@ -52,7 +53,8 @@ int segms[][2] =
     { 5, 4 } 
   };
 
-
+int pnts[][1] =
+  { { 1 }, { 5 } };
 
 
 
@@ -162,7 +164,7 @@ extern "C"
   // Get sub-domain of element ei
   DLL_HEADER int Ng_GetElementIndex (int ei)
   {
-    return 0;
+    return 1;
   }
 
   DLL_HEADER void Ng_SetElementIndex(const int ei, const int index)
@@ -208,7 +210,7 @@ extern "C"
   // Get Surface Element Index
   DLL_HEADER int Ng_GetSurfaceElementIndex (int ei)
   {
-    return 0;
+    return 1;
   }
 
   // Get Surface Element Surface Number
@@ -538,7 +540,7 @@ extern "C" {
   {
     switch (dim)
       {
-      case 0: return 0;
+      case 0: return npoint;
       case 1: return nseg;
       case 2: return ntrig;
       case 3: return 0;
@@ -579,6 +581,19 @@ namespace netgen
   Ng_Point Ng_GetPoint (int nr)
   {
     ;
+  }
+
+  template<> Ng_Element Ng_GetElement<0> (int nr) 
+  { 
+    Ng_Element ret;
+    ret.type = NG_PNT;
+    ret.points.num = 1;
+    ret.points.ptr  = &pnts[nr][0];
+    ret.vertices.num = 1;
+    ret.vertices.ptr  = &pnts[nr][0];
+    ret.edges.num = 0;
+    ret.faces.num = 0;
+    return ret;
   }
 
 
