@@ -37,6 +37,7 @@
 
 // implemented element types:
 enum NG_ELEMENT_TYPE { 
+  NG_PNT = 0,
   NG_SEGM = 1, NG_SEGM3 = 2,
   NG_TRIG = 10, NG_QUAD=11, NG_TRIG6 = 12, NG_QUAD6 = 13,
   NG_TET = 20, NG_TET10 = 21, 
