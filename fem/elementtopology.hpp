@@ -17,9 +17,9 @@ namespace ngfem
 
   /**
      Geometry of element.
-     Possible are ET_SEGM, ET_TRIG, ET_QUAD, ET_TET, ET_PYRAMID, ET_PRISM, ET_HEX
+     Possible are ET_POINT, ET_SEGM, ET_TRIG, ET_QUAD, ET_TET, ET_PYRAMID, ET_PRISM, ET_HEX
   */
-  enum ELEMENT_TYPE { ET_SEGM = 1,
+  enum ELEMENT_TYPE { ET_POINT = 0, ET_SEGM = 1,
 		      ET_TRIG = 10, ET_QUAD = 11, 
 		      ET_TET = 20, ET_PYRAMID = 21, ET_PRISM = 22, ET_HEX = 24 };
 

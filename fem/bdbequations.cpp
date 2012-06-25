@@ -148,16 +148,24 @@ namespace ngfem
 
   // standard integratos:
 
+  static RegisterBilinearFormIntegrator<LaplaceIntegrator<1> > initlap1 ("laplace", 1, 1);
   static RegisterBilinearFormIntegrator<LaplaceIntegrator<2> > initlap2 ("laplace", 2, 1);
   static RegisterBilinearFormIntegrator<LaplaceIntegrator<3> > initlap3 ("laplace", 3, 1);
+
+  static RegisterBilinearFormIntegrator<MassIntegrator<1> > initmass1 ("mass", 1, 1);
   static RegisterBilinearFormIntegrator<MassIntegrator<2> > initmass2 ("mass", 2, 1);
   static RegisterBilinearFormIntegrator<MassIntegrator<3> > initmass3 ("mass", 3, 1);
+
+  static RegisterBilinearFormIntegrator<RobinIntegrator<1> > initrobin1 ("robin", 1, 1);
   static RegisterBilinearFormIntegrator<RobinIntegrator<2> > initrobin2 ("robin", 2, 1);
   static RegisterBilinearFormIntegrator<RobinIntegrator<3> > initrobin3 ("robin", 3, 1);
   
-  
+ 
+  static RegisterLinearFormIntegrator<SourceIntegrator<1> > initsource1 ("source", 1, 1);
   static RegisterLinearFormIntegrator<SourceIntegrator<2> > initsource2 ("source", 2, 1);
   static RegisterLinearFormIntegrator<SourceIntegrator<3> > initsource3 ("source", 3, 1);
+
+  static RegisterLinearFormIntegrator<NeumannIntegrator<1> > initneumann1 ("neumann", 1, 1);
   static RegisterLinearFormIntegrator<NeumannIntegrator<2> > initneumann2 ("neumann", 2, 1);
   static RegisterLinearFormIntegrator<NeumannIntegrator<3> > initneumann3 ("neumann", 3, 1);
   
