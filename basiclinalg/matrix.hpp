@@ -410,6 +410,7 @@ namespace ngbla
   };
 
 
+  /*
   template <class TB> ALWAYS_INLINE
   Mat<3,3,double> operator+= (class Mat<3,3,double> & m, const Expr<TB> & exp)
   {
@@ -434,7 +435,7 @@ namespace ngbla
     m(1,1) += exp.Spec()(1,1);
     return m;
   }
-
+  */
 
 
 
