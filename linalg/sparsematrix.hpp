@@ -151,7 +151,7 @@ namespace ngla
   {
   protected:
     /// sparse direct solver
-    mutable INVERSETYPE inversetype;
+    mutable INVERSETYPE inversetype; //  = default_inversetype;    // C++11
 
   public:
     
@@ -160,7 +160,7 @@ namespace ngla
     { ; }
     
     BaseSparseMatrix (const Array<int> & elsperrow)
-      : MatrixGraph (elsperrow), inversetype(default_inversetype)
+      : MatrixGraph (elsperrow) , inversetype(default_inversetype)
     { ; }
 
     BaseSparseMatrix (int size, const Table<int> & rowelements, 

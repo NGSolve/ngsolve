@@ -50,3 +50,6 @@
 #define ALWAYS_INLINE
 #endif
 
+#ifdef PARALLEL
+#include <unistd.h>  // for usleep (only for parallel)
+#endif
