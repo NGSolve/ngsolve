@@ -95,6 +95,189 @@ DLL_HEADER int Ng_GetNNodes (int nt)
 
 
 
+
+
+// dummies, V2
+namespace netgen
+{
+  ostream * testout = &cout;
+  int printmessage_importance = 1;
+
+  Ng_Point Ng_GetPoint (int nr)
+  {
+    ;
+  }
+
+  template<> Ng_Element Ng_GetElement<0> (int nr) 
+  { 
+    Ng_Element ret;
+    ret.type = NG_PNT;
+    ret.points.num = 1;
+    ret.points.ptr  = &pnts[nr][0];
+    ret.vertices.num = 1;
+    ret.vertices.ptr  = &pnts[nr][0];
+    ret.edges.num = 0;
+    ret.faces.num = 0;
+    return ret;
+  }
+
+
+  template<> Ng_Element Ng_GetElement<1> (int nr) 
+  { 
+    Ng_Element ret;
+    ret.type = NG_SEGM; 
+    ret.points.num = 2;
+    ret.points.ptr  = &segms[nr][0];
+    ret.vertices.num = 2;
+    ret.vertices.ptr  = &segms[nr][0];
+
+    ret.edges.num = 0;
+    ret.edges.ptr = NULL;
+    ret.faces.num = 0;
+    ret.faces.ptr = NULL;
+    return ret;
+  }
+
+  template<> Ng_Element Ng_GetElement<2> (int nr) 
+  { 
+    Ng_Element ret;
+    ret.type = NG_TRIG; 
+    ret.points.num = 3;
+    ret.points.ptr  = &trigs[nr][0];
+
+    ret.vertices.num = 3;
+    ret.vertices.ptr = &trigs[nr][0];
+
+    ret.edges.num = 0;
+    ret.edges.ptr = NULL;
+
+    ret.faces.num = 0;
+    ret.faces.ptr = NULL;
+    return ret;
+  }
+
+  template<> Ng_Element Ng_GetElement<3> (int nr) 
+  { 
+    cout << "calls ng_getelement<3>" << endl;
+  }
+
+  template<> Ng_Node<1> Ng_GetNode<1> (int nr)
+  {
+    ;
+  }
+
+  template<> Ng_Node<2> Ng_GetNode<2> (int nr)
+  {
+    ;
+  }
+
+
+  template <>
+  void Ng_MultiElementTransformation<1,1> (int elnr, int npts,
+					   const double * xi, size_t sxi,
+					   double * x, size_t sx,
+					   double * dxdxi, size_t sdxdxi)
+  {
+    double pts[2] = { points[segms[elnr][0]-1][0], 
+		      points[segms[elnr][1]-1][0] };
+
+    for (int i = 0; i < npts; i++)
+      {
+	double xi_ = xi[i*sxi];
+	if (x)
+	  {
+	    x[i*sx] = pts[1] + xi_ * (pts[0]-pts[1]);
+	  }
+	if (dxdxi)
+	  {
+	    dxdxi[i*sdxdxi  ] = pts[0]-pts[1];
+	  }
+      }
+  }
+
+
+
+  template <>
+  void Ng_MultiElementTransformation<1,2> (int elnr, int npts,
+					   const double * xi, size_t sxi,
+					   double * x, size_t sx,
+					   double * dxdxi, size_t sdxdxi)
+  {
+    cout << "multi - trafo<1,2>" << endl;
+  }
+
+  template <>
+  void Ng_MultiElementTransformation<2,2> (int elnr, int npts,
+					   const double * xi, size_t sxi,
+					   double * x, size_t sx,
+					   double * dxdxi, size_t sdxdxi)
+  {
+    Vec<2> pts[3];
+    for (int i = 0; i < 3; i++)
+      pts[i] = Vec<2> (points[trigs[elnr][i]-1][0], 
+		       points[trigs[elnr][i]-1][1]);
+
+    for (int i = 0; i < npts; i++)
+      {
+	Vec<2> xi_ (xi[i*sxi], xi[i*sxi+1]);
+	Vec<2> x_map = pts[2] + xi_(0) * (pts[0]-pts[2]) + xi_(1) * (pts[1]-pts[2]);
+	Mat<2,2> grad; 
+	grad.Col(0) = pts[0]-pts[2];
+	grad.Col(1) = pts[1]-pts[2];
+	if (x)
+	  {
+	    x[i*sx  ] = x_map(0);
+	    x[i*sx+1] = x_map(1);
+	  }
+	if (dxdxi)
+	  {
+	    dxdxi[i*sdxdxi  ] = grad(0,0);
+	    dxdxi[i*sdxdxi+1] = grad(0,1);
+	    dxdxi[i*sdxdxi+2] = grad(1,0);
+	    dxdxi[i*sdxdxi+3] = grad(1,1);
+	  }
+      }
+  }
+  
+  template <>
+  void Ng_MultiElementTransformation<2,3> (int elnr, int npts,
+					   const double * xi, size_t sxi,
+					   double * x, size_t sx,
+					   double * dxdxi, size_t sdxdxi)
+  {
+    cout << "multi - trafo<2,3>" << endl;
+  }
+  
+  template <>
+  void Ng_MultiElementTransformation<3,3> (int elnr, int npts,
+					   const double * xi, size_t sxi,
+					   double * x, size_t sx,
+					   double * dxdxi, size_t sdxdxi)
+  {
+    cout << "multi - trafo<3,3>" << endl;
+  }
+  
+
+
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // just dummies, old style
 
 extern "C"
@@ -286,7 +469,12 @@ extern "C"
   DLL_HEADER void Ng_GetElementTransformation (int ei, const double * xi, 
                                                double * x, double * dxdxi)
   {
-    cout << "geteltrafo" << endl;
+    switch (dim)
+      {
+      case 1: netgen::Ng_MultiElementTransformation<1,1> (ei-1, 1, xi, 0, x, 0, dxdxi, 0); break;
+      default:
+	cout << "geteltrafo, dim = " << dim << endl;
+      }
   }
 
   
@@ -554,7 +742,8 @@ extern "C" {
     nodes consists of pairs of integers (nodetype, nodenr) 
     return value is number of nodes
   */
-  DLL_HEADER int Ng_GetElementClosureNodes (int dim, int elementnr, int nodeset, int * nodes) { ; }
+  DLL_HEADER int Ng_GetElementClosureNodes (int dim, int elementnr, int nodeset, int * nodes)
+  { ; }
 
 
   struct Ng_Tcl_Interp;
@@ -571,171 +760,6 @@ extern "C" {
 
 
 
-
-// dummies, V2
-namespace netgen
-{
-  ostream * testout = &cout;
-  int printmessage_importance = 1;
-
-  Ng_Point Ng_GetPoint (int nr)
-  {
-    ;
-  }
-
-  template<> Ng_Element Ng_GetElement<0> (int nr) 
-  { 
-    Ng_Element ret;
-    ret.type = NG_PNT;
-    ret.points.num = 1;
-    ret.points.ptr  = &pnts[nr][0];
-    ret.vertices.num = 1;
-    ret.vertices.ptr  = &pnts[nr][0];
-    ret.edges.num = 0;
-    ret.faces.num = 0;
-    return ret;
-  }
-
-
-  template<> Ng_Element Ng_GetElement<1> (int nr) 
-  { 
-    Ng_Element ret;
-    ret.type = NG_SEGM; 
-    ret.points.num = 2;
-    ret.points.ptr  = &segms[nr][0];
-    ret.vertices.num = 2;
-    ret.vertices.ptr  = &segms[nr][0];
-
-    ret.edges.num = 0;
-    ret.edges.ptr = NULL;
-    ret.faces.num = 0;
-    ret.faces.ptr = NULL;
-    return ret;
-  }
-
-  template<> Ng_Element Ng_GetElement<2> (int nr) 
-  { 
-    Ng_Element ret;
-    ret.type = NG_TRIG; 
-    ret.points.num = 3;
-    ret.points.ptr  = &trigs[nr][0];
-
-    ret.vertices.num = 3;
-    ret.vertices.ptr = &trigs[nr][0];
-
-    ret.edges.num = 0;
-    ret.edges.ptr = NULL;
-
-    ret.faces.num = 0;
-    ret.faces.ptr = NULL;
-    return ret;
-  }
-
-  template<> Ng_Element Ng_GetElement<3> (int nr) 
-  { 
-    cout << "calls ng_getelement<3>" << endl;
-  }
-
-  template<> Ng_Node<1> Ng_GetNode<1> (int nr)
-  {
-    ;
-  }
-
-  template<> Ng_Node<2> Ng_GetNode<2> (int nr)
-  {
-    ;
-  }
-
-
-  template <>
-  void Ng_MultiElementTransformation<1,1> (int elnr, int npts,
-					   const double * xi, size_t sxi,
-					   double * x, size_t sx,
-					   double * dxdxi, size_t sdxdxi)
-  {
-    double pts[2] = { points[segms[elnr][0]-1][0], 
-		      points[segms[elnr][1]-1][0] };
-
-    for (int i = 0; i < npts; i++)
-      {
-	double xi_ = xi[i*sxi];
-	if (x)
-	  {
-	    x[i*sx] = pts[1] + xi_ * (pts[0]-pts[1]);
-	  }
-	if (dxdxi)
-	  {
-	    dxdxi[i*sdxdxi  ] = pts[0]-pts[1];
-	  }
-      }
-  }
-
-
-
-  template <>
-  void Ng_MultiElementTransformation<1,2> (int elnr, int npts,
-					   const double * xi, size_t sxi,
-					   double * x, size_t sx,
-					   double * dxdxi, size_t sdxdxi)
-  {
-    cout << "multi - trafo<1,2>" << endl;
-  }
-
-  template <>
-  void Ng_MultiElementTransformation<2,2> (int elnr, int npts,
-					   const double * xi, size_t sxi,
-					   double * x, size_t sx,
-					   double * dxdxi, size_t sdxdxi)
-  {
-    Vec<2> pts[3];
-    for (int i = 0; i < 3; i++)
-      pts[i] = Vec<2> (points[trigs[elnr][i]-1][0], 
-		       points[trigs[elnr][i]-1][1]);
-
-    for (int i = 0; i < npts; i++)
-      {
-	Vec<2> xi_ (xi[i*sxi], xi[i*sxi+1]);
-	Vec<2> x_map = pts[2] + xi_(0) * (pts[0]-pts[2]) + xi_(1) * (pts[1]-pts[2]);
-	Mat<2,2> grad; 
-	grad.Col(0) = pts[0]-pts[2];
-	grad.Col(1) = pts[1]-pts[2];
-	if (x)
-	  {
-	    x[i*sx  ] = x_map(0);
-	    x[i*sx+1] = x_map(1);
-	  }
-	if (dxdxi)
-	  {
-	    dxdxi[i*sdxdxi  ] = grad(0,0);
-	    dxdxi[i*sdxdxi+1] = grad(0,1);
-	    dxdxi[i*sdxdxi+2] = grad(1,0);
-	    dxdxi[i*sdxdxi+3] = grad(1,1);
-	  }
-      }
-  }
-  
-  template <>
-  void Ng_MultiElementTransformation<2,3> (int elnr, int npts,
-					   const double * xi, size_t sxi,
-					   double * x, size_t sx,
-					   double * dxdxi, size_t sdxdxi)
-  {
-    cout << "multi - trafo<2,3>" << endl;
-  }
-  
-  template <>
-  void Ng_MultiElementTransformation<3,3> (int elnr, int npts,
-					   const double * xi, size_t sxi,
-					   double * x, size_t sx,
-					   double * dxdxi, size_t sdxdxi)
-  {
-    cout << "multi - trafo<3,3>" << endl;
-  }
-  
-
-
-  
-}
 
 
 
