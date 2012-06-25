@@ -23,15 +23,16 @@ int main (int argc, char **argv)
   LocalHeap lh(10000000, "main heap");
   MeshAccess ma;
 
-  H1HighOrderFESpace fes(ma, Flags().SetFlag("order",2));
+  // H1HighOrderFESpace fes(ma, Flags().SetFlag("order",2).SetFlag("print") );
+  NodalFESpace fes(ma, Flags().SetFlag("order",1).SetFlag("print") );
   
   T_GridFunction<double> gfu (fes, "gfu", Flags());
 
   T_BilinearFormSymmetric<double> bfa(fes, "bfa", 
-				      Flags().SetFlag("symmetric").SetFlag("printelmat"));
+				      Flags().SetFlag("symmetric").SetFlag("print").SetFlag("printelmat"));
 
-  bfa.AddIntegrator (new LaplaceIntegrator<3> (new ConstantCoefficientFunction(1)));
-  bfa.AddIntegrator (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
+  bfa.AddIntegrator (new LaplaceIntegrator<1> (new ConstantCoefficientFunction(1)));
+  // bfa.AddIntegrator (new RobinIntegrator<1> (new ConstantCoefficientFunction(1)));
 
 
 
@@ -41,7 +42,7 @@ int main (int argc, char **argv)
   asource[0] = new EvalFunction ("sin(x)*y");
   asource[0]->Print(cout);
 
-  lff.AddIntegrator (new SourceIntegrator<3> (new DomainVariableCoefficientFunction<3>(asource)));
+  lff.AddIntegrator (new SourceIntegrator<1> (new DomainVariableCoefficientFunction<3>(asource)));
 
 
   fes.Update(lh);
