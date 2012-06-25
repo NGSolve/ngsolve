@@ -436,7 +436,6 @@ namespace ngla
     static Timer timer_factor ("Mumps Inverse - factor");
     RegionTimer reg (timer);
 
-    VT_OFF();
     
     // symmetric = asymmetric;
     symmetric = true;
@@ -471,7 +470,56 @@ namespace ngla
     // find global dofs
 
     num_globdofs = 0;   // valid on id=0
+
+
+
+
+
+
+   // consistent enumeration (new version)
     
+    int ndof = pardofs->GetNDof();
+    
+    Array<int> global_nums(ndof);
+    global_nums = -1;
+    int num_master_dofs = 0;
+    for (int i = 0; i < ndof; i++)
+      if (pardofs -> IsMasterDof (i) && (!inner || (inner && inner->Test(i))))
+	global_nums[i] = num_master_dofs++;
+    
+    Array<int> first_master_dof(ntasks);
+    MPI_Allgather (&num_master_dofs, 1, MPI_INT, 
+		   &first_master_dof[0], 1, MPI_INT, 
+		   pardofs -> GetCommunicator());
+    
+    int num_glob_dofs = 0;
+    for (int i = 0; i < ntasks; i++)
+      {
+	int cur = first_master_dof[i];
+	first_master_dof[i] = num_glob_dofs;
+	num_glob_dofs += cur;
+      }
+    
+    for (int i = 0; i < ndof; i++)
+      if (global_nums[i] != -1)
+	global_nums[i] += first_master_dof[id];
+    
+    ScatterDofData (global_nums, *pardofs);
+
+
+    // copy to old variables ...
+    num_globdofs = num_glob_dofs;
+    loc2glob = global_nums;
+    for (int row = 0; row < ndof; row++)
+      if (!inner || inner->Test(row))
+	select.Append (row);
+    
+
+
+    /*
+    num_globdofs = 0;
+    select.SetSize(0);
+    loc2glob.SetSize(0);
 
     if (id != 0)
       {
@@ -515,7 +563,6 @@ namespace ngla
     else
       {
 	HashTable<INT<3>, int> ht_globdofs(10000);
-
 	for (int src = 1; src < ntasks; src++)
 	  {
 	    Array<int> hglobid;
@@ -549,11 +596,12 @@ namespace ngla
 	    MyMPI_Send (full_loc2glob, src);
 	  }
       }
-
-    /*
-    *testout << "select = " << endl << select << endl;
-    *testout << "loc2glob = " << endl << loc2glob << endl;
     */
+
+
+
+
+
 
     entrysize = mat_traits<TM>::HEIGHT; 
     iscomplex = mat_traits<TM>::IS_COMPLEX;
@@ -731,6 +779,9 @@ namespace ngla
     for (int i = 0; i < 40; i++)
       mumps_id.icntl[i] = 0;
     */
+
+    VT_OFF();
+
     
     mumps_id.job = JOB_INIT; 
     mumps_id.par = (ntasks == 1) ? 1 : 0;
