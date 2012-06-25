@@ -20,13 +20,13 @@ int main (int argc, char **argv)
   // Ng_LoadGeometry ("cube.geo");
   // Ng_LoadMesh ("cube.vol");
   
-  LocalHeap lh(10000000, "main heap");
+  LocalHeap lh(100000, "main heap");
   MeshAccess ma;
 
   Array<double> dirichlet(1);
   dirichlet[0] = 1;
   H1HighOrderFESpace fes(ma, 
-			 Flags() .SetFlag("order",2)
+			 Flags() .SetFlag("order",3)
 			 .SetFlag("print")
 			 .SetFlag("dirichlet", dirichlet));
 
@@ -62,14 +62,29 @@ int main (int argc, char **argv)
   BaseVector & vecf = lff.GetVector();
   BaseVector & vecu = gfu.GetVector();
   
-  cout << "freedofs = " << *fes.GetFreeDofs() << endl;
-  BaseMatrix * jacobi = dynamic_cast<const BaseSparseMatrix&> (mata).CreateJacobiPrecond(fes.GetFreeDofs());
+  BaseMatrix * jacobi = dynamic_cast<const BaseSparseMatrix&> (mata).
+    CreateJacobiPrecond(fes.GetFreeDofs());
 
   CGSolver<double> inva (mata, *jacobi);
   inva.SetPrintRates();
-  inva.SetMaxSteps(1000);
+  inva.SetMaxSteps(100);
 
   vecu = inva * vecf;
+
+
+  ofstream out("solution.out");
+  GridFunctionCoefficientFunction cfu (gfu);
+  for (int i = 0; i < ma.GetNE(); i++)
+    {
+      HeapReset hr(lh);
+      const ElementTransformation & trafo = ma.GetTrafo(i, false, lh);
+      for (double xi = 0; xi <= 1; xi += 0.1)
+	{
+	  IntegrationPoint ip(xi);
+	  MappedIntegrationPoint<1,1> mip(ip, trafo);
+	  out << mip(0) << " " << cfu.Evaluate (mip) << endl;
+	}
+    }
 
 
 #ifdef PARALLEL
