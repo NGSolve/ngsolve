@@ -46,8 +46,8 @@ namespace ngparallel
 
     virtual ~ParallelDofs();
 
-    const MeshAccess & GetMeshAccess() const { return ma; }
-    const Array<Node> & GetDofNodes() const { return dofnodes; }
+    // const MeshAccess & GetMeshAccess() const { return ma; }
+    // const Array<Node> & GetDofNodes() const { return dofnodes; }
 
     int GetNTasks() const { return exchangedofs->Size(); }
 
@@ -137,7 +137,7 @@ namespace ngparallel
     MPI_Comm comm = pardofs.GetCommunicator();
 
     int ntasks = MyMPI_GetNTasks (comm);
-    int id = MyMPI_GetId (comm);
+    // int id = MyMPI_GetId (comm);
     if (ntasks <= 1) return;
 
     DynamicTable<T> dist_data(ntasks);
