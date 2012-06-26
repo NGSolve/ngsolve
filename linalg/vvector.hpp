@@ -120,21 +120,6 @@ namespace ngla
       : S_BaseVectorPtr<TSCAL> (as, ES, (void*)adata)
     { ; }
 
-    /*
-    void AssignMemory (int as, void * adata)
-    {
-      this->size = as; 
-      this->pdata = static_cast<T*> (adata); 
-    }
-    */
-
-    /*
-    FlatVector<T> FV () const throw()
-    {
-      return FlatVector<T> (this->size, this->pdata);
-    }
-    */
-
     VFlatVector & operator= (TSCAL s1)
     {
       BaseVector::operator= (s1);
