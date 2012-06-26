@@ -232,8 +232,7 @@ namespace ngsolve
 
       // *testout << "setvalues: gfu = " << endl << gfu->GetVector() << endl;
       
-      if (component != -1)
-	delete hgfu;
+	// if (component != -1) delete hgfu;
     }
 
     ///
