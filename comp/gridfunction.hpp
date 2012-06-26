@@ -189,10 +189,10 @@ namespace ngcomp
   template <class SCAL>
   class NGS_DLL_HEADER S_ComponentGridFunction : public S_GridFunction<SCAL>
   {
-    const S_GridFunction<SCAL> & gf;
+    const S_GridFunction<SCAL> & gf_parent;
     int comp;
   public:
-    S_ComponentGridFunction (const S_GridFunction<SCAL> & agf, int acomp);
+    S_ComponentGridFunction (const S_GridFunction<SCAL> & agf_parent, int acomp);
     virtual void Update ();
   };
   

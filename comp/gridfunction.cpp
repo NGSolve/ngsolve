@@ -69,6 +69,13 @@ namespace ngcomp
   {
     if (!visual) return;
 
+    for (int i = 0; i < comp.Size(); i++)
+      {
+	stringstream child_name;
+	child_name << given_name << "_" << i+1;
+	comp[i] -> Visualize (child_name.str());
+      }
+
     const BilinearFormIntegrator * bfi2d = 0, * bfi3d = 0;
 
     if (ma.GetDimension() == 2)
@@ -122,20 +129,20 @@ namespace ngcomp
 
   template <class SCAL>
   S_ComponentGridFunction<SCAL> :: 
-  S_ComponentGridFunction (const S_GridFunction<SCAL> & agf, int acomp)
-    : S_GridFunction<SCAL> (*dynamic_cast<const CompoundFESpace&> (agf.GetFESpace())[acomp], 
-			    agf.GetName(), Flags()),
-      gf(agf), comp(acomp)
+  S_ComponentGridFunction (const S_GridFunction<SCAL> & agf_parent, int acomp)
+    : S_GridFunction<SCAL> (*dynamic_cast<const CompoundFESpace&> (agf_parent.GetFESpace())[acomp], 
+			    agf_parent.GetName(), Flags()),
+      gf_parent(agf_parent), comp(acomp)
   { ; }
 
   template <class SCAL>
   void S_ComponentGridFunction<SCAL> :: Update()
   {
-    const CompoundFESpace & cfes = dynamic_cast<const CompoundFESpace&> (gf.GetFESpace());
+    const CompoundFESpace & cfes = dynamic_cast<const CompoundFESpace&> (gf_parent.GetFESpace());
 
-    this -> vec.SetSize (gf.GetMultiDim());
-    for (int i = 0; i < gf.GetMultiDim(); i++)
-      (this->vec)[i] = gf.GetVector(i).Range (cfes.GetRange(comp));
+    this -> vec.SetSize (gf_parent.GetMultiDim());
+    for (int i = 0; i < gf_parent.GetMultiDim(); i++)
+      (this->vec)[i] = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
   
     this -> level_updated = this -> ma.GetNLevels();
   }
@@ -150,8 +157,6 @@ namespace ngcomp
     vec.SetSize (this->multidim);
     vec = 0;
 
-    this->Visualize (this->name);
-    
     const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&this->GetFESpace());
     if (cfe)
       {
@@ -160,6 +165,8 @@ namespace ngcomp
 	for (int i = 0; i < nsp; i++)
 	  comp[i] = new S_ComponentGridFunction<TSCAL> (*this, i);
       }    
+
+    this->Visualize (this->name);
   }
 
   template <class TV>
