@@ -1937,7 +1937,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
         BaseMatrix & mat = GetMatrix();
         mat = 0.0;
       
-        cout << "Assemble linearization" << endl;
+        cout << IM(3) << "Assemble linearization" << endl;
       
 	Array<int> dnums;
 	ElementTransformation eltrans;
@@ -1953,7 +1953,6 @@ cout << "catch in AssembleBilinearform 2" << endl;
               hasinner = true;
           }
       
-	clock_t prevtime = clock();
 	
         if (hasinner)
           {
@@ -1963,6 +1962,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 	    const Table<int> * element_coloring = &fespace.ElementColoring();
 	    int ncolors = (element_coloring) ? element_coloring->Size() : 1;
 
+	    ProgressOutput progress (ma, "assemble element", ma.GetNE());
 
 	    for (int icol = 0; icol < ncolors; icol++)
 	      {
@@ -1985,21 +1985,8 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		      
 #pragma omp atomic
 		      cnt++;
-
-		      if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
-			{
-#pragma omp critical(printmatasstatus)
-			  {
-			    cout << "\rassemble element " << cnt << "/" << ne << flush;
-			    ma.SetThreadPercentage ( 100.0*cnt / ne );
-			    prevtime = clock();
-			  }
-			}
-		      
-		      /*
-                if (i % 10 == 0)
-                  cout << "\rassemble element " << i << "/" << ne << flush;
-		      */
+		      progress.Update (cnt);
+			  
 		      HeapReset hr(lh);
 	      
 		      if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
@@ -2212,7 +2199,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		    }
 		}
 	      }
-	    cout << "\rassemble element " << ne << "/" << ne << endl;
+	    progress.Done();
 	  }
       
         // (*testout) << "Assemble Mat, vol, mat = " << endl << GetMatrix() << endl;
@@ -2221,6 +2208,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
         if (hasbound)
           {
 	    RegionTimer reg(timerbound);
+	    ProgressOutput progress (ma, "assemble surface element", nse);
 
 	    int cnt = 0;
 #pragma omp parallel 
@@ -2235,23 +2223,13 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		{
 		  HeapReset hr(lh);
 
-#pragma omp critical(printmatasstatus)
-		  {
-		    cnt++;
-		    if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
-		      {
-			{
-			  cout << "\rassemble surface element " << cnt << "/" << nse << flush;
-			  // ma.SetThreadPercentage ( 100.0*cnt / (nse) );
-			  prevtime = clock();
-			}
-		      }
-		  }
-
-	      
-		    if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
-		    
-		    const FiniteElement & fel = fespace.GetSFE (i, lh);
+#pragma omp atomic
+		  cnt++;
+		  progress.Update (cnt);
+		  
+		  if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+		  
+		  const FiniteElement & fel = fespace.GetSFE (i, lh);
 	      
 		    // ma.GetSurfaceElementTransformation (i, eltrans, lh);
 		    ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
@@ -2307,7 +2285,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		    }
 		}
 	    }
-            cout << "\rassemble surface element " << nse << "/" << nse << endl;	  
+            progress.Done();
           }
       
       
@@ -2375,7 +2353,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
         for (int i = 0; i < useddof.Size(); i++)
           if (useddof.Test(i))
             cntused++;
-        cout << "used " << cntused
+        cout << IM(5) << "used " << cntused
              << ", unused = " << useddof.Size()-cntused
              << ", total = " << useddof.Size() << endl;
   
