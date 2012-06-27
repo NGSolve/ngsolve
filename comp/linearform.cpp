@@ -1,9 +1,6 @@
 #include <comp.hpp>
 #include <parallelngs.hpp>
 
-#include <parallelngs.hpp>
-
-
 
 namespace ngcomp
 {
