@@ -55,6 +55,8 @@ namespace netgen
   template <> DLL_HEADER Ng_Element Ng_GetElement<0> (int nr)
   {
     cout << "Netgen does not support 0-D elements" << endl;
+	Ng_Element ret;
+	return ret;
   }
 
   template <> DLL_HEADER Ng_Element Ng_GetElement<1> (int nr)
