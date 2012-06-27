@@ -32,7 +32,7 @@ namespace ngfem
   template <> class DIM_CURL_TRAIT<1>
   {
   public:
-    enum { DIM = 1 };  // should be 0; changed to make gcc34 feel ok
+    enum { DIM = 0 };  // should be 0; set to 1 to make gcc34 feel ok
   };
 
 
