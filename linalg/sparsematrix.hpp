@@ -124,12 +124,12 @@ namespace ngla
 
     int Size() const { return size; }
 
-    int NZE() const { return nze; }
+    size_t NZE() const { return nze; }
 
     FlatArray<int> GetRowIndices(int i) const
-    { return FlatArray<int> (firsti[i+1]-firsti[i], colnr+firsti[i]); }
+    { return FlatArray<int> (int(firsti[i+1]-firsti[i]), colnr+firsti[i]); }
 
-    int First (int i) const { return firsti[i]; }
+    size_t First (int i) const { return firsti[i]; }
 
     void FindSameNZE();
 
