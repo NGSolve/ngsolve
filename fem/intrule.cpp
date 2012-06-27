@@ -36,7 +36,7 @@ namespace ngfem
 	if(det == 0) 
 	  { 
 	    cout << " dxdxi " << dxdxi << endl; 
-	    cout << " GetJacobieDet is ZERO !!! " << endl; 
+	    cout << " GetJacobiDet is ZERO !!! " << endl; 
 	    *testout << " GetJacobieDet is ZERO !!! " << endl; 
             *testout << "ip = " << this -> ip << endl;
             *testout << "point = " << this->point << endl;

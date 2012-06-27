@@ -70,6 +70,7 @@ namespace ngfem
     {
       switch (et)
 	{
+	case ET_POINT: return 0;
 	case ET_SEGM: return 1;
 	case ET_TRIG: return 2;
 	case ET_QUAD: return 2;
@@ -86,6 +87,7 @@ namespace ngfem
     {
       switch (et)
 	{
+	case ET_POINT: return 1;
 	case ET_SEGM: return 2;
 	case ET_TRIG: return 3;
 	case ET_QUAD: return 4;
@@ -102,6 +104,7 @@ namespace ngfem
     { 
       switch (et)
 	{
+	case ET_POINT: return 0;
 	case ET_SEGM: return 1;
 	case ET_TRIG: return 3;
 	case ET_QUAD: return 4;
@@ -119,6 +122,7 @@ namespace ngfem
     {
       switch (et)
 	{
+	case ET_POINT: return 0;
 	case ET_SEGM: return 0;
 	case ET_TRIG: return 1;
 	case ET_QUAD: return 1;
@@ -154,6 +158,7 @@ namespace ngfem
     /// returns number of nodes of type nt
     static int GetNNodes (ELEMENT_TYPE et, NODE_TYPE nt)
     {
+      static const int nn_point[] = { 1, 0, 0, 0 };
       static const int nn_segm[] = { 2, 1, 0, 0 };
       static const int nn_trig[] = { 3, 3, 1, 0 };
       static const int nn_quad[] = { 4, 4, 1, 0 };
@@ -163,6 +168,7 @@ namespace ngfem
       static const int nn_hex[] = { 8, 12, 6, 1 };
       switch (et)
 	{
+	case ET_POINT: return nn_point[nt];
 	case ET_SEGM: return nn_segm[nt];
 	case ET_TRIG: return nn_trig[nt];
 	case ET_QUAD: return nn_quad[nt];
@@ -185,7 +191,8 @@ namespace ngfem
     {
       switch (et)
 	{
-	case ET_SEGM: return 0;
+	case ET_POINT: return 0;
+	case ET_SEGM: return 2;
 	case ET_TRIG: return 3;
 	case ET_QUAD: return 4;
 	case ET_TET: return 4;
@@ -204,6 +211,7 @@ namespace ngfem
     {
       switch (et)
 	{
+	case ET_SEGM: return ET_POINT;
 	case ET_TRIG: return ET_SEGM;
 	case ET_QUAD: return ET_SEGM;
 	case ET_TET: return ET_TRIG;
