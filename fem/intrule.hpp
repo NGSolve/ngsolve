@@ -177,7 +177,7 @@ namespace ngfem
 
 
   /// ip, dimension source, dimension range
-  template <int DIMS = 2, int DIMR = 2, typename SCAL = double> 
+  template <int DIMS, int DIMR, typename SCAL = double> 
   class MappedIntegrationPoint : public DimMappedIntegrationPoint<DIMR,SCAL>
   {
   private:
@@ -209,7 +209,6 @@ namespace ngfem
 			    const ElementTransformation & aeltrans,
 			    const FlatVec<DIMR, SCAL> ax,
 			    const Mat<DIMR, DIMS, SCAL> & adxdxi)
-    // LocalHeap & lh)
       : DimMappedIntegrationPoint<DIMR,SCAL> (aip, aeltrans)
     {
       this->point = ax;
@@ -235,12 +234,17 @@ namespace ngfem
 	      det = L2Norm (normalvec);
 	      normalvec /= det;
 	    }
-	  else
+	  else if (DIMR == 2)
 	    {
 	      det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
 
 	      normalvec(0) = -dxdxi(1,0) / det;
 	      normalvec(1) = dxdxi(0,0) / det;
+	    }
+	  else
+	    {
+	      det = 1.0;
+	      normalvec = 1.0;
 	    }
 	
 	  Mat<DIMS,DIMS,SCAL> ata, iata;

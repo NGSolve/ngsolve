@@ -682,11 +682,6 @@ namespace ngbla
 
 
 
-
-
-
-
-
   /**
      A vector of fixed size.
      Useful as entry type in system vectors.
@@ -695,7 +690,7 @@ namespace ngbla
   class Vec : public MatExpr<Vec<S,T> > // , protected BaseVec
   {
     /// the values
-    T data[S];
+    T data[(S>0)?S:1];
   public:
     /// type of the elements
     typedef T TELEM;

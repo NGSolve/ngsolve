@@ -240,6 +240,42 @@ namespace ngla
     }  
   };
 
+
+
+  class VScaleMatrix : public BaseMatrix
+  {
+    const BaseMatrix & bm;
+    double scale;
+  public:
+    ///
+    VScaleMatrix (const BaseMatrix & abm, double ascale) : bm(abm), scale(ascale) { ; }
+    ///
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
+    {
+      bm.MultAdd (s*scale, x, y);
+    }
+    ///
+    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const 
+    {
+      bm.MultAdd (s*scale, x, y);
+    }
+    ///
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+    {
+      bm.MultTransAdd (s*scale, x, y);
+    }
+    ///
+    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
+    {
+      bm.MultTransAdd (s*scale, x, y);
+    }  
+  };
+
+  inline VScaleMatrix operator* (double d, const BaseMatrix & m)
+  {
+    return VScaleMatrix (m, d);
+  }
+
   /* *********************** operator<< ********************** */
 
   /// output operator for matrices
