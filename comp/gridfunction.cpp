@@ -2,6 +2,7 @@
 #include <multigrid.hpp>
 
 #include <parallelngs.hpp>
+#include <stdlib.h>
 
 namespace ngcomp
 {
@@ -128,11 +129,18 @@ namespace ngcomp
       return compgfs[compound_comp];
   }
 
+  string myItoA (int i)
+  {
+    stringstream str;
+    str << i;
+    return str.str();
+  }
+
   template <class SCAL>
   S_ComponentGridFunction<SCAL> :: 
   S_ComponentGridFunction (const S_GridFunction<SCAL> & agf_parent, int acomp)
     : S_GridFunction<SCAL> (*dynamic_cast<const CompoundFESpace&> (agf_parent.GetFESpace())[acomp], 
-			    agf_parent.GetName(), Flags()),
+			    agf_parent.GetName()+"."+myItoA(acomp+1), Flags()),
       gf_parent(agf_parent), comp(acomp)
   { 
     const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&this->GetFESpace());
@@ -143,6 +151,7 @@ namespace ngcomp
 	for (int i = 0; i < nsp; i++)
 	  this->compgfs[i] = new S_ComponentGridFunction<SCAL> (*this, i);
       }    
+    this->Visualize (this->name);
   }
 
   template <class SCAL>
