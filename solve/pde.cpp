@@ -1045,7 +1045,7 @@ namespace ngsolve
     space->SetName (name);
     spaces.Set (name, space);
     todo.Append(space);
-    AddVariable (string("fes.")+space->GetName()+".ndof", 0.0);
+    AddVariable (string("fes.")+space->GetName()+".ndof", 0.0, 6);
 
     return space;
   }
@@ -1075,26 +1075,8 @@ namespace ngsolve
     const FESpace * space = GetFESpace(spacename);
  
     GridFunction * gf = CreateGridFunction (space, name, flags);
-    gridfunctions.Set (name, gf);
 
-    if (flags.GetDefineFlag("addcoef")){
-      CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf));
-      AddCoefficientFunction(name,coef);
-      
-      const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&(gf->GetFESpace()));
-      if (cfe){
-	int nsp = cfe->GetNSpaces();
-	for (int i = 0; i < nsp; i++){
-	  std::stringstream sstr;
-	  sstr << i+1;
-	  string nname(name+"."+sstr.str());
-	  CoefficientFunction* coef = new GridFunctionCoefficientFunction(*(gf->GetComponent(i)));
-	  AddCoefficientFunction(nname,coef);
-	}
-      }
-    }
-
-    todo.Append(gf);
+    AddGridFunction (name, gf, flags.GetDefineFlag ("addcoef"));
     return gf;
   }
 
@@ -1102,26 +1084,25 @@ namespace ngsolve
   {
     gf -> SetName (name);
     gridfunctions.Set (name, gf);
+    todo.Append(gf);
+
     if (addcf)
-      {    
-	AddCoefficientFunction (name, new GridFunctionCoefficientFunction(*gf));
+      AddCoefficientFunction (name, new GridFunctionCoefficientFunction(*gf));
 	
-	const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace*>(&gf->GetFESpace());
-	if (cfe)
+
+    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace*>(&gf->GetFESpace());
+    if (cfe)
+      {
+	int nsp = cfe->GetNSpaces();
+	for (int i = 0; i < nsp; i++)
 	  {
-	    int nsp = cfe->GetNSpaces();
-	    for (int i = 0; i < nsp; i++)
-	      {
-		std::stringstream sstr;
-		sstr << i+1;
-		string nname(name+"."+sstr.str());
-		
-		AddCoefficientFunction(nname, 
-				       new GridFunctionCoefficientFunction(*gf->GetComponent(i)));
-	      }
+	    std::stringstream sstr;
+	    sstr << i+1;
+	    string nname(name+"."+sstr.str());
+	    
+	    AddGridFunction (nname, gf->GetComponent(i), addcf);
 	  }
       }
-    todo.Append(gf);
   }
 
 
