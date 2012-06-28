@@ -4278,7 +4278,7 @@ namespace netgen
             vssolution.fieldlines_vecfunction = -1;
 
             int pointpos; // SZ 
-            const char * pch = strchr(scalname,'.');
+            const char * pch = strchr(scalname,':');
             pointpos = int(pch-scalname+1);
 
             for (int i = 0; i < vssolution.soldata.Size(); i++)
@@ -4293,7 +4293,7 @@ namespace netgen
 		    char newscalname[100];
 		    for ( int ii = 0; ii < pointpos; ii++ )
 		      newscalname[ii] = scalname[ii];
-		    newscalname[pointpos] = '.';
+		    newscalname[pointpos] = ':';
 		    sprintf (newscalname+pointpos, "%i", vssolution.scalcomp);
 
                     if (strcmp (scalname, newscalname) != 0)

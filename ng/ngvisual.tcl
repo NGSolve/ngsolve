@@ -1257,12 +1257,12 @@ proc visual_dialog { } {
 	    set fname [Ng_Vis_Field getfieldname $i]
 	    set fcomp [Ng_Vis_Field getfieldcomponents $i]
 	    if { $fcomp == 1 } {
-		$w.scalfun add command $fname.1 -label $fname
+		$w.scalfun add command $fname:1 -label $fname
 	    } {
 		for { set j 1 } { $j <= $fcomp } { incr j } {
-		    $w.scalfun add command $fname.$j -label "$fname ($j)"
+		    $w.scalfun add command $fname:$j -label "$fname ($j)"
 		}
-		$w.scalfun add command $fname.0 -label "func ($fname)"
+		$w.scalfun add command $fname:0 -label "func ($fname)"
 	    }
 	}
 
