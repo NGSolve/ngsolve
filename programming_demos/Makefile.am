@@ -27,7 +27,7 @@ demo_comp_LDADD = \
 	$(top_builddir)/parallel/libparallel.la \
 	$(LAPACK_LIBS) \
         -L$(libdir) -lnglib -linterface 
-demo_comp_CPPFLAGS = $(NETGEN_INCLUDES)  -I$(top_srcdir)/include $(MPI_INCLUDES)
+demo_comp_CPPFLAGS = -I$(top_srcdir)/include $(NETGEN_INCLUDES) $(MPI_INCLUDES)
 
 
 demo_comp1d_SOURCES = demo_comp1d.cpp netgen_dummy.cpp
@@ -40,7 +40,7 @@ demo_comp1d_LDADD = \
 	$(top_builddir)/parallel/libparallel.la \
 	$(LAPACK_LIBS) 
 #        -L$(libdir) -lnglib -linterface 
-demo_comp1d_CPPFLAGS = $(NETGEN_INCLUDES)  -I$(top_srcdir)/include $(MPI_INCLUDES)
+demo_comp1d_CPPFLAGS = -I$(top_srcdir)/include $(NETGEN_INCLUDES) $(MPI_INCLUDES)
 
 
 

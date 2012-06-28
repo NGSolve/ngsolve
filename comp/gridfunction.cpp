@@ -69,12 +69,14 @@ namespace ngcomp
   {
     if (!visual) return;
 
-    for (int i = 0; i < comp.Size(); i++)
+    /*
+    for (int i = 0; i < compgfs.Size(); i++)
       {
 	stringstream child_name;
 	child_name << given_name << "_" << i+1;
-	comp[i] -> Visualize (child_name.str());
+	compgfs[i] -> Visualize (child_name.str());
       }
+    */
 
     const BilinearFormIntegrator * bfi2d = 0, * bfi3d = 0;
 
@@ -117,14 +119,13 @@ namespace ngcomp
 
 
 
-  template <class SCAL>
-  GridFunction * S_GridFunction<SCAL> :: 
+  GridFunction * GridFunction :: 
   GetComponent (int compound_comp) const
   {
-    if (!comp.Size() || comp.Size() < compound_comp)
+    if (!compgfs.Size() || compgfs.Size() < compound_comp)
       throw Exception("GetComponent: compound_comp does not exist!");
     else
-      return comp[compound_comp];
+      return compgfs[compound_comp];
   }
 
   template <class SCAL>
@@ -133,7 +134,24 @@ namespace ngcomp
     : S_GridFunction<SCAL> (*dynamic_cast<const CompoundFESpace&> (agf_parent.GetFESpace())[acomp], 
 			    agf_parent.GetName(), Flags()),
       gf_parent(agf_parent), comp(acomp)
-  { ; }
+  { 
+    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&this->GetFESpace());
+    if (cfe)
+      {
+	int nsp = cfe->GetNSpaces();
+	this->compgfs.SetSize(nsp);
+	for (int i = 0; i < nsp; i++)
+	  this->compgfs[i] = new S_ComponentGridFunction<SCAL> (*this, i);
+      }    
+  }
+
+  template <class SCAL>
+  S_ComponentGridFunction<SCAL> :: 
+  ~S_ComponentGridFunction ()
+  {
+    this -> vec = NULL;  // base-class desctructor must not delete the vector
+  }
+
 
   template <class SCAL>
   void S_ComponentGridFunction<SCAL> :: Update()
@@ -145,6 +163,9 @@ namespace ngcomp
       (this->vec)[i] = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
   
     this -> level_updated = this -> ma.GetNLevels();
+
+    for (int i = 0; i < this->compgfs.Size(); i++)
+      this->compgfs[i]->Update();
   }
 
 
@@ -161,9 +182,9 @@ namespace ngcomp
     if (cfe)
       {
 	int nsp = cfe->GetNSpaces();
-	comp.SetSize(nsp);
+	compgfs.SetSize(nsp);
 	for (int i = 0; i < nsp; i++)
-	  comp[i] = new S_ComponentGridFunction<TSCAL> (*this, i);
+	  compgfs[i] = new S_ComponentGridFunction<TSCAL> (*this, i);
       }    
 
     this->Visualize (this->name);
@@ -219,10 +240,10 @@ namespace ngcomp
 	
 	this -> level_updated = this -> ma.GetNLevels();
 
-	const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&GridFunction :: GetFESpace());
-	if (cfe)
-	  for (int i = 0; i < cfe->GetNSpaces(); i++)
-	    comp[i]->Update();
+	// const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&GridFunction :: GetFESpace());
+	// if (cfe)
+	  for (int i = 0; i < compgfs.Size(); i++)
+	    compgfs[i]->Update();
       }
     catch (exception & e)
       {
@@ -1207,6 +1228,7 @@ namespace ngcomp
 		posx.DeleteAll(); posy.DeleteAll(); posz.DeleteAll(); 
 		switch(fel.ElementType())
 		  {
+		  case ET_POINT:  // ??
 		  case ET_SEGM: 
 		  case ET_TET: case ET_HEX: case ET_PRISM: case ET_PYRAMID:
 		    break;

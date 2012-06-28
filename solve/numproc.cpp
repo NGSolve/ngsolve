@@ -195,6 +195,12 @@ namespace ngsolve
       coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
       boundary = flags.GetDefineFlag ("boundary");
       component = int (flags.GetNumFlag ("component", 0))-1;
+
+      if (flags.NumFlagDefined ("component"))
+	{
+	  cerr << "!!!!     numproc setvalues   ... -component   is depreciated and will be removed soon" << endl
+	       << "!!!!     please use  -gridfuncion=" << gfu->GetName() << "." << component << " instead" << endl;
+	}
     }
 
     ///

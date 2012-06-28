@@ -32,7 +32,7 @@ namespace ngcomp
     /// the actual data, array for multi-dim 
     Array<BaseVector*> vec;
     /// component GridFunctions if fespace is a CompoundFESpace
-    Array<GridFunction*> comp;
+    Array<GridFunction*> compgfs;
 
   public:
     /// 
@@ -93,8 +93,9 @@ namespace ngcomp
     ///
     virtual bool IsUpdated () const; 
 
-
-    virtual GridFunction * GetComponent (int compound_comp) const = 0;
+    
+    int GetNComponents () const { return compgfs.Size(); }
+    GridFunction * GetComponent (int compound_comp) const;
 
 
     ///
@@ -158,7 +159,7 @@ namespace ngcomp
       : GridFunction (afespace, aname, flags) { ; }
   
 
-    virtual GridFunction * GetComponent (int compound_comp) const;
+    // virtual GridFunction * GetComponent (int compound_comp) const;
   };
 
 
@@ -167,7 +168,7 @@ namespace ngcomp
   class NGS_DLL_HEADER T_GridFunction : public S_GridFunction<typename mat_traits<TV>::TSCAL>
   {
     using S_GridFunction<typename mat_traits<TV>::TSCAL>::vec;
-    using S_GridFunction<typename mat_traits<TV>::TSCAL>::comp;
+    using S_GridFunction<typename mat_traits<TV>::TSCAL>::compgfs;
 
   public:
     typedef typename mat_traits<TV>::TSCAL TSCAL;
@@ -193,6 +194,7 @@ namespace ngcomp
     int comp;
   public:
     S_ComponentGridFunction (const S_GridFunction<SCAL> & agf_parent, int acomp);
+    virtual ~S_ComponentGridFunction ();
     virtual void Update ();
   };
   
