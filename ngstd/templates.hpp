@@ -84,6 +84,15 @@ inline T pow3 (const T a)
 
 
 
+template <class T>
+inline string ToString (const T& t)
+{
+  stringstream ss;
+  ss << t;
+  return ss.str();
+}
+
+
 
 template <class T>
 void SaveBin (ostream & ost, const T & val)
