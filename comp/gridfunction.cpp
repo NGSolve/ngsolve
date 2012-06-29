@@ -129,18 +129,12 @@ namespace ngcomp
       return compgfs[compound_comp];
   }
 
-  string myItoA (int i)
-  {
-    stringstream str;
-    str << i;
-    return str.str();
-  }
 
   template <class SCAL>
   S_ComponentGridFunction<SCAL> :: 
   S_ComponentGridFunction (const S_GridFunction<SCAL> & agf_parent, int acomp)
     : S_GridFunction<SCAL> (*dynamic_cast<const CompoundFESpace&> (agf_parent.GetFESpace())[acomp], 
-			    agf_parent.GetName()+"."+myItoA(acomp+1), Flags()),
+			    agf_parent.GetName()+"."+ToString (acomp+1), Flags()), 
       gf_parent(agf_parent), comp(acomp)
   { 
     const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&this->GetFESpace());
