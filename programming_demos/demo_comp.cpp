@@ -8,10 +8,25 @@
 #include <comp.hpp>
 using namespace ngcomp;
 
- 
+class MyMPI
+{
+public:
+  MyMPI() 
+  { 
+    int argc = 0;
+    char ** argv = NULL;
+    MPI_Init (&argc, &argv);
+  }
+  ~MyMPI()
+  {
+    MPI_Finalize ();
+  }
+};
+
 
 int main (int argc, char **argv)
 {
+  // MyMPI mmpi;
 #ifdef PARALLEL
   MPI_Init (&argc, &argv);
   ngs_comm = MPI_COMM_WORLD;
@@ -39,12 +54,13 @@ int main (int argc, char **argv)
 
   Array<EvalFunction*> asource(1);
   asource[0] = new EvalFunction ("sin(x)*y");
-  asource[0]->Print(cout);
+  // asource[0]->Print(cout);
 
   lff.AddIntegrator (new SourceIntegrator<3> (new DomainVariableCoefficientFunction<3>(asource)));
 
-
   fes.Update(lh);
+  fes.FinalizeUpdate(lh);
+
   gfu.Update();
   bfa.Assemble(lh);
   lff.Assemble(lh);
@@ -54,14 +70,14 @@ int main (int argc, char **argv)
   BaseVector & vecf = lff.GetVector();
   BaseVector & vecu = gfu.GetVector();
   
-  BaseMatrix * jacobi = dynamic_cast<const BaseSparseMatrix&> (mata).CreateJacobiPrecond();
-
+  // BaseMatrix * jacobi = dynamic_cast<const BaseSparseMatrix&> (mata).CreateJacobiPrecond();
+  BaseMatrix * jacobi = mata.InverseMatrix();
+  
   CGSolver<double> inva (mata, *jacobi);
   inva.SetPrintRates();
   inva.SetMaxSteps(1000);
 
   vecu = inva * vecf;
-
 
 #ifdef PARALLEL
   MPI_Finalize ();

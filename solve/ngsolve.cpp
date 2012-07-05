@@ -150,6 +150,7 @@ int NGS_LoadPDE (ClientData clientData,
 	  //pde = new ngsolve::PDE(*ma);
 	  pde.Reset(new ngsolve::PDE(*ma));
           pde->tcl_interpreter = interp;
+	  MyMPI_SendCmd ("ngs_pdefile");
           pde->LoadPDE (argv[1]);
 	  pde->PrintReport (*testout);
 	}
@@ -199,7 +200,7 @@ void * SolveBVP(void *)
   try
     {
       if (pde && pde->IsGood())
-	pde->SolveBVP();
+	pde->Solve();
     }
 
   catch (exception & e)
@@ -841,7 +842,7 @@ void * SolveBVP2(void *)
 #endif
 
   if (pde && pde->IsGood())
-    pde->SolveBVP();
+    pde->Solve();
 
   Ng_SetRunning (0); 
   return NULL;
@@ -878,10 +879,11 @@ void NGS_ParallelRun ( const string & message )
       ma.Reset(new ngcomp::MeshAccess());
       pde.Reset(new PDE ( *ma ));
 
+      /*
       // transfer file contents, not filename
       string pdefiledata;
       string filename, pde_directory;
-
+      cout << "ready to receive" << endl;
       MyMPI_Recv (filename, 0);
       MyMPI_Recv (pde_directory, 0);
       MyMPI_Recv (pdefiledata, 0);
@@ -890,8 +892,11 @@ void NGS_ParallelRun ( const string & message )
 
       pde->SetDirectory(pde_directory);
       pde->SetFilename(filename);
+      pde -> LoadPDE (pdefile, false, 0);
+      */
 
-      pde -> LoadPDE (pdefile, 1, 0);
+      string dummy;
+      pde -> LoadPDE (dummy, false, 0);
     } 
 
   else if ( message == "ngs_solvepde" )

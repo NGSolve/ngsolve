@@ -469,7 +469,6 @@ namespace ngsolve
 	      // Ng_LoadMesh ((char*)scan->GetStringValueC());
 
 	      string meshfile = pde->GetDirectory()+dirslash+scan->GetStringValue();
-
 	      pde->SetMeshFileName(meshfile);
 	      if(!nomeshload)
 		{
@@ -2009,39 +2008,83 @@ namespace ngsolve
 
     cout << IM(1) << "Load PDE from file " << filename << endl;
 
-    string::size_type pos1 = filename.rfind('\\');
-    string::size_type pos2 = filename.rfind('/');
+    int ntasks = MyMPI_GetNTasks ();
+    int id = MyMPI_GetId();
+
+    string data;
+
     
-    if (pos1 == filename.npos) pos1 = 0;
-    if (pos2 == filename.npos) pos2 = 0;
-    
-    string pde_directory = filename.substr (0, max2(pos1, pos2));
-    (*testout) << "pdefile " ;//<< pde->GetFilename() << endl;
-
-    if(pde_directory == "")
-      pde_directory = ".";
-
-    cout << IM(1) << "dir = " << pde_directory << endl;
-
-    pde = this;
-
+    if (id == 0)
+      {
+	string::size_type pos1 = filename.rfind('\\');
+	string::size_type pos2 = filename.rfind('/');
+	
+	if (pos1 == filename.npos) pos1 = 0;
+	if (pos2 == filename.npos) pos2 = 0;
+	
+	string pde_directory = filename.substr (0, max2(pos1, pos2));
+	(*testout) << "pdefile " ;//<< pde->GetFilename() << endl;
+	
+	if(pde_directory == "")
+	  pde_directory = ".";
+	
+	cout << IM(1) << "dir = " << pde_directory << endl;
+	
+	pde = this;
+	
 #ifdef WIN32
-    for(int i=0; pde_directory[i]!=0 && i<pde_directory.size(); i++)
-      if(pde_directory[i] == '/')
-	pde_directory[i] = '\\';
+	for(int i=0; pde_directory[i]!=0 && i<pde_directory.size(); i++)
+	  if(pde_directory[i] == '/')
+	    pde_directory[i] = '\\';
 #endif
 	
+	pde->SetDirectory(pde_directory);
+	pde->SetFilename(filename);
+	
+	ifstream infile (filename.c_str());
+	if (!infile.good())
+	  throw Exception (string ("PDE file " + filename + " not found"));
+	
+	while (!infile.eof())
+	  {
+	    char ch;
+	    infile.get(ch);
+	    data += ch;
+	  }
 
-    pde->SetDirectory(pde_directory);
-    pde->SetFilename(filename);
-  
-    ifstream infile (filename.c_str());
-    if (!infile.good())
-      {
-	throw Exception (string ("PDE file " + filename + " not found"));
+#ifdef PARALLEL
+	{
+	  for (int dest = 1; dest < ntasks; dest ++)
+	    {
+	      MyMPI_Send (filename, dest);
+	      MyMPI_Send (pde_directory, dest);
+	      MyMPI_Send (data, dest);
+	    }
+	}
+#endif
       }
 
-      
+    else
+
+      {
+	string pdefiledata;
+	string filename, pde_directory;
+
+	MyMPI_Recv (filename, 0);
+	MyMPI_Recv (pde_directory, 0);
+	MyMPI_Recv (data, 0);
+	
+	SetDirectory(pde_directory);
+	SetFilename(filename);
+      }
+
+
+    stringstream strdata(data);
+    LoadPDE(strdata,nomeshload,nogeometryload);
+
+
+
+    /*
     LoadPDE(infile,nomeshload,nogeometryload);
     infile.close();
 
@@ -2067,6 +2110,7 @@ namespace ngsolve
 	}
     }
 #endif
+    */
   }
 
 

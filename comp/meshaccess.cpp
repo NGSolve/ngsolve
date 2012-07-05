@@ -689,7 +689,7 @@ namespace ngcomp
   ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, LocalHeap & lh) const
 
   {
-    ElementTransformation * eltrans;  
+    ElementTransformation * eltrans;
 
     if (!boundary)
       {
@@ -699,7 +699,7 @@ namespace ngcomp
 	  case 2: eltrans = new (lh) Ng_ElementTransformation<2,2> (); break;
 	  case 3: eltrans = new (lh) Ng_ElementTransformation<3,3> (); break;
 	  default:
-	    ;
+	    eltrans = NULL;;
 	  }
 
 	int elind = Ng_GetElementIndex (elnr+1)-1;

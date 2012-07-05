@@ -970,10 +970,14 @@ namespace ngfem
         }
       default:
         {
+	  /*
           stringstream str;
           str<< "IntegratonRuleTP not available for element type " 
              << ElementTopology::GetElementName(eltrans.GetElementType()) << endl;
           throw Exception (str.str());
+	  */
+          throw Exception (ToString("IntegratonRuleTP not available for element type ") +
+			   ElementTopology::GetElementName(eltrans.GetElementType()) + "\n");
         }
 
       }
@@ -2079,11 +2083,15 @@ namespace ngfem
 	case ET_HEX:
 	  ira = &hexrules; break;
 	default:
-	  {
-	    stringstream str;
-	    str << "no integration rules for element " << int(eltyp) << endl;
-	    throw Exception (str.str());
-	  }
+	    /*
+	      {
+	      stringstream str;
+	      str << "no integration rules for element " << int(eltyp) << endl;
+	      throw Exception (str.str());
+	      }
+	    */
+	  throw Exception ("no integration rules for element " + 
+			   ToString(int(eltyp)) + "\n"); 
 	}
 
       if (ira -> Size() < order+1)
@@ -2098,6 +2106,7 @@ namespace ngfem
 	{
 	  switch (eltyp)
 	    {
+	    case ET_POINT: break;
 	    case ET_SEGM:
 	      {
 		Array<double> xi, wi;
