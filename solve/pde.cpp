@@ -11,32 +11,6 @@ namespace ngfem
 namespace ngsolve
 {
 
-  /*
-  EvalVariable :: EvalVariable(const MeshAccess & ama, const string & aname)
-    : NGS_Object(ama,aname)
-  {
-    variable = NULL;
-  }
-
-  void EvalVariable :: SetVariable(double & avariable)
-  {
-    variable = &avariable;
-  }
-  
-  double EvalVariable :: Evaluate(void)
-  {
-    if(variable)
-      {
-	*variable = evaluator.Eval((double*)(0));
-	return *variable;
-      }
-    else
-      return evaluator.Eval((double*)(0));
-  }
-  */
-
-
-
   PDE :: PDE (MeshAccess & ama)
     : ma (ama)
   {
@@ -45,7 +19,7 @@ namespace ngsolve
 
     constant_table_for_FEM = &constants;
 
-    AddVariable ("timing.level", 0.0);
+    AddVariable ("timing.level", 0.0, 6);
   }
   
   PDE :: ~PDE()
@@ -487,7 +461,7 @@ namespace ngsolve
 
 
 
-  void PDE :: SolveBVP ()
+  void PDE :: Solve ()
   {
     static Timer timer("Solver - Total");
     RegionTimer reg (timer);

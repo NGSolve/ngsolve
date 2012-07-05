@@ -269,7 +269,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		dirichlet_face[ngel.faces[0]] = true;
 	    }
 	}
-    
+
 #ifdef PARALLEL	
     AllReduceNodalData (NT_VERTEX, dirichlet_vertex, MPI_LOR, ma);
     AllReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR, ma);
@@ -282,6 +282,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
+    MyMPI_Barrier();
+    cout << "finalize - update" << endl;
+    MyMPI_Barrier();
     static Timer timer ("FESpace::FinalizeUpdate");
     
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
@@ -618,6 +621,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	return *prism;
       case ET_HEX:
 	return *hex;
+      default:
+	;
       }
     throw Exception ("GetFE::Unknown type");
   }

@@ -587,7 +587,7 @@ namespace ngcomp
 	  dist_data.Add (distprocs[j], data[i]);
       }
     
-    Array<int> nsend(ntasks); // , nrecv(ntasks);
+    Array<int> nsend(ntasks);
     for (int i = 0; i < ntasks; i++)
       nsend[i] = dist_data[i].Size();
 
@@ -597,12 +597,13 @@ namespace ngcomp
     for (int i = 0; i < ntasks; i++)
       {
 	if (nsend[i])
-	  requests.Append (MyMPI_ISend (dist_data[i], i, MPI_TAG_SOLVE, ngs_comm));
+	  requests.Append (MyMPI_ISend (dist_data[i], i, MPI_TAG_SOLVE, comm));
 	if (nsend[i])
-	  requests.Append (MyMPI_IRecv (recv_data[i], i, MPI_TAG_SOLVE, ngs_comm));
+	  requests.Append (MyMPI_IRecv (recv_data[i], i, MPI_TAG_SOLVE, comm));
       }
 
-    MyMPI_WaitAll (requests);
+    if (requests.Size())
+      MyMPI_WaitAll (requests);
 
     Array<int> cnt(ntasks);
     cnt = 0;

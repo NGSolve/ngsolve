@@ -135,7 +135,8 @@ namespace ngsolve
     ///
     void LoadSolution (const string & filename, const bool ascii = false);
     ///  
-    void SolveBVP ();
+    void Solve ();
+    // void SolveBVP () { Solve(); }
 
     ///
     void PrintReport (ostream & ost);

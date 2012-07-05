@@ -336,12 +336,20 @@ namespace ngstd
     using FlatArray<T>::data;
   public:
     /// Generate array of logical and physical size asize
-    explicit Array(int asize = 0)
-      : FlatArray<T> (asize, asize ? new T[asize] : 0)
+    explicit Array()
+      : FlatArray<T> (0, NULL)
+    {
+      allocsize = 0; 
+      ownmem = 1;
+    }
+
+    explicit Array(int asize)
+      : FlatArray<T> (asize, new T[asize])
     {
       allocsize = asize; 
       ownmem = 1;
     }
+
 
     /// Generate array in user data
     Array(int asize, T* adata)
