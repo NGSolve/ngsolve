@@ -232,19 +232,36 @@ void Ng_LoadMeshFromStream ( istream & input )
 
 void Ng_LoadMesh (const char * filename)
 {
-  if ( (strlen (filename) > 4) &&
-       strcmp (filename + (strlen (filename)-4), ".vol") != 0 )
+  MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+  MPI_Comm_rank(MPI_COMM_WORLD, &id);
+
+  if (id == 0)
+    {
+      if ( (strlen (filename) > 4) &&
+	   strcmp (filename + (strlen (filename)-4), ".vol") != 0 )
+	{
+	  mesh.Reset (new Mesh());
+	  ReadFile(*mesh,filename);
+	  
+	  //mesh->SetGlobalH (mparam.maxh);
+	  //mesh->CalcLocalH();
+	  return;
+	}
+      
+      ifstream infile(filename);
+      Ng_LoadMeshFromStream(infile);
+
+      if (ntasks > 1)
+	{
+	  // MyMPI_SendCmd ("mesh");
+	  mesh -> Distribute();
+	}
+    }
+  else
     {
       mesh.Reset (new Mesh());
-      ReadFile(*mesh,filename);
-
-      //mesh->SetGlobalH (mparam.maxh);
-      //mesh->CalcLocalH();
-      return;
+      mesh->SendRecvMesh();
     }
-
-  ifstream infile(filename);
-  Ng_LoadMeshFromStream(infile);
 }
 
 void Ng_LoadMeshFromString (const char * mesh_as_string)

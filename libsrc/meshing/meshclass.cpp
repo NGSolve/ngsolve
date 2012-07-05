@@ -1197,16 +1197,10 @@ namespace netgen
     topology -> Update();
     clusters -> Update();
 
-#ifdef PARALLEL
-    if ( ntasks > 1 ) Distribute ();
-#endif
-
+    // Distribute();
 
     SetNextMajorTimeStamp();
     //  PrintMemInfo (cout);
-
-
-
   }
 
 

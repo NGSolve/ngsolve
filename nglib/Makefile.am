@@ -5,7 +5,7 @@ dist_pkgdata_DATA = cube.surf
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  $(MPI_INCLUDES) $(OCCFLAGS)
 
 lib_LTLIBRARIES = libnglib.la
-libnglib_la_SOURCES = nglib.cpp
+libnglib_la_SOURCES = nglib.cpp parallelfunc.cpp
 
 libnglib_la_LIBADD = \
 	$(top_builddir)/libsrc/interface/libinterface.la \

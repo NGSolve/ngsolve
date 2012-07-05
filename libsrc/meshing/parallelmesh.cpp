@@ -657,6 +657,9 @@ namespace netgen
   // call it only for the master !
   void Mesh :: Distribute ()
   {
+    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+    MPI_Comm_rank(MPI_COMM_WORLD, &id);
+
     if (id != 0 || ntasks == 1 ) return;
 
 #ifdef METIS
@@ -666,17 +669,15 @@ namespace netgen
       (*this)[ei].SetPartition(ntasks * ei/GetNE() + 1);
 #endif
 
+    /*
     for (ElementIndex ei = 0; ei < GetNE(); ei++)
       *testout << "el(" << ei << ") is in part " << (*this)[ei].GetPartition() << endl;
     for (SurfaceElementIndex ei = 0; ei < GetNSE(); ei++)
       *testout << "sel(" << int(ei) << ") is in part " << (*this)[ei].GetPartition() << endl;
-
-    // send partition
-    MyMPI_SendCmd ("mesh");
+      */
+    
+    // MyMPI_SendCmd ("mesh");
     SendRecvMesh (); 
-
-    // paralleltop -> UpdateCoarseGrid();
-    // paralleltop -> Print();
   }
   
 

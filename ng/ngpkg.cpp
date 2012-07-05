@@ -221,6 +221,11 @@ namespace netgen
 	ifstream infile(filename.c_str());
 	mesh -> Load(infile);
 
+#ifdef PARALLEL
+	MyMPI_SendCmd ("mesh");
+	mesh -> Distribute();
+#endif
+
 	for (int i = 0; i < geometryregister.Size(); i++)
 	  {
 	    NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (infile);

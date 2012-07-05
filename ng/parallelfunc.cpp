@@ -2,9 +2,6 @@
 
 #include "dlfcn.h"
 
-#ifdef OCCGEOMETRY
-#include <occgeom.hpp>
-#endif
 
 // #include <mystdlib.h>
 
@@ -30,23 +27,16 @@
 
 #endif
 
-
+/*
 #include <geometry2d.hpp>
 #include <stlgeom.hpp>
-
-// #include <incvis.hpp>
-// #include <visual.hpp>
-// #include <mystdlib.h>
-// #include <myadt.hpp>
-// #include <linalg.hpp>
-// #include <csg.hpp>
-
+*/
 
 
 #include <meshing.hpp>
 
 // #include "parallel.hpp"
-#include "parallelfunc.hpp"
+// #include "parallelfunc.hpp"
 
 
 // extern "C" void NGS_ParallelRun (const string & message);
@@ -72,6 +62,7 @@ namespace netgen {
   extern AutoPtr<Mesh>  mesh;
   extern VisualSceneMesh vsmesh;
   extern Flags parameters;
+  extern DLL_HEADER MeshingParameters mparam;
 }
 
 using namespace netgen;

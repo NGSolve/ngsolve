@@ -1,3 +1,7 @@
+das braucht keiner mehr
+
+
+
 #ifndef FILE_PARALLELFUNC
 #define FILE_PARALLELFUNC
 
