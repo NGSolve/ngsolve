@@ -38,9 +38,18 @@ namespace netgen {
 
 namespace netgen
 {
+  int id = 0, ntasks = 1;
+
   // MPI_Comm mesh_comm;
 }
 #endif
+
+
+namespace netgen
+{
+  int id = 0, ntasks = 1;
+}
+
 
 
 /*

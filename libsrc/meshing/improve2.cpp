@@ -729,7 +729,7 @@ namespace netgen
 
 		mesh[pi1] = pnew;
 		PointGeomInfo gi;
-		bool gi_set(false);
+		// bool gi_set(false);
 	      
 	      
 		Element2d *el1p(NULL);
@@ -744,7 +744,7 @@ namespace netgen
 		  if ((*el1p)[l] == pi1)
 		    {
 		      gi = el1p->GeomInfoPi (l+1);
-		      gi_set = true;
+		      // gi_set = true;
 		    }
 
 		// (*testout) << "Connect point " << pi2 << " to " << pi1 << "\n";

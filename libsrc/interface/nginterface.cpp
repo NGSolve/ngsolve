@@ -232,9 +232,10 @@ void Ng_LoadMeshFromStream ( istream & input )
 
 void Ng_LoadMesh (const char * filename)
 {
+#ifdef PARALLEL
   MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
-
+#endif
   if (id == 0)
     {
       if ( (strlen (filename) > 4) &&
@@ -251,17 +252,21 @@ void Ng_LoadMesh (const char * filename)
       ifstream infile(filename);
       Ng_LoadMeshFromStream(infile);
 
+#ifdef PARALLEL
       if (ntasks > 1)
 	{
 	  // MyMPI_SendCmd ("mesh");
 	  mesh -> Distribute();
 	}
+#endif
     }
+#ifdef PARALLEL
   else
     {
       mesh.Reset (new Mesh());
       mesh->SendRecvMesh();
     }
+#endif
 }
 
 void Ng_LoadMeshFromString (const char * mesh_as_string)

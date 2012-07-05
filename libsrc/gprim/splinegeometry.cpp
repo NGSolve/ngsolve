@@ -28,7 +28,7 @@ namespace netgen
     raw_data.Append(D);
     // raw_data.Append(elto0);
 
-    raw_data.Append(splines.Size());
+    raw_data.Append(splines.Size()); 
     for(int i=0; i<splines.Size(); i++)
       splines[i]->GetRawData(raw_data);
   }

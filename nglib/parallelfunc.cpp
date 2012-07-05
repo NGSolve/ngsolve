@@ -35,7 +35,7 @@ using netgen::RegisterUserFormats;
 
 namespace netgen
 {
-  int id, ntasks;
+  // int id, ntasks;
   MPI_Comm mesh_comm;
 }
 

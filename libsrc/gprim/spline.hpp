@@ -46,6 +46,8 @@ namespace netgen
   {
   public:
     SplineSeg () { ; }
+    ///
+    virtual ~SplineSeg() { ; }
     /// calculates length of curve
     virtual double Length () const;
     /// returns point at curve, 0 <= t <= 1
