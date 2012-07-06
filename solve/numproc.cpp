@@ -2222,7 +2222,7 @@ namespace ngsolve
 		  {
 		    if(evaluate != "") 
 		      tclstring << "set visoptions.evaluate " << evaluate<< endl;
-		    tclstring << "set visoptions.scalfunction " << fieldname<< "." << component << endl;
+		    tclstring << "set visoptions.scalfunction " << fieldname<< ":" << component << endl;
 		    if(clip && !noclipsol)
 		      tclstring << "set visoptions.clipsolution scal" << endl;
 		    ng_vissetpar = true;
@@ -2648,7 +2648,7 @@ namespace ngsolve
 	
     if(scalarfun != "")
       {
-        tclstring << "set ::visoptions.scalfunction " << scalarfun << "." << scalarcomp << endl;
+        tclstring << "set ::visoptions.scalfunction " << scalarfun << ":" << scalarcomp << endl;
 	ng_vissetpar = true;
 	  
       }

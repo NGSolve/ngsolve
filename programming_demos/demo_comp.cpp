@@ -8,25 +8,9 @@
 #include <comp.hpp>
 using namespace ngcomp;
 
-class MyMPI
-{
-public:
-  MyMPI() 
-  { 
-    int argc = 0;
-    char ** argv = NULL;
-    MPI_Init (&argc, &argv);
-  }
-  ~MyMPI()
-  {
-    MPI_Finalize ();
-  }
-};
-
 
 int main (int argc, char **argv)
 {
-  // MyMPI mmpi;
 #ifdef PARALLEL
   MPI_Init (&argc, &argv);
   ngs_comm = MPI_COMM_WORLD;

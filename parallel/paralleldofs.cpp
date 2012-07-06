@@ -28,6 +28,22 @@ namespace ngparallel
     int id = MyMPI_GetId();
 
     ndof = dofnodes.Size();
+
+
+    if (ntasks == 1)
+      {
+	Array<int> nexdofs(ntasks), ndistprocs(ndof);
+	nexdofs = 0;
+	ndistprocs = 0;
+
+	exchangedofs = new Table<int> (nexdofs);
+	dist_procs = new Table<int> (ndistprocs);
+
+	ismasterdof.SetSize(ndof);
+	ismasterdof.Set();
+	return;
+      }
+
     Array<int> distprocs;
 
 
