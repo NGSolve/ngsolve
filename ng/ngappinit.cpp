@@ -131,6 +131,8 @@ int main(int argc, char ** argv)
     }
 
 
+  netgen::h_argc = argc;
+  netgen::h_argv = argv;
 
   // command line arguments:
   for (int i = 1; i < argc; i++)

@@ -49,6 +49,9 @@ namespace netgen
   extern string ngdir;
   extern DebugParameters debugparam;
   extern bool verbose;  
+
+  extern int h_argc;
+  extern char ** h_argv;
 }
 
 #endif

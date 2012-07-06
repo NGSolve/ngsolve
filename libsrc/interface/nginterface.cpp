@@ -2340,3 +2340,11 @@ int Ng_GetElementClosureNodes (int dim, int elementnr, int nodeset, int * nodes)
     }
   return 0;
 }
+
+
+
+void Ng_GetArgs (int & argc, char ** &argv)
+{
+  argc = h_argc;
+  argv = h_argv;
+}

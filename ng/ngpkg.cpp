@@ -75,6 +75,7 @@ namespace netgen
 {
   extern Flags parameters;
 
+  /*
   NetgenOutStream operator<< ( ostream & ost, Imp  imp )
   {
     return ( NetgenOutStream ( &ost, imp ) );
@@ -90,7 +91,7 @@ namespace netgen
   {
     return ( NetgenOutStream ( &ost, procs ) );
   }
-
+  */
 
   extern NetgenGeometry * ng_geometry;
   extern AutoPtr<Mesh> mesh;

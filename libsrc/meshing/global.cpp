@@ -29,6 +29,8 @@ namespace netgen
 
   Array<int> tets_in_qualclass;
 
+  int h_argc = 0;
+  char ** h_argv = NULL;
 
   multithreadt :: multithreadt()
   {

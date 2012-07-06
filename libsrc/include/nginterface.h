@@ -386,6 +386,9 @@ extern "C" {
   typedef void * Ng_Mesh;
   DLL_HEADER Ng_Mesh Ng_SelectMesh (Ng_Mesh mesh);
 
+  DLL_HEADER void Ng_GetArgs (int & argc, char ** &argv);
+
+
 #ifdef __cplusplus
 }
 #endif

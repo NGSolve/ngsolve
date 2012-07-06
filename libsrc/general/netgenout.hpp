@@ -165,10 +165,30 @@ public:
 
 };
 
-
+/*
 NetgenOutStream operator<< ( ostream & ost, Imp  imp );
 NetgenOutStream operator<< ( ostream & ost, Proc proc );
 NetgenOutStream operator<< ( ostream & ost, Procs & procs );
+*/
+
+inline NetgenOutStream operator<< ( ostream & ost, Imp  imp )
+  {
+    return ( NetgenOutStream ( &ost, imp ) );
+  }
+
+inline   NetgenOutStream operator<< ( ostream & ost, Proc proc )
+  {
+    return ( NetgenOutStream ( &ost, proc ) );
+  }
+
+
+inline   NetgenOutStream operator<< ( ostream & ost, Procs & procs )
+  {
+    return ( NetgenOutStream ( &ost, procs ) );
+  }
+
+
+
 // {
 //   return ( NetgenOutStream ( &ost, imp.GetImp() ) );
 // }
