@@ -1,5 +1,4 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include $(NETGEN_INCLUDES) $(LAPACK_INCLUDES) $(PARDISO_INCLUDES) $(TCL_INCLUDES) $(MPI_INCLUDES)
-# -I/home/joachim/netgen-mesher/netgen/libsrc/interface
 
 lib_LTLIBRARIES = libngsolve.la
 

@@ -121,7 +121,6 @@ SymbolTable<double> & GetConstantTable ()
 #ifdef SOCKETS
 AutoPtr<ngsolve::ServerJobManager> serverjobmanager;
 namespace netgen {
-  using namespace netgen;
   extern ServerSocketManager serversocketmanager;
 }
 #endif
@@ -682,12 +681,7 @@ int NGSolve_Init (Tcl_Interp * interp)
 #ifdef PARALLEL
   MyMPI_SendCmd ("ngs_loadngs");
   MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
-
-  // MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-  // MPI_Comm_rank(MPI_COMM_WORLD, &id);
-  // working_proc = (ntasks == 1) || (id > 0);
   NGSOStream::SetGlobalActive (true);
-
 #endif
 
   if (getenv ("NGSPROFILE"))
@@ -823,17 +817,7 @@ void NGSolve_Exit ()
 
 
 #ifdef PARALLEL
-
-				     
 				    
-using namespace ngsolve;
-
-// extern AutoPtr<PDE>  pde;
-// extern MeshAccess * ma;
-
-extern "C" void NGS_ParallelRun ( const string & message );
-
-
 
 void * SolveBVP2(void *)
 {
@@ -849,15 +833,14 @@ void * SolveBVP2(void *)
 }
 
 
-void NGS_ParallelRun ( const string & message )
-{
+extern "C" void NGS_ParallelRun (const string & message);
 
+void NGS_ParallelRun (const string & message)
+{
 #ifdef _OPENMP
   omp_set_num_threads (1);
 #endif
 
-  // MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-  // MPI_Comm_rank(MPI_COMM_WORLD, &id);
   NGSOStream::SetGlobalActive (false);
 
   if (getenv ("NGSPROFILE"))

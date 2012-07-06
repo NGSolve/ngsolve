@@ -282,9 +282,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
-    MyMPI_Barrier();
-    cout << "finalize - update" << endl;
-    MyMPI_Barrier();
     static Timer timer ("FESpace::FinalizeUpdate");
     
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
