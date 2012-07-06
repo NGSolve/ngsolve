@@ -11,10 +11,7 @@ using namespace ngcomp;
 
 int main (int argc, char **argv)
 {
-#ifdef PARALLEL
-  MPI_Init (&argc, &argv);
-  ngs_comm = MPI_COMM_WORLD;
-#endif 
+  MyMPI mympi(argc, argv);
 
   Ng_LoadGeometry ("cube.geo");
   Ng_LoadMesh ("cube.vol");
@@ -54,7 +51,14 @@ int main (int argc, char **argv)
   BaseVector & vecf = lff.GetVector();
   BaseVector & vecu = gfu.GetVector();
   
+  /*
   // BaseMatrix * jacobi = dynamic_cast<const BaseSparseMatrix&> (mata).CreateJacobiPrecond();
+
+  BaseMatrix * jacobi = dynamic_cast<const BaseSparseMatrix&> 
+    (dynamic_cast<const ParallelMatrix&>(mata).GetMatrix())
+    .CreateJacobiPrecond();
+  */
+
   BaseMatrix * jacobi = mata.InverseMatrix();
   
   CGSolver<double> inva (mata, *jacobi);
@@ -62,9 +66,4 @@ int main (int argc, char **argv)
   inva.SetMaxSteps(1000);
 
   vecu = inva * vecf;
-
-#ifdef PARALLEL
-  MPI_Finalize ();
-#endif
-
 }
