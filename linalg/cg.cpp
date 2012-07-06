@@ -173,7 +173,7 @@ namespace ngla
 	
 	BruteInnerProduct(w,d,wdn);	 
 
-	if (printrates) cout << "0 " << sqrt(L2Norm(wdn)) << endl;
+	if (printrates) cout << IM(1) << "0 " << sqrt(L2Norm(wdn)) << endl;
 	if (L2Norm(wdn) == 0.0) wdn = 1;	
 
 	if(stop_absolute)
@@ -232,7 +232,7 @@ namespace ngla
 	    //s *= be;
 	    //s += w;
 
-	    if (printrates ) cout << n << " " << sqrt(L2Norm (wdn)) << endl;
+	    if (printrates ) cout << IM(1) << n << " " << sqrt(L2Norm (wdn)) << endl;
 	    if(sh)
 	      sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
 						(lwstart-log(L2Norm(wdn)))/(lwstart-lerr)));
@@ -367,7 +367,7 @@ namespace ngla
 	    wdn = S_InnerProduct<SCAL>(w,d_reduced);
 	    
 	    
-	    if (printrates ) cout << n << " (block " << seed+1 << ") " << sqrt (Abs (wdn)) << endl;
+	    if (printrates ) cout << IM(1) << n << " (block " << seed+1 << ") " << sqrt (Abs (wdn)) << endl;
 	    if(Abs(wdn) == 0.0) wdn = 1;
 
 	    lwstart = log(Abs(wdn));
@@ -478,7 +478,7 @@ namespace ngla
 		s *= be;
 		s += w;
 
-		if (printrates ) cout << n << " (block " << seed+1 << ") " << sqrt (Abs (wdn)) << endl;
+		if (printrates ) cout << IM(1) << n << " (block " << seed+1 << ") " << sqrt (Abs (wdn)) << endl;
 		if(sh)
 		  sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
 						    (lwstart-log(Abs(wdn)))/(lwstart-lerr)));
@@ -588,7 +588,7 @@ namespace ngla
 	s = w;
 	wdn = S_InnerProduct<IPTYPE> (w,d);
 
-	if (printrates) cout << "0 " << sqrt(Abs(wdn)) << endl;
+	if (printrates) cout << IM(1) << "0 " << sqrt(Abs(wdn)) << endl;
 	if (wdn == 0.0) wdn = 1;	
 
 	if(stop_absolute)
@@ -625,7 +625,7 @@ namespace ngla
 	    s *= be;
 	    s += w;
 
-	    if (printrates ) cout << n << " " << sqrt (Abs (wdn)) << endl;
+	    if (printrates ) cout << IM(1) << n << " " << sqrt (Abs (wdn)) << endl;
 	    if ( sh )
 	      sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
 						(lwstart-log(Abs(wdn)))/(lwstart-lerr)));
@@ -712,7 +712,7 @@ namespace ngla
 	r = s - omega * t;
 
 	err_i = L2Norm(r);
-	if (printrates) cout << "0 " << err_i << endl;
+	if (printrates) cout << IM(1) << "0 " << err_i << endl;
 
 
 	if(stop_absolute)
@@ -761,7 +761,7 @@ namespace ngla
 
 	    err_i = L2Norm(r);
 
-	    if (printrates ) cout << n << " " << err_i << endl;
+	    if (printrates ) cout << IM(1) << n << " " << err_i << endl;
 	    if(sh)
 	      sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
 						(lwstart-log(err_i))/(lwstart-lerr)));
@@ -837,7 +837,7 @@ namespace ngla
             err = Abs (S_InnerProduct<IPTYPE> (w, d));
             if (n == 1) err0 = err;
 
-	    if (printrates ) cout << n << " " << sqrt (err) << endl;
+	    if (printrates ) cout << IM(1) << n << " " << sqrt (err) << endl;
           }
 
 	const_cast<int&> (steps) = n;
@@ -924,7 +924,7 @@ namespace ngla
 
         gammai(0) = norm;
 
-	if (printrates) cout << "0 " << norm << endl;
+	if (printrates) cout << IM(1) << "0 " << norm << endl;
 	
 	double err;
 	if(stop_absolute)
@@ -968,7 +968,7 @@ namespace ngla
             gammai(j+1) = si(j+1) * gammai(j);
             gammai(j) = ci(j+1) * gammai(j);
             
-	    if (printrates ) cout << j 
+	    if (printrates ) cout << IM(1) << j 
                                   << " ci = " << ci(j+1) 
                                   << " si = " << si(j+1) 
                                   << " gammi = " << gammai(j) << endl;
@@ -1093,7 +1093,7 @@ void QMRSolver<SCAL> :: Mult (const BaseVector & b, BaseVector & x) const
 {
   try
     {
-      cout << "QMR called" << endl;
+      cout << IM(1) << "QMR called" << endl;
       double resid;
       SCAL rho, rho_1, xi, gamma, gamma_1, theta, theta_1, eta, delta, ep=1.0, beta;
       
@@ -1301,7 +1301,7 @@ void QMRSolver<SCAL> :: Mult (const BaseVector & b, BaseVector & x) const
 	  x += d;
 	  r -= s;
 
-	  if ( printrates )   (cout) << i << " " << r.L2Norm() << endl;
+	  if ( printrates ) cout << IM(1) << i << " " << r.L2Norm() << endl;
 	  
 	  if ((resid = r.L2Norm() / normb) <= tol) {
 	    tol = resid;

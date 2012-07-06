@@ -1466,6 +1466,22 @@ namespace ngbla
     return inv;
   }
 
+  inline void CalcInverse (double & m)
+  {
+    m = 1 / m;
+  }
+
+  inline void CalcInverse (Complex & m)
+  {
+    m = 1.0 / m;
+  }
+
+  template <int H, int W, typename T>
+  inline void CalcInverse (Mat<H,W,T> & m)
+  {
+    FlatMatrix<T> fm(m);
+    CalcInverse (fm);
+  }
 
 
   inline void CalcInverse (const double & m, double & inv)

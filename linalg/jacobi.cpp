@@ -9,8 +9,6 @@
 
 namespace ngla
 {
-  using namespace ngla;
-
   template <class TM, class TV_ROW, class TV_COL>
   JacobiPrecond<TM,TV_ROW,TV_COL> ::
   JacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
@@ -19,19 +17,20 @@ namespace ngla
   { 
     height = mat.Height();
     invdiag = new TM[height];
-    for (int i = 0; i < height; i++)
-      ngbla::CalcInverse (mat(i,i), invdiag[i]);
 
-    //(*testout) << "inv diag = " << endl;
-    //for (int i = 0; i < height; i++)
-    //  (*testout) << "inv[" << i << "] = " << invdiag[i] << endl;
+    for (int i = 0; i < height; i++)
+      invdiag[i] = mat(i,i);
+    
+    // AllReduceDofData (invdiag, MPI_SUM, pardofs);  // don't have pardofs
+
+    for (int i = 0; i < height; i++)
+      CalcInverse (invdiag[i]);
   }
 
   ///
   template <class TM, class TV_ROW, class TV_COL>
   JacobiPrecond<TM,TV_ROW,TV_COL> :: ~JacobiPrecond () 
   {
-    // he: this is an array
     delete [] invdiag; 
   }
 
