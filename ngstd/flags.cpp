@@ -332,10 +332,8 @@ namespace ngstd
 #else
 #ifdef SUN
 #else
-	/*
-	if(endptr != pos && (isnan(val) || isinf(val)))
+	if(endptr != pos && (std::isnan(val) || std::isinf(val)))
 	  endptr = const_cast<char *>(pos);
-	*/
 #endif
 #endif
 #endif
