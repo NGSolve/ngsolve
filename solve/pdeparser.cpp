@@ -10,14 +10,10 @@
 
 
 
-
-
 namespace ngsolve
 {
 
-
   // parser for pde file
-
 
   enum TOKEN_TYPE 
     { 
@@ -155,12 +151,47 @@ namespace ngsolve
     copy_of_stream = "";
     char ch;
 
+
     while(!scanin->eof())
       {
 	scanin->get(ch);
 	if(!scanin->eof())
 	  copy_of_stream += ch;
       }
+
+
+
+
+    int argc;
+    char ** argv;
+    Ng_GetArgs (argc, argv);
+    
+    for (int i = 0; i < argc; i++)
+      {
+	string flag = argv[i];
+	if (flag.substr(0,2) == "-D")
+	  {
+	    int pos = flag.find ("=");
+	    string varname = flag.substr (2, pos-2);
+	    string value = flag.substr (pos+1, flag.length());
+	    string fullname = string("$(")+varname+string(")");
+
+	    size_t spos = 0;
+	    while(spos != string::npos)
+	      {
+		spos = copy_of_stream.find(fullname,spos);
+
+		if(spos != string::npos)
+		  copy_of_stream.replace(spos,
+					 fullname.length(),
+					 value);
+	      }
+	  }
+      }
+
+    // cout << "new stream = " << copy_of_stream << endl;
+
+
 
     size_t pos = 0;
     int ok = 0;
@@ -2008,13 +2039,9 @@ namespace ngsolve
 
     cout << IM(1) << "Load PDE from file " << filename << endl;
 
-    int ntasks = MyMPI_GetNTasks ();
-    int id = MyMPI_GetId();
-
     string data;
 
-    
-    if (id == 0)
+    if (MyMPI_GetId() == 0)
       {
 	string::size_type pos1 = filename.rfind('\\');
 	string::size_type pos2 = filename.rfind('/');
@@ -2052,65 +2079,27 @@ namespace ngsolve
 	    data += ch;
 	  }
 
-#ifdef PARALLEL
-	{
-	  for (int dest = 1; dest < ntasks; dest ++)
-	    {
-	      MyMPI_Send (filename, dest);
-	      MyMPI_Send (pde_directory, dest);
-	      MyMPI_Send (data, dest);
-	    }
-	}
-#endif
+	string hfilename = filename;
+	MyMPI_Bcast (hfilename);
+	MyMPI_Bcast (pde_directory);
       }
 
     else
 
       {
-	string pdefiledata;
 	string filename, pde_directory;
 
-	MyMPI_Recv (filename, 0);
-	MyMPI_Recv (pde_directory, 0);
-	MyMPI_Recv (data, 0);
-	
+	MyMPI_Bcast (filename);
+	MyMPI_Bcast (pde_directory);	
 	SetDirectory(pde_directory);
 	SetFilename(filename);
       }
 
 
+    MyMPI_Bcast (data);
+
     stringstream strdata(data);
-    LoadPDE(strdata,nomeshload,nogeometryload);
-
-
-
-    /*
-    LoadPDE(infile,nomeshload,nogeometryload);
-    infile.close();
-
-#ifdef PARALLEL
-    {
-      MyMPI_SendCmd ("ngs_pdefile");
-      
-      ifstream infile (filename.c_str());
-      string data;
-      while (!infile.eof())
-	{
-	  char ch;
-	  infile.get(ch);
-	  data += ch;
-      }
-      
-      int ntasks = MyMPI_GetNTasks ();
-      for (int dest = 1; dest < ntasks; dest ++)
-	{
-	  MyMPI_Send (filename, dest);
-	  MyMPI_Send (pde_directory, dest);
-	  MyMPI_Send (data, dest);
-	}
-    }
-#endif
-    */
+    LoadPDE(strdata, nomeshload, nogeometryload);
   }
 
 

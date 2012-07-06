@@ -241,6 +241,30 @@ namespace ngparallel
     return request;
   }
 
+
+  template <class T>
+  inline void MyMPI_Bcast (T & s, MPI_Comm comm = ngs_comm)
+  {
+    MPI_Bcast (&s, 1, MyGetMPIType<T>(), 0, comm);
+  }
+
+  template <class T>
+  inline void MyMPI_Bcast (Array<T> & s, MPI_Comm comm = ngs_comm)
+  {
+    int size = s.Size();
+    MyMPI_Bcast (size, comm);
+    if (MyMPI_GetId() != 0) s.SetSize(size);
+    MPI_Bcast (&s[0], size, MyGetMPIType<T>(), 0, comm);
+  }
+
+  inline void MyMPI_Bcast (string & s, MPI_Comm comm = ngs_comm)
+  {
+    int len = s.length();
+    MyMPI_Bcast (len, comm);
+    if (MyMPI_GetId() != 0) s.resize (len);
+    MPI_Bcast (&s[0], len, MPI_CHAR, 0, comm);
+  }
+
   inline void MyMPI_WaitAll (const Array<MPI_Request> & requests)
   {
     static Timer t("dummy - waitall");
@@ -272,6 +296,47 @@ namespace ngparallel
   }
 
 
+class MyMPI
+{
+public:
+  MyMPI(int argc, char ** argv) 
+  { 
+    MPI_Init (&argc, &argv);
+    ngs_comm = MPI_COMM_WORLD;
+    NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
+    
+#ifdef _OPENMP
+    if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
+      omp_set_num_threads (1);
+#endif
+  }
+
+  /*
+  MyMPI()
+  { 
+    int argc2 = 1;
+    char * argv2[2] = { "myprog", NULL };
+    char ** pargv2 = &argv2[0];
+
+    MPI_Init (&argc2, &pargv2);
+    ngs_comm = MPI_COMM_WORLD;
+    NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
+
+#ifdef _OPENMP
+    if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
+      omp_set_num_threads (1);
+#endif
+  }
+  */
+
+  ~MyMPI()
+  {
+    MPI_Finalize ();
+  }
+};
+
+
+
 
 #else
   enum { MPI_COMM_WORLD = 12345 };
@@ -293,6 +358,14 @@ namespace ngparallel
   template <typename T>
   inline T MyMPI_AllReduce (T d, int op = 0, MPI_Comm comm = 0)  { return d; }
 
+  inline void MyMPI_Bcast (string & s, MPI_Comm comm = 0) { ; }
+  
+  class MyMPI
+  {
+  public:
+    MyMPI(int argc, char ** argv) { ; }
+  };
+      
 #endif
 
   
