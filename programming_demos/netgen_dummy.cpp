@@ -754,10 +754,18 @@ extern "C" {
 
   void Ng_Tcl_SetResult (Ng_Tcl_Interp * interp, const char * result);
 
+
+
+  void Ng_GetArgs (int & argc, char ** &argv)
+  {
+    argc = 0;
+    argv = NULL;
+    // argc = h_argc;
+    // argv = h_argv;
+  }
+
+
 }
-
-
-
 
 
 
