@@ -289,8 +289,6 @@ namespace ngcomp
 			  (*testout) << "elvec = " << endl << elvec << endl;
 			}
 
-
-
 		      fespace.TransformVec (i, true, elvec, TRANSFORM_RHS);
 		    
 #pragma omp critical (addelvec2)		    

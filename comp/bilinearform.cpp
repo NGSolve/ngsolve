@@ -613,6 +613,9 @@ namespace ngcomp
 	    // clock_t prevtime = clock();
 	    double prevtime = WallTime();
 
+	    for (int j = 0; j < preconditioners.Size(); j++)
+	      preconditioners[j] -> InitLevel();
+
 	    ProgressOutput progress (ma, "assemble element", ma.GetNE());
 
 
@@ -1108,7 +1111,6 @@ namespace ngcomp
 			      (*testout) << "elmat = " << endl << elmat << endl;
 			    }
 			  
-			  
 			  if (elmat_ev)
 			    {
 			      testout->precision(8);
@@ -1127,15 +1129,12 @@ namespace ngcomp
 			AddElementMatrix (dnums, dnums, sumelmat, 0, i, lh);
 		      }
 		      
-		      
 		      for (int j = 0; j < preconditioners.Size(); j++)
-			preconditioners[j] -> 
-			  AddElementMatrix (dnums, sumelmat, false, i, lh);
+			preconditioners[j] -> AddElementMatrix (dnums, sumelmat, false, i, lh);
 		      
 		      timerb3.Stop();
                     }
 		}//endof parallel 
-		// cout << "\rassemble surface element " << cnt << "/" << nse << endl;
 
 		progress.Done();
 
@@ -1501,6 +1500,8 @@ namespace ngcomp
                     }
               }
 
+	    for (int j = 0; j < preconditioners.Size(); j++)
+	      preconditioners[j] -> FinalizeLevel();
 
             if (print)
               (*testout) << "mat = " << endl << GetMatrix() << endl;
@@ -1948,6 +1949,10 @@ cout << "catch in AssembleBilinearform 2" << endl;
               hasinner = true;
           }
       
+
+	for (int j = 0; j < preconditioners.Size(); j++)
+	  preconditioners[j] -> InitLevel();
+
 	
         if (hasinner)
           {
@@ -2353,8 +2358,11 @@ cout << "catch in AssembleBilinearform 2" << endl;
              << ", unused = " << useddof.Size()-cntused
              << ", total = " << useddof.Size() << endl;
   
+
+	for (int j = 0; j < preconditioners.Size(); j++)
+	  preconditioners[j] -> FinalizeLevel();
       }
-	    catch (Exception & e)
+    catch (Exception & e)
       {
         stringstream ost;
         ost << "in Assemble BilinearForm" << endl;
