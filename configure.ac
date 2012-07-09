@@ -112,6 +112,10 @@ AC_ARG_ENABLE([parallel],
 #        AC_SUBST([MPI_LIBS], "-lmetis")
 
  
+echo "creating compiler wrapper ngscxx"
+echo "$CXX $CXXFLAGS -I$netgendir/include -L$netgendir/lib -fpic $MPI_INCLUDES $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*" > ngscxx
+chmod a+x ngscxx
+
 
 
 AC_CONFIG_HEADERS(config.h) AC_CONFIG_FILES(Makefile include/Makefile
