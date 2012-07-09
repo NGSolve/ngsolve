@@ -33,14 +33,13 @@ namespace netgen {
 
 
 
-#ifdef PARALLELxxx
+#ifdef PARALLEL
 #include <mpi.h>
 
 namespace netgen
 {
-  int id = 0, ntasks = 1;
-
-  // MPI_Comm mesh_comm;
+  // int id = 0, ntasks = 1;
+  MPI_Comm mesh_comm;
 }
 #endif
 

@@ -197,6 +197,15 @@ namespace netgen
     cout << "1D not supported" << endl;
   }
 
+  template <>
+  DLL_HEADER void Ng_MultiElementTransformation<0,1> (int elnr, int npts,
+                                                      const double * xi, size_t sxi,
+                                                      double * x, size_t sx,
+                                                      double * dxdxi, size_t sdxdxi)
+  {
+    cout << "1D not supported" << endl;
+  }
+
 
 
   template <> DLL_HEADER int Ng_GetNNodes<1> ()
