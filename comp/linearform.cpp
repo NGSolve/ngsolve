@@ -71,7 +71,7 @@ namespace ngcomp
     RegionTimer reg (timer);
 
     assembled = true;
-
+    
     if (independent)
       {
 	AssembleIndependent(clh);
@@ -173,13 +173,12 @@ namespace ngcomp
 	
 	timer1.Stop();
 
+
 	if (hasinner)
 	  {
 	    ProgressOutput progress (ma, "assemble element", ma.GetNE());
 
 	    int cnt = 0;
-
-	    // if (working_proc)
 	      
 #pragma omp parallel
 	    {
@@ -196,7 +195,6 @@ namespace ngcomp
 		  gcnt++;
 
 		  progress.Update (cnt);
-		  
 		  HeapReset hr(lh);
 
 		  const FiniteElement & fel = fespace.GetFE (i, lh);
@@ -204,7 +202,7 @@ namespace ngcomp
 		      
 		  ArrayMem<int, 20> dnums;
 		  fespace.GetDofNrs (i, dnums);
-		
+
 		  for (int j = 0; j < parts.Size(); j++)
 		    {
 		      if (parts[j] -> SkeletonForm()) continue;
@@ -239,13 +237,15 @@ namespace ngcomp
 
 
 	    progress.Done();
-	    // MyMPI_Barrier();
 	  }
+
 
 	RegionTimer reg3(timer3);
 
 	if (hasbound)
 	  {
+	    ProgressOutput progress (ma, "assemble surface element", ma.GetNSE());
+	    int cnt = 0;
 
 #pragma omp parallel
 	    {
@@ -254,15 +254,12 @@ namespace ngcomp
 #pragma omp for	      
 	      for (int i = 0; i < nse; i++)
 		{
-#pragma omp critical (linformsurfprint)		    
-		  {
-		    gcnt++;
-		    if (i % 10 == 0)
-		      cout << "\rassemble surface element " << i << "/" << nse << flush;
-
-		    ma.SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
-		  }
-
+#pragma omp atopmic
+		  gcnt++;
+#pragma omp atopmic
+		  cnt++;
+		  
+		  progress.Update (cnt);
 		  HeapReset hr(lh);
 	      
 		  const FiniteElement & fel = fespace.GetSFE (i, lh);
@@ -302,10 +299,10 @@ namespace ngcomp
 		      }
 		    }
 		}
-	      }//end of parallel
-	    cout << "\rassemble surface element " << nse << "/" << nse << endl;	  
-	    }//end of hasbound
-
+	    }//end of parallel
+	    progress.Done();
+	  }//end of hasbound
+	
 
 
 	   

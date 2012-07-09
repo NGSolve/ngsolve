@@ -52,7 +52,7 @@ namespace ngcomp
     LinearForm * linearform;
 
     /// some preconditioners need element matrices 
-    Preconditioner * preconditioner; 
+    Array<Preconditioner*> preconditioners; 
 
     /// matrices (sparse, application, diagonal, ...)
     Array<BaseMatrix*> mats;
@@ -146,7 +146,9 @@ namespace ngcomp
     { linearform = alf; }
     
     void SetPreconditioner (Preconditioner * pre)
-    { preconditioner = pre; }
+    { 
+      preconditioners.Append (pre); 
+    }
 
     /// generates matrix graph
     virtual MatrixGraph * GetGraph (int level, bool symmetric);

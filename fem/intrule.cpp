@@ -2429,9 +2429,9 @@ namespace ngfem
 
   int Integrator :: common_integration_order = -1;
 
+  static IntegrationRules intrules;
   const IntegrationRules & GetIntegrationRules ()
   {
-    static IntegrationRules intrules;
     return intrules;
   }
 

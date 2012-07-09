@@ -1439,7 +1439,6 @@ public:
 	int ndof = fel.GetNDof();
 	
 	elvec = 0;
-
 	FlatVector<TSCAL> hv(ndof * DIM, lh);
 	Vec<DIM_DMAT, TSCAL> dvec;
 	

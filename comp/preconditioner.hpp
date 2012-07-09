@@ -70,7 +70,8 @@ namespace ngcomp
       GetMatrix().Mult(x, y);
     }
 
-
+    virtual void InitLevel () { ; }
+    virtual void FinishLevel () { ; }
     virtual void AddElementMatrix (const Array<int> & dnums,
 				   const FlatMatrix<double> & elmat,
 				   bool inner_element, int elnr,
