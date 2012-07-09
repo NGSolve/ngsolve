@@ -14,13 +14,11 @@ namespace ngcomp
     name="FacetFESpace(facet)";
     // defined flags
     DefineNumFlag("relorder");
-    DefineDefineFlag("print"); 
     DefineDefineFlag("variableorder"); 
 
 
     if(checkflags) CheckFlags(flags);
     
-    print = flags.GetDefineFlag("print"); 
     
     ndlevel.SetSize(0);
     Flags loflags;
