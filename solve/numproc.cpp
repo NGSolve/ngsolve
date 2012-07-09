@@ -1,12 +1,13 @@
 #include <solve.hpp>
 
+/*
 #include <tcl.h>
 #if TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>=4
 #define tcl_const const
 #else
 #define tcl_const
 #endif
-
+*/
 
 #include <parallelngs.hpp>
 
@@ -1594,7 +1595,7 @@ namespace ngsolve
 	char *dummy; dummy = new char[tclstring.str().size()+1];
 	strcpy(dummy,tclstring.str().c_str());
 
-	Tcl_Eval(pde.tcl_interpreter,dummy);
+	pde.Tcl_Eval(tclstring.str());
 
 	delete [] dummy;
 		 
@@ -1729,7 +1730,7 @@ namespace ngsolve
     
     //cout << "tclstring: " << endl << dummy << endl;
 
-    Tcl_Eval(pde.tcl_interpreter,dummy);
+    pde.Tcl_Eval(tclstring.str()); // pde.GetTclInterpreter(), dummy);
 
     delete [] dummy;
 		 
@@ -2291,7 +2292,7 @@ namespace ngsolve
     char *dummy; dummy = new char[tclstring.str().size()+1];
     strcpy(dummy,tclstring.str().c_str());
 
-    Tcl_Eval(pde.tcl_interpreter,dummy);
+    pde.Tcl_Eval(tclstring.str());
     
     delete [] dummy;
   }
@@ -2475,13 +2476,6 @@ namespace ngsolve
     NumProcVisualization (PDE & apde, const Flags & flags);
     ///
     virtual ~NumProcVisualization() { ; }
-
-    /*
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcVisualization (pde, flags);
-    }
-    */
 
     static void PrintDoc (ostream & ost);
 
@@ -2731,7 +2725,7 @@ namespace ngsolve
     char *dummy; dummy = new char[tclstring.str().size()+1];
     strcpy(dummy,tclstring.str().c_str());
     
-    Tcl_Eval(pde.tcl_interpreter,dummy);
+    pde.Tcl_Eval(tclstring.str());
     
     delete [] dummy;
   }
@@ -2880,7 +2874,7 @@ namespace ngsolve
     virtual void Do(LocalHeap & lh)
     {
       char exstr[] = "Ng_Exit\n";
-      Tcl_Eval(pde.tcl_interpreter,exstr);
+      pde.Tcl_Eval(exstr);
       exit(0);
     }
   };

@@ -518,6 +518,77 @@ namespace ngfem
 
   template <int ET> class ET_trait { };
 
+  template<> class ET_trait<ET_POINT>
+  {
+  public:
+    enum { DIM = 0 };
+    enum { N_VERTEX = 1 };
+    enum { N_EDGE = 0 };
+    enum { N_FACE = 0 };
+    enum { N_FACET = 0 };
+
+    static int PolDimension (int order) { return 1; }
+    static int PolBubbleDimension (INT<1> order) { return 0; }
+
+    static ELEMENT_TYPE FaceType(int i) { return ET_POINT; }  // dummy
+
+
+
+    static INT<2> GetEdge (int /* i */);
+    /*
+    {
+      static const int edges[][2] = 
+	{ { 0, 1 } };
+      return INT<2> (edges[0][0], edges[0][1]);
+    }
+    */
+
+    template <typename TVN>
+    static INT<2> GetEdgeSort (int i, const TVN & vnums);
+    /*
+    {
+      INT<2> e = GetEdge (i);
+      if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
+      return e;
+    }
+    */
+
+    static INT<4> GetFace (int /* i */ );
+    /*
+    {
+      return INT<4> (-1, -1, -1, -1);
+    }
+    */
+    template <typename TVN>
+    static INT<4> GetFaceSort (int /*  i */ , const TVN & vnums);
+    /*
+    {
+      return GetFace(0);
+    }
+    */
+    /*
+    template <typename TVN>
+    static int GetClassNr (const TVN & vnums)
+    {
+      int classnr = 0;
+      int sort[3] = { 0, 1 };
+      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); classnr += 1; }
+      return classnr;
+    }
+
+    template <typename TVN>
+    static int GetFacetClassNr (int facet, const TVN & vnums)
+    {
+      return facet;
+    } 
+
+    */
+  };
+
+
+
+
+
   template<> class ET_trait<ET_SEGM>
   {
   public:

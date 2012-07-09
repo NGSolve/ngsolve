@@ -65,6 +65,9 @@ namespace ngcomp
     /// couple (all) neighbouring degrees of freedom (like for jump terms of dg-methods)?
     bool dgjumps;
 
+    /// debug output to testout
+    bool print; 
+
     /// prolongation operators between multigrid levels
     ngmg::Prolongation *prol;
 
@@ -101,6 +104,8 @@ namespace ngcomp
     FiniteElement * quad;
     /// Reference - element (low order only)
     FiniteElement * segm;
+    /// Reference - element (low order only)
+    FiniteElement * point;
 
     /// Evaluator for visualization (future style)
     DifferentialOperator * evaluator;

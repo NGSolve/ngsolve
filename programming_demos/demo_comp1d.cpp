@@ -12,33 +12,39 @@ using namespace ngcomp;
 
 int main (int argc, char **argv)
 {
-#ifdef PARALLEL
-  MPI_Init (&argc, &argv);
-  ngs_comm = MPI_COMM_WORLD;
-#endif 
+  cout << "1D demo" << endl;
 
-  // Ng_LoadGeometry ("cube.geo");
-  // Ng_LoadMesh ("cube.vol");
+  MyMPI mympi (argc, argv);
+
   
   LocalHeap lh(100000, "main heap");
   MeshAccess ma;
 
+  cout << "elements: " << ma.GetNE() << endl;
+  cout << "vertices: " << ma.GetNV() << endl;
+
+
   Array<double> dirichlet(1);
   dirichlet[0] = 1;
   H1HighOrderFESpace fes(ma, 
-			 Flags() .SetFlag("order",3)
-			 .SetFlag("print")
-			 .SetFlag("dirichlet", dirichlet));
+			 Flags() 
+			 .SetFlag("order",3)
+			 // .SetFlag("print")
+			 .SetFlag("dirichlet", dirichlet)
+			 );
 
-  // NodalFESpace fes(ma, Flags().SetFlag("order",1).SetFlag("print") );
-  
   T_GridFunction<double> gfu (fes, "gfu", Flags());
 
   T_BilinearFormSymmetric<double> bfa(fes, "bfa", 
-				      Flags().SetFlag("symmetric").SetFlag("print").SetFlag("printelmat"));
+				      Flags()
+				      .SetFlag("symmetric")
+				      // .SetFlag("print")
+				      // .SetFlag("printelmat")
+				      );
+
 
   bfa.AddIntegrator (new LaplaceIntegrator<1> (new ConstantCoefficientFunction(1)));
-  // bfa.AddIntegrator (new RobinIntegrator<1> (new ConstantCoefficientFunction(1)));
+  bfa.AddIntegrator (new RobinIntegrator<1> (new ConstantCoefficientFunction(1)));
 
 
 
@@ -46,7 +52,6 @@ int main (int argc, char **argv)
 
   Array<EvalFunction*> asource(1);
   asource[0] = new EvalFunction ("sin(x)*y");
-  asource[0]->Print(cout);
 
   lff.AddIntegrator (new SourceIntegrator<1> (new DomainVariableCoefficientFunction<3>(asource)));
 
@@ -64,11 +69,12 @@ int main (int argc, char **argv)
   
   BaseMatrix * jacobi = dynamic_cast<const BaseSparseMatrix&> (mata).
     CreateJacobiPrecond(fes.GetFreeDofs());
-
+  
   CGSolver<double> inva (mata, *jacobi);
   inva.SetPrintRates();
   inva.SetMaxSteps(100);
 
+  cout << "CG solver:" << endl;
   vecu = inva * vecf;
 
 
@@ -85,10 +91,4 @@ int main (int argc, char **argv)
 	  out << mip(0) << " " << cfu.Evaluate (mip) << endl;
 	}
     }
-
-
-#ifdef PARALLEL
-  MPI_Finalize ();
-#endif
-
 }

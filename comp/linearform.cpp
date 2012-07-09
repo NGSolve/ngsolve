@@ -115,15 +115,15 @@ namespace ngcomp
                 }
             }
 
-	if(!allocated || ( this->GetVector().Size() != this->fespace.GetNDof())){
-	  *testout << "allocating vector" << endl;
-	  AllocateVector();
-	  allocated=true;
-	}
-	else{
-	  *testout << "not allocating vector - just setting vec to zero" << endl;
-	  this->GetVector() = TSCAL(0);
-	}
+	if(!allocated || ( this->GetVector().Size() != this->fespace.GetNDof()))
+	  {
+	    AllocateVector();
+	    allocated=true;
+	  }
+	else
+	  {
+	    this->GetVector() = TSCAL(0);
+	  }
 
 	int ne = ma.GetNE();
 	int nf = ma.GetNFacets();
@@ -152,12 +152,15 @@ namespace ngcomp
 	    }
 	  }
 	  
-	*testout << " LINEARFORM TEST:" << endl;
-	*testout << " hasinner = " << hasinner << endl;
-	*testout << " hasouter = " << hasbound << endl;
-	*testout << " hasskeletoninner = " << hasskeletoninner << endl;
-	*testout << " hasskeletonouter = " << hasskeletonbound << endl;
-	
+	if (print)
+	  {
+	    *testout << " LINEARFORM TEST:" << endl;
+	    *testout << " hasinner = " << hasinner << endl;
+	    *testout << " hasouter = " << hasbound << endl;
+	    *testout << " hasskeletoninner = " << hasskeletoninner << endl;
+	    *testout << " hasskeletonouter = " << hasskeletonbound << endl;
+	  }
+
 	int nrcases = 0;
 	int loopsteps = 0;
 	if (hasinner) {nrcases++; loopsteps+=ne;}

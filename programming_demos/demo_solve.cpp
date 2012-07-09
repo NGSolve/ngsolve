@@ -1,5 +1,5 @@
 #include <solve.hpp>
-using namespace ngsolve;
+
 
 int main(int argc, char ** argv)
 {
@@ -9,13 +9,11 @@ int main(int argc, char ** argv)
       exit(1);
     }
 
-  MyMPI mympi(argc, argv);
+  ngsolve::MyMPI mympi(argc, argv);
 
-  MeshAccess ma;
-  PDE pde(ma);
+  ngsolve::PDE pde; 
 
-  pde.LoadPDE (argv[1]); // "d1_square.pde");
-
+  pde.LoadPDE (argv[1]); 
   pde.Solve();
 
   return 0;

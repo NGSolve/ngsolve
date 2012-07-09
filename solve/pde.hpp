@@ -64,7 +64,7 @@ namespace ngsolve
   class NGS_DLL_HEADER PDE
   {
     ///
-    MeshAccess & ma;
+    MeshAccess ma;
 
     ///
     string geometryfilename;
@@ -117,9 +117,12 @@ namespace ngsolve
     //   ClientSocketAccess sa;
     // #endif
 
+    /// a hack 
+    Tcl_Interp * tcl_interpreter;
+
   public:
     ///
-    PDE(MeshAccess & ama);
+    PDE(); // MeshAccess & ama);
     ///
     ~PDE();
 
@@ -280,8 +283,6 @@ namespace ngsolve
   
 
 
-    /// a hack 
-    Tcl_Interp * tcl_interpreter;
   
     string GetMatfile() const
     { return matfile;} 
@@ -316,6 +317,18 @@ namespace ngsolve
 
     void WritePDEFile ( string abspdefile, string geofile, 
 			string meshfile, string matfile, string oldpdefile );
+
+    Tcl_Interp * GetTclInterpreter() const { return tcl_interpreter; }
+    void SetTclInterpreter(Tcl_Interp * inter) { tcl_interpreter = inter; }
+
+
+    void Tcl_Eval (string str);
+    /*
+    void Tcl_CreateCommand(Tcl_Interp *interp,
+			   CONST char *cmdName, Tcl_CmdProc *proc,
+			   ClientData clientData,
+			   Tcl_CmdDeleteProc *deleteProc);
+    */
 
 #ifdef ASTRID
     void SaveZipSolution (const string & filename, const bool ascii = false);

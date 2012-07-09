@@ -605,11 +605,15 @@ namespace ngcomp
 		    hasinner = true;
 	      }
 
-	    *testout << " BILINEARFORM TEST:" << endl;
-	    *testout << " hasinner = " << hasinner << endl;
-	    *testout << " hasouter = " << hasbound << endl;
-	    *testout << " hasskeletoninner = " << hasskeletoninner << endl;
-	    *testout << " hasskeletonouter = " << hasskeletonbound << endl;
+	    if (print)
+	      {
+		*testout << " BILINEARFORM TEST:" << endl;
+		*testout << " hasinner = " << hasinner << endl;
+		*testout << " hasouter = " << hasbound << endl;
+		*testout << " hasskeletoninner = " << hasskeletoninner << endl;
+		*testout << " hasskeletonouter = " << hasskeletonbound << endl;
+	      }
+
 	    int nrcases = 0;
 	    int loopsteps = 0;
 	    if (hasinner) {nrcases++; loopsteps+=ne;}

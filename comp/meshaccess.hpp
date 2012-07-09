@@ -277,8 +277,9 @@ namespace ngcomp
 	{
 	case 1:	return Ng_GetElement<1> (elnr);
 	case 2: return Ng_GetElement<2> (elnr);
-	default:
 	case 3: return Ng_GetElement<3> (elnr);
+	default:
+	  throw Exception ("GetElement, illegal dimension");
 	}
     }
 
@@ -295,8 +296,9 @@ namespace ngcomp
 	{
 	case 1:	return Ng_GetElement<0> (elnr);
 	case 2: return Ng_GetElement<1> (elnr);
-	default:
 	case 3: return Ng_GetElement<2> (elnr);
+	default:
+	  throw Exception ("GetSElement, illegal dimension");
 	}
     }
 

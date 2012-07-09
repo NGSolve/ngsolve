@@ -30,6 +30,7 @@ namespace ngcomp
     DefineDefineFlag("vec");
     DefineDefineFlag("complex");
     DefineDefineFlag("timing");
+    DefineDefineFlag("print");
     DefineNumListFlag("directsolverdomains");
     DefineNumListFlag("dirichlet");
     DefineNumListFlag("definedon");
@@ -45,6 +46,7 @@ namespace ngcomp
     iscomplex = flags.GetDefineFlag ("complex");
 //     eliminate_internal = flags.GetDefineFlag("eliminate_internal");
     timing = flags.GetDefineFlag("timing");
+    print = flags.GetDefineFlag("print");
     dgjumps = flags.GetDefineFlag("dgjumps");
     if (dgjumps) 
       *testout << "ATTENTION: flag dgjumps is used!\n This leads to a \
@@ -75,7 +77,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	      cerr << "Illegal Dirichlet boundary index " << bnd+1 << endl;
 	    */
 	  }
-        *testout << "dirichlet_boundaries" << dirichlet_boundaries << endl;
+	if (print)
+	  *testout << "dirichlet_boundaries:" << endl << dirichlet_boundaries << endl;
       }
     
     if(flags.NumListFlagDefined("definedon") || 
@@ -233,8 +236,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: Update(LocalHeap & lh)
   {
-    *testout << "Update FESpace, type = " << typeid(*this).name() << endl;
-    *testout << "name = " << name << endl;
+    if (print)
+      {
+	*testout << "Update FESpace, type = " << typeid(*this).name() << endl;
+	*testout << "name = " << name << endl;
+      }
 
     for (int i=0; i< specialelements.Size(); i++)
       delete specialelements[i]; 
@@ -275,9 +281,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     AllReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR, ma);
 #endif
     
-    (*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
-    (*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;
-    (*testout) << "Dirichlet_face = " << endl << dirichlet_face << endl;
+    if (print)
+      {
+	(*testout) << "Dirichlet_vertex = " << endl << dirichlet_vertex << endl;
+	(*testout) << "Dirichlet_edge = " << endl << dirichlet_edge << endl;
+	(*testout) << "Dirichlet_face = " << endl << dirichlet_face << endl;
+      }
   }
 
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
@@ -336,12 +345,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
       if (ctofdof[i] & LOCAL_DOF)
 	external_free_dofs.Clear(i);
 	
-    *testout << "freedofs = " << endl << free_dofs << endl;
+    if (print)
+      *testout << "freedofs = " << endl << free_dofs << endl;
 
     
     UpdateParallelDofs();
 
-    *testout << "coloring ... " << flush;
+    if (print)
+      *testout << "coloring ... " << flush;
 
     Array<int> col(ma.GetNE());
     col = -1;
@@ -405,7 +416,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (int i = 0; i < ma.GetNE(); i++)
       (*element_coloring)[col[i]][cntcol[col[i]]++] = i;
     
-    *testout << "needed " << maxcolor+1 << " colors" << endl;
+    if (print)
+      *testout << "needed " << maxcolor+1 << " colors" << endl;
   }
 
 
@@ -583,6 +595,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	fe = quad; break;
       case ET_SEGM:
 	fe = segm; break;
+      case ET_POINT:
+	fe = point; break;
       default:
         ;
       }
@@ -985,7 +999,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    segm    = new FE_Segm2;
 	  }
       }
-
+    point = new FE_Point;
 
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
@@ -1645,10 +1659,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     UpdateCouplingDofArray();
 
-    (*testout) << "Update compound fespace" << endl;
-    (*testout) << "cummulative dofs start at " << cummulative_nd << endl;
-    // (*testout) << "dof coupling types " << ctofdof << endl;
-    // (*testout) << "freedofs " << endl << free_dofs << endl;
+    if (print)
+      {
+	(*testout) << "Update compound fespace" << endl;
+	(*testout) << "cummulative dofs start at " << cummulative_nd << endl;
+      }
   }
 
   void CompoundFESpace :: FinalizeUpdate(LocalHeap & lh)
@@ -1666,11 +1681,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
       if (spaces[i]->GetFreeDofs()) 
 	has_dirichlet_dofs = true;
 
-    *testout << "spaces.size = " << endl << spaces.Size() << endl;
-
     if (has_dirichlet_dofs)
       {
-	*testout << "has Dirichlet dofs" << endl;
 	free_dofs.SetSize(GetNDof());
 	free_dofs.Set();
 

@@ -23,6 +23,18 @@ namespace ngfem
     { ; }
   };
 
+
+  class FE_Point : public T_ScalarFiniteElement<FE_Point,ET_POINT,1,0>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx x[], TFA & shape) 
+    {
+      shape[0] = 1;
+    }
+  }; 
+
+
   ///
   class FE_Segm0 : public T_ScalarFiniteElement<FE_Segm0,ET_SEGM,1,0>
   {
