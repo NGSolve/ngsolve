@@ -31,7 +31,6 @@ namespace ngcomp
     fespace2 = NULL;
     diagonal = false;
     multilevel = true;
-    // galerkin = false;
     symmetric = true;
     // hermitean = false;
     // nonassemble = false;
@@ -39,7 +38,8 @@ namespace ngcomp
     // SetUnusedDiag (0);
     low_order_bilinear_form = NULL;
     linearform = NULL;
-    preconditioner = NULL;
+    // preconditioner = NULL;
+
     // timing = false;
     // print = false;
     // printelmat = false;
@@ -80,9 +80,9 @@ namespace ngcomp
     hermitean = false;
     nonassemble = false;
     SetEpsRegularization (0);
-    SetUnusedDiag (0);
+    SetUnusedDiag (0); 
     low_order_bilinear_form = NULL;
-    preconditioner = NULL;
+    // preconditioner = NULL;
     linearform = 0;
     timing = false;
     print = false;
@@ -143,11 +143,8 @@ namespace ngcomp
   {
     if (!low_order_bilinear_form)
       for (int i = 0; i < parts.Size(); i++)
-	if(parts_deletable[i]) delete parts[i];
+	if (parts_deletable[i]) delete parts[i];
 	
-    //    for (int i = 0; i < precomputed_data.Size(); i++)
-    //      delete precomputed_data[i];
-
     delete low_order_bilinear_form;
   }
 
@@ -171,7 +168,6 @@ namespace ngcomp
     if (low_order_bilinear_form)
       low_order_bilinear_form -> SetElmatEigenValues (ee);
   }
-
 
 
 
@@ -280,8 +276,6 @@ namespace ngcomp
 	    precomputed_data.SetSize(0);
 
 	    Array<int> dnums;
-	    // ElementTransformation eltrans;
-	    
 	    int ne = ma.GetNE();
 	    int nse = ma.GetNSE();
       
@@ -308,7 +302,6 @@ namespace ngcomp
 		  if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
 	  
 		  const FiniteElement & fel = fespace.GetFE (i, lh);
-		  // ma.GetElementTransformation (i, eltrans, lh);
 		  ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
 		  fespace.GetDofNrs (i, dnums);
 	  
@@ -330,7 +323,6 @@ namespace ngcomp
 		  lh.CleanUp();
 		  
 		  const FiniteElement & fel = fespace.GetSFE (i, lh);
-		  // ma.GetSurfaceElementTransformation (i, eltrans, lh);
 		  ElementTransformation & eltrans = ma.GetTrafo (i, 1, lh);
 
 		  fespace.GetSDofNrs (i, dnums);
@@ -367,8 +359,7 @@ namespace ngcomp
 	      }
 	    while (time < 2.0);
 	  
-	    cout << " 1 application takes "
-		 << time / steps
+	    cout << " 1 application takes " << time / steps
 		 << " seconds" << endl;
 
 	  }
@@ -379,10 +370,10 @@ namespace ngcomp
     
     try
       {
+
 	if (low_order_bilinear_form)
-	  {
-	    low_order_bilinear_form->Assemble(lh);
-	  }
+	  low_order_bilinear_form->Assemble(lh);
+
       }
     catch (Exception & e)
       {
@@ -463,9 +454,7 @@ namespace ngcomp
     if (reallocate)
       {
 	delete mats.Last();
-	// delete graphs.Last();
 	mats.DeleteLast();
-	// graphs.DeleteLast();
 
 	Assemble(lh);
 	return;
@@ -507,8 +496,6 @@ namespace ngcomp
 
     for (int i = 0; i < mats.Size(); i++)
       if (mats[i]) mats[i]->MemoryUsage (mu);
-    //  for (i = 0; i < graphs.Size(); i++)
-    //    if (graphs[i]) graphs[i]->MemoryUsage (mu);
 
     for (int i = olds; i < mu.Size(); i++)
       mu[i]->AddName (string(" bf ")+GetName());
@@ -552,7 +539,8 @@ namespace ngcomp
         }
       else if (parts[i] -> SkeletonForm() && !parts[i] -> BoundaryForm()) 
 	{ 
-	  if (!fespace.UsesDGCoupling()) throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
+	  if (!fespace.UsesDGCoupling()) 
+	    throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
 	  //TODO: Check each facet for the neighbouring elements - necessary?
 	}
       else
@@ -573,8 +561,6 @@ namespace ngcomp
 	  {
 	    ma.PushStatus ("Assemble Matrix");
  
-	    Array<int> dnums, idofs, idofs1, odofs;
-
 	    int ndof = fespace.GetNDof();
 	    BitArray useddof(ndof);
 	    useddof.Clear();
@@ -928,8 +914,9 @@ namespace ngcomp
 			      AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
 			    }
 			  
-			  if (preconditioner)
-			    preconditioner -> AddElementMatrix (dnums, sum_elmat, true, i, lh);
+			  for (int j = 0; j < preconditioners.Size(); j++)
+			    preconditioners[j] -> 
+			      AddElementMatrix (dnums, sum_elmat, true, i, lh);
 
 			  for (int j = 0; j < dnums.Size(); j++)
 			    if (dnums[j] != -1)
@@ -963,6 +950,7 @@ namespace ngcomp
             if (hasinner && diagonal)
               {
                 // ElementTransformation eltrans;
+		Array<int> dnums;
                 void * heapp = clh.GetPointer();
                 for (int i = 0; i < ne; i++)
                   {
@@ -1139,8 +1127,10 @@ namespace ngcomp
 			AddElementMatrix (dnums, dnums, sumelmat, 0, i, lh);
 		      }
 		      
-		      if (preconditioner)
-			preconditioner -> AddElementMatrix (dnums, sumelmat, false, i, lh);
+		      
+		      for (int j = 0; j < preconditioners.Size(); j++)
+			preconditioners[j] -> 
+			  AddElementMatrix (dnums, sumelmat, false, i, lh);
 		      
 		      timerb3.Stop();
                     }
@@ -1482,6 +1472,7 @@ namespace ngcomp
             // add eps to avoid empty lines
             FlatMatrix<SCAL> elmat (fespace.GetDimension(), clh);
             elmat = 0;
+	    Array<int> dnums;
             dnums.SetSize(1);
 
             void * p = clh.GetPointer();
@@ -2198,8 +2189,9 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
 		      AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
 
-		      if (preconditioner)
-			preconditioner -> AddElementMatrix (dnums, sum_elmat, true, i, lh);
+		      for (int j = 0; j < preconditioners.Size(); j++)
+			preconditioners[j] -> 
+			  AddElementMatrix (dnums, sum_elmat, true, i, lh);
 		    }
 		}
 	      }
@@ -2220,7 +2212,6 @@ cout << "catch in AssembleBilinearform 2" << endl;
 	      LocalHeap & clh = lh;
 	      LocalHeap lh = clh.Split();
 	      
-	      // ElementTransformation eltrans;
 	      Array<int> dnums;
 #pragma omp for 
 	      for (int i = 0; i < nse; i++)
@@ -2284,8 +2275,9 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		    {
 		      AddElementMatrix (dnums, dnums, sum_elmat, 0, i, lh);
 		      
-		      if (preconditioner)
-			preconditioner -> AddElementMatrix (dnums, sum_elmat, false, i, lh);
+		      for (int j = 0; j < preconditioners.Size(); j++)
+			preconditioners[j] -> 
+			  AddElementMatrix (dnums, sum_elmat, false, i, lh);
 		    }
 		}
 	    }
