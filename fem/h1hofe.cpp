@@ -539,11 +539,13 @@ namespace ngfem
   }
   
 
+  template class H1HighOrderFiniteElement<0>;
   template class H1HighOrderFiniteElement<1>;
   template class H1HighOrderFiniteElement<2>;
   template class H1HighOrderFiniteElement<3>;
 
 
+  template NGS_DLL_HEADER class H1HighOrderFE<ET_POINT>;
   template NGS_DLL_HEADER class H1HighOrderFE<ET_SEGM>;
   template NGS_DLL_HEADER class H1HighOrderFE<ET_TRIG>;
   template NGS_DLL_HEADER class H1HighOrderFE<ET_QUAD>;
@@ -553,6 +555,7 @@ namespace ngfem
   template NGS_DLL_HEADER class H1HighOrderFE<ET_HEX>;
  
 
+  template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_POINT>, ET_POINT>;
   template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_SEGM>, ET_SEGM>;
   template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_TRIG>, ET_TRIG>;
   template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_QUAD>, ET_QUAD>;
@@ -562,6 +565,7 @@ namespace ngfem
   template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
 
 
+  template class T_H1HighOrderFiniteElement<ET_POINT>;
   template class T_H1HighOrderFiniteElement<ET_SEGM>;
   template class T_H1HighOrderFiniteElement<ET_TRIG>;
   template class T_H1HighOrderFiniteElement<ET_QUAD>;

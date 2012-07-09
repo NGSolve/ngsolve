@@ -513,8 +513,10 @@ namespace ngcomp
   }
 
   
-  void MeshAccess :: GetSElPNums (int selnr, Array<int> & pnums) const
+  void MeshAccess :: GetSElPNums (int elnr, Array<int> & pnums) const
   {
+    pnums = ArrayObject (GetSElement(elnr).points);
+    /*
     Ng_Element ngel = (dim == 2) 
       ? Ng_GetElement<1> (selnr)
       : Ng_GetElement<2> (selnr);
@@ -522,6 +524,7 @@ namespace ngcomp
     pnums.SetSize(ngel.points.Size());
     for (int j = 0; j < ngel.points.Size(); j++)
       pnums[j] = ngel.points[j];  
+    */
   }
 
 
@@ -699,7 +702,7 @@ namespace ngcomp
 	  case 2: eltrans = new (lh) Ng_ElementTransformation<2,2> (); break;
 	  case 3: eltrans = new (lh) Ng_ElementTransformation<3,3> (); break;
 	  default:
-	    eltrans = NULL;;
+	    throw Exception ("MeshAccess::GetTrafo, illegal dimension");
 	  }
 
 	int elind = Ng_GetElementIndex (elnr+1)-1;
@@ -713,11 +716,20 @@ namespace ngcomp
       }
     else
       {
+	switch (dim)
+	  {
+	  case 1: eltrans = new (lh) Ng_ElementTransformation<0,1> (); break;
+	  case 2: eltrans = new (lh) Ng_ElementTransformation<1,2> (); break;
+	  case 3: eltrans = new (lh) Ng_ElementTransformation<2,3> (); break;
+	  default:
+	    throw Exception ("MeshAccess::GetTrafo, illegal dimension");
+	  }
+	/*
 	if (GetDimension() == 2) 
 	  eltrans = new (lh) Ng_ElementTransformation<1,2> ();
 	else
 	  eltrans = new (lh) Ng_ElementTransformation<2,3> ();
-      
+	*/
 	int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
 	eltrans->SetElement (1, elnr, elind);
 	eltrans->SetElementType (GetSElType(elnr));

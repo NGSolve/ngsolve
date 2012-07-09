@@ -1,5 +1,13 @@
 #include <solve.hpp>
 
+#include <tcl.h>
+#if TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>=4
+#define tcl_const const
+#else
+#define tcl_const
+#endif
+
+
 #include <parallelngs.hpp>
 
 namespace ngfem
@@ -11,8 +19,8 @@ namespace ngfem
 namespace ngsolve
 {
 
-  PDE :: PDE (MeshAccess & ama)
-    : ma (ama)
+  PDE :: PDE () // MeshAccess & ama)
+  // : ma (ama)
   {
     levelsolved = -1;
     SetGood (true);
@@ -20,6 +28,7 @@ namespace ngsolve
     constant_table_for_FEM = &constants;
 
     AddVariable ("timing.level", 0.0, 6);
+    tcl_interpreter = NULL;
   }
   
   PDE :: ~PDE()
@@ -1365,6 +1374,34 @@ namespace ngsolve
 	pdeout.put(ch);
       }
   }
+
+
+
+
+  void PDE :: Tcl_Eval (string str)
+  {
+    if (!tcl_interpreter) return;
+    ::Tcl_Eval (tcl_interpreter, str.c_str());
+    
+    /*
+      // for non-const tcl_eval (Tcl 8.3)
+    char *dummy; 
+    dummy = new char[str.size()+1];
+    strcpy(dummy, str.c_str());
+    
+    ::Tcl_Eval (tcl_interpreter, dummy);
+
+    delete [] dummy;
+    */
+  }
+
+  /*
+  void PDE :: Tcl_CreateCommand(Tcl_Interp *interp,
+			   CONST char *cmdName, Tcl_CmdProc *proc,
+			   ClientData clientData,
+			   Tcl_CmdDeleteProc *deleteProc);
+  */
+
 
 #ifdef ASTRID
   void PDE :: SaveZipSolution (const string & filename, const bool ascii )

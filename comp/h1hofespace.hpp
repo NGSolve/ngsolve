@@ -20,8 +20,6 @@ namespace ngcomp
   protected:
     int level;
 
-    bool print; 
-
     Array<int> first_edge_dof;
     Array<int> first_face_dof;
     Array<int> first_element_dof;

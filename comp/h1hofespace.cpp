@@ -44,13 +44,9 @@ namespace ngcomp
     //  DefineNumListFlag("dom_order_min_z");
     //  DefineNumListFlag("dom_order_max_z");
     DefineNumFlag("smoothing");
-    DefineDefineFlag("print");
-    DefineDefineFlag("noprint");
     DefineDefineFlag("wb_withedges");
     if (parseflags) CheckFlags(flags);
 
-    print = (flags.GetDefineFlag("print")); 
-  
     wb_loedge = flags.GetDefineFlag("wb_withedges");  
     
     // Variable order space: 
@@ -558,44 +554,44 @@ namespace ngcomp
 
           default:
             {
-              throw Exception (string ("GetFE not supported for element") + 
+              throw Exception (string ("H1HOFES::GetFE not supported for element") + 
                                ElementTopology::GetElementName(eltype));
             }
           }
-
-        if (ma.GetDimension() == 1)
+	
+	switch (ma.GetDimension())
 	  {
-	    hofe1d -> SetVertexNumbers (ngel.vertices);
-	    hofe1d -> SetOrderEdge (0, order_inner[elnr][0]);
-            hofe1d -> ComputeNDof();
-            return *hofe1d;
+	  case 1:
+	    {
+	      hofe1d -> SetVertexNumbers (ngel.vertices);
+	      hofe1d -> SetOrderEdge (0, order_inner[elnr][0]);
+	      hofe1d -> ComputeNDof();
+	      return *hofe1d;
+	    }
+	  case 2:
+	    {
+	      hofe2d -> SetVertexNumbers (ngel.vertices);
+	      hofe2d -> SetOrderEdge ( order_edge[ArrayObject(ngel.edges)] );
+	      
+	      INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
+	      hofe2d -> SetOrderFace (0, p);
+	      
+	      hofe2d -> ComputeNDof();
+	      return *hofe2d;
+	    }
+	  case 3:
+	    {
+	      hofe3d -> SetVertexNumbers (ngel.vertices);
+	      hofe3d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
+	      hofe3d -> SetOrderFace (order_face[ArrayObject(ngel.faces)]);
+	      hofe3d -> SetOrderCell (order_inner[elnr]);
+	      
+	      hofe3d -> ComputeNDof();
+	      return *hofe3d;
+	    }
+	  default: ;
 	  }
-
-        else if (ma.GetDimension() == 2)
-          {
-	    hofe2d -> SetVertexNumbers (ngel.vertices);
-	    hofe2d -> SetOrderEdge ( order_edge[ArrayObject(ngel.edges)] );
-
-	    INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
-	    hofe2d -> SetOrderFace (0, p);
-
-            hofe2d -> ComputeNDof();
-            return *hofe2d;
-          }
-
-        else
-
-          {
-	    hofe3d -> SetVertexNumbers (ngel.vertices);
-	    hofe3d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
-	    hofe3d -> SetOrderFace (order_face[ArrayObject(ngel.faces)]);
-            hofe3d -> SetOrderCell (order_inner[elnr]);
-
-            hofe3d -> ComputeNDof();
-            return *hofe3d;
-          }
       }
-
     catch (Exception & e)
       {
         e.Append ("in H1HoFESpace::GetElement\n");
@@ -612,6 +608,7 @@ namespace ngcomp
       {
         switch (ma.GetSElType(elnr))
           {
+          case ET_POINT:   return * new (lh) ScalarDummyFE<ET_POINT> (); 
           case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); 
           case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); 
           case ET_QUAD:    return * new (lh) ScalarDummyFE<ET_QUAD> (); 
@@ -619,35 +616,45 @@ namespace ngcomp
 	  }
       }
 
+    H1HighOrderFiniteElement<0> * hofe0d = NULL;
     H1HighOrderFiniteElement<1> * hofe1d = NULL;
     H1HighOrderFiniteElement<2> * hofe2d = NULL;
 
     switch (ma.GetSElType(elnr))
       {
+      case ET_POINT: hofe0d = new (lh) H1HighOrderFE<ET_POINT> (); break;
+      case ET_SEGM: hofe1d = new (lh) H1HighOrderFE<ET_SEGM> (); break;
       case ET_TRIG: hofe2d = new (lh) H1HighOrderFE<ET_TRIG> (); break;
       case ET_QUAD: hofe2d = new (lh) H1HighOrderFE<ET_QUAD> (); break;
-      case ET_SEGM: hofe1d = new (lh) H1HighOrderFE<ET_SEGM> (); break;
-      default: throw Exception ("GetFE not supported for element");
+      default: throw Exception ("H1HOFES::GetSFE not supported for element");
       }
   
     Ng_Element ngel = ma.GetSElement(elnr);
-    
-    if (ma.GetDimension() == 2)
-      {
-	hofe1d -> SetVertexNumbers (ngel.vertices);
-	hofe1d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
 
-        hofe1d -> ComputeNDof();
-        return *hofe1d;
-      }
-    else
+    switch (ma.GetDimension())
       {
-	hofe2d -> SetVertexNumbers (ngel.vertices);
-	hofe2d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
-        hofe2d -> SetOrderFace (0, order_face[ma.GetSElFace(elnr)]);
-
-        hofe2d  -> ComputeNDof();
-        return *hofe2d;
+      case 0:
+	{
+	  hofe0d -> ComputeNDof();
+	  return *hofe0d;
+	}
+      case 2:
+	{
+	  hofe1d -> SetVertexNumbers (ngel.vertices);
+	  hofe1d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
+	  
+	  hofe1d -> ComputeNDof();
+	  return *hofe1d;
+	}
+      case 3:
+	{
+	  hofe2d -> SetVertexNumbers (ngel.vertices);
+	  hofe2d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
+	  hofe2d -> SetOrderFace (0, order_face[ma.GetSElFace(elnr)]);
+	  
+	  hofe2d  -> ComputeNDof();
+	  return *hofe2d;
+	}
       }
   }
  

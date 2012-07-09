@@ -155,6 +155,23 @@ namespace ngfem
 
 
 
+  /**
+     High order 0D finite element
+  */
+
+  template <> 
+  class H1HighOrderFE_Shape<ET_POINT> : public H1HighOrderFE<ET_POINT>
+  {
+  public:
+    /// generic shape function
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[], TFA & shape) const
+    {
+      shape[0] = 1.0;
+    }
+  };
+
+
 
   /**
      High order segment finite element

@@ -1617,6 +1617,7 @@ namespace ngfem
   */
   class NGS_DLL_HEADER IntegrationRules
   {
+    IntegrationRule pointrule;  // 0-dim IR
     Array<IntegrationRule*> segmentrules;
     Array<IntegrationRule*> trigrules;
     Array<IntegrationRule*> quadrules;
@@ -1650,6 +1651,11 @@ namespace ngfem
 
   IntegrationRules :: IntegrationRules ()
   {
+    // ************************************
+    // ** Point integration rules
+    // ************************************
+
+    pointrule.Append (IntegrationPoint (0, 0, 0, 1));
 
     // ************************************
     // ** Segment integration rules
@@ -1969,6 +1975,8 @@ namespace ngfem
 
     switch (eltyp)
       {
+      case ET_POINT:
+	return pointrule;
       case ET_SEGM:
 	ira = &segmentrules; break;
       case ET_TRIG:

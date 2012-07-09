@@ -423,11 +423,6 @@ namespace ngfem
 				  Array<double> & w);
   
 
-
-
-  /// Get a reference to the integration-rules container
-  // extern NGS_DLL_HEADER const IntegrationRules & GetIntegrationRules ();
-
   extern NGS_DLL_HEADER const IntegrationRule & SelectIntegrationRule (ELEMENT_TYPE eltype, int order);
   extern NGS_DLL_HEADER const IntegrationRule & SelectIntegrationRuleJacobi10 (int order);
   extern NGS_DLL_HEADER const IntegrationRule & SelectIntegrationRuleJacobi20 (int order);

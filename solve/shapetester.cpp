@@ -39,7 +39,7 @@ namespace ngsolve
       gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
       dof = int(flags.GetNumFlag ("dof", 0));
 
-      Tcl_Eval (pde.tcl_interpreter,
+      pde.Tcl_Eval (
 		"set w .shapetester;"
 		"toplevel $w;" 
 		"wm withdraw $w\n"
@@ -54,7 +54,8 @@ namespace ngsolve
 		"focus .options_dlg\n"
 		);
 
-      Tcl_CreateCommand (pde.tcl_interpreter, "NGS_DrawShape", NGS_DrawShape,
+      Tcl_CreateCommand (pde.GetTclInterpreter(), 
+			 "NGS_DrawShape", NGS_DrawShape,
 			 (ClientData)NULL,
 			 (Tcl_CmdDeleteProc*) NULL);
       shapetester = this;

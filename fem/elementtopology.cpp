@@ -20,6 +20,7 @@ namespace ngfem
   {
     switch (et)
       {
+      case ET_POINT: return "Point";
       case ET_SEGM: return "Segm";
       case ET_TRIG: return "Trig";
       case ET_QUAD: return "Quad";

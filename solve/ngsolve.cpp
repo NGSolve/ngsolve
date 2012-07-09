@@ -106,16 +106,8 @@ int NGS_Help (ClientData clientData,
 
 
 
-AutoPtr<ngcomp::MeshAccess> ma;
+// AutoPtr<ngcomp::MeshAccess> ma;
 AutoPtr<ngsolve::PDE> pde;
-
-/*
-// some files in the fem-library access it
-SymbolTable<double> & GetConstantTable ()
-{
-  return pde -> GetConstantTable();
-}
-*/
 
 
 #ifdef SOCKETS
@@ -142,13 +134,11 @@ int NGS_LoadPDE (ClientData clientData,
     {
       try
 	{
-	  //delete ma; ma = 0; //
-	  // if (!ma) ma = new ngcomp::MeshAccess();
-	  ma.Reset(new ngcomp::MeshAccess());
-	  //delete pde;
-	  //pde = new ngsolve::PDE(*ma);
-	  pde.Reset(new ngsolve::PDE(*ma));
-          pde->tcl_interpreter = interp;
+	  // ma.Reset(new ngcomp::MeshAccess());
+	  // pde.Reset(new ngsolve::PDE(*ma));
+	  pde.Reset(new ngsolve::PDE);
+          pde->SetTclInterpreter (interp);
+
 	  MyMPI_SendCmd ("ngs_pdefile");
           pde->LoadPDE (argv[1]);
 	  pde->PrintReport (*testout);
@@ -859,8 +849,8 @@ void NGS_ParallelRun (const string & message)
     {
       // ngs_comm = MPI_COMM_WORLD;
 
-      ma.Reset(new ngcomp::MeshAccess());
-      pde.Reset(new PDE ( *ma ));
+      // ma.Reset(new ngcomp::MeshAccess());
+      pde.Reset(new PDE);
 
       /*
       // transfer file contents, not filename

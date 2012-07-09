@@ -33,29 +33,47 @@ int trigs[][3] =
 
 
 
-// one-1 mesh example
+// 1D mesh example
 
-
-int dim = 1;
-int nv = 5;
-int npoint = 2;  // geom points
-int nseg = 4;
-int ntrig = 0;
+int dim, ntrig, nseg, nv;
+int npoint = 2;  // geometry points
 
 double points[][1] = { 0, 0.25, 0.5, 0.75, 1 };
 int trigs[][3] = { { 0,0,0 } } ;
 
-int segms[][2] = 
+typedef int tsegm[2];
+tsegm * segms;
+
+int bound_els[2][1];
+
+class init1d
+{
+public:
+  init1d (int anseg)
   {
-    { 2, 1 },
-    { 3, 2 },
-    { 4, 3 },
-    { 5, 4 } 
-  };
+    dim = 1;
+    ntrig = 0;
+    nseg = anseg;
+    nv = anseg + 1;
+    segms = new int[nseg][2];
+    for (int i = 0; i < nseg; i++)
+      {
+	segms[i][0] = i+2;
+	segms[i][1] = i+1;
+      }
 
-int pnts[][1] =
-  { { 1 }, { 5 } };
+    npoint = 2;
+    bound_els[0][0] = 1;
+    bound_els[1][0] = nseg+1;
+  }
+  ~init1d()
+  {
+    delete [] segms;
+  }
+};
 
+
+init1d i1d(4);
 
 
 
@@ -63,7 +81,7 @@ int pnts[][1] =
 // here are the tested functions
 
 
-// space dimension (2 or 3)
+// space dimension (1, 2 or 3)
 DLL_HEADER int Ng_GetDimension ()
 {
   return dim;
@@ -75,15 +93,11 @@ DLL_HEADER int Ng_GetNNodes (int nt)
   switch (nt)
     {
     case 0: return nv;
-    case 1: return 0;
-    case 2: return 0;
+    case 1: return nseg;
+    case 2: return ntrig;
     case 3: return 0;
     }
 }
-
-
-
-
 
 
 
@@ -113,9 +127,9 @@ namespace netgen
     Ng_Element ret;
     ret.type = NG_PNT;
     ret.points.num = 1;
-    ret.points.ptr  = &pnts[nr][0];
+    ret.points.ptr  = &bound_els[nr][0];
     ret.vertices.num = 1;
-    ret.vertices.ptr  = &pnts[nr][0];
+    ret.vertices.ptr  = &bound_els[nr][0];
     ret.edges.num = 0;
     ret.faces.num = 0;
     return ret;
@@ -191,6 +205,29 @@ namespace netgen
 	if (dxdxi)
 	  {
 	    dxdxi[i*sdxdxi  ] = pts[0]-pts[1];
+	  }
+      }
+  }
+
+
+  template <>
+  void Ng_MultiElementTransformation<0,1> (int elnr, int npts,
+					   const double * xi, size_t sxi,
+					   double * x, size_t sx,
+					   double * dxdxi, size_t sdxdxi)
+  {
+    double pt = points[bound_els[elnr][0]-1][0]; 
+
+    for (int i = 0; i < npts; i++)
+      {
+	double xi_ = xi[i*sxi];
+	if (x)
+	  {
+	    x[i*sx] = pt;
+	  }
+	if (dxdxi)
+	  {
+	    dxdxi[i*sdxdxi  ] = 0.0;
 	  }
       }
   }
