@@ -275,7 +275,7 @@ namespace ngla
 
   ParallelMatrix :: ~ParallelMatrix ()
   {
-    ;
+    delete &mat;
   }
 
   void ParallelMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -294,7 +294,7 @@ namespace ngla
 
   BaseMatrix * ParallelMatrix :: CreateMatrix () const
   {
-    return new ParallelMatrix (*mat.CreateMatrix(), pardofs);
+    return new ParallelMatrix (mat.CreateMatrix(), &pardofs);
   }
 
   BaseVector * ParallelMatrix :: CreateVector () const
