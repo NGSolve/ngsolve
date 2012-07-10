@@ -11,9 +11,6 @@ namespace ngcomp
   {
     const BilinearForm & bfa;
 
-    //    Array<Matrix<SCAL>*> & elmats;
-    // Array<Array<int>*> & eldnums;
-
     BaseMatrix *harmonicext, *harmonicexttrans, 
       *innersolve, *pwbmat;    
 
@@ -37,8 +34,7 @@ namespace ngcomp
     
     BDDCMatrix (const BilinearForm & abfa, 
 		const string & ainversetype, bool ablock)
-      : bfa(abfa), // elmats(aelmats), eldnums(aeldnums), 
-	block(ablock), inversetype(ainversetype)
+      : bfa(abfa), block(ablock), inversetype(ainversetype)
     {
       static Timer timer ("BDDC Constructor");
 
@@ -113,6 +109,9 @@ namespace ngcomp
 	    new SparseMatrix<SCAL,TV,TV>(ndof, el2wbdofs, el2ifdofs, false);
 	  harmonicexttrans -> AsVector() = 0.0;
 	}
+      else
+	harmonicexttrans = sparse_harmonicexttrans = NULL;
+
 
       innersolve = sparse_innersolve = bfa.IsSymmetric() 
 	? new SparseMatrixSymmetric<SCAL,TV>(ndof, el2ifdofs)
@@ -138,92 +137,100 @@ namespace ngcomp
     void AddMatrix (FlatMatrix<SCAL> elmat, Array<int> & dnums)
 
     {
-      static Timer timer2 ("BDDC Constructor 2");
-      RegionTimer reg(timer2);
-
+      static Timer timer ("BDDC - Addmatrix");
+      RegionTimer reg(timer);
+      static Timer timer2("BDDC - Add to sparse");
+      static Timer timer3("BDDC - compute");
 
       const FESpace & fes = bfa.GetFESpace();
-
       
-      Array<int> localwbdofs, wbdofs;    
-      Array<int> localintdofs, intdofs;   
-      Array<int> ldnums;
-      Array<double> el2ifweight;
+      ArrayMem<int, 20> localwbdofs, localintdofs;
       
       for (int k = 0; k < dnums.Size(); k++)
 	{
 	  COUPLING_TYPE ct = fes.GetDofCouplingType(dnums[k]);	      
 	  if (ct == WIREBASKET_DOF)
-	    {
-	      localwbdofs.Append (k);
-	      wbdofs.Append (dnums[k]);
-	    }
+	    localwbdofs.Append (k);
 	  else
-	    {
-	      localintdofs.Append (k);
-	      intdofs.Append (dnums[k]);
-	      
-	      if (typeid(SCAL) == typeid(double))
-		el2ifweight.Append (fabs (elmat(k,k)));
-	      else
-		el2ifweight.Append (1);
-	    }
+	    localintdofs.Append (k);
 	}
-      
-      for (int j = 0; j < intdofs.Size(); j++)
-	weight[intdofs[j]] += el2ifweight[j];
       
       int sizew = localwbdofs.Size();
       int sizei = localintdofs.Size();
       
-      Matrix<SCAL> a = elmat.Rows(localwbdofs).Cols(localwbdofs);
+      ArrayMem<double, 20> el2ifweight(sizei);
+      for (int k = 0; k < sizei; k++)
+	if (typeid(SCAL) == typeid(double))
+	  el2ifweight[k] = fabs (elmat(localintdofs[k],
+				       localintdofs[k]));
+	else
+	  el2ifweight[k] = 1;
+
+
       
+      Matrix<SCAL> a = elmat.Rows(localwbdofs).Cols(localwbdofs);
+      Matrix<SCAL> b = elmat.Rows(localwbdofs).Cols(localintdofs);
+      Matrix<SCAL> c = elmat.Rows(localintdofs).Cols(localwbdofs);
+      Matrix<SCAL> d = elmat.Rows(localintdofs).Cols(localintdofs);
+      Matrix<SCAL> het (sizew, sizei);
+      Matrix<SCAL> he (sizei, sizew);
+	  
       if (sizei)
 	{      
-	  Matrix<SCAL> b = elmat.Rows(localwbdofs).Cols(localintdofs);
-	  Matrix<SCAL> c = elmat.Rows(localintdofs).Cols(localwbdofs);
-	  Matrix<SCAL> d = elmat.Rows(localintdofs).Cols(localintdofs);
-	  
+	  RegionTimer reg(timer3);
+	  timer3.AddFlops (sizei*sizei*sizei + 2*sizei*sizei*sizew);
+
 	  LapackInverse (d);
-	  
-	  Matrix<SCAL> he (sizei, sizew);
-	  he = SCAL(0.0);
 	  
 	  if (sizew)
 	    {
+	      he = SCAL(0.0);
+
 	      he -= d*c   | Lapack;
 	      a += b*he   | Lapack;
-	    }
 	  
-	  //R * E
-	  for (int k = 0; k < sizei; k++)
-	    he.Row(k) *= el2ifweight /* [i] */[k]; 
+	      //R * E
+	      for (int k = 0; k < sizei; k++)
+		he.Row(k) *= el2ifweight[k]; 
 	  
-	  sparse_harmonicext->AddElementMatrix(intdofs,wbdofs,he);
-	  
-	  if (!bfa.IsSymmetric())
-	    {
-	      Matrix<SCAL> het (sizew, sizei);
-	      
-	      het = SCAL(0.0);
-	      LapackMultAddAB(b,d,-1.0,het);
-	      
-	      //E * R^T
-	      for (int l = 0; l < sizei; l++)
-		het.Col(l) *= el2ifweight /* [i] */[l];
-	      
-	      sparse_harmonicexttrans->AddElementMatrix(wbdofs,intdofs,het);
+	      if (!bfa.IsSymmetric())
+		{	      
+		  het = SCAL(0.0);
+		  het -= b*d | Lapack;
+		  
+		  //E * R^T
+		  for (int l = 0; l < sizei; l++)
+		    het.Col(l) *= el2ifweight[l];
+		}
 	    }
 	  
 	  //R * A_ii^(-1) * R^T
 	  for (int k = 0; k < sizei; k++) d.Row(k) *= el2ifweight[k]; 
 	  for (int l = 0; l < sizei; l++) d.Col(l) *= el2ifweight[l]; 
-	  
-	  sparse_innersolve -> AddElementMatrix(intdofs,intdofs,d);
 	}
-      
-      dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(pwbmat)
-	->AddElementMatrix(wbdofs,wbdofs,a);
+
+
+      RegionTimer regadd(timer2);
+
+      ArrayMem<int, 20> wbdofs, intdofs;   
+      wbdofs = dnums[localwbdofs];
+      intdofs = dnums[localintdofs];
+
+#pragma omp critical(bddcaddelmat)
+      {
+	for (int j = 0; j < intdofs.Size(); j++)
+	  weight[intdofs[j]] += el2ifweight[j];
+
+	sparse_harmonicext->AddElementMatrix(intdofs,wbdofs,he);
+	
+	if (!bfa.IsSymmetric())
+	  sparse_harmonicexttrans->AddElementMatrix(wbdofs,intdofs,het);
+	
+	sparse_innersolve -> AddElementMatrix(intdofs,intdofs,d);
+	
+	dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(pwbmat)
+	  ->AddElementMatrix(wbdofs,wbdofs,a);
+      }
     }
 
 
@@ -308,16 +315,18 @@ namespace ngcomp
       else
 	{
 #ifdef PARALLEL
-	  if (MyMPI_GetNTasks() > 1)
+	  if (bfa.GetFESpace().IsParallel())
 	    {
-	      ParallelMatrix parwb(*pwbmat, bfa.GetFESpace().GetParallelDofs());
-	      parwb.SetInverseType (inversetype);
-	      inv = parwb.InverseMatrix (free_dofs);
+	      ParallelDofs * pardofs = &bfa.GetFESpace().GetParallelDofs();
 
-	      tmp = new ParallelVVector<TV>(ndof, &bfa.GetFESpace().GetParallelDofs());
-	      innersolve = new ParallelMatrix (*innersolve, bfa.GetFESpace().GetParallelDofs());
-	      harmonicext = new ParallelMatrix (*harmonicext, bfa.GetFESpace().GetParallelDofs());
-	      harmonicexttrans = new ParallelMatrix (*harmonicexttrans, bfa.GetFESpace().GetParallelDofs());
+	      pwbmat = new ParallelMatrix (pwbmat, pardofs);
+	      pwbmat -> SetInverseType (inversetype);
+	      inv = pwbmat -> InverseMatrix (free_dofs);
+
+	      tmp = new ParallelVVector<TV>(ndof, pardofs);
+	      innersolve = new ParallelMatrix (innersolve, pardofs);
+	      harmonicext = new ParallelMatrix (harmonicext, pardofs);
+	      harmonicexttrans = new ParallelMatrix (harmonicexttrans, pardofs);
 	    }
 	  else
 #endif
@@ -337,6 +346,10 @@ namespace ngcomp
       delete inv;
       delete pwbmat;
       delete inv_coarse;
+      delete harmonicext;
+      delete harmonicexttrans;
+      delete innersolve;
+
       delete tmp;
       delete tmp2;
     }
@@ -530,10 +543,7 @@ namespace ngcomp
 	}
     
     if (L2Norm (helmat) != 0)
-#pragma omp critical(bddcaddelmat)
-      {
-	pre -> AddMatrix(helmat, hdnums);
-      }
+      pre -> AddMatrix(helmat, hdnums);
   }
   
 

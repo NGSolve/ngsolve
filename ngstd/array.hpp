@@ -156,7 +156,7 @@ namespace ngstd
      Optional range check by macro CHECK_RANGE
   */
   template <class T>
-  class FlatArray
+  class FlatArray : public BaseArrayObject<FlatArray<T> >
   {
   protected:
     /// the size
@@ -617,6 +617,16 @@ namespace ngstd
       this->SetSize (a2.Size());
       for (int i = 0; i < size; i++)
         (*this)[i] = a2[i];
+      return *this;
+    }
+
+
+    template <typename T2, typename TA>
+    ArrayMem & operator= (const BaseArrayObject<T2,TA> & a2)
+    {
+      this->SetSize (a2.Spec().Size());
+      for (int i = 0; i < size; i++)
+        (*this)[i] = a2.Spec()[i];
       return *this;
     }
 
