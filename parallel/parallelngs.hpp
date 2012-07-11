@@ -5,9 +5,11 @@
 #include <ngstd.hpp>
 #include <la.hpp>
 
-using namespace ngstd;
-using namespace ngla;
-
+namespace ngparallel
+{
+  using namespace ngstd;
+  using namespace ngla;
+}
 
 #ifdef PARALLEL
 

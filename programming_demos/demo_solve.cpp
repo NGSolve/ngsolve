@@ -5,7 +5,7 @@ int main(int argc, char ** argv)
 {
   if (argc < 2)
     {
-      cout << "Usage:  demo_solve filename" << endl;
+      std::cout << "Usage:  demo_solve filename" << std::endl;
       exit(1);
     }
 
