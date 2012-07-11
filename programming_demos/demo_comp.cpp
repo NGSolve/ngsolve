@@ -19,16 +19,14 @@ int main (int argc, char **argv)
   LocalHeap lh(10000000, "main heap");
   MeshAccess ma;
 
-  H1HighOrderFESpace fes(ma, Flags().SetFlag("order",2));
+  H1HighOrderFESpace fes(ma, Flags("order=2"));
   
   T_GridFunction<double> gfu (fes, "gfu", Flags());
 
-  T_BilinearFormSymmetric<double> bfa(fes, "bfa", 
-				      Flags().SetFlag("symmetric").SetFlag("printelmat"));
+  T_BilinearFormSymmetric<double> bfa(fes, "bfa", Flags("symmetric", "printelmat"));
 
   bfa.AddIntegrator (new LaplaceIntegrator<3> (new ConstantCoefficientFunction(1)));
   bfa.AddIntegrator (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
-
 
 
   T_LinearForm<double> lff(fes, "lff", Flags());
