@@ -52,6 +52,14 @@ namespace ngstd
       }
   }
 
+  Flags :: Flags (string f1, string f2, string f3, string f4, string f5)
+  {
+    SetCommandLineFlag ((string("-")+f1).c_str());
+    if (f2.length()) SetCommandLineFlag ( (string("-")+f2).c_str() );
+    if (f3.length()) SetCommandLineFlag ( (string("-")+f3).c_str() );
+    if (f4.length()) SetCommandLineFlag ( (string("-")+f4).c_str() );
+    if (f5.length()) SetCommandLineFlag ( (string("-")+f5).c_str() );
+  }
   
   Flags :: ~Flags ()
   {
