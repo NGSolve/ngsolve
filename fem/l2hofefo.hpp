@@ -70,7 +70,7 @@ namespace ngfem
 
     virtual void PrecomputeShapes (const IntegrationRule & ir) 
     {
-      int classnr =  ET_trait<ET>::GetClassNr (vnums);
+    int classnr =  ET_trait<ET>::GetClassNr (vnums);
 
       PrecomputedScalShapes<DIM> * pre = new  PrecomputedScalShapes<DIM> (ir.GetNIP(), ndof);
 
