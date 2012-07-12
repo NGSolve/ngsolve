@@ -116,7 +116,7 @@ AC_ARG_ENABLE([vt],
         )       
 
 echo "creating compiler wrapper ngscxx"
-echo "$CXX $CXXFLAGS -I$netgendir/include -L$netgendir/lib -fpic $MPI_INCLUDES $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*" > ngscxx
+echo "$CXX $CXXFLAGS -I. -I$netgendir/include -L$netgendir/lib -fpic $MPI_INCLUDES $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*" > ngscxx
 chmod a+x ngscxx
 
 
