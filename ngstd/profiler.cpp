@@ -149,7 +149,9 @@ namespace ngstd
 
 
 #ifdef  VTRACE
+#ifdef PARALLEL
   Timer * Timer::stack_top = NULL;
+#endif
 #endif
 
 

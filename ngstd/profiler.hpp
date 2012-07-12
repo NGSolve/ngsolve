@@ -232,7 +232,7 @@ namespace ngstd
 
 
   
-
+#ifdef PARALLEL
   class Timer
   {
     static Timer * stack_top;
@@ -265,6 +265,34 @@ namespace ngstd
     double GetTime () { return 0; }
     long int GetCounts () { return 0; }
   };
+#else
+
+  class Timer
+  {
+    int timer_id;
+
+  public:
+    Timer (const string & name)
+    {
+      timer_id = VT_USER_DEF(name.c_str());
+    }
+    void Start () 
+    {
+      VT_USER_START_ID(timer_id);
+    }
+    void Stop () 
+    {
+      VT_USER_END_ID(timer_id);
+    }
+
+    void AddFlops (double aflops)  { ; }
+    double GetTime () { return 0; }
+    long int GetCounts () { return 0; }
+  };
+
+#endif
+
+
 
   
   /**
