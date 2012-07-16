@@ -710,7 +710,7 @@ namespace ngbla
     }
 
 
-
+    /*
     MatExpr<T> & operator+= (double scal)
     {
       int hw = Height() * Width();
@@ -718,7 +718,7 @@ namespace ngbla
 	Spec()(i) += scal;
       return *this;
     }
-  
+    */
 
     template<typename TB>
     MatExpr<T> & operator-= (const Expr<TB> & v)
@@ -830,7 +830,7 @@ namespace ngbla
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator+= (v);
       return Spec();
     }
-
+    /*
     const T & operator+= (double scal) const
     {
       int hw = Height() * Width();
@@ -838,7 +838,7 @@ namespace ngbla
 	Spec()(i) += scal;
       return Spec();
     }
-
+    */
     template<typename TB>
     const T & operator-= (const Expr<TB> & v) const
     {
@@ -849,9 +849,12 @@ namespace ngbla
     template <class SCAL2>
     const T & operator*= (const SCAL2 & s) const
     {
+      const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator*= (s);
+      /*
       int hw = Height() * Width();
       for (int i = 0; i < hw; i++)
 	Spec()(i) *= s;
+      */
       return Spec();
     }
 
@@ -1297,7 +1300,7 @@ namespace ngbla
   inline typename TA::TSCAL InnerProduct (const Expr<TA> & a, const Expr<TB> & b)
   {
     typedef typename TA::TSCAL TSCAL;
-
+    
     if (a.Height() == 0) return TSCAL(0);
 
     TSCAL sum = InnerProduct (a.Spec()(0), b.Spec()(0));
