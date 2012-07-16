@@ -315,9 +315,9 @@ namespace ngbla
     BandCholeskyFactors (const SymBandMatrix<T> & a)
       : FlatBandCholeskyFactors<T> (a.Height(), 
                                     a.BandWidth(),
-                                    new T[RequiredMem (a.Height(), a.BandWidth())])
+                                    new T[FlatBandCholeskyFactors<T>::RequiredMem (a.Height(), a.BandWidth())])
     {
-      Factor (a);
+      this->Factor (a);
     }
 
     /// delete memory
