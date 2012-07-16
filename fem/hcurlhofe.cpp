@@ -1098,8 +1098,13 @@ namespace ngfem
 
 	if(usegrad_edge[i])
 	  {
-	    T_ORTHOPOL::CalcTrigExt (order_edge[i]+1, xi*(1-z), z, pol_xi);
-	    
+	    // T_ORTHOPOL::CalcTrigExt (order_edge[i]+1, xi*(1-z), z, pol_xi);
+
+	    LegendrePolynomial::
+	      EvalScaledMult (order_edge[i]-1, 
+			      xi*(1-z), 1-z, 
+			      (1-xi*xi)*(1-z)*(1-z), pol_xi);
+
 	    for(int j = 0; j < order_edge[i]; j++)
               shape[ii++] = Du<3> (pol_xi[j]*lam_t);
 	  }
@@ -1116,10 +1121,16 @@ namespace ngfem
 
 	if (usegrad_edge[i])
 	  {
+	    /*
 	    T_ORTHOPOL::CalcTrigExt (order_edge[i]+1, lami[ee]-lami[es],  
-                                     1-lami[es]-lami[ee], pol_xi);
+	    1-lami[es]-lami[ee], pol_xi);
+	    */
+	    LegendrePolynomial::
+	      EvalScaledMult (order_edge[i]-1, lami[ee]-lami[es], lami[es]+lami[ee], 
+			      lami[ee]*lami[es],
+			      pol_xi);
 	    for(int j = 0; j < order_edge[i]; j++)
-              shape[ii++] = Du<3> (pol_xi[j]);
+	      shape[ii++] = Du<3> (pol_xi[j]);
 	  }
       }
 
