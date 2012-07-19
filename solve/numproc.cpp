@@ -1329,7 +1329,14 @@ namespace ngsolve
     {
       order = int (flags.GetNumFlag ("order", 2));
       coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", "") );
-      pde.AddVariable (string("integrate.")+GetName()+".value", 0.0, 6);
+
+      if (!coef->IsComplex())
+	pde.AddVariable (string("integrate.")+GetName()+".value", 0.0, 6);
+      else
+	{
+	  pde.AddVariable (string("integrate.")+GetName()+".value.real", 0.0, 6);
+	  pde.AddVariable (string("integrate.")+GetName()+".value.imag", 0.0, 6);
+	}
     }
 
     virtual string GetClassName () const
@@ -1354,16 +1361,17 @@ namespace ngsolve
 
     virtual void Do (LocalHeap & lh)
     {
-      double sum = 0;
-      // if (working_proc)
+      if (!coef -> IsComplex())
 	{
+	  double sum = 0;
+	  
 	  for (int i = 0; i < ma.GetNE(); i++)
 	    {
 	      HeapReset hr(lh);
 	      ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
 	      IntegrationRule ir (eltrans.GetElementType(), order);
 	      const BaseMappedIntegrationRule & mir = eltrans(ir, lh);
-
+	      
 	      FlatMatrix<> result(mir.Size(), 1, lh);
 	      coef -> Evaluate (mir, result);
 	      double hsum = 0;
@@ -1371,12 +1379,40 @@ namespace ngsolve
 		hsum += mir[j].GetWeight() * result(j);
 	      sum += hsum;
 	    }
+	  
+	  sum = MyMPI_AllReduce (sum);
+	  
+	  cout << IM(1) << "Integral = " << sum << endl;
+	  pde.AddVariable (string("integrate.")+GetName()+".value", sum, 6);
 	}
-
-      sum = MyMPI_AllReduce (sum);
-
-      cout << IM(1) << "Integral = " << sum << endl;
-      pde.AddVariable (string("integrate.")+GetName()+".value", sum, 6);
+      else
+	{
+	  Complex sum = 0;
+	  
+	  for (int i = 0; i < ma.GetNE(); i++)
+	    {
+	      HeapReset hr(lh);
+	      ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
+	      IntegrationRule ir (eltrans.GetElementType(), order);
+	      const BaseMappedIntegrationRule & mir = eltrans(ir, lh);
+	      
+	      FlatMatrix<Complex> result(mir.Size(), 1, lh);
+	      coef -> Evaluate (mir, result);
+	      Complex hsum = 0;
+	      for (int j = 0; j < mir.Size(); j++)
+		hsum += mir[j].GetWeight() * result(j);
+	      sum += hsum;
+	    }
+	  
+	  // sum = MyMPI_AllReduce (sum);
+	  sum = Complex (MyMPI_AllReduce (sum.real()),
+			 MyMPI_AllReduce (sum.imag()));
+			 
+	  
+	  cout << IM(1) << "Integral = " << sum << endl;
+	  pde.AddVariable (string("integrate.")+GetName()+".value.real", sum.real(), 6);
+	  pde.AddVariable (string("integrate.")+GetName()+".value.imag", sum.imag(), 6);
+	}
     }
   };
 
