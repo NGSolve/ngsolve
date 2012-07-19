@@ -22,7 +22,7 @@ template <int D, typename SCAL = double>
 class AutoDiff
 {
   SCAL val;
-  SCAL dval[D];
+  SCAL dval[D?D:1];
 public:
 
   typedef AutoDiff<D,SCAL> TELEM;
