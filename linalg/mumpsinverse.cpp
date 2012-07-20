@@ -4,27 +4,16 @@
 /* Date:   May. 2009                                                       */
 /* *************************************************************************/
 
-// #define DEBUG
+
 #ifdef USE_MUMPS
 
 #include <la.hpp>
-#include <comp.hpp>
 #include <parallelngs.hpp>
-using namespace ngparallel;
-using namespace ngcomp;
-
-/*
-namespace netgen {
-  extern int id, ntasks;
-}
-*/
 
 namespace ngla
 {
-  using namespace ngstd;
-  using namespace netgen;
+  using namespace ngparallel;
 
-  
 #define JOB_INIT -1
 #define JOB_END -2
 
