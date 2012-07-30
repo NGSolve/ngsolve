@@ -47,7 +47,8 @@ namespace netgen
 			  el.epgeominfo[0], el.epgeominfo[1],
 			  pb, ngi);
 	  
-	    el[2] = mesh.AddPoint (pb);
+	    el[2] = mesh.AddPoint (pb, mesh.Point(el[0]).GetLayer(), 
+				   EDGEPOINT);
 	    between.Set (i2, el[2]);
 	  }
       }
@@ -133,7 +134,8 @@ namespace netgen
 			      el.GeomInfoPi (betw[j][1]+1),
 			      pb, newgi);
 
-		newel[onp+j] = mesh.AddPoint (pb);
+		newel[onp+j] = mesh.AddPoint (pb, mesh.Point(pi1).GetLayer(), 
+					      SURFACEPOINT);
 		between.Set (i2, newel[onp+j]);
 	      }
 	  }
@@ -151,7 +153,7 @@ namespace netgen
     for (int i = 1; i <= ne; i++)
       {
 	const Element & el = mesh.VolumeElement(i);
-	int onp(0);
+	int onp = 0;
 
 	Element newel;
 	newel.SetIndex (el.GetIndex());
@@ -213,7 +215,10 @@ namespace netgen
 	      {
 		newel.PNum(onp+1+j) = mesh.AddPoint
 		  (Center (mesh.Point(i2.I1()),
-			   mesh.Point(i2.I2())));
+			   mesh.Point(i2.I2())),
+		   mesh.Point(i2.I1()).GetLayer(), 
+		   INNERPOINT);
+
 		between.Set (i2, newel.PNum(onp+1+j));
 	      }
 	  }
