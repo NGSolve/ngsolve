@@ -254,9 +254,9 @@ namespace ngcomp
 #pragma omp for	      
 	      for (int i = 0; i < nse; i++)
 		{
-#pragma omp atopmic
+#pragma omp atomic
 		  gcnt++;
-#pragma omp atopmic
+#pragma omp atomic
 		  cnt++;
 		  
 		  progress.Update (cnt);
