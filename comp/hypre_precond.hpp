@@ -11,13 +11,11 @@
 /*********************************************************************/
 
 
-#include "_hypre_utilities.h"
+// #include "_hypre_utilities.h"
+// #include "HYPRE_krylov.h"
 
-#include "HYPRE_krylov.h"
 #include "HYPRE.h"
 #include "HYPRE_parcsr_ls.h"
-
-
 
 
 namespace ngcomp
@@ -26,32 +24,32 @@ namespace ngcomp
   
 class HyprePreconditioner : public Preconditioner
 {
-
   const S_BilinearForm<double> * bfa;
 
   HYPRE_Solver precond;
   HYPRE_IJMatrix A;
   HYPRE_ParCSRMatrix parcsr_A;
 
-
   Array<int> global_nums;
-  // int ne;
-  // int nse;
-	
   int ilower, iupper;
+  const BitArray * freedofs;
+  const ParallelDofs * pardofs;
 
 public:
     
   HyprePreconditioner (const PDE & pde, const Flags & flags, const string & name);
-  HyprePreconditioner (const BaseMatrix & matrix); // 
+  HyprePreconditioner (const BaseMatrix & matrix, const BitArray * afreedofs); 
 
   ~HyprePreconditioner ();
 	
   virtual void Update();
   virtual void Mult (const BaseVector & f, BaseVector & u) const;
 
+  virtual const char * ClassName() const
+  { return "HYPRE AMG Preconditioner"; }
+
 private:
-  void Setup (const BaseMatrix & matrix); 
+  void Setup (const BaseMatrix & matrix);
 };
 
 }

@@ -70,5 +70,6 @@ namespace ngcomp
 
 #include "preconditioner.hpp"
 // #include "bddc.hpp"
+#include "hypre_precond.hpp"
 
 #endif

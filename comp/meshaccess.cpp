@@ -1070,7 +1070,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
     Ng_AddPointCurvePoint(&(point(0)));
   }
 
-
+ 
 
 #ifdef PARALLEL
  

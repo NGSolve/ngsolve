@@ -21,6 +21,7 @@ namespace ngcomp
     Array<double> weight;
     
     bool block;
+    bool hypre;
 
     BaseMatrix * inv;
     BaseMatrix * inv_coarse;
@@ -31,12 +32,16 @@ namespace ngcomp
     BaseVector * tmp2;
 
   public:
+
+    void SetHypre (bool ah = true) { hypre = ah; }
     
     BDDCMatrix (const BilinearForm & abfa, 
-		const string & ainversetype, bool ablock)
+		const string & ainversetype, bool ablock, bool ahypre)
       : bfa(abfa), block(ablock), inversetype(ainversetype)
     {
       static Timer timer ("BDDC Constructor");
+
+      hypre = ahypre;
 
       pwbmat = NULL;
       inv = NULL;
@@ -122,13 +127,12 @@ namespace ngcomp
 	new SparseMatrix<SCAL,TV,TV>(ndof, el2ifdofs, el2wbdofs, false);
       harmonicext->AsVector() = 0.0;
 
-      pwbmat = bfa.IsSymmetric() 
+      pwbmat = bfa.IsSymmetric() && !hypre
 	? new SparseMatrixSymmetric<SCAL,TV>(ndof, el2wbdofs)
-	: new SparseMatrix<SCAL,TV,TV>(ndof, el2wbdofs, el2wbdofs, bfa.IsSymmetric());
+	: new SparseMatrix<SCAL,TV,TV>(ndof, el2wbdofs, el2wbdofs, bfa.IsSymmetric() && !hypre);
       pwbmat -> AsVector() = 0.0;
       pwbmat -> SetInverseType (inversetype);
       
-
       weight.SetSize (fes.GetNDof());
       weight = 0;
     }
@@ -237,6 +241,8 @@ namespace ngcomp
     
     void Finalize()
     {
+      cout << IM(1) << "Setup BDDC preconditioner" << endl;
+
       static Timer timer ("BDDC Constructor 3");
       RegionTimer reg(timer);
 
@@ -276,6 +282,7 @@ namespace ngcomp
       for (int i = 0; i < ndof; i++)
 	if (fes.GetDofCouplingType(i) == WIREBASKET_DOF)
 	  free_dofs -> Set(i);
+
 
       if (fes.GetFreeDofs())
 	free_dofs -> And (*fes.GetFreeDofs());
@@ -321,7 +328,13 @@ namespace ngcomp
 
 	      pwbmat = new ParallelMatrix (pwbmat, pardofs);
 	      pwbmat -> SetInverseType (inversetype);
-	      inv = pwbmat -> InverseMatrix (free_dofs);
+
+#ifdef HYPRE
+	      if (hypre)
+		inv = new HyprePreconditioner (*pwbmat, free_dofs);
+	      else
+#endif
+		inv = pwbmat -> InverseMatrix (free_dofs);
 
 	      tmp = new ParallelVVector<TV>(ndof, pardofs);
 	      innersolve = new ParallelMatrix (innersolve, pardofs);
@@ -436,7 +449,7 @@ namespace ngcomp
     const S_BilinearForm<SCAL> * bfa;
     BDDCMatrix<SCAL,TV> * pre;
     string inversetype;
-    bool block;
+    bool block, hypre;
   public:
     BDDCPreconditioner (const PDE & pde, const Flags & aflags, const string & aname)
       : Preconditioner (&pde, aflags, aname)
@@ -446,6 +459,7 @@ namespace ngcomp
       inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
       if (flags.GetDefineFlag("refelement")) Exception ("refelement - BDDC not supported");
       block = flags.GetDefineFlag("block");
+      hypre = flags.GetDefineFlag("usehypre");
       pre = NULL;
     }
     
@@ -457,7 +471,8 @@ namespace ngcomp
     virtual void InitLevel () 
     {
       delete pre;
-      pre = new BDDCMatrix<SCAL,TV>(*bfa, inversetype, block);
+      pre = new BDDCMatrix<SCAL,TV>(*bfa, inversetype, block, hypre);
+      pre -> SetHypre (hypre);
     }
 
     virtual void FinalizeLevel () 
