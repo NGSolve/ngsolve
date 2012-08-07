@@ -37,7 +37,6 @@ namespace ngcomp
     
     // defined flags
     DefineNumFlag("relorder");
-    DefineDefineFlag("print"); 
     DefineDefineFlag("l2ho");
     DefineDefineFlag("all_dofs_together");
 
@@ -45,7 +44,6 @@ namespace ngcomp
 
     var_order = 0; 
     
-    print = flags.GetDefineFlag("print"); 
     if (flags.NumFlagDefined("order"))
       order =  int (flags.GetNumFlag("order",0));
     else 

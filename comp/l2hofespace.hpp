@@ -31,8 +31,6 @@ namespace ngcomp
     Array<INT<3> > order_inner;
     // table of first element dofnumber 
     Array<int> first_element_dof;
-    // printing bool 
-    bool print; 
     bool fast_pfem;
     bool all_dofs_together;
   public:
