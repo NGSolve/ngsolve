@@ -67,7 +67,7 @@ namespace ngparallel
     bool IsExchangeProc ( int proc ) const
     { return (*exchangedofs)[proc].Size() != 0; }
 
-    MPI_Datatype MyGetMPI_Type ( int dest )
+    MPI_Datatype MyGetMPI_Type ( int dest ) const
     { return mpi_t[dest]; }
 
     MPI_Comm GetCommunicator () const { return ngs_comm; }

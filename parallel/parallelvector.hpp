@@ -19,7 +19,7 @@ namespace ngla
   class NGS_DLL_HEADER ParallelBaseVector : virtual public BaseVector
   {
   protected:
-    ParallelDofs * paralleldofs;
+    const ParallelDofs * paralleldofs;
     mutable PARALLEL_STATUS status;
     
   public:
@@ -50,11 +50,11 @@ namespace ngla
     virtual void Cumulate () const; 
 
 
-    virtual ParallelDofs * GetParallelDofs () const
+    virtual const ParallelDofs * GetParallelDofs () const
     {
       return paralleldofs; 
     }
-
+    
     virtual bool IsParallelVector () const
     {
       return ( this->Status() != NOT_PARALLEL );
@@ -88,7 +88,7 @@ namespace ngla
     virtual void AddRecvValues( int sender )
     { cerr << "ERROR -- AddRecvValues called for BaseVector, is not parallel" << endl; }
 
-    virtual void SetParallelDofs (ParallelDofs * aparalleldofs, 
+    virtual void SetParallelDofs (const ParallelDofs * aparalleldofs, 
 				  const Array<int> * procs = 0)
     { 
       if ( aparalleldofs == 0 ) return;
@@ -121,10 +121,10 @@ namespace ngla
 
   public:
     S_ParallelBaseVectorPtr (int as, int aes, void * adata) throw();
-    S_ParallelBaseVectorPtr (int as, int aes, ParallelDofs * apd, PARALLEL_STATUS stat) throw();
+    S_ParallelBaseVectorPtr (int as, int aes, const ParallelDofs * apd, PARALLEL_STATUS stat) throw();
 
     virtual ~S_ParallelBaseVectorPtr ();
-    virtual void SetParallelDofs (ParallelDofs * aparalleldofs, const Array<int> * procs=0 );
+    virtual void SetParallelDofs (const ParallelDofs * aparalleldofs, const Array<int> * procs=0 );
 
     virtual void Distribute() const;
     virtual ostream & Print (ostream & ost) const;
@@ -148,13 +148,13 @@ namespace ngla
     enum { ES = sizeof(T) / sizeof(TSCAL) };
 
   public:
-    explicit ParallelVVector (int as, ParallelDofs * aparalleldofs,
+    explicit ParallelVVector (int as, const ParallelDofs * aparalleldofs,
 			      PARALLEL_STATUS astatus = CUMULATED)
       : S_BaseVectorPtr<TSCAL> (as, ES), VVector<T> (as), 
 	S_ParallelBaseVectorPtr<TSCAL> (as, ES, aparalleldofs, astatus)
     { ; }
 
-    explicit ParallelVVector (ParallelDofs * aparalleldofs,
+    explicit ParallelVVector (const ParallelDofs * aparalleldofs,
 			      PARALLEL_STATUS astatus = CUMULATED)
       : S_BaseVectorPtr<TSCAL> (aparalleldofs->GetNDof(), ES), 
 	VVector<T> (aparalleldofs->GetNDof()), 
