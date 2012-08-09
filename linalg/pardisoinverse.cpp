@@ -10,6 +10,8 @@
 
 #define F77_FUNC(func)  func ## _
 
+using ngbla::integer;
+
 extern "C"
 {
   /* PARDISO prototype. */
@@ -17,23 +19,23 @@ extern "C"
 #ifdef USE_MKL
 
   void F77_FUNC(pardiso)
-    (void * pt, int * maxfct, int * mnum, int * mtype, int * phase, int * n, 
-     double * a, int * ia, int * ja, int * perm, int * nrhs, int * iparam, 
-     int * msglvl, double * b, double * x, int * error);
+    (void * pt, integer * maxfct, integer * mnum, integer * mtype, integer * phase, integer * n, 
+     double * a, integer * ia, integer * ja, integer * perm, integer * nrhs, integer * iparam, 
+     integer * msglvl, double * b, double * x, integer * error);
 
 #else
 
 #ifdef USE_PARDISO400
-extern  int F77_FUNC(pardisoinit)
-    (void *, int *, int *, int *, double *, int *);
+extern  integer F77_FUNC(pardisoinit)
+    (void *, integer *, integer *, integer *, double *, integer *);
 #else
-extern  int F77_FUNC(pardisoinit)
-    (void *, int *, int *);
+extern  integer F77_FUNC(pardisoinit)
+    (void *, integer *, integer *);
 #endif
-  int F77_FUNC(pardiso)
-    (void * pt, int * maxfct, int * mnum, int * mtype, int * phase, int * n, 
-     double * a, int * ia, int * ja, int * perm, int * nrhs, int * iparam, 
-     int * msglvl, double * b, double * x, int * error);
+  integer F77_FUNC(pardiso)
+    (void * pt, integer * maxfct, integer * mnum, integer * mtype, integer * phase, integer * n, 
+     double * a, integer * ia, integer * ja, integer * perm, integer * nrhs, integer * iparam, 
+     integer * msglvl, double * b, double * x, integer * error);
 
 #endif
 }
@@ -71,8 +73,6 @@ namespace ngla
     print = bool (pardiso_msg); // false;
 
     symmetric = asymmetric;
-    // inner = ainner;
-    // cluster = acluster;
     compressed = false;
 
     (*testout) << "Pardiso, symmetric = " << symmetric << endl;
@@ -105,8 +105,8 @@ namespace ngla
     *testout << "matrix.InverseTpye = " <<  a.GetInverseType() << endl;
     spd = ( a.GetInverseType() == PARDISOSPD ) ? 1 : 0;
 
-    int maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = print, error;
-    int * params = const_cast <int*> (&hparams[0]);
+    integer maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = print, error;
+    integer * params = const_cast <integer*> (&hparams[0]);
 
     for (int i = 0; i < 64; i++)
       params[i] = 0;
@@ -140,8 +140,8 @@ namespace ngla
 #else
     int retvalue;
 #ifdef USE_PARDISO400
-    double dparm[64];
-    int solver = 0;
+    double dparm[64]; 
+    integer solver = 0;
     F77_FUNC(pardisoinit) (pt,  &matrixtype, &solver, params, dparm, &retvalue); 
 #else
     retvalue = 
@@ -153,29 +153,32 @@ namespace ngla
     
     SetMatrixType();
 
+
+    Array<int> icompress(a.Height());
+    compress.SetSize(0);
+    if (inner)
+      {
+	compressed = true;
+	icompress = -1;
+
+	for (int i = 0; i < a.Height(); i++)
+	  if (inner->Test(i))
+	    {
+	      icompress[i] = compress.Size();
+	      compress.Append (i);
+	    }
+	
+	compressed_height = compress.Size() * entrysize;
+	rowstart.SetSize(compressed_height+1);
+      }
+
+
     if ( symmetric )
       {
 	// --- transform lower left to upper right triangular matrix ---
 	// 1.) build array 'rowstart':
 	// (a) get nr. of entries for each row
 
-	Array<int> icompress(a.Height());
-	compress.SetSize(0);
-	if (inner)
-	  {
-	    compressed = true;
-	    icompress = -1;
-
-	    for (int i = 0; i < a.Height(); i++)
-	      if (inner->Test(i))
-		{
-		  icompress[i] = compress.Size();
-		  compress.Append (i);
-		}
-
-	    compressed_height = compress.Size() * entrysize;
-	    rowstart.SetSize(compressed_height+1);
-	  }
 
 	
 	rowstart = 0;
@@ -386,31 +389,31 @@ namespace ngla
 
 	// delete [] counter;
       }
-    else
+    else // non-symmetric
       {
 	if (print)
 	  cout << "non-symmetric pardiso, cluster = " << cluster << ", entrysize = " << entrysize << endl;
 
 	// for non-symmetric matrices:
-	int counter = 0, rowelems;
+	int counter = 0;
 
 	for (int i = 0; i < a.Height(); i++ )
 	  {
-	    rowelems = 0;
+	    int rowelems = 0;
 	    int rowsize = a.GetRowIndices(i).Size();
+	    int ci = inner ? icompress[i] : i;
 
 	    // get effective number of elements in the row
 
 	    if ( inner )
 	      {
-		for (int j = 0; j < rowsize; j++)
-		  {
-		    int col = a.GetRowIndices(i)[j];
-		    if (inner->Test(i) && inner->Test(col))
-		      rowelems += entrysize;
-		    else if ( i == col )
-		      rowelems++;
-		  }
+		if (inner -> Test(i))
+		  for (int j = 0; j < rowsize; j++)
+		    {
+		      int col = a.GetRowIndices(i)[j];
+		      if (inner->Test(col))
+			rowelems += entrysize;
+		    }
 	      }
             else if (cluster)
 	      {
@@ -426,80 +429,28 @@ namespace ngla
 	    else 
 	      rowelems = rowsize * entrysize;
 
-
-	    for (int k = 0; k < entrysize; k++ )
-	      rowstart[i*entrysize+k] = counter+rowelems*k+1;
+	    if (ci != -1)
+	      for (int k = 0; k < entrysize; k++ )
+		rowstart[ci*entrysize+k] = counter+rowelems*k+1;
 	    
-	    //	    (*testout) << "rowelems: " << rowelems << endl;
-
-
-            /*
-	    for ( j=0; j<rowsize; j++ )
-	      {
-		col = a.GetRowIndices(i)[j];
-
-		if ( (!inner && !cluster) ||
-		     (inner && ( inner->Test(i) && inner->Test(col) )) ||
-		     (!inner && cluster &&
-		      ((*cluster)[i] == (*cluster)[col] 
-		       && (*cluster)[i] )) )
-		  {
-		    entry = a(i,col);
-		    for ( k=0; k<entrysize; k++ )
-		      for ( l=0; l<entrysize; l++ )
-			{
-			  indices[counter+rowelems*k+l] = col*entrysize+l+1;
-			  matrix[counter+rowelems*k+l] = Access(entry,k,l);
-			}
-
-		    counter+=entrysize;
-		  }
-		else if ( i == col )
-		  {
-		    // in the case of 'inner' or 'cluster': 1 on the diagonal for
-		    // unused dofs.
-		    for ( l=0; l<entrysize; l++ )
-		      {
-			indices[counter+rowelems*l+l] = col*entrysize+l+1;
-			matrix[counter+rowelems*l+l] = 1;
-		      }
-		    counter++;
-		  }
-	      }
-            */
 
             if (inner)
               {
                 for (int j=0; j<rowsize; j++ )
                   {
                     int col = a.GetRowIndices(i)[j];
-                    
-                    if ( (!inner && !cluster) ||
-                         (inner && ( inner->Test(i) && inner->Test(col) )) ||
-                         (!inner && cluster &&
-		      ((*cluster)[i] == (*cluster)[col] 
-		       && (*cluster)[i] )) )
+                    int ccol = icompress[col];
+
+                    if (inner->Test(i) && inner->Test(col))
                       {
                         TM entry = a(i,col);
                         for (int k=0; k<entrysize; k++ )
                           for (int l=0; l<entrysize; l++ )
                             {
-                              indices[counter+rowelems*k+l] = col*entrysize+l+1;
+                              indices[counter+rowelems*k+l] = ccol*entrysize+l+1;
                               matrix[counter+rowelems*k+l] = Access(entry,k,l);
                             }
-                        
                         counter+=entrysize;
-                      }
-                    else if ( i == col )
-                      {
-		    // in the case of 'inner' or 'cluster': 1 on the diagonal for
-		    // unused dofs.
-                        for (int l=0; l<entrysize; l++ )
-                          {
-                            indices[counter+rowelems*l+l] = col*entrysize+l+1;
-                            matrix[counter+rowelems*l+l] = 1;
-                          }
-                        counter++;
                       }
                   }
               }
@@ -711,10 +662,10 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
-    int maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error;
-    int nrhs = 1;
+    integer maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error;
+    integer nrhs = 1;
 
-    int * params = const_cast <int*> (&hparams[0]);
+    integer * params = const_cast <integer*> (&hparams[0]);
 
     if (compressed)
       {
@@ -727,9 +678,9 @@ namespace ngla
 	*/
 	hx = fx(compress);
 
-	F77_FUNC(pardiso) ( const_cast<long int *>(pt), &maxfct, &mnum, 
-			    const_cast<int *>(&matrixtype),
-			    &phase, const_cast<int *>(&compressed_height), 
+	F77_FUNC(pardiso) ( const_cast<integer*>(pt), &maxfct, &mnum, 
+			    const_cast<integer*>(&matrixtype),
+			    &phase, const_cast<integer*>(&compressed_height), 
 			    reinterpret_cast<double *>(matrix),
 			    &rowstart[0], &indices[0],
 			    NULL, &nrhs, params, &msglevel,
@@ -745,9 +696,9 @@ namespace ngla
       }
     else
       {
-	F77_FUNC(pardiso) ( const_cast<long int *>(pt), &maxfct, &mnum, 
-			    const_cast<int *>(&matrixtype),
-			    &phase, const_cast<int *>(&compressed_height), 
+	F77_FUNC(pardiso) ( const_cast<integer *>(pt), &maxfct, &mnum, 
+			    const_cast<integer *>(&matrixtype),
+			    &phase, const_cast<integer *>(&compressed_height), 
 			    reinterpret_cast<double *>(matrix),
 			    &rowstart[0], &indices[0],
 			    NULL, &nrhs, params, &msglevel,
@@ -788,13 +739,14 @@ namespace ngla
     Matrix<> ty(2, y.Size());
 
       
-    int maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error;
-    int nrhs = 2;
+    integer maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error;
+    integer nrhs = 2;
 
-    int * params = const_cast <int*> (&hparams[0]);
+    integer * params = const_cast <integer*> (&hparams[0]);
 
-    F77_FUNC(pardiso) ( const_cast<long int *>(pt), &maxfct, &mnum, const_cast<int *>(&matrixtype),
-			&phase, const_cast<int *>(&compressed_height), 
+    F77_FUNC(pardiso) ( const_cast<integer *>(pt), 
+			&maxfct, &mnum, const_cast<integer *>(&matrixtype),
+			&phase, const_cast<integer *>(&compressed_height), 
 			reinterpret_cast<double *>(matrix),
 			&rowstart[0], &indices[0],
 			NULL, &nrhs, params, &msglevel, &tx(0,0), &ty(0,0),
@@ -828,8 +780,8 @@ namespace ngla
   template<class TM, class TV_ROW, class TV_COL>
   PardisoInverse<TM,TV_ROW,TV_COL> :: ~PardisoInverse()
   {
-    int maxfct = 1, mnum = 1, phase = -1, nrhs = 1, msglevel = 1, error;
-    int * params = const_cast <int*> (&hparams[0]);
+    integer maxfct = 1, mnum = 1, phase = -1, nrhs = 1, msglevel = 1, error;
+    integer * params = const_cast <integer*> (&hparams[0]);
 
     //    cout << "call pardiso (clean up) ..." << endl;
     F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, NULL,

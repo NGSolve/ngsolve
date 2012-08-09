@@ -11,7 +11,6 @@
 
 
 
-
 namespace ngbla 
 {
   // Interface to lapack functions
@@ -21,7 +20,11 @@ namespace ngbla
 
   extern "C" {
     typedef char logical;
+#ifdef MKL_ILP64
+    typedef long int integer;
+#else
     typedef int integer;
+#endif
     typedef float real;
     typedef double doublereal;
     typedef Complex doublecomplex;
@@ -46,9 +49,9 @@ namespace ngbla
 
   inline double LapackDot (FlatVector<double> x, FlatVector<double> y)
   {
-    int n = x.Size();
-    int incx = 1;
-    int incy = 1;
+    integer n = x.Size();
+    integer incx = 1;
+    integer incy = 1;
     return ddot_ (&n, &x(0), &incx, &y(0), &incy);
   }
 
@@ -67,13 +70,13 @@ namespace ngbla
                             ngbla::FlatVector<double> y)
   {
     char trans = 'T';
-    int m = a.Width();
-    int n = a.Height();
+    integer m = a.Width();
+    integer n = a.Height();
     double alpha = 1;
-    int lda = a.Width();
-    int incx = 1;
+    integer lda = a.Width();
+    integer incx = 1;
     double beta = 0;
-    int incy = 1;
+    integer incy = 1;
     dgemv_ (&trans, &m, &n, &alpha, &a(0,0), &lda, &x(0), &incx, &beta, &y(0), &incy);
   }
 
@@ -82,13 +85,13 @@ namespace ngbla
                             ngbla::FlatVector<Complex> y)
   {
     char trans = 'T';
-    int m = a.Width();
-    int n = a.Height();
+    integer m = a.Width();
+    integer n = a.Height();
     Complex alpha(1,0);
-    int lda = a.Width();
-    int incx = 1;
+    integer lda = a.Width();
+    integer incx = 1;
     Complex beta(0, 0);
-    int incy = 1;
+    integer incy = 1;
     zgemv_ (&trans, &m, &n, &alpha, &a(0,0), &lda, &x(0), &incx, &beta, &y(0), &incy);
   }
 
@@ -99,13 +102,13 @@ namespace ngbla
                              ngbla::FlatVector<double> y)
   {
     char trans = 'N';
-    int m = a.Width();
-    int n = a.Height();
+    integer m = a.Width();
+    integer n = a.Height();
     double alpha = 1;
-    int lda = a.Width();
-    int incx = 1;
+    integer lda = a.Width();
+    integer incx = 1;
     double beta = 0;
-    int incy = 1;
+    integer incy = 1;
     dgemv_ (&trans, &m, &n, &alpha, &a(0,0), &lda, &x(0), &incx, &beta, &y(0), &incy);
   }
 
@@ -120,12 +123,12 @@ namespace ngbla
                             ngbla::FlatVector<double> x,
                             ngbla::FlatVector<double> y)
   {
-    int m = a.Width();
-    int n = a.Height();
+    integer m = a.Width();
+    integer n = a.Height();
     double alpha = fac;
-    int lda = a.Width();
-    int incx = 1;
-    int incy = 1;
+    integer lda = a.Width();
+    integer incx = 1;
+    integer incy = 1;
 
     dger_ (&m, &n, &alpha, &y(0), &incx, &x(0), &incy, &a(0,0), &lda);
   }
@@ -157,14 +160,14 @@ namespace ngbla
     char transa_ = transa ? 'T' : 'N';
     char transb_ = transb ? 'T' : 'N'; 
 
-    int n = c.Width();
-    int m = c.Height();
-    int k = transa ? a.Height() : a.Width();
+    integer n = c.Width();
+    integer m = c.Height();
+    integer k = transa ? a.Height() : a.Width();
     SCAL alpha = 1.0;
     SCAL beta = 0;
-    int lda = a.Dist();
-    int ldb = b.Dist();
-    int ldc = c.Dist();
+    integer lda = a.Dist();
+    integer ldb = b.Dist();
+    integer ldc = c.Dist();
 
     gemm (&transb_, &transa_, &n, &m, &k, &alpha, 
 	  &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
@@ -180,14 +183,14 @@ namespace ngbla
     char transa_ = transa ? 'T' : 'N';
     char transb_ = transb ? 'T' : 'N'; 
 
-    int n = c.Width();
-    int m = c.Height();
-    int k = transa ? a.Height() : a.Width();
+    integer n = c.Width();
+    integer m = c.Height();
+    integer k = transa ? a.Height() : a.Width();
     SCAL alpha = aalpha;
     SCAL beta = abeta;
-    int lda = a.Dist();
-    int ldb = b.Dist();
-    int ldc = c.Dist();
+    integer lda = a.Dist();
+    integer ldb = b.Dist();
+    integer ldc = c.Dist();
 
     gemm (&transb_, &transa_, &n, &m, &k, &alpha, 
 	  &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
@@ -380,14 +383,14 @@ namespace ngbla
   {
     char transa = 'T';
     char transb = 'N';
-    int m = c.Height();
-    int n = c.Width();
-    int k = a.Width();
+    integer m = c.Height();
+    integer n = c.Width();
+    integer k = a.Width();
     double alpha = 1.0;
     double beta = 0;
-    int lda = a.Dist();
-    int ldb = b.Dist();
-    int ldc = c.Dist();
+    integer lda = a.Dist();
+    integer ldb = b.Dist();
+    integer ldc = c.Dist();
 
     dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
@@ -399,14 +402,14 @@ namespace ngbla
   {
     char transa = 'N';
     char transb = 'N';
-    int m = c.Height();
-    int n = c.Width();
-    int k = a.Width();
+    integer m = c.Height();
+    integer n = c.Width();
+    integer k = a.Width();
     double alpha = 1.0;
     double beta = 0;
-    int lda = a.Dist();
-    int ldb = b.Dist();
-    int ldc = c.Dist();
+    integer lda = a.Dist();
+    integer ldb = b.Dist();
+    integer ldc = c.Dist();
     dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
 
@@ -416,14 +419,14 @@ namespace ngbla
   {
     char transa = 'N';
     char transb = 'T';
-    int m = c.Height();  // changed n,m
-    int n = c.Width(); 
-    int k = a.Height();
+    integer m = c.Height();  // changed n,m
+    integer n = c.Width(); 
+    integer k = a.Height();
     double alpha = 1.0;
     double beta = 0;
-    int lda = a.Width();
-    int ldb = b.Width();
-    int ldc = c.Dist(); // c.Width();
+    integer lda = a.Width();
+    integer ldb = b.Width();
+    integer ldc = c.Dist(); // c.Width();
 
     dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
@@ -434,14 +437,14 @@ namespace ngbla
   {
     char transa = 'T';
     char transb = 'T';
-    int m = c.Height();
-    int n = c.Width();
-    int k = a.Height();
+    integer m = c.Height();
+    integer n = c.Width();
+    integer k = a.Height();
     double alpha = 1.0;
     double beta = 0;
-    int lda = a.Width();
-    int ldb = b.Width();
-    int ldc = c.Width();
+    integer lda = a.Width();
+    integer ldb = b.Width();
+    integer ldc = c.Width();
 
     dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
@@ -454,14 +457,14 @@ namespace ngbla
 
     char transa = 'T';
     char transb = 'N';
-    int m = c.Height();
-    int n = c.Width();
-    int k = a.Width();
+    integer m = c.Height();
+    integer n = c.Width();
+    integer k = a.Width();
     Complex alpha(1,0); // double alpha[2] =  { 1.0, 0.0 };
     Complex beta(0,0);  // double beta[2] = { 0.0, 0.0 };
-    int lda = a.Width();
-    int ldb = b.Width();
-    int ldc = c.Width();
+    integer lda = a.Width();
+    integer ldb = b.Width();
+    integer ldc = c.Width();
 
     zgemm_ (&transa, &transb, &n, &m, &k, &alpha,  
             &b(0,0), &ldb, 
@@ -479,14 +482,14 @@ namespace ngbla
   {
     char transa = 'T';
     char transb = 'N';
-    int m = c.Height();
-    int n = c.Width();
-    int k = a.Width();
+    integer m = c.Height();
+    integer n = c.Width();
+    integer k = a.Width();
     double alpha = fac;
     double beta = 1.0;
-    int lda = a.Width();
-    int ldb = b.Width();
-    int ldc = c.Width();
+    integer lda = a.Width();
+    integer ldb = b.Width();
+    integer ldc = c.Width();
 
     dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
@@ -499,14 +502,14 @@ namespace ngbla
   {
     char transa = 'N';
     char transb = 'N';
-    int m = c.Height();
-    int n = c.Width();
-    int k = a.Width();
+    integer m = c.Height();
+    integer n = c.Width();
+    integer k = a.Width();
     double alpha = fac;
     double beta = 1.0;
-    int lda = a.Width();
-    int ldb = b.Width();
-    int ldc = c.Width();
+    integer lda = a.Width();
+    integer ldb = b.Width();
+    integer ldc = c.Width();
 
     dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
@@ -518,14 +521,14 @@ namespace ngbla
   {
     char transa = 'N';
     char transb = 'T';
-    int m = c.Height();  // changed n,m
-    int n = c.Width(); 
-    int k = a.Height();
+    integer m = c.Height();  // changed n,m
+    integer n = c.Width(); 
+    integer k = a.Height();
     double alpha = fac;
     double beta = 1.0;
-    int lda = a.Width();
-    int ldb = b.Width();
-    int ldc = c.Width();
+    integer lda = a.Width();
+    integer ldb = b.Width();
+    integer ldc = c.Width();
 
     dgemm_ (&transa, &transb, &n, &m, &k, &alpha, &b(0,0), &ldb, &a(0,0), &lda, &beta, &c(0,0), &ldc);
   }
@@ -539,14 +542,14 @@ namespace ngbla
     // c += fac * a * Trans (b);
     char transa = 'T';
     char transb = 'N';
-    int m = c.Height();
-    int n = c.Width();
-    int k = a.Width();
+    integer m = c.Height();
+    integer n = c.Width();
+    integer k = a.Width();
     Complex alpha(fac, 0);
     Complex beta(1,0);
-    int lda = a.Width();
-    int ldb = b.Width();
-    int ldc = c.Width();
+    integer lda = a.Width();
+    integer ldb = b.Width();
+    integer ldc = c.Width();
 
     zgemm_ (&transa, &transb, &n, &m, &k, &alpha, 
             &b(0,0), &ldb, 
@@ -564,14 +567,14 @@ namespace ngbla
     // c += fac * a * Trans (b);
     char transa = 'N';
     char transb = 'T';
-    int m = c.Height();
-    int n = c.Width();
-    int k = a.Height();
+    integer m = c.Height();
+    integer n = c.Width();
+    integer k = a.Height();
     Complex alpha(fac, 0); // double alpha[2] = { fac, 0 };
     Complex beta(1,0);     // double beta[2] = { 1.0, 0 };
-    int lda = a.Width();
-    int ldb = b.Width();
-    int ldc = c.Width();
+    integer lda = a.Width();
+    integer ldb = b.Width();
+    integer ldc = c.Width();
 
     zgemm_ (&transa, &transb, &n, &m, &k, &alpha, 
             &b(0,0), &ldb, 
@@ -589,14 +592,14 @@ namespace ngbla
   {
     char transa = 'N';
     char transb = 'N';
-    int m = c.Height();
-    int n = c.Width();
-    int k = a.Width();
+    integer m = c.Height();
+    integer n = c.Width();
+    integer k = a.Width();
     Complex alpha(fac, 0); // double alpha[2] = { fac, 0 };
     Complex beta(1,0);    // double beta[2] = { 1.0, 0 };
-    int lda = a.Width();
-    int ldb = b.Width();
-    int ldc = c.Width();
+    integer lda = a.Width();
+    integer ldb = b.Width();
+    integer ldc = c.Width();
 
     zgemm_ (&transa, &transb, &n, &m, &k, &alpha, 
             &b(0,0), &ldb, 
@@ -637,15 +640,15 @@ namespace ngbla
 
   inline void LapackInverse (ngbla::FlatMatrix<double> a)
   {
-    int m = a.Height();
+    integer m = a.Height();
     if (m == 0) return;
-    int n = a.Width();
-    int lda = a.Width();
-    int * ipiv = new int[n];
-    int lwork = 100*n;
+    integer n = a.Width();
+    integer lda = a.Width();
+    integer * ipiv = new integer[n];
+    integer lwork = 100*n;
     double * work = new double[lwork];
-    int info;
-
+    integer info;
+    
     dgetrf_ (&n, &m, &a(0,0), &lda, ipiv, &info);
     dgetri_ (&n, &a(0,0), &lda, ipiv, work, &lwork, &info);
 
@@ -664,14 +667,14 @@ namespace ngbla
   */
   inline void LapackAInvBt (ngbla::FlatMatrix<double> a, ngbla::FlatMatrix<double> b, char trans = 'N')
   {
-    int m = a.Height();
-    int n = a.Width();
-    int lda = a.Width();
-    int ldb = b.Width();
-    int nrhs = b.Height();
+    integer m = a.Height();
+    integer n = a.Width();
+    integer lda = a.Width();
+    integer ldb = b.Width();
+    integer nrhs = b.Height();
 
-    ArrayMem<int,100> ipiv(n);
-    int info;
+    ArrayMem<integer,100> ipiv(n);
+    integer info;
     // char uplo = 'L';
 
     dgetrf_ (&n, &m, &a(0,0), &lda, &ipiv[0], &info);
@@ -717,15 +720,15 @@ namespace ngbla
 
   inline void LapackInverse (ngbla::FlatMatrix<ngbla::Complex> a)
   {
-    int m = a.Height();
+    integer m = a.Height();
     if (m == 0) return;
 
-    int n = a.Width();
-    int lda = a.Width();
-    int * ipiv = new int[n];
-    int lwork = 100*n;
+    integer n = a.Width();
+    integer lda = a.Width();
+    integer * ipiv = new integer[n];
+    integer lwork = 100*n;
     Complex * work = new Complex[lwork];
-    int info;
+    integer info;
   
     // std::cout << "a = " << std::endl << a << std::endl;
     zgetrf_ (&n, &m, &a(0,0), &lda, ipiv, &info);
@@ -755,15 +758,15 @@ namespace ngbla
 
   inline void LapackAInvBt (ngbla::FlatMatrix<ngbla::Complex> a, ngbla::FlatMatrix<ngbla::Complex> b, char trans = 'N')
   {
-    int m = a.Height();
-    int n = a.Width();
-    int lda = a.Width();
-    int ldb = b.Width();
-    int nrhs = b.Height();
-    int * ipiv = new int[n];
-    int lwork = 100*n;
+    integer m = a.Height();
+    integer n = a.Width();
+    integer lda = a.Width();
+    integer ldb = b.Width();
+    integer nrhs = b.Height();
+    integer * ipiv = new integer[n];
+    integer lwork = 100*n;
     double * work = new double[2*lwork];
-    int info;
+    integer info;
   
 
     zgetrf_ (&n, &m,&a(0,0), &lda, ipiv, &info);
@@ -797,11 +800,11 @@ namespace ngbla
                                           ngbla::FlatVector<double> lami,
                                           ngbla::FlatMatrix<double> evecs = ngbla::FlatMatrix<double>(0,0)){
     char jobz, uplo = 'U'; 
-    int n = a.Height();
-    int lwork=(n+2)*n+1;
+    integer n = a.Height();
+    integer lwork=(n+2)*n+1;
  
     double* work = new double[lwork];
-    int info; 
+    integer info; 
  
     double * matA;
 
@@ -834,18 +837,18 @@ namespace ngbla
   {
     char jobvr = 'V' , jobvl= 'N';
 
-    int n = a.Height();
-    int nvl = 1; 
-    int nvr = eveci.Width() ; 
+    integer n = a.Height();
+    integer nvl = 1; 
+    integer nvr = eveci.Width() ; 
   
     double * vl = 0; 
     double * vr;//  = new std::complex<double> [nvr*n];
     double * lami_re = new double[n], * lami_im = new double[n];
 
-    int lwork = 8*n; 
+    integer lwork = 8*n; 
     double * work = new double[lwork]; 
     double *rwork = new double[8*n];  
-    int info = 0;
+    integer info = 0;
   
     if ( eveci.Width() )
       {
@@ -882,17 +885,17 @@ namespace ngbla
   {
     char jobvr = 'V' , jobvl= 'N';
 
-    int n = a.Height();
-    int nvl = 1; 
-    int nvr = eveci.Width() ; 
+    integer n = a.Height();
+    integer nvl = 1; 
+    integer nvr = eveci.Width() ; 
   
     std::complex<double> * vl = 0; 
     std::complex<double> * vr;//  = new std::complex<double> [nvr*n];
   
-    int lwork = 8*n; 
+    integer lwork = 8*n; 
     std::complex<double> * work = new std::complex<double>[lwork]; 
     double *rwork = new double[8*n];  
-    int info = 0;
+    integer info = 0;
   
     if ( eveci.Width() )
       {
@@ -947,8 +950,8 @@ namespace ngbla
                                  ngbla::FlatVector<ngbla::Complex> lami)
 
   {
-    int n = a.Height();
-    // int evecs_bool = 0;
+    integer n = a.Height();
+    // integer evecs_bool = 0;
     // std::complex<double> * evecs, * dummy;
 
     char jobvr = 'N', jobvl= 'N';
@@ -958,20 +961,20 @@ namespace ngbla
     std::complex<double> * beta = new std::complex<double>[n]; 
     std::complex<double> vl=0.; 
   
-    int nvl = 1; 
+    integer nvl = 1; 
     std::complex<double> * vr ;
   
     std::complex<double> * work = new std::complex<double>[8*n]; 
-    int lwork = 8*n; 
+    integer lwork = 8*n; 
     double *rwork = new double[8*n];  
   
-    int nvr = n ; 
+    integer nvr = n ; 
   
     //std::complex<double>  * A1,*B1; 
-    int i; 
+    integer i; 
   
     // char job=balance_type; // Permute and Scale in Balancing 
-    // int ihi,ilo; 
+    // integer ihi,ilo; 
     double * lscale, *rscale; 
     lscale = new double[n]; 
     rscale = new double[n]; 
@@ -980,9 +983,9 @@ namespace ngbla
   
     // char side = 'R'; 
   
-    int info = 0;
+    integer info = 0;
 
-    // int ii; 
+    // integer ii; 
     // ii=0; 
    
     // if(balancing) zggbal_(&job,&n, A, &n , B, &n, &ilo, &ihi,  lscale, rscale, work2, &info) ; 
@@ -1084,13 +1087,13 @@ namespace ngbla
                                           ngbla::FlatMatrix<double> evecs = ngbla::FlatMatrix<double>(0,0))
   {
     char jobz = 'N' , uplo = 'U'; 
-    int n = a.Height();
+    integer n = a.Height();
 
-    int lwork=(n+2)*n+1;
+    integer lwork=(n+2)*n+1;
     double* work = new double[lwork];
   
-    int info; 
-    int itype =1; 
+    integer info; 
+    integer itype =1; 
 
     if ( evecs.Height() )
       jobz = 'V';
