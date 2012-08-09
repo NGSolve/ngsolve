@@ -18,26 +18,27 @@
 
 namespace ngla
 {
+  using ngbla::integer;
 
   template<class TM, 
 	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
 	   class TV_COL = typename mat_traits<TM>::TV_COL>
   class PardisoInverse : public SparseFactorization
   {
-    int height;   // matrix size in scalars
-    int compressed_height;  // matrix size after compression in scalars
-    int nze, entrysize;
+    integer height;             // matrix size in scalars
+    integer compressed_height;  // matrix size after compression in scalars
+    integer nze, entrysize;
     bool print;
 
     //CL: is this also working on 32-bit architectures?
-    long int pt[128];
+    integer pt[128];
+    integer hparams[64];
 
-    int hparams[64];
-    // int * rowstart, * indices;
-    Array<int> rowstart, indices; 
+    Array<integer> rowstart, indices; 
     typename mat_traits<TM>::TSCAL * matrix;
 
-    int symmetric, matrixtype, spd;
+    integer matrixtype;
+    int symmetric, spd;
 
     void SetMatrixType(); // TM entry
 
@@ -55,26 +56,12 @@ namespace ngla
 		    const BitArray * ainner = NULL,
 		    const Array<int> * acluster = NULL,
 		    int symmetric = 0);
-  
-    /*
-    ///
-    PardisoInverse (const Array<int> & aorder, 
-		    const Array<CliqueEl*> & cliques,
-		    const Array<MDOVertex> & vertices,
-		    int symmetric = 0);		  
-    */
     ///
     virtual ~PardisoInverse ();
     ///
     int VHeight() const { return height/entrysize; }
     ///
     int VWidth() const { return height/entrysize; }
-    ///
-    /*
-    void Allocate (const Array<int> & aorder, 
-		   const Array<CliqueEl*> & cliques,
-		   const Array<MDOVertex> & vertices);
-    */
     ///
     void Factor (const int * blocknr);
     ///
@@ -90,16 +77,6 @@ namespace ngla
     {
       mu.Append (new MemoryUsageStruct ("SparseChol", nze*sizeof(TM), 1));
     }
-
-    /*
-    ///
-    void Set (int i, int j, const TM & val);
-    ///
-    const TM & Get (int i, int j) const;
-    ///
-    //  void SetOrig (int i, int j, const TM & val)
-    //{ ; }
-    */
     virtual BaseVector * CreateVector () const
     {
       return new VVector<TV> (height/entrysize);

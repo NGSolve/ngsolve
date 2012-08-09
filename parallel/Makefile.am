@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/include $(NETGEN_INCLUDES) $(MPI_INCLUDES)  $(MUMPS_INCLUDES) $(HYPRE_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)/include $(NETGEN_INCLUDES) $(LAPACK_INCLUDES) $(MPI_INCLUDES)  $(MUMPS_INCLUDES) $(HYPRE_INCLUDES)
 #  -I/opt/hypre-2.8.0b/include
 
 lib_LTLIBRARIES = libparallel.la

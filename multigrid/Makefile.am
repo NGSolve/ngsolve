@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/include $(NETGEN_INCLUDES) $(MPI_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)/include $(NETGEN_INCLUDES) $(LAPACK_INCLUDES) $(MPI_INCLUDES)
 
 lib_LTLIBRARIES = libngmg.la
 
