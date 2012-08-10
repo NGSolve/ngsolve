@@ -34,8 +34,9 @@ namespace ngla
     integer pt[128];
     integer hparams[64];
 
-    Array<integer> rowstart, indices; 
-    typename mat_traits<TM>::TSCAL * matrix;
+    Array<integer,size_t> rowstart, indices; 
+    // typename mat_traits<TM>::TSCAL * matrix;
+    Array<typename mat_traits<TM>::TSCAL,size_t> matrix;
 
     integer matrixtype;
     int symmetric, spd;
