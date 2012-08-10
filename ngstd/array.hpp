@@ -129,7 +129,7 @@ namespace ngstd
   }
 
 
-  template <class T> class FlatArray;
+  template <class T, class TSIZE = int> class FlatArray;
 
   template <typename T, typename INDEX_ARRAY>
   class IndirectArray : public BaseArrayObject<IndirectArray<T, INDEX_ARRAY> >
@@ -155,12 +155,12 @@ namespace ngstd
      Helper functions for printing. 
      Optional range check by macro CHECK_RANGE
   */
-  template <class T>
+  template <class T, class TSIZE>
   class FlatArray : public BaseArrayObject<FlatArray<T> >
   {
   protected:
     /// the size
-    int size;
+    TSIZE size;
     /// the data
     T * data;
   public:
@@ -169,24 +169,24 @@ namespace ngstd
     FlatArray () { ; } // size = 0; data = 0; }
 
     /// provide size and memory
-    FlatArray (int asize, T * adata) 
+    FlatArray (TSIZE asize, T * adata) 
       : size(asize), data(adata) { ; }
 
     /// memory from local heap
-    FlatArray(int asize, LocalHeap & lh)
+    FlatArray(TSIZE asize, LocalHeap & lh)
       : size(asize),
         // data(static_cast<T*> (lh.Alloc(asize*sizeof(T))))
         data (lh.Alloc<T> (asize))
     { ; }
 
     /// the size
-    int Size() const { return size; }
+    TSIZE Size() const { return size; }
 
 
     /// Fill array with value val
     const FlatArray & operator= (const T & val) const
     {
-      for (int i = 0; i < size; i++)
+      for (TSIZE i = 0; i < size; i++)
         data[i] = val;
       return *this;
     }
@@ -200,7 +200,7 @@ namespace ngstd
     }
     
     /// Access array. range check by macro CHECK_RANGE
-    T & operator[] (int i) const
+    T & operator[] (TSIZE i) const
     {
 
 #ifdef CHECK_RANGE
@@ -323,28 +323,28 @@ namespace ngstd
       Either the container takes care of memory allocation and deallocation,
       or the user provides one block of data.
   */
-  template <class T> 
-  class Array : public FlatArray<T>
+  template <class T, class TSIZE = int> 
+  class Array : public FlatArray<T,TSIZE>
   {
   protected:
     /// physical size of array
-    int allocsize;
+    TSIZE allocsize;
     /// memory is responsibility of container
     bool ownmem;
 
-    using FlatArray<T>::size;
-    using FlatArray<T>::data;
+    using FlatArray<T,TSIZE>::size;
+    using FlatArray<T,TSIZE>::data;
   public:
     /// Generate array of logical and physical size asize
     explicit Array()
-      : FlatArray<T> (0, NULL)
+      : FlatArray<T,TSIZE> (0, NULL)
     {
       allocsize = 0; 
       ownmem = 1;
     }
 
-    explicit Array(int asize)
-      : FlatArray<T> (asize, new T[asize])
+    explicit Array(TSIZE asize)
+      : FlatArray<T,TSIZE> (asize, new T[asize])
     {
       allocsize = asize; 
       ownmem = 1;
@@ -352,16 +352,16 @@ namespace ngstd
 
 
     /// Generate array in user data
-    Array(int asize, T* adata)
-      : FlatArray<T> (asize, adata)
+    Array(TSIZE asize, T* adata)
+      : FlatArray<T,TSIZE> (asize, adata)
     {
       allocsize = asize; 
       ownmem = 0;
     }
 
     /// Generate array in user data
-    Array(int asize, LocalHeap & lh)
-      : FlatArray<T> (asize, lh)
+    Array(TSIZE asize, LocalHeap & lh)
+      : FlatArray<T,TSIZE> (asize, lh)
     {
       allocsize = asize; 
       ownmem = 0;
@@ -370,7 +370,7 @@ namespace ngstd
 
     /// array copy 
     explicit Array (const Array<T> & a2)
-      : FlatArray<T> (a2.Size(), a2.Size() ? new T[a2.Size()] : 0)
+      : FlatArray<T,TSIZE> (a2.Size(), a2.Size() ? new T[a2.Size()] : 0)
     {
       allocsize = size;
       ownmem = 1;
@@ -380,7 +380,7 @@ namespace ngstd
 
     /// array merge-copy
     explicit Array (const Array<T> & a2, const Array<T> & a3)
-      : FlatArray<T> (a2.Size()+a3.Size(), 
+      : FlatArray<T,TSIZE> (a2.Size()+a3.Size(), 
                       a2.Size()+a3.Size() ? new T[a2.Size()+a3.Size()] : 0)
     {
       allocsize = size;
@@ -398,7 +398,7 @@ namespace ngstd
     }
 
     /// Change logical size. If necessary, do reallocation. Keeps contents.
-    void SetSize(int nsize)
+    void SetSize(TSIZE nsize)
     {
       if (nsize > allocsize) ReSize (nsize);
       size = nsize; 
@@ -486,7 +486,7 @@ namespace ngstd
     /// Fill array with val
     Array & operator= (const T & val)
     {
-      FlatArray<T>::operator= (val);
+      FlatArray<T,TSIZE>::operator= (val);
       return *this;
     }
 
@@ -494,13 +494,13 @@ namespace ngstd
     Array & operator= (const Array & a2)
     {
       SetSize (a2.Size());
-      for (int i = 0; i < size; i++)
+      for (TSIZE i = 0; i < size; i++)
         (*this)[i] = a2[i];
       return *this;
     }
 
     /// array copy
-    Array & operator= (const FlatArray<T> & a2)
+    Array & operator= (const FlatArray<T,TSIZE> & a2)
     {
       SetSize (a2.Size());
       for (int i = 0; i < size; i++)
@@ -530,16 +530,16 @@ namespace ngstd
   private:
 
     /// resize array, at least to size minsize. copy contents
-    void ReSize (int minsize)
+    void ReSize (TSIZE minsize)
     {
-      int nsize = 2 * allocsize;
+      TSIZE nsize = 2 * allocsize;
       if (nsize < minsize) nsize = minsize;
 
       if (data)
         {
           T * p = new T[nsize];
 	
-          int mins = (nsize < size) ? nsize : size; 
+          TSIZE mins = (nsize < size) ? nsize : size; 
           memcpy (p, data, mins * sizeof(T));
 
           if (ownmem) delete [] data;
