@@ -97,10 +97,11 @@ namespace ngla
     entrysize = mat_traits<TM>::HEIGHT; 
     height = a.Height() * entrysize;
     compressed_height = height;
-
+    cout << "NZE = " << a.NZE() << endl;
     rowstart.SetSize(compressed_height+1);
     indices.SetSize(a.NZE() * sqr(entrysize));
-    matrix = new TSCAL[a.NZE() * entrysize * entrysize ];     
+    matrix.SetSize (a.NZE() * sqr(entrysize));
+    // matrix = new TSCAL[a.NZE() * entrysize * entrysize ];     
 
     *testout << "matrix.InverseTpye = " <<  a.GetInverseType() << endl;
     spd = ( a.GetInverseType() == PARDISOSPD ) ? 1 : 0;
@@ -281,6 +282,8 @@ namespace ngla
 		      {
 			if (inner->Test(i))
 			  {
+			    *testout << "i = " << i << ", ci = " << ci << " ccol = " << ccol << endl;
+			    *testout << "rowstart = " << rowstart[ccol*entrysize] << "; counter = " << counter[ccol*entrysize] << endl;
 			    TM entry = a(i,col);
 			    for (int l = 0; l < entrysize; l++ )
 			      for (int k = 0; k <= l; k++)
@@ -548,7 +551,7 @@ namespace ngla
 
     // retvalue = 
     F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, 
-			reinterpret_cast<double *>(matrix),
+			reinterpret_cast<double *>(&matrix[0]),
 			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
     
@@ -681,7 +684,7 @@ namespace ngla
 	F77_FUNC(pardiso) ( const_cast<integer*>(pt), &maxfct, &mnum, 
 			    const_cast<integer*>(&matrixtype),
 			    &phase, const_cast<integer*>(&compressed_height), 
-			    reinterpret_cast<double *>(matrix),
+			    reinterpret_cast<double *>(&matrix[0]),
 			    &rowstart[0], &indices[0],
 			    NULL, &nrhs, params, &msglevel,
 			    static_cast<double *>(hx.Data()), 
@@ -699,7 +702,7 @@ namespace ngla
 	F77_FUNC(pardiso) ( const_cast<integer *>(pt), &maxfct, &mnum, 
 			    const_cast<integer *>(&matrixtype),
 			    &phase, const_cast<integer *>(&compressed_height), 
-			    reinterpret_cast<double *>(matrix),
+			    reinterpret_cast<double *>(&matrix[0]),
 			    &rowstart[0], &indices[0],
 			    NULL, &nrhs, params, &msglevel,
 			    static_cast<double *>(fx.Data()), 
@@ -747,7 +750,7 @@ namespace ngla
     F77_FUNC(pardiso) ( const_cast<integer *>(pt), 
 			&maxfct, &mnum, const_cast<integer *>(&matrixtype),
 			&phase, const_cast<integer *>(&compressed_height), 
-			reinterpret_cast<double *>(matrix),
+			reinterpret_cast<double *>(&matrix[0]),
 			&rowstart[0], &indices[0],
 			NULL, &nrhs, params, &msglevel, &tx(0,0), &ty(0,0),
 			&error );
@@ -792,7 +795,7 @@ namespace ngla
 
     // delete [] rowstart;
     // delete [] indices;
-    delete [] matrix;
+    // delete [] matrix;
   }
 
 
