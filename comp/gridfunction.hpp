@@ -300,6 +300,64 @@ namespace ngcomp
 
   };
 
+
+
+
+
+
+
+
+
+
+
+
+
+  class NGS_DLL_HEADER VisualizeCoefficientFunction : public netgen::SolutionData
+  {
+    const MeshAccess & ma;
+    const CoefficientFunction * cf;
+    LocalHeap lh;
+  public:
+    VisualizeCoefficientFunction (const MeshAccess & ama,
+				  const CoefficientFunction * acf);
+    
+    virtual ~VisualizeCoefficientFunction ();
+  
+    virtual bool GetValue (int elnr, 
+			   double lam1, double lam2, double lam3,
+			   double * values) ;
+
+    virtual bool GetValue (int elnr, 
+			   const double xref[], const double x[], const double dxdxref[],
+			   double * values) ;
+
+    virtual bool GetMultiValue (int elnr, int npts,
+				const double * xref, int sxref,
+				const double * x, int sx,
+				const double * dxdxref, int sdxdxref,
+				double * values, int svalues);
+
+    virtual bool GetSurfValue (int elnr, int facetnr,
+			       double lam1, double lam2, 
+			       double * values) ;
+
+    virtual bool GetSurfValue (int selnr, int facetnr, 
+			       const double xref[], const double x[], const double dxdxref[],
+			       double * values);
+
+    virtual bool GetMultiSurfValue (int selnr, int facetnr, int npts,
+                                    const double * xref, int sxref,
+                                    const double * x, int sx,
+                                    const double * dxdxref, int sdxdxref,
+                                    double * values, int svalues);
+
+
+    void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages, int component = -1);
+    void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages_times_volumes, Array<double> & volumes, int component = -1);
+  };
+
+
+
 }
 
 
