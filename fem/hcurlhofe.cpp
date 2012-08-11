@@ -82,14 +82,14 @@ namespace ngfem
 
   template <int D> 
   void HCurlHighOrderFiniteElement<D>:: 
-  SetUsegradEdge (FlatArray<int> & uge)
+  SetUsegradEdge (FlatArray<bool> & uge)
   {
     for (int i=0; i<uge.Size(); i++) usegrad_edge[i]=uge[i]; 
   }
   
   template <int D> 
   void HCurlHighOrderFiniteElement<D>:: 
-  SetUsegradFace (FlatArray<int> & ugf)
+  SetUsegradFace (FlatArray<bool> & ugf)
   {
     for (int i=0; i<ugf.Size(); i++) usegrad_face[i]=ugf[i]; 
   }

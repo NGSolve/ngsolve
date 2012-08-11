@@ -1344,6 +1344,12 @@ namespace ngbla
       return FixSliceVector (next-first, data+first*DIST);
     }
 
+    const FixSliceVector Range (IntRange range) const
+    {
+      return Range (range.First(), range.Next());
+    }
+
+
     const SliceVector<T> Slice (int first, int adist) const
     {
       return SliceVector<T> (s/adist, DIST*adist, data+first*DIST);

@@ -360,13 +360,25 @@ namespace ngcomp
   public:
     S_BilinearForm (const FESpace & afespace, const string & aname,
 		    const Flags & flags)
-      : BilinearForm (afespace, aname, flags) { ; }
+      : BilinearForm (afespace, aname, flags) 
+    { 
+      harmonicext = NULL;
+      harmonicexttrans = NULL;
+      innersolve = NULL;
+      innermatrix = NULL;
+    }
 
     ///
     S_BilinearForm (const FESpace & afespace, 
 		    const FESpace & afespace2,
 		    const string & aname, const Flags & flags)
-      : BilinearForm (afespace, afespace2, aname, flags) { ; }
+      : BilinearForm (afespace, afespace2, aname, flags) 
+    {
+      harmonicext = NULL;
+      harmonicexttrans = NULL;
+      innersolve = NULL;
+      innermatrix = NULL;
+    }
 
 
     ~S_BilinearForm();

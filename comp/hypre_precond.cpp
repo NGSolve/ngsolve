@@ -1,3 +1,4 @@
+#ifdef HYPRE
 /*********************************************************************/
 /* File:   hypre_precond.cpp                                         */
 /* Author: Martin Huber, Joachim Schoeberl                           */
@@ -215,11 +216,5 @@ namespace ngcomp
 
 
   static RegisterPreconditioner<HyprePreconditioner> init_hyprepre ("hypre");
-
-
-
-
-
-
-
 }
+#endif

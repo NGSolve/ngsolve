@@ -107,6 +107,7 @@ public:
     x = hx; 
   }
   
+  /*
   ///
   template <class TVD, class TVY>
   static void ApplyGrid (const FiniteElement & fel, 
@@ -129,7 +130,7 @@ public:
     FlatMatrix<double> dmat(dvecs.Size(), D, const_cast<double*> (&dvecs[0](0)));
     Cast(fel).EvaluateDShapeGridTrans (ir, dmat, hv, lh);
   }
-
+  */
 };
 
 
@@ -278,7 +279,7 @@ public:
     ; 
   }
 
-
+  /*
   template <class TVD, class TVY>
   static void ApplyGrid (const FiniteElement & fel, 
 			 const IntegrationRuleTP<D> & ir,
@@ -300,6 +301,7 @@ public:
     FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
     Cast(fel).EvaluateShapeGridTrans (ir, dvec, hv, lh);
   }
+  */
 };
 
 
@@ -392,7 +394,7 @@ public:
     ; 
   }
 
-
+  /*
   template <typename AFEL, class TVD, class TVY>
   static void ApplyGrid (const AFEL & fel, 
 			 const IntegrationRuleTP<D-1> & ir,
@@ -414,7 +416,7 @@ public:
     FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
     static_cast<const FEL&>(fel).EvaluateShapeGridTrans (ir, dvec, hv, lh);
   }
-
+  */
 };
 
 

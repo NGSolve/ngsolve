@@ -14,7 +14,6 @@ namespace ngbla
 
   template <int H, int W, typename T> class Mat;
   template <int S, typename T> class Vec;
-  // template <int S, typename T> class FlatVec;
 
 
   /*
@@ -430,6 +429,7 @@ namespace ngbla
 
   template <class TA> class RowsArrayExpr;
   template <class TA> class ColsArrayExpr;
+  template <class TA> class SubMatrixExpr;
 
 
 
@@ -479,14 +479,40 @@ namespace ngbla
 
     void Dump (ostream & ost) const { Spec().T::Dump(ost); }
 
+    SubMatrixExpr<T>
+    Rows (int first, int next) 
+    { 
+      return SubMatrixExpr<T> (static_cast<T&> (*this), first, 0, next-first, Width()); 
+    }
+
+    SubMatrixExpr<T>
+    Cols (int first, int next) 
+    { 
+      return SubMatrixExpr<T> (static_cast<T&> (*this), 0, first, Height(), next-first);
+    }
+
+    SubMatrixExpr<T>
+    Rows (IntRange range) 
+    { 
+      return Rows (range.First(), range.Next());
+    }
+
+    SubMatrixExpr<T>
+    Cols (IntRange range)
+    { 
+      return Cols (range.First(), range.Next());
+    }
+
+
+
     RowsArrayExpr<T>
-    Rows (FlatArray<int> rows)
+    Rows (FlatArray<int> rows) 
     { 
       return RowsArrayExpr<T> (static_cast<const T&> (*this), rows); 
     }
 
     ColsArrayExpr<T>
-    Cols (FlatArray<int> cols)
+    Cols (FlatArray<int> cols) 
     { 
       return ColsArrayExpr<T> (static_cast<const T&> (*this), cols); 
     }
@@ -767,9 +793,17 @@ namespace ngbla
     template <class SCAL2>
     T & operator*= (const SCAL2 & s)
     {
-      int hw = Height() * Width();
-      for (int i = 0; i < hw; i++)
-	Spec()(i) *= s;
+      if (T::IS_LINEAR)
+	{
+	  int hw = Height() * Width();
+	  for (int i = 0; i < hw; i++)
+	    Spec()(i) *= s;
+	}
+      else
+	for (int i = 0; i < Height(); i++)
+	  for (int j = 0; j < Width(); j++)
+	    Spec()(i,j) *= s;
+	
       return Spec();
     }
 
@@ -830,15 +864,7 @@ namespace ngbla
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator+= (v);
       return Spec();
     }
-    /*
-    const T & operator+= (double scal) const
-    {
-      int hw = Height() * Width();
-      for (int i = 0; i < hw; i++)
-	Spec()(i) += scal;
-      return Spec();
-    }
-    */
+
     template<typename TB>
     const T & operator-= (const Expr<TB> & v) const
     {
@@ -850,11 +876,6 @@ namespace ngbla
     const T & operator*= (const SCAL2 & s) const
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator*= (s);
-      /*
-      int hw = Height() * Width();
-      for (int i = 0; i < hw; i++)
-	Spec()(i) *= s;
-      */
       return Spec();
     }
 
@@ -863,6 +884,31 @@ namespace ngbla
     {
       return (*this) *= (1.0/s);
     }
+
+    SubMatrixExpr<T>
+    Rows (int first, int next) const
+    { 
+      return SubMatrixExpr<T> (static_cast<const T&> (*this), first, 0, next-first, Width()); 
+    }
+
+    SubMatrixExpr<T>
+    Cols (int first, int next) const
+    { 
+      return SubMatrixExpr<T> (static_cast<const T&> (*this), 0, first, Height(), next-first);
+    }
+
+    SubMatrixExpr<T>
+    Rows (IntRange range) const
+    { 
+      return Rows (range.First(), range.Next());
+    }
+
+    SubMatrixExpr<T>
+    Cols (IntRange range) const
+    { 
+      return Cols (range.First(), range.Next());
+    }
+
 
 
     RowsArrayExpr<T>
@@ -1146,6 +1192,43 @@ namespace ngbla
   {
     return TransExpr<TA> (a.Spec());
   }
+
+
+  /* ************************* SubMatrix ************************ */
+
+  /**
+     RowsArray
+  */
+  template <class TA> class SubMatrixExpr : public MatExpr<SubMatrixExpr<TA> >
+  {
+    TA & a;
+    int first_row, first_col;
+    int height, width;
+  public:
+    typedef typename TA::TELEM TELEM;
+    typedef typename TA::TSCAL TSCAL;
+
+    SubMatrixExpr (TA & aa, int fr, int fc, int ah, int aw) 
+      : a(aa), first_row(fr), first_col(fc), height(ah), width(aw) { ; }
+
+    int Height() const { return height; }
+    int Width() const { return width; }
+
+    TELEM & operator() (int i, int j) { return a(i+first_row, j+first_col); }
+    TELEM & operator() (int i) { return a(i+first_row); }
+    const TELEM & operator() (int i, int j) const { return a(i+first_row, j+first_col); }
+    const TELEM & operator() (int i) const { return a(i+first_row); }
+
+    enum { IS_LINEAR = 0 };
+
+    template<typename TB>
+    const SubMatrixExpr & operator= (const Expr<TB> & m) 
+    {
+      MatExpr<SubMatrixExpr<TA> >::operator= (m);
+      return *this;
+    }
+  };
+
 
 
   /* ************************* RowsArray ************************ */

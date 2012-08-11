@@ -49,6 +49,7 @@ namespace ngparallel
   class MPI_Traits<Complex>
   {
   public:
+    /*
     static MPI_Datatype MPIType () 
     { 
       static MPI_Datatype MPI_T = 0;
@@ -58,6 +59,12 @@ namespace ngparallel
 	  MPI_Type_commit ( &MPI_T );
 	}
       return MPI_T;
+    }
+    */
+    static MPI_Datatype MPIType () 
+    { 
+      // return MPI_C_DOUBLE_COMPLEX;   // no MPI_SUM defined ??
+      return MPI_DOUBLE_COMPLEX;
     }
   };
 

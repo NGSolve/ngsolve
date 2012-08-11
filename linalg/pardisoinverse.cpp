@@ -97,7 +97,7 @@ namespace ngla
     entrysize = mat_traits<TM>::HEIGHT; 
     height = a.Height() * entrysize;
     compressed_height = height;
-    cout << "NZE = " << a.NZE() << endl;
+    // cout << "NZE = " << a.NZE() << endl;
     rowstart.SetSize(compressed_height+1);
     indices.SetSize(a.NZE() * sqr(entrysize));
     matrix.SetSize (a.NZE() * sqr(entrysize));
@@ -121,7 +121,7 @@ namespace ngla
     params[6] = 16;
     params[9] = 10;  // perturbation 1E-10
     params[10] = 1;
-
+    params[12] = (symmetric) ? 0 : 1;  // scling + matching
     // JS
     params[6] = 0;
     params[17] = -1;
@@ -675,10 +675,6 @@ namespace ngla
 	Vector<TVX> hx(compress.Size());
 	Vector<TVX> hy(compress.Size());
 
-	/*
-	for (int i = 0; i < compress.Size(); i++)
-	  hx(i) = fx(compress[i]);
-	*/
 	hx = fx(compress);
 
 	F77_FUNC(pardiso) ( const_cast<integer*>(pt), &maxfct, &mnum, 
@@ -692,10 +688,6 @@ namespace ngla
 
 	fy = 0;
 	fy(compress) = hy;
-	/*
-	for (int i = 0; i < compress.Size(); i++)
-	  fy(compress[i]) = hy(i);
-	*/
       }
     else
       {

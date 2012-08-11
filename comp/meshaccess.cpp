@@ -24,10 +24,9 @@ namespace ngcomp
 
     virtual void SetElement (bool aboundary, int aelnr, int aelindex)
     {
-      // boundary = aboundary;
       elnr = aelnr;
       elindex = aelindex;
-      // dim = Ng_GetDimension();
+
       if (DIMS < DIMR)
 	iscurved = Ng_IsSurfaceElementCurved (elnr+1);
       else
@@ -724,12 +723,7 @@ namespace ngcomp
 	  default:
 	    throw Exception ("MeshAccess::GetTrafo, illegal dimension");
 	  }
-	/*
-	if (GetDimension() == 2) 
-	  eltrans = new (lh) Ng_ElementTransformation<1,2> ();
-	else
-	  eltrans = new (lh) Ng_ElementTransformation<2,3> ();
-	*/
+
 	int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
 	eltrans->SetElement (1, elnr, elind);
 	eltrans->SetElementType (GetSElType(elnr));

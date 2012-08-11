@@ -1083,8 +1083,7 @@ public:
 	void * heapp = lh.GetPointer();
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
-	    MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> 
-	      mip(ir[i], eltrans, lh);
+	    MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip(ir[i], eltrans);
 
 	    DIFFOP::Apply (fel, mip, elveclin, hvlin, lh);
 
@@ -1244,7 +1243,7 @@ public:
       {
 	const IntegrationPoint & ip = ir[i];
 	
-	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip (ir[i], eltrans, lh);
+	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip (ir[i], eltrans);
 
 	DIFFOP::Apply (fel, mip, ellin, hvlin, lh);
 	DIFFOP::Apply (fel, mip, elx, hvx, lh);
@@ -1289,7 +1288,7 @@ public:
 
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip (ir[i], eltrans, lh);
+	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip (ir[i], eltrans);
 
 	DIFFOP::Apply (fel, mip, ellin, hvlin, lh);
 	DIFFOP::Apply (fel, mip, elx, hvx, lh);
@@ -1320,7 +1319,7 @@ public:
       {
 	const IntegrationPoint & ip = ir[i];
 	
-	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip (ir[i], eltrans, lh);
+	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip (ir[i], eltrans);
 	DIFFOP::Apply (fel, mip, elx, hvx, lh);
 
 	double fac = fabs (mip.GetJacobiDet()) * ip.Weight();

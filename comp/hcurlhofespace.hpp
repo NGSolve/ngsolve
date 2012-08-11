@@ -18,19 +18,8 @@ namespace ngcomp
   class NGS_DLL_HEADER HCurlHighOrderFESpace : public FESpace
   {
   protected:
-  
     // Level
     int level;
-    /*
-    // Number of Edges
-    int ned;
-    // Number of Faces
-    int nfa;
-    // Number of Elements
-    int ne;
-    // Number of Vertex
-    int nv;
-    */
     Array<int> first_edge_dof;
     Array<int> first_inner_dof;
     Array<int> first_face_dof; 
@@ -49,9 +38,9 @@ namespace ngcomp
     Array<INT<2> > order_face;
     Array<INT<3> > order_inner;
     Array<int> order_avertex; 
-    Array<int> usegrad_edge; 
-    Array<int> usegrad_face; 
-    Array<int> usegrad_cell; 
+    Array<bool> usegrad_edge; 
+    Array<bool> usegrad_face; 
+    Array<bool> usegrad_cell; 
     Array<INT<3> > dom_order_min; 
     Array<INT<3> > dom_order_max;
     int maxorder, minorder; 
@@ -75,7 +64,6 @@ namespace ngcomp
     int smoother; 
     bool  level_adapted_order;
     bool nograds; 
-    bool print; 
 
     bool fast_pfem;
     bool discontinuous;
