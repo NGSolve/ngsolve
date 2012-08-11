@@ -1282,6 +1282,108 @@ namespace ngcomp
 
 
 
+
+
+
+
+  VisualizeCoefficientFunction :: 
+  VisualizeCoefficientFunction (const MeshAccess & ama,
+				const CoefficientFunction * acf)
+    : SolutionData ("coef", -1, false /* complex */),
+      ma(ama), cf(acf), lh(100000, "viscoef-lh")
+  { ; }
+  
+  VisualizeCoefficientFunction :: ~VisualizeCoefficientFunction ()
+  {
+    ;
+  }
+  
+  bool VisualizeCoefficientFunction :: GetValue (int elnr, 
+						 double lam1, double lam2, double lam3,
+						 double * values) 
+  {
+    cout << "visualizecoef, getvalue (lam1,lam2,alm3) not implemented" << endl;
+    return false;
+  }
+  
+  bool VisualizeCoefficientFunction :: 
+  GetValue (int elnr, 
+	    const double xref[], const double x[], const double dxdxref[],
+	    double * values) 
+  {
+    cout << "visualizecoef, getvalue (xref) not implemented" << endl;
+    return false;
+  }
+
+  bool VisualizeCoefficientFunction :: 
+  GetMultiValue (int elnr, int npts,
+		 const double * xref, int sxref,
+		 const double * x, int sx,
+		 const double * dxdxref, int sdxdxref,
+		 double * values, int svalues)
+  {
+    cout << "visualizecoef, GetMultiValue not implemented" << endl;
+    return false;
+  }
+  
+  bool VisualizeCoefficientFunction ::  
+  GetSurfValue (int elnr, int facetnr,
+		double lam1, double lam2, 
+		double * values) 
+  {
+    HeapReset hr(lh);
+    IntegrationPoint ip(lam1, lam2);
+    bool bound = ma.GetDimension() == 3;
+    ElementTransformation & trafo = ma.GetTrafo (elnr, bound, lh);
+    BaseMappedIntegrationPoint & mip = trafo(ip, lh);
+    values[0] = cf -> Evaluate (mip);
+    return true; 
+  }
+
+  bool VisualizeCoefficientFunction ::  GetSurfValue (int selnr, int facetnr, 
+			       const double xref[], const double x[], const double dxdxref[],
+			       double * values)
+  {
+    cout << "visualizecoef, getsurfvalue (xref) not implemented" << endl;
+    return false;
+  }
+
+  bool VisualizeCoefficientFunction ::  
+  GetMultiSurfValue (int selnr, int facetnr, int npts,
+		     const double * xref, int sxref,
+		     const double * x, int sx,
+		     const double * dxdxref, int sdxdxref,
+		     double * values, int svalues)
+  {
+    for (int i = 0; i < npts; i++)
+      GetSurfValue (selnr, facetnr, xref[i*sxref], xref[i*sxref+1], &values[i*svalues]);
+    return true;
+  }
+
+
+  void VisualizeCoefficientFunction ::  
+  Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages, 
+	  int component)
+  {
+    cout << "visualizecoef, analyze1 not implemented" << endl;
+  }
+
+  void VisualizeCoefficientFunction :: 
+  Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages_times_volumes, 
+	  Array<double> & volumes, int component)
+  {
+    cout << "visualizecoef, analyzed2 not implemented" << endl;
+  }
+
+
+
+
+
+
+
+
+
+
   template class T_GridFunction<double>;
   template class T_GridFunction<Vec<2> >;
   template class T_GridFunction<Vec<3> >;
