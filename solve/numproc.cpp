@@ -285,10 +285,6 @@ namespace ngsolve
     ///
     virtual ~NumProcDrawFlux() { ; }
 
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcDrawFlux (pde, flags);
-    }
     ///
     virtual void Do (LocalHeap & lh);
 
@@ -418,6 +414,84 @@ namespace ngsolve
       "    label printed in the visualization dialogbox\n\n";
 
   }
+
+
+
+
+  /* **************************** Numproc DrawCoefficient ********************************* */
+
+
+  class NumProcDrawCoefficient : public NumProc
+  {
+  protected:
+    netgen::SolutionData * vis;
+    CoefficientFunction * cf;
+    string label;
+
+  public:
+    ///
+    NumProcDrawCoefficient (PDE & apde, const Flags & flags);
+    virtual ~NumProcDrawCoefficient() { ; }
+
+    virtual void Do (LocalHeap & lh) { ; }
+
+    static void PrintDoc (ostream & ost);
+    virtual string GetClassName () const {return "Draw Flux";}
+    virtual void PrintReport (ostream & ost) { ; }
+  };
+
+
+  NumProcDrawCoefficient :: NumProcDrawCoefficient (PDE & apde, const Flags & flags)
+    : NumProc (apde)
+  {
+    cf = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
+    label = flags.GetStringFlag ("label", "");
+
+    vis = new VisualizeCoefficientFunction (ma, cf);
+
+    Ng_SolutionData soldata;
+    Ng_InitSolutionData (&soldata);
+  
+    soldata.name = (char*)label.c_str();
+    soldata.data = 0;
+    soldata.components = 1;
+    soldata.iscomplex = false;
+    soldata.draw_surface = true;
+    soldata.draw_volume  = true; 
+    soldata.dist = 1;
+    soldata.soltype = NG_SOLUTION_VIRTUAL_FUNCTION;
+    soldata.solclass = vis;
+    Ng_SetSolutionData (&soldata);
+  }
+
+
+
+  void NumProcDrawCoefficient :: PrintDoc (ostream & ost)
+
+  {
+    /*
+    ost <<
+      "\n\nNumproc DrawFlux:\n" \
+      "-----------------\n" \
+      "Adds the natural flux to the visualization dialogbox:\n"\
+      "It takes the first integrator of the bilinear-form\n" \
+      "- Heat flux for thermic problems\n"\
+      "- Stresses for mechanical problems\n"\
+      "- Induction for magnetostatic problems\n\n"\
+      "Required flags:\n"
+      "-bilinearform=<bfname>\n" \
+      "    the first integrator for the bf computes the flux\n" \
+      "-solution=<gfname>\n" \
+      "    grid-function providing the primal solution field\n" \
+      "\nOptional flags:\n" \
+      "-applyd\n" \
+      "    apply coefficient matrix (compute either strains or stresses, B-field or H-field,..\n"\
+      "-label=<name>\n" \
+      "    label printed in the visualization dialogbox\n\n";
+    */
+  }
+
+
 
 
 
@@ -1359,56 +1433,52 @@ namespace ngsolve
     }
 
 
+    template <typename SCAL>
+    SCAL DoScal (LocalHeap & lh)
+    {
+      SCAL sum = 0;
+
+#pragma omp parallel
+      {
+	LocalHeap slh = lh.Split(), lh = slh;
+	SCAL lsum = 0;
+#pragma omp for
+	for (int i = 0; i < ma.GetNE(); i++)
+	  {
+	    HeapReset hr(lh);
+	    ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
+	    IntegrationRule ir (eltrans.GetElementType(), order);
+	    const BaseMappedIntegrationRule & mir = eltrans(ir, lh);
+	      
+	    FlatMatrix<SCAL> result(mir.Size(), 1, lh);
+	    coef -> Evaluate (mir, result);
+	    SCAL hsum = 0;
+	    for (int j = 0; j < mir.Size(); j++)
+	      hsum += mir[j].GetWeight() * result(j);
+
+	    lsum += hsum;
+	  }
+#pragma omp critical(npintegrate)
+	{
+	  sum += lsum;
+	}
+      }
+
+      sum = MyMPI_AllReduce (sum);
+      return sum;
+    }
+
     virtual void Do (LocalHeap & lh)
     {
       if (!coef -> IsComplex())
 	{
-	  double sum = 0;
-	  
-	  for (int i = 0; i < ma.GetNE(); i++)
-	    {
-	      HeapReset hr(lh);
-	      ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
-	      IntegrationRule ir (eltrans.GetElementType(), order);
-	      const BaseMappedIntegrationRule & mir = eltrans(ir, lh);
-	      
-	      FlatMatrix<> result(mir.Size(), 1, lh);
-	      coef -> Evaluate (mir, result);
-	      double hsum = 0;
-	      for (int j = 0; j < mir.Size(); j++)
-		hsum += mir[j].GetWeight() * result(j);
-	      sum += hsum;
-	    }
-	  
-	  sum = MyMPI_AllReduce (sum);
-	  
+	  double sum = DoScal<double> (lh);
 	  cout << IM(1) << "Integral = " << sum << endl;
 	  pde.AddVariable (string("integrate.")+GetName()+".value", sum, 6);
 	}
       else
 	{
-	  Complex sum = 0;
-	  
-	  for (int i = 0; i < ma.GetNE(); i++)
-	    {
-	      HeapReset hr(lh);
-	      ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
-	      IntegrationRule ir (eltrans.GetElementType(), order);
-	      const BaseMappedIntegrationRule & mir = eltrans(ir, lh);
-	      
-	      FlatMatrix<Complex> result(mir.Size(), 1, lh);
-	      coef -> Evaluate (mir, result);
-	      Complex hsum = 0;
-	      for (int j = 0; j < mir.Size(); j++)
-		hsum += mir[j].GetWeight() * result(j);
-	      sum += hsum;
-	    }
-	  
-	  // sum = MyMPI_AllReduce (sum);
-	  sum = Complex (MyMPI_AllReduce (sum.real()),
-			 MyMPI_AllReduce (sum.imag()));
-			 
-	  
+	  Complex sum = DoScal<Complex> (lh);
 	  cout << IM(1) << "Integral = " << sum << endl;
 	  pde.AddVariable (string("integrate.")+GetName()+".value.real", sum.real(), 6);
 	  pde.AddVariable (string("integrate.")+GetName()+".value.imag", sum.imag(), 6);
@@ -3039,8 +3109,9 @@ namespace ngsolve
   static RegisterNumProc<NumProcVisualization> npinitvisual("visualization");
   static RegisterNumProc<NumProcIntegrate> npinitintegrate("integrate");
   static RegisterNumProc<NumProcWriteFile> npinitwf ("writefile");
-
-
+  static RegisterNumProc<NumProcDrawFlux> npinitdf ("drawflux");
+  static RegisterNumProc<NumProcDrawCoefficient> npinitdc ("draw");
+  
 
   namespace numproc_cpp
   {
@@ -3054,7 +3125,7 @@ namespace ngsolve
     {
       // GetNumProcs().AddNumProc ("calcflux", NumProcCalcFlux::Create, NumProcCalcFlux::PrintDoc);
       // GetNumProcs().AddNumProc ("setvalues", NumProcSetValues::Create, NumProcSetValues::PrintDoc);
-      GetNumProcs().AddNumProc ("drawflux", NumProcDrawFlux::Create, NumProcDrawFlux::PrintDoc);
+      // GetNumProcs().AddNumProc ("drawflux", NumProcDrawFlux::Create, NumProcDrawFlux::PrintDoc);
       GetNumProcs().AddNumProc ("evaluate", NumProcEvaluate::Create, NumProcEvaluate::PrintDoc);
       GetNumProcs().AddNumProc ("analyze", NumProcAnalyze::Create, NumProcAnalyze::PrintDoc);
       GetNumProcs().AddNumProc ("warn", NumProcWarn::Create, NumProcWarn::PrintDoc);
