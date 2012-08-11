@@ -132,15 +132,20 @@ namespace ngstd
 
   int NgProfiler :: CreateTimer (const string & name)
   {
-    for (int i = SIZE-1; i > 0; i--)
-      if (!usedcounter[i])
-	{
-	  usedcounter[i] = 1;
-	  names[i] = name;
-	  return i;
-	}
+    int nr = -1;
+#pragma omp critical (createtimer)
+    {
+      for (int i = SIZE-1; i > 0; i--)
+	if (!usedcounter[i])
+	  {
+	    usedcounter[i] = 1;
+	    names[i] = name;
+	    nr = i;
+	    break;
+	  }
+    }
+    if (nr > -1) return nr;
     throw Exception ("no more timer available");
-    return -1;
   }
 
 

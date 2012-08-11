@@ -46,8 +46,9 @@ namespace ngparallel
 
     virtual ~ParallelDofs();
 
-    // const MeshAccess & GetMeshAccess() const { return ma; }
-    // const Array<Node> & GetDofNodes() const { return dofnodes; }
+    // only for testing ...
+    const MeshAccess & GetMeshAccess() const { return ma; }
+    const Array<Node> & GetDofNodes() const { return dofnodes; }
 
     int GetNTasks() const { return exchangedofs->Size(); }
 

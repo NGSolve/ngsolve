@@ -871,10 +871,6 @@ namespace ngfem
           
           nip = irx->GetNIP() * iry->GetNIP();
 	  SetSize(nip);
-	  /*
-          xi.SetSize(nip);
-          weight.SetSize(nip);
-	  */
 
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++, ii++)
@@ -887,13 +883,11 @@ namespace ngfem
                                   y * (1-x), 
                                   (1-x) * (1-y) };
                 
-		(*this)[ii] = IntegrationPoint (lami[isort[0]], lami[isort[1]], 0,
-						(*irx)[i1].Weight()*(*iry)[i2].Weight()*(1-x));
-		/*
-                xi[ii](0) = lami[isort[0]];
-                xi[ii](1) = lami[isort[1]];
-                weight[ii] = (*irx)[i1].Weight()*(*iry)[i2].Weight()*(1-x);
-		*/
+		(*this)[ii] = 
+		  IntegrationPoint (lami[isort[0]], 
+				    lami[isort[1]], 
+				    0,
+				    (*irx)[i1].Weight()*(*iry)[i2].Weight()*(1-x));
               }
 
           // trig permutation transformation

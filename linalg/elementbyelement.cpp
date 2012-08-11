@@ -320,6 +320,25 @@ namespace ngla
     return 0;//new helmholtz_exp_cpp::BlockJacobiPrecond_ElByEl<SCAL> (*this, blocks );
   }
 
+
+  template <class SCAL>
+  ostream & ElementByElementMatrix<SCAL> :: Print (ostream & ost) const
+  {
+      ost << "Element-by-Element Matrix:" << endl;
+      ost << "num blocks = " << elmats.Size();
+      for (int i = 0; i < elmats.Size(); i++)
+	{
+	  ost << "block " << i << endl;
+	  ost << "rows = " << rowdnums[i] << endl;
+	  ost << "cols = " << coldnums[i] << endl;
+	  ost << "matrix = " << elmats[i] << endl;
+	}
+      return ost;
+    }
+
+
+
+
   template class ElementByElementMatrix<double>;
   template class ElementByElementMatrix<Complex>;  
   

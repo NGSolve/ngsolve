@@ -191,8 +191,6 @@ namespace ngbla
 
     using CMCPMatExpr<FlatMatrix<T> >::Rows;
     using CMCPMatExpr<FlatMatrix<T> >::Cols;
-    // using Expr<FlatMatrix<T> >::Rows;
-    // using Expr<FlatMatrix<T> >::Cols;
 
     const FlatMatrix Rows (int first, int next) const
     {
@@ -203,7 +201,7 @@ namespace ngbla
     {
       return SliceMatrix<T> (h, next-first, w, data+first);
     }
-    
+
     const FlatMatrix Rows (IntRange range) const
     {
       return FlatMatrix (range.Next()-range.First(), w, data+range.First()*w);
@@ -213,7 +211,6 @@ namespace ngbla
     {
       return SliceMatrix<T> (h, range.Next()-range.First(), w, data+range.First());
     }
-
   };
 
 
@@ -597,8 +594,6 @@ namespace ngbla
     {
       return Cols (range.First(), range.Next());
     }
-
-
   };
 
 
@@ -809,7 +804,8 @@ namespace ngbla
     {
       return SliceVector<T> (w, H, &data[i]);
     }
-
+    
+    /*
     const DoubleSliceMatrix<T> Rows (int first, int next) const
     {
       return DoubleSliceMatrix<T> (next-first, w, 1, H, data+first);
@@ -829,7 +825,7 @@ namespace ngbla
     {
       return Cols (range.First(), range.Next());
     }
-
+    */
 
 
     const FlatMatrixFixWidth<H,T> Trans () const
@@ -1071,6 +1067,7 @@ namespace ngbla
     /// the width
     int Width () const throw() { return w; }
 
+    /*
     const DoubleSliceMatrix Rows (int first, int next) const
     {
       return DoubleSliceMatrix (next-first, w, distr, distc, data+first*distr);
@@ -1090,6 +1087,8 @@ namespace ngbla
     {
       return Cols(range.First(), range.Next());
     }
+    */
+
   };
 
 

@@ -196,7 +196,12 @@ namespace ngcomp
 	if(dim==3) used_face[ma.GetSElFace(i)] = 1; 
       }
 
+    
+    AllReduceNodalData (NT_VERTEX, used_vertex, MPI_LOR, ma);
+    AllReduceNodalData (NT_EDGE, used_edge, MPI_LOR, ma);
+    AllReduceNodalData (NT_FACE, used_face, MPI_LOR, ma);
 
+    
 	
     if(var_order) 
       for (int i = 0; i < ne; i++)

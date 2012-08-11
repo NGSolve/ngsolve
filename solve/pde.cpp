@@ -1069,7 +1069,7 @@ namespace ngsolve
     gridfunctions.Set (name, gf);
     todo.Append(gf);
 
-    if (addcf)
+    if (addcf && (gf->GetFESpace().GetIntegrator()||gf->GetFESpace().GetEvaluator()) )
       AddCoefficientFunction (name, new GridFunctionCoefficientFunction(*gf));
 	
 

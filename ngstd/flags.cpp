@@ -13,9 +13,6 @@
 
 namespace ngstd
 {
-  using namespace ngstd;
-
-
   Flags :: Flags ()
   {
     ;
@@ -24,28 +21,27 @@ namespace ngstd
   Flags :: Flags (const Flags & flags)
   {
     const char * name;
-    int i;
-    for (i = 0; i < flags.GetNStringFlags(); i++)
+    for (int i = 0; i < flags.GetNStringFlags(); i++)
       {
 	const char * str = flags.GetStringFlag (i, name);
 	SetFlag (name, str);
       }
-    for (i = 0; i < flags.GetNNumFlags(); i++)
+    for (int i = 0; i < flags.GetNNumFlags(); i++)
       {
 	double val = flags.GetNumFlag (i, name);
 	SetFlag (name, val);
       }
-    for (i = 0; i < flags.GetNDefineFlags(); i++)
+    for (int i = 0; i < flags.GetNDefineFlags(); i++)
       {
 	flags.GetDefineFlag (i, name);
 	SetFlag (name);
       }
-    for (i = 0; i < flags.GetNNumListFlags(); i++)
+    for (int i = 0; i < flags.GetNNumListFlags(); i++)
       {
 	const Array<double> * numa = flags.GetNumListFlag (i, name);
 	SetFlag (name, *numa);
       }
-    for (i = 0; i < flags.GetNStringListFlags(); i++)
+    for (int i = 0; i < flags.GetNStringListFlags(); i++)
       {
 	const Array<char*> * stra = flags.GetStringListFlag (i, name);
 	SetFlag (name, *stra);

@@ -7,12 +7,14 @@
 #ifdef PARALLEL
  
 #include <la.hpp>
+#include <comp.hpp>
 #include <parallelngs.hpp>
 
 
 namespace ngla
 {
   using namespace ngparallel;
+  using namespace ngcomp;
 
   template <typename TM>
   MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, 
@@ -55,10 +57,55 @@ namespace ngla
     for (int i = 0; i < ndof; i++)
       if (global_nums[i] != -1)
 	global_nums[i] += first_master_dof[id];
-    
+
     ScatterDofData (global_nums, *pardofs);
 
+    /*
+    cout << "TESTING" << endl;
+    for (int i = 0; i < ndof; i++)
+      *testout << "dof" << i << " = " << pardofs->GetDofNodes()[i] << " free = " << subset->Test(i) << endl;
+    const MeshAccess & ma = pardofs->GetMeshAccess();
 
+    for (int dest = 0; dest < ntasks; dest++)
+      {
+	*testout << "shared edges with proc " << dest << endl;
+	*testout << "exdofs " << endl << pardofs->GetExchangeDofs (dest) << endl;
+	Array<int> procs;
+	for (int i = 0; i < ma.GetNEdges(); i++)
+	  {
+	    ma.GetDistantProcs (Node(NT_EDGE, i), procs);
+	    if (procs.Contains (dest))
+	      {
+		int v1, v2;
+		ma.GetEdgePNums (i, v1, v2);
+		v1 = ma.GetGlobalNodeNum (Node(NT_VERTEX, v1));
+		v2 = ma.GetGlobalNodeNum (Node(NT_VERTEX, v2));
+		*testout << "E" << i << ": " << v1 << "-" << v2 << endl;
+	      }
+	  }
+      }
+
+    for (int i = 0; i < ma.GetNEdges(); i++)
+      {
+	*testout << "local edge " << i << endl;
+	int v1, v2;
+	ma.GetEdgePNums (i, v1, v2);
+	*testout << "loc pnts = " << v1 << "-" << v2 << ", glob pnts = " 
+		 << ma.GetGlobalNodeNum (Node(NT_VERTEX, v1)) << "-" 
+		 << ma.GetGlobalNodeNum (Node(NT_VERTEX, v2)) << endl;
+	Array<int> procs;
+	ma.GetDistantProcs (Node(NT_EDGE, i), procs);
+	*testout << "dist procs = " << procs << endl;
+      }
+
+    for (int i = 0; i < ndof; i++)
+      if ( (global_nums[i] == -1) && (!subset || (subset && subset->Test(i))))
+	{
+	  Node node = pardofs->GetDofNodes()[i];
+	  cerr << "global enumeration problem, dof = " << i << ", node = " << node << endl;
+	  *testout << "global enumeration problem, dof = " << i << ", node = " << node << endl;
+	}
+    */
 
     
     if (id != 0)
@@ -133,6 +180,7 @@ namespace ngla
 
 	    for (int i = 0; i < hrows.Size(); i++)
 	      {
+		if (hrows[i] < 0 || hcols[i] < 0) cerr << "Illegal (row/col)" << endl;
 		rows.Append (hrows[i]);
 		cols.Append (hcols[i]);
 		vals.Append (hvals[i]);
@@ -141,6 +189,7 @@ namespace ngla
 	    cout << "\rmaster: got data from " << src << flush;
 	  }
 	cout << endl;
+
 
 	cout << "now build graph" << endl;
 

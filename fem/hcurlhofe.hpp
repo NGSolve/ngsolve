@@ -24,9 +24,9 @@ protected:
   INT<2> order_face[6];
   INT<3> order_cell;
 
-  int usegrad_edge[12]; 
-  int usegrad_face[6]; 
-  int usegrad_cell; 
+  bool usegrad_edge[12]; 
+  bool usegrad_face[6]; 
+  bool usegrad_cell; 
 
   bool discontinuous;
   
@@ -47,8 +47,8 @@ public:
   void SetOrderFace (FlatArray<int> & of);
   void SetOrderFace (FlatArray<INT<2> > & of); 
   void SetOrderEdge (FlatArray<int> & oen);
-  void SetUsegradEdge(FlatArray<int> & uge); 
-  void SetUsegradFace(FlatArray<int> & ugf); 
+  void SetUsegradEdge(FlatArray<bool> & uge); 
+  void SetUsegradFace(FlatArray<bool> & ugf); 
   void SetUsegradCell(int ugc); 
   void SetDiscontinuous ( bool adiscont ) { discontinuous = adiscont; }
   

@@ -557,6 +557,10 @@ namespace ngcomp
 	    {
 	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
 	      bli.CalcElementMatrix (fel, eltrans, elmat, lh);
+
+	      fes.TransformMat (i, bound, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+	      fes.TransformVec (i, bound, elflux, TRANSFORM_RHS);
+	      
 	      /*
 	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
 	      invelmat.Mult (elflux, elfluxi);
@@ -565,7 +569,7 @@ namespace ngcomp
 	      elfluxi = elmat * elflux;
 	    }
 	  
-	  fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
+	  // fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
 
 #pragma omp critical(fluxprojetadd)
 	  {

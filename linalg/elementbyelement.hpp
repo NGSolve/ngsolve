@@ -77,11 +77,7 @@ namespace ngla
 	return coldnums[elnum]; 
     }
 
-    virtual ostream & Print (ostream & ost) const
-    {
-      ost << "Element-by-Element Matrix:" << endl;
-      return ost;
-    }
+    virtual ostream & Print (ostream & ost) const;
 
     virtual BaseBlockJacobiPrecond * 
     CreateBlockJacobiPrecond (Table<int> & blocks,

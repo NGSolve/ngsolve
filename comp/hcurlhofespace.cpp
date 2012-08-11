@@ -30,8 +30,6 @@ namespace ngcomp
     DefineNumFlag("orderface");
     DefineNumFlag("orderedge");
     DefineNumFlag("relorder");
-    DefineDefineFlag("print"); 
-    DefineDefineFlag("noprint"); 
     DefineNumFlag("augmented");
     DefineDefineFlag("fast"); 
     DefineDefineFlag ("discontinuous");
@@ -94,7 +92,6 @@ namespace ngcomp
       } 
        
     fast_pfem = flags.GetDefineFlag ("fast");
-    print=flags.GetDefineFlag("print"); 
     discontinuous = flags.GetDefineFlag ("discontinuous");
 
 
@@ -158,7 +155,7 @@ namespace ngcomp
   {
     FESpace :: Update (lh);
 
-    const int dim = ma.GetDimension(); 
+    int dim = ma.GetDimension(); 
 
     if (order < 0) 
       throw Exception("HCurlHighOrderFESpace::Update() order < 0 !" ) ;
@@ -166,16 +163,15 @@ namespace ngcomp
     if (low_order_space)
       low_order_space -> Update(lh);
 
-    // int nv = ma.GetNV();
     int ne = ma.GetNE();
     int nse = ma.GetNSE();
     int ned = ma.GetNEdges();
-    int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
+    int nfa = (ma.GetDimension() == 3) ? ma.GetNFaces() : 0;
 
     maxorder = -1; 
     minorder = 99; 
 
-    for(int i=0; i<specialelements.Size(); i++)
+    for(int i = 0; i < specialelements.Size(); i++)
       delete specialelements[i];
     specialelements.DeleteAll();
 
@@ -185,18 +181,16 @@ namespace ngcomp
     usegrad_edge.SetSize (ned);                                
     usegrad_face.SetSize (nfa); 
     usegrad_cell.SetSize (ne);
-    fine_edge.SetSize(ned); 
-    fine_face.SetSize(nfa); 
+    fine_edge.SetSize (ned); 
+    fine_face.SetSize (nfa); 
 
     int p = var_order ? 0 : order; 
     order_edge = p; 
     // order_inner = INT<3> (p,p,p); 
     order_inner = INT<3> (0,0,0); 
 
- 
-   
     fine_edge = 0; 
-    if(dim==3) 
+    if (dim==3) 
       { 
 	fine_face = 0; 
 	order_face = INT<2> (p,p);
@@ -209,7 +203,7 @@ namespace ngcomp
     Array<int> eledges, elfaces, vnums;
 
 
-    for(int i=0; i< ne; i++) 
+    for(int i = 0; i < ne; i++) 
       if(gradientdomains[ma.GetElIndex(i)]) 
 	{
 	  ma.GetElEdges(i,eledges);
@@ -219,9 +213,8 @@ namespace ngcomp
 	  
 	  if(ma.GetDimension()==3)
 	    {
-	      ma.GetElFaces(i,elfaces);
-	      
-	      for(int j=0;j<elfaces.Size();j++)
+	      ma.GetElFaces(i, elfaces);
+	      for(int j = 0; j < elfaces.Size(); j++)
 		usegrad_face[elfaces[j]]=1; 
 	    }
 	  usegrad_cell[i] = 1; 
@@ -238,7 +231,9 @@ namespace ngcomp
 	    usegrad_face[ma.GetSElFace(i)] = 1;
 	}
 
-      
+    AllReduceNodalData (NT_EDGE, usegrad_edge, MPI_LOR, ma);
+    AllReduceNodalData (NT_FACE, usegrad_face, MPI_LOR, ma);
+
 	
     for (int i = 0; i < ne; i++)
       {
@@ -337,6 +332,9 @@ namespace ngcomp
       }
 
 
+    AllReduceNodalData (NT_EDGE, fine_edge, MPI_LOR, ma);
+    AllReduceNodalData (NT_FACE, fine_face, MPI_LOR, ma);
+
 
 
       	
@@ -367,40 +365,35 @@ namespace ngcomp
   {
     int nv = ma.GetNV();
     int ne = ma.GetNE();
-    // int nse = ma.GetNSE();
 
     int ned = ma.GetNEdges();
     int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
 
 
     Array<int> pnums; 
-    int i; 
     
     nedfine = 0; 
-    for(int i=0; i<ned; i++) 
-      if(fine_edge[i] == 1) nedfine++; 
+    for(int i = 0; i < ned; i++) 
+      if (fine_edge[i] == 1) nedfine++; 
 
-    //ndof = nedfine; 
     ndof = ned; // Nedelec (order = 0) !!   
-    if(augmented == 1 ) ndof+=nv; 
        
-    first_edge_dof.SetSize(ned+1); 
-    for (i = 0; i < ned; i++)
+    first_edge_dof.SetSize (ned+1); 
+    for (int i = 0; i < ned; i++)
       {
 	first_edge_dof[i] = ndof;
-	if(order_edge[i]>0)
+	if(order_edge[i] > 0)
 	  ndof += usegrad_edge[i]*order_edge[i];
       }
     first_edge_dof[ned] = ndof;
-    // cout << " after edges ndof is " << ndof << endl; 
     
-    first_face_dof.SetSize(nfa+1);
-    face_ngrad.SetSize(nfa); 
+    first_face_dof.SetSize (nfa+1);
+    face_ngrad.SetSize (nfa); 
     face_ngrad = 0; 
-    for (i=0; i< nfa; i++) 
+    for (int i = 0; i < nfa; i++) 
       { 
 	first_face_dof[i] = ndof; 
-	ma.GetFacePNums(i,pnums);  
+	ma.GetFacePNums (i,pnums);  
 	INT<2> p = order_face[i]; 
 	switch(pnums.Size())
 	  {
@@ -421,12 +414,11 @@ namespace ngcomp
 	  }
       } 
     first_face_dof[nfa] = ndof;   
-    // cout << " after faces ndof is " << ndof << endl; 
     
     cell_ngrad.SetSize(ne); 
     cell_ngrad = 0; 
     first_inner_dof.SetSize(ne+1);
-    for (i=0; i< ne; i++)
+    for (int i = 0; i < ne; i++)
       {
 	first_inner_dof[i] = ndof;
 	INT<3> p = order_inner[i];
@@ -440,7 +432,7 @@ namespace ngcomp
 	      }
 	    break; 
 	  case ET_QUAD: 
-	    if(p[0]>=0 &&  p[1]>=0) 
+	    if(p[0]>=0 && p[1]>=0) 
 	      {
 		ndof += (usegrad_cell[i]+1) * p[0] * p[1] + p[0] + p[1]; 
 		cell_ngrad[i] = (usegrad_cell[i]) * p[0] * p[1];
@@ -454,7 +446,7 @@ namespace ngcomp
 	      }
 	    break; 
 	  case ET_PRISM:
-	    if(p[0]>1 &&  p[2]>=0) 
+	    if(p[0]>1 && p[2]>=0) 
 	      {
 		ndof += (usegrad_cell[i]+2)*p[2] * p[0]*(p[0]-1)/2
 		  + (p[0]-1)*p[2] + p[0]*(p[0]-1)/2; 
@@ -481,19 +473,18 @@ namespace ngcomp
 	  }
       }
     first_inner_dof[ne] = ndof;    
-    // cout << " after elements ndof is " << ndof << endl; 
 
-    if ( discontinuous )
+    if (discontinuous)
       {
 	Array<int> edges, faces;
 
 	ndof = 0;
-	for ( int el = 0; el < ne; el++ )
+	for (int el = 0; el < ne; el++ )
 	  {
 	    int ndof_inner = first_inner_dof[el+1] - first_inner_dof[el];
 	    first_inner_dof[el] = ndof;
 	    ma.GetElEdges(el, edges);
-	    if ( ma.GetDimension() == 3 )
+	    if (ma.GetDimension() == 3)
 	      ma.GetElFaces(el, faces);
 
 	    for ( int ed = 0; ed < edges.Size(); ed++ )
@@ -514,7 +505,6 @@ namespace ngcomp
 
 	first_edge_dof = 0;
 	first_face_dof = 0;
-
       }
 
     *testout << "Hcurlho edge dofs: " << first_edge_dof[0] << "-" << first_edge_dof[ned] << endl;
@@ -543,8 +533,6 @@ namespace ngcomp
 
 	*testout << " hcurlho fine_edge = " << fine_edge << endl; 
 	*testout << " hcurlho fine_face = " << fine_face << endl; 
-	
-	
       } 
   }
 
@@ -734,7 +722,8 @@ namespace ngcomp
 	  static_cast<HCurlHighOrderFiniteElement<2>*> (fe);
 
                
-    	ArrayMem<int, 4> ednums, ord_edge, ug_edge;
+    	ArrayMem<int, 4> ednums, ord_edge;
+	ArrayMem<bool, 4> ug_edge;
 	
 	ma.GetElEdges(elnr, ednums);
 	
@@ -755,7 +744,7 @@ namespace ngcomp
 
 	hofe -> SetUsegradEdge (ug_edge); 
 	hofe -> SetUsegradCell (usegrad_cell[elnr]);  // old style
-        FlatArray<int> augf(1,&usegrad_cell[elnr]);
+        FlatArray<bool> augf(1,&usegrad_cell[elnr]);
 	hofe -> SetUsegradFace (augf); 
 	hofe -> ComputeNDof();
 
@@ -843,7 +832,8 @@ namespace ngcomp
       }
 
     ArrayMem<int, 8> vnums;
-    ArrayMem<int, 4> ednums, ord_edge, ug_edge; 
+    ArrayMem<int, 4> ednums, ord_edge;
+    ArrayMem<bool, 4> ug_edge; 
        
     ma.GetSElVertices(selnr, vnums);
 
@@ -859,7 +849,7 @@ namespace ngcomp
 	// hofe -> SetOrderEdge (order_edge[ednums[0]]);
         hofe -> SetOrderEdge (aoe);
 	hofe -> SetUsegradCell (usegrad_edge[ednums[0]]);  // old style
-        FlatArray<int> auge(1, &usegrad_edge[ednums[0]]);
+        FlatArray<bool> auge(1, &usegrad_edge[ednums[0]]);
 	hofe -> SetUsegradEdge (auge);
 	hofe -> ComputeNDof();
       } 
@@ -888,7 +878,7 @@ namespace ngcomp
         hofe -> SetOrderFace (of);
 
 	hofe -> SetUsegradEdge(ug_edge); 
-        FlatArray<int> augf(1, &usegrad_face[ma.GetSElFace(selnr)]);
+        FlatArray<bool> augf(1, &usegrad_face[ma.GetSElFace(selnr)]);
 	hofe -> SetUsegradFace(augf); 
 	hofe -> SetUsegradCell(usegrad_face[ma.GetSElFace(selnr)]);   // old style
 

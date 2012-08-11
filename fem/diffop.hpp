@@ -121,6 +121,7 @@ namespace ngfem
       ;
     }
 
+    /*
     /// old style
     template <typename FEL, class TVD, class TVY, int D>
     static void ApplyGrid (const FEL & fel, 
@@ -141,7 +142,7 @@ namespace ngfem
     {
       ;
     }
-
+    */
   };
 
 

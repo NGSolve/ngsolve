@@ -279,6 +279,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 #ifdef PARALLEL	
     AllReduceNodalData (NT_VERTEX, dirichlet_vertex, MPI_LOR, ma);
     AllReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR, ma);
+    AllReduceNodalData (NT_FACE, dirichlet_face, MPI_LOR, ma);
 #endif
     
     if (print)
@@ -297,7 +298,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     RegionTimer reg (timer);
 
-
     dirichlet_dofs.SetSize (GetNDof());
     dirichlet_dofs.Clear();
     Array<int> dnums;
@@ -313,7 +313,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		  dirichlet_dofs.Set (dnums[j]);
 	    }
 	}	 
-	
 	
     for (int i = 0; i < dirichlet_vertex.Size(); i++)
       if (dirichlet_vertex[i])
@@ -337,18 +336,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
     free_dofs.SetSize (GetNDof());
     free_dofs = dirichlet_dofs;
     free_dofs.Invert();
-	
-
+    
     external_free_dofs.SetSize (GetNDof());
     external_free_dofs = free_dofs;
     for (int i = 0; i < ctofdof.Size(); i++)
       if (ctofdof[i] & LOCAL_DOF)
 	external_free_dofs.Clear(i);
-	
+
     if (print)
       *testout << "freedofs = " << endl << free_dofs << endl;
 
-    
     UpdateParallelDofs();
 
     if (print)
@@ -356,7 +353,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     Array<int> col(ma.GetNE());
     col = -1;
-
     bool found;
     int maxcolor = 0;
 
