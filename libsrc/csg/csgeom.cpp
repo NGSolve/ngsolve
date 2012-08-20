@@ -1497,4 +1497,80 @@ namespace netgen
 		 boundingbox.PMin()(2));
     return max2 (maxs, -mins) * 1.1;
   }
+
+
+
+  class CSGeometryRegister : public GeometryRegister
+  {
+  public:
+    virtual NetgenGeometry * Load (string filename) const;
+    virtual NetgenGeometry * LoadFromMeshFile (istream & ist) const;
+    // virtual VisualScene * GetVisualScene (const NetgenGeometry * geom) const;
+  };
+
+  extern CSGeometry * ParseCSG (istream & istr);
+
+  NetgenGeometry *  CSGeometryRegister :: Load (string filename) const
+  {
+    const char * cfilename = filename.c_str();
+    if (strcmp (&cfilename[strlen(cfilename)-3], "geo") == 0)
+      {
+	PrintMessage (1, "Load CSG geometry file ", cfilename);
+
+	ifstream infile(cfilename);
+
+	CSGeometry * hgeom = ParseCSG (infile);
+	if (!hgeom)
+	  throw NgException ("geo-file should start with 'algebraic3d'");
+
+	hgeom -> FindIdenticSurfaces(1e-8 * hgeom->MaxSize()); 
+	return hgeom;
+      }
+
+    if (strcmp (&cfilename[strlen(cfilename)-3], "ngg") == 0)
+      {
+	PrintMessage (1, "Load new CSG geometry file ", cfilename);
+
+	ifstream infile(cfilename);
+	CSGeometry * hgeom = new CSGeometry("");
+	hgeom -> Load (infile);
+
+	return hgeom;
+      }
+
+
+    
+    return NULL;
+  }
+
+  NetgenGeometry * CSGeometryRegister :: LoadFromMeshFile (istream & ist) const 
+  {
+    string auxstring;
+    if (ist.good())
+      {
+	ist >> auxstring;
+	if (auxstring == "csgsurfaces")
+	  {
+	    CSGeometry * geometry = new CSGeometry ("");
+	    geometry -> LoadSurfaces(ist);
+	    return geometry;
+	  }
+	// else
+	// ist.putback (auxstring);
+      }
+    return NULL;
+  }
+
+
+  class CSGInit
+  {
+  public:
+    CSGInit()
+    {
+      geometryregister.Append (new CSGeometryRegister);
+    }
+  };
+
+  CSGInit csginit;
+
 }

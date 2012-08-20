@@ -5,7 +5,7 @@ Partition_Inter2d.ixx Partition_Loop2d.ixx Partition_Loop.ixx \
 Partition_Inter3d.ixx Partition_Loop3d.ixx Partition_Spliter.ixx \
 Partition_Inter2d.jxx Partition_Loop2d.jxx Partition_Loop.jxx \
 Partition_Inter3d.jxx Partition_Loop3d.jxx Partition_Spliter.jxx \
-utilities.h
+utilities.h vsocc.hpp
 
 
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  $(OCCFLAGS) $(TCL_INCLUDES)

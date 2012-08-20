@@ -546,7 +546,7 @@ namespace netgen
          
          for (i = 1; i <= np; i++)
          {
-            Array<int> vertelems;
+            Array<ElementIndex> vertelems;
 
             if(bndnodes.Test(i))
             {

@@ -178,7 +178,7 @@ static Standard_Boolean  SelectEdge(const TopoDS_Face&    F,
       }
     }
 
-    Standard_Real anglemax = - PI;
+    Standard_Real anglemax = - M_PI;
     TopoDS_Edge   SelectedEdge;	
     for ( itl.Initialize(LE); itl.More(); itl.Next()) {
       const TopoDS_Edge& E = TopoDS::Edge(itl.Value());

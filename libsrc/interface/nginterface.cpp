@@ -119,9 +119,9 @@ namespace netgen
 
 
 #ifdef OPENGL 
-  extern VisualSceneSolution vssolution;
+  // extern VisualSceneSolution vssolution;
 #endif
-  extern CSGeometry * ParseCSG (istream & istr);
+  // extern CSGeometry * ParseCSG (istream & istr);
 
 #ifdef SOCKETS
   extern AutoPtr<ClientSocket> clientsocket;
@@ -161,8 +161,8 @@ void Ng_LoadGeometry (const char * filename)
       return;
     }
 
-  if (id == 0)
-    cerr << "cannot load geometry '" << filename << "'" << endl;
+  // if (id == 0)
+  cerr << "cannot load geometry '" << filename << "'" << ", id = " << id << endl;
 }                          
 
 
@@ -1182,41 +1182,12 @@ void Ng_HPRefinement (int levels, double parameter, bool setorders,
 void Ng_HighOrder (int order, bool rational)
 {
   NgLock meshlock (mesh->MajorMutex(), true);
-  /*
-    Refinement * ref;
 
-    if (stlgeometry)
-    ref = new RefinementSTLGeometry (*stlgeometry);
-    #ifdef OCCGEOMETRY
-    else if (occgeometry)
-    ref = new OCCRefinementSurfaces (*occgeometry);
-    #endif
-    #ifdef ACIS
-    else if (acisgeometry)
-    {
-    ref = new ACISRefinementSurfaces (*acisgeometry);
-    }
-    #endif
-    else if (geometry2d)
-    ref = new Refinement2d (*geometry2d);
-    else
-    {
-    ref = new RefinementSurfaces (*geometry);
-    }
-  */
-  // cout << "parameter 1: " << argv[1] << " (conversion to int = " << atoi(argv[1]) << ")" << endl;
- 
+  mesh -> GetCurvedElements().BuildCurvedElements 
+    (&const_cast<Refinement&> (ng_geometry -> GetRefinement()),
+     order, rational);
 
-  mesh -> GetCurvedElements().BuildCurvedElements (&const_cast<Refinement&> (ng_geometry -> GetRefinement()),
-						   order, rational);
   mesh -> SetNextMajorTimeStamp();
-
-  /*
-    if(mesh)
-    mesh -> GetCurvedElements().BuildCurvedElements (ref, order, rational);
-  */
-
-  // delete ref;
 }
 
 
@@ -1690,13 +1661,18 @@ int Ng_GetNVertexElements (int vnr)
 
 void Ng_GetVertexElements (int vnr, int * els)
 {
-  FlatArray<int> ia(0,0);
   if (mesh->GetDimension() == 3)
-    ia = mesh->GetTopology().GetVertexElements(vnr);
+    {
+      FlatArray<ElementIndex> ia = mesh->GetTopology().GetVertexElements(vnr);
+      for (int i = 0; i < ia.Size(); i++)
+	els[i] = ia[i]+1;
+    }
   else
-    ia = mesh->GetTopology().GetVertexSurfaceElements(vnr);
-  for (int i = 0; i < ia.Size(); i++)
-    els[i] = ia[i];
+    {
+      FlatArray<int> ia = mesh->GetTopology().GetVertexSurfaceElements(vnr);
+      for (int i = 0; i < ia.Size(); i++)
+	els[i] = ia[i];
+    }
 }
 
 
@@ -1963,11 +1939,11 @@ int Ng_IsRunning()
 int Ng_GetVertex_Elements( int vnr, int* elems )
 {
   const MeshTopology& topology = mesh->GetTopology();
-  ArrayMem<int,4> indexArray;
+  ArrayMem<ElementIndex,4> indexArray;
   topology.GetVertexElements( vnr, indexArray );
   
   for( int i=0; i<indexArray.Size(); i++ )
-    elems[i] = indexArray[i];
+    elems[i] = indexArray[i]+1;
   
   return indexArray.Size();
 }
@@ -1989,7 +1965,7 @@ int Ng_GetVertex_SurfaceElements( int vnr, int* elems )
 int Ng_GetVertex_NElements( int vnr )
 {
   const MeshTopology& topology = mesh->GetTopology();
-  ArrayMem<int,4> indexArray;
+  ArrayMem<ElementIndex,4> indexArray;
   topology.GetVertexElements( vnr, indexArray );
   
   return indexArray.Size();

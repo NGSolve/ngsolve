@@ -186,8 +186,8 @@ namespace netgen
     receive-table entries will be set
    */
   template <typename T>
-  inline void MyMPI_ExchangeTable (TABLE<T> & send_verts, 
-				   TABLE<T> & recv_verts, int tag,
+  inline void MyMPI_ExchangeTable (TABLE<T> & send_data, 
+				   TABLE<T> & recv_data, int tag,
 				   MPI_Comm comm = MPI_COMM_WORLD)
   {
     int ntasks, rank;
@@ -197,7 +197,7 @@ namespace netgen
     Array<MPI_Request> requests;
     for (int dest = 0; dest < ntasks; dest++)
       if (dest != rank)
-	requests.Append (MyMPI_ISend (send_verts[dest], dest, tag, comm));
+	requests.Append (MyMPI_ISend (send_data[dest], dest, tag, comm));
 
     for (int i = 0; i < ntasks-1; i++)
       {
@@ -205,9 +205,10 @@ namespace netgen
 	MPI_Probe (MPI_ANY_SOURCE, tag, comm, &status);
 	int size, src = status.MPI_SOURCE;
 	MPI_Get_count (&status, MPI_INT, &size);
-	recv_verts.SetEntrySize (src, size, sizeof(int));
-	requests.Append (MyMPI_IRecv (recv_verts[src], src, tag, comm));
+	recv_data.SetEntrySize (src, size, sizeof(int));
+	requests.Append (MyMPI_IRecv (recv_data[src], src, tag, comm));
       }
+    MPI_Barrier (comm);
     MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
   }
 

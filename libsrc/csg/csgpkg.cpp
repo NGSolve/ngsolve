@@ -546,6 +546,7 @@ namespace netgen
   }
 
 
+  /*
   class CSGeometryRegister : public GeometryRegister
   {
   public:
@@ -617,8 +618,27 @@ namespace netgen
       }
     return NULL;
   }
+  */
 
 
+
+  class CSGeometryVisRegister : public GeometryRegister
+  {
+  public:
+    virtual NetgenGeometry * Load (string filename) const { return NULL; }
+    virtual VisualScene * GetVisualScene (const NetgenGeometry * geom) const;
+  };
+
+  VisualScene * CSGeometryVisRegister :: GetVisualScene (const NetgenGeometry * geom) const
+  {
+    CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry);
+    if (geometry)
+      {
+	vsgeom.SetGeometry (geometry);
+	return &vsgeom;
+      }
+    return NULL;
+  }
 }
 
 
@@ -626,9 +646,9 @@ using namespace netgen;
 
 int Ng_CSG_Init (Tcl_Interp * interp)
 {
-  geometryregister.Append (new CSGeometryRegister);
+  geometryregister.Append (new CSGeometryVisRegister);
+  if (interp == NULL) return TCL_OK;
   
-
 
   Tcl_CreateCommand (interp, "Ng_ParseGeometry", Ng_ParseGeometry,
 		     (ClientData)NULL,

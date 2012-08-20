@@ -1,7 +1,7 @@
 #ifndef FILE_MYSTDLIB
 #define FILE_MYSTDLIB
 
-#ifndef WIN32
+#ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 

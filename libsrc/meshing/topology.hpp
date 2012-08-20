@@ -28,7 +28,7 @@ class MeshTopology
   MoveableArray<int> surffaces;
   MoveableArray<INDEX_2> surf2volelement;
   MoveableArray<int> face2surfel;
-  TABLE<int,PointIndex::BASE> *vert2element;
+  TABLE<ElementIndex,PointIndex::BASE> *vert2element;
   TABLE<int,PointIndex::BASE> *vert2surfelement;
   TABLE<int,PointIndex::BASE> *vert2segment;
   int timestamp;
@@ -68,6 +68,7 @@ public:
   
   int GetSegmentEdge (int segnr) const { return abs(segedges[segnr-1]); }
   int GetSegmentEdgeOrientation (int segnr) const { return sgn(segedges[segnr-1]); }
+  int GetEdge (SegmentIndex segnr) const { return abs(segedges[segnr])-1; }
 
   void GetSegmentEdge (int segnr, int & enr, int & orient) const
   {
@@ -86,6 +87,7 @@ public:
   void GetFaceVertices (int fnr, Array<int> & vertices) const;
   void GetFaceVertices (int fnr, int * vertices) const;
   void GetEdgeVertices (int enr, int & v1, int & v2) const;
+  void GetEdgeVertices (int enr, PointIndex & v1, PointIndex & v2) const;
   const int * GetEdgeVerticesPtr (int enr) const { return &edge2vert[enr][0]; }
   const int * GetFaceVerticesPtr (int fnr) const { return &face2vert[fnr][0]; }
   void GetFaceEdges (int fnr, Array<int> & edges, bool withorientation = false) const;
@@ -96,6 +98,8 @@ public:
   int GetSurfaceElementFace (int elnr) const;
   void GetSurfaceElementEdgeOrientations (int elnr, Array<int> & eorient) const;
   int GetSurfaceElementFaceOrientation (int elnr) const;
+  void GetEdges (SurfaceElementIndex elnr, Array<int> & edges) const;
+  int GetFace (SurfaceElementIndex elnr) const;
 
   int GetSurfaceElementEdges (int elnr, int * edges, int * orient) const;
 
@@ -115,8 +119,8 @@ public:
 
   int GetFace2SurfaceElement (int fnr) const { return face2surfel[fnr-1]; }
   
-  void GetVertexElements (int vnr, Array<int> & elements) const;
-  FlatArray<int> GetVertexElements (int vnr) const;
+  void GetVertexElements (int vnr, Array<ElementIndex> & elements) const;
+  FlatArray<ElementIndex> GetVertexElements (int vnr) const;
 
   void GetVertexSurfaceElements( int vnr, Array<int>& elements ) const;
   FlatArray<int> GetVertexSurfaceElements (int vnr) const;

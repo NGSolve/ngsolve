@@ -814,6 +814,11 @@ namespace netgen
     ///
     int meshdocval;
 
+#ifdef PARALLEL
+    /// number of partition for parallel computation 
+    int partitionNumber;
+#endif
+
   private:
     string* bcname;
 
@@ -863,6 +868,13 @@ namespace netgen
   
     PointIndex & operator[] (int i) { return pnums[i]; }
     const PointIndex & operator[] (int i) const { return pnums[i]; }
+
+#ifdef PARALLEL
+    int GetPartition () const { return partitionNumber; }
+    void SetPartition (int nr) { partitionNumber = nr; }; 
+#else
+    int GetPartition () const { return 0; }
+#endif
   };
 
   ostream & operator<<(ostream  & s, const Segment & seg);

@@ -113,7 +113,7 @@ namespace netgen
   void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
   {
     if (id == 0)
-      PrintMessage ( 3, "UPDATE GLOBAL COARSEGRID STARTS" );      // JS
+      PrintMessage ( 3, "UPDATE GLOBAL COARSEGRID STARTS" );      
 
     int timer = NgProfiler::CreateTimer ("UpdateCoarseGridGlobal");
     NgProfiler::RegionTimer reg(timer);
@@ -151,6 +151,7 @@ namespace netgen
 
 	    for ( int i = 0; i < edges.Size(); i++ )
 	      sendarray.Append (edges[i]);
+	    sendarray.Append (topology.GetSurfaceElementFace (el));
 	  }
 
 	Array<MPI_Request> sendrequests;
@@ -188,9 +189,9 @@ namespace netgen
 	    topology.GetSurfaceElementEdges (surfel, edges);
 	    for (int i = 0; i  < edges.Size(); i++)
 	      SetLoc2Glob_Edge (edges[i], recvarray[ii++]);
+	    int face = topology.GetSurfaceElementFace (surfel);
+	    SetLoc2Glob_Face ( face, recvarray[ii++]);
 	  }
-
-
       }
     
     is_updated = true;
@@ -213,13 +214,7 @@ namespace netgen
       PrintMessage (1, "UPDATE COARSE GRID PARALLEL TOPOLOGY ");
 
 
-    // find exchange edges - first send exchangeedges locnum, v1, v2
-    // receive distant distnum, v1, v2
-    // find matching
-    const MeshTopology & topology = mesh.GetTopology();
-
-    UpdateCoarseGridGlobal();
-
+    // UpdateCoarseGridGlobal();
 
 
     
@@ -246,11 +241,12 @@ namespace netgen
     static int timerf = NgProfiler::CreateTimer ("UpdateCoarseGrid - ex faces");
 
 
-    Array<int,1> glob2loc;
     Array<int> cnt_send(ntasks-1);
 
     NgProfiler::StartTimer (timere);
 
+
+    const MeshTopology & topology = mesh.GetTopology();
     int nfa = topology . GetNFaces();
     int ned = topology . GetNEdges();
     
@@ -278,13 +274,11 @@ namespace netgen
 	gv2e.Set (es, edge);
 
 	for (int dest = 1; dest < ntasks; dest++)
-	  {
-	    if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
-	      {
-		send_edges.Add (dest-1, es[0]);
-		send_edges.Add (dest-1, es[1]);
-	      }
-	  }
+	  if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
+	    {
+	      send_edges.Add (dest-1, es[0]);
+	      send_edges.Add (dest-1, es[1]);
+	    }
       }
 
     TABLE<int> recv_edges(ntasks-1);
@@ -305,13 +299,69 @@ namespace netgen
  
     NgProfiler::StopTimer (timere);
 
-
     MPI_Barrier (MPI_LocalComm);
+
 
     if (mesh.GetDimension() == 3)
       {
 	NgProfiler::StartTimer (timerf);
+
+	// exchange faces
+	cnt_send = 0;
+	Array<int> verts;
+	for (int face = 1; face <= nfa; face++)
+	  {
+	    topology.GetFaceVertices (face, verts);
+	    for (int dest = 1; dest < ntasks; dest++)
+	      if (IsExchangeVert (dest, verts[0]) && 
+		  IsExchangeVert (dest, verts[1]) &&
+		  IsExchangeVert (dest, verts[2]))
+		cnt_send[dest-1]+=3;
+	  }
+    
+	TABLE<int> send_faces(cnt_send);
+	INDEX_3_HASHTABLE<int> gv2f(2*nfa);
+
+	for (int face = 1; face <= nfa; face++)
+	  {
+	    topology.GetFaceVertices (face, verts);
+	    INDEX_3 fs (GetGlobalPNum(verts[0]),
+			GetGlobalPNum(verts[1]),
+			GetGlobalPNum(verts[2]));
+	    fs.Sort();
+
+	    gv2f.Set (fs, face);
+
+	    for (int dest = 1; dest < ntasks; dest++)
+	      if (IsExchangeVert (dest, verts[0]) && 
+		  IsExchangeVert (dest, verts[1]) &&
+		  IsExchangeVert (dest, verts[2]))
+		{
+		  send_faces.Add (dest-1, fs[0]);
+		  send_faces.Add (dest-1, fs[1]);
+		  send_faces.Add (dest-1, fs[2]);
+		}
+	  }
 	
+	TABLE<int> recv_faces(ntasks-1);
+	MyMPI_ExchangeTable (send_faces, recv_faces, MPI_TAG_MESH+9, MPI_LocalComm);
+	
+	for (int sender = 1; sender < ntasks; sender ++)
+	  if (id != sender)
+	    {
+	      FlatArray<int> recvarray = recv_faces[sender-1];
+	      for (int ii = 0; ii < recvarray.Size(); ii+=3)
+		{ 
+		  INDEX_3 gv123 (recvarray[ii],recvarray[ii+1],recvarray[ii+2]);
+		  if (gv2f.Used (gv123))
+		    SetDistantFaceNum (sender, gv2f.Get(gv123));
+		}
+	    }
+
+
+	/*
+	  Array<int,1> glob2loc;
+
 	int maxface = 0;
 	for (int face = 1; face <= nfa; face++)
 	  maxface = max (maxface, GetGlobalFaceNum (face));
@@ -351,7 +401,7 @@ namespace netgen
 		    send_faces.Add (dest-1, face);
 		  }
 	      }
-      }
+	  }
 	TABLE<int> recv_faces(ntasks-1);
 	MyMPI_ExchangeTable (send_faces, recv_faces, MPI_TAG_MESH+8, MPI_LocalComm);
 	
@@ -373,7 +423,7 @@ namespace netgen
 		    }
 		}
 	    } 
-	
+	*/	
 	
 	NgProfiler::StopTimer (timerf);
       }

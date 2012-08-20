@@ -3,19 +3,21 @@
 #include <meshing.hpp>
 #include "paralleltop.hpp"
 
-#define METIS4
+// #define METIS4
 
 
 #ifdef METIS
 namespace metis {
   extern "C" {
 
-#ifdef METIS4
 #include <metis.h>
-    typedef idxtype idx_t;   
-#else
-#include <metis.h>
+
+#if METIS_VER_MAJOR >= 5
+#define METIS5
     typedef idx_t idxtype;   
+#else
+#define METIS4
+    typedef idxtype idx_t;   
 #endif
   } 
 }
@@ -23,17 +25,12 @@ namespace metis {
 using namespace metis;
 #endif
 
-
-
 namespace netgen
 {
 
   template <>
-  inline MPI_Datatype MyGetMPIType<PointIndex> ( ) 
+  inline MPI_Datatype MyGetMPIType<PointIndex> ( )
   { return MPI_INT; }
-
-
-
 
 
   void Mesh :: SendRecvMesh ()
@@ -64,9 +61,6 @@ namespace netgen
 
 
 
-
-
-
     {
       // distribute number of local elements
       if (id == 0)
@@ -94,9 +88,7 @@ namespace netgen
     else
       ReceiveParallelMesh();
 
-
     paralleltop -> UpdateCoarseGrid();
-
   }
 
 
@@ -131,6 +123,15 @@ namespace netgen
     for (SurfaceElementIndex ei = 0; ei < GetNSE(); ei++)
       sels_of_proc.Add ( (*this)[ei].GetPartition(), ei);
 
+    Array<int> num_segs_on_proc(ntasks);
+    num_segs_on_proc = 0;
+    for (SegmentIndex ei = 0; ei < GetNSeg(); ei++)
+      num_segs_on_proc[(*this)[ei].GetPartition()]++;
+
+    TABLE<SegmentIndex> segs_of_proc (num_segs_on_proc);
+    for (SegmentIndex ei = 0; ei < GetNSeg(); ei++)
+      segs_of_proc.Add ( (*this)[ei].GetPartition(), ei);
+
 
 
 
@@ -142,16 +143,10 @@ namespace netgen
     num_procs_on_vert = 0;
     vert_flag = -1;
 
-    Array<int> nelloc (ntasks);
-    nelloc = 0;
-    Array<int> nselloc (ntasks);
-    nselloc = 0;
-
 
     for (int dest = 1; dest < ntasks; dest++)
       {
 	FlatArray<ElementIndex> els = els_of_proc[dest];
-
 	for (int hi = 0; hi < els.Size(); hi++)
 	  {
 	    const Element & el = (*this) [ els[hi] ];
@@ -165,16 +160,13 @@ namespace netgen
 		    num_verts_on_proc[dest]++;
 		    num_procs_on_vert[epi]++;
 
-		    paralleltop -> SetDistantPNum (dest, epi); // , num_verts_on_proc[dest]);
+		    paralleltop -> SetDistantPNum (dest, epi); 
 		  }
 	      }
-	    nelloc[dest] ++;
-	    // paralleltop -> SetDistantEl ( dest, els[hi]+1, nelloc[dest] );
 	  }
 
 
 	FlatArray<SurfaceElementIndex> sels = sels_of_proc[dest];
-
 	for (int hi = 0; hi < sels.Size(); hi++)
 	  {
 	    const Element2d & el = (*this) [ sels[hi] ];
@@ -188,11 +180,28 @@ namespace netgen
 		    num_verts_on_proc[dest]++;
 		    num_procs_on_vert[epi]++;
 
-		    paralleltop -> SetDistantPNum ( dest, epi); //  num_verts_on_proc[dest]);
+		    paralleltop -> SetDistantPNum (dest, epi);
 		  }
 	      }
-	    nselloc[dest] ++;
-	    // paralleltop -> SetDistantSurfEl ( dest, sels[hi]+1, nselloc[dest] );
+	  }
+
+	FlatArray<SegmentIndex> segs = segs_of_proc[dest];
+	for (int hi = 0; hi < segs.Size(); hi++)
+	  {
+	    const Segment & el = (*this) [segs[hi]];
+	    for (int i = 0; i < 2; i++)
+	      {
+		PointIndex epi = el[i]; 
+		if (vert_flag[epi] < dest)
+		  {
+		    vert_flag[epi] = dest;
+
+		    num_verts_on_proc[dest]++;
+		    num_procs_on_vert[epi]++;
+
+		    paralleltop -> SetDistantPNum (dest, epi);
+		  }
+	      }
 	  }
       }
 
@@ -223,6 +232,21 @@ namespace netgen
 	  {
 	    const Element2d & el = (*this) [ sels[hi] ];
 	    for (int i = 0; i < el.GetNP(); i++)
+	      {
+		PointIndex epi = el[i];
+		if (vert_flag[epi] < dest)
+		  {
+		    vert_flag[epi] = dest;
+		    procs_of_vert.Add (epi, dest);
+		  }
+	      }
+	  }
+
+	FlatArray<SegmentIndex> segs = segs_of_proc[dest];
+	for (int hi = 0; hi < segs.Size(); hi++)
+	  {
+	    const Segment & el = (*this) [ segs[hi] ];
+	    for (int i = 0; i < 2; i++)
 	      {
 		PointIndex epi = el[i];
 		if (vert_flag[epi] < dest)
@@ -383,8 +407,53 @@ namespace netgen
     for (int dest = 1; dest < ntasks; dest++)
       sendrequests.Append (MyMPI_ISend(selbuf[dest], dest, MPI_TAG_MESH+4));
 
+
     PrintMessage ( 3, "Sending Edge Segments");
 
+    
+    Array <int> nloc(ntasks); 
+    nloc = 0;
+    bufsize = 1;
+      
+    for (int i = 1; i <= GetNSeg(); i++ )
+      {
+	const Segment & seg = LineSegment (i);
+	int dest = seg.GetPartition();
+	nloc[dest] ++;
+	bufsize[dest] += 14;
+      }
+    
+    TABLE<double> segm_buf(bufsize);
+    
+    /*
+    for (int dest = 1; dest < ntasks; dest++ )
+      segm_buf.Add (dest, nloc[dest]);
+    */
+    for (int i = 1; i <= GetNSeg(); i++ )
+      {
+	const Segment & seg = LineSegment (i);
+	int dest = seg.GetPartition();
+	
+	segm_buf.Add (dest, i);
+	segm_buf.Add (dest, seg.si);
+	segm_buf.Add (dest, seg.pnums[0]);
+	segm_buf.Add (dest, seg.pnums[1]);
+	segm_buf.Add (dest, seg.geominfo[0].trignum);
+	segm_buf.Add (dest, seg.geominfo[1].trignum);
+	segm_buf.Add (dest, seg.surfnr1);
+	segm_buf.Add (dest, seg.surfnr2);
+	segm_buf.Add (dest, seg.edgenr);
+	segm_buf.Add (dest, seg.epgeominfo[0].dist);
+	segm_buf.Add (dest, seg.epgeominfo[1].edgenr);
+	segm_buf.Add (dest, seg.epgeominfo[1].dist);
+	segm_buf.Add (dest, seg.singedge_right);
+	segm_buf.Add (dest, seg.singedge_left);
+      }
+    
+    for (int dest = 1; dest < ntasks; dest++)
+      sendrequests.Append (MyMPI_ISend(segm_buf[dest], dest, MPI_TAG_MESH+5));
+
+    /*
     Array <int> nlocseg(ntasks), segi(ntasks);
     for ( int i = 0; i < ntasks; i++)
       {
@@ -452,6 +521,9 @@ namespace netgen
 
     for ( int dest = 1; dest < ntasks; dest++)
       sendrequests.Append (MyMPI_ISend(segmbuf[dest], dest, MPI_TAG_MESH+5));
+    */
+
+    PrintMessage ( 3, "now wait ...");
 
     MPI_Waitall (sendrequests.Size(), &sendrequests[0], MPI_STATUS_IGNORE);
 
@@ -592,6 +664,7 @@ namespace netgen
       int segi = 1;
       int nsegloc = int ( segmbuf.Size() / 14 ) ;
       paralleltop -> SetNSegm ( nsegloc );
+
       while ( ii < segmbuf.Size() )
 	{
 	  globsegi = int (segmbuf[ii++]);
@@ -681,10 +754,71 @@ namespace netgen
   }
   
 
+#ifdef METIS5
+  void Mesh :: ParallelMetis ( )  
+  {
+    PrintMessage (3, "call metis 5 ...");
+
+    int timer = NgProfiler::CreateTimer ("Mesh::Partition");
+    NgProfiler::RegionTimer reg(timer);
+
+    idx_t ne = GetNE() + GetNSE() + GetNSeg();
+    idx_t nn = GetNP();
+
+    Array<idx_t> eptr, eind;
+    for (int i = 0; i < GetNE(); i++)
+      {
+	eptr.Append (eind.Size());
+	const Element & el = VolumeElement(i+1);
+	for (int j = 0; j < el.GetNP(); j++)
+	  eind.Append (el[j]-1);
+      }
+    for (int i = 0; i < GetNSE(); i++)
+      {
+	eptr.Append (eind.Size());
+	const Element2d & el = SurfaceElement(i+1);
+	for (int j = 0; j < el.GetNP(); j++)
+	  eind.Append (el[j]-1);
+      }
+    for (int i = 0; i < GetNSeg(); i++)
+      {
+	eptr.Append (eind.Size());
+	const Segment & el = LineSegment(i+1);
+	eind.Append (el[0]);
+	eind.Append (el[1]);
+      }
+    eptr.Append (eind.Size());
+    Array<idx_t> epart(ne), npart(nn);
+
+    int nparts = ntasks-1;
+    int edgecut;
+
+    /*
+    int ncommon = 3;
+    METIS_PartMeshDual (&ne, &nn, &eptr[0], &eind[0], NULL, NULL, &ncommon, &nparts,
+			NULL, NULL,
+			&edgecut, &epart[0], &npart[0]);
+    */
+    METIS_PartMeshNodal (&ne, &nn, &eptr[0], &eind[0], NULL, NULL, &nparts,
+			 NULL, NULL,
+			 &edgecut, &epart[0], &npart[0]);
+
+    PrintMessage (3, "metis complete");
+    // cout << "done" << endl;
+
+    for (int i = 0; i < GetNE(); i++)
+      VolumeElement(i+1).SetPartition(epart[i] + 1);
+    for (int i = 0; i < GetNSE(); i++)
+      SurfaceElement(i+1).SetPartition(epart[i+GetNE()] + 1);
+    for (int i = 0; i < GetNSeg(); i++)
+      LineSegment(i+1).SetPartition(epart[i+GetNE()+GetNSE()] + 1);
+  }
+#endif
 
 
 
-#ifdef METIS
+
+#ifdef METIS4
   void Mesh :: ParallelMetis ( )  
   {
     int timer = NgProfiler::CreateTimer ("Mesh::Partition");
@@ -783,7 +917,7 @@ namespace netgen
 			    &edgecut, &epart[0], &npart[0]);
 #else
 	cout << "call metis(5)_PartMeshDual ... " << endl;
-	idx_t options[METIS_NOPTIONS];
+	// idx_t options[METIS_NOPTIONS];
 	
 	Array<idx_t> eptr(ne+1);
 	for (int j = 0; j < ne+1; j++)

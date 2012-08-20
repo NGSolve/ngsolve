@@ -188,6 +188,14 @@ public:
 };
 
 
+inline INDEX_2 Sort (const INDEX_2 & i2)
+{
+  INDEX_2 tmp = i2;
+  tmp.Sort();
+  return tmp;
+}
+
+
 ///
 class INDEX_3
 {

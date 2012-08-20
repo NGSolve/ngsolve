@@ -177,7 +177,7 @@ namespace netgen
     return pi;
   }
 
-
+  /*
 #ifdef PARALLEL
   PointIndex Mesh :: AddPoint (const Point3d & p, bool isghost,  int layer)
   { 
@@ -210,7 +210,7 @@ namespace netgen
   }
 
 #endif
-
+  */
 
 
   SegmentIndex Mesh :: AddSegment (const Segment & s)
@@ -462,26 +462,14 @@ namespace netgen
 
     for (ElementIndex ei = 0; ei < GetNE(); ei++)
       {
-        outfile.width(8);
         outfile << (*this)[ei].GetIndex();
-        outfile.width(8);
-        outfile << (*this)[ei].GetNP();
+        outfile << " " << (*this)[ei].GetNP();
 
         Element el = (*this)[ei];
-        if (inverttets)
-          el.Invert();
-
-        /*
-          for (j = 0; j < el.GetNP(); j++)
-          for (int k = 0; k < el.GetNP()-1; k++)
-          if (el[k] > el[k+1]) swap (el[k], el[k+1]);
-        */
+        if (inverttets) el.Invert();
 
         for (j = 0; j < el.GetNP(); j++)
-          {
-            outfile.width(8);
-            outfile << el[j];
-          }
+	  outfile << " " << el[j];
         outfile << "\n";
       }
 
@@ -920,7 +908,7 @@ namespace netgen
                 if (inverttets)
                   el.Invert();
 
-                AddVolumeElement (el);
+		AddVolumeElement (el);
               }
           }
 
@@ -1193,11 +1181,12 @@ namespace netgen
 
 
     CalcSurfacesOfNode ();
-    //  BuildConnectedNodes ();
-    topology -> Update();
-    clusters -> Update();
-
-    // Distribute();
+ 
+    if (ntasks == 1) // sequential run only
+      {
+	topology -> Update();
+	clusters -> Update();
+      }
 
     SetNextMajorTimeStamp();
     //  PrintMemInfo (cout);

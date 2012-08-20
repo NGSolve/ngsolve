@@ -76,6 +76,11 @@ namespace netgen
       for ( int i = 0; i < loc2distface[locfacenum-1].Size(); i++ )
 	distfacenums[i] = loc2distface[locfacenum-1][i];
     } 
+
+    void GetDistantFaceNums (int locfacenum, Array<int> & distfacenums ) const
+    {
+      distfacenums = loc2distface[locfacenum-1];
+    }
     
     void GetDistantEdgeNums (int locedgenum, int * distedgenums ) const
     {
@@ -83,15 +88,14 @@ namespace netgen
 	distedgenums[i] = loc2distedge[locedgenum-1][i];
     } 
 
+    void GetDistantEdgeNums (int locedgenum, Array<int> & distedgenums ) const
+    {
+      distedgenums = loc2distedge[locedgenum-1];
+    } 
+
     bool IsExchangeVert (int dest, int vnum) const
     {
       return loc2distvert[vnum-1].Contains (dest);
-      /*
-      FlatArray<int> exchange = loc2distvert[vnum-1];
-      for (int i = 0; i < exchange.Size(); i ++)
-	if (exchange[i] == dest) return true;
-      return false;
-      */
     }
   };
  

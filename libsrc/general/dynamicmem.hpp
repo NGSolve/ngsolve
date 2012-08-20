@@ -27,8 +27,8 @@ protected:
   void Alloc (size_t s);
   void ReAlloc (size_t s);
   void Free ();
-  char * Ptr() { return ptr; }
-  const char * Ptr() const { return ptr; }
+  // char * Ptr() { return ptr; }
+  char * Ptr() const { return ptr; }
   void Swap (BaseDynamicMem & m2);
 public:
   void SetName (const char * aname);
@@ -64,22 +64,24 @@ public:
     BaseDynamicMem::Free ();
   }
 
+  /*
   const T * Ptr() const
   {
     return reinterpret_cast<const T*> (BaseDynamicMem::Ptr());
   }
-
-  T * Ptr()
+  */
+  const T * Ptr()
   {
     return reinterpret_cast<T*> (BaseDynamicMem::Ptr());
   }
 
+  /*
   operator const T* () const
   {
     return reinterpret_cast<const T*> (BaseDynamicMem::Ptr());
   }
-
-  operator T* () 
+  */
+  operator T* () const
   {
     return reinterpret_cast<T*> (BaseDynamicMem::Ptr());
   }

@@ -28,6 +28,8 @@ void WriteDiffPackFormat (const Mesh & mesh,
 
   ofstream outfile(filename.c_str());
 
+
+
   if (mesh.GetDimension() == 3)
 
     {
@@ -80,6 +82,17 @@ void WriteDiffPackFormat (const Mesh & mesh,
 	"   - the boundary indicators that are set (ON) if any.\n"
 	"#\n";
 
+
+      // setup point-to-surfaceelement table 
+      TABLE<SurfaceElementIndex, PointIndex::BASE> point2sel(np);
+      for (SurfaceElementIndex sei = 0; sei < nse; sei++)
+	{
+	  const Element2d & el = mesh[sei];
+	  for (int j = 0; j < el.GetNP(); j++)
+	    point2sel.Add (el[j], sei);
+	}
+
+
       for (i = 1; i <= np; i++)
         {
           const Point3d & p = mesh.Point(i);
@@ -96,13 +109,17 @@ void WriteDiffPackFormat (const Mesh & mesh,
 	  if(mesh[PointIndex(i)].Type() != INNERPOINT) 
 	    {
 	      BCsinpoint.DeleteAll();
+	      /*
 	      for (j = 1; j <= nse; j++) 
+	      */
+	      FlatArray<SurfaceElementIndex> sels = point2sel[i];
+	      for (int jj = 0; jj < sels.Size(); jj++)
 		{
-		  for (k = 1; k <= mesh.SurfaceElement(j).GetNP(); k++) 
+		  for (k = 1; k <= mesh[sels[jj]].GetNP(); k++) 
 		    {
-		      if(mesh.SurfaceElement(j).PNum(k)==i) 
+		      if(mesh[sels[jj]].PNum(k)==i) 
 			{
-			  int BC=mesh.GetFaceDescriptor(mesh.SurfaceElement(j).GetIndex()).BCProperty();
+			  int BC=mesh.GetFaceDescriptor(mesh[sels[jj]].GetIndex()).BCProperty();
 			  int nbcsp=BCsinpoint.Size();
 			  int found = 0;
 			  for (l = 1; l <= nbcsp; l++)

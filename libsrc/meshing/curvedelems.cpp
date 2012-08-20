@@ -494,8 +494,23 @@ namespace netgen
   void CurvedElements :: BuildCurvedElements(const Refinement * ref, int aorder,
                                              bool arational)
   {
-    order = aorder;
+    bool working = (ntasks == 1) || (id > 0);
+
     ishighorder = 0;
+    order = 1;
+
+
+#ifdef PARALLEL
+    enum { MPI_TAG_CURVE = MPI_TAG_MESH+20 };
+
+    const ParallelMeshTopology & partop = mesh.GetParallelTopology ();
+    MPI_Comm curve_comm;
+    MPI_Comm_dup (MPI_COMM_WORLD, &curve_comm);      
+    Array<int> procs;
+#endif
+
+    if (working)
+      order = aorder;
 
     if (mesh.coarsemesh)
       {
@@ -507,118 +522,28 @@ namespace netgen
       }
 
 
-#ifdef PARALLEL
-    if (id > 0)
-      {
-	if (!jacpols2.Size())
-	  {
-	    jacpols2.SetSize (100);
-	    for (int i = 0; i < 100; i++)
-	      jacpols2[i] = new JacobiRecPol (100, i, 2);
-	  }
-
-
-	Array<int> master_edgeorder;
-	Array<int> master_edgecoeffsindex;
-	Array<Vec<3> > master_edgecoeffs;
-	Array<int> master_faceorder;
-	Array<int> master_facecoeffsindex;
-	Array<Vec<3> > master_facecoeffs;
-	    
-	MyMPI_Bcast (master_edgeorder, 0, mesh_comm);
-	MyMPI_Bcast (master_edgecoeffsindex, 0, mesh_comm);
-	MyMPI_Bcast (master_edgecoeffs, 0, mesh_comm);
-
-	if (mesh.GetDimension() == 3)
-	  {
-	    MyMPI_Bcast (master_faceorder, 0, mesh_comm);
-	    MyMPI_Bcast (master_facecoeffsindex, 0, mesh_comm);
-	    MyMPI_Bcast (master_facecoeffs, 0, mesh_comm);
-	  }
-
-
-	const MeshTopology & top = mesh.GetTopology();
-	const ParallelMeshTopology & partop = mesh.GetParallelTopology ();
-	
-	edgeorder.SetSize (top.GetNEdges());
-	edgecoeffsindex.SetSize (top.GetNEdges()+1);
-	edgecoeffsindex[0] = 0;
-	for (int i = 0; i < top.GetNEdges(); i++)
-	  {
-	    // int glob = partop.GetDistantEdgeNum (0, i+1);
-	    int glob = partop.GetGlobalEdgeNum (i+1);
-	    edgeorder[i] = master_edgeorder[glob-1];
-	    int ncoefs = master_edgecoeffsindex[glob]-master_edgecoeffsindex[glob-1];
-	    edgecoeffsindex[i+1] = edgecoeffsindex[i] + ncoefs;
-	  }
-	edgecoeffs.SetSize (edgecoeffsindex[top.GetNEdges()]);
-	
-	for (int i = 0; i < top.GetNEdges(); i++)
-	  {
-	    // int glob = partop.GetDistantEdgeNum (0, i+1);
-	    int glob = partop.GetGlobalEdgeNum (i+1);
-	    int ncoefs = master_edgecoeffsindex[glob]-master_edgecoeffsindex[glob-1];
-	    for (int j = 0; j < ncoefs; j++)
-	      edgecoeffs[edgecoeffsindex[i]+j] = master_edgecoeffs[master_edgecoeffsindex[glob-1]+j];
-	  }
-
-	if (mesh.GetDimension() == 3)
-	  {
-	    faceorder.SetSize (top.GetNFaces());
-	    facecoeffsindex.SetSize (top.GetNFaces()+1);
-	    facecoeffsindex[0] = 0;
-	    for (int i = 0; i < top.GetNFaces(); i++)
-	      {
-		// int glob = partop.GetDistantFaceNum (0, i+1);
-		int glob = partop.GetGlobalFaceNum (i+1);
-		faceorder[i] = master_faceorder[glob-1];
-		int ncoefs = master_facecoeffsindex[glob]-master_facecoeffsindex[glob-1];
-		facecoeffsindex[i+1] = facecoeffsindex[i] + ncoefs;
-	      }
-	    facecoeffs.SetSize (facecoeffsindex[top.GetNFaces()]);
-	    
-	    for (int i = 0; i < top.GetNFaces(); i++)
-	      {
-		// int glob = partop.GetDistantFaceNum (0, i+1);
-		int glob = partop.GetGlobalFaceNum (i+1);
-		int ncoefs = master_facecoeffsindex[glob]-master_facecoeffsindex[glob-1];
-		for (int j = 0; j < ncoefs; j++)
-		  facecoeffs[facecoeffsindex[i]+j] = master_facecoeffs[master_facecoeffsindex[glob-1]+j];
-	      }
-	  }
-	else
-	  {
-	    faceorder.SetSize (top.GetNFaces());
-	    faceorder = 1;
-	    facecoeffsindex.SetSize (top.GetNFaces()+1);
-	    facecoeffsindex = 0;
-	  }
-
-	ishighorder = 1;
-	return;
-      }
-#endif
-
-    
     PrintMessage (1, "Curve elements, order = ", aorder);
     if (rational) PrintMessage (1, "curved elements with rational splines");
 
-    const_cast<Mesh&> (mesh).UpdateTopology();
+    if (working)
+      const_cast<Mesh&> (mesh).UpdateTopology();
     const MeshTopology & top = mesh.GetTopology();
 
     rational = arational;
 
     Array<int> edgenrs;
+    int nedges = top.GetNEdges();
+    int nfaces = top.GetNFaces();
 
-    edgeorder.SetSize (top.GetNEdges());
-    faceorder.SetSize (top.GetNFaces());
+    edgeorder.SetSize (nedges);
+    faceorder.SetSize (nfaces);
 
     edgeorder = 1;
     faceorder = 1;
 
     if (rational)
       {
-        edgeweight.SetSize (top.GetNEdges());
+        edgeweight.SetSize (nedges);
         edgeweight = 1.0;
       }
 
@@ -628,23 +553,25 @@ namespace netgen
 	for (ElementIndex ei = 0; ei < mesh.GetNE(); ei++)
 	  if (mesh[ei].GetType() == TET10)
 	    ishighorder = 1;
-	return;
+	return; 
       }
 
 
     if (rational) aorder = 2;
 
-
-    if (mesh.GetDimension() == 3)
-      for (SurfaceElementIndex i = 0; i < mesh.GetNSE(); i++)
-	{
-	  top.GetSurfaceElementEdges (i+1, edgenrs);
-	  for (int j = 0; j < edgenrs.Size(); j++)
-	    edgeorder[edgenrs[j]-1] = aorder;
-	  faceorder[top.GetSurfaceElementFace (i+1)-1] = aorder;
-	}
-    for (SegmentIndex i = 0; i < mesh.GetNSeg(); i++)
-      edgeorder[top.GetSegmentEdge (i+1)-1] = aorder;
+    if (working)
+      {
+	if (mesh.GetDimension() == 3)
+	  for (SurfaceElementIndex i = 0; i < mesh.GetNSE(); i++)
+	    {
+	      top.GetEdges (i, edgenrs);
+	      for (int j = 0; j < edgenrs.Size(); j++)
+		edgeorder[edgenrs[j]] = aorder;
+	      faceorder[top.GetFace (i)] = aorder;
+	    }
+	for (SegmentIndex i = 0; i < mesh.GetNSeg(); i++)
+	  edgeorder[top.GetEdge (i)] = aorder;
+      }
 
     if (rational)
       {
@@ -653,22 +580,63 @@ namespace netgen
       }
 
 
-    edgecoeffsindex.SetSize (top.GetNEdges()+1);
+#ifdef PARALLEL
+    TABLE<int> send_orders(ntasks), recv_orders(ntasks);
+
+    if (ntasks > 1 && working)
+      {
+	for (int e = 0; e < edgeorder.Size(); e++)
+	  {
+	    partop.GetDistantEdgeNums (e+1, procs);
+	    for (int j = 0; j < procs.Size(); j++)
+	      send_orders.Add (procs[j], edgeorder[e]);
+	  }
+	for (int f = 0; f < faceorder.Size(); f++)
+	  {
+	    partop.GetDistantFaceNums (f+1, procs);
+	    for (int j = 0; j < procs.Size(); j++)
+	      send_orders.Add (procs[j], faceorder[f]);
+	  }
+      }
+
+    MyMPI_ExchangeTable (send_orders, recv_orders, MPI_TAG_CURVE, curve_comm);
+
+    if (ntasks > 1 && working)
+      {
+	Array<int> cnt(ntasks);
+	cnt = 0;
+	for (int e = 0; e < edgeorder.Size(); e++)
+	  {
+	    partop.GetDistantEdgeNums (e+1, procs);
+	    for (int j = 0; j < procs.Size(); j++)
+	      edgeorder[e] = max(edgeorder[e], recv_orders[procs[j]][cnt[procs[j]]++]);
+	  }
+	for (int f = 0; f < faceorder.Size(); f++)
+	  {
+	    partop.GetDistantFaceNums (f+1, procs);
+	    for (int j = 0; j < procs.Size(); j++)
+	      faceorder[f] = max(faceorder[f], recv_orders[procs[j]][cnt[procs[j]]++]);
+	  }
+      }
+#endif
+
+
+    edgecoeffsindex.SetSize (nedges+1);
     int nd = 0;
-    for (int i = 0; i < top.GetNEdges(); i++)
+    for (int i = 0; i < nedges; i++)
       {
 	edgecoeffsindex[i] = nd;
 	nd += max (0, edgeorder[i]-1);
       }
-    edgecoeffsindex[top.GetNEdges()] = nd;
+    edgecoeffsindex[nedges] = nd;
 
     edgecoeffs.SetSize (nd);
     edgecoeffs = Vec<3> (0,0,0);
     
 
-    facecoeffsindex.SetSize (top.GetNFaces()+1);
+    facecoeffsindex.SetSize (nfaces+1);
     nd = 0;
-    for (int i = 0; i < top.GetNFaces(); i++)
+    for (int i = 0; i < nfaces; i++)
       {
 	facecoeffsindex[i] = nd;
 	if (top.GetFaceType(i+1) == TRIG)
@@ -676,7 +644,7 @@ namespace netgen
 	else
 	  nd += max (0, sqr(faceorder[i]-1));
       }
-    facecoeffsindex[top.GetNFaces()] = nd;
+    facecoeffsindex[nfaces] = nd;
 
     facecoeffs.SetSize (nd);
     facecoeffs = Vec<3> (0,0,0);
@@ -685,7 +653,7 @@ namespace netgen
     if (!ref || aorder <= 1) 
       {
         order = aorder;
-        return;
+	return; 
       }
     
     Array<double> xi, weight;
@@ -699,403 +667,585 @@ namespace netgen
 	  jacpols2[i] = new JacobiRecPol (100, i, 2);
       }
 
+
+
     PrintMessage (3, "Curving edges");
 
     if (mesh.GetDimension() == 3 || rational)
-      for (SurfaceElementIndex i = 0; i < mesh.GetNSE(); i++)
-        {
-	  SetThreadPercent(double(i)/mesh.GetNSE()*100.);
-          const Element2d & el = mesh[i];
-          top.GetSurfaceElementEdges (i+1, edgenrs);
-          for (int j = 0; j < edgenrs.Size(); j++)
-            edgenrs[j]--;
-          const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (el.GetType());
-
-          for (int i2 = 0; i2 < edgenrs.Size(); i2++)
-            {
-              PointIndex pi1 = edges[i2][0]-1;
-              PointIndex pi2 = edges[i2][1]-1;
-
-              bool swap = el[pi1] > el[pi2];
-
-              Point<3> p1 = mesh[el[pi1]];
-              Point<3> p2 = mesh[el[pi2]];
-
-              int order1 = edgeorder[edgenrs[i2]];
-              int ndof = max (0, order1-1);
-
-              if (rational && order1 >= 2)
-                {
-                  Point<3> pm = Center (p1, p2);
-
-                  int surfnr = mesh.GetFaceDescriptor(el.GetIndex()).SurfNr();
-
-                  Vec<3> n1 = ref -> GetNormal (p1, surfnr, el.GeomInfoPi(edges[i2][0]));
-                  Vec<3> n2 = ref -> GetNormal (p2, surfnr, el.GeomInfoPi(edges[i2][1]));
-
-                  // p3 = pm + alpha1 n1 + alpha2 n2
-                  
-                  Mat<2> mat, inv;
-                  Vec<2> rhs, sol;
-
-                  mat(0,0) = n1*n1;
-                  mat(0,1) = mat(1,0) = n1*n2;
-                  mat(1,1) = n2*n2;
-                  
-                  rhs(0) = n1 * (p1-pm);
-                  rhs(1) = n2 * (p2-pm);
-                  
-
-                  Point<3> p3;
-
-                  if (fabs (Det (mat)) > 1e-10)
-                    {
-                      CalcInverse (mat, inv);
-                      sol = inv * rhs;
-
-                      p3 = pm + sol(0) * n1 + sol(1) * n2;
-                    }
-                  else
-                    p3 = pm;
-
-                  edgecoeffs[edgecoeffsindex[edgenrs[i2]]] = Vec<3> (p3);
-
-
-                  double wold = 1, w = 1, dw = 0.1;
-                  double dold = 1e99;
-                  while (fabs (dw) > 1e-12)
-                    {
-                      Vec<3> v05 = 0.25 * Vec<3> (p1) + 0.5*w* Vec<3>(p3) + 0.25 * Vec<3> (p2);
-                      v05 /= 1 + (w-1) * 0.5;
-                      Point<3> p05 (v05), pp05(v05);
-                      ref -> ProjectToSurface (pp05, surfnr,  el.GeomInfoPi(edges[i2][0]));
-                      double d = Dist (pp05, p05);
-                      
-                      if (d < dold)
-                        {
-                          dold = d;
-                          wold = w;
-                          w += dw;
-                        }
-                      else
-                        {
-                          dw *= -0.7;
-                          w = wold + dw;
-                        }
-                    }
-                  
-                  edgeweight[edgenrs[i2]] = w;
-                  continue;
-                }
-	    
-              Vector shape(ndof);
-              DenseMatrix mat(ndof, ndof), inv(ndof, ndof),
-                rhs(ndof, 3), sol(ndof, 3);
-	    
-              rhs = 0.0;
-              mat = 0.0;
-              for (int j = 0; j < xi.Size(); j++)
-                {
-                  Point<3> p;
-                  Point<3> pp;
-                  PointGeomInfo ppgi;
-		
-                  if (swap)
-                    {
-                      p = p1 + xi[j] * (p2-p1);
-                      ref -> PointBetween (p1, p2, xi[j], 
-                                           mesh.GetFaceDescriptor(el.GetIndex()).SurfNr(),
-                                           el.GeomInfoPi(edges[i2][0]),
-                                           el.GeomInfoPi(edges[i2][1]),
-                                           pp, ppgi);
-                    }
-                  else
-                    {
-                      p = p2 + xi[j] * (p1-p2);
-                      ref -> PointBetween (p2, p1, xi[j], 
-                                           mesh.GetFaceDescriptor(el.GetIndex()).SurfNr(),
-                                           el.GeomInfoPi(edges[i2][1]),
-                                           el.GeomInfoPi(edges[i2][0]),
-                                           pp, ppgi);
-                    }
-		
-                  Vec<3> dist = pp - p;
-		
-                  CalcEdgeShape (order1, 2*xi[j]-1, &shape(0));
-		
-                  for (int k = 0; k < ndof; k++)
-                    for (int l = 0; l < ndof; l++)
-                      mat(k,l) += weight[j] * shape(k) * shape(l);
-		
-                  for (int k = 0; k < ndof; k++)
-                    for (int l = 0; l < 3; l++)
-                      rhs(k,l) += weight[j] * shape(k) * dist(l);
-                }
-	    
-              CalcInverse (mat, inv);
-              Mult (inv, rhs, sol);
-
-	      
-	    
-              int first = edgecoeffsindex[edgenrs[i2]];
-              for (int j = 0; j < ndof; j++)
-                for (int k = 0; k < 3; k++)
-                  edgecoeffs[first+j](k) = sol(j,k);
-            }
-        }
-
-
-    
-    for (SegmentIndex i = 0; i < mesh.GetNSeg(); i++)
       {
-	SetThreadPercent(double(i)/mesh.GetNSeg()*100.);
-	const Segment & seg = mesh[i];
-	PointIndex pi1 = mesh[i][0];
-	PointIndex pi2 = mesh[i][1];
+	Array<int> surfnr(nedges);
+	Array<PointGeomInfo> gi0(nedges);
+	Array<PointGeomInfo> gi1(nedges);
+	surfnr = -1;
 
-	bool swap = (pi1 > pi2);
+	if (working)
+	  for (SurfaceElementIndex i = 0; i < mesh.GetNSE(); i++)
+	    {
+	      top.GetEdges (i, edgenrs);
+	      const Element2d & el = mesh[i];
+	      const ELEMENT_EDGE * edges = MeshTopology::GetEdges0 (el.GetType());
 
-	Point<3> p1 = mesh[pi1];
-	Point<3> p2 = mesh[pi2];
+	      for (int i2 = 0; i2 < edgenrs.Size(); i2++)
+		{
+		  PointIndex pi1 = el[edges[i2][0]];
+		  PointIndex pi2 = el[edges[i2][1]];
+		
+		  bool swap = pi1 > pi2;
+		
+		  Point<3> p1 = mesh[pi1];
+		  Point<3> p2 = mesh[pi2];
+		
+		  int order1 = edgeorder[edgenrs[i2]];
+		  int ndof = max (0, order1-1);
 
-	int segnr = top.GetSegmentEdge (i+1)-1;
+		  surfnr[edgenrs[i2]] = mesh.GetFaceDescriptor(el.GetIndex()).SurfNr();
+		  gi0[edgenrs[i2]] = el.GeomInfoPi(edges[i2][0]+1);
+		  gi1[edgenrs[i2]] = el.GeomInfoPi(edges[i2][1]+1);
+		}
+	    }
 
-	int order1 = edgeorder[segnr];
-	int ndof = max (0, order1-1);
-
-
-        if (rational)
-          {
-            Vec<3> tau1 = ref -> GetTangent (p1, seg.surfnr2, seg.surfnr1, seg.epgeominfo[0]);
-            Vec<3> tau2 = ref -> GetTangent (p2, seg.surfnr2, seg.surfnr1, seg.epgeominfo[1]);
-            // p1 + alpha1 tau1 = p2 + alpha2 tau2;
-
-            Mat<3,2> mat;
-            Mat<2,3> inv;
-            Vec<3> rhs;
-            Vec<2> sol;
-            for (int j = 0; j < 3; j++)
-              {
-                mat(j,0) = tau1(j); 
-                mat(j,1) = -tau2(j); 
-                rhs(j) = p2(j)-p1(j); 
-              }
-            CalcInverse (mat, inv);
-            sol = inv * rhs;
-
-            Point<3> p3 = p1+sol(0) * tau1;
-            edgecoeffs[edgecoeffsindex[segnr]] = Vec<3> (p3);
-
-            
-            //             double dopt = 1e99;
-            //             double wopt = 0;
-            //             for (double w = 0; w <= 2; w += 0.0001)
-            //               {
-            //                 Vec<3> v05 = 0.25 * Vec<3> (p1) + 0.5*w* Vec<3>(p3) + 0.25 * Vec<3> (p2);
-            //                 v05 /= 1 + (w-1) * 0.5;
-            //                 Point<3> p05 (v05), pp05(v05);
-            //                 ref -> ProjectToEdge (pp05, seg.surfnr1, seg.surfnr2, seg.epgeominfo[0]);
-            //                 double d = Dist (pp05, p05);
-            //                 if (d < dopt)
-            //                   {
-            //                     wopt = w;
-            //                     dopt = d;
-            //                   }
-            //               }
-            
-            double wold = 1, w = 1, dw = 0.1;
-            double dold = 1e99;
-            while (fabs (dw) > 1e-12)
-              {
-                Vec<3> v05 = 0.25 * Vec<3> (p1) + 0.5*w* Vec<3>(p3) + 0.25 * Vec<3> (p2);
-                v05 /= 1 + (w-1) * 0.5;
-                Point<3> p05 (v05), pp05(v05);
-                ref -> ProjectToEdge (pp05, seg.surfnr1, seg.surfnr2, seg.epgeominfo[0]);
-                double d = Dist (pp05, p05);
-
-                if (d < dold)
-                  {
-                    dold = d;
-                    wold = w;
-                    w += dw;
-                  }
-                else
-                  {
-                    dw *= -0.7;
-                    w = wold + dw;
-                  }
-                // *testout << "w = " << w << ", dw = " << dw << endl;
-              }
-
-            // cout << "wopt = " << w << ", dopt = " << dold << endl;
-            edgeweight[segnr] = w;
-            
-            //             cout << "p1 = " << p1 << ", tau1 = " << tau1 << ", alpha1 = " << sol(0) << endl;
-            //             cout << "p2 = " << p2 << ", tau2 = " << tau2 << ", alpha2 = " << -sol(1) << endl;
-            //             cout << "p+alpha tau = " << p1 + sol(0) * tau1 
-            //                  << " =?= " << p2 +sol(1) * tau2 << endl;
-            
-          }
-
-        else
-          
-          {
-
-            Vector shape(ndof);
-            DenseMatrix mat(ndof, ndof), inv(ndof, ndof),
-              rhs(ndof, 3), sol(ndof, 3);
-
-            rhs = 0.0;
-            mat = 0.0;
-            for (int j = 0; j < xi.Size(); j++)
-              {
-                Point<3> p;
-
-                Point<3> pp;
-                EdgePointGeomInfo ppgi;
+#ifdef PARALLEL
+	if (ntasks > 1)
+	  {
+	    // distribute it ...
+	    TABLE<double> senddata(ntasks), recvdata(ntasks);
+	    if (working)
+	      for (int e = 0; e < nedges; e++)
+		{
+		  partop.GetDistantEdgeNums (e+1, procs);
+		  for (int j = 0; j < procs.Size(); j++)
+		    {
+		      senddata.Add (procs[j], surfnr[e]);
+		      if (surfnr[e] != -1)
+			{
+			  senddata.Add (procs[j], gi0[e].trignum);
+			  senddata.Add (procs[j], gi0[e].u);
+			  senddata.Add (procs[j], gi0[e].v);
+			  senddata.Add (procs[j], gi1[e].trignum);
+			  senddata.Add (procs[j], gi1[e].u);
+			  senddata.Add (procs[j], gi1[e].v);
+			}
+		    }
+		}
+	    MyMPI_ExchangeTable (senddata, recvdata, MPI_TAG_CURVE, curve_comm);
 	    
-                if (swap)
-                  {
-                    p = p1 + xi[j] * (p2-p1);
-                    ref -> PointBetween (p1, p2, xi[j], 
-                                         seg.surfnr2, seg.surfnr1, 
-                                         seg.epgeominfo[0], seg.epgeominfo[1],
-                                         pp, ppgi);
-                  }
-                else
-                  {
-                    p = p2 + xi[j] * (p1-p2);
-                    ref -> PointBetween (p2, p1, xi[j], 
-                                         seg.surfnr2, seg.surfnr1, 
-                                         seg.epgeominfo[1], seg.epgeominfo[0],
-                                         pp, ppgi);
-                  }
+	    Array<int> cnt(ntasks);
+	    cnt = 0;
+	    if (working)
+	      for (int e = 0; e < nedges; e++)
+		{
+		  partop.GetDistantEdgeNums (e+1, procs);
+		  for (int j = 0; j < procs.Size(); j++)
+		    {
+		      int surfnr1 = recvdata[procs[j]][cnt[procs[j]]++];
+		      if (surfnr1 != -1)
+			{
+			  surfnr[e] = surfnr1; 
+			  gi0[e].trignum = int (recvdata[procs[j]][cnt[procs[j]]++]);
+			  gi0[e].u = recvdata[procs[j]][cnt[procs[j]]++];
+			  gi0[e].v = recvdata[procs[j]][cnt[procs[j]]++];
+			  gi1[e].trignum = int (recvdata[procs[j]][cnt[procs[j]]++]);
+			  gi1[e].u = recvdata[procs[j]][cnt[procs[j]]++];
+			  gi1[e].v = recvdata[procs[j]][cnt[procs[j]]++];
+			}
+		    }
+		}
 	    
-                Vec<3> dist = pp - p;
+	  }
+#endif    
 
-                CalcEdgeShape (order1, 2*xi[j]-1, &shape(0));
+	if (working)
+	  for (int e = 0; e < surfnr.Size(); e++)
+	    {
+	      if (surfnr[e] == -1) continue;
+	      SetThreadPercent(double(e)/surfnr.Size()*100.);
 
-                for (int k = 0; k < ndof; k++)
-                  for (int l = 0; l < ndof; l++)
-                    mat(k,l) += weight[j] * shape(k) * shape(l);
+	      PointIndex pi1, pi2;
+	      top.GetEdgeVertices (e+1, pi1, pi2);
+	      bool swap = (pi1 > pi2);
 
-                for (int k = 0; k < ndof; k++)
-                  for (int l = 0; l < 3; l++)
-                    rhs(k,l) += weight[j] * shape(k) * dist(l);
-              }
+	      Point<3> p1 = mesh[pi1];
+	      Point<3> p2 = mesh[pi2];
 
+	      int order1 = edgeorder[e];
+	      int ndof = max (0, order1-1);
 
-            CalcInverse (mat, inv);
-            Mult (inv, rhs, sol);
+	      if (rational && order1 >= 2)
+		{
+		  Point<3> pm = Center (p1, p2);
 
-            int first = edgecoeffsindex[segnr];
-            for (int j = 0; j < ndof; j++)
-              for (int k = 0; k < 3; k++)
-                edgecoeffs[first+j](k) = sol(j,k);
-          }
+		  Vec<3> n1 = ref -> GetNormal (p1, surfnr[e], gi0[e]);
+		  Vec<3> n2 = ref -> GetNormal (p2, surfnr[e], gi1[e]);
+
+		  // p3 = pm + alpha1 n1 + alpha2 n2
+		
+		  Mat<2> mat, inv;
+		  Vec<2> rhs, sol;
+		
+		  mat(0,0) = n1*n1;
+		  mat(0,1) = mat(1,0) = n1*n2;
+		  mat(1,1) = n2*n2;
+                
+		  rhs(0) = n1 * (p1-pm);
+		  rhs(1) = n2 * (p2-pm);
+                  
+
+		  Point<3> p3;
+		
+		  if (fabs (Det (mat)) > 1e-10)
+		    {
+		      CalcInverse (mat, inv);
+		      sol = inv * rhs;
+		    
+		      p3 = pm + sol(0) * n1 + sol(1) * n2;
+		    }
+		  else
+		    p3 = pm;
+		
+		  edgecoeffs[edgecoeffsindex[e]] = Vec<3> (p3);
+		
+
+		  double wold = 1, w = 1, dw = 0.1;
+		  double dold = 1e99;
+		  while (fabs (dw) > 1e-12)
+		    {
+		      Vec<3> v05 = 0.25 * Vec<3> (p1) + 0.5*w* Vec<3>(p3) + 0.25 * Vec<3> (p2);
+		      v05 /= 1 + (w-1) * 0.5;
+		      Point<3> p05 (v05), pp05(v05);
+		      ref -> ProjectToSurface (pp05, surfnr[e], gi0[e]);
+		      double d = Dist (pp05, p05);
+                    
+		      if (d < dold)
+			{
+			  dold = d;
+			  wold = w;
+			  w += dw;
+			}
+		      else
+			{
+			  dw *= -0.7;
+			  w = wold + dw;
+			}
+		    }
+		
+		  edgeweight[e] = w;
+		  continue;
+		}
+	    
+	      Vector shape(ndof);
+	      DenseMatrix mat(ndof, ndof), inv(ndof, ndof),
+		rhs(ndof, 3), sol(ndof, 3);
+	    
+	      rhs = 0.0;
+	      mat = 0.0;
+	      for (int j = 0; j < xi.Size(); j++)
+		{
+		  Point<3> p;
+		  Point<3> pp;
+		  PointGeomInfo ppgi;
+		
+		  if (swap)
+		    {
+		      p = p1 + xi[j] * (p2-p1);
+		      ref -> PointBetween (p1, p2, xi[j], 
+					   surfnr[e], gi0[e], gi1[e],
+					   pp, ppgi);
+		    }
+		  else
+		    {
+		      p = p2 + xi[j] * (p1-p2);
+		      ref -> PointBetween (p2, p1, xi[j], 
+					   surfnr[e], gi1[e], gi0[e],
+					   pp, ppgi);
+		    }
+		
+		  Vec<3> dist = pp - p;
+		
+		  CalcEdgeShape (order1, 2*xi[j]-1, &shape(0));
+		
+		  for (int k = 0; k < ndof; k++)
+		    for (int l = 0; l < ndof; l++)
+		      mat(k,l) += weight[j] * shape(k) * shape(l);
+		
+		  for (int k = 0; k < ndof; k++)
+		    for (int l = 0; l < 3; l++)
+		      rhs(k,l) += weight[j] * shape(k) * dist(l);
+		}
+	    
+	      CalcInverse (mat, inv);
+	      Mult (inv, rhs, sol);
+	    
+	      int first = edgecoeffsindex[e];
+	      for (int j = 0; j < ndof; j++)
+		for (int k = 0; k < 3; k++)
+		  edgecoeffs[first+j](k) = sol(j,k);
+	    }
       }
 
-   
 
+    Array<int> edge_surfnr1(nedges);
+    Array<int> edge_surfnr2(nedges);
+    Array<EdgePointGeomInfo> edge_gi0(nedges);
+    Array<EdgePointGeomInfo> edge_gi1(nedges);
+    edge_surfnr1 = -1;
+
+    if (working)
+      for (SegmentIndex i = 0; i < mesh.GetNSeg(); i++)
+	{
+	  const Segment & seg = mesh[i];
+	  int edgenr = top.GetEdge (i);
+	  edge_surfnr1[edgenr] = seg.surfnr1;
+	  edge_surfnr2[edgenr] = seg.surfnr2;
+	  edge_gi0[edgenr] = seg.epgeominfo[0];
+	  edge_gi1[edgenr] = seg.epgeominfo[1];
+	}
+
+#ifdef PARALLEL
+    if (ntasks > 1)
+      {
+	// distribute it ...
+	TABLE<double> senddata(ntasks), recvdata(ntasks);
+	if (working)
+	  for (int e = 0; e < nedges; e++)
+	    {
+	      partop.GetDistantEdgeNums (e+1, procs);
+	      for (int j = 0; j < procs.Size(); j++)
+		{
+		  senddata.Add (procs[j], edge_surfnr1[e]);
+		  if (edge_surfnr1[e] != -1)
+		    {
+		      senddata.Add (procs[j], edge_surfnr2[e]);
+		      senddata.Add (procs[j], edge_gi0[e].edgenr);
+		      senddata.Add (procs[j], edge_gi0[e].body);
+		      senddata.Add (procs[j], edge_gi0[e].dist);
+		      senddata.Add (procs[j], edge_gi0[e].u);
+		      senddata.Add (procs[j], edge_gi0[e].v);
+		      senddata.Add (procs[j], edge_gi1[e].edgenr);
+		      senddata.Add (procs[j], edge_gi1[e].body);
+		      senddata.Add (procs[j], edge_gi1[e].dist);
+		      senddata.Add (procs[j], edge_gi1[e].u);
+		      senddata.Add (procs[j], edge_gi1[e].v);
+		    }
+		}
+	    }
+	MyMPI_ExchangeTable (senddata, recvdata, MPI_TAG_CURVE, curve_comm);
+	Array<int> cnt(ntasks);
+	cnt = 0;
+	if (working)
+	  for (int e = 0; e < edge_surfnr1.Size(); e++)
+	    {
+	      partop.GetDistantEdgeNums (e+1, procs);
+	      for (int j = 0; j < procs.Size(); j++)
+		{
+		  int surfnr1 = int(recvdata[procs[j]][cnt[procs[j]]++]);
+		  if (surfnr1 != -1)
+		    {
+		      edge_surfnr1[e] = surfnr1; // int (recvdata[procs[j]][cnt[procs[j]]++]);
+		      edge_surfnr2[e] = int (recvdata[procs[j]][cnt[procs[j]]++]);
+		      edge_gi0[e].edgenr = int (recvdata[procs[j]][cnt[procs[j]]++]);
+		      edge_gi0[e].body = int (recvdata[procs[j]][cnt[procs[j]]++]);
+		      edge_gi0[e].dist = recvdata[procs[j]][cnt[procs[j]]++];
+		      edge_gi0[e].u = recvdata[procs[j]][cnt[procs[j]]++];
+		      edge_gi0[e].v = recvdata[procs[j]][cnt[procs[j]]++];
+		      edge_gi1[e].edgenr = int (recvdata[procs[j]][cnt[procs[j]]++]);
+		      edge_gi1[e].body = int (recvdata[procs[j]][cnt[procs[j]]++]);
+		      edge_gi1[e].dist = recvdata[procs[j]][cnt[procs[j]]++];
+		      edge_gi1[e].u = recvdata[procs[j]][cnt[procs[j]]++];
+		      edge_gi1[e].v = recvdata[procs[j]][cnt[procs[j]]++];
+		    }
+		}
+	    }
+
+      }
+#endif    
+
+    if (working)
+      for (int edgenr = 0; edgenr < edge_surfnr1.Size(); edgenr++)
+	{
+	  int segnr = edgenr;
+	  if (edge_surfnr1[edgenr] == -1) continue;
+
+	  SetThreadPercent(double(edgenr)/edge_surfnr1.Size()*100.);
+
+	  PointIndex pi1, pi2;
+	  top.GetEdgeVertices (edgenr+1, pi1, pi2);
+
+	  bool swap = (pi1 > pi2);
+
+	  Point<3> p1 = mesh[pi1];
+	  Point<3> p2 = mesh[pi2];
+
+	  int order1 = edgeorder[segnr];
+	  int ndof = max (0, order1-1);
+
+	  if (rational)
+	    {
+	      Vec<3> tau1 = ref -> GetTangent (p1, edge_surfnr2[edgenr], edge_surfnr1[edgenr], 
+					       edge_gi0[edgenr]);
+	      Vec<3> tau2 = ref -> GetTangent (p2, edge_surfnr2[edgenr], edge_surfnr1[edgenr], 
+					       edge_gi1[edgenr]);
+	      // p1 + alpha1 tau1 = p2 + alpha2 tau2;
+
+	      Mat<3,2> mat;
+	      Mat<2,3> inv;
+	      Vec<3> rhs;
+	      Vec<2> sol;
+	      for (int j = 0; j < 3; j++)
+		{
+		  mat(j,0) = tau1(j); 
+		  mat(j,1) = -tau2(j); 
+		  rhs(j) = p2(j)-p1(j); 
+		}
+	      CalcInverse (mat, inv);
+	      sol = inv * rhs;
+
+	      Point<3> p3 = p1+sol(0) * tau1;
+	      edgecoeffs[edgecoeffsindex[segnr]] = Vec<3> (p3);
+
+	      double wold = 1, w = 1, dw = 0.1;
+	      double dold = 1e99;
+	      while (fabs (dw) > 1e-12)
+		{
+		  Vec<3> v05 = 0.25 * Vec<3> (p1) + 0.5*w* Vec<3>(p3) + 0.25 * Vec<3> (p2);
+		  v05 /= 1 + (w-1) * 0.5;
+		  Point<3> p05 (v05), pp05(v05);
+		  ref -> ProjectToEdge (pp05, edge_surfnr1[edgenr], edge_surfnr2[edgenr], 
+					edge_gi0[edgenr]);
+		  double d = Dist (pp05, p05);
+
+		  if (d < dold)
+		    {
+		      dold = d;
+		      wold = w;
+		      w += dw;
+		    }
+		  else
+		    {
+		      dw *= -0.7;
+		      w = wold + dw;
+		    }
+		  // *testout << "w = " << w << ", dw = " << dw << endl;
+		}
+
+	      // cout << "wopt = " << w << ", dopt = " << dold << endl;
+	      edgeweight[segnr] = w;
+            
+	      //             cout << "p1 = " << p1 << ", tau1 = " << tau1 << ", alpha1 = " << sol(0) << endl;
+	      //             cout << "p2 = " << p2 << ", tau2 = " << tau2 << ", alpha2 = " << -sol(1) << endl;
+	      //             cout << "p+alpha tau = " << p1 + sol(0) * tau1 
+	      //                  << " =?= " << p2 +sol(1) * tau2 << endl;
+            
+	    }
+
+	  else
+          
+	    {
+	      Vector shape(ndof);
+	      DenseMatrix mat(ndof, ndof), inv(ndof, ndof),
+		rhs(ndof, 3), sol(ndof, 3);
+
+	      rhs = 0.0;
+	      mat = 0.0;
+	      for (int j = 0; j < xi.Size(); j++)
+		{
+		  Point<3> p, pp;
+		  EdgePointGeomInfo ppgi;
+	    
+		  if (swap)
+		    {
+		      p = p1 + xi[j] * (p2-p1);
+		      ref -> PointBetween (p1, p2, xi[j], 
+					   edge_surfnr2[edgenr], edge_surfnr1[edgenr], 
+					   edge_gi0[edgenr], edge_gi1[edgenr],
+					   pp, ppgi);
+		    }
+		  else
+		    {
+		      p = p2 + xi[j] * (p1-p2);
+		      ref -> PointBetween (p2, p1, xi[j], 
+					   edge_surfnr2[edgenr], edge_surfnr1[edgenr], 
+					   edge_gi1[edgenr], edge_gi0[edgenr],
+					   pp, ppgi);
+		    }
+	    
+		  Vec<3> dist = pp - p;
+
+		  CalcEdgeShape (order1, 2*xi[j]-1, &shape(0));
+
+		  for (int k = 0; k < ndof; k++)
+		    for (int l = 0; l < ndof; l++)
+		      mat(k,l) += weight[j] * shape(k) * shape(l);
+
+		  for (int k = 0; k < ndof; k++)
+		    for (int l = 0; l < 3; l++)
+		      rhs(k,l) += weight[j] * shape(k) * dist(l);
+		}
+
+
+	      CalcInverse (mat, inv);
+	      Mult (inv, rhs, sol);
+
+	      int first = edgecoeffsindex[segnr];
+	      for (int j = 0; j < ndof; j++)
+		for (int k = 0; k < 3; k++)
+		  edgecoeffs[first+j](k) = sol(j,k);
+	    }
+	}
+
+   
     
     PrintMessage (3, "Curving faces");
 
-    if (mesh.GetDimension() == 3)
-      { 
-#pragma omp parallel for
-	for (SurfaceElementIndex i = 0; i < mesh.GetNSE(); i++)
-        {
-          SetThreadPercent(double(i)/mesh.GetNSE()*100.);
-          const Element2d & el = mesh[i];
-          int facenr = top.GetSurfaceElementFace (i+1)-1;
+    Array<int> surfnr(nfaces);
+    surfnr = -1;
 
-          if (el.GetType() == TRIG && order >= 3)
-            {
-	      // static int timer = NgProfiler::CreateTimer ("Curvedels - Curve face");
-	      // static int timer1 = NgProfiler::CreateTimer ("Curvedels - Curve face 1");
-	      // static int timer2 = NgProfiler::CreateTimer ("Curvedels - Curve face 2");
+    if (working)
+      for (SurfaceElementIndex i = 0; i < mesh.GetNSE(); i++)
+	surfnr[top.GetFace(i)] = 
+	  mesh.GetFaceDescriptor(mesh[i].GetIndex()).SurfNr();
 
-	      // NgProfiler::RegionTimer reg (timer);
+#ifdef PARALLEL
+    TABLE<int> send_surfnr(ntasks), recv_surfnr(ntasks);
 
-              int fnums[] = { 0, 1, 2 };
-              if (el[fnums[0]] > el[fnums[1]]) swap (fnums[0], fnums[1]);
-              if (el[fnums[1]] > el[fnums[2]]) swap (fnums[1], fnums[2]);
-              if (el[fnums[0]] > el[fnums[1]]) swap (fnums[0], fnums[1]);
-
-              int order1 = faceorder[facenr];
-              int ndof = max (0, (order1-1)*(order1-2)/2);
-	    
-              Vector shape(ndof), dmat(ndof);
-              // DenseMatrix mat(ndof, ndof), inv(ndof, ndof);
-	      MatrixFixWidth<3> rhs(ndof), sol(ndof);
-	    
-              rhs = 0.0;
-              dmat = 0.0;
-
-	      int np = sqr(xi.Size());
-	      Array<Point<2> > xia(np);
-	      Array<Point<3> > xa(np);
-
-	      // NgProfiler::StartTimer (timer1);
-
-              for (int jx = 0, jj = 0; jx < xi.Size(); jx++)
-                for (int jy = 0; jy < xi.Size(); jy++, jj++)
-		  xia[jj] = Point<2> ((1-xi[jy])*xi[jx], xi[jy]);
-	      CalcMultiPointSurfaceTransformation (&xia, i, &xa, NULL);
-
-	      // NgProfiler::StopTimer (timer1);
-	      // NgProfiler::StartTimer (timer2);
-
-
-              for (int jx = 0, jj = 0; jx < xi.Size(); jx++)
-                for (int jy = 0; jy < xi.Size(); jy++, jj++)
-                  {
-
-                    double y = xi[jy];
-                    double x = (1-y) * xi[jx];
-                    double lami[] = { x, y, 1-x-y };
-                    double wi = weight[jx]*weight[jy]*(1-y);
- 
-                    Point<2> xii (x, y);
-                    Point<3> p1, p2;
-                    // CalcSurfaceTransformation (xii, i, p1);
-		    p1 = xa[jj];
-                    p2 = p1;
-
-                    ref -> ProjectToSurface (p2, mesh.GetFaceDescriptor(el.GetIndex()).SurfNr());
-
-                    Vec<3> dist = p2-p1;
-		
-                    CalcTrigShape (order1, lami[fnums[1]]-lami[fnums[0]],
-                                   1-lami[fnums[1]]-lami[fnums[0]], &shape(0));
-
-                    for (int k = 0; k < ndof; k++)
-		      dmat(k) += wi * shape(k) * shape(k);
-
-		    dist *= wi;
-                    for (int k = 0; k < ndof; k++)
-                      for (int l = 0; l < 3; l++)
-                        rhs(k,l) += shape(k) * dist(l);
-                  }
-
-	      // NgProfiler::StopTimer (timer2);
-
-              // *testout << "mat = " << endl << mat << endl;
-              // CalcInverse (mat, inv);
-              // Mult (inv, rhs, sol);
-
-              for (int i = 0; i < ndof; i++)
-                for (int j = 0; j < 3; j++)
-                  sol(i,j) = rhs(i,j) / dmat(i);   // Orthogonal basis !
-
-              int first = facecoeffsindex[facenr];
-              for (int j = 0; j < ndof; j++)
-                for (int k = 0; k < 3; k++)
-                  facecoeffs[first+j](k) = sol(j,k);
-            }
-        }
+    if (ntasks > 1 && working)
+      {
+	for (int f = 0; f < nfaces; f++)
+	  {
+	    partop.GetDistantFaceNums (f+1, procs);
+	    for (int j = 0; j < procs.Size(); j++)
+	      send_surfnr.Add (procs[j], surfnr[f]);
+	  }
       }
-    PrintMessage (3, "Complete");
+
+    MyMPI_ExchangeTable (send_surfnr, recv_surfnr, MPI_TAG_CURVE, curve_comm);
+
+    if (ntasks > 1 && working)
+      {
+	Array<int> cnt(ntasks);
+	cnt = 0;
+	for (int f = 0; f < nfaces; f++)
+	  {
+	    partop.GetDistantFaceNums (f+1, procs);
+	    for (int j = 0; j < procs.Size(); j++)
+	      surfnr[f] = max(surfnr[f], recv_surfnr[procs[j]][cnt[procs[j]]++]);
+	  }
+      }
+#endif
+
+    if (mesh.GetDimension() == 3 && working)
+      { 
+	for (int f = 0; f < nfaces; f++)
+	  {
+	    int facenr = f;
+	    if (surfnr[f] == -1) continue;
+	    // if (el.GetType() == TRIG && order >= 3)
+	    if (top.GetFaceType(facenr+1) == TRIG && order >= 3)
+	      {
+		ArrayMem<int, 3> verts(3);
+		top.GetFaceVertices (facenr+1, verts);
+
+		int fnums[] = { 0, 1, 2 };
+		/*
+		if (el[fnums[0]] > el[fnums[1]]) swap (fnums[0], fnums[1]);
+		if (el[fnums[1]] > el[fnums[2]]) swap (fnums[1], fnums[2]);
+		if (el[fnums[0]] > el[fnums[1]]) swap (fnums[0], fnums[1]);
+		*/
+		if (verts[fnums[0]] > verts[fnums[1]]) swap (fnums[0], fnums[1]);
+		if (verts[fnums[1]] > verts[fnums[2]]) swap (fnums[1], fnums[2]);
+		if (verts[fnums[0]] > verts[fnums[1]]) swap (fnums[0], fnums[1]);
+
+		int order1 = faceorder[facenr];
+		int ndof = max (0, (order1-1)*(order1-2)/2);
+	    
+		Vector shape(ndof), dmat(ndof);
+		MatrixFixWidth<3> rhs(ndof), sol(ndof);
+	    
+		rhs = 0.0;
+		dmat = 0.0;
+
+		int np = sqr(xi.Size());
+		Array<Point<2> > xia(np);
+		Array<Point<3> > xa(np);
+
+		for (int jx = 0, jj = 0; jx < xi.Size(); jx++)
+		  for (int jy = 0; jy < xi.Size(); jy++, jj++)
+		    xia[jj] = Point<2> ((1-xi[jy])*xi[jx], xi[jy]);
+
+		// CalcMultiPointSurfaceTransformation (&xia, i, &xa, NULL);
+
+		Array<int> edgenrs;
+		top.GetFaceEdges (facenr+1, edgenrs);
+		for (int k = 0; k < edgenrs.Size(); k++) edgenrs[k]--;
+
+		for (int jj = 0; jj < np; jj++)
+		  {
+		    Point<3> pp(0,0,0);
+		    double lami[] = { xia[jj](0), xia[jj](1), 1-xia[jj](0)-xia[jj](1)};
+
+		    for (int k = 0; k < verts.Size(); k++)
+		      pp += lami[k] * Vec<3> (mesh.Point(verts[k]));
+
+		    const ELEMENT_EDGE * edges = MeshTopology::GetEdges0 (TRIG);
+		    for (int k = 0; k < edgenrs.Size(); k++)
+		      {
+			int eorder = edgeorder[edgenrs[k]];
+			if (eorder < 2) continue;
+
+			int first = edgecoeffsindex[edgenrs[k]];
+			Vector eshape(eorder-1);
+			int vi1, vi2;
+			top.GetEdgeVertices (edgenrs[k]+1, vi1, vi2);
+			if (vi1 > vi2) swap (vi1, vi2);
+			int v1 = -1, v2 = -1;
+			for (int j = 0; j < 3; j++)
+			  {
+			    if (verts[j] == vi1) v1 = j;
+			    if (verts[j] == vi2) v2 = j;
+			  }
+
+			CalcScaledEdgeShape (eorder, lami[v1]-lami[v2], lami[v1]+lami[v2], &eshape(0));
+			for (int n = 0; n < eshape.Size(); n++)
+			  pp += eshape(n) * edgecoeffs[first+n];
+		      }
+		    xa[jj] = pp;
+		  }
+
+		for (int jx = 0, jj = 0; jx < xi.Size(); jx++)
+		  for (int jy = 0; jy < xi.Size(); jy++, jj++)
+		    {
+		      double y = xi[jy];
+		      double x = (1-y) * xi[jx];
+		      double lami[] = { x, y, 1-x-y };
+		      double wi = weight[jx]*weight[jy]*(1-y);
+ 
+		      Point<3> pp = xa[jj];
+		      // ref -> ProjectToSurface (pp, mesh.GetFaceDescriptor(el.GetIndex()).SurfNr());
+		      ref -> ProjectToSurface (pp, surfnr[facenr]);
+		      Vec<3> dist = pp-xa[jj];
+		
+		      CalcTrigShape (order1, lami[fnums[1]]-lami[fnums[0]],
+				     1-lami[fnums[1]]-lami[fnums[0]], &shape(0));
+
+		      for (int k = 0; k < ndof; k++)
+			dmat(k) += wi * shape(k) * shape(k);
+
+		      dist *= wi;
+		      for (int k = 0; k < ndof; k++)
+			for (int l = 0; l < 3; l++)
+			  rhs(k,l) += shape(k) * dist(l);
+		    }
+
+		for (int i = 0; i < ndof; i++)
+		  for (int j = 0; j < 3; j++)
+		    sol(i,j) = rhs(i,j) / dmat(i);   // Orthogonal basis !
+
+		int first = facecoeffsindex[facenr];
+		for (int j = 0; j < ndof; j++)
+		  for (int k = 0; k < 3; k++)
+		    facecoeffs[first+j](k) = sol(j,k);
+	      }
+	  }
+      }
 
 
     // compress edge and face tables
@@ -1104,12 +1254,12 @@ namespace netgen
       {
 	bool curved = 0;
 	int oldbase = edgecoeffsindex[i];
-	nd = edgecoeffsindex[i+1] - edgecoeffsindex[i];
+	int nd = edgecoeffsindex[i+1] - edgecoeffsindex[i];
 
 	for (int j = 0; j < nd; j++)
 	  if (edgecoeffs[oldbase+j].Length() > 1e-12)
 	    curved = 1;
-        if (rational) curved = 1;
+	if (rational) curved = 1;
 
 	if (curved && newbase != oldbase)
 	  for (int j = 0; j < nd; j++)
@@ -1127,7 +1277,7 @@ namespace netgen
       {
 	bool curved = 0;
 	int oldbase = facecoeffsindex[i];
-	nd = facecoeffsindex[i+1] - facecoeffsindex[i];
+	int nd = facecoeffsindex[i+1] - facecoeffsindex[i];
 
 	for (int j = 0; j < nd; j++)
 	  if (facecoeffs[oldbase+j].Length() > 1e-12)
@@ -1142,29 +1292,17 @@ namespace netgen
 	if (curved) newbase += nd;
       }
     facecoeffsindex.Last() = newbase;
-
-    ishighorder = (order > 1);
+    
+    if (working)
+      ishighorder = (order > 1);
     // (*testout) << "edgecoeffs = " << endl << edgecoeffs << endl;
     // (*testout) << "facecoeffs = " << endl << facecoeffs << endl;
 
 
 #ifdef PARALLEL
-    if (ntasks > 1)
-      {
-	MyMPI_Bcast (edgeorder, 0, mesh_comm);
-	MyMPI_Bcast (edgecoeffsindex, 0, mesh_comm);
-	MyMPI_Bcast (edgecoeffs, 0, mesh_comm);
-	
-	if (mesh.GetDimension() == 3)
-	  {
-	    MyMPI_Bcast (faceorder, 0, mesh_comm);
-	    MyMPI_Bcast (facecoeffsindex, 0, mesh_comm);
-	    MyMPI_Bcast (facecoeffs, 0, mesh_comm);
-	  }
-      }
+    MPI_Barrier (curve_comm);
+    MPI_Comm_free (&curve_comm);      
 #endif
-
-
   }
 
 
@@ -1282,13 +1420,13 @@ namespace netgen
   {
     if (rational && info.order == 2)
       {
-        shapes.SetSize(3);
-        double w = edgeweight[info.edgenr];
-        shapes(0) = xi*xi;
-        shapes(1) = (1-xi)*(1-xi);
-        shapes(2) = 2*w*xi*(1-xi);
-        shapes *= 1.0 / (1 + (w-1) *2*xi*(1-xi));
-        return;
+	shapes.SetSize(3);
+	double w = edgeweight[info.edgenr];
+	shapes(0) = xi*xi;
+	shapes(1) = (1-xi)*(1-xi);
+	shapes(2) = 2*w*xi*(1-xi);
+	shapes *= 1.0 / (1 + (w-1) *2*xi*(1-xi));
+	return;
       }
 
 
@@ -1309,22 +1447,22 @@ namespace netgen
   {
     if (rational && info.order == 2)
       {
-        dshapes.SetSize(3);
-        double wi = edgeweight[info.edgenr];
-        double shapes[3];
-        shapes[0] = xi*xi;
-        shapes[1] = (1-xi)*(1-xi);
-        shapes[2] = 2*wi*xi*(1-xi);
-        double w = 1 + (wi-1) *2*xi*(1-xi);
-        double dw = (wi-1) * (2 - 4*xi);
+	dshapes.SetSize(3);
+	double wi = edgeweight[info.edgenr];
+	double shapes[3];
+	shapes[0] = xi*xi;
+	shapes[1] = (1-xi)*(1-xi);
+	shapes[2] = 2*wi*xi*(1-xi);
+	double w = 1 + (wi-1) *2*xi*(1-xi);
+	double dw = (wi-1) * (2 - 4*xi);
         
-        dshapes(0) = 2*xi;
-        dshapes(1) = 2*(xi-1);
-        dshapes(2) = 2*wi*(1-2*xi);
+	dshapes(0) = 2*xi;
+	dshapes(1) = 2*(xi-1);
+	dshapes(2) = 2*wi*(1-2*xi);
 
-        for (int j = 0;j < 3; j++)
-          dshapes(j) = dshapes(j) / w - shapes[j] * dw / (w*w);
-        return;
+	for (int j = 0;j < 3; j++)
+	  dshapes(j) = dshapes(j) / w - shapes[j] * dw / (w*w);
+	return;
       }
 
 
@@ -1341,15 +1479,15 @@ namespace netgen
 
     if (info.order >= 2)
       {
-        double fac = 2;
+	double fac = 2;
 	if (mesh[info.elnr][0] > mesh[info.elnr][1])
-          {
-            xi = 1-xi; 
-            fac *= -1;
-          }
+	  {
+	    xi = 1-xi; 
+	    fac *= -1;
+	  }
 	CalcEdgeDx (edgeorder[info.edgenr], 2*xi-1, &dshapes(2));
-        for (int i = 2; i < dshapes.Size(); i++)
-          dshapes(i) *= fac;
+	for (int i = 2; i < dshapes.Size(); i++)
+	  dshapes(i) *= fac;
       }
 
     // ??? not implemented ????
@@ -1445,7 +1583,7 @@ namespace netgen
 	const HPRefElement & hpref_el =
 	  (*mesh.hpelements) [mesh[elnr].hp_elnr];
 	
-        // xi umrechnen
+	// xi umrechnen
 	double lami[4];
 	FlatVector vlami(4, lami);
 	vlami = 0;
@@ -1464,7 +1602,7 @@ namespace netgen
 	      for (int l = 0; l < 2; l++)
 		for (int i = 0; i < hpref_el.np; i++)
 		  trans(l,k) += hpref_el.param[i][l] * dlami(i, k);
-          }
+	  }
 	
 	Point<2> coarse_xi(0,0);
 	for (int i = 0; i < hpref_el.np; i++)
@@ -1570,28 +1708,26 @@ namespace netgen
   CalcElementShapes (SurfaceElementInfo & info, const Point<2> & xi, Vector & shapes) const
   {
     const Element2d & el = mesh[info.elnr];
-
     shapes.SetSize(info.ndof);
-    // shapes = 0;	  
 
     if (rational && info.order >= 2)
       {
-        shapes.SetSize(6);
-        double w = 1;
-        double lami[3] = { xi(0), xi(1), 1-xi(0)-xi(1) };
-        for (int j = 0; j < 3; j++)
-          shapes(j) = lami[j] * lami[j];
+	shapes.SetSize(6);
+	double w = 1;
+	double lami[3] = { xi(0), xi(1), 1-xi(0)-xi(1) };
+	for (int j = 0; j < 3; j++)
+	  shapes(j) = lami[j] * lami[j];
 
-        const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TRIG);
-        for (int j = 0; j < 3; j++)
-          {
-            double wi = edgeweight[info.edgenrs[j]];
-            shapes(j+3) = 2 * wi * lami[edges[j][0]-1] * lami[edges[j][1]-1];
-            w += (wi-1) * 2 * lami[edges[j][0]-1] * lami[edges[j][1]-1];
-          }
+	const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TRIG);
+	for (int j = 0; j < 3; j++)
+	  {
+	    double wi = edgeweight[info.edgenrs[j]];
+	    shapes(j+3) = 2 * wi * lami[edges[j][0]-1] * lami[edges[j][1]-1];
+	    w += (wi-1) * 2 * lami[edges[j][0]-1] * lami[edges[j][1]-1];
+	  }
 
-        shapes *= 1.0 / w;
-        return;
+	shapes *= 1.0 / w;
+	return;
       }
 
     switch (el.GetType())
@@ -1605,14 +1741,14 @@ namespace netgen
 	  if (info.order == 1) return;
 
 	  int ii = 3;
-	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TRIG);
+	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges0 (TRIG);
 	  
 	  for (int i = 0; i < 3; i++)
 	    {
 	      int eorder = edgeorder[info.edgenrs[i]];
 	      if (eorder >= 2)
 		{
-		  int vi1 = edges[i][0]-1, vi2 = edges[i][1]-1;
+		  int vi1 = edges[i][0], vi2 = edges[i][1];
 		  if (el[vi1] > el[vi2]) swap (vi1, vi2);
 
 		  CalcScaledEdgeShape (eorder, shapes(vi1)-shapes(vi2), shapes(vi1)+shapes(vi2), &shapes(ii));
@@ -1656,8 +1792,8 @@ namespace netgen
 	      shapes(4) = 4 * x * lam3;
 	      shapes(5) = 4 * x * y;
 	    }
-          break;
-        }
+	  break;
+	}
 
       case QUAD:
 	{
@@ -1670,8 +1806,8 @@ namespace netgen
 	  
 	  double mu[4] = { 
 	    1 - xi(0) + 1 - xi(1), 
-            xi(0) + 1 - xi(1), 
-            xi(0) +     xi(1), 
+	    xi(0) + 1 - xi(1), 
+	    xi(0) +     xi(1), 
 	    1 - xi(0) +     xi(1), 
 	  };
 	    
@@ -1701,7 +1837,7 @@ namespace netgen
 	}
         
       default:
-        throw NgException("CurvedElements::CalcShape 2d, element type not handled");
+	throw NgException("CurvedElements::CalcShape 2d, element type not handled");
       };
   }
 
@@ -1721,42 +1857,42 @@ namespace netgen
 
     if (rational && info.order >= 2)
       {
-        double w = 1;
-        double dw[2] = { 0, 0 };
+	double w = 1;
+	double dw[2] = { 0, 0 };
 
 
-        lami[0] = xi(0); lami[1] = xi(1); lami[2] = 1-xi(0)-xi(1);
-        double dlami[3][2] = { { 1, 0 }, { 0, 1 }, { -1, -1 }};
-        double shapes[6];
+	lami[0] = xi(0); lami[1] = xi(1); lami[2] = 1-xi(0)-xi(1);
+	double dlami[3][2] = { { 1, 0 }, { 0, 1 }, { -1, -1 }};
+	double shapes[6];
 
-        for (int j = 0; j < 3; j++)
-          {
-            shapes[j] = lami[j] * lami[j];
-            dshapes(j,0) = 2 * lami[j] * dlami[j][0];
-            dshapes(j,1) = 2 * lami[j] * dlami[j][1];
-          }
+	for (int j = 0; j < 3; j++)
+	  {
+	    shapes[j] = lami[j] * lami[j];
+	    dshapes(j,0) = 2 * lami[j] * dlami[j][0];
+	    dshapes(j,1) = 2 * lami[j] * dlami[j][1];
+	  }
 
-        const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TRIG);
-        for (int j = 0; j < 3; j++)
-          {
-            double wi = edgeweight[info.edgenrs[j]];
+	const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TRIG);
+	for (int j = 0; j < 3; j++)
+	  {
+	    double wi = edgeweight[info.edgenrs[j]];
 
-            shapes[j+3] = 2 * wi * lami[edges[j][0]-1] * lami[edges[j][1]-1];
-            for (int k = 0; k < 2; k++)
-              dshapes(j+3,k) = 2*wi* (lami[edges[j][0]-1] * dlami[edges[j][1]-1][k] +
-                                      lami[edges[j][1]-1] * dlami[edges[j][0]-1][k]);
+	    shapes[j+3] = 2 * wi * lami[edges[j][0]-1] * lami[edges[j][1]-1];
+	    for (int k = 0; k < 2; k++)
+	      dshapes(j+3,k) = 2*wi* (lami[edges[j][0]-1] * dlami[edges[j][1]-1][k] +
+				      lami[edges[j][1]-1] * dlami[edges[j][0]-1][k]);
 
-            w += (wi-1) * 2 * lami[edges[j][0]-1] * lami[edges[j][1]-1];
-            for (int k = 0; k < 2; k++)
-              dw[k] += 2*(wi-1) * (lami[edges[j][0]-1] * dlami[edges[j][1]-1][k] +
-                                   lami[edges[j][1]-1] * dlami[edges[j][0]-1][k]);
-          }
-        // shapes *= 1.0 / w;
-        dshapes *= 1.0 / w;
-        for (int i = 0; i < 6; i++)
-          for (int j = 0; j < 2; j++)
-            dshapes(i,j) -= shapes[i] * dw[j] / (w*w);
-        return;
+	    w += (wi-1) * 2 * lami[edges[j][0]-1] * lami[edges[j][1]-1];
+	    for (int k = 0; k < 2; k++)
+	      dw[k] += 2*(wi-1) * (lami[edges[j][0]-1] * dlami[edges[j][1]-1][k] +
+				   lami[edges[j][1]-1] * dlami[edges[j][0]-1][k]);
+	  }
+	// shapes *= 1.0 / w;
+	dshapes *= 1.0 / w;
+	for (int i = 0; i < 6; i++)
+	  for (int j = 0; j < 2; j++)
+	    dshapes(i,j) -= shapes[i] * dw[j] / (w*w);
+	return;
       }
 
 
@@ -1768,15 +1904,15 @@ namespace netgen
       case TRIG:
 	{
 	  dshapes(0,0) = 1;
-          dshapes(0,1) = 0.0;
-          dshapes(1,0) = 0.0;
+	  dshapes(0,1) = 0.0;
+	  dshapes(1,0) = 0.0;
 	  dshapes(1,1) = 1;
 	  dshapes(2,0) = -1;
 	  dshapes(2,1) = -1;
 	  
 	  if (info.order == 1) return;
 
-          // *testout << "info.order = " << info.order << endl;
+	  // *testout << "info.order = " << info.order << endl;
 
 
 	  lami[0] = xi(0);
@@ -1816,7 +1952,7 @@ namespace netgen
 	    }
 
 	  int forder = faceorder[info.facenr];
-          // *testout << "forder = " << forder << endl;
+	  // *testout << "forder = " << forder << endl;
 	  if (forder >= 3)
 	    {
 	      int fnums[] = { 0, 1, 2 };
@@ -1878,8 +2014,8 @@ namespace netgen
 		}
 	      
 	    }
-          break;
-        }
+	  break;
+	}
 
       case QUAD:
 	{
@@ -1896,15 +2032,15 @@ namespace netgen
 
 	  double shapes[4] = {
 	    (1-xi(0))*(1-xi(1)),
-            xi(0) *(1-xi(1)),
-            xi(0) *   xi(1) ,
+	    xi(0) *(1-xi(1)),
+	    xi(0) *   xi(1) ,
 	    (1-xi(0))*   xi(1) 
 	  };
 
 	  double mu[4] = { 
 	    1 - xi(0) + 1 - xi(1), 
-            xi(0) + 1 - xi(1), 
-            xi(0) +     xi(1), 
+	    xi(0) + 1 - xi(1), 
+	    xi(0) +     xi(1), 
 	    1 - xi(0) +     xi(1), 
 	  };
 
@@ -1915,7 +2051,7 @@ namespace netgen
 	    { -1, 1 } };
 	    
 	  // double hshapes[20], hdshapes[20];
-          ArrayMem<double, 20> hshapes(order+1), hdshapes(order+1);
+	  ArrayMem<double, 20> hshapes(order+1), hdshapes(order+1);
 
 	  int ii = 4;
 	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (QUAD);
@@ -1946,26 +2082,26 @@ namespace netgen
 	    }
 
 	  /*	  
-           *testout << "quad, dshape = " << endl << dshapes << endl;
-           for (int i = 0; i < 2; i++)
-           {
-           Point<2> xil = xi, xir = xi;
-           Vector shapesl(dshapes.Height()), shapesr(dshapes.Height());
-           xil(i) -= 1e-6;
-           xir(i) += 1e-6;
-           CalcElementShapes (info, xil, shapesl);
-           CalcElementShapes (info, xir, shapesr);
+	   *testout << "quad, dshape = " << endl << dshapes << endl;
+	   for (int i = 0; i < 2; i++)
+	   {
+	   Point<2> xil = xi, xir = xi;
+	   Vector shapesl(dshapes.Height()), shapesr(dshapes.Height());
+	   xil(i) -= 1e-6;
+	   xir(i) += 1e-6;
+	   CalcElementShapes (info, xil, shapesl);
+	   CalcElementShapes (info, xir, shapesr);
 	      
-           for (int j = 0; j < dshapes.Height(); j++)
-           dshapes(j,i) = 1.0 / 2e-6 * (shapesr(j)-shapesl(j));
-           }
+	   for (int j = 0; j < dshapes.Height(); j++)
+	   dshapes(j,i) = 1.0 / 2e-6 * (shapesr(j)-shapesl(j));
+	   }
 	  
-           *testout << "quad, num dshape = " << endl << dshapes << endl;
-           */
+	   *testout << "quad, num dshape = " << endl << dshapes << endl;
+	   */
 	  break;
 	}
       default:
-        throw NgException("CurvedElements::CalcDShape 2d, element type not handled");
+	throw NgException("CurvedElements::CalcDShape 2d, element type not handled");
 
       };
   }
@@ -1977,13 +2113,12 @@ namespace netgen
   {
     const Element2d & el = mesh[info.elnr];
     coefs.SetSize (info.ndof);
-    // coefs = Vec<3> (0,0,0);
     
     for (int i = 0; i < info.nv; i++)
       {
-        Vec<3> hv(mesh[el[i]]);
-        for (int j = 0; j < DIM_SPACE; j++)
-          coefs[i](j) = hv(j);
+	Point<3> hv = mesh[el[i]];
+	for (int j = 0; j < DIM_SPACE; j++)
+	  coefs[i](j) = hv(j);
       }
     
     if (info.order == 1) return;
@@ -1995,15 +2130,15 @@ namespace netgen
 	int first = edgecoeffsindex[info.edgenrs[i]];
 	int next = edgecoeffsindex[info.edgenrs[i]+1];
 	for (int j = first; j < next; j++, ii++)
-          for (int k = 0; k < DIM_SPACE; k++)
-            coefs[ii](k) = edgecoeffs[j](k);
+	  for (int k = 0; k < DIM_SPACE; k++)
+	    coefs[ii](k) = edgecoeffs[j](k);
       }
     
     int first = facecoeffsindex[info.facenr];
     int next = facecoeffsindex[info.facenr+1];
     for (int j = first; j < next; j++, ii++)
       for (int k = 0; k < DIM_SPACE; k++)
-        coefs[ii](k) = facecoeffs[j](k);
+	coefs[ii](k) = facecoeffs[j](k);
   }
 
 
@@ -2086,44 +2221,44 @@ namespace netgen
   void CurvedElements :: 
   CalcElementTransformation (Point<3> xi, ElementIndex elnr,
 			     Point<3> * x, Mat<3,3> * dxdxi, //  bool * curved,
-                             void * buffer, bool valid)
+			     void * buffer, bool valid)
   {
     if (mesh.coarsemesh)
       {
-        const HPRefElement & hpref_el =
-          (*mesh.hpelements) [mesh[elnr].hp_elnr];
+	const HPRefElement & hpref_el =
+	  (*mesh.hpelements) [mesh[elnr].hp_elnr];
 	  
-        // xi umrechnen
-        double lami[8];
-        FlatVector vlami(8, lami);
-        vlami = 0;
-        mesh[elnr].GetShapeNew (xi, vlami);
+	// xi umrechnen
+	double lami[8];
+	FlatVector vlami(8, lami);
+	vlami = 0;
+	mesh[elnr].GetShapeNew (xi, vlami);
 
-        Mat<3,3> trans, dxdxic;
-        if (dxdxi)
-          {
-            MatrixFixWidth<3> dlami(8);
-            dlami = 0;
-            mesh[elnr].GetDShapeNew (xi, dlami);	  
+	Mat<3,3> trans, dxdxic;
+	if (dxdxi)
+	  {
+	    MatrixFixWidth<3> dlami(8);
+	    dlami = 0;
+	    mesh[elnr].GetDShapeNew (xi, dlami);	  
 	      
-            trans = 0;
-            for (int k = 0; k < 3; k++)
-              for (int l = 0; l < 3; l++)
-                for (int i = 0; i < hpref_el.np; i++)
-                  trans(l,k) += hpref_el.param[i][l] * dlami(i, k);
-          }
+	    trans = 0;
+	    for (int k = 0; k < 3; k++)
+	      for (int l = 0; l < 3; l++)
+		for (int i = 0; i < hpref_el.np; i++)
+		  trans(l,k) += hpref_el.param[i][l] * dlami(i, k);
+	  }
 
-        Point<3> coarse_xi(0,0,0);
-        for (int i = 0; i < hpref_el.np; i++)
-          for (int j = 0; j < 3; j++)
-            coarse_xi(j) += hpref_el.param[i][j] * lami[i];
+	Point<3> coarse_xi(0,0,0);
+	for (int i = 0; i < hpref_el.np; i++)
+	  for (int j = 0; j < 3; j++)
+	    coarse_xi(j) += hpref_el.param[i][j] * lami[i];
 
-        mesh.coarsemesh->GetCurvedElements().CalcElementTransformation (coarse_xi, hpref_el.coarse_elnr, x, &dxdxic /* , curved */);
+	mesh.coarsemesh->GetCurvedElements().CalcElementTransformation (coarse_xi, hpref_el.coarse_elnr, x, &dxdxic /* , curved */);
 
-        if (dxdxi)
-          *dxdxi = dxdxic * trans;
+	if (dxdxi)
+	  *dxdxi = dxdxic * trans;
 
-        return;
+	return;
       }
 
 
@@ -2139,26 +2274,26 @@ namespace netgen
 
     if (!valid)
       {
-        info.elnr = elnr;
-        info.order = order;
-        info.ndof = info.nv = MeshTopology::GetNPoints (type);
-        if (info.order > 1)
-          {
-            const MeshTopology & top = mesh.GetTopology();
+	info.elnr = elnr;
+	info.order = order;
+	info.ndof = info.nv = MeshTopology::GetNPoints (type);
+	if (info.order > 1)
+	  {
+	    const MeshTopology & top = mesh.GetTopology();
             
-            info.nedges = top.GetElementEdges (elnr+1, info.edgenrs, 0);
-            for (int i = 0; i < info.nedges; i++)
-              info.edgenrs[i]--;
+	    info.nedges = top.GetElementEdges (elnr+1, info.edgenrs, 0);
+	    for (int i = 0; i < info.nedges; i++)
+	      info.edgenrs[i]--;
             
-            info.nfaces = top.GetElementFaces (elnr+1, info.facenrs, 0);
-            for (int i = 0; i < info.nfaces; i++)
-              info.facenrs[i]--;
+	    info.nfaces = top.GetElementFaces (elnr+1, info.facenrs, 0);
+	    for (int i = 0; i < info.nfaces; i++)
+	      info.facenrs[i]--;
             
-            for (int i = 0; i < info.nedges; i++)
-              info.ndof += edgecoeffsindex[info.edgenrs[i]+1] - edgecoeffsindex[info.edgenrs[i]];
-            for (int i = 0; i < info.nfaces; i++)
-              info.ndof += facecoeffsindex[info.facenrs[i]+1] - facecoeffsindex[info.facenrs[i]];
-          }
+	    for (int i = 0; i < info.nedges; i++)
+	      info.ndof += edgecoeffsindex[info.edgenrs[i]+1] - edgecoeffsindex[info.edgenrs[i]];
+	    for (int i = 0; i < info.nfaces; i++)
+	      info.ndof += facecoeffsindex[info.facenrs[i]+1] - facecoeffsindex[info.facenrs[i]];
+	  }
       }
 
     CalcElementShapes (info, xi, shapes);
@@ -2171,29 +2306,29 @@ namespace netgen
 
     if (x)
       {
-        *x = 0;
-        for (int i = 0; i < shapes.Size(); i++)
-          *x += shapes(i) * coefs[i];
+	*x = 0;
+	for (int i = 0; i < shapes.Size(); i++)
+	  *x += shapes(i) * coefs[i];
       }
 
     if (dxdxi)
       {
-        if (valid && info.order == 1 && info.nv == 4)   // a linear tet
-          {
-            *dxdxi = info.hdxdxi;
-          }
-        else
-          {
-            CalcElementDShapes (info, xi, dshapes);
+	if (valid && info.order == 1 && info.nv == 4)   // a linear tet
+	  {
+	    *dxdxi = info.hdxdxi;
+	  }
+	else
+	  {
+	    CalcElementDShapes (info, xi, dshapes);
             
-            *dxdxi = 0;
-            for (int i = 0; i < shapes.Size(); i++)
-              for (int j = 0; j < 3; j++)
-                for (int k = 0; k < 3; k++)
-                  (*dxdxi)(j,k) += dshapes(i,k) * coefs[i](j);
+	    *dxdxi = 0;
+	    for (int i = 0; i < shapes.Size(); i++)
+	      for (int j = 0; j < 3; j++)
+		for (int k = 0; k < 3; k++)
+		  (*dxdxi)(j,k) += dshapes(i,k) * coefs[i](j);
             
-            info.hdxdxi = *dxdxi;
-          }
+	    info.hdxdxi = *dxdxi;
+	  }
       }
 
     // *testout << "curved_elements, dshapes = " << endl << dshapes << endl;
@@ -2212,22 +2347,22 @@ namespace netgen
 
     if (rational && info.order >= 2)
       {
-        shapes.SetSize(10);
-        double w = 1;
-        double lami[4] = { xi(0), xi(1), xi(2), 1-xi(0)-xi(1)-xi(2) };
-        for (int j = 0; j < 4; j++)
-          shapes(j) = lami[j] * lami[j];
+	shapes.SetSize(10);
+	double w = 1;
+	double lami[4] = { xi(0), xi(1), xi(2), 1-xi(0)-xi(1)-xi(2) };
+	for (int j = 0; j < 4; j++)
+	  shapes(j) = lami[j] * lami[j];
 
-        const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TET);
-        for (int j = 0; j < 6; j++)
-          {
-            double wi = edgeweight[info.edgenrs[j]];
-            shapes(j+4) = 2 * wi * lami[edges[j][0]-1] * lami[edges[j][1]-1];
-            w += (wi-1) * 2 * lami[edges[j][0]-1] * lami[edges[j][1]-1];
-          }
+	const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TET);
+	for (int j = 0; j < 6; j++)
+	  {
+	    double wi = edgeweight[info.edgenrs[j]];
+	    shapes(j+4) = 2 * wi * lami[edges[j][0]-1] * lami[edges[j][1]-1];
+	    w += (wi-1) * 2 * lami[edges[j][0]-1] * lami[edges[j][1]-1];
+	  }
 
-        shapes *= 1.0 / w;
-        return;
+	shapes *= 1.0 / w;
+	return;
       }
 
     shapes.SetSize(info.ndof);
@@ -2279,32 +2414,32 @@ namespace netgen
 	}
         
       case TET10:
-        {
-          double x = xi(0);
-          double y = xi(1);
-          double z = xi(2);
-          double lam4 = 1 - x - y - z;
-          /*
-            shapes(0) = xi(0);
-            shapes(1) = xi(1);
-            shapes(2) = xi(2);
-            shapes(3) = 1-xi(0)-xi(1)-xi(2);
-          */
+	{
+	  double x = xi(0);
+	  double y = xi(1);
+	  double z = xi(2);
+	  double lam4 = 1 - x - y - z;
+	  /*
+	    shapes(0) = xi(0);
+	    shapes(1) = xi(1);
+	    shapes(2) = xi(2);
+	    shapes(3) = 1-xi(0)-xi(1)-xi(2);
+	  */
           
-          shapes(0) = 2 * x * x - x;  
-          shapes(1) = 2 * y * y - y;
-          shapes(2) = 2 * z * z - z;
-          shapes(3) = 2 * lam4 * lam4 - lam4;
+	  shapes(0) = 2 * x * x - x;  
+	  shapes(1) = 2 * y * y - y;
+	  shapes(2) = 2 * z * z - z;
+	  shapes(3) = 2 * lam4 * lam4 - lam4;
           
-          shapes(4) = 4 * x * y;
-          shapes(5) = 4 * x * z;
-          shapes(6) = 4 * x * lam4;
-          shapes(7) = 4 * y * z;
-          shapes(8) = 4 * y * lam4;
-          shapes(9) = 4 * z * lam4;
+	  shapes(4) = 4 * x * y;
+	  shapes(5) = 4 * x * z;
+	  shapes(6) = 4 * x * lam4;
+	  shapes(7) = 4 * y * z;
+	  shapes(8) = 4 * y * lam4;
+	  shapes(9) = 4 * z * lam4;
 
-          break;
-        }
+	  break;
+	}
 
       case PRISM:
 	{
@@ -2315,11 +2450,11 @@ namespace netgen
 	  for (int i = 6; i < info.ndof; i++)
 	    shapes(i) = 0;
 
-          if (info.order == 1) return;
+	  if (info.order == 1) return;
 
 
 	  int ii = 6;
- 	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (PRISM);
+	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (PRISM);
 	  for (int i = 0; i < 6; i++)    // horizontal edges
 	    {
 	      int eorder = edgeorder[info.edgenrs[i]];
@@ -2395,7 +2530,7 @@ namespace netgen
 	  shapes[3] = (1-z-x)*y / (1-z);
 	  shapes[4] = z;
           
-          if (info.order == 1) return;
+	  if (info.order == 1) return;
 
 	  int ii = 5;
 	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (PYRAMID);
@@ -2422,7 +2557,7 @@ namespace netgen
 	}
 
       case HEX:
-        {
+	{
 	  shapes = 0.0;
 	  double x = xi(0);
 	  double y = xi(1);
@@ -2436,11 +2571,11 @@ namespace netgen
 	  shapes[5] =    x *(1-y)*(z);
 	  shapes[6] =    x *   y *(z);
 	  shapes[7] = (1-x)*   y *(z);
-          break;
-        }
+	  break;
+	}
 
       default:
-        throw NgException("CurvedElements::CalcShape 3d, element type not handled");
+	throw NgException("CurvedElements::CalcShape 3d, element type not handled");
 
       };
   }
@@ -2458,42 +2593,42 @@ namespace netgen
 
     if (rational && info.order >= 2)
       {
-        double w = 1;
-        double dw[3] = { 0, 0, 0 };
+	double w = 1;
+	double dw[3] = { 0, 0, 0 };
 
-        double lami[4] = { xi(0), xi(1), xi(2), 1-xi(0)-xi(1)-xi(2) };
-        double dlami[4][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { -1, -1, -1 }};
-        double shapes[10];
+	double lami[4] = { xi(0), xi(1), xi(2), 1-xi(0)-xi(1)-xi(2) };
+	double dlami[4][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { -1, -1, -1 }};
+	double shapes[10];
 
-        for (int j = 0; j < 4; j++)
-          {
-            shapes[j] = lami[j] * lami[j];
-            dshapes(j,0) = 2 * lami[j] * dlami[j][0];
-            dshapes(j,1) = 2 * lami[j] * dlami[j][1];
-            dshapes(j,2) = 2 * lami[j] * dlami[j][2];
-          }
+	for (int j = 0; j < 4; j++)
+	  {
+	    shapes[j] = lami[j] * lami[j];
+	    dshapes(j,0) = 2 * lami[j] * dlami[j][0];
+	    dshapes(j,1) = 2 * lami[j] * dlami[j][1];
+	    dshapes(j,2) = 2 * lami[j] * dlami[j][2];
+	  }
 
-        const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TET);
-        for (int j = 0; j < 6; j++)
-          {
-            double wi = edgeweight[info.edgenrs[j]];
+	const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TET);
+	for (int j = 0; j < 6; j++)
+	  {
+	    double wi = edgeweight[info.edgenrs[j]];
 
-            shapes[j+4] = 2 * wi * lami[edges[j][0]-1] * lami[edges[j][1]-1];
-            for (int k = 0; k < 3; k++)
-              dshapes(j+4,k) = 2*wi* (lami[edges[j][0]-1] * dlami[edges[j][1]-1][k] +
-                                      lami[edges[j][1]-1] * dlami[edges[j][0]-1][k]);
+	    shapes[j+4] = 2 * wi * lami[edges[j][0]-1] * lami[edges[j][1]-1];
+	    for (int k = 0; k < 3; k++)
+	      dshapes(j+4,k) = 2*wi* (lami[edges[j][0]-1] * dlami[edges[j][1]-1][k] +
+				      lami[edges[j][1]-1] * dlami[edges[j][0]-1][k]);
 
-            w += (wi-1) * 2 * lami[edges[j][0]-1] * lami[edges[j][1]-1];
-            for (int k = 0; k < 3; k++)
-              dw[k] += 2*(wi-1) * (lami[edges[j][0]-1] * dlami[edges[j][1]-1][k] +
-                                   lami[edges[j][1]-1] * dlami[edges[j][0]-1][k]);
-          }
-        // shapes *= 1.0 / w;
-        dshapes *= 1.0 / w;
-        for (int i = 0; i < 10; i++)
-          for (int j = 0; j < 3; j++)
-            dshapes(i,j) -= shapes[i] * dw[j] / (w*w);
-        return;
+	    w += (wi-1) * 2 * lami[edges[j][0]-1] * lami[edges[j][1]-1];
+	    for (int k = 0; k < 3; k++)
+	      dw[k] += 2*(wi-1) * (lami[edges[j][0]-1] * dlami[edges[j][1]-1][k] +
+				   lami[edges[j][1]-1] * dlami[edges[j][0]-1][k]);
+	  }
+	// shapes *= 1.0 / w;
+	dshapes *= 1.0 / w;
+	for (int i = 0; i < 10; i++)
+	  for (int j = 0; j < 3; j++)
+	    dshapes(i,j) -= shapes[i] * dw[j] / (w*w);
+	return;
       }
 
     switch (el.GetType())
@@ -2590,12 +2725,12 @@ namespace netgen
 	    {
 	      dshapes = 0.0;
 
-              dshapes(0,0) = 1;
-              dshapes(1,1) = 1;
-              dshapes(2,2) = 1;
-              dshapes(3,0) = -1;
-              dshapes(3,1) = -1;
-              dshapes(3,2) = -1;
+	      dshapes(0,0) = 1;
+	      dshapes(1,1) = 1;
+	      dshapes(2,2) = 1;
+	      dshapes(3,0) = -1;
+	      dshapes(3,1) = -1;
+	      dshapes(3,2) = -1;
 	    }
 	  else
 	    {
@@ -2605,17 +2740,17 @@ namespace netgen
 	      AutoDiff<3> lam4 = 1-x-y-z;
 	      AutoDiff<3> shapes[10];
               
-              shapes[0] = 2 * x * x - x;  
-              shapes[1] = 2 * y * y - y;
-              shapes[2] = 2 * z * z - z;
-              shapes[3] = 2 * lam4 * lam4 - lam4;
+	      shapes[0] = 2 * x * x - x;  
+	      shapes[1] = 2 * y * y - y;
+	      shapes[2] = 2 * z * z - z;
+	      shapes[3] = 2 * lam4 * lam4 - lam4;
               
-              shapes[4] = 4 * x * y;
-              shapes[5] = 4 * x * z;
-              shapes[6] = 4 * x * lam4;
-              shapes[7] = 4 * y * z;
-              shapes[8] = 4 * y * lam4;
-              shapes[9] = 4 * z * lam4;
+	      shapes[4] = 4 * x * y;
+	      shapes[5] = 4 * x * z;
+	      shapes[6] = 4 * x * lam4;
+	      shapes[7] = 4 * y * z;
+	      shapes[8] = 4 * y * lam4;
+	      shapes[9] = 4 * z * lam4;
 
 	      for (int i = 0; i < 10; i++)
 		{
@@ -2625,10 +2760,10 @@ namespace netgen
 		}
 	      
 	    }
-          break;
+	  break;
 
-          break;
-        }
+	  break;
+	}
 
 
       case PRISM:
@@ -2753,7 +2888,7 @@ namespace netgen
 				 lami[fav[2]]-lami[fav[1]], lami[fav[0]],
 				 &dshapei(0,0));
 	      CalcTrigShape (forder, lami[fav[2]]-lami[fav[1]], lami[fav[0]],
-                             &shapei(0));
+			     &shapei(0));
 	      
 	      Mat<2,2> trans;
 	      for (int j = 0; j < 2; j++)
@@ -2815,69 +2950,69 @@ namespace netgen
 	  dshapes(4,0) = 0;
 	  dshapes(4,1) = 0;
 	  dshapes(4,2) = 1;
-          /* old:
-             vdshape[0] = Vec<3>( -(z1-y)/z1, -(z1-x)/z1, ((x+y+2*z-2)*z1+(z1-y)*(z1-x))/z2 );
-             vdshape[1] = Vec<3>( (z1-y)/z1,  -x/z1,      (-x*z1+x*(z1-y))/z2 );
-             vdshape[2] = Vec<3>( y/z1,       x/z1,       x*y/z2 );
-             vdshape[3] = Vec<3>( -y/z1,      (z1-x)/z1,  (-y*z1+y*(z1-x))/z2 );
-             vdshape[4] = Vec<3>( 0, 0, 1 );
-          */
+	  /* old:
+	     vdshape[0] = Vec<3>( -(z1-y)/z1, -(z1-x)/z1, ((x+y+2*z-2)*z1+(z1-y)*(z1-x))/z2 );
+	     vdshape[1] = Vec<3>( (z1-y)/z1,  -x/z1,      (-x*z1+x*(z1-y))/z2 );
+	     vdshape[2] = Vec<3>( y/z1,       x/z1,       x*y/z2 );
+	     vdshape[3] = Vec<3>( -y/z1,      (z1-x)/z1,  (-y*z1+y*(z1-x))/z2 );
+	     vdshape[4] = Vec<3>( 0, 0, 1 );
+	  */
 	  break;
 	}
 
       case HEX:
-        {
-          dshapes = 0.0;
+	{
+	  dshapes = 0.0;
 
 	  double x = xi(0);
 	  double y = xi(1);
 	  double z = xi(2);
 
 	  // shapes[0] = (1-x)*(1-y)*(1-z);
-          dshapes(0,0) = - (1-y)*(1-z);
-          dshapes(0,1) = (1-x) * (-1) * (1-z);
-          dshapes(0,2) = (1-x) * (1-y) * (-1);
+	  dshapes(0,0) = - (1-y)*(1-z);
+	  dshapes(0,1) = (1-x) * (-1) * (1-z);
+	  dshapes(0,2) = (1-x) * (1-y) * (-1);
 
 	  // shapes[1] =    x *(1-y)*(1-z);
-          dshapes(1,0) = (1-y)*(1-z);
-          dshapes(1,1) = -x * (1-z);
-          dshapes(1,2) = -x * (1-y);
+	  dshapes(1,0) = (1-y)*(1-z);
+	  dshapes(1,1) = -x * (1-z);
+	  dshapes(1,2) = -x * (1-y);
 
 	  // shapes[2] =    x *   y *(1-z);
-          dshapes(2,0) = y * (1-z);
-          dshapes(2,1) = x * (1-z);
-          dshapes(2,2) = -x * y;
+	  dshapes(2,0) = y * (1-z);
+	  dshapes(2,1) = x * (1-z);
+	  dshapes(2,2) = -x * y;
 
 	  // shapes[3] = (1-x)*   y *(1-z);
-          dshapes(3,0) = -y * (1-z);
-          dshapes(3,1) = (1-x) * (1-z);
-          dshapes(3,2) = -(1-x) * y;
+	  dshapes(3,0) = -y * (1-z);
+	  dshapes(3,1) = (1-x) * (1-z);
+	  dshapes(3,2) = -(1-x) * y;
 
 	  // shapes[4] = (1-x)*(1-y)*z;
-          dshapes(4,0) = - (1-y)*z;
-          dshapes(4,1) = (1-x) * (-1) * z;
-          dshapes(4,2) = (1-x) * (1-y) * 1;
+	  dshapes(4,0) = - (1-y)*z;
+	  dshapes(4,1) = (1-x) * (-1) * z;
+	  dshapes(4,2) = (1-x) * (1-y) * 1;
 
 	  // shapes[5] =    x *(1-y)*z;
-          dshapes(5,0) = (1-y)*z;
-          dshapes(5,1) = -x * z;
-          dshapes(5,2) = x * (1-y);
+	  dshapes(5,0) = (1-y)*z;
+	  dshapes(5,1) = -x * z;
+	  dshapes(5,2) = x * (1-y);
 
 	  // shapes[6] =    x *   y *z;
-          dshapes(6,0) = y * z;
-          dshapes(6,1) = x * z;
-          dshapes(6,2) = x * y;
+	  dshapes(6,0) = y * z;
+	  dshapes(6,1) = x * z;
+	  dshapes(6,2) = x * y;
 
 	  // shapes[7] = (1-x)*   y *z;
-          dshapes(7,0) = -y * z;
-          dshapes(7,1) = (1-x) * z;
-          dshapes(7,2) = (1-x) * y;
+	  dshapes(7,0) = -y * z;
+	  dshapes(7,1) = (1-x) * z;
+	  dshapes(7,2) = (1-x) * y;
 
-          break;
-        }
+	  break;
+	}
 
       default:
-        throw NgException("CurvedElements::CalcDShape 3d, element type not handled");
+	throw NgException("CurvedElements::CalcDShape 3d, element type not handled");
       }
     
     /*
@@ -2984,33 +3119,33 @@ namespace netgen
   {
     for (int ip = 0; ip < n; ip++)
       {
-        Point<3> xg;
-        Vec<3> dx;
+	Point<3> xg;
+	Vec<3> dx;
 
-        // mesh->GetCurvedElements().
+	// mesh->GetCurvedElements().
 	CalcSegmentTransformation (xi[ip*sxi], elnr, xg, dx);
       
-        if (x)
-          for (int i = 0; i < DIM_SPACE; i++)
-            x[ip*sx+i] = xg(i);
+	if (x)
+	  for (int i = 0; i < DIM_SPACE; i++)
+	    x[ip*sx+i] = xg(i);
 	  
-        if (dxdxi)
-          for (int i=0; i<DIM_SPACE; i++)
-            dxdxi[ip*sdxdxi+i] = dx(i);
+	if (dxdxi)
+	  for (int i=0; i<DIM_SPACE; i++)
+	    dxdxi[ip*sdxdxi+i] = dx(i);
       }
   }
 
   template void CurvedElements :: 
   CalcMultiPointSegmentTransformation<2> (SegmentIndex elnr, int npts,
-                                          const double * xi, size_t sxi,
-                                          double * x, size_t sx,
-                                          double * dxdxi, size_t sdxdxi);
+					  const double * xi, size_t sxi,
+					  double * x, size_t sx,
+					  double * dxdxi, size_t sdxdxi);
 
   template void CurvedElements :: 
   CalcMultiPointSegmentTransformation<3> (SegmentIndex elnr, int npts,
-                                          const double * xi, size_t sxi,
-                                          double * x, size_t sx,
-                                          double * dxdxi, size_t sdxdxi);
+					  const double * xi, size_t sxi,
+					  double * x, size_t sx,
+					  double * dxdxi, size_t sdxdxi);
 
 
 
@@ -3026,138 +3161,6 @@ namespace netgen
 					     &(*xi)[0](0), 2, 
 					     px, 3,
 					     pdxdxi, 6);
-					    
-    return;
-#ifdef OLD
-    if (mesh.coarsemesh)
-      {
-	const HPRefElement & hpref_el =
-	  (*mesh.hpelements) [mesh[elnr].hp_elnr];
-	
-        // xi umrechnen
-	double lami[4];
-	FlatVector vlami(4, lami);
-
-	ArrayMem<Point<2>, 50> coarse_xi (xi->Size());
-	
-	for (int pi = 0; pi < xi->Size(); pi++)
-	  {
-	    vlami = 0;
-	    mesh[elnr].GetShapeNew ( (*xi)[pi], vlami);
-	    
-	    Point<2> cxi(0,0);
-	    for (int i = 0; i < hpref_el.np; i++)
-	      for (int j = 0; j < 2; j++)
-		cxi(j) += hpref_el.param[i][j] * lami[i];
-
-	    coarse_xi[pi] = cxi;
-	  }
-
-	mesh.coarsemesh->GetCurvedElements().
-	  CalcMultiPointSurfaceTransformation (&coarse_xi, hpref_el.coarse_elnr, x, dxdxi);
-
-
-	Mat<2,2> trans;
-        Mat<3,2> dxdxic;
-	if (dxdxi)
-	  {
-	    MatrixFixWidth<2> dlami(4);
-	    dlami = 0;
-
-	    for (int pi = 0; pi < xi->Size(); pi++)
-	      {
-		mesh[elnr].GetDShapeNew ( (*xi)[pi], dlami);	  
-		
-		trans = 0;
-		for (int k = 0; k < 2; k++)
-		  for (int l = 0; l < 2; l++)
-		    for (int i = 0; i < hpref_el.np; i++)
-		      trans(l,k) += hpref_el.param[i][l] * dlami(i, k);
-		
-		dxdxic = (*dxdxi)[pi];
-		(*dxdxi)[pi] = dxdxic * trans;
-	      }
-	  }	
-
-	return;
-      }
-
-
-
-
-
-    Vector shapes;
-    MatrixFixWidth<2> dshapes;
-    Array<Vec<3> > coefs;
-
-
-    const Element2d & el = mesh[elnr];
-    ELEMENT_TYPE type = el.GetType();
-
-    SurfaceElementInfo info;
-    info.elnr = elnr;
-    info.order = order;
-    switch (type)
-      {
-      case TRIG : info.nv = 3; break;
-      case QUAD : info.nv = 4; break;
-      case TRIG6: info.nv = 6; break;
-      default:
-	cerr << "undef element in CalcMultPointSurfaceTrao" << endl;
-      }
-    info.ndof = info.nv;
-
-    if (info.order > 1)
-      {
-	const MeshTopology & top = mesh.GetTopology();
-	
-	top.GetSurfaceElementEdges (elnr+1, info.edgenrs);
-	for (int i = 0; i < info.edgenrs.Size(); i++)
-	  info.edgenrs[i]--;
-	info.facenr = top.GetSurfaceElementFace (elnr+1)-1;
-
-	for (int i = 0; i < info.edgenrs.Size(); i++)
-	  info.ndof += edgecoeffsindex[info.edgenrs[i]+1] - edgecoeffsindex[info.edgenrs[i]];
-	info.ndof += facecoeffsindex[info.facenr+1] - facecoeffsindex[info.facenr];
-      }
-
-    GetCoefficients (info, coefs);
-    if (x)
-      {
-	for (int j = 0; j < xi->Size(); j++)
-	  {
-	    CalcElementShapes (info, (*xi)[j], shapes);
-	    Point<3> val(0,0,0);
-	    for (int i = 0; i < coefs.Size(); i++)
-	      val += shapes(i) * coefs[i];
-            (*x)[j] = val;
-	  }
-      }
-
-    if (dxdxi)
-      {
-	for (int ip = 0; ip < xi->Size(); ip++)
-	  {
-	    CalcElementDShapes (info, (*xi)[ip], dshapes);
-
-            /*
-              (*dxdxi)[ip] = 0;
-              for (int i = 0; i < coefs.Size(); i++)
-	      for (int j = 0; j < 3; j++)
-              for (int k = 0; k < 2; k++)
-              (*dxdxi)[ip](j,k) += dshapes(i,k) * coefs[i](j);
-            */
-
-	    Mat<3,2> ds;
-            ds = 0.0;
-	    for (int i = 0; i < coefs.Size(); i++)
-	      for (int j = 0; j < 3; j++)
-		for (int k = 0; k < 2; k++)
-                  ds(j,k) += dshapes(i,k) * coefs[i](j);
-            (*dxdxi)[ip] = ds;
-	  }
-      }
-#endif
   }
 
 
@@ -3167,15 +3170,15 @@ namespace netgen
   void CurvedElements :: 
   CalcMultiPointSurfaceTransformation (SurfaceElementIndex elnr, int npts,
 				       const double * xi, size_t sxi,
-                                       double * x, size_t sx,
-                                       double * dxdxi, size_t sdxdxi)
+				       double * x, size_t sx,
+				       double * dxdxi, size_t sdxdxi)
   {
     if (mesh.coarsemesh)
       {
 	const HPRefElement & hpref_el =
 	  (*mesh.hpelements) [mesh[elnr].hp_elnr];
 	
-        // xi umrechnen
+	// xi umrechnen
 	double lami[4];
 	FlatVector vlami(4, lami);
 
@@ -3184,7 +3187,7 @@ namespace netgen
 	for (int pi = 0; pi < npts; pi++)
 	  {
 	    vlami = 0;
-            Point<2> hxi(xi[pi*sxi], xi[pi*sxi+1]);
+	    Point<2> hxi(xi[pi*sxi], xi[pi*sxi+1]);
 	    mesh[elnr].GetShapeNew ( hxi, vlami);
 	    
 	    Point<2> cxi(0,0);
@@ -3195,12 +3198,12 @@ namespace netgen
 	    coarse_xi[pi] = cxi;
 	  }
 
-        mesh.coarsemesh->GetCurvedElements().
-          CalcMultiPointSurfaceTransformation<DIM_SPACE> (hpref_el.coarse_elnr, npts,
-                                                          &coarse_xi[0](0), &coarse_xi[1](0)-&coarse_xi[0](0), 
-                                                          x, sx, dxdxi, sdxdxi);
+	mesh.coarsemesh->GetCurvedElements().
+	  CalcMultiPointSurfaceTransformation<DIM_SPACE> (hpref_el.coarse_elnr, npts,
+							  &coarse_xi[0](0), &coarse_xi[1](0)-&coarse_xi[0](0), 
+							  x, sx, dxdxi, sdxdxi);
 
-        // Mat<3,2> dxdxic;
+	// Mat<3,2> dxdxic;
 	if (dxdxi)
 	  {
 	    MatrixFixWidth<2> dlami(4);
@@ -3208,7 +3211,7 @@ namespace netgen
 
 	    for (int pi = 0; pi < npts; pi++)
 	      {
-                Point<2> hxi(xi[pi*sxi], xi[pi*sxi+1]);
+		Point<2> hxi(xi[pi*sxi], xi[pi*sxi+1]);
 		mesh[elnr].GetDShapeNew ( hxi, dlami);	  
 		
 		Mat<2,2> trans;
@@ -3218,17 +3221,17 @@ namespace netgen
 		    for (int i = 0; i < hpref_el.np; i++)
 		      trans(l,k) += hpref_el.param[i][l] * dlami(i, k);
 		
-                Mat<DIM_SPACE,2> hdxdxic, hdxdxi;
-                for (int k = 0; k < 2*DIM_SPACE; k++)
-                  hdxdxic(k) = dxdxi[pi*sdxdxi+k];
+		Mat<DIM_SPACE,2> hdxdxic, hdxdxi;
+		for (int k = 0; k < 2*DIM_SPACE; k++)
+		  hdxdxic(k) = dxdxi[pi*sdxdxi+k];
 
-                hdxdxi = hdxdxic * trans;
+		hdxdxi = hdxdxic * trans;
 
-                for (int k = 0; k < 2*DIM_SPACE; k++)
-                  dxdxi[pi*sdxdxi+k] = hdxdxi(k);
+		for (int k = 0; k < 2*DIM_SPACE; k++)
+		  dxdxi[pi*sdxdxi+k] = hdxdxi(k);
                     
-                // dxdxic = (*dxdxi)[pi];
-                // (*dxdxi)[pi] = dxdxic * trans;
+		// dxdxic = (*dxdxi)[pi];
+		// (*dxdxi)[pi] = dxdxic * trans;
 	      }
 	  }	
 
@@ -3255,7 +3258,6 @@ namespace netgen
 	cerr << "undef element in CalcMultPointSurfaceTrao" << endl;
       }
     info.ndof = info.nv;
-
     if (info.order > 1)
       {
 	const MeshTopology & top = mesh.GetTopology();
@@ -3349,15 +3351,15 @@ namespace netgen
 
   template void CurvedElements :: 
   CalcMultiPointSurfaceTransformation<2> (SurfaceElementIndex elnr, int npts,
-                                          const double * xi, size_t sxi,
-                                          double * x, size_t sx,
-                                          double * dxdxi, size_t sdxdxi);
+					  const double * xi, size_t sxi,
+					  double * x, size_t sx,
+					  double * dxdxi, size_t sdxdxi);
 
   template void CurvedElements :: 
   CalcMultiPointSurfaceTransformation<3> (SurfaceElementIndex elnr, int npts,
-                                          const double * xi, size_t sxi,
-                                          double * x, size_t sx,
-                                          double * dxdxi, size_t sdxdxi);
+					  const double * xi, size_t sxi,
+					  double * x, size_t sx,
+					  double * dxdxi, size_t sdxdxi);
 
 
 
@@ -3391,7 +3393,7 @@ namespace netgen
 	const HPRefElement & hpref_el =
 	  (*mesh.hpelements) [mesh[elnr].hp_elnr];
 	
-        // xi umrechnen
+	// xi umrechnen
 	double lami[8];
 	FlatVector vlami(8, lami);
 
@@ -3528,16 +3530,16 @@ namespace netgen
 
   void  CurvedElements :: 
   CalcMultiPointElementTransformation (ElementIndex elnr, int n,
-                                       const double * xi, size_t sxi,
-                                       double * x, size_t sx,
-                                       double * dxdxi, size_t sdxdxi)
+				       const double * xi, size_t sxi,
+				       double * x, size_t sx,
+				       double * dxdxi, size_t sdxdxi)
   {
     if (mesh.coarsemesh)
       {
 	const HPRefElement & hpref_el =
 	  (*mesh.hpelements) [mesh[elnr].hp_elnr];
 	
-        // xi umrechnen
+	// xi umrechnen
 	double lami[8];
 	FlatVector vlami(8, lami);
 
@@ -3547,9 +3549,9 @@ namespace netgen
 	for (int pi = 0; pi < n; pi++)
 	  {
 	    vlami = 0;
-            Point<3> pxi;
-            for (int j = 0; j < 3; j++)
-              pxi(j) = xi[pi*sxi+j];
+	    Point<3> pxi;
+	    for (int j = 0; j < 3; j++)
+	      pxi(j) = xi[pi*sxi+j];
 
 	    mesh[elnr].GetShapeNew ( pxi, vlami);
 	    
@@ -3558,15 +3560,15 @@ namespace netgen
 	      for (int j = 0; j < 3; j++)
 		cxi(j) += hpref_el.param[i][j] * lami[i];
 
-            for (int j = 0; j < 3; j++)
-              coarse_xi[3*pi+j] = cxi(j);
+	    for (int j = 0; j < 3; j++)
+	      coarse_xi[3*pi+j] = cxi(j);
 	  }
 
 	mesh.coarsemesh->GetCurvedElements().
 	  CalcMultiPointElementTransformation (hpref_el.coarse_elnr, n, 
-                                               &coarse_xi[0], 3, 
-                                               x, sx, 
-                                               dxdxi, sdxdxi);
+					       &coarse_xi[0], 3, 
+					       x, sx, 
+					       dxdxi, sdxdxi);
 
 	Mat<3,3> trans, dxdxic;
 	if (dxdxi)
@@ -3576,9 +3578,9 @@ namespace netgen
 
 	    for (int pi = 0; pi < n; pi++)
 	      {
-                Point<3> pxi;
-                for (int j = 0; j < 3; j++)
-                  pxi(j) = xi[pi*sxi+j];
+		Point<3> pxi;
+		for (int j = 0; j < 3; j++)
+		  pxi(j) = xi[pi*sxi+j];
 
 		mesh[elnr].GetDShapeNew (pxi, dlami);	  
 		
@@ -3588,16 +3590,16 @@ namespace netgen
 		    for (int i = 0; i < hpref_el.np; i++)
 		      trans(l,k) += hpref_el.param[i][l] * dlami(i, k);
 
-                Mat<3> mat_dxdxic, mat_dxdxi;
-                for (int j = 0; j < 3; j++)
-                  for (int k = 0; k < 3; k++)
-                    mat_dxdxic(j,k) = dxdxi[pi*sdxdxi+3*j+k];
+		Mat<3> mat_dxdxic, mat_dxdxi;
+		for (int j = 0; j < 3; j++)
+		  for (int k = 0; k < 3; k++)
+		    mat_dxdxic(j,k) = dxdxi[pi*sdxdxi+3*j+k];
 		
-                mat_dxdxi = mat_dxdxic * trans;
+		mat_dxdxi = mat_dxdxic * trans;
 
-                for (int j = 0; j < 3; j++)
-                  for (int k = 0; k < 3; k++)
-                    dxdxi[pi*sdxdxi+3*j+k] = mat_dxdxi(j,k);
+		for (int j = 0; j < 3; j++)
+		  for (int k = 0; k < 3; k++)
+		    dxdxi[pi*sdxdxi+3*j+k] = mat_dxdxi(j,k);
 
 		// dxdxic = (*dxdxi)[pi];
 		// (*dxdxi)[pi] = dxdxic * trans;
@@ -3647,17 +3649,17 @@ namespace netgen
       {
 	for (int j = 0; j < n; j++)
 	  {
-            Point<3> xij, xj;
-            for (int k = 0; k < 3; k++)
-              xij(k) = xi[j*sxi+k];
+	    Point<3> xij, xj;
+	    for (int k = 0; k < 3; k++)
+	      xij(k) = xi[j*sxi+k];
 
 	    CalcElementShapes (info, xij, shapes);
 	    xj = 0;
 	    for (int i = 0; i < coefs.Size(); i++)
 	      xj += shapes(i) * coefs[i];
 
-            for (int k = 0; k < 3; k++)
-              x[j*sx+k] = xj(k);
+	    for (int k = 0; k < 3; k++)
+	      x[j*sx+k] = xj(k);
 	  }
       }
 

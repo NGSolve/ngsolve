@@ -645,17 +645,8 @@ namespace netgen
         subdivision_timestamp > surfellinetimestamp ||
         (deform && solutiontimestamp > surfellinetimestamp) || 
         zoomall)
-      {
-        if (linelist)
-          glDeleteLists (linelist, 1);
-      
-        linelist = glGenLists (1);
-        glNewList (linelist, GL_COMPILE);
-      
-        DrawSurfaceElementLines();
-
-        glEndList ();
-      
+      {      
+        DrawSurfaceElementLines();      
         surfellinetimestamp = max2 (solutiontimestamp, mesh->GetTimeStamp());
       }
 
@@ -1394,28 +1385,51 @@ namespace netgen
 
   void  VisualSceneSolution :: DrawSurfaceElementLines ()
   {
+#ifdef PARALLELGL
+    if (id == 0 && ntasks > 1)
+      {
+	InitParallelGL();
+
+	par_surfellists.SetSize (ntasks);
+
+	MyMPI_SendCmd ("redraw");
+	MyMPI_SendCmd ("solsurfellinelist");
+
+	for ( int dest = 1; dest < ntasks; dest++ )
+	  MyMPI_Recv (par_surfellists[dest], dest, MPI_TAG_VIS);
+
+	if (linelist)
+	  glDeleteLists (linelist, 1);
+
+	linelist = glGenLists (1);
+	glNewList (linelist, GL_COMPILE);
+	
+	for ( int dest = 1; dest < ntasks; dest++ )
+	  glCallList (par_surfellists[dest]);
+	
+	glEndList();
+	return;
+      }
+#endif
+
+    if (linelist)
+      glDeleteLists (linelist, 1);
+    
+    linelist = glGenLists (1);
+    glNewList (linelist, GL_COMPILE);
+
     glLineWidth (1.0f);
-    // glNormal3d (1, 0, 0);
 
     int nse = mesh->GetNSE();
-
     CurvedElements & curv = mesh->GetCurvedElements();
 
     int n = 1 << subdivisions;
     ArrayMem<Point<2>, 65> ptsloc(n+1);
     ArrayMem<Point<3>, 65> ptsglob(n+1);
 
-    /*
-    double trigpts[3][2]  = { { 0, 0 }, { 1, 0 }, { 0, 1} };
-    double trigvecs[3][2] = { { 1, 0 }, { -1,1 }, { 0, -1} };
-    */
     double trigpts[3][2]  = { { 0, 0 }, { 0, 1 }, { 1, 0} };
     double trigvecs[3][2] = { { 1, 0 }, { 0, -1 }, { -1, 1} };
-    
-    /*
-    double quadpts[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1} };
-    double quadvecs[4][2] = { { 1, 0 }, { 0, 1 }, { -1, 0}, { 0, -1} };
-    */
+
     double quadpts[4][2]  = { { 0, 0 },  { 1, 1 }, { 0, 1}, { 1, 0 } };
     double quadvecs[4][2] = { { 1, 0 },  { -1, 0}, { 0, -1}, { 0, 1 } };
 
@@ -1423,20 +1437,7 @@ namespace netgen
       {
         Element2d & el = (*mesh)[sei];
 
-        // bool curved = curv.IsSurfaceElementCurved (sei);
-
         int nv = (el.GetType() == TRIG || el.GetType() == TRIG6) ? 3 : 4;
-        /*
-        Point<3> p1, p2, p3, p4;
-        if (!curved)
-	{
-            p1 = (*mesh)[el[0]];
-            p2 = (*mesh)[el[1]];
-            p3 = (*mesh)[el[2]];
-            if (nv == 4) p4 = (*mesh)[el[3]];
-          }
-	*/
-
         for (int k = 0; k < nv; k++)
           {
             Point<2> p0;
@@ -1454,44 +1455,29 @@ namespace netgen
 
             glBegin (GL_LINE_STRIP);
 
-            // if (curved)
-              {
-                for (int ix = 0; ix <= n; ix++)
-                  ptsloc[ix] = p0 + (double(ix) / n) * vtau;
-                    
-                curv.CalcMultiPointSurfaceTransformation (&ptsloc, sei, &ptsglob, 0);
-
-                for (int ix = 0; ix <= n; ix++)
-                  {
-                    if (deform)
-                      ptsglob[ix] += GetSurfDeformation (sei, k, ptsloc[ix](0), ptsloc[ix](1));
-                    glVertex3dv (ptsglob[ix]);
-                  }
-              }
-	      /*
-            else
-              {
-                for (int ix = 0; ix <= n; ix++)
-                  {
-                    Point<2> p = p0 + (double(ix) / n) * vtau;
-
-                    Point<3> pnt;
-
-                    if (nv == 3)
-                      pnt = p3 + p(0) * (p1-p3) + p(1) * (p2-p3);
-                    else
-                      pnt = p1 + p(0) * (p2-p1) + p(1) * (p4-p1) + p(0)*p(1) * ( (p1-p2)+(p3-p4) );
-                
-                    if (deform)
-                      pnt += GetSurfDeformation (sei, p(0), p(1) );
-                    
-                    glVertex3dv (pnt);
-                  }
-              }
-	      */
+	    for (int ix = 0; ix <= n; ix++)
+	      ptsloc[ix] = p0 + (double(ix) / n) * vtau;
+	    
+	    curv.CalcMultiPointSurfaceTransformation (&ptsloc, sei, &ptsglob, 0);
+	    
+	    for (int ix = 0; ix <= n; ix++)
+	      {
+		if (deform)
+		  ptsglob[ix] += GetSurfDeformation (sei, k, ptsloc[ix](0), ptsloc[ix](1));
+		glVertex3dv (ptsglob[ix]);
+	      }
+	    
             glEnd ();
           }
       }
+    glEndList ();
+
+
+#ifdef PARALLELGL
+    glFinish();
+    if (id > 0)
+      MyMPI_Send (linelist, 0, MPI_TAG_VIS);
+#endif
   }
 
 

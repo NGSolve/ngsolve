@@ -216,10 +216,12 @@ namespace netgen
 
     DLL_HEADER PointIndex AddPoint (const Point3d & p, int layer = 1);
     DLL_HEADER PointIndex AddPoint (const Point3d & p, int layer, POINTTYPE type);
+    /*
 #ifdef PARALLEL
     PointIndex AddPoint (const Point3d & p, bool aisghost, int layer = 1);
     PointIndex AddPoint (const Point3d & p, bool aisghost, int layer, POINTTYPE type);
 #endif
+    */
     int GetNP () const { return points.Size(); }
 
     MeshPoint & Point(int i) { return points.Elem(i); }
@@ -658,13 +660,6 @@ namespace netgen
 
   
 
-
-    /*
-   /// build connected nodes along prism stack
-   void BuildConnectedNodes ();
-   void ConnectToNodeRec (int node, int tonode, 
-   const TABLE<int> & conto);
-    */
 
     bool PureTrigMesh (int faceindex = 0) const;
     bool PureTetMesh () const;
