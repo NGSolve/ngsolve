@@ -70,7 +70,6 @@ using netgen::RegisterUserFormats;
 
 
 
-
 void ParallelRun()
 {   
   string message;
@@ -82,6 +81,7 @@ void ParallelRun()
 
   if (parameters.StringFlagDefined ("testout"))      
     testout = new ofstream (string("testout_proc") + id  );      
+
     
 
   while ( true )
@@ -294,6 +294,11 @@ void ParallelRun()
 	  if (redraw_cmd == "solsurfellist")
 	    {
 	      vssolution.DrawSurfaceElements();
+	    }
+
+	  if (redraw_cmd == "solsurfellinelist")
+	    {
+	      vssolution.DrawSurfaceElementLines();
 	    }
 
 	  if (redraw_cmd == "clipplanetrigs")

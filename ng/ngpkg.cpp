@@ -218,7 +218,6 @@ namespace netgen
 
     try
       {
-	//mesh -> Load (filename);
 	ifstream infile(filename.c_str());
 	mesh -> Load(infile);
 
