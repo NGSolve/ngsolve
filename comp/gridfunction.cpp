@@ -1333,6 +1333,7 @@ namespace ngcomp
   {
     HeapReset hr(lh);
     IntegrationPoint ip(lam1, lam2);
+    ip.FacetNr() = facetnr;
     bool bound = ma.GetDimension() == 3;
     ElementTransformation & trafo = ma.GetTrafo (elnr, bound, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
