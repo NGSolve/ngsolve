@@ -119,7 +119,7 @@ namespace ngla
     params[3] = params[4] = params[5] = params[7] = params[8] = 
       params[11] = params[12] = params[18] = 0;
     params[6] = 16;
-    params[9] = 10;  // perturbation 1E-10
+    params[9] = 13;  // perturbation 1E-10
     params[10] = 1;
     params[12] = (symmetric) ? 0 : 1;  // scling + matching
     // JS
