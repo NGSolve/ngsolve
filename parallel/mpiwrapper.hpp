@@ -372,7 +372,8 @@ public:
   public:
     MyMPI(int argc, char ** argv) { ; }
   };
-      
+
+  enum { MPI_LOR = 4711 };
 #endif
 
   
