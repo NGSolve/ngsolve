@@ -1457,11 +1457,13 @@ namespace ngstd
 		    {
 		      var_num = arguments[string_value].argnum = num_arguments;
 		      num_arguments += arguments[string_value].dim;
+		      /*
 		      cout << "argument " << string_value 
 			   << " becomes arg " << var_num 
 			   << " vecdim = " << arguments[string_value].dim
 			   << " complex = " << arguments[string_value].iscomplex
 			   << endl;
+		      */
 		    }
 		  token = VARIABLE;
 		  return;
