@@ -5,6 +5,7 @@
 using namespace std;
 
 
+#include "bla.hpp"
 #include "LapackInterface.hpp" 
 
 /*
@@ -44,14 +45,14 @@ namespace ngbla
   
     char jobvr = 'V';
     // char jobvl= 'N';
-    int  n = 4;
-  
-    int info;
+    integer n = 4;
+   
+    integer info;
    
     double * wr = new double[n]; 
 
     double* work = new double[16*n]; 
-    int lwork = 16*n; 
+    integer lwork = 16*n; 
 
     char uplo = 'U' ; 
 
@@ -112,8 +113,9 @@ namespace ngbla
 
 
   //Attention: A,B are overwritten !! 
-  void LaEigNSSolve(int n, double * A, double * B, std::complex<double> * lami, int evecs_bool, double * evecs_re, double * evecs_im, char balance_type )
+  void LaEigNSSolve(int hn, double * A, double * B, std::complex<double> * lami, int evecs_bool, double * evecs_re, double * evecs_im, char balance_type )
   {   
+    integer n = hn;
     char jobvr , jobvl= 'N';
     bool balancing = 0; 
 
@@ -121,14 +123,14 @@ namespace ngbla
       balancing =1; 
 
   
-    int info;
+    integer info;
    
     double * wi= new double[n], * wr = new double[n]; 
     double * beta = new double[n]; 
     double vl=0; 
    
-    int nvl = 1; 
-    int nvr ; 
+    integer nvl = 1; 
+    integer nvr ; 
 
     if (evecs_bool)
       {
@@ -144,11 +146,11 @@ namespace ngbla
     double *vr = new double[nvr*nvr]; 
   
     double* work = new double[16*n]; 
-    int lwork = 16*n; 
+    integer lwork = 16*n; 
     int i,j;
    
     char job=balance_type; // Permute and Scale in Balancing 
-    int ihi,ilo; 
+    integer ihi,ilo; 
     double * lscale, *rscale; 
     lscale = new double[n]; 
     rscale = new double[n]; 
@@ -245,9 +247,9 @@ namespace ngbla
   }
 
   // Attention A,B are overwritten !!! 
-  void LaEigNSSolve(int n, std::complex<double> * A, std::complex<double> * B, std::complex<double> * lami, int evecs_bool, std::complex<double> * evecs, std::complex<double> * dummy, char balance_type)
+  void LaEigNSSolve(int hn, std::complex<double> * A, std::complex<double> * B, std::complex<double> * lami, int evecs_bool, std::complex<double> * evecs, std::complex<double> * dummy, char balance_type)
   {
-  
+    integer n = hn;
     balance_type = 'N'; 
   
   
@@ -276,14 +278,14 @@ namespace ngbla
     std::complex<double> * beta = new std::complex<double>[n]; 
     std::complex<double> vl=0.; 
   
-    int nvl = 1; 
+    integer nvl = 1; 
     std::complex<double> * vr = 0;
   
     std::complex<double> * work = new std::complex<double>[8*n]; 
-    int lwork = 8*n; 
+    integer lwork = 8*n; 
     double *rwork = new double[8*n];  
   
-    int nvr = n ; 
+    integer nvr = n ; 
     if (evecs_bool) 
       {
         jobvr = 'V'; 
@@ -295,7 +297,7 @@ namespace ngbla
     int i; 
   
     char job=balance_type; // Permute and Scale in Balancing 
-    int ihi,ilo; 
+    integer ihi,ilo; 
    
     double * lscale = new double[n]; 
     double * rscale = new double[n]; 
@@ -304,7 +306,7 @@ namespace ngbla
   
     char side = 'R'; 
   
-    int info = 0;
+    integer info = 0;
 
     if(balancing) zggbal_(&job,&n, at, &n , bt, &n, &ilo, &ihi,  lscale, rscale, work2, &info) ; 
   
@@ -388,9 +390,10 @@ namespace ngbla
 
 
   // Attention A,B are overwritten !!! 
-  void LaEigNSSolveX(int n, std::complex<double> * A, std::complex<double> * B, std::complex<double> * lami, int evecs_bool, std::complex<double> * evecs, std::complex<double> * dummy, char balance_type)
+  void LaEigNSSolveX(int hn, std::complex<double> * A, std::complex<double> * B, std::complex<double> * lami, int evecs_bool, std::complex<double> * evecs, std::complex<double> * dummy, char balance_type)
   {
   
+    integer n = hn;
     std::complex<double> * at = new std::complex<double> [n*n];
     std::complex<double> * bt = new std::complex<double> [n*n];
   
@@ -416,14 +419,14 @@ namespace ngbla
     std::complex<double> * beta = new std::complex<double>[n]; 
     std::complex<double> vl=0.; 
   
-    int nvl = 1; 
+    integer nvl = 1; 
     std::complex<double> * vr = 0;
   
     std::complex<double> * work = new std::complex<double>[20*n]; 
-    int lwork = 20*n; 
+    integer lwork = 20*n; 
     double *rwork = new double[20*n];  
   
-    int nvr = n ; 
+    integer nvr = n ; 
     if (evecs_bool) 
       {
         jobvr = 'V'; 
@@ -435,21 +438,21 @@ namespace ngbla
     int i; 
   
     // char job=balance_type; // Permute and Scale in Balancing 
-    int ihi,ilo; 
+    integer ihi,ilo; 
    
     double * lscale = new double[4*n]; 
     double * rscale = new double[4*n]; 
    
   
-    int * iwork = new int[n+2];
+    integer * iwork = new integer[n+2];
   
   
     // char side = 'R'; 
     char sense = 'N'; // no recoprocal condition number computed !! 
     double rconde, rcondv; // not referenced if sense == N 
-    bool bwork; // not referenced 
+    logical bwork; // not referenced 
   
-    int info = 0;
+    integer info = 0;
 
 
     double abnrm, bbnrm; // 1-norm of A and B 
@@ -524,17 +527,19 @@ namespace ngbla
     // throw();  
   }
 
-  void LapackSSEP(int n, double* A, double* lami, double* evecs)  
+  void LapackSSEP(int hn, double* A, double* lami, double* evecs)  
   {
+    integer n = hn;
+
     for(int i=0;i<n*n;i++) evecs[i] = A[i]; 
     
     char jobzm = 'V' , uplo = 'U'; 
   
-    int lwork=2*n*n; 
+    integer lwork=2*n*n; 
  
     double* work = new double[lwork];
   
-    int info; 
+    integer info; 
  
     dsyev_(&jobzm,&uplo , &n , evecs , &n, lami, work, &lwork, &info); 
 
@@ -542,6 +547,7 @@ namespace ngbla
   }
 
 
+  /*
   extern "C"
   void zhseqr_(char & job, char & compz, int & n, 
                int & ilo, int & ihi, complex<double> & h, int & ldh, 
@@ -558,17 +564,18 @@ namespace ngbla
 		int & mm, int & m, 
                 complex<double> & work, double & rwork,
                 int & ifaill, int & ifailr, int & info);
+  */
 
-
-  void LapackHessenbergEP (int n, std::complex<double> * A, std::complex<double> * lami, std::complex<double> * evecs)
+  void LapackHessenbergEP (int hn, std::complex<double> * A, std::complex<double> * lami, std::complex<double> * evecs)
   {
-    int lwork = 2 * n * n;  // or 6 n ?
+    integer n = hn;
+    integer lwork = 2 * n * n;  // or 6 n ?
     complex<double> * work = new complex<double>[lwork];
 
     complex<double> * hA = new complex<double>[n*n];
     for (int i = 0; i < n*n; i++)  { hA[i] = A[i]; }
 
-    int * select = new int[n];
+    logical * select = new logical[n];
     for (int i = 0; i < n; i++) select[i] = 1; // 'V';
 
 
@@ -576,13 +583,13 @@ namespace ngbla
     //  complex<double> * vl = new complex<double>[n*n];
     //  complex<double> * vr = new complex<double>[n*n];
 
-    int info;
+    integer info;
 
     // cout << "calls zhseqr" << endl;
 
     char job = 'E', compz = 'N';
-    int hn = n, ilo = 1, ihi = n, ldh = n, ldz = n;
-    zhseqr_(job, compz, hn, ilo, ihi, *hA, ldh, *lami, *evecs, ldz, *work, lwork, info);
+    integer ilo = 1, ihi = n, ldh = n, ldz = n;
+    zhseqr_(&job, &compz, &n, &ilo, &ihi, hA, &ldh, lami, evecs, &ldz, work, &lwork, &info);
     //  zhseqr_('S', 'I', n, 1, n, *A, n, *lami, *evecs, n, *work, lwork, info);
 
 
@@ -595,19 +602,20 @@ namespace ngbla
     for (int i = 0; i < n*n; i++)  { hA[i] = A[i]; }
     double * rwork = new double[n];
 
-    int m = 0;
+    integer m = 0;
     char side = 'R', eigsrc = 'Q', initv = 'N';
-    hn = n; ldh = n; 
-    int ldvl = n, ldvr = n, mm = n;
-    int * ifaill = new int[n];
-    int * ifailr = new int[n];
+    n = hn;
+    ldh = n; 
+    integer ldvl = n, ldvr = n, mm = n;
+    integer * ifaill = new integer[n];
+    integer * ifailr = new integer[n];
 
     for (int i = 0; i < n*n; i++)
       evecs[i] = -1.0;
     // cout << "call zhsein" << endl;
 
-    zhsein_ (side, eigsrc, initv, select, hn, *A, ldh, *lami, vl, ldvl, *evecs, ldvr,
-             mm, m, *work, *rwork, *ifaill, *ifailr, info);
+    zhsein_ (&side, &eigsrc, &initv, select, &n, A, &ldh, lami, &vl, &ldvl, evecs, &ldvr,
+             &mm, &m, work, rwork, ifaill, ifailr, &info);
 
     if (info)
       cout << "error in eigensolver, info = " << info << endl;
@@ -634,8 +642,9 @@ namespace ngbla
 
 
 
-  void LapackGHEP(int n, double* A, double* B,  double* lami)  
+  void LapackGHEP(int hn, double* A, double* B,  double* lami)  
   {
+    integer n = hn;
     double *B1 = new double[n*n]; 
     double *A1 = new double[n*n]; 
   
@@ -647,12 +656,12 @@ namespace ngbla
  
     char jobzm = 'V' , uplo = 'U'; 
   
-    int lwork=16*n; 
+    integer lwork=16*n; 
  
     double* work = new double[lwork];
   
-    int info; 
-    int itype =1; 
+    integer info; 
+    integer itype =1; 
 
 
     dsygv_(&itype,&jobzm,&uplo , &n , A1 , &n, B1, &n, lami, work, &lwork, &info); 
@@ -663,18 +672,19 @@ namespace ngbla
     delete[] work; 
   }
        
-  int LapackGHEPEPairs(int n, double* A, double* B,  double* lami)  
+  int LapackGHEPEPairs(int hn, double* A, double* B,  double* lami)  
   {
     char jobzm = 'V' , uplo = 'U'; 
-  
-    int lwork=4*n; 
+    
+    integer n = hn;
+    integer lwork=4*n; 
  
     double* work = new double[lwork];
   
-    int info; 
-    int itype =1; 
-    int lda = n;
-    int ldb = n;
+    integer info; 
+    integer itype =1; 
+    integer lda = n;
+    integer ldb = n;
 
     dsygv_(&itype,&jobzm,&uplo , &n , A , &lda, B, &ldb, lami, work, &lwork, &info); 
 
@@ -689,19 +699,20 @@ namespace ngbla
     return(info); 
   }
 
-  int LapackGHEPEPairs(int n, complex<double>* A, complex<double>* B,  double* lami)  
+  int LapackGHEPEPairs(int hn, complex<double>* A, complex<double>* B,  double* lami)  
   {
+    integer n = hn;
     char jobzm = 'V' , uplo = 'U'; 
   
-    int lwork=8*n; 
+    integer lwork=8*n; 
 
     std::complex<double>* work = new std::complex<double>[lwork];
     double* rwork = new double[lwork]; 
   
-    int info; 
-    int itype =1; 
-    int lda = n;
-    int ldb = n;
+    integer info; 
+    integer itype =1; 
+    integer lda = n;
+    integer ldb = n;
 
     cout << " zhegv " << endl; 
 
@@ -741,17 +752,17 @@ namespace ngbla
 
 
 
-  void LaLinearSolveComplex(int n, std::complex<double> * A, std::complex<double> * F)
+  void LaLinearSolveComplex(int hn, std::complex<double> * A, std::complex<double> * F)
   {
     // Solve Ax=F
     // A on exit LU factorization 
     // F is overwritten by solution x 
 
-
-    int nrhs =1; 
-    int *ipiv; 
-    ipiv = new int[n]; 
-    int info; 
+    integer n = hn;
+    integer nrhs =1; 
+    integer *ipiv; 
+    ipiv = new integer[n]; 
+    integer info; 
 
   
     zgesv_(&n, &nrhs, A, &n, ipiv, F, &n, &info ); 
@@ -764,17 +775,17 @@ namespace ngbla
   } 
 
 
-  void LaLinearSolve(int n, double * A, double * F)
+  void LaLinearSolve(int hn, double * A, double * F)
   {
     // Invert
     // A on exit LU factorization 
     // F is overwritten by solution x 
 
-
-    int nrhs = n; 
-    int *ipiv; 
-    ipiv = new int[n*n]; 
-    int info; 
+    integer n = hn;
+    integer nrhs = n; 
+    integer *ipiv; 
+    ipiv = new integer[n*n]; 
+    integer info; 
 
   
     dgesv_(&n, &nrhs, A, &n, ipiv, F, &n, &info ); 
@@ -787,17 +798,18 @@ namespace ngbla
   } 
 
 
-  void LaLinearSolveRHS(int n, double * A, double * F)
+  void LaLinearSolveRHS(int hn, double * A, double * F)
   {
     // Solve linear system A x = F for 1 rhs 
     // A on exit LU factorization 
     // F is overwritten by solution x 
 
 
-    int nrhs = 1; 
-    int *ipiv; 
-    ipiv = new int[n]; 
-    int info; 
+    integer n = hn;
+    integer nrhs = 1; 
+    integer *ipiv; 
+    ipiv = new integer[n]; 
+    integer info; 
 
  
 
