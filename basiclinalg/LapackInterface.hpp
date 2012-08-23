@@ -5,6 +5,8 @@
 
 #include "arch.hpp" 
 
+
+#ifdef OWN_LAPACK
 extern "C"
 {
 // ********************* Eigen Solve Routines ***************************
@@ -55,4 +57,5 @@ extern "C"
  
 }
 
+#endif
 #endif 
