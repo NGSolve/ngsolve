@@ -19,12 +19,13 @@ namespace ngbla
 #ifdef LAPACK
 
   extern "C" {
-    typedef char logical;
 #ifdef MKL_ILP64
     typedef long int integer;
 #else
     typedef int integer;
 #endif
+    // typedef char logical;
+    typedef integer logical;
     typedef float real;
     typedef double doublereal;
     typedef Complex doublecomplex;
