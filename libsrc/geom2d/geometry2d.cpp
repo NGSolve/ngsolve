@@ -827,47 +827,52 @@ namespace netgen
 
 
 
-
-
-
-  void CalcPartition (double l, double h, double h1, double h2,
+  /*
+  void CalcPartition (const SplineSegExt & spline,
+		      double l, double h, double h1, double h2,
 		      double hcurve, double elto0, Array<double> & points)
   {
-    // cout << "calcpart, h = " << h << ", h1 = " << h1 << ", h2 = " << h2 << ", hcurve = " << hcurve << endl;
-    int i, j, n, nel;
-    double sum, t, dt, fun, fperel, oldf, f;
+    double fperel, oldf, f;
 
-    n = 1000;
+    int n = 1000;
 
     points.SetSize (0);
 
-    sum = 0;
-    dt = l / n;
-    t = 0.5 * dt;
-    for (i = 1; i <= n; i++)
+    double dt = l / n;
+
+    double sum = 0;
+    for (int i = 1; i <= n; i++)
       {
-	fun = min3 (hcurve, t/elto0 + h1, (l-t)/elto0 + h2);
+	double t = (i-0.5)*dt;
+	double fun = min3 (hcurve, t/elto0 + h1, (l-t)/elto0 + h2);
+	double curv = spline.CalcCurvature (t/l);
+	cout << "curv = " << curv << endl;
+	if (curv < 1e-10) curv = 1e-10;
+	fun = min2 (fun, 0.1/curv);
 	sum += dt / fun;
-	t += dt;
       }
 
-    nel = int (sum+1);
+    int nel = int (sum+1);
     fperel = sum / nel;
 
     points.Append (0);
 
-    i = 1;
+    int i = 1;
     oldf = 0;
-    t = 0.5 * dt;
-    for (j = 1; j <= n && i < nel; j++)
+    // t = 0.5 * dt;
+    for (int j = 1; j <= n && i < nel; j++)
       {
-	fun = min3 (hcurve, t/elto0 + h1, (l-t)/elto0 + h2);
+	double t = (j-0.5)*dt;
+	double fun = min3 (hcurve, t/elto0 + h1, (l-t)/elto0 + h2);
+	double curv = spline.CalcCurvature (t/l);
+	if (curv < 1e-10) curv = 1e-10;
+	fun = min2 (fun, 0.1/curv);
 
 	f = oldf + dt / fun;
 
-	while (f > i * fperel && i < nel)
+	while (i * fperel < f && i < nel)
 	  {
-	    points.Append ( (l/n) * (j-1 +  (i * fperel - oldf) / (f - oldf)) );
+	    points.Append ( dt * (j-1) +  (i * fperel - oldf) * fun);
 	    i++;
 	  }
 	oldf = f;
@@ -875,6 +880,104 @@ namespace netgen
       }
     points.Append (l);
   }
+  */
+
+
+
+ void CalcPartition (const SplineSegExt & spline, double l, 
+		     MeshingParameters & mp, double h, double h1, double h2,
+		     double hcurve, double elto0, Array<double> & points)
+  {
+    double fperel, oldf, f;
+
+    int n = 10000;
+    
+    Array<Point<2> > xi(n);
+    Array<double> hi(n);
+    
+    hi = h; 
+    for (int i = 0; i < n; i++)
+      {
+	xi[i] = spline.GetPoint ( (i+0.5) / n );
+	double hc = 1.0/mp.curvaturesafety / (1e-20+spline.CalcCurvature ( (i+0.5) / n ));
+	// *testout << "t = " << (i+0.5)/n << ", xi = " << xi[i] << ", hi = " << hc << endl;
+	hi[i] = min2(hi[i], hc);
+      }
+    hi[0] = min (hi[0], h1);
+    hi[n-1] = min (hi[n-1], h2); 
+    
+    if ( (spline.GetPoint(0)-spline.GetPoint(1)).Length() < 1e-12 )
+      hi[0] = hi[n-1] = min2 (hi[0], hi[n-1]);
+
+    // limit slope
+    double gradh = 1/elto0;
+    for (int i = 0; i < n-1; i++)
+      {
+	double hnext = hi[i] + gradh * (xi[i+1]-xi[i]).Length();
+	hi[i+1] = min(hi[i+1], hnext);
+      } 
+    for (int i = n-1; i > 1; i--)
+      {
+	double hnext = hi[i] + gradh * (xi[i-1]-xi[i]).Length();
+	hi[i-1] = min(hi[i-1], hnext);
+      }
+
+
+    points.SetSize (0);
+
+    double dt = l / n;
+
+    double sum = 0;
+    for (int i = 1; i <= n; i++)
+      {
+	double t = (i-0.5)*dt;
+	/*
+	double fun = min3 (hcurve, t/elto0 + h1, (l-t)/elto0 + h2);
+	double curv = spline.CalcCurvature (t/l);
+	cout << "curv = " << curv << endl;
+	if (curv < 1e-10) curv = 1e-10;
+	fun = min2 (fun, 0.1/curv);
+	*/
+	double fun = hi[i-1];
+	sum += dt / fun;
+      }
+
+    int nel = int (sum+1);
+    fperel = sum / nel;
+
+    points.Append (0);
+
+    int i = 1;
+    oldf = 0;
+    // t = 0.5 * dt;
+    for (int j = 1; j <= n && i < nel; j++)
+      {
+	double t = (j-0.5)*dt;
+	double fun = hi[j-1];
+	/*
+	double fun = min3 (hcurve, t/elto0 + h1, (l-t)/elto0 + h2);
+	double curv = spline.CalcCurvature (t/l);
+	if (curv < 1e-10) curv = 1e-10;
+	fun = min2 (fun, 0.1/curv);
+	*/
+	f = oldf + dt / fun;
+
+	while (i * fperel < f && i < nel)
+	  {
+	    points.Append ( dt * (j-1) +  (i * fperel - oldf) * fun);
+	    i++;
+	  }
+	oldf = f;
+	t += dt;
+      }
+    points.Append (l);
+  }
+
+
+
+
+
+
 
 
 

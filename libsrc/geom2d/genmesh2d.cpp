@@ -9,12 +9,14 @@ namespace netgen
 
 
 
-  void CalcPartition (double l, double h, double h1, double h2,
-		      double hcurve, double elto0, Array<double> & points);
+  void CalcPartition (const SplineSegExt & spline, double l, 
+		      MeshingParameters & mp, double h, double h1, double h2,
+		      double hcurve, double elto0, 
+		      Array<double> & points);
 
   // partitionizes spline curve
   void Partition (const SplineSegExt & spline,
-		  double h, double elto0,
+		  MeshingParameters & mp, double h, double elto0,
 		  Mesh & mesh, Point3dTree & searchtree, int segnr) 
   {
     enum { D = 2 };
@@ -31,7 +33,7 @@ namespace netgen
     double h2 = min (spline.EndPI().hmax, h/spline.EndPI().refatpoint);
     double hcurve = min (spline.hmax, h/spline.reffak);
 
-    CalcPartition (l, h, h1, h2, hcurve, elto0, curvepoints);
+    CalcPartition (spline, l, mp, h, h1, h2, hcurve, elto0, curvepoints);
     //  cout << "curvepoints = " << curvepoints << endl;
 
     dt = 1.0 / n;
@@ -130,7 +132,7 @@ namespace netgen
 
 
 
-  void SplineGeometry2d :: PartitionBoundary (double h, Mesh & mesh2d)
+  void SplineGeometry2d :: PartitionBoundary (MeshingParameters & mp, double h, Mesh & mesh2d)
   {
     enum { D = 2 };
     Box<D> bbox;
@@ -166,13 +168,13 @@ namespace netgen
 	  maximum = min2 ( maximum, h);
 	  if ( minimum > 0 )
 	    // GetSpline(i).Partition(minimum, elto0, mesh2d, searchtree, i+1);
-	    Partition(GetSpline(i), minimum, elto0, mesh2d, searchtree, i+1);	    
+	    Partition(GetSpline(i), mp, minimum, elto0, mesh2d, searchtree, i+1);	    
 	  else if ( maximum > 0 )
 	    // GetSpline(i).Partition(maximum, elto0, mesh2d, searchtree, i+1);
-	    Partition(GetSpline(i), maximum, elto0, mesh2d, searchtree, i+1);
+	    Partition(GetSpline(i), mp, maximum, elto0, mesh2d, searchtree, i+1);
 	  else
 	    // GetSpline(i).Partition(h, elto0, mesh2d, searchtree, i+1);
-	    Partition(GetSpline(i), h, elto0, mesh2d, searchtree, i+1);
+	    Partition(GetSpline(i), mp, h, elto0, mesh2d, searchtree, i+1);
 	}
       else
 	{
@@ -296,7 +298,7 @@ namespace netgen
     mesh = new Mesh;
     mesh->SetDimension (2);
 
-    geometry.PartitionBoundary (h, *mesh);
+    geometry.PartitionBoundary (mp, h, *mesh);
 
 
     // marks mesh points for hp-refinement

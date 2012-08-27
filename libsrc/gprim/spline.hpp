@@ -54,11 +54,23 @@ namespace netgen
     virtual Point<D> GetPoint (double t) const = 0;
     /// returns a (not necessarily unit-length) tangent vector for 0 <= t <= 1
     virtual Vec<D> GetTangent (const double t) const
-    { cerr << "GetTangent not implemented for spline base-class"  << endl; Vec<D> dummy; return dummy;}
+    { 
+      cerr << "GetTangent not implemented for spline base-class"  << endl; 
+      Vec<D> dummy; return dummy;
+    }
+
     virtual void GetDerivatives (const double t, 
 				 Point<D> & point,
 				 Vec<D> & first,
-				 Vec<D> & second) const {;}
+				 Vec<D> & second) const 
+    {
+      double eps = 1e-6;
+      point = GetPoint (t);
+      Point<D> pl = GetPoint (t-eps);
+      Point<D> pr = GetPoint (t+eps);
+      first = 1.0/(2*eps) * (pr-pl);
+      second = 1.0/sqr(eps) * ( (pr-point)+(pl-point));
+    }
 
 
     /// returns initial point on curve

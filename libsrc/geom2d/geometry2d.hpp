@@ -97,6 +97,15 @@ namespace netgen
       return seg.GetType();
     }
 
+    virtual double CalcCurvature (double t) const
+    {
+      Point<2> point;
+      Vec<2> first, second;
+      GetDerivatives (t, point, first, second);
+      double curv = fabs(first(0)*second(1)-first(1)*second(0)) / pow(first.Length(), 3);
+      return curv;
+    }
+    
   };
 
 
@@ -141,7 +150,7 @@ namespace netgen
     DLL_HEADER virtual int GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
 			      int perfstepsstart, int perfstepsend);
     
-    void PartitionBoundary (double h, Mesh & mesh2d);
+    void PartitionBoundary (MeshingParameters & mp, double h, Mesh & mesh2d);
 
     void CopyEdgeMesh (int from, int to, Mesh & mesh2d, Point3dTree & searchtree);
 
