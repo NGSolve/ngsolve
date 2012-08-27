@@ -883,21 +883,25 @@ namespace netgen
       }
 
 
+    Array<int> use_edge(nedges);
     Array<int> edge_surfnr1(nedges);
     Array<int> edge_surfnr2(nedges);
+    Array<int> swap_edge(nedges);
     Array<EdgePointGeomInfo> edge_gi0(nedges);
     Array<EdgePointGeomInfo> edge_gi1(nedges);
-    edge_surfnr1 = -1;
+    use_edge = 0;
 
     if (working)
       for (SegmentIndex i = 0; i < mesh.GetNSeg(); i++)
 	{
 	  const Segment & seg = mesh[i];
 	  int edgenr = top.GetEdge (i);
+	  use_edge[edgenr] = 1;
 	  edge_surfnr1[edgenr] = seg.surfnr1;
 	  edge_surfnr2[edgenr] = seg.surfnr2;
 	  edge_gi0[edgenr] = seg.epgeominfo[0];
 	  edge_gi1[edgenr] = seg.epgeominfo[1];
+	  swap_edge[edgenr] = int (seg[0] > seg[1]);
 	}
 
 #ifdef PARALLEL
@@ -911,9 +915,10 @@ namespace netgen
 	      partop.GetDistantEdgeNums (e+1, procs);
 	      for (int j = 0; j < procs.Size(); j++)
 		{
-		  senddata.Add (procs[j], edge_surfnr1[e]);
-		  if (edge_surfnr1[e] != -1)
+		  senddata.Add (procs[j], use_edge[e]);
+		  if (use_edge[e])
 		    {
+		      senddata.Add (procs[j], edge_surfnr1[e]);
 		      senddata.Add (procs[j], edge_surfnr2[e]);
 		      senddata.Add (procs[j], edge_gi0[e].edgenr);
 		      senddata.Add (procs[j], edge_gi0[e].body);
@@ -925,6 +930,7 @@ namespace netgen
 		      senddata.Add (procs[j], edge_gi1[e].dist);
 		      senddata.Add (procs[j], edge_gi1[e].u);
 		      senddata.Add (procs[j], edge_gi1[e].v);
+		      senddata.Add (procs[j], swap_edge[e]);
 		    }
 		}
 	    }
@@ -937,10 +943,10 @@ namespace netgen
 	      partop.GetDistantEdgeNums (e+1, procs);
 	      for (int j = 0; j < procs.Size(); j++)
 		{
-		  int surfnr1 = int(recvdata[procs[j]][cnt[procs[j]]++]);
-		  if (surfnr1 != -1)
+		  use_edge[e] = int(recvdata[procs[j]][cnt[procs[j]]++]);
+		  if (use_edge[e])
 		    {
-		      edge_surfnr1[e] = surfnr1; // int (recvdata[procs[j]][cnt[procs[j]]++]);
+		      edge_surfnr1[e] = int (recvdata[procs[j]][cnt[procs[j]]++]);
 		      edge_surfnr2[e] = int (recvdata[procs[j]][cnt[procs[j]]++]);
 		      edge_gi0[e].edgenr = int (recvdata[procs[j]][cnt[procs[j]]++]);
 		      edge_gi0[e].body = int (recvdata[procs[j]][cnt[procs[j]]++]);
@@ -952,6 +958,7 @@ namespace netgen
 		      edge_gi1[e].dist = recvdata[procs[j]][cnt[procs[j]]++];
 		      edge_gi1[e].u = recvdata[procs[j]][cnt[procs[j]]++];
 		      edge_gi1[e].v = recvdata[procs[j]][cnt[procs[j]]++];
+		      swap_edge[e] = recvdata[procs[j]][cnt[procs[j]]++];
 		    }
 		}
 	    }
@@ -960,17 +967,18 @@ namespace netgen
 #endif    
 
     if (working)
-      for (int edgenr = 0; edgenr < edge_surfnr1.Size(); edgenr++)
+      for (int edgenr = 0; edgenr < use_edge.Size(); edgenr++)
 	{
 	  int segnr = edgenr;
-	  if (edge_surfnr1[edgenr] == -1) continue;
+	  if (!use_edge[edgenr]) continue;
 
 	  SetThreadPercent(double(edgenr)/edge_surfnr1.Size()*100.);
 
 	  PointIndex pi1, pi2;
 	  top.GetEdgeVertices (edgenr+1, pi1, pi2);
 
-	  bool swap = (pi1 > pi2);
+	  bool swap = swap_edge[edgenr]; // (pi1 > pi2);
+	  if (swap) Swap (pi1, pi2);
 
 	  Point<3> p1 = mesh[pi1];
 	  Point<3> p2 = mesh[pi2];
