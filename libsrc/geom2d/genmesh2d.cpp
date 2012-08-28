@@ -91,7 +91,7 @@ namespace netgen
 
   // partitionizes spline curve
   void Partition (const SplineSegExt & spline,
-		  MeshingParameters & mp, double h, double elto0,
+		  MeshingParameters & mp, double hxxx, double elto0,
 		  Mesh & mesh, Point3dTree & searchtree, int segnr) 
   {
     int n = 100;
@@ -120,17 +120,15 @@ namespace netgen
 	  {
 	    double frac = (curvepoints[j]-lold) / (l-lold);
 	    edgelength = i*dt + (frac-1)*dt;
-	    // mark = pold + frac * (p-pold);
 	    mark = spline.GetPoint (edgelength);
 	  
-	    // cout << "mark = " << mark << " =?= " << GetPoint (edgelength) << endl;
-
 	    {
 	      PointIndex pi1 = -1, pi2 = -1;
 	  
 	      Point3d mark3(mark(0), mark(1), 0);
 	      Point3d oldmark3(oldmark(0), oldmark(1), 0);
 
+	      double h = mesh.GetH (Point<3> (oldmark(0), oldmark(1), 0));
 	      Vec<3> v (1e-4*h, 1e-4*h, 1e-4*h);
 	      searchtree.GetIntersecting (oldmark3 - v, oldmark3 + v, locsearch);
 
@@ -267,8 +265,7 @@ namespace netgen
 
   void SplineGeometry2d :: CopyEdgeMesh (int from, int to, Mesh & mesh, Point3dTree & searchtree)
   {
-    const int D = 2;
-    int i;
+    // const int D = 2;
 
     Array<int, PointIndex::BASE> mappoints (mesh.GetNP());
     Array<double, PointIndex::BASE> param (mesh.GetNP());
@@ -282,7 +279,7 @@ namespace netgen
     if (printmessage_importance>0)
       cout << "copy edge, from = " << from << " to " << to << endl;
   
-    for (i = 1; i <= mesh.GetNSeg(); i++)
+    for (int i = 1; i <= mesh.GetNSeg(); i++)
       {
 	const Segment & seg = mesh.LineSegment(i);
 	if (seg.edgenr == from)
@@ -296,16 +293,12 @@ namespace netgen
       }
 
     bool mapped = false;
-    for (i = 1; i <= mappoints.Size(); i++)
+    for (int i = 1; i <= mappoints.Size(); i++)
       {
 	if (mappoints.Get(i) != -1)
 	  {
-	    Point<D> newp = splines.Get(to)->GetPoint (param.Get(i));
-	    Point<3> newp3;
-	    for(int j=0; j<min2(D,3); j++)
-	      newp3(j) = newp(j);
-	    for(int j=min2(D,3); j<3; j++)
-	      newp3(j) = 0;
+	    Point<2> newp = splines.Get(to)->GetPoint (param.Get(i));
+	    Point<3> newp3 (newp(0), newp(1), 0);
 	  
 	    int npi = -1;
 	  
@@ -331,7 +324,7 @@ namespace netgen
 
     // copy segments
     int oldnseg = mesh.GetNSeg();
-    for (i = 1; i <= oldnseg; i++)
+    for (int i = 1; i <= oldnseg; i++)
       {
 	const Segment & seg = mesh.LineSegment(i);
 	if (seg.edgenr == from)
