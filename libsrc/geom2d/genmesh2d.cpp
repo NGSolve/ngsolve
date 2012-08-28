@@ -9,51 +9,116 @@ namespace netgen
 
 
 
-  void CalcPartition (const SplineSegExt & spline, double l, 
-		      MeshingParameters & mp, double h, double h1, double h2,
-		      double hcurve, double elto0, 
-		      Array<double> & points);
+
+  void CalcPartition (const SplineSegExt & spline, 
+		      // double l, 
+		      MeshingParameters & mp, Mesh & mesh, 
+		      // double h, double h1, double h2, double hcurve, 
+		      double elto0, Array<double> & points)
+  {
+    double fperel, oldf, f;
+
+    int n = 10000;
+    
+    Array<Point<2> > xi(n);
+    Array<double> hi(n);
+    
+    for (int i = 0; i < n; i++)
+      {
+	xi[i] = spline.GetPoint ( (i+0.5) / n );
+	hi[i] = mesh.GetH (Point<3> (xi[i](0), xi[i](1), 0));
+      }
+
+    // limit slope
+    double gradh = 1/elto0;
+    for (int i = 0; i < n-1; i++)
+      {
+	double hnext = hi[i] + gradh * (xi[i+1]-xi[i]).Length();
+	hi[i+1] = min(hi[i+1], hnext);
+      } 
+    for (int i = n-1; i > 1; i--)
+      {
+	double hnext = hi[i] + gradh * (xi[i-1]-xi[i]).Length();
+	hi[i-1] = min(hi[i-1], hnext);
+      }
+
+    points.SetSize (0);
+
+    double len = spline.Length();
+    double dt =  len / n;
+
+    double sum = 0;
+    for (int i = 1; i <= n; i++)
+      {
+	double t = (i-0.5)*dt;
+	double fun = hi[i-1];
+	sum += dt / fun;
+      }
+
+    int nel = int (sum+1);
+    fperel = sum / nel;
+
+    points.Append (0);
+
+    int i = 1;
+    oldf = 0;
+
+    for (int j = 1; j <= n && i < nel; j++)
+      {
+	double t = (j-0.5)*dt;
+	double fun = hi[j-1];
+
+	f = oldf + dt / fun;
+
+	while (i * fperel < f && i < nel)
+	  {
+	    points.Append ( dt * (j-1) +  (i * fperel - oldf) * fun);
+	    i++;
+	  }
+	oldf = f;
+	t += dt;
+      }
+    points.Append (len);
+  }
+
+
+
+
+
+
+
+
 
   // partitionizes spline curve
   void Partition (const SplineSegExt & spline,
 		  MeshingParameters & mp, double h, double elto0,
 		  Mesh & mesh, Point3dTree & searchtree, int segnr) 
   {
-    enum { D = 2 };
-    int i, j;
-    double l; // , r1, r2, ra;
-    double lold, dt, frac;
     int n = 100;
-    Point<D> p, pold, mark, oldmark;
+
+    Point<2> mark, oldmark;
     Array<double> curvepoints;
     double edgelength, edgelengthold;
-    l = spline.Length();
 
-    double h1 = min (spline.StartPI().hmax, h/spline.StartPI().refatpoint);
-    double h2 = min (spline.EndPI().hmax, h/spline.EndPI().refatpoint);
-    double hcurve = min (spline.hmax, h/spline.reffak);
+    CalcPartition (spline, mp, mesh, elto0, curvepoints);
 
-    CalcPartition (spline, l, mp, h, h1, h2, hcurve, elto0, curvepoints);
-    //  cout << "curvepoints = " << curvepoints << endl;
+    double dt = 1.0 / n;
 
-    dt = 1.0 / n;
+    int j = 1;
 
-    l = 0;
-    j = 1;
-
-    pold = spline.GetPoint (0);
-    lold = 0;
+    Point<2> pold = spline.GetPoint (0);
+    double lold = 0;
     oldmark = pold;
     edgelengthold = 0;
     Array<int> locsearch;
     
-    for (i = 1; i <= n; i++)
+    for (int i = 1; i <= n; i++)
       {
-	p = spline.GetPoint (i*dt);
-	l = lold + Dist (p, pold);
+	Point<2> p = spline.GetPoint (i*dt);
+	double l = lold + Dist (p, pold);
 	while (j < curvepoints.Size() && (l >= curvepoints[j] || i == n))
 	  {
-	    frac = (curvepoints[j]-lold) / (l-lold);
+	    double frac = (curvepoints[j]-lold) / (l-lold);
 	    edgelength = i*dt + (frac-1)*dt;
 	    // mark = pold + frac * (p-pold);
 	    mark = spline.GetPoint (edgelength);
@@ -72,27 +137,12 @@ namespace netgen
 	      for (int k = 0; k < locsearch.Size(); k++)
 		if ( mesh[PointIndex(locsearch[k])].GetLayer() == spline.layer)
 		  pi1 = locsearch[k];
-	      // if (locsearch.Size()) pi1 = locsearch[0];
 	      
 	      searchtree.GetIntersecting (mark3 - v, mark3 + v, locsearch);
 	      for (int k = 0; k < locsearch.Size(); k++)
 		if ( mesh[PointIndex(locsearch[k])].GetLayer() == spline.layer)
 		  pi2 = locsearch[k];
-	      // if (locsearch.Size()) pi2 = locsearch[0];
 
-	      /*	    
-		for (PointIndex pk = PointIndex::BASE; 
-		pk < mesh.GetNP()+PointIndex::BASE; pk++)
-		{
-		if (Dist (mesh[pk], oldmark3) < 1e-4 * h) pi1 = pk;
-		if (Dist (mesh[pk], mark3) < 1e-4 * h) pi2 = pk;
-		}
-	      */
-	    
-	      
-	      //	    cout << "pi1 = " << pi1 << endl;
-	      //	    cout << "pi2 = " << pi2 << endl;
-	    
 	      if (pi1 == -1)
 		{
 		  pi1 = mesh.AddPoint(oldmark3, spline.layer);
@@ -157,24 +207,52 @@ namespace netgen
 	  if (dom != 0) GetSpline(i).layer = GetDomainLayer (dom);
 	}
 
+
+    // mesh size restrictions ...
+    
+    for (int i = 0; i < splines.Size(); i++)
+      {
+	const SplineSegExt & spline = GetSpline(i);
+	const GeomPoint<2> & p1 = spline.StartPI();
+	const GeomPoint<2> & p2 = spline.EndPI();
+
+	double h1 = min (p1.hmax, h/p1.refatpoint);
+	mesh2d.RestrictLocalH (Point<3>(p1(0),p1(1),0), h1);
+	double h2 = min (p2.hmax, h/p2.refatpoint);
+	mesh2d.RestrictLocalH (Point<3>(p2(0),p2(1),0), h2);
+
+	double len = spline.Length();
+	mesh2d.RestrictLocalHLine (Point<3>(p1(0),p1(1),0), 
+				   Point<3>(p2(0),p2(1),0), len/mp.segmentsperedge);
+
+	double hcurve = min (spline.hmax, h/spline.reffak);
+	double hl = GetDomainMaxh (spline.leftdom);
+	if (hl > 0) hcurve = min2 (hcurve, hl);
+	double hr = GetDomainMaxh (spline.rightdom);
+	if (hr > 0) hcurve = min2 (hcurve, hr);
+
+	int np = 1000;
+	for (double t = 0.5/np; t < 1; t += 1.0/np)
+	  {
+	    Point<2> x = spline.GetPoint(t);
+	    double hc = 1.0/mp.curvaturesafety / (1e-99+spline.CalcCurvature (t));
+	    mesh2d.RestrictLocalH (Point<3> (x(0), x(1), 0), min2(hc, spline.hmax));
+	  }
+      }
+
     for (int i = 0; i < splines.Size(); i++)
       if (GetSpline(i).copyfrom == -1)
 	{
 	  // astrid - set boundary meshsize to  domain meshsize h
 	  // if no domain mesh size is given, the max h value from the bounding box is used
-	  double minimum = min2 ( GetDomainMaxh ( GetSpline(i).leftdom ), GetDomainMaxh ( GetSpline(i).rightdom ) );
-	  double maximum = max2 ( GetDomainMaxh ( GetSpline(i).leftdom ), GetDomainMaxh ( GetSpline(i).rightdom ) );
-	  minimum = min2 ( minimum, h );
-	  maximum = min2 ( maximum, h);
-	  if ( minimum > 0 )
-	    // GetSpline(i).Partition(minimum, elto0, mesh2d, searchtree, i+1);
-	    Partition(GetSpline(i), mp, minimum, elto0, mesh2d, searchtree, i+1);	    
-	  else if ( maximum > 0 )
-	    // GetSpline(i).Partition(maximum, elto0, mesh2d, searchtree, i+1);
-	    Partition(GetSpline(i), mp, maximum, elto0, mesh2d, searchtree, i+1);
-	  else
-	    // GetSpline(i).Partition(h, elto0, mesh2d, searchtree, i+1);
-	    Partition(GetSpline(i), mp, h, elto0, mesh2d, searchtree, i+1);
+	  double hl = GetDomainMaxh ( GetSpline(i).leftdom );
+	  double hr = GetDomainMaxh ( GetSpline(i).rightdom );
+
+	  double useh = h;
+	  if (hl > 0) useh = min2 (h, hl);
+	  if (hr > 0) useh = min2 (h, hr);
+
+	  Partition(GetSpline(i), mp, useh, elto0, mesh2d, searchtree, i+1);	    
 	}
       else
 	{
@@ -298,6 +376,14 @@ namespace netgen
     mesh = new Mesh;
     mesh->SetDimension (2);
 
+    Point3d pmin(bbox.PMin()(0), bbox.PMin()(1), -bbox.Diam());
+    Point3d pmax(bbox.PMax()(0), bbox.PMax()(1), bbox.Diam());
+
+    mesh->SetLocalH (pmin, pmax, mparam.grading);
+    mesh->SetGlobalH (h);
+
+    
+
     geometry.PartitionBoundary (mp, h, *mesh);
 
 
@@ -347,11 +433,6 @@ namespace netgen
     for (SegmentIndex si = 0; si < mesh->GetNSeg(); si++)
       (*mesh)[si].SetBCName ( (*mesh).GetBCNamePtr( (*mesh)[si].si-1 ) );
 
-    Point3d pmin(bbox.PMin()(0), bbox.PMin()(1), -bbox.Diam());
-    Point3d pmax(bbox.PMax()(0), bbox.PMax()(1), bbox.Diam());
-
-    mesh->SetLocalH (pmin, pmax, mparam.grading);
-    mesh->SetGlobalH (h);
   
     mesh->CalcLocalH(mparam.grading);
 
@@ -488,12 +569,7 @@ namespace netgen
 
 
 	mparam.checkoverlap = 0;
-	
-	/*
-	if (!mparam.quad)
-	  meshing.Delaunay (*mesh, domnr, mparam);
-	else
-	*/
+
 	meshing.GenerateMesh (*mesh, mparam, h, domnr);
 
 	for (SurfaceElementIndex sei = oldnf; sei < mesh->GetNSE(); sei++)
