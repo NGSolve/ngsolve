@@ -2,10 +2,14 @@ AM_CPPFLAGS = -I$(top_srcdir)/include $(NETGEN_INCLUDES) $(LAPACK_INCLUDES) $(PA
 
 lib_LTLIBRARIES = libngsolve.la
 
-libngsolve_la_SOURCES = ngsolve.cpp bvp.cpp generalizedEVP.cpp \
-numproc.cpp shapetester.cpp evplapack.cpp hyperbolic.cpp  \
+libngsolve_la_SOURCES = bvp.cpp generalizedEVP.cpp \
+numproc.cpp evplapack.cpp hyperbolic.cpp  \
 nptests.cpp numprocee.cpp pde.cpp pdeparser.cpp
 
+if NGSGUI
+  libngsolve_la_SOURCES += ngsolve.cpp shapetester.cpp
+  AM_CPPFLAGS += -DTCL
+endif
 
 libngsolve_la_LIBADD = $(top_builddir)/comp/libngcomp.la	    \
 $(top_builddir)/ngstd/libngstd.la 		\
