@@ -7,10 +7,11 @@
 #include "../sockets/sockets.hpp"
 #endif
 
+/*
 #ifndef NOTCL
 #include <visual.hpp>
 #endif
-
+*/
 
 #include "nginterface.h"
 #include "nginterface_v2.hpp"

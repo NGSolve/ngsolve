@@ -6,13 +6,6 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_PREFIX_DEFAULT(["/opt/netgen"])
 
 
-# Tcl/Tk configuration:
-TEA_INIT([3.9])
-TEA_PATH_TCLCONFIG
-TEA_LOAD_TCLCONFIG 
-TEA_PATH_TKCONFIG
-TEA_LOAD_TKCONFIG
-TEA_PUBLIC_TCL_HEADERS
 
 
 
@@ -27,6 +20,7 @@ LT_INIT
 
 # OpenCASCADE configuration
 
+occon=false
 AC_ARG_ENABLE([occ], 
         [AC_HELP_STRING([--enable-occ],[compile with OpenCascade geometry kernel])],
         [occon=true])
@@ -84,6 +78,11 @@ AC_ARG_ENABLE([nglib],
         [AC_HELP_STRING([--enable-nglib],[generate shared library nglib])],
         [if test "$enableval" = yes; then nglibon=true; else nglibon=false; fi])
 
+ngguion=true
+AC_ARG_ENABLE([gui],
+        [AC_HELP_STRING([--disable-gui],[don't build netgen with GUI])],
+        [if test "$enableval" = yes; then ngguion=true; else ngguion=false; fi])
+
 
 AC_ARG_ENABLE([parallel],
         [AC_HELP_STRING([--enable-parallel],[enable mpi parallelization])],
@@ -128,20 +127,22 @@ AC_ARG_ENABLE([ffmpeg],
         )               
 
 
-AM_CONDITIONAL([NGLIB], [test x$nglibon = xtrue])
+
+
+# only for GUI version 
+
+if test a$ngguion = atrue ; then
+# Tcl/Tk configuration:
+TEA_INIT([3.9])
+TEA_PATH_TCLCONFIG
+TEA_LOAD_TCLCONFIG 
+TEA_PATH_TKCONFIG
+TEA_LOAD_TKCONFIG
+TEA_PUBLIC_TCL_HEADERS
 
 AC_SUBST([TOGLLIBDIR], ["$togllibfl"])
-
-AC_CHECK_HEADER(pthread.h)
 AC_CHECK_HEADER([togl.h])
 AC_CHECK_HEADER([GL/gl.h])
-
-AC_CHECK_FUNCS([pow])
-AC_CHECK_FUNCS([floor])
-AC_CHECK_FUNCS([matherr])
-AC_CHECK_HEADERS([limits.h])
-
-AC_CHECK_LIB(pthread, pthread_create)
 
 
 
@@ -177,6 +178,22 @@ case "${TEA_WINDOWINGSYSTEM}" in
 esac
 AC_SUBST(LIBGLU)
 
+fi
+
+
+
+AM_CONDITIONAL([NGLIB], [test x$nglibon = xtrue])
+AM_CONDITIONAL([NGGUI], [test x$ngguion = xtrue])
+
+AC_CHECK_HEADER(pthread.h)
+
+AC_CHECK_FUNCS([pow])
+AC_CHECK_FUNCS([floor])
+AC_CHECK_FUNCS([matherr])
+AC_CHECK_HEADERS([limits.h])
+
+AC_CHECK_LIB(pthread, pthread_create)
+
 
 
 
@@ -207,6 +224,7 @@ AC_MSG_RESULT([
     JPEGlib: ........... $jpeglibon
     FFMPEG: ............ $ffmpegon
     NGLIB: ............. $nglibon
+    GUI: ............... $ngguion
 
 
   Building:

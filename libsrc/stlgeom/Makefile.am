@@ -4,7 +4,11 @@ stltool.hpp stltopology.hpp vsstl.hpp
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include $(TCL_INCLUDES)
 METASOURCES = AUTO
 
-lib_LTLIBRARIES = libstl.la libstlvis.la
+lib_LTLIBRARIES = libstl.la 
+
+if NGGUI
+lib_LTLIBRARIES += libstlvis.la 
+endif
 
 libstl_la_SOURCES = meshstlsurface.cpp stlgeom.cpp stlgeomchart.cpp \
 	stlgeommesh.cpp stlline.cpp stltool.cpp stltopology.cpp

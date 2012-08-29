@@ -8,10 +8,11 @@
 #include "../sockets/sockets.hpp"
 #endif
 
+/*
 #ifndef NOTCL
 #include <visual.hpp>
 #endif
-
+*/
 
 #include "nginterface.h"
 #include "../visualization/soldata.hpp"

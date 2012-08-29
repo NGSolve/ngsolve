@@ -8,7 +8,11 @@ revolution.hpp spline3d.hpp vscsg.hpp
 AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include  $(TCL_INCLUDES)
 METASOURCES = AUTO
 
-lib_LTLIBRARIES = libcsg.la  libcsgvis.la 
+lib_LTLIBRARIES = libcsg.la
+
+if NGGUI
+lib_LTLIBRARIES += libcsgvis.la 
+endif
 
 
 libcsg_la_SOURCES = algprim.cpp brick.cpp   \
