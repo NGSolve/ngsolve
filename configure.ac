@@ -22,11 +22,6 @@ CXXFLAGS="$CXXFLAGS -DUSE_TIMEOFDAY"
 # ACX_LAPACK
 
 
-# Tcl configuration:
-TEA_INIT([3.6])
-TEA_PATH_TCLCONFIG
-TEA_LOAD_TCLCONFIG 
-TEA_PUBLIC_TCL_HEADERS
 
 
 
@@ -35,6 +30,23 @@ AC_ARG_WITH([netgen],
         [netgendir=$withval],
         [netgendir="/opt/netgen"]
         )
+
+
+
+guion=true
+AC_ARG_ENABLE([gui],
+        [AC_HELP_STRING([--disable-gui],[don't build ngsolve with GUI])],
+        [if test "$enableval" = yes; then guion=true; else guion=false; fi])
+
+AM_CONDITIONAL([NGSGUI], [test x$guion = xtrue])
+
+if test a$guion = atrue ; then
+# Tcl configuration:
+TEA_INIT([3.6])
+TEA_PATH_TCLCONFIG
+TEA_LOAD_TCLCONFIG 
+TEA_PUBLIC_TCL_HEADERS
+fi
 
 
 AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])

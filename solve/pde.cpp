@@ -1,10 +1,12 @@
 #include <solve.hpp>
 
+#ifdef TCL
 #include <tcl.h>
 #if TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>=4
 #define tcl_const const
 #else
 #define tcl_const
+#endif
 #endif
 
 
@@ -1380,8 +1382,12 @@ namespace ngsolve
 
   void PDE :: Tcl_Eval (string str)
   {
+#ifdef TCL
     if (!tcl_interpreter) return;
     ::Tcl_Eval (tcl_interpreter, str.c_str());
+#else
+    cout << "sorry, no Tcl" << endl;
+#endif
     
     /*
       // for non-const tcl_eval (Tcl 8.3)
