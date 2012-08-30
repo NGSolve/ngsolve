@@ -105,6 +105,14 @@ namespace netgen
       multidimcomponent = mc; 
     }
   };
+
+
+  class DLL_HEADER MouseEventHandler
+  {
+  public:
+    virtual void DblClick (int elnr) { ; }
+  };
+
 }
 
 #endif

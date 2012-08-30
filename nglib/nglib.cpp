@@ -1180,7 +1180,9 @@ namespace netgen
    //Destination for messages, errors, ...
    DLL_HEADER void Ng_PrintDest(const char * s)
    {
-      (*mycout) << s << flush;
+     int id = 0;
+     MPI_Comm_rank(MPI_COMM_WORLD, &id);
+     if (id == 0) (*mycout) << s << flush;
    }
 
 

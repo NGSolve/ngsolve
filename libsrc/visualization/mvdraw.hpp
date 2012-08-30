@@ -157,6 +157,7 @@ namespace netgen
     Array<int> par_filledlists;
 #endif
 
+    MouseEventHandler * user_me_handler;
 
     NgLock *lock;
 
@@ -173,6 +174,10 @@ namespace netgen
     virtual void BuildScene (int zoomall = 0);
     virtual void DrawScene ();
     virtual void MouseDblClick (int px, int py);
+
+    void SetMouseEventHandler (MouseEventHandler * handler)
+    { user_me_handler = handler; }
+
 
     int SelectedFace () const
     { return selface; }

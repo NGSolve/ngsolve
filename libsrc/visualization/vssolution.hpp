@@ -139,8 +139,6 @@ public:
 
 
   Array<SolData*> soldata;
-  
-
 
 
   int usetexture;    // 0..no, 1..1D texture (standard), 2..2D-texture (complex)
@@ -191,7 +189,6 @@ public:
   int GetNSolData () { return soldata.Size(); }
 
   void SaveSolutionData (const char * filename);
-
 
   static void RealVec3d (const double * values, Vec3d & v, 
 			 bool iscomplex, bool imag);

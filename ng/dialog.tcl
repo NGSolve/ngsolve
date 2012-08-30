@@ -1,6 +1,3 @@
-
-
-
 proc meshingoptionsdialog { } {
 
     set w .options_dlg

@@ -61,6 +61,8 @@ namespace netgen
 
     minh = 0.0;
     maxh = 0.0;
+    user_me_handler = NULL;
+
   }
 
   VisualSceneMesh :: ~VisualSceneMesh ()
@@ -3093,6 +3095,12 @@ namespace netgen
     MouseDblClickSelect(px,py,clipplane,backcolor,transformationmat,center,rad,
 			filledlist,selelement,selface,seledge,selpoint,selpoint2,locpi);
 
+    
+    if (user_me_handler)
+      {
+	if (selelement != -1)
+	  user_me_handler -> DblClick (selelement-1);
+      }
 
     selecttimestamp = NextTimeStamp();
 
@@ -3427,7 +3435,6 @@ namespace netgen
 		cout << "seledge = " << seledge << endl;
 	      }
 	  }
-
       }
     else
       {

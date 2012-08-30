@@ -2718,6 +2718,12 @@ void Ng_SetSolutionData (Ng_SolutionData * soldata)
 #endif
 }
 
+void Ng_SetMouseEventHandler (netgen::MouseEventHandler * handler)
+{
+  vsmesh.SetMouseEventHandler (handler);
+}
+
+
 void Ng_ClearSolutionData ()
 {
 #ifdef OPENGL

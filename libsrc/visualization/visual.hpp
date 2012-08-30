@@ -20,8 +20,8 @@ Visualization
 #include "../include/incvis.hpp"
 
 #include "vispar.hpp"
-#include "mvdraw.hpp"
 #include "soldata.hpp"
+#include "mvdraw.hpp"
 
 #include <complex>
 

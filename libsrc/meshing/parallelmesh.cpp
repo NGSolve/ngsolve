@@ -705,7 +705,11 @@ namespace netgen
     int timerloc2 = NgProfiler::CreateTimer ("CalcSurfacesOfNode");
 
     NgProfiler::RegionTimer regloc(timerloc);
-    PrintMessage (2, "Got ", GetNE(), " elements and ", GetNSE(), " surface elements");
+    stringstream str;
+    str << "Got " << GetNE() << " elements and " 
+	 << GetNSE() << " surface elements";
+    cout << str.str() << endl;
+    // PrintMessage (2, "Got ", GetNE(), " elements and ", GetNSE(), " surface elements");
     // PrintMessage (2, "Got ", GetNSE(), " surface elements");
 
     NgProfiler::StartTimer (timerloc2);
