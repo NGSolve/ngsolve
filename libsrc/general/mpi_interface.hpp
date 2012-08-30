@@ -185,6 +185,7 @@ namespace netgen
     send a table entry to each of the prcesses in the group ...
     receive-table entries will be set
    */
+  /*
   template <typename T>
   inline void MyMPI_ExchangeTable (TABLE<T> & send_data, 
 				   TABLE<T> & recv_data, int tag,
@@ -211,6 +212,46 @@ namespace netgen
     MPI_Barrier (comm);
     MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
   }
+  */
+
+  template <typename T>
+  inline void MyMPI_ExchangeTable (TABLE<T> & send_data, 
+				   TABLE<T> & recv_data, int tag,
+				   MPI_Comm comm = MPI_COMM_WORLD)
+  {
+    int ntasks, rank;
+    MPI_Comm_size(comm, &ntasks);
+    MPI_Comm_rank(comm, &rank);
+
+    Array<int> send_sizes(ntasks);
+    Array<int> recv_sizes(ntasks);
+    for (int i = 0; i < ntasks; i++)
+      send_sizes[i] = send_data[i].Size();
+    
+    MPI_Alltoall (&send_sizes[0], 1, MPI_INT, 
+		  &recv_sizes[0], 1, MPI_INT, comm);
+    /*
+      // in-place is buggy !
+    MPI_Alltoall (MPI_IN_PLACE, 1, MPI_INT, 
+		  &recv_sizes[0], 1, MPI_INT, comm);
+    */
+    for (int i = 0; i < ntasks; i++)
+      recv_data.SetEntrySize (i, recv_sizes[i], sizeof(int));
+    
+    Array<MPI_Request> requests;
+    for (int dest = 0; dest < ntasks; dest++)
+      if (dest != rank && send_data[dest].Size())
+	requests.Append (MyMPI_ISend (send_data[dest], dest, tag, comm));
+
+    for (int dest = 0; dest < ntasks; dest++)
+      if (dest != rank && recv_data[dest].Size())
+	requests.Append (MyMPI_IRecv (recv_data[dest], dest, tag, comm));
+
+    // MPI_Barrier (comm);
+    MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
+  }
+
+
 
 
 
