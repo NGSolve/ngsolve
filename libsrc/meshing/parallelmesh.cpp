@@ -706,7 +706,7 @@ namespace netgen
 
     NgProfiler::RegionTimer regloc(timerloc);
     stringstream str;
-    str << "Got " << GetNE() << " elements and " 
+    str << "p" << id << ": got " << GetNE() << " elements and " 
 	 << GetNSE() << " surface elements";
     cout << str.str() << endl;
     // PrintMessage (2, "Got ", GetNE(), " elements and ", GetNSE(), " surface elements");

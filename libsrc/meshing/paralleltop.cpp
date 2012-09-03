@@ -211,7 +211,7 @@ namespace netgen
 
     (*testout) << "UPDATE COARSE GRID PARALLEL TOPOLOGY " << endl;
     if (id == 0)
-      PrintMessage (1, "UPDATE COARSE GRID PARALLEL TOPOLOGY ");
+      PrintMessage (1, "update parallel topology");
 
 
     // UpdateCoarseGridGlobal();

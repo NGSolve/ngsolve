@@ -11,6 +11,74 @@ namespace netgen
   //   bool rational = true;
 
 
+  template <typename T>
+  inline void MyMPI_ExchangeTableTmp (TABLE<T> & send_data, 
+				   TABLE<T> & recv_data, int tag,
+				   MPI_Comm comm = MPI_COMM_WORLD)
+  {
+    int ntasks, rank;
+    MPI_Comm_size(comm, &ntasks);
+    MPI_Comm_rank(comm, &rank);
+
+    Array<int> send_sizes(ntasks);
+    Array<int> recv_sizes(ntasks);
+    for (int i = 0; i < ntasks; i++)
+      send_sizes[i] = send_data[i].Size();
+    
+    cout << "id = " << rank << ", sendsize = " << send_sizes << endl;
+    MPI_Alltoall (&send_sizes[0], 1, MPI_INT, 
+		  &recv_sizes[0], 1, MPI_INT, comm);
+    /*
+      // in-place is buggy !
+    MPI_Alltoall (MPI_IN_PLACE, 1, MPI_INT, 
+		  &recv_sizes[0], 1, MPI_INT, comm);
+    */
+    MPI_Barrier(comm);
+    cout << "id = " << rank << ", recvsize = " << recv_sizes << endl;
+    MPI_Barrier(comm);
+
+    cout << "recv_table = " << recv_data << endl;
+
+    for (int i = 0; i < ntasks; i++)
+      if (recv_sizes[i])
+	recv_data.SetEntrySize (i, recv_sizes[i], sizeof(T));
+
+    cout << "recv_table2 = " << recv_data << endl;
+
+
+    MPI_Barrier(comm);
+    for (int i = 0; i < ntasks; i++)
+      cout << "id = " << rank << ", recvtagsize(" << i << ") = " << recv_data[i].Size() << endl;
+    MPI_Barrier(comm);
+
+    for (int i = 0; i < ntasks; i++)
+      if (recv_data[i].Size())
+	recv_data[i] = 0;
+    
+    Array<MPI_Request> requests(0);
+    for (int dest = 0; dest < ntasks; dest++)
+      if ( (dest != rank) && send_data[dest].Size())
+	requests.Append (MyMPI_ISend (send_data[dest], dest, tag, comm));
+
+    for (int dest = 0; dest < ntasks; dest++)
+      if ( (dest != rank) && recv_data[dest].Size())
+	requests.Append (MyMPI_IRecv (recv_data[dest], dest, tag, comm));
+    
+    MPI_Barrier(comm);
+    cout << "comm started, id = " << rank << ", num requ = " << requests.Size() << endl;
+    MPI_Barrier(comm);
+    
+    if (requests.Size())
+      MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
+    MPI_Barrier(comm);
+    cout << "table done, id = " << rank << endl;
+    sleep(1);
+    MPI_Barrier(comm);
+  }
+
+
+
+
   
   static void ComputeGaussRule (int n, Array<double> & xi, Array<double> & wi)
   {
@@ -599,6 +667,7 @@ namespace netgen
 	  }
       }
 
+    
     MyMPI_ExchangeTable (send_orders, recv_orders, MPI_TAG_CURVE, curve_comm);
 
     if (ntasks > 1 && working)
@@ -667,8 +736,6 @@ namespace netgen
 	  jacpols2[i] = new JacobiRecPol (100, i, 2);
       }
 
-
-
     PrintMessage (3, "Curving edges");
 
     if (mesh.GetDimension() == 3 || rational)
@@ -689,7 +756,7 @@ namespace netgen
 		{
 		  PointIndex pi1 = el[edges[i2][0]];
 		  PointIndex pi2 = el[edges[i2][1]];
-		
+
 		  bool swap = pi1 > pi2;
 		
 		  Point<3> p1 = mesh[pi1];
@@ -703,6 +770,7 @@ namespace netgen
 		  gi1[edgenrs[i2]] = el.GeomInfoPi(edges[i2][1]+1);
 		}
 	    }
+
 
 #ifdef PARALLEL
 	if (ntasks > 1)
@@ -727,8 +795,10 @@ namespace netgen
 			}
 		    }
 		}
+	    
 	    MyMPI_ExchangeTable (senddata, recvdata, MPI_TAG_CURVE, curve_comm);
 	    
+
 	    Array<int> cnt(ntasks);
 	    cnt = 0;
 	    if (working)
@@ -753,6 +823,7 @@ namespace netgen
 	    
 	  }
 #endif    
+
 
 	if (working)
 	  for (int e = 0; e < surfnr.Size(); e++)
@@ -943,9 +1014,10 @@ namespace netgen
 	      partop.GetDistantEdgeNums (e+1, procs);
 	      for (int j = 0; j < procs.Size(); j++)
 		{
-		  use_edge[e] = int(recvdata[procs[j]][cnt[procs[j]]++]);
-		  if (use_edge[e])
+		  int get_edge = int(recvdata[procs[j]][cnt[procs[j]]++]);
+		  if (get_edge)
 		    {
+		      use_edge[e] = 1;
 		      edge_surfnr1[e] = int (recvdata[procs[j]][cnt[procs[j]]++]);
 		      edge_surfnr2[e] = int (recvdata[procs[j]][cnt[procs[j]]++]);
 		      edge_gi0[e].edgenr = int (recvdata[procs[j]][cnt[procs[j]]++]);
