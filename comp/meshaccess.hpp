@@ -624,7 +624,7 @@ namespace ngcomp
   }
 
 #else
-  template <typename T, typename MPI_Op>
+  template <typename T>
   void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op, const MeshAccess & ma,
 			   MPI_Comm comm = ngs_comm)
   { ; }
