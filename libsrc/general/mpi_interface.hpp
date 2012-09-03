@@ -185,6 +185,7 @@ namespace netgen
     send a table entry to each of the prcesses in the group ...
     receive-table entries will be set
    */
+
   /*
   template <typename T>
   inline void MyMPI_ExchangeTable (TABLE<T> & send_data, 
@@ -206,7 +207,7 @@ namespace netgen
 	MPI_Probe (MPI_ANY_SOURCE, tag, comm, &status);
 	int size, src = status.MPI_SOURCE;
 	MPI_Get_count (&status, MPI_INT, &size);
-	recv_data.SetEntrySize (src, size, sizeof(int));
+	recv_data.SetEntrySize (src, size, sizeof(T));
 	requests.Append (MyMPI_IRecv (recv_data[src], src, tag, comm));
       }
     MPI_Barrier (comm);
@@ -230,13 +231,14 @@ namespace netgen
     
     MPI_Alltoall (&send_sizes[0], 1, MPI_INT, 
 		  &recv_sizes[0], 1, MPI_INT, comm);
-    /*
+
       // in-place is buggy !
-    MPI_Alltoall (MPI_IN_PLACE, 1, MPI_INT, 
-		  &recv_sizes[0], 1, MPI_INT, comm);
-    */
+//    MPI_Alltoall (MPI_IN_PLACE, 1, MPI_INT, 
+//		  &recv_sizes[0], 1, MPI_INT, comm);
+
+
     for (int i = 0; i < ntasks; i++)
-      recv_data.SetEntrySize (i, recv_sizes[i], sizeof(int));
+      recv_data.SetEntrySize (i, recv_sizes[i], sizeof(T));
     
     Array<MPI_Request> requests;
     for (int dest = 0; dest < ntasks; dest++)
