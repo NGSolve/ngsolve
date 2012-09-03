@@ -146,10 +146,15 @@ namespace netgen
 #endif
     */
 
+    if (id == 0)
+      (*mycout) << s << flush;
+
+    /*
     if ( ntasks == 1 )
       (*mycout) << s << flush;
     else
       (*mycout) << "p" << id << ": " << s << flush ;
+    */
   }
 
   DLL_HEADER void MyError(const char * ch)
