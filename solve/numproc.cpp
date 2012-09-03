@@ -1546,7 +1546,7 @@ namespace ngsolve
 	  if (pde.ConstantUsed (output_vars[i])) val = pde.GetConstant(output_vars[i]);
 	  if (pde.VariableUsed (output_vars[i])) val = pde.GetVariable(output_vars[i]);
 	  cout << IM(3) << output_vars[i] << " = " << val << endl;
-	  *outfile << val << " ";
+	  if (outfile) *outfile << val << " ";
 	}
       if (outfile) *outfile << endl;
     }
