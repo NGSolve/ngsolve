@@ -349,6 +349,7 @@ public:
   enum { MPI_COMM_WORLD = 12345 };
   enum { ngs_comm = 12345 };
   typedef int MPI_Comm;
+  typedef int MPI_Op;
   inline int MyMPI_GetNTasks (MPI_Comm comm = MPI_COMM_WORLD) { return 1; }
   inline int MyMPI_GetId (MPI_Comm comm = MPI_COMM_WORLD) { return 0; }
 
