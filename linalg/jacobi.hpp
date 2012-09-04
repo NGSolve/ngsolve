@@ -35,7 +35,7 @@ namespace ngla
     ///
     int height;
     ///
-    TM * invdiag;
+    Array<TM> invdiag;
   public:
     // typedef typename mat_traits<TM>::TV_ROW TVX;
     typedef typename mat_traits<TM>::TSCAL TSCAL;

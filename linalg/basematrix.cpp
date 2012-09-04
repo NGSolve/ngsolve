@@ -13,20 +13,24 @@
 namespace ngla
 {
   BaseMatrix :: BaseMatrix()
+    : paralleldofs (NULL)
   {
     ;
   }
 
+  BaseMatrix :: BaseMatrix (ParallelDofs * const aparalleldofs)
+    : paralleldofs ( aparalleldofs )
+  {     
+    ;
+  }
+
+  /*
   BaseMatrix :: BaseMatrix ( const BaseMatrix & amat )
   {
     ;
   }
+  */
 
-//   BaseMatrix :: BaseMatrix ( const ngparallel::ParallelDofs * aparalleldofs )
-//     : paralleldofs ( aparalleldofs )
-//   {
-//     ;
-//   }
   
   BaseMatrix :: ~BaseMatrix ()
   {

@@ -22,15 +22,16 @@ namespace ngla
   class NGS_DLL_HEADER BaseMatrix
   {
   protected:
+    const ParallelDofs * paralleldofs;
 
   public:
-    /// constructor
+    /// 
     BaseMatrix ();
-    /// copy-constructor
-    BaseMatrix ( const BaseMatrix & amat );
+    /// 
+    // BaseMatrix (const BaseMatrix & amat);
     //
-    //  BaseMatrix ( const ngparallel::ParallelDofs * aparalleldofs ); 
-    /// destructor
+    BaseMatrix (ParallelDofs * aparalleldofs); 
+    /// 
     virtual ~BaseMatrix ();
   
     /// virtual function must be overloaded
@@ -109,8 +110,8 @@ namespace ngla
 			   const Array<int> * acluster = NULL) const;
 
 
-
-
+    void SetParallelDofs (const ParallelDofs * pardofs) { paralleldofs = pardofs; }
+    const ParallelDofs * GetParallelDofs () const { return paralleldofs; }
 
     virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;
     virtual BaseMatrix * InverseMatrix (const Array<int> * clusters) const;
