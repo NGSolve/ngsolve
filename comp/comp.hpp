@@ -27,11 +27,12 @@ namespace ngmg
 
 
 
-
+/*
 namespace ngparallel
 {
   class ParallelDofs;
 }
+*/
 
 /// namespace for ngs-components
 namespace ngcomp
