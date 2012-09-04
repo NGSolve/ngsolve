@@ -140,7 +140,7 @@ namespace ngcomp
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & bmir) const
     {
-      static Timer t1 ("multipointjac");
+      static Timer t1 ("multipointjac", 3);
       // static Timer t1a ("multipointjac - A");
       // static Timer t1b ("multipointjac - B");
 
@@ -1123,7 +1123,10 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 	    }
 #ifdef PARALLEL
 	  else
-	    MPI_Bsend (&nr, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+	    {
+	      static Timer t("dummy - progressreport"); RegionTimer r(t);
+	      MPI_Bsend (&nr, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+	    }
 #endif
 	  
 	  prevtime = WallTime();

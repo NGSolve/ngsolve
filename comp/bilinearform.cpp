@@ -515,13 +515,13 @@ namespace ngcomp
   {
     static Timer mattimer("Matrix assembling");
 
-    static Timer timer1 ("Matrix assembling - 1");
-    static Timer timer2 ("Matrix assembling - 2");
-    static Timer timer3 ("Matrix assembling - 3");
+    static Timer timer1 ("Matrix assembling - 1", 3);
+    static Timer timer2 ("Matrix assembling - 2", 3);
+    static Timer timer3 ("Matrix assembling - 3", 3);
     
-    static Timer timerb1 ("Matrix assembling bound - 1");
-    static Timer timerb2 ("Matrix assembling bound - 2");
-    static Timer timerb3 ("Matrix assembling bound - 3");
+    static Timer timerb1 ("Matrix assembling bound - 1", 3);
+    static Timer timerb2 ("Matrix assembling bound - 2", 3);
+    static Timer timerb3 ("Matrix assembling bound - 3", 3);
 
     RegionTimer reg (mattimer);
 
@@ -708,7 +708,7 @@ namespace ngcomp
 
 			      try
 				{
-				  static Timer elementtimer ("Element matrix integration");
+				  static Timer elementtimer ("Element matrix integration", 2);
 				  elementtimer.Start();
 				  if (!diagonal)
 				    bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
@@ -767,9 +767,9 @@ namespace ngcomp
 
 			  if (eliminate_internal)
 			    {
-			      static Timer statcondtimer("static condensation");
-			      static Timer statcondtimer2a("static condensation - Lapack a");
-			      static Timer statcondtimer2b("static condensation - Lapack b");
+			      static Timer statcondtimer("static condensation", 2);
+			      static Timer statcondtimer2a("static condensation - Lapack a", 3);
+			      static Timer statcondtimer2b("static condensation - Lapack b", 3);
 			      statcondtimer.Start();
 
 			      fespace.GetDofNrs (i, idofs1, LOCAL_DOF);

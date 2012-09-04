@@ -276,6 +276,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    }
 	}
 
+    if (print)
+      {
+	(*testout) << "Dirichlet_vertex,1 = " << endl << dirichlet_vertex << endl;
+	(*testout) << "Dirichlet_edge,1 = " << endl << dirichlet_edge << endl;
+	(*testout) << "Dirichlet_face,1 = " << endl << dirichlet_face << endl;
+      }
+
+
 #ifdef PARALLEL	
     AllReduceNodalData (NT_VERTEX, dirichlet_vertex, MPI_LOR, ma);
     AllReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR, ma);
@@ -331,6 +339,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    if (dnums[j] != -1)
 	      dirichlet_dofs.Set (dnums[j]);
 	}
+
+    for (int i = 0; i < dirichlet_face.Size(); i++)
+      if (dirichlet_face[i])
+	{
+	  GetFaceDofNrs (i, dnums);
+	  for (int j = 0; j < dnums.Size(); j++)
+	    if (dnums[j] != -1)
+	      dirichlet_dofs.Set (dnums[j]);
+	}
+
 	
 
     free_dofs.SetSize (GetNDof());

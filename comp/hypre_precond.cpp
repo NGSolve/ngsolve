@@ -47,6 +47,8 @@ namespace ngcomp
   void HyprePreconditioner :: Setup (const BaseMatrix & matrix)
   {
     cout << IM(1) << "Setup Hypre preconditioner" << endl;
+    static Timer t("hypre setup");
+    RegionTimer reg(t);
 
     const ParallelMatrix & pmat = (dynamic_cast<const ParallelMatrix&> (matrix));
     const SparseMatrix<double> & mat = dynamic_cast< const SparseMatrix<double> &>(pmat.GetMatrix());
@@ -86,7 +88,9 @@ namespace ngcomp
 	global_nums[i] += first_master_dof[id];
     
     ScatterDofData (global_nums, *pardofs);
+    cout << IM(3) << "num glob dofs = " << num_glob_dofs << endl;
 	
+    VT_OFF();
 	
     // range of my master dofs ...
     ilower = first_master_dof[id];
@@ -127,21 +131,25 @@ namespace ngcomp
     HYPRE_IJMatrixGetObject(A, (void**) &parcsr_A);
     // HYPRE_IJMatrixPrint(A, "IJ.out.A");
 
-
     HYPRE_BoomerAMGCreate(&precond);
  
     HYPRE_ParVector par_b = NULL;
     HYPRE_ParVector par_x = NULL;
      
+    cout << IM(2) << "Call BoomerAMGSetup" << endl;
     HYPRE_BoomerAMGSetup (precond, parcsr_A, par_b, par_x);
 	
     HYPRE_BoomerAMGSetMaxIter (precond,3);
+    VT_ON();
   }
 
 
 
   void HyprePreconditioner :: Mult (const BaseVector & f, BaseVector & u) const
   {
+    static Timer t("hypre mult");
+    RegionTimer reg(t);
+
     f.Distribute();
     ParallelBaseVector& pu = dynamic_cast< ParallelBaseVector& > (u);
     pu.SetStatus(DISTRIBUTED);
@@ -186,7 +194,9 @@ namespace ngcomp
    
     // HYPRE_IJVectorPrint(b, "IJ.out.b");
 
+    VT_OFF();
     HYPRE_BoomerAMGSolve(precond, parcsr_A, par_b, par_x);
+    VT_ON();
 
     // HYPRE_IJVectorPrint(x, "IJ.out.x");
     
@@ -210,7 +220,7 @@ namespace ngcomp
 	fu(i) = hu(cnt++);
       else
 	fu(i) = 0.0;
-      
+
     u.Cumulate();
   }
 

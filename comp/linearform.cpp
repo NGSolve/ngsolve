@@ -65,9 +65,9 @@ namespace ngcomp
   void S_LinearForm<SCAL> :: Assemble (LocalHeap & clh)
   {
     static Timer timer("Vector assembling");
-    static Timer timer1("Vector assembling 1");
-    static Timer timer2("Vector assembling 2");
-    static Timer timer3("Vector assembling 3");
+    static Timer timer1("Vector assembling 1", 2);
+    static Timer timer2("Vector assembling 2", 2);
+    static Timer timer3("Vector assembling 3", 2);
     RegionTimer reg (timer);
 
     assembled = true;

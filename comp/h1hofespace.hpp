@@ -50,7 +50,7 @@ namespace ngcomp
     Array<int> ndlevel;
 
     bool level_adapted_order; 
-
+    bool nodalp2;
   public:
 
     H1HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool checkflags=false);
