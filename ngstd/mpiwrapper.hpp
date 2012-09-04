@@ -154,6 +154,9 @@ namespace ngparallel
   template <typename T>
   inline T MyMPI_AllReduce (T d, const MPI_Op & op = MPI_SUM, MPI_Comm comm = ngs_comm)
   {
+    static Timer t("dummy - AllReduce");
+    RegionTimer r(t);
+
     T global_d;
     MPI_Allreduce ( &d, &global_d, 1, MyGetMPIType<T>(), MPI_SUM, comm);
     return global_d;
@@ -162,6 +165,9 @@ namespace ngparallel
   template <typename T>
   inline void MyMPI_AllToAll (FlatArray<T> send, FlatArray<T> recv, MPI_Comm comm)
   {
+    static Timer t("dummy - AlltoAll");
+    RegionTimer r(t);
+
     MPI_Alltoall (&send[0], 1, MyGetMPIType<T>(), 
 		  &recv[0], 1, MyGetMPIType<T>(), comm);
   }
@@ -312,6 +318,7 @@ public:
   enum { MPI_COMM_WORLD = 12345 };
   enum { ngs_comm = 12345 };
   typedef int MPI_Comm;
+  typedef int MPI_Op;
   inline int MyMPI_GetNTasks (MPI_Comm comm = MPI_COMM_WORLD) { return 1; }
   inline int MyMPI_GetId (MPI_Comm comm = MPI_COMM_WORLD) { return 0; }
 
@@ -338,6 +345,7 @@ public:
   };
 
   enum { MPI_LOR = 4711 };
+  enum { MPI_SUM = 4711 };
 #endif
 
   
