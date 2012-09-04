@@ -21,14 +21,13 @@ namespace ngla
 				      const BitArray * subset, 
 				      const ParallelDofs * hpardofs)
 
-    : loc2glob(MyMPI_GetNTasks (pardofs -> GetCommunicator())),
+    : loc2glob(MyMPI_GetNTasks (hpardofs -> GetCommunicator())),
       pardofs(hpardofs)
   {
     inv = NULL;
     
     int id = MyMPI_GetId (pardofs -> GetCommunicator());
     int ntasks = MyMPI_GetNTasks (pardofs -> GetCommunicator());
-
 
     // consistent enumeration
     

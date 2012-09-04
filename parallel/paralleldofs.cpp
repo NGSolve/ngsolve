@@ -11,20 +11,22 @@ namespace ngparallel
 
   MPI_Comm ngs_comm;
 
-  ParallelDofs :: ParallelDofs (const MeshAccess & ama, 
-				const Array<Node> & adofnodes, 
-				int dim, bool iscomplex)
+  ParallelMeshDofs :: ParallelMeshDofs (const MeshAccess & ama, 
+					const Array<Node> & adofnodes, 
+					int dim, bool iscomplex)
     : ma(ama), dofnodes(adofnodes)
   {
     static Timer timer ("ParallelDofs");
     RegionTimer reg(timer);
+
+    comm = ngs_comm;
 
     int ntasks = MyMPI_GetNTasks();
     int id = MyMPI_GetId();
 
     ndof = dofnodes.Size();
 
-
+    
     if (ntasks == 1)
       {
 	Array<int> nexdofs(ntasks), ndistprocs(ndof);
@@ -113,6 +115,7 @@ namespace ngparallel
       }
   }
 
+  /*
   ParallelDofs :: ~ParallelDofs()
   {
     ;
@@ -129,11 +132,10 @@ namespace ngparallel
       if (ismasterdof.Test(i)) nlocal++;
 
     return MyMPI_AllReduce (nlocal);
-
     // MPI_Allreduce (&nlocal, &nglobal, 1,  MPI_INT, MPI_SUM, ngs_comm);
     // return nglobal;
   }
-
+  */
 
 
 

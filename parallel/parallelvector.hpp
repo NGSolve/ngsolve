@@ -19,12 +19,10 @@ namespace ngla
   class NGS_DLL_HEADER ParallelBaseVector : virtual public BaseVector
   {
   protected:
-    const ParallelDofs * paralleldofs;
     mutable PARALLEL_STATUS status;
     
   public:
     ParallelBaseVector ()
-      : paralleldofs (NULL) 
     { ; }
 
 
