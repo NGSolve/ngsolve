@@ -1200,4 +1200,29 @@ namespace ngbla
 
 }
 
+
+#ifdef PARALLEL
+namespace ngparallel
+{
+  template<int N, int M, typename T>
+  class MPI_Traits<ngbla::Mat<N, M, T> >
+  {
+  public:
+    static MPI_Datatype MPIType () 
+    { 
+      static MPI_Datatype MPI_T = 0;
+      if (!MPI_T)
+	{
+	  int size = N * M;
+	  MPI_Type_contiguous ( size, MPI_Traits<T>::MPIType(), &MPI_T);
+	  MPI_Type_commit ( &MPI_T );
+	}
+      return MPI_T;
+    }
+  };
+  
+
+}
+#endif
+
 #endif
