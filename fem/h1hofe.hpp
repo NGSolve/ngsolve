@@ -32,7 +32,12 @@ namespace ngfem
 
     using ScalarFiniteElement<DIM>::eltype;
 
+    bool nodalp2;
+
   public:
+    H1HighOrderFiniteElement () 
+      : nodalp2(false) { ; }
+
     /// assignes vertex numbers
     template <typename TA> 
     void SetVertexNumbers (const TA & avnums)
@@ -67,6 +72,8 @@ namespace ngfem
 
     /// set edge order for edge nr
     void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
+
+    void SetNodalP2 (bool anp2) { nodalp2 = anp2; }
 
     /// high order elements need extra configuration. update ndof and order
     virtual void ComputeNDof () = 0;
