@@ -191,7 +191,7 @@ namespace ngstd
   {
     int timernr;
   public:
-    Timer (const string & name)
+    Timer (const string & name, int priority = 1)
     {
       timernr = NgProfiler::CreateTimer (name);
     }
@@ -239,26 +239,33 @@ namespace ngstd
 
     int timer_id;
     Timer * prev;
-
+    int priority;
   public:
-    Timer (const string & name)
+    Timer (const string & name, int apriority = 1)
     {
+      priority = apriority;
       timer_id = VT_USER_DEF(name.c_str());
     }
     void Start () 
     {
-      prev = stack_top;
-      stack_top = this;
-      if (prev)
-	VT_USER_END_ID (prev -> timer_id);
-      VT_USER_START_ID(timer_id);
+      if (priority == 1)
+	{
+	  prev = stack_top;
+	  stack_top = this;
+	  if (prev)
+	    VT_USER_END_ID (prev -> timer_id);
+	  VT_USER_START_ID(timer_id);
+	}
     }
     void Stop () 
     {
-      VT_USER_END_ID(timer_id);
-      if (prev != NULL)
-	VT_USER_START_ID(prev -> timer_id);
-      stack_top = prev;
+      if (priority == 1)
+	{
+	  VT_USER_END_ID(timer_id);
+	  if (prev != NULL)
+	    VT_USER_START_ID(prev -> timer_id);
+	  stack_top = prev;
+	}
     }
 
     void AddFlops (double aflops)  { ; }
@@ -272,7 +279,7 @@ namespace ngstd
     int timer_id;
 
   public:
-    Timer (const string & name)
+    Timer (const string & name, int priority = 1)
     {
       timer_id = VT_USER_DEF(name.c_str());
     }
