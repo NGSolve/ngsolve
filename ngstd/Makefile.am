@@ -16,7 +16,7 @@ localheap.cpp stringops.cpp profiler.cpp array.hpp bessel.hpp	       \
 exception.hpp memusage.hpp symboltable.hpp autodiffdiff.hpp	       \
 bitarray.hpp flags.hpp ngstd.hpp table.hpp autodiff.hpp blockalloc.hpp \
 hashtable.hpp profiler.hpp templates.hpp autoptr.hpp evalfunc.hpp      \
-localheap.hpp stringops.hpp
+localheap.hpp stringops.hpp mpiwrapper.hpp
 
 
 libngstd_la_LDFLAGS = -avoid-version

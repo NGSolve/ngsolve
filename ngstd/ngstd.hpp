@@ -122,6 +122,8 @@ namespace ngstd
 #include "profiler.hpp"
 #include "statushandler.hpp"
 
+#include "mpiwrapper.hpp"
+
 namespace ngstd
 {
 #ifdef WIN32
