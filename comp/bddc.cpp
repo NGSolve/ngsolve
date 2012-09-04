@@ -141,10 +141,10 @@ namespace ngcomp
     void AddMatrix (FlatMatrix<SCAL> elmat, Array<int> & dnums)
 
     {
-      static Timer timer ("BDDC - Addmatrix");
+      static Timer timer ("BDDC - Addmatrix", 2);
       RegionTimer reg(timer);
-      static Timer timer2("BDDC - Add to sparse");
-      static Timer timer3("BDDC - compute");
+      static Timer timer2("BDDC - Add to sparse", 3);
+      static Timer timer3("BDDC - compute", 3);
 
       const FESpace & fes = bfa.GetFESpace();
       
@@ -241,7 +241,7 @@ namespace ngcomp
     
     void Finalize()
     {
-      static Timer timer ("BDDC Constructor 3");
+      static Timer timer ("BDDC Finalize");
       RegionTimer reg(timer);
 
       const FESpace & fes = bfa.GetFESpace();
@@ -301,7 +301,10 @@ namespace ngcomp
 	  // *testout << "blocks = " << endl << blocks << endl;
 	  // *testout << "pwbmat = " << endl << *pwbmat << endl;
 	  cout << "call block-jacobi inverse" << endl;
-	  inv = dynamic_cast<BaseSparseMatrix*> (pwbmat)->CreateBlockJacobiPrecond(blocks, 0, 0, 0);      
+
+	  inv = dynamic_cast<BaseSparseMatrix*> (pwbmat)->CreateBlockJacobiPrecond(blocks, 0, 0, 0);
+	  // inv = dynamic_cast<BaseSparseMatrix*> (pwbmat)->CreateJacobiPrecond(free_dofs);
+
 	  cout << "has inverse" << endl << endl;
 	  // *testout << "blockjacobi = " << endl << *inv << endl;
 	  
