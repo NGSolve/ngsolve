@@ -180,6 +180,22 @@ namespace ngfem
 
   /* *********************** Tetrahedron  **********************/
 
+  template <class Tx, class T>
+  inline void LowEnergyVertexPolynomials3D  (int n, Tx x, T & values)
+  {
+    JacobiPolynomial (n, x, 1, -1, values);
+    Tx sum = 0.0;
+    for (int i = 1; i <= n; i++)
+      {
+	sum += (2.0*i+1)/(i+1) * values[i];
+	values[i] = 1.0/(i*(i+2)) * sum;
+      }
+    values[0] = 1;
+  }
+
+
+
+
   template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx x[], TFA & shape) const
   {
@@ -193,8 +209,11 @@ namespace ngfem
 	shape[i] = lam[i];
     else
       for (int i = 0; i < 4; i++)
-	shape[i] = 0.25*lam[i]*(2*lam[i]-1);
-      
+	{
+	  LowEnergyVertexPolynomials3D (order, 2*lam[i]-1, polx);
+	  shape[i] = polx[order]; 
+	// shape[i] = 0.25*lam[i]*(2*lam[i]-1);
+	}
     int ii = 4; 
 
     // edge dofs
