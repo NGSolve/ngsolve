@@ -161,10 +161,18 @@ namespace ngparallel
 
   class ParallelMeshDofs : public ParallelDofs 
   {
-    ParallelDofs (const MeshAccess & ama, const Array<Node> & adofnodes, 
-		  int dim = 1, bool iscomplex = false)
+  public:
+    ParallelMeshDofs (const MeshAccess & ama, const Array<Node> & adofnodes, 
+		      int dim = 1, bool iscomplex = false)
     { ndof = adofnodes.Size(); }
   };
+
+  template <typename T>
+  void AllReduceDofData (FlatArray<T> data, MPI_Op op, 
+			 const ParallelDofs & pardofs)
+  { ; }
+
+
 
   
 #endif //PARALLEL
