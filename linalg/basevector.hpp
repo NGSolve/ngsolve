@@ -138,8 +138,8 @@ protected:
 public:
 
     int GetNDofGlobal () const { return ndof; }
-
-  };
+  
+};
 
 #endif
 
