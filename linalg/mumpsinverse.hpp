@@ -7,10 +7,12 @@
 /* Date:   Apr. 09                                                         */
 /* *************************************************************************/
 
+/*
 namespace ngparallel
 {
   class ParallelDofs;
 }
+*/
 
 namespace ngla
 {
@@ -124,7 +126,7 @@ namespace ngla
     ParallelMumpsInverse (const SparseMatrixTM<TM> & a, 
 			  const BitArray * ainner,
 			  const Array<int> * acluster,
-			  const ngparallel::ParallelDofs * pardofs,
+			  const ParallelDofs * pardofs,
 			  bool symmetric = 0);
 
     ///

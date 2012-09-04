@@ -6,32 +6,43 @@
 
 
 #include <la.hpp>
+#include <parallelngs.hpp>
+
 
 namespace ngla
 {
+  using namespace ngparallel;
+
   template <class TM, class TV_ROW, class TV_COL>
   JacobiPrecond<TM,TV_ROW,TV_COL> ::
   JacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
 		 const BitArray * ainner)
     : mat(amat), inner(ainner)
   { 
+    SetParallelDofs (mat.GetParallelDofs());
+
     height = mat.Height();
-    invdiag = new TM[height];
+    invdiag.SetSize (height); 
+    invdiag = TM(0.0);
 
     for (int i = 0; i < height; i++)
-      invdiag[i] = mat(i,i);
-    
-    // AllReduceDofData (invdiag, MPI_SUM, pardofs);  // don't have pardofs
+      if (!inner || inner->Test(i))
+	invdiag[i] = mat(i,i);
+
+    *testout << "before allreduce: " << endl << invdiag << endl;
+    AllReduceDofData (invdiag, MPI_SUM, *paralleldofs);  
+    *testout << "after allreduce: " << endl << invdiag << endl;
 
     for (int i = 0; i < height; i++)
-      CalcInverse (invdiag[i]);
+      if (!inner || inner->Test(i))
+	CalcInverse (invdiag[i]);
   }
 
   ///
   template <class TM, class TV_ROW, class TV_COL>
   JacobiPrecond<TM,TV_ROW,TV_COL> :: ~JacobiPrecond () 
   {
-    delete [] invdiag; 
+    ;
   }
 
   ///
@@ -39,10 +50,11 @@ namespace ngla
   void JacobiPrecond<TM,TV_ROW,TV_COL> ::
   MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
   {
+    x.Cumulate();
+    y.Cumulate();
+
     const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-    // dynamic_cast<const T_BaseVector<TV_ROW> &> (x).FV();
     FlatVector<TV_ROW> fy = y.FV<TV_ROW> ();
-    // dynamic_cast<T_BaseVector<TV_ROW> &> (y).FV();
 
     if (!inner)
       for (int i = 0; i < height; i++)

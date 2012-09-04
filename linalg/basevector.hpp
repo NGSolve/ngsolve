@@ -63,6 +63,93 @@ public:
 
 enum PARALLEL_STATUS { DISTRIBUTED, CUMULATED, NOT_PARALLEL };
 
+
+
+#ifdef PARALLEL
+
+class ParallelDofs
+  {
+  protected:
+    int ndof;
+
+    /// proc 2 dofs
+    Table<int> * exchangedofs;
+
+    /// dof 2 procs
+    Table<int> * dist_procs;
+
+    /// mpi-datatype to send exchange dofs
+    Array<MPI_Datatype> mpi_t;
+
+    /// is this the master process ?
+    BitArray ismasterdof;
+
+    MPI_Comm comm;
+
+  public:
+    /*
+    ParallelDofs (const MeshAccess & ama, const Array<Node> & adofnodes, 
+		  int dim = 1, bool iscomplex = false);
+    */
+
+    virtual ~ParallelDofs()
+    {
+      ;
+    }
+
+
+    int GetNTasks() const { return exchangedofs->Size(); }
+
+    const FlatArray<int>  GetExchangeDofs (int proc) const
+    { return (*exchangedofs)[proc]; }
+
+    const FlatArray<int>  GetDistantProcs (int dof) const
+    { return (*dist_procs)[dof]; }
+
+    bool IsMasterDof ( int localdof ) const
+    { return ismasterdof.Test(localdof); }
+
+    int GetNDof () const { return ndof; }
+
+    int GetNDofGlobal () const
+    {
+      if (GetNTasks() == 1) return ndof;
+      int nlocal = 0;
+      for (int i = 0; i < ndof; i++)
+	if (ismasterdof.Test(i)) nlocal++;
+      return ngparallel::MyMPI_AllReduce (nlocal);
+    }
+
+    bool IsExchangeProc ( int proc ) const
+    { return (*exchangedofs)[proc].Size() != 0; }
+
+    MPI_Datatype MyGetMPI_Type ( int dest ) const
+    { return mpi_t[dest]; }
+
+    MPI_Comm GetCommunicator () const { return comm; }
+  };
+
+#else
+class ParallelDofs 
+{
+protected:
+  int ndof;
+  
+public:
+
+    int GetNDofGlobal () const { return ndof; }
+
+  };
+
+#endif
+
+
+
+
+
+
+
+
 class NGS_DLL_HEADER BaseVector
 {
 protected:
@@ -70,10 +157,13 @@ protected:
   int size;
   /// number of doubles per entry
   int entrysize;
-
+  ///
+  const ParallelDofs * paralleldofs;
 public:
   ///
-  BaseVector () throw ()  { ; }
+  BaseVector () throw ()  
+    : paralleldofs (NULL) 
+  { ; }
   ///
   virtual ~BaseVector ();
 
