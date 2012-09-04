@@ -188,8 +188,13 @@ namespace ngfem
     ArrayMem<Tx, 20> polx(order+1), poly(order+1), polz(order+1); 
 
     // vertex shapes
-    for (int i = 0; i < 4; i++)
-      shape[i] = lam[i];
+    if (!nodalp2)
+      for (int i = 0; i < 4; i++)
+	shape[i] = lam[i];
+    else
+      for (int i = 0; i < 4; i++)
+	shape[i] = 0.25*lam[i]*(2*lam[i]-1);
+      
     int ii = 4; 
 
     // edge dofs

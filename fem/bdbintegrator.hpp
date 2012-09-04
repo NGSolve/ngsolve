@@ -492,8 +492,8 @@ public:
 			    FlatMatrix<TSCAL> & elmat,
 			    LocalHeap & lh) const
   {
-    static Timer timer (string ("Elementmatrix, ") + Name());
-    static Timer timer2 (string ("Elementmatrix, ") + Name() + ", Lapack");
+    static Timer timer (string ("Elementmatrix, ") + Name(), 2);
+    static Timer timer2 (string ("Elementmatrix, ") + Name() + ", Lapack", 3);
     RegionTimer reg (timer);
 
     try
@@ -670,7 +670,7 @@ public:
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
-    static Timer timer (string ("BDBIntegrator::ApplyElementMatrix<Complex>, ") + Name());
+    static Timer timer (string ("BDBIntegrator::ApplyElementMatrix<Complex>, ") + Name(), 2);
     RegionTimer reg (timer);
 
     const FEL & fel = static_cast<const FEL&> (bfel);
@@ -736,7 +736,7 @@ public:
 			     LocalHeap & lh) const
   {
     static Timer timer (string ("BDBIntegrator::ApplyElementMatrix<") 
-			+ typeid(TSCAL).name() + ">" + Name());
+			+ typeid(TSCAL).name() + ">" + Name(), 2);
     RegionTimer reg (timer);
 
     // const FEL & fel = static_cast<const FEL&> (bfel);
@@ -1061,8 +1061,8 @@ public:
 				   FlatMatrix<double> & elmat,
 				   LocalHeap & lh) const 
   {
-    static Timer maintimer (string ("NonlinearBDB, CalcLinearized, ") + this->Name());
-    static Timer bdbtimer ("NonlinearBDB, bdb product");
+    static Timer maintimer (string ("NonlinearBDB, CalcLinearized, ") + this->Name(), 2);
+    static Timer bdbtimer ("NonlinearBDB, bdb product", 3);
     RegionTimer reg(maintimer);
 
     try
@@ -1130,8 +1130,8 @@ public:
 			       FlatMatrix<Complex> & elmat,
 			       LocalHeap & lh) const 
   {
-    static Timer maintimer (string ("NonlinearBDB, CalcLinearized<Complex>, ") + this->Name());
-    static Timer bdbtimer ("NonlinearBDB, bdb product");
+    static Timer maintimer (string ("NonlinearBDB, CalcLinearized<Complex>, ") + this->Name(), 2);
+    static Timer bdbtimer ("NonlinearBDB, bdb product", 3);
     RegionTimer reg(maintimer);
 
     try
