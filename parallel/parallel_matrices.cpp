@@ -63,27 +63,34 @@ namespace ngla
     cout << "TESTING" << endl;
     for (int i = 0; i < ndof; i++)
       *testout << "dof" << i << " = " << pardofs->GetDofNodes()[i] << " free = " << subset->Test(i) << endl;
+    *testout << "global_nums = " << endl << global_nums << endl;
+
+
     const MeshAccess & ma = pardofs->GetMeshAccess();
 
     for (int dest = 0; dest < ntasks; dest++)
       {
-	*testout << "shared edges with proc " << dest << endl;
+	*testout << "shared dofs with proc " << dest << endl;
 	*testout << "exdofs " << endl << pardofs->GetExchangeDofs (dest) << endl;
 	Array<int> procs;
-	for (int i = 0; i < ma.GetNEdges(); i++)
+	for (int i = 0; i < ma.GetNFaces(); i++)
 	  {
-	    ma.GetDistantProcs (Node(NT_EDGE, i), procs);
+	    ma.GetDistantProcs (Node(NT_FACE, i), procs);
 	    if (procs.Contains (dest))
 	      {
-		int v1, v2;
-		ma.GetEdgePNums (i, v1, v2);
-		v1 = ma.GetGlobalNodeNum (Node(NT_VERTEX, v1));
-		v2 = ma.GetGlobalNodeNum (Node(NT_VERTEX, v2));
-		*testout << "E" << i << ": " << v1 << "-" << v2 << endl;
+		Array<int> vnums;
+		ma.GetFacePNums (i, vnums);
+		int v1 = ma.GetGlobalNodeNum (Node(NT_VERTEX, vnums[0]));
+		int v2 = ma.GetGlobalNodeNum (Node(NT_VERTEX, vnums[1]));
+		int v3 = ma.GetGlobalNodeNum (Node(NT_VERTEX, vnums[2]));
+		*testout << "F" << i << ": " << v1 << "-" << v2 << "-" << v3 << endl;
 	      }
 	  }
       }
+    */
 
+
+    /*
     for (int i = 0; i < ma.GetNEdges(); i++)
       {
 	*testout << "local edge " << i << endl;
@@ -129,6 +136,8 @@ namespace ngla
 	      for (int j = 0; j < rcols.Size(); j++)
 		if (!subset || subset->Test(rcols[j]))
 		  {
+		    *testout << "send (" << row << "," << rcols[j] 
+			     << "), global = (" <<  global_nums[row] << "," << global_nums[rcols[j]] << ")" << endl;
 		    rows.Append (global_nums[row]);
 		    cols.Append (global_nums[rcols[j]]);
 		    vals.Append (rvals[j]);
@@ -170,6 +179,10 @@ namespace ngla
 	    MyMPI_Recv (hcols, src);
 	    MyMPI_Recv (hvals, src);
 	    MyMPI_Recv (hglobid, src);
+
+	    *testout << "got from P" << src << ":" << endl
+		     << "rows " << endl << hrows << endl
+		     << "cols " << endl << hcols << endl;
 
 	    for (int i = 0; i < hglobid.Size(); i ++)
 	      {
