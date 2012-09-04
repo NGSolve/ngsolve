@@ -852,6 +852,9 @@ namespace ngbla
   };
 
 
+
+
+
   /// cross product
   template <typename S>
   inline Vec<3,S> Cross (const Vec<3,S> & a, const Vec<3,S> & b)
@@ -1413,8 +1416,28 @@ namespace ngbla
     typedef T TSCAL;
   };
 
+
 }
 
-
+#ifdef PARALLEL
+namespace ngparallel
+{
+  template<int S, typename T>
+  class MPI_Traits<ngbla::Vec<S, T> >
+  {
+  public:
+    static MPI_Datatype MPIType () 
+    { 
+      static MPI_Datatype MPI_T = 0;
+      if (!MPI_T)
+	{
+	  MPI_Type_contiguous ( S, MPI_Traits<T>::MPIType(), &MPI_T);
+	  MPI_Type_commit ( &MPI_T );
+	}
+      return MPI_T;
+    }
+  };
+}
+#endif
 
 #endif

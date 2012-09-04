@@ -31,6 +31,24 @@ namespace ngbla
 }
 
 
+#ifdef PARALLEL
+namespace ngparallel
+{
+  template <>
+  class MPI_Traits<ngbla::Complex>
+  {
+  public:
+    static MPI_Datatype MPIType () 
+    { 
+      // return MPI_C_DOUBLE_COMPLEX;   // no MPI_SUM defined ??
+      return MPI_DOUBLE_COMPLEX;
+    }
+  };
+}
+#endif
+
+
+
 
 #include "expr.hpp"
 #include "vector.hpp"
