@@ -241,8 +241,6 @@ namespace ngcomp
     
     void Finalize()
     {
-      cout << IM(1) << "Setup BDDC preconditioner" << endl;
-
       static Timer timer ("BDDC Constructor 3");
       RegionTimer reg(timer);
 
@@ -339,7 +337,8 @@ namespace ngcomp
 	      tmp = new ParallelVVector<TV>(ndof, pardofs);
 	      innersolve = new ParallelMatrix (innersolve, pardofs);
 	      harmonicext = new ParallelMatrix (harmonicext, pardofs);
-	      harmonicexttrans = new ParallelMatrix (harmonicexttrans, pardofs);
+	      if (harmonicexttrans)
+		harmonicexttrans = new ParallelMatrix (harmonicexttrans, pardofs);
 	    }
 	  else
 #endif

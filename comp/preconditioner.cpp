@@ -575,8 +575,10 @@ namespace ngcomp
     else
       {
 	const BaseMatrix * mat = &bfa->GetMatrix();
+#ifdef PARALLEL
 	if (dynamic_cast<const ParallelMatrix*> (mat))
 	  mat = &(dynamic_cast<const ParallelMatrix*> (mat)->GetMatrix());
+#endif
 	jacobi = dynamic_cast<const BaseSparseMatrix&> (*mat)
 	  .CreateJacobiPrecond(bfa->GetFESpace().GetFreeDofs(bfa->UsesEliminateInternal()));
       }
