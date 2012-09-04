@@ -944,7 +944,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    dofnodes[dnums[j]] = Node (nt, nr);
 	}
 
-    paralleldofs = new ParallelDofs (ma, dofnodes, dimension, iscomplex);
+    paralleldofs = new ParallelMeshDofs (ma, dofnodes, dimension, iscomplex);
   }
 
 

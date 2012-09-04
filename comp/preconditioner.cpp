@@ -529,7 +529,7 @@ namespace ngcomp
 
   void LocalPreconditioner :: Update ()
   {
-    cout << "Update Local Preconditioner" << flush;
+    cout << IM(1) << "Update Local Preconditioner" << flush;
     delete jacobi;
     
     // const BaseSparseMatrix& amatrix = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix());
@@ -538,7 +538,7 @@ namespace ngcomp
 	
     int blocktype = int (flags.GetNumFlag ( "blocktype", -1));
 
-    if (MyMPI_GetNTasks() != 1) return;
+    // if (MyMPI_GetNTasks() != 1) return;
     bool parallel = (this->on_proc == -1);
     /*
     if ( !parallel && id != this->on_proc )
@@ -574,8 +574,11 @@ namespace ngcomp
       }
     else
       {
-	jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-	  .CreateJacobiPrecond(bfa->GetFESpace().GetFreeDofs());
+	const BaseMatrix * mat = &bfa->GetMatrix();
+	if (dynamic_cast<const ParallelMatrix*> (mat))
+	  mat = &(dynamic_cast<const ParallelMatrix*> (mat)->GetMatrix());
+	jacobi = dynamic_cast<const BaseSparseMatrix&> (*mat)
+	  .CreateJacobiPrecond(bfa->GetFESpace().GetFreeDofs(bfa->UsesEliminateInternal()));
       }
 
 
