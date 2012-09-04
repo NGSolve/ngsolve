@@ -19,68 +19,27 @@ namespace ngparallel
 
 
 #ifdef PARALLEL
-  class ParallelDofs
+
+
+
+  class ParallelMeshDofs : public ParallelDofs
   {
-  protected:
-    int ndof;
-
     const MeshAccess & ma;
-
-    /// these are local exhangedofs
-    Table<int> * exchangedofs;
-
-    /// dof 2 proc-nr
-    Table<int> * dist_procs;
-
-    /// mpi-datatype to send exchange dofs
-    Array<MPI_Datatype> mpi_t;
-
-    /// is this the master process ?
-    BitArray ismasterdof;
-
     Array<Node> dofnodes;
-
   public:
-    ParallelDofs (const MeshAccess & ama, const Array<Node> & adofnodes, 
-		  int dim = 1, bool iscomplex = false);
+    ParallelMeshDofs (const MeshAccess & ama, const Array<Node> & adofnodes, 
+		      int dim = 1, bool iscomplex = false);
 
-    virtual ~ParallelDofs();
-
-    // only for testing ...
     const MeshAccess & GetMeshAccess() const { return ma; }
     const Array<Node> & GetDofNodes() const { return dofnodes; }
-
-    int GetNTasks() const { return exchangedofs->Size(); }
-
-    const FlatArray<int>  GetExchangeDofs (int proc) const
-    { return (*exchangedofs)[proc]; }
-
-    const FlatArray<int>  GetDistantProcs (int dof) const
-    { return (*dist_procs)[dof]; }
-
-    bool IsMasterDof ( int localdof ) const
-    { return ismasterdof.Test(localdof); }
-
-    int GetNDof () const { return ndof; }
-
-    int GetNDofGlobal () const;
-
-    bool IsExchangeProc ( int proc ) const
-    { return (*exchangedofs)[proc].Size() != 0; }
-
-    MPI_Datatype MyGetMPI_Type ( int dest ) const
-    { return mpi_t[dest]; }
-
-    MPI_Comm GetCommunicator () const { return ngs_comm; }
   };
-
-
   
 
 
   template <typename T>
   void ReduceDofData (FlatArray<T> data, MPI_Op op, const ParallelDofs & pardofs)
   {
+    if (&pardofs == NULL) return;
     MPI_Comm comm = pardofs.GetCommunicator();
     int ntasks = MyMPI_GetNTasks (comm);
     if (ntasks <= 1) return;
@@ -135,6 +94,7 @@ namespace ngparallel
   template <typename T>
   void ScatterDofData (FlatArray<T> data, const ParallelDofs & pardofs)
   {
+    if (&pardofs == NULL) return;
     MPI_Comm comm = pardofs.GetCommunicator();
 
     int ntasks = MyMPI_GetNTasks (comm);
@@ -188,6 +148,7 @@ namespace ngparallel
   void AllReduceDofData (FlatArray<T> data, MPI_Op op, 
 			 const ParallelDofs & pardofs)
   {
+    if (&pardofs == NULL) return;
     ReduceDofData (data, op, pardofs);
     ScatterDofData (data, pardofs);
   }
@@ -197,21 +158,13 @@ namespace ngparallel
 
 #else
 
-  class ParallelDofs 
+
+  class ParallelMeshDofs : public ParallelDofs 
   {
-    int ndof;
-
-  public:
-
     ParallelDofs (const MeshAccess & ama, const Array<Node> & adofnodes, 
 		  int dim = 1, bool iscomplex = false)
     { ndof = adofnodes.Size(); }
-
-    int GetNDofGlobal () const { return ndof; }
-
   };
-
-
 
   
 #endif //PARALLEL

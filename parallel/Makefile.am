@@ -10,7 +10,7 @@ parallelvvector.cpp parallel_matrices.cpp
 # libparallel_la_LIBADD = /opt/hypre-2.8.0b/lib hy/o$(top_builddir)/comp/libngcomp.la
 
 include_HEADERS = paralleldofs.hpp parallelngs.hpp \
-parallelvector.hpp parallel_matrices.hpp mpiwrapper.hpp
+parallelvector.hpp parallel_matrices.hpp
 
 
 libparallel_la_LDFLAGS = -avoid-version

@@ -11,23 +11,8 @@ namespace ngparallel
   using namespace ngla;
 }
 
-#ifdef PARALLEL
 
-/*
-#undef SEEK_SET
-#undef SEEK_CUR
-#undef SEEK_END
-*/
-
-#define OMPI_SKIP_MPICXX
-#include <mpi.h>
-
-#endif
-
-
-
-
-#include "mpiwrapper.hpp"
+// #include "mpiwrapper.hpp"
 #include "paralleldofs.hpp"
 
 #include "parallelvector.hpp"
