@@ -20,5 +20,4 @@ include_HEADERS = bilinearform.hpp comp.hpp facetfespace.hpp	   \
  l2hofespace.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   \
  postproc.hpp preconditioner.hpp vectorfacetfespace.hpp hypre_precond.hpp 
 
-libngcomp_la_LDFLAGS = -avoid-version
-#   -L/opt/hypre-2.8.0b/lib -lHYPRE
+libngcomp_la_LDFLAGS = -avoid-version -L/opt/hypre-2.8.0b/lib -lHYPRE

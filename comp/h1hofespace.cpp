@@ -81,6 +81,7 @@ namespace ngcomp
     
     if (flags.NumFlagDefined("smoothing")) 
       throw Exception ("Flag 'smoothing' for fespace is obsolete \n Please use flag 'blocktype' in preconditioner instead");
+    nodalp2 = flags.GetDefineFlag ("nodalp2");
           
     Flags loflags;
     loflags.SetFlag ("order", 1);
@@ -580,7 +581,7 @@ namespace ngcomp
 	      
 	      INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
 	      hofe2d -> SetOrderFace (0, p);
-	      
+	      hofe2d -> SetNodalP2 (nodalp2);	      
 	      hofe2d -> ComputeNDof();
 	      return *hofe2d;
 	    }
@@ -590,7 +591,7 @@ namespace ngcomp
 	      hofe3d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
 	      hofe3d -> SetOrderFace (order_face[ArrayObject(ngel.faces)]);
 	      hofe3d -> SetOrderCell (order_inner[elnr]);
-	      
+	      hofe3d -> SetNodalP2 (nodalp2);
 	      hofe3d -> ComputeNDof();
 	      return *hofe3d;
 	    }
