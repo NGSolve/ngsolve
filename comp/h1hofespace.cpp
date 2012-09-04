@@ -440,6 +440,7 @@ namespace ngcomp
     for (int i = 0; i < ma.GetNV(); i++)
       if (used_vertex[i])
 	ctofdof[i] = WIREBASKET_DOF;
+    // ctofdof[i] = INTERFACE_DOF;
       else
 	ctofdof[i] = UNUSED_DOF;
 

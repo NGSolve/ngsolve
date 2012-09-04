@@ -52,7 +52,8 @@ namespace ngcomp
 
     const ParallelMatrix & pmat = (dynamic_cast<const ParallelMatrix&> (matrix));
     const SparseMatrix<double> & mat = dynamic_cast< const SparseMatrix<double> &>(pmat.GetMatrix());
-
+    if (dynamic_cast< const SparseMatrixSymmetric<double> *> (&mat))
+      throw Exception ("Please use fully stored sparse matrix for hypre (bf -nonsymmetric)");
 
     pardofs = pmat.GetParallelDofs ();
     int ndof = pardofs->GetNDof();
@@ -100,10 +101,6 @@ namespace ngcomp
     HYPRE_IJMatrixSetObjectType(A, HYPRE_PARCSR);
     HYPRE_IJMatrixInitialize(A);
    
-    /*   
-	 const BaseMatrix & bmat = (dynamic_cast<const ParallelMatrix&> (bfa->GetMatrix())).GetMatrix();
-	 const SparseMatrix<double> & mat = dynamic_cast< const SparseMatrix<double> &>(bmat);
-    */
 
     for( int i = 0; i < mat.Height(); i++)
       {
@@ -139,7 +136,7 @@ namespace ngcomp
     cout << IM(2) << "Call BoomerAMGSetup" << endl;
     HYPRE_BoomerAMGSetup (precond, parcsr_A, par_b, par_x);
 	
-    HYPRE_BoomerAMGSetMaxIter (precond,3);
+    HYPRE_BoomerAMGSetMaxIter (precond,1);
     VT_ON();
   }
 
