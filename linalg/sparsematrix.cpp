@@ -937,8 +937,8 @@ namespace ngla
   void SparseMatrixSymmetricTM<TM> ::
   AddElementMatrix(const FlatArray<int> & dnums, const FlatMatrix<TSCAL> & elmat1)
   {
-    static Timer timer ("SparseMatrixSymmetric::AddElementMatrix");
-    static Timer timers ("SparseMatrixSymmetric::AddElementMatrix - sort");
+    static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
+    static Timer timers ("SparseMatrixSymmetric::AddElementMatrix - sort", 3);
 
     RegionTimer reg (timer);
 

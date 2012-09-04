@@ -432,10 +432,6 @@ namespace ngla
     cluster = acluster;
 
     cout << IM(1) << "Mumps Parallel inverse " << flush;
-    MyMPI_Barrier();
-    cout << IM(1) << "all here" << endl;
-    MyMPI_Barrier();
-
 
     int ntasks = MyMPI_GetNTasks();
     int id = MyMPI_GetId();
