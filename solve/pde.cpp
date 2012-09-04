@@ -1211,10 +1211,7 @@ namespace ngsolve
 	else 
 	*/
 	if (strcmp (type, "local") == 0)
-	  {
-	    if ( id >= 0 )
-	      pre = new LocalPreconditioner (this, flags, name);
-	  }
+	  pre = new LocalPreconditioner (this, flags, name);
 	/*
 	  else if (strcmp (type, "direct") == 0)
 	  pre = new DirectPreconditioner (this, flags, name);
