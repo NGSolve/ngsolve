@@ -1715,6 +1715,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	dirichlet_dofs = free_dofs;
 	dirichlet_dofs.Invert();
+
+        external_free_dofs.SetSize (GetNDof());
+        external_free_dofs = free_dofs;
+        for (int i = 0; i < ctofdof.Size(); i++)
+          if (ctofdof[i] & LOCAL_DOF)
+            external_free_dofs.Clear(i);
+
       }
   }
 
