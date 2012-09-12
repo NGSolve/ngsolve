@@ -3269,6 +3269,23 @@ namespace netgen
 	cerr << "undef element in CalcMultPointSurfaceTrao" << endl;
       }
     info.ndof = info.nv;
+
+    // if (info.order > 1)
+    //   {
+    //     const MeshTopology & top = mesh.GetTopology();
+	
+    //     top.GetSurfaceElementEdges (elnr+1, info.edgenrs);
+    //     for (int i = 0; i < info.edgenrs.Size(); i++)
+    //       info.edgenrs[i]--;
+    //     info.facenr = top.GetSurfaceElementFace (elnr+1)-1;
+
+    //     for (int i = 0; i < info.edgenrs.Size(); i++)
+    //       info.ndof += edgecoeffsindex[info.edgenrs[i]+1] - edgecoeffsindex[info.edgenrs[i]];
+    //     info.ndof += facecoeffsindex[info.facenr+1] - facecoeffsindex[info.facenr];
+    //   }
+
+// Michael Woopen: THESE FOLLOWING LINES ARE COPIED FROM CurvedElements::CalcSurfaceTransformation
+
     if (info.order > 1)
       {
 	const MeshTopology & top = mesh.GetTopology();
@@ -3278,10 +3295,37 @@ namespace netgen
 	  info.edgenrs[i]--;
 	info.facenr = top.GetSurfaceElementFace (elnr+1)-1;
 
-	for (int i = 0; i < info.edgenrs.Size(); i++)
-	  info.ndof += edgecoeffsindex[info.edgenrs[i]+1] - edgecoeffsindex[info.edgenrs[i]];
-	info.ndof += facecoeffsindex[info.facenr+1] - facecoeffsindex[info.facenr];
+
+	bool firsttry = true;
+	bool problem = false;
+
+	while(firsttry || problem)
+	  {
+	    problem = false;
+
+	    for (int i = 0; !problem && i < info.edgenrs.Size(); i++)
+	      {
+		if(info.edgenrs[i]+1 >= edgecoeffsindex.Size())
+		  problem = true;
+		else
+		  info.ndof += edgecoeffsindex[info.edgenrs[i]+1] - edgecoeffsindex[info.edgenrs[i]];
+	      }
+	    if(info.facenr+1 >= facecoeffsindex.Size())
+	      problem = true;
+	    else
+	      info.ndof += facecoeffsindex[info.facenr+1] - facecoeffsindex[info.facenr];
+
+	    if(problem && !firsttry)
+	      throw NgException("something wrong with curved elements");
+	    
+	    if(problem)
+	      BuildCurvedElements(NULL,order,rational);
+
+	    firsttry = false;
+	  }
       }
+
+// THESE LAST LINES ARE COPIED FROM CurvedElements::CalcSurfaceTransformation
 
     GetCoefficients (info, coefs);
 
