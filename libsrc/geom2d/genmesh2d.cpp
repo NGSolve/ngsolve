@@ -234,7 +234,7 @@ namespace netgen
 	  {
 	    Point<2> x = spline.GetPoint(t);
 	    double hc = 1.0/mp.curvaturesafety / (1e-99+spline.CalcCurvature (t));
-	    mesh2d.RestrictLocalH (Point<3> (x(0), x(1), 0), min2(hc, spline.hmax));
+	    mesh2d.RestrictLocalH (Point<3> (x(0), x(1), 0), min2(hc, hcurve));
 	  }
       }
 
