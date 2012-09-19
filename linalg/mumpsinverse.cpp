@@ -260,7 +260,7 @@ namespace ngla
     mumps_id.icntl[1]=-1; 
     mumps_id.icntl[2]=-1; 
     mumps_id.icntl[3]=0;
-    mumps_id.icntl[7]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
+    mumps_id.icntl[6]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
     mumps_id.icntl[12]=1;  // not using scalapck for root schur complement
     mumps_id.icntl[13]=50; // memory increase (in %) due to error -9
     mumps_id.icntl[27]=2;  // 0..default,  2..parallel analysis
@@ -790,15 +790,16 @@ namespace ngla
     mumps_id.icntl[1]=-1; 
     mumps_id.icntl[2]=-1; 
     mumps_id.icntl[3]=1;
-    mumps_id.icntl[7]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
+    // mumps_id.icntl[7]=7;   // BUG (??) 0..min deg, 3..scotch 5..metis, 7..default
+    mumps_id.icntl[6]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
     mumps_id.icntl[12]=1;  // not using scalapck for root schur complement
     mumps_id.icntl[13]=50; // memory increase (in %) due to error -9
     mumps_id.icntl[17]=3;  // parallel input
-    mumps_id.icntl[27]=2;  // 0..default,  2..parallel analysis
+    mumps_id.icntl[27]=2;  // 0..default, 1..seq, 2..parallel analysis
     mumps_id.icntl[28]=2;  // 0..auto, 2..parmetis
 
     // mumps_id.comm_fortran=USE_COMM_WORLD;
-    mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
+    mumps_id.comm_fortran = MPI_Comm_c2f (ngs_comm);
     mumps_id.job = JOB_ANALYSIS;
 
     cout << IM(1) << "analysis ... " << flush;
@@ -997,26 +998,11 @@ namespace ngla
   template class ParallelMumpsInverse<Mat<3,3,double> >;
   template class ParallelMumpsInverse<Mat<3,3,Complex> >;
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#if MAX_SYS_DIM >= 4
+  template class MumpsInverse<Mat<4,4,double> >;
+  template class MumpsInverse<Mat<4,4,Complex> >;
+#endif
   /*
-    #if MAX_SYS_DIM >= 4
-    template class MumpsInverse<Mat<4,4,double> >;
-    template class MumpsInverse<Mat<4,4,Complex> >;
-    #endif
     #if MAX_SYS_DIM >= 5
     template class MumpsInverse<Mat<5,5,double> >;
     template class MumpsInverse<Mat<5,5,Complex> >;
