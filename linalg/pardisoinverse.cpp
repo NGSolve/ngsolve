@@ -456,6 +456,8 @@ namespace ngla
                         counter+=entrysize;
                       }
                   }
+		if (ci != -1)
+		  counter = rowstart[ci*entrysize] + rowelems*entrysize-1;
               }
             else if (cluster)
               {
