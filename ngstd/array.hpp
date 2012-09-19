@@ -122,6 +122,21 @@ namespace ngstd
     return IntRange (range.First()+shift, range.Next()+shift);
   }
 
+  inline IntRange operator+ (int shift, const IntRange & range)
+  {
+    return IntRange (range.First()+shift, range.Next()+shift);
+  }
+
+  inline IntRange operator* (int scale, const IntRange & range)
+  {
+    return IntRange (scale*range.First(), scale*range.Next());
+  }
+
+  inline IntRange operator* (const IntRange & range, int scale)
+  {
+    return IntRange (scale*range.First(), scale*range.Next());
+  }
+
   inline ostream & operator<< (ostream & s, const IntRange & ir)
   {
     s << "[" << ir.First() << "," << ir.Next() << ")";
