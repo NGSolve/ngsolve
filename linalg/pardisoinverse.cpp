@@ -668,28 +668,32 @@ namespace ngla
     FlatVector<TVX> fy = y.FV<TVX> ();
 
     integer maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error;
-    integer nrhs = 1;
+    integer nrhs = fx.Size() / (height/entrysize);
+
+    if (fx.Size() != fy.Size()) cout << "sizes don't match" << endl;
+
+    FlatMatrix<TVX> mx(nrhs, height/entrysize, (TVX*)fx.Data());
+    FlatMatrix<TVX> my(nrhs, height/entrysize, (TVX*)fy.Data());
 
     integer * params = const_cast <integer*> (&hparams[0]);
 
     if (compressed)
       {
-	Vector<TVX> hx(compress.Size());
-	Vector<TVX> hy(compress.Size());
-
-	hx = fx(compress);
-
+	Matrix<TVX> hx(nrhs, compress.Size());
+	Matrix<TVX> hy(nrhs, compress.Size());
+	hx = mx.Cols(compress);
+	
 	F77_FUNC(pardiso) ( const_cast<integer*>(pt), &maxfct, &mnum, 
 			    const_cast<integer*>(&matrixtype),
 			    &phase, const_cast<integer*>(&compressed_height), 
 			    reinterpret_cast<double *>(&matrix[0]),
 			    &rowstart[0], &indices[0],
 			    NULL, &nrhs, params, &msglevel,
-			    static_cast<double *>(hx.Data()), 
-			    static_cast<double *>(hy.Data()), &error );
+			    reinterpret_cast<double *>(&hx(0,0)), 
+			    reinterpret_cast<double *>(&hy(0,0)), &error );
 
-	fy = 0;
-	fy(compress) = hy;
+	my = 0;
+	my.Cols(compress) = hy;
       }
     else
       {
