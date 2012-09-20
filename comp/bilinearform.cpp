@@ -839,10 +839,21 @@ namespace ngcomp
 				    }
 				  else
 				    {
+				      /*
 				      ArrayMem<int,50> idnums;
 				      ArrayMem<int,50> ednums;
 				      fespace.GetDofNrs(i,idnums,LOCAL_DOF);
 				      fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
+				      */
+				      ArrayMem<int,50> idnums1, idnums;
+				      ArrayMem<int,50> ednums1, ednums;
+				      fespace.GetDofNrs(i,idnums1,LOCAL_DOF);
+				      fespace.GetDofNrs(i,ednums1,EXTERNAL_DOF);
+				      for (int j = 0; j < idnums1.Size(); j++)
+					idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
+				      for (int j = 0; j < ednums1.Size(); j++)
+					ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
+				      
 				      if (store_inner)
 					innermatrix ->AddElementMatrix(i,idnums,idnums,d);
 
@@ -2118,10 +2129,15 @@ cout << "catch in AssembleBilinearform 2" << endl;
 				}
 			      else
 				{
-				  Array<int> idnums;
-				  Array<int> ednums;
-				  fespace.GetDofNrs(i,idnums,LOCAL_DOF);
-				  fespace.GetDofNrs(i,ednums,EXTERNAL_DOF);
+				  ArrayMem<int,50> idnums1, idnums;
+				  ArrayMem<int,50> ednums1, ednums;
+				  fespace.GetDofNrs(i,idnums1,LOCAL_DOF);
+				  fespace.GetDofNrs(i,ednums1,EXTERNAL_DOF);
+				  for (int j = 0; j < idnums1.Size(); j++)
+				    idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
+				  for (int j = 0; j < ednums1.Size(); j++)
+				    ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
+
 				  if (store_inner)
 				    static_cast<ElementByElementMatrix<SCAL>*>(innermatrix)
 				      ->AddElementMatrix(i,idnums,idnums,d);
@@ -2317,7 +2333,12 @@ cout << "catch in AssembleBilinearform 2" << endl;
           }
       
 	if (print)
-	  (*testout) << "mat = " << endl << GetMatrix() << endl;
+	  {
+	    (*testout) << "mat = " << endl << GetMatrix() << endl;
+	    if (harmonicext) (*testout) << "harm ext = " << endl << *harmonicext << endl;
+	    if (harmonicexttrans) (*testout) << "harm ext = " << endl << *harmonicexttrans << endl;
+	    if (innermatrix) (*testout) << "harm ext = " << endl << *innermatrix << endl;
+	  }
         /*
           if (mat.Height() < 100)
           mat.Print (cout);
