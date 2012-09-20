@@ -1006,9 +1006,9 @@ namespace ngfem
 
 	RegionTimer reg1a (timer1a);     
 
-	// mat_gradgrad = Trans (dbmats) * bmats;
+	mat_gradgrad = Trans (dbmats) * bmats | Lapack;
         // LapackMultAtB (dbmats, bmats, mat_gradgrad);
-	LapackMult (Trans(dbmats), bmats, mat_gradgrad);
+	// LapackMult (Trans(dbmats), bmats, mat_gradgrad);
 	elmat.Cols(l2_dofs).Rows(l2_dofs) = mat_gradgrad;
       }
 
@@ -1079,9 +1079,15 @@ namespace ngfem
 		mat_mixed += fac_dudns * Trans (jumps);
 		mat_robin += Symmetric (fac_jumps.Rows(l2_dofs) * Trans (jumps.Rows(l2_dofs)));
 	      */
+
+	      elmat     += fac_jumps * Trans (jumps)  | Lapack;
+	      mat_mixed += fac_dudns * Trans(jumps)   | Lapack;
+	      mat_robin += fac_jumps.Rows(l2_dofs) * Trans(jumps.Rows(l2_dofs)) | Lapack;
+	      /*
 	      LapackMultAddABt (fac_jumps, jumps, 1, elmat);
 	      LapackMultAddABt (fac_dudns, jumps, 1, mat_mixed);
 	      LapackMultAddABt (fac_jumps.Rows(l2_dofs), jumps.Rows(l2_dofs), 1, mat_robin);
+	      */
 	    }
 	}
 	
@@ -1098,11 +1104,12 @@ namespace ngfem
 	LapackInverse (mat_gradgrad);
 
 	FlatMatrix<> hmT(nd, nd_l2, lh);
+
 	/*
 	  hmT = mat_mixedT * Trans (mat_gradgrad);
 	  elmat += (1+alpha) * mat_mixedT * Trans (hmT);
 	*/
-	// LapackMultABt (mat_mixedT, mat_gradgrad, hmT);
+
 	LapackMult (mat_mixedT, Trans(mat_gradgrad), hmT);
 	LapackMultAddABt (mat_mixedT, hmT, 1+alpha, elmat);
       }
