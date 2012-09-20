@@ -1876,6 +1876,24 @@ namespace netgen
   {
     if (nodisplay)
       return;
+
+
+    int w = Togl_Width (togl);
+    int h = Togl_Height (togl);
+
+    glViewport(0, 0, w, h);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    
+    // OpenGL near and far clipping planes
+    double pnear = 0.1;
+    double pfar = 10;
+
+    gluPerspective(20.0f, double(w) / h, pnear, pfar);
+    glMatrixMode(GL_MODELVIEW);
+
+
       
     Tcl_Interp * interp = Togl_Interp(togl);
 
@@ -1910,17 +1928,17 @@ namespace netgen
 	glLoadIdentity();
 	// gluLookAt (0, 0, 6, 0, 0, 0, 0, 1, 0);
 	vs->DrawScene();
-
-	Togl_SwapBuffers(togl);
 	glPopMatrix();
+	Togl_SwapBuffers(togl);
       }
   }
 
   static void reshape( struct Togl *togl)
   {
+    /*
     if (nodisplay)
       return;
-      
+    
     int w = Togl_Width (togl);
     int h = Togl_Height (togl);
 
@@ -1937,6 +1955,7 @@ namespace netgen
     glMatrixMode(GL_MODELVIEW);
 
     draw (togl);
+    */
   }
 
 
