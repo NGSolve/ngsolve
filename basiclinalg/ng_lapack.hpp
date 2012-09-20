@@ -199,6 +199,33 @@ namespace ngbla
 
 
 
+  template <typename TA, typename TB, typename TC>
+  inline void LapackMult (const TA & a, 
+			  const TB & b, 
+			  const TC & c)
+  { BASE_LapackMult<typename TC::TSCAL> (a, false, b, false, c); }
+
+  template <typename TA, typename TB, typename TC>
+  inline void LapackMult (const TA & a, 
+			  TransExpr<TB> b, 
+			  const TC & c)
+  { BASE_LapackMult<typename TC::TSCAL> (a, false, b.A(), true, c); }
+
+  template <typename TA, typename TB, typename TC>
+  inline void LapackMult (TransExpr<TA> a, 
+			  const TB & b, 
+			  const TC & c)
+  { BASE_LapackMult<typename TC::TSCAL> (a.A(), true, b, false, c); }
+
+  template <typename TA, typename TB, typename TC>
+  inline void LapackMult (TransExpr<TA> a, 
+			  TransExpr<TB> b, 
+			  const TC & c)
+  { BASE_LapackMult<typename TC::TSCAL> (a.A(), true, b.A(), true, c); }
+
+  
+
+  /*
   inline void LapackMult (SliceMatrix<double> a, 
 			  SliceMatrix<double> b, 
 			  SliceMatrix<double> c)
@@ -215,16 +242,16 @@ namespace ngbla
 			  SliceMatrix<double> b, 
 			  SliceMatrix<double> c)
   { BASE_LapackMult<double> (a.A(), true, b, false, c); }
-  
+
   template <typename TA, typename TB>
   inline void LapackMult (TransExpr<TA> a, 
 			  TransExpr<TB> b,
 			  SliceMatrix<double> c)
   { BASE_LapackMult<double> (a.A(), true, b.A(), true, c); }
+  */
 
 
-
-
+  /*
   inline void LapackMult (SliceMatrix<Complex> a, 
 			  SliceMatrix<Complex> b, 
 			  SliceMatrix<Complex> c)
@@ -247,8 +274,7 @@ namespace ngbla
 			  TransExpr<TB> b,
 			  SliceMatrix<Complex> c)
   { BASE_LapackMult<Complex> (a.A(), true, b.A(), true, c); }
-
-
+  */
 
 
 
@@ -284,7 +310,6 @@ namespace ngbla
 			     SliceMatrix<double> c,
 			     double beta = 1.0)
   { BASE_LapackMultAdd<double> (a.A(), true, b.A(), true, alpha, c, beta); }
-
 
 
 
@@ -370,7 +395,6 @@ namespace ngbla
   { BASE_LapackMult (a, true, b, true, c); }
 
   */
-
 
 
 

@@ -303,6 +303,7 @@ namespace ngbla
       FlatMatrix<T>::operator= (s);
       return *this;
     }
+
   };
 
 

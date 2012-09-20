@@ -137,7 +137,7 @@ namespace ngbla
   {
     // cout << "Calc SchurComplement" << endl;
 
-    void * heapp = lh.GetPointer();
+    HeapReset hr(lh);
 
     int n = a.Height(), n_used = 0, n_unused = 0;
     for (int i = 0; i < n; i++)
@@ -178,27 +178,15 @@ namespace ngbla
     (*testout) << "Schur, c = " << endl << c << endl;
     */
 
-#ifdef LAPACK
-
     LapackInverse (c);
-    LapackMult (c, b1, hb1);
-    // hb1 = c * b1;
-    // s -= b2 * hb1;
-    LapackMultAddAB (b2, hb1, -1, s);
-#else
-    FlatMatrix<> c_inv(n_unused, n_unused, lh);
-    CalcInverse (c, c_inv);
-    c = c_inv;
 
-    hb1 = c * b1;
-    s -= b2 * hb1;
-#endif
+    // LapackMult (c, b1, hb1);
+    hb1 = c * b1 | Lapack;
 
-    lh.CleanUp (heapp);
+    // LapackMultAddAB (b2, hb1, -1, s);
+    s -= b2 * hb1 | Lapack;
 
     // (*testout) << "Schur, cinv = " << endl << c << endl;
-
-
     // (*testout) << "Schur = " << endl << s << endl;
   }
 
