@@ -469,26 +469,15 @@ namespace ngsolve
   void NumProcDrawCoefficient :: PrintDoc (ostream & ost)
 
   {
-    /*
     ost <<
-      "\n\nNumproc DrawFlux:\n" \
+      "\n\nNumproc draw:\n" \
       "-----------------\n" \
-      "Adds the natural flux to the visualization dialogbox:\n"\
-      "It takes the first integrator of the bilinear-form\n" \
-      "- Heat flux for thermic problems\n"\
-      "- Stresses for mechanical problems\n"\
-      "- Induction for magnetostatic problems\n\n"\
+      "Draws a coefficient function:\n"\
       "Required flags:\n"
-      "-bilinearform=<bfname>\n" \
-      "    the first integrator for the bf computes the flux\n" \
-      "-solution=<gfname>\n" \
-      "    grid-function providing the primal solution field\n" \
-      "\nOptional flags:\n" \
-      "-applyd\n" \
-      "    apply coefficient matrix (compute either strains or stresses, B-field or H-field,..\n"\
-      "-label=<name>\n" \
-      "    label printed in the visualization dialogbox\n\n";
-    */
+      "-coefficient=<cfname>\n" \
+      "    name of the coefficient\n" \
+      "-label=<label>\n" \
+      "    name displayed in the visualization dialog\n";
   }
 
 
