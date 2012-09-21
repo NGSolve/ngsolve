@@ -673,12 +673,6 @@ namespace ngcomp
 	  }
       }
 
-    if (id == 17)
-      {
-	Array<int> dnums;
-	GetFaceDofNrs (5452, dnums);
-	cout << "id = 17, f=5452, dnums = " << dnums << endl;
-      }
     AllReduceDofData (ctofdof, MPI_MAX, GetParallelDofs());
   }
 
