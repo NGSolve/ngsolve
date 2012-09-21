@@ -412,6 +412,8 @@ namespace ngcomp
             if (p[0] > 1)
 	      ndof += p[0]-1;
             break;
+          case ET_POINT:
+	    break;
 	  }
       } 
     first_element_dof[ne] = ndof;
@@ -501,6 +503,7 @@ namespace ngcomp
           case ET_PYRAMID: return * new (lh) ScalarDummyFE<ET_PYRAMID> (); break;
           case ET_PRISM:   return * new (lh) ScalarDummyFE<ET_PRISM> (); break;
           case ET_HEX:     return * new (lh) ScalarDummyFE<ET_HEX> (); break;
+	  case ET_POINT:   break;
 	  }
       }
 
@@ -640,7 +643,7 @@ namespace ngcomp
 
     switch (ma.GetDimension())
       {
-      case 0:
+      case 1:
 	{
 	  hofe0d -> ComputeNDof();
 	  return *hofe0d;

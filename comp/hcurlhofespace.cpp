@@ -363,7 +363,7 @@ namespace ngcomp
 		
   void HCurlHighOrderFESpace :: UpdateDofTables()
   {
-    int nv = ma.GetNV();
+    // int nv = ma.GetNV();
     int ne = ma.GetNE();
 
     int ned = ma.GetNEdges();
@@ -662,8 +662,7 @@ namespace ngcomp
 	  }
 	
 	if (eltype == ET_PYRAMID) upgrade = true;
-
-
+	
 	if (upgrade)
 	  {
 	    GetDofNrs (el, dnums);
@@ -672,8 +671,6 @@ namespace ngcomp
 		ctofdof[dnums[j]] = WIREBASKET_DOF;
 	  }
       }
-
-    AllReduceDofData (ctofdof, MPI_MAX, GetParallelDofs());
   }
 
   
@@ -690,6 +687,7 @@ namespace ngcomp
           case ET_PRISM:   return * new (lh) HCurlDummyFE<ET_PRISM> (); 
           case ET_HEX:     return * new (lh) HCurlDummyFE<ET_HEX> (); 
           case ET_SEGM:    break;
+          case ET_POINT:   break;
 	  }
       }
 
