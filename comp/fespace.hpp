@@ -44,9 +44,6 @@ namespace ngcomp
 
 
 
-
-
-
   /**
      Base class for finite element space.
      Provides finite elements, global degrees of freedom, 
@@ -731,6 +728,24 @@ namespace ngcomp
   };
 }
 
+
+
+#ifdef PARALLEL
+namespace ngparallel
+{
+  template<>
+  class MPI_Traits<ngcomp::COUPLING_TYPE>
+  {
+  public:
+    static MPI_Datatype MPIType () 
+    { 
+      if (sizeof(ngcomp::COUPLING_TYPE) == sizeof(int)) return MPI_INT;
+      cout << "please provide MPI_Datatype for COUPLING_TYPE" << endl;
+      exit(1);
+    }
+  };
+}
+#endif
 
 
 #endif
