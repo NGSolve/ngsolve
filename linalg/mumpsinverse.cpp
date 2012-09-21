@@ -8,6 +8,7 @@
 #ifdef USE_MUMPS
 
 #include <la.hpp>
+#include <comp.hpp>
 #include <parallelngs.hpp>
 
 namespace ngla
@@ -499,6 +500,19 @@ namespace ngla
       if (!inner || inner->Test(row))
 	select.Append (row);
     
+    const ParallelMeshDofs & pmdofs = dynamic_cast<const ParallelMeshDofs&> (*pardofs);
+    for (int row = 0; row < ndof; row++)
+      if (!inner || inner->Test(row))
+	if (global_nums[row] < 0)
+	  {
+	    Node node = pmdofs.GetDofNodes()[row];
+	    cout << "illegal gobal num, id = " << id << ", localnum = " << row << 
+	      ", on " << node << endl;
+	    
+	    Array<int> procs;
+	    pmdofs.GetMeshAccess().GetDistantProcs (node, procs);
+	    cout << "procs = " << procs << endl;
+	  }
 
 
     /*
@@ -786,14 +800,22 @@ namespace ngla
     mumps_id.irn_loc = row_indices;
     mumps_id.jcn_loc = col_indices;
 
+
     mumps_id.icntl[0]=-1; 
     mumps_id.icntl[1]=-1; 
     mumps_id.icntl[2]=-1; 
     mumps_id.icntl[3]=1;
+    /*
+    mumps_id.icntl[0]= 6; 
+    mumps_id.icntl[1]= 6; 
+    mumps_id.icntl[2]= 6; 
+    mumps_id.icntl[3]= 3;
+    */
+
     // mumps_id.icntl[7]=7;   // BUG (??) 0..min deg, 3..scotch 5..metis, 7..default
     mumps_id.icntl[6]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
     mumps_id.icntl[12]=1;  // not using scalapck for root schur complement
-    mumps_id.icntl[13]=50; // memory increase (in %) due to error -9
+    mumps_id.icntl[13]=80; // memory increase (in %) due to error -9
     mumps_id.icntl[17]=3;  // parallel input
     mumps_id.icntl[27]=2;  // 0..default, 1..seq, 2..parallel analysis
     mumps_id.icntl[28]=2;  // 0..auto, 2..parmetis
