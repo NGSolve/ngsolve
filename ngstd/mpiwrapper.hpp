@@ -346,6 +346,7 @@ public:
 
   enum { MPI_LOR = 4711 };
   enum { MPI_SUM = 4711 };
+  enum { MPI_MAX = 4711 };
 #endif
 
   
