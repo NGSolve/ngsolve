@@ -163,6 +163,7 @@ namespace ngbla
 
     integer n = c.Width();
     integer m = c.Height();
+    if (n == 0 || m == 0) return;
     integer k = transa ? a.Height() : a.Width();
     SCAL alpha = 1.0;
     SCAL beta = 0;
@@ -186,6 +187,7 @@ namespace ngbla
 
     integer n = c.Width();
     integer m = c.Height();
+    if (n == 0 || m == 0) return;
     integer k = transa ? a.Height() : a.Width();
     SCAL alpha = aalpha;
     SCAL beta = abeta;
@@ -669,16 +671,19 @@ namespace ngbla
     if (m == 0) return;
     integer n = a.Width();
     integer lda = a.Width();
-    integer * ipiv = new integer[n];
-    integer lwork = 100*n;
-    double * work = new double[lwork];
+
+    Array<integer> ipiv(n);
     integer info;
     
-    dgetrf_ (&n, &m, &a(0,0), &lda, ipiv, &info);
-    dgetri_ (&n, &a(0,0), &lda, ipiv, work, &lwork, &info);
+    dgetrf_ (&n, &m, &a(0,0), &lda, &ipiv[0], &info);
 
-    delete [] work;
-    delete [] ipiv;
+    double hwork;
+    integer lwork = -1;
+    dgetri_ (&n, &a(0,0), &lda, &ipiv[0], &hwork, &lwork, &info);
+    lwork = integer(hwork);
+
+    Array<double> work(lwork);
+    dgetri_ (&n, &a(0,0), &lda, &ipiv[0], &work[0], &lwork, &info);
   }
 
   /*
