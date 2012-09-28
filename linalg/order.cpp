@@ -754,7 +754,7 @@ namespace ngla
     static Timer reorder_timer("MinimumDegreeOrdering::Order");
     RegionTimer reg(reorder_timer);
 
-    cout << "start order" << endl;
+    cout << IM(4) << "start order" << endl;
 
     for (int j = 0; j < n; j++)
       {
@@ -767,16 +767,16 @@ namespace ngla
     int lastel = -1;
 
     if (n > 5000)
-      cout << "order " << flush;
+      cout << IM(4) << "order " << flush;
 
     for (int i = 0; i < n; i++)
       {
 	if (n > 5000 && i % 1000 == 999)
 	  {
 	    if (i % 10000 == 9999)
-	      cout << "+" << flush;
+	      cout << IM(4) << "+" << flush;
 	    else
-	      cout << "." << flush;
+	      cout << IM(4) << "." << flush;
 	    //	    cout << "allocated els = " << ball.NumElements() << endl;
 
 	    // NgProfiler::Print (cout);
