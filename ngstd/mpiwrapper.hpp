@@ -158,7 +158,7 @@ namespace ngparallel
     RegionTimer r(t);
 
     T global_d;
-    MPI_Allreduce ( &d, &global_d, 1, MyGetMPIType<T>(), MPI_SUM, comm);
+    MPI_Allreduce ( &d, &global_d, 1, MyGetMPIType<T>(), op, comm);
     return global_d;
   }
 
