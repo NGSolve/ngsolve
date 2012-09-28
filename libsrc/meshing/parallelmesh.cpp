@@ -10,14 +10,14 @@
 namespace metis {
   extern "C" {
 
-#include <metis.h>
+#include <metis5.h>
 
 #if METIS_VER_MAJOR >= 5
 #define METIS5
     typedef idx_t idxtype;   
 #else
 #define METIS4
-    typedef idxtype idx_t;   
+    typedef idxtype idx_t;  
 #endif
   } 
 }
@@ -797,16 +797,16 @@ namespace netgen
     int nparts = ntasks-1;
     int edgecut;
 
-    /*
+
     int ncommon = 3;
     METIS_PartMeshDual (&ne, &nn, &eptr[0], &eind[0], NULL, NULL, &ncommon, &nparts,
 			NULL, NULL,
 			&edgecut, &epart[0], &npart[0]);
-    */
+    /*
     METIS_PartMeshNodal (&ne, &nn, &eptr[0], &eind[0], NULL, NULL, &nparts,
 			 NULL, NULL,
 			 &edgecut, &epart[0], &npart[0]);
-
+    */
     PrintMessage (3, "metis complete");
     // cout << "done" << endl;
 

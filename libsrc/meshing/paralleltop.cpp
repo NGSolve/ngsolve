@@ -218,7 +218,7 @@ namespace netgen
 
 
     
-    MPI_Barrier (MPI_COMM_WORLD);
+    // MPI_Barrier (MPI_COMM_WORLD);
 
     MPI_Group MPI_GROUP_WORLD;
     MPI_Group MPI_LocalGroup;
@@ -299,7 +299,7 @@ namespace netgen
  
     NgProfiler::StopTimer (timere);
 
-    MPI_Barrier (MPI_LocalComm);
+    // MPI_Barrier (MPI_LocalComm);
 
 
     if (mesh.GetDimension() == 3)
