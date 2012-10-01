@@ -686,6 +686,32 @@ namespace ngbla
     dgetri_ (&n, &a(0,0), &lda, &ipiv[0], &work[0], &lwork, &info);
   }
 
+
+
+  inline void LapackInverseSPD (ngbla::FlatMatrix<double> a)
+  {
+    integer n = a.Width();
+    if (n == 0) return;
+    integer lda = n;
+
+    integer info;
+    char uplo = 'L';
+
+    dpotrf_ (&uplo, &n, &a(0,0), &lda, &info);
+    dpotri_ (&uplo, &n, &a(0,0), &lda, &info);
+    for (int i = 0; i < n; i++)
+      for (int j = 0; j < i; j++)
+	a(i,j) = a(j,i);
+  }
+
+
+
+
+
+
+
+
+
   /*
     Compoutes B <--- B A^{-1}    (trans = 'N')
     Compoutes B <--- B A^{-T}    (trans = 'T')
