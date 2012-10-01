@@ -504,6 +504,7 @@ namespace ngcomp
     if ( !fes.DefinedOn(ma.GetElIndex(elnr)) ) 
       return false;
 
+    cache_elnr = -1;
     if (cache_elnr != elnr || cache_bound)
       {
 	lh.CleanUp();
@@ -526,25 +527,22 @@ namespace ngcomp
 
 	fes.TransformVec (elnr, 0, elu, TRANSFORM_SOL);
 
-	fel = &fes.GetFE (elnr, lh);
-
 	cache_elnr = elnr;
 	cache_bound = 0;
-
       }
 
     HeapReset hr(lh);
     ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
+    const FiniteElement & fel = fes.GetFE (elnr, lh);
 
     IntegrationPoint ip(lam1, lam2, lam3, 0);
     MappedIntegrationPoint<3,3> sip (ip, eltrans);
-
 
     for(int j = 0; j < bfi3d.Size(); j++)
       {
 	HeapReset hr(lh);
 	FlatVector<SCAL> flux(bfi3d[j] -> DimFlux(), lh);
-	bfi3d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
+	bfi3d[j]->CalcFlux (fel, sip, elu, flux, applyd, lh);
 
 	for (int i = 0; i < components; i++)
 	  {
@@ -682,7 +680,7 @@ namespace ngcomp
 	for (int k = 0; k < npts; k++)
 	  {
 	    Mat<3,3> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<3,3>;
-	    FlatVec<3> vx( (double*)x + k*sx);
+	    FlatVec<3> vx((double*)x + k*sx);
 	    mir[k] = MappedIntegrationPoint<3,3> (ir[k], eltrans, vx, mdxdxref);
 	  }
 
