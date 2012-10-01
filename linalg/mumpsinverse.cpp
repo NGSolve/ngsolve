@@ -228,6 +228,8 @@ namespace ngla
       }
 
 
+
+
     for (int i = 0; i < 40; i++)
       mumps_id.icntl[i] = 0;
 
@@ -781,6 +783,11 @@ namespace ngla
 
     VT_OFF();
 
+    /*
+    *testout << "mumps matrix: n = " << num_globdofs << ", nz = " << nze << endl;
+    for (int i = 0; i < nze; i++)
+      *testout << "a(" << row_indices[i] << "," << col_indices[i] << ") = " << matrix[i] << endl;
+      */
     
     mumps_id.job = JOB_INIT; 
     mumps_id.par = (ntasks == 1) ? 1 : 0;
@@ -800,25 +807,35 @@ namespace ngla
     mumps_id.irn_loc = row_indices;
     mumps_id.jcn_loc = col_indices;
 
-
     mumps_id.icntl[0]=-1; 
     mumps_id.icntl[1]=-1; 
     mumps_id.icntl[2]=-1; 
     mumps_id.icntl[3]=1;
+
     /*
     mumps_id.icntl[0]= 6; 
-    mumps_id.icntl[1]= 6; 
+    mumps_id.icntl[1]= 0; 
     mumps_id.icntl[2]= 6; 
-    mumps_id.icntl[3]= 3;
+    mumps_id.icntl[3]= 1;
     */
 
+    /*
     // mumps_id.icntl[7]=7;   // BUG (??) 0..min deg, 3..scotch 5..metis, 7..default
     mumps_id.icntl[6]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
-    mumps_id.icntl[12]=1;  // not using scalapck for root schur complement
-    mumps_id.icntl[13]=80; // memory increase (in %) due to error -9
+    mumps_id.icntl[12]=1;  // 0..do use, 1..not using scalapck for root schur complement
+    mumps_id.icntl[13]=200; // memory increase (in %) due to error -9
     mumps_id.icntl[17]=3;  // parallel input
     mumps_id.icntl[27]=0;  // 0..default, 1..seq, 2..parallel analysis
     mumps_id.icntl[28]=0;  // 0..auto, 2..parmetis
+    */
+
+    mumps_id.icntl[6]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
+    mumps_id.icntl[12]=1;  // 0..do use, 1..not using scalapck for root schur complement
+    mumps_id.icntl[13]=200; // memory increase (in %) due to error -9
+    mumps_id.icntl[17]=3;  // parallel input
+    mumps_id.icntl[27]=0;  // 0..default, 1..seq, 2..parallel analysis
+    mumps_id.icntl[28]=2;  // 0..auto, 2..parmetis
+
 
     // mumps_id.comm_fortran=USE_COMM_WORLD;
     mumps_id.comm_fortran = MPI_Comm_c2f (ngs_comm);
