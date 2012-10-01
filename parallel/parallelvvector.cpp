@@ -287,7 +287,7 @@ namespace ngla
     if (status != CUMULATED) return;
     this->SetStatus(DISTRIBUTED);
 
-    for ( int dof = 0; dof < paralleldofs->GetNDof(); dof ++ )
+    for ( int dof = 0; dof < paralleldofs->GetNDofLocal(); dof ++ )
       if ( ! paralleldofs->IsMasterDof ( dof ) )
 	(*this)(dof) = 0;
   }
@@ -360,14 +360,15 @@ namespace ngla
 	if (this->entrysize == 1)
 	  {
 	    FlatVector<double> fv = this -> FVDouble ();
-	    for (int dof = 0; dof < paralleldofs->GetNDof(); dof++)
+	    for (int dof = 0; dof < paralleldofs->GetNDofLocal(); dof++)
 	      if (paralleldofs->IsMasterDof ( dof ) )
 		sum += sqr (fv[dof]);
 	  }
 	else
 	  {
-	    FlatMatrix<double> fv (paralleldofs->GetNDof(), this->entrysize, (double*)this->Memory());
-	    for (int dof = 0; dof < paralleldofs->GetNDof(); dof++)
+	    FlatMatrix<double> fv (paralleldofs->GetNDofLocal(), 
+				   this->entrysize, (double*)this->Memory());
+	    for (int dof = 0; dof < paralleldofs->GetNDofLocal(); dof++)
 	      if (paralleldofs->IsMasterDof ( dof ) )
 		sum += L2Norm2 (fv.Row(dof));
 	  }

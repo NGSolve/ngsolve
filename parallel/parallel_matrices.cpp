@@ -31,7 +31,7 @@ namespace ngla
 
     // consistent enumeration
     
-    int ndof = pardofs->GetNDof();
+    int ndof = pardofs->GetNDofLocal();
     
     Array<int> global_nums(ndof);
     global_nums = -1;
@@ -118,7 +118,7 @@ namespace ngla
       {
 	// const MeshAccess & ma = nodaldofs -> GetMeshAccess();
 
-	int ndof = pardofs->GetNDof();
+	int ndof = pardofs->GetNDofLocal();
 
 	Array<int> rows, cols;
 	Array<TM> vals;

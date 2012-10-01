@@ -154,9 +154,9 @@ namespace ngla
 
     explicit ParallelVVector (const ParallelDofs * aparalleldofs,
 			      PARALLEL_STATUS astatus = CUMULATED)
-      : S_BaseVectorPtr<TSCAL> (aparalleldofs->GetNDof(), ES), 
-	VVector<T> (aparalleldofs->GetNDof()), 
-	S_ParallelBaseVectorPtr<TSCAL> (aparalleldofs->GetNDof(), ES, aparalleldofs, astatus)
+      : S_BaseVectorPtr<TSCAL> (aparalleldofs->GetNDofLocal(), ES), 
+	VVector<T> (aparalleldofs->GetNDofLocal()), 
+	S_ParallelBaseVectorPtr<TSCAL> (aparalleldofs->GetNDofLocal(), ES, aparalleldofs, astatus)
     { ; }
 
 

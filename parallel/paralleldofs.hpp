@@ -46,7 +46,7 @@ namespace ngparallel
 
     DynamicTable<T> dist_data(ntasks);
 
-    for (int i = 0; i < pardofs.GetNDof(); i++)
+    for (int i = 0; i < pardofs.GetNDofLocal(); i++)
       if (!pardofs.IsMasterDof(i))
 	{
 	  FlatArray<int> distprocs = pardofs.GetDistantProcs (i);
@@ -59,6 +59,7 @@ namespace ngparallel
     Array<int> nsend(ntasks), nrecv(ntasks);
     for (int i = 0; i < ntasks; i++)
       nsend[i] = dist_data[i].Size();
+
     MyMPI_AllToAll (nsend, nrecv, comm);
     Table<T> recv_data(nrecv);
 
@@ -77,7 +78,7 @@ namespace ngparallel
     cnt = 0;
     
     MPI_Datatype type = MyGetMPIType<T>();
-    for (int i = 0; i < pardofs.GetNDof(); i++)
+    for (int i = 0; i < pardofs.GetNDofLocal(); i++)
       if (pardofs.IsMasterDof(i))
 	{
 	  FlatArray<int> distprocs = pardofs.GetDistantProcs (i);
@@ -102,7 +103,7 @@ namespace ngparallel
     if (ntasks <= 1) return;
 
     DynamicTable<T> dist_data(ntasks);
-    for (int i = 0; i < pardofs.GetNDof(); i++)
+    for (int i = 0; i < pardofs.GetNDofLocal(); i++)
       if (pardofs.IsMasterDof(i))
 	{
 	  FlatArray<int> distprocs = pardofs.GetDistantProcs (i);
@@ -132,7 +133,7 @@ namespace ngparallel
     Array<int> cnt(ntasks);
     cnt = 0;
     
-    for (int i = 0; i < pardofs.GetNDof(); i++)
+    for (int i = 0; i < pardofs.GetNDofLocal(); i++)
       if (!pardofs.IsMasterDof(i))
 	{
 	  FlatArray<int> distprocs = pardofs.GetDistantProcs (i);
