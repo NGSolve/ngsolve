@@ -87,16 +87,7 @@ class ParallelDofs
     MPI_Comm comm;
 
   public:
-    /*
-    ParallelDofs (const MeshAccess & ama, const Array<Node> & adofnodes, 
-		  int dim = 1, bool iscomplex = false);
-    */
-
-    virtual ~ParallelDofs()
-    {
-      ;
-    }
-
+    virtual ~ParallelDofs()  { ; }
 
     int GetNTasks() const { return exchangedofs->Size(); }
 
@@ -109,7 +100,7 @@ class ParallelDofs
     bool IsMasterDof ( int localdof ) const
     { return ismasterdof.Test(localdof); }
 
-    int GetNDof () const { return ndof; }
+    int GetNDofLocal () const { return ndof; }
 
     int GetNDofGlobal () const
     {
@@ -120,10 +111,10 @@ class ParallelDofs
       return ngparallel::MyMPI_AllReduce (nlocal);
     }
 
-    bool IsExchangeProc ( int proc ) const
+    bool IsExchangeProc (int proc) const
     { return (*exchangedofs)[proc].Size() != 0; }
 
-    MPI_Datatype MyGetMPI_Type ( int dest ) const
+    MPI_Datatype MyGetMPI_Type (int dest) const
     { return mpi_t[dest]; }
 
     MPI_Comm GetCommunicator () const { return comm; }

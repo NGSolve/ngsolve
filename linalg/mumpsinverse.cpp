@@ -264,8 +264,8 @@ namespace ngla
     mumps_id.icntl[6]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
     mumps_id.icntl[12]=1;  // not using scalapck for root schur complement
     mumps_id.icntl[13]=50; // memory increase (in %) due to error -9
-    mumps_id.icntl[27]=2;  // 0..default,  2..parallel analysis
-    mumps_id.icntl[28]=2;  // 0..auto, 1..ptscotch 2..parmetis
+    mumps_id.icntl[27]=0;  // 0..default,  2..parallel analysis
+    mumps_id.icntl[28]=0;  // 0..auto, 1..ptscotch 2..parmetis
 
     // mumps_id.comm_fortran=USE_COMM_WORLD;
     mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
@@ -464,7 +464,7 @@ namespace ngla
 
    // consistent enumeration (new version)
     
-    int ndof = pardofs->GetNDof();
+    int ndof = pardofs->GetNDofLocal();
     
     Array<int> global_nums(ndof);
     global_nums = -1;
@@ -817,8 +817,8 @@ namespace ngla
     mumps_id.icntl[12]=1;  // not using scalapck for root schur complement
     mumps_id.icntl[13]=80; // memory increase (in %) due to error -9
     mumps_id.icntl[17]=3;  // parallel input
-    mumps_id.icntl[27]=2;  // 0..default, 1..seq, 2..parallel analysis
-    mumps_id.icntl[28]=2;  // 0..auto, 2..parmetis
+    mumps_id.icntl[27]=0;  // 0..default, 1..seq, 2..parallel analysis
+    mumps_id.icntl[28]=0;  // 0..auto, 2..parmetis
 
     // mumps_id.comm_fortran=USE_COMM_WORLD;
     mumps_id.comm_fortran = MPI_Comm_c2f (ngs_comm);
