@@ -118,6 +118,15 @@ class ParallelDofs
     { return mpi_t[dest]; }
 
     MPI_Comm GetCommunicator () const { return comm; }
+
+    int GetMasterProc (int dof) const
+    {
+      FlatArray<int> procs = GetDistantProcs(dof);
+      int m = ngparallel::MyMPI_GetId(comm);
+      for (int j = 0; j < procs.Size(); j++)
+	m = min2(procs[j], m);
+      return m;
+    }
   };
 
 #else
