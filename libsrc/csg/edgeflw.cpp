@@ -1700,68 +1700,44 @@ namespace netgen
   {
     // if there is no special point at a sphere, one has to add a segment pair
   
-    int i, j; 
-    int nsol; 
     int nsurf = geometry.GetNSurf();
-    int layer(0);
+    int layer = 0;
 
-    BitArray pointatsurface (nsurf);
-    Point<3> p1, p2;
-    Vec<3> nv, tv;
     Solid * tansol;
     Array<int> tansurfind;
-    //  const Solid * sol;
 
     double size = geometry.MaxSize();
-    nsol = geometry.GetNTopLevelObjects();
+    int nsol = geometry.GetNTopLevelObjects();
     
 
+    BitArray pointatsurface (nsurf);
     pointatsurface.Clear();
   
-    /*
-      for (i = 1; i <= specpoints.Size(); i++)
-      {
-      int classrep;
-
-      classrep = geometry.GetSurfaceClassRepresentant (specpoints[i].s1);
-      pointatsurface.Set (classrep);
-      classrep = geometry.GetSurfaceClassRepresentant (specpoints[i].s2);
-      pointatsurface.Set (classrep);
-      //      pointatsurface.Set (specpoints[i].s1);
-      //      pointatsurface.Set (specpoints[i].s2);
-      }
-    */
-    for (i = 1; i <= mesh.GetNSeg(); i++)
+    for (int i = 1; i <= mesh.GetNSeg(); i++)
       {
 	const Segment & seg = mesh.LineSegment(i);
-	int classrep;
 
 #ifdef DEVELOP      
 	(*testout) << seg.surfnr1 << ", " << seg.surfnr2 << ", si = " << seg.si << endl;
 #endif
-	classrep = geometry.GetSurfaceClassRepresentant (seg.si);
-
+	int classrep = geometry.GetSurfaceClassRepresentant (seg.si);
 	pointatsurface.Set (classrep);
       }
 
   
-    for (i = 0; i < nsurf; i++)
+    for (int i = 0; i < nsurf; i++)
       {
 	int classrep = geometry.GetSurfaceClassRepresentant (i);
 
 	if (!pointatsurface.Test(classrep))
 	  {
 	    const Surface * s = geometry.GetSurface(i);
-	    p1 = s -> GetSurfacePoint();
-	    nv = s -> GetNormalVector (p1);
+	    Point<3> p1 = s -> GetSurfacePoint();
+	    Vec<3> nv = s -> GetNormalVector (p1);
 		    
 	    double hloc = 
 	      min2 (s->LocH (p1, 3, 1, h), mesh.GetH(p1));
 
-	    tv = nv.GetNormal ();
-	    tv *=  (hloc / tv.Length());
-	    p2 = p1 + tv;
-	    s->Project (p2);
 	  
 		    
 	    Segment seg1;
@@ -1779,7 +1755,7 @@ namespace netgen
 	    seg1.surfnr2 = i;
 	    seg2.surfnr2 = i;
 
-	    for (j = 0; j < nsol; j++)
+	    for (int j = 0; j < nsol; j++)
 	      {
 		if (geometry.GetTopLevelObject(j)->GetSurface())
 		  continue;
@@ -1795,6 +1771,8 @@ namespace netgen
 		
 		    if (tansurfind.Size() == 1 && tansurfind.Get(1) == i)
 		      {
+			hloc = min2 (hloc, geometry.GetTopLevelObject(j)->GetMaxH());
+
 			if (!tansol->VectorIn(p1, nv))
 			  {
 			    seg1.domin = j;
@@ -1816,6 +1794,12 @@ namespace netgen
 		    delete tansol;
 		  }
 	      }
+
+	    
+	    Vec<3> tv = nv.GetNormal ();
+	    tv *=  (hloc / tv.Length());
+	    Point<3> p2 = p1 + tv;
+	    s->Project (p2);
 
 
 	    if (seg1.domin != -1 || seg1.domout != -1)
