@@ -88,11 +88,12 @@ AC_ARG_WITH([metis],
         [metisdir=$withval],
         [metisdir=/usr/local]
 	)
+echo "metisdir = $metisdir"
 
 AC_ARG_ENABLE([parallel],
         [AC_HELP_STRING([--enable-parallel],[enable mpi parallelization])],
-	[AC_SUBST([MPI_INCLUDES], "-DPARALLEL -I$(metisdir)/include -DMETIS")]
-	[AC_SUBST([MPI_LIBS], "-L$(metisdir)/lib -lmetis")]
+	[AC_SUBST([MPI_INCLUDES], "-DPARALLEL -I$metisdir/include -DMETIS")]
+	[AC_SUBST([MPI_LIBS], "-L$metisdir/lib -lmetis")]
         )       
 #          -DVTRACE
 #          -lvt-hyb
