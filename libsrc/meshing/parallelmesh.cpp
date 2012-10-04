@@ -10,7 +10,7 @@
 namespace metis {
   extern "C" {
 
-#include <metis5.h>
+#include <metis.h>
 
 #if METIS_VER_MAJOR >= 5
 #define METIS5
