@@ -1151,11 +1151,9 @@ namespace ngsolve
   {
     cout << IM(1) << "add preconditioner " << name << flush;
 
-    //  flags.PrintFlags (cout);
     Preconditioner * pre = NULL;
     const char * type = flags.GetStringFlag ("type", NULL);
 
-    int id = MyMPI_GetId ();
     int ntasks = MyMPI_GetNTasks ();
     
     if ( ntasks == 1 )
