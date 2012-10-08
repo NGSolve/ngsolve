@@ -47,19 +47,41 @@ extern  integer F77_FUNC(pardisoinit)
 
 namespace ngla
 {
-  using namespace ngla;
-  using namespace ngstd;
-
-
   int pardiso_msg = 0;
 
 
-  template<class TM, class TV_ROW, class TV_COL>
-  PardisoInverse<TM,TV_ROW,TV_COL> :: 
-  PardisoInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
-		  const BitArray * ainner,
-		  const Array<int> * acluster,
-		  int asymmetric)
+  class SubsetAll 
+  {
+  public:
+    bool Used(int i) { return true; }
+    bool Used(int i, int j) { return true; }
+  };
+
+  class SubsetFree
+  {
+    const BitArray & free;
+  public:
+    SubsetFree (const BitArray & afree) : free(afree) { ; }
+    bool Used(int i) { return free.Test(i); }
+    bool Used(int i, int j) { return free.Test(i) && free.Test(j); }
+  };
+
+  class SubsetCluster
+  {
+    const Array<int> & cluster;
+  public:
+    SubsetCluster (const Array<int> & acluster) : cluster(acluster) { ; }
+    bool Used(int i) { return cluster[i]; }
+    bool Used(int i, int j) { return cluster[i] && (cluster[i] == cluster[j]); }
+  };
+
+
+  template<class TM>
+  PardisoInverseTM<TM> :: 
+  PardisoInverseTM (const SparseMatrixTM<TM> & a, 
+		    const BitArray * ainner,
+		    const Array<int> * acluster,
+		    int asymmetric)
     : SparseFactorization (a, ainner, acluster)
   { 
     static Timer timer("Pardiso Inverse");
@@ -96,12 +118,6 @@ namespace ngla
 
     entrysize = mat_traits<TM>::HEIGHT; 
     height = a.Height() * entrysize;
-    compressed_height = height;
-    // cout << "NZE = " << a.NZE() << endl;
-    rowstart.SetSize(compressed_height+1);
-    indices.SetSize(a.NZE() * sqr(entrysize));
-    matrix.SetSize (a.NZE() * sqr(entrysize));
-    // matrix = new TSCAL[a.NZE() * entrysize * entrysize ];     
 
     *testout << "matrix.InverseTpye = " <<  a.GetInverseType() << endl;
     spd = ( a.GetInverseType() == PARDISOSPD ) ? 1 : 0;
@@ -134,19 +150,15 @@ namespace ngla
 
 #ifdef USE_MKL
     //    no init in MKL PARDISO
-    //     retvalue = F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, 
-    // 				   reinterpret_cast<double *>(matrix),
-    // 				   rowstart, indices, NULL, &nrhs, params, &msglevel,
-    // 				   NULL, NULL, &error );
 #else
+
     int retvalue;
 #ifdef USE_PARDISO400
     double dparm[64]; 
     integer solver = 0;
     F77_FUNC(pardisoinit) (pt,  &matrixtype, &solver, params, dparm, &retvalue); 
 #else
-    retvalue = 
-      F77_FUNC(pardisoinit) (pt,  &matrixtype, params); 
+    retvalue = F77_FUNC(pardisoinit) (pt,  &matrixtype, params); 
 #endif
     // cout << "init success" << endl;
     // cout << "retvalue = " << retvalue << endl;
@@ -154,402 +166,19 @@ namespace ngla
     
     SetMatrixType();
 
-
-    Array<int> icompress(a.Height());
-    compress.SetSize(0);
     if (inner)
-      {
-	compressed = true;
-	icompress = -1;
-
-	for (int i = 0; i < a.Height(); i++)
-	  if (inner->Test(i))
-	    {
-	      icompress[i] = compress.Size();
-	      compress.Append (i);
-	    }
-	
-	compressed_height = compress.Size() * entrysize;
-	rowstart.SetSize(compressed_height+1);
-      }
-
-
-    if ( symmetric )
-      {
-	// --- transform lower left to upper right triangular matrix ---
-	// 1.) build array 'rowstart':
-	// (a) get nr. of entries for each row
-
-
-	
-	rowstart = 0;
-	
-	if (inner)
-	  for (int i = 0; i < a.Height(); i++ )
-	    {
-	      if (inner->Test(i))
-		for (int j = 0; j < a.GetRowIndices(i).Size(); j++ )
-		  {
-		    int col = a.GetRowIndices(i)[j];
-		    int ccol = icompress[col];
-		    
-		    if ( i != col )
-		      {
-			if (inner->Test(col))
-			  for (int k = 0; k < entrysize; k++ )
-			    rowstart[ccol*entrysize+k+1] += entrysize;
-		      }
-		    else
-		      {
-			for (int k=0; k<entrysize; k++ )
-			  rowstart[ccol*entrysize+k+1] += entrysize-k;
-		      }
-		  }
-	    }
-
-	else
-	  for (int i=0; i < a.Height(); i++ )
-	    {
-	    for (int j = 0; j < a.GetRowIndices(i).Size(); j++ )
-	      {
-		int col = a.GetRowIndices(i)[j];
-		if ( i != col )
-		  {
-		    if (  (!inner && !cluster) ||
-			  (inner && (inner->Test(i) && inner->Test(col) ) ) ||
-			  (!inner && cluster && 
-		           ((*cluster)[i] == (*cluster)[col] 
-			    && (*cluster)[i] ))  )
-		      {
-			for (int k=0; k<entrysize; k++ )
-			  rowstart[col*entrysize+k+1] += entrysize;
-		      }
-		  }
-		else if ( (!inner && !cluster) || 
-			  (inner && inner->Test(i)) ||
-			  (!inner && cluster && (*cluster)[i]) )
-		  {
-		    for (int k=0; k<entrysize; k++ )
-		      rowstart[col*entrysize+k+1] += entrysize-k;
-		  }
-		else
-		  {
-		    for (int k=0; k<entrysize; k++ )
-		      rowstart[col*entrysize+k+1] ++;
-		  }
-	      }
-	  }
-
-	// (b) accumulate
-	rowstart[0] = 0;
-	for (int i = 1; i <= compressed_height; i++) 
-	  rowstart[i] += rowstart[i-1];
-	
-	
-	// 2.) build whole matrix:
-	Array<int> counter(compressed_height);
-
-	if (inner)
-	  {
-	    for (int i = 0; i < a.Height(); i++ )
-	      {
-		int ci = icompress[i];
-		if (ci < 0) continue;
-		for (int k = 0; k < entrysize; k++) counter[ci*entrysize+k]=0;
-
-		for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
-		  {
-		    int col = a.GetRowIndices(i)[j];
-		    int ccol = icompress[col];
-
-		    if (i != col)
-		      {
-			if (inner->Test(i) && inner->Test(col))
-			  {
-			    TM entry = a(i,col);
-			    for (int k = 0; k < entrysize; k++)
-			      for (int l = 0; l < entrysize; l++ )
-				{
-				  indices[rowstart[ccol*entrysize+k]+
-					  counter[ccol*entrysize+k]] = ci*entrysize+l+1;
-				  matrix[rowstart[ccol*entrysize+k]+
-					 counter[ccol*entrysize+k]] = Access(entry,l,k);
-				  counter[ccol*entrysize+k]++;
-				}
-			  }
-		      }
-		    else 
-		      {
-			if (inner->Test(i))
-			  {
-			    *testout << "i = " << i << ", ci = " << ci << " ccol = " << ccol << endl;
-			    *testout << "rowstart = " << rowstart[ccol*entrysize] << "; counter = " << counter[ccol*entrysize] << endl;
-			    TM entry = a(i,col);
-			    for (int l = 0; l < entrysize; l++ )
-			      for (int k = 0; k <= l; k++)
-				{
-				  indices[rowstart[ccol*entrysize+k]+
-					  counter[ccol*entrysize+k]] = ci*entrysize+l+1;
-				  matrix[rowstart[ccol*entrysize+k]+
-					 counter[ccol*entrysize+k]] = Access(entry,l,k);
-				  counter[ccol*entrysize+k]++;
-				}
-			  }
-			/*
-			else
-			  {
-			    // in the case of 'inner' or 'cluster': 1 on the diagonal for
-			    // unused dofs.
-			    for (int l=0; l<entrysize; l++ )
-			      {
-				indices[rowstart[col*entrysize+l]+
-					counter[col*entrysize+l]] = i*entrysize+l+1;
-				matrix[rowstart[col*entrysize+l]+
-				       counter[col*entrysize+l]] = 1;
-				counter[col*entrysize+l]++;
-			      }
-			  }
-			*/
-		      }
-		  }
-	      }
-	  }	
-	else
-	for (int i=0; i<a.Height(); i++ )
-	  {
-	    // int rowsize = a.GetRowIndices(i).Size();
-	    for (int k=0; k<entrysize; k++ ) counter[i*entrysize+k]=0;
-
-	    for (int j=0; j<a.GetRowIndices(i).Size(); j++ )
-	      {
-		int col = a.GetRowIndices(i)[j];
-
-		if ( i != col )
-		  {
-		    if ( (!inner && !cluster) ||
-			 (inner && (inner->Test(i) && inner->Test(col)) ) ||
-			 (!inner && cluster && 
-			  ((*cluster)[i] == (*cluster)[col] 
-			   && (*cluster)[i] ))  )
-		      {
-			TM entry = a(i,col);
-			for (int k=0; k<entrysize; k++)
-			  for (int l=0; l<entrysize; l++ )
-			    {
-			      indices[ rowstart[col*entrysize+k]+
-				       counter[col*entrysize+k]] = i*entrysize+l+1;
-			      matrix[ rowstart[col*entrysize+k]+
-				      counter[col*entrysize+k]] = Access(entry,l,k);
-			      counter[col*entrysize+k]++;
-			    }
-		      }
-		  }
-		else if ( (!inner && !cluster) || 
-			  (inner && inner->Test(i)) ||
-			  (!inner && cluster && (*cluster)[i]) )
-		  {
-		    TM entry = a(i,col);
-		    for (int l=0; l<entrysize; l++ )
-		      for (int k=0; k<=l; k++)
-			{
-			  indices[ rowstart[col*entrysize+k]+
-				   counter[col*entrysize+k]] = i*entrysize+l+1;
-			  matrix[ rowstart[col*entrysize+k]+
-				  counter[col*entrysize+k]] = Access(entry,l,k);
-			  counter[col*entrysize+k]++;
-			}
-		  }
-		else
-		  {
-		    // in the case of 'inner' or 'cluster': 1 on the diagonal for
-		    // unused dofs.
-		    for (int l=0; l<entrysize; l++ )
-		      {
-			indices[ rowstart[col*entrysize+l]+
-				 counter[col*entrysize+l]] = i*entrysize+l+1;
-			matrix[ rowstart[col*entrysize+l]+
-				counter[col*entrysize+l]] = 1;
-			counter[col*entrysize+l]++;
-		      }
-		  }
-	      }
-	  }
-	    
-	// pardiso is 1-based
-	for (int i = 0; i <= compressed_height; i++)
-	  rowstart[i]++;
-	    
-	/*
-	  (*testout) << endl << "row, rowstart / indices, matrix-entries" << endl;
-	  for ( i=0; i<height; i++ )
-	  {
-	  (*testout) << endl << i+1 << ", " << rowstart[i] << ":   ";
-	  for ( j=rowstart[i]-1; j<rowstart[i+1]-1; j++ )
-	  (*testout) << indices[j] << ", " << matrix[j] << "      ";
-	  }
-	  (*testout) << endl;
-	*/
-
-	// delete [] counter;
-      }
-    else // non-symmetric
-      {
-	if (print)
-	  cout << "non-symmetric pardiso, cluster = " << cluster << ", entrysize = " << entrysize << endl;
-
-	// for non-symmetric matrices:
-	int counter = 0;
-
-	for (int i = 0; i < a.Height(); i++ )
-	  {
-	    int rowelems = 0;
-	    int rowsize = a.GetRowIndices(i).Size();
-	    int ci = inner ? icompress[i] : i;
-
-	    // get effective number of elements in the row
-
-	    if ( inner )
-	      {
-		if (inner -> Test(i))
-		  for (int j = 0; j < rowsize; j++)
-		    {
-		      int col = a.GetRowIndices(i)[j];
-		      if (inner->Test(col))
-			rowelems += entrysize;
-		    }
-	      }
-            else if (cluster)
-	      {
-		for (int j = 0; j < rowsize; j++ )
-		  {
-		    int col = a.GetRowIndices(i)[j];
-		    if ( (*cluster)[i] == (*cluster)[col] && (*cluster)[i])
-		      rowelems += entrysize;
-		    else if ( i == col )
-		      rowelems++;
-		  }
-	      }
-	    else 
-	      rowelems = rowsize * entrysize;
-
-	    if (ci != -1)
-	      for (int k = 0; k < entrysize; k++ )
-		rowstart[ci*entrysize+k] = counter+rowelems*k+1;
-	    
-
-            if (inner)
-              {
-                for (int j=0; j<rowsize; j++ )
-                  {
-                    int col = a.GetRowIndices(i)[j];
-                    int ccol = icompress[col];
-
-                    if (inner->Test(i) && inner->Test(col))
-                      {
-                        TM entry = a(i,col);
-                        for (int k=0; k<entrysize; k++ )
-                          for (int l=0; l<entrysize; l++ )
-                            {
-                              indices[counter+rowelems*k+l] = ccol*entrysize+l+1;
-                              matrix[counter+rowelems*k+l] = Access(entry,k,l);
-                            }
-                        counter+=entrysize;
-                      }
-                  }
-		if (ci != -1)
-		  counter = rowstart[ci*entrysize] + rowelems*entrysize-1;
-              }
-            else if (cluster)
-              {
-                for (int j=0; j<rowsize; j++ )
-                  {
-                    int col = a.GetRowIndices(i)[j];
-                    
-                    if ( (*cluster)[i] == (*cluster)[col] && (*cluster)[i] )
-                      {
-                        TM entry = a(i,col);
-                        for (int k=0; k<entrysize; k++ )
-                          for (int l=0; l<entrysize; l++ )
-                            {
-                              indices[counter+rowelems*k+l] = col*entrysize+l+1;
-                              matrix[counter+rowelems*k+l] = Access(entry,k,l);
-                            }
-                        counter+=entrysize;
-                      }
-                    else if ( i == col )
-                      {
-                        for (int l=0; l<entrysize; l++ )
-                          {
-                            indices[counter+rowelems*l+l] = col*entrysize+l+1;
-                            matrix[counter+rowelems*l+l] = 1;
-                          }
-                        counter+=entrysize;
-                      }
-                  }
-              }
-            else
-              for (int j = 0; j < rowsize; j++)
-                {
-                  int col = a.GetRowIndices(i)[j];
-                  // TM entry = a(i,col);
-		  const TM & entry = a.GetRowValues(i)(j);
-                  for (int k = 0; k < entrysize; k++)
-                    for (int l = 0; l < entrysize; l++)
-                      {
-                        indices[counter+rowelems*k+l] = col*entrysize+l+1;
-                        matrix[counter+rowelems*k+l] = Access(entry,k,l);
-                      }
-                  
-                  counter+=entrysize;
-                }
-
-
-	    // counter += rowelems * ( entrysize-1 );    should not be here ???? (JS, Oct 2009)
-	  }
-	rowstart[compressed_height] = counter+1;
-	
-	/*
-	  (*testout) << endl << "row, rowstart / indices, matrix-entries" << endl;
-	  for ( i=0; i<height; i++ )
-	  {
-	  (*testout) << endl << i+1 << ", " << rowstart[i] << ":   ";
-	  for ( j=rowstart[i]-1; j<rowstart[i+1]-1; j++ )
-	  (*testout) << indices[j] << ", " << matrix[j] << "      ";
-	  }
-	  (*testout) << endl;
-	*/
-
-      }
+      GetPardisoMatrix (a, SubsetFree (*inner));
+    else if (cluster)
+      GetPardisoMatrix (a, SubsetCluster (*cluster));
+    else
+      GetPardisoMatrix (a, SubsetAll());
 
     nze = rowstart[compressed_height];
-    
-    {
-      int n = a.Height();
-      used.SetSize (n);
-      used.Set();
-      
-      for (int i = 0; i < n; i++)
-	if (a.GetPositionTest (i,i) == -1)
-	  used.Clear(i);
-      
-      if (inner)
-	for (int i = 0; i < n; i++)
-	  if (!inner->Test(i))
-	    used.Clear(i);
-      
-      if (cluster)
-	for (int i = 0; i < n; i++)
-	  if (!(*cluster)[i])
-	    used.Clear(i);
-    }
+
 
     // call pardiso for factorization:
     // time1 = clock();
     cout << IM(3) << "call pardiso ..." << flush;
-
-
-    
-
 
     // retvalue = 
     F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, 
@@ -572,8 +201,7 @@ namespace ngla
 	  case -4: errmsg = "zero pivot, numerical factorization or iterative refinement problem"; break;
 	  case -5: errmsg = "unclassified (internal) error"; break;
 	  case -6: errmsg = "preordering failed"; break;
-	  default: 
-	    ;
+	  default: ;
 	  }
 	
 	cout << "err = " << errmsg << endl;
@@ -584,8 +212,7 @@ namespace ngla
 	    {
 	      cout << "iparam(20) = " << params[19] << endl; break;
 	    }
-	  default:
-	    ;
+	  default: ;
 	  }
 
 	ofstream err("pardiso.err");
@@ -614,47 +241,140 @@ namespace ngla
     */
   }
   
-  /*
-  template<class TM, class TV_ROW, class TV_COL>
-  PardisoInverse<TM,TV_ROW,TV_COL> :: 
-  PardisoInverse (const Array<int> & aorder, 
-		  const Array<CliqueEl*> & cliques,
-		  const Array<MDOVertex> & vertices,
-		  int symmetric)
+  
+  template<class TM> template <typename TSUBSET>
+  void PardisoInverseTM<TM> :: 
+  GetPardisoMatrix (const SparseMatrixTM<TM> & a, TSUBSET subset)
   {
-    Allocate (aorder, cliques, vertices);
+    Array<int> icompress (a.Height());
+    icompress = -1;
+    
+    compress.SetSize(0);
+
+    int cnt = 0;
+    for (int i = 0; i < a.Height(); i++)
+      if (subset.Used(i))
+	{
+	  icompress[i] = cnt++;
+	  compress.Append(i);
+	}
+    compressed = true;
+    compressed_height = cnt * entrysize;
+
+    rowstart.SetSize (compressed_height+1);
+    rowstart = 0;
+    if (symmetric)
+      {
+	// --- transform lower left to upper right triangular matrix ---
+	// 1.) build array 'rowstart':
+	// (a) get nr. of entries for each row
+
+	for (int i = 0; i < a.Height(); i++)
+	  {
+	    if (!subset.Used(i)) continue;
+
+	    FlatArray<int> ind = a.GetRowIndices(i);
+	    for (int j = 0; j < ind.Size(); j++ )
+	      {
+		if (!subset.Used(i,ind[j])) continue;
+		int ccol = entrysize*icompress[ind[j]];
+
+		if (i != ind[j])
+		  for (int k = 0; k < entrysize; k++ )
+		    rowstart[ccol+k+1] += entrysize;
+		else
+		  for (int k = 0; k < entrysize; k++ )
+		    rowstart[ccol+k+1] += entrysize-k;
+	      }
+	  }
+	
+	// (b) accumulate
+	rowstart[0] = 0;
+	for (int i = 1; i <= compressed_height; i++) 
+	  rowstart[i] += rowstart[i-1];
+	
+
+	indices.SetSize(rowstart[compressed_height]);
+	matrix.SetSize (rowstart[compressed_height]);
+
+	// 2.) build whole matrix:
+	Array<int> counter(compressed_height);
+	counter = 0;
+	for (int i = 0; i < a.Height(); i++ )
+	  {
+	    if (!subset.Used(i)) continue;
+	    int ci = entrysize*icompress[i];
+
+	    FlatArray<int> ind = a.GetRowIndices(i);
+	    FlatVector<TM> values = a.GetRowValues(i);
+
+	    for (int j = 0; j < ind.Size(); j++)
+	      {
+		if (!subset.Used (i,ind[j])) continue;
+
+		int ccol = entrysize*icompress[ind[j]];
+		for (int k = 0; k < entrysize; k++)
+		  for (int l = 0; l < entrysize; l++ )
+		    if ( (i != ind[j]) || (k <= l) )
+		      {
+			indices[rowstart[ccol+k]+counter[ccol+k]] = ci+l+1;
+			matrix[rowstart[ccol+k]+counter[ccol+k]] = Access(values[j],l,k);
+			counter[ccol+k]++;
+		      }
+	      }	
+	  }
+
+	for (int i = 0; i <= compressed_height; i++)
+	  rowstart[i]++;
+      }
+    else
+      {
+	int counter = 0;
+	for (int i = 0; i < a.Height(); i++ )
+	  {
+	    if (!subset.Used(i)) continue;
+	    FlatArray<int> ind = a.GetRowIndices(i);
+
+	    int rowelems = 0;
+	    for (int j = 0; j < ind.Size(); j++)
+	      if (subset.Used(i,ind[j]))
+		rowelems += entrysize;
+	    
+	    int ci = entrysize * icompress[i];
+	    for (int k = 0; k < entrysize; k++, counter += rowelems )
+	      rowstart[ci+k] = counter+1;
+	  }
+	rowstart[compressed_height] = counter+1;
+	
+	indices.SetSize(counter);
+	matrix.SetSize (counter);
+
+	for (int i = 0; i < a.Height(); i++ )
+	  {
+	    if (!subset.Used(i)) continue;
+	    FlatArray<int> ind = a.GetRowIndices(i);
+	    FlatVector<TM> values = a.GetRowValues(i);
+
+	    int ci = entrysize*icompress[i];
+	    
+	    int counter = 0;
+	    for (int j = 0; j < ind.Size(); j++ )
+	      if (subset.Used(i,ind[j]))
+		{
+		  int ccol = entrysize*icompress[ind[j]];
+		  for (int k=0; k<entrysize; k++ )
+		    for (int l=0; l<entrysize; l++ )
+		      {
+			indices[rowstart[ci+k]+counter+l-1] = ccol+l+1;
+			matrix[rowstart[ci+k]+counter+l-1] = Access(values[j],k,l);
+		      }
+		  counter+=entrysize;
+		}
+	  }
+      }
   }
 
-  
-  template<class TM, class TV_ROW, class TV_COL>
-  void PardisoInverse<TM,TV_ROW,TV_COL> :: 
-  Allocate (const Array<int> & aorder, 
-	    const Array<CliqueEl*> & cliques,
-	    const Array<MDOVertex> & vertices)
-  {
-    cout << "PardisoInverse::Allocate not implemented!" << endl;
-  }
-  */
-  
 
-  template<class TM, class TV_ROW, class TV_COL>
-  void PardisoInverse<TM,TV_ROW,TV_COL> :: 
-  FactorNew (const SparseMatrix<TM,TV_ROW,TV_COL> & a)
-  {
-    throw Exception ("PardisoInverse::FactorNew not implemented");
-  }
-
-
-
-
-
-  template<class TM, class TV_ROW, class TV_COL>
-  void PardisoInverse<TM,TV_ROW,TV_COL> :: Factor (const int * blocknr)
-  {
-    cout << "PardisoInverse::Factor not implemented!" << endl;
-  }
-  
-  
 
 
   template<class TM, class TV_ROW, class TV_COL>
@@ -705,10 +425,6 @@ namespace ngla
 			    NULL, &nrhs, params, &msglevel,
 			    static_cast<double *>(fx.Data()), 
 			    static_cast<double *>(fy.Data()), &error );
-
-	for (int i = 0; i < compressed_height/entrysize; i++)
-	  if (!used.Test(i))
-	    for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0.0;
       }
 
     if ( error != 0 )
@@ -728,16 +444,16 @@ namespace ngla
     static Timer timer ("Pardiso Solve");
     RegionTimer reg (timer);
 
-    // FlatVector<TVX> fx = x.FV<TVX> ();
-    FlatVector<TVX> fy = y.FV<TVX> ();
-
 
     FlatMatrixFixWidth<2> hx(x.Size(), (double*)x.Memory());
-    Matrix<> tx(2, x.Size());
-    tx = Trans (hx);
+    Matrix<> tx(2, compressed_height);
+    if (compressed)
+      tx = Trans (hx.Rows(compress));
+    else
+      tx = Trans (hx);
 
     FlatMatrixFixWidth<2> hy(y.Size(), (double*)y.Memory());
-    Matrix<> ty(2, y.Size());
+    Matrix<> ty(2, compressed_height);
 
       
     integer maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error;
@@ -756,11 +472,13 @@ namespace ngla
     if ( error != 0 )
       cout << "Apply Inverse: PARDISO returned error " << error << "!" << endl;
 
-    hy = Trans (ty);
-
-    for (int i=0; i<compressed_height/entrysize; i++)
-      if (!used.Test(i))
-	for (int j=0; j<entrysize; j++ ) fy(i*entrysize+j) = 0.0;
+    if (compressed)
+      {
+	hy = 0;
+	hy.Rows(compress) = Trans(ty);
+      }
+    else
+      hy = Trans (ty);
   }
   
   
@@ -770,16 +488,16 @@ namespace ngla
 
 
 
-  template<class TM, class TV_ROW, class TV_COL>
-  ostream & PardisoInverse<TM,TV_ROW,TV_COL> :: Print (ostream & ost) const
+  template<class TM>
+  ostream & PardisoInverseTM<TM> :: Print (ostream & ost) const
   {
     cout << "PardisoInverse::Print not implemented!" << endl;
     return ost; 
   }
 
 
-  template<class TM, class TV_ROW, class TV_COL>
-  PardisoInverse<TM,TV_ROW,TV_COL> :: ~PardisoInverse()
+  template<class TM>
+  PardisoInverseTM<TM> :: ~PardisoInverseTM()
   {
     integer maxfct = 1, mnum = 1, phase = -1, nrhs = 1, msglevel = 1, error;
     integer * params = const_cast <integer*> (&hparams[0]);
@@ -788,12 +506,8 @@ namespace ngla
     F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, NULL,
 			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
-    if ( error != 0 )
+    if (error != 0)
       cout << "Clean Up: PARDISO returned error " << error << "!" << endl;
-
-    // delete [] rowstart;
-    // delete [] indices;
-    // delete [] matrix;
   }
 
 
@@ -801,36 +515,27 @@ namespace ngla
 
 
 
-  template<class TM, class TV_ROW, class TV_COL>
-  void PardisoInverse<TM,TV_ROW,TV_COL> :: SetMatrixType() // TM entry)
+  template<class TM>
+  void PardisoInverseTM<TM> :: SetMatrixType() // TM entry)
   {
-    // if ( IsComplex(entry) )
     if (mat_traits<TM>::IS_COMPLEX)
       {
-	if ( symmetric ) matrixtype = 6;
+	if ( symmetric ) 
+	  matrixtype = 6;   // complex symmetric
 	else
-	  {
-	    matrixtype = 13;
-	    (*testout) << "PARDISO: Assume matrix type to be complex non-symmetric." << endl;
-	    (*testout) << "Warning: Works, but is not optimal for Hermitian matrices." << endl;
-	  }
+	  matrixtype = 13;  // complex genral
       }
     else
       {
 	if ( symmetric )
 	  {
-	    /*
-	    matrixtype = 2;    // +2 .. pos def., -2  .. symmetric indef
-	    (*testout) << "PARDISO: Assume matrix type to be symmetric positive definite." << endl;
-	    (*testout) << "Warning: This might cause errors for symmetric indefinite matrices!!" << endl;
-	    */
-
 	    if ( spd ) 
-	      matrixtype = 2;
+	      matrixtype = 2;    // pos def
 	    else
-	      matrixtype = -2;
+	      matrixtype = -2;   // symmetric indef
 	  }
-	else matrixtype = 11;
+	else 
+	  matrixtype = 11;       // general non-sym
       }
 
     if (print)

@@ -20,6 +20,8 @@ namespace ngla
 {
   using ngbla::integer;
 
+
+  /*
   template<class TM, 
 	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
 	   class TV_COL = typename mat_traits<TM>::TV_COL>
@@ -30,22 +32,19 @@ namespace ngla
     integer nze, entrysize;
     bool print;
 
-    //CL: is this also working on 32-bit architectures?
     integer pt[128];
     integer hparams[64];
 
     Array<integer,size_t> rowstart, indices; 
-    // typename mat_traits<TM>::TSCAL * matrix;
     Array<typename mat_traits<TM>::TSCAL,size_t> matrix;
 
     integer matrixtype;
-    int symmetric, spd;
+    bool symmetric, spd;
 
-    void SetMatrixType(); // TM entry
+    void SetMatrixType(); 
 
     bool compressed;
     Array<int> compress;
-    BitArray used;
   
   public:
     typedef TV_COL TV;
@@ -58,15 +57,15 @@ namespace ngla
 		    const Array<int> * acluster = NULL,
 		    int symmetric = 0);
     ///
+
+    template <typename TSUBSET>
+    void GetPardisoMatrix (const SparseMatrix<TM,TV_ROW,TV_COL> & a, TSUBSET subset);
+
     virtual ~PardisoInverse ();
     ///
     int VHeight() const { return height/entrysize; }
     ///
     int VWidth() const { return height/entrysize; }
-    ///
-    void Factor (const int * blocknr);
-    ///
-    void FactorNew (const SparseMatrix<TM,TV_ROW,TV_COL> & a);
     ///
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
 
@@ -83,6 +82,109 @@ namespace ngla
       return new VVector<TV> (height/entrysize);
     }
   };
+  */
+
+
+
+
+
+
+
+
+
+  template<class TM>
+  class PardisoInverseTM : public SparseFactorization
+  {
+  protected:
+    integer height;             // matrix size in scalars
+    integer compressed_height;  // matrix size after compression in scalars
+    integer nze, entrysize;
+    bool print;
+
+    integer pt[128];
+    integer hparams[64];
+
+    Array<integer,size_t> rowstart, indices; 
+    Array<typename mat_traits<TM>::TSCAL,size_t> matrix;
+
+    integer matrixtype;
+    bool symmetric, spd;
+
+    void SetMatrixType(); 
+
+    bool compressed;
+    Array<int> compress;
+  
+  public:
+    typedef typename mat_traits<TM>::TSCAL TSCAL;
+
+    ///
+    PardisoInverseTM (const SparseMatrixTM<TM> & a, 
+		      const BitArray * ainner = NULL,
+		      const Array<int> * acluster = NULL,
+		      int symmetric = 0);
+    ///
+
+    template <typename TSUBSET>
+    void GetPardisoMatrix (const SparseMatrixTM<TM> & a, TSUBSET subset);
+
+    virtual ~PardisoInverseTM ();
+    ///
+    int VHeight() const { return height/entrysize; }
+    ///
+    int VWidth() const { return height/entrysize; }
+    ///
+    virtual ostream & Print (ostream & ost) const;
+
+    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+    {
+      mu.Append (new MemoryUsageStruct ("SparseChol", nze*sizeof(TM), 1));
+    }
+  };
+
+
+  template<class TM, 
+	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
+	   class TV_COL = typename mat_traits<TM>::TV_COL>
+  class PardisoInverse : public PardisoInverseTM<TM>
+  {
+    using PardisoInverseTM<TM>::height;
+    using PardisoInverseTM<TM>::compressed_height;
+    using PardisoInverseTM<TM>::entrysize;
+    using PardisoInverseTM<TM>::pt;
+    using PardisoInverseTM<TM>::hparams;
+    using PardisoInverseTM<TM>::matrixtype;
+    using PardisoInverseTM<TM>::rowstart;
+    using PardisoInverseTM<TM>::indices;
+    using PardisoInverseTM<TM>::matrix;
+    using PardisoInverseTM<TM>::compressed;
+    using PardisoInverseTM<TM>::compress;
+
+  public:
+    typedef TV_COL TV;
+    typedef TV_ROW TVX;
+    typedef typename mat_traits<TM>::TSCAL TSCAL;
+
+    ///
+    PardisoInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
+		    const BitArray * ainner = NULL,
+		    const Array<int> * acluster = NULL,
+		    int symmetric = 0)
+      : PardisoInverseTM<TM> (a, ainner, acluster, symmetric) { ; }
+
+    virtual ~PardisoInverse () { ; }
+    ///
+    virtual void Mult (const BaseVector & x, BaseVector & y) const;
+    ///
+    virtual BaseVector * CreateVector () const
+    {
+      return new VVector<TV> (height/entrysize);
+    }
+  };
+
+
+
+
 
 }
 
