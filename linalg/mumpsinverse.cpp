@@ -502,6 +502,7 @@ namespace ngla
       if (!inner || inner->Test(row))
 	select.Append (row);
     
+
     const ParallelMeshDofs & pmdofs = dynamic_cast<const ParallelMeshDofs&> (*pardofs);
     for (int row = 0; row < ndof; row++)
       if (!inner || inner->Test(row))
@@ -515,90 +516,6 @@ namespace ngla
 	    pmdofs.GetMeshAccess().GetDistantProcs (node, procs);
 	    cout << "procs = " << procs << endl;
 	  }
-
-
-    /*
-    num_globdofs = 0;
-    select.SetSize(0);
-    loc2glob.SetSize(0);
-
-    if (id != 0)
-      {
-	const MeshAccess & ma = pardofs -> GetMeshAccess();
-	int ndof = pardofs->GetNDof();
-
-	Array<int> globid(3*ndof);
-
-	for (int row = 0; row < ndof; row++)
-	  if (!inner || inner->Test(row))
-	    select.Append (row);
-	
-	globid = -1;
-
-
-
-	const Array<Node> & dofnodes = pardofs -> GetDofNodes();
-
-	Array<int> nnodes(4);
-	for (int j = 0; j < 4; j++) nnodes[j] = ma.GetNNodes(NODE_TYPE(j));
-	Table<int> tdofnr(nnodes);
-	for (int j = 0; j < 4; j++) tdofnr[j] = 0;
-	Array<int> dofnr(ndof);
-
-	for (int i = 0; i < ndof; i++)
-	  dofnr[i] = tdofnr[dofnodes[i].GetType()][dofnodes[i].GetNr()]++;
-
-	for (int i = 0; i < ndof; i++)
-	  if (!inner || inner->Test(i))
-	    {
-	      globid[3*i+0] = dofnodes[i].GetType();
-	      globid[3*i+1] = ma.GetGlobalNodeNum (dofnodes[i]);
-	      globid[3*i+2] = dofnr[i];
-	    }
-	
-
-	MyMPI_Send (globid, 0);
-	MyMPI_Recv (loc2glob, 0);
-      }
-
-    else
-      {
-	HashTable<INT<3>, int> ht_globdofs(10000);
-	for (int src = 1; src < ntasks; src++)
-	  {
-	    Array<int> hglobid;
-	    MyMPI_Recv (hglobid, src);
-
-	    Array<int> full_loc2glob(hglobid.Size()/3);
-	    full_loc2glob = -1;
-	    for (int i = 0; i < hglobid.Size(); i += 3)
-	      {
-		if (hglobid[i] == -1) continue;
-	      
-		INT<3> nentry;
-		nentry[0] = hglobid[i];
-		nentry[1] = hglobid[i+1];
-		nentry[2] = hglobid[i+2];
-
-		int found;
-
-		if (ht_globdofs.Used (nentry))
-		  found = ht_globdofs.Get(nentry);
-		else
-		  {
-		    found = num_globdofs;
-		    num_globdofs++;
-		    ht_globdofs.Set(nentry, found);
-		  }
-	      
-		full_loc2glob[i/3] = found;
-	      }
-
-	    MyMPI_Send (full_loc2glob, src);
-	  }
-      }
-    */
-
 
 
 
@@ -656,21 +573,6 @@ namespace ngla
 				}
 			    }
 		      }
-		    /*
-		    
-		    else if (i == col)
-		    {
-		    // in the case of 'inner' or 'cluster': 1 on the diagonal for
-		    // unused dofs.
-		    for (int l=0; l<entrysize; l++ )
-		    {
-		    col_indices[ii] = loc2glob[col*entrysize+l]+1;
-		    row_indices[ii] = loc2glob[col*entrysize+l;
-		    matrix[ii] = 1;
-		    ii++;
-		    }
-		    }
-		    */
 		  }
 	      }
 	    nze = ii;
