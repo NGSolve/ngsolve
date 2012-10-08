@@ -1,18 +1,13 @@
 #ifdef LAPACK
-#include <solve.hpp>
-// #include "LapackGEP.hpp"
 
-using namespace std;
-using namespace ngbla;
-using namespace ngla;
+#include <solve.hpp>
 
 
 /*
 
-  Solve for the generalized EVP 
+  Solves for the generalized EVP 
 
   A u = lam M u
-
 
   Uses a simultaneous preconditioned inverse iteration
 
@@ -24,33 +19,23 @@ namespace ngsolve
   class NumProcEVP_AM : public NumProc
   {
   protected:
-    /// 
     BilinearForm * bfa;
-    ///
     BilinearForm * bfm;
-    ///
     GridFunction * gfu;
-    ///
     Preconditioner * pre;
-    ///
+
     int maxsteps, nr, maxnewton;
-    ///
     double prec;
-    ///
     bool print;
-    ///
     bool coarse;
-    ///
     string variable;
+
   public:
-    ///
     NumProcEVP_AM (PDE & apde, const Flags & flags);
-    ///
     virtual ~NumProcEVP_AM();
 
-    ///
     virtual void Do(LocalHeap & lh);
-    ///
+
     virtual string GetClassName () const
     {
       return "Eigenvalue Problem";
@@ -64,10 +49,29 @@ namespace ngsolve
 	  << "Gridfunction  = " << gfu->GetName() << endl
 	  << "Preconditioner = " << ((pre) ? pre->ClassName() : "None") << endl;
     }
+    
+    static void PrintDoc (ostream & ost)
+    {
+      ost << 
+	"\n\nNumproc evpAM:\n"			\
+	"--------------\n"						\
+	"Solves a generalized symmetric eigenvalue problem\n\n" \
+	"Required flags:\n" 
+	"-bilinearforma=<bfname>\n" 
+	"    bilinear-form providing the stiffness matrix\n"	\
+	"-bilinearformm=<bfname>\n" 
+	"    bilinear-form providing the mass matrix\n"	\
+	"-gridfunction=<gfname>\n" 
+	"    a gridfunction. multidim=xx defines num of calculated ev\n"	\
+	"-preconditioner=<prename>\n" \
+	"    a preconditioner for the stiffness matrix\n" \
+	"-maxsteps=n\n" 
+	  << endl;
+    }
   };
 
 
-
+  
   NumProcEVP_AM :: NumProcEVP_AM (PDE & apde, const Flags & flags)
     : NumProc (apde)
   {
@@ -76,9 +80,10 @@ namespace ngsolve
     gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
     pre = pde.GetPreconditioner (flags.GetStringFlag ("preconditioner", ""));
     maxsteps = int(flags.GetNumFlag ("maxsteps", 200));
+    variable = flags.GetStringFlag ("variable", "eigenvalue");
+
     maxnewton = int(flags.GetNumFlag ("maxnewton", 0));
     nr = int(flags.GetNumFlag ("nr", 0));
-    variable = flags.GetStringFlag ("variable", "eigenvalue");
   }
 
   NumProcEVP_AM :: ~NumProcEVP_AM()
@@ -93,18 +98,14 @@ namespace ngsolve
 
     // simulataneous iteration withour coarse grid
 
-
-    const BaseSparseMatrix & mata = 
-      dynamic_cast<const BaseSparseMatrix &> (bfa->GetMatrix());
-    const BaseSparseMatrix & matm = 
-      dynamic_cast<const BaseSparseMatrix&> (bfm->GetMatrix());
-
+    const BaseMatrix & mata = bfa->GetMatrix();
+    const BaseMatrix & matm = bfm->GetMatrix();
     const BaseMatrix & matpre = pre->GetMatrix();
-
 
     int num = gfu -> GetMultiDim();
     cout << "num = " << num << endl;
 	
+
     BaseVector & vecu = gfu->GetVector(0);
 	
     BaseVector & d = *vecu.CreateVector();
@@ -114,22 +115,25 @@ namespace ngsolve
     
     Vector<double> lami(2*num);
 
-
     
     cout.precision(16);
 
     Array<BaseVector*> hvec(2*num);
-
     for (int i = 0; i < 2*num; i++)
       hvec[i] = vecu.CreateVector();
 
+    // random initial guess, in the range of the precond
     for (int i = 0; i < num; i++)
-      gfu->GetVector(i).SetRandom();
+      {
+	hvec[0]->SetRandom();
+	gfu->GetVector(i) = matpre * *hvec[0];
+      }
+	
 
     Matrix<double> ha(2*num, 2*num);
     Matrix<double> hm(2*num, 2*num);
+    Matrix<double> evecs(2*num, 2*num);
 
-    
 
     for (int it = 0; it < maxsteps; it++)
       {
@@ -166,12 +170,9 @@ namespace ngsolve
 		hm(ei, ej) = InnerProduct (mu, *hvec[ej]);
 	      } 
 	  }
-	
-	(*testout) << "ha = " << endl << ha << endl;
-	(*testout) << "hm = " << endl << hm << endl;
 
 #ifdef LAPACK
-	LapackGHEPEPairs (2*num, &ha(0,0), &hm(0,0), &lami(0));
+	LapackEigenValuesSymmetric (ha, hm, lami, evecs);
 #else
         cerr << "This numproc needs LAPACK" << endl;
 #endif
@@ -183,8 +184,7 @@ namespace ngsolve
 	  {
 	    au = 0;
 	    for (int i = 0; i < 2*num; i++)
-	      au += ha(ei,i) * *hvec[i];
-	    
+	      au += evecs(ei, i) * *hvec[i];
 	    gfu->GetVector (ei) = au;
 	  }
       }
@@ -198,7 +198,15 @@ namespace ngsolve
       }
 
 
-#ifdef ABC
+
+
+
+
+
+
+
+
+#ifdef A_MULTIGRID_EVP_SOLVER
 
 
     if (!bfa->GetFESpace().IsComplex())
