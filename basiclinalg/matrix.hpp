@@ -460,6 +460,7 @@ namespace ngbla
   public:
     /// entry type
     typedef T TELEM;
+    typedef T& TREF;
     /// scalar type of entry
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
@@ -575,6 +576,9 @@ namespace ngbla
     {
       return FixSliceVector<W,T> (h, &data[i]);
     }
+
+    using CMCPMatExpr<FlatMatrixFixWidth<W,T> >::Rows;
+    using CMCPMatExpr<FlatMatrixFixWidth<W,T> >::Cols;
 
     const FlatMatrixFixWidth Rows (int first, int next) const
     {
