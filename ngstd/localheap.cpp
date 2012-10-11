@@ -9,8 +9,6 @@
 
 namespace ngstd
 {
-  using namespace ngstd;
-
 
   LocalHeap :: LocalHeap (size_t asize, const char * aname)
   {
