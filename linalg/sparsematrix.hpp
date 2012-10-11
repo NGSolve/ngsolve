@@ -373,7 +373,8 @@ namespace ngla
     virtual BaseBlockJacobiPrecond * 
     CreateBlockJacobiPrecond (Table<int> & blocks,
 			      const BaseVector * constraint = 0,
-			      const ngcomp::Preconditioner * acoarsegridprecond = 0, bool parallel  = 1,
+			      const ngcomp::Preconditioner * acoarsegridprecond = 0, 
+			      bool parallel  = 1,
 			      const BitArray * freedofs = NULL) const
     { 
       return new BlockJacobiPrecond<TM,TV_ROW,TV_COL> (*this, blocks );
@@ -567,13 +568,7 @@ namespace ngla
 			      bool parallel  = 1,
 			      const BitArray * freedofs = NULL) const
     { 
-      if (!constraint)
-	return new BlockJacobiPrecondSymmetric<TM,TV> (*this, blocks);
-      else
-	return new BlockJacobiPrecondSymmetric<TM,TV> 
-	  (*this, constraint->FV<TVX>(), 
-	   // dynamic_cast<const T_BaseVector<TVX>&>(*constraint).FV(),
-	   blocks);
+      return new BlockJacobiPrecondSymmetric<TM,TV> (*this, blocks);
     }
 
 
@@ -671,36 +666,6 @@ namespace ngla
 
 
 
-
-
-
-
-  template<class TM>
-  class VarBlockSparseMatrix : public BaseSparseMatrix, 
-			       public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
-  {
-    Array<int> block2linear;
-    Array<int> data_index;
-    DynamicMem<TM> data;
-
-  public:
-
-    typedef typename mat_traits<TM>::TSCAL TSCAL;
-    typedef typename mat_traits<TM>::TV_COL TV_COL;
-    typedef typename mat_traits<TM>::TV_ROW TV_ROW;
-    typedef typename mat_traits<TM>::TV_COL TVY;
-    typedef typename mat_traits<TM>::TV_ROW TVX;
-
-
-
-    VarBlockSparseMatrix (Array<int> & elsperrow, 
-			  Array<int> & ablock2linear, 
-			  Array<int> & linear2block, 
-			  const SparseMatrix<TM> & sm);
-    static VarBlockSparseMatrix * Create (const SparseMatrix<TM> & sm);
-    virtual ~VarBlockSparseMatrix ();
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-  };
 }
 
 #endif
