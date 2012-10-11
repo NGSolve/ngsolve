@@ -12,7 +12,6 @@
 
 namespace ngla
 {
-  using namespace ngla;
 
   MatrixGraph :: MatrixGraph (const Array<int> & elsperrow)
   {
@@ -689,12 +688,14 @@ namespace ngla
   AddElementMatrix(const FlatArray<int> & dnums1, const FlatArray<int> & dnums2, 
 		   const FlatMatrix<TSCAL> & elmat1)
   {
-    ArrayMem<int, 50> dnums_sort(dnums2.Size()), map(dnums2.Size());
-    dnums_sort = dnums2;
-    for (int i = 0; i < map.Size(); i++)
-      map[i] = i;
-    BubbleSort (dnums2.Size(), &dnums_sort[0], &map[0]);
-    
+    ArrayMem<int, 50> map(dnums2.Size());
+    for (int i = 0; i < map.Size(); i++) map[i] = i;
+    QuickSort (dnums2, map);
+
+    // ArrayMem<int, 50> dnums_sort(dnums2.Size());
+    // dnums_sort = dnums2;
+    // BubbleSort (dnums2.Size(), &dnums_sort[0], &map[0]);
+
     Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
 
     for (int i = 0; i < dnums1.Size(); i++)
@@ -938,17 +939,15 @@ namespace ngla
   AddElementMatrix(const FlatArray<int> & dnums, const FlatMatrix<TSCAL> & elmat1)
   {
     static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
-    static Timer timers ("SparseMatrixSymmetric::AddElementMatrix - sort", 3);
-
     RegionTimer reg (timer);
 
-    timers.Start();
-    ArrayMem<int, 50> dnums_sort(dnums.Size()), map(dnums.Size());
-    dnums_sort = dnums;
-    for (int i = 0; i < map.Size(); i++)
-      map[i] = i;
-    BubbleSort (dnums.Size(), &dnums_sort[0], &map[0]);
-    timers.Stop();
+    ArrayMem<int, 50> map(dnums.Size());
+    for (int i = 0; i < map.Size(); i++) map[i] = i;
+    QuickSort (dnums, map);
+
+    // ArrayMem<int, 50> dnums_sort(dnums.Size());
+    // dnums_sort = dnums;
+    // BubbleSort (dnums.Size(), &dnums_sort[0], &map[0]);
 
 
     Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
@@ -958,12 +957,17 @@ namespace ngla
     
     for (int i1 = first_used; i1 < dnums.Size(); i1++)
       {
+	/*
 	FlatArray<int> rowind = this->GetRowIndices(dnums_sort[i1]);
 	FlatVector<TM> rowvals = this->GetRowValues(dnums_sort[i1]);
-	
+	*/
+	FlatArray<int> rowind = this->GetRowIndices(dnums[map[i1]]);
+	FlatVector<TM> rowvals = this->GetRowValues(dnums[map[i1]]);
+
 	for (int j1 = first_used, k = 0; j1 <= i1; j1++, k++)
 	  {
-	    while (rowind[k] != dnums_sort[j1])
+	    // while (rowind[k] != dnums_sort[j1])
+	    while (rowind[k] != dnums[map[j1]])
 	      {
 		k++;
 		if (k >= rowind.Size())
@@ -1439,164 +1443,6 @@ namespace ngla
 
 
 
-  template <class TM>
-  VarBlockSparseMatrix<TM> ::
-  VarBlockSparseMatrix (Array<int> & elsperrow, 
-			Array<int> & ablock2linear, 
-			Array<int> & linear2block,
-			const SparseMatrix<TM> & sm)
-    : BaseSparseMatrix (elsperrow), block2linear(ablock2linear), data_index(nze+1)
-  {
-    cout << "constr" << endl;
-
-    cout << "nze = " << nze << endl;
-
-    
-    for (int i = 0; i < block2linear.Size()-1; i++)
-      {
-	FlatArray<int> rlin = sm.GetRowIndices(block2linear[i]);
-	Array<int> rblock(rlin.Size());
-	for (int j = 0; j < rlin.Size(); j++)
-	  rblock[j] = linear2block[rlin[j]];
-	BubbleSort (rblock.Size(), &rblock[0]);
-	(*testout) << "rblock = " << rblock << endl;
-
-	if (rblock.Size() > 0) 
-	  CreatePosition (i, rblock[0]);
-
-	for (int j = 1; j < rlin.Size(); j++)
-	  if (rblock[j] != rblock[j-1])
-	    CreatePosition (i, rblock[j]);
-      }
-
-    //    (*testout) << "graph = ";
-    //    MatrixGraph::Print (*testout);
-
-    cout << "has graph" << endl;
-
-
-
-    int ii = 0, cnt = 0;
-    for (int i = 0; i < size; i++)
-      for (size_t j = firsti[i]; j < firsti[i+1]; j++)
-	{
-	  int col = colnr[j];
-	  int h = block2linear[i+1]-block2linear[i];
-	  int w = block2linear[col+1]-block2linear[col];
-
-	  data_index[ii] = cnt;
-	  ii++;
-	  cnt += h*w;
-	}
-
-    data_index[ii] = cnt;
-    cout << "has data_index" << endl;
-    cout << "cnt = " << cnt << endl;
-    cout << "sm.NZE = " << sm.NZE() << endl;
-    data.Alloc (cnt);
-    
-    ii = 0;
-    for (int i = 0; i < size; i++)
-      for (size_t j = firsti[i]; j < firsti[i+1]; j++)
-	{
-	  int col = colnr[j];
-	  int h = block2linear[i+1]-block2linear[i];
-	  int w = block2linear[col+1]-block2linear[col];
-
-	  FlatMatrix<TM> fm(h, w, &data[data_index[ii]]);
-
-	  for (int k = 0; k < h; k++)
-	    for (int l = 0; l < w; l++)
-	      fm(k,l) = sm(block2linear[i]+k, block2linear[col]+l);
-
-	  ii++;
-	}
-  }
-
-
-  
-  template <class TM>
-  VarBlockSparseMatrix<TM> * VarBlockSparseMatrix<TM> ::
-  Create (const SparseMatrix<TM> & sm)
-  {
-    Array<int> b2l;
-    Array<int> l2b(sm.Height());
-    Array<int> elsperrow;
-    
-    b2l.Append (0);
-    l2b[0] = 0;
-    for (int i = 1; i < sm.Height(); i++)
-      {
-	FlatArray<int> rold = sm.GetRowIndices(i-1);
-	FlatArray<int> rnew = sm.GetRowIndices(i);
-
-
-	if (rold == rnew)
-	  {
-	    l2b[i] = l2b[i-1];
-	  }
-	else
-	  {
-	    l2b[i] = l2b[i-1]+1;
-	    b2l.Append (i);
-	  }
-      }
-    b2l.Append (sm.Height());
-    //    (*testout) << "b2l = " << b2l << endl;
-    //    (*testout) << "l2b = " << l2b << endl;
-    
-    elsperrow.SetSize (b2l.Size()-1);
-    elsperrow = 0;
-
-    for (int i = 0; i < b2l.Size()-1; i++)
-      {
-	FlatArray<int> rlin = sm.GetRowIndices(b2l[i]);
-	Array<int> rblock(rlin.Size());
-	for (int j = 0; j < rlin.Size(); j++)
-	  rblock[j] = l2b[rlin[j]];
-	BubbleSort (rblock.Size(), &rblock[0]);
-
-	if (rblock.Size() > 0) elsperrow[i] = 1;
-	for (int j = 1; j < rlin.Size(); j++)
-	  if (rblock[j] != rblock[j-1])
-	    elsperrow[i]++;
-      }
-
-    return new VarBlockSparseMatrix (elsperrow, b2l, l2b, sm);
-  }
-  
-
-  
-  template <class TM>
-  VarBlockSparseMatrix<TM> ::
-  ~VarBlockSparseMatrix ()
-  {
-    ;
-  }
-
-
-  template <class TM>
-  void VarBlockSparseMatrix<TM> ::
-  MultAdd (double s, const BaseVector & x, BaseVector & y) const
-  {
-    FlatVector<TVX> fx (x.Size(), x.Memory());
-    FlatVector<TVY> fy (y.Size(), y.Memory());
-    
-    for (int i = 0; i < size; i++)
-      {
-	FlatVector<TVY> fyi (block2linear[i+1]-block2linear[i], &fy[block2linear[i]]);
-	for (size_t j = firsti[i]; j < firsti[i+1]; j++)
-	  {
-	    int col = colnr[j];
-	    FlatVector<TVX> fxi (block2linear[col+1]-block2linear[col], &fy[block2linear[col]]);
-	    FlatMatrix<TM> fm(fyi.Size(), fxi.Size(), const_cast<TM*> (&data[data_index[j]]));
-	    
-	    fyi += s * (fm * fxi);
-	  }
-      }
-  }
-  
-
 
 
   template class SparseMatrixTM<double>;
@@ -1850,10 +1696,6 @@ namespace ngla
   template class SparseMatrix<double, Vec<14,Complex>, Vec<14,Complex> >;
   template class SparseMatrix<double, Vec<15,Complex>, Vec<15,Complex> >;
 #endif
-
-  template class VarBlockSparseMatrix<double>;
-  template class VarBlockSparseMatrix<Complex>;
-
 
 
 }

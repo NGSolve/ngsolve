@@ -51,15 +51,6 @@ inline void Swap (T & a, T & b)
   b = temp;
 }
 
-/*
-template <class T>
-inline void swap (T & a, T & b)
-{
-  T temp = a;
-  a = b;
-  b = temp;
-}
-*/
 
 /// sign of value (+1, 0, -1)
 template <class T>
@@ -111,48 +102,6 @@ void LoadBin (istream & ist, T & val)
     ist.get(cp[j]);
 }
 
-
-/// bubble sort array
-template <class T>
-inline void BubbleSort (int size, T * data)
-{
-  T hv;
-  for (int i = 0; i < size; i++)
-    for (int j = i+1; j < size; j++)
-      if (data[i] > data[j])
-	{
-	  hv = data[i];
-	  data[i] = data[j];
-	  data[j] = hv;
-	}
-}
-/// bubble sort array
-template <class T>
-inline void BubbleSort (int size, T * data, int * index)
-{
-  T hv;
-  int hi;
-  for (int i = 0; i < size; i++)
-    for (int j = i+1; j < size; j++)
-      if (data[i] > data[j])
-	{
-	  hv = data[i];
-	  data[i] = data[j];
-	  data[j] = hv;
-
-	  hi = index[i];
-	  index[i] = index[j];
-	  index[j] = hi;
-	}
-}
-
-
-/// merge sort array, use help array of same size
-template <class T>
-void MergeSort (int size, T * data, T * help);
-/// merge sort array, use help array of same size
-template <class T>
-void MergeSort (int size, T * data, T * help, int * index, int * indexhelp);
 
 }
 
