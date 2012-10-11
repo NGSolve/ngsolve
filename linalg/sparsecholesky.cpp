@@ -8,8 +8,6 @@
 
 namespace ngla
 {
-  using namespace ngla;
-  using namespace ngstd;
 
 
 
@@ -229,7 +227,7 @@ namespace ngla
     blocknrs.Alloc (n);
     blocknrs.SetName ("sparse inverse, block nrs");
     
-    DynamicMem<int> helpi(n);
+    // DynamicMem<int> helpi(n);
     
     // order: now inverse map 
     for (int i = 0; i < n; i++)
@@ -283,7 +281,9 @@ namespace ngla
 
 	    for (int j = 0; j < ncon; j++)
 	      rowindex2[firstinrow_ri[i]+j] = order[vertices[ii].connected[j]];
-	    MergeSort (ncon, &rowindex2[firstinrow_ri[i]], &helpi[0]);
+
+	    // MergeSort (ncon, &rowindex2[firstinrow_ri[i]], &helpi[0]);
+	    QuickSort (FlatArray<int> (ncon, &rowindex2[firstinrow_ri[i]]));
 
 	    cnt_master += ncon;
 	    cnt += ncon;
