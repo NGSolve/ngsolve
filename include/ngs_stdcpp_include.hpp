@@ -1,17 +1,14 @@
-// #define _GLIBCPP_BASIC_FILE_ENCAPSULATION 1
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #ifndef VERSION
-#define VERSION "4.9.14-dev"
+#define VERSION "5.0-dev"
 #endif
 
 
 #include <iostream>
 #include <fstream>
-// #include <strstream>
 #include <sstream>
 #include <iomanip>
 
