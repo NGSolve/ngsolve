@@ -62,23 +62,17 @@ namespace ngstd
 {
   NGS_DLL_HEADER extern ::std::ostream * testout;
 }
-// using ngstd::testout;
+
 
 namespace netgen
 {
-  // DLL_HEADER extern ::std::ostream * testout;
   DLL_HEADER extern int printmessage_importance;
 }
 
 
-/*
-*/
-
 namespace ngstd
 {
-// using netgen::printmessage_importance;
   using netgen::DynamicMem;
-  // using netgen::testout;
 }
 
 
@@ -95,9 +89,6 @@ namespace ngstd
 }
 
 #include <ngs_defines.hpp>
-
-
-
 
   
 #include "ngsstream.hpp"  

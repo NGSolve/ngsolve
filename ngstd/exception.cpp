@@ -8,8 +8,6 @@
 
 namespace ngstd
 {
-  using namespace ngstd;
-
 
   Exception :: Exception (const string & s) 
     : what(s)

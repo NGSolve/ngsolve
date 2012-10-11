@@ -724,7 +724,7 @@ namespace ngstd
 
 
   template <class T>
-  void QuickSort (const FlatArray<T> & data)
+  void QuickSort (FlatArray<T> data)
   {
     if (data.Size() <= 1) return;
 
@@ -740,9 +740,7 @@ namespace ngstd
       
         if (i <= j)
           {
-            T hv = data[i];
-            data[i] = data[j];
-            data[j] = hv;
+	    Swap (data[i], data[j]);
             i++; j--;
           }
       }
@@ -754,6 +752,40 @@ namespace ngstd
     // for (int i = 0; i < data.Size()-1; i++)
     // if (data[i] > data[i+1]) cerr << "heap sort is wrong !!" << endl;
   }
+
+
+
+  template <class T>
+  void QuickSort (FlatArray<T> data, FlatArray<int> index)
+  {
+    if (index.Size() <= 1) return;
+
+    int i = 0;
+    int j = index.Size()-1;
+
+    T midval = index[ (i+j)/2 ];
+  
+    do
+      {
+        while (data[index[i]] < data[midval]) i++;
+        while (data[midval] < data[index[j]]) j--;
+      
+        if (i <= j)
+          {
+	    Swap (index[i], index[j]);
+            i++; j--;
+          }
+      }
+    while (i <= j);
+
+    QuickSort (data, index.Range (0, j+1));
+    QuickSort (data, index.Range (i, index.Size()));
+
+    // for (int i = 0; i < data.Size()-1; i++)
+    // if (data[i] > data[i+1]) cerr << "heap sort is wrong !!" << endl;
+  }
+
+
 
 
 }

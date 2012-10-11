@@ -73,7 +73,7 @@ public:
   }
 
   /// check bit i
-  inline bool Test (int i) const
+  bool Test (int i) const
   {
     return (data[i / CHAR_BIT] & (char(1) << (i % CHAR_BIT) ) ) ? 1 : 0;
   }
@@ -111,15 +111,15 @@ private:
   { return char(1) << (i % CHAR_BIT); }
     
   ///
-  inline int Addr (int i) const
+  int Addr (int i) const
   { return (i / CHAR_BIT); }
 
 
 };
 
 
-/// prints BitArray
-ostream & operator<<(ostream & s, const BitArray & ba);
+  /// prints BitArray
+  ostream & operator<<(ostream & s, const BitArray & ba);
 
 }
 
