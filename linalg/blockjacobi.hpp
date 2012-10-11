@@ -16,14 +16,14 @@ namespace ngla
   class BaseBlockJacobiPrecond : virtual public BaseMatrix
   {
   public:
-    enum COARSE_TYPE { NO_COARSE = 0, USER_COARSE = 1, DIRECT_COARSE = 2, SMOOTHING_COARSE = 3 };
+    // enum COARSE_TYPE { NO_COARSE = 0, USER_COARSE = 1, DIRECT_COARSE = 2, SMOOTHING_COARSE = 3 };
   protected:
     /// the table defining the blocks
     Table<int> & blocktable;
     /// maximal block size
     int maxbs;
 
-    COARSE_TYPE ct;
+    // COARSE_TYPE ct;
   public:
     /// the blocktable define the blocks. ATTENTION: entries will be reordered !
     BaseBlockJacobiPrecond (Table<int> & ablocktable);
@@ -61,6 +61,7 @@ namespace ngla
 		 FlatArray<int> usedflags,        // in and out: array of -1, size = graph.size
 		 LocalHeap & lh);
 
+    /*
     virtual void SetCoarseType ( string act) 
     {
       if ( strcmp ( act.c_str(), "DIRECT_COARSE") == 0 )
@@ -84,12 +85,14 @@ namespace ngla
 	  ct = NO_COARSE;
 	}
     }
+    */
 
+    /*
     virtual void InitCoarseType (string act, const BitArray * freedofs) 
     {
       cerr << "BaseBlockJacobiPrecond :: InitCoarseType not implemented!" << endl;
     }
-
+    */
   };
 
 
@@ -136,36 +139,23 @@ namespace ngla
     ///
     virtual void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
     {
-      static int timer = NgProfiler::CreateTimer ("BlockJacobi::MultAdd");
-      NgProfiler::RegionTimer reg (timer);
+      static Timer timer("BlockJacobi::MultAdd");
+      RegionTimer reg (timer);
 
-      const FlatVector<TVX> fx = x.FV<TVX> ();
-      // dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
+      FlatVector<TVX> fx = x.FV<TVX> ();
       FlatVector<TVX> fy = y.FV<TVX> ();
-      // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
 
       Vector<TVX> hxmax(maxbs);
-      Vector<TVX> hymax(maxbs);
 
       for (int i = 0; i < blocktable.Size(); i++)
 	{
-	  int bs = blocktable[i].Size();
-	  if (!bs) continue;
+	  FlatArray<int> ind = blocktable[i];
+	  if (!ind.Size()) continue;
 
-	  /*
-	  FlatVector<TVX> hx(bs, &hxmax(0));
-	  FlatVector<TVX> hy(bs, &hymax(0));
-	  */
-	  FlatVector<TVX> hx(bs, hxmax.Addr(0));
-	  FlatVector<TVX> hy(bs, hymax.Addr(0));
+	  FlatVector<TVX> hx(ind.Size(), hxmax.Addr(0));
 
-	  for (int j = 0; j < bs; j++)
-	    hx(j) = fx(blocktable[i][j]);
-	
-	  hy = (*invdiag[i]) * hx;
-
-	  for (int j = 0; j < bs; j++)
-	    fy(blocktable[i][j]) += s * hy(j);
+	  hx = s * fx(ind);
+	  fy(ind) += *invdiag[i] * hx;
 	}
     }
 
@@ -177,10 +167,8 @@ namespace ngla
       NgProfiler::RegionTimer reg (timer);
 
       int i, j;
-      const FlatVector<TVX> fx = x.FV<TVX> ();
-	// dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
+      FlatVector<TVX> fx = x.FV<TVX> ();
       FlatVector<TVX> fy = y.FV<TVX> ();
-	// dynamic_cast<T_BaseVector<TVX> &> (y).FV();
 
       Vector<TVX> hxmax(maxbs);
       Vector<TVX> hymax(maxbs);
@@ -208,10 +196,8 @@ namespace ngla
     virtual void GSSmooth (BaseVector & x, const BaseVector & b,
 			   int steps = 1) const 
     {
-      const FlatVector<TVX> fb = b.FV<TVX> (); 
-	// dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
+      FlatVector<TVX> fb = b.FV<TVX> (); 
       FlatVector<TVX> fx = x.FV<TVX> ();
-	// dynamic_cast<T_BaseVector<TVX> &> (x).FV();
 
       Vector<TVX> hxmax(maxbs);
       Vector<TVX> hymax(maxbs);
@@ -253,9 +239,7 @@ namespace ngla
 			       int steps = 1) const 
     {
       const FlatVector<TVX> fb = b.FV<TVX> (); 
-      // dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
       FlatVector<TVX> fx = x.FV<TVX> ();
-      // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
 
       Vector<TVX> hxmax(maxbs);
       Vector<TVX> hymax(maxbs);
@@ -311,240 +295,6 @@ namespace ngla
   /* **************** SYMMETRIC ****************** */
 
 
-#ifdef SYMCHOLESKY
-
-  // this version stores the blocks as full Cholesky - factors
-
-  ///
-  template <class TM, class TV>
-  class BlockJacobiPrecondSymmetric : 
-    virtual public BaseBlockJacobiPrecond,
-    virtual public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
-  {
-  protected:
-    const SparseMatrixSymmetric<TM,TV> & mat;
-    Array<CholeskyFactors<TM>*> invdiag;
-
-  public:
-
-    typedef TV TVX;
-    typedef typename mat_traits<TM>::TSCAL TSCAL;
-
-    ///
-    BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
-				 Table<int> & ablocktable);
-
-    BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
-				 const FlatVector<TVX> & constraint,
-				 Table<int> & ablocktable);
-    ///
-    virtual ~BlockJacobiPrecondSymmetric ();
-
-    ///
-    virtual void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
-    {
-      int i, j;
-
-      const FlatVector<TVX> fx = 
-	dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
-      FlatVector<TVX> fy = 
-	dynamic_cast<T_BaseVector<TVX> &> (y).FV();
-
-      Vector<TVX> hxmax(maxbs);
-      Vector<TVX> hymax(maxbs);
-
-      for (i = 0; i < blocktable.Size(); i++)
-	{
-	  int bs = blocktable[i].Size();
-	  if (!bs) continue;
-
-	  FlatVector<TVX> hx(bs, &hxmax(0));
-	  FlatVector<TVX> hy(bs, &hymax(0));
-
-	  for (j = 0; j < bs; j++)
-	    hx(j) = fx(blocktable[i][j]);
-	
-	  invdiag[i]->Mult (hx, hy);
-
-	  for (j = 0; j < bs; j++)
-	    fy(blocktable[i][j]) += s * hy(j);
-	}
-    }
-
-    ///
-    virtual void MultTransAdd (TSCAL s, const BaseVector & x, 
-			       BaseVector & y) const 
-    {
-      MultAdd (s, x, y);
-    }
-
-    ///
-    virtual BaseVector * CreateVector () const 
-    {
-      return mat.CreateVector();
-    }
-
-
-    int Height() const { return mat.Height(); }
-    virtual int VHeight() const { return mat.Height(); }
-    int Width() const { return mat.Width(); }
-    virtual int VWidth() const { return mat.Width(); }
-
-
-    ///
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b,
-			   int steps = 1) const 
-    {
-      const FlatVector<TVX> fb = 
-	dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-      FlatVector<TVX> fx = 
-	dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-
-      Vector<TVX> fy(fx.Size());
-
-      // y = b - (D L^T) x
-
-      fy = fb;
-      for (int j = 0; j < mat.Height(); j++)
-	mat.AddRowTransToVector (j, -fx(j), fy);
-
-      for (int k = 1; k <= steps; k++)
-	for (int i = 0; i < blocktable.Size(); i++)
-	  SmoothBlock (i, fx, fb, fy);
-
-    }
-  
-
-
-
-    virtual void GSSmoothPartial (BaseVector & x, const BaseVector & b,
-				  BaseVector & y) const 
-    {
-      const FlatVector<TVX> fb = 
-	dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-      FlatVector<TVX> fx = 
-	dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-      FlatVector<TVX> fy = 
-	dynamic_cast<T_BaseVector<TVX> &> (y).FV();
-
-      // y = b - (D L^T) x
-
-      for (int i = 0; i < blocktable.Size(); i++)
-	SmoothBlock (i, fx, fb, fy);
-    }
-
-
-
-
-
-
-
-
-
-
-    virtual void GSSmoothResiduum (BaseVector & x, const BaseVector & b,
-				   BaseVector & res, int steps = 1) const = 0;
-
-
-  
-    ///
-    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b,
-			       int steps = 1) const 
-    {
-      const FlatVector<TVX> fb = 
-	dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-      FlatVector<TVX> fx = 
-	dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-
-      Vector<TVX> fy(fx.Size());
-
-      // y = b - (D L^T) x
-      fy = fb;
-      for (int j = 0; j < mat.Height(); j++)
-	mat.AddRowTransToVector (j, -fx(j), fy);
-
-      for (int k = 1; k <= steps; k++)
-	for (int i = blocktable.Size()-1; i >= 0; i--)
-	  SmoothBlock (i, fx, fb, fy);
-    }
-
-    virtual void GSSmoothBackPartial (BaseVector & x, const BaseVector & b,
-				      BaseVector & y) const 
-    {
-      const FlatVector<TVX> fb = 
-	dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-      FlatVector<TVX> fx = 
-	dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-      FlatVector<TVX> fy = 
-	dynamic_cast<T_BaseVector<TVX> &> (y).FV();
-
-      // y = b - (D L^T) x
-
-      for (int i = blocktable.Size()-1; i >= 0; i--)
-	SmoothBlock (i, fx, fb, fy);
-    }
-
-
-
-    void SmoothBlock (int i, 
-		      FlatVector<TVX> & x,
-		      const FlatVector<TVX> & b,
-		      FlatVector<TVX> & y) const
-    {
-      FlatArray<int> row = blocktable[i];
-
-      int bs = row.Size();
-      if (bs == 0) return;
-    
-      VectorMem<500,TVX> di (bs);
-      VectorMem<500,TVX> wi (bs, &wimem[0]);
-
-    
-      // di = P_i (y - L x)
-      for (int j = 0; j < bs; j++)
-	di(j) = y(row[j]) - mat.RowTimesVectorNoDiag (row[j], x);
-
-      invdiag[i]->Mult (di, wi);
-
-      // x += P_i w
-      // y -= (D L^t) P_i w
-      for (int j = 0; j < bs; j++)
-	{
-	  x(row[j]) += wi(j);
-	  mat.AddRowTransToVector (row[j], -wi(j), y);
-	}
-    }
-
-  
-    ///
-    virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,
-				    const Array<int> & numbering, 
-				    int forward = 1) const
-    {
-      ;
-    }
-  
-  
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
-    {
-      int nels = 0;
-      for (int i = 0; i < blocktable.Size(); i++)
-	{
-	  int bs = blocktable[i].Size();
-	  nels += (bs * (bs+1))/2;
-	}
-      mu.Append (new MemoryUsageStruct ("BlockJacSym", nels*sizeof(TM), blocktable.Size()));
-    }
-  };
-
-
-
-
-
-#else
-
-  // this version stores the blocks as full banded Cholesky - factors
-
   ///
   template <class TM, class TV>
   class BlockJacobiPrecondSymmetric : 
@@ -567,10 +317,12 @@ namespace ngla
     ///
     BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
 				 Table<int> & ablocktable);
-    ///
+    
+    /*
     BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
 				 const FlatVector<TVX> & constraint,
 				 Table<int> & ablocktable);
+    */
     ///
     virtual ~BlockJacobiPrecondSymmetric ();
   
@@ -662,11 +414,6 @@ namespace ngla
 	}
     */
   };
-
-
-
-#endif // symcholesky
-
 
 
 }
