@@ -10,8 +10,6 @@
 
 namespace ngla
 {
-  using namespace ngla;
-
   
   BaseBlockJacobiPrecond :: 
   BaseBlockJacobiPrecond (Table<int> & ablocktable)
@@ -21,7 +19,6 @@ namespace ngla
     for (int i = 0; i < blocktable.Size(); i++)
       if (blocktable[i].Size() > maxbs)
 	maxbs = blocktable[i].Size();
-
   }
 
 
@@ -332,12 +329,6 @@ namespace ngla
             prevtime = clock();
           }
 
-        /*
-	  for (int i = 0; i < blocktable.Size(); i++)
-	  {
-	  cout << "\rBuilding block " << i ;
-        */
-
 
 	int bs = blocktable[i].Size();
 	if (!bs) 
@@ -348,20 +339,12 @@ namespace ngla
 	
 	Matrix<TM> blockmat(bs);
 	invdiag[i] = new Matrix<TM> (bs);
-	
         
 	for (int j = 0; j < bs; j++)
 	  for (int k = 0; k < bs; k++)
 	    blockmat(j,k) = mat(blocktable[i][j], blocktable[i][k]);
 	
-	// 	(*testout) << "juhu, block " << i << " has L2norm " << L2Norm(blockmat) << endl;	
-	// 	(*testout) << "block = " << blocktable[i] << endl;
-	// 	(*testout) << "blockmat = " << endl << blockmat << endl;
-	
         CalcInverse (blockmat, *invdiag[i]);
-	
-	// 	(*testout) << "inv = " << endl << *invdiag[i] << endl;
-	// 	(*testout) << "prod = " << endl << (blockmat * *invdiag[i]) << endl;
       }
     cout << "\rBlockJacobi Preconditioner built" << endl;
   }
@@ -377,143 +360,6 @@ namespace ngla
 
 
 
-#ifdef SYMCHOLESKY
-
-  ist nicht definiert
-
-
-  ///
-  template <class TM, class TV>
-  BlockJacobiPrecondSymmetric<TM,TV> ::
-  BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
-			       Table<int> & ablocktable)
-    : BaseBlockJacobiPrecond(ablocktable), mat(amat), 
-      invdiag(ablocktable.Size())
-  { 
-    cout << "symmetric BlockJacobi Preconditioner, constructor called, #blocks = " << blocktable.Size() << endl;
-
-    int sumnn = 0;
-    
-    for (int i = 0; i < blocktable.Size(); i++)
-      {
-	cout << "\rBuilding block " << i ;
-	int bs = blocktable[i].Size();
-	
-	if (!bs) 
-	  {
-	    invdiag[i] = 0;
-	    continue;
-	  }
-	
-	sumnn += bs*bs;
-
-	//	int bw = Reorder (blocktable[i], mat);
-	
-	Matrix<TM> blockmat(bs);
-	//	invdiag[i] = new Matrix<TM> (bs);
-	
-	
-	for (int j = 0; j < bs; j++)
-	  for (int k = 0; k < bs; k++)
-	    if (blocktable[i][j] >= blocktable[i][k])
-	      {
-		blockmat(j,k) = 
-		  mat(blocktable[i][j], blocktable[i][k]);
-		if (j != k)
-		  blockmat(k,j) = Trans (blockmat(j,k));
-	      }
-	
-	try
-	  {
-	    invdiag[i] = new CholeskyFactors<TM> (blockmat);
-	  }
-	catch (Exception & e)
-	  {
-	    cout << "block singular !" << endl;
-	    (*testout) << "caught: " << e.What() << endl;
-	    (*testout) << "entries = " << blocktable[i] << endl;
-	    (*testout) << "mat = " << endl << blockmat << endl;
-	  }
-	
-	// invdiag[i]->Print(*testout);
-      }
-    cout << "\rBuilt symmetric BlockJacobi Preconditioner" << endl;
-  }
-
-  template <class TM, class TV>
-  BlockJacobiPrecondSymmetric<TM,TV> ::
-  BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
-			       const FlatVector<TVX> & constraint,
-			       Table<int> & ablocktable)
-    : BaseBlockJacobiPrecond(ablocktable), mat(amat), 
-      invdiag(ablocktable.Size())
-  { 
-    cout << "symmetric BlockJacobi Preconditioner, constructor called, #blocks = " << blocktable.Size() << endl;
-
-    int sumnn = 0;
-
-    for (int i = 0; i < blocktable.Size(); i++)
-      {
-	cout << "\rBuilding block " << i ;
-	int bs = blocktable[i].Size();
-
-	if (!bs) 
-	  {
-	    invdiag[i] = 0;
-	    continue;
-	  }
-
-	sumnn += bs*bs;
-
-	//	int bw = Reorder (blocktable[i], mat);
-
-	Matrix<TM> blockmat(bs);
-	//	invdiag[i] = new Matrix<TM> (bs);
-
-	for (int j = 0; j < bs; j++)
-	  for (int k = 0; k < bs; k++)
-	    if (blocktable[i][j] >= blocktable[i][k])
-	      {
-		blockmat(j,k) = 
-		  mat(blocktable[i][j], blocktable[i][k]);
-		blockmat(k,j) = Trans (blockmat(j,k));
-	      }
-	
-	for (int j = 0; j < bs; j++)
-	  for (int k = 0; k < bs; k++)
-	    blockmat(j,k) -= 1e8 * 
-	      constraint(blocktable[i][j]) *
-	      Trans (constraint(blocktable[i][k]));
-
-	try
-	  {
-	    invdiag[i] = new CholeskyFactors<TM> (blockmat);
-	  }
-	catch (Exception & e)
-	  {
-	    cout << "block singular !" << endl;
-	    (*testout) << "caught: " << e.What() << endl;
-	    (*testout) << "entries = " << blocktable[i] << endl;
-	    (*testout) << "mat = " << endl << blockmat << endl;
-	  }
-	// invdiag[i]->Print(*testout);
-      }
-    cout << "\rBuilt symmetric BlockJacobi Preconditioner" << endl;
-
-  }
-
-  ///
-  template <class TM,TV>
-  BlockJacobiPrecondSymmetric<TM,TV> ::
-  ~BlockJacobiPrecondSymmetric () 
-  {
-    for (int i = 0; i < invdiag.Size(); i++)
-      delete invdiag[i];
-  }
-
-
-#else
-
 
   ///
   template <class TM, class TV>
@@ -527,10 +373,7 @@ namespace ngla
     lowmem = false;
     // lowmem = true;
     
-    // int i;
-    // int sumnn = 0;
     int maxbs = 0;
-    
     int n = blocktable.Size();
 	
     for (int i = 0; i < n; i++)
@@ -553,11 +396,6 @@ namespace ngla
     int memneed[NBLOCKS];
     for (int i = 0; i < NBLOCKS; i++)
       memneed[i] = 0;
-    /*
-      int starti[NBLOCKS];
-      for (int i = 0; i < NBLOCKS; i++)
-      starti[i] = memneed[i] = 0;
-    */
 
     {
       LocalHeap lh (20000 + 5*sizeof(int)*maxbs, "blockjacobi-heap"); 
@@ -579,17 +417,6 @@ namespace ngla
 	}
     }
 
-    /* 
-       int tot_mem =0; 
-       for(int i=0;i<NBLOCKS;i++) 
-       tot_mem += memneed[i]; 
-       *testout << " ******* MEMORY BlockJacobi " << endl; 
-       *testout << " Doubles needed for Block-Jacobi " << double(tot_mem) << endl; 
-       *testout << " Memory needed for Block-Jacobi " << double(tot_mem) * sizeof(double) * 1.e-6 << " MB " <<  endl ; 
-       *testout << " NZE of Amat " << double(amat.NZE()) << endl; 
-       *testout << " Memory for Amat " << double(amat.NZE())*(sizeof(int)+sizeof(double)) *1.e-6 << " MB " << endl; 
-       */
-       
     if (!lowmem)
       {
 	for (int i = 0; i < NBLOCKS; i++)
@@ -609,31 +436,12 @@ namespace ngla
 	    int bs = blocktable[i].Size();
 	    
 	    if (!bs) continue;
-	    
-	    // blockstart[i] = starti[i%NBLOCKS];
-	    // if (blockstart[i] == starti[i%NBLOCKS]) cout << "g"; else cout << "b";
-	    
 	    int bw = blockbw[i];
-	    // int need = FlatBandCholeskyFactors<TM>::RequiredMem (bs, bw);
-	    
-	    /*
-	      if (starti + need > alloc)
-	      {
-	      alloc = int (1.5 * (starti+need) + 10);
-	      data.ReAlloc (alloc);
-	      }
-	    */
+
 	    try
 	      {
-		// invdiag[i] = new BandCholeskyFactors<TM> (blockmat);
-		// FlatBandCholeskyFactors<TM> inv (bs, bw, &data[i%NBLOCKS][starti[i%NBLOCKS]]);
 		FlatBandCholeskyFactors<TM> inv (bs, bw, &data[i%NBLOCKS][blockstart[i]]);
-		// (*testout) << "factor block " << i << endl;
-
 		ComputeBlockFactor (blocktable[i], bw, inv);
-
-		// inv.Print (*testout);
-		// inv.Factor (blockmat);
 	      }
 	    catch (Exception & e)
 	      {
@@ -641,17 +449,8 @@ namespace ngla
 		(*testout) << "block nr = " << i << endl;
 		(*testout) << "caught: " << e.What() << endl;
 		(*testout) << "entries = " << blocktable[i] << endl;
-		/*
-		  (*testout) << "mat = " << endl;
-		  blockmat.Print(*testout);
-		  (*testout) << "diag = " << endl;
-		  pfor (int l = 0; l < bs; l++)
-		  (*testout) << l << ": " << blockmat(l,l) << endl;
-		*/
 		throw;
 	      }
-	    
-	    // starti[i%NBLOCKS] += need;
 	  }
       }
 
@@ -660,16 +459,6 @@ namespace ngla
 
 
 
-
-  template <class TM, class TV>
-  BlockJacobiPrecondSymmetric<TM,TV> ::
-  BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
-			       const FlatVector<TVX> & constraint,
-			       Table<int> & ablocktable)
-    : BaseBlockJacobiPrecond(ablocktable), mat(amat)
-  {
-    throw Exception ("BlockJacPrecondSym with constraints not available for banded blocks, please define SYMCHOLESKY in blocjacobi.hpp");
-  }
 
   template <class TM, class TV>
   BlockJacobiPrecondSymmetric<TM,TV> ::
@@ -704,38 +493,7 @@ namespace ngla
 	  }    
 
     inv.Factor (blockmat);
-
-    //       (*testout) << "block = " << block << endl
-    //       << "mat = " << blockmat << endl
-    //       << "inv = " << endl << inv << endl;
-
-
-
-    /*
-      Matrix<TM> mat2(bs);
-      mat2 = TM(0);
-      for (int j = 0; j < bs; j++)
-      for (int k = 0; k < bs; k++)
-      if (block[j] >= block[k])
-      {
-      if (abs (j-k) < bw)
-      {
-      TM val = mat(block[j], block[k]);
-      mat2(j,k) = val;
-      mat2(k,j) = Trans (val);
-      }
-      }    
-    
-      CholeskyFactors<TM> inv2(mat2);
-      (*testout) << "mat2 = " << endl << mat2 << endl;
-      (*testout) << "inv2 = " << endl;
-      inv2.Print (*testout);
-      (*testout) << endl;
-    */
   } 
-
-
-
 
 
 
@@ -748,10 +506,8 @@ namespace ngla
     static Timer timer("BlockJacobiSymmetric::MultAdd");
     RegionTimer reg (timer);
 
-    const FlatVector<TVX> fx = x.FV<TVX> ();
-      // dynamic_cast<const T_BaseVector<TVX> &> (x).FV();
+    FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy       = y.FV<TVX> ();
-      // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
 
     Vector<TVX> hxmax(maxbs);
     Vector<TVX> hymax(maxbs);
@@ -791,15 +547,12 @@ namespace ngla
     static Timer timer ("BlockJacobiPrecondSymmetric::GSSmooth");
     RegionTimer reg(timer);
 
-    const FlatVector<TVX> fb = b.FV<TVX> ();
-    // dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
+    FlatVector<TVX> fb = b.FV<TVX> ();
     FlatVector<TVX> fx = x.FV<TVX> ();
-    // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
 
     Vector<TVX> fy(fx.Size());
 
     // y = b - (D L^T) x
-
     fy = fb;
     for (int j = 0; j < mat.Height(); j++)
       mat.AddRowTransToVector (j, -fx(j), fy);
@@ -818,9 +571,7 @@ namespace ngla
     RegionTimer reg(timer);
 
     FlatVector<TVX> fx = x.FV<TVX> ();
-    // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
     FlatVector<TVX> fy = y.FV<TVX> ();
-    // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
 
     for (int i = 0; i < blocktable.Size(); i++)
       SmoothBlock (i, fx, fy);
@@ -880,9 +631,7 @@ namespace ngla
     RegionTimer reg(timer);
 
     FlatVector<TVX> fx = x.FV<TVX> ();
-    // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
     FlatVector<TVX> fy = y.FV<TVX> ();
-    // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
 
     for (int i = blocktable.Size()-1; i >= 0; i--)
       SmoothBlock (i, fx, fy);
@@ -934,8 +683,6 @@ namespace ngla
 
 
 
-
-#endif // symcholesky
 
 
 
