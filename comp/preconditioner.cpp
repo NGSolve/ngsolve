@@ -566,7 +566,7 @@ namespace ngcomp
 	Table<int> * blocks = bfa->GetFESpace().CreateSmoothingBlocks(flags);
 	jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
 	  .CreateBlockJacobiPrecond(*blocks, 0, coarse_pre, parallel, bfa->GetFESpace().GetFreeDofs());
-	dynamic_cast<BaseBlockJacobiPrecond&> (*jacobi) . InitCoarseType(ct, bfa->GetFESpace().GetFreeDofs());
+	// dynamic_cast<BaseBlockJacobiPrecond&> (*jacobi) . InitCoarseType(ct, bfa->GetFESpace().GetFreeDofs());
       }
     else if (block)
       {

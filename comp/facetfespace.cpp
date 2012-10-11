@@ -320,6 +320,7 @@ namespace ngcomp
 
     switch (ma.GetElType(elnr))
       {
+      case ET_POINT:   break;
       case ET_SEGM:    break;
       case ET_TRIG:    fe2d = new (lh) FacetFE<ET_TRIG> (); break;
       case ET_QUAD:    fe2d = new (lh) FacetFE<ET_QUAD> (); break;
