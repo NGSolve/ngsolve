@@ -98,15 +98,11 @@ namespace ngla
 
 
 
-
-
   template<class TM, 
-	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
-	   class TV_COL = typename mat_traits<TM>::TV_COL>
+	   class TVEC = typename mat_traits<TM>::TV_ROW> 
   class ParallelMumpsInverse : public BaseMatrix
   {
     typedef typename mat_traits<TM>::TV_COL TV;
-    typedef typename mat_traits<TM>::TV_ROW TVX;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
 
@@ -116,14 +112,14 @@ namespace ngla
 
     bool symmetric, iscomplex;
 
-    const BitArray * inner;
-    const Array<int> * cluster;
+    // const BitArray * inner;
+    // const Array<int> * cluster;
     Array<int> select;
     Array<int> loc2glob;
     int num_globdofs;
   public:
     ///
-    ParallelMumpsInverse (const SparseMatrixTM<TM> & a, 
+    ParallelMumpsInverse (const BaseSparseMatrix & a, 
 			  const BitArray * ainner,
 			  const Array<int> * acluster,
 			  const ParallelDofs * pardofs,

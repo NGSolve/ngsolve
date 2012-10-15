@@ -4,7 +4,7 @@
 /* Date:   May. 2009                                                       */
 /* *************************************************************************/
 
-
+#define DEBUG
 #ifdef USE_MUMPS
 
 #include <la.hpp>
@@ -415,11 +415,11 @@ namespace ngla
 
   
 
-  template <class TM, class TV_ROW, class TV_COL>
-  ParallelMumpsInverse<TM,TV_ROW,TV_COL> :: 
-  ParallelMumpsInverse (const SparseMatrixTM<TM> & a, 
-			const BitArray * ainner,
-			const Array<int> * acluster,
+  template <class TM, class TV>
+  ParallelMumpsInverse<TM,TV> :: 
+  ParallelMumpsInverse (const BaseSparseMatrix & ba, 
+			const BitArray * inner,
+			const Array<int> * cluster,
 			const ParallelDofs * pardofs,
 			bool asymmetric)
   { 
@@ -428,11 +428,13 @@ namespace ngla
     static Timer timer_factor ("Mumps Inverse - factor");
     RegionTimer reg (timer);
 
+    const SparseMatrixTM<TM> & a = dynamic_cast<const SparseMatrixTM<TM> &> (ba);
+
     
     // symmetric = asymmetric;
     symmetric = true;
-    inner = ainner;
-    cluster = acluster;
+    // inner = ainner;
+    // cluster = acluster;
 
     cout << IM(1) << "Mumps Parallel inverse " << flush;
 
@@ -502,7 +504,7 @@ namespace ngla
       if (!inner || inner->Test(row))
 	select.Append (row);
     
-
+    
     const ParallelMeshDofs & pmdofs = dynamic_cast<const ParallelMeshDofs&> (*pardofs);
     for (int row = 0; row < ndof; row++)
       if (!inner || inner->Test(row))
@@ -518,34 +520,29 @@ namespace ngla
 	  }
 
 
-
-
-
     entrysize = mat_traits<TM>::HEIGHT; 
     iscomplex = mat_traits<TM>::IS_COMPLEX;
 
+    Array<int> col_indices;
+    Array<int> row_indices;
+    Array<TSCAL> matrix;
 
-    /*
-      int * colstart = 0;
-      int * counter = 0;
-    */
-    int * col_indices = 0, * row_indices = 0;
-    TSCAL * matrix = 0;
     if (id != 0)
       {
 	height = a.Height() * entrysize;
-	
+	col_indices.SetSize (a.NZE() * entrysize * entrysize);
+	row_indices.SetSize (a.NZE() * entrysize * entrysize);
+	matrix.SetSize (a.NZE() * entrysize * entrysize);
+
+
 	if ( symmetric )
 	  {
-	    col_indices = new int[a.NZE() * entrysize * entrysize ];
-	    row_indices = new int[a.NZE() * entrysize * entrysize ];
-	    matrix = new TSCAL[a.NZE() * entrysize * entrysize ];      
-	    
 	    int ii = 0;
 	    for (int i = 0; i < a.Height(); i++ )
 	      {
 		FlatArray<int> rowind = a.GetRowIndices(i);
-
+		FlatVector<TM> values = a.GetRowValues(i);
+		
 		for (int j = 0; j < rowind.Size(); j++ )
 		  {
 		    int col = rowind[j];
@@ -556,19 +553,26 @@ namespace ngla
 			   ((*cluster)[i] == (*cluster)[col] 
 			    && (*cluster)[i] ))  )
 		      {
-			TM entry = a(i,col);
 			for (int l = 0; l < entrysize; l++ )
 			  for (int k = 0; k < entrysize; k++)
 			    {
-			      int rowi = i*entrysize+l;
-			      int coli = col*entrysize+k;
-			      TSCAL val = Access(entry,l,k);
+			      if (i == col && k > l) continue;
+
+			      int rowi = loc2glob[i]*entrysize+l+1;
+			      int coli = loc2glob[col]*entrysize+k+1;
 
 			      if (rowi >= coli)
 				{
-				  col_indices[ii] = loc2glob[coli]+1;
-				  row_indices[ii] = loc2glob[rowi]+1;
-				  matrix[ii] = val;
+				  col_indices[ii] = coli;
+				  row_indices[ii] = rowi;
+				  matrix[ii] = Access(values[j],l,k);
+				  ii++;
+				}
+			      else
+				{
+				  col_indices[ii] = rowi;
+				  row_indices[ii] = coli;
+				  matrix[ii] = Access(values[j],l,k);
 				  ii++;
 				}
 			    }
@@ -576,10 +580,6 @@ namespace ngla
 		  }
 	      }
 	    nze = ii;
-
-	    for (int i = 0; i < nze; i++)
-	      if (col_indices[i] > row_indices[i])
-		swap (col_indices[i], row_indices[i]);
 	  }
 	else
 	  {
@@ -627,10 +627,11 @@ namespace ngla
 
 
 	    // 2.) build whole matrix:
-	    col_indices = new int[a.NZE() * entrysize * entrysize ];
-	    row_indices = new int[a.NZE() * entrysize * entrysize ];
-	    matrix = new TSCAL[a.NZE() * entrysize * entrysize ];      
-
+	    /*
+	    int * col_indices = new int[a.NZE() * entrysize * entrysize ];
+	    int * row_indices = new int[a.NZE() * entrysize * entrysize ];
+	    TSCAL * matrix = new TSCAL[a.NZE() * entrysize * entrysize ];      
+	    */
 	    for (int i = 0; i < a.Height(); i++ )
 	      {
 		for (int j = 0; j<a.GetRowIndices(i).Size(); j++ )
@@ -704,10 +705,10 @@ namespace ngla
 
     
     /* distributed matrix definition */
-    mumps_id.n   = num_globdofs;  // only on host
+    mumps_id.n   = num_globdofs * entrysize;  // only on host
     mumps_id.nz_loc  = nze;
-    mumps_id.irn_loc = row_indices;
-    mumps_id.jcn_loc = col_indices;
+    mumps_id.irn_loc = row_indices.Addr(0);
+    mumps_id.jcn_loc = col_indices.Addr(0);
 
     mumps_id.icntl[0]=-1; 
     mumps_id.icntl[1]=-1; 
@@ -761,8 +762,7 @@ namespace ngla
     cout << "parallel ordering = " << mumps_id.infog[31] << endl;
     */
 
-
-    mumps_id.a_loc = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*)matrix; 
+    mumps_id.a_loc = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*) (TSCAL*)matrix.Addr(0);
     mumps_id.job = JOB_FACTOR;
     
     cout << IM(1) << "factor ... " << flush;
@@ -780,17 +780,14 @@ namespace ngla
       }
 
     cout << IM(1) << " done " << endl;
-
-    delete [] col_indices;
-    delete [] row_indices;
-    delete [] matrix;
+    
     VT_ON();
   }
   
   
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void ParallelMumpsInverse<TM,TV_ROW,TV_COL> :: 
+  template <class TM, class TV>
+  void ParallelMumpsInverse<TM,TV> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
     static Timer timer("Parallelmumps mult inverse");
@@ -804,10 +801,10 @@ namespace ngla
 
     if (id != 0)
       {
-	FlatVector<TSCAL> fx = x.FV<TSCAL>();
-	FlatVector<TSCAL> fy = y.FV<TSCAL>();
+	FlatVector<TV> fx = x.FV<TV>();
+	FlatVector<TV> fy = y.FV<TV>();
 
-	Array<TSCAL> hx(select.Size());
+	Array<TV> hx(select.Size());
 	for (int i = 0; i < select.Size(); i++)
 	  hx[i] = fx(select[i]);
 	Array<int> select_loc2glob(select.Size());
@@ -830,13 +827,13 @@ namespace ngla
       }
     else
       {
-	Vector<TSCAL> rhs(num_globdofs);
+	Vector<TV> rhs(num_globdofs);
 	rhs = 0.0;
 	
 	for (int src = 1; src < ntasks; src++)
 	  {
 	    Array<int> loc2glob;
-	    Array<TSCAL> hx;
+	    Array<TV> hx;
 	    MyMPI_Recv (loc2glob, src);
 	    MyMPI_Recv (hx, src);
 	    for (int j = 0; j < loc2glob.Size(); j++)
@@ -845,7 +842,8 @@ namespace ngla
 	
 	MUMPS_STRUC_C & ncid = const_cast<MUMPS_STRUC_C&> (mumps_id);
 
-	ncid.rhs = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*) &rhs(0);
+	// ncid.rhs = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*) &rhs(0);
+	ncid.rhs = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*) rhs.Data();
 	ncid.job = JOB_SOLVE;
 
 	mumps_trait<TSCAL>::MumpsFunction (&ncid);
@@ -854,7 +852,7 @@ namespace ngla
 	  {
 	    Array<int> loc2glob;
 	    MyMPI_Recv (loc2glob, src);
-	    Array<TSCAL> hx(loc2glob.Size());
+	    Array<TV> hx(loc2glob.Size());
 
 	    for (int j = 0; j < loc2glob.Size(); j++)
 	      hx[j] = rhs(loc2glob[j]);
@@ -866,8 +864,8 @@ namespace ngla
   }
   
 
-  template <class TM, class TV_ROW, class TV_COL>
-  ParallelMumpsInverse<TM,TV_ROW,TV_COL> :: ~ParallelMumpsInverse()
+  template <class TM, class TV>
+  ParallelMumpsInverse<TM,TV> :: ~ParallelMumpsInverse()
   {
     mumps_id.job=JOB_END; 
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
@@ -886,8 +884,8 @@ namespace ngla
 
 
 
-
-
+  
+  
 
 
 
@@ -923,10 +921,12 @@ namespace ngla
 
 
 
+  
+
 
   template class ParallelMumpsInverse<double>;
   template class ParallelMumpsInverse<Complex>;
-  template class ParallelMumpsInverse<double,Complex,Complex>;
+  template class ParallelMumpsInverse<double,Complex>;
 #if MAX_SYS_DIM >= 1
   template class ParallelMumpsInverse<Mat<1,1,double> >;
   template class ParallelMumpsInverse<Mat<1,1,Complex> >;
