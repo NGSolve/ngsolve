@@ -4,13 +4,11 @@
 /* Date:   15. Aug. 2002                                             */
 /*********************************************************************/
 
-
+// #define DEBUG
 #include <la.hpp>
 
 namespace ngla
 {
-  using namespace ngla;
-
   
   AMG_H1 :: AMG_H1 (const BaseMatrix & sysmat,
 		    Array<INT<2> > & e2v,
@@ -22,17 +20,14 @@ namespace ngla
     int nv = 0;
     for (int i = 0; i < ne; i++)
       for (int j = 0; j < 2; j++)
-	if (e2v[i][j] > nv)
-	  nv = e2v[i][j];
+	nv = max2 (nv, e2v[i][j]);
     nv++;
 
     cout << "ne = " << ne << ", nv = " << nv << endl;
 
-
     jacobi = 0;
     coarsemat = 0;
     inv = 0;
-
 
     if (nv < 20 || levels == 0)
       {
@@ -47,6 +42,13 @@ namespace ngla
     edge_collapse = 0;
     Array<int> v2edge(nv);
     
+    /*
+    for (int i = 0; i < weighte.Size(); i++)
+      for (int j = 0; j < 2; j++)
+	if (e2v[i][j] == -1)
+	  cout << "unused edge" << endl;
+    */
+
 
     /*
     // compute weight to collapse edge
@@ -66,37 +68,39 @@ namespace ngla
     Array<double> vstrength(nv);
     vstrength = 0.0;
     for (int i = 0; i < weighte.Size(); i++)
-      for (int j = 0; j < 2; j++)
-	vstrength[e2v[i][j]] += weighte[i];
-
-    for (int i = 0; i < ne; i++)
-      {
-	double vstr1 = vstrength[e2v[i][0]];
-	double vstr2 = vstrength[e2v[i][1]];
-	edge_collapse_weight[i] = 
-	  weighte[i] * (vstr1+vstr2) / (vstr1 * vstr2);
-      }
+      if (e2v[i][0] != -1)
+	for (int j = 0; j < 2; j++)
+	  vstrength[e2v[i][j]] += weighte[i];
     
-    v2edge = -1;
-    edge_collapse = 0;
-    bool changed;
+    for (int i = 0; i < ne; i++)
+      if (e2v[i][0] != -1)
+	{
+	  double vstr1 = vstrength[e2v[i][0]];
+	  double vstr2 = vstrength[e2v[i][1]];
+	  edge_collapse_weight[i] = 
+	    weighte[i] * (vstr1+vstr2) / (vstr1 * vstr2);
+	}
 
+    
     // figure out best edges to collapse (iterative improvement)
+    v2edge = -1;
+    edge_collapse = false;
+    bool changed;
     do
       {
 	changed = 0;
 	for (int i = 0; i < ne; i++)
-	  if (edge_collapse_weight[i] > 0.1)
+	  if (e2v[i][0] != -1 && edge_collapse_weight[i] > 0.1)
 	    {
 	      if (v2edge[e2v[i][0]] == -1 && v2edge[e2v[i][1]] == -1)
 		
 		{
-		  edge_collapse[i] = 1;
+		  edge_collapse[i] = true;
 		  v2edge[e2v[i][0]] = i;
 		  v2edge[e2v[i][1]] = i;
 		  changed = 1;
 		}	    
-	    
+	      
 	      else
 		
 		{
@@ -110,8 +114,8 @@ namespace ngla
 			  edge_collapse_weight[v2edge[pi1]])
 			{
 			  int remove = v2edge[pi1];
-			  edge_collapse[i] = 1;
-			  edge_collapse[remove] = 0;
+			  edge_collapse[i] = true;
+			  edge_collapse[remove] = false;
 			  v2edge[e2v[remove][0]] = -1;
 			  v2edge[e2v[remove][1]] = -1;
 			  v2edge[pi1] = i;
@@ -130,10 +134,10 @@ namespace ngla
       connected[i] = i;
 
     for (int i = 0; i < ne; i++)
+      if (e2v[i][0] != -1)
       if (edge_collapse[i])
 	{
-	  int pi1 = e2v[i][0];
-	  int pi2 = e2v[i][1];
+	  int pi1 = e2v[i][0], pi2 = e2v[i][1];
 	  if (vstrength[pi1] > vstrength[pi2])
 	    connected[pi2] = pi1;
 	  else
@@ -143,10 +147,8 @@ namespace ngla
     int ncv = 0;
     for (int i = 0; i < nv; i++)
       if (connected[i] == i)
-	{
-	  vcoarse[i] = ncv;
-	  ncv++;
-	}
+	vcoarse[i] = ncv++;
+
     for (int i = 0; i < nv; i++)
       if (connected[i] != i)
 	vcoarse[i] = vcoarse[connected[i]];
@@ -157,6 +159,7 @@ namespace ngla
     // compute fine edge to coarse edge map (ecoarse)
     HashTable<INT<2>, int> ht_ecoarse(e2v.Size());
     for (int i = 0; i < e2v.Size(); i++)
+      if (e2v[i][0] != -1)
       {
 	INT<2> ce;
 	for (int j = 0; j < 2; j++)
@@ -180,6 +183,7 @@ namespace ngla
 
     Array<int> ecoarse(ne);
     for (int i = 0; i < e2v.Size(); i++)
+      if (e2v[i][0] != -1)
       {
 	INT<2> ce;
 	for (int j = 0; j < 2; j++)
@@ -195,9 +199,10 @@ namespace ngla
     Array<double> cweighte(ce2v.Size());
     cweighte = 0;
     for (int i = 0; i < e2v.Size(); i++)
-      if (ecoarse[i] != -1)
-	cweighte[ecoarse[i]] += weighte[i];
-
+      if (e2v[i][0] != -1)
+	if (ecoarse[i] != -1)
+	  cweighte[ecoarse[i]] += weighte[i];
+    
 
     // compute prolongation matrix 
     // prol  ... for matrix projection
@@ -206,13 +211,9 @@ namespace ngla
     Array<int> nne(nv);
     nne = 1;
 
-    //prol = new SparseMatrix<double> (nne);
-    prol = dynamic_cast< SparseMatrixTM<double>* >(sysmat.CreateMatrix(nne));
+    prol = new SparseMatrix<double> (nne, ncv);
     for (int i = 0; i < nv; i++)
-      {
-	prol->CreatePosition (i, vcoarse[i]);
-	(*prol)(i, vcoarse[i]) = 1;
-      }
+      (*prol)(i, vcoarse[i]) = 1;
 
     recAMG = new AMG_H1 (sysmat, ce2v, cweighte, levels-1);
   }
@@ -280,8 +281,8 @@ namespace ngla
   
   void AMG_H1 :: Mult (const BaseVector & x, BaseVector & y) const
   {
-    static int timer = NgProfiler::CreateTimer ("H1-AMG::Mult");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("H1-AMG::Mult");
+    RegionTimer reg (timer);
 
     if (inv)
       {
@@ -1041,8 +1042,8 @@ namespace ngla
       if (ecoarse[i] != -1)
 	nne[i] = 1;
 
-    //prol = new SparseMatrix<double> (nne);
-    prol = dynamic_cast< SparseMatrixTM<double>* >(sysmat.CreateMatrix(nne));
+    prol = new SparseMatrix<double> (nne);
+    // prol = dynamic_cast< SparseMatrixTM<double>* >(sysmat.CreateMatrix(nne));
     for (int i = 0; i < ne; i++)
       if (ecoarse[i] != -1)
 	{
@@ -1057,8 +1058,8 @@ namespace ngla
       else
 	nne[i] = 2;
 
-    //grad = new SparseMatrix<double> (nne);
-    grad = dynamic_cast< SparseMatrixTM<double>* >(sysmat.CreateMatrix(nne));
+    grad = new SparseMatrix<double> (nne);
+    // grad = dynamic_cast< SparseMatrixTM<double>* >(sysmat.CreateMatrix(nne));
     for (int i = 0; i < ne; i++)
       if (e2v[i][0] != -1)
       {
