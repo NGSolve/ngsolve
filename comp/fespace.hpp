@@ -175,9 +175,9 @@ namespace ngcomp
     bool IsComplex () const { return iscomplex; }
 
 
-    /// number of global dofs
+    /// number of dofs of process
     virtual int GetNDof () const = 0;
-    /// number of global dofs on the level
+    /// number of dofs on the level
     virtual int GetNDofLevel (int level) const;
   
     /// returns finite element. 
@@ -731,7 +731,7 @@ namespace ngcomp
 
 
 #ifdef PARALLEL
-namespace ngparallel
+namespace ngstd
 {
   template<>
   class MPI_Traits<ngcomp::COUPLING_TYPE>
