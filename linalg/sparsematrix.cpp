@@ -691,7 +691,7 @@ namespace ngla
   {
     ArrayMem<int, 50> map(dnums2.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
-    QuickSort (dnums2, map);
+    QuickSortI (dnums2, map);
 
     // ArrayMem<int, 50> dnums_sort(dnums2.Size());
     // dnums_sort = dnums2;
@@ -945,7 +945,7 @@ namespace ngla
 
     ArrayMem<int, 50> map(dnums.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
-    QuickSort (dnums, map);
+    QuickSortI (dnums, map);
 
     // ArrayMem<int, 50> dnums_sort(dnums.Size());
     // dnums_sort = dnums;
