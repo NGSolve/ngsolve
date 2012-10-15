@@ -4,12 +4,15 @@
 #include <comp.hpp>
 
 
+namespace ngstd
+{
+  MPI_Comm ngs_comm;
+}
 
 namespace ngparallel
 {
   using namespace ngcomp;
 
-  MPI_Comm ngs_comm;
 
   ParallelMeshDofs :: ParallelMeshDofs (const MeshAccess & ama, 
 					const Array<Node> & adofnodes, 
