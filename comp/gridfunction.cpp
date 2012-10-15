@@ -4,6 +4,25 @@
 #include <parallelngs.hpp>
 #include <stdlib.h>
 
+
+/*
+namespace ngbla
+{
+  template <int N>
+  bool operator< (const Vec<N, int>& a, const Vec<N, int>& b)
+  {
+    for( int i = 0; i < N; i++)
+      {
+	if (a[i] < b[i]) return true;
+	if (a[i] > b[i]) return false;
+      }
+    
+    return false;  
+  }
+}
+*/
+
+
 namespace ngcomp
 {
   using namespace ngmg;
@@ -134,29 +153,24 @@ namespace ngcomp
 
 
 
+  template <int N>
+  bool MyLess (const Vec<N,int>& a, const Vec<N,int>& b)
+  {
+    for( int i = 0; i < N; i++)
+      {
+	if (a[i] < b[i]) return true;
+	if (a[i] > b[i]) return false;
+      }
+    
+    return false;  
+  }
+
+
+
+  /*
 
 template <int N>
-bool Less( Vec<N, int>& a, Vec<N, int>& b)
-{
-	bool ret = false;
-	for( int i = 0; i < N; i++)
-	{
-		if( a[i] < b[i])
-		{
-			ret = true;
-			break;
-		}
-		else if(a[i] > b[i])
-			break;
-	}
-	
-	return ret;  
-}
-
-
-
-template <int N>
-void Quicksort(  Array<int>& pos, Array<Vec<N, int> >& vals,int  first, int last);
+void MyQuicksort(  Array<int>& pos, Array<Vec<N, int> >& vals,int  first, int last);
 
 template <int N>
 int Divide(  Array<int>& pos, Array<Vec<N, int> >& vals, int first,int last);
@@ -164,13 +178,13 @@ int Divide(  Array<int>& pos, Array<Vec<N, int> >& vals, int first,int last);
 
 
 template <int N>
-void Quicksort( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
+void MyQuicksort( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 {
   if( first < last)
   {
     int mid = Divide<N> ( pos, vals, first, last);
-    Quicksort<N>(  pos,  vals, first, mid-1);
-    Quicksort<N>(  pos,  vals, mid+1, last);
+    MyQuicksort<N>(  pos,  vals, first, mid-1);
+    MyQuicksort<N>(  pos,  vals, mid+1, last);
   }
 }
 
@@ -186,10 +200,10 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
   
   while(i < j)
   {
-    while( (i < last) && (  !Less<N>( pivot, vals[ pos[i] ])   )) //pivot >= vals[ pos[i] ]
+    while( (i < last) && (  !MyLess<N>( pivot, vals[ pos[i] ])   )) //pivot >= vals[ pos[i] ]
 			i++;
     
-    while((j > first) && ( !Less<N>(vals[ pos[j] ], pivot)   ) )  // pivot <= vals[ pos[j] ]
+    while((j > first) && ( !MyLess<N>(vals[ pos[j] ], pivot)   ) )  // pivot <= vals[ pos[j] ]
 			j--;
     
     if( i < j)
@@ -202,7 +216,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
   }
   
   
-  if(  Less<N>(pivot,vals[ pos[i] ]) )
+  if(  MyLess<N>(pivot,vals[ pos[i] ]) )
   {
     int temp = pos[i];
     pos[i] = pos[last];
@@ -212,7 +226,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
   return i;
   
 }
-
+  */
 
 
 
@@ -221,7 +235,6 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
   void S_GridFunction<SCAL> :: Load (istream & ist)
   {
     int ntasks = MyMPI_GetNTasks();
-  
     if (ntasks==1)
       { 
 	const FESpace & fes = GetFESpace();
@@ -243,9 +256,9 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	      }
 	  }
       }
+#ifdef PARALLEL	    
     else
       {  
-#ifdef PARALLEL	    
 	GetVector().SetParallelStatus (DISTRIBUTED);    
 	LoadNodeType<1,NT_VERTEX> (ist);
 	LoadNodeType<2,NT_EDGE> (ist);
@@ -255,6 +268,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
       }
 #endif
   }
+
 
   template <class SCAL>  template <int N, NODE_TYPE NTYPE>
   void  S_GridFunction<SCAL> :: LoadNodeType (istream & ist) 
@@ -363,8 +377,9 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	for( int i = 0; i < index.Size(); i++)
 	  index[i] = i;
 	
-	Quicksort<N>(index,points,0, points.Size()-1);
-	
+	// MyQuicksort<N>(index,points,0, points.Size()-1);
+	QuickSortI (points, index, MyLess<N>);
+
 	Array<int> inverse_index(index.Size());
 	for (int i = 0; i < index.Size(); i++ ) 	
 	  inverse_index[index[i]] = i;
@@ -441,17 +456,16 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	      }
 	  }
       }
+#ifdef PARALLEL	 
     else
       {  
-#ifdef PARALLEL	 
 	GetVector().Cumulate();        
-        
 	SaveNodeType<1,NT_VERTEX>(ost);
 	SaveNodeType<2,NT_EDGE>  (ost);
 	SaveNodeType<4,NT_FACE>  (ost);
 	SaveNodeType<8,NT_CELL>  (ost);
-#endif
       }
+#endif
   }
 
   template <class SCAL>  template <int N, NODE_TYPE NTYPE>
@@ -471,7 +485,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	Array<Vec<N+1, int> > nodenums(0);
 	Array<SCAL> data(0);
     
-	Array<int> dnums;
+	Array<int> dnums, pnums;
     
 	for( int i = 0; i < nnodes; i++)
 	  {
@@ -482,8 +496,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	    
 	    if( !par.IsMasterDof ( dnums[0] ))
 	      continue;      
-	    
-	    Array<int> pnums;
+
 	    if (NTYPE == NT_VERTEX)
 	      {
 		pnums.SetSize(1);
@@ -547,7 +560,6 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 		  temp[k] = locpoints[j][k];
 		
 		points.Append( temp );
-		
 		size += nodesize;
 	      }
 	  }    
@@ -556,7 +568,8 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	for( int i = 0; i < index.Size(); i++)
 	  index[i] = i;
 	
-	Quicksort<N>(index,points,0, points.Size()-1);
+	// MyQuicksort<N>(index,points,0, points.Size()-1);
+	QuickSortI (points, index, MyLess<N>);
 	
 	for( int i = 0; i < points.Size(); i++)
 	  {
@@ -1018,6 +1031,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 
     if ( !fes.DefinedOn(ma.GetElIndex(elnr)) ) return 0;
 
+    cache_elnr = -1;
     if (cache_elnr != elnr || cache_bound)
       {
 	lh.CleanUp();
