@@ -723,8 +723,8 @@ namespace ngstd
 
 
 
-  template <class T>
-  void QuickSort (FlatArray<T> data)
+  template <class T, typename TLESS>
+  void QuickSort (FlatArray<T> data, TLESS less)
   {
     if (data.Size() <= 1) return;
 
@@ -735,9 +735,13 @@ namespace ngstd
   
     do
       {
+	/*
         while (data[i] < midval) i++;
         while (midval < data[j]) j--;
-      
+	*/
+        while (less (data[i], midval)) i++;
+        while (less (midval, data[j])) j--;
+
         if (i <= j)
           {
 	    Swap (data[i], data[j]);
@@ -746,30 +750,46 @@ namespace ngstd
       }
     while (i <= j);
 
-    QuickSort (data.Range (0, j+1));
-    QuickSort (data.Range (i, data.Size()));
+    QuickSort (data.Range (0, j+1), less);
+    QuickSort (data.Range (i, data.Size()), less);
 
     // for (int i = 0; i < data.Size()-1; i++)
-    // if (data[i] > data[i+1]) cerr << "heap sort is wrong !!" << endl;
+    // if (data[i+1] < data[i]) cerr << "heap sort is wrong !!" << endl;
+  }
+
+  template <typename T>
+  bool DefaultLess (const T & a, const T & b)
+  {
+    return a < b;
+  }
+
+  template <class T>
+  void QuickSort (FlatArray<T> data)
+  {
+    QuickSort (data, DefaultLess<T>);
   }
 
 
 
-  template <class T>
-  void QuickSort (FlatArray<T> data, FlatArray<int> index)
+  template <class T, typename TLESS>
+  void QuickSortI (FlatArray<T> data, FlatArray<int> index, TLESS less)
   {
     if (index.Size() <= 1) return;
 
     int i = 0;
     int j = index.Size()-1;
 
-    T midval = index[ (i+j)/2 ];
+    int midval = index[ (i+j)/2 ];
   
     do
       {
+	/*
         while (data[index[i]] < data[midval]) i++;
         while (data[midval] < data[index[j]]) j--;
-      
+	*/
+        while (less (data[index[i]],data[midval])  ) i++;
+        while (less (data[midval],  data[index[j]])) j--;
+
         if (i <= j)
           {
 	    Swap (index[i], index[j]);
@@ -778,14 +798,16 @@ namespace ngstd
       }
     while (i <= j);
 
-    QuickSort (data, index.Range (0, j+1));
-    QuickSort (data, index.Range (i, index.Size()));
-
-    // for (int i = 0; i < data.Size()-1; i++)
-    // if (data[i] > data[i+1]) cerr << "heap sort is wrong !!" << endl;
+    QuickSortI (data, index.Range (0, j+1), less);
+    QuickSortI (data, index.Range (i, index.Size()), less);
   }
 
 
+  template <class T>
+  void QuickSortI (FlatArray<T> data, FlatArray<int> index)
+  {
+    QuickSortI (data, index, DefaultLess<T>);
+  }
 
 
 }
