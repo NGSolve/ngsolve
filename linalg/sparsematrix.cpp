@@ -13,9 +13,10 @@
 namespace ngla
 {
 
-  MatrixGraph :: MatrixGraph (const Array<int> & elsperrow)
+  MatrixGraph :: MatrixGraph (const Array<int> & elsperrow, int awidth)
   {
     size = elsperrow.Size();
+    width = awidth;
     owner = true;
     firsti.Alloc (size+1);
     firsti.SetName ("matrix graph, table 1");
@@ -36,11 +37,12 @@ namespace ngla
     colnr[nze] = 0;
   }
                                                                                                                                                                                                                   
-  MatrixGraph :: MatrixGraph (int as, int max_elsperrow)                                                                                                                                                      
-  {                                                                                                                                                                                                           
-    size = as;                                                                                                                                                                                                
-    nze = as * max_elsperrow;                                                                                                                                                                                 
-                                                                                                                                                                                                              
+  MatrixGraph :: MatrixGraph (int as, int max_elsperrow) 
+  {
+    size = as;
+    width = as;
+    nze = as * max_elsperrow;
+
     // colnr = new int[as*max_elsperrow+1];
     colnr.Alloc (as*max_elsperrow+1);
     colnr.SetName ("matrix graph");
@@ -49,7 +51,6 @@ namespace ngla
     firsti.Alloc (as+1);
     firsti.SetName ("matrix graph, table 1");
 
-
     owner = true;
     
     for (int i = 0; i < as*max_elsperrow; i++)
@@ -57,9 +58,7 @@ namespace ngla
     colnr[as*max_elsperrow] = 0;
     
     for (int i = 0; i < as+1; i++)
-      {
-       firsti[i] = i*max_elsperrow;
-      }
+      firsti[i] = i*max_elsperrow;
   }
   
 
@@ -68,6 +67,7 @@ namespace ngla
   {
     MatrixGraph & graph = const_cast<MatrixGraph&> (agraph);
     size = graph.size;
+    width = graph.width;
     nze = graph.nze;
     owner = false;
 
@@ -185,6 +185,7 @@ namespace ngla
       }
 
     size = ndof;
+    width = ndof;
     owner = true;
 
     firsti.Alloc (size+1);
@@ -371,7 +372,7 @@ namespace ngla
   
   void MatrixGraph :: Compress()
   {
-    cout << "compress not implemented" << endl;
+    cout << "compress not implemented" << endl; 
   }
   
 
@@ -625,9 +626,9 @@ namespace ngla
 
   template <class TM>
   SparseMatrixTM<TM> ::
-  SparseMatrixTM (const Array<int> & elsperrow)
+  SparseMatrixTM (const Array<int> & elsperrow, int awidth)
     : // BaseMatrix(),
-      BaseSparseMatrix (elsperrow), 
+    BaseSparseMatrix (elsperrow, awidth), 
       // S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
       nul(TSCAL(0))
   { 
@@ -914,6 +915,7 @@ namespace ngla
     return newmat;
   }
 
+  /*
   template <class TM, class TV_ROW, class TV_COL>
   BaseMatrix *  SparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateMatrix (const Array<int> & elsperrow) const
@@ -921,7 +923,7 @@ namespace ngla
     SparseMatrix * newmat = new SparseMatrix(elsperrow);
     return newmat;
   }
-
+  */
 
   template <class TM, class TV_ROW, class TV_COL>
   BaseVector * SparseMatrix<TM,TV_ROW,TV_COL> ::
@@ -1081,138 +1083,35 @@ namespace ngla
 					    BaseSparseMatrix* acmat ) const
   {
     int n = this->Height();
-    int i, j, k, l;
 
-    SparseMatrixSymmetric< TM,TV >* cmat = 
-      dynamic_cast< SparseMatrixSymmetric< TM,TV >* > ( acmat );
+    SparseMatrixSymmetric<TM,TV>* cmat = 
+      dynamic_cast< SparseMatrixSymmetric<TM,TV>* > ( acmat );
  
     // if no coarse matrix, build up matrix-graph!
     if ( !cmat )
       {
-	IntTable cols(n);
-	IntTable hcols(n);
 	Array<int> marks(n);
-
-	/*
-	  cout << "1" << flush;
-	  int i, j, k, l;
-	  for (i = 0; i < n; i++)
-	  for (j = 0; j < this->GetRowIndices(i).Size(); j++)
-	  {
-	  int jj = this->GetRowIndices(i)[j];
-	      
-	  for (k = 0; k < prol.GetRowIndices(i).Size(); k++)
-	  for (l = 0; l < prol.GetRowIndices(jj).Size(); l++)
-	  {
-	  int kk = prol.GetRowIndices(i)[k];
-	  int ll = prol.GetRowIndices(jj)[l];
-		    
-	  if (kk >= ll)
-	  hcols.AddUnique (kk, ll);
-	  else
-	  hcols.AddUnique (ll, kk);
-	  }
-	  }
-	*/
-
-
-	/*
-	  cout << "1" << flush;
-
-	  marks = -1;
-	  int mcnt = -1;
-	
-	  for (i = 0; i < n; i++)
-	  for (k = 0; k < prol.GetRowIndices(i).Size(); k++)
-	  {
-	  int kk = prol.GetRowIndices(i)[k];
-	      
-	  mcnt++;
-	  for (j = 0; j < hcols[kk].Size(); j++)
-	  marks[hcols[kk][j]] = mcnt;
-	      
-	  for (j = 0; j < this->GetRowIndices(i).Size(); j++)
-	  {
-	  int jj = this->GetRowIndices(i)[j];
-		  
-	  for (l = 0; l < prol.GetRowIndices(jj).Size(); l++)
-	  {
-	  int ll = prol.GetRowIndices(jj)[l];
-		      
-	  if (marks[ll] != mcnt)
-	  {
-	  hcols.Add (kk, ll);
-	  marks[ll] = mcnt;
-	  }
-	  }
-	  }
-	  }
-	
-	  cout << "." << flush;
-	
-	  for (i = 0; i < hcols.Size(); i++)
-	  for (j = 0; j < hcols[i].Size(); j++)
-	  if (hcols[i][j] < i)
-	  cols.AddUnique (i, hcols[i][j]);
-	  else
-	  cols.AddUnique (hcols[i][j], i);
-	
-	  cout << "2" << flush;
-	
-
-	  int nc = 0;
-	  for (i = 0; i < n; i++)
-	  if (cols[i].Size()) nc = i;
-	  nc++;
-	
-	  int nze = 0;
-	  Array<int> cnts(nc);
-	  for (i = 0; i < nc; i++)
-	  {
-	  cnts[i] = cols[i].Size();
-	  nze += cnts[i];
-	  }
-
-
-
-	  cmat = new SparseMatrixSymmetric<TM,TV> (cnts);
-	  // (*testout) << "nc = " << nc << endl;
-	  for (i = 0; i < nc; i++)
-	  for (j = 0; j < cols[i].Size(); j++)
-	  {
-	  // (*testout) << "create position i = " << i << ", j = " << j << ", col = " << cols[i][j] << endl;
-	  cmat->CreatePosition (i, cols[i][j]);
-	  }
-	*/
-
-
-
-   
-	// (*testout) << "cols = " << cols << endl;
-	// (*testout) << "cnts = " << cnts << endl;
-
-	// new version
 	Array<INT<2> > e2v;
-	for (i = 0; i < n; i++)
-	  for (j = 0; j < this->GetRowIndices(i).Size(); j++)
+	for (int i = 0; i < n; i++)
+	  for (int j = 0; j < this->GetRowIndices(i).Size(); j++)
 	    {
-	      int jj = this->GetRowIndices(i)[j];
-	      
-	      for (k = 0; k < prol.GetRowIndices(i).Size(); k++)
-		for (l = 0; l < prol.GetRowIndices(jj).Size(); l++)
+	      int col = this->GetRowIndices(i)[j];
+	      FlatArray<int> prol_rowind = prol.GetRowIndices(i);
+	      FlatArray<int> prol_colind = prol.GetRowIndices(col);
+
+	      for (int k = 0; k < prol_rowind.Size(); k++)
+		for (int l = 0; l < prol_colind.Size(); l++)
 		  {
-		    int kk = prol.GetRowIndices(i)[k];
-		    int ll = prol.GetRowIndices(jj)[l];
+		    int kk = prol_rowind[k];
+		    int ll = prol_colind[l];
 		    
 		    if (kk >= ll) swap (kk,ll);
-		    INT<2> i2;
-		    i2[0] = kk; i2[1] = ll;
-		    e2v.Append (i2);
+		    e2v.Append (INT<2> (kk,ll));
 		  }
 	    }
 
 	int nc = 0;
-	for (i = 0; i < e2v.Size(); i++)
+	for (int i = 0; i < e2v.Size(); i++)
 	  nc = max2 (nc, e2v[i][1]);
 	nc++;
 
@@ -1229,11 +1128,9 @@ namespace ngla
 	for (int i = 0; i < e2v.Size(); i++)
 	  {
 	    int v1 = e2v[i][1];
-	    v2e[v1][cnt[v1]] = i;
-	    cnt[v1]++;
+	    v2e[v1][cnt[v1]++] = i;
 	  }
 	
-	int nze = 0;
 	cnt = 0;
 	marks = -1;
 
@@ -1246,15 +1143,12 @@ namespace ngla
 	      if (marks[v0] != i) 
 		{
 		  cnt[i]++;
-		  nze++;
 		  marks[v0] = i;
 		}
 	    }
 
 	cmat = new SparseMatrixSymmetric<TM,TV> (cnt);
 
-	// Table<int> v2v(cnt);
-	cnt = 0;
 	marks = -1;
 	for (int i = 0; i < nc; i++)
 	  for (int j = 0; j < v2e[i].Size(); j++)
@@ -1263,77 +1157,44 @@ namespace ngla
 	      int v0 = e2v[jj][0];
 	      if (marks[v0] != i) 
 		{
-		  // v2v[i][cnt[i]] = v0;
-		  cnt[i]++;
 		  marks[v0] = i;
 		  cmat -> CreatePosition (i, v0);
 		}
 	    }
-	
-	/*
-	  for (i = 0; i < nc; i++)
-	  for (j = 0; j < v2v[i].Size(); j++)
-	  {
-	  // (*testout) << "create position i = " << i << ", j = " << j << ", col = " << cols[i][j] << endl;
-	  cmat->CreatePosition (i, v2v[i][j]);
-	  }
-	*/
-
-	/*
-	  (*testout) << "cols is = " << endl << cols << endl;
-	  (*testout) << "v2v = " << endl << v2v << endl;
-	  (*testout) << "cmat = " << endl << *cmat << endl;
-	*/
       }
 
     *cmat = 0.;
 
-    // (*testout) << "cmat = " << *cmat << endl;
 	  
-    for (i = 0; i < n; i++)
-      for (j = 0; j < this->GetRowIndices(i).Size(); j++)
+    for (int i = 0; i < n; i++)
+      for (int j = 0; j < this->GetRowIndices(i).Size(); j++)
 	{
-	  int jj = this->GetRowIndices(i)[j];
+	  int col = this->GetRowIndices(i)[j];
 	  
-	  for (k = 0; k < prol.GetRowIndices(i).Size(); k++)
-	    for (l = 0; l < prol.GetRowIndices(jj).Size(); l++)
+	  for (int k = 0; k < prol.GetRowIndices(i).Size(); k++)
+	    for (int l = 0; l < prol.GetRowIndices(col).Size(); l++)
 	      {
 		int kk = prol.GetRowIndices(i)[k];
-		int ll = prol.GetRowIndices(jj)[l];
+		int ll = prol.GetRowIndices(col)[l];
 
 		if ( kk>=ll && kk < cmat->Height() )
 		  {
-		    if ( cmat->GetPositionTest(kk,ll) != -1 )
-		      {
-			(*cmat)(kk,ll) += 
-			  prol[prol.First(i)+k] * 
-			  prol[prol.First(jj)+l] *
-			  (*this)[this->firsti[i]+j];
-		      }
-		    else
-		      *testout << "bad position in restrict (1): " << kk 
-			       << " " << ll << endl;
+		    (*cmat)(kk,ll) += 
+		      prol[prol.First(i)+k] * 
+		      prol[prol.First(col)+l] *
+		      (*this)[this->firsti[i]+j];
 		  }
 
-		if (ll >= kk && i != jj && ll < cmat->Height() )
+		if (ll >= kk && i != col && ll < cmat->Height() )
 		  {
-		    if ( cmat->GetPositionTest(ll,kk) != -1 )
-		      {
-			(*cmat)(ll,kk) += 
-			  prol[prol.First(jj)+l] *
-			  prol[prol.First(i)+k] * 
-			  Trans((*this)[this->firsti[i]+j]);
-		      }
-		    else
-		      *testout << "bad position in restrict (2): " << ll 
-			       << " " << kk << endl;
+		    (*cmat)(ll,kk) += 
+		      prol[prol.First(col)+l] *
+		      prol[prol.First(i)+k] * 
+		      Trans((*this)[this->firsti[i]+j]);
 		  }
 
 	      }
 	}
-
-
-    // cout << "4" << flush << endl;
 
     return cmat;
   }

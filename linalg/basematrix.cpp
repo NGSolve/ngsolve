@@ -92,11 +92,12 @@ namespace ngla
   {
     throw Exception ("BaseMatrix::CraeteMatrix called");
   }
+  /*
   BaseMatrix * BaseMatrix :: CreateMatrix (const Array<int> & elsperrow) const
   {
     throw Exception ("BaseMatrix::CraeteMatrix called");
   }
-
+  */
   BaseVector * BaseMatrix :: CreateVector () const
   {
     cout << "BaseMatrix::CreateVector called" << endl;

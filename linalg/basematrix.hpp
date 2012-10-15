@@ -73,7 +73,7 @@ namespace ngla
     /// creates matrix of same type
     virtual BaseMatrix * CreateMatrix () const;
     /// creates matrix of same type
-    virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
+    // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
     /// creates a matching vector, size = width
     virtual BaseVector * CreateRowVector () const;
     /// creates a matching vector, size = height
