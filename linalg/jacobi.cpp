@@ -11,8 +11,6 @@
 
 namespace ngla
 {
-  using namespace ngparallel;
-
   template <class TM, class TV_ROW, class TV_COL>
   JacobiPrecond<TM,TV_ROW,TV_COL> ::
   JacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
@@ -29,9 +27,7 @@ namespace ngla
       if (!inner || inner->Test(i))
 	invdiag[i] = mat(i,i);
 
-    *testout << "before allreduce: " << endl << invdiag << endl;
-    AllReduceDofData (invdiag, MPI_SUM, *paralleldofs);  
-    *testout << "after allreduce: " << endl << invdiag << endl;
+    ngparallel::AllReduceDofData (invdiag, MPI_SUM, *paralleldofs);  
 
     for (int i = 0; i < height; i++)
       if (!inner || inner->Test(i))
@@ -184,13 +180,7 @@ namespace ngla
     RegionTimer reg (timer);
 
     FlatVector<TVX> fx = x.FV<TVX> ();
-      // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
     FlatVector<TVX> fy = y.FV<TVX> ();
-      // dynamic_cast<T_BaseVector<TVX> &> (y).FV();
-    // const FlatVector<TVX> fb = 
-    // dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
-    // FlatVector<TVX> fh = 
-    // dynamic_cast<const T_BaseVector<TVX> &> (help).FV();
 
     const SparseMatrixSymmetric<TM,TV> & smat =
       dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (this->mat);

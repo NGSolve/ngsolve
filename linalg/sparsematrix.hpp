@@ -76,7 +76,8 @@ namespace ngla
   protected:
     /// number of rows
     int size;
-
+    /// with of matrix
+    int width;
     /// non-zero elements
     size_t nze; 
 
@@ -96,7 +97,7 @@ namespace ngla
 
   public:
     /// arbitrary number of els/row
-    MatrixGraph (const Array<int> & elsperrow);
+    MatrixGraph (const Array<int> & elsperrow, int awidth);
     /// matrix of height as, uniform number of els/row
     MatrixGraph (int as, int max_elsperrow);    
     /// shadow matrix graph
@@ -159,8 +160,8 @@ namespace ngla
       : MatrixGraph (as, max_elsperrow), inversetype(default_inversetype)
     { ; }
     
-    BaseSparseMatrix (const Array<int> & elsperrow)
-      : MatrixGraph (elsperrow) , inversetype(default_inversetype)
+    BaseSparseMatrix (const Array<int> & elsperrow, int awidth)
+      : MatrixGraph (elsperrow, awidth), inversetype(default_inversetype)
     { ; }
 
     BaseSparseMatrix (int size, const Table<int> & rowelements, 
@@ -260,7 +261,7 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
     SparseMatrixTM (int as, int max_elsperrow);
-    SparseMatrixTM (const Array<int> & elsperrow);
+    SparseMatrixTM (const Array<int> & elsperrow, int awidth);
     SparseMatrixTM (int size, const Table<int> & rowelements, 
 		    const Table<int> & colelements, bool symmetric);
     SparseMatrixTM (const MatrixGraph & agraph, bool stealgraph);
@@ -268,9 +269,9 @@ namespace ngla
     virtual ~SparseMatrixTM ();
 
     int Height() const { return size; }
-    int Width() const { return size; }
+    int Width() const { return width; }
     virtual int VHeight() const { return size; }
-    virtual int VWidth() const { return size; }
+    virtual int VWidth() const { return width; }
 
     TM & operator[] (int i)  { return data[i]; }
     const TM & operator[] (int i) const { return data[i]; }
@@ -343,8 +344,11 @@ namespace ngla
     SparseMatrix (int as, int max_elsperrow)
       : SparseMatrixTM<TM> (as, max_elsperrow) { ; }
 
-    SparseMatrix (const Array<int> & elsperrow)
-      : SparseMatrixTM<TM> (elsperrow) { ; }
+    SparseMatrix (const Array<int> & aelsperrow)
+      : SparseMatrixTM<TM> (aelsperrow, aelsperrow.Size()) { ; }
+
+    SparseMatrix (const Array<int> & aelsperrow, int awidth)
+      : SparseMatrixTM<TM> (aelsperrow, awidth) { ; }
 
     SparseMatrix (int size, const Table<int> & rowelements, 
 		  const Table<int> & colelements, bool symmetric)
@@ -360,7 +364,7 @@ namespace ngla
       : SparseMatrixTM<TM> (amat) { ; }
 
     virtual BaseMatrix * CreateMatrix () const;
-    virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
+    // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
     ///
     virtual BaseVector * CreateVector () const;
 
@@ -449,7 +453,7 @@ namespace ngla
       : SparseMatrixTM<TM> (as, max_elsperrow) { ; }
 
     SparseMatrixSymmetricTM (const Array<int> & elsperrow)
-      : SparseMatrixTM<TM> (elsperrow) { ; }
+      : SparseMatrixTM<TM> (elsperrow, elsperrow.Size()) { ; }
 
     SparseMatrixSymmetricTM (int size, const Table<int> & rowelements)
       : SparseMatrixTM<TM> (size, rowelements, rowelements, true) { ; }
@@ -497,9 +501,9 @@ namespace ngla
     { ; }
   
     SparseMatrixSymmetric (const Array<int> & elsperrow)
-      : SparseMatrixTM<TM> (elsperrow), 
+      : SparseMatrixTM<TM> (elsperrow, elsperrow.Size()), 
 	SparseMatrixSymmetricTM<TM> (elsperrow),
-	SparseMatrix<TM,TV,TV> (elsperrow)
+	SparseMatrix<TM,TV,TV> (elsperrow, elsperrow.Size())
     { ; }
 
     SparseMatrixSymmetric (int size, const Table<int> & rowelements)
@@ -551,10 +555,12 @@ namespace ngla
       return new SparseMatrixSymmetric (*this);
     }
 
+    /*
     virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const
     {
       return new SparseMatrix<TM,TV,TV>(elsperrow);
     }
+    */
 
     virtual BaseJacobiPrecond * CreateJacobiPrecond (const BitArray * inner) const
     { 
