@@ -1207,7 +1207,7 @@ namespace ngbla
 
 
 #ifdef PARALLEL
-namespace ngparallel
+namespace ngstd
 {
   template<int N, int M, typename T>
   class MPI_Traits<ngbla::Mat<N, M, T> >

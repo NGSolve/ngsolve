@@ -1420,7 +1420,7 @@ namespace ngbla
 }
 
 #ifdef PARALLEL
-namespace ngparallel
+namespace ngstd
 {
   template<int S, typename T>
   class MPI_Traits<ngbla::Vec<S, T> >

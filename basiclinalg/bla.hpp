@@ -32,7 +32,7 @@ namespace ngbla
 
 
 #ifdef PARALLEL
-namespace ngparallel
+namespace ngstd
 {
   template <>
   class MPI_Traits<ngbla::Complex>
