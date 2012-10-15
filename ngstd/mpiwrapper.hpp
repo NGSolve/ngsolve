@@ -24,9 +24,9 @@
 #endif
 
 
-namespace ngparallel
+namespace ngstd
 {
-  using namespace ngstd;
+  // using namespace ngstd;
 
 
 #ifdef PARALLEL
