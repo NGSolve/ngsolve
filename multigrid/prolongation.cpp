@@ -58,7 +58,7 @@ namespace ngmg
       }
 
     // create matrix graph
-    MatrixGraph mg( indicesPerRow );
+    MatrixGraph mg( indicesPerRow, nc );
     for( i=0; i<nc; i++ )
       mg.CreatePosition( i, i );
     for( i=nc; i<nf; i++ )
