@@ -44,12 +44,15 @@ namespace ngcomp
 
   using namespace ngla;
   using namespace ngfem;
-  using namespace ngparallel;
+  // using namespace ngparallel;
 }
 
 
 #include <parallelngs.hpp>
-
+namespace ngcomp
+{
+  using namespace ngparallel;
+}
 
 
 

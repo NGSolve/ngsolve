@@ -56,7 +56,7 @@ namespace ngcomp
       throw Exception ("Please use fully stored sparse matrix for hypre (bf -nonsymmetric)");
 
     pardofs = pmat.GetParallelDofs ();
-    int ndof = pardofs->GetNDof();
+    int ndof = pardofs->GetNDofLocal();
 
     int ntasks = MyMPI_GetNTasks();
     int id = MyMPI_GetId();
@@ -132,11 +132,22 @@ namespace ngcomp
  
     HYPRE_ParVector par_b = NULL;
     HYPRE_ParVector par_x = NULL;
+
+    HYPRE_BoomerAMGSetPrintLevel(precond, 0);  /* print solve info + parameters */
+    HYPRE_BoomerAMGSetCoarsenType(precond, 10); /* Falgout coarsening */
+    HYPRE_BoomerAMGSetRelaxType(precond, 6);  // 3 GS, 6 .. sym GS 
+    HYPRE_BoomerAMGSetStrongThreshold(precond, 0.5);
+    HYPRE_BoomerAMGSetInterpType(precond,6);
+    HYPRE_BoomerAMGSetPMaxElmts(precond,4);
+    HYPRE_BoomerAMGSetAggNumLevels(precond,1);
+    HYPRE_BoomerAMGSetNumSweeps(precond, 1);   /* Sweeeps on each level */
+    HYPRE_BoomerAMGSetMaxLevels(precond, 20);  /* maximum number of levels */
+    HYPRE_BoomerAMGSetTol(precond, 0.0);      /* conv. tolerance */
+    HYPRE_BoomerAMGSetMaxIter(precond,1);
      
     cout << IM(2) << "Call BoomerAMGSetup" << endl;
     HYPRE_BoomerAMGSetup (precond, parcsr_A, par_b, par_x);
 	
-    HYPRE_BoomerAMGSetMaxIter (precond,1);
     VT_ON();
   }
 
@@ -200,7 +211,7 @@ namespace ngcomp
     // ParallelDofs * pardofs = &(bfa->GetFESpace()).GetParallelDofs ();
     // const ParallelDofs * pardofs = pu.GetParallelDofs ();
 
-    int ndof = pardofs->GetNDof();
+    int ndof = pardofs->GetNDofLocal();
     
     Vector<> hu(iupper-ilower+1);
     Array<int> locind(iupper-ilower+1);
