@@ -383,30 +383,38 @@ namespace ngla
 
   BaseMatrix * ParallelMatrix::InverseMatrix (const BitArray * subset) const
   {
-    const SparseMatrixTM<double> * dmat = dynamic_cast<const SparseMatrixTM<double>*> (&mat);
-    const SparseMatrixTM<Complex> * cmat = dynamic_cast<const SparseMatrixTM<Complex>*> (&mat);
+    BaseMatrix * inv;
+    inv = InverseMatrixTM<double> (subset);   if (inv) return inv;
+    inv = InverseMatrixTM<Complex> (subset);  if (inv) return inv;
+    inv = InverseMatrixTM<Mat<2> > (subset);   if (inv) return inv;
+    inv = InverseMatrixTM<Mat<3> > (subset);   if (inv) return inv;
+
+    throw Exception ("ParallelMatrix::Inverse(BitArray) not available, typeid(mat) = " 
+		     + ToString (typeid(mat).name()));
+  }
+
+
+  
+  template <typename TM>
+  BaseMatrix * ParallelMatrix::InverseMatrixTM (const BitArray * subset) const
+  {
+    const SparseMatrixTM<TM> * dmat = dynamic_cast<const SparseMatrixTM<TM>*> (&mat);
+    if (!dmat) return NULL;
 
 #ifdef USE_MUMPS
     if (mat.GetInverseType() == MUMPS)
-      {
-	if (dmat) return new ParallelMumpsInverse<double> (*dmat, subset, NULL, &pardofs);
-	if (cmat) return new ParallelMumpsInverse<Complex> (*cmat, subset, NULL, &pardofs);
-      }
+      return new ParallelMumpsInverse<TM> (*dmat, subset, NULL, &pardofs);
     else 
 #endif
-      {
-	if (dmat) return new MasterInverse<double> (*dmat, subset, &pardofs);
-	if (cmat) return new MasterInverse<Complex> (*cmat, subset, &pardofs);
-      }
- 
-    cerr << "ParallelMatrix::Inverse(BitArray) not avail, typeid(mat) = " << typeid(mat).name() << endl;
-    return NULL;
+      return new MasterInverse<TM> (*dmat, subset, &pardofs);
+    
   }
+
+
 
   BaseMatrix * ParallelMatrix::InverseMatrix (const Array<int> * clusters) const
   {
-    cerr << "ParallelMatrix::Inverse(ARRAY) not avail" << endl;
-    return NULL;
+    throw Exception ("ParallelMatrix::Inverse(cluster) not available");
   }
 
   INVERSETYPE ParallelMatrix::SetInverseType (INVERSETYPE ainversetype) const
@@ -423,8 +431,6 @@ namespace ngla
   {
     return mat.GetInverseType ();
   }
-
-
 
 
 
