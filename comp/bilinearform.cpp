@@ -3562,9 +3562,13 @@ cout << "catch in AssembleBilinearform 2" << endl;
                                  *space, name, flags);
           }
         else
+	  bf = CreateSymMatObject<T_BilinearFormSymmetric, BilinearForm, const FESpace, const string, const Flags>
+	    (space->GetDimension(), space->IsComplex(), *space, name, flags);
+	  /*
           CreateSymMatObject3 (bf, T_BilinearFormSymmetric, 
                                space->GetDimension(), space->IsComplex(),   
                                *space, name, flags);
+			       */
       }
     else if (flags.GetDefineFlag ("diagonal"))
       {

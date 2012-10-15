@@ -551,7 +551,7 @@ namespace ngcomp
 	H1HighOrderFiniteElement<1> * hofe1d = 0;
 	H1HighOrderFiniteElement<2> * hofe2d = 0;
 	H1HighOrderFiniteElement<3> * hofe3d = 0;
-
+	
         switch (eltype)
           {
           case ET_TET:     hofe3d = new (lh) H1HighOrderFE<ET_TET> (); break;
@@ -589,7 +589,7 @@ namespace ngcomp
 	      hofe2d -> ComputeNDof();
 	      return *hofe2d;
 	    }
-	  case 3:
+	  case 3: default:  
 	    {
 	      hofe3d -> SetVertexNumbers (ngel.vertices);
 	      hofe3d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
@@ -599,7 +599,6 @@ namespace ngcomp
 	      hofe3d -> ComputeNDof();
 	      return *hofe3d;
 	    }
-	  default: ;
 	  }
       }
     catch (Exception & e)
@@ -656,7 +655,7 @@ namespace ngcomp
 	  hofe1d -> ComputeNDof();
 	  return *hofe1d;
 	}
-      case 3:
+      case 3: default:
 	{
 	  hofe2d -> SetVertexNumbers (ngel.vertices);
 	  hofe2d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
