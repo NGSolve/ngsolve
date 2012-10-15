@@ -108,7 +108,7 @@ class ParallelDofs
       int nlocal = 0;
       for (int i = 0; i < ndof; i++)
 	if (ismasterdof.Test(i)) nlocal++;
-      return ngparallel::MyMPI_AllReduce (nlocal);
+      return MyMPI_AllReduce (nlocal);
     }
 
     bool IsExchangeProc (int proc) const
@@ -122,7 +122,7 @@ class ParallelDofs
     int GetMasterProc (int dof) const
     {
       FlatArray<int> procs = GetDistantProcs(dof);
-      int m = ngparallel::MyMPI_GetId(comm);
+      int m = MyMPI_GetId(comm);
       for (int j = 0; j < procs.Size(); j++)
 	m = min2(procs[j], m);
       return m;
