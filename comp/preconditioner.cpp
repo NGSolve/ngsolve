@@ -870,19 +870,15 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, Flags & aflags, cons
 
     delete amg;
 
-    cout << "get edges" << endl;
+    // cout << "get edges" << endl;
 
     Array<INT<2> > e2v (nedge);
+    e2v = INT<2> (-1, -1);
     for (int i = 0; i < nedge; i++)
-      {
-	// if (ma.GetClusterRepEdge (i) >= 0)
-	if (1)
-	  ma.GetEdgePNums (i, e2v[i][0], e2v[i][1]);
-	else
-	  e2v[i][0] = e2v[i][1] = -1;
-      }
+      if (ma.GetClusterRepEdge (i) >= 0)
+	ma.GetEdgePNums (i, e2v[i][0], e2v[i][1]);
 
-    cout << "get faces" << endl;
+    // cout << "get faces" << endl;
 
     Array<INT<4> > f2v (nface);
     Array<int> fpnums;
@@ -915,43 +911,30 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, Flags & aflags, cons
 
     hi.SetSize(nedge);
     for (int i = 0; i < nedge; i++)
-      {
-	Vec<3> p1, p2, v;
-	if (e2v[i][0] != -1 && e2v[i][1] != -1)
-	  {
-	    ma.GetPoint (e2v[i][0], p1);
-	    ma.GetPoint (e2v[i][1], p2);
-	    v = p2 - p1;
-	    hi[i] = L2Norm (v);
-	  }
-	else
-	  hi[i] = 1;
-      }
-
-
+      if (e2v[i][0] != -1)
+	{
+	  Vec<3> v = 
+	    ma.GetPoint<3> (e2v[i][0]) -
+	    ma.GetPoint<3> (e2v[i][1]);
+	  hi[i] = L2Norm (v);
+	}
+    
     if (hcurl)
       {
-	//cout << "comptue ai" << endl;
 	ai.SetSize(nface);
 	for (int i = 0; i < nface; i++)
 	  {
-	    Vec<3> p1, p2, p3, v1, v2, vn;
-	    ma.GetPoint (f2v[i][0], p1);
-	    ma.GetPoint (f2v[i][1], p2);
-	    ma.GetPoint (f2v[i][2], p3);
-	    v1 = p2 - p1;
-	    v2 = p3 - p1;
-	    vn = Cross (v1, v2);
+	    Vec<3> p1 = ma.GetPoint<3> (f2v[i][0]);
+	    Vec<3> p2 = ma.GetPoint<3> (f2v[i][1]);
+	    Vec<3> p3 = ma.GetPoint<3> (f2v[i][2]);
+	    Vec<3> vn = Cross (Vec<3> (p2-p1), Vec<3> (p3-p1));
 	    ai[i] = L2Norm (vn);
 	  }
       }
 
-    Array<int> ednums(12), edorient(12);
-    Array<int> fanums(12), faorient(12);
+    Array<int> ednums(12), fanums(12);
     LocalHeap lh (10000, "CommutingAMG");
-    // ElementTransformation eltrans;
     IntegrationPoint ip(0, 0, 0, 0);
-
 
     cout << "compute weights" << endl;
 
@@ -959,16 +942,13 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, Flags & aflags, cons
     weightf = 0;
     for (int i = 0; i < nel; i++)
       {
-	lh.CleanUp();
+	HeapReset hr(lh);
 	ma.GetElEdges (i, ednums);
 
-	// ma.GetElementTransformation (i, eltrans, lh);
 	ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
 	MappedIntegrationPoint<3,3> sip(ip, eltrans);
 
 	double vol = ma.ElementVolume (i);
-
-
 	double vale = Evaluate (*coefe, sip);
 
 	for (int j = 0; j < ednums.Size(); j++)
@@ -987,10 +967,8 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, Flags & aflags, cons
     if (coefse)
       for (int i = 0; i < nsel; i++)
 	{
-	  lh.CleanUp();
+	  HeapReset hr(lh);
 	  ma.GetSElEdges (i, ednums);
-
-	  // ma.GetSurfaceElementTransformation (i, eltrans, lh);
 	  ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
 
 	  MappedIntegrationPoint<2,3> sip(ip, eltrans);
@@ -1003,31 +981,31 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, Flags & aflags, cons
 	}
 
 
+    Timer timer_coarse("AMG - Coarsening time");
 
-    clock_t starttime, endtime;
-    starttime = clock();
-
+    timer_coarse.Start();
     Array< Vec<3> > vertices;
-    /*
+
     int nv = ma.GetNV();
     vertices.SetSize(nv);
     for (int i = 0; i < nv; i++)
       ma.GetPoint(i, vertices[i]);
-    */
+
     CommutingAMG * amgmat;
     if (hcurl)
       amgmat = new AMG_HCurl (bfa->GetMatrix(), vertices, e2v, f2v, weighte, weightf, levels);
     else
       amgmat = new AMG_H1 (bfa->GetMatrix(), e2v, weighte, levels);
+    timer_coarse.Stop();
 
-    endtime = clock();
-    cout << "AMG coarsening time = " << double(endtime - starttime)/CLOCKS_PER_SEC << " sec" << endl;
+    cout << "AMG coarsening time = " << timer_coarse.GetTime() << " sec" << endl;
 
+    Timer timer_proj("AMG - projection time");
+    timer_proj.Start();
     amgmat->ComputeMatrices (dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix()));
+    timer_proj.Stop();
 
-    endtime = clock();
-    cout << "AMG projection time = " << double(endtime - starttime)/CLOCKS_PER_SEC << " sec" << endl;
-
+    cout << "AMG projection time = " << timer_proj.GetTime() << " sec" << endl;
     cout << "Total NZE = " << amgmat->NZE() << endl;
 
     amg = amgmat;

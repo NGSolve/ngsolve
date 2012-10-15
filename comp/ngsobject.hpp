@@ -110,13 +110,48 @@ protected:
 
 
 
+
+
+template <template <class T> class Object, class Base, class SCAL, class ARG, int ACTDIM>
+class TCreateVecObjectS {
+  Base * Create (int dim, ARG & arg)
+  {
+    if (dim == ACTDIM) return new Object<Vec<ACTDIM,SCAL> > (arg);
+    else return TCreateVecObjectS<Object, Base, SCAL, ARG, ACTDIM-1>::Create(dim, arg);
+  }
+};
+
+template <template <class T> class Object, class Base, class SCAL, class ARG>
+class TCreateVecObjectS<Object, Base, SCAL, ARG, 1> {
+  Base * Create (int dim, ARG & arg)
+  { 
+    if (dim == 1) return new Object<SCAL> (arg);
+    throw Exception ("illegal CreateVecObject, dim = "
+		     + ToString(dim) + '\n');
+  }
+};
+
+template <template <class T> class Object, class Base, class ARG>
+Base * CreateVecObject (int dim, bool iscomplex, ARG & arg)
+{
+  if (!iscomplex)
+    return TCreateVecObjectS<Object, Base, double, ARG, 12>::Create (dim, arg);
+  else
+    return TCreateVecObjectS<Object, Base, Complex, ARG, 12>::Create (dim, arg);
+}
+
+
+
+
+
+
 template <template <class T> class Object, class Base, class SCAL, 
           class ARG, class ARG2, class ARG3, int ACTDIM>
 class TCreateVecObject3S { 
 public:
   static Base * Create (int dim, ARG & arg, ARG2 & arg2, ARG3 & arg3)
   {
-    if (dim == ACTDIM) return new Object<ngbla::Vec<ACTDIM,SCAL> > (arg, arg2, arg3);
+    if (dim == ACTDIM) return new Object<Vec<ACTDIM,SCAL> > (arg, arg2, arg3);
     else return TCreateVecObject3S<Object, Base, SCAL, ARG, ARG2, ARG3, ACTDIM-1>::Create(dim, arg, arg2, arg3);
   }
 };
@@ -128,12 +163,6 @@ public:
   static Base * Create (int dim, ARG & arg, ARG2 & arg2, ARG3 & arg3)
   { 
     if (dim == 1) return new Object<SCAL> (arg, arg2, arg3);
-
-    /*
-    stringstream err;
-    err << "illegal CreateVecObject3, dim = " << dim << endl;
-    throw Exception (err.str());
-    */
     throw Exception ("illegal CreateVecObject3, dim = "
 		     + ToString(dim) + '\n');
   }
@@ -151,46 +180,46 @@ Base * CreateVecObject (int dim, bool iscomplex, ARG & arg, ARG2 & arg2, ARG3 & 
 
 
 
-
-
-
-
-
-
-template <template <class T> class Object, class Base, class SCAL, class ARG, int ACTDIM>
-class TCreateVecObjectS {
-  Base * Create (int dim, ARG & arg)
+template <template <class T, class TV> class Object, class Base, class SCAL, 
+          class ARG, class ARG2, class ARG3, int ACTDIM>
+class TCreateSymMatObject3S { 
+public:
+  static Base * Create (int dim, ARG & arg, ARG2 & arg2, ARG3 & arg3)
   {
-    if (dim == ACTDIM) return new Object<ngbla::Vec<ACTDIM,SCAL> > (arg);
-    else return TCreateVecObjectS<Object, Base, SCAL, ARG, ACTDIM-1>::Create(dim, arg);
+    if (dim == ACTDIM) return new Object<Mat<ACTDIM,ACTDIM,SCAL>,Vec<ACTDIM,SCAL> > (arg, arg2, arg3);
+    else return TCreateSymMatObject3S<Object, Base, SCAL, ARG, ARG2, ARG3, ACTDIM-1>::Create(dim, arg, arg2, arg3);
   }
 };
 
-template <template <class T> class Object, class Base, class SCAL, class ARG>
-class TCreateVecObjectS<Object, Base, SCAL, ARG, 1> {
-  Base * Create (int dim, ARG & arg)
+template <template <class T, class TV> class Object, class Base, class SCAL, 
+          class ARG, class ARG2, class ARG3>
+	  class TCreateSymMatObject3S<Object, Base, SCAL, ARG, ARG2, ARG3, 1> {
+public:
+  static Base * Create (int dim, ARG & arg, ARG2 & arg2, ARG3 & arg3)
   { 
-    if (dim == 1) return new Object<SCAL> (arg);
-    /*
-    stringstream err;
-    err << "illegal CreateVecObject, dim = " << dim << endl;
-    throw Exception (err.str());
-    */
-    throw Exception ("illegal CreateVecObject, dim = "
+    if (dim == 1) return new Object<SCAL,SCAL> (arg, arg2, arg3);
+    throw Exception ("illegal CreateMatObject3, dim = "
 		     + ToString(dim) + '\n');
   }
 };
 
-
-template <template <class T> class Object, class Base, class ARG>
-Base * CreateVecObject (int dim, bool iscomplex, ARG & arg)
+template <template <class T, class TV> class Object, class Base, class ARG, class ARG2, class ARG3>
+Base * CreateSymMatObject (int dim, bool iscomplex, ARG & arg, ARG2 & arg2, ARG3 & arg3)
 {
   if (!iscomplex)
-    return TCreateVecObjectS<Object, Base, double, ARG, 12>::Create (dim, arg);
+    return TCreateSymMatObject3S<Object, Base, double, ARG, ARG2, ARG3, MAX_SYS_DIM>::Create (dim, arg, arg2, arg3);
   else
-    return TCreateVecObjectS<Object, Base, Complex, ARG, 12>::Create (dim, arg);
+    return TCreateSymMatObject3S<Object, Base, Complex, ARG, ARG2, ARG3, MAX_SYS_DIM>::Create (dim, arg, arg2, arg3);
 }
 
+
+
+
+
+
+
+
+  /*
 
 
 template <template <class T> class Object, class Base, class ARG, class ARG2>
@@ -237,14 +266,9 @@ Base * CreateVecObject (int dim, bool iscomplex, ARG & arg, ARG2 & arg2)
 	}
     }
 
-  /*
-  stringstream err;
-  err << "illegal CreateVecObject, dim = " << dim << endl;
-  throw Exception (err.str());
-  */
   throw Exception ("illegal CreateVecObject, dim = " + ToString(dim) + "\n");
 }
-
+  */
 
 
 
