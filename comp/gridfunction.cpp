@@ -130,6 +130,453 @@ namespace ngcomp
   }
 
 
+
+
+
+
+
+template <int N>
+bool Less( Vec<N, int>& a, Vec<N, int>& b)
+{
+	bool ret = false;
+	for( int i = 0; i < N; i++)
+	{
+		if( a[i] < b[i])
+		{
+			ret = true;
+			break;
+		}
+		else if(a[i] > b[i])
+			break;
+	}
+	
+	return ret;  
+}
+
+
+
+template <int N>
+void Quicksort(  Array<int>& pos, Array<Vec<N, int> >& vals,int  first, int last);
+
+template <int N>
+int Divide(  Array<int>& pos, Array<Vec<N, int> >& vals, int first,int last);
+
+
+
+template <int N>
+void Quicksort( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
+{
+  if( first < last)
+  {
+    int mid = Divide<N> ( pos, vals, first, last);
+    Quicksort<N>(  pos,  vals, first, mid-1);
+    Quicksort<N>(  pos,  vals, mid+1, last);
+  }
+}
+
+
+
+template <int N>
+int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
+{
+  int i = first;
+  int j = last -1;
+  
+  Vec<N, int> pivot = vals[  pos[last]  ];
+  
+  while(i < j)
+  {
+    while( (i < last) && (  !Less<N>( pivot, vals[ pos[i] ])   )) //pivot >= vals[ pos[i] ]
+			i++;
+    
+    while((j > first) && ( !Less<N>(vals[ pos[j] ], pivot)   ) )  // pivot <= vals[ pos[j] ]
+			j--;
+    
+    if( i < j)
+    {
+      int temp = pos[i];
+      pos[i] = pos[j];
+      pos[j] = temp;
+    }
+    
+  }
+  
+  
+  if(  Less<N>(pivot,vals[ pos[i] ]) )
+  {
+    int temp = pos[i];
+    pos[i] = pos[last];
+    pos[last] = temp;
+  }
+  
+  return i;
+  
+}
+
+
+
+
+  
+  template <class SCAL>
+  void S_GridFunction<SCAL> :: Load (istream & ist)
+  {
+    int ntasks = MyMPI_GetNTasks();
+  
+    if (ntasks==1)
+      { 
+	const FESpace & fes = GetFESpace();
+	Array<int> dnums;
+	
+	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+	  {
+	    int nnodes = ma.GetNNodes (nt);
+	    for( int i = 0; i < nnodes; i++)
+	      {
+		fes.GetNodeDofNrs (nt, i,  dnums); 
+		Vector<SCAL> elvec(dnums.Size());
+		
+		for (int i=0; i< elvec.Size(); i++)
+		  if (ist.good())
+		    LoadBin<SCAL>(ist, elvec(i));			
+	  
+		SetElementVector (dnums, elvec);
+	      }
+	  }
+      }
+    else
+      {  
+#ifdef PARALLEL	    
+	GetVector().SetParallelStatus (DISTRIBUTED);    
+	LoadNodeType<1,NT_VERTEX> (ist);
+	LoadNodeType<2,NT_EDGE> (ist);
+	LoadNodeType<4,NT_FACE> (ist);
+	LoadNodeType<8,NT_CELL> (ist);
+	GetVector().Cumulate();
+      }
+#endif
+  }
+
+  template <class SCAL>  template <int N, NODE_TYPE NTYPE>
+  void  S_GridFunction<SCAL> :: LoadNodeType (istream & ist) 
+  {
+#ifdef PARALLEL
+    int id = MyMPI_GetId();
+    int ntasks = MyMPI_GetNTasks();
+    
+    const FESpace & fes = GetFESpace();
+    ParallelDofs & par = fes.GetParallelDofs ();
+    
+    if(id > 0)
+      {
+	int nnodes = ma.GetNNodes (NTYPE);
+	
+	Array<Vec<N+1, int> > nodenums(0);
+	Array<int> master_nodes(0);
+	Array<int> dnums;
+	
+	for( int i = 0; i < nnodes; i++)
+	  {
+	    fes.GetNodeDofNrs (NTYPE, i,  dnums);
+	    
+	    if( dnums.Size() == 0)
+	      continue;
+	    
+	    if( !par.IsMasterDof ( dnums[0] ))
+	      continue;
+	    
+	    master_nodes.Append(i);
+	    
+	    Array<int> pnums;
+	    if (NTYPE == NT_VERTEX)
+	      {
+		pnums.SetSize(1);
+		pnums[0]=i;
+	      }
+	    else if( NTYPE == NT_EDGE)
+	      ma.GetEdgePNums (i, pnums);
+	    else if (NTYPE == NT_FACE)
+	      ma.GetFacePNums (i, pnums);
+	    else if (NTYPE == NT_CELL)
+	      ma.GetElPNums (i, pnums);
+	    else
+	      cout<<"Error in SaveSolution Node Type not known"<<endl;
+	    
+	    Vec<N+1, int> points;
+	    points = -1;
+	    for( int j = 0; j < pnums.Size(); j++)
+	      points[j] = ma.GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
+	    points[N] = dnums.Size();
+	    
+	    nodenums.Append(points);	
+	  }
+	
+	MyMPI_Send(nodenums,0,12);
+	
+	Array<SCAL> loc_data;
+	MyMPI_Recv(loc_data,0,13);
+	
+	int cnt=0;
+	for( int i = 0; i < master_nodes.Size(); i++)
+	  {
+	    fes.GetNodeDofNrs (NTYPE, master_nodes[i],  dnums); 
+	    Vector<SCAL> elvec(dnums.Size());
+	    
+	    for (int i=0; i< elvec.Size(); i++)
+	      elvec(i)=loc_data[cnt++];
+	    
+	    SetElementVector (dnums, elvec);
+	  }
+      }
+    else
+      {
+	Array<Vec<N, int> > points(0);
+	Array<int>  nrdofs_per_node(0);
+	
+	Array<Array<int>* > nodenums_of_procs (ntasks-1);
+	
+	int actual=0;
+	for( int proc = 1; proc < ntasks; proc++)
+	  {
+	    Array<Vec<N+1, int> > nodenums_proc;
+	    MyMPI_Recv(nodenums_proc,proc,12);
+	    nodenums_of_procs[proc-1] = new Array<int> (nodenums_proc.Size());
+	    
+	    Vec<N, int>  temp;
+	    
+	    for (int j=0; j<nodenums_proc.Size(); j++)
+	      {
+		for( int k = 0; k < N; k++)
+		  temp[k] = nodenums_proc[j][k];
+		
+		points.Append( temp );
+		
+		nrdofs_per_node.Append(nodenums_proc[j][N]);
+		
+		(*(nodenums_of_procs[proc-1]))[j]=actual++;
+	      }
+	    /*cout << "proc " << proc << endl;
+	      cout << "nodenums " << *(nodenums_of_procs[proc-1]) << endl;
+	      cout << "points " << points << endl;*/
+	  }
+	
+	Array<int> index(points.Size());
+	for( int i = 0; i < index.Size(); i++)
+	  index[i] = i;
+	
+	Quicksort<N>(index,points,0, points.Size()-1);
+	
+	Array<int> inverse_index(index.Size());
+	for (int i = 0; i < index.Size(); i++ ) 	
+	  inverse_index[index[i]] = i;
+	
+	
+	/*cout << "points " << points << endl;      
+	  cout << "index " << index << endl;      
+	  cout << "inverse index " << inverse_index << endl;*/
+	
+	int nnodes=points.Size();
+	int nrdofs_all_nodes=0;
+	Array<int> first_node_dof (nnodes+1);
+	
+	for (int i=0; i<nnodes; i++)
+	  {
+	    first_node_dof[i]=nrdofs_all_nodes;
+	    nrdofs_all_nodes+=nrdofs_per_node[index[i]];
+	  }
+	first_node_dof[nnodes]=nrdofs_all_nodes;
+	
+      //cout << "first_node_dof " << first_node_dof << endl;
+	
+	Array<SCAL> node_data (nrdofs_all_nodes);     
+	for (int i=0; i<nrdofs_all_nodes; i++)
+	  if (ist.good())
+	    LoadBin<SCAL>(ist, node_data[i]);
+	//cout << "node_data " << node_data << endl;
+	
+	for( int proc = 1; proc < ntasks; proc++)
+	  {
+	    Array<SCAL> loc_data (0);
+	    int nr_local_nodes= (*(nodenums_of_procs[proc-1])).Size();	
+	    //cout << "proc " << proc << " nr_local_nodes " << nr_local_nodes << endl;
+	    for (int i=0; i<nr_local_nodes; i++)
+	      {
+		int node=inverse_index[(*(nodenums_of_procs[proc-1]))[i]];
+		//cout << "i " << i << " inverse i " << inverse_index[i] << " node " << node << endl;
+		int first = first_node_dof[node];
+		int last = first_node_dof[node+1];
+		for (int j=first; j<last; j++)
+		  loc_data.Append(node_data[j]);
+	      }
+	    MyMPI_Send(loc_data,proc,13); 		
+	    //	cout << "proc " << proc << " loc_data " << loc_data << endl;
+	  }
+      }
+#endif	
+  }
+  
+
+
+  template <class SCAL>
+  void S_GridFunction<SCAL> :: Save (ostream & ost) const
+  {
+    
+    int ntasks = MyMPI_GetNTasks();
+    const FESpace & fes = GetFESpace();
+  
+  
+    if (ntasks==1)
+      {
+	Array<int> dnums;	    
+	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+	  {
+	    int nnodes = ma.GetNNodes (nt);
+	    for( int i = 0; i < nnodes; i++)
+	      {
+		fes.GetNodeDofNrs (nt, i,  dnums); 
+		Vector<SCAL> elvec(dnums.Size());
+		GetElementVector (dnums, elvec);
+		
+		for (int i=0; i< elvec.Size(); i++)
+		  SaveBin<SCAL>(ost, elvec(i));			
+	      }
+	  }
+      }
+    else
+      {  
+#ifdef PARALLEL	 
+	GetVector().Cumulate();        
+        
+	SaveNodeType<1,NT_VERTEX>(ost);
+	SaveNodeType<2,NT_EDGE>  (ost);
+	SaveNodeType<4,NT_FACE>  (ost);
+	SaveNodeType<8,NT_CELL>  (ost);
+#endif
+      }
+  }
+
+  template <class SCAL>  template <int N, NODE_TYPE NTYPE>
+  void  S_GridFunction<SCAL> :: SaveNodeType (ostream & ost) const
+  {
+#ifdef PARALLEL
+    int id = MyMPI_GetId();
+    int ntasks = MyMPI_GetNTasks();
+    
+    const FESpace & fes = GetFESpace();
+    ParallelDofs & par = fes.GetParallelDofs ();
+    
+    if(id > 0)
+      { 
+	int nnodes = ma.GetNNodes (NTYPE);
+	
+	Array<Vec<N+1, int> > nodenums(0);
+	Array<SCAL> data(0);
+    
+	Array<int> dnums;
+    
+	for( int i = 0; i < nnodes; i++)
+	  {
+	    fes.GetNodeDofNrs (NTYPE, i,  dnums);
+	    
+	    if( dnums.Size() == 0)
+	      continue;
+	    
+	    if( !par.IsMasterDof ( dnums[0] ))
+	      continue;      
+	    
+	    Array<int> pnums;
+	    if (NTYPE == NT_VERTEX)
+	      {
+		pnums.SetSize(1);
+		pnums[0]=i;
+	      }
+	    else if( NTYPE == NT_EDGE)
+	      ma.GetEdgePNums (i, pnums);
+	    else if (NTYPE == NT_FACE)
+	      ma.GetFacePNums (i, pnums);
+	    else if (NTYPE == NT_CELL)
+	      ma.GetElPNums (i, pnums);
+	    else
+	      cout<<"Error in SaveSolution Node Type not known"<<endl;
+	    
+	    Vec<N+1, int> points;
+	    points = -1;
+	    for( int j = 0; j < pnums.Size(); j++)
+	      points[j] = ma.GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
+	    points[N] = dnums.Size();
+	    
+	    nodenums.Append(points);
+	    
+	    Vector<SCAL> elvec(dnums.Size());
+	    GetElementVector (dnums, elvec);
+	    
+	    for( int j = 0; j < dnums.Size(); j++)
+	      data.Append(elvec(j));
+	  }    
+	
+	MyMPI_Send(nodenums,0,22);
+	MyMPI_Send(data,0,23);
+      }
+  
+    if( id == 0 )
+      {
+	Array<Vec<N, int> > points(0);
+	Array<Vec<2, int> > positions(0);
+	Array<SCAL> data(0);
+	
+	int size = 0;
+	for( int proc = 1; proc < ntasks; proc++)
+	  {
+	    Array<Vec<N+1, int> > locpoints;
+	    Array<SCAL> locdata;
+	    MyMPI_Recv(locpoints,proc, 22);
+	    MyMPI_Recv(locdata,proc, 23);
+	    
+	    
+	    Vec<N, int>  temp;
+	    
+	    int actual = 0;
+	    for( int j = 0; j < locpoints.Size(); j++ )
+	      {
+		int nodesize = locpoints[j][N];
+		for( int k = 0; k < nodesize; k++)
+		  data.Append(locdata[actual++]);
+		
+		positions.Append(  Vec<2, int> (  size, nodesize) );
+		
+		for( int k = 0; k < N; k++)
+		  temp[k] = locpoints[j][k];
+		
+		points.Append( temp );
+		
+		size += nodesize;
+	      }
+	  }    
+	
+	Array<int> index(points.Size());
+	for( int i = 0; i < index.Size(); i++)
+	  index[i] = i;
+	
+	Quicksort<N>(index,points,0, points.Size()-1);
+	
+	for( int i = 0; i < points.Size(); i++)
+	  {
+	    int start = positions[index[i]][0];
+	    int end = positions[index[i]][1];
+	    
+	    for( int j = 0; j < end; j++)
+	      SaveBin<SCAL>(ost, data[start++]);
+	  }
+	
+      }
+#endif	   
+  }
+
+
+
+
+
+
+
   template <class SCAL>
   S_ComponentGridFunction<SCAL> :: 
   S_ComponentGridFunction (const S_GridFunction<SCAL> & agf_parent, int acomp)

@@ -2128,6 +2128,73 @@ namespace ngsolve
   //////////////////////////////////////////////////////////////////////////////
 
 
+
+
+
+
+  
+  
+  
+  class NumProcLoadSolution2 : public NumProc
+  {
+  protected:
+    GridFunction * gfu;
+    string filename;
+
+  public:
+    NumProcLoadSolution2 (PDE & apde, const Flags & flags)
+      : NumProc (apde)
+    {
+      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));	
+      filename = flags.GetStringFlag("filename", "solution.out");	
+    }
+    
+    virtual ~NumProcLoadSolution2() {;}
+    
+    virtual void Do(LocalHeap & lh)
+    {
+      ifstream infile(filename.c_str(), ios::binary);
+      gfu -> Load(infile);
+    }
+    
+    virtual string GetClassName () const
+    {
+      return "NumProcLoadSolution2";
+    }
+  };
+
+
+  class NumProcSaveSolution2 : public NumProc
+  {
+  protected:
+    GridFunction * gfu;
+    string filename;
+
+  public:
+    NumProcSaveSolution2 (PDE & apde, const Flags & flags)
+      : NumProc (apde)
+    {
+      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+      filename = flags.GetStringFlag("filename", "solution.out");
+    }
+    
+    virtual ~NumProcSaveSolution2() {};		
+    
+    virtual void Do(LocalHeap & lh)
+    {
+      ofstream out(filename.c_str(), ios::binary);
+      gfu -> Save(out);
+    }
+    
+    virtual string GetClassName () const
+    {
+      return "NumProcSaveSolution2";
+    }
+  };
+
+
+
+
   class NumProcTclMenu : public NumProc
   {
   protected:
@@ -3100,6 +3167,9 @@ namespace ngsolve
   static RegisterNumProc<NumProcWriteFile> npinitwf ("writefile");
   static RegisterNumProc<NumProcDrawFlux> npinitdf ("drawflux");
   static RegisterNumProc<NumProcDrawCoefficient> npinitdc ("draw");
+
+  static RegisterNumProc<NumProcLoadSolution2> npload ("loadgridfunction2");
+  static RegisterNumProc<NumProcSaveSolution2> npsave ("savegridfunction2");
   
 
   namespace numproc_cpp

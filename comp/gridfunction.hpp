@@ -147,6 +147,9 @@ namespace ngcomp
     { vec[comp] -> SetIndirect (dnums, elvec); }
 
 
+
+    virtual void Load (istream & ist) = 0;
+    virtual void Save (ostream & ost) const = 0;
   };
 
 
@@ -159,7 +162,14 @@ namespace ngcomp
       : GridFunction (afespace, aname, flags) { ; }
   
 
-    // virtual GridFunction * GetComponent (int compound_comp) const;
+    // parallel Load/Save by Martin Huber and Lothar Nannen 
+    virtual void Load (istream & ist);
+    virtual void Save (ostream & ost) const;
+
+  private:
+    template <int N, NODE_TYPE NT> void LoadNodeType (istream & ist);
+
+    template <int N, NODE_TYPE NT> void SaveNodeType (ostream & ost) const;
   };
 
 
