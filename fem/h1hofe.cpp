@@ -210,9 +210,9 @@ namespace ngfem
     else
       for (int i = 0; i < 4; i++)
 	{
-	  LowEnergyVertexPolynomials3D (order, 2*lam[i]-1, polx);
-	  shape[i] = polx[order]; 
-	// shape[i] = 0.25*lam[i]*(2*lam[i]-1);
+	  // LowEnergyVertexPolynomials3D (order, 2*lam[i]-1, polx);
+	  // shape[i] = polx[order]; 
+	  shape[i] = 0.25*lam[i]*(2*lam[i]-1);
 	}
     int ii = 4; 
 
