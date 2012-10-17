@@ -257,7 +257,63 @@ void Ng_LoadMesh (const char * filename)
       if (ntasks > 1)
 	{
 	  // MyMPI_SendCmd ("mesh");
-	  mesh -> Distribute();
+	  // mesh -> Distribute();
+
+	  char * weightsfilename = new char [strlen(filename)+1];
+	  strcpy (weightsfilename, filename);            
+	  weightsfilename[strlen (weightsfilename)-3] = 'w';
+	  weightsfilename[strlen (weightsfilename)-2] = 'e';
+	  weightsfilename[strlen (weightsfilename)-1] = 'i';
+	  
+	  ifstream weightsfile(weightsfilename);      
+	  delete [] weightsfilename;  
+	  
+	  if (!(weightsfile.good()))
+	    mesh -> Distribute();
+	  else
+	    {
+	      char str[20];   
+	      bool endfile = false;
+	      int n, dummy;
+	      
+	      Array<int> segment_weights;
+	      Array<int> surface_weights;
+	      Array<int> volume_weights;
+	      
+	      while (weightsfile.good() && !endfile)
+		{
+		  weightsfile >> str;
+		  
+		  if (strcmp (str, "edgeweights") == 0)
+		    {
+		      weightsfile >> n;
+		      segment_weights.SetSize(n);
+		      for (int i=0; i<n; i++)
+			weightsfile >> dummy >> segment_weights[i];
+		    }
+		  
+		  if (strcmp (str, "surfaceweights") == 0)
+		    {
+		      weightsfile >> n;
+		      surface_weights.SetSize(n);
+		      for (int i=0; i<n; i++)
+			weightsfile >> dummy >> surface_weights[i];
+		    }
+		  
+		  if (strcmp (str, "volumeweights") == 0)
+		    {
+		      weightsfile >> n;
+		      volume_weights.SetSize(n);
+		      for (int i=0; i<n; i++)
+			weightsfile >> dummy >> volume_weights[i];
+		    }
+		  
+		  if (strcmp (str, "endfile") == 0)
+		    endfile = true;  
+		}     
+	      
+	      mesh -> Distribute(volume_weights, surface_weights, segment_weights);
+	    }
 	}
 #endif
     }

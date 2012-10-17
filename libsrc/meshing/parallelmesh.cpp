@@ -822,6 +822,143 @@ namespace netgen
 
 
 
+
+//========================== weights =================================================================
+
+
+
+  // distribute the mesh to the slave processors
+  // call it only for the master !
+  void Mesh :: Distribute (Array<int> & volume_weights , Array<int>  & surface_weights, Array<int>  & segment_weights)
+  {
+    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+    MPI_Comm_rank(MPI_COMM_WORLD, &id);
+
+    if (id != 0 || ntasks == 1 ) return;
+
+#ifdef METIS
+    ParallelMetis (volume_weights, surface_weights, segment_weights);
+#else
+    for (ElementIndex ei = 0; ei < GetNE(); ei++)
+      (*this)[ei].SetPartition(ntasks * ei/GetNE() + 1);
+#endif
+
+    /*
+    for (ElementIndex ei = 0; ei < GetNE(); ei++)
+      *testout << "el(" << ei << ") is in part " << (*this)[ei].GetPartition() << endl;
+    for (SurfaceElementIndex ei = 0; ei < GetNSE(); ei++)
+      *testout << "sel(" << int(ei) << ") is in part " << (*this)[ei].GetPartition() << endl;
+      */
+    
+    // MyMPI_SendCmd ("mesh");
+    SendRecvMesh (); 
+  }
+  
+
+#ifdef METIS5
+  void Mesh :: ParallelMetis (Array<int> & volume_weights , Array<int> & surface_weights, Array<int> & segment_weights)  
+  {
+    PrintMessage (3, "call metis 5 with weights ...");
+    
+    // cout << "segment_weights " << segment_weights << endl;
+    // cout << "surface_weights " << surface_weights << endl;
+    // cout << "volume_weights " << volume_weights << endl;
+
+    int timer = NgProfiler::CreateTimer ("Mesh::Partition");
+    NgProfiler::RegionTimer reg(timer);
+
+    idx_t ne = GetNE() + GetNSE() + GetNSeg();
+    idx_t nn = GetNP();
+    
+    Array<idx_t> eptr, eind , nwgt;
+    for (int i = 0; i < GetNE(); i++)
+      {
+	eptr.Append (eind.Size());
+	
+	const Element & el = VolumeElement(i+1);
+	
+	int ind = el.GetIndex();	
+	if (volume_weights.Size()<ind)
+	    nwgt.Append(0);
+	else
+	    nwgt.Append (volume_weights[ind -1]);
+	
+	for (int j = 0; j < el.GetNP(); j++)
+	  eind.Append (el[j]-1);
+      }
+    for (int i = 0; i < GetNSE(); i++)
+      {
+	eptr.Append (eind.Size());
+	const Element2d & el = SurfaceElement(i+1);
+	
+	
+	int ind = el.GetIndex(); 
+	ind = GetFaceDescriptor(ind).BCProperty();
+	if (surface_weights.Size()<ind)
+	    nwgt.Append(0);
+	else
+	    nwgt.Append (surface_weights[ind -1]);
+
+	
+	for (int j = 0; j < el.GetNP(); j++)
+	  eind.Append (el[j]-1);
+      }
+    for (int i = 0; i < GetNSeg(); i++)
+      {
+	eptr.Append (eind.Size());
+	
+	const Segment & el = LineSegment(i+1);	
+	
+	int ind = el.si;
+	if (segment_weights.Size()<ind)
+	    nwgt.Append(0);
+	else
+	    nwgt.Append (segment_weights[ind -1]);
+	
+	eind.Append (el[0]);
+	eind.Append (el[1]);
+      }
+      
+    eptr.Append (eind.Size());
+    Array<idx_t> epart(ne), npart(nn);
+
+    int nparts = ntasks-1;
+    int edgecut;
+
+
+    int ncommon = 3;
+    METIS_PartMeshDual (&ne, &nn, &eptr[0], &eind[0], &nwgt[0], NULL, &ncommon, &nparts,
+			NULL, NULL,
+			&edgecut, &epart[0], &npart[0]);
+    /*
+    METIS_PartMeshNodal (&ne, &nn, &eptr[0], &eind[0], NULL, NULL, &nparts,
+			 NULL, NULL,
+			 &edgecut, &epart[0], &npart[0]);
+    */
+    PrintMessage (3, "metis complete");
+    // cout << "done" << endl;
+
+    for (int i = 0; i < GetNE(); i++)
+      VolumeElement(i+1).SetPartition(epart[i] + 1);
+    for (int i = 0; i < GetNSE(); i++)
+      SurfaceElement(i+1).SetPartition(epart[i+GetNE()] + 1);
+    for (int i = 0; i < GetNSeg(); i++)
+      LineSegment(i+1).SetPartition(epart[i+GetNE()+GetNSE()] + 1);
+  }
+#endif 
+
+
+
+//===========================================================================================
+
+
+
+
+
+
+
+
+
 #ifdef METIS4
   void Mesh :: ParallelMetis ( )  
   {

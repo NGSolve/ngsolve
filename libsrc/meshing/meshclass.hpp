@@ -720,6 +720,8 @@ namespace netgen
 
     /// distributes the master-mesh to local meshes
     void Distribute ();
+    void Distribute (Array<int> & volume_weights, Array<int> & surface_weights, 
+		     Array<int> & segment_weights);
 
 
     /// find connection to parallel meshes
@@ -730,6 +732,9 @@ namespace netgen
 
     /// use metis to decompose master mesh 
     void ParallelMetis (); //  Array<int> & neloc );
+    void ParallelMetis (Array<int> & volume_weights, Array<int> & surface_weights, 
+			Array<int> & segment_weights); 
+
     void PartHybridMesh (); //  Array<int> & neloc );
     void PartDualHybridMesh (); //  Array<int> & neloc );
     void PartDualHybridMesh2D ();  // ( Array<int> & neloc );
