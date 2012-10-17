@@ -4162,7 +4162,8 @@ namespace netgen
 	1, 1, 1, 1,
 	1, 1, 1, 1, 
 	1, 1, 1, 1, 
-	1, 4, 1
+	1, 4, 1, 1, 
+	1
       };
     MPI_Aint displ[] = { (char*)&usetexture - (char*)this,
 			 (char*)&clipsolution - (char*)this,
@@ -4181,7 +4182,10 @@ namespace netgen
 
 			 (char*)&evalfunc - (char*)this,
 			 (char*)&clipplane[0] - (char*)this,
-			 (char*)&multidimcomponent - (char*)this 
+			 (char*)&multidimcomponent - (char*)this, 
+			 (char*)&deform - (char*)this,
+
+			 (char*)&scaledeform - (char*)this 
     };
 
 
@@ -4189,35 +4193,15 @@ namespace netgen
       MPI_INT, MPI_INT, MPI_INT, MPI_INT,
       MPI_INT, MPI_INT, MPI_INT, MPI_INT,
       MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT,
-      MPI_INT, MPI_DOUBLE, MPI_INT
+      MPI_INT, MPI_DOUBLE, MPI_INT, MPI_INT,
+      MPI_DOUBLE
     };
 
-    MPI_Type_create_struct (15, blocklen, displ, types, &type);
+    MPI_Type_create_struct (17, blocklen, displ, types, &type);
     MPI_Type_commit ( &type );
 
     MPI_Bcast (this, 1, type, 0, MPI_COMM_WORLD);
     MPI_Type_free (&type);
-
-    /*
-    MyMPI_Bcast (usetexture);
-    MyMPI_Bcast (clipsolution);
-    MyMPI_Bcast (scalfunction);
-    MyMPI_Bcast (scalcomp);
-    MyMPI_Bcast (vecfunction);
-    MyMPI_Bcast (gridsize);
-
-    MyMPI_Bcast (autoscale);
-    MyMPI_Bcast (logscale);
-    MyMPI_Bcast (minval);
-    MyMPI_Bcast (maxval);
-    MyMPI_Bcast (numisolines);
-    MyMPI_Bcast (subdivisions);
-
-    MyMPI_Bcast (clipplane[0]);
-    MyMPI_Bcast (clipplane[1]);
-    MyMPI_Bcast (clipplane[2]);
-    MyMPI_Bcast (clipplane[3]);
-    */
   }
   
 #endif
