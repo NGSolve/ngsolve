@@ -264,12 +264,15 @@ void Ng_LoadMesh (const char * filename)
 	  weightsfilename[strlen (weightsfilename)-3] = 'w';
 	  weightsfilename[strlen (weightsfilename)-2] = 'e';
 	  weightsfilename[strlen (weightsfilename)-1] = 'i';
-	  
+
 	  ifstream weightsfile(weightsfilename);      
 	  delete [] weightsfilename;  
 	  
 	  if (!(weightsfile.good()))
-	    mesh -> Distribute();
+	    {
+	      // cout << "regular distribute" << endl;
+	      mesh -> Distribute();
+	    }
 	  else
 	    {
 	      char str[20];   
@@ -288,7 +291,7 @@ void Ng_LoadMesh (const char * filename)
 		    {
 		      weightsfile >> n;
 		      segment_weights.SetSize(n);
-		      for (int i=0; i<n; i++)
+		      for (int i = 0; i < n; i++)
 			weightsfile >> dummy >> segment_weights[i];
 		    }
 		  
