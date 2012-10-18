@@ -4,7 +4,7 @@
 /* Date:   May. 2009                                                       */
 /* *************************************************************************/
 
-#define DEBUG
+// #define DEBUG
 #ifdef USE_MUMPS
 
 #include <la.hpp>
@@ -431,12 +431,12 @@ namespace ngla
     const SparseMatrixTM<TM> & a = dynamic_cast<const SparseMatrixTM<TM> &> (ba);
 
     
-    // symmetric = asymmetric;
-    symmetric = true;
+    symmetric = asymmetric;
+    // symmetric = true;
     // inner = ainner;
     // cluster = acluster;
 
-    cout << IM(1) << "Mumps Parallel inverse " << flush;
+    cout << IM(1) << "Mumps Parallel inverse, symmetric = " << symmetric << endl;
 
     int ntasks = MyMPI_GetNTasks();
     int id = MyMPI_GetId();
@@ -583,7 +583,43 @@ namespace ngla
 	  }
 	else
 	  {
-	    cout << "copy matrix non-symmetric" << endl;
+	    int ii = 0;
+	    for (int i = 0; i < a.Height(); i++ )
+	      {
+		FlatArray<int> rowind = a.GetRowIndices(i);
+		FlatVector<TM> values = a.GetRowValues(i);
+		
+		for (int j = 0; j < rowind.Size(); j++ )
+		  {
+		    int col = rowind[j];
+		    
+		    if (  (!inner && !cluster) ||
+			  (inner && (inner->Test(i) && inner->Test(col) ) ) ||
+			  (!inner && cluster &&
+			   ((*cluster)[i] == (*cluster)[col] 
+			    && (*cluster)[i] ))  )
+		      {
+			for (int l = 0; l < entrysize; l++ )
+			  for (int k = 0; k < entrysize; k++)
+			    {
+			      int rowi = loc2glob[i]*entrysize+l+1;
+			      int coli = loc2glob[col]*entrysize+k+1;
+
+			      col_indices[ii] = coli;
+			      row_indices[ii] = rowi;
+			      matrix[ii] = Access(values[j],l,k);
+			      ii++;
+			    }
+		      }
+		  }
+	      }
+	    nze = ii;
+
+
+#ifdef OLDNONSYM	   
+
+
+
 	    // --- transform matrix to compressed column storage format ---
 
 	    int * colstart = new int[height+1];
@@ -674,6 +710,7 @@ namespace ngla
 		      }
 		  }
 	      }
+#endif
 	  }
       }
     else

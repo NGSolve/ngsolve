@@ -234,27 +234,30 @@ namespace ngla
   {
     pmat = &mat;
 
-    /*
-    // define smoothing blocks
-    int nv = pmat->Width();
-    Array<int> cnt(nv);
-    cnt = 0;
-    for (int i = 0; i < pmat->Height(); i++)
-      for (int j = 0; j < pmat->GetRowIndices(i).Size(); j++)
-	cnt[pmat->GetRowIndices(i)[j]]++;
-    
-    Table<int> * smblocks = new Table<int>(cnt);
-    cnt = 0;
-    for (int i = 0; i < pmat->Height(); i++)
-      for (int j = 0; j < pmat->GetRowIndices(i).Size(); j++)
-	{
-	  int jj = pmat->GetRowIndices(i)[j];
-	  (*smblocks)[jj][cnt[jj]] = i;
-	  cnt[jj]++;
-	}
-    bjacobi = mat.CreateBlockJacobiPrecond (*smblocks);
-*/
-
+    if (0) // if (prol)
+      {
+	// define smoothing blocks
+	int nv = prol->Width();
+	Array<int> cnt(nv);
+	cnt = 0;
+	for (int i = 0; i < prol->Height(); i++)
+	  for (int j = 0; j < prol->GetRowIndices(i).Size(); j++)
+	    cnt[prol->GetRowIndices(i)[j]]++;
+	
+	Table<int> * smblocks = new Table<int>(cnt);
+	cnt = 0;
+	for (int i = 0; i < prol->Height(); i++)
+	  for (int j = 0; j < prol->GetRowIndices(i).Size(); j++)
+	    {
+	      int jj = prol->GetRowIndices(i)[j];
+	      (*smblocks)[jj][cnt[jj]] = i;
+	      cnt[jj]++;
+	    }
+	// *testout << "prol = " << endl << *prol << endl;
+	// *testout << "smoothing blocks = " << endl << *smblocks << endl;
+	
+	bjacobi = mat.CreateBlockJacobiPrecond (*smblocks);
+      }
     jacobi = mat.CreateJacobiPrecond ();
 
     if (recAMG)
@@ -265,7 +268,8 @@ namespace ngla
       }
     else 
       {
-        const_cast<BaseSparseMatrix&> (mat).SetInverseType ( SPARSECHOLESKY );
+        // const_cast<BaseSparseMatrix&> (mat).SetInverseType ( SPARSECHOLESKY );
+	mat.SetInverseType (SPARSECHOLESKY);
         inv = mat.InverseMatrix();
       }
   }

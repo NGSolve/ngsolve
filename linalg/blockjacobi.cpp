@@ -656,7 +656,6 @@ namespace ngla
     // di = P_i (y - L x)
     for (int j = 0; j < bs; j++)
       di(j) = y(row[j]) - mat.RowTimesVectorNoDiag (row[j], x);
-    
     if (!lowmem)
       InvDiag(i).Mult (di, wi);
     else
@@ -670,7 +669,6 @@ namespace ngla
 
 	inv.Mult (di, wi);
       }
-
     // x += P_i w
     // y -= (D L^t) P_i w
     for (int j = 0; j < bs; j++)
