@@ -150,7 +150,17 @@ namespace ngstd
     MPI_Recv(&s[0], len, MPI_CHAR, src, tag, ngs_comm, MPI_STATUS_IGNORE);
   }
 
- 
+  template <typename T>
+  inline T MyMPI_Reduce (T d, const MPI_Op & op = MPI_SUM, MPI_Comm comm = ngs_comm)
+  {
+    static Timer t("dummy - AllReduce");
+    RegionTimer r(t);
+
+    T global_d;
+    MPI_Reduce ( &d, &global_d, 1, MyGetMPIType<T>(), op, 0, comm);
+    return global_d;
+  }
+
   template <typename T>
   inline T MyMPI_AllReduce (T d, const MPI_Op & op = MPI_SUM, MPI_Comm comm = ngs_comm)
   {
@@ -245,6 +255,7 @@ namespace ngstd
   {
     static Timer t("dummy - waitall");
     RegionTimer r(t);
+    if (!requests.Size()) return;
     MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
   }
   
@@ -335,6 +346,10 @@ public:
 
   template <typename T>
   inline T MyMPI_AllReduce (T d, int op = 0, MPI_Comm comm = 0)  { return d; }
+
+  template <typename T>
+  inline T MyMPI_Reduce (T d, int op = 0, MPI_Comm comm = ngs_comm) { return d; }
+
 
   inline void MyMPI_Bcast (string & s, MPI_Comm comm = 0) { ; }
   
