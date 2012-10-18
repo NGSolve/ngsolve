@@ -234,8 +234,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
   template <class SCAL>
   void S_GridFunction<SCAL> :: Load (istream & ist)
   {
-    int ntasks = MyMPI_GetNTasks();
-    if (ntasks==1)
+    if (MyMPI_GetNTasks() == 1)
       { 
 	const FESpace & fes = GetFESpace();
 	Array<int> dnums;
@@ -286,21 +285,17 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	
 	Array<Vec<N+1, int> > nodenums(0);
 	Array<int> master_nodes(0);
-	Array<int> dnums;
+	Array<int> dnums, pnums;
 	
-	for( int i = 0; i < nnodes; i++)
+	for(int i = 0; i < nnodes; i++)
 	  {
 	    fes.GetNodeDofNrs (NTYPE, i,  dnums);
 	    
-	    if( dnums.Size() == 0)
-	      continue;
-	    
-	    if( !par.IsMasterDof ( dnums[0] ))
-	      continue;
+	    if (dnums.Size() == 0) continue;
+	    if (!par.IsMasterDof (dnums[0])) continue;
 	    
 	    master_nodes.Append(i);
 	    
-	    Array<int> pnums;
 	    if (NTYPE == NT_VERTEX)
 	      {
 		pnums.SetSize(1);
@@ -317,26 +312,26 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	    
 	    Vec<N+1, int> points;
 	    points = -1;
-	    for( int j = 0; j < pnums.Size(); j++)
+	    for (int j = 0; j < pnums.Size(); j++)
 	      points[j] = ma.GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
 	    points[N] = dnums.Size();
 	    
-	    nodenums.Append(points);	
+	    nodenums.Append (points);	
 	  }
 	
-	MyMPI_Send(nodenums,0,12);
+	MyMPI_Send (nodenums, 0, 12);
 	
 	Array<SCAL> loc_data;
-	MyMPI_Recv(loc_data,0,13);
+	MyMPI_Recv (loc_data, 0, 13);
 	
 	int cnt=0;
-	for( int i = 0; i < master_nodes.Size(); i++)
+	for (int i = 0; i < master_nodes.Size(); i++)
 	  {
 	    fes.GetNodeDofNrs (NTYPE, master_nodes[i],  dnums); 
 	    Vector<SCAL> elvec(dnums.Size());
 	    
-	    for (int i=0; i< elvec.Size(); i++)
-	      elvec(i)=loc_data[cnt++];
+	    for (int i = 0; i< elvec.Size(); i++)
+	      elvec(i) = loc_data[cnt++];
 	    
 	    SetElementVector (dnums, elvec);
 	  }
@@ -357,40 +352,30 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	    
 	    Vec<N, int>  temp;
 	    
-	    for (int j=0; j<nodenums_proc.Size(); j++)
+	    for (int j=0; j < nodenums_proc.Size(); j++)
 	      {
-		for( int k = 0; k < N; k++)
+		for (int k = 0; k < N; k++)
 		  temp[k] = nodenums_proc[j][k];
 		
-		points.Append( temp );
+		points.Append (temp);
 		
-		nrdofs_per_node.Append(nodenums_proc[j][N]);
+		nrdofs_per_node.Append (nodenums_proc[j][N]);
 		
 		(*(nodenums_of_procs[proc-1]))[j]=actual++;
 	      }
-	    /*cout << "proc " << proc << endl;
-	      cout << "nodenums " << *(nodenums_of_procs[proc-1]) << endl;
-	      cout << "points " << points << endl;*/
 	  }
 	
 	Array<int> index(points.Size());
-	for( int i = 0; i < index.Size(); i++)
-	  index[i] = i;
-	
-	// MyQuicksort<N>(index,points,0, points.Size()-1);
+	for( int i = 0; i < index.Size(); i++) index[i] = i;
+
 	QuickSortI (points, index, MyLess<N>);
 
 	Array<int> inverse_index(index.Size());
 	for (int i = 0; i < index.Size(); i++ ) 	
 	  inverse_index[index[i]] = i;
 	
-	
-	/*cout << "points " << points << endl;      
-	  cout << "index " << index << endl;      
-	  cout << "inverse index " << inverse_index << endl;*/
-	
-	int nnodes=points.Size();
-	int nrdofs_all_nodes=0;
+	int nnodes = points.Size();
+	int nrdofs_all_nodes = 0;
 	Array<int> first_node_dof (nnodes+1);
 	
 	for (int i=0; i<nnodes; i++)
@@ -403,12 +388,11 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
       //cout << "first_node_dof " << first_node_dof << endl;
 	
 	Array<SCAL> node_data (nrdofs_all_nodes);     
-	for (int i=0; i<nrdofs_all_nodes; i++)
+	for (int i = 0; i < nrdofs_all_nodes; i++)
 	  if (ist.good())
 	    LoadBin<SCAL>(ist, node_data[i]);
-	//cout << "node_data " << node_data << endl;
 	
-	for( int proc = 1; proc < ntasks; proc++)
+	for (int proc = 1; proc < ntasks; proc++)
 	  {
 	    Array<SCAL> loc_data (0);
 	    int nr_local_nodes= (*(nodenums_of_procs[proc-1])).Size();	
@@ -434,12 +418,10 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
   template <class SCAL>
   void S_GridFunction<SCAL> :: Save (ostream & ost) const
   {
-    
     int ntasks = MyMPI_GetNTasks();
     const FESpace & fes = GetFESpace();
   
-  
-    if (ntasks==1)
+    if (ntasks == 1)
       {
 	Array<int> dnums;	    
 	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
@@ -478,7 +460,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
     const FESpace & fes = GetFESpace();
     ParallelDofs & par = fes.GetParallelDofs ();
     
-    if(id > 0)
+    if (id > 0)
       { 
 	int nnodes = ma.GetNNodes (NTYPE);
 	
@@ -530,7 +512,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	MyMPI_Send(data,0,23);
       }
   
-    if( id == 0 )
+    if (id == 0)
       {
 	Array<Vec<N, int> > points(0);
 	Array<Vec<2, int> > positions(0);
@@ -565,18 +547,16 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	  }    
 	
 	Array<int> index(points.Size());
-	for( int i = 0; i < index.Size(); i++)
-	  index[i] = i;
+	for (int i = 0; i < index.Size(); i++) index[i] = i;
 	
-	// MyQuicksort<N>(index,points,0, points.Size()-1);
 	QuickSortI (points, index, MyLess<N>);
 	
-	for( int i = 0; i < points.Size(); i++)
+	for (int i = 0; i < points.Size(); i++)
 	  {
 	    int start = positions[index[i]][0];
 	    int end = positions[index[i]][1];
 	    
-	    for( int j = 0; j < end; j++)
+	    for (int j = 0; j < end; j++)
 	      SaveBin<SCAL>(ost, data[start++]);
 	  }
 	

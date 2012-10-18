@@ -472,15 +472,11 @@ namespace ngcomp
     u.GetVector() = 0.0;
 
     int cnt = 0;
-    // clock_t prevtime = clock();
-
     ProgressOutput progress (ma, "setvalues element", ma.GetNE());
 
 #pragma omp parallel 
     {
       LocalHeap lh = clh.Split();
-      
-      // Array<int> dnums;
 
 #pragma omp for 
       for (int i = 0; i < ne; i++)
@@ -490,18 +486,6 @@ namespace ngcomp
 #pragma omp atomic
 	  cnt++;
 	  progress.Update (cnt);
-
-	  /*
-#pragma omp critical(fluxprojetpercent)
-	  {
-	    if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
-	      {
-		// cout << "\rsetvalues element " << cnt << "/" << ne << flush;
-		ma.SetThreadPercentage ( 100.0*cnt / ne );
-		prevtime = clock();
-	      }
-	  }
-	  */
 
 	  if (bound && !fes.IsDirichletBoundary(ma.GetSElIndex(i)))
 	    continue;
@@ -516,12 +500,8 @@ namespace ngcomp
 	  FlatVector<SCAL> elfluxi(dnums.Size() * dim, lh);
 	  FlatVector<SCAL> fluxi(dimflux, lh);
 	  
-	  /*
-	  const IntegrationRule & ir = 
-	    GetIntegrationRules().SelectIntegrationRule(fel.ElementType(), 2*fel.Order());
-	  */
-	  IntegrationRule ir(fel.ElementType(), 2*fel.Order());
 
+	  IntegrationRule ir(fel.ElementType(), 2*fel.Order());
 	  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
 
 	  BaseMappedIntegrationRule & mir = eltrans(ir, lh);
@@ -585,9 +565,6 @@ namespace ngcomp
 
     progress.Done();
 
-
-
-    // cout << "\rsetvalues element " << ne << "/" << ne << endl;
     
 #ifdef PARALLEL
     AllReduceDofData (cnti, MPI_SUM, fes.GetParallelDofs());

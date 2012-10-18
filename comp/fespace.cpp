@@ -14,8 +14,6 @@
 #include "../fem/h1lofe.hpp"
 #include <parallelngs.hpp>
 
-
-
 using namespace ngmg;
 
 namespace ngcomp
@@ -1058,23 +1056,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	int i, j;
 	int ne = ma.GetNE();
 	int nse = ma.GetNSE();
-	int ndof = -1;
+	int ndof = ma.GetNV();
 	for (i = 0; i < ne; i++)
 	  {
 	    GetDofNrs (i, dnums);
 	    for (j = 0; j < dnums.Size(); j++)
-	      if (dnums[j] > ndof)
-		ndof = dnums[j];
+	      ndof = max2(ndof, dnums[j]+1);
 	  }
 	for (i = 0; i < nse; i++)
 	  {
 	    GetSDofNrs (i, dnums);
 	    for (j = 0; j < dnums.Size(); j++)
-	      if (dnums[j] > ndof)
-		ndof = dnums[j];
+	      ndof = max2(ndof, dnums[j]+1);
 	  }
 
-	ndlevel.Append (ndof+1);
+	ndlevel.Append (ndof);
       }
       
 
