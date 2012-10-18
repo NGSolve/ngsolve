@@ -83,12 +83,12 @@ AC_ARG_ENABLE([gui],
         [AC_HELP_STRING([--disable-gui],[don't build netgen with GUI])],
         [if test "$enableval" = yes; then ngguion=true; else ngguion=false; fi])
 
+metisdir=/usr/local
 AC_ARG_WITH([metis], 
         [AC_HELP_STRING([--with-metis=dir],[path to metis 5.x])],
         [metisdir=$withval],
         [metisdir=/usr/local]
 	)
-echo "metisdir = $metisdir"
 
 AC_ARG_ENABLE([parallel],
         [AC_HELP_STRING([--enable-parallel],[enable mpi parallelization])],
