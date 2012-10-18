@@ -1096,18 +1096,6 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 #endif
 
 
-  template <typename T>
-  inline T MyMPI_Reduce (T d, const MPI_Op & op = MPI_SUM, MPI_Comm comm = ngs_comm)
-  {
-    static Timer t("dummy - AllReduce");
-    RegionTimer r(t);
-
-    T global_d;
-    MPI_Reduce ( &d, &global_d, 1, MyGetMPIType<T>(), op, 0, comm);
-    return global_d;
-  }
-
-
   
   ProgressOutput :: ProgressOutput (const MeshAccess & ama,
 				    string atask, int atotal)
