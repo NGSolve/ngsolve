@@ -1184,7 +1184,7 @@ namespace netgen
      int id = 0;
      MPI_Comm_rank(MPI_COMM_WORLD, &id);
      if (id != 0) return;
-#endif PARALLEL
+#endif
      (*mycout) << s << flush;
    }
 
