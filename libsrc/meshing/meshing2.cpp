@@ -302,7 +302,8 @@ namespace netgen
 	box.Set ( mesh[sel[0]] );
 	box.Add ( mesh[sel[1]] );
 	box.Add ( mesh[sel[2]] );
-	surfeltree.Insert (box, i);
+	// surfeltree.Insert (box, i);
+	surfeltree.Insert (box, seia[i]);
       }
 
 
@@ -1078,17 +1079,14 @@ namespace netgen
 	      {
 		const Point3d & p = critpoints.Get(i);
 		 
+		for (int jj = 0; jj < intersecttrias.Size(); jj++)
+		  {
+		    // int j = intersecttrias.Get(jj);
+		    // const Element2d & el = mesh.SurfaceElement(j);
 
-		/*
-		  for (j = 1; j <= mesh.GetNSE(); j++)
-		  {
-		*/
-		int jj;
-		for (jj = 1; jj <= intersecttrias.Size(); jj++)
-		  {
-		    int j = intersecttrias.Get(jj);
-		    const Element2d & el = mesh.SurfaceElement(j);
-		  
+		    SurfaceElementIndex j = intersecttrias[jj];
+		    const Element2d & el = mesh[j];
+
 		    int ntrig = (el.GetNP() == 3) ? 1 : 2;
 
 		    int jl;
@@ -1306,7 +1304,7 @@ namespace netgen
 		box.Set (mesh[mtri[0]]);
 		box.Add (mesh[mtri[1]]);
 		box.Add (mesh[mtri[2]]);
-		surfeltree.Insert (box, mesh.GetNSE());
+		surfeltree.Insert (box, mesh.GetNSE()-1);
 
 		const Point3d & sep1 = mesh.Point (mtri.PNum(1));
 		const Point3d & sep2 = mesh.Point (mtri.PNum(2));
