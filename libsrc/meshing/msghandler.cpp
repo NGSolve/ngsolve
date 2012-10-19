@@ -151,7 +151,8 @@ void PopStatus()
   if (msgstatus_stack.Size())
     {
       if (msgstatus_stack.Size() > 1)
-	SetStatMsg (*msgstatus_stack.Last());
+	// SetStatMsg (*msgstatus_stack.Last());
+	SetStatMsg (*msgstatus_stack[msgstatus_stack.Size()-2]);
       else
 	SetStatMsg ("");
       delete msgstatus_stack.Last();

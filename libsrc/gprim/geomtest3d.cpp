@@ -6,6 +6,7 @@
 
 namespace netgen
 {
+
 int
 IntersectTriangleLine (const Point<3> ** tri, const Point<3> ** line)
 {
@@ -14,8 +15,10 @@ IntersectTriangleLine (const Point<3> ** tri, const Point<3> ** line)
   Vec3d vt2(*tri[0], *tri[2]);
   Vec3d vrs(*tri[0], *line[0]);
 
-  static DenseMatrix a(3), ainv(3);
-  static Vector rs(3), lami(3);
+  // static DenseMatrix a(3), ainv(3);
+  // static Vector rs(3), lami(3);
+  Mat<3,3> a, ainv;
+  Vec<3> rs, lami;
   int i;
 
   /*
@@ -31,7 +34,8 @@ IntersectTriangleLine (const Point<3> ** tri, const Point<3> ** line)
       rs(i) = vrs.X(i+1);
     }
 
-  double det = a.Det();
+  // double det = a.Det();
+  double det = Det(a); 
 
   double arel = vl.Length() * vt1.Length() * vt2.Length();
   /*
@@ -64,7 +68,8 @@ IntersectTriangleLine (const Point<3> ** tri, const Point<3> ** line)
     }
 
   CalcInverse (a, ainv);
-  ainv.Mult (rs, lami);
+  // ainv.Mult (rs, lami);
+  lami = ainv * rs;
 
   //  (*testout) << "lami = " << lami << endl;
 
