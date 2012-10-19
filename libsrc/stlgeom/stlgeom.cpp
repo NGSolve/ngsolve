@@ -2104,22 +2104,21 @@ void STLGeometry :: TopologyChanged()
 
 int STLGeometry :: CheckGeometryOverlapping()
 {
-  int i, j, k;
+  PrintMessageCR(3,"Check overlapping geometry ...");
 
   Box<3> geombox = GetBoundingBox();
   Point<3> pmin = geombox.PMin();
   Point<3> pmax = geombox.PMax();
 
   Box3dTree setree(pmin, pmax);
-  Array<int> inters;
 
   int oltrigs = 0;
   markedtrigs.SetSize(GetNT());
 
-  for (i = 1; i <= GetNT(); i++)
+  for (int i = 1; i <= GetNT(); i++)
     SetMarkedTrig(i, 0);
 
-  for (i = 1; i <= GetNT(); i++)
+  for (int i = 1; i <= GetNT(); i++)
     {
       const STLTriangle & tri = GetTriangle(i);
       
@@ -2133,48 +2132,57 @@ int STLGeometry :: CheckGeometryOverlapping()
       setree.Insert (tpmin, tpmax, i);
     }
 
-  for (i = 1; i <= GetNT(); i++)
-    {
-      const STLTriangle & tri = GetTriangle(i);
-      
-      Point<3> tpmin = tri.box.PMin();
-      Point<3> tpmax = tri.box.PMax();
 
-      setree.GetIntersecting (tpmin, tpmax, inters);
-
-      for (j = 1; j <= inters.Size(); j++)
-	{
-	  const STLTriangle & tri2 = GetTriangle(inters.Get(j));
-
-	  const Point<3> *trip1[3], *trip2[3];	
-	  Point<3> hptri1[3], hptri2[3];
-	  /*
-	  for (k = 1; k <= 3; k++)
-	    {
+#pragma omp parallel
+  {
+    Array<int> inters;
+    
+#pragma omp for
+    for (int i = 1; i <= GetNT(); i++)
+      {
+	const STLTriangle & tri = GetTriangle(i);
+	
+	Point<3> tpmin = tri.box.PMin();
+	Point<3> tpmax = tri.box.PMax();
+	
+	setree.GetIntersecting (tpmin, tpmax, inters);
+	
+	for (int j = 1; j <= inters.Size(); j++)
+	  {
+	    const STLTriangle & tri2 = GetTriangle(inters.Get(j));
+	    
+	    const Point<3> *trip1[3], *trip2[3];	
+	    Point<3> hptri1[3], hptri2[3];
+	    /*
+	      for (k = 1; k <= 3; k++)
+	      {
 	      trip1[k-1] = &GetPoint (tri.PNum(k));
 	      trip2[k-1] = &GetPoint (tri2.PNum(k));
-	    }
-	  */
+	      }
+	    */
+	    
+	    for (int k = 0; k < 3; k++)
+	      {
+		hptri1[k] = GetPoint (tri[k]);
+		hptri2[k] = GetPoint (tri2[k]);
+		trip1[k] = &hptri1[k];
+		trip2[k] = &hptri2[k];
+	      }
 
-	  for (k = 0; k < 3; k++)
-	    {
-	      hptri1[k] = GetPoint (tri[k]);
-	      hptri2[k] = GetPoint (tri2[k]);
-	      trip1[k] = &hptri1[k];
-	      trip2[k] = &hptri2[k];
-	    }
-
-	  if (IntersectTriangleTriangle (&trip1[0], &trip2[0]))
-	    {
-	      oltrigs++;
-	      PrintMessage(5,"Intersecting Triangles: trig ",i," with ",inters.Get(j),"!");
-	      SetMarkedTrig(i, 1);
-	      SetMarkedTrig(inters.Get(j), 1);
-	    }
-	}
-    }
-
-  PrintMessage(3,"Check Geometry Overlapping: overlapping triangles = ",oltrigs);
+	    if (IntersectTriangleTriangle (&trip1[0], &trip2[0]))
+	      {
+#pragma omp critical
+		{
+		  oltrigs++;
+		  PrintMessage(5,"Intersecting Triangles: trig ",i," with ",inters.Get(j),"!");
+		  SetMarkedTrig(i, 1);
+		  SetMarkedTrig(inters.Get(j), 1);
+		}
+	      }
+	  }
+      }
+  }
+  PrintMessage(3,"Check overlapping geometry ... ", oltrigs, " triangles overlap");
   return oltrigs;
 }
 
@@ -2408,12 +2416,11 @@ void STLGeometry :: CalcEdgeData()
   PushStatus("Calc Edge Data");
 
   int np1, np2;
-  int i;
   
   int ecnt = 0;
   edgedata->SetSize(GetNT()/2*3);
 
-  for (i = 1; i <= GetNT(); i++)
+  for (int i = 1; i <= GetNT(); i++)
     {
       SetThreadPercent((double)i/(double)GetNT()*100.);
       
@@ -2452,11 +2459,9 @@ void STLGeometry :: CalcEdgeData()
 
 void STLGeometry :: CalcEdgeDataAngles()
 {
-  PrintMessage(5,"calc edge data angles");
+  PrintMessageCR (5,"calc edge data angles ... ");
 
-  int i;
-
-  for (i = 1; i <= GetNTE(); i++)
+  for (int i = 1; i <= GetNTE(); i++)
     {
       STLTopEdge & edge = GetTopEdge (i);
       double cosang = 
@@ -2465,7 +2470,7 @@ void STLGeometry :: CalcEdgeDataAngles()
       edge.SetCosAngle (cosang);
     }
 
-  for (i = 1; i <= edgedata->Size(); i++)
+  for (int i = 1; i <= edgedata->Size(); i++)
     {
       /*
       const STLEdgeData& e = edgedata->Get(i);
@@ -2474,7 +2479,7 @@ void STLGeometry :: CalcEdgeDataAngles()
       edgedata->Elem(i).angle = fabs(ang);
       */
     }
-  
+  PrintMessage (5,"calc edge data angles ... done");
 }
 
 void STLGeometry :: FindEdgesFromAngles()
@@ -3044,11 +3049,10 @@ void STLGeometry :: BuildSmoothEdges ()
 
   PushStatusF("Build Smooth Edges");
 
-  int i, j;//, k, l;
   int nt = GetNT();
   Vec3d ng1, ng2;
 
-  for (i = 1; i <= nt; i++)
+  for (int i = 1; i <= nt; i++)
     {
       if (multithread.terminate)
 	{PopStatus();return;}
@@ -3060,7 +3064,7 @@ void STLGeometry :: BuildSmoothEdges ()
       ng1 = trig.GeomNormal(points);
       ng1 /= (ng1.Length() + 1e-24);
 
-      for (j = 1; j <= 3; j++)
+      for (int j = 1; j <= 3; j++)
 	{ 
 	  int nbt = NeighbourTrig (i, j);
 	  
@@ -3084,7 +3088,6 @@ void STLGeometry :: BuildSmoothEdges ()
 	    }
 	}
     }
-
   PopStatus();
 }
 

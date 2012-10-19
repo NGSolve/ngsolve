@@ -15,11 +15,9 @@ namespace netgen
 //add a point into a pointlist, return pointnumber
 int AddPointIfNotExists(Array<Point3d>& ap, const Point3d& p, double eps)
 {
-  int i;
-  for (i = 1; i <= ap.Size(); i++)
-    {
-      if (Dist(ap.Get(i),p) <= eps ) {return i;}
-    }
+  for (int i = 1; i <= ap.Size(); i++)
+    if (Dist(ap.Get(i),p) <= eps ) 
+      return i;
   return ap.Append(p);
 }
 
@@ -74,11 +72,8 @@ void FIOReadInt(istream& ios, int& i)
   const int ilen = sizeof(int);
   
   char buf[ilen];
-  int j;
-  for (j = 0; j < ilen; j++)
-    {
-      ios.get(buf[j]);
-    }
+  for (int j = 0; j < ilen; j++)
+    ios.get(buf[j]);
   memcpy(&i, &buf, ilen);
 }
 
@@ -89,11 +84,8 @@ void FIOWriteInt(ostream& ios, const int& i)
   char buf[ilen];
   memcpy(&buf, &i, ilen);
 
-  int j;
-  for (j = 0; j < ilen; j++)
-    {
-      ios << buf[j];
-    }
+  for (int j = 0; j < ilen; j++)
+    ios << buf[j];
 }
 
 void FIOReadDouble(istream& ios, double& i)
@@ -101,11 +93,9 @@ void FIOReadDouble(istream& ios, double& i)
   const int ilen = sizeof(double);
   
   char buf[ilen];
-  int j;
-  for (j = 0; j < ilen; j++)
-    {
-      ios.get(buf[j]);
-    }
+  for (int j = 0; j < ilen; j++)
+    ios.get(buf[j]);
+
   memcpy(&i, &buf, ilen);
 }
 
@@ -116,11 +106,8 @@ void FIOWriteDouble(ostream& ios, const double& i)
   char buf[ilen];
   memcpy(&buf, &i, ilen);
 
-  int j;
-  for (j = 0; j < ilen; j++)
-    {
-      ios << buf[j];
-    }
+  for (int j = 0; j < ilen; j++)
+    ios << buf[j];
 }
 
 void FIOReadFloat(istream& ios, float& i)
@@ -143,40 +130,28 @@ void FIOWriteFloat(ostream& ios, const float& i)
   char buf[ilen];
   memcpy(&buf, &i, ilen);
 
-  int j;
-  for (j = 0; j < ilen; j++)
-    {
-      ios << buf[j];
-     }
+  for (int j = 0; j < ilen; j++)
+    ios << buf[j];
 }
 
 void FIOReadString(istream& ios, char* str, int len)
 {
-  int j;
-  for (j = 0; j < len; j++)
-    {
-      ios.get(str[j]);
-    }
+  for (int j = 0; j < len; j++)
+    ios.get(str[j]);
 }
 
 //read string and add terminating 0
 void FIOReadStringE(istream& ios, char* str, int len)
 {
-  int j;
-  for (j = 0; j < len; j++)
-    {
-      ios.get(str[j]);
-    }
+  for (int j = 0; j < len; j++)
+    ios.get(str[j]);
   str[len] = 0;
 }
 
 void FIOWriteString(ostream& ios, char* str, int len)
 {
-  int j;
-  for (j = 0; j < len; j++)
-    {
-      ios << str[j];
-    }
+  for (int j = 0; j < len; j++)
+    ios << str[j];
 }
 
 
@@ -317,62 +292,58 @@ STLTriangle :: STLTriangle(const int * apts)
 int STLTriangle :: IsNeighbourFrom(const STLTriangle& t) const
 {
   //triangles must have same orientation!!!
-  int i, j;
-  for(i = 0; i <= 2; i++)
-    {
-      for(j = 0; j <= 2; j++)
-	{
-	  if (t.pts[(i+1)%3] == pts[j] &&
-	      t.pts[i] == pts[(j+1)%3])
-	    {return 1;}
-	}
-    }
+
+  for(int i = 0; i <= 2; i++)
+    for(int j = 0; j <= 2; j++)
+      if (t.pts[(i+1)%3] == pts[j] && 
+	  t.pts[i] == pts[(j+1)%3])
+
+	return 1;
+
   return 0;      
 }
 
 int STLTriangle :: IsWrongNeighbourFrom(const STLTriangle& t) const
 {
   //triangles have not same orientation!!!
-  int i, j;
-  for(i = 0; i <= 2; i++)
-    {
-      for(j = 0; j <= 2; j++)
-	{
-	  if (t.pts[(i+1)%3] == pts[(j+1)%3] &&
-	      t.pts[i] == pts[j])
-	    {return 1;}
-	}
-    }
+  for(int i = 0; i <= 2; i++)
+    for(int j = 0; j <= 2; j++)
+      if (t.pts[(i+1)%3] == pts[(j+1)%3] &&
+	  t.pts[i] == pts[j])
+	
+	return 1;
+
   return 0;      
 }
 
 void STLTriangle :: GetNeighbourPoints(const STLTriangle& t, int& p1, int& p2) const
 {
-  int i, j;
-  for(i = 1; i <= 3; i++)
-    {
-      for(j = 1; j <= 3; j++)
+  for(int i = 1; i <= 3; i++)
+    for(int j = 1; j <= 3; j++)
+      if (t.PNumMod(i+1) == PNumMod(j) &&
+	  t.PNumMod(i) == PNumMod(j+1))
 	{
-	  if (t.PNumMod(i+1) == PNumMod(j) &&
-	      t.PNumMod(i) == PNumMod(j+1))
-	    {p1 = PNumMod(j); p2 = PNumMod(j+1); return;}
+	  p1 = PNumMod(j); 
+	  p2 = PNumMod(j+1); 
+	  return;
 	}
-    }
+
   PrintSysError("Get neighbourpoints failed!");
 }
 
 int STLTriangle :: GetNeighbourPointsAndOpposite(const STLTriangle& t, int& p1, int& p2, int& po) const
 {
-  int i, j;
-  for(i = 1; i <= 3; i++)
-    {
-      for(j = 1; j <= 3; j++)
+  for(int i = 1; i <= 3; i++)
+    for(int j = 1; j <= 3; j++)
+      if (t.PNumMod(i+1) == PNumMod(j) &&
+	  t.PNumMod(i) == PNumMod(j+1))
 	{
-	  if (t.PNumMod(i+1) == PNumMod(j) &&
-	      t.PNumMod(i) == PNumMod(j+1))
-	    {p1 = PNumMod(j); p2 = PNumMod(j+1); po = PNumMod(j+2); return 1;}
+	  p1 = PNumMod(j); 
+	  p2 = PNumMod(j+1); 
+	  po = PNumMod(j+2); 
+	  return 1;
 	}
-    }
+  
   return 0;
 }
 
@@ -690,15 +661,12 @@ void STLChart :: AddOuterTrig(int i)
 
 int STLChart :: IsInWholeChart(int nr) const
 {
-  int i;
-  for (i = 1; i <= charttrigs->Size(); i++)
-    {
-      if (charttrigs->Get(i) == nr) {return 1;}
-    }
-  for (i = 1; i <= outertrigs->Size(); i++)
-    {
-      if (outertrigs->Get(i) == nr) {return 1;}
-    }
+  for (int i = 1; i <= charttrigs->Size(); i++)
+    if (charttrigs->Get(i) == nr) return 1;
+
+  for (int i = 1; i <= outertrigs->Size(); i++)
+    if (outertrigs->Get(i) == nr) return 1;
+
   return 0;
 }
 
@@ -712,7 +680,6 @@ void STLChart :: GetTrianglesInBox (const Point3d & pmin,
     searchtree -> GetIntersecting (pmin, pmax, trias);
   else
     {
-      int i;
       Box3d box1(pmin, pmax);
       box1.Increase (1e-4);
       Box3d box2;
@@ -720,9 +687,8 @@ void STLChart :: GetTrianglesInBox (const Point3d & pmin,
       trias.SetSize(0);
       
       int nt = GetNT();
-      for (i = 1; i <= nt; i++)
+      for (int i = 1; i <= nt; i++)
 	{
-
 	  int trignum = GetTrig(i);
 	  const STLTriangle & trig = geometry->GetTriangle(trignum);
 	  box2.SetPoint (geometry->GetPoint (trig.PNum(1)));
@@ -730,9 +696,7 @@ void STLChart :: GetTrianglesInBox (const Point3d & pmin,
 	  box2.AddPoint (geometry->GetPoint (trig.PNum(3)));
 	  
 	  if (box1.Intersect (box2))
-	    {
-	      trias.Append (trignum);
-	    }
+	    trias.Append (trignum);
 	}
     }
 }
@@ -741,8 +705,7 @@ void STLChart :: GetTrianglesInBox (const Point3d & pmin,
 void STLChart :: MoveToOuterChart(const Array<int>& trigs)
 {
   if (!trigs.Size()) {return;}
-  int i;
-  for (i = 1; i <= trigs.Size(); i++)
+  for (int i = 1; i <= trigs.Size(); i++)
     {
       if (charttrigs->Get(trigs.Get(i)) != -1) 
 	{AddOuterTrig(charttrigs->Get(trigs.Get(i)));}
@@ -756,14 +719,13 @@ void STLChart :: DelChartTrigs(const Array<int>& trigs)
 {
   if (!trigs.Size()) {return;}
 
-  int i;
-  for (i = 1; i <= trigs.Size(); i++)
+  for (int i = 1; i <= trigs.Size(); i++)
     {
       charttrigs->Elem(trigs.Get(i)) = -1;
     }
 
   int cnt = 0;
-  for (i = 1; i <= charttrigs->Size(); i++)
+  for (int i = 1; i <= charttrigs->Size(); i++)
     {
       if (charttrigs->Elem(i) == -1)
 	{
@@ -774,7 +736,7 @@ void STLChart :: DelChartTrigs(const Array<int>& trigs)
 	  charttrigs->Elem(i-cnt+1) = charttrigs->Get(i+1);
 	}
     }
-  i = charttrigs->Size() - trigs.Size();
+  int i = charttrigs->Size() - trigs.Size();
   charttrigs->SetSize(i);
 
   if (!geomsearchtreeon && stlparam.usesearchtree == 1)
@@ -784,7 +746,7 @@ void STLChart :: DelChartTrigs(const Array<int>& trigs)
       searchtree = new Box3dTree (geometry->GetBoundingBox().PMin() - Vec3d(1,1,1),
 				  geometry->GetBoundingBox().PMax() + Vec3d(1,1,1));
 
-      for (i = 1; i <= charttrigs->Size(); i++)
+      for (int i = 1; i <= charttrigs->Size(); i++)
 	{
 	  const STLTriangle & trig = geometry->GetTriangle(i);
 	  const Point3d & p1 = geometry->GetPoint (trig.PNum(1));
@@ -1124,7 +1086,6 @@ int STLBoundary :: TestSeg(const Point<3>& p1, const Point<3> & p2, const Vec<3>
 int STLBoundary :: TestSegChartNV(const Point3d & p1, const Point3d& p2, 
 				  const Vec3d& sn)
 {
-  int j;
   int nseg = NOSegments();
 
   Point<2> p2d1 = chart->Project2d (p1);
@@ -1133,57 +1094,35 @@ int STLBoundary :: TestSegChartNV(const Point3d & p1, const Point3d& p2,
   Box<2> box2d;
   box2d.Set (p2d1);
   box2d.Add (p2d2);
-  /*
-  Point2d pmin(p2d1);
-  pmin.SetToMin (p2d2);
-  Point2d pmax(p2d1);
-  pmax.SetToMax (p2d2);
-  */
 
   Line2d l1 (p2d1, p2d2);
 
-  double lam1, lam2;
   double eps = 1e-3;
-  
-  for (j = 1; j <= nseg; j++)
+  bool ok = true;
+
+  for (int j = 1; j <= nseg; j++)
     {
+      if (!ok) continue;
       const STLBoundarySeg & seg = GetSegment(j);
 
-      if (!box2d.Intersect (seg.BoundingBox()))
-	continue;
-      /*
-      if (seg.P2DMin()(0) > pmax(0)) continue;
-      if (seg.P2DMin()(1) > pmax(1)) continue;
-      if (seg.P2DMax()(0) < pmin(0)) continue;
-      if (seg.P2DMax()(1) < pmin(1)) continue;
-      */
-
+      if (!box2d.Intersect (seg.BoundingBox())) continue;
       if (seg.IsSmoothEdge()) continue;
 
       const Point<2> & sp1 = seg.P2D1();
       const Point<2> & sp2 = seg.P2D2();
       
-
       Line2d l2 (sp1, sp2);
+      double lam1, lam2;
       
       int err =
 	CrossPointBarycentric (l1, l2, lam1, lam2);
-      /*
-      if (chartdebug)
-	{
-	  
-	  (*testout) << "lam1 = " << lam1 << ", lam2 = " << lam2 << endl;
-	  (*testout) << "p2d = " << p2d1 << ", " << p2d2 << endl;
-	  (*testout) << "sp2d = " << sp1 << ", " << sp2 << endl;
-	  (*testout) << "i1,2 = " << seg.I1() << ", " << seg.I2() << endl;
-	  
-	}
-      */
+
       if (!err && lam1 > eps && lam1 < 1-eps &&
 	  lam2 > eps && lam2 < 1-eps)
-	return 0;
+	ok = false;
     }
-  return 1;
+
+  return ok;
 }
 
 

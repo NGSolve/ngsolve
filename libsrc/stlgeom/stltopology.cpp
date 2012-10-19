@@ -56,20 +56,20 @@ STLGeometry *  STLTopology :: LoadBinary (istream & ist)
   Point<3> pts[3];
   Vec<3> normal;
 
-  int cntface, j;
-  //int vertex = 0;
-  float f;
   char spaces[nospaces+1];
 
-  for (cntface = 0; cntface < nofacets; cntface++)
+  for (int cntface = 0; cntface < nofacets; cntface++)
     {
-      if (cntface % 10000 == 9999) { PrintDot(); } 
+      if (cntface % 10000 == 0)
+	// { PrintDot(); } 
+	PrintMessageCR (3, cntface, " triangles loaded\r");
 
+      float f;
       FIOReadFloat(ist,f); normal(0) = f;
       FIOReadFloat(ist,f); normal(1) = f;
       FIOReadFloat(ist,f); normal(2) = f;
       
-      for (j = 0; j < 3; j++)
+      for (int j = 0; j < 3; j++)
 	{
 	  FIOReadFloat(ist,f); pts[j](0) = f;
 	  FIOReadFloat(ist,f); pts[j](1) = f;
@@ -79,7 +79,7 @@ STLGeometry *  STLTopology :: LoadBinary (istream & ist)
       readtrigs.Append (STLReadTriangle (pts, normal));
       FIOReadString(ist,spaces,nospaces);
     }	    
-  
+  PrintMessage (3, nofacets, " triangles loaded\r");  
 
   geom->InitSTLGeometry(readtrigs);
 
@@ -337,7 +337,6 @@ void STLTopology :: Save (const char* filename) const
 
 STLGeometry *  STLTopology ::Load (istream & ist)
 {
-  size_t i;
   STLGeometry * geom = new STLGeometry();
 
   Array<STLReadTriangle> readtrigs;
@@ -348,14 +347,14 @@ STLGeometry *  STLTopology ::Load (istream & ist)
 
   int cntface = 0;
   int vertex = 0;
-  bool badnormals = 0;
+  bool badnormals = false;
 
   while (ist.good())
     {
       ist >> buf;
 
-      size_t n = strlen (buf);
-      for (i = 0; i < n; i++)
+      int n = strlen (buf);
+      for (int i = 0; i < n; i++)
 	buf[i] = tolower (buf[i]);
 
       if (strcmp (buf, "facet") == 0)
@@ -391,14 +390,11 @@ STLGeometry *  STLTopology ::Load (istream & ist)
 	      else
 
 		{
-		  Vec<3> hnormal;
-		  hnormal = Cross (pts[1]-pts[0], pts[2]-pts[0]);
+		  Vec<3> hnormal = Cross (pts[1]-pts[0], pts[2]-pts[0]);
 		  hnormal.Normalize();
 
 		  if (normal * hnormal < 0.5)
-		    {
-		      badnormals = 1;
-		    }
+		    badnormals = true;
 		}
 
 	      vertex = 0;
@@ -407,11 +403,18 @@ STLGeometry *  STLTopology ::Load (istream & ist)
 		   (Dist2 (pts[0], pts[2]) > 1e-16) &&
 		   (Dist2 (pts[1], pts[2]) > 1e-16) )
 		
-		readtrigs.Append (STLReadTriangle (pts, normal));
+		{
+		  readtrigs.Append (STLReadTriangle (pts, normal));
+
+		  if (readtrigs.Size() % 100000 == 0)
+		    PrintMessageCR (3, readtrigs.Size(), " triangles loaded\r");
+		}
+
 	    }
 	}
     }
-  
+  PrintMessage (3, readtrigs.Size(), " triangles loaded");
+
   if (badnormals) 
     {
       PrintWarning("File has normal vectors which differ extremly from geometry->correct with stldoctor!!!");
@@ -435,8 +438,6 @@ STLGeometry *  STLTopology ::Load (istream & ist)
 
 void STLTopology :: InitSTLGeometry(const Array<STLReadTriangle> & readtrigs)
 {
-  int i, k;
-  
   // const double geometry_tol_fact = 1E6; 
   // distances lower than max_box_size/tol are ignored
 
@@ -445,13 +446,12 @@ void STLTopology :: InitSTLGeometry(const Array<STLReadTriangle> & readtrigs)
 
   PrintMessage(3,"number of triangles = ", readtrigs.Size());
 
-  if (!readtrigs.Size())
-    return;
+  if (!readtrigs.Size()) return;
   
 
   boundingbox.Set (readtrigs[0][0]);
-  for (i = 0; i < readtrigs.Size(); i++)
-    for (k = 0; k < 3; k++)
+  for (int i = 0; i < readtrigs.Size(); i++)
+    for (int k = 0; k < 3; k++)
       boundingbox.Add (readtrigs[i][k]);
   
   PrintMessage(5,"boundingbox: ", Point3d(boundingbox.PMin()), " - ", 
@@ -462,21 +462,20 @@ void STLTopology :: InitSTLGeometry(const Array<STLReadTriangle> & readtrigs)
 
   pointtree = new Point3dTree (bb.PMin(), bb.PMax());
 
-
-
   Array<int> pintersect;
 
   pointtol = boundingbox.Diam() * stldoctor.geom_tol_fact;
   PrintMessage(5,"point tolerance = ", pointtol);
+  PrintMessageCR(5,"identify points ...");  
 
-  for(i = 0; i < readtrigs.Size(); i++)
+  for(int i = 0; i < readtrigs.Size(); i++)
     {
       const STLReadTriangle & t = readtrigs[i];
+
       STLTriangle st;
-      // Vec<3> n = t.Normal();
       st.SetNormal (t.Normal());
 
-      for (k = 0; k < 3; k++)
+      for (int k = 0; k < 3; k++)
 	{
 	  Point<3> p = t[k];
 
@@ -511,7 +510,7 @@ void STLTopology :: InitSTLGeometry(const Array<STLReadTriangle> & readtrigs)
 	}
       
     } 
-
+  PrintMessage(5,"identify points ... done");  
   FindNeighbourTrigs();
 }
 
@@ -540,23 +539,22 @@ void STLTopology :: FindNeighbourTrigs()
 
   PushStatusF("Find Neighbour Triangles");
 
-  int i, j, k, l;
+  PrintMessage(5,"build topology ...");
 
   // build up topology tables
 
-  //int np = GetNP();
   int nt = GetNT();
 
   INDEX_2_HASHTABLE<int> * oldedges = ht_topedges;
   ht_topedges = new INDEX_2_HASHTABLE<int> (GetNP()+1);
   topedges.SetSize(0);
   
-  for (i = 1; i <= nt; i++)
+  for (int i = 1; i <= nt; i++)
     {
       STLTriangle & trig = GetTriangle(i);
 
 
-      for (j = 1; j <= 3; j++)
+      for (int j = 1; j <= 3; j++)
 	{
 	  int pi1 = trig.PNumMod (j+1);
 	  int pi2 = trig.PNumMod (j+2);
@@ -577,7 +575,7 @@ void STLTopology :: FindNeighbourTrigs()
 
 	      trig.NBTrigNum(j) = othertn;
 	      trig.EdgeNum(j) = enr;
-	      for (k = 1; k <= 3; k++)
+	      for (int k = 1; k <= 3; k++)
 		if (othertrig.EdgeNum(k) == enr)
 		  othertrig.NBTrigNum(k) = i;
 	    }
@@ -596,11 +594,11 @@ void STLTopology :: FindNeighbourTrigs()
   topology_ok = 1;
   int ne = GetNTE();
 
-  for (i = 1; i <= nt; i++)
+  for (int i = 1; i <= nt; i++)
     GetTriangle(i).flags.toperror = 0;
 
-  for (i = 1; i <= nt; i++)
-    for (j = 1; j <= 3; j++)
+  for (int i = 1; i <= nt; i++)
+    for (int j = 1; j <= 3; j++)
       {
 	const STLTopEdge & edge = GetTopEdge (GetTriangle(i).EdgeNum(j));
 	if (edge.TrigNum(1) != i && edge.TrigNum(2) != i)
@@ -610,7 +608,7 @@ void STLTopology :: FindNeighbourTrigs()
 	  }
       }
 
-  for (i = 1; i <= ne; i++)
+  for (int i = 1; i <= ne; i++)
     {
       const STLTopEdge & edge = GetTopEdge (i);
       if (!edge.TrigNum(2))
@@ -623,10 +621,10 @@ void STLTopology :: FindNeighbourTrigs()
   if (topology_ok)
     {
       orientation_ok = 1;
-      for (i = 1; i <= nt; i++)
+      for (int i = 1; i <= nt; i++)
 	{
 	  const STLTriangle & t = GetTriangle (i);
-	  for (j = 1; j <= 3; j++)
+	  for (int j = 1; j <= 3; j++)
 	    {
 	      const STLTriangle & nbt = GetTriangle (t.NBTrigNum(j));
 	      if (!t.IsNeighbourFrom (nbt))
@@ -658,8 +656,8 @@ void STLTopology :: FindNeighbourTrigs()
   // generate point -> trig table
 
   trigsperpoint.SetSize(GetNP());
-  for (i = 1; i <= GetNT(); i++)
-    for (j = 1; j <= 3; j++)
+  for (int i = 1; i <= GetNT(); i++)
+    for (int j = 1; j <= 3; j++)
       trigsperpoint.Add1(GetTriangle(i).PNum(j),i);
 
 
@@ -674,8 +672,8 @@ void STLTopology :: FindNeighbourTrigs()
     }
   */
   topedgesperpoint.SetSize (GetNP());
-  for (i = 1; i <= ne; i++)
-    for (j = 1; j <= 2; j++)
+  for (int i = 1; i <= ne; i++)
+    for (int j = 1; j <= 2; j++)
       topedgesperpoint.Add1 (GetTopEdge (i).PNum(j), i);
 
   PrintMessage(5,"point -> trig table generated");
@@ -691,7 +689,7 @@ void STLTopology :: FindNeighbourTrigs()
   for (STLTrigIndex ti = 0; ti < GetNT(); ti++)
     {
       STLTriangle & trig = trias[ti];
-      for (k = 0; k < 3; k++)
+      for (int k = 0; k < 3; k++)
 	{
 	  STLPointIndex pi = trig[k] - STLBASE;
 	  STLPointIndex pi2 = trig[(k+1)%3] - STLBASE;
@@ -711,7 +709,7 @@ void STLTopology :: FindNeighbourTrigs()
 
 	  double phimin = 10, phimax = -1; // out of (0, 2 pi)
 
-	  for (j = 0; j < trigsperpoint[pi].Size(); j++)
+	  for (int j = 0; j < trigsperpoint[pi].Size(); j++)
 	    {
 	      STLTrigIndex ti2 = trigsperpoint[pi][j] - STLBASE;
 	      const STLTriangle & trig2 = trias[ti2];
@@ -719,7 +717,7 @@ void STLTopology :: FindNeighbourTrigs()
 	      if (ti == ti2) continue;
 	      
 	      bool hasboth = 0;
-	      for (l = 0; l < 3; l++)
+	      for (int l = 0; l < 3; l++)
 		if (trig2[l] - STLBASE == pi2)
 		  {
 		    hasboth = 1;
@@ -728,7 +726,7 @@ void STLTopology :: FindNeighbourTrigs()
 	      if (!hasboth) continue;
 
 	      STLPointIndex pi4(0);
-	      for (l = 0; l < 3; l++)
+	      for (int l = 0; l < 3; l++)
 		if (trig2[l] - STLBASE != pi && trig2[l] - STLBASE != pi2)
 		  pi4 = trig2[l] - STLBASE;
 
@@ -758,8 +756,8 @@ void STLTopology :: FindNeighbourTrigs()
     {
       // for compatibility:
       neighbourtrigs.SetSize(GetNT());
-      for (i = 1; i <= GetNT(); i++)
-	for (k = 1; k <= 3; k++)
+      for (int i = 1; i <= GetNT(); i++)
+	for (int k = 1; k <= 3; k++)
 	  AddNeighbourTrig (i, GetTriangle(i).NBTrigNum(k));
     }
   else
@@ -770,7 +768,7 @@ void STLTopology :: FindNeighbourTrigs()
 
       int tr, found;
       int wrongneighbourfound = 0;
-      for (i = 1; i <= GetNT(); i++)
+      for (int i = 1; i <= GetNT(); i++)
 	{
 	  SetThreadPercent((double)i/(double)GetNT()*100.);
 	  if (multithread.terminate)
@@ -779,9 +777,9 @@ void STLTopology :: FindNeighbourTrigs()
 	      return;
 	    }
 	  
-	  for (k = 1; k <= 3; k++)
+	  for (int k = 1; k <= 3; k++)
 	    {
-	      for (j = 1; j <= trigsperpoint.EntrySize(GetTriangle(i).PNum(k)); j++)
+	      for (int j = 1; j <= trigsperpoint.EntrySize(GetTriangle(i).PNum(k)); j++)
 		{
 		  tr = trigsperpoint.Get(GetTriangle(i).PNum(k),j);
 		  if (i != tr && (GetTriangle(i).IsNeighbourFrom(GetTriangle(tr))
