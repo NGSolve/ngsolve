@@ -87,7 +87,7 @@ public:
   ///
   void PrintStat (ostream & ost) const;
   void BaseSetSize(int s) {hash.SetSize(s);}
-protected:
+  //protected:
   ///
   int HashValue (const INDEX_2 & ind) const
     {
@@ -96,8 +96,7 @@ protected:
   ///
   int Position (int bnr, const INDEX_2 & ind) const
   {
-    int i;
-    for (i = 1; i <= hash.EntrySize (bnr); i++)
+    for (int i = 1; i <= hash.EntrySize (bnr); i++)
       if (hash.Get(bnr, i) == ind)
 	return i;
     return 0;
@@ -150,7 +149,7 @@ public:
   ///
   bool Used (const INDEX_2 & ahash) const
   {
-    return (Position (HashValue (ahash), ahash)) ? 1 : 0;
+    return Position (HashValue (ahash), ahash) > 0;
   }
  ///
   int GetNBags () const

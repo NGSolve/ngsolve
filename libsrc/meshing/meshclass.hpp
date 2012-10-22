@@ -676,6 +676,45 @@ namespace netgen
     const class AnisotropicClusters & GetClusters () const
     { return *clusters; }
 
+
+    class CSurfaceArea
+    {
+      const Mesh & mesh;
+      bool valid;
+      double area;
+    public:
+      CSurfaceArea (const Mesh & amesh) 
+	: mesh(amesh), valid(false) { ; }
+
+      void Add (const Element2d & sel)
+      {
+	if (sel.GetNP() == 3)
+	  area += Cross ( mesh[sel[1]]-mesh[sel[0]],
+			  mesh[sel[2]]-mesh[sel[0]] ).Length() / 2;
+	else
+	  area += Cross (Vec3d (mesh.Point (sel.PNum(1)),
+				mesh.Point (sel.PNum(3))),
+			 Vec3d (mesh.Point (sel.PNum(1)),
+				mesh.Point (sel.PNum(4)))).Length() / 2;;
+      }
+      void ReCalc ()
+      {
+	area = 0;
+	for (SurfaceElementIndex sei = 0; sei < mesh.GetNSE(); sei++)
+	  Add (mesh[sei]);
+	valid = true;
+      }
+
+      operator double () const { return area; }
+      bool Valid() const { return valid; }
+    };
+
+    CSurfaceArea surfarea;
+    CSurfaceArea & SurfaceArea() { return surfarea; }
+    const CSurfaceArea & SurfaceArea() const { return surfarea; }
+
+
+
     int GetTimeStamp() const { return timestamp; }
     void SetNextTimeStamp() 
     { timestamp = NextTimeStamp(); }

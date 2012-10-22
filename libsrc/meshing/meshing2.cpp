@@ -200,8 +200,15 @@ namespace netgen
     static int timer1 = NgProfiler::CreateTimer ("surface meshing1");
     static int timer2 = NgProfiler::CreateTimer ("surface meshing2");
     static int timer3 = NgProfiler::CreateTimer ("surface meshing3");
+
+    static int ts1 = NgProfiler::CreateTimer ("surface meshing start 1");
+    static int ts2 = NgProfiler::CreateTimer ("surface meshing start 2");
+    static int ts3 = NgProfiler::CreateTimer ("surface meshing start 3");
+
+
     NgProfiler::RegionTimer reg (timer);
 
+    NgProfiler::StartTimer (ts1);
 
     Array<int> pindex, lindex;
     Array<int> delpoints, dellines;
@@ -267,7 +274,6 @@ namespace netgen
     trigsonnode = 0;
     illegalpoint = 0;
   
-
     double totalarea = Area ();
     double meshedarea = 0;
 
@@ -302,14 +308,15 @@ namespace netgen
 	box.Set ( mesh[sel[0]] );
 	box.Add ( mesh[sel[1]] );
 	box.Add ( mesh[sel[2]] );
-	// surfeltree.Insert (box, i);
 	surfeltree.Insert (box, seia[i]);
       }
 
-
-
+    NgProfiler::StopTimer (ts1);
+    NgProfiler::StartTimer (ts2);
 
     if (totalarea > 0 || maxarea > 0)
+      meshedarea = mesh.SurfaceArea();
+      /*
       for (SurfaceElementIndex sei = 0; sei < mesh.GetNSE(); sei++)
 	{
 	  const Element2d & sel = mesh[sei];
@@ -326,9 +333,12 @@ namespace netgen
 				      mesh.Point (sel.PNum(4)))).Length() / 2;;
 	  meshedarea += trigarea;
 	}
+      */
+      // cout << "meshedarea = " << meshedarea << " =?= " 
+      // << mesh.SurfaceArea() << endl;
 
-
-
+    NgProfiler::StopTimer (ts2);
+    NgProfiler::StartTimer (ts3);
 
     const char * savetask = multithread.task;
     multithread.task = "Surface meshing";
@@ -340,6 +350,7 @@ namespace netgen
 
     double meshedarea_before = meshedarea;
 
+    NgProfiler::StopTimer (ts3);
 
     while (!adfront ->Empty() && !multithread.terminate)
       {

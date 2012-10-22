@@ -26,8 +26,17 @@
 
 namespace netgen
 {
-  extern int IsInArray(int n, const Array<int>& ia);
-  extern int AddIfNotExists(Array<int>& list, int x);
+  inline int IsInArray(int n, const Array<int>& ia)
+  {
+    return ia.Contains(n); 
+  }
+
+  inline bool AddIfNotExists(Array<int>& list, int x)
+  {
+    if (list.Contains(x)) return false;
+    list.Append(x);
+    return true;
+  }
   
   extern DLL_HEADER MeshingParameters mparam;
   
@@ -166,6 +175,7 @@ namespace netgen
     Array<STLLine*> meshlines;
     Array<Point3d> meshpoints;
 
+    double area;
   public:
     STLGeometry();
     virtual ~STLGeometry();

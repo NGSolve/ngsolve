@@ -568,7 +568,6 @@ namespace netgen
 	faceindex = 0;
 	return;
       }
- 
 
     static int timer = NgProfiler::CreateTimer ("MeshSmoothing 2D");
     static int timer1 = NgProfiler::CreateTimer ("MeshSmoothing 2D start");
@@ -580,7 +579,6 @@ namespace netgen
 
     Opti2dLocalData ld;
 
-    // SurfaceElementIndex sei;
 
     Array<SurfaceElementIndex> seia;
     mesh.GetSurfaceElementsOfFace (faceindex, seia);
@@ -593,23 +591,48 @@ namespace netgen
 	  break;
 	}
 
-    int loci;
-    double fact;
-    int moveisok;
-
-    PointGeomInfo ngi;
-    Point3d origp;
-
-
-
-    Vec3d n1, n2;
-    Vector x(2), xedge(1);
+    Vector x(2);
 
     Array<MeshPoint, PointIndex::BASE> savepoints(mesh.GetNP());
 
     ld.uselocalh = mp.uselocalh;
 
+    Array<int, PointIndex::BASE> compress(mesh.GetNP());
+    Array<PointIndex> icompress;
+    for (int i = 0; i < seia.Size(); i++)
+      {
+	const Element2d & el = mesh[seia[i]];
+	for (int j = 0; j < el.GetNP(); j++)
+	  compress[el[j]] = -1;
+      }
+    for (int i = 0; i < seia.Size(); i++)
+      {
+	const Element2d & el = mesh[seia[i]];
+	for (int j = 0; j < el.GetNP(); j++)
+	  if (compress[el[j]] == -1)
+	    {
+	      compress[el[j]] = icompress.Size();
+	      icompress.Append(el[j]);
+	    }
+      }
+    Array<int> cnta(icompress.Size());
+    cnta = 0;
+    for (int i = 0; i < seia.Size(); i++)
+      {
+	const Element2d & el = mesh[seia[i]];
+	for (int j = 0; j < el.GetNP(); j++)
+	  cnta[compress[el[j]]]++;
+      }
+    TABLE<SurfaceElementIndex> elementsonpoint(cnta);
+    for (int i = 0; i < seia.Size(); i++)
+      {
+	const Element2d & el = mesh[seia[i]];
+	for (int j = 0; j < el.GetNP(); j++)
+	  elementsonpoint.Add (compress[el[j]], seia[i]);
+      }
 
+    
+    /*
     Array<int, PointIndex::BASE> nelementsonpoint(mesh.GetNP());
     nelementsonpoint = 0;
     for (int i = 0; i < seia.Size(); i++)
@@ -627,6 +650,8 @@ namespace netgen
 	for (int j = 0; j < el.GetNP(); j++)
 	  elementsonpoint.Add (el[j], seia[i]);
       }
+    */
+    
 
 
     ld.loch = mp.maxh;
@@ -645,7 +670,7 @@ namespace netgen
 
     /*
     int i, j, k;
-
+    Vector xedge(1);
       if (improveedges)
       for (i = 1; i <= mesh.GetNP(); i++)
       if (mesh.PointType(i) == EDGEPOINT)
@@ -695,6 +720,7 @@ namespace netgen
 	  
       if (surfi2 && !surfi3)
       {
+      Vec3d n1, n2;
       GetNormalVector (surfi, sp1, n1);
       GetNormalVector (surfi2, sp1, n2);
       t1 = Cross (n1, n2);
@@ -717,77 +743,87 @@ namespace netgen
     if (mesh.GetNP() > 1000)
       {
 	plotchar = '+';
-	modplot = 10;
+	modplot = 100;
       }
     if (mesh.GetNP() > 10000)
       {
 	plotchar = 'o';
-	modplot = 100;
+	modplot = 1000;
+      }
+    if (mesh.GetNP() > 100000)
+      {
+	plotchar = 'O';
+	modplot = 10000;
       }
     int cnt = 0;
 
 
     NgProfiler::StopTimer (timer1);
 
-
+    /*
     for (PointIndex pi = PointIndex::BASE; pi < mesh.GetNP()+PointIndex::BASE; pi++)
       if (mesh[pi].Type() == SURFACEPOINT)
-	{
-	  if (multithread.terminate)
-	    throw NgException ("Meshing stopped");
-	
-	  cnt++;
-	  if (cnt % modplot == 0 && writestatus)
-	    {
-	      printeddot = 1;
-	      PrintDot (plotchar);
-	    }
-
-	  if (elementsonpoint[pi].Size() == 0)
-	    continue;
-
-	
-	  ld.sp1 = mesh[pi];
-
-	  Element2d & hel = mesh[elementsonpoint[pi][0]];
-
-	  int hpi = 0;
-	  for (int j = 1; j <= hel.GetNP(); j++)
-	    if (hel.PNum(j) == pi)
+    */
+    for (int hi = 0; hi < icompress.Size(); hi++)
+      {
+	PointIndex pi = icompress[hi];
+	if (mesh[pi].Type() == SURFACEPOINT)
+	  {
+	    if (multithread.terminate)
+	      throw NgException ("Meshing stopped");
+	    
+	    cnt++;
+	    if (cnt % modplot == 0 && writestatus)
 	      {
-		hpi = j;
-		break;
+		printeddot = 1;
+		PrintDot (plotchar);
 	      }
-
-	  ld.gi1 = hel.GeomInfoPi(hpi);
-	  SelectSurfaceOfPoint (ld.sp1, ld.gi1);
-	  
-	  ld.locelements.SetSize(0);
-	  ld.locrots.SetSize (0);
-	  ld.lochs.SetSize (0);
+	    
+	    // if (elementsonpoint[pi].Size() == 0) continue;
+	    if (elementsonpoint[hi].Size() == 0) continue;
 	
-	  for (int j = 0; j < elementsonpoint[pi].Size(); j++)
-	    {
-	      SurfaceElementIndex sei = elementsonpoint[pi][j];
-	      const Element2d & bel = mesh[sei];
-	      ld.surfi = mesh.GetFaceDescriptor(bel.GetIndex()).SurfNr();
+	    ld.sp1 = mesh[pi];
 	    
-	      ld.locelements.Append (sei);
+	    // Element2d & hel = mesh[elementsonpoint[pi][0]];
+	    Element2d & hel = mesh[elementsonpoint[hi][0]];
 	    
-	      for (int k = 1; k <= bel.GetNP(); k++)
-		if (bel.PNum(k) == pi)
-		  {
-		    ld.locrots.Append (k);
-		    break;
-		  }
-	      
-	      if (ld.uselocalh)
+	    int hpi = 0;
+	    for (int j = 1; j <= hel.GetNP(); j++)
+	      if (hel.PNum(j) == pi)
 		{
-		  Point3d pmid = Center (mesh[bel[0]], mesh[bel[1]], mesh[bel[2]]);
-		  ld.lochs.Append (mesh.GetH(pmid));
+		  hpi = j;
+		  break;
 		}
-	    }
+
+	    ld.gi1 = hel.GeomInfoPi(hpi);
+	    SelectSurfaceOfPoint (ld.sp1, ld.gi1);
 	  
+	    ld.locelements.SetSize(0);
+	    ld.locrots.SetSize (0);
+	    ld.lochs.SetSize (0);
+	
+	    for (int j = 0; j < elementsonpoint[hi].Size(); j++)
+	      {
+		SurfaceElementIndex sei = elementsonpoint[hi][j];
+		const Element2d & bel = mesh[sei];
+		ld.surfi = mesh.GetFaceDescriptor(bel.GetIndex()).SurfNr();
+		
+		ld.locelements.Append (sei);
+		
+		for (int k = 1; k <= bel.GetNP(); k++)
+		  if (bel.PNum(k) == pi)
+		    {
+		      ld.locrots.Append (k);
+		      break;
+		    }
+		
+		if (ld.uselocalh)
+		  {
+		    Point3d pmid = Center (mesh[bel[0]], mesh[bel[1]], mesh[bel[2]]);
+		    ld.lochs.Append (mesh.GetH(pmid));
+		  }
+	      }
+	    
 	  GetNormalVector (ld.surfi, ld.sp1, ld.gi1, ld.normal);
 	  ld.t1 = ld.normal.GetNormal ();
 	  ld.t2 = Cross (ld.normal, ld.t1);
@@ -830,10 +866,10 @@ namespace netgen
 	    }
 
 	
-	  origp = mesh[pi];
-	  loci = 1;
-	  fact = 1;
-	  moveisok = 0;
+	  Point3d origp = mesh[pi];
+	  int loci = 1;
+	  double fact = 1;
+	  int moveisok = 0;
 
 	  // restore other points
 	  for (int j = 0; j < ld.locelements.Size(); j++)
@@ -867,6 +903,7 @@ namespace netgen
 	      // ProjectPoint (surfi, mesh[pi]);
 	      // moveisok = CalcPointGeomInfo(surfi, ngi, mesh[pi]); 
 
+	      PointGeomInfo ngi;
 	      ngi = ld.gi1;
 	      moveisok = ProjectPointGI (ld.surfi, mesh[pi], ngi);
 	      // point lies on same chart in stlsurface
@@ -883,10 +920,10 @@ namespace netgen
 	    
 	    }
 	}
-
+      }
     if (printeddot)
       PrintDot ('\n');
-  
+
     CheckMeshApproximation (mesh);
     mesh.SetNextTimeStamp();
   }

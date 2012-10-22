@@ -297,16 +297,13 @@ void STLGeometry :: PrepareSurfaceMeshing()
 {
   meshchart = -1; //clear no old chart
   meshcharttrigs.SetSize(GetNT());
-  int i;
-  for (i = 1; i <= GetNT(); i++) 
-    {meshcharttrigs.Elem(i) = 0;}
+  meshcharttrigs = 0;
 }
 
 void STLGeometry::GetMeshChartBoundary (Array<Point2d > & apoints,
 					Array<Point3d > & points3d,
 					Array<INDEX_2> & alines, double h)
 {
-  int i, j;
   twoint seg, newseg;
   int zone;
   Point<2> p2;
@@ -314,11 +311,11 @@ void STLGeometry::GetMeshChartBoundary (Array<Point2d > & apoints,
   const STLChart& chart = GetChart(meshchart);
 
 
-  for (i = 1; i <= chart.GetNOLimit(); i++)
+  for (int i = 1; i <= chart.GetNOLimit(); i++)
     {
       seg = chart.GetOLimit(i);
       INDEX_2 i2;
-      for (j = 1; j <= 2; j++)
+      for (int j = 1; j <= 2; j++)
 	{
 	  int pi = (j == 1) ? seg.i1 : seg.i2;
 	  int lpi;
@@ -358,7 +355,7 @@ void STLGeometry::GetMeshChartBoundary (Array<Point2d > & apoints,
       */
     }
 
-  for (i = 1; i <= chart.GetNOLimit(); i++)
+  for (int i = 1; i <= chart.GetNOLimit(); i++)
     {
       seg = chart.GetOLimit(i);
       ha_points.Elem(seg.i1) = 0;
@@ -1071,12 +1068,9 @@ void STLGeometry :: RestrictLocalH(class Mesh & mesh, double gh)
 
       //berechne minimale distanz von chart zu einem nicht-outerchart-punkt in jedem randpunkt einer chart
       
-      Array<int> acttrigs; //outercharttrigs
-      acttrigs.SetSize(GetNT());
-      for (i = 1; i <= GetNT(); i++)
-	{
-	  acttrigs.Elem(i) = 0;
-	}
+      Array<int> acttrigs(GetNT()); //outercharttrigs
+      acttrigs = 0;
+
       for (i = 1; i <= GetNOCharts(); i++)
 	{
 	  SetThreadPercent((double)i/(double)GetNOCharts()*100.);
@@ -1087,6 +1081,7 @@ void STLGeometry :: RestrictLocalH(class Mesh & mesh, double gh)
 	}
       
       PopStatus();
+      NgProfiler::Print(stdout);
     }
 
   if (stlparam.resthlinelengthenable)
@@ -1124,13 +1119,14 @@ void STLGeometry :: RestrictLocalH(class Mesh & mesh, double gh)
 void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrigs, 
 					       class Mesh & mesh, double gh, double fact, double minh)
 {
-  int i = chartnum;
-  int j;
+  static int timer1 = NgProfiler::CreateTimer ("restrictH OneChart 1");
+  static int timer2 = NgProfiler::CreateTimer ("restrictH OneChart 2");
+  static int timer3 = NgProfiler::CreateTimer ("restrictH OneChart 3");
 
+  NgProfiler::StartTimer (timer1);
   double limessafety = stlparam.resthchartdistfac*fact;  // original: 2
   double localh;
 
-  double f1,f2;
   //  mincalch = 1E10;
   //maxcalch = -1E10;  
   Array<int> limes1;
@@ -1146,8 +1142,8 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
 
   int divisions = 10;
 	  
-  int k, t, nt, np1, np2;
-  Point3d p3p1, p3p2;
+  int np1, np2;
+  // Point3d p3p1, p3p2;
   STLTriangle tt;
       
   limes1.SetSize(0);
@@ -1158,24 +1154,24 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
   plimes2trigs.SetSize(0);
   plimes1origin.SetSize(0);
 
-  STLChart& chart = GetChart(i);
+  STLChart& chart = GetChart(chartnum);
   chart.ClearOLimit();
   chart.ClearILimit();
 
-  for (j = 1; j <= chart.GetNChartT(); j++)
+  for (int j = 1; j <= chart.GetNChartT(); j++)
     {
-      t = chart.GetChartTrig(j); 
+      int t = chart.GetChartTrig(j); 
       tt = GetTriangle(t);
-      for (k = 1; k <= 3; k++)
+      for (int k = 1; k <= 3; k++)
 	{
-	  nt = NeighbourTrig(t,k); 
-	  if (GetChartNr(nt) != i)
+	  int nt = NeighbourTrig(t,k); 
+	  if (GetChartNr(nt) != chartnum)
 	    {	      
 	      tt.GetNeighbourPoints(GetTriangle(nt),np1,np2);
 	      if (!IsEdge(np1,np2) && !GetSpiralPoint(np1) && !GetSpiralPoint(np2))
 		{
-		  p3p1 = GetPoint(np1);
-		  p3p2 = GetPoint(np2);
+		  Point3d p3p1 = GetPoint(np1);
+		  Point3d p3p2 = GetPoint(np2);
 		  if (AddIfNotExists(limes1,np1)) 
 		    {
 		      plimes1.Append(p3p1); 
@@ -1192,8 +1188,8 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
 
 		  for (int di = 1; di <= divisions; di++)
 		    {
-		      f1 = (double)di/(double)(divisions+1.);
-		      f2 = (divisions+1.-(double)di)/(double)(divisions+1.);
+		      double f1 = (double)di/(double)(divisions+1.);
+		      double f2 = (divisions+1.-(double)di)/(double)(divisions+1.);
 			      
 		      plimes1.Append(Point3d(p3p1.X()*f1+p3p2.X()*f2,
 					     p3p1.Y()*f1+p3p2.Y()*f2,
@@ -1206,28 +1202,27 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
 	}
     }
 	  
-	 
-  for (j = 1; j <= chart.GetNT(); j++)
-    {
-      acttrigs.Elem(chart.GetTrig(j)) = i;
-    }
-	  
-  for (j = 1; j <= chart.GetNOuterT(); j++)
-    {
-      t = chart.GetOuterTrig(j); 
-      tt = GetTriangle(t);
-      for (k = 1; k <= 3; k++)
-	{
-	  nt = NeighbourTrig(t,k);
+  NgProfiler::StopTimer (timer1);	 
 
-	  if (acttrigs.Get(nt) != i)
+  NgProfiler::StartTimer (timer2);	 
+  for (int j = 1; j <= chart.GetNT(); j++)
+    acttrigs.Elem(chart.GetTrig(j)) = chartnum;
+
+  for (int j = 1; j <= chart.GetNOuterT(); j++)
+    {
+      int t = chart.GetOuterTrig(j); 
+      tt = GetTriangle(t);
+      for (int k = 1; k <= 3; k++)
+	{
+	  int nt = NeighbourTrig(t,k);
+	  if (acttrigs.Get(nt) != chartnum)
 	    {
 	      tt.GetNeighbourPoints(GetTriangle(nt),np1,np2);
 		      
 	      if (!IsEdge(np1,np2))
 		{
-		  p3p1 = GetPoint(np1);
-		  p3p2 = GetPoint(np2);
+		  Point3d p3p1 = GetPoint(np1);
+		  Point3d p3p2 = GetPoint(np2);
 			  
 		  if (AddIfNotExists(limes2,np1)) {plimes2.Append(p3p1); plimes2trigs.Append(t);}
 		  if (AddIfNotExists(limes2,np2)) {plimes2.Append(p3p2); plimes2trigs.Append(t);}
@@ -1235,8 +1230,8 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
 
 		  for (int di = 1; di <= divisions; di++)
 		    {
-		      f1 = (double)di/(double)(divisions+1.);
-		      f2 = (divisions+1.-(double)di)/(double)(divisions+1.);
+		      double f1 = (double)di/(double)(divisions+1.);
+		      double f2 = (divisions+1.-(double)di)/(double)(divisions+1.);
 			      
 		      plimes2.Append(Point3d(p3p1.X()*f1+p3p2.X()*f2,
 					     p3p1.Y()*f1+p3p2.Y()*f2,
@@ -1248,24 +1243,25 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
 	}
     }
 	  
-	  
+  NgProfiler::StopTimer (timer2);	 
+  NgProfiler::StartTimer (timer3);	 	  
+
   double chartmindist = 1E50;
 
   if (plimes2.Size())
     {
       Box3d bbox;
       bbox.SetPoint (plimes2.Get(1));
-      for (j = 2; j <= plimes2.Size(); j++)
+      for (int j = 2; j <= plimes2.Size(); j++)
 	bbox.AddPoint (plimes2.Get(j));
       Point3dTree stree(bbox.PMin(), bbox.PMax());
-      for (j = 1; j <= plimes2.Size(); j++)
+      for (int j = 1; j <= plimes2.Size(); j++)
 	stree.Insert (plimes2.Get(j), j);
       Array<int> foundpts;
 	  
-      for (j = 1; j <= plimes1.Size(); j++)
+      for (int j = 1; j <= plimes1.Size(); j++)
 	{
 	  double mindist = 1E50;
-	  double dist;
 
 	  const Point3d & ap1 = plimes1.Get(j);
 	  double boxs = mesh.GetH (plimes1.Get(j)) * limessafety;
@@ -1278,12 +1274,9 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
 
 	  for (int kk = 1; kk <= foundpts.Size(); kk++)
 	    {
-	      k = foundpts.Get(kk);
-	      dist = Dist2(plimes1.Get(j),plimes2.Get(k));
-	      if (dist < mindist) 
-		{
-		  mindist = dist;
-		}
+	      int k = foundpts.Get(kk);
+	      double dist = Dist2(plimes1.Get(j),plimes2.Get(k));
+	      if (dist < mindist) mindist = dist;
 	    }
 
 	  /*
@@ -1325,7 +1318,7 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
 	    }
 	}
     }
-
+  NgProfiler::StopTimer (timer3);	 
 }
 
 

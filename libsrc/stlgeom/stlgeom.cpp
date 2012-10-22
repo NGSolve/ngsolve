@@ -41,7 +41,7 @@ void STLMeshing (STLGeometry & geom,
     lineendpoints(), spiralpoints(), selectedmultiedge()
   */
 {
-	edgedata = new STLEdgeDataList(*this);
+  edgedata = new STLEdgeDataList(*this);
   externaledges.SetSize(0);
   Clear();
   meshchart = 0; // initialize all ?? JS
@@ -55,6 +55,7 @@ void STLMeshing (STLGeometry & geom,
   status = STL_GOOD;
   statustext = "Good Geometry";
   smoothedges = NULL;
+  area = -1;
 }
 
 STLGeometry :: ~STLGeometry()
@@ -2004,13 +2005,11 @@ void STLGeometry :: Clear()
 
 double STLGeometry :: Area()
 {
-  double ar = 0;
-  int i;
-  for (i = 1; i <= GetNT(); i++)
-    {
-      ar += GetTriangle(i).Area(points);
-    }
-  return ar;
+  if (area >= 0) return area;
+  area = 0;
+  for (int i = 1; i <= GetNT(); i++)
+    area += GetTriangle(i).Area(points);
+  return area;
 }
 
 double STLGeometry :: GetAngle(int t1, int t2)
@@ -3106,7 +3105,7 @@ int STLGeometry :: IsSmoothEdge (int pi1, int pi2) const
 
 
 
-
+/*
 //function is not used now
 int IsInArray(int n, const Array<int>& ia)
 {
@@ -3117,6 +3116,7 @@ int IsInArray(int n, const Array<int>& ia)
     }
   return 0;
 }
+*/
 
 void STLGeometry :: AddConeAndSpiralEdges()
 {

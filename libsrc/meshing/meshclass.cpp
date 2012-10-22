@@ -5,6 +5,7 @@ namespace netgen
 {
 
   Mesh :: Mesh ()
+    : surfarea(*this)
   {
     // volelements.SetName ("vol elements");
     // surfelements.SetName ("surf elements");
@@ -300,6 +301,9 @@ namespace netgen
 
     surfelements.Last().next = facedecoding[el.index-1].firstelement;
     facedecoding[el.index-1].firstelement = si;
+
+    if (SurfaceArea().Valid())
+      SurfaceArea().Add (el);
 
     lock.UnLock();
     return si;
@@ -2024,15 +2028,15 @@ namespace netgen
 
   void Mesh :: FindOpenSegments (int surfnr)
   {
-    int i, j, k;
+    // int i, j, k;
 
-    // new version, general elemetns
+    // new version, general elements
     // hash index: pnum1-2
     // hash data : surfnr,  surfel-nr (pos) or segment nr(neg)
     INDEX_2_HASHTABLE<INDEX_2> faceht(4 * GetNSE()+GetNSeg()+1);   
 
     PrintMessage (5, "Test Opensegments");
-    for (i = 1; i <= GetNSeg(); i++)
+    for (int i = 1; i <= GetNSeg(); i++)
       {
         const Segment & seg = LineSegment (i);
 
@@ -2052,7 +2056,7 @@ namespace netgen
       }
 
 
-    for (i = 1; i <= GetNSeg(); i++)
+    for (int i = 1; i <= GetNSeg(); i++)
       {
         const Segment & seg = LineSegment (i);
 
@@ -2067,15 +2071,17 @@ namespace netgen
           }
       }
 
+    // bool buggy = false;
+    // ofstream bout("buggy.out");
 
-    for (i = 1; i <= GetNSE(); i++)
+    for (int i = 1; i <= GetNSE(); i++)
       {
         const Element2d & el = SurfaceElement(i);
         if (el.IsDeleted()) continue;
 
         if (surfnr == 0 || el.GetIndex() == surfnr)
           {
-            for (j = 1; j <= el.GetNP(); j++)
+            for (int j = 1; j <= el.GetNP(); j++)
               {
                 INDEX_2 seg (el.PNumMod(j), el.PNumMod(j+1));
                 INDEX_2 data;
@@ -2093,9 +2099,40 @@ namespace netgen
                       }
                     else
                       {
-                        PrintSysError ("hash table si not fitting for segment: ",
+			// buggy = true;
+                        PrintWarning ("hash table si not fitting for segment: ",
                                        seg.I1(), "-", seg.I2(), " other = ",
                                        data.I2());
+			// cout << "me: index = " << el.GetIndex() << ", el = " << el << endl;
+
+			/*
+			bout << "has index = " << seg << endl;
+			bout << "hash value = " << faceht.HashValue (seg) << endl;
+
+			if (data.I2() > 0)
+			  {
+			    int io = data.I2();
+			    cout << "other trig: index = " << SurfaceElement(io).GetIndex()
+				 << ", el = " << SurfaceElement(io) << endl;
+			  }
+			else
+			  {
+			    cout << "other seg " << -data.I2() << ", si = " << data.I1() << endl;
+			  }
+
+			
+			bout << "me: index = " << el.GetIndex() << ", el = " << el << endl;
+			if (data.I2() > 0)
+			  {
+			    int io = data.I2();
+			    bout << "other trig: index = " << SurfaceElement(io).GetIndex()
+				 << ", el = " << SurfaceElement(io) << endl;
+			  } 
+			else
+			  {
+			    bout << "other seg " << -data.I2() << ", si = " << data.I1() << endl;
+			  }
+			*/
                       }
                   }
                 else
@@ -2110,10 +2147,35 @@ namespace netgen
           }
       }  
 
+    /*
+    if (buggy)
+      {
+	for (int i = 1; i <= GetNSeg(); i++)
+	  bout << "seg" << i << " " << LineSegment(i) << endl;
+
+	for (int i = 1; i <= GetNSE(); i++)
+	  bout << "sel" << i << " " << SurfaceElement(i) << " ind = " 
+	       << SurfaceElement(i).GetIndex() << endl;
+
+	bout << "hashtable: " << endl;
+	for (int j = 1; j <= faceht.GetNBags(); j++)
+	  {
+	    bout << "bag " << j << ":" << endl;
+	    for (int k = 1; k <= faceht.GetBagSize(j); k++)
+	      {
+		INDEX_2 i2, data;
+		faceht.GetData (j, k, i2, data);
+		bout << "key = " << i2 << ", data = " << data << endl;
+	      }
+	  }
+	exit(1);
+      }
+    */
+
     (*testout) << "open segments: " << endl;
     opensegments.SetSize(0);
-    for (i = 1; i <= faceht.GetNBags(); i++)
-      for (j = 1; j <= faceht.GetBagSize(i); j++)
+    for (int i = 1; i <= faceht.GetNBags(); i++)
+      for (int j = 1; j <= faceht.GetBagSize(i); j++)
         {
           INDEX_2 i2;
           INDEX_2 data;
@@ -2130,7 +2192,7 @@ namespace netgen
                 {
                   // segment due to triangle
                   const Element2d & el = SurfaceElement (data.I2());
-                  for (k = 1; k <= el.GetNP(); k++)
+                  for (int k = 1; k <= el.GetNP(); k++)
                     {
                       if (seg[0] == el.PNum(k))
                         seg.geominfo[0] = el.GeomInfoPi(k);
@@ -2184,16 +2246,16 @@ namespace netgen
       ptyps.Elem(seg[1]) = EDGEPOINT;
       }
     */
-    for (i = 1; i <= points.Size(); i++)
+    for (int i = 1; i <= points.Size(); i++)
       points.Elem(i).SetType(SURFACEPOINT);
 
-    for (i = 1; i <= GetNSeg(); i++)
+    for (int i = 1; i <= GetNSeg(); i++)
       {
         const Segment & seg = LineSegment (i);
         points[seg[0]].SetType(EDGEPOINT);
         points[seg[1]].SetType(EDGEPOINT);
       }
-    for (i = 1; i <= GetNOpenSegments(); i++)
+    for (int i = 1; i <= GetNOpenSegments(); i++)
       {
         const Segment & seg = GetOpenSegment (i);
         points[seg[0]].SetType (EDGEPOINT);

@@ -219,8 +219,6 @@ namespace netgen
 
 #ifdef PARALLELGL
 	if (ntasks > 1 && vispar.drawtetsdomain > 0 && vispar.drawtetsdomain < ntasks)
-	  // for (int dest = 1; dest < ntasks; dest++)
-	  // if (vispar.drawtetsdomain == dest)
 	  glCallList (par_linelists[vispar.drawtetsdomain]);
 	else
 #endif
@@ -229,7 +227,6 @@ namespace netgen
 
 	glDisable (GL_POLYGON_OFFSET_LINE);
       }
-
 
     if (vispar.drawidentified)
       {

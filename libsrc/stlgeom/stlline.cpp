@@ -648,6 +648,13 @@ STLLine* STLLine :: Mesh(const Array<Point<3> >& ap,
 			 Array<Point3d>& mp, double ghi,
 			 class Mesh& mesh) const
 {
+  static int timer1a = NgProfiler::CreateTimer ("mesh stl-line 1a");
+  static int timer1b = NgProfiler::CreateTimer ("mesh stl-line 1b");
+  static int timer2 = NgProfiler::CreateTimer ("mesh stl-line 2");
+  static int timer3 = NgProfiler::CreateTimer ("mesh stl-line 3");
+
+  NgProfiler::StartTimer (timer1a);
+
   STLLine* line = new STLLine(geometry);
 
   //stlgh = ghi; //uebergangsloesung!!!!
@@ -659,8 +666,6 @@ STLLine* STLLine :: Mesh(const Array<Point<3> >& ap,
   int ind;
   Point3d p;
 
-  int i, j;
-
   Box<3> bbox;
   GetBoundingBox (ap, bbox);
   double diam = bbox.Diam();
@@ -668,7 +673,7 @@ STLLine* STLLine :: Mesh(const Array<Point<3> >& ap,
   double minh = mesh.LocalHFunction().GetMinH (bbox.PMin(), bbox.PMax());
 
   double maxseglen = 0;
-  for (i = 1; i <= GetNS(); i++)
+  for (int i = 1; i <= GetNS(); i++)
     maxseglen = max2 (maxseglen, GetSegLen (ap, i));
   
   int nph = 10+int(maxseglen / minh); //anzahl der integralauswertungen pro segment
@@ -676,11 +681,14 @@ STLLine* STLLine :: Mesh(const Array<Point<3> >& ap,
   Array<double> inthi(GetNS()*nph);
   Array<double> curvelen(GetNS()*nph);
 
+  NgProfiler::StopTimer (timer1a);
+  NgProfiler::StartTimer (timer1b);
 
-  for (i = 1; i <= GetNS(); i++)
+
+  for (int i = 1; i <= GetNS(); i++)
     {
       //double seglen = GetSegLen(ap,i);
-      for (j = 1; j <= nph; j++)
+      for (int j = 1; j <= nph; j++)
 	{
 	  p = GetPointInDist(ap,dist,ind);
 	  //h = GetH(p,dist/len);
@@ -709,7 +717,7 @@ STLLine* STLLine :: Mesh(const Array<Point<3> >& ap,
      
   double fact = inthl/(double)inthlint;
   dist = 0;
-  j = 1;
+  int j = 1;
 
 
   p = ap.Get(StartP());
@@ -721,18 +729,20 @@ STLLine* STLLine :: Mesh(const Array<Point<3> >& ap,
   line->AddRightTrig(GetRightTrig(segn));
   line->AddDist(dist);
 
+  NgProfiler::StopTimer (timer1b);
+  NgProfiler::StartTimer (timer2);
+
   inthl = 0; //restart each meshseg
-  for (i = 1; i <= inthlint; i++)
+  for (int i = 1; i <= inthlint; i++)
     {
       while (inthl < 1.000000001 && j <= inthi.Size())
-      //      while (inthl-1. < 1e-9) && j <= inthi.Size())
 	{
 	  inthl += inthi.Get(j)/fact;
 	  dist += curvelen.Get(j);
 	  j++;
 	}
 
-      //went to far:
+      //went too far:
       j--;
       double tofar = (inthl - 1)/inthi.Get(j);
       inthl -= tofar*inthi.Get(j);
@@ -759,6 +769,10 @@ STLLine* STLLine :: Mesh(const Array<Point<3> >& ap,
       j++;
     }
 
+  NgProfiler::StopTimer (timer2);
+  NgProfiler::StartTimer (timer3);
+
+
   p = ap.Get(EndP());
   pn = AddPointIfNotExists(mp, p, 1e-10*diam);
   segn = GetNS();
@@ -776,6 +790,9 @@ STLLine* STLLine :: Mesh(const Array<Point<3> >& ap,
   (*testout) << "line, " << ap.Get(StartP()) << "-" << ap.Get(EndP())
 	     << " len = " << Dist (ap.Get(StartP()), ap.Get(EndP())) << endl;
   */
+
+  NgProfiler::StopTimer (timer3);
+
   return line;
 }
 }

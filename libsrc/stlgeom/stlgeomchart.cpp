@@ -22,7 +22,6 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
   int timer1 = NgProfiler::CreateTimer ("makeatlas");
   int timer2 = NgProfiler::CreateTimer ("makeatlas - part 2");
   int timer3 = NgProfiler::CreateTimer ("makeatlas - part 3");
-  int timer4 = NgProfiler::CreateTimer ("makeatlas - part 4");
 
   PushStatusF("Make Atlas");
 
@@ -33,7 +32,8 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 
   //speedup for make atlas
   if (GetNT() > 50000)
-    mesh.SetGlobalH(0.05*Dist (boundingbox.PMin(), boundingbox.PMax()));
+    mesh.SetGlobalH(min2 (0.05*Dist (boundingbox.PMin(), boundingbox.PMax()),
+			  mparam.maxh));
 
   atlas.SetSize(0);
   ClearSpiralPoints();
@@ -53,15 +53,15 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
   double sinchartangle = sin(chartangle);
   double sinouterchartangle = sin(outerchartangle);
 
-  Array<int> outermark(GetNT()); //marks all trigs form actual outer region
-  Array<int> outertested(GetNT()); //marks tested trigs for outer region
+  Array<int> outermark(GetNT());     //marks all trigs form actual outer region
+  Array<int> outertested(GetNT());   //marks tested trigs for outer region
   Array<int> pointstochart(GetNP()); //point in chart becomes chartnum
   Array<int> innerpointstochart(GetNP()); //point in chart becomes chartnum
-  Array<int> chartpoints; //point in chart becomes chartnum
+  Array<int> chartpoints;             //point in chart becomes chartnum
   Array<int> innerchartpoints;
   Array<int> dirtycharttrigs;
 
-  Array<int> chartdistacttrigs (GetNT()); //outercharttrigs
+  Array<int> chartdistacttrigs (GetNT());   //outercharttrigs
   chartdistacttrigs = 0;
 
 
@@ -71,8 +71,6 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 
   Array<int> chartpointchecked(GetNP()); //for dirty-chart-trigs
 
-  outermark.SetSize(GetNT());
-  outertested.SetSize(GetNT());
   pointstochart.SetSize(GetNP());
   innerpointstochart.SetSize(GetNP());
   chartmark.SetSize(GetNT());
@@ -117,21 +115,7 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 
       //find unmarked trig
       int prelastunmarked = lastunmarked;
-      /*
-      int j = lastunmarked;
-      bool found = 0;
-      while (j <= GetNT())
-	{
-	  if (!GetMarker(j)) 
-	    {
-	      found = 1; 
-	      lastunmarked = j;
-	      break;
-	    }
-	  else 
-	    j++;
-	}
-      */
+
       bool found = false;
       for (int j = lastunmarked; j <= GetNT(); j++)
 	if (!GetMarker(j))
@@ -255,15 +239,6 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 				  if (!accepted) {break;}
 				}
 			      
-			      /*
-				mindist = 1E50;
-				for (int ii = 1; ii <= 3; ii++)
-				{
-				tdist = Dist(GetPoint(GetTriangle(nt).PNum(ii)),startp);
-				if (tdist < mindist) {mindist = tdist;}
-				}
-				if (mindist > maxdist1) {accepted = 0;}
-			      */
 
 			      if (accepted)
 				{
@@ -337,16 +312,7 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 		  outertested.Elem(nt) = chartnum;
 		  
 		  Vec<3> n2 = GetTriangle(nt).Normal();
-		  /*
-		    double ang;
-		    ang = Angle(n2,sn);
-		    if (ang < -M_PI*0.5) {ang += 2*M_PI;}
-		    
-		    (*testout) << "ang < ocharang = " << (fabs(ang) <= outerchartangle);
-		    (*testout) << " = " << ( (n2 * sn) >= cosouterchartangle) << endl;
-		    
-		    //			      if (fabs(ang) <= outerchartangle) 
-		    */
+
 		  //abfragen, ob noch im tolerierten Winkel
 		  if ( (n2 * sn) >= cosouterchartangle )
 		    {
@@ -361,8 +327,6 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 		      
 		      //zurueckweisen, falls eine Spiralartige outerchart entsteht
 		      
-		      // NgProfiler::StartTimer (timer4);
-
 		      //find overlapping charts exacter: 
 		      //do not check dirty trigs!
 		      if (spiralcheckon && !isdirtytrig)
@@ -388,7 +352,6 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 			    if (!accepted) break;
 			  }
 		      
-		      //  NgProfiler::StopTimer (timer4);
 		      
 		      // outer chart is only small environment of
 		      //    inner chart:
@@ -409,7 +372,6 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 			      {
 				Point<3> pt = GetPoint(ntrig.PNum(k));					  
 				double h2 = sqr(mesh.GetH(pt));
-				
 				for (int l = 1; l <= innerchartpoints.Size(); l++)
 				  {
 				    double tdist = 
@@ -477,8 +439,9 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 	  lastunmarked = prelastunmarked;
 	}
 
-      //calculate an estimate meshsize, not to produce to large outercharts, with factor 2 larger!
+      //calculate an estimate meshsize, not to produce too large outercharts, with factor 2 larger!
       RestrictHChartDistOneChart(chartnum, chartdistacttrigs, mesh, h, 0.5, atlasminh);
+      // NgProfiler::Print(stdout);
     }
   
   NgProfiler::StopTimer (timer1);
@@ -610,6 +573,7 @@ int STLGeometry :: AtlasMade() const
 }
 
 
+/*
 //return 1 if not exists
 int AddIfNotExists(Array<int>& list, int x)
 {
@@ -621,6 +585,7 @@ int AddIfNotExists(Array<int>& list, int x)
   list.Append(x);
   return 1;
 }
+*/
 
 void STLGeometry :: GetInnerChartLimes(Array<twoint>& limes, int chartnum)
 {

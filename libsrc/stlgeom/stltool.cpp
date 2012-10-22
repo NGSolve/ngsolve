@@ -15,8 +15,9 @@ namespace netgen
 //add a point into a pointlist, return pointnumber
 int AddPointIfNotExists(Array<Point3d>& ap, const Point3d& p, double eps)
 {
+  double eps2 = sqr(eps);
   for (int i = 1; i <= ap.Size(); i++)
-    if (Dist(ap.Get(i),p) <= eps ) 
+    if (Dist2(ap.Get(i),p) <= eps2 ) 
       return i;
   return ap.Append(p);
 }

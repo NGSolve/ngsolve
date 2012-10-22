@@ -211,19 +211,6 @@ namespace netgen
   }
 
 
-  /*
-  void AdFront2 :: IncrementClass (int li)
-  {
-    lines[li].IncrementClass();
-  }
-
-
-  void AdFront2 :: ResetClass (int li)
-  {
-    lines[li].ResetClass();
-  }
-  */
-
   int AdFront2 :: SelectBaseLine (Point<3>  & p1, Point<3>  & p2, 
 				  const PointGeomInfo *& geominfo1,
 				  const PointGeomInfo *& geominfo2,
@@ -474,7 +461,7 @@ namespace netgen
     DenseMatrix a(2), ainv(2);
     Vector b(2), u(2);
     
-    // random numbers:
+    // quasi-random numbers:
     n(0) = 0.123871;
     n(1) = 0.15432;
     
