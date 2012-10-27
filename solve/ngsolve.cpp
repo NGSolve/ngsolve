@@ -136,10 +136,11 @@ int NGS_LoadPDE (ClientData clientData,
 	{
 	  // ma.Reset(new ngcomp::MeshAccess());
 	  // pde.Reset(new ngsolve::PDE(*ma));
+	  MyMPI_SendCmd ("ngs_pdefile");
+
 	  pde.Reset(new ngsolve::PDE);
           pde->SetTclInterpreter (interp);
 
-	  MyMPI_SendCmd ("ngs_pdefile");
           pde->LoadPDE (argv[1]);
 	  pde->PrintReport (*testout);
 	}
