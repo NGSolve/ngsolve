@@ -5,7 +5,6 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AC_LANG([C++])
 
-# AC_PROG_CC
 AC_PROG_CXX
 
 AC_PREFIX_DEFAULT(["/opt/netgen"])
@@ -18,7 +17,7 @@ AC_OPENMP
 CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
 LDFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
 
-CXXFLAGS="$CXXFLAGS -DUSE_TIMEOFDAY"
+CXXFLAGS="$CXXFLAGS -DUSE_TIMEOFDAY -DLAPACK"
 # ACX_LAPACK
 
 
@@ -48,8 +47,8 @@ TEA_LOAD_TCLCONFIG
 TEA_PUBLIC_TCL_HEADERS
 fi
 
+		
 
-AC_SUBST([LAPACK_INCLUDES], ["-DLAPACK"])
 AC_ARG_WITH([lapack],
         [AC_HELP_STRING([--with-lapack=lapacklib][linker flags for linking dense linear algebra library LAPACK, default is '-llapack -lblas'])],          
         [AC_SUBST([LAPACK_LIBS], [$withval])],
@@ -91,8 +90,9 @@ AC_ARG_ENABLE([MKLpardiso],
 AC_ARG_ENABLE([mumps],
         [AC_HELP_STRING([--enable-mumps],[enable sparse direct solver MUMPS])],
         [AC_SUBST([MUMPS_INCLUDES], ["-DUSE_MUMPS"])]
-        [AC_SUBST([MUMPS_LIBS], ["-L/opt/mumps/lib -ldmumps -lzmumps -lmumps_common -lpord -L/home/joachim/Downloads/scotch_5.1.12_esmumps/lib   -lscalapack -lblacs -blacsCinit -lmetis -lmpi_f77"])]
+        [AC_SUBST([MUMPS_LIBS], ["-L/usr/local/lib -ldmumps -lzmumps -lmumps_common -lpord -L/home/joachim/Downloads/scotch_5.1.12_esmumps/lib   -lscalapack -lmpi_f90 -lgfortran"])] 
         )
+# -lgfortran
 #         [AC_SUBST([MUMPS_LIBS], ["-L/opt/mumps/lib -ldmumps -lzmumps -lmumps_common -lpord -L/home/joachim/Downloads/scotch_5.1.12_esmumps/lib -lptesmumps -lptscotch -lptscotcherr  /usr/local/lib/libscalapack.a  /usr/local/lib/blacs_MPI-LINUX-0.a  /usr/local/lib/blacsCinit_MPI-LINUX-0.a  /usr/local/lib/blacs_MPI-LINUX-0-fake.a -lparmetis  -lmetis -lgfortran -lmpi_f77"])]
 
 
@@ -110,25 +110,22 @@ AC_ARG_ENABLE([mumps],
 
 
 #AC_SUBST([NETGEN_INCLUDES], ["-I$netgendir/include"])
-AC_SUBST(NETGEN_INCLUDES, "-I$netgendir/include")
-AC_MSG_NOTICE([Netgen includes... $NETGEN_INCLUDES])
-
+# AC_SUBST(NETGEN_INCLUDES, "-I$netgendir/include")
+# AC_MSG_NOTICE([Netgen includes... $NETGEN_INCLUDES])
+CXXFLAGS="$CXXFLAGS -I$netgendir/include"
 
 AC_ARG_ENABLE([parallel],
         [AC_HELP_STRING([--enable-parallel],[enable mpi parallelization])],
-        [AC_SUBST([MPI_INCLUDES], "-DPARALLEL")
-        ]
+        [CXXFLAGS="$CXXFLAGS -DPARALLEL"]
         )       
 
 AC_ARG_ENABLE([vt],
         [AC_HELP_STRING([--enable-vt],[enable vampirtrace])],
-        [AC_SUBST([MPI_INCLUDES], "-DPARALLEL")
-	 CXXFLAGS="$CXXFLAGS -vt:inst manual -DVTRACE"
-        ]
+        [CXXFLAGS="$CXXFLAGS -vt:inst manual -DVTRACE"]
         )       
 
 echo "creating compiler wrapper ngscxx"
-echo "$CXX $CXXFLAGS -I. -I$netgendir/include -L$netgendir/lib -fpic $MPI_INCLUDES $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*" > ngscxx
+echo "$CXX $CXXFLAGS -I. -I$netgendir/include -L$netgendir/lib -fpic $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*" > ngscxx
 chmod a+x ngscxx
 
 
