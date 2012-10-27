@@ -63,7 +63,7 @@ namespace ngparallel
     MyMPI_AllToAll (nsend, nrecv, comm);
     Table<T> recv_data(nrecv);
 
-    Array<MPI_Request> requests;
+    Array<MPI_Request> requests; 
     for (int i = 0; i < ntasks; i++)
       {
 	if (nsend[i])
@@ -99,7 +99,6 @@ namespace ngparallel
     MPI_Comm comm = pardofs.GetCommunicator();
 
     int ntasks = MyMPI_GetNTasks (comm);
-    // int id = MyMPI_GetId (comm);
     if (ntasks <= 1) return;
 
     DynamicTable<T> dist_data(ntasks);
