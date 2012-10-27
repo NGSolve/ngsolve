@@ -403,7 +403,7 @@ namespace ngla
 
 #ifdef USE_MUMPS
     if (mat.GetInverseType() == MUMPS)
-      return new ParallelMumpsInverse<TM> (*dmat, subset, NULL, &pardofs);
+      return new ParallelMumpsInverse<TM> (*dmat, subset, NULL, &pardofs, true);
     else 
 #endif
       return new MasterInverse<TM> (*dmat, subset, &pardofs);
