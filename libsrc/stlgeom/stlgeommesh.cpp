@@ -1122,6 +1122,8 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
   static int timer1 = NgProfiler::CreateTimer ("restrictH OneChart 1");
   static int timer2 = NgProfiler::CreateTimer ("restrictH OneChart 2");
   static int timer3 = NgProfiler::CreateTimer ("restrictH OneChart 3");
+  static int timer3a = NgProfiler::CreateTimer ("restrictH OneChart 3a");
+  static int timer3b = NgProfiler::CreateTimer ("restrictH OneChart 3b");
 
   NgProfiler::StartTimer (timer1);
   double limessafety = stlparam.resthchartdistfac*fact;  // original: 2
@@ -1250,6 +1252,7 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
 
   if (plimes2.Size())
     {
+      NgProfiler::StartTimer (timer3a);
       Box3d bbox;
       bbox.SetPoint (plimes2.Get(1));
       for (int j = 2; j <= plimes2.Size(); j++)
@@ -1259,7 +1262,10 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
 	stree.Insert (plimes2.Get(j), j);
       Array<int> foundpts;
 	  
-      for (int j = 1; j <= plimes1.Size(); j++)
+      NgProfiler::StopTimer (timer3a);
+      NgProfiler::StartTimer (timer3b);
+
+      for (int j = 1; j <= plimes1.Size(); j++) 
 	{
 	  double mindist = 1E50;
 
@@ -1317,6 +1323,7 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
 	      if (mindist < chartmindist) {chartmindist = mindist;}
 	    }
 	}
+      NgProfiler::StopTimer (timer3b);
     }
   NgProfiler::StopTimer (timer3);	 
 }
