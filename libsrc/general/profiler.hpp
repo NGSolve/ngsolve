@@ -35,7 +35,7 @@ public:
   NgProfiler();
   ~NgProfiler();
   static int CreateTimer (const string & name);
-
+  
   static void StartTimer (int nr) 
   { 
     starttimes[nr] = clock(); counts[nr]++; 
@@ -50,6 +50,8 @@ public:
 
   //static void Print (ostream & ost);
   static void Print (FILE * prof);
+
+  static void ClearTimers ();
 
   class RegionTimer
   {

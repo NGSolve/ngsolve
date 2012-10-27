@@ -114,5 +114,14 @@ namespace netgen
   }
 
 
+  void NgProfiler :: ClearTimers () 
+  {
+    for (int i = 0; i < SIZE; i++)
+      {
+	tottimes[i] = 0;
+	counts[i] = 0;
+      }
+  }
+
   NgProfiler prof;
 }
