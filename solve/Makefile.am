@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/include $(NETGEN_INCLUDES) $(LAPACK_INCLUDES) $(PARDISO_INCLUDES) $(TCL_INCLUDES) $(MPI_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)/include $(PARDISO_INCLUDES) $(TCL_INCLUDES)
 
 lib_LTLIBRARIES = libngsolve.la
 

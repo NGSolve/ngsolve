@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/include $(LAPACK_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)/include
 
 lib_LTLIBRARIES = libngfem.la
 
