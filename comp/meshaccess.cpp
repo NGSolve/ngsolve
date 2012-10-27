@@ -221,6 +221,7 @@ namespace ngcomp
 	if (ind > ndomains) ndomains = ind;
       }
     ndomains++;
+    ndomains = MyMPI_AllReduce (ndomains, MPI_MAX);
 
     nboundaries = -1;
     int nse = GetNSE(); 
@@ -230,6 +231,7 @@ namespace ngcomp
 	if (ind > nboundaries) nboundaries = ind;
       }
     nboundaries++;
+    nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX);
   }
 
 
