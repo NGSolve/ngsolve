@@ -724,7 +724,7 @@ namespace ngla
   }
   
 
-
+ 
   
   template <class TM, class TV_ROW, class TV_COL>
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
@@ -1303,11 +1303,14 @@ namespace ngla
 
 
 
-
+  //  template class SparseMatrix<double>;
+#define NONExx
+#ifdef NONExx
 
 
   template class SparseMatrixTM<double>;
   template class SparseMatrixTM<Complex>;
+
 
 #if MAX_SYS_DIM >= 1
   template class SparseMatrixTM<Mat<1,1,double> >;
@@ -1557,6 +1560,5 @@ namespace ngla
   template class SparseMatrix<double, Vec<14,Complex>, Vec<14,Complex> >;
   template class SparseMatrix<double, Vec<15,Complex>, Vec<15,Complex> >;
 #endif
-
-
+#endif
 }
