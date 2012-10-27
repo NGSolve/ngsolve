@@ -5,22 +5,6 @@
 #include <stdlib.h>
 
 
-/*
-namespace ngbla
-{
-  template <int N>
-  bool operator< (const Vec<N, int>& a, const Vec<N, int>& b)
-  {
-    for( int i = 0; i < N; i++)
-      {
-	if (a[i] < b[i]) return true;
-	if (a[i] > b[i]) return false;
-      }
-    
-    return false;  
-  }
-}
-*/
 
 
 namespace ngcomp
@@ -308,7 +292,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	    else if (NTYPE == NT_CELL)
 	      ma.GetElPNums (i, pnums);
 	    else
-	      cout<<"Error in SaveSolution Node Type not known"<<endl;
+	      cout<<"Error in LoadSolution Node Type not known"<<endl;
 	    
 	    Vec<N+1, int> points;
 	    points = -1;
@@ -450,6 +434,10 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 #endif
   }
 
+
+
+
+#ifdef SGFVER1
   template <class SCAL>  template <int N, NODE_TYPE NTYPE>
   void  S_GridFunction<SCAL> :: SaveNodeType (ostream & ost) const
   {
@@ -549,8 +537,13 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	Array<int> index(points.Size());
 	for (int i = 0; i < index.Size(); i++) index[i] = i;
 	
+	static Timer ts ("Save Gridfunction, sort");
+	static Timer tw ("Save Gridfunction, write");
+	ts.Start();
 	QuickSortI (points, index, MyLess<N>);
-	
+	ts.Stop();
+
+	tw.Start();
 	for (int i = 0; i < points.Size(); i++)
 	  {
 	    int start = positions[index[i]][0];
@@ -559,12 +552,165 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	    for (int j = 0; j < end; j++)
 	      SaveBin<SCAL>(ost, data[start++]);
 	  }
-	
+	tw.Stop();	
       }
 #endif	   
   }
+#endif
 
 
+
+#ifdef PARALLEL
+  template <typename T>
+  inline void MyMPI_Gather (T d, MPI_Comm comm = ngs_comm)
+  {
+    static Timer t("dummy - gather"); RegionTimer r(t);
+    
+    MPI_Gather (&d, 1, MyGetMPIType<T>(), 
+		NULL, 1, MyGetMPIType<T>(), 0, comm);
+  }
+
+  template <typename T>
+  inline void MyMPI_GatherRoot (FlatArray<T> d, MPI_Comm comm = ngs_comm)
+  {
+    static Timer t("dummy - gather"); RegionTimer r(t);
+
+    d[0] = T(0);
+    MPI_Gather (MPI_IN_PLACE, 1, MyGetMPIType<T>(), 
+		&d[0], 1, MyGetMPIType<T>(), 0,
+		comm);
+  }
+#endif
+
+
+
+  template <class SCAL>  template <int N, NODE_TYPE NTYPE>
+  void  S_GridFunction<SCAL> :: SaveNodeType (ostream & ost) const
+  {
+#ifdef PARALLEL
+    int id = MyMPI_GetId();
+    int ntasks = MyMPI_GetNTasks();
+    
+    const FESpace & fes = GetFESpace();
+    ParallelDofs & par = fes.GetParallelDofs ();
+    
+    if(id > 0)
+      { 
+	int nnodes = ma.GetNNodes (NTYPE);
+	
+	Array<Vec<N+1,int> > nodenums;
+	Array<SCAL> data;
+    
+	Array<int> dnums, pnums;
+    
+	for (int i = 0; i < nnodes; i++)
+	  {
+	    fes.GetNodeDofNrs (NTYPE, i,  dnums);
+	    
+	    if (dnums.Size() == 0) continue;
+	    if (!par.IsMasterDof (dnums[0])) continue;      
+
+	    if (NTYPE == NT_VERTEX)
+	      {
+		pnums.SetSize(1);
+		pnums[0]=i;
+	      }
+	    else if( NTYPE == NT_EDGE)
+	      ma.GetEdgePNums (i, pnums);
+	    else if (NTYPE == NT_FACE)
+	      ma.GetFacePNums (i, pnums);
+	    else if (NTYPE == NT_CELL)
+	      ma.GetElPNums (i, pnums);
+	    else
+	      cout<<"Error in SaveSolution Node Type not known"<<endl;
+	    
+	    Vec<N+1, int> points;
+	    points = -1;
+	    for( int j = 0; j < pnums.Size(); j++)
+	      points[j] = ma.GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
+	    points[N] = dnums.Size();
+	    
+	    nodenums.Append(points);
+	    
+	    Vector<SCAL> elvec(dnums.Size());
+	    GetElementVector (dnums, elvec);
+	    
+	    for( int j = 0; j < dnums.Size(); j++)
+	      data.Append(elvec(j));
+	  }    
+	
+	MyMPI_Gather (nodenums.Size());
+	MyMPI_Gather (data.Size());
+
+	MyMPI_Send(nodenums,0,22);
+	MyMPI_Send(data,0,23);
+      }
+    else
+      {
+	Array<Vec<N,int> > points(0);
+	Array<Vec<2,int> > positions(0);
+	
+
+	Array<int> size_nodes(ntasks), size_data(ntasks);
+	MyMPI_GatherRoot (size_nodes);
+	MyMPI_GatherRoot (size_data);
+
+	Array<MPI_Request> requests;
+
+	Table<Vec<N+1,int> > table_nodes(size_nodes);
+	for (int p = 1; p < ntasks; p++)
+	  requests.Append (MyMPI_IRecv (table_nodes[p], p, 22));
+
+	Table<SCAL> table_data(size_data);
+	for (int p = 1; p < ntasks; p++)
+	  requests.Append (MyMPI_IRecv (table_data[p], p, 23));
+	MyMPI_WaitAll (requests);
+
+	FlatArray<SCAL> data = table_data.AsArray();
+
+
+	int size = 0;
+	for( int proc = 1; proc < ntasks; proc++)
+	  {
+	    FlatArray<Vec<N+1,int> > locpoints = table_nodes[proc];
+	    Vec<N,int>  temp;
+	    
+	    for( int j = 0; j < locpoints.Size(); j++ )
+	      {
+		int nodesize = locpoints[j][N];
+		
+		positions.Append (Vec<2,int> (size, nodesize));
+		
+		for( int k = 0; k < N; k++)
+		  temp[k] = locpoints[j][k];
+		
+		points.Append( temp );
+		size += nodesize;
+	      }
+	  }    
+	
+	Array<int> index(points.Size());
+	for( int i = 0; i < index.Size(); i++) index[i] = i;
+	
+	static Timer ts ("Save Gridfunction, sort");
+	static Timer tw ("Save Gridfunction, write");
+	ts.Start();
+	QuickSortI (points, index, MyLess<N>);
+	ts.Stop();
+
+	tw.Start();
+	for( int i = 0; i < points.Size(); i++)
+	  {
+	    int start = positions[index[i]][0];
+	    int end = positions[index[i]][1];
+	    
+	    for( int j = 0; j < end; j++)
+	      SaveBin<SCAL>(ost, data[start++]);
+	  }
+	tw.Stop();	
+      }
+#endif	   
+  }
 
 
 
