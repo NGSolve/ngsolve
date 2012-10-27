@@ -205,7 +205,7 @@ namespace netgen
 
     for (int ri = 1; ri <= rules.Size(); ri++)
       {
-	NgProfiler::RegionTimer reg(timers[ri-1]);
+	// NgProfiler::RegionTimer reg(timers[ri-1]);
 	netrule * rule = rules.Get(ri);
 
 #ifdef LOCDEBUG
@@ -345,7 +345,7 @@ namespace netgen
 	    else
 
 	      {
-		NgProfiler::RegionTimer reg(timers3[ri-1]);
+		// NgProfiler::RegionTimer reg(timers3[ri-1]);
 
 		// all lines are mapped !!
 
@@ -420,7 +420,7 @@ namespace netgen
 		    else
 
 		      {
-			NgProfiler::RegionTimer reg(timers2[ri-1]);
+			// NgProfiler::RegionTimer reg(timers2[ri-1]);
 
 			npok = rule->GetNOldP();
 			incnpok = 0;
