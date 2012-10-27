@@ -397,14 +397,13 @@ namespace ngla
     // template<class TEL>
     inline TVY RowTimesVector (int row, const FlatVector<TVX> & vec) const
     {
-      /*
       typedef typename mat_traits<TVY>::TSCAL TTSCAL;
       TVY sum = TTSCAL(0);
-      for (int j = firsti[row]; j < firsti[row+1]; j++)
+      for (size_t j = firsti[row]; j < firsti[row+1]; j++)
 	sum += data[j] * vec(colnr[j]);
       return sum;
-      */
 
+      /*
       int nj = firsti[row+1] - firsti[row];
       const int * colpi = colnr+firsti[row];
       const TM * datap = data+firsti[row];
@@ -415,6 +414,7 @@ namespace ngla
       for (int j = 0; j < nj; j++, colpi++, datap++)
 	sum += *datap * vecp[*colpi];
       return sum;
+      */
     }
 
     ///
@@ -422,18 +422,18 @@ namespace ngla
     {
       // cannot be optimized by the compiler, since hvec could alias
       // the matrix --> keyword 'restrict' will hopefully solve this problem
-      
-      /*
-      for (int j = firsti[row]; j < firsti[row+1]; j++)
+      size_t first = firsti[row];
+      size_t last = firsti[row+1];
+      for (size_t j = first; j < last; j++)
 	vec(colnr[j]) += Trans(data[j]) * el;
-      */
-
+      /*
       int nj = firsti[row+1] - firsti[row];
       const int * colpi = colnr+firsti[row];
       const TM * datap = data+firsti[row];
       TVX * vecp = vec.Addr(0);
       for (int j = 0; j < nj; j++, colpi++, datap++)
-	vecp[*colpi] += Trans(*datap) * el;
+	vecp[*colpi] += Trans(*datap) * el; 
+      */
     }
 
 
@@ -615,43 +615,43 @@ namespace ngla
 
     TV_COL RowTimesVectorNoDiag (int row, const FlatVector<TVX> & vec) const
     {
-      int last = firsti[row+1];
-      int first = firsti[row];
+      size_t last = firsti[row+1];
+      size_t first = firsti[row];
       if (last == first) return TVY(0);
       if (colnr[last-1] == row) last--;
 
       typedef typename mat_traits<TVY>::TSCAL TTSCAL;
       TVY sum = TTSCAL(0);
 
-      /*
-      for (int j = first; j < last; j++)
+      for (size_t j = first; j < last; j++)
 	sum += data[j] * vec(colnr[j]);
-      */
+      return sum;
+
+      /*
       const int * colpi = colnr+firsti[row];
       const TM * datap = data+firsti[row];
       const TVX * vecp = vec.Addr(0);
 
       for (int j = first; j < last; j++, colpi++, datap++)
 	sum += *datap * vecp[*colpi];
-
       return sum;
+      */
     }
 
     void AddRowTransToVectorNoDiag (int row, TVY el, FlatVector<TVX> & vec) const
     {
-      /*
-      int last = this->firsti[row+1];
-      int first = this->firsti[row];
+      size_t first = firsti[row];
+      size_t last = firsti[row+1];
       if (first == last) return;
-
       if (this->colnr[last-1] == row) last--;
 
-      for (int j = firsti[row]; j < last; j++)
+      for (size_t j = first; j < last; j++)
 	vec(colnr[j]) += Trans(data[j]) * el;
-      */
 
-      int last = firsti[row+1];
-      int first = firsti[row];
+      /*
+	// hand tuning, no difference anymore
+      size_t last = firsti[row+1];
+      size_t first = firsti[row];
       if (first == last) return;
 
       if (colnr[last-1] == row) last--;
@@ -662,6 +662,7 @@ namespace ngla
       TVX * vecp = vec.Addr(0);
       for (int j = 0; j < nj; j++, colpi++, datap++)
 	vecp[*colpi] += Trans(*datap) * el;
+      */
     }
   
     BaseSparseMatrix & AddMerge (double s, const SparseMatrixSymmetric  & m2);
