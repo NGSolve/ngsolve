@@ -86,6 +86,11 @@ public:
   }
 
   T * Data() const { return data; }
+
+  FlatArray<T> AsArray() const
+  {
+    return FlatArray<T> (index[size], data);
+  }
 };
 
 
