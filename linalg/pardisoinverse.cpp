@@ -215,6 +215,12 @@ namespace ngla
 	  default: ;
 	  }
 
+	cout << "symmetric = " << symmetric << endl;
+	cout << "spd = " << spd << endl;
+	cout << "compressed = " << compressed << endl;
+	cout << "inner = " << inner << endl;
+	cout << "cluster = " << cluster << endl;
+
 	ofstream err("pardiso.err");
 	err << "ngsolve-matrix = " << endl << a << endl;
 	err << "pardiso matrix = " << endl;
