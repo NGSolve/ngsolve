@@ -832,15 +832,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   const BitArray * FESpace :: GetFreeDofs (bool external) const
   {
-    if (!free_dofs.Size())
-      return NULL;
+    if (external)
+      return &external_free_dofs;
     else
-      {
-	if (external)
-	  return &external_free_dofs;
-	else
-	  return &free_dofs;
-      }
+      return &free_dofs;
   }
 
 
@@ -1693,6 +1688,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (int i = 0; i < spaces.Size(); i++)
       if (spaces[i]->GetFreeDofs()) 
 	has_dirichlet_dofs = true;
+
+    has_dirichlet_dofs = MyMPI_AllReduce (has_dirichlet_dofs, MPI_LOR);
 
     if (has_dirichlet_dofs)
       {

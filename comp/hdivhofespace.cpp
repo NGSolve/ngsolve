@@ -22,8 +22,6 @@
 
 namespace ngcomp
 {
-  using namespace ngcomp; 
-
 
   HDivHighOrderFESpace ::  
   HDivHighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
@@ -41,7 +39,7 @@ namespace ngcomp
     DefineNumFlag("orderfacet");
     DefineDefineFlag("hdiv");
     DefineDefineFlag("hdivho");
-    DefineDefineFlag("print");
+    // DefineDefineFlag("print");
     DefineDefineFlag("noprint");
     DefineDefineFlag("variableorder"); 
     DefineDefineFlag("hodivfree"); 

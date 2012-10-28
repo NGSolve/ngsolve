@@ -20,7 +20,6 @@ namespace ngcomp
   {
     name = "VectorFESpace";
     DefineNumFlag("relorder");
-    DefineDefineFlag("print");
     DefineDefineFlag("variableorder");
 
     if ( parseflags) CheckFlags(flags);

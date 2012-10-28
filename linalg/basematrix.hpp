@@ -182,7 +182,10 @@ namespace ngla
     { 
 #ifdef DEBUG
       if (m.Height() != v.Size() || m.Width() != x.Size())
-	throw Exception ("matrix-vector: size does not fit");
+	throw Exception (ToString ("matrix-vector: size does not fit\n") +
+			 "Matrix:     " + ToString(m.Height()) + " x " + ToString(m.Width()) + "\n"
+			 "Vector in : " + ToString(x.Size()) + "\n"
+			 "Vector res: " + ToString(v.Size()));
 #endif
       m.Mult (x, v);
       v *= s;
