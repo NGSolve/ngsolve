@@ -118,13 +118,9 @@ private:
 };
 
 
-<<<<<<< .mine
 /// prints BitArray
 NGS_DLL_HEADER ostream & operator<<(ostream & s, const BitArray & ba);
-=======
-  /// prints BitArray
-  ostream & operator<<(ostream & s, const BitArray & ba);
->>>>>>> .r1007
+
 
 }
 
