@@ -187,7 +187,7 @@ namespace ngbla
     { n = bw = 0; mem = 0; }
 
     /// factor bandmatrix a
-    void Factor (const FlatSymBandMatrix<T> & a);
+    NGS_DLL_HEADER void Factor (const FlatSymBandMatrix<T> & a);
 
     /// solve with factored matrices
     template <class TVX, class TVY>
