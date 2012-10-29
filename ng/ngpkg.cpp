@@ -1943,7 +1943,10 @@ namespace netgen
     int h = Togl_Height (togl);
 
     glViewport(0, 0, w, h);
-
+	netgen::VisualScene::viewport[0]=0;
+	netgen::VisualScene::viewport[1]=0;
+	netgen::VisualScene::viewport[2]=w;
+	netgen::VisualScene::viewport[3]=h;
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     
