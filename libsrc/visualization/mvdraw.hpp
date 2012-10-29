@@ -26,6 +26,7 @@ namespace netgen
     static float transmat[16];
     static float rotmat[16];
     static float centermat[16];
+	
     static DLL_HEADER float transformationmat[16];
 
     GLdouble clipplane[4];
@@ -43,7 +44,7 @@ namespace netgen
     static int selecttimestamp;
 
   public:
-
+	static int viewport[4];
     // static GLubyte * colortexture;
     static GLuint coltexname;
     static int ntexcols;
@@ -83,7 +84,7 @@ namespace netgen
     DLL_HEADER void DrawCoordinateCross ();
     DLL_HEADER void DrawNetgenLogo ();
     DLL_HEADER void SetOpenGlColor(double val, double valmin, double valmax, int logscale = 0);
-
+	
 
 #ifdef PARALLELGL
     DLL_HEADER void InitParallelGL ();
@@ -92,7 +93,7 @@ namespace netgen
   };
 
 
-  extern void MyOpenGLText (const char * text);
+  DLL_HEADER extern void MyOpenGLText (const char * text);
 
 
 

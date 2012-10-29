@@ -56,6 +56,7 @@ namespace netgen
 
   int VisualScene :: selecttimestamp;
 
+  int VisualScene :: viewport[4];
 
   VisualizationParameters :: VisualizationParameters()
   {
