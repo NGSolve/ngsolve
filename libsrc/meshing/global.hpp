@@ -46,7 +46,7 @@ namespace netgen
 
   extern volatile multithreadt multithread;
 
-  extern string ngdir;
+  DLL_HEADER extern string ngdir;
   extern DebugParameters debugparam;
   extern bool verbose;  
 
