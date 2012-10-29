@@ -56,13 +56,13 @@ namespace netgen
 
     for (int i = 1; i <= geometry2d->GetSplines().Size(); i++)
       {
-	geometry2d->GetSplines().Get(i)->GetPoints (20, points);
+	geometry2d->GetSplines().Get(i)->GetPoints (200, points);
       
 	glBegin (GL_LINE_STRIP);
 	for (int j = 0; j < points.Size(); j++)
 	  glVertex3d (points[j](0), points[j](1), 0);
 	glEnd(); 
-      }
+      } 
 
     glColor3f (1, 0, 0);
 
