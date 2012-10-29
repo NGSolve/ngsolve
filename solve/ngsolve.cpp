@@ -134,12 +134,14 @@ int NGS_LoadPDE (ClientData clientData,
     {
       try
 	{
-	  // ma.Reset(new ngcomp::MeshAccess());
-	  // pde.Reset(new ngsolve::PDE(*ma));
 	  MyMPI_SendCmd ("ngs_pdefile");
 
 	  pde.Reset(new ngsolve::PDE);
           pde->SetTclInterpreter (interp);
+
+	  // make sure to have lapack loaded (important for newer MKL !!!)
+	  Matrix<> a(100), b(100), c(100);
+	  a = 1; b = 2; c = a*b | Lapack;
 
           pde->LoadPDE (argv[1]);
 	  pde->PrintReport (*testout);
@@ -660,6 +662,7 @@ int NGSolve_Init (Tcl_Interp * interp)
 #else
   cout << "sorry, no lapack" << endl; 
 #endif
+
 
 #ifdef USE_PARDISO
   cout << "Including sparse direct solver Pardiso" << endl;
