@@ -16,7 +16,7 @@ namespace ngstd
 
    Provides bit-operations and whole array operations.
 */
-class NGS_DLL_HEADER BitArray
+class BitArray
 {
   /// number of bits
   int size;
@@ -25,16 +25,16 @@ class NGS_DLL_HEADER BitArray
   unsigned char * data;
 public:
   /// empty array
-  BitArray ();
+  NGS_DLL_HEADER BitArray ();
   /// array of asize bits
-  BitArray (int asize);
+  NGS_DLL_HEADER BitArray (int asize);
   ///
-  BitArray (const BitArray & ba2);
+  NGS_DLL_HEADER BitArray (const BitArray & ba2);
   /// delete data
-  ~BitArray ();
+  NGS_DLL_HEADER ~BitArray ();
 
   /// Set size, loose values
-  void SetSize (int asize);
+  NGS_DLL_HEADER void SetSize (int asize);
 
   /// the size
   int Size () const
@@ -42,10 +42,10 @@ public:
 
 
   /// set all bits
-  void Set ();
+  NGS_DLL_HEADER void Set ();
 
   /// clear all bits
-  void Clear ();
+  NGS_DLL_HEADER void Clear ();
 
   /// set bit i
   void Set (int i)
@@ -94,16 +94,16 @@ public:
 
   
   /// invert all bits
-  void Invert ();
+  NGS_DLL_HEADER void Invert ();
 
   /// logical AND with ba2
-  void And (const BitArray & ba2);
+  NGS_DLL_HEADER void And (const BitArray & ba2);
 
   /// logical OR with ba2
-  void Or (const BitArray & ba2);
+  NGS_DLL_HEADER void Or (const BitArray & ba2);
 
   /// copy from ba2
-  BitArray & operator= (const BitArray & ba2);
+  NGS_DLL_HEADER BitArray & operator= (const BitArray & ba2);
 
 private:
   ///
@@ -118,8 +118,13 @@ private:
 };
 
 
+<<<<<<< .mine
+/// prints BitArray
+NGS_DLL_HEADER ostream & operator<<(ostream & s, const BitArray & ba);
+=======
   /// prints BitArray
   ostream & operator<<(ostream & s, const BitArray & ba);
+>>>>>>> .r1007
 
 }
 
