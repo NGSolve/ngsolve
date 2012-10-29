@@ -107,7 +107,7 @@ int NGS_Help (ClientData clientData,
 
 
 // AutoPtr<ngcomp::MeshAccess> ma;
-AutoPtr<ngsolve::PDE> pde;
+NGS_DLL_HEADER AutoPtr<ngsolve::PDE> pde;
 
 
 #ifdef SOCKETS
