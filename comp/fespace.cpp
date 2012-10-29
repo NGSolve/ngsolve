@@ -1901,10 +1901,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-template
+template NGS_DLL_HEADER
 void CompoundFESpace::TransformVec<FlatVector<double> >
 (int elnr, bool boundary, FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
-template
+template NGS_DLL_HEADER
 void CompoundFESpace::TransformVec<FlatVector<Complex> >
 (int elnr, bool boundary, FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
 
