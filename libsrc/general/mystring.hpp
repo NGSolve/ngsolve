@@ -32,30 +32,30 @@ void ReadEnclString(istream & in, string & str, const char encl);
 
 class MyStr;
 
-MyStr operator + (const MyStr &, const MyStr &);
-int operator == (const MyStr &, const MyStr &);
-int operator < (const MyStr &, const MyStr &);
-int operator <= (const MyStr &, const MyStr &);
-int operator > (const MyStr &, const MyStr &);
-int operator >= (const MyStr &, const MyStr &);
-int operator != (const MyStr &, const MyStr &);
-ostream& operator << (ostream &, const MyStr &);
-istream& operator >> (istream &, MyStr &);
+DLL_HEADER MyStr operator + (const MyStr &, const MyStr &);
+DLL_HEADER int operator == (const MyStr &, const MyStr &);
+DLL_HEADER int operator < (const MyStr &, const MyStr &);
+DLL_HEADER int operator <= (const MyStr &, const MyStr &);
+DLL_HEADER int operator > (const MyStr &, const MyStr &);
+DLL_HEADER int operator >= (const MyStr &, const MyStr &);
+DLL_HEADER int operator != (const MyStr &, const MyStr &);
+DLL_HEADER ostream& operator << (ostream &, const MyStr &);
+DLL_HEADER istream& operator >> (istream &, MyStr &);
 
-class MyStr
+class DLL_HEADER MyStr
 {
 public:
-  DLL_HEADER MyStr();
-  DLL_HEADER MyStr(const char *);
-  DLL_HEADER MyStr(char);
-  DLL_HEADER MyStr(const MyStr &);
-  DLL_HEADER MyStr(int);
-  DLL_HEADER MyStr(void *);
-  DLL_HEADER MyStr(long);
-  DLL_HEADER MyStr(double);
-  DLL_HEADER MyStr(const Point3d& p);
-  DLL_HEADER MyStr(const Vec3d& p);
-  DLL_HEADER MyStr(const string & st);
+  MyStr();
+  MyStr(const char *);
+  MyStr(char);
+  MyStr(const MyStr &);
+  MyStr(int);
+  MyStr(void *);
+  MyStr(long);
+  MyStr(double);
+  MyStr(const Point3d& p);
+  MyStr(const Vec3d& p);
+  MyStr(const string & st);
 
   ~MyStr();
   MyStr Left(unsigned);
