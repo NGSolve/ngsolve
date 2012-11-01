@@ -10,7 +10,7 @@
 namespace metis {
   extern "C" {
 
-#include <metis5.h>
+#include <metis.h>
 
 #if METIS_VER_MAJOR >= 5
 #define METIS5
@@ -796,7 +796,6 @@ namespace netgen
 
     int nparts = ntasks-1;
     int edgecut;
-
 
     int ncommon = 3;
     METIS_PartMeshDual (&ne, &nn, &eptr[0], &eind[0], NULL, NULL, &ncommon, &nparts,
