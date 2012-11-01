@@ -164,12 +164,16 @@ namespace ngcomp
       
       ArrayMem<double, 20> el2ifweight(sizei);
       for (int k = 0; k < sizei; k++)
+	el2ifweight[k] = fabs (elmat(localintdofs[k],
+				     localintdofs[k]));
+
+	/*
 	if (typeid(SCAL) == typeid(double))
 	  el2ifweight[k] = fabs (elmat(localintdofs[k],
 				       localintdofs[k]));
 	else
 	  el2ifweight[k] = 1;
-
+	*/
 
       
       Matrix<SCAL> a = elmat.Rows(localwbdofs).Cols(localwbdofs);
