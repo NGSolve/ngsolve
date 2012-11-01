@@ -1308,7 +1308,7 @@ public:
 			 LocalHeap & lh) const
   {
     const FEL & fel = dynamic_cast<const FEL&> (bfel);
-    int ndof = fel.GetNDof ();
+    // int ndof = fel.GetNDof ();
     
     Vec<DIM_DMAT,double> hvx;
     const IntegrationRule & ir = GetIntegrationRule (fel);
