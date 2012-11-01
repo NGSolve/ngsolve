@@ -10,7 +10,7 @@
 namespace metis {
   extern "C" {
 
-#include <metis.h>
+#include <metis5.h>
 
 #if METIS_VER_MAJOR >= 5
 #define METIS5
@@ -802,6 +802,7 @@ namespace netgen
     METIS_PartMeshDual (&ne, &nn, &eptr[0], &eind[0], NULL, NULL, &ncommon, &nparts,
 			NULL, NULL,
 			&edgecut, &epart[0], &npart[0]);
+
     /*
     METIS_PartMeshNodal (&ne, &nn, &eptr[0], &eind[0], NULL, NULL, &nparts,
 			 NULL, NULL,
