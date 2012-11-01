@@ -279,10 +279,8 @@ namespace ngcomp
 	  }
       }
 
-    
     AllReduceNodalData ((ma.GetDimension()==2) ? NT_EDGE : NT_FACE, 
 			fine_facet, MPI_LOR, ma);
-
 
     if(uniform_order_inner > -1) 
       order_inner = INT<3>(uniform_order_inner,uniform_order_inner,uniform_order_inner);

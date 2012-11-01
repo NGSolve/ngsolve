@@ -361,7 +361,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (print)
       *testout << "freedofs = " << endl << free_dofs << endl;
-
+    
     UpdateParallelDofs();
 
     if (print)
@@ -1684,6 +1684,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     // dirichlet-dofs from sub-spaces
     // ist das umsonst ? (JS)
+    // haben jetzt ja immer dirichlet-dofs
     bool has_dirichlet_dofs = false;
     for (int i = 0; i < spaces.Size(); i++)
       if (spaces[i]->GetFreeDofs()) 
@@ -1717,7 +1718,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
         for (int i = 0; i < ctofdof.Size(); i++)
           if (ctofdof[i] & LOCAL_DOF)
             external_free_dofs.Clear(i);
-
       }
   }
 
