@@ -16,10 +16,27 @@ public:
   char selectvisual[20];
   int showstltrias;
   
+  /*
   Vec3d clipnormal;
   double clipdist;
   int clipenable;
   int clipplanetimestamp;
+  */
+  class Clipping
+  {
+  public:
+    Vec3d normal;
+    double dist;
+    int enable;
+    int timestamp;
+    bool operator== (Clipping & clip2)
+    {
+      return 
+	(normal == clip2.normal) && (dist == clip2.dist)
+	&& (enable == clip2.enable);
+    }
+  };
+  Clipping clipping;
 
   int colormeshsize;
 

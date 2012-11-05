@@ -1724,7 +1724,7 @@ namespace netgen
   {
 
     if (tettimestamp > mesh->GetTimeStamp () &&
-	tettimestamp > vispar.clipplanetimestamp )
+	tettimestamp > vispar.clipping.timestamp )
       return;
 
     if (!lock)
@@ -1775,7 +1775,7 @@ namespace netgen
     Array<Element2d> faces;
 
     BitArray shownode(mesh->GetNP());
-    if (vispar.clipenable)
+    if (vispar.clipping.enable)
       {
 	shownode.Clear();
 	for (int i = 1; i <= shownode.Size(); i++)
@@ -2082,7 +2082,7 @@ namespace netgen
   void VisualSceneMesh :: BuildPrismList()
   {
     if (prismtimestamp > mesh->GetTimeStamp () &&
-	prismtimestamp > vispar.clipplanetimestamp )
+	prismtimestamp > vispar.clipping.timestamp )
       return;
 
     if (!lock)
@@ -2410,7 +2410,7 @@ namespace netgen
   void VisualSceneMesh :: BuildHexList()
   {
     if (hextimestamp > mesh->GetTimeStamp () &&
-	hextimestamp > vispar.clipplanetimestamp )
+	hextimestamp > vispar.clipping.timestamp )
       return;
 
     if (!lock)
@@ -2618,7 +2618,7 @@ namespace netgen
   void VisualSceneMesh :: BuildPyramidList()
   {
     if (pyramidtimestamp > mesh->GetTimeStamp () &&
-	pyramidtimestamp > vispar.clipplanetimestamp )
+	pyramidtimestamp > vispar.clipping.timestamp )
       return;
 
     if (!lock)
@@ -3330,7 +3330,7 @@ namespace netgen
 
     glDisable(GL_CLIP_PLANE0);
 
-    if (vispar.clipenable)
+    if (vispar.clipping.enable)
       {
 	Vec<3> n(clipplane[0], clipplane[1], clipplane[2]);
 	double len = Abs(n);

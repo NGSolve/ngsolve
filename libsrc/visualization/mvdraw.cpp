@@ -357,14 +357,14 @@ namespace netgen
   
   void VisualScene :: SetClippingPlane ()
   {
-    if (vispar.clipenable)
+    if (vispar.clipping.enable)
       {
-	Vec3d n = vispar.clipnormal;
+	Vec3d n = vispar.clipping.normal;
 	n /= (n.Length()+1e-10);
 	clipplane[0] = n.X();
 	clipplane[1] = n.Y();
 	clipplane[2] = n.Z();
-	clipplane[3] = -(Vec3d(center) * n) + rad * vispar.clipdist;
+	clipplane[3] = -(Vec3d(center) * n) + rad * vispar.clipping.dist;
 
 	glClipPlane(GL_CLIP_PLANE0, clipplane);
 	glEnable(GL_CLIP_PLANE0);

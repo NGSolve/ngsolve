@@ -253,9 +253,11 @@ namespace netgen
 				       const BoxSphere<3> & box, 
 				       Array<int> & locsurf) const;
     ///
+    /*
     void GetIndependentSurfaceIndices (const Solid * sol, 
 				       const Point<3> & p, Vec<3> & v,
 				       Array<int> & locsurf) const;
+    */
     ///
     void GetIndependentSurfaceIndices (Array<int> & locsurf) const;
 

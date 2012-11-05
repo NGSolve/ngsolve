@@ -831,28 +831,20 @@ namespace netgen
     for (int i = 0; i < nsurf; i++)
       isidenticto[i] = i;
   
-    //(*testout) << "jetzt!" << endl;
     for (int i = 0; i < nsurf; i++)
       for (int j = i+1; j < nsurf; j++)
 	{
-	  //(*testout) << "surf" << i << " surf" << j << endl;
 	  if (GetSurface(j) -> IsIdentic (*GetSurface(i), inv, eps))
 	    {
 	      INDEX_2 i2(i, j);
 	      identicsurfaces.Set (i2, inv);
 	      isidenticto[j] = isidenticto[i];
-	      //(*testout) << "surfaces " << i2 << " are identic" << endl;
 	    }
 	}
 
     (*testout) << "identicmap:" << endl;
     for (int i = 0; i < isidenticto.Size(); i++)
       (*testout) << i << " -> " << isidenticto[i] << endl;
-
-    /*    
-    for (int i = 0; i < nsurf; i++)
-      GetSurface(i)->Print (*testout);
-    */
   }
   
 
@@ -865,9 +857,9 @@ namespace netgen
     ReducePrimitiveIterator rpi(box);
     UnReducePrimitiveIterator urpi;
 
-    ((Solid*)sol) -> IterateSolid (rpi);
+    const_cast<Solid*> (sol) -> IterateSolid (rpi);
     sol -> GetSurfaceIndices (locsurf);
-    ((Solid*)sol) -> IterateSolid (urpi);
+    const_cast<Solid*> (sol) -> IterateSolid (urpi);
 
     for (int i = locsurf.Size()-1; i >= 0; i--)
       {
@@ -944,7 +936,7 @@ namespace netgen
     */
   }
 
-
+  /*
   void CSGeometry ::
   GetIndependentSurfaceIndices (const Solid * sol, 
 				const Point<3> & p, Vec<3> & v,
@@ -957,7 +949,7 @@ namespace netgen
     box.CalcDiamCenter();
     GetIndependentSurfaceIndices (sol, box, locsurf);
   }
-
+  */
 
   void CSGeometry ::
   GetIndependentSurfaceIndices (Array<int> & locsurf) const

@@ -603,13 +603,13 @@ namespace netgen
     else
       {
         if (mesh->GetTimeStamp () > surfeltimestamp ||
-            vispar.clipplanetimestamp > clipplanetimestamp ||
+            vispar.clipping.timestamp > clipplanetimestamp ||
             solutiontimestamp > surfeltimestamp)
           {
             GetMinMax (scalfunction, scalcomp, minval, maxval);
           }
       }
- 
+
     if (mesh->GetTimeStamp() > surfeltimestamp ||
         solutiontimestamp > surfeltimestamp || 
         zoomall)
@@ -672,12 +672,12 @@ namespace netgen
       }
 
 
-    if (clipplanetimestamp < vispar.clipplanetimestamp ||
+    if (clipplanetimestamp < vispar.clipping.timestamp ||
         clipplanetimestamp < solutiontimestamp)
       {
 
         //      cout << "clipsolution = " << clipsolution << endl;
-        if (vispar.clipenable && clipsolution == 2)      
+        if (vispar.clipping.enable && clipsolution == 2)      
           {
             // lock->UnLock();
             NgLock mlock (mesh->Mutex(), 0);
@@ -689,7 +689,7 @@ namespace netgen
           }
 
       
-        if (vispar.clipenable && clipsolution == 1 && sol)
+        if (vispar.clipping.enable && clipsolution == 1 && sol)
 	  DrawClipPlaneTrigs (); 
 
         if (clipplanelist_vec)
@@ -698,7 +698,7 @@ namespace netgen
         clipplanelist_vec = glGenLists (1);
         glNewList (clipplanelist_vec, GL_COMPILE);
 
-        if (vispar.clipenable && clipsolution == 2 && vsol)
+        if (vispar.clipping.enable && clipsolution == 2 && vsol)
           {
             SetTextureMode (usetexture);
 
@@ -794,7 +794,7 @@ namespace netgen
 
     if (
         numisolines && 
-        (clipplanetimestamp < vispar.clipplanetimestamp ||
+        (clipplanetimestamp < vispar.clipping.timestamp ||
          clipplanetimestamp < solutiontimestamp) 
         )
       {
@@ -925,7 +925,7 @@ namespace netgen
 
         if (clipplane_isolinelist) glDeleteLists (clipplane_isolinelist, 1);
             
-        if (vispar.clipenable && clipsolution == 1 && sol)
+        if (vispar.clipping.enable && clipsolution == 1 && sol)
           {
             clipplane_isolinelist = glGenLists (1);
             glNewList (clipplane_isolinelist, GL_COMPILE);
@@ -961,7 +961,7 @@ namespace netgen
         glEnd();
       }
   
-    clipplanetimestamp = max2 (vispar.clipplanetimestamp, solutiontimestamp);
+    clipplanetimestamp = max2 (vispar.clipping.timestamp, solutiontimestamp);
   }
   
 
@@ -1115,6 +1115,7 @@ namespace netgen
 
 
             bool drawelem = false;
+	    /*
             if (sol && sol->draw_surface) 
               {
                 if (usetexture == 2)
@@ -1124,6 +1125,22 @@ namespace netgen
                   for (int ii = 0; ii < npt; ii++)
                     drawelem = GetSurfValue (sol, sei, -1, pref[ii](0), pref[ii](1), scalcomp, values[ii]);
               }
+	    */
+            if (sol && sol->draw_surface) 
+              {
+		drawelem = GetMultiSurfValues (sol, sei, -1, npt, 
+					       &pref[0](0), &pref[1](0)-&pref[0](0),
+					       &points[0](0), &points[1](0)-&points[0](0),
+					       &dxdxis[0](0), &dxdxis[1](0)-&dxdxis[0](0),
+					       &mvalues[0], sol->components);
+                if (usetexture == 2)
+		  for (int ii = 0; ii < npt; ii++)
+		    valuesc[ii] = ExtractValueComplex(sol, scalcomp, &mvalues[ii*sol->components]);
+                else
+		  for (int ii = 0; ii < npt; ii++)
+		    values[ii] = ExtractValue(sol, scalcomp, &mvalues[ii*sol->components]);
+              }
+
             
             if (deform)
               for (int ii = 0; ii < npt; ii++)
@@ -3823,9 +3840,10 @@ namespace netgen
     if (scalfunction != -1) 
       sol = soldata[scalfunction];
 
-
-
-    glBegin (GL_TRIANGLES);
+    
+    if (sol -> draw_volume)
+      {
+	glBegin (GL_TRIANGLES);
 
     int maxlpnr = 0;
     for (int i = 0; i < trigs.Size(); i++)
@@ -3851,7 +3869,7 @@ namespace netgen
 
     for (int i = 0; i < trigs.Size(); i++)
       {
-	bool ok = true;
+	bool ok; //  = true;
         const ClipPlaneTrig & trig = trigs[i];
 	if (trig.elnr != lastelnr)
 	  {
@@ -3887,7 +3905,8 @@ namespace netgen
 	    
 	    // cout << "have multivalues, comps = " << sol->components << endl;
 
-	    if (!drawelem) ok = false;
+	    // if (!drawelem) ok = false;
+	    ok = drawelem;
 	    if (usetexture != 2 || !sol->iscomplex)
 	      for (int ii = 0; ii < nlp; ii++)
 		vals[ii] = ExtractValue(sol, scalcomp, &mvalues[ii*sol->components]);
@@ -3919,7 +3938,7 @@ namespace netgen
 
       }
     glEnd();
-
+      }
     glEndList ();
 
 

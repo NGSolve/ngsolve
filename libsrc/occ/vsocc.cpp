@@ -666,7 +666,7 @@ namespace netgen
 
       // Philippose - 30/01/2009
       // Enable clipping planes for Selection mode in OCC Geometry
-      if (vispar.clipenable)
+      if (vispar.clipping.enable)
       {
          Vec<3> n(clipplane[0], clipplane[1], clipplane[2]);
          double len = Abs(n);
