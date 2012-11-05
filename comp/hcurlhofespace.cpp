@@ -555,6 +555,8 @@ namespace ngcomp
 
 	IntRange range = GetEdgeDofs (edge);
 	ctofdof.Range (range) = INTERFACE_DOF;
+	if (range.Size() >= 2)
+	  ctofdof[range.First()] = WIREBASKET_DOF;
       }
       
     // faces 

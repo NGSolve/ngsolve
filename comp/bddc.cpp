@@ -158,7 +158,7 @@ namespace ngcomp
 	  else
 	    localintdofs.Append (k);
 	}
-      
+
       int sizew = localwbdofs.Size();
       int sizei = localintdofs.Size();
       

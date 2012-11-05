@@ -642,10 +642,6 @@ namespace ngcomp
 		      innermatrix = new ElementByElementMatrix<SCAL>(ndof, ne);
 		  }
 		
-		// MPI_Barrier (MPI_COMM_WORLD);
-
-		// if (working_proc)
-
 		for (int icol = 0; icol < ncolors; icol++)
 		  {
 #pragma omp parallel 
@@ -1949,9 +1945,6 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		  LocalHeap lh = clh.Split();
 		  
 		  Array<int> dnums, idofs, idofs1, odofs;
-
-		  // ElementTransformation eltrans;
-		  
 		  int nec = (element_coloring) ? (*element_coloring)[icol].Size() : ne;
 		  
 #pragma omp for 
@@ -1969,7 +1962,6 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		      if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
 		      
 		      const FiniteElement & fel = fespace.GetFE (i, lh);
-		      // ma.GetElementTransformation (i, eltrans, lh);
 		      ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
 
 		      fespace.GetDofNrs (i, dnums);
@@ -2007,8 +1999,6 @@ cout << "catch in AssembleBilinearform 2" << endl;
 				  (*testout) << "elveclin = " << endl << elveclin << endl;
 				  (*testout) << "elmat = " << endl << elmat << endl;
 				}
-			      
-
 
 
 			      //////////////////////////////////////////////////
