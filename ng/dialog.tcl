@@ -833,7 +833,7 @@ proc viewingoptionsdialog { } {
 	tixControl $f.subdiv -label "Subdivision" -integer true \
             -variable visoptions.subdivisions -min 0 -max 8 \
 	    -options { entry.width 2 } \
-	    -command { puts "mesh-subdivision"; Ng_SetVisParameters; Ng_Vis_Set parameters; Ng_SetNextTimeStamp; redraw }
+	    -command { Ng_SetVisParameters; Ng_Vis_Set parameters; Ng_SetNextTimeStamp; redraw }
 	
 	
 	checkbutton $f.showbadels -text "Show bad elements" \
@@ -1094,8 +1094,10 @@ proc viewingoptionsdialog { } {
 
 
 
-
-
+proc clipplanecommand { { optionalvar 0 } } {
+    Ng_SetVisParameters
+    after idle redraw 
+}
 
 
 set clippingdialog_pop1 0
@@ -1123,18 +1125,20 @@ proc clippingdialog { } {
     set w .clipping_dlg
     
     if {[winfo exists .clipping_dlg] == 1} {
+
 	wm withdraw $w
 	wm deiconify $w
 	focus $w 
-    } {
 
+    } {
 	toplevel $w
 
 	label $w.lab1 -text "Normal x"
 	scale $w.scale1 -orient horizontal -length 300 -from -1 -to 1 \
 	    -resolution 0.01  -tickinterval 0.5 \
 	    -variable  viewoptions.clipping.nx \
-	    -command { popupcheckredraw2 clippingdialog_pop1 ${viewoptions.clipping.enable} }
+	    -command { clipplanecommand }
+#	    -command { popupcheckredraw2 clippingdialog_pop1 ${viewoptions.clipping.enable} }
 
 #		Ng_SetVisParameters; 
 #		if { ${viewoptions.clipping.enable} == 1 } { redraw };
@@ -1144,28 +1148,33 @@ proc clippingdialog { } {
 	scale $w.scale2 -orient horizontal -length 300 -from -1 -to 1 \
 	    -resolution 0.01  -tickinterval 0.5 \
 	    -variable  viewoptions.clipping.ny \
-	    -command { popupcheckredraw2 clippingdialog_pop2 ${viewoptions.clipping.enable} }
+	    -command { clipplanecommand }
+#	    -command { popupcheckredraw2 clippingdialog_pop2 ${viewoptions.clipping.enable} }
 
 	label $w.lab3 -text "Normal z"
 	scale $w.scale3 -orient horizontal -length 300 -from -1 -to 1 \
 	    -resolution 0.01  -tickinterval 0.5 \
 	    -variable  viewoptions.clipping.nz \
-	    -command { popupcheckredraw2 clippingdialog_pop3 ${viewoptions.clipping.enable} }
+	    -command { clipplanecommand }
+#	    -command { popupcheckredraw2 clippingdialog_pop3 ${viewoptions.clipping.enable} }
 	label $w.lab4 -text "Distance"
 	scale $w.scale4 -orient horizontal -length 300 -from -1 -to 1.001 \
 	    -resolution 0.0001  -tickinterval 0.5 \
 	    -variable  viewoptions.clipping.dist \
-	    -command { popupcheckredraw2 clippingdialog_pop4 ${viewoptions.clipping.enable} }
+	    -command { clipplanecommand }
+#	    -command { popupcheckredraw2 clippingdialog_pop4 ${viewoptions.clipping.enable} }
 	
 	
 	tixControl $w.clipdomain -label "Clip only domain" -integer true \
 	    -variable viewoptions.clipping.onlydomain -min 0 -max 50 \
 	    -options { entry.width 2 } \
-	    -command { Ng_SetVisParameters; redraw }
+	    -command { clipplanecommand; }
+#	    -command { Ng_SetVisParameters; redraw }
 	tixControl $w.donotclipdomain -label "Do not clip domain" -integer true \
 	    -variable viewoptions.clipping.notdomain -min 0 -max 50 \
 	    -options { entry.width 2 } \
-	    -command { Ng_SetVisParameters; redraw }
+	    -command { clipplanecommand; }
+#	    -command { Ng_SetVisParameters; redraw }
 
 	pack $w.lab1 $w.scale1 $w.lab2 $w.scale2 $w.lab3 $w.scale3 $w.lab4 $w.scale4 $w.clipdomain $w.donotclipdomain
 
@@ -1193,11 +1202,10 @@ proc clippingdialog { } {
 	#    grab $w
 	focus $w
 
-
 #	$w.scale1 configure -command { puts "call1b"; Ng_SetVisParameters; redraw } 
 #	puts "after"
 
-
+	clipplanecommand
     }
 }
 

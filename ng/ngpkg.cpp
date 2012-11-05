@@ -31,7 +31,6 @@ The interface between the GUI and the netgen library
 extern bool nodisplay;
 
 #include <nginterface.h>
-// extern "C" void RunParallel ( void * (*fun)(void *), void * in);
 
 
 
@@ -686,14 +685,13 @@ namespace netgen
     sprintf (buf, "%lf", multithread.percent);
     Tcl_SetVar  (interp, "::status_percent", buf, 0);
 
-    int i;
     lstring[0] = 0;
-    for (i = 1; i <= tets_in_qualclass.Size(); i++)
+    for (int i = 1; i <= tets_in_qualclass.Size(); i++)
       {
 	sprintf (buf, " %d", tets_in_qualclass.Get(i));
 	strcat (lstring, buf);
       }
-    for (i = tets_in_qualclass.Size()+1; i <= 20; i++)
+    for (int i = tets_in_qualclass.Size()+1; i <= 20; i++)
       strcat (lstring, " 0");
     Tcl_SetVar  (interp, "::status_tetqualclasses", lstring, 0);
 
@@ -2862,17 +2860,22 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
     vispar.locviewer = atoi (Tcl_GetVar (interp, "::viewoptions.light.locviewer", TCL_GLOBAL_ONLY));
     vispar.transp = atof (Tcl_GetVar (interp, "::viewoptions.mat.transp", TCL_GLOBAL_ONLY));
 
-    vispar.clipnormal.X() = atof (Tcl_GetVar (interp, "::viewoptions.clipping.nx", TCL_GLOBAL_ONLY));
-    vispar.clipnormal.Y() = atof (Tcl_GetVar (interp, "::viewoptions.clipping.ny", TCL_GLOBAL_ONLY));
-    vispar.clipnormal.Z() = atof (Tcl_GetVar (interp, "::viewoptions.clipping.nz", TCL_GLOBAL_ONLY));
-    vispar.clipdist = atof (Tcl_GetVar (interp, "::viewoptions.clipping.dist", TCL_GLOBAL_ONLY));
-    vispar.clipenable = atoi (Tcl_GetVar (interp, "::viewoptions.clipping.enable", TCL_GLOBAL_ONLY));
+    VisualizationParameters::Clipping hclip;
+    hclip.normal.X() = atof (Tcl_GetVar (interp, "::viewoptions.clipping.nx", TCL_GLOBAL_ONLY));
+    hclip.normal.Y() = atof (Tcl_GetVar (interp, "::viewoptions.clipping.ny", TCL_GLOBAL_ONLY));
+    hclip.normal.Z() = atof (Tcl_GetVar (interp, "::viewoptions.clipping.nz", TCL_GLOBAL_ONLY));
+    hclip.dist = atof (Tcl_GetVar (interp, "::viewoptions.clipping.dist", TCL_GLOBAL_ONLY));
+    hclip.enable = atoi (Tcl_GetVar (interp, "::viewoptions.clipping.enable", TCL_GLOBAL_ONLY));
     vispar.clipdomain =
       atoi (Tcl_GetVar (interp, "::viewoptions.clipping.onlydomain", TCL_GLOBAL_ONLY));
     vispar.donotclipdomain =
       atoi (Tcl_GetVar (interp, "::viewoptions.clipping.notdomain", TCL_GLOBAL_ONLY));
 
-    vispar.clipplanetimestamp = NextTimeStamp();
+    if ( ! (hclip == vispar.clipping) )
+      {
+	hclip.timestamp = NextTimeStamp();
+	vispar.clipping = hclip;
+      }
 
 
     vispar.whitebackground = atoi (Tcl_GetVar (interp, "::viewoptions.whitebackground", TCL_GLOBAL_ONLY));
