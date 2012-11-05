@@ -113,7 +113,6 @@ namespace ngcomp
     virtual int GetRelOrder() const { return rel_order; }
     virtual bool VarOrder() const { return var_order; }
 
-  protected:
     IntRange GetEdgeDofs (int nr) const
     {
       return IntRange (first_edge_dof[nr], first_edge_dof[nr+1]);

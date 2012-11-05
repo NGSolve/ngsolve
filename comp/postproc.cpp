@@ -237,11 +237,14 @@ namespace ngcomp
 		     LocalHeap & lh,
 		     int component)// = 0)
   {
+    static Timer t("CalcPointFlux");
+    static Timer t2("CalcPointFlux - findpoint");
+    RegionTimer reg(t);
+
     HeapReset hr(lh);
 
     int elnr;
-    Array<int> dnums;
-    // ElementTransformation eltrans;
+    ArrayMem<int,100> dnums;
 
     IntegrationPoint ip(0,0,0,1);
 
@@ -256,6 +259,8 @@ namespace ngcomp
       }
     else
       {
+	RegionTimer reg2(t2);
+    
       	if(domains.Size() > 0)
 	  elnr = ma.FindElementOfPoint(point,ip,false,&domains);
 	else
@@ -265,28 +270,17 @@ namespace ngcomp
 
     const S_GridFunction<SCAL> & u = 
       dynamic_cast<const S_GridFunction<SCAL>&> (bu);
-	
+
     const FESpace & fes = u.GetFESpace();
-    const FiniteElement & fel = (boundary) ? fes.GetSFE (elnr, lh) : fes.GetFE (elnr, lh);
-
-    ElementTransformation & eltrans = ma.GetTrafo (elnr, boundary, lh);
-
-    if (boundary)
-      {
-	// ma.GetSurfaceElementTransformation (elnr, eltrans, lh);
-	fes.GetSDofNrs (elnr, dnums);
-      }
-    else
-      {
-	// ma.GetElementTransformation (elnr, eltrans, lh);
-	fes.GetDofNrs (elnr, dnums);
-      }
+    const FiniteElement & fel = fes.GetFE (elnr, boundary, lh);
+    const ElementTransformation & eltrans = ma.GetTrafo (elnr, boundary, lh);
+    fes.GetDofNrs (elnr, boundary, dnums);
 	
     FlatVector<SCAL> elu(dnums.Size() * fes.GetDimension(), lh);
 	
     if(bu.GetCacheBlockSize() == 1)
       {
-	    u.GetElementVector (dnums, elu);
+	u.GetElementVector (dnums, elu);
       }
     else
       {
@@ -297,82 +291,7 @@ namespace ngcomp
       }
     
     fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
-	
     bli.CalcFlux (fel, eltrans(ip, lh), elu, flux, applyd, lh);
-  
-    /*
-    if(boundary)
-      {
-	if(domains.Size() > 0)
-	  elnr = ma.FindSurfaceElementOfPoint(point,ip,false,&domains);
-	else
-	  elnr = ma.FindSurfaceElementOfPoint(point,ip,false);
-	
-	if (elnr < 0) return 0;
-
-	const S_GridFunction<SCAL> & u = 
-	  dynamic_cast<const S_GridFunction<SCAL>&> (bu);
-	
-	const FESpace & fes = u.GetFESpace();
-	const FiniteElement & fel = fes.GetSFE (elnr, lh);
-	ma.GetSurfaceElementTransformation (elnr, eltrans, lh);
-	
-	fes.GetSDofNrs (elnr, dnums);
-	
-	FlatVector<SCAL> elu(dnums.Size() * fes.GetDimension(), lh);
-	
-	if(bu.GetCacheBlockSize() == 1)
-	  {
-	    u.GetElementVector (dnums, elu);
-	  }
-	else
-	  {
-	    FlatVector<SCAL> elu2(dnums.Size() * fes.GetDimension() * bu.GetCacheBlockSize(), lh);
-	    u.GetElementVector (dnums,elu2);
-	    for(int i=0; i<elu.Size(); i++)
-	      elu[i] = elu2[i*bu.GetCacheBlockSize()+component];
-	  }
-	
-	fes.TransformVec (elnr, true, elu, TRANSFORM_SOL);
-	
-	bli.CalcFlux (fel, eltrans(ip, lh), elu, flux, applyd, lh);
-      }
-    else
-      {
-	if(domains.Size() > 0)
-	  elnr = ma.FindElementOfPoint(point,ip,false,&domains);
-	else
-	  elnr = ma.FindElementOfPoint(point,ip,false);
-       
-	if (elnr < 0) return 0;
-
-	const S_GridFunction<SCAL> & u = 
-	  dynamic_cast<const S_GridFunction<SCAL>&> (bu);
-	
-	const FESpace & fes = u.GetFESpace();
-	const FiniteElement & fel = fes.GetFE (elnr, lh);
-	ma.GetElementTransformation (elnr, eltrans, lh);
-	
-	fes.GetDofNrs (elnr, dnums);
-	
-	FlatVector<SCAL> elu(dnums.Size() * fes.GetDimension(), lh);
-	
-	if(bu.GetCacheBlockSize() == 1)
-	  {
-	    u.GetElementVector (dnums, elu);
-	  }
-	else
-	  {
-	    FlatVector<SCAL> elu2(dnums.Size() * fes.GetDimension() * bu.GetCacheBlockSize(), lh);
-	    u.GetElementVector (dnums,elu2);
-	    for(int i=0; i<elu.Size(); i++)
-	      elu[i] = elu2[i*bu.GetCacheBlockSize()+component];
-	  }
-	
-	fes.TransformVec (elnr, false, elu, TRANSFORM_SOL);
-	bli.CalcFlux (fel, eltrans(ip, lh), elu, flux, applyd, lh);
-      }
-    */ 
     return 1;
   }
   
