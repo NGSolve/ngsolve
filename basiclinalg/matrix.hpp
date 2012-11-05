@@ -987,6 +987,16 @@ namespace ngbla
       return SliceMatrix (next-first, w, dist, data+first*dist);
     }
 
+    const FlatVector<T> Row (int i) const
+    {
+      return FlatVector<T> (w, &data[i*size_t(dist)]);
+    }
+
+    const SliceVector<T> Col (int i) const
+    {
+      return SliceVector<T> (h, dist, &data[i]);
+    }
+
     const SliceMatrix<T> Cols (int first, int next) const
     {
       return SliceMatrix<T> (h, next-first, dist, data+first);
