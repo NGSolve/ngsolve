@@ -790,6 +790,13 @@ namespace ngmg
 
     if (direct)
       {
+	if (biform.UsesEliminateInternal())
+	  {
+	    const FESpace & fes = biform.GetFESpace();
+	    for (int j = 0; j < direct->Size(); j++)
+	      if (fes.GetDofCouplingType(j) == LOCAL_DOF)
+		(*direct)[j] = 0;
+	  }
 	inv[level-1] = dynamic_cast<const BaseSparseMatrix&> 
 	  (biform.GetMatrix()).InverseMatrix (direct);
       }

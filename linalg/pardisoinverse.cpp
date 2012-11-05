@@ -395,8 +395,18 @@ namespace ngla
 
     integer maxfct = 1, mnum = 1, phase = 33, msglevel = 0, error;
     integer nrhs = fx.Size() / (height/entrysize);
-
-    if (fx.Size() != fy.Size()) cout << "sizes don't match" << endl;
+    
+    if (fx.Size() != fy.Size()) 
+      {
+	cout << "PardisoInverse::Mult .. sizes don't match" << endl;
+	cout << "type<TVX> = " << typeid(TVX).name() << endl;
+	cout << "type<TM> = " << typeid(TM).name() << endl;
+	cout << "fx.size = " << fx.Size() << endl;
+	cout << "fy.size = " << fy.Size() << endl;
+	cout << "size(x) = " << x.Size() << endl;
+	cout << "size(y) = " << y.Size() << endl;
+	cout << "height = " << height/entrysize << endl;
+      }
 
     FlatMatrix<TVX> mx(nrhs, height/entrysize, (TVX*)fx.Data());
     FlatMatrix<TVX> my(nrhs, height/entrysize, (TVX*)fy.Data());
@@ -408,7 +418,6 @@ namespace ngla
 	Matrix<TVX> hx(nrhs, compress.Size());
 	Matrix<TVX> hy(nrhs, compress.Size());
 	hx = mx.Cols(compress);
-	
 	F77_FUNC(pardiso) ( const_cast<integer*>(pt), &maxfct, &mnum, 
 			    const_cast<integer*>(&matrixtype),
 			    &phase, const_cast<integer*>(&compressed_height), 
@@ -417,8 +426,7 @@ namespace ngla
 			    NULL, &nrhs, params, &msglevel,
 			    reinterpret_cast<double *>(&hx(0,0)), 
 			    reinterpret_cast<double *>(&hy(0,0)), &error );
-
-	my = 0;
+	my = 0; 
 	my.Cols(compress) = hy;
       }
     else
@@ -435,7 +443,6 @@ namespace ngla
 
     if ( error != 0 )
       cout << "Apply Inverse: PARDISO returned error " << error << "!" << endl;
-
   }
   
   
