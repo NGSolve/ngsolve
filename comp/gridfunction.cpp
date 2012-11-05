@@ -1079,6 +1079,9 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 						double lam1, double lam2, double lam3,
 						double * values) 
   { 
+    static Timer t("visgf::GetValue");
+    RegionTimer reg(t);
+
     // cout << "VisGF::GetValue" << endl;
     if (!bfi3d.Size()) return 0;
     if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
@@ -1146,6 +1149,9 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 						const double xref[], const double x[], const double dxdxref[],
 						double * values) 
   { 
+    static Timer t("visgf::GetValue2");
+    RegionTimer reg(t);
+
     // cout << "VisGF::GetValue2" << endl;
     if (!bfi3d.Size()) return 0;
     if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
@@ -1218,12 +1224,15 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 
   template <class SCAL>
   bool VisualizeGridFunction<SCAL> ::
-  GetMultiValue (int elnr, int npts,
+  GetMultiValue (int elnr, int facetnr, int npts,
 		 const double * xref, int sxref,
 		 const double * x, int sx,
 		 const double * dxdxref, int sdxdxref,
 		 double * values, int svalues)
   {
+    static Timer t("visgf::GetMultiValue");
+    RegionTimer reg(t);
+
     // cout << "VisGF::GetMultiValue" << endl;
     try
       {
@@ -1333,6 +1342,9 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
                                                     double lam1, double lam2, 
                                                     double * values) 
   { 
+    static Timer t("visgf::GetSurfValue");
+    RegionTimer reg(t);
+
     // cout << "VisGF::GetSurfValue" << endl;
     if (!bfi2d.Size()) return 0;
     if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
@@ -1412,6 +1424,9 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 		const double xref[], const double x[], const double dxdxref[],
 		double * values) 
   { 
+    static Timer t("visgf::GetSurfValue 2");
+    RegionTimer reg(t);
+
     // cout << "VisGF::GetSurfValue2" << endl;
     try
       {
@@ -1528,6 +1543,10 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
                      const double * dxdxref, int sdxdxref,
                      double * values, int svalues)
   {
+    static Timer t("visgf::GetMultiSurfValue");
+    static Timer t1("visgf::GetMultiSurfValue - calc flux");
+    RegionTimer reg(t);
+
     // cout << "VisGF::GetMultiSurfValue" << endl;
     try
       {
@@ -1546,18 +1565,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 
 	fes.GetDofNrs (elnr, bound, dnums);
 	fel = &fes.GetFE (elnr, bound, lh);
-	/*
-        if (bound)
-          {
-            fes.GetSDofNrs (elnr, dnums);
-            fel = &fes.GetSFE (elnr, lh);
-          }
-        else
-          {
-            fes.GetDofNrs (elnr, dnums);
-            fel = &fes.GetFE (elnr, lh);
-          }
-	*/
+
         elu.AssignMemory (dnums.Size() * dim, lh);
 
         if(gf->GetCacheBlockSize() == 1)
@@ -1579,39 +1587,40 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
              !fes.DefinedOnBoundary(eltrans.GetElementIndex()) : 
              !fes.DefinedOn(eltrans.GetElementIndex()) ) return 0;
 
-	for (int k = 0; k < npts; k++)
-	  for (int i = 0; i < components; i++)
-	    values[k*svalues+i] = 0.0;
+	SliceMatrix<> mvalues(npts, components, svalues, values);
+	mvalues = 0;
+
+	IntegrationRule ir(npts, lh);
+	for (int i = 0; i < npts; i++)
+	  {
+	    ir[i] = IntegrationPoint (xref[i*sxref], xref[i*sxref+1]);
+	    ir[i].FacetNr() = facetnr;
+	  }
 
         if (bound)
           {
-            for (int k = 0; k < npts; k++)
-              {
-                HeapReset hr(lh);
-                
-                IntegrationPoint ip(xref[k*sxref], xref[k*sxref+1], 0, 0);
-		FlatVec<3> vx( (double*)x + k*sx);
-		Mat<3,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<3,2>;
+	    MappedIntegrationRule<2,3> mir(ir, eltrans, 1, lh);
 
-		MappedIntegrationPoint<2,3> mip (ip, eltrans, vx, mdxdxref); 
-                
-                for(int j = 0; j<bfi2d.Size(); j++)
-                  {
-		    FlatVector<SCAL> flux (bfi2d[j]->DimFlux(), lh);
-                    bfi2d[j]->CalcFlux (*fel, mip, elu, flux, applyd, lh);
-                    for (int i = 0; i < components; i++)
-                      values[k*svalues+i] += ((double*)(void*)&flux(0))[i];
-                  }
-              }
+	    for (int k = 0; k < npts; k++)
+	      {
+		Mat<2,3> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,3>;
+		FlatVec<3> vx( (double*)x + k*sx);
+		mir[k] = MappedIntegrationPoint<2,3> (ir[k], eltrans, vx, mdxdxref);
+	      }
+
+	    for(int j = 0; j < bfi2d.Size(); j++)
+	      {
+		FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
+		t1.Start();
+		bfi2d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
+		t1.Stop();
+		for (int k = 0; k < npts; k++)
+		  mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
+	      }
+
           }
         else
           {
-	    IntegrationRule ir(npts, lh);
-	    for (int i = 0; i < npts; i++)
-	      {
-		ir[i] = IntegrationPoint (xref[i*sxref], xref[i*sxref+1]);
-		ir[i].FacetNr() = facetnr;
-	      }
 	    MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
 
 	    for (int k = 0; k < npts; k++)
@@ -1627,8 +1636,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 		bfi2d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
 
 		for (int k = 0; k < npts; k++)
-		  for (int i = 0; i < components; i++)
-		    values[k*svalues+i] += ((double*)(void*)&flux(k,0))[i];
+		  mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
 	      }
           }
 
