@@ -649,7 +649,7 @@ namespace ngcomp
 		      LocalHeap lh = clh.Split();
 		      int nec = (element_coloring) ? (*element_coloring)[icol].Size() : ne;
 
-#pragma omp for 
+#pragma omp for schedule(dynamic)
 		      for (int ii = 0; ii < nec; ii++)
 			{
 			  int i = (element_coloring) ? (*element_coloring)[icol][ii] : ii;
@@ -1046,7 +1046,7 @@ namespace ngcomp
                 {
                   LocalHeap lh = clh.Split();
                   Array<int> dnums; 
-#pragma omp for 
+#pragma omp for schedule(dynamic)
                   for (int i = 0; i < nse; i++)
                     {
 #pragma omp atomic
@@ -1756,7 +1756,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		  LocalHeap lh = clh.Split();
 		  Array<int> dnums, idofs;
 		  
-#pragma omp for
+#pragma omp for schedule(dynamic)
 		  for (int i = 0; i < ne; i++)
 		    {
 #pragma omp atomic
@@ -1947,7 +1947,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
 		  Array<int> dnums, idofs, idofs1, odofs;
 		  int nec = (element_coloring) ? (*element_coloring)[icol].Size() : ne;
 		  
-#pragma omp for 
+#pragma omp for schedule(dynamic) 
 		  for (int ii = 0; ii < nec; ii++)
 		    {
 		      int i = (element_coloring) ? (*element_coloring)[icol][ii] : ii;
@@ -2423,7 +2423,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
                     Array<int> dnums;
                     // ElementTransformation eltrans;
                     
-#pragma omp for
+#pragma omp for schedule(dynamic)
                     for (int i = 0; i < ne; i++)
                       {
                         lh.CleanUp();
