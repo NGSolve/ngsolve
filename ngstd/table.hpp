@@ -73,14 +73,15 @@ public:
   /// number of elements in all rows
   int NElements() const { return index[size]; }
 
+  /*
   /// Access entry.
   FlatArray<T> operator[] (int i) 
   { 
     return FlatArray<T> (index[i+1]-index[i], data+index[i]); 
   }
-
+  */
   /// Access entry
-  FlatArray<T> operator[] (int i) const 
+  const FlatArray<T> operator[] (int i) const 
   { 
     return FlatArray<T> (index[i+1]-index[i], data+index[i]); 
   }
