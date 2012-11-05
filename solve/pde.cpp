@@ -845,7 +845,6 @@ namespace ngsolve
 
 
 
-
     for (int i = 0; i < preconditioners.Size(); i++)
       if(!preconditioners[i]->SkipCleanUp())
 	preconditioners[i]->CleanUpLevel();

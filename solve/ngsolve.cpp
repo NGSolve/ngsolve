@@ -837,6 +837,11 @@ void NGS_ParallelRun (const string & message)
 
   NGSOStream::SetGlobalActive (false);
 
+  // make sure to have lapack loaded (important for newer MKL !!!)
+  Matrix<> a(100), b(100), c(100);
+  a = 1; b = 2; c = a*b | Lapack;
+
+
   if (getenv ("NGSPROFILE"))
     {
       stringstream filename;
