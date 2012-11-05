@@ -206,6 +206,7 @@ namespace ngstd
       return *this;
     }
 
+    /*
     /// copies pointers
     const FlatArray & operator= (const FlatArray & a2)
     {
@@ -213,7 +214,23 @@ namespace ngstd
       data = a2.data;
       return *this;
     }
-    
+    */
+
+    /// copies array
+    const FlatArray & operator= (const FlatArray & a2) const
+    {
+      for (TSIZE i = 0; i < size; i++) data[i] = a2[i];
+      return *this;
+    }
+
+    template <typename T2, typename TA>
+    const FlatArray & operator= (const BaseArrayObject<T2,TA> & a2) const
+    {
+      for (int i = 0; i < size; i++) (*this)[i] = a2.Spec()[i];
+      return *this;
+    }
+
+
     /// Access array. range check by macro CHECK_RANGE
     T & operator[] (TSIZE i) const
     {
