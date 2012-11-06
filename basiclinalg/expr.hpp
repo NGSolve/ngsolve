@@ -1325,6 +1325,7 @@ namespace ngbla
     const TA & a;
   public:
     typedef typename TA::TELEM TELEM;
+    typedef typename TA::TSCAL TSCAL;
 
     ConjExpr (const TA & aa) : a(aa) { ; }
 
@@ -1365,24 +1366,23 @@ namespace ngbla
   /* ************************* InnerProduct ********************** */
 
 
-  inline double InnerProduct (double a, double b)
-  {
-    return a * b;
-  }
-
-  inline Complex InnerProduct (Complex a, Complex b)
-  {
-    return a * b;
-  }
+  inline double InnerProduct (double a, double b) {return a * b;}
+  inline Complex InnerProduct (Complex a, Complex b) {return a * b;}
+  inline Complex InnerProduct (double a, Complex b) {return a * b;}
+  inline Complex InnerProduct (Complex a, double b) {return a * b;}
 
 
   /**
      Inner product
   */
   template <class TA, class TB>
-  inline typename TA::TSCAL InnerProduct (const Expr<TA> & a, const Expr<TB> & b)
+  inline 
+  // typename TA::TSCAL 
+  typename mat_prod_type<typename TA::TSCAL, typename TB::TSCAL>::TMAT
+  InnerProduct (const Expr<TA> & a, const Expr<TB> & b)
   {
-    typedef typename TA::TSCAL TSCAL;
+    typedef typename mat_prod_type<typename TA::TSCAL, typename TB::TSCAL>::TMAT TSCAL;
+    // typedef typename TA::TSCAL TSCAL;
     
     if (a.Height() == 0) return TSCAL(0);
 
