@@ -265,9 +265,12 @@ namespace ngla
 
     if (elnr < elmats.Size())
       {
-        rowdnums[elnr] = dnr;
-//         if (!symmetric)
-	coldnums[elnr] = dnc;
+        // rowdnums[elnr] = dnr;
+	// coldnums[elnr] = dnc;
+
+	new (&rowdnums[elnr]) FlatArray<int> (dnr);
+	new (&coldnums[elnr]) FlatArray<int> (dnc);
+
         elmats[elnr].AssignMemory (sr, sc, &mat(0,0));
       }
       
@@ -304,9 +307,13 @@ namespace ngla
 
     if (elnr < elmats.Size())
       {
-        rowdnums[elnr] = dnr;
-//         if (!symmetric)
-	coldnums[elnr] = dnc;
+        // rowdnums[elnr] = dnr;
+	// coldnums[elnr] = dnc;
+
+	new (&rowdnums[elnr]) FlatArray<int> (dnr);
+	new (&coldnums[elnr]) FlatArray<int> (dnc);
+
+
         elmats[elnr].AssignMemory (sr, sc, &elmats[refelnr](0,0));
 	clone.Set(elnr);
       }
@@ -338,7 +345,7 @@ namespace ngla
 
 
 
-
+  
   template class ElementByElementMatrix<double>;
   template class ElementByElementMatrix<Complex>;  
   
