@@ -242,6 +242,13 @@ namespace ngla
     {
       bm.MultAdd (s, x, y);
     }  
+
+    virtual ostream & Print (ostream & ost) const
+    {
+      ost << "Transpose of " << endl;
+      bm.Print(ost);
+      return ost;
+    }
   };
 
 
