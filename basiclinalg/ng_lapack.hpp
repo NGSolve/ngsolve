@@ -1171,6 +1171,8 @@ namespace ngbla
 
 #else
 
+  typedef int integer;
+
   inline void LapackMultAtx (ngbla::FlatMatrix<double> a,
                              ngbla::FlatVector<double> x,
                              ngbla::FlatVector<double> y)
