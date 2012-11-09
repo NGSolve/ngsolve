@@ -1,5 +1,5 @@
-#ifndef FILE_AUTOPTR
-#define FILE_AUTOPTR
+#ifndef FILE_NGS_AUTOPTR
+#define FILE_NGS_AUTOPTR
 
 /**************************************************************************/
 /* File:   autoptr.hpp                                                    */
