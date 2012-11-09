@@ -5588,14 +5588,16 @@ namespace netgen
       bcnames[bcnr] = 0;
   }
 
-  string Mesh ::GetBCName ( int bcnr ) const
+  const string & Mesh ::GetBCName ( int bcnr ) const
   {
+    static string defaultstring = "default";
+
     if ( !bcnames.Size() )
-      return "default";
+      return defaultstring;
     if ( bcnames[bcnr] )
       return *bcnames[bcnr];
     else
-      return "default";
+      return defaultstring;
   }
 
   void Mesh :: SetUserData(const char * id, Array<int> & data)

@@ -2311,13 +2311,11 @@ namespace netgen
   }
 
 
-  string FaceDescriptor :: GetBCName () const
+  const string & FaceDescriptor :: GetBCName () const
   {
-    if ( bcname )
-      return *bcname;
-    else 
-      return "default";
-  
+    static string defaultstring = "default";
+    if (bcname) return *bcname;
+    return defaultstring;
   }
 
   /*

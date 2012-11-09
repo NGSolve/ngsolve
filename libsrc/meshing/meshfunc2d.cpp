@@ -44,7 +44,6 @@ namespace netgen
 		meshopt.ImproveMesh(mesh, mp);
 		break;
 	      }
-	    
 	    case 'c': 
 	      {
 		MeshOptimize2d meshopt;

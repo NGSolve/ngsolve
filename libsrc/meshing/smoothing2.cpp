@@ -865,7 +865,6 @@ namespace netgen
 	      //	      (*testout) << "x = " << x << endl;
 	    }
 
-	
 	  Point3d origp = mesh[pi];
 	  int loci = 1;
 	  double fact = 1;

@@ -585,7 +585,7 @@ namespace netgen
 
     DLL_HEADER void SetBCName ( int bcnr, const string & abcname );
 
-    string GetBCName ( int bcnr ) const;
+    const string & GetBCName ( int bcnr ) const;
 
     string * GetBCNamePtr ( int bcnr )
     { return bcnames[bcnr]; }

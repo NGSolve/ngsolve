@@ -847,12 +847,10 @@ namespace netgen
     const string * BCNamePtr () const 
     { return bcname; }
 
-    string GetBCName () const
+    const string & GetBCName () const
     {
-      if (! bcname )
-	{
-	  return "default";
-	}
+      static string defaultstring = "default";
+      if (! bcname ) return defaultstring;
       return *bcname;
     }
 
@@ -934,7 +932,7 @@ namespace netgen
     // Philippose - 06/07/2009
     // Get Surface colour
     Vec3d SurfColour () const { return surfcolour; }
-    string GetBCName () const; 
+    const string & GetBCName () const; 
     // string * BCNamePtr () { return bcname; }
     // const string * BCNamePtr () const  { return bcname; }
     void SetSurfNr (int sn) { surfnr = sn; }
