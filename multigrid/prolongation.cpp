@@ -486,25 +486,20 @@ namespace ngmg
 
 
 
-
-
+  CompoundProlongation :: 
+  CompoundProlongation(const CompoundFESpace * aspace)
+    : space(aspace) { ; }
 
   CompoundProlongation :: 
   CompoundProlongation(const CompoundFESpace * aspace,
 		       Array<const Prolongation*> & aprols)
-    : space(aspace), prols(aprols)
-  { 
-    *testout << "new compoundprolongation" << endl;
-  }
+    : space(aspace), prols(aprols) { ; }
 
-  CompoundProlongation :: 
-  ~CompoundProlongation()
-  { ; }
+  CompoundProlongation :: ~CompoundProlongation() { ; }
   
 
   void CompoundProlongation :: Update ()
   {
-    *testout << "update compound prolongation" << endl;
     for (int i = 0; i < prols.Size(); i++)
       if (prols[i])
 	const_cast<Prolongation*>(prols[i]) -> Update();
