@@ -4,6 +4,11 @@
 #include <parallelngs.hpp>
 #include <la.hpp>
 
+namespace ngstd
+{
+  MPI_Comm ngs_comm;
+}
+
 
 namespace ngla
 {
@@ -355,29 +360,22 @@ namespace ngla
     
     double sum = 0;
     
-    // if (id > 0)
-    {
-	if (this->entrysize == 1)
-	  {
-	    FlatVector<double> fv = this -> FVDouble ();
-	    for (int dof = 0; dof < paralleldofs->GetNDofLocal(); dof++)
-	      if (paralleldofs->IsMasterDof ( dof ) )
-		sum += sqr (fv[dof]);
-	  }
-	else
-	  {
-	    FlatMatrix<double> fv (paralleldofs->GetNDofLocal(), 
-				   this->entrysize, (double*)this->Memory());
-	    for (int dof = 0; dof < paralleldofs->GetNDofLocal(); dof++)
-	      if (paralleldofs->IsMasterDof ( dof ) )
-		sum += L2Norm2 (fv.Row(dof));
-	  }
+    if (this->entrysize == 1)
+      {
+	FlatVector<double> fv = this -> FVDouble ();
+	for (int dof = 0; dof < paralleldofs->GetNDofLocal(); dof++)
+	  if (paralleldofs->IsMasterDof ( dof ) )
+	    sum += sqr (fv[dof]);
+      }
+    else
+      {
+	FlatMatrix<double> fv (paralleldofs->GetNDofLocal(), 
+			       this->entrysize, (double*)this->Memory());
+	for (int dof = 0; dof < paralleldofs->GetNDofLocal(); dof++)
+	  if (paralleldofs->IsMasterDof ( dof ) )
+	    sum += L2Norm2 (fv.Row(dof));
       }
       
-      /*
-	double globalsum = 0;
-	MPI_Allreduce (&sum, &globalsum, 1, MPI_DOUBLE, MPI_SUM, ngs_comm);
-      */
     double globsum = MyMPI_AllReduce (sum, MPI_SUM, ngs_comm);
     return sqrt (globsum);
   }

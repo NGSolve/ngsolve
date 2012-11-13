@@ -13,7 +13,7 @@ namespace ngparallel
 
 
 // #include "mpiwrapper.hpp"
-#include "paralleldofs.hpp"
+// #include "paralleldofs.hpp"
 
 #include "parallelvector.hpp"
 #include "parallel_matrices.hpp"
