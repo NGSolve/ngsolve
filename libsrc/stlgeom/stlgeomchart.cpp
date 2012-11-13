@@ -445,7 +445,7 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
     }
   
   NgProfiler::StopTimer (timer1);
-  NgProfiler::Print(stdout);
+  // NgProfiler::Print(stdout);
 
 
   PrintMessage(5,"");
