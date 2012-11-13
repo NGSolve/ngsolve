@@ -9,11 +9,12 @@
 
 #include <la.hpp>
 #include <comp.hpp>
-#include <parallelngs.hpp>
+// #include <parallelngs.hpp>
 
 namespace ngla
 {
-  using namespace ngparallel;
+  // using namespace ngparallel;
+  using namespace ngcomp;
 
 #define JOB_INIT -1
 #define JOB_END -2

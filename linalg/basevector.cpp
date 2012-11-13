@@ -37,7 +37,6 @@ namespace ngla
     return *this;
   }
 
-
   BaseVector & BaseVector :: Scale (double scal)
   {
     FVDouble() *= scal;

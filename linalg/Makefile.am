@@ -6,7 +6,7 @@ libngla_la_SOURCES = basematrix.cpp basevector.cpp blockjacobi.cpp cg.cpp chebys
 
 libngla_la_LIBADD = $(top_builddir)/basiclinalg/libngbla.la 
 
-include_HEADERS = basematrix.hpp basevector.hpp blockjacobi.hpp cg.hpp chebyshev.hpp commutingAMG.hpp eigen.hpp jacobi.hpp la.hpp order.hpp pardisoinverse.hpp sparsecholesky.hpp sparsematrix.hpp special_matrix.hpp superluinverse.hpp mumpsinverse.hpp vvector.hpp elementbyelement.hpp arnoldi.hpp
+include_HEADERS = basematrix.hpp basevector.hpp blockjacobi.hpp cg.hpp chebyshev.hpp commutingAMG.hpp eigen.hpp jacobi.hpp la.hpp order.hpp pardisoinverse.hpp sparsecholesky.hpp sparsematrix.hpp special_matrix.hpp superluinverse.hpp mumpsinverse.hpp vvector.hpp elementbyelement.hpp arnoldi.hpp paralleldofs.hpp
 
 libngla_la_LDFLAGS = -avoid-version  $(PARDISO_LIBS) $(MUMPS_LIBS) $(SUPERLU_LIBS)  $(LAPACK_LIB)
 
