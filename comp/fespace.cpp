@@ -282,11 +282,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
 
 
-#ifdef PARALLEL	
-    AllReduceNodalData (NT_VERTEX, dirichlet_vertex, MPI_LOR, ma);
-    AllReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR, ma);
-    AllReduceNodalData (NT_FACE, dirichlet_face, MPI_LOR, ma);
-#endif
+    ma.AllReduceNodalData (NT_VERTEX, dirichlet_vertex, MPI_LOR);
+    ma.AllReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR);
+    ma.AllReduceNodalData (NT_FACE, dirichlet_face, MPI_LOR);
     
     if (print)
       {
@@ -1607,14 +1605,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     name="CompoundFESpaces";
     DefineDefineFlag("compound");
     DefineStringListFlag("spaces");
-    if(parseflags) CheckFlags(flags);
+    if (parseflags) CheckFlags(flags);
     
-    Array<const Prolongation*> prols;
-    prol = new CompoundProlongation (this, prols);
+    // Array<const Prolongation*> prols;
+    // prol = new CompoundProlongation (this, prols);
+    prol = new CompoundProlongation (this);
   }
-
-
-
 
 
 
@@ -1629,11 +1625,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
     DefineStringListFlag("spaces");
     if(parseflags) CheckFlags(flags);
     
+    /*
     Array<const Prolongation*> prols(spaces.Size());
     for (int i = 0; i < spaces.Size(); i++)
       prols[i] = spaces[i]->GetProlongation();
-
     prol = new CompoundProlongation (this, prols);
+    */
+
+    CompoundProlongation * hprol = new CompoundProlongation (this);
+    for (int i = 0; i < spaces.Size(); i++)
+      hprol -> AddProlongation (spaces[i]->GetProlongation());
+    prol = hprol;
   }
 
 
@@ -1656,7 +1658,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     cummulative_nd[0] = 0;
     for (int i = 0; i < spaces.Size(); i++)
       {
-	const_cast<FESpace*> (spaces[i])->Update(lh);
+	// const_cast<FESpace*> (spaces[i])->Update(lh);
+	spaces[i] -> Update(lh);
 	cummulative_nd[i+1] = cummulative_nd[i] + spaces[i]->GetNDof();
       }
 
@@ -1953,24 +1956,47 @@ void CompoundFESpace::TransformMat<SliceMatrix<Complex> >
 
 
 
-
-
-
-
-
-
-  FESpaceClasses::FESpaceInfo::
-  FESpaceInfo (const string & aname,
-	       FESpace* (*acreator)(const MeshAccess & ma, const Flags & flags))
-    : name(aname), creator(acreator)
+  Table<int> * Nodes2Table (const MeshAccess & ma,
+			    const Array<Node> & dofnodes)
   {
-    ;
+    int ndof = dofnodes.Size();
+
+    Array<int> distprocs;
+    Array<int> ndistprocs(ndof);
+    ndistprocs = 0;
+    for (int i = 0; i < ndof; i++)
+      {
+	if (dofnodes[i].GetNr() == -1) continue;
+	ma.GetDistantProcs (dofnodes[i], distprocs);
+	ndistprocs[i] = distprocs.Size();
+      }
+
+    Table<int> * dist_procs = new Table<int> (ndistprocs);
+
+    for (int i = 0; i < ndof; i++)
+      {
+	if (dofnodes[i].GetNr() == -1) continue;
+	ma.GetDistantProcs (dofnodes[i], distprocs);
+	(*dist_procs)[i] = distprocs;
+      }
+
+    return dist_procs;
   }
-  
-  FESpaceClasses :: FESpaceClasses ()
-  {
-    ;
-  }
+
+
+  ParallelMeshDofs :: ParallelMeshDofs (const MeshAccess & ama, 
+					const Array<Node> & adofnodes, 
+					int dim, bool iscomplex)
+    : ParallelDofs (ma.GetCommunicator(),
+		    Nodes2Table (ama, adofnodes), dim, iscomplex),		    
+      ma(ama), dofnodes(adofnodes)
+  { ; }
+
+
+
+
+
+
 
   FESpaceClasses :: ~FESpaceClasses()
   {
@@ -1989,11 +2015,9 @@ void CompoundFESpace::TransformMat<SliceMatrix<Complex> >
   FESpaceClasses::GetFESpace(const string & name)
   {
     for (int i = 0; i < fesa.Size(); i++)
-      {
-	if (name == fesa[i]->name)
-	  return fesa[i];
-      }
-    return 0;
+      if (name == fesa[i]->name)
+	return fesa[i];
+    return NULL;
   }
 
   void FESpaceClasses :: Print (ostream & ost) const

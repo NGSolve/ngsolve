@@ -25,18 +25,18 @@ namespace ngcomp
   protected:
     /// Finite element space
     const FESpace & fespace;
-    /// Test-space if different from trial-space, otherwise 0
+    /// Test-space if different from trial-space, otherwise 0 (non operational)
     const FESpace * fespace2;
 
-    ///
+    /// don't assemble matrix
     bool nonassemble;
-    /// 
+    /// store only diagonal of matrix
     bool diagonal;
-    ///
+    /// store matrices on mesh hierarchy
     bool multilevel;
     /// galerkin projection of coarse grid matrices
     bool galerkin;
-    /// complex forms are hermitean
+    /// complex forms are hermitean (non operational)
     bool hermitean;
     /// bilinear form is symmetric
     bool symmetric;
@@ -56,53 +56,64 @@ namespace ngcomp
 
     /// matrices (sparse, application, diagonal, ...)
     Array<BaseMatrix*> mats;
+
     /// bilinearform-integrators
     Array<BilinearFormIntegrator*> parts;
+
     /// is biform responsible for the deallocation ?
     Array<bool> parts_deletable;
-    ///
+
+    /*
     Array<BilinearFormIntegrator*> independent_parts;
-    /// is biform responsible for the deallocation ?
     Array<bool> independent_parts_deletable;
-    ///
     Array< Vec<2,int> > independent_meshindex;
+    */
 
-    ///
+    /// does some timing in assemble
     bool timing;
+    /// prints assembled matrix to testout
     bool print;
+    /// prints element matrices to testout
     bool printelmat;
+    /// calculates eigenvalues of element matrices
     bool elmat_ev;
+    /// does static condensation of internal dofs
     bool eliminate_internal;
+    /// keeps matrices for reconstruction of internal dofs
     bool keep_internal;
-    ///should A_ii itself be stored?!
+    /// should A_ii itself be stored?!
     bool store_inner; 
-
+    
+    /// precomputes some data for each element
     bool precompute;
+    /// precomputed element-wise data
     Array<void*> precomputed_data;
 
 
   public:
+    /// generate a bilinear-form
     BilinearForm (const FESpace & afespace,
 		  const string & aname, 
 		  const Flags & flags);
 
-    ///
+    /// generate a bilinear-form
     BilinearForm (const FESpace & afespace, 
 		  const FESpace & afespace2, 
 		  const string & aname,
 		  const Flags & flags);
-    ///
+    /// deletes integrators (if deletable)
     virtual ~BilinearForm ();
   
 
     ///
-    void AddIntegrator (BilinearFormIntegrator * bfi, const bool deletable = true);
+    void AddIntegrator (BilinearFormIntegrator * bfi, bool deletable = true);
 
-    ///
+    /*
     void AddIndependentIntegrator (BilinearFormIntegrator * bfi,
 				   const int master_surface,
 				   const int slave,
 				   const bool deletable = true);
+    */
   
     ///
     int NumIntegrators () const 
@@ -110,24 +121,20 @@ namespace ngcomp
       return parts.Size(); 
     }
 
-    int NumIndependentIntegrators(void) const
-    {
-      return independent_parts.Size();
-    }
+    /*
+    int NumIndependentIntegrators(void) const {return independent_parts.Size();}
+    */
 
-    ///
-    BilinearFormIntegrator * GetIntegrator (const int i) 
-    { return parts[i]; }
+    /// the i-th integrator
+    BilinearFormIntegrator * GetIntegrator (int i) const { return parts[i]; }
 
-    ///
-    const BilinearFormIntegrator * GetIntegrator (const int i) const 
-    { return parts[i]; }
+    // const BilinearFormIntegrator * GetIntegrator (int i) const { return parts[i]; }
 
-    ///
+
+    /*
     BilinearFormIntegrator * GetIndependentIntegrator (const int i) 
     { return independent_parts[i]; }
 
-    ///
     const BilinearFormIntegrator * GetIndependentIntegrator (const int i) const 
     { return independent_parts[i]; }
 
@@ -139,29 +146,33 @@ namespace ngcomp
     {
       return independent_meshindex[i](1);
     }
+    */
 
 
     /// for static condensation of internal bubbles
-    void SetLinearForm (LinearForm * alf)
-    { linearform = alf; }
+    void SetLinearForm (LinearForm * alf) { linearform = alf; }
     
-    void SetPreconditioner (Preconditioner * pre)
-    { 
-      preconditioners.Append (pre); 
-    }
+    /// preconditioner gets element-matrix
+    void SetPreconditioner (Preconditioner * pre) 
+    { preconditioners.Append (pre); }
 
     /// generates matrix graph
     virtual MatrixGraph * GetGraph (int level, bool symmetric);
-    ///
+
+    /// assembles the matrix
     void Assemble (LocalHeap & lh);
-    ///
+
+    /// re-assembles the matrix.
+    /// if reallocate is false, the existing matrix is reused
     void ReAssemble (LocalHeap & lh, bool reallocate = 0);
-    ///
+
+    /// assembles matrix at linearization point given by lin
+    /// needed for Newton's method
     virtual void AssembleLinearization (const BaseVector & lin,
 					LocalHeap & lh, 
 					bool reallocate = 0) = 0;
 
-    ///
+    /// applies the matrix without assembling
     void ApplyMatrix (const BaseVector & x,
 		      BaseVector & y) const
     {
@@ -169,167 +180,163 @@ namespace ngcomp
       AddMatrix (1, x, y);
     }
 
-    ///
+    /// y += val * Mat * x
     virtual void AddMatrix (double val, const BaseVector & x,
 			    BaseVector & y) const = 0;
   
+    /// y += val * Mat * x
     virtual void AddMatrix (Complex val, const BaseVector & x,
 			    BaseVector & y) const = 0;
   
-    ///
+    /// y += val * lin.mat * x
     virtual void ApplyLinearizedMatrixAdd (double val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
 					   BaseVector & y) const = 0;
-    ///
+    /// y += val * lin.mat * x
     virtual void ApplyLinearizedMatrixAdd (Complex val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
 					   BaseVector & y) const = 0;
 
-
+    /// evaulates internal energy (usually  1/2 x^T A x)
     virtual double Energy (const BaseVector & x) const = 0;
 
-    ///
-    const BaseMatrix & GetMatrix () const
-    { 
-      return *mats.Last(); 
-    }
-    operator const BaseMatrix& () const { return GetMatrix(); }
+    /// returns the assembled matrix
+    BaseMatrix & GetMatrix () const { return *mats.Last(); }
 
-    ///
-    const BaseMatrix & GetMatrix (int level) const
-    { 
-      return *mats[level];
-    }
+    // operator const BaseMatrix& () const { return GetMatrix(); }
 
-    ///  
-    BaseMatrix & GetMatrix () 
-    { 
-      return *mats.Last(); 
-    }
+    /// returns the assembled matrix on a given level
+    BaseMatrix & GetMatrix (int level) const { return *mats[level]; }
 
-    ///
-    BaseMatrix & GetMatrix (int level) 
-    { 
-      return *mats[level];
-    }
 
-    ///  
+    // BaseMatrix & GetMatrix ()  { return *mats.Last(); }
+    // BaseMatrix & GetMatrix (int level)  { return *mats[level]; }
+
+    /// reconstruct internal dofs from static condensation 
+    /// -A_ii^{-1} A_ib
     virtual BaseMatrix & GetHarmonicExtension () const = 0;
-    ///  
+
+    /// modify rhs doue to static condensation.
+    /// -A_bi A_ii^{-1} 
+    /// stored only for non-symmetric biforms
     virtual BaseMatrix & GetHarmonicExtensionTrans () const = 0;
-    ///  
+
+    /// returns inverse of A_ii
     virtual BaseMatrix & GetInnerSolve () const = 0;
-    ///  
+
+    /// returns A_ii
     virtual BaseMatrix & GetInnerMatrix () const = 0;
 
-    bool HasLowOrderBilinearForm(void) const {return low_order_bilinear_form != NULL;}
-    bool UsesEliminateInternal(void) const {return eliminate_internal;}
-    bool UsesKeepInternal(void) const {return keep_internal;}
-    bool UsesStoreInner(void) const {return store_inner;}
+    /// is there a low-order biform ?
+    bool HasLowOrderBilinearForm () const { return low_order_bilinear_form != NULL; }
 
-    const BilinearForm & GetLowOrderBilinearForm() const
+    /// returns the low-order biform
+    BilinearForm & GetLowOrderBilinearForm() const
     {
       return *low_order_bilinear_form;
     }
 
-  
-    BilinearForm & GetLowOrderBilinearForm() 
-    {
-      return *low_order_bilinear_form;
-    }
 
-  
+    /// use static condensation ?
+    bool UsesEliminateInternal () const { return eliminate_internal; }
 
-    ///
-    const FESpace & GetFESpace() const
-    { return fespace; }
-    ///
-    int MixedSpaces () const
-    { return fespace2 != NULL; }
-    ///
-    const FESpace & GetFESpace2() const
-    { return *fespace2; }
+    /// stores the matrices for reconstructing internal dofs ?
+    bool UsesKeepInternal () const { return keep_internal; }
 
-    ///
-    int GetNLevels() const
-    { return mats.Size(); }
-
-    bool IsSymmetric(void) const {return symmetric;}
+    /// does it store Aii ?
+    bool UsesStoreInner () const { return store_inner; }
 
 
-    void SetNonAssemble (bool na = true)
-    { nonassemble = na; }
+    /// the finite element space
+    const FESpace & GetFESpace() const { return fespace; }
+
+
+    /// uses mixed spaces (non operational)
+    bool MixedSpaces () const { return fespace2 != NULL; }
+
+    /// returns the second space (form mixed spaces)
+    const FESpace & GetFESpace2() const { return *fespace2; }
 
     ///
-    void SetGalerkin (bool agalerkin = true)
-    { galerkin = agalerkin; }
-    ///
-    void SetDiagonal (bool adiagonal = true)
-    { diagonal = adiagonal; }
-    ///
-    void SetSymmetric (bool asymmetric = true)
-    { symmetric = asymmetric; }
-    ///
-    void SetHermitean (bool ahermitean = true)
-    { hermitean = ahermitean; }
-    ///
-    void SetMultiLevel (bool amultilevel = 1)
-    { multilevel = amultilevel; }
+    int GetNLevels() const { return mats.Size(); }
 
-    void SetTiming (bool at) 
-    { timing = at; }
+    /// is the form symmetric ?
+    bool IsSymmetric(void) const { return symmetric; }
+
+    /// don't assemble the matrix
+    void SetNonAssemble (bool na = true) { nonassemble = na; }
+
+    ///
+    void SetGalerkin (bool agalerkin = true) { galerkin = agalerkin; }
+
+    ///
+    void SetDiagonal (bool adiagonal = true) { diagonal = adiagonal; }
+
+    ///
+    void SetSymmetric (bool asymmetric = true) { symmetric = asymmetric; }
+
+    ///
+    void SetHermitean (bool ahermitean = true) { hermitean = ahermitean; }
+
+    ///
+    void SetMultiLevel (bool amultilevel = 1) { multilevel = amultilevel; }
+
+    ///
+    void SetTiming (bool at) { timing = at; }
 
     void SetEliminateInternal (bool eliminate) 
     { eliminate_internal = eliminate; }
+
     void SetKeepInternal (bool keep)
     { keep_internal = keep; }
+
     void SetStoreInner (bool storei) 
     { store_inner = storei; }
+
     void SetPrint (bool ap);
     void SetPrintElmat (bool ap);
     void SetElmatEigenValues (bool ee);
 
-    ///
+    /// computes low-order matrices from fines matrix
     void GalerkinProjection ();
 
-
+    /// reconstruct internal dofs
     virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const = 0;
   
-    ///
-    void SetEpsRegularization(double val)
-    { eps_regularization = val; }
-    ///
-    void SetUnusedDiag (double val)
-    { unuseddiag = val; }
+    /// add eps I to the assembled matrix
+    void SetEpsRegularization(double val) { eps_regularization = val; }
 
-    ///
-    int UseGalerkin () const
-    { return galerkin; }
+    /// set matrix diagonal for unused dofs to this value
+    void SetUnusedDiag (double val) { unuseddiag = val; }
 
-    ///
+    /// does it use Galerkin projection ?
+    bool UseGalerkin () const { return galerkin; }
+
+    /// biform object
     virtual string GetClassName () const
     {
       return "BilinearForm";
     }
 
-    ///
+    /// prints report to file
     virtual void PrintReport (ostream & ost);
 
     ///
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
-    ///
+    /// creates a compatible vector
     virtual BaseVector * CreateVector() const = 0;
 
     /// frees matrix 
     virtual void CleanUpLevel() { ; }
+
   private:
-    ///
+    /// assemble matrix
     virtual void DoAssemble (LocalHeap & lh) = 0;
 
-    ///
+    /// allocates (sparse) matrix data-structure
     virtual void AllocateMatrix () = 0;
   };
 
@@ -338,26 +345,22 @@ namespace ngcomp
 
 
 
-
-
+  /**
+     We specify the scalar (double or Complex) of the biform.
+   */
   template <class SCAL>
   class NGS_DLL_HEADER S_BilinearForm : public BilinearForm
   {
   protected:
 
-    /*
-    BaseMatrix * harmonicext;
-    BaseMatrix * innersolve;
-    BaseMatrix * innermatrix;
-    */
     ElementByElementMatrix<SCAL> * harmonicext;
     BaseMatrix * harmonicexttrans;
-    // ElementByElementMatrix<SCAL> * harmonicexttrans;
     ElementByElementMatrix<SCAL> * innersolve;
     ElementByElementMatrix<SCAL> * innermatrix;
 
         
   public:
+    /// 
     S_BilinearForm (const FESpace & afespace, const string & aname,
 		    const Flags & flags)
       : BilinearForm (afespace, aname, flags) 
@@ -435,7 +438,7 @@ namespace ngcomp
     ///
     virtual void DoAssemble (LocalHeap & lh);
     ///
-    virtual void DoAssembleIndependent (BitArray & useddof, LocalHeap & lh);
+    // virtual void DoAssembleIndependent (BitArray & useddof, LocalHeap & lh);
     ///
     virtual void AssembleLinearization (const BaseVector & lin,
 					LocalHeap & lh, 
@@ -641,14 +644,22 @@ namespace ngcomp
 
 
 
-
+  /**
+     Allocates a bilinearform.
+     Some flags are:
+     -symmetric   ... assembles a symmetric matrix
+   */
   extern NGS_DLL_HEADER BilinearForm * CreateBilinearForm (const FESpace * space,
-					    const string & name,
-					    const Flags & flags);
+							   const string & name,
+							   const Flags & flags);
 
 
 
-  ///
+  /**
+     This objects provide the bilinear-form application as matrix vector product.
+     If the bilinearform is indeed non-linear in the first argumen, the operator*
+     will perform the non-linear operator application.
+   */
   class NGS_DLL_HEADER BilinearFormApplication : public BaseMatrix
   {
   protected:
@@ -665,27 +676,30 @@ namespace ngcomp
     ///
     virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const;
     ///
-    // virtual void MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const;
-    ///
     virtual BaseVector * CreateVector () const;
-
+    ///
     virtual int VHeight() const
     {
       return bf->GetFESpace().GetNDof(); 
     }
+    ///
     virtual int VWidth() const
     {
       return bf->GetFESpace().GetNDof(); 
     }
   };
 
-
+  /**
+     Applies the matrix-vector product of linearized matrix.
+     Linearization point is given in the constructor
+   */
   class NGS_DLL_HEADER LinearizedBilinearFormApplication : public BilinearFormApplication 
   {
   protected:
     const BaseVector * veclin;
 
   public:
+    ///
     LinearizedBilinearFormApplication (const BilinearForm * abf,
 				       const BaseVector * aveclin);
 
@@ -695,12 +709,12 @@ namespace ngcomp
     virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod) const;
     ///
     virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const;
-    ///
-    // virtual void MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const;
-
   };
 
 
+  /**
+     This bilinearform stores the element-matrices
+   */
   template<class SCAL>
   class ElementByElement_BilinearForm : public S_BilinearForm<SCAL>
   {

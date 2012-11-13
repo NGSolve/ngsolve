@@ -208,8 +208,8 @@ namespace ngcomp
       }
     
 
-    AllReduceNodalData ((ma.GetDimension()==2) ? NT_EDGE : NT_FACE, 
-			fine_facet, MPI_LOR, ma);
+    ma.AllReduceNodalData ((ma.GetDimension()==2) ? NT_EDGE : NT_FACE, 
+			   fine_facet, MPI_LOR);
 
 
     // update dofs

@@ -25,8 +25,9 @@ namespace ngcomp
     Array<bool> parts_deletable;
     /// do the integration on independent meshes
     bool independent;
-
+    /// print the assembled vector to testout
     bool print;
+    /// print element vectos to testout
     bool printelvec;
 
     bool allocated;
@@ -48,7 +49,7 @@ namespace ngcomp
 
 
     ///
-    virtual void AddIntegrator (LinearFormIntegrator * lfi, const bool deletable = true);
+    virtual void AddIntegrator (LinearFormIntegrator * lfi, bool deletable = true);
 
     ///
     virtual const LinearFormIntegrator * GetIntegrator (int i) const
