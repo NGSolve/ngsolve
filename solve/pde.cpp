@@ -1286,6 +1286,7 @@ namespace ngsolve
       }
   }
   
+  /*
   void PDE :: AddIndependentBilinearFormIntegrator (const string & name, BilinearFormIntegrator * part,
 						    const int master, const int slave,
 						    const bool deletable)
@@ -1301,7 +1302,7 @@ namespace ngsolve
 	cerr << IM(1) << "Bilinearform = " << form << ", part = " << part << endl;
       }
   }
-
+  */
  
   void PDE :: AddLinearFormIntegrator (const string & name, LinearFormIntegrator * part)
   {

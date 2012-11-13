@@ -234,10 +234,13 @@ namespace ngsolve
     ///
     void AddBilinearFormIntegrator (const string & name, BilinearFormIntegrator * part,
 				    const bool deletable = true);
-    ///
+
+    /*
     void AddIndependentBilinearFormIntegrator (const string & name, BilinearFormIntegrator * part,
 					       const int master, const int slave,
 					       const bool deletable = true);
+    */
+
     ///
     void AddLinearFormIntegrator (const string & name, LinearFormIntegrator * part);
 

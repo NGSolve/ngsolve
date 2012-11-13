@@ -1305,8 +1305,8 @@ namespace ngsolve
 	      for(int i = 0; i < source->NumIntegrators(); i++)
 		pde->AddBilinearFormIntegrator(name,source->GetIntegrator(i),false);
 	    
-	      for(int i = 0; i < source->NumIndependentIntegrators(); i++)
-		pde->AddBilinearFormIntegrator(name,source->GetIndependentIntegrator(i),false);
+	      // for(int i = 0; i < source->NumIndependentIntegrators(); i++)
+	      // pde->AddBilinearFormIntegrator(name,source->GetIndependentIntegrator(i),false);
 	    }
 
 	  //
