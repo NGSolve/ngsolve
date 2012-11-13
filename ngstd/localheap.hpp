@@ -119,9 +119,11 @@ namespace ngstd
       return reinterpret_cast<T*> (oldp);
     }
 
+  private:
     ///
     NGS_DLL_HEADER void ThrowException() throw (LocalHeapOverflow);
 
+  public:
     /// free memory (dummy function)
     void Free (void * data) throw () 
     {

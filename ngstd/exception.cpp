@@ -15,10 +15,21 @@ namespace ngstd
     cout << "create ngstd::Exception, what = " << s << endl;
   }
 
+  Exception :: Exception (const char * s) 
+    : what(s)
+  { 
+    cout << "create ngstd::Exception, what = " << s << endl;
+  }
+
   Exception :: ~Exception () 
   { ; }
 
   void Exception :: Append (const string & s)
+  { 
+    what += s; 
+  }
+
+  void Exception :: Append (const char * s)
   { 
     what += s; 
   }
