@@ -1,4 +1,9 @@
-AC_INIT([ngsolve],[5.0-dev],[])
+# define([svnversion], esyscmd([sh -c "svnversion|tr -d '\n'"]))dnl
+# AC_INIT([ngsolve],[5.0-dev-r.svnversion],[])
+# AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+# AC_DEFINE(SVN_REVISION, "svnversion", [SVN Revision])
+
+AC_INIT([ngsolve],[5.1-dev],[])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -125,14 +130,14 @@ AC_ARG_ENABLE([vt],
         )       
 
 echo "creating compiler wrapper ngscxx"
-echo "$CXX $CXXFLAGS -I. -I$netgendir/include -L$netgendir/lib -fpic $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*" > ngscxx
-chmod a+x ngscxx
+echo "$CXX $CXXFLAGS -I. -I$netgendir/include -L$netgendir/lib -fpic $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*  $LAPACK_LIBS" > ngscxx
+chmod a+x ngscxx 
 
 
 
 AC_CONFIG_HEADERS(config.h) AC_CONFIG_FILES(Makefile include/Makefile
 ngstd/Makefile basiclinalg/Makefile linalg/Makefile fem/Makefile
 comp/Makefile solve/Makefile multigrid/Makefile parallel/Makefile 
-programming_demos/Makefile pde_tutorial/Makefile windows/Makefile)
+pde_tutorial/Makefile windows/Makefile)
 
 AC_OUTPUT
