@@ -42,18 +42,18 @@ namespace ngfem
 
   public:
     /// polymorphism: if specific is set, use it.
-    ElementTransformation * specific;
+    // ElementTransformation * specific;
     ///
-    ElementTransformation () { higher_integration_order = false; specific = NULL; }
+    ElementTransformation () { higher_integration_order = false; } // specific = NULL; }
     ///
-    virtual ~ElementTransformation() { delete specific; }
+    virtual ~ElementTransformation() { ; } // delete specific; }
     /// set data: is it a boundary, element number, and element index
     virtual void SetElement (bool aboundary, int aelnr, int aelindex)
     {
       // boundary = Boundary();  // aboundary;
       elnr = aelnr;
       elindex = aelindex;
-      if (specific) specific -> SetElement (aboundary, aelnr, aelindex);
+      // if (specific) specific -> SetElement (aboundary, aelnr, aelindex);
       // iscurved = false;
     }
     /// set geometric type of element
@@ -66,10 +66,12 @@ namespace ngfem
     ELEMENT_TYPE GetElementType () const { return eltype; }
     /// calculates the Jacobi matrix
     virtual void CalcJacobian (const IntegrationPoint & ip,
-			       FlatMatrix<> dxdxi) const
+			       FlatMatrix<> dxdxi) const = 0;
+    /*
     {
       specific -> CalcJacobian (ip, dxdxi);
     }
+    */
 
     /*
     /// Calculates the Jacobi matrix
@@ -82,11 +84,12 @@ namespace ngfem
     */
     /// calculate the mapped point
     virtual void CalcPoint (const IntegrationPoint & ip,
-			    FlatVector<> point) const
+			    FlatVector<> point) const = 0;
+    /*
     {
       specific -> CalcPoint (ip, point);
     }
-
+    */
     /*
     /// calculate the mapped point
     void CalcPoint (const IntegrationPoint & ip,
@@ -99,11 +102,12 @@ namespace ngfem
 
     /// calculate point and Jacobi matrix
     virtual void CalcPointJacobian (const IntegrationPoint & ip,
-				    FlatVector<> point, FlatMatrix<> dxdxi) const
+				    FlatVector<> point, FlatMatrix<> dxdxi) const = 0;
+      /*
     {
       specific -> CalcPointJacobian (ip, point, dxdxi);
     }
-
+      */
     /*
     /// calculate point and Jacobi matrix
     void CalcPointJacobian (const IntegrationPoint & ip,
@@ -116,11 +120,12 @@ namespace ngfem
 
     /// Calculate points and Jacobimatrices in all points of integrationrule
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
-					 BaseMappedIntegrationRule & mir) const
+					 BaseMappedIntegrationRule & mir) const = 0;
+      /*
     {
       specific -> CalcMultiPointJacobian (ir, mir);
     }
-    
+      */
 
     /// Calcs the normal vector in ip
     void CalcNormalVector (const IntegrationPoint & ip,
@@ -153,17 +158,20 @@ namespace ngfem
   
   
     /// returns space dimension of physical elements
-    virtual int SpaceDim () const
+    virtual int SpaceDim () const = 0;
+      /*
     {
       return specific->SpaceDim();
     }
-    
+      */
+
     /// is it a mapping for boundary elements ?
-    virtual bool Boundary() const
+    virtual bool Boundary() const = 0;
+      /*
     {
       return specific->Boundary();
     }
-
+      */
 
     void SetHigherIntegrationOrder(void) {higher_integration_order = true;}
     void UnSetHigherIntegrationOrder(void) {higher_integration_order = false;}
@@ -173,29 +181,39 @@ namespace ngfem
     }
 
     /// has the element non-constant Jacobian ?
-    virtual bool IsCurvedElement() const
+    virtual bool IsCurvedElement() const 
+    {
+      return false;
+    }
+    /*
     {
       return specific -> IsCurvedElement();
     }
+    */
 
     virtual void GetSort (FlatArray<int> sort) const
+    { ; }
+    /*
     {
       if (specific) specific -> GetSort (sort);
     }
+    */
 
     /// return a mapped integration point on localheap
-    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
+    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const = 0;
+    /*
     {
       return (*specific) (ip, lh);
     }
-
+    */
 
     /// return a mapped integration rule on localheap
-    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const
+    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const = 0;
+    /*
     {
       return (*specific) (ir, lh);
     }
-
+    */
 
   private:
     ElementTransformation (const ElementTransformation & eltrans2) { ; }
