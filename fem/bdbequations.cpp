@@ -114,7 +114,6 @@ namespace ngfem
 
 
 
-
   template class MassIntegrator<1>;
   template class MassIntegrator<2>;
   template class MassIntegrator<3>;
@@ -142,7 +141,6 @@ namespace ngfem
   template class NeumannIntegrator<1>;
   template class NeumannIntegrator<2>;
   template class NeumannIntegrator<3>;
-
 
 
 
