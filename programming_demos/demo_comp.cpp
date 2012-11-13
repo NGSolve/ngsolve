@@ -21,7 +21,7 @@ int main (int argc, char **argv)
 
   H1HighOrderFESpace fes(ma, Flags("order=2"));
   
-  T_GridFunction<double> gfu (fes, "gfu", Flags());
+  T_GridFunction<double> gfu (fes);
 
   T_BilinearFormSymmetric<double> bfa(fes, "bfa", Flags("symmetric", "printelmat"));
 
@@ -44,20 +44,20 @@ int main (int argc, char **argv)
   bfa.Assemble(lh);
   lff.Assemble(lh);
 
-
   BaseMatrix & mata = bfa.GetMatrix();
   BaseVector & vecf = lff.GetVector();
   BaseVector & vecu = gfu.GetVector();
+
   
-  /*
-  // BaseMatrix * jacobi = dynamic_cast<const BaseSparseMatrix&> (mata).CreateJacobiPrecond();
+  BaseMatrix * mat = &mata;
+  const ParallelMatrix * pmat = dynamic_cast<const ParallelMatrix*> (mat);
+  if (pmat) mat = &pmat->GetMatrix();
+  
+  BaseMatrix * jacobi = 
+    dynamic_cast<const BaseSparseMatrix&> (*mat).CreateJacobiPrecond();
 
-  BaseMatrix * jacobi = dynamic_cast<const BaseSparseMatrix&> 
-    (dynamic_cast<const ParallelMatrix&>(mata).GetMatrix())
-    .CreateJacobiPrecond();
-  */
+    // BaseMatrix * jacobi = mata.InverseMatrix();
 
-  BaseMatrix * jacobi = mata.InverseMatrix();
   
   CGSolver<double> inva (mata, *jacobi);
   inva.SetPrintRates();
