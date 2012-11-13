@@ -387,6 +387,8 @@ namespace ngmg
     Array<const Prolongation*> prols;
   public:
     ///
+    CompoundProlongation(const CompoundFESpace * aspace);
+    ///
     CompoundProlongation(const CompoundFESpace * aspace,
 			 Array<const Prolongation*> & aprols);
     ///
