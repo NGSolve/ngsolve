@@ -16,7 +16,7 @@ namespace ngcomp
   */
 
 
-  /*
+  /**
     transformation from local to global orientation
     used for low order Nedelec elements
   */
@@ -586,75 +586,82 @@ namespace ngcomp
   class NGS_DLL_HEADER CompoundFESpace : public FESpace
   {
   protected:
-    /// pointer to components
+    /// pointers to components
     Array<FESpace*> spaces;
-    /// cummlated #dofs of components
+    /// cummlated number of dofs of components
     Array<int> cummulative_nd;
-    /// 
+    /// dofs on each multigrid level
     Array<int> ndlevel;
   public:
-    ///
+    /// generates a compound space.
+    /// components will be added later
     CompoundFESpace (const MeshAccess & ama,
-		     const Flags & flags, bool parseflags=false);
-    /// 
+		     const Flags & flags, bool parseflags = false);
+    /// generates a compound space 
+    /// components are provided in aspaces
     CompoundFESpace (const MeshAccess & ama,
 		     const Array<FESpace*> & aspaces,
-		     const Flags & flags, bool parseflags=false);
-    ///
+		     const Flags & flags, bool parseflags = false);
+
+    /// not much to do.
+    /// components will not be deleted
     virtual ~CompoundFESpace ();
-    /// 
+
+    /// add an additional component space
     void AddSpace (FESpace * fes);
+
     ///
     virtual string GetClassName () const
     {
       return "CompoundFESpace";
     }
 
-    ///
+    /// updates also components
     virtual void Update(LocalHeap & lh);
+    /// updates also components
     virtual void FinalizeUpdate(LocalHeap & lh);
 
-    ///
+    /// copies dofcoupling from components
     virtual void UpdateCouplingDofArray();
-    ///
-    virtual int GetNDof () const
-    { return ndlevel.Last(); }
-    ///
-    virtual int GetNDofLevel (int level) const
-    { return ndlevel[level]; }
 
+    /// 
+    virtual int GetNDof () const { return ndlevel.Last(); }
+    ///
+    virtual int GetNDofLevel (int level) const { return ndlevel[level]; }
+
+    /*
     // returns start and end points of dofs corresponding to space "spacenr"
     // first space: spacenr = 0
     int GetStorageStart(int spacenr) const
     { return cummulative_nd[spacenr]; }
-    
     ///
     int GetStorageEnd(int spacenr) const
     { return cummulative_nd[spacenr+1]; }
+    */
 
     IntRange GetRange (int spacenr) const
     { 
       return IntRange(cummulative_nd[spacenr], cummulative_nd[spacenr+1]);
     }
 
-    ///
+    /// get component space
     const FESpace * operator[] (int i) const { return spaces[i]; }
+    /// get component space
     FESpace * operator[] (int i) { return const_cast<FESpace*> (spaces[i]); }
 
-    ///
+    /// returns a compound finite element
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
     ///
+    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
+    ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    ///
+    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
     ///
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
-
-    ///
-    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
-    ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
 
     template <class MAT> NGS_DLL_HEADER
@@ -674,6 +681,7 @@ namespace ngcomp
     virtual void VTransformVC (int elnr, bool boundary,
 			       const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
 
+    /// number of component spaces
     inline int GetNSpaces () const { return spaces.Size(); } 
   };
 
@@ -685,48 +693,117 @@ namespace ngcomp
   class NGS_DLL_HEADER FESpaceClasses
   {
   public:
+    /// descriptor for register fespaces. 
+    /// function pointer to create function.
     struct FESpaceInfo
     {
+      /// the name
       string name;
+      /// function pointer to creator function
       FESpace* (*creator)(const MeshAccess & ma, const Flags & flags);
+      /// creates a descriptor
       FESpaceInfo (const string & aname,
-		   FESpace* (*acreator)(const MeshAccess & ma, const Flags & flags));
+		   FESpace* (*acreator)(const MeshAccess & ma, const Flags & flags))
+	: name(aname), creator(acreator) {;}
     };
-
+  private:
     Array<FESpaceInfo*> fesa;
+
   public:
-    FESpaceClasses();
+    /// initialize 
+    FESpaceClasses() { ; }
+    /// cleans up
     ~FESpaceClasses();  
+
+    /// add a descriptor
     void AddFESpace (const string & aname, 
 		     FESpace* (*acreator)(const MeshAccess & ma, const Flags & flags));
   
+    /// returns all creators
     const Array<FESpaceInfo*> & GetFESpaces() { return fesa; }
+
+    /// returns a creator structure
     const FESpaceInfo * GetFESpace(const string & name);
 
+    /// print available fespaces to stream
     void Print (ostream & ost) const;
   };
  
+  /// returns createion object
   extern NGS_DLL_HEADER FESpaceClasses & GetFESpaceClasses ();
+
+  /// creates a fespace of that type
   extern NGS_DLL_HEADER FESpace * CreateFESpace (const string & type,
 						 const MeshAccess & ma,
 						 const Flags & flags);
 
+
+  /**
+     template for registration of finite element spaces.
+     provides static Create - function
+   */
   template <typename FES>
   class RegisterFESpace
   {
   public:
+    /// constructor registers fespace
     RegisterFESpace (string label)
     {
       GetFESpaceClasses().AddFESpace (label, Create);
       // cout << "register fespace '" << label << "'" << endl;
     }
     
+    /// creates an fespace of type FES
     static FESpace * Create (const MeshAccess & ma, const Flags & flags)
     {
       return new FES (ma, flags);
     }
   };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#ifdef PARALLEL
+
+  class ParallelMeshDofs : public ParallelDofs
+  {
+    const MeshAccess & ma;
+    Array<Node> dofnodes;
+  public:
+    ParallelMeshDofs (const MeshAccess & ama, const Array<Node> & adofnodes, 
+		      int dim = 1, bool iscomplex = false);
+
+    const MeshAccess & GetMeshAccess() const { return ma; }
+    const Array<Node> & GetDofNodes() const { return dofnodes; }
+  };
+  
+#else
+
+
+  class ParallelMeshDofs : public ParallelDofs 
+  {
+  public:
+    ParallelMeshDofs (const MeshAccess & ama, const Array<Node> & adofnodes, 
+		      int dim = 1, bool iscomplex = false)
+    { ndof = adofnodes.Size(); }
+  };
+
+#endif
+
 }
+
+
 
 
 
@@ -737,6 +814,7 @@ namespace ngstd
   class MPI_Traits<ngcomp::COUPLING_TYPE>
   {
   public:
+    /// returns MPI-type 
     static MPI_Datatype MPIType () 
     { 
       if (sizeof(ngcomp::COUPLING_TYPE) == sizeof(int)) return MPI_INT;

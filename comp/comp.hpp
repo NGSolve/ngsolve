@@ -7,15 +7,30 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
-/* 
-   NGS Components: Mesh, Bilinearform, ....
-*/
-
 #include <fem.hpp>
 #include <la.hpp>
 
+#include <soldata.hpp>   // netgen visualization
 
-#include <soldata.hpp>
+
+/**
+   namespace for NGS-components.
+   It contains the access to the mesh topology MeshAccess, 
+   finite element spaces derived from FESpace, and global objects such as
+   Gridfunction, LinearForm, and BilinearForm, or a Preconditioner.
+   Computational functions such as SetValues and CalcFlux.
+ */
+namespace ngcomp
+{
+  using namespace std;
+  using namespace ngstd;
+
+  using ngstd::INT;
+  using ngfem::ELEMENT_TYPE;
+
+  using namespace ngla;
+  using namespace ngfem;
+}
 
 
 namespace ngmg
@@ -23,28 +38,6 @@ namespace ngmg
   class Prolongation;
   class TwoLevelMatrix;
   class MultigridPreconditioner;
-}
-
-
-
-/*
-namespace ngparallel
-{
-  class ParallelDofs;
-}
-*/
-
-/// namespace for ngs-components
-namespace ngcomp
-{
-  using namespace std;
-  using namespace ngstd;
-  using ngstd::INT;
-  using ngfem::ELEMENT_TYPE;
-
-  using namespace ngla;
-  using namespace ngfem;
-  // using namespace ngparallel;
 }
 
 

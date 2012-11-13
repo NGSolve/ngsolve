@@ -21,9 +21,6 @@ namespace ngfem
 
 namespace ngcomp
 {
-  using namespace ngfem;
-
-
   using netgen::Ng_Element;
   using netgen::Ng_Point;
   using netgen::Ng_Node;
@@ -33,10 +30,10 @@ namespace ngcomp
   using netgen::Ng_GetNode;
 
 
-
-
-
-
+  /**
+     Converts element-type from Netgen to element-types of NGSolve.
+     E.g. the Netgen-types NG_TRIG and NG_TRIG6 are merged to NGSolve type ET_TRIG.
+   */
   inline ELEMENT_TYPE ConvertElementType (NG_ELEMENT_TYPE type)
   {
     switch (type)
@@ -73,10 +70,15 @@ namespace ngcomp
 
 
   /** 
-      Access to mesh geometry.
-      This class provides topology, as element to vertex,
-      element to face etc. Internally, NGSolve calls the Netgen
-      mesh handler.
+      Access to mesh topology and geometry.
+
+      MeshAccess provides information such as element-to-vertex table,
+      elemenet-to-edge table etc. 
+      
+      It provides also element-geometry (straight or curved elements) 
+      via GetTrafo. 
+
+      Internally, MeshAccess calls functions from Netgen.
   */
 
   class NGS_DLL_HEADER MeshAccess : public BaseStatusHandler
@@ -86,7 +88,7 @@ namespace ngcomp
     /// dimension of the domain. Set to -1 if no mesh is present
     int dim;
   
-    // number of vertex, edge, face, and cell nodes
+    /// number of vertex, edge, face, and cell nodes
     int nnodes[4];
 
     // number of nodes of co-dimension i 
@@ -110,15 +112,15 @@ namespace ngcomp
     int nboundaries;
 
   public:
-    ///
+    /// connects to Netgen - mesh
     MeshAccess ();
-    ///
+    /// not much to do 
     virtual ~MeshAccess ();
 
-    /// problem dimension
+    /// the spatial dimension of the mesh
     int GetDimension() const { return dim; }  
 
-    /// number of points. needed for 6 node trigs, old-style
+    /// number of points. needed for isoparametric nodal elements
     int GetNP() const  { return Ng_GetNP(); }
 
     /// number of vertices
@@ -137,112 +139,92 @@ namespace ngcomp
     int GetNFaces() const { return nnodes[2]; }    
 
 
-
-    /// number of distinct domains
+    /// maximal sub-domain (material) index. range is [0, ndomains)
     int GetNDomains () const  { return ndomains; }
 
-    /// number of distinct boundaries
+    /// maximal boundary condition index. range is [0, nboundaries)
     int GetNBoundaries () const { return nboundaries; }
 
-    /*
-    ///
-    template <int D>
-    void GetPoint (int pi, Vec<D> & p) const
-    { Ng_GetPoint (pi+1, &p(0)); }
-
-    ///
-    template <int D>
-    Vec<D> GetPoint (int pi) const
-    { 
-      Vec<D> p;
-      Ng_GetPoint (pi+1, &p(0)); 
-      return p;
-    }
-    */
-
+    /// returns point coordinate
     template <int D>
     void GetPoint (int pi, Vec<D> & p) const
     { 
       Ng_Point pt = Ng_GetPoint (pi);
-      for (int j = 0; j < D; j++)
-	p(j) = pt[j];
+      for (int j = 0; j < D; j++) p(j) = pt[j];
     }
 
-    ///
+    /// returns point coordinate
     template <int D>
     Vec<D> GetPoint (int pi) const
     { 
       Vec<D> p;
       Ng_Point pt = Ng_GetPoint (pi);
-      for (int j = 0; j < D; j++)
-	p(j) = pt[j];
+      for (int j = 0; j < D; j++) p(j) = pt[j];
       return p;
     }
 
-    ///
+    /// the geometry type of the element
     ELEMENT_TYPE GetElType (int elnr) const
     { return ConvertElementType (GetElement(elnr).GetType()); }
 
-    ///
+    /// the geometry type of the boundary element
+    ELEMENT_TYPE GetSElType (int elnr) const
+    { return ConvertElementType (GetSElement(elnr).GetType()); }
+
+    /// the sub-domain index of the element
     int GetElIndex (int elnr) const
     { return Ng_GetElementIndex (elnr+1)-1; }
 
+    /// the boundary-condition index of the boundary element
+    int GetSElIndex (const int elnr) const
+    { return Ng_GetSurfaceElementIndex (elnr+1)-1; }
+
+    /// change sub-domain index (???) 
     void SetElIndex (int elnr, int index) const
     { Ng_SetElementIndex (elnr+1,index+1); }
 
+    /// the material of the element
     string GetElMaterial (int elnr) const
     { return Ng_GetElementMaterial (elnr+1); }
 
+    /// the material of the sub-domain
     string GetDomainMaterial (int domnr) const
     { return Ng_GetDomainMaterial(domnr+1); }
-
-    ///
-    ELEMENT_TYPE GetSElType (int elnr) const
-    { return ConvertElementType (GetSElement(elnr).GetType()); }
       
-    ///
-    int GetSElIndex (const int elnr) const
-    /*
-    {
-      if (dim == 2)
-        return Ng_GetElementIndex<1> (elnr)-1;
-      else
-        return Ng_GetElementIndex<2> (elnr)-1;
-    }
-    */
-    { return Ng_GetSurfaceElementIndex (elnr+1)-1; }
 
-    ///
-    int GetSElSurfaceNumber (const int elnr) const
-    { return Ng_GetSurfaceElementSurfaceNumber (elnr+1)-1; }
-    ///
-    int GetSElFDNumber (const int elnr) const
-    { return Ng_GetSurfaceElementFDNumber (elnr+1)-1; }
+    /// the boundary condition name of surface element
+    string GetSElBCName (int selnr) const
+    { return Ng_GetSurfaceElementBCName (selnr+1); }
 
-    ///
-    string GetSElBCName (const int elnr) const
-    { return Ng_GetSurfaceElementBCName (elnr+1); }
-
+    /// the boundary condition name of boundary condition number
     string GetBCNumBCName (const int bcnr) const
     { return Ng_GetBCNumBCName(bcnr); }
 
-    //  ///
-    //  string GetSElBCName (const int elnr) const;
-    //  ///
-    //  string GetBCNumBCName (const int bcnr) const;
 
+
+    /// not sure who needs that
+    int GetSElSurfaceNumber (const int elnr) const
+    { return Ng_GetSurfaceElementSurfaceNumber (elnr+1)-1; }
+
+    /// not sure who needs that
+    int GetSElFDNumber (const int elnr) const
+    { return Ng_GetSurfaceElementFDNumber (elnr+1)-1; }
+
+
+
+    /// the sub-domain indices next to boundary element. 
+    /// returns -1 for void
     void GetSElNeighbouringDomains(const int elnr, int & in, int & out) const
     { 
       Ng_GetSurfaceElementNeighbouringDomains(elnr+1,in,out);
       //in--; out--;
     }
-
   
-    /*
-      update buffered global quantities.
-      Must be called after every change in the mesh
-    */
+
+    /// update buffered global quantities.
+    /// Must be called after every change of the mesh topology
     void UpdateBuffers();
+
 
 
     /*
@@ -255,7 +237,9 @@ namespace ngcomp
     /// number of nodes of type nt
     int GetNNodes (NODE_TYPE nt) const { return nnodes[nt]; }  
 
+
     /// the topology of a domain - element
+    /// experimental, not recommended for use yet
     void GetTopologicElement (int elnr, TopologicElement & topel) const;
 
   
@@ -271,6 +255,12 @@ namespace ngcomp
     */
     void GetClosueNodes (NODE_TYPE nt, int nodenr, NODE_SET ns, Array<Node> & nodes);
 
+    /**
+       returns topology of a Netgen - element.  This is the new
+       (2008), unified concept. The function returns a direct access
+       to the Netgen mesh structure instead of copying point numbers
+       etc. The nasty 1-0 convertion is done on the fly.
+     */
     Ng_Element GetElement (int elnr) const
     {
       switch (dim)
@@ -283,13 +273,12 @@ namespace ngcomp
 	}
     }
 
-    template <int DIM>
-    Ng_Element GetElement (int elnr) const
-    {
-      return Ng_GetElement<DIM> (elnr);
-    }
-
-
+    /**
+       returns topology of a Netgen - element.  This is the new
+       (2008), unified concept. The function returns a direct access
+       to the Netgen mesh structure instead of copying point numbers
+       etc. The nasty 1-0 convertion is done on the fly.
+     */
     Ng_Element GetSElement (int elnr) const
     {
       switch (dim)
@@ -302,6 +291,21 @@ namespace ngcomp
 	}
     }
 
+    /**
+       returns element of compile-time fixed dimension
+     */
+    template <int DIM>
+    Ng_Element GetElement (int elnr) const
+    {
+      return Ng_GetElement<DIM> (elnr);
+    }
+
+    
+    /**
+       returns node topology.
+       A facet or edge-node knows its vertices etc.
+       The method is not yet fully functional.
+     */
     template <int DIM>
     Ng_Node<DIM> GetNode (int nr) const
     {
@@ -309,178 +313,166 @@ namespace ngcomp
     }
 
     // von astrid
-    int GetElNV ( int elnr ) const;
+    int GetElNV (int elnr) const;
 
-    ///
+    /// returns the points of an element.
+    /// vertices and possibly edge-midpoints
     void GetElPNums (int elnr, Array<int> & pnums) const;
-    ///
+
+    /// returns the points of a boundary element.
+    /// vertex and possibly edge-midpoints
     void GetSElPNums (int selnr, Array<int> & pnums) const;
 
+    /// returns the vertices of an element
     void GetElVertices (int elnr, Array<int> & vnums) const
-    {
-      vnums = ArrayObject (GetElement(elnr).vertices);
-    }
-    ///
-    void GetSElVertices (int selnr, Array<int> & vnums) const;
-    ///
+    { vnums = ArrayObject (GetElement(elnr).vertices); }
+
+    /// returns the vertices of a boundary element
+    void GetSElVertices (int selnr, Array<int> & vnums) const
+    { vnums = ArrayObject (GetSElement(selnr).vertices); }
+
+    /// returns the edges of an element
     void GetElEdges (int elnr, Array<int> & ednums) const
-    {
-      ednums = ArrayObject (GetElement(elnr).edges);
-    }
-    ///
+    { ednums = ArrayObject (GetElement(elnr).edges); }
+
+    // returns edge numbers and edge orientation of an element. (old style function)
     void GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const;
-    ///
-    void GetSElEdges (int selnr, Array<int> & ednums) const;
-    ///
+
+    /// returns the edges of a boundary element
+    void GetSElEdges (int selnr, Array<int> & ednums) const
+    { ednums = ArrayObject (GetSElement(selnr).edges); }
+
+    // returns edge numbers and edge orientation of an element. (old style function)
     void GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const;
-    ///
-    void GetElFaces (int elnr, Array<int> & fnums) const;
-    ///
+
+    /// returns the faces of an element
+    void GetElFaces (int elnr, Array<int> & fnums) const
+    { fnums = ArrayObject (GetElement(elnr).faces); }
+
+    // returns face numbers and face orientation of an element. (old style function)
     void GetElFaces (int elnr, Array<int> & fnums, Array<int> & orient) const;
-    ///
+
+    /// returns face number of surface element
     int GetSElFace (int selnr) const;
-    ///
+
+    // returns face number and orientation of surface element
     void GetSElFace (int selnr, int & fnum, int & orient) const;
-    ///
+
+    /// returns vertex numbers of face
     void GetFacePNums (int fnr, Array<int> & pnums) const;
-    ///
+    /// returns vertex numbers of edge
     void GetEdgePNums (int enr, int & pn1, int & pn2) const;
-    ///
+    /// returns vertex numbers of edge
     void GetEdgePNums (int enr, Array<int> & pnums) const;
-    ///
+    /// returns all elements connected to an edge
     void GetEdgeElements (int enr, Array<int> & elnums) const;
-    ///
+    /// returns all edges of a face
     void GetFaceEdges (int fnr, Array<int> & edges) const;
-    ///
+    /// returns elements connected to a face
     void GetFaceElements (int fnr, Array<int> & elnums) const;
-  
+    /// point numbers of a 1D element
     void GetSegmentPNums (int snr, Array<int> & pnums) const;
+    /// index of 1D element
     int GetSegmentIndex (int snr) const;
-
-    ///
+    
+    /// number of facets of an element. 
+    /// facets are edges (2D) or faces (3D)
     int GetNFacets() const { return nnodes_cd[1]; } 
-    ///
+    /// facets of an element
     void GetElFacets (int elnr, Array<int> & fnums) const;
-    ///
+    /// facet of a surface element
     void GetSElFacets (int selnr, Array<int> & fnums) const;
-    ///
+    /// vertices of a facet
     void GetFacetPNums (int fnr, Array<int> & pnums) const;
-    ///
+    /// geometry type of facet
     ELEMENT_TYPE GetFacetType (int fnr) const;
-
-    ///
+    /// elements connected to facet
     void GetFacetElements (int fnr, Array<int> & elnums) const
-    { (GetDimension() == 2) ? GetEdgeElements(fnr, elnums) : GetFaceElements(fnr, elnums); }    
+    { (dim == 2) ? GetEdgeElements(fnr, elnums) : GetFaceElements(fnr, elnums); }    
 
     // void GetVertexElements (int vnr, Array<int> & elnrs) const;
-    ///
+    /// element order stored in Netgen
     int GetElOrder (int enr) const
     { return Ng_GetElementOrder (enr+1); } 
-    ///
+    /// anisotropic order stored in Netgen
     INT<3> GetElOrders (int enr) const
     { 
       INT<3> eo; 
       Ng_GetElementOrders(enr+1,&eo[0],&eo[1],&eo[2]); 
       return eo; 
     } 
-    ///
+    /// set element order in Netgen
     void SetElOrder (int enr, int order) const
     { Ng_SetElementOrder (enr+1,order); }
-    ///
+    /// set anisotropic element order in Netgen
     void SetElOrders (int enr, int ox, int oy, int oz) const
     { Ng_SetElementOrders (enr+1, ox,oy,oz); }
-    
-    ///
+    /// order of suface element
     int GetSElOrder (int enr) const
     { return Ng_GetSurfaceElementOrder (enr+1); } 
-    ///
+    /// anisotropic order of suface element
     INT<2> GetSElOrders (int enr) const
     { 
       INT<2> eo; 
       Ng_GetSurfaceElementOrders(enr+1,&eo[0],&eo[1]); 
       return eo; 
-    } 
-    ///
+    }
+    /// set surface element order
     void SetSElOrder (int enr, int order) const
     { Ng_SetSurfaceElementOrder (enr+1,order); }
-    ///
+    /// set anisotropic surface element order
     void SetSElOrders (int enr, int ox, int oy) const
     { Ng_SetSurfaceElementOrders (enr+1, ox,oy); }
     
 
-    ///
+    /// the volume of an element (mid-point rule)
     double ElementVolume (int elnr) const;
-    ///
+    /// the area of a boundary element (mid-point rule)
     double SurfaceElementVolume (int selnr) const;
+      
 
-
-
-    /// multigrid:
-    int GetNLevels() const
-    { return nlevels; }  // Ng_GetNLevels(); }
-
-    ///
+    /// number of multigrid levels
+    int GetNLevels() const { return nlevels; }  
+    /// the two parent vertices of a vertex. -1 for coarse-grid vertices
     void GetParentNodes (int pi, int * parents) const
     { 
       Ng_GetParentNodes (pi+1, parents);
       parents[0]--; parents[1]--; 
     }
-    ///
+    /// number of parent element on next coarser mesh
     int GetParentElement (int ei) const
     { return Ng_GetParentElement (ei+1)-1; }
-    ///
+    /// number of parent boundary element on next coarser mesh
     int GetParentSElement (int ei) const
     { return Ng_GetParentSElement (ei+1)-1; }
   
-    /// anisotropic clusters:
+    /// representant of vertex for anisotropic meshes
     int GetClusterRepVertex (int pi) const
     { return Ng_GetClusterRepVertex (pi+1)-1; }
-    ///
+    /// representant of edge for anisotropic meshes
     int GetClusterRepEdge (int pi) const
     { return Ng_GetClusterRepEdge (pi+1)-1; }
-    ///
+    /// representant of face for anisotropic meshes
     int GetClusterRepFace (int pi) const
     { return Ng_GetClusterRepFace (pi+1)-1; }
-    ///
+    /// representant of element for anisotropic meshes
     int GetClusterRepElement (int pi) const
     { return Ng_GetClusterRepElement (pi+1)-1; }
-
-    ///
-    // void GetElementTransformation (int elnr, ElementTransformation & eltrans) const;
-
-    ///
+    
+    
+    /// returns the transformation from the reference element to physical element.
+    /// Given a point in the refrence element, the ElementTransformation can 
+    /// compute the mapped point as well as the Jacobian
     ngfem::ElementTransformation & GetTrafo (int elnr, bool boundary, LocalHeap & lh) const;
 
-    ///
-    // void GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans) const;
 
-
-
-
-    /*
-    // compatibility for a while ...
-    void GetElementTransformation (int elnr, ElementTransformation & eltrans,
-				   LocalHeap & lh) const
-    {
-      GetElementTransformation (elnr, eltrans);
-    }
-
-    void GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans,
-					  LocalHeap & lh) const
-    {
-      GetSurfaceElementTransformation (elnr, eltrans);
-    }
-    */
-
-
-
-    ///
-    // ElementTransformation GetSurfaceTrafo (int elnr) const;
-  
+    // (old style optimization)
     void SetPointSearchStartElement(const int el) const;
 
+
+    
     int FindElementOfPoint (FlatVector<double> point,
-			    ngfem::IntegrationPoint & ip, 
+			    IntegrationPoint & ip, 
 			    bool build_searchtree,
 			    const Array<int> * const indices = NULL) const;
     int FindElementOfPoint (FlatVector<double> point,
@@ -496,9 +488,11 @@ namespace ngcomp
 				   bool build_searchtree,
 				   const int index) const;
 
+    /// is element straiht or curved ?
     bool IsElementCurved (int elnr) const
     { return bool (Ng_IsElementCurved (elnr+1)); }
-
+    
+    
     void GetPeriodicVertices ( Array<ngstd::INT<2> > & pairs) const;
     int GetNPairsPeriodicVertices () const;
     void GetPeriodicVertices (int idnr, Array<ngstd::INT<2> > & pairs) const;
@@ -545,16 +539,35 @@ namespace ngcomp
     void InitPointCurve(double red = 1, double green = 0, double blue = 0) const;
     void AddPointCurvePoint(const Vec<3> & point) const;
 
+
+    MPI_Comm GetCommunicator () const { return ngs_comm; }
+
+    /**
+       Returns the list of other MPI - processes where node is present.
+       The ordering coincides for all processes.
+    */
     void GetDistantProcs (Node node, Array<int> & procs) const;
+
+    /**
+       Returns the global number of the node.
+       Currently, this function works only for vertex-nodes.
+     */
     int GetGlobalNodeNum (Node node) const;
+
+
+    /// Reduces MPI - distributed data associated with mesh-nodes
+    template <typename T>
+    void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op) const;
   };
 
 
 
 
-
-
-
+  /**
+     Controls the progress - output.
+     It controls the Netgen - progressbar as well as console progress update.
+     In parallel, all processes must enter and call the Done method.
+   */
   class ProgressOutput
   {
     const MeshAccess & ma;
@@ -571,66 +584,72 @@ namespace ngcomp
 
 
 
-#ifdef PARALLEL
+  /// old style, compatibility for a while
   template <typename T>
-  void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op, const MeshAccess & ma,
-			   MPI_Comm comm = ngs_comm)
+  void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op, const MeshAccess & ma)
   {
+    ma.AllReduceNodalData (nt, data, op);
+  }
+
+
+#ifdef PARALLEL
+
+  template <typename T>
+  void MeshAccess::
+  AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op) const
+  {
+    MPI_Comm comm = GetCommunicator();
+    MPI_Datatype type = MyGetMPIType<T>();
+
     int ntasks = MyMPI_GetNTasks (comm);
     if (ntasks <= 1) return;
 
-    DynamicTable<T> dist_data(ntasks);
-    Array<int> distprocs;
-
-    for (int i = 0; i < ma.GetNNodes(nt); i++)
+    Array<int> cnt(ntasks), distp;
+    cnt = 0;
+    for (int i = 0; i < GetNNodes(nt); i++)
       {
-	ma.GetDistantProcs (Node (nt, i), distprocs);
-	for (int j = 0; j < distprocs.Size(); j++)
-	  dist_data.Add (distprocs[j], data[i]);
+	GetDistantProcs (Node (nt, i), distp);
+	for (int j = 0; j < distp.Size(); j++)
+	  cnt[distp[j]]++;
       }
-    
-    Array<int> nsend(ntasks);
-    for (int i = 0; i < ntasks; i++)
-      nsend[i] = dist_data[i].Size();
 
-    Table<T> recv_data(nsend);
+    Table<T> dist_data(cnt), recv_data(cnt);
+
+    cnt = 0;
+    for (int i = 0; i < GetNNodes(nt); i++)
+      {
+	GetDistantProcs (Node (nt, i), distp);
+	for (int j = 0; j < distp.Size(); j++)
+	  dist_data[distp[j]][cnt[distp[j]]++] = data[i];
+      }
 
     Array<MPI_Request> requests;
     for (int i = 0; i < ntasks; i++)
-      {
-	if (nsend[i])
+      if (cnt[i])
+	{
 	  requests.Append (MyMPI_ISend (dist_data[i], i, MPI_TAG_SOLVE, comm));
-	if (nsend[i])
 	  requests.Append (MyMPI_IRecv (recv_data[i], i, MPI_TAG_SOLVE, comm));
-      }
-
-    if (requests.Size())
-      MyMPI_WaitAll (requests);
-
-    Array<int> cnt(ntasks);
-    cnt = 0;
+	}
+    MyMPI_WaitAll (requests);
     
-    MPI_Datatype type = MyGetMPIType<T>();
+    cnt = 0;
     for (int i = 0; i < data.Size(); i++)
       {
-	ma.GetDistantProcs (Node (nt, i), distprocs);
-	for (int j = 0; j < distprocs.Size(); j++)
-	  {
-	    int dist_proc = distprocs[j];
-	    MPI_Reduce_local (&recv_data[dist_proc][cnt[dist_proc]++], 
-			      &data[i], 1, type, op);
-	  }
+	GetDistantProcs (Node (nt, i), distp);
+	for (int j = 0; j < distp.Size(); j++)
+	  MPI_Reduce_local (&recv_data[distp[j]][cnt[distp[j]]++],
+			    &data[i], 1, type, op);
       }
   }
 
+
 #else
+
   template <typename T>
-  void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op, const MeshAccess & ma,
-			   MPI_Comm comm = ngs_comm)
-  { ; }
+  void MeshAccess::
+  AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op) const { ; }
+
 #endif
-
-
 
 }
 

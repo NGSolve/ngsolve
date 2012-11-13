@@ -25,7 +25,7 @@ namespace ngcomp
       if ( parts_deletable[i]) delete parts[i];
   }
 
-  void LinearForm :: AddIntegrator (LinearFormIntegrator * lfi, const bool deletable)
+  void LinearForm :: AddIntegrator (LinearFormIntegrator * lfi, bool deletable)
   {
     parts.Append (lfi);
     parts_deletable.Append(deletable);
@@ -388,7 +388,7 @@ namespace ngcomp
 
 
 	Array<int> dnums;
-	ElementTransformation eltrans;
+	// ElementTransformation eltrans;
 
 	for (int j=0; j<parts.Size(); j++ )
 	  {

@@ -231,8 +231,8 @@ namespace ngcomp
 	    usegrad_face[ma.GetSElFace(i)] = 1;
 	}
 
-    AllReduceNodalData (NT_EDGE, usegrad_edge, MPI_LOR, ma);
-    AllReduceNodalData (NT_FACE, usegrad_face, MPI_LOR, ma);
+    ma.AllReduceNodalData (NT_EDGE, usegrad_edge, MPI_LOR);
+    ma.AllReduceNodalData (NT_FACE, usegrad_face, MPI_LOR);
 
 	
     for (int i = 0; i < ne; i++)
@@ -332,8 +332,8 @@ namespace ngcomp
       }
 
 
-    AllReduceNodalData (NT_EDGE, fine_edge, MPI_LOR, ma);
-    AllReduceNodalData (NT_FACE, fine_face, MPI_LOR, ma);
+    ma.AllReduceNodalData (NT_EDGE, fine_edge, MPI_LOR);
+    ma.AllReduceNodalData (NT_FACE, fine_face, MPI_LOR);
 
 
 

@@ -36,7 +36,9 @@ namespace ngcomp
 
   public:
     /// 
-    GridFunction (const FESpace & afespace, const string & name, const Flags & flags);
+    GridFunction (const FESpace & afespace, 
+		  const string & name = "gfu", 
+		  const Flags & flags = Flags());
     ///
     virtual ~GridFunction ();
     ///
@@ -184,7 +186,9 @@ namespace ngcomp
     typedef typename mat_traits<TV>::TSCAL TSCAL;
     enum { VDIM = mat_traits<TV>::HEIGHT };
 
-    T_GridFunction (const FESpace & afespace, const string & aname, const Flags & flags);
+    T_GridFunction (const FESpace & afespace, 
+		    const string & aname = "gfu", 
+		    const Flags & flags = Flags());
     virtual ~T_GridFunction ();
 
     virtual void Update ();

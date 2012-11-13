@@ -198,9 +198,9 @@ namespace ngcomp
       }
 
     
-    AllReduceNodalData (NT_VERTEX, used_vertex, MPI_LOR, ma);
-    AllReduceNodalData (NT_EDGE, used_edge, MPI_LOR, ma);
-    AllReduceNodalData (NT_FACE, used_face, MPI_LOR, ma);
+    ma.AllReduceNodalData (NT_VERTEX, used_vertex, MPI_LOR);
+    ma.AllReduceNodalData (NT_EDGE, used_edge, MPI_LOR);
+    ma.AllReduceNodalData (NT_FACE, used_face, MPI_LOR);
 
     
 	

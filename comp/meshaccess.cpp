@@ -8,14 +8,13 @@
    Access to fe mesh
 */
 
-
 #include <comp.hpp>
-
-
 
 namespace ngcomp
 {
 
+  
+  
   template <int DIMS, int DIMR>
   class NGS_DLL_HEADER Ng_ElementTransformation : public ElementTransformation
   {
@@ -98,8 +97,6 @@ namespace ngcomp
     }
 
 
-
-
     virtual void CalcJacobian (const IntegrationPoint & ip,
 			       FlatMatrix<> dxdxi) const
     {
@@ -166,14 +163,10 @@ namespace ngcomp
 
 
 
-
-
-
-
   MeshAccess :: MeshAccess ()
   {
     ngstd::testout = netgen::testout;
-    Ng_UpdateTopology();  // for netgen/ngsolve stand alone (pillendose)
+    Ng_UpdateTopology();  // for netgen/ngsolve stand alone
     UpdateBuffers();
   }
 
@@ -330,12 +323,13 @@ namespace ngcomp
       ednums[i]--;
   }
 
+  /*
   void MeshAccess :: 
   GetSElEdges (int elnr, Array<int> & ednums) const
   {
     ednums = ArrayObject (GetSElement(elnr).edges);
   }
-
+  */
   void MeshAccess :: 
   GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const
   {
@@ -375,26 +369,27 @@ namespace ngcomp
     GetVertexElements(pnums[0], velems0);
     GetVertexElements(pnums[1], velems1);
   
-    //   now compare
-    for (int i=0; i<velems0.Size(); i++) {
-      for (int j=0; j<velems1.Size(); j++) {
-	if (velems0[i] == velems1[j]) {
-	  //  hope that this is a fine edge !! 
-	  // (run several tests and compared with old routine. seems ok)
-	  elnums.Append(velems0[i]);
-	  continue;
-	}
-      }
-    }
+    // now compare
+    for (int i=0; i<velems0.Size(); i++) 
+      for (int j=0; j<velems1.Size(); j++) 
+	if (velems0[i] == velems1[j]) 
+	  {
+	    //  hope that this is a fine edge !! 
+	    // (run several tests and compared with old routine. seems ok)
+	    elnums.Append(velems0[i]);
+	    continue;
+	  }
+
     // fast function should go into Netgen - part (JS)
   }
   
-  
+  /*
   void MeshAccess :: 
   GetElFaces (int elnr, Array<int> & fnums) const
   {
     fnums = ArrayObject (GetElement(elnr).faces);
   }
+  */
 
   void MeshAccess :: 
   GetElFaces (int elnr, Array<int> & fnums, Array<int> & orient) const
@@ -423,31 +418,12 @@ namespace ngcomp
     fnum--;
   }
 
-  // string MeshAccess :: GetSElBCName (const int elnr) const
-  //     {
-  // 	char auxstr[256];
-  // 	string retval;
-  // 	Ng_GetSurfaceElementBCName (elnr+1,auxstr);
-  // 	retval = auxstr;
-  // 	return retval;
-  //     }
-
-  // string MeshAccess :: GetBCNumBCName (const int bcnr) const
-  //     {
-  // 	char auxstr[256];
-  // 	string retval;
-  // 	Ng_GetBCNumBCName(bcnr,auxstr);
-  // 	retval = auxstr;
-  // 	return retval;
-  //     }
-  
   void MeshAccess :: GetFacePNums (int fnr, Array<int> & pnums) const
   {
     pnums.SetSize(4);
     int nv = Ng_GetFace_Vertices (fnr+1, &pnums[0]);
     pnums.SetSize(nv);
-    for (int i = 0; i < nv; i++) 
-      pnums[i]--;
+    for (int i = 0; i < nv; i++) pnums[i]--;
   }
 
  
@@ -456,25 +432,12 @@ namespace ngcomp
     edges.SetSize(4);
     int ned = Ng_GetFace_Edges (fnr+1, &edges[0]);
     edges.SetSize(ned);
-    for (int i = 0; i < ned; i++) 
-      edges[i]--;
+    for (int i = 0; i < ned; i++) edges[i]--;
   }
  
 
   void MeshAccess :: GetFaceElements (int fnr, Array<int> & elnums) const
   {
-    /*
-      int nel = GetNE();
-      int faces[8];
-      elnums.SetSize (0);
-      for (int i = 0; i < nel; i++)
-      {
-      int nfa = Ng_GetElement_Faces (i+1, faces, 0);
-      for (int j = 0; j < nfa; j++)
-      if (faces[j]-1 == fnr)
-      elnums.Append (i);
-      }
-    */
     ArrayMem<int, 9> vnums;
     GetFacePNums(fnr, vnums);
 
@@ -493,67 +456,56 @@ namespace ngcomp
   }
 
 
-  void MeshAccess :: GetEdgePNums (int fnr, int & pn1, int & pn2) const
+  void MeshAccess :: GetEdgePNums (int enr, int & pn1, int & pn2) const
   {
     int v2[2];
-    Ng_GetEdge_Vertices (fnr+1, v2);
+    Ng_GetEdge_Vertices (enr+1, v2);
     pn1 = v2[0]-1;
     pn2 = v2[1]-1;
   }
 
-  void MeshAccess :: GetEdgePNums (int fnr, Array<int> & pnums) const
+  void MeshAccess :: GetEdgePNums (int enr, Array<int> & pnums) const
   {
     pnums.SetSize(2);
-    Ng_GetEdge_Vertices (fnr+1, &pnums[0]);
+    Ng_GetEdge_Vertices (enr+1, &pnums[0]);
     pnums[0] -= 1;
     pnums[1] -= 1;
   }
-
   
   void MeshAccess :: GetSElPNums (int elnr, Array<int> & pnums) const
   {
     pnums = ArrayObject (GetSElement(elnr).points);
-    /*
-    Ng_Element ngel = (dim == 2) 
-      ? Ng_GetElement<1> (selnr)
-      : Ng_GetElement<2> (selnr);
-    
-    pnums.SetSize(ngel.points.Size());
-    for (int j = 0; j < ngel.points.Size(); j++)
-      pnums[j] = ngel.points[j];  
-    */
   }
 
-
+  /*
   void MeshAccess :: GetSElVertices (int selnr, Array<int> & vnums) const
   {
     vnums = ArrayObject (GetSElement(selnr).vertices);
   }
-  
-
-
+  */
   // some utility for Facets
   void MeshAccess :: GetElFacets (int elnr, Array<int> & fnums) const
   {
     if (dim == 2)
       {
-	Ng_Element ngel = Ng_GetElement<2> (elnr);
-	fnums.SetSize(ngel.edges.Size());
-	for (int j = 0; j < ngel.edges.Size(); j++)
-	  fnums[j] = ngel.edges[j];
+	fnums = ArrayObject (Ng_GetElement<2> (elnr).edges);
+
+// 	Ng_Element ngel = Ng_GetElement<2> (elnr);
+// 	fnums.SetSize(ngel.edges.Size());
+// 	for (int j = 0; j < ngel.edges.Size(); j++)
+// 	  fnums[j] = ngel.edges[j];
+
       }
     else
       {
-	Ng_Element ngel = Ng_GetElement<3> (elnr);
-	fnums.SetSize(ngel.faces.Size());
-	for (int j = 0; j < ngel.faces.Size(); j++)
-	  fnums[j] = ngel.faces[j];
+	fnums = ArrayObject (Ng_GetElement<3> (elnr).faces);
+
+// 	Ng_Element ngel = Ng_GetElement<3> (elnr);
+// 	fnums.SetSize(ngel.faces.Size());
+// 	for (int j = 0; j < ngel.faces.Size(); j++)
+// 	  fnums[j] = ngel.faces[j];
+
       }
-      
-    /*
-      if (GetDimension() == 2) GetElEdges(elnr, fnums);
-      else GetElFaces(elnr, fnums);
-    */
   } 
     
   void MeshAccess :: GetSElFacets (int selnr, Array<int> & fnums) const
@@ -577,15 +529,16 @@ namespace ngcomp
 
   ELEMENT_TYPE MeshAccess :: GetFacetType (int fnr) const
   {
-    if (GetDimension() == 2)
-      return ET_SEGM;
-    ArrayMem<int, 4> pnums;
-    GetFacePNums(fnr, pnums);
-    return (pnums.Size() == 3) ? ET_TRIG : ET_QUAD;
+    switch (dim)
+      {
+      case 1: return ET_POINT; 
+      case 2: return ET_SEGM;
+      default:  // i.e. dim = 3
+	ArrayMem<int, 4> pnums;
+	GetFacePNums(fnr, pnums);
+	return (pnums.Size() == 3) ? ET_TRIG : ET_QUAD;
+      }
   }
-
-
-
 
 
 
@@ -607,8 +560,6 @@ namespace ngcomp
     Ng_GetStatus(&s,percent);
     str = s;
   }
-
-
 
   void MeshAccess :: SetTerminate(void) const
   {
@@ -637,8 +588,6 @@ namespace ngcomp
 
 
   /*
-
-  
 
   void MeshAccess ::
   GetElementTransformation (int elnr, ElementTransformation & eltrans) const
@@ -762,26 +711,21 @@ namespace ngcomp
 	}
       }
   
-    char d[10000];
-    LocalHeap lh(d, 10000, "MeshAccess - elementvolume");
+    LocalHeapMem<10000> lh("MeshAccess - elementvolume");
 
-    // ElementTransformation trans;
-    // GetElementTransformation (elnr, trans, lh);
     ElementTransformation & trans = GetTrafo (elnr, false, lh);
-	      
     ConstantCoefficientFunction ccf(1);
-
 
     if (GetDimension() == 2)
       {
-	SourceIntegrator<2> si( &ccf );
+	SourceIntegrator<2> si (&ccf);
 	FlatVector<> elvec(fe->GetNDof(), lh);
 	si.CalcElementVector (*fe, trans, elvec, lh);
 	return elvec(0);
       }
     else
       {
-	SourceIntegrator<3> si( &ccf );
+	SourceIntegrator<3> si(&ccf);
 	FlatVector<> elvec(fe->GetNDof(), lh);
 	si.CalcElementVector (*fe, trans, elvec, lh);
 	return elvec(0);
@@ -807,11 +751,8 @@ namespace ngcomp
 	}
       }
 
-    char d[10000];
-    LocalHeap lh(d, 10000, "MeshAccess - surfaceelementvolume");
+    LocalHeapMem<10000> lh("MeshAccess - surfaceelementvolume");
 
-    // ElementTransformation trans;
-    // GetSurfaceElementTransformation (selnr, trans, lh);
     ElementTransformation & trans = GetTrafo (selnr, true, lh);
     ConstantCoefficientFunction ccf(1);
 
@@ -852,6 +793,8 @@ namespace ngcomp
 					bool build_searchtree,
 					const Array<int> * const indices) const
   {
+    static Timer t("FindElementOfPonit");
+    RegionTimer reg(t);
     int elnr;
     double lami[3];
     if(indices != NULL && indices->Size()>0)
@@ -870,8 +813,7 @@ namespace ngcomp
 
     if (elnr == 0) return -1;
 
-    for (int k = 0; k < 3; k++)
-      ip(k) = lami[k];
+    for (int k = 0; k < 3; k++) ip(k) = lami[k];
 
     return elnr-1;
   }
@@ -892,6 +834,8 @@ namespace ngcomp
 					       bool build_searchtree,
 					       const Array<int> * const indices) const
   {
+    static Timer t("FindSurfaceElementOfPonit");
+    RegionTimer reg(t);
     int elnr;
     double lami[3];
     if(indices != NULL && indices->Size()>0)
@@ -1092,6 +1036,10 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
     procs.SetSize (0);
   }
 #endif
+
+
+
+
 
 
   
