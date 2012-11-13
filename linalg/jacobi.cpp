@@ -6,7 +6,7 @@
 
 
 #include <la.hpp>
-#include <parallelngs.hpp>
+// #include <parallelngs.hpp>
 
 
 namespace ngla
@@ -27,7 +27,7 @@ namespace ngla
       if (!inner || inner->Test(i))
 	invdiag[i] = mat(i,i);
 
-    ngparallel::AllReduceDofData (invdiag, MPI_SUM, *paralleldofs);  
+    AllReduceDofData (invdiag, MPI_SUM, *paralleldofs);  
 
     for (int i = 0; i < height; i++)
       if (!inner || inner->Test(i))

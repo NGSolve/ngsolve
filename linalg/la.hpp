@@ -26,6 +26,7 @@ namespace ngla
   using ngstd::INT;
 }
 
+#include "paralleldofs.hpp"
 #include "basevector.hpp"
 #include "vvector.hpp"
 #include "basematrix.hpp"
