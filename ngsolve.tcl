@@ -60,7 +60,7 @@ if { [catch { NGS_GetData } ] == 0 } {
 
 
     menu .ngmenusolvehelp
-    .ngmenu.solve add cascade -label "Help" -menu .ngmenusolvehelp
+    .ngmenu.solve add cascade -label "Help" -menu .ngmenusolvehelp 
     
     .ngmenusolvehelp add command -label "Constants..." \
 	-command { tk_messageBox -title "Help" -message  [ NGS_Help  constant ] -type ok }
@@ -72,8 +72,21 @@ if { [catch { NGS_GetData } ] == 0 } {
 	-command { tk_messageBox -title "Help" -message  [ NGS_Help  linearform ] -type ok }
 
     # defined in C++ code:
+    menu .ngmenusolvehelpnp
     .ngmenusolvehelp add cascade -label "Numprocs..." -menu .ngmenusolvehelpnp 
-    
+
+
+    proc SetNumProcHelpMenu {} {
+	set allnp [ NGS_Help numprocs ]
+	.ngmenusolvehelpnp delete 1 end
+	foreach np $allnp {
+	    .ngmenusolvehelpnp add command -label "numproc $np" \
+		-command { tk_messageBox -title "Help" -message [ NGS_Help numproc $np ] -type ok }
+	}
+    }
+
+    SetNumProcHelpMenu
+
 
     .ngmenu.solve add command -label "Load PDE..." -accelerator "<l><p>"\
 	-command { 
@@ -83,6 +96,7 @@ if { [catch { NGS_GetData } ] == 0 } {
 		set dirname [file dirname $file]
 		AddRecentNGSFile $file;
                 NGS_LoadPDE  $file;  
+		SetNumProcHelpMenu
                 set selectvisual mesh;
                 Ng_SetVisParameters	
 	    }

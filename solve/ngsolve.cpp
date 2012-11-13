@@ -55,6 +55,26 @@ int NGS_Help (ClientData clientData,
     {
       string topics = argv[1];
 
+      if (topics == "numprocs")
+	{
+	  stringstream str;
+	  const Array<NumProcs::NumProcInfo*> & npi = GetNumProcs().GetNumProcs();
+	  
+	  Array<int> sort(npi.Size());
+	  Array<string> names(npi.Size());
+	  for (int i = 0; i < npi.Size(); i++)
+	    {
+	      sort[i] = i;
+	      names[i] = npi[i]->name;
+	    }
+	  BubbleSort (names, sort);
+	  for (int ii = 0; ii < npi.Size(); ii++)
+	    str << npi[sort[ii]]->name << " ";
+
+	  Tcl_SetResult (interp, (char*)str.str().c_str(), TCL_VOLATILE);
+	  return TCL_OK;
+	}
+
       stringstream str;
 
       if (topics == "constant")
@@ -757,7 +777,7 @@ int NGSolve_Init (Tcl_Interp * interp)
 		     (Tcl_CmdDeleteProc*) NULL);
 
 
-
+  /*
   const Array<NumProcs::NumProcInfo*> & npi = GetNumProcs().GetNumProcs();
 
   Array<int> sort(npi.Size());
@@ -779,7 +799,7 @@ int NGSolve_Init (Tcl_Interp * interp)
 
       Tcl_Eval (interp, (char *) command.c_str());
     }
-
+  */
 
   // trick for forcing linking static libs
   // ngsolve::bvp_cpp::link_it = 0;
@@ -945,7 +965,3 @@ void __cdecl my_operator_delete_array_replacement(void * _ptr)
   delete [] (_ptr);
 }
 #endif
-
-
-
-
