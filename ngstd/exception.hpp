@@ -24,11 +24,16 @@ class NGS_DLL_HEADER Exception
 public:
   /// string s describes the exception
   Exception (const string & s);
+  /// string s describes the exception
+  Exception (const char * s);
   ///
   virtual ~Exception ();
 
   /// append string to description
   void Append (const string & s);
+  /// append string to description
+  void Append (const char * s);
+
   /// verbal description of exception
   const string & What() const { return what; }
 };

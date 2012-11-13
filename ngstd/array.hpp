@@ -771,7 +771,7 @@ namespace ngstd
     QuickSort (data.Range (i, data.Size()), less);
 
     // for (int i = 0; i < data.Size()-1; i++)
-    // if (data[i+1] < data[i]) cerr << "heap sort is wrong !!" << endl;
+    // if (data[i+1] < data[i]) cerr << "quicksort is wrong !!" << endl;
   }
 
   template <typename T>
