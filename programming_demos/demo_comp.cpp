@@ -50,9 +50,12 @@ int main (int argc, char **argv)
 
   
   BaseMatrix * mat = &mata;
+
+#ifdef PARALLEL
   const ParallelMatrix * pmat = dynamic_cast<const ParallelMatrix*> (mat);
   if (pmat) mat = &pmat->GetMatrix();
-  
+#endif
+
   BaseMatrix * jacobi = 
     dynamic_cast<const BaseSparseMatrix&> (*mat).CreateJacobiPrecond();
 
