@@ -1686,10 +1686,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\ng\parallelinterface.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\libsrc\meshing\parallelmesh.cpp"
 				>
 			</File>
@@ -2072,5 +2068,9 @@
 		</File>
 	</Files>
 	<Globals>
+		<Global
+			Name="HPC_Debug"
+			Value="﻿&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;&lt;Properties xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot;&gt;&lt;ProjectNameDisplay /&gt;&lt;CollapseAdvanced&gt;true&lt;/CollapseAdvanced&gt;&lt;ApplicationPlatform&gt;x86&lt;/ApplicationPlatform&gt;&lt;/Properties&gt;"
+		/>
 	</Globals>
 </VisualStudioProject>
