@@ -128,7 +128,7 @@ namespace ngla
     virtual int VHeight() const { return mat.Height(); }
     int Width() const { return mat.Width(); }
     virtual int VWidth() const { return mat.Width(); }
-
+    
     ///
     virtual BaseVector * CreateVector () const 
     {
@@ -306,8 +306,13 @@ namespace ngla
 
     // 
     enum { NBLOCKS = 20 };
-    DynamicMem<int> blockstart, blocksize, blockbw;
-    DynamicMem<TM> data[NBLOCKS];
+    // DynamicMem<int> blockstart, blocksize, blockbw;
+    // DynamicMem<TM> data[NBLOCKS];
+
+    Array<int, size_t> blockstart, blocksize, blockbw;
+    Array<TM, size_t> data[NBLOCKS];
+
+
     bool lowmem;
   public:
   
@@ -330,7 +335,7 @@ namespace ngla
     {
       return FlatBandCholeskyFactors<TM> (blocksize[i], 
 					  blockbw[i], 
-					  const_cast<TM*>(data[i%NBLOCKS]+blockstart[i]));
+					  const_cast<TM*>(&data[i%NBLOCKS][blockstart[i]]));
     }
 
     void ComputeBlockFactor (FlatArray<int> block, int bw, FlatBandCholeskyFactors<TM> & inv) const;

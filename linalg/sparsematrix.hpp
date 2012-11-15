@@ -82,12 +82,12 @@ namespace ngla
     size_t nze; 
 
     /// column numbers
-    // int * colnr;
-    DynamicMem<int> colnr;
+    // DynamicMem<int> colnr;
+    Array<int, size_t> colnr;
 
     /// pointer to first in row
-    // int * firsti;
-    DynamicMem<size_t> firsti;
+    // DynamicMem<size_t> firsti;
+    Array<size_t, size_t> firsti;
   
     /// row has same non-zero elements as previous row
     Array<int> same_nze;
@@ -128,7 +128,8 @@ namespace ngla
     size_t NZE() const { return nze; }
 
     FlatArray<int> GetRowIndices(int i) const
-    { return FlatArray<int> (int(firsti[i+1]-firsti[i]), colnr+firsti[i]); }
+    // { return FlatArray<int> (int(firsti[i+1]-firsti[i]), colnr+firsti[i]); }
+    { return FlatArray<int> (int(firsti[i+1]-firsti[i]), &colnr[firsti[i]]); }
 
     size_t First (int i) const { return firsti[i]; }
 
@@ -253,7 +254,8 @@ namespace ngla
 					 public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
-    DynamicMem<TM> data;
+    // DynamicMem<TM> data;
+    Array<TM, size_t> data;
     VFlatVector<typename mat_traits<TM>::TSCAL> asvec;
     TM nul;
 

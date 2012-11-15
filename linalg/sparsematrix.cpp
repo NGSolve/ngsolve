@@ -18,9 +18,11 @@ namespace ngla
     size = elsperrow.Size();
     width = awidth;
     owner = true;
+    /*
     firsti.Alloc (size+1);
     firsti.SetName ("matrix graph, table 1");
-
+    */
+    firsti.SetSize (size+1);
     nze = 0;
     for (int i = 0; i < size; i++)
       {
@@ -29,8 +31,11 @@ namespace ngla
       }
     firsti[size] = nze;
     
+    /*
     colnr.Alloc (nze+1);
     colnr.SetName ("matrix graph");
+    */
+    colnr.SetSize (nze+1);
     
     for (size_t i = 0; i < nze; i++)
       colnr[i] = -1;
@@ -44,13 +49,17 @@ namespace ngla
     nze = as * max_elsperrow;
 
     // colnr = new int[as*max_elsperrow+1];
+    /*
     colnr.Alloc (as*max_elsperrow+1);
     colnr.SetName ("matrix graph");
-
+    */
+    colnr.SetSize (as*max_elsperrow+1);
     // firsti = new int[as+1];
+    /*
     firsti.Alloc (as+1);
     firsti.SetName ("matrix graph, table 1");
-
+    */
+    firsti.SetSize (as+1);
     owner = true;
     
     for (int i = 0; i < as*max_elsperrow; i++)
@@ -73,13 +82,21 @@ namespace ngla
 
     if (stealgraph)
       {
+	cout << "testing stealgraph" << endl;
+	// Swap (firsti, graph.firsti);
+	// Swap (colnr, graph.colnr);
 	firsti.Swap (graph.firsti);
 	colnr.Swap (graph.colnr);
       }
     else
       {
+	/*
 	firsti.Alloc (size+1);
 	colnr.Alloc (nze);
+	*/
+	firsti.SetSize (size+1);
+	colnr.SetSize (nze);
+	
 	for (int i = 0; i < size+1; i++)
 	  firsti[i] = graph.firsti[i];
 	for (size_t i = 0; i < nze; i++)
@@ -188,8 +205,11 @@ namespace ngla
     width = ndof;
     owner = true;
 
+    /*
     firsti.Alloc (size+1);
     firsti.SetName ("matrix graph, table 1");
+    */
+    firsti.SetSize (size+1);
 
     nze = 0;
     for (int i = 0; i < size; i++)
@@ -199,9 +219,11 @@ namespace ngla
       }
     firsti[size] = nze;
     
+    /*
     colnr.Alloc (nze+1);
     colnr.SetName ("matrix graph");
-    
+    */
+    colnr.SetSize (nze+1);
     // mark = -1;
 
     if (!symmetric)
@@ -618,8 +640,11 @@ namespace ngla
       //      S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
       nul(TSCAL(0))
   {
+    /*
     data.Alloc (nze);
     data.SetName ("sparse matrix");
+    */
+    data.SetSize (nze);
   }
 
 
@@ -632,8 +657,11 @@ namespace ngla
       // S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
       nul(TSCAL(0))
   { 
+    /*
     data.Alloc (nze);
     data.SetName ("sparse matrix");
+    */
+    data.SetSize (nze);
   }
 
   template <class TM>
@@ -643,8 +671,11 @@ namespace ngla
     : BaseSparseMatrix (size, rowelements, colelements, symmetric), 
       nul(TSCAL(0))
   { 
+    /*
     data.Alloc (nze);
     data.SetName ("sparse matrix");
+    */
+    data.SetSize (nze);
   }
 
 
@@ -656,8 +687,11 @@ namespace ngla
       // S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
       nul(TSCAL(0))
   { 
+    /*
     data.Alloc (nze);
     data.SetName ("sparse matrix");
+    */
+    data.SetSize (nze);
     FindSameNZE();
   }
 
@@ -669,8 +703,11 @@ namespace ngla
       // S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
       nul(TSCAL(0)) 
   { 
+    /*
     data.Alloc (nze);
     data.SetName ("sparse matrix");
+    */
+    data.SetSize(nze);
     AsVector() = amat.AsVector(); 
   }
 
@@ -678,7 +715,7 @@ namespace ngla
   SparseMatrixTM<TM> :: ~SparseMatrixTM ()
   { 
     // delete data; 
-    (this->data).Free();
+    // (this->data).Free();
   }
 
 

@@ -1984,6 +1984,7 @@ void CompoundFESpace::TransformMat<SliceMatrix<Complex> >
   }
 
 
+#ifdef PARALLEL
   ParallelMeshDofs :: ParallelMeshDofs (const MeshAccess & ama, 
 					const Array<Node> & adofnodes, 
 					int dim, bool iscomplex)
@@ -1991,6 +1992,7 @@ void CompoundFESpace::TransformMat<SliceMatrix<Complex> >
 		    Nodes2Table (ama, adofnodes), dim, iscomplex),		    
       ma(ama), dofnodes(adofnodes)
   { ; }
+#endif
 
 
 

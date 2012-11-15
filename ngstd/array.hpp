@@ -559,6 +559,15 @@ namespace ngstd
       return *this;
     }
 
+    void Swap (Array & b)
+    {
+      cout << "swap array" << endl;
+      ngstd::Swap (size, b.size);
+      ngstd::Swap (data, b.data);
+      ngstd::Swap (allocsize, b.allocsize);
+      ngstd::Swap (ownmem, b.ownmem);
+    }
+
   private:
 
     /// resize array, at least to size minsize. copy contents
@@ -586,7 +595,10 @@ namespace ngstd
     
       allocsize = nsize;
     }
+
   };
+
+ 
 
 
   /**
