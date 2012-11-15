@@ -26,3 +26,6 @@ integrator.hpp intrule.hpp l2hofefo.hpp l2hofe.hpp recursive_pol.hpp  \
 recursive_pol_tet.hpp recursive_pol_trig.hpp scalarfe.hpp	      \
 specialelement.hpp thdivfe.hpp tscalarfe.hpp vectorfacetfe.hpp	      \
 tscalarfe.cpp hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp
+
+
+dist_data_DATA = dynamicmem.cpp
