@@ -830,7 +830,7 @@ extern "C" {
 
 
 
-
+#ifdef NEED_DYNMEM
 
 
 namespace netgen
@@ -1033,7 +1033,7 @@ namespace netgen
 }
 
 
-
+#endif 
 
 
 

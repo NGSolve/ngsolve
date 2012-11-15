@@ -12,6 +12,12 @@ demo_fem:  demo_fem.cpp
 demo_comp:  demo_comp.cpp
 	ngscxx demo_comp.cpp -o demo_comp  -lngcomp -lngsolve -lngla -lngfem -lparallel -lngstd -lnglib -linterface
 
+demo_comp1d:  demo_comp1d.cpp netgen_dummy.cpp
+	ngscxx demo_comp1d.cpp netgen_dummy.cpp -o demo_comp1d  -lngcomp -lngsolve -lngla -lngfem -lparallel -lngstd -lnglib -linterface
+
+
+
+
 demo_solve:  demo_solve.cpp
 	ngscxx demo_solve.cpp -o demo_solve   -lngcomp -lngsolve -lngla -lngfem -lparallel -lngstd -lnglib -linterface
 
