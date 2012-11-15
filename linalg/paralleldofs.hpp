@@ -207,7 +207,7 @@ namespace ngla
     void ScatterDofData (FlatArray<T> data) const { ; } 
     
     template <typename T>
-    void AllReduceDofData (FlatArray<T> data, MPI_Op op) { ; }
+    void AllReduceDofData (FlatArray<T> data, MPI_Op op) const { ; }
   };
   
 #endif
