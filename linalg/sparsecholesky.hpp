@@ -46,10 +46,15 @@ namespace ngla
   {
     int height, nze;
 
+    /*
     DynamicMem<int> order, firstinrow, firstinrow_ri, rowindex2, blocknrs;
-    ///
     DynamicMem<TM> lfact;
     DynamicMem<TM> diag;
+    */
+    Array<int, size_t> order, firstinrow, firstinrow_ri, rowindex2, blocknrs;
+    Array<TM, size_t> lfact;
+    Array<TM, size_t> diag;
+
     ///
     MinimumDegreeOrdering * mdo;
     int maxrow;

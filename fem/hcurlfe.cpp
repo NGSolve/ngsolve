@@ -23,49 +23,7 @@ namespace ngfem
     return out.str();
   }
 
-#ifdef OLD
-  template <int D>
-  void HCurlFiniteElement<D> :: 
-  CalcIPData (Array<IPData> & ipdata)
-  {
-    const Array<IntegrationPoint*> & ipts = 
-      GetIntegrationRules().GetIntegrationPoints (eltype);
 
-
-    if (ipdata.Size() != ipts.Size()) 
-      {
-	//const Array<IntegrationPoint*> & ipts = 
-	//  GetIntegrationRules().GetIntegrationPoints (eltype);
-
-	/*
-          (*testout) << "Calc IP Data for " << typeid(*this).name() 
-          << ", dim = " << dimspace
-          << ", type = " << ElementTopology::GetElementName (eltype)
-          << ", ndof = " << ndof
-          << ", ipts = " << ipts.Size() << endl;
-	*/
-
-	ipdata.SetSize (ipts.Size());
-	block = new DynamicMem<double> (ipts.Size() * ndof * (D+DIM_CURL));
-	block->SetName ("HCurl-FiniteElement IPData");
-	double * hp = block->Ptr(); 
-	//	double * block = new double[ipts.Size() * ndof * (D+DIM_CURL)];
-	//	double * hp = block;
-	for (int i = 0; i < ipts.Size(); i++)
-	  {
-	    ipdata[i].shape.AssignMemory (ndof, hp);
-	    hp += ndof*D;
-	    ipdata[i].curlshape.AssignMemory (ndof, hp);
-	    hp += ndof*DIM_CURL;
-
-	    CalcShape (*ipts[i], ipdata[i].shape);
-	    CalcCurlShape (*ipts[i], ipdata[i].curlshape);
-	  }
-      }
-
-    p_ipdata = &ipdata[0];
-  }
-#endif
 
 
   template <int D>

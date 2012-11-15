@@ -111,12 +111,16 @@ namespace ngla
     delete mdo;
     mdo = 0;
 
+    diag.SetSize(n);
+    /*
     diag.Alloc (n);
     diag.SetName ("sparse inverse, diag");
-
+    */
+    lfact.SetSize (nze);
+    /*
     lfact.Alloc (nze);
     lfact.SetName ("sparse inverse, lfact");
-
+    */
     for (int i = 0; i < nze; i++)
       lfact[i] = 0.0;
 
@@ -220,13 +224,17 @@ namespace ngla
 	    const int * blocknr)
   {
     int n = aorder.Size();
-    
+
+    order.SetSize (n);
+    /*
     order.Alloc (n);
     order.SetName ("sparse inverse, reorder table");
-
+    */
+    blocknrs.SetSize (n);
+    /*
     blocknrs.Alloc (n);
     blocknrs.SetName ("sparse inverse, block nrs");
-    
+    */
     // DynamicMem<int> helpi(n);
     
     // order: now inverse map 
@@ -257,6 +265,7 @@ namespace ngla
      *testout << " Sparse Cholesky mem needed " << double(cnt*sizeof(TM)+cnt_master*sizeof(int))*1e-6 << " MBytes " << endl; 
      */  
 
+    /*
     firstinrow.Alloc(n+1);
     firstinrow.SetName ("sparse inverse, table 1a");
 
@@ -265,7 +274,12 @@ namespace ngla
 
     rowindex2.Alloc (cnt_master);
     rowindex2.SetName ("sparse inverse, tabl 2a");
-    
+    */
+    firstinrow.SetSize(n+1);
+    firstinrow_ri.SetSize(n+1);
+    rowindex2.SetSize (cnt_master);
+
+
     cnt = 0;
     cnt_master = 0;
     maxrow = 0;
@@ -355,10 +369,10 @@ namespace ngla
       cout << IM(4) << " factor " << flush;
 
     // to avoid aliasing:
-    int * hfirstinrow = firstinrow;
-    int * hfirstinrow_ri = firstinrow_ri;
-    int * hrowindex2 = rowindex2;
-    TM * hlfact = &lfact[0];
+    int * hfirstinrow = firstinrow.Addr(0);
+    int * hfirstinrow_ri = firstinrow_ri.Addr(0);
+    int * hrowindex2 = rowindex2.Addr(0);
+    TM * hlfact = lfact.Addr(0);
     
     enum { BS = 4 };
 

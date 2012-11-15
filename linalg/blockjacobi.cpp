@@ -381,16 +381,23 @@ namespace ngla
 	maxbs = blocktable[i].Size();
 
 
+    /*
     blockstart.Alloc(n);
     blocksize.Alloc(n);
     blockbw.Alloc(n);
+    */
+    blockstart.SetSize(n);
+    blocksize.SetSize(n);
+    blockbw.SetSize(n);
 
+    /*
     blockstart.SetName ("BlockJacobi, Table 1");
     blocksize.SetName ("BlockJacobi, Table 2");
     blockbw.SetName ("BlockJacobi, Table 3");
 
     for (int i = 0; i < NBLOCKS; i++)
       data[i].SetName ("BlockJacobi");
+    */
 
     // int alloc = n;
     int memneed[NBLOCKS];
@@ -420,7 +427,8 @@ namespace ngla
     if (!lowmem)
       {
 	for (int i = 0; i < NBLOCKS; i++)
-	  data[i].Alloc (memneed[i]);
+	  data[i].SetSize(memneed[i]);
+	  // data[i].Alloc (memneed[i]);
 
         clock_t prevtime = clock();
 

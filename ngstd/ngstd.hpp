@@ -55,7 +55,7 @@ inline void * operator new[] (size_t cnt)
 
 
 
-#include "dynamicmem.hpp"
+// #include "dynamicmem.hpp"
 
 
 namespace ngstd
@@ -70,10 +70,12 @@ namespace netgen
 }
 
 
+/*
 namespace ngstd
 {
   using netgen::DynamicMem;
 }
+*/
 
 
 /**

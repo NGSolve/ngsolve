@@ -344,7 +344,8 @@ int NGS_PrintMemoryUsage (ClientData clientData,
 			  int argc, tcl_const char *argv[])
 {
   // netgen::BaseMoveableMem::Print ();
-  netgen::BaseDynamicMem::Print ();
+  
+  // netgen::BaseDynamicMem::Print ();
 
   return TCL_OK;
 }

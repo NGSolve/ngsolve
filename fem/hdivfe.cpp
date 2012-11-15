@@ -17,46 +17,8 @@
 
 namespace ngfem
 {
-  using namespace ngfem;
 
 
-#ifdef OLD
-  template <int D>
-  void HDivFiniteElement<D> :: 
-  CalcIPData (Array<IPData> & ipdata)
-  {
-    if (ipdata.Size() == 0)
-      {
-	const Array<IntegrationPoint*> & ipts = 
-	  GetIntegrationRules().GetIntegrationPoints (eltype);
-    
-	/*
-	(*testout) << "Calc HDiv-IP Data for element type  " << eltype
-		   << ", ndof = " << GetNDof() 
-		   << ": " << ipts.Size() << endl;
-	*/
-
-	ipdata.SetSize (ipts.Size());
-
-	DynamicMem<double> * block = new DynamicMem<double> (ipts.Size() * ndof * (DIM+1));
-	block->SetName ("HDiv-FiniteElement IPData");
-	double * hp = block->Ptr(); 
-
-	for (int i = 0; i < ipts.Size(); i++)
-	  {
-	    ipdata[i].shape.AssignMemory (ndof, hp);
-	    hp += ndof * DIM;
-	    ipdata[i].divshape.AssignMemory (ndof, hp);
-	    hp += ndof;
-	    
-	    CalcShape (*ipts[i], ipdata[i].shape);
-	    CalcDivShape (*ipts[i], ipdata[i].divshape);
-	  }
-      }
-
-    p_ipdata = &ipdata[0];
-  }
-#endif
   
   template <int D>
   void HDivFiniteElement<D> ::
