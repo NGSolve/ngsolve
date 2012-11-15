@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="netgen"
 	ProjectGUID="{87468946-A594-4101-81A4-A131F35261EF}"
 	RootNamespace="netgen"
@@ -320,7 +320,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w64\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)..\ng&quot;;&quot;$(SolutionDir)..\libsrc\include&quot;;&quot;$(SolutionDir)..\libsrc\interface&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\include&quot;;&quot;$(SolutionDir)..\..\ext_libs\pthread-w64\include&quot;;$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;MSVC_EXPRESS;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -944,11 +944,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\gprim\gprim.hpp"
+				RelativePath="..\libsrc\include\gprim.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\gprim.hpp"
+				RelativePath="..\libsrc\gprim\gprim.hpp"
 				>
 			</File>
 			<File
@@ -1032,11 +1032,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\meshing.hpp"
+				RelativePath="..\libsrc\meshing\meshing.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\meshing\meshing.hpp"
+				RelativePath="..\libsrc\include\meshing.hpp"
 				>
 			</File>
 			<File
@@ -1076,11 +1076,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\general\myadt.hpp"
+				RelativePath="..\libsrc\include\myadt.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\myadt.hpp"
+				RelativePath="..\libsrc\general\myadt.hpp"
 				>
 			</File>
 			<File
@@ -1128,11 +1128,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\linalg\opti.hpp"
+				RelativePath="..\libsrc\include\opti.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\opti.hpp"
+				RelativePath="..\libsrc\linalg\opti.hpp"
 				>
 			</File>
 			<File
@@ -1169,6 +1169,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\general\profiler.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\resource.h"
 				>
 			</File>
 			<File
@@ -1220,6 +1224,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\gprim\spline.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\geom2d\spline2d.hpp"
 				>
 			</File>
@@ -1232,6 +1240,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\gprim\splinegeometry.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\geom2d\splinegeometry2.hpp"
 				>
 			</File>
@@ -1240,11 +1252,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\stlgeom\stlgeom.hpp"
+				RelativePath="..\libsrc\include\stlgeom.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\include\stlgeom.hpp"
+				RelativePath="..\libsrc\stlgeom\stlgeom.hpp"
 				>
 			</File>
 			<File
@@ -1313,6 +1325,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\visualization\visual.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\geom2d\vsgeom2d.hpp"
 				>
 			</File>
 			<File
@@ -1422,6 +1438,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\csg\csgpkg.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\csg\curve2d.cpp"
 				>
 			</File>
@@ -1486,7 +1506,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\geom2d\geom2dpkg.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\gprim\geom3d.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\geom2d\geometry2d.cpp"
 				>
 			</File>
 			<File
@@ -1618,11 +1646,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\ng\nginterface.cpp"
+				RelativePath="..\libsrc\interface\nginterface.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\ng\nginterface_v2.cpp"
+				RelativePath="..\libsrc\interface\nginterface_v2.cpp"
 				>
 			</File>
 			<File
@@ -1655,10 +1683,6 @@
 			</File>
 			<File
 				RelativePath="..\ng\parallelfunc.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\ng\parallelinterface.cpp"
 				>
 			</File>
 			<File
@@ -1782,7 +1806,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\geom2d\spline.cpp"
+				RelativePath="..\libsrc\gprim\spline.cpp"
 				>
 			</File>
 			<File
@@ -1790,7 +1814,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\geom2d\splinegeometry.cpp"
+				RelativePath="..\libsrc\gprim\splinegeometry.cpp"
 				>
 			</File>
 			<File
@@ -1810,7 +1834,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\visualization\stlmeshing.cpp"
+				RelativePath="..\libsrc\stlgeom\stlpkg.cpp"
 				>
 			</File>
 			<File
@@ -1858,7 +1882,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\visualization\vscsg.cpp"
+				RelativePath="..\libsrc\csg\vscsg.cpp"
 				>
 			</File>
 			<File
@@ -1866,15 +1890,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\geom2d\vsgeom2d.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\visualization\vsmesh.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\visualization\vsocc.cpp"
+				RelativePath="..\libsrc\visualization\vssolution.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\visualization\vssolution.cpp"
+				RelativePath="..\libsrc\stlgeom\vsstl.cpp"
 				>
 			</File>
 			<File
@@ -2034,7 +2062,15 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\netgen.ico"
+			>
+		</File>
 	</Files>
 	<Globals>
+		<Global
+			Name="HPC_Debug"
+			Value="﻿&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;&lt;Properties xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot;&gt;&lt;ProjectNameDisplay&gt;netgen&lt;/ProjectNameDisplay&gt;&lt;CollapseAdvanced&gt;true&lt;/CollapseAdvanced&gt;&lt;ApplicationPlatform&gt;x86&lt;/ApplicationPlatform&gt;&lt;/Properties&gt;"
+		/>
 	</Globals>
 </VisualStudioProject>
