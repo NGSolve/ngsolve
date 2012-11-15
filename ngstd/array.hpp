@@ -561,7 +561,6 @@ namespace ngstd
 
     void Swap (Array & b)
     {
-      cout << "swap array" << endl;
       ngstd::Swap (size, b.size);
       ngstd::Swap (data, b.data);
       ngstd::Swap (allocsize, b.allocsize);

@@ -82,9 +82,6 @@ namespace ngla
 
     if (stealgraph)
       {
-	cout << "testing stealgraph" << endl;
-	// Swap (firsti, graph.firsti);
-	// Swap (colnr, graph.colnr);
 	firsti.Swap (graph.firsti);
 	colnr.Swap (graph.colnr);
       }
