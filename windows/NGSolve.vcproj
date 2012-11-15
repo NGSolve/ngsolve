@@ -589,6 +589,10 @@
 				Name="linalg"
 				>
 				<File
+					RelativePath="..\linalg\arnoldi.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\linalg\basematrix.cpp"
 					>
 				</File>
@@ -722,10 +726,6 @@
 				>
 				<File
 					RelativePath="..\parallel\paralleldofs.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\parallel\parallelngs.cpp"
 					>
 				</File>
 				<File
@@ -1106,6 +1106,10 @@
 			<Filter
 				Name="linalg"
 				>
+				<File
+					RelativePath="..\linalg\arnoldi.hpp"
+					>
+				</File>
 				<File
 					RelativePath="..\linalg\basematrix.hpp"
 					>
