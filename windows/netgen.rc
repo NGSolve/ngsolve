@@ -36,8 +36,8 @@ LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 4,9,14,0
- PRODUCTVERSION 4,9,14,0
+ FILEVERSION 5,0,0,0
+ PRODUCTVERSION 5,0,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x3L
@@ -54,12 +54,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Vienna UT"
             VALUE "FileDescription", "Netgen Meshing Software"
-            VALUE "FileVersion", "4.9.14"
+            VALUE "FileVersion", "5.0.0"
             VALUE "InternalName", "Netgen"
             VALUE "LegalCopyright", "GNU Public License (GPL)"
             VALUE "OriginalFilename", "Netgen.exe"
             VALUE "ProductName", "Netgen"
-            VALUE "ProductVersion", "4.9.14"
+            VALUE "ProductVersion", "5.0.0"
         END
     END
     BLOCK "VarFileInfo"
