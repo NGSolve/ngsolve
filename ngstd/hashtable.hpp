@@ -298,9 +298,9 @@ namespace ngstd
     ///
     int size;
     ///
-    DynamicMem<T_HASH> hash;
+    Array<T_HASH,size_t> hash;
     ///
-    DynamicMem<T> cont;
+    Array<T,size_t> cont;
     ///
     T_HASH invalid;
   public:
@@ -308,8 +308,8 @@ namespace ngstd
     ClosedHashTable (int asize)
       : size(asize), hash(asize), cont(asize)
     {
-      hash.SetName ("i2-hashtable, hash");
-      cont.SetName ("i2-hashtable, contents");
+      // hash.SetName ("i2-hashtable, hash");
+      // cont.SetName ("i2-hashtable, contents");
       invalid.SetAll (-1);
       for (int i = 0; i < size; i++)
 	hash[i] = invalid;
