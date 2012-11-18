@@ -307,6 +307,11 @@ namespace ngcomp
     if(dim == 3) 
       for(int i=0;i<nfa;i++) if(!used_face[i]) order_face[i] = INT<2> (1,1); 
 
+    for (int i = 0; i < ne; i++)
+      if (!DefinedOn (ma.GetElIndex (i)))
+	order_inner[i] = INT<3>(1,1,1);
+
+
     if(print) 
       {
 	*testout << " H1HoFESpace order " << order << " , var_order " << var_order << " , relorder " << rel_order << endl;  
@@ -478,10 +483,6 @@ namespace ngcomp
   void H1HighOrderFESpace :: PrintReport (ostream & ost)
   {
     FESpace::PrintReport (ost);
-
-    //     (*testout) << "first edge = " << first_edge_dof << endl;
-    //     (*testout) << "first face = " << first_face_dof << endl;
-    //     (*testout) << "first inner = " << first_element_dof << endl;
   }
 
 
@@ -846,7 +847,7 @@ namespace ngcomp
 		
 	    if (creator.GetMode() == 1)
 	      cout << " VE + F + I " << endl;
-		
+
 	    for (int i = 0; i < nv; i++)
 	      creator.Add(i, i);
 		
