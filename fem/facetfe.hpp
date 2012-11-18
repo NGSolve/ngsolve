@@ -47,6 +47,7 @@ namespace ngfem
     int first_facet_dof[7];
 
     using FiniteElement::eltype;
+    using FiniteElement::ndof;
     using FiniteElement::order;
 
   public:

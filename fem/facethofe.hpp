@@ -24,8 +24,10 @@ namespace ngfem
     enum { DIM = ET_trait<ET>::DIM };
     using ET_trait<ET>::N_FACET;
 
-    using FiniteElement::ndof;
-    using FiniteElement::eltype;
+    // using FiniteElement::ndof;
+    // using FiniteElement::eltype;
+    using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::ndof;
+    using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::eltype;
 
     using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::first_facet_dof;
     using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::facet_order;
