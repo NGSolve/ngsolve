@@ -486,7 +486,8 @@ namespace netgen
 
   CurvedElements :: ~CurvedElements()
   {
-    ;
+    for (int i = 0; i < jacpols2.Size(); i++) 
+      delete jacpols2[i];
   }
 
 
