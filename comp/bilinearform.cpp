@@ -130,11 +130,9 @@ namespace ngcomp
 
   BilinearForm :: ~BilinearForm ()
   {
-    if (!low_order_bilinear_form)
-      for (int i = 0; i < parts.Size(); i++)
-	if (parts_deletable[i]) delete parts[i];
-	
     delete low_order_bilinear_form;
+    for (int i = 0; i < parts.Size(); i++)
+      if (parts_deletable[i]) delete parts[i];
   }
 
   void BilinearForm :: SetPrint (bool ap)
@@ -241,6 +239,8 @@ namespace ngcomp
       }
 
     MatrixGraph * graph = new MatrixGraph (ndof, *creator.GetTable(), *creator.GetTable(), symmetric);
+    delete creator.GetTable();
+
     graph -> FindSameNZE();
     return graph;
   }
