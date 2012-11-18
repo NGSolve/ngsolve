@@ -351,6 +351,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     free_dofs = dirichlet_dofs;
     free_dofs.Invert();
     
+    for (int i = 0; i < ctofdof.Size(); i++)
+      if (ctofdof[i] == UNUSED_DOF)
+	free_dofs.Clear(i);
+
     external_free_dofs.SetSize (GetNDof());
     external_free_dofs = free_dofs;
     for (int i = 0; i < ctofdof.Size(); i++)
@@ -657,6 +661,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	<< "dim   = " << dimension << endl
 	<< "dgjmps= " << dgjumps << endl
 	<< "complex = " << iscomplex << endl;
+
+    if (!free_dofs.Size()) return;
+
+    ost << "ndof = << " << GetNDof() << endl;
+    int ntype[8] = { 0 };
+    for (int i = 0; i < ctofdof.Size(); i++)
+      ntype[ctofdof[i]]++;
+    if (ntype[UNUSED_DOF]) ost << "unused = " << ntype[UNUSED_DOF] << endl;
+    if (ntype[LOCAL_DOF])  ost << "local  = " << ntype[LOCAL_DOF] << endl;
+
+    int nfree = 0;
+    for (int i = 0; i < free_dofs.Size(); i++)
+      if (free_dofs[i])
+	nfree++;
+    cout << "free dofs = " << nfree << endl;
   }
   
 
@@ -1712,6 +1731,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		    free_dofs.Clear (base+i);
 	      }
 	  }
+
+        for (int i = 0; i < ctofdof.Size(); i++)
+          if (ctofdof[i] == UNUSED_DOF)
+            free_dofs.Clear(i);
 
 	dirichlet_dofs = free_dofs;
 	dirichlet_dofs.Invert();
