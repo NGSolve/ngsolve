@@ -2,12 +2,6 @@
   Standard data types demos
  */
 
-#include <iostream>
-#include <iomanip>
-
-#include <time.h>
-#include <math.h>
-
 
 // ng-soft header files
 #include <ngstd.hpp>

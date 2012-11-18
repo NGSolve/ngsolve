@@ -2,15 +2,6 @@
   Basic Linear Algebra demos
  */
 
-
-#include <iostream>
-#include <iomanip>
-#include <complex>
-
-#include <ctime>
-#include <cmath>
-
-
 // ng-soft header files
 #include <bla.hpp>
 
