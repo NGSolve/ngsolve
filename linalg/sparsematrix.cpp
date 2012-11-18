@@ -285,7 +285,7 @@ namespace ngla
 		  }
 	      }
 	  }
-      }
+      } 
 
 
 #pragma omp parallel for
@@ -293,6 +293,8 @@ namespace ngla
       QuickSort (GetRowIndices(i));
 
     colnr[nze] = 0;
+
+    delete creator.GetTable();
   }
 
   
