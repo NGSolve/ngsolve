@@ -9,7 +9,7 @@ endif
 netgen_SOURCES = demoview.cpp ngappinit.cpp onetcl.cpp parallelfunc.cpp ngpkg.cpp demoview.hpp parallelfunc.hpp togl_1_7.h
 #  nginterface.cpp nginterface_v2.cpp
 
-netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.a \
+netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.la \
 	$(top_builddir)/libsrc/csg/libcsgvis.la \
 	$(top_builddir)/libsrc/csg/libcsg.la \
 	$(top_builddir)/libsrc/interface/libinterface.la \
