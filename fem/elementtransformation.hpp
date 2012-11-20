@@ -67,65 +67,18 @@ namespace ngfem
     /// calculates the Jacobi matrix
     virtual void CalcJacobian (const IntegrationPoint & ip,
 			       FlatMatrix<> dxdxi) const = 0;
-    /*
-    {
-      specific -> CalcJacobian (ip, dxdxi);
-    }
-    */
 
-    /*
-    /// Calculates the Jacobi matrix
-    void CalcJacobian (const IntegrationPoint & ip,
-		       FlatMatrix<> dxdxi,
-		       LocalHeap & lh) const
-    {
-      CalcJacobian (ip, dxdxi);
-    }
-    */
     /// calculate the mapped point
     virtual void CalcPoint (const IntegrationPoint & ip,
 			    FlatVector<> point) const = 0;
-    /*
-    {
-      specific -> CalcPoint (ip, point);
-    }
-    */
-    /*
-    /// calculate the mapped point
-    void CalcPoint (const IntegrationPoint & ip,
-		    FlatVector<> point,
-		    LocalHeap & lh) const
-    {
-      CalcPoint (ip, point);
-    }
-    */
 
     /// calculate point and Jacobi matrix
     virtual void CalcPointJacobian (const IntegrationPoint & ip,
 				    FlatVector<> point, FlatMatrix<> dxdxi) const = 0;
-      /*
-    {
-      specific -> CalcPointJacobian (ip, point, dxdxi);
-    }
-      */
-    /*
-    /// calculate point and Jacobi matrix
-    void CalcPointJacobian (const IntegrationPoint & ip,
-			    FlatVector<> point, FlatMatrix<> dxdxi,
-			    LocalHeap & lh) const
-    {
-      CalcPointJacobian (ip, point, dxdxi);
-    }
-    */
 
     /// Calculate points and Jacobimatrices in all points of integrationrule
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & mir) const = 0;
-      /*
-    {
-      specific -> CalcMultiPointJacobian (ir, mir);
-    }
-      */
 
     /// Calcs the normal vector in ip
     void CalcNormalVector (const IntegrationPoint & ip,
@@ -159,19 +112,9 @@ namespace ngfem
   
     /// returns space dimension of physical elements
     virtual int SpaceDim () const = 0;
-      /*
-    {
-      return specific->SpaceDim();
-    }
-      */
 
     /// is it a mapping for boundary elements ?
     virtual bool Boundary() const = 0;
-      /*
-    {
-      return specific->Boundary();
-    }
-      */
 
     void SetHigherIntegrationOrder(void) {higher_integration_order = true;}
     void UnSetHigherIntegrationOrder(void) {higher_integration_order = false;}
@@ -185,35 +128,15 @@ namespace ngfem
     {
       return false;
     }
-    /*
-    {
-      return specific -> IsCurvedElement();
-    }
-    */
 
     virtual void GetSort (FlatArray<int> sort) const
     { ; }
-    /*
-    {
-      if (specific) specific -> GetSort (sort);
-    }
-    */
 
     /// return a mapped integration point on localheap
     virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const = 0;
-    /*
-    {
-      return (*specific) (ip, lh);
-    }
-    */
 
     /// return a mapped integration rule on localheap
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const = 0;
-    /*
-    {
-      return (*specific) (ir, lh);
-    }
-    */
 
   private:
     ElementTransformation (const ElementTransformation & eltrans2) { ; }
