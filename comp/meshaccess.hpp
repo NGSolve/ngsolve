@@ -253,7 +253,7 @@ namespace ngcomp
       und GetTopologicElement in 3D ruft
       GetClosureNodes (NT_CELL, cell, NodeSet (NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL), nodes);
     */
-    void GetClosueNodes (NODE_TYPE nt, int nodenr, NODE_SET ns, Array<Node> & nodes);
+    // void GetClosureNodes (NODE_TYPE nt, int nodenr, NODE_SET ns, Array<Node> & nodes);
 
     /**
        returns topology of a Netgen - element.  This is the new
