@@ -159,6 +159,23 @@ namespace ngstd
 
     int Size() const { return ia.Spec().Size(); }
     T operator[] (int i) const { return ba[ia.Spec()[i]]; }
+    T & operator[] (int i) { return ba[ia.Spec()[i]]; }
+
+    IndirectArray operator= (const T & val) 
+    {
+      for (int i = 0; i < Size(); i++)
+        (*this)[i] = val;
+      return IndirectArray (ba, ia);
+    }
+
+    template <typename T2, typename TA>
+    IndirectArray operator= (const BaseArrayObject<T2,TA> & a2) 
+    {
+      for (int i = 0; i < Size(); i++) 
+	(*this)[i] = a2.Spec()[i];
+      return IndirectArray (ba, ia);
+    }
+
   };
 
 
@@ -299,7 +316,7 @@ namespace ngstd
     }
     
     template <typename TI1, typename TI2>
-    const IndirectArray<T, BaseArrayObject<TI1,TI2> > 
+    IndirectArray<T, BaseArrayObject<TI1,TI2> > 
     operator[] (const BaseArrayObject<TI1,TI2> & ind_array) const
     {
       return IndirectArray<T, BaseArrayObject<TI1,TI2> > (*this, ind_array);
