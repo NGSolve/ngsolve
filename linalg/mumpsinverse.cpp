@@ -831,6 +831,9 @@ namespace ngla
     static Timer timer("Parallelmumps mult inverse");
     RegionTimer reg (timer);
 
+    x.Distribute();
+    y.SetParallelStatus (CUMULATED);
+
     VT_OFF();
 
     int ntasks = MyMPI_GetNTasks();
