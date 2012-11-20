@@ -103,6 +103,8 @@ namespace ngfem
       return IntRange (first_facet_dof[fnr], first_facet_dof[fnr+1]);
     }
 
+    virtual string ClassName() const { return "FacetVolumeFiniteElement"; }
+
     virtual void ComputeNDof () = 0;
   };
 

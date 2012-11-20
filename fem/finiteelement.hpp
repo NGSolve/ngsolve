@@ -69,24 +69,23 @@ namespace ngfem
   class NGS_DLL_HEADER FiniteElement
   {
   protected:
-    /// space dimension (1, 2, or 3)
-    // int dimspace;
     /// element geometry (trig, quad, ...)
     ELEMENT_TYPE eltype;
     /// number of degrees of freedom
     int ndof;
     /// polynomial order
     int order;
-  public:
+  protected:
     /// default constructor
     FiniteElement () { ; }
 
     /// constructor
-    FiniteElement (int adimspace, ELEMENT_TYPE aeltype, int andof, int aorder)
+    FiniteElement (ELEMENT_TYPE aeltype, int andof, int aorder)
       : eltype(aeltype), ndof(andof), order(aorder)
     { ; }
 
-    /// virtual destructor
+  public:
+    /// make the class virtual
     virtual ~FiniteElement () { ; }
 
     /// Number of degrees-of-freedom
@@ -98,17 +97,14 @@ namespace ngfem
     /// geometry of element
     ELEMENT_TYPE ElementType() const { return eltype; }
 
-    /// get dof description
-    /// virtual void GetDofs (Array<Dof> & dofs) const;
-
     /// the name of the element family
-    virtual string ClassName() const {return "FiniteElement";}
+    virtual string ClassName() const { return "FiniteElement"; }
 
     /// precomputes shape for integrationrule
     virtual void PrecomputeShapes (const IntegrationRule & ir) { ; }
   };
 
-
+ 
 
 
   /**
@@ -139,6 +135,9 @@ namespace ngfem
 	base += fea[i]->GetNDof();
       return IntRange (base, base+fea[comp]->GetNDof());
     }
+
+    /// the name of the element family
+    virtual string ClassName() const { return "CompoundFiniteElement"; }
   };
 
 
@@ -152,7 +151,7 @@ namespace ngfem
   {
   public:
     DummyFE ()
-      : FiniteElement(ET_trait<ET>::DIM, ET, 0, 0) { ; }
+      : FiniteElement(ET, 0, 0) { ; }
   };
 
 }

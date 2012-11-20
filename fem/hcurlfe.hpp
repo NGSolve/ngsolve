@@ -54,11 +54,11 @@ namespace ngfem
 
     /// 
     HCurlFiniteElement (ELEMENT_TYPE aeltype, int andof, int aorder)
-      : FiniteElement (DIM, aeltype, andof, aorder) { ; } 
+      : FiniteElement (aeltype, andof, aorder) { ; } 
   
     virtual ~HCurlFiniteElement () { ; }
 
-    virtual string ClassName(void) const;
+    virtual string ClassName() const;
 
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip, 

@@ -23,16 +23,19 @@ namespace ngfem
   public:
     ///
     HDivFiniteElement (ELEMENT_TYPE aeltype, int andof, int aorder)
-      : FiniteElement (DIM, aeltype, andof, aorder) { ; } 
+      : FiniteElement (aeltype, andof, aorder) { ; } 
 
+    ///
     HDivFiniteElement () 
     {
-      ; // dimspace = D; 
+      ;
     }
 
     ///
     virtual ~HDivFiniteElement () { ; }
 
+    /// 
+    virtual string ClassName() const {return "HDivFiniteElement";}
 
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip,
@@ -55,39 +58,22 @@ namespace ngfem
     const FlatMatrixFixWidth<DIM> GetShape (const IntegrationPoint & ip,
 					    LocalHeap & lh) const
     {
-      /*
-      if (ip.IPNr() >= 0 && p_ipdata)
-	{
-	  return p_ipdata[ip.IPNr()].shape;
-	}
-      else
-      */
-	{
-	  FlatMatrixFixWidth<DIM> shape(ndof, lh);
-	  CalcShape (ip, shape);
-	  return shape;
-	}
+      FlatMatrixFixWidth<DIM> shape(ndof, lh);
+      CalcShape (ip, shape);
+      return shape;
     }
 
     const FlatVector<> GetDivShape (const IntegrationPoint & ip,
 				    LocalHeap & lh) const
     {
-      /*
-      if (ip.IPNr() >= 0 && p_ipdata)
-	{
-	  return p_ipdata[ip.IPNr()].divshape;
-	}
-      else
-      */
-	{
-	  FlatVector<> divshape(ndof, lh);
-	  CalcDivShape (ip, divshape);
-	  return divshape;
-	}
+      FlatVector<> divshape(ndof, lh);
+      CalcDivShape (ip, divshape);
+      return divshape;
     }
 
     
-    virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<D> vals) const
+    virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, 
+			   FlatMatrixFixWidth<D> vals) const
     {
       MatrixFixWidth<D> shape(ndof);
       for (int i = 0; i < ir.GetNIP(); i++)
@@ -99,8 +85,6 @@ namespace ngfem
 
 
   protected:
-    ///
-    // void CalcIPData (Array<IPData> & ipdata);
 
     /// compute basis, will be orthogonalized
     virtual void CalcShape1 (const IntegrationPoint & ip,
@@ -119,12 +103,10 @@ namespace ngfem
 
 
 
-  /*
+  /**
     HDivNormalFiniteElement
   */
 
-
-  ///
   template <int D>
   class NGS_DLL_HEADER HDivNormalFiniteElement : public FiniteElement
   {
@@ -134,24 +116,22 @@ namespace ngfem
   public:
     ///
     HDivNormalFiniteElement (ELEMENT_TYPE aeltype, int andof, int aorder)
-      : FiniteElement (DIM, aeltype, andof, aorder){;}
+      : FiniteElement (aeltype, andof, aorder){;}
 
     ///
     virtual ~HDivNormalFiniteElement () { ; }
-
 
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip,
 			    FlatVector<> shape) const = 0;
 
+    ///
     const FlatVector<> GetShape (const IntegrationPoint & ip,
 				 LocalHeap & lh) const
     {
-
       FlatVector<> shape(ndof, lh);
       CalcShape (ip, shape);
       return shape;
-
     }
 
   };

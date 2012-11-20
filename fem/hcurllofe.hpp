@@ -33,11 +33,6 @@ namespace ngfem
 
     enum { NDOF = 1 };
 
-  private:
-    ///
-    // static Array<IPData> ipdata;
-    // bool ipdatadestructed;
-
   public:
     ///
     FE_NedelecSegm1();
@@ -57,12 +52,6 @@ namespace ngfem
 
     enum { NDOF = 2 };
 
-  private:
-    ///
-    // static Array<IPData> ipdata;
-    // bool ipdatadestructed;
-
-  public:
     ///
     FE_NedelecSegm2();
     ///

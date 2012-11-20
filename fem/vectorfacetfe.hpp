@@ -10,6 +10,11 @@
 
 namespace ngfem 
 {
+  /*
+    facet element with tangential facet components.
+    to be changed similar to scalar facetfe
+  */
+  
   template <int D>
   class NGS_DLL_HEADER VectorFacetFacetFiniteElement : public FiniteElement
   {
@@ -42,8 +47,6 @@ namespace ngfem
 
     virtual const FlatMatrixFixWidth<D> GetShape (const IntegrationPoint & ip, 
 						    LocalHeap & lh) const = 0;
-    // const int * GetVNums() const { return vnums; }
- 
   };
 
 

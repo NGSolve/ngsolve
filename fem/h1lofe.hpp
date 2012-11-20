@@ -373,15 +373,6 @@ namespace ngfem
       shape[2] = z;
       shape[3] = 1-x-y-z;
     }
-
-    /*
-    virtual void GetDofs (Array<Dof> & dofs) const
-    {
-      dofs.SetSize (0);
-      for (int i = 0; i < 4; i++)
-	dofs.Append (Dof (Node (NT_VERTEX, i), 0));
-    }
-    */
   };
 
 

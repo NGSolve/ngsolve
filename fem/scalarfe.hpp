@@ -24,14 +24,14 @@ namespace ngfem
     /// provides type, number of dofs, maximal order of shapes
     ScalarFiniteElement (ELEMENT_TYPE aeltype, 
 			 int andof = 0, int aorder = 0)
-      : FiniteElement (D, aeltype, andof, aorder) 
+      : FiniteElement (aeltype, andof, aorder) 
     { ; }
 
     /// destructor
     virtual ~ScalarFiniteElement () { ; }
 
     /// the name
-    virtual string ClassName(void) const {return "ScalarFiniteElement";}
+    virtual string ClassName() const { return "ScalarFiniteElement"; }
 
     /**
        returns shape functions in point ip.

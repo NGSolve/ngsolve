@@ -7,15 +7,13 @@
 
 #include <fem.hpp>
 
-namespace ngfem {
-
-
-  using namespace ngfem;
+namespace ngfem
+{
 
   template <int D>
   VectorFacetFacetFiniteElement<D> ::
   VectorFacetFacetFiniteElement (int dim, ELEMENT_TYPE aeltype) :
-    FiniteElement (dim, aeltype, -1, -1 )
+    FiniteElement (aeltype, -1, -1 )
   {
     for (int i=0; i<8; i++)
       vnums[i] = -1; 
