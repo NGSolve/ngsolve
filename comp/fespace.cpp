@@ -104,9 +104,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	      dmaterials[i] = flags.GetStringListFlag ("definedon")[i];
 	    for(int i = 0; i < ma.GetNDomains(); i++)
 	      {
-		for(int j = 0; definedon[i] == 0 && j < dmaterials.Size(); j++)
+		for(int j = 0; j < dmaterials.Size(); j++)
 		  if(StringFitsPattern(ma.GetDomainMaterial(i),dmaterials[j]))
-		    definedon[i] = 1;
+		    {
+		      definedon[i] = 1;
+		      break;
+		    }
 	      }
 	  }
 
@@ -148,7 +151,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  }
 
 	for(int i=0; i< defon.Size(); i++) 
-	  definedonbound[int(defon[i])-1] = 1;
+	  if(defon[i] <= ma.GetNBoundaries() && defon[i] > 0)
+	    definedonbound[int(defon[i])-1] = 1;
       }
     
 

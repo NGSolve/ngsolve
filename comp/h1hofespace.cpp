@@ -151,58 +151,54 @@ namespace ngcomp
     int ne = ma.GetNE();
     int nse = ma.GetNSE();
     
-    order_edge.SetSize (ned);
-    order_face.SetSize (nfa);
-    order_inner.SetSize (ne);
+	
+
     used_edge.SetSize(ned); 
     used_face.SetSize(nfa); 
     used_vertex.SetSize(nv); 
 
-    used_edge = 0;
+    used_edge = 0; 
     used_face = 0; 
     used_vertex = 0; 
-    int p = var_order ?  1 : order; 
-    
-    order_edge = p; 
-    order_face = INT<2>(p,p);
-    order_inner = INT<3>(p,p,p); 
-	
-    Array<int> eledges, elfaces, vnums;
     
     for (int i = 0; i < ne; i++)
-      {	
-	if (!DefinedOn (ma.GetElIndex (i))) continue;
+      if (DefinedOn (ma.GetElIndex (i))) 
+	{
+	  Ng_Element ngel = ma.GetElement(i);
+	  used_vertex[ArrayObject(ngel.vertices)] = 1;
+	  used_edge[ArrayObject(ngel.edges)] = 1;
+	  if (dim == 3) used_face[ArrayObject(ngel.faces)] = 1;
+	}
 
-	ma.GetElVertices (i, vnums);
-	ma.GetElEdges (i, eledges);		
-	
-	if(dim==3) 
-	  {
-	    ma.GetElFaces(i, elfaces);
-	    for (int j=0;j<elfaces.Size();j++) used_face[elfaces[j]] = 1; 
-	  }
-	for (int j=0;j<vnums.Size();j++) used_vertex[vnums[j]] = 1; 
-	for (int j=0;j<eledges.Size();j++) used_edge[eledges[j]] = 1; 
-      }
 
+    Array<int> eledges, elfaces, vnums;
     for (int i = 0; i < nse; i++)
-      {	
-	if (!DefinedOnBoundary (ma.GetSElIndex (i))) continue;
-	
-	ma.GetSElVertices (i, vnums);
-	ma.GetSElEdges (i, eledges);		
-	
-	for (int j=0;j<vnums.Size();j++) used_vertex[vnums[j]] = 1; 
-	for (int j=0;j<eledges.Size();j++) used_edge[eledges[j]] = 1; 
-	if(dim==3) used_face[ma.GetSElFace(i)] = 1; 
-      }
+      if (DefinedOnBoundary (ma.GetSElIndex (i))) 
+	{
+	  ma.GetSElVertices (i, vnums);
+	  ma.GetSElEdges (i, eledges);		
+	  
+	  for (int j=0;j<vnums.Size();j++) used_vertex[vnums[j]] = 1; 
+	  for (int j=0;j<eledges.Size();j++) used_edge[eledges[j]] = 1; 
+	  if (dim == 3) used_face[ma.GetSElFace(i)] = 1; 
+	}
 
     
     ma.AllReduceNodalData (NT_VERTEX, used_vertex, MPI_LOR);
     ma.AllReduceNodalData (NT_EDGE, used_edge, MPI_LOR);
     ma.AllReduceNodalData (NT_FACE, used_face, MPI_LOR);
 
+
     
+    order_edge.SetSize (ned);
+    order_face.SetSize (nfa);
+    order_inner.SetSize (ne);
+
+    int p = var_order ?  1 : order; 
+    
+    order_edge = p; 
+    order_face = p; // INT<2>(p,p);
+    order_inner = p; // INT<3>(p,p,p); 
 	
     if(var_order) 
       for (int i = 0; i < ne; i++)
@@ -268,20 +264,6 @@ namespace ngcomp
 	  }
       }
 
-
-
-	  
-    /*
-      if(uniform_order_inner > -1) 
-      order_inner = INT<3>(uniform_order_inner,uniform_order_inner,uniform_order_inner);
-      if(uniform_order_face > -1) 
-      order_face = INT<2>(uniform_order_face,uniform_order_face); 
-      if(uniform_order_edge > -1) 
-      order_edge = uniform_order_edge; 
-    */ 
-
-
-
     /* 
        if (ma.GetDimension() == 2 && uniform_order_trig != -1 && uniform_order_quad != -1)
        {
@@ -295,21 +277,26 @@ namespace ngcomp
        }
     */ 
     
-    if(uniform_order_inner > -1) 
-      order_inner = INT<3>(uniform_order_inner,uniform_order_inner,uniform_order_inner);
-    if(uniform_order_face > -1 && dim==3) 
-      order_face = INT<2>(uniform_order_face,uniform_order_face); 
-    if(uniform_order_edge > -1) 
+    if(uniform_order_inner > -1)  
+      order_inner = uniform_order_inner;
+    if(uniform_order_face > -1 && dim == 3) 
+      order_face = uniform_order_face;
+    if(uniform_order_edge > -1)   
       order_edge = uniform_order_edge; 
 
 
-    for(int i=0;i<ned;i++) if(!used_edge[i]) order_edge[i] = 1; 
+    for(int i=0;i<ned;i++) 
+      if(!used_edge[i]) 
+	order_edge[i] = 1; 
+
     if(dim == 3) 
-      for(int i=0;i<nfa;i++) if(!used_face[i]) order_face[i] = INT<2> (1,1); 
+      for(int i=0;i<nfa;i++) 
+	if(!used_face[i]) 
+	  order_face[i] = 1; 
 
     for (int i = 0; i < ne; i++)
       if (!DefinedOn (ma.GetElIndex (i)))
-	order_inner[i] = INT<3>(1,1,1);
+	order_inner[i] = 1; 
 
 
     if(print) 
