@@ -12,35 +12,6 @@
 
 namespace ngfem
 {
-  /*
-  template <ELEMENT_TYPE ET>
-  void T_H1HighOrderFiniteElement<ET> :: 
-  GetDofs (Array<Dof> & dofs) const
-  {
-    dofs.SetSize (0);
-    
-    for (int i = 0; i < N_VERTEX; i++)
-      dofs.Append (Dof (Node (NT_VERTEX, i), 0));
-
-    for (int i = 0; i < N_EDGE; i++)
-      for (int j = 0; j < order_edge[i]-1; j++)
-	dofs.Append (Dof (Node (NT_EDGE, i), j));
-
-    for (int i = 0; i < N_FACE; i++)
-      {
-        int nf = ::ngfem::PolBubbleDimension (FaceType(i), order_face[i]);
-	for (int j = 0; j < nf; j++)
-	  dofs.Append (Dof (Node(NT_FACE, i), j));
-      }
-
-    if (DIM == 3)
-      {
-	int ni = ::ngfem::PolBubbleDimension (ET, order_cell);
-	for (int j = 0; j < ni; j++)
-	  dofs.Append (Dof (Node(NT_CELL, 0), j));
-      }
-  }
-  */
 
   template <ELEMENT_TYPE ET>
   void T_H1HighOrderFiniteElement<ET> :: 
@@ -62,20 +33,6 @@ namespace ngfem
     for (int i = 0; i < N_FACE; i++) order = max(order, Max (order_face[i])); 
     if (DIM == 3) order = max (order, Max (order_cell));
   }
-
-  /*
-  template <ELEMENT_TYPE ET>
-  void T_H1HighOrderFiniteElement<ET> :: 
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    int ni = 0;
-    if (DIM == 1) ni = order_edge[0]-1; 
-    if (DIM == 2) ni = ::ngfem::PolBubbleDimension (ET, order_face[0]); 
-    if (DIM == 3) ni = ::ngfem::PolBubbleDimension (ET, order_cell); 
-
-    idofs = IntRange (ndof-ni, ndof);
-  }
-  */
 
 
   /* *********************** Segment  **********************/

@@ -44,7 +44,6 @@ namespace ngfem
   inline void operator++(NODE_TYPE & nt, int)  { nt = NODE_TYPE(nt+1); } 
 
 
-
   /// point coordinates
   typedef double POINT3D[3];  
 

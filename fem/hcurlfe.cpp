@@ -15,15 +15,12 @@
 
 namespace ngfem
 {
+
   template <int D>
   string HCurlFiniteElement<D> :: ClassName(void) const
   { 
-    stringstream out; 
-    out << "HCurlHFiniteElement<" << D << ">"; 
-    return out.str();
+    return ToString ("HCurlFiniteElement<") + ToString(D) + ">";
   }
-
-
 
 
   template <int D>

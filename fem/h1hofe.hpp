@@ -32,7 +32,7 @@ namespace ngfem
 
     using ScalarFiniteElement<DIM>::eltype;
 
-    bool nodalp2;
+    bool nodalp2;  // 
 
   public:
     H1HighOrderFiniteElement () 
@@ -46,18 +46,10 @@ namespace ngfem
     /// assign vertex number
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
 
-    /// set isotropic cell order
-    // void SetOrderCell (int oi)   { order_cell = oi; }
-
     /// set anisotropic cell order
     void SetOrderCell (INT<3> oi)  { order_cell = oi; }
 
-    /// set isotropic face orders
-    // void SetOrderFace (FlatArray<int> & of)
-    // { for (int i = 0; i < of.Size(); i++) order_face[i] = of[i]; }
-
-    /// set anisotropic face orders
-    // void SetOrderFace (FlatArray<INT<2> > & of)
+    /// set isotropic or anisotropic face orders
     template <typename TA>
     void SetOrderFace (const TA & of)
     { for (int i = 0; i < of.Size(); i++) order_face[i] = of[i]; }
@@ -128,9 +120,7 @@ namespace ngfem
       order = aorder;
     }
 
-    // virtual void GetDofs (Array<Dof> & dofs) const;
     virtual void ComputeNDof();
-    // virtual void GetInternalDofs (Array<int> & idofs) const;
   };
 
 
@@ -190,7 +180,7 @@ namespace ngfem
   public:
     /// generic shape function
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const;
+    void T_CalcShape (Tx x[], TFA & shape) const;
   };
 
 

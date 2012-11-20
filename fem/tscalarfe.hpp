@@ -10,45 +10,6 @@
 namespace ngfem
 {
 
-  // Barton and Nackman Trick
-
-  
-  /*
-  template <int DIM>
-  class DShapeElement
-  {
-    double * data;
-  public:
-    DShapeElement (double * adata) : data(adata) { ; }
-    void operator= (AutoDiff<DIM> ad) 
-    { 
-      for (int i = 0; i < DIM; i++) 
-        data[i] = ad.DValue(i); 
-    }
-  };
-
-
-
-  template <int DIM>
-  class DShapeAssign
-  {
-    double * dshape;
-  public:
-    DShapeAssign (FlatMatrixFixWidth<DIM> mat)
-    { dshape = &mat(0,0); }
-
-    DShapeAssign (double * adshape)
-    { dshape = adshape; }
-
-    DShapeElement<DIM> operator[] (int i) const
-    { return DShapeElement<DIM> (dshape + i*DIM); }
-
-    const DShapeAssign Addr (int i) const
-    { return DShapeAssign (dshape+i*DIM); } 
-  };
-  */
-
-
 
   /**
      Extracts and assigns gradient from autodiff.
@@ -264,8 +225,6 @@ namespace ngfem
 
 
 
-
-
   /**
      Base-element for template polymorphism.
      Barton and Nackman Trick for elements with static CalcShape method
@@ -443,18 +402,18 @@ namespace ngfem
   };
 
   template <typename TFA>
-  inline void SetZero (TFA & shape, int first, int next) // const
+  inline void SetZero (TFA & shape, int first, int next)
   {
     for (int i = first; i < next; i++)
       shape[i] = 0.0;
   }
   
-  inline void SetZero (EvaluateShape & shape, int first, int next) // const
+  inline void SetZero (EvaluateShape & shape, int first, int next) 
   {
     ;
   }
   
-  inline void SetZero (EvaluateShapeTrans & shape, int first, int next) // const
+  inline void SetZero (EvaluateShapeTrans & shape, int first, int next)
   {
     ;
   }

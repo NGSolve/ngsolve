@@ -11,19 +11,10 @@ namespace ngfem
 {
 
 
-
-
-
-
-
-
-
   ///
   class FE_RTTrig0 : public HDivFiniteElement<2>
   {
     ///
-// static Array<IPData> ipdata;
-
   public:
     ///
     FE_RTTrig0();
@@ -41,8 +32,6 @@ namespace ngfem
   class FE_RTTrig0plus : public HDivFiniteElement<2>
   {
     ///
-// static Array<IPData> ipdata;
-
   public:
     ///
     FE_RTTrig0plus();
@@ -59,7 +48,6 @@ namespace ngfem
   ///
   class FE_BDMTrig1 : public HDivFiniteElement<2>
   {
-    // static Array<IPData> ipdata;
     ///
     static Matrix<> trans;
 

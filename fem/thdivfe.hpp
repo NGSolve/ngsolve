@@ -11,33 +11,6 @@ namespace ngfem
 {
 
 
-
-
-
-
-  /*
-  // hv.DValue() = (grad u) x (grad v) 
-  inline AutoDiff<3> Cross (const AutoDiff<3> & u,
-  const AutoDiff<3> & v)
-  {
-  AutoDiff<3> hv;
-  hv.Value() = 0.0;
-  hv.DValue(0) = u.DValue(1)*v.DValue(2)-u.DValue(2)*v.DValue(1);
-  hv.DValue(1) = u.DValue(2)*v.DValue(0)-u.DValue(0)*v.DValue(2);
-  hv.DValue(2) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
-  return hv;
-  }
-
-  inline AutoDiff<1> Cross (const AutoDiff<2> & u,
-  const AutoDiff<2> & v)
-  {
-  AutoDiff<1> hv;
-  hv.Value() = 0.0;
-  hv.DValue(0) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
-  return hv;
-  }
-  */
-
   template <int D>
   inline double Dot (const AutoDiff<D> & u, const AutoDiff<D> & v)
   {
@@ -47,50 +20,6 @@ namespace ngfem
     return sum;
   }
 
-
-
-  /*
-    template <int DIM>
-    class Du
-    {
-    public:
-    const AutoDiff<DIM> & u;
-    Du (const AutoDiff<DIM> & au)
-    : u(au) { ; }
-    };
-  
-    template <int DIM>
-    class uDv
-    {
-    public:
-    const AutoDiff<DIM> & u, v;
-    uDv (const AutoDiff<DIM> & au, 
-    const AutoDiff<DIM> & av)
-    : u(au), v(av) { ; }
-    };
-
-
-    template <int DIM>
-    class uDv_minus_vDu
-    {
-    public:
-    const AutoDiff<DIM> & u, v;
-    uDv_minus_vDu (const AutoDiff<DIM> & au, 
-    const AutoDiff<DIM> & av)
-    : u(au), v(av) { ; }
-    };
-
-    template <int DIM>
-    class wuDv_minus_wvDu
-    {
-    public:
-    const AutoDiff<DIM> & u, v, w;
-    wuDv_minus_wvDu (const AutoDiff<DIM> & au, 
-    const AutoDiff<DIM> & av,
-    const AutoDiff<DIM> & aw)
-    : u(au), v(av), w(aw) { ; }
-    };
-  */
 
   template <int DIM>
   class uDvDw_Cyclic
@@ -284,8 +213,6 @@ namespace ngfem
 
     void operator= (const uDvDw_Cyclic<DIM> & uvw) 
     { 
-      // cout << "not implemented 63601" << endl;
-      
       AutoDiff<3> hv =
         uvw.u.Value() * Cross (uvw.v, uvw.w) +
         uvw.v.Value() * Cross (uvw.w, uvw.u) +
@@ -297,8 +224,6 @@ namespace ngfem
 
     void operator= (const Du_Cross_Dv<DIM> & uv) 
     { 
-      // cout << "not implemented 63602" << endl;
-      
       AutoDiff<3> hv = Cross (uv.u, uv.v);
       for (int i = 0; i < 3; i++)
         sum(i) += (*coefs) * hv.DValue(i);
@@ -504,14 +429,6 @@ namespace ngfem
 
       HDivShapeAssign<DIM> ds(shape); 
       static_cast<const FEL*> (this) -> T_CalcShape (adp, ds);
-
-      /*
-      MatrixFixWidth<DIM> hshape(shape.Height());
-      HDivFiniteElement<DIM>::CalcMappedShape (mip, hshape);
-      *testout << "mapped = " << endl << shape << endl;
-      *testout << "base = " << endl << hshape << endl;
-      *testout << "diff = " << endl << shape-hshape << endl;
-      */
     }
 
       
