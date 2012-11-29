@@ -303,7 +303,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\include&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
-				PreprocessorDefinitions="WIN32;noLAPACK;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS"
+				PreprocessorDefinitions="WIN32;noLAPACK;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
