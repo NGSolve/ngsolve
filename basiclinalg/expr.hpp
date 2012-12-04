@@ -1267,6 +1267,12 @@ namespace ngbla
       MatExpr<RowsArrayExpr<TA> >::operator= (m);
       return *this;
     }
+
+    const RowsArrayExpr & operator= (const RowsArrayExpr & m) 
+    {
+      MatExpr<RowsArrayExpr<TA> >::operator= (m);
+      return *this;
+    }
   };
   
 
