@@ -4,16 +4,9 @@
 #include <parallelngs.hpp>
 #include <la.hpp>
 
-namespace ngstd
-{
-  MPI_Comm ngs_comm;
-}
-
 
 namespace ngla
 {
-  using namespace ngparallel;
-
 
   BaseVector & ParallelBaseVector :: SetScalar (double scal)
   {
@@ -151,12 +144,13 @@ namespace ngla
     MPI_Isend( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, ngs_comm, &request);
   }
 
+  /*
   void ParallelBaseVector :: Send ( int dest ) const
   {
     MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
     MPI_Send( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, ngs_comm);
   }
-
+  */
 
 
 
@@ -208,30 +202,20 @@ namespace ngla
 
     Complex localsum ;
     Complex globalsum = 0;
-    /*
-    if ( id == 0 )
-      localsum = 0;
-    else 
-    */
-      localsum = ngbla::InnerProduct (FVComplex(), 
-				      dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex());
-    MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, ngs_comm);
-    //MPI_Allreduce ( &localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, MPI_HIGHORDER_WORLD);
- 
+
+    localsum = ngbla::InnerProduct (FVComplex(), 
+				    dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex());
+
+    MPI_Allreduce (&localsum, &globalsum, 2, MPI_DOUBLE, MPI_SUM, ngs_comm);
     return globalsum;
   }
-
 
   template class S_ParallelBaseVector<double>;
   template class S_ParallelBaseVector<Complex>;
 
 
 
-
-
-
-
-
+  /*
   template <class SCAL>
   S_ParallelBaseVectorPtr<SCAL> :: S_ParallelBaseVectorPtr (int as, int aes, void * adata) throw()
     : S_BaseVectorPtr<SCAL> (as, aes, adata)
@@ -241,7 +225,8 @@ namespace ngla
     this -> paralleldofs = 0;
     status = NOT_PARALLEL;
   }
-  
+  */
+
   template <class SCAL>
   S_ParallelBaseVectorPtr<SCAL> :: 
   S_ParallelBaseVectorPtr (int as, int aes, 
@@ -318,6 +303,7 @@ namespace ngla
 	       MPI_TAG_SOLVE, ngs_comm, &request);
   }
 
+  /*
   template <typename SCAL>
   void S_ParallelBaseVectorPtr<SCAL> :: RecvVec ( int dest)
   {
@@ -329,7 +315,7 @@ namespace ngla
 	      MPI_TS, dest, 
 	      MPI_TAG_SOLVE, ngs_comm, &status);
   }
-
+  */
 
 
   template <typename SCAL>

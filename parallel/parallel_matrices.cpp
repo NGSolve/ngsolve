@@ -7,14 +7,11 @@
 #ifdef PARALLEL
  
 #include <la.hpp>
-#include <comp.hpp>
 #include <parallelngs.hpp>
 
 
 namespace ngla
 {
-  using namespace ngparallel;
-  using namespace ngcomp;
 
   template <typename TM>
   MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, 
@@ -57,7 +54,7 @@ namespace ngla
       if (global_nums[i] != -1)
 	global_nums[i] += first_master_dof[id];
 
-    ScatterDofData (global_nums, *pardofs);
+    pardofs -> ScatterDofData (global_nums);
 
     /*
     cout << "TESTING" << endl;
