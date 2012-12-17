@@ -50,5 +50,5 @@ numproc drawflux np5 -bilinearform=acurl -solution=u  -label=flux
 
 
 
-numproc visualization npv1 -vectorfunction=flux -clipsolution=vector -subdivision=2 -clipvec=[0,1,0] -nolineartexture
+numproc visualization npv1 -scalarfunction=flux:0 -clipsolution=scalar -subdivision=2 -clipvec=[0,1,0] -nolineartexture
 
