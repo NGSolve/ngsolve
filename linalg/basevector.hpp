@@ -324,8 +324,7 @@ namespace ngla
   
     virtual void Cumulate () const { ; }
     virtual void Distribute() const { ; }
-    virtual PARALLEL_STATUS GetParallelStatus () const
-    { return NOT_PARALLEL; }
+    virtual PARALLEL_STATUS GetParallelStatus () const { return NOT_PARALLEL; }
     virtual void SetParallelStatus (PARALLEL_STATUS stat) const { ; }
   };
 
