@@ -578,23 +578,26 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
-    throw Exception ("FESpace::GetVertexDofNrs called");
+    dnums.SetSize (0);
+    // throw Exception ("FESpace::GetVertexDofNrs called");
   }
 
   void FESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
-    throw Exception ("FESpace::GetEdgeDofNrs called");
+    dnums.SetSize (0);
+    // throw Exception ("FESpace::GetEdgeDofNrs called");
   }
 
   void FESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
-    throw Exception ("FESpace::GetFaceDofNrs called");
+    dnums.SetSize (0);
+    // throw Exception ("FESpace::GetFaceDofNrs called");
   }
 
   void FESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
-    throw Exception (string("FESpace::GetInnerDofNrs called for class")+
-		     typeid(*this).name());
+    dnums.SetSize (0);
+    // throw Exception (string("FESpace::GetInnerDofNrs called for class")+ typeid(*this).name());
   }
 
 
