@@ -13,7 +13,8 @@
 
 namespace ngla
 {
-  using ngparallel::ParallelDofs;
+  // using ngparallel::ParallelDofs;
+  // using ngla::ParallelDofs;
 
 
   class NGS_DLL_HEADER ParallelBaseVector : virtual public BaseVector
@@ -25,7 +26,6 @@ namespace ngla
     ParallelBaseVector ()
     { ; }
 
-
     template <typename T> 
     BaseVector & operator= (const VVecExpr<T> & v)
     {
@@ -33,10 +33,7 @@ namespace ngla
       return *this;
     }
 
-    virtual PARALLEL_STATUS Status () const
-    { 
-      return status; 
-    }
+    virtual PARALLEL_STATUS Status () const { return status; }
 
     virtual void SetStatus ( PARALLEL_STATUS astatus ) const
     {
@@ -45,7 +42,7 @@ namespace ngla
 
     virtual PARALLEL_STATUS GetParallelStatus () const { return Status(); }
     virtual void SetParallelStatus (PARALLEL_STATUS stat) const { SetStatus (stat); }
-    virtual void Cumulate () const; 
+
 
 
     virtual const ParallelDofs * GetParallelDofs () const
@@ -55,7 +52,7 @@ namespace ngla
     
     virtual bool IsParallelVector () const
     {
-      return ( this->Status() != NOT_PARALLEL );
+      return (this->Status() != NOT_PARALLEL);
     }
     
     virtual BaseVector & SetScalar (double scal);
@@ -69,29 +66,32 @@ namespace ngla
 
     void PrintStatus ( ostream & ost ) const;
 
-    // virtual void AllReduce ( Array<int> * reduceprocs, Array<int> * sendtoprocs=0 ) const;
+
+    virtual void Cumulate () const; 
     
-    virtual void Distribute() const
-    { cerr << "ERROR -- Distribute called for BaseVector, is not parallel" << endl; }
+    virtual void Distribute() const = 0;
+    // { cerr << "ERROR -- Distribute called for BaseVector, is not parallel" << endl; }
     
     virtual void ISend ( int dest, MPI_Request & request ) const;
-    virtual void Send ( int dest ) const;
+    // virtual void Send ( int dest ) const;
     
-    virtual void IRecvVec ( int dest, MPI_Request & request )
-    { cerr << "ERROR -- IRecvVec called for BaseVector, is not parallel" << endl; }
+    virtual void IRecvVec ( int dest, MPI_Request & request ) = 0;
+    // { cerr << "ERROR -- IRecvVec called for BaseVector, is not parallel" << endl; }
 
-    virtual void RecvVec ( int dest )
-    { cerr << "ERROR -- IRecvVec called for BaseVector, is not parallel" << endl; }
+    // virtual void RecvVec ( int dest )
+    // { cerr << "ERROR -- IRecvVec called for BaseVector, is not parallel" << endl; }
     
-    virtual void AddRecvValues( int sender )
-    { cerr << "ERROR -- AddRecvValues called for BaseVector, is not parallel" << endl; }
+    virtual void AddRecvValues( int sender ) = 0;
+    // { cerr << "ERROR -- AddRecvValues called for BaseVector, is not parallel" << endl; }
 
     virtual void SetParallelDofs (const ParallelDofs * aparalleldofs, 
-				  const Array<int> * procs = 0)
+				  const Array<int> * procs = 0) = 0;
+    /*
     { 
       if ( aparalleldofs == 0 ) return;
       cerr << "ERROR -- SetParallelDofs called for BaseVector, is not parallel" << endl; 
     }
+    */
   };
 
   
@@ -118,7 +118,7 @@ namespace ngla
     Table<SCAL> * recvvalues;
 
   public:
-    S_ParallelBaseVectorPtr (int as, int aes, void * adata) throw();
+    // S_ParallelBaseVectorPtr (int as, int aes, void * adata) throw();
     S_ParallelBaseVectorPtr (int as, int aes, const ParallelDofs * apd, PARALLEL_STATUS stat) throw();
 
     virtual ~S_ParallelBaseVectorPtr ();
@@ -128,7 +128,7 @@ namespace ngla
     virtual ostream & Print (ostream & ost) const;
 
     virtual void  IRecvVec ( int dest, MPI_Request & request );
-    virtual void  RecvVec ( int dest );
+    // virtual void  RecvVec ( int dest );
     virtual void AddRecvValues( int sender );
     virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const;
 
