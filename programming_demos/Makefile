@@ -1,4 +1,4 @@
-all: demo_std demo_bla  demo_fem  demo_comp demo_comp1d demo_solve
+all: demo_std demo_bla  demo_fem  demo_comp demo_comp1d demo_solve demo_parallel
 
 demo_std:  demo_std.cpp
 	ngscxx demo_std.cpp -o demo_std -lngstd
@@ -22,8 +22,12 @@ demo_solve:  demo_solve.cpp
 	ngscxx demo_solve.cpp -o demo_solve   -lngcomp -lngsolve -lngla -lngfem -lparallel -lngstd -lnglib -linterface
 
 
+demo_parallel:  demo_parallel.cpp
+	ngscxx demo_parallel.cpp -o demo_parallel -lngstd
+
+
 
 install:
 
 clean:
-	rm demo_std demo_bla demo_fem demo_comp demo_solve
+	rm demo_std demo_bla demo_fem demo_comp demo_solve demo_parallel
