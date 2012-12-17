@@ -13,7 +13,6 @@
 
 namespace ngla
 {
-  // using namespace ngparallel;
   using namespace ngcomp;
 
 #define JOB_INIT -1
@@ -239,7 +238,7 @@ namespace ngla
     mumps_id.par = (ntasks == 1) ? 1 : 0;
     mumps_id.sym = symmetric ? 1 : 0;
     // mumps_id.comm_fortran=USE_COMM_WORLD;
-    mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
+    mumps_id.comm_fortran = MPI_Comm_c2f (ngs_comm);
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
     cout << IM(1) << "MUMPS version number is " << mumps_id.version_number << endl;
@@ -271,7 +270,7 @@ namespace ngla
     mumps_id.icntl[28]=0;  // 0..auto, 1..ptscotch 2..parmetis
 
     // mumps_id.comm_fortran=USE_COMM_WORLD;
-    mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
+    mumps_id.comm_fortran = MPI_Comm_c2f (ngs_comm);
     mumps_id.job = JOB_ANALYSIS;
 
 
@@ -298,7 +297,7 @@ namespace ngla
     if (id == 0)
       cout << "factor ... " << flush;
 
-    MPI_Barrier (ngparallel::ngs_comm);
+    MPI_Barrier (ngs_comm);
 
     timer_factor.Start();
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
@@ -734,7 +733,7 @@ namespace ngla
     mumps_id.par = (ntasks == 1) ? 1 : 0;
     mumps_id.sym = symmetric ? 1 : 0;
     //mumps_id.comm_fortran=USE_COMM_WORLD;
-    mumps_id.comm_fortran = MPI_Comm_c2f (ngparallel::ngs_comm);
+    mumps_id.comm_fortran = MPI_Comm_c2f (ngs_comm);
 
 
     MumpsFunction (mumps_id);
