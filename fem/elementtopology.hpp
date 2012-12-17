@@ -466,27 +466,35 @@ namespace ngfem
   /**
      A binary representation of selecting V-E-F-C Nodes.
   */
-  typedef int NODE_SET;
 
-  inline NODE_SET NodeSet (NODE_TYPE nt1) 
-  {
-    return 1 << nt1;
-  }
 
-  inline NODE_SET NodeSet (NODE_TYPE nt1, NODE_TYPE nt2) 
+  class NodeSet
   {
-    return (1 << nt1) + (1 << nt2);
-  }
+    int set;
+  public:
+    
+    NodeSet (NODE_TYPE nt1) 
+    {
+      set = 1 << nt1;
+    }
 
-  inline NODE_SET NodeSet (NODE_TYPE nt1, NODE_TYPE nt2, NODE_TYPE nt3) 
-  {
-    return (1 << nt1) + (1 << nt2) + (1 << nt3);
-  }
+    NodeSet (NODE_TYPE nt1, NODE_TYPE nt2) 
+    {
+      set =  (1 << nt1) + (1 << nt2);
+    }
 
-  inline NODE_SET NodeSet (NODE_TYPE nt1, NODE_TYPE nt2, NODE_TYPE nt3, NODE_TYPE nt4) 
-  {
-    return (1 << nt1) + (1 << nt2) + (1 << nt3) + (1 << nt4);
-  }
+    NodeSet (NODE_TYPE nt1, NODE_TYPE nt2, NODE_TYPE nt3) 
+    {
+      set = (1 << nt1) + (1 << nt2) + (1 << nt3);
+    }
+
+    NodeSet (NODE_TYPE nt1, NODE_TYPE nt2, NODE_TYPE nt3, NODE_TYPE nt4) 
+    {
+      set = (1 << nt1) + (1 << nt2) + (1 << nt3) + (1 << nt4);
+    }
+    operator int () const { return set; }
+  };
+
 
 
 
