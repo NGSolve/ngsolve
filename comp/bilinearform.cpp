@@ -552,7 +552,7 @@ namespace ngcomp
  
 	    int ndof = fespace.GetNDof();
 	    BitArray useddof(ndof);
-	    useddof.Clear();
+	    useddof = false;
 
 	    int ne = ma.GetNE();
 	    int nse = ma.GetNSE();
@@ -596,11 +596,7 @@ namespace ngcomp
 	    if (hasskeletoninner) {nrcases++; loopsteps+=nf;}
 	    if (hasskeletonbound) {nrcases++; loopsteps+=nse;}
 	    if (fespace.specialelements.Size()>0) {nrcases++; loopsteps+=fespace.specialelements.Size();}
-	    int actcase = 0;
 	    int gcnt = 0; //global count (for all cases)
-
-	    // clock_t prevtime = clock();
-	    double prevtime = WallTime();
 
 	    for (int j = 0; j < preconditioners.Size(); j++)
 	      preconditioners[j] -> InitLevel();
@@ -610,7 +606,6 @@ namespace ngcomp
 
 	    if (hasinner && !diagonal)
 	      {
-		actcase++;
 		int cnt = 0;
 		const Table<int> * element_coloring = &fespace.ElementColoring();
 		int ncolors = (element_coloring) ? element_coloring->Size() : 1;
@@ -940,8 +935,8 @@ namespace ngcomp
 
 
             if (hasinner && diagonal)
-              {
-                // ElementTransformation eltrans;
+              { 
+		double prevtime = WallTime();
 		Array<int> dnums;
                 void * heapp = clh.GetPointer();
                 for (int i = 0; i < ne; i++)
