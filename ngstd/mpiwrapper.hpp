@@ -26,8 +26,6 @@
 
 namespace ngstd
 {
-  // using namespace ngstd;
-
 
 #ifdef PARALLEL
 
@@ -132,7 +130,7 @@ namespace ngstd
 
   inline void MyMPI_Recv (double & i, int src, int tag = MPI_TAG_SOLVE)
   {
-    MPI_Recv( &i, 1, MPI_DOUBLE, src, tag, ngs_comm, MPI_STATUS_IGNORE);
+    MPI_Recv (&i, 1, MPI_DOUBLE, src, tag, ngs_comm, MPI_STATUS_IGNORE);
   }
 
   inline void MyMPI_Send (const string & s, int dest, int tag = MPI_TAG_SOLVE)
@@ -157,7 +155,7 @@ namespace ngstd
     RegionTimer r(t);
 
     T global_d;
-    MPI_Reduce ( &d, &global_d, 1, MyGetMPIType<T>(), op, 0, comm);
+    MPI_Reduce (&d, &global_d, 1, MyGetMPIType<T>(), op, 0, comm);
     return global_d;
   }
 
@@ -184,11 +182,19 @@ namespace ngstd
 
 
   template <class T>
-  inline void MyMPI_Send (const FlatArray<T> & s, int dest, int tag = MPI_TAG_SOLVE)
+  inline void MyMPI_Send (FlatArray<T> s, int dest, int tag = MPI_TAG_SOLVE)
   {
     MPI_Datatype MPI_T  = MyGetMPIType<T> ();
     MPI_Send( &s[0], s.Size(), MPI_T, dest, tag, ngs_comm);
   }
+
+  template <class T>
+  inline void MyMPI_Recv (FlatArray <T> s, int src, int tag = MPI_TAG_SOLVE)
+  {
+    const MPI_Datatype MPI_T  = MyGetMPIType<T> ();
+    MPI_Recv (&s[0], s.Size(), MPI_T, src, tag, ngs_comm, MPI_STATUS_IGNORE);
+  }
+
 
   template <class T>
   inline void MyMPI_Recv (Array <T> & s, int src, int tag = MPI_TAG_SOLVE)
@@ -200,11 +206,11 @@ namespace ngstd
     MPI_Get_count (&status, MPI_T, &len);
 
     s.SetSize (len);
-    MPI_Recv( &s[0], len, MPI_T, src, tag, ngs_comm, MPI_STATUS_IGNORE);
+    MPI_Recv (&s[0], len, MPI_T, src, tag, ngs_comm, MPI_STATUS_IGNORE);
   }
 
   template <class T>
-  MPI_Request MyMPI_ISend (const FlatArray<T> & s, int dest, int tag, MPI_Comm comm = ngs_comm)
+  MPI_Request MyMPI_ISend (const FlatArray<T> & s, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   { 
     static Timer t("dummy - irecv");
     RegionTimer r(t);
@@ -216,7 +222,7 @@ namespace ngstd
   }
 
   template <class T>
-  MPI_Request  MyMPI_IRecv (const FlatArray<T> & s, int src, int tag, MPI_Comm comm = ngs_comm)
+  MPI_Request  MyMPI_IRecv (const FlatArray<T> & s, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   { 
     static Timer t("dummy - irecv");
     RegionTimer r(t);
@@ -256,7 +262,7 @@ namespace ngstd
     static Timer t("dummy - waitall");
     RegionTimer r(t);
     if (!requests.Size()) return;
-    MPI_Waitall (requests.Size(), &requests[0], MPI_STATUS_IGNORE);
+    MPI_Waitall (requests.Size(), &requests[0], MPI_STATUSES_IGNORE);
   }
   
   inline int MyMPI_WaitAny (const Array<MPI_Request> & requests)
@@ -297,24 +303,6 @@ public:
       omp_set_num_threads (1);
 #endif
   }
-
-  /*
-  MyMPI()
-  { 
-    int argc2 = 1;
-    char * argv2[2] = { "myprog", NULL };
-    char ** pargv2 = &argv2[0];
-
-    MPI_Init (&argc2, &pargv2);
-    ngs_comm = MPI_COMM_WORLD;
-    NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
-
-#ifdef _OPENMP
-    if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
-      omp_set_num_threads (1);
-#endif
-  }
-  */
 
   ~MyMPI()
   {
