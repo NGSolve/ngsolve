@@ -29,7 +29,7 @@ libngsolve_la_LDFLAGS = -avoid-version -rdynamic
 
 
 ngs_SOURCES = ngs.cpp
-ngs_LDADD = $(top_builddir)/solve/libngsolve.la \
+ngs_LDADD = libngsolve.la \
 	$(top_builddir)/comp/libngcomp.la \
 	$(top_builddir)/multigrid/libngmg.la \
 	$(top_builddir)/fem/libngfem.la \
