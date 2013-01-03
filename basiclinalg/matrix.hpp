@@ -61,17 +61,29 @@ namespace ngbla
 
     /// allocates at local heap
     FlatMatrix (int ah, int aw, LocalHeap & lh) // throw (LocalHeapOverflow)
-      : h(ah), w(aw), data((T*)lh.Alloc(ah*aw*sizeof(T))) { ; }
+    // : h(ah), w(aw), data((T*)lh.Alloc(ah*aw*sizeof(T))) { ; }
+      : h(ah), w(aw), data (lh.Alloc<T>(ah*aw)) { ; }
   
     /// allocates at local heap
     FlatMatrix (int ah, LocalHeap & lh) // throw (LocalHeapOverflow)
-      : h(ah), w(ah), data((T*)lh.Alloc(ah*ah*sizeof(T))) { ; }
+    // : h(ah), w(ah), data((T*)lh.Alloc(ah*ah*sizeof(T))) { ; }
+      : h(ah), w(ah), data(lh.Alloc<T>(ah*ah)) { ; }
   
     /// copy constructor. copies pointers, not contents
     FlatMatrix (const FlatMatrix & m) throw () 
       : CMCPMatExpr<FlatMatrix> (), h(m.h), w(m.w) , data(m.data)
     { ; }
   
+    /// allocate and compute 
+    template<typename TB>
+    FlatMatrix (const LocalHeapExpr<TB> & m2) 
+    {
+      h = m2.A().Height();
+      w = m2.A().Width();
+      LocalHeap & lh = m2.GetLocalHeap();
+      data = lh.Alloc<T> (h*w);
+      CMCPMatExpr<FlatMatrix<T> >::operator= (m2.A());
+    }
 
     /// useful to put FlatMatrix over other matrix
     template <typename T2>
