@@ -576,6 +576,33 @@ namespace ngbla
     return LapackExpr<TA> (a.Spec());
   }
 
+
+
+
+
+  template <typename TA>
+  class LocalHeapExpr : public Expr<LocalHeapExpr<TA> >
+  {
+    const TA & a;
+    LocalHeap * lh;
+  public:
+    LocalHeapExpr (const TA & aa, LocalHeap & alh) : a(aa), lh(&alh) { ; }
+    const TA & A() const { return a; }
+    int Height() const { return a.Height(); }
+    int Width() const { return a.Width(); }
+    LocalHeap & GetLocalHeap() const { return *lh; }
+  };
+  
+  template <typename TA>
+  LocalHeapExpr<TA> operator| (const Expr<TA> & a, LocalHeap & lh)
+  {
+    return LocalHeapExpr<TA> (a.Spec(), lh);
+  }
+
+
+
+
+
   
   template <class TA, class TB> class MultExpr;
   
