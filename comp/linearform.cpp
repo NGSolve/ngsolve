@@ -4,6 +4,21 @@
 
 namespace ngcomp
 {
+
+
+  /*
+  template <typename T>
+  void IterateElements (const FESpace & fes, LocalHeap & lh, 
+			const T & func)
+  {
+    for (int i = 0; i < fes.GetMeshAccess().GetNE(); i++)
+      {
+	func(i, fes.GetFE(i, lh));
+      }
+  }
+  */
+
+
   LinearForm ::
   LinearForm (const FESpace & afespace, 
 	      const string & aname,
@@ -176,10 +191,25 @@ namespace ngcomp
 
 	if (hasinner)
 	  {
-	    ProgressOutput progress (ma, "assemble element", ma.GetNE());
 
-	    int cnt = 0;
-	      
+            /*
+	    ProgressOutput progress1 (ma, "test", ma.GetNE());
+
+	    IterateElements 
+	      (fespace, clh, 
+	       [&] (int i, const FiniteElement & fe)
+	       {
+		 cout << "element " << i << ", nd = " << fe.GetNDof() << endl;
+		 progress1.Update();
+		 usleep (10000);
+	       });
+	    progress1.Done();
+            */
+
+
+	    ProgressOutput progress (ma, "assemble element", ma.GetNE());
+	    gcnt += ne;
+
 #pragma omp parallel
 	    {
 	      LocalHeap lh = clh.Split();
@@ -189,12 +219,7 @@ namespace ngcomp
 		{
 		  RegionTimer reg2 (timer2);
 
-#pragma omp atomic
-		  cnt++;
-#pragma omp atomic
-		  gcnt++;
-
-		  progress.Update (cnt);
+		  progress.Update ();
 		  HeapReset hr(lh);
 
 		  const FiniteElement & fel = fespace.GetFE (i, lh);
@@ -218,12 +243,11 @@ namespace ngcomp
 		      if (printelvec)
 			{
 			  testout->precision(8);
-
-			  (*testout) << "elnum= " << i << endl;
-			  (*testout) << "integrator " << parts[j]->Name() << endl;
-			  (*testout) << "dnums = " << endl << dnums << endl;
-			  (*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
-			  (*testout) << "elvec = " << endl << elvec << endl;
+			  *testout << "elnum= " << i << endl
+				   << "integrator " << parts[j]->Name() << endl
+				   << "dnums = " << endl << dnums << endl
+				   << "element-index = " << eltrans.GetElementIndex() << endl
+				   << "elvec = " << endl << elvec << endl;
 			}
 		
 		      fespace.TransformVec (i, false, elvec, TRANSFORM_RHS);
@@ -234,9 +258,6 @@ namespace ngcomp
 		    }
 		}
 	    }
-
-
-	    progress.Done();
 	  }
 
 
@@ -245,7 +266,7 @@ namespace ngcomp
 	if (hasbound)
 	  {
 	    ProgressOutput progress (ma, "assemble surface element", ma.GetNSE());
-	    int cnt = 0;
+	    gcnt += nse;
 
 #pragma omp parallel
 	    {
@@ -254,18 +275,12 @@ namespace ngcomp
 #pragma omp for	      
 	      for (int i = 0; i < nse; i++)
 		{
-#pragma omp atomic
-		  gcnt++;
-#pragma omp atomic
-		  cnt++;
-		  
-		  progress.Update (cnt);
+		  progress.Update ();
 		  HeapReset hr(lh);
 	      
 		  const FiniteElement & fel = fespace.GetSFE (i, lh);
-	      
 		  ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
-		  ArrayMem<int, 20> dnums;
+		  Array<int> dnums (fel.GetNDof(), lh);
 		  fespace.GetSDofNrs (i, dnums);
 	      
 		  for (int j = 0; j < parts.Size(); j++)
@@ -281,12 +296,11 @@ namespace ngcomp
 		      if (printelvec)
 			{
 			  testout->precision(8);
-
-			  (*testout) << "surface-elnum= " << i << endl;
-			  (*testout) << "integrator " << parts[j]->Name() << endl;
-			  (*testout) << "dnums = " << endl << dnums << endl;
-			  (*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
-			  (*testout) << "elvec = " << endl << elvec << endl;
+			  *testout << "surface-elnum = " << i << endl
+				   << "integrator " << parts[j]->Name() << endl
+				   << "dnums = " << endl << dnums << endl
+				   << "element-index = " << eltrans.GetElementIndex() << endl
+				   << "elvec = " << endl << elvec << endl;
 			}
 
 		      fespace.TransformVec (i, true, elvec, TRANSFORM_RHS);
@@ -298,7 +312,6 @@ namespace ngcomp
 		    }
 		}
 	    }//end of parallel
-	    progress.Done();
 	  }//end of hasbound
 	
 
@@ -388,7 +401,6 @@ namespace ngcomp
 
 
 	Array<int> dnums;
-	// ElementTransformation eltrans;
 
 	for (int j=0; j<parts.Size(); j++ )
 	  {
@@ -437,7 +449,6 @@ namespace ngcomp
 		      { 
 			clh.CleanUp();
 			fel = &fespace.GetFE(element,clh);
-			// ma.GetElementTransformation(element,eltrans,clh);
 			fespace.GetDofNrs(element,dnums);
 		      }
 		    ElementTransformation & eltrans = ma.GetTrafo (element, false, clh);
