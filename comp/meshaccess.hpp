@@ -575,9 +575,15 @@ namespace ngcomp
     int total;
     double prevtime;
     bool is_root;
+
+    int cnt;
+    bool done_called;
   public:
     ProgressOutput (const MeshAccess & ama,
 		    string atask, int atotal);
+    ~ProgressOutput ();
+
+    void Update ();
     void Update (int nr);
     void Done();
   };
