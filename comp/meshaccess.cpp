@@ -324,11 +324,11 @@ namespace ngcomp
   }
 
   /*
-  void MeshAccess :: 
-  GetSElEdges (int elnr, Array<int> & ednums) const
-  {
+    void MeshAccess :: 
+    GetSElEdges (int elnr, Array<int> & ednums) const
+    {
     ednums = ArrayObject (GetSElement(elnr).edges);
-  }
+    }
   */
   void MeshAccess :: 
   GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const
@@ -384,11 +384,11 @@ namespace ngcomp
   }
   
   /*
-  void MeshAccess :: 
-  GetElFaces (int elnr, Array<int> & fnums) const
-  {
+    void MeshAccess :: 
+    GetElFaces (int elnr, Array<int> & fnums) const
+    {
     fnums = ArrayObject (GetElement(elnr).faces);
-  }
+    }
   */
 
   void MeshAccess :: 
@@ -478,10 +478,10 @@ namespace ngcomp
   }
 
   /*
-  void MeshAccess :: GetSElVertices (int selnr, Array<int> & vnums) const
-  {
+    void MeshAccess :: GetSElVertices (int selnr, Array<int> & vnums) const
+    {
     vnums = ArrayObject (GetSElement(selnr).vertices);
-  }
+    }
   */
   // some utility for Facets
   void MeshAccess :: GetElFacets (int elnr, Array<int> & fnums) const
@@ -490,20 +490,20 @@ namespace ngcomp
       {
 	fnums = ArrayObject (Ng_GetElement<2> (elnr).edges);
 
-// 	Ng_Element ngel = Ng_GetElement<2> (elnr);
-// 	fnums.SetSize(ngel.edges.Size());
-// 	for (int j = 0; j < ngel.edges.Size(); j++)
-// 	  fnums[j] = ngel.edges[j];
+	// 	Ng_Element ngel = Ng_GetElement<2> (elnr);
+	// 	fnums.SetSize(ngel.edges.Size());
+	// 	for (int j = 0; j < ngel.edges.Size(); j++)
+	// 	  fnums[j] = ngel.edges[j];
 
       }
     else
       {
 	fnums = ArrayObject (Ng_GetElement<3> (elnr).faces);
 
-// 	Ng_Element ngel = Ng_GetElement<3> (elnr);
-// 	fnums.SetSize(ngel.faces.Size());
-// 	for (int j = 0; j < ngel.faces.Size(); j++)
-// 	  fnums[j] = ngel.faces[j];
+	// 	Ng_Element ngel = Ng_GetElement<3> (elnr);
+	// 	fnums.SetSize(ngel.faces.Size());
+	// 	for (int j = 0; j < ngel.faces.Size(); j++)
+	// 	  fnums[j] = ngel.faces[j];
 
       }
   } 
@@ -592,24 +592,24 @@ namespace ngcomp
   void MeshAccess ::
   GetElementTransformation (int elnr, ElementTransformation & eltrans) const
   {
-    delete eltrans.specific;
-    if (GetDimension() == 2)
-      eltrans.specific = new Ng_ElementTransformation<2,2> ();
-    else
-      eltrans.specific = new Ng_ElementTransformation<3,3> ();
+  delete eltrans.specific;
+  if (GetDimension() == 2)
+  eltrans.specific = new Ng_ElementTransformation<2,2> ();
+  else
+  eltrans.specific = new Ng_ElementTransformation<3,3> ();
 
 
-    int elind = Ng_GetElementIndex (elnr+1)-1;
-    eltrans.SetElement (0, elnr, elind);
-    eltrans.SetElementType (GetElType(elnr));
+  int elind = Ng_GetElementIndex (elnr+1)-1;
+  eltrans.SetElement (0, elnr, elind);
+  eltrans.SetElementType (GetElType(elnr));
 
-    if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
-      eltrans.SetHigherIntegrationOrder();
-    else
-      eltrans.UnSetHigherIntegrationOrder();
+  if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
+  eltrans.SetHigherIntegrationOrder();
+  else
+  eltrans.UnSetHigherIntegrationOrder();
 
-    eltrans.specific->SetElement (0, elnr, elind);
-    eltrans.specific->SetElementType (GetElType(elnr));
+  eltrans.specific->SetElement (0, elnr, elind);
+  eltrans.specific->SetElementType (GetElType(elnr));
   }
 
 
@@ -617,20 +617,20 @@ namespace ngcomp
   void MeshAccess ::
   GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans) const
   {
-    delete eltrans.specific;
-    if (GetDimension() == 2)
-      eltrans.specific = new Ng_ElementTransformation<1,2> ();
-    else
-      eltrans.specific = new Ng_ElementTransformation<2,3> ();
+  delete eltrans.specific;
+  if (GetDimension() == 2)
+  eltrans.specific = new Ng_ElementTransformation<1,2> ();
+  else
+  eltrans.specific = new Ng_ElementTransformation<2,3> ();
 
 
-    int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
-    eltrans.SetElement (1, elnr, elind);
-    eltrans.SetElementType (GetSElType(elnr));
+  int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
+  eltrans.SetElement (1, elnr, elind);
+  eltrans.SetElementType (GetSElType(elnr));
 
 
-    eltrans.specific->SetElement (1, elnr, elind);
-    eltrans.specific->SetElementType (GetSElType(elnr));
+  eltrans.specific->SetElement (1, elnr, elind);
+  eltrans.specific->SetElementType (GetSElType(elnr));
   }    
   */
 
@@ -1051,8 +1051,23 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
     prevtime = WallTime();
     int glob_total = MyMPI_Reduce (total);
     if (is_root) total = glob_total;
+
+    done_called = false;
+    cnt = 0;
   }
-  
+
+  ProgressOutput :: ~ProgressOutput ()
+  {
+    Done();
+  }  
+
+  void ProgressOutput :: Update ()
+  {
+#pragma omp atomic
+    cnt++;
+    Update(cnt);
+  }
+
   void ProgressOutput :: Update (int nr)
   {
     double time = WallTime();
@@ -1081,58 +1096,61 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
 
   void ProgressOutput :: Done()
-    {
-      if (is_root)
-	{
+  {
+    if (done_called) return;
+    done_called = true;
+
+    if (is_root)
+      {
 #ifdef PARALLEL	  
-	  int ntasks = MyMPI_GetNTasks();
-	  if (ntasks > 1)
-	    {
-	      Array<int> working(ntasks), computed(ntasks);
-	      working = 1;
-	      computed = 0;
-	      while (1)
-		{
-		  int flag, data, num_working = 0, got_flag = false;
-		  for (int source = 1; source < ntasks; source++)
-		    {
-		      if (!working[source]) continue;
-		      num_working++;
-		      MPI_Iprobe (source, MPI_TAG_SOLVE, ngs_comm, &flag, MPI_STATUS_IGNORE);
-		      if (flag)
-			{
-			  got_flag = true;
-			  MPI_Recv (&data, 1, MPI_INT, source, MPI_TAG_SOLVE, ngs_comm, MPI_STATUS_IGNORE);
-			  if (data == -1) 
-			    working[source] = 0;
-			  else
-			    computed[source] = data;
-			}
-		    }
-		  int sum = 0;
-		  for (int j = 1; j < ntasks; j++) 
-		    sum += computed[j];
-		  cout << IM(3) 
-		       << "\r" << task << " " << sum << "/" << total
-		       << " (" << num_working << " procs working) " << flush;
-		  ma.SetThreadPercentage ( 100.0*sum / total );
-		  if (!num_working) break;
-		  if (!got_flag) usleep (1000);
-		}
-	    }
+	int ntasks = MyMPI_GetNTasks();
+	if (ntasks > 1)
+	  {
+	    Array<int> working(ntasks), computed(ntasks);
+	    working = 1;
+	    computed = 0;
+	    while (1)
+	      {
+		int flag, data, num_working = 0, got_flag = false;
+		for (int source = 1; source < ntasks; source++)
+		  {
+		    if (!working[source]) continue;
+		    num_working++;
+		    MPI_Iprobe (source, MPI_TAG_SOLVE, ngs_comm, &flag, MPI_STATUS_IGNORE);
+		    if (flag)
+		      {
+			got_flag = true;
+			MPI_Recv (&data, 1, MPI_INT, source, MPI_TAG_SOLVE, ngs_comm, MPI_STATUS_IGNORE);
+			if (data == -1) 
+			  working[source] = 0;
+			else
+			  computed[source] = data;
+		      }
+		  }
+		int sum = 0;
+		for (int j = 1; j < ntasks; j++) 
+		  sum += computed[j];
+		cout << IM(3) 
+		     << "\r" << task << " " << sum << "/" << total
+		     << " (" << num_working << " procs working) " << flush;
+		ma.SetThreadPercentage ( 100.0*sum / total );
+		if (!num_working) break;
+		if (!got_flag) usleep (1000);
+	      }
+	  }
 #endif
-	  cout << IM(3) << "\r" << task << " " << total << "/" << total
-	       << "                                 " << endl;
-	}
-      else
-	{
+	cout << IM(3) << "\r" << task << " " << total << "/" << total
+	     << "                                 " << endl;
+      }
+    else
+      {
 #ifdef PARALLEL
-	  MPI_Bsend (&total, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
-	  int final = -1;
-	  MPI_Send (&final, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+	MPI_Bsend (&total, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+	int final = -1;
+	MPI_Send (&final, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
 #endif
-	}
-    }
+      }
+  }
   
 
 
