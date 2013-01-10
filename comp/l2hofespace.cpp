@@ -78,8 +78,14 @@ namespace ngcomp
     if (dgjumps){ *testout << "(L2HOFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
     if (iscomplex) loflags.SetFlag ("complex");
 
-    low_order_space = new ElementFESpace (ma, loflags);
-    prol = new ElementProlongation (*static_cast<ElementFESpace*> (low_order_space));
+
+    if(all_dofs_together)
+      prol = new L2HoProlongation(ma,first_element_dof);
+    else
+      {
+        low_order_space = new ElementFESpace (ma, loflags);
+        prol = new ElementProlongation (*static_cast<ElementFESpace*> (low_order_space));
+      }
   }
 
 
