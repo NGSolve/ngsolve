@@ -80,11 +80,6 @@ if { [catch { NGS_GetData } ] == 0 } {
 	set allnp [ NGS_Help numprocs ]
 	.ngmenusolvehelpnp delete 1 end
 
-
-#        foreach np $allnp {
-#            set cmdstring "tk_messageBox -title \"Help\" -message \[ NGS_Help numproc $np \] -type ok"
-#            .ngmenusolvehelpnp add command -label "numproc $np" -command $cmdstring
-#        }
 	foreach np $allnp {
 	    .ngmenusolvehelpnp add command -label "numproc $np" \
 		-command "tk_messageBox -title \"Help\" -message \[ NGS_Help numproc $np \] -type ok"
