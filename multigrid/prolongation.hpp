@@ -375,6 +375,37 @@ namespace ngmg
 
 
 
+    /// L2Ho prolongaton
+  class L2HoProlongation : public Prolongation
+  {
+    ///
+    const MeshAccess & ma;
+    ///
+    const Array<int> & first_dofs;
+  public:
+    ///
+    L2HoProlongation(const MeshAccess & ama, const Array<int> & afirst_dofs);
+    ///
+    virtual ~L2HoProlongation()
+    { ; }
+    ///
+    virtual void Update ()
+	{ ; }
+
+    ///
+    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
+    { return NULL; }
+
+    ///
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const;
+
+    ///
+    virtual void RestrictInline (int finelevel, BaseVector & v) const
+    {
+		cout << "RestrictInline not implemented for L2HoProlongation" << endl;
+    }
+ 
+  };
 
 
   /// Product space prolongation, combination of elementary prolongations 
