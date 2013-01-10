@@ -16,18 +16,21 @@ namespace ngfem
   */
   
   template <int D>
-  class NGS_DLL_HEADER VectorFacetFacetFiniteElement : public FiniteElement
+  //   class NGS_DLL_HEADER VectorFacetFacetFiniteElement : public FiniteElement
+  class NGS_DLL_HEADER VectorFacetFacetFiniteElement : public HCurlFiniteElement<D>
   {
   protected:
     int vnums[8];
 
     INT<2> order_inner;
-
+    using HCurlFiniteElement<D>::eltype;
+    using HCurlFiniteElement<D>::order;
+ 
   public:
 
-    VectorFacetFacetFiniteElement ():
-      FiniteElement(),
-      order_inner( INT<2>(0,0) )
+    VectorFacetFacetFiniteElement ()
+    // : FiniteElement(),
+      : order_inner( INT<2>(0,0) )
     {
       for ( int i = 0; i < 8; i++ )
 	vnums[i] = -1;
