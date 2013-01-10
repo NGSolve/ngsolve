@@ -186,6 +186,8 @@ namespace ngsolve
     ///
     bool boundary;
     ///
+    bool coarsegridonly;
+    ///
     int component;
   public:
     ///
@@ -195,6 +197,7 @@ namespace ngsolve
       gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
       coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
       boundary = flags.GetDefineFlag ("boundary");
+      coarsegridonly = flags.GetDefineFlag ("coarsegridonly");
       component = int (flags.GetNumFlag ("component", 0))-1;
 
       if (flags.NumFlagDefined ("component"))
@@ -223,23 +226,20 @@ namespace ngsolve
 	"\nOptional flags:\n"						\
 	"-boundary\n only boundary values are set\n" \
 	"-component=<comp>\n set only this component (of CompoundFESpace)\n" \
+        "-coarsegridonly\n" \
+        "    set values only on coarsest grid \n" 
 	  << endl;
     }
     
     ///
     virtual void Do(LocalHeap & lh)
     {
+      if (coarsegridonly && ma.GetNLevels() > 1) return;
       GridFunction * hgfu = gfu;
       if (component != -1)
 	hgfu = gfu->GetComponent(component);
 
-      // if (working_proc)
-	SetValues (pde.GetMeshAccess(), *coef, 
-		 *hgfu, boundary, 0, lh);
-
-      // *testout << "setvalues: gfu = " << endl << gfu->GetVector() << endl;
-      
-	// if (component != -1) delete hgfu;
+      SetValues (pde.GetMeshAccess(), *coef, *hgfu, boundary, 0, lh);
     }
 
     ///
