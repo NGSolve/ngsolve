@@ -3,40 +3,7 @@
  
 namespace ngfem
 {  
-  using namespace ngfem;
 
-  
-  // hv.DValue() = (grad u) x (grad v) 
-  AutoDiff<3> GradCrossGrad (const AutoDiff<3> & u,
-                             const AutoDiff<3> & v)
-  {
-    AutoDiff<3> hv;
-    hv.Value() = 0.0;
-    hv.DValue(0) = u.DValue(1)*v.DValue(2)-u.DValue(2)*v.DValue(1);
-    hv.DValue(1) = u.DValue(2)*v.DValue(0)-u.DValue(0)*v.DValue(2);
-    hv.DValue(2) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
-    return hv;
-  }
-  
-  Vec<3> GradCrossVec (const AutoDiff<3> & u,
-                       const Vec<3> & v)
-  {
-    Vec<3> hv;
-    hv(0) = u.DValue(1)*v(2)-u.DValue(2)*v(1);
-    hv(1) = u.DValue(2)*v(0)-u.DValue(0)*v(2);
-    hv(2) = u.DValue(0)*v(1)-u.DValue(1)*v(0);
-    return hv;
-  }
-  
-  
-  
-  // 2d (gradu) x (grad v)
-  double  GradCrossGrad2 (const AutoDiff<2> & u, const AutoDiff<2> & v) 
-  {
-    return(u.DValue(0)*v.DValue(1) - u.DValue(2)*v.DValue(1)); 
-  }  
-  
- 
    
   //------------------------------------------------------------------------
   // HDivHighOrderFiniteElement
@@ -1383,6 +1350,7 @@ namespace ngfem
     ArrayMem<Tx,10> adpol1(order), adpol2(order), adpol3(order);
     
     // trig faces
+
     int ii = 5;
     for (int i = 0; i < 2; i++)
       {
@@ -1411,8 +1379,7 @@ namespace ngfem
         for (int j = 0; j <= p-1; j++)
 	  shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[fav[0]], lami[fav[1]], adpol2[j]*muz[fav[2]]);
       }    
-
-
+    
     // quad faces
     for (int i = 2; i < 5; i++)
       {
@@ -1472,7 +1439,6 @@ namespace ngfem
           }   
       }    
 
-
     int p = order_inner[0];
     int pz = order_inner[2];
     if(p >= 1 && pz >= 1)
@@ -1498,7 +1464,43 @@ namespace ngfem
     	for(int i = 0; i <= p-1; i++) 
 	  for(int j = 0; j <= p-1-i; j++) 
             shape[ii++] = curl_uDvw_minus_Duvw<3> (z,1-z, adpolxy1[i]*adpolxy2[j]);
+
+        if (!ho_div_free)
+          {  // not yet verified
+            ScaledLegendrePolynomial (p, x-y, x+y, adpolxy1);
+            LegendrePolynomial (p, 1-2*x, adpolxy2);
+            LegendrePolynomial (pz, 1-2*z, adpolz);
+
+            /*
+            for (int i = 0; i <= p; i++)
+              for (int j = 0; j <= p-i; j++)
+                for (int k = 0; k <= pz; k++)
+                  if (i+j+k > 0)
+                    shape[ii++] = wDu_Cross_Dv<3> ((x-y)*adpolxy1[i], x*adpolxy2[j], z*(1-z)*adpolz[k]);
+            */
+
+            for (int i = 0; i <= p; i++)
+              for (int j = 0; j <= p-i; j++)
+                for (int k = 0; k < pz; k++)
+                  shape[ii++] = wDu_Cross_Dv<3> ((x-y)*adpolxy1[i], x*adpolxy2[j], z*(1-z)*adpolz[k]);
+
+            for (int i = 0; i < p; i++)
+              for (int j = 0; j < p-i; j++)
+                shape[ii++] = wDu_Cross_Dv<3> (z, x*y*adpolxy1[i], (1-x-y)*adpolxy2[j]);
+
+            for (int i = 0; i < p; i++)
+              shape[ii++] = wDu_Cross_Dv<3> (z, x, y*(1-x-y)*adpolxy1[i]);
+
+
+            /*
+            for (int i = 0; i <= p-1; i++)
+              for (int k = 0; k <= pz; k++)
+                shape[ii++] = wDu_Cross_Dv<3> (x*y*adpolxy1[i], z*adpolz[k],  1-x-y);
+            */
+          }
       }
+
+    if (ii != ndof) cout << "hdiv-prism: dofs missing, ndof = " << ndof << ", ii = " << ii << endl;
   }
 
  
