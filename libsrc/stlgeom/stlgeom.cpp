@@ -3506,4 +3506,65 @@ void STLGeometry :: SmoothGeometry ()
       SetPoint (i, pi);
     }
 }
+
+
+
+  class STLGeometryRegister : public GeometryRegister
+  {
+  public:
+    virtual NetgenGeometry * Load (string filename) const;
+  };
+
+  NetgenGeometry *  STLGeometryRegister :: Load (string filename) const
+  {
+    const char * cfilename = filename.c_str();
+
+    if (strcmp (&cfilename[strlen(cfilename)-3], "stl") == 0)
+      {
+	PrintMessage (1, "Load STL geometry file ", cfilename);
+
+	ifstream infile(cfilename);
+
+	STLGeometry * hgeom = STLGeometry :: Load (infile);
+	hgeom -> edgesfound = 0;
+	return hgeom;
+      }
+    else if (strcmp (&cfilename[strlen(cfilename)-4], "stlb") == 0)
+      {
+	PrintMessage (1, "Load STL binary geometry file ", cfilename);
+
+	ifstream infile(cfilename);
+
+	STLGeometry * hgeom = STLGeometry :: LoadBinary (infile);
+	hgeom -> edgesfound = 0;
+	return hgeom;
+      }
+    else if (strcmp (&cfilename[strlen(cfilename)-3], "nao") == 0)
+      {
+	PrintMessage (1, "Load naomi (F. Kickinger) geometry file ", cfilename);
+
+	ifstream infile(cfilename);
+
+	STLGeometry * hgeom = STLGeometry :: LoadNaomi (infile);
+	hgeom -> edgesfound = 0;
+	return hgeom;
+      }
+
+    
+    return NULL;
+  }
+
+
+  class STLInit
+  {
+  public:
+    STLInit()
+    {
+      geometryregister.Append (new STLGeometryRegister);
+    }
+  };
+
+  STLInit stlinit;
+
+
 }

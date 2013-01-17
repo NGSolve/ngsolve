@@ -31,10 +31,10 @@ namespace netgen
 
 
 
-  class STLGeometryRegister : public GeometryRegister
+  class STLGeometryVisRegister : public GeometryRegister
   {
   public:
-    virtual NetgenGeometry * Load (string filename) const;
+    virtual NetgenGeometry * Load (string filename) const { return NULL; }
     virtual VisualScene * GetVisualScene (const NetgenGeometry * geom) const;
     virtual void SetParameters (Tcl_Interp * interp) 
     {
@@ -103,7 +103,7 @@ namespace netgen
 			    Tcl_Interp * interp,
 			    int argc, tcl_const char *argv[])
   {
-    STLGeometryRegister reg;
+    STLGeometryVisRegister reg;
     reg.SetParameters (interp);
 
     return TCL_OK;
@@ -406,48 +406,6 @@ namespace netgen
 
 
 
-  NetgenGeometry *  STLGeometryRegister :: Load (string filename) const
-  {
-    const char * cfilename = filename.c_str();
-
-    if (strcmp (&cfilename[strlen(cfilename)-3], "stl") == 0)
-      {
-	PrintMessage (1, "Load STL geometry file ", cfilename);
-
-	ifstream infile(cfilename);
-
-	STLGeometry * hgeom = STLGeometry :: Load (infile);
-	hgeom -> edgesfound = 0;
-	return hgeom;
-      }
-    else if (strcmp (&cfilename[strlen(cfilename)-4], "stlb") == 0)
-      {
-	PrintMessage (1, "Load STL binary geometry file ", cfilename);
-
-	ifstream infile(cfilename);
-
-	STLGeometry * hgeom = STLGeometry :: LoadBinary (infile);
-	hgeom -> edgesfound = 0;
-	return hgeom;
-      }
-    else if (strcmp (&cfilename[strlen(cfilename)-3], "nao") == 0)
-      {
-	PrintMessage (1, "Load naomi (F. Kickinger) geometry file ", cfilename);
-
-	ifstream infile(cfilename);
-
-	STLGeometry * hgeom = STLGeometry :: LoadNaomi (infile);
-	hgeom -> edgesfound = 0;
-	return hgeom;
-      }
-
-    
-    return NULL;
-  }
-
-
-
-
 
 
 
@@ -581,12 +539,12 @@ namespace netgen
 
 
 
-  VisualScene * STLGeometryRegister :: GetVisualScene (const NetgenGeometry * geom) const
+  VisualScene * STLGeometryVisRegister :: GetVisualScene (const NetgenGeometry * geom) const
   {
-    STLGeometry * geometry = dynamic_cast<STLGeometry*> (ng_geometry);
+    const STLGeometry * geometry = dynamic_cast<const STLGeometry*> (geom);
     if (geometry)
       {
-	vsstlmeshing.SetGeometry (geometry);
+	vsstlmeshing.SetGeometry (const_cast<STLGeometry*> (geometry));
 	return &vsstlmeshing;
       }
     return NULL;
@@ -599,7 +557,7 @@ using namespace netgen;
 extern "C" int Ng_stl_Init (Tcl_Interp * interp);
 int Ng_stl_Init (Tcl_Interp * interp)
 {
-  geometryregister.Append (new STLGeometryRegister);
+  geometryregister.Append (new STLGeometryVisRegister);
 
   Tcl_CreateCommand (interp, "Ng_SetSTLParameters", Ng_SetSTLParameters,
 		     (ClientData)NULL,

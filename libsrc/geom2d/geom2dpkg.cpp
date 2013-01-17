@@ -10,42 +10,24 @@ namespace netgen
 {
 	
 
-  extern DLL_HEADER NetgenGeometry * ng_geometry;
+  // extern DLL_HEADER NetgenGeometry * ng_geometry;
   static VisualSceneGeometry2d vsgeom2d;
 
 
 
-  class SplineGeometryRegister : public GeometryRegister
+
+
+  class SplineGeometryVisRegister : public GeometryRegister
   {
   public:
-    virtual NetgenGeometry * Load (string filename) const;
+    virtual NetgenGeometry * Load (string filename) const { return NULL; }
     virtual VisualScene * GetVisualScene (const NetgenGeometry * geom) const;
   };
 
 
-  NetgenGeometry *  SplineGeometryRegister :: Load (string filename) const
+  VisualScene * SplineGeometryVisRegister :: GetVisualScene (const NetgenGeometry * geom) const
   {
-    const char * cfilename = filename.c_str();
-    if (strcmp (&cfilename[strlen(cfilename)-4], "in2d") == 0)
-      {
-	PrintMessage (1, "Load 2D-Spline geometry file ", cfilename);
-	
-
-	ifstream infile(cfilename);
-
-	SplineGeometry2d * hgeom = new SplineGeometry2d();
-	hgeom -> Load (cfilename);
-	return hgeom;
-      }
-    
-    return NULL;
-  }
-
-
-
-  VisualScene * SplineGeometryRegister :: GetVisualScene (const NetgenGeometry * geom) const
-  {
-    SplineGeometry2d * geometry = dynamic_cast<SplineGeometry2d*> (ng_geometry);
+    const SplineGeometry2d * geometry = dynamic_cast<const SplineGeometry2d*> (geom);
     if (geometry)
       {
 	vsgeom2d.SetGeometry (geometry);
@@ -67,6 +49,6 @@ extern "C" int Ng_geom2d_Init (Tcl_Interp * interp);
 
 int Ng_geom2d_Init (Tcl_Interp * interp)
 {
-  geometryregister.Append (new SplineGeometryRegister);
+  geometryregister.Append (new SplineGeometryVisRegister);
   return TCL_OK;
 }

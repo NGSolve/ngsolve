@@ -945,4 +945,41 @@ namespace netgen
     return * new Refinement2d (*this);
   }
 
+
+
+  class SplineGeometryRegister : public GeometryRegister
+  {
+  public:
+    virtual NetgenGeometry * Load (string filename) const;
+  };
+
+  NetgenGeometry *  SplineGeometryRegister :: Load (string filename) const
+  {
+    const char * cfilename = filename.c_str();
+    if (strcmp (&cfilename[strlen(cfilename)-4], "in2d") == 0)
+      {
+	PrintMessage (1, "Load 2D-Spline geometry file ", cfilename);
+	
+
+	ifstream infile(cfilename);
+
+	SplineGeometry2d * hgeom = new SplineGeometry2d();
+	hgeom -> Load (cfilename);
+	return hgeom;
+      }
+    
+    return NULL;
+  }
+
+  class SplineGeoInit
+  {
+  public:
+    SplineGeoInit()
+    {
+      geometryregister.Append (new SplineGeometryRegister);
+    }
+  };
+
+  SplineGeoInit sginit;
+
 }
