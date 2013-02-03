@@ -416,14 +416,8 @@ void MeshOptimize3d :: SplitImprove (Mesh & mesh,
 		  if (el[l] == pi2) has2 = 1;
 		}
 	      if (has1 && has2) 
-		{ // only once
-		  for (l = 0; l < hasbothpoints.Size(); l++)
-		    if (hasbothpoints[l] == elnr)
-		      has1 = 0;
-		  
-		  if (has1)
-		    hasbothpoints.Append (elnr);
-		}
+		if (!hasbothpoints.Contains (elnr))
+		  hasbothpoints.Append (elnr);
 	    }
 	  
 	  bad1 = 0;

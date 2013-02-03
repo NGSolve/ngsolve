@@ -84,16 +84,16 @@ extern void CalcTriangleBadness (double x2, double x3, double y3,
 
 
 
-extern double CalcTriangleBadness (const Point3d & p1, 
-				   const Point3d & p2, 
-				   const Point3d & p3,
+extern double CalcTriangleBadness (const Point<3> & p1, 
+				   const Point<3> & p2, 
+				   const Point<3> & p3,
 				   double metricweight,
 				   double h);
 
-extern double CalcTriangleBadness (const Point3d & p1, 
-				   const Point3d & p2, 
-				   const Point3d & p3,
-				   const Vec3d & n,
+extern double CalcTriangleBadness (const Point<3> & p1, 
+				   const Point<3> & p2, 
+				   const Point<3> & p3,
+				   const Vec<3> & n,
 				   double metricweight,
 				   double h);
 
