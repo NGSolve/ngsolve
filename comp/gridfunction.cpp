@@ -791,6 +791,15 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
   {
     try
       {
+        if (this->GetFESpace().GetLevelUpdated() < this->ma.GetNLevels())
+          {
+            LocalHeap llh (1000000, "gridfunction update");
+            const_cast<FESpace&> (this->GetFESpace()).Update (llh);
+            const_cast<FESpace&> (this->GetFESpace()).FinalizeUpdate (llh);
+          }
+
+
+
 	int ndof = this->GetFESpace().GetNDof();
 
 	for (int i = 0; i < this->multidim; i++)
@@ -1284,10 +1293,14 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	  for (int i = 0; i < components; i++)
 	    values[k*svalues+i] = 0.0;
 
+        bool isdefined = false;
 	for(int j = 0; j < bfi3d.Size(); j++)
 	  {
-	    HeapReset hr(lh);
+            if (!bfi3d[j]->DefinedOn(eltrans.GetElementIndex())) continue;
+            isdefined = true;
 
+	    HeapReset hr(lh);
+            
 	    FlatMatrix<SCAL> flux(npts, bfi3d[j]->DimFlux(), lh);
 	    bfi3d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
 	    
@@ -1296,7 +1309,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 		values[k*svalues+i] += ((double*)(void*)&flux(k,0))[i];
           }
 
-        return true;
+        return isdefined;
       }
     catch (Exception & e)
       {
@@ -1608,16 +1621,18 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 		mir[k] = MappedIntegrationPoint<2,3> (ir[k], eltrans, vx, mdxdxref);
 	      }
 
+            bool isdefined = false;
 	    for(int j = 0; j < bfi2d.Size(); j++)
 	      {
+                if (!bfi2d[j]->DefinedOn(eltrans.GetElementIndex())) continue;
+                isdefined = true;
+
 		FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
-		t1.Start();
 		bfi2d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
-		t1.Stop();
 		for (int k = 0; k < npts; k++)
 		  mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
 	      }
-
+            return isdefined;
           }
         else
           {
@@ -1630,17 +1645,20 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 		mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
 	      }
 
+            bool isdefined = false;
 	    for(int j = 0; j < bfi2d.Size(); j++)
 	      {
+                if (!bfi2d[j]->DefinedOn(eltrans.GetElementIndex())) continue;
+                isdefined = true;
+
 		FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
 		bfi2d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
 
 		for (int k = 0; k < npts; k++)
 		  mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
 	      }
+            return isdefined;
           }
-
-        return true; 
       }
     catch (Exception & e)
       {
