@@ -187,9 +187,10 @@ void lines (Vector & x,         // i: initial point of line-search
   //  it = 100000l;
   it = 0;
 
+  // cout << "lin: ";
   while (it++ <= par.maxit_linsearch)
     {
-
+      // cout << "i = " << it << " f = " << f << " ";
       xneu.Set2 (1, x, alphahat, p);
 
 
@@ -292,7 +293,7 @@ void lines (Vector & x,         // i: initial point of line-search
     }
 
   //  (*testout) << "linsearch: it = " << it << " ifail = " << ifail << endl;
-
+  // cout << endl;
   fun.FuncGrad (xneu, g);
 
 

@@ -248,7 +248,7 @@ double BFGS (
   do
     {
       // Restart
-
+      // cout << "it " << it << "f = " << f << endl;
       if (it % (5 * n) == 0)
 	{
 
@@ -399,6 +399,8 @@ double BFGS (
       f = f0;
       x = x0;
     }
+
+  // cout << endl;
 
   //  (*testout) << "x = " << x << ", x0 = " << x0 << endl;
   return f;
