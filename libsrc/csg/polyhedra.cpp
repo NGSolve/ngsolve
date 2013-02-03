@@ -338,7 +338,7 @@ INSOLID_TYPE Polyhedra :: VecInSolid2 (const Point<3> & p,
   Vec<3> v2n = v2 - (v2 * v1n) * v1n;
   v2n.Normalize();
 
-  double cosv2, cosv2max = -1;
+  double cosv2, cosv2max = -99;
 
   
   for (int i = 0; i < faces.Size(); i++)

@@ -631,10 +631,10 @@ namespace netgen
 
   VisualScene * CSGeometryVisRegister :: GetVisualScene (const NetgenGeometry * geom) const
   {
-    CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry);
+    const CSGeometry * geometry = dynamic_cast<const CSGeometry*> (geom);
     if (geometry)
       {
-	vsgeom.SetGeometry (geometry);
+	vsgeom.SetGeometry (const_cast<CSGeometry*>(geometry));
 	return &vsgeom;
       }
     return NULL;
