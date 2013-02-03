@@ -694,20 +694,21 @@ namespace netgen
 		// hd is now optional, default 1
 		//  infile >> hd;
 		hd = 1;
+
 		infile >> ch;
 	      
 		// get refinement parameter, if it is there
 		//infile.get (ch);
 		// if another int-value, set refinement flag to this value
 		// (corresponding to old files)
-
+                /*
 		if ( int (ch) >= 48 && int(ch) <= 57 )
 		  {
 		    infile.putback(ch);
 		    infile >> hd;
 		    infile >> ch ;
 		  }
-
+                */
 		// get flags, 
 		Flags flags;
 		while (ch == '-')
