@@ -166,6 +166,19 @@ namespace ngbla
   };
 
   template <>
+  class mat_traits<float>
+  {
+  public:
+    typedef float TELEM;
+    typedef float TSCAL;
+    typedef float TV_COL;
+    typedef float TV_ROW;
+    enum { HEIGHT = 1 };
+    enum { WIDTH = 1 };
+    enum { IS_COMPLEX = 0 };
+  };
+
+  template <>
   class mat_traits<Complex>
   {
   public:
@@ -314,6 +327,7 @@ namespace ngbla
     typedef Mat<HEIGHT,WIDTH,TELEM> TMAT;
   };
 
+  template <> class mat_sum_type<float,float> { public: typedef float TMAT; };
   template <> class mat_sum_type<double,double> { public: typedef double TMAT; };
   template <> class mat_sum_type<double,Complex> { public: typedef Complex TMAT; };
   template <> class mat_sum_type<Complex,double> { public: typedef Complex TMAT; };
