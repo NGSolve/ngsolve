@@ -3401,6 +3401,29 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
 
 
+  template <int CBSIZE>
+  BilinearForm * CreateBilinearForm1 (int cb_size,
+                                      const FESpace * space, const string & name, const Flags & flags)
+  {
+    if (CBSIZE == cb_size)
+      return new T_BilinearFormSymmetric<double, Vec<CBSIZE,Complex> > (*space, name, flags);
+    else
+      return CreateBilinearForm1<CBSIZE-1> (cb_size, space, name, flags);
+  }
+
+  template <> 
+  BilinearForm * CreateBilinearForm1<1> (int cb_size,
+                                         const FESpace * space, const string & name, const Flags & flags)
+  {
+    return new T_BilinearFormSymmetric<double, Complex> (*space, name, flags);
+  }
+
+  template <> 
+  BilinearForm * CreateBilinearForm1<0> (int cb_size,
+                                         const FESpace * space, const string & name, const Flags & flags)
+  {
+    throw Exception ("Illegal cacheblocksize" + ToString (cb_size));
+  }
 
 
   BilinearForm * CreateBilinearForm (const FESpace * space,
@@ -3423,6 +3446,9 @@ cout << "catch in AssembleBilinearform 2" << endl;
           {
             if(flags.NumFlagDefined("cacheblocksize"))
               {
+                int cacheblocksize = int(flags.GetNumFlag("cacheblocksize", 1)); 
+                return CreateBilinearForm1<MAX_CACHEBLOCKS> (cacheblocksize, space, name, flags);
+            /*
                 switch(int(flags.GetNumFlag("cacheblocksize",1)))
                   {
 #if MAX_CACHEBLOCKS >= 2
@@ -3460,6 +3486,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
                     return new T_BilinearFormSymmetric<double,Vec<15,Complex> > (*space, name, flags);
 #endif
                   }
+            */
               }
             else
               return new T_BilinearFormSymmetric<double,Complex> (*space, name, flags);
