@@ -115,23 +115,22 @@ namespace ngsolve
     
     // new style: -solver=cg|qmr|gmres|direct|bicgstab
     {
-      const char* sol = flags.GetStringFlag("solver","cg");
-      if (strcmp(sol,"cg")==0) solver = CG;
-      if (strcmp(sol,"qmr")==0) solver = QMR;
-      if (strcmp(sol,"gmres")==0) solver = GMRES;
-      if (strcmp(sol,"simple")==0) solver = SIMPLE;
-      if (strcmp(sol,"direct")==0) solver = DIRECT;
-      if (strcmp(sol,"bicgstab")==0) solver = BICGSTAB;
+      string solvername = flags.GetStringFlag("solver","cg");
+      if (solvername == "cg")     solver = CG;
+      if (solvername == "qmr")    solver = QMR;
+      if (solvername == "gmres")  solver = GMRES;
+      if (solvername == "simple") solver = SIMPLE;
+      if (solvername == "direct") solver = DIRECT;
+      if (solvername == "bicgstab") solver = BICGSTAB;
     }       
     
-    const char* ipflag = flags.GetStringFlag("innerproduct","symmetric");
+    string ipflag = flags.GetStringFlag("innerproduct","symmetric");
     ip_type = SYMMETRIC;
-    if (strcmp(ipflag,"symmetric")==0) ip_type = SYMMETRIC;
-    if (strcmp(ipflag,"hermitean")==0) ip_type = HERMITEAN;
-    if (strcmp(ipflag,"conj_hermitean")==0) ip_type = CONJ_HERMITEAN;
+    if (ipflag == "symmetric") ip_type = SYMMETRIC;
+    if (ipflag == "hermitean") ip_type = HERMITEAN;
+    if (ipflag == "conj_hermitean") ip_type = CONJ_HERMITEAN;
 
     print = flags.GetDefineFlag ("print");
-
     useseedvariant = flags.GetDefineFlag ("seed");
 
     if (solver != DIRECT)
