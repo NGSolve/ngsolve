@@ -124,6 +124,7 @@ set viewoptions.clipping.nx 0
 set viewoptions.clipping.ny 1
 set viewoptions.clipping.nz 0
 set viewoptions.clipping.dist 0
+set viewoptions.clipping.dist2 0
 set viewoptions.clipping.enable 0
 set viewoptions.clipping.onlydomain 0
 set viewoptions.clipping.notdomain 0

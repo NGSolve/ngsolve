@@ -2865,6 +2865,7 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
     hclip.normal.Y() = atof (Tcl_GetVar (interp, "::viewoptions.clipping.ny", TCL_GLOBAL_ONLY));
     hclip.normal.Z() = atof (Tcl_GetVar (interp, "::viewoptions.clipping.nz", TCL_GLOBAL_ONLY));
     hclip.dist = atof (Tcl_GetVar (interp, "::viewoptions.clipping.dist", TCL_GLOBAL_ONLY));
+    hclip.dist2 = atof (Tcl_GetVar (interp, "::viewoptions.clipping.dist2", TCL_GLOBAL_ONLY));
     hclip.enable = atoi (Tcl_GetVar (interp, "::viewoptions.clipping.enable", TCL_GLOBAL_ONLY));
     vispar.clipdomain =
       atoi (Tcl_GetVar (interp, "::viewoptions.clipping.onlydomain", TCL_GLOBAL_ONLY));
@@ -2872,10 +2873,8 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
       atoi (Tcl_GetVar (interp, "::viewoptions.clipping.notdomain", TCL_GLOBAL_ONLY));
 
     if ( ! (hclip == vispar.clipping) )
-      {
-	hclip.timestamp = NextTimeStamp();
-	vispar.clipping = hclip;
-      }
+      hclip.timestamp = NextTimeStamp();
+    vispar.clipping = hclip;
 
 
     vispar.whitebackground = atoi (Tcl_GetVar (interp, "::viewoptions.whitebackground", TCL_GLOBAL_ONLY));

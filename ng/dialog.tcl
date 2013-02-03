@@ -1163,6 +1163,13 @@ proc clippingdialog { } {
 	    -variable  viewoptions.clipping.dist \
 	    -command { clipplanecommand }
 #	    -command { popupcheckredraw2 clippingdialog_pop4 ${viewoptions.clipping.enable} }
+
+	label $w.lab5 -text "Additional Distance"
+	scale $w.scale5 -orient horizontal -length 300 -from -1 -to 1.001 \
+	    -resolution 0.0001  -tickinterval 0.5 \
+	    -variable  viewoptions.clipping.dist2 \
+	    -command { clipplanecommand }
+
 	
 	
 	tixControl $w.clipdomain -label "Clip only domain" -integer true \
@@ -1176,7 +1183,7 @@ proc clippingdialog { } {
 	    -command { clipplanecommand; }
 #	    -command { Ng_SetVisParameters; redraw }
 
-	pack $w.lab1 $w.scale1 $w.lab2 $w.scale2 $w.lab3 $w.scale3 $w.lab4 $w.scale4 $w.clipdomain $w.donotclipdomain
+	pack $w.lab1 $w.scale1 $w.lab2 $w.scale2 $w.lab3 $w.scale3 $w.lab4 $w.scale4 $w.lab5 $w.scale5 $w.clipdomain $w.donotclipdomain
 
 	
 	checkbutton $w.cb1 -text "Enable clipping" \
