@@ -193,6 +193,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     
     prol = 0;
+    level_updated = -1;
+
     low_order_space = 0;
     is_low_order_space = false;
 
@@ -433,6 +435,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     cntcol = 0;
     for (int i = 0; i < ma.GetNE(); i++)
       (*element_coloring)[col[i]][cntcol[col[i]]++] = i;
+
+    level_updated = ma.GetNLevels();
     
     if (print)
       *testout << "needed " << maxcolor+1 << " colors" << endl;

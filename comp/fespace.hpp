@@ -67,6 +67,8 @@ namespace ngcomp
 
     /// prolongation operators between multigrid levels
     ngmg::Prolongation *prol;
+    /// highest multigrid-level for which Update was called (memory allocation)
+    int level_updated;
 
     /// on which subdomains is the space defined ?
     Array<int> definedon;
@@ -160,6 +162,10 @@ namespace ngcomp
 
     /// update element coloring
     virtual void FinalizeUpdate(LocalHeap & lh);
+
+    /// highest level where update/finalize was called
+    int GetLevelUpdated() const { return level_updated; }
+
     const Table<int> & ElementColoring() const { return *element_coloring; }
 
     /// print report to stream
