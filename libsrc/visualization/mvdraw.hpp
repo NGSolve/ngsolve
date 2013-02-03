@@ -79,7 +79,7 @@ namespace netgen
     static void SetBackGroundColor (double col)
     { backcolor = col; }
 
-    DLL_HEADER void CreateTexture (int ncols, int linear, int typ = GL_DECAL);
+    DLL_HEADER void CreateTexture (int ncols, int linear, double alpha, int typ);
     DLL_HEADER void DrawColorBar (double minval, double maxval, int logscale = 0, bool linear = 1);
     DLL_HEADER void DrawCoordinateCross ();
     DLL_HEADER void DrawNetgenLogo ();

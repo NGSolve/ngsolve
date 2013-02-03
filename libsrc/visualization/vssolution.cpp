@@ -353,9 +353,10 @@ namespace netgen
 
     BuildScene();
 
-    CreateTexture (numtexturecols, lineartexture, GL_MODULATE);
+    CreateTexture (numtexturecols, lineartexture, 0.5, GL_MODULATE);
 
     glClearColor(backcolor, backcolor, backcolor, 1);
+    // glClearColor(backcolor, backcolor, backcolor, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     SetLight();
@@ -405,23 +406,106 @@ namespace netgen
         glMatrixMode (GL_MODELVIEW);
       }
 
+
+
+
     if (vispar.drawfilledtrigs || vispar.drawtetsdomain > 0 || vispar.drawdomainsurf > 0)
       {
-        SetClippingPlane ();
-        
-        glCallList (surfellist);
+	// Change for Martin:
+
+	// orig:
+	SetClippingPlane ();  
+
+	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);   
+	// glEnable(GL_BLEND); 
+	glDisable(GL_BLEND); 
+	glCallList (surfellist);
+	glDisable(GL_BLEND); 
+	/*
+	// transparent test ...
+	glColor4f (1, 0, 0, 0.1);
+	glEnable (GL_COLOR_MATERIAL);
+
+	glDepthFunc(GL_GREATER); 
+	glDepthMask(GL_FALSE); 
+	// glBlendFunc(GL_ONE_MINUS_DST_ALPHA,GL_DST_ALPHA); 
+	glBlendFunc(GL_ONE_MINUS_SRC_ALPHA,GL_SRC_ALPHA); 
+
+	glCallList (surfellist);
+
+	glDisable(GL_BLEND);
+	glDepthFunc(GL_LEQUAL); 
+	glDepthMask(GL_TRUE); 
+
+	glCallList (surfellist);
+	// end test ...
+	*/
+	
+
         glCallList (surface_vector_list);
-      
         glDisable(GL_CLIP_PLANE0);
       }
+
 
     if (showclipsolution)
       {
 	if (clipsolution == 1)
-	  glCallList (clipplanelist_scal);
+	  {
+	    // Martin 
+	    // orig:
+	    // glCallList (clipplanelist_scal);
+
+	    // transparent experiments
+	    // see http://wiki.delphigl.com/index.php/Blenden
+
+	    /*
+	    glColor4f (1, 1, 1, 0.5);
+	    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);   
+	    glEnable(GL_BLEND); 
+	    glEnable(GL_COLOR);
+	    glDepthFunc(GL_GREATER); 
+	    glDepthMask(GL_FALSE); 
+
+	    glCallList (clipplanelist_scal); 
+	    glDepthFunc(GL_LEQUAL); 
+	    glDepthMask(GL_TRUE); 
+
+	    glCallList (clipplanelist_scal);
+	    glDisable(GL_BLEND); 
+	    */
+
+
+
+	    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);   
+	    glEnable(GL_BLEND); 
+	    glEnable(GL_DEPTH_TEST);
+
+	    // CreateTexture (numtexturecols, lineartexture, 0.25, GL_MODULATE);
+	    // glCallList (clipplanelist_scal); 
+
+	    glEnable(GL_BLEND); 
+	    // glDisable(GL_DEPTH_TEST);
+	    
+	    // CreateTexture (numtexturecols, lineartexture, 0.25, GL_MODULATE);
+	    glCallList (clipplanelist_scal); 
+
+
+	    // glDepthFunc(GL_LEQUAL); 
+	    // glDepthMask(GL_TRUE); 
+	    // glCallList (clipplanelist_scal);
+	    glEnable(GL_DEPTH_TEST);
+	    glDisable(GL_BLEND); 
+
+	    // end test
+	  } 
 	if (clipsolution == 2)
-	  glCallList (clipplanelist_vec);
+	  {
+	    // glDisable(GL_DEPTH_TEST);
+	    glCallList (clipplanelist_vec);
+	    // glEnable(GL_DEPTH_TEST);
+	  }
       }
+
 
 
     if (draw_fieldlines)
@@ -474,8 +558,12 @@ namespace netgen
 
     if (vispar.drawoutline && !numisolines)
       {
-        SetClippingPlane ();
+	// change for Martin
+	SetClippingPlane ();
+	glDepthMask(GL_FALSE); 
         glCallList (linelist);
+	glDepthMask(GL_TRUE); 
+
         glDisable(GL_CLIP_PLANE0);
       }
 
@@ -1023,7 +1111,7 @@ namespace netgen
 
     glLineWidth (1.0f);
 
-    GLfloat col_grey[] = { 0.6f, 0.6f, 0.6f };
+    GLfloat col_grey[] = { 0.6f, 0.6f, 0.6f, 1.0f };
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, col_grey);
         
 
@@ -1078,16 +1166,17 @@ namespace netgen
 
             int npt = (n+1)*(n+1);
             if (curved)
-              for (int ii = 0; ii < npt; ii++)
-                {
-                  Point<2> xref = pref[ii];
-                  Mat<3,2> dxdxi;
-                  
-                  mesh->GetCurvedElements().
-                    CalcSurfaceTransformation (xref, sei, points[ii], dxdxi);
-                  nvs[ii] = Cross (dxdxi.Col(0), dxdxi.Col(1));
-                  nvs[ii].Normalize();
-                }
+              {
+                for (int ii = 0; ii < npt; ii++)
+                  {
+                    Point<2> xref = pref[ii];
+                    
+                    mesh->GetCurvedElements().
+                      CalcSurfaceTransformation (xref, sei, points[ii], dxdxis[ii]);
+                    nvs[ii] = Cross (dxdxis[ii].Col(0), dxdxis[ii].Col(1));
+                    nvs[ii].Normalize();
+                  }
+              }
             else
               {
 		Point<3> lpi[4];
@@ -1105,6 +1194,11 @@ namespace netgen
                     double x = pref[ii](0);
                     double y = pref[ii](1);
                     points[ii] = lpi[0] + x * vx + y * vy + x*y * vtwist;
+                    for (int j = 0; j < 3; j++)
+                      {
+                        dxdxis[ii](j,0) = vx(j) + y*vtwist(j);
+                        dxdxis[ii](j,1) = vy(j) + x*vtwist(j);
+                      }
                   }
 
                 Vec<3> nv = Cross (vx, vy);
@@ -1174,7 +1268,7 @@ namespace netgen
                                            valuesc[index[j]].imag() );
                         }
                       else
-                        glColor3fv (col_grey);
+                        glColor4fv (col_grey);
                       
                       glNormal3dv (nvs[index[j]]);
                       glVertex3dv (points[index[j]]);
@@ -1198,6 +1292,7 @@ namespace netgen
     for(SurfaceElementIndex sei = 0; sei < nse; sei++)
       {
         const Element2d & el = (*mesh)[sei];
+	// if (el.GetIndex() <= 1) continue;
 
         if(vispar.drawdomainsurf > 0)
 	  {
@@ -1297,7 +1392,7 @@ namespace netgen
                             glTexCoord2f ( valuesc[hi].real(), valuesc[hi].imag() );
                         }
                       else
-                        glColor3fv (col_grey);
+                        glColor4fv (col_grey);
                       
                       glNormal3dv (nvs[hi]);
                       glVertex3dv (points[hi]);
