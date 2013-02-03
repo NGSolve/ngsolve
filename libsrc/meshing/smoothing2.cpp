@@ -9,6 +9,7 @@ namespace netgen
   static const double c_trig = 0.14433756;      // sqrt(3.0) / 12
   static const double c_trig4 = 0.57735026;     // sqrt(3.0) / 3
 
+
   inline double CalcTriangleBadness (double x2, double x3, double y3, 
 				     double metricweight, double h)
   {
@@ -32,7 +33,6 @@ namespace netgen
       }
     return badness;
   }
-
   
   inline void CalcTriangleBadness (double x2, double x3, double y3, double metricweight,
 				   double h, double & badness, double & g1x, double & g1y)
@@ -80,28 +80,21 @@ namespace netgen
 
 
 
-
-
-  double CalcTriangleBadness (const Point3d & p1, 
-			      const Point3d & p2, 
-			      const Point3d & p3,
+  double CalcTriangleBadness (const Point<3> & p1, 
+			      const Point<3> & p2, 
+			      const Point<3> & p3,
 			      double metricweight,
 			      double h)
   {
     // badness = sqrt(3.0) / 12 * (\sum l_i^2) / area - 1 
     // p1 = (0, 0), p2 = (x2, 0), p3 = (x3, y3);
 
-    Vec3d e12(p1,p2);
-    Vec3d e13(p1,p3);
-    Vec3d e23(p2,p3);
-  
-    double l12_2 = e12.Length2();
-    double l13_2 = e13.Length2();
-    double l23_2 = e23.Length2();
+    Vec<3> e12 = p2-p1; 
+    Vec<3> e13 = p3-p1;
+    Vec<3> e23 = p3-p2;
 
-    double cir_2 = l12_2 + l13_2 + l23_2;
-    Vec3d area_v = Cross (e12, e13);
-    double area = 0.5 * area_v.Length();
+    double cir_2 = e12.Length2() + e13.Length2() + e23.Length2();
+    double area = 0.5 * Cross (e12, e13).Length();
 
     if (area <= 1e-24 * cir_2)
       return 1e10;
@@ -112,8 +105,8 @@ namespace netgen
       {
 	// area = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
 	// add:  metricweight * (area / h^2 + h^2 / area - 2)
-
-	const double areahh = area / (h * h);
+        area *= 2;   // copy bug
+        double areahh = area / (h * h);
 	badness += metricweight * (areahh + 1 / areahh - 2);
       }
 
@@ -121,18 +114,20 @@ namespace netgen
   }
 
 
-  double CalcTriangleBadness (const Point3d & p1, 
-			      const Point3d & p2, 
-			      const Point3d & p3,
-			      const Vec3d & n,
+
+
+  double CalcTriangleBadness (const Point<3> & p1, 
+			      const Point<3> & p2, 
+			      const Point<3> & p3,
+			      const Vec<3> & n,
 			      double metricweight,
 			      double h)
   {
-    Vec3d v1 (p1, p2);
-    Vec3d v2 (p1, p3);
+    Vec<3> v1 = p2-p1;
+    Vec<3> v2 = p3-p1;
 
-    Vec3d e1 = v1;
-    Vec3d e2 = v2;
+    Vec<3> e1 = v1;
+    Vec<3> e2 = v2;
 
     e1 -= (e1 * n) * n;
     e1 /= (e1.Length() + 1e-24);
@@ -141,7 +136,6 @@ namespace netgen
     return CalcTriangleBadness ( (e1 * v1), (e1 * v2), (e2 * v2), 
 				 metricweight, h);
   }
-
 
 
   class Opti2dLocalData
@@ -154,6 +148,7 @@ namespace netgen
     Array<SurfaceElementIndex> locelements;
     Array<int> locrots;
     Array<double> lochs;
+    Array<Point<3> > loc_pnts2, loc_pnts3;
   // static int locerr2;
     double locmetricweight;
     double loch;
@@ -178,12 +173,16 @@ namespace netgen
     { } ;
     virtual double FuncGrad (const Vector & x, Vector & g) const;
     virtual double FuncDeriv (const Vector & x, const Vector & dir, double & deriv) const;
+    virtual double FuncDeriv2 (const Vector & x, const Vector & dir, double & deriv) const;
     virtual double Func (const Vector & x) const;
   };
   
   double Opti2SurfaceMinFunction :: 
   Func (const Vector & x) const
   {
+    static int timer = NgProfiler::CreateTimer ("opti2surface - func");
+    NgProfiler::RegionTimer reg (timer);
+
     Vector g(x.Size());
     return FuncGrad (x, g);
   }
@@ -192,13 +191,14 @@ namespace netgen
   double Opti2SurfaceMinFunction :: 
   FuncGrad (const Vector & x, Vector & grad) const
   {
+    // static int timer = NgProfiler::CreateTimer ("opti2surface - funcgrad");
+    // NgProfiler::RegionTimer reg (timer);
+
     Vec<3> n, vgrad;
     Point<3> pp1;
-    double g1x, g1y;
-    double badness, hbadness;
 
     vgrad = 0;
-    badness = 0;
+    double badness = 0;
 
     ld.meshthis -> GetNormalVector (ld.surfi, ld.sp1, ld.gi1, n);
     pp1 = ld.sp1 + x(0) * ld.t1 + x(1) * ld.t2;
@@ -208,11 +208,10 @@ namespace netgen
 
     for (int j = 0; j < ld.locelements.Size(); j++)
       {
-	int roti = ld.locrots[j];
-	const Element2d & bel = mesh[ld.locelements[j]];
+        double g1x, g1y, hbadness;
 
-	Vec<3> e1 = mesh[bel.PNumMod(roti + 1)] - pp1;
-	Vec<3> e2 = mesh[bel.PNumMod(roti + 2)] - pp1;
+        Vec<3> e1 = ld.loc_pnts2[j] - pp1;
+        Vec<3> e2 = ld.loc_pnts3[j] - pp1;
 
 	if (ld.uselocalh) ld.loch = ld.lochs[j];
 
@@ -224,9 +223,9 @@ namespace netgen
             e2 -= e1e2 * e1;
 	    double e2l = e2.Length();
 
-	    CalcTriangleBadness ( e1l, e1e2, e2l, ld.locmetricweight, ld.loch,
-				  hbadness, g1x, g1y);
-
+            CalcTriangleBadness ( e1l, e1e2, e2l, ld.locmetricweight, ld.loch,
+                                  hbadness, g1x, g1y);
+            
 	    badness += hbadness;
             vgrad += g1x * e1 + (g1y/e2l) * e2;
 	  }
@@ -237,40 +236,48 @@ namespace netgen
 	  }
       }
 
-    vgrad -=  (vgrad * n) * n;
-
+    // vgrad -=  (vgrad * n) * n;
     grad(0) = vgrad * ld.t1;
     grad(1) = vgrad * ld.t2;
     return badness;
   }
 
 
-
-
   double Opti2SurfaceMinFunction :: 
   FuncDeriv (const Vector & x, const Vector & dir, double & deriv) const
   {
+    // for (int k = 0; k < 100; k++)
+      FuncDeriv2 (x, dir, deriv);
+  }
+
+
+  double Opti2SurfaceMinFunction :: 
+  FuncDeriv2 (const Vector & x, const Vector & dir, double & deriv) const
+  {
+    // static int timer = NgProfiler::CreateTimer ("opti2surface - funcderiv");
+    // NgProfiler::RegionTimer reg (timer);
+
     Vec<3> n, vgrad;
     Point<3> pp1;
-    double g1x, g1y;
-    double badness, hbadness;
 
     vgrad = 0;
-    badness = 0;
+    double badness = 0;
 
     ld.meshthis -> GetNormalVector (ld.surfi, ld.sp1, ld.gi1, n);
-
     pp1 = ld.sp1 + x(0) * ld.t1 + x(1) * ld.t2;
 
     for (int j = 0; j < ld.locelements.Size(); j++)
       {
-	int roti = ld.locrots[j];
+        double g1x, g1y, hbadness;
 
-	const Element2d & bel = mesh[ld.locelements[j]];
-
+        /*
+        int roti = ld.locrots[j];
+        const Element2d & bel = mesh[ld.locelements[j]];
 	Vec<3> e1 = mesh[bel.PNumMod(roti + 1)] - pp1;
 	Vec<3> e2 = mesh[bel.PNumMod(roti + 2)] - pp1;
-
+        */
+        Vec<3> e1 = ld.loc_pnts2[j] - pp1;
+        Vec<3> e2 = ld.loc_pnts3[j] - pp1;
 	if (ld.uselocalh) ld.loch = ld.lochs[j];
 
 	double e1l = e1.Length();
@@ -293,7 +300,7 @@ namespace netgen
 	  }
       }
 
-    vgrad -= (vgrad * n) * n;
+    // vgrad -= (vgrad * n) * n;
     deriv = dir(0) * (vgrad*ld.t1) + dir(1) * (vgrad*ld.t2);
 
     return badness;
@@ -571,6 +578,7 @@ namespace netgen
 
     static int timer = NgProfiler::CreateTimer ("MeshSmoothing 2D");
     static int timer1 = NgProfiler::CreateTimer ("MeshSmoothing 2D start");
+    static int timer2 = NgProfiler::CreateTimer ("MeshSmoothing 2D - BFGS");
 
     NgProfiler::RegionTimer reg (timer);
     NgProfiler::StartTimer (timer1);
@@ -801,6 +809,8 @@ namespace netgen
 	    ld.locelements.SetSize(0);
 	    ld.locrots.SetSize (0);
 	    ld.lochs.SetSize (0);
+            ld.loc_pnts2.SetSize (0);
+            ld.loc_pnts3.SetSize (0);
 	
 	    for (int j = 0; j < elementsonpoint[hi].Size(); j++)
 	      {
@@ -814,6 +824,8 @@ namespace netgen
 		  if (bel.PNum(k) == pi)
 		    {
 		      ld.locrots.Append (k);
+                      ld.loc_pnts2.Append (mesh[bel.PNumMod(k + 1)]);
+                      ld.loc_pnts3.Append (mesh[bel.PNumMod(k + 2)]);
 		      break;
 		    }
 		
@@ -848,22 +860,20 @@ namespace netgen
 	    }
 	  
 	  x = 0;
-	  par.typx = ld.lochs[0];
+	  par.typx = 0.3*ld.lochs[0];
+
+          NgProfiler::StartTimer (timer2);
 
 	  if (mixed)
 	    {
-	      //	      (*testout) << "vorher : " << surfminfj.Func (x) << endl;
 	      BFGS (x, surfminfj, par, 1e-6);
-	      //	      (*testout) << "nachher: " << surfminfj.Func (x) << endl;
-	      //	      (*testout) << "x = " << x << endl;
 	    }
 	  else
 	    {
-	      //	      (*testout) << "vorher : " << surfminf.Func (x) << endl;
 	      BFGS (x, surfminf, par, 1e-6);
-	      //	      (*testout) << "nachher: " << surfminf.Func (x) << endl;
-	      //	      (*testout) << "x = " << x << endl;
 	    }
+
+          NgProfiler::StopTimer (timer2);
 
 	  Point3d origp = mesh[pi];
 	  int loci = 1;
