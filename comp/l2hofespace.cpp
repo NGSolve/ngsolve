@@ -19,15 +19,12 @@ To do: *Internal External Dofs (eliminate internal)
 
 #include <../fem/l2hofe.hpp>
 #include <../fem/l2hofefo.hpp>
-// #include <../fem/h1hofe.hpp>
-
 
 
 using namespace ngmg;
 
 namespace ngcomp
 {
-  using namespace ngcomp;
 
   L2HighOrderFESpace ::  
   L2HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
@@ -69,7 +66,6 @@ namespace ngcomp
     if (dimension > 1)
       integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
 
-    fast_pfem = flags.GetDefineFlag ("fast");
     all_dofs_together = flags.GetDefineFlag ("all_dofs_together");
 
     Flags loflags;
@@ -119,13 +115,18 @@ namespace ngcomp
     int dim = ma.GetDimension(); 
 
     if(var_order) 
-      for(int i=0;i<nel;i++) 
+      for(int i = 0; i < nel; i++) 
 	{
 	  INT<3> el_orders = ma.GetElOrders(i);
 	  	  
 	  for(int j=0;j<dim;j++)
 	    order_inner[i][j] =  int(max2(el_orders[j]+rel_order,0)); 
+
 	} 
+
+    for(int i = 0; i < nel; i++) 
+      if (!DefinedOn (ma.GetElIndex (i))) 
+        order_inner[i] = 0;
 
     if(print) 
       *testout << " order_inner (l2ho) " << order_inner << endl; 
@@ -150,6 +151,12 @@ namespace ngcomp
     if (!all_dofs_together)
       for (int i=0; i<ma.GetNE(); i++)
 	{
+          if (!DefinedOn (ma.GetElIndex (i)))
+            {
+              ctofdof[i] = UNUSED_DOF;
+              continue;
+            }
+
 	  ctofdof[i] = LOCAL_DOF; //lowest order (constants)
 	  int first = first_element_dof[i];
 	  int next = first_element_dof[i+1];
@@ -220,6 +227,24 @@ namespace ngcomp
   {
     try
       { 
+        Ng_Element ngel = ma.GetElement(elnr);
+        ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
+        
+        if (!DefinedOn (ma.GetElIndex (elnr)))
+          {
+            switch (eltype)
+              {
+              case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); break;
+              case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); break;
+              case ET_QUAD:    return * new (lh) ScalarDummyFE<ET_QUAD> (); break;
+              case ET_TET:     return * new (lh) ScalarDummyFE<ET_TET> (); break;
+              case ET_PYRAMID: return * new (lh) ScalarDummyFE<ET_PYRAMID> (); break;
+              case ET_PRISM:   return * new (lh) ScalarDummyFE<ET_PRISM> (); break;
+              case ET_HEX:     return * new (lh) ScalarDummyFE<ET_HEX> (); break;
+              case ET_POINT:   break;
+              }
+          }
+
 	/*
 	if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
 	  {
@@ -386,6 +411,8 @@ namespace ngcomp
   void L2HighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
+    if (!DefinedOn (ma.GetElIndex (elnr))) return;
+
     if (!all_dofs_together)
       dnums.Append (elnr); // lowest_order 
     int first = first_element_dof[elnr];
