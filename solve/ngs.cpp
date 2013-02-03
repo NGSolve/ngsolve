@@ -13,8 +13,14 @@ int main(int argc, char ** argv)
 
   ngsolve::PDE pde; 
 
-  pde.LoadPDE (argv[1]); 
-  pde.Solve();
+  try
+    {
+      pde.LoadPDE (argv[1]); 
+      pde.Solve();
+    }
+  catch(ngstd::Exception & e)
+    {
+    };
 
   return 0;
 }
