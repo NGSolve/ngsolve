@@ -4,7 +4,8 @@
 namespace netgen
 {
 
-  DLL_HEADER Array<GeometryRegister*> geometryregister;
+  DLL_HEADER GeometryRegisterArray geometryregister; 
+  //DLL_HEADER Array<GeometryRegister*> geometryregister;
 
   GeometryRegister :: ~GeometryRegister()
   { ; }

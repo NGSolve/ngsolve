@@ -87,7 +87,6 @@ namespace netgen
 			      double h)
   {
     // badness = sqrt(3.0) / 12 * (\sum l_i^2) / area - 1 
-    // p1 = (0, 0), p2 = (x2, 0), p3 = (x3, y3);
 
     Vec<3> e12 = p2-p1; 
     Vec<3> e13 = p3-p1;
@@ -103,11 +102,53 @@ namespace netgen
 
     if (metricweight > 0)
       {
-	// area = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
 	// add:  metricweight * (area / h^2 + h^2 / area - 2)
-        area *= 2;   // copy bug
+        area *= 2;   // optimum for (2 area) is h^2
         double areahh = area / (h * h);
 	badness += metricweight * (areahh + 1 / areahh - 2);
+      }
+
+    return badness;
+  }
+
+  double CalcTriangleBadnessGrad (const Point<3> & p1, 
+                                  const Point<3> & p2, 
+                                  const Point<3> & p3,
+                                  Vec<3> & gradp1,
+                                  double metricweight,
+                                  double h)
+  {
+    // badness = sqrt(3.0) / 12 * (\sum l_i^2) / area - 1 
+
+    Vec<3> e12 = p2-p1; 
+    Vec<3> e13 = p3-p1;
+    Vec<3> e23 = p3-p2;
+
+    double cir_2 = e12.Length2() + e13.Length2() + e23.Length2();
+    Vec<3> varea = Cross(e12, e13);
+    double area = 0.5 * varea.Length();
+
+    Vec<3> dcir_2 = (-2) * (e12+e13);
+    Vec<3> darea = (0.25/area) * Cross (p2-p3, varea);
+
+    if (area <= 1e-24 * cir_2)
+      {
+        gradp1 = 0;
+        return 1e10;
+      }
+
+    double badness = c_trig * cir_2 / area - 1;
+    gradp1 = c_trig * (1.0/area * dcir_2 - cir_2 / (area*area) * darea);
+
+    if (metricweight > 0)
+      {
+	// add:  metricweight * (area / h^2 + h^2 / area - 2)
+        area *= 2;   // optimum for (2 area) is h^2
+
+        double areahh = area / (h * h);
+	badness += metricweight * (areahh + 1 / areahh - 2);
+
+        gradp1 += (2*metricweight * (1/(h*h) - (h*h)/(area*area))) * darea;
       }
 
     return badness;
@@ -171,12 +212,132 @@ namespace netgen
 			     Opti2dLocalData & ald)
       : mesh(amesh), ld(ald)
     { } ;
-    virtual double FuncGrad (const Vector & x, Vector & g) const;
-    virtual double FuncDeriv (const Vector & x, const Vector & dir, double & deriv) const;
-    virtual double FuncDeriv2 (const Vector & x, const Vector & dir, double & deriv) const;
-    virtual double Func (const Vector & x) const;
+
+
+    virtual double Func (const Vector & x) const
+    {
+      Vec<3> n;
+      
+      double badness = 0;
+      
+      ld.meshthis -> GetNormalVector (ld.surfi, ld.sp1, ld.gi1, n);
+      Point<3> pp1 = ld.sp1 + x(0) * ld.t1 + x(1) * ld.t2;
+      
+      for (int j = 0; j < ld.locelements.Size(); j++)
+        {
+          Vec<3> e1 = ld.loc_pnts2[j] - pp1;
+          Vec<3> e2 = ld.loc_pnts3[j] - pp1;
+          
+          if (ld.uselocalh) ld.loch = ld.lochs[j];
+          
+          if (Determinant(e1, e2, n) > 1e-8 * ld.loch * ld.loch)
+            {
+              badness += CalcTriangleBadness (pp1, ld.loc_pnts2[j], ld.loc_pnts3[j],
+                                              ld.locmetricweight, ld.loch);
+            }
+          else
+            {
+              badness += 1e8;
+            }
+        }
+      
+      return badness;
+    }
+
+
+    virtual double FuncGrad (const Vector & x, Vector & g) const
+    {
+      Vec<3> vgrad;
+      Point<3> pp1;
+      
+      vgrad = 0;
+      double badness = 0;
+      
+      pp1 = ld.sp1 + x(0) * ld.t1 + x(1) * ld.t2;
+      
+      for (int j = 0; j < ld.locelements.Size(); j++)
+        {
+          Vec<3> e1 = ld.loc_pnts2[j] - pp1;
+          Vec<3> e2 = ld.loc_pnts3[j] - pp1;
+          
+          if (ld.uselocalh) ld.loch = ld.lochs[j];
+          
+          if (Determinant(e1, e2, ld.normal) > 1e-8 * ld.loch * ld.loch)
+            {
+              Vec<3> hgrad;
+              badness += 
+                CalcTriangleBadnessGrad (pp1, ld.loc_pnts2[j], ld.loc_pnts3[j], hgrad,
+                                         ld.locmetricweight, ld.loch);
+              vgrad += hgrad;
+            }
+          else
+            {
+              badness += 1e8;
+            }
+        }
+      g(0) = ld.t1 * vgrad;
+      g(1) = ld.t2 * vgrad;
+      return badness;
+    }
+
+    virtual double FuncDeriv (const Vector & x, const Vector & dir, double & deriv) const
+    {
+      deriv = 0;
+      double badness = 0;
+      
+      Point<3> pp1 = ld.sp1 + x(0) * ld.t1 + x(1) * ld.t2;
+      Vec<3> dir3d = dir(0) * ld.t1 + dir(1) * ld.t2;
+      
+      for (int j = 0; j < ld.locelements.Size(); j++)
+        {
+          Vec<3> e1 = ld.loc_pnts2[j] - pp1;
+          Vec<3> e2 = ld.loc_pnts3[j] - pp1;
+          
+          if (ld.uselocalh) ld.loch = ld.lochs[j];
+          
+          if (Determinant(e1, e2, ld.normal) > 1e-8 * ld.loch * ld.loch)
+            {
+              Vec<3> hgrad;
+              badness += 
+                CalcTriangleBadnessGrad (pp1, ld.loc_pnts2[j], ld.loc_pnts3[j], hgrad,
+                                         ld.locmetricweight, ld.loch);
+              deriv += dir3d * hgrad;
+            }
+          else
+            {
+              badness += 1e8;
+            }
+        }
+      
+      // cout << "deriv = " << deriv << " =?= ";
+      return badness;
+      /*
+      static int timer = NgProfiler::CreateTimer ("opti2surface - deriv");
+      NgProfiler::RegionTimer reg (timer);
+
+      double eps = 1e-6;
+      Vector xr(2), xl(2);
+      xr = x; xl = x;
+      for (int i = 0; i < 2; i++)
+        {
+          xr(i) = x(i) + eps * dir(i);
+          xl(i) = x(i) - eps * dir(i);
+        }
+      deriv = (Func (xr) - Func(xl) ) / (2*eps); 
+      cout << deriv << endl;
+      return Func(x);
+      */
+    }
+
+
+
+    virtual double XXFuncGrad (const Vector & x, Vector & g) const;
+    virtual double XXFuncDeriv (const Vector & x, const Vector & dir, double & deriv) const;
+
   };
+
   
+  /*
   double Opti2SurfaceMinFunction :: 
   Func (const Vector & x) const
   {
@@ -186,10 +347,10 @@ namespace netgen
     Vector g(x.Size());
     return FuncGrad (x, g);
   }
-
+  */
 
   double Opti2SurfaceMinFunction :: 
-  FuncGrad (const Vector & x, Vector & grad) const
+  XXFuncGrad (const Vector & x, Vector & grad) const
   {
     // static int timer = NgProfiler::CreateTimer ("opti2surface - funcgrad");
     // NgProfiler::RegionTimer reg (timer);
@@ -244,15 +405,7 @@ namespace netgen
 
 
   double Opti2SurfaceMinFunction :: 
-  FuncDeriv (const Vector & x, const Vector & dir, double & deriv) const
-  {
-    // for (int k = 0; k < 100; k++)
-      FuncDeriv2 (x, dir, deriv);
-  }
-
-
-  double Opti2SurfaceMinFunction :: 
-  FuncDeriv2 (const Vector & x, const Vector & dir, double & deriv) const
+  XXFuncDeriv (const Vector & x, const Vector & dir, double & deriv) const
   {
     // static int timer = NgProfiler::CreateTimer ("opti2surface - funcderiv");
     // NgProfiler::RegionTimer reg (timer);
