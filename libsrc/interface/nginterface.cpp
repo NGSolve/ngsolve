@@ -109,7 +109,7 @@ namespace netgen
 
   // global variable mesh (should not be used in libraries)
   AutoPtr<Mesh> mesh;
-  NetgenGeometry * ng_geometry = new NetgenGeometry;
+  NetgenGeometry * ng_geometry = NULL; // new NetgenGeometry;
 
   // extern NetgenGeometry * ng_geometry;
   // extern AutoPtr<Mesh> mesh;
