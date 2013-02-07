@@ -192,19 +192,20 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
 
     
-    prol = 0;
+    prol = NULL;
     level_updated = -1;
 
-    low_order_space = 0;
+    low_order_space = NULL;
     is_low_order_space = false;
 
-    tet = 0;
-    pyramid = 0;
-    prism = 0;
-    hex = 0;
-    trig = 0;
-    quad = 0;
-    segm = 0;
+    tet = NULL;
+    pyramid = NULL;
+    prism = NULL;
+    hex = NULL;
+    trig = NULL;
+    quad = NULL;
+    segm = NULL;
+    point = NULL;
 
     evaluator = NULL;
     boundary_evaluator = NULL;
@@ -223,6 +224,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete low_order_space;
     delete boundary_evaluator;
     delete evaluator;
+    delete integrator;
+    delete boundary_integrator;
     delete prol;
 
     delete tet;
@@ -232,6 +235,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete trig;
     delete quad;
     delete segm;
+    delete point;
 
     delete element_coloring;
     delete paralleldofs;
