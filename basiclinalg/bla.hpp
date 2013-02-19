@@ -1,7 +1,6 @@
 #ifndef FILE_NGBLA
 #define FILE_NGBLA
 
-
 #ifdef USE_BLAS
 
 extern "C"
