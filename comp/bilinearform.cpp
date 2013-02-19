@@ -6,7 +6,7 @@
 
 namespace ngcomp
 {
-
+ 
   // dummy function header 
   void CalcEigenSystem (FlatMatrix<Complex> & elmat, 
                         FlatVector<Complex> & lami, 
