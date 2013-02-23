@@ -569,58 +569,57 @@ namespace ngcomp
 
 
 
-/// Identity
-template <int D>
-class DiffOpIdHDG : public DiffOp<DiffOpIdHDG<D> >
-{
-public:
-  enum { DIM = 1 };
-  enum { DIM_SPACE = D };
-  enum { DIM_ELEMENT = D };
-  enum { DIM_DMAT = 1 };
-  enum { DIFFORDER = 0 };
-
-  template <typename FEL, typename MIP, typename MAT>
-  static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-			      MAT & mat, LocalHeap & lh)
+  /// Identity
+  template <int D>
+  class DiffOpIdHDG : public DiffOp<DiffOpIdHDG<D> >
   {
-    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
-    const ScalarFiniteElement<D> & fel_vol = static_cast<const ScalarFiniteElement<D>&> (fel[0]);
-    const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (fel[1]);
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
 
-    int facetnr = mip.IP().FacetNr();
-    mat = 0.0;
-    if (facetnr < 0)
-      mat.Row(0).Range(fel.GetRange(0)) = fel_vol.GetShape(mip.IP(), lh);
-    else
-      mat.Row(0).Range(fel.GetRange(1)).Range(fel_facet.GetFacetDofs(facetnr)) = 
-	fel_facet.Facet(facetnr).GetShape(mip.IP(), lh);
-  }
-};
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      const ScalarFiniteElement<D> & fel_vol = static_cast<const ScalarFiniteElement<D>&> (fel[0]);
+      const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (fel[1]);
+
+      int facetnr = mip.IP().FacetNr();
+      mat = 0.0;
+      if (facetnr < 0)
+        mat.Row(0).Range(fel.GetRange(0)) = fel_vol.GetShape(mip.IP(), lh);
+      else
+        mat.Row(0).Range(fel.GetRange(1)).Range(fel_facet.GetFacetDofs(facetnr)) = 
+          fel_facet.Facet(facetnr).GetShape(mip.IP(), lh);
+    }
+  };
 
 
-template <int D>
-class NGS_DLL_HEADER MassHDGIntegrator 
-  : public T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> >
-{
-public:
-  MassHDGIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> > (DiagDMat<1> (coeff))
-  { ; }
+  template <int D>
+  class NGS_DLL_HEADER HDG_MassIntegrator 
+    : public T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> >
+  {
+  public:
+    HDG_MassIntegrator (Array<CoefficientFunction*> & coeffs)
+      : T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> > (DiagDMat<1> (coeffs[0]))
+    { ; }
     
-  // MassHDGIntegrator (Array<CoefficientFunction*> & coeffs);
-  virtual ~MassHDGIntegrator () { ; }
-  virtual string Name () const { return "Mass-HDG"; }
-};
+    virtual ~HDG_MassIntegrator () { ; }
+    virtual string Name () const { return "Mass-HDG"; }
+  };
+
+
+  static RegisterBilinearFormIntegrator<HDG_MassIntegrator<2> > initlap2 ("HDG_mass", 2, 1);
+  static RegisterBilinearFormIntegrator<HDG_MassIntegrator<3> > initlap3 ("HDG_mass", 3, 1);
 
 
 
-class HybridDGFESpace : public CompoundFESpace
-{
-public:
-  HybridDGFESpace (const MeshAccess & ama, 
-                   // const Array<FESpace*> & aspaces,
-                   const Flags & flags)
+  HybridDGFESpace :: HybridDGFESpace (const MeshAccess & ama, 
+                                      const Flags & flags)
     : CompoundFESpace (ama, flags)
   { 
     Flags l2flags(flags), facetflags(flags);
@@ -635,7 +634,7 @@ public:
 
     facetflags.SetFlag("orderfacet", order);
     if (flags.NumListFlagDefined ("dirichlet"))
-	facetflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
+      facetflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
 
     if (flags.NumFlagDefined ("relorder")) facetflags.SetFlag("variableorder");
     
@@ -644,48 +643,32 @@ public:
     if (!info) info = GetFESpaceClasses().GetFESpace("l2hotp");
     if (!info) info = GetFESpaceClasses().GetFESpace("l2ho");
     
-    // spaces[0] = info->creator(ma, l2flags);
     AddSpace (info->creator(ma, l2flags));
-    
-    // spaces[0] = new L2HighOrderFESpace (ma, l2flags);    
-
-    // spaces[1] = new FacetFESpace (ma, facetflags);        
     AddSpace (new FacetFESpace (ma, facetflags));        
-
 
     if (flags.GetDefineFlag ("edges"))
       throw Exception ("HDG fespace with edges not supported");
 
     static ConstantCoefficientFunction one(1);
+    integrator = GetIntegrators().CreateBFI("HDG_mass", ma.GetDimension(), &one);
+
     if (ma.GetDimension() == 2)
       {
-        // integrator = new MassIntegrator<2> (&one);
-	integrator = new MassHDGIntegrator<2> (&one);
+	// integrator = new HDG_MassIntegrator<2> (&one);
         boundary_integrator = new RobinIntegrator<2> (&one);
       }
     else
       {
-        // integrator = new MassIntegrator<3> (&one);
-        integrator = new MassHDGIntegrator<3> (&one);
+        // integrator = new HDG_MassIntegrator<3> (&one);
         boundary_integrator = new RobinIntegrator<3> (&one);
       }
-    // integrator = new CompoundBilinearFormIntegrator (*integrator, 0);
     boundary_integrator = new CompoundBilinearFormIntegrator (*boundary_integrator, 1);
   }
 
-  virtual ~HybridDGFESpace () { ; }
-
-  /*
-  static FESpace * Create (const MeshAccess & ma, const Flags & flags)
-  {
-
-    HybridDGFESpace * fes = new HybridDGFESpace (ma, spaces, flags);
-    return fes;
-  }
-  */
+  HybridDGFESpace :: ~HybridDGFESpace () { ; }
 
 
-  virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const
+  Array<int> * HybridDGFESpace :: CreateDirectSolverClusters (const Flags & flags) const
   {
     if (flags.GetDefineFlag("subassembled"))
       {
@@ -693,55 +676,55 @@ public:
 	Array<int> & clusters = *new Array<int> (GetNDof());
 	clusters = 0;
 	/*
-	int nv = ma.GetNV();
-	int ned = ma.GetNEdges();
-	// int nfa = ma.GetNFaces();
-	int basefac = spaces[0]->GetNDof();;
-	int baseh1 = basefac + spaces[1]->GetNDof();
+          int nv = ma.GetNV();
+          int ned = ma.GetNEdges();
+          // int nfa = ma.GetNFaces();
+          int basefac = spaces[0]->GetNDof();;
+          int baseh1 = basefac + spaces[1]->GetNDof();
 	  
-	Array<int> dnums;
-	//low order: 2D: vertices
-	if (ma.GetDimension() == 2 && withedges)
+          Array<int> dnums;
+          //low order: 2D: vertices
+          if (ma.GetDimension() == 2 && withedges)
 	  for (int i = 0; i < nv; i++)
-	    if (!IsDirichletVertex(i) && spaces.Size()>2){
-	      spaces[2]->GetVertexDofNrs(i,dnums);
-	      clusters[dnums[0]+baseh1]=1;
-	    }
+          if (!IsDirichletVertex(i) && spaces.Size()>2){
+          spaces[2]->GetVertexDofNrs(i,dnums);
+          clusters[dnums[0]+baseh1]=1;
+          }
 	    
-	//low order: l.o. edges (2D: from facet-space, 3D: from edge-space)
-	if (ma.GetDimension() == 2 || ((ma.GetDimension() == 3) && withedges))
+          //low order: l.o. edges (2D: from facet-space, 3D: from edge-space)
+          if (ma.GetDimension() == 2 || ((ma.GetDimension() == 3) && withedges))
 	  for (int i = 0; i < ned; i++)
-	    if (!IsDirichletEdge(i))
-	    {
-	      dnums.SetSize(0);
-	      if (ma.GetDimension() == 2){
-// 		spaces[1]->GetEdgeDofNrs(i,dnums);
-// 		clusters[dnums[0]+basefac]=1;
-	      }else{
-		spaces[2]->GetEdgeDofNrs(i,dnums);
-		clusters[dnums[0]+baseh1]=1;
-	      }
-	    }
+          if (!IsDirichletEdge(i))
+          {
+          dnums.SetSize(0);
+          if (ma.GetDimension() == 2){
+          // 		spaces[1]->GetEdgeDofNrs(i,dnums);
+          // 		clusters[dnums[0]+basefac]=1;
+          }else{
+          spaces[2]->GetEdgeDofNrs(i,dnums);
+          clusters[dnums[0]+baseh1]=1;
+          }
+          }
 	*/
 
 
 	/*
 	//low order: 3D: l.o. face
 	if (ma.GetDimension() == 3)
-	  for (int i = 0; i < nfa; i++)
-	    if (!IsDirichletFace(i))
-	    {
-		dnums.SetSize(0);
-		spaces[1]->GetFaceDofNrs(i,dnums);
-// 		for (int l=0; l<dnums.Size(); l++)
-// 		  clusters[dnums[l]+basefac]=1;		
-		clusters[dnums[0]+basefac]=1;
-	      //end-if isdirichletvertex
-	    }
+        for (int i = 0; i < nfa; i++)
+        if (!IsDirichletFace(i))
+        {
+        dnums.SetSize(0);
+        spaces[1]->GetFaceDofNrs(i,dnums);
+        // 		for (int l=0; l<dnums.Size(); l++)
+        // 		  clusters[dnums[l]+basefac]=1;		
+        clusters[dnums[0]+basefac]=1;
+        //end-if isdirichletvertex
+        }
 	*/
 
 	return &clusters;	
-    }
+      }
     else
       {
 	Array<int> & clusters = *new Array<int> (GetNDof());
@@ -768,7 +751,7 @@ public:
       }
   }
 
-  virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const
+  Table<int> * HybridDGFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
     bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
     bool subassembled = precflags.GetDefineFlag("subassembled");
@@ -790,24 +773,24 @@ public:
 	switch (smoothing_type)
 	  {
 	  case 1: 
-	  //for BDDC: we have only the condensated (after subassembling) dofs, 
-	  //and build patches around each vertex Vertices + Edges
+            //for BDDC: we have only the condensated (after subassembling) dofs, 
+            //and build patches around each vertex Vertices + Edges
 		
 	    if (creator.GetMode() == 1)
 	      cout << "BDDC-Edges-around-Vertex-Block" << endl;
 		
-// 	    int ds_order = precflags.GetNumFlag ("ds_order", 1);
-// 	    cout << "ds_order = " << ds_order << endl;
-// 		
+            // 	    int ds_order = precflags.GetNumFlag ("ds_order", 1);
+            // 	    cout << "ds_order = " << ds_order << endl;
+            // 		
 	    if (ma.GetDimension() == 2)
 	      {  
 		for (int i = 0; i < nv; i++)
-		{
-		  dnums.SetSize(0);
-		  GetVertexDofNrs(i,dnums);
-		  if (dnums.Size()>0)
-		    creator.Add (i, dnums[0]);
-		}
+                  {
+                    dnums.SetSize(0);
+                    GetVertexDofNrs(i,dnums);
+                    if (dnums.Size()>0)
+                      creator.Add (i, dnums[0]);
+                  }
 	      }
 	    for (int i = 0; i < ned; i++)
 	      {
@@ -846,7 +829,7 @@ public:
 			creator.Add (i, dnums[l]);
 		    }
 	      }
-	      break; 	    
+            break; 	    
 
 
 	  case 3: 
@@ -881,14 +864,8 @@ public:
   }
 
 
-
-
-  virtual string GetClassName () const { return "HybridDGFESpace"; }
-};
-
-
   
-// ------------------------------------------------------------------------
+  // ------------------------------------------------------------------------
 
   
   static RegisterFESpace<FacetFESpace> init_facet ("facet");

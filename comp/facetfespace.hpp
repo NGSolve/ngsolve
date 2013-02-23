@@ -94,12 +94,7 @@ namespace ngcomp
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
     ///
     virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
-     
-    // some utility functions for convenience
-    ///
-    // virtual void GetVertexNumbers(int elnr, Array<int>& vnums) 
-    // { ma.GetElVertices(elnr, vnums); };
-    ///
+
 
     virtual INT<2> GetFacetOrder(int fnr) 
     { return order_facet[fnr]; };
@@ -140,6 +135,22 @@ namespace ngcomp
   
   };
 
+
+
+
+
+  class NGS_DLL_HEADER HybridDGFESpace : public CompoundFESpace
+  {
+  public:
+    HybridDGFESpace (const MeshAccess & ama, 
+                     const Flags & flags);
+
+    virtual ~HybridDGFESpace ();
+    virtual string GetClassName () const { return "HybridDGFESpace"; }
+
+    virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
+    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
+  };
 
 }
 
