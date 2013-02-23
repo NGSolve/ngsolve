@@ -48,7 +48,7 @@ namespace ngcomp
       inv_coarse = NULL;
       tmp = NULL;
       tmp2 = NULL;
-
+      free_dofs = NULL;
       RegionTimer reg(timer);
 
       const FESpace & fes = bfa.GetFESpace();
@@ -368,6 +368,7 @@ namespace ngcomp
       delete harmonicext;
       delete harmonicexttrans;
       delete innersolve;
+      delete free_dofs;
 
       delete tmp;
       delete tmp2;
