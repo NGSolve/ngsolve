@@ -1,11 +1,12 @@
 /*
 
-  NGSolve finite element demo
+  NGSolve 1D finite element demo
 
 */
 
 // ng-soft header files
 #include <comp.hpp>
+#include <ng_mesh1d.hpp>
 using namespace ngcomp;
 
  
@@ -18,17 +19,17 @@ int main (int argc, char **argv)
 
   
   LocalHeap lh(100000, "main heap");
-  MeshAccess ma;
+
+  Mesh1D ma(20);  // a mesh with 4 1D - elements
 
   cout << "elements: " << ma.GetNE() << endl;
   cout << "vertices: " << ma.GetNV() << endl;
-
 
   Array<double> dirichlet(1);
   dirichlet[0] = 1;
   H1HighOrderFESpace fes(ma, 
 			 Flags() 
-			 .SetFlag("order",3)
+                         .SetFlag("order",3)
 			 // .SetFlag("print")
 			 .SetFlag("dirichlet", dirichlet)
 			 );
