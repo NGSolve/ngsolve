@@ -96,10 +96,7 @@ namespace ngcomp
 
     if (bfi2d || bfi3d)
       {
-	// if (ma.GetNLevels() > 1) return;
-        // if (!vis)
-
-	netgen::SolutionData * vis;
+        netgen::SolutionData * vis;
 	if (!fespace.IsComplex())
 	  vis = new VisualizeGridFunction<double> (ma, this, bfi2d, bfi3d, 0);
 	else
@@ -1080,7 +1077,9 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 
   template <class SCAL>
   VisualizeGridFunction<SCAL> :: ~VisualizeGridFunction ()
-  {}
+  {
+    ;
+  }
   
 
   template <class SCAL>
