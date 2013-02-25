@@ -525,13 +525,18 @@ namespace ngcomp
     void SetHigherIntegrationOrder(int elnr);
     void UnSetHigherIntegrationOrder(int elnr);
 
-
+    void LoadMesh (const string & filename)
+    {
+      // Ng_LoadMesh (const_cast<char*> (filename.c_str()));
+      Ng_LoadMesh (filename.c_str());
+      UpdateBuffers();
+    }
 
     void LoadMeshFromString(const string & str)
     {
       Ng_LoadMeshFromString(const_cast<char*>(str.c_str()));
+      UpdateBuffers();
     }
-
 
 
     // void PrecomputeGeometryData(int intorder);
