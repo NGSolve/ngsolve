@@ -494,7 +494,10 @@ namespace ngcomp
   template <class SCAL>
   S_BilinearForm<SCAL> :: ~S_BilinearForm()
   {
-    ;
+    delete harmonicext;
+    delete harmonicexttrans;
+    delete innersolve;
+    delete innermatrix;
   }
 
 
