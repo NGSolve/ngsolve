@@ -21,8 +21,7 @@ namespace ngfem
 namespace ngsolve
 {
 
-  PDE :: PDE () // MeshAccess & ama)
-  // : ma (ama)
+  PDE :: PDE ()
   {
     levelsolved = -1;
     SetGood (true);
@@ -56,7 +55,8 @@ namespace ngsolve
     for (int i = 0; i < numprocs.Size(); i++)
       delete numprocs[i];
     numprocs.DeleteAll();
-
+    for (int i = 0; i < variables.Size(); i++)
+      delete variables[i];
     for (int i = 0; i < string_constants.Size(); i++)
       delete string_constants[i];
     string_constants.DeleteAll();
@@ -513,6 +513,12 @@ namespace ngsolve
 	
     if (constants.Used ("hpref") && levelsolved == -1)
       {
+        double geom_factor = constants.Used("hpref_geom_factor") ? 
+          constants["hpref_geom_factor"] : 0.125;
+        bool setorders = !constants.Used("hpref_setnoorders");
+
+        Ng_HPRefinement (int (constants["hpref"]), geom_factor, setorders);
+        /*
 	if( constants.Used("hpref_setnoorders") )
 	  {
 	    if( constants.Used("hpref_geom_factor")) 
@@ -527,6 +533,7 @@ namespace ngsolve
 	    else
 	      Ng_HPRefinement (int (constants["hpref"]));
 	  }
+        */
       }
 
     
@@ -580,26 +587,26 @@ namespace ngsolve
 	LinearForm * lf = dynamic_cast<LinearForm *>(todo[i]);
 	Preconditioner * pre = dynamic_cast<Preconditioner *>(todo[i]);
 	NumProc * np = dynamic_cast<NumProc *>(todo[i]);
+        
+        try
+          {
+            RegionTimer timer(todo[i]->GetTimer());
+            HeapReset hr(lh);
 
-	if (ev)
-	  {
-	    cout << IM(1) << "evaluate variable " << ev->GetName() << " = " << ev->Evaluate() << endl;
-	  }
-
-	else if (fes)
-	  {
-	    try
-	      {
-		RegionTimer timer(fes->GetTimer());
-
+            if (ev)
+              {
+                cout << IM(1) << "evaluate variable " 
+                     << ev->GetName() << " = " << ev->Evaluate() << endl;
+              }
+            
+            else if (fes)
+              {
 		cout << IM(1)
 		     << "Update " << fes -> GetClassName()
 		     << " " << fes -> GetName () << flush;
 
 		fes -> Update(lh);
 		fes -> FinalizeUpdate(lh);
-
-		lh.CleanUp();
 
 		int ndof = fes->GetNDofGlobal();
 		AddVariable (string("fes.")+fes->GetName()+".ndof", ndof, 6);
@@ -610,157 +617,36 @@ namespace ngsolve
 		  cout << IM(1) << ", ndof = " 
 		       << fes -> GetDimension() << " x " 
 		       << ndof << endl;
-	      }
-	    catch (exception & e)
-	      {
-		throw Exception (e.what() + 
-				 string ("\nthrown by update space ") +
-				 string(fes->GetName()));
-	      }
-#ifdef _MSC_VER
-# ifndef MSVC_EXPRESS
-	    catch (CException * e)
-	      {
-		TCHAR msg[255];
-		e->GetErrorMessage(msg, 255);
-		throw Exception (msg + 
-				 string ("\nthrown by update space ") +
-				 string(fes->GetName()));
-	      }
-# endif // MSVC_EXPRESS
-#endif
-	    catch (Exception & e)
-	      {
-		e.Append (string ("\nthrown by update space ") +
-			  string (fes->GetName()));
-		throw;
-	      }
-	  }
+              }
 
-	else if (gf)
-	  {
-	    try
-	      {
+            else if (gf)
+              {
 		cout << IM(1) << "Update gridfunction " << gf->GetName() << endl;
-		RegionTimer timer(gf->GetTimer());
 		gf->Update();
-
 	      }
-	    catch (exception & e)
-	      {
-		throw Exception (e.what() + 
-				 string ("\nthrown by update grid-function ") +
-				 string (gf->GetName()));
-	      }
-#ifdef _MSC_VER
-# ifndef MSVC_EXPRESS
-	    catch (CException * e)
-	      {
-		TCHAR msg[255];
-		e->GetErrorMessage(msg, 255);
-		throw Exception (msg + 
-				 string ("\nthrown by update grid-function ") +
-				 string(gf->GetName()));
-	      }
-# endif // MSVC_EXPRESS
-#endif
-	    catch (Exception & e)
-	      {
-		e.Append (string ("\nthrown by update grid-function ") +
-			  string (gf->GetName()));
-		throw;
-	      }
-	  }
-
-	else if (bf)
-	  {
-	    try
-	      {
+            
+            else if (bf)
+              {
 		cout << IM(1) 
-		     << "update bilinear-form " << bf->GetName() << endl;
-		(*testout) << "update bilinear-form " << bf->GetName() << endl;
-
-		RegionTimer timer(bf->GetTimer());
+		     << "Update bilinear-form " << bf->GetName() << endl;
 		bf->Assemble(lh);
-		lh.CleanUp();
 	      }
-      
 
-	    catch (exception & e)
-	      {
-		throw Exception (e.what() + 
-				 string ("\nthrown by update bilinear-form ") +
-				 string (bf->GetName()));
-	      }
-#ifdef _MSC_VER
-# ifndef MSVC_EXPRESS
-	    catch (CException * e)
-	      {
-		TCHAR msg[255];
-		e->GetErrorMessage(msg, 255);
-		throw Exception (msg + 
-				 string ("\nthrown by update bilinear-form ") +
-				 string(bf->GetName()));
-	      }
-# endif // MSVC_EXPRESS
-#endif
-	    catch (Exception & e)
-	      {
-		e.Append (string ("\nthrown by update bilinear-form ") +
-			  string (bf->GetName()));
-		throw;
-	      }
-	  }
-
-	else if (lf)
-	  {
-	    if( lf->InitialAssembling() )
-	      {
-		try
-		  {
+            else if (lf)
+              {
+                if( lf->InitialAssembling() )
+                  {
 		    cout << IM(1) << "Update linear-form " << lf->GetName() << endl;
-		    RegionTimer timer(lf->GetTimer());
-			
 		    lf->Assemble(lh);
-		    lh.CleanUp();
-			
-		  }
-		catch (exception & e)
-		  {
-		    throw Exception (e.what() + 
-				     string ("\nthrown by update linear-form ") +
-				     string (lf->GetName()));
-		  }
-#ifdef _MSC_VER
-# ifndef MSVC_EXPRESS
-		catch (CException * e)
-		  {
-		    TCHAR msg[255];
-		    e->GetErrorMessage(msg, 255);
-		    throw Exception (msg + 
-				     string ("\nthrown by update linear-form ") +
-				     string(lf->GetName()));
-		  }
-# endif // MSVC_EXPRESS
-#endif
-		catch (Exception & e)
-		  {
-		    e.Append (string ("\nthrown by update linear-form ") +
-			      string (lf->GetName()));
-		    throw;
 		  }
 	      }
-	  }
-
-	else if (pre)
-	  {
-	    try
-	      {
-
+            
+            else if (pre)
+              {
 		if ( pre->LaterUpdate() )
 		  {  
 		    cout << IM(1) 
-			 << endl << "WARNING: Update of " << pre->ClassName() 
+			 << endl << "Update of " << pre->ClassName() 
 			 << "  " << pre->GetName() << " postponed!" << endl;
 		  }
 		else
@@ -768,78 +654,52 @@ namespace ngsolve
 		    cout << IM(1) << "Update " << pre->ClassName() 
 			 << "  " << pre->GetName() << endl;
 
-		    RegionTimer timer(pre->GetTimer());
 		    pre->Update();
-		    //	  preconditioners[i]->Test();
 		  }
 	      }
-
-	    catch (exception & e)
-	      {
-		throw Exception (e.what() + 
-				 string ("\nthrown by update preconditioner ") +
-				 string (pre->GetName()));
-	      }
-#ifdef _MSC_VER
-# ifndef MSVC_EXPRESS
-	    catch (CException * e)
-	      {
-		TCHAR msg[255];
-		e->GetErrorMessage(msg, 255);
-		throw Exception (msg + 
-				 string ("\nthrown by update preconditioner ") +
-				 string(pre->GetName()));
-	      }
-# endif // MSVC_EXPRESS
-#endif
-	    catch (Exception & e)
-	      {
-		e.Append (string ("\nthrown by update preconditioner ") +
-			  string (pre->GetName()));
-		throw;
-	      }
-	  }
-
-	else if (np)
-	  {
-	    try
-	      {
+            else if (np)
+              {
 		cout << IM(1) 
 		     << "Call numproc " << np->GetClassName() 
 		     << "  " << np->GetName() << endl;
 		
-		RegionTimer timer(np->GetTimer());
 		np->Do(lh);
-		lh.CleanUp();
 	      }
-	    catch (exception & e)
-	      {
-		throw Exception (e.what() + 
-				 string ("\nthrown by update numproc ") +
-				 string (np->GetName()));
-	      }
+            
+            else
+              cerr << "???????????????" << endl;
+          }
+
+
+        catch (exception & e)
+          {
+            throw Exception (string(e.what()) + 
+                             "\nthrown by update " 
+                             + todo[i]->GetClassName() + " "
+                             + todo[i]->GetName());
+          }
 #ifdef _MSC_VER
 # ifndef MSVC_EXPRESS
-	    catch (CException * e)
-	      {
-		TCHAR msg[255];
-		e->GetErrorMessage(msg, 255);
-		throw Exception (msg + 
-				 string ("\nthrown by update numproc ") +
-				 string(np->GetName()));
-	      }
+        catch (CException * e)
+          {
+            TCHAR msg[255];
+            e->GetErrorMessage(msg, 255);
+            throw Exception (msg + 
+                             string ("\nthrown by update ")
+                             + todo[i]->GetClassName() + " "
+                             + todo[i]->GetName());
+          }
 # endif // MSVC_EXPRESS
 #endif
-	    catch (Exception & e)
-	      {
-		e.Append (string ("\nthrown by update numproc ") +
-			  string (np->GetName()));
-		throw;
-	      }
-	  }
-	else
-	  cerr << "???????????????" << endl;
-
+        catch (Exception & e)
+          {
+            e.Append ("\nthrown by update ");
+            e.Append (todo[i]->GetClassName());
+            e.Append (" ");
+            e.Append (todo[i]->GetName());
+            throw;
+          }
+        
 	AddVariable ("timing.level", WallTime()-starttime, 6);
       }
 
@@ -862,8 +722,6 @@ namespace ngsolve
 
     Ng_Redraw();
     levelsolved++;
-    // }
-    
     
     MyMPI_Barrier();
     double endtime = WallTime();
