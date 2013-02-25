@@ -1,125 +1,23 @@
-#include <ngstd.hpp>
-#include <bla.hpp>
-
+#include <stdlib.h>
 #include <nginterface.h>
 #include <nginterface_v2.hpp>
 
-using namespace std;
-#include <ngexception.hpp>
+#include <ng_mesh1d.hpp>
 
-
-using namespace ngbla;
-
-/*
-int dim = 2;
-int nv = 4;
-int nseg = 0;
-int ntrig = 2;
-
-double points [][2] =
-  { { 0, 0 },
-    { 1, 0 },
-    { 0, 1 },
-    { 1, 1 } 
-  };
-
-int trigs[][3] = 
-  { 
-    { 1, 2, 3},
-    { 2, 3, 4} 
-  };
-
-*/
-
-
-
-// 1D mesh example
-
-int dim, ntrig, nseg, nv;
-int npoint = 2;  // geometry points
-
-double points[][1] = { 0, 0.25, 0.5, 0.75, 1 };
-int trigs[][3] = { { 0,0,0 } } ;
-
-typedef int tsegm[2];
-tsegm * segms;
-
-int bound_els[2][1];
-
-class init1d
-{
-public:
-  init1d (int anseg)
-  {
-    dim = 1;
-    ntrig = 0;
-    nseg = anseg;
-    nv = anseg + 1;
-    segms = new int[nseg][2];
-    for (int i = 0; i < nseg; i++)
-      {
-	segms[i][0] = i+2;
-	segms[i][1] = i+1;
-      }
-
-    npoint = 2;
-    bound_els[0][0] = 1;
-    bound_els[1][0] = nseg+1;
-  }
-  ~init1d()
-  {
-    delete [] segms;
-  }
-};
-
-
-init1d i1d(4);
-
-
-
-
-// here are the tested functions
-
-
-// space dimension (1, 2 or 3)
-DLL_HEADER int Ng_GetDimension ()
-{
-  return dim;
-}
-
-
-DLL_HEADER int Ng_GetNNodes (int nt)
-{
-  switch (nt)
-    {
-    case 0: return nv;
-    case 1: return nseg;
-    case 2: return ntrig;
-    case 3: return 0;
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
+Mesh1D_Base mesh1d;
 
 // dummies, V2
 namespace netgen
 {
+  using namespace std;
   ostream * testout = &cout;
   int printmessage_importance = 1;
 
   Ng_Point Ng_GetPoint (int nr)
   {
-    ;
+    Ng_Point pnt;
+    pnt.pt = &mesh1d.points[nr][0];
+    return pnt;
   }
 
   template<> Ng_Element Ng_GetElement<0> (int nr) 
@@ -127,9 +25,9 @@ namespace netgen
     Ng_Element ret;
     ret.type = NG_PNT;
     ret.points.num = 1;
-    ret.points.ptr  = &bound_els[nr][0];
+    ret.points.ptr  = &mesh1d.bound_els[nr][0];
     ret.vertices.num = 1;
-    ret.vertices.ptr  = &bound_els[nr][0];
+    ret.vertices.ptr  = &mesh1d.bound_els[nr][0];
     ret.edges.num = 0;
     ret.faces.num = 0;
     return ret;
@@ -141,9 +39,9 @@ namespace netgen
     Ng_Element ret;
     ret.type = NG_SEGM; 
     ret.points.num = 2;
-    ret.points.ptr  = &segms[nr][0];
+    ret.points.ptr  = &mesh1d.els[nr][0];
     ret.vertices.num = 2;
-    ret.vertices.ptr  = &segms[nr][0];
+    ret.vertices.ptr  = &mesh1d.els[nr][0];
 
     ret.edges.num = 0;
     ret.edges.ptr = NULL;
@@ -154,25 +52,12 @@ namespace netgen
 
   template<> Ng_Element Ng_GetElement<2> (int nr) 
   { 
-    Ng_Element ret;
-    ret.type = NG_TRIG; 
-    ret.points.num = 3;
-    ret.points.ptr  = &trigs[nr][0];
-
-    ret.vertices.num = 3;
-    ret.vertices.ptr = &trigs[nr][0];
-
-    ret.edges.num = 0;
-    ret.edges.ptr = NULL;
-
-    ret.faces.num = 0;
-    ret.faces.ptr = NULL;
-    return ret;
+    throw Exception ("calls ng_getelement<2>");
   }
 
   template<> Ng_Element Ng_GetElement<3> (int nr) 
   { 
-    cout << "calls ng_getelement<3>" << endl;
+    throw Exception ("calls ng_getelement<3>");
   }
 
   template<> Ng_Node<1> Ng_GetNode<1> (int nr)
@@ -192,8 +77,8 @@ namespace netgen
 					   double * x, size_t sx,
 					   double * dxdxi, size_t sdxdxi)
   {
-    double pts[2] = { points[segms[elnr][0]-1][0], 
-		      points[segms[elnr][1]-1][0] };
+    double pts[2] = { mesh1d.points[mesh1d.els[elnr][0]-1][0], 
+		      mesh1d.points[mesh1d.els[elnr][1]-1][0] };
 
     for (int i = 0; i < npts; i++)
       {
@@ -216,7 +101,7 @@ namespace netgen
 					   double * x, size_t sx,
 					   double * dxdxi, size_t sdxdxi)
   {
-    double pt = points[bound_els[elnr][0]-1][0]; 
+    double pt = mesh1d.points[mesh1d.bound_els[elnr][0]-1][0]; 
 
     for (int i = 0; i < npts; i++)
       {
@@ -249,31 +134,7 @@ namespace netgen
 					   double * x, size_t sx,
 					   double * dxdxi, size_t sdxdxi)
   {
-    Vec<2> pts[3];
-    for (int i = 0; i < 3; i++)
-      pts[i] = Vec<2> (points[trigs[elnr][i]-1][0], 
-		       points[trigs[elnr][i]-1][1]);
-
-    for (int i = 0; i < npts; i++)
-      {
-	Vec<2> xi_ (xi[i*sxi], xi[i*sxi+1]);
-	Vec<2> x_map = pts[2] + xi_(0) * (pts[0]-pts[2]) + xi_(1) * (pts[1]-pts[2]);
-	Mat<2,2> grad; 
-	grad.Col(0) = pts[0]-pts[2];
-	grad.Col(1) = pts[1]-pts[2];
-	if (x)
-	  {
-	    x[i*sx  ] = x_map(0);
-	    x[i*sx+1] = x_map(1);
-	  }
-	if (dxdxi)
-	  {
-	    dxdxi[i*sdxdxi  ] = grad(0,0);
-	    dxdxi[i*sdxdxi+1] = grad(0,1);
-	    dxdxi[i*sdxdxi+2] = grad(1,0);
-	    dxdxi[i*sdxdxi+3] = grad(1,1);
-	  }
-      }
+    throw Exception ("multi - trafo<2,2>");
   }
   
   template <>
@@ -282,7 +143,7 @@ namespace netgen
 					   double * x, size_t sx,
 					   double * dxdxi, size_t sdxdxi)
   {
-    cout << "multi - trafo<2,3>" << endl;
+    throw Exception ("multi - trafo<2,3>");
   }
   
   template <>
@@ -291,13 +152,62 @@ namespace netgen
 					   double * x, size_t sx,
 					   double * dxdxi, size_t sdxdxi)
   {
-    cout << "multi - trafo<3,3>" << endl;
+    throw Exception ("multi - trafo<3,3>");
   }
   
 
 
   
 }
+
+
+
+
+
+
+
+
+
+
+
+#include <bla.hpp>
+
+using namespace std;
+#include <ngexception.hpp>
+
+using namespace ngbla;
+
+
+
+
+// space dimension (1, 2 or 3)
+DLL_HEADER int Ng_GetDimension ()  { return 1; }
+
+
+DLL_HEADER int Ng_GetNNodes (int nt)
+{
+  switch (nt)
+    {
+    case 0: return mesh1d.els.Size()+1;
+    case 1: return mesh1d.els.Size();
+    case 2: return 0;
+    case 3: return 0;
+    }
+  throw Exception (string ("illegal node type") + ToString(nt));
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -339,7 +249,7 @@ extern "C"
   // number of mesh points
   int Ng_GetNP ()
   {
-    return nv;
+    return mesh1d.points.Size();
   }
 
 
@@ -349,36 +259,39 @@ extern "C"
   // number of mesh elements
   DLL_HEADER int Ng_GetNE ()
   {
-    return Ng_GetNElements (dim);
+    return Ng_GetNElements (1);
   }
 
   // number of surface triangles
   DLL_HEADER int Ng_GetNSE ()
   {
-    return Ng_GetNElements (dim-1);
+    return Ng_GetNElements (0);
   }
   
   // Get Point coordintes, index from 1 .. np
   DLL_HEADER void Ng_GetPoint (int pi, double * p)
   {
-    for (int i = 0; i < dim; i++)
-      p[i] = points[pi][i];
+    for (int i = 0; i < 1; i++)
+      p[i] = mesh1d.points[pi][i];
   }
   
   // Get Element Points
   DLL_HEADER NG_ELEMENT_TYPE Ng_GetElement (int ei, int * epi, int * np)
   {
+    throw Exception ("Ng_GetElement");
+    /*
     for (int i = 0; i < dim+1; i++)
       epi[i] = trigs[ei][i];
     if (np) *np = dim+1;
     return NG_TRIG;
+    */
   }
 
 
   // Get Element Type
   DLL_HEADER NG_ELEMENT_TYPE Ng_GetElementType (int ei)
   {
-    return NG_TRIG;
+    return NG_SEGM;
   }
 
   // Get sub-domain of element ei
@@ -506,12 +419,7 @@ extern "C"
   DLL_HEADER void Ng_GetElementTransformation (int ei, const double * xi, 
                                                double * x, double * dxdxi)
   {
-    switch (dim)
-      {
-      case 1: netgen::Ng_MultiElementTransformation<1,1> (ei-1, 1, xi, 0, x, 0, dxdxi, 0); break;
-      default:
-	cout << "geteltrafo, dim = " << dim << endl;
-      }
+    netgen::Ng_MultiElementTransformation<1,1> (ei-1, 1, xi, 0, x, 0, dxdxi, 0); 
   }
 
   
@@ -698,10 +606,10 @@ extern "C"
   DLL_HEADER int Ng_IsRunning() { return false; }
   
   //// added by Roman Stainko ....
-  DLL_HEADER int Ng_GetVertex_Elements( int vnr, int* elems) { ; }
-  DLL_HEADER int Ng_GetVertex_SurfaceElements( int vnr, int* elems ) { ; }
-  DLL_HEADER int Ng_GetVertex_NElements( int vnr ) { ; }
-  DLL_HEADER int Ng_GetVertex_NSurfaceElements( int vnr ) { ; }
+  DLL_HEADER int Ng_GetVertex_Elements( int vnr, int* elems) { return 0; }
+  DLL_HEADER int Ng_GetVertex_SurfaceElements( int vnr, int* elems ) { return 0; }
+  DLL_HEADER int Ng_GetVertex_NElements( int vnr ) { return 0; }
+  DLL_HEADER int Ng_GetVertex_NSurfaceElements( int vnr ) { return 0; }
 
 
   DLL_HEADER void Ng_InitPointCurve(double red, double green, double blue) { ; }
@@ -765,10 +673,9 @@ extern "C" {
   {
     switch (dim)
       {
-      case 0: return npoint;
-      case 1: return nseg;
-      case 2: return ntrig;
-      case 3: return 0;
+      case 0: return 2;
+      case 1: return mesh1d.els.Size();
+      default: return 0;
       }
   }
 
@@ -780,7 +687,9 @@ extern "C" {
     return value is number of nodes
   */
   DLL_HEADER int Ng_GetElementClosureNodes (int dim, int elementnr, int nodeset, int * nodes)
-  { ; }
+  { 
+    return 0;
+  }
 
 
   struct Ng_Tcl_Interp;
@@ -830,242 +739,26 @@ extern "C" {
 
 
 
-#ifdef NEED_DYNMEM
 
 
 namespace netgen
 {
-
-  BaseDynamicMem * BaseDynamicMem::first = 0;
-  BaseDynamicMem * BaseDynamicMem::last = 0;
-
-
-  BaseDynamicMem :: BaseDynamicMem ()
-  {
-    prev = last;
-    next = 0;
-
-    if (last) last->next = this;
-    last = this;
-    if (!first) first = this;
-
-    size = 0;
-    ptr = 0;
-    name = 0;
-  }
- 
-  BaseDynamicMem :: ~BaseDynamicMem ()
-  {
-    Free();
-
-    if (next) next->prev = prev;
-    else last = prev;
-    if (prev) prev->next = next;
-    else first = next;
-
-    delete [] name;
-  }
-
-  void BaseDynamicMem :: SetName (const char * aname)
-  {
-    delete [] name;
-    name = NULL;
-    if (aname)
-      {
-	name = new char[strlen(aname)+1];
-	strcpy (name, aname);
-      }
-  }
-
-
-  void BaseDynamicMem :: Alloc (size_t s)
-  {
-    size = s;
-    ptr = new char[s];
-
-    if (!ptr)
-      {
-	cerr << "BaseynamicMem, cannot allocate " << s << " bytes" << endl;
-	Print ();
-	throw ("BaseDynamicMem::Alloc: out of memory");
-      }
-    // ptr = (char*)malloc (s);
-    // ptr = (char*) _mm_malloc (s,16);
-  }
-
-  void BaseDynamicMem :: ReAlloc (size_t s)
-  {
-    if (size == s) return;
-
-    char * old = ptr;
-    ptr = new char[s];
-
-    if (!ptr)
-      {
-	cerr << "BaseynamicMem, cannot Reallocate " << s << " bytes" << endl;
-	Print ();
-	throw ("BaseDynamicMem::Alloc: out of memory");
-      }
-
-
-    // ptr = (char*)malloc(s);
-    // ptr = (char*) _mm_malloc (s,16);
-    memmove (ptr, old, (s < size) ? s : size);
-    delete [] old;
-    // free (old);
-    // _mm_free (old);
-    size = s;
-  }
-
-  void BaseDynamicMem :: Free ()
-  {
-    delete [] ptr;
-    // free (ptr);
-    // _mm_free (ptr);
-    ptr = 0;
-  }
-
-  void BaseDynamicMem :: Swap (BaseDynamicMem & m2)
-  {
-    size_t hi;
-    char * cp;
-    hi = size; size  = m2.size; m2.size = hi;
-    cp = ptr; ptr = m2.ptr; m2.ptr = cp;
-    cp = name; name = m2.name; m2.name = cp;
-  }
-
-
-  void BaseDynamicMem :: Print ()
-  {
-    cout << "****************** Dynamic Mem Report ****************" << endl;
-    BaseDynamicMem * p = first;
-    size_t mem = 0;
-    int cnt = 0;
-    while (p)
-      {
-	mem += p->size;
-	cnt++;
-
-	cout << setw(10) << p->size << " Bytes";
-	cout << ", addr = " << (void*)p->ptr;
-	if (p->name)
-	  cout << " in block " << p->name;
-	cout << endl;
-
-	p = p->next;
-      }
-
-    if (mem > 100000000)
-      cout << "memory in dynamic memory: " << mem/1048576 << " MB" << endl;
-    else if (mem > 100000)
-      cout << "memory in dynamic memory: " << mem/1024 << " kB" << endl;
-    else
-      cout << "memory in dynamic memory: " << mem << " Bytes" << endl;
-    cout << "number of blocks:         " << cnt << endl;
-    //  cout << "******************************************************" << endl;
-  }
-
-
-#ifdef __INTEL_COMPILER
-#pragma warning(push)
-#pragma warning(disable:1684)
-#endif
-
-  void BaseDynamicMem :: GetUsed (int nr, char * ch)
-  {
-    BaseDynamicMem * p = first;
-
-    for (int i = 0; i < nr; i++)
-      ch[i] = '0';
-
-    while (p)
-      {
-        long unsigned hptr = (long unsigned) (p->ptr);
-	// uintptr_t hptr = reinterpret_cast<uintptr_t>(p->ptr); //??
-
-	hptr /= (1024*1024);
-	hptr /= (4096/nr);
-
-	size_t blocks = p->size / (1024*1024);
-	blocks /= (4096/nr);
-	
-	// cout << "ptr = " << (void*)(p->ptr) << ", size = " << p->size << ", hptr = " << hptr << " blocks = " << blocks << endl;
-
-	for (size_t i = 0; i <= blocks; i++)
-	  ch[hptr+i] = '1';
-
-	p = p->next;
-      }
-    
-    {
-
-      /*
-    BaseMoveableMem * pm = BaseMoveableMem::first;
-    while (pm)
-      {
-        long unsigned hptr = (long unsigned) pm->ptr;
-        // uintptr_t hptr = reinterpret_cast<uintptr_t>(pm->ptr);
-
-	hptr /= (1024*1024);
-	hptr /= (4096/nr);
-
-	size_t blocks = pm->size / (1024*1024);
-	blocks /= (4096/nr);
-	
-	// cout << "moveable, ptr = " << (void*)(pm->ptr) << ", size = " << pm->size << ", hptr = " << hptr << " blocks = " << blocks << endl;
-
-	for (size_t i = 0; i <= blocks; i++)
-	  ch[hptr+i] = '1';
-
-	pm = pm->next;
-      }
-      */
-    }
-
-
-
-  }
-
-#ifdef __INTEL_COMPILER
-#pragma warning(pop)
-#endif
-
-}
-
-
-#endif 
-
-
-
-
-
-
-
-
-namespace netgen
-{
-  //using namespace netgen;
-
-
-
   NgException :: NgException (const string & s) 
     : what(s)
   {
     ; 
   }
 
-
   NgException :: ~NgException () 
   {
     ;
   }
 
-  /// append string to description
   void NgException :: Append (const string & s)
   { 
     what += s; 
   }
-
 }
+
 
 
