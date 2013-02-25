@@ -506,16 +506,18 @@ namespace ngsolve
 		  if (ifstream (meshfile.c_str()))
 		    {
 		      cout << IM(1) << "Load mesh from file " << meshfile << endl;
-		      Ng_LoadMesh (const_cast<char*> (meshfile.c_str()));
+		      // Ng_LoadMesh (const_cast<char*> (meshfile.c_str()));
+                      pde->GetMeshAccess().LoadMesh (meshfile);
 		    }
 		  else
 		    {
 		      cout << IM(1) << "Load mesh from file " << scan->GetStringValue() << endl;
-		      Ng_LoadMesh (const_cast<char*> (scan->GetStringValueC()));
+		      // Ng_LoadMesh (const_cast<char*> (scan->GetStringValueC()));
+                      pde->GetMeshAccess().LoadMesh (scan->GetStringValue());
 		    }
 		}
 
-              pde->GetMeshAccess().UpdateBuffers();
+              // pde->GetMeshAccess().UpdateBuffers();
 	      pde->AddVariable ("mesh.levels", pde->GetMeshAccess().GetNLevels(), 6);
 	      pde->AddVariable ("mesh.ne", pde->GetMeshAccess().GetNE(), 6);
 	      pde->AddVariable ("mesh.nv", pde->GetMeshAccess().GetNV(), 6);
