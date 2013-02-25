@@ -33,7 +33,6 @@ namespace ngcomp
     Array<BaseVector*> vec;
     /// component GridFunctions if fespace is a CompoundFESpace
     Array<GridFunction*> compgfs;
-
   public:
     /// 
     GridFunction (const FESpace & afespace, 

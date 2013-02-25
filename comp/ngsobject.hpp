@@ -28,7 +28,6 @@ protected:
   // double time;
 
   /// profiling
-  // int timer;
   Timer timer;
 
   /// keep the object
@@ -39,16 +38,18 @@ public:
   /// 
   NGS_Object (const MeshAccess & ama, const string & aname = "noname", 
               bool checkflags = false)
-    : name(aname), ma(ama), /* time(0), */ timer(aname), skipCleanUp(0)
+    : name(aname), ma(ama), timer(aname), skipCleanUp(0)
   { 
-    // timer = NgProfiler::CreateTimer (aname);
+    ;
   }
   
+  /*
   ///
   NGS_Object (const NGS_Object& obj)
   : name(obj.name), flaglist(obj.flaglist), ma(obj.ma), 
-    /* time(obj.time), */ timer(obj.timer), skipCleanUp(obj.skipCleanUp)
+    timer(obj.timer), skipCleanUp(obj.skipCleanUp)
   { ; }
+  */
 
   ///
   virtual ~NGS_Object () { ; }
