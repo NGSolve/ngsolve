@@ -211,17 +211,15 @@ namespace netgen
     RecPol (int amaxorder)
     {
       maxorder = amaxorder;
-      // cout << "maxo = " << maxorder << endl;
-
       a = new double[maxorder+1];
       b = new double[maxorder+1];
       c = new double[maxorder+1];
     }
     ~RecPol ()
     {
-      delete a;
-      delete b;
-      delete c;
+      delete [] a;
+      delete [] b;
+      delete [] c;
     }
     
     template <class S, class T>

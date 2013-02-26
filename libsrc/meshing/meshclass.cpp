@@ -361,6 +361,7 @@ namespace netgen
   {
 
     ofstream outfile(filename.c_str());
+    // ogzstream outfile( (filename+".gz") .c_str());
 
     Save(outfile);
   }
@@ -408,54 +409,38 @@ namespace netgen
       {
         if ((*this)[sei].GetIndex())
           {
-            outfile.width(8);
-            outfile << GetFaceDescriptor((*this)[sei].GetIndex ()).SurfNr()+1;
-            outfile.width(8);
-            outfile << GetFaceDescriptor((*this)[sei].GetIndex ()).BCProperty();
-            outfile.width(8);	  
-            outfile << GetFaceDescriptor((*this)[sei].GetIndex ()).DomainIn();
-            outfile.width(8);	  
-            outfile << GetFaceDescriptor((*this)[sei].GetIndex ()).DomainOut();
+            outfile << " " << GetFaceDescriptor((*this)[sei].GetIndex ()).SurfNr()+1;
+            outfile << " " << GetFaceDescriptor((*this)[sei].GetIndex ()).BCProperty();
+            outfile << " " << GetFaceDescriptor((*this)[sei].GetIndex ()).DomainIn();
+            outfile << " " << GetFaceDescriptor((*this)[sei].GetIndex ()).DomainOut();
           }
         else
-          outfile << "       0       0       0";
+          outfile << " 0 0 0";
 
         Element2d sel = (*this)[sei];
         if (invertsurf)
           sel.Invert();
 
-        outfile.width(8);
-        outfile << sel.GetNP();
-
+        outfile << " " << sel.GetNP();
         for (j = 0; j < sel.GetNP(); j++)
-          {
-            outfile.width(8);	  
-            outfile << sel[j];
-          }
-
+          outfile << " " << sel[j];
 
         switch (geomtype)
           {
           case GEOM_STL:
             for (j = 1; j <= sel.GetNP(); j++)
-              {
-                outfile.width(7);	  
-                outfile << " " << sel.GeomInfoPi(j).trignum;
-              }
+              outfile << " " << sel.GeomInfoPi(j).trignum;
             break;
           case GEOM_OCC: case GEOM_ACIS:
             for (j = 1; j <= sel.GetNP(); j++)
               {
-                outfile.width(7);	  
                 outfile << " " << sel.GeomInfoPi(j).u;
                 outfile << " " << sel.GeomInfoPi(j).v;
               }
             break;
           default:
-            ; // outfile << "\n";
+            ; 
           }
-
-
         outfile << "\n";
       }
 

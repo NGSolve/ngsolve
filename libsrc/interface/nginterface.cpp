@@ -109,7 +109,8 @@ namespace netgen
 
   // global variable mesh (should not be used in libraries)
   AutoPtr<Mesh> mesh;
-  NetgenGeometry * ng_geometry = NULL; // new NetgenGeometry;
+  // NetgenGeometry * ng_geometry = NULL; // new NetgenGeometry;
+  AutoPtr<NetgenGeometry> ng_geometry;
 
   // extern NetgenGeometry * ng_geometry;
   // extern AutoPtr<Mesh> mesh;
@@ -145,9 +146,12 @@ void Ng_LoadGeometry (const char * filename)
       NetgenGeometry * hgeom = geometryregister[i]->Load (filename);
       if (hgeom)
 	{
+          /*
 	  delete ng_geometry;
 	  ng_geometry = hgeom;
-	  
+	  */
+          ng_geometry.Reset (hgeom);
+
 	  mesh.Reset();
 	  return;
 	}
@@ -157,8 +161,11 @@ void Ng_LoadGeometry (const char * filename)
   // can be used to reset geometry
   if (strcmp(filename,"")==0) 
     {
+      /*
       delete ng_geometry;
       ng_geometry = new NetgenGeometry();
+      */
+      ng_geometry.Reset (new NetgenGeometry());
       return;
     }
 
@@ -177,55 +184,14 @@ void Ng_LoadMeshFromStream ( istream & input )
       NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (input);
       if (hgeom)
 	{
+          /*
 	  delete ng_geometry;
 	  ng_geometry = hgeom;
+          */
+          ng_geometry.Reset (hgeom);
 	  break;
 	}
     }
-
-
-#ifdef LOADOLD
-  if(input.good())
-    {
-      string auxstring;
-      input >> auxstring;
-      if(auxstring == "csgsurfaces")
-	{
-	  /*
-	    if (geometry)
-            {
-	    geometry.Reset (new CSGeometry (""));
-            }
-	    if (stlgeometry)
-	    {
-	    delete stlgeometry;
-	    stlgeometry = NULL;
-	    }
-	    #ifdef OCCGEOMETRY
-	    if (occgeometry)
-	    {
-	    delete occgeometry;
-	    occgeometry = NULL;
-	    }
-	    #endif
-	    #ifdef ACIS
-	    if (acisgeometry)
-	    {
-	    delete acisgeometry;
-	    acisgeometry = NULL;
-	    }
-	    #endif
-	    geometry2d.Reset (0);
-	  */
- 	  // geometry -> LoadSurfaces(input);
-	  CSGeometry * geometry = new CSGeometry ("");
-	  geometry -> LoadSurfaces(input);
-
-	  delete ng_geometry;
-	  ng_geometry = geometry;
-	}
-    }
-#endif 
 }
 
 
@@ -236,9 +202,11 @@ void Ng_LoadMesh (const char * filename)
 #ifdef PARALLEL
   MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
-#endif
+
   if (id == 0)
     {
+#endif
+
       if ( (strlen (filename) > 4) &&
 	   strcmp (filename + (strlen (filename)-4), ".vol") != 0 )
 	{
@@ -318,9 +286,7 @@ void Ng_LoadMesh (const char * filename)
 	      mesh -> Distribute(volume_weights, surface_weights, segment_weights);
 	    }
 	}
-#endif
     }
-#ifdef PARALLEL
   else
     {
       mesh.Reset (new Mesh());
@@ -688,7 +654,7 @@ void Ng_GetNormalVector (int sei, int locpi, double * nv)
 	  nv[2] = n(2);
 	}
 #endif
-      CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry);
+      CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry.Ptr());
       if (geometry)
 	{
 	  n = geometry->GetSurface (surfi) -> GetNormalVector(p);
@@ -2175,7 +2141,7 @@ int Ng_Bisect_WithInfo ( const char * refinementfile, double ** qualityloss, int
 #endif
     {
       // ref = new RefinementSurfaces(*geometry);
-      CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry);
+      CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry.Ptr());
       if (geometry)
 	{
 	  opt = new MeshOptimize2dSurfaces(*geometry);

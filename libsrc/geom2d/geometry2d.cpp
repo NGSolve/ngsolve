@@ -17,7 +17,7 @@ namespace netgen
     for ( int i = 0; i < bcnames.Size(); i++ )
       delete bcnames[i];
     for (int i=0; i<materials.Size(); i++)
-      delete materials[i];
+      delete [] materials[i];
   }
 
 
