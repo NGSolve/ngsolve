@@ -287,11 +287,13 @@ namespace netgen
     PrintMessage (1, "Save mesh to file ", filename, ".... Please Wait!");
 
     ofstream outfile(filename.c_str());
+    //ogzstream outfile( (filename+".gz").c_str());
     mesh -> Save (outfile);
 
     outfile << endl << endl << "endmesh" << endl << endl;
 
-    ng_geometry -> SaveToMeshFile (outfile);
+    if (ng_geometry)
+      ng_geometry -> SaveToMeshFile (outfile);
     /*
     CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry);
     if (geometry && geometry->GetNSurf()) geometry->SaveSurfaces(outfile);
