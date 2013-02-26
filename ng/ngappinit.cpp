@@ -58,6 +58,7 @@ extern "C" int Ng_ServerSocketManagerRun (void);
 bool nodisplay = false;
 bool shellmode = false;
 
+
 /*
  *
  *     The Netgen main function
@@ -81,7 +82,6 @@ int main(int argc, char ** argv)
 
   MPI_Comm_dup ( MPI_COMM_WORLD, &netgen::mesh_comm);
 #endif
-
 
   if ( netgen::id == 0 )
     {
@@ -418,3 +418,23 @@ int Tcl_AppInit(Tcl_Interp * interp)
   Tcl_StaticPackage(interp, "Tk", Tk_Init, 0);
   return TCL_OK;
 }
+
+
+
+
+
+// link MKL with netgen
+// necessary for MKL 11.x, since MKL complains if started
+// from the ngsolve shared library
+
+#ifdef LINKMKL
+extern "C" double ddot_(int *n, double *dx, int *incx, double *dy, 
+                        int *incy);
+
+int mkldummy()
+{
+  int n = 1, one = 1;
+  double a = 1, b = 1; 
+  ddot_(&n, &a, &one, &b, &one);
+}
+#endif
