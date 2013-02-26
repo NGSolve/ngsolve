@@ -434,7 +434,6 @@ namespace ngcomp
     for (int i = 0; i < ma.GetNV(); i++)
       if (used_vertex[i])
 	ctofdof[i] = WIREBASKET_DOF;
-    // ctofdof[i] = INTERFACE_DOF;
       else
 	ctofdof[i] = UNUSED_DOF;
 
@@ -1382,6 +1381,13 @@ namespace ngcomp
       }
 
     return &clusters;
+  }
+
+  template<>
+  FESpace * RegisterFESpace<H1HighOrderFESpace> :: Create (const MeshAccess & ma, const Flags & flags)
+  {
+    // we will check the -periodic flag here
+    return new H1HighOrderFESpace(ma, flags);
   }
 
   static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
