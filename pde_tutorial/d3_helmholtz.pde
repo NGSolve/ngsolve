@@ -1,4 +1,4 @@
-mesh = piezo2d40round4.vol
+mesh = piezo2d40round4.vol.gz
 
 define constant k = 1.8
 
