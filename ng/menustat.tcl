@@ -187,9 +187,9 @@ loadmeshinifile;
 .ngmenu.file add command -label "Save Mesh..." -accelerator "<s><m>" \
     -command {
 	set types {
-	    {"Mesh file"   {.vol}	} }
+	    {"Mesh file"   {.vol .vol.gz}	} }
 
-	set file [tk_getSaveFile -filetypes $types -defaultextension ".vol" -initialfile $basefilename -initialdir $dirname ]
+	set file [tk_getSaveFile -filetypes $types -defaultextension ".vol.gz" -initialfile $basefilename -initialdir $dirname ]
 	if {$file != ""} {
 	    Ng_SaveMesh $file }
 	AddRecentMeshFile $file;

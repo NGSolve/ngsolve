@@ -224,8 +224,14 @@ namespace netgen
     mesh.Reset (new Mesh());
     try
       {
-	ifstream infile(filename.c_str());
-	mesh -> Load(infile);
+        istream * infile;
+        if (filename.substr (filename.length()-3, 3) == ".gz")
+          infile = new igzstream (filename.c_str());
+        else
+          infile = new ifstream (filename.c_str());
+
+	// ifstream infile(filename.c_str());
+	mesh -> Load(*infile);
 
 #ifdef PARALLEL
 	MyMPI_SendCmd ("mesh");
@@ -234,16 +240,15 @@ namespace netgen
 
 	for (int i = 0; i < geometryregister.Size(); i++)
 	  {
-	    NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (infile);
+	    NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (*infile);
 	    if (hgeom)
 	      {
-		// delete ng_geometry;
-		// ng_geometry = hgeom;
                 ng_geometry.Reset (hgeom);
 		break;
 	      }
 	  }
-	
+        delete infile;
+
 	/*
 	string auxstring;
 	if(infile.good())
@@ -286,22 +291,22 @@ namespace netgen
 	return TCL_ERROR;
       }
 
-    const string filename (argv[1]);
+    string filename (argv[1]);
     PrintMessage (1, "Save mesh to file ", filename, ".... Please Wait!");
+    
+    ostream * outfile;
+    if (filename.substr (filename.length()-3, 3) == ".gz")
+      outfile = new ogzstream (filename.c_str());
+    else
+      outfile = new ofstream (filename.c_str());
 
-    // ofstream outfile(filename.c_str());
-    ogzstream outfile( (filename+".gz").c_str());
-    mesh -> Save (outfile);
-
-    outfile << endl << endl << "endmesh" << endl << endl;
+    mesh -> Save (*outfile);
+    *outfile << endl << endl << "endmesh" << endl << endl;
 
     if (ng_geometry)
-      ng_geometry -> SaveToMeshFile (outfile);
-    /*
-    CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry);
-    if (geometry && geometry->GetNSurf()) geometry->SaveSurfaces(outfile);
-    */
+      ng_geometry -> SaveToMeshFile (*outfile);
 
+    delete outfile;
     PrintMessage (1, "Save mesh to file .... DONE!");
     return TCL_OK;
   }

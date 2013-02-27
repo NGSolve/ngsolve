@@ -182,9 +182,11 @@ void Ng_LoadMesh (const char * filename)
   if (id == 0)
     {
 #endif
-
+      if ( string(filename).find(".vol") == string::npos )
+        /*
       if ( (strlen (filename) > 4) &&
 	   strcmp (filename + (strlen (filename)-4), ".vol") != 0 )
+        */
 	{
 	  mesh.Reset (new Mesh());
 	  ReadFile(*mesh,filename);
@@ -193,15 +195,21 @@ void Ng_LoadMesh (const char * filename)
 	  //mesh->CalcLocalH();
 	  return;
 	}
-      
-      ifstream infile(filename);
-      Ng_LoadMeshFromStream(infile);
 
+      string fn(filename);
+
+      istream * infile;
+      if (fn.substr (fn.length()-3, 3) == ".gz")
+        infile = new igzstream (filename);
+      else
+        infile = new ifstream (filename);
+
+      Ng_LoadMeshFromStream(*infile);
+      delete infile;
+      
 #ifdef PARALLEL
       if (ntasks > 1)
 	{
-	  // MyMPI_SendCmd ("mesh");
-	  // mesh -> Distribute();
 
 	  char * weightsfilename = new char [strlen(filename)+1];
 	  strcpy (weightsfilename, filename);            
