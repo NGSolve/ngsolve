@@ -69,6 +69,7 @@ namespace netgen
 
   CSGeometry :: ~CSGeometry ()
   {
+    cout << "delete geometry" << endl;
     Clean();
   }
 
@@ -83,16 +84,10 @@ namespace netgen
     for (int i = 0; i < solids.Size(); i++)
       if(!to_delete.Contains(solids[i]))
 	to_delete.Append(solids[i]);
+
     for(int i = 0; i < to_delete.Size(); i++)
       delete to_delete[i];    
     
-    /*
-    for (int i = 0; i < solids.Size(); i++)
-      delete solids[i]->S1();
-    for (int i = 0; i < solids.Size(); i++)
-      delete solids[i];
-    */
-
     solids.DeleteAll ();
 
     for (int i = 0; i < splinecurves2d.Size(); i++)
@@ -108,7 +103,7 @@ namespace netgen
       delete delete_them[i];
     delete_them.DeleteAll();
     surfaces.DeleteAll();
-  
+
     for (int i = 0; i < toplevelobjects.Size(); i++)
       delete toplevelobjects[i];
     toplevelobjects.DeleteAll ();

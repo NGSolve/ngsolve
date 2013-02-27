@@ -8,12 +8,6 @@
 #include "../sockets/sockets.hpp"
 #endif
 
-/*
-#ifndef NOTCL
-#include <visual.hpp>
-#endif
-*/
-
 #include "nginterface.h"
 #include "../visualization/soldata.hpp"
 
@@ -120,11 +114,6 @@ namespace netgen
 #endif
 
 
-#ifdef OPENGL 
-  // extern VisualSceneSolution vssolution;
-#endif
-  // extern CSGeometry * ParseCSG (istream & istr);
-
 #ifdef SOCKETS
   extern AutoPtr<ClientSocket> clientsocket;
   //extern Array< AutoPtr < ServerInfo > > servers;
@@ -140,34 +129,25 @@ using namespace netgen;
 
 void Ng_LoadGeometry (const char * filename)
 {
+  // he: if filename is empty, return
+  // can be used to reset geometry
+  if (!filename || strcmp(filename,"")==0) 
+    {
+      ng_geometry.Reset (new NetgenGeometry());
+      return;
+    }
 
   for (int i = 0; i < geometryregister.Size(); i++)
     {
       NetgenGeometry * hgeom = geometryregister[i]->Load (filename);
       if (hgeom)
 	{
-          /*
-	  delete ng_geometry;
-	  ng_geometry = hgeom;
-	  */
           ng_geometry.Reset (hgeom);
-
 	  mesh.Reset();
 	  return;
 	}
     }
 
-  // he: if filename is empty, return
-  // can be used to reset geometry
-  if (strcmp(filename,"")==0) 
-    {
-      /*
-      delete ng_geometry;
-      ng_geometry = new NetgenGeometry();
-      */
-      ng_geometry.Reset (new NetgenGeometry());
-      return;
-    }
 
   // if (id == 0)
   cerr << "cannot load geometry '" << filename << "'" << ", id = " << id << endl;
@@ -184,10 +164,6 @@ void Ng_LoadMeshFromStream ( istream & input )
       NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (input);
       if (hgeom)
 	{
-          /*
-	  delete ng_geometry;
-	  ng_geometry = hgeom;
-          */
           ng_geometry.Reset (hgeom);
 	  break;
 	}
@@ -415,21 +391,12 @@ NG_ELEMENT_TYPE Ng_GetElement (int ei, int * epi, int * np)
     }
   else
     {
-      int i;
       const Element2d & el = mesh->SurfaceElement (ei);
-      for (i = 0; i < el.GetNP(); i++)
+      for (int i = 0; i < el.GetNP(); i++)
 	epi[i] = el.PNum(i+1);      
 
       if (np) *np = el.GetNP();
       return NG_ELEMENT_TYPE (el.GetType());
-      /*
-	switch (el.GetNP())
-	{
-	case 3: return NG_TRIG; 
-	case 4: return NG_QUAD; 
-	case 6: return NG_TRIG6; 
-	}
-      */
     }
 
   // should not occur
@@ -821,56 +788,6 @@ void Ng_GetElementTransformation (int ei, const double * xi,
 	}
     }
 }
-
-
-#ifdef OLD
-void Ng_GetBufferedElementTransformation (int ei, const double * xi, 
-                                          double * x, double * dxdxi,
-                                          void * buffer, int buffervalid)
-{
-  // buffer = 0;
-  // buffervalid = 0;
-  if (mesh->GetDimension() == 2)
-    {
-      return Ng_GetElementTransformation (ei, xi, x, dxdxi);
-    }
-  else
-    {
-      mesh->GetCurvedElements().CalcElementTransformation (reinterpret_cast<const Point<3> &> (*xi), 
-                                                           ei-1, 
-                                                           reinterpret_cast<Point<3> &> (*x), 
-                                                           reinterpret_cast<Mat<3,3> &> (*dxdxi), 
-                                                           buffer, (buffervalid != 0));
-
-      /*
-	Point<3> xl(xi[0], xi[1], xi[2]);
-	Point<3> xg;
-	Mat<3,3> dx;
-	// buffervalid = 0;
-	mesh->GetCurvedElements().CalcElementTransformation (xl, ei-1, xg, dx, buffer, buffervalid);
-
-	// still 1-based arrays
-	if (x)
-	{
-	for (int i = 0; i < 3; i++)
-	x[i] = xg(i);
-	}
-
-	if (dxdxi)
-	{
-	for (int i=0; i<3; i++)
-	{
-	dxdxi[3*i] = dx(i,0);
-	dxdxi[3*i+1] = dx(i,1);
-	dxdxi[3*i+2] = dx(i,2);
-	}
-	}
-      */
-    }
-}
-#endif
-
-
 
 
 
