@@ -173,7 +173,7 @@ namespace ngcomp
 
   MeshAccess :: ~MeshAccess ()
   {
-    ;
+    Ng_LoadGeometry("");
   }
 
   void MeshAccess :: UpdateBuffers()

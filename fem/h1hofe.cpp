@@ -362,7 +362,7 @@ namespace ngfem
 
 	  Tx lam_f = 0;
 	  for (int j = 0; j < 4; j++) lam_f += lam[f[j]];
-
+          
 	  Tx xi  = sigma[f[0]] - sigma[f[1]]; 
 	  Tx eta = sigma[f[0]] - sigma[f[3]];
 
