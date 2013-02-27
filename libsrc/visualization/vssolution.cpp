@@ -593,7 +593,8 @@ namespace netgen
   }
   
 
-
+  
+  /*
   void VisualSceneSolution :: RealVec3d (const double * values, Vec3d & v, 
                                          bool iscomplex, bool imag)
   {
@@ -619,7 +620,32 @@ namespace netgen
           }
       }
   }
-
+  */
+  Vec<3>  VisualSceneSolution :: RealVec3d (const double * values, 
+					    bool iscomplex, bool imag)
+  {
+    Vec<3> v;
+    if (!iscomplex)
+      {
+	for (int j = 0; j < 3; j++)
+	  v(j) = values[j];
+      }
+    else
+      {
+        if (!imag)
+          {
+	    for (int j = 0; j < 3; j++)
+	      v(j) = values[2*j];
+          }
+        else
+          {
+	    for (int j = 0; j < 3; j++)
+	      v(j) = values[2*j+1];
+          }
+      }
+    return v;
+  }
+  
 
   void VisualSceneSolution :: RealVec3d (const double * values, Vec3d & v, 
                                          bool iscomplex, double phaser, double phasei)
@@ -804,7 +830,8 @@ namespace netgen
 
                 bool drawelem = 
                   GetValues (vsol, p.elnr, p.lami(0), p.lami(1), p.lami(2), values);
-                RealVec3d (values, v, vsol->iscomplex, imag_part);
+                // RealVec3d (values, v, vsol->iscomplex, imag_part);
+		v = RealVec3d (values, vsol->iscomplex, imag_part);
 
                 double val = v.Length();
 
@@ -3487,7 +3514,10 @@ namespace netgen
     Vec<3> def;
     if (deform && vecfunction != -1)
       {
-        GetSurfValues (soldata[vecfunction], elnr, facetnr, lam1, lam2,  &def(0));
+        // GetSurfValues (soldata[vecfunction], elnr, facetnr, lam1, lam2,  &def(0));
+	double values[6];
+	GetSurfValues (soldata[vecfunction], elnr, facetnr, lam1, lam2,  values);
+	def = RealVec3d (values, soldata[vecfunction]->iscomplex, imag_part);
         def *= scaledeform;
 
         if (soldata[vecfunction]->components == 2) def(2) = 0;
