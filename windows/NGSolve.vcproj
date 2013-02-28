@@ -489,10 +489,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\fem\dynamicmem.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\fem\elementtopology.cpp"
 					>
 				</File>
@@ -724,10 +720,6 @@
 			<Filter
 				Name="parallel"
 				>
-				<File
-					RelativePath="..\parallel\paralleldofs.cpp"
-					>
-				</File>
 				<File
 					RelativePath="..\parallel\parallelvvector.cpp"
 					>
