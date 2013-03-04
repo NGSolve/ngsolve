@@ -1,19 +1,18 @@
 // Microsoft Visual C++ generated resource script.
 //
-#include "resource.h"
+#include "resource."
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
-
+#include "afxres.h"
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Deutsch (Deutschland) resources
+// German (Germany) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)
 #ifdef _WIN32
@@ -36,8 +35,8 @@ LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 5,0,0,0
- PRODUCTVERSION 5,0,0,0
+ FILEVERSION 5,1,0,0
+ PRODUCTVERSION 5,1,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x3L
@@ -54,12 +53,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Vienna UT"
             VALUE "FileDescription", "Netgen Meshing Software"
-            VALUE "FileVersion", "5.0.0"
+            VALUE "FileVersion", "5.1-dev"
             VALUE "InternalName", "Netgen"
             VALUE "LegalCopyright", "GNU Public License (GPL)"
             VALUE "OriginalFilename", "Netgen.exe"
             VALUE "ProductName", "Netgen"
-            VALUE "ProductVersion", "5.0.0"
+            VALUE "ProductVersion", "5.1-dev"
         END
     END
     BLOCK "VarFileInfo"
@@ -92,7 +91,7 @@ END
 
 #endif    // APSTUDIO_INVOKED
 
-#endif    // Deutsch (Deutschland) resources
+#endif    // German (Germany) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
