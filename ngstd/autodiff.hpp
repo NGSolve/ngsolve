@@ -367,6 +367,17 @@ inline AutoDiff<D,SCAL> sqrt (const AutoDiff<D,SCAL> & x)
   return res;
 }
 
+using std::log;
+template <int D, typename SCAL>
+AutoDiff<D,SCAL> log (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D,SCAL> res;
+  res.Value() = std::log(x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) / x.Value();
+  return res;
+}
+
 
 
 //@}
