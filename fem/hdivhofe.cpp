@@ -517,7 +517,7 @@ namespace ngfem
   }
 
 
-
+  /*
   template <ELEMENT_TYPE ET>
   void T_HDivHighOrderFiniteElement<ET> :: 
   GetInternalDofs (Array<int> & idofs) const
@@ -552,7 +552,7 @@ namespace ngfem
     *testout << "hdiv - getinternal dofs: base = " << base << ", nodf = " << ndof << endl;
     idofs += IntRange (base, ndof);
   }
-
+  */
 
 
 

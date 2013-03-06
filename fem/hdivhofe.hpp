@@ -206,9 +206,7 @@ public:
   }
 
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
-
-
+  // virtual void GetInternalDofs (Array<int> & idofs) const;
 };
 
 

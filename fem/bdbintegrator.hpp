@@ -1434,7 +1434,6 @@ public:
   {
     try
       {
-	// const FEL & fel = static_cast<const FEL&> (bfel);
 	int ndof = fel.GetNDof();
 	
 	elvec = 0;
@@ -1444,7 +1443,6 @@ public:
 	IntegrationRule ir(fel.ElementType(), IntegrationOrder(fel));
 	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
 
-	// FlatMatrix<TSCAL> dvecs(ir.GetNIP(), DIM_DMAT, lh);
 	FlatMatrixFixWidth<DIM_DMAT, TSCAL> dvecs(ir.GetNIP(), lh);
 	dvecop.GenerateVectorIR (fel, mir, dvecs, lh);
 
@@ -1453,9 +1451,7 @@ public:
             HeapReset hr(lh);
 	    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip = mir[i];
 
-	    // dvecop.GenerateVector (fel, mip, dvec, lh);
 	    DIFFOP::ApplyTrans (fel, mip, dvecs.Row(i), hv, lh);
-
 	    elvec += mip.GetWeight() * hv;
 	  }
       }

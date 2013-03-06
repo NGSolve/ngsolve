@@ -16,7 +16,6 @@
 namespace ngfem
 {
 
-
   template <int ORDER>
   PrecomputedShapesContainer<PrecomputedScalShapes<2> > L2HighOrderFEFO<ET_TRIG, ORDER>::precomp;
 
