@@ -106,7 +106,7 @@ namespace ngcomp
     /// Reference - element (low order only)
     FiniteElement * point;
 
-    /// Evaluator for visualization (future style)
+    /// Evaluator for visualization (new style)
     DifferentialOperator * evaluator;
     /// Evaluator for visualization of boundary data
     DifferentialOperator * boundary_evaluator;
@@ -121,7 +121,7 @@ namespace ngcomp
     /// if non-zero, pointer to low order space
     FESpace * low_order_space;
     ///
-    bool is_low_order_space;
+    // bool is_low_order_space;
 
     /// if directsolverclustered[i] is true, then the unknowns of domain i are clustered
     Array<bool> directsolverclustered;
@@ -247,6 +247,15 @@ namespace ngcomp
     bool DefinedOnBoundary (int bnr) const
     {return !definedonbound.Size() || definedonbound[bnr]; }
 
+    /// is the FESpace defined for this sub-domain / boundary nr ?
+    bool DefinedOn (int index, bool bound) const
+    {
+      if (bound)
+        return DefinedOnBoundary (index);
+      else
+        return DefinedOn (index);
+    }
+
     ///
     void SetDefinedOn (const BitArray & defon);
     ///
@@ -262,9 +271,9 @@ namespace ngcomp
     /// according low-order FESpace (if available)
     const FESpace & LowOrderFESpace () const { return *low_order_space; }
     ///
-    void SetLowOrderSpace (bool los) { is_low_order_space = los; }
+    // void SetLowOrderSpace (bool los) { is_low_order_space = los; }
     ///
-    bool IsLowOrderSpace () const { return is_low_order_space; }
+    // bool IsLowOrderSpace () const { return is_low_order_space; }
 
     /// non Dirichlet dofs
     virtual const BitArray * GetFreeDofs (bool external = false) const;

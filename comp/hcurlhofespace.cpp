@@ -744,10 +744,10 @@ namespace ngcomp
         FlatArray<INT<2> > of(1, &p);
         hofe -> SetOrderFace (of);
 
-	hofe -> SetUsegradEdge (ug_edge); 
-	hofe -> SetUsegradCell (usegrad_cell[elnr]);  // old style
+	hofe -> SetUseGradEdge (ug_edge); 
+	hofe -> SetUseGradCell (usegrad_cell[elnr]);  // old style
         FlatArray<bool> augf(1,&usegrad_cell[elnr]);
-	hofe -> SetUsegradFace (augf); 
+	hofe -> SetUseGradFace (augf); 
 	hofe -> ComputeNDof();
 
 	hofe -> SetVertexNumbers (vnums);
@@ -761,23 +761,16 @@ namespace ngcomp
 	HCurlHighOrderFiniteElement<3> * hofe = 
 	  static_cast<HCurlHighOrderFiniteElement<3>*> (fe);
 
-        for (int i = 0; i < ngel.vertices.Size(); i++)
-          hofe -> SetVertexNumber (i, ngel.vertices[i]);
-        
-        for (int i = 0; i < ngel.edges.Size(); i++)
-          {
-            hofe -> SetOrderEdge (i, order_edge[ngel.edges[i]]);
-            hofe -> SetUseGradEdge (i, usegrad_edge[ngel.edges[i]]);
-          }
+        hofe -> SetVertexNumbers (ngel.vertices);
 
-        for (int i = 0; i < ngel.faces.Size(); i++)
-          {
-            hofe -> SetOrderFace (i, order_face[ngel.faces[i]]);
-            hofe -> SetUseGradFace (i, usegrad_face[ngel.faces[i]]);
-          }
+        hofe -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
+        hofe -> SetUseGradEdge (usegrad_edge[ArrayObject(ngel.edges)]);
+
+        hofe -> SetOrderFace (order_face[ArrayObject(ngel.faces)]);
+        hofe -> SetUseGradFace (usegrad_face[ArrayObject(ngel.faces)]);
 
 	hofe -> SetOrderCell (order_inner[elnr]);
-	hofe -> SetUsegradCell (usegrad_cell[elnr]); 
+	hofe -> SetUseGradCell (usegrad_cell[elnr]); 
 
 	hofe -> ComputeNDof();
 	hofe -> SetDiscontinuous(discontinuous);
@@ -850,9 +843,9 @@ namespace ngcomp
         FlatArray<int> aoe(1, &order_edge[ednums[0]]);
 	// hofe -> SetOrderEdge (order_edge[ednums[0]]);
         hofe -> SetOrderEdge (aoe);
-	hofe -> SetUsegradCell (usegrad_edge[ednums[0]]);  // old style
+	hofe -> SetUseGradCell (usegrad_edge[ednums[0]]);  // old style
         FlatArray<bool> auge(1, &usegrad_edge[ednums[0]]);
-	hofe -> SetUsegradEdge (auge);
+	hofe -> SetUseGradEdge (auge);
 	hofe -> ComputeNDof();
       } 
     else 
@@ -879,10 +872,10 @@ namespace ngcomp
         FlatArray<INT<2> > of(1, &p);
         hofe -> SetOrderFace (of);
 
-	hofe -> SetUsegradEdge(ug_edge); 
+	hofe -> SetUseGradEdge(ug_edge); 
         FlatArray<bool> augf(1, &usegrad_face[ma.GetSElFace(selnr)]);
-	hofe -> SetUsegradFace(augf); 
-	hofe -> SetUsegradCell(usegrad_face[ma.GetSElFace(selnr)]);   // old style
+	hofe -> SetUseGradFace(augf); 
+	hofe -> SetUseGradCell(usegrad_face[ma.GetSElFace(selnr)]);   // old style
 
 	hofe -> ComputeNDof();
       }

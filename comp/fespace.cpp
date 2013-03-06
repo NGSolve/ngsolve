@@ -196,7 +196,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     level_updated = -1;
 
     low_order_space = NULL;
-    is_low_order_space = false;
+    // is_low_order_space = false;
 
     tet = NULL;
     pyramid = NULL;
@@ -537,19 +537,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const
   {
-    /*
-    ArrayMem<int,100> alldnums; 
-    ArrayMem<COUPLING_TYPE,100> couptype;
-    GetDofNrs(elnr, alldnums);
-    GetDofCouplingTypes(elnr, couptype);
-    dnums.SetSize(0);
-    for (int i=0;i<alldnums.Size();i++){
-      if ( (couptype[i] & ctype) != 0){
-	dnums.Append(alldnums[i]);
-      }
-    }
-    */
-
     ArrayMem<int,100> alldnums; 
     GetDofNrs(elnr, alldnums);
 
@@ -614,59 +601,34 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
-    FiniteElement * fe = 0;
-    
     switch (ma.GetSElType(selnr))
       {
-      case ET_TRIG:
-	fe = trig; break;
-      case ET_QUAD:
-	fe = quad; break;
-      case ET_SEGM:
-	fe = segm; break;
-      case ET_POINT:
-	fe = point; break;
-      default:
+      case ET_TRIG:  return *trig; 
+      case ET_QUAD:  return *quad; 
+      case ET_SEGM:  return *segm; 
+      case ET_POINT: return *point; 
+      case ET_TET: case ET_PYRAMID:
+      case ET_PRISM: case ET_HEX: 
         ;
       }
-    
-    if (!fe)
-      {
-	stringstream str;
-	str << "FESpace " << GetClassName() 
-	    << ", undefined surface eltype " << ma.GetSElType(selnr) 
-	    << ", order = " << order << endl;
-	throw Exception (str.str());
-      }
-
-    return *fe;
+    throw Exception ("GetSFE: unknown type");
   }
-  
 
   const FiniteElement & FESpace :: GetFE (ELEMENT_TYPE type) const
   {
     switch (type)
       {
-      case ET_SEGM:
-	return *segm;
-      case ET_TRIG:
-	return *trig;
-      case ET_QUAD:
-	return *quad;
-      case ET_TET:
-	return *tet;
-      case ET_PYRAMID:
-	return *pyramid;
-      case ET_PRISM:
-	return *prism;
-      case ET_HEX:
-	return *hex;
-      default:
-	;
+      case ET_SEGM:  return *segm;
+      case ET_TRIG:  return *trig;
+      case ET_QUAD:  return *quad;
+      case ET_TET:   return *tet;
+      case ET_PYRAMID: return *pyramid;
+      case ET_PRISM: return *prism;
+      case ET_HEX:   return *hex;
+      case ET_POINT: return *point;
       }
-    throw Exception ("GetFE::Unknown type");
+    throw Exception ("GetFE: unknown type");
   }
-
 
   
   void FESpace :: PrintReport (ostream & ost)
@@ -693,7 +655,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     cout << "free dofs = " << nfree << endl;
   }
   
-
 
   int FESpace :: GetNDofLevel (int level) const
   {
@@ -812,7 +773,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  void FESpace::GetFilteredDofs(COUPLING_TYPE doffilter, BitArray & output, bool freedofsonly) const{
+  void FESpace :: GetFilteredDofs (COUPLING_TYPE doffilter, BitArray & output, 
+                                   bool freedofsonly) const
+  {
     int ndof = GetNDof();
     output.SetSize(ndof);
     output.Clear();
@@ -869,7 +832,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     else
       return &free_dofs;
   }
-
 
 
 
@@ -983,7 +945,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   int FESpace :: GetNDofGlobal() const 
   { 
-    return IsParallel() ?
+    return paralleldofs ?
       paralleldofs -> GetNDofGlobal() : GetNDof(); 
   }
 
@@ -1080,26 +1042,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (ma.GetNLevels() > ndlevel.Size())
       {
 	Array<int> dnums;
-	int i, j;
 	int ne = ma.GetNE();
 	int nse = ma.GetNSE();
 	int ndof = ma.GetNV();
-	for (i = 0; i < ne; i++)
+	for (int i = 0; i < ne; i++)
 	  {
 	    GetDofNrs (i, dnums);
-	    for (j = 0; j < dnums.Size(); j++)
+	    for (int j = 0; j < dnums.Size(); j++)
 	      ndof = max2(ndof, dnums[j]+1);
 	  }
-	for (i = 0; i < nse; i++)
+	for (int i = 0; i < nse; i++)
 	  {
 	    GetSDofNrs (i, dnums);
-	    for (j = 0; j < dnums.Size(); j++)
+	    for (int j = 0; j < dnums.Size(); j++)
 	      ndof = max2(ndof, dnums[j]+1);
 	  }
 
 	ndlevel.Append (ndof);
       }
-      
 
     prol->Update();
 
@@ -1772,7 +1732,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       for (int j=0; j< spaces[i]->GetNDof();j++)
 	ctofdof[cummulative_nd[i]+j] = spaces[i]->GetDofCouplingType(j);	
 
-    *testout << "CompoundFESpace :: UpdateCouplingDofArray() presents \n ctofdof = \n" << ctofdof << endl;
+    // *testout << "CompoundFESpace :: UpdateCouplingDofArray() presents \n ctofdof = \n" << ctofdof << endl;
   }
 
 
@@ -1942,28 +1902,28 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-template NGS_DLL_HEADER
-void CompoundFESpace::TransformVec<FlatVector<double> >
-(int elnr, bool boundary, FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
-template NGS_DLL_HEADER
-void CompoundFESpace::TransformVec<FlatVector<Complex> >
-(int elnr, bool boundary, FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
-
-template
-void CompoundFESpace::TransformMat<FlatMatrix<double> > 
-(int elnr, bool boundary, FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
-template
-void CompoundFESpace::TransformMat<FlatMatrix<Complex> > 
-(int elnr, bool boundary, FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
-
-template
-void CompoundFESpace::TransformMat<SliceMatrix<double> > 
-(int elnr, bool boundary, SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
-template
-void CompoundFESpace::TransformMat<SliceMatrix<Complex> > 
-(int elnr, bool boundary, SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
-
-
+  template NGS_DLL_HEADER
+  void CompoundFESpace::TransformVec<FlatVector<double> >
+  (int elnr, bool boundary, FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
+  template NGS_DLL_HEADER
+  void CompoundFESpace::TransformVec<FlatVector<Complex> >
+  (int elnr, bool boundary, FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
+  
+  template
+  void CompoundFESpace::TransformMat<FlatMatrix<double> > 
+  (int elnr, bool boundary, FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+  template
+  void CompoundFESpace::TransformMat<FlatMatrix<Complex> > 
+  (int elnr, bool boundary, FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+  
+  template
+  void CompoundFESpace::TransformMat<SliceMatrix<double> > 
+  (int elnr, bool boundary, SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+  template
+  void CompoundFESpace::TransformMat<SliceMatrix<Complex> > 
+  (int elnr, bool boundary, SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+  
+  
   void CompoundFESpace::VTransformMR (int elnr, bool boundary,
 				      const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
   {

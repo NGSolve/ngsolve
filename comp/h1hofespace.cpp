@@ -92,7 +92,7 @@ namespace ngcomp
     if (dgjumps){ *testout << "(L2HOFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
 
     low_order_space = new NodalFESpace (ma, loflags);
-    low_order_space -> SetLowOrderSpace (true);
+    // low_order_space -> SetLowOrderSpace (true);
 
     if (ma.GetDimension() == 2)
       evaluator = new T_DifferentialOperator<DiffOpId<2> >;
