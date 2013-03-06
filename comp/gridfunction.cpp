@@ -71,6 +71,10 @@ namespace ngcomp
 
   void GridFunction :: Visualize(const string & given_name)
   {
+    static Timer t1("GF::Visualize 1");
+    static Timer t2("GF::Visualize 2");
+
+
     if (!visual) return;
 
     /*
@@ -96,6 +100,7 @@ namespace ngcomp
 
     if (bfi2d || bfi3d)
       {
+        t1.Start();
         netgen::SolutionData * vis;
 	if (!fespace.IsComplex())
 	  vis = new VisualizeGridFunction<double> (ma, this, bfi2d, bfi3d, 0);
@@ -114,7 +119,11 @@ namespace ngcomp
 	soldata.dist = soldata.components;
 	soldata.soltype = NG_SOLUTION_VIRTUAL_FUNCTION;
 	soldata.solclass = vis;
+        t1.Stop();
+        t2.Start();
+
 	Ng_SetSolutionData (&soldata);    
+        t2.Stop();
       }
   }
 
@@ -1357,56 +1366,39 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
     static Timer t("visgf::GetSurfValue");
     RegionTimer reg(t);
 
-    // cout << "VisGF::GetSurfValue" << endl;
     if (!bfi2d.Size()) return 0;
     if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
     bool bound = (ma.GetDimension() == 3);
     const FESpace & fes = gf->GetFESpace();
 
-
     int dim = fes.GetDimension();
 
-    /*
-      if ( bound ? 
-      !fes.DefinedOnBoundary(ma.GetSElIndex(elnr)) :
-      !fes.DefinedOn(ma.GetElIndex(elnr)) ) return 0;
-    */
+    HeapReset hr(lh);
+    const FiniteElement * fel = &fes.GetFE (elnr, bound, lh);
 
-    if (cache_elnr != elnr || !cache_bound)
+    ArrayMem<int, 100> dnums;
+    fes.GetDofNrs (elnr, bound, dnums);
+
+    FlatVector<SCAL> elu (dnums.Size() * dim, lh);
+
+    if(gf->GetCacheBlockSize() == 1)
       {
-	lh.CleanUp();
-
-	fel = &fes.GetFE (elnr, bound, lh);
-	fes.GetDofNrs (elnr, bound, dnums);
-
-	elu.AssignMemory (dnums.Size() * dim, lh);
-
-	if(gf->GetCacheBlockSize() == 1)
-	  {
-	    gf->GetElementVector (multidimcomponent, dnums, elu);
-	  }
-	else
-	  {
-	    FlatVector<SCAL> elu2(dnums.Size()*dim*gf->GetCacheBlockSize(),lh);
-	    //gf->GetElementVector (multidimcomponent, dnums, elu2);
-	    gf->GetElementVector (0, dnums, elu2);
-	    for(int i=0; i<elu.Size(); i++)
-	      elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
-	  }
-
-	fes.TransformVec (elnr, bound, elu, TRANSFORM_SOL);
-
-	cache_elnr = elnr;
-	cache_bound = 1;
+        gf->GetElementVector (multidimcomponent, dnums, elu);
+      }
+    else
+      {
+        FlatVector<SCAL> elu2(dnums.Size()*dim*gf->GetCacheBlockSize(),lh);
+        //gf->GetElementVector (multidimcomponent, dnums, elu2);
+        gf->GetElementVector (0, dnums, elu2);
+        for(int i=0; i<elu.Size(); i++)
+          elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
       }
 
-    HeapReset hr(lh);
-    ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
+    fes.TransformVec (elnr, bound, elu, TRANSFORM_SOL);
 
-    if ( bound ? 
-	 !fes.DefinedOnBoundary(eltrans.GetElementIndex()) : 
-	 !fes.DefinedOn(eltrans.GetElementIndex()) ) return false;
+    ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
+    if (!fes.DefinedOn(eltrans.GetElementIndex(), bound)) return false;
 
     IntegrationPoint ip(lam1, lam2, 0, 0);
     ip.FacetNr() = facetnr;
@@ -1479,10 +1471,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 
 	HeapReset hr(lh);
 	ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
-
-        if ( bound ? 
-             !fes.DefinedOnBoundary(eltrans.GetElementIndex()) : 
-             !fes.DefinedOn(eltrans.GetElementIndex()) ) return 0;
+        if (!fes.DefinedOn(eltrans.GetElementIndex(), bound)) return false;
 
         IntegrationPoint ip(xref[0], xref[1], 0, 0);
 	ip.FacetNr() = facetnr;
@@ -1556,10 +1545,8 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
                      double * values, int svalues)
   {
     static Timer t("visgf::GetMultiSurfValue");
-    static Timer t1("visgf::GetMultiSurfValue - calc flux");
     RegionTimer reg(t);
 
-    // cout << "VisGF::GetMultiSurfValue" << endl;
     try
       {
         if (!bfi2d.Size()) return 0;
@@ -1575,8 +1562,9 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 
 	ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
 
+        ArrayMem<int, 100> dnums;
 	fes.GetDofNrs (elnr, bound, dnums);
-	fel = &fes.GetFE (elnr, bound, lh);
+	const FiniteElement * fel = &fes.GetFE (elnr, bound, lh);
 
         elu.AssignMemory (dnums.Size() * dim, lh);
 
@@ -1594,10 +1582,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
         
         fes.TransformVec (elnr, bound, elu, TRANSFORM_SOL);
 
-        
-        if ( bound ? 
-             !fes.DefinedOnBoundary(eltrans.GetElementIndex()) : 
-             !fes.DefinedOn(eltrans.GetElementIndex()) ) return 0;
+        if (!fes.DefinedOn(eltrans.GetElementIndex(), bound)) return false;
 
 	SliceMatrix<> mvalues(npts, components, svalues, values);
 	mvalues = 0;

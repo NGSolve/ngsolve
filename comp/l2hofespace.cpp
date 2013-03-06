@@ -245,7 +245,7 @@ namespace ngcomp
               }
           }
 
-	/*
+        /*
 	if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
 	  {
 	    L2HighOrderFiniteElement<2> * hofe2d = 0;
@@ -266,7 +266,7 @@ namespace ngcomp
 
 	    return *hofe2d;
 	  }
-	*/
+        */
 
 	if (ma.GetDimension() == 2)
 	  {

@@ -191,7 +191,6 @@ namespace ngcomp
               if (dnums[j] != -1)
                 creator.Add (i, dnums[j]);
           }
-
         
         if (fespace.UsesDGCoupling())
           //add dofs of neighbour elements as well

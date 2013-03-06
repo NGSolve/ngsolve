@@ -25,8 +25,6 @@ protected:
   /// access to the mesh
   const MeshAccess & ma;
 
-  // double time;
-
   /// profiling
   Timer timer;
 
@@ -43,14 +41,6 @@ public:
     ;
   }
   
-  /*
-  ///
-  NGS_Object (const NGS_Object& obj)
-  : name(obj.name), flaglist(obj.flaglist), ma(obj.ma), 
-    timer(obj.timer), skipCleanUp(obj.skipCleanUp)
-  { ; }
-  */
-
   ///
   virtual ~NGS_Object () { ; }
 
@@ -89,9 +79,6 @@ public:
   {
     cout << "MemoryUsage not implemented for class " << GetClassName() << endl;
   }
-
-  // double GetTime () const { return time; }
-  // void SetTime (double t) { time = t; }
 
   Timer & GetTimer () { return timer; }
   const Timer & GetTimer () const { return timer; }
