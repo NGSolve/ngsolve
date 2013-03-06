@@ -18,17 +18,6 @@ namespace ngfem
      High order finite elements for L2 of fixed order
   */
 
-  /*
-  template<int DIM>
-  class L2HighOrderFiniteElementFO : virtual public ScalarFiniteElement<DIM>
-  {
-  protected:
-    int vnums[8];
-
-  public:
-    void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
-  };
-  */
 
   template <ELEMENT_TYPE ET, int ORDER> class L2HighOrderFEFO;
 
@@ -60,17 +49,18 @@ namespace ngfem
       ndof = L2HighOrderFEFO<ET, ORDER>::NDOF;
     }
 
+    /*
     virtual void GetInternalDofs (Array<int> & idofs) const
     {
       idofs.SetSize(0);
       idofs += IntRange (0, ndof);
     }
-
+    */
 
 
     virtual void PrecomputeShapes (const IntegrationRule & ir) 
     {
-    int classnr =  ET_trait<ET>::GetClassNr (vnums);
+      int classnr =  ET_trait<ET>::GetClassNr (vnums);
 
       PrecomputedScalShapes<DIM> * pre = new  PrecomputedScalShapes<DIM> (ir.GetNIP(), ndof);
 

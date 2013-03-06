@@ -59,8 +59,7 @@ namespace ngfem
   {
     Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
 
-    for (int i = 0; i < 3; i++)
-      shape[i] = lam[i];
+    for (int i = 0; i < 3; i++) shape[i] = lam[i];
 
     int ii = 3;
     
@@ -70,9 +69,10 @@ namespace ngfem
 	{ 
           INT<2> e = GetEdgeSort (i, vnums);
 
-	  LegendrePolynomial::EvalScaledMult (order_edge[i]-2, 
-					      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-					      lam[e[0]]*lam[e[1]], shape.Addr(ii));
+	  LegendrePolynomial::
+            EvalScaledMult (order_edge[i]-2, 
+                            lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+                            lam[e[0]]*lam[e[1]], shape.Addr(ii));
 	  ii += order_edge[i]-1;
 	}
 
@@ -81,7 +81,9 @@ namespace ngfem
       {
         INT<4> f = GetFaceSort (0, vnums);
 
-	DubinerBasis::EvalMult (p-3, lam[f[0]], lam[f[1]], lam[f[0]]*lam[f[1]]*lam[f[2]], shape.Addr(ii));
+	DubinerBasis::EvalMult (p-3, 
+                                lam[f[0]], lam[f[1]], 
+                                lam[f[0]]*lam[f[1]]*lam[f[2]], shape.Addr(ii));
       }
   }
 
@@ -162,8 +164,7 @@ namespace ngfem
 
     // vertex shapes
     if (!nodalp2)
-      for (int i = 0; i < 4; i++)
-	shape[i] = lam[i];
+      for (int i = 0; i < 4; i++) shape[i] = lam[i];
     else
       for (int i = 0; i < 4; i++)
 	{

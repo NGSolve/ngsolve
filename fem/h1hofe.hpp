@@ -137,7 +137,7 @@ namespace ngfem
      Operations are inherited from T_ScalarFiniteElement2, and shape functions are provided by the shape template
    */
   template <ELEMENT_TYPE ET> 
-  class  NGS_DLL_HEADER H1HighOrderFE :  public T_H1HighOrderFiniteElement<ET>,
+  class NGS_DLL_HEADER H1HighOrderFE :  public T_H1HighOrderFiniteElement<ET>,
 					 public T_ScalarFiniteElement2< H1HighOrderFE_Shape<ET>, ET >
 
   {   

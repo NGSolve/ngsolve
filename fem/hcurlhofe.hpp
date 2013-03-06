@@ -41,35 +41,59 @@ public:
   void SetUseGradEdge(int nr, int uge) { usegrad_edge[nr] = uge; }
   void SetUseGradFace(int nr, int ugf) { usegrad_face[nr] = ugf; }
 
-  void SetVertexNumbers (FlatArray<int> & avnums);
-  void SetOrderCell (int oi);
-  void SetOrderCell (INT<3> oi);
-  void SetOrderFace (FlatArray<int> & of);
-  void SetOrderFace (FlatArray<INT<2> > & of); 
-  void SetOrderEdge (FlatArray<int> & oen);
-  void SetUsegradEdge(FlatArray<bool> & uge); 
-  void SetUsegradFace(FlatArray<bool> & ugf); 
-  void SetUsegradCell(int ugc); 
+  /// assignes vertex numbers
+  template <typename TA> 
+  void SetVertexNumbers (const TA & avnums)
+  { for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; }
+  // void SetVertexNumbers (FlatArray<int> & avnums);
+
+  // void SetOrderCell (int oi);
+  void SetOrderCell (INT<3> oi) { order_cell = oi; }
+  // void SetOrderFace (FlatArray<int> & of);
+  // void SetOrderFace (FlatArray<INT<2> > & of); 
+
+  /// set isotropic or anisotropic face orders
+  template <typename TA>
+  void SetOrderFace (const TA & of)
+  { for (int i = 0; i < of.Size(); i++) order_face[i] = of[i]; }
+
+  /// set edge orders
+  template <typename TA>
+  void SetOrderEdge (const TA & oe)
+  { for (int i = 0; i < oe.Size(); i++) order_edge[i] = oe[i]; }
+
+
+  /// use edge-gradients
+  template <typename TA>
+  void SetUseGradEdge (const TA & uge)
+  { for (int i = 0; i < uge.Size(); i++) usegrad_edge[i] = uge[i]; }
+
+  /// use face-gradients
+  template <typename TA>
+  void SetUseGradFace (const TA & ugf)
+  { for (int i = 0; i < ugf.Size(); i++) usegrad_face[i] = ugf[i]; }
+
+  void SetUseGradCell (bool ugc) 
+  { usegrad_cell = ugc; }
+
   void SetDiscontinuous ( bool adiscont ) { discontinuous = adiscont; }
-  
   virtual void ComputeNDof () = 0;
-  void PrintInfo() const;
 };
+
 
 
   /** 
       HCurlHighOrderFE of shape ET.
       The template specialization provides the shape functions.
-   */
-template <ELEMENT_TYPE ET> class HCurlHighOrderFE;
-
-
+  */
+  template <ELEMENT_TYPE ET> class HCurlHighOrderFE;
+  
 
   /**
      HCurlHighOrderFE of shape ET.
      provides access functions, shape funcitons are provided by CalcShape template
   */
-template <ELEMENT_TYPE ET>
+  template <ELEMENT_TYPE ET, typename SHAPES = HCurlHighOrderFE<ET> >
 class T_HCurlHighOrderFiniteElement 
   : public HCurlHighOrderFiniteElement<ET_trait<ET>::DIM>, public ET_trait<ET> 
 
@@ -122,7 +146,7 @@ public:
   T_HCurlHighOrderFiniteElement (int aorder);
 
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
+  // virtual void GetInternalDofs (Array<int> & idofs) const;
 
   virtual void CalcShape (const IntegrationPoint & ip, 
                           FlatMatrixFixWidth<DIM> shape) const;
@@ -144,7 +168,22 @@ public:
   */
 };
 
+  template <ELEMENT_TYPE ET> class HCurlHighOrderFE_Shape;
  
+  template <ELEMENT_TYPE ET> 
+  class HCurlHighOrderFE : public T_HCurlHighOrderFiniteElement<ET, HCurlHighOrderFE_Shape<ET> >
+  {
+  public:
+    HCurlHighOrderFE () { ; }
+    HCurlHighOrderFE (int aorder) 
+      : T_HCurlHighOrderFiniteElement<ET, HCurlHighOrderFE_Shape<ET> > (aorder)
+    {
+      this->ComputeNDof();
+    }
+  };
+
+
+
 /// A segment high order H(curl) element
 template <>
 class HCurlHighOrderFE<ET_SEGM>:  public HCurlHighOrderFiniteElement<1>
@@ -163,81 +202,63 @@ public:
 
 /// A triangular high order H(curl) element
 template <>
-class HCurlHighOrderFE<ET_TRIG> : public T_HCurlHighOrderFiniteElement<ET_TRIG>
+class HCurlHighOrderFE_Shape<ET_TRIG> : public HCurlHighOrderFE<ET_TRIG>
 {
 private:
   typedef TrigShapesInnerLegendre T_INNERSHAPES; 
 public:
-  HCurlHighOrderFE () { ; }
-  HCurlHighOrderFE (int aorder);
-
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[2], TFA & shape) const; 
 };
 
 /// A quadrilateral high order H(curl) element
 template <>
-class HCurlHighOrderFE<ET_QUAD> : public T_HCurlHighOrderFiniteElement<ET_QUAD>
+class HCurlHighOrderFE_Shape<ET_QUAD> : public HCurlHighOrderFE<ET_QUAD>
 {
 public:
-  HCurlHighOrderFE () { ; }
-  HCurlHighOrderFE (int aorder);
-
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[2], TFA & shape) const; 
 };
 
 /// A tetrahedral high order H(curl) element
 template <>
-class HCurlHighOrderFE<ET_TET> : public T_HCurlHighOrderFiniteElement<ET_TET>
+class HCurlHighOrderFE_Shape<ET_TET> : public HCurlHighOrderFE<ET_TET>
 {
 private:
   typedef TetShapesFaceLegendre T_FACESHAPES; 
   typedef TetShapesInnerLegendre T_INNERSHAPES; 
 public:
-  HCurlHighOrderFE () { ; }
-  HCurlHighOrderFE (int aorder);
-
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[3], TFA & shape) const; 
 };
 
 /// A hexahedral high order H(curl) element
 template <>
-class HCurlHighOrderFE<ET_HEX> : public T_HCurlHighOrderFiniteElement<ET_HEX>
+class HCurlHighOrderFE_Shape<ET_HEX> : public HCurlHighOrderFE<ET_HEX>
 {
 public:
-  HCurlHighOrderFE () { ; }
-  HCurlHighOrderFE (int aorder);
-
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[3], TFA & shape) const; 
 };
 
 /// A prismatic high order H(curl) element
 template <>
-class HCurlHighOrderFE<ET_PRISM> : public T_HCurlHighOrderFiniteElement<ET_PRISM>
+class HCurlHighOrderFE_Shape<ET_PRISM> : public HCurlHighOrderFE<ET_PRISM>
 {
 private:
   typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
 
 public:
-  HCurlHighOrderFE () { ; }
-  HCurlHighOrderFE (int aorder);
-
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[3], TFA & shape) const; 
 };
 
 /// A pyramidal high order H(curl) element
 template <>
-class HCurlHighOrderFE<ET_PYRAMID> : public T_HCurlHighOrderFiniteElement<ET_PYRAMID>
+class HCurlHighOrderFE_Shape<ET_PYRAMID> : public HCurlHighOrderFE<ET_PYRAMID>
 {
   typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;  
 public:
-  HCurlHighOrderFE () { ; }
-  HCurlHighOrderFE (int aorder);
-
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[3], TFA & shape) const; 
 };

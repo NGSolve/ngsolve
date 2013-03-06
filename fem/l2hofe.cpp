@@ -20,6 +20,7 @@ namespace ngfem
   SetVertexNumbers (FlatArray<int> & avnums)
   */
 
+  /*
   template <int D>
   void L2HighOrderFiniteElement<D>:: 
   GetInternalDofs (Array<int> & idofs) const
@@ -28,7 +29,7 @@ namespace ngfem
     for (int i = 0; i < ScalarFiniteElement<D>::GetNDof(); i++)
       idofs.Append (i);
   }
-
+  */
 
   template <int D>
   void L2HighOrderFiniteElement<D>:: 

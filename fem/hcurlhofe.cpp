@@ -7,7 +7,6 @@
 /*********************************************************************/
 
 #include <fem.hpp>    
-#include <hcurlhofe.hpp>
 
 namespace ngfem
 {
@@ -21,108 +20,14 @@ namespace ngfem
   HCurlHighOrderFiniteElement (ELEMENT_TYPE aeltype)
     : HCurlFiniteElement<D> (aeltype, -1, -1) 
   { 
-    for (int i = 0; i < 8; i++)
-      vnums[i] = i;
+    for (int i = 0; i < 8; i++) vnums[i] = i;
 
     usegrad_cell = 1;
-    for(int i=0; i<6; i++)
-      usegrad_face[i] = 1;
-    for(int i=0; i<12; i++)
-      usegrad_edge[i] = 1;
+    for(int i=0; i<6; i++) usegrad_face[i] = 1;
+    for(int i=0; i<12; i++) usegrad_edge[i] = 1;
 
     discontinuous = false;
   }
-
-  template <int D>
-  void HCurlHighOrderFiniteElement<D>::
-  SetVertexNumbers (FlatArray<int> & avnums)
-  {
-    for (int i = 0; i < avnums.Size(); i++)
-      vnums[i] = avnums[i];
-  }
-    
-  template <int D>
-  void HCurlHighOrderFiniteElement<D>::
-  SetOrderCell (int oi)
-  {
-    order_cell = INT<3> (oi,oi,oi); 
-  }
-
-  template <int D>
-  void HCurlHighOrderFiniteElement<D>::
-  SetOrderCell (INT<3> oi)
-  {
-    order_cell = oi; 
-  }
-
-  template <int D>
-  void HCurlHighOrderFiniteElement<D>::
-  SetOrderFace (FlatArray<int> & of)
-  {
-    for (int i = 0; i < of.Size(); i++)
-      order_face[i] = INT<2> (of[i],of[i]);
-  }
-
-  template <int D>
-  void HCurlHighOrderFiniteElement<D>::
-  SetOrderFace (FlatArray<INT<2> > & of)
-  {
-    for (int i = 0; i < of.Size(); i++)
-	order_face[i] = of[i];
-  }
-
-  template <int D>
-  void HCurlHighOrderFiniteElement<D>::
-  SetOrderEdge (FlatArray<int> & oen)
-  {
-    for (int i = 0; i < oen.Size(); i++)
-      order_edge[i] = oen[i];
-  }
-
-
-  template <int D> 
-  void HCurlHighOrderFiniteElement<D>:: 
-  SetUsegradEdge (FlatArray<bool> & uge)
-  {
-    for (int i=0; i<uge.Size(); i++) usegrad_edge[i]=uge[i]; 
-  }
-  
-  template <int D> 
-  void HCurlHighOrderFiniteElement<D>:: 
-  SetUsegradFace (FlatArray<bool> & ugf)
-  {
-    for (int i=0; i<ugf.Size(); i++) usegrad_face[i]=ugf[i]; 
-  }
-  
-  template <int D> 
-  void HCurlHighOrderFiniteElement<D>:: 
-  SetUsegradCell (int ugc)
-  {
-    usegrad_cell=ugc; 
-  }
-  
-
-  template <int D> 
-  void HCurlHighOrderFiniteElement<D>:: 
-  PrintInfo() const
-  {
-    (*testout) << "order_cell " << order_cell << " order_face ";
-    for(int i=0; i<6; i++)
-      (*testout) << order_face[i] << " ";
-    (*testout) << "order_edge ";
-    for(int i=0; i<12; i++)
-      (*testout) << order_edge[i] << " ";
-    (*testout) << "usegrad_cell " << usegrad_cell << " usgrad_face ";
-    for(int i=0; i<6; i++)
-      (*testout) << usegrad_face[i] << " ";
-    (*testout) << "usegrad_edge ";
-    for(int i=0; i<12; i++)
-      (*testout) << usegrad_edge[i] << " ";
-  }
-
-
-
-
 
 
   /*******************************************/
@@ -130,33 +35,25 @@ namespace ngfem
   /*******************************************/
 
 
-  template <ELEMENT_TYPE ET>
-  T_HCurlHighOrderFiniteElement<ET> :: 
+  template <ELEMENT_TYPE ET, typename SHAPES>
+  T_HCurlHighOrderFiniteElement<ET, SHAPES> :: 
   T_HCurlHighOrderFiniteElement (int aorder)
   {
-    for (int i = 0; i < N_EDGE; i++)
-      order_edge[i] = aorder;
-    for (int i=0; i < N_FACE; i++) 
-      order_face[i] = INT<2> (aorder,aorder); 
-    if (DIM == 3)
-      order_cell = INT<3> (aorder,aorder,aorder);
+    for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
+    for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;
+    if (DIM == 3) order_cell = aorder;
 
-    for(int i = 0; i < N_EDGE; i++)
-      usegrad_edge[i] = 1;
-    for(int i=0; i < N_FACE; i++)
-      usegrad_face[i] = 1;
-    if (DIM == 3)
-      usegrad_cell = 1;
+    for(int i = 0; i < N_EDGE; i++) usegrad_edge[i] = 1;
+    for(int i=0; i < N_FACE; i++) usegrad_face[i] = 1;
+    if (DIM == 3) usegrad_cell = 1;
 
-    for (int i = 0; i < N_VERTEX; i++)
-      vnums[i] = i;
-    // dimspace = DIM;
+    for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
     eltype = ET;
   }
 
   
-  template <ELEMENT_TYPE ET>
-  void T_HCurlHighOrderFiniteElement<ET> :: 
+  template <ELEMENT_TYPE ET, typename SHAPES>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES> :: 
   CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<DIM> shape) const
   {    
     AutoDiff<DIM> adp[DIM];
@@ -164,11 +61,11 @@ namespace ngfem
       adp[i] = AutoDiff<DIM> (ip(i), i);
 
     HCurlShapeAssign<DIM> ds(shape); 
-    static_cast<const HCurlHighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
+    static_cast<const SHAPES*> (this) -> T_CalcShape (adp, ds);
   }
 
-  template <ELEMENT_TYPE ET>
-  void T_HCurlHighOrderFiniteElement<ET> :: 
+  template <ELEMENT_TYPE ET, typename SHAPES>
+  void T_HCurlHighOrderFiniteElement<ET, SHAPES> :: 
   CalcCurlShape (const IntegrationPoint & ip, FlatMatrixFixWidth<DIM_CURL> shape) const
   {  
     AutoDiff<DIM> adp[DIM];
@@ -176,13 +73,11 @@ namespace ngfem
       adp[i] = AutoDiff<DIM> (ip(i), i);
 
     HCurlCurlShapeAssign<DIM> ds(shape); 
-    static_cast<const HCurlHighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
+    static_cast<const SHAPES*> (this) -> T_CalcShape (adp, ds);
   }
 
-
-
-  template <ELEMENT_TYPE ET>
-  void T_HCurlHighOrderFiniteElement<ET> :: 
+  template <ELEMENT_TYPE ET, typename SHAPES>
+  void T_HCurlHighOrderFiniteElement<ET, SHAPES> :: 
   CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                    FlatMatrixFixWidth<DIM> shape) const
   {
@@ -196,12 +91,12 @@ namespace ngfem
         adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
 
     HCurlShapeAssign<DIM> ds(shape); 
-    static_cast<const HCurlHighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
+    static_cast<const SHAPES*> (this) -> T_CalcShape (adp, ds);
   }
 
   /// compute curl of shape
-  template <ELEMENT_TYPE ET>
-  void T_HCurlHighOrderFiniteElement<ET> :: 
+  template <ELEMENT_TYPE ET, typename SHAPES>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES> :: 
   CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                        FlatMatrixFixWidth<DIM_CURL> curlshape) const
   { // not yet tested
@@ -222,7 +117,7 @@ namespace ngfem
 	    adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
 
 	HCurlCurlShapeAssign<DIM> ds(curlshape); 
-	static_cast<const HCurlHighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
+	static_cast<const SHAPES*> (this) -> T_CalcShape (adp, ds);
 	/*
         Mat<DIM> trans = (1.0/mip.GetJacobiDet()) * mip.GetJacobian();
         for (int i = 0; i < ndof; i++)
@@ -252,8 +147,8 @@ namespace ngfem
   }
   */
 
-  template <ELEMENT_TYPE ET>
-  void T_HCurlHighOrderFiniteElement<ET> :: 
+  template <ELEMENT_TYPE ET, typename SHAPES>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES> :: 
   ComputeNDof()
   {
     ndof = N_EDGE;
@@ -304,29 +199,18 @@ namespace ngfem
         ;
       }
 
-
     order = 0; // max(order_edges,order_face,order_cell);  
     for (int i = 0; i < N_EDGE; i++)
-      if (order_edge[i] > order)  order = order_edge[i];
+      order = max (order, order_edge[i]);
 
     for(int i=0; i < N_FACE; i++) 
       if (ET_trait<ET>::FaceType(i) == ET_TRIG)
-        {
-          if (order_face[i][0] > order) 
-            order = order_face[i][0]; 
-        }
+        order = max (order, order_face[i][0]);
       else
-        {
-          for(int j=0;j<2;j++)
-            if (order_face[i][j] > order) 
-              order = order_face[i][j]; 
-        }
+        order = max (order, Max (order_face[i]));
 
     if (DIM == 3)
-      for (int j = 0; j < 3; j++)
-        if (order_cell[j] > order) 
-          order = order_cell[j];
-    
+      order = max (order, Max(order_cell));
 
     // for integration order .. 
     if (ET == ET_PRISM || ET == ET_HEX || ET == ET_PYRAMID || ET == ET_QUAD)
@@ -334,63 +218,6 @@ namespace ngfem
     else
       if (order==0) order++;
   }
-
-
-  template <ELEMENT_TYPE ET>
-  void T_HCurlHighOrderFiniteElement<ET> :: 
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    int ni = 0;
-
-    if (discontinuous)
-      {
-        ni = ndof;
-      }
-    else
-      {
-        switch (ET)
-          {
-          case ET_TRIG:
-            if (order_face[0][0] > 1) 
-              ni = ((usegrad_face[0]+1)*order_face[0][0]+2)*(order_face[0][0]-1)/2 ;
-            break;
-          case ET_QUAD:
-            if(order_face[0][0]>=0 && order_face[0][1]>=0)
-              ni =  (usegrad_face[0]+1)*order_face[0][0]*order_face[0][1] 
-                + order_face[0][0] + order_face[0][1]; 
-            break;
-          case ET_TET: 
-            if(order_cell[0] > 2)
-              ni = ((usegrad_cell + 2) * order_cell[0] + 3) 
-                * (order_cell[0]-2) * (order_cell[0]-1) / 6; 
-            break;
-          case ET_PRISM:
-            if(order_cell[2] > 0 && order_cell[0] > 1)
-              ni = ((usegrad_cell+2)*order_cell[2] + 1) * order_cell[0]*(order_cell[0]-1)/2
-                + (order_cell[0]-1)*order_cell[2]; 
-            break;
-          case ET_PYRAMID:
-            {
-              int pc = order_cell[0];
-              if(pc > 1)
-                ni = usegrad_cell*(pc-1)*pc*(2*pc-1)/6 + pc*(2*pc*pc+3*pc-2)/3; 
-              break;
-            }
-          case ET_HEX:
-            if(order_cell[0] >= 0 && order_cell[1]>= 0 && order_cell[2]>=0)
-              ni = (usegrad_cell + 2)* order_cell[0] * order_cell[1] * order_cell[2]
-                + order_cell[1]*order_cell[2]  + order_cell[0]*(order_cell[1] + order_cell[2]);  
-            break;
-          default:
-            ;
-          }
-      }
-
-    idofs.SetSize(ni);
-    for (int i = 0; i < ni; i++)
-      idofs[i] = ndof-ni+i;
-  }
-
 
 
   //------------------------------------------------------------------------
@@ -452,14 +279,8 @@ namespace ngfem
   // HCurlHighOrderTrig
   //------------------------------------------------------------------------
   
-  HCurlHighOrderFE<ET_TRIG> :: HCurlHighOrderFE (int aorder)
-    : T_HCurlHighOrderFiniteElement<ET_TRIG> (aorder)
-  {
-    ComputeNDof();
-  }
-  
   template<typename Tx, typename TFA>  
-  void  HCurlHighOrderFE<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  void HCurlHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1];
     Tx lam[3] = { x, y, 1-x-y };
@@ -522,15 +343,8 @@ namespace ngfem
   //------------------------------------------------------------------------
   
 
-  HCurlHighOrderFE<ET_QUAD> :: HCurlHighOrderFE (int aorder)
-    : T_HCurlHighOrderFiniteElement<ET_QUAD> (aorder)
-  {
-    ComputeNDof();
-  }
-  
-
   template<typename Tx, typename TFA>  
-  void  HCurlHighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  void  HCurlHighOrderFE_Shape<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1];
 
@@ -606,14 +420,8 @@ namespace ngfem
   //------------------------------------------------------------------------
  
 
-  HCurlHighOrderFE<ET_TET> :: HCurlHighOrderFE (int aorder)
-    : T_HCurlHighOrderFiniteElement<ET_TET> (aorder)
-  {
-    ComputeNDof();
-  }
-
   template<typename Tx, typename TFA>  
-  void  HCurlHighOrderFE<ET_TET> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void  HCurlHighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lam[4] = { x, y, z, 1-x-y-z };
@@ -706,14 +514,8 @@ namespace ngfem
   //                   Prism
   //------------------------------------------------------------------------
 
-  HCurlHighOrderFE<ET_PRISM> :: HCurlHighOrderFE (int aorder)
-    : T_HCurlHighOrderFiniteElement<ET_PRISM> (aorder)
-  {
-    ComputeNDof();
-  }
-
   template<typename Tx, typename TFA>  
-  void  HCurlHighOrderFE<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void  HCurlHighOrderFE_Shape<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
 
@@ -912,14 +714,9 @@ namespace ngfem
   // HCurlHighOrderHex
   //------------------------------------------------------------------------
 
-  HCurlHighOrderFE<ET_HEX> :: HCurlHighOrderFE (int aorder)
-    : T_HCurlHighOrderFiniteElement<ET_HEX> (aorder)
-  {
-    ComputeNDof();
-  }
-  
+
   template<typename Tx, typename TFA>  
-  void  HCurlHighOrderFE<ET_HEX> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void HCurlHighOrderFE_Shape<ET_HEX> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
 
@@ -1046,14 +843,9 @@ namespace ngfem
   //            Pyramid
   //------------------------------------------------------------------------
 
-  HCurlHighOrderFE<ET_PYRAMID> :: HCurlHighOrderFE (int aorder)
-    : T_HCurlHighOrderFiniteElement<ET_PYRAMID> (aorder)
-  {
-    ComputeNDof();
-  }
 
   template<typename Tx, typename TFA>  
-  void  HCurlHighOrderFE<ET_PYRAMID> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void  HCurlHighOrderFE_Shape<ET_PYRAMID> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
 
@@ -1068,15 +860,9 @@ namespace ngfem
     AutoDiff<3> lami[5] = {(1-xt)*(1-yt)*(1-z),xt*(1-yt)*(1-z), xt * yt * (1-z), 
 			   (1-xt)*yt*(1-z),z}; 
 
-    /*
-    AutoDiff<3> sig[5] = {(1-xt)+(1-yt),xt+(1-yt), xt + yt, 
-			    (1-xt)+yt,z}; 
-    */
-
     AutoDiff<3> lambda[5] = {(1-xt)*(1-yt),xt*(1-yt), xt * yt, 
 			   (1-xt)*yt,z}; 
         
-    
        
     const EDGE * edges = ElementTopology::GetEdges (ET_PYRAMID);
     
@@ -1289,4 +1075,11 @@ namespace ngfem
   template class  HCurlHighOrderFiniteElement<1>;
   template class  HCurlHighOrderFiniteElement<2>;
   template class  HCurlHighOrderFiniteElement<3>; 
+
+  template class HCurlHighOrderFE<ET_TRIG>;
+  template class HCurlHighOrderFE<ET_QUAD>;
+  template class HCurlHighOrderFE<ET_TET>;
+  template class HCurlHighOrderFE<ET_HEX>;
+  template class HCurlHighOrderFE<ET_PRISM>;
+  template class HCurlHighOrderFE<ET_PYRAMID>;
 }

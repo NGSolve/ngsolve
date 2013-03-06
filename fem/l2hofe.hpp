@@ -39,10 +39,8 @@ namespace ngfem
     void SetVertexNumbers (const TA & avnums)
     { for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; }
 
+    /// assign vertex number
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
-
-    /// set polynomial order
-    // void SetOrder (int p)  { order_inner = p; }
 
     /// different orders in differnt directions
     void SetOrder (INT<DIM> p) { order_inner = p; }
@@ -50,7 +48,7 @@ namespace ngfem
     /// calculate number of dofs
     virtual void ComputeNDof () = 0; 
   
-    virtual void GetInternalDofs (Array<int> & idofs) const; 
+    // virtual void GetInternalDofs (Array<int> & idofs) const; 
 
     virtual void PrecomputeTrace () = 0;
 
