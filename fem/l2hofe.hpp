@@ -52,7 +52,26 @@ namespace ngfem
 
     virtual void PrecomputeTrace () = 0;
 
-    void CalcTraceMatrix (int facet, FlatMatrix<> & trace) const;
+    void CalcTraceMatrix (int facet, FlatMatrix<> trace) const;
+    void CalcGradientMatrix (FlatMatrix<> gmat) const;
+
+    virtual void GetDiagMassMatrix (FlatVector<> mass) const;
+
+    virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<DIM> grad) const
+    {
+      Matrix<> gmat(DIM*grad.Height(), coefs.Size());
+      CalcGradientMatrix (gmat);
+      FlatVector<> vgrad(gmat.Height(), &grad(0,0));
+      vgrad = gmat * coefs;
+    }
+
+    virtual void GetGradientTrans (FlatMatrixFixWidth<DIM> grad, FlatVector<> coefs) const 
+    {
+      Matrix<> gmat(DIM*grad.Height(), coefs.Size());
+      CalcGradientMatrix (gmat);
+      FlatVector<> vgrad(gmat.Height(), &grad(0,0));
+      coefs = Trans (gmat) * vgrad;
+    }
 
     virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
     {
@@ -159,6 +178,10 @@ namespace ngfem
 
     typedef HashTable<INT<2>, Matrix<>*> TPRECOMP_TRACE;
     static TPRECOMP_TRACE precomp_trace;
+
+    typedef HashTable<INT<2>, Matrix<>*> TPRECOMP_GRAD;
+    static TPRECOMP_GRAD precomp_grad;
+
   public:
     L2HighOrderFE () { ; }
 
@@ -167,6 +190,7 @@ namespace ngfem
 
 
     virtual void PrecomputeTrace ();
+    virtual void PrecomputeGrad ();
     virtual void PrecomputeShapes (const IntegrationRule & ir);
 
     virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
@@ -175,8 +199,10 @@ namespace ngfem
 
     virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const;
 
-    virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const;
+    virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<DIM> grad) const;
+    virtual void GetGradientTrans (FlatMatrixFixWidth<DIM> grad, FlatVector<> coefs) const;
 
+    virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const;
     virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const;
   };
 

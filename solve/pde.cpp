@@ -475,7 +475,11 @@ namespace ngsolve
   void PDE :: Solve ()
   {
     static Timer timer("Solver - Total");
+    static Timer t1("Solver - begin");
+    static Timer t2("Solver - end");
+
     RegionTimer reg (timer);
+    t1.Start();
 
     size_t heapsize = 1000000;
     if (constants.Used ("heapsize"))
@@ -576,7 +580,7 @@ namespace ngsolve
 				     ma,
 				     *CurvePointIntegrators[i]);
 		    
-
+    t1.Stop();
 
     for(int i = 0; i < todo.Size(); i++)
       {
@@ -704,7 +708,6 @@ namespace ngsolve
       }
 
 
-
     for (int i = 0; i < preconditioners.Size(); i++)
       if(!preconditioners[i]->SkipCleanUp())
 	preconditioners[i]->CleanUpLevel();
@@ -714,11 +717,15 @@ namespace ngsolve
     for (int i = 0; i < linearforms.Size(); i++)
       if(!linearforms[i]->SkipCleanUp())
 	linearforms[i]->CleanUpLevel();
+
+    t2.Start();
 	  
 
     // set solution data
     for (int i = 0; i < gridfunctions.Size(); i++)
       gridfunctions[i]->Visualize(gridfunctions.GetName(i));
+
+    t2.Stop();
 
     Ng_Redraw();
     levelsolved++;

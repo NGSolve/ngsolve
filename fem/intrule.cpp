@@ -845,7 +845,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<1> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             int order, bool compute_mapping, LocalHeap & lh)
+                                             int order) // , bool compute_mapping, LocalHeap & lh)
   {
     cout << "intruletp<1>: nothing here" << endl;
   }
@@ -853,7 +853,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<2> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             int order, bool compute_mapping, LocalHeap & lh)
+                                             int order) // , bool compute_mapping, LocalHeap & lh)
   {
     int nip = 0;
 
@@ -976,6 +976,7 @@ namespace ngfem
 
       }
 
+    /*
     if (compute_mapping && !eltrans.Boundary())
       {
         x.SetSize(nip);
@@ -983,6 +984,7 @@ namespace ngfem
         // eltrans.CalcMultiPointJacobian ( *this, x, dxdxi, lh);
 	throw Exception ("intruleTP comput_mapping currently not available");
       }
+    */
   }
 
 
@@ -991,7 +993,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<3> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             int order, bool compute_mapping, LocalHeap & lh)
+                                             int order) // , bool compute_mapping, LocalHeap & lh)
   {
     int nip = 0;
 
@@ -1264,6 +1266,7 @@ namespace ngfem
 
       }
 
+    /*
     if (compute_mapping && !eltrans.Boundary())
       {
         x.SetSize(nip);
@@ -1271,6 +1274,7 @@ namespace ngfem
         // eltrans.CalcMultiPointJacobian (*this, x, dxdxi, lh);
 	throw Exception ("intruleTP comput_mapping currently not available");
       }
+    */
   }
 
 

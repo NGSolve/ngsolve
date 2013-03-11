@@ -14,32 +14,31 @@
 
 namespace ngfem
 {
-  /*
-  template <int D>
-  void L2HighOrderFiniteElement<D> :: 
-  SetVertexNumbers (FlatArray<int> & avnums)
-  */
 
-  /*
   template <int D>
   void L2HighOrderFiniteElement<D>:: 
-  GetInternalDofs (Array<int> & idofs) const
+  GetDiagMassMatrix (FlatVector<> mass) const
   {
-    idofs.SetSize(0);
-    for (int i = 0; i < ScalarFiniteElement<D>::GetNDof(); i++)
-      idofs.Append (i);
+    IntegrationRule ir(eltype, 2*order);
+    VectorMem<50> shape(ndof);
+    mass = 0;
+    for (int i = 0; i < ir.Size(); i++)
+      {
+        this -> CalcShape (ir[i], shape);
+        for (int j = 0; j < ndof; j++)
+          mass(j) += ir[i].Weight() * sqr (shape(j));
+      }
   }
-  */
+
 
   template <int D>
   void L2HighOrderFiniteElement<D>:: 
-  CalcTraceMatrix (int facet, FlatMatrix<> & trace) const
+  CalcTraceMatrix (int facet, FlatMatrix<> trace) const
   {
     ELEMENT_TYPE ftype = ElementTopology::GetFacetType (eltype, facet);
     Facet2ElementTrafo f2el(eltype, FlatArray<int> (8, const_cast<int*> (vnums)) );
     const IntegrationRule & ir = SelectIntegrationRule (ftype, 2*order);
 
-    // FiniteElement * facetfe = NULL;
     L2HighOrderFiniteElement<1> * facetfe1 = NULL;
     L2HighOrderFiniteElement<2> * facetfe2 = NULL;
     switch (ftype)
@@ -51,13 +50,6 @@ namespace ngfem
 	;
       }
 
-    /*
-    if (D == 2)
-      {
-	facetfe1->SetVertexNumber (0, 1);
-	facetfe1->SetVertexNumber (1, 0);
-      }
-    */
     int ndof_facet = trace.Height();
     Vector<> shape(ndof);
     Vector<> fshape(ndof_facet);
@@ -86,6 +78,35 @@ namespace ngfem
     delete facetfe2;
   }
 
+
+  template <int D>
+  void L2HighOrderFiniteElement<D>:: 
+  CalcGradientMatrix (FlatMatrix<> gmat) const
+  {
+    IntegrationRule ir (eltype, 2*order);
+
+    Vector<> shape(ndof);
+    MatrixFixWidth<D> dshape(ndof);
+    Vector<> norms(ndof);
+    
+    gmat = 0.0;
+    norms = 0.0;
+    for (int i = 0; i < ir.Size(); i++)
+      {
+	this -> CalcShape (ir[i], shape);
+	this -> CalcDShape (ir[i], dshape);
+        
+        for (int j = 0; j < ndof; j++)
+          for (int k = 0; k < ndof; k++)
+            for (int l = 0; l < D; l++)
+              gmat(k*D+l, j) += ir[i].Weight() * dshape(j,l) * shape(k);
+
+	for (int j = 0; j < norms.Size(); j++)
+	  norms(j) += ir[i].Weight() * sqr (shape(j));
+      }
+    for (int j = 0; j < ndof; j++)
+      gmat.Rows(D*j, D*(j+1)) /= norms(j);
+  }
 
 
   template <ELEMENT_TYPE ET>
@@ -132,6 +153,8 @@ namespace ngfem
   template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
   typename L2HighOrderFE<ET,SHAPES>::TPRECOMP_TRACE L2HighOrderFE<ET,SHAPES>::precomp_trace(320);
 
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  typename L2HighOrderFE<ET,SHAPES>::TPRECOMP_GRAD L2HighOrderFE<ET,SHAPES>::precomp_grad(40);
 
 
 
@@ -165,7 +188,20 @@ namespace ngfem
     }
     
 
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  void L2HighOrderFE<ET,SHAPES> :: 
+  PrecomputeGrad ()
+  {
+    int classnr =  ET_trait<ET>::GetClassNr (vnums);
+    
+    if (precomp_grad.Used (INT<2> (order, classnr)))
+      return;
 
+    Matrix<> * gmat = new Matrix<>(ndof*DIM, ndof);
+    L2HighOrderFiniteElement<DIM>::CalcGradientMatrix (*gmat);
+    precomp_grad.Set (INT<2> (order, classnr), gmat);
+  }
+    
 
 
   template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
@@ -235,6 +271,47 @@ namespace ngfem
       else
 	T_ScalarFiniteElement2< SHAPES<ET>, ET > :: EvaluateGradTrans (ir, values, coefs);
     }
+
+
+
+
+
+
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  void L2HighOrderFE<ET,SHAPES> :: 
+  GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<DIM> grad) const
+  {
+    int classnr =  ET_trait<ET>::GetClassNr (vnums);
+    int bnr, pos;
+    if (precomp_grad.Used (INT<2> (order, classnr), bnr, pos))
+      {
+        FlatMatrix<> gmat = *precomp_grad.Get (bnr, pos);
+        FlatVector<> vgrad(grad.Height()*DIM, &grad(0,0));
+        vgrad = gmat * coefs;
+      }
+    else
+      L2HighOrderFiniteElement<DIM>::GetGradient (coefs, grad);
+  }
+  
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  void L2HighOrderFE<ET,SHAPES> :: 
+  GetGradientTrans (FlatMatrixFixWidth<DIM> grad, FlatVector<> coefs) const
+  {
+    int classnr =  ET_trait<ET>::GetClassNr (vnums);
+    int bnr, pos;
+    if (precomp_trace.Used (INT<2> (order, classnr), bnr, pos))
+      {
+        FlatMatrix<> gmat = *precomp_grad.Get (bnr, pos);
+        FlatVector<> vgrad(grad.Height()*DIM, &grad(0,0));
+        coefs = Trans(gmat) * vgrad;
+      }
+    else
+      L2HighOrderFiniteElement<DIM>::GetGradientTrans (grad, coefs);
+  }
+
+
+
+
 
 
 
@@ -524,13 +601,6 @@ b  }
   template class T_L2HighOrderFiniteElement<ET_PYRAMID>;
   template class T_L2HighOrderFiniteElement<ET_HEX>;
 
-  /*
-  template class L2HighOrderFE_Shape<ET_TET>;
-  template class L2HighOrderFE_Shape<ET_PRISM>;
-  template class L2HighOrderFE_Shape<ET_PYRAMID>;
-  template class L2HighOrderFE_Shape<ET_HEX>;
-  */
-
 
 
   template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_SEGM>, ET_SEGM>;
@@ -541,6 +611,53 @@ b  }
   template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_HEX>, ET_HEX>;
   template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
 
+
+
+
+
+
+
+  class testing
+  { 
+  public:
+    testing()
+    {
+      cout << "test calcgrad" << endl;
+      LocalHeap lh(1000000, "heaptest");
+      L2HighOrderFE<ET_TRIG> fel(2);
+
+      Vector<> mass(fel.GetNDof());
+      fel.GetDiagMassMatrix (mass);
+      cout << "mass = " << endl << mass << endl;
+
+      IntegrationRule ir(ET_TRIG, 3);
+      Vector<> coefs(fel.GetNDof());
+      Matrix<> cgrad(fel.GetNDof(), 2);
+
+      coefs = 0;
+      coefs(2) = 1;
+      
+      fel.GetGradient (coefs, cgrad);
+      cout << "grad = " << endl << cgrad << endl;
+      
+      Matrix<> vgrad(ir.GetNIP(), 2);
+      fel.EvaluateGrad (ir, coefs, vgrad);
+      
+      cout << "grad(ir) = " << endl << vgrad << endl;
+
+      FlatVector<> hv(ir.GetNIP(), lh);
+      for (int j = 0; j < 2; j++)
+        {
+          fel.Evaluate (ir, cgrad.Col(j)|lh, hv);
+          vgrad.Col(j) = hv;
+        }
+      
+      cout << "grad(ir2) = " << endl << vgrad << endl;
+    }
+  };
+
+  // static testing test;
+  
 } // namespace
 
 

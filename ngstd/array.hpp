@@ -223,16 +223,6 @@ namespace ngstd
       return *this;
     }
 
-    /*
-    /// copies pointers
-    const FlatArray & operator= (const FlatArray & a2)
-    {
-      size = a2.size;
-      data = a2.data;
-      return *this;
-    }
-    */
-
     /// copies array
     const FlatArray & operator= (const FlatArray & a2) const
     {
@@ -244,6 +234,22 @@ namespace ngstd
     const FlatArray & operator= (const BaseArrayObject<T2,TA> & a2) const
     {
       for (int i = 0; i < size; i++) (*this)[i] = a2.Spec()[i];
+      return *this;
+    }
+
+    /// copies pointers
+    const FlatArray & Assign (const FlatArray & a2)
+    {
+      size = a2.size;
+      data = a2.data;
+      return *this;
+    }
+
+    /// copies pointers
+    const FlatArray & Assign (TSIZE asize, LocalHeap & lh)
+    {
+      size = asize;
+      data = lh.Alloc<T> (asize);
       return *this;
     }
 
