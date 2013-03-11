@@ -213,7 +213,7 @@ namespace ngfem
 	HeapReset hr(lh);
 
 
-	IntegrationRuleTP<D> ir_vol(eltrans, 2*fel_l2.Order(), false, lh);
+	IntegrationRuleTP<D> ir_vol(eltrans, 2*fel_l2.Order()); // , false, lh);
 	// const IntegrationRule & ir_vol = SelectIntegrationRule (eltype, 2*fel_l2.Order());
 
 	MappedIntegrationRule<D,D> mir_vol(ir_vol, eltrans, lh);

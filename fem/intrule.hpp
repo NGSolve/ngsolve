@@ -351,17 +351,14 @@ namespace ngfem
   class IntegrationRuleTP : public IntegrationRule
   {
     const IntegrationRule *irx, *iry, *irz;
-    // int sort[8];
 
-    // ArrayMem<Vec<D>, 100> xi;
-    // ArrayMem<double, 100> weight;
-    ArrayMem<Vec<D>, 100> x;
-    ArrayMem<Mat<D,D>, 100> dxdxi;
+    // ArrayMem<Vec<D>, 100> x;
+    // ArrayMem<Mat<D,D>, 100> dxdxi;
     ArrayMem<Mat<D,D>, 100> dxdxi_duffy;
 
   public:
     NGS_DLL_HEADER IntegrationRuleTP (const ElementTransformation & eltrans,
-		       int order, bool compute_mapping, LocalHeap & lh);
+                                      int order); // , bool compute_mapping, LocalHeap & lh);
 
     // tensor product rule for a facet
     NGS_DLL_HEADER IntegrationRuleTP (ELEMENT_TYPE eltype, FlatArray<int> sort, 
@@ -380,8 +377,8 @@ namespace ngfem
 	ret(j) = (*this)[i](j);
       return ret;  // return xi[i]; 
     }
-    Vec<D> & GetPoint(int i) const { return x[i]; }
-    Mat<D,D> & GetJacobian(int i) const { return dxdxi[i]; }
+    // Vec<D> & GetPoint(int i) const { return x[i]; }
+    // Mat<D,D> & GetJacobian(int i) const { return dxdxi[i]; }
     Mat<D,D> & GetDuffyJacobian(int i) const { return dxdxi_duffy[i]; }
   };
 

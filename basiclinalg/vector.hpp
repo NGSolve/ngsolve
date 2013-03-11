@@ -75,6 +75,18 @@ namespace ngbla
       ;
     }
 
+    /// allocate and compute 
+    template<typename TB>
+    FlatVector (const LocalHeapExpr<TB> & m2) 
+    {
+      s = m2.A().Height();
+      LocalHeap & lh = m2.GetLocalHeap();
+      data = lh.Alloc<T> (s);
+      CMCPMatExpr<FlatVector<T> >::operator= (m2.A());
+    }
+
+
+
     /// assign memory for vector on local heap
     void AssignMemory (int as, LocalHeap & lh) 
     {
