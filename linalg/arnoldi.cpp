@@ -46,7 +46,7 @@ namespace ngla
     
     mata.AsVector() = mata1.AsVector() - shift*matm.AsVector();  
     
-    BaseMatrix * inva = mata.InverseMatrix();	  
+    BaseMatrix * inva = mata.InverseMatrix (freedofs);	  
     
 
     hv.SetRandom();
