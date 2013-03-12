@@ -28,11 +28,12 @@ namespace ngla
   {
     const BaseMatrix & a;
     const BaseMatrix & b;
+    const BitArray * freedofs;
     SCAL shift;
 
   public:
-    Arnoldi (const BaseMatrix & aa, const BaseMatrix & ab)
-      : a(aa), b(ab)
+    Arnoldi (const BaseMatrix & aa, const BaseMatrix & ab, const BitArray * afreedofs = NULL)
+      : a(aa), b(ab), freedofs(afreedofs)
     { 
       shift = 1.0;
     }
