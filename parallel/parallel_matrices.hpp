@@ -35,11 +35,9 @@ namespace ngla
     const BaseMatrix & mat;
     const ParallelDofs & pardofs;
   public:
-    ParallelMatrix (const BaseMatrix * amat, const ParallelDofs * apardofs)
-      : mat(*amat), pardofs(*apardofs) 
-    { 
-      const_cast<BaseMatrix&>(mat).SetParallelDofs (apardofs);
-    }
+    ParallelMatrix (const BaseMatrix * amat, const ParallelDofs * apardofs);
+    // : mat(*amat), pardofs(*apardofs) 
+    // {const_cast<BaseMatrix&>(mat).SetParallelDofs (apardofs);}
 
     virtual ~ParallelMatrix ();
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
