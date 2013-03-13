@@ -265,7 +265,7 @@ namespace ngla
     mumps_id.icntl[3]=0;
     mumps_id.icntl[6]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
     mumps_id.icntl[12]=1;  // not using scalapck for root schur complement
-    mumps_id.icntl[13]=50; // memory increase (in %) due to error -9
+    mumps_id.icntl[13]=60; // memory increase (in %) due to error -9
     mumps_id.icntl[27]=0;  // 0..default,  2..parallel analysis
     mumps_id.icntl[28]=0;  // 0..auto, 1..ptscotch 2..parmetis
 
@@ -771,7 +771,7 @@ namespace ngla
 
     mumps_id.icntl[6]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
     mumps_id.icntl[12]=1;  // 0..do use, 1..not using scalapck for root schur complement
-    mumps_id.icntl[13]=200; // memory increase (in %) due to error -9
+    mumps_id.icntl[13]=400; // memory increase (in %) due to error -9
     mumps_id.icntl[17]=3;  // parallel input
     mumps_id.icntl[27]=0;  // 0..default, 1..seq, 2..parallel analysis
     mumps_id.icntl[28]=2;  // 0..auto, 2..parmetis
