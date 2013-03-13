@@ -214,9 +214,10 @@ namespace ngfem
 		      LocalHeap & lh) const
   {
     static int cnt = 0;
-    if (cnt < 10)
+    if (cnt < 3)
       {
-	cout << "call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
+	cout << IM(3) << "WARNING: call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
+	if (cnt == 2) cout << IM(3) << "(further warnings supressed)" << endl;
 	cnt++;
       }
     FlatMatrix<double> mat(elx.Size(), lh);
