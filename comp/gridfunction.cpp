@@ -71,10 +71,6 @@ namespace ngcomp
 
   void GridFunction :: Visualize(const string & given_name)
   {
-    static Timer t1("GF::Visualize 1");
-    static Timer t2("GF::Visualize 2");
-
-
     if (!visual) return;
 
     /*
@@ -100,7 +96,6 @@ namespace ngcomp
 
     if (bfi2d || bfi3d)
       {
-        t1.Start();
         netgen::SolutionData * vis;
 	if (!fespace.IsComplex())
 	  vis = new VisualizeGridFunction<double> (ma, this, bfi2d, bfi3d, 0);
@@ -119,11 +114,7 @@ namespace ngcomp
 	soldata.dist = soldata.components;
 	soldata.soltype = NG_SOLUTION_VIRTUAL_FUNCTION;
 	soldata.solclass = vis;
-        t1.Stop();
-        t2.Start();
-
 	Ng_SetSolutionData (&soldata);    
-        t2.Stop();
       }
   }
 
@@ -543,13 +534,8 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	Array<int> index(points.Size());
 	for (int i = 0; i < index.Size(); i++) index[i] = i;
 	
-	static Timer ts ("Save Gridfunction, sort");
-	static Timer tw ("Save Gridfunction, write");
-	ts.Start();
 	QuickSortI (points, index, MyLess<N>);
-	ts.Stop();
 
-	tw.Start();
 	for (int i = 0; i < points.Size(); i++)
 	  {
 	    int start = positions[index[i]][0];
@@ -558,7 +544,6 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	    for (int j = 0; j < end; j++)
 	      SaveBin<SCAL>(ost, data[start++]);
 	  }
-	tw.Stop();	
       }
 #endif	   
   }
@@ -1099,7 +1084,6 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
     static Timer t("visgf::GetValue");
     RegionTimer reg(t);
 
-    // cout << "VisGF::GetValue" << endl;
     if (!bfi3d.Size()) return 0;
     if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
@@ -1169,7 +1153,6 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
     static Timer t("visgf::GetValue2");
     RegionTimer reg(t);
 
-    // cout << "VisGF::GetValue2" << endl;
     if (!bfi3d.Size()) return 0;
     if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
@@ -1225,7 +1208,7 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
     for(int j = 0; j < bfi3d.Size(); j++)
       {
 	FlatVector<SCAL> flux (bfi3d[j]->DimFlux(), lh);
-	bfi3d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh);
+	bfi3d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh); 
 
 	for (int i = 0; i < components; i++)
 	  {
@@ -1250,7 +1233,6 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
     static Timer t("visgf::GetMultiValue");
     RegionTimer reg(t);
 
-    // cout << "VisGF::GetMultiValue" << endl;
     try
       {
         if (!bfi3d.Size()) return 0;
