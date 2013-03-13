@@ -329,6 +329,16 @@ namespace ngla
 
   }
 
+  ParallelMatrix :: ParallelMatrix (const BaseMatrix * amat, const ParallelDofs * apardofs)
+    : mat(*amat), pardofs(*apardofs) 
+  { 
+    const_cast<BaseMatrix&>(mat).SetParallelDofs (apardofs);
+#ifdef USE_MUMPS
+    mat.SetInverseType(MUMPS);
+#else
+    mat.SetInverseType(MASTERINVERSE);
+#endif
+  }
 
 
   ParallelMatrix :: ~ParallelMatrix ()
@@ -357,7 +367,12 @@ namespace ngla
 
   BaseVector * ParallelMatrix :: CreateVector () const
   {
-    cerr << "ParallelMatrix::CreateVector not implemented" << endl;
+    if (dynamic_cast<const SparseMatrix<double>*> (&mat))
+      return new ParallelVVector<double> (mat.Height(), &pardofs);
+
+    cerr << "ParallelMatrix::CreateVector not implemented for matrix type " 
+	 << typeid(mat).name()
+	 << endl;
     return NULL;
   }
 
