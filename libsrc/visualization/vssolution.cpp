@@ -70,7 +70,6 @@ namespace netgen
   void VisualSceneSolution :: AddSolutionData (SolData * sd)
   {
     NgLock meshlock1 (mesh->MajorMutex(), 1);
-
     int funcnr = -1;
     for (int i = 0; i < soldata.Size(); i++)
       {
@@ -89,7 +88,7 @@ namespace netgen
         funcnr = soldata.Size()-1;
       }
     
-    SolData * nsd = soldata[funcnr];
+    SolData * nsd = soldata[funcnr]; 
 
     nsd->size = 0;
     if (mesh)
@@ -3965,7 +3964,6 @@ namespace netgen
     if (scalfunction != -1) 
       sol = soldata[scalfunction];
 
-    
     if (sol -> draw_volume)
       {
 	glBegin (GL_TRIANGLES);
@@ -3991,10 +3989,10 @@ namespace netgen
     // complex<double> valc[3];
     int lastelnr = -1;
     int nlp = -1;
+    bool ok = false;
 
     for (int i = 0; i < trigs.Size(); i++)
       {
-	bool ok; //  = true;
         const ClipPlaneTrig & trig = trigs[i];
 	if (trig.elnr != lastelnr)
 	  {
@@ -4230,7 +4228,7 @@ namespace netgen
     Vec<3> p1p2 = p2 - p1;
 
     p1p2.Normalize();
-    Vec<3> p2p1 = -p1p2;
+    // Vec<3> p2p1 = -p1p2;
 
     Vec<3> t1 = p1p2.GetNormal();
     Vec<3> t2 = Cross (p1p2, t1);
@@ -4394,7 +4392,7 @@ namespace netgen
             int pointpos; // SZ 
             const char * pch = strchr(scalname,':');
             pointpos = int(pch-scalname+1);
-
+	    
             for (int i = 0; i < vssolution.soldata.Size(); i++)
               {
                 if ( (strlen (vssolution.soldata[i]->name) == pointpos-1) &&
@@ -4415,15 +4413,10 @@ namespace netgen
 		    scalname = Tcl_GetVar (interp, "::visoptions.scalfunction", TCL_GLOBAL_ONLY);
                   }
                 if (strcmp (vssolution.soldata[i]->name, vecname) == 0)
-                  {
-                    vssolution.vecfunction = i;
-                    //cout  << "set vecfunction to " << i << endl;
-                  }
+		  vssolution.vecfunction = i;
+
                 if (strcmp (vssolution.soldata[i]->name, fieldlines_vecname) == 0)
-                  {
-                    vssolution.fieldlines_vecfunction = i;
-                    //cout  << "set fieldlines-vecfunction to " << i << endl;
-                  }
+		  vssolution.fieldlines_vecfunction = i;
               }
 
             if(vssolution.fieldlines_vecfunction != -1 &&
