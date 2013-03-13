@@ -412,9 +412,15 @@ namespace ngbla
     }
 
     ///
-    const FixSliceVector<W, T> Col (int i) 
+    const FixSliceVector<W,T> Col (int i) 
     {
       return FixSliceVector<W,T> (H, &(*this)(0,i));
+    }
+
+    ///
+    const FixSliceVector<W,const T> Col (int i) const
+    {
+      return FixSliceVector<W,const T> (H, &(*this)(0,i));
     }
 
   };
