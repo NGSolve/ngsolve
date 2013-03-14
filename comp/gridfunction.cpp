@@ -148,66 +148,6 @@ namespace ngcomp
 
 
 
-  /*
-
-template <int N>
-void MyQuicksort(  Array<int>& pos, Array<Vec<N, int> >& vals,int  first, int last);
-
-template <int N>
-int Divide(  Array<int>& pos, Array<Vec<N, int> >& vals, int first,int last);
-
-
-
-template <int N>
-void MyQuicksort( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
-{
-  if( first < last)
-  {
-    int mid = Divide<N> ( pos, vals, first, last);
-    MyQuicksort<N>(  pos,  vals, first, mid-1);
-    MyQuicksort<N>(  pos,  vals, mid+1, last);
-  }
-}
-
-
-
-template <int N>
-int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
-{
-  int i = first;
-  int j = last -1;
-  
-  Vec<N, int> pivot = vals[  pos[last]  ];
-  
-  while(i < j)
-  {
-    while( (i < last) && (  !MyLess<N>( pivot, vals[ pos[i] ])   )) //pivot >= vals[ pos[i] ]
-			i++;
-    
-    while((j > first) && ( !MyLess<N>(vals[ pos[j] ], pivot)   ) )  // pivot <= vals[ pos[j] ]
-			j--;
-    
-    if( i < j)
-    {
-      int temp = pos[i];
-      pos[i] = pos[j];
-      pos[j] = temp;
-    }
-    
-  }
-  
-  
-  if(  MyLess<N>(pivot,vals[ pos[i] ]) )
-  {
-    int temp = pos[i];
-    pos[i] = pos[last];
-    pos[last] = temp;
-  }
-  
-  return i;
-  
-}
-  */
 
 
 
@@ -223,14 +163,45 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
 	  {
 	    int nnodes = ma.GetNNodes (nt);
+
+	    
+	    Array<Vec<8, int> > nodekeys;
+	    Array<int> pnums, compress;
+	    for(int i = 0; i < nnodes; i++)
+	      {
+		fes.GetNodeDofNrs (nt, i,  dnums);
+		if (dnums.Size() == 0) continue;
+		
+		switch (nt)
+		  {
+		  case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
+		  case NT_EDGE: ma.GetEdgePNums (i, pnums); break;
+		  case NT_FACE: ma.GetFacePNums (i, pnums); break;
+		  case NT_CELL: ma.GetElPNums (i, pnums); break;
+		  }
+		Vec<8> key; 
+		key = -1;
+		for (int j = 0; j < pnums.Size(); j++)
+		  key[j] = pnums[j];
+		nodekeys.Append (key);
+		compress.Append (i);
+	      }
+	    
+	    nnodes = nodekeys.Size();
+
+	    Array<int> index(nnodes);
+	    for( int i = 0; i < index.Size(); i++) index[i] = i;
+	    
+	    QuickSortI (nodekeys, index, MyLess<8>);
+	    
 	    for( int i = 0; i < nnodes; i++)
 	      {
-		fes.GetNodeDofNrs (nt, i,  dnums); 
+		fes.GetNodeDofNrs (nt, compress[index[i]],  dnums); 
 		Vector<SCAL> elvec(dnums.Size());
 		
-		for (int i=0; i< elvec.Size(); i++)
+		for (int k = 0; k < elvec.Size(); k++)
 		  if (ist.good())
-		    LoadBin<SCAL>(ist, elvec(i));			
+		    LoadBin<SCAL>(ist, elvec(k));			
 	  
 		SetElementVector (dnums, elvec);
 	      }
@@ -264,8 +235,8 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
       {
 	int nnodes = ma.GetNNodes (NTYPE);
 	
-	Array<Vec<N+1, int> > nodenums(0);
-	Array<int> master_nodes(0);
+	Array<Vec<N+1, int> > nodekeys;
+	Array<int> master_nodes;
 	Array<int> dnums, pnums;
 	
 	for(int i = 0; i < nnodes; i++)
@@ -276,42 +247,35 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	    if (!par.IsMasterDof (dnums[0])) continue;
 	    
 	    master_nodes.Append(i);
-	    
-	    if (NTYPE == NT_VERTEX)
+
+	    switch (NTYPE)
 	      {
-		pnums.SetSize(1);
-		pnums[0]=i;
+	      case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
+	      case NT_EDGE: ma.GetEdgePNums (i, pnums); break;
+	      case NT_FACE: ma.GetFacePNums (i, pnums); break;
+	      case NT_CELL: ma.GetElPNums (i, pnums); break;
 	      }
-	    else if( NTYPE == NT_EDGE)
-	      ma.GetEdgePNums (i, pnums);
-	    else if (NTYPE == NT_FACE)
-	      ma.GetFacePNums (i, pnums);
-	    else if (NTYPE == NT_CELL)
-	      ma.GetElPNums (i, pnums);
-	    else
-	      cout<<"Error in LoadSolution Node Type not known"<<endl;
-	    
-	    Vec<N+1, int> points;
-	    points = -1;
+
+	    Vec<N+1, int> key;
+	    key = -1;
 	    for (int j = 0; j < pnums.Size(); j++)
-	      points[j] = ma.GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
-	    points[N] = dnums.Size();
+	      key[j] = ma.GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
+	    key[N] = dnums.Size();
 	    
-	    nodenums.Append (points);	
+	    nodekeys.Append (key);	
 	  }
 	
-	MyMPI_Send (nodenums, 0, 12);
+	MyMPI_Send (nodekeys, 0, 12);
 	
 	Array<SCAL> loc_data;
 	MyMPI_Recv (loc_data, 0, 13);
 	
-	int cnt=0;
-	for (int i = 0; i < master_nodes.Size(); i++)
+	for (int i = 0, cnt = 0; i < master_nodes.Size(); i++)
 	  {
-	    fes.GetNodeDofNrs (NTYPE, master_nodes[i],  dnums); 
+	    fes.GetNodeDofNrs (NTYPE, master_nodes[i], dnums); 
 	    Vector<SCAL> elvec(dnums.Size());
 	    
-	    for (int i = 0; i< elvec.Size(); i++)
+	    for (int i = 0; i < elvec.Size(); i++)
 	      elvec(i) = loc_data[cnt++];
 	    
 	    SetElementVector (dnums, elvec);
@@ -319,8 +283,8 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
       }
     else
       {
-	Array<Vec<N, int> > points(0);
-	Array<int>  nrdofs_per_node(0);
+	Array<Vec<N, int> > nodekeys;
+	Array<int> nrdofs_per_node;
 	
 	Array<Array<int>* > nodenums_of_procs (ntasks-1);
 	
@@ -331,64 +295,58 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	    MyMPI_Recv(nodenums_proc,proc,12);
 	    nodenums_of_procs[proc-1] = new Array<int> (nodenums_proc.Size());
 	    
-	    Vec<N, int>  temp;
-	    
 	    for (int j=0; j < nodenums_proc.Size(); j++)
 	      {
+		Vec<N, int>  key;
 		for (int k = 0; k < N; k++)
-		  temp[k] = nodenums_proc[j][k];
+		  key[k] = nodenums_proc[j][k];
 		
-		points.Append (temp);
+		nodekeys.Append (key);
 		
 		nrdofs_per_node.Append (nodenums_proc[j][N]);
 		
-		(*(nodenums_of_procs[proc-1]))[j]=actual++;
+		(*nodenums_of_procs[proc-1])[j]=actual++;
 	      }
 	  }
 	
-	Array<int> index(points.Size());
+	int nnodes = nodekeys.Size();
+
+	Array<int> index(nnodes);
 	for( int i = 0; i < index.Size(); i++) index[i] = i;
 
-	QuickSortI (points, index, MyLess<N>);
+	QuickSortI (nodekeys, index, MyLess<N>);
 
-	Array<int> inverse_index(index.Size());
+	Array<int> inverse_index(nnodes);
 	for (int i = 0; i < index.Size(); i++ ) 	
 	  inverse_index[index[i]] = i;
 	
-	int nnodes = points.Size();
-	int nrdofs_all_nodes = 0;
+	int ndofs = 0;
 	Array<int> first_node_dof (nnodes+1);
 	
-	for (int i=0; i<nnodes; i++)
+	for (int i = 0; i < nnodes; i++)
 	  {
-	    first_node_dof[i]=nrdofs_all_nodes;
-	    nrdofs_all_nodes+=nrdofs_per_node[index[i]];
+	    first_node_dof[i] = ndofs;
+	    ndofs += nrdofs_per_node[index[i]];
 	  }
-	first_node_dof[nnodes]=nrdofs_all_nodes;
+	first_node_dof[nnodes] = ndofs;
 	
-      //cout << "first_node_dof " << first_node_dof << endl;
-	
-	Array<SCAL> node_data (nrdofs_all_nodes);     
-	for (int i = 0; i < nrdofs_all_nodes; i++)
+	Array<SCAL> node_data(ndofs);     
+
+	for (int i = 0; i < ndofs; i++)
 	  if (ist.good())
-	    LoadBin<SCAL>(ist, node_data[i]);
+	    LoadBin<SCAL> (ist, node_data[i]);
 	
 	for (int proc = 1; proc < ntasks; proc++)
 	  {
 	    Array<SCAL> loc_data (0);
-	    int nr_local_nodes= (*(nodenums_of_procs[proc-1])).Size();	
-	    //cout << "proc " << proc << " nr_local_nodes " << nr_local_nodes << endl;
-	    for (int i=0; i<nr_local_nodes; i++)
+	    Array<int> & nodenums_proc = *nodenums_of_procs[proc-1];
+
+	    for (int i = 0; i < nodenums_proc.Size(); i++)
 	      {
-		int node=inverse_index[(*(nodenums_of_procs[proc-1]))[i]];
-		//cout << "i " << i << " inverse i " << inverse_index[i] << " node " << node << endl;
-		int first = first_node_dof[node];
-		int last = first_node_dof[node+1];
-		for (int j=first; j<last; j++)
-		  loc_data.Append(node_data[j]);
+		int node = inverse_index[nodenums_proc[i]];
+		loc_data.Append (node_data.Range (first_node_dof[node], first_node_dof[node+1]));
 	      }
 	    MyMPI_Send(loc_data,proc,13); 		
-	    //	cout << "proc " << proc << " loc_data " << loc_data << endl;
 	  }
       }
 #endif	
@@ -408,14 +366,45 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
 	  {
 	    int nnodes = ma.GetNNodes (nt);
+
+	    Array<Vec<8, int> > nodekeys;
+	    Array<int> pnums, compress;
+	    for(int i = 0; i < nnodes; i++)
+	      {
+		fes.GetNodeDofNrs (nt, i,  dnums);
+		if (dnums.Size() == 0) continue;
+		
+		switch (nt)
+		  {
+		  case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
+		  case NT_EDGE: ma.GetEdgePNums (i, pnums); break;
+		  case NT_FACE: ma.GetFacePNums (i, pnums); break;
+		  case NT_CELL: ma.GetElPNums (i, pnums); break;
+		  }
+		Vec<8> key; 
+		key = -1;
+		for (int j = 0; j < pnums.Size(); j++)
+		  key[j] = pnums[j];
+		nodekeys.Append (key);
+		compress.Append (i);
+	      }
+	    
+	    nnodes = nodekeys.Size();
+
+	    Array<int> index(nnodes);
+	    for( int i = 0; i < index.Size(); i++) index[i] = i;
+	    
+	    QuickSortI (nodekeys, index, MyLess<8>);
+
+
 	    for( int i = 0; i < nnodes; i++)
 	      {
-		fes.GetNodeDofNrs (nt, i,  dnums); 
+		fes.GetNodeDofNrs (nt, compress[index[i]],  dnums); 
 		Vector<SCAL> elvec(dnums.Size());
 		GetElementVector (dnums, elvec);
 		
-		for (int i=0; i< elvec.Size(); i++)
-		  SaveBin<SCAL>(ost, elvec(i));			
+		for (int j = 0; j < elvec.Size(); j++)
+		  SaveBin<SCAL>(ost, elvec(j));			
 	      }
 	  }
       }
@@ -432,122 +421,6 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
   }
 
 
-
-
-#ifdef SGFVER1
-  template <class SCAL>  template <int N, NODE_TYPE NTYPE>
-  void  S_GridFunction<SCAL> :: SaveNodeType (ostream & ost) const
-  {
-#ifdef PARALLEL
-    int id = MyMPI_GetId();
-    int ntasks = MyMPI_GetNTasks();
-    
-    const FESpace & fes = GetFESpace();
-    ParallelDofs & par = fes.GetParallelDofs ();
-    
-    if (id > 0)
-      { 
-	int nnodes = ma.GetNNodes (NTYPE);
-	
-	Array<Vec<N+1, int> > nodenums(0);
-	Array<SCAL> data(0);
-    
-	Array<int> dnums, pnums;
-    
-	for( int i = 0; i < nnodes; i++)
-	  {
-	    fes.GetNodeDofNrs (NTYPE, i,  dnums);
-	    
-	    if( dnums.Size() == 0)
-	      continue;
-	    
-	    if( !par.IsMasterDof ( dnums[0] ))
-	      continue;      
-
-	    if (NTYPE == NT_VERTEX)
-	      {
-		pnums.SetSize(1);
-		pnums[0]=i;
-	      }
-	    else if( NTYPE == NT_EDGE)
-	      ma.GetEdgePNums (i, pnums);
-	    else if (NTYPE == NT_FACE)
-	      ma.GetFacePNums (i, pnums);
-	    else if (NTYPE == NT_CELL)
-	      ma.GetElPNums (i, pnums);
-	    else
-	      cout<<"Error in SaveSolution Node Type not known"<<endl;
-	    
-	    Vec<N+1, int> points;
-	    points = -1;
-	    for( int j = 0; j < pnums.Size(); j++)
-	      points[j] = ma.GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
-	    points[N] = dnums.Size();
-	    
-	    nodenums.Append(points);
-	    
-	    Vector<SCAL> elvec(dnums.Size());
-	    GetElementVector (dnums, elvec);
-	    
-	    for( int j = 0; j < dnums.Size(); j++)
-	      data.Append(elvec(j));
-	  }    
-	
-	MyMPI_Send(nodenums,0,22);
-	MyMPI_Send(data,0,23);
-      }
-  
-    if (id == 0)
-      {
-	Array<Vec<N, int> > points(0);
-	Array<Vec<2, int> > positions(0);
-	Array<SCAL> data(0);
-	
-	int size = 0;
-	for( int proc = 1; proc < ntasks; proc++)
-	  {
-	    Array<Vec<N+1, int> > locpoints;
-	    Array<SCAL> locdata;
-	    MyMPI_Recv(locpoints,proc, 22);
-	    MyMPI_Recv(locdata,proc, 23);
-	    
-	    
-	    Vec<N, int>  temp;
-	    
-	    int actual = 0;
-	    for( int j = 0; j < locpoints.Size(); j++ )
-	      {
-		int nodesize = locpoints[j][N];
-		for( int k = 0; k < nodesize; k++)
-		  data.Append(locdata[actual++]);
-		
-		positions.Append(  Vec<2, int> (  size, nodesize) );
-		
-		for( int k = 0; k < N; k++)
-		  temp[k] = locpoints[j][k];
-		
-		points.Append( temp );
-		size += nodesize;
-	      }
-	  }    
-	
-	Array<int> index(points.Size());
-	for (int i = 0; i < index.Size(); i++) index[i] = i;
-	
-	QuickSortI (points, index, MyLess<N>);
-
-	for (int i = 0; i < points.Size(); i++)
-	  {
-	    int start = positions[index[i]][0];
-	    int end = positions[index[i]][1];
-	    
-	    for (int j = 0; j < end; j++)
-	      SaveBin<SCAL>(ost, data[start++]);
-	  }
-      }
-#endif	   
-  }
-#endif
 
 
 
@@ -601,20 +474,14 @@ int Divide( Array<int>& pos, Array<Vec<N, int> >& vals,int first,int last)
 	    if (dnums.Size() == 0) continue;
 	    if (!par.IsMasterDof (dnums[0])) continue;      
 
-	    if (NTYPE == NT_VERTEX)
+	    switch (NTYPE)
 	      {
-		pnums.SetSize(1);
-		pnums[0]=i;
+	      case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
+	      case NT_EDGE: ma.GetEdgePNums (i, pnums); break;
+	      case NT_FACE: ma.GetFacePNums (i, pnums); break;
+	      case NT_CELL: ma.GetElPNums (i, pnums); break;
 	      }
-	    else if( NTYPE == NT_EDGE)
-	      ma.GetEdgePNums (i, pnums);
-	    else if (NTYPE == NT_FACE)
-	      ma.GetFacePNums (i, pnums);
-	    else if (NTYPE == NT_CELL)
-	      ma.GetElPNums (i, pnums);
-	    else
-	      cout<<"Error in SaveSolution Node Type not known"<<endl;
-	    
+
 	    Vec<N+1, int> points;
 	    points = -1;
 	    for( int j = 0; j < pnums.Size(); j++)
