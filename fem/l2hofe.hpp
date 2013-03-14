@@ -50,7 +50,8 @@ namespace ngfem
   
     // virtual void GetInternalDofs (Array<int> & idofs) const; 
 
-    virtual void PrecomputeTrace () = 0;
+    virtual void PrecomputeTrace () = 0; 
+    virtual void PrecomputeGrad () = 0;
 
     void CalcTraceMatrix (int facet, FlatMatrix<> trace) const;
     void CalcGradientMatrix (FlatMatrix<> gmat) const;

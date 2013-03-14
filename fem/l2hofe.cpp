@@ -299,7 +299,7 @@ namespace ngfem
   {
     int classnr =  ET_trait<ET>::GetClassNr (vnums);
     int bnr, pos;
-    if (precomp_trace.Used (INT<2> (order, classnr), bnr, pos))
+    if (precomp_grad.Used (INT<2> (order, classnr), bnr, pos))
       {
         FlatMatrix<> gmat = *precomp_grad.Get (bnr, pos);
         FlatVector<> vgrad(grad.Height()*DIM, &grad(0,0));
