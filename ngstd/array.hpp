@@ -484,7 +484,8 @@ namespace ngstd
 
 
     /// Append array at end of array. reallocation if necessary.
-    int Append (const Array<T> & source)
+    // int Append (const Array<T> & source)
+    int Append (FlatArray<T> source)
     {
       if(size + source.Size() >= allocsize)
         ReSize (size + source.Size() + 1);
