@@ -69,7 +69,6 @@ namespace netgen
 
   CSGeometry :: ~CSGeometry ()
   {
-    cout << "delete geometry" << endl;
     Clean();
   }
 
