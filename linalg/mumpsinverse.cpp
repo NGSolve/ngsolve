@@ -241,7 +241,7 @@ namespace ngla
     mumps_id.comm_fortran = MPI_Comm_c2f (ngs_comm);
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
-    cout << IM(1) << "MUMPS version number is " << mumps_id.version_number << endl;
+    // cout << IM(1) << "MUMPS version number is " << mumps_id.version_number << endl;
 
 
     /* Define the problem on the host */
@@ -738,7 +738,7 @@ namespace ngla
 
     MumpsFunction (mumps_id);
 
-    cout << IM(0) << "MUMPS version number is " << mumps_id.version_number << endl;
+    // cout << IM(0) << "MUMPS version number is " << mumps_id.version_number << endl;
 
     
     /* distributed matrix definition */
