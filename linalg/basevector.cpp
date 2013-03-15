@@ -137,12 +137,13 @@ namespace ngla
     ;
   }
 
+  /*
   BaseVector * BaseVector :: CreateVector ( const Array<int> * procs ) const
   {
     cout << "Create vec called for base class" << endl;
     return 0;
   }
-
+  */
 
   void BaseVector :: SetRandom () 
   {
