@@ -75,7 +75,7 @@ namespace ngla
       return FlatVector<TSCAL> (es, pdata+i*es);
     }
 
-    virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const
+    virtual BaseVector * CreateVector () const
     {
       switch (es)
 	{

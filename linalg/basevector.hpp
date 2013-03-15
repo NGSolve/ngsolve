@@ -223,7 +223,7 @@ namespace ngla
 
     // create vector, procs is the set of processors on which the vector exists
     // default 0 pointer means all procs
-    virtual BaseVector * CreateVector ( const Array<int> * procs = 0) const;
+    virtual BaseVector * CreateVector () const = 0;
 
 
     virtual void SetRandom ();
