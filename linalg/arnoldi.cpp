@@ -23,21 +23,10 @@ namespace ngla
     BaseVector & hva = *a.CreateVector();
     BaseVector & hvm = *a.CreateVector();
    
-    int n = hv.Size()*hv.EntrySize();    // matrix size
-
-    /*
-    SCAL x = 0.;
-    Complex y = 0.;
-    if ( typeid(x).name() ==  typeid(y).name()) n=n/2;
-    */
-    if (typeid(SCAL) == typeid(Complex) ) n=n/2;
+    int n = hv.FV<SCAL>().Size();    
+    int m = min2 (numval, n);
 
 
-    // int m = min2 (numval, n);
-    int m = numval;
-
-
-    // Matrix<SCAL> matV (m,n);
     Matrix<SCAL> matH(m);
     Array<BaseVector*> abv(m);
     for (int i = 0; i < m; i++)
@@ -49,7 +38,6 @@ namespace ngla
 
     hv.SetRandom();
     hv.SetParallelStatus (CUMULATED);
-    // hv = 1;
     FlatVector<double> fv = hv.FV<double>();
     if (freedofs)
       for (int i = 0; i < hv.Size(); i++)
