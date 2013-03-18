@@ -82,7 +82,11 @@ namespace ngbla
       s = m2.A().Height();
       LocalHeap & lh = m2.GetLocalHeap();
       data = lh.Alloc<T> (s);
-      CMCPMatExpr<FlatVector<T> >::operator= (m2.A());
+
+      // does not copy FlatVectors and don't know why
+      // CMCPMatExpr<FlatVector<T> >::operator= (m2.A()); 
+
+      for (int j = 0; j < s; j++) data[j] = m2.A()(j);
     }
 
 
