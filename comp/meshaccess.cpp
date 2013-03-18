@@ -264,26 +264,6 @@ namespace ngcomp
   }
 
 
-  /*
-    ELEMENT_TYPE MeshAccess :: GetElType (int elnr) const
-    {
-    return ConvertElementType (GetElement(elnr).GetType());
-    }
-
-    ELEMENT_TYPE MeshAccess :: GetSElType (int elnr) const
-    {
-    return ConvertElementType (GetSElement(elnr).GetType());
-    }
-  */
-  
-  int MeshAccess :: GetElNV ( int elnr ) const 
-  {
-    return GetElement(elnr).vertices.Size();
-  } 
-
-
-
-
   void MeshAccess :: GetElPNums (int elnr, Array<int> & pnums) const
   {
     pnums = ArrayObject (GetElement(elnr).points);
@@ -475,40 +455,18 @@ namespace ngcomp
     pnums = ArrayObject (GetSElement(elnr).points);
   }
 
-  /*
-    void MeshAccess :: GetSElVertices (int selnr, Array<int> & vnums) const
-    {
-    vnums = ArrayObject (GetSElement(selnr).vertices);
-    }
-  */
   // some utility for Facets
   void MeshAccess :: GetElFacets (int elnr, Array<int> & fnums) const
   {
     if (dim == 2)
-      {
-	fnums = ArrayObject (Ng_GetElement<2> (elnr).edges);
-
-	// 	Ng_Element ngel = Ng_GetElement<2> (elnr);
-	// 	fnums.SetSize(ngel.edges.Size());
-	// 	for (int j = 0; j < ngel.edges.Size(); j++)
-	// 	  fnums[j] = ngel.edges[j];
-
-      }
+      fnums = ArrayObject (Ng_GetElement<2> (elnr).edges);
     else
-      {
-	fnums = ArrayObject (Ng_GetElement<3> (elnr).faces);
-
-	// 	Ng_Element ngel = Ng_GetElement<3> (elnr);
-	// 	fnums.SetSize(ngel.faces.Size());
-	// 	for (int j = 0; j < ngel.faces.Size(); j++)
-	// 	  fnums[j] = ngel.faces[j];
-
-      }
+      fnums = ArrayObject (Ng_GetElement<3> (elnr).faces);
   } 
     
   void MeshAccess :: GetSElFacets (int selnr, Array<int> & fnums) const
   {
-    if (GetDimension() == 2) 
+    if (dim == 2) 
       GetSElEdges(selnr, fnums);
     else
       {
@@ -519,7 +477,7 @@ namespace ngcomp
 
   void MeshAccess :: GetFacetPNums (int fnr, Array<int> & pnums) const
   {
-    if (GetDimension() == 2)
+    if (dim == 2)
       GetEdgePNums(fnr, pnums);
     else
       GetFacePNums(fnr, pnums);

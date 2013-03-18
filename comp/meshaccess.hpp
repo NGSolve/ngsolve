@@ -61,8 +61,11 @@ namespace ngcomp
 
       case NG_HEX:
 	return ET_HEX;
+
+      default:
+        return ET_TRIG;
       }
-    throw Exception ("Netgen2NgS type conversion: Unhandled element type");
+    // throw Exception ("Netgen2NgS type conversion: Unhandled element type");
   }
 
 
@@ -267,9 +270,9 @@ namespace ngcomp
 	{
 	case 1:	return Ng_GetElement<1> (elnr);
 	case 2: return Ng_GetElement<2> (elnr);
-	case 3: return Ng_GetElement<3> (elnr);
-	default:
-	  throw Exception ("GetElement, illegal dimension");
+	case 3:
+        default: return Ng_GetElement<3> (elnr);
+          // default: throw Exception ("GetElement, illegal dimension");
 	}
     }
 
@@ -285,9 +288,9 @@ namespace ngcomp
 	{
 	case 1:	return Ng_GetElement<0> (elnr);
 	case 2: return Ng_GetElement<1> (elnr);
-	case 3: return Ng_GetElement<2> (elnr);
-	default:
-	  throw Exception ("GetSElement, illegal dimension");
+	case 3: 
+        default: return Ng_GetElement<2> (elnr);
+          // default: throw Exception ("GetSElement, illegal dimension");
 	}
     }
 
@@ -313,7 +316,7 @@ namespace ngcomp
     }
 
     // von astrid
-    int GetElNV (int elnr) const;
+    // int GetElNV (int elnr) const;
 
     /// returns the points of an element.
     /// vertices and possibly edge-midpoints
