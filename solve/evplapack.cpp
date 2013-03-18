@@ -79,6 +79,35 @@ namespace ngsolve
   {
     cout << "solve evp with Lapack" << endl;
 
+
+
+    cout << "new version using linalg - Arnoldi" << endl;
+
+
+    if (bfa->GetFESpace().IsComplex())
+      {
+        cout << "complex evp" << endl;
+      }
+    else
+      {
+        cout << "real evp" << endl;
+        Arnoldi<double> arnoldi (bfa->GetMatrix(), bfm->GetMatrix());
+        arnoldi.SetShift (1);
+
+        int nev = gfu->GetMultiDim();
+        Array<BaseVector*> evecs(nev);
+        // for (int i = 0; i  < nev; i++)
+        // evecs[i] = &gfu->GetVector(i);
+        Array<Complex> lam(nev);
+        arnoldi.Calc (num, lam, nev, evecs);
+        for (int i = 0; i < nev; i++)
+          gfu->GetVector(i) = *evecs[i];
+        cout << "lam = " << endl << lam << endl;
+      }
+
+    return;
+
+
     int dim = bfa->GetFESpace().GetDimension();
     int size = bfa->GetMatrix().Height();
     bool iscomplex = bfa->GetFESpace().IsComplex();

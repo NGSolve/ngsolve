@@ -171,6 +171,9 @@ namespace ngsolve
 	      } 
 	  }
 
+        cout << "ha = " << endl << ha << endl;
+        cout << "hm = " << endl << hm << endl;
+
 #ifdef LAPACK
 	LapackEigenValuesSymmetric (ha, hm, lami, evecs);
 #else
