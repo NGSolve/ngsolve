@@ -11,29 +11,9 @@
 namespace ngfem
 {
 
-  //------------------------------------------------------------------------
-  // HCurlHighOrderFiniteElement
-  //------------------------------------------------------------------------
-
-  template <int D>
-  HCurlHighOrderFiniteElement<D> ::
-  HCurlHighOrderFiniteElement (ELEMENT_TYPE aeltype)
-    : HCurlFiniteElement<D> (aeltype, -1, -1) 
-  { 
-    for (int i = 0; i < 8; i++) vnums[i] = i;
-
-    usegrad_cell = 1;
-    for(int i=0; i<6; i++) usegrad_face[i] = 1;
-    for(int i=0; i<12; i++) usegrad_edge[i] = 1;
-
-    discontinuous = false;
-  }
-
-
   /*******************************************/
   /* T_HCurlHOFiniteElement                  */
   /*******************************************/
-
 
   template <ELEMENT_TYPE ET, typename SHAPES>
   T_HCurlHighOrderFiniteElement<ET, SHAPES> :: 
@@ -99,10 +79,11 @@ namespace ngfem
   void T_HCurlHighOrderFiniteElement<ET,SHAPES> :: 
   CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                        FlatMatrixFixWidth<DIM_CURL> curlshape) const
-  { // not yet tested
-    CalcCurlShape (mip.IP(), curlshape);
+  { 
     if (DIM == 2)
       {
+        // not yet tested
+        CalcCurlShape (mip.IP(), curlshape);
         curlshape /= mip.GetJacobiDet();        
       }
     else
@@ -118,14 +99,6 @@ namespace ngfem
 
 	HCurlCurlShapeAssign<DIM> ds(curlshape); 
 	static_cast<const SHAPES*> (this) -> T_CalcShape (adp, ds);
-	/*
-        Mat<DIM> trans = (1.0/mip.GetJacobiDet()) * mip.GetJacobian();
-        for (int i = 0; i < ndof; i++)
-          {
-            Vec<DIM> hs = curlshape.Row(i);
-            curlshape.Row(i) = trans * hs;
-          }
-	*/
       }
   }
   
@@ -223,57 +196,37 @@ namespace ngfem
   //------------------------------------------------------------------------
   // HCurlHighOrderSegm
   //------------------------------------------------------------------------
-  
-  HCurlHighOrderFE<ET_SEGM> :: HCurlHighOrderFE ()
-    : HCurlHighOrderFiniteElement<1>(ET_SEGM)
-  { 
-    // order_cell = INT<3> (aorder,aorder,aorder);
-    usegrad_cell = 1; 
-    // ComputeNDof(); 
-  }
 
-  HCurlHighOrderFE<ET_SEGM> :: HCurlHighOrderFE (int aorder)
-    : HCurlHighOrderFiniteElement<1>(ET_SEGM)
+
+  template<typename Tx, typename TFA>  
+  void HCurlHighOrderFE_Shape<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & shape) const
   {
-    order_cell = INT<3> (aorder,aorder,aorder);
-    usegrad_cell = 1; 
-    ComputeNDof(); 
-  }
+    Tx x = hx[0];
+    Tx lam[2] = { x, 1-x };
 
-  void HCurlHighOrderFE<ET_SEGM> :: ComputeNDof()
-  {
-    ndof =1; 
-    if(usegrad_cell)
-      ndof += order_cell[0];    
-    order = order_cell[0];
-    order++; // integration order 
-  }
-
-  
-  void HCurlHighOrderFE<ET_SEGM> :: CalcShape (const IntegrationPoint & ip, 
-                                               FlatMatrixFixWidth<1> shape) const
-  {
-    AutoDiff<1> x (ip(0),0); 
-    // AutoDiff<1> lami[2] = {1-x,x}; 
-    AutoDiff<1> lami[2] = {x,1-x}; 
-    
-    int es = 0, ee =1;
-    if (vnums[es] > vnums[ee]) swap(es,ee);  
-    AutoDiff<1> xi = lami[ee] - lami[es]; 
-    
-    // Nedelec0-shapes
-    shape(0,0) = 0.5*(xi.DValue(0)); 
-
-    int ii = 1; 
-    if (order_cell[0] >= 1 && usegrad_cell)
-      { 
-        ArrayMem<AutoDiff<1>, 10> pol_xi(order_cell[0]+2);
-        T_ORTHOPOL::Calc (order_cell[0]+1, xi,pol_xi);  
+    ArrayMem<AutoDiff<1>,10> adpol1(order);
 	
-        for (int j = 0; j < order_cell[0]; j++)
-          shape(ii++,0) = pol_xi[j].DValue(0); 
-      }    
+    INT<2> e = GetEdgeSort (0, vnums);	  
+    
+    //Nedelec low order edge shape function 
+    shape[0] = uDv_minus_vDu<1> (lam[e[0]], lam[e[1]]);
+
+    int p = order_cell[0]; 
+    //HO-Edge shapes (Gradient Fields)   
+    if(p > 0 && usegrad_cell)
+      { 
+        LegendrePolynomial::
+          EvalScaledMult (p-1, 
+                          lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+                          lam[e[0]]*lam[e[1]], adpol1);
+        
+        for(int j = 0; j < p; j++) 	      
+          shape[j+1] = Du<1> (adpol1[j]);
+      }
   }
+  
+
+
   
   //------------------------------------------------------------------------
   // HCurlHighOrderTrig
@@ -1076,6 +1029,7 @@ namespace ngfem
   template class  HCurlHighOrderFiniteElement<2>;
   template class  HCurlHighOrderFiniteElement<3>; 
 
+  template class HCurlHighOrderFE<ET_SEGM>;
   template class HCurlHighOrderFE<ET_TRIG>;
   template class HCurlHighOrderFE<ET_QUAD>;
   template class HCurlHighOrderFE<ET_TET>;
