@@ -11,35 +11,29 @@
 
 namespace ngcomp
 {
-  using namespace ngfem;
 
-
-  VectorFacetFESpace :: VectorFacetFESpace ( const MeshAccess & ama, const Flags & flags, 
-					     bool parseflags )
+  VectorFacetFESpace :: VectorFacetFESpace (const MeshAccess & ama, const Flags & flags, 
+					    bool parseflags )
     : FESpace(ama, flags )
   {
     name = "VectorFESpace";
     DefineNumFlag("relorder");
     DefineDefineFlag("variableorder");
 
-    if ( parseflags) CheckFlags(flags);
+    if (parseflags) CheckFlags(flags);
 
     print = flags.GetDefineFlag("print");
 
     ndlevel.SetSize(0);
     Flags loflags;
     loflags.SetFlag("order", 0.0);
-    if ( this->IsComplex() )
-      loflags.SetFlag("complex");
+    if (IsComplex()) loflags.SetFlag("complex");
 
     loflags.SetFlag ("low_order");
     if (!flags.GetDefineFlag ("low_order"))
       low_order_space = new VectorFacetFESpace(ma, loflags);
-    // else
-    // low_order_space = 0;
-    
 
-    order =  int (flags.GetNumFlag ("order",0)); 
+    order = int (flags.GetNumFlag ("order",0)); 
 
     if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order")) 
       var_order = 1; 
@@ -81,24 +75,13 @@ namespace ngcomp
 	order = 0;  
       }
 
-    // Evaluator for shape tester 
+
     evaluator = NULL;
     static ConstantCoefficientFunction one(1);
-    if (ma.GetDimension() == 2)
-      {
-	Array<CoefficientFunction*> coeffs(1);
-	coeffs[0] = &one;
-	// evaluator = GetIntegrators().CreateBFI("massvectorfacet", 2, coeffs);
-	boundary_integrator = GetIntegrators().CreateBFI("robinvectorfacet",2,coeffs); 
-      }
-    else if(ma.GetDimension() == 3) 
-      {
-	Array<CoefficientFunction*> coeffs(1); 
-	coeffs[0] = &one;
-	// integrator = GetIntegrators().CreateBFI("massvectorfacet",3,coeffs); 
-	boundary_integrator = GetIntegrators().CreateBFI("robinvectorfacet",3,coeffs); 
-      }
-
+    Array<CoefficientFunction*> coeffs(1);
+    coeffs[0] = &one;
+    // evaluator = GetIntegrators().CreateBFI("massvectorfacet", 2, coeffs);
+    boundary_integrator = GetIntegrators().CreateBFI("robinvectorfacet", ma.GetDimension(), coeffs); 
 
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
     if (highest_order_dc) {
@@ -108,12 +91,8 @@ namespace ngcomp
     // Update();
   }
   
-  /*
-  FESpace * VectorFacetFESpace :: Create ( const MeshAccess & ma, const Flags & flags )
-  {
-    return new VectorFacetFESpace ( ma, flags, true);
-  }
-  */
+
+
   void VectorFacetFESpace :: Update(LocalHeap& lh)
   {
     FESpace::Update(lh);
@@ -124,15 +103,16 @@ namespace ngcomp
     if ( low_order_space ) 
       low_order_space -> Update(lh);
 
-    nel = ma.GetNE();
-    nfacets = (ma.GetDimension() == 2 ? ma.GetNEdges() : ma.GetNFaces()); 
+    int nel = ma.GetNE();
+    int nfacets = ma.GetNFacets();
  
     int p = 0; 
-    if(!var_order) p = order; 
+    if (!var_order) p = order; 
     
     order_facet.SetSize(nfacets);
-    order_facet = INT<2> (p,p);
     fine_facet.SetSize(nfacets);
+
+    order_facet = p;
     fine_facet = 0; 
     
     Array<int> fanums;
@@ -214,8 +194,8 @@ namespace ngcomp
 
     // update dofs
 
-    ncfacets = 0;
-    ndof_lo = ( ma.GetDimension() == 2 ) ? nfacets : 2*nfacets;
+    // ncfacets = 0;
+    int ndof_lo = (ma.GetDimension() == 2) ? nfacets : 2*nfacets;
     ndof = ndof_lo;
 
     first_facet_dof.SetSize(nfacets+1);
@@ -253,7 +233,7 @@ namespace ngcomp
 	int inci = 0;
 	Array<int> pnums;
 
-	for ( int i = 0; i < nfacets; i++ )
+	for (int i = 0; i < nfacets; i++)
 	  {
 	    INT<2> p = order_facet[i];
 	    if (highest_order_dc)
