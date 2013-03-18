@@ -155,6 +155,7 @@ namespace ngcomp
     ;
   }
 
+  /*
   FESpace * HDivHighOrderFESpace ::
   Create (const MeshAccess & ma, const Flags & flags)
   {
@@ -165,6 +166,7 @@ namespace ngcomp
     else
       return new HDivHighOrderFESpace (ma, flags, true);
   }
+  */
 
   void HDivHighOrderFESpace :: Update(LocalHeap & lh)
   {
@@ -180,9 +182,9 @@ namespace ngcomp
     if (low_order_space)
       low_order_space -> Update(lh);
     
-    nv = ma.GetNV();
-    nel = ma.GetNE();
-    nfa = ma.GetNFacets();
+    // int nv = ma.GetNV();
+    int nel = ma.GetNE();
+    int nfa = ma.GetNFacets();
        
     order_facet.SetSize(nfa);
     order_inner.SetSize(nel); 
@@ -306,9 +308,8 @@ namespace ngcomp
 
   void HDivHighOrderFESpace :: UpdateDofTables()
   {
-    nv = ma.GetNV(); 
-    nfa = (ma.GetDimension()==3  ? ma.GetNFaces() : ma.GetNEdges());
-    nel = ma.GetNE();
+    int nfa = ma.GetNFacets();
+    int nel = ma.GetNE();
     int dim = ma.GetDimension();
     Array<int> pnums; 
      
@@ -472,28 +473,23 @@ namespace ngcomp
   {
     ctofdof.SetSize(ndof);
     if(discont) 
-    {
-      ctofdof = LOCAL_DOF;
-      return;
-    } 
-
+      {
+        ctofdof = LOCAL_DOF;
+        return;
+      } 
+    
     ctofdof = WIREBASKET_DOF;
-
-    int first,next;
-
-    for (int facet = 0; facet < ma.GetNFacets(); facet++){
-      first = first_facet_dof[facet];
-      next = first_facet_dof[facet+1];
-      ctofdof[facet] = WIREBASKET_DOF;
-      for (int j=first; j<next; j++)
-	ctofdof[j] = INTERFACE_DOF;
-    }
-
-    for (int el = 0; el < ma.GetNE(); el ++){
-      for (int j=first_inner_dof[el];j<first_inner_dof[el+1];j++)
-	ctofdof[j] = LOCAL_DOF;
-    }
-//     *testout << "ctofdof = \n" << ctofdof << endl;
+    
+    for (int facet = 0; facet < ma.GetNFacets(); facet++)
+      {
+        ctofdof[facet] = WIREBASKET_DOF;
+        ctofdof.Range (first_facet_dof[facet], 
+                       first_facet_dof[facet+1]) = INTERFACE_DOF;
+      }
+    
+    for (int el = 0; el < ma.GetNE(); el++)
+      ctofdof.Range (first_inner_dof[el], 
+                     first_inner_dof[el+1]) = LOCAL_DOF;
   }
 
   const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
@@ -525,7 +521,7 @@ namespace ngcomp
 
     FiniteElement * fe;
     
-    typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
+    // typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
     // typedef TrigExtensionMonomial T_ORTHOPOL;
     
 
@@ -635,11 +631,6 @@ namespace ngcomp
 
 
     FiniteElement * fe;
-    
-    typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
-    // typedef TrigExtensionMonomial T_ORTHOPOL;
-    
-
     
     switch (ma.GetElType(elnr))
       {
@@ -806,25 +797,16 @@ namespace ngcomp
   void HDivHighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
-    int first,next;
     if(discont) 
       {
 	// lowest_order included in inner 
-      	first = first_inner_dof[elnr];
-	next = first_inner_dof[elnr+1];
-	for(int j=first; j<next; j++)
-	  dnums.Append(j);
+        dnums += IntRange (first_inner_dof[elnr],
+                           first_inner_dof[elnr+1]);
 	return;
       } 
-    
+
     Array<int> fanums;
-    if(ma.GetDimension() == 3)
-      ma.GetElFaces (elnr, fanums);
-    else
-      ma.GetElEdges (elnr, fanums); 
-      
-    if(order < 0)
-      throw Exception(" HDivHighOrderFESpace :: GetDofNrs() order < 0 ");
+    ma.GetElFacets (elnr, fanums);
 
     //Raviart-Thomas
     for (int i = 0; i < fanums.Size(); i++)
@@ -832,21 +814,17 @@ namespace ngcomp
     // facets
     for(int i=0; i<fanums.Size(); i++)
       {
-	first = first_facet_dof[fanums[i]];
-	next = first_facet_dof[fanums[i]+1];
-	for(int j=first ; j<next; j++)
-	  dnums.Append(j);
+        dnums += IntRange (first_facet_dof[fanums[i]],
+                           first_facet_dof[fanums[i]+1]);
+                           
       }
+
     //inner
-    first = first_inner_dof[elnr];
-    next = first_inner_dof[elnr+1];
-    for(int j=first; j<next; j++)
-      dnums.Append(j);
-    
+    dnums += IntRange (first_inner_dof[elnr],
+                       first_inner_dof[elnr+1]);
     
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
-    // (*testout) << "hdivspace(sz) el " << elnr << " has dofs " << dnums << endl;
   }
 
 
@@ -855,38 +833,18 @@ namespace ngcomp
     dnums.SetSize(0);
     if (discont) return; 
 
-    Array<int> vnums,fanums; 
+    Array<int> fanums; 
        
-    if(order <0) throw (" HDivHighOrderFESpace :: GetSDofNrs() order < 0 ");
-    
-    if(ma.GetDimension() == 2) 
-      { 
-	Array<int> eorient; 
-	ma.GetSElEdges (selnr, fanums, eorient);
-	// *testout << " sel edges " << fanums << endl; 
-      } 
-    else 
-      {
-	fanums.SetSize(0); 
-	int forient,fanr;
-	ma.GetSElFace (selnr, fanr, forient);
-	fanums.Append(fanr); 
-      }
-    
+    ma.GetSElFacets (selnr, fanums);
+
     // lowest-order
     for(int i=0;i<fanums.Size();i++) 
       dnums.Append (fanums[i]);
-    // facets 
+
+    // high order
     for (int i = 0; i < fanums.Size(); i++)
-      {
-	int first = first_facet_dof[fanums[i]];
-	int next = first_facet_dof[fanums[i]+1];
-	for (int j = first; j <next; j++)
-	  dnums.Append (j);
-      }
-    
-    //     (*testout)<<"SElNr= "<<selnr<<endl;
-    //     (*testout)<<"SDofNr= "<<dnums<<endl;
+      dnums += IntRange (first_facet_dof[fanums[i]],
+                         first_facet_dof[fanums[i]+1]);
   }
 
 
@@ -1203,29 +1161,15 @@ namespace ngcomp
     int clustertype = int(precflags.GetNumFlag("ds_cluster",1)); 
     cout << " DirectSolverCluster Clustertype " << clustertype << endl; 
   
-    // int nv = ma.GetNV();
-    // int nd = GetNDof();
-    // int ne = ma.GetNE();
-    // int ned = ma.GetNEdges();
-  
-    // int dim = ma.GetDimension();
-
     Array<int> vnums,elnums; 
     Array<int> orient; 
   
     Array<int> edges(3);
         
     int nfa = ma.GetNFaces();
-    // int nnv = ma.GetNV();
-    // int nel = ma.GetNE();
 
     Array<int> ednums, fnums, pnums;
   
-    //  int i, j, k;
-        
-
-
-
     switch (clustertype)
       {
         // 0) none
@@ -1275,29 +1219,8 @@ namespace ngcomp
     dnums += GetElementDofs (elnr);
   }
 
-  
-  // there is a decision in Create ...
-  // static RegisterFESpace<HDivHighOrderFESpace> init ("hdivho");
-
-  // register FESpaces
-  namespace hdivhofespace_cpp
-  {
-    
-    class Init
-    {
-    public:
-      Init ();
-    };
-    
-    Init::Init()
-    {
-      GetFESpaceClasses().AddFESpace ("hdivho", HDivHighOrderFESpace::Create);
-    }
-    
-    Init init;
-  }
-
-  // int link_it_hdivhofes;
+  // h(div) order=0 --->  RT0 was created
+  static RegisterFESpace<HDivHighOrderFESpace> init ("hdivho");
 }
 
 

@@ -19,14 +19,6 @@ namespace ngcomp
   protected:
     // Level
     int level;
-    // Number of Edges
-    int ned;
-    // Number of Faces
-    int nfa;
-    // Number of Elements
-    int nel;
-    // Number of Vertex
-    int nv;
     // Number Dofs 
     int ndof;
     // order of curl-fields 
@@ -56,15 +48,13 @@ namespace ngcomp
     // high order divergence free
     bool ho_div_free; 
 
-    bool print; 
-     
   public:
-
-    HDivHighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
+    HDivHighOrderFESpace (const MeshAccess & ama, const Flags & flags, 
+                          bool parseflags=false);
     ///
     virtual ~HDivHighOrderFESpace ();
 
-    static FESpace * Create (const MeshAccess & ma, const Flags & flags);
+    // static FESpace * Create (const MeshAccess & ma, const Flags & flags);
 
     void UpdateDofTables(); 
 
