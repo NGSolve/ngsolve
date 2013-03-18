@@ -18,15 +18,15 @@ namespace ngcomp
     /// Level
     int level;
     /// Number of Facets
-    int nfacets;
+    // int nfacets;
     /// 
-    int ncfacets;
+    // int ncfacets;
     ///
-    int nel;
+    // int nel;
 
     Array<int> first_facet_dof;
     Array<int> first_inner_dof;  // for highest_order_dc
-    int ndof_lo;
+    // int ndof_lo;
 
     int rel_order;
 
@@ -42,13 +42,10 @@ namespace ngcomp
 
   public:
     ///
-    VectorFacetFESpace ( const MeshAccess & ama, const Flags & flags, 
-			 bool parseflags = false );
+    VectorFacetFESpace (const MeshAccess & ama, const Flags & flags, 
+			bool parseflags = false );
 
-    virtual ~VectorFacetFESpace ()
-    { ; }
-
-    // static FESpace * Create ( const MeshAccess & ma, const Flags & flags );
+    virtual ~VectorFacetFESpace () { ; }
 
     virtual string GetClassName () const 
     {
@@ -61,8 +58,8 @@ namespace ngcomp
 
     virtual int GetNDofLevel ( int i ) const { return ndlevel[i]; }
 
-    virtual int GetNDofLowOrder () const
-    { return ndof_lo; }
+    // virtual int GetNDofLowOrder () const
+    // { return ndof_lo; }
 
     virtual const FiniteElement & GetFE ( int elnr, LocalHeap & lh ) const;
     virtual const FiniteElement & GetSFE ( int selnr, LocalHeap & lh ) const;

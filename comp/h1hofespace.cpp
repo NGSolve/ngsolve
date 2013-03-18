@@ -53,7 +53,7 @@ namespace ngcomp
     //      in case of (var_order && order) or (relorder) 
     var_order = flags.GetDefineFlag("variableorder");  
     fixed_order = flags.GetDefineFlag("fixedorder");  
-    order =  int (flags.GetNumFlag ("order",1)); 
+    order = int (flags.GetNumFlag ("order",1)); 
     if (order < 1) order = 1;
 
     if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order")) 

@@ -210,6 +210,7 @@ namespace ngcomp
 #ifdef PARALLEL	    
     else
       {  
+	GetVector() = 0.0;
 	GetVector().SetParallelStatus (DISTRIBUTED);    
 	LoadNodeType<1,NT_VERTEX> (ist);
 	LoadNodeType<2,NT_EDGE> (ist);
@@ -275,8 +276,8 @@ namespace ngcomp
 	    fes.GetNodeDofNrs (NTYPE, master_nodes[i], dnums); 
 	    Vector<SCAL> elvec(dnums.Size());
 	    
-	    for (int i = 0; i < elvec.Size(); i++)
-	      elvec(i) = loc_data[cnt++];
+	    for (int j = 0; j < elvec.Size(); j++)
+	      elvec(j) = loc_data[cnt++];
 	    
 	    SetElementVector (dnums, elvec);
 	  }

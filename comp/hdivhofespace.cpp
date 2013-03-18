@@ -182,7 +182,7 @@ namespace ngcomp
     
     nv = ma.GetNV();
     nel = ma.GetNE();
-    nfa = (ma.GetDimension() == 2 ? ma.GetNEdges() : ma.GetNFaces()); 
+    nfa = ma.GetNFacets();
        
     order_facet.SetSize(nfa);
     order_inner.SetSize(nel); 
@@ -197,26 +197,24 @@ namespace ngcomp
     
     if(!var_order)
       {
-	p = order; pc = curl_order; 
+	p = order; 
+	pc = curl_order; 
       } 
     
-    order_facet = INT<2>(pc,pc); 
-    order_inner = INT<3>(p,p,p); 
-    order_inner_curl = INT<3>(pc,pc,pc); 
+    order_facet = pc;
+    order_inner = p;
+    order_inner_curl = pc;
     fine_facet = 0; //!!!! 
 
     int dim = ma.GetDimension();
     
-    for(int i=0;i<nel;i++)
+    for(int i = 0; i < nel; i++)
       {
-	ELEMENT_TYPE eltype=ma.GetElType(i); 
+	ELEMENT_TYPE eltype = ma.GetElType(i); 
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);
 	
 	Array<int> elfacets; 
-	if(dim==2)
-	  ma.GetElEdges(i,elfacets);
-	else 
-	  ma.GetElFaces(i,elfacets); 
+	ma.GetElFacets (i,elfacets); 
 	
 	for (int j=0;j<elfacets.Size();j++) fine_facet[elfacets[j]] = 1; 
 	
@@ -282,11 +280,9 @@ namespace ngcomp
     ma.AllReduceNodalData ((ma.GetDimension()==2) ? NT_EDGE : NT_FACE,
 			   fine_facet, MPI_LOR);
 
-    if(uniform_order_inner > -1) 
-      order_inner = INT<3>(uniform_order_inner,uniform_order_inner,uniform_order_inner);
+    if(uniform_order_inner > -1) order_inner = uniform_order_inner;
 
-    if(uniform_order_facet > -1) 
-      order_facet = INT<2>(uniform_order_facet,uniform_order_facet); 
+    if(uniform_order_facet > -1) order_facet = uniform_order_facet;
 
     for(int i=0;i<nfa;i++) if(!fine_facet[i]) order_facet[i] = INT<2> (0,0); 
 
