@@ -31,26 +31,22 @@ protected:
   bool discontinuous;
   
 public:
-  HCurlHighOrderFiniteElement (ELEMENT_TYPE aeltype);
+  // HCurlHighOrderFiniteElement (ELEMENT_TYPE aeltype);
   HCurlHighOrderFiniteElement () { discontinuous = false; }
 
   void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
   void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
   void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
 
-  void SetUseGradEdge(int nr, int uge) { usegrad_edge[nr] = uge; }
-  void SetUseGradFace(int nr, int ugf) { usegrad_face[nr] = ugf; }
+  void SetUseGradEdge(int nr, bool uge) { usegrad_edge[nr] = uge; }
+  void SetUseGradFace(int nr, bool ugf) { usegrad_face[nr] = ugf; }
 
   /// assignes vertex numbers
   template <typename TA> 
   void SetVertexNumbers (const TA & avnums)
   { for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; }
-  // void SetVertexNumbers (FlatArray<int> & avnums);
 
-  // void SetOrderCell (int oi);
   void SetOrderCell (INT<3> oi) { order_cell = oi; }
-  // void SetOrderFace (FlatArray<int> & of);
-  // void SetOrderFace (FlatArray<INT<2> > & of); 
 
   /// set isotropic or anisotropic face orders
   template <typename TA>
@@ -61,7 +57,6 @@ public:
   template <typename TA>
   void SetOrderEdge (const TA & oe)
   { for (int i = 0; i < oe.Size(); i++) order_edge[i] = oe[i]; }
-
 
   /// use edge-gradients
   template <typename TA>
@@ -125,8 +120,6 @@ protected:
   using ET_trait<ET>::FaceType;
   using ET_trait<ET>::GetEdgeSort;
   using ET_trait<ET>::GetFaceSort;
-  
-
 
   typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 
@@ -139,14 +132,12 @@ public:
   {
     for (int i = 0; i < N_VERTEX; i++)
       vnums[i] = i;
-    // dimspace = DIM;
     eltype = ET;
   }
 
   T_HCurlHighOrderFiniteElement (int aorder);
 
   virtual void ComputeNDof();
-  // virtual void GetInternalDofs (Array<int> & idofs) const;
 
   virtual void CalcShape (const IntegrationPoint & ip, 
                           FlatMatrixFixWidth<DIM> shape) const;
@@ -186,18 +177,11 @@ public:
 
 /// A segment high order H(curl) element
 template <>
-class HCurlHighOrderFE<ET_SEGM>:  public HCurlHighOrderFiniteElement<1>
+class HCurlHighOrderFE_Shape<ET_SEGM>:  public HCurlHighOrderFE<ET_SEGM>
 {
-private: 
-  typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
- 
 public:
-  HCurlHighOrderFE ();
-  HCurlHighOrderFE (int aorder);
-  virtual void ComputeNDof();
- 
-  virtual void CalcShape (const IntegrationPoint & ip, 
-			  FlatMatrixFixWidth<1> shape) const;
+  template<typename Tx, typename TFA>  
+  void T_CalcShape (Tx hx[2], TFA & shape) const; 
 };
 
 /// A triangular high order H(curl) element

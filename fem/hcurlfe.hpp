@@ -174,6 +174,13 @@ namespace ngfem
     return hv;
   }
 
+  inline AutoDiff<0> Cross (const AutoDiff<1> & u,
+			    const AutoDiff<1> & v)
+  {
+    AutoDiff<0> hv;
+    hv.Value() = 0.0;
+    return hv;
+  }
 
 
 

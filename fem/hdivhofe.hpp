@@ -165,7 +165,6 @@ protected:
   using HDivFiniteElement<DIM>::ndof;
   using HDivFiniteElement<DIM>::order;
   using HDivFiniteElement<DIM>::eltype;
-  // using HDivFiniteElement<DIM>::dimspace;
 
   using HDivHighOrderFiniteElement<DIM>::order_edge;
   using HDivHighOrderFiniteElement<DIM>::order_face;
@@ -182,9 +181,7 @@ public:
   T_HDivHighOrderFiniteElement () 
     : HDivHighOrderFiniteElement<DIM> (ET)
   {
-    for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
-      vnums[i] = i;
-    // dimspace = DIM;
+    for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
     eltype = ET;
   }
 
@@ -195,18 +192,15 @@ public:
         order_edge[i] = aorder;
     else
       for (int i=0; i < ET_trait<ET>::N_FACE; i++) 
-        order_face[i] = INT<2> (aorder,aorder); 
+        order_face[i] = aorder;
     
-    order_inner = INT<3> (aorder,aorder,aorder);
+    order_inner = aorder;
 
-    for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
-      vnums[i] = i;
-    // dimspace = DIM;
+    for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
     eltype = ET;
   }
 
   virtual void ComputeNDof();
-  // virtual void GetInternalDofs (Array<int> & idofs) const;
 };
 
 
@@ -250,9 +244,7 @@ class HDivHighOrderFE<ET_TET> : public T_HDivHighOrderFiniteElement<ET_TET>
 public:
   HDivHighOrderFE () { ; }
   HDivHighOrderFE (int aorder);
-  // virtual void ComputeNDof();
-  // virtual void GetInternalDofs (Array<int> & idofs) const;
-  
+
   /// compute shape
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[], TFA & shape) const; 
@@ -269,8 +261,6 @@ class HDivHighOrderFE<ET_PRISM> : public T_HDivHighOrderFiniteElement<ET_PRISM>
 public:
   HDivHighOrderFE () { ; }
   HDivHighOrderFE (int aorder);
-  // virtual void ComputeNDof();
-  // virtual void GetInternalDofs (Array<int> & idofs) const;
 
   /*
   /// compute shape
@@ -285,11 +275,6 @@ public:
   /// compute shape
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[], TFA & shape) const; 
-
-
-  /// compute Div numerical diff
-  //void CalcNumDivShape( const IntegrationPoint & ip,
-  //			FlatVector<> divshape) const;
 
   virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
