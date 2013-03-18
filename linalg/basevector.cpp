@@ -119,9 +119,7 @@ namespace ngla
   {
     FlatVector<double> fv = FVDouble();
     for (int i = 0; i < fv.Size(); i++)
-      {
-	ost << fv(i) << " ";
-      }
+      ost << fv(i) << " ";
   }
 
   void BaseVector :: LoadText(istream & ist) 
