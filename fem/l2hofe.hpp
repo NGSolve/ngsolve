@@ -205,6 +205,8 @@ namespace ngfem
 
     virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const;
     virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const;
+
+    virtual void GetDiagMassMatrix (FlatVector<> mass) const;
   };
 
 

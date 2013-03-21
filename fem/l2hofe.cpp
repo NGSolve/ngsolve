@@ -147,6 +147,9 @@ namespace ngfem
 
 
 
+  
+
+
   template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
   typename L2HighOrderFE<ET,SHAPES>::TPRECOMP L2HighOrderFE<ET,SHAPES>::precomp;
 
@@ -162,7 +165,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
   void L2HighOrderFE<ET,SHAPES> :: 
   PrecomputeTrace ()
-    {
+  {
       for (int f = 0; f < ElementTopology::GetNFacets(ET); f++)
 	{
 	  int classnr =  ET_trait<ET>::GetFacetClassNr (f, vnums);
@@ -346,14 +349,31 @@ namespace ngfem
     }
 
 
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  void L2HighOrderFE<ET,SHAPES> :: 
+  GetDiagMassMatrix (FlatVector<> mass) const
+  {
+    L2HighOrderFiniteElement<ET_trait<ET>::DIM>::GetDiagMassMatrix (mass);
+  }
 
+  template <> void L2HighOrderFE<ET_SEGM> :: 
+  GetDiagMassMatrix (FlatVector<> mass) const
+  {
+    // L2HighOrderFiniteElement<1>::GetDiagMassMatrix (mass);
 
+    for (int ix = 0; ix <= order; ix++)
+      mass(ix) = 1.0 / (2*ix+1);
+  }
 
+  template <> void L2HighOrderFE<ET_TRIG> :: 
+  GetDiagMassMatrix (FlatVector<> mass) const
+  {
+    // L2HighOrderFiniteElement<2>::GetDiagMassMatrix (mass);
 
-
-
-
-
+    for (int ix = 0, ii = 0; ix <= order; ix++)
+      for (int iy = 0; iy <= order-ix; iy++, ii++)
+        mass(ii) = 1.0 / ( (2*iy+1) * (2*ix+2*iy+2));
+  }
 
 
 
@@ -378,6 +398,7 @@ namespace ngfem
   }
   */
 
+
   /* *********************** Triangle  **********************/
 
   /*
@@ -392,6 +413,9 @@ namespace ngfem
 
     DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
   }
+  */
+
+  /*
   */
 
   /* *********************** Quadrilateral  **********************/
