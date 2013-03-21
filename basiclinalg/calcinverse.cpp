@@ -25,6 +25,20 @@ namespace ngbla
     return std::abs(a);
   }
 
+#ifdef USE_GMP
+
+  inline double abs (mpq_class a)
+  {
+    return std::fabs(a.get_d());
+  }
+
+  void CalcInverse (mpq_class a, mpq_class & ia)
+  {
+    ia = 1 / a;
+  }
+#endif
+
+
   template <int N, int N2, typename SCAL>
   inline double abs (Mat<N,N2,SCAL> & m)
   {
@@ -213,6 +227,10 @@ namespace ngbla
     T_CalcInverse (inv);
   }
 
+
+#ifdef USE_GMP
+  template void CalcInverse (FlatMatrix<mpq_class> inv);
+#endif
 
 
   template void CalcInverse (FlatMatrix<Mat<1,1,double> > inv);
