@@ -7,7 +7,9 @@
 /* Date:   01. Jan. 02                                                    */
 /**************************************************************************/
 
-
+#ifdef USE_GMP
+#include <gmpxx.h>
+#endif
 
 namespace ngbla
 {
@@ -446,6 +448,26 @@ namespace ngbla
   template <class TA> class SubMatrixExpr;
 
 
+
+
+#ifdef USE_GMP
+
+  template <>
+  class mat_traits<mpq_class>
+  {
+  public:
+    typedef mpq_class TELEM;
+    typedef mpq_class TSCAL;
+    typedef mpq_class TV_COL;
+    typedef mpq_class TV_ROW;
+    enum { HEIGHT = 1 };
+    enum { WIDTH = 1 };
+    enum { IS_COMPLEX = 0 };
+  };
+
+  template <> class mat_prod_type<mpq_class,mpq_class> { public: typedef mpq_class TMAT; };
+
+#endif
 
 
 
@@ -1476,6 +1498,7 @@ namespace ngbla
     return L2Norm2(x.Value());
   }
 
+
   template <class TA>
   inline double L2Norm2 (const Expr<TA> & v)
   {
@@ -1585,7 +1608,7 @@ namespace ngbla
     CalcInverse (inv);
   }
 
-
+  
 
 
   /**
