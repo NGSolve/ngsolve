@@ -139,7 +139,7 @@ namespace netgen
   BASE_INDEX_CLOSED_HASHTABLE (int size)
     : hash(size)
   {
-    hash.SetName ("index-hashtable, hash");
+    // hash.SetName ("index-hashtable, hash");
 
     invalid = -1;
     for (int i = 1; i <= size; i++)
@@ -216,7 +216,7 @@ namespace netgen
   BASE_INDEX_2_CLOSED_HASHTABLE (int size)
     : hash(size)
   {
-    hash.SetName ("i2-hashtable, hash");
+    // hash.SetName ("i2-hashtable, hash");
 
     invalid = -1;
     for (int i = 1; i <= size; i++)

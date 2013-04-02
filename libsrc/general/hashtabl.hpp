@@ -468,7 +468,8 @@ class BASE_INDEX_CLOSED_HASHTABLE
 {
 protected:
   ///
-  MoveableArray<INDEX> hash;
+  // MoveableArray<INDEX> hash;
+  Array<INDEX> hash;
   ///
   int invalid;
 public:
@@ -543,14 +544,15 @@ template <class T>
 class INDEX_CLOSED_HASHTABLE : public BASE_INDEX_CLOSED_HASHTABLE
 {
   ///
-  MoveableArray<T> cont;
+// MoveableArray<T> cont;
+  Array<T> cont;
 
 public:
   ///
   INDEX_CLOSED_HASHTABLE (int size)
     : BASE_INDEX_CLOSED_HASHTABLE(size), cont(size)
   {
-    cont.SetName ("ind-hashtable, contents");
+    ; // cont.SetName ("ind-hashtable, contents");
   }
 
 
@@ -617,8 +619,8 @@ public:
 
   void SetName (const char * aname)
   {
-    cont.SetName(aname);
-    hash.SetName(aname);
+    // cont.SetName(aname);
+    // hash.SetName(aname);
   }
 };
 
@@ -634,7 +636,8 @@ class BASE_INDEX_2_CLOSED_HASHTABLE
 {
 protected:
   ///
-  MoveableArray<INDEX_2> hash;
+  // MoveableArray<INDEX_2> hash;
+  Array<INDEX_2> hash;
   ///
   int invalid;
 public:
@@ -695,7 +698,8 @@ template <class T>
 class INDEX_2_CLOSED_HASHTABLE : public BASE_INDEX_2_CLOSED_HASHTABLE
 {
   ///
-  MoveableArray<T> cont;
+// MoveableArray<T> cont;
+  Array<T> cont;
 
 public:
   ///
@@ -726,8 +730,9 @@ public:
 
   void SetName (const char * aname)
   {
-    cont.SetName(aname);
-    hash.SetName(aname);
+    ; 
+    // cont.SetName(aname);
+    // hash.SetName(aname);
   }
 };
 
@@ -755,14 +760,15 @@ inline ostream & operator<< (ostream & ost, const INDEX_2_CLOSED_HASHTABLE<T> & 
 class BASE_INDEX_3_CLOSED_HASHTABLE
 {
 protected:
-  MoveableArray<INDEX_3> hash;
+  // MoveableArray<INDEX_3> hash;
+  Array<INDEX_3> hash;
   int invalid;
 
 protected: 
   BASE_INDEX_3_CLOSED_HASHTABLE (int size)
     : hash(size)
   {
-    hash.SetName ("i3-hashtable, hash");
+    // hash.SetName ("i3-hashtable, hash");
     invalid = -1;
     for (int i = 0; i < size; i++)
       hash[i].I1() = invalid;
@@ -848,13 +854,14 @@ protected:
 template <class T>
 class INDEX_3_CLOSED_HASHTABLE : public BASE_INDEX_3_CLOSED_HASHTABLE
 {
-  MoveableArray<T,0> cont;
+  // MoveableArray<T,0> cont;
+  Array<T,0> cont;
 
 public:
   INDEX_3_CLOSED_HASHTABLE (int size)
     : BASE_INDEX_3_CLOSED_HASHTABLE(size), cont(size)
   {
-    cont.SetName ("i3-hashtable, contents");
+    ; //cont.SetName ("i3-hashtable, contents");
   }
   
   void Set (const INDEX_3 & ahash, const T & acont)
@@ -923,8 +930,9 @@ public:
 
   void SetName (const char * aname)
   {
-    cont.SetName(aname);
-    hash.SetName(aname);
+    ; 
+    // cont.SetName(aname);
+    // hash.SetName(aname);
   }
 };
 
@@ -1167,7 +1175,7 @@ inline INDEX_2_CLOSED_HASHTABLE<T> ::
 INDEX_2_CLOSED_HASHTABLE (int size)
   : BASE_INDEX_2_CLOSED_HASHTABLE(size), cont(size)
 {
-  cont.SetName ("i2-hashtable, contents");
+  // cont.SetName ("i2-hashtable, contents");
 }
 
 template<class T>
