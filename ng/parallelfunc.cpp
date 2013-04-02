@@ -27,23 +27,12 @@
 
 #endif
 
-/*
-#include <geometry2d.hpp>
-#include <stlgeom.hpp>
-*/
-
 
 #include <meshing.hpp>
 
-// #include "parallel.hpp"
-// #include "parallelfunc.hpp"
 
-
-// extern "C" void NGS_ParallelRun (const string & message);
 void (*NGS_ParallelRun) (const string & message) = NULL;
 
-
-// extern void NGS_ParallelRun ( const string & message );
 
 namespace netgen
 {
