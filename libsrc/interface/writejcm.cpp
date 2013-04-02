@@ -104,7 +104,7 @@ void WriteJCMFormat (const Mesh & mesh,
     if (el.GetNP() == 4)
     {
       for (j = 1; j <= 4; j++)
-        pointsOnTetras.Set(el.PNum(j).GetInt(),1);     
+        pointsOnTetras.Set(int (el.PNum(j)),1);     
     }
   }
 

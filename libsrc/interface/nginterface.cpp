@@ -1785,7 +1785,7 @@ void Ng_GetPeriodicVertices (int idnr, int * pairs)
 
 int Ng_GetNPeriodicEdges (int idnr)
 {
-  Array<INDEX,PointIndex::BASE> map;
+  Array<int,PointIndex::BASE> map;
   //const MeshTopology & top = mesh->GetTopology();
   int nse = mesh->GetNSeg();
 
@@ -1797,8 +1797,8 @@ int Ng_GetNPeriodicEdges (int idnr)
 
     for (SegmentIndex si = 0; si < nse; si++)
       {
-	PointIndex other1 = map[(*mesh)[si][0]];
-	PointIndex other2 = map[(*mesh)[si][1]];
+	PointIndex other1 = PointIndex (map[(*mesh)[si][0]]);
+	PointIndex other2 = PointIndex (map[(*mesh)[si][1]]);
 	//  (*testout) << "seg = " << (*mesh)[si] << "; other = " 
 	//     << other1 << "-" << other2 << endl;
 	if (other1 && other2 && mesh->IsSegment (other1, other2))
@@ -1812,7 +1812,7 @@ int Ng_GetNPeriodicEdges (int idnr)
 
 void Ng_GetPeriodicEdges (int idnr, int * pairs)
 {
-  Array<INDEX,PointIndex::BASE> map;
+  Array<int,PointIndex::BASE> map;
   const MeshTopology & top = mesh->GetTopology();
   int nse = mesh->GetNSeg();
 
@@ -1825,8 +1825,8 @@ void Ng_GetPeriodicEdges (int idnr, int * pairs)
 
     for (SegmentIndex si = 0; si < nse; si++)
       {
-	PointIndex other1 = map[(*mesh)[si][0]];
-	PointIndex other2 = map[(*mesh)[si][1]];
+	PointIndex other1 = PointIndex (map[(*mesh)[si][0]]);
+	PointIndex other2 = PointIndex (map[(*mesh)[si][1]]);
 	if (other1 && other2 && mesh->IsSegment (other1, other2))
 	  {
 	    SegmentIndex otherseg = mesh->SegmentNr (other1, other2);

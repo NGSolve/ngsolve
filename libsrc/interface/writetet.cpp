@@ -494,7 +494,7 @@ namespace netgen
       }
 
 
-    for(PointIndex i=PointIndex::BASE; i<mesh.GetNP()+PointIndex::BASE; i++)
+    for(PointIndex i = mesh.Points().Begin(); i < mesh.Points().End(); i++)
       {
 	if(nodenum[i] == -1)
 	  continue;
@@ -1063,7 +1063,7 @@ namespace netgen
     
     for(int i=0; i<groups.Size(); i++)
       groups[i]->SetSize(0);
-    for(PointIndex i=PointIndex::BASE; i<mesh.GetNP()+PointIndex::BASE; i++)
+    for(PointIndex i = mesh.Points().Begin(); i < mesh.Points().End(); i++)
       {
 	if(i-PointIndex::BASE < point_ids.Size())
 	  {
