@@ -229,6 +229,17 @@ namespace ngstd
 	      break;
 	    }
 
+	  case VEC_VEC_MULT:
+	    {
+	      int dim = program[i].vecdim;
+	      TCALC scal = 0;
+	      for (int j = 0; j < dim; j++)
+		scal += stack[stacksize-2*dim+j+1] * stack[stacksize-dim+j+1];
+	      stacksize-=2*dim-1;
+              stack[stacksize] = scal;
+	      break;
+	    }
+
 	  case NEG:
 	    stack[stacksize] = -stack[stacksize];
 	    break;
@@ -1073,6 +1084,12 @@ namespace ngstd
 		  AddOperation (SCAL_VEC_MULT);
 		  program.Last().vecdim = result2.vecdim;
 		  result.vecdim = result2.vecdim;
+		}
+	      else if (result.vecdim > 1 && result2.vecdim > 1)
+		{
+		  AddOperation (VEC_VEC_MULT);
+		  program.Last().vecdim = result.vecdim;
+                  result.vecdim = 1;
 		}
 	      break;
 	    }
