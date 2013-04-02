@@ -14,6 +14,13 @@
 
 namespace ngla
 {
+
+  BaseVector :: BaseVector ()
+    : paralleldofs (NULL) 
+  {
+    ;
+  }
+  
   BaseVector :: ~BaseVector () 
   { 
     ;
@@ -35,6 +42,11 @@ namespace ngla
   {
     SetScalar (s);
     return *this;
+  }
+
+  double BaseVector :: L2Norm () const
+  {
+    return ngbla::L2Norm (FVDouble());
   }
 
   BaseVector & BaseVector :: Scale (double scal)
@@ -368,6 +380,12 @@ namespace ngla
       else
 	ii += es;
   }
+
+
+  void BaseVector :: Cumulate () const { ; }
+  void BaseVector :: Distribute() const { ; }
+  PARALLEL_STATUS BaseVector :: GetParallelStatus () const { return NOT_PARALLEL; }
+  void BaseVector :: SetParallelStatus (PARALLEL_STATUS stat) const { ; }
   
 
   /*
@@ -522,13 +540,20 @@ S_BaseVector<SCAL> & S_BaseVector<SCAL> :: operator= (double s)
   return *this;
 }
 
-/*
-template <class SCAL>
-SCAL S_BaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
-{
-  throw Exception ("Inner Product called for S_BaseVector");
-}
-*/
+
+  template <class SCAL>
+  SCAL S_BaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
+  {
+    return ngbla::InnerProduct (FVScal(), 
+                                dynamic_cast<const S_BaseVector&>(v2).FVScal());
+  }
+
+  //template <> 
+  Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
+  {
+    return ngbla::InnerProduct (FVScal(), 
+                                dynamic_cast<const S_BaseVector&>(v2).FVScal());
+  }
 
 template <class SCAL>
 FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const 
@@ -568,8 +593,40 @@ FlatVector<Complex> S_BaseVector<Complex> :: FVComplex () const throw()
 
 
 
-template class S_BaseVector<double>;
-//SZ	template class S_BaseVector<Complex>;
+
+
+  template <typename TSCAL>
+  BaseVector * S_BaseVectorPtr<TSCAL> :: CreateVector () const
+  {
+    switch (es)
+      {
+      case 1: return new VVector<TSCAL> (this->size);
+      case 2: return new VVector<Vec<2,TSCAL> > (this->size);
+      case 3: return new VVector<Vec<3,TSCAL> > (this->size);
+      }
+    return new S_BaseVectorPtr<TSCAL> (this->size, es);
+  }
+
+  template <typename TSCAL>
+  BaseVector * S_BaseVectorPtr<TSCAL> :: Range (int begin, int end) const
+  {
+    return new S_BaseVectorPtr<TSCAL> (end-begin, es, pdata+begin*es);
+  }
+  
+  template <typename TSCAL>
+  BaseVector * S_BaseVectorPtr<TSCAL> :: Range (IntRange range) const
+  {
+    return new S_BaseVectorPtr<TSCAL> (range.Size(), es, pdata+range.First()*es);
+  }
+  
+
+  template class S_BaseVector<double>;
+  template class S_BaseVector<Complex>;
+  
+  template class VFlatVector<double>;
+  
+  template class S_BaseVectorPtr<double>;
+  template class S_BaseVectorPtr<Complex>;
 
 
 }

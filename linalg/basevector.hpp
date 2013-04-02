@@ -87,9 +87,7 @@ namespace ngla
     const ParallelDofs * paralleldofs;
   public:
     ///
-    BaseVector () throw ()  
-      : paralleldofs (NULL) 
-    { ; }
+    BaseVector ();
 
     ///
     virtual ~BaseVector ();
@@ -196,10 +194,7 @@ namespace ngla
 	InnerProduct (v2);
     }
 
-    virtual double L2Norm () const
-    {
-      return ngbla::L2Norm (FVDouble());
-    }
+    virtual double L2Norm () const;
 
     virtual BaseVector & Scale (double scal);
     virtual BaseVector & Scale (Complex scal);
@@ -322,10 +317,10 @@ namespace ngla
     }
   
   
-    virtual void Cumulate () const { ; }
-    virtual void Distribute() const { ; }
-    virtual PARALLEL_STATUS GetParallelStatus () const { return NOT_PARALLEL; }
-    virtual void SetParallelStatus (PARALLEL_STATUS stat) const { ; }
+    virtual void Cumulate () const;
+    virtual void Distribute() const;
+    virtual PARALLEL_STATUS GetParallelStatus () const;
+    virtual void SetParallelStatus (PARALLEL_STATUS stat) const;
   };
 
 
@@ -366,16 +361,17 @@ namespace ngla
 
     S_BaseVector & operator= (double s);
 
-    virtual SCAL InnerProduct (const BaseVector & v2) const
+    virtual SCAL InnerProduct (const BaseVector & v2) const;
+    /*
     {
       return ngbla::InnerProduct (FVScal(), 
 				  dynamic_cast<const S_BaseVector&>(v2).FVScal());
     }
-
+    */
     virtual FlatVector<double> FVDouble () const;
     virtual FlatVector<Complex> FVComplex () const;
 
-    virtual FlatVector<SCAL> FVScal () const throw() 
+    virtual FlatVector<SCAL> FVScal () const
     {
       return FlatVector<SCAL> (size * entrysize, Memory());
     }
@@ -391,12 +387,13 @@ namespace ngla
     S_BaseVector () throw() { ; }
     ~S_BaseVector () { ; }
 
-    virtual Complex InnerProduct (const BaseVector & v2) const
+    virtual Complex InnerProduct (const BaseVector & v2) const;
+    /*
     {
       return ngbla::InnerProduct (FVScal(), 
 				  dynamic_cast<const S_BaseVector&>(v2).FVScal());
     }
-
+    */
     virtual FlatVector<double> FVDouble () const throw();
     virtual FlatVector<Complex> FVComplex () const throw();
     virtual FlatVector<Complex> FVScal () const throw() 
